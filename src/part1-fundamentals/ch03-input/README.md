@@ -26,7 +26,7 @@ related_chapters:
   - "3.9"
   - "3.10"
   - "3.11"
-pipeline_stage: task6_pending
+pipeline_stage: "task2b_pending"
 task6_state: revisiting
 task9_state: pending
 task2b_state: fixed

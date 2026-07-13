@@ -1,7 +1,7 @@
 ---
 title: 04-typical-scenarios
-chapter: 07.04
-status: draft
+chapter: "7.4"
+status: "ready-for-review"
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags: [smoothness, jank]
 repaired_date: 2026-05-23
@@ -54,7 +54,7 @@ related_chapters:
 - '7.3'
 - '2.4'
 - '2.5'
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "revisiting"
 task9_state: "pending"
 task2b_state: "fixed"

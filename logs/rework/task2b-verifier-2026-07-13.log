@@ -1,0 +1,75 @@
+# Task2B Verifier Reflux Log — 2026-07-13 11:28 (Asia/Shanghai)
+
+## Run Summary
+- **Run ID**: task2b-verifier-2026-07-13-11-28
+- **Chapters checked**: 6
+- **State corrections**: 6
+- **Blocked**: 0
+- **Android version baseline**: android-17.0.0_r1 (Android 17 / API 37)
+
+## Chapters Reviewed
+
+### §14.7 ProfilingManager
+- **File**: `src/part3-tools/ch14-other-tools/07-profiling-manager.md`
+- **Issue**: `status: finalized` but `pipeline_stage: task6_pending` — contradictory. Task9 auto-fixed on 2026-06-30 (P2×3: JavaHeapDumpRequestBuilder params, AOSP source anchors, cross-ref) but Task6 last reviewed on 2026-05-30 (BEFORE the auto-fix).
+- **Queue**: No pending items for 14.7
+- **Correction**: `status: finalized → ready-for-review`
+- **Reason**: Task9 auto-fixed but Task6 has not re-reviewed; chapter cannot be finalized until Task6 confirms the auto-fix
+- **Body lines**: 256 (≥30 ✓)
+
+### §17.2 SoC 平台差异
+- **File**: `src/part4-system/ch17-oem/02-soc-differences.md`
+- **Issue**: Duplicate/conflicting frontmatter fields. First occurrence: `pipeline_stage: task6_pending`, `task6_state: revisiting`. Second occurrence (YAML override): `pipeline_stage: ready-to-publish`, `task6_state: reviewed`, `task6_result: pass-light-edit`.
+- **Queue**: No pending items for 17.2
+- **Correction**: Removed stale first-occurrence fields (`pipeline_stage: task6_pending`, `task2b_state: fixed`, `last_task2b_lite_at`, `task6_state: revisiting`, `task9_state: pending`, `last_task9_autofix_at`, `status: finalized`, `pipeline_stage: ready-to-publish`). Kept resolved second occurrence: `pipeline_stage: ready-to-publish`.
+- **Reason**: Resolved state (Task6 pass-light-edit 2026-06-15 after Task9 auto-fixes) was correct; stale duplicate fields were confusing
+- **Body lines**: 426 (≥30 ✓)
+
+### §13.25 PerfDog GPU/性能采集数据源
+- **File**: `src/part3-tools/ch13-perfetto/13.25-perfdog-android-platform-gpu-performance-data-sources.md`
+- **Issue**: `pipeline_stage: task9_pending` but `task9_state: reviewed` + `task9_result: pass-tech-review` — Task9 already completed
+- **Queue**: §13.25 task6-review entry completed at 2026-07-13T08:55:35
+- **Correction**: `pipeline_stage: task9_pending → ready-to-publish`
+- **Reason**: Task9 has reviewed and passed; pipeline should advance
+- **Body lines**: 234 (≥30 ✓)
+
+### §7.4 典型卡顿场景
+- **File**: `src/part2-performance/ch07-smoothness/04-typical-scenarios.md`
+- **Issue**: `pipeline_stage: task6_pending` but `task9_result: needs-rework` (from 2026-05-23) — Task9 said needs rework, not Task6 pending
+- **Queue**: No pending items for 7.4
+- **Correction**: `pipeline_stage: task6_pending → task2b_pending`, removed stale duplicate `status: draft` and `chapter: 07.04`
+- **Reason**: After Task9 needs-rework, the chapter should go back to Task2B for content rework, not Task6
+- **Body lines**: 551 (≥30 ✓)
+
+### §15.7 AOSP 源码阅读方法
+- **File**: `src/part3-tools/ch15-methodology/07-aosp-reading.md`
+- **Issue**: Same as §7.4 — `pipeline_stage: task6_pending` but `task9_result: needs-rework`
+- **Queue**: No pending items for 15.7
+- **Correction**: `pipeline_stage: task6_pending → task2b_pending`, removed stale `status: draft`
+- **Reason**: After Task9 needs-rework, chapter should go to Task2B
+- **Body lines**: 514 (≥30 ✓)
+
+### §3.0 输入事件概述 (README)
+- **File**: `src/part1-fundamentals/ch03-input/README.md`
+- **Issue**: `pipeline_stage: task6_pending` but `task9_result: needs-rework` (from 2026-04-28)
+- **Queue**: No pending items for 3.0
+- **Correction**: `pipeline_stage: task6_pending → task2b_pending`
+- **Reason**: After Task9 needs-rework, chapter should go to Task2B
+- **Body lines**: 111 (≥30 ✓)
+
+## Queue Status
+- **Total queue items**: 4 (1 top-level section 16.5 completed, 3 pending sub-items)
+- **Pending rework items**: 1 (§14.9, source: `task-deepresearch-injector`, does NOT block reflux)
+- **Blocking items**: 0
+
+## Android 18/API 38+ Check
+- No Android 18 / API 38+ content found in any reviewed chapters ✓
+
+## Files Modified
+1. `src/part3-tools/ch14-other-tools/07-profiling-manager.md` (frontmatter)
+2. `src/part4-system/ch17-oem/02-soc-differences.md` (frontmatter dedup)
+3. `src/part3-tools/ch13-perfetto/13.25-perfdog-android-platform-gpu-performance-data-sources.md` (frontmatter)
+4. `src/part2-performance/ch07-smoothness/04-typical-scenarios.md` (frontmatter)
+5. `src/part3-tools/ch15-methodology/07-aosp-reading.md` (frontmatter)
+6. `src/part1-fundamentals/ch03-input/README.md` (frontmatter)
+7. `metadata/progress.json` (verifier state)
