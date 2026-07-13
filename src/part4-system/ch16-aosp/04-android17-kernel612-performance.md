@@ -2,14 +2,14 @@
 title: "Android 17 + Kernel 6.12 系统级性能优化"
 section: "16.4"
 chapter: "16.4"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 reviewed_date: 2026-07-09
 reviewed_by: openclaw-task6
 task6_review_date: "2026-06-16"
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "auto-fixed"
 last_task9_at: "2026-07-09T05:56:16+08:00"
 task9_reviewed_date: "2026-07-09"
@@ -54,8 +54,8 @@ task2b_result: "verified"
 task2b_state: "fixed"
 task2b_fixed_at: "2026-06-16T08:51:39+08:00"
 task2b_fixed_by: "task2b-main"
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task2b_verification_note: "2026-06-16 验证 android17-6.18 gki/aarch64/afdo/README.md 原文，正文 AutoFDO benchmark 数据准确。清除版本演进表 [需确认] 标注，补充 Binder benchmark 多次运行最佳结果取值限定。"
 ---
 

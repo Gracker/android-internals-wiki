@@ -2,7 +2,7 @@
 
 title: "Android 17 SDM 安装编译链路性能"
 chapter: "16.9"
-status: finalized
+status: ready-for-review
 last_task2b_lite_at: "2026-06-29"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
@@ -44,10 +44,10 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-06-11"
 gap_source: "DeepResearch 调研结果（score 18）+ AOSP 源码结构"
 task9_result: "auto-fixed"
-task9_state: "reviewed"
+task9_state: "pending"
 task2b_state: "fixed"
-task6_state: "reviewed"
-pipeline_stage: "ready-to-publish"
+task6_state: "revising"
+pipeline_stage: "task6_pending"
 last_task9_at: "2026-06-29T16:41:24+08:00"
 last_task9_autofix_at: "2026-06-29"
 last_task9_review_log: "logs/deep-review/2026-06-29-16-deep-review.md"
