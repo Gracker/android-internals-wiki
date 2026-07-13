@@ -42,7 +42,7 @@ task2b_state: fixed
 last_task2b_lite_at: "2026-05-26"
 last_task6_at: "2026-06-20T14:05:00+08:00"
 last_task6_review_log: "logs/review/2026-06-20-14-review.md"
-last_task6_audit: "2026-05-25"
+last_task6_audit: "2026-07-13"
 task2b_result: fixed
 task6_review_notes: "2026-06-20 Task6 14:05：Task9 auto-fixed 后写作复审；L1/L2 通过，小修 1 处（§2.10/§8.1 交叉引用修正为 §2.9/§5.6）；无新增 L3/L4 回炉项。task9_result=auto-fixed（P0/P1/P2 已全部修复），queue 无 pending，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-06-20-13-deep-review.md"
