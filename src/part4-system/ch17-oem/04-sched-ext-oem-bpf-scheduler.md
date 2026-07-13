@@ -39,11 +39,6 @@ sources:
     path: "https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12"
 tags: ["sched-ext", "bpf", "oem", "scheduler", "kernel-6.12"]
 related_chapters: ["5.1", "5.2", "5.7", "14.10", "17.2"]
-last_task9_audit: "2026-07-13"
-last_task9_audit_at: "2026-07-13T05:20:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-13-05-idle-audit.md"
-last_task9_audit_result: "pass-idle-audit"
-last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）检查通过；Android common android16-6.12 sched_ext paths/constants/sysfs 和 OPPO hmbird proc 控制面口径一致；无 P0/P1 问题，符合 Android 17 版本边界要求。"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-29"
 task6_state: reviewed
@@ -61,6 +56,7 @@ last_task9_review_log: "logs/deep-review/2026-05-29-07-deep-review.md"
 task9_review_notes: "2026-05-29 Task9 deep-review: pass-tech-review。复核 2026-05-20 P0/P1 已修复；Android common 6.12 sched_ext、DSQ、partial switch、scx_bpf_cpuperf_set 与 hmbird_sched proc 控制面口径一致；无新增 P0/P1。queue 无 pending，Task6 已通过，自动晋升 finalized。"
 last_task6_at: "2026-05-29T07:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-29-07-review.md"
+last_task6_audit: "2026-07-13T23:05:00+08:00"
 task6_review_notes: "2026-05-29 07:07 Task6 revisiting review: pass-light-edit；L1/L2 通过；Task2B 已修复后送 Task9 复审；无新增 L3/L4 回炉项。"
 last_task2b_at: "2026-05-29T06:50:00+08:00"
 task2b_fixed_by: openclaw-task2b-main
@@ -71,6 +67,7 @@ task6_l3_l4_issues: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-09
 last_task9_audit: "2026-07-13"
+last_task9_audit_at: "2026-07-13T07:00:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-13-07-audit.md"
 last_task9_audit_result: "pass-idle-audit"
 last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度3（版本差异覆盖）检查通过；Android common android16-6.12 sched_ext paths/constants/sysfs 和 OPPO hmbird proc 控制面口径一致；无 P0/P1 问题，符合 Android 17 版本边界要求。"
