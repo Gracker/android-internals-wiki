@@ -1,9 +1,9 @@
 {
   "total": 717,
   "draft": 0,
-  "ready_for_review": 5,
-  "finalized": 5,
-  "last_updated": "2026-07-13T13:08:56.363946+08:00",
+  "ready_for_review": 6,
+  "finalized": 4,
+  "last_updated": "2026-07-13T13:41:20+08:00",
   "task2b": {
     "last_run": "2026-07-10T10:51:28+08:00",
     "last_section": "19.26",
@@ -655,8 +655,22 @@
   "task2b_main_completed": 2,
   "task2b_lite": {
     "total_fixed": 1,
-    "last_run": "2026-07-05T15:35:00+08:00",
-    "last_chapter": "23.8"
+    "last_run": "2026-07-13T13:41:20+08:00",
+    "last_chapter": "23.8",
+    "last_section": "14.9",
+    "result": "fixed-lite",
+    "fix_type": "frontmatter",
+    "note": "frontmatter dedup + status fix + queue entry for P0/P1 audit issues",
+    "runs": [
+      {
+        "date": "2026-07-13",
+        "time": "13:41",
+        "chapter": "14.9",
+        "source": "task9-deep-tech-review-audit",
+        "type": "frontmatter dedup + status + queue",
+        "issues_fixed": 1
+      }
+    ]
   },
   "task2b_verifier_latest": {
     "run_at": "2026-07-09T03:31:40+08:00",
