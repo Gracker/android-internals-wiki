@@ -135,7 +135,7 @@
             },
             {
               "type": "P0",
-              "category": "源码引用错误", 
+              "category": "源码引用错误",
               "title": "HAL3 Buffer Management API 路径错误",
               "description": "引用的 API 常量路径不存在于 claimed 的 AOSP 版本中",
               "severity": "高 - 直接影响开发者实现",
@@ -213,8 +213,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-07-13T08:05:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-07-13-08-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-07-13-08-review.md",
+      "completed_at": "2026-07-13T08:55:35+08:00",
+      "completed_by": "task2b-main"
     }
   ]
 }
