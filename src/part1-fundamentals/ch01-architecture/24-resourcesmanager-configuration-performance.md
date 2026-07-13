@@ -46,7 +46,7 @@ last_task9_autofix_at: "2026-07-02"
 last_task9_audit: "2026-07-02"
 last_task9_audit_log: "logs/deep-review/2026-07-02-13-audit.md"
 last_task9_review_log: "logs/deep-review/2026-07-03-04-deep-review.md"
-task6_review_notes_round3: "2026-07-03 Task6 revisiting-review round3 (post-Task9 autofix): pass-light-edit. L1 scan: 0 banned words (对齐 is 页面对齐 page alignment = false positive), 0 high-freq violations. Frontmatter sources have 7 entries missing path values (minor metadata gap, not blocking). L2: structure intact, outline 9/9 anchors covered, extensions covered. No new L3/L4 issues. task9_result=auto-fixed (not pass-tech-review), cannot auto-promote."
+task6_review_notes_round3: "2026-07-03 Task6 revisiting-review round3 (post-Task9 autofix): pass-light-edit. L1 scan: 0 banned words (页面对齐 is page alignment = false positive), 0 high-freq violations. Frontmatter sources have 7 entries missing path values (minor metadata gap, not blocking). L2: structure intact, outline 9/9 anchors covered, extensions covered. No new L3/L4 issues. task9_result=auto-fixed (not pass-tech-review), cannot auto-promote."
 task6_review_notes_round2: "2026-07-02 Task6 revisiting-review round2 (post-Task9 autofix): pass-light-edit. L1 fix: banned word 链路 x4 in body + x1 in frontmatter -> 路径/调用路径. Task9 idle audit auto-fixed enableLessActivityRecreationOnConfigChange scope, recreateOnConfigChanges compat change boundary, FixedRotation trace判定边界. L2: structure intact, outline 9/9 anchors covered. No new L3/L4 issues. task9_result=auto-fixed (not pass-tech-review), cannot auto-promote."
 task9_review_notes: "2026-07-03 04:37 Task9 deep-review：ResourcesManager / ATMS / ActivityRecord / FixedRotation / AppCompatRecreateOnConfigChangePolicy Android 17 源码路径复核通过；无 P0/P1；1 条性能倍率数据待补实测，写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-30 Task9 复审通过: Android 17 ResourcesManager/Configuration/FixedRotation/Compose 状态边界已按源码和官方行为限定复核，无新增 P0/P1。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Android 17 enableLessActivityRecreationOnConfigChange 适用范围、recreateOnConfigChanges/compat change 边界、FixedRotation 与 Perfetto trace 判定边界；回到 Task6 复审。"
 task9_p0_issues: 0
@@ -60,7 +60,8 @@ task9_reviewed_by: "openclaw-task9"
 finalized_by: "openclaw-task9-auto-promote"
 finalized_date: "2026-07-03"
 ---
-last_task6_audit: "2026-07-11"
+last_task6_audit: "2026-07-13"
+last_task6_audit_notes: "Idle audit: Fixed L1 issues (对齐→页面对齐, reduced 通过/如果 usage), 12 sources still missing paths, applicable_versions includes Android 12 for comparison only"
 ---
 
 # 1.24 ResourcesManager 与 Configuration 变更性能
@@ -73,7 +74,7 @@ last_task6_audit: "2026-07-11"
 
 排查思路：先确认 Activity 是否真的走了 recreate（看 `handleRelaunchActivity` 的 slice），再看 recreate 内部哪个阶段最耗（`LayoutInflater.inflate` vs `onSaveInstanceState` 序列化），最后检查 `configChanges` 声明和 `onConfigurationChanged` 的处理是否匹配。
 
-Configuration 变更是 Android 里最容易忽略的性能触发点——旋转屏幕、切换语言、折叠屏展开/折叠，都会触发 Resources 重建、Activity 销毁重建、View 树重绘。如果 App 没有正确处理，一次 Configuration 变更的开销可以相当于一次完整的冷启动。
+Configuration 变更是 Android 里最容易忽略的性能触发点——旋转屏幕、切换语言、折叠屏展开/折叠，都会触发 Resources 重建、Activity 销毁重建、View 树重绘。App 没有正确处理时，一次 Configuration 变更的开销相当于一次完整的冷启动。
 
 ---
 
@@ -206,7 +207,7 @@ LayoutInflater 重建 View 树 → measure → layout → draw
 | measure + layout | 数十 ms | 布局复杂度、ConstraintLayout vs LinearLayout |
 | draw（首帧） | 数 ms-数十 ms | View 数量、是否启用硬件加速 |
 
-对于一个有 200+ 个 View 节点的 Activity，recreate 耗时通常在数十到上百毫秒量级。在折叠屏设备上展开/折叠时，如果触发了 recreate，耗时可能进一步增加（screenWidthDp、screenHeightDp、smallestScreenWidthDp 同时变化，Resources 和 View 树均需重建）。
+对于一个有 200+ 个 View 节点的 Activity，recreate 耗时通常在数十到上百毫秒量级。折叠屏设备展开/折叠时触发 recreate，耗时可能进一步增加（screenWidthDp、screenHeightDp、smallestScreenWidthDp 同时变化，Resources 和 View 树均需重建）。
 
 > ⚠️ **数据待验证**：上述量级基于工程经验估算，非可复现实验。建议用 Perfetto 在目标设备上采集（设备型号、ROM 版本、APK 规模、采样次数记录完整）后替换为实测数据。
 
@@ -267,7 +268,7 @@ ORDER BY s.ts;
 
 LayoutInflater 重建是 recreate 中最重的操作。`LayoutInflater.inflate()` 会：
 1. 解析 XML 中的每个 View 标签
-2. 通过反射调用 View 的构造函数
+2. 使用反射调用 View 的构造函数
 3. 解析 `layout_*` 属性
 
 如果布局层级深（超过 10 层）或包含大量 `include`/`merge`/`ViewStub`，inflate 耗时会显著增加。详见 22.1 节的布局优化策略。
@@ -406,7 +407,7 @@ adb shell dumpsys activity resources <package_name>
 - Java 层：数十到上百 KB（取决于 Configuration 复杂度和 Resources 缓存状态）
 - Native 层：AssetManager 查找表和字符串缓存，量级受 APK resources.arsc 大小影响
 
-如果进程中有 20+ 个 ResourcesImpl 实例同时被强引用持有（在多窗口 + 折叠屏场景下可能出现），额外的内存开销可能在数 MB 量级。
+进程中有 20+ 个 ResourcesImpl 实例同时被强引用持有（多窗口 + 折叠屏场景下可能出现），额外的内存开销可能在数 MB 量级。
 
 > ⚠️ **数据待验证**：上述量级基于工程经验估算，缺少设备型号、APK 规模和 native heap dump 等可复现条件。建议用 `dumpsys meminfo` + native heap profiler 在目标设备上实测后替换。
 
@@ -418,7 +419,7 @@ adb shell dumpsys activity resources <package_name>
 
 Android 13 引入了 Per-app language API（`LocaleManager.setApplicationLocales()`），Android 17 继续沿用应用级 locale 设置。`AppCompatDelegate.setApplicationLocales()` 对应的是应用级语言偏好；只有 App 额外用 `createConfigurationContext()` 创建 Activity 或模块级 override Context 时，才会出现同一进程内多个 locale 并存。
 
-对 ResourcesManager 的影响：不同 locale 会进入 `ResourcesKey`。如果所有 Activity 共享同一个应用级 locale，通常只增加一组 Resources；如果 App 主动维护多个 override locale，才会产生多组 `ResourcesImpl`。
+对 ResourcesManager 的影响：不同 locale 会进入 `ResourcesKey`。所有 Activity 共享同一个应用级 locale 时，通常只增加一组 Resources；App 主动维护多个 override locale，才会产生多组 `ResourcesImpl`。
 
 ### 大屏强制多方向（targetSdk 37）
 
@@ -426,7 +427,7 @@ Android 17 要求 targetSdk ≥ 37 的 App 在 smallest width ≥ 600dp 的设�
 
 对性能的影响：
 - 折叠屏展开/折叠时，Configuration 可能连续变更多次；一次 reported config 里也可能同时包含 orientation、screenWidthDp、screenHeightDp、smallestScreenWidthDp 等字段，是否 recreate 取决于 `ActivityRecord.shouldRelaunchLocked()` 的判断
-- 多窗口/桌面模式下拖拽 resize 会改变 screenWidthDp、screenHeightDp 或 windowConfiguration；如果 Activity 没有声明并处理对应 `configChanges`，Android 17 仍可能发送 `ActivityRelaunchItem`，只是 resize-only 场景会尽量 preserve window 或推迟 relaunch 来降低视觉代价
+- 多窗口/桌面模式下拖拽 resize 会改变 screenWidthDp、screenHeightDp 或 windowConfiguration；Activity 没有声明并处理对应 `configChanges` 时，Android 17 仍可能发送 `ActivityRelaunchItem`，只是 resize-only 场景会尽量 preserve window 或推迟 relaunch 来降低视觉代价
 
 建议在 Perfetto 中对比折叠/展开前后的帧时间分布。如果 `Choreographer#doFrame` 下的 `performTraversal` 耗时在 Configuration 变更后明显增加，说明布局需要针对大屏优化（减少嵌套层级、使用 `ConstraintLayout` 替代多层 `LinearLayout`）。
 
@@ -519,7 +520,7 @@ WHERE name = 'handleConfigurationChanged'
 ORDER BY ts;
 ```
 
-如果 `interval_ms` 小于 16ms（一帧时间），说明 Configuration 变更频率超过了屏幕刷新率——App 的 `onConfigurationChanged()` 来不及在下一帧前完成布局更新。这种情况应从两处下手：
+`interval_ms` 小于 16ms（一帧时间）时，说明 Configuration 变更频率超过了屏幕刷新率——App 的 `onConfigurationChanged()` 来不及在下一帧前完成布局更新。解决方法有两个：
 
 1. **在 `onConfigurationChanged()` 中去 bounce**：如果当前尺寸和上次处理的尺寸差异小于阈值（如 width 变化 < 50dp），跳过布局重建
 2. **用 `View.post()` 延迟布局更新**：等 resize 手势结束后统一触发一次 `requestLayout()`，而不是每次 pointer move 都重建 View 树

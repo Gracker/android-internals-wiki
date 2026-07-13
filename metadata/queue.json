@@ -308,5 +308,98 @@
       "completed_at": "2026-07-13T16:50:00+08:00",
       "completed_by": "task2b-main"
     }
+  ],
+  "queue": [
+    {
+      "id": "ch02-rendering/2.17-gpu-power-dvfs",
+      "title": "Android 17 GPU功耗管理策略与DVFS调优机制研究",
+      "priority": 80,
+      "created_date": "2026-07-13",
+      "type": "knowledge-gap"
+    },
+    {
+      "id": "ch02-rendering/2.18-gpu-agi-frame-profiler",
+      "title": "Android 17 AGI Frame Profiler 与 gapii Spy 架构解析",
+      "priority": 80,
+      "created_date": "2026-07-13",
+      "type": "knowledge-gap"
+    },
+    {
+      "id": "ch02-rendering/2.19-gpu-sf-debug-tools-evolution",
+      "title": "Android 17 命令行 GPU/SF 调试工具链演进",
+      "priority": 80,
+      "created_date": "2026-07-13",
+      "type": "knowledge-gap"
+    },
+    {
+      "id": "ch03-memory/3.15-art-heap-task-gc-inhibition",
+      "title": "Android 17 ART HeapTask 并发与 GC 抑制源码级机制",
+      "priority": 80,
+      "created_date": "2026-07-13",
+      "type": "knowledge-gap"
+    },
+    {
+      "id": "ch03-memory/3.16-ai-agent-memory-sandbox-reuse",
+      "title": "Android 17 AI Agent 内存沙箱数据复用机制",
+      "priority": 80,
+      "created_date": "2026-07-13",
+      "type": "knowledge-gap"
+    },
+    {
+      "id": "ch03-memory/3.17-perfetto-ai-memory-tracking",
+      "title": "Perfetto AI 技能状态跟踪在 Android 内存管理中的应用",
+      "priority": 80,
+      "created_date": "2026-07-13",
+      "type": "knowledge-gap"
+    },
+    {
+      "id": "ch05-cpu-power/5.31-cpu-cache-locality-pss",
+      "title": "Android 17 (API 37) CPU 缓存局部性与 PSS 内存核算",
+      "priority": 80,
+      "created_date": "2026-07-13",
+      "type": "knowledge-gap"
+    },
+    {
+      "id": "ch05-cpu-power/5.32-soc-battery-optimization",
+      "title": "Android 17 SoC 跨厂商电池优化策略 × IPower HAL × schedutil 闭环",
+      "priority": 80,
+      "created_date": "2026-07-13",
+      "type": "knowledge-gap"
+    },
+    {
+      "id": "ch05-cpu-power/5.33-soc-power-hal-implementation",
+      "title": "Android 17 不同 SoC 架构下的电池优化策略与 IPower HAL 实现",
+      "priority": 80,
+      "created_date": "2026-07-13",
+      "type": "knowledge-gap"
+    },
+    {
+      "id": "ch12-startup/12.1-application-start-info-framework",
+      "title": "Android 17 启动框架与任务编排 — ApplicationStartInfo 与 AppStartInfoTracker",
+      "priority": 80,
+      "created_date": "2026-07-13",
+      "type": "knowledge-gap"
+    },
+    {
+      "id": "ch12-startup/12.2-startup-insights-gaps",
+      "title": "Android 17 启动洞察分析与缺口研究",
+      "priority": 80,
+      "created_date": "2026-07-13",
+      "type": "knowledge-gap"
+    },
+    {
+      "id": "ch16-agent-native-os/16.1-aohp-android-agent-native",
+      "title": "AOHP：将 Android 改造为 Agent 原生 OS",
+      "priority": 80,
+      "created_date": "2026-07-13",
+      "type": "knowledge-gap"
+    },
+    {
+      "id": "ch16-agent-practice/16.2-outer-loop-agent-practice",
+      "title": "Own the Outer Loop - AI Agent 工程实践",
+      "priority": 80,
+      "created_date": "2026-07-13",
+      "type": "knowledge-gap"
+    }
   ]
 }

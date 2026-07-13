@@ -16,7 +16,7 @@ tags:
   - performance
   - aosp
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: completed
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-07-02"
@@ -31,10 +31,10 @@ task2b_result: fixed
 task2b_fixed_at: "2026-06-26T11:40:00+08:00"
 last_task2b_at: "2026-06-26T11:40:00+08:00"
 task6_result: pass-light-edit
-last_task6_audit: "2026-06-30"
+last_task6_audit: "2026-07-13"
 last_task6_audit_log: "logs/review/2026-06-30-23-audit.md"
-last_task6_at: 2026-07-02T05:06:00+08:00
-task6_review_notes: "2026-07-02 05:06 Task6 re-review (revisiting after Task9 idle-audit auto-fix): pass-light-edit。Task9 idle-audit 将 MessageQueue 源码锚点从 master/android-16 刷新到 android-17.0.0_r1，正文落地正确；无新增 L1/L2 问题。无 B 类回炉项。Task9 result=auto-fixed，送 Task9 正式通过。"
+last_task6_at: 2026-07-13T17:17:00+08:00
+task6_review_notes: "2026-07-02 05:06 Task6 re-review (revisiting after Task9 idle-audit auto-fix): pass-light-edit。Task9 idle-audit 将 MessageQueue 源码锚点从 master/android-16 刷新到 android-17.0.0_r1，正文实施正确；无新增 L1/L2 问题。无 B 类回炉项。Task9 result=auto-fixed，送 Task9 正式通过。"
 last_task2b_lite_at: "2026-06-26T11:40:00+08:00"
 sources:
   - type: official
