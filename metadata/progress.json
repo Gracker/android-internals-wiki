@@ -214,6 +214,13 @@
       "status": "no-candidates",
       "ts": "2026-07-12T02:05:00+08:00",
       "note": "Gap mining round 75: 0 candidates ≥14 (75th consecutive). No new material since Round 74 (1h ago). DeepResearch: 0 new files (newest 2026-07-11 23:58). Clippings: 19 days stale. research-feeds: 3 months stale. daily-info: not yet generated for 2026-07-12. source-index: 0 unmapped high-quality. 50 drafts all >15 lines. Task2B backlog: 0. Coverage truly saturated."
+    },
+    {
+      "section": "13.25",
+      "action": "task6-review",
+      "status": "finalized",
+      "ts": "2026-07-13T12:15:00+08:00",
+      "note": "Re-review (revisiting→reviewed). Frontmatter cleaned: removed duplicate task6_state/task9_state keys, fixed malformed YAML. Punctuation: 2x 、以及→以及. Auto-promoted to finalized (task6 pass-light-edit + task9 pass-tech-review + queue empty). No B-class issues."
     }
   ],
   "review_history": [
