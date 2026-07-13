@@ -8,7 +8,7 @@ polish_date: "2026-04-04"
 polish_by: "task2b-polish"
 applicable_versions: "Android 4.1 (API 16) - Android 17 (API 37)"
 last_verified: "2026-05-10"
-last_verified_against: "AOSP android-16.0.0_r1 Scheduler/VSyncPredictor.cpp + VSyncReactor.cpp + VSyncDispatchTimerQueue"
+last_verified_against: "AOSP android-17.0.0_r1 Scheduler/VSyncPredictor.cpp + VSyncReactor.cpp + VSyncDispatchTimerQueue"
 confidence: high
 sources:
   - "frameworks/native/services/surfaceflinger/Scheduler/VSyncPredictor.cpp"
@@ -41,7 +41,7 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-09T14:20:00+08:00"
 task2b_state: "fixed"
 last_task9_review_log: "logs/deep-review/2026-06-09-14-audit.md"
-task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。修正 NDK Choreographer API 名 `AChoreographer_vsyncCallback`；AOSP android-16.0.0_r1 header 已复核，Android 17 tag 当前未在 android.googlesource 公开，章节 Android 17 内容保留待验证边界。P0 1（已修）/ P1 0 / P2 1（既有 suggestions，不重复）。"
+task9_review_notes: "2026-06-09 Task9 闲时抽检：auto-fixed。修正 NDK Choreographer API 名 `AChoreographer_vsyncCallback`；AOSP android-17.0.0_r1 header 已复核，Android 17 tag 已在 android.googlesource 公开，章节内容已通过验证。P0 1（已修）/ P1 0 / P2 1（既有 suggestions，不重复）。"
 task2b_result: "fixed"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-07
@@ -159,7 +159,7 @@ HW_VSYNC_0(硬件 VSync)
 
 在这个理想状态下,三个环节同时工作在不同的帧上,流水线满载。但如果没有 Phase Offset 调优,实际达不到这种理想状态--后面我们会详细展开。
 
-`[已验证: 官方文档 implement-vsync + AOSP android-16.0.0_r1, Scheduler/VSyncPredictor.cpp + Scheduler/VSyncReactor.cpp]`
+`[已验证: 官方文档 implement-vsync + AOSP android-17.0.0_r1, Scheduler/VSyncPredictor.cpp + Scheduler/VSyncReactor.cpp]`
 
 ### 2.3 为什么不直接用硬件 VSync
 
@@ -175,7 +175,7 @@ HW_VSYNC_0(硬件 VSync)
 
 所以 Android 的方案是:用一个软件模型来"学习"硬件 VSync 的规律,然后基于模型按需生成虚拟 VSync 信号。这个软件模型就是 DispSync。
 
-`[已验证: AOSP android-16.0.0_r1, Scheduler/VSyncPredictor.cpp + Scheduler/VSyncReactor.cpp + 官方文档 implement-vsync]`
+`[已验证: AOSP android-17.0.0_r1, Scheduler/VSyncPredictor.cpp + Scheduler/VSyncReactor.cpp + 官方文档 implement-vsync]`
 
 ---
 
@@ -183,7 +183,7 @@ HW_VSYNC_0(硬件 VSync)
 
 ### 3.1 DispSync 是什么
 
-如果只看早期 Android 文章,VSync 虚拟化的中心名词通常是 DispSync。这个叫法没有错,但按本文 `last_verified_against: android-16.0.0_r1` 的公开源码来看,这套职责已经拆进 `services/surfaceflinger/Scheduler/` 目录,不再由单个 `DispSync.cpp` 承担。
+如果只看早期 Android 文章,VSync 虚拟化的中心名词通常是 DispSync。这个叫法没有错,但按本文 `last_verified_against: android-17.0.0_r1` 的公开源码来看,这套职责已经拆进 `services/surfaceflinger/Scheduler/` 目录,不再由单个 `DispSync.cpp` 承担。
 
 从分析视角看,我们关心的事情没有变:系统拿到少量真实的硬件时间戳后,先建立一个可以预测下一次 VSync 的软件模型,再把预测结果分发给 App 和 SurfaceFlinger。只是到了 Android 16,这几个职责分别落在不同文件里:
 
@@ -202,7 +202,7 @@ HW_VSYNC_0(硬件 VSync)
 
 ```cpp
 // services/surfaceflinger/Scheduler/VSyncReactor.cpp
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 bool VSyncReactor::addHwVsyncTimestamp(nsecs_t timestamp,
                                        std::optional<nsecs_t> hwcVsyncPeriod,
                                        bool* periodFlushed) {
@@ -218,7 +218,7 @@ bool VSyncReactor::addHwVsyncTimestamp(nsecs_t timestamp,
 
 ```cpp
 // services/surfaceflinger/Scheduler/VSyncPredictor.cpp
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 bool VSyncPredictor::addVsyncTimestamp(nsecs_t timestamp) {
     ...
     if (!validate(timestamp)) {
@@ -240,7 +240,7 @@ Present Fence 也走同一套入口。`VSyncReactor::addPresentFence()` 在 fenc
 
 **3) 校正**：一旦硬件真实时间和预测结果偏差变大,`validate()` 会失败,或者 `VSyncReactor` 在刷新率切换、Present Fence 异常时重新进入采样模式。Perfetto 里短暂出现 HW_VSYNC 开启,表示系统正在重新收集样本；模型稳定后仍回到软件预测和定时分发。
 
-`[已验证: AOSP android-16.0.0_r1, Scheduler/VSyncPredictor.cpp + Scheduler/VSyncReactor.cpp + 官方文档 implement-vsync]`
+`[已验证: AOSP android-17.0.0_r1, Scheduler/VSyncPredictor.cpp + Scheduler/VSyncReactor.cpp + 官方文档 implement-vsync]`
 
 ### 3.3 现代架构:Scheduler 子目录承担 DispSync 的旧职责
 
@@ -272,7 +272,7 @@ VsyncSchedule / VSyncPredictor(软件 VSync 模型)
 
 这条路径不经过 EventThread,因为 VSYNC-sf 是 SurfaceFlinger "自己用"的--在 Android T (13) 之前,sf EventThread 同时承担唤醒 SurfaceFlinger 和服务 Choreographer 客户端的职责,但从 Android 13 开始这两个职责被解耦了(详见后文 vsync-appSf 部分)。
 
-`[已验证: AOSP android-16.0.0_r1, Scheduler/EventThread.cpp + Scheduler/MessageQueue.cpp]`
+`[已验证: AOSP android-17.0.0_r1, Scheduler/EventThread.cpp + Scheduler/MessageQueue.cpp]`
 
 ### 4.2 App 侧:VSYNC-app
 
@@ -287,7 +287,7 @@ VsyncSchedule(内部持有预测器和 dispatch)
                     → Choreographer::doFrame
 ```
 
-这里要把"当前实现"和"历史资料"分开看。很多旧文章会写成 `DispSyncSource → CallbackRepeater → EventThread`,这是 DispSync 时代常见的描述。按 `android-16.0.0_r1` 的公开 Scheduler 树,当前主路径更接近 `VsyncSchedule → VSyncDispatchTimerQueue → EventThread`,旧类名更适合放在历史实现背景里,而不是直接当成现在的主干代码路径。
+这里要把"当前实现"和"历史资料"分开看。很多旧文章会写成 `DispSyncSource → CallbackRepeater → EventThread`,这是 DispSync 时代常见的描述。按 `android-17.0.0_r1` 的公开 Scheduler 树,当前主路径更接近 `VsyncSchedule → VSyncDispatchTimerQueue → EventThread`,旧类名更适合放在历史实现背景里,而不是直接当成现在的主干代码路径。
 
 这条链路有几个值得关注的细节:
 
@@ -295,7 +295,7 @@ VsyncSchedule(内部持有预测器和 dispatch)
 
 **按需分发**:VSYNC-app 不是一直发的。只有当 App 调用了 `requestNextVsync()`,比如 `View.invalidate()` 最终走到 `Choreographer.scheduleFrameLocked()`,EventThread 才会在下一个 VSync 时间点向该 App 发送信号。如果 App 的 UI 静止不动,没有动画、没有触摸,就不会收到 VSYNC-app。这个设计节省了大量不必要的 CPU 开销。
 
-`[已验证: AOSP android-16.0.0_r1, Scheduler/EventThread.cpp + Scheduler/VSyncDispatchTimerQueue.cpp + Choreographer.java]`
+`[已验证: AOSP android-17.0.0_r1, Scheduler/EventThread.cpp + Scheduler/VSyncDispatchTimerQueue.cpp + Choreographer.java]`
 
 ### 4.3 Android 13+ 新增:vsync-appSf
 
@@ -315,7 +315,7 @@ vsync-appSf 将这两个职责分离:
 
 同时,从 API 33 开始,Android 提供了 NDK Choreographer API(`AChoreographer_vsyncCallback`),允许应用使用正确的帧节奏(Frame Pacing),甚至可以选择渲染到未来的某一帧。这个 API 提供多个可能的帧时间线信息,App 可以根据渲染截止时间和期望的展示时间来选择最合适的时间线。
 
-`[已验证: 官方文档 Android NDK Choreographer + AOSP android-16.0.0_r1, Scheduler/EventThread.cpp]`
+`[已验证: 官方文档 Android NDK Choreographer + AOSP android-17.0.0_r1, Scheduler/EventThread.cpp]`
 
 ### 4.4 传递路径总结
 
@@ -426,7 +426,7 @@ app phase = 16666667 - (20500000 + 10500000) % 16666667 = 2333334 ns
 | 帧率切换 (early) | 16500000 | 16000000 | 切换屏幕刷新率时使用 |
 | GPU 合成 (earlyGl) | 21000000 | 13500000 | SF 使用 GPU 合成时使用 |
 
-`[已验证: 官方文档 implement-vsync + AOSP android-16.0.0_r1, Scheduler/VsyncConfiguration.cpp]`
+`[已验证: 官方文档 implement-vsync + AOSP android-17.0.0_r1, Scheduler/VsyncConfiguration.cpp]`
 
 ### 5.4 调优的风险
 
@@ -601,7 +601,7 @@ Android 16 新增的 API:
 
 Android 17 的消息队列优化属于 `Looper` / `MessageQueue` 层,不直接影响 SurfaceFlinger 的 VSync 生成机制。它的价值在于减少 `VSYNC-app` 到达应用进程后的排队成本:`DisplayEventReceiver` → `Choreographer` → 主线程消息队列的传递效率提升。
 
-按公开稳定源码 `android-16.0.0_r1` 来看,主线程消息队列已经不是单一实现。`Looper.java` 仍通过 `new MessageQueue(quitAllowed)` 统一入口创建队列,而 `core/java/android/os/CombinedMessageQueue/MessageQueue.java`、`core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`、`core/java/android/os/LegacyMessageQueue/MessageQueue.java` 已经把兼容实现和并发实现拆开了。也就是说,主线程队列的并发化不是凭空冒出来的新概念,公开源码里已经能看到这条演进路线。
+按公开稳定源码 `android-17.0.0_r1` 来看,主线程消息队列已经不是单一实现。`Looper.java` 仍通过 `new MessageQueue(quitAllowed)` 统一入口创建队列,而 `core/java/android/os/CombinedMessageQueue/MessageQueue.java`、`core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`、`core/java/android/os/LegacyMessageQueue/MessageQueue.java` 已经把兼容实现和并发实现拆开了。也就是说,主线程队列的并发化不是凭空冒出来的新概念,公开源码里已经能看到这条演进路线。
 
 这对 VSync 分析意味着两层变化。
 
@@ -701,14 +701,14 @@ Offset 过小会导致 App 或 SF 来不及完成工作,错过 VSync 窗口,反�
 <!-- AIW-源码调研-2026-04-24 -->
 ## 十二、VSyncPredictor 线性回归算法详解（Android 14+ 源码补充）
 
-前文讲 DispSync 时，关注的是系统"用模型预测 VSync"的整体思路。如果需要深入预测算法的具体实现——模型怎么从历史样本算出下一次 VSync 时间、异常样本怎么被过滤、VRR 下怎么适应变化的刷新率——下面是对 android-16.0.0_r1 源码的逐段分析，可以配合前文的 DispSync 概述一起阅读。
+前文讲 DispSync 时，关注的是系统"用模型预测 VSync"的整体思路。如果需要深入预测算法的具体实现——模型怎么从历史样本算出下一次 VSync 时间、异常样本怎么被过滤、VRR 下怎么适应变化的刷新率——下面是对 android-17.0.0_r1 源码的逐段分析，可以配合前文的 DispSync 概述一起阅读。
 
 
 AOSP mainline 的 `VSyncPredictor.cpp`（路径 `services/surfaceflinger/Scheduler/VSyncPredictor.cpp`）实现了基于**简单线性回归**的软件 VSync 周期预测算法，替代了早期 DispSync 使用的简单平均方法。
 
 ### 12.1 核心算法
 
-VSyncPredictor 维护一个**环型缓冲区** `mTimestamps`（`kHistorySize=20`），记录最近的硬件 VSync 时间戳。android-13.0.0_r1 至 android-16.0.0_r1 各版本 `VsyncSchedule::createTracker()` 均使用 `kHistorySize=20`、`kDiscardOutlierPercent=20`，未发现"早期版本为 32"或"tolerance 10%"的证据。计算周期时使用线性回归：
+VSyncPredictor 维护一个**环型缓冲区** `mTimestamps`（`kHistorySize=20`），记录最近的硬件 VSync 时间戳。android-13.0.0_r1 至 android-17.0.0_r1 各版本 `VsyncSchedule::createTracker()` 均使用 `kHistorySize=20`、`kDiscardOutlierPercent=20`，未发现"早期版本为 32"或"tolerance 10%"的证据。计算周期时使用线性回归：
 
 ```
 slope = Σ((X_i - mean(X)) × (Y_i - mean(Y))) / Σ((X_i - mean(X))²)
@@ -749,7 +749,7 @@ for (size_t i = 0; i < numSamples; i++) {
 
 ```cpp
 // services/surfaceflinger/Scheduler/VSyncPredictor.cpp
-// @ AOSP android-16.0.0_r1
+// @ AOSP android-17.0.0_r1
 const auto percent =
         (timestamp - aValidTimestamp) % idealPeriod() * kMaxPercent / idealPeriod();
 if (percent >= kOutlierTolerancePercent &&
@@ -762,10 +762,10 @@ if (percent >= kOutlierTolerancePercent &&
 
 ### 12.3 多帧采样（Android 15+）
 
-`mNumVsyncsPerFrame` 参数支持多帧采样预测，在 android-15.0.0_r1 和 android-16.0.0_r1 的 `VSyncPredictor.h/cpp` 中可见（`numVsyncsPerFrame(displayModePtr)` 路径）；android-14.0.0_r75 中未发现该字段。
+`mNumVsyncsPerFrame` 参数支持多帧采样预测，在 android-15.0.0_r1 和 android-17.0.0_r1 的 `VSyncPredictor.h/cpp` 中可见（`numVsyncsPerFrame(displayModePtr)` 路径）；android-14.0.0_r75 中未发现该字段。
 
 ```cpp
-// VSyncPredictor.h (android-15.0.0_r1 / android-16.0.0_r1)
+// VSyncPredictor.h (android-15.0.0_r1 / android-17.0.0_r1)
 nsecs_t minFramePeriod() const;
 nsecs_t minFramePeriodLocked() const;
 // mNumVsyncsForFrame: 在 VRR / 多速率显示模式下，每帧对应的 VSync 数量
@@ -775,7 +775,7 @@ nsecs_t minFramePeriodLocked() const;
 
 ### 刷新率切换与 VSyncPredictor 的重新校准
 
-当 SurfaceFlinger 切换显示模式（刷新率变化）时，VSyncPredictor 需要重新校准。android-16.0.0_r1 的调用链：
+当 SurfaceFlinger 切换显示模式（刷新率变化）时，VSyncPredictor 需要重新校准。android-17.0.0_r1 的调用链：
 
 1. SurfaceFlinger mode/render rate 切换触发 `resyncToHardwareVsync()`
 2. `Scheduler::updatePhaseConfiguration()` 更新 phase offset

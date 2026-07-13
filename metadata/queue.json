@@ -250,6 +250,63 @@
       ],
       "completed_at": "2026-07-13T14:53:11+08:00",
       "completed_by": "task2b-main"
+    },
+    {
+      "chapter": "16.1",
+      "title": "Google 官方的性能优化思路",
+      "priority": 85,
+      "status": "completed",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-13T16:20:00+08:00",
+      "review_issues": [
+        {
+          "type": "P1",
+          "category": "源码引用不准确",
+          "title": "MessageQueue/Looper源码版本引用不准确",
+          "description": "MessageQueue/Looper 相关源码引用缺少具体版本限定，与 android-17.0.0_r1 的实际实现存在差异",
+          "severity": "中等 - 影响源码可验证性",
+          "location": "MessageQueue/Looper章节",
+          "resolution": "明确版本限定，修正源码引用与android-17.0.0_r1实际实现的差异"
+        },
+        {
+          "type": "P1",
+          "category": "原理链断裂",
+          "title": "Binder机制原理链不完整",
+          "description": "Binder 机制原理链断裂，缺少 IPC 线程优先级继承的具体实现描述",
+          "severity": "中等 - 影响开发者对机制的理解",
+          "location": "Binder 优化章节",
+          "resolution": "补充 Binder IPC 线程优先级继承的具体实现和工作原理"
+        },
+        {
+          "type": "P1",
+          "category": "版本差异不完整",
+          "title": "Android 17 vs Android 16性能优化差异覆盖不足",
+          "description": "Android 17 相比 Android 16 的性能优化差异覆盖不完整",
+          "severity": "中等 - 影响开发者适配",
+          "location": "版本差异章节",
+          "resolution": "补充 Android 17 相比 Android 16 的关键性能优化差异"
+        },
+        {
+          "type": "P1",
+          "category": "版本差异不完整",
+          "title": "ART CMC版本差异说明缺失",
+          "description": "缺少对 Android 17 中 ART CMC (Concurrent Mark-Compact) 的版本差异说明",
+          "severity": "中等 - 影响开发者内存管理理解",
+          "location": "ART GC 变化章节",
+          "resolution": "补充 Android 17 中 ART CMC 的具体实现和版本差异"
+        },
+        {
+          "type": "P1",
+          "category": "知识盲区",
+          "title": "设备类型优化策略差异盲区",
+          "description": "缺少对不同设备类型的优化策略差异盲区",
+          "severity": "中等 - 影响不同设备场景下的优化效果",
+          "location": "优化策略章节",
+          "resolution": "补充针对不同设备类型（旗舰机/中端机/低端机）的优化策略差异"
+        }
+      ],
+      "completed_at": "2026-07-13T16:50:00+08:00",
+      "completed_by": "task2b-main"
     }
   ]
 }
