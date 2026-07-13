@@ -45,6 +45,8 @@ review_round: 5
 review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 1 banned word fix (可以看到→直接陈述) in 03-metrics; AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-26
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-14
 ---
 
 # LeakCanary
@@ -96,7 +98,7 @@ LeakCanary 是 Square 开源的 Android 内存泄漏检测库。它最适合开�
 
 ## 它怎样判断对象被保留
 
-LeakCanary 不会在对象一销毁时就立刻 dump heap。实际流程如下：
+LeakCanary 不会在对象销毁的瞬间就 dump heap。实际流程如下：
 
 1. `Activity.onDestroy()`、`Fragment.onDestroy()`、`Fragment.onDestroyView()`、`ViewModel.onCleared()` 这些生命周期结束点把对象交给 `AppWatcher` / `ObjectWatcher`。
 2. `ObjectWatcher` 为对象保存弱引用。
@@ -105,7 +107,7 @@ LeakCanary 不会在对象一销毁时就立刻 dump heap。实际流程如下�
 5. 只有达到阈值后才会 dump `.hprof`，再由 Shark 分析 GC Root、引用路径、suspect reference 和 retained size。
 
 这套流程把 retained check 和 heap dump 分成了两步。日常接入里最容易写错的地方，就是把“对象还活着”直接写成“马上 dump”。
-## leak trace 比堆大小更有用
+## leak trace 比堆大小更有诊断价值
 
 内存泄漏排查里，堆大小只能告诉你结果，引用链才能告诉你原因。LeakCanary 输出的 leak trace 会标出：
 
@@ -123,9 +125,9 @@ LeakCanary 会把泄漏分成 Application Leak 和 Library Leak。前者是应�
 
 这层分类很实用。团队看泄漏列表时，不能把所有报告都按同一优先级处理。Application Leak 应进入代码修复；Library Leak 更适合做版本规避、反射补丁、依赖升级或忽略规则。
 
-## Release 中使用要很克制
+## Release 版本中的使用边界
 
-完整 LeakCanary 能力和 retained-object 观察能力不要混在一起写。常见边界如下：
+LeakCanary 的完整诊断能力和 retained-object 观察能力是两个层次，不要混为一谈。常见边界如下：
 
 | 依赖 / 能力 | 默认内容 | 适合场景 |
 |---|---|---|

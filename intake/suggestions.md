@@ -127,3 +127,20 @@
 - source-index.json: 0 条高质量未映射素材
 - research-gaps.md: 4 条全部针对已有章节 ch16.5/ch16.9（Task2B 范畴）
 - 结论：0 个 ≥14 分候选，覆盖率已饱和（719 小节）
+
+## [Task6 Review] 14.1 Android Studio Profiler — 2026-07-14
+- **类型**：需重写
+- **位置**：文末 `<!-- AIW-源码调研-2026-06-27 -->` 和 `<!-- AIW-源码调研-2026-07-06 -->` 两段
+- **问题**：两段原始研究 dump 保留 AI 口吻和 report-style 结构，未融入正文叙述：
+  - emoji 标题（📡 Perfetto 版本可用性精确核实）
+  - AI 口吻开头（"通过 Android 17 源码深度调研，发现了完整的 GPU 图形调试与性能优化工具链"）
+  - report-style headers（核心架构组件、性能影响分析、实际应用价值）
+  - 纯 bullet-point 罗列，无叙述衔接
+  - commit hash 等研究过程痕迹暴露
+  - "源码发现的版本引入时间线" 是研究笔记格式，非文章内容
+- **建议**：
+  1. Perfetto 版本引入信息（Android 9 traced, Android 10 heapprofd, Android 12 FrameTimeline）提炼后融入 section "版本兼容性" 段落
+  2. GPU 调试工具链（SurfaceFlinger/JankTracker/FrameTracer）内容如保留，融入 "Profiler 与 Perfetto 的互补关系" 段落或移至附录
+  3. 删除所有 emoji 标题、commit hash、report-style headers
+  4. 按 writing-guide.md 的叙述风格重写
+- **review 日志**：logs/review/2026-07-14-04-review.md
