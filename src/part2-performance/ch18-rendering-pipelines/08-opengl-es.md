@@ -33,7 +33,7 @@ task9_reviewed_date: "2026-05-25"
 task2b_result: fixed
 last_task2b_at: '2026-05-20T11:12:00+08:00'
 last_task9_at: "2026-05-25T20:22:00+08:00"
-last_task6_audit: 2026-06-11
+last_task6_audit: 2026-07-14
 last_task6_at: "2026-05-25T20:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-25-20-review.md"
 last_task9_audit: "2026-07-03"
