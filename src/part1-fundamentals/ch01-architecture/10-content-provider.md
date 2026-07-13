@@ -68,7 +68,7 @@ task6_review_notes: "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余�
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-27"
 last_task6_at: 2026-07-02T05:06:00+08:00
-last_task6_audit: "2026-06-14"
+last_task6_audit: "2026-07-13"
 last_task6_review_log: "logs/review/2026-05-27-16-review.md"
 review_type: "task6-writing-quality-review"
 p0: 0
@@ -100,15 +100,20 @@ last_task9_audit: "2026-07-01 10:28:31"
    - Binder 线程池模型与线程耗尽
    - 远程 ContentProvider 冷启动导致的级联 ANR
    - ANR traces.txt 的诊断标志
-6. [optimization] ContentProvider 的性能优化策略
+6. [multiprocess] 多进程 ContentProvider
+   - android:process 声明的影响
+   - Provider 进程冷启动对调用方的性能影响
+   - 进程间 CursorWindow 的实际行为
+   - 多进程 ContentProvider 的适用场景与注意事项
+7. [optimization] ContentProvider 的性能优化策略
    - 延迟初始化与 App Startup
    - 批量操作减少 Binder 调用
    - Cursor 优化
-7. [perfetto] 在 Perfetto 中的表现
-8. [related] 与其他机制的关系
-9. [jetpack] ContentProvider 与 Jetpack 架构组件
-10. [versions] ContentProvider 的版本演进
-11. [faq] 常见问题与误区
+8. [perfetto] 在 Perfetto 中的表现
+9. [related] 与其他机制的关系
+10. [jetpack] ContentProvider 与 Jetpack 架构组件
+11. [versions] ContentProvider 的版本演进
+12. [faq] 常见问题与误区
 
 # 1.10 ContentProvider 性能与优化
 
@@ -116,7 +121,7 @@ last_task9_audit: "2026-07-01 10:28:31"
 
 ContentProvider 是 Android 四大组件中最「安静」的一个。日常开发中很少直接感知到它的存在，但它对性能的影响往往比直觉更大。做启动速度优化时，发现冷启动时间中有数十到数百毫秒无法解释的耗时，很可能就是 ContentProvider 在背后初始化了第三方 SDK。排查 ANR 时，看到 traces.txt 里有 `ContentProvider$Transport.query` 的栈帧，说明远端进程的数据库操作阻塞了主线程。
 
-要理解 ContentProvider 的性能特征，关键是搞清楚三件事：**它在什么时候执行**（启动阶段，而且比 Application.onCreate 还早）、**它怎么跨进程传输数据**（Binder + 共享内存，有一套复杂但精巧的窗口机制）、**出问题时怎么在 Trace 里定位**（Binder track + provider publish / not-responding 日志）。搞清楚这三件事之后，后续就能在启动优化、ANR 排查、数据库性能调优中准确识别 ContentProvider 相关的问题。
+要理解 ContentProvider 的性能特征，需要搞清楚三件事：**它在什么时候执行**（启动阶段，而且比 Application.onCreate 还早）、**它怎么跨进程传输数据**（Binder + 共享内存，有一套复杂但精巧的窗口机制）、**出问题时怎么在 Trace 里定位**（Binder track + provider publish / not-responding 日志）。搞清楚这三件事之后，后续就能在启动优化、ANR 排查、数据库性能调优中准确识别 ContentProvider 相关的问题。
 
 ## ContentProvider 在 Android 架构中的角色
 
