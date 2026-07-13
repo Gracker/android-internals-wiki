@@ -1,1286 +1,1286 @@
 {
-    "total": 730,
-    "draft": 12,
-    "ready_for_review": 7,
-    "finalized": 4,
-    "last_updated": "2026-07-13T19:07:08.883026+08:00",
-    "task2b": {
-        "last_run": "2026-07-10T10:51:28+08:00",
-        "last_section": "19.26",
-        "result": "fixed",
-        "fix_count": 1,
-        "last_sections": [
-            "15"
-        ],
-        "last_chapter": "13.18",
-        "last_action": "fixed enterprise migration 404 long-term fix paragraph",
-        "runs": [
-            {
-                "date": "2026-07-10",
-                "time": "10:51",
-                "chapter": "13.18",
-                "source": "task9-deep-tech-review",
-                "issues_fixed": 1,
-                "type": "P1 企业迁移长期修复段落重写"
-            }
-        ]
+  "total": 730,
+  "draft": 11,
+  "ready_for_review": 8,
+  "finalized": 4,
+  "last_updated": "2026-07-13T20:13:41.314833+08:00",
+  "task2b": {
+    "last_run": "2026-07-10T10:51:28+08:00",
+    "last_section": "19.26",
+    "result": "fixed",
+    "fix_count": 1,
+    "last_sections": [
+      "15"
+    ],
+    "last_chapter": "13.18",
+    "last_action": "fixed enterprise migration 404 long-term fix paragraph",
+    "runs": [
+      {
+        "date": "2026-07-10",
+        "time": "10:51",
+        "chapter": "13.18",
+        "source": "task9-deep-tech-review",
+        "issues_fixed": 1,
+        "type": "P1 企业迁移长期修复段落重写"
+      }
+    ]
+  },
+  "last_task2b_main": "2026-07-01T18:54:04+08:00",
+  "last_task2b_main_files": [
+    "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+    "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
+    "src/part3-tools/ch19-apm/26-hybrid-apm.md"
+  ],
+  "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
+  "progress": [
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-13T19:07:08.883026+08:00",
+      "note": "Gap mining round 101: 0 candidates ≥14 (101st consecutive). No new material since R100. All sources stale: DeepResearch 48d+ (last May 26), Clippings 20d (last Jun 23), research-feeds 3mo+ (last May 4), daily-info 2026-07-13 all recycled. source-index exhausted. suggestions.md: 4 Task9 items for 16.1/16.6 (Task2B scope, not new chapter gaps). 0 empty drafts. Task2B backlog: 0. Coverage saturated (717 sections)."
     },
-    "last_task2b_main": "2026-07-01T18:54:04+08:00",
-    "last_task2b_main_files": [
-        "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
-        "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
-        "src/part3-tools/ch19-apm/26-hybrid-apm.md"
-    ],
-    "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
-    "progress": [
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-13T19:07:08.883026+08:00",
-            "note": "Gap mining round 101: 0 candidates ≥14 (101st consecutive). No new material since R100. All sources stale: DeepResearch 48d+ (last May 26), Clippings 20d (last Jun 23), research-feeds 3mo+ (last May 4), daily-info 2026-07-13 all recycled. source-index exhausted. suggestions.md: 4 Task9 items for 16.1/16.6 (Task2B scope, not new chapter gaps). 0 empty drafts. Task2B backlog: 0. Coverage saturated (717 sections)."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-13T13:08:56.363276+08:00",
-            "note": "Gap mining round 100: 0 candidates ≥14 (100th consecutive). Evaluated 1 new DeepResearch file: surfaceflinger-perfetto-trace (12:06, 278 lines, 10KB) — scored 13/20, all 7 sections already covered by §2.6 (564L, 28 Perfetto mentions) + §13.14/15/19 (1393L total). binder-priority-inheritance (08:55) already evaluated R97 (11/20). sigchain-apm (05:56) already covered by §20.19. camera-perfetto (02:59) already evaluated R93 (12/20). Daily-info 2026-07-13: all recycled (Android 17 scheduler→§1.43, Linux 6.10 BPF→existing, Copilot X→not Android, Flutter 3.20→existing, Rust 1.80→not Android, Juejin→architecture/practice). Clippings: 20 days stale (108 files, last Jun 23). research-feeds: 3+ months stale. source-index: 188 entries all mapped. 0 empty drafts. Task2B backlog: 0. Coverage saturated (717 sections)."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-13T12:14:56+08:00",
-            "note": "Round 99: 0 candidates ≥14 (99th consecutive). No new material since R98. All sources stale (DeepResearch 70d, Clippings 20d+, research-feeds 3mo+). Daily-info 2026-07-13 all recycled. 11 src/ changes are Task2B rework. 0 empty drafts. Task2B backlog: 0. 717 sections, coverage saturated."
-        },
-        {
-            "section": "14.7, 17.2, 13.25, 7.4, 15.7, 3.0",
-            "action": "task2b-verifier",
-            "status": "state-corrected",
-            "ts": "2026-07-13T11:36:11+08:00",
-            "note": "Reflux verification: 14.7 status finalized→ready-for-review (task9 auto-fixed 06-30, task6 not re-reviewed); 17.2 removed stale duplicate frontmatter fields; 13.25 pipeline_stage task9_pending→ready-to-publish (task9 already pass-tech-review); 7.4/15.7 pipeline→task2b_pending (task9 needs-rework, not task6_pending); 3.0 pipeline→task2b_pending"
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-13T10:06:04.081988+08:00",
-            "note": "Round 98: 0 candidates ≥14 (98th consecutive). No new material since R97. All sources stale (DeepResearch 70d, Clippings 20d, research-feeds 3mo+). Daily-info all recycled. 0 empty drafts. Task2B backlog: 0. 730 sections, coverage saturated."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-13T09:16:24.676249+08:00",
-            "note": "Gap mining round 97: 0 candidates ≥14 (97th consecutive). 2 new DeepResearch files evaluated — Binder IPCThreadState scored 11/20 (architecture/security, covered by §1.44/§1.53), Sigchain already fully covered in §20.19 (130-line section with source code analysis). Camera Perfetto still 12/20 (Round 93). All other sources stale: Clippings 20 days, research-feeds 3+ months, daily-info recycled. 0 empty drafts. Task2B backlog: 0. Coverage saturated (730 sections)."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-13T08:07:44.538316+08:00",
-            "note": "Gap mining round 96: 0 candidates ≥14 (96th consecutive). source-index 188 entries (0 new since 2026-07-12), 14 unmapped score≥20 all covered. Daily-info 2026-07-13: all recycled. Clippings 20 days stale. research-feeds 3+ months stale. suggestions.md: 15 Task14 ch26 content supplements (Task2B scope). 0 empty drafts. Task2B backlog: 0. Coverage saturated (717 sections)."
-        },
-        {
-            "section": "none",
-            "action": "task2a-cleanup",
-            "status": "deprecated-24-stubs",
-            "ts": "2026-07-13T07:10:15+08:00",
-            "note": "Round 96 cleanup: deprecated 24 orphan/duplicate empty draft stubs. All topics already covered by existing substantial chapters. SUMMARY.md cleaned (11 entries removed)."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-13T06:08:15.791997+08:00",
-            "note": "Gap mining round 95: 0 candidates ≥14 (95th consecutive). DeepResearch 4 files (2026-07-12) all evaluated in Round 94: binder-priority→§1.48/§1.53/§1.44 (12/20), ftrace-bridge→§14.31 (already covered), power-advisor→§5.29 (already covered), sensor-privacy→privacy topic not performance (9/20). Daily-info 2026-07-13: all recycled topics. source-index: empty. Clippings: 20 days stale. research-feeds: 3+ months stale. 0 empty drafts. Task2B backlog: 0. Coverage saturated (717 sections)."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-13T05:06:55.017735+08:00",
-            "note": "Gap mining round 94: 0 candidates ≥14 (94th consecutive). No new DeepResearch since Round 93. Daily-info 2026-07-13: all recycled topics (Android 17 scheduler→§1.43, Linux 6.10 BPF→existing, Copilot X→not Android, Flutter 3.20→existing, Rust 1.80→not Android, Juejin: Repository/Activity/AI-dev/Desktop/Compose Pager → architecture/practice not internal perf). source-index: 0 unmapped high-quality. Clippings: 20 days stale. research-feeds: 3+ months stale. 0 empty drafts. Task2B backlog: 0. Coverage saturated (717 sections)."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-13T03:06:22.105461+08:00",
-            "note": "Gap mining round 93: 0 candidates ≥14 (93rd consecutive). 1 new DeepResearch (camera-perfetto-latency-decomposition, 2026-07-13) — maps to existing §14.9 (finalized, 626 lines) as source-level supplement, scored 12/20 (below 14). Daily-info 2026-07-13: recycled topics (Android 17 scheduler→§1.43, Linux 6.10 BPF→existing, Copilot X→not Android, Flutter 3.20→existing, Rust 1.80→not Android). source-index: 0 unmapped high-quality. Clippings: 20 days stale. research-feeds: 3+ months stale. 0 empty drafts. Task2B backlog: 0. Coverage saturated (717 sections)."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-13T02:07:04.090542+08:00",
-            "note": "Gap mining round 92: 0 candidates ≥14. No new material since Round 91. All sources stale (DeepResearch 1d, Clippings 20d, research-feeds 3mo+). 717 sections, coverage saturated."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-13T01:05:46.718417+08:00",
-            "note": "Gap mining round 91: 0 candidates ≥14. No new material since Round 90. All sources stale. 717 sections, coverage saturated."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-13T00:07:21+08:00",
-            "note": "Gap mining round 90: 0 candidates ≥14. 1 new DeepResearch since last round: ftrace-atrace-perfetto-bridge (23:56) → §14.31 already exists (313 lines, draft with substantial content). daily-topics-all-out-of-scope (20:53) explicitly skip. Clippings: 20 days stale. research-feeds: 3+ months stale. source-index: 31 items without mapped_chapters but all have no numeric quality scores, assessed in prior rounds. 0 empty drafts. Task2B backlog: 0. Coverage saturated (717 sections)."
-        },
-        {
-            "section": "16.5, 22.10",
-            "action": "task2b-verifier",
-            "status": "fixed",
-            "ts": "2026-07-12T19:30:43+08:00",
-            "note": "State correction: 16.5 task6_state→revisiting, pipeline→task6_pending; 22.10 status→ready-for-review"
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-12T19:06:48+08:00",
-            "note": "Gap mining round 86: 0 candidates ≥14. LMCache DeepResearch (17:55) is non-Android. All other 2026-07-12 DeepResearch mapped in prior rounds. source-index: 0 unmapped high-quality. Clippings: 19 days stale. research-feeds: 3 months stale. 47 drafts all >15 lines. Task2B backlog: 0."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-12T16:07:59.647366+08:00",
-            "note": "Gap mining round 85: 0 candidates ≥14. All sources stale (DeepResearch 42d, Clippings 72d, research-feeds 90d+). Book has 717 sections, coverage sufficient."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-12T15:08:09.805469+08:00",
-            "note": "Gap mining round 84: 0 candidates ≥14. 1 new DeepResearch (binder-ipcthreadstate, 11:52) scored 13/20 — SpGuard/packCallingIdentity/WorkSource propagation is architecture/security topic, not perf optimization core. Existing §1.44/§1.53 cover kernel-level binder priority; user-space identity layer could supplement as Task2B expansion. source-index: 0 unmapped high-quality. Clippings: 19 days stale. research-feeds: 3 months stale. 47 drafts all >15 lines. Task2B backlog: 0."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-12T14:06:40.557945+08:00",
-            "note": "Gap mining round 83: 0 candidates ≥14 (83rd consecutive). No new material since Round 82 (62 min ago). Daily-info AppFlow (06:30) → §4.11/§16.8 already covered. source-index: 0 unmapped high-quality. Clippings: 19 days stale. research-feeds: 3 months stale. 41 outline-only drafts all duplicates of finalized/ready-for-review chapters. Task2B backlog: 0. Coverage saturated."
-        },
-        {
-            "section": "4.36",
-            "action": "task2a-content-processing",
-            "status": "ready_for_review",
-            "ts": "2026-07-12T13:11:15.555604+08:00",
-            "note": "高级内存优化综合导览: 技术地图/4层架构/heapprofd双Producer/Perfetto内存轨道/PSS核算/HeapTask GC抑制/Linux 6.10/MTE. 10处交叉引用. 综合synthesis章节."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-12T12:11:42.678906+08:00",
-            "note": "Gap mining round 82: 0 candidates ≥14 (82nd consecutive). No new material since Round 81 (62 min ago). Daily-info AppFlow maps to §4.11. source-index: 0 unmapped high-quality. Clippings: 19 days stale. research-feeds: 3+ months stale. 48 drafts all >15 lines. Task2B backlog: 0."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-12T11:06:17.600164+08:00",
-            "note": "Gap mining round 81: 0 candidates ≥14 (81st consecutive). Daily-info AppFlow (06:30) → §4.11 already covered. No new Clippings (19 days). No new research-feeds (3 months). source-index empty. 48 drafts all >15 lines. Task2B backlog: 0."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-12T10:06:28.858282+08:00",
-            "note": "Gap mining round 80: 0 candidates ≥14 (80th consecutive). 1 new DeepResearch (sensor-privacy-indicator-gating, 09:05) — privacy/security feature scored 10/20 (below 14, not performance-related). AppFlow daily-info paper maps to existing §4.11. source-index: 7 unmapped high-quality all map to existing chapters (eBPF→§14.25, audio→§12.33, Binder pool→§1.54, GPU counter×3→§14.28/§2.15/§5.29, LMKD→§4.37). No new Clippings (19 days). No new research-feeds (3 months). 0 empty drafts. Task2B backlog: 0."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-12T07:06:38.938729+08:00",
-            "note": "Gap mining round 79: 0 candidates ≥14 (79th consecutive). No new material since Round 78 (56 min ago). DeepResearch newest still 2026-07-12 05:56 (power-advisor-dvfs-headroom, already mapped to §5.29). No new Clippings (19 days). No new research-feeds (3 months). source-index: 0 unmapped high-quality. 49 drafts all >15 lines. Task2B backlog: 0."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-12T06:08:35.774809+08:00",
-            "note": "Gap mining round 78: 0 candidates ≥14 (78th consecutive). 1 new DeepResearch (power-advisor-dvfs-headroom, 05:56) maps to existing §5.29 draft (184 lines, supplement not new gap). WOOTdroid paper maps to §13/§14/§16. Daily-info RSS: same recycled Android 17 scheduler + Linux 6.10 BPF (URLs inaccessible, already mapped). No new Clippings (19 days). No new research-feeds (2+ months). source-index: 0 unmapped high-quality. 0 empty drafts. Task2B backlog: 0."
-        },
-        {
-            "section": "26.24",
-            "action": "task2a-content-processing",
-            "status": "ready_for_review",
-            "ts": "2026-07-12T05:13:17.115832+08:00",
-            "note": "heapprofd 生产级部署与权限模型: 6 anchors (架构回顾/三层权限模型/生产部署策略/Perfetto联合采集流水线/泄漏诊断工作流/替代方案对比) + 3 extensions (Crash关联分析/低端设备约束/合规与隐私). 交叉引用 §8.39 §14.1 §23.11 §13.22 §23.25. AOSP android-17.0.0_r1 源码验证. Clippings结构参考."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-12T03:07:39.608529+08:00",
-            "note": "Gap mining round 76: 0 candidates ≥14 (76th consecutive). 1 new DeepResearch (gpuservice-gpu-memory, 02:53) maps to existing §14.30. No new Clippings (19 days). No new research-feeds (3 months). source-index: 0 unmapped high-quality. 50 drafts all >15 lines. Task2B backlog: 0."
-        },
-        {
-            "section": "none",
-            "action": "task2a-knowledge-gap-mining",
-            "status": "no-candidates",
-            "ts": "2026-07-12T02:05:00+08:00",
-            "note": "Gap mining round 75: 0 candidates ≥14 (75th consecutive). No new material since Round 74 (1h ago). DeepResearch: 0 new files (newest 2026-07-11 23:58). Clippings: 19 days stale. research-feeds: 3 months stale. daily-info: not yet generated for 2026-07-12. source-index: 0 unmapped high-quality. 50 drafts all >15 lines. Task2B backlog: 0. Coverage truly saturated."
-        },
-        {
-            "section": "13.25",
-            "action": "task6-review",
-            "status": "finalized",
-            "ts": "2026-07-13T12:15:00+08:00",
-            "note": "Re-review (revisiting→reviewed). Frontmatter cleaned: removed duplicate task6_state/task9_state keys, fixed malformed YAML. Punctuation: 2x 、以及→以及. Auto-promoted to finalized (task6 pass-light-edit + task9 pass-tech-review + queue empty). No B-class issues."
-        }
-    ],
-    "review_history": [
-        {
-            "date": "2026-07-01",
-            "time": "22:13",
-            "task": "task6",
-            "chapters": [
-                "1.13",
-                "1.19",
-                "1.26"
-            ],
-            "mode": "revisiting",
-            "fixes": {
-                "1.13": {
-                    "l1": 2,
-                    "l2": 0,
-                    "l3_l4_issues": 0
-                },
-                "1.19": {
-                    "l1": 0,
-                    "l2": 0,
-                    "l3_l4_issues": 0
-                },
-                "1.26": {
-                    "l1": 0,
-                    "l2": 0,
-                    "l3_l4_issues": 0
-                }
-            },
-            "auto_promoted": [],
-            "rework_items": 0
-        }
-    ],
-    "reviews": [
-        {
-            "date": "2026-07-02",
-            "time": "01:10",
-            "task": "task6",
-            "chapters": [
-                "1.13",
-                "1.19",
-                "1.25",
-                "1.4"
-            ],
-            "results": {
-                "1.13": "pass-light-edit",
-                "1.19": "pass-light-edit → finalized",
-                "1.25": "pass-light-edit",
-                "1.4": "pass-light-edit → finalized"
-            },
-            "auto_promoted": [
-                "1.19",
-                "1.4"
-            ],
-            "log": "logs/review/2026-07-02-01-review.md"
-        },
-        {
-            "date": "2026-07-06",
-            "time": "08:26",
-            "task": "task9",
-            "chapters": [
-                "20.9"
-            ],
-            "results": {
-                "20.9": "needs-rework"
-            },
-            "p0": 0,
-            "p1": 3,
-            "p2": 4,
-            "auto_promoted": [],
-            "log": "logs/deep-review/2026-07-06-08-deep-review.md"
-        },
-        {
-            "date": "2026-07-12",
-            "time": "21:10",
-            "task": "task6",
-            "chapters": [
-                "26.9"
-            ],
-            "results": {
-                "26.9": "pass-light-edit → auto-promoted finalized"
-            }
-        },
-        {
-            "date": "2026-07-13",
-            "time": "16:20",
-            "task": "task9",
-            "chapters": [
-                "15",
-                "16.5",
-                "16.1"
-            ],
-            "results": {
-                "15": "needs-rework",
-                "16.5": "pass-tech-review → auto-promoted finalized",
-                "16.1": "needs-rework"
-            },
-            "p0": 0,
-            "p1": 5,
-            "p2": 6,
-            "p3": 2,
-            "auto_promoted": [
-                "16.5"
-            ],
-            "log": "logs/deep-review/2026-07-13-16-deep-review.md"
-        }
-    ],
-    "review_logs": [
-        {
-            "date": "2026-07-02T02:11:00+08:00",
-            "log": "logs/review/2026-07-02-02-review.md",
-            "sections": [
-                "1.13",
-                "1.25"
-            ],
-            "type": "task6-revisiting"
-        },
-        "2026-07-02-21-review.md",
-        {
-            "date": "2026-07-06",
-            "log": "logs/review/2026-07-06-03-review.md",
-            "sections": [
-                "14.8"
-            ],
-            "type": "revisit"
-        },
-        {
-            "date": "2026-07-09-21",
-            "sections": [
-                "9.2",
-                "10.5",
-                "15.6"
-            ],
-            "result": "pass-light-edit",
-            "log_file": "logs/review/2026-07-09-21-review.md"
-        },
-        {
-            "date": "2026-07-10",
-            "log": "logs/review/2026-07-10-08-review.md",
-            "sections": [
-                "13.15",
-                "22.5",
-                "21.3"
-            ],
-            "type": "task6-revisiting"
-        },
-        {
-            "date": "2026-07-12",
-            "sections": [
-                "20.4"
-            ],
-            "result": "pass-light-edit",
-            "auto_promoted": true,
-            "log": "logs/review/2026-07-12-01-review.md"
-        },
-        {
-            "date": "2026-07-12",
-            "log": "logs/review/2026-07-12-21-review.md",
-            "sections": [
-                "26.9"
-            ],
-            "type": "task6-revisiting"
-        }
-    ],
-    "task2b_verifier": {
-        "last_run": "2026-07-13T15:37:00+08:00",
-        "last_action": "reflux-verification-6-chapters",
-        "chapters_fixed": 6,
-        "remaining_task6_pending": 1,
-        "last_result": "6 state corrections: 15/16.5/16.1/16.6/16.4/16.9 status→ready-for-review, pipeline→task6_pending",
-        "last_fixed_count": 6,
-        "last_blocked_count": 0,
-        "remaining_pending": 0
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-13T13:08:56.363276+08:00",
+      "note": "Gap mining round 100: 0 candidates ≥14 (100th consecutive). Evaluated 1 new DeepResearch file: surfaceflinger-perfetto-trace (12:06, 278 lines, 10KB) — scored 13/20, all 7 sections already covered by §2.6 (564L, 28 Perfetto mentions) + §13.14/15/19 (1393L total). binder-priority-inheritance (08:55) already evaluated R97 (11/20). sigchain-apm (05:56) already covered by §20.19. camera-perfetto (02:59) already evaluated R93 (12/20). Daily-info 2026-07-13: all recycled (Android 17 scheduler→§1.43, Linux 6.10 BPF→existing, Copilot X→not Android, Flutter 3.20→existing, Rust 1.80→not Android, Juejin→architecture/practice). Clippings: 20 days stale (108 files, last Jun 23). research-feeds: 3+ months stale. source-index: 188 entries all mapped. 0 empty drafts. Task2B backlog: 0. Coverage saturated (717 sections)."
     },
-    "task2b_rework": [
-        {
-            "section": "20.3",
-            "completed_at": "2026-07-02T18:54:37+08:00",
-            "lane": "main",
-            "source": "frontmatter-backlog-fallback",
-            "fixes": "content depth + practical guidance + data models",
-            "last_task6_review": "2026-07-02",
-            "task6_result": "pass-light-edit",
-            "task6_state": "reviewed",
-            "pipeline_stage": "task9_pending",
-            "review_history": [
-                {
-                    "date": "2026-07-02",
-                    "result": "pass-light-edit",
-                    "mode": "revisiting-review-round2",
-                    "fixes": "L1: banned word fix x1"
-                }
-            ]
-        },
-        {
-            "section": "21.2",
-            "completed_at": "2026-07-02T18:54:37+08:00",
-            "lane": "main",
-            "source": "frontmatter-backlog-fallback",
-            "fixes": "content depth + practical guidance + data models",
-            "last_task6_review": "2026-07-02",
-            "task6_result": "pass-light-edit",
-            "task6_state": "reviewed",
-            "pipeline_stage": "task9_pending",
-            "review_history": [
-                {
-                    "date": "2026-07-02",
-                    "result": "pass-light-edit",
-                    "mode": "revisiting-review-round2",
-                    "fixes": "L1: banned word fix x1"
-                }
-            ]
-        },
-        {
-            "section": "26.1",
-            "completed_at": "2026-07-02T18:54:37+08:00",
-            "lane": "main",
-            "source": "frontmatter-backlog-fallback",
-            "fixes": "content depth + practical guidance + data models",
-            "last_task6_review": "2026-07-02",
-            "task6_result": "pass-light-edit",
-            "task6_state": "reviewed",
-            "pipeline_stage": "task9_pending",
-            "review_history": [
-                {
-                    "date": "2026-07-02",
-                    "result": "pass-light-edit",
-                    "mode": "revisiting-review-round2",
-                    "fixes": "L1: banned word fix x2, empty heading"
-                }
-            ]
-        }
-    ],
-    "last_task2b_at": "2026-07-02T18:54:37+08:00",
-    "deprecated": 34,
-    "stats": {
-        "last_review_date": "2026-07-13",
-        "last_review_by": "openclaw-task9",
-        "drafted": 33,
-        "ready_for_review": 5,
-        "finalized": 11,
-        "ready_to_publish": 0,
-        "total": 717,
-        "last_task9_review_date": "2026-07-13",
-        "last_task9_review_by": "openclaw-task9"
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-13T12:14:56+08:00",
+      "note": "Round 99: 0 candidates ≥14 (99th consecutive). No new material since R98. All sources stale (DeepResearch 70d, Clippings 20d+, research-feeds 3mo+). Daily-info 2026-07-13 all recycled. 11 src/ changes are Task2B rework. 0 empty drafts. Task2B backlog: 0. 717 sections, coverage saturated."
     },
-    "last_task6_review": "2026-07-12T21:10:00+08:00",
-    "last_task6_reviewed_sections": [
+    {
+      "section": "14.7, 17.2, 13.25, 7.4, 15.7, 3.0",
+      "action": "task2b-verifier",
+      "status": "state-corrected",
+      "ts": "2026-07-13T11:36:11+08:00",
+      "note": "Reflux verification: 14.7 status finalized→ready-for-review (task9 auto-fixed 06-30, task6 not re-reviewed); 17.2 removed stale duplicate frontmatter fields; 13.25 pipeline_stage task9_pending→ready-to-publish (task9 already pass-tech-review); 7.4/15.7 pipeline→task2b_pending (task9 needs-rework, not task6_pending); 3.0 pipeline→task2b_pending"
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-13T10:06:04.081988+08:00",
+      "note": "Round 98: 0 candidates ≥14 (98th consecutive). No new material since R97. All sources stale (DeepResearch 70d, Clippings 20d, research-feeds 3mo+). Daily-info all recycled. 0 empty drafts. Task2B backlog: 0. 730 sections, coverage saturated."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-13T09:16:24.676249+08:00",
+      "note": "Gap mining round 97: 0 candidates ≥14 (97th consecutive). 2 new DeepResearch files evaluated — Binder IPCThreadState scored 11/20 (architecture/security, covered by §1.44/§1.53), Sigchain already fully covered in §20.19 (130-line section with source code analysis). Camera Perfetto still 12/20 (Round 93). All other sources stale: Clippings 20 days, research-feeds 3+ months, daily-info recycled. 0 empty drafts. Task2B backlog: 0. Coverage saturated (730 sections)."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-13T08:07:44.538316+08:00",
+      "note": "Gap mining round 96: 0 candidates ≥14 (96th consecutive). source-index 188 entries (0 new since 2026-07-12), 14 unmapped score≥20 all covered. Daily-info 2026-07-13: all recycled. Clippings 20 days stale. research-feeds 3+ months stale. suggestions.md: 15 Task14 ch26 content supplements (Task2B scope). 0 empty drafts. Task2B backlog: 0. Coverage saturated (717 sections)."
+    },
+    {
+      "section": "none",
+      "action": "task2a-cleanup",
+      "status": "deprecated-24-stubs",
+      "ts": "2026-07-13T07:10:15+08:00",
+      "note": "Round 96 cleanup: deprecated 24 orphan/duplicate empty draft stubs. All topics already covered by existing substantial chapters. SUMMARY.md cleaned (11 entries removed)."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-13T06:08:15.791997+08:00",
+      "note": "Gap mining round 95: 0 candidates ≥14 (95th consecutive). DeepResearch 4 files (2026-07-12) all evaluated in Round 94: binder-priority→§1.48/§1.53/§1.44 (12/20), ftrace-bridge→§14.31 (already covered), power-advisor→§5.29 (already covered), sensor-privacy→privacy topic not performance (9/20). Daily-info 2026-07-13: all recycled topics. source-index: empty. Clippings: 20 days stale. research-feeds: 3+ months stale. 0 empty drafts. Task2B backlog: 0. Coverage saturated (717 sections)."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-13T05:06:55.017735+08:00",
+      "note": "Gap mining round 94: 0 candidates ≥14 (94th consecutive). No new DeepResearch since Round 93. Daily-info 2026-07-13: all recycled topics (Android 17 scheduler→§1.43, Linux 6.10 BPF→existing, Copilot X→not Android, Flutter 3.20→existing, Rust 1.80→not Android, Juejin: Repository/Activity/AI-dev/Desktop/Compose Pager → architecture/practice not internal perf). source-index: 0 unmapped high-quality. Clippings: 20 days stale. research-feeds: 3+ months stale. 0 empty drafts. Task2B backlog: 0. Coverage saturated (717 sections)."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-13T03:06:22.105461+08:00",
+      "note": "Gap mining round 93: 0 candidates ≥14 (93rd consecutive). 1 new DeepResearch (camera-perfetto-latency-decomposition, 2026-07-13) — maps to existing §14.9 (finalized, 626 lines) as source-level supplement, scored 12/20 (below 14). Daily-info 2026-07-13: recycled topics (Android 17 scheduler→§1.43, Linux 6.10 BPF→existing, Copilot X→not Android, Flutter 3.20→existing, Rust 1.80→not Android). source-index: 0 unmapped high-quality. Clippings: 20 days stale. research-feeds: 3+ months stale. 0 empty drafts. Task2B backlog: 0. Coverage saturated (717 sections)."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-13T02:07:04.090542+08:00",
+      "note": "Gap mining round 92: 0 candidates ≥14. No new material since Round 91. All sources stale (DeepResearch 1d, Clippings 20d, research-feeds 3mo+). 717 sections, coverage saturated."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-13T01:05:46.718417+08:00",
+      "note": "Gap mining round 91: 0 candidates ≥14. No new material since Round 90. All sources stale. 717 sections, coverage saturated."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-13T00:07:21+08:00",
+      "note": "Gap mining round 90: 0 candidates ≥14. 1 new DeepResearch since last round: ftrace-atrace-perfetto-bridge (23:56) → §14.31 already exists (313 lines, draft with substantial content). daily-topics-all-out-of-scope (20:53) explicitly skip. Clippings: 20 days stale. research-feeds: 3+ months stale. source-index: 31 items without mapped_chapters but all have no numeric quality scores, assessed in prior rounds. 0 empty drafts. Task2B backlog: 0. Coverage saturated (717 sections)."
+    },
+    {
+      "section": "16.5, 22.10",
+      "action": "task2b-verifier",
+      "status": "fixed",
+      "ts": "2026-07-12T19:30:43+08:00",
+      "note": "State correction: 16.5 task6_state→revisiting, pipeline→task6_pending; 22.10 status→ready-for-review"
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-12T19:06:48+08:00",
+      "note": "Gap mining round 86: 0 candidates ≥14. LMCache DeepResearch (17:55) is non-Android. All other 2026-07-12 DeepResearch mapped in prior rounds. source-index: 0 unmapped high-quality. Clippings: 19 days stale. research-feeds: 3 months stale. 47 drafts all >15 lines. Task2B backlog: 0."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-12T16:07:59.647366+08:00",
+      "note": "Gap mining round 85: 0 candidates ≥14. All sources stale (DeepResearch 42d, Clippings 72d, research-feeds 90d+). Book has 717 sections, coverage sufficient."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-12T15:08:09.805469+08:00",
+      "note": "Gap mining round 84: 0 candidates ≥14. 1 new DeepResearch (binder-ipcthreadstate, 11:52) scored 13/20 — SpGuard/packCallingIdentity/WorkSource propagation is architecture/security topic, not perf optimization core. Existing §1.44/§1.53 cover kernel-level binder priority; user-space identity layer could supplement as Task2B expansion. source-index: 0 unmapped high-quality. Clippings: 19 days stale. research-feeds: 3 months stale. 47 drafts all >15 lines. Task2B backlog: 0."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-12T14:06:40.557945+08:00",
+      "note": "Gap mining round 83: 0 candidates ≥14 (83rd consecutive). No new material since Round 82 (62 min ago). Daily-info AppFlow (06:30) → §4.11/§16.8 already covered. source-index: 0 unmapped high-quality. Clippings: 19 days stale. research-feeds: 3 months stale. 41 outline-only drafts all duplicates of finalized/ready-for-review chapters. Task2B backlog: 0. Coverage saturated."
+    },
+    {
+      "section": "4.36",
+      "action": "task2a-content-processing",
+      "status": "ready_for_review",
+      "ts": "2026-07-12T13:11:15.555604+08:00",
+      "note": "高级内存优化综合导览: 技术地图/4层架构/heapprofd双Producer/Perfetto内存轨道/PSS核算/HeapTask GC抑制/Linux 6.10/MTE. 10处交叉引用. 综合synthesis章节."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-12T12:11:42.678906+08:00",
+      "note": "Gap mining round 82: 0 candidates ≥14 (82nd consecutive). No new material since Round 81 (62 min ago). Daily-info AppFlow maps to §4.11. source-index: 0 unmapped high-quality. Clippings: 19 days stale. research-feeds: 3+ months stale. 48 drafts all >15 lines. Task2B backlog: 0."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-12T11:06:17.600164+08:00",
+      "note": "Gap mining round 81: 0 candidates ≥14 (81st consecutive). Daily-info AppFlow (06:30) → §4.11 already covered. No new Clippings (19 days). No new research-feeds (3 months). source-index empty. 48 drafts all >15 lines. Task2B backlog: 0."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-12T10:06:28.858282+08:00",
+      "note": "Gap mining round 80: 0 candidates ≥14 (80th consecutive). 1 new DeepResearch (sensor-privacy-indicator-gating, 09:05) — privacy/security feature scored 10/20 (below 14, not performance-related). AppFlow daily-info paper maps to existing §4.11. source-index: 7 unmapped high-quality all map to existing chapters (eBPF→§14.25, audio→§12.33, Binder pool→§1.54, GPU counter×3→§14.28/§2.15/§5.29, LMKD→§4.37). No new Clippings (19 days). No new research-feeds (3 months). 0 empty drafts. Task2B backlog: 0."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-12T07:06:38.938729+08:00",
+      "note": "Gap mining round 79: 0 candidates ≥14 (79th consecutive). No new material since Round 78 (56 min ago). DeepResearch newest still 2026-07-12 05:56 (power-advisor-dvfs-headroom, already mapped to §5.29). No new Clippings (19 days). No new research-feeds (3 months). source-index: 0 unmapped high-quality. 49 drafts all >15 lines. Task2B backlog: 0."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-12T06:08:35.774809+08:00",
+      "note": "Gap mining round 78: 0 candidates ≥14 (78th consecutive). 1 new DeepResearch (power-advisor-dvfs-headroom, 05:56) maps to existing §5.29 draft (184 lines, supplement not new gap). WOOTdroid paper maps to §13/§14/§16. Daily-info RSS: same recycled Android 17 scheduler + Linux 6.10 BPF (URLs inaccessible, already mapped). No new Clippings (19 days). No new research-feeds (2+ months). source-index: 0 unmapped high-quality. 0 empty drafts. Task2B backlog: 0."
+    },
+    {
+      "section": "26.24",
+      "action": "task2a-content-processing",
+      "status": "ready_for_review",
+      "ts": "2026-07-12T05:13:17.115832+08:00",
+      "note": "heapprofd 生产级部署与权限模型: 6 anchors (架构回顾/三层权限模型/生产部署策略/Perfetto联合采集流水线/泄漏诊断工作流/替代方案对比) + 3 extensions (Crash关联分析/低端设备约束/合规与隐私). 交叉引用 §8.39 §14.1 §23.11 §13.22 §23.25. AOSP android-17.0.0_r1 源码验证. Clippings结构参考."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-12T03:07:39.608529+08:00",
+      "note": "Gap mining round 76: 0 candidates ≥14 (76th consecutive). 1 new DeepResearch (gpuservice-gpu-memory, 02:53) maps to existing §14.30. No new Clippings (19 days). No new research-feeds (3 months). source-index: 0 unmapped high-quality. 50 drafts all >15 lines. Task2B backlog: 0."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-12T02:05:00+08:00",
+      "note": "Gap mining round 75: 0 candidates ≥14 (75th consecutive). No new material since Round 74 (1h ago). DeepResearch: 0 new files (newest 2026-07-11 23:58). Clippings: 19 days stale. research-feeds: 3 months stale. daily-info: not yet generated for 2026-07-12. source-index: 0 unmapped high-quality. 50 drafts all >15 lines. Task2B backlog: 0. Coverage truly saturated."
+    },
+    {
+      "section": "13.25",
+      "action": "task6-review",
+      "status": "finalized",
+      "ts": "2026-07-13T12:15:00+08:00",
+      "note": "Re-review (revisiting→reviewed). Frontmatter cleaned: removed duplicate task6_state/task9_state keys, fixed malformed YAML. Punctuation: 2x 、以及→以及. Auto-promoted to finalized (task6 pass-light-edit + task9 pass-tech-review + queue empty). No B-class issues."
+    }
+  ],
+  "review_history": [
+    {
+      "date": "2026-07-01",
+      "time": "22:13",
+      "task": "task6",
+      "chapters": [
+        "1.13",
+        "1.19",
+        "1.26"
+      ],
+      "mode": "revisiting",
+      "fixes": {
+        "1.13": {
+          "l1": 2,
+          "l2": 0,
+          "l3_l4_issues": 0
+        },
+        "1.19": {
+          "l1": 0,
+          "l2": 0,
+          "l3_l4_issues": 0
+        },
+        "1.26": {
+          "l1": 0,
+          "l2": 0,
+          "l3_l4_issues": 0
+        }
+      },
+      "auto_promoted": [],
+      "rework_items": 0
+    }
+  ],
+  "reviews": [
+    {
+      "date": "2026-07-02",
+      "time": "01:10",
+      "task": "task6",
+      "chapters": [
+        "1.13",
+        "1.19",
+        "1.25",
+        "1.4"
+      ],
+      "results": {
+        "1.13": "pass-light-edit",
+        "1.19": "pass-light-edit → finalized",
+        "1.25": "pass-light-edit",
+        "1.4": "pass-light-edit → finalized"
+      },
+      "auto_promoted": [
+        "1.19",
+        "1.4"
+      ],
+      "log": "logs/review/2026-07-02-01-review.md"
+    },
+    {
+      "date": "2026-07-06",
+      "time": "08:26",
+      "task": "task9",
+      "chapters": [
+        "20.9"
+      ],
+      "results": {
+        "20.9": "needs-rework"
+      },
+      "p0": 0,
+      "p1": 3,
+      "p2": 4,
+      "auto_promoted": [],
+      "log": "logs/deep-review/2026-07-06-08-deep-review.md"
+    },
+    {
+      "date": "2026-07-12",
+      "time": "21:10",
+      "task": "task6",
+      "chapters": [
         "26.9"
-    ],
-    "sections": {
-        "15": {
-            "status": "ready-for-review",
-            "last_task6_at": "2026-07-04T02:10:34+08:00",
-            "task6_result": "pass-light-edit",
-            "task6_state": "reviewed",
-            "pipeline_stage": "task9_pending",
-            "task9_state": "pending",
-            "task6_reviewed_date": "2026-07-07"
-        },
-        "21.2": {
-            "status": "finalized",
-            "last_task6_at": "2026-07-03T19:10:00+08:00",
-            "task6_result": "pass-light-edit",
-            "pipeline_stage": "ready-to-publish"
-        },
-        "20.3": {
-            "status": "finalized",
-            "last_task6_at": "2026-07-03T19:10:00+08:00",
-            "task6_result": "pass-light-edit",
-            "pipeline_stage": "ready-to-publish"
-        },
-        "22.6": {
-            "status": "finalized",
-            "task6_state": "reviewed",
-            "task6_date": "2026-07-04",
-            "task6_result": "pass-light-edit",
-            "notes": "L1轻修(禁用词+元叙述)，自动晋升finalized"
-        },
-        "19.26": {
-            "status": "finalized",
-            "task6_state": "reviewed",
-            "task6_date": "2026-07-04",
-            "task6_result": "pass-light-edit",
-            "notes": "L1轻修(禁用词)，自动晋升finalized"
-        },
-        "20.2": {
-            "status": "finalized",
-            "task6_state": "reviewed",
-            "task6_date": "2026-07-04",
-            "task6_result": "pass-light-edit",
-            "notes": "L1轻修(元叙述)，自动晋升finalized"
-        },
-        "15.9": {
-            "title": "从采集到治理的反馈回路",
-            "status": "ready-for-review",
-            "task6_state": "reviewed",
-            "task6_result": "pass-light-edit",
-            "task9_state": "pending",
-            "pipeline_stage": "task9_pending",
-            "last_task6_at": "2026-07-04T13:09:00+08:00",
-            "review_log": "logs/review/2026-07-04-12-review.md"
-        },
-        "26.10": {
-            "title": "Android 11 以下进程退出归因方案",
-            "status": "finalized",
-            "task6_state": "reviewed",
-            "task6_result": "pass-light-edit",
-            "task9_state": "reviewed",
-            "task9_result": "pass-tech-review",
-            "pipeline_stage": "ready-to-publish",
-            "last_task6_at": "2026-07-04T12:08:00+08:00",
-            "review_log": "logs/review/2026-07-04-12-review.md"
-        },
-        "14.8": {
-            "status": "finalized",
-            "task2b_result": "fixed",
-            "task6_result": "pass-light-edit",
-            "task6_reviewed_at": "2026-07-06T03:20:00+08:00",
-            "task6_state": "reviewed",
-            "task9_state": "pending",
-            "pipeline_stage": "ready-to-publish",
-            "last_task6_review": "2026-07-07",
-            "task2b_verifier_note": "2026-07-06 reflux verification corrected status",
-            "task9_result": "pass-tech-review",
-            "finalized_date": "2026-07-07"
-        },
-        "20.9": {
-            "status": "ready-for-review",
-            "task9_state": "reviewed",
-            "task9_result": "needs-rework",
-            "pipeline_stage": "task2b_pending",
-            "last_task9_at": "2026-07-06T08:32:18.662157",
-            "review_log": "logs/deep-review/2026-07-06-08-deep-review.md",
-            "last_task6": "2026-07-07",
-            "task6_result": "pass-light-edit"
-        },
-        "14.11": {
-            "last_task6_review": "2026-07-07",
-            "task6_result": "pass-light-edit"
-        },
-        "18.18": {
-            "last_task6_review": "2026-07-11",
-            "task6_result": "pass-light-edit",
-            "task6_state": "reviewed",
-            "pipeline_stage": "task9_pending"
-        },
-        "20.4": {
-            "status": "finalized",
-            "pipeline_stage": "ready-to-publish",
-            "task6_state": "reviewed",
-            "task6_result": "pass-light-edit",
-            "task6_reviewed_date": "2026-07-12",
-            "last_task6_at": "2026-07-12T01:06:00+08:00"
-        },
-        "14.9": {
-            "last_task2b_at": "2026-07-13T14:53:11+08:00",
-            "task2b_result": "fixed",
-            "pipeline_stage": "task6_pending"
-        },
-        "16.5": {
-            "status": "finalized",
-            "task9_result": "pass-tech-review",
-            "task9_state": "reviewed",
-            "pipeline_stage": "ready-to-publish",
-            "task6_result": "pass-light-edit",
-            "task6_state": "reviewed",
-            "finalized_at": "2026-07-13T16:20:00+08:00"
-        },
-        "16.1": {
-            "status": "ready-for-review",
-            "task9_result": "needs-rework",
-            "task9_state": "reviewed",
-            "task6_result": "pass-light-edit",
-            "task6_state": "revising",
-            "pipeline_stage": "task6_pending",
-            "last_task9_at": "2026-07-13T16:20:00+08:00"
+      ],
+      "results": {
+        "26.9": "pass-light-edit → auto-promoted finalized"
+      }
+    },
+    {
+      "date": "2026-07-13",
+      "time": "16:20",
+      "task": "task9",
+      "chapters": [
+        "15",
+        "16.5",
+        "16.1"
+      ],
+      "results": {
+        "15": "needs-rework",
+        "16.5": "pass-tech-review → auto-promoted finalized",
+        "16.1": "needs-rework"
+      },
+      "p0": 0,
+      "p1": 5,
+      "p2": 6,
+      "p3": 2,
+      "auto_promoted": [
+        "16.5"
+      ],
+      "log": "logs/deep-review/2026-07-13-16-deep-review.md"
+    }
+  ],
+  "review_logs": [
+    {
+      "date": "2026-07-02T02:11:00+08:00",
+      "log": "logs/review/2026-07-02-02-review.md",
+      "sections": [
+        "1.13",
+        "1.25"
+      ],
+      "type": "task6-revisiting"
+    },
+    "2026-07-02-21-review.md",
+    {
+      "date": "2026-07-06",
+      "log": "logs/review/2026-07-06-03-review.md",
+      "sections": [
+        "14.8"
+      ],
+      "type": "revisit"
+    },
+    {
+      "date": "2026-07-09-21",
+      "sections": [
+        "9.2",
+        "10.5",
+        "15.6"
+      ],
+      "result": "pass-light-edit",
+      "log_file": "logs/review/2026-07-09-21-review.md"
+    },
+    {
+      "date": "2026-07-10",
+      "log": "logs/review/2026-07-10-08-review.md",
+      "sections": [
+        "13.15",
+        "22.5",
+        "21.3"
+      ],
+      "type": "task6-revisiting"
+    },
+    {
+      "date": "2026-07-12",
+      "sections": [
+        "20.4"
+      ],
+      "result": "pass-light-edit",
+      "auto_promoted": true,
+      "log": "logs/review/2026-07-12-01-review.md"
+    },
+    {
+      "date": "2026-07-12",
+      "log": "logs/review/2026-07-12-21-review.md",
+      "sections": [
+        "26.9"
+      ],
+      "type": "task6-revisiting"
+    }
+  ],
+  "task2b_verifier": {
+    "last_run": "2026-07-13T15:37:00+08:00",
+    "last_action": "reflux-verification-6-chapters",
+    "chapters_fixed": 6,
+    "remaining_task6_pending": 1,
+    "last_result": "6 state corrections: 15/16.5/16.1/16.6/16.4/16.9 status→ready-for-review, pipeline→task6_pending",
+    "last_fixed_count": 6,
+    "last_blocked_count": 0,
+    "remaining_pending": 0
+  },
+  "task2b_rework": [
+    {
+      "section": "20.3",
+      "completed_at": "2026-07-02T18:54:37+08:00",
+      "lane": "main",
+      "source": "frontmatter-backlog-fallback",
+      "fixes": "content depth + practical guidance + data models",
+      "last_task6_review": "2026-07-02",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "pipeline_stage": "task9_pending",
+      "review_history": [
+        {
+          "date": "2026-07-02",
+          "result": "pass-light-edit",
+          "mode": "revisiting-review-round2",
+          "fixes": "L1: banned word fix x1"
         }
+      ]
     },
-    "task2a": {
-        "last_run": "2026-07-13T19:07:08.883026+08:00",
-        "last_section": "none",
-        "result": "no-candidates",
-        "note": "Gap mining round 101: 0 candidates ≥14 (101st consecutive). All sources stale. 0 empty drafts. Task2B backlog: 0. 717 sections, coverage saturated."
-    },
-    "task2b_lite": {
-        "total_fixed": 1,
-        "last_run": "2026-07-13T13:41:20+08:00",
-        "last_chapter": "23.8",
-        "last_section": "14.9",
-        "result": "fixed-lite",
-        "fix_type": "frontmatter",
-        "note": "frontmatter dedup + status fix + queue entry for P0/P1 audit issues",
-        "runs": [
-            {
-                "date": "2026-07-13",
-                "time": "13:41",
-                "chapter": "14.9",
-                "source": "task9-deep-tech-review-audit",
-                "type": "frontmatter dedup + status + queue",
-                "issues_fixed": 1
-            }
-        ]
-    },
-    "last_task9_review": {
-        "at": "2026-07-13T16:20:00+08:00",
-        "sections": [
-            "15",
-            "16.5",
-            "16.1"
-        ],
-        "result": "pass-tech-review(1/3), needs-rework(2/3); auto-promoted-16.5",
-        "p0": 0,
-        "p1": 5,
-        "p2": 6,
-        "p3": 2,
-        "auto_promoted": [
-            "16.5"
-        ],
-        "log": "logs/deep-review/2026-07-13-16-deep-review.md"
-    },
-    "section-13.21": {
-        "last_task2b_main": "2026-07-03T16:53:22+08:00",
-        "task2b_result": "fixed",
-        "task2b_state": "fixed",
-        "pipeline_stage": "ready-to-publish",
-        "verifier_corrected_at": "2026-07-13T03:27:14+08:00",
-        "verifier_note": "frontmatter already finalized/ready-to-publish; progress.json was stale (task6_pending)"
-    },
-    "section-2.30": {
-        "last_task2b_main": "2026-07-03T16:53:22+08:00",
-        "task2b_result": "fixed",
-        "task2b_state": "fixed",
-        "pipeline_stage": "ready-to-publish",
-        "status": "finalized",
-        "task6_state": "reviewed",
-        "task6_result": "pass-light-edit",
-        "last_task6_at": "2026-07-08T08:07:00+08:00"
-    },
-    "task2b_lite_completed": [
+    {
+      "section": "21.2",
+      "completed_at": "2026-07-02T18:54:37+08:00",
+      "lane": "main",
+      "source": "frontmatter-backlog-fallback",
+      "fixes": "content depth + practical guidance + data models",
+      "last_task6_review": "2026-07-02",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "pipeline_stage": "task9_pending",
+      "review_history": [
         {
-            "date": "2026-07-03",
-            "section": "13.21",
-            "type": "source-path/cross-ref",
-            "status": "finalized",
-            "pipeline_stage": "ready-to-publish",
-            "task6_state": "reviewed",
-            "task9_state": "reviewed",
-            "last_task6_review": "2026-07-04T04:06:00+08:00"
+          "date": "2026-07-02",
+          "result": "pass-light-edit",
+          "mode": "revisiting-review-round2",
+          "fixes": "L1: banned word fix x1"
         }
-    ],
-    "verifier_logs": [
+      ]
+    },
+    {
+      "section": "26.1",
+      "completed_at": "2026-07-02T18:54:37+08:00",
+      "lane": "main",
+      "source": "frontmatter-backlog-fallback",
+      "fixes": "content depth + practical guidance + data models",
+      "last_task6_review": "2026-07-02",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "pipeline_stage": "task9_pending",
+      "review_history": [
         {
-            "date": "2026-07-03",
-            "hour": "23:30",
-            "action": "task2b-verifier",
-            "corrections": [
-                {
-                    "chapter": "13.21",
-                    "file": "src/part3-tools/ch13-perfetto/13.21-perfetto-version-evolution.md",
-                    "fix": "task2b_state: fixed→pending, pipeline_stage: task6_pending→task2b_pending",
-                    "reason": "Queue has pending P50 task6-review item; chapter should be in task2b_pending not task6_pending"
-                },
-                {
-                    "chapter": "15",
-                    "file": "src/ch15-methodology.md",
-                    "fix": "pipeline_stage: task6_pending→task9_pending",
-                    "reason": "Task6 already reviewed (pass-light-edit); needs Task9 final confirmation for auto-fix"
-                },
-                {
-                    "chapter": "24.14",
-                    "file": "src/part5-app/ch24-io-network/14-network-request-performance-playbook.md",
-                    "fix": "Removed duplicate pipeline_stage: task9_pending (kept ready-to-publish); task9_state: pending→reviewed",
-                    "reason": "status=finalized, task9_result=pass-tech-review, queue clean"
-                },
-                {
-                    "chapter": "appendix.G",
-                    "file": "src/appendix/android-performance-learning-path.md",
-                    "fix": "pipeline_stage: task6_pending→draft",
-                    "reason": "status=draft chapter incorrectly marked as task6_pending"
-                }
-            ],
-            "blocked": [
-                "13.21"
-            ],
-            "result": "no-change"
+          "date": "2026-07-02",
+          "result": "pass-light-edit",
+          "mode": "revisiting-review-round2",
+          "fixes": "L1: banned word fix x2, empty heading"
         }
-    ],
-    "last_task2b_main_at": "2026-07-04T18:52:42+08:00",
-    "task2b_main_completed": 2,
-    "task2b_verifier_latest": {
-        "run_at": "2026-07-09T03:31:40+08:00",
-        "verified_sections": [
-            "14.4",
-            "16.4",
-            "7.9",
-            "13.2",
-            "8.1"
-        ],
-        "status_corrections": 5,
-        "blocked_items": 0,
-        "blocked_sections": [],
-        "result": "ready-for-task6",
-        "details": [
-            {
-                "section": "14.4",
-                "fix": "status: finalized→ready-for-review",
-                "reason": "Task9 idle audit auto-fixed, status stale"
-            },
-            {
-                "section": "16.4",
-                "fix": "status: finalized→ready-for-review",
-                "reason": "Task9 idle audit auto-fixed, status stale"
-            },
-            {
-                "section": "7.9",
-                "fix": "status: finalized→ready-for-review",
-                "reason": "Task9 idle audit auto-fixed, status stale"
-            },
-            {
-                "section": "13.2",
-                "fix": "task9_state: reviewed→pending",
-                "reason": "Task6 re-reviewed post-auto-fix, task9_state stale"
-            },
-            {
-                "section": "8.1",
-                "fix": "task9_state: reviewed→pending",
-                "reason": "Task6 re-reviewed post-auto-fix, task9_state stale"
-            }
-        ]
+      ]
+    }
+  ],
+  "last_task2b_at": "2026-07-02T18:54:37+08:00",
+  "deprecated": 34,
+  "stats": {
+    "last_review_date": "2026-07-13",
+    "last_review_by": "openclaw-task9",
+    "drafted": 33,
+    "ready_for_review": 5,
+    "finalized": 11,
+    "ready_to_publish": 0,
+    "total": 717,
+    "last_task9_review_date": "2026-07-13",
+    "last_task9_review_by": "openclaw-task9"
+  },
+  "last_task6_review": "2026-07-12T21:10:00+08:00",
+  "last_task6_reviewed_sections": [
+    "26.9"
+  ],
+  "sections": {
+    "15": {
+      "status": "ready-for-review",
+      "last_task6_at": "2026-07-04T02:10:34+08:00",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "pipeline_stage": "task9_pending",
+      "task9_state": "pending",
+      "task6_reviewed_date": "2026-07-07"
     },
-    "task2b_verifier_history": [
+    "21.2": {
+      "status": "finalized",
+      "last_task6_at": "2026-07-03T19:10:00+08:00",
+      "task6_result": "pass-light-edit",
+      "pipeline_stage": "ready-to-publish"
+    },
+    "20.3": {
+      "status": "finalized",
+      "last_task6_at": "2026-07-03T19:10:00+08:00",
+      "task6_result": "pass-light-edit",
+      "pipeline_stage": "ready-to-publish"
+    },
+    "22.6": {
+      "status": "finalized",
+      "task6_state": "reviewed",
+      "task6_date": "2026-07-04",
+      "task6_result": "pass-light-edit",
+      "notes": "L1轻修(禁用词+元叙述)，自动晋升finalized"
+    },
+    "19.26": {
+      "status": "finalized",
+      "task6_state": "reviewed",
+      "task6_date": "2026-07-04",
+      "task6_result": "pass-light-edit",
+      "notes": "L1轻修(禁用词)，自动晋升finalized"
+    },
+    "20.2": {
+      "status": "finalized",
+      "task6_state": "reviewed",
+      "task6_date": "2026-07-04",
+      "task6_result": "pass-light-edit",
+      "notes": "L1轻修(元叙述)，自动晋升finalized"
+    },
+    "15.9": {
+      "title": "从采集到治理的反馈回路",
+      "status": "ready-for-review",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-07-04T13:09:00+08:00",
+      "review_log": "logs/review/2026-07-04-12-review.md"
+    },
+    "26.10": {
+      "title": "Android 11 以下进程退出归因方案",
+      "status": "finalized",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "pipeline_stage": "ready-to-publish",
+      "last_task6_at": "2026-07-04T12:08:00+08:00",
+      "review_log": "logs/review/2026-07-04-12-review.md"
+    },
+    "14.8": {
+      "status": "finalized",
+      "task2b_result": "fixed",
+      "task6_result": "pass-light-edit",
+      "task6_reviewed_at": "2026-07-06T03:20:00+08:00",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "pipeline_stage": "ready-to-publish",
+      "last_task6_review": "2026-07-07",
+      "task2b_verifier_note": "2026-07-06 reflux verification corrected status",
+      "task9_result": "pass-tech-review",
+      "finalized_date": "2026-07-07"
+    },
+    "20.9": {
+      "status": "ready-for-review",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "pipeline_stage": "task2b_pending",
+      "last_task9_at": "2026-07-06T08:32:18.662157",
+      "review_log": "logs/deep-review/2026-07-06-08-deep-review.md",
+      "last_task6": "2026-07-07",
+      "task6_result": "pass-light-edit"
+    },
+    "14.11": {
+      "last_task6_review": "2026-07-07",
+      "task6_result": "pass-light-edit"
+    },
+    "18.18": {
+      "last_task6_review": "2026-07-11",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "pipeline_stage": "task9_pending"
+    },
+    "20.4": {
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task6_reviewed_date": "2026-07-12",
+      "last_task6_at": "2026-07-12T01:06:00+08:00"
+    },
+    "14.9": {
+      "last_task2b_at": "2026-07-13T14:53:11+08:00",
+      "task2b_result": "fixed",
+      "pipeline_stage": "task6_pending"
+    },
+    "16.5": {
+      "status": "finalized",
+      "task9_result": "pass-tech-review",
+      "task9_state": "reviewed",
+      "pipeline_stage": "ready-to-publish",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "finalized_at": "2026-07-13T16:20:00+08:00"
+    },
+    "16.1": {
+      "status": "ready-for-review",
+      "task9_result": "needs-rework",
+      "task9_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task6_state": "revising",
+      "pipeline_stage": "task6_pending",
+      "last_task9_at": "2026-07-13T16:20:00+08:00"
+    }
+  },
+  "task2a": {
+    "last_run": "2026-07-13T19:07:08.883026+08:00",
+    "last_section": "none",
+    "result": "no-candidates",
+    "note": "Gap mining round 101: 0 candidates ≥14 (101st consecutive). All sources stale. 0 empty drafts. Task2B backlog: 0. 717 sections, coverage saturated."
+  },
+  "task2b_lite": {
+    "total_fixed": 1,
+    "last_run": "2026-07-13T13:41:20+08:00",
+    "last_chapter": "23.8",
+    "last_section": "14.9",
+    "result": "fixed-lite",
+    "fix_type": "frontmatter",
+    "note": "frontmatter dedup + status fix + queue entry for P0/P1 audit issues",
+    "runs": [
+      {
+        "date": "2026-07-13",
+        "time": "13:41",
+        "chapter": "14.9",
+        "source": "task9-deep-tech-review-audit",
+        "type": "frontmatter dedup + status + queue",
+        "issues_fixed": 1
+      }
+    ]
+  },
+  "last_task9_review": {
+    "at": "2026-07-13T16:20:00+08:00",
+    "sections": [
+      "15",
+      "16.5",
+      "16.1"
+    ],
+    "result": "pass-tech-review(1/3), needs-rework(2/3); auto-promoted-16.5",
+    "p0": 0,
+    "p1": 5,
+    "p2": 6,
+    "p3": 2,
+    "auto_promoted": [
+      "16.5"
+    ],
+    "log": "logs/deep-review/2026-07-13-16-deep-review.md"
+  },
+  "section-13.21": {
+    "last_task2b_main": "2026-07-03T16:53:22+08:00",
+    "task2b_result": "fixed",
+    "task2b_state": "fixed",
+    "pipeline_stage": "ready-to-publish",
+    "verifier_corrected_at": "2026-07-13T03:27:14+08:00",
+    "verifier_note": "frontmatter already finalized/ready-to-publish; progress.json was stale (task6_pending)"
+  },
+  "section-2.30": {
+    "last_task2b_main": "2026-07-03T16:53:22+08:00",
+    "task2b_result": "fixed",
+    "task2b_state": "fixed",
+    "pipeline_stage": "ready-to-publish",
+    "status": "finalized",
+    "task6_state": "reviewed",
+    "task6_result": "pass-light-edit",
+    "last_task6_at": "2026-07-08T08:07:00+08:00"
+  },
+  "task2b_lite_completed": [
+    {
+      "date": "2026-07-03",
+      "section": "13.21",
+      "type": "source-path/cross-ref",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "last_task6_review": "2026-07-04T04:06:00+08:00"
+    }
+  ],
+  "verifier_logs": [
+    {
+      "date": "2026-07-03",
+      "hour": "23:30",
+      "action": "task2b-verifier",
+      "corrections": [
         {
-            "run_at": "2026-07-06T15:26:28+08:00",
-            "verified_sections": [
-                "14.8",
-                "20.9",
-                "14.1",
-                "03-vsync",
-                "10.7",
-                "18.17"
-            ],
-            "status_corrections": 0,
-            "blocked_items": 1,
-            "blocked_section": "21.2",
-            "result": "no-change",
-            "log_file": "logs/rework/task2b-verifier-2026-07-06.log"
+          "chapter": "13.21",
+          "file": "src/part3-tools/ch13-perfetto/13.21-perfetto-version-evolution.md",
+          "fix": "task2b_state: fixed→pending, pipeline_stage: task6_pending→task2b_pending",
+          "reason": "Queue has pending P50 task6-review item; chapter should be in task2b_pending not task6_pending"
         },
         {
-            "timestamp": "2026-07-07T19:31:15+08:00",
-            "action": "verify",
-            "result": "status-corrections",
-            "chapters": [
-                {
-                    "chapter": "1.5",
-                    "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
-                    "fix": "promote-finalized",
-                    "reason": "both reviews passed, queue clear"
-                },
-                {
-                    "chapter": "16.3",
-                    "path": "src/part4-system/ch16-aosp/03-aosp-build.md",
-                    "fix": "status-to-ready-for-review",
-                    "reason": "task9 auto-fixed, waiting task6 re-review"
-                },
-                {
-                    "chapter": "19",
-                    "path": "src/part3-tools/ch19-apm/16-profiling-manager.md",
-                    "fix": "status-to-ready-for-review",
-                    "reason": "task9 auto-fixed, waiting task6 re-review"
-                },
-                {
-                    "chapter": "2.20",
-                    "path": "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md",
-                    "fix": "status-to-ready-for-review",
-                    "reason": "task9 auto-fixed, waiting task6 re-review"
-                },
-                {
-                    "chapter": "20.9",
-                    "path": "src/part5-app/ch20-stability/09-stability-case-studies.md",
-                    "fix": "promote-finalized",
-                    "reason": "both reviews done (auto-fixed+pass-light-edit), queue clear"
-                }
-            ],
-            "status_corrections": 5,
-            "blocked": 0
+          "chapter": "15",
+          "file": "src/ch15-methodology.md",
+          "fix": "pipeline_stage: task6_pending→task9_pending",
+          "reason": "Task6 already reviewed (pass-light-edit); needs Task9 final confirmation for auto-fix"
+        },
+        {
+          "chapter": "24.14",
+          "file": "src/part5-app/ch24-io-network/14-network-request-performance-playbook.md",
+          "fix": "Removed duplicate pipeline_stage: task9_pending (kept ready-to-publish); task9_state: pending→reviewed",
+          "reason": "status=finalized, task9_result=pass-tech-review, queue clean"
+        },
+        {
+          "chapter": "appendix.G",
+          "file": "src/appendix/android-performance-learning-path.md",
+          "fix": "pipeline_stage: task6_pending→draft",
+          "reason": "status=draft chapter incorrectly marked as task6_pending"
         }
+      ],
+      "blocked": [
+        "13.21"
+      ],
+      "result": "no-change"
+    }
+  ],
+  "last_task2b_main_at": "2026-07-04T18:52:42+08:00",
+  "task2b_main_completed": 2,
+  "task2b_verifier_latest": {
+    "run_at": "2026-07-09T03:31:40+08:00",
+    "verified_sections": [
+      "14.4",
+      "16.4",
+      "7.9",
+      "13.2",
+      "8.1"
     ],
-    "deprecations": [
+    "status_corrections": 5,
+    "blocked_items": 0,
+    "blocked_sections": [],
+    "result": "ready-for-task6",
+    "details": [
+      {
+        "section": "14.4",
+        "fix": "status: finalized→ready-for-review",
+        "reason": "Task9 idle audit auto-fixed, status stale"
+      },
+      {
+        "section": "16.4",
+        "fix": "status: finalized→ready-for-review",
+        "reason": "Task9 idle audit auto-fixed, status stale"
+      },
+      {
+        "section": "7.9",
+        "fix": "status: finalized→ready-for-review",
+        "reason": "Task9 idle audit auto-fixed, status stale"
+      },
+      {
+        "section": "13.2",
+        "fix": "task9_state: reviewed→pending",
+        "reason": "Task6 re-reviewed post-auto-fix, task9_state stale"
+      },
+      {
+        "section": "8.1",
+        "fix": "task9_state: reviewed→pending",
+        "reason": "Task6 re-reviewed post-auto-fix, task9_state stale"
+      }
+    ]
+  },
+  "task2b_verifier_history": [
+    {
+      "run_at": "2026-07-06T15:26:28+08:00",
+      "verified_sections": [
+        "14.8",
+        "20.9",
+        "14.1",
+        "03-vsync",
+        "10.7",
+        "18.17"
+      ],
+      "status_corrections": 0,
+      "blocked_items": 1,
+      "blocked_section": "21.2",
+      "result": "no-change",
+      "log_file": "logs/rework/task2b-verifier-2026-07-06.log"
+    },
+    {
+      "timestamp": "2026-07-07T19:31:15+08:00",
+      "action": "verify",
+      "result": "status-corrections",
+      "chapters": [
         {
-            "chapter": "4.33",
-            "path": "src/part1-fundamentals/ch04-memory/4.33-android17-ai-agent-memory-sandboxed-data-reuse.md",
-            "reason": "Duplicate of §4.22 (same title, §4.22 has 220 lines ready-for-review). Outline was copy-paste broken.",
-            "deprecated_at": "2026-07-06T23:08:59+08:00",
-            "deprecated_by": "task2a-cleanup"
+          "chapter": "1.5",
+          "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+          "fix": "promote-finalized",
+          "reason": "both reviews passed, queue clear"
         },
         {
-            "chapter": "5.27",
-            "path": "src/part1-fundamentals/ch05-cpu-power/5.27-ondevice-llm-inference-energy-efficiency.md",
-            "reason": "Title corrupted (frontmatter says CPU cache locality, SUMMARY says MoE/quantization). Topic already covered by §5.11/§5.13/§5.14. Outline broken with GPU content.",
-            "deprecated_at": "2026-07-06T23:08:59+08:00",
-            "deprecated_by": "task2a-cleanup"
+          "chapter": "16.3",
+          "path": "src/part4-system/ch16-aosp/03-aosp-build.md",
+          "fix": "status-to-ready-for-review",
+          "reason": "task9 auto-fixed, waiting task6 re-review"
         },
         {
-            "chapter": "23.5",
-            "path": "src/part5-app/ch23-memory-practice/23.5-art-heaptask-system-7-subclasses.md",
-            "reason": "Duplicate of §4.34 (same topic: ART HeapTask 7 subclasses). §4.21 also covers HeapTask scheduling pipeline. Outline was copy-paste broken.",
-            "deprecated_at": "2026-07-06T23:08:59+08:00",
-            "deprecated_by": "task2a-cleanup"
+          "chapter": "19",
+          "path": "src/part3-tools/ch19-apm/16-profiling-manager.md",
+          "fix": "status-to-ready-for-review",
+          "reason": "task9 auto-fixed, waiting task6 re-review"
         },
         {
-            "chapter": "4.23",
-            "path": "src/part1-fundamentals/ch04-memory/4.23-android17-ai-agent-memory.md",
-            "reason": "Duplicate of §4.22. Contains suspected AI hallucination (MemoryDomain/SandboxedHeap not found in AOSP). Needs-verification status confirmed as unreliable.",
-            "deprecated_at": "2026-07-06T23:08:59+08:00",
-            "deprecated_by": "task2a-cleanup"
+          "chapter": "2.20",
+          "path": "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md",
+          "fix": "status-to-ready-for-review",
+          "reason": "task9 auto-fixed, waiting task6 re-review"
         },
         {
-            "chapter": "4.35",
-            "path": "src/part1-fundamentals/ch4-memory/4.35-Android-Developers-Blog---Android-17-引入了全新的任务调度器通.md",
-            "reason": "Duplicate of §1.43 (Android 17 ML Scheduler, 215 lines, ready-for-review). §4.35 is an RSS-derived stub with no unique content. Same topic: ML-driven task scheduler reducing app launch time.",
-            "deprecated_at": "2026-07-07T03:09:51+08:00",
-            "deprecated_by": "task2a-cleanup"
-        },
-        {
-            "chapter": "4.36",
-            "path": "src/part1-fundamentals/ch4-memory/4.36-Phoronix---Linux-610-内核引入了创新的内存碎片整理机制通过智能预分配和动态调.md",
-            "reason": "Duplicate of §6.19 (Linux 6.10 memory compaction, 126 lines with source code analysis). §4.36 is an RSS-derived stub with no unique content. Same topic: Linux 6.10 proactive compaction mechanism.",
-            "deprecated_at": "2026-07-07T03:09:51+08:00",
-            "deprecated_by": "task2a-cleanup"
-        },
-        {
-            "chapter": "04.41",
-            "path": "src/part1-fundamentals/ch04-memory/04.41-ai-agent-memory-sandboxing.md",
-            "reason": "Duplicate of §4.22 (AI Agent 内存沙箱化与跨应用数据复用, 351 lines, ready-for-review). Orphan stub not in SUMMARY.md.",
-            "deprecated_at": "2026-07-08T00:12:38.580947+08:00",
-            "deprecated_by": "task2a-cleanup"
-        },
-        {
-            "chapter": "04.42",
-            "path": "src/part1-fundamentals/ch04-memory/04.42-art-heaptask-advanced-scheduling.md",
-            "reason": "Duplicate of §4.34/§4.21 (ART HeapTask topics already covered). Orphan stub not in SUMMARY.md.",
-            "deprecated_at": "2026-07-08T00:12:38.580947+08:00",
-            "deprecated_by": "task2a-cleanup"
-        },
-        {
-            "chapter": "08.38",
-            "path": "src/part1-fundamentals/ch08-startup/08.38-startup-insights-application-profiling.md",
-            "reason": "Duplicate of §8.31/§8.32/§8.36 (Startup Insights topics). Orphan stub not in SUMMARY.md.",
-            "deprecated_at": "2026-07-08T00:12:38.580947+08:00",
-            "deprecated_by": "task2a-cleanup"
-        },
-        {
-            "chapter": "17.22",
-            "path": "src/part4-system/ch17-oem/17.22-soc-vendor-power-optimization.md",
-            "reason": "Duplicate of §17.21/§09-soc (SoC power optimization). Orphan stub not in SUMMARY.md.",
-            "deprecated_at": "2026-07-08T00:12:38.580947+08:00",
-            "deprecated_by": "task2a-cleanup"
-        },
-        {
-            "path": "src/part1-fundamentals/ch04-memory/04.40-ai-agent-memory-management.md",
-            "reason": "Orphan stub. AI Agent memory covered by §4.22 (351L).",
-            "chapter": "04.40",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch04-memory/04.40-art-heaptask-system-deep-dive.md",
-            "reason": "Orphan stub. ART HeapTask covered by §4.21 (342L).",
-            "chapter": "04.40",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch04-memory/4.36-android17-ai-agent-memory-sandboxed-data-reuse.md",
-            "reason": "Duplicate of §4.22. File had draft status despite prior deprecation.",
-            "chapter": "4.36",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch04-memory/4.37-android17-ai-agent-memory-management.md",
-            "reason": "Orphan stub. AI Agent memory covered by §4.22.",
-            "chapter": "4.37",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch04-memory/4.37-android17-lmkd-userspace-migration.md",
-            "reason": "Duplicate of §15-psi-lowmemdetector-lmkd-architecture (370L) and §4.36-lmkd-procs-prio-batch (351L). LMKD userspace since Android 10+.",
-            "chapter": "4.37",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch04-memory/4.39-linux-6.10-memory-fragmentation.md",
-            "reason": "Orphan stub. Duplicate of §6.19.",
-            "chapter": "4.39",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch04-memory/4.45-linux610-memory-fragmentation.md",
-            "reason": "Duplicate of §6.19.",
-            "chapter": "4.45",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch04-memory/4.46-android17-ai-agent-memory.md",
-            "reason": "Duplicate of §4.22. Contains hallucination (MemoryDomain/SandboxedHeap not in AOSP).",
-            "chapter": "4.46",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch04-memory/4.47-android17-arm-mte.md",
-            "reason": "Duplicate of §4.9-android17-memory-tagging-extension-mte (335L).",
-            "chapter": "4.47",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch04-memory/4.48-android17-lmkd-procs-prio-batch-thrashing-mainline-fork.md",
-            "reason": "Broken stub: LMKD title but GPU outline. Not in SUMMARY.",
-            "chapter": "4.48",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch05-cpu-power/5.22-android17-soc-battery-optimization.md",
-            "reason": "Orphan stub. SoC power covered by §17.21.",
-            "chapter": "5.22",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch05-cpu-power/5.23-android17-cpu-cache-locality-pss-accounting.md",
-            "reason": "Orphan stub. CPU cache/PSS covered by §4.35 (330L).",
-            "chapter": "5.23",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch05-cpu-power/5.25-android17-cpu-cache-locality.md",
-            "reason": "Duplicate of §4.35-android17-cpu-cache-locality-pss-accounting (330L).",
-            "chapter": "5.25",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch08-startup/8.33-android17-modular-task-scheduler.md",
-            "reason": "Orphan stub. ML scheduler covered by §1.43.",
-            "chapter": "8.33",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch08-startup/8.34-android17-modular-startup-framework.md",
-            "reason": "Orphan stub. No verifiable feature in AOSP android-17.0.0_r1.",
-            "chapter": "8.34",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch08-startup/8.35-android17-official-blog-task-scheduler.md",
-            "reason": "Orphan stub. RSS-derived duplicate of §1.43.",
-            "chapter": "8.35",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch08-startup/8.36-android17-startup-insights.md",
-            "reason": "Orphan stub. Startup insights covered by §8.31/§8.32.",
-            "chapter": "8.36",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch08-startup/8.38-android17-task-scheduler-optimization.md",
-            "reason": "Duplicate of §1.43 (Android 17 ML scheduler 215L).",
-            "chapter": "8.38",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch08-startup/8.40-android17-modular-startup-framework.md",
-            "reason": "No verifiable modular startup framework in AOSP android-17.0.0_r1.",
-            "chapter": "8.40",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part1-fundamentals/ch25-power/25.18-android17-power-stats-hal.md",
-            "reason": "Outline contains fabricated features. Topic partially covered by existing power chapters.",
-            "chapter": "25.18",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part3-optimization/ch04-memory/4.37-lmkd-userspace-migration-psi/4.37-lmkd-userspace-migration-psi.md",
-            "reason": "Duplicate of §4.37/§15. Orphan in wrong directory.",
-            "chapter": "4.37",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part3-tools/ch14-profiling/14.2-android17-perfetto-v57-ai-skills.md",
-            "reason": "Orphan stub. Perfetto AI skills not verifiable.",
-            "chapter": "14.2",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part5-app/ch26-database/26.1-room-30-breaking-changes.md",
-            "reason": "Orphan stub. Room 3.0 is app library not Android internal.",
-            "chapter": "26.1",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
-        },
-        {
-            "path": "src/part5-app/ch26-methodology/26.1-google-android-bench-ai-coding-evaluation.md",
-            "reason": "Orphan stub. AI coding benchmark not Android internals.",
-            "chapter": "26.1",
-            "deprecated_at": "2026-07-13T07:10:15+08:00",
-            "deprecated_by": "task2a-cleanup-round96"
+          "chapter": "20.9",
+          "path": "src/part5-app/ch20-stability/09-stability-case-studies.md",
+          "fix": "promote-finalized",
+          "reason": "both reviews done (auto-fixed+pass-light-edit), queue clear"
         }
-    ],
-    "review_stats": {
-        "last_task6_at": "2026-07-08T08:07:00+08:00",
-        "last_task6_sections": [
-            "2.30",
-            "24.4"
-        ]
+      ],
+      "status_corrections": 5,
+      "blocked": 0
+    }
+  ],
+  "deprecations": [
+    {
+      "chapter": "4.33",
+      "path": "src/part1-fundamentals/ch04-memory/4.33-android17-ai-agent-memory-sandboxed-data-reuse.md",
+      "reason": "Duplicate of §4.22 (same title, §4.22 has 220 lines ready-for-review). Outline was copy-paste broken.",
+      "deprecated_at": "2026-07-06T23:08:59+08:00",
+      "deprecated_by": "task2a-cleanup"
     },
-    "task6_reviews": [
-        {
-            "section": "19.16",
-            "date": "2026-07-07T20:13:05+08:00",
-            "result": "pass-light-edit",
-            "mode": "revisiting",
-            "log": "logs/review/2026-07-07-20-review.md"
-        },
-        {
-            "section": "2.20",
-            "date": "2026-07-07T20:13:05+08:00",
-            "result": "pass-light-edit",
-            "mode": "revisiting",
-            "log": "logs/review/2026-07-07-20-review.md"
-        },
-        {
-            "section": "16.3",
-            "date": "2026-07-07T20:13:05+08:00",
-            "result": "pass-light-edit",
-            "mode": "revisiting",
-            "log": "logs/review/2026-07-07-20-review.md"
-        },
-        {
-            "date": "2026-07-08T08:07:00+08:00",
-            "sections": [
-                "2.30",
-                "24.4"
-            ],
-            "result": "2.30 finalized, 24.4 pass-light-edit",
-            "fixes": 3,
-            "auto_promoted": [
-                "2.30"
-            ]
-        },
-        {
-            "section": "16.4",
-            "date": "2026-07-09",
-            "result": "pass-light-edit",
-            "mode": "revisiting",
-            "log": "logs/review/2026-07-09-06-review.md",
-            "auto_promoted": true
-        },
-        {
-            "section": "13.15",
-            "date": "2026-07-10",
-            "result": "pass-light-edit",
-            "mode": "revisiting",
-            "log": "logs/review/2026-07-10-08-review.md",
-            "fixes": 7,
-            "auto_promoted": true
-        },
-        {
-            "section": "22.5",
-            "date": "2026-07-10",
-            "result": "pass-light-edit",
-            "mode": "revisiting",
-            "log": "logs/review/2026-07-10-08-review.md",
-            "fixes": 0,
-            "auto_promoted": true
-        },
-        {
-            "section": "21.3",
-            "date": "2026-07-10",
-            "result": "pass-light-edit",
-            "mode": "revisiting",
-            "log": "logs/review/2026-07-10-08-review.md",
-            "fixes": 2,
-            "auto_promoted": true
-        },
-        {
-            "date": "2026-07-12",
-            "time": "04:10",
-            "chapters": [
-                "25.9",
-                "20.5"
-            ],
-            "types": [
-                "revisiting",
-                "revisiting"
-            ],
-            "results": [
-                "pass-light-edit",
-                "pass-light-edit"
-            ],
-            "fixes": [
-                1,
-                4
-            ],
-            "big_issues": [
-                0,
-                0
-            ],
-            "auto_promoted": [],
-            "log": "logs/review/2026-07-12-04-review.md"
-        },
-        {
-            "section": "26.9",
-            "date": "2026-07-12",
-            "result": "pass-light-edit",
-            "mode": "revisiting",
-            "log": "logs/review/2026-07-12-21-review.md",
-            "auto_promoted": true
-        }
-    ],
-    "last_task6_run": "2026-07-09T06:08:00+08:00",
-    "task2b_verifier_runs": [
-        {
-            "timestamp": "2026-07-07T23:28:46+08:00",
-            "reviewed": [
-                "19.16",
-                "2.20",
-                "16.3",
-                "12.4",
-                "7.6"
-            ],
-            "fixed": [
-                "19.16",
-                "2.20",
-                "16.3",
-                "12.4",
-                "7.6"
-            ],
-            "blocked": [],
-            "skipped": [
-                "13.12"
-            ],
-            "result": "state-aligned"
-        }
-    ],
-    "last_task2b_verifier_run": "2026-07-08T19:28:09+08:00",
-    "quarantined": 5,
-    "superseded": 6,
-    "section-13.2": {
-        "task6_result": "pass-light-edit",
-        "task6_state": "reviewed",
-        "pipeline_stage": "task9_pending",
-        "last_task6_review": "2026-07-08T23:27:22+08:00",
-        "task2b_result": "fixed",
-        "task2b_state": "fixed",
-        "task9_state": "pending",
-        "task2b_verifier_at": "2026-07-09T03:31:40+08:00"
+    {
+      "chapter": "5.27",
+      "path": "src/part1-fundamentals/ch05-cpu-power/5.27-ondevice-llm-inference-energy-efficiency.md",
+      "reason": "Title corrupted (frontmatter says CPU cache locality, SUMMARY says MoE/quantization). Topic already covered by §5.11/§5.13/§5.14. Outline broken with GPU content.",
+      "deprecated_at": "2026-07-06T23:08:59+08:00",
+      "deprecated_by": "task2a-cleanup"
     },
-    "section-14.4": {
-        "status": "ready-for-review",
-        "pipeline_stage": "ready-to-publish",
-        "task6_state": "revisiting",
-        "task2b_verifier_at": "2026-07-09T03:31:40+08:00",
-        "verifier_corrected_at": "2026-07-13T03:27:14+08:00",
-        "verifier_note": "frontmatter already finalized/ready-to-publish; progress.json was stale (task6_pending)"
+    {
+      "chapter": "23.5",
+      "path": "src/part5-app/ch23-memory-practice/23.5-art-heaptask-system-7-subclasses.md",
+      "reason": "Duplicate of §4.34 (same topic: ART HeapTask 7 subclasses). §4.21 also covers HeapTask scheduling pipeline. Outline was copy-paste broken.",
+      "deprecated_at": "2026-07-06T23:08:59+08:00",
+      "deprecated_by": "task2a-cleanup"
     },
-    "section-16.4": {
-        "status": "finalized",
-        "pipeline_stage": "ready-to-publish",
-        "task6_state": "revisiting",
-        "task2b_verifier_at": "2026-07-09T03:31:40+08:00",
-        "task6_result": "pass-light-edit",
-        "last_task6_at": "2026-07-09T06:08:00+08:00"
+    {
+      "chapter": "4.23",
+      "path": "src/part1-fundamentals/ch04-memory/4.23-android17-ai-agent-memory.md",
+      "reason": "Duplicate of §4.22. Contains suspected AI hallucination (MemoryDomain/SandboxedHeap not found in AOSP). Needs-verification status confirmed as unreliable.",
+      "deprecated_at": "2026-07-06T23:08:59+08:00",
+      "deprecated_by": "task2a-cleanup"
     },
-    "section-7.9": {
-        "status": "ready-for-review",
-        "pipeline_stage": "ready-to-publish",
-        "task6_state": "revisiting",
-        "task2b_verifier_at": "2026-07-09T03:31:40+08:00",
-        "verifier_corrected_at": "2026-07-13T03:27:14+08:00",
-        "verifier_note": "frontmatter already finalized/ready-to-publish; progress.json was stale (task6_pending)"
+    {
+      "chapter": "4.35",
+      "path": "src/part1-fundamentals/ch4-memory/4.35-Android-Developers-Blog---Android-17-引入了全新的任务调度器通.md",
+      "reason": "Duplicate of §1.43 (Android 17 ML Scheduler, 215 lines, ready-for-review). §4.35 is an RSS-derived stub with no unique content. Same topic: ML-driven task scheduler reducing app launch time.",
+      "deprecated_at": "2026-07-07T03:09:51+08:00",
+      "deprecated_by": "task2a-cleanup"
     },
-    "section-8.1": {
-        "task9_state": "pending",
-        "pipeline_stage": "task9_pending",
-        "task2b_verifier_at": "2026-07-09T03:31:40+08:00"
+    {
+      "chapter": "4.36",
+      "path": "src/part1-fundamentals/ch4-memory/4.36-Phoronix---Linux-610-内核引入了创新的内存碎片整理机制通过智能预分配和动态调.md",
+      "reason": "Duplicate of §6.19 (Linux 6.10 memory compaction, 126 lines with source code analysis). §4.36 is an RSS-derived stub with no unique content. Same topic: Linux 6.10 proactive compaction mechanism.",
+      "deprecated_at": "2026-07-07T03:09:51+08:00",
+      "deprecated_by": "task2a-cleanup"
     },
-    "summary": {
-        "finalized": 10,
-        "total": 12,
-        "status_counts": {
-            "ready-for-review": 3,
-            "finalized": 7,
-            "unknown": 2
-        },
-        "ready_for_review": 0
+    {
+      "chapter": "04.41",
+      "path": "src/part1-fundamentals/ch04-memory/04.41-ai-agent-memory-sandboxing.md",
+      "reason": "Duplicate of §4.22 (AI Agent 内存沙箱化与跨应用数据复用, 351 lines, ready-for-review). Orphan stub not in SUMMARY.md.",
+      "deprecated_at": "2026-07-08T00:12:38.580947+08:00",
+      "deprecated_by": "task2a-cleanup"
     },
-    "verifier_runs": [
-        {
-            "date": "2026-07-10T03:34:28+08:00",
-            "lane": "verifier",
-            "checked": [
-                "3.5 输入事件拦截与安全机制",
-                "7.2 卡顿原因体系",
-                "13.14 Perfetto DataGrid 与 Jank CUJ 标准库"
-            ],
-            "fixed": [
-                "3.5: status finalized→ready-for-review, task9_state reviewed→pending",
-                "7.2: status finalized→ready-for-review, task9_state reviewed→pending",
-                "13.14: status finalized→ready-for-review, task9_state reviewed→pending"
-            ],
-            "blocked": [],
-            "result": "ready-for-task6"
-        }
-    ],
-    "rework_log": [
-        {
-            "section": "8.37",
-            "title": "Android 13+ PerformanceHintManager 实战",
-            "status": "fixed",
-            "completed_at": "2026-07-10T12:54:48+08:00",
-            "completed_by": "task2b-main",
-            "source": "task9-deep-tech-review"
-        }
-    ],
-    "last_task2a_gap_create": "2026-07-10T14:04:00+08:00",
-    "completed": 1,
-    "created_date": "2026-07-13"
+    {
+      "chapter": "04.42",
+      "path": "src/part1-fundamentals/ch04-memory/04.42-art-heaptask-advanced-scheduling.md",
+      "reason": "Duplicate of §4.34/§4.21 (ART HeapTask topics already covered). Orphan stub not in SUMMARY.md.",
+      "deprecated_at": "2026-07-08T00:12:38.580947+08:00",
+      "deprecated_by": "task2a-cleanup"
+    },
+    {
+      "chapter": "08.38",
+      "path": "src/part1-fundamentals/ch08-startup/08.38-startup-insights-application-profiling.md",
+      "reason": "Duplicate of §8.31/§8.32/§8.36 (Startup Insights topics). Orphan stub not in SUMMARY.md.",
+      "deprecated_at": "2026-07-08T00:12:38.580947+08:00",
+      "deprecated_by": "task2a-cleanup"
+    },
+    {
+      "chapter": "17.22",
+      "path": "src/part4-system/ch17-oem/17.22-soc-vendor-power-optimization.md",
+      "reason": "Duplicate of §17.21/§09-soc (SoC power optimization). Orphan stub not in SUMMARY.md.",
+      "deprecated_at": "2026-07-08T00:12:38.580947+08:00",
+      "deprecated_by": "task2a-cleanup"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/04.40-ai-agent-memory-management.md",
+      "reason": "Orphan stub. AI Agent memory covered by §4.22 (351L).",
+      "chapter": "04.40",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/04.40-art-heaptask-system-deep-dive.md",
+      "reason": "Orphan stub. ART HeapTask covered by §4.21 (342L).",
+      "chapter": "04.40",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.36-android17-ai-agent-memory-sandboxed-data-reuse.md",
+      "reason": "Duplicate of §4.22. File had draft status despite prior deprecation.",
+      "chapter": "4.36",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.37-android17-ai-agent-memory-management.md",
+      "reason": "Orphan stub. AI Agent memory covered by §4.22.",
+      "chapter": "4.37",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.37-android17-lmkd-userspace-migration.md",
+      "reason": "Duplicate of §15-psi-lowmemdetector-lmkd-architecture (370L) and §4.36-lmkd-procs-prio-batch (351L). LMKD userspace since Android 10+.",
+      "chapter": "4.37",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.39-linux-6.10-memory-fragmentation.md",
+      "reason": "Orphan stub. Duplicate of §6.19.",
+      "chapter": "4.39",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.45-linux610-memory-fragmentation.md",
+      "reason": "Duplicate of §6.19.",
+      "chapter": "4.45",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.46-android17-ai-agent-memory.md",
+      "reason": "Duplicate of §4.22. Contains hallucination (MemoryDomain/SandboxedHeap not in AOSP).",
+      "chapter": "4.46",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.47-android17-arm-mte.md",
+      "reason": "Duplicate of §4.9-android17-memory-tagging-extension-mte (335L).",
+      "chapter": "4.47",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.48-android17-lmkd-procs-prio-batch-thrashing-mainline-fork.md",
+      "reason": "Broken stub: LMKD title but GPU outline. Not in SUMMARY.",
+      "chapter": "4.48",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch05-cpu-power/5.22-android17-soc-battery-optimization.md",
+      "reason": "Orphan stub. SoC power covered by §17.21.",
+      "chapter": "5.22",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch05-cpu-power/5.23-android17-cpu-cache-locality-pss-accounting.md",
+      "reason": "Orphan stub. CPU cache/PSS covered by §4.35 (330L).",
+      "chapter": "5.23",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch05-cpu-power/5.25-android17-cpu-cache-locality.md",
+      "reason": "Duplicate of §4.35-android17-cpu-cache-locality-pss-accounting (330L).",
+      "chapter": "5.25",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.33-android17-modular-task-scheduler.md",
+      "reason": "Orphan stub. ML scheduler covered by §1.43.",
+      "chapter": "8.33",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.34-android17-modular-startup-framework.md",
+      "reason": "Orphan stub. No verifiable feature in AOSP android-17.0.0_r1.",
+      "chapter": "8.34",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.35-android17-official-blog-task-scheduler.md",
+      "reason": "Orphan stub. RSS-derived duplicate of §1.43.",
+      "chapter": "8.35",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.36-android17-startup-insights.md",
+      "reason": "Orphan stub. Startup insights covered by §8.31/§8.32.",
+      "chapter": "8.36",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.38-android17-task-scheduler-optimization.md",
+      "reason": "Duplicate of §1.43 (Android 17 ML scheduler 215L).",
+      "chapter": "8.38",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.40-android17-modular-startup-framework.md",
+      "reason": "No verifiable modular startup framework in AOSP android-17.0.0_r1.",
+      "chapter": "8.40",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part1-fundamentals/ch25-power/25.18-android17-power-stats-hal.md",
+      "reason": "Outline contains fabricated features. Topic partially covered by existing power chapters.",
+      "chapter": "25.18",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part3-optimization/ch04-memory/4.37-lmkd-userspace-migration-psi/4.37-lmkd-userspace-migration-psi.md",
+      "reason": "Duplicate of §4.37/§15. Orphan in wrong directory.",
+      "chapter": "4.37",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part3-tools/ch14-profiling/14.2-android17-perfetto-v57-ai-skills.md",
+      "reason": "Orphan stub. Perfetto AI skills not verifiable.",
+      "chapter": "14.2",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part5-app/ch26-database/26.1-room-30-breaking-changes.md",
+      "reason": "Orphan stub. Room 3.0 is app library not Android internal.",
+      "chapter": "26.1",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    },
+    {
+      "path": "src/part5-app/ch26-methodology/26.1-google-android-bench-ai-coding-evaluation.md",
+      "reason": "Orphan stub. AI coding benchmark not Android internals.",
+      "chapter": "26.1",
+      "deprecated_at": "2026-07-13T07:10:15+08:00",
+      "deprecated_by": "task2a-cleanup-round96"
+    }
+  ],
+  "review_stats": {
+    "last_task6_at": "2026-07-08T08:07:00+08:00",
+    "last_task6_sections": [
+      "2.30",
+      "24.4"
+    ]
+  },
+  "task6_reviews": [
+    {
+      "section": "19.16",
+      "date": "2026-07-07T20:13:05+08:00",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "log": "logs/review/2026-07-07-20-review.md"
+    },
+    {
+      "section": "2.20",
+      "date": "2026-07-07T20:13:05+08:00",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "log": "logs/review/2026-07-07-20-review.md"
+    },
+    {
+      "section": "16.3",
+      "date": "2026-07-07T20:13:05+08:00",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "log": "logs/review/2026-07-07-20-review.md"
+    },
+    {
+      "date": "2026-07-08T08:07:00+08:00",
+      "sections": [
+        "2.30",
+        "24.4"
+      ],
+      "result": "2.30 finalized, 24.4 pass-light-edit",
+      "fixes": 3,
+      "auto_promoted": [
+        "2.30"
+      ]
+    },
+    {
+      "section": "16.4",
+      "date": "2026-07-09",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "log": "logs/review/2026-07-09-06-review.md",
+      "auto_promoted": true
+    },
+    {
+      "section": "13.15",
+      "date": "2026-07-10",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "log": "logs/review/2026-07-10-08-review.md",
+      "fixes": 7,
+      "auto_promoted": true
+    },
+    {
+      "section": "22.5",
+      "date": "2026-07-10",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "log": "logs/review/2026-07-10-08-review.md",
+      "fixes": 0,
+      "auto_promoted": true
+    },
+    {
+      "section": "21.3",
+      "date": "2026-07-10",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "log": "logs/review/2026-07-10-08-review.md",
+      "fixes": 2,
+      "auto_promoted": true
+    },
+    {
+      "date": "2026-07-12",
+      "time": "04:10",
+      "chapters": [
+        "25.9",
+        "20.5"
+      ],
+      "types": [
+        "revisiting",
+        "revisiting"
+      ],
+      "results": [
+        "pass-light-edit",
+        "pass-light-edit"
+      ],
+      "fixes": [
+        1,
+        4
+      ],
+      "big_issues": [
+        0,
+        0
+      ],
+      "auto_promoted": [],
+      "log": "logs/review/2026-07-12-04-review.md"
+    },
+    {
+      "section": "26.9",
+      "date": "2026-07-12",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "log": "logs/review/2026-07-12-21-review.md",
+      "auto_promoted": true
+    }
+  ],
+  "last_task6_run": "2026-07-09T06:08:00+08:00",
+  "task2b_verifier_runs": [
+    {
+      "timestamp": "2026-07-07T23:28:46+08:00",
+      "reviewed": [
+        "19.16",
+        "2.20",
+        "16.3",
+        "12.4",
+        "7.6"
+      ],
+      "fixed": [
+        "19.16",
+        "2.20",
+        "16.3",
+        "12.4",
+        "7.6"
+      ],
+      "blocked": [],
+      "skipped": [
+        "13.12"
+      ],
+      "result": "state-aligned"
+    }
+  ],
+  "last_task2b_verifier_run": "2026-07-08T19:28:09+08:00",
+  "quarantined": 5,
+  "superseded": 6,
+  "section-13.2": {
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "pipeline_stage": "task9_pending",
+    "last_task6_review": "2026-07-08T23:27:22+08:00",
+    "task2b_result": "fixed",
+    "task2b_state": "fixed",
+    "task9_state": "pending",
+    "task2b_verifier_at": "2026-07-09T03:31:40+08:00"
+  },
+  "section-14.4": {
+    "status": "ready-for-review",
+    "pipeline_stage": "ready-to-publish",
+    "task6_state": "revisiting",
+    "task2b_verifier_at": "2026-07-09T03:31:40+08:00",
+    "verifier_corrected_at": "2026-07-13T03:27:14+08:00",
+    "verifier_note": "frontmatter already finalized/ready-to-publish; progress.json was stale (task6_pending)"
+  },
+  "section-16.4": {
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
+    "task6_state": "revisiting",
+    "task2b_verifier_at": "2026-07-09T03:31:40+08:00",
+    "task6_result": "pass-light-edit",
+    "last_task6_at": "2026-07-09T06:08:00+08:00"
+  },
+  "section-7.9": {
+    "status": "ready-for-review",
+    "pipeline_stage": "ready-to-publish",
+    "task6_state": "revisiting",
+    "task2b_verifier_at": "2026-07-09T03:31:40+08:00",
+    "verifier_corrected_at": "2026-07-13T03:27:14+08:00",
+    "verifier_note": "frontmatter already finalized/ready-to-publish; progress.json was stale (task6_pending)"
+  },
+  "section-8.1": {
+    "task9_state": "pending",
+    "pipeline_stage": "task9_pending",
+    "task2b_verifier_at": "2026-07-09T03:31:40+08:00"
+  },
+  "summary": {
+    "finalized": 10,
+    "total": 12,
+    "status_counts": {
+      "ready-for-review": 3,
+      "finalized": 7,
+      "unknown": 2
+    },
+    "ready_for_review": 0
+  },
+  "verifier_runs": [
+    {
+      "date": "2026-07-10T03:34:28+08:00",
+      "lane": "verifier",
+      "checked": [
+        "3.5 输入事件拦截与安全机制",
+        "7.2 卡顿原因体系",
+        "13.14 Perfetto DataGrid 与 Jank CUJ 标准库"
+      ],
+      "fixed": [
+        "3.5: status finalized→ready-for-review, task9_state reviewed→pending",
+        "7.2: status finalized→ready-for-review, task9_state reviewed→pending",
+        "13.14: status finalized→ready-for-review, task9_state reviewed→pending"
+      ],
+      "blocked": [],
+      "result": "ready-for-task6"
+    }
+  ],
+  "rework_log": [
+    {
+      "section": "8.37",
+      "title": "Android 13+ PerformanceHintManager 实战",
+      "status": "fixed",
+      "completed_at": "2026-07-10T12:54:48+08:00",
+      "completed_by": "task2b-main",
+      "source": "task9-deep-tech-review"
+    }
+  ],
+  "last_task2a_gap_create": "2026-07-10T14:04:00+08:00",
+  "completed": 1,
+  "created_date": "2026-07-13"
 }
