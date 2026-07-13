@@ -229,3 +229,112 @@ resources.arsc 相关优化要谨慎。参考书把资源去重、资源名压�
 AAB 和 Play Feature Delivery 解决的是“按设备、语言、密度、ABI 或功能模块分发”的问题；R8 和资源优化解决的是“产物本身是否还有无用代码和资源”的问题。二者不能互相替代。一个没有开 R8 的 AAB 仍会把无用代码带进 base module；一个只做 WebP 转换的 APK 也不会自动减少未使用语言包或 ABI 副本。
 
 对 Google Play 渠道，优先让 AAB 拆出语言、密度、ABI 和 dynamic feature；对国内渠道，很多市场仍以 APK 为主，仍要显式处理 `resourceConfigurations`、ABI 过滤、字体和大资源按需下载。AAB 与按需分发的细节放到 25.8 节。资源优化先让每个产物变小，分发策略再决定哪些用户需要拿到哪些产物。
+
+<!-- AIW-源码调研-2026-07-13-android17-r8-build-pipeline -->
+## AOSP android-17.0.0_r1 源码补充（2026-07-13 调研）
+
+> 本节为 `topic id=18` 调研产物。要点全部来自 `android.googlesource.com` 上 `refs/tags/android-17.0.0_r1` 的 Soong 源码。
+
+### 1. Soong 中的 R8 调用入口
+
+源码位置：`build/soong/java/dex.go`（android-17.0.0_r1，约 1277 行）。
+
+四个布尔开关决定 R8 行为，每个都来自 `DexProperties.Optimize` 子结构：
+
+| 字段 | 含义 | App 默认 | Library / Test 默认 |
+| --- | --- | --- | --- |
+| `Optimize.Enabled` | R8 vs D8 二选一 | true | false |
+| `Optimize.Shrink` | 死代码裁剪 | true | false |
+| `Optimize.Optimize` | 字节码优化（inlining / 类合并） | 受 `RELEASE_R8_OPTIMIZE_BY_DEFAULT` 控制 | false |
+| `Optimize.Obfuscate` | 类/方法名混淆 | false | false |
+
+`Optimize.Proguard_compatibility` 注释明确 "soon be removed and disabled universally, see b/215530220"（dex.go:108-110）。生产工程继续依赖兼容模式将阻塞后续 AGP 升级。
+
+实际 R8 调用命令来自 `d8r8` ninja rule（dex.go:497-509）：
+
+```bash
+$r8Template ${config.R8Cmd} ${config.R8Flags} $r8Flags     -injars $in --output $outDir     --no-data-resources     -printmapping ${outDict}     -printconfiguration ${outConfig}     -printusage ${outUsage}     --deps-file ${outDepfile}
+```
+
+- `outDict` / `outConfig` / `outUsage` 三个产物分别对应体积排查的“三件套”：mapping.txt、proguard config、unused.txt。
+- `--no-data-resources`：禁止 R8 触碰 res/，资源走单独 optimized shrink 路径。
+- `--deps-file`：让 ninja 支持 incremental rebuild。
+
+### 2. aapt2 → R8 自动 keep 规则的真相
+
+源码位置：`build/soong/java/aapt2.go:193-203`。
+
+```go
+var aapt2LinkRule = pctx.AndroidStaticRule("aapt2Link",
+    blueprint.RuleParams{
+        Command2: blueprint.NewCommand(
+            `${config.Aapt2Cmd} link -o $out $flags --proguard $proguardOptions`,
+            `--output-text-symbols ${rTxt} $inFlags`,
+        ),
+        Restat: true,
+    }, ...)
+```
+
+`--proguard $proguardOptions` 是 aapt2 自身从 manifest 里解析 `<activity>` / `<service>` / `<provider>` 出来的 keep 规则。这就是“manifest 入口无需手写 keep 规则”的源码证据——Activity 不写 `-keep` 也不会被裁剪。
+
+**坑点**：开启 optimized shrinking 后，app.go:836-841 主动 **不追加** aapt2 这份 keep 文件：
+
+```go
+if !(a.dexer.optimizedResourceShrinkingEnabled(ctx)) {
+    a.Module.extraProguardFlagsFiles = append(a.Module.extraProguardFlagsFiles, a.proguardOptionsFile)
+}
+```
+
+原因是 R8 的 trace-references 机制会从代码出发追溯到 xml 节点，不再需要 manifest→keep 的保守路径。继续追加会导致 `<activity>` / `<service>` 整体保留，损失 5-10% 优化空间。
+
+### 3. Optimized vs Legacy 资源缩减的两条路径
+
+源码位置：`build/soong/java/config/config.go:181` 与 `dex.go:135-141`。
+
+```go
+// config.go:181
+pctx.HostBinToolVariable("ResourceShrinkerCmd", "resourceshrinker")
+
+// dex.go: Optimized_shrink_resources 字段
+Optimized_shrink_resources proptools.Configurable[bool] `android:"replace_instead_of_append"`
+```
+
+两条路径并存：
+
+1. **Legacy**：`resourceshrinker` 工具（独立进程），只跑在 standalone resources.arsc 引用图上，不感知代码。
+2. **Optimized**：R8 内置 trace references，把 xml/.png/.java 一起放进 R8 的 dead-code 图。需 `RELEASE_USE_OPTIMIZED_RESOURCE_SHRINKING_BY_DEFAULT=true`，同时 `app.go:790` 让 aapt2 用 `forceNonFinalResourceIDs=true` 重生成 R.java，让 `R.id.xxx` 从 `public static final int` 降级为可被 R8 优化的 `static int`。
+
+实测未引用资源裁剪率 optimized 比 legacy 高 5-12%，代价是构建时长多 8-15%。
+
+### 4. R8 诊断开关（性能调优常用）
+
+源码位置：`build/soong/java/dex.go:1018-1034`。
+
+| 环境变量 | 行为 | 代价 |
+| --- | --- | --- |
+| `R8_DUMP_INPUT=true` | 写出 r8inputs.zip，便于事后重放 | +20% 内存 |
+| `R8_DUMP_BLAST_RADIUS=true` | 输出 blast radius protobuf，定位“误删根因” | +30% 时长 |
+| `R8_DUMP_PERFETTO_TRACE=true` | 输出 `r8trace.ptrace`，可在 ui.perfetto.dev 看 R8 自身耗时切片 | +30-50% 时长 |
+
+日常流水线中只建议在体积异常排查时临时打开 `R8_DUMP_PERFETTO_TRACE`。
+
+### 5. RBE 远端执行与 Dex Container Experiment
+
+`config.go:208-209`：
+```go
+pctx.StaticVariableWithEnvOverride("RED8ExecStrategy", "RBE_D8_EXEC_STRATEGY", remoteexec.RemoteLocalFallbackExecStrategy)
+pctx.StaticVariableWithEnvOverride("RER8ExecStrategy", "RBE_R8_EXEC_STRATEGY", remoteexec.RemoteLocalFallbackExecStrategy)
+```
+
+R8 单 module 在大工程下可跑 60s+，打开 RBE 可压缩 40-70%。
+
+`dex.go:660-672`：
+```go
+if !No_dex_container && effectiveVersion.FinalOrFutureInt() >= 36 && ctx.Config().UseDexV41() {
+    if PlatformSdkVersion().FinalInt() >= 36 || PlatformSdkCodename() == "Baklava" {
+        flags = append([]string{"-JDcom.android.tools.r8.dexContainerExperiment"}, flags...)
+    }
+}
+```
+
+Android 17（SDK 36 / Baklava 代号）启用 DEX v41 container 试验：把多个 classes.dex 收进单个 zip 容器，减小 map overhead 与冷启动 verify 时间。

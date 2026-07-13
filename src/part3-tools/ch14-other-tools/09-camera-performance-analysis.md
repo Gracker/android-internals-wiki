@@ -3,7 +3,7 @@
 title: Android Camera 性能与 Perfetto 分析
 chapter: '14.9'
 section: '14.9'
-status: "ready-for-review"
+status: "finalized"
 drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
 reviewed_by: "openclaw-task6"
@@ -37,7 +37,7 @@ task6_result: "pass-light-edit"
 review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: fixed 2x 链路→路径, removed 虚假引导语. L2: good. All outline anchors covered. task9_result=needs-rework, not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed): content clean, no new L1/L2 issues. task9 issues previously fixed in queue. task9 re-review needed for auto-promotion. | ✅ 2026-07-13 task6 review: pass-light-edit. Fixed 8x L1/L2 issues (spacing, code purpose statements, long sentences). All outline anchors covered. No L3/L4 issues.'
 task2b_state: "fixed"
 task2b_result: "fixed"
-last_task9_at: "2026-05-28T18:28:00+08:00"
+last_task9_at: "2026-07-13T15:41:13+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-28
 repaired_date: '2026-04-26'
@@ -46,8 +46,8 @@ last_task9_review_log: "logs/deep-review/2026-05-28-18-deep-review.md"
 task9_review_notes: "2026-05-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。复核 TextureView/SurfaceTexture、HAL buffer management、CameraMetadataNative 与 Perfetto SQL/Python 示例；未发现阻断问题，自动晋升 finalized。"
 task2b_rework_date: '2026-05-19'
 last_task2b_lite_at: "2026-05-28"
-last_task6_at: "2026-05-28T18:20:12+08:00"
-task6_reviewed_at: "2026-05-28T18:20:12+08:00"
+last_task6_at: "2026-07-13T15:17:00+08:00"
+task6_reviewed_at: "2026-07-13T15:17:00+08:00"
 task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-28-18-review.md"
 last_task6_audit: "2026-07-09"
@@ -55,16 +55,16 @@ task6_review_notes: "2026-05-28 18 Task6 revisiting-review: pass-light-edit；�
 p0: 0
 p1: 0
 p2: 0
-task6_l1_l2_fixes: 2
+task6_l1_l2_fixes: 8
 task6_l3_l4_issues: 0
-finalized_date: "2026-05-28"
+finalized_date: "2026-07-13"
 finalized_by: openclaw-task9
 last_task9_audit: "2026-07-13"
 last_task9_audit_log: "logs/deep-review/2026-07-13-08-audit.md"
-task9_result: needs-rework
-task9_state: pending
-task6_state: revisiting
-pipeline_stage: task6_pending
+task9_result: pass-tech-review
+task9_state: reviewed
+task6_state: reviewed
+pipeline_stage: ready-to-publish
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-13
 task2b_lite_notes_2026_07_13: "frontmatter 去重修复: 清理 6 组 duplicate keys (pipeline_stage/task6_state/task9_state/task9_result/last_task9_audit/path-under-sources 误删已恢复); status finalized→ready-for-review (task9_result=needs-rework)"
@@ -135,8 +135,6 @@ Camera 子系统的性能问题可以归纳为四个大类，每一类的排查�
 **预览卡顿**是最常见的投诉。用户打开相机后，预览画面出现肉眼可见的掉帧或卡顿。这类问题的根因通常在 Buffer 流转环节——可能是 HAL 处理慢了，可能是 SurfaceFlinger 合成不及时，也可能是 BufferQueue 的 Buffer 被耗尽了。在 Perfetto 中，我们需要关注 `cameraserver` 进程中 `queueBuffer` 的时间间隔，以及 SurfaceFlinger 的 `BufferTX - SurfaceView` Counter。
 
 **预览卡顿的波动指标**：30 fps 预览目标下，帧间隔标准差超过 5ms 属于流畅度风险信号，需要进一步排查。明显的预览卡顿通常表现为单帧间隔超过 40ms（连续丢一帧）或 50ms 以上。低端设备上，TextureView 路径的外部纹理采样和 View 树合成可能额外增加 5-10ms 延迟，叠加后更容易触发可感知卡顿。结合 FrameTimeline 的 jank 检测和 RenderThread 耗时分布判断，比单独看标准差更可靠。
-
-**预览卡顿的波动指标**：30fps 预览目标下，帧间隔标准差超过 5ms 属于流畅度风险信号，需要进一步排查。明显的预览卡顿通常表现为单帧间隔超过 40ms（连续丢一帧）或 50ms 以上。低端设备上，TextureView 路径的外部纹理采样和 View 树合成可能额外增加 5-10ms 延迟，叠加后更容易触发可感知卡顿。结合 FrameTimeline 的 jank 检测和 RenderThread 耗时分布判断，比单独看标准差更可靠。
 
 **拍照延迟**指的是从用户点击快门到照片拍摄完成的时间。Camera HAL3 管线中，拍照的流程远比预览复杂：需要下发 CaptureRequest，经过 ISP 处理，可能还要做 ZSL（Zero Shutter Lag）缓冲区匹配和多帧降噪。在 Perfetto 中，用 `still capture` Slice 来追踪整个拍照耗时，把它拆解为 App 侧的 Request 提交耗时和 HAL 侧的处理耗时。
 

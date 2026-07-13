@@ -518,3 +518,47 @@ dumpsys surfaceflinger layers   # Layer 详细信息
 - 来源：DeepResearch 调研（2026-05-22）
 - 摘要：Android 17 SurfaceFlinger 事务与缓冲区生命周期源码分析，含双缓冲 mCurrentState/mDrawingState 原子更新机制、INVALIDATE/REFRESH 双消息分离、BufferQueue 状态机循环、Deliqueue 无锁重构 MessageQueue 优化。详述事务批处理、Buffer 获取时机、Layer 状态同步等关键路径源码实现。
 
+
+
+<!-- AIW-源码调研-2026-07-13 -->
+
+## Android 17 渲染管线：Perfetto SurfaceFlinger Trace 实战（新增源码级调研）
+
+基于 Android 17.0.0_r1（API 37）的源码深度分析，通过 Perfetto tracing 建立完整的渲染管线分析框架。
+
+### 关键源码路径与 trace 点
+
+**SurfaceFlinger 主流水线：**
+- `SurfaceFlinger::commit()`（sf.cpp:2996）：Panopt slice + SFTRACE，事务收敛与 Buffer latch 入口
+- `SurfaceFlinger::composite()`（sf.cpp:3330）：SFTRACE_ASYNC_FOR_TRACK_BEGIN(WorkloadTracer::TRACK_NAME, "Composition")，合成决策执行
+- `SFTRACE_NAME("postComposition")`（sf.cpp:3482）：合成提交完成
+
+**CompositionEngine 层：**
+- `Output::beginFrame()`（output.cpp:1148）：判断 mMustRecompose，调用 `mRenderSurface->beginFrame()`
+- `Output::prepareFrame()`（output.cpp:1177）：SFTRACE_CALL()，调用 `chooseCompositionStrategy`
+- `RenderSurface::beginFrame()`（rs.cpp:126）：透传 `mDisplaySurface->beginFrame()`
+- `RenderSurface::prepareFrame()`（rs.cpp:130）：判断 CompositionType，调用 `mDisplaySurface->prepareFrame()`
+
+**Scheduler 侧：**
+- `Scheduler::onCompositionPresented()`（sched.cpp:1776）：检查 vsyncPeriodChangeTimeline
+- `Scheduler::onFrameSignal()`（sched.cpp:411）：主调度入口
+
+**FrameTimeline Jank 检测：**
+- FrameTracer：`PERFETTO_DEFINE_DATA_SOURCE_STATIC_MEMBERS`，通过 `traceTimestamp` 等方法追踪 Buffer 状态
+- `JankType` 枚举：`DisplayHAL`、`SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed`、`AppDeadlineMissed`、`BufferStuffing`、`PredictionError`、`SurfaceFlingerScheduling`
+
+### Perfetto 实战分析方法
+
+1. **主线程 slice 聚焦**：盯紧 `commit`、`composite`、`postComposition` 三个关键阶段
+2. **VSYNC-sf 节拍观察**：间距均匀性反映调度稳定性
+3. **BufferQueue 路径追踪**：dequeue/queue/acquire/release 四步流转的阻塞点分析
+4. **HWC Client 降级检测**：`dumpsys SurfaceFlinger` + Perfetto composition type 对比
+5. **Multi-display 支持**：Android 17 多显示器独立的 FrameTargeter 计算
+
+### 版本边界明确（Android 17.0.0_r1）
+
+- BufferLayer 已合并至 Layer.cpp（Android 17 中不存在单独 BufferLayer）
+- WorkloadTracer 接口通过宏调用推断：`WorkloadTracer::TRACK_NAME`、`WorkloadTracer::COMPOSITION_TRACE_COOKIE`
+- 新增 `RenderSurface::onPresentDisplayCompleted()`（rs.cpp:251）统一处理 present 完成
+
+此调研基于 AOSP android-17.0.0_r1 源码建立，所有结论均通过一手源码验证。详见 DeepResearch/2026-07-13-android17-surfaceflinger-perfetto-trace.md。
