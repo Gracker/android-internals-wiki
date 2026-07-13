@@ -62,6 +62,9 @@ task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-16
 last_deepseek_polish_at: 2026-06-16
+status: finalized
+task2b_state: fixed
+
 ---
 # SoC 平台差异
 

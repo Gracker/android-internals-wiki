@@ -2,7 +2,7 @@
 title: "Android 16 云端 Profile 与 dexopt 安装优化"
 chapter: "16.6"
 section: "16.6"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-15"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-07-01"
@@ -43,12 +43,12 @@ review_notes: "2026-05-15 Task6：四层质检通过；L1/L2 轻量修复 6 处�
 last_task9_audit: "2026-07-01"
 last_task9_audit_log: "logs/deep-review/2026-07-01-15-audit.md"
 last_task2b_lite_at: "2026-07-13"
-task9_result: needs-rework
-task9_state: pending
+task9_result: pass-tech-review
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed-lite
 task6_state: reviewed
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 last_task9_at: "2026-07-13T17:33:00+08:00"
 last_task9_autofix_at: "2026-07-01"
 last_task9_review_log: "logs/deep-review/2026-07-01-15-audit.md"
@@ -62,6 +62,7 @@ task9_p1_issues: 1
 task9_p2_issues: 0
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-01
+
 ---
 
 # 16.6 Android 16 云端 Profile 与 dexopt 安装优化
