@@ -16,9 +16,9 @@ tags:
   - performance
   - aosp
 pipeline_stage: task6_pending
-task6_state: revising
+task6_state: revisiting
 task9_state: pending
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_reviewed_date: "2026-07-02"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-07-02T05:27:44+08:00"
@@ -27,7 +27,7 @@ last_task9_autofix_at: "2026-07-01"
 last_task9_review_log: "logs/deep-review/2026-07-02-05-deep-review.md"
 last_task9_review_notes: "2026-07-01 Task9 idle audit AUTO-FIX: AOSP android-17.0.0_r1 已公开，MessageQueue 稳定源码目录复核为 LegacyMessageQueue / CombinedMessageQueue / CombinedDeliMessageQueue；将 refs/heads/master 与 android-16.0.0_r1 源码锚点更新到 android-17.0.0_r1，并修正正文中“tag 尚未公开”的过期说明。回到 Task6 复审。 | 2026-06-26 Task9 review: Deep technical review completed. P0=0, P1=0, P2=5, No auto-fix required. Overall technical score: 4.2/5. Eligible for auto-promotion to finalized. | 2026-07-02 05:27 Task9 formal deep-review: pass-tech-review。复核 android-17.0.0_r1 源码锚点与版本边界；P0 0 / P1 0 / P2 0。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 task2b_state: fixed
-task2b_result: fixed-lite
+task2b_result: fixed
 task2b_fixed_at: "2026-06-26T11:40:00+08:00"
 last_task2b_at: "2026-06-26T11:40:00+08:00"
 task6_result: pass-light-edit
@@ -141,6 +141,22 @@ Mainline 的核心动作是把"系统能力更新怎么送到设备"做成独立
 
 沿着这三条路径回头看 Android 17 的运行时变化，很多表述会自然变得准确。比如 generational GC，它是 Android 17 release notes 里明确写出的运行时能力变化，但不等于"Mainline 推送的特性"——是否回推到旧设备，取决于对应 ART 模块版本、设备集成和 Google Play system update 的实际覆盖。Cloud Profiles 同理：它服务于 Play 安装期编译，不属于 ART Mainline 本身。
 
+### Android 16 → Android 17：关键性能跃迁
+
+Android 16（API 36）到 Android 17（API 37）不是常规年度迭代——这是一次系统性能基础设施的大版本升级。关键差异如下，不做泛泛概括。
+
+**运行时层面**：Android 16 的 ART 仍以 Concurrent Copying GC 为主，generational 模式处于实验标记位（`kEnableGenerationalCC` 默认关闭）。Android 17 正式将 Concurrent Mark-Compact（CMC）与 generational GC 合并，young generation 回收改为高频低开销模式，old generation 触发频率相应降低。ART 模块版本 `com.android.art` 随 Android 17 一起交付，代码锚点为 `art/runtime/gc/collector/young_mark-compact.cc`（android-17.0.0_r1）。
+
+**内核与构建链**：Android 16 使用 Kernel 6.6（`android15-6.6` 分支），Android 17 切换到 Kernel 6.12（`android17-6.12` 分支），带来了 EEVDF 调度器、multi-generational LRU page reclaim、以及 MGLRU 默认开启。同时 AutoFDO 从 Android 16 的 opt-in 构建选项变为 Android 17 的系统二进制默认构建参数，所有系统 native binary 在构建期自动注入性能剖面数据。
+
+**Framework 线程模型**：Android 16 所有 App 统一走 legacy `MessageQueue`（单锁链表），无论 targetSdk 是多少。Android 17 在 `core/java/android/os/` 下拆分出 `LegacyMessageQueue/`、`CombinedMessageQueue/`、`CombinedDeliMessageQueue/` 三条实现路径，targetSdk 37+ 的应用通过 `@EnabledAfter(targetSdkVersion = VERSION_CODES.BAKLAVA)` 自动走 lock-free 队列。低于 targetSdk 37 的应用维持 legacy 路径不变。
+
+**内存页与兼容性**：Android 16 的 16KB 页面支持处于开发者预览阶段（Developer Preview 中新增 `DeviceConfig.FLAG_DEVICE_SUPPORTS_16KB_PAGE_SIZE` 标志位），Android 17 将其推向正式交付，ELF segment 对齐要求从 4KB 切换到 16KB 成为 NDK 构建的默认行为。
+
+**Rust 系统服务**：Android 16 的 Rust 系统服务以 virtio 虚拟化服务（`packages/services/Virtualization`）和 keystore2 为主，Android 17 扩大到 binder 相关的 `servicemanager` 修复和新的 `native_bridge` 组件，标志着 Rust 在系统关键路径上不再只做隔离区的辅助逻辑。
+
+把这段差异看完，一个直接的推论是：App 端做性能分析时，不能只看设备上跑的是 Android 16 还是 17。同一台 Android 17 设备上，targetSdk 36 的 App 和 targetSdk 37 的 App 走的是完全不同的 MessageQueue 实现——这比看 Build.VERSION.SDK_INT 更关键。
+
 ## ART 的持续优化方向
 ART 这些年的优化可以沿着三条线来看：编译策略、GC、构建期工具链。
 
@@ -149,11 +165,13 @@ ART 这些年的优化可以沿着三条线来看：编译策略、GC、构建�
 
 这条路继续往前走,就有了 Google Play 参与的 Cloud Profiles 和开发者可控的 Baseline Profiles。官方 Baseline Profiles 文档给出的表述很清楚,Baseline Profiles 可以让关键代码路径从第一次启动开始就避免解释执行和 JIT,很多应用测得的执行速度提升大约在 30% 左右。官方同时强调,发布 Baseline Profile 之后,优化生效会明显快于"只依赖 Cloud Profiles"的情况。它对应前面三条交付方式里的第三条:Play 安装期编译流程,而非 Mainline。
 
-### GC：减少前台停顿
+### GC：从 Concurrent Copying 到 Generational CMC
 
 Dalvik 时代 GC 的问题很集中：STW 时间长、碎片化重、前台线程容易被直接停住。ART 后续通过 Concurrent Copying、并发标记和对象搬移，一直在往"少打断前台"这个方向迭代。
 
-Android 17 release notes 对 generational GC 的描述也保持了这个口径,ART 的 Concurrent Mark-Compact collector 现在支持 generational GC,会更频繁地做低成本的 young generation 回收。官方强调"frequent, low-cost",没有给出放之四海而皆准的暂停时间数字。所以这节只保留机制层判断,不再硬写某个固定毫秒数。更细的 GC 演进可以继续看 §4.8《ART 分代垃圾回收与 GC 暂停优化》。
+Android 16 及之前版本的 ART 主要使用 Concurrent Copying（CC）GC，`art/runtime/gc/collector/concurrent_copying.cc` 对全堆做一遍并发标记和搬移。generational 模式在 Android 16 的源码中已经存在——`art/runtime/gc/collector/young_cc.cc` 和 `kEnableGenerationalCC` 标记位，但默认关闭，属于实验特性。
+
+Android 17 的关键变化有两层。第一，generational GC 正式从实验标记位升级为默认开启的运行时行为。Concurrent Mark-Compact（CMC）collector 接管了 generational 回收通道，young generation 的回收变成高频低开销操作，old generation 的 full GC 触发频率相应降低。第二，CMC 本身在设计上也和 CC 不同——CMC 在标记完成后做对象搬移时更侧重 compact，而不是 CC 的简单 copy。Android 17 release notes 对这套机制的描述口径是"frequent, low-cost" young collection，没有给出放之四海而皆准的暂停时间数字。所以在性能分析时只保留机制层判断，实际暂停时间必须在具体设备和 workload 上实测。更细的 GC 演进可以继续看 §4.8《ART 分代垃圾回收与 GC 暂停优化》。
 
 ### 工具链：R8、D8 与 Startup Profiles
 
@@ -172,7 +190,7 @@ View 系统历史太久,Google 这些年一直在做两件事,减少不必要的
 ### Handler / MessageQueue：legacy 队列和 Android 17 新队列的区别
 MessageQueue 的性能问题,在于"很多生产者在并发入队"和"Looper 必须按消息到期时间有序取出"这两件事被塞进了同一套队列结构里。
 
-在 legacy locked queue 里,这个问题通常表现为单锁竞争。Looper 在 `next()` 里遍历并取出到期消息,生产者在 `enqueueMessage()` 里按 `when` 插入单链表,两边都会碰到同一份队列状态。分析旧实现时,可以说它围绕一把锁序列化访问;源码引用应指向 `MessageQueue` 自身,不能只引用 `Handler.java`。`Handler` 只是暴露 `sendMessage()`、`post()` 这些 API 的封装层,队列实现应该看 `Looper.java` 和 `MessageQueue` 的具体实现文件。
+在 legacy locked queue 里,这个问题通常表现为单锁竞争。Looper 在 `next()` 里遍历并取出到期消息,生产者在 `enqueueMessage()` 里按 `when` 插入单链表,两边都会碰到同一份队列状态。分析旧实现时,可以说它围绕一把锁序列化访问;源码引用应指向 `core/java/android/os/MessageQueue.java`（android-17.0.0_r1）,不能只引用 `Handler.java`。`Handler` 只是暴露 `sendMessage()`、`post()` 这些 API 的封装层,队列实现应该看同版本下的 `core/java/android/os/Looper.java`（驱动 `next()` 取消息）和 `core/java/android/os/MessageQueue.java`（管理消息入队与链表维护）。
 
 到了 Android 17，这个前提就不能再直接套用了。Android 17 release notes 和 behavior changes 都明确写到，targetSdk 37 及以上应用会收到新的 lock-free `android.os.MessageQueue`，官方 DeliQueue 博客也确认了 lock-free 设计方向与性能收益。android-17.0.0_r1 的 `core/java/android/os/` 目录下有三条实现路径：`LegacyMessageQueue/`、`CombinedMessageQueue/`、`CombinedDeliMessageQueue/`。`CombinedMessageQueue` 和 `CombinedDeliMessageQueue` 上的 `@EnabledAfter(targetSdkVersion = android.os.Build.VERSION_CODES.BAKLAVA)` 对应 targetSdk 37+ 的兼容门槛——低于这个 targetSdk 的应用仍然走 legacy 路径。Android 17 相比 android-16.0.0_r1 新增了 `CombinedDeliMessageQueue`，这是 DeliQueue 无锁设计的落地实现。
 
@@ -184,6 +202,8 @@ Binder 线程池和优先级继承的版本演进，社区里一直有简化说�
 先看线程池。AOSP `frameworks/native/libs/binder/ProcessState.cpp`（android-17.0.0_r1 稳定锚点）很早就把默认 worker 上限定义成 `DEFAULT_MAX_BINDER_THREADS = 15`，并通过 `BINDER_SET_MAX_THREADS` 把这个上限交给 driver。也就是说,Binder 线程池从早期就是"driver 按需唤醒或拉起 worker,userspace 负责设置上限"的模型。工程里常说的"16 线程"，大多是把发起调用的线程也口语化算进去了；driver 默认 worker 上限仍是 15。
 
 再看优先级继承。官方 binder IPC 文档写得很明确,binder driver 一直支持 nice priority inheritance。Android 8 借 Treble 引入 `/dev/hwbinder` 域,同时把 real-time priority inheritance 加进 binder driver;到了 Android 10,Stable AIDL 又让满足稳定性要求的 HAL 可以回到 `/dev/binder`。准确的演进线是:早期已有 nice priority inheritance,Android 8 加入 RT inheritance 与 hwbinder 域,Android 10 通过 Stable AIDL 重新整理 binder domain 边界。
+
+优先级继承在 binder driver 里的具体工作方式：发起端线程通过 `ioctl(BINDER_WRITE_READ)` 写入事务时，driver 在 `binder_transaction` 结构里记录下发起端线程的调度策略与优先级（`sender_priority` / `sender_policy`）。当 driver 选中目标端线程处理该事务时，先把目标线程的调度优先级临时提升到发起端的水平，再唤醒它执行。事务处理完毕后目标线程恢复原来的调度参数。优先级继承的粒度和有效期绑定在一次 binder 事务上——前一个事务的高优先级不会泄露到后一个无关事务里。在 Perfetto trace 中观察 binder 事务时，如果看到目标端线程长时间以高优先级的 nice 值运行，可以回头检查该线程是否在处理来自高优先级客户端的重事务。
 
 把这条时间线理清楚之后，再看 Perfetto 里的 Binder track，就不会把线程池耗尽、调度延迟和优先级反转搅在一起了。Binder 的具体机制还可以回看 §1.4《Binder IPC 机制与性能影响》。
 
@@ -217,10 +237,17 @@ Google 在 I/O、Codelab 和官方文档里反复强调的原则并不花哨，�
 
 这些原则看起来像常识，但它们恰好解释了为什么 Google 会同时推动系统层优化和开发者工具链优化：系统层提高平台默认能力，开发者工具要求 App 把这些能力用到位。
 
-## Android Go Edition:面向低资源设备的性能策略
-Android Go Edition 是 Project Svelte 思路的延续版。它把低内存、低存储、低算力设备当成真实目标平台,再反过来重做系统和应用默认配置。
+## 不同设备类型的优化策略差异
 
-这条线的意义在于,它不断提醒我们,好的性能优化应该天然向下兼容。减少常驻内存、延迟初始化、降低后台工作、缩短关键路径,这些策略不会只对低端机有效。相反,低端机场景往往最容易把问题放大,也最容易逼我们看清楚主要性能瓶颈。
+性能优化不能只在旗舰机上做判断——同一个结论换到中端机或低端机上常常失效。按设备层级拆开看，每一层的主约束和优化重心都不一样。
+
+**旗舰机（8-16 GB RAM，旗舰 SoC）**：CPU 和 GPU 算力通常不是主约束，真正限制体验的往往是调度延迟和渲染管线时序。优化重点应放在主线程阻塞分析、Binder 调用链压缩、RenderThread 负载检查这些方向。Macrobenchmark 冷启动在旗舰机上跑出来的数字可能很漂亮，但要警惕"旗舰机数据掩盖了真实问题"——同一组 benchmark 必须在中端机上复现一遍才算数。
+
+**中端机（4-6 GB RAM，中端 SoC）**：内存压力和 CPU 频率波动是中端机最常见的约束。GC 频率和 big cluster 调度延迟对帧率的影响比旗舰机大一个数量级。中端机的优化重心应从"渲染管线精调"转向"内存分配收敛"——检查是否在主线程频繁分配临时对象、是否在启动阶段一次性初始化了大量不急需的 SDK、DEX 布局是否导致冷启动时大量 page fault。Baseline Profiles 在中端机上的收益通常比旗舰机更明显，因为 JIT 在低频核心上运行的解释执行开销更大。
+
+**低端机 / Android Go Edition（≤2 GB RAM）**：低端机的主约束是常驻内存和后台工作的总量。Android Go Edition 对系统服务做了裁剪、对预装软件常驻做了硬约束，但这些系统层优化不会自动解决 App 侧的问题。应用端在低端机上的优化策略可以概括为三条：冷启动只加载首页必需的类和方法（借助 Startup Profiles 排 DEX 布局）；后台线程池大小和优先级必须显式控制，不能依赖系统默认值；大对象分配（Bitmap、大 JSON 解析）必须能做就做、能放后台就放后台，避免在前台触发 GC 同时引发掉帧。
+
+这条线的意义在于提醒一个事实：旗舰机上跑出来的"优化收益不明显"，换到中端和低端机上可能就是"肉眼可见的卡顿消失"。反过来，只对着低端机做极限优化、不验证旗舰机上的调度时序，也可能导致"内存降了但渲染卡了"的结果。
 
 ## Google 内部的性能测试基础设施
 公开信息里能看到的 Google 内部性能基础设施主要分三类。
