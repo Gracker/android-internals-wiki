@@ -4,7 +4,7 @@
 title: "Android 17 (API 37) 性能行为变更与适配方法"
 chapter: 16.5
 section: 16.5
-status: finalized
+status: ready-for-review
 drafted_date: 2026-04-08
 applicable_versions: "Android 17 (API 37)"
 last_verified: 2026-07-12
@@ -38,13 +38,13 @@ last_task9_autofix_at: 2026-07-12
 last_task2b_verifier_at: 2026-05-29T23:25:00+08:00
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-12
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revising
 task6_result: pass-light-edit
 task6_l1_l2_fixes: 9
 task6_l3_l4_issues: 0
 task6_new_rework: false
-task9_state: reviewed
+task9_state: pending
 last_task6_at: "2026-07-12T20:19:00+08:00"
 last_task6_review_log: logs/review/2026-07-12-17H-review.md
 task6_reviewed_date: 2026-07-12

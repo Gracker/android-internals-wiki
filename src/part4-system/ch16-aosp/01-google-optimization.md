@@ -2,7 +2,7 @@
 title: "Google 官方的性能优化思路"
 section: "16.1"
 chapter: "16.1"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-10"
 drafted_by: "openclaw-task2a"
 reviewed_date: 2026-07-02
@@ -15,9 +15,9 @@ tags:
   - android
   - performance
   - aosp
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revising
+task9_state: pending
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-07-02"
 task9_reviewed_by: openclaw-task9
