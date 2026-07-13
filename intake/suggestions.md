@@ -86,3 +86,17 @@
 - **建议**：补充来源链接或改标"社区测试数据"
 
 - **review 日志**：logs/review/2026-07-13-22-review.md
+
+## [Task2B 回炉完成] 16.9 Android 17 SDM 安装编译流程性能 — 2026-07-13 22:54
+
+来源：Task6 Review (priority 90) + Task9 Deep Tech Review (priority 95)
+修复内容：
+- P0 ×8: 删除全部虚构代码（DeviceBasedDexopt/ProfileBasedDexopt/InstallProcessor/BackgroundCompiler/ArtDaemon/FileUtils::OptimizeFileAccess/InstallSessionOptimizer/InstallExecutor/DexoptManager/CompilationRequestOptimizer 等类和方法在 AOSP android-17.0.0_r1 中不存在）
+- P0: 全篇从百科词条式列表（90%列表占比）重写为 Type A 机制原理叙述（~18%列表占比）
+- P0: 性能数据标注"官方宣称+需独立验证"警告，补充具体验证步骤
+- P1: §7-10 空洞内容（60行名词罗列无实质）压缩为实用调试指导（检查SDM状态/故障模式表/强制验证模式）
+- P1: 新增 §6 在 Perfetto 中观测 SDM 编译（track对照表+3个典型场景+SQL查询模板）
+- P1: 补充 SDK 版本与传统 dexopt 关系说明
+- P1: 补充开发者适配建议（5条实操指南）
+- L1: "链路"5处→全部替换
+状态：已回送 Task6 → Task9 复审 (pipeline_stage: task6_pending)
