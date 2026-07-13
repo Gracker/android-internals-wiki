@@ -692,6 +692,51 @@
   ],
   "queue": [
     {
+      "id": "ch14-tools/14.1-as-profiler",
+      "section": "14.1",
+      "section_title": "Android Studio Profiler",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 源码路径错误和版本边界不明确",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "P1",
+          "category": "源码引用不准确",
+          "title": "JVMTI agent 相关源码路径错误",
+          "description": "章节引用 tools/base/profiler/native/perfa/perfa.cc + memory/memory_tracking_env.cc，但这些路径在 android-17.0.0_r1 AOSP 中不存在",
+          "severity": "高 - 直接关系到源码可验证性",
+          "location": "Memory Profiler 实时内存曲线章节",
+          "resolution": "验证正确的 AOSP 路径或明确说明位于 Android Studio 源码树"
+        },
+        {
+          "type": "P1",
+          "category": "源码引用不准确",
+          "title": "Heap dump manager 源码路径错误",
+          "description": "章节引用 heap_dump_manager.cc:34，但该路径在 android-17.0.0_r1 AOSP 中不存在",
+          "severity": "高 - 直接关系到源码可验证性",
+          "location": "Heap Dump（堆快照）章节",
+          "resolution": "验证正确的 AOSP 路径"
+        },
+        {
+          "type": "P2",
+          "category": "版本差异覆盖不足",
+          "title": "Java 方法追踪在 profileable 构建中的版本边界不明确",
+          "description": "章节提到 '[待验证: 依 Android Studio / 平台版本确认]'，但未明确说明 Android Studio 与 Android 平台版本的对应关系",
+          "severity": "中等 - 影响开发者使用决策",
+          "location": "Profileable App 限制章节",
+          "resolution": "补充 Android Studio 版本与 Android 平台版本的对应关系，明确 Java 方法追踪的可用性边界"
+        }
+      ],
+      "added_by": "task9-deep-tech-review-audit",
+      "added_at": "2026-07-14T02:20:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-07-14T02:53:34+08:00",
+      "completed_by": "task2b-main",
+      "completion_reason": "fixed: P1-JVMTI/堆dump源码路径澄清为Android Studio源码树platform/tools/base + P2-Java方法追踪版本边界明确 + 禁用词链路修复 + frontmatter清理"
+    },
+    {
       "id": "ch02-rendering/2.17-gpu-power-dvfs",
       "title": "Android 17 GPU功耗管理策略与DVFS调优机制研究",
       "priority": 80,
