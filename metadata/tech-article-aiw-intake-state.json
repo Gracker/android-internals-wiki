@@ -849,6 +849,78 @@
       "status": "appended",
       "title": "现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch"
     },
+    "source/juejin-android/2026-07-14-76182267-从MVVM到MVI为什么说MVVM的UI状态像网.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "15cd8f176f4319aa",
+      "last_appended": "2026-07-14T05:32:22.401503+08:00",
+      "last_seen": "2026-07-14T05:32:22.401503+08:00",
+      "mtime": 1783973534.832664,
+      "score": 9,
+      "sha256": "d0bb2475efc2a7b9b878c6049d468bb06c17f4f82dc8ec6503526d845dd5e607",
+      "size": 9011,
+      "status": "appended",
+      "title": "从 MVVM 到 MVI：为什么说 MVVM 的 UI 状态像“网”，而 MVI 像“一条线”？在 Android 开发"
+    },
+    "source/juejin-android/2026-07-14-76184335-你可能还不知道ComposePager有多强大.md": {
+      "chapter": "待分类",
+      "entry_id": "d38c8254b50675fe",
+      "last_appended": "2026-07-14T05:32:22.401503+08:00",
+      "last_seen": "2026-07-14T05:32:22.401503+08:00",
+      "mtime": 1783973545.5434222,
+      "score": 8,
+      "sha256": "70d9edeed22d3c725f343607981013a23bd7bcefd6010031cd62833c17ea541a",
+      "size": 24046,
+      "status": "appended",
+      "title": "你可能还不知道 Compose Pager 有多强大从传统的 ViewPager 过渡到 Compose Pager，代"
+    },
+    "source/juejin-android/2026-07-14-76214438-带源码我写了个局域网微信.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "4e3cce001e162013",
+      "last_appended": "2026-07-14T05:32:22.401503+08:00",
+      "last_seen": "2026-07-14T05:32:22.401503+08:00",
+      "mtime": 1783973559.590525,
+      "score": 15,
+      "sha256": "902ebdc7709f348d46ebd94a5b4c38680ca5d09807879ede996f782e0bafca13",
+      "size": 14846,
+      "status": "appended",
+      "title": "【带源码】我写了个局域网微信一款小巧的设备间直连通信应用，在交互与功能层面尽量对齐微信，同时深度挖掘安卓系统底层能力，利"
+    },
+    "source/juejin-android/2026-07-14-76382973-Kotlin官网为什么不再强调协程是轻量级线程.md": {
+      "chapter": "待分类",
+      "entry_id": "2e1a16313094c4b6",
+      "last_appended": "2026-07-14T05:32:22.401503+08:00",
+      "last_seen": "2026-07-14T05:32:22.401503+08:00",
+      "mtime": 1783973544.5784388,
+      "score": 8,
+      "sha256": "02938e9c25bf8a95e2093caac39cd43db5dea9b7b2477c4c8727b2aff121681f",
+      "size": 4621,
+      "status": "appended",
+      "title": "Kotlin 官网为什么不再强调“协程是轻量级线程”了？一、早期的说法：协程 = 轻量级线程 Kotlin 1.1 刚推"
+    },
+    "source/juejin-android/2026-07-14-76388970-为什么Android不用接口做Activity通信.md": {
+      "chapter": "待分类",
+      "entry_id": "c4679e3f9e3ef086",
+      "last_appended": "2026-07-14T05:32:22.401503+08:00",
+      "last_seen": "2026-07-14T05:32:22.401503+08:00",
+      "mtime": 1783973544.7876613,
+      "score": 13,
+      "sha256": "03f08770e9d6f2dd39d8effa42e45a91901313fa842dbca762951018ac8087ee",
+      "size": 6018,
+      "status": "appended",
+      "title": "为什么 Android 不用接口做 Activity 通信？一、一个 iOS 开发者，把我问住了 上周，一个刚从 iO"
+    },
+    "source/juejin-android/2026-07-14-76500740-现代Android官方为什么更推荐Repository暴露suspe.md": {
+      "chapter": "待分类",
+      "entry_id": "68902ce8db2293d6",
+      "last_appended": "2026-07-14T05:32:22.401503+08:00",
+      "last_seen": "2026-07-14T05:32:22.401503+08:00",
+      "mtime": 1783973544.7715976,
+      "score": 11,
+      "sha256": "721a1990d18c21ed2e502009e668a61449286a2d157be4ef103d92d8c7706c45",
+      "size": 13149,
+      "status": "appended",
+      "title": "现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch"
+    },
     "技术文章/技术文章/daily-info.md": {
       "last_seen": "2026-07-02T05:30:57.165861+08:00",
       "mtime": 1782937015.1677003,
@@ -939,24 +1011,24 @@
     }
   },
   "last_report": {
-    "appended": 7,
-    "considered": 9,
-    "cutoff": "2026-07-12T05:25:43.611435+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-13.md",
+    "appended": 6,
+    "considered": 6,
+    "cutoff": "2026-07-13T05:20:25.287644+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-14.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1501,
+    "scanned": 1507,
     "skipped": {
       "existing_link": 0,
-      "low_score": 2,
+      "low_score": 0,
       "max_files": 0,
       "old_unseen": 1401,
       "path": 26,
-      "unchanged": 65
+      "unchanged": 74
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-07-13T05:25:25.287644+08:00",
+  "last_run_at": "2026-07-14T05:32:22.401503+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

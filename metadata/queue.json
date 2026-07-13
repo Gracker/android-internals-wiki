@@ -311,6 +311,46 @@
       "completed_at": "2026-07-14T03:39:24+08:00",
       "completed_by": "task2b-lite",
       "completion_reason": "fixed-lite: 版本基线 android-16 → android-17.0.0_r1 (frontmatter + 6 处正文引用)"
+    },
+    {
+      "section": "2.6",
+      "section_title": "SurfaceFlinger 主线程调度策略（SCHED_FIFO + uclamp + TaskProfile）",
+      "priority": 85,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，目标章节 ch02-rendering/06-surfaceflinger.md 状态为 finalized，建议补充到参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-13-android17-surfaceflinger-thread-scheduling-schedfifo-uclamp.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 SurfaceFlinger 渲染线程调度策略 — SF 主线程 SCHED_FIFO prio=2 + uclamp.min 大核驻留 + EventThread SCHED_FIFO + set_sched_policy SP_FOREGROUND 双通道调度",
+          "suggestion": "判断是否适合补充为章节参考资料或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-14T06:11:37",
+      "status": "pending"
+    },
+    {
+      "section": "8.32",
+      "section_title": "Android 17 启动框架与 ApplicationStartInfo/AppStartInfoTracker",
+      "priority": 82,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，目标章节 §8.32 状态为 deprecated，建议在重写时纳入",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-10-android17-startup-applicationstartinfo-tracker.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读/正文重构",
+          "detail": "Android 17 ApplicationStartInfo 数据契约（12维 START_REASON、3档 STARTUP_STATE、4档 START_TYPE、8个 START_TIMESTAMP）+ AppStartInfoTracker 服务端环形缓冲（14天滚动过期，30分钟落盘）+ addApplicationStartInfoCompletionListener 完成回调 — 原 §8.32 已 deprecated，建议重写时作为核心参考",
+          "suggestion": "原章节 deprecated，建议基于此材料重写 §8.32"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-14T06:11:37",
+      "status": "pending"
     }
   ],
   "items": [
