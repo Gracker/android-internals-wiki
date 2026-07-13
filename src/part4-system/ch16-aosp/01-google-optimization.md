@@ -16,18 +16,19 @@ tags:
   - performance
   - aosp
 pipeline_stage: task6_pending
-task6_state: completed
+task6_state: revisiting
 task9_state: pending
 task9_result: needs-rework
-task9_reviewed_date: "2026-07-02"
+task9_reviewed_date: "2026-07-13"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-07-02T05:27:44+08:00"
-last_task9_audit: "2026-07-01"
+last_task9_at: "2026-07-13T17:33:00+08:00"
+last_task9_audit: "2026-07-13"
 last_task9_autofix_at: "2026-07-01"
-last_task9_review_log: "logs/deep-review/2026-07-02-05-deep-review.md"
-last_task9_review_notes: "2026-07-01 Task9 idle audit AUTO-FIX: AOSP android-17.0.0_r1 已公开，MessageQueue 稳定源码目录复核为 LegacyMessageQueue / CombinedMessageQueue / CombinedDeliMessageQueue；将 refs/heads/master 与 android-16.0.0_r1 源码锚点更新到 android-17.0.0_r1，并修正正文中“tag 尚未公开”的过期说明。回到 Task6 复审。 | 2026-06-26 Task9 review: Deep technical review completed. P0=0, P1=0, P2=5, No auto-fix required. Overall technical score: 4.2/5. Eligible for auto-promotion to finalized. | 2026-07-02 05:27 Task9 formal deep-review: pass-tech-review。复核 android-17.0.0_r1 源码锚点与版本边界；P0 0 / P1 0 / P2 0。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+last_task9_review_log: "logs/deep-review/2026-07-13-17-deep-review.md"
+last_task9_review_notes: "2026-07-13 Task9 deep review 发现 P0/P1 问题：1) CombinedMessageQueue路径不存在，实际为CombinedDeliMessageQueue；2) Binder线程池描述未说明总并发路径。P0 1 / P1 1 / P2 0；不可自动晋升，需 Task6 复审。P0/P1 问题已写入 queue.json，建议优先修复源码路径错误和并发描述不完整问题。"
+last_task6_at: 2026-07-13T17:17:00+08:00
 task2b_state: fixed
-task2b_result: fixed
+task2b_result: fixed-lite
 task2b_fixed_at: "2026-06-26T11:40:00+08:00"
 last_task2b_at: "2026-06-26T11:40:00+08:00"
 task6_result: pass-light-edit
@@ -35,7 +36,7 @@ last_task6_audit: "2026-07-13"
 last_task6_audit_log: "logs/review/2026-06-30-23-audit.md"
 last_task6_at: 2026-07-13T17:17:00+08:00
 task6_review_notes: "2026-07-02 05:06 Task6 re-review (revisiting after Task9 idle-audit auto-fix): pass-light-edit。Task9 idle-audit 将 MessageQueue 源码锚点从 master/android-16 刷新到 android-17.0.0_r1，正文实施正确；无新增 L1/L2 问题。无 B 类回炉项。Task9 result=auto-fixed，送 Task9 正式通过。"
-last_task2b_lite_at: "2026-06-26T11:40:00+08:00"
+last_task2b_lite_at: "2026-07-13"
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/release-notes"
@@ -54,7 +55,6 @@ sources:
   - type: aosp
     path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/LegacyMessageQueue/MessageQueue.java"
   - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedMessageQueue/MessageQueue.java"
   - type: aosp
     path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java"
   - type: aosp
@@ -145,11 +145,11 @@ Mainline 的核心动作是把"系统能力更新怎么送到设备"做成独立
 
 Android 16（API 36）到 Android 17（API 37）不是常规年度迭代——这是一次系统性能基础设施的大版本升级。关键差异如下，不做泛泛概括。
 
-**运行时层面**：Android 16 的 ART 仍以 Concurrent Copying GC 为主，generational 模式处于实验标记位（`kEnableGenerationalCC` 默认关闭）。Android 17 正式将 Concurrent Mark-Compact（CMC）与 generational GC 合并，young generation 回收改为高频低开销模式，old generation 触发频率相应降低。ART 模块版本 `com.android.art` 随 Android 17 一起交付，代码锚点为 `art/runtime/gc/collector/young_mark-compact.cc`（android-17.0.0_r1）。
+**运行时层面**：Android 16 的 ART 仍以 Concurrent Copying GC 为主，generational 模式处于实验标记位（`kEnableGenerationalCC` 默认关闭）。Android 17 正式将 Concurrent Mark-Compact（CMC）与 generational GC 合并，young generation 回收改为高频低开销模式，old generation 触发频率相应降低。ART 模块版本 `com.android.art` 随 Android 17 一起交付，代码锚点为 `art/runtime/gc/collector/mark_compact.cc` 中的 `YoungMarkCompact` 类（android-17.0.0_r1）。
 
 **内核与构建链**：Android 16 使用 Kernel 6.6（`android15-6.6` 分支），Android 17 切换到 Kernel 6.12（`android17-6.12` 分支），带来了 EEVDF 调度器、multi-generational LRU page reclaim、以及 MGLRU 默认开启。同时 AutoFDO 从 Android 16 的 opt-in 构建选项变为 Android 17 的系统二进制默认构建参数，所有系统 native binary 在构建期自动注入性能剖面数据。
 
-**Framework 线程模型**：Android 16 所有 App 统一走 legacy `MessageQueue`（单锁链表），无论 targetSdk 是多少。Android 17 在 `core/java/android/os/` 下拆分出 `LegacyMessageQueue/`、`CombinedMessageQueue/`、`CombinedDeliMessageQueue/` 三条实现路径，targetSdk 37+ 的应用通过 `@EnabledAfter(targetSdkVersion = VERSION_CODES.BAKLAVA)` 自动走 lock-free 队列。低于 targetSdk 37 的应用维持 legacy 路径不变。
+**Framework 线程模型**：Android 16 所有 App 统一走 legacy `MessageQueue`（单锁链表），无论 targetSdk 是多少。Android 17 在 `core/java/android/os/` 下拆分出 `LegacyMessageQueue/` 和 `CombinedDeliMessageQueue/` 两条实现路径，targetSdk 37+ 的应用通过 `@EnabledAfter(targetSdkVersion = VERSION_CODES.BAKLAVA)` 自动走 lock-free 队列。低于 targetSdk 37 的应用维持 legacy 路径不变。
 
 **内存页与兼容性**：Android 16 的 16KB 页面支持处于开发者预览阶段（Developer Preview 中新增 `DeviceConfig.FLAG_DEVICE_SUPPORTS_16KB_PAGE_SIZE` 标志位），Android 17 将其推向正式交付，ELF segment 对齐要求从 4KB 切换到 16KB 成为 NDK 构建的默认行为。
 
@@ -192,14 +192,14 @@ MessageQueue 的性能问题,在于"很多生产者在并发入队"和"Looper �
 
 在 legacy locked queue 里,这个问题通常表现为单锁竞争。Looper 在 `next()` 里遍历并取出到期消息,生产者在 `enqueueMessage()` 里按 `when` 插入单链表,两边都会碰到同一份队列状态。分析旧实现时,可以说它围绕一把锁序列化访问;源码引用应指向 `core/java/android/os/MessageQueue.java`（android-17.0.0_r1）,不能只引用 `Handler.java`。`Handler` 只是暴露 `sendMessage()`、`post()` 这些 API 的封装层,队列实现应该看同版本下的 `core/java/android/os/Looper.java`（驱动 `next()` 取消息）和 `core/java/android/os/MessageQueue.java`（管理消息入队与链表维护）。
 
-到了 Android 17，这个前提就不能再直接套用了。Android 17 release notes 和 behavior changes 都明确写到，targetSdk 37 及以上应用会收到新的 lock-free `android.os.MessageQueue`，官方 DeliQueue 博客也确认了 lock-free 设计方向与性能收益。android-17.0.0_r1 的 `core/java/android/os/` 目录下有三条实现路径：`LegacyMessageQueue/`、`CombinedMessageQueue/`、`CombinedDeliMessageQueue/`。`CombinedMessageQueue` 和 `CombinedDeliMessageQueue` 上的 `@EnabledAfter(targetSdkVersion = android.os.Build.VERSION_CODES.BAKLAVA)` 对应 targetSdk 37+ 的兼容门槛——低于这个 targetSdk 的应用仍然走 legacy 路径。Android 17 相比 android-16.0.0_r1 新增了 `CombinedDeliMessageQueue`，这是 DeliQueue 无锁设计的落地实现。
+到了 Android 17，这个前提就不能再直接套用了。Android 17 release notes 和 behavior changes 都明确写到，targetSdk 37 及以上应用会收到新的 lock-free `android.os.MessageQueue`，官方 DeliQueue 博客也确认了 lock-free 设计方向与性能收益。android-17.0.0_r1 的 `core/java/android/os/` 目录下有两条实现路径：`LegacyMessageQueue/` 和 `CombinedDeliMessageQueue/`。`CombinedDeliMessageQueue` 上的 `@EnabledAfter(targetSdkVersion = android.os.Build.VERSION_CODES.BAKLAVA)` 对应 targetSdk 37+ 的兼容门槛——低于这个 targetSdk 的应用仍然走 legacy 路径。`CombinedDeliMessageQueue` 是 DeliQueue 无锁设计的落地实现。
 
 Google 在 DeliQueue 技术博客里给出的主线也和这个拆分一致,生产者尽量走无锁入队,Looper 再在自己的视角里整理待执行消息。对我们做性能分析来说,这个变化的意义是,不能再看到 `Handler.post()` 就默认假定为"老式单锁链表"。必须先分清设备系统版本和 App 的 targetSdk,再决定该看 legacy locked queue 还是新的 concurrent queue。更细的实现与兼容边界,可以继续看 §1.13《MessageQueue 机制与 DeliQueue 无锁优化》。
 
 ### Binder：线程池与优先级继承的时间线
 Binder 线程池和优先级继承的版本演进，社区里一直有简化说法，比如"Android 8 动态扩展线程池，Android 10 才有优先级继承"。实际情况要更细致一些。
 
-先看线程池。AOSP `frameworks/native/libs/binder/ProcessState.cpp`（android-17.0.0_r1 稳定锚点）很早就把默认 worker 上限定义成 `DEFAULT_MAX_BINDER_THREADS = 15`，并通过 `BINDER_SET_MAX_THREADS` 把这个上限交给 driver。也就是说,Binder 线程池从早期就是"driver 按需唤醒或拉起 worker,userspace 负责设置上限"的模型。工程里常说的"16 线程"，大多是把发起调用的线程也口语化算进去了；driver 默认 worker 上限仍是 15。
+先看线程池。AOSP `frameworks/native/libs/binder/ProcessState.cpp`（android-17.0.0_r1 稳定锚点）很早就把默认 worker 上限定义成 `DEFAULT_MAX_BINDER_THREADS = 15`，并通过 `BINDER_SET_MAX_THREADS` 把这个上限交给 driver。也就是说,Binder 线程池从早期就是"driver 按需唤醒或拉起 worker,userspace 负责设置上限"的模型。工程里常说的"16 线程"，大多是把发起调用的线程也口语化算进去了；driver 默认 worker 上限仍是 15；加上发起调用的线程本身，同一时刻最多有 16 条并发路径参与同一次 Binder 事务 round-trip。
 
 再看优先级继承。官方 binder IPC 文档写得很明确,binder driver 一直支持 nice priority inheritance。Android 8 借 Treble 引入 `/dev/hwbinder` 域,同时把 real-time priority inheritance 加进 binder driver;到了 Android 10,Stable AIDL 又让满足稳定性要求的 HAL 可以回到 `/dev/binder`。准确的演进线是:早期已有 nice priority inheritance,Android 8 加入 RT inheritance 与 hwbinder 域,Android 10 通过 Stable AIDL 重新整理 binder domain 边界。
 
@@ -271,7 +271,6 @@ Baseline Profiles 解决的是"关键代码路径尽早编译成机器码",但�
   - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java`(VSync 驱动的帧调度入口)
   - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Looper.java`(Looper 驱动 MessageQueue)
   - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/LegacyMessageQueue/MessageQueue.java`(legacy MessageQueue 实现)
-  - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedMessageQueue/MessageQueue.java`(Android 17 MessageQueue 兼容门槛与组合实现)
   - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java`(Android 17 DeliQueue 实现)
   - `https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/ProcessState.cpp`(`DEFAULT_MAX_BINDER_THREADS` / `BINDER_SET_MAX_THREADS`)
   - `https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp`(完整调用链：`syncNextTransaction()` → `mergeWithNextTransaction()` → `applyPendingTransactions()`)

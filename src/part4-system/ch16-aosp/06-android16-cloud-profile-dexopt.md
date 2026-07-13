@@ -27,7 +27,7 @@ sources:
   - type: aosp
     path: "art/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/content/pm/dex/DexMetadataHelper.java"
+    path: "frameworks/base/core/java/android/content/pm/DexMetadataHelper.java"
   - type: material
     path: "intake/research-feeds/2026-04-07-11-android16-cloud-compilation-baseline-startup-profiles.md"
   - type: blog
@@ -42,18 +42,20 @@ last_task6_review_log: "logs/review/2026-06-29-20-review.md"
 review_notes: "2026-05-15 Task6：四层质检通过；L1/L2 轻量修复 6 处（frontmatter 元数据、结构性元叙述、标题与结尾措辞）；无 L3/L4 回炉项，送 Task9 技术复审。 | 2026-06-29 Task6 复审（Task9 auto-fix 后）：pass-light-edit。L1/L2 全部通过；禁用词零命中；SDM 证据边界写法清晰。Task9 auto-fix 涉及的源码锚点重锚（android-16→17.0.0_r1）写作质量合格。无 B 类回炉项，送 Task9 确认。"
 last_task9_audit: "2026-07-01"
 last_task9_audit_log: "logs/deep-review/2026-07-01-15-audit.md"
-last_task2b_lite_at: "2026-06-29"
-task9_result: auto-fixed
+last_task2b_lite_at: "2026-07-13"
+task9_result: needs-rework
 task9_state: pending
 task2b_state: fixed
-task6_state: revising
+task2b_result: fixed-lite
+task6_state: revisiting
 pipeline_stage: task6_pending
-last_task9_at: "2026-07-01T15:29:13+08:00"
+last_task9_at: "2026-07-13T17:33:00+08:00"
 last_task9_autofix_at: "2026-07-01"
 last_task9_review_log: "logs/deep-review/2026-07-01-15-audit.md"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-01"
-task9_review_notes: "2026-06-29 Task9 auto-fix: 将 SDM 产物管理源码锚点从 android-16.0.0_r1 重锚到 android-17.0.0_r1；无新增 P0/P1。 | 2026-06-29 Task9 confirmation: pass-tech-review。P0 0 / P1 0 / P2 0；复核 SDM 产物管理与 cloud dexopt artifacts 清理锚点，Play 分发侧边界仍按待验证处理；未发现新 P0/P1。 Task6 已通过且 queue 无 pending，自动晋升 finalized。详见 logs/deep-review/2026-06-29-20-deep-review.md。 | 2026-07-01 Task9 闲时抽检 AUTO-FIX：Android 17 主线源码中 `.dm` 安装校验不做 manifest.json 包名/versionCode 绑定；已改为 DexMetadataHelper + ArtManagedInstallFileHelper 的可核对边界。P0 1 / P1 0 / P2 0；回到 Task6 复审。"
+task9_review_notes: "2026-07-13 Task9 deep review 发现 P0/P1 问题：1) DexMetadataHelper路径错误，已移除dex子目录；2) ArtManagerLocal.deleteDexoptArtifacts()方法已重构。P0 1 / P1 1 / P2 0；不可自动晋升，需 Task6 复审。P0/P1 问题已写入 queue.json，建议优先修复源码路径错误和方法引用过时问题。"
+last_task6_at: 2026-07-13T17:17:00+08:00
 task6_reviewed_date: "2026-06-29"
 task9_p0_issues: 1
 task9_p1_issues: 0
@@ -100,7 +102,7 @@ Baseline Profile 面向 Day-0：应用还没有在这台设备上跑过，也能
 
 ## `.dm` 是 Profile 进入安装路径的外壳
 
-Dex Metadata 文件使用 `.dm` 后缀，和目标 APK 按文件名配对。AOSP `frameworks/base/core/java/android/content/pm/dex/DexMetadataHelper.java` 里的配对规则很明确：`base.apk` 对应 `base.dm`；安装器不支持单独提交一个没有 APK 配对的 `.dm` 文件。Android 17 的 ART-managed install files 校验也保持这个边界：`ArtManagedInstallFileHelper.validateDmFile()` 只检查 `.dm` 文件名能对应到同目录 APK；framework 侧 `validateDexMetadataFile()` 只验证 `.dm` 能作为 ZIP 打开，不能把包名 / versionCode 级 manifest 绑定当成 Android 17 主线结论。
+Dex Metadata 文件使用 `.dm` 后缀，和目标 APK 按文件名配对。AOSP `frameworks/base/core/java/android/content/pm/DexMetadataHelper.java` 里的配对规则很明确：`base.apk` 对应 `base.dm`；安装器不支持单独提交一个没有 APK 配对的 `.dm` 文件。Android 17 的 ART-managed install files 校验也保持这个边界：`ArtManagedInstallFileHelper.validateDmFile()` 只检查 `.dm` 文件名能对应到同目录 APK；framework 侧 `validateDexMetadataFile()` 只验证 `.dm` 能作为 ZIP 打开，不能把包名 / versionCode 级 manifest 绑定当成 Android 17 主线结论。
 
 ART Service 侧还会继续解析 `.dm` 的内容。`art/libartservice/service/java/com/android/server/art/DexMetadataHelper.java` 会读取 `config.pb`，并根据 ZIP 里的 profile entry、VDEX entry 判断类型：只有 profile、只有 VDEX，或 profile + VDEX。这个设计解释了为什么 `.dm` 不能简单理解成“Baseline Profile 文件”：它是一个容器，profile 只是其中一种可携带内容。
 
