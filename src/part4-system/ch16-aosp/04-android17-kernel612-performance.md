@@ -2,22 +2,22 @@
 title: "Android 17 + Kernel 6.12 系统级性能优化"
 section: "16.4"
 chapter: "16.4"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 reviewed_date: 2026-07-09
 reviewed_by: openclaw-task6
 task6_review_date: "2026-06-16"
 task6_result: pass-light-edit
-task9_state: "pending"
-task9_result: "auto-fixed"
-last_task9_at: "2026-07-09T05:56:16+08:00"
+task9_state: reviewed
+task9_result: pass-tech-review
+last_task9_at: "2026-07-13T19:23:00+08:00"
 task9_reviewed_date: "2026-07-09"
 task9_reviewed_by: "openclaw-task9"
 task9_review_notes: "2026-07-09 05:56 Task9 deep-review: auto-fixed P0 1 (AutoFDO 官方博客引用 URL 404 -> 编码后正确地址); P1 0 / P2 1; 已写入 suggestions,回到 Task6 复审。"
 last_task9_audit: 2026-07-09
 last_task9_audit_at: "2026-07-09T03:26:14+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-09-03-audit.md"
+last_task9_review_log: "logs/deep-review/2026-07-13-19-deep-review.md"
 last_task9_audit_result: auto-fixed-p0-source-anchor-p1-version-drift
 task9_audit_notes: "2026-07-09 Task9 idle audit: AUTO-FIX P0 1 / P1 1; 修正 DeliQueue Android 17 tag 源码锚点为 CombinedMessageQueue/MessageQueue.java,同步 android17-6.18 Makefile 6.18.24 与 AFDO profile 6.18.21 边界,回到 Task6 复审。"
 last_task2b_at: "2026-06-16T08:51:39+08:00"
@@ -27,6 +27,7 @@ task6_review_notes: "2026-07-13 Task6 revisiting review: pass-light-edit。修�
 last_task2b_verifier_at: "2026-07-09T03:31:26+08:00"
 task2b_verifier_notes: "2026-07-09 Task2B Verifier: status finalized→ready-for-review; Task9 idle audit auto-fixed (P0 1/P1 1), pipeline task6_pending + task6_state revisiting correct, status was stale finalized."
 last_task6_audit: "2026-07-13"
+pipeline_stage: ready-to-publish
 last_task6_audit_log: "logs/review/2026-05-24-23-audit.md"
 last_task6_audit_notes: "idle audit: 补充缺失 outline 大纲;L1 禁用词正文未命中;frontmatter 完整;outline 锚点覆盖 9/9;无回炉项。"
 applicable_versions: "Android 17 (API 37)"
@@ -59,6 +60,7 @@ task2b_fixed_by: "task2b-main"
 pipeline_stage: "task6_pending"
 task6_state: completed
 task2b_verification_note: "2026-06-16 验证 android17-6.18 gki/aarch64/afdo/README.md 原文，正文 AutoFDO benchmark 数据准确。清除版本演进表 [需确认] 标注，补充 Binder benchmark 多次运行最佳结果取值限定。"
+
 ---
 
 # 16.4 Android 17 + Kernel 6.12 系统级性能优化

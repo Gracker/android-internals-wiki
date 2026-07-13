@@ -9,8 +9,8 @@ last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfet
 tags: [performance, methodology, perfetto, profiling, optimization, android]
 task9_result: needs-rework
 task6_result: pass-light-edit
-task6_state: revising
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 pipeline_stage: task6_pending
 task2b_state: fixed
 last_task6_at: 2026-07-04T19:12:25+08:00
@@ -45,6 +45,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-05
 task2b_lite_notes: "2026-07-04 Task2B Lite (07:35轮): 修正 VSync 偏移源码引用(VSyncTracker.cpp单文件→VSyncDispatch/VSyncModulator/VSyncTracker三组件协作); 补充 5W2H 与工具选择的原理桥接段落(section 2.2)。P95 from deep-review 2026-07-04-07. | 2026-07-04 Task2B Lite: 修正 Perfetto 源码路径前缀缺失（src/perfetto_cmd/perfetto_cmd.cc → external/perfetto/src/perfetto_cmd/perfetto_cmd.cc; src/traced/service/service.cc → external/perfetto/src/traced/service/service.cc）。P1 from deep-review 2026-07-04-00."
 task2b_main_notes: "2026-07-04 Task2B 主修复：P0-删除不存在的debug.perfetto.enabled属性修正DeviceConfig描述；P1-补充heapprofd构建类型说明/SQL验证说明/案例数据免责声明；P2-新增Android14+隐私限制节(3.3)+跨厂商Perfetto差异节(3.4)+FrameRateOverrides与WindowManager交互+VSync offset源码锚点"
+
 ---
 
 # Android 性能优化研究方法论
