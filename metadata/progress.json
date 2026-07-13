@@ -560,6 +560,11 @@
       "task6_result": "pass-light-edit",
       "task6_reviewed_date": "2026-07-12",
       "last_task6_at": "2026-07-12T01:06:00+08:00"
+    },
+    "14.9": {
+      "last_task2b_at": "2026-07-13T14:53:11+08:00",
+      "task2b_result": "fixed",
+      "pipeline_stage": "task6_pending"
     }
   },
   "task2a": {

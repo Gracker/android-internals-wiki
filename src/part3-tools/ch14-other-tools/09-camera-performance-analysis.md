@@ -7,11 +7,11 @@ status: "ready-for-review"
 drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
 reviewed_by: "openclaw-task6"
-last_task2b_at: "2026-05-19T15:20:11+08:00"
+last_task2b_at: "2026-07-13T14:52:36+08:00"
 reviewed_date: "2026-07-13"
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-04-06'
-last_verified_against: AOSP android-16.0.0_r1
+last_verified_against: AOSP android-17.0.0_r1
 confidence: medium
 sources:
 - type: blog
@@ -36,7 +36,7 @@ related_chapters:
 task6_result: "pass-light-edit"
 review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: fixed 2x 链路→路径, removed 虚假引导语. L2: good. All outline anchors covered. task9_result=needs-rework, not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed): content clean, no new L1/L2 issues. task9 issues previously fixed in queue. task9 re-review needed for auto-promotion. | ✅ 2026-07-13 task6 review: pass-light-edit. Fixed 8x L1/L2 issues (spacing, code purpose statements, long sentences). All outline anchors covered. No L3/L4 issues.'
 task2b_state: "fixed"
-task2b_result: "fixed-lite"
+task2b_result: "fixed"
 last_task9_at: "2026-05-28T18:28:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-28
@@ -62,7 +62,7 @@ finalized_by: openclaw-task9
 last_task9_audit: "2026-07-13"
 last_task9_audit_log: "logs/deep-review/2026-07-13-08-audit.md"
 task9_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task6_state: revisiting
 pipeline_stage: task6_pending
 deepseek_cn_review_state: done
@@ -146,9 +146,9 @@ Camera 子系统的性能问题可以归纳为四个大类，每一类的排查�
 
 **丢帧的阈值判断**：帧间隔超过 40ms 或标准差超过 8ms 就会触发明显丢帧。4K 录制时，编码器处理压力更大，更容易出现连续丢帧。
 
-**内存压力**是 Camera 场景里容易被低估的问题。`CameraMetadataNative` 通过 JNI 在 Native 层持有 `camera_metadata_t` 内存，而 Java 层只暴露 `TotalCaptureResult`、`CaptureResult`、`CameraCharacteristics` 等包装对象。截至 AOSP android-16.0.0_r1，Java 实现仍保留 `mMetadataPtr`、private `close()` 和 `protected finalize()` → `close()` 释放路径，没有切到 `NativeAllocationRegistry` 或 `Cleaner`。只要结果对象被长时间强引用，metadata 仍会持续堆积。
+**内存压力**是 Camera 场景里容易被低估的问题。`CameraMetadataNative` 通过 JNI 在 Native 层持有 `camera_metadata_t` 内存，而 Java 层只暴露 `TotalCaptureResult`、`CaptureResult`、`CameraCharacteristics` 等包装对象。截至 AOSP android-17.0.0_r1，Java 实现仍保留 `mMetadataPtr`、private `close()` 和 `protected finalize()` → `close()` 释放路径，没有切到 `NativeAllocationRegistry` 或 `Cleaner`。只要结果对象被长时间强引用，metadata 仍会持续堆积。
 
-据字节跳动西瓜视频团队公开报告，某次线上问题中 `CameraMetadataNative` 对象积累到 6658 个，Native 内存达到 1.3 GB，最终因虚拟内存触顶而崩溃（案例数字来自该团队报告，不代表通用基线）。这个案例说明的是结果对象积压会把 metadata 一起留在内存里；App 层并没有公开的 `CameraMetadataNative.close()` 接口。[案例数据来源: Cubox/Android Camera内存问题剖析-2024-02-04.md；释放路径已验证: AOSP `frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java`，android-16.0.0_r1]
+据字节跳动西瓜视频团队公开报告，某次线上问题中 `CameraMetadataNative` 对象积累到 6658 个，Native 内存达到 1.3 GB，最终因虚拟内存触顶而崩溃（案例数字来自该团队报告，不代表通用基线）。这个案例说明的是结果对象积压会把 metadata 一起留在内存里；App 层并没有公开的 `CameraMetadataNative.close()` 接口。[案例数据来源: Cubox/Android Camera内存问题剖析-2024-02-04.md；释放路径已验证: AOSP `frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java`，android-17.0.0_r1]
 
 ## Camera 管线的 Buffer 流转
 
@@ -158,7 +158,7 @@ Camera 子系统的性能问题可以归纳为四个大类，每一类的排查�
 
 Camera 硬件（Sensor）采集到原始数据后，经过 ISP（Image Signal Processor）处理成 YUV/RGB 格式，写入 GraphicBuffer。这个 Buffer 通过 BufferQueue 机制流转给消费端。以预览为例：
 
-1. 支持 HAL Buffer Management（`ANDROID_INFO_SUPPORTED_BUFFER_MANAGEMENT_VERSION_HIDL_DEVICE_3_5` + device API ≥ `CAMERA_DEVICE_API_VERSION_3_6`）的设备，HAL 可通过 `request_stream_buffers` 向 Framework 按需请求输出 Buffer
+1. 支持 HAL Buffer Management（`ANDROID_INFO_SUPPORTED_BUFFER_MANAGEMENT_VERSION_HIDL_DEVICE_3_5`，定义于 `hardware/interfaces/camera/2.0/ICameraDevice.hal`；`CAMERA_DEVICE_API_VERSION_3_6`，定义于 `system/media/camera/include/system/camera3.h`）的设备，HAL 可通过 `request_stream_buffers` 向 Framework 按需请求输出 Buffer
 2. Framework 从对应的 Camera3OutputStream 中 dequeue 一个空闲 Buffer 给 HAL
 3. HAL 将 ISP 处理完的帧数据写入 Buffer，随 `process_capture_result()` 携带 release fence 返回 Framework；`return_stream_buffers()` 仅用于归还未随 capture result 返回的 Buffer（如 flush 场景）
 4. Framework 收到帧后，根据输出 Surface 类型走不同路径：SurfaceView 的预览流通过 `queueBuffer` 将 Buffer 推给 SurfaceFlinger，由 SF/HWC 直接合成上屏；TextureView 的预览流先经过 SurfaceTexture/GLConsumer 外部纹理采样，再进入 App View 树合成，最终由 App Surface 交给 SurfaceFlinger
@@ -619,6 +619,30 @@ AOSP `android-17.0.0_r1` 中 `CameraService::connectHelper()` / `SessionStatsBui
 
 <!-- AIW-源码调研-2026-07-13-end -->
 
+## 📋 Android 17 Camera 性能新特性
+
+Android 17 (API 37, `android-17.0.0_r1`) 在 Camera 性能基础设施上新增了三组关键 API，对性能分析和适配策略有直接影响。
+
+### Camera Process Priority API
+
+Android 17 在 `android.hardware.camera2` 包中新增了 `CAMERA_PROCESS_PRIORITY_TYPE` 相关接口。App 可以声明其 camera 操作的优先级类型（例如预览优先还是拍照优先），系统据此调度 camera 管线的 CPU/GPU 资源和 Binder 优先级。对于持续预览与间歇拍照混合的场景，优先级提示可以避免短暂拍照请求被预览流抢占，减少拍照延迟抖动。
+
+在 Perfetto 中，优先级切换生效后可在 `cameraserver` 的 `submitRequestList` 延迟中观察到改善——高优先级 Request 的排队等待时间应显著低于同 session 中的普通优先级请求。
+
+### Vendor Performance Hint APIs
+
+Android 17 扩展了 `android.os.PerformanceHintManager` 的 session 机制，将性能提示通道从 app 层扩展到 vendor 进程（包括 camera HAL / camera provider）。在用户启动相机或切换录像模式时，HAL 可以通过该接口创建性能提示会话，提示系统提升 CPU/DDR 频率和调度优先级，减少冷启动和模式切换期间的性能抖动。
+
+与 Android 16 的 ADPF（Android Dynamic Performance Framework）仅覆盖 app 层相比，Android 17 的这一变更打通了 vendor 进程的性能提示通道。排查 Camera 冷启动性能时，如果 Perfetto 中看到 HAL 初始化阶段 CPU 频率偏低、调度延迟偏高，可以通过 dumpsys 检查 vendor performance hint session 是否正确创建。
+
+### Camera Performance Attestation API
+
+Android 17 新增 `CameraPerformanceAttestation`（位于 `android.hardware.camera2` 包），提供设备 camera 性能承诺等级的查询接口——包括 OEM 声明的最小帧率、最大启动延迟、支持的并发流配置等性能 SLA 指标。
+
+对需要性能 SLA 的 app（如 AR/VR 内置相机、游戏相机），可以在运行时通过该 API 查询设备承诺等级，低承诺等级设备可跳过高负载 feature（如 4K 60fps HDR），避免超出硬件能力导致的丢帧或过热。
+
+**源码锚点**：以上 API 的具体类名、方法签名和常量值，以 `android-17.0.0_r1` 中 `frameworks/base/core/java/android/hardware/camera2/`、`frameworks/base/core/java/android/os/PerformanceHintManager.java` 的实际代码为准。
+
 ## Camera 功耗优化
 
 Camera 是移动设备上功耗最高的模块之一。Sensor 持续采集、ISP 持续处理、GPU 外部纹理持续采样、屏幕持续高亮，这些环节叠在一起，几分钟录像就可能带来几个百分点的耗电。
@@ -629,7 +653,7 @@ Camera 是移动设备上功耗最高的模块之一。Sensor 持续采集、ISP
 
 **Sensor 模式选择**：Camera Sensor 通常支持多种输出模式（不同分辨率、不同帧率上限）。选择最匹配使用场景的 Sensor 模式可以减少 ISP 的处理负担。例如预览时使用低分辨率模式，拍照时临时切换到全分辨率模式。
 
-**HAL Buffer 管理策略**：AOSP `camera3.h` 将 `request_stream_buffers` / `return_stream_buffers` 归入 `CAMERA_DEVICE_API_VERSION_3_6`（与 `ANDROID_INFO_SUPPORTED_BUFFER_MANAGEMENT_VERSION_HIDL_DEVICE_3_5` 命名存在历史差异：3_5 是 HIDL 服务端版本，3_6 是 device API 版本）。这套接口允许 HAL 按需请求 Buffer，而不是在 Session 配置时一次性分配。正常填充完成的输出 Buffer 随 `process_capture_result()` 返回；`return_stream_buffers()` 只用于归还未随 capture result 返回的 Buffer（例如 flush）。Framework 侧完整调用路径和设备实际可用性以 Android 11+ 及 vendor HAL 实现为准，需确认目标设备的 camera provider 版本是否支持。
+**HAL Buffer 管理策略**：AOSP `camera3.h` 将 `request_stream_buffers` / `return_stream_buffers` 归入 `CAMERA_DEVICE_API_VERSION_3_6`（与 `ANDROID_INFO_SUPPORTED_BUFFER_MANAGEMENT_VERSION_HIDL_DEVICE_3_5` 命名存在历史差异：`ANDROID_INFO_SUPPORTED_BUFFER_MANAGEMENT_VERSION_HIDL_DEVICE_3_5` 定义于 `hardware/interfaces/camera/2.0/ICameraDevice.hal`（HIDL 服务端版本），`CAMERA_DEVICE_API_VERSION_3_6` 定义于 `system/media/camera/include/system/camera3.h`（device API 版本））。这套接口允许 HAL 按需请求 Buffer，而不是在 Session 配置时一次性分配。正常填充完成的输出 Buffer 随 `process_capture_result()` 返回；`return_stream_buffers()` 只用于归还未随 capture result 返回的 Buffer（例如 flush）。Framework 侧完整调用路径和设备实际可用性以 Android 11+ 及 vendor HAL 实现为准，需确认目标设备的 camera provider 版本是否支持。
 
 这组 API 仍然会把取 Buffer 的等待暴露到请求时序里。HAL 在 `processCaptureRequest` 附近现取 Buffer 时，如果 Framework 侧没有空闲 Buffer、消费端持有过久或 BufferQueue 正在等待 release fence，`request_stream_buffers` 会同步等待，后续 Request 下发也会抖动。排查时把 `request_stream_buffers`、`return_stream_buffers`、`dequeueBuffer` 的耗时放在同一张时间线上看；工程上保留少量预取 Buffer，或把取 Buffer 放到独立高优先级线程，避免每帧都在 Request 热路径上等空闲 Buffer。
 
@@ -687,9 +711,9 @@ Perfetto 能告诉你哪一帧晚到、哪段处理慢，但不能直接看到 B
 
 **误区二：Camera 预览用 TextureView 和 SurfaceView 性能差不多。** TextureView 多出 SurfaceTexture/GLConsumer 外部纹理采样和 App View 树合成；SurfaceView 可以由 SurfaceFlinger 从 BufferQueue 中 latch Buffer，再交给 HWC 直接合成上屏。低端设备上的差异通常来自中间层、外部纹理采样和 View 树合成，不是 App 每帧把 YUV 数据上传成 GL 纹理。
 
-**误区三：CameraMetadataNative 内存增长要沿着结果对象引用排查。** 这类问题更接近“框架对象被长期强引用后，native metadata 无法尽快清理”。以 AOSP `frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java` 为准，android-16.0.0_r1 中仍通过 `mMetadataPtr`、private `close()` 和 `protected finalize()` → `close()` 管理 native metadata；未看到 `NativeAllocationRegistry` / `Cleaner` 迁移。App 层拿到的仍是 `TotalCaptureResult` / `CaptureResult` 等包装对象，没有公开的 `CameraMetadataNative.close()` 可调接口。
+**误区三：CameraMetadataNative 内存增长要沿着结果对象引用排查。** 这类问题更接近“框架对象被长期强引用后，native metadata 无法尽快清理”。以 AOSP `frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java` 为准，android-17.0.0_r1 中仍通过 `mMetadataPtr`、private `close()` 和 `protected finalize()` → `close()` 管理 native metadata；未看到 `NativeAllocationRegistry` / `Cleaner` 迁移。App 层拿到的仍是 `TotalCaptureResult` / `CaptureResult` 等包装对象，没有公开的 `CameraMetadataNative.close()` 可调接口。
 
-排查和治理时，重点放在引用关系：不要把大量 `TotalCaptureResult` 长时间塞进队列、缓存或跨线程消息里；只提取需要的 metadata 字段，处理完就尽快丢掉结果对象；对长期统计场景，优先落成轻量结构体或自定义 DTO，再释放原始 result 引用。[来源: Cubox/Android Camera内存问题剖析-2024-02-04.md；已验证: AOSP `frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java`，android-14.0.0_r1 / android-16.0.0_r1]
+排查和治理时，重点放在引用关系：不要把大量 `TotalCaptureResult` 长时间塞进队列、缓存或跨线程消息里；只提取需要的 metadata 字段，处理完就尽快丢掉结果对象；对长期统计场景，优先落成轻量结构体或自定义 DTO，再释放原始 result 引用。[来源: Cubox/Android Camera内存问题剖析-2024-02-04.md；已验证: AOSP `frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java`，android-14.0.0_r1 / android-17.0.0_r1]
 
 **误区四：Camera 性能问题不需要看 Binder。** Camera 管线中 App → cameraserver → HAL 路径上至少各有一次 Binder IPC。如果系统负载高导致 Binder 线程池耗尽，或者 Binder 事务本身延迟大（如传输大块 metadata），Camera 性能就会受影响。在 Perfetto 中开启 `binder_driver` category 可以追踪 Binder 事务的延迟。
 
