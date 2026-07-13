@@ -4,19 +4,19 @@ title: "Android 17 SDM 安装编译链路性能"
 chapter: "16.9"
 status: ready-for-review
 last_task2b_lite_at: "2026-06-29"
-task6_result: pass-light-edit
+task6_result: needs-rework
 reviewed_by: openclaw-task6
-reviewed_date: "2026-06-29"
-last_task6_at: "2026-06-30T05:09:02+08:00"
+reviewed_date: "2026-07-13"
+last_task6_at: "2026-07-13T21:11:36+08:00"
 task9_result: needs-rework
 task9_state: pending
 last_task9_at: "2026-07-13T19:23:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-13"
-task2b_result: fixed
-task2b_state: fixed
-task6_state: revisiting
-pipeline_stage: task6_pending
+task2b_result: needs-rework
+task2b_state: pending
+task6_state: reviewed
+pipeline_stage: task2b_pending
 last_task2b_at: "2026-07-13T20:53:00+08:00"
 task9_review_notes: "2026-07-13 Task9 deep review 发现 P0/P1 问题；2026-07-13 Task2B 回炉修复：P0-DexMetadataHelper 源码锚点补全至 line 44-55(含 PROPERTY_DM_JSON_MANIFEST_REQUIRED / PROPERTY_DM_FSVERITY_REQUIRED 常量定义)+P1-性能数据验证方法补充+P1-SDM 版本演进对比(Android 14→17)。已回送 Task6 复审。"
 review_type: task9-deep-tech-review
@@ -60,7 +60,7 @@ created_date: "2026-06-11"
 
 ## 概述
 
-Android 17 引入了显著的安装性能优化机制，主要围绕 SDM (Staged Dalvik Compilation) 架构展开。本章深入解析 Android 17 中的安装编译链路优化，涵盖云端编译优化、预编译优化、设备端编译优化等多个维度，帮助开发者充分利用 Android 17 的安装性能特性。
+Android 17 引入了显著的安装性能优化机制，主要围绕 SDM (Staged Dalvik Compilation) 架构展开。本章深入解析 Android 17 中的安装编译流程优化，涵盖云端编译优化、预编译优化、设备端编译优化等多个维度，帮助开发者充分利用 Android 17 的安装性能特性。
 
 ## 1. SDM 架构概览
 
@@ -86,7 +86,7 @@ SDM (Staged Dalvik Compilation) 是 Android 17 引入的新编译架构，它将
 
 ### 1.3 SDM 机制的版本演进
 
-SDM 架构不是 Android 17 一次性引入的，而是在多个版本中逐步落地的。以下梳理各版本的关键变化：
+SDM 架构不是 Android 17 一次性引入的，而是在多个版本中逐步引入的。以下梳理各版本的关键变化：
 
 | 版本 | API | SDM 相关变化 | `.dm` 状态 | `.sdm` 状态 |
 |------|-----|-------------|-----------|-----------|
@@ -99,7 +99,7 @@ SDM 架构不是 Android 17 一次性引入的，而是在多个版本中逐步�
 
 关键差异点：
 - **Android 14→15**：ART Service 接管了 dexopt 调度权，从 `installd` 单向执行变为 ART Service → artd → dex2oat 的新三层架构
-- **Android 15→16**：引入 SDM / SDC 物理产物，设备侧首次出现"云端编译产物直接落地"的路径——不再只是云上的 Profile 聚合，而是编译结果的物理分发
+- **Android 15→16**：引入 SDM / SDC 物理产物，设备侧首次出现"云端编译产物直接写入设备"的路径——不再只是云上的 Profile 聚合，而是编译结果的物理分发
 - **Android 16→17**：SDM 链路稳定化，重点在 secondary dex 扩展和默认开启策略
 
 ## 2. 云端编译优化

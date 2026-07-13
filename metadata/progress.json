@@ -620,6 +620,17 @@
       "task6_state": "revising",
       "pipeline_stage": "task6_pending",
       "last_task9_at": "2026-07-13T16:20:00+08:00"
+    },
+    "16.9": {
+      "title": "Android 17 SDM 安装编译流程性能",
+      "status": "ready-for-review",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "task2b_state": "pending",
+      "pipeline_stage": "task2b_pending",
+      "last_review": "2026-07-13",
+      "review_issues_count": 6,
+      "review_log": "logs/review/2026-07-13-21-review.md"
     }
   },
   "task2a": {

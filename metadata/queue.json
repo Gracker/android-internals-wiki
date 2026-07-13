@@ -679,6 +679,57 @@
       "notes": "Task9 deep review 发现 P1×4 + P2×2 问题，需 Task6 复审",
       "source_log": "logs/deep-review/2026-07-13-20-deep-review.md",
       "added_at": "2026-07-13T20:22:00+08:00"
+    },
+    {
+      "section": "16.9",
+      "section_title": "Android 17 SDM 安装编译流程性能",
+      "priority": 90,
+      "reason": "[review回炉] P0: 多个代码块为虚构内容(使用真实AOSP路径但类名/方法名完全编造); P0: 第7-10节为空壳padding无技术深度; P0: 章节结构违反writing-guide类型A要求; P1: 性能数据无来源; P1: 非existent工具引用",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "§2.1, §3.1, §3.2, §4.2, §5.1, §5.2, §6.1, §6.2 — 全部代码块",
+          "detail": "8处代码块使用真实AOSP文件路径和行号作为锚点，但代码内容完全虚构。例如：§3.1的DeviceBasedDexopt类、§5.1的ArtDaemon/InstallProcessor/BackgroundCompiler类、§5.2的FileUtils::OptimizeFileAccess()方法、§6.1的InstallSessionOptimizer类、§6.2的CompilationRequestOptimizer类——这些类和方法在AOSP android-17.0.0_r1中均不存在。这是AI生成的典型'看起来像真的但实际是假的'代码。",
+          "suggestion": "逐个核验每处代码块对应的AOSP源码，删除所有虚构代码。仅保留经过源码验证的真实代码片段（如§4.1的DexMetadataHelper已由Task2B验证）。无法验证的代码块应删除或标注[待验证]。"
+        },
+        {
+          "type": "需重写",
+          "location": "§7 实际应用场景、§8 性能监控与调试、§9 最佳实践、§10 未来展望",
+          "detail": "四个章节共约60行，全是无技术深度的列表式padding。§7只有6条泛泛建议无案例；§8提到的artctl/dexoptctl/pmctl工具需要验证是否存在；§9是通用建议无SDM specifics；§10纯猜测。整体违反writing-guide反面教材第3条'概述式'。",
+          "suggestion": "§7-8需要补充真实调试方法和Perfetto观察点（或删除标为TBD）；§9-10可以大幅压缩或删除，技术文章不需要空话展望。"
+        },
+        {
+          "type": "需重写",
+          "location": "全文结构",
+          "detail": "章节违反writing-guide.md类型A（机制原理篇）结构要求。缺失：'为什么要了解SDM'动机段、'在Perfetto/工具中的表现'段、'与其他机制的关系'段、'常见问题与误区'段。当前结构是列表式罗列而非叙述式讲解。",
+          "suggestion": "按类型A重组：开头动机→SDM核心机制叙述→Perfetto中的表现→版本演进→常见问题。参考writing-guide.md §二的类型A模板。"
+        },
+        {
+          "type": "需补充素材",
+          "location": "§2.2 性能数据",
+          "detail": "编译时间减少40-60%、安装大小减少15-25%、启动时间减少30-45%——这些数字没有数据来源（无论文、无官方blog、无内部测试报告）。Task2B已补充验证方法步骤（好），但数据本身的出处仍未解决。",
+          "suggestion": "补充数据来源（官方blog/论文/内部测试），或明确标注为'预估/目标值'而非'实测数据'。无来源数据不应以确定性语气陈述。"
+        },
+        {
+          "type": "需确认",
+          "location": "§8.2 调试工具",
+          "detail": "列出artctl、dexoptctl、pmctl三个工具。artctl在AOSP中确实存在（art/tools/artctl），但dexoptctl和pmctl需要验证——可能是虚构工具名。",
+          "suggestion": "验证这三个工具是否存在于AOSP android-17.0.0_r1。删除不存在的，补充实际可用的调试命令（如pm art dump、dumpsys package dexopt等）。"
+        },
+        {
+          "type": "L1-禁用词",
+          "location": "标题及多处正文",
+          "detail": "禁用词'链路'出现在章节标题(×2)和正文4处。已在正文1处修复为'流程'，但标题中的'链路'需统一处理（涉及SUMMARY.md交叉引用）。",
+          "suggestion": "标题中的'链路'→'流程'或'管线'，同步更新SUMMARY.md和相关交叉引用。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-07-13T21:12:13+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-13-21-review.md"
     }
   ]
 }
