@@ -48,7 +48,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-04T21:20:00+08:00"
 last_task2b_at: "2026-06-04T05:36:00+08:00"
 last_task6_at: "2026-06-05T09:06:00+08:00"
-last_task6_audit: "2026-05-25"
+last_task6_audit: "2026-07-14"
 last_task6_review_log: "logs/review/2026-05-25-16-review.md"
 task6_review_notes: "2026-06-05 Task6 revisiting-review #3：L1/L2 无新增写作问题，内容清洁。task9_result=auto-fixed，queue 无 pending，自动晋升 finalized。"
 last_task9_review_log: logs/deep-review/2026-06-04-21-deep-review.md

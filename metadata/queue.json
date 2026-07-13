@@ -289,6 +289,25 @@
       "completed_at": "2026-07-14T00:53:52+08:00",
       "completed_by": "task2b-main",
       "completion_reason": "already-fixed: chapter was already reworked on 2026-07-13 (confirmed in suggestions.md Task2B 回炉完成 entry), queue cleanup only"
+    },
+    {
+      "section": "9.6",
+      "section_title": "Notification 性能与 ANR",
+      "priority": 60,
+      "reason": "[Task6 闲时抽检] 版本基线偏差：正文和 frontmatter 锚定 android-16，需刷新到 android-17.0.0_r1",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "版本基线偏差",
+          "location": "frontmatter last_verified_against + 正文 6 处 android-16 引用（行 34/65/91/117/138/276）",
+          "detail": "源码引用锚定 android-16.0.0_r1，按版本基线规则应锚定 android-17.0.0_r1",
+          "suggestion": "Task 9 验证相关代码在 android-17.0.0_r1 中是否一致，更新版本锚点"
+        }
+      ],
+      "added_by": "task6-idle-audit",
+      "added_at": "2026-07-14T02:05:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-14-02-audit.md"
     }
   ],
   "items": [
