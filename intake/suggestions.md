@@ -119,3 +119,11 @@
 - **问题**：Task9（2026-07-13T20:22）标记 needs-rework，Task6 round9（2026-07-13T20:14）发现 B-class 问题（AIW-source-research section），但 queue.json 中均无对应 pending 条目。task2b_state=fixed 与 task9_result=needs-rework 矛盾。Task9 deep-review log 中 ch15 P1 描述过于泛化，缺乏可操作性。
 - **建议**：Task9 或 Task6 需为 ch15 创建具体 queue.json 条目（含 review_issues 数组、具体位置、可操作 suggestion），以便 Task2B 主修复消费。
 - **来源**：Task2B Verifier 2026-07-13-23
+
+## [Task2A R109] 知识缺口挖掘 — 已检查方向 — 2026-07-14 04:09
+- 日常信息 (daily-info 2026-07-14): 2 条均为回收内容（Android 17 scheduler→§1.43 已覆盖，Linux 6.10 BPF→已有章节覆盖）
+- 研究素材 (research-feeds): 112 文件，最新 2026-04-14，已 3 个月无更新
+- Clippings 参考书: 108 文件，最新 2026-06-23，已 21 天无更新
+- source-index.json: 0 条高质量未映射素材
+- research-gaps.md: 4 条全部针对已有章节 ch16.5/ch16.9（Task2B 范畴）
+- 结论：0 个 ≥14 分候选，覆盖率已饱和（719 小节）
