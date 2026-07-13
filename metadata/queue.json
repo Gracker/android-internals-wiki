@@ -233,7 +233,7 @@
           "type": "P0-源码版本不一致",
           "location": "frontmatter last_verified_against vs 正文引用",
           "detail": "last_verified_against 标注 AOSP android-16.0.0_r1，但正文多处引用 android-17.0.0_r1 内容",
-          "suggestion": "统一锚定 android-17.0.0_r1，更新 last_verified_against"
+          "suggestion": "统一锚定 android-17.0_0_r1，更新 last_verified_against"
         },
         {
           "type": "P0-API路径错误",
@@ -307,6 +307,114 @@
       ],
       "completed_at": "2026-07-13T16:50:00+08:00",
       "completed_by": "task2b-main"
+    },
+    {
+      "chapter": "16.5",
+      "title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "priority": 95,
+      "status": "completed",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-13T17:33:00+08:00",
+      "source_log": "logs/deep-review/2026-07-13-17-deep-review.md",
+      "review_issues": [
+        {
+          "type": "P0",
+          "category": "源码路径错误",
+          "title": "young_mark-compact.cc文件路径错误",
+          "description": "章节引用 art/runtime/gc/collector/young_mark-compact.cc 作为分代 CMC 实现，但在 AOSP android-17.0.0_r1 中，该文件实际不存在。实际路径为 art/runtime/gc/collector/mark_compact.cc 中的 YoungMarkCompact 类。",
+          "severity": "高 - 直接关系到源码可验证性",
+          "location": "从 Concurrent Copying 到 Generational CMC 章节",
+          "resolution": "修正源码路径为 art/runtime/gc/collector/mark_compact.cc 中的 YoungMarkCompact 类"
+        },
+        {
+          "type": "P0",
+          "category": "版本边界违反",
+          "title": "标题出现Android 18相关信息违反版本边界规则",
+          "description": "章节标题和概述中多处出现 Android 17 / API 37 作为主线结论，但章节末尾的版本兼容性建议表格中错误引用了 Android 18 的相关信息（尽管已标注为非主线结论）。",
+          "severity": "高 - 直接违反版本边界规则",
+          "location": "标题概述和版本兼容性建议章节",
+          "resolution": "删除所有 Android 18 相关内容，严格限定为 Android 17 / API 37"
+        },
+        {
+          "type": "P1",
+          "category": "源码路径错误",
+          "title": "CombinedDeliMessageQueue路径描述不准确",
+          "description": "章节提到 CombinedDeliMessageQueue/MessageQueue.java 作为 DeliQueue 实现，但未说明该路径仅在 android-17.0.0_r1 中存在，较早版本中消息队列实现在不同路径。",
+          "severity": "中等 - 影响版本理解",
+          "location": "DeliQueue 算法章节",
+          "resolution": "说明版本差异，补充早期版本中消息队列实现路径"
+        }
+      ],
+      "notes": "Task9 deep review 发现 P0/P1 问题，需 Task6 复审",
+      "completed_at": "2026-07-13T18:01:26+08:00",
+      "completed_by": "task2b-lite",
+      "completion_reason": "already-fixed: young_mark-compact.cc and Android 18 references not present in body text (fixed in prior round); CombinedDeliMessageQueue paths correct"
+    },
+    {
+      "chapter": "16.1",
+      "title": "Google 官方的性能优化思路",
+      "priority": 90,
+      "status": "completed",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-13T17:33:00+08:00",
+      "source_log": "logs/deep-review/2026-07-13-17-deep-review.md",
+      "review_issues": [
+        {
+          "type": "P0",
+          "category": "源码路径错误",
+          "title": "CombinedMessageQueue路径不存在",
+          "description": "章节提到 android-17.0.0_r1/core/java/android/os/CombinedMessageQueue/MessageQueue.java，但实际在 AOSP android-17.0.0_r1 中，该文件路径为 CombinedDeliMessageQueue/MessageQueue.java，没有 CombinedMessageQueue 这个中间层。",
+          "severity": "高 - 源码路径错误影响开发者理解",
+          "location": "Handler / MessageQueue 章节",
+          "resolution": "修正源码路径为 CombinedDeliMessageQueue/MessageQueue.java"
+        },
+        {
+          "type": "P1",
+          "category": "描述不完整",
+          "title": "Binder线程池描述未说明总并发路径",
+          "description": "Binder 线程池描述中提到默认 worker 上限仍是 15，但未说明这是 driver 面的限制，实际应用中 Binder 调用可能涉及发起端线程 + 15个 worker 总共16个并发路径。",
+          "severity": "中等 - 影响并发理解",
+          "location": "Binder 线程与优先级继承章节",
+          "resolution": "补充说明发起端线程 + 15worker 的总共16路径"
+        }
+      ],
+      "notes": "Task9 deep review 发现 P0/P1 问题，需 Task6 复审",
+      "completed_at": "2026-07-13T18:01:26+08:00",
+      "completed_by": "task2b-lite",
+      "completion_reason": "fixed-lite: CombinedMessageQueue→CombinedDeliMessageQueue (4 locations), young_mark-compact.cc→mark_compact.cc/YoungMarkCompact, Binder 16-path clarification"
+    },
+    {
+      "chapter": "16.6",
+      "title": "Android 16 云端 Profile 与 dexopt 安装优化",
+      "priority": 90,
+      "status": "completed",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-13T17:33:00+08:00",
+      "source_log": "logs/deep-review/2026-07-13-17-deep-review.md",
+      "review_issues": [
+        {
+          "type": "P0",
+          "category": "源码路径错误",
+          "title": "DexMetadataHelper路径错误",
+          "description": "章节提到 frameworks/base/core/java/android/content/pm/dex/DexMetadataHelper.java 作为路径，但实际在 android-17.0.0_r1 中该文件已移动到 frameworks/base/core/java/android/content/pm/DexMetadataHelper.java（去掉了 dex 子目录）。",
+          "severity": "高 - 源码路径错误影响可验证性",
+          "location": "Dex Metadata (.dm) 在安装与后台编译中的位置章节",
+          "resolution": "修正源码路径为 frameworks/base/core/java/android/content/pm/DexMetadataHelper.java"
+        },
+        {
+          "type": "P1",
+          "category": "方法引用过时",
+          "title": "ArtManagerLocal.deleteDexoptArtifacts()方法已重构",
+          "description": "章节提到 ArtManagerLocal.deleteDexoptArtifacts() 但未说明该方法在 android-17.0.0_r1 中已被重构为多个专门的方法（如 deleteDexoptArtifactsForPackage）。",
+          "severity": "中等 - 影响开发者实现",
+          "location": "System Dexopt Manager 的分发侧边界章节",
+          "resolution": "更新方法引用为新的专门方法"
+        }
+      ],
+      "notes": "Task9 deep review 发现 P0/P1 问题，需 Task6 复审",
+      "completed_at": "2026-07-13T18:01:26+08:00",
+      "completed_by": "task2b-lite",
+      "completion_reason": "fixed-lite: DexMetadataHelper.java path pm/dex/→pm/ (2 locations)"
     }
   ],
   "queue": [
