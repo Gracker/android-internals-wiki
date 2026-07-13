@@ -1,7 +1,7 @@
 ---
 title: 07-aosp-reading
 chapter: 15.07
-status: draft
+status: "ready-for-review"
 applicable_versions: Android 5 (API 21) - Android 17 (API 37)
 tags: [methodology, metrics]
 updated_by: openclaw-task2b
@@ -26,7 +26,7 @@ sources:
     path: "https://mp.weixin.qq.com/s?__biz=MzI4NTk1NzYwNg==&mid=2247483668"
 tags: ['aosp', 'code-reading', 'cs.android.com', 'methodology']
 related_chapters: ["1.1", "2.4", "2.5", "13.1"]
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "revisiting"
 task9_state: "pending"
 task9_result: "needs-rework"

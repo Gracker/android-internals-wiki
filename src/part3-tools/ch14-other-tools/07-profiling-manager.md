@@ -3,7 +3,7 @@ title: "ProfilingManager"
 chapter: "14.7"
 section: "14.7"
 section_title: "ProfilingManager"
-status: finalized
+status: ready-for-review
 updated_by: "openclaw-task6"
 updated_date: "2026-05-30"
 task6_result: pass-light-edit

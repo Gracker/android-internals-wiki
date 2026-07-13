@@ -44,13 +44,6 @@ task9_review_notes: "2026-05-25 11 Task9 deep-review: needs-rework。P0 2 / P1 0
 p0: 0
 p1: 0
 p2: 0
-pipeline_stage: task6_pending
-task2b_state: fixed
-last_task2b_lite_at: "2026-06-29"
-task6_state: revisiting
-task9_state: pending
-last_task9_autofix_at: "2026-06-15"
-status: "finalized"
 pipeline_stage: "ready-to-publish"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-15"
