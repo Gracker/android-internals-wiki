@@ -12,12 +12,6 @@
     "created_at": "2026-07-14 10:18:19"
   },
   {
-    "path": "part1-fundamentals/ch08-startup/8.34-android17-task-scheduler-ml-prediction.md",
-    "priority": 80,
-    "reason": "Created from knowledge gap mining - Android 17 任务调度器与 ML 驱动的用户行为预测",
-    "created_at": "2026-07-14 10:18:19"
-  },
-  {
     "path": "part1-fundamentals/ch04-memory/4.37-android17-ai-agent-memory-sandboxed-data-reuse.md",
     "priority": 80,
     "reason": "Created from knowledge gap mining - AI Agent 在端侧设备的内存沙箱化与跨应用数据复用",
