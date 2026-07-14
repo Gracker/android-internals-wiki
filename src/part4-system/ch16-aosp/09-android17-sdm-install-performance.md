@@ -152,6 +152,129 @@ public class DexMetadataHelper {
 
 **关键确认**：`cloudCompilationPm()` flag 与 `FLAG_ART_SERVICE_V3` 控制整个 SDM 机制。`cloudCompilationPm()` 默认值在 Android 17 中预期为开启，但需要通过 AOSP tag 正式发布后确认。Android 17 的 SDM 相比 Android 16 的预期变化：(a) SDM 写入路径可能扩展到 secondary dex；(b) `pm art dump` 输出增加 SDM/SDC 状态字段。
 
+## 2.5 SDM 源码级机制（PrimaryDexopter ↔ SdcReader 交互）
+
+<!-- AIW-源码调研-2026-07-14 -->
+**调研日期**：2026-07-14｜**基于源码**：AOSP `android-17.0.0_r1`
+
+### 2.5.1 PrimaryDexopter 的 SDM 钩子
+
+`PrimaryDexopter.java`（art/libartservice/service/java/com/android/server/art/）在两个时机点触发 SDM 相关逻辑：
+
+**触发点 1：dexopt 开始前**（line 174-181）
+
+```java
+@Override
+protected void onDexoptStart(@NonNull DetailedPrimaryDexInfo dexInfo) throws RemoteException {
+    if (!mInjector.isPreReboot() && SdkLevel.isAtLeastB()) {
+        boolean isInDalvikCache = isInDalvikCache();
+        for (Abi abi : getAllAbis(dexInfo)) {
+            maybeCreateSdc(dexInfo, abi.isa(), isInDalvikCache);
+        }
+    }
+}
+```
+
+约束：仅 Android 16+ 且非 pre-reboot 模式；对每个使用中 ABI 都生成 SDC。
+
+**触发点 2：dexopt 完成后立即清理**（line 213-220）
+
+```java
+@Override
+protected void onDexoptTargetResult(@NonNull DexoptTarget<DetailedPrimaryDexInfo> target,
+        @DexoptResult.DexoptResultStatus int status) throws RemoteException {
+    // An optimization to release disk space as soon as possible. The SDM and SDC files would be
+    // deleted by the file GC anyway if not deleted here.
+    if (status == DexoptResult.DEXOPT_PERFORMED && !mInjector.isPreReboot()) {
+        mInjector.getArtd().deleteSdmSdcFiles(
+                AidlUtils.buildSecureDexMetadataWithCompanionPaths(
+                        target.dexInfo().dexPath(), target.isa(), target.isInDalvikCache()));
+    }
+}
+```
+
+源码注释明确说明：**SDM/SDC 是 dexopt 操作的临时副产物，不是长期驻留的编译产物**。`DEXOPT_PERFORMED` 后立即清理，释放磁盘空间。
+
+### 2.5.2 artd 端 SdcReader 的 Load/Save 协议
+
+`Artd::maybeCreateSdc()`（artd.cc line 1164-1217）的核心交互逻辑：
+
+| 条件 | 行为 | 开销特征 |
+|------|------|---------|
+| SDM 文件不存在（ENOENT） | 直接返回 OK | 注释："That's typical"——多数场景 |
+| SDC 已存在且 SDM mtime 匹配 | 跳过重建 | 一次 stat + 一次 SdcReader::Load |
+| SDC 不存在或 mtime 不匹配 | 写入新 SDC | NewFile::Create + SdcWriter::Save |
+
+写入新 SDC 时调用两个 setter：`SetSdmTimestampNs(sdm_mtime)` 和 `SetApexVersions()`——SDC 内容是「SDM 时间戳 + 当前 APEX 版本」的轻量元数据。
+
+### 2.5.3 物理文件命名
+
+`path_utils.cc`（line 326-337）：
+
+| 文件 | 命名规则 | 位置 |
+|------|---------|------|
+| SDM | `<dex_path>.<isa>.sdm` | `/data/app/<pkg>/`，**与 dex 同目录** |
+| SDC | `<oat_path>.sdc` | `/data/app/<pkg>/oat/<isa>/` 或 dalvik-cache |
+
+SDC 的 `isInDalvikCache` 标志决定其在 dalvik-cache 还是 dex 旁，SDM 永远紧贴 dex 文件。
+
+### 2.5.4 AIDL 暴露：ArtifactsLocation 枚举
+
+`artd.cc`（line 264-285）将 `OatFileAssistant::Location` 的 SDM 值映射为 AIDL enum：
+
+```cpp
+case OatFileAssistant::Location::kLocationSdmOat:
+  return ArtifactsLocation::SDM_DALVIK_CACHE;
+case OatFileAssistant::Location::kLocationSdmOdex:
+  return ArtifactsLocation::SDM_NEXT_TO_DEX;
+```
+
+这是 ART Service 调度层判断「SDM 是否可用、来自哪条路径」的关键标识。
+
+### 2.5.5 PreRebootStagedMetadata（A/B OTA 兼容）
+
+`artd.cc`（line 545-637）：
+
+```
+文件格式（3 行）：
+PRE_REBOOT_STAGED_METADATA_001
+<build_fingerprint>
+<apex_timestamps>
+```
+
+`kMagic = "PRE_REBOOT_STAGED_METADATA_001"`——这是 Android 17 中 A/B OTA 跨 ART 版本的 staged file 兼容机制。旧版 ART 在 background dexopt 阶段只需检查文件创建时间，完整内容由同版本 ART 理解。
+
+### 2.5.6 ReasonMapping 新增 reason（Android 17 演进）
+
+`ReasonMapping.java`（line 376-401）相较 Android 16 新增：
+
+| Reason 字符串 | 整数值 | 含义 |
+|--------------|--------|------|
+| `install-fast-dm` | 15 | install-fast + 使用 .dm profile 指导 |
+| `install-bulk-dm` | 16 | install-bulk + 使用 .dm profile 指导 |
+| `install-bulk-secondary-dm` | 17 | 同上，secondary dex |
+| `install-bulk-downgraded-dm` | 18 | 同上，降级编译 |
+| `install-bulk-secondary-downgraded-dm` | 19 | 同上 |
+| `cloud` | 26 | **云端 profile 驱动的编译** |
+| `vdex-dm` | 27 | VDEX 重写 + 使用 .dm |
+
+`-dm` 后缀标识使用了 `.dm` 文件的 profile；`cloud` 是云端编译专属 reason。这些值在 `dumpsys package dexopt` 的 `compilation_reason` 字段可直接观察到。
+
+### 2.5.7 关键澄清：.dm vs .sdm 文件性质
+
+`ArtManagerLocal.deleteDexoptArtifacts`（line 213-250）注释明确：
+
+> Deletes dexopt artifacts (including cloud dexopt artifacts) of a package, for primary dex files and for secondary dex files. **This includes VDEX, ODEX, ART, SDM, and SDC files.**
+
+SDM 被归类为 **dexopt artifact**（编译产物），与 VDEX/ODEX 同列；而 `.dm` 是 profile 范畴（不在删除列表内）。SDM 在 `deleteDexoptArtifacts` 时被一起删除，与 §2.5.1 触发点 2 的清理一致。
+
+### 2.5.8 未直接验证项
+
+- `cloudCompilationPm()` 默认开启的具体开关位置：源码中未直接出现该字符串，需在 `ArtManagerService`/`PackageManagerService` 中查找。
+- Secondary dex 是否扩展 SDM 支持：当前 `PrimaryDexopter` 只覆盖 primary dex。
+- `SdcReader` 内部二进制格式：源码路径 `oat/sdc_file.h` 在 `android-17.0.0_r1` 下未能在 android.googlesource.com 获取（NOT_FOUND）。
+
+
 ## 3. SDM 与传统 dexopt 的关系
 
 SDM 不是替代 dexopt，而是在 dexopt 之上叠加了一条快捷路径。二者的分工：

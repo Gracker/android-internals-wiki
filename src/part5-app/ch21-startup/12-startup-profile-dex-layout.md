@@ -59,7 +59,7 @@ reviewed_date: "2026-06-23"
 last_task6_at: "2026-06-23T01:10:00+08:00"
 last_task9_at: "2026-06-05T05:28:04+08:00"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-11
+last_deepseek_cn_review_at: 2026-07-14
 task2b_state: "fixed"
 last_task9_autofix_at: "2026-06-22"
 last_task9_audit: "2026-06-22"
@@ -109,7 +109,7 @@ last_task6_audit: "2026-06-22"
 
 Startup Profile 解决的是启动代码在 DEX 文件里的排布问题。它通常和 Baseline Profile 一起生成，但消费方不同：Baseline Profile 交给 ART 做 profile-guided AOT 编译，Startup Profile 交给构建系统和 R8 调整 DEX layout。前者减少解释执行和 JIT 热身，后者减少启动阶段加载 DEX 时的随机访问、页故障和缓存失配。
 
-21.4 已经覆盖 Baseline Profile 的生成、打包和验证主线。本节只处理启动路径 DEX layout：哪些路径应该带 `includeInStartupProfile = true`，怎样确认 `startup-prof.txt` 被构建系统消费，怎样把收益和业务初始化、I/O、网络等待区分开。ART 编译管线详见 1.7，Baseline Profile 的系统机制详见 8.7，APM 视角详见 19.15。
+21.4 已经覆盖 Baseline Profile 的生成、打包和验证主线。本节聚焦启动路径 DEX layout：哪些路径应该带 `includeInStartupProfile = true`，怎样确认 `startup-prof.txt` 被构建系统消费，以及怎样把 DEX layout 收益和业务初始化、I/O、网络等待的改进区分开。ART 编译管线详见 1.7，Baseline Profile 的系统机制详见 8.7，APM 视角详见 19.15。
 
 Clippings 的《Android 性能优化》把速度问题拆成 CPU 时间、缓存命中率和任务调度三个视角，并把 Dex 类文件重排序放在缓存局部性一类。这里借用这个组织方式：Startup Profile 不直接减少业务代码指令数，也不改变线程调度，它把“启动会读到的类和方法”放得更集中，让同一段冷启动更少等 DEX 页加载。
 
@@ -135,7 +135,7 @@ Baseline Profile 可以覆盖启动之后的核心操作；Startup Profile 应�
 
 冷启动期间，系统要加载 APK 中的 DEX，解析类、方法、字符串、类型索引，并执行入口 Activity、依赖注入、首屏 UI 和必要 SDK 初始化。即使这些方法后续会被 AOT 编译，启动时仍然要访问 DEX 元数据和类定义；访问顺序越分散，越容易产生额外的磁盘读取和页故障。
 
-Dex 类文件重排序的旧做法通常要收集类加载顺序，再用外部工具改 APK。Startup Profile 把这件事合入官方构建路径：Macrobenchmark 记录启动测试中触达的类和方法，生成 `S` 标记规则，R8 根据这些规则调整 DEX 中的布局。从空间局部性的角度理解：启动阶段连续访问的类和方法越集中，CPU 等待数据进入缓存和内存映射页的时间就越少。
+Dex 类文件重排序的旧做法通常要收集类加载顺序，再用外部工具改 APK。Startup Profile 把这件事合入官方构建路径：Macrobenchmark 记录启动测试中触达的类和方法，生成 `S` 标记规则，R8 根据这些规则调整 DEX 中的布局。简单说，启动阶段连续访问的类和方法越集中，CPU 等待数据从磁盘进入缓存和内存映射页的时间就越少。
 
 这类优化只处理代码位置，不能替代启动治理：
 
@@ -243,7 +243,7 @@ Perfetto 侧可以看这些信号：
 - 主线程 I/O、SQLite、网络等待是否仍占主导；如果是，Startup Profile 不是主矛盾。
 - 多次迭代的页故障和磁盘读取是否更稳定；DEX layout 的收益常体现在方差收窄。
 
-Startup Profile 在部分应用中可带来相对 Baseline Profile 的额外启动提升，但实际幅度强依赖 App 结构。工程里不要直接把官方比例写进目标 KPI，应使用本项目 release 包实测。
+Startup Profile 在某些应用中能带来相对 Baseline Profile 的进一步启动提升，但幅度因 App 结构而异。工程中不要直接把官方数据写进 KPI，应该用本项目 release 包实测。
 
 ## 维护风险与发布策略
 
@@ -258,7 +258,13 @@ Startup Profile 的维护成本来自“路径变化”。首页改成 Compose�
 - 灰度只改 Profile 时要单独看新装和首更用户：老用户可能已经有 Cloud Profile 或本地 JIT Profile，收益会被冲淡。
 - 回滚策略保留业务开关：Profile 文件本身随包发布，线上回滚通常要靠版本回退；能延后的启动初始化仍应有远程开关。
 
-失败案例通常有三类。第一类是规则过宽，把搜索、详情、支付全放进 Startup Profile，`classes.dex` 被挤满，主入口收益消失。第二类是测试环境不稳定，弹窗、登录、权限页随机出现，生成结果每次都不同。第三类是启动慢来自网络、数据库、锁等待或第三方 SDK，同步问题没有处理，Profile 只能改善很小一段代码加载成本。
+下面列出三类常见失败模式：
+
+**第一类：规则过宽。** 把搜索、详情、支付全放进 Startup Profile，`classes.dex` 被挤满，主入口收益消失。
+
+**第二类：测试环境不稳定。** 弹窗、登录、权限页随机出现，每次生成的 Profile 结果都不同。
+
+**第三类：瓶颈不在代码加载。** 启动慢来自网络、数据库、锁等待或第三方 SDK——这些同步问题不处理，Profile 只能改善很小一段代码加载成本。
 
 ## Android 版本与安装渠道边界
 

@@ -48,6 +48,8 @@ last_task9_audit_log: "logs/deep-review/2026-07-10-18-audit.md"
 last_task9_audit_at: "2026-07-10T18:28:45+08:00"
 last_task9_audit_result: "pass-audit-p2-only"
 task9_audit_notes: "2026-07-10 Task9 idle audit: pass-audit-p2-only。P0 0 / P1 0 / P2 2；复核 Firebase Performance 官方 get-started/troubleshooting/network/screen-traces/custom-code-traces 文档、Firebase Android SDK Trace/HttpMetric/AppStartTrace 源码与 Android 17 Process API；未发现需写入 queue.json 的源码错误或版本越界。P2：_app_start 起点表述可在下次编辑时从平台 uptime API 收紧到 SDK 当前 elapsedRealtime 源码口径；screen rendering 60Hz 假设仍建议补正文。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-14
 ---
 # Firebase Performance
 
@@ -92,9 +94,9 @@ task9_audit_notes: "2026-07-10 Task9 idle audit: pass-audit-p2-only。P0 0 / P1 
 
 ## Firebase Performance 的定位
 
-Firebase Performance Monitoring 是托管型性能看板。它的长处是接入快、自动采集覆盖面广、控制台不需要自建；短板是原始样本控制弱、字段契约弱、私有化能力弱，控制台还有处理延迟。
+Firebase Performance Monitoring 是一个托管型性能看板。接入成本低、自动采集覆盖面广、控制台开箱即用，这是它的优势。代价是原始样本控制能力有限、字段契约薄弱、私有化部署不支持，控制台还存在处理延迟。
 
-它适合中小团队先把启动、渲染、网络和少量业务 trace 建起来，再用 JankStats、Perfetto 或自建 APM 补深度诊断。把它当成秒级事故面板会踩空。
+它适合中小团队先把启动、渲染、网络和少量业务 trace 搭起来，再用 JankStats、Perfetto 或自建 APM 补深度诊断。把它当成秒级事故面板会踩空。
 
 ## 数据模型：trace、metric、attribute
 
@@ -179,7 +181,10 @@ URL pattern 必须做归一化。像 `/api/item/10001/detail`、`/api/item/10002
 
 官方文档给了几条实操边界：
 
-- Gradle plugin 通过字节码插桩拦截 OkHttp，但覆盖范围有限：自研网络库、Cronet、native 网络栈或非常规封装可能漏掉。Cronet、native 网络栈、自研网络库需要用 `HttpMetric` 手工 network trace：通过 `FirebasePerformance.getInstance().newHttpMetric(url, method)` 创建 metric，手动调用 `start()` / `stop()`，并设置 `setHttpResponseCode()`、`setRequestPayloadSize()` / `setResponsePayloadSize()`、`setContentType()`。不支持的协议会静默缺失
+- Gradle plugin 通过字节码插桩拦截 OkHttp，但覆盖范围有限。下面的请求会漏掉，需要手工补 trace：
+
+- 自研网络库、Cronet、native 网络栈或非常规封装：通过 `FirebasePerformance.getInstance().newHttpMetric(url, method)` 创建 metric，手动调用 `start()` / `stop()`，并设置 `setHttpResponseCode()`、`setRequestPayloadSize()` / `setResponsePayloadSize()`、`setContentType()`。
+- 不支持的协议：会静默缺失，控制台不会提示
 - 如果项目中使用了复杂 AOP 框架（自定义 Transformer 顺序不当），Firebase 的字节码插桩可能失败。排查路径：在 `build.log` 中搜索 `firebase-perf` 插件输出确认插桩生效；在 Logcat 中开启 `firebase_performance_logcat_enabled`，确认 `FirebasePerformance` 日志里出现 completed request 和正确的 Content-Type
 - 只完成了一半、长时间不结束的连接，控制台不一定会形成稳定样本；`Content-Type` 非法的请求也可能不展示
 
@@ -198,7 +203,7 @@ Firebase Performance 的控制台时效会直接影响排查方式。官方 trou
 
 采样和时效决定了排查边界：Firebase 适合发布回归、版本比较、趋势监控，不适合秒级 incident 排查。
 
-近实时 SDK 的几分钟延迟叠加采样过滤，可能导致事故发生时控制台仍然显示正常。不要把 Firebase Performance 作为唯一的故障发现工具——线上告警体系必须有独立的实时业务错误码监控、自建 APM 或日志告警作为主要告警路径，Firebase 只做补充验证和趋势观察。
+近实时 SDK 虽然把延迟从 36 小时降到了几分钟，但叠加采样过滤后，事故发生时控制台仍可能显示正常。不要把 Firebase Performance 作为唯一的故障发现工具。线上告警体系应以独立的实时业务错误码监控、自建 APM 或日志告警为主路径，Firebase 只做补充验证和趋势观察。
 
 ## 和 JankStats、FrameMetrics、Android Vitals 的分工
 

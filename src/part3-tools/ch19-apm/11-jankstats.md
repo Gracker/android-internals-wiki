@@ -45,7 +45,8 @@ last_task9_audit_log: "logs/deep-review/2026-07-08-16-audit.md"
 task9_review_notes: "2026-05-31 Task9 deep review: AndroidX metrics-performance 1.0.0 / JankStatsApi16/24/26/31 / FrameMetrics.DEADLINE 复核通过，无 P0/P1，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-05-31-21-deep-review.md"
 last_task2b_rework_log: "Task2B 2026-05-31: 按 2026-05-21 Task9 fallback 问题修正 JankStats API16/24/26/31 实现分层与 FrameMetrics.DEADLINE API31 版本边界。"
-
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-14
 ---
 
 
@@ -94,7 +95,7 @@ last_task2b_rework_log: "Task2B 2026-05-31: 按 2026-05-21 Task9 fallback 问题
 
 JankStats 属于 `androidx.metrics:metrics-performance`，用于按帧收集 UI jank 信息。AndroidX Maven metadata 当前稳定版本为 `1.0.0`。它会把每帧耗时、是否 jank、当时 UI 状态回调给应用，由应用自行聚合和上传。
 
-它适合作为线上流畅性监控的第一层信号源。它不负责 trace 文件、不负责堆栈、不负责平台看板，也不告诉你某一帧为什么慢。它回答的是：哪些页面、哪些交互、哪些版本出现了更多慢帧。
+它适合作为线上流畅性监控的第一层信号源。它不负责 trace 文件、不输出堆栈、不提供平台看板，也不会告诉你某一帧为什么慢。它只回答一个问题：哪些页面、哪些交互、哪些版本出现了更多慢帧。
 
 ## 它输出什么
 
@@ -104,9 +105,9 @@ JankStats 的一条帧事件通常包含三类信息：
 - **jank 判定**：这一帧是否超过当前刷新率对应的阈值。
 - **UI context**：当时页面或交互状态，比如 `screen=Home`、`state=scrolling`。
 
-UI context 是它比裸 `Choreographer.FrameCallback` 更有用的地方。只知道“慢帧发生了”还不够，线上更需要知道“慢帧发生在哪个页面、哪个用户动作里”。
+UI context 是它比直接使用 `Choreographer.FrameCallback` 更有价值的点。只知道“慢帧发生了”还不够，线上更需要知道“慢帧发生在哪个页面、哪个用户动作里”。
 
-下面这段代码展示 JankStats 的最小接入，重点看 `createAndTrack()` 和 `PerformanceMetricsState` 的状态标记。
+下面的示例以 `createAndTrack()` 初始化 JankStats，并通过 `PerformanceMetricsState` 标记页面状态，这是理解 JankStats 数据模型的最短路径。
 
 ```kotlin
 class HomeActivity : AppCompatActivity() {
@@ -142,7 +143,7 @@ data class JankFrameSample(
 )
 ```
 
-这段代码先通过 `setContentView()` 建立 `DecorView`，再调用 `createAndTrack()`。AndroidX reference 对这个调用有明确约束：`window` 必须已经处于可用状态，且 `DecorView` 不能为空；如果在 `setContentView()` 前初始化，`createAndTrack(window, ...)` 可能直接抛 `IllegalStateException`。
+这段代码先通过 `setContentView()` 建立 `DecorView`，再调用 `createAndTrack()`。需要注意一个调用顺序约束：`window` 必须已经可用，`DecorView` 不能为空。如果在 `setContentView()` 之前调用 `createAndTrack()`，可能直接抛出 `IllegalStateException`。
 
 `OnFrameListener` 回调里的 `FrameData` 只适合做当前帧内的轻量处理。要把事件交给后台线程、批量聚合或异步上报时，先复制 `isJank`、`frameDurationUiNanos` 和 `states` 到自己的 DTO。不要把 `FrameData` 对象本身跨线程保存，也不要在回调里做同步 I/O 或复杂序列化。
 
@@ -188,7 +189,7 @@ JankStats 更适合线上统一口径，FrameMetrics 更适合高版本上拆帧
 
 ### 帧性能监控工具横向对比
 
-除了 JankStats 和 FrameMetrics，线上和线下还有几类常用工具。下面的表格覆盖了数据粒度、适用场景和各自的边界：
+下面把 JankStats、FrameMetrics、Perfetto、Macrobenchmark 和 Firebase Performance 放在一起比较，覆盖数据粒度、适用场景和各自的边界：
 
 | 维度 | JankStats | FrameMetrics | Perfetto | Macrobenchmark | Firebase Performance |
 |------|-----------|--------------|----------|----------------|---------------------|

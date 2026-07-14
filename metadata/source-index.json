@@ -4435,6 +4435,52 @@
       ],
       "summary": "Kotlin的单例模式在实际项目中可能会遇到序列化工具破坏的问题。本文详细分析了...",
       "scored_at": "2026-07-14T09:15:44.576490"
+    },
+    {
+      "title": "High performance with idiomatic Kotlin",
+      "path": "AndroidWeekly/#29/High performance with idiomatic Kotlin",
+      "source_url": "https://magdamiu.medium.com/high-performance-with-idiomatic-kotlin-d52e099d0df0",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 10.5,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3.5,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "High performance with idiomatic Kotlin - Android Weekly #29 technical article",
+      "scored_at": "2026-07-14T09:20:00"
+    },
+    {
+      "title": "Jetpack Compose 1.1 is now stable!",
+      "path": "AndroidWeekly/#29/Jetpack Compose 1.1 is now stable!",
+      "source_url": "https://android-developers.googleblog.com/2022/02/jetpack-compose-11-now-stable.html",
+      "weekly_issue": "#29",
+      "weekly_date": "2022-02-28",
+      "score": 12.0,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Jetpack Compose 1.1 is now stable! - Android Weekly #29 technical article",
+      "scored_at": "2026-07-14T09:20:00"
     }
   ]
 }
