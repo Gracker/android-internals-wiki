@@ -45,22 +45,22 @@ tags:
   - messagequeue
   - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: pass-light-edit
 last_task6_review_log: "logs/review/2026-07-14-18-review.md"
-task9_state: "reviewed"
+task9_state: "pending"
 last_task9_review_log: "logs/deep-review/2026-07-14-12-deep-review.md"
 last_task9_at: "2026-07-14T12:21:00+08:00"
 last_task9_review_notes: "2026-07-14 Task9 deep-review: needs-rework。P0 0 / P1 3。需要修复 Android 17 DeliQueue 实现原理、默认启用边界描述、性能数据引用口径等问题后重新复审。"
 task9_result: "needs-rework"
 last_task9_autofix_at: "2026-07-02"
-last_task9_at: "2026-07-02T02:27:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-02"
-task2b_state: "pending"
-task2b_result: fixed
-pipeline_stage: "task2b_pending"
+task2b_state: "fixed"
+task2b_result: fixed-lite
+pipeline_stage: "task6_pending"
 last_task2b_at: "2026-05-27T12:50:00+08:00"
+last_task2b_lite_at: "2026-07-14"
 task2b_main_at: "2026-07-02T00:57:10.552430+08:00"
 task9_review_notes: "2026-05-27 13:20 Task9：pass-tech-review。复核 Android 16 Combined/Concurrent/Legacy MessageQueue 路径、Android 17 行为变更页、DeliQueue 官方性能数据；未发现 P0/P1，自动晋升 finalized。 | 2026-06-14 08 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 0；复核 Android 16 Combined/Concurrent/Legacy MessageQueue 源码路径、Android 17 MessageQueue 行为变更页、官方 DeliQueue 性能数据与内部交叉引用；无阻断问题，Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-22 16 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0 / P3 0；复核 AOSP android-16.0.0_r1 Combined/Concurrent/Legacy MessageQueue、Android 17 MessageQueue 行为变更页与官方性能数据；Android 17/API 37 边界清楚，无 P0/P1。 | 2026-07-01 20 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；正文仍以 Android 16 ConcurrentMessageQueue/ConcurrentSkipListSet 作为 Android 17 新 MessageQueue 的主要源码说明，缺少 android-17.0.0_r1 CombinedDeliMessageQueue/MessageStack/MessageHeap 主线锚点，已写入 Task2B queue。"
 task6_reviewed_date: "2026-07-14"
@@ -250,7 +250,7 @@ Android 17 的行为变更页面把面向应用的边界写清楚了:
 
 ## 并发数据结构
 
-android-17.0.0_r1 的 `CombinedDeliMessageQueue` 已将实现收敛为 `MessageStack` + `MessageHeap` + `Message` 三类组件：`MessageStack` 替代早期的 Treiber CAS 栈，`MessageHeap` 替代 `ConcurrentSkipListSet` 做有序出队，`Message` 承载 tombstone 标记与生命周期。下面按 Android 16 原型到 Android 17 正式版的演进顺序梳理。
+android-17.0.0_r1 的 `CombinedDeliMessageQueue` 是 Android 16 `CombinedMessageQueue` 的后续重构：Android 16 的 `mUseConcurrent` 标志和进程 allowlist 机制被移除，lock-free 路径成为 `targetSdk >= 37` 应用的唯一实现。`CombinedDeliMessageQueue` 将实现收敛为 `MessageStack` + `MessageHeap` + `Message` 三类组件：`MessageStack` 替代早期的 Treiber CAS 栈，`MessageHeap` 替代 `ConcurrentSkipListSet` 做有序出队，`Message` 承载 tombstone 标记与生命周期。下面按 Android 16 原型到 Android 17 正式版的演进顺序梳理。
 
 ### 1. 生产者路径：从 Treiber 风格 CAS 栈到 MessageStack
 
@@ -307,7 +307,7 @@ Android 17 的 `CombinedDeliMessageQueue` 通过 `MessageStack` 内部的 `mSync
 
 正文引用时要把边界一起写上:
 
-- `5,000x` 属于合成基准,不代表普通业务代码会得到同量级收益。
+- `5,000x` 属于合成基准——Google 只说明是多线程高竞争场景，未公开线程数、消息量级和设备型号，不代表普通业务代码会得到同量级收益。
 - `15%` 和掉帧改善来自 Google 内部 beta 设备与既定 workload,适合说明方向,不适合外推成所有机型的统一收益。
 - 如果要写自己项目的结果,仍然要补设备、系统版本、并发模型、trace 口径和统计窗口。
 
@@ -391,7 +391,7 @@ Perfetto 中的观察路径：Android 16 legacy 场景重点看 main thread 的 
 
 ## 收尾
 
-排查主线程调度问题，先把流程切成三段：**入队、出队、分发**。旧 MessageQueue 的瓶颈集中在前两段共用一把 monitor；Android 16 公开源码已经能看到 legacy / concurrent 多变体试点；Android 17 把这件事推到了对应用默认生效。
+排查主线程调度问题，先把流程切成三段：**入队、出队、分发**。旧 MessageQueue 的瓶颈集中在前两段共用一把 monitor；Android 16 公开源码已经能看到 legacy / concurrent 多变体试点；Android 17 对 `targetSdk >= 37` 的应用默认启用 lock-free 实现。
 
 这里有两个关键判断：
 
