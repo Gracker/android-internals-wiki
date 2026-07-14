@@ -124,5 +124,63 @@
     "priority": 80,
     "created_date": "2026-07-14",
     "source": "knowledge-gap-mining"
+  },
+  {
+    "section": "1.11",
+    "section_title": "Zygote 机制与启动性能优化",
+    "priority": 85,
+    "reason": "[Deep Tech Review] applicable_versions 写 'Android 5.0 (API 21) - Android 17 (API 37)' 但 last_verified_against 锚定 AOSP android-16.0.0_r1;frontmatter 同时存在 task9_state: pending 与 needs-rework 重复字段冲突",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "frontmatter applicable_versions / last_verified_against",
+        "detail": "applicable_versions 写 Android 17 (API 37) 范围,但 last_verified_against 锚定 AOSP android-16.0.0_r1。按 AIW 主线基准 android-17.0.0_r1 应作为验证锚点(android-16 / android-17 的 Zygote preload 序列在公开 AOSP 差异不显著,但需复核 android-17 是否引入新 preload 阶段)。",
+        "suggestion": "1) last_verified_against 锚点改为 android-17.0.0_r1(若 android-17 与 android-16 preload 序列完全一致,可在正文中标注'序列与 android-16 一致,主线以 android-17.0.0_r1 为基准');2) 清理 frontmatter 中 task9_state 重复字段(pending 与 needs-rework 共存)"
+      },
+      {
+        "type": "源码错误",
+        "location": "frontmatter",
+        "detail": "frontmatter 内 task9_state 同时出现 'pending'(独立行)与 'needs-rework'(被多行 task9_review_notes 行覆盖),产生 YAML 字段冲突。",
+        "suggestion": "统一为单一值;按本轮审计决策,实际状态应为 pending(已被前一轮审查发现 needs-rework 但未清理);后续由 Task2B 清理。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-07-14T17:25:09",
+    "status": "pending"
+  },
+  {
+    "section": "1.1",
+    "section_title": "Android 分层架构",
+    "priority": 85,
+    "reason": "[Deep Tech Review] SurfaceFlinger 切片名表 / Binder 线程池锚点只到 android-16.0.0_r1,缺 android-17.0.0_r1 主线锚定;applicable_versions 与 last_verified_against 不一致",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "SurfaceFlinger 切片名表(Android 16 行)",
+        "detail": "表中覆盖 Android 10 / 11-12 / 13-14 / 15 / 16 五行,缺少 Android 17 行。AIW 主线基准是 Android 17,正文却只到 android-16.0.0_r1。",
+        "suggestion": "新增 Android 17 一行,锚定 AOSP android-17.0.0_r1 frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp 的 commit/composite/postComposition 实际切片名(可参考 frameworks/native/services/surfaceflinger/ 源码复核)"
+      },
+      {
+        "type": "版本差异",
+        "location": "Binder 线程池小节 source anchor",
+        "detail": "frontmatter sources 列出 platform/frameworks/native/libs/binder/ProcessState.cpp (android-17.0.0_r1),但正文 Slice 表与正文都未引用 android-17.0.0_r1 源码复核标识;正文 [已验证: 一手源码, frameworks/native/libs/binder + kernel/common/drivers/android/binder.c] 缺具体 tag 标注。",
+        "suggestion": "正文 [已验证] 标注补 '@ AOSP android-17.0.0_r1' 与 '@ AOSP android17-6.18 (kernel)' tag"
+      },
+      {
+        "type": "元数据一致性",
+        "location": "frontmatter applicable_versions / last_verified_against",
+        "detail": "applicable_versions 写 'Android 8 (API 26) - Android 17 (API 37)';last_verified_against 锚定包含 SurfaceFlinger android-11/12.1/13/16 (无 android-17) 和 AOSP android-15/16 (无 android-17)。",
+        "suggestion": "在 last_verified_against 中显式添加 android-17.0.0_r1 锚点"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-07-14T17:25:09",
+    "status": "pending"
   }
 ]

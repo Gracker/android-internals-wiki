@@ -457,3 +457,24 @@ class MultiDisplayPerformanceMonitor {
 - **Compose Snapshot 深挖**: 已在 ch18/25-compose-rendering-pipeline.md (2.5KB Snapshot 专节 + 6.4KB 扩展6) + ch22/22.29-jetpack-compose-并发安全机制.md (12.4KB, 86次 snapshot 提及) 中充分覆盖。总分 11/20，低于阈值。
 - **Gradle 构建性能**: 开发者效率话题，非运行时性能核心。R=2, total=11/20。
 - **结论**: 719 节全覆盖，本轮 0 候选 ≥14 分。第 113 轮连续无候选。
+
+
+## [Task9 Deep Review] 15 Android 性能优化研究方法论 — 2026-07-14
+- **类型**：源码准确性
+- **位置**：§3.2 Perfetto CLI 参数描述
+- **问题**： 中关于  不接受  参数的描述正确，但缺少对 CLI 参数  和  的功能说明
+- **建议**：补充  的具体作用和使用场景说明，明确其与  的语义关系
+
+## [Task9 Deep Review] 1.11 Zygote 机制与启动性能优化 — 2026-07-14
+- **类型**：原理断裂 / 数据缺失
+- **位置**：USAP 与 Child Zygote 关系小节 + 16KB Page Size 数据段
+- **问题**：(1) USAP 边界前提缺失——正文只说 Child Zygote 禁用了 USAP，但未明确 Primary/Secondary Zygote 不属于 Child Zygote 这一关键前提；(2) 16KB 页对 fork 的收益缺少具体设备测试数据
+- **建议**：(1) 在 USAP 段落补一句「Primary/Secondary Zygote 由 init 直接拉起，不属于 Child Zygote 范畴，USAP Pool 只挂在这条主线」；(2) 16KB 数据补实测或明确标注「该比例为理论估算」
+
+
+## [Task9 Deep Review] 1.12 AutoFDO — 2026-07-14
+- **类型**：版本边界说明 + 数据来源标注
+- **位置**：版本演进表与主线说明
+- **问题**：(1) 文中 android15-6.6 / android16-6.12 kernel branch 与 Android 17 / API 37 主线基准并存，但缺少一句主线说明让读者知道主线结论以 Android 17 为准；(2) `create_llvm_prof --prof_sym_list=false` 默认行为描述缺一手来源
+- **建议**：(1) 在文首或版本演进表前补一句「本章主线对应 Android 17 / API 37；kernel branch tag 仅作为 AutoFDO 部署点的事实记录」；(2) `--prof_sym_list=false` 默认行为补来源标注（LLVM create_llvm_prof 文档或 AOSP GKI README）
+
