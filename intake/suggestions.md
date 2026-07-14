@@ -63,3 +63,38 @@
 - **位置**：与 §1.2 系统启动全流程的引用关系
 - **问题**：文中提到"看 Zygote 在开机链里的位置"，但未说明在 §1.2 的哪个具体位置讨论了开机流程的完整时序图
 - **建议**：明确引用 §1.2 中的具体章节编号和小节，增强交叉引用的精确性
+## [Task9 Deep Review] 1.11 Zygote 机制与启动性能优化 — 2026-07-14
+- **类型**：数据缺失
+- **位置**：USAP pool 性能对比
+- **问题**：USAP 概念与 Child Zygote 隔离已讲清楚，但缺少 USAP 启用前后 P99 启动时间 / 内存使用差异的量化数据
+- **建议**：补充社区测量数据（如 Google I/O 演讲、Android 开发者博客中的 USAP P99 收益数据），或标注"暂无公开 P99 量化数据"
+
+## [Task9 Deep Review] 1.11 Zygote 机制与启动性能优化 — 2026-07-14
+- **类型**：版本声明
+- **位置**：USAP Pool 不服务 Child Zygote 源码证据小节
+- **问题**：mUsapPoolSupported 字段引用 `android14-release` 而非 `android-17.0.0_r1`，跨 anchor tag 需补充"该行为在 android-17.0.0_r1 中保持一致"的限定
+- **建议**：在源码引用前增加一句"该构造函数差异在 android-17.0.0_r1 ZygoteServer.java 中保持一致"，避免读者跨版本混淆
+
+## [Task9 Deep Review] 1.11 Zygote 机制与启动性能优化 — 2026-07-14
+- **类型**：源码准确性（微调）
+- **位置**：nativePreloadAppProcessHALs 路径与 Gralloc 类名
+- **问题**：cpp 路径前缀 `core/jni/com_android_internal_os_ZygoteInit.cpp` 在 android-17.0.0_r1 中应为 `frameworks/base/core/jni/com_android_internal_os_ZygoteInit.cpp`；Gralloc2/3/4/5Mapper::preload() 命名在 android-17.0.0_r1 实际实现中需复核当前 Gralloc HAL 版本
+- **建议**：补充完整 frameworks/base 前缀；标注当前 AOSP 默认 Gralloc 版本（gralloc4 为 Android 14+ 默认）
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-07-14
+- **类型**：数据缺失
+- **位置**：USAP pool 性能对比（与 1.11 同步）
+- **问题**：分层架构章节未单独覆盖 USAP 量化收益
+- **建议**：在 ProcessList 或 zygote 概述段落引用 1.11 已补充的数据，避免重复描述
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-07-14
+- **类型**：源码准确性（验证）
+- **位置**：ProcessState.cpp 行号
+- **问题**：BINDER_VM_SIZE / DEFAULT_MAX_BINDER_THREADS 行号 48-49、605-620 需在 android-17.0.0_r1 源码复核
+- **建议**：如行号偏移，更新为正确行号；如已对齐，标注"经 android-17.0.0_r1 复核确认"
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-07-14
+- **类型**：源码准确性（验证）
+- **位置**：binder.c spawn 守门行号
+- **问题**：内核 spawn 守门代码引用 binder.c line 5397-5411，标注的内核 tag `android17-6.18-2026-04_r1` 需确认实际存在
+- **建议**：复核 AOSP 内核分支命名，确认 `android17-6.18-2026-04_r1` 是否为官方 tag；若不是，更正为 AOSP 实际发布的 android17 kernel tag（如 `android17-6.18`）
