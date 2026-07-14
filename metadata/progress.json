@@ -3,7 +3,7 @@
   "draft": 17,
   "ready_for_review": 8,
   "finalized": 4,
-  "last_updated": "2026-07-14T14:13:54+08:00",
+  "last_updated": "2026-07-14T19:15:11.499106+08:00",
   "task2b": {
     "last_run": "2026-07-14T06:54:06+08:00",
     "last_section": "15",
@@ -33,6 +33,13 @@
   ],
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-14T19:15:11.499106+08:00",
+      "note": "Gap mining round 115: 0 candidates >=14 (115th consecutive). No state change since R114 (3h ago). All sources stale: research-feeds 3mo+ (newest 2026-04-14), Clippings 21d+ (newest 2026-06-23), daily-info 2026-07-14 recycled (Android 17 scheduler→§1.43, Linux 6.10 BPF→existing). Juejin: Repository/suspend + MVVM/MVI (app architecture, not internals). Source-index: 7 high-q unmapped all traced to existing chapters (Binder thread pool→§1.54, GPU counter→§14.28, eBPF→§14.25, audio hardening→§12.33, GPU debug→§2.17/§14.8, GPU DVFS→§5.29, LMK→§4.15/§4.34). Research-gaps: 10 entries all for existing chapters (ch16.5/ch16.9/ch15/ch14.1/ch9.6 supplements + ch20 Native Hook→§14.13 + ch22 WebView→5 sections). Suggestions: Task14 supplements for ch01/ch22. Topic scan: AppFlow/DeliQueue/SDM/mmap/madvise/ZRAM/F2FS/EROFS/Bionic/HWUI/SurfaceFlinger/ADPF/Thermal/GameMode/Compose/foldable all covered. mincore/dmabuf-heuristics/SafetyCenter too niche. Task2B backlog: 0. Coverage saturated (737 sections)."
+    },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
@@ -533,10 +540,10 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-14T14:13:54+08:00",
-    "last_section": "8.34",
-    "result": "deprecated-duplicate",
-    "note": "Draft 8.34 (task scheduler + ML prediction) deprecated as duplicate of §1.43 (Android 17 ML Scheduler, ready-for-review). 17 empty drafts remaining."
+    "last_run": "2026-07-14T19:15:11.499106+08:00",
+    "last_section": "none",
+    "result": "no-candidates",
+    "note": "Gap mining round 115: 0 candidates >=14. 115th consecutive. Coverage saturated (737 sections). All sources stale."
   },
   "task2b_lite": {
     "total_fixed": 1,

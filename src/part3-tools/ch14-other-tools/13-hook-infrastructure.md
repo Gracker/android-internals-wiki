@@ -652,3 +652,8 @@ Hook 技术的实际价值不在于"有几种实现方式"，而在于填补性�
 3. **整机监控走 atrace/Perfetto SDK（系统级插桩）**：Systrace 和 Perfetto 的底层 atrace HAL 本身就是一个稳定的 Hook 层，无需自建 Hook 框架就能覆盖 framework 关键路径。
 
 Hook 不是银弹——每次 Hook 都有额外调用开销，PLT 表项被替换后某些 linker 优化（如 IFUNC resolver）会绕过 Hook。选择 Hook 方案前先确认：Perfetto SDK 的 track event 或 atrace 插桩能不能覆盖你的观测需求？能就不用 Hook；不能，再从 PLT Hook → inline hook 逐级加码。
+
+
+<!-- AIW-源码调研-2026-07-14-补充 -->
+
+> **2026-07-14 补充（Android 17 bionic linker 行为）**：`bionic/linker/linker.cpp::soinfo::prelink_image()` 在解析 `.dynamic` 段时，对 `DT_PLTGOT` 给出了明确注释：`// Ignored (because RTLD_LAZY is not supported).` 因此 Android 上的 GOT Hook 没有 glibc-style 的 lazy window；`R_GENERIC_JUMP_SLOT` 在 `soinfo::link_image()` 调用 `relocate()` 期间通过 `process_relocation_impl<RelocMode::General>()` fast path 把函数实地址一次性写入 GOT，hook 工具必须在 `dlopen()` 返回前完成 trampoline 替换（详情见 `DeepResearch/2026-07-14-android17-native-hook-three-schools-inlinhook-arm64.md`）。此外，`protect_relro()` 在 link_image 末尾执行（`linker.cpp:3480+`），把 GNU_RELRO 段写回只读，因此 hook 框架写入时机容差极小；ARM64 MEMTAG globals 启用后 RELRO 内字节含义被改写（`linker_relocate.cpp:345-358`），更增加直接 inline 修补 RELRO 段的难度。

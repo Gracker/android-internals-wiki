@@ -197,3 +197,64 @@ App 不能控制 ZRAM，不应把“关闭 swap”或“调系统属性”写进
 - 线上归因不要只记 `REASON_LOW_MEMORY`。建议同时记录 relaunch TTID/TTFD、上次 `ApplicationExitInfo`、前后台停留时间、设备 RAM 档位、进程内存快照和是否走冷启动。没有这些上下文，线上只能知道“发生过低内存”，很难定位到 ZRAM 换入。
 
 本小节的结论可以压成一句：ZRAM 减少的是进程被杀的概率，代价可能转移到回前台时的解压、换入和重新触碰页面。把这部分成本从启动耗时里拆出来，才能判断问题该归到 App 内存预算、系统内存压力，还是设备级 ZRAM 策略。
+
+
+<!-- AIW-源码调研-2026-07-14:Android 17 ZRAM 多后端 + recompression 架构（Kernel 6.18） -->
+
+## Android 17 ZRAM 多后端 + recompression 架构（Kernel 6.18 源码补全）
+
+> 调研日期：2026-07-14  
+> 源码基准：`android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6`  
+> 调研依据：`DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md`
+
+**目录迁移**：Android 17 内核（6.18）把 ZRAM 从历史位置 `mm/zram.c` 拆为 `drivers/block/zram/` 子目录，并按压缩算法分离 backend：
+
+```
+drivers/block/zram/
+├── zram_drv.c / zram_drv.h / zram_ioctl.c
+├── zcomp.c / zcomp.h        # 压缩抽象层
+├── backend_lzo.c / backend_lzorle.c
+├── backend_lz4.c / backend_lz4hc.c
+├── backend_zstd.c / backend_deflate.c
+└── backend_842.c            # Power 架构
+```
+
+`zcomp.c` 通过 `backends[]` 注册表 + `IS_ENABLED(CONFIG_ZRAM_BACKEND_*)` 控制编译期可见性，所有 backend 实现统一 `zcomp_ops` 接口（`create_ctx / destroy_ctx / compress / decompress`）。
+
+**多 compressor 设计**（`zram_drv.h`）：
+
+```c
+#ifdef CONFIG_ZRAM_MULTI_COMP
+#define ZRAM_PRIMARY_COMP     0U
+#define ZRAM_SECONDARY_COMP   1U
+#define ZRAM_MAX_COMPS        4U   // 最多 4 个 compressor
+#else
+#define ZRAM_PRIMARY_COMP     0U
+#define ZRAM_SECONDARY_COMP   0U
+#define ZRAM_MAX_COMPS        1U
+#endif
+```
+
+每个 slot 的 `attr.flags` 用 `ZRAM_COMP_PRIORITY_BIT1 / BIT2` 两位记录「该 slot 当前由 primary 还是 secondary 压缩」。recompression 阶段（`comp_algorithm_recomp_store`）依据优先级判断升档：
+
+```c
+// zram_drv.c（约 2644-2653 行）
+if (get_slot_comp_priority(zram, index) + 1 >= prio_max)
+    goto next;   // 已达最高优先级，跳过
+```
+
+**huge class 跳过压缩**（`zram_drv.c` 2517、2558 行）：当 `comp_len >= zs_huge_class_size(zram->mem_pool)` 时直接打 `ZRAM_HUGE` 标记并可选走 `ZRAM_WRITEBACK` 把冷大页踢出 zram，省 zsmalloc 内存。
+
+**post-processing 异步流水线**（`zram_drv.c` 1100-1300 行附近）：
+
+- `select_pp_slot()` 从红黑树选 idle / huge slot
+- `zram_prefetch_from_bdev()` 发起 `REQ_OP_READ` bio
+- `zram_prefetch_read_endio()` 在 `bi_end_io` 回调 `INIT_WORK(&req->work, zram_deferred_prefetch)` 后 `queue_work(system_highpri_wq, ...)`
+- `zram_deferred_prefetch()` 重新 `slot_lock()` + 二次校验 `ZRAM_WB` flag 后调 `zram_populate_table()`
+
+要点：prefetch 在 bdev IO 完成前 slot 锁可释放，避免与 free 路径 race。
+
+**Kconfig 默认值**：`ZRAM_DEF_COMP_LZORLE`（`drivers/block/zram/Kconfig`）。`ZRAM_BACKEND_FORCE_LZO` 提供兜底：当所有新 backend 关闭时强制开启 LZO，兼容老 GKI 编译。
+
+[适用版本: Android 17 (API 37) / Kernel 6.18（`android17-6.18-2026-06_r6`）]
+

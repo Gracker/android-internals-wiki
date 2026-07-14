@@ -368,3 +368,80 @@ memcg v2 迁移影响更大的是 per-app 内存归因和 `dumpsys meminfo` 的�
 - 摘要：Android 17 LMKD 从 system/core 迁移至 system/memory/lmkd/，全面采用 PSI（Pressure Stall Information）替代 vmpressure。通过 BPF ring buffer 实时监听 direct reclaim/kswapd/vendor kill 事件，基于 zone watermarks、thrashing 和 swap utilization 三维决策模型选择 kill 目标。pidfd 等待取代传统信号量，PSI 监听间隔分 10ms（高压力）和 100ms（低压力），通过 epoll 事件驱动高效响应。
 - 注入时间：2026-07-08
 - 价值：补全 ch04 关于 LMKD PSI 监听机制和内存压力三维决策模型的源码级盲区
+
+
+<!-- AIW-源码调研-2026-07-14:PSI 内核态聚合 + lmkd 三档阈值 + ZRAM-aware free_swap（Android 17） -->
+
+## Android 17 PSI 内核态聚合 + lmkd 三档阈值与 ZRAM-aware free_swap（源码补全）
+
+> 调研日期：2026-07-14  
+> 源码基准：`kernel/common refs/tags/android17-6.18-2026-06_r6:kernel/sched/psi.c`（1689 行） + `platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1`  
+> 调研依据：`DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md`
+
+**PSI 内核态核心数据结构**（`kernel/sched/psi.c`）：
+
+```c
+struct psi_group_cpu {
+    u64 state_start;          // 当前 state 起点时间戳
+    u32 state_mask;           // 当前 state 位图（PSI_IO/MEM/CPU/IRQ × SOME/FULL）
+    u32 times[PSI_NONIDLE + 1];  // 各状态累计时间
+};
+
+struct psi_group {
+    struct psi_group_cpu __percpu *pcpu;
+    struct mutex avgs_lock;
+    u64 avg[PSI_AVGS_MAX][3];   // avg10 / avg60 / avg300
+    u64 total[PSI_AVGS][PSI_RES_MAX * 2 + 1];
+    struct delayed_work avgs_work;
+    struct timer_list rtpoll_timer;
+    struct task_struct *rtpoll_task;
+    ...
+};
+```
+
+`record_times()` 在每次 `psi_task_change()` 入口被调用，把 `state_start → now` 的 delta 累加到 `times[]`。`psi_rtpoll_work()` 由独立 kthread 跑 `wait_event_interruptible(rtpoll_wait, atomic_cmpxchg(rtpoll_wakeup, 1, 0))`，被 epoll `EPOLLPRI` 唤醒后调用 `collect_percpu_times()` + `update_triggers()`。`psi_memstall_enter/leave()` 是 direct reclaim / kswapd 路径的入口，在 `__alloc_pages_slowpath()` 中调用。
+
+**lmkd 三档 PSI 阈值**（`lmkd.cpp` 第 231-234 行）：
+
+```cpp
+static struct psi_threshold psi_thresholds[VMPRESS_LEVEL_COUNT] = {
+    { PSI_SOME, 70 },    // low: 70ms / 1s SOME stall
+    { PSI_SOME, 100 },   // medium: 100ms / 1s SOME stall
+    { PSI_FULL, 70 },    // critical: 70ms / 1s FULL stall
+};
+```
+
+`init_psi_monitors()` 在新策略下覆盖默认值：
+
+```cpp
+if (use_new_strategy) {  // low_ram_device || !use_minfree_levels
+    psi_thresholds[VMPRESS_LEVEL_LOW].threshold_ms = 0;     // 关闭 low
+    psi_thresholds[VMPRESS_LEVEL_MEDIUM].threshold_ms = psi_partial_stall_ms;
+    psi_thresholds[VMPRESS_LEVEL_CRITICAL].threshold_ms = psi_complete_stall_ms;
+}
+```
+
+`use_new_strategy = low_ram_device || !use_minfree_levels`，且要求 memcg v1 才走老策略；否则 `ALOGE("Old kill strategy can only be used with v1 cgroup hierarchy"); return false;`。
+
+**`get_free_swap()` ZRAM 适配**（`lmkd.cpp` 第 2026-2033 行）：
+
+```cpp
+// In the case of ZRAM, mi->field.free_swap can't be used directly because
+// swap space is taken from the free memory or reclaimed. Use the lowest of
+// free_swap and easily available memory to measure free swap
+static inline int64_t get_free_swap(union meminfo *mi) {
+    if (swap_compression_ratio)
+        return std::min(mi->field.free_swap,
+            mi->field.easy_available * swap_compression_ratio / swap_compression_ratio_div);
+    return mi->field.free_swap;
+}
+```
+
+`swap_compression_ratio / div` 通过 `ro.lmk.swap_compression_ratio`（默认 1）调节：当 ZRAM 把匿名页压缩到 1/2 时，free_swap 在内存视角相当于翻倍。这一逻辑保证 lmkd 不会在 ZRAM 实际可用内存还很多时仍触发 kill。
+
+**`__mp_event_psi()` 统一事件入口**（`lmkd.cpp` 第 2773 行）：从 `mp_event_psi()` / `memevent_listener_notification()` / vendor hook 汇入，先 `record_wakeup_time()` 记时间戳，再按 `level_oomadj[]` 选 oom_score_adj 区间映射的 candidate，启用 `kill_heaviest_task` 时优先 RSS+swap 最大者。Reaper 通过 `pidfd_send_signal()` + `pidfd` 监听死亡，`poll_params->update = POLLING_PAUSE` 等待死亡通知。
+
+**监听间隔分级**：`PSI_POLL_PERIOD_SHORT_MS = 10`（高压力），`PSI_POLL_PERIOD_LONG_MS = 100`（低压力），避免 lmkd 自旋轮询 `/proc/pressure/*`。事件通知走 epoll `EPOLLPRI`（`libpsi/psi.cpp` 第 79 行 `epev.events = EPOLLPRI`）。
+
+[适用版本: Android 17 (API 37) / Kernel 6.18 + lmkd android-17.0.0_r1]
+
