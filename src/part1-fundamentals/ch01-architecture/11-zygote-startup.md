@@ -8,9 +8,9 @@ drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-18"
 reviewed_by: "openclaw-task6"
-applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
+applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37) (以 android-17.0.0_r1 为基准验证)"
 last_verified: "2026-04-11"
-last_verified_against: "AOSP android-17.0.0_r1 (Zygote preload 序列与 android-16 一致，主线以 android-17.0.0_r1 为基准)"
+last_verified_against: "AOSP android-17.0.0_r1 (ZygoteInit.java / Zygote.java / ZygoteServer.java / ZygoteProcess.java / RuntimeInit.java / ActivityThread.java / ProcessList.java); preload 主序列以 android-17.0.0_r1 为基准，与 android-16 行为一致"
 confidence: high
 sources:
   - type: aosp
@@ -43,14 +43,14 @@ sources:
     path: "https://developer.android.com/reference/android/app/ZygotePreload"
 tags: [zygote, fork, startup, preload, cow, usap, app-zygote, webview]
 related_chapters: ["1.2", "1.3", "8.2", "8.3"]
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 task9_state: pending
-task9_result: needs-rework
+task9_result: pending
 last_task9_review_log: logs/deep-review/2026-07-14-17-deep-review.md
 last_task9_at: "2026-07-14T17:26:54+08:00"
 last_task9_review_notes: "2026-07-14 Task9 deep-review: needs-rework。P0 0 / P1 2。需要修复 USAP 与 Child Zygote 关系描述、16KB 页边界影响数据等问题后重新复审。Round 2: P0=0 / P1=2 (applicable_versions vs last_verified_against 不一致 + frontmatter task9_state 重复字段冲突). P2 1 (USAP 边界前提). queue.json 新增 P95 条目."
 finalized_by: openclaw-task9-auto-promote
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-07-14"
 last_task6_review_log: "logs/review/2026-07-14-19-review.md"
@@ -64,7 +64,7 @@ task2b_state: fixed
 task2b_result: fixed
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
-last_task2b_at: 2026-07-14T18:51:57+08:00
+last_task2b_at: 2026-07-14T20:51:00+08:00
 last_task6_audit: "2026-06-24"
 last_task6_at: "2026-07-14T19:39:29+08:00"
 reviewed_at: "2026-05-18T03:31:27+08:00"
@@ -123,7 +123,7 @@ private static void maybePreloadGraphicsDriver() {
   - `UPDATABLE_DRIVER_GLOBAL_OPT_IN_OFF (3)` → 强制 system graphics driver
 - **系统属性**:`ro.gfx.driver.0` (production)、`ro.gfx.driver.1` (prerelease)、`ro.gfx.driver_build_time`
 
-#### 完整 Preload 序列(ZygoteInit.java 行 119-163)
+#### 完整 Preload 序列(ZygoteInit.java 行 296-371)
 
 1. `beginPreload()` → `ZygoteHooks.onBeginPreload()`
 2. `preloadClasses()` → `/system/etc/preloaded-classes`
