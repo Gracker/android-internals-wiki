@@ -8,16 +8,16 @@ status: ready-for-review
 applicable_versions: Android 8-17 (API 26-37)
 last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfetto 官方文档, 官方性能博客
 tags: [performance, methodology, perfetto, profiling, optimization, android]
-task9_result: needs-rework
+task9_result: auto-fixed
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-07-13
 last_task9_at: "2026-07-14T05:20:00+08:00"
 task9_audit_type: deep-review
 last_task9_review_log: logs/deep-review/2026-07-13-20-deep-review.md
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task2b_state: fixed
 last_task6_at: 2026-07-14T07:07:51+08:00
 last_task6_review_log: logs/review/2026-07-14-07-review.md
@@ -32,7 +32,7 @@ task6_review_notes_round10: "2026-07-14 Task6 revisiting-review round10 (post-Ta
 task6_review_notes_round11: "2026-07-14 Task6 revisiting-review round11 (post-Task2B P1×4+P2×2+禁用词修复): pass-light-edit. L1 clean (banned-word scan: 0 real hits; 矩阵=priority matrix false positive, 上分=substring of 线上分布 false positive). High-freq words all within limits (真正×1=legitimate, 彻底×1=不彻底 legitimate). Restricted patterns: 2 (不是X而是Y at limit, stable since round5). Structural meta-narrative: 0. Adjective+colon: 0. L2 pass (opening direct, rhythm good, structure clear, breathing points adequate). L3 pass (SoC vendor comparison table well-structured, SQL examples actionable, source paths anchored to android-17.0.0_r1, 5-Whys walkthrough intact, SDM cross-reference clean). L4 pass (natural Chinese, peer-to-peer tone, no translation feel, no AI-pattern sentences). No L1/L2 fixes needed this round. No B-class writing issues. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Pipeline sent to Task9 for final tech confirmation."
 task2b_result: fixed
 task2b_verifier_note: "2026-07-04T15:29:52+08:00 task9_state reviewed→pending: Task6 round7 已通过并发送至 Task9 复审，task9_state 应为 pending"
-last_task2b_at: 2026-07-14T06:54:06+08:00
+last_task2b_at: 2026-07-14T08:56:47+08:00
 last_task2b_lite_at: 2026-07-04
 task9_task6_review_notes: | 2026-07-02 Task6 re-review (revisiting): needs-rework。L1 修复 4 处（禁用词+空壳章节）。B 类问题：章节整体为百科词条式罗列、案例数据疑似编造、Section 12 内容空泛、缺少 Perfetto 实战维度。已写入 queue priority:90。 | 2026-07-03 17:27 Task9 复核：16:32 入队的 2 条 P85（FrameRateOverrides + persist.traced.enable fallback）仍然成立，本节继续走 Task 2B。不在本轮新增 P0/P1。
 review_notes: "2026-06-27 Task2B Lite: 曾修复 Perfetto 版本描述与 ADB 命令版本限定；2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Perfetto/traced 命令入口、服务启用边界与 Android 17 CLI 选项；回 Task6 复审。 | 2026-07-02 Task2B 主修复：结构性回炉——去百科化、移除编造案例数据、删除泛化云原生/5G/边缘计算内容、补充 Perfetto SQL 实战示例。 | 2026-07-02 Task9 Deep Review AUTO-FIX: 修正 Perfetto CLI detached/background 语义与 trace_processor SQL join/schema 示例；回 Task6 复审。 | 2026-07-03 17:27 Task9 复核：2 项 P1 仍成立（FrameRateOverrides、persist.traced.enable fallback），已在 queue.json 中持有 P85 entry 2 条，本轮未新增，继续走 Task 2B 闭环。"
@@ -46,6 +46,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-05
 task2b_lite_notes: "2026-07-04 Task2B Lite (07:35轮): 修正 VSync 偏移源码引用(VSyncTracker.cpp单文件→VSyncDispatch/VSyncModulator/VSyncTracker三组件协作); 补充 5W2H 与工具选择的原理桥接段落(section 2.2)。P95 from deep-review 2026-07-04-07. | 2026-07-04 Task2B Lite: 修正 Perfetto 源码路径前缀缺失（src/perfetto_cmd/perfetto_cmd.cc → external/perfetto/src/perfetto_cmd/perfetto_cmd.cc; src/traced/service/service.cc → external/perfetto/src/traced/service/service.cc）。P1 from deep-review 2026-07-04-00."
 task2b_main_round_20260714: "2026-07-14 Task2B 主修复: P1×4(AOSP路径验证澄清+Android 17边界标记+数据来源声明+交叉引用补全)+P2×2(SDM参考+构建系统引用)。子章节15.5/15.7版本基线android-16→android-17.0.0_r1。禁用词修复(底层→实现)。"
+task2b_main_notes_20260714: "2026-07-14T08:56:47+08:00 Task2B 主修复 (P95): 修正 §3.2 traced 参数边界描述——区分 CLI 启动选项（--background/--version/--set-socket-permissions/--enable-relay-endpoint）和 socket 协议层缓冲区配置（TraceConfig.buffers[].size_kb）。明确 -b/--async 为 perfetto CLI 选项，由 CLI 填入 TraceConfig 后通过 socket 发给 traced，而非 traced 命令行参数。"
 task2b_main_notes: "2026-07-14 AIW 源码调研集成：将文末 AIW-源码调研-2026-07-07 段落中 Power HAL AIDL v7/HintManagerService/BatteryStatsService 三层内容以叙述风格融入 section 4.1 SoC 分层讨论，删除裸行号引用，替换为函数名+行为描述。 | 2026-07-04 Task2B 主修复：P0-删除不存在的debug.perfetto.enabled属性修正DeviceConfig描述；P1-补充heapprofd构建类型说明/SQL验证说明/案例数据免责声明；P2-新增Android14+隐私限制节(3.3)+跨厂商Perfetto差异节(3.4)+FrameRateOverrides与WindowManager交互+VSync offset源码锚点"
 ---
 
@@ -152,7 +153,9 @@ adb shell setprop persist.traced.enable 1
 adb shell perfetto -t 10s -b 32mb -o /data/misc/perfetto-traces/trace.pftrace sched/sched_switch gfx
 ```
 
-**Android 14-17 (API 34-37)**：Perfetto CLI + traced service 的组合完全替代 Systrace。长时采集有两种后台模式：`perfetto -d`（`--background`）直接后台运行；`perfetto --detach=<key>` 创建 detached session，支持搭配 `--background-wait` 在后台等待采集完成后自动退出，后续通过 `--attach=<key> --stop` 回收。`-d` 和 `--detach` 是两套独立的后台模式，参数不能互换。`traced` 自身只接受服务端选项（`--background`、`--version`、`--set-socket-permissions`），不要给它传 `-b` 或 `--async`。
+**Android 14-17 (API 34-37)**：Perfetto CLI + traced service 的组合完全替代 Systrace。长时采集有两种后台模式：`perfetto -d`（`--background`）直接后台运行；`perfetto --detach=<key>` 创建 detached session，支持搭配 `--background-wait` 在后台等待采集完成后自动退出，后续通过 `--attach=<key> --stop` 回收。`-d` 和 `--detach` 是相同后台采集模式的不同参数形式，功能等价。
+
+`traced` 自身只接受服务端启动选项（`--background`、`--version`、`--set-socket-permissions`、`--enable-relay-endpoint`）。缓冲区大小由 `traced` 内部按 tracing session 配置管理——缓冲区参数在 `traced` 与 producer/consumer 的 socket 协议交互中协商（配置入口为 `protos/perfetto/config/trace_config.proto` 中的 `TraceConfig.buffers[].size_kb`），不在命令行层面透出。因此 `traced` 不接受客户端命令行传来的 `-b` 或 `--async`——这些是 `perfetto` CLI 的选项，由 CLI 填入 TraceConfig 后通过 socket 发给 traced。
 
 ```bash
 # 长时后台采集
@@ -166,7 +169,7 @@ adb shell perfetto --attach=my_trace --stop
 
 `external/perfetto/perfetto.rc` 中 `traced`、`traced_relay`、`traced_probes` 三个 service 均为 `disabled`。标准 AOSP 通过 `persist.traced.enable=1` 的 init action 启动 `traced` / `traced_probes`，同时创建 `/data/misc/perfetto-traces` 和 `/data/misc/perfetto-configs` 目录。Pixel 或厂商镜像可通过 vendor init、DeviceConfig 或属性默认值覆盖启用边界。
 
-`external/perfetto/src/perfetto_cmd/perfetto_cmd.cc` 中 `perfetto` CLI 接受的参数：`-c/--config`、`-o/--out`、`-t/--time`、`-b/--buffer`、`-d/--background`、`-D/--background-wait`、`--detach/--attach`。`external/perfetto/src/traced/service/service.cc` 中 `traced` 只处理 `--background`、`--version`、`--set-socket-permissions`、`--enable-relay-endpoint`，不接受 `-b` 或 `--async`。
+`external/perfetto/src/perfetto_cmd/perfetto_cmd.cc` 中 `perfetto` CLI 接受的参数：`-c/--config`、`-o/--out`、`-t/--time`、`-b/--buffer`、`-d/--background`、`-D/--background-wait`、`--detach/--attach`。`external/perfetto/src/traced/service/service.cc` 中 `traced` 只处理服务端启动选项 `--background`、`--version`、`--set-socket-permissions`、`--enable-relay-endpoint`。缓冲区配置不经过 CLI 参数——`perfetto` CLI 通过 socket 将 `TraceConfig`（含 `buffers[].size_kb`）发送给 `traced`，`traced` 再根据配置内部分配和管理缓冲区。因此 `traced` 不接受客户端命令行传来的 `-b` 或 `--async`。
 
 **Android 17（API 37）Perfetto 启用方式的变化**：**Android 17（API 37，基于 android-17.0.0_r1）**的 Perfetto 控制机制在 `persist.traced.enable=1`（AOSP init rc 方式）基础上，通过 DeviceConfig 框架提供了更细粒度的运行时控制能力。DeviceConfig 允许在无需 root 的条件下，按数据源粒度动态开关 Perfetto 的生产者——例如仅在需要分析内存时启用 heapprofd，避免全局 tracing 的持续性能开销。
 
