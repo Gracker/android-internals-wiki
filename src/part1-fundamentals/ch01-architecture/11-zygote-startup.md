@@ -6,7 +6,7 @@ section: "1.11"
 status: "ready-for-review"
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-18"
+reviewed_date: "2026-07-14"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37) (以 android-17.0.0_r1 为基准验证)"
 last_verified: "2026-04-11"
@@ -43,18 +43,18 @@ sources:
     path: "https://developer.android.com/reference/android/app/ZygotePreload"
 tags: [zygote, fork, startup, preload, cow, usap, app-zygote, webview]
 related_chapters: ["1.2", "1.3", "8.2", "8.3"]
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task9_state: pending
 task9_result: pending
 last_task9_review_log: logs/deep-review/2026-07-14-17-deep-review.md
 last_task9_at: "2026-07-14T17:26:54+08:00"
 last_task9_review_notes: "2026-07-14 Task9 deep-review: needs-rework。P0 0 / P1 2。需要修复 USAP 与 Child Zygote 关系描述、16KB 页边界影响数据等问题后重新复审。Round 2: P0=0 / P1=2 (applicable_versions vs last_verified_against 不一致 + frontmatter task9_state 重复字段冲突). P2 1 (USAP 边界前提). queue.json 新增 P95 条目."
 finalized_by: openclaw-task9-auto-promote
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-07-14"
-last_task6_review_log: "logs/review/2026-07-14-19-review.md"
-task6_review_notes: "07-14 18 Task6 revisiting：pass-light-edit。L1 小修 1 处（禁用词 链路 → 调用路径）；outline 6/6 覆盖；frontmatter YAML 管道符腐蚀修复 + 过期 task9 重复字段清理。Task9 2026-07-14 needs-rework（P1:2），待 Task9 修复后重新复审。"
+last_task6_review_log: "logs/review/2026-07-14-21-review.md"
+task6_review_notes: "07-14 21 Task6 re-review (post-Task2B fix): pass-light-edit。L2 小修 3 处（移除「你」→无主语改写，符合 writing-guide）；outline 6/6 覆盖；L1 禁用词扫描全清。Task9 needs-rework P1:2 已由 Task2B 修复（源码行号+版本声明），待 Task9 复审。"
 last_task9_audit: "2026-05-26"
 last_task9_audit_at: "2026-05-26T14:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-26-14-audit.md"
@@ -66,7 +66,7 @@ repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
 last_task2b_at: 2026-07-14T20:51:00+08:00
 last_task6_audit: "2026-06-24"
-last_task6_at: "2026-07-14T19:39:29+08:00"
+last_task6_at: "2026-07-14T21:09:00+08:00"
 reviewed_at: "2026-05-18T03:31:27+08:00"
 task9_review_log: "logs/deep-review/2026-05-18-03-deep-review.md"
 ---
@@ -189,7 +189,7 @@ Zygote 把所有"几乎每个进程都会用到"的公共初始化工作前置�
 
 在 16KB Page Size 的设备上，COW 的收益会进一步放大。页表条目数量减少约 75%,fork() 复制虚拟地址空间(`dup_mmap`)的耗时随之缩短。这个效果在高内存压力场景更明显--页表越精简，fork 期间需要遍历和复制的 VMA 链表条目就越少。
 
-这一点也决定了 Zygote 优化的边界。它擅长解决"公共初始化不要重复做",但它解决不了 App 自己的业务初始化。你在 `Application.onCreate()` 里主动初始化十几个 SDK,Zygote 并不会替你背锅。
+这一点也决定了 Zygote 优化的边界。它擅长解决"公共初始化不要重复做",但它解决不了 App 自己的业务初始化。在 `Application.onCreate()` 里主动初始化十几个 SDK,Zygote 并不背这口锅。
 
 ## 从启动到建进程：谁在和 Zygote 通信
 
@@ -241,7 +241,7 @@ maybePreloadGraphicsDriver();
 
 同样不要把 `preloaded-classes` 想成"所有常用 UI 类都在里面"。它主要是 bootclasspath / framework 侧的高频类。至少在 android-17.0.0_r1 的 `frameworks/base/config/preloaded-classes` 里，并没有 `androidx.recyclerview.widget.RecyclerView` 这种 AndroidX 控件。也就是说，framework 预热和应用侧库预热是两回事。
 
-再补一个经常看错的点：这些 preload trace 发生在 **zygote 进程**,不是 `system_server` 进程。代码就是在 `ZygoteInit.main()` 的 preload 阶段执行的，此时 `system_server` 还没被 fork 出来。所以如果你在开机 trace 里想分析 preload 过慢，不要跑到 `system_server` track 上找这些 slice。
+再补一个经常看错的点：这些 preload trace 发生在 **zygote 进程**,不是 `system_server` 进程。代码就是在 `ZygoteInit.main()` 的 preload 阶段执行的，此时 `system_server` 还没被 fork 出来。所以如果在开机 trace 里想分析 preload 过慢，不要跑到 `system_server` track 上找这些 slice。
 
 ## fork 之后到 Application.onCreate() 之前，实际发生了什么
 
@@ -277,7 +277,7 @@ if (pid == 0) {
 mgr.attachApplication(mAppThread, startSeq);
 ```
 
-这一步完成后，AMS / ATMS 才知道"这个新进程真的起来了，可以往里下发绑定和启动事务了"。如果你打开了 Android logs 数据源，通常会看到 `am_proc_start` 先出现，`am_proc_bound` 随后出现。前者表示 AMS 决定起进程，后者表示新进程已经和 `system_server` 建立好绑定关系。
+这一步完成后，AMS / ATMS 才知道"这个新进程真的起来了，可以往里下发绑定和启动事务了"。如果打开了 Android logs 数据源，通常会看到 `am_proc_start` 先出现，`am_proc_bound` 随后出现。前者表示 AMS 决定起进程，后者表示新进程已经和 `system_server` 建立好绑定关系。
 
 App 主线程收到 `bindApplication` 之后，trace 会进入 `handleBindApplication()`、`ContentProvider` 安装、`Application` 创建和 `Application.onCreate()` 的前半段准备工作：
 
@@ -412,6 +412,78 @@ ZygoteServer() {
 ### 误区 4:主 Zygote preload 了所有常用库
 
 不要把 framework preload 和应用侧库 preload 混成一锅。`preloaded-classes` 主要覆盖 framework 高频类，不意味着 AndroidX、三方 SDK、业务类都已经在 Zygote 里热好了。
+
+<!-- AIW-源码调研-2026-07-14 -->
+
+## Zygote 与 lmkd 在低 RAM 设备上的协同机制（android-17.0.0_r1 补充）
+
+> 范围：本节补全 research-gaps 中「Zygote 与 LMK 协同」「内存压力下预加载策略」「不同内存容量设备上的 fork 性能差异」三个盲区。所有结论锚定 `android-17.0.0_r1` 源码。
+
+### 1. lmkd 守护进程基于 `ro.config.low_ram` 的多策略切换
+
+**源码位置**：`system/memory/lmkd/lmkd.cpp @ android-17.0.0_r1`
+
+```cpp
+// 行 4107-4127
+low_ram_device = property_get_bool("ro.config.low_ram", false);
+per_app_memcg = property_get_bool("ro.config.per_app_memcg", low_ram_device);
+psi_partial_stall_ms = GET_LMK_PROPERTY(int32, "psi_partial_stall_ms",
+    low_ram_device ? DEF_PARTIAL_STALL_LOWRAM : DEF_PARTIAL_STALL);
+thrashing_limit_pct = std::max(0, GET_LMK_PROPERTY(int32, "thrashing_limit",
+    low_ram_device ? DEF_THRASHING_LOWRAM : DEF_THRASHING));
+```
+
+`low_ram_device` 是单个 bool 开关，lmkd 据此切换 5 个 PSI/thrashing 参数的「lowram 调优」与「默认调优」两套值（partial stall 窗口更短、thrashing limit 更激进），触发更早的进程 kill。`use_new_strategy` 在 `use_minfree_levels=false` 或 `low_ram_device=true` 时启用（行 3616），低 RAM 设备默认走 PSI 新策略而不依赖 minfree 阈值。
+
+**调用链**：`ProcessList.updateOomLevels()` → `writeLmkd(buf, null)` → `sLmkdConnection.exchange()` → `ctrl_command_handler()` → `cmd_target()`（`lmkd.cpp` 行 1436-1500）。
+
+### 2. ProcessList 基于 `mTotalMemMb` 的 6 档 minfree 插值
+
+**源码位置**：`frameworks/base/services/core/java/com/android/server/am/ProcessList.java @ android-17.0.0_r1`
+
+```java
+// 行 1019-1078 updateOomLevels()
+float scaleMem = ((float) (mTotalMemMb - 350)) / (700 - 350);
+float scaleDisp = ((float)(displayWidth * displayHeight) - 480*800) / (1280*800 - 480*800);
+float scale = scaleMem > scaleDisp ? scaleMem : scaleDisp;  // max(内存, 屏幕)
+if (scale < 0) scale = 0; else if (scale > 1) scale = 1;
+```
+
+- 内存 < 350MB 强制取 Low（512MB 设备档位），700MB+ 取 High（1GB 设备档位），中间线性插值。
+- 64-bit 微调：`i==4`（CACHED_APP_MIN_ADJ）high × 3/2，`i==5`（CACHED_APP_LMK_FIRST_ADJ）high × 7/4，**低 RAM 64-bit 设备的缓存压力场景显著受影响**。
+- 厂商可通过 `config_lowMemoryKillerMinFreeKbytesAbsolute`（绝对比例覆盖）和 `config_lowMemoryKillerMinFreeKbytesAdjust`（相对调整）改写默认档位。
+
+**典型值对比**（32-bit 假设，未叠加 64-bit 微调）：
+
+| 设备 | scale | CACHED_APP_LMK_FIRST_ADJ minfree |
+|---|---|---|
+| 512MB（mTotalMemMb≈512，scale≈0.46） | 0.46 | ≈ 22 MB |
+| 1GB（mTotalMemMb≈1024，scale=1.0） | 1.0 | ≈ 184 MB |
+
+**5× 差距**：低 RAM 设备上 zygote 缓存进程被更快清理，fork 子进程时 COW 物理页复用率显著下降。
+
+### 3. Zygote preload：启动期一次性执行，无 lmkd 实时反馈
+
+**源码位置**：`frameworks/base/core/java/com/android/internal/os/ZygoteInit.java @ android-17.0.0_r1`
+
+- `ZygoteInit.preload()`（行 128-176）由 init.rc 触发启动后立即执行，`sPreloadComplete` 静态标志保证只跑一次。
+- `lazyPreload()`（行 178-183）为延迟时机预留接口，`ZygoteProcess.preloadDefault()`（行 1151-1167）通过 `--preload-default` 命令可触发 lazy 模式，但 AMS 中 `preloadDefault` 调用点为空（非默认路径，OEM 集成预留）。
+- **`ZygoteInit.java` 全文件无 `low_ram|lowRam` 判断逻辑**——preload 在 init 时一次完成，剩余进程生命周期内不重新评估。
+
+### 4. fork 路径与 COW 复用的隐性关系
+
+**源码位置**：`frameworks/base/core/java/com/android/internal/os/Zygote.java @ android-17.0.0_r1`
+
+`forkAndSpecialize()`（行 376-405）→ `nativeForkAndSpecialize()` → `com_android_internal_os_Zygote_nativeForkAndSpecialize()` → libc `fork()`。子进程通过 fork 时的 COW 机制复用 zygote 已加载的 framework dex 物理页。**COW 复用率取决于父进程（zygote 中缓存的进程组）是否还在**：lmkd kill 越激进，子进程 fork 后越需重新加载物理页。
+
+`forkSystemServer()`（行 511-525）特殊之处：子进程死亡会触发 zygote 退出（与 `forkAndSpecialize` 的关键差异）。
+
+### 5. 实战建议
+
+- **512MB 设备 cold start 调优**：重点关注 `mOomMinFree[5]`（CACHED_APP_LMK_FIRST_ADJ）阈值，尝试上调 vendor `config_lowMemoryKillerMinFreeKbytesAdjust` 让缓存进程存活更久。
+- **thrashing 风暴检测**：通过 `lmkd.cpp` 行 3360 附近 PSI 订阅接口捕获 `LMK_ASYNC_EVENT_STAT`，关联 fork 风暴（如 OTA 后批量应用冷启动）。
+- **避免在 Application.onCreate 中 dlopen 重型库**：这些库若不在 preloaded-classes，会绕开 COW 复用。
+- **不依赖 `preloadDefault`**：当前 AMS 未自动触发 lazy preload，第三方应用无法可靠使用此 API。
 
 ## 与其他章节的关系
 

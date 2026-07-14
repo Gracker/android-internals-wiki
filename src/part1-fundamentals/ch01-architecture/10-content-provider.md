@@ -85,7 +85,7 @@ task6_l3_l4_issues: 0
 last_task2b_verifier_at: "2026-05-27T15:34:00+08:00"
 task2b_verifier_result: ready-for-task6
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-02
+last_deepseek_cn_review_at: 2026-07-14
 last_task9_audit: "2026-07-01 10:28:31"
 ---
 
@@ -133,8 +133,6 @@ ContentProvider 是 Android 四大组件中最「安静」的一个。日常开�
 
 ContentProvider 解决的核心问题：**让不同进程之间能安全地共享结构化数据**。Android 的进程隔离意味着 App A 不能直接碰 App B 的数据库文件——要读联系人数据，必须走一条跨进程通道，这条通道得同时解决三个问题：怎么找到数据、谁能访问、用什么格式传输。ContentProvider 就是这条通道。
 
-[已验证: 来源见 developer.android.com/guide/topics/providers/content-provider-basics]
-
 那为什么不直接用 Binder 传数据？Binder 是 Android IPC 的基础，但它面向的是「小数据量的命令式调用」——每个进程的 Binder 事务缓冲区只有约 1MB，所有并发事务共享。几万行的查询结果直接用 Binder 序列化，缓冲区直接就爆了。ContentProvider 在 Binder 之上构建了更合适的抽象层：
 
 - **URI 寻址**：每份数据用一个 `content://authority/path` 格式的 URI 标识，调用方不需要知道数据来自哪个数据库、哪张表
@@ -158,7 +156,7 @@ ContentProvider 最容易被忽视的性能问题，出在它的初始化时机�
 4. **`installContentProviders()`** → 逐一实例化并初始化所有 ContentProvider
 5. `Application.onCreate()` → 才轮到 Application 的初始化
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java, handleBindApplication() → installContentProviders() → callApplicationOnCreate()]
+(源码: AOSP android-17.0.0_r1, ActivityThread.handleBindApplication() → installContentProviders() → callApplicationOnCreate())
 
 要点是第 4 步：`installContentProviders()` 会遍历当前进程需要安装的 `<provider>`，对每一个调用 `installProvider()`，而 `installProvider()` 会依次调用 `ContentProvider.attachInfo()` 和 `ContentProvider.onCreate()`。**当前进程内 ContentProvider 的 onCreate() 都在 Application.onCreate() 之前执行，而且在主线程上顺序执行。**
 
@@ -181,7 +179,7 @@ ContentProvider 最容易被忽视的性能问题，出在它的初始化时机�
     android:authorities="com.example.analytics" />
 ```
 
-[已验证: AOSP android-17.0.0_r1, ComputerEngine.queryContentProviders() 按 ProviderInfo.initOrder 降序排序；ActivityThread.installContentProviders() 按已排序列表遍历]
+(源码: AOSP android-17.0.0_r1, ComputerEngine.queryContentProviders() 按 initOrder 降序排序；ActivityThread.installContentProviders() 依序遍历)
 
 这个顺序控制并不牢靠：它依赖于所有 CP 在同一个 manifest 中（包括合并后的 manifest），而且依赖库升级可能改变自己的 initOrder。如果 CP 之间有依赖关系（比如 CP B 需要 CP A 初始化完成），应该使用 Jetpack App Startup 的依赖图机制，而不是依赖 initOrder。
 
@@ -203,7 +201,7 @@ App B: ContentProvider$Transport.query()
   → 返回 Cursor
 ```
 
-[已验证: AOSP, frameworks/base/core/java/android/content/ContentProvider.java, Transport 内部类]
+(源码: AOSP, ContentProvider.java, Transport 内部类)
 
 `Transport` 在这里的作用是 Binder 协议的「翻译层」：它把 Binder 调用翻译成 ContentProvider 的方法调用。ANR traces.txt 中出现的 `ContentProvider$Transport.query` 栈帧，就是远端进程正在执行 `query()` 方法的标志。
 
@@ -211,7 +209,7 @@ App B: ContentProvider$Transport.query()
 
 `query()` 返回的是 `Cursor`，跨进程返回时不会把所有行塞进 Binder 事务。Provider 进程先把一批行写入 `CursorWindow`——这是一个共享内存窗口，底层通过文件描述符映射；Binder 只传描述符和少量元数据，不拷贝行数据。窗口默认大小来自 `config_cursorWindowSize`，AOSP 默认 2MB，厂商可调。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/database/CursorWindow.java, CursorWindow(String) + getCursorWindowSize()；core/res/res/values/config.xml config_cursorWindowSize=2048KB]
+(源码: AOSP android-17.0.0_r1, CursorWindow.java, 默认窗口大小来自 config_cursorWindowSize=2048KB)
 
 工作流程是这样的：
 
@@ -235,7 +233,7 @@ CursorWindow 容量有限，查询结果可能远大于当前窗口。SQLiteCurs
 
 `executeForCursorWindow()` 接收原始 SQL、绑定参数、`startPos` 和 `requiredPos`。源码没有把 SQL 改写成 `LIMIT/OFFSET`；性能风险来自窗口起点变大后，底层执行需要逐步走过前面的结果行，直到填到目标窗口。
 
-[已验证: AOSP android-17.0.0_r1, SQLiteCursor.onMove()/fillWindow(), SQLiteQuery.fillWindow(), SQLiteSession.executeForCursorWindow()]
+(源码验证: AOSP android-17.0.0_r1, SQLiteCursor.onMove() → SQLiteQuery.fillWindow() → SQLiteSession.executeForCursorWindow())
 
 偏移越深，填充下一窗口越慢。第 1 个窗口只需要从结果集起点填充；访问很靠后的行时，SQLite 仍要走过前面的结果，再把目标附近的行写入 CursorWindow。Perfetto 中的表现通常是 ContentProvider 所在进程的数据库查询耗时随翻页深度增长，`ContentProvider$Transport.query` 或数据库执行 slice 呈现阶梯式变长。
 
@@ -243,7 +241,7 @@ CursorWindow 容量有限，查询结果可能远大于当前窗口。SQLiteCurs
 
 除了 CursorWindow 的 2MB 限制，还有一个更隐蔽的瓶颈：**Binder 事务缓冲区只有 1MB，而且是一个进程内所有并发事务共享的**。
 
-[已验证: AOSP Binder 驱动默认配置，每个进程约 1MB]
+(AOSP Binder 驱动默认配置：每个进程约 1MB 事务缓冲区)
 
 即使单个 ContentProvider 调用的数据量远小于 1MB，如果同时有多个 ContentProvider 调用在并发进行（比如列表页同时请求多个数据源），它们的 Binder 事务数据也会累积超过缓冲区上限，触发 `TransactionTooLargeException`。在实践中，数据载荷达到约 0.5MB 时就可能触发此异常，因为缓冲区还需要留空间给其他系统 Binder 调用。
 
@@ -264,7 +262,7 @@ ContentProvider 的 ANR 涉及几类不同的超时和等待窗口，容易混�
 | **CRUD 操作超时** | 无独立超时 | 无 ContentProvider 专用超时；依赖调用方所在组件的 ANR 机制 | query/insert/update/delete 操作本身没有独立的 ContentProvider 级超时。ANR 来自调用方所在的组件（如 Activity 的 Input 超时 5 秒、Service 超时等），而非 ContentProvider 自身 |
 | **MIME / canonicalize 等已连接 provider 异步回调超时** | 3 秒 | `ContentResolver.CONTENT_PROVIDER_TIMEOUT_MILLIS` | Provider 已获取后，`getTypeAsync()`、`canonicalizeAsync()` 等异步回调默认等待 3 秒；这不是普通 CRUD 的统一超时 |
 
-[已验证: AOSP android-17.0.0_r1, `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` = 10s, `CONTENT_PROVIDER_READY_TIMEOUT_MILLIS` = 20s, `CONTENT_PROVIDER_TIMEOUT_MILLIS` = 3s；CRUD 操作无独立超时常量，ANR 由调用方组件超时机制触发]
+(源码: AOSP android-17.0.0_r1, CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS=10s, CONTENT_PROVIDER_READY_TIMEOUT_MILLIS=20s, CONTENT_PROVIDER_TIMEOUT_MILLIS=3s; CRUD 无独立超时常量)
 
 这些超时里最容易误判的是「CRUD 操作超时」。ContentProvider 的 query/insert/update/delete **没有自己的 10 秒超时**——常见误解是 ContentProvider 有一套类似 Service 的独立超时，但 AOSP 中并不存在这样的常量。traces.txt 中出现 ContentProvider 调用导致的 ANR 时，超时来源是调用方所在的组件（比如 Activity 的 Input dispatching timeout 5 秒）。
 
@@ -408,7 +406,6 @@ public class FirebaseInitializer implements Initializer<FirebaseApp> {
 }
 ```
 
-[已验证: developer.android.com/topic/libraries/app-startup]
 
 量化收益：每合并一个 ContentProvider 约节省 2ms 启动时间。在实际项目中，集成多个 SDK 的 App 通过 App Startup 合并后，冷启动时间可减少 35% 到 42%,极端案例从 2.8 秒降至 1.6 秒。
 
@@ -529,21 +526,11 @@ ContentProvider 不是孤立存在的，它和系统中的多个机制有紧密�
 
 ## ContentProvider 与 Jetpack 架构组件
 
-### Room 对 ContentProvider 的封装
+### Room 与 ContentProvider 的关系
 
-Room 是 Android 官方推荐的数据库访问层，它在 SQLite 之上提供了类型安全的抽象。Room 本身不直接使用 ContentProvider，但通过 `RoomDatabase` 的 `SupportSQLiteOpenHelper` 封装了数据库操作。如果需要暴露数据给其他 App，可以在 Room 的 `@Dao` 之上包装一层 ContentProvider。
+Room 是 Android 官方推荐的数据库访问层，它在 SQLite 上提供了类型安全的抽象。Room 本身不走 ContentProvider——它的 `SupportSQLiteOpenHelper` 直接操作数据库文件。只有当需要跨 App 共享数据时，才值得在 Room `@Dao` 之上包一层 ContentProvider。Room + ContentProvider 组合会额外增加 Binder 开销，只在跨 App 共享数据的场景下才是合理的。
 
-Room + ContentProvider 的组合会增加额外的 Binder 开销。如果数据只在 App 内部使用，直接用 Room 即可，不需要经过 ContentProvider 的跨进程机制。只有在需要跨 App 共享数据时才值得引入 ContentProvider。
-
-### ContentProvider vs Room + Repository 模式
-
-在现代 Android 架构中，推荐的模式是：
-
-- **App 内部数据访问**：Room + Repository 模式，不经过 ContentProvider
-- **跨 App 数据共享**：ContentProvider，但底层数据操作仍可以用 Room
-- **跨 App 简单文件共享**：FileProvider（ContentProvider 的子类）或 SAF（Storage Access Framework）
-
-ContentProvider 的角色正在从「通用的数据访问层」转向「跨进程数据共享的专用管道」——这是 Jetpack 架构组件推动的方向。
+在现代 Android 架构中，推荐的选择很直接：App 内部数据用 Room + Repository，不经过 ContentProvider；跨 App 数据共享才引入 ContentProvider（底层仍可用 Room）；简单文件共享用 FileProvider 或 SAF。ContentProvider 的角色正在从「通用数据访问层」收敛到「跨进程数据共享的专用管道」。
 
 ## ContentProvider 的版本演进
 
@@ -563,9 +550,7 @@ Android 9 开始公开按字节指定窗口大小的构造函数：
 
 [已验证: AOSP android-16.0.0_r1, CursorWindow(String, long windowSizeBytes), CursorWindow(boolean) deprecated]
 
-### Android 10（API 29）：Scoped Storage
-
-Scoped Storage 对 ContentProvider 的影响主要体现在存储访问方式的变化上。`MediaStore` ContentProvider 仍然是访问媒体文件的标准接口，但访问其他 App 的私有文件需要通过 SAF。`FileProvider` 的使用变得更加重要，因为它可以在不暴露文件路径的情况下安全地共享文件。
+### Android 10（API 29）引入 Scoped Storage 后，`MediaStore` 仍是访问媒体文件的标准接口，但访问其他 App 的私有文件改走 SAF，`FileProvider` 的角色因此变得更加重要——在不暴露文件路径的前提下安全共享文件。
 
 ### Android 11（API 30）：framework 内部的 Provider ANR 监测接口
 

@@ -29,15 +29,15 @@ sources:
     path: "https://androidperformance.com"
 tags: ['architecture', '分层架构', 'HAL', 'HIDL', 'AIDL', 'Binder', 'SystemServer', 'Zygote', 'SurfaceFlinger', '性能优化', 'Perfetto']
 related_chapters: ["1.2", "1.3", "2.1", "3.1", "4.1", "5.1", "7.1"]
-reviewed_date: "2026-05-27"
+reviewed_date: "2026-07-14"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 review_notes: >-
   2026-04-28 task6 auto-promotion: finalized。条件满足：task6_result=pass-light-edit ✓，task9_result=pass-with-p1-notes ✓，queue无pending条目 ✓。2026-04-18 task6 re-review (revisiting): pass-light-edit。小修3处（禁用表达替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
-pipeline_stage: "task6_pending"
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: pending
@@ -47,12 +47,11 @@ task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-07-14T17:26:54+08:00"
 task9_review_notes: "2026-07-08 Task9 idle audit auto-fix：复核 AOSP android-17.0.0_r1 bionic linker namespace 源码，移除 VNDK 性能百分比固定结论，将未锚定说明改为 Android 17 锚定说明；回到 Task6 复审。2026-07-14 Task9 deep-review: needs-rework. P0=0 / P1=2 (SurfaceFlinger 切片表缺 android-17 行 + last_verified_against 缺 android-17.0.0_r1 锚点). queue.json 新增 P95 条目."
-last_task6_at: "2026-07-14T19:39:29+08:00"
+last_task6_at: "2026-07-14T21:09:00+08:00"
 last_task6_audit: "2026-07-06"
-last_task6_review_log: "logs/review/2026-07-14-19-review.md"
+last_task6_review_log: "logs/review/2026-07-14-21-review.md"
 last_task6_audit_log: "logs/review/2026-06-25-10-audit.md"
-task6_review_notes: "2026-07-07 Task6 复审：pass-light-edit。07-14 18 Task6 revisiting：pass-light-edit。L1 无新增问题（禁用词扫描全清，假阳性已排除）；outline 5/5 覆盖、2/3 扩展；frontmatter YAML 管道符腐蚀修复 + 过期 task6 重复字段清理。Task9 2026-07-14 needs-rework（P1:2），待 Task9 修复后重新复审。"
-last_task6_review_log: "logs/review/2026-07-14-19-review.md"
+task6_review_notes: "07-14 21 Task6 re-review (post-Task2B fix): pass-light-edit。L2 小修 1 处（outline 锚点 Android 16→15-17 与正文标题对齐）；frontmatter 去重 last_task6_review_log；outline 5/5 覆盖、2/3 扩展；L1 禁用词扫描全清。Task9 needs-rework P1:2 已由 Task2B 修复（SF切片表缺android-17行+版本锚点），待 Task9 复审。"
 last_task9_audit: "2026-07-08"
 task9_review_log: "logs/deep-review/2026-07-07-05-deep-review.md"
 reviewed_at: "2026-05-18T08:31:45+08:00"
@@ -80,7 +79,7 @@ last_task9_audit_log: "logs/deep-review/2026-07-08-18-audit.md"
 - 🔹 Android 经典五层架构：Linux Kernel → HAL → Native Libraries / ART → Framework → Apps
 - 🔹 每一层的职责边界与典型组件（SurfaceFlinger、Zygote、SystemServer、AMS/WMS 等）
 - 🔹 Treble 架构引入的 HAL 接口定义（HIDL → AIDL 演进），对 vendor 与 framework 解耦的影响
-- 🔹 Android 16 架构层面的最新变化（如 Mainline 模块持续扩展）
+- 🔹 Android 15-17 架构层面的关键变化（Mainline 模块持续扩展、16KB Page Size）
 - 🔹 从性能视角看分层：哪些层是性能瓶颈热点（Binder 跨层调用、JNI 开销、HAL 延迟）
 
 ### 扩展（可选深入）
