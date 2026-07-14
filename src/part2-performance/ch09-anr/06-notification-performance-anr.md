@@ -1,4 +1,5 @@
 ---
+
 title: "Notification 性能与 ANR"
 chapter: "9.6"
 section: "9.6"
@@ -18,7 +19,7 @@ path: "intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.
 tags: [notification, anr, notificationmanagerservice, remoteviews, performance, notificationlistenerservice, foreground-service]
 related_chapters: ["9.2", "9.3", "9.4", "1.4", "9.5"]
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: "reviewed"
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-04
 task6_result: pass-light-edit
@@ -39,7 +40,8 @@ last_task9_audit: "2026-05-25"
 last_task9_autofix_at: 2026-06-04
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-05
-----
+---
+-
 
 # 9.6 Notification 性能与 ANR
 
