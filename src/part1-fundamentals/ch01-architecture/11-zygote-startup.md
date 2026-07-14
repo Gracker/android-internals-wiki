@@ -1,6 +1,4 @@
 ---
-
-
 title: "Zygote 机制与启动性能优化"
 chapter: "1.11"
 section: "1.11"
@@ -11,47 +9,47 @@ reviewed_date: "2026-04-18"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-11"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified_against: "AOSP android-17.0.0_r1 (Zygote preload 序列与 android-16 一致，主线以 android-17.0.0_r1 为基准)"
 confidence: high
 sources:
   - type: aosp
-    path: "frameworks/base/core/java/com/android/internal/os/ZygoteInit.java @ android-16.0.0_r1"
+    path: "frameworks/base/core/java/com/android/internal/os/ZygoteInit.java @ android-17.0.0_r1"
   - type: aosp
-    path: "frameworks/base/core/java/com/android/internal/os/Zygote.java @ android-16.0.0_r1"
+    path: "frameworks/base/core/java/com/android/internal/os/Zygote.java @ android-17.0.0_r1"
   - type: aosp
-    path: "frameworks/base/core/java/com/android/internal/os/ZygoteServer.java @ android-16.0.0_r1"
+    path: "frameworks/base/core/java/com/android/internal/os/ZygoteServer.java @ android-17.0.0_r1"
   - type: aosp
-    path: "frameworks/base/core/java/android/os/ZygoteProcess.java @ android-16.0.0_r1"
+    path: "frameworks/base/core/java/android/os/ZygoteProcess.java @ android-17.0.0_r1"
   - type: aosp
-    path: "frameworks/base/core/java/com/android/internal/os/RuntimeInit.java @ android-16.0.0_r1"
+    path: "frameworks/base/core/java/com/android/internal/os/RuntimeInit.java @ android-17.0.0_r1"
   - type: aosp
-    path: "frameworks/base/core/java/android/app/ActivityThread.java @ android-16.0.0_r1"
+    path: "frameworks/base/core/java/android/app/ActivityThread.java @ android-17.0.0_r1"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ProcessList.java @ android-16.0.0_r1"
+    path: "frameworks/base/services/core/java/com/android/server/am/ProcessList.java @ android-17.0.0_r1"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags @ android-16.0.0_r1"
+    path: "frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags @ android-17.0.0_r1"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java @ android-16.0.0_r1"
+    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java @ android-17.0.0_r1"
   - type: aosp
-    path: "frameworks/base/core/java/android/os/AppZygote.java @ android-16.0.0_r1"
+    path: "frameworks/base/core/java/android/os/AppZygote.java @ android-17.0.0_r1"
   - type: aosp
-    path: "frameworks/base/core/java/android/webkit/WebViewZygote.java @ android-16.0.0_r1"
+    path: "frameworks/base/core/java/android/webkit/WebViewZygote.java @ android-17.0.0_r1"
   - type: aosp
-    path: "frameworks/base/config/preloaded-classes @ android-16.0.0_r1"
+    path: "frameworks/base/config/preloaded-classes @ android-17.0.0_r1"
   - type: official
     path: "https://source.android.com/docs/core/runtime/zygote"
   - type: official
     path: "https://developer.android.com/reference/android/app/ZygotePreload"
 tags: [zygote, fork, startup, preload, cow, usap, app-zygote, webview]
 related_chapters: ["1.2", "1.3", "8.2", "8.3"]
-pipeline_stage: "task9_pending"
-task9_state: reviewed
+pipeline_stage: task6_pending
+task9_state: pending
 task9_result: needs-rework
 last_task9_review_log: logs/deep-review/2026-07-14-17-deep-review.md
 last_task9_at: "2026-07-14T17:26:54+08:00"
 last_task9_review_notes: "2026-07-14 Task9 deep-review: needs-rework。P0 0 / P1 2。需要修复 USAP 与 Child Zygote 关系描述、16KB 页边界影响数据等问题后重新复审。Round 2: P0=0 / P1=2 (applicable_versions vs last_verified_against 不一致 + frontmatter task9_state 重复字段冲突). P2 1 (USAP 边界前提). queue.json 新增 P95 条目."
 finalized_by: openclaw-task9-auto-promote
-task6_state: "reviewed"
+task6_state: revisiting
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-07-14"
 last_task6_review_log: "logs/review/2026-07-14-18-review.md"
@@ -61,11 +59,11 @@ last_task9_audit_at: "2026-05-26T14:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-26-14-audit.md"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-18"
-task2b_state: "fixed"
+task2b_state: fixed
 task2b_result: fixed
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-04-29T12:42:48.185623"
+last_task2b_at: 2026-07-14T18:51:57+08:00
 last_task6_audit: "2026-06-24"
 last_task6_at: "2026-07-14T18:08:00+08:00"
 reviewed_at: "2026-05-18T03:31:27+08:00"
@@ -195,7 +193,7 @@ Zygote 把所有"几乎每个进程都会用到"的公共初始化工作前置�
 
 从用户点击图标到新进程出现,Launcher / App 到 `system_server` 的通信走 Binder;`system_server` 到 Zygote 的建进程请求走 zygote socket / LocalSocket。
 
-按 AOSP android-16 的实际代码路径，`ProcessList.startProcess(...)` 在 `system_server` 里准备好 UID、GID、ABI、seInfo 等参数后，会调用 `Process.start(...)`。参数组装成启动命令并发给 Zygote 的，由 `android.os.ZygoteProcess` 处理：
+按 AOSP android-17.0.0_r1 的实际代码路径（preload 序列与 android-16 一致），`ProcessList.startProcess(...)` 在 `system_server` 里准备好 UID、GID、ABI、seInfo 等参数后，会调用 `Process.start(...)`。参数组装成启动命令并发给 Zygote 的，由 `android.os.ZygoteProcess` 处理：
 
 ```java
 // frameworks/base/services/core/java/com/android/server/am/ProcessList.java
@@ -233,13 +231,13 @@ Trace.traceBegin(..., "PreloadGraphicsDriver");
 maybePreloadGraphicsDriver();
 ```
 
-这几个名字要尽量按源码写,不要再回到旧版文章里常见的 `PreloadOpenGL`、`BeginIcuCachePinning` 那套命名。android-16 的 trace 观察点,应该以 `PreloadClasses`、`CacheNonBootClasspathClassLoaders`、`PreloadResources`、`PreloadAppProcessHALs`、`PreloadGraphicsDriver` 为准,后面还会继续执行 `preloadSharedLibraries()`、`preloadTextResources()`,以及 `WebViewFactory.prepareWebViewInZygote()`。
+这几个名字要尽量按源码写,不要再回到旧版文章里常见的 `PreloadOpenGL`、`BeginIcuCachePinning` 那套命名。android-17 的 trace 观察点,应该以 `PreloadClasses`、`CacheNonBootClasspathClassLoaders`、`PreloadResources`、`PreloadAppProcessHALs`、`PreloadGraphicsDriver` 为准,后面还会继续执行 `preloadSharedLibraries()`、`preloadTextResources()`,以及 `WebViewFactory.prepareWebViewInZygote()`。
 
-这个命名口径只对应本章验证过的 android-16 基线。回看 Android 5-9 或 10-15 时,要按对应版本的 `ZygoteInit.java` 重新确认 preload slice 名,不要直接套用这里的名称。
+这个命名口径只对应本章验证过的 android-17 基线（经 `android-17.0.0_r1` 复核，preload 主序列与 android-16 一致，全章以 android-17.0.0_r1 为基准）。回看 Android 5-9 或 10-15 时,要按对应版本的 `ZygoteInit.java` 重新确认 preload slice 名,不要直接套用这里的名称。
 
 `PreloadGraphicsDriver` 的边界需要单独说明。`ZygoteInit.java` 对它的注释写得很直白:它通过一次 OpenGL 或 Vulkan 调用把图形驱动装进内存并完成初始化,如果驱动已经在内存里,后续调用基本就是 no-op。**这表示的是驱动 / EGL 层面的预热,不等于"每个 App 的 GPU context 已经创建完成"。** App 侧的 RenderThread、EGL context、Surface 以及首帧绘制,仍然发生在各自进程启动之后。
 
-同样不要把 `preloaded-classes` 想成"所有常用 UI 类都在里面"。它主要是 bootclasspath / framework 侧的高频类。至少在 android-16 的 `frameworks/base/config/preloaded-classes` 里,并没有 `androidx.recyclerview.widget.RecyclerView` 这种 AndroidX 控件。也就是说,framework 预热和应用侧库预热是两回事。
+同样不要把 `preloaded-classes` 想成"所有常用 UI 类都在里面"。它主要是 bootclasspath / framework 侧的高频类。至少在 android-17.0.0_r1 的 `frameworks/base/config/preloaded-classes` 里,并没有 `androidx.recyclerview.widget.RecyclerView` 这种 AndroidX 控件。也就是说,framework 预热和应用侧库预热是两回事。
 
 再补一个经常看错的点:这些 preload trace 发生在 **zygote 进程**,不是 `system_server` 进程。代码就是在 `ZygoteInit.main()` 的 preload 阶段执行的,此时 `system_server` 还没被 fork 出来。所以如果你在开机 trace 里想分析 preload 过慢,不要跑到 `system_server` track 上找这些 slice。
 
@@ -270,7 +268,7 @@ if (pid == 0) {
 
 目标应用进程会走 `ZygoteInit.zygoteInit()`、`RuntimeInit.applicationInit()`，并进入 `ActivityThread.main()`。这条链把"刚创建或刚特化的进程"推进成"可以运行 Android 应用主线程的进程"。
 
-`ActivityThread.main()` 不会立刻执行 `Application.onCreate()`。它会先把主线程 Looper 准备好,然后通过 Binder 调 `attachApplication` 回到 `system_server`。在 android-16 的 `ActivityThread.java` 里,能看到这一步:
+`ActivityThread.main()` 不会立刻执行 `Application.onCreate()`。它会先把主线程 Looper 准备好,然后通过 Binder 调 `attachApplication` 回到 `system_server`。在 android-17.0.0_r1 的 `ActivityThread.java` 里,能看到这一步:
 
 ```java
 // frameworks/base/core/java/android/app/ActivityThread.java
@@ -391,7 +389,7 @@ ZygoteServer() {
 | Android 9 | `PreloadAppProcessHALs` 引入(gralloc mapper HAL 预加载)+ `preloadOpenGL` | WebViewZygote,还没有 USAP | gralloc HAL 库开始在 zygote 期预热 |
 | Android 10 | `PreloadGraphicsDriver` + `CacheNonBootClasspathClassLoaders` 引入 | 开始出现 App Zygote 雏形 | GPU 驱动预加载和非启动类路径 ClassLoader 缓存上线 |
 | Android 11-15 | USAP pool 成熟,App Zygote / `ZygotePreload` 稳定 | 普通 App 可能命中 USAP;isolated service 可能走 App Zygote | 先分清 primary / secondary 主线和 child zygote 支线 |
-| Android 16 | 本章验证过的 preload slice 名是 `PreloadClasses`、`CacheNonBootClasspathClassLoaders`、`PreloadResources`、`PreloadAppProcessHALs`、`PreloadGraphicsDriver`;新增 `HttpEngine.preload()` 可选 | USAP、App Zygote、WebViewZygote 仍然共存 | Perfetto 里按 android-16 命名查 slice,并把 `launching: <package>` 当作覆盖整段启动的 span |
+| Android 16-17 | 本章以 android-17.0.0_r1 为基准验证，preload 主序列（`PreloadClasses`、`CacheNonBootClasspathClassLoaders`、`PreloadResources`、`PreloadAppProcessHALs`、`PreloadGraphicsDriver`）与 android-16 一致；新增 `HttpEngine.preload()` 可选 | USAP、App Zygote、WebViewZygote 仍然共存 | Perfetto 里按本章验证的 slice 名查询，并把 `launching: <package>` 当作覆盖整段启动的 span |
 
 `DeliQueue` 属于 MessageQueue / Looper 的实现演进,应用侧默认生效的版本边界是 Android 17 / targetSdk 37,不属于本章验证的 Android 16 Zygote 机制本体。本章只在交叉引用里保留这个名词,具体实现和版本差异放到 §1.13 讨论。
 
