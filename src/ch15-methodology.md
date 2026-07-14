@@ -2,6 +2,7 @@
 
 
 
+
 title: Android 性能优化研究方法论
 chapter: "15"
 status: ready-for-review
@@ -10,16 +11,16 @@ last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfet
 tags: [performance, methodology, perfetto, profiling, optimization, android]
 task9_result: auto-fixed
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-07-13
 last_task9_at: "2026-07-14T05:20:00+08:00"
 task9_audit_type: deep-review
 last_task9_review_log: logs/deep-review/2026-07-13-20-deep-review.md
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_state: fixed
-last_task6_at: 2026-07-14T07:07:51+08:00
+last_task6_at: 2026-07-14T09:19:57+08:00
 last_task6_review_log: logs/review/2026-07-14-07-review.md
 task6_review_notes_final: "2026-07-02 Task6 revisiting-review round3 (post-Task2B-structural): pass-light-edit. L1 fix×3 (关键是→要, 链路→链, 舒服→自我安慰). L2 pass. No B-class issues. Auto-promoted: task9=pass, queue=completed."
 task6_review_notes_round4: "2026-07-03 Task6 revisiting-review round4 (post-Task2B-content-rework + Task9-autofix): pass-light-edit. L1 clean (banned-word scan: 0 real hits, 3 false positives). L2 pass (opening direct, structure clear, breathing points adequate). L3/L4: no B-class writing issues. FrameRateOverrides section (4.4) well-written, SQL examples properly formatted. DeviceConfig section (3.2) clean. Auto-promotion blocked: task9_result=auto-fixed (not pass-tech-review). Sent to Task9 for final tech confirmation."
@@ -30,6 +31,7 @@ task6_review_notes_round8: "2026-07-04 Task6 revisiting-review round8 (post-Task
 task6_review_notes_round9: "2026-07-13 Task6 revisiting-review round9: pass-light-edit. L1 fix×2 (body text 闭环=banned word removed; frontmatter 6 duplicate keys deduplicated). Banned-word scan: 闭环=0(after fix), 其实=3(within limit), 彻底=4(within limit). High-freq words all within limits. Restricted patterns: 2 (at limit, stable since round5). Structural meta-narrative: 0. AIW-source-research section (bottom): AI-flavored phrasing (通过源码分析发现/关键突破) + raw research-note style = B-class issue sent to Task2B for narrative integration. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Pipeline sent to Task9 for final tech confirmation."
 task6_review_notes_round10: "2026-07-14 Task6 revisiting-review round10 (post-Task2B SoC narrative integration): pass-light-edit. L1 clean (banned-word scan: 0 real hits; 矩阵=priority matrix false positive, 上分=substring of 线上分布 false positive). High-freq words all within limits (彻底×1=不彻底 legitimate, 真正×1=contrastive legitimate). Restricted patterns: 2 (not...而是 at limit, stable since round5). Structural meta-narrative: 0. L2 pass (opening direct, rhythm good, structure clear, breathing points adequate). L3 pass (SoC section 4.1 properly integrated into narrative, source-anchored to android-17.0.0_r1, frameworks like 3-tier baseline and 5-Whys walkthrough intact). L4 pass (natural Chinese, peer-to-peer tone, no translation feel, no AI-pattern sentences). No L1/L2 fixes needed this round. No B-class writing issues. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Pipeline sent to Task9 for final tech confirmation."
 task6_review_notes_round11: "2026-07-14 Task6 revisiting-review round11 (post-Task2B P1×4+P2×2+禁用词修复): pass-light-edit. L1 clean (banned-word scan: 0 real hits; 矩阵=priority matrix false positive, 上分=substring of 线上分布 false positive). High-freq words all within limits (真正×1=legitimate, 彻底×1=不彻底 legitimate). Restricted patterns: 2 (不是X而是Y at limit, stable since round5). Structural meta-narrative: 0. Adjective+colon: 0. L2 pass (opening direct, rhythm good, structure clear, breathing points adequate). L3 pass (SoC vendor comparison table well-structured, SQL examples actionable, source paths anchored to android-17.0.0_r1, 5-Whys walkthrough intact, SDM cross-reference clean). L4 pass (natural Chinese, peer-to-peer tone, no translation feel, no AI-pattern sentences). No L1/L2 fixes needed this round. No B-class writing issues. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Pipeline sent to Task9 for final tech confirmation."
+task6_review_notes_round12: "2026-07-14 Task6 revisiting-review round12 (post-Task9 autofix): pass-light-edit. L1 fix×1 (heading level: ### 4. → ## 4. to match all other top-level sections). Banned-word scan: 0 real hits (矩阵=priority matrix false positive, 上分=substring of 线上分布 false positive, 问题是=part of 5W2H framework false positive). High-freq words all within limits. Restricted patterns: 2 (not...而是 at limit, stable since round5). Structural meta-narrative: 0. Adjective+colon: 0. L2 pass (opening direct, rhythm good, structure clear after heading fix, breathing points adequate). L3 pass (evidence-backed with SQL/bash examples, source anchored to android-17.0.0_r1, SoC vendor comparison intact, 5-Whys walkthrough solid). L4 pass (natural Chinese, peer-to-peer tone, no translation feel, no AI-pattern sentences). No B-class writing issues. Auto-promotion blocked: task9_result=auto-fixed (not pass-tech-review). Pipeline sent to Task9 for final tech confirmation."
 task2b_result: fixed
 task2b_verifier_note: "2026-07-04T15:29:52+08:00 task9_state reviewed→pending: Task6 round7 已通过并发送至 Task9 复审，task9_state 应为 pending"
 last_task2b_at: 2026-07-14T08:56:47+08:00
@@ -221,7 +223,7 @@ adb shell perfetto -t 5s -b 4mb -o /data/misc/perfetto-traces/test.pftrace sched
 
 > 工具层面的问题理清之后，接下来是另一道坎：把采集到的原始数据变成能指导决策的结论。
 
-### 4. 数据采集与分析：从 raw data 到 actionable 结论
+## 4. 数据采集与分析：从 raw data 到 actionable 结论
 
 ### 4.1 采样策略：不同问题用不同采法
 
