@@ -29,7 +29,7 @@ task2b_result: fixed-lite
 task2b_rework_date: "2026-04-20"
 last_task2b_lite_at: "2026-05-31"
 last_task9_at: "2026-06-03T07:20:00+08:00"
-last_task6_audit: 2026-06-03
+last_task6_audit: 2026-07-15
 last_task9_audit: 2026-05-20
 last_task6_at: "2026-06-03T09:15:06+08:00"
 last_task6_review_log: "logs/review/2026-06-03-09-09-review.md"
