@@ -86,6 +86,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-01
 last_task9_audit_log: "logs/deep-review/2026-07-02-04-audit.md"
 last_task9_autofix_at: "2026-07-02"
+last_task6_audit: "2026-07-14"
 ---
 # 2.12 Window Manager Service 与窗口管理
 
@@ -116,7 +117,7 @@ last_task9_autofix_at: "2026-07-02"
 
 不了解 WMS，我们在分析 Perfetto Trace 时遇到 system_server 的 Binder 调用就只能"看个热闹"。而理解了 WMS 的工作方式之后，我们就知道 `wm.relayout_window` 这个 Slice 对应的是什么操作，为什么它可能耗时，以及如何优化。这是把"system_server 好像很忙"变成"我知道它在忙什么"的关键一步。
 
-[待补充：Trace 截图 — 一段典型的冷启动 Trace，标注 WMS 相关的 Slice]
+[待验证：添加典型的冷启动 Trace 截图，标注 WMS 相关的 Slice]
 
 ## WMS 的定位：窗口世界的调度员
 
@@ -198,7 +199,7 @@ Android 12 之后，StartingWindow 的决策与实际创建分在两侧。ATMS/W
 
 Perfetto 里要把三段分开看：system_server 侧是 starting data、Activity/Task 状态和移除请求；Shell / SystemUI 侧才是 starting surface 的创建与绘制；App 侧的 `reportDrawFinished` 标记主 Window 首帧完成。把 starting surface 的绘制职责放在 system_server，会混淆服务端、Shell 和 App 进程边界。
 
-[待补充：Trace 截图 — StartingWindow 创建和移除在 Perfetto 中的表现]
+[待验证：添加 StartingWindow 创建和移除在 Perfetto 中的 Trace 截图表现]
 
 ### Android 12 SplashScreen API
 
