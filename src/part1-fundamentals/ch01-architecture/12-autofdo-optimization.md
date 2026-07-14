@@ -64,7 +64,7 @@ last_task6_review_log: "logs/review/2026-05-19-16-review.md"
 last_task9_review_log: logs/deep-review/2026-07-14-17-deep-review.md
 task9_review_notes: "2026-06-12 Task9 idle audit: auto-fixed android15-6.6 branch HEAD benchmark drift and Android17/module roadmap boundary; no queue entry; return to Task6. | 2026-05-19 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；AutoFDO kernel profile 命令链、GKI 分支路径、android15/android16 数据口径复核通过；模块化 AutoFDO Android17 段落仅作为 P3 roadmap 口径收紧建议记录。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-12
+last_deepseek_cn_review_at: 2026-07-15
 ---
 
 
@@ -111,11 +111,11 @@ AutoFDO（Automatic Feedback-Directed Optimization）是 Google 从系统层面�
 
 ## 从 PGO 到 AutoFDO：编译优化的思路变迁
 
-编译器在编译代码时需要做很多决策：这个函数要不要内联？这个 if 分支是走 true 还是 false 的概率更高？这些代码块在内存中怎么排列能让 CPU 缓存命中率更高？
+编译器编译代码时要面对一堆决策：这个函数要不要内联？这个 if 分支走 true 还是 false 的概率更高？代码块在内存中怎么排列，CPU 缓存命中率才高？
 
-传统的做法是靠编译器的静态启发式规则——编译器根据代码结构猜测。但猜测终究是猜测，真实运行的代码路径和编译器猜的经常不一样。
+传统做法是让编译器靠静态启发式规则去猜。但猜的终究不准——真实运行时走的代码路径，跟编译器猜的经常不是一回事。
 
-Profile-Guided Optimization（PGO）的思路：**先跑一遍，看看哪些路径走得多，再拿这个信息重新编译**。知道热点在哪里之后，编译器就能做出更精准的决策——把热点代码排在一起提高缓存命中率，对热点分支做更激进的内联，把冷代码移到不占缓存的角落。
+Profile-Guided Optimization（PGO）的思路：**先跑一遍，看看哪些路径走得多，再拿这个信息重新编译**。知道热点在哪之后，编译器就能做更准的决策：把热点代码排在一起提高缓存命中率，对热点分支更激进地内联，把冷代码挪到不占缓存的角落。
 
 PGO 有两种主要的实现方式：
 
@@ -429,9 +429,4 @@ Google 的官方说法是：AutoFDO 主要影响编译器的启发式决策（�
 - [GKI（Generic Kernel Image）文档](https://source.android.com/docs/core/architecture/kernel/generic-kernel-image)
 - [Coresight 内核驱动](https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12/drivers/hwtracing/coresight)
 
-### AutoFDO：从数据中心到 Android 内核的编译优化革命
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/AutoFDO：从数据中心到 Android 内核的编译优化革命.md
-- 类型：DeepResearch 调研结果
-- 摘要：这篇调研把 AutoFDO 从 Google 数据中心一路串到 Android 内核，拆开 ETM/simpleperf 采样、profile 转换和 LLVM 应用流程，并补上 Pixel 设备在 mmap、冷启动、Binder RPC 上的收益数据。
-- 注入时间：2026-04-18
-- 价值：把 1.12 从概念介绍推进到实验验证和内核集成细节。
+- **DeepResearch 调研**：AutoFDO 从数据中心到 Android 内核的编译优化（2026-04-18），覆盖 ETM/simpleperf 采样、profile 转换、LLVM 应用流程及 Pixel 设备实测收益数据。

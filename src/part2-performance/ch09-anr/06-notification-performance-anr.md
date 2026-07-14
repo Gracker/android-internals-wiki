@@ -39,7 +39,7 @@ review_notes: "2026-05-06 19:57 Task9：pass-tech-review。P0 0 / P1 0 / P2 2。
 last_task9_audit: "2026-05-25"
 last_task9_autofix_at: 2026-06-04
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-05
+last_deepseek_cn_review_at: 2026-07-15
 ---
 -
 
@@ -60,11 +60,11 @@ last_deepseek_cn_review_at: 2026-06-05
 
 ## 为什么 Notification 会引发 ANR
 
-在做 Android 稳定性优化时,有两类栈经常出现:一类停在 `NotificationManager.notify()`,另一类停在 `NotificationListenerService.onNotificationPosted()`。它们都和“通知”有关,但阻塞位置不同。
+做 Android 稳定性优化时，有两类栈经常出现:一类停在 `NotificationManager.notify()`,另一类停在 `NotificationListenerService.onNotificationPosted()`。它们都和“通知”有关,但阻塞位置不同。
 
 `notify()` 侧的问题,通常落在应用构造通知对象、Binder 过进程,或 NotificationManagerService(NMS)入口校验和入队这段同步路径上。`onNotificationPosted()` 侧的问题,通常落在监听器进程自己的主线程。SystemUI 渲染慢会拖迟通知实际显示出来,但默认不会让调用方一直等到界面画完。
 
-把这三段边界拆开,排查思路就清晰了:调用方卡住,先看应用线程与 Binder;监听器卡住,先看 NLS 主线程;通知晚到或下拉卡顿,再看 SystemUI 和 system_server 的调度状态。
+把这三段边界拆开，排查思路就清晰了:调用方卡住,先看应用线程与 Binder;监听器卡住,先看 NLS 主线程;通知晚到或下拉卡顿,再看 SystemUI 和 system_server 的调度状态。
 
 ## 通知发布流程与 ANR 触发点
 
@@ -149,7 +149,7 @@ AOSP 当前实现里,`notify()` 的 Binder 入口会把发布任务 post 到 NMS
 
 ### 通知排序与分发的开销
 
-通知发布后,NMS 需要更新 `NotificationRecord`,执行拦截与排序,再把变化分发给 listener 和状态栏。通知数量很多、通知对象很重、监听器很多时,system_server 的 CPU 时间会明显上升。
+通知发布后,NMS 需要更新 `NotificationRecord`,执行拦截与排序,再把变化分发给 listener 和状态栏。通知数量很多、通知对象很重、监听器很多时，system_server 的 CPU 时间会明显上升。
 
 公开文档和当前 AOSP 分支不足以把"Android 14 起并行分发""Android 15 起增量排序"这类变化逐版钉死。诊断时更实用的做法,是直接看当前 build 上 `system_server` 的实际调度和 listener 分发耗时。
 
@@ -232,7 +232,7 @@ reapply 跳过了 inflate，但仍然会执行新 `RemoteViews` 的所有 action
 
 ### NLS 回调的线程模型
 
-`NotificationListenerService` 的所有回调(`onNotificationPosted`、`onNotificationRemoved`、`onListenerConnected` 等)默认在**主线程**执行。这是一个容易被忽视的性能陷阱。
+`NotificationListenerService` 的所有回调(`onNotificationPosted`、`onNotificationRemoved`、`onListenerConnected` 等)默认在**主线程**执行。这个陷阱容易被忽视。
 
 当一个 App 注册为通知监听器后,系统中任何 App 发布或取消通知,都会触发 NMS 通过 Binder 回调这个监听器。在通知密集的场景下(如用户同时运行了多个会发送通知的 App),回调频率可能达到每秒数十次。
 
@@ -488,7 +488,7 @@ Android 14 和 15 的分发、排序及后台 listener 行为目前缺少足够�
 
 ### 「通知限流会抛异常,所以不用担心」
 
-Android 12+ 的通知限流是静默丢弃,超过频率限制的通知会被 NMS 直接忽略,不会抛异常,也不会回调通知 App。这说明进度更新可能丢失,但调用方收不到错误反馈,因此需要主动控制更新频率。
+Android 12+ 的通知限流是静默丢弃,超过频率限制的通知会被 NMS 直接忽略，不会抛异常，也不会回调通知 App。这说明进度更新可能丢失,但调用方收不到错误反馈,因此需要主动控制更新频率。
 
 ### 「自定义通知布局比标准模板性能更好」
 
