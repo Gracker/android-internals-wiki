@@ -69,6 +69,8 @@ task2b_notes: "2026-06-06 Task2B main 回炉 #3：P0 Media3 ABR 源码方法修�
 last_task9_autofix_at: 2026-06-06
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-23
+last_task6_audit: "2026-07-14"
+
 ---
 
 ----
@@ -110,7 +112,7 @@ last_deepseek_cn_review_at: 2026-06-23
 
 ## 多媒体管线架构全景
 
-Android 的多媒体处理围绕 MediaCodec 这个核心 API 展开。从数据流的角度看，一条完整的视频播放管线是这样的：
+Android 的多媒体处理围绕 MediaCodec 这个 API 展开。从数据流的角度看，一条完整的视频播放管线是这样的：
 
 `MediaExtractor` 从容器文件中分离出压缩的音视频轨道 → 压缩数据通过 `MediaCodec` 的 input buffer 送给硬件解码器 → 解码后的原始帧通过 `Surface`（底层是 `BufferQueue`）传递给 SurfaceFlinger 合成显示。
 
@@ -221,7 +223,7 @@ fence 链确保从硬件解码器到 GPU 合成再到显示控制器的整个流
 
 [图：`SurfaceView` / `TextureView` / tunneled sideband 三路径时序图。标出 `MediaCodec`、`BufferQueue` 或 sideband handle、`SurfaceTexture`、`SurfaceFlinger`、HWC，以及像素是否回到 App 进程。]
 
-这种模式常见于 Android TV、机顶盒或特定 SoC 的低延迟播放场景。收益通常来自两点：少掉 App `RenderThread` / GPU 的逐帧参与，以及由 HWC 直接完成 A/V sync。代价也很明确：一般只适合 `SurfaceView`，对复杂 UI 变换、叠加特效、截图录屏等场景的支持更受限制。
+这种模式常见于 Android TV、机顶盒或特定 SoC 的低延迟播放场景。收益通常来自两点：少掉 App `RenderThread` / GPU 的逐帧参与，以及由 HWC 直接完成 A/V sync。代价是：一般只适合 `SurfaceView`，对复杂 UI 变换、叠加特效、截图录屏等场景的支持更受限制。
 
 从实现路径看，tunneled playback 在 OMX 时代（Android 4.x-9）就已存在，通过 `OMX_IndexConfigAndroidTunnelingStatus` 配置 tunneled 节点。Android 10 起 Codec2 作为 OMX 的替代路径，逐步补齐了 tunneled playback 的对应能力（`CCodec::configureTunneledVideoPlayback()` 封装相同语义）。排查时不要误读为“Android 11 才支持 tunneled”——OMX 路径更早就有。组件为 tunneled 输出准备 sideband stream handle，对应的 `SurfaceView` layer 在 `SurfaceFlinger` / HWC 中以 sideband layer 的方式存在，像素不再经由普通 `BufferQueue` 逐帧送到 App 或 GPU。
 
@@ -244,7 +246,7 @@ HDR（高动态范围）视频和杜比视界（Dolby Vision）在标准 SDR 视
 
 ### Media3 的架构与设计
 
-Media3 是 Google 推出的 Jetpack 媒体库，是 ExoPlayer 的后继者。从架构上看，Media3 将 ExoPlayer 的核心播放逻辑与 UI 组件分离，提供了更清晰的模块化结构。对于性能分析来说，理解 Media3 的内部调度机制是定位问题的基础。
+Media3 是 Google 推出的 Jetpack 媒体库，是 ExoPlayer 的后继者。从架构上看，Media3 将 ExoPlayer 的播放逻辑与 UI 组件分离，提供了更清晰的模块化结构。对于性能分析来说，理解 Media3 的内部调度机制是定位问题的基础。
 
 Media3 内部有几个关键组件与性能直接相关：
 - **ExoPlayer**：核心播放引擎，负责调度解码、渲染、数据加载
@@ -256,7 +258,7 @@ Media3 内部有几个关键组件与性能直接相关：
 
 ### 自适应码率（ABR）与播放流畅度
 
-ABR 的核心目标是在带宽允许的范围内选择最高质量的视频流，同时在带宽下降时及时降低质量以避免卡顿。Media3 使用 `AdaptiveTrackSelection` 配合 `BandwidthMeter` 来实现这个逻辑。
+ABR 的目标是在带宽允许的范围内选择最高质量的视频流，同时在带宽下降时及时降低质量以避免卡顿。Media3 使用 `AdaptiveTrackSelection` 配合 `BandwidthMeter` 来实现这个逻辑。
 
 ABR 的性能影响体现在两个极端：
 - **切换太慢**：带宽已经下降但还在请求高质量流，导致 buffer 耗尽和 rebuffering
@@ -319,7 +321,7 @@ AudioFlinger 内部有两种 mixer thread：
 
 Android 8.0 引入了 AAudio API，专门为高性能、低延迟的音频应用设计（如音乐合成器、实时音效处理、游戏音频）。相比旧的 OpenSL ES，AAudio 的设计更简洁，延迟更低。
 
-AAudio 的核心使用模式是**异步回调**：App 注册一个回调函数，AAudio 在一个高优先级的内部线程中调用这个回调来传输音频数据。相比同步读写模式，回调模式的优势在于调度更及时、时序抖动更小。
+AAudio 的主要使用模式是**异步回调**：App 注册一个回调函数，AAudio 在一个高优先级的内部线程中调用这个回调来传输音频数据。相比同步读写模式，回调模式的优势在于调度更及时、时序抖动更小。
 
 低延迟回调中的代码必须遵守严格的约束：
 - 不做内存分配/释放
@@ -358,7 +360,7 @@ Android 11 引入了低延迟视频解码支持。在支持该特性的设备上
 3. **AudioFlinger 缓冲**：Normal Mixer 约 20ms 一轮，Fast Mixer 可以短到 2-4ms
 4. **应用缓冲**：App 端 AudioTrack/AAudio 的 buffer 大小配置
 
-**BLE Audio 空间音频链路**：Android 15 引入了 Spatial Audio over BLE Audio。利用 BLE Audio 的低延迟特性，从传感器（头动追踪）到音频渲染生效的端到端时延被显著压缩。在沉浸式应用中，头动追踪 → 音场更新的延迟此前是核心瓶颈；BLE Audio 把这条链路缩短到了可以接受的范围内。排查音频延迟时，如果涉及空间音频场景，需要额外关注传感器采样到 AudioFlinger 渲染生效的完整路径。
+**BLE Audio 空间音频路径**：Android 15 引入了 Spatial Audio over BLE Audio。利用 BLE Audio 的低延迟特性，从传感器（头动追踪）到音频渲染生效的端到端时延被显著压缩。在沉浸式应用中，头动追踪 → 音场更新的延迟此前是主要瓶颈；BLE Audio 把这条路径缩短到了可以接受的范围内。排查音频延迟时，如果涉及空间音频场景，需要额外关注传感器采样到 AudioFlinger 渲染生效的完整路径。
 
 在 Perfetto 中，可以通过音频相关的 track 观察 AudioFlinger 的 mixer 活动。如果 mixer thread 出现较大的调度间隔或者 underrun 标记，通常说明 CPU 调度不够及时，比如高优先级线程被抢占，或者 GC 暂停阻塞了音频回调。
 
@@ -539,9 +541,9 @@ Camera 采集和视频编码的组合管线（如直播、录屏）需要特别�
 
 **演进驱动**：Android 10（API 29）引入 Codec2 框架作为 OMX 的替代路径；API 31+ 起 Codec2 在多数新设备上成为默认编解码路径。Android 5.0（API 21）并未引入 Codec2。
 
-**关键源码文件**：
+**源码文件**：
 
-| 文件路径 | 关键内容 |
+| 文件路径 | 要点 |
 |----------|---------|
 | `frameworks/av/media/libstagefright/omx/OMXNodeInstance.cpp` | Legacy OMX 节点实例，管理 IAndroidBufferUsageFlag |
 | `frameworks/av/media/codec2/core/include/C2Config.h` | 编解码配置参数结构体（含 profile/level/blockSize） |
@@ -552,7 +554,7 @@ Codec2 编解码初始化的典型路径：`MediaCodec.java` API → `MediaCodec
 
 CCodec 桥接逻辑位于 `frameworks/av/media/codec2/sfplugin/CCodec.cpp`，包含组件创建、参数配置和队列管理。具体初始化路径随编解码器类型和配置参数变化，不在此给出伪代码。已验证的 tunneled 入口是 `configureTunneledVideoPlayback()`，涉及 `C2PortTunneledModeTuning`。
 
-**版本矩阵**：
+**版本对应关系**：
 
 | API Level | Codec2 状态 | OMX 状态 |
 |-----------|-------------|----------|
@@ -567,9 +569,9 @@ CCodec 桥接逻辑位于 `frameworks/av/media/codec2/sfplugin/CCodec.cpp`，包
 
 **Tunneled Playback 机制**：官方文档定义为压缩视频数据经硬件 video decoder 直接进入显示路径，不再由 App 代码或 Android framework 逐帧处理。on-demand 场景（Android 5+）使用与音频 presentation timestamp 同步的 `AudioTrack` clock；直播场景（Android 11+）可使用 Tuner 提供的 PCR / STC。App 侧关键入口是 `SurfaceView`、`audioSessionId`、带同一 session 的 `AudioTrack` 与 `MediaCodec`。
 
-**关键源码 / 配置锚点**：
+**源码 / 配置锚点**：
 
-| 路径 / 符号 | 关键内容 |
+| 路径 / 符号 | 要点 |
 |-------------|----------|
 | `MediaFormat.KEY_AUDIO_SESSION_ID` | on-demand tunneled playback 将 `MediaCodec` 与 `AudioTrack` 关联到同一音频 session |
 | `AudioAttributes.FLAG_HW_AV_SYNC` / `AUDIO_PARAMETER_HW_AV_SYNC` | AudioFlinger / Audio HAL 侧用于获取和下发硬件 A/V sync id |
@@ -577,7 +579,7 @@ CCodec 桥接逻辑位于 `frameworks/av/media/codec2/sfplugin/CCodec.cpp`，包
 | `HWC_SIDEBAND` / `sidebandStream` | HWC 侧的 sideband layer 表示，HWC 按音频或 tuner 时钟显示视频帧 |
 | `CCodec::configureTunneledVideoPlayback()` / `C2PortTunneledModeTuning` | Android 10+ Codec2 路径中的 tunneled 配置入口 |
 
-**关键边界**：不要把 `AudioPresentation`、`BUFFER_FLAG_TUNNEL` 或 `IHapticStream` 写成 tunneled playback 的核心 API。官方路径围绕 `KEY_AUDIO_SESSION_ID` / `KEY_HARDWARE_AV_SYNC_ID`、HW_AV_SYNC、sideband handle 和 HWC sideband layer 展开。
+**关键边界**：不要把 `AudioPresentation`、`BUFFER_FLAG_TUNNEL` 或 `IHapticStream` 写成 tunneled playback 的主要 API。官方路径围绕 `KEY_AUDIO_SESSION_ID` / `KEY_HARDWARE_AV_SYNC_ID`、HW_AV_SYNC、sideband handle 和 HWC sideband layer 展开。
 
 **性能收益**：Tunneled playback 的收益来自减少 App / Framework 逐帧参与，并由 HWC 按硬件同步时钟呈现视频帧。具体收益取决于设备 SoC、HAL 实现、内容格式和输出分辨率，不给固定 ms/帧结论。
 
@@ -591,9 +593,9 @@ CCodec 桥接逻辑位于 `frameworks/av/media/codec2/sfplugin/CCodec.cpp`，包
 - Legacy ExoPlayer：`external/exoplayer/library/core/src/main/java/com/google/android/exoplayer2/trackselection/AdaptiveTrackSelection.java`
 - Media3：`androidx/media/blob/release/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/trackselection/AdaptiveTrackSelection.java` + `.../upstream/DefaultBandwidthMeter.java`
 
-**算法核心**：带宽自适应选择，通过 Factory 配置参数控制质量切换。
+**算法原理**：带宽自适应选择，通过 Factory 配置参数控制质量切换。
 
-**关键参数默认值**（AdaptiveTrackSelection.Factory）：
+**参数默认值**（AdaptiveTrackSelection.Factory）：
 
 | 参数 | 默认值 | 作用 |
 |------|--------|------|
@@ -603,14 +605,14 @@ CCodec 桥接逻辑位于 `frameworks/av/media/codec2/sfplugin/CCodec.cpp`，包
 | `minDurationToRetainAfterDiscardMs` | 15000 | 升质量时保留至少 15s 低质量 buffer |
 | `maxWidthToDiscard` / `maxHeightToDiscard` | 1080p | 超出此分辨率的 buffer 可丢弃 |
 
-ABR 质量切换的核心链路：
+ABR 质量切换的调用路径：
 - `DefaultTrackSelector.selectTracks()` 调用 `AdaptiveTrackSelection.updateSelectedTrack()`
 - `updateSelectedTrack()` 结合 `DefaultBandwidthMeter` 的带宽估计（`SlidingPercentile`）和当前 buffer 时长
 - 通过 `determineIdealSelectedIndex()` 确定目标轨道索引，实现升/降质量
 
 以上方法在 androidx/media release 公开源码中可直接溯源。
 
-**关键代码段**（Factory 构造）：
+**代码段**（Factory 构造）：
 ```java
 // AdaptiveTrackSelection.java
 public Factory(
