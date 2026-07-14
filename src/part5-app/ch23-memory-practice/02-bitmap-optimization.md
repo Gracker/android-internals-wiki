@@ -44,7 +44,7 @@ task2b_state: fixed
 task6_review_notes: "2026-05-14 task6 review: 修正否定纠正式开头、版本线表述和硬件 Bitmap 限制句；四层质检通过，无新增 L3/L4 回炉项，等待 Task9 review。"
 last_task6_review_log: "logs/review/2026-05-14-01-review.md"
 last_task6_at: "2026-05-14T01:14:00+08:00"
-last_task6_audit: 2026-06-06
+last_task6_audit: 2026-07-15
 task9_result: auto-fixed
 task9_reviewed_date: 2026-05-14
 task9_reviewed_by: openclaw-task9
@@ -91,7 +91,7 @@ updated_by: openclaw-task9
 
 图片内存问题很少是单一原因。解码尺寸、缓存复用、页面生命周期、设备内存预算——这几个因素叠加才会把问题放大。举例：一张 4000×3000 的 `ARGB_8888` 图片解码后约 45.8 MB，如果在列表里只显示成 200×150 的缩略图，99% 的像素根本没参与显示，却已经把 Native Heap 或 Java Heap 占满了。
 
-这一节从四个应用侧入口来谈：解码前算清目标尺寸，用 `inSampleSize` 降低像素数；理解 Android 8.0 之后 Bitmap 像素内存进了 Native Heap，对监控口径意味着什么；在图片加载入口记录大图和泄漏线索；用 `inBitmap` 复用减少反复分配。ART 堆和 GC 的机制详见 4.3 节，图片加载链路和渲染侧问题详见 22.6 节，页面对象泄漏对 Bitmap 的放大效应详见 23.1 节。
+这一节从四个应用侧入口来谈：解码前算清目标尺寸，用 `inSampleSize` 降低像素数；理解 Android 8.0 之后 Bitmap 像素内存进了 Native Heap，对监控口径的影响；在图片加载入口记录大图和泄漏线索；用 `inBitmap` 复用减少反复分配。ART 堆和 GC 的机制详见 4.3 节，图片加载和渲染侧问题详见 22.6 节，页面对象泄漏对 Bitmap 的放大效应详见 23.1 节。
 
 
 ## Bitmap 内存计算与 inSampleSize
