@@ -41,14 +41,15 @@ review_notes: >-
 pipeline_stage: "task6_pending"
 task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "pending"
-task9_result: auto-fixed
+task9_state: reviewed
+task9_result: needs-rework
 task9_reviewed_date: "2026-07-07"
 task2b_state: "fixed"
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-07-07T05:20:00+08:00"
+last_task9_at: "2026-07-14T17:26:54+08:00"
 task9_review_notes: "2026-07-08 Task9 idle audit auto-fix：复核 AOSP android-17.0.0_r1 bionic linker namespace 源码，移除 VNDK 性能百分比固定结论，将未锚定说明改为 Android 17 锚定说明；回到 Task6 复审。"
+| 2026-07-14 Task9 deep-review: needs-rework. P0=0 / P1=2 (SurfaceFlinger 切片表缺 android-17 行 + last_verified_against 缺 android-17.0.0_r1 锚点). queue.json 新增 P95 条目.
 last_task6_at: "2026-07-07T13:30:00+08:00"
 last_task6_audit: "2026-07-06"
 last_task6_review_log: "logs/review/2026-05-27-05-review.md"
@@ -61,7 +62,7 @@ reviewed_at: "2026-05-18T08:31:45+08:00"
 task6_reviewed_date: "2026-07-07"
 finalized_date: "2026-07-07"
 finalized_by: "openclaw-task6-auto-promote"
-last_task9_review_log: "logs/deep-review/2026-07-07-05-deep-review.md"
+last_task9_review_log: logs/deep-review/2026-07-14-17-deep-review.md
 last_task2b_at: 2026-07-07T04:52:50+08:00
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-07
