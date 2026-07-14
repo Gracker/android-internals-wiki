@@ -1,8 +1,9 @@
 ---
+
 title: "AutoFDO 反馈导向编译优化"
 chapter: "1.12"
 section: "1.12"
-status: finalized
+status: "ready-for-review"
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-19"
@@ -44,11 +45,11 @@ related_chapters:
 task9_reviewed_date: "2026-06-12"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-12T14:20:00+08:00"
-pipeline_stage: ready-to-publish
+pipeline_stage: "task6_pending"
 finalized_date: "2026-05-19"
 finalized_by: openclaw-task9-auto-promote
-task6_state: reviewed
-task9_state: reviewed
+task6_state: "revisiting"
+task9_state: "pending"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-19T15:20:11+08:00"
 task2b_state: "fixed"
@@ -64,6 +65,7 @@ task9_review_notes: "2026-06-12 Task9 idle audit: auto-fixed android15-6.6 branc
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-12
 ---
+
 
 # 1.12 AutoFDO 反馈导向编译优化
 
