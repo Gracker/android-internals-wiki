@@ -1,1 +1,52 @@
-[{"section": "1.11", "section_title": "Zygote 机制与启动性能优化", "priority": 95, "reason": "[Deep Tech Review] 前后端版本声明不一致与内容矛盾问题", "material_paths": ["intake/suggestions.md"], "review_issues": [{"type": "源码错误", "location": "Preload 序列源码行号", "detail": "文中声称在 ZygoteInit.java 行 119-163，经 android-17.0.0_r1 实际源码复核，完整 Preload 序列在行 296-371，不是 119-163 行", "suggestion": "修正为正确的源码行号 android-17.0.0_r1 的 296-371 行"}, {"type": "版本声明不一致", "location": "章节 frontmatter", "detail": "applicable_versions 声明支持 API 21-37，但 last_verified_against 仅声明以 android-17.0.0_r1 为基准，且注明 Zygote preload 序列与 android-16 一致，存在版本声明逻辑不一致问题", "suggestion": "统一版本声明逻辑，明确标注以 android-17.0.0_r1 为基准，与其他章节保持一致"}], "added_by": "task9-deep-tech-review", "added_at": "2026-07-14T20:31:00+08:00", "status": "pending"}, {"section": "1.1", "section_title": "Android 分层架构", "priority": 95, "reason": "[Deep Tech Review] 内容与标题不一致问题", "material_paths": ["intake/suggestions.md"], "review_issues": [{"type": "内容矛盾", "location": "Android 16 架构层面的最新变化小节", "detail": "小节标题说 Android 16，但正文却说 16 KB Page Size 是 Android 15 引入的（Android 16 继续完善），标题与内容存在明显矛盾，需要修正以消除歧义", "suggestion": "修正标题或内容，使标题与实际讨论的版本边界保持一致"}], "added_by": "task9-deep-tech-review", "added_at": "2026-07-14T20:31:00+08:00", "status": "pending"}]
+[
+  {
+    "section": "1.11",
+    "section_title": "Zygote 机制与启动性能优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 前后端版本声明不一致与内容矛盾问题",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "Preload 序列源码行号",
+        "detail": "文中声称在 ZygoteInit.java 行 119-163，经 android-17.0.0_r1 实际源码复核，完整 Preload 序列在行 296-371，不是 119-163 行",
+        "suggestion": "修正为正确的源码行号 android-17.0.0_r1 的 296-371 行"
+      },
+      {
+        "type": "版本声明不一致",
+        "location": "章节 frontmatter",
+        "detail": "applicable_versions 声明支持 API 21-37，但 last_verified_against 仅声明以 android-17.0.0_r1 为基准，且注明 Zygote preload 序列与 android-16 一致，存在版本声明逻辑不一致问题",
+        "suggestion": "统一版本声明逻辑，明确标注以 android-17.0.0_r1 为基准，与其他章节保持一致"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-07-14T20:31:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-07-14T20:51:00+08:00",
+    "completed_by": "task2b-main"
+  },
+  {
+    "section": "1.1",
+    "section_title": "Android 分层架构",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 内容与标题不一致问题",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "内容矛盾",
+        "location": "Android 16 架构层面的最新变化小节",
+        "detail": "小节标题说 Android 16，但正文却说 16 KB Page Size 是 Android 15 引入的（Android 16 继续完善），标题与内容存在明显矛盾，需要修正以消除歧义",
+        "suggestion": "修正标题或内容，使标题与实际讨论的版本边界保持一致"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-07-14T20:31:00+08:00",
+    "status": "completed",
+    "completed_at": "2026-07-14T20:51:00+08:00",
+    "completed_by": "task2b-main"
+  }
+]

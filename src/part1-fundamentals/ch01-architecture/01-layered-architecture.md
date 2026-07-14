@@ -36,11 +36,11 @@ polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 review_notes: >-
   2026-04-28 task6 auto-promotion: finalized。条件满足：task6_result=pass-light-edit ✓，task9_result=pass-with-p1-notes ✓，queue无pending条目 ✓。2026-04-18 task6 re-review (revisiting): pass-light-edit。小修3处（禁用表达替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
-pipeline_stage: "task9_pending"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: pending
-task9_result: needs-rework
+task9_result: pending
 task9_reviewed_date: "2026-07-07"
 task2b_state: fixed
 task2b_result: fixed
@@ -60,7 +60,7 @@ task6_reviewed_date: "2026-07-14"
 finalized_date: "2026-07-07"
 finalized_by: "openclaw-task6-auto-promote"
 last_task9_review_log: logs/deep-review/2026-07-14-17-deep-review.md
-last_task2b_at: 2026-07-14T18:51:57+08:00
+last_task2b_at: 2026-07-14T20:51:00+08:00
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-07
 last_task9_autofix_at: "2026-07-08"
@@ -256,7 +256,7 @@ Treble 之后，HAL 追踪最容易出错的地方，是把它理解成“所有
 
 [已验证: 来源见 research-feeds/2026-03-30-19-ch01-treble-aidl-evolution.md]
 
-## Android 16 架构层面的最新变化
+## Android 15-17 架构层面的关键变化
 
 ### Project Mainline 的持续扩展
 
