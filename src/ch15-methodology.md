@@ -45,7 +45,7 @@ last_idle_audit_at: 2026-07-12T10:52:42+08:00
 last_task6_audit: 2026-07-14
 last_task9_audit_log: logs/deep-review/2026-07-12-10-idle-audit.md
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-05
+last_deepseek_cn_review_at: 2026-07-14
 task2b_lite_notes: "2026-07-04 Task2B Lite (07:35轮): 修正 VSync 偏移源码引用(VSyncTracker.cpp单文件→VSyncDispatch/VSyncModulator/VSyncTracker三组件协作); 补充 5W2H 与工具选择的原理桥接段落(section 2.2)。P95 from deep-review 2026-07-04-07. | 2026-07-04 Task2B Lite: 修正 Perfetto 源码路径前缀缺失（src/perfetto_cmd/perfetto_cmd.cc → external/perfetto/src/perfetto_cmd/perfetto_cmd.cc; src/traced/service/service.cc → external/perfetto/src/traced/service/service.cc）。P1 from deep-review 2026-07-04-00."
 task2b_main_round_20260714: "2026-07-14 Task2B 主修复: P1×4(AOSP路径验证澄清+Android 17边界标记+数据来源声明+交叉引用补全)+P2×2(SDM参考+构建系统引用)。子章节15.5/15.7版本基线android-16→android-17.0.0_r1。禁用词修复(底层→实现)。"
 task2b_main_notes_20260714: "2026-07-14T08:56:47+08:00 Task2B 主修复 (P95): 修正 §3.2 traced 参数边界描述——区分 CLI 启动选项（--background/--version/--set-socket-permissions/--enable-relay-endpoint）和 socket 协议层缓冲区配置（TraceConfig.buffers[].size_kb）。明确 -b/--async 为 perfetto CLI 选项，由 CLI 填入 TraceConfig 后通过 socket 发给 traced，而非 traced 命令行参数。"
@@ -238,21 +238,21 @@ adb shell perfetto -t 5s -b 4mb -o /data/misc/perfetto-traces/test.pftrace sched
 
   Android 17（API 37，基于 android-17.0.0_r1）的 SoC 级电池优化分 5 层：① Framework `PowerManager.setMode()` → ② `PowerManagerService.java` 维护 `DIRTY_*` 位掩码 → ③ `IPower` AIDL 跨进到 vendor HAL（厂商必须提供 SO 库） → ④ vendor 服务调内核 cpufreq/devfreq 节点，或在 `setBoost` 路径上调用 CPU/GPU 驱动 → ⑤ 内核 `schedutil` 通过 `sugov_should_update_freq()` 守门 `rate_limit_us` 决定是否下发新频率。源：android-17.0.0_r1，`hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl`。
 
-  跨厂商差异不在 AIDL 接口层（AOSP 强制统一，`@VintfStability` 跨版本固化），而在**实现层**与**驱动层**：
+  跨厂商差异不在 AIDL 接口层（AOSP 强制统一，`@VintfStability` 跨版本固化），而在各厂的 HAL 库实现和驱动路径上：
 
-  | 厂商 | HAL 库 | 关键路径 | 内核 / 服务 |
+  | 厂商 | HAL 库 | 关键走法 | 内核 / 服务 |
   |---|---|---|---|
-  | Qualcomm | `libqti-power-hal.so` | RPMh (`rpmh_send_data`) + PDC (`set_collapse`) | `qcom-cpufreq-hw`/`qcom-rpmh-regulators` |
-  | MediaTek | `libmtkpower-hal.so` | mtlp → hw_flower → `mediatek-dvfsrc` | `mtk-cpufreq-hw`/`mediatek-cci-devfreq` |
-  | Samsung Exynos | `libexynos-power.so` | ASV + TMU + `exynos-pmu` | `exynos-cpufreq` |
+  | Qualcomm | `libqti-power-hal.so` | RPMh 发送数据 + PDC 控制 collapse | `qcom-cpufreq-hw`/`qcom-rpmh-regulators` |
+  | MediaTek | `libmtkpower-hal.so` | mtlp → hw_flower → dvfsrc | `mtk-cpufreq-hw`/`mediatek-cci-devfreq` |
+  | Samsung Exynos | `libexynos-power.so` | ASV + TMU + PMU | `exynos-cpufreq` |
 
-  内核侧统一由 `kernel/sched/cpufreq_schedutil.c` 的 `sugov_should_update_freq()` 做频率守门，`freq_update_delay_ns` 默认值由 `rate_limit_us`（默认 10000μs）驱动。这意味着同一 PowerHAL `setMode(GAME, true)` 行为：高通方案映射到 RPMh wakeup vote；联发科走 `mtk-pmic` 触发 Vcore boost；三星经 TMU 协调 CPU/GPU/CAMERA 三 rail——但最终都汇总到 schedutil 的 10ms 节流闸。要做精确的电池基线，**必须分 SoC 看，不能简单按设备档位（高端 / 中端 / 低端）聚合**。更多细节见 DeepResearch/2026-07-06-android17-soc-vendor-power-hal-schedutil-loop.md。
+  内核侧统一由 `cpufreq_schedutil.c` 的 `sugov_should_update_freq()` 做频率守门，默认 10ms 节流闸。同一个 `setMode(GAME, true)` 请求：高通方案映射到 RPMh wakeup vote；联发科走 mtk-pmic 触发 Vcore boost；三星经 TMU 协调 CPU/GPU/CAMERA 三路供电——但最终都汇总到 schedutil 的同一个节流闸。要做精确的电池基线，**必须分 SoC 看，不能简单按设备档位聚合**。更多细节见 DeepResearch/2026-07-06-android17-soc-vendor-power-hal-schedutil-loop.md。
 
-  在 AIDL 与 schedutil 之间，还有一层关键的实时反馈机制。`HintManagerService` 对外提供 `getCpuHeadroom` 和 `getGpuHeadroom` 两个实时查询接口，返回当前 SoC 还有多少 CPU/GPU 算力可用。Headroom 的计算不是每次调 HAL——`HintManagerService` 内部维护了一个缓存，通过 `mSupportInfo.headroom.cpuMaxTidCount` 限制同时跟踪的 TID 数量来控制开销，查询窗口可在 50ms 到 10000ms 之间配置。这个设计的意义在于：性能分析工具或游戏引擎可以在帧提交前先问一句"现在还有多少余量"，根据回答决定要不要降画质，而不是撞上 thermal throttle 之后才发现频率已经掉了。
+  在 AIDL 与 schedutil 之间，还有一层实时反馈：`HintManagerService` 的 `getCpuHeadroom` 和 `getGpuHeadroom` 返回当前 SoC 还有多少 CPU/GPU 算力可用。它内部维护缓存，通过限制同时跟踪的 TID 数量控制开销，查询窗口可配置在 50ms 到 10000ms 之间。这个接口的实际用途是：性能分析工具或游戏引擎可以在帧提交前先问一句"现在还有多少余量"，根据回答决定要不要降画质，而不是撞上 thermal throttle 才发现频率已经掉了。
 
-  `HintManagerService` 的另一条职责是通过 `SessionTag` 做应用类型与电池策略的映射。系统应用优先解析 Launcher 或 SYSUI 标签；普通应用则按 `ApplicationInfo.category` 归类为 GAME、APP 等类别，映射到对应的 session mode——例如游戏进程映射到 `SESSION_MODE_GRAPHICS_PIPELINE`，让 Power HAL 知道这个进程的渲染管线需要持续的 CPU/GPU 供给。
+  `HintManagerService` 的另一条职责是通过 `SessionTag` 做应用类型与电池策略的映射：系统应用优先解析 Launcher 或 SYSUI 标签，普通应用按 `ApplicationInfo.category` 归类（GAME、APP 等），映射到对应的 session mode。例如游戏进程映射到 `SESSION_MODE_GRAPHICS_PIPELINE`，让 Power HAL 知道这个进程需要持续的 CPU/GPU 供给。
 
-  再往上一层，`BatteryStatsService` 采用 `POWER_COMPONENT_CPU`、`POWER_COMPONENT_WIFI`、`POWER_COMPONENT_BT` 等统一电量组件模型做能耗归因。`EnergyConsumerPowerStatsCollector` 从 SoC 的能量消耗计数器中读取各组件功耗，按 UID 归因到具体应用——CPU 功耗归于前台应用、WIFI 功耗归于网络活跃的 UID。理解这一层才能说清楚"为什么后台 Service 的一次网络同步没有直接烧 CPU，但功耗账单上仍然扣了你的应用"。
+  再往上看一层，`HintManagerService` 管的是"当前应该给多少电"，而 `BatteryStatsService` 负责"实际用了多少电、算在谁头上"。后者采用 `POWER_COMPONENT_CPU`、`POWER_COMPONENT_WIFI`、`POWER_COMPONENT_BT` 等统一电量组件模型做能耗归因。`EnergyConsumerPowerStatsCollector` 从 SoC 的能量消耗计数器中读取各组件功耗，按 UID 归因到具体应用——CPU 功耗归于前台应用、WIFI 功耗归于网络活跃的 UID。理解这一层才能说清楚"为什么后台 Service 的一次网络同步没有直接烧 CPU，但功耗账单上仍然扣了你的应用"。
 
 ### 4.2 基准线的三条腿
 
