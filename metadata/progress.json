@@ -34,6 +34,13 @@
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
     {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-15T04:10:45.445555+08:00",
+      "note": "Gap mining round 120: 0 candidates >=14 (120th consecutive). No state change since R119 (1h ago). No new source-index items. Research-feeds 107d+ stale (newest 2026-03-29). Clippings 22d+ stale (newest 2026-06-23). Daily-info 2026-07-15 recycled: Android 17 scheduler→§1.43, Linux 6.10 BPF→existing. ClawFeed: FSF botnet blocking (non-Android), app-as-webpage (non-Android), Linux input latency X11/Wayland (desktop Linux). Source-index: empty (all consumed). Research-gaps: entries for existing ch1.1/ch1.11 + PerfDog GPU units for existing 13.25. Suggestions: Task9 review supplements for existing 14.13/13.25/26.18. Task2B backlog: 0. 0 empty drafts. Coverage saturated (765 section files)."
+    },
+    {
       "section": "1.57",
       "action": "task2a-draft-processing",
       "status": "ready-for-review",
@@ -568,10 +575,10 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-15T03:10:54.627698+08:00",
-    "last_section": "1.57",
-    "result": "drafted",
-    "note": "Processed empty draft 1.57 ART Boot Image 内存映射与启动性能. 18 empty drafts remaining."
+    "last_run": "2026-07-15T04:10:45.445555+08:00",
+    "last_section": "none",
+    "result": "no-candidates",
+    "note": "Gap mining round 120: 0 candidates >=14. 120th consecutive. All sources stale. 0 empty drafts. Coverage saturated (765 sections)."
   },
   "task2b_lite": {
     "total_fixed": 1,
