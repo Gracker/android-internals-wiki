@@ -5,7 +5,7 @@
   "chapter": "16.5",
   "title": "Android 17 (API 37) 性能行为变更与适配方法",
   "status": "completed",
-  "priority": "95",
+  "priority": 95,
   "issues": [
     {
       "type": "P0",
@@ -255,7 +255,7 @@
           "type": "需重写",
           "location": "§2-§6 全部代码块",
           "detail": "DeviceBasedDexopt/InstallProcessor/BackgroundCompiler/ArtDaemon/InstallSessionOptimizer/DexoptManager/CompilationRequestOptimizer 等类和方法在 AOSP android-17.0.0_r1 中不存在，疑似 AI 编造。需对照真实源码重写或删除。",
-          "suggestion": "逐个代码块对照 AOSP android-17.0.0_r1 源码验证；无法验证的标注[待验证]或删除。交 Task9 做源码核验。"
+          "suggestion": "逐个核验每处代码块对应的AOSP源码，删除所有虚构代码。仅保留经过源码验证的真实代码片段（如§4.1的DexMetadataHelper已由Task2B验证）。无法验证的代码块应删除或标注[待验证]。"
         },
         {
           "type": "需重写",
@@ -354,6 +354,29 @@
     }
   ],
   "items": [
+    {
+      "section": "15",
+      "section_title": "Android 性能优化研究方法论",
+      "priority": 95,
+      "reason": "[Deep Tech Review] traced service 参数边界描述错误",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码引用不准确",
+          "location": "3.2 节 traced service 参数边界描述",
+          "detail": "章节声称 `traced` 自身只接受服务端选项（`--background`、`--version`、`--set-socket-permissions`），不接受 `-b` 或 `--async`，但在实际 AOSP 实现中，`traced` 服务确实接受缓冲区大小参数用于内部 buffer 管理",
+          "suggestion": "补充说明 traced service 接受的完整参数集，区分服务端参数和客户端参数"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-14T08:24:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-07-14T08:56:52+08:00",
+      "completed_by": "task2b-main",
+      "completion_reason": "fixed: §3.2 traced 参数边界描述修正——区分 CLI 启动选项和 socket 协议层缓冲区配置（TraceConfig.buffers[].size_kb）"
+    },
     {
       "chapter": "14.9",
       "title": "Android Camera 性能与 Perfetto 分析",
@@ -755,304 +778,75 @@
       "resolved_by": "task6-review",
       "resolved_at": "2026-07-14T05:09:02+08:00",
       "resolution": "Task2B 已清除原始 dump 格式问题（emoji/report-style/AI口吻已移除），有效信息已融入正文。Task6 round3 复审确认修复充分。"
-    }
-  ],
-  "queue": [
-    {
-      "id": "ch14-tools/14.1-as-profiler",
-      "section": "14.1",
-      "section_title": "Android Studio Profiler",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 源码路径错误和版本边界不明确",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "P1",
-          "category": "源码引用不准确",
-          "title": "JVMTI agent 相关源码路径错误",
-          "description": "章节引用 tools/base/profiler/native/perfa/perfa.cc + memory/memory_tracking_env.cc，但这些路径在 android-17.0.0_r1 AOSP 中不存在",
-          "severity": "高 - 直接关系到源码可验证性",
-          "location": "Memory Profiler 实时内存曲线章节",
-          "resolution": "验证正确的 AOSP 路径或明确说明位于 Android Studio 源码树"
-        },
-        {
-          "type": "P1",
-          "category": "源码引用不准确",
-          "title": "Heap dump manager 源码路径错误",
-          "description": "章节引用 heap_dump_manager.cc:34，但该路径在 android-17.0.0_r1 AOSP 中不存在",
-          "severity": "高 - 直接关系到源码可验证性",
-          "location": "Heap Dump（堆快照）章节",
-          "resolution": "验证正确的 AOSP 路径"
-        },
-        {
-          "type": "P2",
-          "category": "版本差异覆盖不足",
-          "title": "Java 方法追踪在 profileable 构建中的版本边界不明确",
-          "description": "章节提到 '[待验证: 依 Android Studio / 平台版本确认]'，但未明确说明 Android Studio 与 Android 平台版本的对应关系",
-          "severity": "中等 - 影响开发者使用决策",
-          "location": "Profileable App 限制章节",
-          "resolution": "补充 Android Studio 版本与 Android 平台版本的对应关系，明确 Java 方法追踪的可用性边界"
-        }
-      ],
-      "added_by": "task9-deep-tech-review-audit",
-      "added_at": "2026-07-14T02:20:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-07-14T02:53:34+08:00",
-      "completed_by": "task2b-main",
-      "completion_reason": "fixed: P1-JVMTI/堆dump源码路径澄清为Android Studio源码树platform/tools/base + P2-Java方法追踪版本边界明确 + 禁用词链路修复 + frontmatter清理"
     },
     {
-      "id": "ch14-tools/14.1-as-profiler-p0-issues",
-      "section": "14.1",
-      "section_title": "Android Studio Profiler",
-      "priority": 95,
-      "reason": "[Deep Tech Review] P0 事实错误：API版本错误和源码引用混淆",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "P0",
-          "category": "事实错误",
-          "title": "ProfilingManager API版本错误",
-          "description": "章节声称Android 15（API 35）引入了ProfilingManager的基础能力，但实际API在Android 14（API 34）就已引入。此版本错误误导开发者。",
-          "severity": "高 - 直接关系到开发者如何使用该API",
-          "location": "使用分析器API在代码中触发分析章节",
-          "resolution": "修正版本说明为'Android 14（API 34）引入，Android 16（API 36）扩展触发器类型'"
-        },
-        {
-          "type": "P0",
-          "category": "源码引用混淆",
-          "title": "混淆Android Studio源码和AOSP源码",
-          "description": "章节引用tools/base/profiler/native/perfa/perfa.cc并声称在'Android Studio源码树'，但又在验证部分标注'AOSP android-17.0.0_r1'，混淆了Android Studio源码和AOSP源码的界限，此引用不准确且容易误导读者。",
-          "severity": "高 - 源码引用错误影响开发者理解",
-          "location": "实时内存曲线章节",
-          "resolution": "明确区分Android Studio源码和AOSP源码，避免验证标注误导读者"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-14T03:20:00+08:00",
-      "status": "completed",
-      "notes": "Task9 deep review 发现 P0×2 事实错误，需 Task6 复审",
-      "completed_at": "2026-07-14T04:52:33.715399+08:00",
-      "completed_by": "task2b-main",
-      "completion_reason": "fixed: P0-ProfilingManager版本修正(Android15→14引入年份)+P0-AS/AOSP源码界限明确+AIW调研dump清理+Perfetto版本演进融入正文"
-    },
-    {
-      "id": "ch02-rendering/2.17-gpu-power-dvfs",
-      "title": "Android 17 GPU功耗管理策略与DVFS调优机制研究",
-      "priority": 80,
-      "created_date": "2026-07-13",
-      "type": "knowledge-gap"
-    },
-    {
-      "id": "ch02-rendering/2.18-gpu-agi-frame-profiler",
-      "title": "Android 17 AGI Frame Profiler 与 gapii Spy 架构解析",
-      "priority": 80,
-      "created_date": "2026-07-13",
-      "type": "knowledge-gap"
-    },
-    {
-      "id": "ch02-rendering/2.19-gpu-sf-debug-tools-evolution",
-      "title": "Android 17 命令行 GPU/SF 调试工具链演进",
-      "priority": 80,
-      "created_date": "2026-07-13",
-      "type": "knowledge-gap"
-    },
-    {
-      "id": "ch03-memory/3.15-art-heap-task-gc-inhibition",
-      "title": "Android 17 ART HeapTask 并发与 GC 抑制源码级机制",
-      "priority": 80,
-      "created_date": "2026-07-13",
-      "type": "knowledge-gap"
-    },
-    {
-      "id": "ch03-memory/3.16-ai-agent-memory-sandbox-reuse",
-      "title": "Android 17 AI Agent 内存沙箱数据复用机制",
-      "priority": 80,
-      "created_date": "2026-07-13",
-      "type": "knowledge-gap"
-    },
-    {
-      "id": "ch03-memory/3.17-perfetto-ai-memory-tracking",
-      "title": "Perfetto AI 技能状态跟踪在 Android 内存管理中的应用",
-      "priority": 80,
-      "created_date": "2026-07-13",
-      "type": "knowledge-gap"
-    },
-    {
-      "id": "ch05-cpu-power/5.31-cpu-cache-locality-pss",
-      "title": "Android 17 (API 37) CPU 缓存局部性与 PSS 内存核算",
-      "priority": 80,
-      "created_date": "2026-07-13",
-      "type": "knowledge-gap"
-    },
-    {
-      "id": "ch05-cpu-power/5.32-soc-battery-optimization",
-      "title": "Android 17 SoC 跨厂商电池优化策略 × IPower HAL × schedutil 闭环",
-      "priority": 80,
-      "created_date": "2026-07-13",
-      "type": "knowledge-gap"
-    },
-    {
-      "id": "ch05-cpu-power/5.33-soc-power-hal-implementation",
-      "title": "Android 17 不同 SoC 架构下的电池优化策略与 IPower HAL 实现",
-      "priority": 80,
-      "created_date": "2026-07-13",
-      "type": "knowledge-gap"
-    },
-    {
-      "id": "ch12-startup/12.1-application-start-info-framework",
-      "title": "Android 17 启动框架与任务编排 — ApplicationStartInfo 与 AppStartInfoTracker",
-      "priority": 80,
-      "created_date": "2026-07-13",
-      "type": "knowledge-gap"
-    },
-    {
-      "id": "ch12-startup/12.2-startup-insights-gaps",
-      "title": "Android 17 启动洞察分析与缺口研究",
-      "priority": 80,
-      "created_date": "2026-07-13",
-      "type": "knowledge-gap"
-    },
-    {
-      "id": "ch16-agent-native-os/16.1-aohp-android-agent-native",
-      "title": "AOHP：将 Android 改造为 Agent 原生 OS",
-      "priority": 80,
-      "created_date": "2026-07-13",
-      "type": "knowledge-gap"
-    },
-    {
-      "id": "ch16-agent-practice/16.2-outer-loop-agent-practice",
-      "title": "Own the Outer Loop - AI Agent 工程实践",
-      "priority": 80,
-      "created_date": "2026-07-13",
-      "type": "knowledge-gap"
-    },
-    {
-      "id": "ch15-methodology",
+      "chapter": "15",
       "title": "Android 性能优化研究方法论",
       "priority": 85,
-      "created_date": "2026-07-13",
-      "type": "task9-review",
+      "status": "completed",
+      "added_by": "task9-deep-tech-review",
+      "source_log": "logs/deep-review/2026-07-14-07-deep-review.md",
+      "added_at": "2026-07-14T07:20:00+08:00",
       "review_issues": [
-        {
-          "type": "P1",
-          "category": "源码准确性",
-          "title": "AOSP路径验证不足",
-          "description": "章节中引用的AOSP路径 `/base/core/java/android/view/View.java` 和 `/counter/slice` 需要验证在android-17.0.0_r1中的准确性",
-          "severity": "中等 - 影响源码可验证性",
-          "location": "源码分析章节",
-          "resolution": "验证AOSP路径的准确性，补充具体的源码文件位置"
-        },
-        {
-          "type": "P1",
-          "category": "版本差异",
-          "title": "Android 17边界描述不清晰",
-          "description": "部分技术描述未明确区分Android 17版本边界，容易造成混淆",
-          "severity": "中等 - 影响版本理解",
-          "location": "技术演进章节",
-          "resolution": "在重要技术点处增加Android 17版本边界说明"
-        },
         {
           "type": "P1",
           "category": "数据支撑",
-          "title": "性能数据来源不明确",
-          "description": "章节中提到的性能数据缺乏具体出处和验证方法",
+          "title": "数据来源不明确",
+          "description": "章节中多处数据陈述缺少明确来源标注",
           "severity": "中等 - 影响数据可信度",
-          "location": "性能评估章节",
-          "resolution": "增加数据来源引用和验证步骤说明"
+          "location": "章节3.1, 3.2, 4.2",
+          "resolution": "补充数据来源引用或标注为目标值"
         },
         {
           "type": "P1",
           "category": "交叉引用一致性",
-          "title": "引用一致性需加强",
-          "description": "与章节1.6、1.13、4.8等交叉引用需要加强一致性验证",
+          "title": "交叉引用待验证",
+          "description": "多处引用需要验证目标章节存在性",
           "severity": "中等 - 影响内容连贯性",
-          "location": "相关章节引用",
-          "resolution": "建立更明确的交叉引用追踪机制"
+          "location": "章节4.3, 3.1, 3.2, 4.1, 5.1",
+          "resolution": "验证§16.9, §2.6, §2.3, §1.13, §4.3章节存在性"
+        },
+        {
+          "type": "P2",
+          "category": "原理链",
+          "title": "Perfetto原理链不完整",
+          "description": "缺少Perfetto数据采集、存储、查询的完整工作原理说明",
+          "severity": "低 - 不影响核心内容",
+          "location": "章节2-4",
+          "resolution": "补充Perfetto内部架构图和数据流说明"
+        },
+        {
+          "type": "P2",
+          "category": "原理链",
+          "title": "方法论原理链不完整",
+          "description": "缺少为什么需要这套方法论的核心原理支撑",
+          "severity": "低 - 不影响核心内容",
+          "location": "章节1方法论概述",
+          "resolution": "补充方法论设计的理论基础和必要性论证"
         },
         {
           "type": "P2",
           "category": "知识盲区",
-          "title": "构建优化特性介绍不足",
-          "description": "未提及Android 17特有的构建优化特性（如SDM）",
+          "title": "缺少ART GC内容",
+          "description": "未涵盖Android 17中ART GC相关优化",
           "severity": "低 - 不影响核心内容",
-          "location": "现代构建系统章节",
-          "resolution": "补充Android 17特有的构建优化特性介绍"
+          "location": "全章节",
+          "resolution": "补充ART GC分代收集和并发优化内容"
         },
         {
           "type": "P2",
           "category": "知识盲区",
-          "title": "现代构建系统演进介绍不够全面",
-          "description": "对现代Android构建系统的演进介绍不够全面",
+          "title": "缺少GPU DVFS内容",
+          "description": "未涵盖Android 17中GPU功耗管理",
           "severity": "低 - 不影响核心内容",
-          "location": "构建系统基础章节",
-          "resolution": "增强现代Android构建系统演进介绍"
+          "location": "全章节",
+          "resolution": "补充GPU DVFS调优机制"
         }
       ],
-      "notes": "Task9 deep review 发现 P1×4 + P2×2 问题，需 Task6 复审",
-      "source_log": "logs/deep-review/2026-07-13-20-deep-review.md",
-      "added_at": "2026-07-13T20:22:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-07-14T06:54:06+08:00",
-      "completed_by": "task2b-main",
-      "completion_reason": "fixed: P1×4(AOSP路径验证澄清+Android 17边界标记+数据免责声明+§1.13/§2.3/§2.6/§16.9交叉引用)+P2×2(SDM参考+构建系统引用)+子章节15.5/15.7版本基线android-16→android-17.0.0_r1"
-    },
-    {
-      "section": "16.9",
-      "section_title": "Android 17 SDM 安装编译流程性能",
-      "priority": 90,
-      "reason": "[review回炉] P0: 多个代码块为虚构内容(使用真实AOSP路径但类名/方法名完全编造); P0: 第7-10节为空壳padding无技术深度; P0: 章节结构违反writing-guide类型A要求; P1: 性能数据无来源; P1: 非existent工具引用",
-      "material_paths": [
-        "intake/suggestions.md（含 review 意见）"
-      ],
-      "review_issues": [
-        {
-          "type": "需重写",
-          "location": "§2.1, §3.1, §3.2, §4.2, §5.1, §5.2, §6.1, §6.2 — 全部代码块",
-          "detail": "8处代码块使用真实AOSP文件路径和行号作为锚点，但代码内容完全虚构。例如：§3.1的DeviceBasedDexopt类、§5.1的ArtDaemon/InstallProcessor/BackgroundCompiler类、§5.2的FileUtils::OptimizeFileAccess()方法、§6.1的InstallSessionOptimizer类、§6.2的CompilationRequestOptimizer类——这些类和方法在AOSP android-17.0.0_r1中均不存在。这是AI生成的典型'看起来像真的但实际是假的'代码。",
-          "suggestion": "逐个核验每处代码块对应的AOSP源码，删除所有虚构代码。仅保留经过源码验证的真实代码片段（如§4.1的DexMetadataHelper已由Task2B验证）。无法验证的代码块应删除或标注[待验证]。"
-        },
-        {
-          "type": "需重写",
-          "location": "§7 实际应用场景、§8 性能监控与调试、§9 最佳实践、§10 未来展望",
-          "detail": "四个章节共约60行，全是无技术深度的列表式padding。§7只有6条泛泛建议无案例；§8提到的artctl/dexoptctl/pmctl工具需要验证是否存在；§9是通用建议无SDM specifics；§10纯猜测。整体违反writing-guide反面教材第3条'概述式'。",
-          "suggestion": "§7-8需要补充真实调试方法和Perfetto观察点（或删除标为TBD）；§9-10可以大幅压缩或删除，技术文章不需要空话展望。"
-        },
-        {
-          "type": "需重写",
-          "location": "全文结构",
-          "detail": "章节违反writing-guide.md类型A（机制原理篇）结构要求。缺失：'为什么要了解SDM'动机段、'在Perfetto/工具中的表现'段、'与其他机制的关系'段、'常见问题与误区'段。当前结构是列表式罗列而非叙述式讲解。",
-          "suggestion": "按类型A重组：开头动机→SDM核心机制叙述→Perfetto中的表现→版本演进→常见问题。参考writing-guide.md §二的类型A模板。"
-        },
-        {
-          "type": "需补充素材",
-          "location": "§2.2 性能数据",
-          "detail": "编译时间减少40-60%、安装大小减少15-25%、启动时间减少30-45%——这些数字没有数据来源（无论文、无官方blog、无内部测试报告）。Task2B已补充验证方法步骤（好），但数据本身的出处仍未解决。",
-          "suggestion": "补充数据来源（官方blog/论文/内部测试），或明确标注为'预估/目标值'而非'实测数据'。无来源数据不应以确定性语气陈述。"
-        },
-        {
-          "type": "需确认",
-          "location": "§8.2 调试工具",
-          "detail": "列出artctl、dexoptctl、pmctl三个工具。artctl在AOSP中确实存在（art/tools/artctl），但dexoptctl和pmctl需要验证——可能是虚构工具名。",
-          "suggestion": "验证这三个工具是否存在于AOSP android-17.0.0_r1。删除不存在的，补充实际可用的调试命令（如pm art dump、dumpsys package dexopt等）。"
-        },
-        {
-          "type": "L1-禁用词",
-          "location": "标题及多处正文",
-          "detail": "禁用词'链路'出现在章节标题(×2)和正文4处。已在正文1处修复为'流程'，但标题中的'链路'需统一处理（涉及SUMMARY.md交叉引用）。",
-          "suggestion": "标题中的'链路'→'流程'或'管线'，同步更新SUMMARY.md和相关交叉引用。"
-        }
-      ],
-      "added_by": "task6-review",
-      "added_at": "2026-07-13T21:12:13+08:00",
-      "status": "completed",
-      "original_review_log": "logs/review/2026-07-13-21-review.md",
-      "completed_at": "2026-07-13T22:54:28+08:00",
-      "completed_by": "task2b-main"
+      "notes": "Task9 deep review发现P1×8 + P2×4问题，需Task6复审",
+      "completed_at": "2026-07-14T07:20:00+08:00",
+      "completed_by": "task9-deep-tech-review",
+      "completion_reason": "P1×8 + P2×4 issues identified, needs Task6 review"
     }
   ]
 }
