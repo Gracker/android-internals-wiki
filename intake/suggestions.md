@@ -98,3 +98,9 @@
 - **位置**：binder.c spawn 守门行号
 - **问题**：内核 spawn 守门代码引用 binder.c line 5397-5411，标注的内核 tag `android17-6.18-2026-04_r1` 需确认实际存在
 - **建议**：复核 AOSP 内核分支命名，确认 `android17-6.18-2026-04_r1` 是否为官方 tag；若不是，更正为 AOSP 实际发布的 android17 kernel tag（如 `android17-6.18`）
+
+## [Task9 Deep Review] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — 2026-07-14
+- **类型**：原理链完整性
+- **位置**：Treiber stack ABA 机制描述
+- **问题**：文中提到"单指针 CAS 完全避免 ABA"，但 Treiber stack 本身就是 ABA 讨论最常出现的对象，源码注释未完全消除 ABA 风险
+- **建议**：修正为"单指针 CAS 虽然简化实现，但仍存在 ABA 风险，需要通过 state node 生命周期管理和消息标记协同处理，具体重试逻辑见 MessageStack.nextMessage()"

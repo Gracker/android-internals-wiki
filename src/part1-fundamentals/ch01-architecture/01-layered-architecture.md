@@ -280,6 +280,138 @@ Project Mainline 在 Android 16 上已经覆盖到 ART、Media、Network Stack �
 [已验证: Android Developers, https://developer.android.com/guide/practices/page-sizes]
 [已验证: AOSP, https://source.android.com/docs/core/architecture/16kb-page-size/16kb]
 
+<!-- AIW-源码调研-2026-07-14 -->
+## 多设备形态下分层架构的差异化适配（折叠屏 / 车载 / Wear OS）
+
+经典五层架构图描述的是"通用形态"。但 Android 17 在不同设备形态上**用同一套五层框架承载完全不同的运行时结构**，核心差异集中在窗口层（WMS）和服务层（Car/Watch）。
+
+### DisplayArea 树 —— 五层架构的"窗口层镜像"
+
+`DisplayArea` 是 11 引入、12-17 持续演化的关键抽象。它把"分层架构"在窗口子树层面变成了可配置对象：
+
+```java
+// frameworks/base/services/core/java/com/android/server/wm/DisplayArea.java@android-17.0.0_r1
+public class DisplayArea<T extends WindowContainer> extends WindowContainer<T> {
+    protected final Type mType;
+    enum Type {
+        /** Can only contain WindowTokens above the APPLICATION_LAYER. */
+        ABOVE_TASKS,
+        /** Can only contain WindowTokens below the APPLICATION_LAYER. */
+        BELOW_TASKS,
+        /** Can contain anything. */
+        ANY;
+        private static Type typeOf(WindowToken c) {
+            return c.getWindowLayerFromType() < APPLICATION_LAYER ? BELOW_TASKS : ABOVE_TASKS;
+        }
+    }
+}
+```
+
+`DisplayArea.Type` 把窗口按 Z-Order 分为三类：`BELOW_TASKS`（壁纸、输入法、导航栏）、`ABOVE_TASKS`（状态栏、通知、Toast）、`ANY`（任务、Activity 容器）。`checkChild()` / `checkSiblings()` 在 addChild 时强约束，**这是运行期 enforced 的树形约束检查器，不是装饰**。
+
+`DisplayAreaOrganizer` 定义了 11 个系统级 FEATURE slot（`FEATURE_ROOT`=0 至 `FEATURE_APP_ZOOM_OUT`=10，区间 [0, 10000] 为系统保留，[10001, 20000] 为 vendor 扩展）。每个 DisplayArea 实例带 `mFeatureId`，允许 OEM/三方通过 `DisplayAreaOrganizer` API 监听并 reparent 特定子树。`FEATURE_IME` 注释明确写：
+
+> "This is useful for foldable devices which require custom UX rules for the IME position (e.g. IME on one screen and the focused app on another screen)."
+
+—— 即五层架构在折叠屏上不是"图层叠加"，而是"子树分裂"。
+
+[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/DisplayArea.java, frameworks/base/core/java/android/window/DisplayAreaOrganizer.java]
+
+### 折叠屏 —— DeviceStateController 把"形态"变成状态机
+
+```java
+// frameworks/base/services/core/java/com/android/server/wm/DeviceStateController.java@android-17.0.0_r1
+public enum DeviceStateEnum {
+    UNKNOWN, OPEN, FOLDED, HALF_FOLDED, REAR,
+    CONCURRENT, LID_CLOSED, LID_OPEN, SLATE, DOCKED,
+}
+
+DeviceStateController(@NonNull Context context, @NonNull WindowManagerGlobalLock wmLock) {
+    final DeviceStateManager deviceStateManager =
+            context.getSystemService(DeviceStateManager.class);
+    final List<android.hardware.devicestate.DeviceState> deviceStates =
+            deviceStateManager.getSupportedDeviceStates();
+
+    for (int i = 0; i < deviceStates.size(); i++) {
+        final android.hardware.devicestate.DeviceState state = deviceStates.get(i);
+        if (state.hasProperty(PROPERTY_FOLDABLE_DISPLAY_CONFIGURATION_OUTER_PRIMARY)) {
+            mFoldedDeviceStates.add(state.getIdentifier());
+        } else if (state.hasProperty(PROPERTY_FOLDABLE_DISPLAY_CONFIGURATION_INNER_PRIMARY)) {
+            if (state.hasProperty(PROPERTY_FOLDABLE_HARDWARE_CONFIGURATION_FOLD_IN_HALF_OPEN)) {
+                mHalfFoldedDeviceStates.add(state.getIdentifier());
+            } else {
+                mOpenDeviceStates.add(state.getIdentifier());
+            }
+        }
+        // ...
+    }
+}
+```
+
+Android 17 通过 **Property ID** 把"形态"参数化：`PROPERTY_FOLDABLE_DISPLAY_CONFIGURATION_OUTER_PRIMARY`（外屏为主）、`PROPERTY_FOLDABLE_DISPLAY_CONFIGURATION_INNER_PRIMARY`（内屏为主）、`PROPERTY_FOLDABLE_HARDWARE_CONFIGURATION_FOLD_IN_HALF_OPEN`（支持半开）、`PROPERTY_LAPTOP_HARDWARE_CONFIGURATION_*`（笔记本 lid/slate/docked）。同一份代码服务 **9 种形态**，不需要为折叠屏单独写一份 WMS。
+
+调用链：`HAL DeviceState service → DeviceStateManager（系统服务）→ DeviceStateController（WM 内部）→ DisplayAreaPolicy / IME organizer → 实际显示效果`。
+
+注意 WindowConfiguration 只定义了 4 种 `WINDOWING_MODE`（FULLSCREEN/PINNED/FREEFORM/MULTI_WINDOW）+ 5 种 `ACTIVITY_TYPE`，**没有 `WINDOWING_MODE_FOLDABLE` 这种专属枚举** —— 折叠屏走"通用枚举 + 可配置 DisplayArea 树"路线，而非"每种形态一套枚举"。这是架构上的关键决策。
+
+[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/DeviceStateController.java, frameworks/base/core/java/android/app/WindowConfiguration.java]
+
+### Wear OS —— 通过短路 multi-window 路径差异化
+
+```java
+// frameworks/base/core/java/android/view/WindowManager.java@android-17.0.0_r1
+public static boolean supportsMultiWindow(@NonNull Context context) {
+    try {
+        final Context context2 = ActivityThread.currentApplication();
+        if (context2.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+            // Watch supports multi-window to present essential system UI, but it doesn't need
+            // WM Extensions.
+            return false;
+        }
+        return ActivityTaskManager.supportsMultiWindow(context2);
+    }
+    // ...
+}
+```
+
+手表设备在 `supportsMultiWindow()` 入口直接 `return false`，但保留 multi-window 给"必要的系统 UI"用。对应地，Wear OS 的 `R.array.config_*DeviceStates` 全为空（无折叠概念），`DeviceStateController` 构造时所有 list 都是空，状态机空转。这意味着 Wear OS 上 `DisplayAreaPolicy` 几乎是 "BELOW_TASKS + TASK + ABOVE_TASKS" 三层扁平结构，跟手机/折叠屏上的多层嵌套完全不同 —— 但**实现上没有 Wear OS 专属 DisplayAreaPolicy**，靠 feature flag 在初始化时跳过 multi-window 相关 Feature。
+
+[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/WindowManager.java]
+
+### 车载 —— distant_display 子系统专门处理多屏拓扑
+
+车机是 Android 中分层架构最复杂的形态：
+
+```text
+packages/services/Car/car_product/
+├── distant_display/                    # 远端屏幕拓扑
+│   ├── apps/CarDistantDisplayPanoManager
+│   ├── apps/CarDistantDisplaySystemUI
+│   └── display/
+├── driverui/                           # 驾驶员专属 UI
+└── ...
+```
+
+Car 体系是**多层服务并列**的结构：`system_server`（内置服务）+ `car_service`（独立 system service，进程名 `com.android.car`）+ `car_product/distant_display`（远端显示专用）+ `car_product/driverui`（驾驶员 UI）。`CarDistantDisplayPanoManager` / `CarDistantDisplaySystemUI` 是远端显示的"系统服务"，在 Android Auto 等场景下运行于不同物理显示设备，每个 distant display 拥有自己的 `DisplayContent` 和独立的 `DisplayArea` 树。
+
+`DisplayContent` 是 WMS 侧的"设备实例"，每屏一份，含 `DisplayAreaPolicy`、`DisplayPolicy`、`DisplayRotation`、`DisplayArea` 树。折叠屏展开 = 2 个 `DisplayContent`（内外屏各一份），车机主驾 + 副驾 + 远端 = 3 个，Wear OS = 1 个。`DisplayAreaPolicyBuilder` 注释明确支持多 RootDisplayArea —— **"每屏一份 DisplayArea 树"是设计上一等公民**，多设备形态无需特殊代码。
+
+调用链（车机多屏）：`CarService（com.android.car 进程）→ CarDistantDisplayPanoManager → SystemServer.DisplayManager → WMS.DisplayContent（每屏一份）→ DisplayArea 树`。
+
+[已验证: AOSP android-17.0.0_r1, packages/services/Car/car_product/distant_display/, frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java, frameworks/base/services/core/java/com/android/server/wm/DisplayAreaPolicyBuilder.java]
+
+### 多设备形态下的分层架构总结
+
+| 形态 | DisplayContent 数 | WindowingMode 主用 | 形态状态机 | DisplayArea 树 |
+|------|------------------|--------------------|-----------|----------------|
+| 手机 | 1 | FULLSCREEN | 单一 | 三层（BELOW/TASK/ABOVE） |
+| 折叠屏 | 1-2 | FULLSCREEN/FREEFORM | OPEN/FOLDED/HALF_FOLDED/REAR/CONCURRENT | 多 RootDisplayArea |
+| Wear OS | 1 | FULLSCREEN（multi-window 短路） | 单一（list 全空） | 三层扁平 |
+| 车机 | N（远端数） | FULLSCREEN + OEM overlay | 单一 + 多 DisplayContent | 每屏独立 |
+| 桌面 / 笔记本 | N（Dock 数） | FREEFORM | LID_CLOSED/LID_OPEN/SLATE/DOCKED | 多 RootDisplayArea |
+
+分层架构在 Android 17 不是"五层图"的简单复刻，而是通过 **DisplayArea 树 + WindowingMode 枚举 + DeviceStateController 状态机** 三套机制动态重构同一套框架。理解这一点，是做多设备性能分析（折叠屏 IME 漂移、车机远端显示延迟、桌面窗口冻结）的基础。
+
 ## 从性能视角看分层：瓶颈热点的分布
 
 理解分层架构的最终目的是为了解决性能问题。不同层次的性能瓶颈有不同的"指纹"——在 Perfetto Trace 中表现为不同的 track 和事件模式。
