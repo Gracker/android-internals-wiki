@@ -4,7 +4,7 @@
 title: "MessageQueue 机制与 DeliQueue 无锁优化"
 chapter: "1.13"
 section: "1.13"
-status: "ready-for-review"
+status: "finalized"
 applicable_versions: "传统 MessageQueue:Android 1.0 (API 1)+;并发实现原型:Android 16 (API 36);DeliQueue 正式实现:Android 17 (API 37)"
 drafted_date: "2026-04-04"
 reviewed_date: 2026-07-02
@@ -48,17 +48,17 @@ related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
 task6_state: "reviewed"
 task6_result: pass-light-edit
 last_task6_review_log: "logs/review/2026-07-14-22-review.md"
-task9_state: "pending"
-last_task9_review_log: "logs/deep-review/2026-07-14-12-deep-review.md"
-last_task9_at: "2026-07-14T12:21:00+08:00"
-last_task9_review_notes: "2026-07-14 Task9 deep-review: needs-rework。P0 0 / P1 3。需要修复 Android 17 DeliQueue 实现原理、默认启用边界描述、性能数据引用口径等问题后重新复审。"
-task9_result: "needs-rework"
-last_task9_autofix_at: "2026-07-02"
+task9_state: "reviewed"
+last_task9_review_log: "logs/deep-review/2026-07-14-22-deep-review.md"
+last_task9_at: "2026-07-14T22:20:00+08:00"
+last_task9_review_notes: "2026-07-14 Task9 deep-review: pass-tech-review。P0 0 / P1 1 / P2 1。已修复单指针 CAS ABA 表述；Android 17 源码锚点完整，性能数据引用口径准确。"
+task9_result: "pass-tech-review"
+last_task9_autofix_at: "2026-07-14"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-02"
 task2b_state: "fixed"
 task2b_result: fixed-lite
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 last_task2b_at: "2026-05-27T12:50:00+08:00"
 last_task2b_lite_at: "2026-07-14"
 task2b_main_at: "2026-07-02T00:57:10.552430+08:00"
@@ -81,6 +81,9 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-14
 last_task6_audit: "2026-06-20"
 last_task9_issues: "P0:0 P1:0 P2:0; post-Task6 confirmation pass"
+last_task2b_verifier_at: "2026-07-14T23:27:08+08:00"
+task2b_verifier_notes: "2026-07-14 23:25 Task2B Verifier: auto-promote to finalized. task6_result=pass-light-edit, task9_result=pass-tech-review, queue clear, body 208 lines. pipeline_stage was stuck at task9_pending."
+
 ---
 
 
