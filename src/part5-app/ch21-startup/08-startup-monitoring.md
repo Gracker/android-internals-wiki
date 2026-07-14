@@ -43,6 +43,7 @@ reviewed_date: "2026-06-03"
 task6_reviewed_date: "2026-06-03"
 task6_result: pass-light-edit
 last_task6_at: "2026-06-03T03:06:00+08:00"
+last_task6_audit: "2026-07-14T23:06:00+08:00"
 last_task6_review_log: "logs/review/2026-06-03-03-review.md"
 task6_review_notes: "2026-06-03 Task6 复审：pass-light-edit。L1/L2 复审通过；禁用词扫描仅有 `线上分位值` 假阳性；锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
 task9_review_notes: "2026-06-03 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 0；ApplicationStartInfo、reportFullyDrawn 与 Android Vitals 启动阈值口径复核通过，自动晋升 finalized。"
