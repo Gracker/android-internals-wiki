@@ -111,3 +111,41 @@ Android 17 在系统架构上进行了多项重要优化，主要体现在：
 
 **性能提升**：响应延迟从 200-500ms 降至 50-100ms，CPU 开销降低 30%，空闲 CPU 占用降低 40%。
 <!-- AIW-源码调研-2026-07-08 -->
+
+<!-- AIW-源码调研-2026-07-14 -->
+### 🔹 Android 17 Binder优先级继承实战优化
+
+**核心机制下沉到内核驱动**：Android 17 Binder优先级继承机制完全在内核层实现，用户态IPCThreadState.cpp仅处理辅助功能。核心逻辑位于drivers/android/binder.c的android17-6.18分支，通过flat_binder_object携带FLAT_BINDER_FLAG_INHERIT_RT标志传递继承请求。
+
+**优先级继承流程**：
+```
+Java Binder.setInheritRt() → 
+  Parcel.flattenBinder() → 
+    flat_binder_object.flags |= FLAT_BINDER_FLAG_INHERIT_RT → 
+      binder_transaction() → 
+        binder_transaction_priority() → 
+          binder_set_priority() → 
+            binder_do_set_priority() → 
+              sched_setscheduler_nocheck()
+```
+
+**内核关键实现**：
+- **binder_init_node_ilocked()**：设置node->inherit_rt标志，继承请求落地为节点属性
+- **binder_transaction_priority()**：检查node->inherit_rt，非RT节点强制SCHED_NORMAL，避免优先级反转
+- **BINDER_PRIO_*状态机**：处理BINDER_PRIO_SET/PENDING/ABORT三态，支持嵌套事务的优先级继承
+
+**用户态接口桥接**：
+- **Java层**：Binder.java提供setInheritRt()和setGlobalInheritRt()接口，在Binder对象创建时设置优先级策略
+- **JNI层**：android_util_Binder.cpp实现native方法调用
+- **C++层**：BBinder::setInheritRt()维护mInheritRt状态，Parcel.cpp flattenBinder()时注入继承标志
+
+**安全边界**：
+- CAP_SYS_NICE权限检查防止恶意应用滥用RT权限
+- 继承失败时使用默认SCHED_NORMAL策略
+- 优先级恢复机制确保线程状态安全
+
+**性能影响**：
+- 正面：RT事务立即获得CPU资源，避免优先级反转导致的延迟
+- 负面：实时调度增加上下文切换开销，需合理控制优先级继承粒度
+- 优化：Android 17改进的BINDER_PRIO_*状态机减少不必要的状态转换开销
+<!-- AIW-源码调研-2026-07-14 -->

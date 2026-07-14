@@ -5,7 +5,7 @@
 title: ContentProvider 性能与优化
 chapter: '1.10'
 section: '1.10'
-status: "ready-for-review"
+status: "finalized"
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
@@ -44,11 +44,15 @@ tags:
 - anr
 - sqlite
 - app-startup
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 task6_result: pass-light-edit
-task9_state: "pending"
-task9_result: pass-tech-review
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
+finalized_by: "openclaw-task6-auto-promote"
+finalized_date: "2026-07-14"
+last_task9_review_log: "logs/deep-review/2026-07-14-12-deep-review.md"
+last_task9_at: "2026-07-14T12:21:00+08:00"
 task2b_state: "fixed"
 task2b_result: fixed-lite
 last_task2b_at: '2026-05-27T13:35:00+08:00'
@@ -65,10 +69,10 @@ review_notes: '2026-04-28 task6 re-review-2 (revisiting→reviewed): pass-light-
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
 last_task9_review_log: "logs/deep-review/2026-07-02-05-deep-review.md"
-task6_review_notes: "2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 11 处；未新增 L3/L4 回炉项；保留既有 Task9 needs-rework。 | 2026-05-27 14:05 Task6：pass-light-edit。修复 outline 标记、结构元叙述、占位省略号和代码引导句等 6 处；复核 Task2B Lite 修正后的 remote provider 语义；无新增 L3/L4 回炉项，保留既有 Task9 needs-rework。 | 2026-05-27 15:08 Task6：复审 Task9 auto-fix 后内容；统一中英文混排周边标点与少量第一人称引导，未新增 L3/L4 回炉项；Task9 result 为 auto-fixed，未满足 pass-tech-review 自动晋升条件，送 Task9 复审。 | 2026-05-27 16:08 Task6：复审 Task9 auto-fix 后内容；统一正文半角标点、括号和少量发布稿格式；无新增 L3/L4 回炉项，Task9 result 为 auto-fixed，继续送 Task9 复审。 | 2026-07-02 05:06 Task6 re-review (revisiting after Task9 idle-audit auto-fix): pass-light-edit. Task9 idle-audit 修正 ContentProviderTimeout 日志关键字路径已平滑落地，正文无新增 L1/L2 问题；无 B 类回炉项。Task9 result=auto-fixed，送 Task9 正式通过。"
+task6_review_notes: "2026-07-14 Task6 revisiting-final: pass-light-edit. L1 小修 2 处（形容词+冒号起手式 ×2：「设计初衷很简单」→「解决的核心问题」、「优化策略很直接」→「优化重点是」）。无新增 L3/L4 回炉项。Task9 pass-tech-review，queue 无 pending，自动晋升 finalized。 | 2026-05-16 Task6 stale-recheck：修复文风禁令/冗余副词 11 处；未新增 L3/L4 回炉项；保留既有 Task9 needs-rework。 | 2026-05-27 14:05 Task6：pass-light-edit。修复 outline 标记、结构元叙述、占位省略号和代码引导句等 6 处；复核 Task2B Lite 修正后的 remote provider 语义；无新增 L3/L4 回炉项，保留既有 Task9 needs-rework。 | 2026-05-27 15:08 Task6：复审 Task9 auto-fix 后内容；统一中英文混排周边标点与少量第一人称引导，未新增 L3/L4 回炉项；Task9 result 为 auto-fixed，未满足 pass-tech-review 自动晋升条件，送 Task9 复审。 | 2026-05-27 16:08 Task6：复审 Task9 auto-fix 后内容；统一正文半角标点、括号和少量发布稿格式；无新增 L3/L4 回炉项，Task9 result 为 auto-fixed，继续送 Task9 复审。 | 2026-07-02 05:06 Task6 re-review (revisiting after Task9 idle-audit auto-fix): pass-light-edit. Task9 idle-audit 修正 ContentProviderTimeout 日志关键字路径已平滑落地，正文无新增 L1/L2 问题；无 B 类回炉项。Task9 result=auto-fixed，送 Task9 正式通过。"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-27"
-last_task6_at: 2026-07-02T05:06:00+08:00
+last_task6_at: 2026-07-14T13:14:05+08:00
 last_task6_audit: "2026-07-13"
 last_task6_review_log: "logs/review/2026-05-27-16-review.md"
 review_type: "task6-writing-quality-review"
@@ -127,7 +131,7 @@ ContentProvider 是 Android 四大组件中最「安静」的一个。日常开�
 
 ## ContentProvider 在 Android 架构中的角色
 
-ContentProvider 的设计初衷很简单：**让不同进程之间能安全地共享结构化数据**。Android 的进程隔离意味着 App A 不能直接碰 App B 的数据库文件——要读联系人数据，必须走一条跨进程通道，这条通道得同时解决三个问题：怎么找到数据、谁能访问、用什么格式传输。ContentProvider 就是这条通道。
+ContentProvider 解决的核心问题：**让不同进程之间能安全地共享结构化数据**。Android 的进程隔离意味着 App A 不能直接碰 App B 的数据库文件——要读联系人数据，必须走一条跨进程通道，这条通道得同时解决三个问题：怎么找到数据、谁能访问、用什么格式传输。ContentProvider 就是这条通道。
 
 [已验证: 来源见 developer.android.com/guide/topics/providers/content-provider-basics]
 
@@ -243,7 +247,7 @@ CursorWindow 容量有限，查询结果可能远大于当前窗口。SQLiteCurs
 
 即使单个 ContentProvider 调用的数据量远小于 1MB，如果同时有多个 ContentProvider 调用在并发进行（比如列表页同时请求多个数据源），它们的 Binder 事务数据也会累积超过缓冲区上限，触发 `TransactionTooLargeException`。在实践中，数据载荷达到约 0.5MB 时就可能触发此异常，因为缓冲区还需要留空间给其他系统 Binder 调用。
 
-优化策略很直接：**始终指定 projection（只查需要的列），使用 selection 过滤行，避免在 ContentProvider 中传输大量数据。** 如果需要传输大数据（如图片、文件），应该使用文件描述符(`openFile()` / `openAssetFile()`)或 `MemoryFile`，让数据走单独的共享内存通道，不占用 Binder 事务缓冲区。
+优化重点是**始终指定 projection（只查需要的列），使用 selection 过滤行，避免在 ContentProvider 中传输大量数据。** 如果需要传输大数据（如图片、文件），应该使用文件描述符(`openFile()` / `openAssetFile()`)或 `MemoryFile`，让数据走单独的共享内存通道，不占用 Binder 事务缓冲区。
 
 ## ContentProvider ANR 机制
 
