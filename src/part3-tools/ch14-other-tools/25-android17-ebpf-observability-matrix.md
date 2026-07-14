@@ -410,6 +410,14 @@ flag { name: "load_bpf_lock_contention"
 
 ## 参考资料
 
+### Android 17 eBPF 可观测性矩阵新增程序源码级验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-09-android17-ebpf-observability-matrix-verified.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 在 system/bpfprogs/ 新增 cyclePerUid（tp_btf/sched_switch，PERCPU_ARRAY+LRU_PERCPU_HASH，仅 x86_64）、dmabufIter（iter/dmabuf BPF iterator）、kernelWakelockDuration（raw_tp/wakeup_source_activate+deactivate，aconfig flag pixel_data_engineering）、bpfLockContention（tp/lock/contention_begin+end，aconfig flag kernel_memory_management）。四程序均走 libbpf 路径（.bpf 文件，BTF-enabled），不走 legacyBpfLoader。cyclePerUid 确认挂载 PMU TSC 硬件计数器。
+- 注入时间：2026-07-14
+- 价值：直接解决 §14.25 中标注的 [待验证] 项，提供 attach 类型、map 结构、启用条件的文件级证据
+
+
 ### 源码调研：Android 17 eBPF 可观测性矩阵新增程序源码级验证
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-09-android17-ebpf-observability-matrix-verified.md
 - 类型：DeepResearch 调研结果
