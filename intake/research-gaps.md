@@ -31,3 +31,20 @@
 
 ### 关联章节
 ["1.2", "3.1", "4.1", "7.1"]
+
+## [2026-07-15] 13.25 源码调研：PerfDog 的 Android 平台 GPU/性能采集底层数据源 — 知识盲区
+
+### 盲区描述
+缺少 GPU 计算单元负载分析，对不同计算单元（vertex/fragment/tessellation）负载分离的讨论。同时也缺少对 GPU 驱动厂商特有扩展接口（如高通 Adreno Profiler API）的系统性介绍。
+
+### 重要程度
+高
+
+### 建议研究方向
+- GPU 不同计算单元（vertex/fragment/tessellation）级别的负载分离分析方法
+- 主流 GPU 厂商（高通 Adreno、ARM Mali、Samsung Xclipse）的性能扩展接口研究
+- GPU 计算单元负载分析在性能优化中的实际应用案例
+- 厂商特有 GPU 性能扩展与 AOSP 统一 API 的兼容性分析
+
+### 关联章节
+["13-perfetto-chapters", "3.1", "13.1"]

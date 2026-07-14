@@ -32,3 +32,24 @@
 - **问题**：两处断裂交叉引用，原文 `…理解；、分别提供了启动与渲染问题的测量顺序；、提供了灰度验证和上报组件的组织方式。` 章节号丢失
 - **建议**：确认引用指向（疑 26.3 和 26.15），补全章节号
 - **review 日志**：logs/review/2026-07-15-03-audit.md
+
+## [Task9 Deep Review] 13.25 源码调研：PerfDog 的 Android 平台 GPU/性能采集底层数据源 — 2026-07-15
+
+- **类型**：源码准确性
+- **位置**：GraphicBuffer 分配与 GPU 内存生命周期
+- **问题**：`frameworks/native/libs/ui/GraphicBuffer.cpp` 的 `initSize()` 方法不直接调用 `GraphicBufferAllocator::allocate()`，实际调用链为 `initSize() → GraphicBufferAllocator::alloc()`（不是 `allocate()`）
+- **建议**：修正为正确的 `alloc()` 方法名
+
+## [Task9 Deep Review] 13.25 源码调研：PerfDog 的 Android 平台 GPU/性能采集底层数据源 — 2026-07-15
+
+- **类型**：原理链完整性
+- **位置**：GraphicBuffer 分配与 GPU 内存生命周期
+- **问题**：GPU 内存泄漏检测原理链不完整，缺少对 BufferQueue buffer 回收时机的解释和 GraphicBuffer pool 机制的影响分析
+- **建议**：补充 BufferQueue buffer 回收策略和 GPU memory pool 的影响说明
+
+## [Task9 Deep Review] 13.25 源码调研：PerfDog 的 Android 平台 GPU/性能采集底层数据源 — 2026-07-15
+
+- **类型**：数据与案例支撑
+- **位置**：GPU 性能问题定位实战
+- **问题**：缺少具体的 GPU 性能基准数据，缺少不同 GPU 架构（Adreno vs Mali）的性能对比数据和内存带宽瓶颈的具体阈值
+- **建议**：补充主流 GPU 的性能基准数据，包括不同架构的性能对比和具体阈值
