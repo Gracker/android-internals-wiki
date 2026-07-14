@@ -1,9 +1,9 @@
 {
   "total": 737,
-  "draft": 18,
+  "draft": 17,
   "ready_for_review": 8,
   "finalized": 4,
-  "last_updated": "2026-07-14T13:04:00+08:00",
+  "last_updated": "2026-07-14T14:13:54+08:00",
   "task2b": {
     "last_run": "2026-07-14T06:54:06+08:00",
     "last_section": "15",
@@ -367,7 +367,7 @@
     }
   ],
   "last_task2b_at": "2026-07-02T18:54:37+08:00",
-  "deprecated": 45,
+  "deprecated": 46,
   "stats": {
     "last_review_date": "2026-07-13",
     "last_review_by": "openclaw-task9",
@@ -523,13 +523,20 @@
       "last_review": "2026-07-13",
       "review_issues_count": 6,
       "review_log": "logs/review/2026-07-13-21-review.md"
+    },
+    "8.34": {
+      "status": "deprecated",
+      "pipeline_stage": "deprecated",
+      "deprecated_at": "2026-07-14T14:13:54+08:00",
+      "deprecated_by": "task2a-knowledge-gap",
+      "see_instead": "1.43"
     }
   },
   "task2a": {
-    "last_run": "2026-07-14T13:04:00+08:00",
-    "last_section": "none",
-    "result": "no-candidates",
-    "note": "Gap mining round 114: 0 candidates >=14 (114th consecutive). No state change since R113 (4h ago). research-feeds newest 2026-04-14 (3mo+ stale). Clippings newest 2026-06-23 (21d stale). daily-info 2026-07-14 unchanged (already checked R113). Source-index: 290 entries, 278 unmapped consumed. Research-gaps: ch16.5 Task2B scope only. Suggestions: ch15 Task2B scope only. 0 empty drafts. Task2B backlog: 0. Coverage saturated (743 section files)."
+    "last_run": "2026-07-14T14:13:54+08:00",
+    "last_section": "8.34",
+    "result": "deprecated-duplicate",
+    "note": "Draft 8.34 (task scheduler + ML prediction) deprecated as duplicate of §1.43 (Android 17 ML Scheduler, ready-for-review). 17 empty drafts remaining."
   },
   "task2b_lite": {
     "total_fixed": 1,
@@ -1060,6 +1067,14 @@
       "reason": "Broken stub (copy-paste outline). Orphan not in SUMMARY.md. Topic covered by Duplicate/orphan stub.",
       "deprecated_at": "2026-07-13T21:07:02.371097+08:00",
       "deprecated_by": "task2a-cleanup-round102"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/8.34-android17-task-scheduler-ml-prediction.md",
+      "chapter": "8.34",
+      "title": "Android 17 任务调度器与 ML 驱动的用户行为预测",
+      "reason": "Duplicate of §1.43 Android 17 机器学习驱动任务调度器 (ready-for-review, ~250 lines, 完整覆盖 ML Scheduler 架构/数据流/启动优化场景/性能指标/调优实践)。8.34 主题与 1.43 完全重叠（任务调度器 + ML 驱动用户行为预测），启动预热、应用启动预测等内容已包含在 1.43 的「实际应用场景」一节。新增将导致内容重复并稀释全书的交叉引用结构。",
+      "deprecated_at": "2026-07-14T14:13:54+08:00",
+      "deprecated_by": "task2a-knowledge-gap"
     }
   ],
   "review_stats": {
