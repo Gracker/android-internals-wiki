@@ -1,13 +1,13 @@
 ---
 title: "EyeDropper API 与跨设备协作性能"
 chapter: "18.21"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 17 (API 37)"
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_reviewed_date: "2026-04-24"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-24T08:27:00+08:00"
-last_task9_audit: "2026-07-13"
+last_task9_audit: "2026-07-15"
 tags: [eyedropper, activity-result, color-picking, system-ui, collaboration]
 related_chapters: ["2.6", "8.2", "18.20"]
 created_by: "task2a-knowledge-gap"
@@ -27,15 +27,16 @@ sources:
     path: "https://developer.android.com/training/basics/intents/result"
     title: "Get a result from an activity"
     date: "2026"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 task6_result: pass-light-edit
 last_task6_audit: "2026-06-30"
-task2b_result: fixed
+task2b_result: fixed-lite
+last_task2b_lite_at: "2026-07-15"
 ---
 
 # EyeDropper API 与跨设备协作性能
@@ -171,6 +172,8 @@ private fun onEyeDropperResult(result: ActivityResult) {
 ## 降级策略和边界
 
 - API 下限是 Android 17 / API 37。更老的设备继续走应用内取色器或导入图片取色。
+- `ACTION_OPEN_EYE_DROPPER` 在 Android 17（API 37）引入，截至 `android-17.0.0_r1` 仍可用，但在 main 分支（Android 18+）中尚未确认其保留状态。工程实现中应将 `resolveActivity()` 检查作为运行时前置条件，不要硬编码对该 API 的存在性假设。
+- AIW 版本边界为 Android 17 / API 37。本章结论不覆盖 Android 18 / API 38 及更高版本，该 API 在后续版本中的行为以官方文档为准。
 - 取色结果依赖系统提供的处理器。防御式代码仍然应该保留 `resolveActivity()` 或异常兜底。
 - secure window 和 protected buffer 会被涂黑，不能把 EyeDropper 当成绕过内容保护的入口。
 - EyeDropper 面向用户显式操作，不适合后台自动化或高频批量取样。

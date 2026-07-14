@@ -596,9 +596,9 @@
   },
   "task2b_lite": {
     "total_fixed": 1,
-    "last_run": "2026-07-13T13:41:20+08:00",
+    "last_run": "2026-07-15T07:35:00+08:00",
     "last_chapter": "23.8",
-    "last_section": "14.9",
+    "last_section": "18.21",
     "result": "fixed-lite",
     "fix_type": "frontmatter",
     "note": "frontmatter dedup + status fix + queue entry for P0/P1 audit issues",
@@ -611,7 +611,8 @@
         "type": "frontmatter dedup + status + queue",
         "issues_fixed": 1
       }
-    ]
+    ],
+    "last_result": "fixed-lite"
   },
   "last_task9_review": {
     "at": "2026-07-13T16:20:00+08:00",
