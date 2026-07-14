@@ -48,17 +48,18 @@ last_task9_at: "2026-06-12T14:20:00+08:00"
 pipeline_stage: "task6_pending"
 finalized_date: "2026-05-19"
 finalized_by: openclaw-task9-auto-promote
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "pending"
 task2b_result: "fixed"
 last_task2b_at: "2026-05-19T15:20:11+08:00"
 task2b_state: "fixed"
 task6_result: pass-light-edit
+task6_review_notes_round5: "2026-07-14 Task6 revisiting-review round5 (post-Task9 autofix): pass-light-edit. L1 小修 2 处（形容词+冒号「思路很简单」→「思路」；冗余副词「真正」×1 删除）。L2: 结构完整，outline 5/5 锚点 + 2/2 扩展覆盖。无新增 L3/L4 回炉项。task9_result=auto-fixed（非 pass-tech-review），送 Task9 正式复审。"
 last_task6_audit: "2026-06-08"
 task9_result: auto-fixed
 last_task9_audit: "2026-06-12"
 last_task9_autofix_at: "2026-06-12"
-last_task6_at: "2026-05-19T16:12:00+08:00"
+last_task6_at: "2026-07-14T13:14:05+08:00"
 last_task6_review_log: "logs/review/2026-05-19-16-review.md"
 last_task9_review_log: "logs/deep-review/2026-06-12-14-audit.md"
 task9_review_notes: "2026-06-12 Task9 idle audit: auto-fixed android15-6.6 branch HEAD benchmark drift and Android17/module roadmap boundary; no queue entry; return to Task6. | 2026-05-19 Task9 deep review: pass-tech-review。P0 0 / P1 0 / P2 0；AutoFDO kernel profile 命令链、GKI 分支路径、android15/android16 数据口径复核通过；模块化 AutoFDO Android17 段落仅作为 P3 roadmap 口径收紧建议记录。"
@@ -114,7 +115,7 @@ AutoFDO（Automatic Feedback-Directed Optimization）是 Google 从系统层面�
 
 传统的做法是靠编译器的静态启发式规则——编译器根据代码结构猜测。但猜测终究是猜测，真实运行的代码路径和编译器猜的经常不一样。
 
-Profile-Guided Optimization（PGO）的思路很简单：**先跑一遍，看看哪些路径走得多，再拿这个信息重新编译**。知道热点在哪里之后，编译器就能做出更精准的决策——把热点代码排在一起提高缓存命中率，对热点分支做更激进的内联，把冷代码移到不占缓存的角落。
+Profile-Guided Optimization（PGO）的思路：**先跑一遍，看看哪些路径走得多，再拿这个信息重新编译**。知道热点在哪里之后，编译器就能做出更精准的决策——把热点代码排在一起提高缓存命中率，对热点分支做更激进的内联，把冷代码移到不占缓存的角落。
 
 PGO 有两种主要的实现方式：
 
@@ -314,7 +315,7 @@ userspace 这一层不是抽象描述。AOSP 里已经有 `hwui`、`libartbase`�
 - 设备是 ARM64，并且具备 Coresight 分支追踪能力；较早的平台常见 ETM，新一些 ARMv9 平台则是 ETE + TRBE。
 - 构建版本至少是 `userdebug` / `eng`，并能 `adb root`，否则 ETM 采集往往拿不到完整数据。
 - host 侧要有未剥离的 `vmlinux` 或目标模块符号，`create_llvm_prof` 需要把 branch-list 映射回真实符号。
-- 构建系统要能把生成的 profile 接到 Kleaf / DDK 的构建配置里，否则采集结果没法真正进入编译。
+- 构建系统要能把生成的 profile 接到 Kleaf / DDK 的构建配置里，否则采集结果没法进入编译。
 
 最小可复现流程可以按三个阶段理解。
 

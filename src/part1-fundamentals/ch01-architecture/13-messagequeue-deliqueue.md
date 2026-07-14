@@ -47,7 +47,10 @@ related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
 task6_state: "revisiting"
 task6_result: pass-light-edit
 last_task6_review_log: "logs/review/2026-06-14-08-review.md"
-task9_state: "pending"
+task9_state: "needs-rework"
+last_task9_review_log: "logs/deep-review/2026-07-14-12-deep-review.md"
+last_task9_at: "2026-07-14T12:21:00+08:00"
+last_task9_review_notes: "2026-07-14 Task9 deep-review: needs-rework。P0 0 / P1 3。需要修复 Android 17 DeliQueue 实现原理、默认启用边界描述、性能数据引用口径等问题后重新复审。"
 task9_result: "pass-tech-review"
 last_task9_autofix_at: "2026-07-02"
 last_task9_at: "2026-07-02T02:27:00+08:00"
@@ -216,7 +219,7 @@ Message next() {
 
 ## Android 16 和 Android 17 要分成两步看
 
-这里最容易写乱。
+这里最容易写混乱。
 
 ### Android 16:公开源码里已经有并发实现,但默认范围很窄
 
@@ -398,7 +401,7 @@ Perfetto 中的观察路径：Android 16 legacy 场景重点看 main thread 的 
 
 官方页面已经明确：这个字段还在，但值固定不再代表真实队列内容。
 
-### "DeliQueue 引入了新的任务优先级重排机制"
+### "DeliQueue 实现了新的任务优先级处理机制"
 
 公开源码能确认的调度语义还是 `when`、barrier、async message 这三件事。它换的是队列结构和同步方式，不是给应用层额外加入新的优先级系统。
 
@@ -406,7 +409,7 @@ Perfetto 中的观察路径：Android 16 legacy 场景重点看 main thread 的 
 
 排查主线程调度问题，先把流程切成三段：**入队、出队、分发**。旧 MessageQueue 的瓶颈集中在前两段共用一把 monitor；Android 16 公开源码已经能看到 legacy / concurrent 多变体试点；Android 17 把这件事推到了面向应用的默认行为。
 
-这节最值得带走的判断有两个：
+这里有两个关键判断：
 
 - trace 里 `dispatchMessage()` 长是业务执行慢，不要先归因到 MessageQueue。
 - retarget 到 Android 17 后，测试框架、反射代码、旧监控脚本先出问题，先查 `mMessages` 和测试库版本，再查业务逻辑。

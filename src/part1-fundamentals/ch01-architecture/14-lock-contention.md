@@ -4,7 +4,7 @@
 
 title: "锁竞争与同步性能分析"
 chapter: "1.14"
-status: "ready-for-review"
+status: "finalized"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37); bionic PI mutex sections require Android 9+; DeliQueue applies to Android 17 targetSdk 37+"
 tags: [Mutex, Futex, monitor lock, 优先级反转, 锁竞争, DeliQueue, Perfetto, Binder, jank, ANR]
 related_chapters: ["1.4", "1.5", "1.13", "2.4", "2.5", "7.1", "9.1"]
@@ -53,8 +53,8 @@ sources:
     path: "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md"
   - type: note
     path: "intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 task9_state: "pending"
 task9_result: "pass-tech-review"
@@ -71,12 +71,12 @@ task2b_result: fixed
 last_task2b_at: "2026-05-27T16:50:00+08:00"
 task2b_notes: "2026-05-27 Task2B：清理文末 AIW 源码调研原始块，将 AMS mGlobalLock/mProcLock 双锁与 PI-futex 边界合并入正文。"
 last_task6_audit: "2026-06-08"
-last_task6_at: "2026-07-03T04:11:01+08:00"
+last_task6_at: "2026-07-14T13:14:05+08:00"
 last_task6_review_log: "logs/review/2026-06-25-21-review.md"
 review_type: "task6-writing-quality-review"
 task6_l1_l2_fixes: 9
 task6_l3_l4_issues: 0
-task6_review_notes: "2026-06-25 21:17 Task6 复审：修复 LRU 性能数据小节重复（删除文末 1204 字符重复块）、性能数据中英文间距、大纲禁用词「下钻」、补 [待验证] 标注；Task9 已通过且 queue 无 pending，自动晋升 finalized。"
+task6_review_notes: "2026-07-14 Task6 revisiting-final: pass-light-edit. L1 小修 1 处（正文列表项 mProcLock 缺 backticks）。无新增 L3/L4 回炉项。Task9 pass-tech-review，queue 无 pending，自动晋升 finalized。 | 2026-06-25 21:17 Task6 复审：修复 LRU 性能数据小节重复（删除文末 1204 字符重复块）、性能数据中英文间距、大纲禁用词「深入分析」、补 [待验证] 标注；Task9 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_review_log: "logs/deep-review/2026-07-03-04-deep-review.md"
 task9_review_notes: "2026-07-03 04:37 Task9 deep-review：AOSP android-17.0.0_r1 / kernel common android17-6.18 源码锚点复核通过；无 P0/P1；1 条 LRU 性能数据待补实测，写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-02 12:46 Task9 idle audit AUTO-FIX：重锚 ART/bionic/Binder/AMS/DeliQueue 源码到 Android 17，修正 OomAdjuster Android 17 包路径与 DeliQueue 官方指标口径；回到 Task6 复审。 | 2026-05-27 15:22 Task9 deep-review：技术复审无新增 P0/P1；既有 queue pending 为 Task6/Task2B 文末源码调研原始块清理，不自动晋升。"
 deepseek_cn_review_state: done
@@ -84,8 +84,8 @@ last_deepseek_cn_review_at: 2026-07-04
 task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 1
-finalized_by: "openclaw-task9-auto-promote"
-finalized_date: "2026-07-03"
+finalized_by: "openclaw-task6-auto-promote"
+finalized_date: "2026-07-14"
 ---
 
 
@@ -240,7 +240,7 @@ AMS 的双锁结构是 system_server 锁竞争里很典型的例子。Android 10
 
 ### LRU 锁优化的代码级细节
 
-上文讲的 AMS 双锁拆分，最终落地在 LRU 这个高频数据结构上。下面从代码层面看这种拆分如何具体生效：
+上文讲的 AMS 双锁拆分，最终实现在 LRU 这个高频数据结构上。下面从代码层面看这种拆分如何具体生效：
 
 #### 1. ProcessList中的LRU锁保护
 
@@ -297,7 +297,7 @@ case UPDATE_TIME_ZONE: {
 #### 5. 设计要点
 
 `@CompositeRWLock` 注解和 LOSP/LSP 命名约定的实际效果：
-1. 读操作仅需mProcLock（避免全局锁竞争）
+1. 读操作仅需 `mProcLock`（避免全局锁竞争）
 2. 写操作仍需两把锁保证数据一致性
 3. 支持轻量级操作并行执行
 

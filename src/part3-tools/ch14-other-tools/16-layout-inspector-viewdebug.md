@@ -21,6 +21,7 @@ applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: 2026-06-28
 last_verified_against: AOSP android-17.0.0_r1 / Android Developers Layout Inspector docs
 confidence: medium
+last_task6_audit: 2026-07-14
 sources: 
   - type: official
     path: "https://developer.android.com/studio/debug/layout-inspector"

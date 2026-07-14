@@ -123,6 +123,25 @@
       ],
       "fixes": 0,
       "b_class_issues": 1
+    },
+    {
+      "date": "2026-07-14",
+      "hour": "13",
+      "reviewed": [
+        "1.10",
+        "1.14",
+        "1.12"
+      ],
+      "promoted": [
+        "1.10",
+        "1.14"
+      ],
+      "sent_to_task9": [
+        "1.12"
+      ],
+      "total_l1_l2_fixes": 5,
+      "total_l3_l4_issues": 0,
+      "log": "logs/review/2026-07-14-13-review.md"
     }
   ],
   "reviews": [
@@ -1289,5 +1308,11 @@
       "task9_state": "pending"
     }
   },
-  "last_task2b": ""
+  "last_task2b": "",
+  "status_counts": {
+    "draft": 4,
+    "ready-for-review": 4,
+    "finalized": 9,
+    "ready-to-publish": 0
+  }
 }

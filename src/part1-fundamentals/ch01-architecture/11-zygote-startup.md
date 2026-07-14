@@ -44,7 +44,11 @@ sources:
     path: "https://developer.android.com/reference/android/app/ZygotePreload"
 tags: [zygote, fork, startup, preload, cow, usap, app-zygote, webview]
 related_chapters: ["1.2", "1.3", "8.2", "8.3"]
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
+task9_state: "needs-rework"
+last_task9_review_log: "logs/deep-review/2026-07-14-12-deep-review.md"
+last_task9_at: "2026-07-14T12:21:00+08:00"
+last_task9_review_notes: "2026-07-14 Task9 deep-review: needs-rework。P0 0 / P1 2。需要修复 USAP 与 Child Zygote 关系描述、16KB 页边界影响数据等问题后重新复审。"
 finalized_by: openclaw-task9-auto-promote
 task6_state: "revisiting"
 task6_result: pass-light-edit
