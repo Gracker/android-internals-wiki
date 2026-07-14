@@ -22,6 +22,10 @@
 
   - [1.54 Android 17 Binder 线程池实现机制与调优参数](part1-fundamentals/ch01-architecture/1.54-binder-thread-pool-implementation.md)
   - [1.55 Android 17 VNDK 隔离与 native 库加载性能影响](part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md)
+
+  - [1.56 Android 17 cgroup v2 统一层级与进程资源隔离机制](part1-fundamentals/ch01-architecture/56-android17-cgroup-v2-unified-hierarchy.md)
+  - [1.57 ART Boot Image 内存映射与启动性能](part1-fundamentals/ch01-architecture/57-android17-art-boot-image-memory-mapping-startup.md)
+  - [1.58 Android Dynamic Linker (linker64) 架构与 Native 库加载性能边界](part1-fundamentals/ch01-architecture/58-android-dynamic-linker-linker64-native-library.md)
 - [第 2 章：渲染管线](part2-performance/ch02-rendering/README.md)
   - [2.1 GPU 渲染管线架构演进](part2-performance/ch02-rendering/2.1-gpu-rendering-pipeline-evolution.md)  - [Compose Pager 从基础到高级动画](part2-performance/ch2-rendering/2.52-Compose-Pager-从基础到高级动画.md)
 - [2.5 Compose Pager 从基础到高级动画](part2-performance/ch02-rendering/2.5-compose-pager-advanced-animations.md)
@@ -71,6 +75,7 @@
   - [5.28 PELT Boost 回退与 AMU/PMU 微架构感知调频](part1-fundamentals/ch05-cpu-power/5.28-android17-pelt-boost-revert-amu-pmu-microarch-frequency-limiting.md)
 - [5.29 Android 17 GPU DVFS Headroom 与 SurfaceFlinger PowerAdvisor 链路](part1-fundamentals/ch05-cpu-power/5.29-android17-gpu-dvfs-headroom-power-advisor.md)
   - [5.30 Android 17 OnDeviceIntelligence 框架性能：FoundationModelManager 推理调度与资源隔离](part1-fundamentals/ch05-cpu-power/5.30-android17-ondevice-intelligence-framework-performance.md)
+  - [5.31 Android 17 内核 EEVDF 调度器：从 CFS 到 EEVDF](part1-fundamentals/ch05-cpu-power/31-android17-eevdf-scheduler.md)
 
   - [Android 17 Binder IPC 优先级继承机制与内核批处理流水线](part1-fundamentals/ch01-architecture/1.9-binder-ipc-优先级继承内核批处理流水线-draft.md)
 
