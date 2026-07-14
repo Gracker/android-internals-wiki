@@ -1,9 +1,9 @@
 {
   "total": 741,
   "draft": 19,
-  "ready_for_review": 10,
-  "finalized": 4,
-  "last_updated": "2026-07-15T03:10:54.627698+08:00",
+  "ready_for_review": 9,
+  "finalized": 5,
+  "last_updated": "2026-07-15T04:06:00+08:00",
   "task2b": {
     "last_run": "2026-07-14T06:54:06+08:00",
     "last_section": "15",
@@ -33,6 +33,13 @@
   ],
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
+    {
+      "section": "13.25",
+      "action": "task6-review",
+      "status": "finalized",
+      "ts": "2026-07-15T04:06:00+08:00",
+      "note": "Review pass: 2 L1/L2 fixes (duplicate paragraph removal, redundant 真正的 removal). Auto-promoted to finalized (task6 pass + task9 pass + queue clear)."
+    },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",

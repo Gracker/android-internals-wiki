@@ -61,7 +61,7 @@ finalized_by: "openclaw-task6-auto-promote"
 last_task9_review_log: logs/deep-review/2026-07-14-17-deep-review.md
 last_task2b_at: 2026-07-14T20:51:00+08:00
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-07
+last_deepseek_cn_review_at: 2026-07-15
 last_task9_autofix_at: "2026-07-08"
 last_task9_audit_log: "logs/deep-review/2026-07-08-18-audit.md"
 task9_review_notes: "2026-07-14 Task9 round-3 复审（post-Task2B fix）: pass-tech-review。P0=0 / P1=0。复核 SurfaceFlinger 切片表 android-17 行已添加、16KB Page Size 三层边界（AOSP 构建 / 设备配置 / Google Play）声明清晰、last_verified_against 锚定 android-17.0.0_r1 等修复全部到位。P2 3 处已写入 suggestions.md（USAP 量化、ProcessState.cpp 行号、binder.c spawn 守门行号待验证），P3 3 处仅日志记录。满足自动晋升条件 → ✅ finalized。"
@@ -71,8 +71,6 @@ finalized_by: "openclaw-task9-auto-promote"
 finalized_date: "2026-07-14"
 ---
 ---
-
-
 
 
 # Android 分层架构
@@ -109,13 +107,13 @@ finalized_date: "2026-07-14"
 
 分析渲染卡顿时，Trace 里可能出现这样的场景：主线程在 `doFrame()` 里卡了 30 ms，原因是某个 `measure()` 调用触发 Binder 通信，等待 SystemServer 返回就花掉 20 ms。如果不清楚主线程、SystemServer、Binder 分别属于哪一层、为什么需要跨层通信，就只能看到一堆彩色方块，却无法定位根因。
 
-理解分层架构之后，再打开 Perfetto Trace 就能快速判断异常耗时落在哪一层、为什么发生、该从哪一层入手优化。这是性能分析的基础功。
+理解分层架构之后，打开 Perfetto Trace 就能快速判断异常耗时落在哪一层、原因是什么、优化该从哪一层入手。这是性能分析的基本功。
 
 [已验证: 官方文档, https://developer.android.com/guide/platform]
 
 ## Android 经典五层架构
 
-Android 的架构从底向上分为五层：Linux Kernel、HAL、Native Libraries & ART Runtime、Framework、Apps。这个分层有明确的工程动机，每一层的存在都对应一类具体问题。
+Android 的架构从底向上分为五层：Linux Kernel、HAL、Native Libraries & ART Runtime、Framework、Apps。这套分层不是随意画出来的，每一层要解决什么问题都是明确的。
 
 ### 从硬件到应用：为什么需要五层
 
@@ -139,7 +137,7 @@ graph TB
 
 [图：Android 五层架构图，每层用不同颜色标注，标注关键组件归属]
 
-这个架构的设计取舍是：**每一层只对自己的上一层提供接口，对自己的下一层隐藏实现。** 这种设计保证了当硬件更换、系统升级时，上层代码不需要修改。在性能分析中，每一层都可能成为瓶颈，瓶颈的表现形式取决于它所在的层次。
+这个架构的设计取舍是：**每一层只对自己的上一层提供接口，对自己的下一层隐藏实现。** 这种设计保证了当硬件更换、系统升级时，上层代码不需要修改。做性能分析时，每一层都可能成为瓶颈，表现形式各不相同。
 
 ### 各层职责：从 Kernel 到 App 的边界分工
 
@@ -280,8 +278,9 @@ Project Mainline 在 Android 16 上已经覆盖到 ART、Media、Network Stack �
 [已验证: Android Developers, https://developer.android.com/guide/practices/page-sizes]
 [已验证: AOSP, https://source.android.com/docs/core/architecture/16kb-page-size/16kb]
 
-<!-- AIW-源码调研-2026-07-14 -->
 ## 多设备形态下分层架构的差异化适配（折叠屏 / 车载 / Wear OS）
+
+前面讲的是"通用形态"下的五层架构。但 Android 17 支持手机、折叠屏、手表、车机、桌面等多种设备，这些形态共用同一套分层框架，运行时结构却各有不同。核心差异集中在窗口层（WMS）和服务层（Car/Watch）。
 
 经典五层架构图描述的是"通用形态"。但 Android 17 在不同设备形态上**用同一套五层框架承载完全不同的运行时结构**，核心差异集中在窗口层（WMS）和服务层（Car/Watch）。
 
@@ -530,9 +529,6 @@ if (starvationTime > 100ms) {
 
 [已验证: 一手源码, frameworks/native/libs/binder @ AOSP android-17.0.0_r1 + kernel/common/drivers/android/binder.c @ AOSP android17-6.18 (kernel)]
 
-<!-- AIW-源码调研-2026-07-07 -->
-
-
 
 [已验证: 官方文档 + 社区测量数据, https://androidperformance.com]
 
@@ -599,7 +595,7 @@ Perfetto 采集数据的方式恰好与 Android 的三层结构一一对应。�
 
 ### 误区：SurfaceFlinger 在 Framework 进程中
 
-这是一个非常常见的误解。SurfaceFlinger 是一个独立的 Native 进程，不属于 SystemServer。在 Perfetto 中搜索 `surfaceflinger` 就能看到它的独立进程 track。它通过 Binder 与 SystemServer 中的 WMS 通信，但两者是完全独立的进程。理解这一点对于分析渲染问题很重要：SurfaceFlinger 的性能问题需要看 `surfaceflinger` 进程的 track，而不是 `system_server`。
+这个误解很常见。SurfaceFlinger 是一个独立的 Native 进程，不属于 SystemServer。在 Perfetto 中搜索 `surfaceflinger` 就能看到它的独立进程 track。它通过 Binder 与 SystemServer 中的 WMS 通信，但两者是完全独立的进程。理解这一点对于分析渲染问题很重要：SurfaceFlinger 的性能问题需要看 `surfaceflinger` 进程的 track，而不是 `system_server`。
 
 ### 误区：Zygote fork 会复制 ART 堆
 
@@ -656,7 +652,7 @@ Binder 相比 Socket/管道的核心优势在于：**一次拷贝**。传统 IPC
 
 为什么需要隔离？Framework 和 Vendor 模块可能依赖同一个 C++ 库的不同版本。如果不隔离，链接器会随机加载其中一个版本，导致符号冲突或 ABI 不兼容的崩溃。
 
-对性能的影响是双面的：VNDK 隔离要求 Vendor 进程只能使用白名单中的库，某些共享库需要被复制一份给 Vendor 使用，增加了存储空间和内存占用。但从系统稳定性的角度看，这个权衡是值得的——它消除了 Framework 更新导致 Vendor HAL 崩溃的风险。
+对性能的影响有两面：VNDK 隔离要求 Vendor 进程只能使用白名单中的库，某些共享库需要被复制一份给 Vendor 使用，增加了存储空间和内存占用。但从系统稳定性的角度看，这个权衡是值得的——它消除了 Framework 更新导致 Vendor HAL 崩溃的风险。
 
 ---
 ## 参考资料
@@ -713,13 +709,10 @@ Binder 相比 Socket/管道的核心优势在于：**一次拷贝**。传统 IPC
 
 ## 调研记录
 
-<!-- AIW-源码调研-2026-04-19 -->
 - **2026-04-19**: 源码调研「SELinux 开销对 Binder 性能的影响」已完成。发现：SELinux 通过 `selinux_binder_transaction()` 钩子对每次 Binder transaction 执行 `avc_has_perm()` 检查；AVC 缓存使稳态开销极低（~50-200 ns/次）；Android 8+ Treble 三路 binder 设备隔离设计降低了跨域误用风险。报告：`OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-19-selinux-binder-performance-overhead.md`
 
-<!-- AIW-源码调研-2026-06-23 -->
 - **2026-06-23**: 源码调研「Android AI 手机生态：从硬件入口到大模型协同的完整产业链分析」已完成。发现：Android 17 形成了 AIDL HAL + VoiceInteractionService + AccessibilityService + NNAPI HAL 的三层技术架构，支撑了字节跳动与努比亚这类"硬件厂商+大模型厂商"合作模式；豆包手机助手通过 VoiceInteractionService 系统级认证、AccessibilityService 全局 UI 控制，AIDL HAL 访问高通 NPU 算力，实现全场景 AI 助手。调用路径：`AI 助手 App → VoiceInteractionService/AIDL HAL → NPU Vendor HAL → 芯片厂商驱动 → 硬件 NPU`。NPU 推理功耗比 CPU 低 60%，响应延迟 15-50 ms。报告：`2026-06-23-android-ai-phone-ecosystem-analysis.md`
 
-<!-- AIW-源码调研-2026-07-08 -->
 ## VNDK 隔离与 Self-contained HALs 的源码级性能影响
 
 Android 17 的 linker namespace 访问控制仍以 `android_namespace_t::is_accessible()` 为核心：隔离命名空间会依次检查 `allowed_libs_`、`ld_library_paths_`、`default_library_paths_` 和 `permitted_paths_`。这能解释 VNDK / VNDK-less 路径下 `dlopen()` 前的访问校验成本，但当前没有可复现实测数据支撑固定百分比结论。
@@ -860,7 +853,6 @@ std::string Config::get_vndk_version_string(const char delimiter) {
 
 > **版本说明**：以上源码结构已在 AOSP `android-17.0.0_r1` 的 `bionic/linker/linker_namespaces.cpp`、`linker_namespaces.h`、`linker.cpp` 复核；性能影响仍需设备实测，不写成 Android 17 固定结论。
 
-<!-- AIW-源码调研-2026-07-09 -->
 ## VNDK 加载成本的 6 个可观测锚点（源码级量化视角）
 
 2026-07-08 的小节以 `is_accessible()` 机制为核心，但诚实地把「量化成本」标为「仍需实测」。本节不重复机制，把目光转向 bionic linker 源码中**可直接由代码推理出的结构化指标**——这些指标构成后续 simpleperf / ftrace 基准测试的天然对照基线，可替代「未经一手验证的固定百分比」。
