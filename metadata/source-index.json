@@ -4389,6 +4389,52 @@
       "processed_at": "2026-07-14T06:12:05",
       "action": "queue",
       "reason": "目标章节 deprecated"
+    },
+    {
+      "title": "binder 深入研究-传输机制篇_上",
+      "path": "AndroidWeekly/202519/binder 深入研究-传输机制篇_上",
+      "source_url": "https://mp.weixin.qq.com/s?__biz=MzkzOTQ4NDUyNg==&mid=2247491184&idx=1&sn=858482f1dab1a42851425c035b06ad8d&scene=21",
+      "weekly_issue": "202519",
+      "weekly_date": "2025-07-28",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 2
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-进程间通信",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android Binder机制是Android系统中最核心的跨进程通信机制。本文深入探讨了Binder驱动层的实现...",
+      "scored_at": "2026-07-14T09:15:44.576478"
+    },
+    {
+      "title": "震惊 Kotlin 单例翻车实录",
+      "path": "AndroidWeekly/202519/震惊 Kotlin 单例翻车实录",
+      "source_url": "https://mp.weixin.qq.com/s?__biz=MzIyMzg2MzQxNg==&mid=2247488779&idx=1&sn=2f54497977953185ee384f19a862984f&scene=21",
+      "weekly_issue": "202519",
+      "weekly_date": "2025-07-28",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 4,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch04-语言基础",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Kotlin的单例模式在实际项目中可能会遇到序列化工具破坏的问题。本文详细分析了...",
+      "scored_at": "2026-07-14T09:15:44.576490"
     }
   ]
 }

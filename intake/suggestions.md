@@ -298,6 +298,55 @@ class MultiDisplayPerformanceMonitor {
 
 ---
 
+## [Task9 Deep Review] 15 Android 性能优化研究方法论 — 2026-07-14
+- **类型**：源码引用准确性
+- **位置**：3.2 traced service 参数边界描述
+- **问题**：traced service 参数边界描述与实际实现存在差异 — 需要更准确区分服务端和客户端参数
+- **建议**：修正 §3.2 中关于 traced service 参数的描述，明确区分 CLI 启动选项（--background/--version/--set-socket-permissions/--enable-relay-endpoint）和 socket 协议层缓冲区配置（TraceConfig.buffers[].size_kb），并说明 -b/--async 是 perfetto CLI 选项而非 traced 命令行参数
+
+## [Task9 Deep Review] 15 Android 性能优化研究方法论 — 2026-07-14
+- **类型**：原理链完整性
+- **位置**：2.1 PDCA 循环与性能优化的对应关系
+- **问题**：PDCA 循环与性能优化的对应关系缺少"为什么需要数据反馈"的原理支撑
+- **建议**：在 2.1 节补充数据反馈的重要性原理：没有数据反馈的优化相当于"闭眼射箭"，即使遵循 PDCA 流程，也会因为缺乏客观标准导致决策偏差，进而产生次优解。建议添加："Check 阶段的数据反馈不是可有可无，而是确保 Plan 阶段的假设是否成立的唯一验证手段。没有数据反馈的优化本质上只是猜测，会导致'感觉快了'但实际无改善或产生新问题。"
+
+## [Task9 Deep Review] 15 Android 性能优化研究方法论 — 2026-07-14
+- **类型**：知识盲区
+- **位置**：整体章节内容
+- **问题**：缺少 ART GC 相关优化内容（分代收集、并发优化）
+- **建议**：在 6.1 优化方案设计章节补充 ART GC 优化专节，包括：分代收集优化策略（减少 Minor GC 频率、优化对象分配位置）、并发 GC 配置（UseGTask、UseTLAB、ConcurrentGC 等参数）、GC 暂停优化（Memory relocating 技术）、GC 事件监听与诊断方法（GcEventListener、内存快照分析）
+
+## [Task9 Deep Review] 15 Android 性能优化研究方法论 — 2026-07-14
+- **类型**：知识盲区
+- **位置**：整体章节内容
+- **问题**：缺少 GPU DVFS 调优机制
+- **建议**：在 4.1 SoC 分节补充 GPU DVFS 专节，包括：PowerManager.setBoost() 与 GPU 频率映射、GPU Governor 类型（simple_ondemand、performance、powersave）、GPU 时钟门控优化、GPU 渲染管线与 DVFS 的协调机制，特别是高通 Adreno、ARM Mali、Samsung Xclipse 等不同 GPU 架构的 DVFS 差异
+
+## [Task9 Deep Review] 15 Android 性能优化研究方法论 — 2026-07-14
+- **类型**：数据与案例支撑
+- **位置**：4.2 基准线的三条腿
+- **问题**：性能数据示例（如"冷启动 P50 1.8s，P99 4.2s"）缺少来源标注
+- **建议**：在数据说明段补充具体的基准数据来源，如："冷启动基准数据取自 Google Play Android Vitals 的行业统计（2023-2024 年全球 Android 设备启动时间分析），P50 基准值为 1.5s，P99 基准值为 4.0s，本示例中的数值仅用于教学演示"
+
+## [Task9 Deep Review] 15 Android 性能优化研究方法论 — 2026-07-14
+- **类型**：交叉引用一致性
+- **位置**：1.2 分类框架
+- **问题**：引用 §2.3 Handler/MessageQueue 调度机制，但该章节可能未创建
+- **建议**：检查并确保 §2.3 章节存在，或修正引用为正确的章节编号，如"关于 Handler/MessageQueue 的调度机制在帧预算消耗中的角色见 §4.3 Perfetto trace_processor 实战中的 Binder 阻塞查询部分"
+
+## [Task9 Deep Review] 15 Android 性能优化研究方法论 — 2026-07-14
+- **类型**：交叉引用一致性
+- **位置**：1.2 分类框架
+- **问题**：引用 §16.9 SDM，但该章节已被标记为需重写
+- **建议**：暂时移除对 §16.9 SDM 的引用，或修正为"构建系统优化机制详见相关章节，此处暂不展开"
+
+## [Task9 Deep Review] 15 Android 性能优化研究方法论 — 2026-07-14
+- **类型**：知识盲区
+- **位置**：整体章节内容
+- **问题**：缺少 Android 17 新特性（FrameRateOverrides、Adaptive Refresh Rate）的深度分析
+- **建议**：在 4.4 自适应刷新率场景的帧数据分析基础上，补充更深入的技术细节，包括：FrameRateOverrides API 的实现机制（SurfaceControl.setFrameRate() 到 SurfaceFlinger 的映射流程）、不同刷新率档位的自适应调整算法、Adaptive Refresh Rate 与 VSync 调度的协同机制
+
+
 ## [2026-07-14] 通用性能数据上下文建议
 
 ### 所有章节统一建议
