@@ -1,4 +1,5 @@
 ---
+
 title: "Zygote 机制与启动性能优化"
 chapter: "1.11"
 section: "1.11"
@@ -42,7 +43,7 @@ sources:
     path: "https://developer.android.com/reference/android/app/ZygotePreload"
 tags: [zygote, fork, startup, preload, cow, usap, app-zygote, webview]
 related_chapters: ["1.2", "1.3", "8.2", "8.3"]
-pipeline_stage: task6_pending
+pipeline_stage: "task9_pending"
 task9_state: pending
 task9_result: needs-rework
 last_task9_review_log: logs/deep-review/2026-07-14-17-deep-review.md
@@ -69,6 +70,7 @@ last_task6_at: "2026-07-14T19:39:29+08:00"
 reviewed_at: "2026-05-18T03:31:27+08:00"
 task9_review_log: "logs/deep-review/2026-05-18-03-deep-review.md"
 ---
+
 
 
 # 1.11 Zygote 机制与启动性能优化
