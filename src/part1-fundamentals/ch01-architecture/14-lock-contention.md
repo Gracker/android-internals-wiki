@@ -1,9 +1,10 @@
 ---
 
 
+
 title: "锁竞争与同步性能分析"
 chapter: "1.14"
-status: "finalized"
+status: "ready-for-review"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37); bionic PI mutex sections require Android 9+; DeliQueue applies to Android 17 targetSdk 37+"
 tags: [Mutex, Futex, monitor lock, 优先级反转, 锁竞争, DeliQueue, Perfetto, Binder, jank, ANR]
 related_chapters: ["1.4", "1.5", "1.13", "2.4", "2.5", "7.1", "9.1"]
@@ -52,10 +53,10 @@ sources:
     path: "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md"
   - type: note
     path: "intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md"
-pipeline_stage: "ready-to-publish"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "pass-tech-review"
 task9_reviewed_date: "2026-07-03"
 task9_reviewed_by: "openclaw-task9"
@@ -65,7 +66,7 @@ last_task9_audit_log: "logs/deep-review/2026-07-02-12-audit.md"
 task6_review_notes_round4: "2026-07-03 Task6 revisiting-review round4 (post-Task9 autofix): pass-light-edit. L1 scan: 0 banned words, 0 high-freq violations. L2: structure intact, outline 8/8 anchors + 3/3 extensions covered. No new L3/L4 issues. task9_result=auto-fixed (not pass-tech-review), cannot auto-promote."
 task6_review_notes_round2: "2026-07-02 Task6 revisiting-review round2 (post-Task9 autofix): pass-light-edit. Task9 idle audit auto-fixed Android 17 source re-anchoring (OomAdjuster package path, DeliQueue metrics). L1 scan: 0 banned words, 0 high-freq violations. L2: structure intact, outline 8/8 anchors covered, 4 extensions covered. No new L3/L4 issues. task9_result=auto-fixed (not pass-tech-review), cannot auto-promote."
 last_task9_autofix_at: "2026-07-02"
-task2b_state: fixed
+task2b_state: "fixed"
 task2b_result: fixed
 last_task2b_at: "2026-05-27T16:50:00+08:00"
 task2b_notes: "2026-05-27 Task2B：清理文末 AIW 源码调研原始块，将 AMS mGlobalLock/mProcLock 双锁与 PI-futex 边界合并入正文。"
@@ -86,6 +87,7 @@ task9_p2_issues: 1
 finalized_by: "openclaw-task9-auto-promote"
 finalized_date: "2026-07-03"
 ---
+
 
 # 1.14 锁竞争与同步性能分析
 

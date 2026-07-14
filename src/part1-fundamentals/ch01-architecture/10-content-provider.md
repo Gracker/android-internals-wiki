@@ -1,10 +1,11 @@
 ---
 
 
+
 title: ContentProvider 性能与优化
 chapter: '1.10'
 section: '1.10'
-status: finalized
+status: "ready-for-review"
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
@@ -43,12 +44,12 @@ tags:
 - anr
 - sqlite
 - app-startup
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: "pending"
 task9_result: pass-tech-review
-task2b_state: fixed
+task2b_state: "fixed"
 task2b_result: fixed-lite
 last_task2b_at: '2026-05-27T13:35:00+08:00'
 last_task2b_lite_at: '2026-05-27'
@@ -83,6 +84,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-02
 last_task9_audit: "2026-07-01 10:28:31"
 ---
+
 
 
 1. [why-cp] 为什么要了解 ContentProvider 的性能
