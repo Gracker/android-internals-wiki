@@ -377,3 +377,14 @@ class MultiDisplayPerformanceMonitor {
 - **新兴 API**: SafetyCenter (Android 13+) → 安全功能非性能，5/20。AppSearch (Android 12+) → 应用级库非系统机制，7/20。
 - **Research-gaps 新增**: Native Hook 三大流派对比 → 14.13 已 finalized 覆盖。WebView T2 秒开率 → 已有 5 个 WebView 节覆盖。
 - **结论**: 743 节全覆盖，本轮 0 候选 ≥14 分。第 112 轮连续无候选。
+
+## [Task2A Gap Mining R113] 已检查方向 — 2026-07-14
+- **Daily-info 2026-07-14**: Android 17 scheduler/memory + Linux 6.10 BPF → 已有多个章节覆盖。掘金文章为应用架构层（MVVM/MVI/协程定义），非性能系统层。
+- **Clippings 性能优化参考书**: 缓存优化（冷热端分离+重排序）→ ch05/18-cpu-cache-friendly-code-data-layout.md + ch21/12-startup-profile-dex-layout.md 已覆盖。DEX 文件体积 → ch25/07-r8-resource-optimization.md + ch25/06-apk-analysis.md 已覆盖。资源文件体积 → 同上。GC 抑制 → ch21/13-art-gc-suppression-startup-performance.md 已覆盖。插件化包体积 → ch25/08-app-bundle-delivery.md 已覆盖。
+- **Clippings 稳定性参考书**: ASM 字节码插桩 → ch14/13-hook-infrastructure.md + ch26/21-bytecode-instrumentation-monitoring-automation.md 已覆盖。OOM 路径 → ch20/05-oom-governance.md 已覆盖。
+- **Clippings 线上疑难问题参考书**: JVM TI → ch14/01-as-profiler.md 已覆盖。Native Hook → ch14/13-hook-infrastructure.md 已覆盖。
+- **AOSP 服务扫描**: DownloadManager → 非性能核心 (7/20)。ClipboardManager → 非性能核心 (5/20)。TextServices/SpellChecker → 太过边缘 (5/20)。
+- **新兴 API**: AppSearch (Android 12+) → 应用级搜索库，非性能系统 (7/20)。SpeechRecognizer → 语音功能，非核心性能 (5/20)。
+- **Compose Snapshot 深挖**: 已在 ch18/25-compose-rendering-pipeline.md (2.5KB Snapshot 专节 + 6.4KB 扩展6) + ch22/22.29-jetpack-compose-并发安全机制.md (12.4KB, 86次 snapshot 提及) 中充分覆盖。总分 11/20，低于阈值。
+- **Gradle 构建性能**: 开发者效率话题，非运行时性能核心。R=2, total=11/20。
+- **结论**: 719 节全覆盖，本轮 0 候选 ≥14 分。第 113 轮连续无候选。
