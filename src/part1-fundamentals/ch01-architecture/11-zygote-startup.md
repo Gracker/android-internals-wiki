@@ -49,13 +49,13 @@ task9_state: reviewed
 task9_result: needs-rework
 last_task9_review_log: logs/deep-review/2026-07-14-17-deep-review.md
 last_task9_at: "2026-07-14T17:26:54+08:00"
-last_task9_review_notes: "2026-07-14 Task9 deep-review: needs-rework。P0 0 / P1 2。需要修复 USAP 与 Child Zygote 关系描述、16KB 页边界影响数据等问题后重新复审。"
-| 2026-07-14 Task9 deep-review (round 2): needs-rework. P0=0 / P1=2 (applicable_versions vs last_verified_against 不一致 + frontmatter task9_state 重复字段冲突) + 1 继承(USAP 边界前提) + 1 继承(16KB 数据缺失). P2 1 (USAP 边界前提). queue.json 新增 P95 条目.
+last_task9_review_notes: "2026-07-14 Task9 deep-review: needs-rework。P0 0 / P1 2。需要修复 USAP 与 Child Zygote 关系描述、16KB 页边界影响数据等问题后重新复审。Round 2: P0=0 / P1=2 (applicable_versions vs last_verified_against 不一致 + frontmatter task9_state 重复字段冲突). P2 1 (USAP 边界前提). queue.json 新增 P95 条目."
 finalized_by: openclaw-task9-auto-promote
-task6_state: "revisiting"
+task6_state: "reviewed"
 task6_result: pass-light-edit
-task9_state: "pending"
-last_task9_at: "2026-05-18T03:31:27+08:00"
+task6_reviewed_date: "2026-07-14"
+last_task6_review_log: "logs/review/2026-07-14-18-review.md"
+task6_review_notes: "07-14 18 Task6 revisiting：pass-light-edit。L1 小修 1 处（禁用词 链路 → 调用路径）；outline 6/6 覆盖；frontmatter YAML 管道符腐蚀修复 + 过期 task9 重复字段清理。Task9 2026-07-14 needs-rework（P1:2），待 Task9 修复后重新复审。"
 last_task9_audit: "2026-05-26"
 last_task9_audit_at: "2026-05-26T14:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-26-14-audit.md"
@@ -67,11 +67,9 @@ repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-29T12:42:48.185623"
 last_task6_audit: "2026-06-24"
-last_task6_at: "2026-06-24T21:08:00+08:00"
+last_task6_at: "2026-07-14T18:08:00+08:00"
 reviewed_at: "2026-05-18T03:31:27+08:00"
 task9_review_log: "logs/deep-review/2026-05-18-03-deep-review.md"
-last_task9_review_log: "logs/deep-review/2026-05-18-03-deep-review.md"
-task9_review_notes: "2026-05-18 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1(16KB 页与 VMA 边界,已写入 suggestions.md)。Task6 已通过且 queue 无 pending,自动晋升 finalized。"
 ---
 
 
@@ -88,7 +86,7 @@ ZygoteInit.preload() 包含两条关键预加载路径,分别对应 gralloc mapp
 
 - **源码**:`core/jni/com_android_internal_os_ZygoteInit.cpp` 行 19-22
 - **当前实现**:`GraphicBufferMapper::preloadHal()` -- 预加载 gralloc mapper HAL(passthrough 库)
-- **实际链路**:`ZygoteInit.nativePreloadAppProcessHALs()` → `GraphicBufferMapper::preloadHal()` → `Gralloc2/3/4/5Mapper::preload()`,加载 gralloc mapper 的 passthrough 共享库,让 fork 后的子进程直接继承已加载的 gralloc 库,避免冷启动时重复 dlopen + HAL 初始化开销
+- **实际调用路径**:`ZygoteInit.nativePreloadAppProcessHALs()` → `GraphicBufferMapper::preloadHal()` → `Gralloc2/3/4/5Mapper::preload()`,加载 gralloc mapper 的 passthrough 共享库,让 fork 后的子进程直接继承已加载的 gralloc 库,避免冷启动时重复 dlopen + HAL 初始化开销
 - **引入版本**:Android 9(`PreloadAppProcessHALs` 在 `android-9.0.0_r1` 已存在,同时还有 `preloadOpenGL`)
 
 ```cpp
