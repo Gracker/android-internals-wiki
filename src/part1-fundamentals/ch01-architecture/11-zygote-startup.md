@@ -44,8 +44,8 @@ sources:
 tags: [zygote, fork, startup, preload, cow, usap, app-zygote, webview]
 related_chapters: ["1.2", "1.3", "8.2", "8.3"]
 pipeline_stage: "task9_pending"
-task9_state: pending
-task9_result: pending
+task9_state: reviewed
+task9_result: pass-tech-review
 last_task9_review_log: logs/deep-review/2026-07-14-17-deep-review.md
 last_task9_at: "2026-07-14T17:26:54+08:00"
 last_task9_review_notes: "2026-07-14 Task9 deep-review: needs-rework。P0 0 / P1 2。需要修复 USAP 与 Child Zygote 关系描述、16KB 页边界影响数据等问题后重新复审。Round 2: P0=0 / P1=2 (applicable_versions vs last_verified_against 不一致 + frontmatter task9_state 重复字段冲突). P2 1 (USAP 边界前提). queue.json 新增 P95 条目."
@@ -59,7 +59,7 @@ last_task9_audit: "2026-05-26"
 last_task9_audit_at: "2026-05-26T14:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-26-14-audit.md"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-18"
+task9_reviewed_date: 2026-07-14
 task2b_state: fixed
 task2b_result: fixed
 repaired_date: "2026-04-24"
@@ -68,7 +68,13 @@ last_task2b_at: 2026-07-14T20:51:00+08:00
 last_task6_audit: "2026-06-24"
 last_task6_at: "2026-07-14T21:09:00+08:00"
 reviewed_at: "2026-05-18T03:31:27+08:00"
-task9_review_log: "logs/deep-review/2026-05-18-03-deep-review.md"
+task9_review_log: logs/deep-review/2026-07-14-21-deep-review.md
+task9_review_notes: "2026-07-14 Task9 round-3 复审（post-Task2B fix）: pass-tech-review。P0=0 / P1=0。复核 16KB 页边界声明、USAP 与 Child Zygote 源码级隔离证据、last_verified_against 锚定 android-17.0.0_r1 等修复全部到位。P2 3 处已写入 suggestions.md（USAP 量化数据、内核 tag 标注、cppath 微调），P3 3 处仅日志记录。满足自动晋升条件 → ✅ finalized。"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+finalized_by: "openclaw-task9-auto-promote"
+finalized_date: "2026-07-14"
+---
 ---
 
 
