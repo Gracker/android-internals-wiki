@@ -1,5 +1,25 @@
 # Task 9 技术改进建议
 
+## [2026-07-14] Task9 Deep Review] Chapter 15 Methodology — 2026-07-14
+
+## [Task9 Deep Review] Chapter 15 Methodology — 2026-07-14
+- **类型**：原理链完整性
+- **位置**：§4.1 SoC分层讨论
+- **问题**：Power HAL与内核驱动的交互机制描述较抽象，缺少具体代码示例说明数据流向
+- **建议**：补充Power HAL调用栈的具体代码片段，展示从Framework到HAL再到驱动的数据传递过程
+
+## [Task9 Deep Review] Chapter 15 Methodology — 2026-07-14
+- **类型**：知识盲区
+- **位置**：整体方法论
+- **问题**：缺少Android 17中新的thermal throttle机制对性能分析的影响
+- **建议**：新增thermal throttle章节，说明温度管理如何影响CPU/GPU频率调度，以及如何通过Perfetto采集thermal事件
+
+## [Task9 Deep Review] Chapter 15 Methodology — 2026-07-14
+- **类型**：数据与案例支撑
+- **位置**：§4.4 FrameRateOverrides数据分析
+- **问题**：缺少实际案例数据支撑，分析方法较为理论化
+- **建议**：补充真实场景的Perfetto trace示例，展示自适应刷新率设备上的帧数据分析实例
+
 ## [2026-07-14] Chapter 15 Methodology
 
 ### 源码引用准确性问题
