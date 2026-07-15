@@ -1535,5 +1535,16 @@
     "ready-for-review": 4,
     "finalized": 9,
     "ready-to-publish": 0
-  }
+  },
+  "task6_audits": [
+    {
+      "section": "19.24",
+      "title": "崩溃与 ANR 捕获机制",
+      "date": "2026-07-15",
+      "mode": "audit",
+      "l1_l2_fixes": 3,
+      "l3_l4_issues": 3,
+      "log": "logs/review/2026-07-15-09-audit.md"
+    }
+  ]
 }

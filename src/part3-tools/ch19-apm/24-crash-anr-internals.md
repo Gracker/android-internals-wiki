@@ -33,14 +33,11 @@ task9_state: "reviewed"
 task2b_state: fixed
 task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-06-03T07:35:00+08:00"
-task6_state: "reviewed"
-task9_state: "reviewed"
-pipeline_stage: "ready-to-publish"
 task9_reviewed_date: "2026-06-02"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-03T07:20:00+08:00"
 task9_review_notes: "2026-06-02 Task9 deep-review: auto-fixed。修正 /data/anr 权限口径、ProfilingTrigger 36.1/API37 分层、Crashpad out-of-process handler 描述；回到 Task6 复审。"
-last_task6_audit: "2026-06-03"
+last_task6_audit: "2026-07-15"
 last_task6_at: "2026-06-03T09:15:06+08:00"
 last_task9_audit: 2026-05-25
 last_task9_audit_at: "2026-05-25T13:20:00+08:00"
@@ -71,7 +68,7 @@ last_deepseek_cn_review_at: 2026-06-29
 - 🔹 [Java Crash 捕获] 展开 `Thread.setDefaultUncaughtExceptionHandler` 的原理，以及如何保证自身上报逻辑不被 Crash 截断。
 - 🔹 [Native Crash 捕获] 解析 Google Breakpad / Crashpad 在 Android 端的应用，说明 Linux 信号（Signal）拦截机制与 Tombstone 文件的生成与解析。
 - 🔹 [ANR 捕获演进史] 从早期读取 `/data/anr/traces.txt`，到监听 SIGQUIT 信号 (Signal Catcher Hook)，再到 Android 11+ 官方 `ApplicationExitInfo` 方案。
-- 🔹 [OOM 细分与防范] 拆解非 Java Heap OOM 的监控：文件描述符 (FD) 溢出、线程池暴增 (Thread Exhaustion)、虚拟内存地址空间 (VMA) 耗尽的监控与预警。
+- 🔹 [OOM 细分与防范] 展开非 Java Heap OOM 的监控：文件描述符 (FD) 溢出、线程池暴增 (Thread Exhaustion)、虚拟内存地址空间 (VMA) 耗尽的监控与预警。
 - 🔹 [现场快照留存] 说明崩溃瞬间如何收集寄存器状态、内存使用率、Logcat 尾部日志、以及用户 Session 操作轨迹。
 - 🔹 [多 SDK 冲突] 解释当项目中同时存在多个 APM (如 Bugly + Firebase + 自研) 时，Crash Handler 被覆盖或死锁的风险及链接链处理方案。
 
@@ -470,7 +467,7 @@ sigaction(SIGABRT, &sa, &g_old_handlers[SIGABRT]);
 
 **局限**：
 - 只能捕获 native crash，不能捕获纯 Java OOM
-- 信号到来时进程状态已不稳定，上报链路本身可能受损
+- 信号到来时进程状态已不稳定，上报通道本身可能受损
 - ANR 不发信号，无法通过此路径获取 ANR trace
 
 ### 12.3 LMKd 监听（进程被 LMK 杀死）
