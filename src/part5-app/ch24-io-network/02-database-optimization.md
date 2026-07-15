@@ -62,7 +62,7 @@ last_task6_audit: "2026-06-06"
 last_task6_review_log: logs/review/2026-05-14-08-review.md
 task6_review_notes: "2026-05-14 Task6：四层质检通过；L1/L2 无需正文改动。满足 task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending，自动晋升 finalized。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-11
+last_deepseek_cn_review_at: 2026-07-15
 ---
 
 # 数据库性能优化（SQLite/Room）
@@ -135,7 +135,7 @@ val database = Room.databaseBuilder(context, AppDatabase::class.java, "app.db")
 WAL 的应用侧检查项：
 
 - 确认是否使用 Room 默认 `AUTOMATIC`，不要为了“兼容”随手切回 `TRUNCATE` 或 `DELETE`。
-- 如果使用 `ATTACH DATABASE`，重新评估 WAL；Android 官方 SQLite 性能文档把 `ATTACH DATABASE` 列为启用 WAL 的例外条件。
+- 如果使用 `ATTACH DATABASE`，重新评估 WAL；官方文档把 `ATTACH DATABASE` 列为启用 WAL 的例外条件。
 - 大事务后观察 `-wal` 文件增长和 checkpoint 耗时。默认 100 页阈值按 SQLite 数据库页计算，不按设备内存页直接换算；用 `PRAGMA page_size` 或建库时的实际 DB page size 计算 checkpoint 数据量。
 - 不在主线程首次 open 数据库。首次 open 可能触发 schema 校验、Migration、预置库复制或 checkpoint。
 
@@ -184,7 +184,7 @@ interface MessageDao {
 }
 ```
 
-列表查询不要返回 `SELECT *`。大文本、JSON、BLOB 和冗余字段会挤占 CursorWindow，也会增加反序列化成本。Android 官方 SQLite 性能文档给出的第一条原则就是少读行、少读列，并把过滤、排序、聚合交给 SQLite 引擎完成。
+列表查询不要返回 `SELECT *`。大文本、JSON、BLOB 和冗余字段会挤占 CursorWindow，也会增加反序列化成本。官方文档给出的第一条原则就是少读行、少读列，并把过滤、排序、聚合交给 SQLite 引擎完成。
 
 事务使用要按业务边界收敛。批量插入、删除、状态切换适合放进一个事务；网络回调、文件读取、复杂计算不该包在事务内。事务体里做慢 I/O，会占着写连接等待磁盘或网络，其他查询和写入都会被拖慢。
 
@@ -248,7 +248,7 @@ data class MessageEntity(
 )
 ```
 
-`conversation_id, sent_at` 适合支撑“某个会话内按时间倒序取消息”的查询。`server_id` 用唯一索引表达去重约束，让 SQLite 在写入时直接校验唯一性。Android 官方 SQLite 性能文档也建议使用索引加速查询、使用唯一约束让数据库处理数据约束，并提醒不要维护未使用索引，因为写入时也要更新索引表。
+`conversation_id, sent_at` 适合支撑“某个会话内按时间倒序取消息”的查询。`server_id` 用唯一索引表达去重约束，让 SQLite 在写入时直接校验唯一性。官方文档也建议使用索引加速查询、使用唯一约束让数据库处理数据约束，并提醒不要维护未使用索引，因为写入时也要更新索引表。
 
 索引和查询优化按这张清单检查：
 

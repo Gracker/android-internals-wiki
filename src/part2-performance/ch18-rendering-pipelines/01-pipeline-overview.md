@@ -40,6 +40,8 @@ p0: 0
 p1: 0
 p2: 1
 task9_review_notes: "2026-05-24 07:40 Task9 deep-review: pass-tech-review。无 P0/P1；P2 2 项已写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-17 Task9 闲时抽检 AUTO-FIX：P0 1 / P1 0 / P2 2；修正 Android 14-16 SurfaceFlinger 源码锚点，`BufferStateLayer.cpp` 限定为 Android 11-13，回到 Task6 复审。 | 2026-06-19 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；源码与版本边界复核通过，Task6 已通过且 queue 无 pending，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-06-19-01-deep-review.md。 | 2026-07-09 Task9 闲时抽检 AUTO-FIX：P0 0 / P1 1 / P2 0；将 Android 16 锚点提升到 android-17.0.0_r1，补齐 Android 17 表格与 Layer.cpp/ViewRootImpl/HardwareBufferRenderer 证据，回到 Task6 复审。 | 2026-07-09 16 Task9 deep-review AUTO-FIX：P0 0 / P1 0 / P2 1；补齐 HWC/BufferQueueProducer 验证行的 android-17.0.0_r1 锚点；回 Task6 复审。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-15
 ---
 
 <!-- outline-start -->
@@ -68,7 +70,7 @@ Android 图形栈在过去几年经历了系统性重构。理解版本差异是
 
 | Android 版本 | 常见主管线 | 主要特性 |
 |:---|:---|:---|
-| **Android 16-17** (API 36-37) | BLAST + 持续演进的 FrameTimeline / SurfaceControl / HWC fence 路径 | Android 17 仍以 `ViewRootImpl` + `BLASTBufferQueue`、SurfaceFlinger `Layer.cpp` 为主线；`HardwareBufferRenderer` 支持无 Window 的 RenderNode 到 HardwareBuffer 输出 [已验证: AOSP android-17.0.0_r1] |
+| **Android 16-17** (API 36-37) | BLAST + 持续演进的 FrameTimeline / SurfaceControl / HWC fence 路径 | Android 17 仍以 `ViewRootImpl` + `BLASTBufferQueue`、SurfaceFlinger `Layer.cpp` 为主线；`HardwareBufferRenderer` 支持无 Window 的 RenderNode 到 HardwareBuffer 输出 |
 | **Android 14-15** (API 34-35) | BLAST + 成熟的 SurfaceControl / FrameTimeline 体系 | HardwareBufferRenderer、FrameTimeline、现代图层事务接口继续完善 |
 | **Android 12-13** (API 31-33) | BLAST 稳定期 | FrameTimeline 成为常用观测入口，Transaction / 合成可观测性更完整 |
 | **Android 11** (API 30) | App View 默认 BLAST 提交流程 | `BLASTBufferQueue` 进入 AOSP 主线，ViewRootImpl 默认通过 `SurfaceControl.Transaction` 提交 buffer 与窗口状态 |
@@ -77,7 +79,7 @@ Android 图形栈在过去几年经历了系统性重构。理解版本差异是
 
 **关键转折点**：BLAST 改的是提交通道，不是消费位置。Android 11 之后，App 侧的 ViewRootImpl / RenderThread 会把绘制好的 buffer 和图层几何状态封装进 `SurfaceControl.Transaction`，再通过 `apply()` 交给 SurfaceFlinger。Android 11-13 的 SurfaceFlinger 侧可沿 `BufferStateLayer.cpp` 追 buffer 状态；Android 14-17 的同类逻辑已收敛到 `Layer.cpp`，重点看 `Layer::setBuffer()`、`Layer::latchBufferImpl()` 和 release callback。App 还是 producer，SurfaceFlinger 还是 consumer。
 
-放到 Trace 里看，App 进程新增的 `BLASTBufferQueue` slice 代表本地打包 transaction；消费与合成仍然发生在 SurfaceFlinger 进程里。Android 10 的 Trace 处在过渡期，很多 App View 场景仍然更像 Legacy BufferQueue。
+在 Trace 里，App 进程新增的 `BLASTBufferQueue` slice 代表本地打包 transaction，消费与合成仍然发生在 SurfaceFlinger 进程里。Android 10 的 Trace 处在过渡期，很多 App View 场景仍然更像 Legacy BufferQueue。
 
 [已验证: external review archive + 2.5 节 BLAST 验证记录 + AOSP android-17.0.0_r1 `frameworks/native/services/surfaceflinger/Layer.cpp`、`frameworks/base/core/java/android/view/ViewRootImpl.java`、`frameworks/base/graphics/java/android/graphics/HardwareBufferRenderer.java`；Android 11-13 旧锚点为 `frameworks/native/services/surfaceflinger/BufferStateLayer.cpp`]
 
@@ -138,9 +140,11 @@ Android 图形栈在过去几年经历了系统性重构。理解版本差异是
 
 ---
 
+以上九类管线覆盖了大多数应用开发场景。有两类跨架构的渲染路径不完全由 App 控制，但在 Trace 里频繁出现，这里单独做概念速查。
+
 ## 补充：WebView 渲染架构（概览）
 
-WebView 拥有 Android 中最复杂的渲染架构，根据场景不同分为四种模式。这里仅做概览，详细分析需结合 Chromium 源码和特定版本的 Trace：
+WebView 拥有 Android 中最复杂的渲染架构，根据场景不同分为四种模式。详细分析需要结合 Chromium 源码和具体版本的 Trace，本节只做概念速查：
 
 | 模式 | 场景 | Buffer 生产者 | 关键特征 |
 | :--- | :--- | :--- | :--- |
@@ -153,7 +157,7 @@ WebView 的渲染路径不是 App 开发者能直接控制的，它取决于 Chr
 
 ## 补充：Flutter 渲染架构（概览）
 
-Flutter 在 Android 上的渲染架构有自己的线程分工。纯 Flutter 渲染时，raster 线程和 platform 线程的分工仍然存在。Flutter 3.32 stable 起默认在 iOS/Android 上合并 UI Task Runner 和 Platform Task Runner 到同一条主线程执行（PR #162944，Flutter #150525），可通过 flag opt-out。旧版本 Flutter 在 Platform View 混合场景里 UI 和 platform 线程分开执行，存在跨线程时序漂移。合并后消除了 Platform View 异步偏移造成的帧间闪烁：Flutter 侧的合成与原生侧的提交共享同一个 VSync 调度点。Platform View 集成方式（SurfaceView vs TextureView）会直接影响最终渲染路径：
+Flutter 在 Android 上的渲染架构有独立的线程分工：raster 线程和 platform 线程各司其职。Flutter 3.32 stable 起默认在 iOS/Android 上合并 UI Task Runner 和 Platform Task Runner 到同一条主线程执行（PR #162944，Flutter #150525），可通过 flag opt-out。旧版本 Flutter 在 Platform View 混合场景里 UI 和 platform 线程分开执行，存在跨线程时序漂移。合并后消除了 Platform View 异步偏移造成的帧间闪烁：Flutter 侧的合成与原生侧的提交共享同一个 VSync 调度点。Platform View 集成方式（SurfaceView vs TextureView）会直接影响最终渲染路径：
 
 - **Flutter SurfaceView**：走 SurfaceView 直出管线（见 [18.6](06-surfaceview.md)），适合全屏 Flutter 页面
 - **Flutter TextureView**：走 App 侧合成管线（见 [18.7](07-textureview.md)），适合需要与原生 View 混合的场景

@@ -5,7 +5,9 @@
       "section_title": "崩溃与 ANR 捕获机制",
       "priority": 95,
       "reason": "[Deep Tech Review] 源码路径错误",
-      "material_paths": ["intake/suggestions.md"],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
       "review_issues": [
         {
           "type": "源码错误",
@@ -261,6 +263,28 @@
       "original_review_log": "logs/review/2026-07-15-09-audit.md",
       "completed_at": "2026-07-15T10:50:00+08:00",
       "completed_by": "task2b-main"
+    },
+    {
+      "section": "5.7",
+      "section_title": "CPU 相关的版本演进",
+      "priority": 90,
+      "reason": "[抽检review回炉] AOSP 源码标签全部锚定 android-16.0.0_r1（11处），违反版本基线 android-17.0.0_r1",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/review/2026-07-15-20-audit.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "frontmatter sources L35-45 + 正文 L227/L279/L461",
+          "detail": "全章节 11 处 AOSP 源码路径引用 android-16.0.0_r1，0 处 android-17.0.0_r1。last_verified_against 也写 'AOSP android-16.0.0_r1'。违反版本基线规则。",
+          "suggestion": "逐条确认文件在 android-17.0.0_r1 中存在性和内容差异，更新 tag + last_verified_against"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-07-15T20:13:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-15-20-audit.md"
     }
   ]
 }

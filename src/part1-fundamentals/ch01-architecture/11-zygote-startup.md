@@ -468,7 +468,7 @@ if (scale < 0) scale = 0; else if (scale > 1) scale = 1;
 **源码位置**：`frameworks/base/core/java/com/android/internal/os/ZygoteInit.java @ android-17.0.0_r1`
 
 - `ZygoteInit.preload()`（行 128-176）由 init.rc 触发启动后立即执行，`sPreloadComplete` 静态标志保证只跑一次。
-- `lazyPreload()`（行 178-183）为延迟时机预留接口，`ZygoteProcess.preloadDefault()`（行 1151-1167）通过 `--preload-default` 命令可触发 lazy 模式，但 AMS 中 `preloadDefault` 调用点为空（非默认路径，OEM 集成预留）。
+- `lazyPreload()`（行 178-183）接受 `ZygoteProcess.preloadDefault()` 通过 socket 命令 `--preload-default` 触发。**AOSP 17 默认调用点位于 `SystemServer.java @ android-17.0.0_r1` 第 1588-1606 行的 `SecondaryZygotePreload` 任务**：`SystemServerInitThreadPool.submit` 异步调用 `Process.ZYGOTE_PROCESS.preloadDefault(Build.SUPPORTED_32_BIT_ABIS[0])`，`WebViewFactoryPreparation` 任务在第 3420-3425 行通过 `ConcurrentUtils.waitForFutureNoInterrupt(mZygotePreload, "Zygote preload")` 串行化等待。init.rc 端仅 `zygote_secondary` 启动时携带 `--enable-lazy-preload`（`system/core/rootdir/init.zygote64_32.rc` 第 5 行），主 zygote 仍走 eager 预加载；`preloadDefault` 返回 `true` 表示「真做了 lazy preload」，返回 `false` 表示「zygote 已是 eager preload 状态」或「无 32-bit ABI」，两者皆正常路径。<!-- AIW-源码调研-2026-07-15 :topic-28-daily -->
 - **`ZygoteInit.java` 全文件无 `low_ram|lowRam` 判断逻辑**——preload 在 init 时一次完成，剩余进程生命周期内不重新评估。
 
 ### 4. fork 路径与 COW 复用的隐性关系
@@ -484,7 +484,7 @@ if (scale < 0) scale = 0; else if (scale > 1) scale = 1;
 - **512MB 设备 cold start 调优**：重点关注 `mOomMinFree[5]`（CACHED_APP_LMK_FIRST_ADJ）阈值，尝试上调 vendor `config_lowMemoryKillerMinFreeKbytesAdjust` 让缓存进程存活更久。
 - **thrashing 风暴检测**：通过 `lmkd.cpp` 行 3360 附近 PSI 订阅接口捕获 `LMK_ASYNC_EVENT_STAT`，关联 fork 风暴（如 OTA 后批量应用冷启动）。
 - **避免在 Application.onCreate 中 dlopen 重型库**：这些库若不在 preloaded-classes，会绕开 COW 复用。
-- **不依赖 `preloadDefault`**：当前 AMS 未自动触发 lazy preload，第三方应用无法可靠使用此 API。
+- **`preloadDefault` 真实使用方**：`SystemServer` 启动期 1s lead time 触发（行 1588-1606），仅 32-bit secondary zygote 受益；第三方应用无法直接调用 `Process.ZYGOTE_PROCESS.preloadDefault`，需走 `ZygotePreload` API 走 framework 层封装（见 `developer.android.com/reference/android/app/ZygotePreload`）。
 
 ## 与其他章节的关系
 
