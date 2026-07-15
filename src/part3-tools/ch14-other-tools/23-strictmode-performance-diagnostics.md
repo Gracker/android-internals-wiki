@@ -27,8 +27,8 @@ task9_reviewed_by: openclaw-task9
 last_task9_autofix_at: "2026-06-17"
 last_task9_review_log: "logs/deep-review/2026-06-17-14-deep-review.md"
 task9_review_notes: "2026-06-17 Task9 auto-fix: StrictMode API 归属、VmPolicy bit 口径、Compose/ActivityScenario 边界、DropBox/netd 说明与 AOSP android-17.0.0_r1 源码锚点修正；回到 Task6 复审。"
-last_task6_audit: "2026-07-03"
-last_task6_audit_notes: "L1轻量优化：替换测→测量，替换需要进行→执行，优化长句表达"
+last_task6_audit: "2026-07-16"
+last_task6_audit_notes: "L1抽检：链路→路径(大厂黑话)，关键 7→2(高频降频)，frontmatter完整"
 p0: 0
 p1: 0
 p2: 0
@@ -176,7 +176,7 @@ D/StrictMode: StrictMode policy violation: android.os.strictmode.DiskReadViolati
     at com.example.MyActivity.onResume(MyActivity.java:42)
 ```
 
-关键信息提取方法：
+信息提取方法：
 
 1. **违规类型**：第一行的 `DiskReadViolation` / `DiskWriteViolation` / `NetworkViolation` / `CustomSlowCallViolation` 标明问题类别。
 2. **触发位置**：堆栈最下面的应用代码行（`MyActivity.java:42`）是问题发生的具体位置。
@@ -263,7 +263,7 @@ StrictMode 的拦截点有限，以下场景不会触发检测：
 
 ### 何时从 StrictMode 迁移到 Perfetto
 
-StrictMode 解决的是"有没有"的问题——有没有主线程磁盘读、有没有网络调用。Perfetto 解决的是"有多慢"的问题——这个磁盘操作耗时多少、Binder 调用链路哪一步最慢。
+StrictMode 解决的是"有没有"的问题——有没有主线程磁盘读、有没有网络调用。Perfetto 解决的是"有多慢"的问题——这个磁盘操作耗时多少、Binder 调用路径哪一步最慢。
 
 当 StrictMode 的豁免列表越来越长、或者性能问题的瓶颈从"是否在主线程"转向"耗时多少毫秒"时，需要结合 Perfetto 自定义 trace 点做精确度量：
 
@@ -314,13 +314,13 @@ StrictMode 的策略是进程内的、线程级别的。每个进程需要独立
 
 ## Android 14–17 VmPolicy 演进与跨 Binder 违规传播（源码级补充）
 
-> 以下从 AOSP android-17.0.0_r1 源码出发，补充主章节 VmPolicy 层面的细节：比特位全景、跨 Binder 违规传播机制、以及 Android 14–17 窗口内的关键演进。
+> 以下从 AOSP android-17.0.0_r1 源码出发，补充主章节 VmPolicy 层面的细节：比特位全景、跨 Binder 违规传播机制、以及 Android 14–17 窗口内的演进。
 
 ### VmPolicy 比特位全景（API 37 范围）
 
 `StrictMode.java`（android-17.0.0_r1）里，本文只讨论 API 37 范围内可用、且与性能诊断直接相关的 `DETECT_VM_*` 位；下表聚焦 Android 14–17 窗口内的 bit 9–14：
 
-| 比特 | 常量 | API | 关键特性 |
+| 比特 | 常量 | API | 主要特性 |
 |------|------|-----|---------|
 | bit 9  | `DETECT_VM_NON_SDK_API_USAGE` | API 28 | 与 `VMRuntime.setNonSdkApiUsageConsumer` 集成 |
 | bit 10 | `DETECT_VM_IMPLICIT_DIRECT_BOOT` | API 29 | 在 CE/DE 加密盘加载前检测 direct-boot 误用 |
@@ -340,7 +340,7 @@ StrictMode 的策略是进程内的、线程级别的。每个进程需要独立
 3. 被调用方进程触发违规时（如 system_server 在 onTransaction 路径做磁盘读），走 `onThreadPolicyViolation` → 判 `PENALTY_GATHER` 启用 → 把 `ViolationInfo` 累积到 `gatheredViolations.get().add(info)`。
 4. `Parcel.writeNoException()` 返回前调 `StrictMode.hasGatheredViolations()` 检查 → 若有违规，把 `ViolationInfo` 列表序列化进 reply Parcel → `Parcel.writeException()` 反序列化在调用方进程重新 throw RuntimeException。
 
-**关键代码片段**：
+**代码片段**：
 
 ```java
 // StrictMode.java - gatheredViolations ThreadLocal
@@ -459,7 +459,7 @@ private static void dropboxViolationAsync(final int penaltyMask, final Violation
 
 ### 推荐补充到章节 §14.23 的源码级引用清单
 
-完整调研覆盖 14 个关键函数与 6 个集成锚点，需要更深细节时参考对应 DeepResearch 报告。
+完整调研覆盖 14 个函数与 6 个集成锚点，需要更深细节时参考对应 DeepResearch 报告。
 
 > [适用版本: Android 9 (API 28) - Android 17 (API 37)]
 > [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/StrictMode.java, libcore/dalvik/src/main/java/dalvik/system/BlockGuard.java]
@@ -475,7 +475,7 @@ private static void dropboxViolationAsync(final int penaltyMask, final Violation
 ### Android 14–17 StrictMode VmPolicy 演进与跨 Binder 违规传播机制
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-14-android17-strictmode-vmpolicy-evolution-cross-binder-propagation.md
 - 类型：DeepResearch 调研结果
-- 摘要：StrictMode VmPolicy 从 Android 14 的 10 个 DETECT_VM_* 比特扩展到 Android 17 的 15 个，新增 credential-protected-while-locked、incorrect-context-use、BAL-aborted 等。跨 Binder 违规传播靠 gatheredViolations ThreadLocal + Parcel.writeNoException() 反向序列化；BlockGuard.Policy 通过 getPolicyMask() 把策略位图打包进 Binder native thread-local。定位 14 个关键函数与 6 个集成锚点。
+- 摘要：StrictMode VmPolicy 从 Android 14 的 10 个 DETECT_VM_* 比特扩展到 Android 17 的 15 个，新增 credential-protected-while-locked、incorrect-context-use、BAL-aborted 等。跨 Binder 违规传播靠 gatheredViolations ThreadLocal + Parcel.writeNoException() 反向序列化；BlockGuard.Policy 通过 getPolicyMask() 把策略位图打包进 Binder native thread-local。定位 14 个函数与 6 个集成锚点。
 
 ### Android 17 StrictMode 新增 FlaggedApi 集成与 ImplicitUriPermissionGrantViolation
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-strictmode-android17-new-features.md
