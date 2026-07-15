@@ -71,14 +71,14 @@ reviewed_date: 2026-06-04
 reviewed_by: openclaw-task6
 task6_reviewed_date: "2026-06-04"
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 last_task2b_at: '2026-04-30T10:46:19+08:00'
 review_notes: '2026-05-12 task9 deep-review: needs-rework。P1 2 / P2 1，精确闹钟版本与 sched_ext 版本锚点需回炉。'
 task9_result: auto-fixed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-04T06:48:42+08:00"
@@ -88,6 +88,8 @@ last_task9_autofix_at: "2026-06-04"
 last_task9_review_log: "logs/deep-review/2026-06-04-06-deep-review.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-04
+verifier_last_checked: "2026-07-15T23:27:58+08:00"
+verifier_result: "state-consistency-fixed: task6_state/task9_state/pipeline_stage aligned with finalized"
 ---
 
 
