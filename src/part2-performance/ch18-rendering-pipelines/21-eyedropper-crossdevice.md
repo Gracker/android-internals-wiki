@@ -27,14 +27,15 @@ sources:
     path: "https://developer.android.com/training/basics/intents/result"
     title: "Get a result from an activity"
     date: "2026"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-24
+reviewed_date: 2026-07-15
+last_task6_at: "2026-07-15T08:15:00+08:00"
 task6_result: pass-light-edit
-last_task6_audit: "2026-06-30"
+last_task6_audit: "2026-07-15"
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-07-15"
 ---
@@ -116,7 +117,7 @@ EyeDropper 不把整帧图像交给调用方。应用最终只收到一个颜色
 
 ### 默认没有公开保证的 EyeDropper 专属 Trace 标记
 
-公开 API 文档只定义了 intent action 和 result extra，没有定义稳定的 Perfetto slice 名、counter 名，AOSP 公开资料里也还缺少系统宿主组件的固定锚点。实战里如果直接按 EyeDropper 相关关键字去搜系统 slice，通常得不到可靠结果。
+公开 API 文档只定义了 Intent action 和 result extra，没有定义稳定的 Perfetto slice 名、counter 名，AOSP 公开资料里也还缺少系统宿主组件的固定锚点。实战里如果直接按 EyeDropper 相关关键字去搜系统 slice，通常得不到可靠结果。
 
 更稳妥的做法是把观测口径放在调用链两端：
 

@@ -4481,6 +4481,98 @@
       ],
       "summary": "Jetpack Compose 1.1 is now stable! - Android Weekly #29 technical article",
       "scored_at": "2026-07-14T09:20:00"
+    },
+    {
+      "url": "https://android-developers.googleblog.com/2026/07/android-17-performance-scheduler-memory-management",
+      "title": "Android Developers Blog - Android 17 性能优化深度解析：调度器与内存管理革命",
+      "section": "1.43",
+      "chapter_path": "src/part1-fundamentals/ch01-architecture/1.43-android17-ml-scheduler.md",
+      "added_date": "2026-07-15",
+      "score": 17,
+      "added_by": "task8-classifier"
+    },
+    {
+      "url": "https://www.kernel.org/doc/html/latest/admin-guide/bpf-memory-management.html",
+      "title": "Phoronix / kernel.org - Linux 6.10 内核内存管理重大更新：BPF 集成与实时性优化",
+      "section": "4.18",
+      "chapter_path": "src/part1-fundamentals/ch04-memory/04.18-android17-ontrimmemory-source-fair-adaptation.md",
+      "added_date": "2026-07-15",
+      "score": 18,
+      "added_by": "task8-classifier"
+    },
+    {
+      "url": "https://marco-nett.de/blog/measuring-input-latency-on-linux-x11-vs-wayland-vrr-dxvk/",
+      "title": "Measuring Input Latency on Linux: X11 vs. Wayland, VRR, and DXVK",
+      "section": "ch15-methodology (queue pending, finalized)",
+      "chapter_path": "src/ch15-methodology.md",
+      "added_date": "2026-07-15",
+      "score": 14,
+      "added_by": "task8-classifier"
+    },
+    {
+      "title": "2026-07-14-android17-binder-priority-inheritance",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-14-android17-binder-priority-inheritance.md",
+      "quality": "high",
+      "score": 15,
+      "scored_at": "2026-07-15T05:48:33.691067"
+    },
+    {
+      "title": "2026-07-14-android17-gpuservice-gpumem-dmabuf-attribution-lifecycle",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-14-android17-gpuservice-gpumem-dmabuf-attribution-lifecycle.md",
+      "quality": "high",
+      "score": 15,
+      "scored_at": "2026-07-15T05:48:33.691080"
+    },
+    {
+      "title": "2026-07-14-android17-multi-form-device-architecture",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-14-android17-multi-form-device-architecture.md",
+      "quality": "high",
+      "score": 15,
+      "scored_at": "2026-07-15T05:48:33.691082"
+    },
+    {
+      "title": "2026-07-14-android17-native-hook-three-schools-inlinhook-arm64",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-14-android17-native-hook-three-schools-inlinhook-arm64.md",
+      "quality": "high",
+      "score": 15,
+      "scored_at": "2026-07-15T05:48:33.691083"
+    },
+    {
+      "title": "2026-07-14-android17-sdm-compilation-sourcecode",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-14-android17-sdm-compilation-sourcecode.md",
+      "quality": "high",
+      "score": 15,
+      "scored_at": "2026-07-15T05:48:33.691085"
+    },
+    {
+      "title": "2026-07-14-android17-zram-psi-pressure-management",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md",
+      "quality": "high",
+      "score": 15,
+      "scored_at": "2026-07-15T05:48:33.691086"
+    },
+    {
+      "title": "2026-07-14-android17-zygote-lmkd-cooperation-lowram",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-14-android17-zygote-lmkd-cooperation-lowram.md",
+      "quality": "high",
+      "score": 15,
+      "scored_at": "2026-07-15T05:48:33.691087"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-gpu-power-advisor-gpu-decomposition-frame-producer-aidl.md",
+      "title": "源码调研：Android 17 GPU 功耗管理策略与 DVFS 调优机制（PowerAdvisor + FrameProducer AIDL 视角）",
+      "summary": "基于 android-17.0.0_r1 分析 Power HAL V6 GpuHeadroomParams/Result AIDL、FrameProducer 帧级 deadline miss 反馈、LatchedFrameData 帧时间戳分解、PowerAdvisor GPU 时长估算与 supportsGpuReporting 门控。",
+      "chapter_mapping": "ch02 §2.17",
+      "processed_at": "2026-07-15T06:14:40.983097",
+      "action": "direct_inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-aohp-academic-vs-android17-appfunctions-framework.md",
+      "title": "源码调研：AOHP 学术原型 vs Android 17 AppFunctions 官方机制 —— AOSP 层面的真实对照",
+      "summary": "确认 AOHP 未进入 AOSP 主线，AppFunctions 才是 Google 官方 agent 化框架。源码级分析 AppFunctionManagerService 构造、双 Flag 门控、V2 权限模型及与 AOHP 工程差异。",
+      "chapter_mapping": "ch16 §16.1",
+      "processed_at": "2026-07-15T06:14:40.983097",
+      "action": "direct_inject"
     }
   ]
 }

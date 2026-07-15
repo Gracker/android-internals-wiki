@@ -921,6 +921,49 @@
       "status": "appended",
       "title": "现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch"
     },
+    "source/juejin-android/2026-07-15-76171086-Android-Room-3.0来了.md": {
+      "last_seen": "2026-07-15T05:26:41.857037+08:00",
+      "mtime": 1784060086.3464208,
+      "sha256": "f484dd23f5c1065508c23a26897470fc3c5cd7f887ee9a71837c4988e82b3827",
+      "size": 5735,
+      "status": "skipped-low-score"
+    },
+    "source/juejin-android/2026-07-15-76184335-Compose-Pager有多强大.md": {
+      "chapter": "待分类",
+      "entry_id": "bb7ae8bc762049ee",
+      "last_appended": "2026-07-15T05:26:41.857037+08:00",
+      "last_seen": "2026-07-15T05:26:41.857037+08:00",
+      "mtime": 1784060085.4284122,
+      "score": 8,
+      "sha256": "97a346449e9ceda68e7e90797387c91553c9fffb7c2369175f30ece2d3da4878",
+      "size": 24046,
+      "status": "appended",
+      "title": "你可能还不知道 Compose Pager 有多强大从传统的 ViewPager 过渡到 Compose Pager，代"
+    },
+    "source/juejin-android/2026-07-15-76232428-UseCase越多项目越烂.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "3ffa10d45be6e8c1",
+      "last_appended": "2026-07-15T05:26:41.857037+08:00",
+      "last_seen": "2026-07-15T05:26:41.857037+08:00",
+      "mtime": 1784060084.5384908,
+      "score": 7,
+      "sha256": "9b884dbeaf6a16c33d5aa3ef715310acf8d594508c4a3b3972247986bbf2c0e0",
+      "size": 15894,
+      "status": "appended",
+      "title": "我见过的最反直觉的 Android 架构问题：UseCase 越多，项目越烂Clean Architecture 落地的"
+    },
+    "source/juejin-android/2026-07-15-76500740-Repository暴露suspend-.md": {
+      "chapter": "待分类",
+      "entry_id": "46808444271fd5f0",
+      "last_appended": "2026-07-15T05:26:41.857037+08:00",
+      "last_seen": "2026-07-15T05:26:41.857037+08:00",
+      "mtime": 1784060084.9593399,
+      "score": 11,
+      "sha256": "1887920658534c3805e965b2fc9ec052356e2609b0be8edb0e40a147afa0e681",
+      "size": 13149,
+      "status": "appended",
+      "title": "现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch"
+    },
     "技术文章/技术文章/daily-info.md": {
       "last_seen": "2026-07-02T05:30:57.165861+08:00",
       "mtime": 1782937015.1677003,
@@ -1011,24 +1054,24 @@
     }
   },
   "last_report": {
-    "appended": 6,
-    "considered": 6,
-    "cutoff": "2026-07-13T05:20:25.287644+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-14.md",
+    "appended": 3,
+    "considered": 4,
+    "cutoff": "2026-07-14T05:27:22.401503+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-15.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1507,
+    "scanned": 1511,
     "skipped": {
       "existing_link": 0,
-      "low_score": 0,
+      "low_score": 1,
       "max_files": 0,
       "old_unseen": 1401,
       "path": 26,
-      "unchanged": 74
+      "unchanged": 80
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-07-14T05:32:22.401503+08:00",
+  "last_run_at": "2026-07-15T05:26:41.857037+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

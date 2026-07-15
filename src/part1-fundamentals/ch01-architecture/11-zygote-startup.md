@@ -74,7 +74,8 @@ status: "finalized"
 pipeline_stage: "ready-to-publish"
 finalized_by: "openclaw-task9-auto-promote"
 finalized_date: "2026-07-14"
----
+deepseek_cn_review_state: needs-structure-rework
+last_deepseek_cn_review_at: 2026-07-15
 ---
 
 
@@ -83,7 +84,6 @@ finalized_date: "2026-07-14"
 
 <!-- outline-start -->
 
-<!-- AIW-源码调研-2026-05-07 -->
 ### PreloadAppProcessHALs 与 PreloadGraphicsDriver
 
 ZygoteInit.preload() 包含两条关键预加载路径，分别对应 gralloc mapper HAL 和 GPU 驱动的 zygote 期初始化：
@@ -143,7 +143,6 @@ private static void maybePreloadGraphicsDriver() {
 10. `WebViewFactory.prepareWebViewInZygote()`
 11. `warmUpJcaProviders()` → AndroidKeyStoreProvider.install() + JCA provider warm-up
 
-<!-- AIW-源码调研-2026-05-07 END -->
 
 ## 要点
 
@@ -362,8 +361,7 @@ ORDER BY slice.ts;
 
 [图：Primary Zygote / secondary zygote 负责普通 App 与 `system_server`;child zygote 分出 WebViewZygote 和 App Zygote,并标出各自独立 socket]
 
-<!-- AIW-源码调研-2026-04-20 -->
-**补充：USAP Pool 不服务 Child Zygote 的源码级证据**
+**USAP Pool 不服务 Child Zygote 的源码级证据**
 
 android14-release 的 `ZygoteServer.java` 中存在明确的代码级隔离：
 
@@ -419,11 +417,8 @@ ZygoteServer() {
 
 不要把 framework preload 和应用侧库 preload 混成一锅。`preloaded-classes` 主要覆盖 framework 高频类，不意味着 AndroidX、三方 SDK、业务类都已经在 Zygote 里热好了。
 
-<!-- AIW-源码调研-2026-07-14 -->
 
 ## Zygote 与 lmkd 在低 RAM 设备上的协同机制（android-17.0.0_r1 补充）
-
-> 范围：本节补全 research-gaps 中「Zygote 与 LMK 协同」「内存压力下预加载策略」「不同内存容量设备上的 fork 性能差异」三个盲区。所有结论锚定 `android-17.0.0_r1` 源码。
 
 ### 1. lmkd 守护进程基于 `ro.config.low_ram` 的多策略切换
 
