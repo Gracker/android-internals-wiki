@@ -221,13 +221,33 @@
           "location": "章节结论风险",
           "detail": "章节未提及 EyeDropper API 在 Android 17 之外版本的兼容性风险，作为技术文档应该前瞻性地指出版本生命周期限制",
           "suggestion": "在章节降级策略部分补充未来版本兼容性说明，重申 AIW 版本边界（Android 17）的严肃性"
+        },
+        {
+          "type": "源码错误",
+          "location": "版本声明与实际源码不符",
+          "detail": "全文声明 Android 17 (API 37) 引入 ACTION_OPEN_EYE_DROPPER，但在 AOSP android-17.0.0_r1 中无法找到该常量定义。版本定位错误属于 P0 级别事实错误。",
+          "suggestion": "需验证正确版本定位，或改为描述性内容，不能引用不存在的 Android 17 API"
+        },
+        {
+          "type": "源码错误",
+          "location": "源码锚点缺失",
+          "detail": "作为技术章节，缺少对核心 API 的源码路径引用，无法验证系统层面实现细节，属于事实不完整",
+          "suggestion": "补充 AOSP 中实际存在的取色相关源码路径，或明确说明系统实现细节未公开"
+        },
+        {
+          "type": "版本差异",
+          "location": "版本边界模糊",
+          "detail": "仅说\"截至 android-17.0.0_r1 仍可用\"但没有提供证据，且未验证 API 在不同 Android 版本中的实际可用性",
+          "suggestion": "在章节中明确标注版本边界和基于源码验证的可用性声明"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-15T07:20:00+08:00",
+      "added_at": "2026-07-16T03:23:55.380598+08:00",
       "status": "completed",
       "completed_reason": "fixed-lite",
-      "completed_at": "2026-07-15T07:35:00+08:00"
+      "completed_at": "2026-07-15T07:35:00+08:00",
+      "verifier_closed_at": "2026-07-16T03:27:25+08:00",
+      "verifier_closed_reason": "chapter already finalized/ready-to-publish; queue item stale"
     },
     {
       "section": "19.24",
