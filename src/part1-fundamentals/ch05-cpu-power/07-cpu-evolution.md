@@ -1,6 +1,7 @@
 ---
 
 
+
 title: CPU 相关的版本演进
 chapter: '5.7'
 section: '5.7'
@@ -11,7 +12,7 @@ review_round: 2
 task6_review_notes: '2026-06-04 task6 revisiting-review: pass-light-edit。L1/L2 全部通过(禁用词0/AI套话0/高频词全0/元叙述0)。无B类大问题。自动晋升 finalized(task9 auto-fixed + queue 无 pending + 本次无B类大问题)。'
 applicable_versions: Android 5.0 - Android 17
 last_verified: '2026-06-04'
-last_verified_against: developer.android.com Android 17 behavior/features + source.android.com + AOSP android-16.0.0_r1
+last_verified_against: developer.android.com Android 17 behavior/features + source.android.com + AOSP android-17.0.0_r1
   + android15-6.6.98_r00 + Arm MTE docs
 confidence: medium
 sources:
@@ -32,17 +33,17 @@ sources:
 - type: blog
   path: ARM documentation - Energy Aware Scheduling
 - type: aosp
-  path: platform/frameworks/base/+/android-16.0.0_r1/core/java/android/app/usage/UsageStatsManager.java
+  path: platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/usage/UsageStatsManager.java
 - type: aosp
-  path: platform/frameworks/base/+/android-16.0.0_r1/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java
+  path: platform/frameworks/base/+/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java
 - type: aosp
-  path: platform/frameworks/base/+/android-16.0.0_r1/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java
+  path: platform/frameworks/base/+/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java
 - type: aosp
-  path: platform/frameworks/base/+/android-16.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java
+  path: platform/frameworks/base/+/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java
 - type: aosp
-  path: platform/system/core/+/android-16.0.0_r1/libprocessgroup/profiles/task_profiles.json
+  path: platform/system/core/+/android-17.0.0_r1/libprocessgroup/profiles/task_profiles.json
 - type: aosp
-  path: platform/frameworks/base/+/android-16.0.0_r1/core/java/android/os/PerformanceHintManager.java
+  path: platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java
 - type: official
   path: developer.android.com/ndk/guides/arm-mte
 - type: official
@@ -70,14 +71,14 @@ reviewed_date: 2026-06-04
 reviewed_by: openclaw-task6
 task6_reviewed_date: "2026-06-04"
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 last_task2b_at: '2026-04-30T10:46:19+08:00'
 review_notes: '2026-05-12 task9 deep-review: needs-rework。P1 2 / P2 1，精确闹钟版本与 sched_ext 版本锚点需回炉。'
 task9_result: auto-fixed
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
-task2b_result: fixed-lite
-pipeline_stage: ready-to-publish
+task2b_result: fixed
+pipeline_stage: task6_pending
 task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-04T06:48:42+08:00"
@@ -224,7 +225,7 @@ int bucket = usm.getAppStandbyBucket();
 
 如果在 Perfetto 中发现某个 App 的 JobScheduler 任务长时间不执行,先检查它的 Standby Bucket。Rare、Restricted,或者从未启动过的 Never,都可能解释为什么后台任务几乎没有运行机会。
 
-[已验证: 官方文档 developer.android.com/topic/performance/appstandby;AOSP android-16.0.0_r1 frameworks/base/core/java/android/app/usage/UsageStatsManager.java]
+[已验证: 官方文档 developer.android.com/topic/performance/appstandby;AOSP android-17.0.0_r1 frameworks/base/core/java/android/app/usage/UsageStatsManager.java]
 
 这个机制的实际影响:App 的后台行为频率不完全由开发者代码决定,而是由用户习惯和系统的 ML 模型共同决定。同一个 App,在重度用户的手机上和在偶尔打开的用户的手机上,后台任务的执行频率可能相差数倍。
 
@@ -270,13 +271,13 @@ MTE (Memory Tagging Extension)由 Armv8.5-A 引入,Android 在支持硬件的设
 
 如果只记住 EAS 和 GKI,中间会少掉最关键的一层,线程的性能意图怎么传到调度器。Android 10 之前,很多设备习惯用 schedtune 和一组厂商自定义 cgroup boost 做前台、后台、Top App 的差异化调度。到 Android 11 之后,AOSP 开始把这类策略收敛到 `libprocessgroup` 和 `task_profiles.json` 这一套统一接口里。
 
-`task_profiles.json` 的作用很直接,框架给进程或线程打上 profile,`libprocessgroup` 再把这个 profile 展开成具体的 cgroup、cpuset、timer slack 和 uclamp 操作。到了 android-16.0.0_r1,文件里已经能直接看到 `UClampMin -> cpu.uclamp.min`、`UClampMax -> cpu.uclamp.max` 这样的映射。也就是说,线程"至少要拿到多高的算力""最多只能吃到多少 CPU",在这一层就已经被写成了调度器能直接消费的参数。
+`task_profiles.json` 的作用很直接,框架给进程或线程打上 profile,`libprocessgroup` 再把这个 profile 展开成具体的 cgroup、cpuset、timer slack 和 uclamp 操作。到了 android-17.0.0_r1,文件里已经能直接看到 `UClampMin -> cpu.uclamp.min`、`UClampMax -> cpu.uclamp.max` 这样的映射。也就是说,线程"至少要拿到多高的算力""最多只能吃到多少 CPU",在这一层就已经被写成了调度器能直接消费的参数。
 
 这段演进把 §5.2 和 §5.9 串了起来。§5.2 讲的是 EAS 怎么做 CPU 选择,§5.9 讲的是 ADPF / PerformanceHint 怎么让 App 报告自己的工作节奏。它们之间还隔着一层系统策略,hint session、task profile、uclamp、cpuset。PerformanceHintManager / ADPF 提供的是 work duration hint,本身不等于调度参数。系统或厂商策略需要把这些 hint 转成更低层的线程分组、uclamp 调整或 cpuset 选择,调度器才会看到差异。
 
 对排查工作也有直接帮助。如果一个线程明明负载不高,却总被放在大核上,或者一直被压在小核,别只盯着 EAS 算法。先看它当前属于什么 task profile,再看对应 profile 有没有给 `cpu.uclamp.min`、`cpu.uclamp.max` 或 cpuset 施加限制。很多"调度器好像失灵了"的问题，通常不是 `fair.c` 算错，而是策略层先把范围框好了。
 
-[已验证: source.android.com/docs/core/perf/cgroups;AOSP android-16.0.0_r1 platform/system/core/libprocessgroup/profiles/task_profiles.json]
+[已验证: source.android.com/docs/core/perf/cgroups;AOSP android-17.0.0_r1 platform/system/core/libprocessgroup/profiles/task_profiles.json]
 
 ## Android 12+:对精确闹钟、前台服务、后台启动的持续限制
 
@@ -458,7 +459,7 @@ FCM（Firebase Cloud Messaging）高优先级消息可以绕过 Doze。如果推
 - [PerformanceHintManager API Reference](https://developer.android.com/reference/android/os/PerformanceHintManager) [已验证: 官方文档]
 - [Android cgroups and task profiles](https://source.android.com/docs/core/perf/cgroups) [已验证: source.android.com]
 - [Arm Memory Tagging Extension on Android](https://developer.android.com/ndk/guides/arm-mte) [已验证: 官方文档]
-- AOSP 路径参考(android-16.0.0_r1 / android15-6.6.98_r00):
+- AOSP 路径参考(android-17.0.0_r1 / android15-6.6.98_r00):
   - `frameworks/base/core/java/android/app/usage/UsageStatsManager.java` - Standby bucket 常量定义(含 `STANDBY_BUCKET_NEVER = 50`)
   - `frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java` - Doze 模式实现
   - `frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java` - App Standby Buckets 实现

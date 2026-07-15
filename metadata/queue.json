@@ -283,8 +283,11 @@
       ],
       "added_by": "task6-audit",
       "added_at": "2026-07-15T20:13:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-07-15-20-audit.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-07-15-20-audit.md",
+      "completed_at": "2026-07-15T20:51:34.073169+08:00",
+      "completed_by": "task2b-main",
+      "completion_reason": "fixed: updated 11 occurrences of android-16.0.0_r1 -> android-17.0.0_r1 (sources + body + references + last_verified_against)"
     }
   ]
 }
