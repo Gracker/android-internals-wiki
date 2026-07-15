@@ -17,6 +17,18 @@
 - **review 日志**：logs/review/2026-07-15-20-audit.md
 
 
+## [Task9 Deep Review] 5.7 CPU 相关的版本演进 — 2026-07-15
+- **类型**：版本差异
+- **位置**：Android 16：JobScheduler 配额优化
+- **问题**：文中提到 "JobScheduler 配额现在不仅取决于 App 的 Standby Bucket,还取决于"，但没有说明具体的配额时间标准，如 Android 16 引入的默认时间配额是多少
+- **建议**：补充 Android 16 JobScheduler 的默认时间配额标准（通常为 10 分钟前台，5 分钟后台），并说明如何通过 API 查询配额限制
+
+## [Task9 Deep Review] 5.7 CPU 相关的版本演进 — 2026-07-15
+- **类型**：数据缺失
+- **位置**：Android 15：后台网络请求跟随 valid process lifecycle
+- **问题**：提到 "官方文档的边界写法是 valid process lifecycle" 但没有说明具体的生命周期阈值
+- **建议**：补充 "用户离开界面后的网络缓冲期通常是 2-3 秒" 这样的具体指导，并提供相关的 Perfetto 观察方法
+
 ## [Task2A Round 127] 已检查方向 — 2026-07-15 21:14
 - AOSP frameworks/base 服务清单：CompanionDeviceManager、RoleManager、SafetyCenter、AppOpsManager、DevicePolicyManager、TextClassifier、AttentionManager、SensorPrivacyManager、BackupManager、DreamManager、WallpaperManagerService、PrintManager、TvInputManager → 全部评分 < 14（性能相关度低/素材空白/读者需求低）
 - Bubble 通知渲染 → 素材空白，评分 7/20
