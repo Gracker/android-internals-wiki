@@ -495,6 +495,14 @@ if (scale < 0) scale = 0; else if (scale > 1) scale = 1;
 
 ## 参考资料
 
+
+### Android 17 Zygote lazyPreload() 端到端触发链路与 SecureFS 叙事核查
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-zygote-lazy-preload-true-triggers-securefs-not-in-aosp17.md
+- 类型：DeepResearch 调研结果
+- 摘要：完整重建 lazyPreload() 双阶段机制：init 期主 zygote eager 预加载、次 zygote 带 --enable-lazy-preload 跳过；system_server 期通过 SystemServerInitThreadPool 提交 SecondaryZygotePreload 任务，经 socket 命令触发 ZygoteInit.lazyPreload()。同时修正「SecureFS」在 AOSP 17 中不存在的错误叙事，并纠正 §1.11 中 preloadDefault 调用点为空的陈旧断言。
+- 注入时间：2026-07-16
+- 价值：修正 AIW §1.11 关于 preloadDefault 的错误断言，补全 lazy preload 完整触发链路源码级分析
+
 - `frameworks/base/core/java/com/android/internal/os/ZygoteInit.java`:preload、zygote 主入口、child zygote 入口
 - `frameworks/base/core/java/com/android/internal/os/Zygote.java`:`forkAndSpecialize()`、`specializeAppProcess()`、`PostFork`
 - `frameworks/base/core/java/android/os/ZygoteProcess.java`:`startViaZygote()`、`zygoteSendArgsAndGetResult()`、`startChildZygote()`、`preloadApp()`

@@ -426,6 +426,14 @@ Native 层要额外做两件事：
 ## 10. 参考资料与延伸阅读
 
 
+### Android 17 GWP-ASan 可恢复机制与配置参数源码分析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md
+- 类型：DeepResearch 调研结果
+- 摘要：Android 17 GWP-ASan 已重写为可恢复（Recoverable）线上诊断器，默认 SampleRate=25000、MaxSimultaneousAllocations=32、ProcessSampling=128。通过 GuardedPoolAllocator 在 PROT_NONE 哨兵页布点，SEGV 信号经 debuggerd 两阶段恢复路径处理，首次崩溃走完整 tombstone 流程，后续崩溃抑制 reporter 仅标记损坏槽。与 Permissive MTE 共享 recoverable_crash 出口但路径独立。
+- 注入时间：2026-07-16
+- 价值：补全 §19.24 §9 GWP-ASan 配置开关、可调参数、Recoverable 路径及与 MTE 耦合关系的源码级细节
+
+
 - `art/runtime/signal_catcher.cc`：ART SignalCatcher 使用 `sigwait()` 处理 `SIGQUIT` 的实现
 - `system/core/debuggerd/proto/tombstone.proto`：API 31+ native tombstone protobuf 的结构参考
 - `bionic/libc/include/signal.h`：`struct sigaction`、`SA_SIGINFO` 与 handler 签名
