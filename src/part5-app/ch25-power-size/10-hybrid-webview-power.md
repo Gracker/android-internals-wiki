@@ -17,6 +17,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-06-03"
 task6_result: pass-light-edit
 last_task6_at: "2026-06-03T14:05:00+08:00"
+last_task6_audit: "2026-07-15"
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: ready-to-publish
@@ -185,7 +186,7 @@ adb bugreport bugreport-hybrid-power.zip
 
 ## 原生化与 Web 优化的决策表
 
-技术选型不该只问“要不要 WebView”。更稳的问法是：这个页面的高频操作是否由 Web 技术制造了额外 CPU、内存或网络成本；如果是，能不能通过局部原生化解决。
+技术选型不该只问“要不要 WebView”,要问的是这个页面的高频操作是否由 Web 技术制造了额外 CPU、内存或网络成本,以及能否通过局部原生化解决。
 
 | 业务形态 | 倾向方案 | 判断条件 | 可执行动作 |
 | --- | --- | --- | --- |
@@ -255,6 +256,3 @@ Hybrid/WebView 的功耗治理从页面级账本开始：同内容对照、同�
 - [AOSP: Power profiles for Android](https://source.android.com/docs/core/power)
 - [AOSP: Measure power values](https://source.android.com/docs/core/power/values)
 - [AOSP: frameworks/base/native/webview/loader/loader.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/native/webview/loader/loader.cpp)
--
--
--
