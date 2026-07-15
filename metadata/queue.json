@@ -288,6 +288,25 @@
       "completed_at": "2026-07-15T20:51:34.073169+08:00",
       "completed_by": "task2b-main",
       "completion_reason": "fixed: updated 11 occurrences of android-16.0.0_r1 -> android-17.0.0_r1 (sources + body + references + last_verified_against)"
+    },
+    {
+      "section": "23.4",
+      "section_title": "Java Heap 优化策略",
+      "priority": 70,
+      "reason": "[task6-audit] last_verified_against 仍为 android-16.0.0_r1，需更新至 android-17.0.0_r1",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "frontmatter: last_verified_against",
+          "detail": "当前值为 'AOSP android-16.0.0_r1 + Android Developers ComponentCallbacks2 + Clippings/...'，版本基线要求 android-17.0.0_r1。需 Task 9 确认源码路径和 API 参考是否在 android-17.0.0_r1 下有变化，更新验证基线。",
+          "suggestion": "Task 9 对照 android-17.0.0_r1 检查 Heap::ShouldAllocLargeObject、Heap::GetMaxMemory、GetFreeMemoryUntilOOME 等引用，更新 last_verified_against"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-07-15T21:19:50",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-15-21-audit.md"
     }
   ]
 }
