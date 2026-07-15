@@ -42,13 +42,9 @@ task6_result: pass-light-edit
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-07-10"
-finalized_by: "openclaw-task6-auto-promote"
-finalized_date: "2026-07-10"
 last_task9_at: 2026-07-10T05:29:18+08:00
 task6_reviewed_date: "2026-07-10"
-finalized_by: "openclaw-task6-auto-promote"
-finalized_date: "2026-07-10"
-last_task6_audit: "2026-06-21"
+last_task6_audit: "2026-07-16"
 last_task9_audit: "2026-07-10"
 last_task9_autofix_at: "2026-07-10"
 last_task9_review_log: "logs/deep-review/2026-07-10-05-audit.md"
