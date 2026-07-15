@@ -146,16 +146,19 @@
   - [4.22 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.22-android17-ai-agent-memory-sandboxed-data-reuse.md)
   - [14.28 GPU 性能分析进阶 — 跨厂商计数器标准化与工作负载剖析](part3-tools/ch14-other-tools/28-gpu-performance-profiling-advanced.md)
   - [14.29 Android 17 AGI Frame Profiler gapii Spy 架构与单帧 GPU 捕获机制](part3-tools/ch14-other-tools/14.29-android17-agi-frame-profiler-gapii-spy.md)
+  - [14.32 ARM Topdown 微架构性能分析方法论与 Android 实践](part3-tools/ch14-other-tools/32-arm-topdown-microarch-performance-analysis.md)
   - [14.30 GpuService GPU 内存可观测性架构：GpuMem eBPF 追踪 / GpuMemTracer Perfetto 桥接 / GpuStats statsd 归因](part3-tools/ch14-other-tools/14.30-android17-gpuservice-gpu-memory-observability.md)
   - [26.24 heapprofd 生产级部署与权限模型](part5-app/ch26-observability/24-heapprofd-production-deployment-permissions.md)
   - [20.19 Android 17 信号处理架构迁移与 debuggerd bionic/linker 重构](part5-app/ch20-stability/19-android17-signal-handler-debuggerd-migration.md)
   - [20.21 FD 泄漏监控与线程资源治理实战](part5-app/ch20-stability/21-fd-leak-monitoring-thread-resource-governance.md)
   - [20.22 Binder 通信监控实战](part5-app/ch20-stability/22-binder-communication-monitoring.md)
+  - [20.23 GWP-ASan 灰度检测演进与 Android 17 内存安全防线](part5-app/ch20-stability/23-gwp-asan-probabilistic-memory-safety-android17.md)
 
 #   - [8.33 Android 17 模块化启动框架与依赖图优化](src/part1-fundamentals/ch08-startup/8.33-android17-modular-startup-dependency-graph.md)
   - [4.36 Android 17 高级内存优化与治理](src/part1-fundamentals/ch04-memory/4.36-android17-advanced-memory-optimization.md)
   - [16.11 Android 17 ARM64 内核安全缓解机制性能开销与调优](part4-system/ch16-aosp/11-arm64-kernel-security-mitigation-performance.md)
-  - [25.25 OEM 厂商差异化后台限制与功耗诊断实战](part5-app/ch25-power-size/25-android17-oem-background-restriction-power-diagnosis.md)
+  - [25.26 Android 17 前台服务类型执行模型与后台启动性能边界](part5-app/ch25-power-size/26-android17-fgs-type-execution-model-background-launch-performance.md)
+  - [25.27 Android 17 BatteryUsageStats API 与功耗精准归因管线](part5-app/ch25-power-size/27-android17-battery-usage-stats-power-attribution.md)
 附录
 
 - [附录 G：Android 性能学习路线](appendix/android-performance-learning-path.md)

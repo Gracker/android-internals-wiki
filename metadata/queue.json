@@ -41,6 +41,76 @@
       "priority": 80,
       "status": "pending",
       "file": "src/part5-app/ch20-stability/22-binder-communication-monitoring.md"
+    },
+    {
+      "chapter": "25.26",
+      "title": "Android 17 前台服务类型执行模型与后台启动性能边界",
+      "priority": 80,
+      "status": "pending",
+      "file": "src/part5-app/ch25-power-size/26-android17-fgs-type-execution-model-background-launch-performance.md"
+    },
+    {
+      "chapter": "25.27",
+      "title": "Android 17 BatteryUsageStats API 与功耗精准归因管线",
+      "priority": 80,
+      "status": "pending",
+      "file": "src/part5-app/ch25-power-size/27-android17-battery-usage-stats-power-attribution.md"
+    },
+    {
+      "chapter": "14.32",
+      "title": "ARM Topdown 微架构性能分析方法论与 Android 实践",
+      "priority": 80,
+      "status": "pending",
+      "file": "src/part3-tools/ch14-other-tools/32-arm-topdown-microarch-performance-analysis.md"
+    },
+    {
+      "chapter": "20.23",
+      "title": "GWP-ASan 灰度检测演进与 Android 17 内存安全防线",
+      "priority": 80,
+      "status": "pending",
+      "file": "src/part5-app/ch20-stability/23-gwp-asan-probabilistic-memory-safety-android17.md"
+    }
+  ],
+  "pending": [
+    {
+      "section": "17.4",
+      "section_title": "sched_ext 与 OEM BPF 调度器",
+      "priority": 85,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，Android 17 GKI 6.18 sched_ext 默认启用 + 13 个 Android 专属 vendor hook + cpufreq 闭环源码级分析，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-sched-ext-6.18-vendor-hook-cpufreq-loop.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 sched_ext 与 OEM 自定义 BPF 调度器适配路径 — GKI 6.18 默认启用 CONFIG_SCHED_CLASS_EXT，落地 13 个 Android 专属 vendor hook（android_vh_scx_*），完成 cpufreq 闭环",
+          "suggestion": "章节已 finalized，判断是否适合在下一轮修订中补充 vendor hook 完整列表、scx_enable 流程、SysRq-S 回退面等源码级细节"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-16T06:14:00.474672",
+      "status": "pending"
+    },
+    {
+      "section": "4.8",
+      "section_title": "ART 分代 GC 与 MarkCompact 源码结构",
+      "priority": 82,
+      "reason": "[DeepResearch 注入] 新高价值源码调研，YoungMarkCompact 只是 MarkCompact 的 4 行 wrapper，userfaultfd + SIGBUS 零 STW 搬迁路径 + 三段式代际布局源码级分析",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-art-markcompact-young-wrapper-source-verification.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 ART YoungMarkCompact 与 MarkCompact 关系源码核查 — YoungMarkCompact 是 thin wrapper，CMC 由 userfaultfd + SIGBUS 构成零 STW 搬迁，支持 young/mid/old 三段代际布局",
+          "suggestion": "§4.8 和 §4.14 均 finalized，判断是否在下一轮修订中补充 CMC userfaultfd 机制、UFFD搬迁路径、代际布局细节"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-16T06:14:00.474672",
+      "status": "pending"
     }
   ]
 }
