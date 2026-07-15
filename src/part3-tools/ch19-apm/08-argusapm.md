@@ -34,6 +34,8 @@ last_task6_audit: "2026-06-27T10:13:02+08:00"
 last_task9_audit: "2026-07-14"
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-25
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-15
 ---
 # ArgusAPM
 
@@ -81,7 +83,7 @@ last_deepseek_polish_at: 2026-05-25
 
 ArgusAPM 是 360 开源的 Android 性能监控平台，仓库 README 把它定义为移动端可视化性能监控平台。它覆盖交互分析、网络、内存、进程、文件、卡顿、ANR 等指标，并提供 Gradle Plugin 做接入和 AOP 织入。
 
-截至 2026-04-24，仓库 README 仍保留一条公告：由于公司业务调整及成本原因，ArgusAPM 停止支持服务端免费新增接入，已接入产品不受影响。再往下看公开 sample，基线也停在较早期：`compileSdkVersion 27`、`targetSdkVersion 27`、`JavaVersion.VERSION_1_7`，示例里依赖的 OkHttp 还是 `3.10.0`。这个状态决定了它更适合作为架构参考或存量项目维护对象，不适合作为新项目默认选型。
+仓库 README 明确公告：由于公司业务调整及成本原因，ArgusAPM 已停止服务端免费新增接入，已接入产品不受影响。再往下看公开 sample，基线也停在较早期：`compileSdkVersion 27`、`targetSdkVersion 27`、`JavaVersion.VERSION_1_7`，示例里依赖的 OkHttp 还是 `3.10.0`。这个状态决定了它更适合作为架构参考或存量项目维护对象，不适合作为新项目默认选型。
 
 ## 架构分成采集模块和 Gradle Plugin
 
@@ -155,11 +157,11 @@ flowchart LR
     D --> E["可视化平台\n版本 / 机型 / 页面 / 告警"]
 ```
 
-这套结构在今天仍然成立，只是每一层的实现要更新。Gradle Transform 要迁到现代 AGP API，进程和隐私限制要重审，服务端新增接入也不能再依赖原项目公告里已经停止的免费服务。
+这套结构今天依然适用，只是每一层的实现要跟上平台变化。Gradle Transform 要迁到现代 AGP API，进程和隐私限制要重审，服务端新增接入也不能再依赖原项目公告里已经停止的免费服务。
 
 ## AOP 织入适合哪些数据
 
-ArgusAPM 这类方案使用编译期织入，最适合处理有明确调用边界的数据。文中的 AOP 指 AspectJ 路径，主要覆盖 `TraceActivity`、`TraceNetTrafficMonitor` 这类切面；ASM 路径的匹配范围比字面含义窄——`FuncClassAdapter` 仅在 `TypeUtil.isRunMethod()` 或 `TypeUtil.isOnReceiveMethod()` 成立时才插入 `FuncMethodAdapter`，也就是只织入 `Runnable.run()` 和 `BroadcastReceiver.onReceive()` 的入口/出口计时代码；`OkHttp3ClassAdapter` 只匹配 `OkHttpClient.Builder` 构建路径；`WebClassAdapter` 只匹配 `WebViewClient.onPageFinished()` 等固定入口。不要把 ASM 路径理解成泛化的「任意方法耗时」采集。
+ArgusAPM 这类方案使用编译期织入，最适合处理有明确调用边界的数据。文中的 AOP 指 AspectJ 路径，主要覆盖 `TraceActivity`、`TraceNetTrafficMonitor` 这类切面。ASM 路径的匹配范围更窄——只织入 `Runnable.run()` 和 `BroadcastReceiver.onReceive()` 的入口/出口计时，以及 `OkHttpClient.Builder` 构建路径和 `WebViewClient.onPageFinished()` 等固定入口。不要把 ASM 路径理解成泛化的「任意方法耗时」采集。
 
 - Activity 生命周期耗时。
 - OkHttp 请求开始、结束、失败。
@@ -228,9 +230,9 @@ ArgusAPM 里有 `argus-apm-okhttp` 这类网络采集模块。现代网络监控
 - 缓存命中和离线缓存。
 - URL pattern 脱敏。
 
-只靠 `Interceptor` 拿不到 DNS / connect / TLS 这些阶段，阶段拆分要靠 `EventListener`；`Interceptor` 更适合补请求 ID、业务 code 和页面上下文。
+只靠 `Interceptor` 拆不出 DNS / connect / TLS 这些阶段，阶段拆分要用 `EventListener`；`Interceptor` 更适合补请求 ID、业务 code 和页面上下文。
 
-这段 `EventListener` 示例属于迁移后的写法。OkHttp 的 `EventListener` 在 3.9 进入预览，3.11 才成为稳定 API；ArgusAPM sample 仍是 `okhttp:3.10.0`，存量工程不要直接复制这段阶段拆分。迁移顺序应先升级网络采集模块，再把旧 Interceptor / 流量包装改成 `EventListener + Interceptor` 分工。
+这段 `EventListener` 示例是迁移后的写法。OkHttp 的 `EventListener` 在 3.11 才成为稳定 API，ArgusAPM sample 用的是 `okhttp:3.10.0`，存量工程不能直接套用。正确的迁移顺序是先升级网络采集模块，再把旧 Interceptor 改成 `EventListener + Interceptor` 分工。
 
 ```kotlin
 class StageEventListener : EventListener() {

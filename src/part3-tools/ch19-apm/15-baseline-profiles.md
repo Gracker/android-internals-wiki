@@ -49,6 +49,8 @@ last_task9_autofix_at: "2026-06-16"
 last_task9_review_log: "logs/deep-review/2026-06-16-14-audit.md"
 task9_review_notes: "2026-06-16 Task9 idle audit auto-fixed: 将 AOSP ART profman/dex2oat 源码锚点从 refs/heads/main 固定到 android-16.0.0_r1；android-17.0.0_r1 tag 未发布时不使用 main/master 作为正文结论来源。"
 last_task6_at: "2026-06-17T01:10:00+08:00"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-15
 ---
 
 # Baseline Profiles 与编译优化
@@ -96,13 +98,13 @@ last_task6_at: "2026-06-17T01:10:00+08:00"
 
 Baseline Profiles 使应用或库随包发布一组常用代码路径,Android Runtime 据此进行 AOT 编译优化。官方文档给出的目标是优化启动、降低交互卡顿,让新用户和每次更新后的首次运行都受益。
 
-它不属于 APM 采集工具,但和性能监控关系很近。线上启动慢或交互慢被发现后,Baseline Profiles 常常是修复手段之一;修复是否生效,再用 Macrobenchmark 和线上指标验证。
+它不属于 APM 采集工具，但和性能监控紧密相关。线上启动慢或交互慢被发现后,Baseline Profiles 常常是修复手段之一;修复是否生效,再用 Macrobenchmark 和线上指标验证。
 
 ## 它解决的是首次运行性能
 
 没有 profile 时,应用安装或更新后,很多代码路径要等运行中解释执行、JIT 编译或后台 profile 引导优化。用户首次打开时,关键路径可能还没被编译好。
 
-Baseline Profiles 把"哪些类和方法值得提前优化"提前打包进去。ART 按安装来源、系统版本和后台 dexopt 时机使用这些规则,让启动和高频交互更早进入较好状态。
+Baseline Profiles 把"哪些类和方法值得提前优化"提前打包进去。ART 按安装来源、系统版本和后台 dexopt 时机使用这些规则,让启动和高频交互尽早进入编译优化状态。
 
 版本边界要拆开看:
 
@@ -126,7 +128,7 @@ flowchart LR
     Dex2oat --> Oat[OAT / App image]
 ```
 
-`baseline-prof.txt` 不会直接交给 ART 编译器。`profgen` 在构建期把文本规则转成二进制 profile;非 Play 安装时,`androidx.profileinstaller.ProfileInstaller` 通常负责把随包 profile 放到 ART 可读的位置。后续由 `profman` 合并和分析 profile,满足条件后由 `dex2oat --compiler-filter=speed-profile` 编译命中的方法。源码锚点可先落到 AOSP android-16.0.0_r1 的 `art/profman/profman.cc` 和 `art/dex2oat/dex2oat.cc`; Android 17 发布 tag 可用后再复核同一路径。
+`baseline-prof.txt` 不会直接交给 ART 编译器。`profgen` 在构建期把文本规则转成二进制 profile;非 Play 安装时,`androidx.profileinstaller.ProfileInstaller` 通常负责把随包 profile 放到 ART 可读的位置。后续由 `profman` 合并和分析 profile,满足条件后由 `dex2oat --compiler-filter=speed-profile` 编译命中的方法。源码锚点见 AOSP `art/profman/profman.cc` 和 `art/dex2oat/dex2oat.cc`。
 
 `RESULT_CODE_PROFILE_ENQUEUED_FOR_COMPILATION` 表示 profile 已交给系统,等待后续 dexopt;`RESULT_CODE_COMPILED_WITH_PROFILE` 才表示当前包已经按 profile 完成编译。排查时不要把 ENQUEUED 当作收益已经生效。
 
@@ -197,23 +199,23 @@ Baseline Profile 最终会生成一组 ART profile 规则,描述哪些类和方�
 HSPLcom/example/app/MainActivity;->onCreate(Landroid/os/Bundle;)V
 ```
 
-前缀里的字母只有三个 flag 含义：
+前缀里的字母只有三个 flag：
 
 - `H`：Hot，频繁调用的方法。
 - `S`：Startup，启动路径内的方法或类，R8 / D8 可据此调整 DEX layout。
 - `P`：Post-startup，启动后仍常用的路径。
 
-`L` 不是 profile flag。`Lcom/example/app/MainActivity;` 中的 `L` 是 JVM/Dex 类型描述符前缀，表示一个对象类型，和 `I`（int）、`V`（void）、`[`（数组）是同一套描述符语法。方法签名 `(Landroid/os/Bundle;)V` 里的 `L` 也是同一个意思。
+注意 `Lcom/example/app/MainActivity;` 里的 `L` 不是 profile flag，它是 JVM/Dex 类型描述符前缀，表示对象类型，和 `I`（int）、`V`（void）、`[`（数组）是同一套语法。方法签名 `(Landroid/os/Bundle;)V` 里的 `L` 同理。
 
-类规则不带 H/S/P flags：
+类规则不带 H/S/P flags，整类纳入 profile：
 
 ```text
 Lcom/example/app/FeedItem;
 ```
 
-这表示整个类纳入 profile，没有方法级的 flag。`L` 同样是类型描述符前缀，不是独立的 "Load" 标记。
+这里的 `L` 同样是类型描述符前缀，不是独立的 "Load" 标记。
 
-方法规则上可以同时出现 H、S、P，例如 `HSPLcom/...;->method(...)V` 表示这条记录既影响 ART 编译优先级，也参与启动布局优化。开发者通常不手写这些规则，但排查 profile 命中率时要能区分 flags 和类型描述符。profile 不是"性能配置开关"，它是一组热点类和方法提示。它覆盖不到的路径，不会因为文件存在而自动变快。
+方法规则上可以同时出现 H、S、P，例如 `HSPLcom/...;->method(...)V` 表示这条记录既影响 ART 编译优先级，也参与启动布局优化。排查 profile 命中率时，关键是能区分 flags 和类型描述符。profile 不是"性能配置开关"，是一组热点类和方法提示——没被覆盖到的路径，不会因为文件存在就自动变快。
 
 ## 生成场景要覆盖用户路径
 
@@ -225,7 +227,7 @@ Baseline Profile 的质量取决于生成脚本。只启动 App 一次,通常只
 - 打开详情页。
 - 触发一次核心业务操作,例如搜索或播放。
 
-不要录太多低频路径。Profile 越宽,安装后编译成本越高,也越难维护。
+不要贪多。Profile 越宽，安装后编译成本越高，也越难维护。
 
 ## 验证 profile 是否生效
 

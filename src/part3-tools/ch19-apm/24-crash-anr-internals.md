@@ -54,7 +54,7 @@ last_task2b_verifier_at: "2026-05-31T23:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 last_task9_autofix_at: "2026-06-02"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-29
+last_deepseek_cn_review_at: 2026-07-15
 ---
 
 
@@ -91,11 +91,11 @@ last_deepseek_cn_review_at: 2026-06-29
 > **扩展**视素材丰富程度选择性深入。
 <!-- outline-end -->
 
-稳定性 APM 要覆盖四类不同现场：Java 未捕获异常、Native 信号崩溃、ANR、以及没有抛异常却把进程拖死的资源耗尽。四类现场的采样入口、线程上下文、权限边界都不同，统一看板只是收尾阶段，前面必须先把捕获路径搭对。
+稳定性 APM 要覆盖四类不同场景：Java 未捕获异常、Native 信号崩溃、ANR、以及没有抛异常却把进程拖死的资源耗尽。这四类的采样入口、线程上下文、权限边界都不同。统一看板是最后一步，前提是先把各自的捕获路径搭对。
 
 ## 1. 稳定性采样面：不同现场的执行机会
 
-| 现场类型 | 典型入口 | 进程当时是否还可控 | 适合采什么 |
+| 现场类型 | 典型入口 | 进程此时是否受控 | 适合采什么 |
 | --- | --- | --- | --- |
 | Java Crash | `Thread.setDefaultUncaughtExceptionHandler` | 部分可控，当前线程即将退出 | 异常类型、线程名、Java 栈、轻量 breadcrumb |
 | Native Crash | `sigaction` / Crashpad client | 风险很高，只能做极少操作 | 寄存器、signal、native backtrace、so build id |
@@ -110,7 +110,7 @@ Java 层未捕获异常最终会走到 `Thread.UncaughtExceptionHandler`。全�
 
 ### 2.1 代理式处理比“完全接管”更稳
 
-这段代码的用途是把异常摘要写入本地 crash store，然后把控制权交回系统或上一个 SDK 的 handler。重点看 `previous` 链接，避免把系统默认退出逻辑吞掉。
+这段代码的作用是把异常摘要写入本地 crash store，然后把控制权交回系统或上一个 SDK 的 handler。重点看 `previous` 链接，避免把系统默认退出逻辑吞掉。
 
 ```kotlin
 class CrashHandlerInstaller {
@@ -165,14 +165,14 @@ Native Crash 在 Linux / Android 上通常表现为 `SIGSEGV`、`SIGABRT`、`SIG
 
 ### 3.2 Signal handler 里能做什么
 
-Signal handler 的工作应当收缩到最小集合：
+Signal handler 只做最少的事：
 
 - 记录 signal number、fault address、thread id
 - 读取 `ucontext_t` 中的寄存器上下文
 - 将必要信息写入预分配缓冲区或通知 Crashpad handler
 - 恢复前一个 handler 或重新抛出 signal，让系统继续生成 tombstone
 
-不该做的事同样明确：
+相应地，有几件事一定不能做：
 
 - 不能依赖 malloc/new
 - 不能拿互斥锁
@@ -327,7 +327,7 @@ fun readRecentExitRecords(context: Context): List<String> {
 
 ## 6. 现场快照：崩溃当下只收最小集合，其余留到下次启动补齐
 
-现场快照的目标是帮后端聚类和复盘，不需要把整台设备所有信息都写进一条记录。一个可执行的最小集合可以是：
+现场快照的目标是帮后端聚类和复盘，不需要把整台设备的信息全部写进一条记录。一个可执行的最小集合可以是：
 
 - 线程或 signal 基本信息：线程名、tid、signal、异常类型
 - 关键栈：Java 主线程栈、crashing thread native backtrace
@@ -411,10 +411,11 @@ Native 层要额外做两件事：
 
 ## 12. Android 11 以下：ApplicationExitInfo 缺失时的替代方案
 
-<!-- AIW-源码调研-2026-05-08 -->
+以上 §8 和 §4 的方案以 Android 11+ 为前提。对于仍需支持低版本的工程，以下是各现场的替代捕获路径。
+
 ### 12.1 核心矛盾
 
-低版本缺失的不只是 `ApplicationExitInfo` 这一套 API，背后还缺整套机制：
+低版本缺的不只是 `ApplicationExitInfo` 这套 API，而是背后整套机制：
 
 - **无统一存储**：进程退出时 system_server 不会写 Proto 文件
 - **无官方 trace 路径**：`/data/anr/` 对普通 App 始终不可读
@@ -422,7 +423,7 @@ Native 层要额外做两件事：
 
 ### 12.2 Signal Handler 自注册（Native Crash）
 
-**原理**：在 JNI 层注册 `sigaction`，捕获 `SIGSEGV` / `SIGABRT` / `SIGFPE` 等信号，获取 native crash 时的寄存器上下文和调用栈。
+**原理**：在 JNI 层注册 `sigaction`，捕获 `SIGSEGV` / `SIGABRT` / `SIGFPE` 等信号，在 native crash 发生时拿到寄存器上下文和调用栈。
 
 **典型实现**：
 ```cpp
@@ -555,6 +556,8 @@ KOOM 的核心贡献是解决"Java heap OOM 时进程状态已经不稳定"的�
 
 ## 13. 版本能力补充：Android 线上诊断能力总览
 
+以下按 API 版本梳理各诊断能力的差异，供版本兼容评估时快速查阅。
+
 *关联章节：§26.5、§26.2*
 
 ### 13.1 ApplicationExitInfo 版本行为差异
@@ -659,5 +662,3 @@ profilingManager.registerForAllProfilingResults(executor) { result ->
 源码/文档锚点：
 - Crashpad Overview Design：Linux/Android registration 与 crash capture 流程
 - `bionic/libc/include/signal.h`
-
-<!-- AIW-源码调研-2026-05-15 -->

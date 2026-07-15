@@ -32,6 +32,8 @@ last_task9_audit: "2026-07-12"
 last_task6_audit: "2026-06-20"
 last_task6_at: "2026-05-23T03:05:00+08:00"
 task2b_result: fixed
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-15
 ---
 
 <!-- outline-start -->
@@ -93,7 +95,7 @@ graph TD
 
 1. **视频解码线程**解码出一帧图像（MediaCodec → GPU/CPU 解码）
 2. 解码线程直接向 SurfaceView 的 BufferQueue 执行 `dequeueBuffer` → 填充 → `queueBuffer`
-3. BBQ 构造 Transaction，提交给 SurfaceFlinger
+3. BLASTBufferQueue（BBQ）构造 Transaction，提交给 SurfaceFlinger
 
 **与 Pipeline A 的区别**：Pipeline B 不经过 UI Thread，不经过 RenderThread，不受 `Choreographer` 调度。它的帧率取决于视频源（24/30/60fps）和解码速度，而不是系统的 VSync 频率。
 
@@ -195,7 +197,7 @@ sequenceDiagram
 | `SurfaceSyncGroup` | Android 14 / API 34+ | 把多个受控 Surface 包进一个同步组。公开 API 支持 `AttachedSurfaceControl`（TextureView）和 `SurfaceControlViewHost.SurfacePackage`；SurfaceView 的 `add(SurfaceView, ...)` 和 `SurfaceViewFrameCallback` 为 framework/internal `@hide` 路径，普通应用不可直接调用 |
 | `latch unsignaled buffer` | 单 Layer 局部优化 | 满足 AutoSingleLayer 等条件时把 fence 等待时机后移；**不是跨 Surface 同步** |
 
-**重要边界**：上面这些原语只能协调**受控 Surface / Transaction**，不能让外部 Producer（Camera / MediaCodec / Flutter Engine）的下一块 buffer 在期望帧准时到达。当跨进程 Producer 节奏不可控时，这些机制能**缓解**不同步压力，但**不会自动解决**它——最终仍然需要一个时刻让各条 Surface 同时满足"可以参与这一轮合成"的条件，等待时机可以后移，同步要求没有消失。
+**重要边界**：上面这些原语只能协调**受控 Surface / Transaction**，无法控制外部 Producer（Camera / MediaCodec / Flutter Engine）的 buffer 到达时机。当跨进程 Producer 节奏不可控时，这些机制能缓解不同步压力，但不能自动消除它——最终仍需要一个时刻让各条 Surface 同时满足"可以参与这一轮合成"的条件。等待时机可以后移，同步要求没有消失。
 
 [已验证: AOSP `frameworks/native/libs/gui/SurfaceComposerClient.cpp` `Transaction::merge` / `setDesiredPresentTime` + `frameworks/native/libs/gui/Surface.cpp` `Surface::setBuffersTimestamp()` + Android Developers `SurfaceSyncGroup` (API 34) / `addTransactionCommittedListener` (API 33)]
 
