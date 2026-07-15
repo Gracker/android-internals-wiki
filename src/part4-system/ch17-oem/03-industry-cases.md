@@ -34,9 +34,9 @@ task6_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-28"
 task6_result: "pass-light-edit"
-last_task6_audit: "2026-06-22"
-last_task6_audit_log: "logs/review/2026-06-22-16-audit.md"
-last_task6_audit_notes: "idle audit: L1 禁用词 拆解→分析 1 处小修；高频词均在阈值内；frontmatter 完整；outline 锚点内容需优化。"
+last_task6_audit: "2026-07-15"
+last_task6_audit_log: "logs/review/2026-07-15-18-audit.md"
+last_task6_audit_notes: "idle audit: L1 禁用词全清；中英文间距干净；高频词(优化48/性能38/设备28)均主题固有；frontmatter 完整；4个🔹锚点全覆盖；无 L1/L2 问题，无需修改。"
 section: "17.3"
 status: finalized
 pipeline_stage: ready-to-publish
