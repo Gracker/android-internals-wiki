@@ -166,7 +166,10 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-15T05:33:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-15T08:50:00+08:00",
+      "completed_by": "task2b-main",
+      "completion_reason": "URL 不可访问，跳过 (解析到内部/特殊用途 IP 地址)"
     },
     {
       "section": "18.21",
