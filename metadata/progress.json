@@ -1,6 +1,6 @@
 {
   "total": 741,
-  "draft": 17,
+  "draft": 1,
   "ready_for_review": 11,
   "finalized": 5,
   "last_updated": "2026-07-15T08:25:48+08:00",
@@ -33,6 +33,13 @@
   ],
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
+    {
+      "section": "none",
+      "action": "task2a-cleanup",
+      "status": "deprecated-orphans",
+      "ts": "2026-07-15T01:10:55.540854+00:00",
+      "note": "Round 122: Deprecated 16 orphan stubs (01.1×1, 01.2×2, 04.1×1, 04.5×2, 4.36×1, 4.37×1, 05.1×1, 05.6×1, 08.1×1, 08.9×1, 2.17×1, 13.1×1, 15.1×1, 22.8×1). All were auto-generated stubs with raw filenames as titles, generic outlines, not in SUMMARY.md, duplicating existing content. 0 legitimate drafts remain. Gap mining saturated."
+    },
     {
       "section": "5.31",
       "action": "task2a-draft-processing",
@@ -437,7 +444,7 @@
     }
   ],
   "last_task2b_at": "2026-07-02T18:54:37+08:00",
-  "deprecated": 46,
+  "deprecated": 62,
   "stats": {
     "last_review_date": "2026-07-13",
     "last_review_by": "openclaw-task9",
@@ -603,10 +610,10 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-15T08:25:48+08:00",
-    "last_section": "5.31",
-    "result": "drafted",
-    "note": "Processed §5.31 EEVDF scheduler — only legitimate empty draft in SUMMARY.md. 16 other empty drafts are orphan stubs (deprecated/duplicates)."
+    "last_run": "2026-07-15T01:10:55.540854+00:00",
+    "last_section": "none",
+    "result": "cleanup",
+    "note": "Deprecated 16 orphan stubs (round 122). All 16 empty drafts were orphan stubs not in SUMMARY.md with generic/duplicate content. No legitimate drafts to process. Gap mining saturated (121+ consecutive rounds no candidates)."
   },
   "task2b_lite": {
     "total_fixed": 1,
@@ -1146,6 +1153,134 @@
       "reason": "Duplicate of §1.43 Android 17 机器学习驱动任务调度器 (ready-for-review, ~250 lines, 完整覆盖 ML Scheduler 架构/数据流/启动优化场景/性能指标/调优实践)。8.34 主题与 1.43 完全重叠（任务调度器 + ML 驱动用户行为预测），启动预热、应用启动预测等内容已包含在 1.43 的「实际应用场景」一节。新增将导致内容重复并稀释全书的交叉引用结构。",
       "deprecated_at": "2026-07-14T14:13:54+08:00",
       "deprecated_by": "task2a-knowledge-gap"
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/01.1-android-developers-blog---android-17-引入了全新的任务调度器，通.md",
+      "chapter": "01.1",
+      "title": "Android Developers Blog - Android 17 任务调度器",
+      "reason": "Orphan stub not in SUMMARY.md. Truncated blog title as chapter title. ML scheduler topic already covered by §1.43 (ready-for-review, 250+ lines). Chapter number conflicts with existing §1.1 Android 分层架构.",
+      "deprecated_at": "2026-07-15T01:10:55.540854+00:00",
+      "deprecated_by": "task2a-cleanup-round122"
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/01.2-07-05-android17-art-heaptask-system-7-subclasses-s.md",
+      "chapter": "01.2",
+      "title": "07-05-android17-art-heaptask-system-7-subclasses-source-closed-loop",
+      "reason": "Orphan stub not in SUMMARY.md. Raw filename as title. ART HeapTask topic covered by §4.21 (ready-for-review, 327 lines). Generic auto-generated outline.",
+      "deprecated_at": "2026-07-15T01:10:55.540854+00:00",
+      "deprecated_by": "task2a-cleanup-round122"
+    },
+    {
+      "path": "src/part1-fundamentals/ch01-architecture/01.2-07-05-android17-binder-sz4m-kernel-buffer-pool-pri.md",
+      "chapter": "01.2",
+      "title": "07-05-android17-binder-sz4m-kernel-buffer-pool-priority-set-called-dedup",
+      "reason": "Orphan stub not in SUMMARY.md. Raw filename as title. Binder IPC topic covered by §1.44/§1.53/§1.54. Chapter number conflicts with other 01.2 stub.",
+      "deprecated_at": "2026-07-15T01:10:55.540854+00:00",
+      "deprecated_by": "task2a-cleanup-round122"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/04.1-07-04-android17-lmkd-procs-prio-batch-thrashing-ma.md",
+      "chapter": "04.1",
+      "title": "07-04-android17-lmkd-procs-prio-batch-thrashing-mainline-fork",
+      "reason": "Orphan stub not in SUMMARY.md. Raw filename as title. LMKD topic covered by §4.43/§4.48(deprecated)/existing ch04 sections. Generic auto-generated outline.",
+      "deprecated_at": "2026-07-15T01:10:55.540854+00:00",
+      "deprecated_by": "task2a-cleanup-round122"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/04.5-07-04-ai-agent-memory-management.md",
+      "chapter": "04.5",
+      "title": "07-04-ai-agent-memory-management",
+      "reason": "Orphan stub not in SUMMARY.md. AI Agent memory topic covered by §4.22 (ready-for-review, 215 lines). Generic auto-generated outline.",
+      "deprecated_at": "2026-07-15T01:10:55.540854+00:00",
+      "deprecated_by": "task2a-cleanup-round122"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/04.5-07-05-android17-ai-agent-memory-sandboxed-data-reu.md",
+      "chapter": "04.5",
+      "title": "07-05-android17-ai-agent-memory-sandboxed-data-reuse",
+      "reason": "Orphan stub not in SUMMARY.md. AI Agent memory sandbox topic covered by §4.22 (ready-for-review, 215 lines). Chapter number conflicts with other 04.5 stub.",
+      "deprecated_at": "2026-07-15T01:10:55.540854+00:00",
+      "deprecated_by": "task2a-cleanup-round122"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.36-android17-art-heaptask-concurrent-gc-suppression.md",
+      "chapter": "4.36",
+      "title": "Android 17 ART HeapTask 并发与 GC 抑制源码级机制",
+      "reason": "Orphan stub not in SUMMARY.md (SUMMARY 4.36 = 'Android 17 高级内存优化与治理', different file). Topic covered by §4.21 (ready-for-review, 327 lines) which includes GC suppression guardrails, continuous_gc_mode_, and mSponge analysis.",
+      "deprecated_at": "2026-07-15T01:10:55.540854+00:00",
+      "deprecated_by": "task2a-cleanup-round122"
+    },
+    {
+      "path": "src/part1-fundamentals/ch04-memory/4.37-android17-ai-agent-memory-sandboxed-data-reuse.md",
+      "chapter": "4.37",
+      "title": "AI Agent 在端侧设备的内存沙箱化与跨应用数据复用",
+      "reason": "Orphan stub not in SUMMARY.md. AI Agent memory sandbox topic covered by §4.22 (ready-for-review, 215 lines). Previous 4.37 stubs already deprecated.",
+      "deprecated_at": "2026-07-15T01:10:55.540854+00:00",
+      "deprecated_by": "task2a-cleanup-round122"
+    },
+    {
+      "path": "src/part1-fundamentals/ch05-cpu-power/05.1-07-05-android17-battery-optimization-soc-architect.md",
+      "chapter": "05.1",
+      "title": "07-05-android17-battery-optimization-soc-architecture-power-management",
+      "reason": "Orphan stub not in SUMMARY.md. SoC battery optimization topic covered by §5.21 (ready-for-review) and §17.21. Generic auto-generated outline.",
+      "deprecated_at": "2026-07-15T01:10:55.540854+00:00",
+      "deprecated_by": "task2a-cleanup-round122"
+    },
+    {
+      "path": "src/part1-fundamentals/ch05-cpu-power/05.6-07-04-android17-pms-cpuidle-schedutil-closed-loop.md",
+      "chapter": "05.6",
+      "title": "07-04-android17-pms-cpuidle-schedutil-closed-loop",
+      "reason": "Orphan stub not in SUMMARY.md. PMS/cpuidle/schedutil topic covered by §5.28/§5.29/§17.21. Generic auto-generated outline.",
+      "deprecated_at": "2026-07-15T01:10:55.540854+00:00",
+      "deprecated_by": "task2a-cleanup-round122"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/08.1-07-04-android17-modular-startup-framework-dependen.md",
+      "chapter": "08.1",
+      "title": "07-04-android17-modular-startup-framework-dependency-graph",
+      "reason": "Orphan stub not in SUMMARY.md. Modular startup topic covered by §8.33. Generic auto-generated outline. Chapter number conflicts with existing §8.1.",
+      "deprecated_at": "2026-07-15T01:10:55.540854+00:00",
+      "deprecated_by": "task2a-cleanup-round122"
+    },
+    {
+      "path": "src/part1-fundamentals/ch08-startup/08.9-07-05-android17-startup-insights-application-start.md",
+      "chapter": "08.9",
+      "title": "07-05-android17-startup-insights-application-start-info",
+      "reason": "Orphan stub not in SUMMARY.md. Startup Insights topic covered by §8.31/§8.32. Generic auto-generated outline.",
+      "deprecated_at": "2026-07-15T01:10:55.540854+00:00",
+      "deprecated_by": "task2a-cleanup-round122"
+    },
+    {
+      "path": "src/part2-performance/ch02-rendering/2.17-android17-gpu-debug-performance-tools-source.md",
+      "chapter": "2.17",
+      "title": "Android 17 GPU 图形调试与分析工具链源码级研究",
+      "reason": "Orphan stub not in SUMMARY.md. GPU debug tools topic covered by §2.15/§2.16/§2.51/§14.28/§14.29/§14.30. Generic auto-generated outline.",
+      "deprecated_at": "2026-07-15T01:10:55.540854+00:00",
+      "deprecated_by": "task2a-cleanup-round122"
+    },
+    {
+      "path": "src/part3-tools/ch13-perfetto/13.1-07-04-android17-heapprofd-production-deployment-pe.md",
+      "chapter": "13.1",
+      "title": "07-04-android17-heapprofd-production-deployment-permissions",
+      "reason": "Orphan stub not in SUMMARY.md. heapprofd topic covered by §13.24/§26.24. Generic auto-generated outline.",
+      "deprecated_at": "2026-07-15T01:10:55.540854+00:00",
+      "deprecated_by": "task2a-cleanup-round122"
+    },
+    {
+      "path": "src/part3-tools/ch15-methodology/15.1-5.-google-android-bench：ai-编码能力评测方法论.md",
+      "chapter": "15.1",
+      "title": "5. Google Android Bench：AI 编码能力评测方法论",
+      "reason": "Orphan stub not in SUMMARY.md. AI coding benchmark is not Android internals. Generic auto-generated outline.",
+      "deprecated_at": "2026-07-15T01:10:55.540854+00:00",
+      "deprecated_by": "task2a-cleanup-round122"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/22.8-webview-h5-performance-optimization-systematic.md",
+      "chapter": "22.8",
+      "title": "WebView/H5 极致性能优化体系化方法",
+      "reason": "Orphan stub not in SUMMARY.md. Generic auto-generated outline ('锚点 1', '锚点 2'). WebView topic has suggestions in intake/suggestions.md for existing chapters, not a new section.",
+      "deprecated_at": "2026-07-15T01:10:55.540854+00:00",
+      "deprecated_by": "task2a-cleanup-round122"
     }
   ],
   "review_stats": {
