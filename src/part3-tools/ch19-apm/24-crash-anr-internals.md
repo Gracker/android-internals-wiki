@@ -385,9 +385,46 @@ Native 层要额外做两件事：
 
 常规 Crash 报告能看到“已经崩了之后”的栈，但对 use-after-free、heap corruption 这类问题，单靠普通 minidump 有时还不够。GWP-ASan 的定位是低比例灰度抽样，提前把部分分配切到带保护页的路径，命中后给出更明确的内存破坏证据。
 
+## 9. GWP-ASan：线上抓 C/C++ 内存破坏的补充手段
+
+常规 Crash 报告能看到"已经崩了之后"的栈，但对 use-after-free、heap corruption 这类问题，单靠普通 minidump 有时还不够。GWP-ASan 的定位是低比例灰度抽样，提前把部分分配切到带保护页的路径，命中后给出更明确的内存破坏证据。
+
 它不适合全量开启：调试价值高，运行时开销也更高。对 C/C++ 模块占比较重的应用，推荐作为专项灰度开关，不推荐默认全量配置。
 
+<!-- AIW-源码调研-2026-07-16 -->
+### 9.1 Android 17 GWP-ASan 配置与 Recoverable 路径（一手源码细节）
+
+> 基于 AOSP `android-17.0.0_r1`：`bionic/libc/bionic/gwp_asan_wrappers.cpp` (L94-519)、`system/core/debuggerd/handler/debuggerd_handler.cpp` (L709-996)、`bionic/libc/bionic/malloc_common_dynamic.cpp` (L382-415)、`bionic/libc/private/bionic_globals.h` (L136-146)。完整调研见 `DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md`。
+
+**默认参数**（`gwp_asan_wrappers.cpp` L174-201、SetDefaultGwpAsanOptions L261-276）：
+
+| 参数 | 默认值 | 含义 | 系统属性 | 环境变量 |
+|------|--------|------|----------|----------|
+| `SampleRate` | `25000` | 每次分配 N 中采 1 次 | `libc.debug.gwp_asan.sample_rate.{system_default\|app_default}.{progname}` | `GWP_ASAN_SAMPLE_RATE` |
+| `ProcessSampling` | `128`（system/app）/`1`（其他） | 进程被选中的概率分母 | `libc.debug.gwp_asan.process_sampling.{...}` | `GWP_ASAN_PROCESS_SAMPLING` |
+| `MaxSimultaneousAllocations` | `32` | 同进程最多 32 个槽位 | `libc.debug.gwp_asan.max_allocs.{...}` | `GWP_ASAN_MAX_ALLOCS` |
+| `Recoverable` | **`true`** | 首次 crash 写 DropBox 后进程继续 | `libc.debug.gwp_asan.recoverable.{...}` | `GWP_ASAN_RECOVERABLE` |
+
+**优先级链**（`GetGwpAsanOptions` L376-422 注释）：① 环境变量 > ② 程序级 sysprop > ③ 全局 sysprop。非 persist 选项覆盖 persist 选项。
+
+**Recoverable 三阶段路径**：
+
+1. **Pre crash report**（`debuggerd_handler.cpp` L709-728）：`debuggerd_signal_handler` 收到 SEGV 且 `NeedsGwpAsanRecovery(si_addr)` 为真 → 调 `GwpAsanPreCrashHandler(si_addr)` 把损坏槽暂存，并置 `process_info.recoverable_crash = true`。
+2. **Signal handler 出口**（L865-870）：若 `process_info.recoverable_crash == true` → 调 `GwpAsanPostCrashHandler(si_addr)` 把槽标记成「勿再分配」，**不调用** `resend_signal()`，进程继续。
+3. **`debuggerd_handle_gwp_asan_signal` 防刷屏**（L929-966）：用 `static pthread_mutex_t first_crash_mutex` + `static bool first_crash` 保证**仅首次** GWP-ASan 触发完整 debuggerd 报告；后续 crash 只 patch 分配器，不再产生 DropBox entry，**避免 ActivityManager 因短时间内多次 native crash 杀掉 App**。
+
+**与 Permissive MTE 的边界**（`debuggerd_handler.cpp` L730-775）：MTE 走 `SEGV_MTESERR`/`SEGV_MTEAERR` + `is_permissive_mte()`，把线程 TCF 切到 `PR_MTE_TCF_NONE` 后用 `timer_create(CLOCK_THREAD_CPUTIME_ID, ...)` 在固定 CPU 时间后重新打开 MTE。两者**共用同一个 `recoverable_crash` 出口抑制进程退出**，但路径完全独立。
+
+**Wire 协议桥接**（`bionic_globals.h` L136-140）：`libc_shared_globals` 暴露 5 个字段给 bionic linker 与 debuggerd 共享：`gwp_asan_state`、`gwp_asan_metadata` 与三个回调指针 `debuggerd_{needs_gwp_asan_recovery, gwp_asan_pre/post_crash_report}`。`debuggerd_handler.cpp` L518-525 用 `ASSERT_SAME_OFFSET` 验证发送侧与 `crash_dump.cpp` 接收侧结构体偏移一致。
+
+**与调试 malloc 的互斥**（`gwp_asan_wrappers.cpp` L447-458、455）：初始化时若 `GetDefaultDispatchTable()` 非空，**主动 bail**——GWP-ASan 必须先于 `malloc_debug` / `malloc_hooks` / `heapprofd` 安装。这是 `MallocInitImpl` (L387、399-414) 中「先 `MaybeInitGwpAsanFromLibc` 再按优先级安装 hook」的根因。
+
+**SDK 影响**（与 §20.19 §锚点 6 一致）：第三方 Crash SDK 若在 MTE/GWP-ASan SEGV 上**自行调用 `_exit()` 或 `abort()` 会破坏 recoverable**，必须放过这类 `si_code` 让 system handler 处理。
+
+<!-- /AIW-源码调研-2026-07-16 -->
+
 ## 10. 参考资料与延伸阅读
+
 
 - `art/runtime/signal_catcher.cc`：ART SignalCatcher 使用 `sigwait()` 处理 `SIGQUIT` 的实现
 - `system/core/debuggerd/proto/tombstone.proto`：API 31+ native tombstone protobuf 的结构参考

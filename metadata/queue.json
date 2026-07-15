@@ -1,366 +1,46 @@
 {
-  "items": [
+  "entries": [
     {
-      "section": "19.24",
-      "section_title": "崩溃与 ANR 捕获机制",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 源码路径错误",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "§13.2 ProfilingManager 源码路径",
-          "detail": "packages/modules/Profiling/framework/java/android/os/ProfilingManager.java 在 android-17.0.0_r1 中不存在（404错误），可能路径结构变化或功能已移动到其他模块",
-          "suggestion": "需要验证正确的模块路径，或改为描述性内容"
-        },
-        {
-          "type": "源码错误",
-          "location": "§13.3 ProfilingTrigger 源码路径",
-          "detail": "packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java 在 android-17.0.0_r1 中不存在（404错误），需要验证正确的模块路径",
-          "suggestion": "需要验证正确的模块路径，或改为描述性内容"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-15T14:31:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-07-15T15:20:00+08:00",
-      "completed_by": "task9-deep-tech-review"
-    },
-    {
-      "section": "1.11",
-      "section_title": "Zygote 机制与启动性能优化",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 前后端版本声明不一致与内容矛盾问题",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "Preload 序列源码行号",
-          "detail": "文中声称在 ZygoteInit.java 行 119-163，经 android-17.0.0_r1 实际源码复核，完整 Preload 序列在行 296-371，不是 119-163 行",
-          "suggestion": "修正为正确的源码行号 android-17.0.0_r1 的 296-371 行"
-        },
-        {
-          "type": "版本声明不一致",
-          "location": "章节 frontmatter",
-          "detail": "applicable_versions 声明支持 API 21-37，但 last_verified_against 仅声明以 android-17.0.0_r1 为基准，且注明 Zygote preload 序列与 android-16 一致，存在版本声明逻辑不一致问题",
-          "suggestion": "统一版本声明逻辑，明确标注以 android-17.0.0_r1 为基准，与其他章节保持一致"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-14T20:31:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-07-14T20:51:00+08:00",
-      "completed_by": "task2b-main"
-    },
-    {
-      "section": "1.1",
-      "section_title": "Android 分层架构",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 内容与标题不一致问题",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "内容矛盾",
-          "location": "Android 16 架构层面的最新变化小节",
-          "detail": "小节标题说 Android 16，但正文却说 16 KB Page Size 是 Android 15 引入的（Android 16 继续完善），标题与内容存在明显矛盾，需要修正以消除歧义",
-          "suggestion": "修正标题或内容，使标题与实际讨论的版本边界保持一致"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-14T20:31:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-07-14T20:51:00+08:00",
-      "completed_by": "task2b-main"
-    },
-    {
-      "chapter": "5.31",
-      "title": "Android 17 内核 EEVDF 调度器：从 CFS 到 Earliest Eligible Virtual Deadline First",
+      "chapter": "22.33",
+      "title": "Compose PausableComposition 性能机制",
       "priority": 80,
       "status": "pending",
-      "created_date": "2026-07-15",
-      "source": "task2a-knowledge-gap"
+      "file": "src/part5-app/ch22-rendering-practice/33-compose-pausable-composition-performance.md"
     },
     {
-      "chapter": "1.56",
-      "title": "Android 17 cgroup v2 统一层级与进程资源隔离机制",
+      "chapter": "13.20",
+      "title": "Frame Timeline API 33 Perfetto 深度分析",
       "priority": 80,
       "status": "pending",
-      "created_date": "2026-07-15",
-      "source": "task2a-knowledge-gap"
+      "file": "src/part3-tools/ch13-perfetto/20-frame-timeline-api33-perfetto-analysis.md"
     },
     {
-      "chapter": "1.57",
-      "title": "ART Boot Image 内存映射与启动性能",
+      "chapter": "13.21",
+      "title": "Perfetto pprof 与 Simpleperf 原生可视化",
       "priority": 80,
       "status": "pending",
-      "created_date": "2026-07-15",
-      "source": "task2a-knowledge-gap"
+      "file": "src/part3-tools/ch13-perfetto/21-perfetto-pprof-simpleperf-native-visualization.md"
     },
     {
-      "chapter": "1.58",
-      "title": "Android Dynamic Linker (linker64) 架构与 Native 库加载性能边界",
+      "chapter": "21.18",
+      "title": "缓存优化实战：冷热端分离",
       "priority": 80,
       "status": "pending",
-      "created_date": "2026-07-15",
-      "source": "task2a-knowledge-gap"
+      "file": "src/part5-app/ch21-startup/18-cache-optimization-cpu-locality.md"
     },
     {
-      "section": "26.18",
-      "section_title": "App Performance Score 与性能质量评分归因",
-      "priority": 70,
-      "reason": "[Task6抽检] 正文第3段两处断裂交叉引用（；、pattern），章节号丢失，需补全",
-      "material_paths": [
-        "logs/review/2026-07-15-03-audit.md"
-      ],
-      "review_issues": [
-        {
-          "type": "需确认",
-          "location": "正文第3段（outline-end后第2段）",
-          "detail": "原文'…理解；、分别提供了启动与渲染问题的测量顺序；、提供了灰度验证和上报组件的组织方式。'——两个分号后的章节号完全丢失，形成无主语引用",
-          "suggestion": "确认引用指向（疑为26.3启动/渲染测量 和 26.15灰度/上报），补全章节号"
-        }
-      ],
-      "added_by": "task6-audit",
-      "added_at": "2026-07-15T03:20:10",
-      "status": "completed",
-      "original_review_log": "logs/review/2026-07-15-03-audit.md",
-      "completed_at": "2026-07-15T10:50:00+08:00",
-      "completed_by": "task2b-main"
-    },
-    {
-      "section": "13.25",
-      "section_title": "源码调研：PerfDog 的 Android 平台 GPU/性能采集底层数据源",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 源码方法名错误",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "GraphicBuffer 分配与 GPU 内存生命周期",
-          "detail": "frameworks/native/libs/ui/GraphicBuffer.cpp 的 initSize() 方法不直接调用 GraphicBufferAllocator::allocate()，实际调用链为 initSize() → GraphicBufferAllocator::alloc()（不是 allocate()）",
-          "suggestion": "修正为正确的 alloc() 方法名"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-15T03:21:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-07-15T03:38:00+08:00",
-      "completed_by": "task2b-lite",
-      "completion_reason": "fixed-lite: corrected GraphicBufferAllocator method name allocate() -> alloc()"
-    },
-    {
-      "section": "14.13",
-      "section_title": "Hook 基础设施与性能工具实现原理",
-      "priority": 95,
-      "reason": "[Deep Tech Review] art/runtime/entrypoints/entrypoint_utils.h 路径可能在 android-17.0.0_r1 中不存在，但正文中多处引用",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "多处引用 art/runtime/entrypoints/entrypoint_utils.h",
-          "detail": "章节 frontmatter 中已标记该路径可能不存在，但正文仍多处引用作为事实依据",
-          "suggestion": "提供确切的替代路径或删除所有引用，改为描述性内容"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-15T05:22:45.491764",
-      "status": "completed",
-      "completed_at": "2026-07-14T21:41:10+00:00",
-      "completed_reason": "fixed-lite: entrypoint_utils.h verified exists in android-17.0.0_r1 via googlesource; false positive, frontmatter updated"
-    },
-    {
-      "section": "15",
-      "section_title": "Android 性能优化研究方法论",
-      "priority": 72,
-      "reason": "[素材注入] 新增参考文章，建议补充到 finalized 章节（相关性 3/5 + 深度 4/5 + 时效性 4/5 + 来源 3/5 = 14）",
-      "material_paths": [
-        "https://marco-nett.de/blog/measuring-input-latency-on-linux-x11-vs-wayland-vrr-dxvk/"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "Measuring Input Latency on Linux: X11 vs. Wayland, VRR, and DXVK — 作者自制基于光传感器+Arduino 的端到端延迟测试设备（受 OSLTT 启发，融合 m2p-latency 与 Open-Source-LDAT 设计），USB 模拟鼠标点击 + 屏幕亮度变化测真",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充（章节已 finalized，需评估是否新增 addendum 或列入下个迭代）"
-        }
-      ],
-      "added_by": "task8-classifier",
-      "added_at": "2026-07-15T05:33:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-07-15T08:50:00+08:00",
-      "completed_by": "task2b-main",
-      "completion_reason": "URL 不可访问，跳过 (解析到内部/特殊用途 IP 地址)"
-    },
-    {
-      "section": "18.21",
-      "section_title": "EyeDropper API 与跨设备协作性能",
-      "priority": 95,
-      "reason": "[Deep Tech Review] Android 版本兼容性风险",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "版本差异",
-          "location": "API 版本生命周期风险",
-          "detail": "ACTION_OPEN_EYE_DROPPER 在 Android 17 中存在且可用，但在 main 分支（Android 18+）中未找到，说明该 API 可能被弃用或移除。这直接关系到 AIW 以 Android 17 为基准版本的严肃性。",
-          "suggestion": "需要补充 API 版本生命周期说明，明确标注该 API 仅适用于 Android 17，可能在未来版本中被移除，并建议制定替代方案策略。"
-        },
-        {
-          "type": "版本差异",
-          "location": "章节结论风险",
-          "detail": "章节未提及 EyeDropper API 在 Android 17 之外版本的兼容性风险，作为技术文档应该前瞻性地指出版本生命周期限制",
-          "suggestion": "在章节降级策略部分补充未来版本兼容性说明，重申 AIW 版本边界（Android 17）的严肃性"
-        },
-        {
-          "type": "源码错误",
-          "location": "版本声明与实际源码不符",
-          "detail": "全文声明 Android 17 (API 37) 引入 ACTION_OPEN_EYE_DROPPER，但在 AOSP android-17.0.0_r1 中无法找到该常量定义。版本定位错误属于 P0 级别事实错误。",
-          "suggestion": "需验证正确版本定位，或改为描述性内容，不能引用不存在的 Android 17 API"
-        },
-        {
-          "type": "源码错误",
-          "location": "源码锚点缺失",
-          "detail": "作为技术章节，缺少对核心 API 的源码路径引用，无法验证系统层面实现细节，属于事实不完整",
-          "suggestion": "补充 AOSP 中实际存在的取色相关源码路径，或明确说明系统实现细节未公开"
-        },
-        {
-          "type": "版本差异",
-          "location": "版本边界模糊",
-          "detail": "仅说\"截至 android-17.0.0_r1 仍可用\"但没有提供证据，且未验证 API 在不同 Android 版本中的实际可用性",
-          "suggestion": "在章节中明确标注版本边界和基于源码验证的可用性声明"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-16T03:23:55.380598+08:00",
-      "status": "completed",
-      "completed_reason": "fixed-lite",
-      "completed_at": "2026-07-15T07:35:00+08:00",
-      "verifier_closed_at": "2026-07-16T03:27:25+08:00",
-      "verifier_closed_reason": "chapter already finalized/ready-to-publish; queue item stale"
-    },
-    {
-      "section": "19.24",
-      "section_title": "崩溃与 ANR 捕获机制",
-      "priority": 90,
-      "reason": "[抽检review回炉] 源码版本标签未锚定 android-17.0.0_r1（3处 android16-release + 1处 android-14.0.0_r1）",
-      "material_paths": [
-        "logs/review/2026-07-15-09-audit.md"
-      ],
-      "review_issues": [
-        {
-          "type": "需确认",
-          "location": "frontmatter sources line 23-25",
-          "detail": "3 条 AOSP 源码链接使用 android16-release tag，需确认对应文件在 android-17.0.0_r1 中是否存在及是否有内容变化",
-          "suggestion": "更新为 android-17.0.0_r1 tag，由 Task 9 验证"
-        },
-        {
-          "type": "需确认",
-          "location": "§12.3 line 484 代码注释",
-          "detail": "@ AOSP android-14.0.0_r1 标注过旧，ProcessList.java adj 常量在 Android 17 中可能有变化",
-          "suggestion": "Task 9 验证 android-17.0.0_r1 中 ProcessList.java 的 adj 常量是否有差异"
-        },
-        {
-          "type": "需确认",
-          "location": "§12.4 line 509 正文",
-          "detail": "AOSP android16-release init.rc 权限描述需在 Android 17 中验证",
-          "suggestion": "Task 9 确认 /data/anr 权限在 android-17.0.0_r1 中仍为 0775 system system"
-        }
-      ],
-      "added_by": "task6-audit",
-      "added_at": "2026-07-15T09:14:00+08:00",
-      "status": "completed",
-      "original_review_log": "logs/review/2026-07-15-09-audit.md",
-      "completed_at": "2026-07-15T10:50:00+08:00",
-      "completed_by": "task2b-main"
-    },
-    {
-      "section": "5.7",
-      "section_title": "CPU 相关的版本演进",
-      "priority": 90,
-      "reason": "[抽检review回炉] AOSP 源码标签全部锚定 android-16.0.0_r1（11处），违反版本基线 android-17.0.0_r1",
-      "material_paths": [
-        "intake/suggestions.md",
-        "logs/review/2026-07-15-20-audit.md"
-      ],
-      "review_issues": [
-        {
-          "type": "版本差异",
-          "location": "frontmatter sources L35-45 + 正文 L227/L279/L461",
-          "detail": "全章节 11 处 AOSP 源码路径引用 android-16.0.0_r1，0 处 android-17.0.0_r1。last_verified_against 也写 'AOSP android-16.0.0_r1'。违反版本基线规则。",
-          "suggestion": "逐条确认文件在 android-17.0.0_r1 中存在性和内容差异，更新 tag + last_verified_against"
-        }
-      ],
-      "added_by": "task6-audit",
-      "added_at": "2026-07-15T20:13:00+08:00",
-      "status": "completed",
-      "original_review_log": "logs/review/2026-07-15-20-audit.md",
-      "completed_at": "2026-07-15T20:51:34.073169+08:00",
-      "completed_by": "task2b-main",
-      "completion_reason": "fixed: updated 11 occurrences of android-16.0.0_r1 -> android-17.0.0_r1 (sources + body + references + last_verified_against)"
-    },
-    {
-      "section": "23.4",
-      "section_title": "Java Heap 优化策略",
-      "priority": 70,
-      "reason": "[task6-audit] last_verified_against 仍为 android-16.0.0_r1，需更新至 android-17.0.0_r1",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "需确认",
-          "location": "frontmatter: last_verified_against",
-          "detail": "当前值为 'AOSP android-16.0.0_r1 + Android Developers ComponentCallbacks2 + Clippings/...'，版本基线要求 android-17.0.0_r1。需 Task 9 确认源码路径和 API 参考是否在 android-17.0.0_r1 下有变化，更新验证基线。",
-          "suggestion": "Task 9 对照 android-17.0.0_r1 检查 Heap::ShouldAllocLargeObject、Heap::GetMaxMemory、GetFreeMemoryUntilOOME 等引用，更新 last_verified_against"
-        }
-      ],
-      "added_by": "task6-audit",
-      "added_at": "2026-07-15T21:19:50",
+      "chapter": "22.34",
+      "title": "Compose SubcomposeLayout 性能深度",
+      "priority": 80,
       "status": "pending",
-      "original_review_log": "logs/review/2026-07-15-21-audit.md"
+      "file": "src/part5-app/ch22-rendering-practice/34-compose-subcompose-layout-performance.md"
     },
     {
-      "section": "25.25",
-      "section_title": "OEM 厂商差异化后台限制与功耗诊断实战",
+      "chapter": "20.22",
+      "title": "Binder 通信监控实战",
       "priority": 80,
-      "reason": "知识缺口：厂商差异化后台限制无专门章节，research-gaps标记为高优先级",
-      "material_paths": [
-        "intake/research-gaps.md"
-      ],
-      "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-07-16T01:16:47.489816+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "22.31",
-      "section_title": "Compose Modifier.Node 架构与性能迁移",
-      "priority": 80,
-      "reason": "知识缺口：Modifier.Node 是 Compose 核心架构变更，全书仅1处提及",
-      "material_paths": [],
-      "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-07-16T01:16:47.489816+08:00",
-      "status": "completed",
-      "completed_at": "2026-07-16T02:15:00+08:00",
-      "completed_by": "task2a-draft-processing"
-    },
-    {
-      "section": "22.32",
-      "section_title": "Compose 无限动画与 VectorConverter 性能优化",
-      "priority": 80,
-      "reason": "知识缺口：rememberInfiniteTransition/VectorConverter 全书0覆盖",
-      "material_paths": [],
-      "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-07-16T01:16:47.489816+08:00",
-      "status": "pending"
+      "status": "pending",
+      "file": "src/part5-app/ch20-stability/22-binder-communication-monitoring.md"
     }
   ]
 }
