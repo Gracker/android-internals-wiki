@@ -87,7 +87,7 @@ task9_review_notes: '2026-05-17 Task9 00: pass-tech-review。Task2B 已修复 P0
   将 AOSP source 锚点从 master/裸路径改为 android-17.0.0_r1 tagged URLs；保留 Android 10 lmkd
   历史路径为 android-10.0.0_r47 参照；版本上限遵守 Android 17/API 37。回到 Task6 复审。详见 logs/deep-review/2026-07-01-09-audit.md。'
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: '2026-06-27'
+last_deepseek_cn_review_at: 2026-07-16
 ---
 
 # 26.10 Android 11 以下进程退出归因方案
@@ -136,7 +136,7 @@ Android 11 以前，应用侧没有 `ApplicationExitInfo` 这类系统级退出�
 | `dumpsys activity processes` / `meminfo` / `procstats` | 进程状态、adj、内存 | 低 | 多数命令需要 shell、dump 权限或调试环境 | 实验室复现、售后诊断、灰度白名单 |
 | `/proc/self/*` | 当前进程内存、线程、fd、maps | 高 | 只能在进程还活着时采集；字段随内核版本有差异 | 崩溃前快照、周期性轻量采样 |
 
-Native crash 的处理要把“捕获信号”和“可靠写文件”分开。信号到来时堆、锁、线程状态都可能不可用，handler 里应只做最小记录，并尽量交给独立 handler 进程或 fork 出的子进程处理。参考书在 Breakpad 章节强调了文件句柄泄漏、栈溢出、堆破坏、二次崩溃这些失败路径；低版本退出归因可以复用这个风险清单，但实现要以当前 SDK 的 crash 组件为准。
+Native crash 的处理要把“捕获信号”和“可靠写文件”分开。信号到来时堆、锁、线程状态都可能不可用，handler 里应只做最小记录，并尽量交给独立 handler 进程或 fork 出的子进程处理。文件句柄泄漏、栈溢出、堆破坏、二次崩溃这些失败路径，在 native crash handler 实现阶段就要纳入风险清单；具体实现方案以当前 SDK 的 crash 组件为准。
 
 ANR traces 不能按“线上 SDK 可直接读文件”设计。Android 官方文档说明，旧版本会有单个 `/data/anr/traces.txt`，新版本会有多个 `/data/anr/anr_*` 文件；这描述的是设备上的系统 trace 文件形态，不等于普通应用有读取权限。SDK 更稳妥的路径是在主线程长时间无响应时先保存本进程可拿到的栈、队列等待时间、前后台状态和最近业务事件，再把 Play Vitals、用户 bugreport、厂商诊断结果作为后补证据。
 
@@ -162,7 +162,7 @@ KOOM 的价值在于“进程死掉前保存 Java heap 现场”，它不能替�
 
 在退出归因模型里，KOOM 产物适合放进 `evidence[]`，而不是直接改写 reason。例子：上次 session 未正常关闭，进程重启前 2 分钟内出现 Java heap 阈值连续超限，同时保存了 HPROF 报告，这时可以给 `LOW_MEMORY_SUSPECTED`，置信度为 medium；如果同时有系统侧 `ApplicationExitInfo.REASON_LOW_MEMORY`，才把它升为系统确认。低版本没有系统侧记录，所以不要升到 high。
 
-参考书的内存现场章节把 `/proc/meminfo`、`/proc/self/status`、`/proc/self/maps`、fd、线程数作为崩溃分析素材；KOOM 补上的只是 heap dump 这一块。退出归因要把这些轻量快照和 HPROF 组合起来，避免只看 Java heap 就把所有退出都归成 OOM。
+`/proc/meminfo`、`/proc/self/status`、`/proc/self/maps`、fd、线程数这些轻量快照可以作为退出前的现场素材；KOOM 补上的只是 heap dump 这一块。退出归因要把这些快照和 HPROF 组合起来，避免只看 Java heap 就把所有退出都归成 OOM。
 
 ### 🔹 权限、兼容性与厂商 ROM 差异
 
@@ -229,7 +229,7 @@ Android 8.0 以后 JVMTI 可用于调试和监控类工具，但这不等同于�
 
 默认层只保存小对象：session marker、最近一次前后台状态、Java heap/RSS/PSS 摘要、fd/线程数、最近关键业务事件摘要、crash envelope。这个层级要覆盖全量用户，写入路径要短，文件采用原子写策略，避免为了诊断退出原因再引入新的 I/O 问题。
 
-加深层只对灰度人群、问题版本、特定机型或服务端命令开启。可增加主线程 watchdog 栈、本进程关键线程栈、`/proc/self/maps` 摘要、最近 N 秒的 SDK 日志、KOOM dump 触发。参考书的线上疑难问题章节强调全量日志、用户拉取、主动上报和动态诊断的组合；这里采用同样的分层思路，但退出归因不应默认打开高成本采集。
+加深层只对灰度人群、问题版本、特定机型或服务端命令开启。可增加主线程 watchdog 栈、本进程关键线程栈、`/proc/self/maps` 摘要、最近 N 秒的 SDK 日志、KOOM dump 触发。退出归因也不应默认打开高成本采集——全量日志、用户拉取、主动上报、动态诊断这些手段要分层打开，不能因为找退出原因本身引出新的性能问题。
 
 原始文件层只在强触发下上传：minidump、HPROF、maps、线程栈、用户日志都可能包含文件路径、账号片段、URL、业务参数、设备信息。上传前要做四件事：
 

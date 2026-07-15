@@ -78,6 +78,8 @@ last_task9_autofix_at: "2026-06-30"
 task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 0
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-16
 ---
 
 # RecyclerView 最佳实践
@@ -107,14 +109,11 @@ task9_p2_issues: 0
 
 RecyclerView 优化不该从“调几个参数”开始，而要从滑动路径里的成本来源开始：创建 ViewHolder、绑定数据、计算差异、预取下一屏、处理嵌套滑动。7.8 节已经展开 RecyclerView 内部布局、缓存和 GapWorker 机制；这里把机制转成应用侧写法、验收方法和取舍边界。
 
-> **⚠️ 源码锚点说明**：本节 AndroidX RecyclerView 源码以 `androidx.recyclerview:recyclerview:1.4.0` 的 `recyclerview-1.4.0-sources.jar` 为不可变基线。RecyclerView 是 AndroidX artifact，不属于 `android-17.0.0_r1` platform tag；本文不使用移动分支作为 Android 17 结论依据。
-
 
 ## ViewHolder 复用与 ItemType 设计
 
 ViewHolder 设计的目标是让滑动过程尽量走缓存命中，减少反复 `inflate` 和完整绑定。AndroidX RecyclerView 源码里，`RecycledViewPool` 支持在多个 RecyclerView 之间共享 ViewHolder，默认按 `viewType` 分桶；每个类型的池容量可通过 `setMaxRecycledViews()` 调整。RecyclerView 自身还有 `mCachedViews`，默认缓存大小是 2。详见 7.8 节的四级缓存说明。
 
-[已验证: AndroidX RecyclerView 1.4.0 sources.jar `RecyclerView.java`, `RecycledViewPool`, `mCachedViews`, `DEFAULT_CACHE_SIZE`]
 
 `viewType` 的划分要按“布局结构是否不同”来做，避免按业务枚举一项一项拆。两个 item 如果 XML 结构一致，只是文案、图片、按钮状态不同，应该共用同一个 `viewType`。过多 `viewType` 会把池子切碎：每个类型都有自己的容量限制，某一类刚回收的 ViewHolder 无法服务另一类 item，滑动时就会重新创建。
 
@@ -127,7 +126,6 @@ ViewHolder 设计的目标是让滑动过程尽量走缓存命中，减少反复
 | `onBindViewHolder()` | 只绑定当前数据，重活交给异步组件 | 每次 bind 都重建复杂对象、重复设置监听 | `RV onBindViewHolder type=...` 在慢帧里变长 |
 | Pool | 嵌套同构列表共享 `RecycledViewPool` | 每个子列表独立持有池 | 外层滑动时内层列表反复 create |
 
-[已验证: AndroidX RecyclerView 1.4.0 sources.jar `RecyclerView.java`, Adapter trace sections]
 
 嵌套横向列表的共享池可以写成下面这样。重点是让同构子列表共用同一批 ViewHolder，再按首屏数量调容量。
 
@@ -149,19 +147,16 @@ fun bindHorizontalList(holder: SectionHolder, items: List<Card>) {
 
 这段代码把多个子列表的回收池合并到一个对象里。`TYPE_CARD` 的容量按“屏幕上可能同时出现的子列表数 × 每个子列表可见卡片数”估算，再用 Perfetto 验证滑动中 `RV onCreateViewHolder` 是否下降。容量过大会增加内存占用，不能只按峰值堆上去。
 
-[已验证: AndroidX RecyclerView 1.4.0 sources.jar `RecyclerView.RecycledViewPool#setMaxRecycledViews`, `LinearLayoutManager#setRecycleChildrenOnDetach`]
 
-[自动发现] `setHasStableIds(true)` 只适合 item 有稳定业务 ID 的列表。它能帮助 RecyclerView 在更新和动画期间识别同一个 item，但不能代替 DiffUtil，也不能修复错误的 `viewType` 设计。开启后必须保证 `getItemId(position)` 在同一条业务数据生命周期内不变，否则会出现复用错位、动画异常和状态串扰。
+`setHasStableIds(true)` 只适合 item 有稳定业务 ID 的列表。它能帮助 RecyclerView 在更新和动画期间识别同一个 item，但不能代替 DiffUtil，也不能修复错误的 `viewType` 设计。开启后必须保证 `getItemId(position)` 在同一条业务数据生命周期内不变，否则会出现复用错位、动画异常和状态串扰。
 
 ## DiffUtil 与增量更新
 
 整表刷新是列表卡顿的高发来源。`notifyDataSetChanged()` 会让 RecyclerView 丢失细粒度变更信息，后续布局、动画和绑定都只能按大范围变更处理。`DiffUtil` 的价值是计算新旧列表差异，再把插入、删除、移动、内容变化分发给 Adapter。AndroidX 源码说明它使用 Eugene W. Myers 差分算法；`calculateDiff(callback, detectMoves)` 可以控制是否检测移动。
 
-[已验证: AndroidX RecyclerView 1.4.0 sources.jar `DiffUtil.java`, `calculateDiff()`, `detectMoves`, Myers algorithm]
 
 应用侧优先使用 `ListAdapter` 或 `AsyncListDiffer`。`ListAdapter#submitList()` 内部委托 `AsyncListDiffer`，后者在后台线程计算 diff，完成后再回到主线程分发更新。官方文档也把 `submitList()` 作为 Room / LiveData 场景的标准接入方式。
 
-[已验证: AndroidX RecyclerView 1.4.0 sources.jar `ListAdapter.java`, `AsyncListDiffer.java`; 官方文档 `ListAdapter`, `AsyncListDiffer`]
 
 DiffUtil 写得好不好，取决于三个回调：
 
@@ -211,7 +206,6 @@ class CardAdapter : ListAdapter<Card, CardHolder>(CardDiff()) {
 
 这段写法的收益来自减少完整 bind 的次数，diff 计算本身不会因此变少。列表中只有标题、点赞数、关注状态这类小字段变化时，payload 能明显缩短主线程绑定时间；如果 item 布局会因为字段变化触发布局重新测量，还要回到 22.1 节检查布局成本。
 
-[已验证: AndroidX RecyclerView 1.4.0 sources.jar `DiffUtil.ItemCallback#getChangePayload`, `Adapter#onBindViewHolder(holder, position, payloads)`]
 
 大列表还有两个边界：
 
@@ -222,11 +216,9 @@ class CardAdapter : ListAdapter<Card, CardHolder>(CardDiff()) {
 
 RecyclerView 的预取由 GapWorker 驱动。AndroidX 源码中，滚动路径会调用 `mGapWorker.postFromTraversal()`，记录滚动方向和距离，再把 GapWorker 作为 Runnable 投到主线程队列。执行时，GapWorker 根据下一帧 deadline 尝试预取目标 position；创建和绑定前会分别经过 `willCreateInTime()`、`willBindInTime()` 预算判断。
 
-[已验证: AndroidX RecyclerView 1.4.0 sources.jar `RecyclerView.java#postFromTraversal`, `GapWorker.java`, `RecyclerView.RecycledViewPool#willCreateInTime/willBindInTime`]
 
 `LinearLayoutManager#setInitialPrefetchItemCount()` 只影响嵌套 RecyclerView 首次出现时的 initial prefetch 数量。官方文档对它的定义是：当这个 LayoutManager 的 RecyclerView 嵌套在另一个 RecyclerView 中时，设置要预取的内部 item 数量。它不能当作“越大越流畅”的开关；item inflate 或 bind 很重时，GapWorker 会因为 deadline 不够而提前放弃。
 
-[已验证: 官方文档 `LinearLayoutManager#setInitialPrefetchItemCount(int)`; AndroidX `LinearLayoutManager#collectInitialPrefetchPositions`]
 
 配置建议按这几步做：
 
@@ -241,7 +233,6 @@ RecyclerView 的预取由 GapWorker 驱动。AndroidX 源码中，滚动路径�
 
 多 RecyclerView 场景常见于首页 Feed、频道页、卡片流和 ViewPager2。性能问题通常来自多层列表在同一帧里同时触发布局、绑定和预取，不能只归因于“嵌套”。
 
-[已验证: AIW 7.8 嵌套滑动与共享 Pool；AIW 2.4 Choreographer 帧调度]
 
 处理顺序可以固定下来：
 
@@ -270,19 +261,17 @@ fun RecyclerView.configureHorizontalCards(
 
 这段配置适用于内层 item 尺寸稳定、卡片类型数量有限的列表。如果内层卡片高度由远端内容决定，`setHasFixedSize(true)` 可能掩盖尺寸变化；如果 change animation 是产品体验的一部分，也不能直接关闭，要按慢帧和视觉结果取舍。
 
-## [自动发现] 变更动画与局部刷新要一起看
+## 变更动画与局部刷新要一起看
 
 局部刷新做完后，还要看 ItemAnimator。`getChangePayload()` 能减少绑定范围，但默认 change animation 仍可能让旧 ViewHolder 和新 ViewHolder 同时参与动画，增加布局和绘制压力。点赞、关注、计数器这类高频状态变更，通常只需要文本或图标状态切换，不需要整行 change animation。
 
 在同一台设备上录两段 Perfetto，一段保留 change animation，一段关闭 `supportsChangeAnimations`。如果关闭后 `RV OnLayout`、`RV onBindViewHolder` 和慢帧数量下降，并且交互视觉没有损失，就把关闭范围限定在对应 Adapter 或页面，不要全局一刀切。
 
-[已验证: AndroidX RecyclerView 1.4.0 sources.jar `SimpleItemAnimator#supportsChangeAnimations`; AIW 7.8 Perfetto 排查顺序]
 
 ## RecyclerView vs LazyColumn 性能对比
 
 `LazyColumn` 和 RecyclerView 都只处理可见窗口附近的 item。官方 Compose 文档明确说明，Lazy 组件只组合和布局 viewport 中可见的元素；列表中有多种 item 时，`contentType` 可以让 Compose 在相同类型之间复用组合。这个方向和 RecyclerView 的 `viewType` / Pool 很像：类型划分越接近布局结构，复用效果越稳定。
 
-[已验证: 官方文档 `Compose lists`, `LazyColumn`, `contentType`]
 
 两者选型不要用固定结论：
 
@@ -295,7 +284,6 @@ fun RecyclerView.configureHorizontalCards(
 
 迁移判断要看同机数据。至少对比四组指标：慢帧率、P95 帧耗时、内存峰值、首屏可交互时间。Compose 写法中不要在 `LazyColumn` 的 `items` 里排序、过滤或创建大对象；官方性能文档也把这类操作列为列表重组中的常见开销。
 
-[已验证: 官方文档 `Compose performance best practices`, LazyColumn sorting example]
 
 ## 验收清单
 

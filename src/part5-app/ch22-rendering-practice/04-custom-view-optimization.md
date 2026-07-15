@@ -47,6 +47,8 @@ p0: 2
 p1: 0
 p2: 0
 last_task9_audit: "2026-06-17"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-16
 ---
 # 自定义 View 性能优化
 
@@ -70,7 +72,7 @@ last_task9_audit: "2026-06-17"
 
 自定义 View 是 Android 开发中最灵活的 UI 扩展手段，也是性能问题的高发区。一条 onDraw() 里多了几行对象分配，就可能在大列表滑动场景中触发每秒 60-120 次的 GC 压力；一次把内容变化误写成 requestLayout()，或把过大的自定义 View 作为单个 RenderNode 频繁 invalidate()，都会放大测量、布局或 DisplayList 重录成本。
 
-本节聚焦自定义 View 的四个性能瓶颈：绘制管线开销、对象分配、硬件加速适配、重绘范围控制。每个环节都给出可观察的指标和可执行的改法。
+本节从四个方向拆解自定义 View 的性能瓶颈——绘制管线开销、对象分配、硬件加速适配、重绘范围控制，再补上 RenderNode 分层和 Perfetto 观测方法。每个环节都给出可观察的指标和可执行的改法。
 
 ## onMeasure / onLayout / onDraw 性能原则
 
@@ -299,7 +301,7 @@ public class FlowLayout extends ViewGroup {
 
 ### invalidate 与 RenderNode damage
 
-硬件加速模式下，调用 `invalidate()` 会触发 View 对应的 RenderNode 标记为 needs-update。后续 `performDraw()` 阶段只重新录制被标记的 RenderNode，未变化的子树保持缓存。这是硬件加速管线中控制重绘范围的主要机制——不是通过脏矩形，而是通过 RenderNode 粒度的 DisplayList 更新。
+硬件加速模式下，调用 `invalidate()` 会标记 View 对应的 RenderNode 为 needs-update。后续 `performDraw()` 阶段只重新录制这些被标记的 RenderNode，未变化的子树继续复用缓存。硬件加速管线的重绘范围控制依赖的是 RenderNode 粒度的 DisplayList 更新，而不是脏矩形合并。
 
 对于需要更细粒度控制的多层内容，可以用 `RenderNode` 手动拆分静态层和动态层（见本章末尾 RenderNode 小节）。
 
@@ -354,7 +356,6 @@ public void startAnimation() {
 
 `postInvalidateOnAnimation()` 在 API 16 以下的行为是 `postInvalidate()`，即延迟 16ms 而非等到下一个 VSync。`ViewCompat.postInvalidateOnAnimation()` 提供了向后兼容。当前 Android 10+ 的目标版本下这不是问题，但在维护旧版本兼容时需要注意。
 
-[来源: AOSP View.java 源码注释]
 
 ## RenderNode 与自定义 View
 
@@ -413,7 +414,6 @@ protected void onDraw(Canvas canvas) {
 }
 ```
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderNode.java。`setPosition()` 设定 RenderNode 尺寸，默认为 0；`endRecording()` 放入 try/finally 防止异常时录制状态泄漏。]
 
 ## 扩展
 
