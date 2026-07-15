@@ -134,11 +134,14 @@
   - [13.26 android.os.Trace API 深度解析与应用级自定义追踪](part3-tools/ch13-perfetto/13.26-android-trace-api-custom-tracing.md)
   - [13.27 Android 17 Perfetto v57 AI 技能与状态轨道](part3-tools/ch13-perfetto/13.27-android17-perfetto-v57-ai-skill-state-tracks.md)
   - [21.17 Startup Insights API 与启动性能可观测性](part5-app/ch21-startup/17-startup-insights-api-observability.md)
+  - [21.18 缓存优化实战：冷热端分离与 CPU 缓存命中率](part5-app/ch21-startup/18-cache-optimization-cpu-locality.md)
   - [17.9 SoC 特异性功耗优化策略：高通/联发科/三星](part4-system/ch17-oem/09-soc-specific-power-optimization.md)
   - [17.21 Android 17 SoC 厂商 Power HAL 与 schedutil 闭环](part4-system/ch17-oem/17.21-android17-soc-vendor-power-hal-schedutil-loop.md)
   - [22.30 Impeller Shader 编译性能与 Flutter 渲染稳定性](part5-app/ch22-rendering-practice/30-impeller-shader-compilation-flutter.md)
   - [22.31 Compose Modifier.Node 架构与性能迁移](part5-app/ch22-rendering-practice/31-compose-modifier-node-architecture-performance.md)
   - [22.32 Compose 无限动画与 VectorConverter 性能优化](part5-app/ch22-rendering-practice/32-compose-infinite-animation-vector-converter-performance.md)
+  - [22.33 Compose PausableComposition 性能机制](part5-app/ch22-rendering-practice/33-compose-pausable-composition-performance.md)
+  - [22.34 Compose SubcomposeLayout 性能深度](part5-app/ch22-rendering-practice/34-compose-subcompose-layout-performance.md)
 
   - [4.22 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.22-android17-ai-agent-memory-sandboxed-data-reuse.md)
   - [14.28 GPU 性能分析进阶 — 跨厂商计数器标准化与工作负载剖析](part3-tools/ch14-other-tools/28-gpu-performance-profiling-advanced.md)
@@ -147,6 +150,7 @@
   - [26.24 heapprofd 生产级部署与权限模型](part5-app/ch26-observability/24-heapprofd-production-deployment-permissions.md)
   - [20.19 Android 17 信号处理架构迁移与 debuggerd bionic/linker 重构](part5-app/ch20-stability/19-android17-signal-handler-debuggerd-migration.md)
   - [20.21 FD 泄漏监控与线程资源治理实战](part5-app/ch20-stability/21-fd-leak-monitoring-thread-resource-governance.md)
+  - [20.22 Binder 通信监控实战](part5-app/ch20-stability/22-binder-communication-monitoring.md)
 
 #   - [8.33 Android 17 模块化启动框架与依赖图优化](src/part1-fundamentals/ch08-startup/8.33-android17-modular-startup-dependency-graph.md)
   - [4.36 Android 17 高级内存优化与治理](src/part1-fundamentals/ch04-memory/4.36-android17-advanced-memory-optimization.md)

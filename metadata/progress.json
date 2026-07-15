@@ -1,9 +1,9 @@
 {
-  "total": 745,
-  "draft": 4,
+  "total": 751,
+  "draft": 10,
   "ready_for_review": 12,
   "finalized": 5,
-  "last_updated": "2026-07-16T02:15:00+08:00",
+  "last_updated": "2026-07-16T05:04:00+08:00",
   "task2b": {
     "last_run": "2026-07-14T06:54:06+08:00",
     "last_section": "15",
@@ -33,6 +33,13 @@
   ],
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-16T04:05:53.994738+08:00",
+      "note": "Gap mining round 131: 0 candidates >=14 (131st consecutive). No state change since R130 (50min ago). All sources stale/unchanged. Coverage saturated (769 section files)."
+    },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
@@ -666,10 +673,23 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-16T02:15:00+08:00",
-    "last_section": "22.31",
-    "result": "ready-for-review",
-    "note": "Deprecated §20.21 (duplicate of finalized §20.14). Processed §22.31 Compose Modifier.Node: full content with ModifierNodeElement/Node architecture, layout/draw/input node types, migration from composed(), verification methods."
+    "date": "2026-07-16",
+    "time": "04:04",
+    "mode": "gap-mining",
+    "round": 131,
+    "result": "no-candidates",
+    "consecutive_no_candidate": 131,
+    "checked": [
+      "769 total files, 25 drafts (all >15 lines), 0 empty drafts",
+      "Task2B backlog: 0",
+      "Daily-info 2026-07-16: identical to R130 (recycled)",
+      "Research-feeds: 112 files, newest=2026-04-14 (3mo+ stale)",
+      "Clippings: 108 files (fully indexed, 23d stale)",
+      "Source-index: 306 entries, all traced",
+      "Research-gaps: 5 entries all for existing chapters",
+      "Coverage saturated at 769 section files"
+    ],
+    "note": "Gap mining round 131: 0 candidates >=14 (131st consecutive). No state change since R130 (50min ago). Coverage saturated."
   },
   "task2b_lite": {
     "total_fixed": 1,
@@ -1610,7 +1630,7 @@
       "log": "logs/review/2026-07-15-09-audit.md"
     }
   ],
-  "task2a_round": 130,
+  "task2a_round": 131,
   "last_task2a": {
     "date": "2026-07-16",
     "time": "03:13",

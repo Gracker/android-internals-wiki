@@ -32,10 +32,10 @@ drafted_by: codex
 drafted_date: '2026-04-21'
 gap_source: AOSP结构+官方文档+研究素材
 last_task2b_at: '2026-06-24'
-last_task9_at: '2026-06-24'
-last_task9_audit: '2026-07-06'
+last_task9_at: 2026-07-16T02:23:22+0800
+last_task9_audit: 2026-07-16
 path: https://github.com/KwaiAppTeam/KOOM
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 polish_by: task2b-polish
 polish_count: '1'
 polish_date: '2026-04-22'
@@ -74,10 +74,10 @@ task6_review_notes_2026_07_01_r8: '第八轮复审（revisiting 回炉后）：L
 task2b_lite_note_2026-07-15: 'P95 Task9 issue 确认误报: art/runtime/entrypoints/entrypoint_utils.h 经 android.googlesource.com android-17.0.0_r1 验证确实存在，正文引用正确，frontmatter last_verified_against 补充该路径'
 task6_reviewed_by: openclaw-task6
 task6_reviewed_date: '2026-07-01'
-task6_state: reviewed
+task6_state: revisiting
 last_task6_at: '2026-07-01'
 last_task6_audit: '2026-07-15'
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_review_date: '2026-06-24'
 task9_reviewer: openclaw-task9
 task9_state: reviewed
@@ -85,7 +85,6 @@ tech_score: 3/5
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-05
 ---
-
 # 14.13 Hook 基础设施与性能工具实现原理
 
 ## 为什么要了解 Hook 基础设施？
