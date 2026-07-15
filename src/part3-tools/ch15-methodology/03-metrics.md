@@ -53,7 +53,7 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
 last_task6_at: "2026-04-25T00:00:00+08:00"
 task6_result: "pass-light-edit"
-last_task6_audit: "2026-07-15"
+last_task6_audit: "2026-07-15T23:06:00+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-25T08:51:01+08:00"
@@ -209,7 +209,7 @@ TTID 是 App 启动过程中,从进程创建到第一帧绘制完成的时间。
 
 Android 系统通过 ActivityManager 内部的 `reportActivityLaunched` 事件自动记录 TTID。在 `logcat` 中过滤 `Displayed` 关键字就能看到:
 
-```
+```text
 ActivityManager: Displayed com.example.app/.MainActivity: +1s234ms
 ```
 
@@ -347,7 +347,7 @@ PSS 是 Android 上度量 App 真实物理内存占用的标准指标。它的�
 
 可以通过 `dumpsys meminfo <package_name>` 获取 App 的详细内存分布:
 
-```
+```text
 ** MEMINFO in pid 12345 [com.example.app] **
                    Pss      Private  Private  SwapPss     Heap     Heap     Heap
                  Total    Dirty    Clean    Dirty     Size    Alloc     Free
