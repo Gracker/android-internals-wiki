@@ -1,11 +1,11 @@
 ## [Task9 Deep Review] 19.24 崩溃与 ANR 捕获机制 — 2026-07-15
-- **类型**：数据缺失
-- **位置**：§6 现场快照部分
-- **问题**：缺少实际 ring buffer 容量与内存占用估算数据
-- **建议**：补充典型场景下的 ring buffer 内存开销和性能影响数据，例如标准崩溃收集的内存占用估算，以及在高频率崩溃场景下的性能影响
+- **类型**：知识盲区
+- **位置**：§13.5 信号处理器的 async-signal-safe 限制边界
+- **问题**：信号处理器的 async-signal-safe 限制边界没有明确列举禁用函数清单，缺少常见误用案例
+- **建议**：补充 async-signal-safe 函数清单和常见误用案例，如 malloc、free、printf、fprintf、pthread_mutex_lock、sem_wait 等函数在信号处理器中的使用风险
 
 ## [Task9 Deep Review] 26.18 App Performance Score 与性能质量评分归因 — 2026-07-15
-- **类型**：数据缺失
-- **位置**：§5 动态评分部分
-- **问题**：缺少实际性能提升数据
-- **建议**：补充 Baseline Profile、Startup Profile 等配置项的实际性能提升案例数据，包括不同应用类型的性能提升范围和优化效果
+- **类型**：知识盲区
+- **位置**：第7章"常见误用边界"
+- **问题**：缺少对 App Performance Score 与 Vitals 口径不匹配场景的讨论，未说明如何处理交叉验证矛盾
+- **建议**：补充当 App Performance Score 与 Android Vitals 口径不匹配时的处理流程，包括数据源差异、窗口期差异、设备覆盖差异的识别与协调方案
