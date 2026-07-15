@@ -1,9 +1,9 @@
 {
   "total": 745,
-  "draft": 5,
-  "ready_for_review": 11,
+  "draft": 4,
+  "ready_for_review": 12,
   "finalized": 5,
-  "last_updated": "2026-07-16T01:16:47.489816+08:00",
+  "last_updated": "2026-07-16T02:15:00+08:00",
   "task2b": {
     "last_run": "2026-07-14T06:54:06+08:00",
     "last_section": "15",
@@ -493,7 +493,7 @@
     }
   ],
   "last_task2b_at": "2026-07-02T18:54:37+08:00",
-  "deprecated": 62,
+  "deprecated": 63,
   "stats": {
     "last_review_date": "2026-07-13",
     "last_review_by": "openclaw-task9",
@@ -659,10 +659,10 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-15T20:12:53+08:00",
-    "last_section": "none",
-    "result": "no-candidates",
-    "note": "Gap mining round 126: 0 candidates >=14 (126th consecutive). Coverage saturated."
+    "last_run": "2026-07-16T02:15:00+08:00",
+    "last_section": "22.31",
+    "result": "ready-for-review",
+    "note": "Deprecated §20.21 (duplicate of finalized §20.14). Processed §22.31 Compose Modifier.Node: full content with ModifierNodeElement/Node architecture, layout/draw/input node types, migration from composed(), verification methods."
   },
   "task2b_lite": {
     "total_fixed": 1,
@@ -1330,6 +1330,13 @@
       "reason": "Orphan stub not in SUMMARY.md. Generic auto-generated outline ('锚点 1', '锚点 2'). WebView topic has suggestions in intake/suggestions.md for existing chapters, not a new section.",
       "deprecated_at": "2026-07-15T01:10:55.540854+00:00",
       "deprecated_by": "task2a-cleanup-round122"
+    },
+    {
+      "chapter": "20.21",
+      "path": "src/part5-app/ch20-stability/21-fd-leak-monitoring-thread-resource-governance.md",
+      "reason": "Duplicate of finalized §20.14 (线程与 FD 资源监控治理). Same topic, same Clippings references, >80% overlap. §20.14 already covers FD snapshot, creation attribution, anonymous thread governance, online strategy, and correlation analysis.",
+      "deprecated_at": "2026-07-16T02:10:00+08:00",
+      "deprecated_by": "task2a-cleanup-round130"
     }
   ],
   "review_stats": {

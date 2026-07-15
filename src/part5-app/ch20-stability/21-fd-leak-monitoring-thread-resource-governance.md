@@ -1,7 +1,7 @@
 ---
 title: "FD 泄漏监控与线程资源治理实战"
 chapter: "20.21"
-status: draft
+status: deprecated
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [fd-leak, thread-monitoring, resource-governance, stability, native]
 related_chapters: ["20.14", "20.2", "20.3", "20.4", "20.18"]
@@ -10,6 +10,14 @@ created_date: "2026-07-16"
 gap_source: "素材驱动+Clippings"
 confidence: medium
 ---
+
+> ⚠️ **本节已废弃（2026-07-16）**
+> 与已 finalized 的 §20.14「线程与 FD 资源监控治理」内容重叠 >80%。
+> §20.14 已完整覆盖 FD 快照、创建归因、匿名线程治理、线上策略和关联判定，
+> 并使用相同 Clippings 参考书。本节大纲为重复创建，不再单独成节。
+> 详见：`src/part5-app/ch20-stability/14-thread-fd-resource-monitoring.md`
+
+
 
 # 20.21 FD 泄漏监控与线程资源治理实战
 

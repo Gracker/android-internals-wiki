@@ -328,19 +328,9 @@
       "material_paths": [],
       "added_by": "task2a-knowledge-gap",
       "added_at": "2026-07-16T01:16:47.489816+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "20.21",
-      "section_title": "FD 泄漏监控与线程资源治理实战",
-      "priority": 80,
-      "reason": "知识缺口：FD/线程监控实战覆盖不足，Clippings参考书有结构参考",
-      "material_paths": [
-        "intake/research-gaps.md"
-      ],
-      "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-07-16T01:16:47.489816+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-16T02:15:00+08:00",
+      "completed_by": "task2a-draft-processing"
     },
     {
       "section": "22.32",
