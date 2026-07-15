@@ -1,9 +1,9 @@
 {
   "total": 741,
-  "draft": 18,
-  "ready_for_review": 10,
+  "draft": 17,
+  "ready_for_review": 11,
   "finalized": 5,
-  "last_updated": "2026-07-15T08:15:00+08:00",
+  "last_updated": "2026-07-15T08:25:48+08:00",
   "task2b": {
     "last_run": "2026-07-14T06:54:06+08:00",
     "last_section": "15",
@@ -33,6 +33,13 @@
   ],
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
+    {
+      "section": "5.31",
+      "action": "task2a-draft-processing",
+      "status": "ready-for-review",
+      "ts": "2026-07-15T08:25:48+08:00",
+      "note": "Drafted EEVDF scheduler deep-dive: vlag/eligibility/deadline algorithm internals, Linux 6.6→6.18 evolution timeline, android17-6.18 ACK adaptation, EAS/PELT collaboration (selection vs placement vs frequency), uclamp indirect influence chain, sched_ext support boundary (code present but CONFIG_SCHED_EXT not default), app performance impact (UI thread wakeup, background fairness, Perfetto observation)"
+    },
     {
       "section": "18.21",
       "action": "task6-review",
@@ -596,10 +603,10 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-15T07:12:06.762023+08:00",
-    "last_section": "none",
-    "result": "no-candidates",
-    "note": "Gap mining round 121: 0 candidates >=14. 121st consecutive. All sources stale. 0 empty drafts. Coverage saturated (765 sections)."
+    "last_run": "2026-07-15T08:25:48+08:00",
+    "last_section": "5.31",
+    "result": "drafted",
+    "note": "Processed §5.31 EEVDF scheduler — only legitimate empty draft in SUMMARY.md. 16 other empty drafts are orphan stubs (deprecated/duplicates)."
   },
   "task2b_lite": {
     "total_fixed": 1,
