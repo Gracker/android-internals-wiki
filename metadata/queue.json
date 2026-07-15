@@ -100,8 +100,10 @@
       ],
       "added_by": "task6-audit",
       "added_at": "2026-07-15T03:20:10",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-07-15-03-audit.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-07-15-03-audit.md",
+      "completed_at": "2026-07-15T10:50:00+08:00",
+      "completed_by": "task2b-main"
     },
     {
       "section": "13.25",
@@ -229,8 +231,10 @@
       ],
       "added_by": "task6-audit",
       "added_at": "2026-07-15T09:14:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-07-15-09-audit.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-07-15-09-audit.md",
+      "completed_at": "2026-07-15T10:50:00+08:00",
+      "completed_by": "task2b-main"
     }
   ]
 }

@@ -9,7 +9,7 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-task6_state: reviewed
+task6_state: revisiting
 task6_result: "pass-light-edit"
 reviewed_date: "2026-06-02"
 reviewed_by: "openclaw-task6"
@@ -20,18 +20,18 @@ sources:
   - "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,int,int)"
   - "https://raw.githubusercontent.com/chromium/crashpad/main/doc/overview_design.md"
   - "https://developer.android.com/ndk/guides/gwp-asan"
-  - "https://android.googlesource.com/platform/art/+/android16-release/runtime/signal_catcher.cc"
-  - "https://android.googlesource.com/platform/system/core/+/android16-release/debuggerd/proto/tombstone.proto"
-  - "https://android.googlesource.com/platform/bionic/+/android16-release/libc/include/signal.h"
+  - "https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/signal_catcher.cc"
+  - "https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/debuggerd/proto/tombstone.proto"
+  - "https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/libc/include/signal.h"
 last_task2b_at: "2026-05-25T15:18:38+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-status: finalized
-pipeline_stage: ready-to-publish
+status: ready-for-review
+pipeline_stage: task6_pending
 task9_result: "auto-fixed"
-task9_state: "reviewed"
+task9_state: pending
 task2b_state: fixed
-task2b_result: "fixed-lite"
+task2b_result: fixed
 last_task2b_lite_at: "2026-06-03T07:35:00+08:00"
 task9_reviewed_date: "2026-06-02"
 task9_reviewed_by: "openclaw-task9"
@@ -478,7 +478,7 @@ LMK 决策使用 `oom_score_adj` 表示进程 kill 优先级，lmkd 再结合内
 
 ```java
 // frameworks/base/services/core/java/com/android/server/am/ProcessList.java
-// @ AOSP android-14.0.0_r1
+// @ AOSP android-17.0.0_r1
 static final int ZOMBIE_ADJ = 1000;
 static final int CACHED_APP_MAX_ADJ = 999;   // 缓存进程上限
 static final int CACHED_APP_MIN_ADJ = 900;   // 缓存进程下限
@@ -503,7 +503,7 @@ static final int FOREGROUND_APP_ADJ = 0;
 
 **路径**：`/data/anr/`（现代版本按 `anr_<yyyy-MM-dd-HH-mm-ss-SSS>` 生成单次 ANR trace 文件，权限 0600；早期版本存在 `traces.txt` 路径，文件名和保留策略跨版本不同）
 
-**权限约束**：普通 App 不能直接读写。AOSP android16-release `init.rc` 以 `0775 system system` 创建 `/data/anr`，ANR trace 由系统侧写入；量产 App 只能通过 `ApplicationExitInfo`、bugreport、root/厂商合作等路径获取。
+**权限约束**：普通 App 不能直接读写。AOSP android-17.0.0_r1 `init.rc` 以 `0775 system system` 创建 `/data/anr`，ANR trace 由系统侧写入；量产 App 只能通过 `ApplicationExitInfo`、bugreport、root/厂商合作等路径获取。
 
 **APM 获取方式**：
 | 方式 | 权限要求 | 可靠性 | 备注 |

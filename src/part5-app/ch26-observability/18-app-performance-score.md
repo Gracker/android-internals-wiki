@@ -46,14 +46,14 @@ sources:
     path: "https://developer.android.com/topic/performance/baselineprofiles/measure-baselineprofile"
   - type: official
     path: "https://developer.android.com/android-performance-analyzer"
-task6_state: reviewed
+task6_state: revisiting
 pipeline_stage: ready-to-publish
 last_task2a_at: "2026-05-23T20:04:00+08:00"
 task2a_result: drafted
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-23"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 last_task6_at: "2026-05-23T20:16:21+08:00"
 last_task6_audit: "2026-07-15"
 task9_result: pass-tech-review
@@ -109,7 +109,7 @@ last_deepseek_cn_review_at: 2026-06-23
 
 这节的重点不是复述评分表，而是把分数转成研发队列。对团队来说，分数只回答“哪里还有改进空间”；能推进的是后面的任务拆分：补配置、补测试、补 trace 证据，再把风险接进发版门禁。
 
-把质量平台放在开发、CI、测试、灰度和发布流程里理解；、分别提供了启动与渲染问题的测量顺序；、提供了灰度验证和上报组件的组织方式。这里借用的是覆盖顺序和问题分类，不复用原文段落与代码。
+把质量平台放在开发、CI、测试、灰度和发布流程里理解；26.3 节分别提供了启动与渲染问题的测量顺序；26.15 节提供了灰度验证和上报组件的组织方式。这里借用的是覆盖顺序和问题分类，不复用原文段落与代码。
 
 ## App Performance Score 的定位
 
