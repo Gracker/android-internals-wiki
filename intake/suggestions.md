@@ -15,3 +15,12 @@
 - **问题**：全章节 AOSP 源码引用锚定 android-16.0.0_r1（共 11 处），0 处 android-17.0.0_r1。违反版本基线规则「源码链接必须锚定 android-17.0.0_r1」。last_verified_against 字段也写的是 "AOSP android-16.0.0_r1"。
 - **建议**：逐条确认文件在 android-17.0.0_r1 中存在性和内容差异，更新 tag。涉及文件：UsageStatsManager.java、DeviceIdleController.java、AppStandbyController.java、JobSchedulerService.java、task_profiles.json、PerformanceHintManager.java、sched.h
 - **review 日志**：logs/review/2026-07-15-20-audit.md
+
+
+## [Task2A Round 127] 已检查方向 — 2026-07-15 21:14
+- AOSP frameworks/base 服务清单：CompanionDeviceManager、RoleManager、SafetyCenter、AppOpsManager、DevicePolicyManager、TextClassifier、AttentionManager、SensorPrivacyManager、BackupManager、DreamManager、WallpaperManagerService、PrintManager、TvInputManager → 全部评分 < 14（性能相关度低/素材空白/读者需求低）
+- Bubble 通知渲染 → 素材空白，评分 7/20
+- MediaSession 深度 → 已由 §18.23 多媒体播放管线覆盖
+- UsageStatsManager → 已由 §5.21 App Standby Bucket 覆盖
+- source-index 306 条全部映射，research-feeds 最新 2026-04-14（3月+ 未更新），Clippings 108 条已全部索引
+- 结论：127 轮连续无 ≥14 分候选，知识库覆盖趋于饱和
