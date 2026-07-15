@@ -328,4 +328,48 @@ RegionSpace 的 region 大小（默认 256KB）基于 4KB page size 设计。16K
 
 ---
 
+### 🔸 Android 17 源码级补充：CMC 代际包装器 `YoungMarkCompact` 不是新算法
+
+<!-- AIW-源码调研-2026-07-15 -->
+
+> 本节基于 `DeepResearch/2026-07-15-android17-art-markcompact-young-wrapper-source-verification.md` 摘录。所有结论可从 `mark_compact.h:58-114`、`mark_compact.cc:507-511`、`heap.cc:876-892 / 2940-2945`、`gc_type.h:23-37` 一手核对。
+
+AOSP 17 的 `art/runtime/gc/collector/` 目录下同时存在 `MarkCompact` 和 `YoungMarkCompact` 两个文件，二者**不是两个独立算法**。源码直证：
+
+```cpp
+// mark_compact.h:60-62
+// The actual young GC code is also implemented in MarkCompact class. However,
+// using this class saves us from creating duplicate data-structures, which
+// would have happened with two instances of MarkCompact.
+class YoungMarkCompact final : public GarbageCollector { /* ... */ };
+
+// mark_compact.cc:507-511 —— 全部实现 4 行
+void YoungMarkCompact::RunPhases() {
+  DCHECK(!main_collector_->young_gen_);
+  main_collector_->young_gen_ = true;
+  main_collector_->RunPhases();
+  main_collector_->young_gen_ = false;
+}
+```
+
+由此可见：
+
+- `YoungMarkCompact` 是 `MarkCompact` 的**轻量级适配器**（thin wrapper / view），不持有独立的 marking / compacting 实现。所有 `MarkObject`、`VisitRoots`、`IsMarked` 等 9 个虚函数在 `YoungMarkCompact` 中均为 `UNIMPLEMENTED(FATAL)`。
+- 触发条件唯一：`MayUseCollector(kCollectorTypeCMC)` ✓ + `use_generational_gc_ == true` ✓ + `gc_type == kGcTypeSticky` 三者同时满足时，`Heap::CollectGarbageInternal` 把 `young_mark_compact_` 注入 GC（`heap.cc:2944`）。
+- 算法骨架仍是 CMC：`MarkingPause → MarkingPhase(concurrent) → CompactionPause → CompactMovingSpace(concurrent + UFFD/SIGBUS)`；young 模式只是把扫描范围裁到 `[young_gen_begin_, moving_space_end_)`，跳过对 old-gen 的 compaction。
+
+代际布局（`mark_compact.h:991-1005` 注释）：
+
+> "we maintain 3 generations: young, mid, and old. Mid generation is collected during young collections. This means objects need to survive two GCs before they get promoted to old-gen."
+
+| 世代 | 何时收集 | 升迁路径 |
+| --- | --- | --- |
+| young | 每轮 Sticky GC 收集 | → mid |
+| mid | young GC 时连带收集 | → old（连续存活两轮） |
+| old | Full GC 时才参与 | 长期驻留 |
+
+这与 §4.8 的"分代 GC 设计动机"一致：在 young collection 时跳过对 old-gen 的重复扫描，从而把 STW 从「全堆」压回「young+mid」子集。
+
+工程含义：行业资料里偶尔将 `YoungMarkCompact` 写作"新增 GC 类型"，源自 `garbage_collectors_` 列表中它是一个独立对象；源码层面它是策略层（Heap 选择器）的 view，而不是算法层的新实现。下游文档需要保持术语准确——AIW 正文应以"CMC 的代际入口"称呼，而非"独立的 MC 算法"。
+
 > 本节内容基于 AOSP android-17.0.0_r1 一手源码验证。相关源码锚点已按 `refs/tags/android-17.0.0_r1` 二次核对。

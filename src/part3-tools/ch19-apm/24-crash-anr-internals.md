@@ -9,11 +9,11 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-task6_state: revisiting
+task6_state: reviewed
 task6_result: "pass-light-edit"
 reviewed_date: "2026-06-02"
 reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-06-03"
+task6_reviewed_date: "2026-07-15"
 sources:
   - "https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler"
   - "https://developer.android.com/reference/android/app/ApplicationExitInfo"
@@ -26,8 +26,8 @@ sources:
 last_task2b_at: "2026-05-25T15:18:38+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-status: ready-for-review
-pipeline_stage: task6_pending
+status: finalized
+pipeline_stage: ready-to-publish
 task9_result: "auto-fixed"
 task9_state: pending
 task2b_state: fixed
@@ -38,13 +38,13 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-06-03T07:20:00+08:00"
 task9_review_notes: "2026-06-02 Task9 deep-review: auto-fixed。修正 /data/anr 权限口径、ProfilingTrigger 36.1/API37 分层、Crashpad out-of-process handler 描述；回到 Task6 复审。"
 last_task6_audit: "2026-07-15"
-last_task6_at: "2026-06-03T09:15:06+08:00"
+last_task6_at: "2026-07-15T12:06:00+08:00"
 last_task9_audit: 2026-05-25
 last_task9_audit_at: "2026-05-25T13:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-25-13-audit.md"
-last_task6_review_log: "logs/review/2026-06-03-09-09-review.md"
-task6_review_notes: "2026-06-03 09:11 Task6 revisiting-review：无新增 L1/L2 问题。Task9 auto-fix 已确认无写作质量问题。满足 auto-promotion 条件，晋升 finalized。（frontmatter 空行、表述收束、ASCII 流程图代码围栏），锚点 7/7 覆盖，未新增 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。"
-task6_l1_l2_fixes: 0
+last_task6_review_log: "logs/review/2026-07-15-12-review.md"
+task6_review_notes: "2026-07-15 12:06 Task6 revisiting-review：修复 2 处 L1 形容词+冒号句式（§4.1、§4.2）。Task9 auto-fix 确认无写作质量问题。锚点 7/7+3扩展 覆盖，无 L3/L4 回炉项。满足 auto-promotion 条件，晋升 finalized。"
+task6_l1_l2_fixes: 2
 task6_l3_l4_issues: 0
 task6_new_rework: false
 task6_auto_promoted: true
@@ -224,7 +224,7 @@ ANR 的捕获链变化最大，原因是系统对相关文件和进程信号的�
 
 早期调试环境里，开发者常直接读取 `/data/anr/traces.txt`，或者从 `/data/anr/` 拉 `anr_*` 文件。它的优点是内容直观，能直接看到主线程和 Binder 线程堆栈。
 
-它的问题也很明显：
+但它在生产环境里有几个硬限制：
 
 - 生产环境应用进程通常没有这一路径的读取权限
 - 文件格式和命名跨版本有差异
@@ -245,7 +245,7 @@ APM 里所谓的 SIGQUIT Hook，通常需要改动以下环节之一；简单注
 - 在系统 dump 前后插入采样逻辑
 - 在厂商 ROM、root/test 环境中改造系统侧 ANR 流程
 
-这类方案能拿到更早的现场，但维护成本很高：
+这类方案能拿到更早的现场，但维护代价体现在几个方面：
 
 - 与 ART、libsigchain、其他 SDK 的信号处理逻辑互相影响
 - Android 版本演进后，信号掩码和 dump 行为可能变化

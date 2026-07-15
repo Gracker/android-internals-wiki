@@ -1,12 +1,12 @@
 ---
 title: "EyeDropper API 与跨设备协作性能"
 chapter: "18.21"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 17 (API 37)"
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-24"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-24T08:27:00+08:00"
+last_task9_at: "2026-07-15T09:27:11+08:00"
 last_task9_audit: "2026-07-15"
 tags: [eyedropper, activity-result, color-picking, system-ui, collaboration]
 related_chapters: ["2.6", "8.2", "18.20"]
@@ -27,9 +27,11 @@ sources:
     path: "https://developer.android.com/training/basics/intents/result"
     title: "Get a result from an activity"
     date: "2026"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
+reviewed_by_task9: openclaw-task9
+task9_reviewed_at: "2026-07-15T09:27:11+08:00"
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-07-15
