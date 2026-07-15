@@ -86,7 +86,8 @@ last_task2b_verifier_at: "2026-05-27T15:34:00+08:00"
 task2b_verifier_result: ready-for-task6
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-14
-last_task9_audit: "2026-07-01 10:28:31"
+last_task9_audit: "2026-07-16 00:20:31"
+last_task9_idle_audit_log: "logs/deep-review/2026-07-16-00-audit.md"
 ---
 
 

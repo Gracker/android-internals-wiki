@@ -307,6 +307,50 @@
       "added_at": "2026-07-15T21:19:50",
       "status": "pending",
       "original_review_log": "logs/review/2026-07-15-21-audit.md"
+    },
+    {
+      "section": "25.25",
+      "section_title": "OEM 厂商差异化后台限制与功耗诊断实战",
+      "priority": 80,
+      "reason": "知识缺口：厂商差异化后台限制无专门章节，research-gaps标记为高优先级",
+      "material_paths": [
+        "intake/research-gaps.md"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-16T01:16:47.489816+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "22.31",
+      "section_title": "Compose Modifier.Node 架构与性能迁移",
+      "priority": 80,
+      "reason": "知识缺口：Modifier.Node 是 Compose 核心架构变更，全书仅1处提及",
+      "material_paths": [],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-16T01:16:47.489816+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "20.21",
+      "section_title": "FD 泄漏监控与线程资源治理实战",
+      "priority": 80,
+      "reason": "知识缺口：FD/线程监控实战覆盖不足，Clippings参考书有结构参考",
+      "material_paths": [
+        "intake/research-gaps.md"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-16T01:16:47.489816+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "22.32",
+      "section_title": "Compose 无限动画与 VectorConverter 性能优化",
+      "priority": 80,
+      "reason": "知识缺口：rememberInfiniteTransition/VectorConverter 全书0覆盖",
+      "material_paths": [],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-16T01:16:47.489816+08:00",
+      "status": "pending"
     }
   ]
 }
