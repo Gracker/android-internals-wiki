@@ -28,20 +28,21 @@ repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 status: finalized
 pipeline_stage: ready-to-publish
-task9_result: "auto-fixed"
-task9_state: pending
+task9_result: "pass-tech-review"
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_lite_at: "2026-06-03T07:35:00+08:00"
 task9_reviewed_date: "2026-06-02"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-06-03T07:20:00+08:00"
+last_task9_at: "2026-07-15T17:24:15+08:00"
 task9_review_notes: "2026-06-02 Task9 deep-review: auto-fixed。修正 /data/anr 权限口径、ProfilingTrigger 36.1/API37 分层、Crashpad out-of-process handler 描述；回到 Task6 复审。"
 last_task6_audit: "2026-07-15"
 last_task6_at: "2026-07-15T12:06:00+08:00"
-last_task9_audit: 2026-05-25
+last_task9_audit: 2026-07-15
 last_task9_audit_at: "2026-05-25T13:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-25-13-audit.md"
+last_task9_review_log: "logs/deep-review/2026-07-15-17-deep-review.md"
 last_task6_review_log: "logs/review/2026-07-15-12-review.md"
 task6_review_notes: "2026-07-15 12:06 Task6 revisiting-review：修复 2 处 L1 形容词+冒号句式（§4.1、§4.2）。Task9 auto-fix 确认无写作质量问题。锚点 7/7+3扩展 覆盖，无 L3/L4 回炉项。满足 auto-promotion 条件，晋升 finalized。"
 task6_l1_l2_fixes: 2
