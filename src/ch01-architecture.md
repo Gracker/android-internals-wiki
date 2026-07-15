@@ -149,3 +149,25 @@ Java Binder.setInheritRt() →
 - 负面：实时调度增加上下文切换开销，需合理控制优先级继承粒度
 - 优化：Android 17改进的BINDER_PRIO_*状态机减少不必要的状态转换开销
 <!-- AIW-源码调研-2026-07-14 -->
+
+### UseCase 越多，项目越烂 — Clean Architecture 落地的反直觉规律
+- 来源：https://juejin.cn/post/7623242804392247305
+- 类型：技术博客 / 深度分析
+- 摘要：直击 Clean Architecture 落地痛点：大量 UseCase 只做一行转发无业务价值；给出 UseCase 存在的三个充分条件（多数据源聚合、业务规则校验、测试隔离）；Repository 应提供缓存降级的数据契约；ViewModel 超过 200 行说明某层职责溢出；延伸到 KMP 下 Domain 层保持纯净。
+- 入库时间：2026-07-15
+- 评分：13/20
+
+### 现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch
+- 来源：https://juejin.cn/post/7650074080125599790
+- 类型：技术博客 / 深度分析
+- 摘要：系统阐述 Repository 暴露 suspend fun/Flow 的架构语义：suspend 表达能力，launch 表达任务归属；Repository 内部 launch 会导致生命周期失控、异常传播断裂、取消语义模糊；区分 withContext（切线程）与 launch（新建任务）；给出四条代码评审判断规则。
+- 入库时间：2026-07-15
+- 评分：13/20
+
+### Android Room 3.0 破坏性变化与迁移路径
+- 来源：https://juejin.cn/post/7617108607432736778
+- 类型：技术博客 / 版本变更分析
+- 摘要：Room 3.0 四大破坏性变化：全新包名 androidx.room3、砍 Java 代码生成、仅支持 KSP、禁止同步 DAO（必须 suspend 或 Flow）；底层从 SupportSQLite 切到 androidx.sqlite 支持 KMP；提供 2.7.0→2.8.0 桥接层→3.0 三步迁移路径；2.x 进入维护模式。
+- 入库时间：2026-07-15
+- 评分：14/20
+

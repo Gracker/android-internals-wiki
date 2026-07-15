@@ -81,7 +81,7 @@ last_task9_review_log: logs/deep-review/2026-07-14-17-deep-review.md
 task9_review_notes: "2026-07-03 04:37 Task9 deep-review：AOSP android-17.0.0_r1 / kernel common android17-6.18 源码锚点复核通过；无 P0/P1；1 条 LRU 性能数据待补实测，写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-02 12:46 Task9 idle audit AUTO-FIX：重锚 ART/bionic/Binder/AMS/DeliQueue 源码到 Android 17，修正 OomAdjuster Android 17 包路径与 DeliQueue 官方指标口径；回到 Task6 复审。 | 2026-05-27 15:22 Task9 deep-review：技术复审无新增 P0/P1；既有 queue pending 为 Task6/Task2B 文末源码调研原始块清理，不自动晋升。"
 | 2026-07-14 Task9 deep-review: pass-tech-review. P0=0/P1=0/P2=0, queue 无 pending, 自动晋升 finalized.
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-04
+last_deepseek_cn_review_at: 2026-07-15
 task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 1
@@ -173,7 +173,7 @@ finalized_date: "2026-07-14"
 
 ## 为什么锁是性能分析的核心议题
 
-Perfetto 里最容易让人误判的一类问题，是线程看起来“没在跑代码”，但一帧还是掉了，或者启动还是慢了。把时间轴放大以后，通常会看到主线程、RenderThread，或者 Binder worker 停在 Waiting / Sleeping 状态。接下来要回答的是：它到底在等哪一种等待。
+Perfetto 里最容易让人误判的一类问题，是线程停在 Waiting / Sleeping 状态，但一帧还是掉了，或者启动还是慢了。把时间轴放大以后，通常会看到主线程、RenderThread 或 Binder worker 停在某个地方。接下来要回答的就是一句话：它到底在等什么。
 
 如果把 Java monitor、native mutex、Binder driver wait queue、MessageQueue 自身的串行化问题都混成“同一种锁”，后面的诊断就会一路跑偏。Java monitor 要看 ART monitor；native 锁要看 `pthread_mutex` / `ConditionVariable`；Binder 要看驱动侧 wait queue 和服务端对象锁；MessageQueue 则要单独看主线程消息投递路径。把这四类路径分开，才能知道该去查哪段代码、该看哪个 track、该改哪一种设计。
 
@@ -185,7 +185,7 @@ Perfetto 里最容易让人误判的一类问题，是线程看起来“没在�
 
 第一类是 **Java monitor**。`synchronized`、`wait()`、`notify()` 这一套都属于它。它的关键点是 ART 怎样把对象头里的 lock word、竞争升级和等待队列组织起来。Perfetto 的 `android.monitor_contention` 模块就是专门为这条路径准备的。
 
-第二类是 **native mutex / condition variable**。这类等待经常出现在 RenderThread、SurfaceFlinger、AudioFlinger，以及系统服务的 C++ 代码里。表面上看，trace 里它和 Java monitor 一样也会出现 `futex_*`，但 owner、调用栈、锁对象全都不一样。看见 `futex_wait`，不能自动把它判成 Java 锁。
+第二类是 **native mutex / condition variable**。这类等待经常出现在 RenderThread、SurfaceFlinger、AudioFlinger，以及系统服务的 C++ 代码里。表面上看，trace 里它和 Java monitor 一样也会出现 `futex_*`，但 owner、调用栈、锁对象全都不一样。看见 `futex_wait`，不能自动归为 Java 锁。
 
 第三类是 **Binder driver wait queue**。跨进程调用时，调用方常常睡在 `binder_thread_read` 或 reply 等待上。这里要看的是 Binder worker 有没有空、目标服务是不是被对象锁卡住、驱动是不是还在排队分发事务。
 
@@ -363,7 +363,7 @@ LIMIT 40;
 
 锁优化不要一开始就谈无锁。更稳的顺序是，先缩短临界区，再减少共享范围，再考虑换锁或无锁。
 
-如果问题出在 Java monitor，优先把耗时操作搬出 `synchronized`，把大对象锁拆小。Android 16 起，ART 的逃逸分析已经能自动消除线程私有对象上的冗余 `synchronized` 指令——比如局部变量中的 `StringBuffer` 锁。如果 trace 里的 monitor contention 消失了但问题仍在，要考虑是否被编译器静默优化过。
+Java monitor 的问题，优先把耗时操作搬出 `synchronized`，把大对象锁拆小。Android 16 起，ART 的逃逸分析已经能自动消除线程私有对象上的冗余 `synchronized` 指令——比如局部变量中的 `StringBuffer` 锁。如果 trace 里的 monitor contention 消失了但问题仍在，要考虑是否被编译器静默优化过。
 
 如果问题出在 native mutex，要看是不是把计算、I/O、等待别的条件也塞进了持锁路径。
 
