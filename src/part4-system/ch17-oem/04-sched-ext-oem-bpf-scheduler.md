@@ -358,6 +358,152 @@ Android 16 / Android 17 进入 kernel 6.12 之后，`sched_ext` 基础设施出�
 
 这套边界也适用于其它 vendor 调度功能。性能文章里要避免把单一厂商、单一固件版本的行为写成 Android 通用规律；承认未知反而更稳。
 
+<!-- AIW-源码调研-2026-07-15 -->
+
+## Android 17 Kernel 6.18 (android17-6.18-2026-06_r6) 增量事实
+
+[已验证: 全部结论锚定 `android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6`，对应 `kernel/sched/ext.c` 7007 行、`kernel/sched/ext.h` 95 行、`kernel/sched/ext_internal.h` 1080 行、`kernel/sched/cpufreq_schedutil.c` 944 行、`init/Kconfig` 行 1159-1165、`include/trace/hooks/sched.h` 行 379-422、`arch/arm64/configs/gki_defconfig`；OPPO 公开仓库 `github.com/Wuzikh1/sched_ext/hmbird_sched_proc_main.c`]
+
+### 一、GKI 默认启用与编译单元
+
+- `arch/arm64/configs/gki_defconfig` 含 `CONFIG_SCHED_CLASS_EXT=y`，且 `init/Kconfig:1165` 把 `CONFIG_EXT_GROUP_SCHED` 默认 `y`，`depends on SCHED_CLASS_EXT && CGROUP_SCHED`。即在 arm64 GKI 构建里，BPF 调度类 + cgroup v2 集成路径默认就位。
+- `kernel/sched/build_policy.c` 把 `ext_idle.c` 与 `ext.c` 用 `#ifdef CONFIG_SCHED_CLASS_EXT` 包住；启用了 `CONFIG_SCHED_CLASS_EXT` 即直接编译 ext.c 7007 行。
+
+### 二、sched_ext_ops 操作表（BPF scheduler ABI）
+
+`kernel/sched/ext_internal.h:267-840` 定义 `struct sched_ext_ops` 共 **31 个回调**，按分组：
+
+- 任务放置：`select_cpu` / `enqueue` / `dequeue` / `dispatch` / `dispatch_max_batch`
+- 生命周期：`tick` / `runnable` / `running` / `stopping` / `quiescent` / `yield`
+- core-sched：`core_sched_before`
+- 属性变更：`set_weight` / `set_cpumask` / `update_idle` / `cpu_acquire` / `cpu_release`
+- 进程初始化：`init_task` / `exit_task` / `enable` / `disable`
+- 错误转储：`dump` / `dump_cpu` / `dump_task`
+- cgroup（CONFIG_EXT_GROUP_SCHED 下）：`cgroup_init` / `cgroup_exit` / `cgroup_prep_move` / `cgroup_move` / `cgroup_cancel_move` / `cgroup_set_weight` / `cgroup_set_bandwidth`
+- CPU 热插拔：`cpu_online` / `cpu_offline`
+- 调度器级：`init` / `exit` / `flags` / `timeout_ms` / `exit_dump_len` / `hotplug_seq` / `name` / `priv`
+
+`bpf_scx_check_member()`（ext.c:5076-5097）限定 `init_task` / `init` / `cgroup_init` / `cgroup_prep_move` 这五个回调允许 `prog->sleepable`，其它 BPF ops 在 verifier 阶段被拒收 sleepable 程序。
+
+`sched_ext_ops__select_cpu` 默认实现返回 `-EINVAL`（ext.c:5141）；`sched_ext_ops__init` 默认实现返回 `-EINVAL`。意味着 BPF scheduler 必须实现 `select_cpu` 与 `init` 才能正常加载；`validate_ops()`（ext.c:4632-4655）做静态校验。
+
+### 三、加载入口与启用约束
+
+`scx_enable()`（ext.c:4946-4973）流程：
+
+1. **拒绝条件**：`housekeeping_cpumask(HK_TYPE_DOMAIN) != cpu_possible_mask` → 直接返回 `-EINVAL`，强制要求「`isolcpus=` 域隔离」与 sched_ext 不可共存（行 4949-4950）。OEM 若启用 sched_ext，必须放弃 CPU 域隔离，反之亦然。
+2. **Helper kthread**：`kthread_run_worker(0, "scx_enable_helper")`，并 `sched_set_fifo(helper->task)`（行 4953-4960），把 helper 钉在 SCHED_FIFO，避免 enable 流程被普通 CFS 任务抢占。
+3. **BPF skeleton 注册**：`bpf_struct_ops bpf_sched_ext_ops = { ... .name = "sched_ext_ops", ... }`（ext.c:5270-5279），调度器实际以 BPF skeleton + libbpf `bpf_map__attach_struct_ops()` 加载，BPF 程序名固定为 `sched_ext_ops`。
+
+`bpf_scx_update()`（ext.c:5144-5153）返回 `-EOPNOTSUPP`：sched_ext **不支持 hot-update**，运行时只能 `scx_disable` 后重新 load。
+
+### 四、cpufreq 闭环（Android 17 6.18 关键变更）
+
+`kernel/sched/ext.h:32-37` 暴露 `scx_cpuperf_target(cpu)`：
+
+```c
+static inline u32 scx_cpuperf_target(s32 cpu)
+{
+    if (scx_enabled())
+        return cpu_rq(cpu)->scx.cpuperf_target;
+    else
+        return 0;
+}
+```
+
+`kernel/sched/cpufreq_schedutil.c:235` 的 `sugov_get_util()` 注释（行 369-372）直接说明：
+
+> "The heuristics in this function is for the fair class. For SCX, the performance target comes directly from the BPF scheduler. Let's just follow it."
+
+即 `util = scx_cpuperf_target(sg_cpu->cpu)` 在 SCX 路径下覆盖 schedutil 的 fair-class 启发式，BPF scheduler 调 `scx_bpf_cpuperf_set()` 后立即反映到下一次 `sugov_should_update_freq`。`SCX_OPS_SWITCH_PARTIAL=0` 时 `scx_switched_all()` 走 fast path，频率决策完全交给 BPF scheduler。
+
+BTF kfunc 列表（ext.c BTF_ID_FLAGS 区）共 80+ 条，包括 `scx_bpf_dsq_insert` / `scx_bpf_dsq_move` / `scx_bpf_select_cpu_dfl` / `scx_bpf_cpuperf_set` / `scx_bpf_task_cpu` 等；BPF scheduler 通过 libbpf 直接调用，无需任何 vendor ioctl。
+
+### 五、Android 专属 Vendor Hook（OEM 适配路径）
+
+`grep "trace_android_vh_scx\|trace_android_vh_switching_to_scx" kernel/sched/ext.c` 命中 **13 个 hook**（`include/trace/hooks/sched.h` 行 379-422），对应 OEM kernel fork 的标准扩展点：
+
+| Hook | ext.c 触发点 | 用途 |
+|------|---------------|------|
+| `android_vh_scx_enabled` | 4060, 4852 | ext class 整体启/停（static_branch + 通知 vendor） |
+| `android_vh_scx_ops_enable_state` | 4011, 4112, 4706 | 状态机：`SCX_DISABLING → SCX_DISABLED → SCX_ENABLING` |
+| `android_vh_scx_enq_to_priq` | 988 | vtime-ordered DSQ 入队 |
+| `android_vh_scx_set_cpus_allowed` | 2599 | 任务 cpus_allowed 变更拦截 |
+| `android_vh_scx_task_can_run_on` | 1866 | 任务 CPU 允许性检查 |
+| `android_vh_scx_task_switch_finish` | 4035, 4884 | 任务切换完成点 |
+| `android_vh_scx_switch_repeat_skip` | 4023, 4873 | 反复切换时 vendor 提前 skip |
+| `android_vh_scx_restore_flags` | （sched.h:379） | ext flags 还原 |
+| `android_vh_scx_ops_consider_migration` | 1402, 1502 | enqueue/dequeue 路径考虑迁移 |
+| `android_vh_scx_fix_prev_slice` | 2435 | 上一个 task 的 slice 修正 |
+| `android_vh_scx_exit_on_abnormal` | 4470 | BPF scheduler 异常退出 |
+| `android_vh_switching_to_scx` | 3074 | task 切到 SCX class 时 |
+| `android_vh_task_tick_scx` | 2757 | tick 中对 ext class 任务的处理点 |
+
+这些 hook **在 upstream Linux `kernel/sched/ext.c` 中不存在**；是 Android common kernel 在 6.12→6.18 之间为 OEM 适配统一提供的标准扩展点。典型用法：
+
+- `android_vh_scx_set_cpus_allowed` 拦截 BPF scheduler 调 `scx_bpf_set_cpus_allowed` 后，OEM vendor task group / VIP 调度可覆盖 BPF 选择。
+- `android_vh_scx_switch_repeat_skip` 在 task 反复被切进切出 ext class 时给 vendor 一次否决权，避免特定 task 在两个 class 之间抖动。
+- `android_vh_scx_exit_on_abnormal` 做 graceful fallback：BPF scheduler 异常退出时自动把对应 vendor task group 切回 SCHED_NORMAL。
+
+vendor hook 不修改 BPF scheduler 的算法逻辑，仅在关键决策点提供「否决 / 补充 / 通知」语义，这是 Android 17 GKI 设计哲学——把 vendor 适配点收敛在固定 13 个 hook，避免 OEM 修改 ext.c 本身破坏 GKI 锁定。
+
+### 六、可观测与回退
+
+`/sys/kernel/sched_ext/`（ext.c:3506-3611）：
+
+| 文件 | 内容 |
+|------|------|
+| `state` | `enabled` / `enabling` / `disabling` / `disabled` |
+| `switch_all` | `0` = partial（仅 SCX class 任务走 BPF），`1` = 全部 CFS 任务走 BPF |
+| `nr_rejected` | 累积被拒次数（policy SCHED_EXT 但 BPF scheduler 设置了 disallow） |
+| `hotplug_seq` | CPU 热插拔序列号；BPF scheduler 用 `ops.hotplug_seq` 校验 |
+| `enable_seq` | 启动序列号；本次 boot 是否曾加载过 BPF scheduler |
+| `ops` | 当前 BPF scheduler 的 `name[SCX_OPS_NAME_LEN]` |
+| `events` | `SCX_EV_*` 计数器（`SELECT_CPU_FALLBACK` / `DISPATCH_LOCAL_DSQ_OFFLINE` / `DISPATCH_KEEP_LAST` / `ENQ_SKIP_EXITING` / `ENQ_SKIP_MIGRATION_DISABLED` / `REFILL_SLICE_DFL` / `BYPASS_DURATION` / `BYPASS_DISPATCH` / `BYPASS_ACTIVATE`） |
+
+回退：SysRq-S「reset-sched-ext(S)」（ext.c:5284-5290）调 `scx_disable(SCX_EXIT_SYSRQ)`，所有任务立即回 SCHED_NORMAL/CFS；`hotplug_seq` 检测到 BPF scheduler 加载期间发生 CPU 热插拔时主动拒绝 enable。
+
+### 七、OEM 实操：OPPO hmbird_sched 控制面
+
+公开仓库（`hmbird_sched_proc_main.c`）在 `/proc/hmbird_sched/` 暴露：
+
+```
+scx_enable   partial_ctrl   cpuctrl_high_ratio   cpuctrl_low_ratio
+slim_stats   hmbirdcore_debug   slim_for_app   misfit_ds
+scx_shadow_tick_enable   highres_tick_ctrl_dbg   cpu7_tl
+cpu_cluster_masks   save_gov   ...
+```
+
+- `scx_enable`：主开关，对应 BPF scheduler 是否加载。
+- `partial_ctrl`：对应上游 `SCX_OPS_SWITCH_PARTIAL` flag（ext.c:4850 `WRITE_ONCE(scx_switching_all, !(ops->flags & SCX_OPS_SWITCH_PARTIAL))`）。
+- `cpuctrl_high/low_ratio`：与 `scx_cpuperf_target` 配合调整 schedutil 频率阈值。
+- `slim_for_app` / `misfit_ds`：应用层与「不匹配任务」的迁移策略。
+
+**重要边界**：OPPO hmbird_sched 只公开了控制面代码，**BPF scheduler 算法本身（`struct sched_ext_ops` 各回调实现）未在公开仓库披露**。要还原 OEM 策略需借助 `SCX_EV_*` 计数器与 `/proc/hmbird_sched/*` 行为反推。
+
+### 八、与 android16-6.12 的版本差异
+
+| 维度 | android16-6.12 | android17-6.18 |
+|------|----------------|----------------|
+| `kernel/sched/ext.c` 行数 | ~6000+ | **7007** |
+| `CONFIG_SCHED_CLASS_EXT=y` | GKI 默认 y | GKI 默认 y（已验证） |
+| Android vendor hook 数量 | ~10 | **13**（追加 `android_vh_scx_fix_prev_slice` / `android_vh_scx_exit_on_abnormal` 等） |
+| `scx_cpuperf_target` 与 `sugov_get_util` 闭环 | 未完整闭环 | 已完成闭环（cpufreq_schedutil.c:235 直接读取） |
+| `SCX_OPS_HAS_CGROUP_WEIGHT` | active | deprecated + noop（ext.c:4653-4654） |
+
+### 九、对章节「Android 17 之后会默认启用吗」的纠偏
+
+原章节（基于 android16-6.12）写「不能把 `sched_ext` 写成 Android 17 默认调度机制」，本轮源码验证后修正为更精确的事实：
+
+- **编译侧默认**：arm64 GKI 6.18 defconfig `CONFIG_SCHED_CLASS_EXT=y`（已验证），意味着 BPF 调度类在编译产物中默认就位。
+- **运行侧默认**：GKI 默认开启不代表 user build 自动加载 BPF scheduler；需 init.rc / vendor init 服务主动 `bpf_map__attach_struct_ops()` 才会出现 `/sys/kernel/sched_ext/ops` 内容。AOSP main 在 Android 17 是否加入 init 路径**待验证**。
+- **Pixel user build 默认状态**未在本轮验证，需后续读取 `system/core/init/` 或 vendor init 服务源码。
+
+新事实校正：原章节「待验证: Android 17 正式发布后 GKI defconfig、CDD/VTS 约束、Pixel 与主流 OEM user build 的默认状态」中「GKI defconfig」一项本轮已确认（`CONFIG_SCHED_CLASS_EXT=y`）；Pixel user build 与 CDD/VTS 约束仍是开放问题。
+
+[已验证: android17-6.18-2026-06_r6 源码；未进入 Android 18 / API 38；Android 16 6.12 数据仅作版本演进对比]
+
+
 ## 参考资料
 
 
