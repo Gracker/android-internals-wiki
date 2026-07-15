@@ -2,7 +2,7 @@
 title: Hook 基础设施与性能工具实现原理
 chapter: '14.13'
 section: '14.13'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-06-24'
 last_verified_against: AOSP android-17.0.0_r1 system/sepolicy/public/domain.te + bionic/linker/linker_phdr.cpp
