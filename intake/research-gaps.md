@@ -47,4 +47,21 @@
 - 厂商特有 GPU 性能扩展与 AOSP 统一 API 的兼容性分析
 
 ### 关联章节
-["13-perfetto-chapters", "3.1", "13.1"]
+["13-perfetto-chapters", "3.1", "13.1"]## [2026-07-15] 18.21 EyeDropper API 与跨设备协作性能 — 知识盲区
+
+### 盲区描述
+1. **EyeDropper 与 MediaProjection 的内部权限隔离机制** - EyeDropper 如何在系统内部实现与 MediaProjection 不同的权限隔离，特别是对系统界面、第三方应用内容的安全边界识别
+2. **系统取色器的安全实现机制** - secure window 和 protected buffer 的具体识别算法和裁剪实现，系统如何判断哪些内容需要保护
+
+### 重要程度
+高
+
+### 建议研究方向
+- 通过分析 AOSP 源码追踪 EyeDropper 宿主组件的实现
+- 研究 MediaProjection 和 EyeDropper 在 SurfaceFlinger 层的差异处理
+- 分析系统界面的隐私保护机制实现
+- 测试不同安全场景下的实际行为表现
+
+### 关联章节
+[2.6, 8.2, 18.20]
+

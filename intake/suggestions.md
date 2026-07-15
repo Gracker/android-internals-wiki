@@ -100,3 +100,15 @@
 - **已检查方向**：source-index (306 entries, 88 high-q unmapped all traced)、research-feeds (112 files, newest 2026-04-14)、daily-info (2026-07-15 recycled)、Clippings (108 files)、research-gaps (3 entries)、AOSP service coverage、official docs
 - **结果**：0 candidates >=14。121st consecutive。Coverage saturated (765 sections)。
 - **避免重复**：下次探索方向应聚焦于①Android 17后续版本特性（但不得超出android-17.0.0_r1）②新兴Clippings素材（如有更新）③新的research-feeds（如有更新）
+## [Task9 Deep Review] 18.21 EyeDropper API 与跨设备协作性能 — 2026-07-15
+- **类型**：源码准确性/原理完整性/数据支撑
+- **位置**：系统实现细节章节
+- **问题**：EyeDropper 宿主组件缺乏明确的 AOSP 类名引用，用户点击到颜色返回的中间环节缺少系统侧的像素采样、裁剪、隐私过滤机制说明
+- **建议**：补充 EyeDropper 宿主组件的 AOSP 源码路径，明确系统内部处理机制，增加 secure window 识别的具体实现原理
+
+## [Task9 Deep Review] 18.21 EyeDropper API 与跨设备协作性能 — 2026-07-15
+- **类型**：数据支撑
+- **位置**：性能观测章节
+- **问题**："eye_dropper_launch" 到 "eye_dropper_result" 的时间间隔缺少典型耗时数据
+- **建议**：补充实际性能基准测试数据，包括不同设备、不同取色场景下的典型响应时间范围
+
