@@ -3,7 +3,7 @@
   "draft": 1,
   "ready_for_review": 11,
   "finalized": 5,
-  "last_updated": "2026-07-15T13:09:45.770217+08:00",
+  "last_updated": "2026-07-15T19:09:10.923271+08:00",
   "task2b": {
     "last_run": "2026-07-14T06:54:06+08:00",
     "last_section": "15",
@@ -33,6 +33,20 @@
   ],
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-15T19:09:10.923271+08:00",
+      "note": "Gap mining round 125: 0 candidates >=14 (125th consecutive). No state change since R124 (3h ago). No new DeepResearch files since last run. Research-feeds 3mo+ stale (newest 2026-04-14). Clippings 22d+ stale (newest 2026-06-23). Daily-info 2026-07-15 already fully consumed. Source-index: 306 entries, all high-q unmapped traced to existing. Research-gaps: 3 entries all existing ch19.24/ch26.18. Suggestions: Task9 supplements. Task2B backlog: 0. 0 empty drafts. Coverage saturated (741 total)."
+    },
+    {
+      "section": "none",
+      "action": "task2a-knowledge-gap-mining",
+      "status": "no-candidates",
+      "ts": "2026-07-15T18:10:38.257314+08:00",
+      "note": "Gap mining round 124: 0 candidates >=14 (124th consecutive). No state change since R123 (3h ago). Daily-info 2026-07-15 already fully consumed by task8. Source-index: 306 entries, 4 high-q unmapped all traced to existing (GPU counter->14.28, GPU profiling->2.17/14.8, GPU DVFS->5.29, LMK->4.15/4.34). Research-feeds 112 files newest 2026-04-14 (3mo+ stale). Clippings 108 files 22d+ stale. Research-gaps: 3 entries all existing ch19.24/ch26.18. Suggestions: Task9 supplements for existing chapters. Task2B backlog: 0. 0 empty drafts. Coverage saturated (765 section files)."
+    },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
@@ -617,10 +631,10 @@
     }
   },
   "task2a": {
-    "last_run": "2026-07-15T13:09:45.770217+08:00",
+    "last_run": "2026-07-15T19:09:10.923271+08:00",
     "last_section": "none",
     "result": "no-candidates",
-    "note": "Gap mining round 123: 0 candidates >=14 (123rd consecutive). Coverage saturated."
+    "note": "Gap mining round 125: 0 candidates >=14 (125th consecutive). Coverage saturated."
   },
   "task2b_lite": {
     "total_fixed": 1,
@@ -1553,5 +1567,6 @@
       "l3_l4_issues": 3,
       "log": "logs/review/2026-07-15-09-audit.md"
     }
-  ]
+  ],
+  "task2a_round": 125
 }
