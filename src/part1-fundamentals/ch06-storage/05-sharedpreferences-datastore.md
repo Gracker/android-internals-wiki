@@ -39,7 +39,7 @@ task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: fixed
 last_task9_audit: "2026-07-01"
-last_task6_audit: "2026-07-07"
+last_task6_audit: 2026-07-17
 last_task9_audit_log: "logs/deep-review/2026-07-01-02-audit.md"
 last_task9_autofix_at: "2026-07-01"
 task9_review_notes: "2026-07-01 Task9 idle audit auto-fix: AOSP anchors refreshed to android-17.0.0_r1; corrected DataStore native library packaging from nonexistent datastore-multiprocess artifact to datastore-core-android AAR and removed stale ShadowSharedCounter fallback snippet. No open P0/P1 after fix."
