@@ -71,3 +71,15 @@
 - **问题**：源码路径版本基线仍标注 android-16.0.0_r1（涉及 Binder.java、Parcel.java、SystemProperties.java、Trace.java、trace.h 等所有 aosp 类型 sources），项目基准要求 android-17.0.0_r1
 - **建议**：由 Task 9 重新核对 android-17.0.0_r1 中这些文件路径和 API 签名是否有变化，确认后由 Task 2B 统一更新版本标注
 - **review 日志**：logs/review/2026-07-16-09-audit.md
+
+## [Task9 Deep Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-07-16
+- **类型**：版本差异覆盖
+- **位置**：分代 CMC gating 条件说明部分
+- **问题**：Android 17分代 CMC gating 条件说明，虽然提到了需要满足多个 AND 条件，但未明确说明 device_config 与其他 gating 条件的组合关系
+- **建议**：补充 device_config 检查的实际落地路径，明确 `persist.device_config.runtime_native_boot.use_generational_gc` 与其他条件的关系，增加验证命令示例
+
+## [Task9 Deep Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-07-16
+- **类型**：知识盲区
+- **位置**：分代 GC 与 MarkCompact 章节
+- **问题**：未涵盖 Task2B backlog 中提到的 YoungMarkCompact 与 MarkCompact 关系细节
+- **建议**：补充 YoungMarkCompact 是 MarkCompact 的 thin wrapper 这一关键关系，说明 CMC 实际由 userfaultfd + SIGBUS 构成零 STW 搬迁机制
