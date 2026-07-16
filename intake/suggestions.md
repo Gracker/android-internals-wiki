@@ -33,3 +33,9 @@
 - **位置**：Journey CLI 命令格式说明
 - **问题**：未明确说明 Journey CLI 子命令的具体格式和使用方法
 - **建议**：补充 android journey 命令的完整语法示例，包括 run、define、validate 等子命令的参数说明，并注明支持的最低 Android CLI 版本
+
+## [Task9 Deep Review] 9.6 Notification 性能与 ANR — 2026-07-17
+- **类型**：数据缺失
+- **位置**：RemoteViews reapply机制
+- **问题**：缺乏实际性能数据支撑，reapply vs 重新inflate的性能对比数据缺失
+- **建议**：补充典型场景下RemoteViews reapply与重新inflate的性能对比数据，包括不同布局复杂度、图片数量等场景的实测耗时
