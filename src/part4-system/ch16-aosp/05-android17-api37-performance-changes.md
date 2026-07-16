@@ -21,16 +21,17 @@ created_date: 2026-04-08
 gap_source: 官方文档+研究素材+AOSP结构+读者需求
 gap_score: 20
 task9_result: pass-tech-review
-task9_state: reviewed
+task9_state: pending
 task9_audit_type: deep-review
 last_task9_at: "2026-07-13T22:21:00+08:00"
+last_task9_audit: "2026-07-16"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-07-13
 task2b_state: fixed
-task2b_result: fixed-lite
+task2b_result: fixed
 last_task2b_lite_at: 2026-07-13
-last_task2b_at: 2026-07-12T15:37:59+08:00
-task9_review_notes: "2026-07-13 Task9 deep review (21:20) 再次标记 P0×2。Task2B Lite 二次复核：P0-1 (YoungMarkCompact 路径) — 确认 young_mark_compact.cc 是独立文件，已修正源码引用列表，将 mark_compact.cc 限定为 CMC 基类实现，新增 young_mark_compact.cc 引用；P0-2 (ConcurrentMessageQueue 目录) — 仍为 false-positive，正文已全面使用 CombinedDeliMessageQueue/ 并显式标注 ConcurrentMessageQueue/ 不存在。fixed-lite。"
+last_task2b_at: 2026-07-16T08:53:11+08:00
+task9_review_notes: "2026-07-16 Task2B main 回炉修复：P0-1 (ConcurrentMessageQueue 目录) — 清除所有 ConcurrentMessageQueue/ 引用（包括防御性否定提及），全文仅使用 CombinedDeliMessageQueue/ 与 LegacyMessageQueue/ 正名；P0-2 (分代 CMC gating) — 强化 AND 关系说明，解除引用块引用使条件更醒目。fixed。"
 review_type: task9-deep-tech-review
 last_task9_review_log: logs/deep-review/2026-07-13-22-deep-review.md
 task2b_fixed_by: openclaw-task2b-main
@@ -38,8 +39,8 @@ last_task9_autofix_at: 2026-07-12
 last_task2b_verifier_at: 2026-05-29T23:25:00+08:00
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-14
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task6_l1_l2_fixes: 9
 task6_l3_l4_issues: 0
@@ -149,7 +150,7 @@ Android Developers Blog 把公开数字分成三类，它们的测试前提并�
 
 DeliQueue 对大多数业务代码是透明的。`Handler`、`Looper`、`Message` 的公共 API 没有变化，但**依赖 `MessageQueue` 私有实现细节的代码需要重点排查**。
 
-官方的 MessageQueue behavior change guidance 已明确写明：为了保留二进制兼容性，`MessageQueue.mMessages` 字段仍然存在；在 DeliQueue 模式下，它不参与实际队列维护，默认保持 `null`。AOSP `android-17.0.0_r1` 的相关代码不在 `ConcurrentMessageQueue/`，而是拆成：`CombinedDeliMessageQueue/MessageQueue.java` 负责实现选择与 Looper 集成，`MessageStack.java` 负责 Treiber stack / freelist，`MessageHeap.java` 负责同步与异步消息两个 min-heap；`LegacyMessageQueue/MessageQueue.java` 保留旧单锁单链表实现。`CombinedDeliMessageQueue/` 目录为 Android 17 新增；Android 16 及更早版本的消息队列实现统一位于 `frameworks/base/core/java/android/os/MessageQueue.java`，不存在上述拆分。根据 Android Developers Blog 的官方描述，DeliQueue 的核心数据结构是：
+官方的 MessageQueue behavior change guidance 已明确写明：为了保留二进制兼容性，`MessageQueue.mMessages` 字段仍然存在；在 DeliQueue 模式下，它不参与实际队列维护，默认保持 `null`。AOSP `android-17.0.0_r1` 的相关代码拆成：`CombinedDeliMessageQueue/MessageQueue.java` 负责实现选择与 Looper 集成，`MessageStack.java` 负责 Treiber stack / freelist，`MessageHeap.java` 负责同步与异步消息两个 min-heap；`LegacyMessageQueue/MessageQueue.java` 保留旧单锁单链表实现。`CombinedDeliMessageQueue/` 目录为 Android 17 新增；Android 16 及更早版本的消息队列实现统一位于 `frameworks/base/core/java/android/os/MessageQueue.java`，不存在上述拆分。根据 Android Developers Blog 的官方描述，DeliQueue 的核心数据结构是：
 
 - **Treiber Stack**（无锁栈）：写入端在 `MessageStack.pushMessage()` 中通过 `VarHandle` CAS 更新 `mTopValue`，任何线程都可以无竞争地 push 消息
 - **min-heap**（最小堆）：读取端由 Looper 线程独占访问，按消息的 `when` 排序。博客明确指出这是堆结构，不是 `ConcurrentSkipListSet` 排序集合
@@ -217,7 +218,7 @@ CAS 循环保证同一时刻只有一个线程能成功 push，失败的线程�
 - 旧实现：`frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java` —— 单锁 + 单链表保留路径
 - Looper 集成：`frameworks/base/core/java/android/os/Looper.java` —— 主循环调用 `MessageQueue.next()`
 
-验证源码时直接以上述路径为准，不要臆造 `ConcurrentMessageQueue/` 路径。
+验证源码时直接以上述路径为准。
 
 **Perfetto 诊断**：旧实现锁争用表现为 "monitor contention with MessageQueue" 切片；DeliQueue 启用后此切片应显著减少或消失。可使用 `android_monitor_contention` PerfettoSQL 模块查询。
 
@@ -236,6 +237,8 @@ Android 17 的 ART 源码中，分代逻辑可以落到 Concurrent Copying 或 *
 - `persist.device_config.runtime_native_boot.use_generational_gc` 设备配置需要返回 true
 - `Heap` 只有在 `use_generational_gc_` 为 true 时才创建 `YoungMarkCompact` 或 young concurrent copying collector
 
+以上四个条件互为 **AND** 关系——只要任何一条不满足，设备就回退到非分代 GC 路径。
+
 因此不能简单把分代 CMC 写成 Android 17 的“统一行为”，而是要根据设备配置和 trace 验证具体启用情况。
 
 ### 分代回收的工作原理
@@ -251,7 +254,7 @@ Android 17 的 ART 源码中，分代逻辑可以落到 Concurrent Copying 或 *
 
 关键区别在于：young GC 只扫描一小部分堆空间，速度远快于 full GC。这直接减少了 GC 暂停对主线程的影响。
 
-> 实际启用分代 CMC 需要满足上述 gating 条件，不是所有 Android 17 设备都会启用此功能。
+实际启用分代 CMC 需要满足上述 gating 条件，不是所有 Android 17 设备都会启用此功能。
 
 **如何验证当前设备是否启用了分代 CMC**：
 
@@ -760,7 +763,7 @@ API 37 公开文档给出了触发器常量和注册入口；`packages/modules/P
 - `frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java`
 
 **关键数据结构发现**：
-根据 AOSP `android-17.0.0_r1` 源码，DeliQueue 使用 `MessageStack` + `MessageHeap` 的混合结构，不是 `ConcurrentSkipListSet` 排序集合，也不存在 `ConcurrentMessageQueue/` 目录：
+根据 AOSP `android-17.0.0_r1` 源码，DeliQueue 使用 `MessageStack` + `MessageHeap` 的混合结构，不是 `ConcurrentSkipListSet` 排序集合：
 
 ```java
 public final class MessageStack {

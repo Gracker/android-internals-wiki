@@ -109,7 +109,7 @@
       "chapter": "16.5",
       "title": "Android 17 (API 37) 性能行为变更与适配方法",
       "priority": 95,
-      "status": "pending",
+      "status": "completed",
       "file": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
       "reason": "[Deep Tech Review] AOSP android-17.0.0_r1 中不存在 ConcurrentMessageQueue/ 目录，应为 CombinedDeliMessageQueue/",
       "review_issues": [
@@ -127,7 +127,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-16T08:25:30"
+      "added_at": "2026-07-16T08:25:30",
+      "completed_at": "2026-07-16T08:50:00+08:00",
+      "completed_by": "task2b-main"
     }
   ],
   "pending": [
