@@ -117,3 +117,8 @@
 - **位置**：16KB page size 收益数据段落
 - **问题**：列出的收益百分比（app launch time 平均下降 3.16%、部分应用能到 30%；启动期功耗下降 4.56%；camera hot start 快 4.48%；cold start 快 6.60%；system boot time 提升约 8%）未在章节中给出直接来源链接。
 - **建议**：补充 developer.android.com/guide/practices/page-sizes 中具体段落的锚链接，或在 sources 中追加 data sheet 引用。
+## [Task9 Deep Review] part2-performance/ch08-responsiveness/08-system-triggered-profiling.md — 2026-07-16
+- **类型**：版本差异
+- **位置**：Android 16 vs 17 行为差异说明部分
+- **问题**：章节提到了 Android 16 的 APP_FULLY_DRAWN 和 ANR，但未明确说明这两个 trigger 在 Android 17 中是否有行为变化
+- **建议**：补充说明 Android 16 和 Android 17 中这些 trigger 的行为一致性或差异，明确版本演进边界
