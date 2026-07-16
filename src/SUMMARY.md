@@ -153,6 +153,7 @@
   - [13.22 Perfetto SQL 查询手册与性能分析实战查询库](part3-tools/ch13-perfetto/22-perfetto-sql-cookbook-performance-analysis.md)
   - [21.17 Startup Insights API 与启动性能可观测性](part5-app/ch21-startup/17-startup-insights-api-observability.md)
   - [21.18 缓存优化实战：冷热端分离与 CPU 缓存命中率](part5-app/ch21-startup/18-cache-optimization-cpu-locality.md)
+  - [21.19 设备分级性能策略实战](part5-app/ch21-startup/19-device-tier-performance-strategy.md)
   - [17.9 SoC 特异性功耗优化策略：高通/联发科/三星](part4-system/ch17-oem/09-soc-specific-power-optimization.md)
   - [17.21 Android 17 SoC 厂商 Power HAL 与 schedutil 闭环](part4-system/ch17-oem/17.21-android17-soc-vendor-power-hal-schedutil-loop.md)
   - [22.30 Impeller Shader 编译性能与 Flutter 渲染稳定性](part5-app/ch22-rendering-practice/30-impeller-shader-compilation-flutter.md)
@@ -166,6 +167,9 @@
   - [22.38 Compose Canvas 自定义绘制性能实战](part5-app/ch22-rendering-practice/38-compose-canvas-custom-drawing-performance.md)
   - [22.39 Compose Snapshot 系统深度：状态一致性模型与性能开销](part5-app/ch22-rendering-practice/22.39-compose-snapshot-system-state-consistency-performance.md)
   - [22.40 Compose Compiler v2 / K2 编译器迁移与 @Composable 编译优化](part5-app/ch22-rendering-practice/22.40-compose-compiler-v2-k2-migration-performance.md)
+  - [22.41 Compose ↔ View 互操作性能实战](part5-app/ch22-rendering-practice/41-compose-view-interop-performance.md)
+  - [22.42 SurfaceView 与 TextureView 渲染性能选型实战](part5-app/ch22-rendering-practice/42-surfaceview-textureview-rendering-performance.md)
+  - [22.43 Media3 视频播放渲染管线性能实战](part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md)
 
   - [4.22 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.22-android17-ai-agent-memory-sandboxed-data-reuse.md)
   - [14.28 GPU 性能分析进阶 — 跨厂商计数器标准化与工作负载剖析](part3-tools/ch14-other-tools/28-gpu-performance-profiling-advanced.md)
