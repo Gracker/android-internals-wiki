@@ -53,6 +53,8 @@ task6_review_notes: "2026-05-24 Task6 revisiting review: pass-light-edit。L1/L2
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-26
 last_task9_audit_result: "pass-source-version-audit"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-16
 ---
 # Jetpack Benchmark（Microbenchmark + Macrobenchmark）
 
@@ -97,7 +99,7 @@ last_task9_audit_result: "pass-source-version-audit"
 
 ## Benchmark 用来证明改动效果
 
-Jetpack Benchmark 不是线上 APM。它是本地、实验室和 CI 中用来稳定测量性能差异的工具。APM 告诉你线上哪个版本变差，Benchmark 用来验证某个修复是否真的让启动、滑动或函数耗时变好。
+Jetpack Benchmark 不是线上 APM。它的战场在本地、实验室和 CI：当你需要稳定地测量一次代码改动到底让启动快了还是慢了、滑动帧率变了没变，Benchmark 就是用来回答这个问题的。线上 APM 告诉你哪个版本出了问题，Benchmark 验证修复是否真的有效。
 
 Android 官方把 Benchmark 分成 Microbenchmark 和 Macrobenchmark。名字相近，但测的对象完全不同。
 
@@ -119,7 +121,7 @@ Android 官方把 Benchmark 分成 Microbenchmark 和 Macrobenchmark。名字相
 
 Microbenchmark 在进程内循环执行一段可直接调用的代码，适合测算法、序列化、正则、数据结构、图片处理等局部 CPU 工作。
 
-旧版经验常把 Microbenchmark 理解成热身后的 JIT 和缓存命中口径。这个判断只适用于没有额外 AOT 预编译的配置。Android Developers 现在明确写明：Benchmark 1.3.0-beta01+ 配合 AGP 8.4.0+ 时，`androidx.benchmark` plugin 会默认把 microbenchmark APK 做全量编译，口径更接近稳定的 AOT 结果；如果要回到旧的预热后的 JIT 口径，需要在 `gradle.properties` 里设置 `androidx.benchmark.forceaotcompilation=false`。
+旧版经验常把 Microbenchmark 理解成热身后的 JIT 和缓存命中口径。这个判断只适用于没有额外 AOT 预编译的配置。从 Benchmark 1.3.0-beta01 起，配合 AGP 8.4.0+，`androidx.benchmark` plugin 的默认行为变了：不再依赖热身后的 JIT 口径，而是把 microbenchmark APK 做全量 AOT 编译，结果波动更小，更适合做稳定回归。要回到旧的热身后口径，需要在 `gradle.properties` 里设置 `androidx.benchmark.forceaotcompilation=false`。
 
 | Microbenchmark 运行形态 | 典型版本 | 结果口径 |
 |---|---|---|
