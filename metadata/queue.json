@@ -179,5 +179,35 @@
     "added_at": "2026-07-17T05:05:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-07-17-05-audit.md"
+  },
+  {
+    "section": "20.27",
+    "title": "Kotlin 协程泄漏诊断与结构化并发性能监控",
+    "path": "src/part5-app/ch20-stability/20.27-coroutine-leak-diagnosis-structured-concurrency-performance.md",
+    "priority": 80,
+    "status": "pending",
+    "created_date": "2026-07-17",
+    "gap_source": "AOSP结构/章节深挖",
+    "score": 17
+  },
+  {
+    "section": "22.39",
+    "title": "Compose Snapshot 系统深度：状态一致性模型与性能开销",
+    "path": "src/part5-app/ch22-rendering-practice/22.39-compose-snapshot-system-state-consistency-performance.md",
+    "priority": 80,
+    "status": "pending",
+    "created_date": "2026-07-17",
+    "gap_source": "AOSP结构/章节深挖",
+    "score": 16
+  },
+  {
+    "section": "22.40",
+    "title": "Compose Compiler v2 / K2 编译器迁移与 @Composable 编译优化",
+    "path": "src/part5-app/ch22-rendering-practice/22.40-compose-compiler-v2-k2-migration-performance.md",
+    "priority": 80,
+    "status": "pending",
+    "created_date": "2026-07-17",
+    "gap_source": "官方文档",
+    "score": 15
   }
 ]

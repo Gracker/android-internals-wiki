@@ -164,6 +164,8 @@
   - [22.36 SharedTransitionLayout — Compose 共享元素过渡动画性能优化](part5-app/ch22-rendering-practice/36-shared-transition-layout-performance.md)
   - [22.37 Compose Runtime Tracing — Perfetto 集成与组合阶段追踪](part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md)
   - [22.38 Compose Canvas 自定义绘制性能实战](part5-app/ch22-rendering-practice/38-compose-canvas-custom-drawing-performance.md)
+  - [22.39 Compose Snapshot 系统深度：状态一致性模型与性能开销](part5-app/ch22-rendering-practice/22.39-compose-snapshot-system-state-consistency-performance.md)
+  - [22.40 Compose Compiler v2 / K2 编译器迁移与 @Composable 编译优化](part5-app/ch22-rendering-practice/22.40-compose-compiler-v2-k2-migration-performance.md)
 
   - [4.22 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.22-android17-ai-agent-memory-sandboxed-data-reuse.md)
   - [14.28 GPU 性能分析进阶 — 跨厂商计数器标准化与工作负载剖析](part3-tools/ch14-other-tools/28-gpu-performance-profiling-advanced.md)
@@ -178,6 +180,7 @@
   - [20.24 Crash 状态下 Java 线程堆栈获取与锁等待分析](part5-app/ch20-stability/24-crash-java-stack-lock-wait-analysis.md)
   - [20.25 线程泄漏与匿名线程监控实战](part5-app/ch20-stability/25-thread-leak-anonymous-thread-monitoring.md)
   - [20.26 Native 内存泄漏线上监控实战](part5-app/ch20-stability/26-native-memory-leak-online-monitoring.md)
+  - [20.27 Kotlin 协程泄漏诊断与结构化并发性能监控](part5-app/ch20-stability/20.27-coroutine-leak-diagnosis-structured-concurrency-performance.md)
 
 #   - [8.33 Android 17 模块化启动框架与依赖图优化](src/part1-fundamentals/ch08-startup/8.33-android17-modular-startup-dependency-graph.md)
   - [4.36 Android 17 高级内存优化与治理](src/part1-fundamentals/ch04-memory/4.36-android17-advanced-memory-optimization.md)
