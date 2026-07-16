@@ -172,6 +172,90 @@
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-07-16T06:14:00.474672",
       "status": "pending"
+    },
+    {
+      "section": "1.15",
+      "section_title": "JNI/NDK 性能优化",
+      "priority": 90,
+      "reason": "[audit回炉] 源码版本基线仍标注 android-16.0.0_r1，需更新为 android-17.0.0_r1",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "frontmatter sources + 正文多处 AOSP 引用 + 参考资料",
+          "detail": "源码路径版本基线仍标注 android-16.0.0_r1，项目基准要求 android-17.0.0_r1。涉及 frontmatter last_verified_against、所有 aosp 类型 sources、正文中 'AOSP android-16.0.0_r1' 引用（如 Parcel.java @FastNative 示例、Binder.java @CriticalNative 示例、Trace.java/trace.h 引用等）、参考资料 section。",
+          "suggestion": "由 Task 9 核对 android-17.0.0_r1 中这些文件路径和 API 是否有变化，确认后由 Task 2B 统一更新版本标注为 android-17.0.0_r1"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-07-16T09:15:34",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-16-09-audit.md"
+    }
+  ],
+  "items": [
+    {
+      "section": "17.4",
+      "section_title": "sched_ext 与 OEM BPF 调度器",
+      "priority": 85,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，Android 17 GKI 6.18 sched_ext 默认启用 + 13 个 Android 专属 vendor hook + cpufreq 闭环源码级分析，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-sched-ext-6.18-vendor-hook-cpufreq-loop.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 sched_ext 与 OEM 自定义 BPF 调度器适配路径 — GKI 6.18 默认启用 CONFIG_SCHED_CLASS_EXT，落地 13 个 Android 专属 vendor hook（android_vh_scx_*），完成 cpufreq 闭环",
+          "suggestion": "章节已 finalized，判断是否适合在下一轮修订中补充 vendor hook 完整列表、scx_enable 流程、SysRq-S 回退面等源码级细节"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-16T06:14:00.474672",
+      "status": "pending"
+    },
+    {
+      "section": "4.8",
+      "section_title": "ART 分代 GC 与 MarkCompact 源码结构",
+      "priority": 82,
+      "reason": "[DeepResearch 注入] 新高价值源码调研，YoungMarkCompact 只是 MarkCompact 的 4 行 wrapper，userfaultfd + SIGBUS 零 STW 搬迁路径 + 三段式代际布局源码级分析",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-art-markcompact-young-wrapper-source-verification.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 ART YoungMarkCompact 与 MarkCompact 关系源码核查 — YoungMarkCompact 是 thin wrapper，CMC 由 userfaultfd + SIGBUS 构成零 STW 搬迁，支持 young/mid/old 三段代际布局",
+          "suggestion": "§4.8 和 §4.14 均 finalized，判断是否在下一轮修订中补充 CMC userfaultfd 机制、UFFD搬迁路径、代际布局细节"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-16T06:14:00.474672",
+      "status": "pending"
+    },
+    {
+      "section": "1.15",
+      "section_title": "JNI/NDK 性能优化",
+      "priority": 90,
+      "reason": "[audit回炉] 源码版本基线仍标注 android-16.0.0_r1，需更新为 android-17.0.0_r1",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "frontmatter sources + 正文多处 AOSP 引用 + 参考资料",
+          "detail": "源码路径版本基线仍标注 android-16.0.0_r1，项目基准要求 android-17.0.0_r1。涉及 frontmatter last_verified_against、所有 aosp 类型 sources、正文中 'AOSP android-16.0.0_r1' 引用（如 Parcel.java @FastNative 示例、Binder.java @CriticalNative 示例、Trace.java/trace.h 引用等）、参考资料 section。",
+          "suggestion": "由 Task 9 核对 android-17.0.0_r1 中这些文件路径和 API 是否有变化，确认后由 Task 2B 统一更新版本标注为 android-17.0.0_r1"
+        }
+      ],
+      "added_by": "task6-audit",
+      "added_at": "2026-07-16T09:15:34",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-07-16-09-audit.md"
     }
   ]
 }
