@@ -104,6 +104,30 @@
       "priority": 80,
       "status": "pending",
       "file": "src/part5-app/ch26-observability/27-profilo-atrace-online-collection.md"
+    },
+    {
+      "chapter": "16.5",
+      "title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "priority": 95,
+      "status": "pending",
+      "file": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+      "reason": "[Deep Tech Review] AOSP android-17.0.0_r1 中不存在 ConcurrentMessageQueue/ 目录，应为 CombinedDeliMessageQueue/",
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "Line 152 & 220 & 763",
+          "detail": "章节中多次引用 ConcurrentMessageQueue/ 目录，但 AOSP android-17.0.0_r1 中不存在此目录。正确的目录结构为 CombinedDeliMessageQueue/",
+          "suggestion": "修正所有 ConcurrentMessageQueue/ 引用为 CombinedDeliMessageQueue/，并明确说明 Android 17 中消息队列的实际目录结构"
+        },
+        {
+          "type": "版本差异",
+          "location": "分代 CMC 部分",
+          "detail": "章节提到 Android 17 的分代 CMC，但未充分说明实际启用条件复杂。从源码看，分代 CMC 需要 use_generational_gc、kUseBakerReadBarrier || gUseUserfaultfd、use_generational_cmc flag 和 device_config 同时满足",
+          "suggestion": "补充分代 CMC 的实际启用条件说明，明确不是所有 Android 17 设备都会启用此功能"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-16T08:25:30"
     }
   ],
   "pending": [
