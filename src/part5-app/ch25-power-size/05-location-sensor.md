@@ -52,6 +52,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-06-03"
 task6_result: pass-light-edit
 last_task6_at: "2026-06-03T21:36:06+08:00"
+last_task6_audit: "2026-07-16"
 last_task6_review_log: logs/review/2026-05-14-19-review.md
 task6_review_notes: "2026-05-14 Task6：L1/L2 小修 2 处；写作层通过。保留 Task9 P1 回炉队列，未自动晋升。"
 deepseek_cn_review_state: done
