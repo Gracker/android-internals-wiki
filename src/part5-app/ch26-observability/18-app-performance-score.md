@@ -2,7 +2,7 @@
 title: "App Performance Score 与性能质量评分归因"
 chapter: "26.18"
 section: "26.18"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-23"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37); App Performance Score Preview 2026"
 last_verified: "2026-05-23"
@@ -54,6 +54,8 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-23"
 task6_result: pass-light-edit
 task9_state: reviewed
+task2b_state: fixed
+task2b_result: fixed
 last_task6_at: "2026-05-23T20:16:21+08:00"
 last_task6_audit: "2026-07-15"
 task9_result: auto-fixed
