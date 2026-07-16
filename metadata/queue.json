@@ -69,6 +69,41 @@
       "priority": 80,
       "status": "pending",
       "file": "src/part5-app/ch20-stability/23-gwp-asan-probabilistic-memory-safety-android17.md"
+    },
+    {
+      "chapter": "9.13",
+      "title": "ANR 日志 CPU 数据系统化分析方法论",
+      "priority": 80,
+      "status": "pending",
+      "file": "src/part2-performance/ch09-anr/13-anr-log-cpu-analysis-methodology.md"
+    },
+    {
+      "chapter": "26.25",
+      "title": "ProcessCpuTracker 与 /proc 伪文件系统 CPU 数据采集",
+      "priority": 80,
+      "status": "pending",
+      "file": "src/part5-app/ch26-observability/25-proc-filesystem-cpu-monitoring.md"
+    },
+    {
+      "chapter": "26.26",
+      "title": "Page Fault 类型分析与 Android 实践",
+      "priority": 80,
+      "status": "pending",
+      "file": "src/part5-app/ch26-observability/26-page-fault-analysis-android.md"
+    },
+    {
+      "chapter": "20.24",
+      "title": "Crash 状态下 Java 线程堆栈获取与锁等待分析",
+      "priority": 80,
+      "status": "pending",
+      "file": "src/part5-app/ch20-stability/24-crash-java-stack-lock-wait-analysis.md"
+    },
+    {
+      "chapter": "26.27",
+      "title": "Facebook Profilo 框架线上 ATrace 收集方案",
+      "priority": 80,
+      "status": "pending",
+      "file": "src/part5-app/ch26-observability/27-profilo-atrace-online-collection.md"
     }
   ],
   "pending": [

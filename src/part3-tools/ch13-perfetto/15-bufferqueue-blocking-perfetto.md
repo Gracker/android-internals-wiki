@@ -69,7 +69,7 @@ task9_review_notes: "2026-07-10 Task9 idle-audit AUTO-FIX: P0 0 / P1 1 / P2 0;�
 last_task9_audit: "2026-07-10"
 last_task9_autofix_at: "2026-07-10"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-06
+last_deepseek_cn_review_at: 2026-07-16
 ---
 
 # 13.15 BufferQueue 阻塞的 Perfetto 识别
@@ -175,13 +175,18 @@ BufferQueue 背压和另外四类问题很像,排查时按下面顺序剥离:
 
 ## Android 16/17 release notify 路径边界
 
-Task 9 复核口径是:android-15.0.0_r1 的 `BufferQueueProducer.cpp` 未命中 `BUFFER_RELEASE_CHANNEL`,仍按传统 `mDequeueCondition.wait()` / `wait_for()` 和 `notify_all()` 路径理解;android-16.0.0_r1 存在 `COM_ANDROID_GRAPHICS_LIBGUI_FLAGS(BUFFER_RELEASE_CHANNEL)` 包裹的 `waitForBufferRelease()` / `notifyBufferReleased()`;android-17.0.0_r1 已保留 `waitForBufferRelease()` / `notifyBufferReleased()` 路径,`BufferQueueCore::notifyBufferReleased()` 最终仍调用 `mDequeueCondition.notify_all()`。因此本节把 Android 14/15 作为传统条件变量等待路径,把 Android 16/17 写成 release notify 路径,不把 flag 名称本身当成 Android 17 稳定接口。
+`dequeueBuffer` 的等待唤醒机制在不同 Android 版本上存在两个实现路径：
 
-对 Perfetto 判读的影响可以按保守口径处理:
+- **Android 14/15**：`BufferQueueProducer.cpp` 采用传统的 `mDequeueCondition.wait()` / `wait_for()` 等待，再由 `notify_all()` 全量唤醒 [已验证: android-15.0.0_r1]。
+- **Android 16/17**：引入了 `BUFFER_RELEASE_CHANNEL` 标记，通过 `waitForBufferRelease()` / `notifyBufferReleased()` 做定向唤醒 [已验证: android-16.0.0_r1 + android-17.0.0_r1]。`BufferQueueCore::notifyBufferReleased()` 最终仍调用 `mDequeueCondition.notify_all()`。
+
+`BUFFER_RELEASE_CHANNEL` 本身是 Android 16 引入的 flag 形态，不是 Android 17 的稳定接口名。
+
+对 Perfetto 判读的影响：
 
 - Android 14/15 设备上,`dequeueBuffer` 长等待可能伴随 futex sleep 和全量唤醒后的锁竞争。
-- Android 16/17 设备上,等待解除更依赖具体 buffer release 通知;Trace 上仍应回到 `dequeueBuffer` 时长、release 时刻和 Layer 的对应关系,不把同步实现差异直接写成用户可感知结论。
-- 性能收益不能脱离设备分支和 trace 证据评估,不能只凭 release notify 路径存在断言"已修复 BufferQueue 阻塞"。
+- Android 16/17 设备上,等待解除更依赖具体 buffer release 通知;Trace 上仍应回到 `dequeueBuffer` 时长、release 时刻和 Layer 的对应关系,不要将同步机制的内部差异直接解释为用户可感知的行为变化。
+- 性能收益不能脱离设备分支和 trace 证据评估,不能仅凭 release notify 路径存在就断言"BufferQueue 阻塞已修复"。
 
 ## Perfetto SQL 模板
 
@@ -279,4 +284,4 @@ BufferQueue 阻塞的判据不是某个 slice 名字，而是一组时间上闭�
 ## 参考资料与延伸阅读
 
 - **Android Triple Buffer 机制与 BufferQueue 缓冲区管理**：源码调研，详细分析 Triple Buffer 的 producer-consumer 流水线机制、MIN_UNDEQUEUED_BUFFERS=2 的阻塞条件、dequeueBuffer/acquireBuffer/releaseBuffer 完整流程
- `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-android-triple-buffer-bufferqueue-mechanism.md`
+ - 完整机制分析：`Android Triple Buffer 机制与 BufferQueue 缓冲区管理`（内部调研文档）

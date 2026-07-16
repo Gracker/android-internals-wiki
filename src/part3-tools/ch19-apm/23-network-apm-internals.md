@@ -58,6 +58,8 @@ last_task9_audit_log: "logs/deep-review/2026-07-11-07-audit.md"
 last_task9_audit_result: "auto-fixed-idle-audit"
 last_task9_audit_notes: "idle audit: 维度1/3 复核发现 OkHttp EventListener 版本限定小错，已将 requestHeadersEnd 版本下限 3.11+ 修正为 3.9+；无 P0/P1。"
 last_task9_autofix_at: "2026-07-11"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-16
 ---
 # 网络 APM 底层捕获原理
 
@@ -92,7 +94,7 @@ last_task9_autofix_at: "2026-07-11"
 > **扩展**视素材丰富程度选择性深入。
 <!-- outline-end -->
 
-网络 APM 的难点不在看板，而在采样点。请求从业务代码出发，到 DNS、建连、TLS、请求发送、服务端等待、响应读取，中间跨了应用层、库层、Socket 层，有时还跨了 Java 和 Native。端侧想拿到一条可复盘的网络样本，通常要把三层能力拼起来：请求语义层的拦截、阶段时序层的事件回调、以及库实现不可见时的插桩或 Native Hook。
+网络 APM 的难点不在看板，而在采样点。一条请求从业务代码出发，到 DNS、建连、TLS、请求发送、服务端等待、响应读取——中间跨了应用层、库层、Socket 层，有时还跨了 Java 和 Native。端侧要拿到一条可复盘的网络样本，通常需要把三层能力拼在一起：请求语义层的拦截、阶段时序层的事件回调、以及库实现不可见时的插桩或 Native Hook。
 
 ## 1. “无侵入”拿数据，实际是分层采集
 
@@ -591,16 +593,3 @@ HTTP/3 之后，很多团队会继续沿用 DNS/TCP/TLS/TTFB 这套字段名，�
 - OkHttp Interceptors：官方拦截器文档，适合区分应用拦截器与网络拦截器的职责边界
 - AGP `AsmClassVisitorFactory`：构建期字节码插桩入口，适合替代旧 Transform 方案
 - Cronet `UrlRequest.Callback` / `RequestFinishedInfo`：适合补齐 QUIC、连接复用和 request 结束后的原生指标
-
-## 12. 锚点覆盖核对
-
-- [已覆盖] 定位：说明“无侵入”本质是分层采集
-- [已覆盖] OkHttp 捕获：拆分 `EventListener` 与 `Interceptor` 的职责，解释 DNS/TCP 盲区
-- [已覆盖] 字节码插桩：给出 ASM Hook `openConnection` 的伪代码与工程边界
-- [已覆盖] Native 网络捕获：说明 Cronet 指标、PLT Hook、eBPF 权限边界
-- [已覆盖] 指标分解模型：给出 request / attempt 双层模型与阶段表
-- [已覆盖] 弱网与重试识别：拆分 `retry_overhead_ms` 与 `server_wait_ms`
-- [已覆盖] 隐私与安全：补齐 URL、Query、Header、Body、删除请求策略
-- [扩展已覆盖] `OkHttp EventListener` 核心代码
-- [扩展已覆盖] ASM Hook `openConnection` 伪代码
-- [扩展已覆盖] HTTP/3 / QUIC 口径变化
