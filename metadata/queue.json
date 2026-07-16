@@ -158,5 +158,26 @@
     "status": "pending",
     "path": "src/part5-app/ch22-rendering-practice/38-compose-canvas-custom-drawing-performance.md",
     "created_date": "2026-07-17"
+  },
+  {
+    "section": "5.11",
+    "section_title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
+    "priority": 90,
+    "reason": "[review抽检] android-17.0.0_r1 tag 状态自相矛盾：正文称已锚定，文末验证边界段称 tag 未发布",
+    "material_paths": [
+      "logs/review/2026-07-17-05-audit.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需确认",
+        "location": "正文 'Android 17 NPU 硬件特性声明' 段 vs 文末 '端侧 AI 推理栈验证边界' 段",
+        "detail": "正文写 '源码锚点已锚定 android-17.0.0_r1；该常量在 android-17.0.0_r1 中已确认存在'，文末写 'AOSP android-17.0.0_r1 tag 未发布，不能写成已锚定 tag'。同一 tag 状态描述矛盾。",
+        "suggestion": "核实 android-17.0.0_r1 当前是否已发布。统一两处表述。"
+      }
+    ],
+    "added_by": "task6-audit",
+    "added_at": "2026-07-17T05:05:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-07-17-05-audit.md"
   }
 ]
