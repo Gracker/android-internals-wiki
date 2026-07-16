@@ -2,7 +2,7 @@
 title: Hook 基础设施与性能工具实现原理
 chapter: '14.13'
 section: '14.13'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-06-24'
 last_verified_against: AOSP android-17.0.0_r1 system/sepolicy/public/domain.te + bionic/linker/linker_phdr.cpp
@@ -35,7 +35,7 @@ last_task2b_at: '2026-06-24'
 last_task9_at: 2026-07-16T02:23:22+0800
 last_task9_audit: 2026-07-16
 path: https://github.com/KwaiAppTeam/KOOM
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 polish_by: task2b-polish
 polish_count: '1'
 polish_date: '2026-04-22'
@@ -72,18 +72,19 @@ task6_review_notes_2026_06_24_r6: '第六轮复审（Task2B P95 Task9回炉后�
 task6_review_notes_2026_06_24_r7: '第七轮复审（Task2B IFUNC表格修正后回炉复审）：L1 修 20 处路径格式（AOSP/GitHub 源码路径中多余空格，涉及验证标注和正文）。禁用词/AI套话/翻译腔全清洁（body text）。不是X而是Y=2（限额内）。高频词全清洁。IFUNC 对比表 P90 修正已验证正确。L3 观察 1 条：art/runtime/entrypoints/entrypoint_utils.h 路径可能在 android-17.0.0_r1 中不存在（Task9 P95 queue 标记 completed 但路径未更新），交 Task9 复核。无 B 类阻断问题。task6_result: pass-light-edit，待 Task9 技术复审。'
 task6_review_notes_2026_07_01_r8: '第八轮复审（revisiting 回炉后）：L1 修 3 处（frontmatter title 残留---、禁用词链路→跳转回路、错误处理代码块缺概念示意图标注）。禁用词/AI套话/翻译腔全清洁。不是X而是Y=1（限额内）。高频词全清洁（核心6次均作形容词修饰，关键7次均作形容词修饰，非汇报腔用法）。L3 观察 1 条（应用场景三小节持续偏薄，前轮已标注，持续性建议不阻断）。无 B 类阻断问题。task9_result: pass-tech-review + queue.json 无 pending → 自动晋升 finalized。'
 task2b_lite_note_2026-07-15: 'P95 Task9 issue 确认误报: art/runtime/entrypoints/entrypoint_utils.h 经 android.googlesource.com android-17.0.0_r1 验证确实存在，正文引用正确，frontmatter last_verified_against 补充该路径'
+task6_review_notes_2026_07_16_r9: '第九轮复审（Task9 auto-fixed 后 revisiting 回炉）：L1 修 2 处（16KB section"两个直接影响"数量不一致→改为"三个"、backcompat 代码块缺语言标签→添加 bash）。禁用词/AI套话/翻译腔全清洁。"对齐"22次均作技术术语（page/ELF/指令对齐）非汇报腔用法。不是X而是Y=1（限额内）。高频词全清洁（真正0/实际上0/其实0）。验证标注29处[已验证]全部有源、[待验证]0。无 B 类阻断问题。task9_result: auto-fixed + queue.json 无 pending → 自动晋升 finalized。'
 task6_reviewed_by: openclaw-task6
-task6_reviewed_date: '2026-07-01'
-task6_state: revisiting
-last_task6_at: '2026-07-01'
-last_task6_audit: '2026-07-15'
+task6_reviewed_date: '2026-07-16'
+task6_state: reviewed
+last_task6_at: '2026-07-16'
+last_task6_audit: '2026-07-16'
 task9_result: auto-fixed
 task9_review_date: '2026-06-24'
 task9_reviewer: openclaw-task9
 task9_state: reviewed
 tech_score: 3/5
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-05
+last_deepseek_cn_review_at: 2026-07-16
 ---
 # 14.13 Hook 基础设施与性能工具实现原理
 
@@ -459,7 +460,7 @@ PLT Hook 在多进程场景下还要注意：两个进程的同一个 .so 在同
 
 ### 16KB Page Size 对 Hook 的影响
 
-Android 16+ 引入的 16KB page size 对 Hook 框架产生两个直接影响：
+Android 16+ 引入的 16KB page size 对 Hook 框架产生三个直接影响：
 
 1. **页面粒度变化**：`mprotect` 的权限切换以页为单位。4096B → 16384B，同一个 `mprotect` 调用可能影响范围扩大到 4 倍。如果 Trampoline 和数据落在同一个 16KB 页内，切换权限时可能误伤数据段。
 2. **ELF 加载对齐**：16KB page size 要求 .so 在编译时指定 `-Wl,-z,max-page-size=16384` [已验证: Android Developers 16KB page size docs]。如果 Hook 的目标 .so 没有以 16KB 对齐编译，它的代码段和数据段可能和 linker 预期的布局不一致，GOT 表偏移计算会出错。
@@ -542,7 +543,7 @@ trampo 池（`sh_hub_trampo_mgr` + `sh_island_trampo_mgr`）每页申请 `PROT_R
 
 Android 17 引入了完整的 backcompat 模式，由两个 system property 控制：
 
-```
+```bash
 # 强制对所有 App 启用 backcompat（默认行为）
 adb shell setprop bionic.linker.16kb.app_compat.enabled true
 adb shell setprop pm.16kb.app_compat.disabled false
@@ -655,6 +656,4 @@ Hook 技术的实际价值不在于"有几种实现方式"，而在于填补性�
 Hook 不是银弹——每次 Hook 都有额外调用开销，PLT 表项被替换后某些 linker 优化（如 IFUNC resolver）会绕过 Hook。选择 Hook 方案前先确认：Perfetto SDK 的 track event 或 atrace 插桩能不能覆盖你的观测需求？能就不用 Hook；不能，再从 PLT Hook → inline hook 逐级加码。
 
 
-<!-- AIW-源码调研-2026-07-14-补充 -->
-
-> **2026-07-14 补充（Android 17 bionic linker 行为）**：`bionic/linker/linker.cpp::soinfo::prelink_image()` 在解析 `.dynamic` 段时，对 `DT_PLTGOT` 给出了明确注释：`// Ignored (because RTLD_LAZY is not supported).` 因此 Android 上的 GOT Hook 没有 glibc-style 的 lazy window；`R_GENERIC_JUMP_SLOT` 在 `soinfo::link_image()` 调用 `relocate()` 期间通过 `process_relocation_impl<RelocMode::General>()` fast path 把函数实地址一次性写入 GOT，hook 工具必须在 `dlopen()` 返回前完成 trampoline 替换（详情见 `DeepResearch/2026-07-14-android17-native-hook-three-schools-inlinhook-arm64.md`）。此外，`protect_relro()` 在 link_image 末尾执行（`linker.cpp:3480+`），把 GNU_RELRO 段写回只读，因此 hook 框架写入时机容差极小；ARM64 MEMTAG globals 启用后 RELRO 内字节含义被改写（`linker_relocate.cpp:345-358`），更增加直接 inline 修补 RELRO 段的难度。
+> **Android bionic linker 的 GOT 填充时机**：`bionic/linker/linker.cpp::soinfo::prelink_image()` 在解析 `.dynamic` 段时，对 `DT_PLTGOT` 给出了明确注释：`// Ignored (because RTLD_LAZY is not supported).` 因此 Android 上的 GOT Hook 没有 glibc-style 的 lazy window；`R_GENERIC_JUMP_SLOT` 在 `soinfo::link_image()` 调用 `relocate()` 期间通过 `process_relocation_impl<RelocMode::General>()` fast path 把函数实地址一次性写入 GOT，hook 工具必须在 `dlopen()` 返回前完成 GOT 替换。此外，`protect_relro()` 在 link_image 末尾执行（`linker.cpp:3480+`），把 GNU_RELRO 段写回只读，hook 框架的写入时机容差极小；ARM64 MEMTAG globals 启用后 RELRO 内字节含义被改写（`linker_relocate.cpp:345-358`），更增加直接 inline 修补 RELRO 段的难度。
