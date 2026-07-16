@@ -11,8 +11,9 @@
       "chapter": "13.20",
       "title": "Frame Timeline API 33 Perfetto 深度分析",
       "priority": 80,
-      "status": "pending",
-      "file": "src/part3-tools/ch13-perfetto/20-frame-timeline-api33-perfetto-analysis.md"
+      "status": "done",
+      "file": "src/part3-tools/ch13-perfetto/20-frame-timeline-api33-perfetto-analysis.md",
+      "completed_date": "2026-07-16"
     },
     {
       "chapter": "13.21",

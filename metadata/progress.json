@@ -1,9 +1,9 @@
 {
   "total": 760,
-  "draft": 16,
-  "ready_for_review": 15,
+  "draft": 15,
+  "ready_for_review": 16,
   "finalized": 5,
-  "last_updated": "2026-07-16T12:28:56.914873+08:00",
+  "last_updated": "2026-07-16T13:04:00+08:00",
   "task2b": {
     "last_run": "2026-07-14T06:54:06+08:00",
     "last_section": "15",
@@ -33,6 +33,13 @@
   ],
   "last_task2b_main_fix": "Flutter thread model version boundary: 3.29+→3.32 stable+, 3.28-→3.31- across 2.11/18.12/19.26",
   "progress": [
+    {
+      "section": "13.20",
+      "action": "task2a-draft-processing",
+      "status": "ready-for-review",
+      "ts": "2026-07-16T13:04:00+08:00",
+      "note": "Frame Timeline API 33 Perfetto 深度分析：Expected/Actual Timeline 物理含义、三条关键 Track、颜色编码与 jank 归因、FrameData API、数据源配置、SQL 查询、Compose PausableComposition 联动"
+    },
     {
       "section": "none",
       "action": "task2a-knowledge-gap-mining",
