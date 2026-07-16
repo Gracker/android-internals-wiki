@@ -70,6 +70,9 @@
   - [8.32 Android 17 应用启动信息分析](part1-fundamentals/ch08-startup/8.32-android17-application-start-info.md)
 
 - [26.23 生产级 ART 动态方法追踪 — XTrace 架构与实战](part5-app/ch26-observability/26.23-xtrace-art-dynamic-method-tracing.md)
+  - [26.25 ProcessCpuTracker 与 /proc 伪文件系统 CPU 数据采集](part5-app/ch26-observability/25-proc-filesystem-cpu-monitoring.md)
+  - [26.26 Page Fault 类型分析与 Android 实践](part5-app/ch26-observability/26-page-fault-analysis-android.md)
+  - [26.27 Facebook Profilo 框架线上 ATrace 收集方案](part5-app/ch26-observability/27-profilo-atrace-online-collection.md)
 - [5.21 Android 17 SoC 厂商电池优化架构](part1-fundamentals/ch05-cpu-power/5.21-android17-battery-optimization-soc-architecture.md)
 
   - [5.28 PELT Boost 回退与 AMU/PMU 微架构感知调频](part1-fundamentals/ch05-cpu-power/5.28-android17-pelt-boost-revert-amu-pmu-microarch-frequency-limiting.md)
@@ -123,6 +126,7 @@
   - [9.9 Android 17 ANR 预警系统](src/part2-performance/ch09-anr/09-android17-anr-warning-system.md)
   - [9.10 Android 17 ANR 预警回调与类型枚举](src/part2-performance/ch09-anr/10-android17-anr-warning-callback.md)
   - [9.11 企业级 ANR 监控平台架构设计](src/part2-performance/ch09-anr/9.11-enterprise-anr-monitoring-platform-design.md)  - [9.12 Android 17 ANR 输入事件超时检测双层预警机制](part2-fundamentals/ch09-architecture/9-12-android17-anr-输入事件超时检测双层预警机制.md)
+  - [9.13 ANR 日志 CPU 数据系统化分析方法论](part2-performance/ch09-anr/13-anr-log-cpu-analysis-methodology.md)
 - [第 12 章：音频性能优化](part3-system/ch12-audio-performance/README.md)
   - [12.33 Android 17 后台音频硬化与 LE Audio 功耗治理](part3-system/ch12-audio-performance/12.33-android17-background-audio-hardening-leaudio-power.md)
 
@@ -153,6 +157,7 @@
   - [20.21 FD 泄漏监控与线程资源治理实战](part5-app/ch20-stability/21-fd-leak-monitoring-thread-resource-governance.md)
   - [20.22 Binder 通信监控实战](part5-app/ch20-stability/22-binder-communication-monitoring.md)
   - [20.23 GWP-ASan 灰度检测演进与 Android 17 内存安全防线](part5-app/ch20-stability/23-gwp-asan-probabilistic-memory-safety-android17.md)
+  - [20.24 Crash 状态下 Java 线程堆栈获取与锁等待分析](part5-app/ch20-stability/24-crash-java-stack-lock-wait-analysis.md)
 
 #   - [8.33 Android 17 模块化启动框架与依赖图优化](src/part1-fundamentals/ch08-startup/8.33-android17-modular-startup-dependency-graph.md)
   - [4.36 Android 17 高级内存优化与治理](src/part1-fundamentals/ch04-memory/4.36-android17-advanced-memory-optimization.md)
