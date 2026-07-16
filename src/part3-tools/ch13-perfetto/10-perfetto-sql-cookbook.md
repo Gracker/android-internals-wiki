@@ -13,6 +13,7 @@ task6_result: pass-light-edit
 pipeline_stage: ready-to-publish
 reviewed_by: openclaw-task6
 last_task6_at: 2026-07-12
+last_task6_audit: 2026-07-17
 ---
 
 # 13.10 Perfetto SQL 性能分析实战手册
@@ -37,7 +38,7 @@ Perfetto TraceProcessor 内置了一个完整的 SQL 引擎（基于 SQLite）�
 
 ### SQL 引擎与模块加载
 
-TraceProcessor 的 SQL 方言叫 Perfetto SQL，基于 SQLite 但做了扩展。最大的扩展是 `INCLUDE PERFETTO MODULE` 语句：Perfetto 官方维护了一套标准库模块（standard library module s），每个模块提供预定义的表、视图和函数，把底层的 raw 表封装成更易用的高级抽象。
+TraceProcessor 的 SQL 方言叫 Perfetto SQL，基于 SQLite 但做了扩展。最大的扩展是 `INCLUDE PERFETTO MODULE` 语句：Perfetto 官方维护了一套标准库模块（standard library modules），每个模块提供预定义的表、视图和函数，把底层的 raw 表封装成更易用的高级抽象。
 
 ```sql
 -- 加载帧分析标准模块
@@ -320,7 +321,7 @@ ORDER BY delay_ns DESC
 LIMIT 20;
 ```
 
-这个查询的核心逻辑：从 `sched` 表中找到主线程以 `R`（Runnable）或 `R+`（Runnable preempt e d）状态离开 CPU 的记录，然后用 `LEAD()` 窗口函数取同一 utid 的下一条调度记录，两者的时间差就是调度延迟。如果 `delay_ms` 频繁超过 5 ms，说明系统 CPU 负载很重，主线程在排队等 CPU。处理方向是减少后台 Runnable 竞争：限制业务线程池并发、降低后台线程优先级、拆分长 CPU 任务、排查热降频或系统负载。`SCHED_FIFO` 只适用于系统/厂商特权进程的受控场景；普通 App 没有 `CAP_SYS_NICE`，不能把 UI 主线程切到实时调度，滥用还可能造成系统饥饿和 watchdog 风险。
+这个查询的核心逻辑：从 `sched` 表中找到主线程以 `R`（Runnable）或 `R+`（Runnable preempted）状态离开 CPU 的记录，然后用 `LEAD()` 窗口函数取同一 utid 的下一条调度记录，两者的时间差就是调度延迟。如果 `delay_ms` 频繁超过 5 ms，说明系统 CPU 负载很重，主线程在排队等 CPU。处理方向是减少后台 Runnable 竞争：限制业务线程池并发、降低后台线程优先级、拆分长 CPU 任务、排查热降频或系统负载。`SCHED_FIFO` 只适用于系统/厂商特权进程的受控场景；普通 App 没有 `CAP_SYS_NICE`，不能把 UI 主线程切到实时调度，滥用还可能造成系统饥饿和 watchdog 风险。
 
 ### 线程状态分布
 
@@ -401,7 +402,7 @@ LIMIT 20;
 
 ### 跨进程 Binder 调用链追踪
 
-在实际分析中，我们经常需要追踪一个 Binder 调用从客户端到服务端的完整路径。在 Perfetto UI 中，这对应的是 Android Binder / T r a nsactions track。在 SQL 中，需要通过时间戳关联来连接客户端和服务端的 slice：
+在实际分析中，我们经常需要追踪一个 Binder 调用从客户端到服务端的完整路径。在 Perfetto UI 中，这对应的是 Android Binder / Transactions track。在 SQL 中，需要通过时间戳关联来连接客户端和服务端的 slice：
 
 ```sql
 -- 查找主线程发起的长时间 Binder 调用
@@ -535,11 +536,11 @@ ORDER BY counter.ts ;
 
 路径二是 Java heap dump。它依赖 heap graph / `android.java_hprof` 相关数据源，分析对象数量、类名和引用关系时看 `heap_graph_object`、`heap_graph_class`、`heap_graph_reference` 等表。
 
-路径三是 Java allocation sampling。它依赖 heappro f d 与 ART Java allocation 相关配置，分析分配热点时看 `heap_profile_allocation` 以及 callsite / frame 相关表。`process_stats` 里的 `mem.rss.anon` 只能表示匿名 RSS 趋势，不能直接当成 Java Heap。
+路径三是 Java allocation sampling。它依赖 heapprofd 与 ART Java allocation 相关配置，分析分配热点时看 `heap_profile_allocation` 以及 callsite / frame 相关表。`process_stats` 里的 `mem.rss.anon` 只能表示匿名 RSS 趋势，不能直接当成 Java Heap。
 
 如果 Heap 相关 counter 呈锯齿形上升（分配→GC 回收→再分配→再回收），且每次 GC 后的基准线持续抬高，说明存在内存泄漏。参见 §10.2 内存泄漏章节。
 
-[已验证: Perfetto counter / heap graph / heappro f d 表族；counter 名称随 trace 配置和 Android 版本变化]
+[已验证: Perfetto counter / heap graph / heapprofd 表族；counter 名称随 trace 配置和 Android 版本变化]
 
 ## 启动时间分析
 
@@ -575,17 +576,17 @@ LEFT JOIN thread ON thread_track.utid = thread.utid
 LEFT JOIN process AS thread_process ON thread.upid = thread_process.upid
 LEFT JOIN process_track ON slice.track_id = process_track.id
 LEFT JOIN process AS track_process ON process_track.upid = track_process.upid
-WHERE slice.name GLOB '*a m_proc_start*'
+WHERE slice.name GLOB '*am_proc_start*'
   OR slice.name GLOB '*bindApplication*'
-  OR slice.name GLOB '*Activity T hread*'
-  OR slice.name IN ('Application.on C r e at e', 'Activity.on C r e at e')
+  OR slice.name GLOB '*ActivityThread*'
+  OR slice.name IN ('Application.onCreate', 'Activity.onCreate')
   OR slice.name GLOB 'Choreographer#doFrame*'
 ORDER BY slice.ts ;
 ```
 
 [已验证: AOSP Zygote Init.java 使用 `Zygote Init` trace section；App 冷启动节点需按实际 trace 中的 slice 名确认]
 
-通过这个查询可以得到启动过程中各个阶段的时间线。`Application.on C r e at e`、`Activity.on C r e at e` 是否可见，取决于应用或 Framework 是否写入对应 trace section。如果某个阶段明显偏长，可以进一步分析该阶段内的 Binder 调用和锁等待。
+通过这个查询可以得到启动过程中各个阶段的时间线。`Application.onCreate`、`Activity.onCreate` 是否可见，取决于应用或 Framework 是否写入对应 trace section。如果某个阶段明显偏长，可以进一步分析该阶段内的 Binder 调用和锁等待。
 
 ### 启动过程中的 Binder 调用统计
 
@@ -725,7 +726,7 @@ state_with_slice AS (
 SELECT
   CASE
   WHEN slice_name GLOB '*monitor*' THEN 'Lock Contention'
-  WHEN slice_name GLOB '*binder*' THEN 'Binder C a ll'
+  WHEN slice_name GLOB '*binder*' THEN 'Binder Call'
   WHEN state = 'D' THEN 'Uninterruptible IO'
   WHEN state = 'S' THEN 'Sleeping (generic)'
   WHEN state IN ('R', 'R+') THEN 'Runnable but waiting for CPU'
@@ -764,7 +765,7 @@ ORDER BY dur DESC
 LIMIT 10;
 ```
 
-`android_monitor_contention` 在 Perfetto v 54.0 中已经把 owner 线程、blocked 线程和相关方法解析好了，比直接在原始 `slice` 上用名字模糊匹配稳定得多。当前 Perfetto stdlib 文档还提供 `lock_name` 列；如果本机 TraceProcessor 支持该列，可以把它加回 SELECT，否则从原始 `slice` / `args` 表补查锁对象名。结合 Perfetto UI 的 L ock contention track，可以快速定位锁竞争的全貌。
+`android_monitor_contention` 在 Perfetto v54.0 中已经把 owner 线程、blocked 线程和相关方法解析好了，比直接在原始 `slice` 上用名字模糊匹配稳定得多。当前 Perfetto stdlib 文档还提供 `lock_name` 列；如果本机 TraceProcessor 支持该列，可以把它加回 SELECT，否则从原始 `slice` / `args` 表补查锁对象名。结合 Perfetto UI 的 Lock contention track，可以快速定位锁竞争的全貌。
 
 ### 锁竞争与帧时间关联
 
@@ -798,7 +799,7 @@ ORDER BY contention.dur DESC;
 
 如果 `lock_pct` 超过 30%，说明这一帧卡顿的主要原因是锁等待。根因分析方法：从 `owner_thread`、`short_blocking_method` 和 `short_blocked_method` 继续沿着持锁线程的时间线往后查；本机 TraceProcessor 若支持 `lock_name`，再把锁对象名纳入判断。参见 §1.14 锁竞争与同步性能分析章节。
 
-[已验证: google/perfetto v 54.0 `android.monitor_contention.sql` + Perfetto 当前 stdlib docs]
+[已验证: google/perfetto v54.0 `android.monitor_contention.sql` + Perfetto 当前 stdlib docs]
 
 ## SPAN_JOIN 与窗口函数：跨维度时间序列交叉分析
 
@@ -894,4 +895,4 @@ JOIN frame_lock_cpu
 
 每条路径中的 SQL 查询都可以在本章找到对应的模板。建议读者把常用的查询保存为 SQL 文件，在实际分析时直接加载执行，而不是每次从零开始写。
 
-> 本章 SQL 基于 Perfetto v 54.0 源码与当前 Perfetto stdlib 文档交叉验证，建议在 Perfetto UI 的 Query 标签页中直接运行。部分查询可能因 Trace 配置差异（未开启 sched/f trace 等数据源）而无结果，请确保 Trace 抓取配置覆盖了分析所需的数据源（参见 §13.2 Trace 抓取章节）。
+> 本章 SQL 基于 Perfetto v54.0 源码与当前 Perfetto stdlib 文档交叉验证，建议在 Perfetto UI 的 Query 标签页中直接运行。部分查询可能因 Trace 配置差异（未开启 sched/f trace 等数据源）而无结果，请确保 Trace 抓取配置覆盖了分析所需的数据源（参见 §13.2 Trace 抓取章节）。
