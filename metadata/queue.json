@@ -142,5 +142,21 @@
     "status": "pending",
     "file": "src/part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md",
     "added": "2026-07-16"
+  },
+  {
+    "chapter": "23.26",
+    "title": "ART 堆内存分布与 OOM 触发路径实战",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part5-app/ch23-memory-practice/23.26-art-heap-distribution-oom-trigger-path.md",
+    "created_date": "2026-07-17"
+  },
+  {
+    "chapter": "22.38",
+    "title": "Compose Canvas 自定义绘制性能实战",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part5-app/ch22-rendering-practice/38-compose-canvas-custom-drawing-performance.md",
+    "created_date": "2026-07-17"
   }
 ]

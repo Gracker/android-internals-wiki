@@ -143,6 +143,7 @@
   - [12.33 Android 17 后台音频硬化与 LE Audio 功耗治理](part3-system/ch12-audio-performance/12.33-android17-background-audio-hardening-leaudio-power.md)
 
 - [23.13 应用虚拟内存优化实战](part5-app/ch23-memory-practice/13-virtual-memory-optimization.md)
+  - [23.26 ART 堆内存分布与 OOM 触发路径实战](part5-app/ch23-memory-practice/23.26-art-heap-distribution-oom-trigger-path.md)
 
 ---
 
@@ -162,6 +163,7 @@
   - [22.35 Bitmap 解码管线性能与 ImageDecoder 实战](part5-app/ch22-rendering-practice/35-bitmap-decode-pipeline-imagedecoder.md)
   - [22.36 SharedTransitionLayout — Compose 共享元素过渡动画性能优化](part5-app/ch22-rendering-practice/36-shared-transition-layout-performance.md)
   - [22.37 Compose Runtime Tracing — Perfetto 集成与组合阶段追踪](part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md)
+  - [22.38 Compose Canvas 自定义绘制性能实战](part5-app/ch22-rendering-practice/38-compose-canvas-custom-drawing-performance.md)
 
   - [4.22 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.22-android17-ai-agent-memory-sandboxed-data-reuse.md)
   - [14.28 GPU 性能分析进阶 — 跨厂商计数器标准化与工作负载剖析](part3-tools/ch14-other-tools/28-gpu-performance-profiling-advanced.md)
