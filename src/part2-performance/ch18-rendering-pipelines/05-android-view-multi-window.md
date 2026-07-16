@@ -38,7 +38,7 @@ task9_review_notes: "2026-05-07 Task9 08:36:needs-rework。P0 0 / P1 1 / P2 2;�
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-06-07
 last_task6_at: 2026-06-07T13:06:00+08:00
-last_task6_audit: '2026-05-25T07:06:00+08:00'
+last_task6_audit: '2026-07-16'
 last_task6_review_log: logs/review/2026-06-07-11-review.md
 task6_review_notes: 2026-05-07 task6 review 05:05:补齐 section/H1、last_verified/confidence、代码块语言标注并清理禁用词;L1/L2 | 2026-06-07 task6 review 11:06:L1小修1处(开头形容词+冒号模式→直接陈述);L1/L2通过,无新增回炉项。
   通过,无新增回炉项,转 Task9 复审。 | 2026-05-07 task6 review 06:10:清理标题术语与正文提示腔,统一为多窗口渲染路径;L1/L2
@@ -86,7 +86,7 @@ last_deepseek_cn_review_at: 2026-07-04
 3. **同 App 多 Activity 可见**:同一 App 内两个 Activity 同时处于可见/RESUMED 状态(如 TaskFragment / Activity Embedding)。
 4. **Activity Embedding(Android 12L+)**:在同一个 Task 内嵌入多个 Activity,常用于大屏 / 折叠屏的 list-detail 布局。仍然是同进程,串行竞争规则适用;WMS 层把这些 Activity 组织进同一个 `Task`,几何变化要用 `WindowContainerTransaction` 协调。
 
-这些场景共享渲染资源--一个 UI Thread、一个 RenderThread、一个 EGLContext(OpenGL 后端)。瓶颈表现为窗口之间的绘制串行竞争。
+这些场景共享渲染资源——一个 UI Thread、一个 RenderThread、一个 EGLContext(OpenGL 后端)。瓶颈表现为窗口之间的绘制串行竞争。
 
 ### 跨进程多窗口
 
@@ -96,7 +96,7 @@ last_deepseek_cn_review_at: 2026-07-04
 2. **PiP(画中画)**:一个 App 缩小到角落播放,另一个 App 占据主屏。两个进程独立渲染。
 3. **Freeform / Desktop Windowing(Android 16+)**:Android 16 引入的原生桌面窗口管理,允许多个应用窗口同时显示。桌面窗口数量可变、尺寸自由,SystemUI 需同时渲染 Taskbar 和 Universal Cursor。连接外部显示器时,SystemUI 进程的 CPU 和显存会出现明显阶跃。对 App 侧来说,桌面模式下的多窗口同时可见时间更长,渲染压力从"短暂共存"变成了"持续并存"。
 
-跨进程多窗口的瓶颈不在 App 进程内部,而在 SurfaceFlinger:各窗口的 `BufferTX` / `acquire fence` 节奏不同步,SF 每一轮 `vsync-sf` 要在多份窗口状态里选出可以一起合成的一组(per-layer latch)。读跨进程多窗口 trace 时,App 进程内部的 slice 可能都很健康--问题要到 SurfaceFlinger 进程里去找。
+跨进程多窗口的瓶颈不在 App 进程内部,而在 SurfaceFlinger:各窗口的 `BufferTX` / `acquire fence` 节奏不同步,SF 每一轮 `vsync-sf` 要在多份窗口状态里选出可以一起合成的一组(per-layer latch)。读跨进程多窗口 trace 时,App 进程内部的 slice 可能都很健康——问题要到 SurfaceFlinger 进程里去找。
 
 ### 同 App 分屏:介于两者之间
 
@@ -115,7 +115,7 @@ last_deepseek_cn_review_at: 2026-07-04
 
 同进程多窗口里，多个 `ViewRootImpl` 共享同一个 `Choreographer`（`Choreographer.getInstance()` 是 `ThreadLocal<Choreographer>`，同一主线程上的所有 `ViewRootImpl` 天然共享）。同一帧 `doFrame` 内，多个 `performTraversals` 按 callback 注册顺序**串行**执行；RenderThread 是进程级单例（`RenderThread::getInstance()`），`DrawFrame` 也按窗口先后串行排队。某个窗口的 `performTraversals` 长了，后续窗口的起跑点直接往后挪。
 
-### 跨进程：各自独立跑流水线，但共享一份 SF 帧节奏
+### 跨进程:各自独立跑流水线,但共享一份 SF 帧节奏
 
 跨进程多窗口里，每个进程独立订阅 `vsync-app`，独立跑自己的 MainThread / RenderThread / `BLASTBufferQueue`。Perfetto 里能看到不同进程的 `Choreographer#doFrame` 各自独立出现，不挤在同一个线程里。问题集中在：
 
@@ -131,7 +131,7 @@ last_deepseek_cn_review_at: 2026-07-04
 
 多窗口的性能瓶颈不在于"画的东西翻倍"，而在于**串行化执行**——两个窗口的绘制任务不能并行，只能排队。
 
-SurfaceFlinger 合成侧已经并行化了--多个 Layer 可以由 HWC 硬件同时合成,跨进程多窗口的帧率互不干扰(见 [18.2](02-android-view-standard.md))。因此,同进程多窗口的压力主要落在生产侧:App 进程内部的 UI Thread 和 RenderThread 排队。
+SurfaceFlinger 合成侧已经并行化了——多个 Layer 可以由 HWC 硬件同时合成,跨进程多窗口的帧率互不干扰(见 [18.2](02-android-view-standard.md))。因此,同进程多窗口的压力主要落在生产侧:App 进程内部的 UI Thread 和 RenderThread 排队。
 
 ### UI Thread 争抢
 
@@ -343,7 +343,7 @@ getWindow().getDecorView().post(() -> {
 
 **同 App 分屏**:两个 Activity 同进程,共享同一个 `Choreographer` 和 RenderThread。`doFrame` 内出现两套完整的 `performTraversals`,串行竞争加剧。排查重点在 App 进程内部的 UI Thread / RenderThread 竞争。
 
-**跨 App 分屏**:两个不同 App 各自独立进程,各自有独立的 UI Thread / RenderThread / `BLASTBufferQueue`。App 进程内部的 slice 可能都很健康--瓶颈在 SurfaceFlinger 侧。排查重点转移到 SF 进程的 per-layer latch、HWC composition 和 `vsync-sf` 调度。
+**跨 App 分屏**:两个不同 App 各自独立进程,各自有独立的 UI Thread / RenderThread / `BLASTBufferQueue`。App 进程内部的 slice 可能都很健康——瓶颈在 SurfaceFlinger 侧。排查重点转移到 SF 进程的 per-layer latch、HWC composition 和 `vsync-sf` 调度。
 
 对两种分屏都适用的是:两个 Activity 的布局复杂度是否可以各自简化、是否有不必要的全屏重绘、非活跃 Activity 是否可以暂停渲染。
 
