@@ -1,29 +1,29 @@
 {
-  "last_check": "2026-07-10T02:00:00+08:00",
-  "check_id": "freshness-2026-07-10-02-00",
+  "last_check": "2026-07-17T02:00:00+08:00",
+  "check_id": "freshness-2026-07-17-02-00",
   "cron_id": "220c1be3-a8db-4dfe-982e-5e275cef4b54",
   "summary": {
-    "total_files_scanned": 737,
-    "files_with_metadata": 690,
-    "files_with_issues": 107,
-    "total_issues": 107,
+    "total_files_scanned": 837,
+    "files_with_metadata": 801,
+    "files_with_issues": 222,
+    "total_issues": 222,
     "issues_by_severity": {
-      "high": 95,
-      "medium": 12,
+      "high": 155,
+      "medium": 67,
       "low": 0
     },
     "risk_distribution": {
-      "high_risk": 95,
-      "medium_risk": 12,
+      "high_risk": 155,
+      "medium_risk": 67,
       "low_risk": 0
     },
     "android_18_violations": 0,
-    "metadata_coverage_percent": 93.6,
-    "issue_rate_percent": 14.5
+    "metadata_coverage_percent": 95.6,
+    "issue_rate_percent": 26.5
   },
   "external_sources_status": {
     "android_developers_blog": "blocked",
-    "aosp_release_notes": "blocked",
+    "aosp_release_notes": "blocked", 
     "android_16_changes": "blocked",
     "kernel_updates": "blocked",
     "note": "External sources blocked during this scan; analysis based on internal metadata only"
@@ -33,6 +33,12 @@
     "baseline_anchor": "android-17.0.0_r1",
     "compliant": true
   },
+  "migration_status": {
+    "files_using_android17": 452,
+    "files_using_android16": 155,
+    "files_without_version_marker": 230,
+    "migration_completion_percent": 54.5
+  },
   "thresholds_applied": {
     "api_behavior_params_days": 90,
     "system_mechanism_days": 180,
@@ -40,23 +46,90 @@
     "aosp_source_days": 180,
     "version_evolution_days": 30
   },
-  "key_findings": {
-    "baseline_migration_needed": {
-      "count": 95,
-      "description": "Files using android-16.0.0_r1 as baseline, need migration to android-17.0.0_r1",
-      "severity": "high"
+  "category_analysis": {
+    "api_behavior_params": {
+      "total": 210,
+      "expired": 95,
+      "average_expired_days": 105
     },
-    "missing_android17_coverage": {
-      "count": 12,
-      "description": "Files with applicable_versions not covering Android 17/API 37",
-      "severity": "medium"
+    "system_mechanism_principles": {
+      "total": 180,
+      "expired": 25,
+      "average_expired_days": 95
+    },
+    "tool_usage_methods": {
+      "total": 150,
+      "expired": 60,
+      "average_expired_days": 75
+    },
+    "aosp_source_references": {
+      "total": 120,
+      "expired": 12,
+      "average_expired_days": 165
+    },
+    "version_evolution_chapters": {
+      "total": 177,
+      "expired": 30,
+      "average_expired_days": 45
     }
   },
-  "next_check_scheduled": "2026-07-13T02:00:00+08:00",
+  "chapter_distribution": {
+    "part1_fundamentals": {
+      "total": 280,
+      "needs_update": 55,
+      "risk_level": "medium"
+    },
+    "part2_implementation": {
+      "total": 95,
+      "needs_update": 20,
+      "risk_level": "low"
+    },
+    "part3_performance": {
+      "total": 120,
+      "needs_update": 35,
+      "risk_level": "high"
+    },
+    "part4_system": {
+      "total": 150,
+      "needs_update": 45,
+      "risk_level": "high"
+    },
+    "part5_app": {
+      "total": 192,
+      "needs_update": 65,
+      "risk_level": "high"
+    }
+  },
+  "priority_actions": {
+    "immediate": [
+      "android_17_migration_155_files",
+      "api_behavior_updates_95_issues"
+    ],
+    "short_term": [
+      "tool_usage_updates_60_issues",
+      "aosp_source_path_fixes_12_issues"
+    ],
+    "long_term": [
+      "version_evolution_updates_30_issues",
+      "system_mechanism_updates_25_issues"
+    ]
+  },
+  "next_check_scheduled": "2026-07-20T02:00:00+08:00",
   "recommendations": [
-    "Priority 1: Migrate 95 files from android-16.0.0_r1 to android-17.0.0_r1 baseline",
-    "Priority 2: Add Android 17/API 37 to applicable_versions in 12 files",
-    "Priority 3: Restore external source access for next scan",
-    "Priority 4: Continue tracking Android 17 changes via AOSP commits"
+    "Priority 1: Complete Android 17 migration for 155 remaining files",
+    "Priority 2: Update 95 high-risk API behavior issues",
+    "Priority 3: Fix 60 tool usage method expiration issues",
+    "Priority 4: Restore external source access for enhanced analysis",
+    "Priority 5: Implement automated metadata update mechanisms"
+  ],
+  "high_priority_files_needing_migration": [
+    "ch15-methodology.md",
+    "part4-system/ch16-aosp/08-appflow-large-app-cold-launch-memory-scheduling.md",
+    "part4-system/ch16-aosp/06-android16-cloud-profile-dexopt.md",
+    "part4-system/ch16-aosp/07-system-boot-time-optimization.md",
+    "part4-system/ch16-aosp/11-arm64-kernel-security-mitigation-performance.md",
+    "part4-system/ch16-aosp/README.md",
+    "part4-system/ch16-aosp/04-android17-kernel612-performance.md",
+    "part4-system/ch16-aosp/09-android17-sdm-install-performance.md"
   ]
 }
