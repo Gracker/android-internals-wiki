@@ -75,6 +75,7 @@ p2: 1
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-11
 last_task9_audit: "2026-07-11"
+last_task6_audit: "2026-07-16"
 last_task9_audit_at: "2026-07-11T22:29:04+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-11-22-audit.md"
 last_task9_audit_result: "pass-idle-audit"

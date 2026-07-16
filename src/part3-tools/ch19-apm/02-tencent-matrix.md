@@ -38,6 +38,8 @@ review_notes: "2026-05-06 task9 deep-review: pass-tech-review。P1 0 / P2 2；�
 
 deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-25
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-16
 ---
 
 # Tencent Matrix
@@ -85,7 +87,7 @@ last_deepseek_polish_at: 2026-05-25
 
 Matrix 是微信团队开源的插件式 APM 框架，Android 侧覆盖 APK 检查、卡顿与慢函数、启动耗时、内存泄漏、文件 I/O、SQLite、耗电、native memory leak 检测、MemGuard、pthread hook 等模块。它最适合的场景，是团队已经有上报和分析平台，需要一个客户端 SDK 把常见性能现场采回来。
 
-它不是一个“接入即有完整平台”的 SaaS。Matrix 更偏客户端采集框架，数据格式、采样、上传、聚合、报警和工单流转，都要由接入方自己接好。
+它不是开箱即用的 SaaS 平台。Matrix 定位在客户端采集层，数据格式、采样、上传、聚合、报警和工单流转，都由接入方自己补齐。
 
 ## 模块怎么分
 
@@ -121,9 +123,9 @@ Trace Canary 最容易被误解。它在编译期对目标方法插入入口和�
 - 混淆后需要稳定的 mapping / method map 关系，否则线上报告难以阅读。
 - 插桩范围过大时，方法记录本身会产生额外开销。
 
-AGP 8.0 已移除 Transform API 和 `com.android.build.api.transform` 包，仍调用 `android.registerTransform` 的 Matrix Trace 插件会在配置阶段失败，典型错误是 `API 'android.registerTransform' is removed`。接入 AGP 8+ 项目前，先看所用官方版本、内部分支或社区 fork 的插件源码：如果还注册 `MatrixTraceTransform`，可选方案有三类：固定在 AGP 7.x；使用已经迁移到 Android Components Instrumentation API 的分支；把插桩迁到 `androidComponents.onVariants { variant.instrumentation.transformClassesWith(...) }`。
+AGP 8.0 移除了 Transform API 和 `com.android.build.api.transform` 包。仍在调用 `android.registerTransform` 的 Matrix Trace 插件会在配置阶段直接失败，典型错误是 `API 'android.registerTransform' is removed`。接入 AGP 8+ 项目前，先确认所用官方版本、内部分支或社区 fork 的插件源码。如果插件仍然注册 `MatrixTraceTransform`，可选路径有三条：留在 AGP 7.x；切到已完成 Android Components Instrumentation API 迁移的分支；或把插桩逻辑迁到 `androidComponents.onVariants { variant.instrumentation.transformClassesWith(...) }`。
 
-迁移时要保留旧 Transform 里的三项能力：按包名和黑白名单过滤类，给被插桩方法分配稳定整数 id，输出与混淆 mapping 同版本保存的 `methodMapping.txt`。线上 `Issue` payload 通常只适合携带 method id、栈摘要和耗时；服务端必须用对应构建产物的 `methodMapping.txt` 反解方法名，否则慢函数报告无法聚合到源码位置。
+迁移时要保留旧 Transform 的三项核心能力：按包名和黑白名单过滤类、给被插桩方法分配稳定整数 id、输出与混淆 mapping 同版本保存的 `methodMapping.txt`。线上 `Issue` payload 通常只适合携带 method id、栈摘要和耗时；服务端必须用对应构建产物的 `methodMapping.txt` 反解方法名，否则慢函数报告无法聚合到源码位置。
 
 下面这段是 AGP 8+ 注册位置示意，`MatrixTraceClassVisitorFactory` 代表迁移后的 ASM visitor 工厂名，实际项目要替换为自己的实现类：
 

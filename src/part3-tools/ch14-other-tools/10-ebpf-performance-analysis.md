@@ -86,7 +86,7 @@ last_deepseek_cn_review_at: 2026-06-28
 
 Android 12 把 eBPF 从实验性网络功能升级为系统性能数据的默认采集路径，此后每个版本都在扩展 eBPF 的覆盖范围——CPU 时间统计、GPU 内存追踪、网络流量分类、Mainline 模块的 uprobe 框架先后进入系统。到 Android 16，sched-ext 和 Rust 化的 bpfloader 意味着 eBPF 已经从辅助工具变成了内核可观测性的基础设施。
 
-作为 Android 性能工程师，理解 eBPF 的入口是看它和 Perfetto/simpleperf 之间的分工：Perfetto 负责从 HAL 到 ftrace 的端到端时间线，simpleperf 回答"CPU 在哪个函数上耗时"，eBPF 回答的是"内核在执行某个动作时上下文是什么"。三者不互相替代——排障中 Perfetto 钩出宏观耗时，eBPF 探入微观调度和内存事件，simpleperf 提供微架构层面的 PMU 细节。
+作为 Android 性能工程师，理解 eBPF 在 Android 中的入口，要看它和 Perfetto/simpleperf 之间的分工：Perfetto 负责从 HAL 到 ftrace 的端到端时间线，simpleperf 回答"CPU 在哪个函数上耗时"，eBPF 回答的是"内核在执行某个动作时上下文是什么"。三者不互相替代——排障中 Perfetto 钩出宏观耗时，eBPF 探入微观调度和内存事件，simpleperf 提供微架构层面的 PMU 细节。
 
 读完这一章，能搞清楚几件事：Android 上哪些 eBPF 能力是平台内置的、它们的加载链路是什么样的、各 attach 点的参数和返回值模型怎么区分（这是代码示例写错的根因）、以及 eBPF 数据在 Perfetto trace 中长什么样。
 
@@ -98,7 +98,7 @@ Android 12 把 eBPF 从实验性网络功能升级为系统性能数据的默认
 
 Android 9 引入 BPF 的唯一目的是网络流量统计。`QTAGUID` 使用 BPF 过滤器替代旧的 `/proc/net/xt_qtaguid`，通过 `system/bpf/progs/` 下的 C 程序实现 per-UID 网络计数。Android 10—11 在此基础上扩展了网络策略控制：基于 BPF 的流量拦截、数据节省模式下的 socket 过滤、以及 tethering 场景的转发规则。这一阶段的 BPF 程序由 C++ `Loader.cpp` 在 early-init 阶段加载，编译产物是 `.o` ELF 文件，pin 到 `/sys/fs/bpf/` 供系统服务消费。
 
-这一阶段的 eBPF 对性能工程师不直接可见——它藏在网络栈里，由 `netd` 和 ConnectivityService 消费，没有对用户态开放通用加载接口。
+这一阶段的 eBPF 隐藏在网络栈内部，由 `netd` 和 ConnectivityService 消费，性能工程师无法直接观测——它没有对用户态开放通用加载接口。
 
 ### 阶段二：Android 12—13 — 成为默认性能路径
 
@@ -130,7 +130,7 @@ AOSP main 分支中可见的变化：Perfetto eBPF data source 的集成度在�
 
 ## eBPF Attach 点与上下文模型
 
-理解不同 attach 点的上下文结构和参数模型，是避免 eBPF 代码写错的基础。以下四种 attach 类型在 Android eBPF 中最常见，它们的 `ctx` 指针含义各不相同：
+掌握不同 attach 点的上下文结构和参数模型，是避免 eBPF 代码出错的根本。以下四种 attach 类型在 Android eBPF 中最常见，它们的 `ctx` 指针含义各不相同：
 
 | Attach 类型 | ctx 类型 | 参数访问方式 | Android 典型用途 |
 |------------|----------|-------------|----------------|
