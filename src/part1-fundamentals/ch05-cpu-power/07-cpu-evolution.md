@@ -8,6 +8,7 @@ section: '5.7'
 status: finalized
 reviewed_at: '2026-05-16T12:20:36+08:00'
 last_task6_at: '2026-06-04T07:05:00+08:00'
+last_task6_audit: "2026-07-17T04:09:00+08:00"
 review_round: 2
 task6_review_notes: '2026-06-04 task6 revisiting-review: pass-light-edit。L1/L2 全部通过(禁用词0/AI套话0/高频词全0/元叙述0)。无B类大问题。自动晋升 finalized(task9 auto-fixed + queue 无 pending + 本次无B类大问题)。'
 applicable_versions: Android 5.0 - Android 17
@@ -267,7 +268,7 @@ MTE (Memory Tagging Extension)由 Armv8.5-A 引入,Android 在支持硬件的设
 
 [已验证: developer.android.com/ndk/guides/arm-mte;source.android.com/docs/security/test/memory-safety/arm-mte;Arm Architecture Reference Manual]
 
-讲完调度器选核策略（EAS）和硬件能力（ARM 扩展），中间还缺一层：线程的性能意图怎么传给调度器。下面这个 [自动发现] 段落补的就是这条链路。
+讲完调度器选核策略（EAS）和硬件能力（ARM 扩展），中间还缺一层：线程的性能意图怎么传给调度器。下面这个 [自动发现] 段落补的就是这条连接路径。
 
 ## [自动发现] Android 11-15:schedtune 退场,uclamp 与 task profiles 进入主线
 
