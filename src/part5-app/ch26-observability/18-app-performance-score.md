@@ -2,7 +2,7 @@
 title: "App Performance Score 与性能质量评分归因"
 chapter: "26.18"
 section: "26.18"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-23"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37); App Performance Score Preview 2026"
 last_verified: "2026-05-23"
@@ -46,24 +46,24 @@ sources:
     path: "https://developer.android.com/topic/performance/baselineprofiles/measure-baselineprofile"
   - type: official
     path: "https://developer.android.com/android-performance-analyzer"
-task6_state: revisiting
-pipeline_stage: task6_pending
+task6_state: reviewed
+pipeline_stage: ready-to-publish
 last_task2a_at: "2026-05-23T20:04:00+08:00"
 task2a_result: drafted
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-23"
+reviewed_date: "2026-07-16"
 task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-last_task6_at: "2026-05-23T20:16:21+08:00"
-last_task6_audit: "2026-07-15"
+last_task6_at: "2026-07-16T20:24:00+08:00"
+last_task6_audit: "2026-07-16"
 task9_result: auto-fixed
 last_task9_at: "2026-05-23T20:25:42+08:00"
 last_task9_audit: "2026-07-07"
 last_task9_autofix_at: 2026-07-15
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-23"
+task9_reviewed_date: "2026-07-16"
 task9_review_notes: "2026-05-23 20:25 Task9 深度技术审计：pass-tech-review。P0 0 / P1 0 / P2 0；官方 App Performance Score、Vitals、Macrobenchmark、Baseline Profiles、APA 口径复核通过；自动晋升 finalized。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-23
@@ -108,7 +108,7 @@ last_deepseek_cn_review_at: 2026-06-23
 
 <!-- outline-end -->
 
-团队拿到一个 0–100 的性能分数之后，最常见的反应是“然后呢？”App Performance Score 是 Google 给出的应用性能体检框架，它把改进项拆成两类：一类是能从工程配置里直接检查的静态项，另一类是必须在设备上跑路径才能得到的动态项。[已验证: 官方文档, https://developer.android.com/topic/performance/app-score]
+团队拿到一个 0-100 的性能分数之后，最常见的反应是“然后呢？”App Performance Score 是 Google 给出的应用性能体检框架，它把改进项拆成两类：一类是能从工程配置里直接检查的静态项，另一类是必须在设备上跑路径才能得到的动态项。[已验证: 官方文档, https://developer.android.com/topic/performance/app-score]
 
 这节的重点不是复述评分表，而是把分数转成研发队列。对团队来说，分数只回答“哪里还有改进空间”；能推进的是后面的任务拆分：补配置、补测试、补 trace 证据，再把风险接进发版门禁。
 
@@ -132,7 +132,7 @@ App Performance Score 适合做研发阶段的性能体检。官方文档把它�
 
 ## 静态评分：低成本配置项先补齐
 
-静态评分不跑设备。它检查的是项目是否采用了对启动和渲染有稳定收益的工具与配置。官方列出的静态项包括：使用较新的 Android Gradle Plugin，启用 full mode R8 和最小化例外，正确应用 Baseline Profiles，覆盖一个或多个用户旅程，使用 Startup Profiles 做 DEX layout optimization，使用最新稳定版 Compose，并在合适时机调用 `FullyDrawnReporter` / `reportFullyDrawn()`。[已验证: 官方文档, https://developer.android.com/topic/performance/app-score]
+静态评分不跑设备。它检查的是项目是否采用了对启动和渲染有稳定收益的工具与配置。官方列出的静态项包括：使用较新的 Android Gradle Plugin，启用 R8 full mode 和最小化例外，正确应用 Baseline Profiles，覆盖一个或多个用户旅程，使用 Startup Profiles 做 DEX 布局优化，使用最新稳定版 Compose，并在合适时机调用 `FullyDrawnReporter` / `reportFullyDrawn()`。[已验证: 官方文档, https://developer.android.com/topic/performance/app-score]
 
 这些项的价值在于成本低、失败信号清楚、适合接进 CI。
 
