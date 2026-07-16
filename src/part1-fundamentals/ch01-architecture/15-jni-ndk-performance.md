@@ -7,7 +7,7 @@ status: finalized
 drafted_date: "2026-04-06"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-23"
-last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com @CriticalNative"
+last_verified_against: "AOSP android-17.0.0_r1 + developer.android.com @CriticalNative"
 confidence: medium
 sources:
   - type: official
@@ -27,19 +27,19 @@ sources:
   - type: research
     path: "intake/research-feeds/2026-04-07-19-art-fastnative-criticalnative-jni-optimization.md"
   - type: aosp
-    path: "frameworks/base/core/java/android/os/Binder.java (android-16.0.0_r1)"
+    path: "frameworks/base/core/java/android/os/Binder.java (android-17.0.0_r1)"
   - type: aosp
-    path: "frameworks/base/core/java/android/os/Parcel.java (android-16.0.0_r1)"
+    path: "frameworks/base/core/java/android/os/Parcel.java (android-17.0.0_r1)"
   - type: aosp
-    path: "frameworks/base/core/java/android/os/SystemProperties.java (android-16.0.0_r1)"
+    path: "frameworks/base/core/java/android/os/SystemProperties.java (android-17.0.0_r1)"
   - type: aosp
-    path: "frameworks/base/core/java/android/os/Trace.java (android-16.0.0_r1)"
+    path: "frameworks/base/core/java/android/os/Trace.java (android-17.0.0_r1)"
   - type: aosp
-    path: "frameworks/native/include/android/trace.h (android-16.0.0_r1)"
+    path: "frameworks/native/include/android/trace.h (android-17.0.0_r1)"
   - type: aosp
-    path: "system/core/libcutils/include/cutils/trace.h (android-16.0.0_r1)"
+    path: "system/core/libcutils/include/cutils/trace.h (android-17.0.0_r1)"
   - type: aosp
-    path: "system/core/libutils/include/utils/Trace.h (android-16.0.0_r1)"
+    path: "system/core/libutils/include/utils/Trace.h (android-17.0.0_r1)"
 tags:
   - android
   - research
@@ -49,26 +49,27 @@ tags:
 related_chapters:
   - "4.7"
   - "14.2"
-pipeline_stage: "ready-to-publish"
+pipeline_stage: "task6_pending"
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: "pending"
 task9_reviewed_date: "2026-05-20"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-20T11:41:31+08:00"
 task2b_state: fixed
-task2b_result: fixed
+task2b_result: fixed-lite
+last_task2b_lite_at: "2026-07-16"
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-23
 last_task6_at: "2026-05-18T15:14:44+08:00"
 last_task6_audit: "2026-07-16"
 last_task6_audit_result: l1-light-edit
-last_task2b_at: "2026-05-20T11:12:00+08:00"
+last_task2b_at: "2026-07-16T11:35:00+08:00"
 last_task9_audit: "2026-05-20"
 last_task9_review_log: "logs/deep-review/2026-05-20-11-deep-review.md"
 task9_review_notes: "2026-05-20 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 3；P2 为 CriticalNative public API 边界、16KB page size NDK 版本口径、Propeller 待验证段。已自动同步 pipeline_stage=ready-to-publish。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-30
-task6_state: "reviewed"
+task6_state: "revisiting"
 ---
 
 # 1.15 JNI/NDK 性能优化
@@ -119,7 +120,7 @@ task6_state: "reviewed"
 
 很多章节一上来就说“在 Perfetto 里看 JNI slice”，这句话本身就不完整。默认 system trace 并不会自动替我们生成统一名字的“JNI transition”切片。要在 Perfetto 里看见 JNI，我们通常走三条路，而且每条路回答的问题都不一样。
 
-第一条路：**手工插桩**。如果代码在你控制范围内，Java 侧可以用 `android.os.Trace`，NDK 侧可以直接包含 `<android/trace.h>`，调用 `ATrace_beginSection()` / `ATrace_endSection()`。这时 Perfetto 线程轨上出现的 slice 名字，就是我们自己写进去的 section name。AOSP android-16.0.0_r1 中，公开 NDK 头文件在 `frameworks/native/include/android/trace.h`，`ATrace_beginSection()` 和 `ATrace_endSection()` 也在这个头里声明。系统内部的 `ATRACE_BEGIN` / `ATRACE_END` 宏来自 `system/core/libcutils/include/cutils/trace.h` 这套包装层；声明 `ATrace_beginSection()` 的则是公开 NDK 接口。C++ RAII 宏 `ATRACE_CALL()` / `ATRACE_NAME()` 定义在 `system/core/libutils/include/utils/Trace.h`，不是 `cutils/trace.h`——后者只有 C 风格的 `ATRACE_BEGIN/END`。系统级服务或 HAL 的 C++ 代码通常更适合直接用 `ATRACE_CALL()` / `ATRACE_NAME()`，因为这套宏会把 begin/end 自动配对；给第三方 App 或 SDK 交付的 NDK 代码仍应以 `<android/trace.h>` 这组稳定 API 为准。
+第一条路：**手工插桩**。如果代码在你控制范围内，Java 侧可以用 `android.os.Trace`，NDK 侧可以直接包含 `<android/trace.h>`，调用 `ATrace_beginSection()` / `ATrace_endSection()`。这时 Perfetto 线程轨上出现的 slice 名字，就是我们自己写进去的 section name。AOSP android-17.0.0_r1 中，公开 NDK 头文件在 `frameworks/native/include/android/trace.h`，`ATrace_beginSection()` 和 `ATrace_endSection()` 也在这个头里声明。系统内部的 `ATRACE_BEGIN` / `ATRACE_END` 宏来自 `system/core/libcutils/include/cutils/trace.h` 这套包装层；声明 `ATrace_beginSection()` 的则是公开 NDK 接口。C++ RAII 宏 `ATRACE_CALL()` / `ATRACE_NAME()` 定义在 `system/core/libutils/include/utils/Trace.h`，不是 `cutils/trace.h`——后者只有 C 风格的 `ATRACE_BEGIN/END`。系统级服务或 HAL 的 C++ 代码通常更适合直接用 `ATRACE_CALL()` / `ATRACE_NAME()`，因为这套宏会把 begin/end 自动配对；给第三方 App 或 SDK 交付的 NDK 代码仍应以 `<android/trace.h>` 这组稳定 API 为准。
 
 第二条路：**采样**。Perfetto 的 callstack / native symbol 采样，或者 simpleperf 采样，能告诉我们 CPU 时间主要烧在什么 native 符号上，也能看到 `art_jni_trampoline` 这一类运行时桥接符号是否频繁出现。但采样给的是“这里经常被采到”，不是“这一次 JNI 调用精确耗时多少微秒”。如果我们要回答“哪个 native 算法最热”，采样很好用；如果我们要回答“Java 调用 native 的边界本身耗了多久”，还是得靠插桩或更细的实验。
 
@@ -176,7 +177,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* /* reserved */) {
 
 这两个注解经常一起出现，但它们解决的问题不同。`@FastNative` 仍然是 JNI，只是运行时给它走了更短的过渡路径，所以照样能拿托管对象、能做 JNI 调用；`@CriticalNative` 把规则收得更紧，换来更短的 ABI。
 
-先看 `@FastNative`。AOSP android-16.0.0_r1 的 `frameworks/base/core/java/android/os/Parcel.java` 里有一个很直接的例子：
+先看 `@FastNative`。AOSP android-17.0.0_r1 的 `frameworks/base/core/java/android/os/Parcel.java` 里有一个很直接的例子：
 
 ```java
 @FastNative
@@ -288,7 +289,7 @@ Propeller 是 Google 提出的 Post-Link Optimization 技术，在 PGO 的基础
   - `https://developer.android.com/ndk/guides/simpleperf`
   - `https://developer.android.com/reference/java/nio/ByteBuffer`
   - `https://docs.oracle.com/javase/8/docs/technotes/guides/jni/`
-- AOSP 源码路径（android-16.0.0_r1）
+- AOSP 源码路径（android-17.0.0_r1）
   - `frameworks/base/core/java/android/os/Binder.java`
   - `frameworks/base/core/java/android/os/Parcel.java`
   - `frameworks/base/core/java/android/os/SystemProperties.java`
