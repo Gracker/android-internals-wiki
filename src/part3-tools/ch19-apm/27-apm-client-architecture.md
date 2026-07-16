@@ -69,6 +69,8 @@ task2b_fixed_at: '2026-06-03T10:53:52'
 last_task2b_at: '2026-06-03T10:53:52'
 last_task9_autofix_at: '2026-06-04'
 task6_review_notes_r5: '2026-06-04 Task6 18:15: pass-light-edit(revisit#2). Task9 auto-fix confirmed OK; writing quality clean on re-check. L1/L2 pass. No new rework items. Sending to Task9 for final confirmation.'
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-16
 ---
 
 # 千万级 DAU 的 APM 端侧架构
@@ -103,7 +105,9 @@ task6_review_notes_r5: '2026-06-04 Task6 18:15: pass-light-edit(revisit#2). Task
 > **扩展**视素材丰富程度选择性深入。
 <!-- outline-end -->
 
-千万级 DAU 的 APM 端侧架构，要在宿主 App 最差状态下仍以低成本记录事实；指标数量只是次要问题。主线程卡住、进程被杀、网络不可用、低端机存储慢、用户只复现一次，这些条件同时出现时，APM 才暴露真实质量。本文把端侧 APM 看成一个小型数据系统：入口要轻，缓冲要可丢，存储要能恢复，上传要受控，远程指令要有边界。
+一个能跑在千万级 DAU 上的 APM SDK，第一要务不是在正常状态下多采几条指标，而是在宿主 App 最差的时候仍然能记录事实，而且不把宿主拖得更慢。
+
+主线程卡住了、进程被杀了、网络不通、低端机存储慢、用户只复现了一次——这些条件凑齐的时候，才是 APM 质量的真实考场。从这个角度看，端侧 APM 就是一个小型数据系统：入口必须轻到不能阻塞调用方，缓冲可以丢弃但不能无限膨胀，存储要能顶住崩溃恢复，上传要自己管好频率和条件，远程指令不能拿到超出 App 权限的能力。
 
 ## 1. APM 端侧引擎的职责边界
 
@@ -120,7 +124,6 @@ task6_review_notes_r5: '2026-06-04 Task6 18:15: pass-light-edit(revisit#2). Task
 | 网络投递层 | 批量上传、退避重试、按网络条件延迟 | 后台高频唤醒，造成耗电和流量异常 |
 | 指令层 | 接收采样率、开关、Trace、Hprof 等远程配置 | 指令无 TTL 或无配额，放大线上故障 |
 
-[已验证: source, Tencent Mars xLog 暴露 `AppenderModeAsync`、`AppenderModeSync`、`cacheDir`、`logDir` 配置入口；Logan README 将端侧、服务端和日志检索站点拆成多个组件。]
 
 这六层的共同约束是：业务线程只提交事实，不等待编码、落盘和网络。只要 APM 的一次记录动作能被放进主线程耗时分布里，它就必须给出耗时上限和降级策略。
 
@@ -206,7 +209,7 @@ FlatBuffers 的优势不同：它允许直接访问序列化后的 buffer，不�
 
 端侧推荐默认使用 Protobuf Lite 作为网络报文，存储层可使用自定义 block 包住多个 Protobuf event。这样能兼顾 schema 演进和文件恢复：单条 event 仍由 Protobuf 描述，外层 block 负责压缩、加密、长度和校验。
 
-以上对比基于协议设计特性和业界通用经验，未包含特定字段规模、事件频率、设备型号、payload 大小和序列化耗时的一手 benchmark。实际选型前，至少在目标设备上用本 App 的真实埋点 payload 跑一次最小对比：同一批 1k/10k 事件分别用 JSON、Protobuf Lite、FlatBuffers 编码，记录 payload bytes、encode/decode time、alloc bytes 和 GC 次数。缺少这组数据时，结论应理解为"二进制协议通常更适合高频上报"而非"一定更优"。
+这张表背后的前提是：协议设计特性和业界通用经验。真要落到自己项目里，至少用本 App 的真实埋点 payload 在目标设备上跑一轮——同一批 1k 和 10k 事件分别走 JSON、Protobuf Lite、FlatBuffers，记录 payload 大小、编解码耗时、分配量和 GC 次数。在没有自己的数据之前，把结论理解为"二进制协议通常更适合高频上报"就够了，不要写成"一定更优"。
 
 ## 5. 动态指令：远程能力必须带 TTL、配额和签名
 
@@ -233,7 +236,6 @@ Perfetto 文档给出的建议是：Android 侧已有 `android.os.Trace` / ATrac
 | 本进程 / 本 SDK 可控日志（自写 tag） | 可用 | 可用 | 可用 | 可用 |
 | 全设备 logcat 回捞（含其他进程/system server） | 不可用；Android 4.1+ `READ_LOGS` 只授予 privileged/system app | 不可用；同普通 App | 可用（manifest 声明 `READ_LOGS` 且系统签名） | 可用 |
 
-[已验证: 官方文档, Android 4.1+ `READ_LOGS` 仅授予 privileged system apps；Perfetto docs 说明 in-process tracing 不需要特殊 OS 权限，系统级 tracing 需要 privileged consumer。]
 
 设计远程指令协议时，必须把 App 的实际权限边界编进指令的 capability check。普通三方 App 只能开通自身进程内的 Perfetto SDK in-process trace、自身 Hprof 和自有 SDK 日志回捞；系统级 Perfetto、全设备 logcat 和跨进程 Hprof 只能在内部测试 build 或系统签名 App 上执行。指令协议中增加 `required_capability` 字段（`app_sdk` / `system_privileged` / `adb_internal`），端侧收到超出自身能力的指令时返回失败回执，不静默忽略。
 
@@ -357,4 +359,4 @@ graph LR
 
 ## 11. 与本章其他小节的关系
 
-本节给的是端侧 APM 总架构，具体能力放到相邻小节：网络捕获详见 19.23 节，Crash / ANR 捕获详见 19.24 节，Hybrid 监控详见 19.26 节，Perfetto SDK 接入详见 19.13 节。这里不重复展开各模块内部原理，只保留架构取舍和端侧约束。
+端侧 APM 的总架构取舍和约束到这里就讲完了。各模块的具体原理不再在这里展开：网络捕获见 19.23 节，Crash / ANR 捕获见 19.24 节，Hybrid 监控见 19.26 节，Perfetto SDK 接入见 19.13 节。

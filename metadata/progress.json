@@ -1,9 +1,9 @@
 {
-  "total": 788,
-  "draft": 37,
+  "total": 793,
+  "draft": 42,
   "ready-for-review": 256,
   "in-review": 0,
   "final": 0,
-  "last_updated": "2026-07-16T19:10:00+08:00",
-  "last_action": "task2a: draft 21.18 processed (cache optimization)"
+  "last_updated": "2026-07-16T20:23:14+08:00",
+  "last_action": "task2a: gap-mining created 5 new chapters (20.25,20.26,24.21,25.28,26.28)"
 }

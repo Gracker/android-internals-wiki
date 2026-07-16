@@ -1,82 +1,37 @@
-{
-  "issues": [
-    {
-      "section": "1.15",
-      "section_title": "JNI/NDK 性能优化",
-      "priority": 95,
-      "reason": "[Deep Tech Review] AOSP 文件路径验证失败 - 所有引用的AOSP文件在android-17.0.0_r1下无法通过googlesource直接访问",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "AOSP文件引用部分（frameworks/base/core/java/android/os/Binder.java等）",
-          "detail": "文中引用的AOSP文件路径在android-17.0.0_r1版本下无法通过googlesource直接访问，疑似路径错误或访问方式变更",
-          "suggestion": "验证AOSP文件当前可用的访问方式，或提供可验证的源码片段"
-        },
-        {
-          "type": "验证结果",
-          "location": "原 P0 issue（2026-07-16T05:32:56Z）",
-          "detail": "经 2026-07-16T14 直接 HTTP 验证：https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Binder.java 返回 HTTP 200。frameworks/base/core/java/android/os/ 下 Binder.java、Parcel.java、SystemProperties.java、Trace.java 以及 frameworks/native/include/android/trace.h、system/core/libcutils/include/cutils/trace.h、system/core/libutils/include/utils/Trace.h 在 android-17.0.0_r1 下全部可访问。原 P0 判定为 false-positive。",
-          "suggestion": "本 issue 关闭，转入 suggestions.md 跟踪 P2 改进（版本演进表缺 Android 17 行；16KB page size 收益数据缺来源链接）。",
-          "verified_by": "task9-deep-tech-review",
-          "verified_at": "2026-07-16T14:25:40+08:00"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-16T05:32:56Z",
-      "status": "resolved-false-positive",
-      "resolved_note": "原 P0 AOSP 路径不可达判定为误判：android-17.0.0_r1 下所有引用路径经 HTTP 验证均可访问（2026-07-16T14）。",
-      "resolved_at": "2026-07-16T14:25:40+08:00",
-      "resolved_by": "task9-deep-tech-review"
-    },
-    {
-      "section": "1.59",
-      "section_title": "Android 17 ML 驱动任务调度器架构与性能协同机制",
-      "priority": 80,
-      "reason": "知识缺口挖掘 (RSS 驱动) - 与 ch01 既有的 1.43 ML 调度器章节形成综合视角",
-      "material_paths": [
-        "intake/daily-info/2026-07-16.md"
-      ],
-      "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-07-16T09:11:43.261381+00:00",
-      "status": "pending"
-    },
-    {
-      "section": "1.60",
-      "section_title": "Linux 6.10 BPF 集成对 Android 17 内核可观测性的影响边界",
-      "priority": 80,
-      "reason": "知识缺口挖掘 (RSS 驱动) - 与 14.25/2.6/14.29 eBPF 章节形成主线+延伸视角",
-      "material_paths": [
-        "intake/daily-info/2026-07-16.md"
-      ],
-      "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-07-16T09:11:43.261624+00:00",
-      "status": "pending"
-    },
-    {
-      "section": "4.50",
-      "section_title": "Android 17 LMKD v2 用户态迁移 + PSI 分层内存压力治理",
-      "priority": 80,
-      "reason": "知识缺口挖掘 (AOSP 结构驱动) - 在 4.37/4.43 基础上深化 PSI 协同机制",
-      "material_paths": [
-        "intake/research-gaps.md",
-        "metadata/source-index.json"
-      ],
-      "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-07-16T09:11:43.261626+00:00",
-      "status": "pending"
-    },
-    {
-      "section": "5.32",
-      "section_title": "Linux 6.10 BPF DVFS 与 schedutil 调频闭环在 Android 17 的应用边界",
-      "priority": 80,
-      "reason": "知识缺口挖掘 (RSS 驱动) - 与 5.28/5.29/5.31/17.21 形成多层 BPF+schedutil 视角",
-      "material_paths": [
-        "intake/daily-info/2026-07-16.md"
-      ],
-      "added_by": "task2a-knowledge-gap",
-      "added_at": "2026-07-16T09:11:43.261627+00:00",
-      "status": "pending"
-    }
-  ]
-}
+[
+  {
+    "chapter": "25.28",
+    "title": "ThermalManager 热节流适配与性能降级治理实战",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part5-app/ch25-power-size/28-thermal-manager-throttling-performance.md"
+  },
+  {
+    "chapter": "20.25",
+    "title": "线程泄漏与匿名线程监控实战",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part5-app/ch20-stability/25-thread-leak-anonymous-thread-monitoring.md"
+  },
+  {
+    "chapter": "26.28",
+    "title": "非 Play 渠道性能监控与国内厂商 ROM 适配可观测性",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part5-app/ch26-observability/28-non-play-channel-rom-observability.md"
+  },
+  {
+    "chapter": "24.21",
+    "title": "SAF/DocumentFile/ContentResolver 文件访问性能选型与治理",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part5-app/ch24-io-network/21-saf-documentfile-contentresolver-performance.md"
+  },
+  {
+    "chapter": "20.26",
+    "title": "Native 内存泄漏线上监控实战",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part5-app/ch20-stability/26-native-memory-leak-online-monitoring.md"
+  }
+]

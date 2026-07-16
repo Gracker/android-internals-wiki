@@ -76,6 +76,7 @@
   - [26.25 ProcessCpuTracker 与 /proc 伪文件系统 CPU 数据采集](part5-app/ch26-observability/25-proc-filesystem-cpu-monitoring.md)
   - [26.26 Page Fault 类型分析与 Android 实践](part5-app/ch26-observability/26-page-fault-analysis-android.md)
   - [26.27 Facebook Profilo 框架线上 ATrace 收集方案](part5-app/ch26-observability/27-profilo-atrace-online-collection.md)
+  - [26.28 非 Play 渠道性能监控与国内厂商 ROM 适配可观测性](part5-app/ch26-observability/28-non-play-channel-rom-observability.md)
 - [5.21 Android 17 SoC 厂商电池优化架构](part1-fundamentals/ch05-cpu-power/5.21-android17-battery-optimization-soc-architecture.md)
 
   - [5.28 PELT Boost 回退与 AMU/PMU 微架构感知调频](part1-fundamentals/ch05-cpu-power/5.28-android17-pelt-boost-revert-amu-pmu-microarch-frequency-limiting.md)
@@ -161,12 +162,15 @@
   - [20.22 Binder 通信监控实战](part5-app/ch20-stability/22-binder-communication-monitoring.md)
   - [20.23 GWP-ASan 灰度检测演进与 Android 17 内存安全防线](part5-app/ch20-stability/23-gwp-asan-probabilistic-memory-safety-android17.md)
   - [20.24 Crash 状态下 Java 线程堆栈获取与锁等待分析](part5-app/ch20-stability/24-crash-java-stack-lock-wait-analysis.md)
+  - [20.25 线程泄漏与匿名线程监控实战](part5-app/ch20-stability/25-thread-leak-anonymous-thread-monitoring.md)
+  - [20.26 Native 内存泄漏线上监控实战](part5-app/ch20-stability/26-native-memory-leak-online-monitoring.md)
 
 #   - [8.33 Android 17 模块化启动框架与依赖图优化](src/part1-fundamentals/ch08-startup/8.33-android17-modular-startup-dependency-graph.md)
   - [4.36 Android 17 高级内存优化与治理](src/part1-fundamentals/ch04-memory/4.36-android17-advanced-memory-optimization.md)
   - [16.11 Android 17 ARM64 内核安全缓解机制性能开销与调优](part4-system/ch16-aosp/11-arm64-kernel-security-mitigation-performance.md)
   - [25.26 Android 17 前台服务类型执行模型与后台启动性能边界](part5-app/ch25-power-size/26-android17-fgs-type-execution-model-background-launch-performance.md)
   - [25.27 Android 17 BatteryUsageStats API 与功耗精准归因管线](part5-app/ch25-power-size/27-android17-battery-usage-stats-power-attribution.md)
+  - [25.28 ThermalManager 热节流适配与性能降级治理实战](part5-app/ch25-power-size/28-thermal-manager-throttling-performance.md)
 附录
 
 - [附录 G：Android 性能学习路线](appendix/android-performance-learning-path.md)

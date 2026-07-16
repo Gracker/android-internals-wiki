@@ -69,7 +69,7 @@ last_task9_audit: "2026-05-20"
 last_task9_review_log: "logs/deep-review/2026-07-16-14-deep-review.md"
 task9_review_notes: "2026-07-16 14:25 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 2。P2 为版本演进表缺 Android 17 行、16KB page size 收益数据缺来源链接。原 queue.json P95 issue（2026-07-16T05:32:56Z AOSP 路径不可达）经验证为误判（android-17.0.0_r1 下所有引用路径均 HTTP 200），已标记为 resolved-false-positive。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-05-30
+last_deepseek_cn_review_at: 2026-07-16
 task6_state: "reviewed"
 ---
 
@@ -121,7 +121,9 @@ task6_state: "reviewed"
 
 很多章节一上来就说“在 Perfetto 里看 JNI slice”，这句话本身就不完整。默认 system trace 并不会自动替我们生成统一名字的“JNI transition”切片。要在 Perfetto 里看见 JNI，我们通常走三条路，而且每条路回答的问题都不一样。
 
-第一条路：**手工插桩**。如果代码在你控制范围内，Java 侧可以用 `android.os.Trace`，NDK 侧可以直接包含 `<android/trace.h>`，调用 `ATrace_beginSection()` / `ATrace_endSection()`。这时 Perfetto 线程轨上出现的 slice 名字，就是我们自己写进去的 section name。AOSP android-17.0.0_r1 中，公开 NDK 头文件在 `frameworks/native/include/android/trace.h`，`ATrace_beginSection()` 和 `ATrace_endSection()` 也在这个头里声明。系统内部的 `ATRACE_BEGIN` / `ATRACE_END` 宏来自 `system/core/libcutils/include/cutils/trace.h` 这套包装层；声明 `ATrace_beginSection()` 的则是公开 NDK 接口。C++ RAII 宏 `ATRACE_CALL()` / `ATRACE_NAME()` 定义在 `system/core/libutils/include/utils/Trace.h`，不是 `cutils/trace.h`——后者只有 C 风格的 `ATRACE_BEGIN/END`。系统级服务或 HAL 的 C++ 代码通常更适合直接用 `ATRACE_CALL()` / `ATRACE_NAME()`，因为这套宏会把 begin/end 自动配对；给第三方 App 或 SDK 交付的 NDK 代码仍应以 `<android/trace.h>` 这组稳定 API 为准。
+第一条路：**手工插桩**。如果代码在你控制范围内，Java 侧可以用 `android.os.Trace`，NDK 侧可以直接包含 `<android/trace.h>`，调用 `ATrace_beginSection()` / `ATrace_endSection()`。这时 Perfetto 线程轨上出现的 slice 名字，就是我们自己写进去的 section name。在 AOSP android-17.0.0_r1 里，公开 NDK 接口 `<android/trace.h>` 声明了 `ATrace_beginSection()` 和 `ATrace_endSection()`，这是第三方 App 和 SDK 能稳定使用的 API。
+
+系统内部还有另一套包装：C 风格的 `ATRACE_BEGIN` / `ATRACE_END` 宏定义在 `system/core/libcutils/include/cutils/trace.h`，主要用于 HAL 和系统服务；C++ RAII 版的 `ATRACE_CALL()` / `ATRACE_NAME()` 则来自 `system/core/libutils/include/utils/Trace.h`，好处是 begin/end 自动配对，不用手动管理。给系统级服务写 C++ 代码时优先用这套 RAII 宏；给第三方交付 NDK 代码时，仍然以 `<android/trace.h>` 的稳定 API 为准。
 
 第二条路：**采样**。Perfetto 的 callstack / native symbol 采样，或者 simpleperf 采样，能告诉我们 CPU 时间主要烧在什么 native 符号上，也能看到 `art_jni_trampoline` 这一类运行时桥接符号是否频繁出现。但采样给的是“这里经常被采到”，不是“这一次 JNI 调用精确耗时多少微秒”。如果我们要回答“哪个 native 算法最热”，采样很好用；如果我们要回答“Java 调用 native 的边界本身耗了多久”，还是得靠插桩或更细的实验。
 
@@ -248,11 +250,9 @@ AOSP 自己的实现方式很能说明问题。`Binder.java`、`Parcel.java` 这
 
 ## Post-Link 优化：Propeller
 
-[待验证: NDK r28 changelog 与 LLVM lld 官方文档中未找到 `--propeller-order` flag 的直接说明；8% 收益来自 Google Propeller 论文，为 warehouse-scale workload 评估，不能直接作为 Android NDK 功能背书]
+Propeller 是 Google 提出的 Post-Link Optimization 技术，思路是在 PGO 的基础上往前走一步：不靠编译器做决策，而是让 linker 拿着执行 profile 重新排列二进制中的基本块顺序，提升 CPU 分支预测和指令缓存命中率。Google 的论文给出的数字是，在已有 PGO 之上再带来最高 8% 的性能提升。它和 PGO 是互补关系——PGO 影响编译器的内联和代码生成决策，Propeller 影响 linker 的代码布局决策。
 
-Propeller 是 Google 提出的 Post-Link Optimization 技术，在 PGO 的基础上通过重排二进制中的基本块（basic block）顺序，提升 CPU 的分支预测和指令缓存命中率。Google 的论文显示，在已有 PGO 的基础上，Propeller 可以再带来最高 8% 的性能提升。这项技术目前更适合对启动时间或热路径有极致要求的场景，通用业务可以先确保 PGO / AutoFDO 已接入后再考虑。
-
-如果 NDK 后续版本正式暴露 Propeller flag，启用路径大致为：先用 instrumented binary 采集执行 profile，然后把 profile 反馈给 linker 进行基本块重排，最后输出优化后的 .so。它和 PGO 是互补关系——PGO 影响编译器的内联和代码生成决策，Propeller 影响 linker 的代码布局决策。当前 NDK r28 changelog 中能确认的是 16 KiB alignment 等变更，尚未看到 Propeller 的官方 flag 或 profile 采集流程。
+目前 Propeller 还不是 NDK 的公开功能。NDK r28 changelog 里能确认的是 16 KiB alignment 等变更，Propeller 的官方 flag 和 profile 采集流程都还没有出现。对启动时间或热路径有极致要求的项目可以先关注，通用业务优先把 PGO / AutoFDO 接入稳定再说。
 
 ## 版本演进
 
