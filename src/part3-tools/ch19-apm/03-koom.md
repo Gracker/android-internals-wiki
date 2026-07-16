@@ -50,6 +50,8 @@ p1: 1
 p2: 0
 finalized_date: "2026-06-13"
 finalized_by: "openclaw-task6-auto-promote"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-17
 ---
 
 # KOOM

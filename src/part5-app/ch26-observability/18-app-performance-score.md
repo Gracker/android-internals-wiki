@@ -66,6 +66,76 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-16"
 task9_review_notes: "2026-05-23 20:25 Task9 深度技术审计：pass-tech-review。P0 0 / P1 0 / P2 0；官方 App Performance Score、Vitals、Macrobenchmark、Baseline Profiles、APA 口径复核通过；自动晋升 finalized。"
 deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-17
+---
+---
+title: "App Performance Score 与性能质量评分归因"
+chapter: "26.18"
+section: "26.18"
+status: finalized
+drafted_date: "2026-05-23"
+applicable_versions: "Android 11 (API 30) - Android 17 (API 37); App Performance Score Preview 2026"
+last_verified: "2026-05-23"
+last_verified_against: "Android Developers App Performance Score / Android Vitals / Macrobenchmark / Baseline Profiles docs"
+confidence: high
+tags: [app-performance-score, android-vitals, macrobenchmark, baseline-profile, performance-governance, observability]
+related_chapters: ["15.3", "15.6", "15.10", "19.14", "26.3", "26.15"]
+created_by: "task2a-knowledge-gap"
+created_date: "2026-05-23"
+gap_source: "官方文档"
+sources:
+  - type: clipping
+    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md"
+  - type: clipping
+    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 6.md"
+  - type: clipping
+    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 9.md"
+  - type: clipping
+    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md"
+  - type: clipping
+    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md"
+  - type: clipping
+    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 28.md"
+  - type: clipping
+    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md"
+  - type: clipping
+    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md"
+  - type: clipping
+    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 34.md"
+  - type: clipping
+    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md"
+  - type: official
+    path: "https://developer.android.com/topic/performance/app-score"
+  - type: official
+    path: "https://developer.android.com/topic/performance/vitals"
+  - type: official
+    path: "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
+  - type: official
+    path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
+  - type: official
+    path: "https://developer.android.com/topic/performance/baselineprofiles/measure-baselineprofile"
+  - type: official
+    path: "https://developer.android.com/android-performance-analyzer"
+task6_state: reviewed
+pipeline_stage: ready-to-publish
+last_task2a_at: "2026-05-23T20:04:00+08:00"
+task2a_result: drafted
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-07-16"
+task6_result: pass-light-edit
+task9_state: reviewed
+task2b_state: fixed
+task2b_result: fixed
+last_task6_at: "2026-07-16T20:24:00+08:00"
+last_task6_audit: "2026-07-16"
+task9_result: auto-fixed
+last_task9_at: "2026-05-23T20:25:42+08:00"
+last_task9_audit: "2026-07-07"
+last_task9_autofix_at: 2026-07-15
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-07-16"
+task9_review_notes: "2026-05-23 20:25 Task9 深度技术审计：pass-tech-review。P0 0 / P1 0 / P2 0；官方 App Performance Score、Vitals、Macrobenchmark、Baseline Profiles、APA 口径复核通过；自动晋升 finalized。"
+deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-23
 ---
 
@@ -276,80 +346,58 @@ APA 的价值在于减少工具切换，并把 trace 导航、对比和 SQL 分�
 
 每台设备都要绑定维护规则：系统版本是否升级、后台是否清理、亮度和刷新率是否固定、采样前是否重启、是否清数据、温度起点是否记录。动态评分的波动很多来自环境，而不是代码变化；环境字段缺失时，评分报告只能作为线索，不能作为发版裁决。
 
-<!-- AIW-源码调研-2026-07-16 -->
 
-### 🔹 Android 17.0.0_r1 源码调研补充：PerformanceHintManager 真实实现
+### 🔹 系统侧 API：PerformanceHintManager 与 CPU/GPU 头寸
 
-基于源码级深度调研发现，官方文档和日常选题中引用的 `PerformanceMetricsManager.java` 在 Android 17.0.0_r1 中**实际不存在**。实际的核心实现是 `PerformanceHintManager.java`，并且新增了重要的性能头寸计算机制。
+动态评分和低端机评估都依赖对设备真实运行状态的感知。Android 17 在 `android.os` 包下提供了 `PerformanceHintManager`（`frameworks/base/core/java/android/os/PerformanceHintManager.java`，371 行），允许应用创建提示会话、报告工作负载实际耗时，并查询 CPU/GPU 的可用头寸——这套 API 可以作为动态评分的系统侧数据支撑。
 
-#### 1. PerformanceMetricsManager.java 不存在
+注意：部分外部资料引用 `PerformanceMetricsManager` 类名，该文件在 Android 17.0.0_r1 的 `frameworks/base/core/java/android/app/` 目录下并不存在；实际类是 `PerformanceHintManager`。
 
-**源码验证**：通过 `git ls-tree -r android-17.0.0_r1 --name-only` 全面检验，`frameworks/base/core/java/android/app/` 目录下无 `PerformanceMetricsManager.java` 文件。
+#### 核心机制
 
-**实际存在**：`core/java/android/os/PerformanceHintManager.java` (371行)
+- **会话创建**：`createHintSession(int[] tids, long initialTargetWorkDurationNanos)` — 为目标线程创建性能提示会话
+- **目标更新**：`updateTargetWorkDuration(long targetDurationNanos)` — 更新预期工作耗时
+- **反馈机制**：`reportActualWorkDuration(long actualDurationNanos)` — 报告实际耗时，系统据此调整调度策略
+- **GPU 增强**：`reportActualWorkDuration(WorkDuration workDuration)` — 支持分离 CPU/GPU 工作时长
+- **提示发送**：`sendHint(int hint)` — CPU_LOAD_UP/DOWN/RESET/RESUME, GPU_LOAD_UP/DOWN/RESET
 
-**矛盾说明**：官方文档或其他资料可能存在滞后，或者该文件在不同渠道/厂商版本中存在。
+#### CPU/GPU 头寸查询 API
 
-#### 2. PerformanceHintManager 核心机制
+Android 17 新增了头寸查询接口：
 
-**源码路径**：`frameworks/base/core/java/android/os/PerformanceHintManager.java`
-
-**关键功能**：
-- **会话创建**：`createHintSession(int[] tids, long initialTargetWorkDurationNanos)`
-- **目标更新**：`updateTargetWorkDuration(long targetDurationNanos)`
-- **反馈机制**：`reportActualWorkDuration(long actualDurationNanos)`
-- **GPU增强**：`reportActualWorkDuration(WorkDuration workDuration)` - 支持分离CPU/GPU工作时长
-- **提示发送**：`sendHint(int hint)` - CPU_LOAD_UP/DOWN/RESET/RESUME, GPU_LOAD_UP/DOWN/RESET
-
-#### 3. 新增 CPU/GPU 头寸计算 API
-
-**Android 17 新增**：
-- `IHintManager.getCpuHeadroom(in CpuHeadroomParamsInternal params)`
-- `IHintManager.getGpuHeadroom(in GpuHeadroomParamsInternal params)`
-
-**参数配置**：
 ```java
-// CpuHeadroomParams
 @FlaggedApi(Flags.FLAG_CPU_GPU_HEADROOMS)
 public final class CpuHeadroomParams {
     @CpuHeadroomCalculationType int calculationType; // MIN/AVERAGE
-    int calculationWindowMillis; // 计算窗口大小
-    int[] tids; // 目标线程 ID
+    int calculationWindowMillis;                     // 计算窗口
+    int[] tids;                                      // 目标线程 ID
 }
 ```
 
-**归因价值**：为低端机样本池提供量化性能基线，支持动态调度优化。
+通过 `IHintManager.getCpuHeadroom()` 和 `IHintManager.getGpuHeadroom()` 可以查询当前设备的 CPU/GPU 可用头寸。在动态评分场景中，头寸值可以作为低端机判定的量化基线：帮助区分瓶颈来自应用自身还是设备资源不足。
 
-#### 4. PowerHintSessionWrapper HAL 集成
+#### HAL 集成路径
 
-**源码位置**：`frameworks/native/services/powermanager/PowerHintSessionWrapper.cpp`
+调用链路：
 
-**版本演进**：
-- HAL v2: 基础会话功能
-- HAL v4: 提示发送能力
-- HAL v5: 模式切换 (`setMode`) 和图形层关联 (`associateToLayers`)
-
-**调用链路**：
 ```
 App → PerformanceHintManager → JNI → AIDL → PowerHintSessionWrapper → HAL → Kernel Scheduler
 ```
 
-#### 5. AIDL 接口增强
+`PowerHintSessionWrapper`（`frameworks/native/services/powermanager/PowerHintSessionWrapper.cpp`）负责将应用层的性能提示传递给内核调度器，HAL v5 起支持模式切换（`setMode`）和图形层关联（`associateToLayers`）。
 
-**IHintManager 扩展**：
-- `associateToLayers(IBinder[] layerTokens)` - 关联到具体图形层
-- `setHintSessionThreads(IHintSession, int[])` - 动态线程配置
+#### AIDL 接口
 
-**IHintSession 增强**：
-- `reportActualWorkDuration2(WorkDuration[] workDurations)` - 批量处理工作时长
-- `setMode(int mode, boolean enabled)` - 会话级别模式切换
+- `associateToLayers(IBinder[] layerTokens)` — 关联到具体图形层
+- `setHintSessionThreads(IHintSession, int[])` — 动态配置线程
+- `reportActualWorkDuration2(WorkDuration[] workDurations)` — 批量处理工作时长
+- `setMode(int mode, boolean enabled)` — 会话级别模式切换
 
-#### 6. 低端机适配价值
+#### 与动态评分和低端机评估的关系
 
-**量化评估**：通过 headroom API 提供硬件负载量化指标
-**动态调整**：根据实际工作时长反馈调整调度策略
-**功率优化**：`setPreferPowerEfficiency()` 支持省电优先模式
-**国内厂商适配**：非 Play 渠道可通过参数定制化配置
+这套 API 对 App Performance Score 的动态评分有两个直接价值：
 
-本次调研揭示了官方文档与实际源码的差异，并发现了 Android 17 中实际的性能归因基础设施。国内厂商可基于此架构建设自有性能评估体系，为低端机性能优化提供源码级支持。
+1. **量化设备负载**：头寸 API 提供设备侧的剩余能力，而不是应用自己的帧耗时。结合应用侧指标，可以区分"应用写得差"还是"设备已经跑满了"。
+2. **低端机基线**：在低端机样本池中，头寸值可以作为基线记录。如果同一设备上应用更新后头寸持续走低，说明新版本整体负载变重，即使单帧耗时没有明显恶化。
 
+国内非 Play 渠道分发的应用，可以基于这套架构建设自有性能评估体系，用头寸 API 替代 Play 侧的部分动态评分能力。
