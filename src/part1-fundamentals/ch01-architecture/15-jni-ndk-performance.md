@@ -60,7 +60,7 @@ task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-23
 last_task6_at: "2026-05-18T15:14:44+08:00"
-last_task6_audit: "2026-06-24"
+last_task6_audit: "2026-07-16"
 last_task6_audit_result: l1-light-edit
 last_task2b_at: "2026-05-20T11:12:00+08:00"
 last_task9_audit: "2026-05-20"
@@ -272,7 +272,7 @@ Propeller 是 Google 提出的 Post-Link Optimization 技术，在 PGO 的基础
 
 **误区四：`AttachCurrentThread()` 是小事，哪里需要哪里调。** attach/detach 应该跟线程生命周期绑定，不该跟单次任务绑定。否则线程上下文管理本身就会进入热路径。
 
-**误区五：`GetPrimitiveArrayCritical()` 等于零拷贝且没副作用。** 运行时可能返回真实指针，也可能返回拷贝；关键在于 critical 区域必须短，且要尽快 release。
+**误区五：`GetPrimitiveArrayCritical()` 等于零拷贝且没副作用。** 运行时可能返回真实指针，也可能返回拷贝；critical 区域必须短，且要尽快 release。
 
 ## 与其他章节的关系
 

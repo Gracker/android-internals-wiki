@@ -80,3 +80,25 @@ Android 17 中 GPU 性能问题的 Machine Learning 基础异常检测方法未�
 
 ### 关联章节
 5.2, 5.6, 5.7, 5.8
+## [2026-07-16] ART 虚拟机锁膨胀机制（ThinLock → FatLock）— 参考书素材
+
+### 来源
+[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 46.md]
+
+### 知识点
+1. ART 锁状态分类：ThinLocked（瘦锁/轻量级锁）与 FatLocked（胖锁/重量级锁）
+2. 瘩锁→胖锁转换触发条件：lock count 超过 4096，或非持有线程争用时
+3. ART 锁优化策略：通过 sched_yield 让出执行权，循环 50 次尝试获取锁，避免直接膨胀为胖锁
+4. Monitor::Inflate / Monitor::Deflate 函数控制锁状态转换
+5. 可通过监控 Inflate 调用判断代码热点区域的锁争用程度
+
+### 重要程度
+高
+
+### 建议加工方向
+- 结合 android-17.0.0_r1 源码分析 ART Monitor 锁状态机的完整实现
+- ThinLock/FatLock 转换阈值（4096）在 Android 17 是否有调整
+- 锁膨胀监控方案的工程实践（哪些线上工具实现了此能力）
+- 与 Java/JVM 轻量级锁/偏向锁机制的对比分析
+
+## [章节待创建] 建议归属 Part 1 ch04 内存管理 或独立章节
