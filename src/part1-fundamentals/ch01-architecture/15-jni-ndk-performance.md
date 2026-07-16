@@ -3,7 +3,7 @@
 title: "JNI/NDK 性能优化"
 section: "1.15"
 chapter: "1.15"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-06"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-23"

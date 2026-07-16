@@ -177,7 +177,7 @@
       "section": "1.15",
       "section_title": "JNI/NDK 性能优化",
       "priority": 90,
-      "reason": "[audit回炉] 源码版本基线仍标注 android-16.0.0_r1，需更新为 android-17.0.0_r1",
+      "reason": "[Task2B Main] 版本基线已在 Task2B Lite 中修复为 android-17.0.0_r1；更新 frontmatter status → ready-for-review 以重新进入流水线",
       "material_paths": [
         "intake/suggestions.md"
       ],
@@ -191,8 +191,10 @@
       ],
       "added_by": "task6-audit",
       "added_at": "2026-07-16T09:15:34",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-07-16-09-audit.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-07-16-09-audit.md",
+      "completed_at": "2026-07-16T12:50:00+08:00",
+      "completed_by": "task2b-main"
     }
   ],
   "items": [
@@ -254,8 +256,10 @@
       ],
       "added_by": "task6-audit",
       "added_at": "2026-07-16T09:15:34",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-07-16-09-audit.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-07-16-09-audit.md",
+      "completed_at": "2026-07-16T12:50:00+08:00",
+      "completed_by": "task2b-main"
     }
   ]
 }
