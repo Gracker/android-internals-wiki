@@ -42,7 +42,7 @@ last_task9_audit: 2026-07-13
 last_task9_autofix_at: "2026-07-02"
 task2b_fixed_at: "2026-07-02T20:56:40+08:00"
 last_idle_audit_at: 2026-07-12T10:52:42+08:00
-last_task6_audit: 2026-07-14
+last_task6_audit: 2026-07-16
 last_task9_audit_log: logs/deep-review/2026-07-12-10-idle-audit.md
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-14
