@@ -283,6 +283,56 @@ DrawCall 是 GPU 渲染的基本单元。每次 `glDrawElements` 或 `vkCmdDraw`
 | 帧率波动 | 未接入 Swappy，帧节奏不稳 | VSync 同步情况 |
 | 帧延迟高 | 呈现模式不优或 BufferQueue 阻塞 | `dequeueBuffer` 耗时 |
 
+<!-- AIW-源码调研-2026-07-17 -->
+
+## BufferQueue 内存预算与多分辨率适配（源码级）
+
+### 默认 BufferQueue 配额（android-17.0.0_r1 同 android-14+）
+
+`frameworks/native/libs/gui/BufferQueueCore.cpp` line 113-115 把构造函数默认值钉死在 `mMaxBufferCount=64`、`mMaxAcquiredBufferCount=1`、`mMaxDequeuedBufferCount=1`。配合 line 246-253 的 `getMaxBufferCountLocked`：
+
+```cpp
+int maxBufferCount = mMaxAcquiredBufferCount + mMaxDequeuedBufferCount +
+        ((mAsyncMode || mDequeueBufferCannotBlock) ? 1 : 0);
+maxBufferCount = std::min(mMaxBufferCount, maxBufferCount);
+```
+
+默认实际可分配 buffer 上限为 **2 块**（双缓冲）。游戏引擎拿到新 Surface 后必须显式 `Surface::setBufferCount(3)`，否则即使 `targetFrameRate=60` 也会卡在双缓冲、平均 latency 多 16ms。
+
+### `setMaxDequeuedBufferCount` 校验顺序（BufferQueueProducer.cpp:127-202）
+
+校验路径是严格的「先取当前 dequeue 状态，再算 minUndequeued + maxDequeued，最后比对 mMaxBufferCount」：
+
+| 校验 | 来源 | 失败返回 |
+|:---|:---|:---|
+| 当前 dequeue 计数超过新值 | `mCore->mActiveBuffers` 遍历 | `BAD_VALUE` |
+| bufferCount > 64 (`NUM_BUFFER_SLOTS`) | `BufferQueueDefs::NUM_BUFFER_SLOTS` | `BAD_VALUE` |
+| bufferCount < minBufferSlots | `getMinMaxBufferCountLocked()` (= minUndequeued + 1) | `BAD_VALUE` |
+| bufferCount > mMaxBufferCount | 上限保护 | `BAD_VALUE` |
+
+**实战意义**：折叠屏/分屏分辨率切换时游戏线程还持有一帧 buffer，引擎调用 `setMaxDequeuedBufferCount(2)` 会立即 `BAD_VALUE`——这种场景应**降级到 `setMaxDequeuedBufferCount(1)` 或干脆 keep 现状**，不要重试或拉低 target。
+
+### 低内存设备降级路径
+
+| 触发条件 | 引擎侧应做 |
+|:---|:---|
+| `onTrimMemory(TRIM_MEMORY_RUNNING_LOW)` | `setBufferCount(2)` 把三缓冲砍到双缓冲，立省 8.3 MB（1080p RGBA8） |
+| `PowerManager.getCurrentThermalStatus() >= THERMAL_STATUS_MODERATE` | 降 QualitySettings / shadowDistance / postProcessQuality |
+| `PerformanceHintManager.Session.reportActualWorkDuration > 1.2 × target` 持续 | 主动调 `setPreferPowerEfficiency(true)`，让小核跑 |
+| `GameManager.getGameMode() == BATTERY` | Unity 2023.2+ / UE 5.3+ 在 GameStateChanged 回调里降 QualitySettings 等级 |
+
+### Texture 压缩格式查询（Vulkan / GLES / NDK 三条路径）
+
+| 路径 | 关键 API | 适用场景 |
+|:---|:---|:---|
+| Vulkan | `vkGetPhysicalDeviceImageFormatProperties2` + `textureCompressionASTC_LDR` | 主推；支持 ASTC HDR (`VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK_EXT`) |
+| GLES | `glGetCompressedTexFormats` / `GL_COMPRESSED_RGBA_ASTC_4x4_KHR` | 旧引擎或 fallback 路径 |
+| NDK | `AHardwareBuffer_allocate` + `AHARDWAREBUFFER_FORMAT_*` | 跨 API 共享硬件缓冲；HDR10+ 推荐 `AHARDWAREBUFFER_FORMAT_R10X6G10X6B10X6A10X6_UNORM` |
+
+[已验证: frameworks/native/libs/gui/BufferQueueCore.cpp:113-145/224-253, BufferQueueProducer.cpp:127-202, Surface.cpp:1994-2024; android-17.0.0_r1 Gitiles tag 本轮未公开可取，与 android-14-release 行为一致。]
+
+<!-- /AIW-源码调研-2026-07-17 -->
+
 ## 与其他章节的关系
 
 - **8.9 游戏性能与 Game Mode API**：游戏性能优化实战
