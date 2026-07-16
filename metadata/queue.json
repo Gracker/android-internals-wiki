@@ -1,213 +1,27 @@
-[
-  {
-    "chapter": "1.61",
-    "title": "Android 17 TelephonyManager 架构与性能优化",
-    "priority": 80,
-    "status": "done",
-    "path": "src/part1-fundamentals/ch01-architecture/1.61-android17-telephonymanager-architecture-performance.md",
-    "processed_date": "2026-07-17"
-  },
-  {
-    "chapter": "1.62",
-    "title": "Android 17 ConnectivityManager 架构与性能优化",
-    "priority": 80,
-    "status": "pending",
-    "path": "src/part1-fundamentals/ch01-architecture/1.62-android17-connectivitymanager-architecture-performance.md"
-  },
-  {
-    "chapter": "1.63",
-    "title": "Android 17 NotificationManager 架构与性能优化",
-    "priority": 80,
-    "status": "pending",
-    "path": "src/part1-fundamentals/ch01-architecture/1.63-android17-notificationmanager-architecture-performance.md"
-  },
-  {
-    "chapter": "1.64",
-    "title": "Android 17 BiometricService 架构与性能优化",
-    "priority": 80,
-    "status": "pending",
-    "path": "src/part1-fundamentals/ch01-architecture/1.64-android17-bometricservice-architecture-performance.md"
-  },
-  {
-    "chapter": "1.65",
-    "title": "Android 17 LocationManager 架构与性能优化",
-    "priority": 80,
-    "status": "pending",
-    "path": "src/part1-fundamentals/ch01-architecture/1.65-android17-locationmanager-architecture-performance.md"
-  },
-  {
-    "chapter": "1.66",
-    "title": "Android 17 WindowManager 架构与性能优化",
-    "priority": 80,
-    "status": "pending",
-    "path": "src/part1-fundamentals/ch01-architecture/1.66-android17-windowmanager-architecture-performance.md"
-  },
-  {
-    "chapter": "1.67",
-    "title": "Android 17 PackageManager 架构与性能优化",
-    "priority": 80,
-    "status": "pending",
-    "path": "src/part1-fundamentals/ch01-architecture/1.67-android17-packagemanager-architecture-performance.md"
-  },
-  {
-    "chapter": "1.68",
-    "title": "Android 17 ActivityManager 架构与性能优化",
-    "priority": 80,
-    "status": "pending",
-    "path": "src/part1-fundamentals/ch01-architecture/1.68-android17-activitymanager-architecture-performance.md"
-  },
-  {
-    "chapter": "25.28",
-    "title": "ThermalManager 热节流适配与性能降级治理实战",
-    "priority": 80,
-    "status": "pending",
-    "path": "src/part5-app/ch25-power-size/28-thermal-manager-throttling-performance.md"
-  },
-  {
-    "chapter": "20.25",
-    "title": "线程泄漏与匿名线程监控实战",
-    "priority": 80,
-    "status": "pending",
-    "path": "src/part5-app/ch20-stability/25-thread-leak-anonymous-thread-monitoring.md"
-  },
-  {
-    "chapter": "26.28",
-    "title": "非 Play 渠道性能监控与国内厂商 ROM 适配可观测性",
-    "priority": 80,
-    "status": "pending",
-    "path": "src/part5-app/ch26-observability/28-non-play-channel-rom-observability.md"
-  },
-  {
-    "chapter": "24.21",
-    "title": "SAF/DocumentFile/ContentResolver 文件访问性能选型与治理",
-    "priority": 80,
-    "status": "pending",
-    "path": "src/part5-app/ch24-io-network/21-saf-documentfile-contentresolver-performance.md"
-  },
-  {
-    "chapter": "20.26",
-    "title": "Native 内存泄漏线上监控实战",
-    "priority": 80,
-    "status": "pending",
-    "path": "src/part5-app/ch20-stability/26-native-memory-leak-online-monitoring.md"
-  },
-  {
-    "chapter": "13.22",
-    "title": "Perfetto SQL 查询手册与性能分析实战查询库",
-    "priority": 80,
-    "status": "pending",
-    "path": "src/part3-tools/ch13-perfetto/22-perfetto-sql-cookbook-performance-analysis.md"
-  },
-  {
-    "chapter": "8.19",
-    "title": "Android 线程模型与调度器选型实战",
-    "priority": 80,
-    "status": "pending",
-    "path": "src/part2-performance/ch08-responsiveness/19-thread-model-dispatcher-selection.md"
-  },
-  {
-    "chapter": "8.20",
-    "title": "JNI 调用开销与 Native 互操作性能边界",
-    "priority": 80,
-    "status": "pending",
-    "path": "src/part2-performance/ch08-responsiveness/20-jni-overhead-native-interop-performance.md"
-  },
-  {
-    "chapter": "22.35",
-    "title": "Bitmap 解码管线性能与 ImageDecoder 实战",
-    "priority": 80,
-    "status": "pending",
-    "path": "src/part5-app/ch22-rendering-practice/35-bitmap-decode-pipeline-imagedecoder.md"
-  },
-  {
-    "chapter": "8.21",
-    "title": "Broadcast 性能与跨进程通信开销治理",
-    "priority": 80,
-    "status": "done",
-    "path": "src/part2-performance/ch08-responsiveness/21-broadcast-performance-cross-process-overhead.md",
-    "processed_date": "2026-07-17"
-  },
-  {
-    "section": "22.36",
-    "title": "SharedTransitionLayout — Compose 共享元素过渡动画性能优化",
-    "priority": 80,
-    "status": "pending",
-    "file": "src/part5-app/ch22-rendering-practice/36-shared-transition-layout-performance.md",
-    "added": "2026-07-16"
-  },
-  {
-    "section": "22.37",
-    "title": "Compose Runtime Tracing — Perfetto 集成与组合阶段追踪",
-    "priority": 80,
-    "status": "pending",
-    "file": "src/part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md",
-    "added": "2026-07-16"
-  },
-  {
-    "chapter": "23.26",
-    "title": "ART 堆内存分布与 OOM 触发路径实战",
-    "priority": 80,
-    "status": "pending",
-    "path": "src/part5-app/ch23-memory-practice/23.26-art-heap-distribution-oom-trigger-path.md",
-    "created_date": "2026-07-17"
-  },
-  {
-    "chapter": "22.38",
-    "title": "Compose Canvas 自定义绘制性能实战",
-    "priority": 80,
-    "status": "pending",
-    "path": "src/part5-app/ch22-rendering-practice/38-compose-canvas-custom-drawing-performance.md",
-    "created_date": "2026-07-17"
-  },
-  {
-    "section": "5.11",
-    "section_title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
-    "priority": 90,
-    "reason": "[review抽检] android-17.0.0_r1 tag 状态自相矛盾：正文称已锚定，文末验证边界段称 tag 未发布",
-    "material_paths": [
-      "logs/review/2026-07-17-05-audit.md"
-    ],
-    "review_issues": [
-      {
-        "type": "需确认",
-        "location": "正文 'Android 17 NPU 硬件特性声明' 段 vs 文末 '端侧 AI 推理栈验证边界' 段",
-        "detail": "正文写 '源码锚点已锚定 android-17.0.0_r1；该常量在 android-17.0.0_r1 中已确认存在'，文末写 'AOSP android-17.0.0_r1 tag 未发布，不能写成已锚定 tag'。同一 tag 状态描述矛盾。",
-        "suggestion": "核实 android-17.0.0_r1 当前是否已发布。统一两处表述。"
-      }
-    ],
-    "added_by": "task6-audit",
-    "added_at": "2026-07-17T05:05:00+08:00",
-    "status": "pending",
-    "original_review_log": "logs/review/2026-07-17-05-audit.md"
-  },
-  {
-    "section": "20.27",
-    "title": "Kotlin 协程泄漏诊断与结构化并发性能监控",
-    "path": "src/part5-app/ch20-stability/20.27-coroutine-leak-diagnosis-structured-concurrency-performance.md",
-    "priority": 80,
-    "status": "pending",
-    "created_date": "2026-07-17",
-    "gap_source": "AOSP结构/章节深挖",
-    "score": 17
-  },
-  {
-    "section": "22.39",
-    "title": "Compose Snapshot 系统深度：状态一致性模型与性能开销",
-    "path": "src/part5-app/ch22-rendering-practice/22.39-compose-snapshot-system-state-consistency-performance.md",
-    "priority": 80,
-    "status": "pending",
-    "created_date": "2026-07-17",
-    "gap_source": "AOSP结构/章节深挖",
-    "score": 16
-  },
-  {
-    "section": "22.40",
-    "title": "Compose Compiler v2 / K2 编译器迁移与 @Composable 编译优化",
-    "path": "src/part5-app/ch22-rendering-practice/22.40-compose-compiler-v2-k2-migration-performance.md",
-    "priority": 80,
-    "status": "pending",
-    "created_date": "2026-07-17",
-    "gap_source": "官方文档",
-    "score": 15
-  }
-]
+{
+  "pending": [
+    {
+      "section": "ch04-memory",
+      "section_title": "ch04-memory",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://android-developers.googleblog.com/2026/07/android-17-performance-scheduler-memory-management"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 系统性能优化深度解析：调度器与内存管理革命 — Android 17 带来了系统调度的革命性改进，通过基于机器学习的用户行为预测算法，实现了应用启动时间平均减少30%。新调度器能够动态识别不同应用类型，为前台应用提供最优资源分配，内存使用效率提升6...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-07-17T05:33:38.333549",
+      "status": "pending"
+    }
+  ],
+  "in_progress": [],
+  "completed": [],
+  "rejected": []
+}
