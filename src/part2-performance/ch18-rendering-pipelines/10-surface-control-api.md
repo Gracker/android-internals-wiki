@@ -40,7 +40,7 @@ last_task9_audit_at: "2026-07-08T02:33:03+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-08-02-audit.md"
 last_task9_audit_result: "auto-fixed-p0-android17-baseline"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-07
+last_deepseek_cn_review_at: 2026-07-16
 last_task2b_verifier_at: "2026-07-08T03:31:42+08:00"
 task2b_verifier_result: "status-corrected-ready-for-task6"
 task2b_verifier_notes: "2026-07-08 Task2B Verifier: status finalized→ready-for-review; auto-fixed by Task9, pipeline=task6_pending, queue clear. Ready for Task6 re-review."
@@ -68,7 +68,7 @@ task2b_verifier_notes: "2026-07-08 Task2B Verifier: status finalized→ready-for
 
 <!-- outline-end -->
 
-`ASurfaceControl`（Android 10/Q 引入，API 29）是 Android NDK 中面向 SurfaceFlinger 的原生图层控制接口。它允许 App 在 View 树之外创建或管理子 Layer，并把 Buffer、几何属性、层级关系等变更作为一次事务提交给系统合成器。对浏览器、视频容器、自绘引擎这类需要自己组织合成结构的场景，它提供了比普通 View / Surface 更细的控制粒度。（具体性能收益取决于目标设备的 HWC 能力与合成策略，需按设备实测）
+`ASurfaceControl`（Android 10 / API 29 引入）是 Android NDK 提供的原生图层控制接口，面向 SurfaceFlinger 工作。应用可以通过它在 View 树之外创建或管理子图层，把 Buffer、几何属性和层级关系打包成一次事务提交给系统合成器。对于浏览器、视频容器、自绘引擎这类需要自己组织合成结构的场景，它比普通 View / Surface 提供了更细的控制粒度——但性能收益取决于目标设备的 HWC 能力和合成策略，需要按设备实测。
 
 ## 核心概念
 
@@ -84,9 +84,7 @@ task2b_verifier_notes: "2026-07-08 Task2B Verifier: status finalized→ready-for
 
 `ASurfaceTransaction` 代表一组原子提交的 Layer 属性更新。应用可以一次性修改多个 `ASurfaceControl` 的 Buffer、位置、裁剪区域、Z-Order、可见性，再通过 `apply()` 把这组更新作为统一快照送给系统。
 
-原子提交主要解决三类问题：- Buffer 更新和几何属性可以在同一个提交边界里生效，减少中间态被用户看到的机会
-- 多个 Layer 的变化可以作为一个快照出现，不必担心前一层已经移动、后一层还没跟上的错位
-- Buffer、位置、透明度这类变化可以和 BLAST 使用的 Transaction 模型保持一致，便于分析 App 侧和 SurfaceFlinger 侧的对应关系
+原子提交解决的核心问题是中间态可见。Buffer 更新和几何属性在同一个提交边界里生效，避免用户看到半截状态；多个 Layer 的变化作为一个快照出现，不会出现前一层已经移动、后一层还没跟上的错位；同时 Buffer、位置、透明度这类变化和 BLAST 的 Transaction 模型保持一致，分析 App 侧和 SurfaceFlinger 侧的对应关系也更直接。
 
 ## 与 BLAST 的关系
 
@@ -275,9 +273,11 @@ App Main Window (SurfaceControl from SurfaceView)
 
 ### Layer 数量与性能
 
-Layer 数量增加会直接抬高 SurfaceFlinger 的工作量。每多一个独立的 buffer layer，SurfaceFlinger 都要多做一次 `latchBuffer`、可见性判断和合成策略选择。常见的性能压力主要来自三类：1. **SurfaceFlinger 侧工作量增加**：独立 buffer layer 越多，遍历、latch、合成决策的成本越高
-2. **HWC 直合成名额有限**：可直接交给 HWC 的 overlay 名额通常只有少数几个，超出后会退回 GPU 合成；精确上限强依赖 SoC、分辨率、旋转、HDR、裁剪和 OEM 策略。（精确上限因 SoC、分辨率、旋转、合成策略而异，需按目标设备实测）
-3. **buffer 占用增长**：每个 buffer layer 都可能对应独立的 GraphicBuffer / AHardwareBuffer 池
+Layer 数量增加会直接抬高 SurfaceFlinger 的工作量。每多一个独立的 buffer layer，SurfaceFlinger 都要多做一次 `latchBuffer`、可见性判断和合成策略选择。常见的性能压力来自三个方面：
+
+1. **SurfaceFlinger 遍历开销**：独立 buffer layer 越多，遍历、latch、合成决策的成本越高。
+2. **HWC overlay 名额有限**：可直接交给 HWC 的 overlay 名额通常只有少数几个，超出后会退回 GPU 合成——精确上限依赖 SoC、分辨率、旋转、HDR、裁剪和 OEM 策略，需按目标设备实测。
+3. **buffer 占用增长**：每个 buffer layer 都可能对应独立的 GraphicBuffer / AHardwareBuffer 池。
 
 实战里不建议给出“5 个以内”这种固定阈值。更稳妥的做法是：先用 `dumpsys SurfaceFlinger` 和 Perfetto 看当前场景到底需要几个独立 buffer layer，再判断哪些层必须异步更新，哪些层可以并回同一个 buffer，或者改成只承担结构关系的 Container Layer。
 
@@ -414,9 +414,9 @@ WebView 并不是每次都走独立 SurfaceControl 子 Layer。普通页面仍�
 - SurfaceFlinger 侧能看到对应 child layer 的 `setTransactionState`、`latchBuffer` 与网页更新拍点保持一致
 - `dumpsys SurfaceFlinger` 的 layer dump 或厂商图形调试面板能说明该 layer 最终走 HWC 还是 GPU 合成
 
-这组证据不成立时，不能直接把收益归因到独立 SurfaceControl。这个场景里的常见瓶颈也很典型。如果 Chromium 提交 Transaction 的频率高于显示侧能稳定消费的频率，SurfaceFlinger 侧会出现事务堆积；如果网页内容依赖 GPU 结果，acquire fence 没及时 signal，就会在 `latchBuffer` 上等待；如果这个 child layer 还叠了圆角、alpha、缩放或视频，HWC 可能接不了，只能退回 GPU 合成。（精确结论需结合目标设备的 HWC 约束和 provider 实现差异验证）
+这组证据不成立时，不能直接把收益归因到独立 SurfaceControl。这个场景里的常见瓶颈也很典型。如果 Chromium 提交 Transaction 的频率高于显示侧能稳定消费的频率，SurfaceFlinger 侧会出现事务堆积；如果网页内容依赖 GPU 结果，acquire fence 没及时 signal，就会在 `latchBuffer` 上等待；如果这个 child layer 还叠了圆角、alpha、缩放或视频，HWC 可能接不了，只能退回 GPU 合成——精确结论需要结合目标设备的 HWC 约束和 provider 实现差异来验证。
 
-因此，WebView 场景里要比较的是两件事：宿主 RenderThread 的工作有没有明显减轻，以及 SurfaceFlinger 侧是否换来了更可控的独立 layer 合成。如果宿主仍要在每一帧里同步做网页绘制，问题还在 App 侧；如果宿主已经解耦，但 SurfaceFlinger 组合过重，问题就转到 Layer 数量、fence 和合成策略上了。[图：WebView 独立合成示意图。宿主窗口只绘制原生控件和透明占位，Chromium 独立提交 Web 内容 buffer，SurfaceFlinger 在同一帧里合成两者。]
+所以 WebView 场景的核心判断只有两件事：宿主 RenderThread 的工作有没有明显减轻，以及 SurfaceFlinger 侧是否换来了更可控的独立 layer 合成。如果宿主仍在每帧里同步做网页绘制，瓶颈在 App 侧；如果宿主已经解耦但 SurfaceFlinger 组合过重，瓶颈就转到 Layer 数量、fence 和合成策略上。[图：WebView 独立合成示意图。宿主窗口只绘制原生控件和透明占位，Chromium 独立提交 Web 内容 buffer，SurfaceFlinger 在同一帧里合成两者。]
 
 ### 画中画（Picture-in-Picture）
 
@@ -471,7 +471,7 @@ adb shell dumpsys SurfaceFlinger | grep -A 20 "<package>"
 
 ## 附录：图形缓冲体系对象边界与 BufferQueue 流转链（源码级）
 
-> 本附录用于明确 Surface / ANativeWindow / HardwareBuffer / GraphicBuffer / Gralloc / HWC 的对象边界与流转路径。### 对象边界总览
+> 本附录梳理 Surface / ANativeWindow / HardwareBuffer / GraphicBuffer / Gralloc / HWC 之间的对象边界和流转关系。### 对象边界总览
 
 | 层级 | 典型类型 | 说明 |
 |:---|:---|:---|

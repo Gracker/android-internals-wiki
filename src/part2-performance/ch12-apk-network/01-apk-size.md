@@ -62,7 +62,7 @@ repaired_by: openclaw-task2b
 last_task2b_at: '2026-05-06T04:41:00+08:00'
 task9_review_notes: "2026-05-06 05 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2。Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0；Dynamic Feature Module 仍使用旧 Play Core Library 1.6+ 口径，需更新为 Play Feature Delivery Library 2.1.0+ 并标注 Android 14+ target SDK 版本边界。 | 2026-05-28 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-18 Task9 闲时抽检：pass-tech-review。P0 0 / P1 0 / P2 1；官方文档核对未发现 Android 18/API 38 越界；zipalign 16KB 验证命令建议后续从对齐命令改为 -c 校验命令。 | 2026-07-09 Task9 闲时抽检：pass-tech-review。P0 0 / P1 0 / P2 1；复核官方文档未发现 Android 18/API 38 越界；16KB zipalign 仍为既有 P2 建议，未新增队列。"
 last_task6_at: '2026-05-06T05:05:00+08:00'
-last_task6_audit: 2026-07-14T03:06:00+08:00
+last_task6_audit: 2026-07-16T14:18:09+08:00
 review_notes: '2026-05-05 Task6 23:26：revisiting 写作复审，清理填充词/元叙述，并让 density FAQ 与正文口径一致；写作层通过。Task9
   已有 P1/P2 queue pending，等待 Task2B。 | 2026-05-06 Task6 05:05：revisiting 写作复审；清理 L1/L2
   结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。 | 2026-05-06 05 task9 deep-review:
@@ -83,7 +83,7 @@ last_deepseek_cn_review_at: 2026-06-18
 
 试想一个场景：用户在地铁上用 4G 搜到一个 App，Google Play 显示「下载大小 156 MB」——这个数字很可能直接让他划走了。Google 在 2018 年的一项内部研究中发现，APK 体积每增加 6 MB，安装转化率就下降约 1%。在国内应用市场，这个数字可能更敏感——很多用户还在按流量计费，或者手机存储已经捉襟见肘。
 
-体积问题不仅仅是下载体验。APK 安装后，dex 文件需要被解压、验证、编译（AOT/JIT）；resources.arsc 会被加载到内存；native libraries 被解压到磁盘。体积越大，安装时间越长，运行时的内存占用也越高。对于 MTK、高通这类平台上做性能优化的工程师来说，包体积和启动速度、内存占用之间存在一条不太显眼但会影响结果的因果链。
+体积问题不仅仅是下载体验。APK 安装后，dex 文件需要被解压、验证、编译（AOT/JIT）；resources.arsc 会被加载到内存；native libraries 被解压到磁盘。体积越大，安装时间越长，运行时的内存占用也越高。包体积和启动速度、内存占用之间存在一条因果链，在 MTK、高通等平台的性能优化工作中会产生影响。
 
 本章不罗列优化技巧清单——那种清单任何博客上都能找到。本章只回答三件事：**一个 APK 里面到底装了什么，哪些东西占了多少空间，我们用什么工具能看清楚，以及从工程实践的角度，哪些优化手段投入产出比最高。**
 

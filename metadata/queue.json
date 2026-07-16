@@ -28,6 +28,55 @@
       "resolved_note": "原 P0 AOSP 路径不可达判定为误判：android-17.0.0_r1 下所有引用路径经 HTTP 验证均可访问（2026-07-16T14）。",
       "resolved_at": "2026-07-16T14:25:40+08:00",
       "resolved_by": "task9-deep-tech-review"
+    },
+    {
+      "section": "1.59",
+      "section_title": "Android 17 ML 驱动任务调度器架构与性能协同机制",
+      "priority": 80,
+      "reason": "知识缺口挖掘 (RSS 驱动) - 与 ch01 既有的 1.43 ML 调度器章节形成综合视角",
+      "material_paths": [
+        "intake/daily-info/2026-07-16.md"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-16T09:11:43.261381+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.60",
+      "section_title": "Linux 6.10 BPF 集成对 Android 17 内核可观测性的影响边界",
+      "priority": 80,
+      "reason": "知识缺口挖掘 (RSS 驱动) - 与 14.25/2.6/14.29 eBPF 章节形成主线+延伸视角",
+      "material_paths": [
+        "intake/daily-info/2026-07-16.md"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-16T09:11:43.261624+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "4.50",
+      "section_title": "Android 17 LMKD v2 用户态迁移 + PSI 分层内存压力治理",
+      "priority": 80,
+      "reason": "知识缺口挖掘 (AOSP 结构驱动) - 在 4.37/4.43 基础上深化 PSI 协同机制",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "metadata/source-index.json"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-16T09:11:43.261626+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "5.32",
+      "section_title": "Linux 6.10 BPF DVFS 与 schedutil 调频闭环在 Android 17 的应用边界",
+      "priority": 80,
+      "reason": "知识缺口挖掘 (RSS 驱动) - 与 5.28/5.29/5.31/17.21 形成多层 BPF+schedutil 视角",
+      "material_paths": [
+        "intake/daily-info/2026-07-16.md"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-16T09:11:43.261627+00:00",
+      "status": "pending"
     }
   ]
 }

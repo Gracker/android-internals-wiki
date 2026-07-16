@@ -58,6 +58,8 @@ task6_reviewed_by: "openclaw-task6"
 last_task6_review_log: "logs/review/2026-05-19-17-review.md"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-25"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-16
 ---
 # androidx.tracing（Tracing SDK）
 
@@ -166,9 +168,9 @@ void renderHomeFeed(List<FeedItem> items) {
 | `beginAsyncSection` / `endAsyncSection` | 亚微秒级 | 含 int cookie 写入，与 beginSection 处于同一量级 |
 | trace disabled fast path | 纳秒级 | 平台层 `isTagEnabled()` 布尔短路即返回，生产环境无 trace 时几乎零开销 |
 
-> 量级来自公开文档与平台源码行为分析。具体数值因设备、Android 版本、ftrace buffer 状态而异；读者可用 `androidx.benchmark:benchmark-micro-junit4` 在目标设备上复测。
+> 以上量级基于平台源码行为和公开文档分析。具体数值因设备、Android 版本和 ftrace buffer 状态而异，可以在目标设备上用 `androidx.benchmark:benchmark-micro-junit4` 复测。
 
-开销来自两部分：
+开销主要来自三个层面：
 
 1. **字符串分配**：每次 `beginSection` 都会在 native 层做一次 `write(fd, ...)` 系统调用，把 `B|<pid>|<name>` 写入 `trace_marker`。字符串越长，系统调用耗时越高。
 2. **ftrace ring buffer 写入**：写入 per-CPU ring buffer 本身很快（约 100ns），但在高并发场景下 buffer 溢出会触发额外的锁竞争。
@@ -480,4 +482,4 @@ Java 层只看到一次 JNI 调用，Perfetto 里如果没有 native slice，读
 | 同步 `trace {}` 包含协程挂起点 | Perfetto 出现跨线程的错误长 slice，挂起期间线程的其他工作全被包进同一条 slice，读 trace 的人误判耗时 | 挂起跨度用 async trace 或评估 `traceCoroutine`；上方的"视图污染"示例展示了错误写法和修正方案 |
 | Debug 才有 trace | Release 问题无法复现 | 低成本稳定 trace 留在正式代码 |
 
-Tracing SDK 的价值来自一致性。少量稳定、长期存在的 trace，比临时到处加标记更有用。
+Tracing SDK 的长期价值来自一致性：少量稳定、长期存在的 trace 标记，远比临时到处加 trace 更有用。
