@@ -6,7 +6,7 @@ status: finalized
 drafted_date: "2026-05-22"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-05-22"
-last_verified_against: "AOSP main + Android 官方文档 + LiteRT docs + Perfetto docs"
+last_verified_against: "AOSP android-17.0.0_r1 + Android 官方文档 + LiteRT docs + Perfetto docs"
 confidence: medium
 tags: "[gpu, npu, heterogeneous-compute, adpf, thermal, power, litert]"
 related_chapters: "[\"5.3\", \"5.4\", \"5.9\", \"5.11\", \"5.12\", \"5.13\", \"5.14\", \"17.2\", \"22.10\", \"25.11\"]"
@@ -15,19 +15,31 @@ created_date: "2026-05-22"
 gap_source: "章节深挖/素材驱动/官方文档"
 gap_score: 16
 material_count: 6
-sources: 
-path: "https://source.android.com/docs/core/perf/performance-hint-api"
-path: "https://developer.android.com/games/optimize/adpf"
-path: "https://developer.android.com/ndk/guides/neuralnetworks/migration-guide"
-path: "https://source.android.com/docs/core/interaction/neural-networks/device-discovery"
-path: "https://ai.google.dev/edge/litert/overview"
-path: "https://ai.google.dev/edge/litert/android/npu/overview"
-path: "https://perfetto.dev/docs/data-sources/cpu-freq"
-path: "https://perfetto.dev/docs/data-sources/battery-counters"
-path: "https://developer.android.com/reference/android/content/pm/PackageManager#FEATURE_NEURAL_PROCESSING_UNIT"
-path: "https://developer.android.com/about/versions/17/release-notes"
-path: "DeepResearch/2026-05-20-android-17-npu-aicore-nnapi-research.md"
-path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-adpf-non-game-scenarios-and-profiling-trigger-type-anomaly.md"
+sources:
+  - type: official
+    path: "https://source.android.com/docs/core/perf/performance-hint-api"
+  - type: official
+    path: "https://developer.android.com/games/optimize/adpf"
+  - type: official
+    path: "https://developer.android.com/ndk/guides/neuralnetworks/migration-guide"
+  - type: official
+    path: "https://source.android.com/docs/core/interaction/neural-networks/device-discovery"
+  - type: official
+    path: "https://ai.google.dev/edge/litert/overview"
+  - type: official
+    path: "https://ai.google.dev/edge/litert/android/npu/overview"
+  - type: official
+    path: "https://perfetto.dev/docs/data-sources/cpu-freq"
+  - type: official
+    path: "https://perfetto.dev/docs/data-sources/battery-counters"
+  - type: official
+    path: "https://developer.android.com/reference/android/content/pm/PackageManager#FEATURE_NEURAL_PROCESSING_UNIT"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/release-notes"
+  - type: research
+    path: "DeepResearch/2026-05-20-android-17-npu-aicore-nnapi-research.md"
+  - type: research
+    path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-adpf-non-game-scenarios-and-profiling-trigger-type-anomaly.md"
 reviewed_date: '2026-06-04'
 reviewed_by: "openclaw-task6"
 task6_state: reviewed
@@ -51,6 +63,7 @@ last_task2b_lite_at: 2026-06-04
 last_task9_autofix_at: "2026-06-04"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-04
+last_task6_audit: "2026-07-16T21:17:00+08:00"
 ---
 
 # 5.16 GPU/NPU 异构负载调度与功耗归因
