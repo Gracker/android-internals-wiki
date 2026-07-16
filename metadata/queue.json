@@ -1,6 +1,89 @@
 {
   "pending": [
     {
+      "section": "18.16",
+      "section_title": "游戏引擎渲染链路",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-game-engine-resolution-memory-allocation.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "游戏引擎渲染链路 — 多设备分辨率适配与内存分配策略 — BufferQueue 默认双缓冲（mMaxAcquiredBufferCount=1 + mMaxDequeuedBufferCount=1），游戏引擎三缓冲需显式调 setMaxDequeuedB",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-17T06:14:31.983422",
+      "status": "pending"
+    },
+    {
+      "section": "5.9",
+      "section_title": "ADPF 自适应性能框架",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-16-android17-performance-score-attribution-sourcecode.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 App Performance Score 归因链与低端机样本池建设 — PerformanceMetricsManager.java 在 android-17.0.0_r1 中不存在，实际由 PerformanceHintManager 提供。Android 17 新增 ",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-17T06:14:31.983422",
+      "status": "pending"
+    },
+    {
+      "section": "17.1",
+      "section_title": "OEM 性能优化的通用思路",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-16-android17-oem-background-restriction.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 厂商差异化省电策略：后台限制机制与诊断方法 — AppRestrictionController 通过 7 种 BaseAppStateTracker 子类追踪应用状态，OEM 可通过 SystemConfig 的 bg-restriction-e",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-17T06:14:31.983422",
+      "status": "pending"
+    },
+    {
+      "section": "14.13",
+      "section_title": "Hook 基础设施",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-14-android17-native-hook-three-schools-inlinhook-arm64.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 Native Hook 三大流派对比与 Inline Hook ARM64 实现 — bionic linker 取消 RTLD_LAZY，JUMP_SLOT 在 dlopen 期间全部解析写入 GOT，GOT Hook 窗口极短。Trap Hook 收敛于 debuggerd_sig",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-07-17T06:14:31.983422",
+      "status": "pending"
+    }
+  ],
+  "in_progress": [],
+  "completed": [
+    {
       "section": "ch04-memory",
       "section_title": "ch04-memory",
       "priority": 60,
@@ -18,10 +101,11 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-07-17T05:33:38.333549",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-07-17T06:51:09+08:00",
+      "completed_by": "task2b-main",
+      "completed_reason": "URL 不可访问，跳过: android-developers.googleblog.com 返回 HTTP 404"
     }
   ],
-  "in_progress": [],
-  "completed": [],
   "rejected": []
 }
