@@ -187,6 +187,51 @@
         "#Repository"
       ],
       "scored_at": "2026-07-17T05:50:13.916976"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-game-engine-resolution-memory-allocation.md",
+      "title": "游戏引擎渲染链路 — 多设备分辨率适配与内存分配策略",
+      "summary": "BufferQueue 默认双缓冲（mMaxAcquiredBufferCount=1 + mMaxDequeuedBufferCount=1），游戏引擎三缓冲需显式调 setMaxDequeuedBufferCount(2)。ASTC HDR 为移动端 HDR 纹理主流。低内存降级路径涵盖 PerformanceHintManager、setBufferCount、ANativeWindow_setFrameRate、GameMode BATTERY 四组 API。",
+      "chapter": "ch18",
+      "section": "18.16",
+      "processed_at": "2026-07-17T06:14:31.983422",
+      "action": "queued"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-16-android17-performance-score-attribution-sourcecode.md",
+      "title": "Android 17 App Performance Score 归因链与低端机样本池建设",
+      "summary": "PerformanceMetricsManager.java 在 android-17.0.0_r1 中不存在，实际由 PerformanceHintManager 提供。Android 17 新增 CPU/GPU Headroom API（CpuHeadroomParams/GpuHeadroomParams），通过 IHintManager AIDL 暴露，PowerHintSessionWrapper 提供 HAL 层 C++ 封装与版本回退。",
+      "chapter": "ch05",
+      "section": "5.9",
+      "processed_at": "2026-07-17T06:14:31.983422",
+      "action": "queued"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-16-android17-oem-background-restriction.md",
+      "title": "Android 17 厂商差异化省电策略：后台限制机制与诊断方法",
+      "summary": "AppRestrictionController 通过 7 种 BaseAppStateTracker 子类追踪应用状态，OEM 可通过 SystemConfig 的 bg-restriction-exemption 配置豁免。多层级豁免优先级链：系统模块 > 运营商应用 > 豁免列表 > 设备管理员 > DPC 保护 > 角色持有。",
+      "chapter": "ch17",
+      "section": "17.1",
+      "processed_at": "2026-07-17T06:14:31.983422",
+      "action": "queued"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md",
+      "title": "Android 17 ZRAM 与 PSI 压力管理机制",
+      "summary": "ZRAM 从 mm/zram.c 迁移到 drivers/block/zram/ 子目录，支持 CONFIG_ZRAM_MULTI_COMP 多 compressor（最多 4 个）按 slot recompression。PSI 通过 per-CPU state 记账 + epoll 事件通知 lmkd，监听间隔分 10ms（高压力）与 100ms（低压力）。",
+      "chapter": "ch04",
+      "section": "4.15",
+      "processed_at": "2026-07-17T06:14:31.983422",
+      "action": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-14-android17-native-hook-three-schools-inlinhook-arm64.md",
+      "title": "Android 17 Native Hook 三大流派对比与 Inline Hook ARM64 实现",
+      "summary": "bionic linker 取消 RTLD_LAZY，JUMP_SLOT 在 dlopen 期间全部解析写入 GOT，GOT Hook 窗口极短。Trap Hook 收敛于 debuggerd_signal_handler。Inline Hook 在 ARM64 上无 Thumb 但 ADRP/ADR/LDR PC-relative 修复仍是难点，DT_TEXTREL 在 LP64 上被直接拒绝。",
+      "chapter": "ch14",
+      "section": "14.13",
+      "processed_at": "2026-07-17T06:14:31.983422",
+      "action": "queued"
     }
   ]
 }

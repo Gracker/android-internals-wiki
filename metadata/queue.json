@@ -107,5 +107,35 @@
       "completed_reason": "URL 不可访问，跳过: android-developers.googleblog.com 返回 HTTP 404"
     }
   ],
-  "rejected": []
+  "rejected": [],
+  "items": [
+    {
+      "chapter": "22.41",
+      "title": "Compose ↔ View 互操作性能实战",
+      "priority": 80,
+      "status": "pending",
+      "path": "src/part5-app/ch22-rendering-practice/41-compose-view-interop-performance.md"
+    },
+    {
+      "chapter": "22.42",
+      "title": "SurfaceView 与 TextureView 渲染性能选型实战",
+      "priority": 80,
+      "status": "pending",
+      "path": "src/part5-app/ch22-rendering-practice/42-surfaceview-textureview-rendering-performance.md"
+    },
+    {
+      "chapter": "22.43",
+      "title": "Media3 视频播放渲染管线性能实战",
+      "priority": 80,
+      "status": "pending",
+      "path": "src/part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md"
+    },
+    {
+      "chapter": "21.19",
+      "title": "设备分级性能策略实战",
+      "priority": 80,
+      "status": "pending",
+      "path": "src/part5-app/ch21-startup/19-device-tier-performance-strategy.md"
+    }
+  ]
 }

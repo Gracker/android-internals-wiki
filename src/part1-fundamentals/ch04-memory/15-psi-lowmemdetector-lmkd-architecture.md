@@ -362,6 +362,14 @@ memcg v2 迁移影响更大的是 per-app 内存归因和 `dumpsys meminfo` 的�
 
 ## 延伸阅读
 
+### Android 17 ZRAM 与 PSI 压力管理机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md
+- 类型：DeepResearch 调研结果
+- 摘要：ZRAM 从 mm/zram.c 迁移到 drivers/block/zram/ 子目录，支持 CONFIG_ZRAM_MULTI_COMP 多 compressor（最多 4 个）按 slot recompression。PSI 通过 per-CPU state 记账 + epoll 事件通知 lmkd，监听间隔分 10ms（高压力）与 100ms（低压力）。
+- 注入时间：2026-07-17
+- 价值：ZRAM 多后端架构与 PSI 分级监听的源码级补强
+
+
 ### Android 17 LMKD 用户态迁移 + PSI 协同机制源码级调研
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-07-android17-lmkd-userspace-migration-psi.md
 - 类型：DeepResearch 调研结果
