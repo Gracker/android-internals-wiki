@@ -10,7 +10,8 @@ task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-05"
 reviewed_at: "2026-05-24T20:14:35+08:00"
-last_task6_at: "2026-06-05T17:22:30"
+last_task6_at: "2026-06-05T17:22:30+08:00"
+last_task6_audit: "2026-07-17"
 task6_reviewed_date: "2026-06-04"
 review_round: 3
 task6_review_notes: "2026-06-04 Task6 revisiting review: pass-light-edit. L1/L2 全部通过 (禁用词 0 / 高频词 0 / 元叙述 0 / 否定-纠正 0)。无 B 类大问题。task9_result=needs-rework, 待 Task9 复审。"
@@ -52,7 +53,7 @@ drafted_by: openclaw-task2a
 created_by: task2a-knowledge-gap
 created_date: '2026-04-08'
 task2b_result: fixed
-last_task2b_at: 2026-06-04T18:54:38
+last_task2b_at: 2026-06-04T18:54:38+08:00
 last_task9_review_log: "logs/deep-review/2026-06-04-18-deep-review.md"
 task9_review_notes: "2026-06-05 Task9 auto-fix: 修正 Android 17 NPU feature 的 AOSP tag 边界、targetSdkVersion 37 口径和 NPU fallback 描述。"
 last_task6_review_log: "logs/review/2026-05-24-20-review.md"
