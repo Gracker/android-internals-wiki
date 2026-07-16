@@ -152,6 +152,8 @@
   - [22.33 Compose PausableComposition 性能机制](part5-app/ch22-rendering-practice/33-compose-pausable-composition-performance.md)
   - [22.34 Compose SubcomposeLayout 性能深度](part5-app/ch22-rendering-practice/34-compose-subcompose-layout-performance.md)
   - [22.35 Bitmap 解码管线性能与 ImageDecoder 实战](part5-app/ch22-rendering-practice/35-bitmap-decode-pipeline-imagedecoder.md)
+  - [22.36 SharedTransitionLayout — Compose 共享元素过渡动画性能优化](part5-app/ch22-rendering-practice/36-shared-transition-layout-performance.md)
+  - [22.37 Compose Runtime Tracing — Perfetto 集成与组合阶段追踪](part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md)
 
   - [4.22 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.22-android17-ai-agent-memory-sandboxed-data-reuse.md)
   - [14.28 GPU 性能分析进阶 — 跨厂商计数器标准化与工作负载剖析](part3-tools/ch14-other-tools/28-gpu-performance-profiling-advanced.md)
