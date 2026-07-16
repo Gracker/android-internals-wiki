@@ -1,7 +1,9 @@
 # Android 技术内幕：系统机制、性能优化与工具实战
 
+[English navigation summary](README.en.md)
+
 > *Android Internals: System Architecture, Performance & Tooling in Practice*
-> English version planned after v1.0 release.
+> 完整英文版计划在 v1.0 之后提供；当前已有英文项目与生态导航摘要。
 
 一本由 AI 辅助持续进化的 Android 技术百科，面向有经验的 Android 开发者和系统工程师。
 
@@ -10,10 +12,11 @@
 <!-- android-performance-ecosystem:start -->
 ## Android 性能分析生态
 
-本仓库属于 [Android Performance Ecosystem](https://github.com/Gracker/android-performance-ecosystem)：它把可选插桩、采集、分析、系统知识与可复现案例连接成一套完整路径。
+[Android Performance Ecosystem](https://github.com/Gracker/android-performance-ecosystem) 通过导航 Hub 与七个核心项目，把可选插桩、采集、分析、系统知识与可复现案例连接成一套完整路径。
 
 | 阶段 | 项目 | 作用 | 地址 |
 | --- | --- | --- | --- |
+| 导航 | [Android Performance Ecosystem](https://github.com/Gracker/android-performance-ecosystem) | 维护统一项目地图、交接元数据、README 导航区块与漂移检查。 | [GitHub](https://github.com/Gracker/android-performance-ecosystem) |
 | 插桩 | [TraceFix](https://github.com/Gracker/TraceFix) | 在编译期注入 App 侧 android.os.Trace section，让方法执行在运行时 Trace 中可见。 | [GitHub](https://github.com/Gracker/TraceFix) |
 | 采集与测量 | [Perfetto Tools](https://github.com/Gracker/perfetto-tools) | 抓取可复现的 Perfetto Trace，并采集 FPS 或 Simpleperf 测量结果。 | [GitHub](https://github.com/Gracker/perfetto-tools) |
 | 分析 | [SmartPerfetto](https://github.com/Gracker/SmartPerfetto) | 通过 AI 辅助 Web UI、CLI、报告、会话、对比和证据工作流分析 Trace。 | [GitHub](https://github.com/Gracker/SmartPerfetto) |
