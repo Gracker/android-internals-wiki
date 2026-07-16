@@ -1,47 +1,192 @@
-[
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md",
-    "title": "Android 17 GWP-ASan 可恢复机制与配置参数源码分析",
-    "summary": "GWP-ASan 重写为 Recoverable 诊断器，SampleRate=25000，SEGV 经 debuggerd 两阶段恢复，与 MTE 路径独立",
-    "chapter": "ch19",
-    "section": "19.24",
-    "processed_at": "2026-07-16T06:14:00.474672",
-    "action": "injected"
-  },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-zygote-lazy-preload-true-triggers-securefs-not-in-aosp17.md",
-    "title": "Android 17 Zygote lazyPreload() 端到端触发链路",
-    "summary": "双阶段 lazy preload 机制重建，修正 preloadDefault 调用点为空的断言，SecureFS 不存在于 AOSP 17",
-    "chapter": "ch01",
-    "section": "1.11",
-    "processed_at": "2026-07-16T06:14:00.474672",
-    "action": "injected"
-  },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-gpu-power-advisor-gpu-decomposition-frame-producer-aidl.md",
-    "title": "Android 17 GPU Headroom API 与 FrameProducer 帧级反馈",
-    "summary": "GPU Headroom AIDL + FrameProducer deadline miss 反馈 + PowerAdvisor 内部分解逻辑",
-    "chapter": "ch02",
-    "section": "2.17",
-    "processed_at": "2026-07-16T06:14:00.474672",
-    "action": "injected"
-  },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-sched-ext-6.18-vendor-hook-cpufreq-loop.md",
-    "title": "Android 17 sched_ext 6.18 Vendor Hook 与 cpufreq 闭环",
-    "summary": "GKI 6.18 默认启用 sched_ext，13 个 Android 专属 vendor hook，cpufreq 闭环",
-    "chapter": "ch17",
-    "section": "17.4",
-    "processed_at": "2026-07-16T06:14:00.474672",
-    "action": "queued"
-  },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-art-markcompact-young-wrapper-source-verification.md",
-    "title": "Android 17 ART YoungMarkCompact/MarkCompact 源码核查",
-    "summary": "YoungMarkCompact 是 4 行 wrapper，CMC 由 userfaultfd 构成零 STW 搬迁，三段式代际布局",
-    "chapter": "ch04",
-    "section": "4.8",
-    "processed_at": "2026-07-16T06:14:00.474672",
-    "action": "queued"
-  }
-]
+{
+  "files": [
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-16-android17-gwp-asan-recoverable-sourcecode.md",
+      "title": "Android 17 GWP-ASan 可恢复机制与配置参数源码分析",
+      "summary": "GWP-ASan 重写为 Recoverable 诊断器，SampleRate=25000，SEGV 经 debuggerd 两阶段恢复，与 MTE 路径独立",
+      "chapter": "ch19",
+      "section": "19.24",
+      "processed_at": "2026-07-16T06:14:00.474672",
+      "action": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-zygote-lazy-preload-true-triggers-securefs-not-in-aosp17.md",
+      "title": "Android 17 Zygote lazyPreload() 端到端触发链路",
+      "summary": "双阶段 lazy preload 机制重建，修正 preloadDefault 调用点为空的断言，SecureFS 不存在于 AOSP 17",
+      "chapter": "ch01",
+      "section": "1.11",
+      "processed_at": "2026-07-16T06:14:00.474672",
+      "action": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-gpu-power-advisor-gpu-decomposition-frame-producer-aidl.md",
+      "title": "Android 17 GPU Headroom API 与 FrameProducer 帧级反馈",
+      "summary": "GPU Headroom AIDL + FrameProducer deadline miss 反馈 + PowerAdvisor 内部分解逻辑",
+      "chapter": "ch02",
+      "section": "2.17",
+      "processed_at": "2026-07-16T06:14:00.474672",
+      "action": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-sched-ext-6.18-vendor-hook-cpufreq-loop.md",
+      "title": "Android 17 sched_ext 6.18 Vendor Hook 与 cpufreq 闭环",
+      "summary": "GKI 6.18 默认启用 sched_ext，13 个 Android 专属 vendor hook，cpufreq 闭环",
+      "chapter": "ch17",
+      "section": "17.4",
+      "processed_at": "2026-07-16T06:14:00.474672",
+      "action": "queued"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-art-markcompact-young-wrapper-source-verification.md",
+      "title": "Android 17 ART YoungMarkCompact/MarkCompact 源码核查",
+      "summary": "YoungMarkCompact 是 4 行 wrapper，CMC 由 userfaultfd 构成零 STW 搬迁，三段式代际布局",
+      "chapter": "ch04",
+      "section": "4.8",
+      "processed_at": "2026-07-16T06:14:00.474672",
+      "action": "queued"
+    },
+    {
+      "title": "源码调研：游戏引擎渲染链路 — 多设备分辨率适配与内存分配策略",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-game-engine-resolution-memory-allocation.md",
+      "quality": "19/20",
+      "score": 19,
+      "chapters": [
+        "ch18"
+      ],
+      "tags": [
+        "#Android",
+        "#游戏引擎",
+        "#内存管理",
+        "#渲染优化"
+      ],
+      "scored_at": "2026-07-17T05:50:13.916958"
+    },
+    {
+      "title": "Android 触控时延优化",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Android 触控时延优化-2026-07-16.md",
+      "quality": "14/20",
+      "score": 14,
+      "chapters": [
+        "ch03"
+      ],
+      "tags": [
+        "#Android",
+        "#触控优化",
+        "#性能优化"
+      ],
+      "scored_at": "2026-07-17T05:50:13.916966"
+    },
+    {
+      "title": "源码调研：Android 17 厂商差异化省电策略：后台限制机制与诊断方法",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-16-android17-oem-background-restriction.md",
+      "quality": "20/20",
+      "score": 20,
+      "chapters": [
+        "ch05"
+      ],
+      "tags": [
+        "#Android",
+        "#省电策略",
+        "#OEM定制",
+        "#PowerManager"
+      ],
+      "scored_at": "2026-07-17T05:50:13.916968"
+    },
+    {
+      "title": "源码调研：Android 17 App Performance Score 归因链与低端机样本池建设",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-16-android17-performance-score-attribution-sourcecode.md",
+      "quality": "20/20",
+      "score": 20,
+      "chapters": [
+        "ch05"
+      ],
+      "tags": [
+        "#Android",
+        "#性能监控",
+        "#ScoreAttribution",
+        "#PerformanceHintManager"
+      ],
+      "scored_at": "2026-07-17T05:50:13.916969"
+    },
+    {
+      "title": "你可能还不知道 Compose Pager 有多强大",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-17-76184335-你可能还不知道Compose-Pager.md",
+      "quality": "13/20",
+      "score": 13,
+      "chapters": [
+        "ch02"
+      ],
+      "tags": [
+        "#Android",
+        "#Compose",
+        "#Pager",
+        "#UI开发"
+      ],
+      "scored_at": "2026-07-17T05:50:13.916971"
+    },
+    {
+      "title": "Android 要变天：桌面端这次真的来了！",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-17-76226966-Android要变天桌面端这次真的来了.md",
+      "quality": "16/20",
+      "score": 16,
+      "chapters": [
+        "ch16"
+      ],
+      "tags": [
+        "#Android",
+        "#桌面端",
+        "#UX设计",
+        "#多窗口"
+      ],
+      "scored_at": "2026-07-17T05:50:13.916972"
+    },
+    {
+      "title": "我见过的最反直觉的 Android 架构问题：UseCase 越多，项目越烂",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-17-76232428-最反直觉的Android架构问题UseC.md",
+      "quality": "19/20",
+      "score": 19,
+      "chapters": [
+        "ch16"
+      ],
+      "tags": [
+        "#Android",
+        "#架构设计",
+        "#CleanArchitecture",
+        "#UseCase"
+      ],
+      "scored_at": "2026-07-17T05:50:13.916973"
+    },
+    {
+      "title": "Android CLI 来了！终端一键建项目、控模拟器、给 Agent 喂官方规范",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-17-76308345-Android-CLI来了终端一键建项目.md",
+      "quality": "18/20",
+      "score": 18,
+      "chapters": [
+        "ch16"
+      ],
+      "tags": [
+        "#Android",
+        "#CLI",
+        "#开发工具",
+        "#Agent"
+      ],
+      "scored_at": "2026-07-17T05:50:13.916975"
+    },
+    {
+      "title": "现代 Android 官方为什么更推荐 Repository 暴露 `suspend fun`，而不是在内部 `launch`",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-17-76500740-现代Android官方为什么更推荐Rep.md",
+      "quality": "20/20",
+      "score": 20,
+      "chapters": [
+        "ch16"
+      ],
+      "tags": [
+        "#Android",
+        "#Kotlin",
+        "#协程",
+        "#Repository"
+      ],
+      "scored_at": "2026-07-17T05:50:13.916976"
+    }
+  ]
+}
