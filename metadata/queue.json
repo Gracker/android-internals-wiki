@@ -1,5 +1,61 @@
 [
   {
+    "chapter": "1.61",
+    "title": "Android 17 TelephonyManager 架构与性能优化",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part1-fundamentals/ch01-architecture/1.61-android17-telephonymanager-architecture-performance.md"
+  },
+  {
+    "chapter": "1.62",
+    "title": "Android 17 ConnectivityManager 架构与性能优化",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part1-fundamentals/ch01-architecture/1.62-android17-connectivitymanager-architecture-performance.md"
+  },
+  {
+    "chapter": "1.63",
+    "title": "Android 17 NotificationManager 架构与性能优化",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part1-fundamentals/ch01-architecture/1.63-android17-notificationmanager-architecture-performance.md"
+  },
+  {
+    "chapter": "1.64",
+    "title": "Android 17 BiometricService 架构与性能优化",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part1-fundamentals/ch01-architecture/1.64-android17-bometricservice-architecture-performance.md"
+  },
+  {
+    "chapter": "1.65",
+    "title": "Android 17 LocationManager 架构与性能优化",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part1-fundamentals/ch01-architecture/1.65-android17-locationmanager-architecture-performance.md"
+  },
+  {
+    "chapter": "1.66",
+    "title": "Android 17 WindowManager 架构与性能优化",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part1-fundamentals/ch01-architecture/1.66-android17-windowmanager-architecture-performance.md"
+  },
+  {
+    "chapter": "1.67",
+    "title": "Android 17 PackageManager 架构与性能优化",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part1-fundamentals/ch01-architecture/1.67-android17-packagemanager-architecture-performance.md"
+  },
+  {
+    "chapter": "1.68",
+    "title": "Android 17 ActivityManager 架构与性能优化",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part1-fundamentals/ch01-architecture/1.68-android17-activitymanager-architecture-performance.md"
+  },
+  {
     "chapter": "25.28",
     "title": "ThermalManager 热节流适配与性能降级治理实战",
     "priority": 80,
