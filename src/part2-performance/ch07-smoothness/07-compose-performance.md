@@ -39,7 +39,11 @@ last_deepseek_cn_review_at: 2026-07-02
 task6_reviewed_date: "2026-07-02"
 last_task6_at: "2026-07-02T04:05:00+08:00"
 last_task6_review_log: logs/review/2026-07-02-04-review.md
+last_task6_audit: 2026-07-17
 reviewed_date: "2026-07-02"
+sources:
+  - 朱涛·沉思录:如何优化 Compose 的性能(微信公众号)
+  - Android官方文档:Jetpack Compose Performance
 ---
 
 # Jetpack Compose 性能优化
@@ -501,7 +505,7 @@ fun WebViewScreen(url: String) {
 
 前几节讨论了 Compose 的重组机制和常见的性能陷阱,这些优化手段已经能覆盖大部分场景。但还有一个特殊的性能敏感区域:动画。动画的特点是状态变化极为频繁(每秒 60 甚至 120 次),如果每一帧都走完整的 Composition → Layout → Draw 流程,开销会迅速累积。Compose 提供了三种层次的动画 API,性能特征各不相同:
 
-**`animate*AsState`**(如 `animateColorAsState`、`animateDpAsState`):最简单的声明式动画 API。它返回一个 `State<T>` 对象,动画期间值会持续变化。是否触发重组取决于这个 State 在哪里被读取--如果在 Composable 参数中直接解包(`.value`),每一帧都会触发 Composition;如果延迟到 `Modifier.drawBehind` 或 `Modifier.graphicsLayer` 的 Draw 阶段才读取,则完全跳过 Composition 和 Layout,只触发重绘。区别的关键在于 State 读取的作用域,而不是 API 本身。
+**`animate*AsState`**(如 `animateColorAsState`、`animateDpAsState`):最简单的声明式动画 API。它返回一个 `State<T>` 对象,动画期间值会持续变化。是否触发重组取决于这个 State 在哪里被读取--如果在 Composable 参数中直接解包(`.value`),每一帧都会触发 Composition;如果延迟到 `Modifier.drawBehind` 或 `Modifier.graphicsLayer` 的 Draw 阶段才读取,则完全跳过 Composition 和 Layout,只触发重绘。区别取决于 State 读取的作用域,而不是 API 本身。
 
 **`Animatable`**:更底层的 API,可以在 Coroutine 中手动驱动动画。它的优势在于可以在不触发重组的情况下直接修改绘制属性--比如通过 `Modifier.drawBehind` 在 Draw 阶段直接读取 `Animatable` 的当前值,从而完全跳过 Composition 和 Layout 阶段。**这是 Android 官方推荐的高性能动画方式。**
 
