@@ -39,7 +39,7 @@ last_task9_autofix_at: 2026-07-12
 last_task2b_verifier_at: 2026-05-29T23:25:00+08:00
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-14
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: revisiting
 task6_result: pass-light-edit
 task6_l1_l2_fixes: 9
