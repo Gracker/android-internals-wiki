@@ -43,10 +43,11 @@ task9_review_notes: "2026-06-06 Task9 04 auto-fix: 修正 ARR/MRR 版本边界�
 task9_result: auto-fixed
 last_task2b_by: openclaw-task2b-main
 last_task9_autofix_at: 2026-06-06
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-17
 ---
 
-----
-
+---
 
 # 2.19 刷新率切换与帧率适配性能
 
@@ -133,7 +134,7 @@ SurfaceFlinger 为不同类型的 Layer 分配不同的投票权重：
 
 Android 11 引入了内容检测机制，自动判断屏幕内容类型并调整刷新率。该机制依赖 `RefreshRateSelector` 中按 Layer 类型赋权的逻辑（详见下一小节 `RefreshRateSelector`），而非独立的 `VsyncConfiguration` 代码路径。
 
-> [已验证范围：android-16.0.0_r1] 内容检测的核心依据是 `LayerMetadata` 中的 `contentType` 字段和 `RefreshRateSelector::getRankedFrameRates()` 中对不同 Layer 类型的权重分配，参与路径：`frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp`。`VsyncConfiguration` 类名和 `setPolicy()` 方法在 android-16.0.0_r1 中无对应物。
+> 在 android-16.0.0_r1 中，内容检测的核心依据是 `LayerMetadata` 中的 `contentType` 字段和 `RefreshRateSelector::getRankedFrameRates()` 中对不同 Layer 类型的权重分配，参与路径：`frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp`。`VsyncConfiguration` 类名和 `setPolicy()` 方法在 android-16.0.0_r1 中无对应物。
 
 ### Surface.setFrameRate() API
 
@@ -164,9 +165,9 @@ public void setFrameRate(float rate, @FrameRateCompatibility int compatibility)
 
 RefreshRateSelector 是 SurfaceFlinger 中的核心组件，负责综合所有因素决定最终的刷新率：
 
-> [已验证范围：android-16.0.0_r1] 核心决策路径：各 Layer 的帧率需求 → `RefreshRateSelector::getRankedFrameRates()` 排序 → `Scheduler` 综合 touch boost、idle timer、power HAL hint 等信号 → 通过 `setActiveMode()` 将最终选定的显示模式提交给 Composer HAL。`Scheduler.cpp` 源码路径：`frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp`。
+> 核心决策路径（android-16.0.0_r1）：各 Layer 的帧率需求 → `RefreshRateSelector::getRankedFrameRates()` 排序 → `Scheduler` 综合 touch boost、idle timer、power HAL hint 等信号 → 通过 `setActiveMode()` 将最终选定的显示模式提交给 Composer HAL。`Scheduler.cpp` 源码路径：`frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp`。
 
-> [已确认：android-16.0.0_r1] `VoteSet` 类名、`collectVotes()` / `calculateOptimalRate()` / `supportsARR()` 在 android-16.0.0_r1 tag 中不存在。实际决策入口为 `RefreshRateSelector::getRankedFrameRates()`。以下原理性描述基于公开文档和行为推断，不逐行对标源码。
+> 在 android-16.0.0_r1 中，`VoteSet` 类名、`collectVotes()` / `calculateOptimalRate()` / `supportsARR()` 均不存在，实际决策入口为 `RefreshRateSelector::getRankedFrameRates()`。以下原理性描述基于公开文档和行为推断，不逐行对标源码。
 
 ## 硬件切换的真实代价
 
@@ -176,7 +177,7 @@ PLL（Phase-Locked Loop）重新配置是刷新率切换的主要耗时来源。
 
 #### PLL 切换延迟
 
-> [待验证] 以下 PLL 切换延迟数字来自 SoC 厂商公开白皮书和显示驱动文档的架构级描述，非统一测试条件下的实测对比。不同设备型号、固件版本、环境温度下的实际延迟可能偏离表中数值。作为定性趋势参考而非精确定量指标。
+> 以下 PLL 切换延迟描述来自 SoC 厂商公开白皮书和显示驱动文档的架构级描述，非统一测试条件下的实测数据，不同设备上实际延迟可能偏离，仅作为定性趋势参考。
 
 #### PLL 状态机
 
@@ -193,7 +194,7 @@ PLL 状态转换：
 
 Display HAL 负责与硬件显示控制器交互，其状态机切换也会影响切换延迟：
 
-> [已验证范围：android-16.0.0_r1] Composer HAL 的模式切换入口是 `IComposer::setActiveConfig()` / `IComposer::setActiveConfigWithConstraints()`，对应 HWC2 的 `setActiveConfig()`。Display HAL 并不直接暴露 `setMode()` 或 `setAdaptiveRefreshRate()` 这样的虚拟方法——这些精确签名的代码块在 android-16.0.0_r1 中不可溯源，以下原理描述为路径级简化：
+> 在 android-16.0.0_r1 中，Composer HAL 的模式切换入口是 `IComposer::setActiveConfig()` / `IComposer::setActiveConfigWithConstraints()`，对应 HWC2 的 `setActiveConfig()`。Display HAL 并不直接暴露 `setMode()` 或 `setAdaptiveRefreshRate()` 这样的虚拟方法——这些精确签名的代码块在 android-16.0.0_r1 中不可溯源，以下原理描述为路径级简化：
 
 > 模式切换流程：SurfaceFlinger 通过 `composer::setActiveConfig()` 向 Composer HAL 发起模式切换请求 → HAL 检查 mode 是否在当前 `Config Group` 内（无缝切换）→ 应用显示时序参数（HWC2 caps 的 `Seamless` flag）→ 返回切换结果。
 
@@ -203,9 +204,9 @@ Display HAL 负责与硬件显示控制器交互，其状态机切换也会影�
 
 刷新率切换后，VSync 信号的周期也会相应调整：
 
-> [已验证范围：android-16.0.0_r1] VSync 周期管理由 `VSyncDispatchTimerQueue` 和 `VSyncTracker` 协同实现，核心路径在 `frameworks/native/services/surfaceflinger/Scheduler/VSyncDispatchTimerQueue.cpp`。刷新率变化时，`DisplayDevice::setActiveMode()` 触发 `VSyncTracker::setDisplayModePtr()` 更新追踪参数，新的 VSync 周期在下一个调度窗口生效。
+> 在 android-16.0.0_r1 中，VSync 周期管理由 `VSyncDispatchTimerQueue` 和 `VSyncTracker` 协同实现，核心路径在 `frameworks/native/services/surfaceflinger/Scheduler/VSyncDispatchTimerQueue.cpp`。刷新率变化时，`DisplayDevice::setActiveMode()` 触发 `VSyncTracker::setDisplayModePtr()` 更新追踪参数，新的 VSync 周期在下一个调度窗口生效。
 
-> [待验证] `setRefreshRate()` / `adjustPeriodGradually()` / `notifyARRChange()` 等精确方法名在 android-16.0.0_r1 中未找到对应实现。`mDynamicVSync` / `ADJUSTMENT_THRESHOLD` 同样不可溯源。
+> 注意：`setRefreshRate()` / `adjustPeriodGradually()` / `notifyARRChange()` 等精确方法名在 android-16.0.0_r1 中未找到对应实现，`mDynamicVSync` / `ADJUSTMENT_THRESHOLD` 同样不可溯源。
 
 ## 在 Perfetto 中识别刷新率切换卡顿
 
@@ -213,7 +214,7 @@ Display HAL 负责与硬件显示控制器交互，其状态机切换也会影�
 
 在 Perfetto 中，VSync 周期的变化是识别刷新率切换的重要指标：
 
-> [待验证] 以下 Perfetto 配置使用的是概念性事件名（`vsync_period`、`refresh_rate_change`、`display_mode_switch`），不是 Perfetto 的实际 data source 或 ftrace event 名。实际 Perfetto 配置应使用 Perfetto textproto 格式。
+> 以下 Perfetto 配置使用的是概念性事件名（`vsync_period`、`refresh_rate_change`、`display_mode_switch`），不是 Perfetto 的实际 data source 或 ftrace event 名。实际 Perfetto 配置应使用 Perfetto textproto 格式。
 
 > 监控刷新率变化的推荐方法（已验证）：
 > - 抓取 `android.surfaceflinger.frametimeline` data source，并在 Trace Processor 中查看 `actual_frame_timeline_slice` / `expected_frame_timeline_slice`
@@ -296,7 +297,7 @@ Android 11-14 覆盖的是多刷新率切换（MRR）和 FrameRate API / `Refres
 | **Android 16** | ARR 查询 API | `Display.hasArrSupport()` 和 `getSuggestedFrameRate()` 作为 App 可见查询入口 | 设备支持 ARR 时才有意义 |
 | **Android 17** | 待公开 tag 复核 | 本轮不使用 main/master 资料写 Android 17 结论 | 待 `android-17.0.0_r1` 或更低公开 tag 验证 |
 
-> [已验证范围：官方 ARR 文档 + android-16.0.0_r1] Android 15 引入 ARR；Android 16 可查询 ARR 支持。Android 17 tag 未公开前，不把 main/master 中的 ARR 描述作为 AIW 正文结论。
+> 根据官方 ARR 文档和 android-16.0.0_r1 源码：Android 15 引入 ARR；Android 16 可查询 ARR 支持。Android 17 tag 未公开前，不把 main/master 中的 ARR 描述作为 AIW 正文结论。
 
 ### 多刷新率（MRR）与 ARR 的版本边界
 
@@ -322,13 +323,13 @@ ARR（Adaptive Refresh Rate）是 Android 15 引入的刷新率平滑过渡机�
 
 ARR 是 Android 15 引入的刷新率适配机制，Android 15-QPR1+ 起在支持的设备上可用。官方文档给出的核心模型是：非 ARR 面板按当前 active display mode 的固定 cadence 刷新；ARR 面板将 display VSync rate 与 refresh rate 解耦，面板可在同一个 display mode 内按 tearing effect（TE）信号的离散倍数显示下一帧。
 
-> [已验证范围：官方 ARR 文档 + android-16.0.0_r1] AOSP 源码中 ARR 相关元素常以 `vrr` 命名。`DisplayManagerInternal` 中并未定义 `handleAdaptiveRefreshRate()` 方法；SurfaceFlinger 侧仍通过 `RefreshRateSelector::getRankedFrameRates()` 汇总 Layer 投票、触摸状态、省电模式、设备空闲状态等信号，再结合 HWC / 面板能力下发显示节奏相关 hint。
+> 在 android-16.0.0_r1 和官方 ARR 文档中，AOSP 源码中 ARR 相关元素常以 `vrr` 命名。`DisplayManagerInternal` 中并未定义 `handleAdaptiveRefreshRate()` 方法；SurfaceFlinger 侧仍通过 `RefreshRateSelector::getRankedFrameRates()` 汇总 Layer 投票、触摸状态、省电模式、设备空闲状态等信号，再结合 HWC / 面板能力下发显示节奏相关 hint。
 
 ### 厂商特定实现差异
 
 不同 SoC 厂商的刷新率切换实现存在显著差异：
 
-> [待验证] 以下厂商特征来自各厂商公开白皮书和部分技术文档的定性描述。所有数值（PLL 延迟帧数、功耗百分比、续航降幅）均缺少设备型号、Android 版本、屏幕亮度、测试条件和样本量，不能作为发布稿量化结论。不同设备型号上实现差异显著，应以实测 Perfetto 数据为准。
+> 以下厂商特征来自各厂商公开白皮书和部分技术文档的定性描述。所有数值（PLL 延迟帧数、功耗百分比、续航降幅）均缺少设备型号、Android 版本、屏幕亮度、测试条件和样本量，不能作为发布稿量化结论，应以实测 Perfetto 数据为准。
 
 > 从公开架构资料中可提取的定性趋势：旗舰 SoC 通常支持更短的 PLL 切换延迟，中端 SoC 偏长。不同 SoC 制程、显示驱动版本和屏幕面板规格下的精确数字需独立验证，不在此给出固定帧数。
 
@@ -374,7 +375,7 @@ ARR 的硬件前置条件（概念级，非 AOSP 逐行对标）：
 - ARR 配置通过 `DisplayConfiguration.vrrConfig` / `VrrConfig` 描述；该配置为空时，该 display mode 按非 ARR / MRR 语义处理。
 - ARR 面板并不要求用多个 Display Mode 做 60Hz ↔ 120Hz 切换。官方模型是在一个 display mode 内使用离散 VSync 步长适配内容 cadence；传统 MRR 才依赖多个 Display Mode 和 mode switching。
 
-> [已验证范围：官方 ARR 文档] `DisplayConfiguration.vsyncPeriod` 在 ARR 面板上表示 TE 信号频率，系统再结合 `minFrameIntervalNs` 等字段推导可支持的离散刷新 cadence。
+> 根据官方 ARR 文档，`DisplayConfiguration.vsyncPeriod` 在 ARR 面板上表示 TE 信号频率，系统再结合 `minFrameIntervalNs` 等字段推导可支持的离散刷新 cadence。
 
 #### 软件调度边界
 
@@ -395,8 +396,6 @@ ARR 的硬件前置条件（概念级，非 AOSP 逐行对标）：
 - 如果需要精确量化刷新率切换的电池开销，应在同设备同亮度下做 A/B 测试：分别录制 60Hz 固定、120Hz 固定和 ARR 自动切换三种模式的 trace + battery historian report，对比 mAh 消耗。
 
 ## App 与系统优化策略
-
-[已修复: 移除未标注的伪代码块，改为概念性建议并补真实 API / Trace 观察路径。]
 
 ### App 侧优化
 
@@ -555,8 +554,6 @@ adb shell perfetto -c perfetto_config.xml -o trace.pftrace
 ```
 
 ### 性能基准与量化数据
-
-[已修复: 无可复核来源的具体 SoC / 续航 / 电池消耗数字降级为定性趋势描述；需设备/版本/条件/样本的精确数据留待 Task 9 确认后再补。]
 
 #### 关键指标基准
 
