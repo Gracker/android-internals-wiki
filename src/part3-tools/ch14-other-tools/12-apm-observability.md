@@ -66,9 +66,9 @@ task2b_result: fixed
 last_task2b_at: "2026-05-28T12:50:00+08:00"
 task9_review_notes: "2026-07-08 Task9 idle audit AUTO-FIX: P1 1；AppExitInfoTracker/ApplicationExitInfo/FrameMetrics/Window 源码锚点从 android-16/旧复核口径重锚到 android-17.0.0_r1；正文结论无行为变化，回到 Task6 复审。详见 logs/deep-review/2026-07-08-18-audit.md。 | 2026-05-29 Task9 pass-tech-review: 复核 JankStats / FrameMetrics / ApplicationExitInfo / Matrix AGP 边界 / KOOM / btrace / Measure 选型口径，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task6_at: "2026-05-28T14:05:00+08:00"
-last_task6_audit: "2026-06-27"
+last_task6_audit: "2026-07-16"
 last_task6_audit_result: pass-light-edit
-last_task6_audit_log: "logs/review/2026-06-27-03-audit.md"
+last_task6_audit_log: "logs/review/2026-07-16-23-audit.md"
 last_task9_audit: "2026-07-08"
 last_task9_audit_at: "2026-07-08T18:39:10+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-08-18-audit.md"
