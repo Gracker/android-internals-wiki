@@ -3,7 +3,7 @@
 title: "JNI/NDK 性能优化"
 section: "1.15"
 chapter: "1.15"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-06"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-23"
@@ -49,9 +49,10 @@ tags:
 related_chapters:
   - "4.7"
   - "14.2"
-pipeline_stage: "task6_pending"
+pipeline_stage: ready-to-publish
 task6_result: pass-light-edit
 task9_state: "pending"
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-20"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-20T11:41:31+08:00"
@@ -59,17 +60,17 @@ task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-07-16"
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-23
-last_task6_at: "2026-05-18T15:14:44+08:00"
+reviewed_date: 2026-07-16
+last_task6_at: "2026-07-16T13:20:00+08:00"
 last_task6_audit: "2026-07-16"
-last_task6_audit_result: l1-light-edit
+last_task6_audit_result: l1-light-edit-revisiting
 last_task2b_at: "2026-07-16T11:35:00+08:00"
 last_task9_audit: "2026-05-20"
 last_task9_review_log: "logs/deep-review/2026-05-20-11-deep-review.md"
 task9_review_notes: "2026-05-20 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 3；P2 为 CriticalNative public API 边界、16KB page size NDK 版本口径、Propeller 待验证段。已自动同步 pipeline_stage=ready-to-publish。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-30
-task6_state: "revisiting"
+task6_state: "reviewed"
 ---
 
 # 1.15 JNI/NDK 性能优化

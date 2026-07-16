@@ -546,15 +546,17 @@
   ],
   "sections": {
     "15": {
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task6_result": "pass-light-edit",
       "last_task2b_main_at": "2026-07-14T06:54:06+08:00",
       "task2b_result": "fixed",
       "task2b_state": "fixed",
-      "task2b_fix_summary": "P1×4+P2×2 + android-16→17 baseline for 15.5/15.7"
+      "task2b_fix_summary": "P1×4+P2×2 + android-16→17 baseline for 15.5/15.7",
+      "status": "finalized",
+      "last_task6_at": "2026-07-16T13:20:00+08:00"
     },
     "21.2": {
       "status": "finalized",
