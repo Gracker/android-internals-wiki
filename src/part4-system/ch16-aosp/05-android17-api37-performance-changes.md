@@ -36,11 +36,11 @@ review_type: task9-deep-tech-review
 last_task9_review_log: logs/deep-review/2026-07-13-22-deep-review.md
 task2b_fixed_by: openclaw-task2b-main
 last_task9_autofix_at: 2026-07-12
-last_task2b_verifier_at: 2026-05-29T23:25:00+08:00
+last_task2b_verifier_at: "2026-07-16T23:27:16+08:00"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-14
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task6_l1_l2_fixes: 9
 task6_l3_l4_issues: 0
