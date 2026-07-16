@@ -33,5 +33,40 @@
     "priority": 80,
     "status": "pending",
     "path": "src/part5-app/ch20-stability/26-native-memory-leak-online-monitoring.md"
+  },
+  {
+    "chapter": "13.22",
+    "title": "Perfetto SQL 查询手册与性能分析实战查询库",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part3-tools/ch13-perfetto/22-perfetto-sql-cookbook-performance-analysis.md"
+  },
+  {
+    "chapter": "8.19",
+    "title": "Android 线程模型与调度器选型实战",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part2-performance/ch08-responsiveness/19-thread-model-dispatcher-selection.md"
+  },
+  {
+    "chapter": "8.20",
+    "title": "JNI 调用开销与 Native 互操作性能边界",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part2-performance/ch08-responsiveness/20-jni-overhead-native-interop-performance.md"
+  },
+  {
+    "chapter": "22.35",
+    "title": "Bitmap 解码管线性能与 ImageDecoder 实战",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part5-app/ch22-rendering-practice/35-bitmap-decode-pipeline-imagedecoder.md"
+  },
+  {
+    "chapter": "8.21",
+    "title": "Broadcast 性能与跨进程通信开销治理",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part2-performance/ch08-responsiveness/21-broadcast-performance-cross-process-overhead.md"
   }
 ]

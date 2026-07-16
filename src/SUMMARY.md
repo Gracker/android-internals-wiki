@@ -141,6 +141,7 @@
   - [14.27 Macrobenchmark 框架与自动化性能门禁](part3-tools/ch14-other-tools/27-macrobenchmark-automation-gate.md)
   - [13.26 android.os.Trace API 深度解析与应用级自定义追踪](part3-tools/ch13-perfetto/13.26-android-trace-api-custom-tracing.md)
   - [13.27 Android 17 Perfetto v57 AI 技能与状态轨道](part3-tools/ch13-perfetto/13.27-android17-perfetto-v57-ai-skill-state-tracks.md)
+  - [13.22 Perfetto SQL 查询手册与性能分析实战查询库](part3-tools/ch13-perfetto/22-perfetto-sql-cookbook-performance-analysis.md)
   - [21.17 Startup Insights API 与启动性能可观测性](part5-app/ch21-startup/17-startup-insights-api-observability.md)
   - [21.18 缓存优化实战：冷热端分离与 CPU 缓存命中率](part5-app/ch21-startup/18-cache-optimization-cpu-locality.md)
   - [17.9 SoC 特异性功耗优化策略：高通/联发科/三星](part4-system/ch17-oem/09-soc-specific-power-optimization.md)
@@ -150,6 +151,7 @@
   - [22.32 Compose 无限动画与 VectorConverter 性能优化](part5-app/ch22-rendering-practice/32-compose-infinite-animation-vector-converter-performance.md)
   - [22.33 Compose PausableComposition 性能机制](part5-app/ch22-rendering-practice/33-compose-pausable-composition-performance.md)
   - [22.34 Compose SubcomposeLayout 性能深度](part5-app/ch22-rendering-practice/34-compose-subcompose-layout-performance.md)
+  - [22.35 Bitmap 解码管线性能与 ImageDecoder 实战](part5-app/ch22-rendering-practice/35-bitmap-decode-pipeline-imagedecoder.md)
 
   - [4.22 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.22-android17-ai-agent-memory-sandboxed-data-reuse.md)
   - [14.28 GPU 性能分析进阶 — 跨厂商计数器标准化与工作负载剖析](part3-tools/ch14-other-tools/28-gpu-performance-profiling-advanced.md)
