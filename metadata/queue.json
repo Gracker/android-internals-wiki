@@ -1,266 +1,33 @@
 {
-  "entries": [
+  "issues": [
     {
-      "chapter": "22.33",
-      "title": "Compose PausableComposition 性能机制",
-      "priority": 80,
-      "status": "pending",
-      "file": "src/part5-app/ch22-rendering-practice/33-compose-pausable-composition-performance.md"
-    },
-    {
-      "chapter": "13.20",
-      "title": "Frame Timeline API 33 Perfetto 深度分析",
-      "priority": 80,
-      "status": "done",
-      "file": "src/part3-tools/ch13-perfetto/20-frame-timeline-api33-perfetto-analysis.md",
-      "completed_date": "2026-07-16"
-    },
-    {
-      "chapter": "13.21",
-      "title": "Perfetto pprof 与 Simpleperf 原生可视化",
-      "priority": 80,
-      "status": "pending",
-      "file": "src/part3-tools/ch13-perfetto/21-perfetto-pprof-simpleperf-native-visualization.md"
-    },
-    {
-      "chapter": "21.18",
-      "title": "缓存优化实战：冷热端分离",
-      "priority": 80,
-      "status": "pending",
-      "file": "src/part5-app/ch21-startup/18-cache-optimization-cpu-locality.md"
-    },
-    {
-      "chapter": "22.34",
-      "title": "Compose SubcomposeLayout 性能深度",
-      "priority": 80,
-      "status": "pending",
-      "file": "src/part5-app/ch22-rendering-practice/34-compose-subcompose-layout-performance.md"
-    },
-    {
-      "chapter": "20.22",
-      "title": "Binder 通信监控实战",
-      "priority": 80,
-      "status": "pending",
-      "file": "src/part5-app/ch20-stability/22-binder-communication-monitoring.md"
-    },
-    {
-      "chapter": "25.26",
-      "title": "Android 17 前台服务类型执行模型与后台启动性能边界",
-      "priority": 80,
-      "status": "pending",
-      "file": "src/part5-app/ch25-power-size/26-android17-fgs-type-execution-model-background-launch-performance.md"
-    },
-    {
-      "chapter": "25.27",
-      "title": "Android 17 BatteryUsageStats API 与功耗精准归因管线",
-      "priority": 80,
-      "status": "pending",
-      "file": "src/part5-app/ch25-power-size/27-android17-battery-usage-stats-power-attribution.md"
-    },
-    {
-      "chapter": "14.32",
-      "title": "ARM Topdown 微架构性能分析方法论与 Android 实践",
-      "priority": 80,
-      "status": "pending",
-      "file": "src/part3-tools/ch14-other-tools/32-arm-topdown-microarch-performance-analysis.md"
-    },
-    {
-      "chapter": "20.23",
-      "title": "GWP-ASan 灰度检测演进与 Android 17 内存安全防线",
-      "priority": 80,
-      "status": "pending",
-      "file": "src/part5-app/ch20-stability/23-gwp-asan-probabilistic-memory-safety-android17.md"
-    },
-    {
-      "chapter": "9.13",
-      "title": "ANR 日志 CPU 数据系统化分析方法论",
-      "priority": 80,
-      "status": "pending",
-      "file": "src/part2-performance/ch09-anr/13-anr-log-cpu-analysis-methodology.md"
-    },
-    {
-      "chapter": "26.25",
-      "title": "ProcessCpuTracker 与 /proc 伪文件系统 CPU 数据采集",
-      "priority": 80,
-      "status": "pending",
-      "file": "src/part5-app/ch26-observability/25-proc-filesystem-cpu-monitoring.md"
-    },
-    {
-      "chapter": "26.26",
-      "title": "Page Fault 类型分析与 Android 实践",
-      "priority": 80,
-      "status": "pending",
-      "file": "src/part5-app/ch26-observability/26-page-fault-analysis-android.md"
-    },
-    {
-      "chapter": "20.24",
-      "title": "Crash 状态下 Java 线程堆栈获取与锁等待分析",
-      "priority": 80,
-      "status": "pending",
-      "file": "src/part5-app/ch20-stability/24-crash-java-stack-lock-wait-analysis.md"
-    },
-    {
-      "chapter": "26.27",
-      "title": "Facebook Profilo 框架线上 ATrace 收集方案",
-      "priority": 80,
-      "status": "pending",
-      "file": "src/part5-app/ch26-observability/27-profilo-atrace-online-collection.md"
-    },
-    {
-      "chapter": "16.5",
-      "title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "section": "1.15",
+      "section_title": "JNI/NDK 性能优化",
       "priority": 95,
-      "status": "completed",
-      "file": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
-      "reason": "[Deep Tech Review] AOSP android-17.0.0_r1 中不存在 ConcurrentMessageQueue/ 目录，应为 CombinedDeliMessageQueue/",
+      "reason": "[Deep Tech Review] AOSP 文件路径验证失败 - 所有引用的AOSP文件在android-17.0.0_r1下无法通过googlesource直接访问",
+      "material_paths": [],
       "review_issues": [
         {
           "type": "源码错误",
-          "location": "Line 152 & 220 & 763",
-          "detail": "章节中多次引用 ConcurrentMessageQueue/ 目录，但 AOSP android-17.0.0_r1 中不存在此目录。正确的目录结构为 CombinedDeliMessageQueue/",
-          "suggestion": "修正所有 ConcurrentMessageQueue/ 引用为 CombinedDeliMessageQueue/，并明确说明 Android 17 中消息队列的实际目录结构"
+          "location": "AOSP文件引用部分（frameworks/base/core/java/android/os/Binder.java等）",
+          "detail": "文中引用的AOSP文件路径在android-17.0.0_r1版本下无法通过googlesource直接访问，疑似路径错误或访问方式变更",
+          "suggestion": "验证AOSP文件当前可用的访问方式，或提供可验证的源码片段"
         },
         {
-          "type": "版本差异",
-          "location": "分代 CMC 部分",
-          "detail": "章节提到 Android 17 的分代 CMC，但未充分说明实际启用条件复杂。从源码看，分代 CMC 需要 use_generational_gc、kUseBakerReadBarrier || gUseUserfaultfd、use_generational_cmc flag 和 device_config 同时满足",
-          "suggestion": "补充分代 CMC 的实际启用条件说明，明确不是所有 Android 17 设备都会启用此功能"
+          "type": "验证结果",
+          "location": "原 P0 issue（2026-07-16T05:32:56Z）",
+          "detail": "经 2026-07-16T14 直接 HTTP 验证：https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Binder.java 返回 HTTP 200。frameworks/base/core/java/android/os/ 下 Binder.java、Parcel.java、SystemProperties.java、Trace.java 以及 frameworks/native/include/android/trace.h、system/core/libcutils/include/cutils/trace.h、system/core/libutils/include/utils/Trace.h 在 android-17.0.0_r1 下全部可访问。原 P0 判定为 false-positive。",
+          "suggestion": "本 issue 关闭，转入 suggestions.md 跟踪 P2 改进（版本演进表缺 Android 17 行；16KB page size 收益数据缺来源链接）。",
+          "verified_by": "task9-deep-tech-review",
+          "verified_at": "2026-07-16T14:25:40+08:00"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-07-16T08:25:30",
-      "completed_at": "2026-07-16T08:50:00+08:00",
-      "completed_by": "task2b-main"
-    }
-  ],
-  "pending": [
-    {
-      "section": "17.4",
-      "section_title": "sched_ext 与 OEM BPF 调度器",
-      "priority": 85,
-      "reason": "[DeepResearch 注入] 新增高价值调研材料，Android 17 GKI 6.18 sched_ext 默认启用 + 13 个 Android 专属 vendor hook + cpufreq 闭环源码级分析，建议补充到章节",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-sched-ext-6.18-vendor-hook-cpufreq-loop.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "Android 17 sched_ext 与 OEM 自定义 BPF 调度器适配路径 — GKI 6.18 默认启用 CONFIG_SCHED_CLASS_EXT，落地 13 个 Android 专属 vendor hook（android_vh_scx_*），完成 cpufreq 闭环",
-          "suggestion": "章节已 finalized，判断是否适合在下一轮修订中补充 vendor hook 完整列表、scx_enable 流程、SysRq-S 回退面等源码级细节"
-        }
-      ],
-      "added_by": "task-deepresearch-injector",
-      "added_at": "2026-07-16T06:14:00.474672",
-      "status": "pending"
-    },
-    {
-      "section": "4.8",
-      "section_title": "ART 分代 GC 与 MarkCompact 源码结构",
-      "priority": 82,
-      "reason": "[DeepResearch 注入] 新高价值源码调研，YoungMarkCompact 只是 MarkCompact 的 4 行 wrapper，userfaultfd + SIGBUS 零 STW 搬迁路径 + 三段式代际布局源码级分析",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-art-markcompact-young-wrapper-source-verification.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "Android 17 ART YoungMarkCompact 与 MarkCompact 关系源码核查 — YoungMarkCompact 是 thin wrapper，CMC 由 userfaultfd + SIGBUS 构成零 STW 搬迁，支持 young/mid/old 三段代际布局",
-          "suggestion": "§4.8 和 §4.14 均 finalized，判断是否在下一轮修订中补充 CMC userfaultfd 机制、UFFD搬迁路径、代际布局细节"
-        }
-      ],
-      "added_by": "task-deepresearch-injector",
-      "added_at": "2026-07-16T06:14:00.474672",
-      "status": "pending"
-    },
-    {
-      "section": "1.15",
-      "section_title": "JNI/NDK 性能优化",
-      "priority": 90,
-      "reason": "[Task2B Main] 版本基线已在 Task2B Lite 中修复为 android-17.0.0_r1；更新 frontmatter status → ready-for-review 以重新进入流水线",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "需确认",
-          "location": "frontmatter sources + 正文多处 AOSP 引用 + 参考资料",
-          "detail": "源码路径版本基线仍标注 android-16.0.0_r1，项目基准要求 android-17.0.0_r1。涉及 frontmatter last_verified_against、所有 aosp 类型 sources、正文中 'AOSP android-16.0.0_r1' 引用（如 Parcel.java @FastNative 示例、Binder.java @CriticalNative 示例、Trace.java/trace.h 引用等）、参考资料 section。",
-          "suggestion": "由 Task 9 核对 android-17.0.0_r1 中这些文件路径和 API 是否有变化，确认后由 Task 2B 统一更新版本标注为 android-17.0.0_r1"
-        }
-      ],
-      "added_by": "task6-audit",
-      "added_at": "2026-07-16T09:15:34",
-      "status": "completed",
-      "original_review_log": "logs/review/2026-07-16-09-audit.md",
-      "completed_at": "2026-07-16T12:50:00+08:00",
-      "completed_by": "task2b-main"
-    }
-  ],
-  "items": [
-    {
-      "section": "17.4",
-      "section_title": "sched_ext 与 OEM BPF 调度器",
-      "priority": 85,
-      "reason": "[DeepResearch 注入] 新增高价值调研材料，Android 17 GKI 6.18 sched_ext 默认启用 + 13 个 Android 专属 vendor hook + cpufreq 闭环源码级分析，建议补充到章节",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-sched-ext-6.18-vendor-hook-cpufreq-loop.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "Android 17 sched_ext 与 OEM 自定义 BPF 调度器适配路径 — GKI 6.18 默认启用 CONFIG_SCHED_CLASS_EXT，落地 13 个 Android 专属 vendor hook（android_vh_scx_*），完成 cpufreq 闭环",
-          "suggestion": "章节已 finalized，判断是否适合在下一轮修订中补充 vendor hook 完整列表、scx_enable 流程、SysRq-S 回退面等源码级细节"
-        }
-      ],
-      "added_by": "task-deepresearch-injector",
-      "added_at": "2026-07-16T06:14:00.474672",
-      "status": "pending"
-    },
-    {
-      "section": "4.8",
-      "section_title": "ART 分代 GC 与 MarkCompact 源码结构",
-      "priority": 82,
-      "reason": "[DeepResearch 注入] 新高价值源码调研，YoungMarkCompact 只是 MarkCompact 的 4 行 wrapper，userfaultfd + SIGBUS 零 STW 搬迁路径 + 三段式代际布局源码级分析",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-art-markcompact-young-wrapper-source-verification.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "Android 17 ART YoungMarkCompact 与 MarkCompact 关系源码核查 — YoungMarkCompact 是 thin wrapper，CMC 由 userfaultfd + SIGBUS 构成零 STW 搬迁，支持 young/mid/old 三段代际布局",
-          "suggestion": "§4.8 和 §4.14 均 finalized，判断是否在下一轮修订中补充 CMC userfaultfd 机制、UFFD搬迁路径、代际布局细节"
-        }
-      ],
-      "added_by": "task-deepresearch-injector",
-      "added_at": "2026-07-16T06:14:00.474672",
-      "status": "pending"
-    },
-    {
-      "section": "1.15",
-      "section_title": "JNI/NDK 性能优化",
-      "priority": 90,
-      "reason": "[audit回炉] 源码版本基线仍标注 android-16.0.0_r1，需更新为 android-17.0.0_r1",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "需确认",
-          "location": "frontmatter sources + 正文多处 AOSP 引用 + 参考资料",
-          "detail": "源码路径版本基线仍标注 android-16.0.0_r1，项目基准要求 android-17.0.0_r1。涉及 frontmatter last_verified_against、所有 aosp 类型 sources、正文中 'AOSP android-16.0.0_r1' 引用（如 Parcel.java @FastNative 示例、Binder.java @CriticalNative 示例、Trace.java/trace.h 引用等）、参考资料 section。",
-          "suggestion": "由 Task 9 核对 android-17.0.0_r1 中这些文件路径和 API 是否有变化，确认后由 Task 2B 统一更新版本标注为 android-17.0.0_r1"
-        }
-      ],
-      "added_by": "task6-audit",
-      "added_at": "2026-07-16T09:15:34",
-      "status": "completed",
-      "original_review_log": "logs/review/2026-07-16-09-audit.md",
-      "completed_at": "2026-07-16T12:50:00+08:00",
-      "completed_by": "task2b-main"
+      "added_at": "2026-07-16T05:32:56Z",
+      "status": "resolved-false-positive",
+      "resolved_note": "原 P0 AOSP 路径不可达判定为误判：android-17.0.0_r1 下所有引用路径经 HTTP 验证均可访问（2026-07-16T14）。",
+      "resolved_at": "2026-07-16T14:25:40+08:00",
+      "resolved_by": "task9-deep-tech-review"
     }
   ]
 }

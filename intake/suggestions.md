@@ -83,3 +83,37 @@
 - **位置**：分代 GC 与 MarkCompact 章节
 - **问题**：未涵盖 Task2B backlog 中提到的 YoungMarkCompact 与 MarkCompact 关系细节
 - **建议**：补充 YoungMarkCompact 是 MarkCompact 的 thin wrapper 这一关键关系，说明 CMC 实际由 userfaultfd + SIGBUS 构成零 STW 搬迁机制
+
+
+## [Task9 Deep Review] 1.15 JNI/NDK 性能优化 — 2026-07-16
+- **类型**：数据缺失
+- **位置**：性能基准数据章节
+- **问题**：2016年angler-userdebug基准数据直接引用为官方参考值，但缺乏更近期的设备测试数据对比
+- **建议**：补充近2-3年的典型设备测试数据，或明确标注数据时效性和适用边界
+
+## [Task9 Deep Review] 1.15 JNI/NDK 性能优化 — 2026-07-16
+- **类型**：知识盲区
+- **位置**：现代硬件架构影响章节
+- **问题**：没有覆盖现代ARM架构（如ARMv9、Neon指令集）对JNI性能的影响
+- **建议**：补充现代ARM架构特性对JNI transition优化的相关说明
+- **参考书覆盖深度**：中等
+
+## [Task9 Deep Review] 1.15 JNI/NDK 性能优化 — 2026-07-16
+- **类型**：知识盲区
+- **位置**：编译优化章节
+- **问题**：没有提到JIT/AOT编译对JNI调用热路径的影响
+- **建议**：补充JIT/AOT编译器对JNI边界调用的优化策略和性能影响
+- **参考书覆盖深度**：中等
+
+
+## [Task9 Deep Review] 1.15 JNI/NDK 性能优化 — 2026-07-16 14:25
+- **类型**：版本差异覆盖
+- **位置**：版本演进表格
+- **问题**：frontmatter `applicable_versions` 标注"Android 8 (API 26) - Android 17 (API 37)"，但版本演进表格只到 Android 16 (API 36)，缺少 Android 17 (API 37) 行。
+- **建议**：补充 Android 17 (API 37) 在 JNI/NDK 方向的官方变更（如有），或在表格末尾追加"Android 17 (API 37)：本轮核对未发现对 public JNI annotation 的新语义变化；16KB page size 已强制要求 targeting Android 15+ 的 64 位应用支持；如新增内容需另行调研"。
+
+## [Task9 Deep Review] 1.15 JNI/NDK 性能优化 — 2026-07-16 14:25
+- **类型**：数据缺失
+- **位置**：16KB page size 收益数据段落
+- **问题**：列出的收益百分比（app launch time 平均下降 3.16%、部分应用能到 30%；启动期功耗下降 4.56%；camera hot start 快 4.48%；cold start 快 6.60%；system boot time 提升约 8%）未在章节中给出直接来源链接。
+- **建议**：补充 developer.android.com/guide/practices/page-sizes 中具体段落的锚链接，或在 sources 中追加 data sheet 引用。
