@@ -3,8 +3,9 @@
     "chapter": "1.61",
     "title": "Android 17 TelephonyManager 架构与性能优化",
     "priority": 80,
-    "status": "pending",
-    "path": "src/part1-fundamentals/ch01-architecture/1.61-android17-telephonymanager-architecture-performance.md"
+    "status": "done",
+    "path": "src/part1-fundamentals/ch01-architecture/1.61-android17-telephonymanager-architecture-performance.md",
+    "processed_date": "2026-07-17"
   },
   {
     "chapter": "1.62",
