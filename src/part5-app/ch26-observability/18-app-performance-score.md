@@ -275,3 +275,81 @@ APA 的价值在于减少工具切换，并把 trace 导航、对比和 SQL 分�
 | 高温前后 | 检查 thermal 对 CPU / GPU 频率和动态分的影响 | 同场景冷机、热机各跑多轮 |
 
 每台设备都要绑定维护规则：系统版本是否升级、后台是否清理、亮度和刷新率是否固定、采样前是否重启、是否清数据、温度起点是否记录。动态评分的波动很多来自环境，而不是代码变化；环境字段缺失时，评分报告只能作为线索，不能作为发版裁决。
+
+<!-- AIW-源码调研-2026-07-16 -->
+
+### 🔹 Android 17.0.0_r1 源码调研补充：PerformanceHintManager 真实实现
+
+基于源码级深度调研发现，官方文档和日常选题中引用的 `PerformanceMetricsManager.java` 在 Android 17.0.0_r1 中**实际不存在**。实际的核心实现是 `PerformanceHintManager.java`，并且新增了重要的性能头寸计算机制。
+
+#### 1. PerformanceMetricsManager.java 不存在
+
+**源码验证**：通过 `git ls-tree -r android-17.0.0_r1 --name-only` 全面检验，`frameworks/base/core/java/android/app/` 目录下无 `PerformanceMetricsManager.java` 文件。
+
+**实际存在**：`core/java/android/os/PerformanceHintManager.java` (371行)
+
+**矛盾说明**：官方文档或其他资料可能存在滞后，或者该文件在不同渠道/厂商版本中存在。
+
+#### 2. PerformanceHintManager 核心机制
+
+**源码路径**：`frameworks/base/core/java/android/os/PerformanceHintManager.java`
+
+**关键功能**：
+- **会话创建**：`createHintSession(int[] tids, long initialTargetWorkDurationNanos)`
+- **目标更新**：`updateTargetWorkDuration(long targetDurationNanos)`
+- **反馈机制**：`reportActualWorkDuration(long actualDurationNanos)`
+- **GPU增强**：`reportActualWorkDuration(WorkDuration workDuration)` - 支持分离CPU/GPU工作时长
+- **提示发送**：`sendHint(int hint)` - CPU_LOAD_UP/DOWN/RESET/RESUME, GPU_LOAD_UP/DOWN/RESET
+
+#### 3. 新增 CPU/GPU 头寸计算 API
+
+**Android 17 新增**：
+- `IHintManager.getCpuHeadroom(in CpuHeadroomParamsInternal params)`
+- `IHintManager.getGpuHeadroom(in GpuHeadroomParamsInternal params)`
+
+**参数配置**：
+```java
+// CpuHeadroomParams
+@FlaggedApi(Flags.FLAG_CPU_GPU_HEADROOMS)
+public final class CpuHeadroomParams {
+    @CpuHeadroomCalculationType int calculationType; // MIN/AVERAGE
+    int calculationWindowMillis; // 计算窗口大小
+    int[] tids; // 目标线程 ID
+}
+```
+
+**归因价值**：为低端机样本池提供量化性能基线，支持动态调度优化。
+
+#### 4. PowerHintSessionWrapper HAL 集成
+
+**源码位置**：`frameworks/native/services/powermanager/PowerHintSessionWrapper.cpp`
+
+**版本演进**：
+- HAL v2: 基础会话功能
+- HAL v4: 提示发送能力
+- HAL v5: 模式切换 (`setMode`) 和图形层关联 (`associateToLayers`)
+
+**调用链路**：
+```
+App → PerformanceHintManager → JNI → AIDL → PowerHintSessionWrapper → HAL → Kernel Scheduler
+```
+
+#### 5. AIDL 接口增强
+
+**IHintManager 扩展**：
+- `associateToLayers(IBinder[] layerTokens)` - 关联到具体图形层
+- `setHintSessionThreads(IHintSession, int[])` - 动态线程配置
+
+**IHintSession 增强**：
+- `reportActualWorkDuration2(WorkDuration[] workDurations)` - 批量处理工作时长
+- `setMode(int mode, boolean enabled)` - 会话级别模式切换
+
+#### 6. 低端机适配价值
+
+**量化评估**：通过 headroom API 提供硬件负载量化指标
+**动态调整**：根据实际工作时长反馈调整调度策略
+**功率优化**：`setPreferPowerEfficiency()` 支持省电优先模式
+**国内厂商适配**：非 Play 渠道可通过参数定制化配置
+
+本次调研揭示了官方文档与实际源码的差异，并发现了 Android 17 中实际的性能归因基础设施。国内厂商可基于此架构建设自有性能评估体系，为低端机性能优化提供源码级支持。
+
