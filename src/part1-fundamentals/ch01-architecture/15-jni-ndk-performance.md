@@ -51,11 +51,11 @@ related_chapters:
   - "14.2"
 pipeline_stage: ready-to-publish
 task6_result: pass-light-edit
-task9_state: "pending"
+task9_state: "reviewed"
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-20"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-20T11:41:31+08:00"
+last_task9_at: "2026-07-16T14:25:40+08:00+08:00"
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-07-16"
@@ -66,8 +66,8 @@ last_task6_audit: "2026-07-16"
 last_task6_audit_result: l1-light-edit-revisiting
 last_task2b_at: "2026-07-16T11:35:00+08:00"
 last_task9_audit: "2026-05-20"
-last_task9_review_log: "logs/deep-review/2026-05-20-11-deep-review.md"
-task9_review_notes: "2026-05-20 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 3；P2 为 CriticalNative public API 边界、16KB page size NDK 版本口径、Propeller 待验证段。已自动同步 pipeline_stage=ready-to-publish。"
+last_task9_review_log: "logs/deep-review/2026-07-16-14-deep-review.md"
+task9_review_notes: "2026-07-16 14:25 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 2。P2 为版本演进表缺 Android 17 行、16KB page size 收益数据缺来源链接。原 queue.json P95 issue（2026-07-16T05:32:56Z AOSP 路径不可达）经验证为误判（android-17.0.0_r1 下所有引用路径均 HTTP 200），已标记为 resolved-false-positive。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-05-30
 task6_state: "reviewed"
