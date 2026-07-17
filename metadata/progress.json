@@ -1,11 +1,11 @@
 {
-  "total": 829,
-  "draft": 70,
+  "total": 832,
+  "draft": 73,
   "ready-for-review": 261,
   "in-review": 0,
   "final": 0,
-  "last_updated": "2026-07-17T17:17:26.270839+08:00",
-  "last_action": "task2a-gap-mining: 创建 3 个新章节 — 20.28, 26.30, 26.31",
+  "last_updated": "2026-07-17T18:05:00+08:00",
+  "last_action": "task2a-gap-mining: 创建 3 个新章节 — 27.2, 27.3, 25.31",
   "task2b": {
     "last_run": "2026-07-17T14:52:59+08:00",
     "last_chapter": "14.22",
