@@ -1,7 +1,7 @@
 ---
 title: "Android 性能优化研究方法论"
 chapter: "15"
-status: "finalized"
+status: "ready-for-review"
 applicable_versions: "Android 8-17 (API 26-37)"
 last_verified_against: "AOSP android-17.0.0_r1, Android Developers 文档, Perfetto 官方文档, 官方性能博客"
 tags: [performance, methodology, perfetto, profiling, optimization, android]
