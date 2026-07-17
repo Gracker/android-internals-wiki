@@ -146,6 +146,24 @@
       "priority": 80,
       "source": "task2a-gap-mining",
       "created_date": "2026-07-17"
+    },
+    {
+      "chapter": "25.29",
+      "title": "DEX 体积优化实战",
+      "file": "part5-app/ch25-power-size/29-dex-size-optimization.md",
+      "priority": 80,
+      "status": "pending",
+      "source": "task2a-gap-mining",
+      "created_date": "2026-07-17"
+    },
+    {
+      "chapter": "25.30",
+      "title": "Native SO 体积优化实战",
+      "file": "part5-app/ch25-power-size/30-native-so-size-optimization.md",
+      "priority": 80,
+      "status": "pending",
+      "source": "task2a-gap-mining",
+      "created_date": "2026-07-17"
     }
   ]
 }

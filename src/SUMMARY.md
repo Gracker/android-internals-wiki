@@ -193,6 +193,9 @@
   - [25.26 Android 17 前台服务类型执行模型与后台启动性能边界](part5-app/ch25-power-size/26-android17-fgs-type-execution-model-background-launch-performance.md)
   - [25.27 Android 17 BatteryUsageStats API 与功耗精准归因管线](part5-app/ch25-power-size/27-android17-battery-usage-stats-power-attribution.md)
   - [25.28 ThermalManager 热节流适配与性能降级治理实战](part5-app/ch25-power-size/28-thermal-manager-throttling-performance.md)
+
+  - [25.29 DEX 体积优化实战](part5-app/ch25-power-size/29-dex-size-optimization.md)
+  - [25.30 Native SO 体积优化实战](part5-app/ch25-power-size/30-native-so-size-optimization.md)
 附录
 
 - [附录 G：Android 性能学习路线](appendix/android-performance-learning-path.md)
