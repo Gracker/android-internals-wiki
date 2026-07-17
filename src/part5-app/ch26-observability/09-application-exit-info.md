@@ -63,7 +63,7 @@ last_task6_at: "2026-07-12T21:10:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-07-12-20-audit.md"
 task9_review_notes: "2026-07-12 Task9 idle audit AUTO-FIX: 将 AOSP 源码锚点和 last_verified_against 从 android-16/plain path 更新到 android-17.0.0_r1；复核 ApplicationExitInfo reason 常量、traceInputStream ANR/API31 native tombstone、LMK report support 和 AppExitInfoTracker/NativeTombstoneManager 路径，无 Android 18/API 38 内容。回到 Task6 复审。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-18
+last_deepseek_cn_review_at: 2026-07-17
 last_task9_audit_at: "2026-07-12T20:31:20+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-12-20-audit.md"
 last_task9_audit_result: auto-fixed
@@ -121,7 +121,7 @@ last_task9_autofix_at: "2026-07-12"
 
 ApplicationExitInfo 解决的是稳定性看板里最容易缺的一块：进程没有给 Crash SDK 留下正常回调机会，但系统仍然知道它为什么退出。Android 11 之后，应用可以在下次启动时读取历史退出记录，把 ANR、native crash、LMK、用户强停、包更新、权限变更这类事件纳入同一套归因口径。
 
-Java Crash 详见 20.2，Native Crash 详见 20.3 和 19.24，ANR 详见 20.4；这里关注进程结束之后，三类现场如何进入同一份证据包。
+这里关注的是进程结束之后，Java crash、native crash、ANR 三类现场如何进入同一份证据包。（各项的具体机制见 20.2、20.3、19.24、20.4。）
 
 ## 进程退出归因的观测目标
 
@@ -144,7 +144,7 @@ Crash SDK 能拿到 Java 未捕获异常，native crash SDK 能拿到信号和 m
 
 ## API 30+ 的 ApplicationExitInfo
 
-Android 11 引入 `ActivityManager.getHistoricalProcessExitReasons(packageName, pid, maxNum)`。官方文档说明，返回值按“最近到最旧”排序；`packageName = null` 表示查询调用方 UID 下的所有包；`pid = 0` 不按进程 ID 过滤；`maxNum = 0` 表示返回所有匹配记录。系统内部以环形缓冲保存历史记录，因此查询结果不是长期审计日志。
+Android 11 引入 `ActivityManager.getHistoricalProcessExitReasons(packageName, pid, maxNum)`。返回值按“最近到最旧”排序：`packageName = null` 表示查询调用方 UID 下的所有包；`pid = 0` 不按进程 ID 过滤；`maxNum = 0` 表示返回所有匹配记录。系统内部用环形缓冲保存历史记录，所以查询结果不是长期审计日志。
 
 
 
@@ -193,7 +193,7 @@ private fun copyTraceIfPresent(
 
 这段代码只是采集入口。生产环境还要加去重、大小限制、磁盘配额和隐私清洗；`traceInputStream` 不应该在主线程读取，大文件写入也不应该阻塞冷启动路径。
 
-`reason` 是归因的主字段。AOSP 中 `REASON_CRASH = 4`、`REASON_CRASH_NATIVE = 5`、`REASON_ANR = 6`、`REASON_LOW_MEMORY = 3`；`REASON_SIGNALED = 2` 表示进程因 OS signal 退出，例如 `SIGKILL`。官方文档也说明，并非所有设备都支持低内存 kill 上报；不支持时，内存压力导致的 kill 可能只表现为 `REASON_SIGNALED`。
+`reason` 是归因的主字段。AOSP 中 `REASON_CRASH = 4`、`REASON_CRASH_NATIVE = 5`、`REASON_ANR = 6`、`REASON_LOW_MEMORY = 3`；`REASON_SIGNALED = 2` 表示进程因 OS signal 退出，例如 `SIGKILL`。要注意的是，并非所有设备都支持低内存 kill 上报；不支持时，内存压力导致的 kill 可能只表现为 `REASON_SIGNALED`。
 
 
 `importance` 记录退出前的进程重要性。它不等价于页面状态，但能帮助区分“前台用户正在操作时退出”和“后台缓存进程被系统回收”。端侧还应保存自己的生命周期标记，例如最近 Activity resume 时间、是否存在前台服务、是否完成首帧、是否处于升级迁移窗口。
@@ -202,7 +202,7 @@ private fun copyTraceIfPresent(
 
 ## ANR 与 native crash 的现场拼接
 
-`getTraceInputStream()` 是 ApplicationExitInfo 最有价值的补偿字段。官方文档说明，该输入流返回系统在进程死亡前采集的 traces，通常在 `REASON_ANR` 时可用；从 Android 12（API 31）起，`REASON_CRASH_NATIVE` 可以返回 tombstone protobuf。tombstone 保存在单独的全局环形缓冲里，可能被较新的 native crash 覆盖，因此返回 `null` 是正常边界。
+`getTraceInputStream()` 是 ApplicationExitInfo 最有价值的补偿字段：它返回系统在进程死亡前采集的 traces，通常在 `REASON_ANR` 时可用；从 Android 12（API 31）起，`REASON_CRASH_NATIVE` 也可以返回 tombstone protobuf。tombstone 保存在单独的全局环形缓冲里，可能被较新的 native crash 覆盖，所以返回 `null` 是正常边界。
 
 
 
@@ -284,7 +284,7 @@ ExitEnvelope 建议固定字段：
 
 系统回收和用户杀进程也要分开。`REASON_LOW_MEMORY` 表示系统处于内存压力；`REASON_USER_REQUESTED` 可能来自设置页强停或最近任务移除。它们对用户体验的含义不同：前台页面被低内存杀掉要进入稳定性治理；用户主动划掉后台任务更多是行为背景。
 
-厂商系统可能调整记录数量、低内存上报能力和 trace 保留策略。官方文档已经说明历史记录来自环形缓冲，native tombstone 也可能被全局缓冲覆盖。线上系统不能把“没有 trace”当成“没有 ANR / native crash”，只能标记为附件缺失。
+厂商系统可能调整记录数量、低内存上报能力和 trace 保留策略。历史记录来自环形缓冲，native tombstone 也可能被全局缓冲覆盖。线上系统不能把“没有 trace”当成“没有 ANR / native crash”，只能标记为附件缺失。
 
 
 ## 退出原因与稳定性指标体系的映射

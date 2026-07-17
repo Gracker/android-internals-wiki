@@ -40,6 +40,8 @@ task6_result: pass-light-edit
 last_task6_audit: "2026-07-15"
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-07-15"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-17
 ---
 
 # EyeDropper API 与跨设备协作性能
@@ -48,7 +50,7 @@ last_task2b_lite_at: "2026-07-15"
 
 Android 17 提供了一个通过 Intent 拉起的系统级取色入口。公开 API 没有提供可实例化的 `EyeDropper` 对象。工程上要掌握的重点是四件事：启动入口、结果读取、隐私边界、以及跨设备协作时应用自己要承担的同步工作。
 
-公开 API 只保证两件东西：`Intent.ACTION_OPEN_EYE_DROPPER` 用来拉起系统取色器，`Intent.EXTRA_COLOR` 用来回传 ARGB 颜色值。系统不会把完整屏幕像素流交给应用，也没有公开的跨设备同步 API。
+公开 API 的核心就两个：`Intent.ACTION_OPEN_EYE_DROPPER` 负责拉起系统取色器，`Intent.EXTRA_COLOR` 负责回传 ARGB 颜色值。系统不会把完整屏幕像素流交给应用，也没有公开的跨设备同步 API。
 
 ## 真实调用链
 
@@ -119,7 +121,7 @@ EyeDropper 不把整帧图像交给调用方。应用最终只收到一个颜色
 
 ### 默认没有公开保证的 EyeDropper 专属 Trace 标记
 
-公开 API 文档只定义了 Intent action 和 result extra，没有定义稳定的 Perfetto slice 名、counter 名，AOSP 公开资料里也还缺少系统宿主组件的固定锚点。实战里如果直接按 EyeDropper 相关关键字去搜系统 slice，通常得不到可靠结果。
+公开 API 文档只定义了 Intent action 和 result extra，没有承诺稳定的 Perfetto slice 名或 counter 名。实战中直接按 EyeDropper 关键字去搜系统 slice，通常得不到可靠结果。
 
 更稳妥的做法是把观测口径放在调用链两端：
 
@@ -175,8 +177,7 @@ private fun onEyeDropperResult(result: ActivityResult) {
 ## 降级策略和边界
 
 - API 下限是 Android 17 / API 37。更老的设备继续走应用内取色器或导入图片取色。
-- `ACTION_OPEN_EYE_DROPPER` 在 Android 17（API 37）引入，截至 `android-17.0.0_r1` 仍可用，但在 main 分支（Android 18+）中尚未确认其保留状态。工程实现中应将 `resolveActivity()` 检查作为运行时前置条件，不要硬编码对该 API 的存在性假设。
-- AIW 版本边界为 Android 17 / API 37。本章结论不覆盖 Android 18 / API 38 及更高版本，该 API 在后续版本中的行为以官方文档为准。
+- `ACTION_OPEN_EYE_DROPPER` 在 Android 17（API 37）引入。工程实现中应将 `resolveActivity()` 检查作为运行时前置条件，不要硬编码对该 API 的存在性假设。
 - 取色结果依赖系统提供的处理器。防御式代码仍然应该保留 `resolveActivity()` 或异常兜底。
 - secure window 和 protected buffer 会被涂黑，不能把 EyeDropper 当成绕过内容保护的入口。
 - EyeDropper 面向用户显式操作，不适合后台自动化或高频批量取样。
