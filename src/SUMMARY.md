@@ -85,6 +85,7 @@
   - [26.26 Page Fault 类型分析与 Android 实践](part5-app/ch26-observability/26-page-fault-analysis-android.md)
   - [26.27 Facebook Profilo 框架线上 ATrace 收集方案](part5-app/ch26-observability/27-profilo-atrace-online-collection.md)
   - [26.28 非 Play 渠道性能监控与国内厂商 ROM 适配可观测性](part5-app/ch26-observability/28-non-play-channel-rom-observability.md)
+  - [26.29 JVMTI Agent — ART 运行时动态监控接口与线上方法追踪](part5-app/ch26-observability/29-jvmti-agent-art-runtime-dynamic-monitoring.md)
 - [5.21 Android 17 SoC 厂商电池优化架构](part1-fundamentals/ch05-cpu-power/5.21-android17-battery-optimization-soc-architecture.md)
 
   - [5.28 PELT Boost 回退与 AMU/PMU 微架构感知调频](part1-fundamentals/ch05-cpu-power/5.28-android17-pelt-boost-revert-amu-pmu-microarch-frequency-limiting.md)

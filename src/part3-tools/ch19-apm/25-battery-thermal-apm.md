@@ -45,6 +45,8 @@ last_deepseek_polish_at: 2026-05-26
 last_task9_audit: 2026-06-07
 last_task9_audit_log: logs/deep-review/2026-06-07-14-audit.md
 last_task9_autofix_at: 2026-06-07
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-17
 ---
 
 
@@ -153,16 +155,17 @@ Alarm 对耗电的影响来自“把设备叫醒”。在 Doze 模式下，系�
 
 ### Android 12+ 精确闹钟权限对 APM 归因的影响
 
-Android 12 引入 `SCHEDULE_EXACT_ALARM` 权限，Android 13/14 进一步收紧精确闹钟的行为。APM 记录 Alarm 样本时，要同时记录目标进程是否持有该权限、`canScheduleExactAlarms()` 的返回值、alarm type 和 `allowWhileIdle` 标记。这样在归因时才能区分"业务设置了精确闹钟但系统拒绝了"和"业务确实只用了非精确闹钟"。
+Android 12 开始引入 `SCHEDULE_EXACT_ALARM` 权限，后续版本一步步收紧精确闹钟的行为。APM 记录 Alarm 样本时，要同时记录目标进程是否持有该权限、`canScheduleExactAlarms()` 的返回值、alarm type 和 `allowWhileIdle` 标记。这样在归因时才能区分"业务设置了精确闹钟但系统拒绝了"和"业务确实只用了非精确闹钟"。
 
-| Android 版本 | 精确闹钟行为 | APM 样本应记录的字段 |
-| --- | --- | --- |
-| Android 11 及以下 | 无权限限制，`setExact()` / `setExactAndAllowWhileIdle()` 正常工作 | alarm type、triggerAt、interval |
-| Android 12 | 新增 `SCHEDULE_EXACT_ALARM` 权限，新安装应用默认授予，预装应用视厂商策略 | 增加 permission 状态、`canScheduleExactAlarms()` 返回值 |
-| Android 13 | targetSdk 33+ 可在 `SCHEDULE_EXACT_ALARM` 与 `USE_EXACT_ALARM` 之间选择；`USE_EXACT_ALARM` 安装即授予但仅限闹钟/日历等合规场景，`SCHEDULE_EXACT_ALARM` 走用户授权并可能被撤销 | 增加 app-op 状态、是否命中 `USE_EXACT_ALARM` 豁免、安装/升级来源 |
-| Android 14-17 | 新安装且 targetSdk 33+ 的应用默认拒绝 `SCHEDULE_EXACT_ALARM`；未授权时通过 `PendingIntent` 版本调用 `setExact()` / `setExactAndAllowWhileIdle()` / `setAlarmClock()` 会抛 `SecurityException`，不会静默降级。`OnAlarmListener` 版本的 `setExact()` 不需要该权限。需改用 `set()` / `setWindow()` / `setAndAllowWhileIdle()` 等非精确闹钟 API，或引导用户授权 | 调用精确闹钟 API 前必须检查 `canScheduleExactAlarms()`；未授权时记录回退路径（非精确闹钟 API 或权限请求），并在样本中区分"请求精确"与"实际精确" |
+版本行为变化可以拆成三个阶段来看：
 
-Android 14-17 对精确闹钟的权限策略最为严格，上表已列出具体行为和 APM 记录要求。端侧归因的核心是在样本中区分"业务请求了精确闹钟"和"系统实际允许了精确触发"两种口径。
+**Android 11 及以下**：没有权限限制，`setExact()` / `setExactAndAllowWhileIdle()` 正常工作。APM 样本记录 alarm type、triggerAt、interval 即可。
+
+**Android 12-13**：Android 12 新增 `SCHEDULE_EXACT_ALARM`，新安装应用默认授予，预装应用视厂商策略。13 进一步在 targetSdk 33+ 上允许在 `SCHEDULE_EXACT_ALARM` 与 `USE_EXACT_ALARM` 之间选择——后者安装即授予但仅限闹钟、日历等合规场景，前者走用户授权且可能被撤销。APM 样本需额外记录 permission 状态、`canScheduleExactAlarms()` 返回值、app-op 状态和是否命中 `USE_EXACT_ALARM` 豁免。
+
+**Android 14-17**：规则最严。新安装且 targetSdk 33+ 的应用默认拒绝 `SCHEDULE_EXACT_ALARM`；未授权时通过 `PendingIntent` 版本调用 `setExact()` / `setExactAndAllowWhileIdle()` / `setAlarmClock()` 会直接抛 `SecurityException`，不会静默降级。注意 `OnAlarmListener` 版本的 `setExact()` 不受此限制。业务侧需改为 `set()` / `setWindow()` / `setAndAllowWhileIdle()` 等非精确闹钟 API，或引导用户授权。APM 样本要在调用前检查 `canScheduleExactAlarms()`，未授权时记录回退路径，并在样本中区分"请求精确"与"实际精确"两种口径。
+
+端侧归因的核心始终是：区分"业务请求了精确闹钟"和"系统实际允许了精确触发"，不要把权限拒绝当成了业务没设置闹钟。
 
 ## 4. 硬件资源耗电归因：按占用窗口统计
 
