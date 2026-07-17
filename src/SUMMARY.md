@@ -86,6 +86,8 @@
   - [26.27 Facebook Profilo 框架线上 ATrace 收集方案](part5-app/ch26-observability/27-profilo-atrace-online-collection.md)
   - [26.28 非 Play 渠道性能监控与国内厂商 ROM 适配可观测性](part5-app/ch26-observability/28-non-play-channel-rom-observability.md)
   - [26.29 JVMTI Agent — ART 运行时动态监控接口与线上方法追踪](part5-app/ch26-observability/29-jvmti-agent-art-runtime-dynamic-monitoring.md)
+  - [26.30 性能防劣化体系与 CI 门禁实战](part5-app/ch26-observability/30-performance-regression-governance-ci-gate.md)
+  - [26.31 应用日志系统性能优化与高效日志体系实战](part5-app/ch26-observability/31-high-performance-logging-system-practice.md)
 - [5.21 Android 17 SoC 厂商电池优化架构](part1-fundamentals/ch05-cpu-power/5.21-android17-battery-optimization-soc-architecture.md)
 
   - [5.28 PELT Boost 回退与 AMU/PMU 微架构感知调频](part1-fundamentals/ch05-cpu-power/5.28-android17-pelt-boost-revert-amu-pmu-microarch-frequency-limiting.md)
@@ -193,6 +195,8 @@
   - [20.26 Native 内存泄漏线上监控实战](part5-app/ch20-stability/26-native-memory-leak-online-monitoring.md)
   - [20.27 Kotlin 协程泄漏诊断与结构化并发性能监控](part5-app/ch20-stability/20.27-coroutine-leak-diagnosis-structured-concurrency-performance.md)
   - [20.1 应用稳定性监控与异常处理](part5-app/ch20-stability/20.1-app-stability-monitoring-practices.md)
+  - [20.28 第三方 SDK 性能影响评估与治理实战](part5-app/ch20-stability/28-sdk-performance-governance.md)
+
 
 #   - [8.33 Android 17 模块化启动框架与依赖图优化](src/part1-fundamentals/ch08-startup/8.33-android17-modular-startup-dependency-graph.md)
   - [4.36 Android 17 高级内存优化与治理](src/part1-fundamentals/ch04-memory/4.36-android17-advanced-memory-optimization.md)

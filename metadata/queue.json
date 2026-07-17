@@ -265,6 +265,33 @@
       "status": "pending",
       "source": "task2a-gap-mining",
       "created_date": "2026-07-17"
+    },
+    {
+      "chapter": "20.28",
+      "title": "第三方 SDK 性能影响评估与治理实战",
+      "priority": 80,
+      "path": "src/part5-app/ch20-stability/28-sdk-performance-governance.md",
+      "gap_source": "Clippings参考书+日常痛点+AOSP SDK Runtime",
+      "gap_score": 18,
+      "created_date": "2026-07-17"
+    },
+    {
+      "chapter": "26.30",
+      "title": "性能防劣化体系与 CI 门禁实战",
+      "priority": 80,
+      "path": "src/part5-app/ch26-observability/30-performance-regression-governance-ci-gate.md",
+      "gap_source": "方法论缺口+Macrobenchmark生态+行业实践",
+      "gap_score": 17,
+      "created_date": "2026-07-17"
+    },
+    {
+      "chapter": "26.31",
+      "title": "应用日志系统性能优化与高效日志体系实战",
+      "priority": 80,
+      "path": "src/part5-app/ch26-observability/31-high-performance-logging-system-practice.md",
+      "gap_source": "Clippings参考书+logd源码+AOSP日志体系",
+      "gap_score": 15,
+      "created_date": "2026-07-17"
     }
   ]
 }
