@@ -53,6 +53,7 @@ task6_review_notes: "2026-06-13 Task6 回炉复审(revisiting→reviewed): pass-
 finalized_date: "2026-06-13"
 finalized_by: "openclaw-task6-auto-promote"
 deepseek_cn_review_state: done
+last_task6_audit: 2026-07-17T14:15:00+08:00
 last_deepseek_cn_review_at: 2026-06-23
 ---
 
@@ -169,10 +170,9 @@ last_deepseek_cn_review_at: 2026-06-23
 | "打开页面要等很久" | 启动或页面可交互时间过长 | TTID / TTFD、首屏数据路径 |
 | "界面像死掉了一样" | ANR 或接近 ANR | 主线程栈、`ApplicationExitInfo`、`traces.txt` |
 | "越用越卡,回前台更慢" | 内存压力 / 进程回收 / page fault | PSS、GC、LMKD、冷 / 温 / 热启动切换 |
+| "耗电快 / 手机发烫，同时卡" | 功耗/发热伴随卡顿 | Battery Historian、Perfetto power rails、Thermal/CPU frequency 轨道 |
 
 这张表的价值在于逼着读者先问一句:**我现在看到的,到底是哪一类体验失效?**
-
-| "耗电快 / 手机发烫，同时卡" | 功耗/发热伴随卡顿 | Battery Historian、Perfetto power rails、Thermal/CPU frequency 轨道 |
 
 **耗电/发热伴随卡顿**：这类问题经常是热限频和资源争抢叠加的结果。排查时先确认因果关系——是功耗导致的性能退化，还是性能问题触发了功耗异常。
 
