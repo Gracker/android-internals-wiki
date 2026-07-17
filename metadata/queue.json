@@ -32,5 +32,33 @@
     "status": "completed",
     "completed_at": "2026-07-17T22:54:05+08:00",
     "completed_by": "task2b-main-repair"
+  },
+  {
+    "chapter": "22.44",
+    "title": "Compose 状态订阅与重组控制实战",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part5-app/ch22-rendering-practice/44-compose-state-subscription-recomposition-control.md"
+  },
+  {
+    "chapter": "22.45",
+    "title": "Compose LazyGrid 性能优化实战",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part5-app/ch22-rendering-practice/45-compose-lazygrid-performance.md"
+  },
+  {
+    "chapter": "20.29",
+    "title": "Crash 报告 SDK 架构选型与 tombstone 解析实战",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part5-app/ch20-stability/29-crash-sdk-architecture-tombstone-parsing.md"
+  },
+  {
+    "chapter": "24.22",
+    "title": "OkHttp 5.0 / Cronet / Ktor 网络引擎选型与性能实战",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part5-app/ch24-io-network/22-okhttp-cronet-ktor-engine-comparison.md"
   }
 ]
