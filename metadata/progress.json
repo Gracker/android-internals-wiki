@@ -11,5 +11,13 @@
     "last_chapter": "14.22",
     "last_status": "1 chapter completed (P95: fixed)"
   },
-  "ready_for_review": 2
+  "ready_for_review": 2,
+  "chapters": {
+    "15": {
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "pipeline_stage": "task6_pending",
+      "last_task2b_at": "2026-07-17T22:54:05+08:00"
+    }
+  }
 }
