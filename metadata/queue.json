@@ -164,6 +164,15 @@
       "status": "pending",
       "source": "task2a-gap-mining",
       "created_date": "2026-07-17"
+    },
+    {
+      "chapter": "5.33",
+      "title": "Android 17 App Performance Score 归因链与低端机样本池建设",
+      "path": "src/part1-fundamentals/ch05-cpu-power/5.33-android17-performance-score-attribution-sourcecode.md",
+      "priority": 80,
+      "status": "pending",
+      "source": "task2a-gap-mining",
+      "created_date": "2026-07-17"
     }
   ]
 }
