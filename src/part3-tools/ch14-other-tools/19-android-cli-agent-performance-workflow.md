@@ -43,8 +43,8 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-22"
 last_task9_at: "2026-05-22T04:51:16+08:00"
 task9_review_notes: "2026-05-22 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1（CI 模板需补 AVD create 前置条件，已写入 suggestions）。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-last_task9_review_log: "logs/deep-review/2026-05-22-04-deep-review.md"
-last_task9_audit: "2026-06-25"
+last_task9_review_log: "logs/deep-review/2026-07-17-08-idle-audit.md"
+last_task9_audit: "2026-07-17"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
 deepseek_cn_review_state: done
