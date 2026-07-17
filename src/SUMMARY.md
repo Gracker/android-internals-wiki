@@ -92,6 +92,7 @@
 - [5.29 Android 17 GPU DVFS Headroom 与 SurfaceFlinger PowerAdvisor 链路](part1-fundamentals/ch05-cpu-power/5.29-android17-gpu-dvfs-headroom-power-advisor.md)
   - [5.30 Android 17 OnDeviceIntelligence 框架性能：FoundationModelManager 推理调度与资源隔离](part1-fundamentals/ch05-cpu-power/5.30-android17-ondevice-intelligence-framework-performance.md)
   - [5.31 Android 17 内核 EEVDF 调度器：从 CFS 到 EEVDF](part1-fundamentals/ch05-cpu-power/31-android17-eevdf-scheduler.md)
+  - [5.33 Android 17 App Performance Score 归因链与低端机样本池建设](part1-fundamentals/ch05-cpu-power/5.33-android17-performance-score-attribution-sourcecode.md)
 
   - [Android 17 Binder IPC 优先级继承机制与内核批处理流水线](part1-fundamentals/ch01-architecture/1.9-binder-ipc-优先级继承内核批处理流水线-draft.md)
 
