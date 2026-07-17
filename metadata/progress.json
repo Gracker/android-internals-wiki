@@ -1,6 +1,6 @@
 {
   "total": 826,
-  "draft": 68,
+  "draft": 67,
   "ready-for-review": 261,
   "in-review": 0,
   "final": 0,
@@ -10,5 +10,6 @@
     "last_run": "2026-07-17T14:52:59+08:00",
     "last_chapter": "14.22",
     "last_status": "1 chapter completed (P95: fixed)"
-  }
+  },
+  "ready_for_review": 1
 }
