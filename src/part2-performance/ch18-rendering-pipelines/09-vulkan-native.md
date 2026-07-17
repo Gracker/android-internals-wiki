@@ -51,8 +51,8 @@ status: finalized
 reviewed_date: "2026-06-28"
 reviewed_by: "openclaw-task6"
 last_task6_at: "2026-06-28T22:10:00+08:00"
-last_task6_audit: "2026-05-26"
-last_task6_audit_log: "logs/review/2026-05-26-15-audit.md"
+last_task6_audit: "2026-07-17"
+last_task6_audit_log: "logs/review/2026-07-17-19-audit.md"
 last_task6_review_log: "logs/review/2026-06-07-05-review.md"
 task6_state: reviewed
 task6_result: "pass-light-edit"
@@ -75,10 +75,10 @@ last_deepseek_cn_review_at: 2026-06-28
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
-- [18.9.1 为什么选择 Vulkan](#为什么选择-vulkan) — 与 GLES 的关键区别
+- [18.9.1 为什么选择 Vulkan](#为什么选择-vulkan) — 与 GLES 的主要区别
 - [18.9.2 Android Vulkan Profile (AVP)](#android-vulkan-profile-avp) — 碎片化问题的标准化方案
 - [18.9.3 渲染流程详解](#渲染流程详解) — Acquire → Submit → Present 的完整流程
-- [18.9.4 Pipeline Barrier 与 Image Layout](#pipeline-barrier-与-image-layout) — 显式同步的关键
+- [18.9.4 Pipeline Barrier 与 Image Layout](#pipeline-barrier-与-image-layout) — 显式同步的要点
 - [18.9.5 Presentation Mode](#presentation-mode) — Android native WSI 的支持边界
 - [18.9.6 Swappy Frame Pacing](#swappy-frame-pacing) — Android 官方的帧节奏库
 - [18.9.7 Trace 视角](#trace-视角) — Vulkan 调用路径的识别特征
@@ -90,7 +90,7 @@ last_deepseek_cn_review_at: 2026-06-28
 
 <!-- outline-end -->
 
-Vulkan 是 Android 目前的主要底层图形 API，Android 15 起通过 AVP（Android Vulkan Profile）进一步统一了设备能力基线。[已验证: Android 15 Developer Preview 文档] 与 OpenGL ES 相比，Vulkan 的核心差异在于**“显式优于隐式”**——内存分配、同步原语、命令提交全部由 App 显式控制，驱动只负责执行已提交的命令，不再替应用猜测意图。换来的收益是更低的 CPU 开销、更少的驱动行为不确定性，以及更高的调试可控性。
+Vulkan 是 Android 目前的主要底层图形 API，Android 15 起通过 AVP（Android Vulkan Profile）进一步统一了设备能力基线。[已验证: Android 15 Developer Preview 文档] 与 OpenGL ES 相比，Vulkan 的主要差异在于**“显式优于隐式”**——内存分配、同步原语、命令提交全部由 App 显式控制，驱动只负责执行已提交的命令，不再替应用猜测意图。换来的收益是更低的 CPU 开销、更少的驱动行为不确定性，以及更高的调试可控性。
 
 关于图形 API 的演进历史，详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)。从实战角度看，Vulkan 渲染管线要讲清楚三件事：Acquire 到 Present 的完整流程、Presentation Mode 怎么选，以及 Trace 里怎么识别 Vulkan 调用路径。
 
@@ -165,7 +165,7 @@ Android Vulkan Profile 的演进分成两类口径：
 
 ## 渲染流程详解
 
-Vulkan 的渲染流程围绕三个核心对象展开：**Swapchain**（管理图像）、**Command Buffer**（存储绘制命令）、**Queue**（提交命令到 GPU）。与 GLES 的最大区别在于，这三个对象的创建、配置和同步全部由 App 显式管理。
+Vulkan 的渲染流程围绕三个对象展开：**Swapchain**（管理图像）、**Command Buffer**（存储绘制命令）、**Queue**（提交命令到 GPU）。与 GLES 的最大区别在于，这三个对象的创建、配置和同步全部由 App 显式管理。
 
 ### 第一阶段：Acquire（获取）
 
@@ -309,7 +309,7 @@ UNDEFINED → COLOR_ATTACHMENT_OPTIMAL → PRESENT_SRC_KHR
 
 ### Pipeline Barrier
 
-Pipeline Barrier 显式地告诉 GPU："在这之前的操作必须完成，之后的操作才能开始"。这是 Vulkan 替代 GLES 隐式同步的核心机制：
+Pipeline Barrier 显式地告诉 GPU："在这之前的操作必须完成，之后的操作才能开始"。这是 Vulkan 替代 GLES 隐式同步的主要机制：
 
 ```c
 VkImageMemoryBarrier barrier = {
@@ -371,9 +371,9 @@ vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &count, modes
 2. **Input-to-Display 延迟**：原生 Vulkan 无法预测帧着陆时间，App 不知道该在什么时候提交才能正好赶上目标 VSync
 3. **高刷适配**：90Hz/120Hz/144Hz 屏幕需要动态调整 Swap Interval，原生 API 不提供方便的抽象
 
-### 核心原理
+### 工作原理
 
-Swappy 的核心思想是**精准控制 Present 时机**。它结合 Choreographer 的 VSync 时间戳、presentation timestamp 和 sync fence 来计算最佳提交时机：
+Swappy 的设计思路是**精准控制 Present 时机**。它结合 Choreographer 的 VSync 时间戳、presentation timestamp 和 sync fence 来计算最佳提交时机：
 
 ```mermaid
 sequenceDiagram
@@ -392,7 +392,7 @@ sequenceDiagram
     App->>SF: queueBuffer (libvulkan/Swappy CPU 端调用，精准时机由 Frame Pacing 控制)
 ```
 
-### 关键 API
+### 主要 API
 
 这段示例保留初始化、设置 interval、替换 present 三步，主要看返回值处理和每个 swapchain 的初始化顺序。
 
@@ -442,7 +442,7 @@ Perfetto 里的默认诊断入口应先看三类证据：
 4. **`vkCmdDraw*`**：具体的 GPU 绘制命令（替代 GLES 的 `glDraw*`）
 5. **`vkCmdPipelineBarrier`**：显式同步 barrier
 
-### 关键 Slice
+### 主要 Slice
 
 | Slice | 含义 | 关注点 |
 |:---|:---|:---|
