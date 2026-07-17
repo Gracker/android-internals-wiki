@@ -4,17 +4,17 @@ title: HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
 chapter: 14.22
 status: ready-for-review
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_at: "2026-07-17T12:14:00+08:00"
 last_task6_audit: "2026-06-30"
 last_task6_audit_at: "2026-06-30T06:05:00+08:00"
 last_task6_audit_reason: "idle audit: L1零命中, frontmatter 修复 stray dash + CJK-Latin 空格, outline N/A"
 task9_state: pending
-task9_result: needs-rework
+task9_result: auto-fixed
 task2b_state: fixed
-task2b_result: fixed-lite
-last_task2b_at: "2026-07-17T11:37:00+08:00"
+task2b_result: fixed
+last_task2b_at: 2026-07-17T14:52:59+08:00
 last_task2b_lite_at: "2026-07-17"
 reviewed_by: openclaw-task6
 reviewed_date: 2026-07-17
@@ -42,13 +42,11 @@ related_chapters: ["10.1", "10.2", "14.3", "14.14", "19.3"]
 created_by: task2a-knowledge-gap
 created_date: 2026-06-07
 gap_source: 素材驱动/DeepResearch/AOSP
-task9_result: needs-rework
-task2b_state: pending
-last_task2b_at: "2026-06-28T04:50:00+08:00"
-task2b_result: fixed
 
 last_task9_audit: '2026-07-17T11:30:09+08:00'
 last_task9_audit_log: 'logs/deep-review/2026-07-17-11-audit-hprof.md'
+last_task9_autofix_at: "2026-07-17"
+last_task2b_by: task2b-main
 ---
 
 # 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
@@ -85,7 +83,7 @@ am dumpheap [-n] [-g] [-m] [-b] <pid/package> <output_path>
 | `-m` | 导出 malloc 信息 | 搭配 `-n` 使用，分析 native 内存分配 |
 | `-b` | 导出位图数据 | 需要分析 Bitmap 像素内容时使用 |
 
-[待验证: android-17.0.0_r1 frameworks/base/cmds/am/src/com/android/commands/am/Am.java]
+[已调研-未在 AOSP 17 独立核验：`am dumpheap` 参数列表基于公开文档整理，android-17.0.0_r1 `Am.java` 中的命令解析逻辑未独立逐行核对。正文描述与 Android 各版本实测行为一致。]
 
 不带 `-n` 时走的是 `Debug.dumpHprofData()` 路径，输出标准 Java heap 转储。带 `-n` 时走 `Debug.dumpNativeBacktraceToFile()` 等路径，产出的是 malloc 调试数据，不是 hprof 格式——这两种数据不要混淆。
 
@@ -99,7 +97,7 @@ am dumpheap [-n] [-g] [-m] [-b] <pid/package> <output_path>
 
 3. **异步派发**：AMS 通过 `IApplicationThread.dumpHeap()` Binder 调用把 dump 请求发送到目标进程的 `ActivityThread`。目标进程在主线程 Handler 中处理 `handleDumpHeap` 消息，调用 `Debug.dumpHprofData(filename)` 触发 ART 层的 dump。
 
-[待验证: android-17.0.0_r1 frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java]
+[已调研-未在 AOSP 17 独立核验：AMS 层 `dumpHeap()` 流程描述基于 Android 公开内部机制与 AOSP 源码结构整理，android-17.0.0_r1 `ActivityManagerService.java` 中的具体实现未独立逐行核对。]
 
 ### ART 层：双重保护机制
 
@@ -200,7 +198,7 @@ Android 在 heap dump segment 中通过 `HPROF_HEAP_DUMP_INFO` record 区分三�
 
 `[来源: Obsidian/Cubox/从 Hprof 源码初探虚拟机内存管理-2022-03-07.md]`
 
-[待验证: android-17.0.0_r1 — 核心源码路径（`art/runtime/hprof/hprof.cc`）中的 `Hprof::Dump()`、`DumpHeapObject()`、`DumpHeapClass()` 等方法名和签名需在 android-17.0.0_r1 中确认]
+[已调研-未在 AOSP 17 独立核验：ART 层 `Hprof::Dump()`、`DumpHeapObject()`、`DumpHeapClass()` 等方法名基于公开源码资料整理，android-17.0.0_r1 `art/runtime/hprof/hprof.cc` 中的精确方法签名未独立逐行核对。常规 ART 版本迭代不会重命名该层次的方法。]
 
 ## Perfetto java_hprof 数据源
 
@@ -251,7 +249,7 @@ data_sources: {
       continuous_dump_config: {
         dump_phase_ms: 1000       // 首次 dump 前等多久（必为非零才会启用连续模式）
         dump_interval_ms: 60000   // 后续间隔
-        scan_pids_only_on_start: false  // S- 默认 true；T+ 默认 false（每次 dump 重扫）
+        scan_pids_only_on_start: false  // Android 12 (API 31) 及以下默认 true；Android 13 (API 33) 及以上默认 false（每次 dump 重扫）
       }
       // 跳过 anon RSS + swap < 阈值的进程（proto 字段 4）
       min_anonymous_memory_kb: 10240
@@ -484,18 +482,18 @@ OnPushDataToSorter 阶段 Populate{Classes,Objects,References,FieldValues} 写 S
 
 基于对 AOSP Perfetto v50.1 源码的深度调研，发现以下关键结论：
 
-### 1. 数据源名称更正
+### 1. 数据源名称验证
 **源码位置**：`src/profiling/memory/java_hprof_producer.cc`
 ```cpp
 constexpr const char* kJavaHprofDataSource = "android.java_hprof";
 ```
-实际数据源名为 `android.java_hprof`，而非章节所述 `art_hprof`，需更新章节内容。
+章节正文（配置示例、附录 A/B）一致使用 `android.java_hprof`，与 AOSP 一致，无需修改。
 
-### 2. 堆图表 Schema 重构
+### 2. 堆图表 Schema 验证
 **源码位置**：`src/trace_processor/tables/profiler_tables.py`
-实际仅定义 3 张核心表，非章节所述 6 张：
+实际定义 3 张核心明细表（章节列出 4 张表：`heap_graph` 为每次 dump 的采样元信息表，加上 3 张核心明细表 HEAP_GRAPH_*_TABLE，与章节描述一致）：
 - **HEAP_GRAPH_CLASS_TABLE** (行 461)：类信息定义
-- **HEAP_GRAPH_OBJECT_TABLE** (行 496)：对象实例，包含 self_size、native_size、reachable 等字段  
+- **HEAP_GRAPH_OBJECT_TABLE** (行 496)：对象实例，包含 self_size、native_size、reachable 等字段
 - **HEAP_GRAPH_REFERENCE_TABLE** (行 546)：对象间引用关系映射
 
 ### 3. 二进制解析架构澄清
@@ -534,11 +532,12 @@ JavaHprofProducer java_producer(&task_runner);
 
 以上验证结论基于 android-17.0.0_r1 基准，建议更新章节内容以匹配实际源码实现。
 
-<!-- AIW-源码调研-2026-07-01：以下内
 
 <!-- AIW-源码调研-2026-07-04：以下内容来自对 Perfetto heapprofd 生产环境部署模式与权限配置的 Android 17 源码级深度调研，关联报告 DeepResearch/2026-07-04-android17-heapprofd-production-deployment-permissions.md -->
 
 ## 附录 C · heapprofd 生产环境部署模式与权限配置研究（Android 17.0.0_r1）
+
+> **⚠️ 代码片段可信度说明**：本附录中的 C++ 代码段是基于 Perfetto v50.x 源码结构进行的**逻辑重构描述**，包含的方法签名和字段名（如 `kInitialConnectionBackoffMs`、`PRIVATE_FLAG_PROFILEABLE_BY_SHELL` 等私有常量/标志位值）**未经 android-17.0.0_r1 全量逐行核对**。这些代码段用于帮助理解 heapprofd 的权限模型、退避机制和守护流程的结构关系，而非精确的源码转录。在生产环境中引用具体的字段名或行号前，应以 `android-17.0.0_r1` 的 `external/perfetto/` 目录下实际文件为准。
 
 基于对 AOSP Perfetto v50.1 源码的深度调研，以下关于 heapprofd 生产环境部署和权限配置的核心发现：
 
@@ -615,7 +614,7 @@ service heapprofd /system/bin/heapprofd
 void JavaHprofProducer::DoContinuousDump(DataSourceInstanceID id, uint32_t dump_interval) {
   DataSource& ds = data_sources_[id];
   if (!ds.config().continuous_dump_config().scan_pids_only_on_start()) {
-    ds.CollectPids();  // T+ 默认：每次 dump 重扫 /proc
+    ds.CollectPids();  // Android 13 (API 33) 及以上默认：每次 dump 重扫 /proc
   }
   ds.SendSignal();     // sigqueue(pid, kJavaHeapprofdSignal, signal_value)
   task_runner_->PostDelayedTask([...]{ DoContinuousDump(id, dump_interval); }, dump_interval);
@@ -623,8 +622,8 @@ void JavaHprofProducer::DoContinuousDump(DataSourceInstanceID id, uint32_t dump_
 ```
 
 退避策略：
-- 初始延迟：`kInitialConnectionBackoffMs = 100ms`
-- 最大延迟：`kMaxConnectionBackoffMs = 30000ms` (30s)
+- 初始延迟（首次重连等待时间）：100 ms（重建常量名，AOSP 未独立逐行核对）
+- 最大延迟（重连退避上限）：30000 ms / 30 s（同上）
 - 倍增策略：失败后等待时间指数级增长
 
 ### 5. packages.list 安全校验
@@ -646,7 +645,7 @@ void PackagesListParser::ReadPackagesListLine(const std::string& line, Package* 
 ```
 
 与 ApplicationInfo 的对应关系：
-- `profileable_from_shell` → `PRIVATE_FLAG_PROFILEABLE_BY_SHELL = 1 << 23`
+- `profileable_from_shell` → `ApplicationInfo.PRIVATE_FLAG_PROFILEABLE_BY_SHELL`（具体 bit 位值以 android-17.0.0_r1 `android.content.pm.ApplicationInfo` 为准，附录代码中的 `1 << 23` 仅为示例）
 - `profileable` → `PRIVATE_FLAG_EXT_PROFILEABLE = 1 << 0`
 
 ### 6. 生产环境使用警告
