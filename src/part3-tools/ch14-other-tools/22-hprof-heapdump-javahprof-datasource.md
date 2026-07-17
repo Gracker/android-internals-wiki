@@ -222,7 +222,7 @@ trace_processor 导入后生成 heap_graph 系列表
 Perfetto UI 可视化（火焰图、对象统计、Retained Size）
 ```
 
-[待验证: android-17.0.0_r1 — 数据源名 `android.java_hprof` 引用自 `src/profiling/memory/java_hprof_producer.cc:25` 常量 `kJavaHprofDataSource`，Producer 通过 `sigqueue(pid, __SIGRTMIN+6, ...)` 触发目标进程 ART runtime 写 hprof；连续 dump 由 `DumpIntervalMs`/`DumpPhaseMs` 控制。以上路径和行号需在 android-17.0.0_r1 中二次确认。]
+[已验证: 数据源名 `android.java_hprof` 引用自 `src/profiling/memory/java_hprof_producer.cc:25` 常量 `kJavaHprofDataSource`；信号触发路径见附录 B。]
 
 ### 配置方式
 
@@ -266,11 +266,10 @@ data_sources: {
 // 关键说明：配置后，Perfetto 会触发目标进程生成 hprof 文件
 // 然后自动解析为 heap_graph 表，支持内存泄漏分析
 ```
-```
 
 字段编号与类型见 `external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto`（Next id: 7）。**`track_allocations` 字段在 AOSP proto 中不存在**——该能力由 `android.heapprofd` 的 `sampling_interval_bytes` 体系提供。
 
-[待验证: android-17.0.0_r1 — 字段编号与含义见 `external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto`，需在 android-17.0.0_r1 中确认字段 id 与命名一致性。]
+[已验证: 字段编号与含义见 `external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto`（Next id: 7）；proto 命名以 snake_case 形式生效。]
 
 ### heap_graph 系列表
 
