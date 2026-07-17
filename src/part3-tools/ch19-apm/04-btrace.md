@@ -48,6 +48,8 @@ task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 0
 task9_review_notes: "2026-07-03 Task9 deep review: pass-tech-review；无 P0/P1/P2；task6 已通过且 queue.json 无 pending，自动晋升 finalized；详见 logs/deep-review/2026-07-03-08-deep-review.md。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-17
 ---
 
 # btrace / RheaTrace
@@ -93,7 +95,7 @@ task9_review_notes: "2026-07-03 Task9 deep review: pass-tech-review；无 P0/P1/
 
 ## btrace 用来补方法级现场
 
-btrace，也就是 RheaTrace，是字节跳动开源的高性能 tracing 工具。3.0 版本以 Perfetto 为主要承载，采集应用方法栈并叠加系统 trace 信息，最终生成可以在 Perfetto UI 中打开的 `.pb` trace 文件。
+btrace（RheaTrace）是字节跳动开源的高性能 tracing 工具。3.0 版本以 Perfetto 为承载，采集应用方法栈并叠加系统 trace，生成可在 Perfetto UI 打开的 `.pb` 文件。
 
 它适合“某类启动慢、卡顿或交互延迟已经被发现，需要补一段方法级现场”的场景。它的输出更像诊断证据，不像指标看板。
 
@@ -123,7 +125,7 @@ btrace 3.0 有两类模式：
 
 ## 3.0 版本的几个边界
 
-截至 2026-04-24，btrace README 中列出的 3.0 约束包括：
+btrace README 中列出的 3.0 约束包括：
 
 - Android 设备要求 8.0 及以上。
 - 对不支持 Perfetto 的设备，系统信息采集能力受限。
@@ -149,7 +151,7 @@ btrace 的价值在另一边：它可以从方法栈角度补更多调用信息�
 
 接入 btrace 前要把构建开关设计好。Debug / internal 包可以默认集成真实依赖，Release 包通常使用 no-op 或只在灰度诊断包中启用。方法名混淆后还要准备 mapping，否则 Perfetto 中的调用栈会失去可读性。
 
-分析结果不要只看最长方法。从时间轴出发：先确定慢的时间窗口，再确认主线程是否运行，再看方法 trace、系统调度和阻塞点。只有应用方法、系统状态和用户操作能互相对应，结论才适合写进性能修复单。
+分析结果不要只看最长方法。按时间轴来：先定位慢的时间窗口，确认主线程是否在运行，再看方法 trace、系统调度和阻塞点。应用方法、系统状态和用户操作三者对得上，结论才适合写进性能修复单。
 
 ## 采集参数怎么读
 
@@ -176,13 +178,13 @@ btrace 3.0 的 PC 侧命令参数直接影响 trace 内容。常见参数可以�
 打开 btrace 输出的 `.pb` 后，不要先搜最长方法。推荐按时间线读：
 
 1. 找目标场景窗口：启动从进程创建到首帧，滑动从触摸开始到列表停止。
-2. 看 Main thread：这段时间主线程是在跑、睡眠、等待，还是被调度饿住。
-3. 看 RenderThread：UI 线程提交后，RenderThread 是否继续阻塞。
-4. 看 CPU 调度：线程是否频繁 Runnable 但拿不到 CPU；Perfetto 中浅色等待段通常对应 Runnable，实际 Running 会在 CPU 轨道或线程状态里显示 CPU core 归属。
+2. 看 Main thread：主线程是在跑、睡眠、等待，还是被调度饿住了。
+3. 看 RenderThread：UI 线程提交后，RenderThread 是否还在阻塞。
+4. 看 CPU 调度：线程是否频繁 Runnable 但拿不到 CPU。Perfetto 中浅色等待段通常是 Runnable，实际 Running 在 CPU 轨道或线程状态里显示 CPU core 归属。
 5. 看 btrace 方法轨道：业务方法和系统慢段是否在同一窗口。
-6. 看 Binder / I/O / GC：是否有跨进程、磁盘或回收事件插入。
+6. 看 Binder / I/O / GC：是否有跨进程、磁盘或 GC 事件插入。
 
-如果主线程没有运行，最长方法就不是主因。比如线程 runnable 但长时间不上 CPU，问题可能来自系统负载或优先级竞争；如果主线程卡在 Binder，问题可能在对端进程；如果卡在 I/O，方法名只能告诉你调用入口，文件和系统状态还要另查。
+如果主线程没有运行，最长方法就不是主因。线程 runnable 但长时间不上 CPU → 问题在系统负载或优先级竞争；主线程卡在 Binder → 问题在对端进程；主线程卡在 I/O → 方法名只告诉你调用入口，文件和系统状态还得另查。
 
 ## 启动慢样本的分析模板
 
@@ -197,7 +199,7 @@ btrace 3.0 的 PC 侧命令参数直接影响 trace 内容。常见参数可以�
 | 首帧前 | measure/layout/draw、图片解码、首屏数据 |
 | 首帧后 | 延迟初始化、异步任务、后台线程争抢 CPU |
 
-btrace 的价值在于把这些业务阶段的函数栈和 Perfetto 的系统事件放在一起。比如启动 P95 抬升，如果 trace 显示 `Application.onCreate()` 里方法耗时变长，但 CPU 轨道显示线程一直 runnable 却拿不到 CPU，修复方向可能是减少启动并发或延迟后台初始化，单纯删除局部代码未必有效。
+btrace 的价值在于把业务函数栈和 Perfetto 系统事件放在同一时间轴。比如启动 P95 抬升，trace 显示 `Application.onCreate()` 里方法耗时变长，但 CPU 轨道显示线程一直 runnable 却拿不到 CPU——修复方向可能是减少启动并发或延迟后台初始化，单纯删局部代码未必有效。
 
 ## 滑动卡顿样本的分析模板
 
@@ -223,7 +225,7 @@ trace("Feed#bindViewHolder") {
 
 ## 采样 trace 的误判
 
-采样式 tracing 的结论有边界：
+采样式 tracing 有天然边界：
 
 - 采样间隔会影响能否看到短函数。
 - buffer 满后旧样本可能被覆盖。

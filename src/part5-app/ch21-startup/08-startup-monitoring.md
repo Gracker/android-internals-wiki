@@ -47,6 +47,8 @@ last_task6_audit: "2026-07-14T23:06:00+08:00"
 last_task6_review_log: "logs/review/2026-06-03-03-review.md"
 task6_review_notes: "2026-06-03 Task6 复审：pass-light-edit。L1/L2 复审通过；禁用词扫描仅有 `线上分位值` 假阳性；锚点覆盖完整。Task9 仍 pending/needs-rework，未自动晋升。"
 task9_review_notes: "2026-06-03 Task9 深度复审：pass-tech-review。P0 0 / P1 0 / P2 0；ApplicationStartInfo、reportFullyDrawn 与 Android Vitals 启动阈值口径复核通过，自动晋升 finalized。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-17
 ---
 
 # 启动监控与度量
@@ -76,7 +78,7 @@ task9_review_notes: "2026-06-03 Task9 深度复审：pass-tech-review。P0 0 / P
 
 ## 为什么要了解启动监控与度量
 
-21.1 到 21.7 节已经拆过启动链路、任务编排、ContentProvider、Baseline Profile、Splash Screen、延迟初始化和多进程启动。剩下的工程问题：**优化完成后，怎么在线上持续判断启动有没有变快、有没有退化、退化由谁引入**。
+§21.1–§21.7 已经拆过启动链路、任务编排、ContentProvider、Baseline Profile、Splash Screen、延迟初始化和多进程启动。剩下的工程问题只有一个：**优化完成后，怎么在线上持续判断启动有没有变快、有没有退化、退化是谁引入的**。
 
 启动监控不是在 `Application.onCreate()` 前后打两个点。`Application` 只能覆盖 App 代码开始执行后的区间，漏掉了进程创建、Zygote fork、类加载、资源加载、首帧绘制和用户感知完成等关键阶段。线上度量要把系统口径、业务口径和用户体感放在一张表里，否则容易出现 Trace 里变快、用户仍觉得慢的情况。
 
@@ -92,7 +94,7 @@ task9_review_notes: "2026-06-03 Task9 深度复审：pass-tech-review。P0 0 / P
 | TTID（Time To Initial Display） | 启动请求 | 首帧可见 | 判断用户何时看到第一屏 | 首屏可见不代表内容可用 |
 | TTFD（Time To Full Display） | 启动请求 | `reportFullyDrawn()` 对应的内容就绪点 | 判断用户何时能使用核心内容 | 依赖业务准确上报，漏报会让数据失真 |
 
-Android 官方文档把启动分为冷启动、温启动和热启动，并建议用首帧展示时间与完全绘制时间观察启动体验。`Activity.reportFullyDrawn()` 是 TTFD 的标准上报入口，适合在首屏核心数据、首屏列表或首个可交互区域准备完成后调用。[已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
+Android 官方把启动分为冷启动、温启动和热启动，用首帧展示时间与完全绘制时间衡量启动体验。`Activity.reportFullyDrawn()` 是 TTFD 标准上报入口，在首屏核心数据、首屏列表或首个可交互区域就绪后调用。
 
 21.1 节已经解释冷 / 温 / 热启动的系统链路。这里保留引用关系：启动类型由启动原因、进程是否存活、Activity 是否复用共同决定，不在业务代码里用单个布尔值粗暴判断。
 
@@ -109,13 +111,12 @@ Android 官方文档把启动分为冷启动、温启动和热启动，并建议
 | `content_ready` | 首屏核心内容可用时 | 页面、数据来源、是否缓存命中 | 业务口径的可用时间，适合映射到 TTFD |
 | `report_fully_drawn` | 调用 `Activity.reportFullyDrawn()` 处 | 是否首次调用、调用时机 | 系统口径的完全绘制时间 |
 
-[已验证: 官方文档, developer.android.com/reference/android/app/Activity#reportFullyDrawn()]
 
 这里有两个常见误区。
 
-第一，不能为了更早埋点而随意新增一个 `ContentProvider`。`ContentProvider` 会在 `Application.onCreate()` 之前初始化，本身也会增加启动成本。已有 21.3 节专门讲 ContentProvider 启动治理，本节只建议在已存在的基础设施入口中记录极轻量时间戳，不为了监控增加新的启动组件。
+第一，不要为了更早埋点新增 `ContentProvider`。`ContentProvider` 在 `Application.onCreate()` 之前初始化，本身也有启动成本。§21.3 专门讲了 ContentProvider 启动治理，本节只建议在已有基础设施入口中记录极轻量时间戳，不为监控引入新的启动组件。
 
-第二，`onResume()` 不是首帧。`onResume()` 表示 Activity 进入可交互生命周期，不代表第一帧已经完成合成。首帧至少要结合 `ViewTreeObserver.OnPreDrawListener`、`Choreographer` 或平台侧展示日志来校验。线上 SDK 可以记录近似点，线下诊断仍要回到 Perfetto / Android Studio Profiler 里看 `Choreographer#doFrame`、主线程和 RenderThread 的时序。
+第二，`onResume()` 不是首帧。`onResume()` 只表示 Activity 进入可交互生命周期，第一帧的合成可能还在后面。首帧至少要结合 `ViewTreeObserver.OnPreDrawListener`、`Choreographer` 或平台侧日志校验。线上 SDK 记录近似点，线下诊断回到 Perfetto / Android Studio Profiler 看 `Choreographer#doFrame`、主线程和 RenderThread 的时序。
 
 ### 埋点字段清单
 
@@ -138,7 +139,7 @@ Android 官方文档把启动分为冷启动、温启动和热启动，并建议
 
 ### 分位值比平均值更适合启动监控
 
-启动耗时分布通常是长尾分布。少数低端机、升级后首次启动、弱网拉取配置、数据库迁移和冷路径 I/O 会把平均值拉高。只看平均值会误判两个方向：一个版本 P50 变好但 P99 变差，平均值可能不明显；另一个版本只有少数用户退化，平均值也可能被大量热启动样本掩盖。
+启动耗时是典型长尾分布。低端机、升级后首次启动、弱网拉取配置、数据库迁移、冷路径 I/O 这几类长尾会把平均值拉上去。只看平均值容易在两个方向误判：P50 变好但 P99 变差时，平均值变化不明显；少量用户退化时，平均值也可能被大量热启动样本稀释。
 
 线上看板建议固定展示四个分位值：
 
@@ -225,9 +226,9 @@ Android 官方文档把启动分为冷启动、温启动和热启动，并建议
 
 ### Android 15+ 的平台启动信息
 
-Android 15 起，平台增加了应用启动信息相关 API（`ApplicationStartInfo`，added in API 35），用于提供启动类型、启动原因、时间戳等信息。获取入口是 `ActivityManager.getHistoricalProcessStartReasons(int)` 或 `addApplicationStartInfoCompletionListener()`。核心字段包括 `getReason()`、`getStartType()`、`getStartupState()`、`getStartupTimestamps()`；时间戳为 monotonic nanoseconds，覆盖 `START_TIMESTAMP_FORK` / `BIND_APPLICATION` / `APPLICATION_ONCREATE` / `FIRST_FRAME` / `FULLY_DRAWN` 等阶段。[已验证: Android Developers reference, API 35; Task9 确认 2026-05-17]
+Android 15 起，平台增加了应用启动信息相关 API（`ApplicationStartInfo`，added in API 35），用于提供启动类型、启动原因、时间戳等信息。获取入口是 `ActivityManager.getHistoricalProcessStartReasons(int)` 或 `addApplicationStartInfoCompletionListener()`。核心字段包括 `getReason()`、`getStartType()`、`getStartupState()`、`getStartupTimestamps()`；时间戳为 monotonic nanoseconds，覆盖 `START_TIMESTAMP_FORK` / `BIND_APPLICATION` / `APPLICATION_ONCREATE` / `FIRST_FRAME` / `FULLY_DRAWN` 等阶段。
 
-`addApplicationStartInfoCompletionListener()` 的完成回调以 first frame drawn 为边界，不等待业务调用 `Activity.reportFullyDrawn()`。如果要用平台时间戳校准 TTFD / FULLY_DRAWN，必须先在业务内容可用后调用 `reportFullyDrawn()`，再通过 `getHistoricalProcessStartReasons()` 或后续拿到的 `ApplicationStartInfo` 副本读取 `START_TIMESTAMP_FULLY_DRAWN`；否则这个时间戳可能不存在。[已验证: Android Developers ActivityManager/ApplicationStartInfo reference, API 35]
+`addApplicationStartInfoCompletionListener()` 的完成回调以 first frame drawn 为边界，不等待业务调用 `Activity.reportFullyDrawn()`。如果要用平台时间戳校准 TTFD / FULLY_DRAWN，必须先在业务内容可用后调用 `reportFullyDrawn()`，再通过 `getHistoricalProcessStartReasons()` 或后续拿到的 `ApplicationStartInfo` 副本读取 `START_TIMESTAMP_FULLY_DRAWN`；否则这个时间戳可能不存在。
 
 它适合补齐 App 自建埋点拿不到的系统侧起点，但只能覆盖 Android 15+ 设备，线上监控仍需要保留 Android 10-14 的兼容采集路径。
 
@@ -245,7 +246,6 @@ Google Play Android Vitals 会统计应用启动时间，并按启动类型给�
 | 温启动 | ≥ 2 秒 | 进程可能存在，但 Activity 需要重新创建或恢复 |
 | 热启动 | ≥ 1.5 秒 | 进程和 Activity 状态较完整，用户期望更快返回 |
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
 
 这些阈值是 Play 侧的外部基线，不适合作为团队内部唯一目标。内部发版门禁通常要更严格：冷启动 P90 要低于 Vitals 阈值，并且核心入口的 TTFD 要满足业务可用标准。对启动体验敏感的首页、支付页、拍摄页，要单独设更低阈值。
 
