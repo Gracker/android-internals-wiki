@@ -4,7 +4,7 @@ title: HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
 chapter: 14.22
 status: finalized
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 last_task6_at: "2026-07-17T12:14:00+08:00"
 last_task6_audit: "2026-06-30"
