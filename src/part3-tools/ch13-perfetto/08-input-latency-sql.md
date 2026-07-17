@@ -47,6 +47,8 @@ last_task9_review_log: "logs/deep-review/2026-06-04-06-deep-review.md"
 last_task6_at: "2026-06-05T08:10:00+08:00"
 last_task6_audit: "2026-07-05"
 task6_review_notes: '2026-06-04 Task6 18:15: pass-light-edit(revisit#2). Task9 auto-fix confirmed OK; sources frontmatter fixed (empty entries replaced with actual URLs). L1/L2 pass. No new rework items. Sending to Task9 for final confirmation.'
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-17
 ---
 
 # 13.8 Perfetto 输入延迟 SQL 深度分析
@@ -94,7 +96,7 @@ dispatch_latency_dur、handling_latency_dur、ack_latency_dur、total_latency_du
 
 本节的目标是提供一套完整的 SQL 工具集：从基本查询到高级分析，从单次 Trace 到批量对比，覆盖输入延迟排障的绝大多数场景。
 
-[交叉引用: §3.4 输入延迟与预测输入技术 — 本节是 §3.4 中"Perfetto 分析方法"的 SQL 深度展开]
+> 本节是 §3.4 输入延迟分析方法在 SQL 维度的深度展开。
 
 
 ## android.input 模块的表结构
@@ -108,8 +110,6 @@ INCLUDE PERFETTO MODULE android.input;
 ```
 
 这个模块在 Perfetto 的标准库中，不需要额外配置。它封装了输入系统的多个 trace event，将其聚合为结构化的 SQL 表。
-
-[已验证: perfetto.dev/docs/analysis/sql-tables/android-input]
 
 
 ### android_input_events 表族
@@ -172,8 +172,6 @@ LIMIT 20;
 | `android_key_events` | `id, event_id, ts, arg_set_id, source, action, device_id, display_id, key_code` | 某次 key event 何时进入系统、按键码是什么、原始参数存在哪个 `arg_set_id` |
 
 `event_id` 是原始 inputevent 数据源里的 long 型 ID，`arg_set_id` 仍然指向 `args` 表中的事件详情。坐标、pointer properties、policy flag 这类 proto 细节仍然要从 `arg_set_id` 继续解包；但 `source`、`action`、`device_id`、`display_id`，以及 key event 的 `key_code` 已经可以直接作为公开列查询。
-
-[已验证: Perfetto stdlib docs android_key_events / android_motion_events]
 
 ### android_input_event_dispatch（窗口分发表）
 
@@ -276,7 +274,7 @@ FROM android_input_events
 WHERE total_latency_dur IS NOT NULL;
 ```
 
-**参考值示例**：Pixel 7 / Android 14 / 60Hz / 主线程无阻塞 / 滑动场景 / 2000 样本
+以下参考值来自 Pixel 7 / Android 14 / 60Hz / 主线程无阻塞 / 滑动场景 / 2000 样本：
 | 阶段 | P50 | P95 | P99 |
 |------|-----|-----|-----|
 | dispatch | < 1 ms | < 3 ms | < 5 ms |
@@ -339,9 +337,10 @@ ORDER BY queue_length DESC, duration_ms DESC
 LIMIT 50;
 ```
 
-[已验证: `iq`=InputDispatcher inbound queue；`oq:<channel>`=connection outboundQueue，等待 publish 到目标 input channel，持续堆积通常表示目标连接/pipe/backpressure 使发送推进不了；`wq:<channel>`=connection waitQueue，事件已发送给 App，等待 App finish/ACK，也是 dispatching timeout/ANR 响应性判断的核心队列。不同 Perfetto 版本和厂商构建可能改写 track name，查询时以当前 trace 的 `track.name` 为准]
+不同 Perfetto 版本和厂商构建可能改写 track name，查询时以当前 trace 的 `track.name` 为准。
 
-[图：Perfetto 中 InputDispatcher 的 iq/oq/wq counter track 示例——三个 counter 分别以不同颜色显示在 InputDispatcher 线程下方，标注 iq 堆积 > 5 的时段和对应的 App 主线程耗时操作]
+
+这三个队列的含义是：`iq`（inbound queue）等待 InputDispatcher 分发；`oq:<channel>`（outbound queue）等待 publish 到目标 input channel，持续堆积通常表示目标连接存在 backpressure；`wq:<channel>`（wait queue）是已发给 App 等待 finish/ACK 的事件，也是 dispatching timeout / ANR 响应性判断的核心指标。
 
 **解读规则**：
 
@@ -386,14 +385,11 @@ FROM pre_anr_events;
 
 `ms_to_anr` 越小，说明事件越接近 ANR 触发点。若 `handling_ms` 从几个毫秒逐渐抬到几十或上百毫秒，通常意味着 App 主线程在 ANR 前已经持续退化；若 `dispatch_ms` 持续抬高，则要回头检查 system_server 侧调度和输入分发线程。
 
-[已验证: Perfetto SQL 支持 WITH 子句和子查询]
-
-[交叉引用: §9.1 ANR 设计思想 — 输入 ANR 的超时机制详解]
+> 输入 ANR 的超时机制详见 §9.1。
 
 
 ## Choreographer 与 Input 的时序关联
 
-[图：Perfetto 中输入事件与 Choreographer doFrame 匹配的时间线——上方是 android_input_events 的 dispatch/handling/ack 切片，下方是同一线程的 Choreographer#doFrame 切片，标注 input_to_frame 的时间间隔]
 
 ### 输入事件到帧渲染的精确关联
 
@@ -470,7 +466,7 @@ LIMIT 200;
 
 不同 Android 版本、App 埋点方式和 trace 配置下，callback slice 的命名可能不一样。先枚举、再过滤，命中率更高。
 
-[交叉引用: §2.4 Choreographer 与渲染流水线 — doFrame 回调机制详解]
+> doFrame 回调机制详见 §2.4。
 
 ## 常用 SQL 模板集
 
@@ -558,7 +554,7 @@ LIMIT 50;
 
 第二步通过 `thread_track` 把 `slice.track_id` 关联到目标线程，再用 `process.name` 锁定目标进程。这样可以避免把其他线程或其他进程的 slice 混进 ANR 前主线程耗时列表。
 
-[交叉引用: §9.3 ANR 分析方法 — 完整的 ANR 分析流程]
+> 完整的 ANR 分析流程详见 §9.3。
 
 
 ### 模板 3：冷启动输入响应分析
@@ -588,7 +584,7 @@ WHERE input.dispatch_ts BETWEEN cold_start.start_ts AND cold_start.end_ts
 ORDER BY input.dispatch_ts ASC;
 ```
 
-[交叉引用: §8.2 App 启动全流程 — 冷启动的性能分析详解]
+> 冷启动性能分析详见 §8.2。
 
 ## 与 13.5 专题解读的衔接
 
@@ -608,14 +604,13 @@ ORDER BY input.dispatch_ts ASC;
 
 **推荐的组合工作流**：
 
-[图：SQL → Perfetto UI 的组合分析工作流示意——左半部分是 SQL 查询返回的异常事件列表（含 timestamp_ms 列），右半部分是 Perfetto UI 中导航到对应时间点后的完整时间线视图，标注从 SQL 结果的时间戳到 UI 中定位的映射关系]
 
 1. 先用本节的 SQL 模板定位异常事件（最慢的 N 个、延迟分布异常的时间段）
 2. 记录异常事件的时间戳，回到 Perfetto UI 中导航到对应位置
 3. 在 UI 中查看该时间点前后的完整上下文（CPU 调度、内存、Binder 调用等）
 4. 确定根因后，用 SQL 做量化验证（修复前后对比）
 
-[交叉引用: §13.5 专题解读 — Perfetto UI 的可视化分析方法]
+> Perfetto UI 的可视化分析方法详见 §13.5。
 
 
 
@@ -756,8 +751,6 @@ echo "Results in $OUTPUT_DIR/"
 
 这里要用未加引号的 heredoc，让 `${filename}` 在进入 Trace Processor 前先由 shell 展开；否则 `trace_name` 会变成字面量 `${filename}`。
 
-[已验证: trace_processor_shell 支持标准 SQL 输入和 CSV 输出]
-
 ### 方法 2：Python + perfetto lib
 
 对于更复杂的分析（如多 Trace 合并、可视化），可以使用 Python API：
@@ -789,8 +782,6 @@ for trace_path in traces:
 for name, stats in results.items():
     print(f"{name}: P50={stats['p50']:.1f}ms, P95={stats['p95']:.1f}ms, P99={stats['p99']:.1f}ms")
 ```
-
-[已验证: perfetto Python 包提供 TraceProcessor API，支持 pandas 输出]
 
 
 ## 参考资料
