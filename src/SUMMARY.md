@@ -179,6 +179,8 @@
   - [22.41 Compose ↔ View 互操作性能实战](part5-app/ch22-rendering-practice/41-compose-view-interop-performance.md)
   - [22.42 SurfaceView 与 TextureView 渲染性能选型实战](part5-app/ch22-rendering-practice/42-surfaceview-textureview-rendering-performance.md)
   - [22.43 Media3 视频播放渲染管线性能实战](part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md)
+  - [22.44 Compose 状态订阅与重组控制实战](part5-app/ch22-rendering-practice/44-compose-state-subscription-recomposition-control.md)
+  - [22.45 Compose LazyGrid 性能优化实战](part5-app/ch22-rendering-practice/45-compose-lazygrid-performance.md)
   - [22.1 UI 渲染性能优化与 Compose 渲染管线](part5-app/ch22-rendering-practice/22.1-ui-rendering-performance-optimization.md)
 
   - [4.22 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.22-android17-ai-agent-memory-sandboxed-data-reuse.md)
@@ -197,6 +199,7 @@
   - [20.27 Kotlin 协程泄漏诊断与结构化并发性能监控](part5-app/ch20-stability/20.27-coroutine-leak-diagnosis-structured-concurrency-performance.md)
   - [20.1 应用稳定性监控与异常处理](part5-app/ch20-stability/20.1-app-stability-monitoring-practices.md)
   - [20.28 第三方 SDK 性能影响评估与治理实战](part5-app/ch20-stability/28-sdk-performance-governance.md)
+  - [20.29 Crash 报告 SDK 架构选型与 tombstone 解析实战](part5-app/ch20-stability/29-crash-sdk-architecture-tombstone-parsing.md)
 
 
 #   - [8.33 Android 17 模块化启动框架与依赖图优化](src/part1-fundamentals/ch08-startup/8.33-android17-modular-startup-dependency-graph.md)

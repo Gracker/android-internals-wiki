@@ -1,11 +1,11 @@
 {
-  "total": 833,
-  "draft": 71,
+  "total": 837,
+  "draft": 75,
   "ready-for-review": 264,
   "in-review": 0,
   "final": 0,
-  "last_updated": "2026-07-17T22:08:19+08:00",
-  "last_action": "task2a-draft: 4.50 LMKD v2 PSI 分层内存压力治理",
+  "last_updated": "2026-07-17T23:25:59+08:00",
+  "last_action": "task2a-gap-mining: 22.44, 22.45, 20.29, 24.22 (4 new sections)",
   "task2b": {
     "last_run": "2026-07-17T14:52:59+08:00",
     "last_chapter": "14.22",
