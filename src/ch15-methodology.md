@@ -1,27 +1,23 @@
 ---
-
-
-
-
-title: Android 性能优化研究方法论
+title: "Android 性能优化研究方法论"
 chapter: "15"
-status: finalized
-applicable_versions: Android 8-17 (API 26-37)
-last_verified_against: AOSP android-17.0.0_r1, Android Developers 文档, Perfetto 官方文档, 官方性能博客
+status: "finalized"
+applicable_versions: "Android 8-17 (API 26-37)"
+last_verified_against: "AOSP android-17.0.0_r1, Android Developers 文档, Perfetto 官方文档, 官方性能博客"
 tags: [performance, methodology, perfetto, profiling, optimization, android]
-task9_result: pass-tech-review
-task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-07-13
+task9_result: "needs-rework"
+task6_result: "pass-light-edit"
+task6_state: "revisiting"
+task9_state: "pending"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-07-13"
 last_task9_at: "2026-07-14T05:20:00+08:00"
-task9_audit_type: deep-review
-last_task9_review_log: logs/deep-review/2026-07-13-20-deep-review.md
-pipeline_stage: ready-to-publish
-task2b_state: fixed
-last_task6_at: 2026-07-14T09:19:57+08:00
-last_task6_review_log: logs/review/2026-07-14-07-review.md
+task9_audit_type: "deep-review"
+last_task9_review_log: "logs/deep-review/2026-07-13-20-deep-review.md"
+pipeline_stage: "task6_pending"
+task2b_state: "fixed"
+last_task6_at: "2026-07-14T09:19:57+08:00"
+last_task6_review_log: "logs/review/2026-07-14-07-review.md"
 task6_review_notes_final: "2026-07-02 Task6 revisiting-review round3 (post-Task2B-structural): pass-light-edit. L1 fix×3 (关键是→要, 链路→链, 舒服→自我安慰). L2 pass. No B-class issues. Auto-promoted: task9=pass, queue=completed."
 task6_review_notes_round4: "2026-07-03 Task6 revisiting-review round4 (post-Task2B-content-rework + Task9-autofix): pass-light-edit. L1 clean (banned-word scan: 0 real hits, 3 false positives). L2 pass (opening direct, structure clear, breathing points adequate). L3/L4: no B-class writing issues. FrameRateOverrides section (4.4) well-written, SQL examples properly formatted. DeviceConfig section (3.2) clean. Auto-promotion blocked: task9_result=auto-fixed (not pass-tech-review). Sent to Task9 for final tech confirmation."
 task6_review_notes_round5: "2026-07-04 Task6 revisiting-review round5 (post-Task2B-lite-fix source path prefix): pass-light-edit. L1 clean (banned-word scan: 0 real hits; 矩阵=priority matrix false positive, 上分=substring of 线上分布 false positive). High-freq words all within limits. Restricted patterns: 2 (at limit). Structural meta-narrative: 0. Code blocks: all properly tagged (bash/sql). L2 pass (opening direct, rhythm good, structure clear, reader takeaways solid). L3 pass (evidence-backed, actionable SQL/bash examples, original frameworks). L4 pass (natural Chinese, peer-to-peer tone, no translation feel). No L1/L2 fixes needed this round. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Sent to Task9 for final tech confirmation."
@@ -32,25 +28,26 @@ task6_review_notes_round9: "2026-07-13 Task6 revisiting-review round9: pass-ligh
 task6_review_notes_round10: "2026-07-14 Task6 revisiting-review round10 (post-Task2B SoC narrative integration): pass-light-edit. L1 clean (banned-word scan: 0 real hits; 矩阵=priority matrix false positive, 上分=substring of 线上分布 false positive). High-freq words all within limits (彻底×1=不彻底 legitimate, 真正×1=contrastive legitimate). Restricted patterns: 2 (not...而是 at limit, stable since round5). Structural meta-narrative: 0. L2 pass (opening direct, rhythm good, structure clear, breathing points adequate). L3 pass (SoC section 4.1 properly integrated into narrative, source-anchored to android-17.0.0_r1, frameworks like 3-tier baseline and 5-Whys walkthrough intact). L4 pass (natural Chinese, peer-to-peer tone, no translation feel, no AI-pattern sentences). No L1/L2 fixes needed this round. No B-class writing issues. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Pipeline sent to Task9 for final tech confirmation."
 task6_review_notes_round11: "2026-07-14 Task6 revisiting-review round11 (post-Task2B P1×4+P2×2+禁用词修复): pass-light-edit. L1 clean (banned-word scan: 0 real hits; 矩阵=priority matrix false positive, 上分=substring of 线上分布 false positive). High-freq words all within limits (真正×1=legitimate, 彻底×1=不彻底 legitimate). Restricted patterns: 2 (不是X而是Y at limit, stable since round5). Structural meta-narrative: 0. Adjective+colon: 0. L2 pass (opening direct, rhythm good, structure clear, breathing points adequate). L3 pass (SoC vendor comparison table well-structured, SQL examples actionable, source paths anchored to android-17.0.0_r1, 5-Whys walkthrough intact, SDM cross-reference clean). L4 pass (natural Chinese, peer-to-peer tone, no translation feel, no AI-pattern sentences). No L1/L2 fixes needed this round. No B-class writing issues. Auto-promotion blocked: task9_result=needs-rework (not pass-tech-review). Pipeline sent to Task9 for final tech confirmation."
 task6_review_notes_round12: "2026-07-14 Task6 revisiting-review round12 (post-Task9 autofix): pass-light-edit. L1 fix×1 (heading level: ### 4. → ## 4. to match all other top-level sections). Banned-word scan: 0 real hits (矩阵=priority matrix false positive, 上分=substring of 线上分布 false positive, 问题是=part of 5W2H framework false positive). High-freq words all within limits. Restricted patterns: 2 (not...而是 at limit, stable since round5). Structural meta-narrative: 0. Adjective+colon: 0. L2 pass (opening direct, rhythm good, structure clear after heading fix, breathing points adequate). L3 pass (evidence-backed with SQL/bash examples, source anchored to android-17.0.0_r1, SoC vendor comparison intact, 5-Whys walkthrough solid). L4 pass (natural Chinese, peer-to-peer tone, no translation feel, no AI-pattern sentences). No B-class writing issues. Auto-promotion blocked: task9_result=auto-fixed (not pass-tech-review). Pipeline sent to Task9 for final tech confirmation."
-task2b_result: fixed
+task2b_result: "fixed"
 task2b_verifier_note: "2026-07-04T15:29:52+08:00 task9_state reviewed→pending: Task6 round7 已通过并发送至 Task9 复审，task9_state 应为 pending"
-last_task2b_at: 2026-07-14T08:56:47+08:00
-last_task2b_lite_at: 2026-07-04
-task9_task6_review_notes: | 2026-07-02 Task6 re-review (revisiting): needs-rework。L1 修复 4 处（禁用词+空壳章节）。B 类问题：章节整体为百科词条式罗列、案例数据疑似编造、Section 12 内容空泛、缺少 Perfetto 实战维度。已写入 queue priority:90。 | 2026-07-03 17:27 Task9 复核：16:32 入队的 2 条 P85（FrameRateOverrides + persist.traced.enable fallback）仍然成立，本节继续走 Task 2B。不在本轮新增 P0/P1。
+last_task2b_at: "2026-07-17T22:54:05+08:00"
+last_task2b_lite_at: "2026-07-04"
+task9_task6_review_notes: "| 2026-07-02 Task6 re-review (revisiting): needs-rework。L1 修复 4 处（禁用词+空壳章节）。B 类问题：章节整体为百科词条式罗列、案例数据疑似编造、Section 12 内容空泛、缺少 Perfetto 实战维度。已写入 queue priority:90。 | 2026-07-03 17:27 Task9 复核：16:32 入队的 2 条 P85（FrameRateOverrides + persist.traced.enable fallback）仍然成立，本节继续走 Task 2B。不在本轮新增 P0/P1。"
 review_notes: "2026-06-27 Task2B Lite: 曾修复 Perfetto 版本描述与 ADB 命令版本限定；2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Perfetto/traced 命令入口、服务启用边界与 Android 17 CLI 选项；回 Task6 复审。 | 2026-07-02 Task2B 主修复：结构性回炉——去百科化、移除编造案例数据、删除泛化云原生/5G/边缘计算内容、补充 Perfetto SQL 实战示例。 | 2026-07-02 Task9 Deep Review AUTO-FIX: 修正 Perfetto CLI detached/background 语义与 trace_processor SQL join/schema 示例；回 Task6 复审。 | 2026-07-03 17:27 Task9 复核：2 项 P1 仍成立（FrameRateOverrides、persist.traced.enable fallback），已在 queue.json 中持有 P85 entry 2 条，本轮未新增，继续走 Task 2B 闭环。"
-last_task9_audit: 2026-07-16
+last_task9_audit: "2026-07-17"
 last_task9_autofix_at: "2026-07-02"
 task2b_fixed_at: "2026-07-02T20:56:40+08:00"
-last_idle_audit_at: 2026-07-12T10:52:42+08:00
-last_task6_audit: 2026-07-16
-last_task9_audit_log: logs/deep-review/2026-07-12-10-idle-audit.md
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-14
+last_idle_audit_at: "2026-07-17T22:24:56.238668"
+last_task6_audit: "2026-07-16"
+last_task9_audit_log: "logs/deep-review/2026-07-17-22-idle-audit.md"
+deepseek_cn_review_state: "done"
+last_deepseek_cn_review_at: "2026-07-14"
 task2b_lite_notes: "2026-07-04 Task2B Lite (07:35轮): 修正 VSync 偏移源码引用(VSyncTracker.cpp单文件→VSyncDispatch/VSyncModulator/VSyncTracker三组件协作); 补充 5W2H 与工具选择的原理桥接段落(section 2.2)。P95 from deep-review 2026-07-04-07. | 2026-07-04 Task2B Lite: 修正 Perfetto 源码路径前缀缺失（src/perfetto_cmd/perfetto_cmd.cc → external/perfetto/src/perfetto_cmd/perfetto_cmd.cc; src/traced/service/service.cc → external/perfetto/src/traced/service/service.cc）。P1 from deep-review 2026-07-04-00."
 task2b_main_round_20260714: "2026-07-14 Task2B 主修复: P1×4(AOSP路径验证澄清+Android 17边界标记+数据来源声明+交叉引用补全)+P2×2(SDM参考+构建系统引用)。子章节15.5/15.7版本基线android-16→android-17.0.0_r1。禁用词修复(底层→实现)。"
 task2b_main_notes_20260714: "2026-07-14T08:56:47+08:00 Task2B 主修复 (P95): 修正 §3.2 traced 参数边界描述——区分 CLI 启动选项（--background/--version/--set-socket-permissions/--enable-relay-endpoint）和 socket 协议层缓冲区配置（TraceConfig.buffers[].size_kb）。明确 -b/--async 为 perfetto CLI 选项，由 CLI 填入 TraceConfig 后通过 socket 发给 traced，而非 traced 命令行参数。"
 task2b_main_notes: "2026-07-14 AIW 源码调研集成：将文末 AIW-源码调研-2026-07-07 段落中 Power HAL AIDL v7/HintManagerService/BatteryStatsService 三层内容以叙述风格融入 section 4.1 SoC 分层讨论，删除裸行号引用，替换为函数名+行为描述。 | 2026-07-04 Task2B 主修复：P0-删除不存在的debug.perfetto.enabled属性修正DeviceConfig描述；P1-补充heapprofd构建类型说明/SQL验证说明/案例数据免责声明；P2-新增Android14+隐私限制节(3.3)+跨厂商Perfetto差异节(3.4)+FrameRateOverrides与WindowManager交互+VSync offset源码锚点"
----
+----
+
 
 # Android 性能优化研究方法论
 
@@ -173,7 +170,7 @@ adb shell perfetto --attach=my_trace --stop
 
 `external/perfetto/src/perfetto_cmd/perfetto_cmd.cc` 中 `perfetto` CLI 接受的参数：`-c/--config`、`-o/--out`、`-t/--time`、`-b/--buffer`、`-d/--background`、`-D/--background-wait`、`--detach/--attach`。`external/perfetto/src/traced/service/service.cc` 中 `traced` 只处理服务端启动选项 `--background`、`--version`、`--set-socket-permissions`、`--enable-relay-endpoint`。缓冲区配置不经过 CLI 参数——`perfetto` CLI 通过 socket 将 `TraceConfig`（含 `buffers[].size_kb`）发送给 `traced`，`traced` 再根据配置内部分配和管理缓冲区。因此 `traced` 不接受客户端命令行传来的 `-b` 或 `--async`。
 
-**Android 17（API 37）Perfetto 启用方式的变化**：**Android 17（API 37，基于 android-17.0.0_r1）**的 Perfetto 控制机制在 `persist.traced.enable=1`（AOSP init rc 方式）基础上，通过 DeviceConfig 框架提供了更细粒度的运行时控制能力。DeviceConfig 允许在无需 root 的条件下，按数据源粒度动态开关 Perfetto 的生产者——例如仅在需要分析内存时启用 heapprofd，避免全局 tracing 的持续性能开销。
+**Android 17（API 37）Perfetto 启用方式的变化**：**Android 17（API 37，基于 android-17.0.0_r1）**的 Perfetto 控制机制在 `persist.traced.enable=1`（AOSP init rc 方式）基础上，通过 DeviceConfig 框架提供了更细粒度的运行时控制能力。`persist.device_config.global_settings.sys_traced` 可以在无需 root 的条件下控制 `traced`/`traced_probes` 的启停，适合在非 root 的 user build 设备上按需调整全局 tracing 服务。heapprofd 独立于 traced，由 `persist.heapprofd.enable=1` 或 `traced.lazy.heapprofd=1` 单独控制（受 SELinux 约束，见 §4.3）。
 
 ```bash
 # 查询当前 Perfetto traced 启用状态（兼容多版本）
@@ -183,7 +180,37 @@ adb shell getprop persist.traced.enable
 adb shell device_config list perfetto
 ```
 
-注意：`device_config` 的具体 key 取决于设备厂商的配置覆盖，Pixel 设备与 AOSP 参考实现可能不一致。`persist.traced.enable=1` 在 Android 17 中仍然是 AOSP 默认推荐方式，DeviceConfig 提供附加的运行时控制能力，适合在非 root 的 user build 设备上按需调整数据源。
+注意：`device_config` 的具体 key 取决于设备厂商的配置覆盖，Pixel 设备与 AOSP 参考实现可能不一致。`persist.traced.enable=1` 在 Android 17 中仍然是 AOSP 默认推荐方式。
+
+#### Perfetto 缓冲区架构与配置策略
+
+Perfetto 的 trace 数据流经三层缓冲区：
+
+1. **Producer 共享内存缓冲区（SMB）**：每个数据生产者进程与 `traced` 之间有一块 1:1 的共享内存。生产者的写入快速路径直接序列化 trace 数据到 SMB 的页中，实现零拷贝写入。SMB 的角色是解耦生产者的写入速度和 `traced` 的搬移速度——即使 `traced` 因调度延迟暂时被阻塞，生产者也能继续写入 SMB，不丢数据。
+
+2. **中央 trace 缓冲区**：由 `TraceConfig.buffers[]` 定义，是 `traced` 内部管理的内存缓冲区。`traced` 从各生产者的 SMB 中搬移 trace packet 到对应名称的中央缓冲区中。每个 `buffers[]` 条目的关键配置：
+   - `size_kb`：缓冲区大小（KB）。缓冲区过小会导致 oldest 数据被覆盖（ring buffer 模式）或采集提前停止（discard 模式）。
+   - `fill_policy`：`RING_BUFFER`（默认，达到上限后覆盖旧数据）或 `DISCARD`（达到上限后拒绝新数据）。长时 trace 应使用 `RING_BUFFER` 配合 `write_into_file`。
+
+3. **ftrace 每 CPU 环形缓冲区**：当开启 `linux.ftrace` 数据源时，内核为每个 CPU 维护独立的 ftrace 环形缓冲区。`traced_probes` 按 `drain_period_ms` 周期性读取这些缓冲区并转换为二进制 protobuf。ftrace 缓冲区需要足够大以容纳两次 drain 之间产生的内核 trace 事件。
+
+长时采集场景下的实用配置组合：
+
+```bash
+# 配置文件示例：30 分钟长时 trace，ring buffer + write_into_file
+# 将以下内容写入 config.pbtxt 后用 perfetto -c config.pbtxt --txt 启动
+buffers {
+  size_kb: 65536    # 64MB 中央缓冲区
+  fill_policy: RING_BUFFER
+}
+duration_ms: 1800000  # 30 分钟
+write_into_file: true  # 周期性将中央缓冲区写入文件，避免 OOM
+flush_period_ms: 30000 # 每 30 秒刷新一次到磁盘
+```
+
+`write_into_file` 配合 `flush_period_ms` 是长时 trace（> 10 分钟）的标准配置：不用把所有 trace 数据都放在内存里，而是周期性地写入磁盘文件，内存中只保留两次 flush 之间的增量。`flush_period_ms` 通常设为 10-30 秒，对应约 10-30 秒内的 trace 数据量。
+
+多数据源场景下的缓冲区隔离：Android 17 支持为不同的数据源指定不同的目标缓冲区（`target_buffer`），通过 `buffers[].name` 命名。例如 sched/gfx 数据写入大容量 ring buffer，heapprofd 的分配数据写入独立的 discard 缓冲区——堆分配数据量可能很大，如果和调度事件混在同一个 ring buffer 中，高频分配会迅速挤掉有价值的调度切片。
 
 ### 3.3 Android 14+ 隐私限制对性能分析的影响
 
@@ -343,7 +370,9 @@ ORDER BY total_bytes DESC
 LIMIT 20;
 ```
 
-heapprofd 需要在 Perfetto config 中显式开启。**构建类型决定 heapprofd 的默认可用性**：AOSP 的 `traced_probes` service 在 `userdebug` 和 `eng` 构建中默认启用 heapprofd 生产者，但在 `user` 构建中默认不拉起——因为 heapprofd 涉及与 zygote 交互和 `/proc/pid/mem` 访问，生产环境出于安全和性能考虑通常不开启。如果要在 user 构建中使用，需要 root 权限手动启动 `traced_probes` 或通过 DeviceConfig 动态启用对应的生产者。
+heapprofd 需要在 Perfetto config 中显式开启数据源。heapprofd 是独立的系统守护进程（`/system/bin/heapprofd`），有自己的 init.rc service 定义，不是 `traced_probes` 的一部分。其启停由系统属性 `persist.heapprofd.enable=1`（或 `traced.lazy.heapprofd=1`）控制，默认 `disabled`。
+
+heapprofd 的核心限制在 SELinux 层：heapprofd 需要 `DAC_READ_SEARCH` capability 才能通过 `/proc/pid/mem` 访问目标进程的堆内存做分配追踪。该 capability 在 AOSP `heapprofd.rc` 中明确标注为 `userdebug_or_eng` only——`user` 构建的 SELinux 策略会拒绝授予此权限。也就是说，在 `user` 构建中即使通过 `persist.heapprofd.enable=1` 启动了 heapprofd 进程，它也没有权限读取目标进程的内存页面，trace 中的 `heap_profile_allocation` 表将为空。要在 user 构建中完整使用 heapprofd，必须使用 `userdebug` 构建或在 SELinux 策略中为 heapprofd 添加相应权限。
 
 开启后 trace 里会包含每个 malloc/free 的调用栈，上面这条 SQL 直接给出 Top 20 内存分配函数。结合分配次数和总字节数，能找到"频繁小分配"和"偶尔大分配"两类不同的内存问题模式。
 
