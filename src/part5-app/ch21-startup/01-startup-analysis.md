@@ -28,6 +28,7 @@ task6_reviewed_date: "2026-06-02"
 task6_result: "pass-light-edit"
 last_task6_at: "2026-06-04T05:07:00+08:00"
 last_task6_review_log: "logs/review/2026-06-02-07-review.md"
+last_task6_audit: 2026-07-17
 task6_review_notes: "2026-06-04 Task6 revisiting-review: L1/L2 无新增问题，章节整洁。自动晋升 finalized。"
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
@@ -181,7 +182,7 @@ class MyApplication : Application() {
 }
 ```
 
-这段代码只能在开发阶段使用。线上监控需要用 `SystemClock.elapsedRealtime()` 记录时间戳，并通过 APM SDK 上报。注意 `System.nanoTime()` 和 `SystemClock.elapsedRealtime()` 的区别：前者用于测量区间耗时，后者可以跨进程对齐时间线。
+这段代码只能在开发阶段使用。线上监控需要用 `SystemClock.elapsedRealtime()` 记录时间戳，并通过 APM SDK 上报。注意 `System.nanoTime()` 和 `SystemClock.elapsedRealtime()` 的区别：前者用于测量区间耗时，后者可以跨进程使用同一时间基准。
 
 ### Activity.onCreate：布局 inflate 是主要开销
 
@@ -623,7 +624,7 @@ synchronized (mLoaders) {
 > **Android 17 / API 37 为本文最高版本边界**。未读取或引用 Android 18 / API 38+ 内容。
 
 
-## 模块化启动框架与依赖管理（Android 17 源码级闭环）
+## 模块化启动框架与依赖管理（Android 17 源码级全路径）
 
 > 源码调研：`DeepResearch/2026-07-04-android17-modular-startup-framework-dependency-graph.md`
 > 一手源码：`frameworks/base/core/java/android/app/ActivityThread.java`、`LoadedApk.java`、`Application.java`（android-17.0.0_r1）；AndroidX `Initializer.java` / `InitializationProvider.java` / `AppInitializer.java`（androidx-main）
