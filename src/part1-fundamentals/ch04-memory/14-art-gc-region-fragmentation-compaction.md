@@ -42,6 +42,7 @@ gap_source: "DeepResearch 调研结果（score 19）+ AOSP 源码结构"
 last_task2b_lite_at: "2026-06-29"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-30
+last_task6_audit: "2026-07-17"
 ---
 
 # 4.14 ART GC Region 碎片化与 Compaction 策略
@@ -352,7 +353,7 @@ void YoungMarkCompact::RunPhases() {
 }
 ```
 
-由此可见：
+从源码可以看出：
 
 - `YoungMarkCompact` 是 `MarkCompact` 的**轻量级适配器**（thin wrapper / view），不持有独立的 marking / compacting 实现。所有 `MarkObject`、`VisitRoots`、`IsMarked` 等 9 个虚函数在 `YoungMarkCompact` 中均为 `UNIMPLEMENTED(FATAL)`。
 - 触发条件唯一：`MayUseCollector(kCollectorTypeCMC)` ✓ + `use_generational_gc_ == true` ✓ + `gc_type == kGcTypeSticky` 三者同时满足时，`Heap::CollectGarbageInternal` 把 `young_mark_compact_` 注入 GC（`heap.cc:2944`）。
