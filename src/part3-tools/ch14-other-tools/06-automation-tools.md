@@ -1,11 +1,11 @@
 ---
-applicable_versions: Android 8 (API 26) - Android 15 (API 35)
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 chapter: 14.6
 confidence: medium
 drafted_date: 2026-04-04
 last_task2b_at: "2026-05-22T07:21:00+08:00"
 last_task6_at: "2026-06-04T05:07:00+08:00"
-last_task6_audit: 2026-06-15
+last_task6_audit: 2026-07-17
 last_task6_review_log: logs/review/2026-05-22-08-review.md
 last_task9_at: "2026-05-22T07:43:01+08:00"
 last_task9_audit: 2026-05-22
@@ -20,9 +20,21 @@ review_round: 4
 reviewed_by: openclaw-task6
 reviewed_date: "2026-06-04"
 section: 14.6
-sources: 
+sources:
+  - developer.android.com/topic/performance/benchmarking
+  - developer.android.com/topic/performance/benchmarking/macrobenchmark-overview
+  - developer.android.com/topic/performance/benchmarking/microbenchmark-overview
+  - developer.android.com/topic/performance/benchmarking/benchmarking-in-ci
+  - developer.android.com/training/testing/ui-automator
+  - developer.android.com/training/testing/ui-testing/espresso
 status: "finalized"
-tags: 
+tags:
+  - android
+  - benchmark
+  - macrobenchmark
+  - microbenchmark
+  - ci-cd
+  - performance-testing
 task2b_result: fixed
 task2b_state: fixed
 task6_result: "pass-light-edit"
