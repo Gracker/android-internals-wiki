@@ -60,5 +60,19 @@
     "priority": 80,
     "status": "pending",
     "path": "src/part5-app/ch24-io-network/22-okhttp-cronet-ktor-engine-comparison.md"
+  },
+  {
+    "chapter": "22.46",
+    "title": "Compose TextField 文本输入与 IME 动画性能实战",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part5-app/ch22-rendering-practice/46-compose-textfield-ime-performance.md"
+  },
+  {
+    "chapter": "22.47",
+    "title": "Compose 手势与 NestedScrollConnection 性能实战",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part5-app/ch22-rendering-practice/47-compose-nested-scroll-gesture-performance.md"
   }
 ]
