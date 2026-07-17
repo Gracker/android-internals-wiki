@@ -53,7 +53,7 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
 last_task6_at: "2026-04-25T00:00:00+08:00"
 task6_result: "pass-light-edit"
-last_task6_audit: "2026-07-17T08:27:00+08:00"
+last_task6_audit: "2026-07-17T17:20:00+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-25T08:51:01+08:00"
@@ -129,7 +129,7 @@ task2b_verifier_result: "status-fix-ready-for-task6"
 
 FPS 是最直觉的流畅性指标:一秒钟内屏幕上成功渲染了多少帧。60Hz 屏幕的理论上限是 60 FPS,120Hz 屏幕是 120 FPS。在 Perfetto 中,可以通过统计 RenderThread 和 SurfaceFlinger 的工作周期来计算实际 FPS。
 
-但 FPS 的问题也很明显:它是平均值。平均值看起来漂亮,不代表体验稳定。
+但 FPS 是平均值——平均值看起来漂亮,不代表体验稳定。
 
 这就是为什么我们做性能分析时,很少只用 FPS。
 
