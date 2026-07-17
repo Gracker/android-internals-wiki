@@ -2,20 +2,23 @@
 
 title: HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
 chapter: 14.22
-status: ready-for-review
-pipeline_stage: task6_pending
+status: finalized
+pipeline_stage: ready-to-publish
 task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_at: "2026-07-17T12:14:00+08:00"
 last_task6_audit: "2026-06-30"
 last_task6_audit_at: "2026-06-30T06:05:00+08:00"
 last_task6_audit_reason: "idle audit: L1零命中, frontmatter 修复 stray dash + CJK-Latin 空格, outline N/A"
-task9_state: pending
-task9_result: auto-fixed
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-07-17T14:52:59+08:00
 last_task2b_lite_at: "2026-07-17"
+last_task9_at: "2026-07-17T15:20:00+08:00"
+last_task9_audit_log: "logs/deep-review/2026-07-17-15-deep-review.md"
+last_task9_result: "pass-tech-review"
 reviewed_by: openclaw-task6
 reviewed_date: 2026-07-17
 drafted_date: 2026-06-07
@@ -23,7 +26,7 @@ drafted_by: openclaw-task2a
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: 2026-06-07
 last_verified_against: AOSP android-17.0.0_r1 + KOOM 2.2.1 + Perfetto docs
-confidence: medium
+confidence: high
 sources: 
   - type: aosp
     path: "art/runtime/hprof/hprof.cc"
@@ -53,7 +56,7 @@ last_task2b_by: task2b-main
 
 本节梳理 Android 上 Java 堆转储（heap dump）从命令到文件的完整路径，以及在 Perfetto 中通过 `java_hprof` 数据源做结构化分析的方式。
 
-堆转储是内存泄漏排查的核心证据。§10.2 讲了泄漏的定义和分类，§14.3 列了内存分析工具清单，§14.14 讲了 Android Studio Memory Profiler 和 LeakCanary 的堆转储分析流程。本节聚焦在更底层的问题：heap dump 在系统内部是怎么产生的、dump 过程对应用有多大影响、以及 Perfetto 如何把原始 hprof 文件转化为可查询的结构化数据。
+堆转储（heap dump）是内存泄漏排查的核心证据。§10.2 讲了泄漏的定义和分类，§14.3 列了内存分析工具清单，§14.14 讲了 Android Studio Memory Profiler 和 LeakCanary 的堆转储分析流程。本节聚焦在更底层的问题：heap dump 在系统内部是怎么产生的、dump 过程对应用有多大影响、以及 Perfetto 如何把原始 hprof 文件转化为可查询的结构化数据。
 
 ## HPROF Heap Dump 调用栈：从 Shell 到 ART
 
@@ -67,7 +70,7 @@ last_task2b_by: task2b-main
 
 `am dumpheap` → `AMS.dumpHeap()` → `IApplicationThread.dumpHeap()` → `ActivityThread.handleDumpHeap()` → `Debug.dumpHprofData()` → `art::Hprof::Dump()`
 
-### Shell 命令层：am dumpheap 参数
+### Shell 命令层：`am dumpheap` 参数
 
 ```bash
 am dumpheap [-n] [-g] [-m] [-b] <pid/package> <output_path>
