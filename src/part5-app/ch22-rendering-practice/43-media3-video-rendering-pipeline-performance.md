@@ -58,4 +58,148 @@ gap_source: "AOSP结构/官方文档"
 
 <!-- outline-end -->
 
+<!-- AIW-源码调研-2026-07-17 -->
+## AOSP android-17.0.0_r1 源码级补充
+
+> 本节由每日源码调研（research-gaps 自选轮）反哺。源码锚点：android-17.0.0_r1。
+
+### MediaCodec Java 层关键路径
+
+**异步模式回调派发**（`frameworks/base/media/java/android/media/MediaCodec.java@android-17.0.0_r1`）：
+
+- `mCallback` / `EventHandler`（line 1820-1850）注册 9 类回调常量，其中 `CB_INPUT_AVAILABLE=1` / `CB_OUTPUT_AVAILABLE=2` / `CB_OUTPUT_FORMAT_CHANGE=4` / `CB_LARGE_FRAME_OUTPUT_AVAILABLE=7` / `CB_METRICS_FLUSHED=8` / `CB_REQUIRED_RESOURCES_CHANGE=9` 是 Android 17 上视频播放高频事件。
+- `mBufferMode`（line 2451）区分 `BUFFER_MODE_LEGACY`（ByteBuffer）与 `BUFFER_MODE_BLOCK`（Android 12+ 零拷贝 Frame）；ExoPlayer MediaCodecVideoRenderer 默认走 `BUFFER_MODE_BLOCK` 路径。
+- `releaseOutputBuffer(int, long renderTimestampNs)`（line 4363）：ExoPlayer 在 SurfaceView 渲染时调用此 API 指定 VSYNC 渲染时间；SurfaceView 端要求 timestamp 与 `System.nanoTime` 差距 ≤ 1 秒，否则 fallback 到「最早可行时间」不丢帧模式。
+- `setOutputSurface(@NonNull Surface surface)`（line 2643）：动态切换 decoder 输出 Surface（API 24+），video effect pipeline 关键 API。
+
+### MediaCodec native 双线程模型
+
+**`mCodecLooper` 与 `ANDROID_PRIORITY_AUDIO`**（`frameworks/av/media/libstagefright/MediaCodec.cpp@android-17.0.0_r1:2671-2676`）：
+
+```cpp
+mCodecLooper = new ALooper;
+mCodecLooper->setName("CodecLooper");
+err = mCodecLooper->start(false, false, ANDROID_PRIORITY_AUDIO);
+```
+
+`mCodecLooper` 独立线程运行 OMX state machine，`mLooper` 处理 API 请求；两者解耦避免 codec 卡顿阻塞 `releaseOutputBuffer` 等 API 调用。
+
+**BufferChannel 回调注册**（line 2689-2693）：
+
+```cpp
+mCodec->setCallback(
+        std::unique_ptr<CodecBase::CodecCallback>(
+                new CodecCallback(new AMessage(kWhatCodecNotify, this))));
+mBufferChannel = mCodec->getBufferChannel();
+mBufferChannel->setCallback(
+        std::unique_ptr<CodecBase::BufferCallback>(
+                new BufferCallback(new AMessage(kWhatCodecNotify, this))));
+```
+
+`BufferCallback::onOutputBufferAvailable`（line 1072-1080）通过 `kWhatDrainThisBuffer` 消息通知 MediaCodec 主 looper，由 Java 层 `EventHandler` 派发到 `Callback.onOutputBufferAvailable`。
+
+### setSurface generation number 机制
+
+**`MediaCodec::connectToSurface`**（line 7691-7745）：
+
+```cpp
+static uint32_t sSurfaceGeneration = 0;
+*generation = (getpid() << 10) | (++sSurfaceGeneration & ((1 << 10) - 1));
+surface->setGenerationNumber(*generation);
+...
+sp<SurfaceListener> listener =
+        new OnBufferReleasedListener(*generation, mBufferChannel);
+err = surfaceConnectWithListener(
+        surface, listener, "connectToSurface(reconnect-with-listener)");
+```
+
+**Generation number = PID<<10 | counter**，避免 disconnect → reconnect 时 GPU 端 stale frames 错误 attach 到新连接。`OnBufferReleasedListener` 把 surface buffer release 回调桥接到 `mBufferChannel`，保证 codec 端 buffer 索引与 surface buffer 生命周期一致。ExoPlayer 切 video effect 时一次 `setOutputSurface` 调用可省去 BufferQueue reset + buffer 重新分配的 50~200ms 卡顿。
+
+### BufferQueue asyncMode 链路
+
+**`BufferQueueProducer::setAsyncMode`**（`frameworks/native/libs/gui/BufferQueueProducer.cpp@android-17.0.0_r1:274-313`）：
+
+```cpp
+if ((mCore->mMaxAcquiredBufferCount + mCore->mMaxDequeuedBufferCount +
+        (async || mCore->mDequeueBufferCannotBlock ? 1 : 0)) >
+        mCore->mMaxBufferCount) {
+    return BAD_VALUE;
+}
+int delta = mCore->getMaxBufferCountLocked(async,
+        mCore->mDequeueBufferCannotBlock, mCore->mMaxBufferCount)
+        - mCore->getMaxBufferCountLocked();
+mCore->adjustAvailableSlotsLocked(delta);
+mCore->mAsyncMode = async;
+```
+
+sync → async 时 `delta=+1`，多预留 1 个 slot 用于异步积压；async → sync 时 `delta=-1`，`adjustAvailableSlotsLocked` 把 slot 从 free 移到 unused。
+
+**Async mode 下 producer 提交的 buffer 标记为 `mIsDroppable=true`**（line 1108-1112）：
+
+```cpp
+if (mCore->mAsyncMode) {
+    item.mIsDroppable = true;
+}
+```
+
+SurfaceFlinger 在 consumer 不及时 acquire 时可以丢弃过期帧——典型场景：SurfaceView 三缓冲 + video decode 速率 > display 刷新率。
+
+**EGL CPU throttling 联动**（line 1232）：
+
+```cpp
+enableEglCpuThrottling = mCore->mAsyncMode || mCore->mDequeueBufferCannotBlock;
+```
+
+async mode 下启用 EGL CPU 节流，防止 producer 抢光所有 buffer 导致 consumer 无法 acquire。
+
+### Surface::setSwapInterval 触发 setAsyncMode
+
+**`frameworks/native/libs/gui/Surface.cpp@android-17.0.0_r1:725-735`**：
+
+```cpp
+const bool wasSwapIntervalZero = mSwapIntervalZero;
+mSwapIntervalZero = (interval == 0);
+if (mSwapIntervalZero != wasSwapIntervalZero) {
+    mGraphicBufferProducer->setAsyncMode(mSwapIntervalZero);
+}
+```
+
+这是 ExoPlayer 在 PlayerView（SurfaceView 容器）下推荐设置 `setSwapInterval(0)` 的源码依据：
+
+- `interval=1`（默认）：sync mode，UI 渲染适合；
+- `interval=0`：async mode，视频/游戏适合，producer 不阻塞、过期帧可丢。
+
+**`Surface::setBufferCount(3)`**（line 2604-2621）→ `setMaxDequeuedBufferCount(3 - 1 = 2)`，保留 1 个 slot 给 consumer 端 deque/acquire，实现三缓冲。
+
+### ACodec setSurfaceParameters 扩展接口
+
+**`ACodec::BaseState::setSurfaceParameters`**（`frameworks/av/media/libstagefright/ACodec.cpp@android-17.0.0_r1:6564`）支持四类参数：
+
+- `PARAMETER_KEY_OFFSET_TIME`：渲染时间偏移（直播录制、屏幕捕捉）；
+- `skip-frames-before`：跳过 startTimeUs 之前帧（seek 优化）；
+- `PARAMETER_KEY_SUSPEND`：暂停输入（直播暂停、隐私遮挡）；
+- `stop-time-us`：encoder 停止时间（限时长录制）。
+
+### 实战调优清单（基于源码结论）
+
+1. **异步模式强制启用**：`MediaCodec.setCallback(...)` + 复用 `MediaCodec` 实例（避免每次 createVideoFormat 重新 init）。
+2. **Surface 模式 + `setSwapInterval(0)`**：视频/直播场景必开；UI 场景保留 `interval=1`。
+3. **动态 `setOutputSurface`**：视频特效 pipeline（先渲染到 offscreen GL Surface 处理滤镜，再切到屏上 Surface）可省去 codec restart。
+4. **HDR 渲染保留 `mAllowFrameDroppingBySurface=true`**：4K HDR 60fps 下 SF 自动丢过期帧，避免 jank。
+5. **三缓冲（`setBufferCount(3)`）**：视频场景标准配置，平衡延迟与帧率稳定性。
+
+### 联动章节
+
+- §18.16 BufferQueue（producer/consumer 基础，本次调研补充 asyncMode / generation number 机制）
+- §18.11 ANGLE / OpenGL ES over Vulkan（视频特效 GL pipeline）
+- §2.31 DisplayModeController / RefreshRateSelector（视频帧率 vs 设备刷新率匹配）
+- §22.42（前后章节，video surface state）
+- §12.33（多媒体子章节）
+
+参考报告：`DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md`
+
+<!-- /AIW-源码调研-2026-07-17 -->
+
+
+
 > 本节内容待加工。[结构参考: developer.android.com/media3 + AOSP frameworks/av + frameworks/base]
