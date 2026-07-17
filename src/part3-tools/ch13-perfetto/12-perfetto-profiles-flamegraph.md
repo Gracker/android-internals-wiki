@@ -42,6 +42,8 @@ p2: 0
 updated_by: "openclaw-task9"
 updated_date: "2026-07-11"
 task9_review_notes: "2026-07-11 Task9 idle-audit AUTO-FIX: P0 1 / P1 0 / P2 0；修正 Perfetto v54.0 `traceconv bundle` 示例中不存在的 `--proguard-map` CLI 参数，改为 v54 源码支持的 `PERFETTO_PROGUARD_MAP` + `--symbol-paths` 路径，并将外部格式/CPU profiling/traceconv 参考锚定到 v54.0。回到 Task6 复审。详见 logs/deep-review/2026-07-11-04-audit.md。"
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-17
 ---
 
 # 13.12 Perfetto Profile 导入与 Flamegraph 分析
@@ -207,20 +209,16 @@ traceconv bundle \
 
 ## DataGrid 与 SQL 标准库补充
 
-v54 把 profile 相关的输入格式和 SQL 能力又向前推了一步：Trace Processor 支持 Collapsed Stack、Firefox Profiler preprocessed JSON；SQL 标准库新增 `heap_graph_stats`、Jank CUJ、counter-based weighted jank metrics；UI 侧则增强 DataGrid、pivot table、glob filter 和 snap-to-boundaries。
+v54 继续扩展了 profile 输入格式和 SQL 能力 [已验证: Perfetto v54 Release Notes]，对日常分析有价值的几项是：
 
-[已验证: Perfetto v54 Release Notes]
+- **Collapsed Stack**：可导入 Brendan Gregg FlameGraph 体系的 `main;foo;bar 100` 文本。适合迁移旧资料，但缺时间轴时只能做热点参考。
+- **Firefox Profiler preprocessed JSON**：可承接 Linux perf 或 Android simpleperf 转出的 profile。跨工具对照时有用；如果已有 Simpleperf protobuf，应优先走 v53 原生导入。
+- **R8 retracing**：提升 Java/Kotlin 混淆栈的还原质量。必须和 `mapping.txt`、构建版本绑定，不能跨版本复用。
+- **`heap_graph_stats` + dmabuf**：内存 profile 与图形内存统计查询更方便，可与 10.x、14.3、14.9 章节联动分析 Camera / Bitmap / GPU 内存。
+- **Jank CUJ 与 weighted jank metrics**：把 profile 热点和 CUJ 级 jank 指标放进同一个分析框架，可用标准库替代手写重复 SQL（参见 7.x、13.8、13.10）。
+- **DataGrid / pivot / filter**：降低 SQL 结果的探索成本。适合先快速分组找规律，稳定查询再固化到 13.10 的 SQL 模板。
 
-| v54 能力 | 和本节的关系 | 使用建议 |
-|---|---|---|
-| Collapsed Stack format | 可导入 Brendan Gregg FlameGraph 体系的 `main;foo;bar 100` 文本 | 适合迁移旧 profile 资料；缺时间轴时只做热点参考 |
-| Firefox Profiler preprocessed JSON | 可承接 Linux perf、Android simpleperf 转出的 Firefox profile | 适合跨工具对照；如果已有 Simpleperf protobuf，优先走 v53 原生导入 |
-| R8 retracing | 提升 Java/Kotlin 混淆栈还原质量 | 和 `mapping.txt`、构建版本绑定，不能跨版本复用 |
-| `heap_graph_stats` + dmabuf | 内存 profile 与图形内存统计更易查询 | 和 10.x、14.3、14.9 章节联动，分析 Camera / Bitmap / GPU 内存 |
-| Jank CUJ 与 weighted jank metrics | 把 profile 热点和 CUJ 级 jank 指标放到同一分析框架 | 和 7.x、13.8、13.10 联动，用标准库替代手写重复 SQL |
-| DataGrid / pivot / filter | 降低 SQL 结果探索成本 | 适合先快速分组，再把稳定查询固化到 13.10 的 SQL 模板 |
-
-这些能力不替代 SQL 工作流。DataGrid（SQL table viewer）和 pivot table 适合探索数据结构，最终要复用的诊断结论仍应落成 SQL：目标进程、时间窗、线程、sample 数、帧预算和证据截图要能重复生成。
+这些能力不替代 SQL 工作流。DataGrid 和 pivot table 是探索工具，最终要复用的诊断结论仍应落成 SQL：目标进程、时间窗、线程、sample 数、帧预算和证据截图要能重复生成。
 
 ## 大 Trace 分析工作流
 
@@ -275,7 +273,7 @@ v54 的 Firefox Profiler 和 Collapsed Stack 支持，解决的是历史 profile
 
 Profile 与 system trace 的结合点在时间窗。FrameTimeline 给出异常帧，Binder slice 给出跨进程等待，GC slice 给出停顿区间，profile sample 再说明目标线程在窗口内把 CPU 花在哪里。
 
-[自动发现] 一套简化模板是：
+一套简化模板是：
 
 - **FrameTimeline → profile**：先选异常帧的 `ts + dur`，只看这段内主线程和 RenderThread 的 sample，确认 CPU 热点是否落在 layout/draw、Compose recomposition、bitmap decode 或业务计算。
 - **Binder → profile**：先定位长 Binder transact，再看客户端线程是否在 CPU 上执行序列化/反序列化，服务端线程是否在同窗内有 CPU 热点。

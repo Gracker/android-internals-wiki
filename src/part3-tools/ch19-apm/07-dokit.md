@@ -36,6 +36,8 @@ last_task2b_at: "2026-04-27T04:40:00+08:00"
 review_notes: "2026-04-27 Task9 复审通过：DoKit README 版本矩阵、registerTransform/AGP8 风险、OkHttp ASM 注入、PerformanceDataManager 采样口径与 dokit.cn 出站边界已覆盖。"
 last_deepseek_polish_at: 2026-05-26
 deepseek_polish_state: done
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-17
 ---
 
 # DoraemonKit / DoKit

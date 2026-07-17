@@ -137,5 +137,15 @@
       "status": "pending",
       "path": "src/part5-app/ch21-startup/19-device-tier-performance-strategy.md"
     }
+  ],
+  "queue": [
+    {
+      "chapter": "26.29",
+      "title": "JVMTI Agent — ART 运行时动态监控接口与线上方法追踪",
+      "path": "src/part5-app/ch26-observability/29-jvmti-agent-art-runtime-dynamic-monitoring.md",
+      "priority": 80,
+      "source": "task2a-gap-mining",
+      "created_date": "2026-07-17"
+    }
   ]
 }
