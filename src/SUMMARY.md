@@ -207,6 +207,7 @@
 
   - [25.29 DEX 体积优化实战](part5-app/ch25-power-size/29-dex-size-optimization.md)
   - [25.30 Native SO 体积优化实战](part5-app/ch25-power-size/30-native-so-size-optimization.md)
+  - [25.31 资源文件体积优化实战](part5-app/ch25-power-size/31-resource-file-size-optimization.md)
 附录
 
 - [附录 G：Android 性能学习路线](appendix/android-performance-learning-path.md)

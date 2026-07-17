@@ -292,6 +292,30 @@
       "gap_source": "Clippings参考书+logd源码+AOSP日志体系",
       "gap_score": 15,
       "created_date": "2026-07-17"
+    },
+    {
+      "chapter": "27.2",
+      "title": "线程池优化与 CPU 利用率提升实战",
+      "path": "src/part5-app/ch27-2-thread-pool-cpu-utilization.md",
+      "priority": 80,
+      "gap_score": 18,
+      "created_date": "2026-07-17"
+    },
+    {
+      "chapter": "27.3",
+      "title": "任务调度优先级与 CPU 亲和性实战",
+      "path": "src/part5-app/ch27-3-task-scheduling-priority-affinity.md",
+      "priority": 80,
+      "gap_score": 16,
+      "created_date": "2026-07-17"
+    },
+    {
+      "chapter": "25.31",
+      "title": "资源文件体积优化实战",
+      "path": "src/part5-app/ch25-power-size/31-resource-file-size-optimization.md",
+      "priority": 80,
+      "gap_score": 15,
+      "created_date": "2026-07-17"
     }
   ]
 }
