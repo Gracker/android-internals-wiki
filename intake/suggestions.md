@@ -1,11 +1,17 @@
-## [Task9 Deep Review] 14.3 内存分析工具 — 2026-07-17
+## [Task9 Deep Review] 1.15 JNI/NDK 性能优化 — 2026-07-17
 - **类型**：源码准确性
-- **位置**：malloc debug 小节
-- **问题**：源码路径过时，bionic/libc/memory/malloc_debug 在 Android 17 中已移至 system/memory/libmeminfo
-- **建议**：更新源码引用路径为 system/memory/libmeminfo 并注明路径变更原因
+- **位置**：官方基准值引用部分
+- **问题**：文章提到"官方公开表仍停在2016年的`angler-userdebug`"，但没有明确标注这是AOSP官方文档引用，可能被误解为AOSP源码数据
+- **建议**：在对应位置添加"(引用自 developer.android.com)"明确标识来源
 
-## [Task9 Deep Review] 14.3 内存分析工具 — 2026-07-17
+## [Task9 Deep Review] 1.15 JNI/NDK 性能优化 — 2026-07-17
 - **类型**：版本差异
-- **位置**：MTE 三种模式表格下方
-- **问题**：未说明 Android 17 中的默认行为变更，引入了更严格的 MTE 默认策略
-- **建议**：补充 Android 17 的默认行为变更说明
+- **位置**：Android 16 (API 36) 版本演进表
+- **问题**：标注"本轮核对未发现新的 public JNI annotation 语义变化"，但未明确说明核查的具体AOSP版本范围
+- **建议**：补充说明核查依据，明确是否已验证android-17.0.0_r1
+
+## [Task9 Deep Review] 1.15 JNI/NDK 性能优化 — 2026-07-17
+- **类型**：数据支撑
+- **位置**：16KB page size 性能收益段落
+- **问题**："16KB page size 对性能确实有正向收益"提到官方测试数据，但缺少具体测试环境描述
+- **建议**：补充数据来源链接或详细测试条件（设备型号、样本数量、测试方法）
