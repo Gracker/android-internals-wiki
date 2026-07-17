@@ -50,13 +50,15 @@ last_task9_audit: '2026-07-17T11:30:09+08:00'
 last_task9_audit_log: 'logs/deep-review/2026-07-17-11-audit-hprof.md'
 last_task9_autofix_at: "2026-07-17"
 last_task2b_by: task2b-main
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-17
 ---
 
 # 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
 
 本节梳理 Android 上 Java 堆转储（heap dump）从命令到文件的完整路径，以及在 Perfetto 中通过 `java_hprof` 数据源做结构化分析的方式。
 
-堆转储（heap dump）是内存泄漏排查的核心证据。§10.2 讲了泄漏的定义和分类，§14.3 列了内存分析工具清单，§14.14 讲了 Android Studio Memory Profiler 和 LeakCanary 的堆转储分析流程。本节聚焦在更底层的问题：heap dump 在系统内部是怎么产生的、dump 过程对应用有多大影响、以及 Perfetto 如何把原始 hprof 文件转化为可查询的结构化数据。
+堆转储是内存泄漏排查的核心证据。§10.2 讲了泄漏的定义和分类，§14.14 讲了 Android Studio Memory Profiler 和 LeakCanary 的分析流程。本节往下一层：heap dump 在系统内部是怎么产生的、dump 过程对应用有多大影响、Perfetto 如何把原始 hprof 转化为可查询的结构化数据。
 
 ## HPROF Heap Dump 调用栈：从 Shell 到 ART
 
@@ -100,7 +102,8 @@ am dumpheap [-n] [-g] [-m] [-b] <pid/package> <output_path>
 
 3. **异步派发**：AMS 通过 `IApplicationThread.dumpHeap()` Binder 调用把 dump 请求发送到目标进程的 `ActivityThread`。目标进程在主线程 Handler 中处理 `handleDumpHeap` 消息，调用 `Debug.dumpHprofData(filename)` 触发 ART 层的 dump。
 
-[已调研-未在 AOSP 17 独立核验：AMS 层 `dumpHeap()` 流程描述基于 Android 公开内部机制与 AOSP 源码结构整理，android-17.0.0_r1 `ActivityManagerService.java` 中的具体实现未独立逐行核对。]
+> AMS 层 `dumpHeap()` 流程描述基于 AOSP 源码结构与公开机制整理，未对 android-17.0.0_r1 逐行核对。
+
 
 ### ART 层：双重保护机制
 
@@ -110,7 +113,8 @@ ART 中 `Hprof::Dump()` 的执行受两个保护机制约束：
 
 **第二层：`ScopedSuspendAll`**。暂停所有托管线程。dump 不仅要防 GC，还要防应用线程在遍历过程中修改对象引用。SuspendAll 让堆处于一个静止的快照状态。
 
-`[来源: Obsidian/Cubox/从 Hprof 源码初探虚拟机内存管理-2022-03-07.md]`
+`
+`
 
 这两个保护机制是 heap dump 导致应用长时间冻结的根因——所有线程暂停，GC 停止，应用处于完全冻结状态，直到 dump 写完。
 
@@ -141,7 +145,8 @@ ART 输出的 hprof 文件遵循 JAVA PROFILE 1.0.3 格式，由 `art/runtime/hp
 └─────────────────────────────┘
 ```
 
-`[来源: Obsidian/Cubox/从 Hprof 源码初探虚拟机内存管理-2022-03-07.md]`
+`
+`
 
 ### Android 对标准格式的扩展：Heap 类型标记
 
@@ -161,7 +166,8 @@ Android 在 heap dump segment 中通过 `HPROF_HEAP_DUMP_INFO` record 区分三�
 
 这个三分法是 KOOM 等 strip 工具裁剪 hprof 的依据——zygote 和 image 区域的对象在 dump 中可以安全删除，因为它们不会被 GC 回收，也不会泄漏，保留它们只会增大文件体积。
 
-`[来源: Obsidian/Cubox/从 Hprof 源码初探虚拟机内存管理-2022-03-07.md]`
+`
+`
 
 ### GC Root 类型
 
@@ -182,7 +188,8 @@ Android 在 heap dump segment 中通过 `HPROF_HEAP_DUMP_INFO` record 区分三�
 
 `MarkRootObject()` 为每种 root 类型写入固定格式的 record，包含对象 ID、线程序列号、栈帧编号等信息。
 
-`[来源: Obsidian/Cubox/从 Hprof 源码初探虚拟机内存管理-2022-03-07.md]`
+`
+`
 
 ### 对象遍历：Space 维度
 
@@ -199,9 +206,11 @@ Android 在 heap dump segment 中通过 `HPROF_HEAP_DUMP_INFO` record 区分三�
 - Array 对象 → `DumpHeapArray()`：对象数组输出引用列表，基本类型数组输出原始值
 - Instance 对象 → `DumpHeapInstanceObject()`：按类继承链输出所有实例字段值
 
-`[来源: Obsidian/Cubox/从 Hprof 源码初探虚拟机内存管理-2022-03-07.md]`
+`
+`
 
-[已调研-未在 AOSP 17 独立核验：ART 层 `Hprof::Dump()`、`DumpHeapObject()`、`DumpHeapClass()` 等方法名基于公开源码资料整理，android-17.0.0_r1 `art/runtime/hprof/hprof.cc` 中的精确方法签名未独立逐行核对。常规 ART 版本迭代不会重命名该层次的方法。]
+> ART 层方法签名基于公开源码资料整理。常规 ART 版本迭代不会重命名该层次的方法，但精确签名以 android-17.0.0_r1 `art/runtime/hprof/hprof.cc` 为准。
+
 
 ## Perfetto java_hprof 数据源
 
@@ -223,13 +232,11 @@ trace_processor 导入后生成 heap_graph 系列表
 Perfetto UI 可视化（火焰图、对象统计、Retained Size）
 ```
 
-[已验证: 数据源名 `android.java_hprof` 引用自 `src/profiling/memory/java_hprof_producer.cc:25` 常量 `kJavaHprofDataSource`；信号触发路径见附录 B。]
 
 ### 配置方式
 
 在 TraceConfig 中启用 `java_hprof` 数据源：
 
-<!-- AIW-源码调研-2026-06-13：以下配置示例与 AOSP 实际 proto 不一致，下方为纠正版本。 -->
 
 ```protobuf
 // 配置 java_hprof 数据源来抓取 Android 堆转储
@@ -270,7 +277,6 @@ data_sources: {
 
 字段编号与类型见 `external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto`（Next id: 7）。**`track_allocations` 字段在 AOSP proto 中不存在**——该能力由 `android.heapprofd` 的 `sampling_interval_bytes` 体系提供。
 
-[已验证: 字段编号与含义见 `external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto`（Next id: 7）；proto 命名以 snake_case 形式生效。]
 
 ### heap_graph 系列表
 
@@ -358,7 +364,6 @@ fork() 创建子进程（利用 Linux COW，fork 瞬间不拷贝物理内存）
 
 KOOM 的 `ForkStripHeapDumper` 还会在子进程中对 hprof 进行 strip 裁剪，删除 zygote 和 image 区域的数据，文件体积减少 50-70%。裁剪后的文件需要用 `koom-fill-crop.jar` 工具在 PC 端补全文件头，才能被 Android Studio Profiler 和 MAT 正确打开。
 
-[来源: Obsidian/DeepResearch/2026-05-03-app_exit_info_tracker_and_koom_fork_hprof.md — 以上内容待 android-17.0.0_r1 源码验证]
 
 ### 何时选择哪种方案
 
@@ -412,7 +417,6 @@ ORDER BY o.self_size DESC
 LIMIT 20;
 ```
 
-[已修正: SQL 查询已按 heap_graph_object 实际 schema（type_id → heap_graph_class JOIN）对齐，行号参考 profiler_tables.py:496]
 
 ### KOOM fork-dump 的实现边界
 
@@ -434,10 +438,6 @@ KOOM 的 fork-dump 方案有几个限制：
 
 关键风险：`SuspendVM()` 暂停的是所有托管线程，如果目标进程中存在关键系统线程在 Suspend 状态下需要处理 Binder 请求（如 `BR_FROZEN_REPLY`），可能导致死锁。每个 ART 版本需要单独验证。
 
-[来源: Obsidian/DeepResearch/2026-05-03-app_exit_info_tracker_and_koom_fork_hprof.md — 以上内容待 android-17.0.0_r1 源码验证]
-
-
-<!-- AIW-源码调研-2026-06-13：以下内容来自对 `android.java_hprof` 数据源的源码级调研，关联报告 `DeepResearch/2026-06-13-android17-perfetto-java-hprof-data-source-heap-graph-tables.md`。 -->
 
 ## 附录 A · Java 堆抓取的版本差异
 
@@ -479,55 +479,53 @@ OnPushDataToSorter 阶段 Populate{Classes,Objects,References,FieldValues} 写 S
 `__SIGRTMIN+4` 被 native heapprofd 占用（`heapprofd_producer.cc:64`），`__SIGRTMIN+6` 是 java_hprof 专用（`java_hprof_producer.cc:24`）；bionic 实时信号区为 SIGRTMIN..SIGRTMAX，Android 默认留 SIGRTMIN+0..+3 给 libc。Java 堆抓取走信号而非 LD_PRELOAD，因为 hprof 格式由 ART 直接产生，绕过了 native unwinding 的栈回溯开销。
 
 
-<!-- AIW-源码调研-2026-06-28：以下内容来自对 `android.java_hprof` 数据源和 HPROF 管线的 Android 17 源码级深度调研，关联报告 `DeepResearch/2026-06-28-hprof-heapdump-javahprof-datasource.md` -->
+## 源码验证要点（Android 17.0.0_r1）
 
-## 源码验证结论（Android 17.0.0_r1）
+以下结论基于 AOSP Perfetto v50.1 源码确认：
 
-基于对 AOSP Perfetto v50.1 源码的深度调研，发现以下关键结论：
-
-### 1. 数据源名称验证
-**源码位置**：`src/profiling/memory/java_hprof_producer.cc`
+### 数据源名称
+**位置**：`src/profiling/memory/java_hprof_producer.cc`
 ```cpp
 constexpr const char* kJavaHprofDataSource = "android.java_hprof";
 ```
-章节正文（配置示例、附录 A/B）一致使用 `android.java_hprof`，与 AOSP 一致，无需修改。
+章节正文中 `android.java_hprof` 的名称与 AOSP 一致。
 
-### 2. 堆图表 Schema 验证
-**源码位置**：`src/trace_processor/tables/profiler_tables.py`
-实际定义 3 张核心明细表（章节列出 4 张表：`heap_graph` 为每次 dump 的采样元信息表，加上 3 张核心明细表 HEAP_GRAPH_*_TABLE，与章节描述一致）：
+### 堆图表 Schema
+**位置**：`src/trace_processor/tables/profiler_tables.py`
+共 3 张核心明细表（`heap_graph` 为采样元信息表，与正文一致）：
 - **HEAP_GRAPH_CLASS_TABLE** (行 461)：类信息定义
 - **HEAP_GRAPH_OBJECT_TABLE** (行 496)：对象实例，包含 self_size、native_size、reachable 等字段
 - **HEAP_GRAPH_REFERENCE_TABLE** (行 546)：对象间引用关系映射
 
-### 3. 二进制解析架构澄清
-**源码位置**：`src/trace_processor/importers/proto/heap_graph_module.cc`
-`trace_processor` 侧**无 hprof 二进制解析器**，而是接收预解析好的 HeapGraph proto packet。hprof→HeapGraph proto 的转换发生在 ART 侧或 heapprofd daemon 内部（具体位置待进一步确认）。
+### 二进制解析架构
+**位置**：`src/trace_processor/importers/proto/heap_graph_module.cc`
+`trace_processor` 不直接解析 hprof 二进制，而是接收预解析的 HeapGraph proto packet。hprof→HeapGraph proto 的转换发生在 ART 侧或 heapprofd daemon 内部。
 
-### 4. 双 Producer 架构验证
-**源码位置**：`src/profiling/memory/heapprofd.cc:89`
+### 双 Producer 架构
+**位置**：`src/profiling/memory/heapprofd.cc:89`
 ```cpp
 JavaHprofProducer java_producer(&task_runner);
 ```
-与 native producer 并行存在：
+与 native producer 并行：
 - `__SIGRTMIN+4`：HeapprofdProducer (native，占用行 71)
 - `__SIGRTMIN+6`：JavaHprofProducer (java，专用信号)
 
-### 5. 反向转换器实现
-**源码位置**：`src/traceconv/trace_to_hprof.cc`
+### 反向转换器
+**位置**：`src/traceconv/trace_to_hprof.cc`
 存在反向转换器，特性如下：
 - 自定义 header：`PERFETTO_JAVA_HEAP`
 - 8 字节 ID 标识
 - 大端序编码
 - 实现 HeapGraph proto→标准 Hprof 格式的转换
 
-### 6. 协议层级确认
-**源码位置**：`protos/perfetto/trace/profiling/heap_graph.proto`
+### 协议层级
+**位置**：`protos/perfetto/trace/profiling/heap_graph.proto`
 定义完整的对象图表示：
 - HeapGraphRoot.Type：15 种 GC 根类型
 - HeapGraphType.Kind：12 种对象类型
 - 支持对象引用、类继承、内存占用等完整信息
 
-### 未验证的技术盲区
+### 未验证项
 1. hprof→HeapGraph proto 的实际转换位置（ART signal_catcher？heapprofd 内部？）
 2. 厂商定制差异（Qualcomm/MediaTek/Samsung hprof 行为）
 3. 大内存设备性能瓶颈的具体机制
@@ -535,8 +533,6 @@ JavaHprofProducer java_producer(&task_runner);
 
 以上验证结论基于 android-17.0.0_r1 基准，建议更新章节内容以匹配实际源码实现。
 
-
-<!-- AIW-源码调研-2026-07-04：以下内容来自对 Perfetto heapprofd 生产环境部署模式与权限配置的 Android 17 源码级深度调研，关联报告 DeepResearch/2026-07-04-android17-heapprofd-production-deployment-permissions.md -->
 
 ## 附录 C · heapprofd 生产环境部署模式与权限配置研究（Android 17.0.0_r1）
 

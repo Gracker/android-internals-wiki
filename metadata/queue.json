@@ -79,6 +79,21 @@
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-07-17T06:14:31.983422",
       "status": "pending"
+    },
+    {
+      "section": "8.19",
+      "section_title": "端到端触控延迟优化实战",
+      "priority": 80,
+      "reason": "[Task2A 知识缺口挖掘] 触控延迟全链路优化实战，素材来自 Cubox 技术文章 + Part 1 ch03 理论章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Android 触控时延优化-2026-07-16.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch03-input/02-touch-performance.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch03-input/09-input-latency-budget-perception.md"
+      ],
+      "added_by": "task2a-knowledge-gap",
+      "added_at": "2026-07-17T20:23:14+08:00",
+      "status": "pending"
     }
   ],
   "in_progress": [],
