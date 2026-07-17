@@ -241,6 +241,18 @@ fork 之后依赖的仍然是 Copy-on-Write。共享页不写就不复制，所�
 - **Android 13**：引入 `startApexServices()` 独立阶段，APEX 模块（ART、Media 等）可以在开机阶段独立更新，不再随 system 分区整体升级。ART APEX 的更新会直接影响 Zygote 预加载的 dexpreopt 产物路径。
 - **Android 13**：Perfetto 的 boot trace 配置改进，增加了更多 init 阶段的 atrace hook。
 - **Android 15**：Cloud Profiles 作为 Mainline 模块推送给设备，首次启动时编译产物可能依赖云端下发的 profile，不再只依赖本地 Baseline Profile。OTA 后首启的 dex2oat 策略随之变化。[待验证：Cloud Profiles 对 Pixel 设备首启耗时的量化影响]
+<!-- AIW-源码调研-2026-07-17 -->
+
+**源码级补充（android-17.0.0_r1）：** Cloud Profiles 在 AOSP 内部没有独立名字，而是 ART Mainline APEX (`com.android.art`) 通过 Play Store 推送的三类产物的统称：(1) `/data/system/cloud-profile/<pkg>.prof`（prebuilt profile）；(2) `/data/misc/art/<pkg>/<isa>/cloud_*.{odex,vdex,art}`（cloud dexopt artifacts）；(3) `/data/staged_dexopt_*`（pre-reboot staged files）。
+
+SystemServer 与 ART Mainline 的第一个真正耦合点在 `startBootstrapServices()` 的第 1195 行 `ArtModuleServiceInitializer.setArtModuleServiceManager(new ArtModuleServiceManager())`，目的是在 `DexUseManagerLocal` 初始化前 force trigger class linker，避免后续 `PackageManagerService` 启动期间与 GC 互相阻塞（b/263486535）。
+
+是否触发整包 dexopt 由 `DexOptHelper.performPackageDexOptUpgradeIfNeeded()` 决策（`frameworks/base/services/core/java/com/android/server/pm/DexOptHelper.java`）：仅在 `isFirstBoot()` / `isDeviceUpgrading()` / `hasBcpApexesChanged()` 三个条件之一命中时才进入分支调用 `ArtManagerLocal.onBoot(reason, ...)`；普通启动直接 return。`artManager.onBoot(...)` 注释明确说"This method is blocking. It takes about 30 seconds to a few minutes"。
+
+SystemServer 全局聚合入口是 `ArtManagerLocal.snapshotBootImageProfile(snapshot)`（`ArtManagerLocal.java` 第 887 行），扫描三类环境变量 `BOOTCLASSPATH` / `SYSTEMSERVERCLASSPATH` / `STANDALONE_SYSTEMSERVER_JARS`，把 system_server 与所有应用 ref/cur profile 合并到 `data/misc/profman/boot-image.prof`。`frameworks/base/services/art-profile`（4711 行 HSPL/HPL）则是 system_server 自带的固化 hot/startup 方法表，被 `services.jar` 装入后给 dex2oat 提供 speed-profile 的输入。
+
+**结论**：Cloud Profiles 不改 SystemServer 服务启动顺序，只在 `startOtherServices()` 末尾的 `updatePackagesIfNeeded()` 里串接一次 30s~几分钟的阻塞式 dexopt。Pixel 设备首启耗时的量化数据**仍未一手核对**，进一步量化建议直接抓取 `event log` 的 `boot_complete_*` 与 `dex2oat_*` 事件，参见 8.3 节。
+
 - **Android 16**：profileable build 配置的变化影响 Zygote 预加载的命中路径；AutoFDO（Automatic Feedback-Directed Optimization）与 Baseline Profile 协同优化，对冷启动有额外改善。具体数据参见 8.3 节。
 - **Android 16（Cloud Compilation / SDM）**：Google Play 在应用安装和更新场景下向设备分发预编译的 `.odex` / `.vdex` 产物（Software Distribution Manager, SDM），减少安装时本地 `dex2oat` 的 CPU 开销，对低端设备的安装体验改善明显。公开资料目前只覆盖应用侧的安装和更新流程；系统 OTA 后首次开机是否也走 SDM 通道，尚无公开 AOSP 或官方文档支撑，不应把 SDM 等同于"OTA 后全机免编译"。
 
