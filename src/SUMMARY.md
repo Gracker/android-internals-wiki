@@ -129,6 +129,8 @@
   - [11.1 Android 17 网络性能优化实战](part2-performance/ch11-network-optimization/11.1-Android 17 网络性能优化实战.md)
 
 - [第 9 章：ANR 监控与分析](src/part2-performance/ch09-anr/README.md)
+  - [9.1 ANR 检测机制与监控告警](src/part2-performance/ch09-anr/9.1-anr-detection-monitoring-alerting.md)
+  - [9.1 ANR 检测机制与监控告警](part2-performance/ch09-anr/9.1-anr-detection-monitoring-alerting.md)
   - [9.1 Android ANR 机制概述](src/part2-performance/ch09-anr/01-anr-intro.md)
   - [9.2 ANR 类型与触发条件](src/part2-performance/ch09-anr/02-anr-types.md)
   - [9.3 ANR 分析方法](src/part2-performance/ch09-anr/03-anr-analysis.md)
@@ -146,6 +148,7 @@
 
 - [23.13 应用虚拟内存优化实战](part5-app/ch23-memory-practice/13-virtual-memory-optimization.md)
   - [23.26 ART 堆内存分布与 OOM 触发路径实战](part5-app/ch23-memory-practice/23.26-art-heap-distribution-oom-trigger-path.md)
+  - [23.1 内存管理策略与 OOM 防护](part5-app/ch23-memory-practice/23.1-memory-management-strategy-oom-defense.md)
 
 ---
 
@@ -156,6 +159,7 @@
   - [21.17 Startup Insights API 与启动性能可观测性](part5-app/ch21-startup/17-startup-insights-api-observability.md)
   - [21.18 缓存优化实战：冷热端分离与 CPU 缓存命中率](part5-app/ch21-startup/18-cache-optimization-cpu-locality.md)
   - [21.19 设备分级性能策略实战](part5-app/ch21-startup/19-device-tier-performance-strategy.md)
+  - [21.1 启动优化策略与冷启动链路](part5-app/ch21-startup/21.1-cold-start-optimization-strategy.md)
   - [17.9 SoC 特异性功耗优化策略：高通/联发科/三星](part4-system/ch17-oem/09-soc-specific-power-optimization.md)
   - [17.21 Android 17 SoC 厂商 Power HAL 与 schedutil 闭环](part4-system/ch17-oem/17.21-android17-soc-vendor-power-hal-schedutil-loop.md)
   - [22.30 Impeller Shader 编译性能与 Flutter 渲染稳定性](part5-app/ch22-rendering-practice/30-impeller-shader-compilation-flutter.md)
@@ -172,6 +176,7 @@
   - [22.41 Compose ↔ View 互操作性能实战](part5-app/ch22-rendering-practice/41-compose-view-interop-performance.md)
   - [22.42 SurfaceView 与 TextureView 渲染性能选型实战](part5-app/ch22-rendering-practice/42-surfaceview-textureview-rendering-performance.md)
   - [22.43 Media3 视频播放渲染管线性能实战](part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md)
+  - [22.1 UI 渲染性能优化与 Compose 渲染管线](part5-app/ch22-rendering-practice/22.1-ui-rendering-performance-optimization.md)
 
   - [4.22 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.22-android17-ai-agent-memory-sandboxed-data-reuse.md)
   - [14.28 GPU 性能分析进阶 — 跨厂商计数器标准化与工作负载剖析](part3-tools/ch14-other-tools/28-gpu-performance-profiling-advanced.md)
@@ -187,6 +192,7 @@
   - [20.25 线程泄漏与匿名线程监控实战](part5-app/ch20-stability/25-thread-leak-anonymous-thread-monitoring.md)
   - [20.26 Native 内存泄漏线上监控实战](part5-app/ch20-stability/26-native-memory-leak-online-monitoring.md)
   - [20.27 Kotlin 协程泄漏诊断与结构化并发性能监控](part5-app/ch20-stability/20.27-coroutine-leak-diagnosis-structured-concurrency-performance.md)
+  - [20.1 应用稳定性监控与异常处理](part5-app/ch20-stability/20.1-app-stability-monitoring-practices.md)
 
 #   - [8.33 Android 17 模块化启动框架与依赖图优化](src/part1-fundamentals/ch08-startup/8.33-android17-modular-startup-dependency-graph.md)
   - [4.36 Android 17 高级内存优化与治理](src/part1-fundamentals/ch04-memory/4.36-android17-advanced-memory-optimization.md)

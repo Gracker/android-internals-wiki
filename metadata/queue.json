@@ -183,6 +183,51 @@
       "priority": 80,
       "status": "pending",
       "path": "src/part5-app/ch21-startup/19-device-tier-performance-strategy.md"
+    },
+    {
+      "chapter": "21.1",
+      "title": "启动优化策略与冷启动链路",
+      "path": "src/part5-app/ch21-startup/21.1-cold-start-optimization-strategy.md",
+      "priority": 80,
+      "source": "task2a-gap-mining",
+      "created_date": "2026-07-17",
+      "status": "pending"
+    },
+    {
+      "chapter": "22.1",
+      "title": "UI 渲染性能优化与 Compose 渲染管线",
+      "path": "src/part5-app/ch22-rendering-practice/22.1-ui-rendering-performance-optimization.md",
+      "priority": 80,
+      "source": "task2a-gap-mining",
+      "created_date": "2026-07-17",
+      "status": "pending"
+    },
+    {
+      "chapter": "20.1",
+      "title": "应用稳定性监控与异常处理",
+      "path": "src/part5-app/ch20-stability/20.1-app-stability-monitoring-practices.md",
+      "priority": 80,
+      "source": "task2a-gap-mining",
+      "created_date": "2026-07-17",
+      "status": "pending"
+    },
+    {
+      "chapter": "23.1",
+      "title": "内存管理策略与 OOM 防护",
+      "path": "src/part5-app/ch23-memory-practice/23.1-memory-management-strategy-oom-defense.md",
+      "priority": 80,
+      "source": "task2a-gap-mining",
+      "created_date": "2026-07-17",
+      "status": "pending"
+    },
+    {
+      "chapter": "9.1",
+      "title": "ANR 检测机制与监控告警",
+      "path": "src/part2-performance/ch09-anr/9.1-anr-detection-monitoring-alerting.md",
+      "priority": 80,
+      "source": "task2a-gap-mining",
+      "created_date": "2026-07-17",
+      "status": "pending"
     }
   ],
   "queue": [
