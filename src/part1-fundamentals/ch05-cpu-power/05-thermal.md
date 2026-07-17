@@ -28,8 +28,8 @@ task6_state: reviewed
 task6_result: pass-light-edit
 task6_reviewed_date: 2026-06-23
 last_task6_at: 2026-06-23T08:15:43+08:00
-last_task6_audit: "2026-05-26"
-last_task6_audit_log: "logs/review/2026-05-26-06-audit.md"
+last_task6_audit: "2026-07-17"
+last_task6_audit_log: "logs/review/2026-07-17-16-audit.md"
 last_task6_review_log: "logs/review/2026-06-23-08-review.md"
 task6_review_notes: "2026-06-23 Task6 复审(Task9 auto-fix 后回归):pass-light-edit。无禁用词/高频词命中。不是X而是Y 句式在限制内。无物理动作动词命中。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 确认。"
 task9_state: reviewed
