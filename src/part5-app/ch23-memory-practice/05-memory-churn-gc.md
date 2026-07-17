@@ -52,7 +52,7 @@ last_task9_at: "2026-06-30T15:36:54+08:00"
 task9_review_notes: "2026-06-30 task9 idle audit auto-fix: Android 17 基线复核发现 ShouldConcurrentGCForJava() 已加入 time-based GC triggering 分支；已更新源码锚点和版本说明，回到 Task6 复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-30
-last_task6_audit: "2026-06-06"
+last_task6_audit: "2026-07-17"
 last_task9_audit: "2026-06-30"
 last_task9_autofix_at: "2026-06-30"
 ---
