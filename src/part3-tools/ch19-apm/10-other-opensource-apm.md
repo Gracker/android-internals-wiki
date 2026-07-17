@@ -12,7 +12,7 @@ reviewed_by: openclaw-task6
 path: "https://github.com/Tencent/matrix"
 task6_result: pass-light-edit
 task6_review_notes: "2026-06-28 16:11 Task6 revisiting 复审(Task9 auto-fix后回归): 修复69处半角标点(逗号/冒号/分号→全角)。L1禁用词/高频词/物理动词/元叙述/否定纠正grep全部零命中。L2结构/节奏/开头/读者视角均通过。task9_result=auto-fixed(无遗留P0/P1),queue无pending,自动晋升finalized。"
-last_task6_audit: "2026-06-28"
+last_task6_audit: "2026-07-17"
 last_task2b_lite_at: "2026-06-25"
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-06-25"
