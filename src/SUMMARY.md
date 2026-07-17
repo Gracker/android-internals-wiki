@@ -181,6 +181,8 @@
   - [22.43 Media3 视频播放渲染管线性能实战](part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md)
   - [22.44 Compose 状态订阅与重组控制实战](part5-app/ch22-rendering-practice/44-compose-state-subscription-recomposition-control.md)
   - [22.45 Compose LazyGrid 性能优化实战](part5-app/ch22-rendering-practice/45-compose-lazygrid-performance.md)
+  - [22.46 Compose TextField 文本输入与 IME 动画性能实战](part5-app/ch22-rendering-practice/46-compose-textfield-ime-performance.md)
+  - [22.47 Compose 手势与 NestedScrollConnection 性能实战](part5-app/ch22-rendering-practice/47-compose-nested-scroll-gesture-performance.md)
   - [22.1 UI 渲染性能优化与 Compose 渲染管线](part5-app/ch22-rendering-practice/22.1-ui-rendering-performance-optimization.md)
 
   - [4.22 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.22-android17-ai-agent-memory-sandboxed-data-reuse.md)
