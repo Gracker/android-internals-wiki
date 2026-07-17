@@ -79,6 +79,50 @@
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-07-17T06:14:31.983422",
       "status": "pending"
+    },
+    {
+      "section": "14.22",
+      "section_title": "HPROF Heap Dump 管线与 Perfetto java_hprof 数据源",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 14.22 HPROF 章节含 P0/P1 多处（数据源名称冲突、表数量冲突、7 处 [待验证]、附录 C 长代码片段待核对、profiler_tables.py 行号三套不一致）",
+      "material_paths": [
+        "logs/deep-review/2026-07-17-11-audit-hprof.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "正文 'Perfetto java_hprof 数据源' 节开篇 + protobuf 配置示例注释",
+          "detail": "章节开篇声称 Perfetto 数据源名为 `art_hprof`，与后续 'AIW-源码调研-2026-06-28' 自我修正 `android.java_hprof` 矛盾；两者并存于正文中，读者扫读正文会拿到错误名称。自我修正仅追加在 6-28 调研节，未回写到正文首段。",
+          "suggestion": "移除正文 'art_hprof' 表述，统一为 `android.java_hprof`，并标注源码锚点 `src/profiling/memory/java_hprof_producer.cc:25` 常量 `kJavaHprofDataSource`。"
+        },
+        {
+          "type": "源码错误",
+          "location": "正文 'heap_graph 系列表' 节 + 章节内 '源码验证结论（Android 17.0.0_r1）' 节",
+          "detail": "正文列出 6 张表（heap_graph / heap_graph_object / heap_graph_class / heap_graph_reference / heap_graph_primitive / heap_graph_object_data），'源码验证结论' 节自我修正为仅 3 张核心表（HEAP_GRAPH_CLASS_TABLE / HEAP_GRAPH_OBJECT_TABLE / HEAP_GRAPH_REFERENCE_TABLE）。两个相互矛盾的结论并存于同一章节。",
+          "suggestion": "正文只保留 3 张核心表的描述，删除 'heap_graph_primitive' 与 'heap_graph_object_data'；并按 '源码验证结论' 节的 `profiler_tables.py` 行号 461/496/546 重写对应表 schema。"
+        },
+        {
+          "type": "原理断裂/版本差异",
+          "location": "全文 7 处 [待验证] 标记",
+          "detail": "正文中存在 7 处 `[待验证]` 标记（am dumpheap、AMS 层 dumpHeap、ART 层 Hprof::Dump 方法签名、java_hproducer.cc 行号、proto 字段编号、heap_graph_object schema、KOOM fork-dump 描述）。`task9_result: fixed-verified` 标签与正文 7 处未验证内容并存，自相矛盾——不应在 finalized 状态残留未验证声明。",
+          "suggestion": "对每条 `[待验证]` 项执行一次 android-17.0.0_r1 全量源码核对（4 项 hprof/ART + 2 项 perfetto proto/python + 1 项 KOOM）；无法核实的降级为 `[已调研-未在 AOSP 17 命中]` 而非遗留 `[待验证]`。"
+        },
+        {
+          "type": "源码错误",
+          "location": "附录 C 'AIW-源码调研-2026-07-04'",
+          "detail": "附录 C 包含 5 段完整 C++ 代码片段（ProducerSupport::CanProfile、JavaHprofProducer::DoContinuousDump、PackagesListParser::ReadPackagesListLine、ProfilerGuardrails::CheckMemoryLimit/CheckCpuLimit），每段都声称'源码位置'和精确行号，但其中字段命名（如 kInitialConnectionBackoffMs、PRIVATE_FLAG_PROFILEABLE_BY_SHELL = 1 << 23）与 Perfetto v50.x 公开文档不完全一致，未逐行核对 android-17.0.0_r1 全量源码前可信度低。",
+          "suggestion": "对每段附录 C 代码执行 android-17.0.0_r1 全量逐行核对；不通过则删除代码块、改用一段总结性描述并标注'未在 android-17.0.0_r1 命中精确行号'。"
+        },
+        {
+          "type": "交叉引用错误",
+          "location": "全文 profiler_tables.py 行号引用",
+          "detail": "同一文件 profiler_tables.py 出现三套不同行号：`~行 595-1230`、`行 950-1175`、`HEAP_GRAPH_*_TABLE 行 461/496/546`，三套行号不重叠也无相互引用关系。",
+          "suggestion": "统一为 '源码验证结论（Android 17.0.0_r1）' 节的 461/496/546，删除前两套未对齐引用。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-07-17T11:30:02",
+      "status": "pending"
     }
   ],
   "in_progress": [],

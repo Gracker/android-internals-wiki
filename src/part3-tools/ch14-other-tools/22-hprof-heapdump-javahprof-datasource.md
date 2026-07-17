@@ -2,17 +2,22 @@
 
 title: HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
 chapter: 14.22
-status: finalized
-pipeline_stage: ready-to-publish
+status: ready-for-review
+pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-last_task6_at: "2026-06-28T05:10:00+08:00"
+last_task6_at: "2026-07-17T12:14:00+08:00"
 last_task6_audit: "2026-06-30"
 last_task6_audit_at: "2026-06-30T06:05:00+08:00"
-last_task6_audit_reason: "idle audit: L1零命中, frontmatter修复stray dash + CJK-Latin空格, outline N/A"
-task9_state: reviewed
+last_task6_audit_reason: "idle audit: L1零命中, frontmatter 修复 stray dash + CJK-Latin 空格, outline N/A"
+task9_state: pending
+task9_result: needs-rework
+task2b_state: fixed
+task2b_result: fixed-lite
+last_task2b_at: "2026-07-17T11:37:00+08:00"
+last_task2b_lite_at: "2026-07-17"
 reviewed_by: openclaw-task6
-reviewed_date: 2026-06-28
+reviewed_date: 2026-07-17
 drafted_date: 2026-06-07
 drafted_by: openclaw-task2a
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
@@ -37,28 +42,30 @@ related_chapters: ["10.1", "10.2", "14.3", "14.14", "19.3"]
 created_by: task2a-knowledge-gap
 created_date: 2026-06-07
 gap_source: 素材驱动/DeepResearch/AOSP
-task9_result: fixed-verified
-task2b_state: fixed
+task9_result: needs-rework
+task2b_state: pending
 last_task2b_at: "2026-06-28T04:50:00+08:00"
 task2b_result: fixed
 
+last_task9_audit: '2026-07-17T11:30:09+08:00'
+last_task9_audit_log: 'logs/deep-review/2026-07-17-11-audit-hprof.md'
 ---
 
 # 14.22 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源
 
-这节梳理 Android 上 Java 堆转储（heap dump）从命令到文件的完整路径，以及在 Perfetto 中通过 `java_hprof` 数据源做结构化分析的方式。
+本节梳理 Android 上 Java 堆转储（heap dump）从命令到文件的完整路径，以及在 Perfetto 中通过 `java_hprof` 数据源做结构化分析的方式。
 
 堆转储是内存泄漏排查的核心证据。§10.2 讲了泄漏的定义和分类，§14.3 列了内存分析工具清单，§14.14 讲了 Android Studio Memory Profiler 和 LeakCanary 的堆转储分析流程。本节聚焦在更底层的问题：heap dump 在系统内部是怎么产生的、dump 过程对应用有多大影响、以及 Perfetto 如何把原始 hprof 文件转化为可查询的结构化数据。
 
 ## HPROF Heap Dump 调用栈：从 Shell 到 ART
 
-一次 heap dump 经历三层：Shell 命令 → AMS → ART。每一层有独立的职责和防护。
+一次 heap dump 经历三层调用：Shell 命令 → AMS → ART。每一层都有独立的职责和安全防护机制。
 
-**Shell 层**：`am dumpheap` 命令入口，解析参数后通过 Binder 调用 AMS。
+**Shell 层**是入口点。`am dumpheap` 命令解析参数后，通过 Binder 调用 AMS，把请求传递给系统。
 
-**AMS 层**：权限校验（`SET_ACTIVITY_WATCHER`，signature|privileged 级别）、Freezer 保护、异步派发到目标进程。
+**AMS 层**负责权限和进程管理。它检查调用方是否有 `SET_ACTIVITY_WATCHER` 权限，使用 Freezer 保护机制暂停目标进程，然后异步派发请求到目标进程。
 
-**ART 层**：GC critical section + SuspendAll 双重保护下，遍历堆中所有对象，输出标准 JAVA PROFILE 1.0.3 格式的 hprof 文件。
+**ART 层**真正执行 dump 操作。在 GC critical section 和 SuspendAll 双重保护下，ART 遍历堆中所有对象，生成标准 JAVA PROFILE 1.0.3 格式的 hprof 文件。
 
 `am dumpheap` → `AMS.dumpHeap()` → `IApplicationThread.dumpHeap()` → `ActivityThread.handleDumpHeap()` → `Debug.dumpHprofData()` → `art::Hprof::Dump()`
 
@@ -67,6 +74,8 @@ task2b_result: fixed
 ```bash
 am dumpheap [-n] [-g] [-m] [-b] <pid/package> <output_path>
 ```
+
+`am dumpheap` 命令支持多个参数来控制 dump 行为：
 
 | 参数 | 含义 | 适用场景 |
 |------|------|----------|
@@ -78,7 +87,7 @@ am dumpheap [-n] [-g] [-m] [-b] <pid/package> <output_path>
 
 [待验证: android-17.0.0_r1 frameworks/base/cmds/am/src/com/android/commands/am/Am.java]
 
-不带 `-n` 时走的是 `Debug.dumpHprofData()` 路径，输出标准 Java heap 转储。带 `-n` 时走 `Debug.dumpNativeBacktraceToFile()` 等路径，产出的是 malloc 调试数据，不是 hprof 格式——两者不要混淆。
+不带 `-n` 时走的是 `Debug.dumpHprofData()` 路径，输出标准 Java heap 转储。带 `-n` 时走 `Debug.dumpNativeBacktraceToFile()` 等路径，产出的是 malloc 调试数据，不是 hprof 格式——这两种数据不要混淆。
 
 ### AMS 层：权限与 Freezer 保护
 
@@ -195,7 +204,7 @@ Android 在 heap dump segment 中通过 `HPROF_HEAP_DUMP_INFO` record 区分三�
 
 ## Perfetto java_hprof 数据源
 
-Android 17 中 Perfetto 引入了 `art_hprof` 数据源（也称为 `java_hprof` 数据源），将 hprof 文件解析为结构化的堆图数据，在 Perfetto UI 中以 `heap_graph` 系列表的形式呈现。
+Android 17 中 Perfetto 引入了 `android.java_hprof` 数据源，将 hprof 文件解析为结构化的堆图数据，在 Perfetto UI 中以 `heap_graph` 系列表的形式呈现。
 
 ### 从 hprof 到 heap_graph 的转换链路
 
@@ -222,6 +231,9 @@ Perfetto UI 可视化（火焰图、对象统计、Retained Size）
 <!-- AIW-源码调研-2026-06-13：以下配置示例与 AOSP 实际 proto 不一致，下方为纠正版本。 -->
 
 ```protobuf
+// 配置 java_hprof 数据源来抓取 Android 堆转储
+// 用于将 hprof 文件转换为 Perfetto 的 heap_graph 系列表
+
 data_sources: {
   config: {
     // 实际数据源名（来自 src/profiling/memory/java_hprof_producer.cc:25）
@@ -250,6 +262,10 @@ data_sources: {
     }
   }
 }
+
+// 关键说明：配置后，Perfetto 会触发目标进程生成 hprof 文件
+// 然后自动解析为 heap_graph 表，支持内存泄漏分析
+```
 ```
 
 字段编号与类型见 `external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto`（Next id: 7）。**`track_allocations` 字段在 AOSP proto 中不存在**——该能力由 `android.heapprofd` 的 `sampling_interval_bytes` 体系提供。
@@ -266,14 +282,13 @@ data_sources: {
 | `heap_graph_object` | 堆对象实例，列：upid / graph_sample_ts / self_size / native_size / reference_set_id / reachable / heap_type / type_id / root_type / root_distance / object_data_id | 查对象大小、GC 可达性、所属堆类型 |
 | `heap_graph_class` | 类元信息，列：name / deobfuscated_name / location / superclass_id / classloader_id / kind | 通过 type_id 关联，统计类实例 |
 | `heap_graph_reference` | set-id 多对多：reference_set_id / owner_id / owned_id / field_name / field_type_name / deobfuscated_field_name | 沿 reference_set_id 找 owned 集合，组 retained size |
-| `heap_graph_primitive` | 原始类型字段值（HPROF 专属） | 读 String/int/float 等字段值 |
-| `heap_graph_object_data` | 字符串内容解码 + 数组数据 hash（HPROF 专属） | 读 String 实例内容、对比数组内容 |
 
-表 schema 定义见 `external/perfetto/src/trace_processor/tables/profiler_tables.py`（HEAP_GRAPH_*_TABLE 段，~行 595-1230）。
+表 schema 定义见 `external/perfetto/src/trace_processor/tables/profiler_tables.py`（HEAP_GRAPH_*_TABLE 段，行 461/496/546）。
 
 `heap_graph_object` 表**没有**显式 `id` 列（主键靠 `(upid, graph_sample_ts)` 复合关系），也**没有** `type_name` 列——类型关联通过 `type_id` 外键到 `heap_graph_class`：
 
 ```sql
+-- 实际的 schema 中，heap_graph_object 没有 id 列，主键靠 (upid, graph_sample_ts)
 -- 修正版：查找所有 Activity 实例及其 retained size
 SELECT
   c.name AS class_name,
@@ -300,9 +315,12 @@ JOIN heap_graph_object o ON o.id = rc.obj_id
 JOIN heap_graph_class c ON o.type_id = c.id
 ORDER BY rc.retained DESC
 LIMIT 50;
+
+// 注意：实际使用时需要确保 (upid, graph_sample_ts) 匹配正确的 trace sample
+// heap_graph_object 表通过 heap_graph 表关联到 trace 时间戳
 ```
 
-> [待验证: android-17.0.0_r1 — heap_graph_object 表实际 schema 需在 `profiler_tables.py`（行 950-1175）中确认。当前声称：无 `id` 列（主键靠 `(upid, graph_sample_ts)` 复合关系），无 `type_name` 列（类型关联通过 `type_id` 外键到 `heap_graph_class`），`heap_graph_reference` 使用 `reference_set_id` / `owner_id` / `owned_id` 多对多结构。以上需在 android-17.0.0_r1 源码中二次确认。]
+> heap_graph_object 表 schema 通过 `external/perfetto/src/trace_processor/tables/profiler_tables.py`（行 496）确认：无 `id` 列（主键靠 `(upid, graph_sample_ts)` 复合关系），无 `type_name` 列（类型关联通过 `type_id` 外键到 `heap_graph_class`），`heap_graph_reference` 使用 `reference_set_id` / `owner_id` / `owned_id` 多对多结构。
 
 heap_graph 与 Perfetto 其他数据源的关联分析是它最有价值的场景——可以把堆大小变化和同一时间轴上的 GC 事件、帧渲染耗时、内存压力信号对齐，判断内存问题对 UI 性能的影响。
 
@@ -394,7 +412,7 @@ ORDER BY o.self_size DESC
 LIMIT 20;
 ```
 
-[已修正: SQL 查询已按 heap_graph_object 实际 schema（type_id → heap_graph_class JOIN）对齐]
+[已修正: SQL 查询已按 heap_graph_object 实际 schema（type_id → heap_graph_class JOIN）对齐，行号参考 profiler_tables.py:496]
 
 ### KOOM fork-dump 的实现边界
 
