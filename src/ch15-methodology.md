@@ -5,15 +5,15 @@ status: "ready-for-review"
 applicable_versions: "Android 8-17 (API 26-37)"
 last_verified_against: "AOSP android-17.0.0_r1, Android Developers 文档, Perfetto 官方文档, 官方性能博客"
 tags: [performance, methodology, perfetto, profiling, optimization, android]
-task9_result: "needs-rework"
+task9_result: "auto-fixed"
 task6_result: "pass-light-edit"
 task6_state: "revisiting"
-task9_state: "pending"
+task9_state: "reviewed"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-13"
-last_task9_at: "2026-07-14T05:20:00+08:00"
+task9_reviewed_date: "2026-07-18"
+last_task9_at: "2026-07-18T10:46:44+08:00"
 task9_audit_type: "deep-review"
-last_task9_review_log: "logs/deep-review/2026-07-13-20-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-07-18-10-deep-review.md"
 pipeline_stage: "task6_pending"
 task2b_state: "fixed"
 last_task6_at: "2026-07-14T09:19:57+08:00"
@@ -35,7 +35,7 @@ last_task2b_lite_at: "2026-07-04"
 task9_task6_review_notes: "| 2026-07-02 Task6 re-review (revisiting): needs-rework。L1 修复 4 处（禁用词+空壳章节）。B 类问题：章节整体为百科词条式罗列、案例数据疑似编造、Section 12 内容空泛、缺少 Perfetto 实战维度。已写入 queue priority:90。 | 2026-07-03 17:27 Task9 复核：16:32 入队的 2 条 P85（FrameRateOverrides + persist.traced.enable fallback）仍然成立，本节继续走 Task 2B。不在本轮新增 P0/P1。"
 review_notes: "2026-06-27 Task2B Lite: 曾修复 Perfetto 版本描述与 ADB 命令版本限定；2026-06-27 Task9 Deep Tech Review: 通过，无 P0/P1 问题，总体评分 3.5/5。 | 2026-07-02 Task9 闲时抽检 AUTO-FIX: 修正 Perfetto/traced 命令入口、服务启用边界与 Android 17 CLI 选项；回 Task6 复审。 | 2026-07-02 Task2B 主修复：结构性回炉——去百科化、移除编造案例数据、删除泛化云原生/5G/边缘计算内容、补充 Perfetto SQL 实战示例。 | 2026-07-02 Task9 Deep Review AUTO-FIX: 修正 Perfetto CLI detached/background 语义与 trace_processor SQL join/schema 示例；回 Task6 复审。 | 2026-07-03 17:27 Task9 复核：2 项 P1 仍成立（FrameRateOverrides、persist.traced.enable fallback），已在 queue.json 中持有 P85 entry 2 条，本轮未新增，继续走 Task 2B 闭环。"
 last_task9_audit: "2026-07-17"
-last_task9_autofix_at: "2026-07-02"
+last_task9_autofix_at: "2026-07-18"
 task2b_fixed_at: "2026-07-02T20:56:40+08:00"
 last_idle_audit_at: "2026-07-17T22:24:56.238668"
 last_task6_audit: "2026-07-16"
@@ -46,6 +46,7 @@ task2b_lite_notes: "2026-07-04 Task2B Lite (07:35轮): 修正 VSync 偏移源码
 task2b_main_round_20260714: "2026-07-14 Task2B 主修复: P1×4(AOSP路径验证澄清+Android 17边界标记+数据来源声明+交叉引用补全)+P2×2(SDM参考+构建系统引用)。子章节15.5/15.7版本基线android-16→android-17.0.0_r1。禁用词修复(底层→实现)。"
 task2b_main_notes_20260714: "2026-07-14T08:56:47+08:00 Task2B 主修复 (P95): 修正 §3.2 traced 参数边界描述——区分 CLI 启动选项（--background/--version/--set-socket-permissions/--enable-relay-endpoint）和 socket 协议层缓冲区配置（TraceConfig.buffers[].size_kb）。明确 -b/--async 为 perfetto CLI 选项，由 CLI 填入 TraceConfig 后通过 socket 发给 traced，而非 traced 命令行参数。"
 task2b_main_notes: "2026-07-14 AIW 源码调研集成：将文末 AIW-源码调研-2026-07-07 段落中 Power HAL AIDL v7/HintManagerService/BatteryStatsService 三层内容以叙述风格融入 section 4.1 SoC 分层讨论，删除裸行号引用，替换为函数名+行为描述。 | 2026-07-04 Task2B 主修复：P0-删除不存在的debug.perfetto.enabled属性修正DeviceConfig描述；P1-补充heapprofd构建类型说明/SQL验证说明/案例数据免责声明；P2-新增Android14+隐私限制节(3.3)+跨厂商Perfetto差异节(3.4)+FrameRateOverrides与WindowManager交互+VSync offset源码锚点"
+task9_review_notes_20260718: "2026-07-18 Task9 deep review AUTO-FIX: corrected Perfetto background/detach semantics, heapprofd user-build eligibility, WindowManager preferredRefreshRate/API naming, SurfaceFlinger VSync Scheduler source paths, and FrameTimeline/counter SQL schema. No queue P0/P1 left; returned to Task6."
 ----
 
 
@@ -152,13 +153,16 @@ adb shell setprop persist.traced.enable 1
 adb shell perfetto -t 10s -b 32mb -o /data/misc/perfetto-traces/trace.pftrace sched/sched_switch gfx
 ```
 
-**Android 14-17 (API 34-37)**：Perfetto CLI + traced service 的组合完全替代 Systrace。长时采集有两种后台模式：`perfetto -d`（`--background`）直接后台运行；`perfetto --detach=<key>` 创建 detached session，支持搭配 `--background-wait` 在后台等待采集完成后自动退出，后续通过 `--attach=<key> --stop` 回收。`-d` 和 `--detach` 是相同后台采集模式的不同参数形式，功能等价。
+**Android 14-17 (API 34-37)**：Perfetto CLI + traced service 的组合完全替代 Systrace。长时采集常用两种方式：`perfetto -d`（`--background`）让命令行客户端 daemonize，立即返回并打印后台进程 PID；`perfetto --detach=<key>` 创建可按 key 重新 attach 的 detached session，后续通过 `--attach=<key> --stop` 回收。Android 17 的 `perfetto` CLI 明确把 `--detach` 和 `--background` 设为互斥选项，二者不是功能等价的别名；`--background-wait` 只属于 `--background` 路径，用于等待数据源启动确认。
 
 `traced` 自身只接受服务端启动选项（`--background`、`--version`、`--set-socket-permissions`、`--enable-relay-endpoint`）。缓冲区大小由 `traced` 内部按 tracing session 配置管理——缓冲区参数在 `traced` 与 producer/consumer 的 socket 协议交互中协商（配置入口为 `protos/perfetto/config/trace_config.proto` 中的 `TraceConfig.buffers[].size_kb`），不在命令行层面透出。因此 `traced` 不接受客户端命令行传来的 `-b` 或 `--async`——这些是 `perfetto` CLI 的选项，由 CLI 填入 TraceConfig 后通过 socket 发给 traced。
 
 ```bash
 # 长时后台采集
 adb shell perfetto -d -t 30s -b 64mb -o /data/misc/perfetto-traces/long_trace.pftrace sched gfx view wm
+
+# detached session（传入输出文件时 config 需设置 write_into_file: true）
+adb shell perfetto --detach=my_trace -c /data/misc/perfetto-configs/config.pbtxt --txt -o /data/misc/perfetto-traces/detached.pftrace
 
 # detached session 回收时必须带 key
 adb shell perfetto --attach=my_trace --stop
@@ -372,7 +376,7 @@ LIMIT 20;
 
 heapprofd 需要在 Perfetto config 中显式开启数据源。heapprofd 是独立的系统守护进程（`/system/bin/heapprofd`），有自己的 init.rc service 定义，不是 `traced_probes` 的一部分。其启停由系统属性 `persist.heapprofd.enable=1`（或 `traced.lazy.heapprofd=1`）控制，默认 `disabled`。
 
-heapprofd 的核心限制在 SELinux 层：heapprofd 需要 `DAC_READ_SEARCH` capability 才能通过 `/proc/pid/mem` 访问目标进程的堆内存做分配追踪。该 capability 在 AOSP `heapprofd.rc` 中明确标注为 `userdebug_or_eng` only——`user` 构建的 SELinux 策略会拒绝授予此权限。也就是说，在 `user` 构建中即使通过 `persist.heapprofd.enable=1` 启动了 heapprofd 进程，它也没有权限读取目标进程的内存页面，trace 中的 `heap_profile_allocation` 表将为空。要在 user 构建中完整使用 heapprofd，必须使用 `userdebug` 构建或在 SELinux 策略中为 heapprofd 添加相应权限。
+heapprofd 的限制主要在目标进程资格和 SELinux 权限边界。AOSP `external/perfetto/heapprofd.rc` 中的 `DAC_READ_SEARCH` capability 在 `user` 构建会被 SELinux 拒绝，但这不等于 `user` 构建完全不能用 heapprofd。Perfetto 官方文档的边界是：debug Android 构建可以 profile 大多数应用和系统服务；`user` 构建只能 profile manifest 中带 `debuggable` 或 `<profileable android:shell="true"/>` 的应用。对不满足资格的目标进程，profile 会为空；要分析普通系统服务或非 profileable 应用，需要 userdebug/eng 构建或相应 SELinux 策略。
 
 开启后 trace 里会包含每个 malloc/free 的调用栈，上面这条 SQL 直接给出 Top 20 内存分配函数。结合分配次数和总字节数，能找到"频繁小分配"和"偶尔大分配"两类不同的内存问题模式。
 
@@ -388,7 +392,7 @@ heapprofd 的核心限制在 SELinux 层：heapprofd 需要 `DAC_READ_SEARCH` ca
 
 #### 自适应刷新率场景的帧数据分析
 
-前面三条原则适用于固定刷新率场景。在多档刷新率设备上，帧预算本身会随窗口变化——Android 17 的 FrameRateOverrides API 允许应用或 WindowManager 为特定窗口指定目标帧率（例如游戏窗口 120Hz、视频窗口 60Hz、静态内容降到 30Hz）。在支持多档刷新率的设备上，同一个应用的不同窗口可能以不同的帧预算运行——「帧超时」的定义不再固定为 16.6ms。这一能力的实现依赖 SurfaceFlinger 的 VSync 调度机制和 Choreographer 的帧回调管线（见 §2.3 和 §2.6）。
+前面三条原则适用于固定刷新率场景。在多档刷新率设备上，帧预算本身会随窗口变化——Android 17 的帧率提示入口包括 `View.setRequestedFrameRate()`、`WindowManager.LayoutParams.preferredRefreshRate` 和 `SurfaceControl.Transaction.setFrameRate()`，SurfaceFlinger 内部再通过 `FrameRateOverrideMappings` 等机制生成窗口/UID 级 override。在支持多档刷新率的设备上，同一个应用的不同窗口可能以不同的帧预算运行——「帧超时」的定义不再固定为 16.6ms。这一能力的实现依赖 SurfaceFlinger 的 VSync 调度机制和 Choreographer 的帧回调管线（见 §2.3 和 §2.6）。
 
 这一变化对数据分析的三个关键影响：
 
@@ -396,34 +400,58 @@ heapprofd 的核心限制在 SELinux 层：heapprofd 需要 `DAC_READ_SEARCH` ca
 
 **FrameTimeline Expected Timeline 的校准作用**：FrameTimeline 记录了每帧的 Expected Presentation Time 和 Actual Presentation Time。Expected Timeline 已经反映了 FrameRateOverrides 的干预结果——它将目标帧率换算为预期的 VSync 序列。分析时优先看 Expected 和 Actual 之间的差值（即帧的 deadline miss），而不是直接用 16ms 做阈值。
 
-**FrameRateOverrides 与 WindowManager 的交互**：FrameRateOverrides 不是独立生效的。当应用或 WindowManager 通过 `WindowManager.LayoutParams.preferredFrameRate` 或 `SurfaceControl.setFrameRate()` 为某个窗口指定帧率后，SurfaceFlinger 会据此调整该窗口的 VSync 序列。但最终的 VSync offset（即 App 收到 VSync 信号到 SurfaceFlinger 提交帧之间的时间窗口）由 SurfaceFlinger 综合所有可见窗口的帧率后统一计算——如果有多个窗口以不同帧率同时可见，offset 会照顾到最高帧率的窗口。因此在分屏或多窗口场景下，低帧率窗口的实际帧预算可能比其目标帧率对应的理论值更大。
+**FrameRateOverrides 与 WindowManager 的交互**：FrameRateOverrides 不是独立生效的。当应用或 WindowManager 通过 `WindowManager.LayoutParams.preferredRefreshRate`、`View.setRequestedFrameRate()` 或 `SurfaceControl.Transaction.setFrameRate()` 为窗口/Surface 指定帧率偏好后，SurfaceFlinger 会据此调整相关 Layer 的帧率选择。但最终的 VSync offset（即 App 收到 VSync 信号到 SurfaceFlinger 提交帧之间的时间窗口）由 SurfaceFlinger 综合所有可见窗口的帧率后统一计算——如果有多个窗口以不同帧率同时可见，offset 会照顾到最高帧率的窗口。因此在分屏或多窗口场景下，低帧率窗口的实际帧预算可能比其目标帧率对应的理论值更大。
 
-**VSync 偏移动态调整**：在 Android 17 中，SurfaceFlinger 会根据当前帧率动态调整 VSync offset——帧率越低，offset 越大，给 App 的主线程留更多渲染时间。VSync 偏移计算涉及 SurfaceFlinger Scheduler 模块（`frameworks/native/services/surfaceflinger/Scheduler/`）中的三个协作组件：`VSyncTracker`（主要实现在 `VSyncTracker.cpp/h` 及相关文件中，跟踪和预测 VSync 周期）、`VSyncModulator`（按 App/SF 两组 phase offset 调制偏移量）、`VSyncDispatch`（管理 VSync 信号的 dispatch 时序）。三者协作完成 VSync 偏移的动态调整。帧率切换时三者协作重新计算 phase offset 并控制 VSync 信号发出的时机。帧率切换点附近的帧容易出现 deadline miss，因为 offset 调整有延迟——新帧率的 offset 在上一帧的渲染周期已确定，而上一帧的 offset 是基于旧帧率计算的，导致切换后的第一帧或前两帧使用了不匹配的 offset。
+**VSync 偏移动态调整**：在 Android 17 中，SurfaceFlinger 会根据当前帧率动态调整 VSync offset——帧率越低，offset 越大，给 App 的主线程留更多渲染时间。VSync 偏移计算涉及 SurfaceFlinger Scheduler 模块（`frameworks/native/services/surfaceflinger/Scheduler/`）中的三个协作组件：`VSyncTracker.h` 定义 VSync 预测接口，`VSyncPredictor.cpp` / `VSyncReactor.cpp` 维护预测模型；`VsyncModulator.cpp/h` 按 App/SF 两组 phase offset 调制偏移量；`VSyncDispatch.h` 与 `VSyncDispatchTimerQueue.cpp` 管理 VSync 信号的 dispatch 时序。三者协作完成 VSync 偏移的动态调整。帧率切换时三者协作重新计算 phase offset 并控制 VSync 信号发出的时机。帧率切换点附近的帧容易出现 deadline miss，因为 offset 调整有延迟——新帧率的 offset 在上一帧的渲染周期已确定，而上一帧的 offset 是基于旧帧率计算的，导致切换后的第一帧或前两帧使用了不匹配的 offset。
 
 Perfetto trace 中的可观测字段：
 
 ```sql
--- 在 Perfetto trace 中查询帧率变化事件（需 trace 中包含 SurfaceFlinger 数据源）
+-- 枚举 trace 中的帧率 / VSync / refresh 相关 counter，再按设备实际 track 名筛选
 SELECT
-  ts,
-  name,
-  int_value AS target_fps
-FROM slice
-JOIN metadata ON slice.name = 'frame_rate_override'
-WHERE int_value > 0
-ORDER BY ts;
+  c.ts,
+  t.name AS track_name,
+  c.value
+FROM counter c
+JOIN counter_track t ON c.track_id = t.id
+WHERE t.name GLOB '*fps*'
+   OR t.name GLOB '*Vsync*'
+   OR t.name GLOB '*vsync*'
+   OR t.name GLOB '*refresh*'
+ORDER BY c.ts;
 ```
 
 ```sql
 -- 查询 FrameTimeline Expected vs Actual 差异，按帧做 jank 判定
+WITH frames AS (
+  SELECT
+    e.surface_frame_token,
+    e.display_frame_token,
+    e.ts AS expected_start_ns,
+    e.ts + e.dur AS expected_end_ns,
+    a.ts AS actual_start_ns,
+    a.ts + a.dur AS actual_end_ns,
+    a.jank_type,
+    a.present_type,
+    a.on_time_finish,
+    a.layer_name
+  FROM expected_frame_timeline_slice e
+  JOIN actual_frame_timeline_slice a
+    ON a.surface_frame_token = e.surface_frame_token
+   AND a.display_frame_token = e.display_frame_token
+)
 SELECT
-  frame_id,
-  expected_presentation_timestamp_ns,
-  actual_presentation_timestamp_ns,
-  (actual_presentation_timestamp_ns - expected_presentation_timestamp_ns) / 1000000.0 AS miss_ms
-FROM expected_frame_timeline_slice
-JOIN actual_frame_timeline_slice USING (frame_id)
-WHERE actual_presentation_timestamp_ns > expected_presentation_timestamp_ns
+  surface_frame_token,
+  display_frame_token,
+  layer_name,
+  jank_type,
+  present_type,
+  on_time_finish,
+  (actual_end_ns - expected_end_ns) / 1000000.0 AS miss_ms
+FROM frames
+WHERE actual_end_ns > expected_end_ns
+   OR on_time_finish = 0
+   OR jank_type != 'None'
 ORDER BY miss_ms DESC
 LIMIT 20;
 ```
@@ -620,5 +648,3 @@ CI 性能回归：每次 MR 自动跑性能基准测试。启动耗时、核心�
 ### 延伸阅读
 - [Android Performance Patterns (YouTube)](https://www.youtube.com/playlist?list=PLWz5rJ2EKKc8j2Bd8Bd9-2O9V1zr-hBFY) — Google 官方性能模式视频系列
 - [Android Vitals](https://developer.android.com/topic/performance/vitals) — Google Play 的 ANR/启动/帧率评分体系
-
-
