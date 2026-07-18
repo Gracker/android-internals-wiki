@@ -125,6 +125,16 @@ mdbook serve
 
 ## License
 
-本作品采用 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) 许可协议。
+本作品采用双许可：
+
+- 社区使用：[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)；
+- 商业使用：由权利持有人另行书面授予的
+  [AIW Commercial License](COMMERCIAL-LICENSE.md)。
+
+仅下载仓库或 Knowledge Pack 不代表获得商业授权。SmartPerfetto 使用的公开
+Knowledge Pack 只包含严格解析、`finalized`、Task6/Task9 明确通过且不在阻塞
+队列中的文章。构建和分发规则见
+[`knowledge-pack/policy.yaml`](knowledge-pack/policy.yaml)，Pack 再分发边界见
+[`KNOWLEDGE-PACK-LICENSE.md`](KNOWLEDGE-PACK-LICENSE.md)。
 
 > 注：本书引用的 AOSP 源码遵循 Apache License 2.0。引用他人内容均已标注原始出处，仅用于技术说明目的。
