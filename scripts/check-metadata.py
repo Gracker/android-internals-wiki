@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """检查所有章节文件是否包含完整的 YAML 元数据头。"""
 
+import argparse
 import os
 import re
 import sys
 import yaml
-import glob
 
 REQUIRED_FIELDS = [
     "title", "chapter", "status", "applicable_versions", "tags"
@@ -57,26 +57,47 @@ def check_file(filepath):
     return issues
 
 
-def main():
-    src_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "src")
+def iter_files(src_dir, explicit_files=None):
+    if explicit_files:
+        repo_root = os.path.dirname(os.path.dirname(__file__))
+        for item in explicit_files:
+            filepath = item if os.path.isabs(item) else os.path.join(repo_root, item)
+            if not filepath.endswith('.md') or not os.path.exists(filepath):
+                continue
+            rel = os.path.relpath(filepath, src_dir)
+            if rel.startswith(('preface/', 'appendix/', 'graphify-out/')):
+                continue
+            if os.path.basename(filepath) in ('README.md', 'SUMMARY.md'):
+                continue
+            if filepath.startswith(src_dir + os.sep):
+                yield filepath
+        return
 
-    # 只检查非 README 的章节文件
-    all_files = []
+    # Full scan mode, kept for manual audits.
     for root, dirs, files in os.walk(src_dir):
         for f in files:
             if f.endswith('.md') and f != 'README.md' and f != 'SUMMARY.md':
                 filepath = os.path.join(root, f)
-                # 跳过 preface / appendix，以及 graphify 生成报告
                 rel = os.path.relpath(filepath, src_dir)
                 if rel.startswith(('preface/', 'appendix/', 'graphify-out/')):
                     continue
-                all_files.append(filepath)
+                yield filepath
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description='Check chapter YAML metadata.')
+    ap.add_argument('--files', nargs='*', help='Only check these repo-relative files. Default: full src scan.')
+    args = ap.parse_args(argv)
+    src_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "src")
+
+    all_files = list(iter_files(src_dir, args.files))
 
     total = len(all_files)
     issues_count = 0
     warn_count = 0
 
-    print(f"检查 {total} 个章节文件的元数据...\n")
+    scope = '指定变更文件' if args.files else '全量 src'
+    print(f"检查 {total} 个章节文件的元数据（scope={scope}）...\n")
 
     for filepath in sorted(all_files):
         rel = os.path.relpath(filepath, src_dir)
