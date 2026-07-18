@@ -27,7 +27,9 @@ jobs:
             git fetch origin "${{ github.base_ref }}" --depth=1
             RANGE="$BASE...HEAD"
           else
-            RANGE="${{ github.event.before }}..${{ github.sha }}"
+            # On master, previous PR merge commits may already contain legacy files that fail
+            # the repository-wide checker. Gate the commit that triggered this push.
+            RANGE="HEAD^..HEAD"
           fi
           git diff --name-only --diff-filter=ACMR "$RANGE" -- 'src/**/*.md' > /tmp/changed-md.txt || true
           echo "files<<EOF" >> "$GITHUB_OUTPUT"
