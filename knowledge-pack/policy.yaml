@@ -1,0 +1,48 @@
+schema_version: 1
+pack_id: android-internals
+
+distribution:
+  smartperfetto:
+    default: include-if-eligible
+    excluded_paths:
+      - src/preface/**
+      - src/appendix/**
+      - src/graphify-out/**
+    excluded_tags: []
+    blocklist: []
+
+eligibility:
+  status: finalized
+  pipeline_stage: ready-to-publish
+  task6_state: reviewed
+  task6_result: pass-light-edit
+  task9_state: reviewed
+  task9_result: pass-tech-review
+  blocking_queue_statuses:
+    - pending
+    - rework
+    - blocked
+    - in-progress
+    - in_progress
+
+exported_metadata:
+  - title
+  - chapter
+  - applicable_versions
+  - last_verified
+  - last_verified_against
+  - confidence
+  - tags
+  - sources
+
+license:
+  expression: CC-BY-NC-SA-4.0 OR LicenseRef-AIW-Commercial
+  copyright_holder: Gracker
+  attribution: Android Internals Wiki by Gracker
+  community_notice: LICENSE
+  commercial_notice: COMMERCIAL-LICENSE.md
+  redistribution_notice: KNOWLEDGE-PACK-LICENSE.md
+
+compatibility:
+  smartperfetto_min_version: 1.1.1
+  smartperfetto_max_version: 2.x
