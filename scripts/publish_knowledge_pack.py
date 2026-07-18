@@ -247,7 +247,12 @@ def publish(
     revoke_version: str | None,
     minimum_safe_version: str | None,
     reason_code: str | None,
+    refresh_metadata: bool = False,
 ) -> dict[str, Any]:
+    if refresh_metadata and (pack_dir is not None or revoke_version is not None):
+        raise ValueError(
+            "metadata refresh cannot be combined with a Pack or revocation"
+        )
     metadata = _load_repository(repository_root)
     policy = _load_policy(repo_root)
     expiry = policy["metadata_expiry"]
@@ -320,7 +325,9 @@ def publish(
         )
         published = True
 
-    if not published or channel is None:
+    if channel is None:
+        raise ValueError("publish requires an existing stable channel")
+    if not published and not refresh_metadata:
         raise ValueError("publish requires a Pack or --revoke-version")
 
     add_json_target(nightly, repository_root, CHANNEL_TARGET, channel)
@@ -375,6 +382,8 @@ def publish(
     write_timestamp(repository_root, timestamp)
     return {
         "published": True,
+        "contentPublished": published,
+        "reason": "content_published" if published else "metadata_refreshed",
         "contentVersion": channel["contentVersion"],
         "contentFingerprint": channel["contentFingerprint"],
         "nightlyMetadataVersion": nightly.signed.version,
@@ -412,6 +421,7 @@ def build_parser() -> argparse.ArgumentParser:
     publish_parser.add_argument("--revoke-version")
     publish_parser.add_argument("--minimum-safe-version")
     publish_parser.add_argument("--reason-code")
+    publish_parser.add_argument("--refresh-metadata", action="store_true")
     return parser
 
 
@@ -433,6 +443,7 @@ def main() -> int:
                 args.revoke_version,
                 args.minimum_safe_version,
                 args.reason_code,
+                args.refresh_metadata,
             )
         else:
             result = publish(
