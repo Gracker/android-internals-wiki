@@ -180,10 +180,22 @@ current_fingerprint="$(printf '%s' "$current_state" | "$PYTHON" -c \
 if [[ "$fingerprint" == "$current_fingerprint" ]]; then
   current_version="$(printf '%s' "$current_state" | "$PYTHON" -c \
     'import json,sys; print(json.load(sys.stdin)["channel"]["contentVersion"])')"
-  printf 'Knowledge Pack is unchanged; stable remains %s\n' "$current_version"
-  record_output "published" "false"
+  if [[ "$MODE" == "publish" ]]; then
+    "$PYTHON" "$REPO_ROOT/scripts/publish_knowledge_pack.py" \
+      publish \
+      --repository "$PUBLIC_REPOSITORY" \
+      --keys-dir "$KEYS_DIR" \
+      --refresh-metadata
+    printf 'Knowledge Pack is unchanged; refreshed signed metadata for %s\n' \
+      "$current_version"
+    record_output "published" "true"
+    record_output "reason" "metadata_refreshed"
+  else
+    printf 'Knowledge Pack is unchanged; stable remains %s\n' "$current_version"
+    record_output "published" "false"
+    record_output "reason" "content_fingerprint_unchanged"
+  fi
   record_output "content_version" "$current_version"
-  record_output "reason" "content_fingerprint_unchanged"
   exit 0
 fi
 

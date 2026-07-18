@@ -28,6 +28,7 @@ from bootstrap_knowledge_pack_repository import (
     bootstrap,
 )
 from publish_knowledge_pack import (
+    inspect_repository,
     next_version,
     publish,
 )
@@ -142,6 +143,70 @@ class TufRepositoryTest(unittest.TestCase):
                 None,
                 None,
                 None,
+            )
+
+    def test_metadata_refresh_renews_roles_without_creating_pack_version(self) -> None:
+        publish(
+            REPO_ROOT,
+            self.repository,
+            self.pack,
+            self.keys,
+            None,
+            None,
+            None,
+        )
+        before = inspect_repository(self.repository)
+        target_files = {
+            path.relative_to(self.repository)
+            for path in (self.repository / "targets").rglob("*")
+            if path.is_file()
+        }
+
+        refreshed = publish(
+            REPO_ROOT,
+            self.repository,
+            None,
+            self.keys,
+            None,
+            None,
+            None,
+            refresh_metadata=True,
+        )
+
+        after = inspect_repository(self.repository)
+        self.assertTrue(refreshed["published"])
+        self.assertFalse(refreshed["contentPublished"])
+        self.assertEqual(refreshed["reason"], "metadata_refreshed")
+        self.assertEqual(
+            after["channel"]["contentVersion"],
+            before["channel"]["contentVersion"],
+        )
+        self.assertEqual(after["publishedVersions"], before["publishedVersions"])
+        self.assertEqual(
+            {
+                path.relative_to(self.repository)
+                for path in (self.repository / "targets").rglob("*")
+                if path.is_file()
+            },
+            target_files,
+        )
+        for role in ("nightly", "snapshot", "timestamp"):
+            self.assertEqual(
+                after["metadataVersions"][role],
+                before["metadataVersions"][role] + 1,
+            )
+
+    def test_metadata_refresh_requires_existing_stable_channel(self) -> None:
+        with self.assertRaisesRegex(ValueError, "existing stable channel"):
+            publish(
+                REPO_ROOT,
+                self.repository,
+                None,
+                self.keys,
+                None,
+                None,
+                None,
+                refresh_metadata=True,
             )
 
     def test_revoking_current_stable_requires_an_existing_safe_version(self) -> None:
