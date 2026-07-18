@@ -1,0 +1,16 @@
+schema_version: 1
+recall_at: 5
+minimum_recall: 1.0
+queries:
+  - id: ebpf-binder-semantics
+    query: eBPF Binder 语义重建 在线追踪
+    expected_path: src/part5-app/ch26-observability/11-ebpf-online-tracing-binder-semantics.md
+  - id: recyclerview-rendering
+    query: RecyclerView 滑动渲染性能优化
+    expected_path: src/part2-performance/ch07-smoothness/08-recyclerview-performance.md
+  - id: observability-architecture
+    query: Android 性能可观测性架构
+    expected_path: src/part5-app/ch26-observability/01-observability-architecture.md
+  - id: negative-private-workflow
+    query: qzxvnonexistenttoken98437
+    expect_no_results: true

@@ -48,6 +48,7 @@ metadata/*.log
 __pycache__/
 *.pyc
 .venv/
+/.venv-knowledge-pack/
 venv/
 env/
 .pytest_cache/
@@ -66,3 +67,7 @@ node_modules/
 .env.local
 .omx/
 .git.bak/
+
+# Generated public Knowledge Pack candidates
+/dist/knowledge-pack/
+/dist/knowledge-pack-release/
