@@ -135,7 +135,10 @@ jobs:
           "https://raw.githubusercontent.com/Gracker/android-internals-knowledge-pack/${{ steps.public.outputs.sha }}/targets/"
           --expected-revoked-version "${{ steps.update.outputs.revoked_version }}"
       - name: Attest published Pack provenance
-        if: steps.update.outputs.published == 'true' && steps.update.outputs.pack_dir != ''
+        if: >-
+          steps.update.outputs.published == 'true' &&
+          steps.update.outputs.pack_dir != '' &&
+          github.event.repository.private == false
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: "${{ steps.update.outputs.pack_dir }}/**"
