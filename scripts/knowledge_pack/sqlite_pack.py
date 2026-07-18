@@ -71,10 +71,13 @@ def create_pack_database(
             ) WITHOUT ROWID;
 
             CREATE TABLE chunks (
-              chunk_id TEXT PRIMARY KEY,
+              chunk_rowid INTEGER PRIMARY KEY,
+              chunk_id TEXT NOT NULL UNIQUE,
               article_id TEXT NOT NULL,
               section_id TEXT NOT NULL,
+              title TEXT NOT NULL,
               heading TEXT NOT NULL,
+              tags TEXT NOT NULL,
               body TEXT NOT NULL,
               start_line INTEGER NOT NULL,
               end_line INTEGER NOT NULL,
@@ -83,7 +86,7 @@ def create_pack_database(
               search_tokens TEXT NOT NULL,
               FOREIGN KEY(article_id) REFERENCES articles(article_id),
               FOREIGN KEY(section_id) REFERENCES sections(section_id)
-            ) WITHOUT ROWID;
+            );
 
             CREATE TABLE sources (
               article_id TEXT NOT NULL,
@@ -101,6 +104,8 @@ def create_pack_database(
               tags,
               body,
               search_tokens,
+              content = 'chunks',
+              content_rowid = 'chunk_rowid',
               tokenize = 'unicode61 remove_diacritics 2'
             );
             """
@@ -112,6 +117,7 @@ def create_pack_database(
                 for key, value in sorted(identity.items())
             ],
         )
+        next_chunk_rowid = 1
         for article in articles:
             tags_json = json.dumps(
                 article.tags,
@@ -136,7 +142,7 @@ def create_pack_database(
                     article.last_verified,
                     article.last_verified_against,
                     tags_json,
-                    article.file_hash,
+                    article.public_hash,
                 ),
             )
             connection.executemany(
@@ -176,15 +182,18 @@ def create_pack_database(
                 connection.execute(
                     """
                     INSERT INTO chunks(
-                      chunk_id, article_id, section_id, heading, body,
+                      chunk_rowid, chunk_id, article_id, section_id, title, heading, tags, body,
                       start_line, end_line, chunk_hash, token_count, search_tokens
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
+                        next_chunk_rowid,
                         chunk.chunk_id,
                         chunk.article_id,
                         chunk.section_id,
+                        article.title,
                         chunk.heading,
+                        " ".join(article.tags),
                         chunk.body,
                         chunk.start_line,
                         chunk.end_line,
@@ -193,21 +202,8 @@ def create_pack_database(
                         chunk.search_tokens,
                     ),
                 )
-                connection.execute(
-                    """
-                    INSERT INTO chunks_fts(
-                      chunk_id, title, heading, tags, body, search_tokens
-                    ) VALUES (?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        chunk.chunk_id,
-                        article.title,
-                        chunk.heading,
-                        " ".join(article.tags),
-                        chunk.body,
-                        chunk.search_tokens,
-                    ),
-                )
+                next_chunk_rowid += 1
+        connection.execute("INSERT INTO chunks_fts(chunks_fts) VALUES ('rebuild')")
         connection.commit()
         connection.execute("VACUUM")
         quick_check = connection.execute("PRAGMA quick_check").fetchone()

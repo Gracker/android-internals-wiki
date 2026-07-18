@@ -5,7 +5,6 @@ on:
     branches: [master, develop]
     paths:
       - "src/**"
-      - "metadata/queue.json"
       - "knowledge-pack/**"
       - "scripts/knowledge_pack/**"
       - "scripts/build_knowledge_pack.py"
@@ -25,7 +24,6 @@ on:
     branches: [master, develop]
     paths:
       - "src/**"
-      - "metadata/queue.json"
       - "knowledge-pack/**"
       - "scripts/knowledge_pack/**"
       - "scripts/build_knowledge_pack.py"
@@ -64,7 +62,7 @@ jobs:
       - name: Report repository-wide metadata debt
         continue-on-error: true
         run: python scripts/check-metadata.py
-      - name: Build strict candidate
+      - name: Build all-body candidate
         run: >-
           python scripts/build_knowledge_pack.py
           --output dist/knowledge-pack

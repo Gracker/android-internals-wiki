@@ -35,10 +35,13 @@ map, build and validation commands, writing rules, and contribution workflow.
 
 ## Knowledge Pack and licensing
 
-Policy-eligible finalized articles can be published as a versioned, read-only
-SmartPerfetto Knowledge Pack. The private source repository, drafts, review
-queues, logs, and local paths are not included. Publication eligibility is
-defined by [`knowledge-pack/policy.yaml`](knowledge-pack/policy.yaml).
+Every body Markdown file under `src/` can be published in the versioned,
+read-only SmartPerfetto Knowledge Pack. Workflow state, Task 6/Task 9 results,
+and review queues are audit metadata rather than inclusion gates. Navigation
+README/SUMMARY files and generated graph reports are not article bodies. Local
+private-path lines are redacted from the public projection, and secret findings
+fail the release. The exact policy is defined by
+[`knowledge-pack/policy.yaml`](knowledge-pack/policy.yaml).
 
 The content is available under either:
 

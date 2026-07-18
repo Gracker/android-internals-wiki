@@ -46,3 +46,31 @@ def scan_public_text(text: str) -> tuple[SecurityFinding, ...]:
         if pattern.search(text):
             findings.append(SecurityFinding(code=code, severity="exclude"))
     return tuple(findings)
+
+
+def redact_private_context_lines(text: str) -> tuple[str, tuple[str, ...]]:
+    """Remove complete lines containing private context while preserving line numbers."""
+
+    output: list[str] = []
+    redaction_codes: list[str] = []
+    for line in text.splitlines(keepends=True):
+        codes = sorted(
+            {
+                code
+                for code, pattern in PRIVATE_CONTEXT_PATTERNS
+                if pattern.search(line)
+            }
+        )
+        if not codes:
+            output.append(line)
+            continue
+        newline = ""
+        if line.endswith("\r\n"):
+            newline = "\r\n"
+        elif line.endswith("\n"):
+            newline = "\n"
+        elif line.endswith("\r"):
+            newline = "\r"
+        output.append(f"[REDACTED_PRIVATE_CONTEXT:{','.join(codes)}]{newline}")
+        redaction_codes.extend(codes)
+    return "".join(output), tuple(redaction_codes)
