@@ -7,6 +7,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 import tempfile
 import threading
@@ -162,16 +163,24 @@ class TufRepositoryTest(unittest.TestCase):
             if path.is_file()
         }
 
-        refreshed = publish(
-            REPO_ROOT,
-            self.repository,
-            None,
-            self.keys,
-            None,
-            None,
-            None,
-            refresh_metadata=True,
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(REPO_ROOT / "scripts" / "publish_knowledge_pack.py"),
+                "--repo",
+                str(REPO_ROOT),
+                "publish",
+                "--repository",
+                str(self.repository),
+                "--keys-dir",
+                str(self.keys),
+                "--refresh-metadata",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
         )
+        refreshed = json.loads(completed.stdout)
 
         after = inspect_repository(self.repository)
         self.assertTrue(refreshed["published"])
