@@ -74,5 +74,32 @@
     "priority": 80,
     "status": "pending",
     "path": "src/part5-app/ch22-rendering-practice/47-compose-nested-scroll-gesture-performance.md"
+  },
+  {
+    "section": "2.31",
+    "section_title": "Android 17 Display Mode 选择与 RefreshRateSelector 评分机制",
+    "priority": 85,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "DisplayModeController 四态状态机与 RefreshRateSelector 评分机制 — 基于 android-17.0.0_r1 源码，拆解 SurfaceFlinger Display Mode 切换从 Layer/DisplayDevice 抽取到独立 DisplayModeController 的架构变化，RefreshRateSelector 三组输入评分计算，getRankedFrameRatesLocked 浮点分曲线，FrameRateOverrideMappings 双路 UID-level override 合并，modeset_state_machine flag 控制的双槽/单槽模式切换",
+        "suggestion": "章节已 finalized，建议判断是否适合在下次修订时补充 DisplayModeController.initiateModeChange 两条路径及 kernel idle timer 双路径判别"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-07-18T10:33:02.169990",
+    "status": "pending"
+  },
+  {
+    "chapter": "25.32",
+    "title": "插件化包体积优化 — 历史演进与现代替代方案",
+    "priority": 80,
+    "status": "pending",
+    "path": "src/part5-app/ch25-power-size/32-plugin-dynamic-loading-size-optimization.md"
   }
 ]

@@ -62,6 +62,8 @@ last_task9_autofix_at: '2026-06-07'
 last_deepseek_polish_at: 2026-05-25
 deepseek_polish_state: done
 last_task6_at: 2026-06-07T13:06:00+08:00
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-18
 ---
 
 
@@ -186,7 +188,7 @@ Benchmark 分数最适合做“设备能力分层”。把它和线上 APM 连�
 | 内存容量 | 设备信息 / 线上采集 | OOM、后台恢复、缓存策略 |
 | 热稳定性 | 3DMark stress / PerfDog 长测 | 长时间游戏、视频、直播 |
 
-Android Performance Class（Media Performance Class）适合作为设备分层的第一层粗筛。Android 12+ 设备可通过 `Build.VERSION.MEDIA_PERFORMANCE_CLASS` 暴露等级；Jetpack Core Performance 的 `DevicePerformance.mediaPerformanceClass` 可以提供兼容查询。它给出的是系统声明的媒体能力下限，覆盖内存、I/O、编解码、相机等维度。Benchmark 分数再用于补充更细的 CPU、GPU、存储和热稳定性差异。
+做设备分层时，先用 Android Performance Class（Media Performance Class）作为第一层粗筛。Android 12+ 设备通过 `Build.VERSION.MEDIA_PERFORMANCE_CLASS` 暴露等级，Jetpack Core Performance 的 `DevicePerformance.mediaPerformanceClass` 提供兼容查询。它给出的是系统声明的媒体能力下限，覆盖内存、I/O、编解码、相机等维度。更细的 CPU、GPU、存储和热稳定性差异，再用 Benchmark 分数补充。
 
 | 信号 | 用法 | 边界 |
 |---|---|---|
