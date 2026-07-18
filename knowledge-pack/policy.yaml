@@ -23,6 +23,7 @@ eligibility:
     - rework
     - blocked
     - in-progress
+    - in_progress
 
 exported_metadata:
   - title
