@@ -17,7 +17,8 @@
   - [1.44 Android 17 Binder IPC 优先级继承与内核批处理流水线](part1-fundamentals/ch01-architecture/1.44-binder-ipc-priority-inheritance.md)
   - [1.45 Android 17 Staged Install 状态机与原子性安装](part1-fundamentals/ch01-architecture/1.45-staged-install-state-machine.md)
   - [1.46 Android 17 ResourcesManager 与 Configuration 变更性能](part1-fundamentals/ch01-architecture/1.46-resourcesmanager-configuration-performance.md)
-  - [1.53 Android 17 Binder IPC 优先级继承与异步批处理流水线](part1-fundamentals/ch01-architecture/1-53-android17-binder-ipc-优先级继承与异步批处理流水线.md)  - [1.33 Android 17 Binder 线程池实现机制与调优参数](part1-fundamentals/ch01-architecture/01.33-gap-analysis.md)
+  - [1.53 Android 17 Binder IPC 优先级继承与异步批处理流水线](part1-fundamentals/ch01-architecture/1-53-android17-binder-ipc-优先级继承与异步批处理流水线.md)
+  - [1.33 Android 17 Binder 线程池实现机制与调优参数](part1-fundamentals/ch01-architecture/01.33-gap-analysis.md)
 
 
   - [1.54 Android 17 Binder 线程池实现机制与调优参数](part1-fundamentals/ch01-architecture/1.54-binder-thread-pool-implementation.md)
@@ -37,24 +38,29 @@
   - [1.67 Android 17 PackageManager 架构与性能优化](part1-fundamentals/ch01-architecture/1.67-android17-packagemanager-architecture-performance.md)
   - [1.68 Android 17 ActivityManager 架构与性能优化](part1-fundamentals/ch01-architecture/1.68-android17-activitymanager-architecture-performance.md)
 - [第 2 章：渲染管线](part2-performance/ch02-rendering/README.md)
-  - [2.1 GPU 渲染管线架构演进](part2-performance/ch02-rendering/2.1-gpu-rendering-pipeline-evolution.md)  - [Compose Pager 从基础到高级动画](part2-performance/ch2-rendering/2.52-Compose-Pager-从基础到高级动画.md)
+  - [2.1 GPU 渲染管线架构演进](part2-performance/ch02-rendering/2.1-gpu-rendering-pipeline-evolution.md)
+  - [Compose Pager 从基础到高级动画](part2-performance/ch2-rendering/2.52-Compose-Pager-从基础到高级动画.md)
 - [2.5 Compose Pager 从基础到高级动画](part2-performance/ch02-rendering/2.5-compose-pager-advanced-animations.md)
   - [2.15 Android 17 GPU 图形调试与性能优化工具链](part1-fundamentals/ch02-rendering/2.15-android17-gpu-debug-tools.md)
   - [2.3 GPU 调试性能工具链源码调研](part2-performance/ch02-rendering/2.3-gpu-debug-performance-tools.md)
-  - [2.51 Android 17 GPU 调试性能工具链](part1-fundamentals/ch02-rendering/2.51-android17-gpu-debug-performance-tools.md)  - [2.11 Android 17 GPU 图形调试与性能优化工具链](part1-fundamentals/ch02-rendering/11-gap-analysis.md)  - [2.13 Android 17 eBPF观测增强](part1-fundamentals/ch13-profiling/13-gap-analysis.md)
+  - [2.51 Android 17 GPU 调试性能工具链](part1-fundamentals/ch02-rendering/2.51-android17-gpu-debug-performance-tools.md)
+  - [2.11 Android 17 GPU 图形调试与性能优化工具链](part1-fundamentals/ch02-rendering/11-gap-analysis.md)
+  - [2.13 Android 17 eBPF观测增强](part1-fundamentals/ch13-profiling/13-gap-analysis.md)
   - [2.32 GraphicBuffer 内存池化与 BufferQueue Slot 复用机制](part1-fundamentals/ch02-rendering/32-graphic-buffer-memory-pool.md)
   - [2.16 Android 17 GPU 调试与性能优化工具链](part2-performance/ch02-rendering/2.16-android17-gpu-debugging-tools-chain.md)
 
 
 
   - [2.6 Android 17 eBPF观测增强](part1-fundamentals/ch01-architecture/2.6-ebpf-observability-enhancement.md)
-  - [2.7 Android 17 GPU 图形调试与性能优化工具链]
+  - [2.7 Android 17 GPU 图形调试与性能优化工具链](part1-fundamentals/ch01-architecture/2.7-gpu-debug-performance-tools-chain.md)
   - [2.10 Android 17 Startup Insights Gaps](part2-performance/ch02-rendering/2.10-android17-startup-insights-gaps.md)
   - [2.12 Android 17 Startup Insights Application Start Info](part2-performance/ch02-rendering/2.12-android17-startup-insights-application-start-info.md)
   - [2.14 Android 17 信号处理机制与debuggerd架构迁移](part2-performance/ch02-rendering/2.14-android17-signal-debuggerd-architecture.md)
   - [2.9 Android 17 GPU Debug Performance Tools Source](part2-performance/ch02-rendering/2.9-android17-gpu-debug-performance-tools-source.md)
-(part1-fundamentals/ch01-architecture/2.7-gpu-debug-performance-tools-chain.md)
-- [第 4 章：内存管理](part1-fundamentals/ch04-memory/README.md)  - [4.43 Android 17 LMKD 用户态迁移 + PSI 协同机制源码级调研](part1-fundamentals/ch04-memory/04.43-gap-analysis.md)  - [4.44 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/04.44-gap-analysis.md)  - [4.45 Android 17 CPU 缓存局部性与 PSS 内存核算源码机制](part1-fundamentals/ch05-cpu-power/06-gap-analysis.md)
+- [第 4 章：内存管理](part1-fundamentals/ch04-memory/README.md)
+- [4.43 Android 17 LMKD 用户态迁移 + PSI 协同机制源码级调研](part1-fundamentals/ch04-memory/04.43-gap-analysis.md)
+- [4.44 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/04.44-gap-analysis.md)
+- [4.45 Android 17 CPU 缓存局部性与 PSS 内存核算源码机制](part1-fundamentals/ch05-cpu-power/06-gap-analysis.md)
 
 
 
@@ -62,10 +68,10 @@
 - [4.34 Android 17 ART HeapTask 系统的 7 个子类实现](part1-fundamentals/ch04-memory/4.34-android17-art-heaptask-system-7-subclasses.md)
   - [4.35 Android 17 CPU 缓存局部性与 PSS 内存核算源码机制](part1-fundamentals/ch04-memory/4.35-android17-cpu-cache-locality-pss-accounting.md)
 
-  - [4.9 Android 17 ARM MTE 内存标签扩展实战]
+  - [4.9 Android 17 ARM MTE 内存标签扩展实战](part1-fundamentals/ch04-memory/4.9-android17-memory-tagging-extension-mte.md)
   - [4.46 Android 17 AI Agent Memory Sandboxed Data Reuse](part1-fundamentals/ch04-memory/4.46-android17-ai-agent-memory-sandboxed-data-reuse.md)
   - [4.47 AI Agent Memory Management](part1-fundamentals/ch04-memory/4.47-ai-agent-memory-management.md)
-(part1-fundamentals/ch04-memory/4.9-android17-memory-tagging-extension-mte.md)  - [4.49 Android 17 trimMemory 回调 API 演进与 ART Heap Trim 链路](part1-fundamentals/ch04-memory/4.49-android17-trim-memory-api-evolution.md)
+  - [4.49 Android 17 trimMemory 回调 API 演进与 ART Heap Trim 链路](part1-fundamentals/ch04-memory/4.49-android17-trim-memory-api-evolution.md)
   - [4.50 Android 17 LMKD v2 用户态迁移 + PSI 分层内存压力治理](part1-fundamentals/ch04-memory/4.50-lmkd-v2-psi-tiered-pressure-governance.md)
 - [第 6 章：存储性能](part1-fundamentals/ch06-storage/README.md)
   - [6.2 Android 17 SharedPreferencesImpl ANR 机制](part1-fundamentals/ch06-storage/6.2-sharedpreferences-anr-optimization.md)
@@ -106,7 +112,6 @@
   - [14.24 Android 17 simpleperf 微架构级性能采样与工作流增强](part3-tools/ch14-other-tools/24-android17-simpleperf-microarch-profiling.md)
   - [14.25 Android 17 eBPF 性能可观测性程序矩阵扩展](part3-tools/ch14-other-tools/14.25-android17-ebpf-observability-enhancement.md)
   - [8.33 Android 17 Modular Startup Framework Dependency Graph](part1-fundamentals/ch08-startup/8.33-android17-modular-startup-framework-dependency-graph.md)
-(part3-tools/ch14-other-tools/25-android17-ebpf-observability-matrix.md)
   - [8.37 Android 13+ PerformanceHintManager 实战：从 NDK hintUntilFrame 到 Java 集成](part1-fundamentals/ch08-startup/8.37-android17-performance-hint-manager.md)
 - [第 8 章：响应速度优化](src/part2-performance/ch08-responsiveness/README.md)
   - [8.1 响应速度原理](src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md)
@@ -144,7 +149,8 @@
   - [9.8 ANR 监控方案设计](src/part2-performance/ch09-anr/08-anr-monitoring-design.md)
   - [9.9 Android 17 ANR 预警系统](src/part2-performance/ch09-anr/09-android17-anr-warning-system.md)
   - [9.10 Android 17 ANR 预警回调与类型枚举](src/part2-performance/ch09-anr/10-android17-anr-warning-callback.md)
-  - [9.11 企业级 ANR 监控平台架构设计](src/part2-performance/ch09-anr/9.11-enterprise-anr-monitoring-platform-design.md)  - [9.12 Android 17 ANR 输入事件超时检测双层预警机制](part2-fundamentals/ch09-architecture/9-12-android17-anr-输入事件超时检测双层预警机制.md)
+  - [9.11 企业级 ANR 监控平台架构设计](src/part2-performance/ch09-anr/9.11-enterprise-anr-monitoring-platform-design.md)
+  - [9.12 Android 17 ANR 输入事件超时检测双层预警机制](part2-fundamentals/ch09-architecture/9-12-android17-anr-输入事件超时检测双层预警机制.md)
   - [9.13 ANR 日志 CPU 数据系统化分析方法论](part2-performance/ch09-anr/13-anr-log-cpu-analysis-methodology.md)
 - [第 12 章：音频性能优化](part3-system/ch12-audio-performance/README.md)
   - [12.33 Android 17 后台音频硬化与 LE Audio 功耗治理](part3-system/ch12-audio-performance/12.33-android17-background-audio-hardening-leaudio-power.md)
