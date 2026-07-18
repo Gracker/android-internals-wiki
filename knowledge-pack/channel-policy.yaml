@@ -1,0 +1,11 @@
+schema_version: 1
+channel: stable
+metadata_expiry:
+  root_days: 365
+  targets_days: 365
+  nightly_days: 30
+  snapshot_days: 7
+  timestamp_hours: 48
+retained_local_versions: 2
+minimum_safe_version: null
+revoked_versions: []

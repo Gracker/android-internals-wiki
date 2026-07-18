@@ -32,3 +32,19 @@ The [Android Performance Ecosystem](https://github.com/Gracker/android-performan
 
 Read the [Chinese README](README.md) for the current project status, directory
 map, build and validation commands, writing rules, and contribution workflow.
+
+## Knowledge Pack and licensing
+
+Policy-eligible finalized articles can be published as a versioned, read-only
+SmartPerfetto Knowledge Pack. The private source repository, drafts, review
+queues, logs, and local paths are not included. Publication eligibility is
+defined by [`knowledge-pack/policy.yaml`](knowledge-pack/policy.yaml).
+
+The content is available under either:
+
+- CC BY-NC-SA 4.0 for community use; or
+- a separate written [AIW Commercial License](COMMERCIAL-LICENSE.md).
+
+Possession of a Pack does not itself grant commercial-use rights. See
+[`KNOWLEDGE-PACK-LICENSE.md`](KNOWLEDGE-PACK-LICENSE.md) for the exact
+SmartPerfetto redistribution boundary.
