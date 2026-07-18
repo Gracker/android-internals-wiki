@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import shutil
 import sqlite3
@@ -63,6 +64,28 @@ class EligibilityTest(unittest.TestCase):
             public_content_fingerprint(first.accepted),
             public_content_fingerprint(second.accepted),
         )
+
+    def test_known_legacy_queue_markers_do_not_hide_blocked_paths(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="aiw-pack-queue-") as temp_dir:
+            fixture = Path(temp_dir)
+            shutil.copytree(FIXTURE_ROOT, fixture, dirs_exist_ok=True)
+            queue_path = fixture / "metadata" / "queue.json"
+            queue = json.loads(queue_path.read_text(encoding="utf-8"))
+            queue_path.write_text(
+                json.dumps(
+                    ["pending", "in_progress", "items", "queue", *queue]
+                ),
+                encoding="utf-8",
+            )
+
+            result = scan_eligible_articles(fixture, load_policy())
+
+        self.assertEqual(
+            [article.relative_path for article in result.accepted],
+            ["src/good.md"],
+        )
+        reasons = {entry.relative_path: entry.reason for entry in result.excluded}
+        self.assertEqual(reasons["src/blocked.md"], "blocking_queue_entry")
 
     def test_malformed_yaml_is_excluded_without_aborting_scan(self) -> None:
         with tempfile.TemporaryDirectory(prefix="aiw-pack-malformed-") as temp_dir:

@@ -24,6 +24,14 @@ VALID_CONFIDENCE = {
     "medium-low": "low",
     "low": "low",
 }
+LEGACY_QUEUE_MARKERS = {
+    "pending",
+    "in_progress",
+    "completed",
+    "rejected",
+    "items",
+    "queue",
+}
 
 
 def _normalize_path(value: str) -> str:
@@ -40,6 +48,8 @@ def load_blocked_queue_paths(
         raise ValueError("metadata/queue.json must contain a list")
     blocked: set[str] = set()
     for item in loaded:
+        if isinstance(item, str) and item in LEGACY_QUEUE_MARKERS:
+            continue
         if not isinstance(item, dict):
             raise ValueError("metadata/queue.json entries must be objects")
         status = scalar_text(item.get("status"))
