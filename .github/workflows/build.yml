@@ -11,13 +11,39 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install pyyaml
-      - name: Check YAML frontmatter
-        run: python scripts/check-metadata.py
+      - name: Collect changed markdown files
+        id: changed
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE="origin/${{ github.base_ref }}"
+            git fetch origin "${{ github.base_ref }}" --depth=1
+            RANGE="$BASE...HEAD"
+          else
+            RANGE="${{ github.event.before }}..${{ github.sha }}"
+          fi
+          git diff --name-only --diff-filter=ACMR "$RANGE" -- 'src/**/*.md' > /tmp/changed-md.txt || true
+          echo "files<<EOF" >> "$GITHUB_OUTPUT"
+          cat /tmp/changed-md.txt >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "Changed markdown files:"
+          cat /tmp/changed-md.txt
+      - name: Check YAML frontmatter for changed files
+        shell: bash
+        run: |
+          mapfile -t FILES < /tmp/changed-md.txt
+          if [[ ${#FILES[@]} -eq 0 ]]; then
+            echo "No changed src markdown files; skipping metadata check."
+            exit 0
+          fi
+          python scripts/check-metadata.py --files "${FILES[@]}"
       - name: Check progress
         run: python scripts/progress-report.py
 

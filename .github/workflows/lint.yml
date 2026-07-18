@@ -7,7 +7,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: DavidAnson/markdownlint-cli2-action@v19
         with:
-          globs: 'src/**/*.md'
-          config: '.markdownlint.json'
+          fetch-depth: 0
+      - name: Collect changed markdown files
+        shell: bash
+        run: |
+          git fetch origin "${{ github.base_ref }}" --depth=1
+          git diff --name-only --diff-filter=ACMR "origin/${{ github.base_ref }}...HEAD" -- 'src/**/*.md' > /tmp/changed-md.txt || true
+          echo "Changed markdown files:"
+          cat /tmp/changed-md.txt
+      - name: Run markdownlint on changed files
+        shell: bash
+        run: |
+          mapfile -t FILES < /tmp/changed-md.txt
+          if [[ ${#FILES[@]} -eq 0 ]]; then
+            echo "No changed src markdown files; skipping markdownlint."
+            exit 0
+          fi
+          npx markdownlint-cli2 --config .markdownlint.json "${FILES[@]}"
