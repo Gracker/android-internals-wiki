@@ -32,7 +32,8 @@ SQLite、FTS、压缩或公开投影算法且正文投影未变化时，必须�
 master 的确定 SHA 并从头构建，不复用候选 artifact。发布器先比较公开内容
 fingerprint：
 
-- 内容未变化：成功 no-op，不创建空版本；
+- 内容未变化：不创建空 Pack 版本，但续签 nightly、snapshot、timestamp，避免
+  无内容变更期间在线元数据过期；
 - 内容变化：使用 UTC 日期生成 `YYYY.MM.DD.N`，同日从 `0` 递增；
 - 已存在的版本和目标文件永不覆盖；
 - 更新 delegated targets、snapshot、timestamp 后一次 Git commit 推送；
