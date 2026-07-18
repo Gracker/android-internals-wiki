@@ -132,8 +132,9 @@ mdbook serve
   [AIW Commercial License](COMMERCIAL-LICENSE.md)。
 
 仅下载仓库或 Knowledge Pack 不代表获得商业授权。SmartPerfetto 使用的公开
-Knowledge Pack 只包含严格解析、`finalized`、Task6/Task9 明确通过且不在阻塞
-队列中的文章。构建和分发规则见
+Knowledge Pack 收录 `src/` 下所有正文，不以 `status`、`pipeline_stage`、
+Task6/Task9 或 queue 状态作为门槛。各级 `README.md`、`SUMMARY.md` 和自动生成的
+图报告不属于正文；私有路径行会在公开投影中脱敏，密钥命中会阻断发布。构建和分发规则见
 [`knowledge-pack/policy.yaml`](knowledge-pack/policy.yaml)，Pack 再分发边界见
 [`KNOWLEDGE-PACK-LICENSE.md`](KNOWLEDGE-PACK-LICENSE.md)。
 

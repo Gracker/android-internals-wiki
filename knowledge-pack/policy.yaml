@@ -3,27 +3,21 @@ pack_id: android-internals
 
 distribution:
   smartperfetto:
-    default: include-if-eligible
+    default: include-body-markdown
+    projection_revision: 2
     excluded_paths:
-      - src/preface/**
-      - src/appendix/**
       - src/graphify-out/**
     excluded_tags: []
     blocklist: []
 
-eligibility:
-  status: finalized
-  pipeline_stage: ready-to-publish
-  task6_state: reviewed
-  task6_result: pass-light-edit
-  task9_state: reviewed
-  task9_result: pass-tech-review
-  blocking_queue_statuses:
-    - pending
-    - rework
-    - blocked
-    - in-progress
-    - in_progress
+audit_metadata:
+  workflow_fields:
+    - status
+    - pipeline_stage
+    - task6_state
+    - task6_result
+    - task9_state
+    - task9_result
 
 exported_metadata:
   - title

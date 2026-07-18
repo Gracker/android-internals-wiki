@@ -12,7 +12,8 @@ class ParsedArticle:
     metadata: dict[str, Any]
     body: str
     body_start_line: int
-    file_hash: str
+    metadata_quality: str = "strict"
+    metadata_error: str | None = None
 
 
 @dataclass(frozen=True)
@@ -52,7 +53,11 @@ class PackArticle:
     last_verified_against: str | None
     tags: tuple[str, ...]
     sources: tuple[dict[str, str], ...]
-    file_hash: str
+    public_hash: str
+    metadata_quality: str
+    metadata_error: str | None
+    audit_metadata: tuple[tuple[str, str], ...]
+    redaction_codes: tuple[str, ...]
     sections: tuple[Section, ...] = field(default_factory=tuple)
     chunks: tuple[Chunk, ...] = field(default_factory=tuple)
 

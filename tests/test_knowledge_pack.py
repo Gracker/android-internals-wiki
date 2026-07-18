@@ -13,15 +13,22 @@ import yaml
 
 from scripts.knowledge_pack.eligibility import (
     public_content_fingerprint,
-    scan_eligible_articles,
+    scan_corpus_articles,
 )
-from scripts.knowledge_pack.frontmatter import DuplicateKeyError, parse_article
+from scripts.knowledge_pack.frontmatter import (
+    DuplicateKeyError,
+    parse_article,
+)
 from scripts.knowledge_pack.markdown_chunks import (
     build_sections_and_chunks,
     stable_article_id,
     tokenize_search_text,
 )
-from scripts.knowledge_pack.security_scan import scan_public_text
+from scripts.knowledge_pack.manifest import build_audit_summary
+from scripts.knowledge_pack.security_scan import (
+    redact_private_context_lines,
+    scan_public_text,
+)
 from scripts.knowledge_pack.sqlite_pack import (
     create_pack_database,
     search_database,
@@ -45,49 +52,64 @@ class FrontmatterTest(unittest.TestCase):
             parse_article("src/duplicate.md", raw)
 
 
-class EligibilityTest(unittest.TestCase):
-    def test_only_strict_reviewed_non_blocked_article_is_accepted(self) -> None:
-        result = scan_eligible_articles(FIXTURE_ROOT, load_policy())
+class CorpusInclusionTest(unittest.TestCase):
+    def test_workflow_state_and_queue_do_not_gate_body_inclusion(self) -> None:
+        result = scan_corpus_articles(FIXTURE_ROOT, load_policy())
         self.assertEqual(
             [article.relative_path for article in result.accepted],
-            ["src/good.md"],
+            [
+                "src/blocked.md",
+                "src/draft.md",
+                "src/duplicate.md",
+                "src/good.md",
+            ],
         )
-        reasons = {entry.relative_path: entry.reason for entry in result.excluded}
-        self.assertEqual(reasons["src/blocked.md"], "blocking_queue_entry")
-        self.assertEqual(reasons["src/draft.md"], "status_not_eligible")
-        self.assertTrue(reasons["src/duplicate.md"].startswith("strict_parse_failed"))
+        qualities = {
+            article.relative_path: article.metadata_quality
+            for article in result.accepted
+        }
+        self.assertEqual(qualities["src/draft.md"], "strict")
+        self.assertEqual(qualities["src/duplicate.md"], "invalid")
+        audit = build_audit_summary(
+            result,
+            "2026-07-18T00:00:00Z",
+            "0" * 40,
+        )
+        self.assertEqual(
+            audit["acceptedWorkflowMetadataCounts"]["status"],
+            {"(missing)": 1, "draft": 1, "finalized": 2},
+        )
+        self.assertEqual(
+            audit["acceptedMetadataErrorCounts"],
+            {"DuplicateKeyError": 1},
+        )
 
     def test_content_fingerprint_is_stable(self) -> None:
-        first = scan_eligible_articles(FIXTURE_ROOT, load_policy())
-        second = scan_eligible_articles(FIXTURE_ROOT, load_policy())
+        first = scan_corpus_articles(FIXTURE_ROOT, load_policy())
+        second = scan_corpus_articles(FIXTURE_ROOT, load_policy())
         self.assertEqual(
             public_content_fingerprint(first.accepted),
             public_content_fingerprint(second.accepted),
         )
 
-    def test_known_legacy_queue_markers_do_not_hide_blocked_paths(self) -> None:
+    def test_queue_changes_do_not_change_public_corpus(self) -> None:
         with tempfile.TemporaryDirectory(prefix="aiw-pack-queue-") as temp_dir:
             fixture = Path(temp_dir)
             shutil.copytree(FIXTURE_ROOT, fixture, dirs_exist_ok=True)
+            before = scan_corpus_articles(fixture, load_policy())
             queue_path = fixture / "metadata" / "queue.json"
-            queue = json.loads(queue_path.read_text(encoding="utf-8"))
             queue_path.write_text(
-                json.dumps(
-                    ["pending", "in_progress", "items", "queue", *queue]
-                ),
+                json.dumps([{"status": "blocked", "file": "src/good.md"}]),
                 encoding="utf-8",
             )
-
-            result = scan_eligible_articles(fixture, load_policy())
+            after = scan_corpus_articles(fixture, load_policy())
 
         self.assertEqual(
-            [article.relative_path for article in result.accepted],
-            ["src/good.md"],
+            public_content_fingerprint(before.accepted),
+            public_content_fingerprint(after.accepted),
         )
-        reasons = {entry.relative_path: entry.reason for entry in result.excluded}
-        self.assertEqual(reasons["src/blocked.md"], "blocking_queue_entry")
 
-    def test_malformed_yaml_is_excluded_without_aborting_scan(self) -> None:
+    def test_closed_malformed_frontmatter_includes_body_with_fallback(self) -> None:
         with tempfile.TemporaryDirectory(prefix="aiw-pack-malformed-") as temp_dir:
             fixture = Path(temp_dir)
             shutil.copytree(FIXTURE_ROOT, fixture, dirs_exist_ok=True)
@@ -101,12 +123,93 @@ class EligibilityTest(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            result = scan_eligible_articles(fixture, load_policy())
+            result = scan_corpus_articles(fixture, load_policy())
+
+        malformed_article = next(
+            article
+            for article in result.accepted
+            if article.relative_path == "src/malformed.md"
+        )
+        self.assertEqual(malformed_article.metadata_quality, "invalid")
+        self.assertEqual(malformed_article.title, "malformed")
+
+    def test_unclosed_frontmatter_with_h1_includes_body_only(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="aiw-pack-unclosed-") as temp_dir:
+            fixture = Path(temp_dir)
+            shutil.copytree(FIXTURE_ROOT, fixture, dirs_exist_ok=True)
+            (fixture / "src" / "unclosed.md").write_text(
+                "---\ntitle: Unclosed\n# Body that must not include metadata\n\nArticle text.\n",
+                encoding="utf-8",
+            )
+            result = scan_corpus_articles(fixture, load_policy())
+
+        article = next(
+            item for item in result.accepted if item.relative_path == "src/unclosed.md"
+        )
+        self.assertEqual(article.metadata_quality, "invalid")
+        self.assertNotIn("title: Unclosed", article.chunks[0].body)
+        self.assertEqual(article.chunks[0].heading, "Body that must not include metadata")
+        self.assertIn("Article text.", article.chunks[0].body)
+
+    def test_unclosed_frontmatter_without_h1_is_excluded(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="aiw-pack-unclosed-empty-") as temp_dir:
+            fixture = Path(temp_dir)
+            shutil.copytree(FIXTURE_ROOT, fixture, dirs_exist_ok=True)
+            (fixture / "src" / "unclosed.md").write_text(
+                "---\ntitle: Unclosed\nmetadata only\n",
+                encoding="utf-8",
+            )
+            result = scan_corpus_articles(fixture, load_policy())
 
         reasons = {entry.relative_path: entry.reason for entry in result.excluded}
+        self.assertTrue(reasons["src/unclosed.md"].startswith("body_parse_failed"))
+
+    def test_private_path_redaction_is_public_projection_stable(self) -> None:
+        fingerprints: list[str] = []
+        for username in ("alice", "bob"):
+            with tempfile.TemporaryDirectory(prefix="aiw-pack-redaction-") as temp_dir:
+                fixture = Path(temp_dir)
+                shutil.copytree(FIXTURE_ROOT, fixture, dirs_exist_ok=True)
+                draft_path = fixture / "src" / "draft.md"
+                draft_path.write_text(
+                    draft_path.read_text(encoding="utf-8")
+                    + f"\nPrivate note: /Users/{username}/private/source.md\n",
+                    encoding="utf-8",
+                )
+                result = scan_corpus_articles(fixture, load_policy())
+                article = next(
+                    item for item in result.accepted if item.relative_path == "src/draft.md"
+                )
+                self.assertIn("macos_user_path", article.redaction_codes)
+                self.assertIn("[REDACTED_PRIVATE_CONTEXT:macos_user_path]", article.chunks[-1].body)
+                self.assertFalse(scan_public_text(article.chunks[-1].body))
+                fingerprints.append(public_content_fingerprint(result.accepted))
+        self.assertEqual(fingerprints[0], fingerprints[1])
+
+    def test_fatal_secret_in_body_aborts_public_build(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="aiw-pack-secret-") as temp_dir:
+            fixture = Path(temp_dir)
+            shutil.copytree(FIXTURE_ROOT, fixture, dirs_exist_ok=True)
+            draft_path = fixture / "src" / "draft.md"
+            draft_path.write_text(
+                draft_path.read_text(encoding="utf-8")
+                + "\n-----BEGIN PRIVATE KEY-----\nsecret\n-----END PRIVATE KEY-----\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "fatal secret finding"):
+                scan_corpus_articles(fixture, load_policy())
+
+    def test_repository_corpus_includes_every_body_markdown(self) -> None:
+        result = scan_corpus_articles(REPO_ROOT, load_policy())
+        expected_paths = {
+            path.relative_to(REPO_ROOT).as_posix()
+            for path in (REPO_ROOT / "src").rglob("*.md")
+            if path.name.lower() not in {"readme.md", "summary.md"}
+            and "src/graphify-out/" not in path.relative_to(REPO_ROOT).as_posix()
+        }
         self.assertEqual(
-            reasons["src/malformed.md"],
-            "strict_parse_failed:ScannerError",
+            {article.relative_path for article in result.accepted},
+            expected_paths,
         )
 
 
@@ -160,10 +263,17 @@ class SecurityScanTest(unittest.TestCase):
         self.assertEqual(fatal[0].severity, "fatal")
         self.assertEqual(excluded[0].severity, "exclude")
 
+    def test_private_context_redaction_preserves_line_count(self) -> None:
+        original = "before\n/Users/alice/private/source.cc\nafter\n"
+        redacted, codes = redact_private_context_lines(original)
+        self.assertEqual(redacted.count("\n"), original.count("\n"))
+        self.assertEqual(codes, ("macos_user_path",))
+        self.assertFalse(scan_public_text(redacted))
+
 
 class SqlitePackTest(unittest.TestCase):
     def test_pack_database_is_searchable(self) -> None:
-        scan = scan_eligible_articles(FIXTURE_ROOT, load_policy())
+        scan = scan_corpus_articles(FIXTURE_ROOT, load_policy())
         with tempfile.TemporaryDirectory(prefix="aiw-pack-test-") as temp_dir:
             database_path = Path(temp_dir) / "content.sqlite"
             identity = {
@@ -184,6 +294,22 @@ class SqlitePackTest(unittest.TestCase):
                 self.assertEqual(
                     connection.execute("PRAGMA quick_check").fetchone()[0],
                     "ok",
+                )
+                article_columns = {
+                    row[1]
+                    for row in connection.execute("PRAGMA table_info(articles)")
+                }
+                self.assertNotIn("status", article_columns)
+                self.assertNotIn("pipeline_stage", article_columns)
+                self.assertEqual(
+                    connection.execute(
+                        """
+                        SELECT COUNT(*)
+                        FROM chunks_fts f
+                        JOIN chunks c ON c.chunk_rowid = f.rowid
+                        """
+                    ).fetchone()[0],
+                    connection.execute("SELECT COUNT(*) FROM chunks").fetchone()[0],
                 )
             finally:
                 connection.close()

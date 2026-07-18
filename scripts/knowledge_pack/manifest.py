@@ -53,6 +53,18 @@ def build_audit_summary(
     source_revision: str,
 ) -> dict[str, Any]:
     reasons = Counter(entry.reason for entry in scan.excluded)
+    metadata_quality = Counter(article.metadata_quality for article in scan.accepted)
+    metadata_errors = Counter(
+        article.metadata_error
+        for article in scan.accepted
+        if article.metadata_error is not None
+    )
+    workflow_counts: dict[str, Counter[str]] = {}
+    redaction_counts: Counter[str] = Counter()
+    for article in scan.accepted:
+        for field, value in article.audit_metadata:
+            workflow_counts.setdefault(field, Counter())[value] += 1
+        redaction_counts.update(article.redaction_codes)
     return {
         "schemaVersion": 1,
         "generatedAt": generated_at,
@@ -61,6 +73,13 @@ def build_audit_summary(
         "acceptedArticleCount": len(scan.accepted),
         "excludedArticleCount": len(scan.excluded),
         "excludedReasonCounts": dict(sorted(reasons.items())),
+        "acceptedMetadataQualityCounts": dict(sorted(metadata_quality.items())),
+        "acceptedMetadataErrorCounts": dict(sorted(metadata_errors.items())),
+        "acceptedWorkflowMetadataCounts": {
+            field: dict(sorted(counts.items()))
+            for field, counts in sorted(workflow_counts.items())
+        },
+        "redactedPrivateContextLineCounts": dict(sorted(redaction_counts.items())),
         "acceptedArticleIds": [article.article_id for article in scan.accepted],
     }
 
@@ -94,6 +113,9 @@ def build_manifest(
         "builder": {
             "name": "android-internals-knowledge-pack",
             "version": BUILDER_VERSION,
+            "projectionRevision": policy["distribution"]["smartperfetto"][
+                "projection_revision"
+            ],
         },
         "generatedAt": generated_at,
         "articleCount": len(scan.accepted),

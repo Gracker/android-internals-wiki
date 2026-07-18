@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-import hashlib
 import re
 from typing import Any
 
@@ -16,6 +15,7 @@ FRONTMATTER_PATTERN = re.compile(
     r"\A---[ \t]*\r?\n(?P<yaml>.*?)\r?\n---[ \t]*(?:\r?\n|\Z)",
     re.DOTALL,
 )
+BODY_H1_PATTERN = re.compile(r"(?m)^#[ \t]+.+$")
 
 
 class DuplicateKeyError(ValueError):
@@ -76,5 +76,54 @@ def parse_article(relative_path: str, raw: str) -> ParsedArticle:
         metadata=metadata,
         body=body,
         body_start_line=body_start_line,
-        file_hash=hashlib.sha256(raw.encode("utf-8")).hexdigest(),
+    )
+
+
+def parse_corpus_article(relative_path: str, raw: str) -> ParsedArticle:
+    """Extract a body even when optional source metadata needs a safe fallback."""
+
+    match = FRONTMATTER_PATTERN.match(raw)
+    if match is None:
+        if raw.startswith("---\n") or raw.startswith("---\r\n"):
+            body_match = BODY_H1_PATTERN.search(raw)
+            if body_match is None:
+                raise ValueError("unclosed_frontmatter_without_body_heading")
+            body = raw[body_match.start() :]
+            return ParsedArticle(
+                relative_path=relative_path,
+                metadata={},
+                body=body,
+                body_start_line=raw[: body_match.start()].count("\n") + 1,
+                metadata_quality="invalid",
+                metadata_error="UnclosedFrontmatterFence",
+            )
+        return ParsedArticle(
+            relative_path=relative_path,
+            metadata={},
+            body=raw,
+            body_start_line=1,
+            metadata_quality="missing",
+        )
+
+    body = raw[match.end() :]
+    body_start_line = raw[: match.end()].count("\n") + 1
+    try:
+        loaded = load_strict_yaml(match.group("yaml"))
+        if not isinstance(loaded, dict):
+            raise ValueError("frontmatter_must_be_mapping")
+        metadata = {str(key): value for key, value in loaded.items()}
+    except (ValueError, yaml.YAMLError) as error:
+        return ParsedArticle(
+            relative_path=relative_path,
+            metadata={},
+            body=body,
+            body_start_line=body_start_line,
+            metadata_quality="invalid",
+            metadata_error=type(error).__name__,
+        )
+    return ParsedArticle(
+        relative_path=relative_path,
+        metadata=metadata,
+        body=body,
+        body_start_line=body_start_line,
     )

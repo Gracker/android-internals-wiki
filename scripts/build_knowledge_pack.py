@@ -16,7 +16,7 @@ from typing import Any
 from knowledge_pack import BUILDER_VERSION, PACK_FORMAT_VERSION
 from knowledge_pack.eligibility import (
     public_content_fingerprint,
-    scan_eligible_articles,
+    scan_corpus_articles,
 )
 from knowledge_pack.frontmatter import load_strict_yaml
 from knowledge_pack.manifest import (
@@ -56,7 +56,6 @@ def _source_identity(repo_root: Path) -> tuple[str, str, bool]:
             "--porcelain=v1",
             "--",
             "src",
-            "metadata/queue.json",
             "knowledge-pack",
             "scripts/build_knowledge_pack.py",
             "scripts/knowledge_pack",
@@ -76,7 +75,8 @@ def _load_policy(path: Path) -> dict[str, Any]:
         ("schema_version",),
         ("pack_id",),
         ("distribution", "smartperfetto", "default"),
-        ("eligibility", "task9_result"),
+        ("distribution", "smartperfetto", "projection_revision"),
+        ("audit_metadata", "workflow_fields"),
         ("license", "expression"),
         ("compatibility", "smartperfetto_min_version"),
     )
@@ -86,8 +86,26 @@ def _load_policy(path: Path) -> dict[str, Any]:
             if not isinstance(value, dict) or segment not in value:
                 raise ValueError(f"policy missing {'.'.join(segments)}")
             value = value[segment]
-    if loaded["distribution"]["smartperfetto"]["default"] != "include-if-eligible":
+    if loaded["distribution"]["smartperfetto"]["default"] != "include-body-markdown":
         raise ValueError("unsupported distribution default")
+    projection_revision = loaded["distribution"]["smartperfetto"][
+        "projection_revision"
+    ]
+    if not isinstance(projection_revision, int) or projection_revision < 1:
+        raise ValueError("invalid distribution projection revision")
+    workflow_fields = loaded["audit_metadata"]["workflow_fields"]
+    if (
+        not isinstance(workflow_fields, list)
+        or not workflow_fields
+        or len(workflow_fields) > 32
+        or any(
+            not isinstance(field, str)
+            or re.fullmatch(r"[a-z][a-z0-9_]{0,79}", field) is None
+            for field in workflow_fields
+        )
+        or len(set(workflow_fields)) != len(workflow_fields)
+    ):
+        raise ValueError("invalid audit workflow fields")
     return loaded
 
 
@@ -112,23 +130,29 @@ def _public_content_fingerprint(
 ) -> str:
     digest = hashlib.sha256()
     digest.update(f"articles:{article_fingerprint}\n".encode("ascii"))
+    public_policy = {
+        "compatibility": policy["compatibility"],
+        "distribution": policy["distribution"],
+        "exported_metadata": policy["exported_metadata"],
+        "license": policy["license"],
+        "pack_id": policy["pack_id"],
+        "schema_version": policy["schema_version"],
+    }
     digest.update(
         json.dumps(
-            policy,
+            public_policy,
             ensure_ascii=False,
             sort_keys=True,
             separators=(",", ":"),
         ).encode("utf-8")
     )
     digest.update(b"\n")
-    inputs = [
+    public_notices = [
         repo_root / "LICENSE",
         repo_root / "COMMERCIAL-LICENSE.md",
         repo_root / "KNOWLEDGE-PACK-LICENSE.md",
-        repo_root / "scripts" / "build_knowledge_pack.py",
-        *sorted((repo_root / "scripts" / "knowledge_pack").glob("*.py")),
     ]
-    for path in inputs:
+    for path in public_notices:
         digest.update(str(path.relative_to(repo_root)).encode("utf-8"))
         digest.update(b"\0")
         digest.update(path.read_bytes())
@@ -146,13 +170,13 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
     revision, commit_time, dirty = _source_identity(repo_root)
     if dirty and not args.allow_dirty:
         raise ValueError(
-            "eligible source inputs are dirty; commit them or pass --allow-dirty for a development build"
+            "public corpus inputs are dirty; commit them or pass --allow-dirty for a development build"
         )
     generated_at = (
         normalize_utc_timestamp(args.built_at) if args.built_at else commit_time
     )
     _prepare_output(output_dir)
-    scan = scan_eligible_articles(repo_root, policy)
+    scan = scan_corpus_articles(repo_root, policy)
     if not scan.accepted:
         raise ValueError("source_generation_empty")
     fingerprint = _public_content_fingerprint(
@@ -217,7 +241,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--allow-dirty",
         action="store_true",
-        help="allow dirty eligible source inputs for local development only",
+        help="allow dirty public corpus inputs for local development only",
     )
     return parser.parse_args()
 
