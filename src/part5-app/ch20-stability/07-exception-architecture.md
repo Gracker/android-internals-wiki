@@ -3,7 +3,7 @@ title: "异常处理架构设计"
 chapter: "20.7"
 section: "20.7"
 status: "finalized"
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [exception-handling, safemode, hotfix, graceful-degradation]
 confidence: medium
@@ -21,18 +21,19 @@ last_task6_review_log: "logs/review/2026-06-23-11-review.md"
 task6_review_notes: "2026-06-23 Task6 二轮复审(Task9 08:34 auto-fix 后回归):pass-light-edit。Task9 修复(parentFile.fdatasync()→android.system.Os.open()+Os.fsync(), REASON_INITIALIZATION_FAILURE 补入 SafeMode 白名单)已验证到位,无引入新写作问题。无禁用词/高频词命中(正文)。不是X而是Y 句式 1 次(在限制内)。承担 1 处(line 272,中文日常用法,非物理动作隐喻,保留)。L1/L2 全部通过,无 B 类问题。queue.json 无 pending。task9_result 为 auto-fixed(非 pass-tech-review),不可自动晋升,送回 Task9 最终确认。"
 last_task2b_lite_at: "2026-06-16"
 last_task2a_at: "2026-05-15T05:33:00+08:00"
-task9_result: pass-tech-review
+task9_result: auto-fixed
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: 2026-06-23
-last_task9_at: "2026-06-23T11:24:00+08:00"
-last_task9_audit: "2026-06-23"
-last_task9_review_log: "logs/deep-review/2026-06-23-11-deep-review.md"
-task9_review_notes: "2026-06-23 Task9 最终确认: pass-tech-review。P0 0 / P1 5 / P2 8；主要技术问题已闭环，剩余 P2 建议已写入 suggestions.md。SafeMode 状态机、ApplicationExitInfo 集成、多进程崩溃处理等核心架构验证通过。"
+task9_reviewed_date: 2026-07-18
+last_task9_at: "2026-07-18T11:22:00+08:00"
+last_task9_audit: "2026-07-18"
+last_task9_review_log: "logs/deep-review/2026-07-18-11-audit.md"
+last_task9_autofix_at: "2026-07-18"
+task9_review_notes: "2026-06-23 Task9 最终确认: pass-tech-review。P0 0 / P1 5 / P2 8；主要技术问题已闭环，剩余 P2 建议已写入 suggestions.md。SafeMode 状态机、ApplicationExitInfo 集成、多进程崩溃处理等核心架构验证通过。 2026-07-18 Task9 idle-audit: auto-fixed。P0 1：修正 ApplicationExitInfo android-17.0.0_r1 reason 常量计数/编号，移除未进入 Android 17 的 REASON_CRITICAL_PROCESS_DIED，并校准同一核验段 AOSP 行号与 AppExitInfoTracker 应用侧边界。"
 deepseek_cn_review_state: needs-structure-rework
 last_deepseek_cn_review_at: 2026-06-17
 task2b_state: fixed
 task2b_result: fixed
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
 auto_finalized: true
 verifier_pass: "2026-06-23T11:26:00+08:00"
@@ -400,17 +401,17 @@ fun atomicWriteCrashFile(dir: File, pid: Int, content: ByteArray): Boolean {
 
 ### `ApplicationExitInfo` 退出原因全集
 
-`frameworks/base/core/java/android/app/ApplicationExitInfo.java` 在 android-17 共 18 个 `REASON_*` 常量（0–17），本节列出的 `REASON_CRASH` / `REASON_CRASH_NATIVE` / `REASON_ANR` / `REASON_LOW_MEMORY` / `REASON_USER_REQUESTED` 全部存在，**应补的还有**：
+`frameworks/base/core/java/android/app/ApplicationExitInfo.java` 在 android-17.0.0_r1 共 17 个 `REASON_*` 常量（0–16），本节列出的 `REASON_CRASH` / `REASON_CRASH_NATIVE` / `REASON_ANR` / `REASON_LOW_MEMORY` / `REASON_USER_REQUESTED` 全部存在，**应补的还有**：
 
-- `REASON_INITIALIZATION_FAILURE`（8）：启动初始化失败，SafeMode 维度 3 白名单应纳入。
+- `REASON_INITIALIZATION_FAILURE`（7）：启动初始化失败，SafeMode 维度 3 白名单应纳入。
 - `REASON_FREEZER`（14）/ `REASON_PACKAGE_STATE_CHANGE`（15）/ `REASON_PACKAGE_UPDATED`（16）/ `REASON_USER_STOPPED`（11）/ `REASON_PERMISSION_CHANGE`（8）/ `REASON_DEPENDENCY_DIED`（12）：应明确加入黑名单，避免被误算为启动崩溃。
-- `REASON_CRITICAL_PROCESS_DIED`（17）：Android 17 新增的关键进程死亡，需纳入异常处理范围。
+- `REASON_CRITICAL_PROCESS_DIED` 未进入 android-17.0.0_r1，不能纳入本节 SafeMode 判定范围。
 
 `getTraceInputStream()` 签名是 `@Nullable InputStream getTraceInputStream() throws IOException`，对 `mAppTraceRetriever` 为空的 reason 必然返回 `null`——"拿不到 trace" 是正常路径，不能当作 "没有 native crash"。
 
 ### `AtomicFile` 持久化协议（核验维度 4 的边界）
 
-`frameworks/base/core/java/android/util/AtomicFile.java:172` 的 `finishWrite()` 流程：
+`frameworks/base/core/java/android/util/AtomicFile.java:170` 的 `finishWrite()` 流程：
 
 ```java
 // 关键代码
@@ -419,7 +420,7 @@ str.close();
 rename(mNewName, mBaseName);  // POSIX rename(2)
 ```
 
-`FileUtils.sync()`（`core/java/android/os/FileUtils.java:275`）只调 `FileDescriptor.sync()`，**不 fsync 父目录**。崩溃后父目录 inode 未落盘，下一次启动 `openRead()` 可能看到不一致状态——本节维度 4 提到的"父目录 fsync 边界"在 AOSP `AtomicFile` 里**没有实现**，生产实现若要更严格，需要打开父目录 fd 后调用 `fsync(dirfd)`；Android 层可用 `android.system.Os.open()` + `Os.fsync()` 封装，或用 NDK 调用。
+`FileUtils.sync()`（`core/java/android/os/FileUtils.java:277`）只调 `FileDescriptor.sync()`，**不 fsync 父目录**。崩溃后父目录 inode 未落盘，下一次启动 `openRead()` 可能看到不一致状态——本节维度 4 提到的"父目录 fsync 边界"在 AOSP `AtomicFile` 里**没有实现**，生产实现若要更严格，需要打开父目录 fd 后调用 `fsync(dirfd)`；Android 层可用 `android.system.Os.open()` + `Os.fsync()` 封装，或用 NDK 调用。
 
 `failWrite()` 只删 `mNewName`，**不回退 `mBaseName`**；崩溃期间未完成 `finishWrite` 之前失败，下次读到的是旧版本，与本节"崩溃入口写文件时 partial 清理规则"一致。
 
@@ -427,15 +428,15 @@ rename(mNewName, mBaseName);  // POSIX rename(2)
 
 `frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java`：
 
-- `APP_EXIT_INFO_PERSIST_INTERVAL = TimeUnit.MINUTES.toMillis(30)`（line 102）——**30 分钟 debounce**，不是每次 `noteAppKill` 都落盘。
-- `mAppExitInfoHistoryListSize` 来自资源 `config_app_exit_info_history_list_size=16`（line 268–269）——**单包 16 条上限**，超出按最旧优先丢弃。
+- `APP_EXIT_INFO_PERSIST_INTERVAL = TimeUnit.MINUTES.toMillis(30)`（line 119）——**30 分钟 debounce**，不是每次 `noteAppKill` 都落盘。
+- `mAppExitInfoHistoryListSize` 来自资源 `config_app_exit_info_history_list_size=16`（line 283–284）——**单包 16 条上限**，超出按最旧优先丢弃。
 - 路径：`data/system/procexitstore/procexitinfo`（`APP_EXIT_STORE_DIR` / `APP_EXIT_INFO_FILE`）。
 
-应用启动期做 SafeMode 判定时：30 分钟内强停 + 断电的场景，**这条 `REASON_USER_REQUESTED` 还没落盘就丢失**。生产实现若依赖 `ApplicationExitInfo` 做离线补偿，要么在 `forceStop` 前主动触发一次 `immediately=true` 同步，要么在 `Application.onCreate` 顶端额外叠加本地未上报队列。
+应用启动期做 SafeMode 判定时：30 分钟内强停 + 断电的场景，**这条 `REASON_USER_REQUESTED` 还没落盘就丢失**。应用侧不能主动触发 system_server 的 `immediately=true` 持久化；生产实现若依赖 `ApplicationExitInfo` 做离线补偿，需要在 `Application.onCreate` 顶端额外叠加本地未上报队列。
 
 ### `ProcessList` 退出原因来源链
 
-`frameworks/base/services/core/java/com/android/server/am/ProcessList.java:907–911`：
+`frameworks/base/services/core/java/com/android/server/am/ProcessList.java:884–888`：
 
 ```java
 noteAppKill(oomKill.getPid(), oomKill.getUid(),
@@ -443,13 +444,13 @@ noteAppKill(oomKill.getPid(), oomKill.getUid(),
         ApplicationExitInfo.SUBREASON_OOM_KILL, "oom");
 ```
 
-AOSP 把"用户主动强停"和"系统低内存"分别落到了 `REASON_USER_REQUESTED`（AMS `forceStopPackageLocked` → `ProcessList.killProcessGroup`）和 `REASON_LOW_MEMORY`（`OomConnection` / `LmkdConnection` 回调），且不与 `REASON_CRASH` 系列混用。`SafeModeController` 维度 3 可以直接按 reason 整数判定，**不需要解析 `mDescription` 字符串**。`Process.killProcess`（`core/java/android/os/Process.java:1439`）→ `sendSignal(pid, SIGNAL_KILL=9)`，是被三条路径共用的底层调用。
+AOSP 把"用户主动强停"和"系统低内存"分别落到了 `REASON_USER_REQUESTED`（AMS `forceStopPackageLocked` → `ProcessList.killProcessGroup`）和 `REASON_LOW_MEMORY`（`OomConnection` / `LmkdConnection` 回调），且不与 `REASON_CRASH` 系列混用。`SafeModeController` 维度 3 可以直接按 reason 整数判定，**不需要解析 `mDescription` 字符串**。`Process.killProcess`（`core/java/android/os/Process.java:1546`）→ `sendSignal(pid, SIGNAL_KILL=9)`，是被三条路径共用的底层调用。
 
 ### 客户端 API 边界
 
-`frameworks/base/core/java/android/app/ActivityManager.java:4457` 的 `getHistoricalProcessExitReasons(packageName, pid, maxNum)`：
+`frameworks/base/core/java/android/app/ActivityManager.java:4810` 的 `getHistoricalProcessExitReasons(packageName, pid, maxNum)`：
 
-- `maxNum=0` 表示"返回所有匹配记录"（line 4451 注释），按 `mAppExitInfoHistoryListSize=16` 上限传入 `maxNum=16` 即可。
+- `maxNum=0` 表示"返回所有匹配记录"（line 4803 注释），按 `mAppExitInfoHistoryListSize=16` 上限传入 `maxNum=16` 即可。
 - `isLowMemoryKillReportSupported()` 是**静态方法**，先确认设备支持上报 LMK kill 再走 `REASON_LOW_MEMORY` 路径；部分厂商 ROM 不上报时该 reason 退化为 `REASON_SIGNALED`，过滤会失效。
 
 ### 信息源（全部 android-17.0.0_r1）
@@ -471,28 +472,28 @@ AOSP 把"用户主动强停"和"系统低内存"分别落到了 `REASON_USER_REQ
 
 本节在 §20.7"最小可靠写入协议"的基础上，给出 AOSP 真实实现的源码级核验。**基于 android-17.0.0_r1**。
 
-#### 写入路径（DBMS.java:540-573 → 925-944）
+#### 写入路径（DBMS.java:557-560 → 993-1000）
 
 `DropBoxManagerService.add()` 写入的代码：
 
 ```java
-// DropBoxManagerService.java:548-553
+// DropBoxManagerService.java:557-560
 temp = new File(mDropBoxDir, "drop" + Thread.currentThread().getId() + ".tmp");
 try (FileOutputStream out = new FileOutputStream(temp)) {
     entry.writeTo(out.getFD());
 }
-// DropBoxManagerService.java:942
+// DropBoxManagerService.java:1000
 if (!temp.renameTo(file)) {
     throw new IOException("Can't rename " + temp + " to " + file);
 }
 ```
 
 关键点：
-- `try-with-resources` 自动 `close()`，**不调用 `FileUtils.sync()`**（工具本身存在于 `FileUtils.java:275`，DBMS 显式不调用）。
+- `try-with-resources` 自动 `close()`，**不调用 `FileUtils.sync()`**（工具本身存在于 `FileUtils.java:277`，DBMS 显式不调用）。
 - `File.renameTo()` 是 POSIX `rename(2)` 的 Java 封装，**不刷父目录 inode**。
 - `add()` 的 `catch` 块只 `Slog.e("Can't write: " + tag, e)`，**不补偿**——失败的 tmp 由下次启动的 `init()` 删除。
 
-#### 启动恢复（DBMS.java:1107-1112）
+#### 启动恢复（DBMS.java:1165-1167）
 
 ```java
 for (File file : files) {
@@ -508,12 +509,12 @@ for (File file : files) {
 
 **与生产期望的边界差异**：本节"最小可靠写入协议"表格里描述 tmp 解析后 rename 为 completed，但 AOSP DBMS 的真实行为是 **tmp 直接 delete**——这是有意取舍，dbms 不做 partial recovery。
 
-#### Tombstone 模式（DBMS.java:951-960, 1287-1291）
+#### Tombstone 模式（DBMS.java:1014-1017, 1227-1230）
 
 被 trim 或配额超限的条目**不直接删除**，而是创建 0 字节 + `IS_EMPTY` 标志的 tombstone：
 
 ```java
-// DBMS.java:951-960
+// DBMS.java:1014-1017
 public EntryFile(File dir, String tag, long timestampMillis) throws IOException {
     this.tag = TextUtils.safeIntern(tag);
     this.timestampMillis = timestampMillis;
@@ -525,7 +526,7 @@ public EntryFile(File dir, String tag, long timestampMillis) throws IOException 
 
 含义：**"曾经有崩溃"的信号保留，内容丢失**。生产应用要按 tag+timestamp 看到 tombstone 才能区分"没崩溃过"和"崩溃过但日志已 GC"。
 
-#### system_server 自崩溃的 2 秒 join（AMS.java:10051-10070）
+#### system_server 自崩溃的 2 秒 join（AMS.java:10752-10758）
 
 ```java
 worker.start();
@@ -542,13 +543,13 @@ if (process != null && process.mPid == MY_PID && "crash".equals(eventType)) {
 **这是整个协议最关键的可靠性补丁**：
 - 普通应用 crash 没有 `worker.join`——依赖 worker 在进程死亡前自然完成，**不保证落盘**。
 - 只有 `system_server` 自己 crash 时才阻塞 2 秒等 DropBox 落盘——这是有意的可靠性权衡。
-- `DropboxRateLimiter.shouldRateLimit()` 命中时直接 return，连 worker 都不启动（AMS.java:9893-9895）。
+- `DropboxRateLimiter.shouldRateLimit()` 命中时直接 return，连 worker 都不启动（AMS.java:10568-10570）。
 
 #### 信息源（全部 android-17.0.0_r1）
 
-- `frameworks/base/services/core/java/com/android/server/DropBoxManagerService.java`（1324 行）
-- `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`（21170 行，节选 9872-10070）
-- `frameworks/base/core/java/android/os/FileUtils.java`（节选 269-279）
+- `frameworks/base/services/core/java/com/android/server/DropBoxManagerService.java`（1382 行）
+- `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`（21242 行，节选 10568-10758）
+- `frameworks/base/core/java/android/os/FileUtils.java`（节选 277-284）
 
 #### 生产实现的差距提示
 
