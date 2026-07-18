@@ -443,7 +443,6 @@ def main() -> int:
                 args.revoke_version,
                 args.minimum_safe_version,
                 args.reason_code,
-                args.refresh_metadata,
             )
         else:
             result = publish(
@@ -454,6 +453,7 @@ def main() -> int:
                 args.revoke_version,
                 args.minimum_safe_version,
                 args.reason_code,
+                args.refresh_metadata,
             )
     except Exception as error:
         print(f"ERROR: {error}", file=sys.stderr)
