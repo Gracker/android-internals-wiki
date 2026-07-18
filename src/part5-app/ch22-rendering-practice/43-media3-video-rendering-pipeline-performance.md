@@ -203,3 +203,13 @@ if (mSwapIntervalZero != wasSwapIntervalZero) {
 
 
 > 本节内容待加工。[结构参考: developer.android.com/media3 + AOSP frameworks/av + frameworks/base]
+
+
+## 延伸阅读
+
+### Media3 视频播放渲染管线 — AOSP android-17.0.0_r1 全链路源码级拆解
+- 来源：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md`
+- 类型：DeepResearch 调研结果
+- 摘要：从 MediaCodec Java 层 EventHandler/Callback 异步分发到 native 层 ALooper 双线程模型（mLooper + mCodecLooper），详解 BufferQueue generation number 防 buffer 跨连接复用、BUFFER_MODE_BLOCK vs BUFFER_MODE_LEGACY 的 ExoPlayer 零拷贝路径、setOutputSurface 动态切换 consumer 机制，以及 SurfaceView.setSwapInterval(0) 触发 mIsDroppable 帧丢弃策略。形成 MediaCodec → BufferQueue → SurfaceFlinger 完整链路闭环。
+- 注入时间：2026-07-18
+- 价值：§22.43 正文仅有 outline，此调研提供了可直接引用的源码级 Media3/ExoPlayer 渲染管线深度分析

@@ -232,6 +232,51 @@
       "section": "14.13",
       "processed_at": "2026-07-17T06:14:31.983422",
       "action": "queued"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-windowmanager-architecture-sourcecode.md",
+      "title": "Android 17 WindowManagerService 架构 — Window 添加 / Surface 分配 / BLAST 链路",
+      "summary": "WMS 双 Handler 线程模型、addWindow 全链路、WindowSurfacePlacer 6 次循环护栏、BLASTSyncEngine SyncGroup 合批机制",
+      "chapter": "ch01 §1.66",
+      "processed_at": "2026-07-18T10:33:46.781497",
+      "action": "direct-inject",
+      "status": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md",
+      "title": "Media3 视频播放渲染管线全链路源码级拆解",
+      "summary": "MediaCodec 异步分发→ALooper 双线程→BufferQueue generation 防复用→BUFFER_MODE_BLOCK 零拷贝→setOutputSurface 动态切换",
+      "chapter": "ch22 §43",
+      "processed_at": "2026-07-18T10:33:46.781497",
+      "action": "direct-inject",
+      "status": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md",
+      "title": "Android 17 ANGLE（GLES-over-Vulkan）选择与同步机制",
+      "summary": "ANGLE 三级优先级门控、Loader unload 真值表、EGL fence→Vulkan semaphore 转换、GLSL→SPIR-V UBO 压缩",
+      "chapter": "ch19 §19.1",
+      "processed_at": "2026-07-18T10:33:46.781497",
+      "action": "direct-inject",
+      "status": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-cloud-profiles-systemserver-onboot.md",
+      "title": "Android 17 SystemServer 启动与 ART Mainline Cloud Profiles 协同机制",
+      "summary": "ART Mainline APEX 驱动 dexopt 触发、ArtModuleServiceInitializer 避免 GC 死锁、Cloud Profile ProfilePath 合并",
+      "chapter": "ch16 §16.07",
+      "processed_at": "2026-07-18T10:33:46.781497",
+      "action": "direct-inject",
+      "status": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md",
+      "title": "SurfaceFlinger DisplayMode 选择与 RefreshRateSelector 评分机制",
+      "summary": "DisplayModeController 四态状态机、RefreshRateSelector 三组输入评分、FrameRateOverrideMappings 双路 override 合并",
+      "chapter": "ch02 §2.31",
+      "processed_at": "2026-07-18T10:33:46.781497",
+      "action": "queue",
+      "status": "queued"
     }
   ]
 }

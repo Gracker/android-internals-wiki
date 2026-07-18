@@ -1281,3 +1281,13 @@ service zygote /system/bin/app_process64 -Xzygote /system/bin --zygote --start-s
 - Zygote 高优先级启动与 fail-fast 机制
 
 本补强内容填补了前述章节在源码级实现细节的空白，为启动性能优化提供了可操作的技术路径。
+
+
+## 延伸阅读
+
+### Android 17 SystemServer 启动与 ART Mainline Cloud Profiles 协同机制
+- 来源：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-cloud-profiles-systemserver-onboot.md`
+- 类型：DeepResearch 调研结果
+- 摘要：基于 android-17.0.0_r1 源码，拆解 ART Mainline APEX 升级驱动的 SystemServer 启动期间两条串行操作：(1) DexOptHelper.performPackageDexOptUpgradeIfNeeded → ArtManagerLocal.onBoot 触发首启/OTA/BCP APEX 更新后的整包 dexopt；(2) ArtModuleServiceInitializer 在 startBootstrapServices 第一行完成 ART Service 注册以避免 GC 与 Class Linker 死锁（b/263486535）。详解 Cloud Profile 在源码层体现为 ProfilePath (ref/cur/prebuilt/dm) + MergeProfileOptions.forBootImage + services/art-profile 4711 行 HSPL/HPL 条目。
+- 注入时间：2026-07-18
+- 价值：为 §16.07 启动优化章节补充 ART Mainline 与 Cloud Profiles 的精确协同机制，填补 dexopt 触发条件与 BCP APEX 变更检测的源码级空白

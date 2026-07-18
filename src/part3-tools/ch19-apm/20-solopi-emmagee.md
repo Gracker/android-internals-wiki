@@ -45,6 +45,8 @@ p0: 0
 p1: 0
 p2: 0
 task9_review_notes: 2026-07-03 12 Task9 deep-review: pass-tech-review。Task6 复审后复核 SoloPi README/build.gradle/release 与 Emmagee README/release，版本边界仍限定 Android 17 以内；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-18
 ---
 -
 
@@ -108,7 +110,7 @@ SoloPi 是支付宝开源的无线化、非侵入式 Android 自动化工具。R
 
 ## SoloPi 的兼容性边界
 
-SoloPi 公开仓库暴露出的构建基线比较老：根工程使用 AGP 4.0.2，README 写明 Android Studio 4.0、Gradle 6.1.1、TargetApi 29、MinimumApi 18；GitHub latest release 仍是 v0.12.0（2022-05）。这套基线直接影响 Android 12-17 的验收方式。
+SoloPi 公开仓库的构建基线比较老：根工程使用 AGP 4.0.2，README 写明 Android Studio 4.0、Gradle 6.1.1、TargetApi 29、MinimumApi 18；GitHub latest release 仍是 v0.12.0（2022-05）。这套基线直接影响 Android 12-17 的验收方式。
 
 上游维护状态也要放进工具选型：公开 release 停在 2022-05，仓库 `targetSdkVersion` 为 29，公开构建链没有跟进 Android 13-17 的受限设置，以及 Android 14-17 的前台服务类型、后台启动 Activity 等行为变化。SoloPi 可以用来固定操作路径，但不要作为自动化测试的唯一依赖；关键回归要保留 adb、Macrobenchmark、PerfDog、Perfetto 等可替代路径。
 
@@ -119,7 +121,7 @@ SoloPi 公开仓库暴露出的构建基线比较老：根工程使用 AGP 4.0.2
 | `minSdkVersion` | 18 | 老设备仍可安装，现代兼容性不等于已验证 |
 | latest release | v0.12.0（2022-05） | 近年平台改动后的兼容结果表没有上游发布说明 |
 
-可以按下面的节奏判断：
+兼容性判断可以参考下表：
 
 | 平台段 | 当前判断 | 使用方式 |
 |---|---|---|
