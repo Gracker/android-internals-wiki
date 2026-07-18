@@ -54,7 +54,7 @@ jobs:
           DEPLOY_KEY: ${{ secrets.AIW_PACK_DEPLOY_KEY }}
         run: |
           install -m 700 -d "$HOME/.ssh"
-          printf '%s' "$DEPLOY_KEY" > "$HOME/.ssh/aiw_pack_deploy"
+          printf '%s\n' "$DEPLOY_KEY" > "$HOME/.ssh/aiw_pack_deploy"
           chmod 600 "$HOME/.ssh/aiw_pack_deploy"
           ssh-keyscan github.com >> "$HOME/.ssh/known_hosts"
           printf 'Host github.com\n  IdentityFile %s\n  IdentitiesOnly yes\n' \
@@ -71,9 +71,9 @@ jobs:
           TIMESTAMP_KEY: ${{ secrets.AIW_TUF_TIMESTAMP_KEY }}
         run: |
           install -m 700 -d "$RUNNER_TEMP/aiw-tuf-keys"
-          printf '%s' "$NIGHTLY_KEY" > "$RUNNER_TEMP/aiw-tuf-keys/nightly.pem"
-          printf '%s' "$SNAPSHOT_KEY" > "$RUNNER_TEMP/aiw-tuf-keys/snapshot.pem"
-          printf '%s' "$TIMESTAMP_KEY" > "$RUNNER_TEMP/aiw-tuf-keys/timestamp.pem"
+          printf '%s\n' "$NIGHTLY_KEY" > "$RUNNER_TEMP/aiw-tuf-keys/nightly.pem"
+          printf '%s\n' "$SNAPSHOT_KEY" > "$RUNNER_TEMP/aiw-tuf-keys/snapshot.pem"
+          printf '%s\n' "$TIMESTAMP_KEY" > "$RUNNER_TEMP/aiw-tuf-keys/timestamp.pem"
           chmod 600 "$RUNNER_TEMP/aiw-tuf-keys/"*.pem
       - name: Build, verify, and update TUF repository
         id: update
