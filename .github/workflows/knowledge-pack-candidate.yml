@@ -80,7 +80,7 @@ jobs:
           retention-days: 7
           if-no-files-found: error
       - name: Attest candidate provenance
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.event.repository.private == false
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: "dist/knowledge-pack/**"
