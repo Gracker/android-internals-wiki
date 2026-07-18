@@ -1,8 +1,22 @@
 # AIW Knowledge Pack 维护说明
 
 Knowledge Pack 是从私有 Android Internals Wiki 仓库生成的公开、只读、版本化
-知识快照。公开仓库只接收严格入选的正文片段、聚合审计、许可证和 TUF
-元数据，不接收草稿、queue、review notes、日志、绝对路径或 Git remote。
+知识快照。`src/` 下的正文 Markdown 全部进入候选语料，草稿、待审、定稿、
+deprecated、queue 中的正文一视同仁。工作流状态只进入聚合审计，不发送给模型，
+也不作为收录门槛。
+
+各级 `README.md`、`SUMMARY.md` 和 `src/graphify-out/**` 是导航或生成产物，不属于
+正文。公开仓库只接收经过安全投影的正文片段、聚合审计、许可证和 TUF 元数据：
+本机绝对路径所在行会被确定性脱敏，高置信密钥命中会阻断构建；私有源仓库、queue、
+review notes、日志、原始绝对路径和 Git remote 都不会进入 Pack。
+
+合法 frontmatter 只投影白名单内的公开字段。缺少 frontmatter 时从一级标题和路径生成
+稳定元数据；YAML 损坏但分隔符闭合时丢弃损坏元数据后保留正文；分隔符未闭合时只有
+找到明确的一级正文标题才从该标题起收录，否则失败关闭。SQLite 中的文章哈希和公开
+内容 fingerprint 只基于这份公开投影，不基于脱敏前原文或工作流状态。
+`distribution.smartperfetto.projection_revision` 是构建格式的显式重发开关：仅修复
+SQLite、FTS、压缩或公开投影算法且正文投影未变化时，必须递增它，避免稳定发布被
+相同内容 fingerprint 判定为 no-op。
 
 ## 自动流程
 
@@ -10,7 +24,7 @@ Knowledge Pack 是从私有 Android Internals Wiki 仓库生成的公开、只�
 
 1. 安装 `requirements.txt` 中锁定的依赖；
 2. 运行构建器和 TUF 单元测试；
-3. 按 `policy.yaml` 失败关闭地筛选文章；
+3. 按 `policy.yaml` 收录全部正文并生成公开安全投影；
 4. 构建 SQLite FTS5 数据库并运行完整校验和黄金查询；
 5. 上传保留 7 天的候选 artifact；push 构建附加 provenance attestation。
 

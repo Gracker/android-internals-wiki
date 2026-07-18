@@ -3,7 +3,7 @@
 Copyright (c) 2026 Gracker.
 
 The copyright holder authorizes the SmartPerfetto project to build, reproduce,
-package, and redistribute unmodified, policy-eligible Android Internals Wiki
+package, and redistribute public-safe, policy-included Android Internals Wiki
 Knowledge Packs together with SmartPerfetto source and binary distributions.
 
 Every redistributed Pack must:
