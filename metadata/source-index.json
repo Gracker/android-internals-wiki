@@ -330,8 +330,13 @@
       "summary": "拆解 ART Mainline APEX 驱动的 SystemServer 启动期 dexopt 触发（首启/OTA/BCP 变更），ArtModuleServiceInitializer 避免 GC-Class Linker 死锁，Cloud Profile 源码层 ProfilePath 合并机制。",
       "chapter": "ch08",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
-      "action": "indexed-only-chapter-freeze",
-      "score": 17
+      "action": "body-applied",
+      "previous_action": "indexed-only-chapter-freeze",
+      "status": "applied",
+      "score": 17,
+      "applied_at": "2026-07-19T22:16:26+08:00",
+      "applied_run_id": "20260719-221555-b0bff823",
+      "target_path": "src/part3-system/ch12-audio-performance/12.33-android17-background-audio-hardening-leaudio-power.md"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md`",
