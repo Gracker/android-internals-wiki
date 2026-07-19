@@ -129,9 +129,9 @@
       ]
     }
   ],
-  "last_scan_date": "2026-07-18",
-  "total_knowledge_points": 546,
-  "total_suggestions": 173,
+  "last_scan_date": "2026-07-19",
+  "total_knowledge_points": 558,
+  "total_suggestions": 177,
   "total_gaps": 21,
   "skipped_files": [
     {
@@ -215,7 +215,27 @@
       "processed_at": "2026-07-18T20:49:14.832239+08:00",
       "chapter": "ch20",
       "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Binder 通信监控：如何监控每一次 Binder 传输？.md": {
+      "processed_at": "2026-07-19T19:28:50.260009+08:00",
+      "chapter": "ch20",
+      "points": 2
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Binder 通信过程：客户端视角领略 Binder.md": {
+      "processed_at": "2026-07-19T19:28:50.260273+08:00",
+      "chapter": "ch20",
+      "points": 2
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - ELF 文件与 readelf & objdump ：了解 ELF 格式与解析工具.md": {
+      "processed_at": "2026-07-19T19:28:50.261150+08:00",
+      "chapter": "ch20",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Java Crash 分析与监控原理.md": {
+      "processed_at": "2026-07-19T19:28:50.261836+08:00",
+      "chapter": "ch20",
+      "points": 4
     }
   },
-  "cursor": 4
+  "cursor": 8
 }

@@ -413,6 +413,24 @@
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
       "action": "indexed-only-chapter-freeze",
       "score": 19
+    },
+    {
+      "path": "[掘金Android] 2026-07-19",
+      "title": "[掘金Android] 2026-07-19",
+      "summary": "文章从状态读取位置、`derivedStateOf`、组合阶段和布局/绘制阶段解释重组影响范围，适合补入 Compose 性能排查章节。推荐章节：Compose 性能；类型：性能实践；tags：#Android #Compose #Performance",
+      "chapter": "ch16",
+      "processed_at": "2026-07-19T19:28:48.274322+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-19-juejin-android.md",
+      "title": "[技术文章] Juejin Android intake · 2026-07-19",
+      "summary": "status: completed Obsidian: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-19-juejin-android.md source: 掘金 Android 推荐流 sc...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-19T19:28:48.274322+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
     }
   ]
 }
