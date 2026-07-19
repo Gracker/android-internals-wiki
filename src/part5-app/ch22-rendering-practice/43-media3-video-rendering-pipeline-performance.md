@@ -1,13 +1,25 @@
 ---
 title: "Media3 视频播放渲染管线性能实战"
 chapter: "22.43"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 tags: [media3, exoplayer, videoplayback, mediacodec, rendering, performance]
 related_chapters: ["22.42", "12.33", "25.17", "25.18"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "AOSP结构/官方文档"
+last_verified: "2026-07-20"
+confidence: medium-high
+sources:
+  - "DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md"
+  - "DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md"
+last_body_apply_at: "2026-07-20T07:15:21+08:00"
+last_body_apply_run_id: "20260720-071521-dbc00327"
+last_body_apply_source: "source-index:27 DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md"
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 ---
 
 # 22.43 Media3 视频播放渲染管线性能实战
@@ -200,6 +212,58 @@ if (mSwapIntervalZero != wasSwapIntervalZero) {
 
 <!-- /AIW-源码调研-2026-07-17 -->
 
+
+<!-- AIW-Body-Apply-ANGLE-2026-07-20 -->
+## ANGLE（GLES-over-Vulkan）对视频特效链路的影响
+
+> 本节把 ANGLE / Vulkan 翻译层材料补入 §22.43 的 Media3 视频特效语境。边界：仅讨论 Android 17 / API 37（AOSP `android-17.0.0_r1`）中已由材料验证的路径，不扩展到 Android 18/API38+。[来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+
+### 选择机制：先确认播放器进程是否真的跑在 ANGLE 上
+
+Media3 的 `VideoEffectProcessor`、`SurfaceTexture → GL_EXTERNAL → Fragment Shader` 这类链路通常以 OpenGL ES 作为应用侧入口；在启用 ANGLE 的设备上，GLES 调用会落到 ANGLE-Vulkan 后端，而不是直接进入厂商 GLES driver。[来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+
+Android 17 的 ANGLE 选择不是单一开关，而是 `GraphicsEnvironment.setupAngle()` 中的 **Settings choice → `persist.graphics.egl` → `ro.hardware.egl`** 三层优先级，再叠加 `Flags.useQueryAngleChoice()` 分支：当用户/系统决策为 NATIVE 且只读属性不是 `angle` 时，框架会调用 `nativeSetAngleInfo("", true, packageName, null)`，让 Loader 维持 system driver；DEFAULT 则先看 `persist.graphics.egl`，再退到 `ro.hardware.egl`。[已验证: GraphicsEnvironment.java android-17.0.0_r1 line 698-786; 来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+
+对播放器或短视频 App 的实践含义是：不要只凭设备型号或开发者选项判断「已经启用 ANGLE」。在定位滤镜首帧慢、VSync 抖动或 shader cold compile 时，先在同一进程内读取 `glGetIntegerv(GL_RENDERER)`；若返回字符串包含 `ANGLE`，再把后续 Perfetto / logcat 观测归入 ANGLE-Vulkan 路径，否则应按 native GLES / vendor driver 路径排查。[来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+
+### Loader 生命周期：切换 driver 不是运行时热切
+
+`GraphicsEnv::setAngleInfo()` 在 native 层只接受一套 ANGLE 参数，并在重复设置时触发强约束；这意味着通过 Settings 或属性修改 ANGLE 选择后，播放器进程必须重启，不能假设正在播放的 Media3 实例会动态切到另一套 EGL/GLES 实现。[已验证: GraphicsEnv.cpp android-17.0.0_r1 line 599-619; 来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+
+`Loader::should_unload_system_driver()` 的真值表还给出一个调试边界：当 ANGLE namespace 已设置且不是 system ANGLE，或者处于 `shouldUseAngle() && !angleLoaded` 状态时，Loader 会卸载 system driver 后重试 ANGLE；但 `cnx->systemDriverUnloaded` 一旦为 true，后续不会再次卸载，避免循环。[已验证: Loader.cpp android-17.0.0_r1 line 160-225; 来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+
+因此，视频特效 A/B 实验应以「冷启动一次进程 = 一种 EGL/GLES backend」为单位采样；同一进程内反复切开关得到的首帧耗时、shader 编译耗时和掉帧统计都可能混入 Loader 状态，不适合作为 ANGLE 与 native GLES 的严谨对比。[来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+
+### APK fallback 与崩溃边界
+
+`setupAngleFromApk()` 会把 `nativeLibraryDir:sourceDir!/lib/<abi>` 注入 ANGLE namespace，再尝试加载 `libEGL_angle.so`、`libGLESv1_CM_angle.so`、`libGLESv2_angle.so`；材料指出若 ANGLE APK 已安装但没有携带 native libs，Android 17 仍可能回退到 system partition 的 ANGLE/driver 路径，b/370113081 的 crash 风险边界并未被材料证明已收敛。[已验证: GraphicsEnvironment.java android-17.0.0_r1 line 825-839; Loader.cpp android-17.0.0_r1 line 632-660; 来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+
+播放器侧如果发现只有部分渠道包、ABI 或 OEM ROM 在开启视频滤镜后崩溃，应把 `libEGL_angle.so` / `libGLESv2_angle.so` 是否来自 APK、system ANGLE 还是 vendor GLES 作为第一组环境指纹记录，避免把 Loader fallback 问题误判为 Media3 `VideoFrameProcessor` 自身缺陷。[来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+
+### EGL native fence 到 Vulkan semaphore：同步等待的位置会变
+
+在 ANGLE-Vulkan 后端，EGL native fence 不再只是 GLES driver 内部 fence。`SyncHelperNativeFence::serverWait()` 会 `dup(mFenceFd)`，把副本 fd 交给 `vkImportSemaphoreFdKHR`，并使用 `VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR` 与 `VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR` 将 Android native fence 导入 Vulkan semaphore；原 primary fd 仍由 ANGLE 侧管理。[已验证: SyncVk.cpp android-17.0.0_r1 line 508-538; 来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+
+`SyncHelperNativeFence::clientWait()` 通过 `egl::Display::GetCurrentThreadUnlockedTailCall()` 把等待切到 GPU 线程语境执行，而不是简单阻塞 EGL 调用者；材料还指出 `SyncWaitFd()` 使用 `poll()` 并把小于 1ms 的正 timeout 强压到 1ms。[已验证: SyncVk.cpp android-17.0.0_r1 line 28-68, 587-630; 来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+
+这会影响视频特效链路的性能归因：如果 `SurfaceTexture` 更新、滤镜 FBO 合成或输出 Surface 交换附近出现 single-digit-ms 等待，不应只看 Java 层 `releaseOutputBuffer()` 或 Media3 render callback；还要在 Perfetto 中同时看 Vulkan submit/present、ANGLE GPU 线程和 fence wait 栈，否则容易把 ANGLE fence 导入成本误报成 MediaCodec 解码慢。[来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+
+### Shader 编译与 UBO 布局：滤镜冷启动的真实成本
+
+ANGLE-Vulkan 的 shader 路径由 `CompilerVk::getTranslatorOutputType()` 返回 `SH_SPIRV_VULKAN_OUTPUT`，`CodeGen.cpp` 在 SPIR-V 输出类型下实例化 `TranslatorSPIRV`；`TranslatorSPIRV::translate()` 会经历 `translateImpl()`、DriverUniform 注入、SPIR-V id 分配和 `OutputSPIRV()` 序列化。[已验证: CompilerVk.cpp android-17.0.0_r1; CodeGen.cpp android-17.0.0_r1 line 72-78; TranslatorSPIRV.cpp android-17.0.0_r1 line 1158-1182; 来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+
+对 Media3 视频特效而言，这意味着「第一次启用滤镜卡顿」可能来自 GLSL → SPIR-V cold compile，而不是 MediaCodec 初始化或 BufferQueue 重分配；材料给出的优化方向是：在播放器冷启动或进入编辑页时预热默认 UI shader、首个滤镜 material 和常用合成 shader，让后续 PipelineCache / ShaderBlobCache 命中。[来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+
+`ProgramVk.cpp` 中的 Vulkan default block encoder 使用 `PackedSPIRVBlockEncoder`，材料指出 ANGLE-Vulkan 的默认块布局比 std140 更紧凑；跨 native GLES、ANGLE-Vulkan、原生 Vulkan 三端复用 uniform buffer 时，要确认 shader 侧 layout 与 app 侧写入偏移是否一致，避免把 sampler binding 或 uniform 数据错位误判为滤镜算法错误。[已验证: ProgramVk.cpp android-17.0.0_r1 line 43-78; 来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+
+### 排查清单：把 ANGLE 作为视频渲染变量显式入表
+
+1. 启动播放器后记录 `GL_RENDERER`、`/proc/<pid>/maps` 中是否存在 `libEGL_angle`，并把结果与 Media3 版本、SurfaceView/TextureView、HDR 开关一起写入性能样本。[来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+2. 做 ANGLE vs native GLES 对比时，每个分组都冷启动进程；不要在同一进程内修改 Settings 后继续复用已有 EGL context。[已验证: GraphicsEnv.cpp android-17.0.0_r1 line 599-619; 来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+3. 首帧慢分解为 Codec 初始化、BufferQueue 建连、GL/ANGLE shader 编译、fence wait 四段；只有 GL renderer 含 ANGLE 时，才把 `SyncHelperNativeFence` 与 TranslatorSPIRV 路径纳入主因候选。[来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+4. 对出现 b/370113081 类 fallback 风险的设备，记录 ANGLE APK native libs 是否齐全与 Loader 实际加载的 so 来源；没有证据时不要把 crash 结论上升为 Media3 框架 bug。[已验证: GraphicsEnvironment.java android-17.0.0_r1 line 825-839; 来源: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md]
+
+<!-- /AIW-Body-Apply-ANGLE-2026-07-20 -->
 
 
 > 本节内容待加工。[结构参考: developer.android.com/media3 + AOSP frameworks/av + frameworks/base]
