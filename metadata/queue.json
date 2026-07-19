@@ -101,5 +101,105 @@
     "priority": 80,
     "status": "pending",
     "path": "src/part5-app/ch25-power-size/32-plugin-dynamic-loading-size-optimization.md"
+  },
+  {
+    "section": "freshness",
+    "section_title": "AIW 时效性巡检",
+    "priority": 70,
+    "reason": "[时效性巡检] last_verified 2026-04-17 older than 90 days",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/02-boot-process.md"
+    ],
+    "review_issues": [
+      {
+        "type": "时效性",
+        "location": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+        "detail": "last_verified 2026-04-17 older than 90 days",
+        "suggestion": "重新核验至 Android 17/API37"
+      }
+    ],
+    "added_by": "hermes-aiw-weekly-source-audit",
+    "added_at": "2026-07-19T22:24:21.973906+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "freshness",
+    "section_title": "AIW 时效性巡检",
+    "priority": 70,
+    "reason": "[时效性巡检] last_verified 2026-04-05 older than 90 days",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/07-art-compilation.md"
+    ],
+    "review_issues": [
+      {
+        "type": "时效性",
+        "location": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+        "detail": "last_verified 2026-04-05 older than 90 days",
+        "suggestion": "重新核验至 Android 17/API37"
+      }
+    ],
+    "added_by": "hermes-aiw-weekly-source-audit",
+    "added_at": "2026-07-19T22:24:21.973906+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "freshness",
+    "section_title": "AIW 时效性巡检",
+    "priority": 85,
+    "reason": "[时效性巡检] contains Android 18/API38+ out-of-scope mention",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/09-package-manager.md"
+    ],
+    "review_issues": [
+      {
+        "type": "时效性",
+        "location": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+        "detail": "contains Android 18/API38+ out-of-scope mention",
+        "suggestion": "标注超出 AIW 范围或移除正文结论"
+      }
+    ],
+    "added_by": "hermes-aiw-weekly-source-audit",
+    "added_at": "2026-07-19T22:24:21.973906+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "freshness",
+    "section_title": "AIW 时效性巡检",
+    "priority": 85,
+    "reason": "[时效性巡检] contains Android 18/API38+ out-of-scope mention",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md"
+    ],
+    "review_issues": [
+      {
+        "type": "时效性",
+        "location": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md",
+        "detail": "contains Android 18/API38+ out-of-scope mention",
+        "suggestion": "标注超出 AIW 范围或移除正文结论"
+      }
+    ],
+    "added_by": "hermes-aiw-weekly-source-audit",
+    "added_at": "2026-07-19T22:24:21.973906+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "freshness",
+    "section_title": "AIW 时效性巡检",
+    "priority": 85,
+    "reason": "[时效性巡检] contains Android 18/API38+ out-of-scope mention",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/1.60-linux-610-bpf-android17-boundary.md"
+    ],
+    "review_issues": [
+      {
+        "type": "时效性",
+        "location": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch01-architecture/1.60-linux-610-bpf-android17-boundary.md",
+        "detail": "contains Android 18/API38+ out-of-scope mention",
+        "suggestion": "标注超出 AIW 范围或移除正文结论"
+      }
+    ],
+    "added_by": "hermes-aiw-weekly-source-audit",
+    "added_at": "2026-07-19T22:24:21.973906+08:00",
+    "status": "pending"
   }
 ]
