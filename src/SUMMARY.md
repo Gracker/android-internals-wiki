@@ -50,7 +50,6 @@
   - [2.16 Android 17 GPU 调试与性能优化工具链](part2-performance/ch02-rendering/2.16-android17-gpu-debugging-tools-chain.md)
 
 
-
   - [2.6 Android 17 eBPF观测增强](part1-fundamentals/ch01-architecture/2.6-ebpf-observability-enhancement.md)
   - [2.7 Android 17 GPU 图形调试与性能优化工具链](part1-fundamentals/ch01-architecture/2.7-gpu-debug-performance-tools-chain.md)
   - [2.10 Android 17 Startup Insights Gaps](part2-performance/ch02-rendering/2.10-android17-startup-insights-gaps.md)
@@ -61,7 +60,6 @@
 - [4.43 Android 17 LMKD 用户态迁移 + PSI 协同机制源码级调研](part1-fundamentals/ch04-memory/04.43-gap-analysis.md)
 - [4.44 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/04.44-gap-analysis.md)
 - [4.45 Android 17 CPU 缓存局部性与 PSS 内存核算源码机制](part1-fundamentals/ch05-cpu-power/06-gap-analysis.md)
-
 
 
   - [4.9 Android 17 ARM MTE 内存标签扩展实战](part1-fundamentals/ch04-memory/4.9-android17-memory-tagging-extension-mte.md)
@@ -92,8 +90,6 @@
   - [26.27 Facebook Profilo 框架线上 ATrace 收集方案](part5-app/ch26-observability/27-profilo-atrace-online-collection.md)
   - [26.28 非 Play 渠道性能监控与国内厂商 ROM 适配可观测性](part5-app/ch26-observability/28-non-play-channel-rom-observability.md)
   - [26.29 JVMTI Agent — ART 运行时动态监控接口与线上方法追踪](part5-app/ch26-observability/29-jvmti-agent-art-runtime-dynamic-monitoring.md)
-  - [26.30 性能防劣化体系与 CI 门禁实战](part5-app/ch26-observability/30-performance-regression-governance-ci-gate.md)
-  - [26.31 应用日志系统性能优化与高效日志体系实战](part5-app/ch26-observability/31-high-performance-logging-system-practice.md)
 - [5.21 Android 17 SoC 厂商电池优化架构](part1-fundamentals/ch05-cpu-power/5.21-android17-battery-optimization-soc-architecture.md)
 
   - [5.28 PELT Boost 回退与 AMU/PMU 微架构感知调频](part1-fundamentals/ch05-cpu-power/5.28-android17-pelt-boost-revert-amu-pmu-microarch-frequency-limiting.md)
@@ -126,7 +122,6 @@
   - [8.14 推送通知管线性能：FCM 投递延迟与 NotificationManagerService 渲染](src/part2-performance/ch08-responsiveness/14-push-notification-pipeline-performance.md)
   - [8.17 Kotlin Flow 背压、操作符链与响应式性能边界](src/part2-performance/ch08-responsiveness/17-kotlin-flow-backpressure-performance.md)
   - [8.18 Binder Trace 驱动的 Activity 冷启动性能分析](src/part2-performance/ch08-responsiveness/18-binder-trace-cold-start-analysis.md)
-  - [8.19 端到端触控延迟优化实战：从输入事件到帧上屏的全链路剖析](src/part2-performance/ch08-responsiveness/19-touch-latency-optimization-practice.md)
   - [8.3 Android 17 系统启动优化与 bootanalyze 工具链增强](part2-fundamentals/ch08-architecture/8-3-android17-系统启动优化与-bootanalyze-工具链增强.md)
   - [8.6 Android 17 WindowManager 性能优化实战](part2-performance/ch08-window-manager/8.6-window-manager-performance.md)
   - [8.7 Android 17 ActivityManager 性能优化实战](part2-performance/ch08-activity-manager/8.7-activity-manager-performance.md)
@@ -137,8 +132,6 @@
   - [11.1 Android 17 网络性能优化实战](part2-performance/ch11-network-optimization/11.1-Android 17 网络性能优化实战.md)
 
 - [第 9 章：ANR 监控与分析](src/part2-performance/ch09-anr/README.md)
-  - [9.1 ANR 检测机制与监控告警](src/part2-performance/ch09-anr/9.1-anr-detection-monitoring-alerting.md)
-  - [9.1 ANR 检测机制与监控告警](part2-performance/ch09-anr/9.1-anr-detection-monitoring-alerting.md)
   - [9.1 Android ANR 机制概述](src/part2-performance/ch09-anr/01-anr-intro.md)
   - [9.2 ANR 类型与触发条件](src/part2-performance/ch09-anr/02-anr-types.md)
   - [9.3 ANR 分析方法](src/part2-performance/ch09-anr/03-anr-analysis.md)
@@ -157,7 +150,6 @@
 
 - [23.13 应用虚拟内存优化实战](part5-app/ch23-memory-practice/13-virtual-memory-optimization.md)
   - [23.26 ART 堆内存分布与 OOM 触发路径实战](part5-app/ch23-memory-practice/23.26-art-heap-distribution-oom-trigger-path.md)
-  - [23.1 内存管理策略与 OOM 防护](part5-app/ch23-memory-practice/23.1-memory-management-strategy-oom-defense.md)
 
 ---
 
@@ -168,7 +160,6 @@
   - [21.17 Startup Insights API 与启动性能可观测性](part5-app/ch21-startup/17-startup-insights-api-observability.md)
   - [21.18 缓存优化实战：冷热端分离与 CPU 缓存命中率](part5-app/ch21-startup/18-cache-optimization-cpu-locality.md)
   - [21.19 设备分级性能策略实战](part5-app/ch21-startup/19-device-tier-performance-strategy.md)
-  - [21.1 启动优化策略与冷启动链路](part5-app/ch21-startup/21.1-cold-start-optimization-strategy.md)
   - [17.9 SoC 特异性功耗优化策略：高通/联发科/三星](part4-system/ch17-oem/09-soc-specific-power-optimization.md)
   - [17.21 Android 17 SoC 厂商 Power HAL 与 schedutil 闭环](part4-system/ch17-oem/17.21-android17-soc-vendor-power-hal-schedutil-loop.md)
   - [22.30 Impeller Shader 编译性能与 Flutter 渲染稳定性](part5-app/ch22-rendering-practice/30-impeller-shader-compilation-flutter.md)
@@ -185,11 +176,6 @@
   - [22.41 Compose ↔ View 互操作性能实战](part5-app/ch22-rendering-practice/41-compose-view-interop-performance.md)
   - [22.42 SurfaceView 与 TextureView 渲染性能选型实战](part5-app/ch22-rendering-practice/42-surfaceview-textureview-rendering-performance.md)
   - [22.43 Media3 视频播放渲染管线性能实战](part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md)
-  - [22.44 Compose 状态订阅与重组控制实战](part5-app/ch22-rendering-practice/44-compose-state-subscription-recomposition-control.md)
-  - [22.45 Compose LazyGrid 性能优化实战](part5-app/ch22-rendering-practice/45-compose-lazygrid-performance.md)
-  - [22.46 Compose TextField 文本输入与 IME 动画性能实战](part5-app/ch22-rendering-practice/46-compose-textfield-ime-performance.md)
-  - [22.47 Compose 手势与 NestedScrollConnection 性能实战](part5-app/ch22-rendering-practice/47-compose-nested-scroll-gesture-performance.md)
-  - [22.1 UI 渲染性能优化与 Compose 渲染管线](part5-app/ch22-rendering-practice/22.1-ui-rendering-performance-optimization.md)
 
   - [4.22 Android 17 AI Agent 内存沙箱化与跨应用数据复用](part1-fundamentals/ch04-memory/4.22-android17-ai-agent-memory-sandboxed-data-reuse.md)
   - [14.28 GPU 性能分析进阶 — 跨厂商计数器标准化与工作负载剖析](part3-tools/ch14-other-tools/28-gpu-performance-profiling-advanced.md)
@@ -205,9 +191,7 @@
   - [20.25 线程泄漏与匿名线程监控实战](part5-app/ch20-stability/25-thread-leak-anonymous-thread-monitoring.md)
   - [20.26 Native 内存泄漏线上监控实战](part5-app/ch20-stability/26-native-memory-leak-online-monitoring.md)
   - [20.27 Kotlin 协程泄漏诊断与结构化并发性能监控](part5-app/ch20-stability/20.27-coroutine-leak-diagnosis-structured-concurrency-performance.md)
-  - [20.1 应用稳定性监控与异常处理](part5-app/ch20-stability/20.1-app-stability-monitoring-practices.md)
   - [20.28 第三方 SDK 性能影响评估与治理实战](part5-app/ch20-stability/28-sdk-performance-governance.md)
-  - [20.29 Crash 报告 SDK 架构选型与 tombstone 解析实战](part5-app/ch20-stability/29-crash-sdk-architecture-tombstone-parsing.md)
 
 
 #   - [8.33 Android 17 模块化启动框架与依赖图优化](src/part1-fundamentals/ch08-startup/8.33-android17-modular-startup-dependency-graph.md)
@@ -220,7 +204,6 @@
   - [25.29 DEX 体积优化实战](part5-app/ch25-power-size/29-dex-size-optimization.md)
   - [25.30 Native SO 体积优化实战](part5-app/ch25-power-size/30-native-so-size-optimization.md)
   - [25.31 资源文件体积优化实战](part5-app/ch25-power-size/31-resource-file-size-optimization.md)
-  - [25.32 插件化包体积优化 — 历史演进与现代替代方案](part5-app/ch25-power-size/32-plugin-dynamic-loading-size-optimization.md)
 附录
 
 - [附录 G：Android 性能学习路线](appendix/android-performance-learning-path.md)
