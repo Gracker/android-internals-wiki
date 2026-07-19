@@ -129,9 +129,9 @@
       ]
     }
   ],
-  "last_scan_date": "2026-07-19",
-  "total_knowledge_points": 558,
-  "total_suggestions": 177,
+  "last_scan_date": "2026-07-20",
+  "total_knowledge_points": 574,
+  "total_suggestions": 181,
   "total_gaps": 21,
   "skipped_files": [
     {
@@ -235,7 +235,27 @@
       "processed_at": "2026-07-19T19:28:50.261836+08:00",
       "chapter": "ch20",
       "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md": {
+      "processed_at": "2026-07-20T06:30:13.494485+08:00",
+      "chapter": "ch20",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Java 内存泄漏监控与 OOM：Java 内存泄漏如何定义？.md": {
+      "processed_at": "2026-07-20T06:30:13.495212+08:00",
+      "chapter": "ch20",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md": {
+      "processed_at": "2026-07-20T06:30:13.496047+08:00",
+      "chapter": "ch20",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Native Backtrace：Native 堆栈信息获取.md": {
+      "processed_at": "2026-07-20T06:30:13.496895+08:00",
+      "chapter": "ch20",
+      "points": 4
     }
   },
-  "cursor": 8
+  "cursor": 12
 }

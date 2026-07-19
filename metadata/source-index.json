@@ -267,8 +267,12 @@
       "summary": "ANGLE 三级优先级门控、Loader unload 真值表、EGL fence→Vulkan semaphore 转换、GLSL→SPIR-V UBO 压缩",
       "chapter": "ch19 §19.1",
       "processed_at": "2026-07-18T10:33:46.781497",
-      "action": "direct-inject",
-      "status": "injected"
+      "action": "body-applied",
+      "status": "applied",
+      "previous_action": "direct-inject",
+      "applied_at": "2026-07-20T07:15:21+08:00",
+      "applied_run_id": "20260720-071521-dbc00327",
+      "target_path": "src/part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-cloud-profiles-systemserver-onboot.md",
@@ -321,8 +325,13 @@
       "summary": "详解 ANGLE 三级优先级 + Flag 双重门控、Loader unload 真值表、EGL native fence→Vulkan semaphore 转换、GLSL→SPIR-V UBO 压缩路径，含 b/370113081 crash 风险边界。",
       "chapter": "ch16",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
-      "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "action": "body-applied",
+      "score": 15,
+      "previous_action": "indexed-only-chapter-freeze",
+      "status": "applied",
+      "applied_at": "2026-07-20T07:15:21+08:00",
+      "applied_run_id": "20260720-071521-dbc00327",
+      "target_path": "src/part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-cloud-profiles-systemserver-onboot.md`",
@@ -434,6 +443,15 @@
       "summary": "status: completed Obsidian: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-19-juejin-android.md source: 掘金 Android 推荐流 sc...",
       "chapter": "ch16",
       "processed_at": "2026-07-19T19:28:48.274322+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-20-juejin-android.md",
+      "title": "[技术文章] Juejin Android intake · 2026-07-20",
+      "summary": "status: completed Obsidian: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-20-juejin-android.md Evidence: /Users/gracker/...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-20T06:20:11.946708+08:00",
       "action": "indexed-only-chapter-freeze",
       "score": 19
     }
