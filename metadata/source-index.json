@@ -34,7 +34,12 @@
       "chapter": "ch17",
       "section": "17.4",
       "processed_at": "2026-07-16T06:14:00.474672",
-      "action": "indexed-only-chapter-freeze"
+      "action": "body-applied",
+      "status": "applied",
+      "applied_at": "2026-07-19T18:27:36+08:00",
+      "applied_run_id": "20260719-182618-1abc2d42",
+      "target_path": "src/part4-system/ch17-oem/17.21-android17-soc-vendor-power-hal-schedutil-loop.md",
+      "previous_action": "indexed-only-chapter-freeze"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-art-markcompact-young-wrapper-source-verification.md",
