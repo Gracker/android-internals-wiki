@@ -130,8 +130,8 @@
     }
   ],
   "last_scan_date": "2026-07-18",
-  "total_knowledge_points": 533,
-  "total_suggestions": 169,
+  "total_knowledge_points": 546,
+  "total_suggestions": 173,
   "total_gaps": 21,
   "skipped_files": [
     {
@@ -194,5 +194,28 @@
       "reason": "非技术内容（职业发展方法论/个人成长），无知识点可提取",
       "date": "2026-07-14"
     }
-  ]
+  ],
+  "processed": {
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - ANR 治理实践.md": {
+      "processed_at": "2026-07-18T20:48:18.469012+08:00",
+      "chapter": "ch20",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - ART 堆内存分布与黑科技扩量：拯救 OOM 的利器.md": {
+      "processed_at": "2026-07-18T20:48:18.469082+08:00",
+      "chapter": "ch20",
+      "points": 2
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - ASM 与字节码插桩：改写字节码的“神器”.md": {
+      "processed_at": "2026-07-18T20:49:14.831980+08:00",
+      "chapter": "ch20",
+      "points": 3
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Android.bp 文件与符号表：如何才能找到函数符号？.md": {
+      "processed_at": "2026-07-18T20:49:14.832239+08:00",
+      "chapter": "ch20",
+      "points": 4
+    }
+  },
+  "cursor": 4
 }
