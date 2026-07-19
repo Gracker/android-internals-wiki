@@ -101,3 +101,27 @@
 - **来源**：[结构参考: Clippings/Android 应用稳定性剖析与优化 - Android.bp 文件与符号表：如何才能找到函数符号？.md]
 - **建议补充**：title: "Android 应用稳定性剖析与优化 - Pika - 掘金小册"；我们 Android 应用开发，日常可能跟 Android 系统打交道的机会并不多，但是我们也会经常接触到 Android 系统源码，此时我们也会发现，Android 系统中有着大部分 C/C++ 代码，同时 Android 系统内部的子模块众多，一个 and；在我们用 Ninja 构建一个大型项目的时候，一般需要先编写 Ninja Build 文件（通常是以.ninja 为后缀的文件），指定构建规则，然后在命令行中启动 Ninja 程序，Ninja 程序会根据配置文件中的构建规则生成指定的目标文件。；但是，这个 Ninja 构建的配置文件有点过于复杂了，同时上手成本也很高，也不太适合直接构建多模块场景，此时 `Android.bp` 文件出现了，通过编写 Android.bp 文件包含了源文件和依赖关系的信息，以及如何编译成目标文件的信息，最终通过 Nin
 - **参考书覆盖深度**：结构索引，不搬运原文
+
+## [Task14 参考书扫描] ch20 — 2026-07-19
+- **类型**：现有章节参考/案例候选（章节冻结：不新增章节）
+- **来源**：[结构参考: Clippings/Android 应用稳定性剖析与优化 - Binder 通信监控：如何监控每一次 Binder 传输？.md]
+- **建议补充**：title: "Android 应用稳定性剖析与优化 - Pika - 掘金小册"；Binder 通信监控：如何监控每一次 Binder 传输？
+- **参考书覆盖深度**：结构索引，不搬运原文
+
+## [Task14 参考书扫描] ch20 — 2026-07-19
+- **类型**：现有章节参考/案例候选（章节冻结：不新增章节）
+- **来源**：[结构参考: Clippings/Android 应用稳定性剖析与优化 - Binder 通信过程：客户端视角领略 Binder.md]
+- **建议补充**：title: "Android 应用稳定性剖析与优化 - Pika - 掘金小册"；Binder 通信过程：客户端视角领略 Binder
+- **参考书覆盖深度**：结构索引，不搬运原文
+
+## [Task14 参考书扫描] ch20 — 2026-07-19
+- **类型**：现有章节参考/案例候选（章节冻结：不新增章节）
+- **来源**：[结构参考: Clippings/Android 应用稳定性剖析与优化 - ELF 文件与 readelf & objdump ：了解 ELF 格式与解析工具.md]
+- **建议补充**：title: "Android 应用稳定性剖析与优化 - Pika - 掘金小册"；因为 Android 系统是基于 Linux 内核的，作为 Linux 主要的文件格式的 ELF，它被运用在很多地方，比如与我们稳定性相关的.so 文件，它本质就是一个 ELF 文件格式。ELF 解析被广泛运用在很多方面，比如 so 动态加载、dlsym 绕过；通常，在我们 Android 开发中，readelf 工具随着 ndk 的下载，就集成在 ndk 工具包了。我们可以通过以下路径，去找到不同架构里面的 readelf 工具，比如我电脑中的路径如下：；/AndroidSdk/ndk/21.0.6113669/toolchains/aarch64-linux-android-4.9/prebuilt/darwin-x86_64/bin/aarch64-linux-android-readelf
+- **参考书覆盖深度**：结构索引，不搬运原文
+
+## [Task14 参考书扫描] ch20 — 2026-07-19
+- **类型**：现有章节参考/案例候选（章节冻结：不新增章节）
+- **来源**：[结构参考: Clippings/Android 应用稳定性剖析与优化 - Java Crash 分析与监控原理.md]
+- **建议补充**：title: "Android 应用稳定性剖析与优化 - Java Crash 分析与监控原理"；source: "综合自Java Crash监控章节"；在 Android Java 层，异常分为两大类别：；特殊处理**：在 Android 17 中，可通过"堆扩量"技术部分恢复
+- **参考书覆盖深度**：结构索引，不搬运原文
