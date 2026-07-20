@@ -2,11 +2,11 @@
 title: "第 3 章:输入系统"
 chapter: "3.0"
 section: "3.0"
-status: "ready-for-review"
+status: "finalized"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-09"
-last_verified_against: "AOSP android-16.0.0_r4 frameworks/native/services/inputflinger、Android 15 ARR / Predictive Back 文档、ch03 子章节"
-confidence: "medium"
+last_verified: "2026-07-20"
+last_verified_against: "AOSP android-17.0.0_r1; ch03 finalized subchapters 3.1/3.3/3.4/3.5/3.8/3.10/3.11; Android Developers Predictive Back / MotionPredictor / ARR docs"
+confidence: "high"
 tags:
   - input
   - inputflinger
@@ -26,23 +26,26 @@ related_chapters:
   - "3.9"
   - "3.10"
   - "3.11"
-pipeline_stage: "task2b_pending"
-task6_state: revisiting
-task9_state: pending
+pipeline_stage: "finalized"
+task6_state: reviewed
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-09T10:55:26+08:00"
 task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: 2026-05-09
-task9_result: needs-rework
-last_task9_at: "2026-04-28T14:33:59+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-28"
-last_task6_at: "2026-05-09T04:05:00+08:00"
+task9_result: pass-tech-review
+last_task9_at: "2026-07-20T15:05:34+08:00"
+task9_reviewed_by: hermes-aiw-review-finalize-apply
+task9_reviewed_date: "2026-07-20"
+last_task6_at: "2026-07-20T15:05:34+08:00"
 last_task6_review_log: "logs/review/2026-05-09-04-review.md"
 task2b_rework_notes: "2026-06-09 Task2B main:补全缺失子章节 3.7-3.11 列表与阅读建议;修复 last_verified_against 源码版本锚点;合并重复延伸阅读;修复 InputClassifier 后括号无空格;响应 deep-review 2026-05-10-03 P1 反压/背压/优先级/异步回调覆盖缺口。送 Task6 复审。"
 task6_review_notes: "2026-05-09 Task6 04:05:Task2B 修复后写作复审;修正验证锚点路径格式,L1/L2 通过;无新增 L3/L4 回炉项,送 Task9 复审。"
+last_review_finalize_at: "2026-07-20T15:05:34+08:00"
+last_review_finalize_run_id: "20260720-150534-9a0187cb"
+review_finalize_notes: "2026-07-20 Hermes AIW review/finalize: 按 android-17.0.0_r1 与已 finalized 的 ch03 子章节复核总览;收窄 InputFlinger Rust、Predictive Back、DeliQueue 和 MotionPredictor 表述后晋升 finalized。"
+reviewed_by: hermes-aiw-review-finalize-apply
+reviewed_date: "2026-07-20"
 ---
 
 # 第 3 章:输入系统
@@ -67,28 +70,28 @@ task6_review_notes: "2026-05-09 Task6 04:05:Task2B 修复后写作复审;修正�
 - **Android 12 及更早**:InputFlinger 是纯 C++ 分发栈,`InputDispatcher` 直接按焦点窗口投递,`InputClassifier` 做基本的多指分类。
 - **Android 13-14**:Predictive Back 引入返回手势预测,输入事件流和返回动画开始耦合;`InputClassifier` 的分类逻辑逐步加重。
 - **Android 15+**:ARR(Adaptive Refresh Rate)进入输入分析视野--屏幕刷新节奏不再是固定 60/120Hz,而是随内容动态变化,触控采样到显示反馈的端到端延迟分析必须结合 ARR 的 VSync 调度策略。
-- **Android 16/17**:AOSP 主线里的 InputFlinger 开始引入 Rust 组件替换部分 C++ 模块,`InputDispatcher` 的返回键 AOT 拦截模型(Target 36+)改变了传统 `onBackPressed` 流程;Native 级手势排除区域判定下沉至 `InputDispatcher` 循环。这些变化仍在推进中，分析前先确认目标设备的实际行为：
+- **Android 16/17**:AOSP 主线里的输入栈变化要拆开看:Rust 主要落在 InputFilter / accessibility filter 侧,不是替换 InputReader / InputDispatcher 主分发路径;Predictive Back / ahead-of-time back dispatch 改变了传统 `onBackPressed` 流程;DeliQueue 和 ARR 会影响输入到主线程、再到显示反馈的延迟口径。这些变化仍要按目标设备实际 tag 与配置确认：
 
 | 主题 | 子节 | Android 16/17 候选变化 | 验证锚点 |
 |------|------|----------------------|----------|
-| Predictive Back | 3.3 | AOT 编译期 back 动画预测,减少运行时回调开销 | `frameworks/base/libs/windowmanager/` / `BackAnimationController` |
-| MotionPredictor | 3.4 | ML 驱动的触控预测模型,替代线性外推 | `frameworks/native/services/inputflinger/predictor/` / `MotionPredictor.cpp` |
-| InputFlinger Rust | 3.1 / 3.5 | 输入事件分发路径中的 Rust 组件替换 | `frameworks/native/services/inputflinger/rust/` |
-| DeliQueue | 3.1 | MessageQueue 延迟投递优化,减少输入事件到主线程的排队延迟 | `frameworks/base/core/java/android/os/MessageQueue.java` |
+| Predictive Back | 3.3 | ahead-of-time back dispatch、系统返回动画与回调时序变化 | `frameworks/base/core/java/android/window/`、SystemUI gestural back 路径 |
+| MotionPredictor | 3.4 | framework `MotionPredictor`、AndroidX motion prediction 与 native predictor 的版本边界 | `frameworks/native/services/inputflinger/predictor/`、`android.view.MotionPredictor` |
+| InputFlinger Rust | 3.1 / 3.5 / 3.8 | Rust 主要用于 InputFilter wrapper 与 accessibility filters,不替代 InputReader / InputDispatcher 主路径 | `frameworks/native/services/inputflinger/rust/` |
+| DeliQueue | 3.4 / 1.26 | MessageQueue 延迟投递优化,影响输入事件到主线程的排队延迟口径 | `frameworks/base/core/java/android/os/MessageQueue.java` |
 | InputMonitor | 3.5 | 隐藏系统 API,可编程监控输入事件流,权限边界需按 `android.permission.MONITOR_INPUT` 核验 | `frameworks/base/core/java/android/hardware/input/InputMonitor.java` |
 
 把以上变化放进同一张图里,后面分析响应速度、ANR 和高延迟交互时才不容易看偏。
 
 ## 本章内容
 
-- `3.1` Input 事件分发全流程:从 EventHub / InputReader,经由 `InputClassifier` (Android 10+ 的触摸事件必经路由点,负责多指/手掌/触控笔分类与分流),再到 InputDispatcher 和应用窗口的投递路径。Android 16+ 的 AOT 返回键拦截和 Native 手势排除判定也落在这一节。
+- `3.1` Input 事件分发全流程:从 EventHub / InputReader,经由 `InputClassifier` (Android 10+ 的触摸事件必经路由点,负责多指/手掌/触控笔分类与分流),再到 InputDispatcher 和应用窗口的投递路径。Android 16/17 的分发边界变化要和 `3.3`、`3.8` 对照阅读。
 - `3.2` 触摸响应的性能分析:看采样、批处理、主线程消费和 UI 反馈之间的时间差。
 - `3.3` 手势导航与系统交互:重点放在系统手势截获、Predictive Back 回调模型和返回动画时序。
 - `3.4` 输入延迟与预测输入技术:把 Motion 预测、低延迟渲染路径和 Android 15 ARR 的高刷协同放在一起看。
 - `3.5` 输入事件拦截与安全机制:看焦点窗口、权限边界、遮挡与注入限制。
 - `3.6` 手势识别算法与性能优化:看去抖、阈值、误触处理和复杂手势识别的代价。
 - `3.7` InputDispatcher 反压机制:事件积压时如何降级无响应窗口、如何通过 Dispatch 超时触发 ANR,以及 backpressure 在实际 trace 中的表现。
-- `3.8` InputFlinger Rust 迁移与 ARR 协同:Android 15+ InputFlinger 引入 Rust 替换部分 C++ 分发路径,ARR 动态刷新率下输入采样周期的自适应调整。
+- `3.8` InputFlinger Rust 组件与 ARR 协同:Android 15-QPR1+ / Android 17 中 Rust 主要落在 InputFilter wrapper 与 accessibility filters,ARR 动态刷新率下还要结合 touch hint 和 VSync 调度看端到端反馈。
 - `3.9` 端到端延迟预算与感知阈值:把输入延迟拆成各阶段,结合 HCI 感知阈值研究给每段分派预算;回答"多快才算快"。
 - `3.10` InputDispatcher stale event 判定:高负载下旧事件如何被标记 stale 并丢弃,优先级窗口 (foreground/background) 对事件存活时间的影响。
 - `3.11` InputMethodManager 与软键盘性能:输入法会话的建立开销、IME 进程调度对输入响应的影响,以及软键盘弹出/收起期间的输入事件排队行为。
