@@ -17,9 +17,14 @@ last_body_apply_at: "2026-07-20T07:15:21+08:00"
 last_body_apply_run_id: "20260720-071521-dbc00327"
 last_body_apply_source: "source-index:27 DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md"
 task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
+task6_state: needs-rework
+task9_state: needs-rework
+pipeline_stage: task6_needs_rework
+reviewed_date: "2026-07-20"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+last_review_finalize_at: "2026-07-20T11:05:57+08:00"
+last_review_finalize_run_id: "20260720-110557-bfc838f1"
+review_rework_reason: "2026-07-20 review: 未 finalized。正文仍保留 outline/待加工痕迹，且存在若干把 AOSP Surface/ANGLE 源码机制上升为 Media3/ExoPlayer 默认实践的断言；已先修正可证伪的小范围表述，需 Task2B 将 outline 改写为完整正文并补齐 Media3 官方/API 侧证据后再复审。"
 ---
 
 # 22.43 Media3 视频播放渲染管线性能实战
@@ -80,7 +85,7 @@ pipeline_stage: task6_pending
 **异步模式回调派发**（`frameworks/base/media/java/android/media/MediaCodec.java@android-17.0.0_r1`）：
 
 - `mCallback` / `EventHandler`（line 1820-1850）注册 9 类回调常量，其中 `CB_INPUT_AVAILABLE=1` / `CB_OUTPUT_AVAILABLE=2` / `CB_OUTPUT_FORMAT_CHANGE=4` / `CB_LARGE_FRAME_OUTPUT_AVAILABLE=7` / `CB_METRICS_FLUSHED=8` / `CB_REQUIRED_RESOURCES_CHANGE=9` 是 Android 17 上视频播放高频事件。
-- `mBufferMode`（line 2451）区分 `BUFFER_MODE_LEGACY`（ByteBuffer）与 `BUFFER_MODE_BLOCK`（Android 12+ 零拷贝 Frame）；ExoPlayer MediaCodecVideoRenderer 默认走 `BUFFER_MODE_BLOCK` 路径。
+- `mBufferMode`（line 2451）区分 `BUFFER_MODE_LEGACY`（ByteBuffer）与 `BUFFER_MODE_BLOCK`（Android 12+ Block Model / Frame 路径）。材料能支撑 AOSP `MediaCodec` 具备该模式分支，但不能直接推出所有 Media3/ExoPlayer `MediaCodecVideoRenderer` 默认都走 `BUFFER_MODE_BLOCK`；实际路径需结合所用 Media3 版本、`MediaCodecAdapter` 实现与 codec 能力确认。
 - `releaseOutputBuffer(int, long renderTimestampNs)`（line 4363）：ExoPlayer 在 SurfaceView 渲染时调用此 API 指定 VSYNC 渲染时间；SurfaceView 端要求 timestamp 与 `System.nanoTime` 差距 ≤ 1 秒，否则 fallback 到「最早可行时间」不丢帧模式。
 - `setOutputSurface(@NonNull Surface surface)`（line 2643）：动态切换 decoder 输出 Surface（API 24+），video effect pipeline 关键 API。
 
@@ -176,7 +181,7 @@ if (mSwapIntervalZero != wasSwapIntervalZero) {
 }
 ```
 
-这是 ExoPlayer 在 PlayerView（SurfaceView 容器）下推荐设置 `setSwapInterval(0)` 的源码依据：
+这是 native `Surface` / EGL producer 在 `swapInterval=0` 时切入 BufferQueue asyncMode 的源码依据；Java 层 `PlayerView`/`SurfaceView` 并没有一个等价、通用的公开 `setSwapInterval(0)` 开关，因此不能写成「ExoPlayer 推荐配置」。更稳妥的结论是：当播放器或特效链路的 native GL producer 以 interval 0 提交到 Surface 时，BufferQueue 会进入 asyncMode，过期帧可被标记为可丢弃：
 
 - `interval=1`（默认）：sync mode，UI 渲染适合；
 - `interval=0`：async mode，视频/游戏适合，producer 不阻塞、过期帧可丢。
@@ -194,10 +199,10 @@ if (mSwapIntervalZero != wasSwapIntervalZero) {
 
 ### 实战调优清单（基于源码结论）
 
-1. **异步模式强制启用**：`MediaCodec.setCallback(...)` + 复用 `MediaCodec` 实例（避免每次 createVideoFormat 重新 init）。
-2. **Surface 模式 + `setSwapInterval(0)`**：视频/直播场景必开；UI 场景保留 `interval=1`。
+1. **优先评估异步模式**：`MediaCodec.setCallback(...)` 可降低同步 dequeue/release 的阻塞风险；是否复用 codec 实例要服从 DRM、profile/level、分辨率与 Surface 切换边界，不能无条件池化。
+2. **区分 Java 播放器 Surface 与 native GL producer**：`Surface::setSwapInterval(0)` 能解释 asyncMode 进入条件，但不是 `PlayerView` 的通用 Java 调优项；只有自有 native/GL 特效 producer 能控制 swap interval 时才可作为实验变量。
 3. **动态 `setOutputSurface`**：视频特效 pipeline（先渲染到 offscreen GL Surface 处理滤镜，再切到屏上 Surface）可省去 codec restart。
-4. **HDR 渲染保留 `mAllowFrameDroppingBySurface=true`**：4K HDR 60fps 下 SF 自动丢过期帧，避免 jank。
+4. **HDR 渲染谨慎启用 surface 侧丢帧策略**：若播放器/codec adapter 暴露 frame-dropping 配置，可把它作为 4K/HDR/60fps 的实验变量；本章材料只证明 BufferQueue asyncMode 会把 buffer 标记为 droppable，不能保证所有 HDR 播放路径都会自动规避 jank。
 5. **三缓冲（`setBufferCount(3)`）**：视频场景标准配置，平衡延迟与帧率稳定性。
 
 ### 联动章节
@@ -266,7 +271,13 @@ ANGLE-Vulkan 的 shader 路径由 `CompilerVk::getTranslatorOutputType()` 返回
 <!-- /AIW-Body-Apply-ANGLE-2026-07-20 -->
 
 
-> 本节内容待加工。[结构参考: developer.android.com/media3 + AOSP frameworks/av + frameworks/base]
+## Review rework notes（2026-07-20）
+
+本轮审阅未将本章推进到 `finalized`。原因不是 ANGLE / MediaCodec 两份 DeepResearch 材料本身缺失，而是当前章节仍有三类需要 Task2B 回炉的问题：
+
+1. 顶部 `outline` 仍是提纲形态，且含「Android 17 Media3 Renderer 架构变化」「Android 17 HDR_OOTF」等未在本章材料中展开证明的标题级断言。
+2. 已补入的 AOSP 源码段落有若干把 native `Surface` / BufferQueue / ANGLE 机制直接写成 Media3/ExoPlayer 默认实践的风险；本轮已修正 `BUFFER_MODE_BLOCK` 默认路径、`setSwapInterval(0)` 推荐项、codec 池化与 HDR 自动丢帧等可证伪表述。
+3. 下一轮应按「Media3 官方 API/ExoPlayer adapter 行为 → AOSP MediaCodec/BufferQueue 证据 → 性能实战建议」重排正文，把未验证项明确降级为排查变量，而不是主线结论。
 
 
 ## 延伸阅读
