@@ -454,6 +454,33 @@
       "processed_at": "2026-07-20T06:20:11.946708+08:00",
       "action": "indexed-only-chapter-freeze",
       "score": 19
+    },
+    {
+      "path": "https://eunomia.dev/blog/2026/07/15/ebpf-ai-agent-policy-enforcement/",
+      "title": "[ClawFeed] An Empirical Study: AI Agent Rules Need Context and Layered Enforcement",
+      "summary": "文章基于 64 个仓库的 2,116 条 agent instruction 语句，说明多数规则需要项目或任务上下文，ActPlane 用 eBPF-LSM 和可反馈 DSL 执行 OS 可观察策略，在决策合规 benchmark 上优于 prompt、tool regex 和 tool-level IFC。",
+      "chapter": "ch16",
+      "processed_at": "2026-07-21T06:20:59.356819+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17
+    },
+    {
+      "path": "[掘金Android]",
+      "title": "[掘金Android]",
+      "summary": "这篇文章整理了 Android CLI 预览版能覆盖的项目创建、模拟器控制、官方规范接入等能力，并把它放进 Claude Code、Codex、Gemini CLI 这类 Agent 工作流里理解。适合跟踪 Android 官方工具链对 AI 编程的支持，不过落地前要以官方文档和当前 CLI 版本为准。",
+      "chapter": "ch16",
+      "processed_at": "2026-07-21T06:20:59.356819+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-21-juejin-android.md",
+      "title": "[技术文章] Juejin Android Intake · 2026-07-21",
+      "summary": "status: completed run_at: 2026-07-21 04:14:47 CST source: Juejin Android recommend_cate_feed, sort_type=200, limit=20 freshness: 本轮抓取 20 条候选，按 Android 技术相关性、Android 17/API37 上限、正文完整度和 7.0...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-21T06:20:59.356819+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
     }
   ]
 }
