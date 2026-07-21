@@ -129,9 +129,9 @@
       ]
     }
   ],
-  "last_scan_date": "2026-07-20",
-  "total_knowledge_points": 574,
-  "total_suggestions": 181,
+  "last_scan_date": "2026-07-21",
+  "total_knowledge_points": 590,
+  "total_suggestions": 185,
   "total_gaps": 21,
   "skipped_files": [
     {
@@ -255,7 +255,27 @@
       "processed_at": "2026-07-20T06:30:13.496895+08:00",
       "chapter": "ch20",
       "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控原理.md": {
+      "processed_at": "2026-07-21T06:30:00.232616+08:00",
+      "chapter": "ch20",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md": {
+      "processed_at": "2026-07-21T06:30:00.233518+08:00",
+      "chapter": "ch20",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Native Hook 全解析：Native 闯关入门秘籍.md": {
+      "processed_at": "2026-07-21T06:30:00.234387+08:00",
+      "chapter": "ch20",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - Native 内存泄漏监控：寻找 Native 中不可达内存.md": {
+      "processed_at": "2026-07-21T06:30:00.235388+08:00",
+      "chapter": "ch20",
+      "points": 4
     }
   },
-  "cursor": 12
+  "cursor": 16
 }
