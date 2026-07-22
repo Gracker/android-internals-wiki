@@ -129,9 +129,9 @@
       ]
     }
   ],
-  "last_scan_date": "2026-07-21",
-  "total_knowledge_points": 590,
-  "total_suggestions": 185,
+  "last_scan_date": "2026-07-22",
+  "total_knowledge_points": 606,
+  "total_suggestions": 189,
   "total_gaps": 21,
   "skipped_files": [
     {
@@ -275,7 +275,27 @@
       "processed_at": "2026-07-21T06:30:00.235388+08:00",
       "chapter": "ch20",
       "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径与解决方案.md": {
+      "processed_at": "2026-07-22T06:30:48.959126+08:00",
+      "chapter": "ch20",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - OOM 发生路径：了解 OOM 是如何产生的.md": {
+      "processed_at": "2026-07-22T06:30:48.960470+08:00",
+      "chapter": "ch20",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - pthread_create 回溯：原来 Native 也有 try catch！.md": {
+      "processed_at": "2026-07-22T06:30:48.961669+08:00",
+      "chapter": "ch20",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - 初识内存：内存是什么？.md": {
+      "processed_at": "2026-07-22T06:30:48.962322+08:00",
+      "chapter": "ch20",
+      "points": 4
     }
   },
-  "cursor": 16
+  "cursor": 20
 }
