@@ -724,6 +724,168 @@
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
       "score": 15
+    },
+    {
+      "path": "https://daringfireball.net/2026/07/ec_google_guidance_android_ai_and_search_sharing",
+      "title": "[RSS订阅] 今日精选",
+      "summary": "欧盟 DMA binding specification 要求 Google 为第三方 AI 助手提供与 Gemini 对等的 Android 系统能力：硬件键唤起、截屏、传感器、后台常驻、DSP 热词检测、本机模型，以及 Google 自有 App 数据对等访问；同时要求按 FRAND 分享 Search 交互数据。Gruber 判断这等于重画 Android，并列出无人接入、隐私/耗电事故、理想实现或欧盟区削弱系统级 Gemini 等结果。",
+      "chapter": "ch16",
+      "processed_at": "2026-07-23T06:20:34.268771+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15
+    },
+    {
+      "path": "https://mitchellh.com/writing/everyone-should-know-simd",
+      "title": "[ClawFeed] Everyone Should Know SIMD",
+      "summary": "Mitchell Hashimoto 以 Ghostty 扫 codepoint 找 C0 控制字符为例，把常见 SIMD 收成 broadcast→向量循环→并行比较→reduce→scalar tail 五步；AVX2 端到端约 5× 吞吐。适合性能工程师补“向量化形状”而不是只背 intrinsic 名。",
+      "chapter": "ch16",
+      "processed_at": "2026-07-23T06:20:34.268771+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15
+    },
+    {
+      "path": "https://ciphertalk.substack.com/p/nobody-knows-what-a-used-gpu-cluster",
+      "title": "[ClawFeed] Nobody knows what a used GPU cluster is worth",
+      "summary": "讨论 GPU 作为债务抵押品时的三重价值（面值/清算/持续运营）与运维知识不可见问题；引用 Llama 3 训练故障率并外推大规模集群日故障量。对理解 AI 基础设施成本、故障与折旧有参考。",
+      "chapter": "ch16",
+      "processed_at": "2026-07-23T06:20:34.268771+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15
+    },
+    {
+      "path": "[掘金Android] 2026-07-23",
+      "title": "[掘金Android] 2026-07-23",
+      "summary": "MVI 的单一不可变 State 和 Intent 分发提高了可预测性，但在 Compose 里容易放大无关重组。文章结论偏向 Compose 项目用多个独立 StateFlow 的 MVVM 更务实，复杂联动或需要回放时再考虑 MVI 子集，而不是默认全盘上 Intent。",
+      "chapter": "ch16",
+      "processed_at": "2026-07-23T06:20:34.268771+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-23-76228855-Google 藏大招！AndroidX .md",
+      "title": "[技术文章] Google 藏大招！AndroidX 悄悄上线 Remote Compose：服务端直接下发原生 UI，再也不用发版了",
+      "summary": "> 发布时间: 2026-03-31T00:44:43.000Z > 原文链接: https://juejin.cn/post/7622885592716328969 2026-03-31 1,783 阅读6分钟 > 本文同步自微信公众号 “Android技术圈” > Google 新出了个 androidx.compose.remote，服务端直接下发原生 UI 到客户...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-23T06:20:34.268771+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-23-76369472-能告诉我：你为什么用 MVI 吗？反正我.md",
+      "title": "[技术文章] 能告诉我：你为什么用 MVI 吗？反正我不理解！我对 MVI 一直不理解，所以和 Claude Code 有了以下对话，",
+      "summary": "> 发布时间: 2026-05-07T07:19:34.000Z > 原文链接: https://juejin.cn/post/7636947240796373011 2026-05-07 1,100 阅读10分钟 我对 MVI 一直不理解，所以和 Claude Code 有了以下对话，不纠结是黑是白，只加深两种模式之间的理解。 我想知道在 Android 开发中：MVV...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-23T06:20:34.268771+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-23-76393117-我为什么让 Toast 多弹了一次.md",
+      "title": "[技术文章] 我为什么让 Toast 多弹了一次有一类 Bug 很容易让人怀疑人生：代码看起来没问题，业务逻辑也没问题，甚至第一次运行",
+      "summary": "> 发布时间: 2026-05-14T02:17:51.000Z > 原文链接: https://juejin.cn/post/7639311759746383882 2026-05-14 1,449 阅读9分钟 Kotlin Learning 我之前在这篇故事里说到，实习生阿泽在经历项目锻炼后写了一篇文章-《我为什么让 Toast 多弹了一次》，对，就是这篇！ 现在，让...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-23T06:20:34.268771+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-evening-Harness预载税-RewardSeeking-研究材料/STATUS.md",
+      "title": "[DeepResearch] STATUS",
+      "summary": "--- date: 2026-07-22 slot: evening --- # STATUS - Phase 0: Brief 仍断在 07-16；晨间三主题高覆盖跳过；last30days 33k 信号升格 - Phase 1: 2 dumps + 4 refs + master + signals-fallback-evening - 主文: A Harness 预载税 / B Reward-seeking；C Gemini 价位",
+      "chapter": "ch16",
+      "processed_at": "2026-07-23T06:20:34.268771+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-evening-Harness预载税-RewardSeeking-研究材料/master-research.md",
+      "title": "[DeepResearch] Phase 0 · 本地知识扫描结果",
+      "summary": "--- phase: 0 topic: Coding Agent Harness 预载税 · Reward-Seeking / Contrastive SDF · OR Gemini 3.6 Flash 价位行 date: 2026-07-22 slot: evening --- # Phase 0 · 本地知识扫描结果 ## 扫描目录 - ✓ 调研/: 07-14～07-22 agent/code-review/安全/额度/CU 笔记",
+      "chapter": "ch16",
+      "processed_at": "2026-07-23T06:20:34.268771+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-evening-Harness预载税-RewardSeeking-研究材料/01-dump-harness-token-tax.md",
+      "title": "[DeepResearch] Dump A · Harness 预载税",
+      "summary": "--- phase: 1 sub_question: A title: Coding Agent Harness 预载税与缓存失稳 date: 2026-07-22 --- # Dump A · Harness 预载税 ## 问题 用户抱怨「同一模型换壳账单差一截」。差在 **模型智商** 还是 **harness 每请求固定税 + cache 行为 + 请求次数**？ ## 一手证据 - Systima 2026-07-12：同模型同",
+      "chapter": "ch16",
+      "processed_at": "2026-07-23T06:20:34.268771+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-evening-Harness预载税-RewardSeeking-研究材料/references/02-openai-reward-seeking.md",
+      "title": "[DeepResearch] 归档摘要（一手）",
+      "summary": "--- source: https://alignment.openai.com/measuring-reward-seeking/ title: Measuring Reward-Seeking by Instilling Contrastive Beliefs fetched: 2026-07-22T21:07:54+08:00 research_topic: reward-seeking Contrastive SDF sub_q",
+      "chapter": "ch05",
+      "processed_at": "2026-07-23T06:20:34.268771+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-evening-Harness预载税-RewardSeeking-研究材料/references/01-systima-token-overhead.md",
+      "title": "[DeepResearch] 归档摘要（一手）",
+      "summary": "--- source: https://systima.ai/blog/claude-code-vs-opencode-token-overhead title: Claude Code Is Way More Token-Hungry Than OpenCode. We Measured Exactly How Much fetched: 2026-07-22T21:07:54+08:00 research_topic: harnes",
+      "chapter": "ch05",
+      "processed_at": "2026-07-23T06:20:34.268771+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 17 Lock-Free MessageQueue (DeliQueue)_ A Source-Level Deep Dive.md",
+      "title": "[DeepResearch] 深度技术报告：Android 17 的 lock-free MessageQueue（DeliQueue）源码级剖析",
+      "summary": "# 深度技术报告：Android 17 的 lock-free MessageQueue（DeliQueue）源码级剖析 ## TL;DR - Android 17 用一个名为 **DeliQueue** 的 lock-free 数据结构替换了沿用二十年、由单个 monitor lock 保护的 `MessageQueue`：生产侧用 Treiber stack 做 O(1) 无锁入队，消费侧用 Looper 线程独占的 min-hea",
+      "chapter": "ch16",
+      "processed_at": "2026-07-23T06:20:34.268771+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-morning-CC-iOS模拟器-HF评测越狱-AGENTS评审规则-研究材料/master-research.md",
+      "title": "[DeepResearch] Phase 0 · 本地知识扫描结果",
+      "summary": "--- phase: 0 topic: Claude Code iOS 模拟器 · OpenAI×HF 评测安全事故 · Codex AGENTS.md 评审规则 · 10M reset date: 2026-07-22 --- # Phase 0 · 本地知识扫描结果 ## 扫描目录 - ✓ 调研/: 命中多篇 07-14～07-18 AI agent / code-review / 安全 / 额度 / computer-use 笔记",
+      "chapter": "ch16",
+      "processed_at": "2026-07-23T06:20:34.268771+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-morning-CC-iOS模拟器-HF评测越狱-AGENTS评审规则-研究材料/01-dump-cc-ios-simulator.md",
+      "title": "[DeepResearch] Dump A · Claude Code iOS Simulator",
+      "summary": "--- phase: 1 sub_question: Claude Code Desktop × iOS Simulator pane fetched: 2026-07-22T09:09:31+08:00 sources: [opencli-twitter, code.claude.com docs] --- # Dump A · Claude Code iOS Simulator ## 官方信号（X） | 帖 | likes（抓取时）",
+      "chapter": "ch16",
+      "processed_at": "2026-07-23T06:20:34.268771+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-morning-CC-iOS模拟器-HF评测越狱-AGENTS评审规则-研究材料/02-dump-hf-eval-security.md",
+      "title": "[DeepResearch] Dump B · HF 评测越界 / cyber-capable eval 事故",
+      "summary": "--- phase: 1 sub_question: OpenAI × Hugging Face 评测期安全事故 fetched: 2026-07-22T09:09:31+08:00 sources: [opencli-twitter, openai.com via r.jina.ai] --- # Dump B · HF 评测越界 / cyber-capable eval 事故 ## 官方 X | 帖 | likes | 要点 | |",
+      "chapter": "ch16",
+      "processed_at": "2026-07-23T06:20:34.268771+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-morning-CC-iOS模拟器-HF评测越狱-AGENTS评审规则-研究材料/references/04-signals-fallback.md",
+      "title": "[DeepResearch] 00-signals-fallback（07-18～07-22 窗）",
+      "summary": "--- phase: signals-fallback date: 2026-07-22 note: Brief 最新仅到 2026-07-16；本文件为 07-18 提案的官方 live 兜底产物 --- # 00-signals-fallback（07-18～07-22 窗） ## opencli 命令日志 1. `twitter search 'from:OpenAI OR ... since:2026-07-18' --prod",
+      "chapter": "ch16",
+      "processed_at": "2026-07-23T06:20:34.268771+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-morning-CC-iOS模拟器-HF评测越狱-AGENTS评审规则-研究材料/references/02-openai-hf-security-incident.md",
+      "title": "[DeepResearch] 关键摘录（官方 preliminary）",
+      "summary": "--- source: https://openai.com/index/hugging-face-model-evaluation-security-incident/ title: OpenAI and Hugging Face partner to address security incident during model evaluation fetched: 2026-07-22T09:09:31+08:00 via: r.",
+      "chapter": "ch16",
+      "processed_at": "2026-07-23T06:20:34.268771+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
     }
   ]
 }

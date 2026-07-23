@@ -129,9 +129,9 @@
       ]
     }
   ],
-  "last_scan_date": "2026-07-22",
-  "total_knowledge_points": 606,
-  "total_suggestions": 189,
+  "last_scan_date": "2026-07-23",
+  "total_knowledge_points": 622,
+  "total_suggestions": 193,
   "total_gaps": 21,
   "skipped_files": [
     {
@@ -295,7 +295,27 @@
       "processed_at": "2026-07-22T06:30:48.962322+08:00",
       "chapter": "ch20",
       "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md": {
+      "processed_at": "2026-07-23T06:30:36.058441+08:00",
+      "chapter": "ch20",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - 开篇词：欢迎加入 Android 优化之旅，你将走进稳定性优化的世界！.md": {
+      "processed_at": "2026-07-23T06:30:36.059303+08:00",
+      "chapter": "ch20",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - 稳定性全景.md": {
+      "processed_at": "2026-07-23T06:30:36.060172+08:00",
+      "chapter": "ch20",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 - 线程监控：如何解决“匿名”线程？.md": {
+      "processed_at": "2026-07-23T06:30:36.060749+08:00",
+      "chapter": "ch20",
+      "points": 4
     }
   },
-  "cursor": 20
+  "cursor": 24
 }
