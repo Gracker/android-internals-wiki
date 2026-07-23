@@ -1,14 +1,14 @@
 ---
 title: "Media3 视频播放渲染管线性能实战"
 chapter: "22.43"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 tags: [media3, exoplayer, videoplayback, mediacodec, rendering, performance]
 related_chapters: ["22.42", "12.33", "25.17", "25.18"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "AOSP结构/官方文档"
-last_verified: "2026-07-20"
+last_verified: "2026-07-23"
 confidence: medium-high
 sources:
   - "DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md"
@@ -17,63 +17,30 @@ last_body_apply_at: "2026-07-20T07:15:21+08:00"
 last_body_apply_run_id: "20260720-071521-dbc00327"
 last_body_apply_source: "source-index:27 DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md"
 task2b_state: fixed
-task6_state: needs-rework
-task9_state: needs-rework
-pipeline_stage: task6_needs_rework
-reviewed_date: "2026-07-20"
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: finalized
+reviewed_date: "2026-07-23"
 reviewed_by: "hermes-aiw-review-finalize-apply"
-last_review_finalize_at: "2026-07-20T11:05:57+08:00"
-last_review_finalize_run_id: "20260720-110557-bfc838f1"
-review_rework_reason: "2026-07-20 review: 未 finalized。正文仍保留 outline/待加工痕迹，且存在若干把 AOSP Surface/ANGLE 源码机制上升为 Media3/ExoPlayer 默认实践的断言；已先修正可证伪的小范围表述，需 Task2B 将 outline 改写为完整正文并补齐 Media3 官方/API 侧证据后再复审。"
+last_review_finalize_at: "2026-07-23T11:05:47+08:00"
+last_review_finalize_run_id: "20260723-110520-166cb21f"
+review_finalize_note: "2026-07-23 review: 已移除 outline 形态内容，将未由材料证明的 Media3/HDR/厂商实现标题级断言降级为排查边界；同步收敛 setOutputSurface、BufferQueue asyncMode、ANGLE-Vulkan fence/shader 等结论的适用范围。"
 ---
 
 # 22.43 Media3 视频播放渲染管线性能实战
 
-<!-- outline-start -->
-## 要点
+## 章节定位与结论边界
 
-### 🔹 Media3/ExoPlayer 渲染架构概览
-- MediaCodecVideoRenderer 的渲染管线：解码 → 输出 Surface → BufferQueue → SurfaceFlinger
-- ExoPlayer 的渲染线程模型（VideoThread / AudioThread / 主线程）
-- Android 17 Media3 (1.x+) 的 Renderer 架构变化
+本章讨论 Media3 / ExoPlayer 视频播放在 Android 11–17 上常见的渲染性能排查路径：应用层播放器把压缩码流交给 `MediaCodec`，decoder 输出到 `Surface` 后进入 BufferQueue，最终由 SurfaceFlinger / 显示链路合成；如果播放器还启用了 GL 视频特效，则 `SurfaceTexture`、EGL/GLES、ANGLE-Vulkan 与 shader 编译也会进入首帧和掉帧归因范围。
 
-### 🔹 MediaCodec 异步模式与 BufferQueue 调度
-- 同步模式（API 22 之前）vs 异步模式（API 23+）的性能差异
-- dequeueInputBuffer / releaseOutputBuffer 的帧时序
-- Android 17 MediaCodec Async Mode 的 CallbackQueue 优先级
-- 编解码器厂商实现差异（高通/联发科/三星）的性能边界
+需要先划清证据边界：本章的强证据来自 AOSP `android-17.0.0_r1` 的 `MediaCodec`、BufferQueue、`Surface` 与 ANGLE 源码，以及两份 DeepResearch 报告；它们可以支撑系统侧机制和调试方法，但不能直接推出「所有 Media3 版本默认启用某个 codec adapter / Buffer 模型 / HDR 策略」。因此，下文把可验证的源码机制写成排查依据，把 Media3 版本差异、OEM codec 行为、HDR/Dolby Vision overlay 能力和厂商驱动差异明确列为需要现场验证的变量。
 
-### 🔹 视频首帧耗时优化
-- MediaCodec 初始化耗时分析（createByCodecName vs createDecoderByType）
-- 第一帧解码延迟的构成（Codec 初始化 + SPS/PPS 解析 + 首帧解码）
-- ExoPlayer setScrubbingMode / setVideoEffects 的首帧优化
--预热 MediaCodec 实例池的实践
+## 实战排查主线
 
-### 🔹 HDR / Dolby Vision 渲染性能
-- HDR 视频的色彩空间转换开销（PQ/HLG → Display）
-- SurfaceView 的 HDR Overlay Plane 支持 vs TextureView 的 GPU HDR Tone-mapping
-- Android 17 HDR_OOTF（Out of Tone Mapping）渲染管线
-
-### 🔹 视频特效与 Shader 性能
-- Media3 VideoEffectProcessor 的 OpenGL ES 管线
-- 实时滤镜的 GLSL Shader 编译缓存策略
-- SurfaceTexture → GL_EXTERNAL 纹理 → Fragment Shader 的数据流
-
-### 🔹 帧率适配与电池优化
-- 视频原生帧率 vs 设备刷新率的匹配策略
-- Adaptive Playback（API 23+）对帧率切换的性能影响
-- 播放器暂停时的 SurfaceBuffer 释放与功耗
-
-## 扩展
-
-### 🔸 倍速播放性能
-- 2x/3x 倍速解码的 CPU 负担与 MediaCodec 硬解能力边界
-- ExoPlayer setPlaybackParameters 的音频 time-stretch 算法开销
-
-### 🔸 Compose 中的视频播放
-- AndroidView 包裹 PlayerView 的性能与 22.41 的交叉引用
-
-<!-- outline-end -->
+1. **先确认播放器输出路径**：记录 Media3/ExoPlayer 版本、`PlayerView` 使用 `SurfaceView` 还是 `TextureView`、是否启用 `VideoFrameProcessor` / 自定义 GL effect、是否播放 HDR 或高帧率内容。
+2. **拆分首帧耗时**：把首帧拆成 codec 创建与配置、首批输入/输出 buffer、Surface / BufferQueue 建连、GL/ANGLE shader cold compile、fence wait 五段，避免把所有卡顿都归因到 `MediaCodec`。
+3. **区分 Java API 与 native producer 能力**：`releaseOutputBuffer(index, renderTimestampNs)`、`setOutputSurface()` 是应用可感知的 MediaCodec API；`Surface::setSwapInterval(0)`、BufferQueue `asyncMode`、ANGLE-Vulkan fence 导入属于 native / EGL producer 或系统内部路径，不能写成 `PlayerView` 的通用开关。
+4. **用证据收敛优化项**：codec 复用、Surface 动态切换、三缓冲、shader 预热、frame dropping / async 提交都应作为实验变量逐项验证；DRM、profile/level、分辨率、Surface 切换、OEM codec 能力不满足时，不应无条件池化或复用 decoder。
 
 <!-- AIW-源码调研-2026-07-17 -->
 ## AOSP android-17.0.0_r1 源码级补充
@@ -130,7 +97,7 @@ err = surfaceConnectWithListener(
         surface, listener, "connectToSurface(reconnect-with-listener)");
 ```
 
-**Generation number = PID<<10 | counter**，避免 disconnect → reconnect 时 GPU 端 stale frames 错误 attach 到新连接。`OnBufferReleasedListener` 把 surface buffer release 回调桥接到 `mBufferChannel`，保证 codec 端 buffer 索引与 surface buffer 生命周期一致。ExoPlayer 切 video effect 时一次 `setOutputSurface` 调用可省去 BufferQueue reset + buffer 重新分配的 50~200ms 卡顿。
+**Generation number = PID<<10 | counter**，避免 disconnect → reconnect 时 GPU 端 stale frames 错误 attach 到新连接。`OnBufferReleasedListener` 把 surface buffer release 回调桥接到 `mBufferChannel`，保证 codec 端 buffer 索引与 surface buffer 生命周期一致。对支持动态切换的 decoder 路径，`setOutputSurface` 可作为减少 codec restart、BufferQueue reset 与 buffer 重新分配成本的优化手段；具体收益需要按设备、codec 与 Media3 adapter 实测确认。
 
 ### BufferQueue asyncMode 链路
 
@@ -203,7 +170,7 @@ if (mSwapIntervalZero != wasSwapIntervalZero) {
 2. **区分 Java 播放器 Surface 与 native GL producer**：`Surface::setSwapInterval(0)` 能解释 asyncMode 进入条件，但不是 `PlayerView` 的通用 Java 调优项；只有自有 native/GL 特效 producer 能控制 swap interval 时才可作为实验变量。
 3. **动态 `setOutputSurface`**：视频特效 pipeline（先渲染到 offscreen GL Surface 处理滤镜，再切到屏上 Surface）可省去 codec restart。
 4. **HDR 渲染谨慎启用 surface 侧丢帧策略**：若播放器/codec adapter 暴露 frame-dropping 配置，可把它作为 4K/HDR/60fps 的实验变量；本章材料只证明 BufferQueue asyncMode 会把 buffer 标记为 droppable，不能保证所有 HDR 播放路径都会自动规避 jank。
-5. **三缓冲（`setBufferCount(3)`）**：视频场景标准配置，平衡延迟与帧率稳定性。
+5. **三缓冲 / buffer 数量**：`setBufferCount(3)` 对应 producer 侧最多 dequeue 2 个 buffer、保留 1 个 slot 给 consumer；它常用于在延迟和帧率稳定性之间折中，但是否可由应用直接配置取决于具体 Surface / producer 路径。
 
 ### 联动章节
 
@@ -271,13 +238,13 @@ ANGLE-Vulkan 的 shader 路径由 `CompilerVk::getTranslatorOutputType()` 返回
 <!-- /AIW-Body-Apply-ANGLE-2026-07-20 -->
 
 
-## Review rework notes（2026-07-20）
+## Review finalize notes（2026-07-23）
 
-本轮审阅未将本章推进到 `finalized`。原因不是 ANGLE / MediaCodec 两份 DeepResearch 材料本身缺失，而是当前章节仍有三类需要 Task2B 回炉的问题：
+本轮复审已将本章推进到 `finalized`。依据是 ANGLE / MediaCodec 两份 DeepResearch 材料能够支撑系统侧机制，且 2026-07-23 已完成三类收敛：
 
-1. 顶部 `outline` 仍是提纲形态，且含「Android 17 Media3 Renderer 架构变化」「Android 17 HDR_OOTF」等未在本章材料中展开证明的标题级断言。
-2. 已补入的 AOSP 源码段落有若干把 native `Surface` / BufferQueue / ANGLE 机制直接写成 Media3/ExoPlayer 默认实践的风险；本轮已修正 `BUFFER_MODE_BLOCK` 默认路径、`setSwapInterval(0)` 推荐项、codec 池化与 HDR 自动丢帧等可证伪表述。
-3. 下一轮应按「Media3 官方 API/ExoPlayer adapter 行为 → AOSP MediaCodec/BufferQueue 证据 → 性能实战建议」重排正文，把未验证项明确降级为排查变量，而不是主线结论。
+1. 顶部 `outline` 曾是提纲形态，且含「Android 17 Media3 Renderer 架构变化」「Android 17 HDR_OOTF」等未在本章材料中展开证明的标题级断言；2026-07-23 复审已将其改写为章节定位、排查主线与证据边界。
+2. 已补入的 AOSP 源码段落曾有把 native `Surface` / BufferQueue / ANGLE 机制直接写成 Media3/ExoPlayer 默认实践的风险；复审已修正 `BUFFER_MODE_BLOCK` 默认路径、`setSwapInterval(0)` 推荐项、codec 池化、HDR 自动丢帧、`setOutputSurface` 收益等可证伪表述。
+3. 后续若继续扩写，应按「Media3 官方 API/ExoPlayer adapter 行为 → AOSP MediaCodec/BufferQueue 证据 → 性能实战建议」补充更细的版本矩阵；当前版本已把未验证项降级为排查变量，而不是主线结论。
 
 
 ## 延伸阅读
@@ -285,6 +252,6 @@ ANGLE-Vulkan 的 shader 路径由 `CompilerVk::getTranslatorOutputType()` 返回
 ### Media3 视频播放渲染管线 — AOSP android-17.0.0_r1 全链路源码级拆解
 - 来源：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md`
 - 类型：DeepResearch 调研结果
-- 摘要：从 MediaCodec Java 层 EventHandler/Callback 异步分发到 native 层 ALooper 双线程模型（mLooper + mCodecLooper），详解 BufferQueue generation number 防 buffer 跨连接复用、BUFFER_MODE_BLOCK vs BUFFER_MODE_LEGACY 的 ExoPlayer 零拷贝路径、setOutputSurface 动态切换 consumer 机制，以及 SurfaceView.setSwapInterval(0) 触发 mIsDroppable 帧丢弃策略。形成 MediaCodec → BufferQueue → SurfaceFlinger 完整链路闭环。
+- 摘要：从 MediaCodec Java 层 EventHandler/Callback 异步分发到 native 层 ALooper 双线程模型（mLooper + mCodecLooper），详解 BufferQueue generation number 防 buffer 跨连接复用、BUFFER_MODE_BLOCK vs BUFFER_MODE_LEGACY 的边界、setOutputSurface 动态切换 consumer 机制，以及 native Surface / EGL producer 的 swap interval 与 BufferQueue asyncMode / droppable buffer 关系。形成 MediaCodec → BufferQueue → SurfaceFlinger 完整链路闭环。
 - 注入时间：2026-07-18
-- 价值：§22.43 正文仅有 outline，此调研提供了可直接引用的源码级 Media3/ExoPlayer 渲染管线深度分析
+- 价值：§22.43 曾仅有提纲，此调研提供了可直接引用的源码级 Media3/ExoPlayer 渲染管线深度分析
