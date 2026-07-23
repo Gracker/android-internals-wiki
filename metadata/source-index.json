@@ -886,6 +886,74 @@
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
       "score": 19
+    },
+    {
+      "path": "https://juejin.cn/post/7629276299651645486｜摘要：正文把跨端目标拆成移动双端、移动",
+      "title": "[掘金Android] 04:14",
+      "summary": "掘金 Android｜告别 KMP 选型地狱！klibs.io 上线，全平台库一键筛选太省心｜https://juejin.cn/post/7644781814767927347｜摘要：文章用网络库、存储、依赖注入、日期时间等常见依赖为例，说明 KMP 不能只看 README 或 Maven 版本，还要确认 Android、iOS、JVM、JS、WASM 等平台矩阵。价值在于把选库动作前置到搜索阶段，降低多平台工程后期踩坑概率。｜推荐章节：Kotlin Multiplatform / 依赖选型｜类型：技术文章｜标签：#Android #Juejin",
+      "chapter": "ch06",
+      "processed_at": "2026-07-24T06:20:24.288565+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-24-76292762-跨端框架横评 2026：Flutter、React Native、KMP.md",
+      "title": "[技术文章] 跨端框架横评 2026：Flutter、React Native、KMP、Kuikly、小程序，谁是你下一个项目的正确答案？",
+      "summary": "> 发布时间: 2026-04-17T05:31:39.000Z > 原文链接: https://juejin.cn/post/7629276299651645486 2026-04-17 2,281 阅读18分钟 2024 年有一个被反复讨论的话题：跨端框架已经\"卷\"出结果了吗？现在是 2026 年，答案依然是：没有。 不是因为这些框架还不够成熟，而是因为它们在各自的战...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-24T06:20:24.288565+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md",
+      "title": "[技术文章] Android CLI 来了！终端一键建项目、控模拟器、给 Agent 喂官方规范Android 团队刚发布了 Andr",
+      "summary": "> 发布时间: 2026-04-21T00:49:58.000Z > 原文链接: https://juejin.cn/post/7630834546863751219 2026-04-21 1,171 阅读5分钟 > 本文首发于公众号“Android技术圈” Android 团队刚发布了 **Android CLI（预览版）**：你可以在终端里完成 Android 开发的...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-24T06:20:24.288565+08:00",
+      "action": "body-applied",
+      "score": 19,
+      "previous_action": "indexed-only-chapter-freeze",
+      "status": "applied",
+      "applied_at": "2026-07-24T07:15:55+08:00",
+      "applied_run_id": "20260724-071534-2a71a09c",
+      "target_path": "src/part5-app/ch26-observability/29-jvmti-agent-art-runtime-dynamic-monitoring.md"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-24-76369472-能告诉我：你为什么用 MVI 吗？反正我不理解！.md",
+      "title": "[技术文章] 能告诉我：你为什么用 MVI 吗？反正我不理解！我对 MVI 一直不理解，所以和 Claude Code 有了以下对话，",
+      "summary": "> 发布时间: 2026-05-07T07:19:34.000Z > 原文链接: https://juejin.cn/post/7636947240796373011 2026-05-07 1,116 阅读10分钟 我对 MVI 一直不理解，所以和 Claude Code 有了以下对话，不纠结是黑是白，只加深两种模式之间的理解。 我想知道在 Android 开发中：MVV...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-24T06:20:24.288565+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-24-76370364-我用 AI 基于 Tauri + Vue 3 写了个 ADB 桌面工具，.md",
+      "title": "[技术文章] 🔥🔥🔥 我用AI基于 Tauri + Vue 3 写了个 ADB 桌面工具，把命令行的脏活全干了我用AI基于 Ta",
+      "summary": "> 发布时间: 2026-05-07T11:13:58.000Z > 原文链接: https://juejin.cn/post/7637036421360074767 2026-05-07 961 阅读6分钟 GitHub 仓库：github.com/jaaksi/adbt… （欢迎 Star ⭐） 如果你是 Android 开发者，下面这些命令你一定不陌生： adb d...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-24T06:20:24.288565+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-24-76447818-告别 KMP 选型地狱！klibs.io 上线，全平台库一键筛选太省心.md",
+      "title": "[技术文章] 告别 KMP 选型地狱！klibs.io 上线，全平台库一键筛选太省心KMP 项目最容易卡住的地方，不是写 expect",
+      "summary": "> 发布时间: 2026-05-29T00:39:23.000Z > 原文链接: https://juejin.cn/post/7644781814767927347 2026-05-29 719 阅读5分钟 KMP 项目最容易卡住的地方，不是写 expect/actual。而是选库：网络、存储、依赖注入、UI、日期时间、加密，每个库都要确认支持哪些平台，版本是不是还在维...",
+      "chapter": "ch06",
+      "processed_at": "2026-07-24T06:20:24.288565+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-24-juejin-android.md",
+      "title": "[技术文章] Juejin Android intake · 2026-07-24",
+      "summary": "status: completed Obsidian: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-24-juejin-android.md Evidence: /Users/gracker/...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-24T06:20:24.288565+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
     }
   ]
 }
