@@ -1153,6 +1153,54 @@
       "status": "appended",
       "title": "Juejin Android Intake · 2026-07-22"
     },
+    "source/juejin-android/2026-07-23-76228855-Google 藏大招！AndroidX .md": {
+      "chapter": "待分类",
+      "entry_id": "f45967182a30efb7",
+      "last_appended": "2026-07-23T05:25:25.477295+08:00",
+      "last_seen": "2026-07-23T05:25:25.477295+08:00",
+      "mtime": 1784751245.8434699,
+      "score": 11,
+      "sha256": "11ff23cfda038ed38e64434ad9b92cec3d4fc7ad8f731853d340513a7986e06b",
+      "size": 11872,
+      "status": "appended",
+      "title": "Google 藏大招！AndroidX 悄悄上线 Remote Compose：服务端直接下发原生 UI，再也不用发版了"
+    },
+    "source/juejin-android/2026-07-23-76369472-能告诉我：你为什么用 MVI 吗？反正我.md": {
+      "chapter": "待分类",
+      "entry_id": "4ba0dd3530118cb6",
+      "last_appended": "2026-07-23T05:25:25.477295+08:00",
+      "last_seen": "2026-07-23T05:25:25.477295+08:00",
+      "mtime": 1784751245.843738,
+      "score": 10,
+      "sha256": "45e316e01735547a168cbf0638ba776c8eb510da4c7be7a10d1a50f5f5da49a7",
+      "size": 15186,
+      "status": "appended",
+      "title": "能告诉我：你为什么用 MVI 吗？反正我不理解！我对 MVI 一直不理解，所以和 Claude Code 有了以下对话，"
+    },
+    "source/juejin-android/2026-07-23-76393117-我为什么让 Toast 多弹了一次.md": {
+      "chapter": "待分类",
+      "entry_id": "d4182958fb3c3f59",
+      "last_appended": "2026-07-23T05:25:25.477295+08:00",
+      "last_seen": "2026-07-23T05:25:25.477295+08:00",
+      "mtime": 1784751245.8432112,
+      "score": 9,
+      "sha256": "da3139f49dc35621634f2cee3c0eb22fe3a5c7c1393ade466fa0d72443fe87ec",
+      "size": 17735,
+      "status": "appended",
+      "title": "我为什么让 Toast 多弹了一次有一类 Bug 很容易让人怀疑人生：代码看起来没问题，业务逻辑也没问题，甚至第一次运行"
+    },
+    "source/juejin-android/2026-07-23-juejin-android.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "2be884346b3543d6",
+      "last_appended": "2026-07-23T05:25:25.477295+08:00",
+      "last_seen": "2026-07-23T05:25:25.477295+08:00",
+      "mtime": 1784751245.8440912,
+      "score": 13,
+      "sha256": "9b4973b24dee36f74ed6bc1f5093472d82aa1e08fcd49e43b33d3cab4a65722e",
+      "size": 9971,
+      "status": "appended",
+      "title": "Juejin Android Intake · 2026-07-23"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -2960,24 +3008,24 @@
     }
   },
   "last_report": {
-    "appended": 1,
-    "considered": 1,
-    "cutoff": "2026-07-21T05:20:50.863832+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-22.md",
+    "appended": 4,
+    "considered": 4,
+    "cutoff": "2026-07-22T05:20:38.445069+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-23.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1693,
+    "scanned": 1697,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 28,
-      "unchanged": 261
+      "unchanged": 262
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-07-22T05:25:38.445069+08:00",
+  "last_run_at": "2026-07-23T05:25:25.477295+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
