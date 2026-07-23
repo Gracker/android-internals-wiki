@@ -129,9 +129,9 @@
       ]
     }
   ],
-  "last_scan_date": "2026-07-23",
-  "total_knowledge_points": 622,
-  "total_suggestions": 193,
+  "last_scan_date": "2026-07-24",
+  "total_knowledge_points": 633,
+  "total_suggestions": 197,
   "total_gaps": 21,
   "skipped_files": [
     {
@@ -315,7 +315,27 @@
       "processed_at": "2026-07-23T06:30:36.060749+08:00",
       "chapter": "ch20",
       "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 应用稳定性剖析与优化 -Binder 异常：原来 Binder 异常真不少！.md": {
+      "processed_at": "2026-07-24T06:30:26.060299+08:00",
+      "chapter": "ch20",
+      "points": 2
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - Android 性能优化总结.md": {
+      "processed_at": "2026-07-24T06:30:26.061178+08:00",
+      "chapter": "ch26",
+      "points": 1
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md": {
+      "processed_at": "2026-07-24T06:30:26.062375+08:00",
+      "chapter": "ch23",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md": {
+      "processed_at": "2026-07-24T06:30:26.063163+08:00",
+      "chapter": "ch25",
+      "points": 4
     }
   },
-  "cursor": 24
+  "cursor": 28
 }
