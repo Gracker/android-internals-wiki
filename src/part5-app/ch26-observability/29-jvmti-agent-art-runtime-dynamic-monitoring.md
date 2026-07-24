@@ -9,7 +9,7 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "Clippings参考书+AOSP源码+章节深挖"
 last_verified: "2026-07-24"
-confidence: medium
+confidence: low
 sources:
   - "技术文章/source/juejin-android/2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md"
   - "本章既有提纲: JVMTI/ART/runtime-monitoring"
@@ -17,9 +17,14 @@ last_body_apply_at: "2026-07-24T07:15:55+08:00"
 last_body_apply_run_id: "20260724-071534-2a71a09c"
 last_body_apply_source: "source-index:91"
 task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
+task6_state: needs-rework
+task9_state: needs-rework
+pipeline_stage: needs-rework
+reviewed_date: "2026-07-24"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+last_review_finalize_at: "2026-07-24T08:05:55+08:00"
+last_review_finalize_run_id: "20260724-080541-db5bc0cd"
+rework_reason: "当前正文主要是 Android CLI 工作流补记和既有提纲，尚未完成 Android 17.0.0_r1 ART/JVMTI 源码级核验；不能 finalize。"
 ---
 
 # 26.29 JVMTI Agent — ART 运行时动态监控接口与线上方法追踪
@@ -62,6 +67,8 @@ pipeline_stage: task6_pending
 <!-- outline-end -->
 
 ## 本节定位
+
+> **审阅状态（2026-07-24）**：本章暂不 finalize。当前正文只安全说明 Android CLI 可作为 JVMTI 实验环境与证据采集入口，并明确它不能替代 ART/JVMTI 源码结论；但章节标题承诺的 `android.os.Debug.attachAgent`、`Agent_OnLoad` / `Agent_OnUnload`、MethodEntry/MethodExit、FieldAccess/FieldModification、对象 tag 与线上 attach/detach 边界仍停留在提纲与待核验清单阶段。后续需要基于 Android 17.0.0_r1 / android17-6.18 对 ART `runtime/jvmti` 与 Framework attach API 做逐项源码复核后，才能恢复 `ready-for-review` 或推进 `finalized`。
 
 JVMTI Agent 的价值在于把“线上运行时正在发生什么”变成可观察事件，而不是把监控逻辑提前写死在业务代码或编译期插桩里；本章先保留既有提纲中的 JVMTI、ART、`android.os.Debug.attachAgent`、方法事件、字段事件、线上 attach/detach、Profilo、对象标记与采样策略这些研究轴线，后续源码复核仍以 Android 8.0（API 26）到 Android 17（API 37）为边界。[来源: 本章既有提纲]
 
