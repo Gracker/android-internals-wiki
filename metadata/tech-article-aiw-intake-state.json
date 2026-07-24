@@ -1273,6 +1273,121 @@
       "status": "appended",
       "title": "Juejin Android intake · 2026-07-24"
     },
+    "source/juejin-android/2026-07-25-76228855-Google-藏大招-AndroidX-悄悄上线-Remote-Comp.md": {
+      "chapter": "待分类",
+      "entry_id": "437528e6a0bb2403",
+      "last_appended": "2026-07-25T05:25:55.870655+08:00",
+      "last_seen": "2026-07-25T05:25:55.870655+08:00",
+      "mtime": 1784924100.320689,
+      "score": 11,
+      "sha256": "a07db6713c0e4000427625004071fd5f56f72146a9f9d05ebce02757f938ad82",
+      "size": 11912,
+      "status": "appended",
+      "title": "Google 藏大招！AndroidX 悄悄上线 Remote Compose：服务端直接下发原生 UI，再也不用发版了"
+    },
+    "source/juejin-android/2026-07-25-76241685-紧急预警-Android-17-定位权限大改-你的-App-要适配了.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "b44362d68cd02cb6",
+      "last_appended": "2026-07-25T05:25:55.870655+08:00",
+      "last_seen": "2026-07-25T05:25:55.870655+08:00",
+      "mtime": 1784924100.3212821,
+      "score": 8,
+      "sha256": "4b02b8bdd5845c4b3e6bcceb779c472500de177b4e04db26b22131841d577b1f",
+      "size": 6128,
+      "status": "appended",
+      "title": "紧急预警！Android 17 定位权限大改，你的 App 要适配了做过定位相关功能的开发者都知道，定位权限是用户最敏感"
+    },
+    "source/juejin-android/2026-07-25-76261590-还在为-Compose-屏幕适配发愁-一个-Density-搞定所有机型.md": {
+      "last_seen": "2026-07-25T05:25:55.870655+08:00",
+      "mtime": 1784924100.321876,
+      "sha256": "99aa385abadfce2793c216675a8fce1b63edf8c0d5f8750e805722655ff1812f",
+      "size": 10718,
+      "status": "skipped-low-score"
+    },
+    "source/juejin-android/2026-07-25-76308345-Android-CLI-来了-终端一键建项目-控模拟器-给-Agent-.md": {
+      "chapter": "待分类",
+      "entry_id": "6ad95f1d040d51bb",
+      "last_appended": "2026-07-25T05:25:55.870655+08:00",
+      "last_seen": "2026-07-25T05:25:55.870655+08:00",
+      "mtime": 1784924100.322486,
+      "score": 9,
+      "sha256": "fac635fc8ce3ca6e21852a59a4bd1f77ee8b5747f2540ab5675483645ca080f9",
+      "size": 8523,
+      "status": "appended",
+      "title": "Android CLI 来了！终端一键建项目、控模拟器、给 Agent 喂官方规范Android 团队刚发布了 Andr"
+    },
+    "source/juejin-android/2026-07-25-76336249-Android-App-最强APM来袭.md": {
+      "chapter": "待分类",
+      "entry_id": "cf5c77dcb37ea8fa",
+      "last_appended": "2026-07-25T05:25:55.870655+08:00",
+      "last_seen": "2026-07-25T05:25:55.870655+08:00",
+      "mtime": 1784924100.3227477,
+      "score": 17,
+      "sha256": "24a0956360abd3fc63146dda68e0063d2b32381de5695ba0a375d464fb9fa5c9",
+      "size": 25776,
+      "status": "appended",
+      "title": "Android App 最强APM来袭 简介 Android APM 是一个全维度 Android 性能监控框架，当"
+    },
+    "source/juejin-android/2026-07-25-76369472-能告诉我-你为什么用-MVI-吗-反正我不理解.md": {
+      "chapter": "待分类",
+      "entry_id": "3346b4ba5c977b89",
+      "last_appended": "2026-07-25T05:25:55.870655+08:00",
+      "last_seen": "2026-07-25T05:25:55.870655+08:00",
+      "mtime": 1784924100.3234959,
+      "score": 10,
+      "sha256": "b4079d1f913ec6409074431325dab757401a662d543f5503a1a27c840b0d9bd3",
+      "size": 15226,
+      "status": "appended",
+      "title": "能告诉我：你为什么用 MVI 吗？反正我不理解！我对 MVI 一直不理解，所以和 Claude Code 有了以下对话，"
+    },
+    "source/juejin-android/2026-07-25-76370364-我用AI基于-Tauri-Vue-3-写了个-ADB-桌面工具-把命令行.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "d6b33f74542a777e",
+      "last_appended": "2026-07-25T05:25:55.870655+08:00",
+      "last_seen": "2026-07-25T05:25:55.870655+08:00",
+      "mtime": 1784924100.323955,
+      "score": 10,
+      "sha256": "14dd27706c8ed59284383db12133211edcb09ae767b2451ccc23c5455d97edc7",
+      "size": 11014,
+      "status": "appended",
+      "title": "🔥🔥🔥 我用AI基于 Tauri + Vue 3 写了个 ADB 桌面工具，把命令行的脏活全干了我用AI基于 Ta"
+    },
+    "source/juejin-android/2026-07-25-76388970-为什么-Android-不用接口做-Activity-通信.md": {
+      "chapter": "待分类",
+      "entry_id": "8b868ca8b0738601",
+      "last_appended": "2026-07-25T05:25:55.870655+08:00",
+      "last_seen": "2026-07-25T05:25:55.870655+08:00",
+      "mtime": 1784924100.324156,
+      "score": 14,
+      "sha256": "35568b544a18fefa2ad5613328e90956792ef6d08f747744d5951696b760bf23",
+      "size": 6543,
+      "status": "appended",
+      "title": "为什么 Android 不用接口做 Activity 通信？一、一个 iOS 开发者，把我问住了 上周，一个刚从 iO"
+    },
+    "source/juejin-android/2026-07-25-76400776-我通过3个小改动将Compose重组减少了78.md": {
+      "chapter": "ch08-responsiveness",
+      "entry_id": "9863585547e91dd6",
+      "last_appended": "2026-07-25T05:25:55.870655+08:00",
+      "last_seen": "2026-07-25T05:25:55.870655+08:00",
+      "mtime": 1784924100.3243413,
+      "score": 9,
+      "sha256": "5a7401e15542fa184cc75796f7e341baa5771f3e670f42a45e8fcaf81681513a",
+      "size": 6870,
+      "status": "appended",
+      "title": "我通过3个小改动将Compose重组减少了78%起初，屏幕看起来很正常。没有崩溃。没有 ANR（应用程序无响应）。也没有"
+    },
+    "source/juejin-android/2026-07-25-juejin-android.md": {
+      "chapter": "待分类",
+      "entry_id": "9ff99f0694aa5a11",
+      "last_appended": "2026-07-25T05:25:55.870655+08:00",
+      "last_seen": "2026-07-25T05:25:55.870655+08:00",
+      "mtime": 1784924100.324583,
+      "score": 16,
+      "sha256": "3c514a055051f4dfdf59767fbb259a5001238a3af8a8f62045eceff9586d4996",
+      "size": 10519,
+      "status": "appended",
+      "title": "Juejin Android Intake · 2026-07-25"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -3080,24 +3195,24 @@
     }
   },
   "last_report": {
-    "appended": 6,
-    "considered": 6,
-    "cutoff": "2026-07-23T05:20:25.477295+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-24.md",
+    "appended": 9,
+    "considered": 10,
+    "cutoff": "2026-07-24T05:20:16.341025+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-25.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1703,
+    "scanned": 1713,
     "skipped": {
       "existing_link": 0,
-      "low_score": 0,
+      "low_score": 1,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 28,
-      "unchanged": 266
+      "unchanged": 272
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-07-24T05:25:16.341025+08:00",
+  "last_run_at": "2026-07-25T05:25:55.870655+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

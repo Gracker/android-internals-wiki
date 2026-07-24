@@ -129,9 +129,9 @@
       ]
     }
   ],
-  "last_scan_date": "2026-07-24",
-  "total_knowledge_points": 633,
-  "total_suggestions": 197,
+  "last_scan_date": "2026-07-25",
+  "total_knowledge_points": 646,
+  "total_suggestions": 201,
   "total_gaps": 21,
   "skipped_files": [
     {
@@ -335,7 +335,27 @@
       "processed_at": "2026-07-24T06:30:26.063163+08:00",
       "chapter": "ch25",
       "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md": {
+      "processed_at": "2026-07-25T06:30:06.546428+08:00",
+      "chapter": "ch20",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md": {
+      "processed_at": "2026-07-25T06:30:06.547254+08:00",
+      "chapter": "ch23",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - dex 文件的体积优化实战.md": {
+      "processed_at": "2026-07-25T06:30:06.547881+08:00",
+      "chapter": "ch24",
+      "points": 1
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - so 文件的体积优化实战.md": {
+      "processed_at": "2026-07-25T06:30:06.548775+08:00",
+      "chapter": "ch23",
+      "points": 4
     }
   },
-  "cursor": 28
+  "cursor": 32
 }

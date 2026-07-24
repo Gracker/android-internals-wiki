@@ -1,13 +1,25 @@
 ---
 title: "Compose Runtime Tracing — androidx.tracing 与 Perfetto 组合阶段追踪"
 chapter: "22.37"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 tags: [Compose, Tracing, Perfetto, Observability, Recomposition]
 related_chapters: ["22.28", "22.3", "13.21", "26.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "AOSP结构/官方文档"
+last_verified: "2026-07-25"
+confidence: medium
+sources:
+  - "developer.android.com/jetpack/androidx/releases/tracing"
+  - "技术文章/source/juejin-android/2026-07-25-76336249-Android-App-最强APM来袭.md"
+last_body_apply_at: "2026-07-25T07:15:14+08:00"
+last_body_apply_run_id: "20260725-071514-c8dfcc93"
+last_body_apply_source: "source-index:100 / 2026-07-25-76336249-Android-App-最强APM来袭.md"
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 ---
 
 # 22.37 Compose Runtime Tracing — androidx.tracing 与 Perfetto 组合阶段追踪
@@ -16,57 +28,104 @@ gap_source: "AOSP结构/官方文档"
 ## 要点
 
 ### 🔹 锚点 1：androidx.tracing.compose 架构与启用方式
-- androidx.tracing:tracing 和 androidx.tracing:tracing-perfetto 模块架构
-- CompositionTracer 接口：组合阶段追踪的钩子设计
-- 启用方式：Debug 模式自动启用 vs Production 通过 API 显式开启
-- tracing-perfetto 的 AAR 集成与 Systrace 回退机制
+- androidx.tracing:tracing 和 androidx.tracing:tracing-perfetto 模块架构 [结构参考: developer.android.com/jetpack/androidx/releases/tracing]
+- CompositionTracer 接口：组合阶段追踪的钩子设计 [结构参考: 本章原始大纲]
+- 启用方式：Debug 模式自动启用 vs Production 通过 API 显式开启 [结构参考: 本章原始大纲]
+- tracing-perfetto 的 AAR 集成与 Systrace 回退机制 [结构参考: developer.android.com/jetpack/androidx/releases/tracing]
 
 ### 🔹 锚点 2：Compose 组合阶段的 Trace 事件
-- recompose:start / recompose:end — 重组事件追踪
-- compose:start / compose:end — 组合事件追踪
-- subcompose:start / subcompose:end — 子组合事件追踪
-- 每个事件的参数：受影响的 Composable 信息、重组原因
-- Trace 事件与 FrameTimeline 的时序对齐
+- recompose:start / recompose:end — 重组事件追踪 [结构参考: 本章原始大纲]
+- compose:start / compose:end — 组合事件追踪 [结构参考: 本章原始大纲]
+- subcompose:start / subcompose:end — 子组合事件追踪 [结构参考: 本章原始大纲]
+- 每个事件的参数：受影响的 Composable 信息、重组原因 [结构参考: 本章原始大纲]
+- Trace 事件与 FrameTimeline 的时序对齐 [结构参考: 本章原始大纲]
 
 ### 🔹 锚点 3：Perfetto 中分析 Compose 组合开销
-- 在 Perfetto UI 中识别 Compose 重组 Track
-- 重组频率热点定位：某 Composable 单帧重组次数
-- 子组合嵌套深度的 Perfetto 可视化
-- 重组与布局/绘制阶段的耗时占比分析
-- 使用 Perfetto SQL 查询重组统计（与 13.22 Perfetto SQL Cookbook 联动）
+- 在 Perfetto UI 中识别 Compose 重组 Track [结构参考: 本章原始大纲]
+- 重组频率热点定位：某 Composable 单帧重组次数 [结构参考: 本章原始大纲]
+- 子组合嵌套深度的 Perfetto 可视化 [结构参考: 本章原始大纲]
+- 重组与布局/绘制阶段的耗时占比分析 [结构参考: 本章原始大纲]
+- 使用 Perfetto SQL 查询重组统计（与 13.22 Perfetto SQL Cookbook 联动）[结构参考: 本章原始大纲]
 
 ### 🔹 锚点 4：生产环境 Compose Tracing 部署
-- tracing-perfetto 在 Release 构建中的开销评估
-- 采样策略：基于用户的灰度采样 vs 基于会话的触发式采样
-- Trace 数据的线上收集与聚合
-- 与现有 APM 框架（Firebase Performance / 自研 APM）的集成路径
+- tracing-perfetto 在 Release 构建中的开销评估 [结构参考: developer.android.com/jetpack/androidx/releases/tracing]
+- 采样策略：基于用户的灰度采样 vs 基于会话的触发式采样 [来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+- Trace 数据的线上收集与聚合 [来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+- 与现有 APM 框架（Firebase Performance / 自研 APM）的集成路径 [来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
 
 ### 🔹 锚点 5：重组归因与性能反模式识别
-- 从 Trace 事件中提取重组原因（State 变化、强制重组、键值变化）
-- 高频重组 Composable 的自动识别规则
-- 无效重组（unnecessary recomposition）的 Trace 特征
-- 与 Compose Compiler Metrics（22.28）交叉验证重组问题
+- 从 Trace 事件中提取重组原因（State 变化、强制重组、键值变化）[结构参考: 本章原始大纲]
+- 高频重组 Composable 的自动识别规则 [结构参考: 本章原始大纲]
+- 无效重组（unnecessary recomposition）的 Trace 特征 [结构参考: 本章原始大纲]
+- 与 Compose Compiler Metrics（22.28）交叉验证重组问题 [结构参考: 本章原始大纲]
 
 ### 🔹 锚点 6：与 Layout Inspector / Recompose Highlighter 的工具链协同
-- Layout Inspector 的实时重组高亮 vs Perfetto 的离线深度分析
-- 开发期调试工具与线上监控工具的能力边界
-- 从开发期发现到线上验证的完整 Compose 性能工作流
+- Layout Inspector 的实时重组高亮 vs Perfetto 的离线深度分析 [结构参考: 本章原始大纲]
+- 开发期调试工具与线上监控工具的能力边界 [结构参考: 本章原始大纲]
+- 从开发期发现到线上验证的完整 Compose 性能工作流 [结构参考: 本章原始大纲]
 
 ## 扩展
 
 ### 🔸 扩展点 1：自定义 Trace Section 与 Composable 关联
-- 使用 Trace.beginSection() 在自定义 Composable 中添加细粒度追踪
-- Modifier.Node 架构下的自定义追踪粒度控制
-- 追踪命名规范与 Perfetto Slice 聚合
+- 使用 Trace.beginSection() 在自定义 Composable 中添加细粒度追踪 [结构参考: developer.android.com/jetpack/androidx/releases/tracing]
+- Modifier.Node 架构下的自定义追踪粒度控制 [结构参考: 本章原始大纲]
+- 追踪命名规范与 Perfetto Slice 聚合 [结构参考: 本章原始大纲]
 
 ### 🔸 扩展点 2：Compose Tracing 与 Macrobenchmark 集成
-- 在 Macrobenchmark 测试中自动收集 Compose Trace
-- 基线对比：重组次数回归检测
-- CI/CD 中的 Compose 性能门禁自动化
+- 在 Macrobenchmark 测试中自动收集 Compose Trace [结构参考: 本章原始大纲]
+- 基线对比：重组次数回归检测 [结构参考: 本章原始大纲]
+- CI/CD 中的 Compose 性能门禁自动化 [来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
 
 <!-- outline-end -->
 
-> 本节内容待加工。
+## 1. 本章定位：把 Compose Trace 放进 APM 闭环
+
+Compose Runtime Tracing 的价值不只是“在 Perfetto 里多看几条 Slice”，而是把组合、重组、子组合等 UI 运行时开销纳入可回放、可归因、可门禁的性能观测链路。[结构参考: 本章原始大纲] 对应用侧来说，它应当和启动、FPS、慢方法、网络、IO 等信号一起进入 APM 事件模型，而不是停留在一次性的本地调试截图。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+
+材料中的 Android APM 框架把性能监控拆成按需注册的模块，并通过 `Apm.init(application, ApmConfig(...))` 加模块注册完成低侵入接入；这说明 Compose Tracing 在工程里也应作为“渲染/帧率观测的可选子能力”纳入模块化开关，而不是强制全量开启。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md] 同一材料还把令牌桶限流、灰度发布、动态配置列为生产可用性的核心设计，因此 Compose Trace 的线上部署也应具备采样率、触发条件、上传配额和降级策略。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+
+## 2. APM 维度映射：Compose Trace 与 FPS/Render 模块的关系
+
+材料列出的 FPS 模块使用 Choreographer VSync 与 FrameMetrics 观测掉帧、卡顿和冻结，Render 模块关注 View 树数量、层级深度和过度绘制预留项。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md] 在 Compose 页面中，FrameMetrics/FPS 能告诉我们“这一帧慢了”，而 Compose Runtime Tracing 的目标是补足“慢帧前后是否发生了高频重组、子组合嵌套或组合阶段膨胀”。[结构参考: 本章原始大纲]
+
+因此推荐把数据分成两层：第一层是轻量指标，例如帧耗时、丢帧等级、页面名和设备分组；第二层是触发式 Trace，例如当某页面连续出现卡顿或冻结时再采集 Perfetto Trace 片段。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md] 这样做的依据是材料中的 APM 设计已经包含令牌桶限流、灰度发布和动态配置，可以为“只在异常会话采集 Trace”提供生产控制面。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+
+## 3. 生产启用策略：灰度、限流与动态配置
+
+生产环境不要把 Compose Trace 当成无条件常开能力；更稳妥的方式是把它绑定到 APM 配置中心，由动态配置决定页面白名单、采样比例、最大 Trace 时长和上传频率。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md] 材料中的 GrayReleaseController 支持按比例开启新模块，RateLimiter 支持保护上报通道，DynamicConfigProvider 支持运行时调整阈值，这三类能力正好对应 Compose Trace 的灰度、限流和阈值控制。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+
+一个可执行的落地规则如下：
+
+1. Debug/Benchmark 构建中优先完整采集 Compose Trace，用于开发期回归和 Macrobenchmark 对比。[结构参考: 本章原始大纲]
+2. Release 构建中默认关闭全量 Trace，只保留 FPS/FrameMetrics 等轻量观测；当动态配置命中目标页面、设备档位或慢帧阈值时，再开启短窗口 Trace。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+3. 上传链路沿用 APM 的本地存储、批量重试和压缩上传策略，避免在弱网或高频异常场景中放大性能问题。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+4. Trace 产物只作为问题归因证据进入后台，不作为普通埋点高频上报；这与材料中“令牌桶限流 + 灰度发布 + 动态配置，生产环境可用”的思路一致。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+
+## 4. 归因流程：从慢帧到 Compose 重组证据
+
+一次完整排查可以按“先轻后重”的顺序执行：先由 FPS 模块发现卡顿帧，再检查页面、设备、启动阶段、网络和 IO 是否有同步异常，最后调取 Perfetto 中的 Compose Trace Slice 做组合阶段归因。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md] 材料中的 APM 能力覆盖启动、网络、FPS、慢方法、IO、SQLite、Binder IPC、线程和 GC 等维度，因此 Compose Trace 不应孤立解释所有慢帧，而应和这些维度一起做交叉排查。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+
+在 Perfetto 侧，重点看三类现象：同一帧内是否出现过多重组 Slice、子组合 Slice 是否嵌套过深、组合阶段耗时是否挤占了布局/绘制预算。[结构参考: 本章原始大纲] 如果 Trace 显示组合阶段正常，而同一时间 APM 慢方法或 IO 模块报告主线程阻塞，则应优先处理主线程阻塞而不是盲目优化 Composable 结构。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+
+## 5. 与字节码插桩和慢方法监控的边界
+
+材料中的慢方法模块同时使用 Looper Hook 与 ASM 字节码插桩，并通过 AGP instrumentation API 提供方法耗时采集能力。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md] 这类方法级监控适合回答“哪个函数慢”，而 Compose Runtime Tracing 更适合回答“组合阶段何时发生、与帧时序如何重叠”。[结构参考: 本章原始大纲]
+
+两者可以互补，但不应互相替代：如果某个 Composable 的业务计算函数被 ASM 标记为慢方法，再结合 Compose Trace 中的重组次数，就能判断问题是单次计算过重，还是状态订阅导致重复计算过多。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md] 对 CI/CD 门禁而言，可以用 Macrobenchmark 固定场景采集 Trace，再用慢方法统计验证是否有新增热点方法；材料中明确包含“构建 + 测试”和基于 AGP instrumentation API 的插桩能力，可作为自动化门禁的工程基础。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+
+## 6. 事件模型建议
+
+为了让 Compose Trace 进入 APM 后台，事件至少应包含以下字段：页面/路由、设备分组、帧时间窗口、Trace 文件索引、采样策略版本、触发原因和关联轻量指标。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md] 材料中的 apm-model 使用 ApmEvent 与 Line Protocol 序列化，apm-storage 使用 EventStore 与 FileEventStore，apm-uploader 提供 HttpApmUploader、LogcatApmUploader 和 RetryingApmUploader；这些模块说明 Trace 摘要与上传引用可以复用统一事件管线。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+
+注意不要把完整 Perfetto 文件当成普通指标无限制上传；更合理的方式是上传摘要指标与受控文件引用，完整 Trace 只在命中采样、用户授权和服务端配额时保留。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md] 这与材料强调的本地存储、重试上传、Gzip 压缩和令牌桶限流一致，也能降低线上观测系统反向制造卡顿的风险。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+
+## 7. 检查清单
+
+- 是否只在 Android 13（API 33）到 Android 17（API 37）范围内描述本章行为，避免引入 Android 18/API 38+ 结论。[适用版本: 本章 frontmatter]
+- 是否把 Compose Trace 和 FPS/FrameMetrics 指标关联，而不是只保存孤立 Trace 文件。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+- 是否通过灰度发布、动态配置和令牌桶限流控制 Release 采集范围。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+- 是否把 Trace 摘要接入统一事件模型、本地存储和重试上传链路。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+- 是否在 Perfetto 中把重组/组合/子组合 Slice 与慢帧窗口对齐分析。[结构参考: 本章原始大纲]
 
 [结构参考: 官方文档 developer.android.com/jetpack/androidx/releases/tracing]
 [适用版本: Android 13 (API 33) - Android 17 (API 37)，tracing-perfetto 需 Compose 1.6+]
