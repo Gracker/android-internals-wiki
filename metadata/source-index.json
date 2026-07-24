@@ -954,6 +954,163 @@
       "processed_at": "2026-07-24T06:20:24.288565+08:00",
       "action": "indexed-only-chapter-freeze",
       "score": 19
+    },
+    {
+      "path": "[掘金Android] 2026-07-25 Juejin Android Intake",
+      "title": "[掘金Android] 2026-07-25 Juejin Android Intake",
+      "summary": "",
+      "chapter": "ch16",
+      "processed_at": "2026-07-25T06:20:05.040699+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-76228855-Google-藏大招-AndroidX-悄悄上线-Remote-Comp.md",
+      "title": "[技术文章] Google 藏大招！AndroidX 悄悄上线 Remote Compose：服务端直接下发原生 UI，再也不用发版了",
+      "summary": "> 发布时间: 2026-03-31T00:44:43.000Z > 原文链接: https://juejin.cn/post/7622885592716328969 2026-03-31 1,811 阅读6分钟 > 本文同步自微信公众号 “Android技术圈” > Google 新出了个 androidx.compose.remote，服务端直接下发原生 UI 到客户...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-25T06:20:05.040699+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-76241685-紧急预警-Android-17-定位权限大改-你的-App-要适配了.md",
+      "title": "[技术文章] 紧急预警！Android 17 定位权限大改，你的 App 要适配了做过定位相关功能的开发者都知道，定位权限是用户最敏感",
+      "summary": "> 发布时间: 2026-04-03T00:58:50.000Z > 原文链接: https://juejin.cn/post/7624168579077357614 2026-04-03 1,928 阅读4分钟 > 本文首发于微信公众号“Android技术圈” 做过定位相关功能的开发者都知道，定位权限是用户最敏感的权限之一。 弹窗一出来，用户的第一反应往往是\"拒绝\"。就...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-25T06:20:05.040699+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-76308345-Android-CLI-来了-终端一键建项目-控模拟器-给-Agent-.md",
+      "title": "[技术文章] Android CLI 来了！终端一键建项目、控模拟器、给 Agent 喂官方规范Android 团队刚发布了 Andr",
+      "summary": "> 发布时间: 2026-04-21T00:49:58.000Z > 原文链接: https://juejin.cn/post/7630834546863751219 2026-04-21 1,181 阅读5分钟 > 本文首发于公众号“Android技术圈” Android 团队刚发布了 **Android CLI（预览版）**：你可以在终端里完成 Android 开发的...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-25T06:20:05.040699+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-76336249-Android-App-最强APM来袭.md",
+      "title": "[技术文章] Android App 最强APM来袭 简介 Android APM 是一个全维度 Android 性能监控框架，当",
+      "summary": "> 发布时间: 2026-04-28T07:14:20.000Z > 原文链接: https://juejin.cn/post/7633624917233319936 2026-04-28 2,698 阅读7分钟 说明：花了4个小时用AI(GLM5.1)写的，后续用codex优化了，整体达到或者超越主流水平 github.com/XZQ/Android… [](https...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-25T06:20:05.040699+08:00",
+      "action": "body-applied",
+      "score": 19,
+      "status": "body-applied",
+      "applied_at": "2026-07-25T07:15:14+08:00",
+      "applied_run_id": "20260725-071514-c8dfcc93",
+      "target_path": "src/part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-76369472-能告诉我-你为什么用-MVI-吗-反正我不理解.md",
+      "title": "[技术文章] 能告诉我：你为什么用 MVI 吗？反正我不理解！我对 MVI 一直不理解，所以和 Claude Code 有了以下对话，",
+      "summary": "> 发布时间: 2026-05-07T07:19:34.000Z > 原文链接: https://juejin.cn/post/7636947240796373011 2026-05-07 1,135 阅读10分钟 我对 MVI 一直不理解，所以和 Claude Code 有了以下对话，不纠结是黑是白，只加深两种模式之间的理解。 我想知道在 Android 开发中：MVV...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-25T06:20:05.040699+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-76370364-我用AI基于-Tauri-Vue-3-写了个-ADB-桌面工具-把命令行.md",
+      "title": "[技术文章] 🔥🔥🔥 我用AI基于 Tauri + Vue 3 写了个 ADB 桌面工具，把命令行的脏活全干了我用AI基于 Ta",
+      "summary": "> 发布时间: 2026-05-07T11:13:58.000Z > 原文链接: https://juejin.cn/post/7637036421360074767 2026-05-07 969 阅读6分钟 GitHub 仓库：github.com/jaaksi/adbt… （欢迎 Star ⭐） 如果你是 Android 开发者，下面这些命令你一定不陌生： adb d...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-25T06:20:05.040699+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-76388970-为什么-Android-不用接口做-Activity-通信.md",
+      "title": "[技术文章] 为什么 Android 不用接口做 Activity 通信？一、一个 iOS 开发者，把我问住了 上周，一个刚从 iO",
+      "summary": "> 发布时间: 2026-05-13T00:03:47.000Z > 原文链接: https://juejin.cn/post/7638897090145075246 2026-05-13 4,250 阅读4分钟 上周，一个刚从 iOS 转过来的同事问我： > “Android 为啥不喜欢用接口回调传结果？ iOS 那边 delegate、closure 不就挺好吗？”...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-25T06:20:05.040699+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-76400776-我通过3个小改动将Compose重组减少了78.md",
+      "title": "[技术文章] 我通过3个小改动将Compose重组减少了78%起初，屏幕看起来很正常。没有崩溃。没有 ANR（应用程序无响应）。也没有",
+      "summary": "> 发布时间: 2026-05-16T13:19:38.000Z > 原文链接: https://juejin.cn/post/7640077602280456207 2026-05-16 522 阅读2分钟 起初，屏幕看起来很正常。没有崩溃。没有 ANR（应用程序无响应）。也没有明显的帧丢失。但是，每次我滚动、输入或更改滤镜时，我总感觉有些不对劲——就像 UI 在做更多...",
+      "chapter": "ch03",
+      "processed_at": "2026-07-25T06:20:05.040699+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-juejin-android.md",
+      "title": "[技术文章] Juejin Android Intake · 2026-07-25",
+      "summary": "status: completed source: 掘金 Android 推荐流，候选 20 篇，正文抓取 9 篇，精选 4 篇 Obsidian: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-25T06:20:05.040699+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-24-morning-Agent-Workflow-预算-研究材料/master-research.md",
+      "title": "[DeepResearch] Phase 0 · 本地知识扫描结果",
+      "summary": "--- phase: 0 topic: 并行 Agent 工作流报告结构与推理预算 lang: zh-CN --- # Phase 0 · 本地知识扫描结果 ## 执行摘要 - 本地扫描命中与本题高相关的既有笔记：Cursor side chat、长时 Agent 六旋钮、Graph Engineering 执行图工程。 - 本轮不重复写长时 Agent 总论，缩小到两个缺口：并行 Agent 报告字段、Workflow 推理预算表。",
+      "chapter": "ch16",
+      "processed_at": "2026-07-25T06:20:05.040699+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-24-morning-Agent-Workflow-预算-研究材料/STATUS.md",
+      "title": "[DeepResearch] STATUS",
+      "summary": "--- date: 2026-07-24 status: completed-without-diagrams lang: zh-CN --- # STATUS ## 执行摘要 - Phase 0/1/2 已完成：local context、2 个 dump、master research、2 篇调研笔记、1 篇公众号草稿、quality report。 - Phase 3 Gracker 成图未执行：当前工具集中没有 `image_g",
+      "chapter": "ch16",
+      "processed_at": "2026-07-25T06:20:05.040699+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-24-morning-Agent-Workflow-预算-研究材料/quality-report.md",
+      "title": "[DeepResearch] 四层质检报告",
+      "summary": "--- phase: 2c date: 2026-07-24 lang: zh-CN --- # 四层质检报告 ## 执行摘要 - 检查对象：两篇调研笔记 + 一篇公众号草稿。 - 结论：通过。没有触发强制 rewrite。 - 仍需人工复核：Grok Build Workflows 的真实报告形态、Grok 4.5 上下文与价格口径、AMD 推理占比数字的一手材料。 ## L1 硬性规则 ✅ - 禁用词：未发现影响发布的禁用词命中。",
+      "chapter": "ch16",
+      "processed_at": "2026-07-25T06:20:05.040699+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-24-morning-Agent-Workflow-预算-研究材料/02-dump-workflow-budget.md",
+      "title": "[DeepResearch] Dump 02 · Agent Workflow 的 token 预算表",
+      "summary": "--- phase: 1 topic: Agent Workflow 推理预算 date: 2026-07-24 sources: [opencli-twitter, x-brief, local-notes] lang: zh-CN --- # Dump 02 · Agent Workflow 的 token 预算表 ## 执行摘要 - 当天基础设施信号把焦点从训练成本推到推理成本：AMD 相关引用称 2026 年推理约占全球 AI",
+      "chapter": "ch16",
+      "processed_at": "2026-07-25T06:20:05.040699+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-24-morning-Agent-Workflow-预算-研究材料/budget.md",
+      "title": "[DeepResearch] budget.md",
+      "summary": "--- phase: budget date: 2026-07-24 lang: zh-CN --- # budget.md ## 执行摘要 - 本次记录 4 条 opencli search 命令，原始抓取文件约 62KB。 - 进入正文的核心信号约 8 条，主要来自 Grok Build Workflows、计量追问、Android 自拍登录和 Kimi Code CLI 线索。 - 未验证断言集中在 Grok 4.5 上下文窗口",
+      "chapter": "ch16",
+      "processed_at": "2026-07-25T06:20:05.040699+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-24-morning-Agent-Workflow-预算-研究材料/01-dump-parallel-agent-report.md",
+      "title": "[DeepResearch] Dump 01 · Grok Build Workflows 与报告字段",
+      "summary": "--- phase: 1 topic: 并行 Agent 工作流报告结构 date: 2026-07-24 sources: [opencli-twitter, x-brief, local-notes] lang: zh-CN --- # Dump 01 · Grok Build Workflows 与报告字段 ## 执行摘要 - 关键外部信号: `@grok` 称 Grok Build Workflows 可以规划任务、并行运行最多",
+      "chapter": "ch16",
+      "processed_at": "2026-07-25T06:20:05.040699+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-24-morning-Agent-Workflow-预算-研究材料/00-local-context.md",
+      "title": "[DeepResearch] Phase 0 · 本地知识扫描结果",
+      "summary": "--- phase: 0 topic: 并行 Agent 工作流报告结构与推理预算 lang: zh-CN --- # Phase 0 · 本地知识扫描结果 ## 执行摘要 - 本地扫描命中与本题高相关的既有笔记：Cursor side chat、长时 Agent 六旋钮、Graph Engineering 执行图工程。 - 本轮不重复写长时 Agent 总论，缩小到两个缺口：并行 Agent 报告字段、Workflow 推理预算表。",
+      "chapter": "ch16",
+      "processed_at": "2026-07-25T06:20:05.040699+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15
     }
   ]
 }
