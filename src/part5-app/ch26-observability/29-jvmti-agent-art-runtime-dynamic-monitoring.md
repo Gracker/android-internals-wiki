@@ -22,9 +22,9 @@ task9_state: needs-rework
 pipeline_stage: needs-rework
 reviewed_date: "2026-07-24"
 reviewed_by: "hermes-aiw-review-finalize-apply"
-last_review_finalize_at: "2026-07-24T08:05:55+08:00"
-last_review_finalize_run_id: "20260724-080541-db5bc0cd"
-rework_reason: "当前正文主要是 Android CLI 工作流补记和既有提纲，尚未完成 Android 17.0.0_r1 ART/JVMTI 源码级核验；不能 finalize。"
+last_review_finalize_at: "2026-07-24T11:05:16+08:00"
+last_review_finalize_run_id: "20260724-110500-de06306e"
+rework_reason: "本轮复审确认正文仍主要是 Android CLI 工作流补记与既有 JVMTI 提纲，材料只能支撑实验环境/证据采集流程，不能支撑 attachAgent、Agent_OnLoad/Agent_OnUnload、MethodEntry/MethodExit、FieldAccess/FieldModification、对象 tag 与线上 attach/detach 的 Android 17.0.0_r1 源码级结论；需继续 rework，不能 finalize。"
 ---
 
 # 26.29 JVMTI Agent — ART 运行时动态监控接口与线上方法追踪
@@ -68,7 +68,7 @@ rework_reason: "当前正文主要是 Android CLI 工作流补记和既有提纲
 
 ## 本节定位
 
-> **审阅状态（2026-07-24）**：本章暂不 finalize。当前正文只安全说明 Android CLI 可作为 JVMTI 实验环境与证据采集入口，并明确它不能替代 ART/JVMTI 源码结论；但章节标题承诺的 `android.os.Debug.attachAgent`、`Agent_OnLoad` / `Agent_OnUnload`、MethodEntry/MethodExit、FieldAccess/FieldModification、对象 tag 与线上 attach/detach 边界仍停留在提纲与待核验清单阶段。后续需要基于 Android 17.0.0_r1 / android17-6.18 对 ART `runtime/jvmti` 与 Framework attach API 做逐项源码复核后，才能恢复 `ready-for-review` 或推进 `finalized`。
+> **审阅状态（2026-07-24，本轮 run `20260724-110500-de06306e`）**：本章 frontmatter 暂保留校验脚本允许的 `ready-for-review`，但 `pipeline_stage` / `task6_state` / `task9_state` 维持 `needs-rework`，不能 finalize。当前正文只安全说明 Android CLI 可作为 JVMTI 实验环境与证据采集入口，并明确它不能替代 ART/JVMTI 源码结论；但章节标题承诺的 `android.os.Debug.attachAgent`、`Agent_OnLoad` / `Agent_OnUnload`、MethodEntry/MethodExit、FieldAccess/FieldModification、对象 tag 与线上 attach/detach 边界仍停留在提纲与待核验清单阶段。后续需要基于 Android 17.0.0_r1 / android17-6.18 对 ART `runtime/jvmti` 与 Framework attach API 做逐项源码复核后，才能推进 `finalized`。
 
 JVMTI Agent 的价值在于把“线上运行时正在发生什么”变成可观察事件，而不是把监控逻辑提前写死在业务代码或编译期插桩里；本章先保留既有提纲中的 JVMTI、ART、`android.os.Debug.attachAgent`、方法事件、字段事件、线上 attach/detach、Profilo、对象标记与采样策略这些研究轴线，后续源码复核仍以 Android 8.0（API 26）到 Android 17（API 37）为边界。[来源: 本章既有提纲]
 
