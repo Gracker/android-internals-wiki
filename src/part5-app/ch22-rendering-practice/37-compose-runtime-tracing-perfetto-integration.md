@@ -23,9 +23,9 @@ task9_state: needs-rework
 pipeline_stage: needs-rework
 reviewed_date: "2026-07-25"
 reviewed_by: "hermes-aiw-review-finalize-apply"
-last_review_finalize_at: "2026-07-25T08:06:08+08:00"
-last_review_finalize_run_id: "20260725-080521-473381f2"
-rework_reason: "官方 Compose Runtime Tracing 依赖名与部分事件/归因细节需补证；现有正文可作为 APM 部署思路，但不足以 finalized。"
+last_review_finalize_at: "2026-07-25T11:06:11+08:00"
+last_review_finalize_run_id: "20260725-110551-3b9ce171"
+rework_reason: "官方 Compose Runtime Tracing 事件命名、重组原因字段、Release 显式开启 API/版本矩阵仍需官方示例或实测 Perfetto 证据；本章可保留为 APM 部署策略草稿，但不足以 finalized。"
 ---
 
 # 22.37 Compose Runtime Tracing — runtime-tracing 与 Perfetto 组合阶段追踪
@@ -60,7 +60,7 @@ rework_reason: "官方 Compose Runtime Tracing 依赖名与部分事件/归因�
 - 与现有 APM 框架（Firebase Performance / 自研 APM）的集成路径 [来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
 
 ### 🔹 锚点 5：重组归因与性能反模式识别
-- 从 Trace 事件中提取重组原因（State 变化、强制重组、键值变化）[结构参考: 本章原始大纲]
+- 不要直接宣称 Trace 事件能给出 State 变化、强制重组、键值变化等“重组原因”；本章现有来源只足以支撑用 Slice 观察组合/重组时序，原因归因需结合 Layout Inspector、Compose Compiler Metrics、业务状态订阅和实测 trace_processor 结果。[待验证: 本轮 review]
 - 高频重组 Composable 的自动识别规则 [结构参考: 本章原始大纲]
 - 无效重组（unnecessary recomposition）的 Trace 特征 [结构参考: 本章原始大纲]
 - 与 Compose Compiler Metrics（22.28）交叉验证重组问题 [结构参考: 本章原始大纲]
@@ -86,7 +86,7 @@ rework_reason: "官方 Compose Runtime Tracing 依赖名与部分事件/归因�
 
 ## 1. 本章定位：把 Compose Trace 放进 APM 闭环
 
-> Review 状态：本章当前适合作为“Compose Trace 如何接入 APM 闭环”的工程策略草稿；依赖名已修正为 `androidx.compose.runtime:runtime-tracing`，但事件命名、重组原因字段、Production 显式开启 API 仍缺少官方示例或实测 Perfetto 证据，因此暂不 finalized。
+> Review 状态：本章当前适合作为“Compose Trace 如何接入 APM 闭环”的工程策略草稿；依赖名已修正为 `androidx.compose.runtime:runtime-tracing`，但事件命名、重组原因字段、Release 显式开启 API 与版本矩阵仍缺少官方示例或实测 Perfetto 证据，因此暂不 finalized。
 
 Compose Runtime Tracing 的价值不只是“在 Perfetto 里多看几条 Slice”，而是把组合、重组、子组合等 UI 运行时开销纳入可回放、可归因、可门禁的性能观测链路。[结构参考: 本章原始大纲] 对应用侧来说，它应当和启动、FPS、慢方法、网络、IO 等信号一起进入 APM 事件模型，而不是停留在一次性的本地调试截图。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
 
@@ -136,4 +136,4 @@ Compose Runtime Tracing 的价值不只是“在 Perfetto 里多看几条 Slice�
 - 是否在 Perfetto 中把重组/组合/子组合 Slice 与慢帧窗口对齐分析。[结构参考: 本章原始大纲]
 
 [结构参考: 官方文档 developer.android.com/jetpack/androidx/releases/tracing]
-[适用版本: Android 13 (API 33) - Android 17 (API 37)，tracing-perfetto 需 Compose 1.6+]
+[适用版本: Android 13 (API 33) - Android 17 (API 37)；composition tracing 的复现前提需按官方工具链文档核对，既有章节记录为 Android Studio Flamingo+、Compose UI/Compiler 1.3.0+、API 30+、加入 `androidx.compose.runtime:runtime-tracing`]
