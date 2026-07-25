@@ -1388,6 +1388,18 @@
       "status": "appended",
       "title": "Juejin Android Intake · 2026-07-25"
     },
+    "source/juejin-android/2026-07-26-juejin-android.md": {
+      "chapter": "待分类",
+      "entry_id": "345900199201fca6",
+      "last_appended": "2026-07-26T05:25:14.093748+08:00",
+      "last_seen": "2026-07-26T05:25:14.093748+08:00",
+      "mtime": 1785010468.3835962,
+      "score": 9,
+      "sha256": "9ab68735268e91e52ca964b588b9d6b794d2567618c5476516a5e513d6ec5f5c",
+      "size": 5716,
+      "status": "appended",
+      "title": "Juejin Android intake · 2026-07-26"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -3195,24 +3207,24 @@
     }
   },
   "last_report": {
-    "appended": 9,
-    "considered": 10,
-    "cutoff": "2026-07-24T05:20:16.341025+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-25.md",
+    "appended": 1,
+    "considered": 1,
+    "cutoff": "2026-07-25T05:20:55.870655+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-26.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1713,
+    "scanned": 1714,
     "skipped": {
       "existing_link": 0,
-      "low_score": 1,
+      "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 28,
-      "unchanged": 272
+      "unchanged": 282
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-07-25T05:25:55.870655+08:00",
+  "last_run_at": "2026-07-26T05:25:14.093748+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

@@ -1376,6 +1376,16 @@
       "score": 15,
       "route_status": "quarantined-non-aiw-or-aggregate",
       "routed_at": "2026-07-25T13:53:24.486291+08:00"
+    },
+    {
+      "path": "https://kitsumed.github.io/blog/posts/android-may-soon-restrict-on-device-adb/",
+      "title": "[ClawFeed] Android May Soon Restrict On-Device ADB, Affecting Shizuku, libadb and Developers",
+      "summary": "文章基于 Google IssueTracker 中关于 ADBD 绑定接口的讨论，梳理 on-device ADB、Wireless Debugging 与 TCP/IP ADB 的风险路径，指出永久禁止 loopback 会影响 Shizuku、libadb、Termux 和本机开发工作流。",
+      "chapter": "ch16",
+      "processed_at": "2026-07-26T06:20:21.627008+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ]
 }
