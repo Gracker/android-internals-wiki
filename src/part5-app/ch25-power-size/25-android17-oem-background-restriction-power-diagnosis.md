@@ -1,7 +1,7 @@
 ---
 title: "OEM 厂商差异化后台限制与功耗诊断实战"
 chapter: "25.25"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [oem-doze, background-restriction, power-optimization, vendor-doze, chinese-oem]
 related_chapters: ["25.2", "25.3", "25.4", "25.13", "11.2", "11.3"]
@@ -9,6 +9,8 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "research-gaps+daily-info"
 last_verified: "2026-07-25"
+reviewed_date: "2026-07-25"
+reviewed_by: "hermes-aiw-review-finalize-apply"
 confidence: medium-high
 sources:
   - "DeepResearch/2026-07-16-android17-oem-background-restriction.md"
@@ -16,9 +18,11 @@ last_body_apply_at: "2026-07-25T15:18:53+08:00"
 last_body_apply_run_id: "20260725-151525-21e58a30"
 last_body_apply_source: "source-index:16:DeepResearch/2026-07-16-android17-oem-background-restriction.md"
 task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: finalized
+last_review_finalize_at: "2026-07-25T16:05:49+08:00"
+last_review_finalize_run_id: "20260725-160531-5200f347"
 ---
 
 # 25.25 OEM 厂商差异化后台限制与功耗诊断实战
