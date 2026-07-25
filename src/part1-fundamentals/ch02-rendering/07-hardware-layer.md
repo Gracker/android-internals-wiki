@@ -6,7 +6,7 @@ status: "finalized"
 drafted_date: "2026-03-30"
 applicable_versions: "Android 3.0 (API 11) - Android 17 (API 37)"
 last_verified: "2026-07-25"
-last_verified_against: "AOSP android-17.0.0_r1 View.java, ViewPropertyAnimator.java, RenderNode.java, RenderProperties.h, RenderNode.cpp, CanvasContext.cpp, LayerUpdateQueue.cpp, SkiaPipeline.cpp; AndroidX Compose semantics checked separately against official documentation"
+last_verified_against: "AOSP android-17.0.0_r1 View.java, ViewPropertyAnimator.java, RenderNode.java, RenderProperties.h, RenderNode.cpp, CanvasContext.cpp, LayerUpdateQueue.cpp, SkiaPipeline.cpp, SkiaGpuPipeline.cpp, Properties.cpp; androidx.compose.ui:ui:1.11.4 GraphicsLayerModifier.kt/GraphicsLayerScope.kt"
 confidence: medium
 reviewed_date: "2026-05-08"
 review_notes: "2026-05-07 16:08 task6 review (Task2B 修复后复审): pass-light-edit。轻修 4 处（16KB 分配粒度/数据描述/Compose offscreen 用词）；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 5 处（开头读者指向、第一人称、操作原则句），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
@@ -37,14 +37,30 @@ sources:
     path: "AOSP android-17.0.0_r1: frameworks/base/libs/hwui/LayerUpdateQueue.cpp"
   - type: aosp
     path: "AOSP android-17.0.0_r1: frameworks/base/libs/hwui/pipeline/skia/SkiaPipeline.cpp"
+  - type: aosp
+    path: "AOSP android-17.0.0_r1: frameworks/base/libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp"
+  - type: aosp
+    path: "AOSP android-17.0.0_r1: frameworks/base/libs/hwui/Properties.cpp"
+  - type: aosp
+    path: "AOSP android-17.0.0_r1: frameworks/base/core/java/android/view/TextureView.java"
+  - type: aosp
+    path: "AOSP android-17.0.0_r1: frameworks/base/graphics/java/android/graphics/TextureLayer.java"
+  - type: aosp
+    path: "AOSP android-17.0.0_r1: frameworks/base/libs/hwui/DeferredLayerUpdater.cpp"
   - type: kernel
-    path: "android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c (boundary reference; a View layer is not guaranteed to be an exported dma-buf)"
+    path: "kernel/common/drivers/dma-buf/dma-buf.c"
+    ref: "android17-6.18-2026-06_r6"
+    note: "boundary reference; a View layer is not guaranteed to be an exported dma-buf"
   - type: official
     path: "https://developer.android.com/develop/ui/compose/graphics/draw/modifiers"
+  - type: official
+    path: "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui/1.11.4/ui-1.11.4-sources.jar"
   - type: obsidian
     path: "Writer/rendering_pipelines/S02_aosp_standard_type.md"
   - type: obsidian
     path: "Writer/rendering_pipelines/S04_textureview_type.md"
+  - type: obsidian
+    path: "Writer/rendering_pipelines/S07_software_offscreen_type.md"
 tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer, buildLayer, graphicsLayer, GPU-纹理缓存]
 related_chapters: ["2.4", "2.5", "2.6", "7.1", "7.5"]
 pipeline_stage: "ready-to-publish"
@@ -138,6 +154,10 @@ Hardware Layer 描述单个 RenderNode 的中间合成策略：先把该节点�
 - 窗口没有硬件加速：`LAYER_TYPE_HARDWARE` 会表现得与 software layer 相近，无法获得 HWUI RenderThread hardware layer。
 
 `LAYER_TYPE_NONE` 只表示没有显式 View layer。它不会强制每帧 measure、layout 或重录 DisplayList；这些工作是否发生仍由布局请求、invalidate、RenderNode dirty state 和当前帧属性决定。
+
+Android 17 设备端的 `CanvasContext::create()` 根据 `Properties::getRenderPipelineType()` 选择 SkiaGL 或 SkiaVulkan；默认值由 `skiagl`/`skiavk` 配置决定。两条路径都继承 `SkiaGpuPipeline`，其 `createOrUpdateLayer()` 使用 `SkSurfaces::RenderTarget()` 创建 budgeted `SkSurface`。
+
+因此，“GPU 纹理缓存”适合描述设备端常见效果，跟源码时则应使用“RenderNode 持有的 layer surface / GPU render target”。它没有独立的 BufferQueue、GraphicBuffer 或 SurfaceControl，也不能直接交给 SurfaceFlinger 或 HWC。
 
 ## `setLayerType()` 在 Android 17 做了什么
 
@@ -318,7 +338,15 @@ CanvasContext::draw()
 
 ### 1. 离屏内存
 
-一个宽 `w`、高 `h`、每像素 `b` 字节的单缓冲下界可写成 `w × h × b`。它只是下界，真实成本还可能包含：
+Android 17 的 `SkiaGpuPipeline::createOrUpdateLayer()` 会先把 layer surface 宽高按 `LAYER_SIZE=64` 像素向上取整：
+
+```text
+W = ceil(w / 64) × 64
+H = ceil(h / 64) × 64
+单个 layer surface 的像素存储下界 = W × H × b
+```
+
+这里的 `w`、`h` 是 RenderNode 尺寸，`b` 是每像素字节数。这个结果仍只是下界，真实成本还可能包含：
 
 - row/tile 对齐和 allocator 粒度；
 - 像素格式、色彩空间与 HDR 精度；
@@ -326,7 +354,7 @@ CanvasContext::draw()
 - blur、shadow、MSAA 或效果处理使用的临时 surface；
 - 缓存、staging 与延迟释放。
 
-CPU 进程使用 16KB 页面，不能直接推出 GPU texture 也按 16KB 固定取整。GraphicBuffer/gralloc、GPU 驱动和 HWUI/Skia allocator 具有各自策略；需要使用目标设备的 memtrack、GPU memory counter、厂商工具或可复现实验测量。
+64 像素是 Android 17 HWUI layer surface 的尺寸取整，不是 Linux 页面大小。CPU 进程使用 16KB 页面，也不能推出 GPU texture 按 16KB 固定取整。GraphicBuffer/gralloc、GPU 驱动和 HWUI/Skia allocator 具有各自策略；需要使用目标设备的 memtrack、GPU memory counter、厂商工具或可复现实验测量。
 
 ### 2. 首次建立
 
@@ -440,9 +468,9 @@ RenderEffect 的目的在于产生 blur、color filter 或其他图像效果；�
 
 ## Compose `graphicsLayer`：与平台版本分开看
 
-Jetpack Compose 属于 AndroidX，`graphicsLayer` 行为由应用依赖版本决定，不能只写“Android 17 就是某个 Compose 实现”。
+Jetpack Compose 属于 AndroidX，`graphicsLayer` 行为由应用依赖版本决定，不能只写“Android 17 就是某个 Compose 实现”。下面的语义固定到 `androidx.compose.ui:ui:1.11.4` 的 `GraphicsLayerModifier.kt` 与 `GraphicsLayerScope.kt`，并与 Android Developers 文档交叉核对。
 
-Android Developers 当前文档给出的核心语义是：
+Compose UI 1.11.4 的核心语义是：
 
 - `Modifier.graphicsLayer` 先提供绘制指令隔离与整体 transform；
 - draw layer 不保证分配离屏 buffer；
@@ -454,8 +482,10 @@ Android Developers 当前文档给出的核心语义是：
 | 策略 | 官方语义 | 风险 |
 |:---|:---|:---|
 | `Auto` | 默认；alpha < 1 或设置 RenderEffect 等条件会使用 offscreen | 由参数决定，不能只看 modifier 名称 |
-| `Offscreen` | 总是先栅格化到离屏 texture/bitmap，再合成到目标 | 增加内存、pass 和 bounds clipping |
+| `Offscreen` | 总是先渲染到离屏 buffer，再合成到目标 | 增加内存、pass 和 bounds clipping |
 | `ModulateAlpha` | 把 alpha 调制到每条绘制指令；无 RenderEffect 时可避免 alpha 离屏 | 重叠内容可能得到不同视觉结果 |
+
+除 `CompositingStrategy.Offscreen` 外，1.11.4 的 `GraphicsLayerScope` 还规定：非 `SrcOver` 的 `blendMode` 和非空 `colorFilter` 都会强制离屏，语义等价于 Offscreen。`Auto` 不是“不离屏”，它会根据 alpha、RenderEffect 和这些合成属性选择中间 buffer。
 
 下面的代码显式要求 Offscreen，适合需要把 `BlendMode` 限制在当前 composable 内容范围内的场景：
 
@@ -533,6 +563,9 @@ CPU 页面大小无法决定 GPU/gralloc allocator 的全部粒度。内存结�
 | dirty rect 合并 | `libs/hwui/LayerUpdateQueue.cpp` |
 | 显式预建与 prefetched layer | `libs/hwui/renderthread/CanvasContext.cpp`：`buildLayer()`、`freePrefetchedLayers()` |
 | Skia 离屏 layer 重绘 | `libs/hwui/pipeline/skia/SkiaPipeline.cpp`：`renderLayers()`、`renderLayerImpl()` |
+| GPU layer surface 的 64 像素尺寸取整与分配 | `libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp`：`createOrUpdateLayer()` |
+| 设备端 SkiaGL/SkiaVulkan 选择 | `libs/hwui/Properties.cpp`、`renderthread/CanvasContext.cpp` |
+| TextureView 输入与 HWUI 采样 | `core/java/android/view/TextureView.java`、`graphics/java/android/graphics/TextureLayer.java`、`libs/hwui/DeferredLayerUpdater.cpp` |
 
 ## 小结
 
@@ -561,6 +594,11 @@ Hardware Layer 是 HWUI 内部的 RenderNode 中间渲染结果。它用一次�
 - [LayerUpdateQueue.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/LayerUpdateQueue.cpp)
 - [CanvasContext.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp)
 - [SkiaPipeline.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaPipeline.cpp)
+- [SkiaGpuPipeline.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp)
+- [Properties.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/Properties.cpp)
+- [TextureView.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java)
+- [TextureLayer.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/TextureLayer.java)
+- [DeferredLayerUpdater.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp)
 
 ### Kernel 边界
 
@@ -573,11 +611,13 @@ Hardware Layer 是 HWUI 内部的 RenderNode 中间渲染结果。它用一次�
 - [Hardware acceleration](https://developer.android.com/topic/performance/hardware-accel)
 - [RenderNode.setUseCompositingLayer](https://developer.android.com/reference/android/graphics/RenderNode#setUseCompositingLayer(boolean,%20android.graphics.Paint))
 - [Compose graphics modifiers](https://developer.android.com/develop/ui/compose/graphics/draw/modifiers)
+- [Compose UI 1.11.4 sources](https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui/1.11.4/ui-1.11.4-sources.jar)
 
 ### 渲染系列素材
 
 - `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S02_aosp_standard_type.md`
 - `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S04_textureview_type.md`
+- `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S07_software_offscreen_type.md`
 
 ### 相关章节
 
