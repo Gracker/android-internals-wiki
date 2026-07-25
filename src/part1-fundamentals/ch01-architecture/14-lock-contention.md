@@ -1,425 +1,571 @@
 ---
-
-
-
-title: "锁竞争与同步性能分析"
-chapter: "1.14"
+title: 锁竞争与同步性能分析
+chapter: '1.14'
+section: '1.14'
 status: finalized
-applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37); bionic PI mutex sections require Android 9+; DeliQueue applies to Android 17 targetSdk 37+"
-tags: [Mutex, Futex, monitor lock, 优先级反转, 锁竞争, DeliQueue, Perfetto, Binder, jank, ANR]
-related_chapters: ["1.4", "1.5", "1.13", "2.4", "2.5", "7.1", "9.1"]
-section: "1.14"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-06"
-gap_source: "研究素材+AOSP结构+每日信息+读者需求"
-gap_score: "17/20"
-drafted_date: "2026-04-06"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-06-25"
-reviewed_by: "openclaw-task6"
-last_verified: "2026-07-02"
-last_verified_against: "AOSP android-17.0.0_r1 + kernel/common android17-6.18 + Android Developers Blog 2026-02-17 + Perfetto stdlib"
-confidence: "medium"
+applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
+last_verified: '2026-07-25'
+last_verified_against: AOSP android-17.0.0_r1 + ACK android17-6.18-2026-06_r6 + Perfetto official documentation
+confidence: high
 sources:
   - type: aosp
-    path: "platform/art/runtime/monitor.cc (android-17.0.0_r1)"
+    path: "art/runtime/monitor.cc @ android-17.0.0_r1"
   - type: aosp
-    path: "platform/art/runtime/lock_word.h (android-17.0.0_r1)"
+    path: "art/runtime/lock_word.h @ android-17.0.0_r1"
   - type: aosp
-    path: "platform/bionic/libc/bionic/pthread_mutex.cpp (android-17.0.0_r1; PI API already present in android-9.0.0_r1)"
+    path: "bionic/libc/bionic/pthread_mutex.cpp @ android-17.0.0_r1"
   - type: aosp
-    path: "platform/frameworks/native/libs/binder/ProcessState.cpp (android-17.0.0_r1; 7.1.2/8.0 used only for history comparison)"
+    path: "frameworks/native/libs/binder/ProcessState.cpp @ android-17.0.0_r1"
   - type: aosp
-    path: "platform/frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java (android-17.0.0_r1)"
+    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-17.0.0_r1"
   - type: aosp
-    path: "platform/frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java (android-17.0.0_r1)"
+    path: "frameworks/base/services/core/java/com/android/server/am/ProcessList.java @ android-17.0.0_r1"
   - type: aosp
-    path: "platform/frameworks/base/services/core/java/com/android/server/am/psc/OomAdjuster.java (android-17.0.0_r1)"
+    path: "frameworks/base/services/core/java/com/android/server/am/psc/OomAdjuster.java @ android-17.0.0_r1"
   - type: aosp
-    path: "platform/frameworks/base/services/core/java/com/android/server/am/ProcessList.java (android-17.0.0_r1)"
-  - type: aosp-kernel
-    path: "kernel/common/drivers/android/binder.c (android17-6.18 branch; Android 17 kernel branch)"
+    path: "frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java @ android-17.0.0_r1"
+  - type: kernel
+    path: "kernel/common/drivers/android/binder.c @ android17-6.18-2026-06_r6"
+  - type: kernel
+    path: "kernel/common/Documentation/locking/rt-mutex.rst @ android17-6.18-2026-06_r6"
+  - type: kernel
+    path: "kernel/common/Documentation/locking/pi-futex.rst @ android17-6.18-2026-06_r6"
+  - type: kernel
+    path: "kernel/common/kernel/futex/pi.c @ android17-6.18-2026-06_r6"
   - type: official
     path: "https://perfetto.dev/docs/analysis/stdlib-docs#androidmonitor_contention"
   - type: official
-    path: "https://source.android.com/docs/core/audio/latency/priority-inversion"
-  - type: blog
+    path: "https://perfetto.dev/docs/analysis/stdlib-docs#androidbinder"
+  - type: official
     path: "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html"
-  - type: note
-    path: "intake/research-feeds/2026-04-06-15-perfetto-monitor-contention-art-lock-analysis.md"
-  - type: note
-    path: "intake/research-feeds/2026-04-06-15-art-thin-fat-lock-inflation-long-wait.md"
-  - type: note
-    path: "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md"
-  - type: note
-    path: "intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md"
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
+tags:
+  - android
+  - lock-contention
+  - monitor
+  - mutex
+  - futex
+  - priority-inversion
+  - binder
+  - perfetto
+related_chapters:
+  - '1.4'
+  - '1.5'
+  - '1.13'
+  - '2.4'
+  - '2.5'
+  - '7.1'
+  - '9.1'
+created_date: '2026-04-06'
+drafted_date: '2026-04-06'
+reviewed_date: '2026-07-25'
+reviewed_by: Codex
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: pass-tech-review
-task9_reviewed_date: "2026-07-03"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-07-14T17:26:54+08:00"
-last_task9_audit: "2026-07-02"
-last_task9_audit_log: "logs/deep-review/2026-07-02-12-audit.md"
-task6_review_notes_round4: "2026-07-03 Task6 revisiting-review round4 (post-Task9 autofix): pass-light-edit. L1 scan: 0 banned words, 0 high-freq violations. L2: structure intact, outline 8/8 anchors + 3/3 extensions covered. No new L3/L4 issues. task9_result=auto-fixed (not pass-tech-review), cannot auto-promote."
-task6_review_notes_round2: "2026-07-02 Task6 revisiting-review round2 (post-Task9 autofix): pass-light-edit. Task9 idle audit auto-fixed Android 17 source re-anchoring (OomAdjuster package path, DeliQueue metrics). L1 scan: 0 banned words, 0 high-freq violations. L2: structure intact, outline 8/8 anchors covered, 4 extensions covered. No new L3/L4 issues. task9_result=auto-fixed (not pass-tech-review), cannot auto-promote."
-last_task9_autofix_at: "2026-07-02"
-task2b_state: "fixed"
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-27T16:50:00+08:00"
-task2b_notes: "2026-05-27 Task2B：清理文末 AIW 源码调研原始块，将 AMS mGlobalLock/mProcLock 双锁与 PI-futex 边界合并入正文。"
-last_task6_audit: "2026-06-08"
-last_task6_at: "2026-07-14T13:14:05+08:00"
-last_task6_review_log: "logs/review/2026-06-25-21-review.md"
-review_type: "task6-writing-quality-review"
-task6_l1_l2_fixes: 9
-task6_l3_l4_issues: 0
-task6_review_notes: "2026-07-14 Task6 revisiting-final: pass-light-edit. L1 小修 1 处（正文列表项 mProcLock 缺 backticks）。无新增 L3/L4 回炉项。Task9 pass-tech-review，queue 无 pending，自动晋升 finalized。 | 2026-06-25 21:17 Task6 复审：修复 LRU 性能数据小节重复（删除文末 1204 字符重复块）、性能数据中英文间距、大纲禁用词「深入分析」、补 [待验证] 标注；Task9 已通过且 queue 无 pending，自动晋升 finalized。"
-last_task9_review_log: logs/deep-review/2026-07-14-17-deep-review.md
-task9_review_notes: "2026-07-03 04:37 Task9 deep-review：AOSP android-17.0.0_r1 / kernel common android17-6.18 源码锚点复核通过；无 P0/P1；1 条 LRU 性能数据待补实测，写入 suggestions；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-02 12:46 Task9 idle audit AUTO-FIX：重锚 ART/bionic/Binder/AMS/DeliQueue 源码到 Android 17，修正 OomAdjuster Android 17 包路径与 DeliQueue 官方指标口径；回到 Task6 复审。 | 2026-05-27 15:22 Task9 deep-review：技术复审无新增 P0/P1；既有 queue pending 为 Task6/Task2B 文末源码调研原始块清理，不自动晋升。"
-| 2026-07-14 Task9 deep-review: pass-tech-review. P0=0/P1=0/P2=0, queue 无 pending, 自动晋升 finalized.
+pipeline_stage: ready-to-publish
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-15
-task9_p0_issues: 0
-task9_p1_issues: 0
-task9_p2_issues: 1
-finalized_by: "openclaw-task6-auto-promote"
-finalized_date: "2026-07-14"
 ---
-
 
 # 1.14 锁竞争与同步性能分析
 
-<!-- outline-start -->
-## 要点
+线程显示为 Waiting 或 Sleeping，只能证明它没有在 CPU 上执行，不能直接证明发生了锁竞争。它可能在等 Java monitor、native mutex、条件变量、Binder 回复、I/O、定时器，也可能只是 Looper 正常睡在 `epoll_wait()`。
 
-### 🔹 锚点 1：先把四类等待分开
-- Java monitor：`synchronized`、`wait()` / `notify()`，底层是 ART monitor
-- Native mutex / condition variable：`pthread_mutex`、`std::mutex`、`ConditionVariable`
-- Binder driver wait queue：跨进程调用的等待与唤醒，由 binder driver 管理，不等同于 Java 锁
-- MessageQueue / DeliQueue：主线程消息投递路径的串行化问题，需要和前面三类区分
-- 无竞争 CAS 很便宜，一旦进入睡眠路径，成本就会跳到上下文切换级
+诊断锁问题最有效的方法不是先猜“哪种锁更快”，而是回答四个问题：
 
-### 🔹 锚点 2：Monitor Lock 的实现与性能特征
-- `synchronized` 对应 `monitorenter` / `monitorexit`，由 ART monitor 实现
-- 对象头 lock word 支持 `Unlocked → Thin Locked → Fat Monitor` 状态转换
-- 发生竞争或调用 `wait()` 时会从 thin lock 膨胀为 fat monitor
-- `kLongWaitMs = 100ms` 的长等待日志可直接帮助定位严重竞争
-- Perfetto 的 `android.monitor_contention` 模块可直接查询 owner / waiter 关系
+1. **谁在等**：主线程、RenderThread、Binder worker，还是普通后台线程？
+2. **等什么**：Java monitor、native 同步原语、Binder 回复，还是正常事件等待？
+3. **谁能让它继续**：真正的 owner 或服务端线程是谁？
+4. **owner 为什么没有及时推进**：正在运行、排队等 CPU、阻塞在另一把锁，还是做了 I/O？
 
-### 🔹 锚点 3：Futex 与 Linux 同步原语
-- futex 的核心思路是“用户态快速路径，内核态慢速路径”
-- `FUTEX_WAIT` / `FUTEX_WAKE` 是 Java monitor 和 native mutex 睡眠路径的基础
-- bionic 在 `android-9.0.0_r1` 已提供 `pthread_mutexattr_setprotocol(..., PTHREAD_PRIO_INHERIT)`
-- 但“系统支持 PI mutex”不等于“具体锁路径已经启用 PI-futex”
-- Binder 的等待与唤醒要单独看 binder driver 的 wait queue 和事务优先级逻辑
+这四个答案拼起来，才是一条可修复的等待链。
 
-### 🔹 锚点 4：优先级反转要按子系统拆开看
-- 经典模式：低优先级线程持锁，中优先级线程抢占，高优先级线程饿死
-- Java monitor、native mutex、Binder 事务等待都可能出现优先级反转，但处理手段不同
-- Linux 提供 PI-futex，这是一种可选机制，不是所有 Android 子系统都统一采用
-- Android 官方音频文档明确提醒，实时路径不一定适合直接依赖 PI-futex
-- Binder 更应该看 `binder_transaction_priority()` 这类驱动侧优先级传播逻辑
+## 1. 先把几类“等”分开
 
-### 🔹 锚点 5：Binder 框架中的锁竞争
-- `ProcessState.cpp` 在 `android-7.1.2_r39` 和 `android-8.0.0_r1` 都把 `DEFAULT_MAX_BINDER_THREADS` 定义为 15
-- Binder 调用卡住时，调用方常常睡在 `binder_thread_read` 或 reply 等待上
-- 瓶颈经常在服务端对象锁，如 `WindowManagerGlobalLock`、AMS/PMS 全局锁
-- Binder 线程池耗尽会把“一个服务慢”放大成“整批调用都慢”
+Android trace 中最容易混淆的是下面五类路径。
 
-### 🔹 锚点 6：在 Perfetto 中怎么区分这几类问题
-- Java monitor：看 `android.monitor_contention` 和 Thread / Lock contention track
-- Native mutex：看 `thread_state.blocked_function` 里的 `futex_*`，再反推 owner 线程
-- Binder wait queue：看 `binder_thread_read`、binder transaction/reply，以及目标进程 Binder worker 是否打满
-- system_server 场景要同时看 Binder worker 和服务线程，不要只盯住调用方主线程
-- SQL 要用真实模块名 `android.monitor_contention`
+| 类型 | 常见入口 | 主要实现 | 首要证据 |
+| --- | --- | --- | --- |
+| Java monitor | `synchronized`、`Object.wait()` | ART Monitor / LockWord | `android_monitor_contention`、owner/waiter 方法 |
+| Java 并发包 | `ReentrantLock`、`Condition`、`LockSupport.park()` | AQS、park/unpark、native 等待 | Java 调用栈、线程状态、相关业务埋点 |
+| Native 锁 | `pthread_mutex`、`std::mutex`、condition variable | bionic + futex | native 栈、`blocked_function`、锁埋点 |
+| Binder IPC | 同步 AIDL、服务端线程池 | libbinder + binder driver | binder transaction/reply、client/server 线程状态 |
+| Looper 等待 | `MessageQueue.next()` | Java 队列 + native Looper + epoll | 是否有到期消息、`nativePollOnce()`、MessageQueue contention |
 
-### 🔹 锚点 7：锁竞争优化的系统级策略
-- 先缩短临界区，再考虑换锁，再考虑无锁
-- 读多写少场景优先考虑读写分离，不要上来就全局大锁
-- Binder 事务里不要把 I/O、跨服务调用、长计算塞在持锁区间
-- DeliQueue 是“先消掉主线程生产者锁竞争，再保留单消费者排序”的代表案例
-- 无锁不等于零成本，CAS 重试和 cache line bouncing 也会吃掉收益
+它们都可能在内核线程状态里表现为睡眠，但优化方式完全不同。
 
-### 🔹 锚点 8：版本演进中的锁优化
-- Android 5.0：Java monitor 讨论应以 ART 的 monitor / lock word 实现为准
-- Android 7.1.2 与 8.0：Binder worker 默认上限都是 15，8.0 不是“8→16”的分水岭
-- Android 9：bionic 已具备 PI mutex 属性接口，是否启用取决于具体 mutex 配置
-- Android 17：DeliQueue 把 MessageQueue 生产者路径改为无锁，Google 公布主线程 lock contention time 下降 15%
+- Java monitor 要找持有同一对象 monitor 的线程。
+- `ReentrantLock` 不属于 ART monitor，不能指望 `android_monitor_contention` 自动给出 owner。
+- native `futex_wait` 只说明某个 futex 慢路径在等待，不说明它一定对应 mutex，更不说明一定启用了优先级继承。
+- 同步 Binder 调用的 client 等的是服务端回复；服务端内部可能又卡在 Java 或 native 锁上。
+- 空闲 Looper 睡在 native poll 是正确行为，不应该“优化掉”。
 
-## 🔸 扩展 1：常见问题与误区
-- `synchronized` 和 `ReentrantLock` 不是简单的快慢关系，先看竞争形态，再看可中断/超时/公平性需求
-- 看到 `futex_wait` 不等于一定是 Java 锁，native mutex 和条件变量也会走同一类睡眠路径
-- 主线程卡在 Binder 上，不代表服务端一定在“算得慢”，也可能是在等服务端对象锁或等 Binder worker
-- 无锁结构能消掉阻塞，但不保证总是更快，高竞争下 CAS 重试一样会放大开销
-- PI 机制不是万灵药，是否值得引入要看实时性目标、信任模型和实现代价
+## 2. ART Monitor：`synchronized` 在 Android 17 中怎样工作
 
-## 🔸 扩展 2：与其他机制的关系
-- **1.4 Binder IPC**：回答“跨进程调用怎么走”，本节回答“为什么调用会在等待里耗时”
-- **1.5 线程模型**：决定谁是 owner、谁是 waiter，以及谁会被谁抢占
-- **1.13 DeliQueue**：展示 MessageQueue 这条具体路径如何从 monitor 迁移到无锁生产者模型
-- **2.4 / 2.5 渲染调度**：主线程或 RenderThread 一旦被锁竞争拖住，就会直接变成掉帧
-- **7.1 / 9.1**：卡顿和 ANR 最终都需要回到“关键线程为什么没有继续运行”这个问题
+Java 字节码用 `monitorenter` 和 `monitorexit` 表达 `synchronized`。ART 在对象头的 32 位 LockWord 中记录轻量状态，必要时再关联完整的 `Monitor` 对象。
 
-## 🔸 扩展 3：读者诊断清单
-- 先分清等待类型，再决定工具，不要把所有等待都当成“锁竞争”
-- 先看调用方，再看 owner，再看 owner 是否又在等别人
-- 先判断是同进程锁还是跨进程 Binder，再决定改线程模型还是改 IPC 设计
-- 先用 Perfetto 找最长等待，再回 AOSP 或业务代码找持锁区间
-- 修复后必须回到 trace 验证，确认等待时间和关键线程调度都真的变短了
-<!-- outline-end -->
+`art/runtime/lock_word.h` 在 `android-17.0.0_r1` 中定义了这些状态：
 
-## 为什么锁是性能分析的核心议题
-
-Perfetto 里最容易让人误判的一类问题，是线程停在 Waiting / Sleeping 状态，但一帧还是掉了，或者启动还是慢了。把时间轴放大以后，通常会看到主线程、RenderThread 或 Binder worker 停在某个地方。接下来要回答的就是一句话：它到底在等什么。
-
-如果把 Java monitor、native mutex、Binder driver wait queue、MessageQueue 自身的串行化问题都混成“同一种锁”，后面的诊断就会一路跑偏。Java monitor 要看 ART monitor；native 锁要看 `pthread_mutex` / `ConditionVariable`；Binder 要看驱动侧 wait queue 和服务端对象锁；MessageQueue 则要单独看主线程消息投递路径。把这四类路径分开，才能知道该去查哪段代码、该看哪个 track、该改哪一种设计。
-
-锁问题之所以常常直接变成 jank 或 ANR，是因为一旦从用户态的 CAS 快速路径掉进睡眠路径，成本就会立刻跳到上下文切换级。关键线程如果在错误的地方睡下去，16.6ms 的帧预算和 5s 的 ANR 窗口都会很快被吃光。
-
-## Android 中的锁类型全景
-
-先把 Android 里最常见的四类等待拆开。
-
-第一类是 **Java monitor**。`synchronized`、`wait()`、`notify()` 这一套都属于它。它的关键点是 ART 怎样把对象头里的 lock word、竞争升级和等待队列组织起来。Perfetto 的 `android.monitor_contention` 模块就是专门为这条路径准备的。
-
-第二类是 **native mutex / condition variable**。这类等待经常出现在 RenderThread、SurfaceFlinger、AudioFlinger，以及系统服务的 C++ 代码里。表面上看，trace 里它和 Java monitor 一样也会出现 `futex_*`，但 owner、调用栈、锁对象全都不一样。看见 `futex_wait`，不能自动归为 Java 锁。
-
-第三类是 **Binder driver wait queue**。跨进程调用时，调用方常常睡在 `binder_thread_read` 或 reply 等待上。这里要看的是 Binder worker 有没有空、目标服务是不是被对象锁卡住、驱动是不是还在排队分发事务。
-
-第四类是 **MessageQueue / DeliQueue**。这是主线程消息投递路径的特例。它和 Binder、native mutex 都不一样，因为它讨论的是主线程内部事件循环怎样接收来自多个生产者的消息。Android 17 的 DeliQueue 把这里的生产者路径改成无锁，就是因为这条路径足够高频，足够容易把高优先级线程拖进等待里。
-
-这四类路径的共同点只有一个，都是“等待”。差异在于等待对象、唤醒机制、Perfetto 表现和优化手段都不同。
-
-## Monitor Lock 的实现细节
-
-`synchronized` 的底层是 ART monitor，不是什么抽象的“Java 锁”。对象头里的 lock word 先尝试走 thin lock，只有在竞争出现，或者调用 `wait()` 这类需要等待队列的操作时，才会膨胀成 fat monitor。`art/runtime/lock_word.h` 里定义了 `Unlocked`、`ThinLocked`、`FatLocked` 这些状态，`art/runtime/monitor.cc` 里则能看到 monitor 进入、膨胀和等待的实际实现。[已验证: AOSP android-17.0.0_r1, `art/runtime/monitor.cc` + `art/runtime/lock_word.h`]
-
-这条设计解释了为什么“无竞争的 `synchronized`”和“竞争下的 `synchronized`”完全不是一个量级。前者基本上是一次对象头 CAS，后者要创建 fat monitor、进入等待队列、让线程睡眠，再等待别人把它唤醒。`wait()` 也会强制这条路径进入 fat monitor，因为只有 fat monitor 才有完整的等待集合。
-
-ART 还提供一个明确的观测点。`monitor.cc` 里的 `kLongWaitMs` 设为 100ms，等待超过这个阈值会打出长等待日志。Perfetto 的 monitor contention 轨和 SQL 标准库，正是围绕这类事件组织起来的。Java monitor 这条路径有明确的数据面，诊断时可以直接回到这些事件。
-
-## Futex：用户态与内核态的桥梁
-
-futex 的价值在于把“无竞争时的原子操作”和“有竞争时的线程睡眠”连在一起。无竞争时，线程只在用户态改一个共享字，几乎不需要内核介入；竞争出现后，再通过 `FUTEX_WAIT` / `FUTEX_WAKE` 进入慢速路径。ART monitor、bionic 的 `pthread_mutex`、条件变量，都会建立在这套机制上。
-
-**“系统支持 futex”不等于“所有等待都叫 futex 锁竞争”，也不等于“具体锁路径启用了 PI-futex”。** `android-9.0.0_r1` 的 bionic 已经提供 `pthread_mutexattr_setprotocol(..., PTHREAD_PRIO_INHERIT)`，Android 17 的 bionic 仍保留这组接口；这说明 native mutex 层具备 PI mutex 能力。可它只说明“可以这样配置”，并不说明系统里每一把 mutex 都真的这么配了。[已验证: AOSP android-17.0.0_r1 + android-9.0.0_r1, `platform/bionic/libc/bionic/pthread_mutex.cpp`]
-
-普通 futex 等待走 `FUTEX_WAIT` / `FUTEX_WAKE`，内核负责睡眠和唤醒，不处理等待者优先级。PI-futex 走 `FUTEX_LOCK_PI` / `FUTEX_UNLOCK_PI`，内核会把等待者优先级传给持锁线程，并在释放锁时唤醒优先级最高的等待者。这个差异只在 mutex 按 PI 协议初始化后成立；同样看到 `futex_*`，不能直接推断成 PI 行为。
-
-还有一个容易被写过头的边界：PI futex 的用户态 word 会编码 owner TID，32 位 ABI 下 `pthread_mutex_t` 布局更紧，owner TID 编码空间需要按 bionic tag 核对。公开 AOSP 证据不能支撑 `android_pid_t` / `ANDROID_PID_MAX` 或“Android 12+ 64-bit PID 修复”这类结论，正文只保留可验证的 ABI 边界。
-
-Binder 更不能直接写成 “Binder = futex / PI-futex”。Binder 的等待和唤醒主要由 binder driver 的 wait queue、事务分发和线程选择逻辑处理。驱动里需要重点核对的入口，是 `binder_transaction_priority()`、`binder_select_thread_ilocked()`、`binder_wakeup_thread_ilocked()` 这一类函数，而不是把它硬套到 Java monitor 的语义里。[已验证: kernel/common android17-6.18 `drivers/android/binder.c`]
-
-## 优先级反转：从模型到 Android 现场
-
-优先级反转的模式很简单，低优先级线程持有关键资源，中优先级线程抢占 CPU，高优先级线程反而拿不到锁。麻烦在于，它在 Android 里不只发生在一种锁上。
-
-如果是 Java monitor，典型现象是主线程等一个后台线程释放对象锁。线程明明不忙，却一直在等。
-
-如果是 native mutex，常见位置会出现在 SurfaceFlinger、RenderThread、Audio 等实时或半实时路径。
-
-如果是 Binder，现象更容易绕，调用方看上去像是在等 IPC，根因却可能是服务端 Binder worker 拿着全局锁，又被别的线程抢占了。
-
-Linux 提供 PI-futex，是为了解决这类问题的一种机制。但 Android 官方关于音频延迟与 priority inversion 的文档讲得很直白，实时路径不一定适合直接依赖 PI-futex，因为系统调用成本、信任模型和 DoS 风险都要算进去。所以更稳妥的写法应限定为：“Linux 与 bionic 提供了这类机制，具体是否启用要按子系统、按锁类型核实”，不要扩写成“Android 某某子系统统一用了 PI-futex”。[已验证: `source.android.com/docs/core/audio/latency/priority-inversion`]
-
-Binder 这一侧也应该分开写。它要看的重点是驱动怎样给事务传播优先级，怎样挑 Binder worker，怎样唤醒等待线程。把“Binder transaction priority inheritance”和“Java / ART monitor 等待”混成一条实现链，读者到了 trace 现场基本一定会判断错。
-
-SurfaceFlinger 和 InputDispatcher 不能直接写成“Android 14+ 全面启用 PI-futex”。公开源码里，SurfaceFlinger 常见的 `mStateLock` 路径经 `android::Mutex` 默认初始化，InputDispatcher 主分发路径使用 `std::mutex`；这些锚点本身不足以证明已配置 `PTHREAD_PRIO_INHERIT`。在 Perfetto 中观察到 SF 或 Input 路径锁等待异常时，仍要回到 owner / waiter、调用栈和具体锁初始化代码核对，不要把“内核支持 PI-futex”扩写成“该子系统核心锁已启用 PI”。[已验证: 2026-05-18 Task9 抽检]
-
-## Binder 框架中的锁竞争
-
-Binder 的问题，通常不是“调用慢”这四个字能概括的。调用方睡在 Binder 上，只说明它在等目标进程；瓶颈常常在服务端对象锁、Binder worker 数量，或者服务端 worker 持锁时又去做了别的慢操作。
-
-`ProcessState.cpp` 在 `android-7.1.2_r39`、`android-8.0.0_r1` 和 `android-17.0.0_r1` 都把 `DEFAULT_MAX_BINDER_THREADS` 定义为 15。所以“Android 8 把 Binder 默认线程从 8 提到 16”这个说法站不住脚。常见 Binder worker 上限长期稳定在 15 个工作线程，外加调用上下文里能看到的主线程或主 Binder 线程，trace 里才会让人形成“像是 16 条线程”的体感。[已验证: AOSP `frameworks/native/libs/binder/ProcessState.cpp` at `android-17.0.0_r1`，旧 tag 仅作历史对照]
-
-system_server 里的典型热点在服务端全局锁，不在 Binder 驱动本身。比如 WindowManager 的 `WindowManagerGlobalLock`，AMS/PMS 的大对象锁，都会把一个 Binder 调用拖成一整串等待。调用方主线程睡在 `binder_thread_read`，服务端 Binder worker 可能睡在 `futex_wait`，而持锁的 owner 线程可能又在跑磁盘 I/O、跨服务调用，或者干脆在等另一把锁。只看调用方只能看到结果；把 Binder worker 和 owner 一起看，根因才会露出来。
-
-AMS 的双锁结构是 system_server 锁竞争里很典型的例子。Android 10 之后，AMS 逐步把进程状态保护从单一 `ActivityManagerService.this` 拆到 `mGlobalLock` 与 `mProcLock`：前者仍保护组件生命周期、进程启动、ANR 判定这类全局状态，后者更多保护 LRU list、`ProcessRecord` 和 OOM 调整里的进程状态读取。到 Android 17，`ENABLE_PROC_LOCK` 固定为 true，`OomAdjuster.updateOomAdjLSP()` 位于 `com/android/server/am/psc/OomAdjuster.java`，`ProcessList.forEachLruProcessesLOSP()` 也会进入 `mProcLock` 保护范围。[已验证: AOSP android-17.0.0_r1 `ActivityManagerService.java` + `psc/OomAdjuster.java` + `ProcessList.java`]
-
-### LRU 锁优化的代码级细节
-
-上文讲的 AMS 双锁拆分，最终实现在 LRU 这个高频数据结构上。下面从代码层面看这种拆分如何具体生效：
-
-#### 1. ProcessList中的LRU锁保护
-
-```java
-@CompositeRWLock({"mService", "mProcLock"})
-private final ArrayList<ProcessRecord> mLruProcesses = new ArrayList<ProcessRecord>();
-
-// -LOSP: 仅任一锁即可访问
-@GuardedBy(anyOf = {"mService", "mProcLock"})
-void forEachLruProcessesLOSP(boolean iterateForward, @NonNull Consumer<ProcessRecord> callback) {
-    // 遍历 LRU 列表
-}
-
-// -LSP: 必须同时持有两把锁
-@GuardedBy({"mService", "mProcLock"})
-ArrayList<ProcessRecord> getLruProcessesLSP() {
-    return mLruProcesses;
-}
+```cpp
+enum LockState {
+  kUnlocked,
+  kThinLocked,
+  kFatLocked,
+  kHashCode,
+  kForwardingAddress,
+};
 ```
 
-#### 2. OomAdjuster的锁粒度优化
+### 2.1 无竞争路径：thin lock
+
+对象未加锁时，ART 可以把当前线程的 monitor thread ID 和递归计数编码进 LockWord。线程通过原子更新获得 thin lock；同一线程重入时增加计数。
+
+thin lock 的优势是不用为每个曾经被 `synchronized` 的对象都分配完整 Monitor。无竞争时，路径短、没有线程休眠，也没有内核调度切换。
+
+“无竞争的 `synchronized` 很便宜”不等于“任何 `synchronized` 都只做一次 CAS”。对象可能已经膨胀为 fat monitor，可能带有 identity hash code，也可能发生递归和运行时状态变化。性能结论要落到实际对象和竞争形态。
+
+### 2.2 竞争、`wait()` 和 identity hash：monitor inflation
+
+`art/runtime/monitor.cc` 的源码注释列出需要完整 Monitor 的三类典型情况：
+
+- 出现真实竞争。
+- 在对象上调用 `wait()`。
+- 一个需要加锁的对象同时带有 identity hash code。
+
+竞争线程面对被其他线程持有的 thin lock 时，ART 会协调 owner 并尝试把锁膨胀为 fat monitor。fat monitor 才有完整的 owner、waiter、条件等待和诊断信息。
+
+`Object.wait()` 的语义也不能简化成“睡一会”：
+
+1. 调用线程必须已经持有该对象 monitor。
+2. `wait()` 把线程放入等待集合，并释放 monitor。
+3. `notify()` / `notifyAll()`、中断或超时使它具备继续条件。
+4. `wait()` 返回前还必须重新获得同一个 monitor。
+
+因此，被唤醒不等于马上执行。线程可能从“等通知”转成“等重新拿锁”。
+
+### 2.3 `kLongWaitMs` 是日志阈值，不是统一的 Perfetto 阈值
+
+Android 17 源码定义：
+
+```cpp
+static constexpr uint64_t kDebugThresholdFudgeFactor =
+        kIsDebugBuild ? 10 : 1;
+static constexpr uint64_t kLongWaitMs =
+        100 * kDebugThresholdFudgeFactor;
+```
+
+也就是 release 构建为 100ms，debug 构建为 1000ms。这个常量服务于 ART 的长竞争告警逻辑，日志是否出现还受采样、owner 方法是否可解析等条件影响。
+
+它不能用来推导以下结论：
+
+- “小于 100ms 的锁竞争不会进 Perfetto。”
+- “没有长等待日志就没有锁问题。”
+- “100ms 是 Android 所有锁的统一严重阈值。”
+
+一帧在 60Hz 下只有约 16.7ms，几毫秒的主线程锁等待已经可能造成掉帧，远不到 ART 长等待日志的量级。
+
+## 3. Futex：用户态快路径与内核慢路径
+
+futex 不是一把具体的 C++ 锁，而是一套让用户态原子状态与内核等待队列协作的机制。
+
+普通 mutex 的典型思路是：
+
+```text
+尝试用户态原子加锁
+  ├─ 成功：直接进入临界区
+  └─ 失败：标记存在竞争，通过 futex 进入内核等待
+
+解锁
+  ├─ 没有 waiter：用户态完成
+  └─ 存在 waiter：通过 futex 唤醒等待线程
+```
+
+`bionic/libc/bionic/pthread_mutex.cpp` 的非 PI mutex 路径会在竞争时调用 `__futex_wait_ex()`，释放竞争锁时调用 `__futex_wake_ex()`。无竞争时不需要每次都陷入内核。
+
+这也是为什么 `blocked_function` 里看到 `futex_*` 仍然不能直接下结论：
+
+- 它可能来自 `pthread_mutex`。
+- 可能来自 condition variable。
+- 可能来自 ART 或其他运行时内部同步。
+- 可能是 Java 并发包最终触发的 park。
+- 只能证明线程在某个 futex 等待点睡眠，不能单凭函数名恢复锁对象和 owner。
+
+要定位 native 锁，通常还需要 native 调用栈、业务锁埋点、同进程线程状态，或在可复现环境中增加针对该锁的 trace。
+
+## 4. 优先级反转与 PI-futex
+
+优先级反转的经典链条是：
+
+```text
+低优先级线程 L：持有锁
+中优先级线程 M：持续占用 CPU
+高优先级线程 H：等待 L 的锁
+
+结果：H 的进度被 M 间接拖慢
+```
+
+即使 L 的临界区只有 1ms，如果 L 长时间拿不到 CPU，这把锁对 H 的墙上时间影响也可能远大于 1ms。
+
+### 4.1 PI 的作用
+
+ACK `android17-6.18-2026-06_r6` 的 rt-mutex 文档描述了优先级继承：
+
+- 高优先级 waiter 阻塞在 rt-mutex 上时，低优先级 owner 临时继承更高优先级。
+- owner 释放锁后撤销这次提升。
+- owner 又阻塞在另一把 rt-mutex 时，提升可以沿依赖链传播。
+- waiter 按优先级组织；同优先级使用 FIFO 顺序。
+
+PI 缩短的是“高优先级线程被低优先级 owner 挡住，而 owner 又抢不到 CPU”的窗口。它不能缩短 owner 自己在临界区里做的 I/O、长计算或同步 Binder 调用。
+
+### 4.2 Android 17 bionic 怎样选择 PI mutex
+
+bionic 支持：
+
+```c
+pthread_mutexattr_setprotocol(&attr, PTHREAD_PRIO_INHERIT);
+pthread_mutex_init(&mutex, &attr);
+```
+
+只有 mutex 属性显式选择 `PTHREAD_PRIO_INHERIT`，bionic 才走 `__futex_pi_lock_ex()` / `__futex_pi_unlock()`，由内核 PI-futex 和 rt-mutex 处理 owner 提升。普通 mutex 仍走普通 futex 路径。
+
+所以：
+
+- “Android 内核支持 PI-futex”是能力描述。
+- “这把锁启用了 PI”必须检查它的初始化属性。
+- “某线程在 `futex_wait`”不能证明它走的是 PI。
+
+PI 也不是修复糟糕锁设计的替代品。临界区过大、锁顺序混乱、持锁做 I/O，仍应先从设计上消除。
+
+## 5. Binder 等待不是 Java 锁等待
+
+同步 Binder 调用跨越 client、驱动和 server：
+
+```text
+Client thread
+  └─ binder transaction
+      └─ Binder driver 选择/唤醒 server thread
+          └─ Server Binder thread 执行服务代码
+              └─ binder reply
+                  └─ Client 继续执行
+```
+
+client 在等 reply 时没有持有“Binder Java monitor”。驱动使用自己的锁和 wait queue 管理事务、线程与工作项；server 的业务代码则可能再遇到 Java monitor 或 native mutex。
+
+一次同步 Binder 延迟可以拆成：
+
+```text
+总墙上时间
+= client 入驱动与排队
++ server thread 获得运行机会
++ server 业务执行
++ server 内部锁 / I/O / 嵌套 Binder 等待
++ reply 返回与 client 再次被调度
+```
+
+只看 client 睡在 Binder 相关内核函数上，无法判断哪一项占主导。
+
+### 5.1 Binder 有自己的优先级传播
+
+`drivers/android/binder.c` 在当前 ACK tag 中包含：
+
+- `binder_select_thread_ilocked()`：为进程工作选择等待线程。
+- `binder_wakeup_thread_ilocked()`：唤醒具体线程或通知进程需要线程。
+- `binder_transaction_priority()`：根据事务与 binder node 限制处理 server thread 的优先级。
+
+这是 Binder 事务调度的一部分，不等同于 `PTHREAD_PRIO_INHERIT`，也不会自动提升“server thread 正在等待的某个 Java monitor owner”。如果 Binder worker 进入服务代码后又卡在应用锁上，仍要沿 Java 或 native owner 链继续追。
+
+### 5.2 默认 15 不代表进程里固定只有 15 条 Binder 线程
+
+Android 17 的 `ProcessState.cpp` 定义：
+
+```cpp
+#define DEFAULT_MAX_BINDER_THREADS 15
+```
+
+初始化 binder 驱动时，libbinder 通过 `BINDER_SET_MAX_THREADS` 把这个默认最大值设为 15。与此同时，`startThreadPool()` 会调用 `spawnPooledThread(true)` 主动启动一条 main pooled thread。
+
+因此应该这样读：
+
+- 15 是 libbinder 传给驱动的默认“可请求启动线程”上限。
+- 主动启动的 main pooled thread单独计入总量计算。
+- 业务线程也可以进入 Binder 调用上下文。
+- 服务可以在启动线程池前通过 API 配置不同上限。
+
+把这些机制压缩成“Binder 线程池固定 15 条”或“固定 16 条”都会误导 trace 分析。线程数只是容量的一部分；一个 worker 持大锁或做慢 I/O，仍可能让其他事务排队。
+
+## 6. system_server：Binder 慢经常只是表象
+
+App 主线程调用 AMS、WMS 或 PMS 后长时间等 reply，常见根因不是 Binder driver 本身，而是 server 端：
+
+- Binder worker 等 system_server 的全局对象锁。
+- owner 持锁执行长计算或磁盘 I/O。
+- owner 在持锁状态发起另一个同步 Binder 调用。
+- 多把系统锁形成长等待链。
+- Binder worker 接近饱和，新事务迟迟没有线程处理。
+
+分析顺序应是：从 client transaction 跟到 server reply，再看 server thread 的线程状态；如果它在等锁，继续找 owner，而不是停在“Binder 调用耗时”这个表面结论。
+
+### 6.1 Android 17 AMS 的 `mGlobalLock` 与 `mProcLock`
+
+`ActivityManagerService.java` 当前源码明确给出：
 
 ```java
-@GuardedBy("mService")
+final ActivityManagerGlobalLock mGlobalLock = ActivityManagerService.this;
+
+private static final boolean ENABLE_PROC_LOCK = true;
+
+final ActivityManagerGlobalLock mProcLock = ENABLE_PROC_LOCK
+        ? new ActivityManagerProcLock() : mGlobalLock;
+```
+
+源码注释规定锁顺序：`mProcLock` 位于 `mGlobalLock` 之下，不应在只持有 `mProcLock` 时反向获取 `mGlobalLock`。
+
+`@CompositeRWLock({"mService", "mProcLock"})` 不是一个运行时读写锁对象，而是静态锁契约：相关状态读取可由两把锁中的任意一把保护，写入通常要求同时持有两把锁。方法后缀也帮助审阅调用约束：
+
+- `LOSP`：通常表示持有列出的任一锁。
+- `LSP`：通常表示同时持有 service/global 与 proc lock。
+
+例如 Android 17 的 `OomAdjuster`：
+
+```java
+@GuardedBy("mServiceLock")
 void updateOomAdjLocked(@OomAdjReason int oomAdjReason) {
     synchronized (mProcLock) {
-        updateOomAdjLSP(oomAdjReason); // 仅持有 mProcLock 完成 LRU 操作
+        updateOomAdjLSP(oomAdjReason);
     }
 }
 ```
 
-#### 3. 调度层面效果
+这里调用者已经受 `mServiceLock` 保护，再进入 `mProcLock`，符合全局锁到进程锁的顺序。`ProcessList.mLruProcesses` 也标注为 composite lock 保护。
 
-Perfetto 中可观测到，消息处理类操作（如时区更新）仅获取 `mProcLock`：
+这些源码能证明锁域和顺序，不能单独证明某个固定性能提升比例。锁持有时间必须来自具体设备与 trace；没有可定位的一手基准时，不应写“从 25ms 降到 8ms”或“吞吐提升 3 倍”。
 
-```java
-case UPDATE_TIME_ZONE: {
-    synchronized (mProcLock) {
-        mProcessList.forEachLruProcessesLOSP(false, app -> {
-            app.getThread().updateTimeZone();
-        });
-    }
-}
-```
+## 7. MessageQueue：Android 17 的一个针对性去锁案例
 
-#### 4. 性能数据
+旧 MessageQueue 用同一个 `synchronized (this)` 保护有序链表，生产者入队、Looper 取消息和移除操作会在这把 monitor 上竞争。
 
-公开数据显示：
+对运行在 Android 17 且 `targetSdkVersion >= 37` 的应用，DeliQueue 默认启用。它把生产者提交改为 Treiber stack 上的 CAS，由 Looper 独占两个最小堆完成同步/异步消息排序。核心消息路径摆脱旧的单一全局 monitor，但 IdleHandler 和文件描述符记录仍有各自的小锁。
 
-- 锁持有时间从 Android 11 的 25ms 降至 8ms
-- system_server 吞吐量提升约 3 倍
-- LRU 操作延迟减少 68%
+Google 公布的内部 beta trace 中，App 主线程花在锁竞争上的时间下降 15%。这个数字只描述其样本中的 MessageQueue 改造效果，不能外推到 AMS、Binder、native mutex 或业务锁。
 
-#### 5. 设计要点
+DeliQueue 展示了一种有边界的无锁设计：
 
-`@CompositeRWLock` 注解和 LOSP/LSP 命名约定的实际效果：
-1. 读操作仅需 `mProcLock`（避免全局锁竞争）
-2. 写操作仍需两把锁保证数据一致性
-3. 支持轻量级操作并行执行
+- 多生产者共享的提交路径无锁。
+- 排序复杂度留给单一 Looper owner。
+- 取消先做 tombstone，物理清理由 Looper 完成。
+- 同步屏障、异步消息和 native poll 的语义继续保留。
 
+它不是“把所有锁换成 CAS”的模板。无锁结构仍会产生 CAS 重试、共享缓存行抖动、内存分配和延迟清理成本。
 
-落到 Perfetto 里，AMS 锁竞争通常表现为 App 线程或 system_server Binder worker 的长 `binder_transaction`，再接上 `ActivityManagerService.onTransact()`、`updateOomAdjLocked()`、`attachApplicationLocked()` 等调用栈。如果同一时间 `android_monitor_contention` 能看到 AMS 相关 owner / waiter，或者服务端 worker 停在 `futex_*`，就应该沿着 owner 线程继续查，而不是把这次等待归因到 Binder 驱动本身。
+## 8. Perfetto：先找证据，再解释原因
 
-这就是为什么 Binder 场景里要同时看三层信息，调用方在等什么，服务端 worker 在干什么，持锁线程是不是又被别人卡住了。少看一层，就会把跨进程等待误判成“单点慢函数”。
+### 8.1 Java monitor
 
-## 在 Perfetto 中识别锁竞争
-
-Perfetto 里分析锁竞争，先做分类，再做归因。
-
-**第一步，判断是不是 Java monitor。** 如果 trace 打开了相关数据源，可以直接用 `android.monitor_contention` 模块看 owner / waiter 关系，而不是先去翻 raw slice 名字。
+当前 Perfetto stdlib 模块名是 `android.monitor_contention`，查询表名是 `android_monitor_contention`：
 
 ```sql
 INCLUDE PERFETTO MODULE android.monitor_contention;
 
 SELECT
   process_name,
-  blocked_thread_name AS waiter_thread,
-  blocking_thread_name AS owner_thread,
+  blocked_thread_name AS waiter,
+  blocking_thread_name AS owner,
   short_blocked_method AS waiter_method,
   short_blocking_method AS owner_method,
-  CAST(dur / 1e6 AS FLOAT) AS wait_ms
+  lock_name,
+  dur / 1e6 AS wait_ms
 FROM android_monitor_contention
 WHERE process_name = 'system_server'
 ORDER BY dur DESC
-LIMIT 20;
+LIMIT 30;
 ```
 
-这条查询直接给出等待线程、持锁线程和等待时长。它适合查 Java monitor，尤其适合 system_server 这类 owner / waiter 链比较复杂的场景。这里的模块名必须是 `android.monitor_contention`，不是 `android.monitor`。[已验证: Perfetto stdlib `android/monitor_contention.sql`]
+这张表能给出 Java monitor 的 waiter、owner、双方方法、源码位置、是否主线程、锁名和时长。`android_monitor_contention_chain` 还能表达 contention 的父子关系；配套 thread-state 表可以继续看 owner 在持锁期间是 Running、Runnable，还是又阻塞在其他内核函数。
 
-**第二步，判断是不是 native mutex / condition variable。** 这类等待通常不会出现在 `android_monitor_contention` 里，而会反映在 `thread_state.blocked_function` 的 `futex_*`、`__futex_wait` 一类函数上。它们说明线程睡下去了，但不会直接标出锁对象。这个时候要结合 owner 线程的调用栈、同进程其他线程状态一起看。
+注意两个边界：
 
-**第三步，判断是不是 Binder wait queue。** 如果主线程或 Binder caller 线程长时间停在 `binder_thread_read`、binder reply 或事务等待上，不要直接说“服务端处理慢”。先看目标进程 Binder worker 有没有打满，再看这些 worker 是在 Running、在 `futex_wait`，还是在别的 Binder 调用里。
+- 表中没有记录，不等于设备上绝对没有竞争；trace 配置、运行时采样和可解析信息都会影响数据完整性。
+- 这张表针对 ART Java monitor，不覆盖所有 `ReentrantLock` 和 native mutex。
 
-下面这条 raw SQL 更适合扫 native mutex 和 Binder driver 两种等待：
+### 8.2 Native futex 等待
+
+没有专门锁埋点时，可以先从 `thread_state.blocked_function` 找 futex 慢路径：
 
 ```sql
 SELECT
-  process.name AS process_name,
-  thread.name AS thread_name,
-  thread_state.state,
-  thread_state.blocked_function,
-  CAST(thread_state.dur / 1e6 AS FLOAT) AS blocked_ms
-FROM thread_state
-JOIN thread USING (utid)
-JOIN process USING (upid)
-WHERE process.name IN ('system_server', 'surfaceflinger')
-  AND thread_state.blocked_function IS NOT NULL
-  AND (
-    thread_state.blocked_function GLOB 'futex*' OR
-    thread_state.blocked_function GLOB 'binder*'
-  )
-ORDER BY thread_state.dur DESC
-LIMIT 40;
+  p.name AS process_name,
+  t.name AS thread_name,
+  ts.ts,
+  ts.dur / 1e6 AS blocked_ms,
+  ts.state,
+  ts.blocked_function
+FROM thread_state ts
+JOIN thread t ON t.utid = ts.utid
+LEFT JOIN process p ON p.upid = t.upid
+WHERE ts.blocked_function GLOB '*futex*'
+ORDER BY ts.dur DESC
+LIMIT 50;
 ```
 
-如果在 system_server 里同时看到这些现象，主线程或 App 线程睡在 binder，system_server 的 Binder worker 又睡在 `futex_*`，并且 `android_monitor_contention` 里能看到 `WindowManagerGlobalLock` 之类的大锁，那基本就能判断这是“Binder 调用被服务端对象锁拖慢”，而不是“调用方自己代码慢”。这条诊断路径能把调用方等待、服务端对象锁和 Binder worker 状态连起来。
+这一步只负责找候选。下一步要结合 native 栈或源码确认它对应 mutex、condvar 还是其他等待，并找 owner。不要从 `futex_wait` 一个字符串直接跳到“Java 锁竞争”。
 
-## 锁竞争优化的系统级策略
+### 8.3 Binder client 与 server
 
-锁优化不要一开始就谈无锁。更稳的顺序是，先缩短临界区，再减少共享范围，再考虑换锁或无锁。
+Perfetto 的 `android.binder` 模块可以把 transaction 和 reply 关联到 client/server：
 
-Java monitor 的问题，优先把耗时操作搬出 `synchronized`，把大对象锁拆小。Android 16 起，ART 的逃逸分析已经能自动消除线程私有对象上的冗余 `synchronized` 指令——比如局部变量中的 `StringBuffer` 锁。如果 trace 里的 monitor contention 消失了但问题仍在，要考虑是否被编译器静默优化过。
+```sql
+INCLUDE PERFETTO MODULE android.binder;
 
-如果问题出在 native mutex，要看是不是把计算、I/O、等待别的条件也塞进了持锁路径。
+SELECT
+  client_process,
+  client_thread,
+  server_process,
+  server_thread,
+  interface,
+  method_name,
+  is_sync,
+  client_dur / 1e6 AS client_ms,
+  server_dur / 1e6 AS server_ms
+FROM android_binder_txns
+WHERE is_sync
+ORDER BY client_dur DESC
+LIMIT 30;
+```
 
-如果问题出在 Binder，重点是避免 Binder worker 持锁时再去做跨服务调用、磁盘 I/O，或者长时间等待。Binder 事务的持锁区间一旦拉长，整个线程池都会跟着排队。
+再用 `android_sync_binder_thread_state_by_txn` 或 `android_sync_binder_blocked_functions_by_txn` 分解 client 与 server 两端的线程状态。若 server reply 区间叠加 Java monitor contention，就继续查 `android_monitor_contention` 给出的 owner。
 
-Android 17 的 DeliQueue 是这类优化的一个案例。它面向 targetSdk 37+ 应用，把多生产者插入路径改成无锁，单消费者排序和消费继续留给 Looper 自己处理。Google 给出的数据是，应用主线程花在 lock contention 上的时间下降 15%，应用 missed frames 下降 4%，SystemUI / Launcher 交互 missed frames 下降 7.7%，应用启动到首帧绘制的 p95 时间下降 9.1%。这组数据只支撑 MessageQueue 生产者路径的优化收益，不能外推到其他锁路径。[已验证: Android Developers Blog 2026-02-17 + AOSP android-17.0.0_r1 `CombinedDeliMessageQueue/MessageQueue.java`]
+“client 时间长、server 时间短”可能意味着排队、调度或 reply 返回延迟；“server 时间长”也不能直接等同于 CPU 计算，server 可能大部分时间在锁、I/O 或嵌套 Binder 上。
 
-无锁也没有免费收益。CAS 重试、cache line bouncing、生产者突发写入带来的 drain 压力，都会把收益吃回去。所以 trace 里看见“没有 monitor contention 了”，并不代表问题自然消失，还要继续看 CPU 时间、owner 行为和关键线程延迟有没有一起变好。
+## 9. 三个常见现场怎样推理
 
-## 版本演进中的锁优化
+### 现场一：主线程出现 `monitor contention with ...`
 
-| 版本 | 可以确认的变化 | 对分析的意义 |
-|------|----------------|--------------|
-| Android 5.0 | Java monitor 的讨论应以 ART `monitor.cc` / `lock_word.h` 为准 | 讨论 `synchronized` 时，不要再沿用 Dalvik 时代的实现想象 |
-| Android 7.1.2 / 8.0 | `ProcessState.cpp` 两个 tag 的 `DEFAULT_MAX_BINDER_THREADS` 都是 15 | “Android 8 把 Binder 线程从 8 提到 16”这个说法不成立 |
-| Android 9 | bionic 已提供 `pthread_mutexattr_setprotocol(..., PTHREAD_PRIO_INHERIT)` | 说明 native 层具备 PI mutex 能力，但是否真的启用要看具体锁属性 |
-| Android 16 | ART 强化逃逸分析，可自动消除线程私有对象上的冗余 `synchronized` 指令（如局部变量中的 `StringBuffer` 锁） | 分析 monitor contention 时，如果对象是方法局部变量且未逃逸，可能已被编译器移除，trace 里不会出现 |
-| Android 14+ | 未找到公开源码证据证明 SurfaceFlinger / InputDispatcher 核心锁“全面启用 PI-futex” | 分析 SF/Input 路径锁等待时，要按具体锁初始化代码核对，不能按版本直接假设 PI 保护 |
-| Android 17 | DeliQueue 把 targetSdk 37+ 应用的 MessageQueue 生产者路径改成无锁 | 分析主线程消息投递等待时，要把 Android 17 targetSdk 37+ 与旧行为分开看 |
+1. 在 `android_monitor_contention` 找 waiter 方法、owner 线程和 owner 方法。
+2. 看 owner 在等待区间内的 `thread_state`。
+3. owner 如果 Runnable 但长时间未运行，检查 CPU 压力与优先级反转。
+4. owner 如果睡在另一把锁或 Binder 上，继续沿依赖链追。
+5. 回源码确认临界区，检查能否移出 I/O、IPC 或长计算。
 
-## 常见问题与误区
+### 现场二：主线程睡在同步 Binder 调用
 
-### 1. `synchronized` 一定比 `ReentrantLock` 慢吗
+1. 用 `android_binder_txns` 找 server 进程、线程和方法。
+2. 比较 client 与 server 区间，确认时间花在哪一端。
+3. server worker 若等 monitor，用 contention 表找 owner。
+4. server worker 若在 native futex，结合 native 栈找具体锁。
+5. 多个事务都排队时，检查 worker 饱和和某个长事务是否占住线程。
 
-不是。无竞争时，两者都可能非常快。决定差距的，往往是竞争形态、是否需要可中断/超时、公平性，以及是否把慢操作塞进持锁区间。先看 trace，再决定换不换锁。
+### 现场三：线程停在 `futex_wait`
 
-### 2. 看到 `futex_wait` 就能断定是 Java 锁吗
+1. 先确认 Java 调用栈是否来自 ART monitor、AQS/park，还是 JNI/native 代码。
+2. 检查是否有对应的 `android_monitor_contention` 事件。
+3. 没有 Java monitor 证据时，按 native 锁或条件等待调查。
+4. 找初始化代码，确认是不是 PI mutex；不要根据函数名猜。
+5. 如果这是正常 condvar 等待，再去查“为什么条件迟迟没有被生产”，而不是优化 futex 本身。
 
-不能。Java monitor、native mutex、条件变量都会在竞争后走到类似的睡眠路径。没有 `android_monitor_contention` 的 owner / waiter 数据，或者没有对应 native 调用栈时，不能只凭一个 `futex_*` 就下判断。
+## 10. 锁优化的工程顺序
 
-### 3. 主线程卡在 Binder 上，就一定是对端服务慢吗
+### 10.1 先缩短临界区
 
-也不能这么写。主线程睡在 Binder 上，只说明它在等对端结果。对端慢，可能是业务逻辑慢，也可能是 Binder worker 不够、全局锁冲突、持锁线程又在等别人。Binder 场景里，单看调用方基本不够。
+最常见的有效改动是把不保护共享不变量的工作移出锁：
 
-### 4. 无锁一定更快吗
+- 日志格式化和大对象构建。
+- 磁盘、网络和数据库 I/O。
+- 同步 Binder 调用。
+- 可在锁内复制输入、锁外计算、锁内提交结果的长计算。
+- 不需要共享状态保护的回调。
 
-不一定。无锁消掉的是阻塞，不是成本本身。高竞争下的 CAS 重试、共享缓存行抖动，同样会变成热点。DeliQueue 之所以成立，是因为它只把最容易出问题的“多生产者插入路径”改成无锁，没有把整套消息处理全部重写成 lock-free。
+把代码移出锁前要重新审视不变量。盲目缩小范围可能制造 check-then-act race，性能改善不能以破坏正确性为代价。
 
-### 5. PI 机制能一次性解决优先级反转吗
+### 10.2 再减少共享状态
 
-不能。PI-futex 只是一种机制，而且有使用前提和代价。不同子系统对实时性、信任模型、可维护性的要求不同。写技术文档时，最忌讳的就是把“内核支持 PI”直接扩写成“系统所有关键锁都用了 PI”。
+- 用线程封闭或消息传递代替共享可变对象。
+- 把一把全局锁拆成按对象、按 shard 或按子系统的锁。
+- 读多写少时考虑不可变快照、copy-on-write 或读写分离。
+- 高频计数器考虑分片，减少多个 CPU 写同一缓存行。
 
-## 与其他机制的关系
+拆锁会引入锁顺序和跨域一致性问题。先写清哪些字段构成同一不变量，再决定能否拆。
 
-锁竞争从来不是孤立的问题。它和线程模型绑在一起，因为优先级、调度类、owner / waiter 关系都来自线程模型；它和 Binder 绑在一起，因为很多“看起来像 IPC 慢”的问题，根因是服务端对象锁；它和渲染调度绑在一起，因为主线程、RenderThread 一旦被等待拖住，掉帧会直接出现在 `doFrame` 预算里；它和 ANR 绑在一起，因为 5 秒超时统计的本质，就是关键线程有没有继续推进。
+### 10.3 明确锁顺序
 
-这一节不要求背几种锁名字，重点是建立诊断习惯。看到等待，先问是哪条路径；看到主线程卡住，先找 owner；看到 owner，再问它是不是又在等别人。顺着这条链往下查，锁竞争问题通常都能落到具体代码和具体线程上。
+跨多把锁时，项目应定义全局顺序，并在代码审查中阻止反向获取。Android 17 AMS 对 `mGlobalLock` → `mProcLock` 的注释就是这种契约。
 
-## 读者诊断清单
+超时只能限制等待，并不能修复潜在死锁；`tryLock()` 也不能自动保证状态机正确。
 
-1. **先抓对 trace。** 至少带上 `sched`、Binder 相关事件，以及能支持 monitor contention 分析的数据源。没有线程状态和 owner / waiter 信息，后面只能猜。
-2. **先给等待分类。** `android_monitor_contention` 命中的是 Java monitor；`futex_*` 但没有 monitor 数据，多半是 native mutex / condvar；`binder_thread_read` / binder reply 则先按 Binder 路径查。
-3. **先找 owner，再找 owner 的 owner。** 调用方不是根因。让等待拉长的，往往是持锁线程自己又被别的资源拖住了。
-4. **system_server 要双向看。** 一边看 App 或调用方主线程，一边看 system_server 的 Binder worker、服务线程和全局锁。只看一边，结论很容易少一层。
-5. **修完必须回 trace。** 只把锁换了还不够，还要确认关键线程等待时间、Binder 排队时间、帧预算占用都真的降下来了。
+### 10.4 最后才比较锁类型或无锁结构
 
-## 小结
+选择 `synchronized`、`ReentrantLock`、读写锁或无锁结构，应由需求决定：
 
-锁竞争分析难的地方在于，不同等待路径长得太像，特别容易被混写。把 Java monitor、native mutex、Binder driver wait queue、MessageQueue 这四类路径拆开，再回到 Perfetto 里看线程状态、owner / waiter、Binder worker 和关键线程预算，很多原本糊成一团的问题就会变得非常具体。到这一步，优化才会变成有目标的修改。
+- 是否需要可中断获取或超时。
+- 是否需要多个 Condition。
+- 是否允许公平策略带来的吞吐成本。
+- 读写比例和临界区大小。
+- 竞争线程数、优先级和 CPU 拓扑。
+- 失败重试与内存回收是否可控。
+
+微基准要覆盖真实竞争形态。只测单线程 acquire/release，无法预测主线程与多后台生产者同时竞争时的尾延迟。
+
+### 10.5 Binder 线程数不是第一修复手段
+
+增加 worker 可能缓解排队，也可能让更多线程同时争同一把全局锁，增加内存和调度压力。先找最长事务、持锁 I/O、嵌套同步 IPC 和锁依赖链，再判断容量是否真的不足。
+
+## 11. 版本边界
+
+| 版本 | 可确认的同步相关变化 | 阅读方式 |
+| --- | --- | --- |
+| Android 5.0（API 21） | 应用运行时切换到 ART，Java monitor 分析以 ART `monitor.cc` / `lock_word.h` 为准 | 不沿用 Dalvik 时代实现细节解释当前系统 |
+| Android 9（API 28） | bionic 已具备 `PTHREAD_PRIO_INHERIT` mutex 属性接口 | 只说明可用；具体锁是否启用仍看初始化 |
+| Android 17（API 37） | 当前 bionic PI mutex 走 PI-futex；当前 ACK 为 `android17-6.18-2026-06_r6`；DeliQueue 对 target 37+ App 默认启用 | 平台、bionic 与 kernel 源码按本知识库统一锚点核对 |
+
+Binder 默认线程配置在历史上容易被误传。本章只对当前 Android 17 锚点下结论：`DEFAULT_MAX_BINDER_THREADS` 为 15，`startThreadPool()` 另行启动 main pooled thread；它不是“进程固定线程总数”。
+
+## 12. 常见误区
+
+### “Waiting / Sleeping 就是锁竞争”
+
+不成立。Looper、条件变量、Binder、I/O 和定时器都会让线程睡眠。先找等待对象和唤醒条件。
+
+### “`synchronized` 一定比 `ReentrantLock` 慢”
+
+不成立。它们的功能、运行时路径和竞争行为不同。没有 workload 和 trace，单凭类型无法判断。
+
+### “看到 `futex_wait` 就找 Java monitor owner”
+
+不成立。先看 `android_monitor_contention` 和调用栈。futex 是底层等待机制，不是 Java monitor 的专属标签。
+
+### “内核支持 PI，所以 Android 关键锁都有优先级继承”
+
+不成立。bionic mutex 必须以 `PTHREAD_PRIO_INHERIT` 初始化；Binder 的事务优先级传播又是另一套机制。
+
+### “Binder 调用慢就是驱动慢”
+
+大多数时候证据还不够。server worker 可能卡在业务锁、I/O、CPU 调度或嵌套 IPC。先把 client 与 server 两端时间线连起来。
+
+### “无锁一定更快”
+
+不成立。CAS 重试、cache-line bouncing、GC 和算法复杂度都可能成为新成本。DeliQueue 的价值来自针对具体队列拓扑的重构，不是“无锁”两个字本身。
+
+## 结论
+
+锁竞争分析的核心不是锁名，而是等待链。Java monitor 用 `android_monitor_contention` 找 waiter 与 owner；native mutex 从 futex 候选回到 native 栈和初始化代码；Binder 用 transaction/reply 连起 client 与 server；MessageQueue 还要区分正常 native poll 与旧 monitor 竞争。
+
+找到 owner 后继续问：它在 CPU 上运行吗，还是 Runnable 却没被调度？它是否阻塞在另一把锁、I/O 或 Binder 上？只有追到真正不推进的节点，缩短临界区、拆锁、调整线程模型、启用 PI 或采用无锁结构才有明确目标。
+
+## 参考资料
+
+- [AOSP：ART monitor.cc（android-17.0.0_r1）](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/monitor.cc)
+- [AOSP：ART lock_word.h（android-17.0.0_r1）](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/lock_word.h)
+- [AOSP：bionic pthread_mutex.cpp（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/pthread_mutex.cpp)
+- [AOSP：libbinder ProcessState.cpp（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/ProcessState.cpp)
+- [AOSP：ActivityManagerService.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
+- [AOSP：ProcessList.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ProcessList.java)
+- [AOSP：OomAdjuster.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/psc/OomAdjuster.java)
+- [AOSP：CombinedDeliMessageQueue/MessageQueue.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java)
+- [ACK：Binder driver（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)
+- [ACK：rt-mutex 文档（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/locking/rt-mutex.rst)
+- [ACK：PI-futex 文档（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/locking/pi-futex.rst)
+- [ACK：futex PI 实现（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/futex/pi.c)
+- [Perfetto：`android.monitor_contention` stdlib](https://perfetto.dev/docs/analysis/stdlib-docs#androidmonitor_contention)
+- [Perfetto：`android.binder` stdlib](https://perfetto.dev/docs/analysis/stdlib-docs#androidbinder)
+- [Android Developers Blog：Android 17 lock-free MessageQueue](https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html)
