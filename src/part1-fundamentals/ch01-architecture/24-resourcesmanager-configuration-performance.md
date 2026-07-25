@@ -100,35 +100,36 @@ last_task6_audit_notes: "Idle audit: Fixed L1 issues (对齐→页面对齐, red
 系统级 Configuration 更新和单个 Activity 的 override Configuration 最终会在 `ActivityRecord.ensureActivityConfiguration()` 汇合。主路径如下：
 
 ```text
-配置来源
-  ├─ locale / fontScale / uiMode 等全局配置
-  ├─ display、rotation、density
-  └─ multi-window / desktop / foldable 的窗口 bounds
-       ↓
-ActivityManagerService.updateConfiguration()
-  └─ ActivityTaskManagerService.updateConfigurationLocked()
-       ├─ updateGlobalConfigurationWithTransition()
-       │    └─ updateGlobalConfigurationLocked()
-       │         └─ WindowProcessController.onConfigurationChanged()
-       │              └─ ConfigurationChangeItem
-       │                   └─ ConfigurationController.handleConfigurationChanged()
-       │                        └─ ResourcesManager.applyConfigurationToResources()
-       └─ ensureConfigAndVisibilityAfterUpdate()
-            └─ ActivityRecord.ensureActivityConfiguration()
-                 ├─ shouldRelaunchLocked() == true
-                 │    └─ ActivityRelaunchItem
-                 │         └─ ActivityThread.handleRelaunchActivity()
-                 └─ shouldRelaunchLocked() == false
-                      └─ ActivityConfigurationChangeItem
-                           └─ ActivityThread.handleActivityConfigurationChanged()
+全局设置变化                              窗口 / display 层级变化
+locale / fontScale / uiMode               rotation / multi-window / foldable bounds
+  ↓                                         ↓
+ActivityManagerService.updateConfiguration()  DisplayContent / Task / ActivityRecord
+  └─ ActivityTaskManagerService                的 ConfigurationContainer 更新
+       └─ updateGlobalConfigurationLocked()             │
+            ├─ WindowProcessController                  │
+            │    └─ ConfigurationChangeItem             │
+            │         └─ ConfigurationController        │
+            │              └─ ResourcesManager          │
+            │                   .applyConfigurationToResources()
+            └─ RootWindowContainer / display 层级 ──────┘
+                                      ↓
+                 ActivityRecord 的 merged Configuration
+                                      ↓
+                 ensureActivityConfiguration()
+                   ├─ shouldRelaunchLocked() == true
+                   │    └─ ActivityRelaunchItem
+                   │         └─ ActivityThread.handleRelaunchActivity()
+                   └─ shouldRelaunchLocked() == false
+                        └─ ActivityConfigurationChangeItem
+                             └─ ActivityThread.handleActivityConfigurationChanged()
 ```
 
 这张图有两个需要分开的分支：
 
-- **进程级配置**：`ConfigurationChangeItem` 先让应用进程更新全局资源和组件回调。
+- **进程级配置**：`ConfigurationChangeItem` 更新应用进程的全局资源和组件回调。
 - **Activity 级配置**：`ActivityRecord` 根据变化位、Manifest 和兼容策略决定 relaunch，或者把新的 merged override Configuration 热派发给现有 Activity。
 
-多窗口 Activity 收到的不是一份孤立全局配置。服务端把全局 Configuration 与 Activity 的 override Configuration 合并后再下发，窗口大小、displayId、rotation 和 app bounds 都可能来自 Activity 所在的容器。
+多窗口 Activity 收到的不是一份孤立全局配置。服务端把全局 Configuration 与 Activity 的 override Configuration 合并后再下发，窗口大小、displayId、rotation 和 app bounds 都可能来自 Activity 所在的容器。relaunch 路径还会在创建新 Activity 实例前应用待处理的进程配置，避免新实例读取旧 Resources。
 
 ## Resources、ResourcesImpl 与 AssetManager
 
