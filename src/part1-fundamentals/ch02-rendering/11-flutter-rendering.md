@@ -8,24 +8,34 @@ applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags: [flutter, rendering, impeller, skia, cross-platform, shader-compilation, jank]
 confidence: high
 last_verified: 2026-07-25
-last_verified_against: Flutter 3.44.8 (058e0af2c2b57e369d905a03ac9748b0ebf543c6, engine 0cd610717bde95fd88343c64f81c11ba4e5c0010) + AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + official Flutter and Android documentation
+last_verified_against: Flutter 3.44.8 (058e0af2c2b57e369d905a03ac9748b0ebf543c6, engine 0cd610717bde95fd88343c64f81c11ba4e5c0010) + AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Writer rendering_pipelines/S10_flutter_type.md + official Flutter and Android documentation
 sources:
 - type: source
   path: https://github.com/flutter/flutter/tree/3.44.8/engine/src/flutter/shell/platform/android
 - type: source
   path: https://github.com/flutter/flutter/tree/3.44.8/engine/src/flutter/impeller
+- type: source
+  path: https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/flutter_main.cc
+- type: source
+  path: https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/android_context_dynamic_impeller.cc
 - type: official
   path: https://docs.flutter.dev/resources/architectural-overview
 - type: official
   path: https://docs.flutter.dev/perf/impeller
 - type: official
   path: https://docs.flutter.dev/platform-integration/android/platform-views
+- type: official
+  path: https://github.com/flutter/flutter/issues/150525
+- type: official
+  path: https://source.android.com/docs/core/graphics/implement-vulkan
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/
 - type: aosp
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/
+- type: material
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S10_flutter_type.md
 drafted_date: 2026-04-01
 drafted_by: openclaw-task2a
 finalized_date: 2026-05-22
@@ -74,7 +84,7 @@ last_task9_autofix_at: "2026-07-02"
 ### 锚点(必须覆盖)
 
 - 🔹 Flutter 的渲染架构:Framework(Dart) → Engine(C++) → Platform Embedder 三层模型
-- 🔹 Flutter 的线程模型:Flutter 3.29 stable+ 的 Main(UI+Platform) / Raster / IO,以及 Flutter 3.28- 或定制 Embedder 的旧四线程模型
+- 🔹 Flutter 的线程模型:Flutter 3.32 stable+ 的 Main(UI+Platform) / Raster / IO,以及 Flutter 3.31 及更早版本、过渡构建或定制 Embedder 的旧四线程模型
 - 🔹 与原生 Android 渲染管线的核心区别:通过 Choreographer 获取 VSync、跳过 ViewRootImpl Traversal、无 RenderThread
 - 🔹 PlatformView 的 Virtual Display / Hybrid Composition / TLHC 多路径及性能影响
 - 🔹 常见性能问题:Shader 编译卡顿、Widget 过度重建、列表滚动卡顿
@@ -173,9 +183,15 @@ NDK 路径不可用时，engine 才把任务投到 platform task runner，通过
 
 因此，trace 中看到 `PlatformVsync`、`VsyncProcessCallback` 或 Java `Choreographer#doFrame`，只能证明 Flutter 在订阅系统 VSync。纯 Flutter Widget 后面不会出现 Android ViewRoot 的 traversal 与 HWUI RenderThread 绘制。
 
-### Flutter 3.29 起合并 UI 与 Platform 线程
+### Flutter 3.32 stable 起默认合并 UI 与 Platform 线程
 
-当前官方架构文档明确：Flutter 3.29 起，Android 和 iOS 默认把 UI thread 与 platform thread 合并，独立 UI thread 被移除，Dart main isolate 在原生 platform thread 上运行。
+Flutter 官方材料对这个版本边界存在冲突：架构概览仍写 3.29，而 Flutter 团队维护的跟踪 issue #150525 在 2025-05-20 的更新中明确写明，Android 和 iOS 从 Flutter 3.32 stable 起默认合并 UI thread 与 platform thread。这里采用后者作为稳定版边界；3.29—3.31 包含实现进入主线和逐步启用的过程，分析这些版本时必须核对 engine revision 与启动参数，不能只看 SDK 版本号。
+
+在合并模型中，独立 UI thread 被移除，Dart main isolate 在原生 platform thread 上运行。Flutter 3.44.8 的源码把这一点落到了三处：
+
+- `Settings::merged_platform_ui_thread` 默认取 `kEnabled`；
+- Android `FlutterMain::Init()` 调用 `SettingsFromCommandLine(command_line, true)`，不再允许用启动参数关闭线程合并；
+- `AndroidShellHolder` 仅在线程合并未启用时创建独立 UI thread，3.44.8 的默认 `ThreadHost` 只创建 Raster 与 IO 线程。
 
 当前移动端主线可按三组执行者理解：
 
@@ -185,7 +201,7 @@ NDK 路径不可用时，engine 才把任务投到 platform task runner，通过
 | Raster | DisplayList raster、texture upload、pipeline、GPU submit | 复杂效果、首次资源、GPU/driver back-pressure |
 | IO | 图片与资源 I/O、解码、GPU resource context 相关工作 | 大图解码、磁盘 I/O、资源准备迟到 |
 
-Flutter 3.28 及更早版本、部分过渡版本、定制 Embedder 或旧 trace 仍可能看到 Platform/UI/Raster/IO 分离形态。不要只凭 `1.ui`、`1.platform` 等线程名判断版本；线程名还会受到 Linux 16 字符限制和 engine 命名变化影响。
+Flutter 3.31 及更早版本、部分过渡构建、定制 Embedder 或旧 trace 仍可能看到 Platform/UI/Raster/IO 分离形态。不要只凭 `1.ui`、`1.platform` 等线程名判断版本；线程名还会受到 Linux 16 字符限制和 engine 命名变化影响。
 
 ### 合并线程改变了卡顿归因
 
@@ -364,7 +380,9 @@ HCPP 从 Flutter 3.44 起提供，当前仍为实验性 opt-in。官方要求：
     android:value="true" />
 ```
 
-这项配置请求 HCPP；设备不满足条件时，Flutter 会回退到 App 原先配置的平台 View 策略。HCPP 使用 Android 14 起的 native transaction synchronization 改善旧 HC 的同步开销，但仍可能存在多个 Surface/layer，也有复杂透明 overlay 的已知限制。
+这项配置只是在请求 HCPP；设备不满足条件时，Flutter 会回退到 App 原先配置的平台 View 策略。3.44.8 的 `PlatformViewAndroid` 先检查 flag、API 34+ 与 Impeller，`IsSurfaceControlEnabled()` 随后还要求实际 backend 是 `kImpellerVulkan`，并且 Vulkan context 允许 SurfaceControl swapchain。只看到 manifest、API level 或“Impeller 已启用”中的任一项，都不能证明运行时进入了 HCPP。
+
+HCPP 使用 Android 14 起的 native transaction synchronization 改善旧 HC 的同步开销，但仍可能存在多个 Surface/layer，也有复杂透明 overlay 的已知限制。
 
 Android 14、15、16 或 17 不会自动开启 HCPP。问题报告应记录 Flutter 版本、flag、API level、Vulkan/Impeller 状态与实际 fallback。
 
@@ -372,11 +390,13 @@ Android 14、15、16 或 17 不会自动开启 HCPP。问题报告应记录 Flut
 
 ### 默认范围
 
-Flutter 官方文档规定：
+Flutter 3.27 起，Android API 29+ 默认启用 Impeller。官方网页把不满足条件的情况概括为回退到 legacy OpenGL renderer；Flutter 3.44.8 的代码把这条规则拆得更细：
 
-- Flutter 3.27 起，Android API 29+ 默认启用 Impeller；
-- 系统低于 API 29 或设备不支持 Vulkan 时，回退 legacy OpenGL renderer；
-- `--no-enable-impeller` 和 manifest opt-out 可用于诊断当前版本，但 engine 已提示未来会移除 opt-out。
+- `FlutterMain::SelectedRenderingAPI()` 在 Impeller 已启用、API 29+ 且设备不是 Vivante 时选择 `kImpellerAutoselect`；
+- `AndroidContextDynamicImpeller` 先尝试 Vulkan。模拟器、部分 Huawei/MediaTek/已知问题 SoC、缺少必需 Vulkan extension/feature 或 Vulkan context 无效，会改建 `AndroidContextGLImpeller`，此时仍是 Impeller，只是 backend 变为 OpenGL ES；
+- API 低于 29、Vivante 设备或显式关闭 Impeller 时，非 slimpeller 构建才选择 `kSkiaOpenGLES`；software rendering 是另一条独立路径。
+
+因此，“不支持 Vulkan 就一定退回 Skia”不适用于 3.44.8。排查时应同时记录 renderer 与 backend：`Impeller/Vulkan`、`Impeller/OpenGLES`、`Skia/OpenGLES` 代表三种不同状态。`--no-enable-impeller` 和 manifest opt-out 可用于当前版本诊断，engine 已提示未来会移除 Impeller opt-out。
 
 renderer 由 App 携带的 Flutter engine 决定。Android 15、16 或 17 系统升级不会替旧 APK 切换 renderer。
 
@@ -405,7 +425,7 @@ Flutter 3.44.8 的 `ShellSetupGPUSubsystem` 还明确把某些 Android Vulkan co
 
 ### 怎样做 renderer A/B
 
-诊断时固定同一设备、build、页面数据、分辨率、刷新率和温度，对比 Impeller 与 opt-out：
+诊断时固定同一设备、build、页面数据、分辨率、刷新率和温度。先比较自动选择得到的 Impeller/Vulkan 与 Impeller/OpenGLES；需要隔离 renderer 差异时，再加入 Skia/OpenGLES opt-out：
 
 1. 分开冷启动、首次进入和热路径；
 2. 比较 platform/Dart、Raster、GPU completion 与 display deadline；
@@ -616,11 +636,12 @@ Android 15 起支持 16 KB page-size 设备。Flutter App 中的 engine/AOT nati
 | Android 13 / API 33 | Image fence Java API 可供当前 ImageReader producer 路径使用；显示 HAL 进入 AIDL 时代。 |
 | Android 14 / API 34 | 提供 HCPP 所需的 transaction synchronization 平台前提，但不会自动开启 HCPP。 |
 | Android 15 / API 35 | 16 KB page-size 兼容成为 Flutter engine/plugin 的 native 约束。 |
-| Android 16 / API 36 | 新出厂设备 Vulkan 1.4；旧 APK 的 Flutter renderer/thread 模型不会随 OS 更新。 |
+| Android 16 / API 36 | AOSP 对支持 64-bit ABI 且非 low-memory 的设备要求可用的最高 Vulkan feature set；Android 16+ 出厂设备要求 Vulkan 1.4。旧 APK 的 Flutter renderer/thread 模型不会随 OS 更新。 |
 | Android 17 / API 37 | 本章平台源码锚点；继续按 Surface、FrontEnd、CompositionEngine、AIDL Composer 与 kernel fence 分析。 |
 | Flutter 3.24 | `SurfaceProducer` 稳定可用。 |
 | Flutter 3.27 | Android API 29+ 默认启用 Impeller。 |
-| Flutter 3.29 | Android/iOS 默认合并 UI 与 platform thread。 |
+| Flutter 3.32 stable | Android/iOS 默认合并 UI 与 platform thread；3.29—3.31 的过渡构建按 engine revision 与参数确认。 |
+| Flutter 3.38 | Android/iOS 移除关闭 UI/platform 线程合并的选项。 |
 | Flutter 3.44 | HCPP 作为 API 34+、Vulkan/Impeller 条件下的实验性 opt-in 能力。 |
 | Flutter 3.44.8 | 本章 Flutter 源码验证 tag。 |
 
@@ -630,7 +651,7 @@ Android 15 起支持 16 KB page-size 设备。Flutter App 中的 engine/AOT nati
 
 | 误判 | 应怎样验证 |
 | --- | --- |
-| Flutter 固定有独立 UI、Platform、Raster 三线程 | Flutter 3.29+ 默认合并 UI/Platform，按 engine revision 与 task runner 确认 |
+| Flutter 固定有独立 UI、Platform、Raster 三线程 | 以 Flutter 3.32 stable 为默认合并边界；3.29—3.31 按 engine revision 与启动参数确认 |
 | Flutter frame end 就是上屏 | 继续追 GPU fence、root/host queue、SF latch 与 present |
 | `RenderMode.surface` 内容属于 host App Window | 查 `FlutterSurfaceView` child layer |
 | `RenderMode.texture` 只有一个 BufferQueue | 分开 SurfaceTexture producer 与 host App Window |
@@ -646,10 +667,11 @@ Android 15 起支持 16 KB page-size 设备。Flutter App 中的 engine/AOT nati
 ### Flutter 3.44.8
 
 - [`VsyncWaiterAndroid`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/vsync_waiter_android.cc)、[`Choreographer`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/impeller/toolkit/android/choreographer.cc)、[Java `VsyncWaiter`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/view/VsyncWaiter.java)：NDK 优先与 Java fallback。
+- [`settings.h`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/common/settings.h)、[`switches.cc`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/common/switches.cc)、[`flutter_main.cc`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/flutter_main.cc)、[`android_shell_holder.cc`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/android_shell_holder.cc)：3.44.8 的线程合并、renderer 选择与 Android API 29 边界。
 - [`RenderMode.java`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/RenderMode.java)、[`FlutterSurfaceView`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/FlutterSurfaceView.java)、[`FlutterTextureView`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/FlutterTextureView.java)、[`FlutterImageView`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/FlutterImageView.java)：root target。
 - [`FlutterRenderer.java`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java)、[`TextureRegistry.java`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/view/TextureRegistry.java)、[`SurfaceTextureSurfaceProducer.java`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/embedding/engine/renderer/SurfaceTextureSurfaceProducer.java)：external texture、backing、lifecycle 与 fence。
 - [`PlatformViewsController.java`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java)、[`PlatformViewsController2.java`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController2.java)：TLHC、HC、VD 与 HCPP。
-- [Impeller README](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/impeller/README.md)：离线 shader、pipeline、cache 与子系统边界。
+- [`android_context_dynamic_impeller.cc`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/android_context_dynamic_impeller.cc)、[Impeller README](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/impeller/README.md)：Vulkan/OpenGLES 自动选择、离线 shader、pipeline、cache 与子系统边界。
 
 ### Android 17 与 kernel
 
@@ -660,6 +682,8 @@ Android 15 起支持 16 KB page-size 设备。Flutter App 中的 engine/AOT nati
 ### 官方文档
 
 - [Flutter architectural overview](https://docs.flutter.dev/resources/architectural-overview)
+- [Flutter thread merge tracking issue #150525](https://github.com/flutter/flutter/issues/150525)
+- [Flutter 3.38 release notes](https://docs.flutter.dev/release/release-notes/release-notes-3.38.0)
 - [Impeller rendering engine](https://docs.flutter.dev/perf/impeller)
 - [Android Platform Views and HCPP](https://docs.flutter.dev/platform-integration/android/platform-views)
 - [SurfaceProducer migration](https://docs.flutter.dev/release/breaking-changes/android-surface-plugins)
@@ -667,6 +691,7 @@ Android 15 起支持 16 KB page-size 设备。Flutter App 中的 engine/AOT nati
 - [Flutter performance best practices](https://docs.flutter.dev/perf/best-practices)
 - [Flutter DevTools Performance view](https://docs.flutter.dev/tools/devtools/performance)
 - [Android 16 KB page-size support](https://developer.android.com/guide/practices/page-sizes)
+- [AOSP Vulkan implementation requirements](https://source.android.com/docs/core/graphics/implement-vulkan)
 - [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
 
-本章的 root RenderMode、external texture、PlatformView、SurfaceFlinger 与 HWC 对象关系还对照了 `rendering_pipelines/S10_flutter_type.md`。Writer 系列用于建立完整出图拓扑，Flutter 3.44.8、Android 17 与 kernel 固定 tag 用于确认当前代码边界。
+本章的 root RenderMode、external texture、PlatformView、SurfaceFlinger 与 HWC 对象关系还对照了 `rendering_pipelines/S10_flutter_type.md`。Writer 文章用于建立完整出图拓扑；线程合并的稳定版边界与 renderer fallback 又分别用 Flutter 团队的跟踪记录和 3.44.8 精确源码复核，避免沿用其中已经变化或过度简化的版本描述。
