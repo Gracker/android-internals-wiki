@@ -8,8 +8,114 @@ applicable_versions: Android 3.0 (API 11) ~ Android 17 (API 37)
 tags: [rendering, gpu, vsync]
 confidence: medium
 last_verified: 2026-07-25
-last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + historical AOSP tags + Android 17 official docs
-sources: [{'type': 'official', 'path': 'developer.android.com/about/versions'}, {'type': 'official', 'path': 'developer.android.com/about/versions/16/features'}, {'type': 'official', 'path': 'source.android.com'}, {'type': 'aosp', 'path': 'external/perfetto/protos/perfetto/trace/android/frame_timeline_event.proto'}, {'type': 'aosp', 'path': 'frameworks/base/graphics/java/android/graphics/RuntimeColorFilter.java'}, {'type': 'aosp', 'path': 'frameworks/base/graphics/java/android/graphics/animation/RenderNodeAnimator.java'}, {'type': 'aosp', 'path': 'frameworks/base/graphics/java/android/graphics/RuntimeXfermode.java'}, {'type': 'official', 'path': 'developer.android.com/about/versions/17/summary'}, {'type': 'official', 'path': 'developer.android.com/reference/android/view/Choreographer.FrameTimeline'}, {'type': 'official', 'path': 'developer.android.com/games/develop/vulkan/overview'}, {'type': 'official', 'path': 'developer.android.com/ndk/guides/graphics/android-vulkan-profile'}, {'type': 'official', 'path': 'source.android.com/docs/compatibility/16/android-16-cdd'}, {'type': 'official', 'path': 'source.android.com/docs/core/graphics/implement-vulkan'}, {'type': 'official', 'path': 'github.com/KhronosGroup/Vulkan-Profiles/blob/main/profiles/VP_ANDROID_16_minimums.json'}, {'type': 'aosp', 'path': 'frameworks/base/core/java/android/view/Choreographer.java (android-5.0.0_r1)'}]
+last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + historical AOSP tags + Android 17 official docs + AndroidX WebGPU 1.0.0-alpha05 + Writer rendering_pipelines S01-S14
+sources:
+  - type: official
+    path: developer.android.com/about/versions
+  - type: official
+    path: developer.android.com/about/versions/16/features
+  - type: official
+    path: developer.android.com/about/versions/17/summary
+  - type: official
+    path: developer.android.com/develop/ui/views/graphics/hardware-accel
+  - type: official
+    path: developer.android.com/develop/ui/views/animations/adaptive-refresh-rate
+  - type: official
+    path: developer.android.com/develop/ui/views/graphics/webgpu
+  - type: official
+    path: developer.android.com/jetpack/androidx/releases/webgpu#1.0.0-alpha05
+  - type: official
+    path: developer.android.com/reference/androidx/webgpu/GPUSurface
+  - type: official
+    path: developer.android.com/reference/android/view/Choreographer.FrameTimeline
+  - type: official
+    path: developer.android.com/reference/android/view/Display
+  - type: official
+    path: developer.android.com/reference/android/view/FrameMetrics
+  - type: official
+    path: developer.android.com/games/develop/vulkan/overview
+  - type: official
+    path: developer.android.com/ndk/guides/graphics/android-vulkan-profile
+  - type: official
+    path: perfetto.dev/docs/data-sources/frametimeline
+  - type: official
+    path: source.android.com
+  - type: official
+    path: source.android.com/docs/compatibility/16/android-16-cdd
+  - type: official
+    path: source.android.com/docs/core/graphics/implement-vulkan
+  - type: official
+    path: github.com/KhronosGroup/Vulkan-Profiles/blob/1e7889df491ae9284ca096fcc1eb2bfcd1f367cb/profiles/VP_ANDROID_16_minimums.json
+  - type: aosp
+    path: frameworks/base/core/java/android/view/Choreographer.java (android-5.0.0_r1)
+  - type: aosp
+    path: frameworks/base/core/java/android/view/Choreographer.java (android-6.0.0_r1)
+  - type: aosp
+    path: frameworks/base/libs/hwui/Properties.cpp (android-8.0.0_r1)
+  - type: aosp
+    path: frameworks/base/libs/hwui/Properties.cpp (android-9.0.0_r1)
+  - type: aosp
+    path: frameworks/base/core/java/android/view/Choreographer.java (android-17.0.0_r1)
+  - type: aosp
+    path: frameworks/base/core/java/android/view/Display.java (android-17.0.0_r1)
+  - type: aosp
+    path: frameworks/base/core/java/android/view/FrameRateVelocityPoint.java (android-17.0.0_r1)
+  - type: aosp
+    path: frameworks/base/core/java/android/view/FrameMetrics.java (android-17.0.0_r1)
+  - type: aosp
+    path: frameworks/base/graphics/java/android/graphics/RuntimeColorFilter.java (android-17.0.0_r1)
+  - type: aosp
+    path: frameworks/base/graphics/java/android/graphics/RuntimeXfermode.java (android-17.0.0_r1)
+  - type: aosp
+    path: frameworks/base/graphics/java/android/graphics/animation/RenderNodeAnimator.java (android-17.0.0_r1)
+  - type: aosp
+    path: frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp (android-17.0.0_r1)
+  - type: aosp
+    path: frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp (android-17.0.0_r1)
+  - type: aosp
+    path: frameworks/native/libs/gui/BLASTBufferQueue.cpp (android-17.0.0_r1)
+  - type: aosp
+    path: frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp (android-17.0.0_r1)
+  - type: aosp
+    path: frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.h (android-17.0.0_r1)
+  - type: aosp
+    path: external/perfetto/protos/perfetto/trace/android/frame_timeline_event.proto (android-17.0.0_r1)
+  - type: kernel
+    path: kernel/common/drivers/dma-buf/dma-buf.c (android17-6.18-2026-06_r6)
+  - type: kernel
+    path: kernel/common/drivers/dma-buf/dma-fence.c (android17-6.18-2026-06_r6)
+  - type: kernel
+    path: kernel/common/drivers/dma-buf/sync_file.c (android17-6.18-2026-06_r6)
+  - type: writer
+    path: Writer/rendering_pipelines/S01_rendering_types_overview.md
+  - type: writer
+    path: Writer/rendering_pipelines/S02_aosp_standard_type.md
+  - type: writer
+    path: Writer/rendering_pipelines/S03_surfaceview_type.md
+  - type: writer
+    path: Writer/rendering_pipelines/S04_textureview_type.md
+  - type: writer
+    path: Writer/rendering_pipelines/S05_mixed_rendering_type.md
+  - type: writer
+    path: Writer/rendering_pipelines/S06_multi_window_type.md
+  - type: writer
+    path: Writer/rendering_pipelines/S07_software_offscreen_type.md
+  - type: writer
+    path: Writer/rendering_pipelines/S08_native_graphics_type.md
+  - type: writer
+    path: Writer/rendering_pipelines/S09_webview_type.md
+  - type: writer
+    path: Writer/rendering_pipelines/S10_flutter_type.md
+  - type: writer
+    path: Writer/rendering_pipelines/S11_camera_type.md
+  - type: writer
+    path: Writer/rendering_pipelines/S12_video_overlay_hwc_type.md
+  - type: writer
+    path: Writer/rendering_pipelines/S13_game_type.md
+  - type: writer
+    path: Writer/rendering_pipelines/S14_react_native_type.md
+  - type: writer
+    path: Writer/rendering_pipelines/images/DIAGRAM_MANIFEST.md
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
 task6_reviewed_date: 2026-06-15
@@ -65,13 +171,14 @@ Android 渲染史不能只记成一串版本号。拿到 Perfetto 后，工程�
 | Android 5.0 / API 21 | HWUI RenderThread | UI 线程记录/同步与 RenderThread 执行需要分开看 |
 | Android 6.0 / API 23 | Choreographer 增加 COMMIT 回调阶段 | 现代回调顺序开始接近当前形态 |
 | Android 7.0 / API 24 | Vulkan NDK API、`FrameMetrics` | 原生渲染多一种低层 API；App 可按 Window 取帧阶段数据 |
-| Android 8–9 / API 26–28 | HWUI 逐步迁移到以 Skia 为中心的 GPU 后端，Android 9 AOSP 主路径广泛使用 SkiaGL | 不要把旧 `OpenGLRenderer` 类名套到新 HWUI |
+| Android 8.x / API 26–27 | AOSP HWUI 可通过 `debug.hwui.renderer` 选择 SkiaGL/SkiaVulkan，未设置时仍使用旧 OpenGL renderer | 看到 Skia 后端类不等于该版本默认启用 |
+| Android 9 / API 28 | AOSP 将 `debug.hwui.renderer` 的默认值改为 `skiagl` | 不要把旧 `OpenGLRenderer` 类名套到 Android 9 以后的 AOSP 默认主路径 |
 | Android 11 / API 30 | 主窗口路径开始使用 BLASTBufferQueue | buffer 与 SurfaceControl transaction 的关系更紧 |
 | Android 12 / API 31 | FrameTimeline；`FrameMetrics` 增加 GPU duration 与 deadline | 可关联 App SurfaceFrame 和 DisplayFrame，并区分 CPU/GPU/显示责任 |
 | Android 13 / API 33 | `Choreographer.FrameData` / `FrameTimeline` 公共 API；AGSL `RuntimeShader` | App 可获取候选帧时间线；Canvas 增加运行时 shader |
 | Android 15 / API 35 | ARR 在支持 Android 15 QPR1 与相应 HAL 的设备上可用；ANGLE 成为可选 GLES-on-Vulkan 层 | VSync 间隔和 render rate 不能再假设固定；GLES 后端需看设备选择 |
 | Android 16 / API 36 | `Display.hasArrSupport()`、`getSuggestedFrameRate()`；`RuntimeColorFilter` / `RuntimeXfermode`；Vulkan 1.4 launch-device 要求 | App 能查询 ARR；AGSL 可用于滤镜与混合；设备能力仍需运行时查询 |
-| Android 17 / API 37 | WebGPU；GLES `prefer_angle` manifest 请求；`Display.getFrameRateVelocityMapping()` | Java/Kotlin 增加 Vulkan-backed WebGPU 入口；ANGLE 仍是偏好请求；滚动帧率可结合速度映射 |
+| Android 17 / API 37 | Jetpack WebGPU；GLES `prefer_angle` manifest 请求；`Display.getFrameRateVelocityMapping()` | WebGPU 增加现代 GPU 接口但仍需独立依赖；ANGLE 仍是偏好请求；滚动帧率可结合速度映射 |
 
 表中“引入”表示平台或 API 的版本边界，不保证所有升级到该版本的设备拥有相同 GPU、显示 HAL、驱动能力和默认后端。
 
@@ -90,7 +197,7 @@ API 11 开始，Android 2D View 管线支持硬件加速。硬件加速 Window �
 
 “调用 `canvas.drawRect()` 就立即执行一条 GL 命令”不符合显示列表模型。
 
-API 11 同时提供 `View.setLayerType()`。`LAYER_TYPE_HARDWARE` 可以把稳定内容放入硬件层，便于后续做合成属性动画；它会占用图形内存，内容失效后仍要重建，不能长期给所有 View 强制开启。
+API 11 同时提供 `View.setLayerType()`。`LAYER_TYPE_HARDWARE` 可以把稳定内容放入硬件层，便于后续做合成属性动画；它会占用图形内存。内容失效后仍要重新绘制并更新 layer，尺寸或渲染上下文变化时还可能重新分配，因此不能长期给所有 View 强制开启。
 
 ### Android 4.0：默认值与 target API 有关
 
@@ -190,9 +297,9 @@ Vulkan 从 API 24 可供 native 应用使用。它减少驱动隐式状态，把
 
 Vulkan API 可用，不表示 View/HWUI 一定使用 Vulkan。应用 Vulkan renderer、HWUI SkiaVulkan、ANGLE-on-Vulkan 是三条不同路径。
 
-### Android 8–9：HWUI 转向 Skia GPU 后端
+### Android 8.x–9：HWUI 转向 Skia GPU 后端
 
-早期 HWUI 自己维护大量 OpenGL renderer 逻辑。Android 8 引入 SkiaGL 测试路径，Android 9 的 AOSP 配置广泛把 SkiaGL 作为默认 HWUI 路径。绘制 API 仍是 View/Canvas/RenderNode，底层从 HWUI 直接管理 GL 逐步变为以 Skia GPU backend 为中心。
+早期 HWUI 自己维护大量 OpenGL renderer 逻辑。Android 8.0/8.1 的 `Properties.cpp` 已识别 `skiagl` 和 `skiavk`，但 `debug.hwui.renderer` 未设置时仍回退旧 OpenGL renderer；Android 9.0 的同一文件把属性默认值明确改为 `skiagl`。绘制 API 仍是 View/Canvas/RenderNode，底层由 HWUI 直接管理 GL 的路径逐步转向 Skia GPU backend。
 
 Android 17 的 `libs/hwui/pipeline/skia/` 仍有 `SkiaOpenGLPipeline`、`SkiaVulkanPipeline` 和公共 `SkiaGpuPipeline`。设备可以按产品配置、驱动和调试设置选择后端，不能按 Android 版本断言所有设备都走同一个 backend。
 
@@ -289,9 +396,9 @@ GLES 应用、原生 Vulkan 应用和 HWUI 页面不能混为一个类型。ANGL
 
 ### WebGPU
 
-Android 17 / API 37 增加 WebGPU，为 Kotlin 和 Java 提供访问 Vulkan 的现代图形与计算 API。这是应用可选择的新接口，不表示 View/Compose、WebView 或现有 GLES 应用会自动改走 WebGPU。
+Android 17 的发布说明把 WebGPU 列为图形新能力。公开接口来自独立发布的 Jetpack `androidx.webgpu:webgpu`，截至本章核验时为 `1.0.0-alpha05`，并非 `android.*` framework API；alpha 阶段的接口仍可能变化。该库提供 Kotlin/Java 绑定，以比 Vulkan 更高层的对象组织 adapter、device、queue、command buffer 与 WGSL shader。
 
-分析使用 WebGPU 的应用时，应把它按独立 GPU Producer/API 路径处理：查看 command submission、render/compute pass、目标 Surface、buffer queue 与最终 SurfaceFlinger Layer。
+WebGPU 不会让 View/Compose、WebView 或现有 GLES 应用自动换后端。分析使用 WebGPU 的应用时，应把它按独立 GPU API 和工作提交路径处理：离屏 compute 只跟踪 buffer、texture 与 queue；绘制到屏幕时，再沿 `GPUSurface` 的 current texture、`present()`、目标 `ANativeWindow`、BufferQueue 和最终 SurfaceFlinger Layer 追踪。
 
 ### `prefer_angle` 是请求，不是保证
 
@@ -309,9 +416,9 @@ Android 17 起，游戏可以在 manifest 中请求优先使用 ANGLE 作为 GLE
 
 ### API 37 的 frame-rate/velocity mapping
 
-`Display.getFrameRateVelocityMapping()` 返回当前 Display 的滚动速度与建议 frame rate 映射，主要服务 RecyclerView、ScrollView 等 fling 场景。设备从内屏切到外屏，或收到 display changed 事件后，需要针对当前 Window 所在 Display 重新查询。
+`Display.getFrameRateVelocityMapping()` 返回当前 Display 的滚动速度阈值与可行 frame rate 组成的只读、非空映射。例如一个点可以表达“速度超过 300 dp/s 时使用 120 fps”。官方契约主要面向 RecyclerView、ScrollView、AbsListView、NestedScrollView 等 fling 场景。设备从内屏切到外屏，或收到 `DisplayListener.onDisplayChanged()` 后，需要针对当前 Window 所在 Display 重新查询。
 
-它提供 display-specific 建议，不会替 App 修复慢帧。列表仍需在每个选定 deadline 前完成 UI、RenderThread、GPU 与 buffer 提交。
+这些点是 display-specific 策略输入，不是系统替 App 自动完成的帧率切换。调用方仍要按速度选择映射点，并通过 View、Surface 或其他 frame-rate API 表达请求；列表也仍需在每个选定 deadline 前完成 UI、RenderThread、GPU 与 buffer 提交。
 
 ### Android 17 的标准 HWUI 主线
 
@@ -380,7 +487,7 @@ App 可能以 30 fps 更新，显示以 60/90/120 Hz 或 ARR 步进工作；多�
 
 ## Kernel 与厂商边界
 
-本章的 kernel 锚点是 `android17-6.18-2026-06_r6`。通用 kernel 提供线程调度、dma-buf、dma-fence / sync_file、内存回收和频率框架等基础机制。
+本章的 kernel 锚点是 `android17-6.18-2026-06_r6`。其中 `drivers/dma-buf/dma-buf.c` 管理共享 buffer 对象，`dma-fence.c` 定义异步完成依赖，`sync_file.c` 把 fence 暴露为可跨进程传递和等待的文件描述符；通用 kernel 还提供线程调度、内存回收和频率框架等基础机制。
 
 HWUI backend、Vulkan/GLES driver、GPU job 调度、图形内存分配、DPU/HWC plane 与 ARR HAL 含有大量厂商实现。一个 framework 版本里程碑不保证 vendor driver 同步采用相同策略。Kernel fence 只能说明异步依赖是否完成；要解释迟到原因，还需找到 fence owner、提交者和对应硬件工作。
 
@@ -417,17 +524,24 @@ FrameMetrics 是 App Window 的渲染里程碑。SurfaceFlinger、HWC 和多 Lay
 - [Android 5.0 `RenderThread.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-5.0.0_r1/libs/hwui/renderthread/RenderThread.cpp)：RenderThread 已进入 HWUI。
 - [Android 5.0 `Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-5.0.0_r1/core/java/android/view/Choreographer.java)：INPUT、ANIMATION、TRAVERSAL。
 - [Android 6.0 `Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-6.0.0_r1/core/java/android/view/Choreographer.java)：COMMIT 回调阶段。
+- [Android 8.0 `Properties.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-8.0.0_r1/libs/hwui/Properties.cpp)、[Android 9.0 `Properties.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-9.0.0_r1/libs/hwui/Properties.cpp)：SkiaGL/SkiaVulkan 可选路径与 SkiaGL 默认值的版本分界。
 - [Android 11 `BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-11.0.0_r1/libs/gui/BLASTBufferQueue.cpp)：BLAST 初期实现。
 
 ### Android 17 / `android-17.0.0_r1`
 
 - [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)：当前回调顺序、FrameData 与 FrameTimeline。
 - [`FrameMetrics.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/FrameMetrics.java)：当前指标、GPU duration、deadline 与 VSyncId。
+- [`Display.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Display.java)、[`FrameRateVelocityPoint.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/FrameRateVelocityPoint.java)：ARR 查询、建议帧率与速度映射的 API 37 实现。
 - [`DrawFrameTask.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp)、[`CanvasContext.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp)：UI/RenderThread 同步、绘制和 buffer 提交。
 - [`SkiaOpenGLPipeline.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp)、[`SkiaVulkanPipeline.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp)：当前 HWUI GPU backend。
 - [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)：buffer 与 transaction。
-- [SurfaceFlinger FrameTimeline](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/FrameTimeline/)：SurfaceFrame、DisplayFrame 与 jank classification。
+- [SurfaceFlinger `FrameTimeline.h`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.h)、[`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp)：SurfaceFrame、DisplayFrame 与 jank classification。
 - [SurfaceFlinger FrontEnd](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/FrontEnd/)、[`HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)：RequestedLayerState、LayerSnapshot、validate/present。
+
+### Kernel / `android17-6.18-2026-06_r6`
+
+- [`dma-buf.c`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)：共享 buffer 对象与 attachment/map 边界。
+- [`dma-fence.c`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)、[`sync_file.c`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：异步完成依赖与 sync_file fd。
 
 ### 官方文档
 
@@ -440,6 +554,7 @@ FrameMetrics 是 App Window 的渲染里程碑。SurfaceFlinger、HWC 和多 Lay
 - [Implement Vulkan](https://source.android.com/docs/core/graphics/implement-vulkan)
 - [Vulkan and ANGLE on Android](https://developer.android.com/games/develop/vulkan/overview)
 - [Android 17 features and changes](https://developer.android.com/about/versions/17/summary)
+- [WebGPU for Android](https://developer.android.com/develop/ui/views/graphics/webgpu)、[AndroidX WebGPU releases](https://developer.android.com/jetpack/androidx/releases/webgpu)、[`GPUSurface`](https://developer.android.com/reference/androidx/webgpu/GPUSurface)
 - [Display API](https://developer.android.com/reference/android/view/Display)
 
-当前显示拓扑还对照了 `rendering_pipelines` 系列的 S01、S02、S03、S04、S05 与 S12：标准 HWUI App Window、`SurfaceView` 独立 Layer、`TextureView` 回流宿主窗口，以及 SurfaceFlinger/HWC 的边界都以该系列为高优先级参考，再用 Android 17 源码确认类名和调用关系。
+当前显示拓扑还逐篇对照了 `rendering_pipelines` 系列的 S01–S14 与配图 manifest。S01/S02 给出标准 HWUI 主线；S03–S07 区分独立 Surface、宿主回流、多窗口与离屏路径；S08–S14 覆盖 Native Graphics、WebView、Flutter、Camera、Video、Game 与 React Native 的专用 Producer。该系列用于确定对象拓扑和证据顺序，再用 Android 17 平台源码与指定 kernel tag 确认当前类名、调用关系和同步边界。
