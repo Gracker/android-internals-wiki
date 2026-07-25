@@ -31,8 +31,6 @@ sources:
   - type: aosp
     path: "platform/frameworks/base/libs/hwui/renderthread/CanvasContext.cpp"
   - type: obsidian
-    path: "Android/rendering_pipelines/presentation.md"
-  - type: obsidian
     path: "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md"
   - type: aosp
     path: "platform/frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp"
@@ -40,6 +38,12 @@ sources:
     path: "platform/frameworks/base/libs/hwui/renderthread/RenderProxy.cpp"
   - type: aosp
     path: "platform/frameworks/base/core/java/android/view/ThreadedRenderer.java"
+  - type: aosp
+    path: "platform/frameworks/base/graphics/java/android/graphics/HardwareRenderer.java"
+  - type: aosp
+    path: "platform/frameworks/base/libs/hwui/jni/android_graphics_HardwareRenderer.cpp"
+  - type: aosp
+    path: "platform/frameworks/base/libs/hwui/renderthread/HintSessionWrapper.cpp"
   - type: aosp
     path: "platform/frameworks/base/core/java/android/view/View.java"
   - type: aosp
@@ -49,9 +53,11 @@ sources:
   - type: aosp
     path: "platform/frameworks/native/libs/gui/BufferQueueProducer.cpp"
   - type: kernel
-    path: "android17-6.18-2026-06_r6/kernel/sched/core.c"
+    path: "kernel/common/kernel/sched/core.c"
+    ref: "android17-6.18-2026-06_r6"
   - type: kernel
-    path: "android17-6.18-2026-06_r6/kernel/sched/fair.c"
+    path: "kernel/common/kernel/sched/fair.c"
+    ref: "android17-6.18-2026-06_r6"
   - type: obsidian
     path: "Writer/rendering_pipelines/S01_rendering_types_overview.md"
   - type: obsidian
@@ -131,14 +137,14 @@ task9_p2_issues: 0
 ```mermaid
 flowchart LR
     V["VSync-app / Choreographer"] --> U["UI 线程<br/>measure / layout / Record DisplayList"]
-    U --> S["syncAndDrawFrame()<br/>UI 等待 DrawFrameTask"]
+    U --> S["syncAndDrawFrame&#40;&#41;<br/>UI 等待 DrawFrameTask"]
     S --> P["RenderThread<br/>syncFrameState / prepareTree"]
-    P --> D["CanvasContext::draw()<br/>HWUI / Skia 后端"]
-    D --> B["Surface / BLASTBufferQueue<br/>queueBuffer + 完成 fence"]
+    P --> D["CanvasContext::draw&#40;&#41;<br/>HWUI / Skia 后端"]
+    D --> B["Surface / BLASTBufferQueue<br/>queueBuffer + Producer completion fence"]
+    D --> G["GPU 异步执行"]
     B --> F["SurfaceFlinger<br/>latch / compose"]
+    G -. "signal acquire fence" .-> F
     F --> H["HWC / Display"]
-    G["GPU 异步执行"] --> B
-    D --> G
     P -. "满足提前解锁条件" .-> U
 ```
 
@@ -179,6 +185,14 @@ public RenderNode updateDisplayListIfDirty() {
     if ((mPrivateFlags & PFLAG_DRAWING_CACHE_VALID) == 0
             || !renderNode.hasDisplayList()
             || (mRecreateDisplayList)) {
+        if (renderNode.hasDisplayList() && !mRecreateDisplayList) {
+            mPrivateFlags |= PFLAG_DRAWN | PFLAG_DRAWING_CACHE_VALID;
+            mPrivateFlags &= ~PFLAG_DIRTY_MASK;
+            dispatchGetDisplayList();
+            return renderNode;
+        }
+
+        mRecreateDisplayList = true;
         final RecordingCanvas canvas =
                 renderNode.beginRecording(getWidth(), getHeight());
         try {
@@ -189,10 +203,11 @@ public RenderNode updateDisplayListIfDirty() {
             }
         } finally {
             renderNode.endRecording();
+            setDisplayListProperties(renderNode);
         }
     } else {
         mPrivateFlags |= PFLAG_DRAWN | PFLAG_DRAWING_CACHE_VALID;
-        dispatchGetDisplayList();
+        mPrivateFlags &= ~PFLAG_DIRTY_MASK;
     }
     return renderNode;
 }
@@ -334,7 +349,7 @@ void CanvasContext::draw(bool solelyTextureViewUpdates) {
 
 `getFrame()` 由当前渲染后端取得目标 frame；`draw()` 处理脏区、RenderNode 和 layer 更新；`swapBuffers()` 将结果交给 NativeWindow/BufferQueue 路径。CPU 方法返回时，GPU 仍可能继续执行已经提交的图形工作。
 
-这里还有一个容易混淆的同名概念：`CanvasContext::waitOnFences()` 等待的是 `mFrameFences` 中由 CommonPool 异步帧任务产生的 fence。它不能直接替换成“等待 SurfaceFlinger release fence”的解释。GraphicBuffer 的 Producer/Consumer fence 由 NativeWindow、BufferQueue、BLAST 和 SurfaceFlinger 路径携带，排查时要按来源区分。
+这里还有一个容易混淆的同名概念：`CanvasContext::waitOnFences()` 等待的是 `mFrameFences` 中的 `std::future<void>`，这些 future 由 `CommonPool::async()` 创建，用来保证异步帧任务在本帧结束前完成。方法名虽然含有 `Fences`，等待对象却不是 `sync_file` 图形 fence，也不能替换成“等待 SurfaceFlinger release fence”的解释。GraphicBuffer 的 Producer/Consumer fence 由 NativeWindow、BufferQueue、BLAST 和 SurfaceFlinger 路径携带，排查时要按来源区分。
 
 ### `queueBuffer()` 表示 Producer 已提交
 
@@ -379,7 +394,7 @@ Consumer / BLAST / SurfaceFlinger
 
 ### buffer 数量没有“永远是三个”的结论
 
-Android 17 的 `CanvasContext::setBufferCount()` 查询 `NATIVE_WINDOW_MIN_UNDEQUEUED_BUFFERS`，再设置 `min_undequeued_buffers + 2`。这个表达式不等于所有设备、所有 surface、所有时刻都固定为三块 buffer。
+Android 17 的 `CanvasContext.cpp` 定义了文件内静态函数 `setBufferCount()`：它查询 `NATIVE_WINDOW_MIN_UNDEQUEUED_BUFFERS`，再设置 `min_undequeued_buffers + 2`。`CanvasContext::setupPipelineSurface()` 只在 NativeSurface 尚未设置额外 buffer 时调用它。这个表达式不等于所有设备、所有 surface、所有时刻都固定为三块 buffer。
 
 Producer 能否继续 dequeue 还取决于：
 
@@ -433,7 +448,7 @@ Android 17 源码能直接确认两个 flush 场景：
 
 Android 5.0 已有 `RenderNodeAnimator` 和 `ViewPropertyAnimatorRT` 基础。alpha、translation、scale、rotation 等能直接映射到 RenderNode 属性的动画，有机会由 RenderThread 推进，减少每帧重新执行完整 View traversal 的需要。
 
-Android 17 的 `RenderThread` 使用 `AChoreographer` VSync callback 驱动 RenderThread 帧回调。`CanvasContext::prepareTree()` 检测到仍有动画且不要求 UI redraw 时，会继续注册 RenderThread frame callback。`CanvasContext::drawRenderNode()` 还存在 `TreeInfo::MODE_RT_ONLY` 路径。
+Android 17 的 `RenderThread` 使用 `AChoreographer` VSync callback 驱动 RenderThread 帧回调。`CanvasContext::prepareTree()` 检测到仍有动画且不要求 UI redraw 时，会继续注册 RenderThread frame callback。VSync 到达后，`CanvasContext::doFrame()` 调用 `prepareAndDraw(nullptr)`；`prepareAndDraw()` 使用 `TreeInfo::MODE_RT_ONLY` 准备树并绘制。`RenderProxy::drawRenderNode()` 也会同步调用同一个 `prepareAndDraw(node)` 入口。
 
 判断一段动画能否持续走 RT 路径，要看这些条件：
 
@@ -680,6 +695,7 @@ MainThread 负责计算 View 层级并记录 RenderNode DisplayList；RenderThre
 - [RenderProxy.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/RenderProxy.cpp)
 - [DrawFrameTask.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp)
 - [CanvasContext.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp)
+- [HintSessionWrapper.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/HintSessionWrapper.cpp)
 - [RenderThread.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/RenderThread.cpp)
 - [Bitmap.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java)
 - [BLASTBufferQueue.cpp](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)
