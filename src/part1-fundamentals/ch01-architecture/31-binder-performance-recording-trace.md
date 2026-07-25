@@ -1,270 +1,402 @@
 ---
-title: "Android 17 Binder 性能录制与跨进程 Trace 链路"
+title: "Android 17 Binder 调试能力：AIDL Trace、冻结状态、扩展错误与事务录制"
 chapter: "1.31"
 status: ready-for-review
 drafted_date: "2026-06-27"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
-last_verified: "2026-06-27"
-last_verified_against: "AOSP android-17.0.0_r1 (commit ae266dcb706d083868578cfedce381ef44488a07)"
-confidence: medium
+last_verified: "2026-07-25"
+last_verified_against: "AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6"
+confidence: high
 sources:
   - type: aosp
-    path: "frameworks/native/libs/binder/IPCThreadState.cpp (1787-1868)"
+    path: "frameworks/native/libs/binder/Binder.cpp"
   - type: aosp
-    path: "frameworks/native/libs/binder/ProcessState.cpp (538-567)"
+    path: "frameworks/native/libs/binder/IPCThreadState.cpp"
   - type: aosp
-    path: "frameworks/native/libs/binder/Binder.cpp (95-97, 399-501, 556-572)"
+    path: "frameworks/native/libs/binder/ProcessState.cpp"
   - type: aosp
-    path: "frameworks/native/libs/binder/RecordedTransaction.cpp (43-96)"
+    path: "frameworks/native/libs/binder/RecordedTransaction.cpp"
   - type: aosp
-    path: "frameworks/native/libs/binder/include/binder/Trace.h (31-36)"
+    path: "frameworks/native/libs/binder/include/binder/RecordedTransaction.h"
   - type: aosp
-    path: "drivers/android/binder.c (v6.12, trace_binder_txn_latency_free L1645-1676)"
+    path: "frameworks/native/libs/binder/include/binder/Trace.h"
+  - type: aosp
+    path: "system/tools/aidl/generate_cpp.cpp"
   - type: aosp
     path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql"
+  - type: kernel
+    path: "include/uapi/linux/android/binder.h (android17-6.18-2026-06_r6)"
+  - type: kernel
+    path: "drivers/android/binder.c (android17-6.18-2026-06_r6)"
+  - type: kernel
+    path: "drivers/android/binderfs.c (android17-6.18-2026-06_r6)"
+  - type: kernel
+    path: "drivers/android/binder_trace.h (android17-6.18-2026-06_r6)"
 tags: [binder, ipc, performance-monitoring, tracing, perfetto, aidl, recording]
-related_chapters: ["1.4", "1.25", "1.30", "13.5"]
+related_chapters: ["1.4", "1.25", "1.30", "1.32", "13.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-27"
 gap_source: "DeepResearch"
 gap_score: 15
 ---
 
-# 1.31 Android 17 Binder 性能录制与跨进程 Trace 链路
+# 1.31 Android 17 Binder 调试能力：AIDL Trace、冻结状态、扩展错误与事务录制
 
-Binder IPC 的性能问题——线程池饱和、慢事务、大事务、oneway 风暴——在过去缺少系统级的结构化观测手段。开发者要么手动读 `/sys/kernel/debug/binder/`，要么在业务代码里埋 `ATRACE_BEGIN/END`。Android 17 把 binder 性能监控拆成了四层独立能力：内核 ioctl 探测、binderfs 特性文件、RecordedTransaction 调用录制、ATRACE_TAG_AIDL Perfetto 切片。四层各有适用场景，组合起来覆盖从粗粒度统计到细粒度单事务追踪的完整链路。
+Binder 的“可观测性”不是一个开关。分析等待时间、查询冻结状态、读取失败原因、查看 AIDL 方法名、录制 Parcel 内容，依赖的是不同层级的机制。把它们混成一套性能接口，常见后果有两个：用状态位计算事务量，或把调试录制当成可常驻的线上监控。
 
-## 要点
+本章以 Android 17 / API 37、AOSP `android-17.0.0_r1` 和内核 `android17-6.18-2026-06_r6` 为准，回答三个问题：每项能力提供什么证据，调用边界在哪里，以及如何与 Perfetto 结果互相印证。常规 Binder trace 配置、SQL 字段和排障流程见 [1.32 Android 17 Binder IPC 性能监控](01.32-android17-binder-ipc-performance-monitoring.md)。
 
-### 🔹 Binder 性能监控的演进
+## 一、先按证据类型选择工具
 
-Binder 性能观测经历了三个阶段：
+| 需要回答的问题 | 首选机制 | 能看到什么 | 看不到什么 |
+|---|---|---|---|
+| 调用在哪一端等待 | Perfetto Binder flow + 线程状态 | 客户端/服务端时间、调度和阻塞状态 | Parcel 业务内容 |
+| 这次 AIDL 调的是哪个方法 | `ATRACE_TAG_AIDL` 切片 | 接口、方法、客户端或服务端切片 | 参数值、返回值 |
+| 冻结期间是否收到事务 | `BINDER_GET_FROZEN_INFO` | 同步事务状态位、异步事务状态位 | 事务次数和耗时 |
+| 失败来自哪个驱动命令 | `BINDER_GET_EXTENDED_ERROR` | 失败 id、Binder 返回命令、负 errno | 跨线程历史错误 |
+| 发送端是否触发 oneway 嫌疑检测 | `BR_ONEWAY_SPAM_SUSPECT` | 当前发送线程收到告警并打印栈 | 接收端队列的通用统计报表 |
+| 请求和回复的 Parcel 是什么 | `RecordedTransaction` | 接口名、code、flags、状态、请求/回复数据 | 稳定文件协议、低扰动线上采集 |
 
-**手动采样期（Android 14 及以前）**：`/sys/kernel/debug/binder/` 目录下的 `stats`、`transactions`、`transaction_log` 文件提供进程级的聚合统计——transaction 总数、异步 transaction 占比、失败原因分布。缺点是只能看快照，无法关联到具体调用时序；调试时需要手动 `cat` 文件再对照 logcat 时间戳猜因果关系。
+这些能力没有“粗粒度到细粒度”的固定层级，也不是 Android 17 同时新增。当前版本中的源码入口只能证明 Android 17 的行为，不能反推引入版本。
 
-**Perfetto 标准化期（Android 15-16）**：Perfetto 的 `linux.ftrace` data source 通过内核 `binder_transaction` / `binder_transaction_received` / `binder_reply` 等 tracepoint 收集事件，再经 `android.binder` SQL 标准库（`external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql`）解析成 `android_binder_txns` 表，提供 `client_dur`、`server_dur`、`dispatch_dur` 三个延迟维度。这套体系做到了 trace 可录制、可查询，但缺少事务内容的录制能力——只知道"花了多久"，不知道"传了什么"。
+## 二、binderfs feature 文件表示能力，不表示运行状态
 
-**系统化录制期（Android 17）**：libbinder 层新增四个标准化能力面——`BINDER_GET_FROZEN_INFO` / `BINDER_FREEZE` ioctl 用于进程冻结状态的精确探测，`BINDER_GET_EXTENDED_ERROR` 用于失败事务的根因分类，`BINDER_ENABLE_ONEWAY_SPAM_DETECTION` 用于 oneway 风暴检测，`RecordedTransaction` 用于完整事务内容录制。每个能力都通过 `/dev/binderfs/features/` 做 capability gating，老内核上自动降级。
-
-### 🔹 Android 17 内核 ioctl 性能探测接口
-
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/IPCThreadState.cpp:1787-1868]
-
-Android 17 在 `IPCThreadState` 中暴露了四个面向用户态的 ioctl 接口，覆盖冻结探测、错误归因、异常检测三个场景。
-
-**`getProcessFreezeInfo(pid, &sync, &async)`** 返回目标进程在冻结前已完成的同步/异步 transaction 计数。配合 `freeze(pid, enable, timeout_ms)` 使用——`freeze` 返回 `-EAGAIN` 表示事务未排空，调用方通过 `getProcessFreezeInfo` 轮询直到 drain 完成。
-
-```cpp
-// IPCThreadState.cpp:1787-1798 — 查询目标进程冻结前的 transaction 计数
-status_t IPCThreadState::getProcessFreezeInfo(pid_t pid,
-    uint32_t *sync_received, uint32_t *async_received) {
-    binder_frozen_status_info info = {};
-    info.pid = pid;
-    if (ioctl(self()->mProcess->mDriverFD, BINDER_GET_FROZEN_INFO, &info) < 0)
-        return -errno;
-    *sync_received = info.sync_recv;
-    *async_received = info.async_recv;
-    return NO_ERROR;
-}
-```
-
-`freeze()` 的 `timeout_ms` 参数是内核异步回收的等待时间，不是"冻结持续多久"——冻结是持续状态，直到 `enable=false`。
-
-**`logExtendedError()`** 在 transaction 失败时通过 `BINDER_GET_EXTENDED_ERROR` ioctl 拿到内核返回的分类错误码。当前只识别 `ENOSPC`（binder buffer 满），其他错误走通用 `strerror` 路径。调用前提是 `/dev/binderfs/features/extended_error` 存在且返回 1。
-
-**`enableOnewaySpamDetection(true)`** 打开内核的 oneway 风暴检测。当目标进程的 oneway 队列积压超过阈值时，内核返回 `BR_ONEWAY_SPAM_SUSPECT`，`BBinder::onTransact` 收到后打 `LOG_THREADPOOL` 警告。Android 16 后期接口稳定，Android 17 与 `ProcessState::DriverFeature::ONEWAY_SPAM_DETECTION` 一起作为正式特性。
-
-### 🔹 特性探测：binderfs features 文件
-
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/ProcessState.cpp:538-554]
-
-上述 ioctl 的可用性依赖内核版本。Android 17 用 `/dev/binderfs/features/` 目录下的只读特性文件做标准化探测：
+Android 17 的 `ProcessState::isDriverFeatureEnabled()` 只探测三项驱动能力：
 
 ```cpp
-// ProcessState.cpp:538-554 — static bool 缓存的特性探测
 #define DRIVER_FEATURES_PATH "/dev/binderfs/features/"
 
 bool ProcessState::isDriverFeatureEnabled(const DriverFeature feature) {
     if (feature == DriverFeature::ONEWAY_SPAM_DETECTION) {
         static bool enabled = readDriverFeatureFile(
-            DRIVER_FEATURES_PATH "oneway_spam_detection");
+                DRIVER_FEATURES_PATH "oneway_spam_detection");
         return enabled;
     }
     if (feature == DriverFeature::EXTENDED_ERROR) {
         static bool enabled = readDriverFeatureFile(
-            DRIVER_FEATURES_PATH "extended_error");
+                DRIVER_FEATURES_PATH "extended_error");
         return enabled;
     }
     if (feature == DriverFeature::FREEZE_NOTIFICATION) {
         static bool enabled = readDriverFeatureFile(
-            DRIVER_FEATURES_PATH "freeze_notification");
+                DRIVER_FEATURES_PATH "freeze_notification");
         return enabled;
     }
     return false;
 }
 ```
 
-`static bool` 保证每个特性在每个进程内只读一次文件。binderfs 是 kernel 5.15+ 引入的每实例 binder 设备机制——特性文件是只读开关，返回 1 字节 `1`/`0`。这套设计让 libbinder 在不同内核版本上优雅降级：新 ioctl 在老内核上探测失败就跳过，不影响正常 IPC 路径。
+每项结果以函数内 `static bool` 缓存，因此同一进程不会在每次事务中重复打开 feature 文件。`readDriverFeatureFile()` 只读取首字符并判断是否为 `'1'`。
 
-### 🔹 AIDL Trace 自动注入
+内核 `binderfs.c` 在 Android 17 的 6.18 分支中创建四个文件：
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/include/binder/Trace.h:31-36, Binder.cpp:479-501]
+- `oneway_spam_detection`
+- `extended_error`
+- `freeze_notification`
+- `transaction_report`
 
-Android 17 在 libbinder 中为 AIDL 事务预留了独立的 trace tag 位：
+第四项存在于当前内核，但 `ProcessState::DriverFeature` 没有对应枚举。它不能据此写成 libbinder 的通用能力探测接口。
 
-```cpp
-// Trace.h:31-36 — bit 24 预留给 AIDL 事务 trace
-#ifdef ATRACE_TAG_AIDL
-#if ATRACE_TAG_AIDL != (1 << 24)
-#error "Mismatched ATRACE_TAG_AIDL definitions"
-#endif
-#else
-#define ATRACE_TAG_AIDL (1 << 24)
-#endif
-```
+还要区分 `freeze_notification` 与冻结 ioctl。前者表示客户端可否通过 `BC_REQUEST_FREEZE_NOTIFICATION` 订阅远端 Binder 的冻结状态变化；`IPCThreadState::freeze()` 和 `getProcessFreezeInfo()` 直接调用 `BINDER_FREEZE`、`BINDER_GET_FROZEN_INFO`，没有先读取这个 feature 文件。feature 文件是“驱动是否实现该项协议”的声明，不包含调用量、队列长度或延迟。
 
-`BBinder::onTransact` 入口通过 `startTrace(code)` 查表得到 AIDL 接口方法名（如 `android.app.IActivityManager.startService`），然后调用 `trace_begin(ATRACE_TAG_AIDL, name)`。出口调用 `trace_end`。
+## 三、冻结查询返回状态位，不是事务计数
+
+### 3.1 `sync_recv` 与 `async_recv` 的含义
+
+framework 侧的封装很薄：传入 pid，驱动填充两个 `uint32_t` 字段。
 
 ```cpp
-// Binder.cpp:479-491 — 按 code 查表得到方法名，打 trace 切片
-__attribute__((noinline)) bool BBinder::startTrace(uint32_t code) {
-    char traceSectionName[TRACE_BUFFER_SIZE];
-    status_t result = getTraceName(code, traceSectionName, TRACE_BUFFER_SIZE);
-    trace_begin(ATRACE_TAG_AIDL, traceSectionName);
-    return true;
-}
-```
-
-`noinline` 标注防止热路径被内联污染。在 `onTransact` 的实际调用路径中，`get_trace_enabled_tags() & ATRACE_TAG_AIDL` 判断 tag 是否启用——未启用时 `[[unlikely]]` 分支预测让整段 trace 调用几乎零开销。`get_trace_enabled_tags()` 是 user-space cache（无 syscall），读取约 10ns。
-
-Perfetto 通过 `linux.ftrace` data source 收集 atrace 事件后，在 trace processor 中把 `binder transaction` slice 和 `AIDL::*Server` slice 关联到同一线程时间线上。在 Perfetto UI 中打开 "Android Binder / Transactions" track 即可看到按方法名标注的 binder 调用切片。
-
-### 🔹 跨进程调用链路录制
-
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/Binder.cpp:399-456, RecordedTransaction.cpp:43-96]
-
-上述 trace 切片只记录"哪个方法被调了、花了多久"。要拿到事务的完整内容（入参 Parcel、返回 Parcel、错误码），需要用 `RecordedTransaction` 机制。
-
-**录制开关**：通过 `BBinder::startRecordingTransactions(fd)` 从 Parcel 中读取一个 fd，后续每条进站 transaction 自动序列化写到这个 fd。`kEnableRecording` 编译期宏（默认 `false`）控制是否启用——release build 不打开，仅在 userdebug 或 vendor 定制 build 启用。
-
-```cpp
-// Binder.cpp:556-572 — onTransact 路径中的自动录制
-if (kEnableKernelIpc && kEnableRecording
-    && code != START_RECORDING_TRANSACTION) [[unlikely]] {
-    auto e = mRecording.promote();
-    if (e && e->mRecordingOn) {
-        auto transaction = android::binder::debug::RecordedTransaction::
-            fromDetails(mDescriptor, code, flags, timestamp,
-                        data, reply, err);
-        if (transaction) {
-            transaction->dumpToFile(e->mRecordingFd);
-        }
+status_t IPCThreadState::getProcessFreezeInfo(
+        pid_t pid, uint32_t* syncReceived, uint32_t* asyncReceived) {
+    binder_frozen_status_info info = {};
+    info.pid = pid;
+    if (ioctl(self()->mProcess->mDriverFD,
+              BINDER_GET_FROZEN_INFO, &info) < 0) {
+        return -errno;
     }
+    *syncReceived = info.sync_recv;
+    *asyncReceived = info.async_recv;
+    return NO_ERROR;
 }
 ```
 
-**Chunk 编码格式**：每条录制的事务由 4 个 Chunk 组成——Header Chunk（含接口描述符、code、flags、时间戳）、Sent Parcel Chunk（入参内容）、Reply Parcel Chunk（返回内容）、End Chunk。每个 Chunk 有 `chunkType`（uint32）+ `dataSize`（uint32）+ 数据 + `checksum`（uint64 XOR）。Chunk 顺序允许乱序，不识别的 Chunk 可凭 `dataSize` + 校验和跳过——读写两端可独立演进。
+字段语义由内核 UAPI 明确定义：
 
-**录制视角的局限**：录制是服务端视角——`BBinder::onTransact` 触发，不是 `BpBinder::transact`。要做端到端的 client→server 链路追踪，需要同时在客户端打开录制。android-17.0.0_r1 中 `BpBinder` 侧的对应路径未确认实现 [待验证]。
+| 字段 | 位 | Android 17 含义 |
+|---|---:|---|
+| `sync_recv` | bit 0 | 进程冻结后收到过同步事务 |
+| `sync_recv` | bit 1 | 冻结过程中出现等待回复的同步事务 |
+| `async_recv` | bit 0 | 进程自上次进入冻结状态后收到过异步事务 |
 
-### 🔹 Perfetto 中的跨进程调用链路关联
+内核在目标进程已冻结时使用按位或记录事件：
 
-[已验证: AOSP android-17.0.0_r1, external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql]
+```c
+if (proc->is_frozen) {
+    frozen = true;
+    proc->sync_recv |= !oneway;
+    proc->async_recv |= oneway;
+}
+```
 
-Perfetto SQL 标准库的 `android.binder` 模块把 binder transaction slice 通过 `flow` 边连接成完整的 client→server→reply 路径。`android_binder_txns` 表提供以下关键字段：
+查询时，驱动又把 `binder_txns_pending_ilocked()` 的布尔结果放进 `sync_recv` 的 bit 1。由此可见，`sync_recv == 3` 表示两个状态位都为 1，不代表发生了三次同步事务；`async_recv` 也不能作为单调增长计数器。
 
-| 字段 | 含义 | 延迟归因 |
-|------|------|---------|
-| `client_dur` | 客户端总等待时间 | dispatch + server + 内核开销 |
-| `server_dur` | 服务端处理时间 | 业务逻辑耗时 |
-| `dispatch_dur` | 排队等待时间 | client_dur - server_dur - 内核开销 |
-| `is_sync` | 是否同步事务 | oneway = false |
+### 3.2 `timeout_ms` 只控制等待排空
 
-诊断逻辑：
+`freeze(pid, true, timeout_ms)` 先把目标进程标记为冻结，随后最多等待 `outstanding_txns` 清空。驱动还会检查正在等待回复的事务；仍有待处理项时返回 `-EAGAIN`，并撤销本次冻结状态。
 
-- `client_dur` 长、`server_dur` 短 → dispatch 瓶颈，Binder 线程池饱和
-- `server_dur` 长 → 业务逻辑或锁竞争
-- `dispatch_dur` 持续高位 → 线程池默认上限（16）不够用
+```c
+target_proc->is_frozen = true;
 
-Android 17 内核 v6.12 新增 `trace_binder_txn_latency_free` tracepoint（`binder.c:1645-1676`），在事务释放时记录 `from_proc/thread → to_proc/thread` 的完整映射，用内核时钟度量全生命周期延迟。这是延迟归因的主时钟源——`trace_binder_txn_latency_free` 与 `trace_binder_transaction` 的时间戳差即为完整事务生命周期。详见 1.4 节关于 Binder transaction 延迟分析的部分。
+if (info->timeout_ms > 0)
+    ret = wait_event_interruptible_timeout(
+        target_proc->freeze_wait,
+        !target_proc->outstanding_txns,
+        msecs_to_jiffies(info->timeout_ms));
 
-### 🔹 Binder Transaction 审计与异常检测
+if (ret >= 0 && binder_txns_pending_ilocked(target_proc))
+    ret = -EAGAIN;
+```
 
-基于上述观测基础设施，Android 17 能结构化地检测以下异常模式：
+因此，`timeout_ms` 是等待旧事务排空的期限，不是“冻结多长时间”。冻结成功后持续到调用 `freeze(pid, false, ...)`；解冻路径同时清除 `sync_recv` 和 `async_recv`。
 
-**Buffer 溢出（ENOSPC）**：`logExtendedError()` 检测到 `ENOSPC` 时输出 `"Binder buffer full. Too many or too large transactions."`。每个进程的 binder buffer 上限通常为 1MB（部分设备 512KB），超限触发 `TransactionTooLargeException`。buffer 管理机制的细节详见 1.30 节。
+冻结后的新同步事务会失败并向发送端返回冻结相关错误。oneway 事务可进入冻结进程的待处理工作，发送端还可能收到 `BR_TRANSACTION_PENDING_FROZEN`。分析长时间的异步 Binder flow 时，冻结是候选原因之一，但当前内核没有名为 `binder_freeze` 的 Binder tracepoint，不能靠这个虚构事件直接标记区间。
 
-**Oneway 风暴**：`BR_ONEWAY_SPAM_SUSPECT` 在目标进程 oneway 队列积压超阈值时由内核返回。`BBinder::onTransact` 的线程池路径记录到这条警告后，可以用 Perfetto 的 `binder async` slice 交叉确认是哪个调用方在发 oneway 洪水。
+### 3.3 冻结通知是另一条协议
 
-**慢事务与 ANR 关联**：`dispatch_dur` 持续大于 500ms 时，客户端的 `ioctl(BINDER_WRITE_READ)` 处于 S（Sleeping）状态。如果这是前台 ANR 链路（如 Service ANR 的 20s 前台服务超时、broadcast ANR 的 10s 超时），可以在 Perfetto 中按时间戳对齐 binder 阻塞和 ANR 触发点。`ApplicationExitInfo` 中 reason 字段为 `ANR` 的记录可以和 trace 中的 binder 阻塞段做因果关联。详见 9.1 节关于 ANR 触发机制的分析。
+客户端若持有某个远端 Binder handle，可以通过 `addFrozenStateChangeCallback()` 请求冻结通知。libbinder 先检查 `freeze_notification` feature，再发送 `BC_REQUEST_FREEZE_NOTIFICATION`；内核以 `BR_FROZEN_BINDER` 回传 `is_frozen` 与 cookie。
 
-**Frozen 事务延迟**：被冻结进程的 oneway 事务排在 `node->async_todo` 上，`binder_txn_latency_free` 直到解冻 + 投递后才触发——事务生命周期延迟 = frozen 时间 + 实际投递时间。在 trace 中表现为 `dispatch_dur` 异常大但 `server_dur` 正常，需要结合 `binder_freeze` tracepoint 区分"排队等解冻"和"真的处理慢"。
+这条协议回答“我持有的远端 Binder 是否发生冻结状态变化”。`BINDER_GET_FROZEN_INFO` 则按 pid 查询冻结期间是否收到过事务。两者的对象、数据结构和使用目的不同。
 
-### 🔹 与 eBPF 观测的互补关系
+以上接口属于平台 native Binder 组件，不是 Android SDK 提供给普通应用的健康检查 API。能打开相应 Binder 设备，并不等于产品的 SELinux 和调用方身份允许把它用作任意进程管理接口。
 
-Binder 性能观测目前有三条技术路线，精度和适用场景不同：
+## 四、扩展错误是线程级的一次性信息
 
-| 维度 | Perfetto ftrace | Android 17 ioctl API | eBPF uprobe |
-|------|----------------|---------------------|-------------|
-| 采集层 | 内核 tracepoint | 用户态 ioctl + 内核配合 | 用户态函数 hook |
-| 精度 | 高（内核时钟） | 中（用户态时钟） | 高（内核采样） |
-| 开销 | 低-中（ftrace 注册） | 低（static bool 缓存） | 低（uprobe 单点） |
-| 内容粒度 | 时间 + 调用方/被调方 | 时间 + 计数 + 错误分类 | 任意（取决于 BPF 代码） |
-| 事务内容 | ❌ | ✅（RecordedTransaction） | ✅（可读 Parcel） |
-| 内核版本要求 | 5.10+（binder tracepoint） | 6.0+（部分 ioctl） | 5.15+（BPF uprobe） |
-| root 需求 | 需要 atrace 或 perfetto | 不需要（应用级 API） | 需要（加载 BPF 程序） |
+一次事务失败后，`IPCThreadState::waitForResponse()` 会调用 `logExtendedError()`。它先确认 `extended_error` feature 可用，再通过 `BINDER_GET_EXTENDED_ERROR` 读取：
 
-Perfetto ftrace 适合系统级全链路分析——打开 binder_driver category 后所有进程的 binder 事件自动收集，适合"不知道问题在哪个进程"的场景。ioctl API 适合应用内自查——不需要 root，不需要打开全局 trace，只查自己的 binder 调用统计。eBPF uprobe 适合深度定制——在 `binder_transaction` 函数入口挂 BPF 程序，可以拿到完整的 Parcel 内容，但需要 root 和 BPF 编译环境。
+```c
+struct binder_extended_error {
+    __u32 id;
+    __u32 command;
+    __s32 param;
+};
+```
 
-### 🔹 实战诊断场景
+- `id`：失败操作的驱动标识；
+- `command`：`BR_FAILED_REPLY` 等 Binder 返回命令；
+- `param`：负 errno。
 
-**场景一：system_server binder 线程池耗尽**
+内核把错误保存在当前 `binder_thread` 中。`BINDER_GET_EXTENDED_ERROR` 复制结果后立即把该线程的记录重置为 `BR_OK`。它不是进程级错误历史，也不适合跨线程延后查询。
 
-现象：多个 app 进程的 ANR 同时出现，logcat 中 `BinderProxy` 线程处于 `S` 状态。
+Android 17 的 `logExtendedError()` 只为 `ENOSPC` 增加一段解释：Binder 缓冲区已满，事务过多或过大。其他 errno 仍使用通用错误字符串。`ENOSPC` 也不能单独证明“这一条 Parcel 超过固定 1 MiB”；同一接收进程的并发同步/异步分配都会消耗 Binder 映射与异步预算，详见 [1.30 Android 17 Binder Transaction Buffer](30-binder-transaction-buffer-performance.md)。
 
-诊断路径：在 Perfetto 中执行以下 SQL 查询，找出 dispatch_dur 最高的 transaction：
+## 五、oneway 嫌疑告警发生在发送端
+
+`ProcessState::open_driver()` 在打开 Binder 驱动后，默认执行 `BINDER_ENABLE_ONEWAY_SPAM_DETECTION`。当驱动把某次事务完成工作标记为 `BINDER_WORK_TRANSACTION_ONEWAY_SPAM_SUSPECT` 时，发送端线程收到 `BR_ONEWAY_SPAM_SUSPECT`：
+
+```cpp
+case BR_ONEWAY_SPAM_SUSPECT:
+    ALOGE("Process seems to be sending too many oneway calls.");
+    CallStack::logStack("oneway spamming",
+                        CallStack::getCurrent().get(),
+                        ANDROID_LOG_ERROR);
+    [[fallthrough]];
+case BR_TRANSACTION_COMPLETE:
+    // complete the sender-side transaction
+```
+
+这里打印的是正在发送 oneway 的线程栈。告警不是 `BBinder::onTransact()` 在接收端生成，也不表示驱动已经对调用方实施通用“限流”。定位时应回到发送栈，再用 Perfetto 的异步 Binder flow 核对接口、频率和目标进程。
+
+## 六、AIDL Trace 提供方法名，不提供 Parcel 内容
+
+### 6.1 libbinder 的服务端切片
+
+`BBinder::transact()` 每次进入服务端本地 Binder 对象时，先检查 `ATRACE_TAG_AIDL`：
+
+```cpp
+bool tracingEnabled = get_trace_enabled_tags() & ATRACE_TAG_AIDL;
+if (tracingEnabled) {
+    tracingEnabled = startTrace(code);
+}
+
+scope_guard guard = make_scope_guard([&]() {
+    if (tracingEnabled) trace_end(ATRACE_TAG_AIDL);
+});
+```
+
+`startTrace()` 通过接口描述符、transaction code 与后端类型组成名称，例如：
+
+```text
+AIDL::cpp::android.foo.IExample::doWork::server
+```
+
+C++ AIDL 生成器会把 transaction code 到方法名的映射交给 `BBinder::setTransactionCodeMap()`。Java Binder 由生成的 `getTransactionName()` 提供方法名。映射缺失或 code 不在用户方法范围时，切片名称可能退化为 `UNKNOWN_CODE_<n>`。
+
+### 6.2 生成代码还可以增加客户端和服务端切片
+
+C++ 后端在 `options.GenTraces()` 开启时，会分别在代理方法和 Stub 分发中生成 `ScopedTrace`：
+
+```cpp
+::android::binder::ScopedTrace trace(
+    ATRACE_TAG_AIDL,
+    "AIDL::cpp::IExample::doWork::cppClient");
+```
+
+服务端对应名称以 `cppServer` 结尾。它们与 `BBinder::transact()` 的通用服务端切片不是同一处代码，因此抓到的轨道可能出现嵌套切片。看到几个相近的 AIDL slice 时，应先检查名称后缀和所在进程/线程，不能按切片数量推算调用次数。
+
+源码没有给出“关闭时固定 10 ns”或“开启时固定多少微秒”的保证。关闭 tag 会绕过名称构造和 `trace_begin()`；开启后的成本与生成代码、名称处理、trace 缓冲区和调用频率有关，应在目标设备上测量。
+
+### 6.3 最小 Perfetto 配置
+
+下面的配置用于同时采集 AIDL 方法切片、Binder flow 与线程调度。它是分析模板，缓冲区大小和时长应按复现窗口调整。
+
+```protobuf
+buffers {
+  size_kb: 32768
+  fill_policy: RING_BUFFER
+}
+
+data_sources {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      atrace_categories: "aidl"
+      ftrace_events: "binder/binder_transaction"
+      ftrace_events: "binder/binder_transaction_received"
+      ftrace_events: "binder/binder_transaction_alloc_buf"
+      ftrace_events: "binder/binder_txn_latency_free"
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_waking"
+    }
+  }
+}
+
+duration_ms: 10000
+```
+
+`ATRACE_TAG_AIDL` 只带来方法切片。跨进程连线来自 Binder ftrace 事件，线程为什么迟迟没有运行则依赖调度事件。只打开 `aidl` category，不能替代 Binder driver 与 `sched` 数据。
+
+## 七、API 37 的 Perfetto 表没有 `dispatch_dur`
+
+`android-17.0.0_r1` 中 `android_binder_txns` 的主要字段包括：
+
+- `client_ts`、`client_dur`：客户端 Binder slice 的起点与墙钟时长；
+- `server_ts`、`server_dur`：服务端 Binder slice 的起点与墙钟时长；
+- `client_process`、`server_process` 及两端 pid/tid；
+- `aidl_name`、`interface`、`method_name`；
+- `is_sync`；
+- 去除 suspend 区间后的 `client_monotonic_dur`、`server_monotonic_dur`。
+
+表中没有 `dispatch_dur`。下面的查询把“服务端切片起点相对客户端切片起点的差值”显式命名为 `server_start_delay_ms`：
 
 ```sql
 INCLUDE PERFETTO MODULE android.binder;
 
-SELECT server_process, avg(dispatch_dur) / 1e6 as avg_dispatch_ms,
-       avg(server_dur) / 1e6 as avg_server_ms, count(*) as txn_count
+SELECT
+  client_process,
+  server_process,
+  aidl_name,
+  client_dur / 1e6 AS client_ms,
+  server_dur / 1e6 AS server_ms,
+  (server_ts - client_ts) / 1e6 AS server_start_delay_ms
 FROM android_binder_txns
-WHERE server_process = '/system/bin/system_server'
-  AND ts > trace_start() + 1e9  -- 跳过启动阶段
-GROUP BY server_process
-ORDER BY avg_dispatch_ms DESC;
+WHERE is_sync = 1
+ORDER BY client_dur DESC
+LIMIT 50;
 ```
 
-如果 `avg_dispatch_ms` >> `avg_server_ms`，说明 system_server 的 16 个 binder 线程都在忙。进一步查 thread_state 轨道，看 binder 线程阻塞在哪个锁上——通常是 `ActivityManagerService` 或 `PackageManagerService` 的全局锁。
+这个差值适合筛选“服务端开始得晚”的事务，但不能直接命名为纯排队时间：它还可能包含客户端到驱动、驱动选择线程以及调度唤醒等区间。`client_dur - server_dur` 同样混合了内核传输、等待、回复和调度开销。需要继续查看 `android_sync_binder_thread_state_by_txn` 或两端线程轨道，才能区分 runnable 延迟、睡眠和锁阻塞。
 
-**场景二：ContentProvider query 跨进程延迟**
+## 八、`binder_txn_latency_free` 记录对象释放时刻
 
-现象：`ContentResolver.query()` 耗时异常，但 provider 进程的 `query()` 方法本身不慢。
+当前内核的 `binder_txn_latency_free` tracepoint 包含：
 
-诊断路径：在 Perfetto 中搜索 `binder transaction` slice，filter `aidl_name LIKE '%ContentProvider%'`。对照 `client_dur` 和 `server_dur`：
+- transaction `debug_id`；
+- `from_proc/from_thread` 与 `to_proc/to_thread`；
+- `code`、`flags`。
 
-- `dispatch_dur` 占比 > 70% → provider 进程线程池饱和或被 freeze
-- `server_dur` 异常但方法逻辑不复杂 → 可能是 CursorWindow 跨进程拷贝开销 [来源: intake/research-feeds/2026-04-05-07-cursorwindow-binder-performance.md]
+触发点位于 `binder_free_transaction()`。它说明某个内核 `binder_transaction` 对象何时被释放，可借助 `debug_id` 与 `binder_transaction` 事件关联。两事件的时间差是该内核对象的存活区间，不等于应用看到的端到端调用耗时：服务端何时释放接收缓冲区、错误路径以及 oneway 处理方式都会影响对象寿命。
 
-**场景三：oneway 调用风暴**
+当前 `binder_trace.h` 有 `binder_transaction` 和 `binder_transaction_received`，回复仍通过 `binder_transaction` 的 `reply` 字段表示；不存在名为 `binder_reply` 的 tracepoint。也不存在 `binder_freeze` tracepoint。诊断脚本应先检查设备的 `/sys/kernel/tracing/events/binder/`，不要把 UI 中的 “binder reply” slice 名称当成内核事件名。
 
-现象：system_server logcat 出现 `BR_ONEWAY_SPAM_SUSPECT` 警告，某个 app 的 binder 调用被限流。
+## 九、RecordedTransaction 适合受控复现，不适合常驻监控
 
-诊断路径：打开 `BINDER_ENABLE_ONEWAY_SPAM_DETECTION` 后，在 Perfetto 中 filter `is_sync = 0` 的 binder transaction，按 `client_process` 聚合 count。高频 oneway 调用方通常是后台保活进程在循环调 `registerListener` 类接口。
+### 9.1 启用条件
 
-## 扩展
+`RecordedTransaction` 同时受三个条件限制：
 
-### 🔸 RecordedTransaction 二进制格式与离线分析
+1. libbinder 编译时定义 `BINDER_ENABLE_RECORDING`，否则 `kEnableRecording` 为 `false`；
+2. 使用 kernel Binder；
+3. 发起 `START_RECORDING_TRANSACTION` / `STOP_RECORDING_TRANSACTION` 的调用者 uid 为 root。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/RecordedTransaction.cpp:43-96]
+`startRecordingTransactions(const Parcel& data)` 从控制事务的 `Parcel` 中读取一个 `unique_fd`。同一个 `BBinder` 一次只允许一场录制。`userdebug` 不是充分条件，必须检查目标产品的 libbinder 构建参数。
 
-录制数据的二进制格式设计支持前向兼容——Chunk 结构允许新增类型而不破坏旧解析器。`TransactionHeader` 包含 `version` 字段（非零表示 RPC binder 而非 kernel binder）、接口描述符、code/flags、纳秒级时间戳。离线解析时按 Chunk 顺序读取，每个 Chunk 的 `chunkType` 不识别就跳 `dataSize` + 8（checksum），不阻断后续解析。
+### 9.2 它记录服务端进站事务
 
-`dumpToFile(fd)` 是顺序写，无锁，实测 overhead 在 100ns-1us 量级（依赖 Parcel size）。录制不影响 transaction 的正常处理路径——录制失败只打 `ALOGI`，不改变 transaction 返回值。
+录制代码位于 `BBinder::transact()`，在 `onTransact()` 返回后执行。它保存：
 
-### 🔸 厂商定制 binder 调度优先级传播
+- `getInterfaceDescriptor()`；
+- transaction `code` 与 `flags`；
+- `onTransact()` 返回状态；
+- 请求 Parcel 的数据区与对象偏移；
+- 回复 Parcel 的数据区；
+- 调用 `timespec_get()` 时的时间戳。
 
-部分厂商（MTK MUSCHED、QCOM SCHED_GROUP）在 binder 调用链中传播调度优先级——client 线程的 VIP 等级通过 `binder_transaction` 中的 `prio` 字段传递给 server 线程，server 线程被临时提升优先级处理。这套机制在 Perfetto 的 `sched_switch` 事件中表现为 server binder 线程的 `prio` 字段短暂变化。OEM 定制的 binder 线程池上限（如从 16 改到 32）会影响 dispatch_dur 基线——分析时需要确认设备的 `binder_thread_pool_size` 属性。
+时间戳在服务端处理完成后采集，不能当作事务开始时间。AOSP 的 `BpBinder` 发送路径没有与之对称的客户端录制入口，因此“客户端和服务端各打开一次就得到端到端录制”并不成立。端到端时间仍应由 Perfetto 的 Binder flow 解释。
 
-> 本节源码锚点为 android-17.0.0_r1。部分 ioctl 在内核侧的精确字段定义需要 `<linux/android/binder.h>` 头文件确认 [待验证]。Android 14/16 同名 ioctl 的 framework 侧入口存在性未逐行 grep 确认 [待验证]。
+### 9.3 文件格式与风险
+
+Android 17 的写入顺序是：
+
+```text
+Header
+Interface Name
+Sent Parcel
+Reply Parcel
+Sent Parcel Object Offsets
+End
+```
+
+`TransactionHeader` 只有 code、flags、返回状态、RPC version 标记、秒/纳秒时间戳和保留字段；接口名是独立 chunk。每个 chunk 由 `uint32_t chunkType`、`uint32_t dataSize`、数据、0～7 字节补齐和 64 位 XOR 校验值组成。未知 chunk 可以校验后跳过，重复 chunk 由后读到的值覆盖。
+
+源码仍明确标记该格式“under active development”且不稳定。录制内容可能包含账号标识、令牌、路径和业务数据；同时，序列化与文件写入发生在事务返回路径并受录制锁保护，会改变被测路径的时延。没有源码依据支持固定的 `100 ns–1 us` 开销。它适用于实验设备上的协议复现和离线检查，不应用于生产设备的常驻采集。
+
+## 十、一个可复用的诊断顺序
+
+### 10.1 慢事务
+
+1. 用 Perfetto 抓 `binder`、`aidl` 与 `sched`；
+2. 从 `android_binder_txns` 找出长 `client_dur`；
+3. 比较 `server_ts` 与 `client_ts`，再检查客户端和服务端线程状态；
+4. AIDL slice 有方法名时定位到接口；没有名称时保留 code 和两端 pid/tid，回到服务定义核对；
+5. 不用 `binder_txn_latency_free` 的对象寿命替代端到端耗时。
+
+### 10.2 冻结相关事务
+
+1. 由负责进程冻结的系统组件记录冻结/解冻操作；
+2. 把 `sync_recv` 当位图解析，禁止累计求和；
+3. 需要观察 handle 对应远端状态变化时使用 freeze notification；
+4. 用 Binder async flow 判断 oneway 是在冻结期间等待，还是服务端线程本身繁忙。
+
+### 10.3 失败与内容复现
+
+1. 事务失败后在同一 Binder 线程读取 extended error；
+2. `ENOSPC` 先检查接收进程的缓冲区占用、大事务和并发异步事务；
+3. 只有在 trace 与日志无法解释协议内容、设备可控且 libbinder 编译开关已打开时，才使用 `RecordedTransaction`；
+4. 录制文件按敏感数据管理，完成分析后清理。
+
+## 十一、源码锚点
+
+- AOSP `android-17.0.0_r1`
+  - `frameworks/native/libs/binder/Binder.cpp`：AIDL 服务端 trace、录制权限与写入位置
+  - `frameworks/native/libs/binder/IPCThreadState.cpp`：冻结 ioctl、扩展错误、oneway 告警、冻结通知
+  - `frameworks/native/libs/binder/ProcessState.cpp`：binderfs feature 探测与默认 oneway 嫌疑检测
+  - `frameworks/native/libs/binder/RecordedTransaction.cpp`、`include/binder/RecordedTransaction.h`：chunk 格式与不稳定性声明
+  - `system/tools/aidl/generate_cpp.cpp`：C++ 客户端/服务端 AIDL trace 生成
+  - `external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql`：`android_binder_txns` 字段定义
+- Kernel `android17-6.18-2026-06_r6`
+  - `include/uapi/linux/android/binder.h`：冻结状态位与 ioctl UAPI
+  - `drivers/android/binder.c`：冻结、扩展错误、oneway 嫌疑告警和事务释放
+  - `drivers/android/binderfs.c`：feature 文件
+  - `drivers/android/binder_trace.h`：Binder tracepoint 字段
+
+本章所有结论均以以上两个锚点为准。迁移到旧系统或 GKI/vendor 分支时，应重新核对 feature 文件、tracepoint 列表、SELinux 策略和 libbinder 编译选项。
