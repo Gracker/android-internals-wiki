@@ -12,12 +12,14 @@ sources:
   path: https://developer.android.com/reference/android/view/Choreographer
 - type: aosp
   path: platform/frameworks/base/core/java/android/view/Choreographer.java
-- type: blog
-  path: obsidian/Personal-Knowlodge/source/Android-Choreographer.md
 - type: aosp
   path: platform/frameworks/base/core/java/android/view/DisplayEventReceiver.java
 - type: aosp
   path: platform/frameworks/base/core/java/android/view/ViewRootImpl.java
+- type: aosp
+  path: platform/frameworks/base/graphics/java/android/graphics/HardwareRenderer.java
+- type: aosp
+  path: platform/frameworks/base/libs/hwui/renderthread/CanvasContext.cpp
 - type: aosp
   path: platform/frameworks/base/core/java/android/view/FrameMetrics.java
 - type: aosp
@@ -309,7 +311,7 @@ CALLBACK_INPUT
 
 | 阶段 | Android 17 trace 子切片 | 主要工作 | 容易误解的地方 |
 |------|--------------------------|----------|----------------|
-| INPUT | `input` | 帧同步的 batched input 消费、重采样等 | 普通输入事件并非全部等到这里才处理 |
+| INPUT | `input` | 帧同步的 batched input 消费、重采样等 | 普通输入事件也可以在其他时机处理 |
 | ANIMATION | `animation` | 属性动画、`FrameCallback`、公开 `VsyncCallback` 等 | 回调只推进状态，不保证一定产生新 buffer |
 | INSETS_ANIMATION | `insets_animation` | 汇总系统栏、IME 等 Insets 动画更新 | 它位于 Animation 之后、Traversal 之前 |
 | TRAVERSAL | `traversal` | ViewRoot traversal、measure/layout/draw、HWUI 交接 | 三项工作是否都执行取决于本帧状态 |
@@ -394,7 +396,7 @@ flowchart TD
 3. 必要时切换 preferred timeline；
 4. 超过日志阈值时打印 `Skipped N frames`。
 
-`debug.choreographer.skipwarning` 的默认阈值是 30。它只控制日志警告，不是系统判定 jank 的唯一门槛。没有 `Skipped N frames` 日志，仍可能存在 deadline miss；出现日志也只能说明主线程回调严重迟到，不能单靠它确认显示端结果。
+`debug.choreographer.skipwarning` 的默认阈值是 30。它只控制日志警告，不能当作系统判定 jank 的唯一门槛。没有 `Skipped N frames` 日志，仍可能存在 deadline miss；出现日志也只能说明主线程回调严重迟到，不能单靠它确认显示端结果。
 
 ### 5.4 写入 FrameInfo 后才分发回调
 
@@ -438,7 +440,7 @@ Traversal 可能把本帧状态交给 RenderThread，但以下工作可以继续
 
 ### 6.3 expected present 回答“系统预计何时呈现”
 
-`FrameTimeline.getExpectedPresentationTimeNanos()` 表示平台预计该 timeline 何时呈现。它不是 present fence，也不是实际显示结果。比较 expected 与 actual presentation，才能判断这一帧是否按计划显示。
+`FrameTimeline.getExpectedPresentationTimeNanos()` 表示平台预计该 timeline 何时呈现。这个值属于预测时间，不代表 present fence 或实际显示结果。比较 expected 与 actual presentation，才能判断这一帧是否按计划显示。
 
 ### 6.4 VSync ID 是跨层关联键
 
@@ -657,14 +659,14 @@ ORDER BY a.ts;
 Android 17 的标准 HWUI/BLAST 路径会把等待 buffer release 的时长回传给 Choreographer：
 
 ```text
-BLASTBufferQueue 等待 buffer release
-  → HardwareRenderer/CanvasContext callback
+BBQBufferQueueProducer::waitForBufferRelease() 统计等待时长
+  → BLASTBufferQueue → CanvasContext/HardwareRenderer callback
   → ViewRootImpl 绑定 Choreographer.onWaitForBufferRelease()
   → 等待时长超过上一帧 interval 的一半
   → 标记 buffer stuffed
 ```
 
-这条路径用于说明触发来源。`onWaitForBufferRelease()` 只负责设置状态，具体动作在后续 `doFrame()` 开始时由 `updateBufferStuffingState()` 决定。
+`BBQBufferQueueProducer` 是 Android 17 标准 App Window 的 BLAST Producer 实现。它在没有 free buffer、`dequeueBuffer()` 必须等待 release 时进入这条路径。`onWaitForBufferRelease()` 只负责设置状态，具体动作在后续 `doFrame()` 开始时由 `updateBufferStuffingState()` 决定。
 
 ### 11.2 恢复动作有 DELAY_FRAME 和 OFFSET
 
@@ -769,8 +771,8 @@ COMMIT 是 App callback 阶段。buffer 生产、SF 合成、HWC present 和 pan
 | Android 4.1 / API 16 | Project Butter 引入 Choreographer | App 输入、动画和 traversal 开始围绕 VSync 调度 |
 | Android 7.0 / API 24 | FrameMetrics 公开 | 可按 Window 帧观察阶段耗时 |
 | Android 8.0 / API 26 | FrameMetrics 增加 intended/actual VSync 时间 | 可识别 UI 线程未及时响应 intended VSync |
-| Android 11 / API 30 | Insets animation 进入现代回调序列 | 五阶段顺序包含 `INSETS_ANIMATION` |
-| Android 12 / API 31 | FrameTimeline 可用；FrameMetrics 增加 GPU duration/deadline | App 与 SF 可以按 token 分析 expected/actual |
+| Android 10 / API 29 | Choreographer 已包含独立的 Insets animation callback 类别 | 五阶段顺序包含 `INSETS_ANIMATION` |
+| Android 12 / API 31 | SurfaceFlinger/Perfetto FrameTimeline 可用；FrameMetrics 增加 GPU duration/deadline | App 与 SF 可以按 token 分析 expected/actual；此时还没有 API 33 的公开 `Choreographer.FrameData` |
 | Android 13 / API 33 | 公开 `VsyncCallback`、`FrameData`、`FrameTimeline` | App 可读取候选 timeline、deadline 和 VSync ID |
 | Android 16 / API 36 | FrameMetrics 公开 `FRAME_TIMELINE_VSYNC_ID` | 线上 Window 指标更容易与 trace token 关联 |
 | Android 17 / API 37 | 本章源码基线；五类 callback、多 timeline、buffer stuffing recovery 均按 `android-17.0.0_r1` 核验 | 不把当前实现倒推成 Android 17 首次新增 |
@@ -845,6 +847,8 @@ Perfetto 中看到 wakeup 到 running 的长间隔时，再检查优先级、CFS
 - AOSP `android-17.0.0_r1`：`core/java/android/view/Choreographer.java`
 - AOSP `android-17.0.0_r1`：`core/java/android/view/DisplayEventReceiver.java`
 - AOSP `android-17.0.0_r1`：`core/java/android/view/ViewRootImpl.java`
+- AOSP `android-17.0.0_r1`：`graphics/java/android/graphics/HardwareRenderer.java`
+- AOSP `android-17.0.0_r1`：`libs/hwui/renderthread/CanvasContext.cpp`
 - AOSP `android-17.0.0_r1`：`core/java/android/view/FrameMetrics.java`
 - AOSP `android-17.0.0_r1`：`core/java/android/view/Window.java`
 - AOSP `android-17.0.0_r1`：`frameworks/native/services/surfaceflinger/Scheduler/EventThread.cpp`
