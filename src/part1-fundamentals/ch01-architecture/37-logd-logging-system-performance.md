@@ -31,356 +31,300 @@ gap_source: "AOSP结构+官方文档"
 
 # 1.37 Android logd 日志系统性能与开销
 
-## logd 架构与日志通路
+Android 日志看起来只是一行 `Log.d()`，系统侧却要完成级别判断、JNI 字符串访问、Unix Domain Socket 发送、缓冲保存和读者分发。排查这条链路时，最容易混淆三个边界：应用写日志与 logd 保存日志、logd 的服务端筛选与 logcat 的客户端筛选、EventLog 与 StatsD atom 传输。本章以 `android-17.0.0_r1` 为主线把它们分开。
 
-### 从 Java API 到内核的完整日志链路
+## 1. Android 17 的写入链路
 
-Android 日志系统的核心链路如下：
+### 1.1 从 `Log.d()` 到 `logdw`
 
-```
-App: android.util.Log.d(TAG, msg)
-  → JNI: android_util_Log_println_native (frameworks/base/core/jni/android_util_Log.cpp)
-    → __android_log_write (system/logging/liblog/logger_write.cpp)
-      → write() 系统调用 → logd socket (SOCK_DGRAM)
-        → logd 守护进程读取
-          → 写入环形缓冲区
-            → logcat 客户端读取
-```
+普通 Java 文本日志的主路径如下：
 
-> 注：早期 Android（4.x 及以前）经 logger 内核驱动的 `/dev/log_main` 等字符设备节点写入；Android 5.0+ 已改为通过 socket 直接送入 logd，不再使用 `/dev/log/*` 节点。上图展示的是 Android 5.0+ 的现代路径。
-
-**关键组件**：
-
-- **logd 守护进程**（`system/logging/logd/`）：系统级日志中枢，从 socket 读取日志条目（早期版本从内核 logger 设备读取），写入内存环形缓冲区，供 logcat 客户端消费。
-- **logger 内核驱动**（`drivers/staging/android/logger.c`，Android 早期版本）：提供 `/dev/log_main`、`/dev/log_system`、`/dev/log_events`、`/dev/log_crash` 四个字符设备节点。从 Android 5.0 开始，logger 驱动被废弃，日志写入改为通过 socket 直接发送给 logd。
-- **logd-socket 通路**（Android 5.0+）：`liblog` 中的 `__android_log_write` 通过 `SOCK_DGRAM` socket 将日志条目以二进制协议发送给 logd 守护进程。相比内核 logger 驱动，这一设计把环形缓冲区管理从内核态移到用户态守护进程，由 logd 统一做丢弃/合并/分类策略；日志写入仍需经过一次 `write()` 系统调用（仍存在上下文切换），但不再占用专用字符设备与内核侧缓冲逻辑。
-
-[已验证: AOSP android-17.0.0_r1, system/logging/logd/main.cpp]
-
-### logd 的缓冲区分类
-
-logd 维护多个独立环形缓冲区，每个有独立的容量和丢弃策略：
-
-| 缓冲区 | 默认大小 | 用途 |
-|--------|----------|------|
-| `main` | 256 KB | 应用主日志 |
-| `system` | 256 KB | 系统服务日志 |
-| `events` | 64 KB | 二进制事件日志（statsd atom） |
-| `crash` | 64 KB | 崩溃日志 |
-| `kernel` | 配置依赖 | 内核日志（dmesg 采集） |
-| `radio` | 64 KB | 电话/通信日志 |
-
-缓冲区大小可通过 `logcat -G` 或 `ro.logd.size` 系统属性调整。每个缓冲区是独立的环形结构，满了之后覆盖最旧的条目。
-
-[已验证: AOSP android-17.0.0_r1, system/logging/logd/LogBuffer.cpp]
-
-### Android 版本演进中的 logd 架构变化
-
-> 注：以下版本线为公开资料整理的方向性描述，用于帮助理解演进趋势；每一条的精确引入版本/阈值应以对应版本的 AOSP 源码为准，本文不作为版本断代表。
-
-- **Android 4.x 及以前**：使用 logger 内核驱动，应用通过 `/dev/log/*` 设备节点写入日志。
-- **Android 5.0 (Lollipop)**：引入 logd 守护进程替代 logger 驱动，日志通过 socket 发送。logger 驱动逐步从内核移除。
-- **Android 7.x 前后**：引入 `chatty` 机制，对高频重复日志进行合并压缩，减少缓冲区消耗。
-- **Android 10 (API 29)**：`logcat -v` 多种输出格式，增加 `uid` 字段支持。
-- **Android 12 (API 31)**：日志条目增加 epoch 信息，支持更精确的时间戳。
-- **Android 14 (API 34) 前后**：logd 开始引入 Rust 组件，部分日志解析路径迁移到 Rust 实现。
-- **Android 15 (API 35) 前后**：logd Rust 重写进入实质性阶段，核心 LogBuffer 和 LogReader 部分开始 Rust 化。
-- **Android 17 (API 37)**：在 android-17.0.0_r1 上，logd 的 Rust 组件已出现在核心路径；Rust 化的具体覆盖比例和 C++ 兼容层的最终范围以 android-17.0.0_r1 源码为准，本文不把社区/commit message 的方向性描述当作已实测结论。
-
-[已验证: AOSP android-17.0.0_r1, system/logging/logd/ git log]
-
-
-## android.util.Log 写入开销
-
-### JNI 调用路径分析
-
-当应用调用 `Log.d(TAG, "message")` 时，完整的执行路径如下：
-
-1. **Java 层**：`android.util.Log.d()` → 调用 native 方法 `println_native(int bufID, int priority, String tag, String msg)`
-2. **JNI 层**（`android_util_Log.cpp`）：将 Java 字符串转换为 C 字符串（涉及字符编码转换和内存分配），调用 `__android_log_buf_write()`
-3. **liblog 层**（`system/logging/liblog/logger_write.cpp`）：构造 `android_log_event` 结构体，填充时间戳、pid、tid、tag 等元数据，通过 `write()` 向 logd socket 发送
-4. **内核层**：socket write 系统调用，涉及上下文切换
-
-**单条日志开销估算**：
-
-| 环节 | 开销 |
-|------|------|
-| JNI 字符串转换 | 0.5-2 μs（取决于字符串长度） |
-| log_event 结构构造 | 0.2-0.5 μs |
-| socket write 系统调用 | 1-3 μs |
-| **总计（单条）** | **约 2-6 μs** |
-
-> ⚠️ 以上为经验量级估算，用于帮助判断数量级（单条日志对 16.6ms 帧预算的影响通常在 0.1% 量级），未在 android-17.0.0_r1 上运行 microbenchmark。不同 SoC、日志长度、logd 负载下实测值会显著偏离；如需精确数字，应以 Perfetto trace + on-device 测量为准，不要直接引用本表数字。
-
-### 主线程日志写入的帧预算影响
-
-在 60fps 下，单帧预算为 16.6ms。假设主线程每帧写入 50 条日志（在高频日志场景中并不少见）：
-
-- 50 条 × 4μs/条 = 200μs = 0.2ms
-- 占帧预算的约 1.2%
-
-看似占比不高，但叠加以下因素后可能放大：
-
-- **GC 压力**：JNI 字符串转换产生短期对象，增加 young gen GC 频率
-- **socket 竞争**：多线程同时写日志时的 socket 锁竞争
-- **logd 反压**：logd 处理不过来时，socket 缓冲区满导致 write() 阻塞
-- **SELinux 检查**：每条日志写入路径上有 SELinux 权限验证开销
-
-### Log.println() 的隐藏开销
-
-`Log.println(int priority, String tag, String msg)` 是所有 `Log.d/v/i/w/e` 方法的底层实现。除了显式的字符串参数外，还有一个容易被忽视的开销点：
-
-```java
-// Log.d 的实现
-public static int d(String tag, String msg) {
-    return println_native(LOG_ID_MAIN, DEBUG, tag, msg);
-}
+```text
+android.util.Log.d(tag, message)
+  -> Log.println_native(LOG_ID_MAIN, DEBUG, tag, message)
+  -> frameworks/base/core/jni/android_util_Log.cpp
+     GetStringUTFChars(tag / message)
+  -> __android_log_buf_write()
+     __android_log_is_loggable()
+  -> liblog LogdWrite()
+     writev(header, payload)
+  -> /dev/socket/logdw (AF_UNIX, SOCK_DGRAM)
+  -> logd LogListener
+  -> LogBuffer::Log()
 ```
 
-当 `msg` 包含复杂字符串拼接时，实际开销远大于 JNI 调用本身：
+这张路径图有四个需要记住的细节。
 
-```java
-// 反模式：字符串拼接在调用前已完成
-Log.d("TAG", "user=" + user.getName() + " id=" + user.getId() + " data=" + data.toString());
-// 即使日志级别被 ProGuard 移除，字符串拼接仍会执行（如果不做条件判断）
+第一，JNI 层通过 `GetStringUTFChars()` 取得 tag 和 message 的 Modified UTF-8 表示，随后释放。虚拟机是否复制字符串由实现和字符串内容决定，因此不宜把它固定描述成“一次堆分配”，但编码访问和 JNI 边界都有成本。
+
+第二，文本日志进入 `__android_log_buf_write()` 后会再次执行 `__android_log_is_loggable()`。`Log.d()` 的参数在进入 native 方法前已经求值，所以 native 级别过滤能省掉 socket 写入，却省不掉调用方已经完成的字符串拼接、对象 `toString()` 或 JSON 序列化。
+
+第三，Android 17 的 liblog 使用 `writev()` 发送头部和 payload。旧版内核 logger 的 `/dev/log_main` 等节点只适合解释早期版本，不能用来描述当前路径。
+
+第四，`/dev/socket/logdw` 是 datagram socket。logd 为它启用凭据传递，`LogListener` 从 `SCM_CREDENTIALS` 取得发送方 pid、uid、gid；客户端不能靠伪造 payload 冒充另一个进程。SELinux 和文件/socket 权限约束谁能连接与写入，这与“每条日志都在 liblog 中做一次 SELinux 判定”是两回事。
+
+源码锚点：
+
+- `frameworks/base/core/java/android/util/Log.java`
+- `frameworks/base/core/jni/android_util_Log.cpp`
+- `system/logging/liblog/logger_write.cpp`
+- `system/logging/liblog/logd_writer.cpp`
+- `system/logging/liblog/README.protocol.md`
+- `system/logging/logd/LogListener.cpp`
+
+### 1.2 普通日志在过载时会丢，不会等待 logd
+
+`LogdWrite()` 为普通日志使用 `SOCK_NONBLOCK`。这里的普通日志包括 `main`、`system`、`radio`、`events`、`stats`、`crash` 等合法 buffer；`security` 是受权限控制的特殊二进制 buffer，liblog 为它另设阻塞 socket。
+
+当 logd 来不及接收、socket 返回 `EAGAIN` 时，liblog 记录一次 drop 并返回。后续写入恢复且 liblog 内部日志允许输出时，它会尝试写入 event tag `1006`（`liblog`），报告此前丢弃的数量。这与旧版 `chatty` 行不是同一套机制。
+
+因此，普通应用日志风暴的风险主要是：
+
+- 调用方持续做格式化、JNI 转换和系统调用，消耗 CPU 与电量；
+- socket 过载后新日志丢失，关键现场被噪声覆盖；
+- logd 忙于接收、压缩、裁剪和服务读者，增加系统负载；
+- 日志对象和中间字符串增加分配压力。
+
+把普通日志描述成“socket 满后 `write()` 阻塞主线程并导致 ANR”不符合 Android 17 的 liblog 实现。若 trace 显示线程长期停在日志相关调用，应继续检查自建日志框架的锁、磁盘 sink、格式化、崩溃收集器或厂商改动，不能直接归因于 AOSP `logdw` 反压。
+
+也不要对 `EAGAIN` 做无间隔重试。这样会把允许丢日志的保护机制变成 CPU 自旋。
+
+### 1.3 payload 上限与长消息
+
+Android 17 的 `LOGGER_ENTRY_MAX_PAYLOAD` 为 4068 字节。`LogdWrite()` 会把超出上限的直接 payload 截到可发送范围。Java `Log.printlns()` 处理长文本和堆栈时，会按 payload 预算和换行位置拆成多条，再逐条调用 native 写入。
+
+这会带来两个结果：
+
+- 一条很长的异常堆栈可能对应多次 JNI 和 `writev()`；
+- 直接调用底层打印接口时，尾部信息可能被截断。
+
+线上诊断信息应把稳定标识和错误类别放在前面，避免把唯一有用的字段留到长消息末尾。结构化数据也不应无上限地序列化进 logcat。
+
+## 2. logd 如何接收和保存日志
+
+### 2.1 `LogListener` 的两条接收实现
+
+logd 从 init 继承 `logdw` socket。Android 17 的 `LogListener` 有两种接收方式：
+
+- `android.logd.flags.use_iouring` 开启且内核支持时，使用 `IOUringSocketHandler` 的 multishot `recvmsg`；
+- 条件不满足时，使用传统 `recvmsg()` 循环。
+
+两条路径最终都会校验包长度、读取发送方凭据，调用 `LogBuffer::Log()`。io_uring 是受 aconfig flag 和运行时支持共同控制的实现选择，不能据此断言所有 Android 17 设备都启用它。
+
+### 2.2 buffer 名称、容量与设备差异
+
+Android 17 定义了八个 log ID：
+
+| Buffer | 常见内容 |
+|---|---|
+| `main` | 应用与通用 native 日志 |
+| `radio` | radio/telephony 相关日志 |
+| `events` | EventLog 二进制事件 |
+| `system` | framework/system 组件文本日志 |
+| `crash` | 崩溃相关日志 |
+| `stats` | logd 协议中的 stats 二进制 buffer |
+| `security` | 受权限控制的安全事件 |
+| `kernel` | logd 收集的内核日志 |
+
+`LogSize.h` 给出的通用默认值是每个 buffer 256 KiB，最小值 64 KiB，最大值 256 MiB。非 debuggable 的 low-RAM 设备会选 64 KiB。产品配置和运行时设置可以改变结果；Android 17 的属性覆盖还受设备类型与 debuggable 条件约束，不能用一张固定容量表代表所有设备。
+
+应直接查询目标设备：
+
+```bash
+adb logcat -g
 ```
 
-正确做法见 [生产环境日志性能治理](#生产环境日志性能治理) 小节。
+输出会列出各 buffer 的 ring buffer size、已消费量、可读量以及单条上限。`logcat -G` 可以按 `-b` 选择修改运行时大小，但通常需要相应权限；调大容量只能延长保留窗口，不能消除写入成本或 socket 丢包。
 
+### 2.3 默认实现是 serialized chunks
 
-## logd 缓冲区管理与丢弃策略
+Android 17 的 `logd.buffer_type` 默认值是 `serialized`，另一个可选值为 `simple`。默认实现不能理解成一个定长 `LogBufferEntry[]` 数组。
 
-### 环形缓冲区的写入与覆盖
+`SerializedLogBuffer` 为每个 log ID 维护 `SerializedLogChunk` 列表。当前 chunk 以可追加形式保存；完成的 chunk 使用 Zstd level 1 压缩。总计费大小超过目标容量时，logd 从较老的 chunk 开始裁剪。读者需要访问压缩 chunk 时再解压，并通过引用状态避免正在读取的数据被直接释放。
 
-logd 使用 `LogBufferEntry` 数组作为环形缓冲区。写入新条目时：
+这套设计的容量语义仍接近“保留有限窗口、淘汰旧数据”，内部单位却是 chunk 和序列化条目。分析裁剪成本、内存占用或慢读者行为时，必须以该实现为准。
 
-1. 如果缓冲区未满，直接追加到尾部
-2. 如果缓冲区已满，覆盖最旧的条目（FIFO 淘汰）
-3. 被覆盖的条目会计入 `dropped` 统计
+### 2.4 `chatty` 属于历史机制
 
-### DROP 消息机制
+`system/logging/logd/README.compression.md` 的标题直接说明了 Android S 的变化：使用日志压缩取代 Chatty。Android 17 的 logd 源码没有当前默认路径所需的 `ChattyLogBuffer.cpp`，默认的 serialized buffer 也不会按旧说明插入 `uid=... expired ... lines` 来表示重复日志。
 
-当大量条目被丢弃时，logd 会在缓冲区中插入一条 `chatty` 消息：
+旧设备抓取中仍可能看到 `chatty`，AOSP 的事件 tag 表也保留了历史名称，但这不足以证明 Android 17 默认使用旧的重复行合并策略。当前版本的两个相关现象应分开看：
 
-```
-06-28 10:00:00.123  1234  1235 I chatty: uid=10000(tag) expired 45 lines
-```
+- buffer 超限：logd 裁剪老 chunk；
+- writer socket 过载：liblog 遇到 `EAGAIN` 丢弃新写入，并可能用 event tag `liblog` 报告数量。
 
-这条消息记录了被合并丢弃的日志数量、来源 uid 和 tag。`chatty` 机制用于减少高频重复日志的缓冲区消耗。
+## 3. logcat 的读取与过滤边界
 
-[已验证: AOSP android-17.0.0_r1, system/logging/logd/ChattyLogBuffer.cpp]
+### 3.1 reader socket 与每客户端线程
 
-> 注：chatty 行为在 Android 7.0 前后引入并持续演进，但其精确引入版本、合并阈值、被 Rust 重写后是否仍默认开启等细节，应以 android-17.0.0_r1 源码为准复核，不要把本文当作版本断代表。
+logcat 连接 `/dev/socket/logdr`。该 reader socket 使用 `SOCK_SEQPACKET`，logd 接受连接和读取命令后，为客户端创建独立的 `LogReaderThread`。服务端命令支持的主要筛选条件包括：
 
-### 缓冲区满时的性能退化
+- log ID mask；
+- pid；
+- 起始时间或 sequence；
+- tail 条数；
+- 是否非阻塞、是否 wrap 等读取模式。
 
-当 logd 处理日志的速度跟不上写入速度时（例如大量应用同时输出日志），会出现：
+安全 buffer 和跨 uid 读取还受凭据与权限约束。应用公开 NDK logging API 的正常写入目标是 `main`；读取全局 logcat 的 `READ_LOGS` 也只授予受信任的特权组件。
 
-1. **socket 缓冲区积压**：发送方 socket 的 `SO_SNDBUF` 满后，`write()` 调用从非阻塞变为阻塞
-2. **logd CPU 飙升**：logd 线程消耗大量 CPU 处理积压日志
-3. **最坏情况**：应用主线程因 `write()` 阻塞而被挂起，间接导致 ANR 风险
+### 3.2 tag 与正则在 logcat 客户端执行
 
-缓冲区大小本身不是性能瓶颈（环形覆盖是 O(1) 操作），真正的问题是 **socket write 的背压传导**。在低端设备或日志风暴场景下，这种背压传导是 logd 性能影响的主要途径。
+`*:S MyApp:V` 一类 tag/priority 规则由 logcat 进程的 `android_log_shouldPrintLine()` 判断。`--regex` 也由 logcat 的 `std::regex_search()` 执行。它们不会作为 tag 表或正则表达式交给 logd。
 
-[已验证: AOSP android-17.0.0_r1, system/logging/logd/LogListener.cpp]
+这个边界会直接影响性能判断：
 
+- `--pid` 能下推给 logd，减少服务端发送的数据；
+- `-b` 能缩小服务端读取的 buffer 集合；
+- tag/priority 和 `--regex` 主要节省终端输出，不一定减少 logd 到 logcat 的传输；
+- 复杂正则消耗的是 logcat 客户端 CPU，不能写成 logd 因正则匹配而升高 CPU。
 
-## Android 15+ logd Rust 重写
+长期采集时，可以先缩小服务端范围，再添加客户端显示过滤。例如：
 
-### Rust 化动机
-
-logd 的 Rust 重写是 Android 系统级 Rust 迁移的一部分，动机包括：
-
-1. **内存安全**：logd 是高权限系统服务（root 运行），C/C++ 中的内存安全漏洞影响面大。Rust 的所有权模型从编译层面消除了 buffer overflow、use-after-free 等风险。
-2. **并发性能**：logd 需要处理多线程并发日志写入和读取，Rust 的 `Send`/`Sync` 机制提供了编译期线程安全保障，避免了 C++ 中手写锁可能引入的死锁和竞态。
-3. **代码可维护性**：Rust 的类型系统和错误处理（`Result`/`Option`）使得代码意图更清晰，减少了 C++ 中常见的隐式错误处理路径。
-
-### Rust 版本的架构变化
-
-> 注：以下为方向性描述（结合社区讨论与 commit message），具体组件名、内部数据结构（如 `RwLock<VecDeque<LogEntry>>`、`mio`）以 android-17.0.0_r1 源码为准，本文不把数据结构描述当作已读源码确认结论。
-
-在 android-17.0.0_r1 附近，logd 的 Rust 组件主要包括：
-
-- **LogBuffer**（Rust 重写）：环形缓冲区管理，使用 `RwLock<VecDeque<LogEntry>>` 替代 C++ 的 mutex 保护链表
-- **LogListener**（Rust 重写）：socket 监听和日志读取，使用 Rust 的 `mio` 或标准库 `std::net` 处理 I/O
-- **LogReader**（Rust 重写）：logcat 客户端的读取服务端，处理过滤和格式化
-- **FFI 兼容层**：保留少量 C++ 包装代码，通过 C ABI 与 init、属性系统等 C/C++ 组件交互
-
-[已验证: AOSP android-17.0.0_r1, system/logging/logd/src/]
-
-### 性能特征对比
-
-基于 AOSP 社区和 Google 内部测试数据：
-
-| 维度 | C++ 版本 | Rust 版本 |
-|------|----------|-----------|
-| 内存占用 | 基线 | 约低 5-10%（更紧凑的数据结构） |
-| 日志吞吐量 | 基线 | 约 1.1-1.3x（无锁读取路径优化） |
-| 尾延迟 | 偶发尖峰（锁竞争） | 更平稳（RwLock 细粒度锁） |
-| 启动时间 | 基线 | 略快（无全局构造函数） |
-
-> ⚠️ 上表倍率来自社区讨论和 commit message 的方向性描述，未在 android-17.0.0_r1 上运行对照基准测试，且 Rust 化的具体覆盖范围在不同 Android 版本上不同。不应把本表数字当作已实测结论或跨版本断代依据；如需引用，应先在目标版本上自测并替换为实测数据。
-
-### 兼容性
-
-Rust 版本 logd 保持了以下兼容性：
-
-- **协议兼容**：socket 二进制协议不变，客户端无需修改
-- **logcat 接口兼容**：所有 `logcat` 命令行参数和行为保持一致
-- **属性系统兼容**：`ro.logd.*` 和 `persist.logd.*` 属性继续生效
-- **SELinux 策略兼容**：logd 的 SELinux 域和权限不变
-
-
-## logcat 抓取性能与过滤开销
-
-### logcat 的读取模型
-
-logcat 通过 socket 连接 logd 的 `LogReader` 服务，持续拉取日志条目。读取过程为：
-
-1. logcat 发起 `connect()` 到 logd reader socket
-2. logd fork 一个 reader 线程服务该连接
-3. logcat 发送过滤条件（tag:priority 表达式）
-4. logd 按过滤条件推送匹配的日志条目
-
-### 过滤开销分析
-
-logcat 的过滤表达式（如 `*:S MyApp:V ActivityManager:I`）在 logd 侧解析为优先级表：
-
-- **tag 精确匹配**：O(1) 查找（哈希表），开销极低
-- **`--regex` 正则过滤**：对每条日志执行正则匹配，开销与正则复杂度正相关。在 10K+ 条/秒的日志流中，复杂正则可能导致 logd CPU 飙升
-- **`--pid` 过滤**：直接比较 pid 字段，开销极低
-
-实际场景中，`--regex` 是最可能造成性能问题的过滤选项。如果需要在生产环境长期 logcat，应优先使用 tag:priority 过滤，避免正则。
-
-### 多进程同时 logcat 的竞争
-
-多个 logcat 客户端同时连接时，logd 的 LogReader 为每个客户端维护独立的读取位置和过滤状态。主要开销：
-
-- **内存**：每个客户端约占用 4-8 KB 的连接状态
-- **CPU**：每条日志需要遍历所有客户端的过滤条件（但 tag 匹配是 O(1)）
-- **实际影响**：5-10 个并发 logcat 客户端在正常日志量下不会产生可感知的性能影响；超过 20 个时可能观察到 logd CPU 占用上升
-
-[已验证: AOSP android-17.0.0_r1, system/logging/logd/LogReader.cpp]
-
-
-## 生产环境日志性能治理
-
-### ProGuard/R8 移除日志调用
-
-最有效的日志性能优化是在 release 构建中直接移除日志调用。正确配置：
-
-```groovy
-// proguard-rules.pro
--assumenosideeffects class android.util.Log {
-    public static int v(...);
-    public static int d(...);
-}
+```bash
+adb logcat -b main --pid="$(adb shell pidof -s com.example.app)" \
+  -v threadtime 'MyApp:V' '*:S'
 ```
 
-R8 在 `minifyEnabled true` 时会移除匹配的方法调用，**包括方法参数中的字符串拼接**（如果拼接结果不被其他地方引用）。
+这里 `-b main` 和 `--pid` 控制服务端数据范围，后面的 filter spec 决定 logcat 打印哪些 tag。命令替换应在主机 shell 执行；多进程应用还要确认 `pidof -s` 选中的进程是否符合排查目标。
 
-⚠️ **常见错误**：
+### 3.3 慢读者与多 reader
 
-```java
-// 错误：即使 Log.d 被移除，StringBuilder 拼接仍可能保留
-Log.d(TAG, "data=" + expensiveToString());
+每个 reader 有独立线程和读取状态。多开 logcat 会增加线程、解压和 socket 发送工作，但 AOSP 没有给出“每个客户端固定占用多少 KB”或“超过多少个必然退化”的通用阈值。
 
-// 正确：使用 BuildConfig.DEBUG 守卫
-if (BuildConfig.DEBUG) {
-    Log.d(TAG, "data=" + expensiveToString());
-}
-```
+当 reader 落后于裁剪位置时，serialized buffer 会让它跳过已被回收的旧 chunk，并记录相应警告。读 socket 也配置了发送超时，避免一个停滞客户端无限拖住发送。是否达到瓶颈取决于日志速率、buffer、读者数量、输出介质和设备性能，需在目标设备测量。
 
-[已验证: 官方文档, developer.android.com/build/shrink-code]
+## 4. 容易混淆的两条旁路
 
-### Timber 等日志框架的运行时开销
+### 4.1 EventLog 与 StatsD atom
 
-Timber（`jakewharton/timber`）是流行的 Android 日志框架，其开销主要来自：
+`LOG_ID_EVENTS` 保存 `EventLog` 风格的二进制事件，tag 可由事件 tag 表解析。现代 StatsD atom 的主传输路径不同：Android R 及以后，`packages/modules/StatsD/lib/libstatssocket` 通过独立的非阻塞 Unix datagram socket `/dev/socket/statsdw` 向 statsd 写入。
 
-1. **调用栈获取**：Timber 默认通过 `new Throwable().getStackTrace()` 获取调用栈来提取 tag。这一操作开销约 5-20μs，远大于 Log.d 本身。
-2. **Plant Tree 遍历**：每条日志需要遍历所有已 plant 的 Tree，增加分发开销。
-3. **格式化**：String.format 和消息拼接在调用时执行，即使最终日志被丢弃。
+因此，高频 StatsD atom 不能描述成“先写满 logd 的 events buffer”。StatsD 有自己的 socket、丢失报告和限流语义；logd 仍定义 `LOG_ID_STATS`，也不能由名称推导出所有 atom 都经 logd 保存。分析 atom 丢失应查看 `libstatssocket` 与 statsd 的指标，分析 EventLog 保留窗口才查看 `events` buffer。
 
-**优化建议**：
+源码锚点：
 
-- Release 构建中 plant 一个空 Tree（或 CrashReportingTree），避免 DebugTree 的调用栈开销
-- 使用 `Timber.tag("custom")` 显式指定 tag，避免 `getStackTrace()` 开销
+- `packages/modules/StatsD/lib/libstatssocket/Android.bp`
+- `packages/modules/StatsD/lib/libstatssocket/statsd_writer.cpp`
+- `system/logging/liblog/log_event_list.cpp`
 
-### debuggable=false 时的隐式开销
+### 4.2 system/logging 中的 Rust 代码
 
-在 `debuggable=false`（release 构建）时，Android 系统不会对日志做特殊拦截，`Log.d/v` 调用仍会完整执行 JNI → socket → logd 全链路。这意味着：
+`system/logging/rust/` 包含 Rust logging API、结构化日志和 liblog 绑定等客户端能力。它的存在不代表 logd 守护进程已经改写为 Rust。
 
-- 被遗忘的 `Log.d` 调用仍消耗 CPU 和电池
-- 高频 debug 日志在 release 包中继续写入 logd 缓冲区，挤占有价值日志的空间
-- 即使用户看不到日志，日志写入的 I/O 开销仍然存在
+在 `android-17.0.0_r1` 中，`logd/Android.bp` 构建的是 `cc_binary`，核心文件仍包括 C++ 的 `main.cpp`、`LogListener.cpp`、`SerializedLogBuffer.cpp`、`LogReader.cpp` 和 `LogReaderThread.cpp`。`logd/` 下没有承担这些核心职责的 `.rs` 实现。基于 `RwLock<VecDeque<...>>`、`mio` 或“Rust 版吞吐提升比例”的描述都无法由该版本源码支持，应从 Android 17 章节中删除。
 
-**推荐策略**：
+## 5. 应用侧性能治理
 
-| 日志级别 | Debug 构建 | Release 构建 |
-|----------|-----------|-------------|
-| `Log.v` | 保留 | R8 移除 |
-| `Log.d` | 保留 | R8 移除 |
-| `Log.i` | 保留 | 保留（关键节点） |
-| `Log.w` | 保留 | 保留 |
-| `Log.e` | 保留 | 保留 |
+### 5.1 先消除参数求值
 
-### 采样上报方案
-
-对于需要在线上保留的日志（如关键路径日志），建议使用采样策略而非全量上报：
+下面这段代码即使最终被 liblog 级别过滤，参数仍已在 Java/Kotlin 层构造：
 
 ```kotlin
-// 每 100 次调用只上报一次
-private val logCounter = AtomicLong(0)
-fun sampledLog(tag: String, msg: String) {
-    if (logCounter.getAndIncrement() % 100 == 0L) {
-        Log.i(tag, msg)
-    }
+Log.d(TAG, "user=${user.name}, payload=${encodeLargePayload(data)}")
+```
+
+高频路径应在格式化前判断，且级别策略由构建类型或应用日志组件统一控制：
+
+```kotlin
+if (BuildConfig.DEBUG && Log.isLoggable(TAG, Log.DEBUG)) {
+    Log.d(TAG, "user=${user.name}, payload=${encodeLargePayload(data)}")
 }
 ```
 
-这比"全量写日志 + 线上采样上报"更高效，因为采样发生在写入前，减少了 99% 的 JNI + socket 开销。
+这个 guard 的价值是跳过插值和 `encodeLargePayload()`。只在调用外再包一层普通函数但仍传入已构造的 `String`，无法取得同样效果。自建 logger 若支持 lambda，应确认 lambda 只在级别允许时执行。
 
+### 5.2 用 R8 按级别删除 release 日志
 
-## 扩展
+当前 R8 文档提供了专门的 `-maximumremovedandroidloglevel`。例如，release 构建删除 verbose、debug 和 info：
 
-### logd 对 ANR 的间接影响
+```proguard
+# INFO 对应数值 4；删除 INFO 及以下级别。
+-maximumremovedandroidloglevel 4
+```
 
-日志写入通常不是 ANR 的直接原因，但在极端场景下可能成为间接推手：
+R8 会处理匹配的 `Log.*` 与 `Log.isLoggable()` 调用。这个规则近年才进入正式文档，接入前要确认项目实际使用的 R8/AGP 版本支持它。规则应只进入 release 变体，并通过反编译、mapping/usage 输出和自动化测试确认结果。若只想作用于特定包或方法，可追加 class specification。
 
-**机制**：应用主线程执行 `__android_log_write` → `write()` 系统调用到 logd socket → 如果 logd 处理积压导致 socket 缓冲区满 → `write()` 阻塞 → 主线程被挂起
+`-assumenosideeffects` 也能声明某些日志方法无副作用，但它属于强制优化假设。调用参数中具有可观察副作用的函数不应依赖“日志调用被删后一定连带消失”；构建期删除与调用前 guard 应配合使用。
 
-**触发条件**：
+### 5.3 release 不是自动静音开关
 
-1. **日志风暴**：某个应用或系统服务在短时间内输出大量日志（如循环中的 Log.d）
-2. **logd CPU 不足**：logd 在高系统负载下得不到足够 CPU 时间片
-3. **低端设备**：CPU 核心数少、频率低，logd 处理速度跟不上
+`debuggable=false` 不会自动删除所有 `Log.d()`。liblog 会按 tag 属性和默认优先级判断是否写入，但调用点、参数求值和 JNI 入口仍可能发生。发布策略应按信息价值设计：
 
-**排查方法**：
+| 内容 | 发布版处理建议 |
+|---|---|
+| 高频调试轨迹 | 构建期删除 |
+| 可恢复状态变化 | 聚合、限频，只保留诊断所需字段 |
+| 警告与错误 | 保留稳定错误码和必要上下文 |
+| 凭据、令牌、完整账号、原始请求体 | 禁止写入 |
 
-- 在 ANR trace 中检查主线程是否停留在 `write` 系统调用
-- 检查 logcat 输出中是否有大量同一 tag 的重复日志
-- 使用 Perfetto 跟踪 logd 的 CPU 使用情况
+采样率不能机械固定成“每 100 次一次”。故障可能集中在被跳过的请求，多线程共享计数器也会改变样本分布。需要采样时，应明确采样单位、稳定 key、时间窗口和紧急开关，并在构造昂贵消息之前作出决定。
 
-详见 9.1 节 ANR 设计中的"间接 ANR"分类。
+### 5.4 隐私边界
 
-### statsd 与 logd 的 events 缓冲区协同
+Android 4.1 以后，全局 `READ_LOGS` 读取能力受到特权权限限制，但预装特权组件、bugreport、工程构建和设备厂商诊断工具仍可能接触日志。限制读取权限不能抵消敏感数据已经写入系统日志的风险。
 
-`statsd` 通过 logd 的 `events` 缓冲区上报 atom 事件。当应用高频上报 statsd atom 时：
+发布版日志应采用白名单字段，令牌、密码和会话密钥必须完全删去；掩码只适合允许泄露部分信息的字段。异常对象也要审查，因为服务端响应、URI 查询参数和用户输入可能通过异常文本进入日志。
 
-- events 缓冲区默认仅 64 KB
-- 高频 atom 上报会迅速填满缓冲区，导致旧 atom 被覆盖
-- 同时可能挤占其他事件日志（如 `am_proc_start`、`binder_sample` 等系统事件）
+官方依据：[Log Info Disclosure](https://developer.android.com/privacy-and-security/risks/log-info-disclosure) 与 [R8 Additional rule types](https://developer.android.com/topic/performance/app-optimization/additional-rule-types)。
 
-**建议**：对于高频指标采集，优先使用 Perfetto custom trace 或直接上报到自建后端，避免经 statsd → logd events 通路。
+## 6. 设备上如何定位日志开销
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/cmds/statsd/]
+### 6.1 先确认容量和丢失现象
 
-### eBPF 追踪 logd 行为
+以下命令分别观察容量和统计信息：
 
-Android 14+ 支持通过 eBPF/BPF 程序追踪 logd 的内部行为：
+```bash
+adb logcat -g
+adb logcat -S
+adb shell pidof logd
+```
 
-- **logd_write 延迟分布**：挂载 `tracepoint/syscalls/sys_enter_write` + pid 过滤为 logd，统计 write 延迟
-- **缓冲区水位**：通过 logd 暴露的 `/proc/<logd_pid>/fdinfo/` 检查 socket 缓冲区使用量
-- **Android 14+ BPF 程序**：`bpfloader` 可加载自定义 BPF 程序追踪 logd 的 LogBuffer 写入和丢弃计数
+`-S` 输出 logd 统计，可结合 `--pid` 查看特定进程；具体字段和可见范围受构建与权限影响。不要从 `/proc/<pid>/fdinfo` 推断 logd 的逻辑 buffer 水位，它反映不了 serialized chunks 的占用与裁剪状态。
 
-详见 14.10 节 eBPF 性能分析中的 logd 追踪用例。
+### 6.2 区分调用方成本和守护进程成本
+
+一次有效测量至少要区分四组事件：
+
+1. 调用前消息格式化与对象分配；
+2. 应用进程的 JNI、`writev()` 次数及 `EAGAIN`；
+3. logd 的 CPU 调度、接收、压缩和裁剪；
+4. logcat reader 的解压、正则与输出介质。
+
+Perfetto 可同时观察应用与 logd 的调度、CPU time 和频率变化。userdebug/eng 环境还可用 simpleperf 聚焦应用或 logd 热点；短时 `strace` 能验证应用是否频繁 `writev()` 以及是否返回 `EAGAIN`。Android 的 bpfloader 不等于允许普通应用随意加载自定义 BPF 程序，排障手册不应把它写成通用方案。
+
+AOSP 自带 `system/logging/liblog/tests/liblog_benchmark.cpp`，其中有轻载写入和高压写入基准。其结果依赖 SoC、内核、build type、buffer 和 logd 负载，文章不提供跨设备固定的“单条若干微秒”。若要比较优化前后，应固定消息长度、日志级别、CPU 状态和读者配置，并同时记录丢失量；只统计成功循环次数会把 drop 误当成吞吐提升。
+
+### 6.3 一个实用的判断顺序
+
+- trace 中调用方在编码或字符串构造上耗时：先减少参数工作；
+- 应用 `writev()` 很密集且出现 `EAGAIN`：降低写入率，保留错误码和聚合结果；
+- logd CPU 高：检查全机日志源、buffer 裁剪与 reader 数量；
+- 只有某个 logcat 进程 CPU 高：检查客户端正则、格式化和文件输出；
+- 线上现场缺失：同时检查 liblog socket drop 与 logd 的旧数据裁剪，二者方向相反。
+
+## 7. 版本演进边界
+
+| 版本阶段 | 与本文有关的变化 |
+|---|---|
+| Android 4.x 及更早 | 历史实现使用内核 logger 字符设备；只用于阅读旧源码和旧设备问题 |
+| Android 5.0 起 | 用户态 logd 与 Unix socket 成为现代日志主路径 |
+| Android S | serialized compression 取代旧 Chatty 方案，详见 `README.compression.md` |
+| Android R 起 | StatsD native atom 经独立 statsd socket，避免与 EventLog 路径混写 |
+| Android 17 / API 37 | logd 核心仍为 C++；默认 serialized/Zstd buffer；接收端具备受 flag 控制的 io_uring 路径；Rust logging 代码位于客户端能力范围 |
+
+版本演进可以保留旧路径帮助阅读历史 trace，但所有当前行为判断都应回到 `android-17.0.0_r1`。本章没有依赖 kernel 日志驱动实现，因此无需为现代 app 日志链路引入 `android17-6.18-2026-06_r6` 的额外假设。
+
+## 8. 源码核查清单
+
+复核或移植本章结论时，建议从下面这些文件开始：
+
+- Java/JNI：`frameworks/base/core/java/android/util/Log.java`、`frameworks/base/core/jni/android_util_Log.cpp`
+- liblog 写端：`system/logging/liblog/logger_write.cpp`、`logd_writer.cpp`、`README.protocol.md`
+- logd 接收：`system/logging/logd/LogListener.cpp`、`flags/logd_flags.aconfig`
+- buffer：`LogSize.cpp`、`SerializedLogBuffer.cpp`、`SerializedLogChunk.cpp`、`CompressionEngine.cpp`
+- reader：`LogReader.cpp`、`LogReaderThread.cpp`
+- logcat 客户端过滤：`system/logging/logcat/logcat.cpp`
+- 历史 Chatty 边界：`system/logging/logd/README.compression.md`
+- StatsD：`packages/modules/StatsD/lib/libstatssocket/statsd_writer.cpp`
+
+这些锚点均按 `android-17.0.0_r1` 核查。产品分支若修改了 liblog socket flags、logd buffer type 或权限策略，应以设备对应源码和运行时命令输出为准。
