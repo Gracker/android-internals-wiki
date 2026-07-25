@@ -1,159 +1,143 @@
 ---
-title: 线程模型
-chapter: '1.5'
-section: '1.5'
+title: "线程模型"
+chapter: "1.5"
+section: "1.5"
 status: finalized
 pipeline_stage: ready-to-publish
-task6_state: "reviewed"
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
+applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
+confidence: high
+tags:
+  - thread
+  - handler
+  - looper
+  - messagequeue
+  - renderthread
+  - coroutine
+  - workmanager
+  - thread-priority
+sources:
+  - type: official
+    path: "https://developer.android.com/guide/components/processes-and-threads"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/Handler"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/HandlerThread"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/AsyncTask"
+  - type: official
+    path: "https://developer.android.com/kotlin/coroutines"
+  - type: official
+    path: "https://developer.android.com/topic/libraries/architecture/workmanager"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/behavior-changes-17"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/ActivityThread.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/Looper.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/Handler.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/Android.bp @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/graphics/java/android/graphics/HardwareRenderer.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/view/ThreadedRenderer.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/libs/hwui/renderthread/RenderThread.cpp @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/libs/hwui/renderthread/RenderProxy.cpp @ android-17.0.0_r1"
+  - type: aosp
+    path: "system/core/libutils/Looper.cpp @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/Process.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "system/core/libprocessgroup/profiles/task_profiles.json @ android-17.0.0_r1"
+  - type: aosp
+    path: "libcore/ojluni/src/main/java/java/lang/Thread.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "libcore/api/current.txt @ android-17.0.0_r1"
+  - type: kernel
+    path: "kernel/sched/fair.c @ android17-6.18-2026-06_r6"
+last_verified: "2026-07-25"
+last_verified_against: "AOSP android-17.0.0_r1; ACK android17-6.18-2026-06_r6; Android Developers"
+related_chapters:
+  - "1.2"
+  - "1.4"
+  - "1.13"
+  - "2.4"
+  - "2.5"
+  - "5.1"
+drafted_date: "2026-03-31"
+drafted_by: "openclaw-task2"
 reviewed_date: "2026-07-07"
+reviewed_by: "openclaw-task6"
 reviewed_at: "2026-05-26T01:12:00+08:00"
-last_task6_at: "2026-07-07T08:10:16+08:00"
-last_task6_audit: '2026-06-14'
+task6_state: reviewed
+task6_result: pass-light-edit
 task6_reviewed_date: "2026-07-07"
-review_round: 11
+last_task6_at: "2026-07-07T08:10:16+08:00"
+last_task6_audit: "2026-07-08"
 task6_review_notes: "2026-07-07 08:10 Task6：Task2B lite 修复后重审（版本引用已更新至 android-17.0.0_r1）；L1 小修 4 处（承担→中性动词 ×2、对齐→对照、结构性元叙述 ×1）；无新增 L3/L4 回炉项；转 Task9 复核 P1 版本修复。"
 task9_state: reviewed
-task9_result: "pass-tech-review"
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-07-07"
-task9_reviewed_by: openclaw-task9
+task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-07-07T08:21:00+08:00"
-task9_review_notes: "2026-07-07 Task9 review: pass-tech-review。复核源码引用准确性、原理链完整性、版本差异覆盖。发现 1 处 P2 建议改进：16KB page size 对 metadata region 影响可补充。写入 suggestions.md。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_audit: "2026-07-05"
-last_task6_audit: "2026-07-08"
 last_task9_audit_at: "2026-07-05T15:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-07-05-15-audit.md"
 last_task9_audit_result: "p1-issue-found"
+task9_review_notes: "2026-07-07 Task9 review: pass-tech-review。复核源码引用准确性、原理链完整性、版本差异覆盖。发现 1 处 P2 建议改进：16KB page size 对 metadata region 影响可补充。写入 suggestions.md。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 task9_audit_notes: "2026-07-05 Task9 idle audit: 发现 P1 版本覆盖不匹配问题。章节声明适用 Android 5.0 - Android 17，但源码引用基于 android-16.0.0_r1，与 Android 17 (android-17.0.0_r1) 存在版本差异。已写入 suggestions.md 建议修正版本覆盖声明。"
-task2b_state: "fixed"
-task2b_result: "fixed-lite"
-last_task2b_lite_at: '2026-07-07'
-last_task2b_at: '2026-07-07T07:36:00+08:00'
-applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
-last_verified: '2026-04-24'
-last_verified_against: AOSP android-17.0.0_r1, Android SDK android-Baklava stubs
-confidence: high
-sources:
-- type: blog
-  path: Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md
-- type: blog
-  path: Personal-Knowlodge/source/Android-Systrace-MainThread-And-RenderThread.md
-- type: blog
-  path: Personal-Knowlodge/source/2026-03-05_wechat_Looper到底在等什么.md
-- type: blog
-  path: Personal-Knowlodge/source/2026-03-07_wechat_万字解析Android_Handler实现原理.md
-- type: blog
-  path: Personal-Knowlodge/source/2026-03-06_wechat_Android性能优化之绑定RenderThread到大核CPU.md
-- type: aosp
-  path: frameworks/base/core/java/android/os/Looper.java
-- type: aosp
-  path: frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java
-- type: aosp
-  path: frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java
-- type: aosp
-  path: frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java
-- type: aosp
-  path: frameworks/base/core/java/android/os/Handler.java
-- type: aosp
-  path: frameworks/base/core/java/android/app/ActivityThread.java
-- type: aosp
-  path: frameworks/base/graphics/java/android/graphics/HardwareRenderer.java
-- type: aosp
-  path: frameworks/base/libs/hwui/renderthread/RenderThread.cpp
-- type: aosp
-  path: frameworks/native/libs/binder/ProcessState.cpp
-- type: aosp
-  path: frameworks/base/core/java/android/os/Process.java
-- type: official
-  path: developer.android.com/guide/components/processes-and-threads
-- type: official
-  path: developer.android.com/reference/android/os/Process#setThreadPriority(int,int)
-tags:
-- thread
-- handler
-- looper
-- messagequeue
-- renderthread
-- coroutine
-- workmanager
-- thread-priority
-related_chapters:
-- '1.2'
-- '1.4'
-- '1.13'
-- '2.4'
-- '2.5'
-- '5.1'
-drafted_date: '2026-03-31'
-drafted_by: openclaw-task2
+task2b_state: fixed
+task2b_result: fixed-lite
+last_task2b_lite_at: "2026-07-07"
+last_task2b_at: "2026-07-07T07:36:00+08:00"
+review_round: 11
 polish_count: 2
-polish_date: '2026-04-10'
-polish_by: task2b-polish
+polish_date: "2026-04-10"
+polish_by: "task2b-polish"
 last_task9_review_log: "logs/deep-review/2026-05-26-01-deep-review.md"
 last_task6_review_log: "logs/review/2026-07-07-08-review.md"
 review_notes: "2026-05-26 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0;Binder ioctl、硬件加速版本边界、MessageQueue 观察点复核通过;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-07
+last_deepseek_cn_review_at: "2026-07-07"
 ---
 
 # 线程模型
 
-<!-- outline-start -->
-## 本节要点大纲
+Android 应用并不是“主线程加几个后台线程”这么简单。一次点击可能依次经过主线程的输入分发、业务代码、Binder 调用和渲染提交；其中任何线程被锁、I/O 或调度延迟拖住，都可能让这一帧错过显示期限。
 
-### 锚点（必须覆盖）
+理解线程模型的目的，不是记住线程名称，而是建立三种判断能力：
 
-- 🔹 主线程（UI Thread）的职责与消息循环：Looper → MessageQueue → Handler
-- 🔹 Handler / Message / MessageQueue 的工作原理及 IdleHandler
-- 🔹 RenderThread 的角色：分担 GPU 命令提交，与主线程的同步点
-- 🔹 AsyncTask（API 30 deprecated）→ Executor → Kotlin Coroutine 的演进与最佳实践
-- 🔹 线程优先级：nice 值、cgroup（foreground/background）、SCHED_FIFO vs SCHED_OTHER
-- 🔹 HandlerThread / IntentService / WorkManager 的适用场景
+1. 这段工作为什么运行在当前线程？
+2. 当前线程是在执行、等待 CPU，还是等待另一个线程或内核事件？
+3. 这段工作应该留在当前线程，还是交给其他执行机制？
 
-### 扩展（可选深入）
+## 主线程负责什么
 
-- 🔸 Kotlin Coroutine Dispatcher 与线程池的映射关系
-- 🔸 线程数量对性能的影响：过度线程化引发的调度开销与 CPU 争抢
-- 🔸 ThreadLocal 在 Looper、Choreographer 中的应用
+应用进程由 Zygote fork 后，`ActivityThread.main()` 在进程初始线程上完成主消息循环的初始化。`ActivityThread` 是应用进程的调度中枢，不是另一个 `Thread` 对象。
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
-<!-- outline-end -->
-
-## 为什么要了解 Android 的线程模型
-
-打开 Perfetto，每个 App 进程下都有好几个线程在活动。最显眼的两条是 UI Thread（主线程）和 RenderThread（渲染线程）。滑动列表时，UI Thread 上会出现一串整齐的 `doFrame` 方块，紧跟着 RenderThread 上出现对应的 `DrawFrame` 方块——两个线程像齿轮一样咬合，一帧一帧把画面推到屏幕上。
-
-做卡顿分析、ANR 排查或启动速度优化，必须理解这套线程模型。主线程负责几乎所有与用户交互相关的工作：处理 Input 事件、执行动画、measure/layout/draw、响应 Binder 调用。任何一项阻塞了主线程，用户就会感知到卡顿甚至 ANR。而要理解主线程为什么被阻塞、阻塞在哪里，先要搞清楚主线程是怎么运转的——它不断从消息队列中取出消息并处理，代码执行只是这个循环中的一个片段。
-
-同时，从 Android 5.0 开始，渲染工作被分离到独立的 RenderThread。理解主线程和 RenderThread 的分工与同步机制，是在 Perfetto 中正确解读渲染性能数据的前提。
-
-## 主线程的职责与消息循环
-
-### 从 fork 到消息循环：主线程是怎么"活"起来的
-
-我们在 1.3 进程模型中已经讲过，App 进程由 Zygote 通过 `fork()` 创建。fork 出来的进程只是一个普通的 Linux 进程——它有自己的地址空间，但还没有和 Android 的消息体系建立联系。一个没有消息循环的线程就像一台没有通电的机器：硬件在，但不会运转。
-
-这个"通电"的过程发生在 `ActivityThread.main()` 中。当 Zygote fork 出子进程后，会通过反射调用 `ActivityThread.main()`，在这个方法里，主线程完成了三件关键的事情：
+Android 17 中的关键顺序如下，代码省略了参数解析、日志和调试初始化：
 
 ```java
 // frameworks/base/core/java/android/app/ActivityThread.java
-// @ AOSP android-17.0.0_r1
+// @ android-17.0.0_r1，节选
 public static void main(String[] args) {
-    // 1. 创建主线程的 Looper 和 MessageQueue
+    // 参数解析可在此前处理 --use-deliqueue。
     Looper.prepareMainLooper();
 
-    // 2. 创建 ActivityThread 并 attach 到 AMS
     ActivityThread thread = new ActivityThread();
     thread.attach(false, startSeq);
 
-    // 3. 获取主线程 Handler，开始消息循环
     if (sMainThreadHandler == null) {
         sMainThreadHandler = thread.getHandler();
     }
@@ -163,569 +147,330 @@ public static void main(String[] args) {
 }
 ```
 
+`Looper.loop()` 正常情况下不会返回。主线程持续处理消息，直到进程退出。
 
-看 `throw new RuntimeException` 这一行，代码直接表明了一个事实：`Looper.loop()` 正常情况下永远不会返回。主线程进入消息循环之后，就一直在循环中取消息、处理消息，直到进程被杀掉。
+应用组件和 View 体系的大部分回调都在主线程运行，包括：
 
-高爷在他的 Perfetto 系列文章中指出，ActivityThread 这个名字很容易引起误解。它表示的是运行在主线程上的一组调度逻辑，不是一个独立的 Thread 对象。运行 App 代码的主线程是 fork 出来的那个 Linux 线程，ActivityThread 只是在这个线程上初始化了消息机制，并通过其内部类 `H`（继承自 Handler）来处理四大组件相关的消息。所以当我们说"主线程在处理 Activity 生命周期"时，更精确的说法是"主线程的 Looper 从 MessageQueue 中取出了一条 BIND_APPLICATION 或 RECEIVER 消息，然后由 ActivityThread 的 Handler 分发处理"。
+- Activity、Service 和 BroadcastReceiver 的主要生命周期回调；
+- 输入事件分发；
+- View 的 measure、layout 和显示列表记录；
+- `Choreographer` 驱动的动画与帧回调；
+- 主线程 Handler、主线程 Executor 和 `Dispatchers.Main` 上的任务；
+- 直接在主线程发起的同步 Binder 调用。
 
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md]
+“Binder 回调都在主线程”则是错误的。远程 AIDL 调用默认由进程的 Binder 线程池接收；服务代码是否再切回主线程，取决于组件和实现。反过来，主线程主动发起同步 Binder 调用时会等待远端返回，因此仍可能造成主线程卡顿。
 
-### Looper → MessageQueue → Handler：消息驱动模型
+## Looper、MessageQueue 与 Handler
 
-Android 主线程的运行模型可以压缩成一个模型：**一个线程，一个 Looper，一个 MessageQueue，无数个 Handler**。
+一个已经调用 `Looper.prepare()` 的线程拥有一个 `Looper` 和一个 `MessageQueue`，可以有多个绑定到这个 Looper 的 `Handler`。
 
-**Looper** 是线程的消息循环引擎。它的核心工作就是一个无限循环：不断从 MessageQueue 中取出下一条 Message，分发给对应的 Handler 去处理。每个线程最多只能有一个 Looper，它通过 `ThreadLocal` 存储在线程本地（ThreadLocal 的作用在后文单独说明）。
+- `Handler` 负责投递消息或 Runnable，并在消息被取出时分发回调；
+- `MessageQueue` 保存尚未处理的消息，并计算下一次唤醒时间；
+- `Looper` 循环取出到期消息，调用消息对应 Handler 的 `dispatchMessage()`。
 
-**MessageQueue** 对外暴露的语义一直没变，仍然是“按到期时间取下一条消息，再交给对应 Handler 处理”。如果只看经典实现，它可以理解成一个按 `when` 排序的链式队列，很多 Handler / Looper 教程也是按这个模型展开的。这里要补一个版本边界：章节适用范围已经覆盖到 Android 16，而 android-16 源树里已经并存 `LegacyMessageQueue`、`CombinedMessageQueue`、`ConcurrentMessageQueue` 三套实现。经典链表这套理解方式仍然有用，但它只准确描述 legacy 路径；android-16 的队列实现演进和锁策略变化放到 §1.13《MessageQueue 机制与 DeliQueue 无锁优化》展开。
+`Looper` 通过 `ThreadLocal` 与当前线程关联。它不会自己创建线程，也不会把回调自动搬到后台。回调在哪个线程执行，只取决于 Handler 绑定的 Looper。
 
-兼容性边界也要补上。android-16 公开源码已经把 `CombinedMessageQueue` 和 `ConcurrentMessageQueue` 放进源树，但普通应用默认仍走 legacy；面向应用的默认启用边界在 Android 17，细节放到 §1.13《MessageQueue 机制与 DeliQueue 无锁优化》展开。对工程实践更直接的影响，是不要再把 `MessageQueue.mMessages` 当成稳定观察点。旧版 Espresso、Robolectric 或自定义测试脚本如果靠反射读取这个私有字段判断队列是否空闲，后续迁移会出兼容性问题。测试代码优先改到公开接口，如 `TestLooperManager`、IdlingResource，或者升级到已经去掉私有字段依赖的测试库。
-
-
-**Handler** 是消息的发送者和处理者。任何一个 Handler 实例在创建时都会绑定到当前线程的 Looper（也可以指定 Looper）。调用 `handler.sendMessage()` 时，消息被插入到 Looper 的 MessageQueue 中；当 Looper 循环到这条消息时，回调到 `handler.dispatchMessage()` 进行处理。
+Android 17 的循环主体仍可以概括为：
 
 ```java
-// 简化的 Looper.loop() 核心逻辑
 // frameworks/base/core/java/android/os/Looper.java
-public static void loop() {
-    final Looper me = myLooper();
-    final MessageQueue queue = me.mQueue;
-    for (;;) {
-        Message msg = queue.next(); // 可能阻塞
-        if (msg == null) return;    // 唯一退出条件：队列退出
-        msg.target.dispatchMessage(msg); // target 就是发送这条消息的 Handler
-        msg.recycleUnchecked();
-    }
-}
-```
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java、frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java、frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java]
-
-`msg.target` 就是发送这条消息的 Handler——这条消息的发送者。因此，同一条 MessageQueue 可以被多个 Handler 共享。不同 Handler 发送的消息都会进入同一个队列，但每条消息都会被自己的 Handler 处理。主线程上，ActivityThread 的内部类 `H` 就是最核心的 Handler，它处理 BIND_APPLICATION、CREATE_SERVICE、RECEIVER、BIND_SERVICE 等消息，驱动四大组件的生命周期。
-
-
-### nativePollOnce：epoll 驱动的高效等待
-
-主线程空闲时在做什么？这个看似简单的问题，背后牵扯到 Linux 内核的 epoll 机制。
-
-当 MessageQueue 中没有到期的消息时，`MessageQueue.next()` 会调用 `nativePollOnce(ptr, timeoutMillis)` 进入 native 层。在 native 层，Looper 内部维护了一个 epoll 实例，它同时监控着多个文件描述符（fd），包括一个唤醒用的 `mWakeEventFd`（eventfd 类型）。`epoll_wait` 会将线程挂起，直到以下任一事件发生：
-
-1. 有新的 Java 消息入队（通过 `mWakeEventFd` 写入唤醒）
-2. 有 Native 层的定时消息到期
-3. 有 native 层通过 `Looper.addFd()` 注册的 fd 变为可读状态（Input 事件 socket fd、VSync 信号 fd 等在 JNI/native 层通过 `messageQueue->getLooper()->addFd(...)` 注册到同一个 epoll 实例）；App 自定义 fd 可通过 `MessageQueue.addOnFileDescriptorEventListener()` 接入
-
-这种设计让主线程的 Looper 同时充当 Java 消息泵和统一事件分发中心这两个角色。Input 事件、VSync 信号等系统事件，通过 `addFd` 注册到 epoll 后被统一监控，再通过回调机制分发到各自的处理路径。注意：Binder 通信的 fd 不在主线程 Looper 的默认 epoll 监控集合中——Binder 线程池通过 binder driver 的 `BINDER_WRITE_READ` ioctl 等待和处理跨进程事务（`IPCThreadState::joinThreadPool()` 循环调用 `getAndExecuteCommand()`，最终在 `talkWithDriver()` 里通过 `ioctl(mDriverFD, BINDER_WRITE_READ, &bwr)` 阻塞交互），没有独立的 epoll 循环。需要和 MessageQueue/nativePollOnce 的 `epoll_wait` 路径分开观察。[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/IPCThreadState.cpp]
-
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-05_wechat_Looper到底在等什么.md]
-
-### IdleHandler：主线程的"碎片时间"利用
-
-MessageQueue 提供了一个机制叫 `IdleHandler`——当消息队列空闲（没有立即可处理的消息）时，系统会回调注册的 IdleHandler。这给了开发者一个机会在主线程空闲时执行低优先级的工作，而不影响正常的消息处理。
-
-```java
-// 注册 IdleHandler
-Looper.myQueue().addIdleHandler(() -> {
-    // 在主线程空闲时执行
-    doLowPriorityWork();
-    return false; // 返回 false 表示执行一次后自动移除；true 则每次空闲都回调
-});
-```
-
-IdleHandler 的典型用途包括：
-- 延迟初始化非关键组件（如第三方 SDK 的初始化）
-- 在启动完成后预加载某些数据
-- 在帧间隙执行轻量级的清理工作
-
-但要注意：IdleHandler 的执行会延迟后续消息的处理。如果在 IdleHandler 中执行了耗时操作，等同于在主线程上做了阻塞。实战中应该把 IdleHandler 中的工作控制在 1-2ms 以内。
-
-
-## RenderThread：渲染工作的分离
-
-### 为什么需要独立的渲染线程
-
-在 Android 4.4 及更早的版本中，所有的 UI 渲染工作都在主线程完成：measure、layout、draw，然后调用 OpenGL API 提交绘制命令，并与 SurfaceFlinger 交互。结果是 GPU 命令提交会同步阻塞主线程。如果 GPU 处理慢了，主线程也会一起被拖慢。
-
-Android 5.0（Lollipop）引入了 RenderThread，将渲染工作从主线程分离出去。这个改动的核心思想是：主线程只负责构建绘制指令（DisplayList），构建完成后通过 `syncAndDrawFrame()` 将 DisplayList（一组平台无关的绘制指令序列）同步给 RenderThread，然后主线程就可以解放出来处理下一个 VSync 周期的消息。RenderThread 在自己的线程上独立执行 GPU 渲染命令、管理 Buffer、与 SurfaceFlinger 交互。
-
-这种"生产者-消费者"模式让主线程和 GPU 可以并行工作：主线程在构建第 N+1 帧的 DisplayList 时，RenderThread 可能在渲染第 N 帧。这就是为什么在 Perfetto 中我们会看到主线程和 RenderThread 的活动是交叠的，而非串行的。
-
-
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md]
-
-### RenderThread 的创建时机
-
-RenderThread 不是在进程创建时就初始化的。它采用懒加载策略——在 App 第一次需要绘制内容时才会被创建。具体来说，当 Activity 第一次执行 `draw` 操作时，`ViewRootImpl` 会检测硬件加速渲染器（`ThreadedRenderer`）是否已经初始化，如果没有就创建它。
-
-```java
-// frameworks/base/core/java/android/view/ViewRootImpl.java
-// @ AOSP android-17.0.0_r1
-mAttachInfo.mThreadedRenderer.initializeIfNeeded(
-    mWidth, mHeight, mAttachInfo, mSurface, surfaceInsets);
-```
-
-在 native 层，RenderThread 使用独立的 Looper（不是主线程的 Looper，而是 native 层自己的 `Looper` 实现），通过内部的 WorkQueue 接收来自主线程的 `DrawFrameTask`。主线程调用 `DrawFrameTask::postAndWait()` 时，通过 `mRenderThread->queue().post()` 将任务投递到 RenderThread 的 WorkQueue，并用 Condition 同步等待 `syncFrameState` 完成。RenderThread 的 `threadLoop()` 在 `waitForWork()` / `processQueue()` 循环中依次取出并执行任务。RenderThread 仍然是单线程渲染引擎，按顺序处理每一帧，不会出现多线程并发操作 GPU 的场景。
-
-
-### 主线程与 RenderThread 的同步点：syncAndDrawFrame
-
-主线程和 RenderThread 之间的核心交互点是 `syncAndDrawFrame()`。这个调用发生在主线程的 `Choreographer.doFrame()` 流程中，位于 Traversal（measure/layout/draw）阶段完成之后。
-
-```java
-// frameworks/base/graphics/java/android/graphics/HardwareRenderer.java
-// @ AOSP android-17.0.0_r1
-int syncResult = syncAndDrawFrame(choreographer.mFrameInfo);
-```
-
-`syncAndDrawFrame()` 不是简单的 fire-and-forget。主线程调用它之后，会先把本帧的 `RenderNode` 树和 `FrameInfo` 同步给 RenderThread，并在 `DrawFrameTask::postAndWait()` 这一段同步等待 RenderThread 接管本帧。RenderThread 完成 `syncFrameState`、判断本帧是否需要执行绘制之后，会通过 `unblockUiThread()` 让主线程继续往前跑。
-
-因此，主线程和 RenderThread 的配合要拆成两个阶段看：
-
-1. **同步阶段**：主线程在 `syncAndDrawFrame()` 内等待 RenderThread 完成帧状态同步，并拿到 `syncResult`。
-2. **异步阶段**：主线程解阻塞后，RenderThread 继续执行 `DrawFrame`，包括申请 Buffer、提交 GPU 命令、`queueBuffer()` 和通知 SurfaceFlinger。
-
-在 Perfetto 里，主线程上的 `syncAndDrawFrame` 不是“纯异步发包”的零成本 slice，它包含一段可见的同步等待；RenderThread 上更长的 `DrawFrame` slice 则对应后半段渲染开销。把这两段分开看，才能判断瓶颈是在主线程卡住，还是 RenderThread / GPU 把一帧拖长了。
-
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md]
-
-### 软件绘制：没有 RenderThread 的世界
-
-如果在 AndroidManifest 中设置了 `android:hardwareAccelerated="false"`，系统就不会创建 RenderThread。所有的绘制工作都在主线程上通过 CPU 调用 libSkia 完成。
-
-在 Perfetto 中，这种模式的特征是：主线程的 `draw` 阶段会显著拉长，帧与帧之间的空闲间隔变短，其他 Message 的执行时间被压缩。这里涉及两个版本节点：Android 3.0（Honeycomb）引入了 GPU 加速的 2D 渲染管线，`targetSdk >= 14` 时默认启用硬件加速；Android 5.0（Lollipop）引入 RenderThread / ThreadedRenderer，把 GPU 命令提交等后半段从主线程拆到独立线程。如果看到软件绘制路径，原因要么是 App 显式关闭了硬件加速，要么是设备不支持 GPU 渲染。
-
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Systrace-MainThread-And-RenderThread.md]
-
-## 线程优先级：nice 值、cgroup 和调度策略
-
-Android 的线程调度建立在 Linux 内核的调度机制之上，但在此基础上做了一层重要的封装。理解这层封装，是分析 Perfetto 中线程行为的前提。
-
-### nice 值与 Process.setThreadPriority
-
-Linux 用 nice 值来表示线程的优先级，范围从 -20（最高优先级）到 19（最低优先级），默认值是 0。nice 值越低，线程获得的 CPU 时间越多。Android 通过 `android.os.Process` 类提供了设置线程优先级的 API：
-
-```java
-// 设置当前线程为后台优先级
-Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
-// THREAD_PRIORITY_BACKGROUND = 10
-// THREAD_PRIORITY_DEFAULT = 0
-// THREAD_PRIORITY_DISPLAY = -4
-// THREAD_PRIORITY_URGENT_DISPLAY = -8
-```
-
-
-`Process.setThreadPriority()` 和 `Thread.setPriority()` 是两套不同的机制。前者直接操作 Linux 的 nice 值，是 Android 推荐的方式；后者操作的是 Java 虚拟机的线程优先级（1-10），最终也会映射到 nice 值，但映射关系不够直观。在做性能优化时，始终使用 `Process.setThreadPriority()`。
-
-### cgroup：前台组 vs 后台组
-
-仅仅用 nice 值来区分优先级还不够。Android 还会通过线程组和 cgroup 配置把前台、后台线程拆开调度。当一个线程被设置成 `THREAD_PRIORITY_BACKGROUND`（10）这类后台优先级时，系统会把它放进 background thread group。AOSP `Process.java` 对这个组的定义是“scheduled with a reduced share of the CPU”。
-
-这里没有一个跨版本都成立的固定比例。不同设备会再叠加 `cpu.shares`、cpuset、uclamp 甚至 cgroup v2 的控制参数，所以不要把它理解成通用的 95:5。分析实机时，直接查看设备上的 `/dev/cpuctl/`、`/dev/stune/` 或 cgroup v2 对应目录参数，更可靠。这样解读 Perfetto 也更稳妥：后台线程的 CPU slice 往往更短、更稀疏，但具体压缩到什么程度，取决于设备配置。
-
-Perfetto 的 CPU 视图会呈现这个效果：后台线程的 CPU slice 通常很短且稀疏，而前台线程的 CPU slice 更长且连续。如果看到一个后台线程意外地占用了大量 CPU，先检查的是它的优先级设置是否正确。
-
-### SCHED_OTHER vs SCHED_FIFO
-
-Linux 提供了多种调度策略，Android 中最常用的有两种：
-
-**SCHED_OTHER**（也叫 SCHED_NORMAL）是默认的调度策略，使用完全公平调度器（CFS）。所有使用 nice 值的线程都属于这个策略。CFS 会根据 nice 值动态调整线程的 CPU 份额，确保所有线程在长期内获得公平的 CPU 时间。
-
-**SCHED_FIFO** 是实时调度策略，使用固定优先级。SCHED_FIFO 线程一旦开始运行，就会一直运行直到它主动让出 CPU（比如阻塞在 I/O 上）或者被更高优先级的实时线程抢占。Android 里更典型的例子是 AudioFlinger 这类对 deadline 敏感的实时音频线程。App 侧 RenderThread 在 AOSP 常见路径下并不会切到 `SCHED_FIFO`，而是在 `RenderThread::threadLoop()` 里通过 `setpriority(PRIO_PROCESS, 0, PRIORITY_DISPLAY)` 提升到 display nice priority，调度策略仍然属于 `SCHED_OTHER`。
-
-在 Perfetto 中，如果一个线程长时间占据 CPU 不释放，而且它不是 `SCHED_FIFO`，那通常说明它只是拿到了较高的 nice priority，或者代码路径本身有问题。只有在明确看到实时调度线程时，我们才应该按 `SCHED_FIFO` / `SCHED_RR` 的思路去解释它的行为。
-
-
-### 实战：绑定 RenderThread 到大核 CPU
-
-在一些性能敏感的场景中（如滑动列表、游戏），开发者可以通过 `sched_setaffinity` 将 RenderThread 绑定到频率最高的大核 CPU 上，以减少因线程在不同核心间迁移导致的性能波动。严振杰的实践文章详细介绍了如何通过读取 `/sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_max_freq` 来识别大核，然后通过 native 调用 `sched_setaffinity` 绑定线程。
-
-不过这种做法要谨慎：它可能和系统的 EAS（能量感知调度）策略冲突，而且不同 SoC 平台的核心布局不同。在做绑定之前，先在目标设备上用 Perfetto 对比绑定前后的帧耗时数据，确认有改善。
-
-Android 12 引入的 ADPF（Adaptive Performance Framework）通过 `PerformanceHintManager` 让应用向系统反馈工作负载目标。ADPF hint session 主要影响 CPU 频率决策——当 `reportActualWorkDuration()` 上报的耗时超过 `getTargetWorkDuration()` 的目标值时，系统会提高对应线程的运行频率。核心放置（哪个 CPU 核心执行线程）仍然由内核 EAS 调度器基于 load/capacity 信息决定，ADPF 不直接控制核心迁移。手动 `sched_setaffinity` 会锁定线程的核心选择范围，ADPF 的频率调整在绑核范围内仍然生效，但调度器无法再自由选择最优核心。在新设备上，优先使用 `PerformanceHintManager` 让系统做频率调度决策，而不是手动绑核。只有在不支持 ADPF 的旧设备上，或者 ADPF 调度效果经过实测确认不如手动绑核时，才考虑 `sched_setaffinity`。
-
-
-
-<!-- AIW-源码调研-2026-07-13 -->
-
-## Android 17 SurfaceFlinger 渲染线程调度策略：SCHED_FIFO + uclamp + TaskProfile 四层叠加
-
-（基于 android-17.0.0_r1 / API 37 源码级调研，详见 DeepResearch/2026-07-13-android17-surfaceflinger-thread-scheduling-schedfifo-uclamp.md）
-
-上游章节讨论的是通用线程模型，下面针对 **SurfaceFlinger 这条对 vsync 时延敏感的实时管线**，把「线程到底走了哪些调度策略」具体到一个进程：
-SurfaceFlinger、EventThread、app Choreographer 订阅三条路径，叠加使用 **4 套机制**。
-
-### 1. SurfaceFlinger 主线程：双 syscall（SCHED_FIFO + uclamp.min）
-
-源码：`frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp:8104-8142`
-
-```cpp
-void SurfaceFlinger::setSchedFifo(bool enabled, const char* whence) {
-    static constexpr int kFifoPriority = 2;
-    static constexpr int kOtherPriority = 0;
-    struct sched_param param = {0};
-    int sched_policy;
-    if (enabled && !FlagManager::getInstance().disable_sched_fifo_sf()) {
-        sched_policy = SCHED_FIFO;
-        param.sched_priority = kFifoPriority;     // priority 2，最低 RT 段
-    } else {
-        sched_policy = SCHED_OTHER;
-        param.sched_priority = kOtherPriority;
-    }
-    if (sched_setscheduler(0, sched_policy, &param) != 0) {
-        // ... ALOGW 失败降级 ...
+// @ android-17.0.0_r1，按真实调用关系简化
+for (;;) {
+    if (!loopOnce(me, ident, thresholdOverride)) {
+        return;
     }
 }
 
-void SurfaceFlinger::setSchedAttr(bool enabled, const char* whence) {
-    static const unsigned int kUclampMin =
-            base::GetUintProperty<unsigned int>("ro.surface_flinger.uclamp.min"s, 0U);
-    if (!kUclampMin) return;       // uclamp.min=0（默认）时整个函数直接跳过
-    sched_attr attr = {};
-    attr.size = sizeof(attr);
-    attr.sched_flags = (SCHED_FLAG_KEEP_ALL | SCHED_FLAG_UTIL_CLAMP);
-    attr.sched_util_min = enabled ? kUclampMin : 0;
-    attr.sched_util_max = 1024;
-    if (syscall(__NR_sched_setattr, 0, &attr, 0)) { ... }
-}
+// loopOnce() 内部取得消息后执行：
+msg.target.dispatchMessage(msg);
+msg.recycleUnchecked();
 ```
 
-调用入口（`SurfaceFlinger.cpp:6545-6556`）：
-
-```cpp
-void SurfaceFlinger::optimizeThreadScheduling(
-        const char* whence, gui::ISurfaceComposer::OptimizationPolicy optimizationPolicy) {
-    const bool optimizeForPerformance =
-            optimizationPolicy == gui::ISurfaceComposer::OptimizationPolicy::optimizeForPerformance;
-    // TODO: b/281692563 - Merge the syscalls. For now, keep uclamp in a separate syscall
-    // and set it before SCHED_FIFO due to b/190237315.
-    setSchedAttr(optimizeForPerformance, whence);   // uclamp 先于 SCHED_FIFO 设置
-    setSchedFifo(optimizeForPerformance, whence);
-}
-```
-
-要点：
-
-- `disable_sched_fifo_sf` FlagManager 控制是否启用 SCHED_FIFO；OEM 通常默认禁用（防止与其它 RT 进程抢优先级），仅在 OptimizePolicy=optimizeForPerformance 时启用
-- `ro.surface_flinger.uclamp.min` 是 OEM 写入的 only-read 一次（`static const`）的数值，决定 SF 主线程最小利用率 clamp；典型 OEM 设为 800–1024 以保证大核驻留
-- 两个 syscall 顺序由 `b/190237315` 决定：uclamp 必须先于 SCHED_FIFO，否则部分内核版本会丢失 hint
-
-### 2. EventThread 线程启动：SCHED_FIFO + libprocessgroup 双通道
-
-源码：`frameworks/native/services/surfaceflinger/Scheduler/EventThread.cpp:333-342`
-
-```cpp
-// Use SCHED_FIFO to minimize jitter
-constexpr int EVENT_THREAD_PRIORITY = 2;
-struct sched_param param = {0};
-param.sched_priority = EVENT_THREAD_PRIORITY;
-if (pthread_setschedparam(mThread.native_handle(), SCHED_FIFO, &param) != 0) {
-    ALOGE("Couldn't set SCHED_FIFO for EventThread");
-}
-
-set_sched_policy(tid, SP_FOREGROUND);   // → libprocessgroup → cgroup v2 TaskProfile
-```
-
-EventThread 自身用 pthread_setschedparam 设 SCHED_FIFO prio=2，**紧接着调用 set_sched_policy(tid, SP_FOREGROUND)**，挂两个 TaskProfile：
-- `CPUSET_SP_FOREGROUND`（决定可访问哪些 CPU）
-- `SCHED_SP_FOREGROUND`（决定 CPU 带宽与 uclamp hint）
-
-App 端订阅路径（`EventThread.cpp:367-376`）：
-
-```cpp
-auto connection = sp<EventThreadConnection>::make(
-        const_cast<EventThread*>(this), ipc->getCallingUid(),
-        ipc->getCallingPid(), eventRegistration);
-if (!FlagManager::getInstance().disable_sched_fifo_sf_sched()) {
-    const int policy = SCHED_FIFO;
-    connection->setMinSchedulerPolicy(policy, sched_get_priority_min(policy));   // 最低优先级 1
-}
-```
-
-`setMinSchedulerPolicy(SCHED_FIFO, sched_get_priority_min(SCHED_FIFO))` 把 app 的连接降到 SCHED_FIFO 最低优先级（通常为 1），保证不会饿死 SF 自己的 thread。
-
-### 3. libprocessgroup：CPUSET_* 与 SCHED_* 双 Profile
-
-源码：`system/core/libprocessgroup/sched_policy.cpp:35-149`
-
-```cpp
-int set_cpuset_policy(pid_t tid, SchedPolicy policy) {
-    policy = _policy(policy);
-    switch (policy) {
-        case SP_BACKGROUND:
-            return SetTaskProfiles(tid, {"CPUSET_SP_BACKGROUND"}, true) ? 0 : -1;
-        case SP_FOREGROUND:
-        case SP_AUDIO_APP:
-        case SP_AUDIO_SYS:
-            return SetTaskProfiles(tid, {"CPUSET_SP_FOREGROUND"}, true) ? 0 : -1;
-        case SP_TOP_APP:
-            return SetTaskProfiles(tid, {"CPUSET_SP_TOP_APP"}, true) ? 0 : -1;
-        case SP_SYSTEM:
-            return SetTaskProfiles(tid, {"CPUSET_SP_SYSTEM"}, true) ? 0 : -1;
-        case SP_RESTRICTED:
-            return SetTaskProfiles(tid, {"CPUSET_SP_RESTRICTED"}, true) ? 0 : -1;
-        case SP_FOREGROUND_WINDOW:
-            return SetTaskProfiles(tid, {"CPUSET_SP_FOREGROUND_WINDOW"}, true) ? 0 : -1;
-        default: break;
-    }
-    return 0;
-}
-```
-
-`set_sched_policy()` 同样通过 `SetTaskProfiles()` 调用，挂的是 `SCHED_SP_*` 命名空间——前者改 cpuset（绑核），后者改 CPU 带宽/优先级。EventThread 一行 `set_sched_policy(tid, SP_FOREGROUND)` 实际上等同同时挂两个 profile（具体哪些生效取决于 OEM `task_profiles.json` 配置）。
-
-### 4. 普通 Android Thread：仅 nice，不走 RT
-
-源码：`system/core/libutils/Threads.cpp:74-87`
-
-```cpp
-static int trampoline(const thread_data_t* t) {
-    thread_func_t f = t->entryFunction;
-    void* u = t->userData;
-    int prio = t->priority;
-    char * name = t->threadName;
-    delete t;
-    setpriority(PRIO_PROCESS, 0, prio);     // 普通 nice，不走 RT
-    if (name) {
-        androidSetThreadName(name);
-        free(name);
-    }
-    return f(u);
-}
-```
-
-App 侧 RenderThread / HWUI 等走的是这条路径，最终只是 `setpriority()`，调度类仍属 SCHED_OTHER（与 SCHED_FIFO 区别见上节）。这就是为何 RenderThread 在 trace 中只看到 nice 值，而不会显示 SCHED_FIFO 标志。
-
-### 版本差异（锚定 android-17.0.0_r1）
-
-| API level | 关键差异 |
-|-----------|----------|
-| API 28 | 仅 `setSchedFifo()`，无 uclamp |
-| API 30 | 引入 `__NR_sched_setattr` |
-| API 33 | SF 加入 `setSchedAttr()`，初版 `kUclampMin` 默认 0 |
-| API 36 | 引入 `disable_sched_fifo_sf` / `disable_sched_fifo_sf_sched` 双 FlagManager 开关 |
-| **API 37** | `b/190237315` 修复：uclamp 先于 SCHED_FIFO；`SP_FOREGROUND` 扩展为 `SP_AUDIO_APP/SYS` 分支 |
-
-### 性能影响速览
-
-1. **vsync 时延稳定性**：SCHED_FIFO prio=2 抢断所有 CFS，理论上保证 ~100us 级响应。disable 时退化到 200–500us 抖动，jank 风险上升。
-2. **大核驻留**：uclamp.min + uclamp.max=1024 让 SF 主线程在 EAS 视角下强制驻留性能核。
-3. **backpressure 隔离**：app 端连接的 `setMinSchedulerPolicy(SCHED_FIFO, min_prio)` 保证 app 只能在 SF EventThread 空闲时跑，避免反向饿死。
-
-### 反向验证 / Perfetto 实战
-
-- 在 `perfetto ftrace` 中对线程 `verify_sched_policy(SCHED_FIFO)` 与 uclamp 值需要使用 `ftrace/events/sched/sched_switch` 配合 `sched_setattr` 调用点观察
-- `dumpsys SurfaceFlinger --scheduler` 在 Android 17 输出 scheduler 内部状态，可对比 disable_sched_fifo_sf flag 启用前后
-- `--disable-sched-fifo-sf` 命令行参数可在 bootconfig 注入关闭
-
-## 从 AsyncTask 到 Kotlin Coroutine：异步编程的演进
-
-Android 的异步编程方案经历了多次迭代，每一次迭代都在修正前一代方案暴露出来的问题。了解这段演进，有助于在实际项目中做出正确的技术选择。
-
-### AsyncTask（Android 1.5 - API 30 deprecated）
-
-AsyncTask 是最早的官方异步方案，它封装了 Handler + Thread 的使用。但它的缺陷在实战中反复暴露：默认的串行执行器导致多个 AsyncTask 排队执行；内存泄漏（持有 Activity 引用）；配置变更后丢失结果。Google 在 API 30 正式废弃了 AsyncTask。
-
-### Executor / ThreadPoolExecutor
-
-Java 的 Executor 框架提供了更灵活的线程池管理。`Executors.newFixedThreadPool()`、`Executors.newCachedThreadPool()` 等工厂方法可以快速创建线程池。在 Android 中推荐使用 `Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())` 来避免创建过多线程，并通过 `Process.setThreadPriority()` 给工作线程设置合适优先级。
-
-### Coroutine 的核心概念
-
-Coroutine 是 Android 官方推荐的异步方案。它通过编译器变换把异步代码写成同步的样子，避免了回调嵌套，同时用结构化并发管理协程生命周期。
-
-核心概念是 **Dispatcher**——决定协程在哪个线程或线程池上执行：
-
-- `Dispatchers.Main`：主线程，UI 操作
-- `Dispatchers.IO`：IO 线程池（默认最多 64 线程），网络、数据库、文件操作
-- `Dispatchers.Default`：CPU 密集型线程池（线程数等于 CPU 核心数），排序、解析等计算
-- `Dispatchers.Unconfined`：不指定线程，在调用者所在线程执行
+创建 Handler 时应显式指定 Looper，或者使用能够表达执行位置的 Executor。无参 `Handler()` 和隐式绑定当前线程的构造方式已经废弃，因为调用点一旦换到没有 Looper 的线程，或者意外绑定到错误的 Looper，问题通常要到运行时才暴露。
 
 ```kotlin
-// 典型的协程使用模式
-viewModelScope.launch {
-    val data = withContext(Dispatchers.IO) {
-        apiService.fetchData() // 在 IO 线程池执行
+private val mainHandler = Handler(Looper.getMainLooper())
+
+fun updateUiLater() {
+    mainHandler.post {
+        // 这里明确运行在主线程。
     }
-    textView.text = data.name // 自动切回主线程
 }
 ```
 
+### Android 17 的 MessageQueue 不能再只按链表理解
 
-在 Perfetto 中，Coroutine 的线程模型体现为：`Dispatchers.IO` 的协程会在线程池中的某个线程上执行（如 `DefaultDispatcher-worker-1`），而 `Dispatchers.Main` 的协程会在主线程上通过 Handler 分发执行。如果在 Perfetto 中看到主线程上有大量的 IO 操作，那很可能是有人在 `Dispatchers.Main` 上做了本应在 `Dispatchers.IO` 上做的工作。
+经典 `LegacyMessageQueue` 以 `mMessages` 为头结点，维护按执行时间排序的单向链表。这个模型适合解释旧版本的插入、同步屏障和 `next()`，但不能代表 Android 17 的全部实现。
 
-### Java 21 虚拟线程：SDK 露出，不代表已经可用
+Android 17 有两层选择：
 
-Android 16 的 SDK stubs 已经带上 `Thread.isVirtual()`，但 `java/lang/Thread.java` 的注释写得很直白：`virtual thread isn't implemented on Android yet`。在 Android 上，这个方法只会返回 `false`。它的主要作用是给跨平台库补齐 API 面，让代码可以编译，不是 Android 侧已经提供了 Project Loom 运行时。当前 SDK 里也没有公开的 `Thread.startVirtualThread(...)` 入口，所以不要把 Android 16 视为“已经支持虚拟线程”。
+1. **构建时选择源码实现。** `frameworks/base/core/java/Android.bp` 排除各个 MessageQueue 实现目录，再由 `messagequeue-gen` 选择一套源码生成最终的 `android.os.MessageQueue`。默认配置和产品变量可以选择不同实现。
+2. **运行时选择兼容模式。** `CombinedMessageQueue` 和 `CombinedDeliMessageQueue` 自身还会根据兼容性变更、平台进程身份与功能开关，在 legacy 路径和新路径之间选择。
 
-应用侧如果需要轻量级并发，Kotlin Coroutine 仍然是当前可用的主方案。多平台共享库可以把 `isVirtual()` 当能力探测点，但不要在 Android 上按虚拟线程的调度语义设计线程模型。
+因此，源树中存在多个同名源码文件，不代表它们会作为三个公开类同时装入应用进程。最终 Java API 仍然是 `android.os.MessageQueue`。
 
+Android 17 对以 API 37 为目标版本的应用启用新的无锁 MessageQueue 实现。依赖 `mMessages` 等私有字段的反射代码可能失效。测试代码应使用公开或测试框架提供的同步机制，例如 IdlingResource；不要通过遍历私有链表判断“队列已空”。具体数据结构和 DeliQueue 见 §1.13。
 
-## HandlerThread、IntentService 与 WorkManager
+### Looper 空闲时为什么不消耗 CPU
 
-上一节梳理了从 AsyncTask 到 Coroutine 的演进——这些方案解决的是「在哪个线程上执行异步任务」的问题。但 Android 还提供了一些专门的后台执行机制，定位更偏「任务调度」而非「线程切换」。这里按适用场景区分它们的边界。
+没有到期消息时，Java MessageQueue 会进入 native poll。Android 17 的 `system/core/libutils/Looper.cpp` 创建 epoll 实例和用于唤醒的 eventfd，等待时调用 `epoll_wait()`。
 
-### HandlerThread：带 Looper 的后台线程
+新消息改变下一次到期时间时，生产者写入 eventfd 唤醒 Looper。通过 native Looper 或 MessageQueue 文件描述符监听接口注册的 fd，也可以由同一轮 epoll 等待发现。线程此时处于阻塞睡眠，不是在 Java 层不断检查队列。
 
-HandlerThread 继承自 Thread，它在线程启动后自动创建 Looper 并进入消息循环。因此我们可以像操作主线程一样，通过 Handler 向它发送消息。
+Binder 线程池是另一条等待路径。Binder 工作线程通过 Binder 驱动的读写 ioctl 等待事务，默认不依赖主线程 Looper 的 epoll。Perfetto 中看到主线程睡在 `epoll_wait`，不能据此判断 Binder 线程也处于同一种等待。
 
-HandlerThread 的典型用途是创建一个串行执行的后台任务队列。比如图片处理、日志写入、传感器数据处理——这些任务需要按顺序执行，但不需要在主线程上做。
+### 延迟消息不是精确定时器
 
-```java
-HandlerThread handlerThread = new HandlerThread("BgWorker");
-handlerThread.start();
-Handler bgHandler = new Handler(handlerThread.getLooper());
-bgHandler.post(() -> processImage(bitmap));
-```
+`postDelayed()` 和 `sendMessageAtTime()` 表达的是“到这个时刻后才有资格执行”，不是“保证在这个时刻执行”。消息到期后仍可能受以下因素影响：
 
-使用完之后要调用 `handlerThread.quit()` 来退出 Looper 循环，否则线程不会自动回收。
+- 队列前方正在执行的长消息；
+- 同步屏障对同步消息的阻挡；
+- 线程处于 Runnable 状态但没有及时获得 CPU；
+- 进程冻结、省电策略或系统负载；
+- 系统时钟和休眠语义。
 
-### IntentService（API 30 deprecated）
+如果业务要求持久化、跨进程存活或由系统在约束满足后调度，应使用 Alarm、JobScheduler 或 WorkManager 等相应机制，而不是让主线程 Handler 保存一个很长的延迟任务。
 
-IntentService 内部使用 HandlerThread 来串行处理 Intent 请求。它已经废弃了，因为它的功能可以完全被 WorkManager 或 JobIntentService 替代。如果在维护使用 IntentService 的老代码，建议迁移到 WorkManager。
+### IdleHandler 只能做有界的轻量工作
 
-### WorkManager：可靠的后台任务调度
+`MessageQueue.IdleHandler` 在队列暂时没有可执行消息时运行，回调仍发生在所属 Looper 线程。它并没有一段由系统保证的“空闲预算”。回调运行期间新消息可以入队，而新消息必须等回调返回。
 
-WorkManager 是 Android Jetpack 中用于处理可延迟后台任务的推荐方案。它保证任务一定会执行（即使 App 退出或设备重启），并根据系统条件（网络状态、电量、存储空间等）智能调度。
+适合放入 IdleHandler 的是短小、可中断或只做一次的初始化。磁盘扫描、网络访问、大对象反序列化和不可控循环都应移出主线程。返回 `false` 会在本次调用后移除该 IdleHandler；返回 `true` 表示以后队列进入空闲状态时仍可调用。
 
-| 场景 | 推荐方案 |
-|------|---------|
-| UI 相关的异步操作 | Kotlin Coroutine + Dispatchers.Main |
-| 即时的 CPU/IO 操作 | Kotlin Coroutine + Dispatchers.IO/Default |
-| 可延迟但必须执行的后台任务 | WorkManager |
-| 用户感知的长期后台任务 | 前台 Service |
-| 精确定时的重复任务 | AlarmManager（需要 `SCHEDULE_EXACT_ALARM` 权限，API 31+） |
+## 主线程与 RenderThread 如何分工
 
-> **WorkManager `PeriodicWorkRequest` 的限制**：最小周期间隔 15 分钟，执行时间受 Doze 省电模式和电池优化影响，不保证精确触发。业务要求精确定时（闹钟、定时提醒）时，使用 `AlarmManager` 的 `setExactAndAllowWhileIdle()`，并在 Android 12（API 31）及以上声明 `SCHEDULE_EXACT_ALARM` 权限（用户可在系统设置中撤销）。API 33+ 对闹钟类应用提供 `USE_EXACT_ALARM` 权限，不需要用户授权。
+硬件加速窗口不会把整个绘制过程都放到主线程。
 
-WorkManager 底层根据 Android 版本选择不同的执行引擎：API 23+ 使用 JobScheduler，更低版本使用 AlarmManager + BroadcastReceiver。开发者不需要关心这些细节，只需要定义 Worker 类、设置约束条件、提交给 WorkManager 即可。
+主线程主要负责：
 
+- 执行动画和 View 回调；
+- measure 与 layout；
+- 遍历 View 树并记录显示列表；
+- 把本帧状态同步给渲染管线。
 
-## ThreadLocal 在 Looper 和 Choreographer 中的应用
+RenderThread 主要负责：
 
-前面的"一个线程一个 Looper"设计还留下一个问题：Looper 怎么保证每个线程拿到的是属于自己的实例？答案是 ThreadLocal——Java 的线程本地存储机制，每个线程有自己独立的变量副本，互不干扰。Framework 中最关键的两个 ThreadLocal 用途就是 Looper 和 Choreographer。
+- 消费已记录的渲染节点和显示列表；
+- 准备、批处理并提交 GPU 工作；
+- 管理 HWUI 的渲染上下文；
+- 执行一部分可以脱离主线程推进的属性动画。
 
-### Looper 中的 ThreadLocal
+Android 17 的 `RenderThread::getInstance()` 懒加载名为 `RenderThread` 的线程。`threadLoop()` 把线程 nice 调整为 `PRIORITY_DISPLAY`，然后初始化 native Looper、Choreographer 及图形后端。普通应用的 RenderThread 不应被笼统描述为 `SCHED_FIFO` 实时线程。
 
-Looper 类内部有一个静态的 `ThreadLocal<Looper>`：
+### `syncAndDrawFrame()` 是真实的线程交接点
 
-```java
-// frameworks/base/core/java/android/os/Looper.java
-static final ThreadLocal<Looper> sThreadLocal = new ThreadLocal<Looper>();
+主线程经过 `ThreadedRenderer`、`HardwareRenderer` 和 `RenderProxy`，最终调用 `DrawFrameTask::drawFrame()`。后者把任务投递给 RenderThread，并等待同步阶段推进：
 
-public static void prepare() {
-    sThreadLocal.set(new Looper(quitAllowed));
+```cpp
+// frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp
+// @ android-17.0.0_r1，节选
+int DrawFrameTask::drawFrame() {
+    mSyncResult = SyncResult::OK;
+    mSyncQueued = systemTime(SYSTEM_TIME_MONOTONIC);
+    postAndWait();
+    return mSyncResult;
 }
 
-public static Looper myLooper() {
-    return sThreadLocal.get();
+void DrawFrameTask::postAndWait() {
+    AutoMutex _lock(mLock);
+    mRenderThread->queue().post([this]() { run(); });
+    mSignal.wait(mLock);
 }
 ```
 
-这保证了每个线程调用 `Looper.prepare()` 时创建的 Looper 只属于自己。当 `Looper.myLooper()` 被调用时，它返回的是当前线程的 Looper，不会串到别的线程。这就是为什么子线程在调用 `new Handler()` 之前必须先调用 `Looper.prepare()`——否则 `Looper.myLooper()` 返回 null，Handler 无法绑定到 Looper。
+RenderThread 执行 `run()` 时先同步帧状态。满足条件时，它可以在真正提交绘制前解除主线程等待；如果纹理准备等工作要求继续持有同步点，则会在稍后解除。因此，不能把这段关系简化成“主线程提交后立即自由运行”，也不能理解成“主线程必须等 GPU 完成整帧”。
 
-### Choreographer 中的 ThreadLocal
+Perfetto 中常见三种情况：
 
-Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程存储一个独立的 Choreographer 实例。AOSP `Choreographer` 的 `sThreadInstance.initialValue()` 会对任何已有 Looper 的线程创建实例，构造函数里会注册 `FrameDisplayEventReceiver(looper, VSYNC_SOURCE_APP)` 来接收 VSync 信号。任何有 Looper 的线程调用了 `Choreographer.getInstance()` 之后，都能收到 VSync 回调，没有主线程限制。
+- 主线程长：输入、业务、布局或显示列表记录成为瓶颈；
+- RenderThread 长：渲染准备、图形驱动或 GPU 侧压力更可疑；
+- 主线程在同步点等待 RenderThread：需要沿唤醒关系继续看 RenderThread 当时是在运行、等 CPU、等锁，还是等图形资源。
 
-日常分析中通常只看到主线程的 Choreographer 驱动渲染，原因是 `ViewRootImpl.scheduleTraversals()` 通过 `Choreographer.getInstance()` 拿到的是主线程的实例，`doFrame()` → Traversal 调度链绑在主线程上。如果其他线程也创建了自己的 Choreographer 并通过 `postFrameCallback` 注册回调，那个线程的 Choreographer 同样会收到 VSync 并执行回调。Perfetto 里看到非主线程出现 `Choreographer#doFrame` slice 时，先检查该线程是否注册了自己的 Choreographer，不要直接当成异常。
+软件渲染窗口不走这条 `ThreadedRenderer` 硬件渲染路径。但不能据此断言“进程中一定没有 RenderThread”，因为同一进程中的其他硬件加速窗口仍可能创建它。
 
+## 如何选择后台执行机制
 
-## 在 Perfetto 中的表现
+先判断任务是否需要立即完成、是否必须持久化、是否要求串行和线程亲和性，再选择工具。
 
-理解线程模型之后，Perfetto 中的线程行为可以按目标观察：
+| 需求 | 首选工具 | 关键边界 |
+|---|---|---|
+| 很短的 UI 更新 | 主线程 Handler、Main Executor、`Dispatchers.Main` | 不做阻塞 I/O 或长计算 |
+| 与生命周期绑定的异步任务 | Kotlin 协程 + lifecycle/ViewModel scope | 保留结构化取消关系 |
+| CPU 密集型并行计算 | `Dispatchers.Default` 或有界 Executor | 控制并行度，避免超过设备承受能力 |
+| 阻塞式磁盘或网络调用 | `Dispatchers.IO` 或专用有界 Executor | 线程池不能消除底层阻塞，只是移出主线程 |
+| 必须在一个带 Looper 的专用线程串行执行 | HandlerThread | 明确所有权，并安全退出 |
+| 必须在约束满足后可靠执行的持久任务 | WorkManager | 调度时刻不精确，普通 Worker 有运行时长限制 |
+| 需要立即运行且用户可感知的长任务 | 前台服务及相应任务 API | 遵守后台启动和通知限制 |
 
-### 识别关键线程
+### HandlerThread：仅在确实需要 Looper 时使用
 
-在 App 进程下，我们会看到以下几个重要的线程：
+HandlerThread 适合要求线程亲和、顺序处理，且依赖 Handler/Looper API 的组件。只为了“开一个后台线程”时，Executor 或协程通常更容易管理并发、返回值和取消。
 
-- **主线程（UI Thread）**：通常显示为进程包名或 `CrBrowserMain`（WebView 场景），处理 Input、Animation、Traversal 和所有 Handler 消息。
-- **RenderThread**：App 进程下的渲染线程，执行 GPU 渲染命令。它的活动紧跟在主线程的 `syncAndDrawFrame` 之后。
-- **Binder 线程**：名字类似 `Binder:12345_1`，处理来自其他进程的 Binder 调用。如果这些线程有长时间 CPU 活动，说明 App 在响应跨进程调用。
-- **FinalizerDaemon**：执行对象 finalize 的守护线程。如果频繁活动，说明有大量对象在 GC 回收时需要执行 finalize，可能导致 GC 暂停时间变长。
-- **DefaultDispatcher-worker-\***：Kotlin Coroutine 的默认线程池线程。
-- **MQ.Delivered 计数器**：Perfetto 中 `mq` 类别下的 `MQ.Delivered` 计数器，记录 MessageQueue 消息投递频率。三种实现（`LegacyMessageQueue`、`CombinedMessageQueue`、`ConcurrentMessageQueue`）都会记录该计数器，不能靠它区分队列实现。区分队列实现的可靠信号：① targetSdk 37 + `USE_NEW_MESSAGEQUEUE` compat change 标志（新队列启用边界）；② `mMessages` 在新实现下恒为 null 的兼容性行为；③ MessageQueue monitor contention 是否消失（新队列消除了 `mMessages` 锁争用）；④ FrameTimeline / jank_type 与 Looper dispatch 片段在同一时间窗内对照。
+```kotlin
+class SerialWorker : Closeable {
+    private val thread = HandlerThread(
+        "serial-worker",
+        Process.THREAD_PRIORITY_BACKGROUND
+    ).apply { start() }
 
-### 主线程状态解读
+    private val handler = Handler(thread.looper)
 
-在 Perfetto 的 CPU Slice 视图中，主线程的状态有几种典型表现：
+    fun submit(block: () -> Unit) {
+        check(handler.post(block)) { "worker is shutting down" }
+    }
 
-- **Running（绿色）**：正在执行代码，对应某个 Message 的处理。如果是 `doFrame`，说明在处理一帧的渲染；如果是其他，可能是 Binder 调用、Service 处理等。
-- **Runnable（蓝色）**：已经准备好运行，但在等待 CPU。如果频繁出现，说明 CPU 负载较高，线程在争抢 CPU 时间。
-- **Sleep（白色/浅色）**：在 `epoll_wait` 中等待消息，或者阻塞在 I/O 操作上。正常空闲时应该是 Sleep 在 `nativePollOnce` 上。
-- **Uninterruptible Sleep（深橙色）**：通常在等待磁盘 I/O。如果主线程频繁进入这个状态，说明有同步 I/O 操作阻塞了主线程。
+    override fun close() {
+        thread.quitSafely()
+        thread.join()
+    }
+}
+```
 
-### RenderThread 延迟分析
+`quitSafely()` 会处理已经到期的消息，再丢弃未来消息并退出；`quit()` 会更直接地终止队列。调用方还要避免在该线程自身执行 `join()`，并保证关闭后不再投递。
 
-通过对比主线程 `syncAndDrawFrame` 的结束时间和 RenderThread `DrawFrame` 的结束时间，可以判断渲染是否成为瓶颈。如果 RenderThread 的执行时间经常超过一个 VSync 周期（120Hz 下约 8.33ms），就说明 GPU 渲染是性能瓶颈，需要从减少过度绘制、简化 DisplayList 等方向优化。
+### 协程解决的是任务结构，不是让代码自动变快
 
+协程可以用较少线程表达大量挂起任务，但真正的阻塞调用仍会占住承载它的线程。Dispatcher 选择需要与工作类型相符：
 
-## 线程数量对性能的影响
+```kotlin
+class UserRepository(
+    private val api: UserApi,
+    private val db: UserDatabase,
+) {
+    suspend fun refresh(id: String): User = withContext(Dispatchers.IO) {
+        val user = api.load(id)   // 阻塞式接口时占用 IO worker
+        db.users().upsert(user)
+        user
+    }
+}
+```
 
-到目前为止，我们讨论的都是单个线程或两个线程之间的协作。如果把视角拉远，还有一个容易被忽视的全局问题：一个进程中同时活跃的线程数量本身，就会对性能产生影响。
+- `Dispatchers.Main` 用于短小的 UI 工作；
+- `Dispatchers.Default` 用于 CPU 密集工作；
+- `Dispatchers.IO` 用于阻塞式 I/O；
+- 专用 dispatcher 用于线程亲和、资源隔离或严格并发上限。
 
-每个线程都有自己的栈空间（Android 上默认约 1MB）、寄存器上下文、以及内核调度开销。当线程数量过多时，会从多个维度拖慢系统：
+不要依赖 Default 或 IO 当前的具体线程数。它们会随 Kotlin 版本、系统属性和运行环境调整。协程在挂起后也可能由另一个工作线程继续执行，因此普通 `ThreadLocal` 不能自然表达跨挂起点的上下文；需要时使用协程上下文或 `ThreadLocal.asContextElement()`。
 
-1. **调度开销增加**：内核需要在更多线程之间做上下文切换，每次切换都需要保存和恢复寄存器状态、刷新 TLB（Translation Lookaside Buffer）。在 CPU 密集型场景中，过多的上下文切换会直接导致性能下降。
+结构化并发比“在哪个线程跑”更重要。任务应属于明确的 scope，由页面、ViewModel、服务或应用级组件持有；生命周期结束时，取消关系才能沿父子任务传播。
 
-2. **CPU 缓存失效**：线程在不同 CPU 核心间迁移时，L1/L2 缓存中的热点数据会失效。这也是为什么有些优化方案选择将关键线程绑定到特定核心——减少迁移，提高缓存命中率。
+### WorkManager 不是通用线程池
 
-3. **锁竞争加剧**：线程越多，对共享资源的竞争越激烈。在 Perfetto 中表现为线程频繁在"等待锁"（Sleep 状态，waking reason 显示 `futex_wait_queue_me`（Fast Userspace Mutex，Linux 内核提供的用户态互斥锁））和"持有锁"之间切换。
+WorkManager 面向需要在应用退出、进程重建后仍应继续安排的持久后台任务。它会根据系统版本使用 JobScheduler 等调度设施，并在约束满足后尽力执行，但不保证精确启动时间，也不保证恰好执行一次业务副作用。
 
-4. **内存压力**：每个线程的栈空间加起来可能达到几十甚至上百 MB，在内存紧张的设备上会加速 LMK 回收。
+Worker 可能因为约束变化、进程终止或重试策略重复运行。上传、扣减、写入远端等操作应设计为幂等，或者由服务端提供去重键。普通 Worker 还受到单次运行时长限制；需要长时间运行时，应按 WorkManager 长任务和前台服务规则设计，而不是无限阻塞一个 Worker。
 
-Android Framework 对线程数量的控制体现在多个层面。Binder 这里要把两个数字拆开看。`ProcessState.cpp` 里的 `DEFAULT_MAX_BINDER_THREADS=15`，指的是通过 `BINDER_SET_MAX_THREADS` 告诉内核最多再拉起 15 个额外的 Binder worker。与此同时，`startThreadPool()` 会先启动 1 个 pooled thread。于是常见默认配置下，我们会看到 1 个已启动 worker，加上最多 15 个内核追加 worker，也就是最多 16 个 pooled worker。§1.4 写“默认上限 15 个”时，指的是 `DEFAULT_MAX_BINDER_THREADS` 这个驱动配置值；这里写 16，指的是把 `startThreadPool()` 先启动的那个 worker 一起算进去。两种口径说的是同一件事，这里同样不把 App 主线程算进去。`Dispatchers.IO` 和 `Dispatchers.Default` 也各自有并行度上限，目的都是在吞吐量和调度开销之间取平衡。
+立即发生、只需随当前页面存活的任务不应绕到 WorkManager。它既增加调度开销，也会模糊任务所有权。
 
+### AsyncTask 与 IntentService 的版本位置
 
-## 常见问题与误区
+`AsyncTask` 在 API 30 已废弃。它把线程池、生命周期和主线程回调包装在一个类里，但容易造成 Context 泄漏、配置变更后回调错位、取消语义不完整和异常处理不一致。新代码应按任务性质选择协程或 `java.util.concurrent`。
 
-### 误区 1：主线程不能做任何耗时操作
+`IntentService` 同样在 API 30 废弃，原因是 Android 8.0 以后后台执行限制可能中断其工作。替代方案不是固定的：
 
-主线程不能做会阻塞消息循环的耗时操作。如果一个操作耗时 5ms，但它不影响 doFrame 的按时完成（即不会导致掉帧），那它就是可接受的。关键不是操作的绝对耗时，而是它是否影响帧渲染的时序。当然，从工程实践出发，应该尽量把所有超过 1ms 的操作都放到后台线程，为消息循环留足余量。
+- 需要持久、可延迟的工作，使用 WorkManager；
+- 需要立即执行且用户可感知的长工作，评估前台服务；
+- 仅在进程内短时串行执行，使用协程、Executor 或确有 Looper 需求时使用 HandlerThread。
 
-### 误区 2：Thread.sleep() 在主线程上一定会导致卡顿
+## 线程优先级、调度类与任务配置
 
-不一定。如果 `Thread.sleep()` 发生在两帧之间的空闲时段（主线程在等待下一个 VSync），并且 sleep 的时间不超过到下一个 VSync 的间隔，它不会导致掉帧。但这是一个非常脆弱的假设——因为帧率、VSync offset 等因素在不同设备上不同。正确的做法是使用 `Handler.postDelayed()` 或 Kotlin Coroutine 的 `delay()`，它们不会阻塞线程，而是通过消息机制延迟执行。
+Android Java 层的 `Process.setThreadPriority()` 调整的是 Linux nice 值。Android 17 中常见常量包括：
 
-### 误区 3：多线程一定能提高性能
+- `THREAD_PRIORITY_DEFAULT = 0`；
+- `THREAD_PRIORITY_BACKGROUND = 10`；
+- `THREAD_PRIORITY_FOREGROUND = -2`；
+- `THREAD_PRIORITY_DISPLAY = -4`；
+- `THREAD_PRIORITY_URGENT_DISPLAY = -8`；
+- `THREAD_PRIORITY_AUDIO = -16`。
 
-不一定。如果多个线程在争抢同一把锁，或者任务本身是计算密集型且 CPU 已经满载，增加线程只会增加调度开销。在 CPU 密集型场景中，线程数等于 CPU 核心数通常是最佳配置（这就是 `Dispatchers.Default` 的策略）。在 I/O 密集型场景中，线程数可以适当增加（这就是 `Dispatchers.IO` 允许更多线程的原因），因为 I/O 等待期间线程不占用 CPU。
+数值越小，nice 优先级越高，但这不等于获得固定比例的 CPU，也不保证立即运行。对普通应用线程，`Process.setThreadPriority()` 比 `Thread.setPriority()` 更能准确表达 Android/Linux 层的调度意图。
 
-### 误区 4：Handler 的无参构造函数在子线程上一定崩溃
+在 ACK `android17-6.18-2026-06_r6` 中，普通 `SCHED_NORMAL`/`SCHED_BATCH` 线程进入 fair 调度类，`kernel/sched/fair.c` 使用 EEVDF 选择可运行实体。nice 值会改变调度权重和虚拟时间推进方式，而不是把 CPU 简单切成固定份额。
 
-`new Handler()` 的无参构造函数要求当前线程有 Looper，否则抛出异常。但在主线程上创建则不会（因为主线程已经有 Looper）。在子线程上，需要先调用 `Looper.prepare()`，然后才能创建 Handler。注意，Handler 的无参构造函数在 API 30 中已被废弃，推荐使用 `new Handler(Looper.myLooper())` 显式指定 Looper。
+Android 还通过 task profile、cgroup 和 cpuset 管理进程或线程。AOSP Android 17 的 `task_profiles.json` 为 background、foreground、top-app 等组合作出不同的性能、I/O、timer slack 和 CPU capacity 配置；设备厂商可以覆盖这些配置。因此，“前台组必定运行在某几颗大核”不是跨设备成立的结论。
 
-## 与其他章节的关系
+### 不要把实时调度和 CPU 亲和性当成常规优化
 
-- **1.2 系统启动全流程**：Zygote fork 出进程后，通过 ActivityThread.main() 初始化主线程消息循环
-- **1.4 Binder IPC 机制与性能影响**：Binder 线程池是 App 进程中另一组重要线程，处理跨进程调用
-- **1.13 MessageQueue 机制与 DeliQueue 无锁优化**：android-16 以后队列内部实现（CombinedMessageQueue、ConcurrentMessageQueue）的演进和锁策略变化在 1.13 展开
-- **2.4 Choreographer 与渲染流水线**：Choreographer 通过主线程的 Handler 监听 VSync 信号，驱动每帧的渲染
-- **2.5 MainThread 与 RenderThread 协作**：本章的 RenderThread 部分在 2.5 中有更详细的工作流程分析
-- **5.1 Linux 进程调度基础**：nice 值、cgroup、调度策略的底层原理在 CPU 章节中深入展开
+`SCHED_FIFO`/`SCHED_RR` 会绕过普通 fair 调度，配置不当可能饿死主线程、系统服务甚至关键内核工作。设置实时策略通常还需要系统权限和经过约束的系统组件，不是三方应用的通用性能开关。
 
-## 参考资料
+手动把 RenderThread 或业务线程绑到所谓“大核”也不可移植。SoC 拓扑、能效模型、温控状态和厂商调度策略各不相同，固定亲和性可能降低性能或增加功耗。普通应用应先缩短关键路径、控制并行度，并让系统调度器和 ADPF 等公开机制表达性能需求。
 
-- AOSP 源码路径：
-  - `frameworks/base/core/java/android/os/Looper.java` — Looper 核心，消息循环引擎
-  - `frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java` — 经典链式语义的 MessageQueue 实现（android-16 引入，android-17.0.0_r1 保留）
-  - `frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java` — 并存的 MessageQueue 实现之一（android-16 引入，android-17.0.0_r1 保留）
-  - `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java` — 并存的 MessageQueue 实现之一（android-16 引入，android-17.0.0_r1 保留）
-  - `frameworks/base/core/java/android/os/Handler.java` — Handler，消息发送与处理
-  - `frameworks/base/core/java/android/app/ActivityThread.java` — 主线程入口，四大组件消息处理
-  - `frameworks/base/graphics/java/android/graphics/HardwareRenderer.java` — `syncAndDrawFrame()` Java 入口
-  - `frameworks/base/libs/hwui/renderthread/RenderThread.cpp` — RenderThread native 实现
-  - `frameworks/base/libs/hwui/renderthread/RenderProxy.cpp` — 主线程与 RenderThread 的同步桥接
-  - `frameworks/native/libs/binder/ProcessState.cpp` — Binder pool 默认线程上限
-  - `frameworks/base/core/java/android/os/Process.java` — 线程优先级设置
-  - `system/core/libutils/Looper.cpp` — Native Looper，epoll 实现
-- 官方文档：
-  - [Processes and Threads | Android Developers](https://developer.android.com/guide/components/processes-and-threads)
-  - [Kotlin Coroutines on Android](https://developer.android.com/kotlin/coroutines)
-  - [WorkManager | Android Developers](https://developer.android.com/topic/libraries/architecture/workmanager)
-  - [Process.setThreadPriority | Android Developers](https://developer.android.com/reference/android/os/Process#setThreadPriority(int,int))
-  - [TestLooperManager | Android Developers](https://developer.android.com/reference/android/os/TestLooperManager)
-- 高爷原创文章：
-  - [Android Perfetto 系列 7 - MainThread 和 RenderThread 解读](https://www.androidperformance.com/2025/08/02/Android-Perfetto-07-MainThread-And-RenderThread/) — Perfetto 视角下的双线程渲染架构详解
-  - [Android Systrace 基础知识 - MainThread 和 RenderThread 解读](https://www.androidperformance.com/2019/11/06/Android-Systrace-MainThread-And-RenderThread/) — Systrace 视角下的双线程分析
-- 其他参考：
-  - [Looper到底在等什么？](https://mp.weixin.qq.com/s/Z3d8e48e3b17fc95113d46e50b95893) — Looper 的 epoll 机制详解（芦半山）
-  - [Android性能优化之绑定RenderThread到大核CPU](https://www.yanzhenjie.com/post/20241221/1f3fc18c6801/) — sched_setaffinity 实践（严振杰）
-  - Android SDK `platforms/android-Baklava/android-stubs-src.jar` 中的 `java/lang/Thread.java` — `isVirtual()` 注释明确写明虚拟线程尚未在 Android 上实现
+## 线程越多，吞吐量不一定越高
+
+增加线程只有在任务能并行、资源没有成为瓶颈且调度成本可接受时才可能提高吞吐量。过度线程化会带来：
+
+- 每个线程的 native 元数据与栈地址空间开销；
+- 更多上下文切换和缓存工作集扰动；
+- 更多 Runnable 线程争抢有限 CPU；
+- 锁竞争、队列竞争和优先级反转；
+- 不受控的并行 I/O，使存储或服务端更拥塞。
+
+线程栈大小和实际物理内存占用会随运行时、架构、线程创建方式及已触碰页面变化，不应把某个固定数值当成所有 Android 设备的成本。
+
+CPU 密集型任务应使用有界并行度，并以目标设备上的吞吐、尾延迟、功耗和温度为依据。I/O 密集型池可以比 CPU 核数大，但仍需限制并发，保护文件描述符、连接池、数据库和远端服务。
+
+## 用 Perfetto 判断线程为什么慢
+
+看到一个很长的 slice，只能说明某段逻辑从开始到结束经历了很长时间。下一步要把时间拆成线程状态：
+
+- **Running**：线程确实在 CPU 上执行；
+- **Runnable**：可以运行，但在等 CPU；
+- **Sleeping / Interruptible sleep**：常见于等消息、Binder、futex、I/O 或条件变量；
+- **Uninterruptible sleep**：通常需要继续检查内核 I/O、驱动或等待链。
+
+排查一帧卡顿时，可以按以下顺序推进：
+
+1. 从 FrameTimeline 或对应帧事件确认错过的是应用期限还是显示合成期限；
+2. 同时查看主线程和 RenderThread，而不是只盯 `doFrame`；
+3. 对长区间展开 thread state，区分 on-CPU、Runnable 与阻塞；
+4. Runnable 很长时查看 CPU 是否被更高优先级或大量线程占用；
+5. 阻塞时沿 wakeup、futex、Binder、I/O 或锁持有者寻找真正的唤醒方；
+6. 回到源码确认 slice 对应的执行边界，再决定优化业务、并行度还是跨线程协议。
+
+主线程睡在 Looper poll 通常表示“当前没有到期消息”，本身不是卡顿证据。相反，如果关键消息已到期而主线程仍被前一条消息占用，才需要缩短那条消息的执行路径。
+
+## Android 17 的虚拟线程边界
+
+Android 17 的 `libcore` 源码和 API 文本已经出现第一版虚拟线程接口，包括 `Thread.ofVirtual()`、`Thread.startVirtualThread()`、`Thread.isVirtual()` 和 `Executors.newVirtualThreadPerTaskExecutor()`。实现受 `com.android.libcore.virtual_thread_api_v1` 等发布开关控制。
+
+这意味着两个极端结论都不准确：
+
+- “Android 的虚拟线程永远没有实现”已经不符合 Android 17 源码；
+- “所有 Android 17 设备都可以无条件使用虚拟线程”同样没有依据。
+
+应用需要以实际 SDK 暴露、构建开关和目标设备行为为准，并准备兼容路径。虚拟线程适合表达大量阻塞式并发任务，但不会让 CPU 密集计算突破处理器上限，也不会替代主线程、Looper、生命周期 scope 或 WorkManager 的持久调度语义。面向多个 Android 版本的应用，协程和有界 Executor 仍是更稳定的基础工具。
+
+## 容易混淆的结论
+
+### “只要不在主线程就不会卡”
+
+后台线程过多会抢占 CPU；后台线程持锁、占满 Binder 线程池或制造大量 I/O，也会间接拖慢主线程。
+
+### “RenderThread 会接管所有绘制”
+
+主线程仍要执行布局、显示列表记录和帧状态同步。RenderThread 无法补救主线程上的长业务、复杂布局或错误的同步等待。
+
+### “线程优先级设得越高越快”
+
+优先级只是调度输入，还受 cgroup、CPU 容量、温控和其他实时负载约束。滥用高优先级会把延迟转嫁给别的关键线程。
+
+### “Handler 延迟时间到了就会准时执行”
+
+到期只表示消息可以被选择。队列前方工作、同步屏障和 CPU 调度都可能继续推迟执行。
+
+### “协程等于后台线程”
+
+协程是可挂起任务的结构。它在哪个线程运行由 Dispatcher 和上下文决定；`Dispatchers.Main` 上的协程仍会占用主线程。
+
+## 版本演进
+
+| 版本 | 与线程模型相关的变化 |
+|---|---|
+| Android 5.0 | 硬件加速渲染管线进一步采用独立 RenderThread，主线程与渲染提交的分工成为常见分析对象 |
+| Android 8.0 | 后台执行限制收紧，后台 Service 不再适合承载任意长任务 |
+| Android 11 / API 30 | `AsyncTask` 与 `IntentService` 废弃 |
+| Android 12 以后 | 前台服务启动和后台工作约束持续收紧，任务类型必须与系统 API 语义匹配 |
+| Android 17 / API 37 | 以 API 37 为目标的应用启用新的无锁 MessageQueue；私有字段反射存在兼容风险 |
+| Android 17 / API 37 | `libcore` 出现受发布开关控制的虚拟线程 v1 API 与实现，不能假定所有构建均启用 |
+
+分析线程问题时，先确认平台版本、应用 targetSdk、设备构建与实际调度配置，再解释 trace。只凭线程名称、某个 nice 值或旧版 MessageQueue 字段，无法得出可靠结论。
