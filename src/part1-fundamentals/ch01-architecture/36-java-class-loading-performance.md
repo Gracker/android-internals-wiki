@@ -4,7 +4,7 @@ chapter: "1.36"
 status: ready-for-review
 drafted_date: "2026-06-28"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-06-28"
+last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 sources:
@@ -13,15 +13,37 @@ sources:
   - type: aosp
     path: "libcore/dalvik/src/main/java/dalvik/system/DexPathList.java"
   - type: aosp
+    path: "libcore/dalvik/src/main/java/dalvik/system/DexFile.java"
+  - type: aosp
+    path: "libcore/dalvik/src/main/java/dalvik/system/DelegateLastClassLoader.java"
+  - type: aosp
+    path: "libcore/ojluni/src/main/java/java/lang/ClassLoader.java"
+  - type: aosp
     path: "art/runtime/class_linker.cc"
+  - type: aosp
+    path: "art/runtime/class_status.h"
+  - type: aosp
+    path: "art/runtime/native/dalvik_system_DexFile.cc"
+  - type: aosp
+    path: "art/runtime/oat/oat_file.cc"
+  - type: aosp
+    path: "art/libdexfile/dex/type_lookup_table.h"
+  - type: aosp
+    path: "art/runtime/verifier/class_verifier.cc"
+  - type: aosp
+    path: "art/libartservice/service/README.md"
   - type: aosp
     path: "frameworks/base/core/java/com/android/internal/os/ZygoteInit.java"
   - type: aosp
     path: "frameworks/base/core/java/android/app/ApplicationLoaders.java"
-  - type: blog
-    path: "DeepResearch/2026-06-12-android14-cold-start-warmup-mechanism.md"
-  - type: blog
-    path: "DeepResearch/当 Perfetto 显示 Running 时,Android 程序到底在做什么? .md"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/ActivityThread.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/LoadedApk.java"
+  - type: aosp
+    path: "system/core/debuggerd/debuggerd.cpp"
+  - type: official
+    path: "https://developer.android.com/topic/performance/baselineprofiles/difference-baseline-startup"
 tags: [classloader, class-loading, dexpathlist, startup, verification, art]
 related_chapters: ["1.7", "1.9", "1.11", "1.22", "8.2", "21.1", "21.4"]
 created_by: "task2a-knowledge-gap"
@@ -31,225 +53,327 @@ gap_source: "AOSP结构/章节深挖"
 
 # 1.36 Android Java 类加载链路与启动期类加载性能
 
-## 要点
+## 先分清三个动作
 
-### 🔹 Java 类加载链路全解析
+讨论类加载性能时，最容易把三类工作算在一起：
 
-Android 应用的类加载遵循 Java ClassLoader 委托模型，但实现层完全基于 DEX。完整调用链如下：
+1. **查找并定义类**：找到 DEX 中的 `class_def`，构造 `java.lang.Class` 对象，装入字段、方法、父类和接口信息，再完成链接。
+2. **验证类**：检查 DEX 指令、类型流和访问约束。可用的 VDEX/OAT 验证结果能够省掉重复验证；缺少可用结果时，运行时仍要执行 verifier。
+3. **初始化类**：写入编码在 DEX 中的静态字段初值，执行 `<clinit>`，并按 Java 内存模型发布初始化结果。
 
-```
-ClassLoader.loadClass(name)
-  → BootClassLoader / PathClassLoader.loadClass()
-    → (委托 parent 先试)
-    → BaseDexClassLoader.findClass(name)
-      → DexPathList.findClass(name, suppressed)
-        → 遍历 dexElements 数组
-        → DexFile.loadClassBinaryName(name, this, defined)
-          → nativeDefineClass/native (JNI)
-            → ART ClassLinker::DefineClass(...)
-```
+`ClassLoader.loadClass()` 会取得类并完成 ART 所需的定义/链接，但不会因此执行 `<clinit>`。验证结果可能已经存在于可用产物中；尚未满足验证条件的类，可以在后续初始化或使用路径进入 verifier。`Class.forName(name)` 的单参数重载会请求初始化。`new`、调用静态方法、读写非常量静态字段等主动使用也可能触发初始化。
 
-**关键源码路径** [已验证: AOSP android-17.0.0_r1, libcore/dalvik/src/main/java/dalvik/system/BaseDexClassLoader.java]：
+因此，一段启动耗时即使由某个类首次出现引起，也要继续判断时间落在查找、定义/链接、验证，还是业务自己的 `<clinit>`。四者的修复方向不同。
 
-- `BaseDexClassLoader` 构造时创建 `DexPathList`，后者持有 `Element[] dexElements` 数组，每个 Element 封装一个 DEX 文件的 `DexFile` 句柄
-- `DexPathList.findClass()` 遍历 `dexElements`，对每个 DEX 调用 `DexFile.loadClassBinaryName()`，该方法通过 JNI 进入 ART native 层
-- ART 侧 `ClassLinker::DefineClass()` 完成类的实际定义：分配 `Class` 元数据结构、解析 DEX 中的 class_def_item、设置父类/接口关系
+## 从 Java API 到 ART
 
-**PathClassLoader vs DelegateLastClassLoader**：
+### 常规 Java 路径
 
-Android 9+ 引入 `DelegateLastClassLoader`（继承 `PathClassLoader`），它的 `loadClass()` 先自己查找再委托 parent —— 与标准 parent-first 模型相反。用于库去重和隔离场景（如 Privacy Sandbox、SDK Runtime）。其性能开销主要在于额外的查找尝试（parent 查找失败后才会命中），在大量类加载的冷启动场景可累积可观的额外开销。
+`PathClassLoader` 在 Java 层找不到已加载类、父加载器也没有命中后，会沿这条路径进入 DEX 和 ART：
 
-### 🔹 类加载的三大开销：查找、验证、初始化
-
-类加载的运行时开销可拆解为三个阶段：
-
-**1. 查找开销（Loading / Linking Resolution）**
-
-`DexPathList.findClass()` 在多个 DEX 文件中线性查找类。每个 DEX 的查找通过 `DexFile::FindClassDef()` 完成 —— 在 DEX 的 `class_defs` 表中二分搜索 `type_idx`。单次查找开销很小（约 1-5μs），但冷启动中数百个类 × MultiDex 的 N 个 DEX 文件，累积开销可达 5-20ms。
-
-`[适用版本: Android 12 - Android 17]`
-
-**2. 验证开销（Verification）**
-
-ART Verifier 在类首次使用时检查字节码合法性。`ClassLinker::VerifyClass()` 调用 `MethodVerifier::Verify()`，对每个方法做数据流分析。验证是 ART 中 CPU 密集的操作之一。
-
-- 有 AOT 编译（speed-profile / speed）的类在安装时已完成验证，运行时零开销
-- 仅 `verify` filter 的 APK（无 AOT）在运行时触发 JIT 验证，首次类加载可增加 5-50ms（取决于类的方法数和复杂度）
-- Android 6+ 的 Quickening 优化让验证后的字节码运行更快，但验证本身仍是开销
-
-详见 §1.22「ART Verifier Quickening 与 dexopt 过滤器性能边界」。
-
-**3. 初始化开销（\<clinit\>）**
-
-`<clinit>` 是类的静态初始化块。ART 通过 `ClassLinker::InitializeClass()` 调用。开销取决于 `<clinit>` 的内容：
-
-- 空的 `<clinit>`（编译器生成的占位）：约 10-50μs
-- 含 `static final` 常量初始化：通常已被 AOT 编译，开销很小
-- 含复杂逻辑（如初始化集合、加载配置）：可达数毫秒
-
-`[已验证: AOSP android-17.0.0_r1, art/runtime/class_linker.cc - InitializeClass]`
-
-### 🔹 冷启动中的类加载瓶颈
-
-冷启动是类加载开销最集中的场景。根据 Perfetto trace 分析，一个典型中型应用的冷启动涉及 **800-2000 个类的首次加载**。
-
-**类加载在冷启动中的时序分布**：
-
-```
-Zygote fork → ActivityThread.main()
-  ├── Application.attachBaseContext()     ← ContentProvider 初始化，触发框架类加载
-  ├── Application.onCreate()               ← Application 子类、第三方 SDK 初始化类
-  ├── Activity.onCreate()                  ← Activity 子类、View 子类、布局相关类
-  └── 首帧渲染                              ← Drawable、动画、Bitmap 工具类
+```text
+ClassLoader.loadClass(name, resolve)
+  ├─ findLoadedClass(name)
+  ├─ parent.loadClass(name, false) / bootstrap lookup
+  └─ BaseDexClassLoader.findClass(name)
+       ├─ sharedLibraryLoaders
+       ├─ DexPathList.findClass(name, suppressed)
+       │    └─ 依次访问 dexElements
+       │         └─ DexFile.loadClassBinaryName(...)
+       │              └─ DexFile.defineClassNative(...)
+       │                   └─ ClassLinker::DefineClass(...)
+       └─ sharedLibraryLoadersAfter
 ```
 
-**Perfetto 中的特征** [来源: DeepResearch/当 Perfetto 显示 Running 时,Android 程序到底在做什么? .md]：
+这条链有两个需要特别留意的线性维度：父加载器链和 `dexElements[]`。`DexPathList.findClass()` 按数组顺序访问元素，命中第一个定义就停止。DEX 数量增加会扩大未命中或靠后命中的访问范围，但耗时还受缓存、DEX 映射状态、产物是否可用和设备存储影响，不能只用 DEX 数量换算成固定毫秒数。
 
-在 Perfetto trace 中，类加载表现为 `dalvik` atrace category 下的以下 track event：
+### API 37 的 ART 快速路径
 
-- `ClassLinker::LoadClass` — 类的加载（读取 DEX、分配 Class 结构）
-- `ClassLinker::DefineClass` — 类的定义（设置继承关系、分配 vtable）
-- `VerifyClass` — 字节码验证
-- `InitializeClass` — 静态初始化
+ART 自己解析类型引用时，不一定重新递归调用上述 Java 方法。`ClassLinker::FindClass()` 会识别以下标准加载器及其继承关系：
 
-在冷启动早期（特别是 `attachBaseContext` 到 `Application.onCreate` 之间），这些事件常常占据主线程 Running 时间的 **30-60%**。
+- `PathClassLoader` / `DexClassLoader`
+- `InMemoryDexClassLoader`
+- `DelegateLastClassLoader`
 
-**与 GC 的叠加效应**：类加载过程中分配的大量 `Class` 对象、`ArtMethod` 数组、字符串常量等会触发 minor GC。Android 14+ 的 ART 在 fork 后 2 秒内默认抑制 GC（详见 §21.13），但抑制窗口结束后类加载残余对象仍可能引发 GC 暂停。
+对可识别的链，`FindClassInBaseDexClassLoader()` 在 native 层按相同策略查找，避免多次 Java/native 往返。遇到自定义且无法识别的 `ClassLoader` 时，ART 才需要回到该加载器的 Java 行为。native 快速路径仍遵循 Java 侧对应的委托顺序。
 
-### 🔹 ART ClassLinker 内部机制
+### `DelegateLastClassLoader` 的准确顺序
 
-`ClassLinker` 是 ART 运行时中管理类生命周期的核心组件 [已验证: AOSP android-17.0.0_r1, art/runtime/class_linker.cc]。
+`DelegateLastClassLoader` 从 API 27 开始提供。API 37 中，已加载类仍然先由 `findLoadedClass()` 命中；新查找的顺序为：
 
-**DefineClass 的关键步骤**：
+1. boot class path；
+2. `sharedLibraryLoaders`；
+3. 本加载器的 DEX；
+4. `sharedLibraryLoadersAfter`；
+5. parent。
 
-1. **分配 Class 内存**：从 LinearAlloc 分配 `Class` 结构体（LinearAlloc 是线性的、不释放的分配器，避免堆碎片）
-2. **解析 class_def**：从 DEX 文件的 `class_def_item` 读取类名、父类、接口列表、访问标志
-3. **设置继承链**：设置 `super_class_`、`iftable_`（接口表）、`vtable_`（虚方法表）
-4. **分配 ArtMethod 数组**：为类的每个方法分配 `ArtMethod` 结构
-5. **分配 ArtField 数组**：为每个字段分配 `ArtField` 结构
-6. **注册到 ClassTable**：将类注册到 ClassLoader 关联的 ClassTable，后续查找直接命中
+它只把应用/库 DEX 放到了普通 parent 之前，boot class path 仍有最高优先级。该策略适合有明确隔离需求的运行环境，不能用来给普通应用“加速类加载”。同名类由谁定义会影响类型身份、强制转换、包访问和链接约束，性能收益必须排在正确性之后评估。
 
-**锁竞争**：
+## DEX 中怎样找到 `class_def`
 
-`DefineClass` 持有 `Locks::classlinker_classes_lock_`，确保同一 ClassLoader 内同一类不会被并发定义。在多线程并发触发类加载时（如启动期有多个后台线程同时初始化不同的 SDK），锁竞争可导致主线程类加载被阻塞。
+“每个 DEX 都对 `class_defs` 做二分查找”不符合 API 37 实现。
 
-**CHA（Class Hierarchy Analysis）的额外开销**：
+`DexPathList` 或 ART 的标准加载器快速路径会依次访问加载器持有的 DEX。进入某一个 DEX 后，`OatDexFile::FindClassDef()` 的优先路径是：
 
-`ClassLinker::DefineClass` 完成后会调用 `ClassHierarchyAnalysis::UpdateAfterLoadingOf()`，检查新加载的类是否使已有的 devirtualization 假设失效。CHA 在类加载密集的启动阶段会产生可观的 CPU 开销，但通过消除虚方法调用来提升后续执行效率。详见 §1.35「ART 去优化（Deoptimization）触发机制与性能影响」。
+1. 如果该 DEX 关联的 `TypeLookupTable` 有效，按 descriptor 的 modified UTF-8 hash 查找 `class_def_idx`；
+2. 如果没有有效查找表，先由 descriptor 找到 `type_id`；
+3. 再调用 `DexFile::FindClassDef(type_idx)`，后者在 API 37 中顺序扫描 `class_defs`。
 
-### 🔹 Multidex 与类加载性能
+`TypeLookupTable` 在编译阶段创建，运行时从映射的产物读取。它避免了常见路径上的整表扫描。外层 DEX 元素仍然按 class path 顺序访问，所以 Startup Profile 对 DEX 布局的优化依旧有价值。
 
-MultiDex 应用的类加载性能受 DEX 文件数量直接影响。
+### MultiDex 优化应看什么
 
-**DexPathList 的线性查找代价**：
+评估 MultiDex 要同时检查 DEX 次序、加载器结构和运行时产物：
 
-`DexPathList.findClass()` 对 `dexElements[]` 做线性遍历。对于 N 个 DEX 的 MultiDex 应用，最坏情况下单次 `findClass` 需要检查所有 N 个 DEX。虽然单个 DEX 的 `FindClassDef` 很快（DEX 内部有 type_id 到 class_def 的索引），但 N 次查找的累积开销不容忽视。
+- 启动所需类是否集中在靠前的 DEX；
+- 未命中查找是否反复穿过多个元素；
+- 动态 feature、插件或补丁是否增加了额外加载器层级；
+- 产物中是否带有可用的 profile、验证信息和 type lookup table；
+- 类是否在首帧前确有必要。
 
-**量化评估**：
+Startup Profile 是构建期输入。D8/R8 用它调整 DEX 布局，优先把启动类和方法放入主 `classes.dex`；空间不足时会溢出到后续 DEX。Baseline Profile 则随 APK/AAB 提供给 ART，用于设备侧 profile-guided compilation。两者可以来自同一套生成流程，但作用阶段不同。
 
-| DEX 数量 | 单类查找（μs） | 500 类冷启动累积（ms） |
-|----------|---------------|----------------------|
-| 1（单 DEX） | 1-3 | 0.5-1.5 |
-| 5 | 3-8 | 1.5-4.0 |
-| 10+ | 5-15 | 2.5-7.5 |
+不要用“首 DEX 命中率必须达到某个百分比”代替测量。可在 Android Studio 的 APK Analyzer 中检查 DEX 分布；AGP 8.8 及以上还可检查 AAB 内 R8 元数据的 `dexFiles[].startup` 标记。
 
-`[待验证: 上述数据为基于源码逻辑的理论估算，实际开销因设备性能、DEX 大小、类分布而异]`
+## `ClassLinker::DefineClass()` 做了什么
 
-**Android 14+ 的 DEX Layout 优化**：
+API 37 的主要步骤可概括为：
 
-Android 14 引入了基于 Profile 的 DEX Layout 重排（详见 §21.12）。它根据 Baseline Profile 中的类使用频率，将高频类集中到 classes.dex（第一个 DEX），减少查找时的跨 DEX 遍历。冷启动中 90% 以上的类命中第一个 DEX，大幅降低 MultiDex 的查找开销。
-
-### 🔹 Bootclasspath 与 App Classpath 的加载差异
-
-Android 的类加载存在两个截然不同的路径：bootclasspath 和 app classpath。
-
-**Bootclasspath 类**（如 `java.lang.*`、`android.app.*` 等 framework 类）：
-
-- 在 **Zygote 进程**中通过 `ZygoteInit.preloadClasses()` 预加载 [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/internal/os/ZygoteInit.java]
-- `preloadClasses()` 读取 `/system/etc/preloaded-classes`（约 3000-4000 个类），对每个类调用 `Class.forName()` 触发加载 + 验证 + 初始化
-- 预加载完成后调用 `runtime.preloadDexCaches()` 填充 DEX cache，fork 后子进程直接命中
-- 应用进程通过 `BootClassLoader` 查找这些类，开销为零（已预加载 + 已初始化 + 已 AOT 编译）
-
-**App classpath 类**（应用自身的类、第三方库的类）：
-
-- 应用进程启动时由 `PathClassLoader` 加载
-- 每个 DEX 文件在首次访问时按需加载
-- 无 AOT 时需要 JIT 验证和编译
-- `ApplicationLoaders.java` 维护了以 APK 路径为 key 的 ClassLoader 缓存（`mLoaders` Map），确保同一 APK 的多次加载复用已有的 `PathClassLoader`，避免重复 DEX 解析 [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ApplicationLoaders.java]
-
-**Zygote 懒预加载机制**：
-
-Android 10+ 引入 `--enable-lazy-preload`，将 Zygote 的预加载从开机阶段推迟到首次 fork 前。这意味着系统开机更快，但第一个启动的应用会承担预加载成本。Android 17 进一步优化了懒预加载的调度策略。详见 §1.11「Zygote 机制与启动性能优化」。
-
-### 🔹 类加载锁竞争与并行初始化
-
-类加载本质上是串行的 —— Java 规范要求 `<clinit>` 在锁保护下执行。ART 使用 `Class.status` 字段实现类加载的互斥：
-
-**类加载状态机** [已验证: AOSP android-17.0.0_r1, art/runtime/class_linker.cc - DefineClass / InitializeClass]：
-
-```
-kNotReady → kIdx → kLoaded → kResolved → kVerifying → kRetryVerificationAtRuntime
-  → kVerifyingAtRuntime → kInitialized
+```text
+查 ClassTable
+  → 分配 mirror::Class
+  → RegisterDexFile / SetupClass
+  → 尝试插入 ClassTable
+  → LoadClass（字段、方法、父类和接口）
+  → LinkClass（布局、vtable、iftable、IMT 等）
+  → CHA 更新
+  → 状态转为 kResolved
+  → ClassPrepare 回调
 ```
 
-- 线程 A 触发类加载时，先将状态设为 `kVerifying`，然后执行验证和初始化
-- 线程 B 同时尝试加载同一类时，发现状态不是 `kInitialized`，会在 `ClassLinker::InitializeClass` 中等待（通过 monitor）
-- 线程 A 完成后状态变为 `kInitialized`，线程 B 被唤醒后直接使用
+这段顺序解释了两个常见 trace 现象。第一，定义一个类可能递归解析父类和接口，因此一个外层类的 wall time 会包含依赖类工作。第二，CHA 更新发生在类变为 `kResolved` 之前；新类若推翻了 JIT 的单实现假设，可能进一步触发已编译代码失效和去优化，相关机制见 §1.35。
 
-**死锁风险**：
+### 托管堆与 `LinearAlloc` 的边界
 
-当两个线程同时触发有循环依赖的两个类的 `<clinit>` 时（如类 A 的 `<clinit>` 引用类 B，类 B 的 `<clinit>` 引用类 A），理论上会死锁。ART 通过 `<clinit>` 的可重入设计避免这个问题：已在初始化中的类（状态为 `kInitializing`）的 `<clinit>` 被重入时直接返回，不等初始化完成。但这意味着类可能在 `<clinit>` 完全执行完之前就被其他线程访问到半初始化的状态 —— 这是 Java 语言规范允许的行为。
+`mirror::Class` 是 ART 托管堆对象，由 `AllocClass()` 分配。`LinearAlloc` 主要承载这些 native 元数据：
 
-**实际启动场景中的锁竞争**：
+- `ArtMethod` 数组；
+- `ArtField` 数组；
+- 部分 IMT、冲突表和链接期表结构。
 
-在冷启动中，主线程是类加载的主要驱动者。后台线程（如 SDK 初始化的线程池）并发加载类时，如果与主线程加载的类存在依赖关系（如继承、静态字段引用），可能触发等待。诊断方法：
+应用 class loader 注册时，ART 为它创建 `ClassTable` 和专属 `LinearAlloc`。当 class loader 不再可达并被清理时，ART 会移除相关 JIT/CHA 依赖，随后删除该 allocator 和 class table。于是，“LinearAlloc 中的类元数据永不释放”只适用于加载器长期存活的观察窗口，不能当成 ART 的一般回收规则。
 
-- Perfetto 中查看 `ClassLinker::InitializeClass` 的 wall-clock duration，如果远超 CPU duration，说明存在锁等待
-- `dumpsys` 无直接类加载统计，但 simpleperf 的 `sample` 模式可以看到 `class_linker.cc` 函数的热度
+### 并发定义使用多层同步
 
-## 扩展
+`classlinker_classes_lock_` 保护全局/加载器类表等共享结构，但 `DefineClass()` 没有从头到尾独占这把锁。插入、更新或访问 `ClassTable` 时才在限定范围内持锁。类对象自身的 monitor 和状态变化负责协调同一个类的并发定义、解析、验证与初始化。
 
-### 🔸 Baseline Profile 对类加载路径的影响
+并发加载不同类仍可能互相影响，来源包括：
 
-Baseline Profile（详见 §21.4）通过指导 AOT 编译覆盖启动路径上的类，间接降低运行时类加载开销：
+- 类表和 DEX 注册的短临界区；
+- 两个类共享父类或接口；
+- verifier 递归验证父类型；
+- 初始化代码等待其他线程、I/O 或应用锁；
+- CHA 失效处理和 JIT code cache 工作。
 
-1. **AOT 覆盖减少 JIT 压力**：被 Profile 覆盖的类在安装时（或后台 dexopt）完成 AOT 编译，验证也在编译时完成，运行时零验证开销
-2. **DEX Layout 重排**：Android 14+ 的 `dexlayout` 根据 Profile 将冷启动类集中到 classes.dex 的前部，提升 DEX 内局部性
-3. **但不能消除类加载本身**：即使所有方法都 AOT 编译了，`Class` 元数据结构仍需在运行时分配（`DefineClass`），`<clinit>` 仍需执行。Baseline Profile 减少的是验证和 JIT 编译开销，不是类加载开销
+仅凭主线程出现 blocked 状态，不能直接归因于一把“ClassLinker 全局锁”。需要结合等待栈和被等待线程确认。
 
-### 🔸 Android 17 中 ART 类加载的变化
+## 验证：编译过滤器能省掉哪部分工作
 
-Android 17（API 37）在 ART 类加载方面的主要变化：
+`ClassLinker::VerifyClass()` 先检查类是否已验证，然后尝试使用 OAT/VDEX 记录的状态。只有无法取得可用的预验证结果时，才调用 `ClassVerifier::VerifyClass()`。运行时 verifier 会遍历方法，对指令和类型流做检查；API 37 的 trace 名称为 `VerifyClass <PrettyDescriptor>`。
 
-1. **Mainline 模块更新**：ART 作为 Mainline 模块继续独立演进，ClassLinker 内部实现持续优化，但公共 API 保持稳定
-2. **CHA 优化**：CHA 的增量更新算法进一步优化，减少了新类加载时的全量 hierarchy 扫描开销
-3. **VerifyClass 路径优化**：验证器在 Android 17 中进一步利用 profile 信息，对已验证的类跳过重复检查
-4. **Zygote 懒预加载增强**：`--enable-lazy-preload` 的调度更精细，减少首个应用启动时的预加载等待
+ART Service 对三个正式支持的 compiler filter 定义如下：
 
-`[已更新至 Android 17]`
+| filter | 验证与提取 | 方法编译 | profile 中类的解析与初始化 |
+|---|---:|---:|---:|
+| `verify` | 是 | 否 | 否 |
+| `speed-profile` | 是 | profile 中的方法 | 是 |
+| `speed` | 是 | 全部方法 | 否 |
 
-### 🔸 Jetpack Startup 与类加载优化
+`verify` 会在 dexopt 阶段执行验证并生成可复用结果；它不做 AOT 方法编译，也不做类解析与初始化。运行时能否跳过 verifier 还取决于产物是否存在、校验是否通过、class loader context 和依赖是否匹配，以及编译期是否记录了需要在运行时重试的软失败。
 
-Jetpack Startup 库（`androidx.startup`）通过 ContentProvider 初始化简化启动链路，但其类加载开销需要注意：
+同理，`speed-profile` 也不能保证每个启动类都没有运行时验证。profile 覆盖、产物有效性、依赖变化和 verifier 的失败类型都会改变路径。验证优化应以 `VerifyClass ...` slice、ART 产物状态和可重复的启动测量为证据。
 
-1. **ContentProvider 初始化触发**：Android 在 `Application.attachBaseContext()` 之后、`Application.onCreate()` 之前初始化所有 ContentProvider。Jetpack Startup 的 `InitializationProvider` 是一个特殊 ContentProvider，在其 `onCreate()` 中执行各 `Initializer` 链
-2. **类加载集中**：所有 Initializer 类在 ContentProvider 初始化阶段集中加载，造成类加载的 CPU 峰值
-3. **与 App Startup 库的关系**：Google 推荐用 Jetpack Startup 替代手动 ContentProvider 初始化，但注意不要在 Initializer 中执行耗时操作，否则会阻塞 Application.onCreate() 的调度
+## 初始化：`<clinit>`、状态与可见性
 
-### 🔸 Class.forName 性能与反射开销
+### 状态包含成功、重试与失败分支
 
-`Class.forName()` 和 `ClassLoader.loadClass()` 是两种触发类加载的方式：
+API 37 的成功主路径可概括为：
 
-- `Class.forName(name)` 内部调用 `Class.forName(name, true, callerClassLoader)` —— `true` 表示同时初始化（执行 `<clinit>`）
-- `ClassLoader.loadClass(name)` 只加载不初始化；需要显式调用 `Class.newInstance()` 或访问静态字段时才触发初始化
+```text
+kNotReady → kIdx → kLoaded → kResolving/kResolved
+  → kVerifying → kVerified → kInitializing
+  → kInitialized（部分架构的过渡态）→ kVisiblyInitialized
+```
 
-反射式类加载的额外开销主要来自：
+失败路径可能进入 `kErrorUnresolved` 或 `kErrorResolved`；编译期软验证失败还可能记录 `kRetryVerificationAtRuntime` 或 `kVerifiedNeedsAccessChecks`。OAT class status 可用 `kSuperclassValidated` 表示父类描述符已校验，运行时对象不会把它作为每次初始化都经历的固定节点。临时类在确定最终大小并复制后会进入 `kRetired`。因此，诊断代码不应假设每个类都会逐项经历同一组状态。
 
-1. **反射调用本身**：`Method.invoke()` 的 JIT 编译路径有额外开销（argument boxing、security check）
-2. **无法被 AOT 覆盖**：通过反射加载的类不在编译器的可见范围内，无法被 Baseline Profile 覆盖
-3. **隐藏 API 限制**：Android 9+ 的隐藏 API 限制使得通过反射访问非公开 API 的代码路径更长（`ViewModel` 等组件内部使用了 `Class.forName` 但通过反射绕过限制的路径有额外开销）
+`kInitialized` 表示初始化完成，但读取静态字段的线程仍需通过 acquire 语义获得可见性。`kVisiblyInitialized` 表示初始化结果已经对所有线程可见，编译代码可以使用更便宜的检查。API 37 在 x86/x86_64 或单线程事务中可直接进入 `kVisiblyInitialized`；其他路径先记录 `kInitialized`，再由批处理 callback 使用 `membarrier()` 或线程 checkpoint 建立可见性。
 
-**优化建议**：
+### 谁执行，谁等待
 
-- 冷启动路径避免使用 `Class.forName`，改用直接类引用（让编译器和 Profile 优化生效）
-- 序列化框架（Gson、Moshi）在启动期创建大量反射元数据，考虑使用代码生成方案（Moshi KSP、kotlinx.serialization）
+`InitializeClass()` 按 JLS 12.4.2 使用类对象 monitor 协调：
+
+- 当前线程若已在初始化同一个类，递归调用直接返回成功，让当前初始化继续；
+- 其他线程看到 `kInitializing` 时，在 `WaitForInitializeClass()` 中等待；
+- `<clinit>` 抛异常后，类进入错误状态，后续使用会收到相应的初始化失败异常；
+- 成功后更新统计、发布状态并唤醒等待线程。
+
+同线程递归初始化可能让该线程在 `<clinit>` 尚未结束时读到默认值或阶段性值。其他线程不会把 `kInitializing` 当成初始化成功，它们会等待。两个线程分别初始化存在交叉依赖的类时，仍可能形成跨线程死锁；“`<clinit>` 可重入”只处理同一线程的递归情形。
+
+### `<clinit>` 耗时属于应用代码
+
+ART 会先初始化父类，并按规范处理包含 default method 的接口，再写入 DEX 编码的静态值，最后调用类初始化方法。此处可以执行任意应用逻辑，例如读取磁盘、初始化序列化元数据、创建线程池或等待锁。耗时来自这些逻辑时，调整 compiler filter 或 DEX 次序通常只能改善外围成本，不能消除 `<clinit>` 本身。
+
+把静态初始化改为惰性 holder、按需缓存或显式初始化前，要检查线程安全和首次使用位置。工作只是从进程启动移到了另一个用户动作时，还应衡量该动作的延迟。
+
+## 应用冷启动中的准确时序
+
+常规应用进程在 `ActivityThread.handleBindApplication()` 中建立 `Application`。API 37 的关键顺序如下：
+
+```text
+LoadedApk.makeApplicationInner()
+  → Instrumentation.newApplication()
+    → AppComponentFactory.instantiateApplication()
+    → Application.attach()
+      → Application.attachBaseContext()
+  → ActivityThread.installContentProviders()
+    → ContentProvider.onCreate()
+  → Instrumentation.callApplicationOnCreate()
+    → Application.onCreate()
+  → 启动 Activity
+```
+
+由此可以确定：manifest 中的 provider 安装发生在 `attachBaseContext()` 之后、`Application.onCreate()` 之前。Jetpack Startup 的 `InitializationProvider` 也处在这个区间，各个 `Initializer` 的类加载和执行会阻塞后续 `Application.onCreate()`。它把多个初始化入口集中到一个 provider，仍需由应用控制每个 initializer 的工作量和依赖关系。
+
+启动阶段常见的类加载来源包括：
+
+- 自定义 `Application`、provider 和首个 Activity；
+- 布局 inflate 触发的 View、Drawable 与反射构造；
+- 依赖注入生成代码或运行时扫描；
+- 序列化、数据库、路由与日志框架的注册表；
+- SDK 在静态字段或 initializer 中建立的对象图。
+
+不要先假定“类加载占启动时间的固定比例”。应从同一构建、同一设备、同一编译状态的多轮 Macrobenchmark trace 中识别稳定热点。
+
+## Zygote 与应用 class path
+
+### 预加载共享了什么
+
+`ZygoteInit.preloadClasses()` 读取 `/system/etc/preloaded-classes`。每个有效条目使用 `Class.forName(name, true, null)` 交给 boot class loader 加载并初始化，最后调用 `VMRuntime.preloadDexCaches()`。列表条数是产品配置，不能写成跨设备固定值。
+
+fork 后，应用能通过写时复制共享 Zygote 已建立的类元数据、初始化状态和相关内存页。应用仍要按 boot class path 和类表执行查找，首次解析到自身 DEX 的引用也可能更新应用侧 DexCache。成功预加载类的定义、验证和初始化已经在 Zygote 完成，并具备共享条件；后续查找仍有成本。
+
+`--enable-lazy-preload` 是 Zygote 的配置分支。启用时，启动 Zygote 阶段跳过 eager preload，并在第一次 fork 前完成 preload。该选项由产品启动策略决定，应用不能假定 Android 17 设备都采用同一配置。
+
+### `ApplicationLoaders` 缓存有条件
+
+`ApplicationLoaders` 的 `mLoaders` 通常以 APK/zip 路径作为 cache key，但只在 parent 等于 base parent 时查找和写入该缓存。自定义 parent 会新建加载器，也不会进入这条普通缓存路径。系统还会为部分非 boot class path 系统库建立独立缓存，并校验 parent、加载器名称和 shared-library 环境。
+
+同一路径只有满足缓存条件时才会复用 `PathClassLoader`。分析拆分 APK、shared library、WebView 或插件时，要同时检查 parent 与 shared-library 图。
+
+## 如何在 API 37 上定位成本
+
+### 1. 先固定编译状态
+
+类验证和 JIT/AOT 状态会直接改变 trace。对比优化前后时，应明确使用哪种 Macrobenchmark `CompilationMode`，不要把首次安装的 `verify` 状态和已完成后台 dexopt 的 `speed-profile` 状态混在一组结果中。
+
+设备支持 ART Service shell 命令时，可这样检查包的 dexopt 状态：
+
+```bash
+adb shell pm art dump com.example.app
+```
+
+输出可帮助确认 DEX、compiler filter、编译原因和 profile 情况。不同构建类型与设备策略可能影响可见字段，记录原始输出比只抄一个 filter 名称更可靠。
+
+### 2. 使用 API 37 的真实 trace 名称
+
+`ClassLinker::DefineClass()` 在 API 37 使用原始 descriptor 作为 `ScopedTrace` 名称，例如 `Lcom/example/Foo;`。verifier 使用 `VerifyClass com.example.Foo` 一类名称。源码没有为每次初始化提供名为 `ClassLinker::InitializeClass` 或 `InitializeClass` 的固定 slice。
+
+这个 Perfetto SQL 汇总目标进程中形如类 descriptor 的 slice：
+
+```sql
+SELECT
+  s.name,
+  COUNT(*) AS occurrences,
+  ROUND(SUM(s.dur) / 1e6, 3) AS total_ms,
+  ROUND(MAX(s.dur) / 1e6, 3) AS max_ms
+FROM slice AS s
+JOIN thread_track AS tt ON s.track_id = tt.id
+JOIN thread AS t ON tt.utid = t.utid
+JOIN process AS p ON t.upid = p.upid
+WHERE p.name = 'com.example.app'
+  AND s.name GLOB 'L*;'
+GROUP BY s.name
+ORDER BY SUM(s.dur) DESC;
+```
+
+这里的 slice 覆盖 `DefineClass()` 的 wall time，可能包含依赖类解析和等待。汇总后还要回到时间线查看嵌套关系，不能把父 slice 与子 slice 简单相加成独立成本。
+
+验证事件可在同一查询框架中改用以下条件筛选：
+
+```sql
+s.name GLOB 'VerifyClass *'
+```
+
+若热点落在 `<clinit>`，需要方法采样、可控的方法 tracing，或在自有初始化入口增加 `Trace.beginSection()`。系统 trace 没有独立初始化 slice 时，不要用 descriptor slice 的总时长冒充 `<clinit>` 时长。
+
+### 3. 用 SIGQUIT 看累计统计
+
+API 37 的 `ClassLinker::DumpForSigQuit()` 会输出 Zygote/非 Zygote 已加载类数量、注册的 class loader 和 DEX 路径，以及累计初始化类数量与时间。SIGQUIT 内容会交给 `tombstoned`，不会作为完整文本写入 logcat。userdebug 或已取得 root 的设备可用 `debuggerd -j` 接收 Java dump：
+
+```bash
+adb root
+pid="$(adb shell pidof com.example.app | tr -d '\r')"
+adb shell debuggerd -j "$pid" > java-dump.txt
+rg 'Zygote loaded classes|post zygote classes|Classes initialized|Dumping registered class loaders' java-dump.txt
+```
+
+`debuggerd` 的 API 37 实现要求 root；普通 user 构建不应依赖这条流程。这些统计是进程累计值，适合比较同一测试节点的构建差异，不会指出单个类为何慢。Java dump 还包含完整线程信息，采集时要考虑它对进程的扰动。
+
+### 4. 用采样确认 CPU 去向
+
+在 userdebug、可分析应用或具备相应权限的设备上，simpleperf 可以回答 CPU 是否耗在 `ClassLinker`、verifier、CHA，还是应用静态初始化方法。采样看到 `ClassLinker::DefineClass` 只说明 CPU 栈经过该函数；结合 Perfetto 的 wall time 才能区分计算、调度和锁等待。
+
+## 优化顺序
+
+### 先减少首帧前必须出现的类
+
+优先检查 provider、`Application.onCreate()`、首屏 inflate 和首帧前同步回调。可推迟到首帧后的 SDK，不要通过静态字段或 manifest provider 提前引用。可按需创建的大对象图，不要在 `<clinit>` 一次性建立。
+
+这一步通常同时减少类定义、验证、对象分配和业务初始化，收益范围比只调 DEX 次序更广。推迟后仍要给新位置做交互延迟和线程安全测试。
+
+### 再改善 DEX 布局与编译覆盖
+
+- 生成覆盖真实启动入口的 Baseline Profile；
+- 只把首帧所需路径纳入 Startup Profile，避免主 DEX 被低优先级路径挤满；
+- 用 release/R8 构建检查最终 DEX，而不是检查未混淆的 profile 生成变体；
+- 通过 Macrobenchmark 分别测 `None`、`BaselineProfile` 等明确编译模式；
+- 用 `pm art dump` 确认设备采用了预期产物。
+
+Baseline Profile 可以减少解释执行、JIT 和部分运行时验证，也可能让 profile 类从 app image 等产物中更快恢复。它不保证消除所有 `Class` 建立工作，更不会自动缩短应用写在 `<clinit>` 中的 I/O 或锁等待。
+
+### 处理反射和运行时扫描
+
+`Class.forName(name)` 会初始化类；需要只加载时可显式使用 `Class.forName(name, false, loader)`。运行路径被 profile 采集后，反射加载的类和方法仍可出现在 Baseline/Startup Profile 中。
+
+反射框架常见的额外成本来自字符串查找、成员枚举、注解解析、可访问性检查、参数装箱和缓存建立。代码生成可减少这些运行时工作，但是否值得改造要以采样结果为准。隐藏 API 策略是访问控制问题，不应混入普通应用类加载优化结论。
+
+### 谨慎并行化初始化
+
+把 SDK 初始化全部扔进线程池可能增加 DEX 映射、类表临界区、verifier、CPU 和内存带宽竞争，也可能形成跨线程 `<clinit>` 依赖。适合并行的工作应满足：依赖清楚、不阻塞首帧所需类、没有主线程回调要求，并且在目标设备上测得端到端收益。
+
+## Android 17 边界与检查表
+
+最高源码锚点为 `android-17.0.0_r1`。API 37 的结论包括：标准加载器 native 快速路径、`TypeLookupTable` 优先查找、`mirror::Class` 与 `LinearAlloc` 的内存边界、完整类状态、真实 trace 名称和 ART Service 三种正式 compiler filter。没有源码证据的“Android 17 进一步优化了某算法”不作为版本结论。
+
+排查启动类加载时，可按以下顺序复核：
+
+1. 编译状态是否一致，ART 产物是否有效；
+2. 慢点属于定义、验证、初始化，还是依赖类递归；
+3. Perfetto 中是否使用 API 37 的真实 descriptor/`VerifyClass` 名称；
+4. 热点类为何在首帧前被引用；
+5. Startup Profile 是否改善了最终 DEX 布局；
+6. Baseline Profile 是否覆盖实际启动入口；
+7. `<clinit>` 是否含 I/O、锁等待、大对象图或运行时扫描；
+8. 自定义/DelegateLast 加载器是否改变查找顺序和类型身份；
+9. 优化是否在多轮 Macrobenchmark 中保持稳定，并且没有把延迟转移到首个交互。
