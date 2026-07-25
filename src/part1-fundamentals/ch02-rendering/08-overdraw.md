@@ -6,8 +6,8 @@ polish_count: 1
 polish_date: 2026-04-05
 polish_by: task2b-polish
 applicable_versions: Android 4.2 (API 17) - Android 17 (API 37)
-last_verified: 2026-07-03
-last_verified_against: AOSP android-17.0.0_r1
+last_verified: 2026-07-25
+last_verified_against: AOSP android-17.0.0_r1 Properties.h/Properties.cpp, SkiaPipeline.cpp, RenderNodeDrawable.cpp, Canvas.java; androidx.compose.ui:ui:1.11.4 GraphicsLayerModifier.kt/GraphicsLayerScope.kt; kernel android17-6.18-2026-06_r6 dma-buf/dma-fence
 drafted_date: 2026-03-30
 confidence: high
 reviewed_date: 2026-04-30
@@ -22,11 +22,52 @@ task9_state: reviewed
 task6_state: reviewed
 pipeline_stage: ready-to-publish
 status: finalized
-sources: 
-- type: official
+sources:
+  - type: aosp
+    path: frameworks/base/libs/hwui/Properties.h
+    ref: android-17.0.0_r1
+  - type: aosp
+    path: frameworks/base/libs/hwui/Properties.cpp
+    ref: android-17.0.0_r1
+  - type: aosp
+    path: frameworks/base/libs/hwui/pipeline/skia/SkiaPipeline.cpp
+    ref: android-17.0.0_r1
+  - type: aosp
+    path: frameworks/base/libs/hwui/pipeline/skia/RenderNodeDrawable.cpp
+    ref: android-17.0.0_r1
+  - type: aosp
+    path: frameworks/base/graphics/java/android/graphics/Canvas.java
+    ref: android-17.0.0_r1
+  - type: kernel
+    path: kernel/common/drivers/dma-buf/dma-buf.c
+    ref: android17-6.18-2026-06_r6
+  - type: kernel
+    path: kernel/common/drivers/dma-buf/dma-fence.c
+    ref: android17-6.18-2026-06_r6
+  - type: kernel
+    path: kernel/common/drivers/dma-buf/sync_file.c
+    ref: android17-6.18-2026-06_r6
+  - type: official
+    path: https://developer.android.com/develop/ui/compose/graphics/draw/modifiers
+  - type: official
+    path: https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui/1.11.4/ui-1.11.4-sources.jar
+  - type: obsidian
+    path: Writer/rendering_pipelines/S01_rendering_types_overview.md
+  - type: obsidian
+    path: Writer/rendering_pipelines/S02_aosp_standard_type.md
+  - type: obsidian
+    path: Writer/rendering_pipelines/S03_surfaceview_type.md
+  - type: obsidian
+    path: Writer/rendering_pipelines/S04_textureview_type.md
+  - type: obsidian
+    path: Writer/rendering_pipelines/S05_mixed_rendering_type.md
+  - type: obsidian
+    path: Writer/rendering_pipelines/S07_software_offscreen_type.md
+  - type: obsidian
+    path: Writer/rendering_pipelines/S12_video_overlay_hwc_type.md
 path: developer.android.com/develop/ui/compose/graphics/draw/modifiers
-tags: 
-related_chapters: 
+tags: [overdraw, hwui, skia, gpu, compose, perfetto, agi]
+related_chapters: ["2.6", "2.7", "2.10", "7.1", "7.5"]
 task9_result: pass-tech-review
 task9_reviewed_date: 2026-07-03
 task9_reviewed_by: openclaw-task9
@@ -93,6 +134,8 @@ Android 17 / API 37 的源码锚点是 `android-17.0.0_r1`。HWUI 通过 `debug.
 
 - 颜色来自 **HWUI 绘制命令的诊断性重放**，不是 GPU 驱动返回的硬件计数器；
 - 调试模式本身多了一张全尺寸 A8 表面、一次重放和一次着色合成，不能在开启它时测量页面的正常 GPU 时长。
+
+诊断重放还有一个 Hardware Layer 边界。Android 17 的 `RenderNodeDrawable` 遇到已有 layer surface 的 RenderNode 时，会通过 `drawImageRect()` 合成 layer snapshot，而不会在最终窗口的 overdraw pass 中逐条展开该 layer 内部的 DisplayList。源码还保留了刚重绘 layer 的透明矩形调试分支，但不能据此把最终叠加色解释成 layer 内部所有 draw op 的逐像素计数。看到 layer build/update 或离屏 pass 时，还要结合 [2.7 Hardware Layer](07-hardware-layer.md) 的 RenderThread、GPU 和内存证据。
 
 ### 颜色应该怎样读
 
@@ -345,6 +388,8 @@ protected void onDraw(Canvas canvas) {
 
 Compose 与 View 最终都可能进入 HWUI App Window，所以像素覆盖的基本判断相同。需要把重组、绘制命令和离屏合成分开看。
 
+以下 `graphicsLayer` 结论固定到 `androidx.compose.ui:ui:1.11.4` 的 `GraphicsLayerModifier.kt` 与 `GraphicsLayerScope.kt`，并与 Android Developers 文档交叉核对。应用若使用其他 Compose UI 版本，应按实际依赖重新确认；Android 17 平台版本不会替应用固定 Compose 实现。
+
 ### 多层背景仍会多画
 
 多个 `Modifier.background()`、`Surface` 或 `Canvas` 覆盖同一区域时，不能假设 Compose 会自动合并父子背景。若外层已经提供不透明底色，内层只在需要的范围画自身视觉。
@@ -357,7 +402,8 @@ Compose 与 View 最终都可能进入 HWUI App Window，所以像素覆盖的�
 
 - 默认 `CompositingStrategy.Auto` 下，alpha 小于 1 或使用 `RenderEffect` 等场景可能创建离屏 buffer；
 - overscroll 效果会使用离屏 buffer，不受指定合成策略影响；
-- `CompositingStrategy.Offscreen` 强制先画入离屏纹理，再合成到目标，而且内容会按 layer bounds 裁剪；
+- 非 `SrcOver` 的 `blendMode` 或非空 `colorFilter` 会强制离屏，语义等价于 Offscreen；
+- `CompositingStrategy.Offscreen` 强制先画入离屏 buffer，再合成到目标，而且内容会按 layer bounds 裁剪；
 - `CompositingStrategy.ModulateAlpha` 在可用时把 alpha 分配到各绘制命令，省去 alpha 离屏层，但重叠内容的混合结果可能与 Offscreen 不同。
 
 下面的示例明确要求离屏合成，适合需要 `BlendMode` 隔离的场景：
@@ -438,6 +484,7 @@ counter 的统计单位、render target、pass 范围和上下文都可能不同
 
 - [`Properties.h`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/Properties.h)、[`Properties.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/Properties.cpp)：`debug.hwui.overdraw` 属性与配色选择。
 - [`SkiaPipeline.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaPipeline.cpp)：A8 表面、`SkOverdrawCanvas` 重放与颜色映射。
+- [`RenderNodeDrawable.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/RenderNodeDrawable.cpp)：Hardware Layer snapshot 合成与本帧 layer repaint 的诊断计数。
 - [`Canvas.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Canvas.java)：`clipRect()`、`quickReject()` 及旧重载的废弃状态。
 - [Canvas API reference](https://developer.android.com/reference/android/graphics/Canvas)：`quickReject()` 的返回语义。
 - [Hardware acceleration](https://developer.android.com/develop/ui/views/graphics/hardware-accel)：Canvas 硬件加速模型和早期 API 支持边界。
@@ -445,5 +492,6 @@ counter 的统计单位、render target、pass 范围和上下文都可能不同
 - [FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)：App / SurfaceFlinger jank 分类和 App 帧完成时间。
 - [AGI Frame Profiler](https://developer.android.com/agi/frame-trace/frame-profiler)：受支持帧中的 API 调用、render pass、draw call 和 GPU 数据。
 - [Compose graphics modifiers](https://developer.android.com/develop/ui/compose/graphics/draw/modifiers)：`graphicsLayer`、离屏合成与 `CompositingStrategy`。
+- [Compose UI 1.11.4 sources](https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui/1.11.4/ui-1.11.4-sources.jar)：`GraphicsLayerModifier.kt`、`GraphicsLayerScope.kt` 的版本化语义。
 
-本文关于 App Window、`SurfaceView`、`TextureView` 与 HWC 的边界，还对照了 `rendering_pipelines` 系列的 S01、S02、S03、S04、S05 和 S12。该系列用于建立 Producer、Consumer、SurfaceFlinger Layer 与最终显示帧之间的关系；平台类名和行为仍以 Android 17 源码为准。
+本文关于 App Window、`SurfaceView`、`TextureView`、离屏渲染与 HWC 的边界，还对照了 `rendering_pipelines` 系列的 S01、S02、S03、S04、S05、S07 和 S12。该系列用于建立 Producer、Consumer、SurfaceFlinger Layer 与最终显示帧之间的关系；平台类名和行为仍以 Android 17 源码为准。
