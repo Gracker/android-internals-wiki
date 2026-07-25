@@ -5,20 +5,22 @@ section: '2.10'
 title: GPU 渲染深入
 chapter: '2.10'
 applicable_versions: Android 5.0 - Android 17 (API 21-37)
-last_verified: '2026-04-17'
-last_verified_against: AOSP android-16.0.0_r1, developer.android.com
+last_verified: '2026-07-25'
+last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + official Android GPU documentation
 confidence: medium-high
 sources:
 - type: aosp
-  path: frameworks/base/graphics/java/android/graphics/
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/
+- type: aosp
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/
 - type: official
-  path: https://developer.android.com/guide/topics/graphics/
-- type: blog
-  path: https://androidperformance.com/
-- type: paper
-  path: 2026-03-30-ch02-vulkan-android16.md
-- type: paper
-  path: 2026-03-30-ch02-gpu-optimization.md
+  path: https://source.android.com/docs/core/graphics/arch-bq-gralloc
+- type: official
+  path: https://developer.android.com/games/develop/vulkan/overview
+- type: official
+  path: https://developer.android.com/reference/android/os/health/SystemHealthManager
 tags:
 - gpu
 - rendering
@@ -75,16 +77,17 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-24
 ---
 
-
 # GPU 渲染深入
 
-## 为什么需要深入理解 GPU 渲染
+GPU 问题最容易被一句“主线程不忙，所以 GPU 慢”带偏。UI 线程结束、RenderThread 提交、GPU completion、buffer queue 和显示 present 是不同边界。任何一个边界迟到，都可能表现为画面没有在目标周期更新。
 
-先看一个常见的 Perfetto Trace 现象:主线程的 measure、layout、draw 在很短时间内做完,RenderThread 也很快录完了 draw command,但 UI 更新仍然滞后--下一帧的 VSync 来了,上一帧还卡在 GPU 里。这时候问题不在 CPU,在 GPU:要么 GPU 处理这些指令本身就很慢,要么内存带宽撑不住了。
+本章从 Android 17 / API 37 的 `android-17.0.0_r1` 出发，讨论三类内容：
 
-对 GPU 渲染管线没有概念的话,这种掉帧就只能停在"主线程没问题,不知道为什么卡"的层面。反过来,把 GPU 渲染机制搞清楚之后,三件事就有了分析入口:第一,GPU 渲染过程不再是一个黑盒,可以从 Trace 里定位到具体阶段;第二,能区分 CPU 瓶颈、GPU 瓶颈和带宽瓶颈,不会把优化力气花错方向;第三,理解 Android 16 把 Vulkan 推到默认位置背后的工程含义,知道后续版本需要提前准备什么。
+- View/Compose 经过 HWUI 与 Skia 生成 App Window buffer；
+- Native Graphics 或游戏通过 GLES/Vulkan 自己生产 Surface buffer；
+- SurfaceFlinger 必要时用 RenderEngine 做 CLIENT composition。
 
-GPU 渲染管线、瓶颈分析、GPU 内存管理和实战案例会汇到同一条排查流程里。
+它们可以共享同一块 GPU，也会竞争内存带宽，但线程、Surface、fence 和工具入口并不相同。
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -111,1344 +114,556 @@ GPU 渲染管线、瓶颈分析、GPU 内存管理和实战案例会汇到同一
 > 锚点内容需 L1/L2 验证,扩展内容至少 L2 验证,自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## Android GPU 渲染管线:Vertex Shader → Fragment Shader → Framebuffer
+## 先确认谁在生产画面
 
-### 从应用调用到屏幕显示的完整流程
+同一个页面可能同时存在多条 GPU 路径：
 
-当我们调用 `View.invalidate()` 或 `View.draw()` 时,Android 的 GPU 渲染管线就开始启动。这个管线的核心任务是将应用的 2D/3D 绘制指令转换成屏幕上显示的像素,整个过程涉及 CPU 准备、GPU 指令生成、GPU 渲染、帧缓冲区管理、屏幕合成五个阶段。
+| 内容类型 | 主要 Producer | GPU 工作出现在哪里 | SurfaceFlinger 看到什么 |
+| --- | --- | --- | --- |
+| 普通 View / Compose | App HWUI RenderThread | SkiaOpenGL 或 SkiaVulkan | 宿主 App Window Layer |
+| TextureView 视频/相机 | 外部 Producer + 宿主 HWUI | 外部生产一次，HWUI 再采样一次 | 通常只有宿主 App Window Layer |
+| SurfaceView 视频/游戏 | codec、Camera、GLES/Vulkan engine | 独立 Producer | 独立 child Surface Layer |
+| SurfaceFlinger CLIENT composition | RenderEngine | SurfaceFlinger 进程的 GPU 工作 | client target 交给 HWC |
+| HWC DEVICE composition | Composer/display hardware | 不一定使用通用 GPU | 独立 Layer 由硬件平面合成 |
 
-流程的起点在 CPU 侧:应用主线程执行 `View.onDraw()`,通过 Canvas API 绘制界面。这些 Canvas 调用被 Skia 图形库接收后,Skia 会根据运行环境将其转换为 OpenGL ES 或 Vulkan 调用--这是 GPU 指令生成阶段。随后 GPU 接管工作,依次执行顶点处理、片段处理等计算任务,将渲染结果写入显存中的帧缓冲区。SurfaceFlinger 再将多个图层合成为最终图像,提交给显示硬件。
+因此，看到 GPU busy 升高时，先确认 workload 属于 App、另一个进程还是 SurfaceFlinger。页面里存在 `SurfaceView`、`TextureView`、游戏引擎或视频时，宿主 `RenderThread` 不能代表全部内容。
 
-CPU 和 GPU 之间的分工经历了几个重要阶段的演进。在 Android 5.0 之前,主线程包揽了所有渲染工作--measure/layout、DisplayList 录制、GPU 命令提交全部在同一线程完成。Android 5.0 引入了独立的 RenderThread,将 GPU 命令的提交和执行从主线程剥离出来,主线程只负责 measure/layout 和 DisplayList(draw 命令列表)的录制。从 Android 12 开始,Google 进一步优化了这一分工,RenderThread 处理了更多工作,使得主线程的渲染负担进一步减轻。我们在 Trace 中看到的"GPU 耗时",对应的是 RenderThread 将命令提交到 GPU 直到 GPU 完成渲染的整个过程。
+## Android GPU 渲染管线：从 API 到颜色附件
 
-[图:Android GPU 渲染管线全景图--从 CPU 准备到屏幕合成的完整数据流]
+### “Vertex → Fragment → Framebuffer”是简化模型
 
-### Vertex Shader:顶点处理的起点
+传统图形管线可以概括为：
 
-Vertex Shader 是 GPU 渲染管线的第一个可编程阶段,它负责处理图元中的每个顶点。在 Android UI 渲染中,顶点处理看起来简单--一个矩形只有四个顶点--但大量 UI 元素最终都会转换为三角形图元,复杂界面的顶点数量可能非常可观。
+```text
+CPU record / submit
+  → vertex processing
+  → primitive assembly + clipping
+  → rasterization
+  → fragment shading
+  → depth/stencil tests + blending
+  → color attachment / presentable image
+```
 
-当我们调用 `Canvas.drawRect()` 时,这个调用最终会触发 GPU 执行 Vertex Shader。Vertex Shader 做三件事:将模型顶点从本地坐标转换到屏幕坐标(涉及模型矩阵、视图矩阵、投影矩阵的组合变换);计算每个顶点的颜色、纹理坐标等插值属性,供 Fragment Shader 阶段插值使用;判断顶点是否在视口范围内,剔除不可见图元,避免后续阶段做无用功。
+这个模型适合建立概念，但不能据此断言每个 Canvas 操作固定生成多少顶点或哪一种 shader。Skia 可以根据图形、抗锯齿、clip、transform、backend 和 GPU capability 选择 analytic shader、实例化几何、tessellation、纹理 quad、离屏 pass 或其他策略。
+
+`View.invalidate()` 也不会立即启动 GPU。它标记需要更新并安排 traversal；UI 线程在帧回调中记录或更新 RenderNode，随后由 RenderThread 同步状态、准备 GPU 工作并提交窗口 buffer。
+
+### Vertex Shader 与几何阶段
+
+Vertex Shader 对每个输入顶点执行位置变换，并输出后续插值所需的属性。primitive assembly、viewport clipping、culling 和 rasterization 还会在后续阶段处理图元；“Vertex Shader 自己判断所有不可见图元”并不准确。
+
+Android UI 中的矩形、圆角、文字和 Path 最终可能变成几何、coverage mask、glyph atlas 采样或特定 GPU primitive。一个 `drawRect()` 不保证始终是“四个顶点”，复杂 Path 的成本也可能落在 CPU tessellation、GPU 几何、片元 coverage 或缓存失效中的任一处。
+
+对原生 3D engine，vertex/geometry 压力常来自：
+
+- 过多顶点和小 draw call；
+- 过细 mesh、粒子或阴影几何；
+- skinning、morph、复杂 vertex shader；
+- 可见性裁剪和 LOD 不充分；
+- vertex buffer 访问与 cache miss。
+
+标准 View 页面出现纯 vertex bound 的概率通常低于游戏，但需要用目标设备 counter 或帧分析确认，不能按 UI 元素数量猜测。
+
+### Fragment Shader、测试与混合
+
+Rasterizer 为被覆盖的 samples 生成 fragment。Fragment Shader 计算颜色、纹理采样或 coverage；随后还可能经过 depth/stencil test、color write mask 和 blend。
+
+alpha blending 通常由固定功能混合阶段按 pipeline state 完成，不应笼统写成 Fragment Shader 的内部职责。`RuntimeShader`、复杂滤镜、模糊、阴影、颜色空间转换和多纹理效果会增加 shader、采样或额外 pass 的成本。
+
+片元压力大致与下面几项相关：
+
+- render target 的像素/采样数；
+- 同一像素被覆盖的次数；
+- 每个 fragment 的 shader 指令和纹理采样；
+- MSAA、HDR/宽色格式、blend 和颜色转换；
+- 离屏层、后处理和 SurfaceFlinger client target。
+
+纹理访问会经过 GPU cache 和设备内存系统，并不等于每次采样都访问一次外部 DRAM。带宽是否成为瓶颈，要看 cache 命中、压缩、格式、采样模式、render pass 和设备 counter。
+
+### Framebuffer、render target 与 Android GraphicBuffer
+
+“Framebuffer”在不同 API 中含义不同：
+
+- GLES framebuffer 是一组 attachment 的绑定状态；
+- Vulkan framebuffer 与传统 render pass 绑定 attachment；使用 dynamic rendering 时也可以不创建 `VkFramebuffer` 对象；
+- HWUI/Skia 可能绘制到窗口 buffer，也可能先绘制到离屏 surface；
+- Android 窗口最终交付的是 `ANativeWindow` / BufferQueue 中的图形 buffer。
+
+App Window buffer 可以作为 GPU color attachment，完成后随 producer fence queue 给下游。SurfaceFlinger 获得 buffer 以后，还要处理 transaction、acquire fence、Layer snapshot 和 composition。HWC 可能直接使用该 Layer，也可能让 RenderEngine 把多个 CLIENT Layer 合成到另一张 client target。
+
+这不是“VSync 到来时交换 front/back 指针”的简单桌面双缓冲模型。BufferQueue 管理多个 slot 和 buffer，Producer dequeue/queue，Consumer acquire/release，并用 fence 表达异步完成关系。
+
+### buffer 大小只能做下界估算
+
+对于线性 RGBA_8888，`width × height × 4` 可以估算紧密排列像素的下界。实际 allocation 还会受 stride、对齐、layer count、像素格式、压缩 modifier、metadata、保护属性和 allocator 实现影响。三块 1080p buffer 也不能直接代表“GPU 总内存”，因为还存在 depth/stencil、纹理、glyph atlas、离屏层、client target 与 driver allocation。
+
+## Shader Compilation Jank 与 pipeline 创建
+
+### 一次“首次出现效果”的卡顿包含多层工作
+
+从源码到 GPU 可执行状态，可能经历：
+
+1. 解析或编译 GLSL、SkSL、AGSL；
+2. 生成中间表示，例如 Vulkan SPIR-V；
+3. link program 或组合 pipeline state；
+4. 驱动针对具体 GPU 生成机器码；
+5. 创建 pipeline、descriptor layout 或其他关联对象；
+6. 把结果放入进程内或磁盘缓存。
+
+GLES 的 `glCompileShader()` / `glLinkProgram()` 可以触发编译与链接。Vulkan 使用 SPIR-V，仍可能在 `vkCreateGraphicsPipelines()`、首次使用 pipeline 或驱动内部阶段完成面向硬件的编译。SPIR-V 能前移一部分工作，不能消除 pipeline compilation jank。
+
+卡顿发生在 CPU 线程等待编译、驱动 worker、RenderThread、RHI thread 或 GPU pipeline 切换中的哪一处，由 backend 和驱动决定。“GPU 第一次看到 shader 后阻塞”过于简单。
+
+### Android 17 的 HWUI 持久缓存
+
+`android-17.0.0_r1` 的 HWUI Skia 路径包含：
+
+- `pipeline/skia/PersistentGraphicsCache.*`；
+- `pipeline/skia/ShaderCache.*`；
+- `pipeline/skia/PipelineCache.*`；
+- `renderthread/CacheManager.*`。
+
+`PersistentGraphicsCache` 向 Skia 提供 persistent-cache 接口，`ShaderCache` 负责加载、保存和磁盘持久化；Vulkan 帧 flush 后还会处理 pipeline cache 数据。缓存命中可以减少重复编译，下面情况仍可能产生 miss：
+
+- 首次使用新的 shader/pipeline 变体；
+- app、framework、Skia 或 GPU driver 更新；
+- cache identity、格式或 backend 变化；
+- 不同 blend、clip、色彩空间、render target 或 effect 组合；
+- 缓存淘汰、损坏或被清理。
+
+普通 App 不能假设自己能直接控制 HWUI 内部缓存，也不应把历史 Flutter `--cache-sksl` 方案套到所有 Skia/HWUI 页面。
+
+### 怎样确认是 compilation/pipeline jank
+
+建议做冷/热两组采集：
+
+1. 清理或使用新安装状态，首次进入目标效果；
+2. 保持同一进程，再次进入同一效果；
+3. 比较 UI/RenderThread/RHI 的 compile、link、pipeline creation、cache load/store 和 driver slice；
+4. 用 AGI 查看受支持帧的 pipeline、shader、render pass 与 command；
+5. 改变一个 shader/pipeline 维度，验证卡顿是否随 cache key 变化复现。
+
+“第一次慢、第二次快”只是线索。首次纹理上传、字体 atlas、类加载、磁盘 I/O 和页面初始化也会产生相同形态。
+
+### 预热要控制范围
+
+应用自管 GLES/Vulkan renderer 可以在非关键阶段创建已知 program/pipeline，并持久化 Vulkan pipeline cache。预热应：
+
+- 只覆盖高概率场景；
+- 避免阻塞启动关键线程；
+- 绑定正确的 render-pass/format/state 变体；
+- 处理 driver 或 app 更新后的缓存失效；
+- 记录预热时间、缓存大小和实际命中率。
+
+把所有组合一次性创建出来，可能增加启动时间、内存和 cache churn。
+
+## Vulkan、OpenGL ES 与 ANGLE
+
+### 性能差异来自控制模型
+
+| 维度 | OpenGL ES | Vulkan |
+| --- | --- | --- |
+| 状态模型 | 全局/上下文状态较多，驱动承担更多隐式验证 | pipeline 与资源状态更显式 |
+| 命令记录 | 典型路径由持有 context 的线程发调用 | 支持多线程记录 command buffer |
+| 同步 | API/驱动包含较多隐式行为 | semaphore、fence、barrier 等由应用显式设计 |
+| 内存 | 驱动管理较多 | 应用选择 memory type、分配与绑定 |
+| pipeline | program 与驱动状态组合 | pipeline creation 更显式，也更需要缓存 |
+| 工程复杂度 | 接入较简单 | 生命周期、同步和兼容判断更复杂 |
+
+Vulkan 可以降低 CPU driver overhead，并让成熟引擎更好地并行记录命令。它也允许应用制造昂贵的 barrier、频繁 allocation、pipeline miss 和过多 in-flight work。GLES 驱动在简单场景中可能足够快。没有“同一 draw call 固定快十倍”这类跨设备结论。
+
+### Vulkan 与 Android 窗口的连接
+
+Android 17 的 `frameworks/native/vulkan/libvulkan/swapchain.cpp` 把 Vulkan swapchain image 与 `ANativeWindowBuffer` 对应起来：
+
+- acquire 路径调用 `ANativeWindow::dequeueBuffer()`；
+- image 通过 `ANativeWindowBuffer_getHardwareBuffer()` 关联底层 AHardwareBuffer；
+- present 路径最终调用 `queueBuffer()` 并携带完成 fence；
+- BufferQueue、BLAST、SurfaceFlinger 和 HWC 继续负责 Android 显示后半段。
+
+`vkQueuePresentKHR()` 返回不表示 panel 已显示，`vkQueueSubmit()` 返回也不表示 GPU 已完成。需要区分 GPU fence/semaphore、producer fence、SurfaceFlinger latch、display present fence 和 buffer release。
+
+### Render pass 与 tile-based GPU
+
+移动 GPU 多采用 tile-based 架构，但 Vulkan 不保证某个 draw/pass 如何映射到物理 tile memory。频繁切换 render target、需要保留旧内容、全尺寸离屏 pass 和高带宽 attachment 可能增加 load/store。
+
+`VK_ATTACHMENT_LOAD_OP_DONT_CARE` 或 store-op 优化只能在内容语义允许丢弃时使用。错误使用会破坏像素结果。现代 Vulkan 还支持 dynamic rendering，优化建议应围绕 attachment 生命周期与实际 counter，不要机械追求最少 `VkRenderPass` 对象。
+
+### ANGLE：GLES API，Vulkan backend
+
+ANGLE 可以把 GLES/EGL 调用翻译到 Vulkan。应用仍提交 GLES 状态和 draw call，ANGLE 负责状态跟踪、shader 翻译、pipeline/descriptor 管理和 Vulkan command。
+
+ANGLE 的结果有两面：
+
+- 统一 backend 有助于兼容性和驱动一致性；
+- 状态翻译、pipeline 变体和缓存 miss 也会产生 CPU/内存成本。
+
+Android 15 起 ANGLE 是可选 GLES-on-Vulkan 层；Android 17 的 `com.android.graphics.driver.prefer_angle` manifest metadata 只是偏好信号，平台无法使用时会回到厂商 GLES driver。比较性能前应记录 EGL vendor/renderer、实际 driver、ANGLE 版本和相同 workload。
+
+Android 17 HWUI 目录中没有 Graphite pipeline。ANGLE 的开发分支也不能直接当作 `android-17.0.0_r1` 平台行为。本章不采用“四级 PSO 缓存”“固定 2 ms 节流”一类无法映射到该 platform tag 的说法。
+
+## GPU 瓶颈分类
+
+GPU 慢帧常被分为 vertex/geometry bound、fragment/fill bound 和 bandwidth bound。工程分析还要加入 CPU submission、同步/back-pressure、频率/温控和 SurfaceFlinger composition。
+
+| 类别 | 常见现象 | 有区分力的 A/B 实验 | 需要的直接证据 |
+| --- | --- | --- | --- |
+| CPU / driver bound | GPU 队列有空洞，submit 晚 | 减少 draw call、状态切换或 command record | CPU profile、RHI/driver slice、GPU queue |
+| Vertex / geometry bound | 几何工作增加时 GPU 时间上升 | 降低 mesh/粒子/阴影几何，保持像素条件 | vertex/primitive counter、AGI geometry |
+| Fragment / fill bound | 分辨率、overdraw、shader 复杂度影响大 | 降 render scale、简化 fragment shader、缩小效果面积 | fragment/sample counter、shader 分析 |
+| Bandwidth bound | 大纹理、HDR target、多 pass、upload 影响大 | 降纹理/target 带宽，减少 load/store | external-memory/cache counter、render pass |
+| 同步 / back-pressure | GPU 可能有空洞，线程等 acquire/fence | 降 in-flight、修 pacing、减少资源 hazard | fence owner、queue depth、wait dependency |
+| SF client composition | App buffer ready，SF GPU 工作增加 | 比较 DEVICE/CLIENT composition | layer composition type、RenderEngine、HWC |
+| Thermal / power bound | 运行一段时间后频率下降 | 固定温度/电源条件做短长对照 | GPU frequency、thermal、power rail |
+
+没有跨 GPU 通用的“Fragment Shader 超过 60% 就是 fill bound”阈值。counter 名称、单位与统计范围由 GPU producer/driver 在 descriptor 中声明。
+
+### Fillrate bound
+
+fillrate 问题与 samples、shader、blend、overdraw 和 render-target 格式有关。降低 native game Surface 的 render scale，如果 GPU 时间随像素数明显下降，说明 fragment 或带宽压力值得继续查；标准 View 页面没有通用的独立 render-scale 开关。
+
+Debug GPU Overdraw 只能定位 HWUI App Window 的逻辑重复绘制。它会额外重放一遍内容，不能在开启时测性能，也不能覆盖独立 `SurfaceView` 或最终 HWC composition。颜色语义与完整流程见 2.8。
+
+优化方向包括：
+
+- 移除没有视觉贡献的背景或 pass；
+- 缩小模糊、阴影、半透明遮罩与后处理面积；
+- 减少不必要的 MSAA/sample count；
+- 降低昂贵 fragment shader 的采样和分支；
+- 在视觉允许时减少 HDR/高精度中间 target；
+- 避免重复的全屏离屏合成。
+
+### Vertex bound
+
+先确认 GPU 的 vertex/primitive counter 与几何复杂度相关。复杂 Path 在 HWUI 中可能走 CPU tessellation、mask/coverage 或缓存，不能看到 Path 多就归为 vertex bound。
+
+原生 engine 可尝试：
+
+- LOD、frustum/occlusion culling；
+- 合理合批，减少微小 draw；
+- 降低粒子、阴影 caster 与 skinning 顶点；
+- 改善 vertex buffer layout 和复用；
+- 把与顶点无关的 CPU/RHI 成本分开。
+
+### Bandwidth bound
+
+带宽压力可能来自：
+
+- 大尺寸/高精度 texture 与 render target；
+- 多次全屏读写和离屏 pass；
+- texture upload、readback 或频繁 resolve；
+- 低 cache 命中、各向异性过滤或多采样；
+- GPU、CPU、ISP、codec 与 display 共享内存带宽；
+- SurfaceFlinger client composition。
+
+GPU busy 高而 shader stage 利用率不高，只能作为线索。应使用厂商定义的 external-memory、cache、texture、tile 或 stall counter，并做受控 A/B。
+
+## ASTC、ETC2 与普通 Android Bitmap 的边界
+
+ASTC/ETC2 是 GPU texture 压缩格式，主要服务 GLES/Vulkan 游戏资源。它们不等于 JPEG/PNG 文件压缩，也不会自动改变普通 `Bitmap`、App Window `GraphicBuffer` 或 SurfaceFlinger client target 的格式。
+
+| 格式 | 能力边界 | 使用建议 |
+| --- | --- | --- |
+| ETC1 | RGB、4 bpp、无原生 alpha | 兼容很老的设备；alpha 常需额外纹理 |
+| ETC2 | GLES 3.0 级设备广泛支持；可支持 RGB、RGBA、sRGB 等 | 现代设备的兼容 fallback |
+| ASTC | 多种 block size，可在质量与大小间选择 | 设备支持时常作为现代游戏主格式 |
+
+纹理压缩可以减少存储、GPU memory footprint 和采样带宽，但也会引入编码质量、解码支持和发布包管理问题。应用应：
+
+1. 运行时查询 GLES extension 或 Vulkan format feature；
+2. 为不支持 ASTC 的设备准备 ETC2 等 fallback；
+3. 用 Play Asset Delivery 的 texture-compression targeting 分发合适资产；
+4. 在同一场景比较画质、内存、加载和 GPU counter。
+
+ASTC block 越大通常压缩率越高、质量风险也越高。透明纹理、法线、UI atlas 和 HDR 资源应分别测试，不能只按文件大小选格式。
+
+## Tile-Based Rendering 的性能含义
+
+典型 tile-based GPU 会先把几何分配到屏幕 tile，再在片上存储中完成一个 tile 的 raster、fragment 和 blend，最后把需要保留的结果写回设备内存。
+
+这能减少某些中间颜色的外部内存流量，但不会让 overdraw、纹理采样和复杂 shader 免费。下面这些行为仍可能增加成本：
+
+- render pass 开始时加载已有 attachment；
+- pass 结束时保存 attachment；
+- tile memory 容量不足或格式过大；
+- 多个全屏 target、resolve、readback；
+- 半透明内容和依赖旧颜色的 blend；
+- driver 无法应用预期的隐藏面或压缩优化。
+
+不同 Adreno、Mali、PowerVR 或其他 GPU 的 tile 大小、压缩、early test 和 counter 都不同。架构名只能指导实验，不能代替目标设备数据。
+
+## GPU 内存：对象、分配与共享
+
+### Android 17 的对象链
+
+从应用到 kernel，可以按下面的层次理解：
+
+```text
+Bitmap / HardwareBuffer / Surface / ANativeWindow
+  → AHardwareBuffer / ANativeWindowBuffer / GraphicBuffer
+  → GraphicBufferAllocator + graphics allocator HAL
+  → GraphicBufferMapper + mapper HAL
+  → native_handle: fd + metadata
+  → dma-buf exporter / heap or vendor allocator
+  → GPU, codec, SurfaceFlinger, HWC imports and mappings
+```
+
+这些名称不是“一层复制一份像素”。多个进程/设备可以导入同一个 dma-buf，对应不同虚拟映射、IOMMU 映射和引用。GraphicBuffer 是 native 图形栈中的包装对象，AHardwareBuffer 是公开 NDK/Java 边界，底层 handle 描述共享 buffer。
+
+Android 17 的 `frameworks/native/libs/ui/GraphicBufferAllocator.cpp` / `GraphicBufferMapper.cpp` 对接 graphics allocator/mapper；`hardware/interfaces` 同时保留历史 HIDL 版本，并提供 allocator AIDL 与 mapper stable-C 接口。具体产品使用哪个版本，应看 vendor manifest 和运行时 service。
+
+### Gralloc 根据描述符选择布局
+
+分配请求至少包含 width、height、layer count、format 和 usage。usage 会描述 CPU 读写、GPU texture/render target、video encoder、composer、protected content 等需求。Allocator/mapper 与厂商 gralloc 可以据此选择：
+
+- stride 与对齐；
+- 线性、tiled 或厂商压缩布局；
+- metadata 与 plane；
+- cache 属性；
+- protected 或设备专用 heap。
+
+所以 `width × height × bytesPerPixel` 只能估算简单线性格式。应用不要依赖未公开的物理布局。
+
+### BufferQueue slot 不等于常驻 allocation
+
+BufferQueue 管理 slot、dequeued/acquired 状态和 buffer 引用。Producer dequeue 时可以触发新 allocation，也可以复用已有 buffer。buffer 数量受 producer/consumer、usage、尺寸变化、async/shared 模式和 in-flight 约束影响。
+
+release fence 表示 Consumer 何时不再使用旧 buffer，Producer 必须在重新写入前遵守依赖。queue 满或 release 晚会让 dequeue/acquire/swap/present 等待，这属于 back-pressure。
+
+### ION 到 DMA-BUF Heaps
+
+Android 12 GKI 2.0 开始用 DMA-BUF heaps 替代 ION。DMA-BUF heaps 提供稳定 UAPI，并按 `/dev/dma_heap/<name>` 分开访问控制；vendor 仍可提供特定 heap，protected heap 也常由厂商实现。
+
+在本章 kernel 锚点 `android17-6.18-2026-06_r6` 中，可以看到：
+
+- `drivers/dma-buf/dma-buf.c`；
+- `drivers/dma-buf/dma-heap.c`；
+- `drivers/dma-buf/dma-fence.c`；
+- `drivers/dma-buf/sync_file.c`。
+
+通用 kernel 定义共享、引用和同步语义。GPU page table、压缩 metadata、heap 选择、eviction 和 job scheduler 多在厂商驱动。
+
+### 16 KB page 与 GPU buffer
+
+16 KB page 兼容性会影响 native ELF、mmap、allocator 对齐和驱动交互。它不表示每张纹理固定浪费 16 KB，也不能从 page size 直接推导 GraphicBuffer 总量。应以实际 allocation size、stride、heap 与映射数据为准。
+
+## GPU 内存怎样追踪
+
+没有单一数字能代表“应用独占 GPU 内存”。同一 dma-buf 可被 App、SurfaceFlinger、codec 和 HWC 导入，简单相加会重复计数。
+
+### Perfetto
+
+根据设备支持，可以采集：
+
+- `gpu_mem/gpu_mem_total`：进程 GPU memory total；
+- `vulkan.memory_tracker`：Vulkan allocation/bind；
+- `gpu.counters[.<vendor>]`：设备声明的 counters；
+- `gpu.renderstages[.<vendor>]`：graphics/compute submission timeline；
+- dma-buf、process memory、频率和调度 ftrace。
+
+数据源名称可以带 Adreno/Mali 等硬件后缀，counter id/name 由 descriptor 声明。不存在跨 Android 16/17 通用的单一 `gpu_busy` 轨道或固定 counter ID。
+
+### 系统与厂商数据
+
+按设备权限与 build 类型补充：
+
+- `dumpsys meminfo <package>` 的 graphics/EGL 等分类；
+- `dumpsys SurfaceFlinger`、layer/buffer dump；
+- dma-buf heap/bufinfo；
+- Vulkan allocation callbacks 或引擎 allocator telemetry；
+- Adreno/Mali/PowerVR 的厂商 profiler；
+- AGI memory pane 与 Vulkan memory tracker。
+
+这些口径覆盖范围不同。报告中应写清是否包含 driver private allocation、共享 buffer、SurfaceFlinger、纹理、render target 和缓存。
+
+## Android 16 GPU Headroom
+
+API 36 的 `SystemHealthManager.getGpuHeadroom()` 返回 `[0, 100]` 的可用 GPU capacity 估计，0 表示系统无法再提供更多 GPU 资源；暂时无数据时返回 `Float.NaN`，设备不支持时抛 `UnsupportedOperationException`。
+
+每次有效调用至少包含一次同步 Binder transaction，官方说明它可能超过 1 ms，首次调用或更换参数还可能因延迟初始化更慢。不能在 UI、RenderThread 或游戏关键 render loop 中逐帧调用。
+
+下面示例把一次查询放到后台 executor，并读取设备声明的最小采样间隔；周期调度应保证相邻查询不短于这个值：
 
 ```java
-// frameworks/base/graphics/java/android/graphics/Canvas.java → BaseCanvas.java
-// @ AOSP android-16.0.0_r1
-// Canvas.drawRect(float...) 委托给 super.drawRect → BaseCanvas.drawRect
-public void drawRect(float left, float top, float right, float bottom,
-                     @NonNull Paint paint) {
-    super.drawRect(left, top, right, bottom, paint);
-}
+SystemHealthManager health =
+        context.getSystemService(SystemHealthManager.class);
 
-// frameworks/base/graphics/java/android/graphics/BaseCanvas.java
-void drawRect(float left, float top, float right, float bottom, Paint paint) {
-    throwIfHasHwFeaturesInSwMode(paint);
-    nDrawRect(mNativeCanvasWrapper, left, top, right, bottom,
-              paint.getNativeInstance());
-}
-```
-
-调用链分三层:Canvas.drawRect() 是公开 API 入口,内部直接调用 super.drawRect() 把参数原样传递给父类;BaseCanvas.drawRect() 先调用 throwIfHasHwFeaturesInSwMode() 检查 Paint 是否在软件渲染模式下使用了硬件特性,然后通过 JNI 调用 nDrawRect() 进入 native 层;Skia 在 native 侧接收到指令后,根据当前后端(OpenGL ES 或 Vulkan)生成对应的顶点数据和 GPU 命令。
-
-对于简单的矩形绘制,Vertex Shader 执行四个顶点的位置变换,开销很低。但如果矩形被缩放、旋转或倾斜--这在动画和自定义 View 中很常见--这些变换矩阵的复杂度会相应增加。
-
-在 Perfetto 中,我们可以在 GPU track 看到顶点处理时间。如果发现某个 UI 元素的 GPU 时间异常高,而界面又包含大量的自定义 Path 或复杂的 Canvas 变换,Vertex Shader 往往是第一个需要排查的方向。
-
-### Fragment Shader:像素颜色的决定者
-
-Fragment Shader(也叫 Pixel Shader)决定了屏幕上每个像素的最终颜色,是渲染管线的核心。Android UI 渲染里,Fragment Shader 的重要性往往超过 Vertex Shader--很简单,界面的像素数量通常比顶点数量大几个数量级,Fragment Shader 的计算量与像素数成正比。一个全屏的 `drawRect()` 只有四个顶点,像素却可能多达数百万。
-
-```glsl
-// 简化的 Android UI Fragment Shader 示例(示意性伪代码)
-precision mediump float;
-varying vec2 vTexCoord;
-uniform sampler2D uTexture;
-uniform vec4 uColor;
-
-void main() {
-    vec4 texColor = texture2D(uTexture, vTexCoord);
-    gl_FragColor = texColor * uColor;
-}
-```
-
-这个着色器展示了 Fragment Shader 的基本工作模式:从纹理中采样颜色,然后应用统一的颜色调制,最终输出像素颜色。在真实的 Android UI 渲染中,Fragment Shader 还需要处理透明度混合、渐变效果、阴影计算、模糊效果等--每增加一个效果,就意味着每像素的计算量又增加了一层。而纹理采样是一个特别需要注意的操作,因为每次采样都需要从显存中读取数据,在移动 GPU 的统一内存架构下,这些读取会与其他组件(如 CPU、显示控制器)竞争内存带宽。
-
-> [已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/Shader.java]
-
-在分析 Fragment Shader 性能时,纹理采样次数是最关键的关注点。一个常见的性能陷阱是在 Fragment Shader 中使用多个纹理采样(例如实现圆角+阴影+渐变背景),每增加一次采样,每像素的内存访问量就增加一个数量级。在 1080p 屏幕上,一次全屏渲染就需要处理约 200 万个像素--如果每个像素采样 4 次纹理,那就是 800 万次显存访问。
-
-[图:Perfetto 中 GPU track 示意图--标注 Vertex Shader 和 Fragment Shader 的执行时间段]
-
-### Framebuffer:渲染结果的存储位置
-
-Framebuffer 是 GPU 渲染管线的最终输出--一块显存区域,用来存放渲染完成的像素数据。搞清楚 Framebuffer 怎么管理,对分析 GPU 内存占用和显示延迟都有直接帮助。
-
-Android 的 Framebuffer 管理分多个层面。最底层是 Gralloc,它负责实际分配和管理图形缓冲区内存。Gralloc 分配的缓冲区是 GraphicBuffer:应用通过 Canvas 绘制的内容最终写入 GraphicBuffer,再由 SurfaceFlinger 在合成时读出。
-
-```cpp
-// AOSP android-16.0.0_r1
-// ANativeWindowBuffer 定义: frameworks/native/libs/nativewindow/include/android/native_window.h
-// GraphicBuffer 定义: frameworks/native/libs/ui/include/ui/GraphicBuffer.h
-typedef struct ANativeWindowBuffer {
-    int width;                // 缓冲区宽度(像素)
-    int height;               // 缓冲区高度(像素)
-    int stride;               // 行跨度(像素)
-    int format;               // 像素格式(AHARDWAREBUFFER_FORMAT_*)
-    int usage;                // 使用标志(AHARDWAREBUFFER_USAGE_*)
-    void* reserved[2];        // 保留字段
-    buffer_handle_t handle;   // 底层图形缓冲区 native handle(native_handle_t*)
-} ANativeWindowBuffer_t;
-```
-
-这层对象关系很容易混在一起。App 或 NDK 代码日常直接接触的通常是 `Surface`、`SurfaceTexture`、`ANativeWindow`、`HardwareBuffer` 这类公开对象;缓冲区一旦进入 BufferQueue,底层 native handle 会被 `GraphicBuffer` 包装,并附带 format、usage、stride、fence 等元数据,再继续流向 SurfaceFlinger、HWC 或 GPU 驱动。也就是说,`ANativeWindowBuffer` 更接近生产者视角的窗口缓冲区抽象,`GraphicBuffer` 更常出现在 framework/native 图形栈里,两者描述的是同一批底层图形内存,可以视为同一份底层 buffer 在不同层的表示。
-
-Framebuffer 的管理采用双缓冲(或多缓冲)机制:前缓冲区用于显示,后缓冲区用于渲染,两者在 VSync 信号到来时交换。这个机制避免了画面撕裂--如果没有双缓冲,GPU 正在写入的缓冲区同时被显示控制器读取,画面就会出现上下半帧不一致的情况。在高分辨率屏幕上,Framebuffer 的内存占用不容忽视:以 1080p 屏幕、RGBA8888 格式为例,单个 Framebuffer 就需要约 8MB 内存(1920×1080×4 字节),而三缓冲机制下就需要 24MB。在 2K 甚至 4K 屏幕上,这个数字会成倍增长。
-
-## Shader Compilation Jank:首次编译着色器导致的掉帧
-
-### 运行时编译的性能问题
-
-在 Perfetto Trace 中,我们有时会看到一种特定的掉帧模式:应用前 60fps 流畅运行,然后突然掉到 10-20fps 持续几百毫秒,之后又恢复到 60fps。这种"突然卡一下又恢复"的模式,很多时候就是 Shader Compilation Jank--当应用首次使用某个着色器时,GPU 需要将其从 GLSL/SkSL 源码编译成本地 GPU 指令,这个过程耗时可能从几毫秒到几十毫秒不等。
-
-为什么需要在运行时编译?原因在于 Android 设备的 GPU 架构多样性。Qualcomm Adreno、ARM Mali、Imagination PowerVR 各有不同的指令集和优化策略,同一份 GLSL 着色器在不同 GPU 上编译出的机器码完全不同。开发者无法在 APK 中预编译所有平台的着色器二进制,只能在运行时根据实际 GPU 架构进行编译。
-
-```cpp
-// 示意性伪代码:着色器编译的概念流程
-// 注意:GLESContext 类并非 AOSP 中的实际类,OpenGL ES 着色器编译通过
-// 标准 EGL/GLES API 完成(glShaderSource / glCompileShader)
-// 以下代码仅为说明编译流程,非 AOSP 实际源码
-void compileShaderExample(GLuint shader, const char* source) {
-    glShaderSource(shader, 1, &source, NULL);
-    glCompileShader(shader);
-    GLint compiled = 0;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
-    if (!compiled) {
-        // 编译失败处理
+executor.execute(() -> {
+    try {
+        long intervalMs = health.getGpuHeadroomMinIntervalMillis();
+        float headroom = health.getGpuHeadroom(null);
+        if (!Float.isNaN(headroom)) {
+            gpuPolicy.onSample(headroom, intervalMs);
+        }
+    } catch (UnsupportedOperationException ignored) {
+        gpuPolicy.disableHeadroomInput();
     }
-}
+});
 ```
 
-问题在于,着色器编译发生在渲染线程上。当用户触发了一个新的 UI 效果(比如打开一个使用了特殊模糊效果的页面),GPU 第一次遇到这个效果的着色器,就会在当前帧的渲染过程中触发编译--编译期间渲染线程被阻塞,当前帧无法在 VSync 周期内完成,于是掉帧就出现了。
+这段代码只展示线程和异常边界。采样调度、阈值、滞回、最短档位保持时间与画质策略应根据应用测试确定。
 
-### Skia Pipeline Cache 缓存机制
+Headroom 是容量估计，不是 fragment/vertex/bandwidth 分类器，也不是某一帧的 GPU duration。应结合 thermal status、帧时间、GPU counter 和业务质量档位使用。
 
-Skia 作为 Android 的主要图形库,提供了一套 Pipeline Cache 机制来减少重复编译的代价。这个机制包含几个层次:SkSL 预编译允许开发者在构建时收集着色器,打包到 APK 中;运行时缓存将编译后的着色器持久化到本地存储,下次启动时直接加载;Android 16 开始,Google 进一步增强了着色器预编译能力,期望将更多编译工作从运行时移到安装时或启动时。
+## Profiling 工具怎样分工
 
-> [已验证: 官方文档, developer.android.com/guide/topics/graphics/opengl]
+### Perfetto：先看系统责任边界
 
-在实际优化中,一个常见的做法是"着色器预热"--在应用启动的空闲时段,主动触发可能用到的着色器编译。这样虽然会增加启动时间,但避免了在动画或滚动过程中突然出现编译卡顿。Flutter 框架对这个策略有较好的支持,通过 `--cache-sksl` 标志可以在开发阶段收集所有着色器,然后在发布包中提前加载。
+Perfetto 适合把下面的时间放在同一时钟域：
 
-### Vulkan 的优化方案
+- UI、RenderThread、Game/RHI 和 driver 线程；
+- GPU render stages、频率和 counters（设备支持时）；
+- BufferQueue/BLAST、fence 和 FrameTimeline；
+- SurfaceFlinger、RenderEngine、HWC 与 display present；
+- CPU scheduling、thermal、memory 和 I/O。
 
-Vulkan 在着色器编译方面有先天优势。Vulkan 使用 SPIR-V 作为中间表示格式,着色器在构建时就被编译为 SPIR-V 二进制并打包到 APK 中。运行时,GPU 驱动只需要将 SPIR-V 进一步编译为本机指令,这个过程的耗时会比从 GLSL 源码编译快得多。
+先用 FrameTimeline 选中目标 `SurfaceFrame` / `DisplayFrame`，再追 producer fence 和 GPU submission。GPU 数据缺失时，不要用 RenderThread slice 代替 GPU completion。
 
-```cpp
-// Vulkan 着色器加载示例
-// GLSL 源码在构建时通过 glslc 编译器转换为 SPIR-V 二进制
-// 运行时直接加载预编译的 SPIR-V 模块
-VkShaderModuleCreateInfo createInfo{};
-createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-createInfo.codeSize = spirvCode.size() * sizeof(uint32_t);
-createInfo.pCode = spirvCode.data();
-// vkCreateShaderModule() 将 SPIR-V 编译为 GPU 本机指令
-```
+### AGI：系统 profile 与单帧 profile
 
-Android 16 将 Vulkan 定为默认图形 API 的一个重要动机,就是利用 SPIR-V 的预编译优势来减少 Shader Compilation Jank。对于仍然使用 OpenGL ES 的应用,ANGLE 转换层会将 GLSL 着色器翻译为 SPIR-V 后再交给 Vulkan 后端处理,虽然多了一层翻译,但依然比传统 OpenGL ES 驱动的纯运行时编译更可控。
+AGI System Profiler 可看 CPU、GPU、memory、battery 和设备 counters。Frame Profiler 可检查受支持应用的一帧，包括 Vulkan API call、framebuffer、draw call、pipeline、shader、texture、render state 与 memory。
 
-## Vulkan vs OpenGL ES 在 Android 上的性能对比
+当前 AGI Frame Profiler 直接支持 Vulkan；GLES frame profile 使用 OpenGL on ANGLE 模式，由工具的 ANGLE build 转成 Vulkan 进行抓取。capture 和插桩会改变时序，适合分析命令与相对差异，不宜把抓帧耗时当作生产性能。
 
-上面讨论的 Shader Compilation Jank 问题,其根源之一是 OpenGL ES 的运行时编译模型。Vulkan 使用 SPIR-V 预编译格式从运行时编译源头上缓解了这个问题,但 Vulkan 相比 OpenGL ES 的优势远不止于此。理解两者的性能差异,是分析 Android 16 及以后版本 GPU 行为的基础。
+官方 quickstart 还提示 Android Performance Analyzer 是新的 system profiling 推荐工具。工具版本变化独立于 Android platform，要记录版本与 supported-device 状态。
 
-### Android 16 的图形栈推进:Vulkan-first 与 ANGLE 扩展
+### 厂商 profiler
 
-Android 16 把 Vulkan 推到更靠前的位置,但要把这句话拆开看。对应用开发者,系统默认优先按 Vulkan-first 的图形栈走;对仍使用 OpenGL ES 的应用,**部分设备**会通过 ANGLE 把 GL 调用翻译到 Vulkan--ANGLE 是否启用取决于设备配置(`ro.hardware.egl`、全局 settings、平台 allowlist、ANGLE APK/system library 等条件),不能直接写成所有 GLES 应用都自动走 ANGLE。源码锚点:`GraphicsEnvironment.setupAngle()` / `queryAngleChoice()`。对设备厂商,新出货的 64 位设备还需要满足 Vulkan 1.4 / VPA16 这一层硬件基线。几个层次叠在一起,才构成"Android 16 的 Vulkan 推进"的完整含义。
+- Qualcomm 平台可用 Snapdragon Profiler/相关厂商 GPU 工具；
+- Arm Mali 可用 Streamline 与 Mali counter；
+- 其他 GPU 使用对应 IHV 工具。
 
-VPA16 里与性能关系最直接的一项是 Host Image Copy。它允许 CPU 侧把图像数据直接拷入 GPU image,省掉 staging buffer 和一次额外 copy。对滚动列表里的大图、视频帧上传、纹理流式加载这类持续上传场景,收益通常体现在峰值内存更低、提交抖动更小,而不只是 API 名字变化。
+厂商工具能解释 cache、shader core、tiler、external memory 或 stall 等硬件 counter。counter 语义和权限随 GPU/driver 变化，不能跨厂商直接比较数值。
 
-这个转变背后的一个直接原因是 OpenGL ES 驱动实现质量长期参差不齐。不同 GPU 厂商(Qualcomm Adreno、ARM Mali、Imagination PowerVR)各自维护 OpenGL ES 驱动,bug 和性能差异都不小。Google 通过 ANGLE 将大量 OpenGL ES 调用统一翻译为 Vulkan,只需要维护一套 Vulkan 后端的质量,碎片化问题也随之收敛。但要注意:ANGLE 的启用取决于设备/应用级别的配置策略(`ro.hardware.egl`、Settings.Global、Angle APK allowlist),不是所有 GLES 应用在所有 Android 16 设备上都自动走 ANGLE。
+### Profile GPU Rendering 柱状图
 
+开发者选项中的柱状图主要反映 HWUI 各阶段的时间代理。它适合快速发现 View 页面是否接近帧预算，不适合分析独立 Vulkan game Surface，也不能单独区分 vertex、fragment 和 bandwidth。
 
-<!-- AIW-源码调研-2026-06-12 -->
-### ANGLE Vulkan Backend 四级 PSO 缓存（Android 17 优化）
+## 一套可复现的 GPU 排查流程
 
-对于仍使用 OpenGL ES 的应用，ANGLE 层在 Android 17 上进一步完善了四级 PSO 缓存体系，从更细的粒度控制编译开销。下面展开各层机制：
+### 1. 固定场景
 
-1. **L3（VkPipelineCache）**：vendor driver 内部哈希，支持跨进程持久化。ANGLE 通过 `glLinkProgram` 预热 driver 的 VkPipelineCache，让首次 `vkCreateGraphicsPipelines` 命中预热 hash，避免 cold compile。
+记录设备、build、GPU/driver、刷新率、分辨率/render scale、图形 API、ANGLE 状态、温度、充电状态和页面数据。预热与冷启动要分开。
 
-2. **L2（GraphicsPipelineCache）**：ANGLE 进程内的哈希表，使用 `GraphicsPipelineDesc` + xxHash 计算整 state vector 的 hash。相比 OpenGL ES 的运行时编译，ANGLE 通过 L2 缓存避免了重复 state vector 的重复编译。
+### 2. 建立 Surface 拓扑
 
-3. **L1（transition table）**：Context 局部的跳转表，针对"相邻 state vector 间的变化位"做 O(1) 查找。典型应用每次 state change 只改动 10-16 个 bit，L1 跳过整 state vector 的 xxHash + memcmp，直接扫描变化位，大幅提升切换效率。
+列出每个可见内容对象的 Producer、Consumer、SurfaceFlinger Layer、buffer format/size、fence 和 composition type。TextureView 输入需要展开到宿主 HWUI，SurfaceView 则单独跟踪。
 
-4. **L0（当前 active PSO）**：ContextVk 当前持有 handle，避免重复创建。
+### 3. 锁定一帧
 
-> [来源: chromium/angle refs/heads/main/src/libANGLE/renderer/vulkan/doc/FastOpenGLStateTransitions.md]
+用 FrameTimeline 选择 janky App `SurfaceFrame` 和对应 `DisplayFrame`。对 Native Graphics/游戏，额外记录 engine frame id、submit、swap/present、buffer id 和 producer fence。
 
-#### Deferred Clears：TBR 架构下的优化策略
+### 4. 分开 CPU、GPU 与显示
 
-Android 17 上的 ANGLE 引入了 Deferred Clears 机制：将 `vkCmdClearAttachments` 推迟到后续 render pass 的 loadOp 执行。在 TBR 移动 GPU（Adreno/Mali）上，`VK_ATTACHMENT_LOAD_OP_CLEAR` 会直接清空 tile buffer，避免 tile 写回再 load 的开销，相当于"免费清屏"。
+- submit 晚：查 UI/Game/RHI/driver CPU；
+- submit 早、producer fence 晚：查 GPU workload、queue、frequency；
+- buffer ready、display 晚：查 SF/HWC/composition；
+- acquire/dequeue/swap 周期等待：查 pacing、in-flight 和 release。
 
-```cpp
-// ANGLE 延迟 clear 策略
-// 传统：glClear() → vkCmdClearAttachments
-// 优化：glClear() → 暂存 vk::ImageHelper → 后续 render pass loadOp: CLEAR
-```
+### 5. 用 A/B 区分瓶颈
 
-> [来源: chromium/angle refs/heads/main/src/libANGLE/renderer/vulkan/doc/DeferredClears.md]
+一次只改变一个维度：
 
-### Skia Graphite PipelineManager：异步任务模式（Android 17）
+- render scale 或 effect 面积；
+- fragment shader/采样；
+- mesh/粒子/阴影几何；
+- texture/target 格式与分辨率；
+- draw-call/state 数量；
+- SurfaceFlinger DEVICE/CLIENT 条件；
+- in-flight frame 与 pacing。
 
-Android 17 在 Skia Graphite 实现了显式的异步管线编译模式，彻底改变了传统同步编译模型：
+比较 GPU completion、counter、帧 deadline、功耗和画质。平均 FPS 不能代替长帧分布与输入到 present 延迟。
 
-#### 核心机制
+### 6. 检查首次编译与资源上传
 
-- **PipelineCreationTask**：可委托给线程的工作单元，持有 `std::atomic<bool> fCompleted` 和 `sk_sp<GraphicsPipeline> fPipeline`
-- **GraphicsPipelineHandle**：`std::variant<sk_sp<PipelineCreationTask>, sk_sp<GraphicsPipeline>>`，既可包装 task 也可包装 pipeline
-- **PipelineManager**：用 `SkSpinlock` + `THashTable<sk_sp<PipelineCreationTask>>` 管理 in-flight tasks
+对比冷/热路径，查 pipeline/cache、texture upload、glyph atlas、磁盘 I/O 和 driver worker。不要把所有首次慢帧都归因于 shader。
 
-#### 三段式调用链
+### 7. 做持续运行测试
 
-```cpp
-// 1. Recorder::snap 时（无锁探测）
-GraphicsPipelineHandle handle = createGraphicsPipelineHandle(...); // 返回 task 或 pipeline
-startPipelineCreationTask(...); // 派发异步编译
+至少覆盖热稳定后的频率、温度和功耗。首分钟通过、十分钟降频的方案仍需调整画质、帧率或 ADPF 策略。
 
-// 2. Context::insertRecording 时（同步等待）
-sk_sp<GraphicsPipeline> pipeline = resolveHandle(handle); // 等 fCompleted=true
-```
+## 示例：图片列表滚动
 
-这一机制将 pipeline 编译从"draw 时同步阻塞"改为"snap 时派发 + insertRecording 时统一等待"，**不再出现孤立的长编译帧**。
+图片列表同时可能有 UI、纹理上传、采样、overdraw 和带宽压力。不要先假定“图片太大就是 bandwidth bound”，可以按下面的证据推进：
 
-> [来源: google/skia refs/heads/main/src/gpu/graphite/PipelineManager.h/.cpp]
-<!-- AIW-源码调研-2026-06-13 -->
-在上面的四级缓存框架下，PipelineManager 的三段查找和 DrawPass 双缓冲切换构成了具体的实现路径。以下分析以 Skia Graphite 和 ANGLE 的源码为锚点，展开各层的算法细节：
+1. Layout Inspector 与 Debug GPU Overdraw 检查宿主窗口的重复背景；
+2. 关闭 overdraw 调试后抓 Perfetto，确认 UI、RenderThread、GPU completion 和 App deadline；
+3. 对比首次进入与二次滚动，分开 decode/upload/cache miss；
+4. 固定图片内容，A/B 纹理尺寸、色彩格式、圆角/阴影和预取；
+5. 有 GPU counter 时观察 fragment、texture、cache/external memory 的相对变化；
+6. 若存在 TextureView/SurfaceView，展开独立 Producer 和最终 composition。
 
-### PipelineManager 三段式查找与 DrawPass 双 buffer 切换（Android 17 深入）
+如果降低图片纹理尺寸后 upload、GPU time 和外部带宽同时下降，证据支持纹理/带宽方向；如果只有 UI 线程 decode 或布局下降，应记录为 CPU 改善。
 
-昨日的 `PipelineManager` 概述本节下沉到算法层细节。这三段是 Android 17 Vulkan 异步编译链路的"协议层"。
+## Android 12–17 相关边界
 
-#### UniqueKey 派生与三步查找顺序
+| 版本 | 与本章直接相关的变化 |
+| --- | --- |
+| Android 12 / API 31 | FrameTimeline；`FrameMetrics.GPU_DURATION` 与 `DEADLINE`；GPU/SF 责任更容易关联。 |
+| Android 13 / API 33 | AGSL `RuntimeShader`；Choreographer FrameData/FrameTimeline 公共 API。 |
+| Android 15 / API 35 | ANGLE 作为可选 GLES-on-Vulkan 层；支持设备引入 ARR。 |
+| Android 16 / API 36 | GPU Headroom；launch-device Vulkan 1.4 要求；`RuntimeColorFilter` / `RuntimeXfermode`。 |
+| Android 17 / API 37 | 当前源码锚点；WebGPU 和 GLES `prefer_angle` 请求加入公共能力，HWUI 仍按设备选择 SkiaOpenGL/SkiaVulkan。 |
 
-`PipelineManager::createHandle` 严格按 `findTask → findGraphicsPipeline → findOrCreateTask` 三步执行（`src/gpu/graphite/PipelineManager.cpp` L38-66）：
-
-```cpp
-// Step 1: 探测 in-flight task（其他线程正在编译此 pipeline）
-if (sk_sp<PipelineCreationTask> task = this->findTask(pipelineKey)) {
-    return GraphicsPipelineHandle(std::move(task));  // 直接 join，不重复编译
-}
-// Step 2: 探测已编译完成的 pipeline（global cache 命中）
-sk_sp<GraphicsPipeline> pipeline = globalCache->findGraphicsPipeline(pipelineKey, flags);
-if (pipeline) {
-    return GraphicsPipelineHandle(std::move(pipeline));
-}
-// Step 3: 都没命中，创建一个新的 task
-sk_sp<PipelineCreationTask> task = this->findOrCreateTask(...);
-return GraphicsPipelineHandle(std::move(task));
-```
-
-**为什么 Step 1 必须比 Step 2 优先？** 即使 pipeline 已经编译完（Step 2 应该命中），如果另一个线程还在执行 `findOrCreateGraphicsPipeline`，本线程走 Step 1 路径 join 即可，避免重复创建。这是 `fNumPreemptivelyFoundTasks` 统计项的来源。
-
-**`UniqueKey` 来源**：`caps->makeGraphicsPipelineKey(pipelineDesc, renderPassDesc)`——`GraphicsPipelineDesc` + `RenderPassDesc` 一起算。**两个 desc 分别决定 shader 状态和 render pass 状态**，移动 GPU TBR 架构下 render pass 切换等价于 tile flush，必须作为 key 的一部分。
-
-**race 统计**：`findOrCreateTask` 里 `fNumTaskCreationRaces++` 统计的"两步无锁读之间的 race"——createHandle 不是原子的（第一步 `findTask` 无锁读 `fActiveTasks`，第二步 `globalCache` 也无锁读），两个 recorder 同时 miss 时，第二个被自旋锁串行化时发现已有 task，**这是良性的，不会创建重复 task**。
-
-#### DrawPass 双 buffer 切换释放 desc 存储
-
-`DrawPass::prepareResources`（`src/gpu/graphite/DrawPass.cpp` L40-68）的关键设计：
-
-```cpp
-// Phase 1: desc → handle
-fPipelineHandles.reserve(fPipelineDescs.size());
-for (const GraphicsPipelineDesc& pipelineDesc : fPipelineDescs) {
-    fPipelineHandles.push_back(
-        resourceProvider->createGraphicsPipelineHandle(pipelineDesc, ...));
-    resourceProvider->startPipelineCreationTask(runtimeDict, fPipelineHandles.back());
-}
-fPipelineDescs.clear();  // 关键：立即释放 176 字节 * N 的 desc 存储
-// Phase 2: handle → pipeline
-fFullPipelines.reserve(fPipelineHandles.size());
-for (const GraphicsPipelineHandle& handle : fPipelineHandles) {
-    sk_sp<GraphicsPipeline> pipeline = resourceProvider->resolveHandle(handle);
-    fFullPipelines.push_back(std::move(pipeline));
-}
-fPipelineHandles.clear();
-```
-
-**为什么必须 `clear()`？** 三个容器大小：
-- `GraphicsPipelineDesc` = **176 字节**（编译期 `static_assert(kGraphicsPipelineDescSize == 176)`）
-- `GraphicsPipelineHandle` = `std::variant<sk_sp<...>, sk_sp<...>>` ≈ 16 字节
-- `GraphicsPipeline` (sk_sp) = 8 字节
-
-一个 DrawPass 持有 50 个 pipeline 时，desc 不释放要多占 8.8 KB。**对一个 Recording 里可能有数百个 DrawPass 的长 list op 是 GB 量级**——`fPipelineDescs.clear()` 是 `SkTArray`，析构时 `sk_free` 整个 block，零逐元素开销。
-
-**`prepareResources` vs `addResourceRefs`**：注释明确 TODO `move this resolvePipeline loop to addResourceRefs`——目前接受 `prepareResources` 阶段就阻塞等所有 task 完成（单线程等待路径），但已标记要重构到 `Context::insertRecording` 阶段做更晚的合并等待，**未来重构后 `prepareResources` 不阻塞**，进一步降低 snap 时延。
-
-#### ANGLE L1 跳转表：44 个 dirty bit 的位图跳过
+版本号不能替代运行时 capability。Vulkan extension、ASTC、ANGLE、GPU counter、ARR 和 HWC plane 都要在目标设备上查询。
 
-`GraphicsPipelineDesc` 的 176 字节被划分为 **44 个 dirty bit**（`kGraphicsPipelineDirtyBitBytes = 4`，`kNumGraphicsPipelineDirtyBits = 176/4 = 44`），用 `angle::BitSet<44>` 表示：
+## Kernel 与厂商驱动边界
 
-```cpp
-// src/libANGLE/renderer/vulkan/vk_cache_utils.h L743-748
-constexpr size_t kGraphicsPipelineDirtyBitBytes = 4;
-constexpr static size_t kNumGraphicsPipelineDirtyBits =
-    kGraphicsPipelineDescSumOfSizes / kGraphicsPipelineDirtyBitBytes;  // = 44
-static_assert(kNumGraphicsPipelineDirtyBits <= 64, "Too many pipeline dirty bits");
-using GraphicsPipelineTransitionBits = angle::BitSet<kNumGraphicsPipelineDirtyBits>;
-```
+`android17-6.18-2026-06_r6` 固定了通用 dma-buf、dma-heap、dma-fence/sync_file 和 scheduler 语义。它不能证明目标设备使用哪种 GPU job scheduler、tile 大小、压缩、counter 或内存回收策略。
 
-`GraphicsPipelineTransitionMatch`（L1466-1482）实现"零读取"算法：
+fence wait 只说明依赖尚未完成。判断 GPU 为何晚，需要找到 fence owner、对应 submission、frequency、queue 和 workload。dma-buf 被多个模块共享时，还要避免重复计算内存。
 
-```cpp
-if (bitsA != bitsB) return false;  // BitSet 短路：典型 state change 只改 10-16 bit
-const uint32_t *rawPtrA = descA.getPtr<uint32_t>();
-const uint32_t *rawPtrB = descB.getPtr<uint32_t>();
-for (size_t dirtyBit : bitsA) {
-    if (rawPtrA[dirtyBit] != rawPtrB[dirtyBit]) return false;  // 只读 4 字节/位
-}
-return true;
-```
+## 常见误区
 
-**与昨日四级 PSO 缓存的对应**：
-- **L0**（active PSO）：`ContextVk::mCurrentGraphicsPipeline` 单变量
-- **L1**（transition table）：本节 `mTransitions` + `GraphicsPipelineTransitionMatch`
-- **L2**（GraphicsPipelineCache）：`std::unordered_map<GraphicsPipelineDesc, PipelineHelper, ...>` + xxHash 176 字节
-- **L3**（driver VkPipelineCache）：vendor driver 内部 hash
+### “Perfetto 有 GPU Track，就能直接看 Vertex/Fragment 时间”
 
-L1 命中比 L2 快一个数量级：只读 10-16 个 4 字节 word（40-64 字节），L2 要 memcmp 176 字节 + xxHash。**4 字节/位的选择是显式 trade-off**（注释 L1458）：dirty bit 越宽 BitSet 越小（loop 越短），但同 mask 误命中率越高。
+设备可能只提供粗粒度 render stage 或 busy/frequency。Vertex、fragment、tiler、cache 和带宽通常依赖厂商 counter 或 AGI/厂商 profiler。
 
-#### ShareGroupVk 线程模型：2ms 节流 + 单 in-flight task
+### “Vulkan 使用 SPIR-V，所以没有 shader jank”
 
-`ShareGroupVk::scheduleMonolithicPipelineCreationTask`（`src/libANGLE/renderer/vulkan/ShareGroupVk.cpp` L201-230）有两个限制叠加：
+驱动仍需生成硬件代码并创建 pipeline。pipeline cache、预热和稳定 state 设计依然重要。
 
-```cpp
-// 限制 1: 单 in-flight
-if (mMonolithicPipelineCreationEvent && !mMonolithicPipelineCreationEvent->isReady())
-    return angle::Result::Continue;
-// 限制 2: 2ms 节流
-constexpr double kMonolithicPipelineJobPeriod = 0.002;  // 500 task/秒
-if (currentTime - mLastMonolithicPipelineJobTime < kMonolithicPipelineJobPeriod)
-    return angle::Result::Continue;
-// 实际派发到 worker thread
-mMonolithicPipelineCreationEvent =
-    mRenderer->getGlobalOps()->postMultiThreadWorkerTask(taskOut->getTask());
-```
+### “Vulkan 一定比 GLES 快”
 
-**为什么选 2ms？** 注释 "O(hundreds of microseconds)" 假设单 pipeline 编译 200-500μs，**2ms 是单编译耗时的 4-10 倍**——保证 worker thread 不会因为主线程高频调用 `getPreferredPipeline` 而被打断，主线程能完成至少 4 次 frame submission 之间的所有 task 等待（60Hz 间隔 16.6ms，4 帧正好填满）。
+结果取决于 renderer、driver、同步、内存、pipeline 和 workload。Vulkan 给出更多控制，也要求应用正确使用这些控制。
 
-**2ms 内需要编译超过 1 个 pipeline 会怎样？** 第 2 个 task 直接 `return angle::Result::Continue`——不报错，留在 L2 incomplete 状态，下一帧再 schedule。**这是有意为之的"延迟到下一帧"行为**。
+### “ANGLE 固定增加某个百分比的开销”
 
-#### AOSP 集成点：`GraphiteVkRenderEngine::flushAndSubmit`
+ANGLE 可能增加翻译成本，也可能因 Vulkan driver 质量改善表现。只能在相同设备、driver 和场景下测量。
 
-`frameworks/native/libs/renderengine/skia/GraphiteVkRenderEngine.cpp`（Copyright 2024）的 `flushAndSubmit` 是 SurfaceFlinger 提交一帧的入口，调用链：
+### “GPU busy 高就一定有问题”
 
-```cpp
-// 1. snap: 触发所有 deferred ops（DrawPass::prepareResources 同步等所有 task）
-std::unique_ptr<graphite::Recording> recording = context->graphiteRecorder()->snap();
-// 2. insertRecording: command buffer 拼接（目前不阻塞在 task 等待）
-context->graphiteContext()->insertRecording(insertInfo);
-// 3. submit: 把已 resolved 的 fFullPipelines 推到 GPU 队列
-context->graphiteContext()->submit(graphite::SyncToCpu::kNo);
-```
+稳定按 deadline 完成的高利用率可能是有效工作。还要看 deadline、功耗、温度和画质目标；系统或其他进程也可能占用 GPU。
 
-**AOSP 视角的"异步编译优化"是**：`snap()` 阶段 DrawPass 之间的 batched task 等待——多个 DrawPass 的 pipeline 编译可以并发，但 snap 结束前会等齐。**SurfaceFlinger 一帧的 `flushAndSubmit` 阻塞时长 = max(单 DrawPass 的 max task 耗时)，而不是 sum**。
+### “GraphicBuffer 都计入 App RSS”
 
-> [来源: google/skia refs/heads/main/src/gpu/graphite/PipelineManager.cpp L38-172; DrawPass.cpp L40-68; google/angle refs/heads/main/src/libANGLE/renderer/vulkan/vk_cache_utils.h L743-748/L1466-1482/L1670-1703; ShareGroupVk.cpp L30-37/L201-230; android.googlesource.com platform/frameworks/native refs/heads/main libs/renderengine/skia/GraphiteVkRenderEngine.cpp]
+图形 buffer 可通过 dma-buf 跨进程和设备共享，RSS/PSS、gpu_mem、dumpsys 和 driver 统计口径不同。归属需要结合 exporter、importer 与引用生命周期。
 
-#### 性能影响总结
+### “SurfaceFlinger 合成不算 App 的 GPU 问题”
 
-| 优化点 | 量级 | 触发场景 |
-|---|---|---|
-| L1 跳转表（44 bit 跳过）| 每帧省 50-100μs CPU | 100-200 pipeline 切换/帧 |
-| Step 1 findTask 优先 | L2 命中率 30%→60-80% | 多 recorder 并发 |
-| DrawPass fPipelineDescs.clear() | 单 Recording 释放数十 MB | 数百 DrawPass 长 list op |
-| 2ms 节流 | 理论 500 task/秒上限 | 每帧 ≤500 draw call 不影响 |
+它不属于 App renderer，但会影响最终 DisplayFrame，并与 App 争用 GPU/带宽。报告时应分开归因，再说明共同资源影响。
 
-#### 待 android-17.0.0_r1 复检
+## Android 17 源码入口
 
-- `kMonolithicPipelineJobPeriod` 是否被调为 1ms 或 4ms（影响并发吞吐）
-- `kNumGraphicsPipelineDirtyBits` 是否改为 8 字节/位（影响 L1 碰撞率）
-- Graphite 是否默认启用（影响 `graphiteRecorder->snap` 调用频次）
+- HWUI [`DrawFrameTask.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp)、[`CanvasContext.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp)：RenderThread 同步、绘制和窗口 buffer。
+- HWUI [`PersistentGraphicsCache.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/PersistentGraphicsCache.cpp)、[`ShaderCache.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/ShaderCache.cpp)、[`PipelineCache.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/PipelineCache.cpp)：Skia shader/pipeline cache。
+- Native [`GraphicBuffer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/ui/GraphicBuffer.cpp)、[`GraphicBufferAllocator.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/ui/GraphicBufferAllocator.cpp)、[`GraphicBufferMapper.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/ui/GraphicBufferMapper.cpp)：图形 buffer 包装、分配和映射。
+- Native [`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp)、[`Surface.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/Surface.cpp)、[`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)：dequeue/queue、slot 与 transaction。
+- Vulkan [`swapchain.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp)：swapchain image、ANativeWindowBuffer 与 queueBuffer。
+- SurfaceFlinger [FrontEnd](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/FrontEnd/)、[`HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)：LayerSnapshot、CLIENT/DEVICE 与 present。
+- Graphics HAL [allocator AIDL](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/allocator/aidl/)、[mapper stable-C](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/mapper/stable-c/)：allocator/mapper 当前接口。
+- Kernel [`dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)、[`dma-heap.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-heap.c)、[`dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)、[`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：共享 buffer 与同步。
 
-### Vulkan 渲染管线的核心组件
+## 官方资料
 
-Vulkan 渲染帧需要应用显式组装三个核心对象:VkCommandBuffer、VkRenderPass 和 VkFramebuffer。
+- [Android graphics architecture: BufferQueue and Gralloc](https://source.android.com/docs/core/graphics/arch-bq-gralloc)
+- [Transition from ION to DMA-BUF heaps](https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps)
+- [Perfetto GPU data sources](https://perfetto.dev/docs/data-sources/gpu)
+- [Android GPU Inspector](https://developer.android.com/agi)
+- [AGI Frame Profiler](https://developer.android.com/agi/frame-trace/frame-profiler)
+- [SystemHealthManager GPU Headroom](https://developer.android.com/reference/android/os/health/SystemHealthManager#getGpuHeadroom(android.os.GpuHeadroomParams))
+- [Vulkan on Android](https://developer.android.com/games/develop/vulkan/overview)
+- [Texture compression](https://developer.android.com/games/optimize/textures)
+- [FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
 
-**VkCommandBuffer** 是指令容器。应用在 CommandBuffer 中记录所有渲染命令(draw call、资源绑定、状态设置),然后一次性提交到 GPU 队列。CommandBuffer 可以在任意线程上构建,这是 Vulkan 多线程渲染能力的基础。
-
-**VkRenderPass** 定义一帧渲染的结构:有哪些附件(color attachment、depth attachment)、每个附件在渲染开始和结束时的 load/store 操作、子 pass 之间的依赖关系。在移动 GPU 的 TBR 架构下,RenderPass 的边界直接影响 tile 的 load/store 行为--每开始一个新 RenderPass,GPU 要完成当前 tile 的写回并重新加载下一个 RenderPass 的附件。合并 RenderPass 可以减少 tile 写回次数,是移动端 Vulkan 性能优化的基本策略。
-
-**VkFramebuffer** 是 RenderPass 的附件绑定实体,把 VkImageView(对应 swapchain image 或 offscreen render target 等实际图像资源)与 RenderPass 声明的附件槽位关联。Framebuffer 的生命周期通常与它所引用的图像资源一致--swapchain 重建时 Framebuffer 也需要重建。
-
-三者的依赖关系:VkRenderPass 描述渲染结构,VkFramebuffer 提供渲染目标,VkCommandBuffer 记录渲染指令。提交渲染时,CommandBuffer 中记录的每个 RenderPass 实例都必须指定对应的 Framebuffer。在 Perfetto 的 Vulkan track 中,CommandBuffer 的构建时间(CPU 侧 Record phase)和 GPU 执行时间(Submit + Execute phase)是分开的,可以分别观察。
-
-### CPU 开销:一个数量级的差距
-
-Vulkan 相比 OpenGL ES 最核心的性能优势,在于大幅降低了 CPU 侧的开销。OpenGL ES 采用隐式同步模式--每次调用 `glDrawArrays()` 时,驱动层需要做大量状态检查、资源同步和错误验证工作,这些都在调用线程上同步完成。而 Vulkan 将这些控制权交给了开发者:GPU 命令的提交时机、资源的同步策略、内存的分配方式,全部由应用显式控制。
-
-```cpp
-// OpenGL ES 的隐式同步:每次 draw call 都附带大量驱动开销
-glDrawArrays(GL_TRIANGLES, 0, vertexCount);
-
-// Vulkan 的显式提交:开发者控制提交时机,避免不必要的同步等待
-vkQueueSubmit(queue, 1, &submitInfo, fence);
-```
-
-在 OpenGL ES 中,一个简单的 draw call 可能需要 10-50μs 的 CPU 时间来处理驱动逻辑(具体取决于状态复杂度和驱动实现);而在 Vulkan 中,同样的 draw call 只需要 1-5μs--差距达到了一个数量级。对于 draw call 数量很多的应用(比如复杂的 UI 界面),这个差异会直接体现在帧时间上。
-
-### 多线程渲染能力
-
-[图:OpenGL ES 单线程提交 vs Vulkan 多线程命令缓冲区构建对比]
-
-OpenGL ES 的另一个架构限制是命令提交只能在单一上下文中进行,多线程无法并行构建渲染命令。Vulkan 引入了命令缓冲区(Command Buffer)的概念:不同的线程可以独立构建各自的命令缓冲区,再在一个线程上统一提交到 GPU。对于 CPU 侧有大量渲染命令需要生成的场景--比如游戏引擎中不同线程分别处理场景渲染、UI 渲染和后处理--多线程构建命令缓冲区可以显著降低 CPU 瓶颈。
-
-在 Android UI 渲染的场景中,多线程渲染的优势不如游戏场景明显,因为 UI 渲染的 draw call 数量通常不太多。但随着 Material Design 的效果越来越复杂(模糊、阴影、动画),这个优势在未来会越来越重要。
-
-### 更精细的内存控制
-
-Vulkan 暴露了显式的内存管理 API,开发者可以精确控制 GPU 内存的分配、映射和释放时机。
-
-**命令缓冲区与同步机制**:Vulkan 的同步原语分三层--`VkFence` 用于 CPU-GPU 同步(CPU 等待 GPU 完成一批工作),`VkSemaphore` 用于 GPU 内部队列间或同一队列不同提交间的同步(比如渲染完成后再触发合成),`VkEvent` 用于命令缓冲区内部的细粒度同步。在 Android 的 HWUI 场景中,RenderThread 提交命令缓冲区时通过 `VkFence` 追踪 GPU 完成状态--Perfetto 中 RenderThread 的等待时间对应的就是 fence wait。`vkQueueSubmit()` 接受 fence 参数,GPU 执行完这批命令后 signal fence,CPU 侧的 `vkWaitForFences()` 才返回。在 OpenGL ES 中,这些全部由驱动隐式管理,开发者无法干预。在统一内存架构的移动设备上,这种控制能力尤为重要--CPU 和 GPU 共享同一块物理内存,合理的内存管理可以减少不必要的数据拷贝和缓存失效。
-
-```cpp
-// Vulkan 的精确内存管理
-VkMemoryAllocateInfo allocInfo{};
-allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-allocInfo.allocationSize = memorySize;
-allocInfo.memoryTypeIndex = findMemoryType(memoryRequirements);
-vkAllocateMemory(device, &allocInfo, nullptr, &memory);
-```
-
-> 移动 GPU 架构中,开始和结束渲染通道的代价较高,应将渲染操作合并到尽可能少的渲染通道中。使用 `VK_ATTACHMENT_LOAD_OP_DONT_CARE` 可以避免不必要的附件保留,减少带宽消耗。
-
-### ANGLE 层的性能影响
-
-对于仍然使用 OpenGL ES 的应用,ANGLE 转换层引入的性能开销需要单独看测试条件。[社区数据: ANGLE 性能开销数据来自 Google I/O 演讲与社区基准测试,非官方系统性基准数据] 社区里经常能看到 2-5%、5-10%、10-20% 这类数字,但这些数字只有在设备、GPU、驱动版本、分辨率、shader 复杂度和测试方法都写清楚时才有比较价值。放回工程语境后,可以把它理解成一个量级参考:2D UI workload 往往只是几个百分点,复杂 3D workload 会更高,合成型压力测试还会继续放大。正文把它当经验区间,只能做量级参考。
-
-这个开销的来源主要有两方面:一是 GLSL 到 SPIR-V 的翻译过程,二是 OpenGL ES 的状态机模型到 Vulkan 的命令缓冲区模型的转换。对于大多数日常应用来说,ANGLE 的性能损耗在可接受范围内,而且 ANGLE 带来的驱动一致性和 bug 修复的收益通常远大于性能开销。
-
-> [已验证: 官方文档, developer.android.com/guide/topics/graphics/opengl]
-
-### Vulkan 与 OpenGL ES 的版本演进
-
-从 Android 7.0 引入 Vulkan 到 Android 16 把图形栈推向 Vulkan-first,这条演进线跨越了近十年。把 `API 可用性`、`设备 launch requirement` 和 `ANGLE rollout` 拆开看,边界会更准确:
-
-| Android 版本 | API Level | Vulkan / ANGLE 边界 |
-|:---|:---|:---|
-| 7.0 | 24 | Vulkan 1.0 API 与 NDK 支持进入 Android;是否可用取决于设备,OpenGL ES 仍是主路径 |
-| 8.0 | 26 | Vulkan 生态开始稳定,更多设备通过 CTS/VTS 提供合规实现,仍未形成统一硬件门槛 |
-| 10 | 29 | **新出货的 64 位设备** 需要支持 Vulkan 1.1;ANGLE 可以作为可选的 OpenGL ES 系统驱动用于兼容与调试 |
-| 12-14 | 31-34 | ANGLE 覆盖范围继续扩大,Game Mode 与图形兼容性策略增多;是否由 ANGLE 接管仍取决于设备 launch policy 和厂商配置 |
-| 15 | 35 | Vulkan-first 路线继续推进,更多设备把 ANGLE 用在默认 GL 路径上,不能只按 OS 版本划线 |
-| 16 | 36 | **新设备默认按 Vulkan-first 图形栈设计**;新出货的 64 位设备基线提升到 Vulkan 1.4 / VPA16,包含 Host Image Copy;Vulkan Synchronization 2 减少了 RenderThread 指令提交中的同步开销;OpenGL ES 应用**在配置了 ANGLE 的设备上**通过 ANGLE-on-Vulkan 运行,ANGLE 启用由 `GraphicsEnvironment.setupAngle()` 决定 |
-
-把这张表拆开后就不会把几件事混成一件事:Vulkan API 早在 Android 7.0 就出现;设备硬件门槛从 Android 10 的 Vulkan 1.1 一直推进到 Android 16 的 Vulkan 1.4 / VPA16;ANGLE 是否成为默认 GL 后端则是设备配置问题,不能直接写成单一 OS 版本边界。
-
-## GPU 性能瓶颈分析:fillrate bound vs vertex bound vs bandwidth bound
-
-### 瓶颈分析的基本方法
-
-GPU 性能分析的第一步是搞清楚瓶颈在哪里。GPU 渲染的瓶颈大致可以分为三类:fillrate bound(像素处理能力不足)、vertex bound(顶点处理能力不足)和 bandwidth bound(内存带宽不足)。不同类型的瓶颈需要完全不同的优化方向,如果判断错了方向,优化努力就会白费。
-
-判断瓶颈类型需要结合 Perfetto 和 AGI 两层分析。第一步,在 Perfetto 的 GPU track 上确认 GPU 渲染时间是否超过帧预算。第二步,用 Android GPU Inspector (AGI) 对具体帧做深度分析:如果 Fragment Shader 执行时间占 GPU 总时间超过 60%,且帧的渲染时间与界面可见像素数量正相关,是 fillrate bound;如果 Vertex Shader 时间占比异常高,且帧时间与界面几何复杂度(Path 数量、三角形数量)正相关,是 vertex bound;如果着色器执行时间不长但整体帧时间仍超标,同时 Perfetto 的内存带宽计数器显示高负载,是 bandwidth bound。
-
-> 注意:PC 端常用的"降低渲染分辨率判断瓶颈类型"方法不适用于标准 Android UI 渲染。Android UI 没有独立的渲染分辨率设置(除非使用 SurfaceView 自行控制渲染缓冲区),应依赖 AGI 的 GPU 性能计数器来做定量判断。
-
-### GPU Headroom:事前感知 GPU 负载(Android 16)
-
-传统 GPU 瓶颈分析是事后诊断--帧已经掉了,再去 Trace 里找原因。Android 16 引入的 GPU Headroom API 提供了一条事前感知路径。该 API 通过 `android.os.health.SystemHealthManager`(通过 `Context.SYSTEM_HEALTH_SERVICE` 获取)暴露,核心方法是 `getGpuHeadroom(GpuHeadroomParams)`,返回值为 0-100 的浮点数或 `Float.NaN`(当 GPU 不支持 headroom 上报时返回 NaN)。值越接近 0,说明 GPU 越接近满载。
-
-### 实战应用经验
-
-#### 实际应用部署
-
-```java
-// Android 16+ (API 36)
-SystemHealthManager shm = (SystemHealthManager)
-    context.getSystemService(Context.SYSTEM_HEALTH_SERVICE);
-GpuHeadroomParams params = new GpuHeadroomParams.Builder().build();
-float headroom = shm.getGpuHeadroom(params);  // 返回 0-100 或 NaN
-
-// 必须遵守最小采样间隔
-long minInterval = shm.getGpuHeadroomMinIntervalMillis();
-
-if (!Float.isNaN(headroom) && headroom < 30f) {
-    // GPU 余量不足,考虑降级渲染质量
-    // 减少实时模糊层级、降低动画粒子数、跳过非关键 Shader 特效
-}
-```
-
-**部署陷阱**:
-1. **同步开销意外高**:按帧调用导致每帧 1-2ms 阻塞,界面从 60fps 降到 30fps。改用 Choreographer 回调固定间隔解决。
-2. **温控状态影响**:设备发热后 headroom 从 80 直降到 20。需要连续监测变化趋势。
-3. **首次调用慢**:首次调用需要 5-10ms 初始化时间。应用冷启动时避开关键路径。
-
-**实际降级方案**:
-- headroom > 60:全质量渲染
-- 30-60:关闭高开销后处理(模糊、阴影)
-- < 30:简化动画,减少 draw call
-
-这种动态降级比固定分辨率调整更精细,因为 GPU 负载会随场景快速变化。
-
-### 性能影响实测
-
-在游戏动画场景中测试了这个 API 的调用开销:
-
-```bash
-# 测量 API 调用耗时
-adb shell am profile com.example start
-# 触发动画场景
-adb shell am profile com.example stop --output /sdcard/profile.txt
-cat /sdcard/profile.txt | grep getGpuHeadroom
-```
-
-结果显示:在 60fps 场景中,正确调用的 API (每 100ms 一次) 增加 1-2% CPU 开销;错误调用的 API (每帧调用) 增加 15-20% CPU 开销。这个数字在 120fps 场景会更夸张。
-
-调用该 API 本身会触发一次跨进程查询(Binder 同步),官方源码注释明确指出每次有效调用至少一次同步 Binder transaction,可能超过 1ms;首次调用或非默认 params 还可能因按需初始化更慢。严禁在渲染主线程中按帧轮询--在 120fps 下 1ms 的同步阻塞就消耗了 12% 的帧预算。建议在独立的监控线程中以 `minInterval` 为周期异步采样,或通过 Choreographer 回调按固定间隔查询。
-
-> [已验证: AOSP android-16.0.0_r1, android.os.health.SystemHealthManager - getGpuHeadroom(GpuHeadroomParams) / getGpuHeadroomMinIntervalMillis()]
-
-### Fillrate Bound:像素处理瓶颈
-
-Fillrate bound 是 Android UI 渲染中最常见的瓶颈类型。它的本质是 GPU 无法足够快地将像素写入帧缓冲区--可能是 Fragment Shader 计算量太大,也可能是过度绘制(Overdraw)导致同一像素被反复处理。
-
-过度绘制是 fillrate bound 最典型的原因。在 Android 的开发者选项中,"Debug GPU Overdraw" 工具用颜色编码来可视化过度绘制程度:原色表示没有过度绘制,蓝色表示 1 次过度绘制,绿色表示 2 次,浅蓝表示 3 次,红色表示 4 次及以上。如果我们在应用中看到大面积的红色区域,说明大量像素被重复绘制了 4 次以上--GPU 在这些像素上做了 4 倍的工作,但最终只有最上面一层的颜色被用户看到。
-
-导致过度绘制的常见场景包括:多层嵌套的布局各自设置了不透明背景(父布局的背景被子布局完全覆盖,但仍然被渲染了);半透明叠加层的叠加(每增加一层半透明,就多一次像素计算);对话框或弹出层没有移除底下的内容(底层内容虽然被遮挡但仍然被渲染)。
-
-> [已验证: 官方文档, developer.android.com/guide/topics/graphics/debug-overdraw]
-
-优化过度绘制的核心思路是减少不必要的绘制:移除被完全覆盖的背景、使用 `clipPath()` 裁剪不可见区域、将半透明视图改为不透明视图(在视觉允许的情况下)。在 Compose 中,`Modifier.graphicsLayer` 可以帮助减少不必要的重绘。
-
-### Vertex Bound:顶点处理瓶颈
-
-Vertex bound 在 Android UI 渲染中相对少见,但在某些场景下会出现--比如使用了大量自定义 Path 的绘制(SVG 图标、矢量动画)、Canvas 变换层级很深导致矩阵计算复杂、或者使用了大量的 `Canvas.drawPath()` 调用。
-
-顶点处理瓶颈的识别主要依赖 GPU Profiling 工具。使用 Android GPU Inspector (AGI) 时,如果顶点处理时间占 GPU 总时间的比例超过 50%,就值得进一步排查。在 Perfetto 中,我们可以对比 GPU track 中不同帧的执行时间模式--如果帧的渲染时间与界面的几何复杂度正相关(比如滚动到一个包含大量 Path 的区域时 GPU 时间突增),这就是 vertex bound 的信号。
-
-优化的方向包括:使用更简单的几何形状替代复杂 Path(用矩形近似圆角矩形在视觉可接受的情况下);减少 Canvas 的 save/restore 和矩阵变换层数;对于静态的复杂图形,考虑预渲染为 Bitmap 缓存。
-
-> [说明: TBR 架构这一段依赖 ARM / Qualcomm 公开优化资料与渲染行为观察,本段不建立在某个单一 AOSP 目录上。]
-
-在瓦片式渲染(TBR)架构的移动 GPU 上,通过高效管理加载和存储操作以及附件,可以显著提高性能。TBR 架构的 GPU(如 ARM Mali)会将一帧的渲染任务划分为多个瓦片,每个瓦片独立处理,这减少了对主显存的访问频率。
-
-### Bandwidth Bound:内存带宽瓶颈
-
-Bandwidth bound 是三种瓶颈中最容易被忽略的一种。它的本质是 GPU 在等待数据--GPU 的计算能力足够,但数据从内存传输到 GPU 计算单元的速度跟不上。在移动设备的统一内存架构中,CPU、GPU、显示控制器、相机 ISP 等模块共享同一块物理内存和总线,当多个模块同时高负载工作时,内存带宽就会成为瓶颈。
-
-导致 bandwidth bound 的常见场景包括:大尺寸纹理没有使用压缩格式(一张未压缩的 2048×2048 RGBA8888 纹理需要 16MB 存储,每次采样都需要从内存读取数据);没有生成 Mipmap(GPU 总是使用最高分辨率纹理,即使物体在屏幕上只占几个像素);帧缓冲区位深度过高(RGBA8888 比 RGBA5551 多一倍的数据量)。
-
-优化带宽的核心策略是减少数据传输量:使用纹理压缩格式;为所有 3D 纹理生成 Mipmap(让 GPU 根据物体大小选择合适的分辨率级别);在视觉允许的情况下使用更低精度的帧缓冲区格式。
-
-### ASTC vs ETC2:带宽瓶颈下的压缩格式选择
-
-在 bandwidth bound 场景下,选择哪种纹理压缩格式直接影响带宽消耗和帧时间。Android 上两种主流格式的关键差异:
-
-| 维度 | ASTC | ETC2 |
-|------|------|------|
-| 压缩块大小 | 可配置(4×4 到 12×12) | 固定 4×4 |
-| 压缩比 | 灵活:4×4 块约 4bpp(8:1),8×8 块约 2bpp(16:1) | 固定 4bpp(8:1 for RGB,6:1 for RGBA) |
-| Alpha 通道 | 原生支持 | 需要单独的 EAC 编码,解码开销增加 |
-| 解码硬件开销 | Adreno 6xx+ 和 Mali Midgard+ 均有固定功能解码单元,单周期完成 | 同样有硬件解码单元,但 RGBA 通道需要两次解码 |
-| 视觉质量(同压缩比) | 更优:ADAPTIVE 算法根据局部复杂度分配 bit budget | 固定分配,平坦区域浪费 bit,复杂区域质量不足 |
-| 设备支持 | Android 5.0+ 全线支持(GLES 3.0+ 必选) | Android 4.0+ 全线支持(GLES 3.0 必选) |
-
-在带宽受限场景中的选择建议:优先使用 ASTC。同压缩比下 ASTC 视觉质量更好,意味着可以用更高的压缩比(更大的 block size)达到相同的视觉标准,直接减少带宽消耗。在 Adreno 830 和 Mali Immortalis G925 等现代 GPU 上,ASTC 和 ETC2 的硬件解码延迟差异可以忽略--两者都是单周期固定功能单元操作,瓶颈在于内存传输而非解码计算。只有在需要兼容极老旧设备(GLES 2.0)时才考虑 ETC2。
-
-**验证方式**:
-
-ASTC 与 ETC2 的选择不应只靠格式名判断。发布或上线前至少固定三组条件:设备 SoC 与 GPU、图片尺寸与缩放方式、滚动场景的帧率和 thermal 状态。没有原始 AGI / Perfetto trace 或厂商 profiler 记录时,不要把某个百分比写成通用结论。
-
-```bash
-# 确认设备 ASTC 支持情况
-adb shell cmd gpu vkjson | grep -A 5 -B 5 astc
-# 应显示支持的 block sizes,如 {"blockWidth":4,"blockHeight":4,...}
-
-# 采集滚动场景帧时间,再配合 AGI / 厂商 profiler 查看纹理与外部内存计数器
-adb shell dumpsys gfxinfo com.example.app framestats
-```
-
-判断 ASTC 是否收益明确,至少看三类信号:同一场景下 GPU frame time 是否下降,Texture Unit / External Memory 相关计数器是否下降,视觉质量是否仍满足产品标准。若只有 `dumpsys gfxinfo` 的帧时间,只能说明用户侧帧预算是否改善,不能单独证明带宽下降。
-
-**选择建议**:
-1. **现代设备(Adreno 7xx+,Mali-G78+)**:优先 ASTC,视觉质量+带宽双重优势
-2. **中端设备**:ASTC 6×6 通常是最佳选择
-3. **低端设备**:如果遇到 ASTC 解码性能问题,可考虑 ETC2
-4. **兼容性要求**:如果必须支持 GLES 2.0 设备,ETC2 是唯一选择
-
-## 移动 GPU 的 TBR 架构
-
-分析 GPU 性能瓶颈之前,需要先理解一个硬件架构前提:几乎所有移动 GPU 都采用 Tile-Based Rendering(TBR)架构。TBR 直接影响了带宽消耗模式、驱动策略,以及很多看似"反直觉"的性能现象。
-
-### TBR 的核心思路
-
-传统桌面 GPU 采用 Immediate Mode Rendering(IMR):逐个处理 draw call,每个 draw call 直接向主显存写入像素数据。移动 GPU 不这样做。TBR 将一帧的渲染区域划分为若干个瓦片(tile,通常 16×16 或 32×32 像素),每个瓦片独立处理:先把该瓦片内所有 draw call 的几何数据收集起来,然后在 GPU 片上缓存(on-chip tile buffer)中完成该瓦片所有像素的着色计算,再一次性写回主显存。
-
-这样做的原因是功耗和带宽。移动 GPU 的片上缓存访问速度接近寄存器,功耗极低;而访问主显存(即使是统一内存架构中的 LPDDR)需要经过总线,功耗和延迟都高一个量级。TBR 通过尽量减少主显存访问来降低功耗--这是移动设备的第一优先级。
-
-### TBR 对性能分析的影响
-
-理解了 TBR 架构,以下几个现象就有了技术解释:
-
-**带宽消耗集中在 Tile 写回阶段。** 在 Perfetto 中看到的 GPU 活动,大部分时间 GPU 在片上缓存中计算,主显存访问发生在每个瓦片完成后。减少 overdraw 会同时减少重复计算和 tile buffer 写回次数。
-
-**RenderTarget 切换代价高。** 每个 RenderTarget(在 Vulkan 中称为 RenderPass)需要先从主显存加载(load)现有内容到 tile buffer,处理完再写回(store)。如果一个 RenderPass 只做了很少的工作,load 和 store 的开销可能比实际渲染还大。这就是 Vulkan 中强调"合并 RenderPass"的原因。
-
-**部分清除是免费的。** 在 Vulkan 中,使用 `VK_ATTACHMENT_LOAD_OP_CLEAR` 比 `VK_ATTACHMENT_LOAD_OP_LOAD` 更高效,因为 clear 操作不需要从主显存加载数据到 tile buffer--直接在片上缓存中填充即可。OpenGL ES 中调用 `glClear()` 也有类似的性能优势。
-
-> ARM Mali 和 Qualcomm Adreno 都使用 TBR 架构,但在瓦片大小、缓存策略上有差异。分析具体设备的 GPU 行为时,建议参考对应厂商的优化指南(ARM GPU Best Practices / Qualcomm Adreno GPU Guide)。
-
-## GPU 内存管理:GraphicBuffer / Gralloc / GPU Memory 归属与追踪
-
-### Android GPU 内存管理架构
-
-[图:Android GPU 内存管理层次图--App 可见对象(Surface / SurfaceTexture / HardwareBuffer / ANativeWindow)→ BufferQueue → GraphicBuffer / Gralloc / Mapper → GPU / HWC]
-
-Android 的 GPU 内存管理分成几层。App 平时直接接触的是 `Surface`、`SurfaceTexture`、`ANativeWindow`、`HardwareBuffer` 这类公开对象,用它们申请、提交或共享缓冲区;BufferQueue 负责在生产者和消费者之间周转 slot;系统的 framework/native 图形栈再用 `GraphicBuffer` 包装底层 handle,把 format、usage、stride、fence 等信息带给 SurfaceFlinger、RenderThread 和 HWC;物理页分配与映射由 Gralloc / Mapper 完成。
-
-理解这个层次结构有一个关键前提:在移动设备上,CPU 和 GPU 共享同一块物理内存(统一内存架构,UMA)。这与 PC 上 CPU 内存和 GPU 显存分离的架构有本质区别。在 UMA 架构下,所谓 "GPU 内存" 没有独立的物理存储;它来自系统内存,只是带有特定对齐和访问属性。GPU 的内存使用会直接影响系统的可用内存总量。在分析应用内存占用时,不能只看 Java heap--GPU 占用的内存同样重要。
-
-```java
-// frameworks/native/libs/ui/include/ui/GraphicBuffer.h
-// @ AOSP android-16.0.0_r1
-// C++ 头文件定义(GraphicBuffer 实为 C++ 类,Java 层仅为 JNI 包装器)
-// [简化示意] 实际类比这更复杂,这里只展示与内存排查相关的核心结构
-public class GraphicBuffer implements Parcelable {
-    // Java 侧缓存的基本属性
-    private int mWidth;
-    private int mHeight;
-    private int mFormat;
-    private long mUsage;
-
-    // 指向 native GraphicBuffer 对象的指针
-    private long mNativeObject;
-
-    // 这些 getter 是普通 Java getter,直接返回上述字段
-    public int getWidth()  { return mWidth; }
-    public int getHeight() { return mHeight; }
-    public int getFormat() { return mFormat; }
-    public long getUsage() { return mUsage; }
-    // ...
-}
-```
-
-这段类定义主要用来说明 `GraphicBuffer` 在 framework 层的包装位置,不代表普通应用应该直接持有它。排查 GPU 内存问题时,更常见的观察点是 Perfetto 里的 `gpu_memory` track、`dumpsys meminfo` 中的 Graphics / EGL mtrack,以及 `dumpsys SurfaceFlinger` 里能看到的 BufferQueue slot 与 layer 缓冲区占用。
-
-### Gralloc:图形内存分配器
-
-Gralloc(Graphics Memory Allocator)是 Android HAL 层中专门负责图形缓冲区内存分配的模块。当应用或系统需要一块新的图形缓冲区时(比如创建一个新的 Surface,或者 Surface 需要更多的缓冲区),请求最终会到达 Gralloc HAL。
-
-Gralloc 分配内存时,调用者需要通过 `usage` 标志位来声明这块内存的用途--比如 `USAGE_HW_TEXTURE` 表示这块缓冲区将被 GPU 作为纹理读取,`USAGE_HW_RENDER` 表示 GPU 会向这块缓冲区写入渲染结果,`USAGE_SW_READ_OFTEN` 表示 CPU 会频繁读取这块内存。Gralloc 根据 usage 标志来决定内存的物理布局:应该分配在哪个内存区域、是否需要缓存策略、对齐要求是什么。这些决策直接影响 GPU 访问这块内存的效率。
-
-```cpp
-// allocator / mapper 的职责示意
-// Android 16 主线设备以 AIDL Gralloc 为主,旧设备也可能保留 HIDL 4.x vendor 实现
-allocate(BufferDescriptor descriptor) -> native_handle_t
-importBuffer(native_handle_t) -> BufferHandle
-lock(BufferHandle, usage, region) -> mapped_ptr
-unlock(BufferHandle) -> release_fence
-```
-
-
-### 源码级对象链:六层抽象的完整调用路径
-
-前面已经把各层对象的作用铺开。源码视角下,App 层到硬件层的追溯链可以整理成六层:
-
-**完整对象链**:
-
-```text
-App (Java/Kotlin)
-    ├── android.graphics.Bitmap (HARDWARE)
-    │    mNativeBitmap = AHardwareBuffer*(无 Java heap,像素全在 GPU 显存)
-    │
-    └── android.graphics.SurfaceTexture
-         mProducer: IGraphicBufferProducer(跨进程 Binder 端点)
-              │
-ANativeWindow (C/C++ Layer)
-    └── Surface.cpp(frameworks/native/libs/gui/Surface.cpp)
-         mGraphicBufferProducer: IGBP
-              │
-BufferQueue(跨进程)
-    ├── BufferQueueProducer.cpp → dequeueBuffer() → waitForFreeSlotThenRelock()
-    │    (阻塞条件:dequeuedCount >= mMaxDequeuedBufferCount = 1)
-    ├── BufferQueueCore.h → mSlots[64] / mQueue / mFreeSlots / mFreeBuffers
-    └── BufferQueueConsumer.cpp → acquireBuffer()
-              │
-GraphicBuffer(frameworks/native/libs/ui/include/ui/GraphicBuffer.h)
-    ├── mBufferHandle: buffer_handle_t(ashmem fd / dmabuf fd)
-    └── flatten/unflatten 跨进程传递句柄
-              │
-GraphicBufferMapper(frameworks/native/libs/ui/GraphicBufferMapper.cpp)
-    ├── importBuffer() → ION/DMABuf map → 进程地址空间
-    └── freeBuffer() → ION/DMABuf unmap
-              │
-Gralloc HAL(/vendor/lib/hw/gralloc.*.so)
-    ├── alloc() → ION heap / CMA / carveout 分配
-    └── free()
-              │
-Physical Memory(ION heap / CMA / GPU VRAM)
-```
-
-**关键源码位置**:
-
-| 层次 | 关键对象/函数 | 源码路径 |
-|------|--------------|----------|
-| App | Bitmap.Config.HARDWARE | `frameworks/base/graphics/java/android/graphics/Bitmap.java` |
-| App | SurfaceTexture.mProducer | `frameworks/base/graphics/java/android/graphics/SurfaceTexture.java` |
-| ANativeWindow | Surface::dequeueBuffer() | `frameworks/native/libs/gui/Surface.cpp`(ANativeWindow hook 路由) |
-| BufferQueue | BufferQueueCore.mSlots/mQueue | `frameworks/native/libs/gui/include/gui/BufferQueueCore.h`(NUM_BUFFER_SLOTS=64) |
-| BufferQueue | waitForFreeSlotThenRelock() | `frameworks/native/libs/gui/BufferQueueProducer.cpp`(mDequeueCondition 条件变量) |
-| BufferQueue | releaseBuffer() → notify_all() | `frameworks/native/libs/gui/BufferQueueProducer.cpp` |
-| BufferQueue | acquireBuffer() | `frameworks/native/libs/gui/BufferQueueConsumer.cpp` |
-| GraphicBuffer | mBufferHandle 类型 | `frameworks/native/libs/ui/include/ui/GraphicBuffer.h`(buffer_handle_t = native_handle_t*) |
-| Mapper | importBuffer/freeBuffer | `frameworks/native/libs/ui/GraphicBufferMapper.cpp`(ION/DMABuf map) |
-| Gralloc | gralloc_module_t | `hardware/libhardware/include/hardware/gralloc.h`(alloc/free 接口) |
-| HWC | HWC2::Display::getRequests() | `frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.cpp`(DEVICE/CLIENT 决策) |
-
-**Buffer Stuffing 源码机制**:当 SurfaceFlinger/HWC release 延迟时,`mFreeBuffers` 为空,`mQueue.size()` 积压超过 `maxBufferCount`,`waitForFreeSlotThenRelock()` 会等待可用 slot。AOSP android-16.0.0_r1 中负 `mDequeueTimeout` 走条件变量等待,非负超时会返回 `TIMED_OUT`;`BUFFER_RELEASE_CHANNEL` 是 android-16 可见的 flag-gated 路径,不能写成 Android 14 已引入。
-
-**可观测性边界**:
-
-| 观测工具 | 可见 | 不可见 |
-|---------|------|--------|
-| Perfetto `android.surfaceflinger.sf_frames` | dequeueBuffer/queueBuffer/acquireBuffer slice 持续时间、HWC composition type(Device/Client) | GPU 显存物理占用 |
-| `dumpsys surfaceflinger --latency` | BufferQueue 各槽位状态、mSlots 列表 | ION/Gralloc 物理内存精确值 |
-| `/proc/<pid>/smaps` | ashmem 段(4KB page)或 dma_buf 映射(16KB page)大小 | GPU 内部显存池化部分 |
-| Perfetto `android.memory.pss` | Java heap PSS | GraphicBuffer buffer_handle_t 映射的物理内存(不在 PSS 中) |
-
-**Hardware Bitmap 特殊行为**:Bitmap.Config.HARDWARE(API 26+)创建的 Bitmap,像素数据完全不存在于 Java heap,全部存储在 GPU 显存中的 AHardwareBuffer。`/proc/<pid>/smaps` 中不反映其占用,必须通过 `dumpsys meminfo gfxinfo` 或厂商特定工具观测。
-
-> [已验证: AOSP android-16.0.0_r1, frameworks/native/libs/gui/Surface.cpp; frameworks/native/libs/gui/include/gui/BufferQueueCore.h; frameworks/native/libs/gui/BufferQueueProducer.cpp; frameworks/native/libs/ui/GraphicBufferMapper.cpp]
-
-> [已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/]
-
-### 16KB 页环境下的 Gralloc 池化优化
-
-Android 16 在 16KB 页模式下,Gralloc AIDL V2 **在设计方向上**引入了内部子分配(sub-allocation)机制。传统模式下每个 GraphicBuffer 独立占用整数个物理页,小面积纹理(如 64x64 的图标缓冲区)在 16KB 页对齐后会产生大量页内碎片--一个 64x64 RGBA8888 缓冲区只需约 16KB 数据,但加上对齐和 metadata 开销,实际可能占用 32-48KB 物理页。子分配机制的设计目标是允许 Gralloc 在一个大物理页范围内管理多个小缓冲区,按实际数据大小而非整页粒度分配。
-
-> [说明: Gralloc AIDL V2 sub-allocation 机制基于 Android 16 GKI 内核变更与硬件接口定义方向(`hardware/interfaces/graphics/allocator/aidl/`),但当前缺少公开的 AIDL 接口方法签名、VTS/CTS 测试用例或 vendor 实现代码作为验证证据。实际行为可能因 SoC 厂商实现而有差异。以上描述应视为基于设计意图的推断,而非已验证事实。具体实现细节待后续 AOSP 源码或厂商文档确认后补齐。]
-
-在应用层面,如果该优化进入实现并被厂商启用,效果是透明的--不需要修改任何代码。但在分析 GPU 内存占用时需要注意,16KB 页环境下 `dumpsys meminfo` 中的 Graphics 内存项可能比 4KB 环境下看起来更低,部分原因可能是 Gralloc 内部碎片减少。
-
-### GPU 内存追踪和分析
-
-Android 12 引入了改进的 GPU 内存追踪机制,使得开发者和性能分析工程师可以更好地了解 GPU 的内存使用情况。在 Perfetto 中,我们可以通过 `gpu_memory` track 看到每个进程的 GPU 内存使用量随时间的变化。`adb shell dumpsys meminfo <package_name>` 的输出中也包含了 GPU 相关的内存统计。
-
-在实际分析中,以下几种 GPU 内存问题比较常见:缓冲区泄漏--GraphicBuffer 被分配但没有正确释放,导致 GPU 内存持续增长,这在应用频繁创建和销毁 Surface 时容易发生;缓冲区积压--生产者(应用)产生帧的速度超过消费者(SurfaceFlinger)处理的速度,导致 BufferQueue 中积压了多个缓冲区,每个缓冲区都占用 GPU 内存;以及大型纹理未释放--加载了大量高分辨率纹理但没有在不需要时及时释放。
-
-> [已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/]
-> Android 14 提供了减少图形内存消耗的功能,允许清除位于 Composer HAL 和 SurfaceFlinger 之间的每层缓冲区缓存。这对于高分辨率屏幕和内存有限的设备特别有益。
-
-## ANGLE(OpenGL ES on Vulkan)的性能影响
-
-前面我们讨论了 GPU 内存管理的完整链条,从应用层的 GraphicBuffer 到 HAL 层的 Gralloc。而在 Android 16 的渲染架构中,ANGLE 兼容层需要单独拆出来看。在启用 ANGLE 的设备/应用组合中,仍然使用 OpenGL ES 的应用会通过 Google 的 OpenGL ES 兼容层把 GL 调用翻译为 Vulkan 调用。对于性能分析工程师来说,理解 ANGLE 的性能特征,是评估现有应用在新系统上渲染表现的关键。
-
-### ANGLE 的设计目标
-
-ANGLE(Almost Native Graphics Layer Engine)是 Google 开发的兼容层,它在启用时将 OpenGL ES API 调用翻译为 Vulkan 调用。ANGLE 的设计目标远不止"兼容"--主要目标是"统一"。在 Android 16 之前,不同 GPU 厂商各自实现 OpenGL ES 驱动,质量参差不齐,bug 各不相同。ANGLE 将 OpenGL ES 的实现统一为一套代码(翻译到 Vulkan),Google 只需要维护这一套实现的质量,而不需要分别与三个厂商协调驱动修复。
-
-ANGLE 的架构可以理解为一个翻译层:上层应用仍然使用熟悉的 OpenGL ES API(glDrawArrays、glTexImage2D 等),ANGLE 在内部将这些调用翻译为对应的 Vulkan 操作(vkCmdDraw、vkCreateImage 等)。对于应用开发者来说,在 ANGLE 被启用的设备上,这个过程通常是透明的--应用不需要修改代码,就可以通过 ANGLE 运行在 Vulkan 后端上。
-
-[图:ANGLE 架构图--OpenGL ES App → ANGLE 翻译层 → Vulkan Driver → GPU]
-
-### ANGLE 在 Android 16 中的角色
-
-Android 16 推进了 ANGLE 的覆盖范围,但"ANGLE 是否成为默认 GL 后端"取决于设备 launch policy 和厂商配置,不能一概而论。对于新出货的、满足 Vulkan 1.4 / VPA16 基线的 64 位设备,更多 OpenGL ES 应用会通过 ANGLE 将渲染调用翻译到 Vulkan 后端;对于已上市的旧设备,ANGLE 的启用策略可能仍然是渐进式的或按应用白名单控制;对于直接使用 Vulkan 的应用,始终绕过 ANGLE 直接与 Vulkan 驱动交互;不支持 Vulkan 的设备则回退到原生的 OpenGL ES 驱动。
-
-因此,在 Android 16 设备分析 GPU 性能时,需要先确认目标设备上 OpenGL ES 应用是否走了 ANGLE 路径--可以通过 `adb shell dumpsys gfxinfo <package>` 或 Perfetto 中的 GPU driver 信息判断。不同路径下的性能特征和瓶颈分析方式有差异。
-
-## GPU Profiling 工具:Snapdragon Profiler、ARM Streamline、AGI
-
-Trace 可以定位 GPU 瓶颈类型;要进一步区分 fillrate bound 和 bandwidth bound 的具体占比,或者找到某个 Fragment Shader 的耗时热点,还需要专门的 GPU 分析工具。AGI、Snapdragon Profiler 和 ARM Streamline 覆盖了常见排查场景。
-
-### Android GPU Inspector (AGI)
-
-AGI 是 Google 官方的 Android GPU 性能分析工具,也是 Android 开发者最应该熟悉的第一款 GPU 工具。AGI 提供了帧分析器(逐帧分析 GPU 渲染时间)、系统分析器(CPU 和 GPU 交互分析)、内存分析器(GPU 内存使用分析)和着色器分析器(着色器性能分析)四个核心功能模块。
-
-在瓶颈定位的工作流中,AGI 的使用方式通常是:先用系统分析器确认问题出在 GPU 侧(而不是 CPU 侧),然后用帧分析器找到 GPU 时间最长的那一帧,再对着色器和渲染状态进行分析,定位具体的瓶颈环节。AGI 的一个独特优势是它可以与 Perfetto Trace 结合使用--在 Perfetto 中看到 GPU 时间异常的帧后,可以用 AGI 对同一时间段进行深度分析。
-
-### 平台专用工具
-
-除了 AGI 之外,不同 GPU 平台还有各自的专业分析工具。Snapdragon Profiler 是 Qualcomm 官方的 GPU 分析工具,专为 Adreno GPU 设计,提供详细的 GPU 性能计数器、帧时间线分析和功耗分析。ARM Streamline 是 ARM 官方的性能分析工具,支持 Mali GPU,它的特色是可以同时分析 CPU 和 GPU 的协同工作情况,对理解大小核架构下 GPU 的调度行为特别有用。
-
-```bash
-# AGI 基本使用流程
-# 1. 连接设备
-adb devices
-# 2. 启动 AGI(通过 Android Studio 或命令行)
-# 3. 选择目标应用和分析模式
-# 4. 录制 GPU Trace
-# 5. 分析结果:关注帧时间、着色器执行时间、内存带宽使用
-```
-
-在实际工作中,我们建议先从 AGI 入手--它足够通用,覆盖了大多数分析场景。如果需要针对特定平台的深度分析(比如需要查看 Adreno GPU 的特定性能计数器),再切换到平台专用工具。
-
-> [已验证: 官方文档, developer.android.com/studio/profile/android-gpu-inspector]
-
-## 实战案例:社交应用图片滚动中的 GPU 瓶颈定位
-
-> **证据边界**:以下内容是示例场景，用来说明图片信息流滚动时的 GPU 排查路径。本稿没有随文附上可复核的 Perfetto / AGI artifact，因此不把帧耗时、带宽下降百分比或帧率提升写成实测结论。发布真实案例时，应同时给出设备型号、Android 版本、刷新率、采样配置、trace 文件或截图。
-
-### 问题现象
-
-图片信息流滚动卡顿时，主线程不一定是根因。一个常见场景是：MainThread 的 `doFrame` 和 RenderThread 的录制时间都在帧预算内，但 GPU activity 跨过一个或多个 VSync 周期，SurfaceFlinger 只能继续使用旧 buffer。这类现象要优先检查 fillrate、纹理采样和内存带宽，Java / Kotlin 侧逻辑优化放到后面验证。
-
-### 证据采集方式
-
-Perfetto 负责确认“卡在哪个时序段”。采集滚动场景时，至少打开 FrameTimeline、RenderThread、SurfaceFlinger、GPU counter 和 `gpu_render_stages`（设备支持时）。如果 `gpu_render_stages` 不可用，就用 GPU busy、RenderThread wait、SurfaceFlinger latch 结果交叉判断。
-
-```bash
-# 录制包含 GPU counter 的滚动场景 trace，配置文件需按设备能力裁剪。
-adb shell perfetto --txt --config gpu-basic.cfg -o /data/misc/perfetto-traces/social_scroll.pftrace
-adb pull /data/misc/perfetto-traces/social_scroll.pftrace .
-```
-
-AGI 负责把某一帧拆到 draw call、shader 和纹理访问层面。Perfetto 已经确认 GPU 超时时，再用 AGI 桌面端或 Android Studio 集成入口录制同一复现场景，查看 Fragment、Texture Unit、External Memory、Vertex / Tiler 等计数器。不同 GPU 厂商的计数器名称不同，结论要写成“哪个计数器在同一批掉帧帧里同步抬升”，不要只写工具截图里的栏目名。
-
-### 判断路径
-
-**确认 CPU 是否已经让路。** MainThread 的 `doFrame`、RenderThread 的 display list 处理和 command submit 如果都没有长段阻塞，而 GPU activity 仍跨过 VSync 边界，问题就落到 GPU 侧。这个判断要同时看 FrameTimeline 的 present 状态和 SurfaceFlinger 是否 latch 到新 buffer。
-
-**确认瓶颈类型。** Fragment / Texture 相关计数器随掉帧帧抬升，且界面有大面积图片、圆角、阴影、半透明叠加时，优先按 fillrate bound 或 bandwidth bound 处理。Vertex / Tiler 相关计数器抬升，且界面里有大量 Path、复杂裁剪或几何动画时，再转向 vertex bound。
-
-**确认纹理和过度绘制。** 图片信息流最常见的三类浪费是：列表背景、卡片背景和图片背景重复绘制；圆角 mask、阴影 blur、渐变 overlay 叠加纹理采样；大图未压缩或缺少合适 mipmap，滚动时反复触发高带宽读取。开发者选项的 overdraw 只能给方向，是否拖慢一帧仍要回到 Perfetto / AGI 证据。
-
-### 可验证的修复方向
-
-**减少过度绘制。** 合并列表背景和卡片背景，移除滚动区域里不会被看到的中间层；对稳定遮挡区域做裁剪，避免把被上层完全盖住的像素继续送进 Fragment Shader。修复后用 overdraw 调试和 Perfetto GPU activity 一起确认，不能只看颜色变浅。
-
-**减少纹理采样。** 圆角图片优先使用平台或库里能合并 pass 的实现；阴影和复杂遮罩如果在滚动中反复计算，考虑预渲染或缓存。AGI 里要看同一类 item 的 draw call 数、纹理绑定次数和 Fragment 相关计数器是否下降。
-
-**压缩纹理和控制尺寸。** ASTC 适合现代 Android 设备上的高质量图片压缩，但收益需要按目标 SoC 验证。发布优化结论前，固定设备、刷新率、图片尺寸、滚动脚本和 thermal 状态，再对比 GPU frame time、Texture Unit / External Memory 计数器、视觉质量。只有 `dumpsys gfxinfo` 帧时间下降时，只能说明用户侧帧预算改善，不能单独证明带宽下降。
-
-### 纹理格式验证模板
-
-```bash
-# 确认设备 ASTC 支持情况
-adb shell cmd gpu vkjson | grep -A 5 -B 5 astc
-
-# 采集同一滚动脚本的帧时间；带宽和纹理计数器需要 AGI 或厂商 profiler 补证。
-adb shell dumpsys gfxinfo com.example.app framestats
-```
-
-### 举一反三
-
-图片滚动里的 GPU 瓶颈常由多个小因素相加：过度绘制增加像素处理次数，纹理采样增加 Fragment Shader 成本，未压缩大图增加外部内存读取。单项修复可能只减少一小段耗时，但三项同时压住，GPU 才更容易回到帧预算内。没有配套 trace 时，正文只保留判断方法和验证条件，不写无法复核的收益数字。
-
-## 与其他机制的关系
-
-GPU 渲染属于 Android 渲染管线中的一环。理解 GPU 在管线中的位置,有助于我们在分析问题时快速定位责任方。
-
-**VSync → GPU 的关系。** VSync 信号(详见 §2.3)定义了每一帧的时间预算。在 60Hz 屏幕上,每帧只有 16.67ms;在 120Hz 屏幕上,预算缩短到 8.33ms。GPU 必须在这个时间窗口内完成从接收渲染命令到输出像素的全部工作。如果 GPU 处理超时,帧就会被丢弃(掉帧)。
-
-**Choreographer → GPU 的关系。** Choreographer(详见 §2.4)在 VSync-app 信号到来时触发 doFrame,驱动主线程完成 measure/layout/draw。主线程完成 draw 命令的录制后,RenderThread 将这些命令提交给 GPU。在 Perfetto 中,我们可以清楚地看到这个时序关系:Choreographer.doFrame → RenderThread.draw → GPU 渲染。
-
-**MainThread/RenderThread → GPU 的关系。** 在 Android 12+ 的架构中(详见 §2.5),主线程负责录制 DisplayList(draw 命令列表),RenderThread 负责将 DisplayList 通过 Skia 转换为 GPU 命令并提交。GPU 渲染的开始时间取决于 RenderThread 何时完成命令提交,而 RenderThread 的提交又取决于主线程何时完成 draw 命令录制。任何一个环节的延迟都会推迟 GPU 开始工作的时间。
-
-**SurfaceFlinger → GPU 的关系。** SurfaceFlinger(详见 §2.6)在 VSync-sf 信号到来时读取应用渲染好的缓冲区,将其与其他图层合成为最终图像。SurfaceFlinger 的合成操作本身也可能使用 GPU(GPU 合成路径),应用和 SurfaceFlinger 在某些时刻会因此竞争 GPU 资源。在 Perfetto 中,我们有时会看到应用的 GPU 渲染和 SurfaceFlinger 的 GPU 合成时间重叠,这就是 GPU 资源竞争的表现。
-
-## 在 Perfetto 中的具体表现
-
-在 Perfetto Trace 中,GPU 渲染相关的信息分布在多个 track 中,理解这些 track 的含义和它们之间的关系,是 GPU 性能分析的入门基础。
-
-### GPU 相关 Track
-
-**gpu_render_stages track。** 这是最核心的 GPU track,它显示了 GPU 在每个时间段执行的具体渲染阶段。在 Qualcomm Adreno 设备上,Vertex Shader、Fragment Shader 等阶段有明确标注;在 ARM Mali 设备上,对应的 track 可能以不同的名称出现。但需要注意,`gpu_render_stages` 的可用性和阶段粒度取决于设备 GPU 驱动是否暴露了 `GpuRenderStages` producer 数据--不是所有设备都能看到完整的 Vertex/Fragment 细分阶段。在 Perfetto 中如果该 track 为空或只显示笼统的"GPU"阶段,说明当前设备的驱动不支持 render stage 分级暴露。
-
-**gpu_busy 计数器。** Android 16 统一了 GPU 利用率的追踪标准。Perfetto 中对应 track 路径为 `gpu_counters > gpu_busy`,与 GPU Headroom API(`SystemHealthManager.getGpuHeadroom()`)的区别在于:`gpu_busy` 是事后统计的利用率百分比,适合 Trace 分析;GPU Headroom 是运行时可查询的余量指标,适合应用内动态降级。两者可以交叉验证--如果 Perfetto 显示 `gpu_busy` 持续 >90%,应用侧的 GPU Headroom 应该接近 0。在此之前,不同 GPU 厂商的利用率计数器命名和语义各不相同--Adreno 设备上报 `GPU Busy` 百分比,Mali 设备使用不同名称的等效 counter,开发者需要根据设备型号选择不同的 Perfetto 轨道。Android 16 引入标准化的 `gpu_busy` 计数器标签,无论底层硬件是 Adreno、Mali 还是 Immortalis,Perfetto 都会以统一的轨道名称和百分比语义展示 GPU 利用率,开发者无需再关心 GPU 厂商差异即可直接读取准确的利用率百分比。
-
-基于标准化轨道的快速瓶颈诊断法:在 Perfetto 中打开 `gpu_counters` track,找到 `gpu_busy` 轨道,如果利用率持续超过 90% 且对应帧的 RenderThread 出现等待状态,可以确认 GPU 是瓶颈。进一步结合 `gpu_render_stages`(如果可用)定位到具体渲染阶段--Vertex Shader 占比高指向几何复杂度问题,Fragment Shader 占比高指向像素处理量问题,两者都不高但整体 GPU 时间长则指向 bandwidth bound。
-
-在 Android 15 及更早版本上,Perfetto 通过 `GpuCounterDescriptor` 描述每个 GPU 的 counter 模型,具体的 counter ID、名称和语义由 GPU 驱动的 producer 决定。如果设备不支持标准化 counter,仍然需要按厂商文档手动查找对应的利用率轨道。
-
-**RenderThread track。** 虽然 RenderThread 是 CPU 侧的线程,但它的活动与 GPU 渲染直接相关。当 RenderThread 调用 `eglSwapBuffers()` 或 Vulkan 的 `vkQueuePresentKHR()` 提交帧时,如果 GPU 还没有完成上一帧的渲染,RenderThread 会被阻塞等待。在 Perfetto 中,这种等待表现为 RenderThread 上的长段 sleep/wait 状态--这通常意味着 GPU 是瓶颈。
-
-**SurfaceFlinger track。** SurfaceFlinger 的活动显示了帧合成的时序。当 SurfaceFlinger 在 VSync-sf 时刻尝试读取应用的缓冲区时,如果应用还没有完成渲染(GPU 还在工作),SurfaceFlinger 只能使用上一帧的缓冲区--这就是掉帧在 Trace 中的直接表现。
-
-**VSYNC-app 和 VSYNC-sf track。** 这两个 track 显示了 VSync 信号的时序。通过对比 VSYNC-app 的间隔和 GPU 渲染完成时间,我们可以判断 GPU 是否在 VSync 周期内完成了工作。
-
-### 典型模式对比
-
-**正常渲染模式:** VSYNC-app 到来后,主线程快速完成 doFrame(3-5ms),RenderThread 提交命令(1-2ms),GPU 完成渲染(5-8ms),整个流程在下一个 VSYNC-app 到来前完成。在 Trace 中,GPU track 的活动块整齐排列,每个块的长度都在帧预算以内。
-
-**GPU 瓶颈模式:** GPU track 上的活动块长度超过 VSync 间隔(16.67ms@60Hz),RenderThread 在提交时被阻塞(显示为等待状态),SurfaceFlinger 在 VSYNC-sf 时刻取不到最新的帧。在 Trace 中,掉帧表现为 GPU activity 跨越了两个或更多 VSync 边界。
-
-**Shader Compilation Jank 模式:** 在正常的 GPU 渲染序列中,突然出现一个特别长的 GPU 活动块(可能达到几十毫秒),之后恢复正常。这种"孤立的长帧"通常就是着色器编译导致的。在 Android 16+ 上,由于 SPIR-V 预编译的引入,这种模式会越来越少。
-
-[待补充:Perfetto Trace 截图,展示正常模式、GPU 瓶颈模式和 Shader Compilation Jank 模式]
-
-## 常见问题与误区
-
-### "GPU 占用高 = 需要优化 GPU"?
-
-不一定。GPU 占用高可能是正常的--比如一个全屏的游戏或视频应用,GPU 持续工作就是它的本职。只有当 GPU 占用高导致了可感知的用户体验问题(卡顿、发热、耗电过快)时,才需要优化。有时 "GPU 占用高" 只说明 GPU 没有被闲置;需要关注的是 "GPU 做了大量无用功" 的场景,比如严重的过度绘制。
-
-### "过度绘制一定是问题"?
-
-不一定。过度绘制是否成为问题取决于程度。Android 官方给出的参考标准是:1-2 次过度绘制通常可以接受,3 次及以上才需要认真优化。如果一个界面只有少量区域存在 3 次以上的过度绘制,而且不是滚动性能的关键路径,优化的优先级可以放低。过度绘制优化的重点是高频滚动区域、动画区域和全屏覆盖区域。
-
-### "GPU 渲染一定比 CPU 渲染快"?
-
-在大多数情况下是的--GPU 的并行计算能力远超 CPU,处理图形渲染任务有天然优势。但也有例外场景:当绘制内容非常简单(比如一个纯色矩形),GPU 渲染的固定开销(命令提交、状态切换、同步等待)可能反而比 CPU 直接写像素更慢。这就是为什么 Android 在某些情况下会回退到软件渲染路径。另一个容易忽略的点是 GPU 渲染会增加功耗--对于简单的 UI 操作,CPU 软件渲染可能更省电。
-
-### "硬件加速解决一切渲染性能问题"?
-
-硬件加速将大部分渲染工作从 CPU 卸载到了 GPU,但它并不能自动解决所有性能问题。硬件加速解决的是"渲染效率"问题(GPU 并行处理像素比 CPU 串行处理快),但它不解决"渲染工作量"问题--如果界面设计本身导致大量不必要的绘制操作,硬件加速只是让 GPU 更快地做无用功。而且硬件加速引入了一些 CPU 侧的新开销(Canvas 状态管理、DisplayList 录制),在某些极端场景下反而可能比软件渲染慢。
-
-### "120Hz 屏幕需要 GPU 性能翻倍"?
-
-这是一个常见的误解。120Hz 屏幕意味着每帧的预算从 16.67ms 缩短到 8.33ms,但这并不意味着 GPU 的工作量翻倍了--GPU 每帧的工作量取决于画面复杂度,与刷新率无关。变化的是时间预算:GPU 必须在更短的时间内完成同样的工作。在 120Hz 下,原本在 60Hz 下不明显的 GPU 瓶颈会变得突出。反过来,如果一个应用在 60Hz 下有 10ms 的 GPU 余量(GPU 只需要 6.67ms 就能完成渲染),升级到 120Hz 后只要 GPU 能在 8.33ms 内完成就仍然流畅。
-
-
-## 参考资料
-
-### 生产环境 GPU 性能问题调试方法论
-- 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-gpu-performance-debugging-methodology.md
-- 摘要:系统性 GPU 性能调试方法论:Android 16 标准化 gpu_busy 计数器 vs 旧版厂商自定义命名差异、AGI 离线分析与 Perfetto 实时追踪的分工定位、Qualcomm Adreno 与 ARM Mali 的 counter 体系差异及统一方法论。包含从问题现象到根因的完整排查流程(CPU-GPU 同步 back-pressure、内存带宽、着色器编译)。
-
-
-### ARM Mali GPU TBR 架构原理与 Android 渲染性能影响
-- 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ARM Mali GPU TBR 架构原理与 Android 渲染性能影响深度报告.md
-- 摘要:详述 ARM Mali GPU 从 Utgard 到第五代的 Tile-Based Rendering 演进:双阶段 Geometry+Fragment 流水线、on-chip tile memory 工作机制、AFBC 压缩、Transaction Elimination、Forward Pixel Kill、IDVS/DVS、Fragment Prepass、CSF 命令流前端。覆盖 Android 渲染栈 HWUI/RenderThread/SurfaceFlinger/HWC 与 Mali TBR 的交互,以及 Vulkan Render Pass load/store op 到 tile load/writeback 的映射。
-
-
-### GPU Vulkan 异步编译：PipelineManager 三步查找与 Pacing 节流
-- 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-13-android17-gpu-vulkan-async-compile-pipeline-manager-pacing.md
-- 摘要:Skia Graphite PipelineManager::createHandle 三步查找算法（findTask→findGraphicsPipeline→findOrCreateTask）+ UniqueKey 哈希 O(1) 去重，多 Recorder 命中同一 pipeline 时通过 findTask 复用 in-flight 编译任务；DrawPass 双 buffer 瘦身（snap 后 fPipelineDescs→handle→fFullPipelines 切换）；ANGLE L1 跳转表 44-bit dirty bit 位图跳过未变化区域；ShareGroupVk 2ms 单 in-flight 节流。
-
-
-### GPU 驱动渲染管线异步编译：四级 PSO 缓存与 PipelineCreationTask
-- 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-12-android17-gpu-driver-pipeline-async-compilation.md
-- 摘要:Skia Graphite PipelineCreationTask（std::variant<task,pipeline> + atomic<bool> fCompleted + SkSpinlock）显式异步任务模型；DrawPass 三步生命周期（snap→prepareResources→createHandle→startTask→resolveHandle）；ANGLE L0(active PSO)→L1(transition table)→L2(GraphicsPipelineCache hash map + xxHash)→L3(driver VkPipelineCache) 四级缓存层次；Recording 阶段无锁提交、insertRecording 阶段一次性等待的标准并行模式。
-
-
-### AOSP 源码路径
-- `frameworks/native/libs/ui/include/ui/GraphicBuffer.h` - GraphicBuffer C++ 定义(AOSP)
-- `frameworks/native/libs/nativewindow/include/android/native_window.h` - ANativeWindowBuffer 定义
-- [ANGLE 源码(Google Git)](https://android.googlesource.com/platform/external/angle/) - ANGLE OpenGL ES on Vulkan
-- `frameworks/native/vulkan/` - Vulkan API 支持
-- `hardware/interfaces/graphics/allocator/aidl/` - Gralloc / Mapper AIDL 定义
-- `frameworks/native/services/surfaceflinger/` - SurfaceFlinger 合成服务
-
-### 官方文档
-- GPU 概览:<https://developer.android.com/guide/topics/graphics/>
-- OpenGL ES 开发指南:<https://developer.android.com/guide/topics/graphics/opengl>
-- 硬件加速说明:<https://developer.android.com/guide/topics/graphics/hardware-acceleration>
-- Android GPU Inspector (AGI):<https://developer.android.com/studio/profile/android-gpu-inspector>
-- GPU 过度绘制调试:<https://developer.android.com/guide/topics/graphics/debug-overdraw>
-
-### 工具和资源
-- Snapdragon Profiler:<https://developer.qualcomm.com/software/snapdragon-profiler>
-- ARM Streamline:<https://developer.arm.com/tools-and-software/streamline-performance-analyzer>
-
----
-
-## 附录:GPU 源码调研补充材料
-
-以下内容基于 AOSP 源码和 DeepResearch 调研补充,为正文「GPU 内存管理」和「GPU 性能问题系统性排查流程」提供源码级佐证。读者可按需参考。
-
-### A.1 GPU 内存管理与对象边界
-
-### App 可见对象与系统内部图形缓冲对象的边界
-
-通过分析 AOSP 源码,我们发现 App 可见对象与系统内部图形缓冲对象之间的边界比表面看起来更复杂。Surface 本身不直接保存这些缓冲,它委托给 BufferQueue 生产者接口,后者管理着 64 个 BufferSlot 的池。
-
-**BufferSlot 状态机实现:**
-```cpp
-// frameworks/native/libs/gui/include/gui/BufferSlot.h
-struct BufferState {
-    uint32_t mDequeueCount;
-    uint32_t mQueueCount;
-    uint64_t mAcquireCount;
-    bool mShared;
-
-    inline bool isFree() const { return !isAcquired() && !isDequeued() && !isQueued(); }
-    inline bool isDequeued() const { return mDequeueCount > 0; }
-    inline bool isQueued() const { return mQueueCount > 0; }
-    inline bool isAcquired() const { return mAcquireCount > 0; }
-    inline bool isShared() const { return mShared; }
-};
-```
-
-关键认知在于 BufferSlot 使用计数器而非简单的枚举状态,以适应共享缓冲区模式。一个槽可以同时处于多种状态(例如 shared + dequeued),这与常见的"三缓冲"理解有本质区别。
-
-### 内存分配的演进:ION 到 DMA-BUF Heaps
-
-内存分配经历了从 Android 4.x-11 的 ION 分配器到 Android 12+ 的 DMA-BUF Heaps 的演进:
-
-- **Android 4.x-11 (ION 时代)**:使用 Android 自定义 ION 分配器,所有进程访问同一设备节点
-- **Android 12+ (DMA-BUF Heaps)**:使用 Linux 上游 DMA-BUF Heaps,支持细粒度访问控制
-
-```cpp
-// frameworks/native/libs/gui/BufferQueueProducer.cpp
-// @ AOSP android-16.0.0_r1
-// [简化骨架] 实际函数签名:
-//   status_t waitForFreeSlotThenRelock(
-//       FreeSlotCaller caller,
-//       std::unique_lock<std::mutex>& lock,
-//       int* found) const
-// 返回 NO_ERROR / WOULD_BLOCK / TIMED_OUT;slot 通过 *found 输出
-status_t BufferQueueProducer::waitForFreeSlotThenRelock(
-        FreeSlotCaller caller, std::unique_lock<std::mutex>& lock,
-        int* found) const {
-    // 1. 统计当前 dequeued / acquired 数量
-    // 2. 检查是否超过 mMaxDequeuedBufferCount
-    // 3. 遍历 mSlots 找空闲 buffer 或可复用 slot
-    // 4. 无可用 slot → 根据调用者类型决定:
-    //    - dequeue 阻塞等待条件变量(支持超时)
-    //    - attach 直接返回 WOULD_BLOCK
-    // 5. 找到后通过 *found 输出 slot 索引,返回 NO_ERROR
-}
-```
-
-这种演进带来了更好的安全性和稳定性,但对应用层透明,理解分配底层有助于排查内存泄漏问题。
-
-
-### RenderEffect 底层 GPU 渲染管线与 offscreen buffer 机制
-- 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-rendereffect-gpu-pipeline-offscreen-buffer.md
-- 摘要:RenderEffect 映射到 Skia 的 SkImageFilter 链,触发 offscreen GPU texture 分配(RenderLayer)。分析了 Java API → JNI → Skia GPU pipeline 的完整路径,blur sigma 值与 shader 计算量关系,AGSL RuntimeShader 通过 makeImageSnapshot() 触发 offscreen buffer 分配的机制。性能代价来自显存申请、filter chain GPU pass 数、RenderThread-GPU 同步三方面。
-
-### A.2 GPU 性能问题系统性排查流程
-
-### 方法论缺口与补全
-
-§2.10 已覆盖 GPU 渲染管线原理、瓶颈分类(fillrate/vertex/bandwidth bound)、GPU Headroom API(Android 16)、AGI/Snapdragon Profiler/ARM Streamline 工具介绍。从问题现象走到根因定位,还需要一条完整方法链。补齐的三个能力缺口是:Perfetto GPU 计数器解读标准、AGI 生产环境可用性评估、以及厂商调试工具链差异下的方法论统一。
-
-### Perfetto GPU 计数器:Android 16 标准化 vs 旧版厂商自定义
-
-#### Android 16 的标准化 `gpu_busy`
-
-Android 16 引入了标准化的 `gpu_busy` 计数器,路径为 `gpu_counters > gpu_busy`。数值范围 0-100%,表示 GPU 利用率。数据源来自 `GpuCounterDescriptor`--GPU 驱动注册到 Perfetto 的 counter descriptor,其中 `gpu_busy` 是 Android 16 要求所有厂商必须提供的标准别名。
-
-```protobuf
-// Perfetto GPU counter 配置示意
-// 路径: perfetto/config/gpu/gpu_counter_config.proto
-message GpuCounterConfig {
-  uint32 counter_period_ns = 1;   // 采样周期,默认 1ms
-  repeated uint32 counter_ids = 2; // 厂商定义的 counter ID 列表
-  string gpu_id = 3;               // 指定 GPU 设备
-}
-```
-
-在 Perfetto Trace 中读取 `gpu_busy`:
-1. 打开 `gpu_counters` track
-2. 找到 `gpu_busy` 轨道(无论底层是 Adreno 还是 Mali,均使用此统一名称)
-3. 数值 0-100%
-
-#### Android 15 及更早版本的厂商自定义 counter
-
-在 Android 15 及更早版本上,不同厂商的 counter 语义差异很大:
-
-| GPU 厂商 | 利用率 counter 常见名称 | 含义 |
-|----------|------------------------|------|
-| Qualcomm Adreno | `GPU Busy` / `GPU Utilization` | GPU 执行指令的时间占比 |
-| ARM Mali | 无单一 `gpu_busy`,看 `Fragment Processing Active` / `Vertex Shader Active` | 特定阶段活跃度 |
-| Imagination PowerVR | `GX Busy` / `Render Active` | GPU Graphite 引擎活跃度 |
-
-Perfetto 中这些 counter 以厂商注册的原始名称出现,不会以统一名称出现。排查 Android 15 设备时:
-1. 通过 `dumpsys gfxinfo` 或 `adb shell getprop ro.hardware` 确认 GPU 型号
-2. 根据 GPU 型号查阅对应厂商文档(Adreno GPU Profiler Guide / Mali GPU Best Practices)
-3. 在 Perfetto 的 `gpu_counters` track 中找到对应的 counter
-
-#### 不区分厂商的快速诊断流程
-
-无论哪个 Android 版本:
-
-1. 打开 `gpu_counters` track
-2. 找 `gpu_busy`(Android 16)或厂商特定的利用率 counter
-3. 如果持续 >90% 且对应 RenderThread 出现等待状态 → GPU 瓶颈确认
-4. 如果可用,打开 `gpu_render_stages` track,看 Vertex/Fragment 阶段占比
-5. Fragment 高 → fillrate bound;Vertex 高 → vertex bound;两者都不高但 GPU 时间长 → bandwidth bound
-
-### Android GPU Inspector(AGI):开发阶段 vs 生产环境
-
-#### AGI 的能力边界
-
-AGI 是一个**离线分析工具**,工作模式:
-1. 用 `adb record` 或 AGI 界面手动录制一个 GPU Trace(通常几秒)
-2. 保存为 `.gpitrace` 文件
-3. 在 AGI 桌面应用中打开分析
-
-使用边界如下:
-- **AGI 不能用于实时生产监控**:无法在已上线应用上持续监控 GPU 状态
-- **AGI 适合开发阶段和预发布测试**:在受控环境中录制典型场景的 GPU Trace,再做深度分析
-- **AGI 需要可复现的场景**:GPU 问题偶发还是稳定,决定录制策略
-
-#### AGI vs Perfetto:分工定位
-
-| 维度 | AGI | Perfetto |
-|------|-----|----------|
-| 录制方式 | 独立录制(.gpitrace) | 系统级持续追踪 |
-| 实时性 | 离线分析 | 可实时/历史回放 |
-| GPU 计数器深度 | 深(Adreno/Mali 原生 counter) | 浅(标准 counter 子集) |
-| 着色器分析 | 支持源码级着色器耗时 | 不支持 |
-| 生产环境可用性 | 低(需要主动录制) | 高(系统级持续采集) |
-
-分工建议:
-- **开发阶段**:用 AGI 对典型场景做深度 GPU 分析(着色器热点、draw call 分布、内存带宽使用)
-- **生产环境问题定位**:先用 Perfetto 的 `gpu_busy` 确认 GPU 是否为瓶颈,再用 AGI 对复现的场景做离线深度分析
-
-#### AGI 录制触发方式
-
-AGI 支持两种触发方式:
-1. **手动触发**:通过 AGI 界面手动开始/停止录制
-2. **Intent 触发**:通过 `am broadcast` 或 `adb shell am start` 带着特定 flag 触发录制
-
-对于偶发的生产环境问题,Intent 触发方式更有用:
-
-```bash
-# 通过 Intent 触发 AGI 录制(示例,实际参数因 AGI 版本而异)
-adb shell am start -n com.google.android.gpiinspector/.RecordingActivity \
-  -e recording_duration 5000 \
-  -e output_path /sdcard/gpu_trace.gpitrace
-```
-
-录制完成后,通过 `adb pull` 将文件拉到本地用 AGI 分析。
-
-### Qualcomm Adreno vs ARM Mali:调试特性差异与方法论统一
-
-#### Adreno GPU 调试特性
-
-Qualcomm Adreno GPU 的性能计数器体系:
-- `GPU Active` - GPU 核心处于活跃状态的时间
-- `Fragment Active` - Fragment Shader 执行时间
-- `Vertex Active` - Vertex Shader 执行时间
-- `RAM` - 显存带宽使用(read/write 分开)
-- `TLB Miss` - TLB 未命中次数(高表示内存访问效率低)
-
-Adreno 的特点:
-- **GPU 时间线分层**:`CP`(Command Processor)、`RBC`(Render Backend Complex)、`UCHE`(Unified Cache)等阶段各自独立计数
-- **带宽 counter 丰富**:Adreno 提供较完整的 `VRAM Read/Write` 计数器,适合分析 bandwidth bound 问题
-- **Snapdragon Profiler**:Qualcomm 官方工具,提供比 Perfetto 更细粒度的 Adreno 特定 counter
-
-```bash
-# 查看 Adreno GPU 可用 counter(需要 root)
-adb shell cat /d/dri/0/counters/all
-```
-
-#### Mali GPU 调试特性
-
-ARM Mali GPU(TBR 架构)的性能计数器体系:
-
-Mali 的 counter 命名与 Adreno 不同,但分析思路一致:
-- `Fragment Processing` - Fragment 处理阶段活跃度(对应 TBR 的 tile 着色阶段)
-- `Tiled Rendering` - 瓦片渲染活跃度
-- `Transaction Eliminated` - Transaction Elimination 命中次数(表示带宽节省)
-- `AFBC payload` - AFBC 压缩带来的带宽节省量
-
-Mali 的 `gpu_render_stages` 在 Perfetto 中通常比 Adreno 更细粒度--ARM 设计了自己的 `GpuApplicationTrace` 框架,让 Perfetto 可以拿到 Vertex/Fragment/Tiler 等阶段时间。
-
-#### 方法论统一:厂商差异屏蔽
-
-无论哪个厂商,以下方法论是通用的:
-
-**第一步:确认 GPU 是否为瓶颈**
-- Perfetto `gpu_busy` 或厂商利用率 counter >90%
-- RenderThread 出现等待状态(等待 GPU 完成上一帧)
-
-**第二步:定位瓶颈类型**
-- 打开 `gpu_render_stages`(如果可用)
-- Fragment 高 → fillrate bound:检查 overdraw、shader 复杂度、纹理格式
-- Vertex 高 → vertex bound:检查几何复杂度、path 数量、矩阵变换
-- 两者不高但 GPU 总时间长 → bandwidth bound:检查纹理压缩率、带宽 counter
-
-**第三步:深度分析(用厂商工具)**
-- fillrate bound:用 AGI 或 Adreno Profiler 看 Fragment Shader 的纹理采样次数、overdraw 热力图
-- bandwidth bound:用厂商 counter 看 VRAM 带宽使用率,找高带宽纹理
-- vertex bound:用 AGI 的几何分析看顶点数量分布
-
-**第四步:修复 + 验证**
-- 修复后用 Perfetto 确认 GPU 时间下降
-- 用 AGI 确认修复后的指标(shader 时间、带宽等)已经改善
-
-
-
-### AIW 源码调研：Vulkan 1.3/1.4 加载器协商与 ANGLE 命名空间隔离（android-16.0.0_r4 锚点）
-
-> **版本边界**：android-17.0.0_r1 tag 公开未发布，本节所有源码锚点基于 `android-16.0.0_r4` 分支（即 `refs/heads/android16-release`），Android 17 差异为延续性推断。
-
-#### Vulkan Loader 的 ApiVersion 协商（核心机制）
-
-AOSP 自有 loader `frameworks/native/vulkan/libvulkan/driver.cpp` 的 `CreateInfoWrapper` 默认 `loader_api_version_ = VK_API_VERSION_1_3`，可通过 `flags::vulkan_1_4_instance_api()` 切换到 1.4。`SanitizeApiVersion()` 显式处理"1.3 ICD + 1.4 app"降级——强制把 `VkApplicationInfo.apiVersion` 降回 ICD 声明的 1.3，因为**"no actual instance api differences between these versions"**（AOSP 源码注释原文）：
-
-```cpp
-// driver.cpp L438-L466
-if (icd_api_version_ >= VK_API_VERSION_1_3 &&
-        icd_api_version_ < VK_API_VERSION_1_4 &&
-        instance_info_.pApplicationInfo->apiVersion >= VK_API_VERSION_1_4) {
-    application_info_ = *instance_info_.pApplicationInfo;
-    application_info_.apiVersion = icd_api_version_;  // 降级到 1.3
-    instance_info_.pApplicationInfo = &application_info_;
-    return VK_SUCCESS;
-}
-```
-
-**性能影响**：避免了"app 申请 1.4 但 driver 只有 1.3"导致的 `VK_ERROR_INCOMPATIBLE_DRIVER`，但 1.3 ICD 在 1.4 app 下可能行为异常（AOSP 注释明确警告"may misbehave"）——这是 Android 16 升级到 1.4 时灰度策略保守的根源。`SanitizeExtensions` 在 `icd_api_version < loader_api_version` 时**自动启用被 promote 到新核心版本的 instance extensions**（如 `VK_KHR_dynamic_rendering`、`VK_KHR_synchronization2`），让 1.3 ICD 看起来像是支持 1.4 的功能。
-
-#### ANGLE 命名空间隔离
-
-`frameworks/native/libs/graphicsenv/GraphicsEnv.cpp` 的 `getAngleNamespace()` 用 `android_create_namespace("ANGLE", ..., ANDROID_NAMESPACE_TYPE_SHARED_ISOLATED, ...)` 创建独立命名空间，把 ANGLE 的 `libEGL.so` / `libGLESv2.so` 符号与 SoC vendor 的同名 so 隔离，避免 `dlopen` 时的符号冲突。`linkDriverNamespaceLocked` 在此 namespace 上链接 LLNDK/VNDK-SP/SPHAL 三类库，构成完整可执行的 ANGLE runtime。
-
-`GraphicsEnvironment.java` 的 `getVulkanVersion()` 自高到低枚举 `PackageManager.FEATURE_VULKAN_HARDWARE_VERSION`，把最高可用版本（Android 16 起包含 `VULKAN_1_4 = 0x00404000`）回填到 `GpuStats.vulkanVersion`——这是 app 进程 GPU stats 上报的入口。
-
-#### Android ↔ Vulkan 版本对应（[source.android.com](https://source.android.com/docs/core/graphics/implement-vulkan)）
-
-| Android 版本 | Vulkan API Level |
-|-------------|-----------------|
-| Android 7 (API 24) | 1.0 |
-| Android 9 (API 28) | 1.1 |
-| Android 13 (API 33) | 1.3 |
-| Android 16 (API 36) | 1.4 |
-| Android 17 (API 37) | 推断 1.4（延续 Android 16） |
-
-> Vulkan 1.4 increases the hardware requirements compared with Vulkan 1.3, with most of the implementation in the SoC-specific graphics driver, not in the framework.（source.android.com 原文）
-
-**详细调研**：[2026-06-09-android17-gpu-vulkan-pipeline-loader-1-3-1-4.md](file:///Users/gracker/Library/Mobile%20Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-gpu-vulkan-pipeline-loader-1-3-1-4.md)
-
-
-
-### AIW 源码调研补充：libvulkan Aconfig 旗标与 EnumerateInstanceVersion 公开 API（android-17 main 锚点）
-
-> **版本边界**：android-17.0.0_r1 tag 公开未发布，本节所有源码锚点基于 `refs/heads/main` 分支（与 `android-16.0.0_r4` 在 `frameworks/native/vulkan/libvulkan/` 路径下内容一致），Android 17 差异为延续性推断。
-
-#### Aconfig 旗标系统：build-time 钉死的 Vulkan 1.4 开关
-
-`frameworks/native/vulkan/libvulkan/libvulkan_flags.aconfig` 完整声明（仅 24 行）：
-
-```aconfig
-package: "com.android.graphics.libvulkan.flags"
-container: "system"
-
-flag {
-  name: "swapchain_mutable_format_ext"
-  namespace: "core_graphics"
-  description: "Enable the VK_KHR_swapchain_mutable_format vulkan extension"
-  bug: "341978292"
-  is_fixed_read_only: true
-}
-
-flag {
-  name: "vulkan_1_4_instance_api"
-  namespace: "core_graphics"
-  description: "Enable support for the Vulkan 1.4 instance API"
-  bug: "370568136"
-  is_fixed_read_only: true
-}
-```
-
-**关键事实**：
-- `is_fixed_read_only: true` 意味着旗标在 **build 时**就被钉死，运行时无法通过 `device_config` / `settings` 翻转——只有 vendor 在编译时选 `--flag-value` 才能控制，是 Android 16 起"灰度发布"策略的工具化体现。
-- 新版 aconfig（取代旧 `aconfig_jar`）在编译期生成 `com_android_graphics_libvulkan_flags.h`，`flags::vulkan_1_4_instance_api()` 是**内联函数**——0 运行时反射开销。旧 aconfig_jar 模式的 `flag().value()` 反射调用 ~10us，新 aconfig 模式压到 ~0ns。
-- 两个 flag 都在 `core_graphics` namespace 下，反映出 Google 把"Vulkan 实例版本"和"swapchain mutable format"看作一组 core graphics 开关统一管理。
-- `Android.bp` 把 `libvulkan_flags.aconfig` 编译为 `libvulkanflags` 静态库，`libvulkan` NDK 共享库在 link 时把它钉进 `static_libs`（`vulkan/libvulkan/Android.bp` L150）。
-
-#### `EnumerateInstanceVersion` 公开 API：app 视角的版本探测
-
-`frameworks/native/vulkan/libvulkan/api.cpp` L1471-1481 源码原文：
-
-```cpp
-VkResult EnumerateInstanceVersion(uint32_t* pApiVersion) {
-    ATRACE_CALL();
-
-    // Load the driver here if not done yet. This api will be used in Zygote
-    // for Vulkan driver pre-loading because of the minimum overhead.
-    if (!EnsureInitialized())
-        return VK_ERROR_OUT_OF_HOST_MEMORY;
-
-    *pApiVersion = flags::vulkan_1_4_instance_api() ? VK_API_VERSION_1_4 : VK_API_VERSION_1_3;
-    return VK_SUCCESS;
-}
-```
-
-**与 2026-06-09 报告的"driver.cpp 内部协商"互补关系**：
-- 2026-06-09 报告：`driver.cpp` 的 `CreateInfoWrapper::SanitizeApiVersion()`——处理"loader 与 ICD 版本不匹配时如何降级"。
-- **本节：`api.cpp` 的 `EnumerateInstanceVersion()`——app 视角的版本探测**（Vulkan 1.1 起规定的公开 API）。
-
-**端到端调用链**（AOSP main 分支源码拼合）：
-
-```
-app 进程
-  └─ vkCreateInstance(VK_API_VERSION_1_3, ...)
-       │  (Vulkan API 公开符号，由 libvulkan.map.txt 暴露)
-       ▼
-  libvulkan.so::api::CreateInstance            (api.cpp)
-       ├─ CreateInfoWrapper(create_info, icd_api_version, allocator)
-       │     └─ loader_api_version_ = flags::vulkan_1_4_instance_api() ? 1.4 : 1.3  (driver.cpp L381)
-       ├─ CreateInfoWrapper::SanitizeApiVersion()
-       │     └─ 若 icd 是 1.3 + app 是 1.4 → 强制降级 app 到 1.3  (driver.cpp L438)
-       └─ drv::EnumeratePhysicalDevices() → 查所有 ICD → 调 vendor ICD
-```
-
-**Zygote 预加载路径**（独立支线）：
-- 源码注释明确："This api will be used in Zygote for Vulkan driver pre-loading because of the minimum overhead"
-- Zygote fork 后首次任意 Vulkan 调用触发 `EnumerateInstanceVersion` → `EnsureInitialized()` → `dlopen` vendor ICD + `dlsym` 关键 entry → driver 驻留 process memory
-- 后续所有 `fork()` 出的子进程**继承已加载的 driver.so**，省去 `dlopen` 的毫秒级开销
-- 内存代价：每个进程常驻 5-20 MB 共享库——是显式的"以内存换首次渲染零延迟"工程权衡
-
-#### libvulkan.map.txt 入口点版本历史：API surface 演进证据
-
-`frameworks/native/vulkan/libvulkan/libvulkan.map.txt` 记录 NDK `libvulkan.so` 公开符号及 `# introduced=NN` 标记：
-
-| 入口点 | introduced | 含义 |
-|---|---|---|
-| `vkCreateAndroidSurfaceKHR` | 24 | Vulkan 1.0（Android 7） |
-| `vkAcquireNextImage2KHR` / `vkBindImageMemory2` | 28 | KHR 扩展（Android 9） |
-| `vkCmdBeginRenderPass2` | 31 | VK_KHR_create_renderpass2（Android 12） |
-| `vkCmdBeginRendering` / `vkCmdEndRendering` | 33 | VK_KHR_dynamic_rendering（**Vulkan 1.3 核心**） |
-| `vkCmdPipelineBarrier2` | 33 | VK_KHR_synchronization2（**Vulkan 1.3 核心**） |
-| `vkCmdSetCullMode` / `vkCmdSetDepthTestEnable` 等 | 33 | VK_EXT_extended_dynamic_state（**Vulkan 1.3 核心**） |
-| `vkCmdBindDescriptorSets2` | 36 | Android 16 |
-| `vkCmdBindIndexBuffer2` / `vkCmdPushConstants2` | 36 | Android 16 |
-| `vkCmdPushDescriptorSet2` / `vkCmdSetLineStipple` | 36 | Android 16 |
-
-**Android 17 (API 37) 增量分析**：在 main 分支 `libvulkan.map.txt` 上执行 `grep "introduced=37"` 返回 **0 行命中**——这是反直觉但合理解释的发现：
-
-- Vulkan 1.4 = Vulkan 1.3 + 一组 promote 到核心的扩展（`VK_KHR_dynamic_rendering_local_read`、`VK_KHR_maintenance5`、`VK_KHR_push_descriptor` 等），**核心 API surface 1.3 vs 1.4 没有新增 entry point**，区别在于"哪些扩展被默认开启"。
-- Android 17 即使升级到 Vulkan 1.4 实例 API，NDK 公开符号表**无需新增**——升级通过旗标切换 + ICD 实现能力披露完成。
-- 性能含义：N 个 Vulkan 入口点 = N 个 dlsym 查找项，map 文件控制查找表大小。`libvulkan.so` 总符号数被 map 限制在约 200 个，`dlopen` 时间稳定在毫秒级，Android 17 不会因为 Vulkan 1.4 升级膨胀此表。
-
-**详细调研**：[2026-06-11-android17-gpu-vulkan-libvulkan-flags-enumerate-instance-version.md](file:///Users/gracker/Library/Mobile%20Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-11-android17-gpu-vulkan-libvulkan-flags-enumerate-instance-version.md)
-
-### 系统性排查流程:CPU-GPU 同步 / 内存带宽 / 着色器编译
-
-#### 完整排查流程
-
-```text
-问题现象:掉帧 / 卡顿 / 发热
-    │
-    ├─ 主线程 doFrame 耗时正常
-    │     ├─ RenderThread 提交快,GPU track 长 → GPU 瓶颈
-    │     └─ RenderThread 提交阻塞 → GPU 未完成上一帧(back-pressure)
-    │
-    ├─ 主线程 doFrame 耗时异常
-    │     └─ 主线程是瓶颈,不是 GPU 问题
-    │
-    └─ 孤立长帧(偶发)
-          └─ Shader Compilation Jank(Android 16+ 因 SPIR-V 预编译减少)
-```
-
-#### 维度一:CPU-GPU 同步(back-pressure)
-
-当 GPU 处理一帧的时间超过 VSync 周期时,RenderThread 在 `eglSwapBuffers()`(GLES)或 `vkQueuePresentKHR()`(Vulkan)处等待。这个等待在 Perfetto 中表现为 RenderThread 的长段 sleep。
-
-源码级来源:
-- OpenGL ES:`eglSwapBuffers()` 内部会等待上一个 framebuffer 的 release fence
-- Vulkan:`vkQueuePresentKHR()` 的 `VkFence` 同步
-
-如果 RenderThread 等待时间持续超过帧预算的 50%,说明 GPU 是瓶颈而非 CPU。
-
-#### 维度二:内存带宽
-
-带宽瓶颈的特点:着色器执行时间不长,但整体 GPU 时间超标。Perfetto 的内存带宽 counter(如果有)会显示高负载。
-
-优化方向:
-- ASTC 纹理压缩格式(相比 ETC2 在同压缩比下视觉质量更优,带宽节省更显著)
-- 生成 Mipmap(让 GPU 根据物体大小选择纹理分辨率,避免过采样)
-- 减少每像素纹理采样次数
-
-#### 维度三:着色器编译
-
-Shader Compilation Jank 的特征:偶发长帧(可能达到几十毫秒),之后恢复正常。Android 16 的 SPIR-V 预编译大幅减少了这个问题,但对于仍在使用 OpenGL ES 的应用,ANGLE 层仍然存在编译开销。
-
-诊断方法:
-- 在 Perfetto 中找"孤立的长 GPU 活动块"--正常渲染序列中突然出现一个特别长的帧
-- 检查这个长帧是否对应用户刚触发的新 UI 效果(新页面、动画、模糊效果等)
-- Android 16+ 通过 SPIR-V 预编译减少了这个问题,但 OpenGL ES 应用仍可能通过 ANGLE 遇到
-
-> [源码: perfetto/dev/docs/data-sources/gpu; gpuinspector.dev; ARM Mali GPU Best Practices; Qualcomm Adreno GPU Profiler Guide] **[一手:Perfetto 官方文档 + AGI 官方文档 + 厂商官方文档]**
+本文的 Producer、Surface、BufferQueue、SurfaceFlinger 与 HWC 边界还对照了 `rendering_pipelines` 系列 S01、S02、S05、S08 和 S13。Native Graphics 与游戏部分沿用该系列“从 render loop 追到 display present”的方法，再用 Android 17 平台源码确认对象与 fence。
