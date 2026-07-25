@@ -4,22 +4,30 @@ chapter: "1.40"
 status: ready-for-review
 drafted_date: "2026-06-29"
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
-last_verified: "2026-06-29"
+last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1"
-confidence: medium
+confidence: high
 sources:
   - type: aosp
-    path: "bionic/libc/bionic/malloc_common.cpp (android-17.0.0_r1)"
+    path: "bionic/README.md (android-17.0.0_r1)"
   - type: aosp
-    path: "bionic/libc/bionic/pthread.cpp (android-17.0.0_r1)"
+    path: "bionic/libc/Android.bp (android-17.0.0_r1)"
   - type: aosp
-    path: "bionic/libc/platform/bionic/page.h (android-17.0.0_r1)"
+    path: "bionic/libc/bionic/malloc_common.cpp, malloc_common_dynamic.cpp (android-17.0.0_r1)"
   - type: aosp
-    path: "bionic/linker/linker_phdr.cpp (android-17.0.0_r1)"
+    path: "bionic/libc/bionic/pthread_create.cpp, pthread_attr.cpp, pthread_mutex.cpp, pthread_cond.cpp (android-17.0.0_r1)"
   - type: aosp
-    path: "bionic/libc/arch-arm64/ (android-17.0.0_r1)"
+    path: "bionic/libc/platform/bionic/page.h, tls.h, tls_defines.h (android-17.0.0_r1)"
+  - type: aosp
+    path: "bionic/linker/linker_phdr.cpp, linker_phdr.h (android-17.0.0_r1)"
+  - type: aosp
+    path: "bionic/libc/arch-arm64/ifuncs.cpp (android-17.0.0_r1)"
+  - type: aosp
+    path: "external/scudo/standalone/allocator_config.h (android-17.0.0_r1)"
+  - type: kernel
+    path: "kernel/futex/, Documentation/arch/arm64/memory-tagging-extension.rst (android17-6.18-2026-06_r6)"
   - type: official
-    path: "developer.android.com/ndk/guides/page-sizes"
+    path: "developer.android.com/guide/practices/page-sizes"
   - type: official
     path: "source.android.com/docs/security/test/scudo"
   - type: official
@@ -34,220 +42,380 @@ gap_source: "AOSP结构"
 
 # 1.40 Bionic libc 性能演进与系统级影响
 
-<!-- outline-start -->
-## 要点
+Bionic 位于 Android 原生运行时的公共路径上。系统调用封装、线程创建、同步原语、ELF 装载、字符串函数以及 Native Heap 的入口都经过它。分析 Bionic 性能时，第一步是划清实现边界：某个 API 由 Bionic 导出，不代表算法主体也在 Bionic 仓库。
 
-### 🔹 Bionic 概述：Android C 库的角色与性能地位
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点；涉及 futex 和 MTE 的内核行为，以 `android17-6.18-2026-06_r6` 为锚点。历史版本只用于解释兼容代码为何存在。
 
-Bionic 是 Android 的 C/C++ 标准库实现，源自 BSD 许可，每个原生进程（包括 app_process、系统服务和第三方 NDK 库）均在启动时动态链接 `libc.so`。与 Linux 桌面发行版常用的 glibc 相比，Bionic 在设计上做了明确的取舍：体积小、启动快、内存占用低，代价是放弃了对部分 POSIX 扩展和 glibc 私有扩展的支持。[已验证: AOSP android-17.0.0_r1, bionic/README.md]
+## 1. Bionic 管什么
 
-Bionic 的核心组件包括：
+Bionic 是 Android 的 C 库、数学库和动态链接器。NDK 使用的 C++ 标准库是 libc++，不能把两者混为一谈。
 
-- **libc.so**：标准 C 库，提供 `malloc`/`free`、`pthread`、字符串操作（`memcpy`/`memset`/`strlen`）、`stdio`、`stdlib` 等
-- **libm.so**：数学库
-- **libdl.so**：动态链接器接口
-- **linker64**（即 `ld-android.so`）：ELF 加载器，负责运行时符号解析和重定位
+| 组件 | Android 17 中的职责 | 容易混淆的边界 |
+|---|---|---|
+| `libc.so` / `libc.a` | C/POSIX 接口、系统调用封装、pthread、stdio、malloc 入口等 | 堆分配算法主体位于 `external/scudo/` |
+| `libm.so` / `libm.a` | 数学函数 | 部分实现来自外部上游项目 |
+| `libdl.so` | `dlopen`、`dlsym` 等接口桩 | 运行时实现由动态链接器接管 |
+| `/system/bin/linker`、`/system/bin/linker64` | 装载 ELF、解析依赖、重定位、管理 linker namespace | Android 的名称不是 `ld-android.so` |
+| `libstdc++.so` | 少量 C++ ABI 支持与兼容符号 | 它不是完整的 STL 实现 |
 
-从性能视角看，Bionic 的影响面覆盖三个层级：
+Bionic 源码也没有单一的“BSD 实现”来源。`libc/upstream-freebsd/`、`upstream-netbsd/`、`upstream-openbsd/` 保存可直接复用的上游代码；`libc/bionic/` 包含 Android 自己维护的实现；系统调用桩由描述文件生成；部分 arm/arm64 字符串、内存和数学例程来自 `external/arm-optimized-routines/` 或 `external/llvm-libc/`。因此，“Bionic 比 glibc 小，所以一定更快”无法作为性能结论，必须在目标 Android 设备和目标 API 上测量。
 
-1. **系统调用封装**：所有上层框架（Framework Java 层通过 JNI、NDK 原生代码、系统服务 C++ 实现）最终经 Bionic 发起 syscall
-2. **内存分配路径**：`malloc`/`free` 的 dispatch 由 Bionic 控制，直接影响 Native Heap 行为（详见 23.11 Scudo 分配器章节）
-3. **线程与同步原语**：`pthread_create`/`pthread_mutex_lock`/`pthread_cond_wait` 的实现直接影响并发性能
+从调用路径看，可以先采用下面这张边界图：
 
-### 🔹 malloc/free 实现演进：dlmalloc → jemalloc → Scudo
+```text
+NDK / Framework JNI / native system service
+                  |
+                  v
+              Bionic API
+        +---------+----------+
+        |                    |
+        v                    v
+  用户态快速路径          系统调用封装
+  TLS / atomic / IFUNC       |
+        |                    v
+        |       Linux android17-6.18-2026-06_r6
+        |
+        +--> malloc dispatch --> Scudo（常规产品）
+                            \--> jemalloc（malloc_low_memory 产品配置）
+```
 
-Android 的 Native 堆分配器经历了三代演进，每代都反映了当时移动设备的主要矛盾：
+这张图解释了两个常见误判：在 `malloc` 火焰图里看到 `libc.so`，不能直接认定问题在 Bionic；在 `pthread_mutex_lock` 里看到 futex，也不能认定每次加锁都进入内核。
 
-| 时代 | 分配器 | 默认版本 | 核心改进 | 主要局限 |
-|------|--------|---------|---------|---------|
-| Android 1.0–4.x | dlmalloc | API 1–19 | Doug Lea 分配器，单锁，实现简洁 | 碎片化严重、多线程扩展性差、无安全防护 |
-| Android 5.0–10 | jemalloc | API 21–29 | Jason Evans 分配器，per-thread arena，碎片化控制优秀 | 无内存安全特性、配置灵活性不足 |
-| Android 11+ | Scudo | API 30–37 | LLVM-based 安全分配器，chunk 校验、quarantine、MTE 支持 | 安全检查带来约 2–5% 性能开销 |
+## 2. malloc：Bionic 负责入口和分派，Scudo 负责分配
 
-[已验证: AOSP android-17.0.0_r1, bionic/libc/bionic/malloc_common.cpp — `MallocDispatch` 结构体和 `__libc_init_malloc` 逻辑]
+### 2.1 Android 17 的默认关系
 
-演进的关键驱动力：
+`bionic/libc/bionic/malloc_common.cpp` 定义 `MallocDispatch`，其中包含 `malloc`、`free`、`realloc`、`mallopt`、`malloc_info` 等函数指针。正常路径使用默认 dispatch；malloc debug、hooks、heapprofd 等功能可以安装另一张 dispatch 表，在调用前后插入诊断或采样逻辑。
 
-- **dlmalloc → jemalloc**：多核设备普及后，dlmalloc 的全局锁成为瓶颈。jemalloc 引入 per-thread arena，将分配竞争大幅降低。Android 5.0 切换到 jemalloc 后，多线程 Native 代码的吞吐量显著提升
-- **jemalloc → Scudo**：Android 11 的切换主要出于安全考虑而非性能。Scudo 基于 LLVM sanitizer allocator，提供 chunk 元数据校验、use-after-free 检测（通过 quarantine 延迟释放）和随机化。代价是约 2–5% 的 CPU 开销，换取的是对 Native 内存安全漏洞的系统性防护
-- **Android 17 的 Scudo**：进一步强化了 MTE 集成（`SCUDO_ENABLE_MTE` 编译选项）、chunk 越界检测的精度，以及 `allocator_release_to_os_interval_ms` 的可配置性
+下面的 Android 17 构建片段用于确认默认分配器和低内存分支：
 
-[结构参考: Clippings/Android 性能优化 — 原理：掌握 App 运行时的内存模型.md]
+```bp
+cc_defaults {
+    name: "libc_native_allocator_defaults",
+    whole_static_libs: ["libscudo"],
+    cflags: ["-DUSE_SCUDO"],
+    product_variables: {
+        malloc_low_memory: {
+            whole_static_libs: [
+                "libjemalloc5",
+                "libc_jemalloc_wrapper",
+            ],
+            exclude_static_libs: ["libscudo"],
+        },
+    },
+}
+```
 
-Native Heap 分配器的实战排查与调优详见 **23.11 Scudo 分配器与 Native Heap 性能边界**。MTE 相关的崩溃治理详见 **20.11 MTE memtagMode 与 Native 崩溃治理**。
+这段配置表明，Android 17 常规产品将 `libscudo` 链入 libc；启用 `malloc_low_memory` 的产品仍可选择 jemalloc。Bionic 的 README 也明确说明，堆实现位于 `external/scudo/`。
 
-### 🔹 pthread 实现与调度属性性能
+可以把一次普通分配理解为：
 
-Bionic 的 pthread 实现基于 Linux futex（Fast Userspace Mutex）系统调用，与 glibc 的 NPTL（Native POSIX Thread Library）在接口上兼容，但内部实现有多处差异。
+```text
+malloc()
+  -> Bionic 当前 dispatch
+     -> Scudo C wrapper
+        -> Primary：按 size class 管理常规分配
+        -> Secondary：处理较大或特殊分配
+```
 
-**线程创建**：`pthread_create()` 的开销主要来自三部分——`mmap` 分配线程栈（默认主线程栈 8MB、子线程栈 1MB，受 `ulimit -s` 和 `pthread_attr_setstacksize` 影响）、`clone` 系统调用创建内核线程、TLS 初始化。Bionic 在 Android 17 中通过 `__pthread_start` 简化启动路径，减少了一次间接调用。[已验证: AOSP android-17.0.0_r1, bionic/libc/bionic/pthread.cpp]
+当 heapprofd 或 malloc debug 生效时，中间会多一层拦截。性能分析必须先确认当前 dispatch，随后再判断耗时来自采样、回溯、Scudo 元数据操作、锁竞争、缺页，还是内核映射与回收。
 
-**调度策略**：Bionic 支持的 `SCHED_*` 常量映射到 Linux 内核调度策略：
+### 2.2 分配器演进的正确读法
 
-| Bionic 常量 | 内核调度策略 | 用途 |
-|-------------|------------|------|
-| `SCHED_OTHER` (0) | CFS | 默认分时调度 |
-| `SCHED_BATCH` | CFS batch | 计算密集型后台任务 |
-| `SCHED_FIFO` (1) | 实时 FIFO | 无时间片，按优先级抢占 |
-| `SCHED_RR` (2) | 实时 Round-Robin | 带时间片的实时调度 |
-| `SCHED_IDLE` | idle | 极低优先级 |
-| `SCHED_TOP_APP` | CFS + boost | Android 扩展，前台应用优先级提升 |
+| 阶段 | AOSP 主线选择 | 解决的问题 | 阅读时要保留的条件 |
+|---|---|---|---|
+| Android 早期 | dlmalloc | 实现简单，适合当时的设备规模 | 多线程扩展和碎片控制能力有限 |
+| Android 5.0 至 10 前后 | jemalloc | 多 arena、size class 和更好的并发扩展 | 具体参数由 Android 分支配置决定 |
+| Android 11 至 17 | Scudo | 强化 chunk 元数据、状态与分配行为检查 | 低内存产品仍可能使用 jemalloc |
 
-Android 的 `SCHED_TOP_APP`（值 5）不是标准 Linux 策略，而是 Android 内核分支引入的扩展，通过 cgroup `cpu_schedtop` 控制组实现前台应用优先级提升。这个策略被 `ActivityManagerService` 在应用进入前台时自动设置。[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessList.java]
+这条时间线解释设计变化，不能代替基准测试。分配器开销受对象尺寸分布、线程数、存活期、RSS 压力、MTE 模式和采样工具影响，固定写成“增加 2%～5%”没有可迁移性。
 
-**互斥锁性能**：Bionic 的 `pthread_mutex_t` 支持三种类型——normal（无错误检测）、errorcheck（检测重复锁定/解锁）、recursive（允许同线程多次锁定）。在无竞争路径上，normal mutex 通过 atomic compare-and-swap 实现用户态快速路径，仅在竞争时陷入 futex 系统调用。Android 17 的 mutex 实现引入了 optimistic spinning 优化，在短临界区场景下减少不必要的 futex 调用。[待验证: 具体优化细节需对照 bionic/libc/bionic/pthread_mutex.cpp 源码确认]
+Scudo 是面向堆漏洞的强化分配器。它能检测部分损坏的 chunk header、double free、无效状态、未对齐指针和分配/释放类型不匹配。它仍可能漏掉应用没有触发检查的越界或 use-after-free，官方也把 Scudo 定义为 mitigation，而非 ASan/HWASan 那类完整错误检测器。出现 `Scudo ERROR:` 时，应把短错误摘要当作排查入口，再结合 tombstone、HWASan、MTE 或可复现测试定位第一次非法访问。
 
-**条件变量**：`pthread_cond_wait`/`pthread_cond_signal` 同样基于 futex。Bionic 实现了一个 MONITOR 值来避免虚假唤醒和丢失信号。性能敏感场景建议使用 `pthread_cond_broadcast` 时小心 thundering herd 问题。
+### 2.3 API 37 的回收接口
 
-### 🔹 Thread Local Storage (TLS) 实现与性能影响
+Android 的 `mallopt` 提供若干分配器控制项：
 
-Bionic 在 ARM64 上使用 `TPIDR_EL0` 系统寄存器存储 TLS 基地址，这是 ARMv8 架构中专为线程局部存储设计的寄存器。TLS 的访问路径是：
+- `M_PURGE`（API 28）尝试立即释放未使用内存；
+- `M_PURGE_ALL`（API 34）检查范围更广，也可能阻塞更久；
+- `M_PURGE_FAST`（API 37）面向可频繁调用、延迟受限的场景，允许少释放一些内存以缩短执行时间；
+- `M_DECAY_TIME` 控制未使用页立即、周期或停止回收；
+- `M_MEMTAG_TUNING` 只在 Scudo 且进程启用 MTE 时有意义。
 
-1. 读取 `TPIDR_EL0` 获取 TLS 基地址（单条 `mrs` 指令，约 1 cycle）
-2. 加上 slot 偏移量访问具体 TLS 变量
+这些接口改变 CPU 时间、锁持有时间、RSS 和后续缺页之间的平衡。不要把 purge 放到每帧路径，也不要只看调用结束后的 RSS。应同时记录 purge 时延、回收量、下一阶段 minor fault 和用户可见延迟。
 
-Bionic 的 TLS 布局在 `bionic/libc/private/bionic_tls.h` 中定义。关键 slot 包括：
+## 3. pthread_create：默认栈只是线程成本的一部分
+
+### 3.1 子线程与主线程的栈来源不同
+
+Android 17 的默认子线程栈定义在 `pthread_internal.h`：
+
+```cpp
+#if defined(__LP64__)
+#define SIGNAL_STACK_SIZE_WITHOUT_GUARD (32 * 1024)
+#else
+#define SIGNAL_STACK_SIZE_WITHOUT_GUARD (16 * 1024)
+#endif
+
+#define PTHREAD_STACK_SIZE_DEFAULT \
+    ((1 * 1024 * 1024) - SIGNAL_STACK_SIZE_WITHOUT_GUARD)
+```
+
+因此，Bionic 创建的子线程默认 `pthread_attr_t::stack_size` 在 LP64 上是 992 KiB，在 32 位进程上是 1008 KiB。源码随后会从栈顶划出 `pthread_internal_t`，所以这两个数字也不能直接当成业务代码可用的最大栈深。
+
+主线程走另一条路径。`pthread_attr_getstack` 根据 `RLIMIT_STACK` 和进程映射计算主栈；只有当限制为 `RLIM_INFINITY` 时，Bionic 才把报告值收敛为 8 MiB，避免调用者把无限值当成可用映射。由此可见，“Android 主线程固定 8 MiB”不成立。
+
+### 3.2 一个子线程包含哪些映射
+
+当调用者没有提供栈时，`pthread_create.cpp` 建立一块 `MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE` 映射，布局如下：
+
+```text
+低地址
+  [调用者配置的 stack guard]
+  [线程栈]
+  [静态 ELF TLS + bionic_tls]
+  [libgen buffers，按页填充]
+  [Bionic 末端 guard]
+高地址
+```
+
+之后才初始化 TCB、DTV、stack canary、Bionic TLS，并通过带有 `CLONE_SETTLS` 等标志的 clone 路径创建内核线程。线程启动后还会建立 alternate signal stack；arm64/riscv 构建还可能分配 Shadow Call Stack 的保护区域。
+
+这里有三个性能含义：
+
+1. 线程成本不能只用 `stack_size` 估算。TLS、guard、signal stack、Shadow Call Stack、内核 task 和调度数据都要计入。
+2. `MAP_NORESERVE` 以及按需缺页使虚拟地址空间增长与 RSS 增长不同步。只看 VSS 容易高估物理内存，触碰大量栈页后 RSS 才会上升。
+3. 缩小栈能减少地址空间和最坏物理占用，但 `PTHREAD_STACK_MIN` 只是 ABI 下限。Android 17 中 LP64 为 16 KiB、32 位为 8 KiB；该下限不保证业务调用深度、信号处理、JNI 或第三方库安全。
+
+设置自有栈时，还必须满足运行时页大小对齐。递归、较大的栈上数组、复杂 unwind、信号处理和 sanitizer 都可能让“空载测试可用”的小栈在压力场景溢出。调优应先用目标构建测量高水位，再预留 guard 与故障处理余量。
+
+### 3.3 调度策略与 top-app 是两套接口
+
+`pthread_attr_setschedpolicy` 接受的是 Linux 调度策略，例如 `SCHED_OTHER`/`SCHED_NORMAL`、`SCHED_BATCH`、`SCHED_IDLE`、`SCHED_FIFO` 和 `SCHED_RR`。实时策略还受权限、优先级范围与系统策略约束。
+
+Android 的 top-app 属于 task profile、cgroup 和系统调度配置，`SCHED_TOP_APP` 不是 Bionic 或 Linux 的 `SCHED_*` 常量。前台进程获得怎样的 CPU 集合、uclamp 或其他调度参数，由 framework、libprocessgroup、设备配置和内核共同决定。应用不能通过 `pthread_attr_setschedpolicy(..., 5)` 把线程变成 top-app；数值碰巧相同也没有这层语义。
+
+## 4. mutex 与 condition variable：先区分用户态快路径和内核等待
+
+### 4.1 普通 mutex
+
+Android 17 的普通、非 PI mutex 使用一个原子状态：
+
+- `0`：未锁；
+- `1`：已锁、尚未发现竞争；
+- `2`：已锁、存在竞争。
+
+无竞争的 `pthread_mutex_lock` 通过 atomic compare-and-exchange 从 `0` 改为 `1`，不进入内核。竞争路径把状态改为 `2`，然后调用 futex wait；解锁发现旧状态为 `2` 时，调用 futex wake 唤醒一个等待者。源码中没有可据以宣称“Android 17 新增 optimistic spinning”的分支。
+
+共享 mutex 会选择跨进程 futex 操作，私有 mutex 可以使用更便宜的 private futex。recursive 和 errorcheck 类型还要记录 owner 与递归计数。高频锁路径应先确认锁类型、是否跨进程、竞争比例和临界区长度，再讨论替换同步原语。
+
+### 4.2 Priority Inheritance mutex
+
+把 mutex protocol 配置为 `PTHREAD_PRIO_INHERIT` 后，Bionic 使用独立的 PI 状态与 `FUTEX_LOCK_PI`/`FUTEX_UNLOCK_PI` 路径。无竞争时仍尝试原子获得 owner；发生竞争时由内核 `kernel/futex/pi.c` 等代码管理所有权和优先级继承。
+
+PI 可以缓解高优先级线程等待低优先级持锁者造成的优先级反转，但其路径和状态管理更复杂。它不能修复过长临界区、锁顺序错误或持锁 I/O。
+
+### 4.3 Condition variable
+
+`pthread_cond_t` 在 Android 17 中维护原子 `state` 计数和等待者数量。wait 路径的顺序是：
+
+1. 读取当前 state；
+2. 记录等待者；
+3. 解开调用者的 mutex；
+4. 对旧 state 执行 futex wait；
+5. 减少等待者并重新获得 mutex。
+
+signal/broadcast 会增加 state，再分别 wake 一个或多个等待者。该实现允许 spurious wakeup；POSIX 调用者仍须用谓词循环：
+
+```cpp
+pthread_mutex_lock(&mutex);
+while (!ready) {
+    pthread_cond_wait(&cond, &mutex);
+}
+consume_result();
+pthread_mutex_unlock(&mutex);
+```
+
+这段循环同时处理虚假唤醒、多个消费者竞争以及条件在重新加锁前发生变化。把 `while` 改成 `if` 会引入正确性问题。`broadcast` 是否造成集中唤醒，要结合等待者数量和谓词设计分析，不能仅凭 API 名称判断。
+
+## 5. TLS：快速寻址不等于零成本
+
+arm64 的 `__get_tls()` 直接读取 `TPIDR_EL0`：
+
+```cpp
+static inline void** __get_tls(void) {
+  void** result;
+  __asm__("mrs %0, tpidr_el0" : "=r"(result));
+  return result;
+}
+```
+
+这段代码只证明线程指针的获取方式。一次 C/C++ `thread_local` 访问还可能包含 TLS model 相关的地址计算、DTV 查询、模块初始化和数据访问，不能统一写成固定周期数。
+
+Android 17 在 arm/arm64 上保留的 Bionic TCB slot 包括：
 
 | Slot | 用途 |
-|------|------|
-| `TLS_SLOT_BIONIC` | Bionic 内部状态（errno、栈保护等） |
-| `TLS_SLOT_STACK_GUARD` | 栈溢出保护 canary 值 |
-| `TLS_SLOT_TSAN` / `TLS_SLOT_ASAN` | Sanitizer 状态 |
-| `TLS_SLOT_ART_THREAD_SELF` | ART 虚拟机 Thread 指针 |
-| `TLS_SLOT_DLOPEN` | dlopen 递归锁 |
-| 动态分配 slot | `pthread_key_create` 创建的用户 TLS |
+|---|---|
+| `TLS_SLOT_DTV` | ELF TLS dynamic thread vector |
+| `TLS_SLOT_THREAD_ID` | 线程标识相关快速访问 |
+| `TLS_SLOT_APP` | API 29 起留给应用使用的预分配 slot |
+| `TLS_SLOT_OPENGL` / `TLS_SLOT_OPENGL_API` | 图形子系统快速访问 |
+| `TLS_SLOT_STACK_GUARD` | stack protector canary |
+| `TLS_SLOT_SANITIZER` | sanitizer 线程状态 |
+| `TLS_SLOT_ART_THREAD_SELF` | ART 的 `Thread::Current()` 快速路径 |
+| `TLS_SLOT_BIONIC_TLS` | Bionic 自身 TLS 指针 |
+| `TLS_SLOT_NATIVE_BRIDGE_GUEST_STATE` | native bridge guest 状态 |
+| `TLS_SLOT_STACK_MTE` | stack MTE ring buffer 指针 |
 
-`__get_tls()` 是 Bionic 的内部接口，编译器经常将其内联为单条 `mrs` 指令。对性能的影响极小——每次 TLS 访问约 2–3 条指令（`mrs` + `ldr` 偏移 + 可能的 `ldr` 数据），远低于使用全局变量的多核缓存一致性问题。[已验证: AOSP android-17.0.0_r1, bionic/libc/arch-arm64/bionic/__get_tls.cpp]
+这些定义位于私有头文件 `tls_defines.h`，不属于 NDK 公共 ABI。业务代码不能依赖 slot 编号；普通线程局部数据应使用 C++ `thread_local`、编译器 ELF TLS 或 `pthread_key_create`。
 
-Android 17 的 TLS 实现增加了对 MTE 相关 slot 的预留。当 MTE 启用时，每个线程的 TLS 区域会被打上内存标记，确保 TLS 访问不受 tag mismatch 影响。[待验证: 具体 MTE TLS 标记逻辑需对照 bionic/libc/bionic/pthread_internal.cpp 源码确认]
+`TLS_SLOT_STACK_MTE` 也不表示“整个 TLS 区域被 MTE 标记”。Android 17 的 `pthread_create.cpp` 会在需要时把它设置为 stack MTE ring buffer；线程主映射在 `__libc_memtag_stack` 开启时可带 `PROT_MTE`。这是栈标记支持，和 TLS 寻址机制应分别说明。
 
-### 🔹 MTE 集成与内存标记性能开销
+## 6. MTE：诊断精度、运行成本和适用环境要一起看
 
-Memory Tagging Extension (MTE) 是 ARMv8.5 引入的硬件级内存安全特性。Android 11+ 的 Scudo 分配器率先集成 MTE 支持，Android 14 将 `android:memtagMode` 引入应用清单。
+Arm MTE 以 16 字节 granule 保存 4 位 allocation tag，指针的逻辑 tag 位于地址高位。CPU 访问内存时比较 logical tag 与 allocation tag。标签不匹配时，Android 可按进程配置不同 fault mode：
 
-MTE 的基本机制：
+| 模式 | 报告行为 | 适用方向 |
+|---|---|---|
+| SYNC | 在错误访问处精确触发 `SEGV_MTESERR`，诊断信息更完整 | 开发、测试、需要精确定位的进程 |
+| ASYNC | 记录 mismatch，延迟到后续内核入口附近以 `SEGV_MTEAERR` 终止；故障地址和主回溯通常不精确 | 经过充分测试后的低开销生产监测 |
+| ASYMM | 读同步、写异步；系统可在应用请求 async 时按 CPU 首选模式升级 | 硬件支持时的生产候选 |
 
-1. **标记分配**：每个内存块（16-byte 对齐的 granule）被分配一个 4-bit tag（取值 0–15）
-2. **指针关联**：分配返回的指针的高 4 位（bits 56–59）存储对应的 tag
-3. **硬件校验**：每次 load/store 指令执行时，硬件自动比对指针 tag 与目标地址的内存 tag，不匹配则触发 SIGSEGV
+ASYNC 并不会“只记录而不终止”。进程仍会收到 `SIGSEGV`，只是终止点可能靠近下一次系统调用或中断，主 backtrace 常常对应报告时刻。
 
-两种执行模式：
+Android 17 的 Bionic 包含 `note_memtag_heap_async.S` 和 `note_memtag_heap_sync.S`，用于把构建时的 heap memtag 要求写入 ELF note。当前控制边界如下：
 
-| 模式 | 同步性 | 典型 CPU 开销 | 精确度 | 适用场景 |
-|------|--------|-------------|--------|---------|
-| MTE ASYNC | 异步检测 | 约 2–5% | 低（仅记录，不立即终止） | 生产灰度、低开销监控 |
-| MTE SYNC | 同步检测 | 约 5–10% | 高（指令执行时立即终止） | 测试、高安全要求进程 |
+- Java 应用通过 `<application>` 或 `<process>` 的 `android:memtagMode` 请求 `off`、`default`、`sync` 或 `async`；
+- 原生可执行文件可由 Soong/Make 的 `memtag_heap` 配置启用；
+- `arm64.memtag.process.<basename>` 只适合原生进程的启动时实验配置，不适用于 Java 应用包名；
+- `MEMTAG_OPTIONS` 可覆盖原生进程设置；
+- 最终模式还受硬件、内核和设备策略影响。
 
-Android 17 通过系统属性 `arm64.memtag.process.<package>` 和应用清单 `android:memtagMode` 控制 MTE 开关。`memtagMode="sync"` 启用同步模式，`"async"` 启用异步模式，`"off"` 禁用。
+MTE 的成本与 CPU 实现、访问模式、Scudo tagging、是否采集分配/释放堆栈以及系统首选模式有关。硬件完成 tag compare 也不等于整条链路零成本。应在同一设备、同一温控和同一工作负载下对比 off/async/sync，并同时看 CPU、功耗、帧延迟和 Native Heap 指标。
 
-[已验证: 官方文档, source.android.com/docs/security/test/memory-safety/arm-mte]
+更多配置和报告解析见 [AOSP MTE 文档](https://source.android.com/docs/security/test/memory-safety/arm-mte) 以及 **20.11 MTE memtagMode 与 Native 崩溃治理**。
 
-MTE 的性能开销主要来自：
-- **Tag 分配与存储**：Scudo 在每次 `malloc` 时需要分配和写入 tag（约额外 2–3 cycle per allocation）
-- **硬件 tag 检查**：每次 memory access 的 tag 比对由硬件完成，不占用额外周期，但会增加 TLB/pipeline 压力
-- **栈标记**：函数栈帧需要标记，增加函数 prologue/epilogue 开销
+## 7. 16 KB 页：运行时页大小、ELF 对齐和兼容装载
 
-MTE 崩溃治理和 `memtagMode` 的线上策略详见 **20.11 MTE memtagMode 与 Native 崩溃治理**。
+### 7.1 Bionic 如何获取页大小
 
-### 🔹 16KB Page Size 支持与 Bionic 改动
+Android 17 的内部 helper 如下：
 
-Android 15 开始支持 16KB 内存页面（取代传统 4KB），Android 16–17 进一步扩展了兼容性和工具链支持。这一变更对 Bionic 的影响是系统性的。
+```cpp
+inline size_t page_size() {
+#if defined(PAGE_SIZE)
+  return PAGE_SIZE;
+#else
+  static const size_t page_size = getauxval(AT_PAGESZ);
+  return page_size;
+#endif
+}
+```
 
-**Bionic 的 page size 感知改动**：
+可变页大小构建从 auxiliary vector 的 `AT_PAGESZ` 读取运行时值。`page_start`、`page_offset`、`page_end` 以及 pthread 映射随后都使用该值。NDK 代码应使用 `getpagesize()` 或 `sysconf(_SC_PAGESIZE)`，不要假设 `PAGE_SIZE == 4096`。
 
-1. **动态 page size 查询**：Bionic 不再硬编码 `PAGE_SIZE = 4096`，而是通过 `sysconf(_SC_PAGESIZE)` 和 `getpagesize()` 在运行时返回实际 page size。`bionic/libc/platform/bionic/page.h` 定义了 `PAGE_SIZE`、`PAGE_MASK` 等宏为运行时求值。[已验证: AOSP android-17.0.0_r1, bionic/libc/platform/bionic/page.h]
+Android 15 起，AOSP 支持配置为 16 KB 页的设备；4 KB 设备仍受支持。16 KB 页扩大单个 TLB entry 的覆盖范围，也增大映射、保护、文件尾页和部分分配器回收的粒度。小对象通常共享 Scudo slab，一个 1 字节 `malloc` 不会单独占用一个 16 KB 物理页。RSS 是增加还是下降，取决于 TLB miss、页表、文件映射、工作集局部性和页内浪费之间的结果。
 
-2. **ELF 加载器改动**：`linker64` 的 `ElfReader::LoadSegments()` 需要处理 4KB 和 16KB 混合对齐的 ELF 文件。`linker_phdr_16kib_compat.cpp` 实现了 16KB 兼容路径，对仅 4KB 对齐的旧 .so 文件提供回退加载（Android 15 宽松模式，Android 17 可配置为严格模式）。[已验证: AOSP android-17.0.0_r1, bionic/linker/linker_phdr.cpp, bionic/linker/linker_phdr_16kib_compat.cpp]
+### 7.2 linker 的兼容路径不能替代重新构建
 
-3. **mmap 和 mprotect**：所有 `mmap` 调用的 `length` 参数和对齐要求需与实际 page size 匹配。Bionic 内部的 `mmap` 封装已适配。
+`linker_phdr.h` 对 Android 17 兼容开关的注释很直接：
 
-4. **malloc 分配器**：Scudo 的 chunk 对齐、page 回收策略需要感知 16KB page。Scudo 使用 `getpagesize()` 获取实际 page size，在 16KB 设备上调整 region 大小和释放粒度。
+```cpp
+// Use app compat mode when loading 4KiB max-page-size ELFs
+// on 16KiB page-size devices?
+bool should_use_16kib_app_compat_ = false;
+```
 
-**性能影响**：
+兼容装载时，linker 以 4 KiB 对齐解释旧 ELF segment，并通过专门的匿名映射、复制与权限处理装载它。关闭兼容模式后，如果设备页大小至少为 16 KiB 且 `PT_LOAD` 最小对齐小于系统页大小，`LoadSegments()` 会拒绝装载；配置为 fatal 时还会主动中止。
 
-16KB page size 的主要收益在 TLB（Translation Lookaside Buffer）层面。在相同的工作集大小下，16KB page 使 TLB 覆盖范围扩大 4 倍，减少 TLB miss 引发的 page table walk 开销。对内存密集型应用（如图片处理、数据库、游戏纹理加载）效果最明显。代价是内部分片增大——分配 1 Byte 实际占用 16KB——对小对象密集场景有 RSS 增长风险。
+兼容模式增加映射和权限处理的复杂度，也受设备与应用兼容策略控制。发布包仍应提供正确对齐的全部 native library，包括第三方 SDK 和预编译 `libc++_shared.so`。
 
-16KB Page Size 的完整性能分析、TLB 影响实测和兼容性治理详见 **4.7 16KB Page Size 与 Android 性能**。Native .so 兼容性治理详见 **20.13 16KB Page Size 兼容性与 Native 崩溃治理**。
+当前官方工具链规则是：
 
-### 🔹 ARM64 优化：NEON 加速的字符串/内存操作函数
+| NDK 版本 | 16 KB ELF 对齐 |
+|---|---|
+| r28 及以上 | 默认生成 16 KB 对齐的 ELF |
+| r27 及以下 | 显式加入 `-Wl,-z,max-page-size=16384` 和 `-Wl,-z,common-page-size=16384` |
 
-Bionic 的 `memcpy`/`memset`/`memmove`/`strlen`/`strcmp` 等基础内存操作函数针对 ARM64 做了深度手工优化，位于 `bionic/libc/arch-arm64/string/` 目录。这些函数是所有 Native 代码中调用频率最高的原语之一，其性能直接影响整体吞吐量。
+还要检查自定义 linker script、预编译 `.so`、直接使用 `mmap`/`mprotect` 的对齐计算，以及把 4096 当作 I/O block 大小的代码。构建通过后，应在 16 KB 模式设备上执行启动、`dlopen`、插件加载、解压、数据库和 native crash 路径测试。完整检查方式见 [Android 16 KB page size 指南](https://developer.android.com/guide/practices/page-sizes)。
 
-**优化策略**：
+## 8. arm64 字符串函数：Android 17 按硬件能力选择实现
 
-- **NEON SIMD 并行处理**：`memcpy` 使用 `ldp`/`stp`（Load/Store Pair）指令一次搬运 16 字节，配合 NEON 的 `ld1`/`st1` 指令可一次处理 128-bit（16 字节）数据。对大块拷贝（≥64 字节），使用 NEON Q 寄存器并行处理可达到接近内存带宽峰值的吞吐量
-- **分支预测优化**：对短序列（≤16 字节）和小范围长度的 `strlen`/`strcmp`，使用条件指令（`cbz`/`cbnz`）和无分支比较，减少分支预测失败
-- **缓存预取**：对大块 `memcpy`（≥4KB），插入 `prfm`（Prefetch Memory）指令预取后续 cache line，隐藏内存延迟
+Android 17 将部分 arm64 字符串/内存例程链接自 `external/arm-optimized-routines/`，同时保留 Bionic 自有的检查 wrapper、Oryon 例程和 IFUNC resolver。`ifuncs.cpp` 根据 auxv hardware capability 与 CPU 信息选择实现。
 
-[已验证: AOSP android-17.0.0_r1, bionic/libc/arch-arm64/string/]
+| 函数族 | Android 17 的选择依据 |
+|---|---|
+| `memcpy` / `memmove` | 优先 MOPS；否则识别 Qualcomm Oryon；再看 ASIMD；最后使用通用 arm64 实现 |
+| `memset` | 优先 MOPS；否则选择 Oryon 或通用 arm64 实现 |
+| `memchr`、`strchr`、`strlen` 等 | 支持 MTE 时选择能正确处理 tagged address 的 MTE 版本 |
+| `memcmp`、`strcmp`、`strcpy` 等 | 当前选择 arm64 实现；源码中的 SVE 分支仍是待启用注释 |
 
-**与 glibc 实现的对比**：
+这比“所有大于 64 字节的拷贝都走 NEON”更接近源码。具体汇编内部可能使用 pair load/store、SIMD、prefetch 或 non-temporal store，但阈值和收益属于被选实现及 CPU 微架构，不能从 Bionic API 层统一推导。
 
-glibc 的 `memcpy` 实现更复杂，包含更多针对不同 CPU 微架构的微调（如 ERMS/FSRM 指令、rep movsb 快路径）。Bionic 的实现更精简，代码体积更小（适合移动设备指令缓存约束），但在极端大块拷贝场景下可能略慢。对于 Android 应用的典型工作负载（小到中等大小的内存操作），两者性能差异不显著。
+排查 `memcpy` 热点时，还要先判断：
 
-Android 17 的 Bionic 在支持 SVE2（Scalable Vector Extension 2）的硬件上引入了实验性的 SVE2 优化字符串函数，但默认编译目标仍以 NEON 为主以确保向后兼容。[待验证: SVE2 优化函数的启用条件和性能数据]
+- 拷贝是否可以通过所有权转移、scatter/gather 或批处理减少；
+- 地址是否对齐、是否跨 NUMA/共享内存、是否触发缺页；
+- 调用长度分布和重叠语义是否匹配；
+- 设备最终解析到哪一个 IFUNC；
+- 时间消耗是 CPU 搬运、cache miss，还是内存带宽饱和。
 
-### 🔹 Bionic vs glibc 性能差异与跨平台开发
+替换系统 `memcpy` 前必须在目标 SoC 上测量，并覆盖小块、大块、冷热 cache、对齐和重叠输入。系统 resolver 已经包含平台维护的硬件分支，自写版本很容易只在单一 microbenchmark 中占优。
 
-跨平台 C/C++ 代码移植到 Android 时，开发者常遇到 Bionic 与 glibc 的行为差异导致的性能或兼容性问题。
+## 9. Bionic 与 glibc：先检查 API 可用性，再谈性能
 
-**功能缺失**：
+跨平台代码最容易沿用旧版 Bionic 印象。Android 17 的实际状态包括：
 
-| glibc 功能 | Bionic 状态 | 影响 |
-|-----------|------------|------|
-| `iconv()` 全集 | 仅支持有限编码子集 | 需要完整字符集转换的库需引入 libiconv |
-| NSS（Name Service Switch） | 不支持 | 依赖 `gethostbyname`/`getaddrinfo` 行为差异 |
-| `printf` 扩展格式（`%m`、位置参数） | 部分支持 | 某些格式化输出可能行为不同 |
-| `ftw()`/`nftw()` | 不支持 | 需替换为 `opendir`/`readdir` 递归 |
-| `glob()` | 不支持 | 需自行实现或用 POSIX `fnmatch` |
-| `posix_spawn()` | Android 10+ 支持 | 旧代码可能用 `fork`/`exec` |
+| 接口 | Android 17 状态 |
+|---|---|
+| `glob` / `globfree` | API 28 起可用 |
+| `iconv` / `iconv_open` / `iconv_close` | API 28 起可用，支持的编码集合仍应查当前文档 |
+| `posix_spawn` / `posix_spawnp` | API 28 起可用 |
+| `backtrace` / `backtrace_symbols` / `backtrace_symbols_fd` | API 33 起可用 |
+| `ftw` / `nftw` | API 37 头文件与符号中存在 |
+| `pthread_cancel` | Android 17 仍未实现 |
 
-**行为差异**：
+“头文件能编译”与“最低支持版本能运行”是两件事。NDK 根据 `minSdkVersion` 提供 API stub 和 availability guard；如果库的最低 API 低于符号引入版本，需要条件编译、运行时查询或兼容实现。直接在低版本进程装载一个带有新符号强引用的 `.so`，可能在业务代码执行前就失败。
 
-- **`printf` 浮点格式化**：Bionic 使用简化实现，某些极端精度场景的输出可能与 glibc 不同
-- **`wchar_t` 大小**：Bionic 和 glibc 在 Linux 上都是 4 字节，但 Windows 的 MSVCRT 是 2 字节——跨 Windows/Android 移植时需注意
-- **线程取消（`pthread_cancel`）**：Bionic 不支持 `pthread_cancel`，这是 Android 刻意的设计决策（认为其语义不安全）。需要使用 cooperative cancellation（标志位 + 检查点）
-- **信号处理**：Bionic 的信号处理语义与 glibc 在某些边缘场景（如 signal-safety、`sigaction` flags）有细微差异
-- **`fork()` 后的状态**：Bionic 在 `fork()` 后只允许调用 async-signal-safe 函数，与 glibc 的行为一致，但 Bionic 对违反此规则的检测更严格
+`pthread_cancel` 缺失时，应采用协作式取消：原子标志、eventfd/pipe 唤醒、可中断队列或上层任务状态。不要用信号模拟任意点取消，因为库代码、锁状态和资源释放都可能停在不可恢复的位置。
 
-**性能差异**：
+glibc 的 benchmark 也不能直接预测 Android。Android 设备的分配器、动态链接器、内核配置、SoC cache、温控和进程策略都不同。正确做法是在 Android target 上用同一编译器选项和相同数据集测试。
 
-Bionic 在以下场景可能表现出与 glibc 不同的性能特征：
+## 10. 诊断工具如何选择
 
-- **小对象 `malloc`/`free`**：Scudo（Android 默认）相比 glibc 的 ptmalloc2/tcmalloc 在小对象分配上有额外安全检查开销
-- **线程创建**：Bionic 的 `pthread_create` 栈分配策略与 glibc 不同（默认栈大小 1MB vs glibc 默认 8MB），影响内存占用和 `clone` 系统调用延迟
-- **文件 I/O**：Bionic 的 `stdio` 实现使用更小的缓冲区（默认 1KB vs glibc 的 4KB–8KB），对大量小写操作有影响
+| 现象 | 首选工具 | 读取重点 |
+|---|---|---|
+| Native Heap 持续增长 | heapprofd / Perfetto、`malloc_info` | 调用栈聚合、存活分配、时间窗口；区分 allocated bytes 与 RSS |
+| 怀疑越界、double free | Scudo 日志、MTE、HWASan | 第一条 allocator 错误、fault mode、allocation/deallocation stack |
+| 需要精确 guard 或每次分配回溯 | malloc debug | 仅在调试环境开启；`backtrace` 选项会让分配慢一个数量级 |
+| RSS 下降慢 | `mallopt` 对照实验、Perfetto memory、minor fault | purge 时延、释放页数、后续重新 fault 的代价 |
+| 锁竞争 | Perfetto `sched`/futex、Simpleperf | owner/waiter、临界区、唤醒延迟、优先级反转 |
+| 线程数或栈占用异常 | `/proc/<pid>/maps`、Perfetto、线程 dump | `stack_and_tls:<tid>` 映射、实际触页、高水位 |
+| Native crash 符号化 | tombstone、debuggerd、带 build ID 的符号文件 | `backtrace_symbols` 只提供进程内基础转换，不能替代完整离线符号化 |
 
-跨平台开发建议：对性能敏感的 C/C++ 代码，应在 Android 目标平台上做独立的 benchmark，不应假设 glibc 上的性能数据可以直接迁移。
+malloc debug 通过 `libc.debug.malloc.options` 或对应环境配置安装 shim。guard、fill、backtrace 等选项可以组合，但开销不同；尤其逐次 unwind 会改变分配时序和竞争。heapprofd 适合按时间采样真实负载，HWASan/MTE 适合查非法访问，工具选择要服从问题类型。
 
-## 扩展
+## 11. 面向 NDK 代码的检查清单
 
-### 🔸 Bionic 调试与性能分析
+1. **先记录分配尺寸与存活期。** 高频小对象不自动等于需要对象池。对象池会引入生命周期、峰值保留和并发管理成本，只有 benchmark 证明收益时再采用。
+2. **把分配次数、allocated bytes、RSS 分开。** Scudo cache、匿名页、文件页和内核回收会让三个指标变化不同步。
+3. **控制线程数量，再调整栈。** 优先使用有界执行器；调整 `pthread_attr_setstacksize` 时覆盖递归、JNI、信号和 sanitizer 场景。
+4. **保持条件变量谓词循环。** 任何依赖“不会虚假唤醒”的写法都不符合 Android 17 实现与 POSIX 约束。
+5. **不要伪造 top-app 策略。** 线程调度问题应从 task profile、nice、uclamp、CPU affinity、实时权限和设备配置分别检查。
+6. **按运行时页大小计算映射。** 所有传给 `mmap`、`mprotect`、`munmap` 的地址和长度都要复核；ELF 则检查每个 `PT_LOAD` 的对齐。
+7. **把 MTE 模式写进测试矩阵。** 开发阶段用 sync 获取精确报告，生产候选按安全与性能需求评估 async/asymm。
+8. **批量 I/O 时处理系统调用语义。** 直接 `write` 仍可能 short write 或被 `EINTR` 中断；用它替换 stdio 之前，应补齐重试并测量 buffering 效果。
+9. **遵守 `minSdkVersion`。** 对 API 28、33、37 新增符号分别检查编译 guard 和运行时装载路径。
 
-Bionic 提供了多种调试与性能分析手段：
+## 12. 结论
 
-- **malloc debug**：通过 `libc.debug.malloc.options` 系统属性启用，可追踪每次 `malloc`/`free` 的调用栈。适合开发环境定位 Native 内存泄漏，不适合生产环境（开销 >5x）。[已验证: AOSP android-17.0.0_r1, bionic/libc/malloc_debug/README.md]
-- **Scudo 错误诊断**：Scudo 在检测到堆损坏时输出 `Scudo ERROR` 诊断信息，包含 chunk 元数据、调用栈和可能的破坏模式分析
-- **`android_meminfo` 系列 API**：`android_meminfo_get()` 提供进程级内存统计，包括 Native Heap 分配/释放字节数
-- **`backtrace_symbols`**：将 Native 调用栈地址转换为符号名，用于 crash dump 分析
+Android 17 中，Bionic 的性能角色可以归纳为四层：
 
-Native 内存排查的完整工具链和方法论详见 **14.3 Simpleperf 多进程性能监控** 和 **23.11 Scudo 分配器与 Native Heap 性能边界**。
+- API 与 ABI 层：提供 C/POSIX 接口和系统调用封装；
+- 用户态运行时层：实现 pthread 快路径、TLS、stdio 和部分基础例程；
+- 分派层：把 Native Heap 调用交给 Scudo/jemalloc，并允许调试与采样插入；
+- 装载层：根据 ELF、页大小和硬件能力选择装载与 IFUNC 路径。
 
-### 🔸 NDK 原生代码 Bionic 调优最佳实践
+定位问题时，应沿真实调用链逐层确认：当前分配器是谁、dispatch 是否被工具替换、锁是否发生竞争、线程实际映射了什么、页大小和 ELF 对齐是否匹配、arm64 resolver 选择了哪个实现。这样得到的结论才能在 Android 17 设备上复现，也能解释版本升级后行为为何变化。
 
-基于 Bionic 的性能特征，NDK 原生代码的调优建议：
-
-1. **减少频繁小对象 `malloc`/`free`**：Scudo 的安全检查对小对象有固定开销，高频分配/释放（如每帧创建临时对象）会放大这个成本。建议使用对象池或 arena allocator
-2. **理解 Scudo 的 chunk 大小分类**：Scudo 将分配请求按大小分到不同的 size class，每个 class 有独立的 freelist。了解 size class 边界可以优化内存布局（避免分配 65 字节时被提升到 128 字节 class）
-3. **线程栈大小调优**：`pthread_attr_setstacksize` 在创建大量线程时影响显著。默认 1MB 对 I/O 线程通常过多，128KB–256KB 可能足够。但不应低于 `PTHREAD_STACK_MIN`（16KB on Bionic）
-4. **避免 `pthread_cancel` 依赖**：Bionic 不支持，跨平台代码应改用 cooperative cancellation
-5. **16KB page 兼容性**：NDK 编译时使用 `-Wl,-z,max-page-size=16384` 确保生成的 .so 兼容 16KB page 设备。NDK r27+ 默认启用此选项
-6. **`stdio` 缓冲区**：如需大量小写操作，考虑自行设置更大的 `setvbuf` 缓冲区，或切换到直接 `write` 系统调用批量写入
-
-[已验证: 官方文档, developer.android.com/ndk/guides/page-sizes]
-
-<!-- outline-end -->
-
-[结构参考: Clippings/Android 性能优化 — 原理：掌握 App 运行时的内存模型.md]
-[已验证: AOSP android-17.0.0_r1, bionic/ 目录树]
-[交叉引用: 4.7 16KB Page Size, 4.16 ART TLAB, 23.11 Scudo 分配器, 20.11 MTE 崩溃治理, 20.13 16KB 兼容性治理]
+Native Heap 的进一步分析见 **23.11 Scudo 分配器与 Native Heap 性能边界**；16 KB 页的系统影响见 **4.7 16KB Page Size 与 Android 性能**；MTE 和 16 KB 兼容性治理分别见 **20.11** 与 **20.13**。
