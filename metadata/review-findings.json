@@ -1,4 +1,22 @@
 {
-  "schema_version": 1,
-  "findings": []
+  "findings": [
+    {
+      "chapter": "src/part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md",
+      "created_at": "2026-07-25T14:10:58.427069+08:00",
+      "created_by": "hermes-aiw-review-finalize-apply",
+      "created_run_id": "20260725-140518-2c766e00",
+      "details": "本轮已移除/收敛未证实的 recompose:start/end、compose:start/end、subcompose:start/end 固定事件名表述；仍需官方 Runtime Tracing 示例或同版本 Perfetto/trace_processor 结果验证可见 Slice 命名、重组原因字段、Release 显式开启 API 与版本矩阵。",
+      "id": "finding-cc5b12ae4ba9",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "src/part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md"
+      ],
+      "status": "open",
+      "summary": "Compose Runtime Tracing 事件命名与 Release 启用矩阵缺少官方/实测证据，暂不能 finalized",
+      "type": "missing-source",
+      "updated_at": "2026-07-25T14:10:58.427069+08:00"
+    }
+  ],
+  "schema_version": 1
 }

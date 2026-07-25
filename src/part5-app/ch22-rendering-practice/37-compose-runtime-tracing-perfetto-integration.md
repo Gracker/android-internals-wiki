@@ -23,9 +23,9 @@ task9_state: needs-rework
 pipeline_stage: needs-rework
 reviewed_date: "2026-07-25"
 reviewed_by: "hermes-aiw-review-finalize-apply"
-last_review_finalize_at: "2026-07-25T11:06:11+08:00"
-last_review_finalize_run_id: "20260725-110551-3b9ce171"
-rework_reason: "官方 Compose Runtime Tracing 事件命名、重组原因字段、Release 显式开启 API/版本矩阵仍需官方示例或实测 Perfetto 证据；本章可保留为 APM 部署策略草稿，但不足以 finalized。"
+last_review_finalize_at: "2026-07-25T14:10:14+08:00"
+last_review_finalize_run_id: "20260725-140518-2c766e00"
+rework_reason: "本轮复查继续确认：官方 Compose Runtime Tracing 的可见 Slice 命名、重组原因字段、Release 显式开启 API/版本矩阵仍缺少官方示例或实测 Perfetto/trace_processor 证据；已收敛未证实的事件名表述，但本章仍只能作为 APM 部署策略草稿，暂不 finalized。"
 ---
 
 # 22.37 Compose Runtime Tracing — runtime-tracing 与 Perfetto 组合阶段追踪
@@ -40,9 +40,8 @@ rework_reason: "官方 Compose Runtime Tracing 事件命名、重组原因字段
 - tracing-perfetto 的 AAR 集成、二进制依赖与系统 Trace/Perfetto 行为边界需按 AndroidX tracing release notes 逐项核对。[结构参考: developer.android.com/jetpack/androidx/releases/tracing]
 
 ### 🔹 锚点 2：Compose 组合阶段的 Trace 事件
-- recompose:start / recompose:end — 重组事件追踪 [结构参考: 本章原始大纲]
-- compose:start / compose:end — 组合事件追踪 [结构参考: 本章原始大纲]
-- subcompose:start / subcompose:end — 子组合事件追踪 [结构参考: 本章原始大纲]
+- 可见事件应以实际 Perfetto Slice 名称为准；本轮材料不能支撑固定写死 `recompose:start/end`、`compose:start/end`、`subcompose:start/end` 这类事件名，因此正文只保留“组合/重组/子组合相关 Slice”的能力边界。[待验证: 本轮 review]
+- 若后续定稿需要事件名表，应从官方 Runtime Tracing 示例或同一 Compose/AndroidX 版本下的 `trace_processor` 查询结果抽取，而不是沿用大纲占位名称。[待验证: 本轮 review]
 - Trace 事件通常能帮助定位组合/重组相关 Slice，但“每个事件都携带重组原因”未在本轮来源中得到充分证明，定稿前应以官方 Runtime Tracing 示例或实测 trace_processor 输出校验。[待验证: 本轮 review]
 - Trace 事件与 FrameTimeline 的时序对齐 [结构参考: 本章原始大纲]
 
@@ -54,7 +53,7 @@ rework_reason: "官方 Compose Runtime Tracing 事件命名、重组原因字段
 - 使用 Perfetto SQL 查询重组统计（与 13.22 Perfetto SQL Cookbook 联动）[结构参考: 本章原始大纲]
 
 ### 🔹 锚点 4：生产环境 Compose Tracing 部署
-- tracing-perfetto 在 Release 构建中的开销评估 [结构参考: developer.android.com/jetpack/androidx/releases/tracing]
+- tracing-perfetto/runtime-tracing 在 Release 构建中的开销、启用条件与二进制依赖边界需补官方或实测证据后再写成版本矩阵。[结构参考: developer.android.com/jetpack/androidx/releases/tracing]
 - 采样策略：基于用户的灰度采样 vs 基于会话的触发式采样 [来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
 - Trace 数据的线上收集与聚合 [来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
 - 与现有 APM 框架（Firebase Performance / 自研 APM）的集成路径 [来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
@@ -86,7 +85,7 @@ rework_reason: "官方 Compose Runtime Tracing 事件命名、重组原因字段
 
 ## 1. 本章定位：把 Compose Trace 放进 APM 闭环
 
-> Review 状态：本章当前适合作为“Compose Trace 如何接入 APM 闭环”的工程策略草稿；依赖名已修正为 `androidx.compose.runtime:runtime-tracing`，但事件命名、重组原因字段、Release 显式开启 API 与版本矩阵仍缺少官方示例或实测 Perfetto 证据，因此暂不 finalized。
+> Review 状态：本章当前适合作为“Compose Trace 如何接入 APM 闭环”的工程策略草稿；依赖名已修正为 `androidx.compose.runtime:runtime-tracing`，本轮进一步收敛了未证实的固定事件名，但可见 Slice 命名、重组原因字段、Release 显式开启 API 与版本矩阵仍缺少官方示例或实测 Perfetto/trace_processor 证据，因此暂不 finalized。
 
 Compose Runtime Tracing 的价值不只是“在 Perfetto 里多看几条 Slice”，而是把组合、重组、子组合等 UI 运行时开销纳入可回放、可归因、可门禁的性能观测链路。[结构参考: 本章原始大纲] 对应用侧来说，它应当和启动、FPS、慢方法、网络、IO 等信号一起进入 APM 事件模型，而不是停留在一次性的本地调试截图。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
 
@@ -105,7 +104,7 @@ Compose Runtime Tracing 的价值不只是“在 Perfetto 里多看几条 Slice�
 一个可执行的落地规则如下：
 
 1. Debug/Benchmark 构建中优先完整采集 Compose Trace，用于开发期回归和 Macrobenchmark 对比。[结构参考: 本章原始大纲]
-2. Release 构建中默认关闭全量 Trace，只保留 FPS/FrameMetrics 等轻量观测；当动态配置命中目标页面、设备档位或慢帧阈值时，再开启短窗口 Trace。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+2. Release 构建中默认关闭全量 Trace，只保留 FPS/FrameMetrics 等轻量观测；当动态配置命中目标页面、设备档位或慢帧阈值时，再按已验证的 AndroidX tracing/runtime-tracing 接入方式采集短窗口 Trace，避免在缺少版本矩阵证据时宣称某个统一的显式开启 API。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md；待验证: 本轮 review]
 3. 上传链路沿用 APM 的本地存储、批量重试和压缩上传策略，避免在弱网或高频异常场景中放大性能问题。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
 4. Trace 产物只作为问题归因证据进入后台，不作为普通埋点高频上报；这与材料中“令牌桶限流 + 灰度发布 + 动态配置，生产环境可用”的思路一致。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
 
