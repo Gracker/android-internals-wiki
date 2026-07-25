@@ -64,6 +64,12 @@ task9_state: reviewed
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-26
 last_task6_audit: "2026-07-02"
+last_verified: "2026-07-25"
+confidence: high
+last_idle_audit_at: "2026-07-25T22:35:51+08:00"
+last_idle_audit_run_id: "20260725-223518-idle-audit-9529cd15"
+last_idle_audit_log: "logs/audit/2026-07-25-20260725-223518-idle-audit-9529cd15-idle-audit.md"
+idle_audit_result: "pass-metadata-only"
 ---
 
 # 视频叠加与 HWC
