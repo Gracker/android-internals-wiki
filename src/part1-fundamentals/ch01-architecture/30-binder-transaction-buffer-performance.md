@@ -1,432 +1,359 @@
 ---
-title: "Binder Transaction Buffer 演进与大事务性能边界"
+title: "Android 17 Binder Transaction Buffer：内核分配、异步预算与 RPC 上限"
 chapter: "1.30"
 status: ready-for-review
-applicable_versions: "Android 1.0 - Android 17 (API 37)"
+applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 tags: [binder, ipc, transaction-buffer, performance, android17, rpc-binder]
 related_chapters: ["1.4", "1.17", "1.25", "1.10", "1.38"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-27"
 drafted_date: "2026-06-28"
-last_verified: "2026-06-28"
-last_verified_against: "AOSP android-17.0.0_r1"
+last_verified: "2026-07-25"
+last_verified_against: "AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6"
 confidence: high
 sources:
   - type: aosp
-    path: "frameworks/native/libs/binder/Constants.h (android-17.0.0_r1)"
+    path: "frameworks/native/libs/binder/RpcState.cpp (android-15.0.0_r1)"
   - type: aosp
-    path: "frameworks/native/libs/binder/ProcessState.cpp (android-17.0.0_r1)"
+    path: "frameworks/native/libs/binder/Constants.h (android-16.0.0_r1)"
   - type: aosp
-    path: "frameworks/native/libs/binder/RpcState.cpp (android-17.0.0_r1)"
+    path: "frameworks/native/libs/binder/Constants.h"
   - type: aosp
-    path: "frameworks/native/libs/binder/BpBinder.cpp (android-17.0.0_r1)"
+    path: "frameworks/native/libs/binder/ProcessState.cpp"
   - type: aosp
-    path: "frameworks/native/libs/binder/Binder.cpp (android-17.0.0_r1)"
+    path: "frameworks/native/libs/binder/RpcState.cpp"
   - type: aosp
-    path: "frameworks/native/libs/binder/IPCThreadState.cpp (android-17.0.0_r1)"
+    path: "frameworks/native/libs/binder/RpcTransportUtils.h"
+  - type: aosp
+    path: "frameworks/native/libs/binder/BpBinder.cpp"
+  - type: aosp
+    path: "frameworks/native/libs/binder/Binder.cpp"
+  - type: aosp
+    path: "frameworks/native/libs/binder/IPCThreadState.cpp"
+  - type: aosp
+    path: "frameworks/native/libs/binder/Parcel.cpp"
+  - type: kernel
+    path: "common/drivers/android/binder.c (android17-6.18-2026-06_r6)"
+  - type: kernel
+    path: "common/drivers/android/binder_alloc.c (android17-6.18-2026-06_r6)"
+  - type: kernel
+    path: "common/include/uapi/linux/android/binder.h (android17-6.18-2026-06_r6)"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/TransactionTooLargeException"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/SharedMemory"
+  - type: official
+    path: "https://source.android.com/docs/core/architecture/hidl/binder-ipc"
 ---
 
-# 1.30 Binder Transaction Buffer 演进与大事务性能边界
+# 1.30 Android 17 Binder Transaction Buffer：内核分配、异步预算与 RPC 上限
 
-## 概述
+Binder 没有一个适用于所有调用的“单笔 1 MiB 上限”。kernel Binder 为每个进程建立接收事务的映射区，多笔在途请求、oneway、回复和 Binder object 会共同占用这块空间。RPC Binder 又使用另一套传输和协议上限。只记住“Binder 是 1 MiB”会漏掉并发、方向、异步预算和协议头等关键条件。
 
-Binder 事务缓冲区是 Android IPC 性能的硬约束边界。每个进程的 Binder 缓冲池大小、单笔事务上限、以及大事务告警阈值，共同决定了「一次跨进程调用能传多少数据、同时能有多少并发调用、以及何时会触发 `TransactionTooLargeException` 或 `FAILED_TRANSACTION`」。Android 17 在此领域引入了重要变化：RPC binder 单笔事务上限从 100KB 提升至 600KB，并首次将缓冲区相关魔量常量化到 `Constants.h`。
+本文以 `android-17.0.0_r1` 和 `android17-6.18-2026-06_r6` 为准，回答四个问题：映射区有多大，驱动怎样分配和回收，oneway 为什么更容易形成压力，以及 Android 17 中的 600 KiB RPC 上限究竟约束哪条路径。事务时序观测见 [1.32](01.32-android17-binder-ipc-performance-monitoring.md)，oneway 排队见 [1.25](01.25-android17-binder-ipc-async-batch-pipeline.md)。
 
-## 要点
+## 一、先区分三种“大小边界”
 
-### 🔹 Binder 缓冲区架构
+| 边界 | Android 17 的值或规则 | 约束对象 |
+| --- | --- | --- |
+| libbinder 映射请求 | `1 MiB - 2 × page size` | 一个 kernel Binder 进程的接收缓冲区 |
+| Binder 驱动 mmap 上限 | `min(requested size, 4 MiB)` | 驱动接受的单个 `binder_alloc` 映射长度 |
+| RPC Binder 协议上限 | `600 KiB`，还要扣除协议头与对象表 | 一条 RPC Binder 命令或回复包 |
+| libbinder 大事务告警线 | `300 KiB` | kernel Binder 和 RPC Binder 的诊断告警，不是硬上限 |
 
-#### 进程级缓冲池：BINDER_VM_SIZE
+第一行和第二行并不矛盾。Android 17 的 AOSP `ProcessState` 主动只映射约 1 MiB；kernel r6 最多接受 4 MiB，是驱动对调用者请求的保护上限。普通 AOSP 进程不会因为驱动允许 4 MiB 就自动得到 4 MiB。
 
-每个 Android 进程在 `ProcessState::init()` 时通过 `mmap` 映射一块 binder 缓冲区，大小由 `BINDER_VM_SIZE` 常量控制：
+RPC Binder 不通过目标进程的 `/dev/binder` 映射区传输数据，因此 600 KiB 与 kernel Binder 的约 1 MiB 接收池不能互相替代。
+
+## 二、kernel Binder 映射区如何建立
+
+### 1. `BINDER_VM_SIZE` 的准确计算
+
+Android 17 的 `ProcessState.cpp` 定义：
 
 ```cpp
-// frameworks/native/libs/binder/ProcessState.cpp:48 (android-17.0.0_r1)
-#define BINDER_VM_SIZE ((1 * 1024 * 1024) - sysconf(_SC_PAGE_SIZE) * 2)
+#define BINDER_VM_SIZE \
+    ((1 * 1024 * 1024) - sysconf(_SC_PAGE_SIZE) * 2)
 ```
 
-这意味着缓冲池大小约为 **1MB - 2×PageSize**。在 4KB 页大小下约为 1,015,808 字节（~990KB）；在 16KB 页大小下约为 999,424 字节（~976KB）。此值自 Android 早期版本至 Android 17 **从未修改**。
+常见页大小下的结果如下：
 
-`mmap` 调用使用 `MAP_PRIVATE | MAP_NORESERVE` 标志（`ProcessState.cpp:625`），这意味着：
+| 页大小 | 计算 | 映射长度 |
+| --- | --- | --- |
+| 4 KiB | `1,048,576 - 2 × 4,096` | `1,040,384` 字节，即 1016 KiB |
+| 16 KiB | `1,048,576 - 2 × 16,384` | `1,015,808` 字节，即 992 KiB |
 
-- 缓冲区是**惰性分配**的：内核只在实际写入时才分配物理页
-- **不计入进程 RSS**：LMKD 无法感知 binder 缓冲区的实际使用量
-- 不占用 swap 配额：`NORESERVE` 表示不预留 swap 空间
+16 KiB 页设备的映射长度比 4 KiB 页设备少 24 KiB。这个差值来自宏中的“两页”，不是驱动把每笔事务按 16 KiB 对齐。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/ProcessState.cpp]
-
-#### 缓冲区分配与回收：binder_alloc
-
-内核驱动中的 `binder_alloc` 模块（`drivers/android/binder_alloc.c`）负责管理每个进程的缓冲区。核心机制：
-
-1. **分配**：`binder_alloc_new_buf()` 在 mmap 区域中分配连续缓冲区。每个事务（包括 oneway）的数据和 offsets 数组都从同一池子分配。
-2. **约束**：同一进程内**所有并发 in-flight 事务**的 data + offsets 总和不能超过 `BINDER_VM_SIZE`。
-3. **回收**：事务完成后（`BC_FREE_BUFFER`），缓冲区立即归还到 free list。
-4. **ASYNC vs SYNC 优先级**：内核为 oneway 事务保留了一定比例的缓冲区（`binder_alloc` 中 `buffer_size / 2` 为 async 限制），防止同步事务被大量异步事务挤占。
-
-当缓冲区耗尽时，新事务会阻塞等待或返回 `EAGAIN`（取决于 `TF_ONE_WAY` 标志），内核通过 `BR_SPAWN_LOOPER` 通知用户空间可能需要更多 binder 线程。
-
-[已验证: AOSP android-17.0.0_r1, drivers/android/binder_alloc.c]
-
-#### 1MB 限制的历史来源
-
-1MB 的 binder 缓冲池大小可以追溯到 Android 最早的 Binder 驱动实现。设计目标是：
-
-- **足够大**以容纳典型的 IPC 调用（如 `getInstalledPackages()` 返回的 PackageInfo 列表）
-- **足够小**以限制每个进程的内核内存占用（移动设备内存稀缺的时代遗产）
-- **公平性**：防止一个恶意进程通过巨型事务耗尽系统内存
-
-`TransactionTooLargeException`（Java 层）和 `FAILED_TRANSACTION`（native 层）是数据超过缓冲区时的直接表现。
-
-[已验证: 官方文档, developer.android.com/reference/android/os/TransactionTooLargeException]
-
----
-
-### 🔹 Android 17 缓冲区扩展：RPC Binder 事务上限 100KB → 600KB
-
-> ⚠️ **事实校正**：outline 原始描述「2MB 缓冲区提升」不准确。经 AOSP android-17.0.0_r1 源码核验，Android 17 的变化是 **RPC binder 单笔事务上限**从 100KB 提升到 600KB，**kernel binder 的 `BINDER_VM_SIZE` 1MB 未变**。
-
-#### Constants.h：从隐性魔数到显式常量
-
-Android 17 在 `frameworks/native/libs/binder/` 下新增了 `Constants.h`（commit `ae266dc`，关联 bug `b/392575419`），首次将两个关键常量显式化：
+`ProcessState` 使用以下方式建立映射：
 
 ```cpp
-// frameworks/native/libs/binder/Constants.h (android-17.0.0_r1)
-namespace android::binder {
+mVMStart = mmap(
+    nullptr,
+    BINDER_VM_SIZE,
+    PROT_READ,
+    MAP_PRIVATE | MAP_NORESERVE,
+    opened.get(),
+    0
+);
+```
 
-// 大事务告警软阈值（300 KB）
+这块用户虚拟地址用于接收驱动写入的事务。`MAP_NORESERVE` 表示不为映射预留交换空间；它不能推导出“Binder 页面不计入 RSS”。驱动在事务需要覆盖相应范围时安装后备物理页，内存统计仍要以目标内核和设备实测为准。
+
+### 2. 映射属于接收方
+
+kernel Binder 为目标进程分配请求 buffer。A 调用 B 时，请求占用 B 的 `binder_alloc`；B 返回同步回复时，回复占用 A 的 `binder_alloc`。因此，某个进程的压力既可能来自它作为服务端接收大量请求，也可能来自它作为客户端同时等待大量回复。
+
+发送方用户态 `Parcel` 的内存是另一份数据。驱动将 Parcel data、offset 数组和附加 buffer 复制或修正到接收方映射区，不能把发送方 Parcel capacity 与接收方 Binder 空间视为同一个指标。
+
+### 3. 驱动的 4 MiB 上限
+
+kernel r6 的 `binder_alloc_mmap_handler()` 使用：
+
+```c
+alloc->buffer_size = min_t(
+    unsigned long,
+    vma->vm_end - vma->vm_start,
+    SZ_4M
+);
+```
+
+这个上限允许其他 Binder 用户态实现请求不同长度，同时阻止无限放大映射。AOSP `ProcessState` 仍传入 `BINDER_VM_SIZE`，所以最终 `alloc->buffer_size` 是前一节算出的 1016 KiB 或 992 KiB。
+
+## 三、`binder_alloc` 怎样分配一笔事务
+
+### 1. 分配大小不只有 `data_size`
+
+`binder_alloc_new_buf()` 接收三部分：
+
+- `data_size`：Parcel 普通数据区；
+- `offsets_size`：指向 Binder object、FD 等对象的偏移数组；
+- `extra_buffers_size`：scatter-gather 附加缓冲区及相关数据。
+
+kernel r6 的 `sanitized_size()` 分别把三者按 `sizeof(void *)` 对齐，再求和；零长度事务也至少占一个指针大小，以保证地址唯一。
+
+```text
+allocated = align(data_size, pointer_size)
+          + align(offsets_size, pointer_size)
+          + align(extra_buffers_size, pointer_size)
+```
+
+事务 buffer 按指针大小切分。页只负责实际后备范围，相邻小事务可以位于同一页。16 KiB 页会改变页面安装和回收粒度，不会让每个小事务固定浪费 16 KiB。
+
+### 2. 最佳适配、切分与合并
+
+`binder_alloc_new_buf_locked()` 在 free-buffer 红黑树中找能容纳请求的最小 buffer。找到更大的空闲块后，驱动把它切成已分配部分和剩余 free buffer；释放时再与相邻空闲块合并。
+
+分配成功后，`binder_install_buffer_pages()` 只安装覆盖该 buffer 所需的页面。页面级回收还要考虑相邻 buffer 是否在使用，因此“事务 buffer 已释放”和“该页可以回收”是两个时刻。
+
+### 3. 空间不足直接失败
+
+如果找不到合适的 free buffer，`binder_alloc_new_buf_locked()` 返回 `-ENOSPC`。异步预算不足也返回 `-ENOSPC`。这条路径不会阻塞等待旧 buffer 释放，更不会借 `BR_SPAWN_LOOPER` 扩大线程池。
+
+`BR_SPAWN_LOOPER` 处理的是服务进程缺少可用 Binder 线程，与接收缓冲区分配失败属于不同问题。native 调用通常看到 `FAILED_TRANSACTION`；Java 层如何映射为 `TransactionTooLargeException` 或其他异常，取决于 JNI 的启发式规则，详见 [1.32](01.32-android17-binder-ipc-performance-monitoring.md)。
+
+### 4. buffer 何时归还
+
+接收方 libbinder 通过 `BR_TRANSACTION` 或 `BR_REPLY` 得到映射区地址，构造一个引用这段内存的 `Parcel`。处理完后，release callback 向驱动发送 `BC_FREE_BUFFER`，驱动才把对应 `binder_buffer` 放回 free tree。
+
+对于同步请求，Android 17 的 `IPCThreadState` 在发送回复前先执行 `buffer.setDataSize(0)`，释放请求 buffer，避免客户端收到回复后立即发起下一笔调用时，旧请求仍占用服务端空间。
+
+oneway 没有回复。它可能先在目标进程或目标 node 的异步队列中等待，buffer 在服务端完成处理并释放 Parcel 后才归还。高频 oneway 的 buffer 生命周期并不天然比同步调用短。
+
+## 四、同步与异步共享地址池，但异步有预算
+
+### 1. “一半给 oneway”不是两块物理分区
+
+初始化 `binder_alloc` 时，kernel r6 设置：
+
+```c
+alloc->free_async_space = alloc->buffer_size / 2;
+```
+
+同步和异步事务仍从同一棵 free-buffer 树分配。`free_async_space` 是额外的记账预算：异步分配前先检查预算，成功后扣减，释放后归还。同步事务不扣这项预算，但仍需要地址池中存在足够的连续 free buffer。
+
+所以，一半空间没有被提前划成 oneway 专用区。该预算只限制异步事务最多消耗的总量，为同步请求和回复保留余地。
+
+### 2. oneway 的 node 级串行会延长占用
+
+同一个 Binder node 的 oneway 事务按顺序处理。第一个异步事务正在执行时，后续事务进入该 node 的 `async_todo`。当前 buffer 释放后，驱动才把下一笔搬到目标进程的可执行队列。
+
+如果生产速度高于服务端消费速度，多个 oneway buffer 会同时占据目标进程地址池；调用方早已从 `BR_TRANSACTION_COMPLETE` 返回，并不代表服务端完成或 buffer 已释放。
+
+### 3. Android 17 kernel r6 的 spam 判定
+
+kernel r6 只有在 `free_async_space < buffer_size / 10` 时才开始查找主要发送方，也就是剩余异步预算少于初始异步预算的 20%。随后按当前发送进程统计尚未释放的异步 buffer：
+
+- buffer 数量超过 50；或
+- 总占用超过 `buffer_size / 4`；
+
+满足其一，当前 buffer 会被标记为 `oneway_spam_suspect`。libbinder 默认启用驱动检测，调用方收到 `BR_ONEWAY_SPAM_SUSPECT` 时记录调用栈。
+
+这些是内核诊断条件，不是业务接口应追求的容量目标。接近这些条件时，目标进程的异步预算已经非常紧张。
+
+## 五、FD、Binder object 与 scatter-gather 也占元数据空间
+
+通过 Binder 传递 `ParcelFileDescriptor` 或 Binder object 时，大文件内容不会复制进 `data_size`，但事务仍包含 `flat_binder_object` 以及 offset 条目。驱动还要完成对象引用或 FD 的校验与转换。
+
+FD 方案的主要价值是让大块数据留在文件、共享内存或其他专用缓冲区中，Binder 只承载描述符和控制信息。它不表示端到端没有数据复制：生产者可能先把数据写进共享区域，接收者也要 mmap、同步并管理生命周期。
+
+Android 8 已引入 scatter-gather Binder。Android 17 的 `BC_TRANSACTION_SG` 可以通过 `binder_transaction_data_sg` 提供 `buffers_size`，驱动把相应内容计入 `extra_buffers_size`。它属于稳定演进机制，不是 Android 17 新增的应用开关。
+
+## 六、怎样理解“大事务”与失败
+
+### 1. 没有安全的固定单笔值
+
+一笔事务能否成功，至少取决于：
+
+- 目标进程当前剩余的连续 free buffer；
+- 同时在途的请求与回复；
+- 此调用的 data、offsets 和 extra buffers；
+- oneway 是否还受 `free_async_space` 限制；
+- 事务发送期间目标进程是否死亡或被冻结；
+- 走 kernel Binder 还是 RPC Binder。
+
+即使单笔数据明显低于映射长度，并发事务也可能使它失败。反过来，失败也不必然意味着本次 Parcel 本身接近 1 MiB。
+
+### 2. 300 KiB 是主动告警线
+
+Android 17 的 `Constants.h` 定义：
+
+```cpp
 constexpr size_t kLogTransactionsOverBytes = 300 * 1024;
+```
 
-// RPC binder 单笔事务硬上限（600 KB）
-// 注释原文："This was 100 KB during and before Android V"
+`BpBinder` 对超过该值的发出 Parcel 记录 `Large outgoing transaction`。`BBinder` 对超过该值的请求和回复分别记录 `Large data transaction`、`Large reply transaction`。
+
+这条线比常见映射长度小很多，因为大事务会增加复制成本，并挤压同一进程的并发空间。日志出现不等于当前事务必然失败，但应检查接口是否把大块数据、无界列表或图片直接塞进 Parcel。
+
+### 3. 服务端 1000 ms 日志测的是执行区间
+
+Android 17 的 `BBinder::transact()` 从进入方法开始计时；超过 1000 ms 时记录接口、方法、请求字节数、回复字节数和 flags。这个区间主要覆盖服务端 `onTransact()` 及其嵌套工作，不是调用方端到端耗时，也不含事务到达服务线程之前的全部等待。
+
+### 4. Perfetto 的大小证据
+
+kernel r6 的 `binder_transaction_alloc_buf` tracepoint直接给出 `data_size`、`offsets_size`、`extra_buffers_size`，并通过 transaction id 与 `binder_transaction` 关联。Perfetto 标准 `android_binder_txns` 表没有通用的 `dataSize` / `replySize` 列；要分析大小，应在录制时加入该 ftrace event，再查看原始事件参数。
+
+debugfs `stats` 还能看到逐进程 buffer 数量和 `free async space`，但它是快照，不能代替 transaction 级时间轴。
+
+## 七、RPC Binder 的 600 KiB 边界
+
+### 1. 版本变化发生在 Android 16
+
+`Constants.h` 在 `android-16.0.0_r1` 和 `android-17.0.0_r1` 中都存在。其注释说明 RPC Binder 上限在 Android V 及以前是 100 KB，Baklava 时期改为：
+
+```cpp
 constexpr size_t kRpcTransactionLimitBytes = 600 * 1024;
-
-} // namespace android::binder
 ```
 
-注释明确写道：「RPC binder does not have support for shared memory in the Android Baklava timeframe」——这是 600KB 上限的根本原因：RPC 通道缺少 shared memory fallback，所以单笔事务必须能装下中大块数据。
+因此版本边界应写成：
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/Constants.h]
+| 版本 | RPC Binder 边界 |
+| --- | --- |
+| Android 15 / V 及以前 | 100 KB |
+| Android 16 / Baklava | 600 KiB，并引入统一的 300 KiB 告警常量 |
+| Android 17 | 延续 600 KiB 协议上限与 300 KiB 告警线 |
 
-#### 三处事务校验的统一引用
+Android 17 是本文验证基线，但不是这次上限调整的首发版本。
 
-`kRpcTransactionLimitBytes` 在 RPC binder 的事务链路中被三处引用：
+### 2. 600 KiB 不等于可用 Parcel 正好 600 KiB
 
-| 位置 | 文件 | 检查语义 | 失败行为 |
-|------|------|----------|----------|
-| 分配侧 | `RpcState.cpp:381` | `size > kRpcTransactionLimitBytes` | `ALOGE` + 拒绝分配 |
-| 发送侧 | `RpcState.cpp:670` | `bodySize >= kRpcTransactionLimitBytes - sizeof(RpcWireHeader)` | `ALOGE` + `FAILED_TRANSACTION` |
-| 接收侧 | `RpcState.cpp:1345` | `bodySize < kRpcTransactionLimitBytes - sizeof(RpcWireHeader)` | break 退出循环 |
-| 分块 | `RpcTransportUtils.h:67` | `kChunkMax = kRpcTransactionLimitBytes` | iovec 分块发送上限 |
-
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/RpcState.cpp + RpcTransportUtils.h]
-
-#### RPC binder vs kernel binder：适用路径区分
-
-理解 Android 17 缓冲区变化的关键是区分两条 binder 通道：
-
-**kernel binder**（传统路径）：
-- 通过 `/dev/binder` 设备节点
-- 受 `BINDER_VM_SIZE`（~1MB）进程级缓冲池约束
-- 绝大多数 App ↔ ContentProvider、App ↔ 系统服务走此路径
-
-**RPC binder**（新增路径）：
-- 通过 vsock/socket 传输（`RpcSession`）
-- 受 `kRpcTransactionLimitBytes`（600KB）单笔上限约束
-- 主要用于虚拟化（Microdroid VM）、`RpcServer` 形式注册的服务
-
-`BpBinder::transact` 中的分流逻辑（`BpBinder.cpp:419-426`）：
+`RpcState::transactAddress()` 计算的 `bodySize` 包含 `RpcWireTransaction`、Parcel data 和对象表，并要求：
 
 ```cpp
-if (isRpcBinder()) [[unlikely]] {
-    status = rpcSession()->transact(...);        // 走 RPC 通道 → 600KB 上限
-} else {
-    status = IPCThreadState::self()->transact(...);  // 走 kernel binder → 1MB 进程池
-}
+bodySize < kRpcTransactionLimitBytes - sizeof(RpcWireHeader)
 ```
 
-`[[unlikely]]` 标注表明编译器将 kernel binder 路径排为热路径，RPC 路径为冷路径。对普通 App 调用 `ContentResolver` → `ContentProvider` 的路径，**绝大多数走 kernel binder**，不直接受 600KB 限制影响。
+所以应用可用的 Parcel data 必须小于 600 KiB，还要为协议结构和对象表留空间。回复使用同样的包级约束；超出时，服务端清空回复数据，并以 `FAILED_TRANSACTION` 返回。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/BpBinder.cpp]
+`CommandData` 的动态分配也拒绝超过 600 KiB 的请求。`RpcTransportUtils` 把 600 KiB 用作初始最大传输 chunk，并可在底层返回 `ENOMEM` 时缩小 chunk 重试。传输分块不会放宽整个 RPC 命令的协议上限。
 
-#### 版本演进总结
+### 3. 它不影响普通 App 到系统服务的 kernel Binder
 
-| 维度 | Android ≤ V (API ≤ 35) | Android 17 (API 37) | 来源 |
-|------|------------------------|----------------------|------|
-| RPC binder 单笔事务硬上限 | 100 KB（隐性魔数） | **600 KB** | `Constants.h` |
-| 大事务告警阈值 | 无统一常量 | **300 KB** | `Constants.h` |
-| `BINDER_VM_SIZE` | ~1MB | ~1MB（**未变**） | `ProcessState.cpp:48` |
-| RPC binder 共享内存 | 缺失 | **仍缺失** | `Constants.h` 注释 |
-| `Constants.h` 文件 | 不存在 | 存在（26Q2 引入） | git: `ae266dc` |
+`BpBinder::transact()` 先判断 `isRpcBinder()`：RPC endpoint 交给 `RpcSession`，其余交给 `IPCThreadState` 和 kernel Binder。普通 App 调用 Activity Manager、Package Manager 或 ContentProvider 通常属于后一条路径，不会因为 RPC 上限从 100 KB 变为 600 KiB 就获得更大的 kernel Binder 空间。
 
----
+`Constants.h` 用 Baklava 时期 RPC Binder 缺少 shared-memory support 解释设限原因。Android 17 tag 仍保留同一常量和注释；设计 RPC 接口时应直接服从 600 KiB 包级上限，不能假设有自动共享内存后备路径。
 
-### 🔹 大事务性能策略
+## 八、`TF_ONE_WAY` 与 `TF_CLEAR_BUF` 的 buffer 语义
 
-#### SharedMemory vs Binder：数据量的交叉点
+### 1. `TF_ONE_WAY`
 
-当需要跨进程传递大数据时，选择 SharedMemory 还是 Binder 取决于数据量和访问模式：
+`TF_ONE_WAY` 让调用方不等待回复，但数据仍要在目标进程成功分配并复制。`BR_TRANSACTION_COMPLETE` 只说明驱动接受了发送请求；服务端执行、oneway node 排队和 buffer 回收都可能发生在之后。
 
-| 数据量 | 推荐方式 | 理由 |
-|--------|----------|------|
-| < 100 KB | Binder Parcel | 一次性传递，无需额外资源管理 |
-| 100 KB - 500 KB | 谨慎使用 Binder | kernel binder 可承载但占用缓冲池 10%-50%；RPC binder 受 600KB 限制 |
-| 500 KB - 1 MB | **SharedMemory + FD 传递** | 避免 `BINDER_VM_SIZE` 耗尽 |
-| > 1 MB | **必须用 SharedMemory** | binder 缓冲池无法承载 |
+适合 oneway 的接口应是无需返回结果、允许异步处理且有容量控制的事件。把同步方法机械改成 oneway，只会把调用方等待变成目标进程的隐式队列和异步空间压力。
 
-`MemoryFile`、`SharedMemory`（API 27+）、`Ashmem`（deprecated）是三种主要的共享内存 API。`ContentProvider` 返回大型 `Cursor` 时使用 `CursorWindow`（内部基于 ashmem），不走 binder 数据通道。
+### 2. `TF_CLEAR_BUF`
 
-**300KB 告警阈值**：超过 `kLogTransactionsOverBytes`（300KB）的事务会在 logcat 中输出 `ALOGW`，过滤关键字 `"Large data transaction"`、`"Large reply transaction"`、`"Large outgoing transaction"` 即可定位大事务调用源。
+kernel r6 在创建目标 `binder_buffer` 时把 `TF_CLEAR_BUF` 写入 `clear_on_free`。释放 buffer 前，`binder_alloc_clear_buf()` 遍历后备物理页，把整个 buffer 清零后再归还 allocator。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/Binder.cpp:510,548 + BpBinder.cpp:433]
+同步调用中，Android 17 的 `IPCThreadState` 会把 `TF_CLEAR_BUF` 转发给回复；`BBinder::transact()` 还会对用户态回复 Parcel 调用 `markSensitive()`，使 libbinder 在释放自己拥有的数据区前清零。因此该 flag 同时覆盖接收方 kernel buffer 和相关用户态回复数据，不应写成“只清用户态、不清内核”。
 
-#### FileDescriptor 传递（BINDER_TYPE_FD）的性能特征
+清零成本随 buffer 覆盖范围增加，源码没有承诺固定微秒数。它是敏感数据的安全语义，不能为了减少耗时随意移除；应先避免把大块敏感数据放进 Parcel。
 
-传递 FD 通过 `BINDER_TYPE_FD` 类型在 binder transaction 中完成，内核驱动调用 `binder_translate_fd` 将发送方的 FD 映射到接收方的 FD 表中。关键性能特征：
+## 九、16 KiB 页设备上的真实影响
 
-- **FD 传递本身很轻量**：不拷贝数据，只复制文件描述符引用
-- **但会消耗 buffer offsets 空间**：每个 FD 占用 `sizeof(binder_size_t)` 的 offset 条目
-- **`TF_ACCEPT_FDS` 标志**：默认开启，对端如果未设置此标志则拒绝 FD 传递
-- **dup 风险**：接收方获得 FD 后需要主动 close，否则导致 FD 泄漏
+16 KiB 页带来两个可直接从源码确认的变化：
 
-典型用法：传递 SharedMemory 的 FD → 接收方 mmap → 零拷贝访问大数据。这比通过 Parcel 序列化大数据高效得多。
+1. `BINDER_VM_SIZE` 从 4 KiB 页设备的 1016 KiB 变为 992 KiB；
+2. `binder_install_buffer_pages()` 和 page LRU 以 16 KiB 为安装、回收粒度。
 
-[已验证: AOSP android-17.0.0_r1, drivers/android/binder.c]
+事务 buffer 的逻辑大小仍按指针宽度对齐，多个小 buffer 可以共享一页。较大的页面可能改变后备物理页数量、回收时机和内存局部性，但“每个小事务多浪费 12 KiB”之类结论无法从 allocator 得出，必须通过真实负载测量。
 
-#### ContentProvider 批量操作的缓冲区消耗
+做 4 KiB/16 KiB 对比时，应固定 APK、调用并发、Parcel 分布和设备内存状态，并分别报告 transaction 大小、失败率、页面统计与端到端时延。
 
-`ContentProvider.applyBatch()` 将多个 `ContentProviderOperation` 打包成一个 `Bundle` 跨进程传递。每个操作约 8-12KB（操作类型 + URI + values + selection），典型批量操作：
+## 十、接口设计与验证方法
 
-| 批量操作数量 | Parcel 大小（估） | 缓冲池占用率 | 风险 |
-|-------------|------------------|------------|------|
-| 5 个操作 | ~50 KB | ~5% | 安全 |
-| 20 个操作 | ~200 KB | ~20% | 注意 |
-| 50 个操作 | ~500 KB | ~50% | **高风险**：并发事务可能溢出 |
-| 100+ 个操作 | > 1 MB | > 100% | **必定失败** |
+### 1. 控制数据可以直接走 Parcel
 
-推荐策略：批量操作超过 20 个时，分批提交或改用 `ContentProvider.call()` + SharedMemory。
+固定字段、数量有界的小型请求适合 AIDL structured Parcelable。使用 typed collection，避免通用 Bundle 携带不受控对象；服务端同时校验元素数、字符串长度和嵌套集合深度。
 
-[待验证: 需要在实际系统 provider 上采样 Perfetto 确认 Parcel 实际尺寸]
+不要按“20 个操作”或“500 KB 以下”写死通用规则。同一种 `ContentProviderOperation` 的 URI、selection、values 和 back reference 都会改变 Parcel 大小。批量接口应同时限制 item count 和预估字节数，并在压力测试中记录真实序列化大小。
 
----
+### 2. 大块数据使用描述符协议
 
-### 🔹 Binder 事务标志位性能语义
+图片、模型、媒体帧、大型表格或可重复访问的数据更适合文件、`ParcelFileDescriptor`、`SharedMemory` 或领域专用共享 buffer。Binder 只传递描述符、offset、length、格式、版本和所有权。
 
-#### FLAG_ONEWAY 的异步语义与排队行为
+协议还要明确：
 
-`FLAG_ONEWAY`（`TF_ONE_WAY`，值 0x01）标记事务为异步调用。调用方发出 `BC_TRANSACTION` 后，内核收到后立即返回 `BR_TRANSACTION_COMPLETE`，调用方不阻塞等待远端执行结果。
+- 谁创建和关闭 FD；
+- 何时允许复用或覆盖；
+- 读写权限与 `SharedMemory.setProtect()`；
+- 生产者与消费者之间如何同步；
+- 对端死亡后的清理；
+- 长度、offset 与整数溢出的校验。
 
-性能影响：
-- **缓冲区占用周期短**：oneway 事务的数据在远端 `BBinder::transact` 完成后即可回收
-- **但仍消耗缓冲区**：在数据传输期间，oneway 事务同样占用 `BINDER_VM_SIZE` 空间
-- **async 缓冲区限制**：内核为 oneway 事务单独设置了上限（约为 `buffer_size / 2`），防止大量异步调用挤占同步调用空间
-- **oneway spam 检测**：Android 17 默认开启 oneway spam detection，内核检测到过密的 oneway 调用时发送 `BR_ONEWAY_SPAM_SUSPECT`，客户端 `IPCThreadState` 会打印 `ALOGE("Process seems to be sending too many oneway calls.")` + CallStack
+### 3. 为 oneway 建立背压
 
-详见 1.25 节（Android 17 Binder IPC 异步机制与批处理流水线）的深入分析。
+oneway 接口可以用序列号合并过时状态，用有界窗口限制未确认事件，或将高频细粒度事件聚合成批次。目标是让生产速度长期不超过消费速度，而不是等到驱动发出 spam suspect 才处理。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/IPCThreadState.cpp:1175-1182]
+### 4. 同时测单笔大小和并发
 
-#### FLAG_CLEAR_BUF 的安全清除开销
+建议至少覆盖以下用例：
 
-`FLAG_CLEAR_BUF`（值 0x20）在 Android 17 中通过 `Constants.h` 体系管理。当设置此标志时：
+1. 单请求逐步增加 data、object 和 extra buffer；
+2. 多线程并发同步请求；
+3. 服务端故意延迟消费 oneway；
+4. 请求小、回复大，以及请求大、回复小；
+5. 4 KiB 与 16 KiB 页设备；
+6. kernel Binder 与 RPC Binder 分开测试；
+7. Perfetto 记录 `binder_transaction_alloc_buf`，复现前后读取 debugfs stats；
+8. 检查 300 KiB 日志、`FAILED_TRANSACTION`、扩展 `ENOSPC` 和 oneway spam 日志。
 
-- 服务端：`BBinder::transact` 中 `if (reply != nullptr && (flags & FLAG_CLEAR_BUF)) reply->markSensitive();`（`Binder.cpp:506`）
-- `markSensitive()` 标记 Parcel 的数据缓冲区在释放时需要用 `memset` 清零
-- **性能开销**：单次 `memset(data, 0, size)` 的开销与数据大小成线性关系，对于 300KB+ 的大事务，可能增加 50-200μs 的延迟
-- 主要用于安全敏感数据（密码、密钥、token），避免数据残留在已释放的 binder 缓冲区中
+只有把事务大小分布与并发数放在一起，才能解释“同一个调用有时成功、有时失败”。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/Binder.cpp:506]
+## 十一、Android 17 源码核对入口
 
-#### enableShielding 与 buffer 清零
+| 结论 | 文件与入口 |
+| --- | --- |
+| AOSP 映射长度 | `ProcessState.cpp`：`BINDER_VM_SIZE`、`mmap()` |
+| 驱动 4 MiB 上限、async 初始预算 | `binder_alloc.c`：`binder_alloc_mmap_handler()` |
+| 大小对齐、最佳适配与 `-ENOSPC` | `binder_alloc.c`：`sanitized_size()`、`binder_alloc_new_buf_locked()` |
+| oneway spam 条件 | `binder_alloc.c`：`debug_low_async_space_locked()` |
+| kernel buffer 清零 | `binder.c`：`clear_on_free`；`binder_alloc.c`：`binder_alloc_clear_buf()` |
+| 300 KiB 日志与 600 KiB RPC 上限 | `Constants.h` |
+| RPC 请求/回复包级检查 | `RpcState.cpp`：`transactAddress()`、回复发送路径 |
+| 传输 chunk | `RpcTransportUtils.h`：`kChunkMax` |
+| 大事务与慢事务日志 | `BpBinder.cpp`、`Binder.cpp` |
+| 请求释放与 clear flag 转发 | `IPCThreadState.cpp`：`BR_TRANSACTION` 处理分支 |
 
-Android 17 的 `Parcel::markSensitive()` 机制是 `FLAG_CLEAR_BUF` 的底层实现。当 Parcel 被 markSensitive 后，其 `freeData()` 路径会先写零再释放。这一机制对 binder 缓冲区的影响：
-
-- 用户态 Parcel 的 `freeData()` 额外开销：O(n) memset
-- 内核 binder buffer 的回收路径：不受 `markSensitive` 影响（内核在 `BC_FREE_BUFFER` 时直接归还到 free list，不清零）
-- 因此 `FLAG_CLEAR_BUF` 只保护用户态数据，不保护内核缓冲区中的数据残留
-
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/Parcel.cpp]
-
----
-
-### 🔹 Binder 线程池与事务排队
-
-#### 默认 15 线程上限的历史与调优
-
-每个 Android 进程的 binder 线程池默认最大值为 **15 个 binder 线程**（`DEFAULT_MAX_BINDER_THREADS`，`ProcessState.cpp:49`）。加上主线程（main thread 也参与 binder 通信），总并发处理能力为 ~16 个并发事务。
-
-线程池的动态扩展机制：
-
-1. `ProcessState::setThreadPoolMaxThreadCount(maxThreads)` 通过 `BINDER_SET_MAX_THREADS` ioctl 告诉内核上限
-2. 内核在事务排队且空闲线程不足时，通过 `BR_SPAWN_LOOPER` 通知用户空间创建新线程
-3. 新线程 `joinThreadPool(isMain=false)` 后进入 `getAndExecuteCommand()` 循环
-4. **启动后不能缩容**：`LOG_ALWAYS_FATAL_IF(mThreadPoolStarted && maxThreads < mMaxThreads)`
-
-`system_server` 的线程池配置更大（通常 >30），因为需要处理来自所有 App 的系统服务调用。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/ProcessState.cpp:435-507]
-
-#### 线程池耗尽的表现
-
-当 binder 线程池耗尽时，新事务会在内核中排队等待空闲线程。表现取决于调用类型：
-
-| 场景 | 现象 | 诊断信号 |
-|------|------|----------|
-| 同步调用排队 | 调用方线程 `binder_thread_read` 阻塞 | Perfetto: `binder_wait_for_work` 长片段 |
-| Oneway 调用堆积 | 内核 async buffer 耗尽，新 oneway 阻塞或丢弃 | `BR_ONEWAY_SPAM_SUSPECT` |
-| 进程被冻结 | 缓存进程的 binder 事务被暂存 | `BR_TRANSACTION_PENDING_FROZEN`（解冻后重投递）|
-| 进程死亡 | 远端 binder 线程不可用 | `BR_DEAD_REPLY` |
-| 进程无响应 | InputDispatcher 等待 binder 回复超时 | ANR（前台 5s / 后台 10s for InputDispatcher） |
-
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/IPCThreadState.cpp]
-
-详见 1.38 节（Binder 线程池管理与 IPC 线程饥饿性能边界）的深入分析。
-
----
-
-### 🔹 ContentProvider 与系统服务的高频调用
-
-#### ContentProvider call/insert 的缓冲区消耗
-
-`ContentResolver.call()` 和 `ContentResolver.insert()` 是最常见的高频 binder 调用路径。每次调用的 Parcel 开销：
-
-| 操作类型 | 典型 Parcel 大小 | 说明 |
-|---------|-----------------|------|
-| `insert(uri, values)` | 2-5 KB | URI 字符串 + ContentValues 键值对 |
-| `update(uri, values, where)` | 3-8 KB | 增加 WHERE 子句 |
-| `call(method, arg, extras)` | 5-50 KB | Bundle 可携带较大数据 |
-| `query(uri, ...)` 返回 Cursor | < 1 KB | 实际数据通过 CursorWindow (ashmem) 传递 |
-| `applyBatch(ops)` | 50-500 KB | 多操作打包，每操作 ~10KB |
-
-关键点：`query` 返回的 Cursor 实际数据**不走 binder buffer**，而是通过 `CursorWindow`（基于 ashmem/SharedMemory）零拷贝传递。binder 事务只传递 CursorWindow 的 FD 引用。
-
-#### 系统服务高频调用的缓冲区占用
-
-常见高频系统服务调用及其缓冲区消耗：
-
-| 调用 | 典型数据量 | 频率 |
-|------|-----------|------|
-| `PackageManager.getPackageInfo()` | 5-20 KB | 每次启动数次 |
-| `WindowManager.getMetrics()` | 2-8 KB | 每次 UI 变化 |
-| `ActivityManager.getRunningAppProcesses()` | 3-15 KB | 周期性查询 |
-| `LocationManager.getLastKnownLocation()` | 1-3 KB | 每次定位请求 |
-| `NotificationManager.notify()` | 2-10 KB | 每次通知 |
-
-这些单个调用都不大，但累积效应值得关注。冷启动中可能产生 30-50 次同步系统服务调用，总缓冲区周转量可达数百 KB。
-
-#### 跨进程回调注册的缓冲区累积风险
-
-注册 binder 回调（如 `ContentObserver`、`RemoteCallbackList`）时，服务端会持有客户端的 `IBinder` 引用。每次回调触发时：
-
-- 客户端进程需要有空闲 binder 线程处理
-- 如果回调密集且客户端线程池满，回调会排队
-- 如果客户端进程被冻结，回调进入 `BR_TRANSACTION_PENDING_FROZEN` 状态
-
-推荐做法：对高频回调使用 `oneway` 接口，确保单个回调不会长时间占用 binder 线程。
-
-[自动发现] 对于使用 `Messenger` 或 `ResultReceiver` 的异步回调路径，底层仍然是 binder oneway 调用，同样受线程池和缓冲区约束。
-
----
-
-### 🔹 Perfetto 中的 Binder 缓冲区观测
-
-#### binder_track 与 binder_transaction slice
-
-Perfetto 的标准 binder track（`android.binder`）自动采集所有 binder 事务的 trace 点：
-
-- **`binder transaction` slice**：一次完整的同步或异步 binder 调用，从 `BC_TRANSACTION` 到 `BR_REPLY`（同步）或 `BR_TRANSACTION_COMPLETE`（异步）
-- **`binder reply` slice**：同步调用的回复阶段
-- **`thread_state` 关联**：调用方线程在 `binder_wait_for_work` 状态下 blocked
-
-典型 Perfetto 分析流程：
-
-1. 搜索 `binder transaction` slice，按 `duration` 降序排列
-2. 对超长 slice（>10ms），展开查看 `category`、`debug_filename`、`debug_category` 字段
-3. 关联 `thread_state` track 确认调用方是否在主线程
-4. 对端线程（server 端 binder thread）通过 `process_track` 关联
-
-#### binder_wait_for_work stall 的含义
-
-`binder_wait_for_work` 是 Perfetto 中标识 binder 调用等待时间的关键信号。它表示调用方线程在 `ioctl(BINDER_WRITE_READ)` 中等待内核响应的时间。
-
-stall 的常见原因：
-- 服务端处理慢（`BBinder::transact` 内部业务逻辑耗时）
-- 服务端 binder 线程池耗尽（等待空闲线程）
-- 内核调度延迟（目标进程未被及时调度到 CPU）
-- 进程被冻结（cached process 的 binder 调用被 freezer 暂停）
-
-Android 17 的 `BBinder::transact` 内置了 **1000ms 延迟阈值**告警：
-
-```cpp
-// frameworks/native/libs/binder/Binder.cpp:570-575 (android-17.0.0_r1)
-const uint64_t transactionMs = to_ms(std::chrono::steady_clock::now() - startTime);
-if (transactionMs > 1000lu) {
-    ALOGW("Binder transaction to %s, function: %s, took %" PRIu64
-          "ms. Data bytes: %zu Reply bytes: %zu Flags: %d", ...);
-}
-```
-
-这是**被动测量通道**：即使应用没有自建埋点，也能从 logcat 中过滤 `"Binder transaction to"` + `"took"` 定位卡顿事务。同时 `ATRACE_TAG_AIDL` 提供**主动测量通道**，在 Perfetto trace 中自动生成 binder transaction 区段。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/Binder.cpp:570-575]
-
-#### 300KB 大事务告警的 Perfetto 关联
-
-当 binder 事务的 data 超过 `kLogTransactionsOverBytes`（300KB）时，`Binder.cpp:510` 和 `BpBinder.cpp:433` 会输出 `ALOGW`。结合 Perfetto 分析的推荐流程：
-
-1. 在 logcat 中搜索 `"Large data transaction"` / `"Large reply transaction"` / `"Large outgoing transaction"`
-2. 根据时间戳关联到 Perfetto trace 中对应的 `binder transaction` slice
-3. 检查 slice 的 `dataSize` 和 `replySize` 字段
-4. 优化方向：改用 SharedMemory/FD 传递，或拆分事务
-
----
-
-## 扩展
-
-### 🔸 跨厂商 Binder 实现差异
-
-主流 OEM 对 binder driver 的参数调优主要体现在：
-
-- **`BINDER_VM_SIZE` 调整**：部分高性能设备（如游戏手机）的 OEM fork 可能将此值提升到 2MB 或 4MB，但 AOSP 主线始终维持 1MB
-- **`DEFAULT_MAX_BINDER_THREADS` 调整**：某些 OEM 将 system_server 的线程池扩大到 50+
-- **binder driver 内核模块定制**：高通和联发科的 BSP 可能包含 binder 驱动的性能优化补丁
-
-[待验证: 需要采样多个 OEM 设备的 `getprop | grep binder` 和 dmesg 确认]
-
-### 🔸 Binder 在虚拟化/容器环境中的性能
-
-Android Virtualization Framework（AVF）中的 VM 间通信使用 RPC binder（通过 vsock），而非传统的 `/dev/binder`。关键差异：
-
-- **缓冲区模型不同**：RPC binder 使用 socket/vsock 传输，缓冲区由 `RpcTransport` 管理，不受 `BINDER_VM_SIZE` 约束
-- **单笔事务上限**：受 `kRpcTransactionLimitBytes`（600KB）约束
-- **拷贝次数**：RPC binder 至少 2-3 次拷贝（client → vsock → server），比 kernel binder 的 1 次拷贝多
-- **无 shared memory**：Android 17 的 RPC binder 不支持 shared memory（Constants.h 注释确认），大块数据只能走 FD 传递或重复拷贝
-
-详见 1.32 节（Android Virtualization Framework 架构与 pKVM 隔离性能边界）。
-
-### 🔸 16KB Page Size 对 Binder 缓冲区的影响
-
-Android 16+ 开始支持 16KB page size。对 binder 缓冲区的影响：
-
-- **`BINDER_VM_SIZE` 变化**：`(1MB - 2 * 16KB)` = 995,328 字节，比 4KB page 的 1,015,808 字节少 ~20KB
-- **分配粒度变化**：binder buffer 的分配单位从 4KB 变为 16KB，小事务的内部碎片率上升
-- **`mmap` 区域不变**：进程的 binder mmap 总区域大小不受 page size 影响，但实际可用空间略有减少
-
-详见 4.7 节（16KB Page Size 与 Android 性能）。
-
----
-
-## 版本边界声明
-
-本文所有源码引用均锚定 `android-17.0.0_r1`（Android 17 / API 37）。涉及 Android V 及之前的版本对比，基于 `Constants.h` 注释原文：「This was 100 KB during and before Android V」。`BINDER_VM_SIZE` 自 Android 早期版本至 android-17.0.0_r1 未发生变化。
-
-> 本文由 Task 2A 知识加工于 2026-06-28 产出。素材来源：AOSP android-17.0.0_r1 源码 + DeepResearch 调研材料。所有源码引用已通过 AOSP 源码验证。
-
-## 参考资料
-
-### Android 17 RPC Binder 事务上限从 100KB 提升到 600KB
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-27-android17-binder-rpc-transaction-limit-600kb.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 17 在 Constants.h 首次将 RPC binder 单笔事务上限从 100KB 提升到 600KB（6×），告警阈值 300KB；该常量统一约束 RpcState 的分配/发送/接收/iovec 分块四方路径。传统 kernel binder 的 BINDER_VM_SIZE（1MB）未修改。对 ContentProvider 大批量 Cursor/BulkInsert 路径可减少 fallback 到 CursorWindow/ashmem 的次数。
-- 注入时间：2026-06-29
-- 价值：源码级澄清 Android 17 Binder 事务缓冲区的真实变更范围（RPC binder 而非 kernel binder），消除'1MB→2MB'的错误描述
+分析 Transaction Buffer 时，先标明目标进程、事务方向、kernel/RPC 通道、同步/oneway 和并发数。缺少这些条件，“1 MiB 上限”只是一个容易误导的近似说法。
