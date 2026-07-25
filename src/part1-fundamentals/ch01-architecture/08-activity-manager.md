@@ -136,6 +136,21 @@ last_deepseek_cn_review_at: '2026-07-01'
 task6_l1_l2_fixes: '5'
 task6_l3_l4_issues: '0'
 last_task9_audit_log: logs/deep-review/2026-07-01-00-audit.md
+task6_review_notes: '2026-07-01 Task6 revisiting re-review (idle-audit auto-fix 后):
+  pass-light-edit。L1 小修 7 处（禁用词"链路"×7 → 流程/调用链/计算路径/路径）；无 L2/L3/L4 新增问题。Task9 idle-audit
+  source version anchoring 后写作复审通过。自动晋升 finalized。'
+task9_review_notes: '2026-07-01 Task9 idle-audit: auto-fixed Android 17 source baseline;
+  OomAdjuster moved to com.android.server.am.psc; updated OOM constants/source anchors
+  and android-17.0.0_r1 verification markers; P0 1 / P1 0 / P2 0; returned to Task6
+  review. | 2026-06-09 Task9 deep-review: pass-tech-review。复核 Task9 idle-audit auto-fix
+  与 Task6 回流；AOSP android-16.0.0_r1 源码锚点、Android 17 官方行为边界、queue pending 状态均通过；P0
+  0 / P1 0 / P2 0；自动晋升 finalized。 | 2026-06-09 Task9 idle-audit: auto-fixed P0 source
+  anchors: ProcessAnrTimer is an inner class of ActiveServices, not a standalone source
+  file; activity cold-start process launch uses ATMS.startProcessAsync() -> ActivityManagerInternal.startProcess(),
+  not AMS.startProcessAsync(); P0 2 / P1 0 / P2 0; returned to Task6 review. | 2026-05-28
+  Task9 00:33：AUTO-FIX Perfetto monitor contention SQL 表名/列名；回到 Task6 复审。 | 2026-05-28
+  Task9 deep-review: pass-tech-review。复核 Task6 回流后的技术口径；P0 0 / P1 0 / P2 0；queue 无
+  pending，自动晋升 finalized。'
 ---
 
 # 1.8 Activity Manager Service 与性能分析

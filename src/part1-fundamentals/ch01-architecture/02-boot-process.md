@@ -36,6 +36,48 @@ task2b_result: fixed
 task9_state: reviewed
 task9_result: auto-fixed
 review_notes: "2026-07-25 Android 17/API 37 全文复审：平台锚定 android-17.0.0_r1，内核锚定 android17-6.18-2026-06_r6；删除 Pixel 分段估算、Cloud Profiles/SDM 外推、关闭 dm-verity 建议和内部加工标记；修正 Perfetto boot trace 起点、init 三阶段、Zygote/SystemServer 顺序与 per-user boot completed 边界。"
+drafted_date: '2026-03-30'
+drafted_by: openclaw-task2a
+reviewed_date: "2026-07-02"
+reviewed_by: openclaw-task6
+review_type: task6-writing-quality-review
+task6_reviewed_date: "2026-07-02"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-07-01'
+last_task9_at: '2026-07-01T13:41:01+08:00'
+last_task2b_at: '2026-05-06T16:04:00+08:00'
+last_task2b_lite_at: '2026-07-01'
+review_v2_fix: 误区 section boot_completed 事件描述修正 + 事件排序修正
+polish_count: '1'
+polish_date: '2026-04-05'
+polish_by: task2b-polish
+last_task9_review_log: logs/deep-review/2026-07-01-13-deep-review.md
+task9_review_notes: '2026-05-06 16:39 task9 deep-review: pass-tech-review。P0 0 / P1
+  0 / P2 4。 | 2026-05-19 22:20 闲时抽检：bootstat 命令参数错误。 | 2026-05-20 03:17 Task2B 修正：bootstat
+  -l→-p。 | 2026-05-27 06:23 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；Task6
+  已通过且 queue 无 pending，自动晋升 finalized。 | 2026-07-01 07:25 Task9 idle audit: AUTO-FIX
+  AOSP source anchors android-16.0.0_r1→android-17.0.0_r1; P1 queued because finalized
+  chapter has no markdown body after frontmatter.'
+last_task6_at: "2026-07-02T04:05:00+08:00"
+last_task6_audit: '2026-07-04'
+last_task6_audit_result: pass-no-edit
+task6_review_notes: 2026-05-06 16:24 Task6：Task2B 修复后写作复审；清理大纲口语化表述，无新增 L3/L4 回炉项，送 | 2026-07-01 13:30 Task6：Task2B main body restoration 后复审；禁用词扫描零命中，outline 全覆盖（6/6 锚点+3/3 扩展），CN-EN spacing/L1/L2 全部通过；无新增 L3/L4 回炉项；正文约 6300 字，待验证 2 处/待补充 4 处均在合理范围。送 Task9 复审 restored body。
+  Task9 复审。 | 2026-05-27 06:09 Task6：复审通过；禁用词扫描无新增硬伤，outline 覆盖完整，无新增 L3/L4 回炉项，送
+  Task9 复审。
+last_task6_review_log: logs/review/2026-07-02-04-review.md
+last_task9_audit: '2026-07-01'
+last_task9_audit_result: auto-fixed
+task2b_lite_note: '2026-06-20 Task2B Lite: cleared stale last_task9_audit_result=needs-rework
+  (2026-06-10 idle audit P1 phantom; text has no "3000-4000 常用类" reference; chapter
+  is finalized with pass-tech-review).'
+task2b_lite_note_2: '2026-07-01 Task2B Lite: frontmatter state fix — status finalized→needs-rework
+  (task9_result=needs-rework, body empty); stale task2b_result fixed-lite→pending.
+  Body restoration deferred to main Task2B.'
+last_task9_autofix_at: '2026-07-01'
+task2b_fixed_at: '2026-07-01T12:52:40+08:00'
+task2b_fixed_by: task2b-main-2026-07-01
+deepseek_cn_review_state: done
+last_deepseek_cn_review_at: 2026-07-03
 ---
 
 # 系统启动全流程
