@@ -1,40 +1,60 @@
+---
+title: "版本约定"
+chapter: "preface.5"
+status: ready-for-review
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
+last_verified: "2026-07-25"
+last_verified_against: "AOSP android-17.0.0_r1; Android Common Kernel android17-6.18-2026-06_r6"
+confidence: high
+sources:
+  - type: official
+    path: "https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/default.xml"
+  - type: official
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/"
+tags: [introduction, versioning, aosp, kernel]
+---
+
 # 版本约定
 
-Android 性能问题有一个很现实的难点：**很多结论是带版本边界的。**
+Android 的系统行为、源码路径和观测能力都会随版本变化。同一条排障经验在 Android 10、Android 15 与 Android 17 上可能对应不同方法、trace 事件或限制条件，因此正文会把版本范围和源码 tag 一起写出。
 
-同样一个问题，在 Android 10、Android 12、Android 15 上的观察点、系统行为甚至优化方向，都可能不一样。  
-所以本书尽量不给“脱离版本的永恒结论”，而是把版本范围一起写出来。
+## 平台版本标注
 
-## 版本标注格式
+正文使用 `Android X（API N）- Android Y（API M）` 表示连续适用范围，例如：
 
-正文里默认使用下面这种格式标注适用范围：
+- `Android 8（API 26）- Android 17（API 37）`
+- `Android 12（API 31）- Android 17（API 37）`
+- `Android 15（API 35）及以上；本书验证到 Android 17（API 37）`
 
-`Android X (API N) - Android Y (API M)`
+“及以上”只覆盖章节明确验证过的最高版本，不自动包含 Android 18 或后续版本。API level 表示 SDK 接口版本，AOSP tag 表示本次核对的具体源码快照；两者用途不同，正文需要源码论证时应同时给出。
 
-例如：
+## 默认平台源码
 
-- `Android 8 (API 26) - Android 17 (API 37)`
-- `Android 12 (API 31) - Android 17 (API 37)`
-- `Android 15+（system-triggered profiling 扩展到 Android 16 / 17，源码验证默认看 Android 17 tag）`
+平台结论默认锚定 AOSP `android-17.0.0_r1`。这个 tag 用于核对 Framework、Native system components、ART、Bionic、HAL 接口定义与平台工具等源码。
 
-## 为什么要坚持写版本范围
+旧版本 tag 可以保留在版本演进段落中。例如一项行为在 Android 12 引入、Android 15 重构、Android 17 再次调整时，正文应分别指出发生变化的 tag、路径或符号，并以 `android-17.0.0_r1` 收束当前行为。
 
-读者在工作里最常遇到的误判之一，就是把“某个版本下成立的结论”误当成“所有版本都成立”。  
-比如：
+`main`、`master` 与开发分支会继续变化。它们可以帮助发现未来方向，但不能作为 Android 17 行为的证据。若开发分支与 Android 17 tag 不同，正文以固定 tag 为准。
 
-- Android 12 之后很多渲染分析会优先看 FrameTimeline，但更老的系统并没有这套可观测性。
-- Android 14、15、16 对后台限制、前台服务和 profiling 的行为已经明显不同。
-- 某些 AOSP 路径在不同版本里名字相同，但逻辑已经重构。
+## 默认内核源码
 
-如果不把版本范围一起写清楚，读者很容易在自己设备上“照着做但看不到同样结果”，最后误以为是自己看错了。
+涉及 Linux 调度、内存管理、Binder 驱动、文件系统、BPF、PSI、cgroup 或电源管理时，默认锚定 Android Common Kernel `android17-6.18-2026-06_r6`。
 
-## 默认参考版本
+ACK tag 只覆盖公共内核基线。具体设备还可能包含：
 
-除非章节里明确说明，本书当前内容以 Android 17（API 37）稳定版为最高基线来讲，AOSP 源码验证默认锚定 `android-17.0.0_r1`，再补充关键版本分界线。  
-遇到明显受版本影响的地方，会优先写清楚：
+- SoC 厂商驱动和调度扩展；
+- GKI vendor modules；
+- 产品 defconfig、设备树与内核命令行；
+- 厂商性能、温控和功耗策略。
 
-- 哪个版本之前是什么
-- 哪个版本之后变成了什么
-- 读者在 trace、代码路径或工具上会看到什么变化
+因此，ACK 中存在某项能力不等于所有 Android 17 设备都以同样配置启用；ACK 中没有厂商实现，也不能证明设备上不存在对应扩展。涉及量产设备时，需要补充该设备的 kernel commit、配置和 vendor 证据。
 
-读这本书时，最稳的习惯是：**每次看到一个判断，顺手确认它适用的版本范围。**
+## 阅读版本差异
+
+遇到受版本影响的结论，正文应交代三个观察点：
+
+1. 变化从哪个版本开始，旧行为是什么；
+2. Android 17 固定基线中的代码路径与行为是什么；
+3. trace、日志、命令或 API 表现会怎样变化。
+
+按这三个观察点核对，可以区分“设备没有触发条件”“厂商实现不同”和“资料引用了其他 Android 版本”。全书的确定性结论最高到 Android 17；更高版本只作为明确隔离的后续线索。
