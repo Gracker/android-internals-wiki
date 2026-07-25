@@ -8,6 +8,10 @@ applicable_versions: "['Android 14.0 (API 34) - Android 17.0 (API 37)']"
 tags: "[power, battery, energy]"
 weight: "4"
 source_repos: "['frameworks/base/core/java/android/os/PowerManager.java', 'frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java', 'frameworks/base/core/java/android/os/BatteryStats.java', 'frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java', 'frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java', 'frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobInfo.java', 'frameworks/base/services/core/java/com/android/server/am/ActiveServices.java', 'frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java', 'frameworks/base/services/core/java/com/android/server/location/LocationManagerService.java', 'frameworks/base/services/core/java/com/android/server/location/injector/SystemLocationPowerSaveModeHelper.java']"
+last_verified: "2026-07-25"
+last_verified_against: "AOSP android-17.0.0_r1; linked AIW DeepResearch notes for Battery Saver/location, JobScheduler, Radio, Adaptive Battery/App Standby"
+confidence: medium-high
+sources: "AOSP android-17.0.0_r1 source paths listed in source_repos; DeepResearch/2026-06-17-battery-saver-location-power-policy-aosp-deep-dive.md; DeepResearch/2026-06-20-job-scheduler-throttling-mechanism.md; DeepResearch/2026-06-18-jobscheduler-source-verification.md; DeepResearch/2026-06-18-radio-power-state-machine-source-analysis.md; DeepResearch/2026-06-18-adaptive-battery-app-standby-coordination.md"
 task2b_result: fixed
 task2b_state: fixed
 task9_state: pass-tech-review
@@ -24,8 +28,9 @@ last_task9_at: "2026-07-02T09:31:35+08:00"
 last_task6_audit: "2026-07-03"
 last_task6_review_at: "2026-07-03T16:19:00+08:00"
 last_task9_audit: "2026-07-02"
+last_idle_audit_at: "2026-07-25T18:35:47+08:00"
+last_idle_audit_run_id: "20260725-183547-idle-audit-692dae4f"
 ---
--
 
 # 11.4 案例集
 

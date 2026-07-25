@@ -1,7 +1,7 @@
 ---
 title: "Media3 视频播放渲染管线性能实战"
 chapter: "22.43"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 tags: [media3, exoplayer, videoplayback, mediacodec, rendering, performance]
 related_chapters: ["22.42", "12.33", "25.17", "25.18"]
@@ -17,14 +17,14 @@ last_body_apply_at: "2026-07-25T17:15:40+08:00"
 last_body_apply_run_id: "20260725-171540-c68b5cac"
 last_body_apply_source: "source-index:26 DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md"
 task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
-reviewed_date: "2026-07-23"
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: finalized
+reviewed_date: "2026-07-25"
 reviewed_by: "hermes-aiw-review-finalize-apply"
-last_review_finalize_at: "2026-07-23T11:05:47+08:00"
-last_review_finalize_run_id: "20260723-110520-166cb21f"
-review_finalize_note: "2026-07-23 review: 已移除 outline 形态内容，将未由材料证明的 Media3/HDR/厂商实现标题级断言降级为排查边界；同步收敛 setOutputSurface、BufferQueue asyncMode、ANGLE-Vulkan fence/shader 等结论的适用范围。"
+last_review_finalize_at: "2026-07-25T18:06:09+08:00"
+last_review_finalize_run_id: "20260725-180545-04713644"
+review_finalize_note: "2026-07-25 review: 修正 KEY_ALLOW_FRAME_DROP 字段语义与 ExoPlayer 默认行为的证据边界；确认 MediaCodec/BufferQueue/ANGLE 源码锚点均限定在 android-17.0.0_r1，未上升为 Android 18/API38+ 或厂商通用结论。本章可 finalized。"
 ---
 
 # 22.43 Media3 视频播放渲染管线性能实战
@@ -53,7 +53,7 @@ review_finalize_note: "2026-07-23 review: 已移除 outline 形态内容，将�
 
 - `mCallback` / `EventHandler`（line 1820-1850）注册 9 类回调常量，其中 `CB_INPUT_AVAILABLE=1` / `CB_OUTPUT_AVAILABLE=2` / `CB_OUTPUT_FORMAT_CHANGE=4` / `CB_LARGE_FRAME_OUTPUT_AVAILABLE=7` / `CB_METRICS_FLUSHED=8` / `CB_REQUIRED_RESOURCES_CHANGE=9` 是 Android 17 上视频播放高频事件。
 - `mBufferMode`（line 2451）区分 `BUFFER_MODE_LEGACY`（ByteBuffer）与 `BUFFER_MODE_BLOCK`（Android 12+ Block Model / Frame 路径）。材料能支撑 AOSP `MediaCodec` 具备该模式分支，但不能直接推出所有 Media3/ExoPlayer `MediaCodecVideoRenderer` 默认都走 `BUFFER_MODE_BLOCK`；实际路径需结合所用 Media3 版本、`MediaCodecAdapter` 实现与 codec 能力确认。
-- `releaseOutputBuffer(int, long renderTimestampNs)`（line 4363）：ExoPlayer 在 SurfaceView 渲染时调用此 API 指定 VSYNC 渲染时间；SurfaceView 端要求 timestamp 与 `System.nanoTime` 差距 ≤ 1 秒，否则 fallback 到「最早可行时间」不丢帧模式。
+- `releaseOutputBuffer(int, long renderTimestampNs)`（line 4363）：播放器可通过此 API 为 Surface 输出指定渲染时间戳；SurfaceView 端要求 timestamp 与 `System.nanoTime` 差距 ≤ 1 秒，否则 fallback 到「最早可行时间」不丢帧模式。具体 Media3 版本是否、何时使用该 API，需要结合 ExoPlayer `MediaCodecVideoRenderer` / frame release helper 实现确认。
 - `setOutputSurface(@NonNull Surface surface)`（line 2643）：动态切换 decoder 输出 Surface（API 24+），video effect pipeline 关键 API。
 
 ### MediaCodec native 双线程模型
@@ -204,13 +204,13 @@ if (!format->findInt32(KEY_ALLOW_FRAME_DROP, &mAllowFrameDroppingBySurface)) {
 }
 ```
 
-这里的逻辑是：输出格式里**没有** `KEY_ALLOW_FRAME_DROP` 字段时默认为 `true`（允许 surface 丢帧），字段存在时按字面值取用。[已验证: MediaCodec.cpp android-17.0.0_r1 line 5676-5678; 来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
+这里的逻辑边界需要谨慎表述：按材料摘录，输出格式里**没有** `KEY_ALLOW_FRAME_DROP` 字段时默认为 `true`（允许 surface 侧参与丢帧决策）；字段存在时这段摘录把 `mAllowFrameDroppingBySurface` 归一为 `false`，不能据此写成「字段存在时按字面值取用」。[已验证: MediaCodec.cpp android-17.0.0_r1 line 5676-5678; 来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
 
-当 codec 在 configure 时把 `KEY_ALLOW_FRAME_DROP=true`，最终会通过 `disableLegacyBufferDropPostQ(surface)` 通知 BufferQueue 禁用 legacy 帧丢弃策略，让 SurfaceFlinger 自己根据 acquire fence 决定 drop。材料把这一行为描述为「ExoPlayer 默认行为——把丢帧决策权交给 SF 的 BufferQueue 机制」；从源码能验证的是 AOSP `MediaCodec` 默认 `mAllowFrameDroppingBySurface=true`，但「ExoPlayer 的实际配置值」取决于 Media3 / ExoPlayer `MediaCodecVideoRenderer` 与具体 codec adapter 实现，不应在缺少版本矩阵时写成绝对结论。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
+当 `mAllowFrameDroppingBySurface=true` 时，后续路径会通过 `disableLegacyBufferDropPostQ(surface)` 通知 BufferQueue 禁用 legacy 帧丢弃策略，让 SurfaceFlinger 自己根据 acquire fence 决定 drop。材料曾把这一行为描述为「ExoPlayer 默认行为——把丢帧决策权交给 SF 的 BufferQueue 机制」；本章只保留 AOSP `MediaCodec` 默认值这一可验证结论，不把「ExoPlayer 的实际配置值」写成绝对默认，因为它取决于 Media3 / ExoPlayer `MediaCodecVideoRenderer` 与具体 codec adapter 实现。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
 
 实战含义：
 
-1. **HDR / 高帧率卡顿**：若发现 codec 端 disable 了 surface frame drop（`mAllowFrameDroppingBySurface=false`），SurfaceFlinger 会等 consumer acquire 完每一帧——4K HDR 60fps 下容易产生 jank。排查时应先确认 `KEY_ALLOW_FRAME_DROP` 的实际值，而不是直接归因到 codec 解码慢。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
+1. **HDR / 高帧率卡顿**：若发现 codec 端没有把丢帧决策交给 surface（`mAllowFrameDroppingBySurface=false`），SurfaceFlinger 侧可用的 drop 策略会变化——4K HDR 60fps 下容易产生 jank。排查时应先确认 configure 阶段是否携带 `KEY_ALLOW_FRAME_DROP` 以及最终 `mAllowFrameDroppingBySurface` 状态，而不是直接归因到 codec 解码慢。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
 2. **`disableLegacyBufferDropPostQ` 的作用**：移除 legacy drop 路径后，BufferQueue 的 FIFO 顺序由 SurfaceFlinger 维护，drop 决策更接近 Vulkan / V-Display pipeline 的 present time 模型。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
 
 ### BufferQueueCore 基线默认值与 slot 上限

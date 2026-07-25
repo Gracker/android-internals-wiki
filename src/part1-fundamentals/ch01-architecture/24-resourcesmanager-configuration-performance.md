@@ -1,28 +1,53 @@
 ---
-
-
 title: "ResourcesManager 与 Configuration 变更性能"
 chapter: "1.24"
 status: "finalized"
 drafted_date: "2026-06-04"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-06-30"
-last_verified_against: "AOSP android-17.0.0_r1 ActivityRecord/ATMS/ResourcesManager/ConfigurationController/ActivityThread/AppCompatRecreateOnConfigChangePolicy + DisplayContent/WindowToken FixedRotation 调用路径"
-confidence: medium
+last_verified: "2026-07-25"
+last_verified_against: "AOSP android-17.0.0_r1 ResourcesManager / ResourcesKey / ConfigurationController / ActivityRecord / ActivityThread / AppCompatRecreateOnConfigChangePolicy / DisplayContent / WindowToken；Android 17 官方行为变更文档"
+confidence: high
 sources:
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/ResourcesManager.java"
-  - type: aosp
-  - type: aosp
-  - type: aosp
-  - type: aosp
-  - type: aosp
-  - type: aosp
-  - type: aosp
-  - type: aosp
   - type: official
+    path: "https://developer.android.com/guide/topics/resources/runtime-changes"
   - type: official
-  - type: blog
+    path: "https://developer.android.com/guide/topics/manifest/activity-element#config"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/behavior-changes-17"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/behavior-changes-all"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/changes/ff-restrictions-ignored"
+  - type: official
+    path: "https://developer.android.com/develop/ui/compose/state-saving"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/ResourcesManager.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/content/res/ResourcesKey.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/content/res/Resources.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/content/res/ResourcesImpl.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/ConfigurationController.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/ActivityThread.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/servertransaction/ActivityRelaunchItem.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/servertransaction/ActivityConfigurationChangeItem.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/AppCompatRecreateOnConfigChangePolicy.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/WindowToken.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/res/res/values/attrs_manifest.xml @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-17.0.0_r1"
 tags: [resources, configuration, activity-recreation, performance, resourcesmanager, configChanges, edge-to-edge]
 related_chapters: ["1.8", "2.12", "8.2", "16.5"]
 created_by: "task2a-knowledge-gap"
@@ -59,625 +84,489 @@ task9_reviewed_date: "2026-07-03"
 task9_reviewed_by: "openclaw-task9"
 finalized_by: "openclaw-task9-auto-promote"
 finalized_date: "2026-07-03"
----
 last_task6_audit: "2026-07-13"
 last_task6_audit_notes: "Idle audit: Fixed L1 issues (对齐→页面对齐, reduced 通过/如果 usage), 12 sources still missing paths, applicable_versions includes Android 12 for comparison only"
 ---
-
 # 1.24 ResourcesManager 与 Configuration 变更性能
 
-### 锚点 1: 实战场景：一次旋转引发的主线程卡顿
+一次旋转、折叠展开、窗口缩放或语言切换，应用可能只收到 `onConfigurationChanged()`，也可能销毁并重建 Activity。两条路径都会更新资源，性能成本却完全不同。
 
-打开 Perfetto，选中一段旋转屏幕前后的 trace。主线程上有一段连续的 `Choreographer#doFrame` 延迟——每次丢帧约 60-80ms，连丢三帧。往前翻，`ActivityThread.handleRelaunchActivity` 吃掉了 120ms，其中 `LayoutInflater.inflate()` 独占 85ms。
+排查这类问题时，顺序比“要不要声明 `configChanges`”更重要：先确认哪些 Configuration 位发生变化，再确认 system_server 选择热派发还是 relaunch，随后检查资源更新、状态恢复和首帧。Android 17 还改变了部分配置项的默认重建策略，旧版本经验不能直接套用。
 
-这条 trace 来自一个有 200+ 个 View 节点的详情页 Activity。它声明了 `configChanges="orientation"`——但 layout 里嵌套了 12 层 LinearLayout，一次旋转走到了 destroy + create 的完整路径，加上布局 inflate 的开销，主线程阻塞 180ms。
+本文以 Android 17 / API 37 / AOSP `android-17.0.0_r1` 为当前源码锚点，同时说明 Android 12–16 的演进边界。
 
-排查思路：先确认 Activity 是否真的走了 recreate（看 `handleRelaunchActivity` 的 slice），再看 recreate 内部哪个阶段最耗（`LayoutInflater.inflate` vs `onSaveInstanceState` 序列化），最后检查 `configChanges` 声明和 `onConfigurationChanged` 的处理是否匹配。
+## 一次 Configuration 变更经过哪些模块
 
-Configuration 变更是 Android 里最容易忽略的性能触发点——旋转屏幕、切换语言、折叠屏展开/折叠，都会触发 Resources 重建、Activity 销毁重建、View 树重绘。App 没有正确处理时，一次 Configuration 变更的开销相当于一次完整的冷启动。
+系统级 Configuration 更新和单个 Activity 的 override Configuration 最终会在 `ActivityRecord.ensureActivityConfiguration()` 汇合。主路径如下：
 
----
-
-### 锚点 2: ResourcesManager 的角色与资源加载管线
-
-ResourcesManager 是 framework 层的单例，由 `ActivityThread` 持有，负责为整个进程创建和管理所有 `Resources` 实例。进程内 Resources 实例的数量取决于当前有多少种不同的 Configuration。
-
-### Resources 的三层结构
-
-```
-Resources（对外接口）
-  └── ResourcesImpl（持有 AssetManager + Configuration）
-        └── AssetManager（native 层，持有 apkPaths + resources.arsc 的 mmap）
-```
-
-- `Resources` 是给 App 用的接口层，提供 `getString()`、`getDrawable()` 等方法
-- `ResourcesImpl` 持有状态：当前 Configuration、DisplayMetrics、AssetManager
-- `AssetManager` 在 native 层通过 mmap 访问 APK 中的 `resources.arsc`，负责资源查找和解析
-
-一个 `ResourcesKey`——由 apkPaths、configuration、displayId 等参数拼合——决定一个 `ResourcesImpl` 实例。两个 ResourcesKey 相同的 Resources 共享同一个 ResourcesImpl，这是 ResourcesManager 的缓存复用机制。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ResourcesManager.java — getResources() → findOrCreateResourcesImplForKeyLocked()]
-
-### ResourcesManager 的缓存结构
-
-ResourcesManager 内部维护两组映射：
-
-```
-ResourcesKey → ResourcesImpl（全局缓存，跨 Activity 共享）
-IBinder (Activity token) → Resources（每个 Activity 独立）
+```text
+配置来源
+  ├─ locale / fontScale / uiMode 等全局配置
+  ├─ display、rotation、density
+  └─ multi-window / desktop / foldable 的窗口 bounds
+       ↓
+ActivityManagerService.updateConfiguration()
+  └─ ActivityTaskManagerService.updateConfigurationLocked()
+       ├─ updateGlobalConfigurationWithTransition()
+       │    └─ updateGlobalConfigurationLocked()
+       │         └─ WindowProcessController.onConfigurationChanged()
+       │              └─ ConfigurationChangeItem
+       │                   └─ ConfigurationController.handleConfigurationChanged()
+       │                        └─ ResourcesManager.applyConfigurationToResources()
+       └─ ensureConfigAndVisibilityAfterUpdate()
+            └─ ActivityRecord.ensureActivityConfiguration()
+                 ├─ shouldRelaunchLocked() == true
+                 │    └─ ActivityRelaunchItem
+                 │         └─ ActivityThread.handleRelaunchActivity()
+                 └─ shouldRelaunchLocked() == false
+                      └─ ActivityConfigurationChangeItem
+                           └─ ActivityThread.handleActivityConfigurationChanged()
 ```
 
-`getResources()` 的查找顺序：
-1. 用 Activity token 查已有的 Resources 实例
-2. 用 ResourcesKey 查可复用的 ResourcesImpl
-3. 都没有就创建新的 ResourcesImpl + Resources
+这张图有两个需要分开的分支：
 
-缓存命中条件严格：apkPaths、orientation、locale、density、screenWidthDp、screenHeightDp 等字段必须完全一致。任何一个字段不同，就需要新建 ResourcesImpl。
+- **进程级配置**：`ConfigurationChangeItem` 先让应用进程更新全局资源和组件回调。
+- **Activity 级配置**：`ActivityRecord` 根据变化位、Manifest 和兼容策略决定 relaunch，或者把新的 merged override Configuration 热派发给现有 Activity。
 
-[已验证：AOSP android-17.0.0_r1, ResourcesManager.findOrCreateResourcesImplForKeyLocked()]
+多窗口 Activity 收到的不是一份孤立全局配置。服务端把全局 Configuration 与 Activity 的 override Configuration 合并后再下发，窗口大小、displayId、rotation 和 app bounds 都可能来自 Activity 所在的容器。
 
----
+## Resources、ResourcesImpl 与 AssetManager
 
-### 锚点 3: Configuration 变更的触发源与传播路径
+应用看到的资源对象分三层：
 
-### 系统级触发源
-
-| 触发源 | 涉及的 Configuration 字段 | 典型场景 |
-|--------|---------------------------|----------|
-| 屏幕旋转 | orientation, screenWidthDp, screenHeightDp | 手机旋转 |
-| 折叠/展开 | screenWidthDp, screenHeightDp, smallestScreenWidthDp | 折叠屏设备 |
-| 语言切换 | locale | 设置中切换语言 |
-| 深色模式 | uiMode (night mode) | 设置或自动切换 |
-| 密度变更 | density | 接入外接显示器 |
-| 桌面模式 | screenWidthDp, screenHeightDp, orientation | Chrome OS / Samsung DeX |
-| Per-app language | locale | Android 13+ AppCompatDelegate.setApplicationLocales() |
-| 窗口 resize | screenWidthDp, screenHeightDp, windowConfiguration | 多窗口拖拽 |
-
-### 传播路径
-
-Configuration 变更沿两条路径传播：先走进程级派发，更新 App 进程的 Resources；再走 Activity 级检查，决定是否 relaunch。
-
-```
-触发源（Settings / WindowManager / PowerManager 等）
-  → ActivityManagerService.updateConfiguration()
-    → ActivityTaskManagerService.updateConfigurationLocked()
-      → updateGlobalConfigurationLocked()
-      → WindowProcessController.dispatchConfiguration()
-        → ConfigurationChangeItem
-        → ActivityThread.handleConfigurationChanged()
-        → ConfigurationController.handleConfigurationChanged()
-        → ResourcesManager.applyConfigurationToResources()
-      → ensureConfigAndVisibilityAfterUpdate()
-        → ActivityRecord.ensureActivityConfiguration()
-        → ActivityRecord.shouldRelaunchLocked()
-          → 需要 relaunch → ActivityRelaunchItem → ActivityThread.handleRelaunchActivity()
-          → 不需要 relaunch → ActivityConfigurationChangeItem → ActivityThread.handleActivityConfigurationChanged()
+```text
+Resources
+  └─ ResourcesImpl
+       └─ AssetManager
+            └─ ApkAssets：base APK、split、overlay、shared library
 ```
 
-服务端（system_server）更新全局 Configuration，并通过 `WindowProcessController.dispatchConfiguration()` 向 App 进程发送 `ConfigurationChangeItem`；客户端收到后才调用 `ResourcesManager.applyConfigurationToResources()` 重建或复用 `ResourcesImpl`。Activity 是否销毁重建由 `ActivityRecord.ensureActivityConfiguration()` 和 `shouldRelaunchLocked()` 根据 `configChanges`、PiP density skip、compat policy、resource overlay policy 等条件判断。
+- `Resources` 是公开 API 的包装层，也保存 ClassLoader 等调用上下文。
+- `ResourcesImpl` 保存当前 `Configuration`、`DisplayMetrics`、资源缓存和 `AssetManager`。
+- `AssetManager` 管理 base APK、split APK、overlay 和共享库的资源表与 native 对象。
 
-[已验证：AOSP android-17.0.0_r1, ActivityManagerService.updateConfiguration() → ActivityTaskManagerService.updateConfigurationLocked() / updateGlobalConfigurationLocked() / ensureConfigAndVisibilityAfterUpdate() → WindowProcessController.dispatchConfiguration() / ActivityRecord.ensureActivityConfiguration() → ActivityThread.handleConfigurationChanged() / handleRelaunchActivity()]
+多个 `Resources` 可以指向同一个 `ResourcesImpl`。因此，看到多个 Context 或 Resources 对象，不等于 native 资源表被完整复制了多份。
 
-### FixedRotation：避免旋转时重建的特殊路径
+### ResourcesKey 保存什么
 
-Android 12 引入了 FixedRotation 机制。当启动一个方向不同的 Activity 时，系统不立即切换显示方向，而是通过 `WindowToken.applyFixedRotationTransform()` 准备旋转后的 `DisplayInfo`、`DisplayFrames` 和 `Configuration`，让 App 进程先按模拟的旋转环境完成首次绘制，绘制完成后再执行旋转动画。
+Android 17 的 `ResourcesKey` 包含：
 
-关键调用链（Android 17，android-17.0.0_r1）：
+| 字段 | 用途 |
+|---|---|
+| `mResDir`、`mSplitResDirs` | base APK 与 split 资源路径 |
+| `mOverlayPaths`、`mLibDirs` | RRO overlay 与共享库资源路径 |
+| `mDisplayId` | 覆盖默认 display 的资源显示目标 |
+| `mOverrideConfiguration` | 叠加到全局配置之上的 override Configuration |
+| `mCompatInfo` | 屏幕与密度兼容参数 |
+| `mLoaders` | 动态 `ResourcesLoader` 集合 |
 
-```
-DisplayContent.handleTopActivityLaunchingInDifferentOrientation()
-  → setFixedRotationLaunchingApp()
-    → startFixedRotationTransform()
-      → WindowToken.applyFixedRotationTransform()
-        → WindowToken.onFixedRotationStatePrepared()
-          → WindowProcessController.registerActivityConfigurationListener()
-```
+全局 `orientation`、`locale`、`screenWidthDp` 并不是每次都直接复制进 key。`mOverrideConfiguration` 只保存相对全局配置的覆盖值。这个区别决定了缓存行为：全局 Configuration 改变时，系统通常更新现有 `ResourcesImpl`；不同 display、Activity override、资源路径或 loader 组合才需要不同 key。
 
-FixedRotation 让 Activity 避免了一次完整的 recreate，但它只在 Activity 启动时生效。如果 App 已经在前台，用户旋转设备，FixedRotation 不适用，仍然走正常的 Configuration 变更流程。
+### 全局配置更新会遍历现有 ResourcesImpl
 
-[已验证：AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java — handleTopActivityLaunchingInDifferentOrientation() → setFixedRotationLaunchingApp() → startFixedRotationTransform(); frameworks/base/services/core/java/com/android/server/wm/WindowToken.java — applyFixedRotationTransform() → onFixedRotationStatePrepared(); 历史博客参考（Android 12 时期的分析，方法名在 android-17 中已有变化）: Cubox/Android无缝旋转-Fixed Rotation - 掘金-2022-08-29.md]
+`ResourcesManager.applyConfigurationToResources()` 的 Android 17 行为：
 
----
+1. 用 `mResConfiguration.isOtherSeqNewer(config)` 检查配置序号；没有更新且 compat 不变时直接返回。
+2. `mResConfiguration.updateFrom(config)` 更新进程级基准配置。
+3. 遍历 `mResourceImpls`，把全局配置与每个 key 的 override 合并。
+4. 调用 `ResourcesImpl.updateConfiguration()` 更新资源选择、metrics 和内部缓存。
+5. Activity override、资源路径或 display 发生变化并需要不同实现时，通过 `redirectResourcesToNewImplLocked()` 让现有 `Resources` 改指向新的 `ResourcesImpl`。
 
-### 锚点 4: Activity recreation 的性能代价
+源码提供的稳定 trace 名称是：
 
-### recreate 的工作量
-
-Activity recreate 的本质是 destroy + create，完整走一遍生命周期：
-
-```
-onSaveInstanceState()          // 序列化状态
-onPause() → onStop() → onDestroy()  // 销毁旧实例
-  ↓
-Intent 解析 + 新 Activity 分配
-  ↓
-onCreate() → onStart() → onRestoreInstanceState() → onResume()
-  ↓
-LayoutInflater 重建 View 树 → measure → layout → draw
+```text
+ResourcesManager#applyConfigurationToResources
 ```
 
-一次 recreate 的耗时构成（以下数值为工程估算，缺少设备型号、ROM 版本、布局规模、Perfetto trace 等可复现条件，不应作为跨设备可比的性能结论）：
+旋转一次就创建一个新 `ResourcesImpl`、拖动窗口每个尺寸都留一份缓存，这两种推断都不成立。是否新建取决于 key 和 override 是否改变、旧 impl 是否还能复用。
 
-| 阶段 | 估算量级 | 影响因素 |
-|------|----------|----------|
-| onSaveInstanceState 序列化 | 数 ms | 状态数据量（Parcel 序列化开销） |
-| onDestroy 清理 | 数 ms | 释放的引用数量 |
-| Activity 对象创建 + onCreate | 数 ms-数十 ms | 初始化逻辑复杂度 |
-| LayoutInflater 重建 View 树 | 数十 ms-上百 ms | 布局层级深度和 View 数量 |
-| measure + layout | 数十 ms | 布局复杂度、ConstraintLayout vs LinearLayout |
-| draw（首帧） | 数 ms-数十 ms | View 数量、是否启用硬件加速 |
+## Activity 为什么会 relaunch
 
-对于一个有 200+ 个 View 节点的 Activity，recreate 耗时通常在数十到上百毫秒量级。折叠屏设备展开/折叠时触发 recreate，耗时可能进一步增加（screenWidthDp、screenHeightDp、smallestScreenWidthDp 同时变化，Resources 和 View 树均需重建）。
+`ActivityRecord.shouldRelaunchLocked()` 的最终判断可以写成一个位运算：
 
-> ⚠️ **数据待验证**：上述量级基于工程经验估算，非可复现实验。建议用 Perfetto 在目标设备上采集（设备型号、ROM 版本、APK 规模、采样次数记录完整）后替换为实测数据。
-
-#### 用 Perfetto 实测 Activity recreate 耗时
-
-在目标设备上采集 trace 后，用以下查询直接拿到一次 recreate 的各阶段耗时。不需要看估算——看 trace：
-
-```sql
--- 一次 Activity recreate 的各阶段耗时分解
-WITH recreate AS (
-  SELECT id, ts, dur FROM slice
-  WHERE name = 'handleRelaunchActivity'
-  ORDER BY ts DESC LIMIT 1
-)
-SELECT
-  CASE
-    WHEN s.name LIKE '%onSaveInstanceState%' THEN '1_onSaveInstanceState'
-    WHEN s.name LIKE '%onPause%' THEN '2_onPause'
-    WHEN s.name LIKE '%onStop%' THEN '3_onStop'
-    WHEN s.name LIKE '%onDestroy%' THEN '4_onDestroy'
-    WHEN s.name LIKE '%onCreate%' THEN '5_onCreate'
-    WHEN s.name LIKE '%onStart%' THEN '6_onStart'
-    WHEN s.name LIKE '%onResume%' THEN '7_onResume'
-    WHEN s.name LIKE '%LayoutInflater%' OR s.name LIKE '%inflate%' THEN 'LayoutInflater.inflate'
-    WHEN s.name LIKE '%measure%' OR s.name = 'measure' THEN 'measure'
-    WHEN s.name LIKE '%layout%' OR s.name = 'layout' THEN 'layout'
-    WHEN s.name LIKE '%draw%' OR s.name = 'draw' THEN 'draw'
-    ELSE s.name
-  END AS stage,
-  s.dur / 1e6 AS duration_ms
-FROM slice s, recreate r
-WHERE s.ts >= r.ts AND s.ts + s.dur <= r.ts + r.dur
-  AND (s.name LIKE '%onSave%' OR s.name LIKE '%onPause%' OR s.name LIKE '%onStop%'
-    OR s.name LIKE '%onDestroy%' OR s.name LIKE '%onCreate%' OR s.name LIKE '%onStart%'
-    OR s.name LIKE '%onResume%' OR s.name LIKE '%inflate%'
-    OR s.name IN ('measure', 'layout', 'draw'))
-ORDER BY s.ts;
+```text
+(changes & ~skipRelaunchConfigMask) != 0
 ```
 
-**采集建议**：
+`changes` 是新旧 merged Configuration 的差异位。`skipRelaunchConfigMask` 代表 Activity 或系统策略能够热处理的变化，Android 17 按以下来源逐步构造：
 
-- 在目标设备上锁定同一个 Activity，在 `onConfigurationChanged` / `onCreate` 前后设置 atrace marker（`Trace.beginSection("my_recreate_measure")`），trace 中就能精确找到自己要看的 recreate
-- 至少重复触发 5 次 Configuration 变更（旋转、折叠、语言切换等），取 P50/P95
-- 对比 `configChanges` 声明前后的耗时差异，可以直接量化 `configChanges` 的收益
-- 结合 `adb shell dumpsys gfxinfo <package>` 的帧统计，对比 recreate 前后的帧耗时变化
+1. `ActivityInfo.getRealConfigChanged()`：Manifest 的 `android:configChanges`，加上旧 target SDK 的兼容位。
+2. `CONFIG_RESOURCES_UNUSED`：Activity 声明不使用资源时跳过重建。
+3. 旧 VR 应用的 `uiMode` 兼容规则。
+4. desk mode 切换且应用没有 desk 资源时的跳过规则。
+5. PiP 中的 density 变化。
+6. display compatibility policy，例如尺寸兼容模式。
+7. resource overlay policy 对 `CONFIG_ASSETS_PATHS` 的处理。
+8. `AppCompatRecreateOnConfigChangePolicy.getRecreateConfigMask()`：包内存在相应限定符资源，或应用显式要求重建时，把这些位从 skip mask 中移除。
 
-### 序列化/反序列化的隐含开销
+只要还有一个变化位未被 skip mask 覆盖，Activity 就会 relaunch。`orientation` 经常和 `screenSize`、`screenLayout`、窗口 bounds 一起变化，所以只声明 `orientation` 仍可能重建。
 
-`onSaveInstanceState()` 的开销经常被低估。几个常见的高成本操作：
+### relaunch 的客户端顺序
 
-- `Parcel.writeParcelable()` 写入大型对象（如包含 Bitmap 的自定义 Parcelable）
-- `Parcel.writeList()` 写入长列表
-- `Bundle.putParcelableArrayList()` 序列化列表中的每个元素
+`ActivityRelaunchItem.execute()` 在应用进程里建立名为 `activityRestart` 的 trace slice，然后调用 `ActivityThread.handleRelaunchActivity()`。后者先应用待处理的进程级 Configuration，再进入 `handleRelaunchActivityInner()`：
 
-在 Perfetto 中，recreate 期间如果主线程出现 `Parcel.writeParcelable` 的长耗时 slice，说明状态序列化是瓶颈。
+```text
+必要时 onPause
+  → onStop，并保存实例状态
+  → onDestroy
+  → 使用新 Configuration 启动新 Activity 实例
+       → onCreate
+       → onStart
+       → 状态恢复
+       → onResume
+       → 新 View / Composition 首帧
+```
 
-### View 树重建的瓶颈
+重建成本来自应用生命周期代码、状态保存、布局或 Composition 重建、资源冷缓存和新窗口首帧。不能把它固定写成“等于一次冷启动”：进程通常还活着，Application、进程级单例、代码页和许多缓存仍可复用；但一个初始化很重的 Activity 也可能比普通热启动更慢。
 
-LayoutInflater 重建是 recreate 中最重的操作。`LayoutInflater.inflate()` 会：
-1. 解析 XML 中的每个 View 标签
-2. 使用反射调用 View 的构造函数
-3. 解析 `layout_*` 属性
+## Android 17 减少了哪些 Activity 重建
 
-如果布局层级深（超过 10 层）或包含大量 `include`/`merge`/`ViewStub`，inflate 耗时会显著增加。详见 22.1 节的布局优化策略。
+Android 17 默认不再因为以下变化重建 Activity：
 
----
+- `CONFIG_KEYBOARD`
+- `CONFIG_KEYBOARD_HIDDEN`
+- `CONFIG_NAVIGATION`
+- `CONFIG_TOUCHSCREEN`
+- `CONFIG_COLOR_MODE`
+- `CONFIG_UI_MODE` 从 desk mode 切入或切出，且应用没有对应 desk 资源时
 
-### 锚点 5: configChanges 清单与系统强制 recreate 的边界
+前五项由 `SKIP_ACTIVITY_RECREATION_ON_CONFIG_CHANGE` 与 `AppCompatRecreateOnConfigChangePolicy` 处理。策略还会扫描包内 `Configuration` 资源限定符；包内存在相应资源时，系统仍可把该变化放回 recreate mask。
 
-### AndroidManifest 中的 configChanges 声明
-
-在 `<activity>` 标签中声明 `android:configChanges` 可以阻止系统在对应 Configuration 变更时 recreate Activity，改为回调 `onConfigurationChanged()`：
+依赖旧重建行为刷新界面的 Activity，可以在 Manifest 中显式声明 `android:recreateOnConfigChanges`：
 
 ```xml
 <activity
-    android:name=".MainActivity"
-    android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|uiMode|locale|layoutDirection|density" />
+    android:name=".InputActivity"
+    android:recreateOnConfigChanges="keyboard|keyboardHidden|navigation|touchscreen|colorMode" />
 ```
 
-常见 configChanges 值及其适用场景：
+同一配置位同时出现在 `configChanges` 和 `recreateOnConfigChanges` 时，以“不重建、由 Activity 处理”为结果。代码审查时应避免这种自相矛盾的声明。
 
-| 值 | 触发场景 | 处理难度 |
-|----|----------|----------|
-| `orientation` | 屏幕旋转 | 中——需要重新布局 |
-| `screenSize` | 屏幕尺寸变化（旋转、折叠） | 中——需要重新布局 |
-| `smallestScreenSize` | 物理屏幕尺寸变化 | 高——可能需要切换布局 |
-| `screenLayout` | 屏幕布局变化 | 中 |
-| `uiMode` | 日间/夜间模式切换 | 低——主题切换 |
-| `locale` | 语言切换 | 高——需要刷新所有文本 |
-| `layoutDirection` | RTL/LTR 切换 | 中 |
-| `density` | 显示密度变化 | 高——需要重新加载资源 |
+这项 Android 17 变化不包含 `locale`、`layoutDirection`、`screenSize`、`smallestScreenSize`、`density`、普通 night mode 或 font scale。它们仍按 Manifest、资源限定符和 `shouldRelaunchLocked()` 的其他策略决定。
 
-### 各版本的 configChanges 演进
+## configChanges 应该怎样用
 
-**Android 17 (API 37)**：在 smallest width ≥ 600dp 的设备上（平板、折叠屏展开态），系统忽略 `android:screenOrientation`、`android:resizeableActivity="false"` 和宽高比限制。targetSdk ≥ 37 的 App 在大屏设备上因此必须处理连续的 Configuration 变更——不能再通过锁屏方向来规避。
+`android:configChanges` 把资源和 UI 更新责任交给 Activity。系统仍会更新 Configuration，也仍会调用 `onConfigurationChanged()`；省掉的只是 Activity 销毁与重建。
 
-> **关于 density 和 foldable 强制 recreate 的说明**：坊间流传 "Android 13 density 变更不再允许应用自行处理""Android 14 foldable 场景强制 recreate" 等说法，但 Android 17 `ActivityRecord#shouldRelaunchLocked()` 在 PiP 场景下会把 `CONFIG_DENSITY` 加入 skip mask（不触发 relaunch），且官方 manifest 文档仍列出 `density` 为 `configChanges` 的有效值。这些说法缺少公开源码和官方行为变更文档的支撑，不作为确定性结论。
+一个只准备自行处理旋转和窗口尺寸的 Activity，可以使用窄声明：
 
-[已验证: 官方文档, developer.android.com/about/versions/17/behavior-changes-17 — targetSdk 37 大屏适配]
+```xml
+<activity
+    android:name=".PlayerActivity"
+    android:configChanges="orientation|screenSize" />
+```
 
-### configChanges 的正确用法
-
-声明了 `configChanges` 不等于"什么都不用做"。`onConfigurationChanged()` 回调中必须手动处理 UI 更新：
-
-```java
-@Override
-public void onConfigurationChanged(Configuration newConfig) {
-    super.onConfigurationChanged(newConfig);
-    // 1. 更新 Resources（系统已自动更新）
-    // 2. 重新布局 View 树
-    // 3. 更新受 Configuration 影响的自定义状态
+```kotlin
+override fun onConfigurationChanged(newConfig: Configuration) {
+    super.onConfigurationChanged(newConfig)
+    updatePlayerLayout(
+        widthDp = newConfig.screenWidthDp,
+        heightDp = newConfig.screenHeightDp,
+        orientation = newConfig.orientation,
+    )
 }
 ```
 
-常见错误：声明了 `orientation|screenSize` 的 configChanges，但 `onConfigurationChanged()` 中没有重新调整布局，导致 UI 在新方向上显示不正确。
+回调执行时，Activity 的 Resources 已切到新配置。应用需要更新所有受影响对象，包括自定义 View、播放器/相机变换、窗口 inset、缓存的尺寸、语言文本和嵌入组件。只调用 `super` 不能完成这些工作。
 
----
+不建议为了“性能”把 `orientation|screenSize|screenLayout|smallestScreenSize|uiMode|locale|layoutDirection|density` 全部塞进 Manifest。每多接管一项，就多一类资源、第三方组件和状态需要人工刷新。默认 recreate 能自动重新选择 `layout-land`、`values-night`、`values-sw600dp`、本地化字符串和 density 资源，正确性成本通常更低。
 
-### 锚点 6: 避免 recreate 的策略与性能收益
+选择标准很直接：
 
-### ViewModel + SavedStateHandle
+- 页面依赖大量限定符资源，或包含难以热更新的 View/Fragment：保留 recreate，优化状态恢复和初始化。
+- 播放、相机、游戏或连续窗口动画不能中断，而且团队能维护完整更新逻辑：声明必要的 `configChanges`。
+- 只为躲避某个卡顿而接管所有变化：先修 Activity 初始化和状态模型。
 
-减少 Configuration 变更代价的起点：让状态不依赖 Activity 实例。`ViewModel` 在 Configuration 变更时不会被销毁，`SavedStateHandle` 处理进程被杀后的状态恢复。
+## FixedRotation 解决的是窗口过渡
 
-```
-Activity recreate 前的状态保存路径：
-  SavedStateHandle 中的值 → SavedStateRegistry → Bundle
-  ViewModel（同一进程内保留，不参与 Bundle 序列化）
-  自定义 onSaveInstanceState() 只保存手动写入的 Bundle 数据，不会自动同步到 SavedStateHandle
+FixedRotation 给 `WindowToken` 建立一个模拟旋转后的 `DisplayInfo`、`DisplayFrames` 和 Configuration，让窗口在 display 完成物理旋转前按目标方向布局和绘制。Android 17 中常见入口包括：
 
-Activity recreate 后的恢复路径：
-  同一进程内：ViewModel 直接可用（同一个实例）
-  进程被杀后：ViewModel 重新创建，SavedStateHandle 从 Bundle 恢复已经写入的 key
-```
-
-性能收益来自把大状态留在 ViewModel 内存缓存中，Configuration recreate 后不需要重新拉取或重新计算；只有需要跨进程恢复的小状态才写入 SavedStateHandle / Bundle。大型列表、Bitmap 或复杂对象仍不应该塞进 Bundle。
-
-### Context.createConfigurationContext()
-
-创建一个带 override Configuration 的 Context，避免影响进程级的 Resources：
-
-```java
-Configuration override = new Configuration(baseContext.getResources().getConfiguration());
-override.setLocale(newLocale);
-Context localizedContext = baseContext.createConfigurationContext(override);
-// 用 localizedContext 加载资源，不影响其他 Activity
+```text
+DisplayContent.handleTopActivityLaunchingInDifferentOrientation()
+  → setFixedRotationLaunchingApp()
+     → startFixedRotationTransform()
+        → WindowToken.applyFixedRotationTransform()
+           → WindowToken.onFixedRotationStatePrepared()
 ```
 
-这个方法适用于 Per-app language 场景：每个 Activity 可以有独立的 Locale，不需要变更进程级 Configuration。
+系统也能对非顶部但可见、方向不同的 Activity 调用 `applyFixedRotationForNonTopVisibleActivityIfNeeded()`。
 
-### Compose 对 Configuration 变更的处理
+FixedRotation 不是“禁止 Activity recreate”的开关。`ActivityRecord.applyFixedRotationTransform()` 仍会调用 `ensureActivityConfiguration()`，后续是否 relaunch 继续由配置差异和 `shouldRelaunchLocked()` 决定。它主要处理旋转期间的窗口配置与 Surface 变换，减少画面跳变。
 
-Compose 默认不依赖 Activity recreate 来更新 UI——`LocalConfiguration` 作为 CompositionLocal 提供，Configuration 变更时触发 recomposition，将新配置反映到 UI 树中。但 **recomposition 不等于 Activity recreate**：`remember` 仅在 recomposition 间保留状态，Activity recreate（以及更严重的 process death）会清空所有 `remember` 值——需要使用 `rememberSaveable`（依赖 `Bundle` 序列化）或 `ViewModel` + `SavedStateHandle` 才能在跨 recreate 或跨进程死亡时恢复状态。
+默认 Perfetto 不一定有 `applyFixedRotationTransform` 这类 Java 方法 slice。trace 里没有 `activityRestart` 只能证明没有走 Activity relaunch，不能反推 FixedRotation 一定参与。判断 FixedRotation 需要结合 WindowManager 日志、窗口状态和对应源码分支。
 
-Compose 的状态在三个不同边界有不同行为：
+## Perfetto：区分热更新和 relaunch
 
-- **Recomposition（Activity 未被 relaunch，或新实例创建后的 UI 更新）**：`LocalConfiguration` 变更触发 recomposition；同一个 Composition 内的 `remember` 保留。
-- **Activity recreate（Configuration 变更触发 relaunch）**：旧 Composition 销毁，`remember` 丢失——Compose 函数在新 Activity 中重新执行，所有未用 `rememberSaveable` 保存的值重置。需要用 `rememberSaveable`（`Bundle` 序列化）或 `ViewModel` + `SavedStateHandle` 跨 recreate 保留状态。
-- **Process death**：只有 `rememberSaveable` 和 `ViewModel` 的 `SavedStateHandle` 能通过系统保存的 `Bundle` 恢复；`remember` 和 `derivedStateOf` 的值全部丢失。
+Android 17 源码中可以直接依赖的 slice 名称如下：
 
-`derivedStateOf`、`produceState` 在不同边界的保留能力取决于上游数据源：基于 `remember` 的数据在 Activity recreate 后丢失，基于 `ViewModel` 或持久化存储的数据在对应边界内保留。
+| slice | 位置 | 说明 |
+|---|---|---|
+| `configChanged` | `ConfigurationController` | 进程级 Configuration 更新 |
+| `ResourcesManager#applyConfigurationToResources` | `ResourcesManager` | 更新进程内 ResourcesImpl |
+| `activityConfigChanged` | `ActivityConfigurationChangeItem` | Activity 热派发 |
+| `activityRestart` | `ActivityRelaunchItem` | Activity relaunch |
+| `performCreate:<Activity>` 等 | `Activity` | 新实例的生命周期阶段 |
+| `inflate` | `LayoutInflater` | XML View 树构建 |
+| `measure`、`layout`、`draw-VRI[...]` | `ViewRootImpl` | View 首帧遍历 |
+| `Choreographer#doFrame <vsyncId>` | `Choreographer` | 应用帧执行 |
 
-详见 7.7 节和 22.3 节。
+旧文章常搜索 `handleRelaunchActivity` 或 `handleConfigurationChanged`。方法名存在，不代表源码建立了同名 slice。Android 17 判断 relaunch 应优先查 `activityRestart`，判断热派发查 `activityConfigChanged` 和 `configChanged`。
 
----
-
-### 锚点 7: Resources 缓存与内存占用
-
-### ResourcesImpl 缓存膨胀
-
-ResourcesManager 维护 `ResourcesKey → ResourcesImpl` 的全局缓存。Android 17 中 `mResourceImpls` 使用 `WeakReference<ResourcesImpl>`，通过 `ReferenceQueue` 和 `cleanupResourceImplsLocked()` 清理已无外部强引用的实例。ResourcesImpl 对象本身不会因为留在缓存容器中而无法 GC——根源在于外部强引用阻止 GC（如静态变量持有 Resources、单例持有 Activity Context 等），导致弱引用无法被回收。
-
-在以下高频 Configuration 变更场景中，多个存活 ResourcesImpl 会被同时持有，增加弱引用缓存键数量和原生资源开销：
-
-- 多窗口模式下频繁拖拽 resize：每次 resize 产生新的 screenWidthDp/screenHeightDp 组合
-- 折叠屏反复折叠/展开：产生多组 Configuration
-- Per-app language 场景下频繁切换语言：每种 locale + 其他 Configuration 参数的组合都是独立的 ResourcesKey
-
-每个 ResourcesImpl 持有一个 AssetManager 实例，AssetManager 在 native 层 mmap 了 APK 的 `resources.arsc`。多个 ResourcesImpl 不会重复 mmap 同一个 APK（内核的页面缓存共享），但每个 AssetManager 有自己的 native 内存分配（查找表、字符串缓存等）。
-
-### dumpsys activity resources 分析
-
-```bash
-adb shell dumpsys activity resources <package_name>
-```
-
-输出中关注：
-
-- `ResourcesKey` 的数量——如果远大于当前 Activity 数量，说明可能存在外部强引用阻止 GC 导致弱引用无法被清理
-- `ResourcesImpl` 的数量——应该等于 ResourcesKey 的去重数量
-- 最近创建的 ResourcesImpl 的时间戳——如果频繁创建，说明 Configuration 在高频变化
-
-### 内存估算
-
-一个 ResourcesImpl 实例的内存占用量级（估算，非实测）：
-
-- Java 层：数十到上百 KB（取决于 Configuration 复杂度和 Resources 缓存状态）
-- Native 层：AssetManager 查找表和字符串缓存，量级受 APK resources.arsc 大小影响
-
-进程中有 20+ 个 ResourcesImpl 实例同时被强引用持有（多窗口 + 折叠屏场景下可能出现），额外的内存开销可能在数 MB 量级。
-
-> ⚠️ **数据待验证**：上述量级基于工程经验估算，缺少设备型号、APK 规模和 native heap dump 等可复现条件。建议用 `dumpsys meminfo` + native heap profiler 在目标设备上实测后替换。
-
----
-
-### 锚点 8: Android 17 对 Configuration 性能的影响
-
-### Per-app language
-
-Android 13 引入了 Per-app language API（`LocaleManager.setApplicationLocales()`），Android 17 继续沿用应用级 locale 设置。`AppCompatDelegate.setApplicationLocales()` 对应的是应用级语言偏好；只有 App 额外用 `createConfigurationContext()` 创建 Activity 或模块级 override Context 时，才会出现同一进程内多个 locale 并存。
-
-对 ResourcesManager 的影响：不同 locale 会进入 `ResourcesKey`。所有 Activity 共享同一个应用级 locale 时，通常只增加一组 Resources；App 主动维护多个 override locale，才会产生多组 `ResourcesImpl`。
-
-### 大屏强制多方向（targetSdk 37）
-
-Android 17 要求 targetSdk ≥ 37 的 App 在 smallest width ≥ 600dp 的设备上支持所有方向和 resize。系统会忽略 `android:screenOrientation` 和 `android:resizeableActivity="false"`。
-
-对性能的影响：
-- 折叠屏展开/折叠时，Configuration 可能连续变更多次；一次 reported config 里也可能同时包含 orientation、screenWidthDp、screenHeightDp、smallestScreenWidthDp 等字段，是否 recreate 取决于 `ActivityRecord.shouldRelaunchLocked()` 的判断
-- 多窗口/桌面模式下拖拽 resize 会改变 screenWidthDp、screenHeightDp 或 windowConfiguration；Activity 没有声明并处理对应 `configChanges` 时，Android 17 仍可能发送 `ActivityRelaunchItem`，只是 resize-only 场景会尽量 preserve window 或推迟 relaunch 来降低视觉代价
-
-建议在 Perfetto 中对比折叠/展开前后的帧时间分布。如果 `Choreographer#doFrame` 下的 `performTraversal` 耗时在 Configuration 变更后明显增加，说明布局需要针对大屏优化（减少嵌套层级、使用 `ConstraintLayout` 替代多层 `LinearLayout`）。
-
-[已验证: 官方文档, developer.android.com/about/versions/17/behavior-changes-17]
-
-### IME 状态不再恢复
-
-Android 17 开始，Configuration 变更后系统不再自动恢复之前的 IME（软键盘）显示状态。如果 App 依赖系统恢复键盘弹出状态，需要在 `onConfigurationChanged()` 或 `onCreate()` 中主动调用 `windowSoftInputMode` 设置或 `showSoftInput()`。
-
-### 16KB Page Size 对资源 mmap 的影响
-
-Android 15 引入 16KB page size 支持（详见 4.7 节）。对资源加载的影响：
-- `resources.arsc` 通过 mmap 加载，16KB page size 下 mmap 的最小粒度增大
-- 对于小 APK（resources.arsc < 1MB），内存浪费增加约 8-16KB（从一个 4KB 页变为一个 16KB 页的浪费上限）
-- 对于大 APK，影响可以忽略——mmap 的页面对齐开销在整体内存中占比很小
-
----
-
-### 锚点 9: 读完本节你将掌握
-
-- 在 Perfetto 中定位 Configuration 变更卡顿：看 `handleRelaunchActivity` 的耗时和帧延迟模式，区分 recreate 瓶颈（inflate / onSaveInstanceState 序列化）和 layout 瓶颈
-- 理解 ResourcesManager 的 ResourcesKey → ResourcesImpl 缓存复用机制，知道什么场景会产生多个 Resources 实例
-- 梳理 `AMS.updateConfiguration()` → `WindowProcessController.dispatchConfiguration()` → `ActivityRecord.shouldRelaunchLocked()` 的完整路径
-- 评估一次 Activity recreate 的耗时分布：onSaveInstanceState 序列化 → View 树重建 → measure/layout/draw 各阶段占比
-- 正确配置 `configChanges`：理解每种值的真实处理难度，知道 Android 17 大屏场景下的强制边界
-- 用 `ViewModel` + `rememberSaveable` 跨 Configuration 变更保持状态，减少不必要的数据重建
-- 用 `dumpsys activity resources` 诊断 ResourcesImpl 缓存膨胀，通过 Heap Dump 定位泄漏根因
-
-
-## 扩展
-
-### 折叠屏/多窗口场景下的连续 Configuration 变更
-
-折叠屏展开/折叠时，系统可能在短时间内连续发送多个 Configuration 变更。Android 的处理策略：
-
-- ATMS 在 `updateConfigurationLocked()` 中更新全局 Configuration，后续通过 `WindowProcessController.dispatchConfiguration()` 和 `ActivityRecord.ensureActivityConfiguration()` 派发到进程和 Activity
-- 折叠/展开可能在同一次 reported config 中同时体现 orientation、screenWidthDp、screenHeightDp、smallestScreenWidthDp，也可能因设备实现和窗口事件顺序拆成多次派发，实战中要以 Perfetto / logcat 中的 config 序列为准
-- FixedRotation 主要服务于 Activity 启动、非 top 可见 Activity 固定方向等旋转兼容场景；普通前台 Activity 的折叠/展开仍以 Configuration 派发和 relaunch 判定为准
-
-应对策略：
-1. 声明 `configChanges="orientation|screenSize|smallestScreenSize|screenLayout"`，在 `onConfigurationChanged()` 中处理
-2. 使用 Jetpack WindowManager 的 `WindowInfoTracker` 监听窗口状态变化
-3. 在布局中避免硬编码尺寸，使用 `dimens.xml` 的 sw600dp/sw720dp 限定符
-
-#### 折叠屏展开/折叠的 Perfetto 诊断方法
-
-折叠屏展开/折叠触发的 Configuration 变更往往伴随帧丢失。以下 Perfetto 查询直接定位折叠过程中的卡顿来源：
+下面的 SQL 用于列出配置变化附近的稳定 slice。`performCreate:` 和 `Choreographer#doFrame` 带动态后缀，所以用 `GLOB`：
 
 ```sql
--- 折叠屏展开/折叠期间的帧耗时与 Configuration 变更对应关系
 SELECT
-  f.frame_number,
-  f.vsync AS vsync_ts,
-  (f.actual_present_time - f.vsync) / 1e6 AS jank_ms,
-  c.name AS config_change,
-  c.dur / 1e6 AS config_change_ms
-FROM actual_frame_timeline_slice f
-LEFT JOIN slice c ON (
-  c.ts BETWEEN f.vsync - 50000000 AND f.actual_present_time
-  AND c.name IN ('handleConfigurationChanged', 'handleRelaunchActivity')
-)
-WHERE f.jank_type != 0  -- 只关注卡顿帧
-ORDER BY f.vsync;
+  p.name AS process_name,
+  th.name AS thread_name,
+  s.name,
+  s.ts / 1e9 AS ts_s,
+  s.dur / 1e6 AS dur_ms
+FROM slice s
+JOIN thread_track tt ON s.track_id = tt.id
+JOIN thread th USING (utid)
+LEFT JOIN process p USING (upid)
+WHERE s.name IN (
+    'configChanged',
+    'ResourcesManager#applyConfigurationToResources',
+    'activityConfigChanged',
+    'activityRestart',
+    'inflate',
+    'measure',
+    'layout'
+  )
+  OR s.name GLOB 'performCreate:*'
+  OR s.name GLOB 'performStart:*'
+  OR s.name GLOB 'performResume:*'
+  OR s.name GLOB 'draw-VRI*'
+  OR s.name GLOB 'Choreographer#doFrame *'
+ORDER BY s.ts;
 ```
 
-**关键信号**：
+如果应用自己的 `onConfigurationChanged()`、状态恢复或页面初始化没有 slice，给关键区段加自定义 marker：
 
-- 折叠/展开一次，Perfetto 中 `FrameTimeline` 通常出现 2-5 帧 jank。如果超过 10 帧，说明 `onConfigurationChanged()` 或 recreate 中的 inflate 开销过大
-- `handleConfigurationChanged` + `performTraversal` 连续出现超过 50ms，布局需要优化（减少嵌套层级）
-- 如果折叠后出现了 `handleRelaunchActivity` slice，说明当前 Activity 没有声明并处理对应的 `configChanges`，被迫走了 recreate
+```kotlin
+Trace.beginSection("Cfg:updatePlayerLayout")
+try {
+    updatePlayerLayoutForCurrentWindow()
+} finally {
+    Trace.endSection()
+}
+```
 
-**折叠屏设备差异的边界**：
-
-- AOSP 不规定三星 Fold / Pixel Fold 在折叠时必须按某个固定顺序更新 size、density 或 logical display；设备差异需要用实机 trace 和 `dumpsys display` 确认
-- 如果 trace 中出现 `handleRelaunchActivity` / `ActivityRelaunchItem`，说明走了 Activity recreate；如果只有 `handleConfigurationChanged`，说明系统只做热派发
-- FixedRotation 是否介入要回到 `DisplayContent` / `WindowToken` 源码和窗口状态判断，不能仅凭设备型号下结论
-
-#### 多窗口 resize 的性能陷阱
-
-多窗口模式下拖拽 resize divider 时，`screenWidthDp` / `screenHeightDp` 在每次指针移动时都可能更新。在 Perfetto 中表现为连续多个 `handleConfigurationChanged` slice，每次间隔 10-50ms：
+用 FrameTimeline 判断用户是否看到卡顿，避免只看某个函数的 CPU 时间：
 
 ```sql
--- 多窗口 resize 期间的 Configuration 变更频率
-SELECT name, ts, dur/1e6 AS ms,
-  LAG(ts) OVER (ORDER BY ts) AS prev_ts,
-  (ts - LAG(ts) OVER (ORDER BY ts)) / 1e6 AS interval_ms
-FROM slice
-WHERE name = 'handleConfigurationChanged'
-  AND ts BETWEEN <start_ns> AND <end_ns>
+SELECT
+  ts / 1e9 AS ts_s,
+  dur / 1e6 AS frame_ms,
+  jank_type
+FROM actual_frame_timeline_slice
+WHERE ts BETWEEN <start_ns> AND <end_ns>
 ORDER BY ts;
 ```
 
-`interval_ms` 小于 16ms（一帧时间）时，说明 Configuration 变更频率超过了屏幕刷新率——App 的 `onConfigurationChanged()` 来不及在下一帧前完成布局更新。解决方法有两个：
+采集时至少记录设备、build fingerprint、刷新率、Activity、触发方式、是否 relaunch、变化位和样本次数。relaunch 与热更新的对比必须使用同一页面、同一窗口状态和相同数据集，报告 P50/P95，而不是引用没有测试条件的“快 5–10 倍”。
 
-1. **在 `onConfigurationChanged()` 中去 bounce**：如果当前尺寸和上次处理的尺寸差异小于阈值（如 width 变化 < 50dp），跳过布局重建
-2. **用 `View.post()` 延迟布局更新**：等 resize 手势结束后统一触发一次 `requestLayout()`，而不是每次 pointer move 都重建 View 树
+### 性能归因顺序
 
-### dumpsys 实战：定位 Resources 泄漏
+1. 有 `activityRestart`：查看 `performStop`、`performDestroy`、`performCreate`、`inflate` 和新窗口首帧。
+2. 只有 `activityConfigChanged`：查看应用回调、自定义 marker、`measure/layout/draw`。
+3. `ResourcesManager#applyConfigurationToResources` 很长：检查资源路径、overlay、多个存活 ResourcesImpl 和资源缓存失效。
+4. slice 都短但 FrameTimeline 仍 jank：检查主线程调度延迟、RenderThread、GPU 和 Surface/Window transition。
+5. Configuration 短时间连续变化：按每次事件的 config 与窗口 bounds 分组，确认应用是否重复做网络、解码、数据库或大对象构建。
+
+## 多窗口与折叠屏的连续变化
+
+折叠、展开、跨 display 和拖动自由窗口时，一次用户操作可能产生多次 merged Configuration。AOSP 不规定不同厂商必须以相同顺序更新 size、density、rotation 与窗口 posture，应用应把每次回调当成当前有效状态。
+
+处理原则：
+
+- 尺寸和布局更新要轻，使用当前 window metrics 或新 Configuration 重新计算。
+- 网络请求、图片解码、数据聚合等昂贵工作与尺寸回调解耦；同一任务可取消或复用。
+- 需要按帧合并重复 UI 工作时，可以用 `postOnAnimation`、Compose 状态去重或可取消协程，但执行时重新读取最新窗口状态。
+- 不要用“宽度变化小于 50dp 就丢弃”这类固定阈值。小变化也可能跨过资源断点、改变文字换行、窗口 inset 或相机裁剪。
+- 不要等待一个并不存在的“resize 手势结束”平台回调后才更新界面；拖动过程中用户也需要看到正确布局。
+
+Jetpack WindowManager 的 `WindowInfoTracker` 用于观察折叠特征和窗口布局信息；Configuration 仍负责资源限定符与 Activity relaunch。两个信号描述的对象不同，不能互相替代。
+
+## Android 17 的大屏方向与可调整大小策略
+
+Android 16 已开始在大屏上忽略部分方向、宽高比和 resizable 限制，并提供临时退出选项。应用 target SDK 升到 Android 17 / API 37 后，这个退出选项不再可用。
+
+在官方定义的大屏边界上，以下 Manifest 属性和运行时 API 可能被忽略：
+
+- `screenOrientation`
+- `resizeableActivity`
+- `minAspectRatio`、`maxAspectRatio`
+- `setRequestedOrientation()`、`getRequestedOrientation()` 对固定横竖屏值的请求
+
+Android 17 文档列出的例外包括：`android:appCategory` 标记的游戏、用户在设备宽高比设置中显式选择应用默认行为，以及小于 sw600dp 边界的屏幕。
+
+固定竖屏或 `resizeableActivity="false"` 已不能承担“避免 Configuration 变化”的职责。target 37 的大屏测试至少覆盖：
+
+- 横屏、竖屏和旋转中的状态保存；
+- 分屏与桌面自由窗口连续 resize；
+- 折叠态与展开态；
+- 相机预览、视频画面和自定义 Surface 的宽高比与旋转；
+- 窗口从一个 display 移到 density/rotation 不同的另一个 display。
+
+可以在测试设备上启用 `UNIVERSAL_RESIZABLE_BY_DEFAULT` compat flag，提前观察限制被忽略后的行为。测试结果仍要以目标版本、设备窗口模式和官方例外为准。
+
+## Android 17 的 IME 可见性变化
+
+Android 17 中，应用没有自行处理 Configuration 变化、因而发生 Activity 重建时，系统不再恢复变化前的 IME 可见状态。页面若要求重建后继续显示键盘，需要明确请求：
+
+- 对适合始终显示键盘的页面设置 `android:windowSoftInputMode="stateAlwaysVisible"`。
+- 在新 Activity 的 `onCreate()` 完成输入框创建和焦点恢复后请求显示 IME。
+- Activity 自行处理配置变化时，在 `onConfigurationChanged()` 中按业务状态决定是否保持或请求 IME。
+
+不要无条件调用 `showSoftInput()`。输入框尚未 attach、没有 window focus 或焦点已转移时，请求可能无效，也可能把键盘错误地弹到不再需要输入的页面。
+
+## Compose 与 View 的状态边界
+
+### Compose
+
+读取 `LocalConfiguration.current` 的 Composable 会在配置变化时重新组合。行为取决于 Activity 是否 relaunch：
+
+| 边界 | `remember` | `rememberSaveable` | `ViewModel` | `SavedStateHandle` |
+|---|---|---|---|---|
+| 同一 Composition 内重组 | 保留 | 保留 | 保留 | 保留 |
+| Activity relaunch | 丢失 | 从 Bundle 恢复 | 同一进程内保留原实例 | 可恢复小型 UI 状态 |
+| 系统回收进程后重建 | 丢失 | 可从已保存实例状态恢复 | 原实例丢失 | 新 ViewModel 可恢复小型 UI 状态 |
+
+`rememberSaveable` 和 `SavedStateHandle` 都使用 Bundle 边界。保存 ID、筛选项、输入文本和滚动位置；大型列表、Bitmap 或完整页面模型应保存在数据层，并用稳定 ID 重建。
+
+Activity 自行处理 Configuration 时，Compose UI 可以通过 `LocalConfiguration` 更新；嵌入的 `AndroidView` 和 Fragment 不会因为 Compose 重组自动重建。它们依赖 Activity recreate 刷新的资源和内部状态，需要应用显式更新。
+
+### View 与 Fragment
+
+View 页面保留默认 recreate 时，ViewModel 负责同一进程内的页面数据，已保存实例状态机制保存小型 UI 状态。新 Activity 会重新加载限定符资源和 View 树。
+
+自行处理 Configuration 时，检查清单至少包括：
+
+- 使用新 Resources 刷新字符串、颜色、drawable 和主题相关值；
+- 根据新窗口 bounds 更新布局参数；
+- 更新 Fragment 或自定义 View 中缓存的 density、方向和尺寸；
+- 重新计算相机、视频、OpenGL/Vulkan Surface 的变换；
+- 重新读取 window insets，不复用旧 Rect；
+- 取消以旧尺寸启动、尚未完成的异步工作。
+
+## createConfigurationContext 的使用边界
+
+`Context.createConfigurationContext(override)` 会创建带 override Configuration 的 Context，适合局部资源查询、预览或隔离的显示环境：
+
+```kotlin
+val override = Configuration(baseContext.resources.configuration).apply {
+    setLocales(LocaleList.forLanguageTags("zh-CN"))
+}
+val localizedContext = baseContext.createConfigurationContext(override)
+val title = localizedContext.getString(R.string.title)
+```
+
+应用级语言优先使用 `LocaleManager.setApplicationLocales()` 或 AndroidX `AppCompatDelegate.setApplicationLocales()`。手工创建 Context 不会替应用完成 Activity、Service、通知和 Compose 的整体语言切换。
+
+大量缓存不同 override Context 会让 `ResourcesManager` 同时维护更多 key/impl 组合。临时 Context 用完即释放，不要为每次绑定 View 创建一份并长期存入单例。
+
+## Resources 内存诊断
+
+Android 17 的 `mResourceImpls` 是 `ResourcesKey → WeakReference<ResourcesImpl>`。`Resources` 列表和 Activity 关联资源同样以弱引用保存；Activity token 映射使用 `WeakHashMap`。缓存容器本身不会强行保活 `ResourcesImpl`。
+
+`resourcesManagerCacheLeakCleanup()` flag 开启时，`ReferenceQueue` 负责及时移除死亡 key；全局配置更新也会顺手删除已经失效的 weak reference。flag 未开启时，死亡 weak reference 的键可能暂留在 map 中，但对应 impl 已可被 GC。map 项存在和 native 对象仍存活是两回事。
+
+Android 17 内部有 `ActivityManagerService.dumpResources()` / `dumpAllResources()`，客户端最终调用 `Resources.dumpHistory()`。这组接口按底层 `ApkAssets` 去重后输出资源历史和 assets，但 `android-17.0.0_r1` 没有提供稳定、公开的 `dumpsys activity resources <process>` 子命令。厂商调试工具即使暴露了内部 dump，也不能把输出项数直接解释为 `ResourcesKey` 数量；它同样不提供“最近创建时间”。
+
+通用工具先看进程内存，再对 debuggable 进程抓堆：
 
 ```bash
-# 查看 App 的 Resources 缓存状态
-adb shell dumpsys activity resources <package_name>
-
-# 对比两个时间点的 ResourcesImpl 数量
-adb shell dumpsys activity resources <package_name> | grep "ResourcesImpl" | wc -l
-# ... 操作 App（旋转、切换语言、进入多窗口）...
-adb shell dumpsys activity resources <package_name> | grep "ResourcesImpl" | wc -l
+adb shell dumpsys meminfo <package-name>
+adb shell am dumpheap <process-name> /data/local/tmp/app.hprof
 ```
 
-如果 ResourcesImpl 数量持续增长且不回落，说明有 Configuration 泄漏——某些 ResourcesImpl 被持有但不再使用。常见原因：
-- 静态变量持有对旧 Resources 的引用
-- Singleton 持有对 Activity Context 的引用（应该用 ApplicationContext）
-- Handler/Runnable 持有对旧 Activity 的隐式引用
+`am dumpheap` 受 debuggable、权限和设备策略限制。native AssetManager 或资源表分配要用 Perfetto native heap profiler；Java HPROF 看不到全部 native 成本。
 
-定位方法：通过 Android Studio Profiler 的 Heap Dump，搜索 `ResourcesImpl` 实例，查看 GC Root 引用链。
+资源相关内存持续增长时，按证据逐层确认：
 
-### Compose 与 Configuration 变更
+1. 多次执行相同的旋转、语言切换或窗口 resize，观察进程 PSS/native heap 是否在 GC 后持续增长。
+2. 用 Java heap dump 查看仍存活的 `Resources`、Context、Activity 与 `ResourcesImpl`，沿 GC Root 找强引用。
+3. 用 native heap profiler 检查 AssetManager/资源相关分配，而不是按 Java 对象数量估算“每个 ResourcesImpl 几百 KB”。
+4. 在可调用内部 resource dump 的工程环境中对照 ApkAssets 路径，确认是否反复加载不同 split、overlay、shared library 或动态 ResourcesLoader；量产环境没有该入口时，从 heap 与加载日志取证。
+5. 若只有死亡 weak reference 的 key 数增加、堆内存没有增长，不应定性为资源泄漏。
 
-Compose 能降低 Configuration 变更后的 UI 更新成本，但不改变 Activity 是否被系统 relaunch：
+静态持有旧 Activity Context、长期保存局部 override Context、没有释放的主题/插件资源，都会让旧资源对象继续存活。单独看到多个 `ResourcesImpl` 仍不足以下结论；多 display、多 window 和不同 override 本来就可能需要多个实现。
 
-- `LocalConfiguration`：Configuration 变更时让读取它的 Composable 重新执行；如果 Activity 已经 recreate，这是新 Composition 中的重新执行
-- `remember`：只在同一个 Composition 内保留，Activity recreate 后丢失
-- `rememberSaveable`：通过 `Bundle` 序列化跨 Activity recreate 保存小状态
-- `ViewModel`：同一进程内跨 Configuration recreate 保留内存状态，配合 SavedStateHandle 处理进程恢复
+## 一套可执行的排查流程
 
-Compose 页面仍要按 Manifest / `ActivityRecord.shouldRelaunchLocked()` 的规则处理 `configChanges`。如果没有声明并处理对应变更，系统仍可能销毁并重建 Activity；Compose 只能决定新旧 Composition 中哪些状态能恢复，不能让 `remember` 自动跨 recreate 存活。
+### 1. 确认变化位和 Activity 结果
 
+- 记录新旧 Configuration 的 locale、uiMode、density、orientation、screenWidthDp、screenHeightDp、smallestScreenWidthDp 和 window bounds。
+- 在 `onCreate()`、`onDestroy()`、`onConfigurationChanged()` 加带 Activity 实例标识的日志。
+- 检查 Manifest 的 `configChanges`、`recreateOnConfigChanges`、方向和 resize 设置。
 
----
+### 2. 用 trace 选择分支
 
-### 🔹 Android 17 Configuration 派发与 Relaunch 判定源码级验证
+- `activityRestart` 存在：分析 relaunch 生命周期与新窗口首帧。
+- `activityConfigChanged` 存在且没有 `activityRestart`：分析热更新回调和 View/Compose 重排。
+- 两者都没有：检查 trace 是否覆盖目标进程、atrace category 和正确的时间窗口。
 
-基于 `android-17.0.0_r1` AOSP 源码对 ATMS / ResourcesManager / ActivityRecord 的 Configuration 派发路径进行完整验证。要点如下：
+### 3. 把系统成本与应用成本分开
 
-#### 1. ATMS 入口到 ActivityRecord 的完整调用链
+- `ResourcesManager#applyConfigurationToResources`：framework 资源更新。
+- 应用 marker：业务回调、数据恢复、播放器/相机更新。
+- `inflate`、`measure`、`layout`、`draw-VRI[...]`：View 系统工作。
+- FrameTimeline：用户可见帧结果。
 
-```
-ActivityTaskManagerService#updateConfigurationLocked(values, initLocale, persistent, userId)
-  └─ updateGlobalConfigurationWithTransition()
-      └─ updateGlobalConfigurationLocked()
-          ├─ mSystemThread.applyConfigurationToResources(mTempConfig)   // ResourcesManager 全局 config
-          ├─ 遍历 pidMap: app.onConfigurationChanged(mTempConfig)        // WindowProcessController 级
-          └─ mRootWindowContainer.onConfigurationChanged(mTempConfig)   // 派发到 DisplayContent/ActivityRecord
-              └─ ActivityRecord#ensureActivityConfiguration(ignoreVisibility)
-                  └─ updateReportedConfigurationAndSend()
-                      ├─ getConfigurationChanges(mTmpConfig)             // 计算 diff
-                      └─ shouldRelaunchLocked(changes, mTmpConfig)?       // 判定核心
-                          ├─ 是 → relaunchActivityLocked(preserveWindow, changes)
-                          │        └─ ClientTransaction(ActivityRelaunchItem)
-                          │            → ActivityThread#handleRelaunchActivity()
-                          │                └─ handleRelaunchActivityInner()
-                          │                    → onPause → onStop(saveState) → onDestroy → onCreate → onStart → onResume
-                          └─ 否 → scheduleConfigurationChanged() 走 hot path
-```
+### 4. 修复匹配根因
 
-对应源码锚点：`ATMS.java`、`ActivityRecord.java`、`ActivityThread.java`（以上均为 android-17.0.0_r1）。
+- 生命周期初始化重复：移到 ViewModel、repository 或可复用缓存，并保证新 Activity 能接回状态。
+- Bundle 过大：只保存恢复所需的小型 key，数据从持久层重建。
+- 热更新过重：把数据工作移出配置回调，UI 按帧合并到最新状态。
+- 限定符资源未刷新：恢复默认 recreate，或补齐手工更新逻辑。
+- 连续窗口变化：取消旧尺寸任务，避免丢弃合法 Configuration。
+- 资源内存增长：用 heap root 和 native 分配证明持有者，再改生命周期。
 
-#### 2. `shouldRelaunchLocked()` 决策位掩码的精确组成
+## 版本演进
 
-```java
-// ActivityRecord.java:8740-8795（android-17.0.0_r1）
-private boolean shouldRelaunchLocked(int changes, Configuration changesConfig) {
-    int skipRelaunchConfigMask = info.getRealConfigChanged();          // (1) Manifest configChanges
-    if ((skipRelaunchConfigMask & CONFIG_RESOURCES_UNUSED) != 0) {
-        return false;
-    }
-    // (2) Android 8 前 VR 兼容（仅 CONFIG_UI_MODE）
-    if (info.applicationInfo.targetSdkVersion < O && requestedVrComponent != null
-            && onlyVrUiModeChanged(changes, changesConfig)) {
-        skipRelaunchConfigMask |= CONFIG_UI_MODE;
-    }
-    // (3) Android 17 桌面模式：没有 desk 资源时跳过
-    if (shouldSkipActivityRelaunchWhenDocking() && onlyDeskInUiModeChanged(changesConfig)
-            && !hasDeskResources()) {
-        skipRelaunchConfigMask |= CONFIG_UI_MODE;
-    }
-    // (4) Android 17 PiP 模式：density 变化不重启
-    if (getWindowingMode() == WINDOWING_MODE_PINNED) {
-        skipRelaunchConfigMask |= CONFIG_DENSITY;
-    }
-    // (5) 显示兼容策略（折叠屏 / 小屏兼容）
-    skipRelaunchConfigMask |= mAppCompatController.getDisplayCompatPolicy()
-            .getDisplayCompatModeConfigMask();
-    // (6) RRO 资源 overlay 约束
-    if ((skipRelaunchConfigMask & CONFIG_ASSETS_PATHS) == 0
-            && (changes & CONFIG_ASSETS_PATHS) != 0
-            && !mAppCompatController.getResourceOverlayPolicy()
-                    .doResourceOverlayChangesAffectActivity()) {
-        skipRelaunchConfigMask |= CONFIG_ASSETS_PATHS;
-    }
-    // (7) Android 17 按需 recreate：减去包内存在资源的 recreate mask
-    skipRelaunchConfigMask &= (~mAppCompatController.getRecreateOnConfigChangePolicy()
-            .getRecreateConfigMask());
-    return (changes & (~skipRelaunchConfigMask)) != 0;
-}
-```
+| 版本 | 与本章相关的变化 |
+|---|---|
+| Android 12 / API 31–32 | 大屏、折叠屏与多窗口让 Configuration 变化更频繁；FixedRotation 与窗口过渡路径持续演进 |
+| Android 13 / API 33 | 平台提供 per-app language API，应用级 locale 成为常见配置来源 |
+| Android 14–15 | display compatibility、窗口模式与资源更新策略继续演进，具体行为应按对应 tag 核对 |
+| Android 16 / API 36 | 大屏开始忽略方向、宽高比和 resize 限制，仍提供临时退出选项 |
+| Android 17 / API 37 | target 37 大屏退出选项移除；五类低频配置默认减少 Activity recreate；新增 `recreateOnConfigChanges` 适配路径；未自行处理的配置重建不再恢复旧 IME 可见状态 |
 
-`info.getRealConfigChanged()` 在 `ActivityInfo.java:1847` 还有一层向后兼容：API < 13 的 App 强制把 `CONFIG_SCREEN_SIZE | CONFIG_SMALLEST_SCREEN_SIZE` 加入 skip 位，避免折叠屏/平板上不必要 recreate。
+## 源码阅读入口
 
-#### 3. Android 17 新机制：`enableLessActivityRecreationOnConfigChange`
+- `ResourcesKey.java`：资源缓存 key 的准确字段。
+- `Resources.java`、`ResourcesImpl.java`：资源历史、AssetManager 与实现层状态。
+- `ResourcesManager.java`：weak-reference 缓存、全局配置更新、Activity override 与 impl 重定向。
+- `ConfigurationController.java`：应用进程级配置更新和组件回调。
+- `ActivityTaskManagerService.java`、`WindowProcessController.java`：system_server 的全局配置更新与进程派发。
+- `ActivityRecord.java`：merged Configuration、`shouldRelaunchLocked()` 与 Activity 级派发。
+- `AppCompatRecreateOnConfigChangePolicy.java`：Android 17 减少重建的资源限定符判断。
+- `ActivityRelaunchItem.java`、`ActivityThread.java`：`activityRestart` 与客户端 relaunch 生命周期。
+- `DisplayContent.java`、`WindowToken.java`：FixedRotation 的模拟旋转配置与窗口变换。
+- `attrs_manifest.xml`：`configChanges` 与 `recreateOnConfigChanges` 的平台语义。
+- `ActivityManagerService.java`：内部 resource dump 的服务端入口与边界。
 
-`AppCompatRecreateOnConfigChangePolicy#getRecreateConfigMask()` (`AppCompatRecreateOnConfigChangePolicy.java:71-86`) 引入**按需 recreate 决策**：当 `enableLessActivityRecreationOnConfigChange` flag 开启且 `ActivityInfo.SKIP_ACTIVITY_RECREATION_ON_CONFIG_CHANGE` compat change 生效时，包解析阶段会把未写入 `android:recreateOnConfigChanges` 的冷门配置变化默认并入 `configChanges` skip mask；随后系统扫描包内 `Configuration[] configs = packageResources.getResourceConfigurations()`，只把包内确实存在资源限定符的变化重新加入强制 recreate 列表：
+## 参考资料
 
-- `CONFIG_KEYBOARD` / `CONFIG_KEYBOARD_HIDDEN` / `CONFIG_NAVIGATION` / `CONFIG_TOUCHSCREEN` / `CONFIG_COLOR_MODE`
-
-`density` / `screenSize` / `smallestScreenSize` / 常规 `uiMode` **不在这套默认 skip + 按需 recreate 范围内**。这些变化仍要依赖 Manifest 中的 `configChanges`、桌面模式 `uiMode` 特例或 display compat policy；没有声明时不能假定会走 hot path 派发。
-
-工程含义：Android 17 主要减少外接/硬件键盘、导航设备、触控能力、colorMode 等冷门配置变化导致的非必要 recreate；字体大小、screenSize、density、locale 仍要按各自的 Configuration 位单独判断。
-
-#### 4. ResourcesManager 的 seq 早出与 override 合并
-
-`ResourcesManager#applyConfigurationToResources()` (`RM.java:1554`) 入口：
-
-```java
-if (!mResConfiguration.isOtherSeqNewer(config) && compat == null) {
-    return false;   // 序号比对快速跳过
-}
-int changes = mResConfiguration.updateFrom(config);
-...
-for (int i = mResourceImpls.size() - 1; i >= 0; i--) {
-    applyConfigurationToResourcesLocked(config, compat, tmpConfig, key, r);
-}
-```
-
-每个 `ResourcesImpl` 通过 `key.mOverrideConfiguration`（Activity 维度 override config）合并后再 `updateConfiguration()`——这是 multi-window / PiP 不同尺寸的关键：`ActivityRecord.getMergedOverrideConfiguration()` 在 `updateReportedConfigurationAndSend()` 内被读取并下发给 `scheduleConfigurationChanged()`，保证 Activity 拿到的是「全局 + Activity override」合并后的 Configuration。
-
-#### 5. FixedRotation 当前调用路径（不触发 recreate）
-
-`DisplayContent#applyFixedRotationForNonTopVisibleActivityIfNeeded()` (`DisplayContent.java:2171-2235`)：折叠/旋转时，若 top Activity 不透明度和方向条件满足，DisplayContent 会给非 top Activity 的 WindowToken 加 `FixedRotationTransformState`（`WindowToken.java:116-142`）做旋转兼容。`WindowToken.hasFixedRotationTransform()` (`WindowToken.java:414-416`) 返回 `mFixedRotationTransformState != null`。这条路径不经过 `ActivityRecord.shouldRelaunchLocked()`，但 `WindowToken#onFixedRotationStatePrepared()` 会触发 token 的 rotated configuration 派发；它影响的是旋转后的窗口配置与 Surface 变换，不等于 Activity recreate。
-
-可对照 trace：默认 Perfetto 不一定会出现 `applyFixedRotationForNonTopVisibleActivityIfNeeded` 或 `linkFixedRotationTransform` 这样的 Java 方法名 slice，除非启用了对应方法跟踪或额外 trace 点。实战中先用 `handleRelaunchActivity` / `ActivityRelaunchItem` 区分 recreate，再结合 WindowManager 日志或源码路径判断 FixedRotation 是否参与。
-
-#### 6. `handleRelaunchActivityInner()` 的 destroy + create 顺序
-
-`ActivityThread.java:6933-6962`：
-
-```java
-if (!r.paused) performPauseActivity(r, false, reason, null);       // onPause
-if (!r.stopped) callActivityOnStop(r, true /* saveState */, reason); // onStop(saveState)
-handleDestroyActivity(r, false, true, reason);                    // onDestroy
-...
-handleLaunchActivity(r, pendingActions, mLastReportedDeviceId, customIntent);  // onCreate/onStart/onResume
-```
-
-`handleRelaunchActivity()`（`ActivityThread.java:6784`）在走到 `handleRelaunchActivityInner()` 之前会先调 `mConfigurationController.handleConfigurationChanged(changedConfig, null)`，保证 ActivityThread 进程级 Configuration 已先应用，新 Activity 启动时 `Resources` 实例已是新 config。
-
-#### 7. 实战建议（基于源码验证的优化清单）
-
-1. **声明 `configChanges` 但用 `requestLayout()` 替代 View 重建**：在 `onConfigurationChanged()` 中只调 `View#requestLayout()` / `View#invalidate()` 比整个 Activity recreate 快 5-10x（Perfetto trace 中 `handleRelaunchActivityInner` 一次典型 80-180ms vs `onConfigurationChanged + requestLayout` 5-20ms）。
-2. **Android 17 折叠屏适配**：声明 `configChanges="orientation|screenSize|smallestScreenSize|screenLayout"` 是首选；不声明会被 `displayCompatPolicy.getDisplayCompatModeConfigMask()` 加 mask，但仍可能在非 compat 模式下 recreate。
-3. **避免 manifest 把 `configChanges` 写全**：Android 17 `enableLessActivityRecreationOnConfigChange` 只覆盖外接/硬件输入和 colorMode 等冷门配置位；screenSize、density、locale、普通 uiMode 仍要显式声明并在 `onConfigurationChanged()` 中处理。
-4. **资源限定符补齐**：如果 App 内确实有 `values-night` / `values-w600dp` / `values-zh-rCN` 等多套资源，必须意识到切换 locale 或主题时会触发 recreate；不要在 `onSaveInstanceState` 中序列化大对象。
-5. **FixedRotation vs recreate 区分**：折叠屏展开/折叠后看到 Activity 视觉旋转但 trace 没有 `ActivityRelaunchItem`，只能说明没有走 Activity recreate；FixedRotation 是否参与要继续看 WindowManager 日志、窗口层级和 `DisplayContent` / `WindowToken` 路径。
+- [Android Developers：处理 Configuration 变化](https://developer.android.com/guide/topics/resources/runtime-changes)
+- [Android Developers：`<activity>` Manifest 属性](https://developer.android.com/guide/topics/manifest/activity-element#config)
+- [Android 17：面向 API 37 的行为变化](https://developer.android.com/about/versions/17/behavior-changes-17)
+- [Android 17：影响所有应用的行为变化](https://developer.android.com/about/versions/17/behavior-changes-all)
+- [Android 17：大屏忽略方向与 resizability 限制](https://developer.android.com/about/versions/17/changes/ff-restrictions-ignored)
+- [Android Developers：Compose 状态保存](https://developer.android.com/develop/ui/compose/state-saving)
+- [ResourcesManager.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ResourcesManager.java)
+- [ResourcesKey.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/res/ResourcesKey.java)
+- [Resources.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/res/Resources.java)
+- [ResourcesImpl.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/res/ResourcesImpl.java)
+- [ConfigurationController.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ConfigurationController.java)
+- [ActivityThread.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [ActivityRelaunchItem.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/servertransaction/ActivityRelaunchItem.java)
+- [ActivityConfigurationChangeItem.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/servertransaction/ActivityConfigurationChangeItem.java)
+- [ActivityRecord.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityRecord.java)
+- [AppCompatRecreateOnConfigChangePolicy.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/AppCompatRecreateOnConfigChangePolicy.java)
+- [DisplayContent.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/DisplayContent.java)
+- [WindowToken.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowToken.java)
+- [attrs_manifest.xml @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/res/res/values/attrs_manifest.xml)
+- [ActivityManagerService.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
