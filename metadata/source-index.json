@@ -48,7 +48,9 @@
       "chapter": "ch04",
       "section": "4.8",
       "processed_at": "2026-07-16T06:14:00.474672",
-      "action": "indexed-only-chapter-freeze"
+      "action": "indexed-only-chapter-freeze",
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "title": "源码调研：游戏引擎渲染链路 — 多设备分辨率适配与内存分配策略",
@@ -200,7 +202,9 @@
       "chapter": "ch18",
       "section": "18.16",
       "processed_at": "2026-07-17T06:14:31.983422",
-      "action": "indexed-only-chapter-freeze"
+      "action": "indexed-only-chapter-freeze",
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-16-android17-performance-score-attribution-sourcecode.md",
@@ -223,7 +227,20 @@
       "chapter": "ch17",
       "section": "17.1",
       "processed_at": "2026-07-17T06:14:31.983422",
-      "action": "indexed-only-chapter-freeze"
+      "action": "indexed-only-chapter-freeze",
+      "target_path": "src/part5-app/ch25-power-size/25-android17-oem-background-restriction-power-diagnosis.md",
+      "route_confidence": 25,
+      "route_terms": [
+        "厂商差异化省电策略",
+        "apprestrictioncontroller",
+        "baseappstatetracker",
+        "oem",
+        "systemconfig",
+        "bg-restriction-exemption",
+        "配置豁免"
+      ],
+      "route_status": "existing-chapter-routed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md",
@@ -241,7 +258,21 @@
       "chapter": "ch14",
       "section": "14.13",
       "processed_at": "2026-07-17T06:14:31.983422",
-      "action": "indexed-only-chapter-freeze"
+      "action": "indexed-only-chapter-freeze",
+      "target_path": "src/part5-app/ch20-stability/20.15-native-hook-technology-selection-implementation.md",
+      "route_confidence": 64,
+      "route_terms": [
+        "native",
+        "hook",
+        "inline",
+        "arm64",
+        "bionic",
+        "linker",
+        "rtld",
+        "lazy"
+      ],
+      "route_status": "existing-chapter-routed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-windowmanager-architecture-sourcecode.md",
@@ -299,7 +330,9 @@
       "chapter": "ch04",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-windowmanager-architecture-sourcecode.md`",
@@ -308,7 +341,21 @@
       "chapter": "ch16",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch01-architecture/1.66-android17-windowmanager-architecture-performance.md",
+      "route_confidence": 37,
+      "route_terms": [
+        "windowmanagerservice",
+        "window",
+        "surface",
+        "blast",
+        "android-17.0.0",
+        "handler",
+        "addwindow",
+        "windowtoken"
+      ],
+      "route_status": "existing-chapter-routed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android3-video-rendering-pipeline-sourcecode.md`",
@@ -317,7 +364,21 @@
       "chapter": "ch02",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "target_path": "src/part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md",
+      "route_confidence": 34,
+      "route_terms": [
+        "media3",
+        "mediacodec",
+        "java",
+        "native",
+        "bufferqueue",
+        "buffer",
+        "mode",
+        "setoutputsurface"
+      ],
+      "route_status": "existing-chapter-routed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md`",
@@ -354,7 +415,21 @@
       "chapter": "ch02",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "target_path": "src/part2-rendering/ch02-rendering/2.31-android17-display-mode-refresh-rate-selection.md",
+      "route_confidence": 45,
+      "route_terms": [
+        "surfaceflinger",
+        "displaymode",
+        "选择与",
+        "refreshrateselector",
+        "评分机制",
+        "displaymodecontroller",
+        "layer",
+        "global"
+      ],
+      "route_status": "existing-chapter-routed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-18-76250748-Android现代架构不需要事件总.md",
@@ -363,7 +438,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-18-76500740-现代Android官方为什么更推荐Repo.md",
@@ -372,7 +449,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "https://doi.org/10.1109/TSE.2021.3071193",
@@ -381,7 +460,9 @@
       "chapter": "ch04",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 17
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-18-android17-boot-timing-startup-performance-monitoring.md",
@@ -390,7 +471,9 @@
       "chapter": "ch08",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 17
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-18-morning-CodexSecurity-ManagedAgents-InklingOR-研究材料/master-research.md",
@@ -399,7 +482,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-18-morning-CodexSecurity-ManagedAgents-InklingOR-研究材料/references/01-openai-codex-security-x.md",
@@ -408,7 +493,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-18-morning-CodexSecurity-ManagedAgents-InklingOR-研究材料/references/03-inkling-openrouter.md",
@@ -417,7 +504,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-18-morning-CodexSecurity-ManagedAgents-InklingOR-研究材料/03-dump-inkling-openrouter.md",
@@ -426,7 +515,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "[掘金Android] 2026-07-19",
@@ -435,7 +526,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-19T19:28:48.274322+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-19-juejin-android.md",
@@ -444,7 +537,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-19T19:28:48.274322+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-20-juejin-android.md",
@@ -453,7 +548,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-20T06:20:11.946708+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "https://eunomia.dev/blog/2026/07/15/ebpf-ai-agent-policy-enforcement/",
@@ -462,7 +559,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-21T06:20:59.356819+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 17
+      "score": 17,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "[掘金Android]",
@@ -471,7 +570,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-21T06:20:59.356819+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-21-juejin-android.md",
@@ -480,7 +581,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-21T06:20:59.356819+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/2026-07-21-Graph-Engineering-Agent执行图工程-深度调研.md",
@@ -489,7 +592,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/research-materials/gracker-diagrams/graph-engineering-checklist/quality-review.md",
@@ -498,7 +603,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/research-materials/gracker-diagrams/graph-engineering-checklist/style-provenance.md",
@@ -507,7 +614,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/research-materials/gracker-diagrams/graph-semantics-mechanism/quality-review.md",
@@ -516,7 +625,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/research-materials/gracker-diagrams/graph-semantics-mechanism/style-provenance.md",
@@ -525,7 +636,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/gracker-diagrams/graph-engineering-checklist/quality-review.md",
@@ -534,7 +647,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/gracker-diagrams/graph-engineering-checklist/style-provenance.md",
@@ -543,7 +658,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/gracker-diagrams/graph-semantics-mechanism/quality-review.md",
@@ -552,7 +669,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/gracker-diagrams/graph-semantics-mechanism/style-provenance.md",
@@ -561,7 +680,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/research-materials/gracker-diagrams/graph-engineering-checklist/quality-review-v2-rejected.md",
@@ -570,7 +691,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/research-materials/gracker-diagrams/graph-engineering-checklist/prompts/infographic.md",
@@ -579,7 +702,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/gracker-diagrams/graph-engineering-checklist/quality-review-v2-rejected.md",
@@ -588,7 +713,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/gracker-diagrams/graph-engineering-checklist/prompts/infographic.md",
@@ -597,7 +724,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/research-materials/gracker-diagrams/graph-engineering-checklist/density-review.md",
@@ -606,7 +735,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/research-materials/gracker-diagrams/graph-engineering-checklist/structured-content.md",
@@ -615,7 +746,9 @@
       "chapter": "ch03",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/research-materials/gracker-diagrams/graph-engineering-checklist/analysis.md",
@@ -624,7 +757,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/research-materials/gracker-diagrams/graph-engineering-checklist/copy.md",
@@ -633,7 +768,9 @@
       "chapter": "ch03",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/gracker-diagrams/graph-engineering-checklist/density-review.md",
@@ -642,7 +779,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/gracker-diagrams/graph-engineering-checklist/structured-content.md",
@@ -651,7 +790,9 @@
       "chapter": "ch03",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/gracker-diagrams/graph-engineering-checklist/analysis.md",
@@ -660,7 +801,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/gracker-diagrams/graph-engineering-checklist/copy.md",
@@ -669,7 +812,9 @@
       "chapter": "ch03",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/research-materials/gracker-diagrams/graph-semantics-mechanism/quality-review-v2-rejected.md",
@@ -678,7 +823,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/research-materials/gracker-diagrams/graph-semantics-mechanism/prompts/infographic.md",
@@ -687,7 +834,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/gracker-diagrams/graph-semantics-mechanism/quality-review-v2-rejected.md",
@@ -696,7 +845,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/gracker-diagrams/graph-semantics-mechanism/prompts/infographic.md",
@@ -705,7 +856,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/research-materials/gracker-diagrams/graph-semantics-mechanism/density-review.md",
@@ -714,7 +867,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-21-Graph-Engineering-Agent执行图工程/research-materials/gracker-diagrams/graph-semantics-mechanism/structured-content.md",
@@ -723,7 +878,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-22T06:20:47.354674+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "https://daringfireball.net/2026/07/ec_google_guidance_android_ai_and_search_sharing",
@@ -732,7 +889,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "https://mitchellh.com/writing/everyone-should-know-simd",
@@ -741,7 +900,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "https://ciphertalk.substack.com/p/nobody-knows-what-a-used-gpu-cluster",
@@ -750,7 +911,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "[掘金Android] 2026-07-23",
@@ -759,7 +922,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-23-76228855-Google 藏大招！AndroidX .md",
@@ -768,7 +933,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-23-76369472-能告诉我：你为什么用 MVI 吗？反正我.md",
@@ -777,7 +944,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-23-76393117-我为什么让 Toast 多弹了一次.md",
@@ -786,7 +955,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-evening-Harness预载税-RewardSeeking-研究材料/STATUS.md",
@@ -795,7 +966,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-evening-Harness预载税-RewardSeeking-研究材料/master-research.md",
@@ -804,7 +977,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-evening-Harness预载税-RewardSeeking-研究材料/01-dump-harness-token-tax.md",
@@ -813,7 +988,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-evening-Harness预载税-RewardSeeking-研究材料/references/02-openai-reward-seeking.md",
@@ -822,7 +999,9 @@
       "chapter": "ch05",
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-evening-Harness预载税-RewardSeeking-研究材料/references/01-systima-token-overhead.md",
@@ -831,7 +1010,9 @@
       "chapter": "ch05",
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 17 Lock-Free MessageQueue (DeliQueue)_ A Source-Level Deep Dive.md",
@@ -840,7 +1021,21 @@
       "chapter": "ch16",
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch01-architecture/01.26-messagqueue-deliqueue-optimization.md",
+      "route_confidence": 31,
+      "route_terms": [
+        "lock-free",
+        "messagequeue",
+        "deliqueue",
+        "lock",
+        "treiber",
+        "stack",
+        "无锁入队",
+        "looper"
+      ],
+      "route_status": "existing-chapter-routed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-morning-CC-iOS模拟器-HF评测越狱-AGENTS评审规则-研究材料/master-research.md",
@@ -849,7 +1044,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-morning-CC-iOS模拟器-HF评测越狱-AGENTS评审规则-研究材料/01-dump-cc-ios-simulator.md",
@@ -858,7 +1055,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-morning-CC-iOS模拟器-HF评测越狱-AGENTS评审规则-研究材料/02-dump-hf-eval-security.md",
@@ -867,7 +1066,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-morning-CC-iOS模拟器-HF评测越狱-AGENTS评审规则-研究材料/references/04-signals-fallback.md",
@@ -876,7 +1077,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 17
+      "score": 17,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-morning-CC-iOS模拟器-HF评测越狱-AGENTS评审规则-研究材料/references/02-openai-hf-security-incident.md",
@@ -885,7 +1088,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-23T06:20:34.268771+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "https://juejin.cn/post/7629276299651645486｜摘要：正文把跨端目标拆成移动双端、移动",
@@ -894,7 +1099,9 @@
       "chapter": "ch06",
       "processed_at": "2026-07-24T06:20:24.288565+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 17
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-24-76292762-跨端框架横评 2026：Flutter、React Native、KMP.md",
@@ -903,7 +1110,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-24T06:20:24.288565+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md",
@@ -926,7 +1135,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-24T06:20:24.288565+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-24-76370364-我用 AI 基于 Tauri + Vue 3 写了个 ADB 桌面工具，.md",
@@ -935,7 +1146,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-24T06:20:24.288565+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-24-76447818-告别 KMP 选型地狱！klibs.io 上线，全平台库一键筛选太省心.md",
@@ -944,7 +1157,9 @@
       "chapter": "ch06",
       "processed_at": "2026-07-24T06:20:24.288565+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-24-juejin-android.md",
@@ -953,7 +1168,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-24T06:20:24.288565+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "[掘金Android] 2026-07-25 Juejin Android Intake",
@@ -962,7 +1179,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-25T06:20:05.040699+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-76228855-Google-藏大招-AndroidX-悄悄上线-Remote-Comp.md",
@@ -971,7 +1190,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-25T06:20:05.040699+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-76241685-紧急预警-Android-17-定位权限大改-你的-App-要适配了.md",
@@ -980,7 +1201,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-25T06:20:05.040699+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-76308345-Android-CLI-来了-终端一键建项目-控模拟器-给-Agent-.md",
@@ -989,7 +1212,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-25T06:20:05.040699+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-76336249-Android-App-最强APM来袭.md",
@@ -1011,7 +1236,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-25T06:20:05.040699+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-76370364-我用AI基于-Tauri-Vue-3-写了个-ADB-桌面工具-把命令行.md",
@@ -1020,7 +1247,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-25T06:20:05.040699+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-76388970-为什么-Android-不用接口做-Activity-通信.md",
@@ -1029,7 +1258,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-25T06:20:05.040699+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-76400776-我通过3个小改动将Compose重组减少了78.md",
@@ -1038,7 +1269,9 @@
       "chapter": "ch03",
       "processed_at": "2026-07-25T06:20:05.040699+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-juejin-android.md",
@@ -1047,7 +1280,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-25T06:20:05.040699+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-24-morning-Agent-Workflow-预算-研究材料/master-research.md",
@@ -1056,7 +1291,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-25T06:20:05.040699+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-24-morning-Agent-Workflow-预算-研究材料/STATUS.md",
@@ -1065,7 +1302,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-25T06:20:05.040699+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-24-morning-Agent-Workflow-预算-研究材料/quality-report.md",
@@ -1074,7 +1313,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-25T06:20:05.040699+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-24-morning-Agent-Workflow-预算-研究材料/02-dump-workflow-budget.md",
@@ -1083,7 +1324,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-25T06:20:05.040699+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-24-morning-Agent-Workflow-预算-研究材料/budget.md",
@@ -1092,7 +1335,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-25T06:20:05.040699+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-24-morning-Agent-Workflow-预算-研究材料/01-dump-parallel-agent-report.md",
@@ -1101,7 +1346,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-25T06:20:05.040699+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 19
+      "score": 19,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-24-morning-Agent-Workflow-预算-研究材料/00-local-context.md",
@@ -1110,7 +1357,9 @@
       "chapter": "ch16",
       "processed_at": "2026-07-25T06:20:05.040699+08:00",
       "action": "indexed-only-chapter-freeze",
-      "score": 15
+      "score": 15,
+      "route_status": "quarantined-non-aiw-or-aggregate",
+      "routed_at": "2026-07-25T13:53:24.486291+08:00"
     }
   ]
 }
