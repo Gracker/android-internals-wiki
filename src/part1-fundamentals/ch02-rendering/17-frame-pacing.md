@@ -3,17 +3,29 @@ title: "Frame Pacing Library 与帧节奏控制"
 chapter: "2.17"
 section: "2.17"
 status: "finalized"
-applicable_versions: "Android 4.1 (API 16, Java Choreographer 路径) - Android 17 (API 37)"
-last_verified: "2026-04-19"
-last_verified_against: "frameworks/opt/gamesdk refs/heads/android-games-sdk-games-frame-pacing-release（AGDK frame-pacing release branch，非 Android platform tag）；Perfetto FrameTimeline SQL @ android-17.0.0_r1；frameworks/base DeliQueue @ android-17.0.0_r1；developer.android.com frame-pacing docs"
-confidence: medium
+applicable_versions: "Android 4.4 (API 19, Swappy 当前 release minSdk) - Android 17 (API 37)；Java Choreographer 自 API 16 可用"
+last_verified: "2026-07-25"
+last_verified_against: "frameworks/base、frameworks/native、external/perfetto @ android-17.0.0_r1；kernel/common @ android17-6.18-2026-06_r6；frameworks/opt/gamesdk refs/heads/android-games-sdk-games-frame-pacing-release @ f81f888fe11e；Android Frame Pacing、Vulkan present timing 与 Perfetto FrameTimeline 官方文档"
+confidence: high
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 sources:
   - type: "aosp"
+    path: "frameworks/native/vulkan/libvulkan/driver.cpp @ android-17.0.0_r1"
+  - type: "aosp"
+    path: "frameworks/native/vulkan/libvulkan/swapchain.cpp @ android-17.0.0_r1"
+  - type: "aosp"
+    path: "frameworks/base/core/java/android/view/Surface.java @ android-17.0.0_r1"
+  - type: "aosp"
+    path: "frameworks/native/libs/gui/BufferQueueProducer.cpp @ android-17.0.0_r1"
+  - type: "aosp"
     path: "external/perfetto/src/trace_processor/metrics/sql/android/android_frame_timeline_metric.sql"
+  - type: "aosp"
+    path: "frameworks/opt/gamesdk/games-frame-pacing @ f81f888fe11e"
   - type: "official"
     path: "developer.android.com/games/sdk/frame-pacing"
+  - type: "official"
+    path: "developer.android.com/games/develop/vulkan/frame-pacing-extensions"
 tags: ["rendering", "frame-pacing", "swappy", "perfetto", "vulkan"]
 related_chapters: ["2.3", "2.6", "2.13", "2.18", "16.4"]
 created_by: "task2a-knowledge-gap"
@@ -53,59 +65,44 @@ last_deepseek_cn_review_at: 2026-06-20
 
 # 2.17 Frame Pacing Library 与帧节奏控制
 
-在 Perfetto 里，平均 FPS 看着不差，`Actual Timeline` 却一会儿短一会儿长，或者 `SurfaceView` 的 buffered frames 在 1、2、3 之间来回抖，这类卡顿很多时候不是 GPU 算力不够，而是 frame submit 的节奏没有贴住显示系统。Frame Pacing Library，文档里也叫 Swappy，处理的就是这件事。
+平均 FPS 只能回答一段时间内产出了多少帧，不能说明每一帧在屏幕上停留了多久。比如游戏平均维持 60 FPS，但显示屏工作在 90 Hz；如果提交时刻没有对齐显示周期，画面可能按 1、2、1、2 个刷新周期交替停留。计数器仍接近 60，运动却会发颤。
 
-Swappy 负责决定这一帧该什么时候等、什么时候交、要不要设置 presentation time，以及要不要向平台报告新的 frame rate vote。游戏自己继续跑自己的 update 和 render loop，Swappy 把 `eglSwapBuffers()` 或 `vkQueuePresentKHR()` 这一跳改成更贴近 Android 显示节拍的提交方式。
+Frame pacing 要同时约束三件事：应用从哪个节拍开始生产、buffer 何时提交、这块 buffer 希望在哪个显示周期出现。Android Frame Pacing Library（Swappy）把这组控制封装在 `SwappyGL_swap()` 和 `SwappyVk_queuePresent()` 附近，并利用 Choreographer、presentation timestamp 与 fence 抑制 queue-stuffing。
 
-<!-- outline-start -->
-## 本节要点大纲
+> **源码边界**：平台源码以 Android 17 / API 37 的 `android-17.0.0_r1` 为准，涉及 fence 的 kernel 语义以 `android17-6.18-2026-06_r6` 为准。Swappy 是随应用发布的 AGDK 库，不属于 Android 17 平台 API；本文库实现锚定 `frameworks/opt/gamesdk` 的 `android-games-sdk-games-frame-pacing-release` 分支提交 `f81f888fe11e`。排查线上应用时还要记录 APK 实际打包的 Swappy 版本。
 
-### 锚点（必须覆盖）
+## 先分清四个控制量
 
-- 🔹 **帧节奏问题在 trace 里长什么样**：[已验证: developer.android.com/games/sdk/frame-pacing]
-  平均 FPS 正常，不代表显示时长均匀。60FPS 内容跑在 90Hz、120Hz 屏幕上，如果 submit 节奏没贴住 refresh period，`Actual Timeline`、`SurfaceView` buffered frames 和肉眼观感都会出现抖动。
+| 控制量 | 回答的问题 | 常见接口或证据 |
+|---|---|---|
+| render-loop tick | 何时采样输入、更新逻辑并开始一帧 | 引擎 scheduler、`AChoreographer`、Java `Choreographer` |
+| frame pacing | 何时等待、何时提交，允许多少帧同时在途 | Swappy、自研 pacing、acquire / swap / present wait |
+| presentation target | 希望 buffer 对应哪个显示时刻 | `EGL_ANDROID_presentation_time`、`VK_GOOGLE_display_timing`、Android 17 的 `VK_EXT_present_timing` |
+| frame-rate vote | 内容倾向什么帧率，系统应如何选显示模式 | `ANativeWindow_setFrameRate()`、`Surface.setFrameRate()` |
 
-- 🔹 **Swappy 的真实提交链**：[已验证: frameworks/opt/gamesdk/games-frame-pacing/opengl/SwappyGL.cpp, frameworks/opt/gamesdk/games-frame-pacing/opengl/EGL.cpp]
-  当前 OpenGL 实现的主链是 `insertSyncFence()` -> `onPreSwap()` -> `setPresentationTime()` -> `swapBuffers()` -> `onPostSwap()`。正文用伪代码或分段引用表达调用顺序，避免把 synthetic snippet 标成单个真实函数。
-
-- 🔹 **Choreographer / DisplayManager 的回退路径**：[已验证: frameworks/opt/gamesdk/games-frame-pacing/common/ChoreographerThread.cpp, frameworks/opt/gamesdk/games-frame-pacing/common/SwappyDisplayManager.cpp]
-  当前实现分为 public API 和内部线程回退两层。`SwappyGL_init()` / `SwappyVk_initAndGetRefreshCycleDuration()` 仍要求 JNI env 和 Activity；初始化成功后，内部才会在 NDK Choreographer、Java Choreographer 和 no-Choreographer best effort 之间选择。`SwappyDisplayManager` 只在 API 28-30 的一部分路径里启用。
-
-- 🔹 **Auto 模式与多刷新率是动态求解**：[已验证: frameworks/opt/gamesdk/games-frame-pacing/common/SwappyCommon.cpp, frameworks/opt/gamesdk/games-frame-pacing/common/SwappyCommon.h]
-  `calculateSwapInterval()` 按 `frameTime / refreshPeriod` 求 interval，用 `REFRESH_RATE_MARGIN = 500ns` 做取整边界，`mAutoSwapIntervalThreshold` 默认是 `50ms`。正文避免写成 11ms / 16ms / 22ms 这类硬编码档位表。
-
-- 🔹 **OpenGL / Vulkan / 非游戏场景的接入边界**：[已验证: frameworks/opt/gamesdk/include/swappy/swappyGL.h, frameworks/opt/gamesdk/include/swappy/swappyVk.h, developer.android.com/reference/android/view/Choreographer]
-  OpenGL 需要在 `SwappyGL_swap()` 主线外补 `SwappyGL_setWindow(window)`；Vulkan 也要在 `SwappyVk_queuePresent(VkQueue, const VkPresentInfoKHR*)` 之外补 `SwappyVk_setWindow(device, swapchain, window)`，这样 frame-rate vote / display timing 才接完整。非游戏场景如果只想借鉴节奏控制，`Choreographer.FrameCallback` 示例也要写成可运行的自引用形式。
-
-- 🔹 **验证路径不能只盯 Perfetto**：[已验证: developer.android.com/games/sdk/frame-pacing/opengl/verify-improvement, developer.android.com/games/sdk/reference/frame-pacing, external/perfetto/src/trace_processor/metrics/sql/android/jank/frames.sql]
-  官方验证页仍把 `systrace.py` 和 `SurfaceView` channel 作为入口。Swappy 自己还有 `SwappyGL_enableStats()` / `SwappyVk_enableStats()`、`FrameStatistics` logcat 和 `SwappyStats`。Perfetto 的 `Expected Timeline` / `Actual Timeline` 和对应 SQL 则是 Android 12+ 的 FrameTimeline 能力，`SurfaceView` 仍要走替代观察路径。
-
-### 扩展（可选深入）
-
-- 🔸 **与 ARR 的关系**：Swappy 会投票 frame rate 或选择 display mode，平台级 Adaptive Refresh Rate 的模式切换细节放到 §2.18 展开。
-- 🔸 **引擎集成的表述边界**：Unity / Unreal 的版本线变化很快，没有 release note 支撑时，不把“默认启用”写成事实。
-<!-- outline-end -->
-
-> **源码版本说明**：`frameworks/opt/gamesdk` 仓库在 `android-17.0.0_r1`、`android-16.0.0_r1`、`android-15.0.0_r1` 下均无 `games-frame-pacing` 目录。本文 Swappy 源码引用基于 `refs/heads/android-games-sdk-games-frame-pacing-release`，这是 AGDK 库 release branch，不是 Android 17 platform tag。下文未带 tag 的 `frameworks/opt/gamesdk` 锚点均指向该分支，只用于说明 AGDK Swappy 库实现，不作为 Android 17 platform 源码结论。
+这四项会互相影响，但不能互相替代。Choreographer tick 只提供工作起点；frame-rate vote 只声明内容帧率；presentation target 只描述目标时刻。队列深度、GPU 完成情况和显示反馈仍要由 pacing 算法共同处理。
 
 ## 帧节奏问题在 trace 里长什么样
 
-一个常见误判场景是：游戏逻辑层每秒产出 60 帧，监控面板上的平均 FPS 也是 60，但屏幕是 90Hz。90Hz 的 refresh period 大约是 11.11ms，60FPS 的 frame time 大约是 16.67ms，这两个节奏没有整数倍关系。如果应用只是“画完就交”，屏幕侧会出现一部分帧只占 1 个 refresh period，另一部分帧占 2 个 refresh period。肉眼看到的效果，就是同样 60FPS，运动仍然发颤。
+90 Hz 的刷新周期约为 11.11 ms，60 FPS 内容的目标帧间隔约为 16.67 ms。两者没有整数倍关系。应用若每次 GPU 工作结束后立即 present，显示侧可能让相邻内容帧分别停留一个和两个刷新周期；重负载场景还会让间隔变成更杂乱的组合。
 
-官方文档把这类问题拆成两层。一个是 late frame，帧来晚了，显示系统只能把旧帧再放一次。另一个是 frame arrive too early，提交过早，buffer queue 被塞深，输入到显示的延迟被拉长。Swappy 针对的就是这两层：一层控制 submit 时机，另一层控制 queue 深度。[已验证: developer.android.com/games/sdk/frame-pacing]
+另一类问题是 queue-stuffing。应用持续以最快速度提交，BufferQueue 很快积累多个待显示 buffer。队列满后，render thread 会在 acquire、swap 或 present 附近被反压阻塞，看起来像是系统自动替应用“限帧”。这时输入已经在更早的逻辑帧采样，多出来的排队会直接增加触控到显示的延迟。等待也可能由 pacing 主动施加，用来阻止队列继续变深；不能只凭 wait slice 长就判为故障。
 
-排查 trace 时，检查两处：
+诊断时先比较以下信号：
 
-- `SurfaceView` channel 的 buffered frames 是否稳定。官方 verify-improvement 页面给的判断方法就是这里。
-- `Expected Timeline` 和 `Actual Timeline` 是否等宽、是否保持稳定。`Actual Timeline` 忽长忽短，通常说明 frame pacing 本身已经乱了；`Expected Timeline` 很稳、`Actual Timeline` 却频繁 miss deadline，更多是 app 或 SF 侧的执行超时。
+- 目标 FPS、显示 refresh rate 与相邻 buffer 提交间隔是否相容。
+- `SurfaceView` trace channel 中 buffered frames 是否长期大于 1，是否周期性顶满后再回落。
+- acquire / swap / present 的阻塞是否与队列深度、release fence 或 GPU 完成时间同步出现。
+- 输入采样到 buffer present 的延迟是否随 queue depth 增长。
+- 支持 FrameTimeline 的窗口是否出现 `Buffer Stuffing`、`App Deadline Missed` 或 SurfaceFlinger 侧 jank。
 
-[图：同一段游戏滚动场景在启用 Swappy 前后的 trace 对比。上半部分是 `SurfaceView` channel 的 buffered frames，未接入 Swappy 时在 1、2、3 之间来回波动；下半部分是 `Expected Timeline` / `Actual Timeline`，接入后 `Actual Timeline` 的宽度和起止位置更稳定。]
+平均 FPS、单次 `eglSwapBuffers()` 耗时或单条 `vkQueuePresentKHR()` 耗时都不足以单独定责。swap / present 可能混合 driver flush、等待可用 slot、等待 fence 与 pacing sleep；需要把 CPU、GPU、BufferQueue 和显示时间放在同一段 trace 中对照。
 
 ## Swappy 的真实提交链
 
-AGDK frame-pacing release branch 的 OpenGL 路径已经拆成多段。`SwappyGL::swapInternal()` 负责把几个步骤串起来，fence、presentation time 和统计逻辑分散在 `SwappyGL.cpp`、`EGL.cpp`、`SwappyCommon.cpp` 里。
+提交 `f81f888fe11e` 的 OpenGL 路径由 `SwappyGL::swapInternal()` 组织，fence、presentation time、等待策略和统计分别位于 `SwappyGL.cpp`、`EGL.cpp` 与 `SwappyCommon.cpp`。
 
-按该 release branch 源码整理，提交顺序可以写成这段伪代码。AOSP 没有原样函数体，所以这里不能标成真实函数。
+下面的节选化伪代码用于展示调用顺序；错误处理和成员访问已简化。
 
 ```cpp
 // 伪代码，按 frameworks/opt/gamesdk android-games-sdk-games-frame-pacing-release 分支调用顺序整理
@@ -128,39 +125,35 @@ bool SwappyGL::swapInternal(EGLDisplay display, EGLSurface surface) {
 }
 ```
 
-这条链里有三件事。
+`insertSyncFence()` 在本次 swap 前插入 `EGL_SYNC_FENCE_KHR`，内部 waiter thread 异步观察完成状态。`lastFrameIsComplete()` 和 `getFencePendingTime()` 把上一帧 GPU 进度反馈给 `SwappyCommon`。
 
-一件是 `insertSyncFence()`。`EGL.cpp` 里会创建 `EGL_SYNC_FENCE_KHR`，再把 fence 交给内部 waiter thread 异步等待。后面的 `lastFrameIsComplete()` 和 `getFencePendingTime()`，都依赖这里采到的状态。[已验证: frameworks/opt/gamesdk/games-frame-pacing/opengl/EGL.cpp, frameworks/opt/gamesdk/games-frame-pacing/opengl/EGL.h]
+`onPreSwap()` 根据 Choreographer 时序、上一帧完成情况、当前 pipeline mode 和目标 swap duration 决定是否等待。`onPostSwap()` 记录本次提交并推进下一次目标时刻。`setPresentationTime()` 还会检查目标时间是否已经离下一次 Vsync 太近；进入这个边界后，它跳过 `eglPresentationTimeANDROID()`，避免设置一个已经失去意义的目标。
 
-一件是 `onPreSwap()` / `onPostSwap()`。这部分在 `SwappyCommon` 里处理等待、统计 frame duration、决定 auto swap interval、更新 presentation time，还会在合适的时候向平台投票新的 frame rate。[已验证: frameworks/opt/gamesdk/games-frame-pacing/common/SwappyCommon.cpp]
-
-还有一件是 `setPresentationTime()`。`SwappyGL.cpp` 不会直接调用 `eglPresentationTimeANDROID()`，而是先比较“离下一个 vsync 还有多久”和当前 display timing，再决定要不要设置 presentation time。离 vsync 太近时，源码直接返回 `EGL_TRUE`，不再额外设置。[已验证: frameworks/opt/gamesdk/games-frame-pacing/opengl/SwappyGL.cpp]
-
-把这几步合在一起看，Swappy 做的事就清楚了：它同时在管 fence、submit 时机、presentation time 和 refresh-rate vote。
+因此，Swappy 的作用范围超过“替换一次 swap”：它用 fence 约束在途帧，用 presentation timestamp 选择显示周期，再依据观测到的 CPU / GPU 时间调整 interval 与 pipeline mode。
 
 ## Choreographer / DisplayManager 的回退路径
 
-当前实现最容易被写错的地方，是把内部 `ChoreographerThread` 回退树直接当成 public API contract。公开入口和内部线程策略需要分开看。`SwappyGL_init(JNIEnv*, jobject)` 和 `SwappyVk_initAndGetRefreshCycleDuration(JNIEnv*, jobject, ...)` 的公开入口都要求 JNI env 和 Activity；`vm == nullptr` 这条分支描述的是内部线程选择策略，不能推导成应用可以把 Swappy 当成一套通用的 no-JVM、native-only 初始化 API。
+内部 `ChoreographerThread` 的选择树不是公开初始化契约。`SwappyGL_init(JNIEnv*, jobject)` 与 `SwappyVk_initAndGetRefreshCycleDuration(JNIEnv*, jobject, ...)` 都接收 JNI env 和 Activity。源码中的 `vm == nullptr` 分支只描述内部对象如何选择节拍源，不能据此省掉公开入口要求的 Android 上下文。
 
-`ChoreographerThread::createChoreographerThread()` 本身的回退链还是很重要，因为它决定了初始化成功之后，Swappy 在内部到底靠哪条节拍源工作。
+`ChoreographerThread::createChoreographerThread()` 按以下顺序选择内部节拍源：
 
 - `vm == nullptr`，或者 `sdkInt >= 24`，优先 `NDKChoreographerThread`。源码里 `NDKChoreographerThread::MIN_SDK_VERSION = 24`。
 - `sdkInt < 24` 且 JVM、Activity 都在，尝试 `JavaChoreographerThread`。
-- Java 路径初始化也失败时，回退 `NoChoreographerThread`，日志里会写 `Using no Choreographer (Best Effort)`。
-- `Type::App` 这条特殊分支会直接走 `NoChoreographerThread`，表示调用方自己管理 App Choreographer 节拍。[已验证: frameworks/opt/gamesdk/games-frame-pacing/common/ChoreographerThread.cpp]
+- Java 路径初始化失败时，回退 `NoChoreographerThread`，日志会记录 `Using no Choreographer (Best Effort)`。
+- `Type::App` 直接使用 `NoChoreographerThread`，表示调用方自行提供应用侧 Choreographer 节拍。
 
-刷新率和 display mode 的路径会随 API 变化。`SwappyDisplayManager::MIN_SDK_VERSION = 28`，`useSwappyDisplayManager()` 还额外做了版本过滤：API 28 到 30 的一部分路径会启用 Java 侧 DisplayManager 帮手；API 31 及以上关闭这条路径，因为 NDK 已经有 refresh-rate callback；源码还单独排除了 Android 11 preview 1 的半成品状态。[已验证: frameworks/opt/gamesdk/games-frame-pacing/common/SwappyDisplayManager.cpp, frameworks/opt/gamesdk/games-frame-pacing/common/SwappyDisplayManager.h]
+刷新率与 display mode 的辅助路径也有版本边界。`SwappyDisplayManager::MIN_SDK_VERSION` 是 28；`useSwappyDisplayManager()` 在 API 28—30 使用 Java helper，但排除 API 30 preview SDK 1。API 31 起，NDK 已提供所需的 refresh-rate callback，Java helper 退出这条路径。
 
-把“公开接入前提”和“内部节拍来源”拆开之后，版本边界更好记：
+公开接入前提与内部节拍来源的版本边界如下：
 
 | 平台边界 | 公开接入前提 | 内部节拍来源 | 刷新率相关辅助 |
 |---|---|---|---|
-| API 16-23 | `SwappyGL_init()` 仍要求 JVM / Activity，公开主线是 OpenGL | Java Choreographer | 无 NDK Choreographer，Swappy 走 Java 回调 |
+| API 19—23 | `SwappyGL_init()` 仍要求 JVM / Activity，公开主线是 OpenGL | Java Choreographer | 无 NDK Choreographer，Swappy 走 Java 回调 |
 | API 24-27 | OpenGL 仍走 `SwappyGL_init()`；Vulkan 路径从这里开始成立 | NDK Choreographer 优先 | 无 `SwappyDisplayManager` |
 | API 28-30 | 同上 | NDK Choreographer 优先 | `SwappyDisplayManager` 可维护 supported refresh periods 和 display mode |
 | API 31+ | 同上 | NDK Choreographer + native refresh-rate callback | Java DisplayManager helper 退出主链 |
 
-这组边界可以直接拿来排查初始化问题：API 16-23 先确认 JVM / Activity 是否齐全；API 24+ 再看 NDK Choreographer、DisplayManager 和 refresh-rate callback 这几条辅助链。公开文档在 `developer.android.com/games/sdk/frame-pacing`，源码主仓库在 `platform/frameworks/opt/gamesdk`。
+API 19—23 的初始化故障先查 JNI / Activity 与 Java Choreographer；API 24+ 再检查 NDK Choreographer 符号、独立 ALooper 线程和 refresh-rate callback。`SwappyGL_isEnabled()` 也要纳入启动日志，因为系统属性或必需 EGL extension 缺失会让 OpenGL 路径停用。
 
 ## Auto 模式与多刷新率是动态求解
 
@@ -182,73 +175,78 @@ int SwappyCommon::calculateSwapInterval(nanoseconds frameTime,
 }
 ```
 
-这段代码说明：interval 按实际 frame time 和 refresh period 动态计算，代码里没有写死三档模板。[已验证: frameworks/opt/gamesdk/games-frame-pacing/common/SwappyCommon.cpp]
+`interval` 是运行时求出的刷新周期整数倍，库内没有 90 / 45 / 30 FPS 这样的固定档位表。官方文档列出的档位是设备刷新率组合的示例，不能反向当作算法常量。
 
-多刷新率选择也是动态过程。`setPreferredRefreshPeriod()` 会遍历 `mSupportedRefreshPeriods`，找“能装下当前 frame time 的最短 swap duration”，同时在满足条件的 refresh config 里尽量选更长的 refresh period 来省电。平台支持 `ANativeWindow_setFrameRate()` 时，Swappy 直接投票 frame rate；没有这条 native 能力时，才退回 DisplayManager 路径。[已验证: frameworks/opt/gamesdk/games-frame-pacing/common/SwappyCommon.cpp]
+多刷新率选择也是动态过程。`setPreferredRefreshPeriod()` 会遍历 `mSupportedRefreshPeriods`，寻找能够容纳当前 frame time 的最短 swap duration；结果相近时选择较长的 refresh period，以降低显示刷新功耗。加载到 `ANativeWindow_setFrameRate()` 且已经设置 window 时，Swappy 直接提交 frame-rate vote；否则才考虑 DisplayManager 路径。
 
 源码里有几个常量，但含义和三档阈值表不同：
 
-- `mAutoSwapIntervalThreshold` 默认是 `50ms`，慢到这个区间后，auto swap interval 不再主动 sleep，直接让应用尽快跑。
+- `mAutoSwapIntervalThreshold` 默认是 `50ms`。观测到的帧时长超过该阈值后，auto swap interval 不再主动 sleep，让应用尽快追赶；它不是建议的目标帧预算。
 - `REFRESH_RATE_MARGIN` 是 `500ns`，只用于 interval 取整边界。
-- `FrameDurations` 的采样窗口是 `2s`，用来估计最近一段 frame duration 走势。[已验证: frameworks/opt/gamesdk/games-frame-pacing/common/SwappyCommon.h, frameworks/opt/gamesdk/games-frame-pacing/common/SwappyCommon.cpp]
+- `FrameDurations` 的采样窗口是 `2s`，用来估计近期 CPU / GPU frame duration。
 
 在 90Hz 设备上做心算，22ms 左右的 frame time 会被 `calculateSwapInterval()` 算成 2 个 refresh period，得到约 22.22ms 的展示节奏。这个数来自运行时计算，不来自配置表里的“45FPS 档位”。
 
 ## OpenGL、Vulkan 与非游戏场景的接入边界
 
-OpenGL 的接入最直接，主线就是初始化、设 interval、把 `eglSwapBuffers()` 替换成 `SwappyGL_swap()`。
+下面的 OpenGL 骨架用于说明初始化顺序与每帧入口；生产代码还要处理失败、窗口重建和 `SwappyGL_destroy()`。
 
 ```cpp
-SwappyGL_init(env, activity);
-SwappyGL_setWindow(window);  // window 为创建 EGLSurface 的 ANativeWindow
-SwappyGL_setSwapIntervalNS(16'666'666ULL);
+bool swappyReady = SwappyGL_init(env, activity) && SwappyGL_isEnabled();
+if (swappyReady) {
+    SwappyGL_setWindow(window);  // 创建 EGLSurface 时使用的 ANativeWindow
+
+    // 固定 60 FPS 示例；需要动态调节时保留默认 Auto 模式。
+    SwappyGL_setAutoSwapInterval(false);
+    SwappyGL_setAutoPipelineMode(false);
+    SwappyGL_setSwapIntervalNS(16'666'666ULL);
+}
 
 while (running) {
     renderFrame();
-    SwappyGL_swap(display, surface);
+    bool ok = swappyReady
+        ? SwappyGL_swap(display, surface)
+        : (eglSwapBuffers(display, surface) == EGL_TRUE);
+    // ok == false 时用 eglGetError() 继续定位。
 }
 ```
 
-这段代码有两层含义。`SwappyGL_swap()` 接上后，submit pacing 主线就能跑起来；`SwappyGL_setWindow(window)` 则把 `ANativeWindow_*` 相关的 frame-rate report / display timing 路径补齐。少了这一步，swap 可能还能跑通，但 Swappy 会把“ANativeWindow not configured, frame rate will not be reported to Android platform”当成降级路径。
+`SwappyGL_swap()` 接管提交时序；`SwappyGL_setWindow()` 则让库可以调用 `ANativeWindow_setFrameRate()`。缺少 window 时 swap 仍可能成功，但库会记录 `ANativeWindow not configured, frame rate will not be reported to Android platform`，frame-rate vote 路径随之降级。默认 Auto 模式会继续根据观测值修改 interval；需要固定目标时，必须先关闭 Auto。
 
-如果要看统计数据，额外再接 `SwappyGL_enableStats(true)`、`SwappyGL_recordFrameStart()` 和 `SwappyGL_getStats()`。这些 API 在 `swappyGL_extra.h` 里，不在基础头文件那一层。[已验证: frameworks/opt/gamesdk/include/swappy/swappyGL.h, frameworks/opt/gamesdk/include/swappy/swappyGL_extra.h]
+统计接口位于 `swappyGL_extra.h`。启用 `SwappyGL_enableStats(true)` 后，在每帧 CPU 工作开始前调用 `SwappyGL_recordFrameStart()`，再用 `SwappyGL_getStats()` 读取直方图。`SwappyGL_init()` 返回成功也不代表所有统计能力都可用，仍要检查运行日志。
 
-Vulkan 的接入要多几步。`swappyVk.h` 给出的主线是：先让 Swappy 决定 device extensions，再初始化 swapchain 级别状态，之后才在 present 路径上接管 `vkQueuePresentKHR()`。`SwappyVk_queuePresent()` 的真实签名如下。
-
-```cpp
-VkResult SwappyVk_queuePresent(VkQueue queue,
-                               const VkPresentInfoKHR* pPresentInfo);
-```
-
-最小可用调用链可以写成这样：
+Vulkan 必须在 `vkCreateDevice()` 前让 Swappy 检查可用 device extensions，并把它返回的名称并入 `VkDeviceCreateInfo::ppEnabledExtensionNames`。下面的骨架省略了两次枚举所需的容器分配和 Vulkan 对象创建，只展示顺序。
 
 ```cpp
+// vkCreateDevice() 之前：把 requiredExtensions 合并进 enabled extensions。
 SwappyVk_determineDeviceExtensions(physicalDevice,
                                    availableExtensionCount,
                                    availableExtensions,
                                    &requiredExtensionCount,
                                    requiredExtensions);
 
+// 创建 VkDevice、VkQueue、VkSwapchainKHR 之后：
 uint64_t refreshPeriodNs = 0;
-SwappyVk_initAndGetRefreshCycleDuration(env,
-                                        activity,
-                                        physicalDevice,
-                                        device,
-                                        swapchain,
-                                        &refreshPeriodNs);
+if (!SwappyVk_initAndGetRefreshCycleDuration(
+        env, activity, physicalDevice, device, swapchain, &refreshPeriodNs)) {
+    // 记录失败并选择应用自己的 present 路径。
+}
+
 SwappyVk_setWindow(device, swapchain, window);
 SwappyVk_setQueueFamilyIndex(device, queue, queueFamilyIndex);
+SwappyVk_setAutoSwapInterval(false);  // 固定 interval；动态模式保留默认 true
+SwappyVk_setAutoPipelineMode(false);
 SwappyVk_setSwapIntervalNS(device, swapchain, refreshPeriodNs);
 
 VkPresentInfoKHR presentInfo = { /* ... */ };
-SwappyVk_queuePresent(queue, &presentInfo);
+VkResult result = SwappyVk_queuePresent(queue, &presentInfo);
 ```
 
-Vulkan 这条链同样分两层。`SwappyVk_queuePresent()` 接上后，present pacing 主线能工作；`SwappyVk_setWindow(device, swapchain, window)` 则把 swapchain 对应的 `ANativeWindow` 交给 Swappy，用来补齐 display timing 和 frame-rate vote 这条链。这样写至少不会再在 `queuePresent` 这一行上编译失败。[已验证: frameworks/opt/gamesdk/include/swappy/swappyVk.h]
+`SwappyVk_queuePresent(VkQueue, const VkPresentInfoKHR*)` 会代应用调用 `vkQueuePresentKHR()`，也可能改写 `pNext` 或插入同步命令。swapchain 重建前应先调用 `SwappyVk_destroySwapchain()`，device 生命周期结束时再调用 `SwappyVk_destroyDevice()`；否则库内按 swapchain / device 保存的状态会失效。
 
-游戏引擎的支持情况变化很快。Unity、Unreal 都有 Swappy 相关入口，但“哪个版本开始支持”“是否默认启用”这类信息，需要直接查各自 release note 或引擎官方 Android 文档。没有出处支撑时，不把版本号写成事实。
+Unity、Unreal 等引擎的集成与默认开关会随版本变化。分析时记录引擎版本、graphics API、render pipeline 和 frame-pacing 配置，不根据“引擎支持 Swappy”推断某个 APK 已启用。
 
-非游戏场景如果只想借鉴 frame pacing 的思路，`Choreographer.FrameCallback` 也要写成能自引用的形式。如果用 lambda 写这段回调，`this` 会指向外层对象，按文意跑不起来。匿名内部类能把 callback 自身传回 `postFrameCallback()`。
+非游戏 native 渲染器若只需要 Vsync 驱动，可以直接使用 `AChoreographer`；Java 渲染循环可以使用 `Choreographer.FrameCallback`。下面的例子只演示自续订 callback。
 
 ```java
 Choreographer choreographer = Choreographer.getInstance();
@@ -264,50 +262,76 @@ Choreographer.FrameCallback callback = new Choreographer.FrameCallback() {
 choreographer.postFrameCallback(callback);
 ```
 
-这段用的是平台 Choreographer，不是 Swappy API。目的仍然是把 CPU 侧的 render loop 绑到 display 节拍上。[已验证: developer.android.com/reference/android/view/Choreographer]
+这段代码只把 CPU 工作起点对齐到显示节拍。它没有 presentation timestamp、GPU 完成反馈或在途帧控制，不能等价替换 Swappy；官方 Frame Pacing 文档也明确指出，单独使用 Choreographer 仍可能在长帧场景触发 buffer-stuffing。
+
+## Android 17 的 Vulkan present timing
+
+Android 17 / API 37 新增 `VK_EXT_present_timing` 平台支持。它允许自研 Vulkan pacing 查询 swapchain 支持的时间域、为 present 请求指定目标时间，并读取 `QUEUE_OPERATIONS_END`、`REQUEST_DEQUEUED`、`IMAGE_FIRST_PIXEL_OUT`、`IMAGE_FIRST_PIXEL_VISIBLE` 等 present stage 的反馈。Android 17 的 `swapchain.cpp` 分别用 render-complete、composition-latch 和 actual-present timestamp 填充这些阶段。该扩展与较早的 `VK_GOOGLE_display_timing` 解决相近问题，但接口更标准，反馈阶段也更细。
+
+AOSP 的 `VP_ANDROID_17_requirements.json` 把 `VK_EXT_present_timing`、`VK_KHR_present_id2` 和 `VK_KHR_present_wait2` 列在 Android 17 profile 的 `MUST` 集合中。这个 profile 约束相应的 Android 17 launch / chipset 能力线，不能代替应用的运行时检查：升级设备、定制系统、驱动状态和 feature 开关都可能造成差异。
+
+`android-17.0.0_r1` 的 Vulkan loader 也体现了这层条件。`EnumerateDeviceExtensionProperties()` 只有在以下条件满足时才加入 `VK_EXT_present_timing`：
+
+1. `service.sf.present_timestamp` 为 true；
+2. `present_timing_ext` 平台 flag 已开启；
+3. ICD 支持该扩展硬依赖的 calibrated timestamps 能力。
+
+应用仍需执行 `vkEnumerateDeviceExtensionProperties()`，并通过 `VkPhysicalDevicePresentTimingFeaturesEXT`、`VkPhysicalDevicePresentId2FeaturesKHR` 等 feature 结构查询和启用所需能力。查询 past presentation timing 前，还要用 `vkSetSwapchainPresentTimingQueueSizeEXT()` 配置反馈队列。Android 上相关时间戳使用 `CLOCK_MONOTONIC`，目标时间为 0 或超过未来 1 秒时会被忽略。
+
+这里要特别区分平台能力和库实现。`f81f888fe11e` 的 `SwappyVk` 仍按 `VK_GOOGLE_display_timing` 是否可用，在 `SwappyVkGoogleDisplayTiming` 与 `SwappyVkFallback` 之间选择；该提交没有使用 `VK_EXT_present_timing`、`VK_KHR_present_id2` 或 `VK_KHR_present_wait2`。所以：
+
+- 使用 Swappy 时，按 APK 打包版本的源码和运行日志判断它选择了哪个实现。
+- 自研 pacing 可以在 Android 17 设备上优先探测 `VK_EXT_present_timing`，再按能力回退。
+- 设备枚举出新扩展，不表示现有 Swappy 会自动切换到新接口。
+
+### Android 17 的 producer throttling 开关
+
+Android 17 / API 37 还新增了 `Surface.setProducerThrottlingEnabled()` 和对应的 `ANativeWindow_setProducerThrottlingEnabled()`。默认值为 true：producer 在 consumer 仍处理上一块 buffer 时执行 queue buffer，CPU 可能在 `eglSwapBuffers()` 或 `vkQueuePresentKHR()` 附近等待上一帧 GPU 工作完成。
+
+设置为 false 会关闭这处 queue-buffer CPU throttle。CPU 生产速度超过 GPU 时，队列容量仍会在后续 dequeue 或 `vkAcquireNextImageKHR()` 处形成自然反压；该 API 不会取消 BufferQueue 容量、fence 语义或应用自己的 in-flight 限制。异步模式下它没有效果，throttling 始终启用。
+
+这项能力适合已经用 semaphore、fence 和有限 in-flight frame 做好显式同步的 Vulkan renderer。旧应用若把 present 中的 stall 当作隐式同步，直接关闭可能暴露资源复用错误或让 queue depth 增长。`f81f888fe11e` 的 Swappy release 实现早于该 API，也没有调用它；接入 Swappy 的应用应先用 trace 确认当前 stall 来源，再决定是否由业务侧修改。
 
 ## 验证路径：SurfaceView、Perfetto、FrameStatistics 三条线一起看
 
-官方 verify-improvement 页面给的第一条路是 `systrace.py`。抓 trace 时，文档建议把 `sched`、`freq`、`gfx`、`view`、`sync`、`binder_driver`、`hal`、`input`、`aidl` 这些类别一起开出来，然后去看 `SurfaceView` channel。
+验证前固定场景、目标 FPS、显示 refresh rate、分辨率、画质、温度和输入脚本。然后各抓一份 Swappy 开启与关闭的 trace。只比较两个不同时间段，容易把热降频、场景差异或刷新率切换误判成 pacing 收益。
+
+### SurfaceView 与队列深度
+
+AGDK 的 verify-improvement 页面仍给出下面的 `systrace.py` 命令，目的在于观察 `SurfaceView` channel 的 buffered-frame 计数。
 
 ```bash
 python systrace.py -a your-app-package-name -o mygametrace.html \
   sched freq idle am wm gfx view sync binder_driver hal input aidl
 ```
 
-官方给出的判断口径也很直白：启用 Swappy 之后，`SurfaceView` channel 里 buffered frames 的波动应该收敛下来。[已验证: developer.android.com/games/sdk/frame-pacing/opengl/verify-improvement, developer.android.com/games/sdk/frame-pacing/vulkan/verify-improvement]
-
-验证入口按版本拆开后是这样：
+启用 pacing 后，buffered-frame 计数应更稳定，长时间顶在较深队列的情况应减少。现代设备也可以用 Perfetto UI 录制相同类别，并同时开启 scheduler、frequency、graphics、view、input 和 GPU 数据源；诊断目标不变。
 
 | 平台边界 | 优先观察项 | 说明 |
 |---|---|---|
-| API 16-30 | `systrace.py`、`SurfaceView` buffered frames、SwappyStats | 这一路没有 FrameTimeline track，也没有 `actual_frame_timeline_slice` / `expected_frame_timeline_slice` |
-| API 31+（普通窗口） | 上述三条 + `Expected Timeline` / `Actual Timeline` + trace processor SQL | 可以直接用 FrameTimeline 看 app / sf jank 归因 |
-| API 31+（`SurfaceView` 游戏） | 仍以 `SurfaceView` buffered frames、`gpu.renderstages`、SwappyStats 为主 | Perfetto 文档明确写着 `SurfaceViews are currently not supported` |
+| API 19—30 | SurfaceView buffered frames、acquire / swap / present wait、GPU、SwappyStats | Android 12 前没有 FrameTimeline |
+| API 31+ 普通窗口 | 上述信号 + `Expected Timeline` / `Actual Timeline` | FrameTimeline 可区分 app 与 SurfaceFlinger 侧 jank |
+| API 31+ `SurfaceView` 游戏 | SurfaceView channel、BufferQueue、GPU、fence、SwappyStats | Perfetto 官方 FrameTimeline 文档仍注明不支持 SurfaceView |
 
-第二条路是 Perfetto 的 FrameTimeline。这条路要求 Android 12 (S)+，UI 里才会出现 `Expected Timeline` 和 `Actual Timeline`，trace processor 里才有 `actual_frame_timeline_slice` 与 `expected_frame_timeline_slice`。在 Android 10-11 上排查时，按这套关键字去找只会得到空结果。[已验证: Perfetto 官方文档, https://perfetto.dev/docs/data-sources/frametimeline]
+不能把普通窗口的 FrameTimeline 查询结果与另一个独立 `SurfaceView` layer 混在一起解释。SurfaceView 游戏优先依赖 BufferQueue、GPU、fence 和 Swappy 自身统计。
 
-做 trace processor 分析时，可以直接查 `actual_frame_timeline_slice` 和 `expected_frame_timeline_slice`。Perfetto 自己的 SQL metric 已经在用 `on_time_finish`、`jank_type`、`present_type` 这些列。
+### FrameTimeline
 
-没有现成 trace 时，可以抓一段 15 秒样本：
+FrameTimeline 要求 Android 12 / API 31 及以上。`Expected Timeline` 表示 scheduler 给该帧的预算，`Actual Timeline` 从 `Choreographer#doFrame` 或 `AChoreographer_vsyncCallback` 开始，到 `max(GPU complete, buffer post)` 结束。后者的 `ts` 不是物理屏幕的 present timestamp，不能用相邻 `actual.ts` 直接代替相邻上屏时间。
 
-```bash
-adb shell perfetto -o /data/misc/perfetto-traces/frame-pacing.perfetto-trace -t 15s \
-  sched freq idle am wm gfx view binder_driver hal
-```
+在 Perfetto UI 中按以下顺序展开：
 
-抓完后按这个顺序看 4 条轨道：
+- 应用进程的 Choreographer / AChoreographer callback 与 render-thread marker；
+- `Expected Timeline` 和 `Actual Timeline`；
+- GPU render stages 与 producer fence；
+- 对应 layer 的 BufferQueue / SurfaceFlinger slice。
 
-- App 进程里的 `Choreographer#doFrame`
-- App 进程上方的 `Expected Timeline`
-- 同一位置的 `Actual Timeline`
-- SurfaceFlinger / `SurfaceView` 相关 channel 的 buffered frames
-
-用一条总览查询把时长、deadline 和归因放在一张表里：
+对于受 FrameTimeline 支持的窗口，下面的查询把预算、实际工作时长和 jank 归因放到同一行。它沿用 Android 17 Perfetto metric 中按 `upid + name` 关联 expected / actual slice 的方式。
 
 ```sql
 SELECT
-  actual.name AS vsync,
+  actual.name AS vsync_token,
+  actual.layer_name,
   actual.ts / 1e6 AS ts_ms,
   actual.dur / 1e6 AS actual_dur_ms,
   expected.dur / 1e6 AS expected_dur_ms,
@@ -325,44 +349,22 @@ ORDER BY actual.ts DESC
 LIMIT 20;
 ```
 
-这条查询主要看两件事：
+`on_time_finish = 0` 表示应用没有按预算完成；`present_type` 描述 early、on-time、late 或 dropped；`jank_type` 给出 `App Deadline Missed`、`Buffer Stuffing`、SurfaceFlinger scheduling 等分类。一个 vsync token 可能对应多个 layer，分析时要同时保留 `layer_name`，不要只按 token 聚合。
 
-- `actual_dur_ms` 和 `expected_dur_ms` 是否长期错位。
-- `jank_type` 是否连续出现 `BufferStuffing`、app deadline miss 或 SF scheduling。`android_frame_timeline_metric.sql` 里已经把这些字符串当成归因依据。[已验证: external/perfetto/src/trace_processor/metrics/sql/android/jank/frames.sql, external/perfetto/src/trace_processor/metrics/sql/android/android_frame_timeline_metric.sql]
+### SwappyStats
 
-如果要继续区分“帧间隔不均匀”和“真的 miss deadline”，再跑一条间隔查询：
+Swappy 自身提供第三组证据。启用 `SwappyGL_enableStats(true)` 或 `SwappyVk_enableStats(swapchain, true)` 后，应用应在每帧 CPU 工作开始前调用对应的 `recordFrameStart()`。结果既可以通过 `SwappyGL_getStats()` / `SwappyVk_getStats()` 取得，也会使用 `FrameStatistics` tag 输出到 logcat。
 
-```sql
-SELECT
-  actual.ts / 1e6 AS ts_ms,
-  ROUND((actual.ts - LAG(actual.ts) OVER (ORDER BY actual.ts)) / 1e6, 2) AS delta_from_prev_ms,
-  ROUND(actual.dur / 1e6, 2) AS actual_dur_ms,
-  actual.on_time_finish,
-  actual.jank_type
-FROM actual_frame_timeline_slice actual
-WHERE actual.upid = (
-  SELECT upid FROM process WHERE name = 'your.package.name' LIMIT 1
-)
-ORDER BY actual.ts DESC
-LIMIT 30;
-```
+Vulkan 有额外限制：`SwappyVkFallback` 的 `enableStats()`、`recordFrameStart()` 与 `getStats()` 都只打印 unsupported；只有选择 `SwappyVkGoogleDisplayTiming` 的实现时，Vulkan 统计才成立。因此“已经调用 enableStats”不能作为统计一定有效的证据。
 
-这条查询适合和 UI 里的两条 FrameTimeline track 对着看：
-
-- `delta_from_prev_ms` 在 8.33ms、16.67ms 这类 refresh period 整数倍之间来回跳，但 `on_time_finish` 大多还是 1，更像是节奏不均匀。
-- `jank_type` 连续出现 `BufferStuffing`，同时 `SurfaceView` buffered frames 长时间大于 1，说明 App 交帧过早，queue depth 已经被拉深。
-- `on_time_finish = 0` 且 `actual_dur_ms` 长于 `expected_dur_ms`，更多是 App 或 SurfaceFlinger 真的 miss 了这一帧的预算。
-
-第三条路是 Swappy 自己的统计接口。`swappyGL_extra.h` 和 `swappyVk.h` 都写明了：启用 `SwappyGL_enableStats(true)` 或 `SwappyVk_enableStats(swapchain, true)` 之后，应用需要在每帧 CPU 工作开始前调用 `recordFrameStart`，统计结果会写到 logcat 的 `FrameStatistics` tag，也能通过 `SwappyGL_getStats()` / `SwappyVk_getStats()` 拿到 `SwappyStats`。Vulkan 这条统计链还要求平台支持 `VK_GOOGLE_display_timing`。[已验证: frameworks/opt/gamesdk/include/swappy/swappyVk.h]
-
-`SwappyStats` 里有几组需要重点看的 histogram：
+`SwappyStats` 的四组 histogram 分别回答不同问题：
 
 - `idleFrames`，渲染完成后在 compositor queue 里又等了几个 refresh periods。
 - `lateFrames`，离目标 presentation time 晚了几个 refresh periods。
 - `offsetFromPreviousFrame`，相邻两帧之间隔了多少个 refresh periods。
 - `latencyFrames`，从 `recordFrameStart` 到实际 present 经过了多少个 refresh periods。
 
-源码里的 logcat label 是固定的。这几行是 `FrameStatistics.cpp` 实际打印的字段名，角括号里的值由运行时决定：
+下面列出 `FrameStatistics.cpp` 的固定 logcat 字段名，便于在采样日志中定位：
 
 ```text
 I/FrameStatistics: == Frame statistics ==
@@ -374,68 +376,42 @@ I/FrameStatistics: offset from previous frame: <bucket histogram>
 I/FrameStatistics: frame latency: <bucket histogram>
 ```
 
-这组数据可以定位“节奏是否稳定、queue 是否变深、延迟是否被拉长”，适合和 Perfetto 对照看。[已验证: frameworks/opt/gamesdk/games-frame-pacing/common/FrameStatistics.cpp, frameworks/opt/gamesdk/include/swappy/swappy_common.h, frameworks/opt/gamesdk/include/swappy/swappyGL_extra.h, frameworks/opt/gamesdk/include/swappy/swappyVk.h]
+`idleFrames` 上升通常意味着 buffer 在 compositor queue 中多等了刷新周期；`lateFrames` 上升说明目标 presentation time 与完成时刻错位；`latencyFrames` 增大说明从 CPU 工作开始到 present 的在途周期变多。把这些直方图与 queue depth、GPU fence 和输入延迟放在同一测试窗口内比较，才能判断主动等待是在稳定节拍，还是目标 interval 配置不当。
 
-[图：Perfetto 样例。App 进程中同时展开 `Choreographer#doFrame`、`Expected Timeline`、`Actual Timeline`；SurfaceFlinger 一侧展开 `SurfaceView` channel。图中标出一帧 `jank_type=BufferStuffing` 的位置，以及 buffered frames 从 1 升到 2 后没有及时回落的区间。]
+## 帧率投票、ARR 与版本边界
 
-## 版本边界、与 ARR 的关系、常见误区
+Swappy 的 `setPreferredRefreshPeriod()` 在 `ANativeWindow_setFrameRate()` 可用且 window 已设置时，提交 `ANATIVEWINDOW_FRAME_RATE_COMPATIBILITY_DEFAULT` 类型的 frame-rate vote；旧平台才回退到 `SwappyDisplayManager` 的 preferred display mode。该 vote 表达内容希望采用的帧率，系统还要结合其他可见 layer、切换策略和硬件 mode 决定显示刷新率。
 
-版本边界最好按三条线一起记：一条是 Java / NDK Choreographer 的接入边界，一条是 `SwappyDisplayManager` 这条 Java helper 什么时候进入又什么时候退出，一条是 AGDK 文档和 AOSP 仓库现在分别放在哪里。把这三条线记住，排查时就不会把 API 级别、库形态和仓库位置混成一团。[已验证: frameworks/opt/gamesdk/games-frame-pacing/common/ChoreographerThread.cpp, frameworks/opt/gamesdk/games-frame-pacing/common/SwappyDisplayManager.h, developer.android.com/games/sdk/frame-pacing]
+Pacing 决定每一帧落在哪个显示周期，frame-rate vote 帮助系统选择适合内容的 refresh rate。只投票而不控制提交时刻，短帧和长帧仍可能交替；只控制提交却不声明内容率，120 Hz 屏幕也可能为 60 FPS 内容做不必要的刷新。
 
-Swappy 和 §2.18 的 Adaptive Refresh Rate 有关系，但不是同一层。Swappy 解决的是 app submit pacing 和 frame-rate vote，平台 ARR 解决的是硬件 mode switch、policy、SurfaceFlinger 如何跟随活跃内容。把这两层拆开看，trace 里的因果关系更容易区分。
+应用不要在同一个 `ANativeWindow` 上同时让 Swappy 和业务代码持续调用 `Surface.setFrameRate()` / `ANativeWindow_setFrameRate()`。它们更新的是同一 Surface 的当前 vote，后续写入会改变先前设置，容易造成 mode 选择与 pacing 目标来回变化。系统如何综合多个 layer 的 vote 见 §2.18。
 
-**Swappy 的 frame-rate vote 路径**：Swappy 内部通过 `setPreferredRefreshPeriod()` 计算目标帧率后，实际调用的是 `ANativeWindow_setFrameRate(mWindow, frameRate, ANATIVEWINDOW_FRAME_RATE_COMPATIBILITY_DEFAULT)`（条件是 `mANativeWindow_setFrameRate` 函数指针已加载且 `mWindow` 非 null），否则回退到通过 `SwappyDisplayManager` 设置 DisplayManager 的 preferred mode id。如果应用在同一个 `ANativeWindow` 上同时手动调用了 `Surface.setFrameRate()` 或 `ANativeWindow_setFrameRate()`，后调用的会覆盖先前的 vote。SurfaceFlinger 侧会对同一 layer 上来自不同来源的 frame-rate vote 做合并决策（具体策略见 §2.18），应用层不需要关心合并逻辑，但需要避免 Swappy vote 和手动 vote 互相覆盖导致的节奏不稳定。
+| 平台版本 | 与本章直接相关的变化 |
+|---|---|
+| Android 4.1 / API 16 | Java `Choreographer` 可用于应用帧回调；当前所核 Swappy release 的 minSdk 仍是 19 |
+| Android 7.0 / API 24 | NDK `AChoreographer` 可用，Swappy 内部优先选择 native 路径 |
+| Android 9—11 / API 28—30 | Swappy 的 Java `DisplayManager` helper 参与刷新率与 mode 信息维护 |
+| Android 11 / API 30 | `ANativeWindow_setFrameRate()` 提供 native frame-rate vote |
+| Android 12 / API 31 | FrameTimeline 成为现代窗口 jank 诊断基线；Swappy 不再需要 Java DisplayManager helper |
+| Android 15 / API 35 | 支持设备引入 Adaptive Refresh Rate，刷新率选择更依赖平台策略 |
+| Android 17 / API 37 | 平台增加 `VK_EXT_present_timing` 与 producer-throttling 控制；现有 Swappy release 实现仍需按自身版本确认底层扩展 |
 
-常见误区如下。
+常见误判可以按下表排除：
 
-- 用 `Thread.sleep()` 控帧不够。它既不看 vsync，也不知道 display pipeline 现在有几层 buffer。
-- Vulkan 有 `VK_PRESENT_MODE_FIFO_KHR`，也不等于已经拿到了 Android 上这一层的 pacing。Swappy 额外处理的是 Android display timing、refresh callback、stats 和 queue depth。
-- 平均 FPS 正常，肉眼依然卡，并不矛盾。帧间隔波动增大时，主观流畅度会明显下降，这就是 frame pacing 这节要处理的问题。
-
-## Vulkan 帧确认路径与 Android 17 DeliQueue
-
-### present_id 与 VK_GOOGLE_display_timing：Swappy Vulkan 路径的真实确认方式
-
-Android 16 设备的 Vulkan 能力基线由 Khronos VP_ANDROID_16_minimums profile 定义（具体 Vulkan 版本要求以正式 CDD 16 为准）。`VK_KHR_present_id` 在 Khronos `vk.xml` 中仍是 ratified KHR 设备扩展，不属于 Vulkan 1.4 核心特性；设备支持时，应用需通过 `VkPhysicalDevicePresentIdFeaturesKHR` 查询并启用。复核 `frameworks/opt/gamesdk` 的 AGDK frame-pacing release branch：`SwappyVk.cpp`、`SwappyVkBase.cpp` 和 `swappyVk.h` 中均未出现 `VK_KHR_present_id` 或 `present_id` 相关代码。Swappy Vulkan 路径的帧上屏确认仍围绕 `VK_GOOGLE_display_timing`、GPU fence、Choreographer 回调和 SwappyStats。
-
-`VK_GOOGLE_display_timing` 提供的是 display 驱动报告的 `presentTimes` 时间戳，经过 SurfaceFlinger 中转。Swappy 用这些时间戳与内部统计做校准。这条路径与 Choreographer 回调路径之间存在调度延迟，但这正是 Swappy 通过 `onPreSwap()` / `onPostSwap()` 统计循环试图补偿的部分。
-
-`VK_KHR_present_id` 本身是给 present 操作打递增 ID 的扩展，不等同于 display driver 返回完成时间戳。即使 Swappy 未来接入该扩展，帧上屏时刻的确认仍然需要 display timing 支持。当前 Swappy Vulkan 路径没有使用 `VK_KHR_present_id`，文档或文章不应把"Vulkan 1.4 可用"写成"Swappy 已接入"。
-
-Swappy 当前未接入 `VK_KHR_present_id` 和 `VK_KHR_present_wait`（前者是后者的启用前置，两者均需通过 `VkPhysicalDevice*FeaturesKHR` 查询）。即使设备支持这些扩展，实际能否减少 present 确认延迟还需 benchmark 验证——设备型号、Android build、GPU 驱动、swapchain present mode、是否启用 `VK_GOOGLE_display_timing` 都会影响结果，不能仅凭扩展声明下结论。
-
-### DeliQueue：Java MessageQueue 的无锁重构
-
-Android 17 对 Java 侧 `MessageQueue` 做了无锁队列重构（DeliQueue），替换了沿用多年的 `Looper` + `MessageQueue` 锁竞争模型。
-
-**对 Java Choreographer 的影响（targetSdk 37+）。** Android 17 behavior changes 明确限定：apps targeting Android 17 (API 37) or higher 才会收到 DeliQueue 的无锁 `MessageQueue` 实现。Legacy `MessageQueue`（`LegacyMessageQueue/MessageQueue.java`）中，`nativePollOnce()` 返回后通过 `synchronized (this)` 保护队列读写，其他线程的 `enqueueMessage()` 也竞争同一把 monitor，锁竞争会导致 VSync 回调到达时间抖动。DeliQueue（`CombinedDeliMessageQueue/MessageQueue.java`）通过多生产者 lock-free Treiber stack + Looper 侧 min-heap 的无锁结构消除了这把 monitor（详见 §16.4）。只有 targetSdk ≥ 37 且运行在 Android 17+ 设备上的应用，使用 Java `Choreographer.FrameCallback` 时才会直接受益。targetSdk < 37 的应用即使跑在 Android 17 上，MessageQueue 仍走原有锁路径。
-
-**对 Swappy 的 NDK AChoreographer 路径，影响需要分两层看。** Swappy 的 Vulkan/OpenGL 路径走的是 NDK `AChoreographer` 回调，不直接经过 Java `MessageQueue`。DeliQueue 改造的是 Java 层 `MessageQueue`，目前没有 AOSP commit 或公开文档证明 NDK `AChoreographer` / `ALooper` 的回调路径也做了同样的无锁改造。如果 NDK AChoreographer 的底层仍然走传统 `Looper` 管道，DeliQueue 改善的是 Java 侧回调抖动，不直接传导到 Swappy native 回调。
-
-DeliQueue 改造的是 Java 层 `MessageQueue`。NDK `AChoreographer` / `ALooper` 的回调路径是否做了同样的无锁改造，目前没有公开文档确认——如果 NDK 路径也同步改造，Swappy `onPreSwap()` 中对下一个 VSync 的时间估算精度会受益，高刷设备上效果更明显。
-
-[已验证: AOSP frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java, frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java @ android-17.0.0_r1; Swappy × Choreographer × Android 17 架构深研]
+| 现象或做法 | 为什么证据不足 | 继续检查 |
+|---|---|---|
+| 用 `Thread.sleep()` 达到目标 FPS | sleep 不知道 Vsync 相位、队列深度和 GPU 完成状态 | Choreographer、present target、fence、queue depth |
+| Vulkan 使用 `VK_PRESENT_MODE_FIFO_KHR` | FIFO 保证队列顺序与 Vblank 语义，不提供完整的 Android pacing 反馈 | display timing、present interval、在途帧 |
+| `eglSwapBuffers()` 很长 | 其中可能包含主动 pacing、free-slot wait 或 release-fence wait | 线程状态、BufferQueue、fence、GPU |
+| 平均 FPS 达标 | 平均值会掩盖短帧 / 长帧交替和额外排队 | frame-time 序列、present 间隔、输入到显示延迟 |
+| Android 17 设备必有可用的 `VK_EXT_present_timing` | 平台版本与 Vulkan runtime capability 不是同一个判断条件 | extension 枚举、feature query、loader / driver 日志 |
 
 ## 参考资料
 
-- 官方文档：<https://developer.android.com/games/sdk/frame-pacing>
-- OpenGL 集成：<https://developer.android.com/games/sdk/frame-pacing/opengl>
-- Vulkan 集成：<https://developer.android.com/games/sdk/frame-pacing/vulkan>
-- 官方验证页：<https://developer.android.com/games/sdk/frame-pacing/opengl/verify-improvement>
-- 官方 API Reference：<https://developer.android.com/games/sdk/reference/frame-pacing>
-- Choreographer 文档：<https://developer.android.com/reference/android/view/Choreographer>
-- AOSP：`frameworks/opt/gamesdk/games-frame-pacing/common/ChoreographerThread.cpp`
-- AOSP：`frameworks/opt/gamesdk/games-frame-pacing/common/SwappyDisplayManager.cpp`
-- AOSP：`frameworks/opt/gamesdk/games-frame-pacing/common/SwappyCommon.cpp`
-- AOSP：`frameworks/opt/gamesdk/games-frame-pacing/opengl/SwappyGL.cpp`
-- AOSP：`frameworks/opt/gamesdk/games-frame-pacing/opengl/EGL.cpp`
-- AOSP：`frameworks/opt/gamesdk/include/swappy/swappyGL_extra.h`
-- AOSP：`frameworks/opt/gamesdk/include/swappy/swappyVk.h`
-- Perfetto SQL 参考：`external/perfetto/src/trace_processor/metrics/sql/android/jank/frames.sql`
-- Perfetto SQL 参考：`external/perfetto/src/trace_processor/metrics/sql/android/android_frame_timeline_metric.sql`
-
-### Swappy × Choreographer × Android 17 架构深研
-- 来源：DeepResearch 调研。围绕 Swappy、Choreographer、SurfaceFlinger 三层协作，指出 Android 17 的 DeliQueue 主要改善主线程 MessageQueue 锁竞争，从而提升 Vsync 回调到达质量；Swappy 本体仍依赖 ChoreographerFilter、AChoreographer deadline/expectedPresentationTime 与统计循环做帧节奏控制。
-
-### SurfaceFlinger 帧时序三层架构（FrameTracer / FrameTimeline / VSyncPredictor）
-- 来源：DeepResearch 源码调研（android-17.0.0_r1）。覆盖三层独立模块：①FrameTracer（Perfetto DataSource `android.surfaceflinger.frame`，逐 layer 记录 buffer queue/acquire/post/latch 生命周期事件，含 60s 过期 fence 回收）；②FrameTimeline（`android.surfaceflinger.frametimeline`，用 `SurfaceFrame` 包装单帧，按 13 类 jank bitmask + `refined-jank-metric` 公式输出 None/Partial/Full 严重度分数，`TokenManager` 预测有效期 120ms）；③VSyncPredictor（OLS 线性回归替代 DispSync，异常值过滤 ±50%，`kScalingFactor` 缩放渲染率相位）。完整数据流从硬件 VSync 经 VSyncPredictor 建模、VSyncDispatchTimerQueue 反推 wakeup time，最终到 Choreographer 回调，可用于定位 App/SF/HWC 三段卡顿判定点。
+- Android Developers：[Frame Pacing Library](https://developer.android.com/games/sdk/frame-pacing)、[OpenGL ES 集成](https://developer.android.com/games/sdk/frame-pacing/opengl)、[Vulkan 集成](https://developer.android.com/games/sdk/frame-pacing/vulkan) 与 [验证方法](https://developer.android.com/games/sdk/frame-pacing/opengl/verify-improvement)
+- Android Developers：[Vulkan frame pacing extensions](https://developer.android.com/games/develop/vulkan/frame-pacing-extensions)、[`Surface` API](https://developer.android.com/reference/android/view/Surface) 与 [Choreographer API](https://developer.android.com/reference/android/view/Choreographer)
+- AGDK `f81f888fe11e`：[`SwappyGL.cpp`](https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/f81f888fe11e9540dd580edf5993232172ed3cbe/games-frame-pacing/opengl/SwappyGL.cpp)、[`SwappyCommon.cpp`](https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/f81f888fe11e9540dd580edf5993232172ed3cbe/games-frame-pacing/common/SwappyCommon.cpp)、[`ChoreographerThread.cpp`](https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/f81f888fe11e9540dd580edf5993232172ed3cbe/games-frame-pacing/common/ChoreographerThread.cpp) 与 [`SwappyVk.cpp`](https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/f81f888fe11e9540dd580edf5993232172ed3cbe/games-frame-pacing/vulkan/SwappyVk.cpp)
+- Android 17 AOSP：[`vulkan/libvulkan/driver.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/libvulkan/driver.cpp)、[`vulkan/libvulkan/swapchain.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp) 与 [`VP_ANDROID_17_requirements.json`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json)
+- Android 17 producer throttling：[`Surface.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java)、[`native_window.h`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/nativewindow/include/android/native_window.h) 与 [`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp)
+- Perfetto：[FrameTimeline 文档](https://perfetto.dev/docs/data-sources/frametimeline)、[`actual_frame_timeline_slice` schema](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/prelude/after_eof/events.sql) 与 [`android_frame_timeline_metric.sql`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/metrics/sql/android/android_frame_timeline_metric.sql)
+- Kernel `android17-6.18-2026-06_r6`：[`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c) 与 [`dma-fence.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/dma-fence.h)
