@@ -1,233 +1,569 @@
 ---
-title: "1.21 Android Developer Verification 与安装链路边界"
-chapter: "1.21"
-section: "1.21"
+title: Android Developer Verification 与安装链路边界
+chapter: '1.21'
+section: '1.21'
 status: finalized
-pipeline_stage: ready-to-publish
-applicable_versions: "Enforcement: Android 7+ certified devices; PackageInstaller reason-code API: Android 16 Extension 36.1 - Android 17 (API 37)"
-tags: "[package-manager, installer, developer-verification, security, performance]"
-confidence: medium
-last_verified: "2026-06-17"
-last_verified_against: "Android Developers developer verification FAQ 2026-05-11 / PackageInstaller API version 36.1 / AOSP android-16.0.0_r1 PackageInstallerSession"
-task6_review_notes: "2026-06-17 Task6 revisiting复审：pass-light-edit。L1/L2 扫描通过（1.21 复审无禁用词、高频词、元叙述命中）；task9 auto-fix 已验证写作质量无回归；queue 无 pending；自动晋升 finalized。"
-last_task6_review_log: "logs/review/2026-06-17-04-review.md"
-task6_state: reviewed
-task9_state: "reviewed"
-drafted_date: "2026-05-20"
-related_chapters: "[\"1.9\", \"16.5\", \"26.7\"]"
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-20"
-gap_source: "官方文档/每日信息/AOSP结构"
-path: "frameworks/base/services/core/java/com/android/server/pm/VerifyingSession.java"
-task9_result: "auto-fixed"
-task2b_state: "fixed"
-last_task9_at: "2026-06-17T00:29:18+08:00"
-task9_reviewed_date: "2026-06-17"
-task9_reviewed_by: "openclaw-task9"
-task9_review_notes: "2026-06-17 Task9 deep-review: AUTO-FIX P1 1; separated ADV enforcement scope (Android 7+ certified devices via Play services) from PackageInstaller 36.1 reason-code API surface; no queue item."
-last_task9_review_log: "logs/deep-review/2026-06-17-00-deep-review.md"
-last_task9_autofix_at: "2026-06-17"
-task6_result: pass-light-edit
-last_task2b_lite_at: "2026-06-30"
-task2b_lite_note: "2026-06-30 Task2B Lite: 修复 last_task6_review_log 字段被 title 污染的机械错误。"
-reviewed_by: openclaw-task6
-reviewed_date: '2026-06-17'
-last_task6_at: "2026-06-17T04:06:00+08:00"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-17
-last_task6_audit: "2026-06-27"
+applicable_versions: "Policy: certified Android 7+ devices; platform API: Android 16.1 (API 36.1) - Android 17 (API 37)"
+last_verified: '2026-07-25'
+last_verified_against: AOSP android-17.0.0_r1 + Android 17 API 37 + Android Developer Verification policy as of 2026-07-25
+policy_snapshot: '2026-07-25'
+confidence: high
+sources:
+  - type: official
+    path: "https://developer.android.com/developer-verification/guides"
+  - type: official
+    path: "https://developer.android.com/developer-verification/guides/faq"
+  - type: official
+    path: "https://developer.android.com/developer-verification/guides/limited-distribution"
+  - type: official
+    path: "https://developer.android.com/reference/android/content/pm/PackageInstaller"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/Build.VERSION"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/Build.VERSION_CODES_FULL"
+  - type: official
+    path: "https://developer.android.com/blog/posts/android-developer-verification-rolling-out-to-all-developers-on-play-console-and-android-developer-console"
+  - type: aosp
+    path: "frameworks/base/core/java/android/content/pm/PackageInstaller.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/content/pm/verify/developer/DeveloperVerifierService.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/content/pm/verify/developer/DeveloperVerificationSession.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/content/pm/verify/developer/DeveloperVerificationStatus.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/PackageInstallerService.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/verify/developer/DeveloperVerifierController.java @ android-17.0.0_r1"
+tags:
+  - android
+  - package-manager
+  - package-installer
+  - developer-verification
+  - app-signing
+  - security
+related_chapters:
+  - '1.4'
+  - '1.9'
+  - '16.5'
+  - '26.7'
 ---
 
 # 1.21 Android Developer Verification 与安装链路边界
 
-Developer Verification 是 Android 在安装路径上新增的开发者身份与包名注册校验层。它改变的是“这个包能不能从当前分发入口继续安装”的策略判断，不替代 APK 签名校验、安装器权限判断、dexopt、SDM 校验或用户授权流程。对性能团队来说，价值不在政策解读，而在安装失败归因、安装耗时拆分、企业分发策略和发版质量门禁的口径统一。[已验证: 官方文档, developer.android.com/developer-verification]
+Android Developer Verification 回答的是：
 
-## Developer Verification 放在安装链路的哪一层
+> 准备安装这个包的开发者身份、包名和签名密钥，是否满足当前设备上的开发者验证策略？
 
-Android 安装链路里有几类判断经常被混在一起：APK 是否完整、签名是否一致、安装器有没有权限、用户是否同意、设备策略是否允许、开发者是否完成验证。Developer Verification 只覆盖开发者身份与包名注册问题。
+它不回答 APK 是否损坏、升级签名是否匹配、安装器是否有权限、用户是否同意，也不负责 dexopt。把这些问题混成一个“安装校验”，会直接导致错误归因。
 
-| 层级 | 负责的问题 | 典型证据 | 与 Developer Verification 的关系 |
+本章以三组基线为准：
+
+- 平台源码：AOSP `android-17.0.0_r1`。
+- 平台接口：Android 17 / API 37；相关公开接口最早标记为 Android 16.1 / API 36.1。
+- 产品政策：Android Developer Verification 官方文档在 2026-07-25 的公开口径。
+
+政策会继续变化，源码标签不会。工程实现应把两者分开管理。
+
+## 1. 先分清三个坐标系
+
+| 层次 | 解决的问题 | 载体 | 版本边界 |
 |---|---|---|---|
-| APK 结构与签名 | base / split 是否完整，签名证书是否一致，版本号是否可升级 | `STATUS_FAILURE_INVALID`、`INSTALL_FAILED_INVALID_APK`、签名 mismatch | 不属于开发者身份校验；失败时不应归因到 verification 政策 |
-| PackageInstaller session | 安装器写入文件、封存 session、提交状态回调、用户动作回调 | `Session.commit(IntentSender)`、`EXTRA_STATUS`、`STATUS_PENDING_USER_ACTION` | Developer Verification 的结果通过同一 commit 回调面暴露给安装器 |
-| 用户与策略 | 未知来源安装确认、设备策略、update ownership、安装器权限 | `STATUS_PENDING_USER_ACTION`、`STATUS_FAILURE_BLOCKED`、`STATUS_FAILURE_ABORTED` | 某些 Developer Verification 失败会先进入用户动作流程，再失败或继续安装 |
-| 开发者身份与包名注册 | 开发者是否验证，包名是否注册到该开发者账号 | `EXTRA_DEVELOPER_VERIFICATION_FAILURE_REASON`、`DEVELOPER_VERIFICATION_FAILED_REASON_*` | 这里讨论的新增边界 |
-| dexopt / SDM / ART | 安装后或安装时的 profile、dex metadata、云编译产物处理 | `verifySdmSignatures()`、`dumpsys package dexopt` | 与 Developer Verification 共用安装阶段，但目标是执行性能，不是分发可信身份 |
+| Google 的开发者验证政策 | 哪些设备、区域、渠道和用户路径需要验证 | Android Developer Verifier、Google Play services、开发者管理中心 | 官方称覆盖 Android 7 及以上的 certified Android devices；分阶段启用 |
+| Android 平台机制 | 安装 session 如何请求 verifier、等待结果、触发用户动作并回传错误 | `PackageInstallerSession`、`DeveloperVerifierController`、`PackageInstaller` API | 本章锚定 `android-17.0.0_r1`；公开结果 API 自 36.1 提供 |
+| APK 与安装信任链 | APK 是否可解析、签名是否有效、升级证书是否兼容、权限与设备策略是否允许 | APK Signature Scheme、PMS、PackageInstaller、DPM、package verifier | 由各自的平台版本和策略决定 |
 
-官方口径把验证流程拆成两步：开发者验证身份，随后注册 package names，并通过提供由私钥签名的 APK 证明包名归属。这个过程建立“开发者账号 ↔ 包名 ↔ 签名 APK”的绑定关系。[已验证: 官方文档, developer.android.com/developer-verification]
+Android 17 AOSP 提供 verifier 接入框架，却没有把 Google 的身份数据库和判定逻辑开源在 `frameworks/base` 中。实际 verifier 是系统指定的服务提供者；在 Google 认证设备上，官方把 Android Developer Verifier 描述为一项新的 Google 系统服务，并说明 Android 7 及以上设备通过 Google Play services 接收相关更新。
 
-工程排障时，安装失败要先拆层。同一个“无法安装”弹窗，背后可能是 APK 文件损坏、签名不一致、用户拒绝、设备策略阻止、网络问题导致验证失败、或者开发者未完成验证。只有回调 extra 或系统日志指向 developer verification 时，才进入 Developer Verification 路径。
+反过来，AOSP 中存在这些类，也不表示任意 AOSP 构建都会自动执行 Google 的政策。Android 17 的 `PackageInstallerService` 默认策略是 `DEVELOPER_VERIFICATION_POLICY_NONE`；设备没有配置 verifier，或功能 flag 没有启用时，session 会跳过这一步。
 
-## verified / unverified developer 对用户安装路径的影响
+`android.content.pm.verify.developer` 下的 `DeveloperVerifierService`、`DeveloperVerificationSession` 和 `DeveloperVerificationStatus` 都标有 `@SystemApi` 与 `@hide`。它们是平台与受信 verifier 的协议，不是普通应用可以直接实现或调用的公开 SDK。普通安装器应使用 `PackageInstaller` 的公开 extras、reason code 和 extension 接口。
 
-Developer Verification 面向的是 certified Android devices 上的普通安装路径。FAQ 进一步明确了执行范围：运行 Android 7 及以上、通过 Google Play services 接收规则更新的 certified devices。而 `PackageInstaller` 中新增的 Developer Verification reason-code extra 则是 Android 16 Extension 36.1 之后安装器侧的可观测手段。官方时间线显示，2026 年 9 月起，Brazil、Indonesia、Singapore、Thailand 等区域会先进入要求期；到这个节点，适用区域内的 app 需要由 verified developer 注册后才能在认证设备上安装。[已验证: 官方文档, developer.android.com/developer-verification/guides/faq；PackageInstaller API version 36.1]
+## 2. 截至 2026-07-25，政策执行到哪里
 
-安装入口可以按人群分成三类：
+### 2.1 2026 年 9 月是首批渠道执行，不是所有旁加载
 
-- 普通用户从浏览器、文件管理器、消息应用或第三方商店安装 APK：适用区域和认证设备上，未注册应用会被验证策略拦截，安装器会收到 pending user action、aborted 或 failure 类状态，取决于 target SDK、安装器权限和系统策略。[已验证: 官方文档, PackageInstaller API]
-- power user advanced flow：官方博客披露 advanced flow 会在 2026 年 8 月全球上线。用户完成一次设置并经过一天等待期后，可以选择 7 天或长期允许安装 unverified developers 的应用；安装时仍会看到 unverified developer 警告，并可继续安装。[已验证: Android Developers Blog, 2026-03-19]
-- ADB 本地调试：FAQ 明确说明开发者可通过 ADB 安装未验证应用，用于开发和测试不面向大众分发的 app。这个入口保留开发调试能力，不应作为线上分发策略。[已验证: 官方 FAQ, developer.android.com/developer-verification/guides/faq]
+从 2026-09-30 起，巴西、印度尼西亚、新加坡和泰国的 certified Android devices 开始执行首批验证，但当前公布的范围只覆盖下列参与商店发起的安装：
 
-企业分发还有一条单独边界：FAQ 写明，经组织商店在 managed devices 上分发的企业应用不要求完成 Developer Verification，因为 IT admin 已经完成组织内审查。官方仍建议注册并认领这些 app，避免同一个包从非托管入口或非托管设备安装时出现额外摩擦。[已验证: 官方 FAQ]
+- Google Play
+- HONOR App Market
+- OPPO App Market
+- Samsung Galaxy Store
+- Transsion Palm Store
+- vivo V-Appstore
+- Xiaomi GetApps
 
-limited distribution account 面向教师、学生、hobbyist 等小范围分发场景。官方页面给出的边界是最多 20 台由最终用户明确授权的设备，且无需政府 ID 或注册费。它能覆盖学习、实验和小圈子分发，不适合商业渠道、第三方商店规模化分发或企业灰度发布。[已验证: 官方文档, developer.android.com/developer-verification]
+FAQ 在 2026-07-15 明确补充：
 
-## PackageInstallerSession 中的校验插入点
+- 用户直接旁加载 APK，2026 年 9 月暂不受这轮要求影响。
+- 未列入上表的其他商店，2026 年 9 月也暂不受这轮要求影响。
+- 2027 年开始，计划把保护扩展到全球 certified Android devices 上的所有应用。
 
-`PackageInstaller.Session.commit(IntentSender)` 是安装器能稳定感知结果的公开入口。AOSP `PackageInstallerSession` 在 commit 后会封存 session，进入 stream validation，再发送 `MSG_INSTALL` 进入安装处理。Android 16 源码中可核对到这条骨架：`commit()` → `dispatchStreamValidateAndCommit()` → `handleStreamValidateAndCommit()` → `streamValidateAndCommit()` → `handleInstall()`。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java]
+所以，“2026-09-30 起四国所有非 Play 安装都会被拦截”是错误结论。更准确的模型是：
 
-这条骨架说明两个边界：
+```text
+长期目标
+  └─ certified Android devices 上的广泛安装来源
 
-- session 写入和封存阶段只保证安装内容不再被修改，不等于包已经通过所有策略；安装器不能把 `commit()` 调用成功当成安装成功。
-- `handleInstall()` 之前和过程中都可能出现用户动作、策略阻止、包验证、安装失败回调；安装器必须完整处理 `STATUS_PENDING_USER_ACTION`、`STATUS_FAILURE_ABORTED`、`STATUS_FAILURE_BLOCKED`、`STATUS_FAILURE_INVALID` 等状态。
+2026-09-30 首批执行
+  ├─ 四个国家
+  ├─ mobile / tablet 为主要执行形态
+  └─ 七个明确列出的参与商店
 
-Developer Verification 在公开 API 上新增的是结果解释能力。`PackageInstaller` version 36.1 增加 `EXTRA_DEVELOPER_VERIFICATION_FAILURE_REASON`、`EXTRA_DEVELOPER_VERIFICATION_LITE_PERFORMED`，以及 `DEVELOPER_VERIFICATION_FAILED_REASON_DEVELOPER_BLOCKED`、`NETWORK_UNAVAILABLE`、`UNKNOWN` 等 reason code。官方 API 还说明，不同 target SDK 和权限下，同一验证失败可能先返回 `STATUS_PENDING_USER_ACTION`，随后再返回 `STATUS_FAILURE_ABORTED` 并带上 reason code。[已验证: 官方文档, PackageInstaller API version 36.1]
+暂不属于 2026-09 首批执行
+  ├─ 直接旁加载
+  └─ 未参与首批计划的其他商店
+```
 
-安装器的结果处理可以按下面的表执行：
+“暂不”描述的是当前上线批次，不代表可以忽略 2027 年的全球扩展。
 
-| 回调字段 | 观察动作 | 归因边界 |
+首批执行的 form factor 也有一层细节：Google Play 分发的应用需要登记所有 form factor；Play 以外的 2026 年首批强制范围当前落在所选四国的 mobile 与 tablet。不要把手机上的实验结果直接外推到 TV、Auto 或 Wear。
+
+### 2.2 特殊分发路径
+
+| 路径 | 当前官方边界 | 工程理解 |
 |---|---|---|
-| `EXTRA_STATUS = STATUS_PENDING_USER_ACTION` | 读取 `Intent.EXTRA_INTENT`，把用户带到系统确认页 | 这是“还没结束”的状态，不能计入安装失败 |
-| `EXTRA_STATUS = STATUS_FAILURE_ABORTED` + `EXTRA_DEVELOPER_VERIFICATION_FAILURE_REASON` | 记录 reason code、target SDK、安装来源、用户是否经过系统流程 | 可归入 Developer Verification 失败 |
-| `STATUS_FAILURE_BLOCKED` | 同时检查设备策略、包验证器、系统关键包保护、安装器权限 | 不要只按 status 名称归入开发者验证 |
-| `STATUS_FAILURE_INVALID` / `STATUS_FAILURE_CONFLICT` | 核对 APK 结构、split、签名、版本、已有包状态 | 与 Developer Verification 分开统计 |
+| ADB | 工作流保持不变，可安装未注册应用 | 只证明开发调试路径可用，不能替代真实商店验收 |
+| Advanced flow | 2026 年 8 月面向 power users 推出；一次设置后可安装未注册应用 | 用户明确承担风险的旁加载路径，不是商店静默绕过接口 |
+| Limited distribution | 免费、无需政府签发身份证件，最多分享给 20 台经最终用户明确授权的设备 | 适合学习、课堂、家庭和非商业小范围分享 |
+| Managed device + organization store | 由 IT 管理员审核的组织内应用不要求完成验证 | 同一 APK 离开托管商店或进入非托管设备后，不能继续假设豁免 |
 
-公开 AOSP 分支中，Developer Verification 的服务端策略、区域开关、网络结果缓存和 verifier 绑定实现还不能写成固定的源码调用链——这部分在公开分支中的最终路径仍有待确认。目前更稳的做法是引用 PackageInstaller 公开回调面和官方 Developer Verification 文档，内部实现留待后续源码复核。
+Advanced flow 不是安装器可自行打开的开关。官方 FAQ 描述的流程包含启用开发者模式、反诱导确认、重启与重新认证、24 小时等待，以及再次用生物识别或 PIN 确认。ADB 不受这段等待时间影响。
 
-## 对安装耗时和失败归因的观测指标
+这些步骤属于 2026 年的政策快照，不应硬编码成应用的永久业务规则。
 
-安装耗时不要只看“点击安装到完成”的总时长。总时长能反映用户体感，但不能告诉团队卡在下载、拷贝、用户授权、验证、dexopt、SDM 还是安装结果回调。
+## 3. 开发者验证和 APK 签名是什么关系
 
-推荐拆成 7 个阶段：
+注册流程建立的是：
 
-1. 获取包体：下载、校验下载完整性、从文件管理器或商店传入安装器。
-2. session 写入：安装器创建 session，写入 base APK、split APK、metadata 文件。
-3. session commit：调用 `Session.commit()` 并等待系统回调，记录 commit 到首个状态回调耗时。
-4. 用户动作：`STATUS_PENDING_USER_ACTION` 到用户确认、取消或超时的耗时。
-5. Developer Verification：出现 `EXTRA_DEVELOPER_VERIFICATION_FAILURE_REASON` 时记录 reason code、网络状态、package source、target SDK、advanced flow 状态。
-6. 安装与 ART 处理：包解析、签名、安装事务、dexopt / profile / SDM 处理，详见 1.9 节和 16.5 节。
-7. 结果回调：`STATUS_SUCCESS` 或失败状态返回安装器，安装器展示给用户或上报。
+```text
+现实中的个人或组织
+        ↕ 身份验证
+开发者账号
+        ↕ package name 注册
+应用包名
+        ↕ 由私钥签名的 APK 证明
+签名密钥
+```
 
-线上指标按“阶段耗时 + 失败类型”组合上报，比单一 install duration 更有用：
+它利用签名 APK 证明包名与密钥归属，但不替代设备本地的 APK 签名校验。
 
-| 指标 | 推荐字段 | 排障用途 |
+攻击者拿到已注册应用的 package name，却没有合法私钥时：
+
+1. Developer Verification 不能让伪造 APK 获得合法签名。
+2. APK Signature Scheme 校验仍会发现签名无效。
+3. 若设备上已有正版应用，升级安装还要通过 signing lineage / certificate compatibility 检查。
+
+反过来，一个 APK 的 v2/v3/v4 签名有效，只说明 APK 由对应密钥签发且内容未被篡改，不自动说明开发者已完成身份验证，或 package name 已注册到对应账号。
+
+发版资产至少要同时维护 package name、当前与历史 signing certificate、验证账号与状态，以及各渠道最终交付 APK 的证书指纹。渠道重签会同时破坏升级兼容性和包名注册证明。
+
+## 4. Android 17 对普通安装器公开了什么
+
+### 4.1 API 36.1 与 API 37
+
+`PackageInstaller` 文档把 Developer Verification 的结果字段标为“Added in version 36.1”。Android 17 / API 37 继续提供这些接口，并把 installer target SDK 大于 36 作为新的回调行为边界。
+
+36.1 是 minor SDK，不应只检查 `Build.VERSION.SDK_INT >= 36`。需要区分 minor release 时，使用：
+
+```kotlin
+val supportsDeveloperVerificationResult =
+    Build.VERSION.SDK_INT >= 36 &&
+        Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1
+```
+
+Android 17 的 `Build.VERSION_CODES_FULL.CINNAMON_BUN` 为 37.0，自然满足这个条件。代码仍需用包含相应符号的 SDK 编译。
+
+### 4.2 失败 reason
+
+| 常量 | 值 | 含义 |
+|---|---:|---|
+| `DEVELOPER_VERIFICATION_FAILED_REASON_UNKNOWN` | 0 | verifier 超时、连接失败，或报告未知原因导致无法完成 |
+| `DEVELOPER_VERIFICATION_FAILED_REASON_NETWORK_UNAVAILABLE` | 1 | verifier 明确报告网络不可用 |
+| `DEVELOPER_VERIFICATION_FAILED_REASON_DEVELOPER_BLOCKED` | 2 | verifier 已完成判断，但开发者未通过当前策略 |
+
+`UNKNOWN` 不是“未提供 reason”。读取前必须检查 extra 是否存在，不能只用默认值 0。
+
+### 4.3 结果 extras
+
+| Extra | 类型 | 用途 |
 |---|---|---|
-| session 写入耗时 | APK 大小、split 数量、存储类型、安装器进程 | 区分包体过大、I/O 慢、安装器实现问题 |
-| commit 到首回调耗时 | session id、package source、target SDK、是否 staged / multi-package | 观察系统处理入口是否排队或等待用户动作 |
-| pending user action 停留 | 开始时间、结束状态、用户选择、是否 pre-approval | 区分用户犹豫、系统弹窗不可见、安装器没有拉起 intent |
-| Developer Verification 失败 | reason code、网络状态、区域、advanced flow 状态、installer package | 区分网络不可用、开发者被阻止、策略未知失败 |
-| dexopt / SDM 处理 | 是否有 `.dm` / `.sdm`、包大小、profile 状态 | 与云编译、SDM、安装后首启性能关联 |
-| 最终状态 | `EXTRA_STATUS`、`EXTRA_STATUS_MESSAGE`、`EXTRA_OTHER_PACKAGE_NAME` | 给客服、发版、渠道团队统一口径 |
+| `EXTRA_DEVELOPER_VERIFICATION_FAILURE_REASON` | `int` | 安装最终因 Developer Verification 中止时解释原因 |
+| `EXTRA_DEVELOPER_VERIFICATION_LITE_PERFORMED` | `boolean` | 失败结果中标记 verifier 是否只做了 lite verification |
+| `EXTRA_DEVELOPER_VERIFICATION_EXTENSION_RESPONSE` | `PersistableBundle` | verifier 对 installer extension params 的响应 |
+| `Intent.EXTRA_INTENT` | `Intent` | 需要用户动作，或提供可延后展示的系统解释页 |
 
-`EXTRA_STATUS_MESSAGE` 只能作为调试文本，不适合作为聚合键。聚合键应优先使用枚举状态和 reason code；调试文本用于样本抽查，避免系统版本、语言环境或 OEM 改写导致维度爆炸。
+`SessionParams.setExtensionParams()` 与 `getDeveloperVerificationServiceProvider()` 允许安装器和 verifier 扩展私有协议。bundle 的 schema 由 verifier 实现决定，并非跨设备通用协议。安装器只有确认 provider 后才能解释它；遥测也不应默认原样上传未知 bundle。
 
-## 与 Android 16 SDM / 云编译安装优化的关系
+## 5. 回调不是“一次提交、一次结果”
 
-Developer Verification 和 Android 16 SDM 都出现在安装路径上，但它们处理的问题完全不同。Developer Verification 判断开发者身份和包名注册；SDM 判断安装包附带的 Secure Dex Metadata 是否与 APK 签名一致，并服务于 ART / cloud compilation 的执行性能路径。
+`Session.commit(IntentSender)` 只是把封存后的 session 交给系统异步处理。它返回成功，不代表安装完成。
 
-Android 16 `PackageInstallerSession` 中可核对到 `verifySdmSignatures()`：它会遍历 art managed files，找到 `.sdm` 后用 APK Signature Scheme v3 起步校验 SDM 签名，再与 APK 的 `SigningDetails` 做 exact match；签名失败或不一致时抛出 `INSTALL_FAILED_INVALID_APK`。[已验证: AOSP android-16.0.0_r1, PackageInstallerSession.verifySdmSignatures()]
+Developer Verification 失败时，`EXTRA_STATUS` 取决于安装器的 target SDK、权限和失败是否允许用户处理：
 
-这给排障提供了一个清晰分界：
+| 安装器 | 首个回调 | 后续结果 |
+|---|---|---|
+| target SDK ≤ 36，只有 `REQUEST_INSTALL_PACKAGES` | 先收到不带 reason 的 `STATUS_PENDING_USER_ACTION` | 用户允许绕过则继续；否则 `STATUS_FAILURE_ABORTED` + reason |
+| target SDK ≤ 36，持有特权 `INSTALL_PACKAGES` | 通常直接收到 `STATUS_FAILURE_ABORTED` + reason | 不依赖普通用户确认流程 |
+| target SDK ≥ 37，需要用户输入的非阻断问题 | 先收到不带 reason 的 `STATUS_PENDING_USER_ACTION` | 用户重试/允许后继续，或最终 aborted + reason |
+| target SDK ≥ 37，其余阻断结果 | `STATUS_FAILURE_ABORTED` + reason | 可能带 `Intent.EXTRA_INTENT`，供系统解释原因 |
 
-- Developer Verification 失败：优先看 `EXTRA_DEVELOPER_VERIFICATION_FAILURE_REASON`、用户 advanced flow、区域、认证设备、开发者账号与 package name 注册状态。
-- SDM 签名失败：优先看 `.sdm` 是否存在、是否由同一签名密钥签名、是否被渠道重签或二次加工，失败状态更接近 invalid APK。
-- dexopt 或云编译收益异常：优先看 ART、profile、dex metadata、安装后首启耗时和 `dumpsys package dexopt`，详见 1.9 节。
+系统默认 Package Installer 是特例：AOSP 会优先让它展示相应系统 UI。
 
-不要把“安装慢”默认归咎到 Developer Verification。多数安装慢来自包体 I/O、multi-split 写入、用户停留、包解析、dexopt、存储压力或商店下载；Developer Verification 只有在回调 extra 或系统日志指向 reason code 时，才应作为独立阶段统计。
+安装器应把 pending 看成中间状态：
 
-## 企业分发、旁加载与灰度发布的适配边界
+```kotlin
+fun handleInstallResult(result: Intent) {
+    when (result.getIntExtra(PackageInstaller.EXTRA_STATUS, Int.MIN_VALUE)) {
+        PackageInstaller.STATUS_PENDING_USER_ACTION -> {
+            val action = result.getParcelableExtra(
+                Intent.EXTRA_INTENT,
+                Intent::class.java,
+            ) ?: return
+            // 前台可立即拉起；后台应先发通知，让用户主动返回。
+            startActivity(action.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
 
-Developer Verification 对分发团队的影响集中在“包名归属”和“安装入口”。发版前检查表应从 APK 产物扩展到分发身份：
+        PackageInstaller.STATUS_SUCCESS -> {
+            // 安装事务已经完成。
+        }
 
-| 场景 | 检查项 | 失败后表现 | 建议动作 |
+        PackageInstaller.STATUS_FAILURE_ABORTED -> {
+            val reason = if (result.hasExtra(
+                    PackageInstaller.EXTRA_DEVELOPER_VERIFICATION_FAILURE_REASON,
+                )
+            ) {
+                result.getIntExtra(
+                    PackageInstaller.EXTRA_DEVELOPER_VERIFICATION_FAILURE_REASON,
+                    PackageInstaller.DEVELOPER_VERIFICATION_FAILED_REASON_UNKNOWN,
+                )
+            } else {
+                null
+            }
+            // reason == null 时，不能归因于 Developer Verification。
+        }
+    }
+}
+```
+
+应用不在前台时直接启动 pending intent，可能被后台启动限制拦住，也会制造突兀体验。公开 API 建议发通知，让用户回到安装器后再进入系统页面。
+
+## 6. Android 17 的真实源码调用链
+
+Android 17 把新机制直接接入 `PackageInstallerSession`，不是把 Google 的业务判定写进旧的 package verifier。
+
+### 6.1 创建 session：冻结默认策略并预热 verifier
+
+`PackageInstallerService.createSessionInternal()` 从 per-user 策略表读取默认值，作为 session 的 initial policy 和 current policy。策略会写入 session XML，因此进程重启不会改变已创建 session 的初始边界。
+
+满足以下条件时，构造 `PackageInstallerSession` 会提前绑定 verifier：
+
+- verification feature 已启用；
+- 设备配置了 verifier provider；
+- 当前不是 multi-package parent；
+- session 不是从重启恢复。
+
+若 `SessionParams.appPackageName` 已提供包名，controller 还会调用 `onPackageNameAvailable()` 让 verifier 预取数据。真正的验证尚未开始，这只是 pre-warm。
+
+### 6.2 commit：封存、流式校验，再进入安装消息
+
+```text
+Session.commit(statusReceiver)
+  → markAsSealed()
+  → dispatchSessionSealed()
+  → handleSessionSealed()
+  → dispatchStreamValidateAndCommit()
+  → handleStreamValidateAndCommit()
+  → streamValidateAndCommit()
+  → MSG_INSTALL
+  → handleInstall()
+```
+
+`streamValidateAndCommit()` 会准备 DataLoader、验证 APK/APEX session 的基本结构并标记 committed。到这里仍没有安装成功。
+
+### 6.3 `handleInstall()`：解析 APK 后先做 Developer Verification
+
+```text
+handleInstall()
+  ├─ sendPendingUserActionIntentIfNeeded()
+  ├─ prepareInheritedFiles()
+  ├─ parseApk()
+  └─ performDeveloperVerification()
+       └─ startDeveloperVerificationSession()
+```
+
+单包 session 使用一个 `CompletableFuture`。multi-package session 不验证 parent，而是分别验证每个 child；任一 child 失败，parent 整体失败。
+
+### 6.4 controller 与 verifier 的交互
+
+`startDeveloperVerificationSession()` 交给 `DeveloperVerifierController` 的信息包括：
+
+- package name；
+- staged package URI；
+- `SigningInfo`；
+- manifest 声明的 shared libraries；
+- 当前 verification policy；
+- installer extension params；
+- ADB / 强制验证的内部 flags。
+
+controller 使用 `PackageManager.ACTION_VERIFY_DEVELOPER` 绑定设备指定的 `DeveloperVerifierService`，然后调用 `onVerificationRequired(session)`；用户请求重试时调用 `onVerificationRetry(session)`；超时后调用 `onVerificationTimeout(id)`。
+
+verifier 通过 `DeveloperVerificationSession` 回报：
+
+```text
+reportVerificationComplete(status)
+reportVerificationIncomplete(reason)
+reportVerificationBypassed(reason)
+```
+
+完整结果包含 `isVerified`、lite verification 状态、App Metadata 状态和可选失败说明。incomplete 当前只区分 unknown 与 network unavailable。
+
+### 6.5 结果怎样回到原安装链
+
+```text
+verifier callback
+  ├─ verified / policy NONE / allowed bypass
+  │    └─ future success
+  │         └─ resumeVerify()
+  │              ├─ extract native libraries
+  │              ├─ PackageSessionVerifier
+  │              └─ install
+  │
+  └─ rejected / incomplete / timeout / connection failure
+       ├─ policy 是否要求阻断
+       ├─ 是否允许用户重试或 install anyway
+       └─ failure
+            ├─ INSTALL_FAILED_VERIFICATION_FAILURE
+            ├─ EXTRA_DEVELOPER_VERIFICATION_FAILURE_REASON
+            └─ dispatchSessionFinished()
+```
+
+Developer Verification 位于 APK 已解析、原有 session verification 继续运行之前。通过后，包仍可能因为签名、设备策略、存储、shared library、APK 格式或后续安装事务失败。
+
+## 7. policy 决定“失败后怎么办”
+
+Android 17 AOSP 定义了四种 system API policy：
+
+| Policy | developer blocked | unknown / 连接失败 / 超时 | network unavailable |
 |---|---|---|---|
-| 第三方商店 | 开发者账号已验证，所有公开 package name 已注册，APK 签名与注册证明一致 | 普通用户在适用区域安装失败或进入警告流程 | 发布前把包名注册纳入渠道准入；渠道包禁止重签 |
-| 官网 APK / 私域下载 | 下载页说明安装来源，安装器能处理 `STATUS_PENDING_USER_ACTION` | 用户在系统确认页停留或取消 | 加安装引导和失败码上报，不诱导用户绕过系统保护 |
-| 企业 MDM / organization store | managed devices 与组织商店策略确认 | 托管设备内通常不要求验证；非托管设备仍可能失败 | 内部分发仍建议认领 package name，减少外部分发摩擦 |
-| 小范围测试 | limited distribution 账号设备数、授权设备清单 | 超过 20 台或未授权设备安装失败 | 内测规模扩大前切到 full distribution 或 Play 内测轨道 |
-| ADB 调试 | 仅用于开发、自动化测试、实验包 | 不受注册要求限制 | 不把 ADB 成功当作用户安装成功证据 |
-| 灰度发版 | 包名、签名、渠道、安装器 target SDK、区域策略 | 同一版本不同区域失败率差异大 | 监控按国家/地区、安装来源、reason code 分组 |
+| `NONE` | 不阻断 | 不阻断 | 不阻断 |
+| `BLOCK_FAIL_OPEN` | 阻断 | 允许用户继续 | 允许重试或继续 |
+| `BLOCK_FAIL_WARN` | 阻断 | 允许用户继续 | 允许重试或继续 |
+| `BLOCK_FAIL_CLOSED` | 阻断 | 阻断 | 允许用户重试 |
 
-发版质量门禁可以补 4 个检查点，详见 26.7 节：
+`BLOCK_FAIL_OPEN` 与 `BLOCK_FAIL_WARN` 在 Android 17 头文件注释中的安装结果描述相同；不要只凭名字推导额外语义。
 
-- 包名注册：正式、beta、内测、企业版 package name 都要有归属记录。
-- 签名一致性：注册证明 APK、渠道 APK、最终下载 APK 的 signing certificate 不能被渠道替换。
-- 安装器兼容：自研安装器和第三方商店 SDK 要能处理 `STATUS_PENDING_USER_ACTION`、`Intent.EXTRA_INTENT`、Developer Verification reason code。
-- 失败分流：用户取消、网络不可用、开发者被阻止、APK invalid、设备策略阻止分别上报，客服文案和技术排障不要混用。
+per-user 默认策略由 verifier 或系统指定的 policy delegate 设置。verifier 还可通过 session 的 `setPolicy()` 覆盖当前请求。业务代码不能只凭国家码模拟最终判定，必须以系统回调为准。
 
-## regional enforcement 与时间线
+## 8. ADB 边界不能只用一句“永远绕过”
 
-官方当前公开时间线如下：[已验证: 官方文档, developer.android.com/developer-verification]
+官方面向开发者的承诺是 ADB 工作流不变。Android 17 源码把这个产品承诺拆成了机制与结果两层：旧的非强制路径可以直接跳过；启用 `verificationServiceAdb` 后，ADB request 也可送到 verifier，并通过 `FLAG_VERIFICATION_IS_ADB` 表明来源。verifier 可用 `DEVELOPER_VERIFICATION_BYPASSED_REASON_ADB` 明确回报 bypass。
 
-| 时间 | 事件 | 工程影响 |
+若内部 session 还设置了 `forceVerification`，平台会追加 `FLAG_VERIFICATION_FORCED_ON_ADB`；即便如此，源码注释仍要求只有 blocking policy 才能真正阻断。这些都是 shell、测试或系统管理边界，不是普通第三方安装器 API，也不改变常规 ADB 用于开发测试的产品承诺。
+
+- `adb install` 成功：证明 APK 和调试安装路径基本可用。
+- 商店安装成功：证明该商店、设备、账号、区域和策略组合可用。
+- 两者不能互相替代。
+
+## 9. 安装耗时应该怎样拆
+
+```text
+包体获取
+  + session 写入
+  + seal / stream validation
+  + 普通用户授权等待
+  + Developer Verification
+  + 原有 package verification
+  + native library / 安装事务 / dexopt
+  + 最终回调
+```
+
+controller 会在 session 创建时尝试 pre-warm verifier，正式请求则在 `handleInstall()` 解析 APK 后发送。只看“创建 session 到成功”无法得到纯验证耗时。
+
+Android 17 r1 的 controller 默认参数是：
+
+- verifier 连接等待：10 秒；
+- verifier 请求等待：10 秒；
+- verifier 可申请延长的总上限：10 分钟。
+
+它们来自 `DeviceConfig.NAMESPACE_PACKAGE_MANAGER_SERVICE`，是默认值，不是兼容性保证或产品 SLA。OEM、系统更新和实验配置都可能改变它们。
+
+| 时间点 | 普通安装器是否可见 | 含义 |
 |---|---|---|
-| 2025 年 8 月 | 宣布新的 developer verification 要求 | 需要盘点非 Play 分发包名和签名资产 |
-| 2025 年 11 月 | Android Developer Console 与 Play Console early access | 存量开发者可开始验证身份和注册包名 |
-| 2026 年 3 月 | verification 面向所有开发者开放 | 第三方分发渠道应进入发版前检查 |
-| 2026 年 6 月 | limited distribution accounts early access | 小范围分发团队可验证 20 台设备模式 |
-| 2026 年 8 月 | limited distribution account 全球上线；advanced flow 全球上线 | 安装器和客服流程需要覆盖 power user 路径 |
-| 2026 年 9 月 | Brazil、Indonesia、Singapore、Thailand 进入要求期 | 区域维度安装失败率可能出现跳变 |
+| session 创建、文件写入 | 可见 | 安装器自身 I/O |
+| `commit()` | 可见 | 系统异步处理起点 |
+| 首次 `STATUS_PENDING_USER_ACTION` | 可见 | 需要用户介入，不一定来自 Developer Verification |
+| Developer Verification failure reason | 仅失败且系统提供时可见 | 可确认验证层失败 |
+| 最终 success / failure | 可见 | 安装 session 结束 |
+| verifier bind、request、response 精确时间 | 普通应用不可直接取得 | 需要 system metrics、trace 或受控设备日志 |
 
-这份时间线应作为版本化配置进入分发平台。不要把区域执行写死在客户端；服务端可以根据官方更新调整提醒、灰度、拦截和客服文案。
+普通安装器可上报 `commit → first callback` 和 `commit → terminal callback`，但不能把前者直接命名为“Developer Verification 耗时”。
 
-## 安装失败错误码与可观测性上报
+## 10. 推荐的错误归因顺序
 
-安装器至少要收集这些字段：
+```text
+收到安装回调
+  ├─ STATUS_PENDING_USER_ACTION
+  │    └─ 中间状态：保存 session 上下文并处理 Intent.EXTRA_INTENT
+  ├─ STATUS_FAILURE_ABORTED
+  │    ├─ 有 Developer Verification reason → 归入 developer verification
+  │    └─ 无 reason → 检查用户取消、session abandon 等原因
+  ├─ STATUS_FAILURE_BLOCKED
+  │    └─ 检查 DPM、用户限制、旧 package verifier、关键包保护
+  ├─ STATUS_FAILURE_INVALID / CONFLICT
+  │    └─ 检查 APK、split、签名、版本与现有包
+  └─ STATUS_SUCCESS
+       └─ 安装完成；不等于应用首帧已经出现
+```
 
-- `EXTRA_STATUS`：`STATUS_SUCCESS`、`STATUS_PENDING_USER_ACTION`、`STATUS_FAILURE_ABORTED`、`STATUS_FAILURE_BLOCKED`、`STATUS_FAILURE_INVALID` 等。
-- `EXTRA_STATUS_MESSAGE`：保留原文用于样本排查，不参与主聚合维度。
-- `EXTRA_DEVELOPER_VERIFICATION_FAILURE_REASON`：只在 API / Extension 支持且失败与 Developer Verification 相关时出现。
-- `EXTRA_DEVELOPER_VERIFICATION_LITE_PERFORMED`：标记 lite verification 是否执行过，适合用于区分完整验证与轻量验证路径。
-- `Intent.EXTRA_INTENT`：pending user action 或系统解释页入口，安装器要能延迟拉起或通过通知引导用户返回。
-- 安装上下文：installer package、target SDK、package source、区域、网络状态、是否 managed device、是否 ADB、是否 advanced flow。
+`STATUS_FAILURE_BLOCKED` 的公开定义覆盖 device policy、package verifier 和系统关键包保护等来源。只有 `STATUS_FAILURE_ABORTED` 同时带 Developer Verification reason 时，才有充分证据归入本机制。
 
-一条可用的安装失败事件结构应长这样：
+`EXTRA_STATUS_MESSAGE` 是调试文本，可能随系统版本、语言和 OEM 改变。它适合保留样本，不适合作为监控聚合键。
+
+## 11. Android 17 r1 的 lite extra 类型不一致
+
+公开契约规定 `EXTRA_DEVELOPER_VERIFICATION_LITE_PERFORMED` 是 `boolean`。但在 `android-17.0.0_r1` 中：
+
+1. `setSessionFailedDueToDeveloperVerification()` 用 `Bundle.putBoolean()` 写入。
+2. `sendOnPackageInstalled()` 复制到最终 Intent 时却调用 `extras.getInt()`。
+
+这是 r1 源码中的类型不一致，不能把 `int` 当成新的公开协议。`Bundle.getInt()` 遇到原来的 `Boolean` 时还可能回落为默认值 0，因此 `true` 信息可能在复制过程中已经丢失。下面的防御性读取只能避免类型假设扩散，不能恢复已丢失的真值：
+
+```kotlin
+fun readLitePerformedCompat(intent: Intent): Boolean? {
+    if (!intent.hasExtra(
+            PackageInstaller.EXTRA_DEVELOPER_VERIFICATION_LITE_PERFORMED,
+        )
+    ) {
+        return null
+    }
+
+    return when (
+        val value = intent.extras?.get(
+            PackageInstaller.EXTRA_DEVELOPER_VERIFICATION_LITE_PERFORMED,
+        )
+    ) {
+        is Boolean -> value          // 公开契约
+        is Int -> value != 0         // 兼容错误类型；r1 的 true 可能已丢失
+        else -> null
+    }
+}
+```
+
+兼容代码应限制在适配层，并记录真实类型以便后续删除；业务层仍使用 `Boolean?`。
+
+## 12. 遥测字段与隐私边界
+
+建议记录：
+
+- package name、versionCode、installer package 与 package source；
+- installer target SDK、是否持有特权安装权限；
+- `SDK_INT`、`SDK_INT_FULL`、session 是否 multi-package / staged；
+- `EXTRA_STATUS`、reason extra 是否存在及枚举值；
+- pending 是否出现、停留多久、最终继续还是取消；
+- managed / unmanaged、ADB / 非 ADB；
+- session write、commit 到首回调、commit 到终态的耗时；
+- 服务端版本化的政策区域和渠道批次。
+
+不建议默认记录未知 verifier extension bundle、系统解释页文本、身份文件、账号凭据或签名私钥，也不要用自由文本 status message 作为高基数主维度。
 
 ```json
 {
   "package_name": "com.example.app",
   "version_code": 12345,
   "installer_package": "com.example.store",
-  "package_source": "downloaded_file",
-  "target_sdk": 36,
+  "installer_target_sdk": 37,
+  "sdk_int": 37,
+  "sdk_int_full": 3700000,
   "status": "STATUS_FAILURE_ABORTED",
+  "developer_verification_reason_present": true,
   "developer_verification_reason": "NETWORK_UNAVAILABLE",
   "pending_user_action_seen": true,
   "managed_device": false,
   "adb_install": false,
-  "country": "BR",
-  "network_type": "wifi",
+  "distribution_cohort": "2026-09-participating-store",
   "duration_ms": {
     "session_write": 420,
     "commit_to_first_callback": 1800,
     "pending_user_action": 12000,
-    "total": 15200
+    "commit_to_terminal": 14800
   }
 }
 ```
 
-这段 JSON 只示意字段组织方式，不能直接当成 SDK API。它的用途是让渠道、客户端、服务端、客服共享同一套归因语言：网络导致 verification 失败、开发者被阻止、用户取消、APK invalid、设备策略阻止，分别走不同处理路径。
+`distribution_cohort` 是业务侧标签，不是 Android API 字段。它比把地区规则写死在客户端更容易随政策更新。
 
-## 与应用发版质量门禁的交叉引用
+## 13. 发版与渠道验收清单
 
-Developer Verification 应进入 26.7 节的发版质量门禁，作为“分发身份”检查项。它不替代签名证书管理，也不替代渠道包一致性检查；三者要一起看。
+### 开发者账号与签名
 
-发布前建议执行 5 个动作：
+- 正式、beta、企业版和历史 package name 都已盘点。
+- package name 已登记到正确账号。
+- 注册证明 APK 与最终渠道 APK 的 signing certificate 一致。
+- Play App Signing、旧密钥、密钥轮换和非 Play 渠道的证书关系有记录。
+- 渠道下载后的 APK 再次验签，防止重签或产物替换。
 
-- 导出所有线上 package name，区分 Play、第三方商店、官网下载、企业版、测试版。
-- 核对每个 package name 的开发者账号、验证状态、注册状态、签名证书指纹。
-- 对第三方渠道包做下载后验签，确认没有渠道重签、二次压缩破坏 metadata、插入未验证 split。
-- 用目标安装器跑一轮 `Session.commit()` 结果处理测试，覆盖 success、pending user action、aborted、blocked、invalid 五类状态。
-- 将 Developer Verification reason code 接入线上安装失败上报，并在客服后台展示人能读懂的分类。
+### 安装器
 
-边界也要写清：ADB 安装通过、实验室设备安装通过、managed device 内部分发通过，都不能证明普通用户在适用区域和认证设备上的安装路径通过。发版验收必须覆盖真实分发入口。
+- 用 `SDK_INT_FULL` 处理 36.1 API 边界。
+- 把 `STATUS_PENDING_USER_ACTION` 当成中间状态。
+- target SDK 37 覆盖 pending、retry、install anyway 与 direct abort。
+- 只有 reason extra 存在时才归因到 Developer Verification。
+- extension params 只在确认 verifier provider 与 schema 后使用。
+- 后台收到 pending 时通过通知恢复，不盲目拉起 Activity。
 
-## 参考资料
+### 测试矩阵
 
-- [Android developer verification](https://developer.android.com/developer-verification)
-- [Frequently asked questions | Android developer verification](https://developer.android.com/developer-verification/guides/faq)
-- [Register on Android Developer Console](https://developer.android.com/developer-verification/guides/android-developer-console)
+| 维度 | 样本 |
+|---|---|
+| 平台 | Android 16.1、Android 17 |
+| 设备 | certified Google Android、无对应 verifier 的 AOSP / 企业设备 |
+| 安装器 target | ≤ 36、37 |
+| 权限 | `REQUEST_INSTALL_PACKAGES`、特权 `INSTALL_PACKAGES` |
+| 结果 | verified、developer blocked、network unavailable、timeout |
+| 用户路径 | pending 后继续、重试、取消 |
+| 分发 | 参与商店、非参与商店、直接旁加载、ADB、managed store |
+| session | 单包、multi-package |
+
+区域和商店策略要在真实分发入口验证。VPN、修改 locale 或实验室 ADB 成功，都不足以证明真实渠道路径。
+
+## 14. 与其他安装机制的边界
+
+| 机制 | 失败说明 | 是否由 Developer Verification 替代 |
+|---|---|---|
+| APK 解析与签名 | 文件损坏、签名无效、split 不一致、升级证书冲突 | 否 |
+| 安装器权限与未知来源授权 | 调用者无权创建/提交安装，或用户未授权该来源 | 否 |
+| Device Policy / 用户限制 | 管理员禁止安装、卸载或未知来源 | 否 |
+| 旧 package verifier / Play Protect | 对应用内容、恶意行为或包风险做判断 | 否 |
+| Developer Verification | 开发者身份、包名与密钥注册不满足当前 policy | 本章机制 |
+| SDM / dex metadata | 安装附带的执行优化元数据是否可信 | 否 |
+| dexopt / ART profile | 安装后代码编译状态和启动性能 | 否 |
+
+最稳妥的心智模型是：
+
+> Developer Verification 是安装继续条件中的一项，不是 Android 安装安全模型的新总开关。
+
+它通过 Android 17 的 `PackageInstallerSession` 接入统一安装事务；Google 的实际验证规则由设备上的 verifier 和当前政策控制；普通安装器只应根据公开回调处理用户动作与终态，不应猜测系统内部结论。
+
+## 源码锚点
+
+- [PackageInstaller：公开 extras、reason、policy 与 installer API](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/PackageInstaller.java#449)
+- [DeveloperVerifierService：系统 verifier 的回调入口](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/verify/developer/DeveloperVerifierService.java#48)
+- [DeveloperVerificationSession：请求信息、结果与 bypass API](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/verify/developer/DeveloperVerificationSession.java#37)
+- [PackageInstallerService：per-user policy 与 session 创建](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageInstallerService.java#298)
+- [PackageInstallerSession：handleInstall 接入点](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageInstallerSession.java#3066)
+- [PackageInstallerSession：Developer Verification 异步链路](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageInstallerSession.java#3244)
+- [PackageInstallerSession：结果、用户动作与失败 extra](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageInstallerSession.java#3491)
+- [DeveloperVerifierController：绑定、请求与超时管理](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/verify/developer/DeveloperVerifierController.java#514)
+
+## 官方资料
+
+- [Android developer verification](https://developer.android.com/developer-verification/guides)
+- [Frequently asked questions](https://developer.android.com/developer-verification/guides/faq)
+- [Limited distribution](https://developer.android.com/developer-verification/guides/limited-distribution)
 - [PackageInstaller API reference](https://developer.android.com/reference/android/content/pm/PackageInstaller)
-- [Android developer verification: Balancing openness and choice with safety](https://android-developers.googleblog.com/2026/03/android-developer-verification.html)
-- AOSP: `frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java`
-- AOSP: `frameworks/base/services/core/java/com/android/server/pm/VerifyingSession.java`
+- [Build.VERSION：SDK_INT_FULL](https://developer.android.com/reference/android/os/Build.VERSION#SDK_INT_FULL)
+- [Build.VERSION_CODES_FULL](https://developer.android.com/reference/android/os/Build.VERSION_CODES_FULL)
+- [Android Developer Verifier rollout](https://developer.android.com/blog/posts/android-developer-verification-rolling-out-to-all-developers-on-play-console-and-android-developer-console)
