@@ -344,7 +344,7 @@
       "summary": "基于 android-17.0.0_r1 源码，完整拆解 WMS 双 Handler 线程模型、addWindow 全链路（WindowToken 解析→BLASTSurfaceControl）、WindowSurfacePlacer 6 次循环硬上限 layout 风暴护栏、BLASTSyncEngine SyncGroup 多 surface 合批机制。",
       "chapter": "ch16",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "score": 19,
       "target_path": "src/part1-fundamentals/ch01-architecture/1.66-android17-windowmanager-architecture-performance.md",
       "route_confidence": 37,
@@ -359,7 +359,11 @@
         "windowtoken"
       ],
       "route_status": "existing-chapter-routed",
-      "routed_at": "2026-07-25T13:53:24.486291+08:00"
+      "routed_at": "2026-07-25T13:53:24.486291+08:00",
+      "previous_action": "indexed-only-chapter-freeze",
+      "status": "applied",
+      "applied_at": "2026-07-26T07:15:29+08:00",
+      "applied_run_id": "20260726-071529-abfc0d7c"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android3-video-rendering-pipeline-sourcecode.md`",
