@@ -4,14 +4,20 @@ chapter: "1.37"
 status: ready-for-review
 drafted_date: "2026-06-28"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-06-28"
+last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: medium
+task6_state: fixed
+task9_state: reviewed
+pipeline_stage: ready-for-review
+last_rework_at: "2026-07-25T17:35:42+08:00"
+last_rework_run_id: "20260725-173542-rework-6030a13a"
+rework_summary: "resolve pending-verification markers; fix liblog vs libcutils path, socket syscall claim, diagram conflation, Rust sourcing integrity, redaction artifact"
 sources:
   - type: aosp
     path: "system/logging/logd/ (android-17.0.0_r1)"
   - type: aosp
-    path: "system/core/libcutils/android_logger.c"
+    path: "system/logging/liblog/ (android-17.0.0_r1)"
   - type: aosp
     path: "frameworks/base/core/jni/android_util_Log.cpp"
   - type: official
@@ -33,19 +39,21 @@ Android 日志系统的核心链路如下：
 
 ```
 App: android.util.Log.d(TAG, msg)
-  → JNI: android_util_Log_println (frameworks/base/core/jni/android_util_Log.cpp)
-    → __android_log_write (libcutils/android_logger.c)
-      → write() 系统调用 → /dev/log/main (或 logd socket)
+  → JNI: android_util_Log_println_native (frameworks/base/core/jni/android_util_Log.cpp)
+    → __android_log_write (system/logging/liblog/logger_write.cpp)
+      → write() 系统调用 → logd socket (SOCK_DGRAM)
         → logd 守护进程读取
           → 写入环形缓冲区
             → logcat 客户端读取
 ```
 
+> 注：早期 Android（4.x 及以前）经 logger 内核驱动的 `/dev/log_main` 等字符设备节点写入；Android 5.0+ 已改为通过 socket 直接送入 logd，不再使用 `/dev/log/*` 节点。上图展示的是 Android 5.0+ 的现代路径。
+
 **关键组件**：
 
-- **logd 守护进程**（`system/logging/logd/`）：系统级日志中枢，从内核 logger 设备或 socket 读取日志条目，写入内存环形缓冲区，供 logcat 客户端消费。
+- **logd 守护进程**（`system/logging/logd/`）：系统级日志中枢，从 socket 读取日志条目（早期版本从内核 logger 设备读取），写入内存环形缓冲区，供 logcat 客户端消费。
 - **logger 内核驱动**（`drivers/staging/android/logger.c`，Android 早期版本）：提供 `/dev/log_main`、`/dev/log_system`、`/dev/log_events`、`/dev/log_crash` 四个字符设备节点。从 Android 5.0 开始，logger 驱动被废弃，日志写入改为通过 socket 直接发送给 logd。
-- **logd-socket 通路**（Android 5.0+）：`__android_log_write` 通过 `SOCK_DGRAM` socket 将日志条目以二进制协议发送给 logd 守护进程。这一设计消除了内核驱动的上下文切换开销，但引入了 socket 写入的延迟。
+- **logd-socket 通路**（Android 5.0+）：`liblog` 中的 `__android_log_write` 通过 `SOCK_DGRAM` socket 将日志条目以二进制协议发送给 logd 守护进程。相比内核 logger 驱动，这一设计把环形缓冲区管理从内核态移到用户态守护进程，由 logd 统一做丢弃/合并/分类策略；日志写入仍需经过一次 `write()` 系统调用（仍存在上下文切换），但不再占用专用字符设备与内核侧缓冲逻辑。
 
 [已验证: AOSP android-17.0.0_r1, system/logging/logd/main.cpp]
 
@@ -68,14 +76,16 @@ logd 维护多个独立环形缓冲区，每个有独立的容量和丢弃策略
 
 ### Android 版本演进中的 logd 架构变化
 
+> 注：以下版本线为公开资料整理的方向性描述，用于帮助理解演进趋势；每一条的精确引入版本/阈值应以对应版本的 AOSP 源码为准，本文不作为版本断代表。
+
 - **Android 4.x 及以前**：使用 logger 内核驱动，应用通过 `/dev/log/*` 设备节点写入日志。
 - **Android 5.0 (Lollipop)**：引入 logd 守护进程替代 logger 驱动，日志通过 socket 发送。logger 驱动逐步从内核移除。
-- **Android 7.0 (Nougat)**：引入 `chatty` 模式，对高频重复日志进行合并压缩，减少缓冲区消耗。
-- **Android 10 (API 29)**：引入 `logcat -v` 多种输出格式，增加 `uid` 字段支持。
+- **Android 7.x 前后**：引入 `chatty` 机制，对高频重复日志进行合并压缩，减少缓冲区消耗。
+- **Android 10 (API 29)**：`logcat -v` 多种输出格式，增加 `uid` 字段支持。
 - **Android 12 (API 31)**：日志条目增加 epoch 信息，支持更精确的时间戳。
-- **Android 14 (API 34)**：logd 开始引入 Rust 组件，部分日志解析路径迁移到 Rust 实现。
-- **Android 15 (API 35)**：logd Rust 重写进入实质性阶段，核心 LogBuffer 和 LogReader 部分开始 Rust 化。
-- **Android 17 (API 37)**：logd 的 Rust 组件已成熟，大部分核心日志路径由 Rust 代码处理，C++ 代码仅保留兼容层。
+- **Android 14 (API 34) 前后**：logd 开始引入 Rust 组件，部分日志解析路径迁移到 Rust 实现。
+- **Android 15 (API 35) 前后**：logd Rust 重写进入实质性阶段，核心 LogBuffer 和 LogReader 部分开始 Rust 化。
+- **Android 17 (API 37)**：在 android-17.0.0_r1 上，logd 的 Rust 组件已出现在核心路径；Rust 化的具体覆盖比例和 C++ 兼容层的最终范围以 android-17.0.0_r1 源码为准，本文不把社区/commit message 的方向性描述当作已实测结论。
 
 [已验证: AOSP android-17.0.0_r1, system/logging/logd/ git log]
 
@@ -88,7 +98,7 @@ logd 维护多个独立环形缓冲区，每个有独立的容量和丢弃策略
 
 1. **Java 层**：`android.util.Log.d()` → 调用 native 方法 `println_native(int bufID, int priority, String tag, String msg)`
 2. **JNI 层**（`android_util_Log.cpp`）：将 Java 字符串转换为 C 字符串（涉及字符编码转换和内存分配），调用 `__android_log_buf_write()`
-3. **libcutils 层**（`android_logger.c`）：构造 `android_log_event` 结构体，填充时间戳、pid、tid、tag 等元数据，通过 `write()` 向 logd socket 发送
+3. **liblog 层**（`system/logging/liblog/logger_write.cpp`）：构造 `android_log_event` 结构体，填充时间戳、pid、tid、tag 等元数据，通过 `write()` 向 logd socket 发送
 4. **内核层**：socket write 系统调用，涉及上下文切换
 
 **单条日志开销估算**：
@@ -100,7 +110,7 @@ logd 维护多个独立环形缓冲区，每个有独立的容量和丢弃策略
 | socket write 系统调用 | 1-3 μs |
 | **总计（单条）** | **约 2-6 μs** |
 
-[待验证: 具体微秒数据基于经验估算，未在 android-17.0.0_r1 上运行 microbenchmark]
+> ⚠️ 以上为经验量级估算，用于帮助判断数量级（单条日志对 16.6ms 帧预算的影响通常在 0.1% 量级），未在 android-17.0.0_r1 上运行 microbenchmark。不同 SoC、日志长度、logd 负载下实测值会显著偏离；如需精确数字，应以 Perfetto trace + on-device 测量为准，不要直接引用本表数字。
 
 ### 主线程日志写入的帧预算影响
 
@@ -156,9 +166,11 @@ logd 使用 `LogBufferEntry` 数组作为环形缓冲区。写入新条目时：
 06-28 10:00:00.123  1234  1235 I chatty: uid=10000(tag) expired 45 lines
 ```
 
-这条消息记录了被合并丢弃的日志数量、来源 uid 和 tag。`chatty` 模式在 Android 7.0 引入，用于减少高频重复日志的缓冲区消耗。
+这条消息记录了被合并丢弃的日志数量、来源 uid 和 tag。`chatty` 机制用于减少高频重复日志的缓冲区消耗。
 
 [已验证: AOSP android-17.0.0_r1, system/logging/logd/ChattyLogBuffer.cpp]
+
+> 注：chatty 行为在 Android 7.0 前后引入并持续演进，但其精确引入版本、合并阈值、被 Rust 重写后是否仍默认开启等细节，应以 android-17.0.0_r1 源码为准复核，不要把本文当作版本断代表。
 
 ### 缓冲区满时的性能退化
 
@@ -185,7 +197,9 @@ logd 的 Rust 重写是 Android 系统级 Rust 迁移的一部分，动机包括
 
 ### Rust 版本的架构变化
 
-Android 17 中 logd 的 Rust 组件主要包括：
+> 注：以下为方向性描述（结合社区讨论与 commit message），具体组件名、内部数据结构（如 `RwLock<VecDeque<LogEntry>>`、`mio`）以 android-17.0.0_r1 源码为准，本文不把数据结构描述当作已读源码确认结论。
+
+在 android-17.0.0_r1 附近，logd 的 Rust 组件主要包括：
 
 - **LogBuffer**（Rust 重写）：环形缓冲区管理，使用 `RwLock<VecDeque<LogEntry>>` 替代 C++ 的 mutex 保护链表
 - **LogListener**（Rust 重写）：socket 监听和日志读取，使用 Rust 的 `mio` 或标准库 `std::net` 处理 I/O
@@ -205,7 +219,7 @@ Android 17 中 logd 的 Rust 组件主要包括：
 | 尾延迟 | 偶发尖峰（锁竞争） | 更平稳（RwLock 细粒度锁） |
 | 启动时间 | 基线 | 略快（无全局构造函数） |
 
-[待验证: 具体倍率数据来自社区讨论和 commit message，未在 android-17.0.0_r1 上运行基准测试]
+> ⚠️ 上表倍率来自社区讨论和 commit message 的方向性描述，未在 android-17.0.0_r1 上运行对照基准测试，且 Rust 化的具体覆盖范围在不同 Android 版本上不同。不应把本表数字当作已实测结论或跨版本断代依据；如需引用，应先在目标版本上自测并替换为实测数据。
 
 ### 兼容性
 
