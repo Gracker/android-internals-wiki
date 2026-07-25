@@ -129,9 +129,9 @@
       ]
     }
   ],
-  "last_scan_date": "2026-07-25",
-  "total_knowledge_points": 646,
-  "total_suggestions": 201,
+  "last_scan_date": "2026-07-26",
+  "total_knowledge_points": 662,
+  "total_suggestions": 205,
   "total_gaps": 21,
   "skipped_files": [
     {
@@ -355,7 +355,27 @@
       "processed_at": "2026-07-25T06:30:06.548775+08:00",
       "chapter": "ch23",
       "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md": {
+      "processed_at": "2026-07-26T06:30:23.320687+08:00",
+      "chapter": "ch24",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md": {
+      "processed_at": "2026-07-26T06:30:23.321283+08:00",
+      "chapter": "ch23",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 原理：重新认识 APK 安装包.md": {
+      "processed_at": "2026-07-26T06:30:23.321883+08:00",
+      "chapter": "ch21",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 原理：重新认识内存.md": {
+      "processed_at": "2026-07-26T06:30:23.322257+08:00",
+      "chapter": "ch20",
+      "points": 4
     }
   },
-  "cursor": 32
+  "cursor": 36
 }
