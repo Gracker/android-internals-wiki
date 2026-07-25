@@ -27,9 +27,7 @@ sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/CompositionEngine/"
   - type: official
-    path: "https://source.android.com/docs/core/graphics/surfaceflinger"
-  - type: blog
-    path: "https://www.androidperformance.com/"
+    path: "https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager"
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/FrontEnd/"
   - type: aosp
@@ -39,15 +37,27 @@ sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/DisplayHardware/AidlComposerHal.cpp"
   - type: aosp
+    path: "frameworks/native/services/surfaceflinger/DisplayHardware/HidlComposerHal.cpp"
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/DisplayHardware/ComposerHal.cpp"
+  - type: aosp
+    path: "frameworks/native/libs/gui/include/gui/JankInfo.h"
+  - type: aosp
     path: "hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/"
   - type: aosp
     path: "frameworks/native/libs/gui/BLASTBufferQueue.cpp"
   - type: kernel
-    path: "android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c"
+    path: "kernel/common/drivers/dma-buf/dma-buf.c"
+    ref: "android17-6.18-2026-06_r6"
   - type: kernel
-    path: "android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c"
+    path: "kernel/common/drivers/dma-buf/dma-fence.c"
+    ref: "android17-6.18-2026-06_r6"
   - type: kernel
-    path: "android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c"
+    path: "kernel/common/drivers/dma-buf/sync_file.c"
+    ref: "android17-6.18-2026-06_r6"
+  - type: kernel
+    path: "kernel/common/include/linux/dma-fence.h"
+    ref: "android17-6.18-2026-06_r6"
   - type: obsidian
     path: "Writer/rendering_pipelines/S01_rendering_types_overview.md"
   - type: obsidian
@@ -332,7 +342,7 @@ commit 返回 `false` 可能只是本轮没有需要提交到显示的变化，�
 6. 需要 CLIENT 时由 RenderEngine 生成 client target；
 7. `presentFrameAndReleaseLayers()` 执行 present 并分发 fence。
 
-Android 17 有特定条件下把 GPU-backed virtual display composition 放到后台执行器的路径，但它受 flag、RenderEngine threaded 能力和物理 Display 是否使用 client composition等条件约束。多 Display 不能概括成“全部并行合成”。
+Android 17 有特定条件下把 GPU-backed virtual display composition 放到后台执行器的路径，但它受 flag、RenderEngine threaded 能力和物理 Display 是否使用 client composition 等条件约束。多 Display 不能概括成“全部并行合成”。
 
 ## Android 12 与 Android 13+ 的主循环边界
 
@@ -621,8 +631,8 @@ AOSP SurfaceFlinger 能说明 framework 怎样传递 buffer/fence、调用 Compo
 | Android 12 / API 31 | SurfaceFlinger 仍使用 `onMessageReceived()` 的 INVALIDATE/REFRESH；FrameTimeline 成为现代诊断入口 | 旧 Trace 用 INVALIDATE/REFRESH，App SurfaceFrame 与 DisplayFrame 分开分析 |
 | Android 13 / API 33 | 主循环进入 `commit/composite`；Composer3 AIDL 进入平台；默认 unsignaled latch 策略有严格适用条件 | 不能沿用 Android 12 方法名；简单单 Layer buffer update 与跨 Layer sync 要分开 |
 | Android 14 / API 34 | `Scheduler::onFrameSignal()` 统一 commit/composite 帧入口 | VSync 调度与 SF 工作由 Scheduler/FrameTarget 证据关联 |
-| Android 15 / API 35 | 支持 ARR 的设备可以在一个显示模式内改变 VSync 周期 | SF deadline 与 present 不能再按固定 60/120 Hz 周期推断 |
-| Android 16 / API 36 | 源码已有 per-display `FrameTargeter` 以及带 `PhysicalDisplayId`、`FrameTargets/FrameTargeters` 的 commit/composite 参数 | 多显示按 displayId、target、present fence 分开 |
+| Android 15 / API 35 | 源码已有 per-display `FrameTargeter` 以及带 `PhysicalDisplayId`、`FrameTargets/FrameTargeters` 的 commit/composite 参数；支持 ARR 的设备可以在一个显示模式内改变 VSync 周期 | 多显示按 displayId、target、present fence 分开；SF deadline 与 present 不能再按固定 60/120 Hz 周期推断 |
+| Android 16 / API 36 | 延续 per-display frame target 与 pacesetter/follower 调度结构 | 不能把 Android 15 已存在的参数和类误记成 Android 16 首次引入 |
 | Android 17 / API 37 | 本章当前锚点：FrontEnd transaction/snapshot、`commit(PhysicalDisplayId, FrameTargets)`、`composite(...FrameTargeters)`、AIDL Composer3/HWComposer 协商 | 所有当前方法名、composition type 和 fence 分支按 `android-17.0.0_r1` 解释 |
 
 这张表只把已核对的版本差异写成“该版本存在”。判断某个内部类或优化是否首次出现，需要继续比较父 tag 与提交历史。
@@ -639,7 +649,7 @@ commit 主要处理 transaction、Layer state、snapshot、buffer latch、refres
 
 ### DEVICE composition 不代表“零 GPU”
 
-它说明该 Layer 由 Composer 设备路径处理。其他 CLIENT Layer、App 渲染和 SurfaceFlinger特效仍可占用 GPU，HWC/DPU 也有带宽与同步成本。
+它说明该 Layer 由 Composer 设备路径处理。其他 CLIENT Layer、App 渲染和 SurfaceFlinger 特效仍可占用 GPU，HWC/DPU 也有带宽与同步成本。
 
 ### Layer 退回 CLIENT 没有跨设备固定阈值
 
@@ -696,6 +706,9 @@ SurfaceFlinger 把多个 Producer 的 buffer 与客户端 transaction 整理成 
 - [Display.cpp](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Display.cpp)
 - [HWComposer.cpp](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)
 - [AidlComposerHal.cpp](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/AidlComposerHal.cpp)
+- [HidlComposerHal.cpp](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HidlComposerHal.cpp)
+- [ComposerHal.cpp](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/ComposerHal.cpp)
+- [JankInfo.h](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/include/gui/JankInfo.h)
 - [Composition.aidl](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl)
 - [DisplayCommand.aidl](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayCommand.aidl)
 - [BLASTBufferQueue.cpp](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)
