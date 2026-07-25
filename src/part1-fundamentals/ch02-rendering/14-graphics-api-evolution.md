@@ -3,41 +3,55 @@ title: 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）
 chapter: '2.14'
 section: '2.14'
 status: finalized
-applicable_versions: Android 4.0 (API 14) - Android 17 (API 37); GLES from API 14,
-  Vulkan 1.0 from API 24, Vulkan 1.3 from API 33, Vulkan 1.4 from API 36, ANGLE from
-  API 34
-last_verified: '2026-04-26'
-last_verified_against: source.android.com implement-vulkan + developer.android.com
-confidence: medium
+applicable_versions: Android 1.0 (API 1) - Android 17 (API 37); OpenGL ES 1.x from API 1,
+  OpenGL ES 2.0 from API 8, Vulkan from API 24, WebGPU developer preview from API 24
+last_verified: '2026-07-25'
+last_verified_against: Android 17 / API 37 / android-17.0.0_r1; android17-6.18-2026-06_r6;
+  Writer rendering_pipelines/S08_native_graphics_type.md
+confidence: high
 sources:
 - type: official
-  path: https://developer.android.com/ndk/guides/graphics
+  path: https://source.android.com/docs/compatibility/17/android-17-cdd
 - type: official
   path: https://source.android.com/docs/core/graphics/implement-vulkan
 - type: official
   path: https://developer.android.com/ndk/guides/graphics/android-vulkan-profile
 - type: official
-  path: https://developer.android.com/about/versions/15/features#graphics
-- type: aosp
-  path: frameworks/base/core/java/android/os/GraphicsEnvironment.java
-- type: aosp
-  path: frameworks/native/opengl/libs/EGL/Loader.cpp
-- type: aosp
-  path: frameworks/native/libs/graphicsenv/GraphicsEnv.cpp
-- type: aosp
-  path: frameworks/native/vulkan/include/vulkan/vk_android_native_buffer.h
-- type: aosp
-  path: external/angle/
-- type: official
-  path: https://developer.android.com/ndk/guides/graphics/validation-layer
-- type: official
-  path: https://developer.android.com/games/optimize/adpf
+  path: https://developer.android.com/games/develop/vulkan/overview
 - type: official
   path: https://developer.android.com/develop/ui/views/graphics/webgpu
+- type: official
+  path: https://developer.android.com/develop/ui/views/graphics/webgpu/getting-started
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/webgpu
 - type: official
   path: https://perfetto.dev/docs/data-sources/frametimeline
+- type: aosp
+  path: frameworks/base/core/java/android/os/GraphicsEnvironment.java
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/native/opengl/libs/EGL/Loader.cpp
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/native/libs/graphicsenv/GraphicsEnv.cpp
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/native/vulkan/libvulkan/swapchain.cpp
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/native/vulkan/libvulkan/driver.cpp
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/native/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/native/vulkan/include/vulkan/vk_android_native_buffer.h
+  ref: android-17.0.0_r1
+- type: kernel
+  path: drivers/dma-buf/sync_file.c
+  ref: android17-6.18-2026-06_r6
+- type: obsidian
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md
 tags:
 - fundamentals
 - rendering
@@ -86,893 +100,383 @@ last_deepseek_cn_review_at: '2026-06-25'
 
 # 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）
 
-我们在 §2.1 中看到了 Android 渲染架构的全景，在 §2.9 中了解了渲染管线从 HWUI 到 SkiaVulkan 的演进，在 §2.10 中分析了 GPU 渲染的深入机制。但有一个维度一直没有展开：当我们要写一个游戏引擎、一个视频滤镜、或者一个需要直接操作 GPU 的应用时，应该选择哪个图形 API？OpenGL ES、Vulkan，还是把 GLES 交给 ANGLE 翻译？这个选择在 Android 15 之后尤其重要。Google 已经把 Vulkan 明确为 Android 首选 GPU 接口，并把 ANGLE 定位为在 Vulkan 之上承载 OpenGL ES 的过渡层。同样是一段 GLES 代码，在不同设备上可能仍走厂商原生驱动，也可能被平台切到 ANGLE，再落到 Vulkan 驱动。
+Android 上的 OpenGL ES、Vulkan、ANGLE 和 WebGPU 不在同一个抽象层。OpenGL ES 与 Vulkan 是应用可直接使用的 GPU API；ANGLE 接收 EGL / OpenGL ES 调用，再翻译到 Vulkan 等后端；AndroidX WebGPU 则用更高层的对象模型和 WGSL 屏蔽一部分后端差异。选型时如果只比较“谁更快”，很容易把 API 开销、驱动质量、引擎实现和显示管线混在一起。
 
-理解图形 API 的演进脉络和架构差异，不只是“选对工具”的问题。我们在 Perfetto 里看到 GPU 工作时，需要先分清自己手上拿到的是哪一层信号：是应用侧 API 调用、驱动暴露的 GPU renderstage，还是系统合成层记录的帧结果。只有把这些层次分开，后面的兼容性判断和性能分析才不会混线。
+本文以 Android 17 / API 37、`android-17.0.0_r1` 为平台源码锚点，kernel 侧以 `android17-6.18-2026-06_r6` 为锚点。结论先放在前面：
 
-## Android 图形 API 的三代演进
+- 已有稳定的 GLES 渲染器，不必仅因系统升级就重写为 Vulkan。先测 CPU 提交、GPU 执行、驱动兼容性和维护成本。
+- Vulkan 适合需要可预测资源管理、多线程命令录制、复杂同步或现代渲染能力的引擎，但它把更多正确性责任交给应用。
+- ANGLE 是 GLES 驱动选项，不是新的应用 API。Android 17 允许应用表达偏好，平台仍会结合设备能力和策略决定是否采用。
+- WebGPU 在 Android 17 时间点仍是 AndroidX developer preview。它适合愿意接受预览期 API 变化、又希望获得现代图形与计算接口的项目，不能当作成熟 Vulkan 渲染器的无成本替代。
+- 无论上游使用哪种 API，可见画面通常都要经 `ANativeWindow`、BufferQueue、SurfaceFlinger 和 HWC 到达显示设备。API 选型不会绕过显示系统。
 
-Android 从诞生到现在，GPU 编程接口经历了三代更迭，前后跨越十余年。
+## 1. 先分清四个抽象层
 
-### 第一代：OpenGL ES——移动 GPU 的起点
+一帧从应用代码到屏幕，至少跨过 API、驱动、Android 图形缓冲区和显示合成四层。下面这张图用于确认每个名字所在的位置。
 
-OpenGL ES（OpenGL for Embedded Systems）是 Khronos Group 为嵌入式设备制定的图形 API 标准。Android 从 1.0 版本就支持 OpenGL ES 1.0/1.1，但让 GPU 渲染成为主流的是 OpenGL ES 2.0——它带来了可编程着色器（vertex shader 和 fragment shader），从固定功能管线转向了可编程管线。
+```mermaid
+flowchart LR
+    App["应用 / 游戏引擎"]
+    GLES["OpenGL ES API"]
+    Vulkan["Vulkan API"]
+    WebGPU["AndroidX WebGPU"]
+    ANGLE["ANGLE<br/>GLES → Vulkan"]
+    Dawn["WebGPU native implementation"]
+    Driver["厂商 Vulkan / GLES driver"]
+    Window["EGLSurface 或 VkSurfaceKHR<br/>连接 ANativeWindow"]
+    BQ["BufferQueue"]
+    SF["SurfaceFlinger"]
+    HWC["HWC / display"]
 
-Android 各版本对 OpenGL ES 的支持时间线：
-
-| OpenGL ES 版本 | 引入的 Android 版本 | API Level | 关键能力 |
-|---|---|---|---|
-| 1.0 / 1.1 | Android 1.0 | API 1 | 固定功能管线，基本 2D/3D |
-| 2.0 | Android 2.2 (Froyo) | API 8 | 可编程着色器（GLSL ES），现代 GPU 编程的起点 |
-| 3.0 | Android 4.3 (JB MR2) | API 18 | 多重渲染目标（MRT）、Transform Feedback、实例化绘制 |
-| 3.1 | Android 5.0 (Lollipop) | API 21 | Compute Shader、独立着色器对象 |
-| 3.2 | Android 7.0 (Nougat) | API 24 | Android Extension Pack 正式标准化 |
-
-[已验证: 官方文档, developer.android.com/guide/topics/graphics/opengl]
-
-OpenGL ES 2.0 是一个分水岭。在它之前（ES 1.x），开发者只能用固定功能管线：告诉 GPU "画一个三角形、贴一张纹理、加一个光源"，GPU 按预定义的流程执行。ES 2.0 引入了 GLSL ES 着色器语言，开发者可以自己写代码控制 GPU 的顶点处理和片段着色阶段。这打开了移动端 GPU 的潜力——后处理滤镜、水面反射、粒子系统都成为可能。
-
-ES 3.0/3.1/3.2 在 ES 2.0 的基础上逐步添加了更高级的 GPU 特性：多重渲染目标允许一次绘制输出多张纹理（延迟渲染的基础）、Compute Shader 让 GPU 执行通用计算、实例化绘制减少了 draw call 数量。
-
-但 OpenGL ES 有一个关键架构限制：它是一个**状态机模型**。每次调用 `glBindTexture()`、`glBlendFunc()`、`glDrawArrays()` 时，都在改变一个全局状态机的状态。驱动需要在每次 draw call 时检查完整的状态组合是否合法、是否需要重新编译着色器、是否需要同步 CPU 和 GPU——这些都在调用线程上同步完成。这个设计在高 draw call 数量的场景下会成为严重的 CPU 瓶颈。
-
-### 第二代：Vulkan——显式控制的现代 API
-
-Vulkan 同样由 Khronos Group 制定，2016 年发布 1.0 版本。与 OpenGL ES 的"驱动替你做决定"不同，Vulkan 的设计哲学是"开发者自己控制一切"：内存分配、命令提交时机、GPU/CPU 同步策略、管线状态——全部由应用显式指定。
-
-Android 对 Vulkan 的版本基线可以直接看官方 `implement-vulkan` 文档。它给出的对应关系是：
-
-| Vulkan 版本 | 平台 API 可用性 | 新设备 Launch Requirement | 关键能力 |
-|---|---|---|---|
-| 1.0 | Android 7.0 (API 24) | Android 7.0+ | 显式 API、Command Buffer、多线程命令录制 |
-| 1.1 | Android 7.0 (API 24) | Android 10 新 64 位设备 | subgroup 操作、YCbCr 转换、多视图渲染 |
-| 1.3 | Android 13 (API 33) | Android 13+ launch devices | 动态渲染、Synchronization 2、更多现代 Vulkan 能力进入主流基线 |
-| 1.4 | Android 16 (API 36) | Android 16+ launch devices | 更多此前可选的现代能力进入 core，平台继续向更完整的 Vulkan 功能集收敛 |
-
-[已验证: 官方文档, source.android.com/docs/core/graphics/implement-vulkan]
-
-Vulkan 1.0 就已经提供了 OpenGL ES 不具备的核心能力：Command Buffer 允许多线程并行构建 GPU 命令、显式内存管理让应用控制 GPU 内存的分配和回收时机、Pipeline State Object（PSO）将着色器和渲染状态预编译为一个不可变对象，避免了运行时的状态验证开销。
-
-但 Vulkan 1.0 的 API 复杂度极高。创建一个"画一个三角形"的最小 Vulkan 程序需要约 800 行代码——同样的功能在 OpenGL ES 中只需要不到 100 行。Vulkan 1.1/1.3/1.4 的迭代目标就是降低这个复杂度：Vulkan 1.3 的动态渲染让开发者不再需要显式定义 RenderPass 对象，Vulkan 1.4 继续把更多现代能力并入核心能力集合。
-
-上表说的是平台 / OEM 侧的 Vulkan 版本基线，我们可以把它理解为“这一代 Android 对新设备希望具备什么 Vulkan 能力”；它不等于“所有升级到该版本的旧设备都会自动获得同样的 Vulkan 版本”。
-
-**Android Vulkan Profile 2025（AVP 2025）** 面向活跃设备生态定义了一组兼容能力集合，适合拿来描述更稳定的跨设备能力面。官方页面已经说明，早期资料里的 **Android Baseline Profiles（ABP）** 正在统一更名为 **Android Vulkan Profiles（AVP）**；如果你在旧分享或旧 JSON 里还看到 ABP，可以把它理解为同一条能力线的旧称。
-
-AVP 2025 在 AVP 2022 / 2021 的基础上继续扩展 profile 能力集合，官方点名的是额外内存特性、浮点控制、host query reset，以及更多标准化像素格式。它更适合拿来做 capability audit 和 feature gating：先看目标设备是否满足这组 profile，再决定默认开启哪些渲染路径。到了 Android 16，新发设备的 Vulkan 平台基线已经抬到 1.4，这时像 `VK_EXT_host_image_copy` / Host Image Copy 这样的上传路径能力就值得单独核对：它允许 CPU 直接把数据拷到 image，减少 staging buffer 和额外 copy，纹理流式加载、首帧资源上传和后台资源预热都更容易压住卡顿。是否真的可用，仍要以目标设备暴露的 Vulkan version、feature 和 extension 为准。
-
-[已验证: 官方文档, developer.android.com/ndk/guides/graphics/android-vulkan-profile]
-
-理解了 AVP 的定位之后，再看 Android 16 对 Vulkan 的要求，就要拆成两层。
-
-### VP_ANDROID_16 Profile 与 Vulkan 1.4 基线
-
-Android 16 的 Vulkan 要求要拆成两层看：
-
-1. **平台基线**：Android 16 新设备需要支持 Vulkan 1.4（见 `implement-vulkan` 官方表）
-2. **VP_ANDROID_16 Profile**：Khronos 发布的 Android 16 Vulkan Profile，定义新设备上应具备的最低兼容能力集合。该 profile 的 api-version 为 1.3.276，额外强制要求 `VK_EXT_host_image_copy`
-
-| 层级 | 版本要求 | 强制扩展 |
-|---|---|---|
-| Android 16 平台基线 | Vulkan 1.4 | — |
-| VP_ANDROID_16 Profile | api-version 1.3.276 | `VK_EXT_host_image_copy` |
-
-`VK_EXT_host_image_copy` 允许 CPU 直接把数据拷到 VkImage，省掉 staging buffer 和额外拷贝。纹理流式加载和首帧资源上传都受益。
-
-`VK_EXT_shader_object` 不是 VP_ANDROID_16 的强制扩展，但在支持它的设备上对渲染流畅性有直接帮助：传统路径中每个 shader + render state 组合都要预编译成不可变 PSO，着色器变体多的场景（不同材质、光照组合），PSO 创建是冷启动卡顿的主要来源。这个扩展让驱动在运行时按需编译单个着色器，不需要穷举所有组合。排查 Shader Jank 时，如果目标设备支持该扩展但应用仍有着色器编译卡顿，优先检查是否已经在用 shader object 路径。
-
-工程上建议同时核对目标设备的 Vulkan 1.4 支持和 VP_ANDROID_16 profile compliance：前者决定平台能力基线，后者决定跨设备兼容能力的最低集合。具体设备的扩展支持以 `vkEnumerateDeviceExtensionProperties` 返回的结果为准。
-
-### 第三代：ANGLE——翻译层，不是新 API
-
-严格来说，ANGLE（Almost Native Graphics Layer Engine）不是一个独立的图形 API，它是一个**翻译层**：接收 OpenGL ES API 调用，将其翻译为 Vulkan（或 macOS/iOS 上的 Metal）调用。
-
-ANGLE 的定位可以用一句话概括：它让 OpenGL ES 应用在不改 API 的前提下，有机会跑在 Vulkan 后端之上。但在 Android 上，关键的不是“系统里有没有 ANGLE”，而是“这次进程启动时，GLES driver 最终选中了谁”。
-
-Android 15 的图形说明页把 ANGLE 描述为“running OpenGL ES on top of Vulkan”的 optional layer，同时明确写到，后续会在更多**新设备**上把 ANGLE 作为 GL system driver 出厂。因此，我们更应该把 ANGLE 理解为一条持续推进中的路线，而不是一个已经对所有设备统一生效的开关。
-
-**注意**：Android 17（API 37）是否会把 ANGLE 升级为新设备上的强制性默认 GLES 驱动，截至 2026-06，source.android.com/compatibility 公开到 Android 16 CDD，Android 17 CDD 尚未正式发布，尚无官方条款直接支撑这一结论。若后续 CDD 确认此方向，则原生 GLES 驱动将不再作为默认选项出厂，GLES 调用由平台统一翻译到 Vulkan 后端。在此之前，本段仅为路线推演。
-
-目前可以确认的结论：
-
-- Android 15 把 ANGLE 定位为 optional layer，官方 roadmap 表明后续会在更多新设备上把 ANGLE 作为 GL system driver 出厂
-- 具体设备是否走 ANGLE，需以 CDD 条款、AOSP config/CTS 变更或官方发布文档为依据
-- 旧设备升级后的行为取决于厂商实现
-
-排查 Perfetto 时，仍建议先确认"本次进程启动时 GLES driver 最终选中了谁"，不要默认所有 Android 17+ 设备都走 ANGLE。
-
-AOSP `GraphicsEnvironment.queryAngleChoice()` 给出了 Java 层的第一段选路顺序：先看全局开关 `ANGLE_GL_DRIVER_ALL_ANGLE`，再看按包名配置的 `angle_gl_driver_selection_pkgs` / `angle_gl_driver_selection_values`，前两类配置都未命中时才落到平台资源里的 `config_angleAllowList`。如果显式选了 `native`，Java 层会把 `shouldUseNativeDriver` 传给 native 层；如果选了 ANGLE，则先尝试 ANGLE APK，再回退到 system ANGLE。到了 `frameworks/native/opengl/libs/EGL/Loader.cpp`，loader 的顺序是“先尝试 ANGLE，再尝试 updatable driver，两者都不可用时再落回 native / system GLES driver”。这也是为什么我们不能把“Android 15+”直接等同于“所有 GLES 应用都会自动经过 ANGLE”。
-
-```java
-// frameworks/base/core/java/android/os/GraphicsEnvironment.java
-private String queryAngleChoice(...) {
-    if (allUseAngle == ANGLE_GL_DRIVER_ALL_ANGLE_ON) return "angle";
-    ...
-    if (optInValue.equals("angle")) return "angle";
-    if (optInValue.equals("native")) return "native";
-    ...
-    for (String allowedPackage : angleAllowListPackages) {
-        if (allowedPackage.equals(packageName)) return "angle";
-    }
-    return "default";
-}
+    App --> GLES
+    App --> Vulkan
+    App --> WebGPU
+    GLES --> ANGLE --> Driver
+    GLES --> Driver
+    Vulkan --> Driver
+    WebGPU --> Dawn --> Driver
+    Driver --> Window --> BQ --> SF --> HWC
 ```
 
-开发者选项和 ADB override，就是在改这些 `Settings.Global` 键值。调试单个包时，常见做法是同时写入包名列表和值列表：
+图中 GLES 有两条可能路径：厂商原生 GLES 驱动，或 ANGLE 的 Vulkan backend。应用调用 `glDraw*()` 并不能证明底层没有 Vulkan。WebGPU 的实现也可能使用 Vulkan，但应用看到的是 WebGPU 对象、WGSL 和 command encoder，不是 `VkDevice`。
+
+HWUI 还要单独看待。普通 View 的硬件加速由 `libhwui`、Skia 和 RenderThread 管理；应用直接创建 EGL context 或 Vulkan device 时，资源和提交策略由应用或引擎管理。平台 HWUI 的实现可以说明 Android 自己怎样使用 Vulkan，却不能直接推导第三方引擎应该复制其线程、队列或缓存结构。
+
+## 2. API 演进：版本号只回答“接口何时出现”
+
+### 2.1 OpenGL ES
+
+Android 从 API 1 就有 OpenGL ES 1.x，OpenGL ES 2.0 从 API 8 开始提供可编程 shader。后续版本逐步加入实例化、计算着色器和更完整的图形能力。
+
+| OpenGL ES | Android API 起点 | 主要变化 |
+|---|---:|---|
+| 1.0 / 1.1 | API 1 | 固定功能管线 |
+| 2.0 | API 8 | vertex / fragment shader，GLSL ES |
+| 3.0 | API 18 | MRT、instancing、transform feedback 等 |
+| 3.1 | API 21 | compute shader、SSBO 等 |
+| 3.2 | API 24 | geometry / tessellation 等进入 ES 标准 |
+
+API 起点不代表设备必须实现该版本。应用仍应通过 manifest 的 `uses-feature`、EGL 配置和运行时查询约束能力。Android 17 CDD 7.1.4.1 对带屏幕和视频输出的设备要求支持 GLES 1.1、2.0、3.0 和 3.1，并建议支持 3.2；这是 Android 17 兼容设备的要求，不应倒推到旧系统。
+
+GLES 的核心模型是 context 内的可变状态。`glBindTexture()`、`glUseProgram()` 和 blend/depth 设置会改变后续 draw 的解释方式。驱动要根据当前状态生成或选择底层命令，并处理应用看不到的缓存、资源驻留和同步。这个模型方便入门，也给驱动留下了较大的实现空间。
+
+“GLES 必然单线程”并不准确。应用可以建立共享 context，在不同线程上传或编译资源；驱动内部也可以异步工作。限制主要来自 context 状态的顺序语义和共享对象同步：把同一个 context 的 draw call 随意分发给多个线程行不通，多 context 方案又需要仔细管理可见性与 fence。
+
+### 2.2 Vulkan
+
+Vulkan 从 Android 7.0 / API 24 开始提供。Android 官方的版本表给出以下平台演进：
+
+| Vulkan | Android 平台节点 | 说明 |
+|---|---|---|
+| 1.0 | Android 7 / API 24 | Android 首次支持 Vulkan |
+| 1.1 | Android 9 / API 28 | 平台加入 Vulkan 1.1 支持 |
+| 1.3 | Android 13 / API 33 | Android 13 首发设备基线提升到 1.3 |
+| 1.4 | Android 16 / API 36 | Android 16 及以后首发设备要求 1.4 |
+
+表里的“平台支持”和“首发设备要求”不是一回事。升级到 Android 17 的旧设备不会因为系统版本变化就获得新的 GPU 硬件特性。创建 device 前必须查询 physical device 的 API version、extension、feature、format 和 queue family。
+
+Vulkan 把大量隐式工作变成应用可见对象：
+
+- command buffer 明确记录命令，queue submission 明确提交批次；
+- image layout、pipeline stage 和访问掩码参与资源 hazard 管理；
+- memory allocation、binding、预算和回收策略由应用或 allocator 管理；
+- pipeline、descriptor 和 render state 的组合更早确定；
+- semaphore 处理 GPU 工作依赖，fence 处理主机等待，barrier 处理命令间的内存与执行依赖。
+
+这不等于 `vkCmdDraw()` “完全没有校验”或 Vulkan “自动更快”。Release 构建通常不启用 validation layer，但 loader、ICD 和应用自己的封装仍有工作；录制成本还会受 descriptor 更新、pipeline 查找、内存分配和锁竞争影响。Vulkan 的优势在于应用能看到并控制更多成本，把昂贵工作移出帧关键路径。若资源生命周期、同步或缓存设计不稳，结果可能比成熟的 GLES 驱动更差。
+
+### 2.3 ANGLE
+
+ANGLE 对应用暴露 EGL / OpenGL ES，在内部维护 GLES 状态并生成 Vulkan 等后端命令。它的价值主要有两类：
+
+1. 让平台用一套持续维护的 GLES 实现适配不同 GPU 驱动；
+2. 让已有 GLES 应用在不改应用 API 的前提下测试 Vulkan 后端。
+
+ANGLE 不会消除 GLES 状态机的语义。它仍需跟踪状态、处理 shader 翻译和为 Vulkan backend 组织 pipeline。某个应用在 ANGLE 上更快或更慢，取决于 workload、ANGLE 版本、pipeline cache、厂商 Vulkan 驱动和设备热状态，不能只按 API 名称判断。
+
+### 2.4 WebGPU
+
+AndroidX WebGPU 提供 Kotlin / Java 风格的 WebGPU 接口，以 WGSL 编写 shader，并支持图形与通用计算。它比 Vulkan 更高层，能减少平台相关样板代码；相应地，底层资源状态和提交细节也不再全部由应用直接控制。
+
+截至 2026-07-25，AndroidX WebGPU 最新公开版本为 `1.0.0-alpha05`，仍处于 developer preview。官方入门文档给出的最低系统版本是 API 24，优先使用 Vulkan 1.1；兼容 feature level 可覆盖部分 GLES 设备。这里的 API 24 是库的系统下限，不代表每台 API 24 设备都有相同后端能力。
+
+WebGPU 适合新工具、跨平台可视化、计算任务和能够承受预览 API 调整的项目。已有大型 Vulkan 引擎若依赖自定义内存分配、精细 barrier、特定 extension 或厂商工具，迁移收益需要逐项评估。
+
+## 3. Android 17 的 Vulkan 要求要分三层读
+
+Android 17 同时存在 CDD、平台源码内的设备要求 profile，以及面向活跃设备生态的 Android Vulkan Profile。三者服务的对象不同。
+
+| 层次 | 主要对象 | Android 17 下应怎样理解 |
+|---|---|---|
+| CDD 7.1.4.2 | Android 兼容设备 | 设备若包含 Vulkan 实现，CDD 规定最低 API、WSI 与外部同步等要求；特定设备类型另有首发约束 |
+| `VP_ANDROID_17_requirements` | Android 17 首发或重新进行 Google Requirements Freeze 的芯片组 | AOSP JSON 声明 `api-version: 1.4.335`，并列出该代芯片组的强制 feature / extension |
+| AVP 2025 | 活跃 Vulkan 设备生态 | 用一组已统计覆盖率的能力帮助应用选择兼容路径，不等同于某个 Android 平台版本 |
+
+Android 17 CDD 新增或明确了 present 相关要求，包括 `VK_EXT_present_mode_fifo_latest_ready`、`VK_KHR_present_wait2`、`VK_KHR_present_id2`、`VK_KHR_android_surface` 和 `VK_KHR_swapchain` 等。CDD 还约束外部 layer 注入：普通非 debuggable 应用不能被任意插入图形 layer，除非满足 CDD 指定的 metadata 条件；OEM 或平台 layer 属于例外。这一变化会影响抓帧、验证层和图形调试工具的接入方式。
+
+`frameworks/native/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json` 列出的 Android 17 芯片组要求更宽。它除了 present 扩展，还包含 `VK_KHR_pipeline_binary`、`VK_KHR_pipeline_library`、`VK_EXT_graphics_pipeline_library`、`VK_EXT_present_timing`，并要求 Vulkan 1.4 的 `hostImageCopy` feature。
+
+应用仍应运行时枚举。AOSP `libvulkan/driver.cpp` 就提供了一个直接例子：`VK_EXT_present_timing` 只有在 SurfaceFlinger present timestamp 属性开启、对应平台 flag 开启，并且 ICD 支持 `VK_KHR_calibrated_timestamps` 时才由 loader 暴露。系统镜像、设备首发条件、厂商 ICD 和升级路径会共同影响最终结果。
+
+AVP 2025 也不能替代运行时查询。官方覆盖率统计回答“活跃 Vulkan 设备中有多少满足某组能力”，适合制定降级策略；它不会让缺失的 extension 出现在设备上。工程上可以先用 profile 做设备分层，再对要启用的 feature、extension 和 format 做精确检查。
+
+## 4. GLES 与 Vulkan 的架构差异
+
+### 4.1 状态提交
+
+GLES 允许应用逐步修改 context 状态，驱动在 draw 前后决定怎样映射到硬件。Vulkan 通常要求应用先构造较完整的对象与命令，再把命令批次交给 queue。
+
+| 维度 | OpenGL ES | Vulkan |
+|---|---|---|
+| 状态模型 | context 内可变状态 | pipeline、descriptor、dynamic state 等显式对象 |
+| 命令组织 | API 调用按序进入驱动 | 先录制 command buffer，再提交 queue |
+| 内存 | 驱动负责大部分分配与迁移 | 应用选择 memory type 并管理分配、绑定与预算 |
+| 同步 | API 隐含规则较多，也支持 GL sync | semaphore、fence、barrier、event 等显式表达 |
+| 错误暴露 | 部分错误可由 `glGetError()` 观察 | 错误码、validation layer、GPU-assisted validation |
+| 多线程 | 多 context 可用，状态和共享同步较难 | command pool / command buffer 可按线程组织，queue 外部同步仍由应用负责 |
+
+Vulkan 适合把 scene traversal、visibility、resource preparation 和 command recording 拆到多个 worker。它不会自动完成并行化。若所有 worker 争用同一个 allocator、descriptor pool 或 pipeline cache，线程数越多，锁和缓存抖动越明显。
+
+### 4.2 Command buffer 复用
+
+静态场景可以复用部分 secondary command buffer，减少 CPU 录制。但以下变化通常会迫使应用更新命令或其引用的数据：
+
+- swapchain 重建或 framebuffer / attachment 变化；
+- pipeline、descriptor binding 或 draw 数量变化；
+- 资源生命周期和 image layout 方案变化；
+- dynamic rendering 配置或渲染目标变化。
+
+复用也不是“录一次永久使用”。应用要确认 command buffer 不处于 pending 状态，引用的对象仍然有效，并处理多帧并行时的资源版本。很多引擎更常见的策略是复用渲染图、pipeline 和 descriptor 布局，同时用每帧 arena 快速重录命令。
+
+### 4.3 Pipeline 编译
+
+GLES 驱动可能在 link、首次 draw 或状态组合变化时编译底层 shader / pipeline。Vulkan 把 pipeline 对象暴露给应用，使预热和持久化更可控，但 pipeline 变体数量仍可能很大。
+
+`VK_EXT_shader_object`、graphics pipeline library 和 pipeline binary 解决的是不同环节，不能把某一个扩展描述成“消除 shader jank”的通用开关：
+
+- shader object 减少对完整 graphics pipeline 对象的依赖；
+- graphics pipeline library 允许把 pipeline 拆成可复用部分；
+- pipeline binary 让实现生成和复用二进制表示；
+- 应用仍要控制 shader 变体、缓存命中、后台预热和首次使用时机。
+
+Android 17 的设备要求 profile 提高了 pipeline library / binary 的基线，但旧设备与升级设备仍需要兼容路径。
+
+### 4.4 两条 queue 不等于自动无阻塞
+
+Vulkan 可以提供多个 queue，也可以只提供一个满足要求的 graphics queue family。transfer、compute 和 graphics 使用独立 queue 时，仍可能共享同一硬件执行单元、内存带宽或内核调度器；queue family ownership transfer 和 semaphore 还会增加同步工作。
+
+Android 17 的 HWUI `VulkanManager` 会请求同一 graphics family 的两条 queue，一条用于主要图形工作，一条服务 `HardwareBitmapUploader` / `GrallocUploadThread`。这是平台对自身上传 workload 的实现选择，不是“所有 Vulkan 应用都应申请两条 graphics queue”的规则。应用要根据 queue family、驱动行为和 trace 数据决定是否拆分。
+
+## 5. Android WSI：不同 API 的共同出口
+
+Native Graphics 的关键边界是画面生产权。应用或引擎通过自己的 render loop 获取 buffer、记录 GPU 工作并提交到可见 `Surface`。宿主可以是 `SurfaceView`、`GameActivity`、`NativeActivity` 或其他能提供 `Surface` 的组件。
+
+Java `Surface` 可由 `ANativeWindow_fromSurface()` 转成 `ANativeWindow`。EGL window surface 与 Vulkan Android surface 都以它连接 Android 图形缓冲区。
+
+### 5.1 EGL / GLES 提交
+
+GLES 应用发出 draw call 后，通过 `eglSwapBuffers()` 提交 window surface 的当前 buffer。实现内部要完成必要的 driver flush、producer fence 传递和 `ANativeWindow` buffer 交换。
+
+`eglSwapBuffers()` 返回只说明 EGL 定义的交换动作完成，不等于像素已经显示。buffer 之后还要等待 SurfaceFlinger latch、合成决策、HWC present 和显示扫描。函数耗时长也不能直接归因于 shader：它可能在等可用 BufferQueue slot、release fence、swap interval 或 frame pacing。
+
+### 5.2 Vulkan acquire / present
+
+下面的序列用于解释 Android 17 AOSP WSI 的职责分界，不表示 vendor ICD 内部只能按此线程模型执行。
+
+```text
+vkAcquireNextImageKHR
+  → ANativeWindow::dequeueBuffer
+  → 把 dequeue fence 交给 vkAcquireImageANDROID
+
+应用录制并提交 GPU 工作
+
+vkQueuePresentKHR
+  → vkQueueSignalReleaseImageANDROID 生成 producer 完成 fence
+  → ANativeWindow::queueBuffer(buffer, fence)
+  → BufferQueue → SurfaceFlinger → HWC → display
+```
+
+`frameworks/native/vulkan/libvulkan/swapchain.cpp` 中可以看到对应的 `dequeueBuffer()`、`AcquireImageANDROID()`、`QueueSignalReleaseImageANDROID()` 和 `queueBuffer()` 调用。`VK_ANDROID_native_buffer` 是 loader 与 ICD 之间的 Android 私有桥接，普通应用应使用公开的 `VK_KHR_android_surface` / swapchain API。
+
+acquire fence 保护 producer 不要过早覆盖仍被 consumer 使用的 buffer；queue 给 SurfaceFlinger 的 fence 表示 GPU 何时完成本次生产。显示完成后的 release fence 再控制该 buffer 何时可重用。到了 kernel 锚点 `android17-6.18-2026-06_r6`，跨模块的 buffer 共享仍建立在 dma-buf 上，同步文件由 `sync_file` 承载 fence。API 换成 Vulkan 不会取消这些所有权与同步约束。
+
+### 5.3 Present mode 需要查询
+
+不要把桌面 Vulkan 的常见 present mode 当成 Android 固定配置。应用应查询 surface 支持的 format、color space、extent、transform、usage、image count 和 present mode，再建立 swapchain。
+
+Android 17 增加的 `VK_EXT_present_mode_fifo_latest_ready` 允许 FIFO 在同一刷新周期内选择更晚准备好的 present，目标是减少旧帧排队；它仍受 surface 能力、extension 暴露和应用 pacing 影响。`VK_KHR_present_wait2`、`VK_KHR_present_id2` 和 `VK_EXT_present_timing` 提供更精确的 present 标识、等待与时间反馈，但不能替代 GPU semaphore、resource barrier 或 BufferQueue release fence。
+
+## 6. Android 17 的 ANGLE 选路
+
+Android 17 CDD 没有规定所有设备都必须把 ANGLE 作为默认 GLES 驱动。官方路线是让更多新设备采用 ANGLE，同时保留 GLES 应用兼容性。对应用来说，需要区分“表达偏好”“平台选中”和“loader 已加载”三个阶段。
+
+Android 17 提供 manifest 偏好。下面的配置适合希望优先测试或使用 ANGLE 的游戏：
+
+```xml
+<application
+    android:appCategory="game">
+    <meta-data
+        android:name="com.android.graphics.driver.prefer_angle"
+        android:value="true" />
+</application>
+```
+
+这个 metadata 是偏好，不是驱动存在性的保证。官方文档说明：ANGLE 不可用时仍使用厂商 GLES。AOSP 的执行路径更细：`GraphicsEnvironment` 先根据设备条件和多级策略决定该进程是否应使用 ANGLE，只有选路成立后，`EGL/Loader.cpp` 才优先加载 ANGLE；在这一阶段加载失败会触发 fatal，而不是静默切回另一个已选路径。
+
+Android 17 `GraphicsEnvironment.java` 的决策来源包括：
+
+1. 全局强制 ANGLE 设置；
+2. 每包开发设置；
+3. 平台 allowlist；
+4. 静态与动态 deny 规则；
+5. game mode / game driver 配置；
+6. 应用 manifest 的 `prefer_angle`。
+
+manifest 偏好还有设备门槛。源码会排除 essential tier、low-RAM，以及 vendor API level 早于 `202604` 的设备。选路成立后，系统先配置 ANGLE APK；没有对应 APK 时再尝试 system ANGLE。`GraphicsEnv.cpp` 保存包名、ANGLE 路径与规则结果，EGL loader 据此选择 ANGLE、可更新驱动、指定原生驱动或系统默认驱动。
+
+开发阶段可以用官方 ADB 设置对单个包强制选择 ANGLE。下面的命令只用于测试机，测试结束要清理全局设置：
 
 ```bash
-adb shell settings put global angle_gl_driver_selection_pkgs com.example.app
+adb shell settings put global angle_gl_driver_selection_pkgs your.package.name
 adb shell settings put global angle_gl_driver_selection_values angle
+
+adb shell settings delete global angle_gl_driver_selection_pkgs
+adb shell settings delete global angle_gl_driver_selection_values
 ```
 
-如果要回到平台默认选路，再删除对应的 global setting 即可。除此之外，AOSP `GraphicsEnv.cpp` 还暴露了 `ANGLEAndroidParseRulesString()` 和 `ANGLEShouldBeUsedForApplication()` 这条调用链，说明 ANGLE 包自身还可以结合 rules string、设备信息和 app 包名做进一步判断。对排查“为什么这台机型走 ANGLE、那台不走”这类问题时，这条链路比简单的 allowlist / denylist 口号更有解释力。
+配置命令本身只改变选路输入。验证结果时还应检查 `dumpsys gpu`、logcat 的 GraphicsEnvironment / EGL 信息，以及 `glGetString(GL_VENDOR)`、`glGetString(GL_RENDERER)`；如需性能结论，再结合 Perfetto 或 AGI。不要仅凭“设备是 Android 17”判断 backend。
 
-[已验证: 官方文档 + AOSP 源码, developer.android.com/about/versions/15/features#graphics, frameworks/base/core/java/android/os/GraphicsEnvironment.java, frameworks/native/opengl/libs/EGL/Loader.cpp, frameworks/native/libs/graphicsenv/GraphicsEnv.cpp]
+## 7. 怎样选择 API
 
-## Vulkan 与 OpenGL ES 的架构差异
+### 7.1 先问 workload，再问 API
 
-理解这两种 API 的架构差异，不只是理论问题。我们在 Perfetto 中分析 GPU Activity 时，看到的 slice 行为、时间分布和抖动模式，都和底层 API 的架构选择直接相关。
-
-### 状态机 vs 显式命令
-
-OpenGL ES 是一个全局状态机。以下伪代码展示了典型的 OpenGL ES 绘制流程：
-
-```cpp
-// OpenGL ES 绘制流程——全局状态机模式
-glBindTexture(GL_TEXTURE_2D, textureA);    // 绑定纹理
-glUniform1f(uAlphaLoc, 0.5f);              // 设置 uniform
-glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  // 混合模式
-glDrawArrays(GL_TRIANGLES, 0, vertexCount); // 提交绘制——驱动在此做完整状态验证
-```
-
-每次 `glDrawArrays()` 被调用时，OpenGL ES 驱动需要做以下工作（全部在调用线程上同步完成）：
-
-1. **状态验证**：检查当前的纹理、着色器、混合模式、帧缓冲等状态组合是否合法
-2. **状态追踪**：将应用设置的状态映射到 GPU 硬件寄存器
-3. **资源同步**：确认 GPU 是否还在使用上一次提交的资源
-4. **错误检查**：在 Debug 模式下进行完整的参数验证
-
-这个过程在简单的场景下不是问题，但当 draw call 数量达到数百甚至数千（复杂 UI、游戏场景），CPU 侧的状态验证、资源同步和 driver bookkeeping 就会直接堆在提交线程上。Vulkan 把大量验证前移到 Pipeline 创建阶段，单次命令记录路径通常更轻。具体差值强依赖 GPU 架构、驱动质量和 workload，不适合脱离测试条件写成固定微秒表。
-
-Vulkan 的做法完全不同。它没有全局状态机，取而代之的是不可变的 **Pipeline State Object（PSO）**：
-
-```cpp
-// Vulkan 绘制流程——显式命令模式
-// 1. 预先创建 Pipeline（一次性开销，通常在加载时完成）
-VkGraphicsPipelineCreateInfo pipelineInfo = {
-    .stageCount = 2,
-    .pStages = shaderStages,        // 着色器阶段
-    .pVertexInputState = &vertexInputState,  // 顶点输入
-    .pRasterizationState = &rasterState,     // 光栅化
-    .pColorBlendState = &blendState,         // 混合状态
-    // ... 所有状态在创建时一次性确定
-};
-vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, NULL, &pipeline);
-
-// 2. 录制命令到 Command Buffer（可在任意线程）
-vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-vkCmdBindDescriptorSets(cmdBuffer, ..., descriptorSet);  // 绑定资源
-vkCmdDraw(cmdBuffer, vertexCount, 1, 0, 0);  // 提交绘制——无需状态验证
-
-// 3. 提交 Command Buffer 到 GPU（在主线程）
-vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence);
-```
-
-关键区别在于：Vulkan 将状态验证的工作从"每次 draw call 时做"移到了"创建 Pipeline 时做一次"。`vkCmdDraw()` 本身只是一个轻量级的命令记录操作——往 Command Buffer 里追加一条指令，不涉及任何 GPU 交互或状态检查。
-
-### 多线程渲染
-
-OpenGL ES 的全局状态机设计导致它是一个单线程 API。虽然可以通过 EGL 共享上下文在多个线程中使用 OpenGL ES，但状态机的全局性使得多线程同时操作 GL 上下文需要大量的锁同步，实际收益有限。
-
-Vulkan 的 Command Buffer 天然支持多线程。不同的线程可以各自独立地构建 Command Buffer，再由提交线程统一提交：
-
-```text
-线程 A: 构建 Command Buffer (场景渲染命令)
-线程 B: 构建 Command Buffer (UI 覆盖层命令)
-线程 C: 构建 Command Buffer (后处理命令)
-   ↓
-主线程: vkQueueSubmit(A + B + C) → 一次性提交到 GPU
-```
-
-在 Perfetto 中，如果应用使用 Vulkan 的多线程命令构建，我们可以在多个线程的 Track 上同时看到 GPU 命令的录制活动，而最终的 `vkQueueSubmit` 只会在提交线程上出现一个很短的 slice。
-
-在 Perfetto 中，如果应用使用 Vulkan 的多线程命令构建，我们可以在多个线程的 Track 上同时看到 GPU 命令的录制活动，而最终的 `vkQueueSubmit` 只会在提交线程上出现一个很短的 slice。
-
-<!-- AIW-源码调研-2026-06-26: HWUI VulkanManager 多队列实现 -->
-#### 平台级多队列：HWUI `VulkanManager` 的两条图形队列设计
-
-上面的多线程 Command Buffer 构建主要是**应用层**的能力。Android 平台层（HWUI）已经把这个能力下沉：android-17.0.0_r1 的 `frameworks/base/libs/hwui/renderthread/VulkanManager.cpp` 在 `setupDevice()` 中**强制要求从同一 graphics queue family 取 2 个 queue**：
-
-```cpp
-// VulkanManager.cpp: setupDevice()
-constexpr auto kRequestedQueueCount = 2;
-LOG_ALWAYS_FATAL_IF(
-    queueProps[i].queueFamilyProperties.queueCount < kRequestedQueueCount);
-// ...
-const VkDeviceQueueCreateInfo queueInfo = {
-        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-        queueNextPtr, 0,
-        mGraphicsQueueIndex,    // ← 同 family
-        kRequestedQueueCount,   // ← count=2
-        queuePriorities,
-};
-```
-
-`initialize()` 把这两条 queue 分别绑定：
-
-```cpp
-// VulkanManager.cpp: initialize()
-mGetDeviceQueue(mDevice, mGraphicsQueueIndex, 0, &mGraphicsQueue);     // ← RenderThread 帧绘制
-mGetDeviceQueue(mDevice, mGraphicsQueueIndex, 1, &mAHBUploadQueue);   // ← HardwareBitmapUploader 上传
-```
-
-`VulkanManager::createContext(options, ContextType type)` 用 `kRenderThread` / `kUploadThread` 两个 enum 值把 `backendContext.fQueue` 切到对应的 VkQueue，并给 device-lost 回调打上 `"RenderThread"` / `"UploadThread"` 上下文标签，便于 GPU fault 现场定位。两个 GrDirectContext 共享同一份 `VkInstance/VkDevice/VkPhysicalDevice`，但各自持有独立的 VMA 实例（`SkiaVMA::Options.fThreadSafe = false`），互不踩内存。
-
-**对应用的影响**：这是 Android 17 上「UI 渲染与位图上传解耦」的平台级实现 —— 即便应用本身只用了单线程录制 Command Buffer，HWUI 仍然在底层把 `HardwareBitmapUploader` 的上传命令排到独立的 `mAHBUploadQueue` 上，避免大位图上传阻塞主绘制队列的 `vkQueueSubmit`。
-
-#### 队列全局优先级：`VK_EXT_global_priority` 与 EGL ContextPriority 映射
-
-`VulkanManager.cpp` 把 `Properties::contextPriority`（来自 `EGL_CONTEXT_PRIORITY_LOW_IMG/MEDIUM_IMG/HIGH_IMG`）映射到 `VK_QUEUE_GLOBAL_PRIORITY_LOW/MEDIUM/HIGH_EXT`，通过 `VkDeviceQueueGlobalPriorityCreateInfoEXT` 作为 `VkDeviceQueueCreateInfo` 的 `pNext`：
-
-```cpp
-// VulkanManager.cpp: setupDevice()
-if (Properties::contextPriority != 0 &&
-    mExtensions.hasExtension(VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME, 2)) {
-    VkQueueGlobalPriorityEXT globalPriority;
-    switch (Properties::contextPriority) {
-        case EGL_CONTEXT_PRIORITY_HIGH_IMG:
-            globalPriority = VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT; break;
-        // ...
-    }
-    queuePriorityCreateInfo.globalPriority = globalPriority;
-    queueNextPtr = &queuePriorityCreateInfo;
-}
-```
-
-驱动若不支持所请求的优先级，HWUI **不会 fatal**，而是 `ALOGW` 降级 —— 注释明确说明这是为了兼容 SysUI/Launcher 与 SurfaceFlinger 的 RT priority 共存场景。
-
-#### 帧边界：`VK_ANDROID_frame_boundary` 的双路径
-
-`VulkanManager::finishFrame()` 在收尾时根据是否在 AGI 抓取环境走两条路径：
-
-```cpp
-// VulkanManager.cpp: finishFrame()
-static uint64_t currentFrameID = 0;
-GrSubmitInfo submitInfo;
-if (!mFrameBoundaryANDROID) {
-    submitInfo.fMarkBoundary = GrMarkFrameBoundary::kYes;
-    submitInfo.fFrameID = currentFrameID++;
-}
-context->submit(submitInfo);
-
-if (submitted == GrSemaphoresSubmitted::kYes && mFrameBoundaryANDROID) {
-    // ... 取 VkImage 句柄 ...
-    mFrameBoundaryANDROID(mDevice, sharedSemaphore->semaphore(), image);
-}
-```
-
-`VK_ANDROID_frame_boundary` 是 AGI（Android GPU Inspector）Vulkan capture layer 实现的私有扩展（`VulkanManager.h` 中手动 typedef 的 `PFN_vkFrameBoundaryANDROID`），用于把 GPU 帧边界与 `VkSemaphore`、`VkImage` 一起暴露给抓取层；非抓取环境下退化为 Skia 层的 `GrMarkFrameBoundary::kYes` + `frameID`，被 Perfetto GPU renderer 用作 frame timeline 的 ID。
-
-#### 与 SurfaceFlinger 的跨进程同步：`VK_KHR_external_semaphore_fd`
-
-`VulkanManager::dequeueNextBuffer()` 把 SurfaceFlinger 通过 `dequeueBuffer` 返回的 Linux `sync_fd` 转成 VkSemaphore：
-
-```cpp
-// VulkanManager.cpp: dequeueNextBuffer()
-VkImportSemaphoreFdInfoKHR importInfo;
-importInfo.sType = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR;
-importInfo.semaphore = semaphore;
-importInfo.flags = VK_SEMAPHORE_IMPORT_TEMPORARY_BIT;
-importInfo.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT;
-importInfo.fd = fence_clone;     // ← 来自 SF producer fence
-err = mImportSemaphoreFdKHR(mDevice, &importInfo);
-GrBackendSemaphore beSemaphore = GrBackendSemaphores::MakeVk(semaphore);
-bufferInfo->skSurface->wait(1, &beSemaphore);
-skgpu::ganesh::FlushAndSubmit(bufferInfo->skSurface.get());
-```
-
-`VK_SEMAPHORE_IMPORT_TEMPORARY_BIT` 表明这是一个一次性同步原语：Skia wait 完成后即销毁 semaphore 与 fd。HWUI 不复用这些 sync object —— 这是一个潜在的性能优化点（可改用 `VulkanManager::fenceWait/createReleaseFence` 这套 explicit API 做对象池）。
-
-#### 缓冲区年龄：`SwapBehavior::BufferAge` 与 partial update
-
-```cpp
-// VulkanManager.cpp: initialize()
-if (Properties::enablePartialUpdates && Properties::useBufferAge) {
-    mSwapBehavior = SwapBehavior::BufferAge;
-}
-// VulkanManager.cpp: dequeueNextBuffer()
-int bufferAge = (mSwapBehavior == SwapBehavior::Discard) ? 0
-                                                    : surface->getCurrentBuffersAge();
-return Frame(surface->logicalWidth(), surface->logicalHeight(), bufferAge);
-```
-
-`bufferAge` 用于 Skia 的 `SkSurface::invalidated()`：当 `enablePartialUpdates && useBufferAge` 同时打开时，HWUI 基于上 N 帧未脏的 buffer 区域做精准 invalidate，减少 GPU 端 fill rate。这是 §2.8 (overdraw) 在 Vulkan 后端的对应实现。
-
-> 注：上述源码片段均来自 `android-17.0.0_r1`（commit `ae266dcb706d083868578cfedce381ef44488a07`）。本节描述的是这一 tag 的现状；"Android 17 新增"的强断言需要补充 android-14/16 对照 tag 后才能成立。
-
-<!-- /AIW-源码调研-2026-06-26 -->
-
-<!-- AIW-源码调研-2026-06-29: HWUI Vulkan 双队列 + 独立 GrallocUploadThread 三线程模型 + VK_EXT_global_priority 整组传播 -->
-#### 双队列的真实消费者：`VkUploader` 与 `GrallocUploadThread`
-
-06-26 注入只描述了 `VulkanManager` 提供了 `mAHBUploadQueue` 这条队列。本节补充：**这条队列在 android-17.0.0_r1 中唯一的真实消费者是 `HardwareBitmapUploader` 的 `VkUploader` 子类**，且运行在一条独立 native 线程 `GrallocUploadThread` 上 —— 整个 HWUI 实际上是「**三线程 + 双 Vulkan queue**」的并行模型。
-
-**位置**：`frameworks/base/libs/hwui/HardwareBitmapUploader.cpp`
-
-`AHBUploader` 基类（line 84-122）持有独立的 `ThreadBase`，按 `mPendingUploads` 计数 + 60s idle timeout 动态启停：
-
-```cpp
-void beginUpload() {
-    std::lock_guard _lock{mLock};
-    mPendingUploads++;
-    if (!mUploadThread) { mUploadThread = new ThreadBase{}; }
-    if (!mUploadThread->isRunning()) {
-        mUploadThread->start("GrallocUploadThread");   // ← 独立 native 线程
-    }
-    onBeginUpload();
-}
-```
-
-`VkUploader::onUploadHardwareBitmap`（line 240-265）是 `kUploadThread` 在 AOSP 中**唯一**的调用点：
-
-```cpp
-renderthread::VulkanManager* vkManager = getVulkanManager();
-if (!vkManager->hasVkContext()) { vkManager->initialize(); }
-if (!mGrContext) {
-    GrContextOptions options;
-    mGrContext = vkManager->createContext(options,
-            renderthread::VulkanManager::ContextType::kUploadThread);
-    LOG_ALWAYS_FATAL_IF(!mGrContext, "failed to create GrContext for vulkan uploads");
-    this->postIdleTimeoutCheck();
-}
-sk_sp<SkImage> image =
-        SkImages::TextureFromAHardwareBufferWithData(mGrContext.get(), bitmap.pixmap(), ahb);
-mGrContext->submit(GrSyncCpu::kYes);   // CPU 同步等上传完成
-```
-
-`VulkanManager::createContext`（line 530-555）按 contextType 把 `backendContext.fQueue` 切到对应 VkQueue，且给 device-lost 回调打 `"RenderThread"` / `"UploadThread"` 标签用于 GPU fault 现场定位：
-
-```cpp
-backendContext.fQueue =
-        (contextType == ContextType::kRenderThread) ? mGraphicsQueue : mAHBUploadQueue;
-backendContext.fDeviceLostProc = (contextType == ContextType::kRenderThread)
-                                         ? deviceLostProcRenderThread
-                                         : deviceLostProcUploadThread;
-```
-
-**对应用与系统调优的隐含意义**：
-
-1. **三线程的职责边界**：
-   - **UI 线程**：录制 DisplayList / Canvas 命令（不直接提交到 GPU）。
-   - **RenderThread**：把 DisplayList 翻译成 Skia GrOps + Vulkan command buffer，`vkQueueSubmit` 到 `mGraphicsQueue`。
-   - **GrallocUploadThread**（`VkUploader` 路径）：把 CPU 端位图按需上传成 GPU 纹理，`vkQueueSubmit` 到 `mAHBUploadQueue`。
-   两条 GPU 线程**没有**显式 semaphore 同步 —— 上传产物是 `AHardwareBuffer` 句柄，由 RenderThread 后续通过 `SkImages::TextureFromAHardwareBuffer` 在自己线程里按需 wait AHB 的 producer fence（来自 gralloc）。
-
-2. **`onIdle` 销毁的代价**：`VkUploader::onIdle` 触发 `mGrContext.reset()`（line 226-228），下次上传需重新 `createContext` + 重建 VMA 实例。短间隔高并发 `copyBitmapToHardwareBuffer` 场景会反复重建，是潜在性能抖动源。
-
-3. **EGL vs Vulkan 路径互斥**：同进程只有一条 `GrallocUploadThread`；`EGLUploader`（line 134-216）走 `EGLImage + glTexSubImage2D + EGLSyncKHR` 路径，`VkUploader` 走 `SkImages::TextureFromAHardwareBufferWithData` 路径，由 `Properties::getRenderPipelineType()` 在 RenderThread 初始化时决定。
-
-#### `VK_EXT_global_priority` 的整组 queue 传播
-
-`VulkanManager.cpp:322-373` 的全局优先级映射有两个**容易踩坑**的细节：
-
-```cpp
-const VkDeviceQueueCreateInfo queueInfo = {
-        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-        queueNextPtr,           // ← 指向 queuePriorityCreateInfo
-        0,
-        mGraphicsQueueIndex,
-        kRequestedQueueCount,   // ← 2 个 queue 共享同一 globalPriority
-        queuePriorities,
-};
-```
-
-- `VkDeviceQueueGlobalPriorityCreateInfoEXT` 挂在 `VkDeviceQueueCreateInfo` 的 pNext 上，**作用域是整组 queue**（同 family 的 2 个 queue 共享同一 globalPriority）。一旦应用把 mGraphicsQueue 提到 HIGH，`mAHBUploadQueue` 也自动 HIGH —— 后台位图上传会**抢占**其他进程的 GPU 时间片。
-- 驱动不支持时**不 fatal**，降级到默认优先级（line 369-380 注释明确是为兼容 SysUI/Launcher 与 SF 的 RT priority 共存）。
-- 默认完全关闭（`Properties::contextPriority = 0`，`Properties.cpp:73`），仅在 `EGL_CONTEXT_PRIORITY_*_IMG` 被显式设置时才会激活。
-- 走的是 `VK_EXT_global_priority`（非 `VK_KHR_global_priority`），因为 EXT 版本可与 1.1 设备兼容；KHR 版本从 1.4 core 起内置，源码中 `hasGlobalPriority = mAPIVersion >= VK_API_VERSION_1_4 || 显式声明 KHR 扩展`（line 265-281）。
-
-#### 帧边界标记：`GrMarkFrameBoundary::kYes` 与 `frameID`
-
-`VulkanManager::finishFrame`（line 710-723）非 AGI 抓取环境下，把 Skia 的 `GrMarkFrameBoundary::kYes` 与递增的 `frameID` 一起塞进 `GrSubmitInfo`：
-
-```cpp
-static uint64_t currentFrameID = 0;
-GrSubmitInfo submitInfo;
-if (!mFrameBoundaryANDROID) {
-    submitInfo.fMarkBoundary = GrMarkFrameBoundary::kYes;
-    submitInfo.fFrameID = currentFrameID++;
-}
-context->submit(submitInfo);
-```
-
-`frameID` 由 Perfetto GPU renderer 用作 frame timeline 的 ID，是 trace 中「按帧聚合 GPU 时间」的基础。AGI 抓取时（`mFrameBoundaryANDROID != nullptr`）会再额外调一次 `mFrameBoundaryANDROID(mDevice, sharedSemaphore->semaphore(), image)` 把 VkImage + VkSemaphore 一并暴露给 capture layer。
-
-> 上述源码片段均来自 `android-17.0.0_r1`（commit `ae266dcb706d083868578cfedce381ef44488a07`）。`HardwareBitmapUploader.cpp:252-253` 的 `kUploadThread` 调用与 `Properties::contextPriority = 0` 的默认行为是基于本 tag 源码的实测观察。
-
-<!-- /AIW-源码调研-2026-06-29 -->
-
-### Command Buffer 复用
-
-OpenGL ES 没有命令缓冲区的概念——每次绘制都是"即时的"（虽然驱动内部可能做批处理，但开发者无法控制）。Vulkan 的 Command Buffer 可以在帧之间复用：如果一帧的渲染命令没有变化（比如静态 UI），只需要在第一帧录制 Command Buffer，后续帧直接重新提交即可。
-
-这个特性对 UI 渲染特别有价值。Android 的 View 系统在 UI 没有变化时不会重新走一遍 measure/layout/draw 流程，但 GPU 命令仍然需要提交。如果使用 Vulkan 的 Command Buffer 复用，静态 UI 的帧提交开销几乎为零。
-
-## ANGLE 的角色与 Android 图形栈收敛
-
-### ANGLE 的翻译架构
-
-ANGLE 在 AOSP 中的源码路径为 `external/angle/`，其核心翻译流程如下：
-
-```text
-App 的 GLES 调用
-    ↓
-GLES 入口函数 (eglMakeCurrent, glDrawArrays, ...)
-    ↓
-验证层（Validation Layer）—— 检查 API 使用是否合法
-    ↓
-状态追踪层（State Tracking）—— 维护 OpenGL ES 的状态机
-    ↓
-Vulkan 后端（external/angle/src/libANGLE/renderer/vulkan/）
-    ├─ vk::Renderer —— 管理 VkDevice, VkQueue, 格式表, 内部着色器
-    ├─ ContextVk —— 处理 OpenGL Context 的状态变更和命令执行
-    └─ Pipeline 缓存 —— 将 OpenGL 状态向量映射到 Vulkan PSO
-    ↓
-Vulkan 驱动 → GPU
-```
-
-[已验证: AOSP 源码, external/angle, external/angle/src/libANGLE/renderer/vulkan/]
-
-ANGLE 的翻译不是简单的 API 映射。最复杂的部分是**状态转换**：OpenGL ES 的"随时改变状态"模型需要被翻译为 Vulkan 的"预编译 Pipeline"模型。ANGLE 内部维护了一个状态向量到 Vulkan PSO 的哈希映射表——当应用改变了 OpenGL ES 状态时，ANGLE 会查找是否已经有匹配的 Vulkan Pipeline，如果没有就创建一个新的。
-
-ANGLE 引入的额外开销主要来自两方面：
-
-1. **GLSL ES 到 SPIR-V 的着色器翻译**：ANGLE 内置了一个着色器编译器，将 GLSL ES 源码翻译为 Vulkan 使用的 SPIR-V 二进制格式。这个翻译发生在着色器首次编译时，之后会被缓存
-2. **状态追踪和 Pipeline 查找**：每次 GLES draw call 都需要在哈希表中查找匹配的 Vulkan Pipeline，如果未命中则创建新的 Pipeline（这个创建过程本身是耗时的）
-
-### ANGLE 的性能影响应该怎么理解
-
-官方资料强调的重点是 compatibility 和 behavior consistency，而不是给出一个统一的“ANGLE 一定慢多少”结论。原因很简单：ANGLE 的成本不只取决于 ANGLE 本身，还取决于 workload 的 draw call 形态、shader 数量、state change 密度，以及原生 GLES driver 自身的质量。
-
-从机制上看，ANGLE 的额外成本主要集中在两个阶段。第一次是 shader 翻译和 pipeline 建立：GLES shader 需要被 ANGLE 翻译到后端可用的形式，首次命中时会有额外 CPU 开销。第二次是 draw call 前的状态映射：ANGLE 需要把 OpenGL ES 的状态机语义折算成 Vulkan 的 pipeline、descriptor 和 render pass 语义。如果 workload 状态切换频繁、pipeline cache 命中率又不高，这部分成本就会更明显。
-
-反过来看，如果某个 SoC 的原生 GLES driver 本身存在较重的 CPU 开销或兼容性问题，ANGLE 走 Vulkan 后端反而可能更稳定，甚至更快。所以我们不应该在文章里给出脱离场景的固定百分比，更合理的结论是：**ANGLE 带来的是“以一定翻译成本换取更一致的驱动行为”。**答案只能在目标 workload 和目标设备上测出来。
-
-另外，Vulkan 支持 pipeline cache，但“系统 ANGLE 一定能替所有 GLES 应用统一管理并稳定复用 cache”并不是官方给出的通用承诺。分析启动抖动时，我们可以把 pipeline / shader 首次编译当成重点怀疑对象，但不要先把它写成一条无条件成立的系统保证。
-
-### ANGLE 路线对开发者的实际影响
-
-对开发者来说，更可靠的判断方式是先回答三个问题：这个设备的 GL system driver 是什么？这个包有没有被 developer option / adb override 改写？如果都没有，平台默认策略是否把它放进了 ANGLE 路径？
-
-因此，现阶段更稳妥的工程结论是：
-
-1. **现有 GLES 应用不一定需要立刻迁移**：如果目标设备仍在原生 GLES driver 上，应用会继续按原路径运行；如果设备把该包选进 ANGLE，API 代码通常不用改，但我们仍要重新做稳定性和性能回归。
-2. **性能变化要按 workload 测**：ANGLE 可能变慢，也可能因为绕开厂商 GLES driver 的问题而更稳定。
-3. **调试时先确认“是否走 ANGLE”再看 Trace**：没有这一步，后面的 Perfetto 解释很容易错层。
-4. **WebView / WebGL 需要单独判断**：Chromium / WebView 先由自身的 Skia backend 决定走 Vulkan 还是 GL。SkiaVulkan 直接调用 Vulkan driver，系统 ANGLE policy 不参与；只有回到 SkiaGL / GLES 路径时，ANGLE 选路才会影响这条栈。
-
-系统 ANGLE policy 只解释“系统 GLES driver 怎么选”，它不能替代 Chromium / WebView backend 检查。
-
-### 热 / 功耗信号也会进入选路
-
-Android 15 在 ADPF 中新增了 power-efficiency mode、GPU + CPU work duration 上报和 thermal headroom thresholds。图形 API 选路不能只看峰值帧率，还要看长时间运行时的热预算。
-
-`GraphicsEnvironment` 负责 driver 选择入口，ADPF 提供热 / 功耗信号，这两套机制经常一起用，但不是同一个开关。工程上可以把它们组合成三档策略：
-
-1. **性能优先**：thermal headroom 充足，目标是峰值帧率，继续走 native Vulkan 或已经验证稳定的 native GLES
-2. **功耗优先**：headroom 持续收紧，或 hint session 已切到 power-efficiency mode 时，在目标机型上评估更保守的 ANGLE 路径，并同时降低分辨率、后处理、阴影或 texture streaming 频率
-3. **安全 / 兼容优先**：业务含 WebView / WebGPU 时，再叠加浏览器侧的安全与兼容性策略，必要时退回更保守的 backend。系统 GLES driver policy 只能解释 GLES 选路，不能替代 WebGPU 或 Chromium backend 的判断
-
-[已验证: 官方文档, developer.android.com/about/versions/15/features#graphics, developer.android.com/games/optimize/adpf]
-
-### WebGPU / Dawn：另一条新接口
-
-Android 侧新增的一条图形接口路线是 WebGPU。Jetpack 文档把它定义为 WebGPU 标准的 Kotlin bindings，并直接写明它是 WebGL 的后继接口，定位比 Vulkan 更高层，代码量也更小，适合图像处理、数据可视化、ML inference 和游戏这类直接依赖 GPU 的场景。
-
-需要把 WebGPU 和 ANGLE 分开看。ANGLE 是 GLES 到 Vulkan 的翻译层，WebGPU 是另一套 API 语义和 WGSL shader 体系。AndroidX WebGPU 的 release notes 已经写明它会持续更新内部 Dawn source commit，Dawn 项目本身也是 Chromium 中 WebGPU 的底层实现。分析 WebView / WebGL / WebGPU 问题时，要先确认 Chromium / Dawn 这一层的 backend，再去解释系统 ANGLE policy。两者观察路径不同。
-
-Jetpack WebGPU 的 API 代码量比 Vulkan 少一个数量级。计算管线的抽象开销低于渲染管线——这是 Dawn 内部做 command buffer 转写时的结构决定的。图形渲染管线的相对性能取决于 draw call 密度和着色器复杂度，与计算管线的差距更大。选择 WebGPU 的场景（图像处理、ML inference、数据可视化）通常以计算管线为主，可以预期 GPU 活动的开销比例较低。
-
-此前版本中“Jetpack WebGPU 在 Android 17 上达到 Vulkan 原生实现 90%-95% 吞吐量”的量化声明因缺少基准来源、设备、测试 workload 和 API/库版本，已修正为定性描述；实际吞吐量差异需在目标 workload 和目标设备上实测。
-
-[已验证: 官方文档 + 上游实现, developer.android.com/develop/ui/views/graphics/webgpu, developer.android.com/jetpack/androidx/releases/webgpu, github.com/google/dawn]
-
-
-[已验证: 官方文档 + 上游实现, developer.android.com/develop/ui/views/graphics/webgpu, developer.android.com/jetpack/androidx/releases/webgpu, github.com/google/dawn]
-
-<!-- AIW-源码调研-2026-06-25 -->
-
-### Jetpack WebGPU 库结构（AndroidX 源码级，2026-06-25 增补）
-
-**核心结论**：Jetpack WebGPU（`androidx.webgpu`）是 2025 年才进入 AndroidX 仓库的应用层 Jetpack 库，命名空间 `androidx.webgpu`，底层通过 `@FastNative` JNI 调用预编译的 Dawn 原生库，不依赖系统级 WebGPU 支持。下面给出可验证的源码细节。
-
-**库元数据**（`androidx/webgpu/webgpu/build.gradle`，androidx-main）：
-
-```groovy
-android {
-    namespace = "androidx.webgpu"
-    defaultConfig { minSdk { version = release(24) } }  // Android 7.0+
-}
-androidx {
-    name = "WebGPU"
-    type = SoftwareType.PUBLISHED_LIBRARY
-    inceptionYear = "2025"
-}
-androidComponents {
-    onVariants(selector().all()) { variant ->
-        variant.sources.jniLibs.addStaticSourceDirectory(
-                new File(AndroidXConfig.getPrebuiltsRoot(project),
-                         "androidx/webgpu/jni").absolutePath)
-        variant.sources.assets.addStaticSourceDirectory('meta')
-    }
-}
-```
-
-**FeatureLevel 双 Profile**（`androidx/webgpu/src/main/java/androidx/webgpu/FeatureLevel.kt`）：
-
-```kotlin
-public class FeatureLevel private constructor() {
-    public companion object {
-        public const val Undefined: Int = 0x00000000
-        /** Compatibility profile, supportable on older APIs like OpenGL ES 3.1 and Direct3D 11. */
-        public const val Compatibility: Int = 0x00000001
-        /** Core profile, requiring modern APIs like Vulkan, Metal, or Direct3D 12. */
-        public const val Core: Int = 0x00000002
-    }
-}
-```
-
-**Backend Type 枚举**（`androidx/webgpu/api/current.txt`，`BackendType` 节选）：
-
-```
-public final class BackendType {
-    field public static final int D3D11 = 3;
-    field public static final int D3D12 = 4;
-    field public static final int Metal = 5;
-    field public static final int Null = 1;
-    field public static final int OpenGL = 7;
-    field public static final int OpenGLES = 8;
-    field public static final int Undefined = 0;
-    field public static final int Vulkan = 6;
-    field public static final int WebGPU = 2;
-}
-```
-
-Android 设备实际可命中的 backend 只有 Vulkan（Core Profile）和 OpenGLES（Compatibility Profile），其他后端（D3D11/12/Metal/OpenGL/Null/WebGPU）在 Android 平台上不会被选中。
-
-**Adapter 信息**（`androidx/webgpu/src/main/java/androidx/webgpu/GPUAdapterInfo.kt`）：
-
-```kotlin
-public class GPUAdapterInfo @JvmOverloads constructor(
-    public var vendor: String,
-    public var architecture: String,
-    public var device: String,
-    public var description: String,
-    @AdapterType.Type public var adapterType: Int,    // DiscreteGPU/IntegratedGPU/CPU/Unknown
-    public var vendorID: Int,
-    public var deviceID: Int,
-    public var subgroupMinSize: Int,
-    public var subgroupMaxSize: Int,                 // Core Profile 才有非零值
-    @BackendType.Type public var backendType: Int = BackendType.Undefined,
-)
-```
-
-**完整调用链**：
-
-```
-Kotlin call: GPU.createInstance() (Functions.kt)
-  → @FastNative external fun
-  → JNI bridge: Java_androidx_webgpu_GPU_createInstance
-  → libwebgpu_jni.so (Dawn prebuilt, from androidx/webgpu/jni)
-  → Dawn C++: wgpu::CreateInstance()
-  → 选择 backend (Vulkan / OpenGL ES)
-  → 返回 GPUInstance handle
-```
-
-**对 §2.14 决策树的补充**：
-
-1. **Jetpack WebGPU ≠ Android 17 系统级 WebGPU**：AndroidX WebGPU 是应用层库，minSdk=24，覆盖 Android 7.0+，独立于系统升级路径。Android 17 在 WebView/PWA 场景提供的系统级 WebGPU（Chromium 内置 Dawn）与 AndroidX WebGPU 是两条独立路径，进程实例、Dawn 版本、handle 复用都未共享。
-2. **性能分水岭由 GPU 驱动决定**：通过 `GPUAdapterInfo.backendType` 可以判断设备实际命中 Vulkan 还是 OpenGLES。Adreno 4xx/5xx、Mali T6xx/T7xx 即使硬件支持 Vulkan 1.0，也可能被 WebGPU 选中 OpenGLES Compatibility Profile；Adreno 6xx+、Mali G7x+、Immortalis G7xx 才稳定命中 Vulkan Core Profile。
-3. **APK 体积成本**：Dawn prebuilt 单架构约 3-8 MB，ABI splits 后总大小仍可能达 10-15 MB。对 APK size 敏感的应用需考虑 ABI splits 或按需下载。
-4. **核心 API 表面**（`androidx.webgpu/src/main/java/androidx/webgpu/`）：超过 80 个 .kt 文件，覆盖 W3C WebGPU spec 核心对象（GPUInstance/Adapter/Device/Queue/Buffer/Texture/Sampler/BindGroup/Pipeline/CommandEncoder/RenderPassEncoder/ComputePassEncoder/ShaderModule/QuerySet 等）。文件级注释明确指出"The KDocs in this file was generated by Google Gemini AI. For the definitive source of truth, please refer to the source code and the official WebGPU JS Specification (https://www.w3.org/TR/webgpu/)"——权威参考是 W3C 规范，源码 KDoc 由 AI 生成。
-
-[已验证: AndroidX main 分支 5 个源码文件 + api/current.txt, 一手 AOSP 路径；未经 Android 17 release tag 锚定，android-17.0.0_r1 上 webgpu 模块的实际集成状态需进一步验证]
-
-
-## API 选择对渲染性能的实际影响
-
-## API 选择对渲染性能的实际影响
-
-### 隐式优化 vs 显式控制
-
-OpenGL ES 的驱动会替开发者做很多"隐式优化"——自动合并 draw call、在后台编译着色器、预取纹理、调整 GPU 频率。这些优化让开发者用更少的代码获得不错的性能，但也意味着：不同厂商的驱动优化策略不同，同一个应用在不同设备上的性能表现可能差异巨大。这正是 Android GPU 碎片化问题的根源。
-
-Vulkan 则要求开发者自己做这些优化。它不会替你合并 draw call、不会自动预编译着色器、不会隐式同步 CPU 和 GPU。如果开发者不主动管理 Pipeline Cache、不预创建 Pipeline、不做正确的同步，Vulkan 的性能可能比 OpenGL ES 更差。但反过来，如果开发者做对了这些优化，Vulkan 可以提供 OpenGL ES 无法达到的性能上限。
-
-这个权衡可以总结为：**OpenGL ES 的性能下限高、上限低；Vulkan 的性能下限低、上限高。**
-
-### 游戏引擎的 API 选择
-
-主流游戏引擎的 API 选择策略：
-
-| 引擎 | 默认 API | 策略 |
+| 场景 | 优先评估 | 原因 |
 |---|---|---|
-| Unity | Vulkan (Android) | 2020+ 默认 Vulkan，GLES 作为 fallback |
-| Unreal Engine | Vulkan | Android 平台仅 Vulkan（ES3.2 作为降级备选） |
-| Godot | Vulkan (4.x) / GLES (3.x) | 4.x 默认 Vulkan Clustered，GLES 兼容模式可选 |
+| 已稳定运行的 2D、滤镜或轻量 3D GLES 项目 | 保持 GLES，并在目标设备测试 ANGLE | 重写成本可能高于 API 开销收益 |
+| 高 draw count、大型材质系统、复杂资源流式加载 | Vulkan | 更容易控制命令录制、pipeline、内存和同步 |
+| 使用 Unity、Unreal 等成熟引擎 | 采用引擎已验证的 Vulkan / GLES 路径 | 引擎版本、渲染后端和设备名单比手写 API 偏好更关键 |
+| 需要兼容旧 GLES 代码，同时评估 Vulkan 驱动 | GLES + ANGLE A/B 测试 | 应用接口保持不变，可比较两种 GLES 实现 |
+| 新的 Kotlin / Java 图形或 GPU 计算项目 | 评估 AndroidX WebGPU preview | 接口更高层，但要接受 alpha 阶段变化 |
+| 依赖特定 Vulkan extension、显式显存预算或厂商工具 | Vulkan | WebGPU / GLES 不一定暴露所需控制面 |
 
-[已验证: Unity 2020+ release notes, Unreal Engine 5 Android requirements, Godot 4.x documentation]
+“Vulkan 比 GLES 快多少”没有脱离 workload 的固定答案。若 CPU 时间主要耗在游戏逻辑，换 API 不会缩短逻辑；若 GPU 被 fragment shader 或带宽压满，降低 draw-call 驱动开销也不会直接解决；若首帧卡在 shader / pipeline 编译，则缓存、预热和变体管理往往比 API 标签更重要。
 
-对于使用游戏引擎的开发者，通常不需要关心底层 API 选择——引擎已经做好了适配。但如果开发自定义渲染引擎或需要极致性能的场景（AR/VR、实时视频处理），直接使用 Vulkan 是更好的选择。
+### 7.2 Vulkan 的采用条件
 
-## 图形 API 与 Perfetto / 工具分析
+项目适合 Vulkan，通常至少满足以下条件：
 
-### 在 Perfetto 中识别图形 API
+- 团队能维护 validation、GPU crash dump、设备兼容名单和降级路径；
+- 引擎能管理多帧并行的资源生命周期，不依赖频繁 `vkDeviceWaitIdle()`；
+- command recording、descriptor、pipeline cache 和 allocator 有清晰所有权；
+- 对 surface 旋转、生命周期、swapchain 重建、颜色空间和 protected content 有测试；
+- 有足够目标设备验证厂商 ICD，而不只在模拟器或单台旗舰机测试。
 
-在 Perfetto 里，最容易出错的地方是把不同层次的数据源混成一条因果链。更稳妥的读法是先分清“这个数据源到底观测的是 CPU API 调用、GPU work submission，还是进程装载状态”。
+如果这些条件尚不具备，先优化成熟 GLES 路径通常更稳。也可以使用已有 RHI 或引擎后端，把 API 差异限制在渲染抽象层。
 
-| 数据源 / 观察面 | 我们能看到什么 | 不能单独回答什么 |
+### 7.3 从 GLES 迁移时先保存可比证据
+
+迁移前先固定相同的场景、分辨率、刷新率、温度窗口和画质设置，记录：
+
+- 应用逻辑、render preparation、driver 调用分别占多少 CPU 时间；
+- draw / dispatch 数量、pipeline 变体、纹理上传和显存峰值；
+- GPU 各阶段、带宽、频率与热降频；
+- acquire、submit、present、SurfaceFlinger latch 和 display present 时间；
+- 首帧、切场景、后台恢复和旋转时的缓存行为。
+
+随后建立 Vulkan capability matrix，再逐步迁移资源、shader、render pass / dynamic rendering、同步和 swapchain。每完成一段都与 GLES 基线比较。这样能知道收益来自并行录制、资源策略、pipeline 预热还是驱动差异，也能及时发现画质或同步错误。
+
+## 8. 性能分析：沿一帧向下定位
+
+### 8.1 CPU 侧
+
+先找应用掌握的 render loop。GLES 常见边界是 `eglSwapBuffers()`；Vulkan 还应观察 acquire、command recording、`vkQueueSubmit*()` 与 `vkQueuePresentKHR()`。线程名字只能当线索，调用栈、应用 trace marker 和提交事件更可靠。
+
+| 现象 | 可能原因 | 下一步证据 |
 |---|---|---|
-| GPU Activity / `gpu.renderstages` | 驱动暴露出来的 GPU 阶段、queue work、部分 `vk*` 或 vendor slice 名称 | 不能只凭一个 `vkQueueSubmit` 就断定“应用一定是原生 Vulkan”或“一定是 GLES 经 ANGLE” |
-| `gpu.counters` | 频率、利用率、带宽等时间序列 | 反映负载，不直接反映 API 选路 |
-| 进程 maps / 已加载共享库 | `libEGL.so`、`libGLESv2.so`、`libvulkan.so`、ANGLE 相关库是否出现 | 很多栈会同时加载多种库，不能只凭 loaded libs 判断最终渲染后端 |
-| App 侧自检日志 | 当前进程向上暴露的 renderer / backend 信息 | 需要应用配合，单独使用时也看不到 GPU 负载细节 |
+| `eglSwapBuffers()` 很长 | driver flush、无空闲 buffer、release fence、swap interval、pacing | 线程状态、BufferQueue 深度、GPU queue、fence |
+| `vkAcquireNextImageKHR()` 很长 | 没有可用 image、consumer 释放晚、FIFO 节拍、surface 变化 | image count、present mode、release fence、返回码 |
+| command recording 很长 | 单线程瓶颈、pipeline / descriptor 查找、内存分配、锁竞争 | worker 分布、调度延迟、allocator / cache marker |
+| submit 很快但 GPU 晚 | shader、overdraw、带宽、同步 bubble、频率或热限制 | GPU renderstage、counter、频率、fence signal |
+| buffer 已 queue 但未及时显示 | acquire fence 晚、错过 latch、目标时间未到、合成或 HWC 延迟 | layer trace、FrameTimeline、SF/HWC slice、present fence |
 
-靠谱的做法是把这些信号组合起来：先用 app 侧自检或 driver selection 配置确认“这次想走哪条路”，再用 maps 和 Perfetto 看“实际加载了什么、GPU 工作怎么分布”，同时把 Frame Timeline 里的帧结果对上去。这样我们才能区分 native Vulkan、native GLES，以及 GLES-over-ANGLE 这三类路径，而不是被某一个 slice 名字带偏。
+`eglSwapBuffers()` 或 `vkQueuePresentKHR()` 返回都不是“用户已经看到这一帧”。显示时间需要继续跟到 BufferQueue、SurfaceFlinger、HWC 和 display present。只有把 producer 完成 fence 与 display present fence分开，才不会把 GPU 完成误写成屏幕显示。
 
-GPU counter 的配置方式（在 TraceConfig 中）：
+### 8.2 ANGLE 侧
 
-```protobuf
-// Perfetto TraceConfig GPU counter 配置
-data_sources {
-    config {
-        name: "gpu.counters"
-        gpu_counter_config {
-            counter_period_ns: 1000000  // 1ms 采样间隔
-            counter_ids: 1  // 按需选择 GPU counter ID
-            counter_ids: 2
-            counter_ids: 3
-        }
-    }
-}
-```
+ANGLE 路径要拆成应用 GLES、ANGLE 状态跟踪 / shader 翻译，以及 Vulkan driver / GPU 三段。大量细碎状态切换可能增加翻译成本；pipeline cache 命中、厂商 Vulkan 驱动质量也可能让它优于原生 GLES。
 
-注意：`counter_period_ns` 是 Perfetto `GpuCounterConfig` 的正确字段名；`counter_ids` 为 repeated 字段，每个 ID 单独一行。如果 GPU producer 支持 `counter_names`，也可以用名称代替 ID，但需要确认目标设备的 producer 实现。
+AGI 适合检查 Vulkan queue、shader 和 GPU counter；Perfetto 适合把应用线程、调度、GPU、BufferQueue、SurfaceFlinger 与 FrameTimeline 放到同一时间轴。某些 trace 中看到 Vulkan slice，只能证明该层存在 Vulkan 工作，不能据此断言应用直接使用 Vulkan：ANGLE、HWUI 或系统 RenderEngine 都可能提交 Vulkan。
 
-因此，`gpu.counters` 更适合回答“这一段 GPU 忙不忙、频率高不高”，不适合单独回答“到底是 GLES 还是 Vulkan”。只有在我们已经通过进程 maps、driver selection 或 app 侧日志确认了 API 路径之后，这些 counters 才能作为性能分析证据继续往下用。
+### 8.3 Queue stuffing 与延迟
 
-[待补充: Perfetto 中 renderstages / maps / Frame Timeline 的三层对照截图]
+producer 持续尽快提交会逐渐占满可用 buffer。随后 render thread 周期性阻塞在 swap 或 acquire，帧率看似稳定，输入采样却落在更早的一帧，触控到显示延迟增加。
 
-### AGI 与不同 API 的兼容性
+修复方向包括匹配目标刷新率、减少不必要的 in-flight frame、推迟输入采样和采用明确的 frame pacing。Swappy 可以包装 GLES 的 swap 或 Vulkan present，并结合 Choreographer、presentation timestamp 与 fence 控制节拍；它属于应用库，不是 `android-17.0.0_r1` 平台内部固定路径。
 
-Android GPU Inspector（AGI）是 Google 官方的 GPU 分析工具（详见 §14.8）。AGI 的支持边界要按具体版本和 capture mode 看，正文里只保留稳定结论：
+## 9. 版本迭代：保留历史，结论止于 Android 17
 
-- **Vulkan 应用**：AGI 可以直接捕获和分析 Vulkan 调用，适合做 draw call、render pass 和 GPU 时间分布分析
-- **OpenGL ES 应用**：常见做法是借助 ANGLE 或图形重放路径把 GLES 工作映射到 Vulkan 视角，因此可见内容会受设备、驱动和 capture 模式限制
-- **工具能力更新**：长时 system trace、帧截图、Frame Profiler 这类能力更新很快，实战时直接对照当期 AGI release notes，不要把某一年的路线图当成稳定事实
+- Android 1.0 / API 1：提供 OpenGL ES 1.x。
+- Android 2.2 / API 8：OpenGL ES 2.0 进入 SDK。
+- Android 4.3 / API 18：OpenGL ES 3.0。
+- Android 5.0 / API 21：OpenGL ES 3.1。
+- Android 7.0 / API 24：Vulkan 1.0 与 OpenGL ES 3.2 平台支持。
+- Android 9 / API 28：平台加入 Vulkan 1.1。
+- Android 13 / API 33：新设备 Vulkan 基线提升到 1.3。
+- Android 15 / API 35：官方进一步明确 ANGLE 作为可选 GLES-on-Vulkan 层及后续路线。
+- Android 16 / API 36：首发设备 Vulkan 基线提升到 1.4。
+- Android 17 / API 37：CDD 增加 present、外部同步与 layer 注入要求；`VP_ANDROID_17_requirements` 定义该代首发/重新冻结芯片组的 Vulkan 1.4.335 能力集合；应用可通过 `com.android.graphics.driver.prefer_angle` 表达 ANGLE 偏好；AndroidX WebGPU 仍处预览阶段。
 
-[已验证: AGI 官方文档, developer.android.com/agi]
+这里没有把“平台新增”“兼容设备要求”“新芯片组要求”和“活跃设备覆盖率”写成一条递增版本线。它们回答的问题不同，也是做设备分层时最容易混淆的地方。
 
-### Frame Timeline 中的表现差异
+## 10. 常见误区
 
-Frame Timeline（帧时间线）要求 Android 12(S) 及以上。`Expected Timeline` / `Actual Timeline` 这组轨道适合回答“哪一帧晚了、晚在 App 还是晚在 SurfaceFlinger”。如果你在 Android 10-11 上排查，UI 里不会看到这组轨道，对应的 FrameTimeline 表也不存在。
+### Vulkan 没有 driver overhead
 
-截至 2026-04，Perfetto 公开文档仍把 `SurfaceView` 标成 `SurfaceViews are currently not supported`。Android 15 引入的 `ProfilingManager`，以及 Android 16 新增的 system-triggered profiling，解决的是 trace 更容易抓、关键事件更容易关联；它们不等于 Frame Timeline 已经补齐 `SurfaceView` 的 `Actual Timeline`。所以在游戏、相机预览、播放器这类 `SurfaceView` 场景里，更稳的入口仍是 `SurfaceView` buffered frames、`gpu.renderstages`、Swappy stats，以及应用自己的 driver / backend 自检日志。Frame Timeline 关注的是 frame result，不直接告诉我们这一帧背后走的是 native Vulkan、native GLES 还是 ANGLE；具体的 Swappy 验证路径见 §2.17。
+Vulkan 减少了部分隐式状态推导，并允许应用更早组织工作，但 loader、ICD、内存管理、descriptor、pipeline 和内核提交仍有成本。目标是让成本更可控，不是让成本消失。
 
-[已验证: Perfetto 官方文档, https://perfetto.dev/docs/data-sources/frametimeline]
+### Vulkan 多线程录制一定更快
 
-## 迁移策略与最佳实践
+只有 workload 可拆分、每线程资源独立且 CPU 核数足够时才可能获益。任务过小或共享锁过多时，并行录制会增加开销。
 
-### 何时选择 Vulkan，何时保持 GLES
+### Android 17 上 GLES 都会走 ANGLE
 
-```text
-新项目？
-  ├─ 是 → 直接使用 Vulkan（推荐）
-  ├─ 否（已有 GLES 代码）
-  │   ├─ 性能关键型（游戏/AR/VR）→ 评估原生 Vulkan，并在目标设备上对比 native GLES / ANGLE 路径
-  │   ├─ 普通 UI 应用 → 先维持 GLES，但在 Android 15+ 目标设备上验证是否被切到 ANGLE
-  │   └─ WebView/WebGL → 额外检查 Chromium / WebView backend，不直接套用系统 ANGLE 结论
-  └─ 使用游戏引擎 → 跟随引擎默认设置，再用目标设备做实测
-```
+CDD 没有这一规定。系统默认、allowlist / deny 规则、设备等级、vendor API level、开发设置和 manifest 都可能影响选路。以进程运行时信息为准。
 
-**直接使用 Vulkan 的场景**：
-- 新开发的 3D 游戏或 AR/VR 应用
-- 需要多线程 GPU 命令构建的场景
-- 对 GPU 内存布局有精细控制需求的场景
-- 需要使用 Compute Shader 做大规模并行计算
+### ANGLE 只是兼容层，所以一定更慢
 
-**继续维护 GLES 的场景**：
-- 现有的 GLES 应用，目标设备实测稳定
-- 以 2D UI 为主，且没有明确的 CPU driver bottleneck
-- 跨平台代码仍需要保持 GLES 抽象层
-- 开发资源有限，但要把 native GLES / ANGLE 两条路径纳入回归范围
+ANGLE 多了一层状态翻译，也可能绕开质量较差的厂商 GLES 实现，并利用较好的 Vulkan 驱动。结论只能来自同设备、同场景、同温度条件下的 A/B 测试。
 
-### 从 GLES 迁移到 Vulkan 的关键步骤
+### `vkQueuePresentKHR()` 返回表示画面已显示
 
-迁移不是简单的 API 替换。以下是需要重点关注的事项：
+present 只是把 swapchain image 交给 presentation engine。Android 上还要经过 native window、BufferQueue、SurfaceFlinger、HWC 和显示设备。若要判断可见时间，应使用 present timing、FrameTimeline、layer trace 和 display fence 等证据。
 
-1. **Pipeline 预创建**：Vulkan 的 Pipeline 创建是耗时操作（可能数十毫秒）。必须在应用启动或场景加载时完成所有 Pipeline 的创建，绝不能在渲染循环中创建 Pipeline
-2. **Pipeline Cache 持久化**：将 Pipeline Cache 序列化到磁盘，下次启动时加载。这样可以减少重复建管线的冷启动开销，但具体收益取决于 workload 和驱动实现
-3. **内存管理**：Vulkan 要求应用自己管理 GPU 内存。移动设备使用统一内存架构（CPU/GPU 共享物理内存），`VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT` 的选择策略与桌面端不同
-4. **Pre-rotation**：设备旋转时，Vulkan 应用需要自己在渲染时处理画面旋转，否则 SurfaceFlinger 会做额外的旋转合成，导致性能下降
-5. **验证层**：开发阶段启用 Vulkan Validation Layer（`VK_LAYER_KHRONOS_validation`）检查 API 使用错误，发布时关闭。Android 官方文档把它定位为开发期的 error-checking 机制，用来避免 release build 的 performance penalty。它会拦截 Vulkan entry point 做额外校验，不要把开启验证层时测到的 CPU 帧时间直接当成正式性能数据
+### 满足 Android 17 就可以跳过 capability query
 
-[已验证: 官方文档, developer.android.com/ndk/guides/graphics, developer.android.com/ndk/guides/graphics/validation-layer]
+升级设备、不同设备类型、系统属性、平台 flag 和 ICD 能力都会影响结果。版本号适合筛选大范围，feature / extension / format 查询负责最终决策。
 
-### Android 15+ 图形栈收敛后的实际检查项
+## 11. 源码阅读入口
 
-| 场景 | 我们该关注什么 | 建议动作 |
-|---|---|---|
-| 现有 GLES 应用 | 该包在目标设备上究竟走 native GLES 还是 ANGLE | 用 developer option、app 日志、进程 maps 做一次确认 |
-| 游戏 / 重负载渲染 | ANGLE 是否带来额外 shader / pipeline 抖动，或绕开原生 driver bug | 分别测首帧、稳态帧、shader warm-up |
-| Vulkan 应用 | 是否满足 Android 13 / 16 的 Vulkan 1.3 / 1.4 基线，以及目标 AVP profile（旧资料常写 ABP） | 对照 `implement-vulkan` 和 AVP 页面做 capability audit |
-| WebView / WebGL / WebGPU | Chromium / Dawn backend 与系统 GLES driver 是否一致，浏览器侧是否单独限制某条能力 | 单独看 Chromium / WebView / Dawn 的构建与运行时配置 |
-| NDK 图形代码 | 代码是否把“GLES == 厂商原生驱动”当成硬编码假设 | 清理这些假设，改成运行时检测 |
+| 目标 | Android 17 源码 |
+|---|---|
+| ANGLE 选路策略 | `frameworks/base/core/java/android/os/GraphicsEnvironment.java` |
+| native 侧 ANGLE 配置 | `frameworks/native/libs/graphicsenv/GraphicsEnv.cpp` |
+| EGL 驱动加载顺序 | `frameworks/native/opengl/libs/EGL/Loader.cpp` |
+| Vulkan Android WSI | `frameworks/native/vulkan/libvulkan/swapchain.cpp` |
+| loader extension 暴露条件 | `frameworks/native/vulkan/libvulkan/driver.cpp` |
+| Android 私有 WSI 接口 | `frameworks/native/vulkan/include/vulkan/vk_android_native_buffer.h` |
+| Android 17 Vulkan 芯片组要求 | `frameworks/native/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json` |
+| kernel fence 文件桥接 | `drivers/dma-buf/sync_file.c` |
 
-## 与其他章节的关系
-
-- **§2.1 Android 渲染架构全景**：本章聚焦 API 层面，§2.1 聚焦渲染架构整体
-- **§2.9 渲染机制的版本演进**：§2.9 从渲染管线视角讲 HWUI→SkiaGL→SkiaVulkan 的演进，本章从 API 层面讲 GLES→Vulkan 的演进
-- **§2.10 GPU 渲染深入**：§2.10 分析 GPU 内部的工作机制和性能分析，本章分析上层 API 的选择对性能的影响
-- **§14.8 GPU 图形调试与分析工具**：AGI、RenderDoc 等工具的详细使用方法
-
-## 常见问题与误区
-
-**误区：ANGLE 一定会让所有 GLES 应用变慢**
-实际情况：ANGLE 没有统一适用的固定性能百分比。它的开销取决于 workload、shader 首次编译、状态切换密度，以及原生 GLES driver 的质量。可靠的结论只能来自目标设备实测。
-
-**误区：Android 15+ 之后所有 GLES 应用都会自动走 ANGLE**
-实际情况：是否走 ANGLE，取决于系统 driver、全局开关、per-app override、平台 allowlist，以及 loader 的 fallback 路径。官方 roadmap 说的是“更多新设备会把 ANGLE 作为 GL system driver”，不是“所有设备、所有应用今天都已经统一切换”。
-
-**误区：WebView / WebGL 一定受系统 ANGLE 路线控制**
-实际情况：WebView / Chromium 的 GPU backend 先在 SkiaVulkan 和 SkiaGL 等路径之间选择。SkiaVulkan 路径绕过 GLES / ANGLE；SkiaGL 路径才会落到系统 GLES driver 选路。分析这类问题时，先验证 Chromium / Skia / WebView 当前 build 和运行时 backend。
-
-**误区：Vulkan 一定比 OpenGL ES 快**
-实际情况：如果 Vulkan 代码没有做 Pipeline 预创建、cache 预热和正确的同步，性能可能反而比 GLES 更差。Vulkan 提供了更高的性能上限，但也要求更多的工程投入。
+阅读源码时先确认 tag。本文的平台文件均以 `android-17.0.0_r1` 为准，kernel 文件以 `android17-6.18-2026-06_r6` 为准。厂商 ICD 不在 AOSP 中，涉及 shader compiler、GPU scheduler、内存压缩和硬件 counter 的结论还要结合具体 SoC 文档与设备 trace。
 
 ## 参考资料
 
-- [Android NDK Graphics Guide](https://developer.android.com/ndk/guides/graphics) — GLES / Vulkan 官方入口
-- [Implement Vulkan](https://source.android.com/docs/core/graphics/implement-vulkan) — Android 版本与 Vulkan 能力基线
-- [Android Vulkan Profile](https://developer.android.com/ndk/guides/graphics/android-vulkan-profile) — AVP 2025（旧称 ABP）与 profile 说明
-- [Android 15 Features: Graphics](https://developer.android.com/about/versions/15/features#graphics) — ANGLE as optional layer 与官方 roadmap
-- [Android Dynamic Performance Framework](https://developer.android.com/games/optimize/adpf) — 热 / 功耗信号与 hint session 能力
-- [Vulkan validation layers on Android](https://developer.android.com/ndk/guides/graphics/validation-layer) — Validation Layer 的使用边界
-- [WebGPU for Android](https://developer.android.com/develop/ui/views/graphics/webgpu) — WebGPU 在 Android 原生应用中的定位
-- [AndroidX WebGPU release notes](https://developer.android.com/jetpack/androidx/releases/webgpu) — AndroidX WebGPU 与 Dawn 更新记录
-- [Dawn README](https://github.com/google/dawn/blob/main/README.md) — Dawn 与 Chromium WebGPU 的关系
-- AOSP 源码路径：`frameworks/base/core/java/android/os/GraphicsEnvironment.java`（driver selection / per-app override）、`frameworks/native/opengl/libs/EGL/Loader.cpp`（ANGLE / native / updated driver 选路）、`frameworks/native/libs/graphicsenv/GraphicsEnv.cpp`（ANGLE APK / system setup 与 rules string 接口）、`external/angle/`（ANGLE 实现）
-
----
-
-<!-- 源码调研: ANGLE Vulkan Sync + RenderThread CPU Affinity -->
-
-## 附：ANGLE Vulkan 同步机制（源码级）
-
-### EGL_ANDROID_native_fence_sync 的实现路径
-
-ANGLE 的 Vulkan backend 在 Android 上通过 `EGL_ANDROID_native_fence_sync` 扩展实现 EGL Sync 对象与 Vulkan 同步原语的互操作。该扩展使得 EGL fence sync 对象可以与 native fence fd 关联，从而在 EGL 与 Vulkan 之间共享同步状态。
-
-**关键调用链**（ANGLE Vulkan backend，源码位于 `external/angle/src/libANGLE/renderer/vulkan/android/`）：
-
-```text
-eglCreateSync(EGL_ANDROID_native_fence_sync, fd)
-  ├─ if fd provided: vkImportFenceFdKHR → VkFence
-  └─ if no fd: create VkFence → vkGetFenceFdKHR → export fd
-
-eglClientWaitSync(eglSync, timeout)
-  → vkWaitForFences(fence, VK_TRUE, timeout)
-
-eglWaitSync(eglSync, flags)
-  → dup(nativeFenceFd) → vkImportSemaphoreFdKHR → VkSemaphore
-  → add as wait semaphore to next vkQueueSubmit
-```
-
-### vkAcquireImageANDROID：EGL ↔ Vulkan 图像同步
-
-`vkAcquireImageANDROID`（定义于 `vk_android_native_buffer.h`）是 Android 上 Vulkan 获取 EGL 管理图像的关键函数。其签名包含 `nativeFenceFd` 参数，允许 Vulkan 端等待 EGL 端完成图像处理后再复用：
-
-```cpp
-// vkAcquireImageANDROID signature
-VkResult vkAcquireImageANDROID(
-    VkDevice device,
-    VkImage image,
-    int nativeFenceFd,    // from EGL side — represents GPU completion point
-    VkSemaphore semaphore,
-    VkFence fence);
-```
-
-末尾两个参数分别接收 `VkSemaphore` 和 `VkFence`。这个函数不会返回 `VkImageLayout*`；把末尾参数写成 layout 指针，会把 Android 私有 WSI 扩展和其他 image acquire 路径混在一起。
-
-**典型使用场景**：
-1. GLES App 渲染完成 → 创建 EGL fence sync → 获得 fd
-2. 同一 Surface 切换到 Vulkan 消费 → `vkAcquireImageANDROID(waitFd)` 阻塞直到 GLES 完成
-3. 两个 API 之间的资源安全共享
-
-### vkQueuePresentKHR 的同步陷阱
-
-**核心问题**：`vkQueuePresentKHR` **不返回 fence 或 semaphore** 告知何时 presentation 操作完成。这导致 ANGLE 等 Vulkan 消费者无法安全复用 wait semaphore。
-
-**Validation Layer 警告**（Vulkan SDK 1.4.313+）：
-> "your VkSemaphore is being signaled by VkQueue, but it may still be in use by VkSwapchainKHR"
-
-**解决方案**：
-- **per-swapchain-image semaphore**：为每个 swapchain image 分配独立 "submit finished" semaphore，而非 per-frame
-- **VK_KHR_swapchain_maintenance1**：允许 `vkQueuePresentKHR` 指定 fence，解决了这个长期问题
-
-### Perfetto Trace 切片命名影响
-
-当 ANGLE 开启 Vulkan backend 时，GPU 同步点的 Trace 命名从 GLES 风格变为 Vulkan 风格：
-
-| 场景 | GLES/EGL 路径 | Vulkan/ANGLE 路径 |
-|------|-------------|-----------------|
-| Frame Signal | `eglSwapBuffers` | `vkQueuePresentKHR` |
-| Wait 切片 | `GLFence::ClientWait` | `vkWaitForFences` |
-| Image 获取 | N/A | `vkAcquireNextImageKHR` |
-| Semaphore 操作 | `eglClientWaitSyncKHR` | `vkSemaphoreWait` |
-
----
-
-## 附：RenderThread CPU Affinity（SCHED_FIFO 调度机制）
-
-### 系统级调度策略控制
-
-RenderThread 的 CPU 亲和性通过 cgroup/task_profiles 体系由系统统一分配，**不是**通过显式 `sched_setaffinity` 调用管理。
-
-**关键源码路径**：
-```text
-frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
-```
-
-RenderThread 调度策略由 `sys.use_fifo_ui` 系统属性控制：
-
-```java
-// ActivityManagerService.java (simplified from AOSP)
-if (SystemProperties.get("sys.use_fifo_ui", "0").equals("1")) {
-    // Apply SCHED_FIFO to UI thread and RenderThread of top-app
-    final int renderThreadTid = renderThread.getTid();
-    Process.setThreadScheduler(renderThreadTid,
-                               Process.SCHED_FIFO | Process.SCHED_RESET_ON_FORK,
-                               1 /* priority */);
-}
-```
-
-**完整调度链**：
-```text
-sys.use_fifo_ui=1
-  → ActivityManagerService identifies top-app process
-  → ProcessList.SCHED_GROUP_TOP_APP
-  → setThreadScheduler(RenderThread, SCHED_FIFO, 1)
-  → RenderThread gets SCHED_FIFO with priority 1
-```
-
-### cgroup 资源组分配
-
-`SCHED_GROUP_TOP_APP` 是 Android 资源管理框架的调度组概念，与 cpuset 相关但不完全等同于 cpuset 绑定：
-
-```text
-/dev/cpuset/
-├── cpuset.top-app/      ← TOP_APP 调度组的 cpuset
-│   ├── cpus             ← 大核（big cores）分配
-│   └── mems             ← 对应 memory nodes
-```
-
-RenderThread 作为 top-app 进程内的线程，理论上可调度到大核。
-
-### 早期实现的性能问题
-
-RenderThread SCHED_FIFO 的早期实现曾导致显著性能回退：
-
-| 版本 | 问题 | 后果 |
-|------|------|------|
-| 早期实现 | RenderThread load balancer 非 capacity-aware | RenderThread 抢占大核导致 UI thread 被驱逐到小核 |
-| 影响 | App 启动速度降低 **30%** | 关键场景性能降级 |
-| 修复 | 引入 capacity-aware RT load balancer | 95th/99th percentile 帧时间降低 10-15% |
-
-### RenderThread 架构确认
-
-Android SDK 文档明确说明：所有 `HardwareRenderer` 实例共享同一个 render thread。源码路径为 `frameworks/base/graphics/java/android/graphics/HardwareRenderer.java`。如果需要追踪 native 层线程行为，对应的实现路径是 `frameworks/base/libs/hwui/renderthread/RenderThread.cpp` 和 `RenderProxy.cpp`——`RenderProxy` 在 native 层持有 `RenderThread` 引用，由 `RenderThread::create()` 保证进程内单例。
-
-> **注意**：AOSP 中未找到 Android 15+ 新增"更激进的 CPU 大核绑定"相关 API 或参数，该说法来源为外部讨论，未经一手源码验证。
-
-[已验证: AOSP ActivityManagerService.java, HardwareRenderer.java, vkAcquireImageANDROID, vkQueuePresentKHR spec]
+- [Android 17 Compatibility Definition](https://source.android.com/docs/compatibility/17/android-17-cdd)
+- [Implement Vulkan](https://source.android.com/docs/core/graphics/implement-vulkan)
+- [Android Vulkan Profiles](https://developer.android.com/ndk/guides/graphics/android-vulkan-profile)
+- [Vulkan on Android 与 ANGLE](https://developer.android.com/games/develop/vulkan/overview)
+- [WebGPU on Android](https://developer.android.com/develop/ui/views/graphics/webgpu)
+- [Get started with WebGPU](https://developer.android.com/develop/ui/views/graphics/webgpu/getting-started)
+- [AndroidX WebGPU release notes](https://developer.android.com/jetpack/androidx/releases/webgpu)
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- `Writer/rendering_pipelines/S08_native_graphics_type.md`（本章的 Native Graphics 架构基线）
