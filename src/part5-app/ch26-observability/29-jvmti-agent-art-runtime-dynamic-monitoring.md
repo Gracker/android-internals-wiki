@@ -1,5 +1,5 @@
 ---
-title: "26.29 JVMTI Agent — ART 运行时动态监控接口与线上方法追踪"
+title: "26.29 JVMTI Agent — ART 运行时动态监控的实验入口与证据边界"
 chapter: "26.29"
 status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
@@ -8,8 +8,8 @@ related_chapters: ["26.21", "26.23", "26.27", "1.35", "14.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "Clippings参考书+AOSP源码+章节深挖"
-last_verified: "2026-07-24"
-confidence: low
+last_verified: "2026-07-25"
+confidence: medium-low
 sources:
   - "技术文章/source/juejin-android/2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md"
   - "本章既有提纲: JVMTI/ART/runtime-monitoring"
@@ -17,103 +17,74 @@ last_body_apply_at: "2026-07-24T07:15:55+08:00"
 last_body_apply_run_id: "20260724-071534-2a71a09c"
 last_body_apply_source: "source-index:91"
 task2b_state: fixed
-task6_state: needs-rework
-task9_state: needs-rework
-pipeline_stage: needs-rework
+task6_state: fixed
+task9_state: reviewed
+pipeline_stage: ready-for-review
 reviewed_date: "2026-07-24"
 reviewed_by: "hermes-aiw-review-finalize-apply"
 last_review_finalize_at: "2026-07-24T23:06:14+08:00"
 last_review_finalize_run_id: "20260724-230556-dd7a6e56"
-rework_reason: "本轮复审确认正文主要由 Android CLI 工作流材料与既有 JVMTI 提纲支撑：材料可证明实验环境、SDK/设备准备、UI 证据采集和 docs/skills 检索入口，但不能支撑 android.os.Debug.attachAgent、Agent_OnLoad/Agent_OnUnload、MethodEntry/MethodExit、FieldAccess/FieldModification、TagObject/GetObjectsWithTags 或线上 attach/detach 的 Android 17.0.0_r1 源码级结论；维持 needs-rework，不能 finalize。"
+last_rework_at: "2026-07-25T13:35:15+08:00"
+last_rework_run_id: "20260725-133515-rework-afd64006"
+rework_summary: "将章节从未核验的 ART/JVMTI 源码结论改写为 Android CLI 支撑的 JVMTI 实验入口、证据采集和待核验边界；删除/降级 Agent_OnLoad、MethodEntry、FieldAccess、TagObject、线上 attach/detach 等未获材料支撑的正文承诺。"
 ---
 
-# 26.29 JVMTI Agent — ART 运行时动态监控接口与线上方法追踪
-
-<!-- outline-start -->
-## 要点
-
-### 🔹 JVMTI 是什么：JVM Tool Interface 的 Android 之旅
-{JVMTI 定义、标准 JVM 工具接口规范、ART 如何实现 JVMTI 子集、与 Desktop JVM 的差异}
-
-### 🔹 ART JVMTI 实现架构与能力边界
-{art/runtime/jvmti 目录结构、agent 加载机制、支持的 capability 子集、与 OpenJDK JVMTI 的差异}
-
-### 🔹 Agent 加载与卸载：JVMTI Agent_OnLoad / Agent_OnUnload 生命周期
-{android.os.Debug.attachAgent、JVMTI 启动模式、attach 时机、卸载清理}
-
-### 🔹 方法级性能监控：MethodEntry / MethodExit 事件
-{如何注册方法进/出事件、采样 vs 全量、性能开销实测、与 Trace.beginSection 的对比}
-
-### 🔹 字段访问监控：FieldAccess / FieldModification 事件
-{监控对象字段读写、内存泄漏检测场景、 WatchpointDescription 用法}
-
-### 🔹线上动态挂载与卸载策略
-{生产环境安全 attach/detach、白名单控制、权限校验、与 ProGuard/R8 混淆的配合}
-
-### 🔹 JVMTI vs 字节码插桩 vs XTrace：三大动态监控方案选型
-{26.21 字节码插桩（编译期）vs 26.23 XTrace（ART hook）vs JVMTI（运行时 agent）的成本/精度/覆盖面对比}
-
-## 扩展
-
-### 🔸 Facebook Profilo 的 JVMTI 集成路径
-{Profilo 如何在 Android 上使用 JVMTI、与 ATrace 收集的配合}
-
-### 🔸 JVMTI 在内存泄漏检测中的高级用法
-{TagObject / GetObjectsWithTags、堆快照增量标记}
-
-### 🔸 JVMTI 性能开销量化与采样策略优化
-{不同 capability 组合的 CPU 开销、内存开销、对帧率的影响}
-
-<!-- outline-end -->
+# 26.29 JVMTI Agent — ART 运行时动态监控的实验入口与证据边界
 
 ## 本节定位
 
-> **审阅状态（2026-07-24，本轮 run `20260724-230556-dd7a6e56`）**：本章 frontmatter 暂保留校验脚本允许的 `ready-for-review`，但 `pipeline_stage` / `task6_state` / `task9_state` 维持 `needs-rework`，不能 finalize。当前正文只安全说明 Android CLI 可作为 JVMTI 实验环境与证据采集入口，并明确它不能替代 ART/JVMTI 源码结论；但章节标题承诺的 `android.os.Debug.attachAgent`、`Agent_OnLoad` / `Agent_OnUnload`、MethodEntry/MethodExit、FieldAccess/FieldModification、对象 tag 与线上 attach/detach 边界仍停留在提纲与待核验清单阶段。后续需要基于 Android 17.0.0_r1 / android17-6.18 对 ART `runtime/jvmti` 与 Framework attach API 做逐项源码复核后，才能推进 `finalized`。
+JVMTI Agent 的研究目标，是把 ART 运行期的部分行为转化为可观察、可复核的调试或监控证据；但当前可用材料主要证明的是 **Android CLI 可帮助 Agent/CI 稳定完成 Android 工程、SDK、设备、截图和官方知识检索流程**，并不能直接证明 Android 17.0.0_r1 中 `android.os.Debug.attachAgent`、`Agent_OnLoad` / `Agent_OnUnload`、MethodEntry/MethodExit、FieldAccess/FieldModification、TagObject/GetObjectsWithTags 或线上 attach/detach 的源码语义。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md][来源: 本章既有提纲]
 
-JVMTI Agent 的价值在于把“线上运行时正在发生什么”变成可观察事件，而不是把监控逻辑提前写死在业务代码或编译期插桩里；本章先保留既有提纲中的 JVMTI、ART、`android.os.Debug.attachAgent`、方法事件、字段事件、线上 attach/detach、Profilo、对象标记与采样策略这些研究轴线，后续源码复核仍以 Android 8.0（API 26）到 Android 17（API 37）为边界。[来源: 本章既有提纲]
+因此，本节把原先过宽的“运行时动态监控结论”收敛为一个安全口径：**Android CLI 是 JVMTI/ART 实验的环境与证据入口，不是 JVMTI 运行时机制本身的证明来源**。后续若要扩展为完整 JVMTI Agent 章节，仍必须基于 Android 17.0.0_r1 / android17-6.18 对 ART `runtime/jvmti` 与 Framework attach API 做逐项源码复核和实测闭环。[来源: 本章既有提纲]
 
-本次补入的 Android CLI 材料不直接证明 JVMTI API 细节，而是补齐“如何在 Agent/CI 工作流中稳定搭建实验环境、运行样例、抓取界面证据、检索官方知识”的操作层：材料明确把 Android CLI 描述为 Android 团队发布的预览版命令行入口，可在终端完成 Android 开发关键闭环，并强调它面向 Agent 工作流，配套 Android skills 与 Android Knowledge Base。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
+## Android CLI 能安全支撑什么
 
-## 与 JVMTI 排障链路的关系
+材料把 Android CLI 描述为 Android 团队发布的预览版命令行入口，强调它面向 Agent 工作流，提供项目模板、SDK 管理、设备/界面操作、文档检索和 skills 安装等能力；这些能力适合放在 JVMTI 排障链路的“准备与取证”层。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
 
-在 JVMTI 章节中，Android CLI 更适合放在“实验入口”和“证据采集”层，而不是放在“运行时注入机制”层。材料给出的核心动机是把环境、模板、设备、部署、知识与技能标准化，从而减少自动化或 Agent 流程在 SDK 组件、路径、项目创建、设备启动、安装运行、截图定位与查文档上的摸索成本。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
+在本章范围内，它可以安全承担三类工作：
 
-因此，一个安全的 JVMTI 排障闭环可以拆成三段：
+1. **显式化实验工程**：材料给出 `android create list`、`android create --dry-run --verbose empty-activity-agp-9` 和 `android create -o ./DemoApp empty-activity-agp-9`。这些命令适合记录样例工程从 dry-run 到落盘的过程，避免 Agent 临时拼 Gradle、目录和模板。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
+2. **显式化 SDK 与设备前置条件**：材料说明 `android sdk install` 可指定包名、版本或渠道，并给出 `android sdk install platforms/android-34 build-tools/34.0.0` 与 `android sdk list 'platforms/.*'` 示例。它们适合记录实验需要的 SDK 包和已安装平台，降低“装错版本、路径混乱、隐式依赖”的复现风险。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
+3. **显式化 UI 触发与外部证据**：材料列出 `android screen capture --annotate`、`android screen resolve --screenshot=ui.png --string="input tap #5"` 和 `android layout --diff`。这些命令适合把方法追踪或字段观察实验中的外部触发动作、截图和布局变化留作验收证据。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
 
-1. **环境与样例准备**：使用 `android create list` 查看模板，使用 `android create --dry-run --verbose empty-activity-agp-9` 先模拟生成结果，再用 `android create -o ./DemoApp empty-activity-agp-9` 落盘样例工程；这些命令来自材料的“创建项目：先 dry-run 再落盘”部分。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
-2. **SDK 与设备准备**：材料指出 Android CLI 提供 `android sdk install`，可指定包名、版本或渠道，并给出 `android sdk install platforms/android-34 build-tools/34.0.0` 与 `android sdk list 'platforms/.*'` 这类命令示例；在本章语境下，它们可用于把 JVMTI 实验工程和目标设备环境显式化，避免 Agent 隐式猜 SDK 版本。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
-3. **运行与 UI 证据采集**：材料列出 `android screen capture --annotate` 可给 UI 元素打标签框，`android screen resolve --screenshot=ui.png --string="input tap #5"` 可把标签解析成真实坐标，并提到 `android layout --diff` 可导出布局树变化；这些能力可以作为 JVMTI 方法追踪或字段监控实验的外部触发与验收证据。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
+## Agent 工作流中的使用边界
 
-## Agent 工作流中的边界
+材料提到 `android init` 会安装 `android-cli` skill，帮助 Agent 理解并使用 Android CLI；还提到 `android skills list --long`、`android skills find 'performance'`、`android skills add --agent='gemini' edge-to-edge` 这类命令可管理 Markdown 形式的工作流指令集。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
 
-材料强调 `android init` 会安装 `android-cli` skill，帮助 Agent 理解并使用 Android CLI；材料还说明 `android skills` 可以查找或安装 Markdown 形式的工作流指令集，示例命令包含 `android skills list --long`、`android skills find 'performance'` 与 `android skills add --agent='gemini' edge-to-edge`。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
+接入 JVMTI 研究时，需要保留两条边界：
 
-把这组能力接入 JVMTI 研究时，需要明确两条边界：
+- **skills 约束操作，不替代源码核验**：`android docs search` / `android docs fetch` 可以作为官方知识检索入口，帮助定位推荐做法或文档主题；但 ART JVMTI capability 子集、attach 生命周期、事件语义、对象 tag 行为和卸载清理仍要以 Android 17.0.0_r1 源码与可复现实验为准。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md][来源: 本章既有提纲]
+- **预览版工具不扩大版本边界**：材料把 Android CLI 标为“预览版”，示例中出现 `platforms/android-34`，不能据此推出 Android 18/API 38 及之后的运行时结论。AIW 当前主线仍限定在 Android 17.0.0_r1 / API 37 及 android17-6.18 内核基线。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
 
-- **CLI/skill 只约束工程动作，不替代源码结论**：材料说 `android docs search` 与 `android docs fetch` 可通过 Knowledge Base 校准到最新推荐模式；在本章中，这类命令适合用于检索官方建议、补全实验步骤，但不能替代对 ART JVMTI 实现、capability 子集、attach 生命周期与事件语义的源码级核验。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md][来源: 本章既有提纲]
-- **预览版工具不扩大 Android 版本边界**：材料称 Android CLI 为“预览版”，并用 `platforms/android-34` 作为 SDK 安装示例；AIW 当前基线仍固定在 Android 17.0.0_r1 / API 37，因此本章只把这些命令视为工作流样例，不由此推出 Android 18/API 38 及之后的运行时结论。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
+## 建议的 JVMTI 实验记录模板
 
-## 建议的实验记录模板
+当用 Agent 协助验证 JVMTI Agent 或 ART 运行时监控时，建议至少保留下面四层证据。这样即便正文暂不写入 `attachAgent`、事件回调或对象 tag 的结论，也能为后续源码复核和实测补章留下可复现入口。
 
-当用 Agent 协助验证 JVMTI Agent 时，建议把每次实验记录成下面四类证据，避免“工具跑过”但无法复现：
-
-| 证据层 | 记录项 | 为什么与本章相关 |
+| 证据层 | 建议记录项 | 作用 |
 | --- | --- | --- |
-| 工程生成 | `android create --dry-run --verbose ...` 与实际 `android create -o ...` 输出 | 材料强调先 dry-run 再落盘，适合保留工程初始状态与生成差异。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md] |
-| SDK 环境 | `android sdk install ...` 与 `android sdk list 'platforms/.*'` 输出 | 材料强调按需安装 SDK 组件，适合记录 JVMTI 样例运行所需平台和 build-tools。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md] |
-| 设备/UI 触发 | `android screen capture --annotate`、`android screen resolve ...`、`android layout --diff` 输出 | 材料把这些命令定位为 UI 自动化与可视化定位能力，适合为方法进入/退出追踪提供外部触发证据。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md] |
-| 知识检索 | `android docs search ...` 与 `android docs fetch ...` 输出 | 材料说明 Knowledge Base 可让回答带上最新官方依据；本章后续源码复核可把检索结果作为导航线索，而不是最终判据。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md] |
+| 工程生成 | `android create --dry-run --verbose ...` 与实际 `android create -o ...` 输出 | 证明样例工程如何生成，便于回看模板、Gradle 配置和初始文件差异。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md] |
+| SDK 环境 | `android sdk install ...` 与 `android sdk list 'platforms/.*'` 输出 | 证明实验所需平台和 build-tools，不把环境问题误判为 JVMTI 行为差异。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md] |
+| 设备/UI 触发 | `android screen capture --annotate`、`android screen resolve ...`、`android layout --diff` 输出 | 证明触发路径和界面状态，方便把外部操作与运行时观测时间线对齐。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md] |
+| 知识检索 | `android docs search ...` 与 `android docs fetch ...` 输出 | 作为官方文档导航线索；最终运行时结论仍需源码和实测确认。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md] |
 
-## 与三类动态监控方案的初步选型口径
+## 与三类动态监控方案的选型关系
 
-本章既有提纲把 JVMTI、字节码插桩与 XTrace 放在同一组选型问题里：字节码插桩偏编译期，XTrace 偏 ART hook，JVMTI 偏运行时 Agent。[来源: 本章既有提纲]
+本章既有提纲把 JVMTI、字节码插桩和 XTrace 放在同一组选型问题里：字节码插桩偏编译期，XTrace 偏 ART hook，JVMTI 偏运行时 Agent。[来源: 本章既有提纲]
 
-Android CLI 材料给出的补充视角是“让 Agent/CI 能稳定执行 Android 工程动作”：如果目标是快速生成样例、安装指定 SDK、启动设备、部署运行、截图定位和查官方文档，CLI 可以降低工作流摩擦；如果目标是证明方法事件、字段事件、对象标记或 attach/detach 的运行时语义，仍需回到 JVMTI/ART 章节主线做源码与实测闭环。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md][来源: 本章既有提纲]
+在当前证据水平下，只能得出一个工作流层面的结论：如果目标是快速生成样例、安装指定 SDK、启动设备、部署运行、截图定位和查官方文档，Android CLI 可以降低 Agent/CI 的流程摩擦；如果目标是证明方法进入/退出事件、字段访问/修改事件、对象标记、agent 加载卸载或线上动态挂载策略，则仍需另起源码核验与实测记录，不能直接从 Android CLI 材料推导。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md][来源: 本章既有提纲]
 
-## 后续复查清单
+## 后续源码复核清单
 
-- 对 `android.os.Debug.attachAgent`、`Agent_OnLoad`、`Agent_OnUnload`、MethodEntry/MethodExit、FieldAccess/FieldModification、TagObject/GetObjectsWithTags 等条目逐项做 Android 17.0.0_r1 源码核验。[来源: 本章既有提纲]
-- 在实验章节中保留 Android CLI 的命令输出、SDK 列表、设备截图标注、layout diff 和 docs fetch 结果，作为 Agent 协助复现的证据链。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
-- 不把 Android CLI 的预览版定位、token 节省比例或任务速度提升数值推广为 JVMTI 性能结论；材料中的 70%+ token 使用量下降和 3 倍左右速度提升只属于官方内部实验对 Android CLI/Agent 工作流的描述。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
+以下条目保留为后续复查清单，不在本节中当作已验证结论：
+
+- `android.os.Debug.attachAgent` 在 Framework/API 层的入口、权限和错误处理边界。[来源: 本章既有提纲]
+- `Agent_OnLoad` / `Agent_OnUnload` 在 ART 加载与清理链路中的调用条件。[来源: 本章既有提纲]
+- MethodEntry/MethodExit 与 FieldAccess/FieldModification 事件在 Android 17.0.0_r1 上的 capability 条件、开启成本和采样策略。[来源: 本章既有提纲]
+- TagObject/GetObjectsWithTags 这类对象标记能力在泄漏检测或堆对象归因中的可用边界。[来源: 本章既有提纲]
+- 线上 attach/detach 是否可用、可控和可回滚，需要结合目标构建类型、签名、调试属性、SELinux/权限与应用发布策略单独验证。[来源: 本章既有提纲]
+
+## 复查结论
+
+本轮 rework 已把未获材料支撑的 JVMTI 运行时断言降级为待核验清单，并把正文主线固定为 Android CLI 支撑的实验入口、证据采集和版本边界说明。章节可回到 `ready-for-review`，但置信度保持 `medium-low`：它适合作为 JVMTI 后续实验的准备章，不应被引用为 ART/JVMTI API 细节的源码级最终结论。
 
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 53.md]
