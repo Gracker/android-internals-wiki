@@ -2,776 +2,542 @@
 title: Package Manager Service 与应用安装性能
 chapter: '1.9'
 section: '1.9'
-status: "finalized"
-drafted_date: '2026-04-05'
-polish_count: 1
-polish_date: '2026-04-09'
-polish_by: task2b-polish
-drafted_by: openclaw-task2a
-reviewed_date: "2026-05-28"
-reviewed_by: "openclaw-task6"
-reviewed_at: "2026-05-28T17:18:00+08:00"
-task6_result: "pass-light-edit"
-task6_state: "reviewed"
-task9_result: "auto-fixed"
-task9_state: "reviewed"
-task2b_result: "fixed-lite"
-task2b_state: "fixed"
-pipeline_stage: "ready-to-publish"
-last_task2b_lite_at: "2026-06-22"
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-confidence: medium
+last_verified: '2026-07-25'
+last_verified_against: AOSP android-17.0.0_r1 + ACK android17-6.18-2026-06_r6 + Android Developers
+confidence: high
 sources:
-- type: aosp
-  path: frameworks/base/services/java/com/android/server/SystemServer.java
-- type: aosp
-  path: frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java
-- type: aosp
-  path: frameworks/base/services/core/java/com/android/server/pm/Installer.java
-- type: aosp
-  path: frameworks/base/services/core/java/com/android/server/pm/PackageManagerShellCommand.java
-- type: aosp
-  path: frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java
-- type: aosp
-  path: frameworks/base/services/core/java/com/android/server/pm/InstallingSession.java
-- type: aosp
-  path: frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java
-- type: aosp
-  path: frameworks/base/services/core/java/com/android/server/pm/DexOptHelper.java
-- type: aosp
-  path: frameworks/native/cmds/installd/InstalldNativeService.cpp
-- type: aosp
-  path: art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java
-- type: aosp
-  path: art/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java
-- type: aosp
-  path: art/libartservice/service/java/com/android/server/art/ArtShellCommand.java
-- type: aosp
-  path: art/libartservice/service/java/com/android/server/art/BackgroundDexoptJob.java
-- type: aosp
-  path: frameworks/base/services/incremental/IncrementalService.cpp
-- type: aosp
-  path: system/incremental_delivery/
-- type: aosp
-  path: frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java
-- type: aosp
-  path: frameworks/base/services/core/java/com/android/server/pm/pkg/ArchiveState.java
-- type: aosp
-  path: frameworks/base/services/core/java/com/android/server/wm/ActivityStarter.java
-- type: official
-  path: https://developer.android.com/topic/performance/baselineprofiles/overview
-- type: official
-  path: https://source.android.com/docs/core/perf/vm
-- type: blog
-  path: 'Android Authority: Android 16 Cloud Compilation'
+  - type: aosp
+    path: "frameworks/base/services/java/com/android/server/SystemServer.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/Computer.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/InitAppsHelper.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/ParallelPackageParser.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/com/android/internal/pm/parsing/PackageParser2.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/com/android/internal/pm/pkg/parsing/ParsingPackageUtils.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/InstallingSession.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/PackageSessionVerifier.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/StagingManager.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/Installer.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/DexOptHelper.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/PackageManagerShellCommand.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/PackageArchiver.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/pkg/ArchiveState.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityStarter.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/services/incremental/IncrementalService.cpp @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/base/core/java/android/util/apk/ApkSignatureVerifier.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "frameworks/native/cmds/installd/InstalldNativeService.cpp @ android-17.0.0_r1"
+  - type: aosp
+    path: "art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "art/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "art/libartservice/service/java/com/android/server/art/PrimaryDexopter.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "art/libartservice/service/java/com/android/server/art/BackgroundDexoptJob.java @ android-17.0.0_r1"
+  - type: aosp
+    path: "art/artd/artd.cc @ android-17.0.0_r1"
+  - type: kernel
+    path: "kernel/common/fs/incfs/main.c @ android17-6.18-2026-06_r6"
+  - type: kernel
+    path: "kernel/common/fs/incfs/vfs.c @ android17-6.18-2026-06_r6"
+  - type: official
+    path: "https://source.android.com/docs/core/runtime/configure/art-service"
+  - type: official
+    path: "https://source.android.com/docs/core/architecture/kernel/incfs"
+  - type: official
+    path: "https://source.android.com/docs/security/features/apksigning"
+  - type: official
+    path: "https://source.android.com/docs/security/features/apksigning/v4"
+  - type: official
+    path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
+  - type: official
+    path: "https://developer.android.com/topic/performance/baselineprofiles/manually-create-measure"
+  - type: official
+    path: "https://developer.android.com/topic/performance/startupprofiles/overview"
+  - type: official
+    path: "https://developer.android.com/about/versions/15/behavior-changes-all#app-archiving"
 tags:
-- android
-- pms
-- package-manager
-- dex2oat
-- dexopt
-- baseline-profiles
-- cloud-compilation
-- app-installation
-- compilation
-last_task2b_at: "2026-05-30T11:36:00+08:00"
-last_task2b_by: "openclaw-task2b-lite"
-last_task2b_summary: "Task2B Lite: Added DeepResearch reference materials to sources section"
-review_notes: '2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。；2026-05-06 04 task6 re-review: pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。 | 2026-05-06 05 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 2。P0/P1 已写入 queue，等待 Task2B。 | 2026-05-12 21 task6 review: needs-rework。已清理 frontmatter 重复字段；Android 16 云端编译/SDM 深度段与前文资料边界冲突，已加存疑标注并写入 queue。'
-last_task6_at: "2026-05-28T17:18:00+08:00"
-task6_reviewed_date: "2026-05-28"
-last_task2b_verifier_at: "2026-06-14T11:25:00+08:00"
-task6_reviewed_by: "openclaw-task6"
-last_task6_review_log: "logs/review/2026-05-28-17-review.md"
-task6_review_notes: "2026-05-28 17:18 Task6 review: pass-light-edit。清理编辑痕迹与参考资料表述 3 处；outline 5/5 覆盖；无新增 L3/L4 回炉项，送 Task9 复审。"
+  - pms
+  - package-manager
+  - package-installer
+  - art-service
+  - dexopt
+  - baseline-profiles
+  - incremental-install
+  - app-archiving
+related_chapters:
+  - '1.2'
+  - '1.7'
+  - '2.3'
+  - '3.5'
+  - '8.2'
+drafted_date: '2026-04-05'
+drafted_by: openclaw-task2a
+reviewed_by: openclaw-task6
+reviewed_date: '2026-05-28'
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: reviewed
+task9_result: auto-fixed
+task2b_state: fixed
+task2b_result: fixed-lite
+pipeline_stage: ready-to-publish
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-08
-last_verified: '2026-06-07'
-last_verified_against: "AOSP android-16.0.0_r1 (`PackageManagerShellCommand` / `PackageInstallerSession.verifySdmSignatures` / `ArtManagedInstallFileHelper` / `ArtManagerLocal` / `DexOptHelper` / `ArtShellCommand` / `BackgroundDexoptJob` / `IncrementalService` / `PackageArchiver` / `ActivityStarter` / `ArchiveState`) + AOSP android-15.0.0_r1 `PackageArchiver` / `ActivityStarter` / `ArchiveState` + AOSP android-9.0.0_r1 `Installer.java` + Android Developers Baseline Profiles overview"
-last_task9_review_at: "2026-06-07T21:22:00+08:00"
-task9_reviewed_date: "2026-06-07"
-task9_reviewed_at: "2026-06-07T21:22:00+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_by_current: "openclaw-task9"
-last_task9_audit: '2026-06-07'
-last_task9_audit_date: "2026-06-07"
-last_task9_autofix_at: '2026-06-07'
-last_task9_review_log: "logs/deep-review/2026-06-07-21-audit.md"
-updated_by: "openclaw-task9"
-updated_date: "2026-06-07"
-task9_review_notes: "2026-05-28 Task9 deep-review: needs-rework。P0 2 / P1 1；SDM 全称/文件归属、installd 版本边界和 Cloud Compilation 设备侧链路仍冲突，已合并 queue。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 SDM/.sdm、installd Binder、ART Service 与安装编译链路，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-07 21 Task9 idle audit: auto-fixed。将 App Archiving 源码锚点从 AOSP mainline 改为 android-15/16 tag；未使用 Android 18/API 38+ 内容。"
-last_deepseek_polish_at: 2026-06-08
-last_task6_audit: "2026-07-10"
-last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
 ---
-
 
 # 1.9 Package Manager Service 与应用安装性能
 
-<!-- outline-start -->
-## 本节要点大纲
+安装一个应用，不是把 APK 复制到 `/data/app` 就结束了。系统还要验证安装会话、解析包、校验签名、协调权限和共享库、准备应用数据、按策略执行 dexopt，最后才把新状态发布给系统其余部分。只要其中一个阶段变慢，用户看到的“正在安装”就会变长；如果编译产物或 Profile 没有按预期生效，影响还会延续到首次启动。
 
-### 锚点（必须覆盖）
-- [PMS 在系统架构中的位置](#pms-在系统架构中的位置)：`SystemServer.startBootstrapServices()` 中的启动位置，以及它为什么要早于大多数系统服务。
-- [PMS 与 installd 的协作关系](#pms-与-installd-的协作关系)：`Installer`、`IInstalld`、`installd`、ART Service 在现代安装路径里的职责分工。
-- [应用安装全流程与性能关键路径](#应用安装全流程与性能关键路径)：从 session 写入到状态发布，哪些阶段吃 CPU，哪些阶段吃 I/O。
-- [Baseline Profiles 与安装时优化](#baseline-profiles-与安装时优化)：安装期编译覆盖、DEX 布局、首次启动收益如何落到实际行为上。
-- [版本演进](#版本演进)：Android 10 到 Android 17 里，包管理、编译调度、OTA 优化各自怎么变。
+本节以 AOSP `android-17.0.0_r1` 为平台基线；涉及 Incremental File System 时，以 ACK `android17-6.18-2026-06_r6` 为内核基线。Android 10～16 只用于解释机制如何演进。
 
-### 导读
-本节把 PMS 放回 `system_server` 的启动现场，再顺着 `PackageInstallerSession`、`InstallPackageHelper`、`Installer`、`IInstalld` 这几层往下看。我们关心的是安装阶段的真实执行位置、首次启动前已经做完了哪些准备、Trace 里每一段耗时该怎么归因。
-<!-- outline-end -->
+---
 
+## 先建立一张职责表
 
-## 为什么要了解 Package Manager Service
+应用安装横跨多个进程。排查问题前，先确定正在观察的是控制面还是执行面：
 
-在 Perfetto 里分析冷启动时，经常会看到 `bindApplication`、类加载、page fault、`dlopen` 这些运行期事件。它们的耗时表现，往往受安装期已经做过的工作影响：APK 扫描、签名校验、DEX 布局、dexopt 编译产物是否可用。`bindApplication` 负责进程绑定和应用运行时初始化；APK 签名校验、包扫描、安装期 dexopt 则发生在更早的安装或开机扫描阶段。
+| 模块 | 所在进程 | 主要职责 | 不应归给它的工作 |
+|---|---|---|---|
+| `PackageInstallerSession` | `system_server` | 管理 session、密封、校验、提交和结果回调 | 不直接解析全部包状态 |
+| PMS / `InstallPackageHelper` | `system_server` | 扫描、协调签名与权限、处理包状态、提交安装结果 | 不直接运行 `dex2oat` |
+| `Installer` | `system_server` | `installd` Binder 客户端 | 不是安装策略中心 |
+| `installd` | native daemon | 应用数据目录、权限、标签及底层文件操作 | Android 14+ 不负责组织整套 dexopt 策略 |
+| ART Service / `artd` | `system_server` / native daemon | 组织和执行 on-device dexopt，管理编译产物 | 不负责发布 PackageManager 状态 |
+| `dex2oat` | 独立 native 进程 | 按 ART Service 给出的参数生成 OAT、VDEX 等产物 | 不决定包是否允许安装 |
 
-另一个更直接的场景是安装和更新。用户看到下载完成，不等于应用已经可以流畅启动。设备端还要继续做 session 提交、包扫描、签名校验、数据目录准备、dexopt、状态发布等步骤。大型 APK、split 安装、低端闪存、首次 dexopt，都可能把这段时间拉长。
+Android 14 起，设备端 AOT 编译的控制面已经迁移到 ART Service。PMS 中仍能看到 `DexOptHelper`，但它更接近安装侧的桥接层：根据安装状态发起请求，最终由 `ArtManagerLocal`、`artd` 和 `dex2oat` 完成编译。把 Android 17 的安装编译简单画成“PMS 调 installd 做 dexopt”，会遗漏真正的调度和执行位置。
 
-了解 PMS 和安装流程，就能回答下面这些问题：
+---
 
-- 安装耗时长，瓶颈在文件写入、签名校验，还是 dexopt？
-- 首次冷启动慢，是否和安装期的编译策略、Baseline Profiles、DEX 布局有关？
-- 系统 OTA 后，哪些应用需要重新校验或重新编译，用户为什么有时会看到“优化应用”变少？
-- 在 Perfetto 里，应该去 `system_server`、`installd`、`PackageInstallerSession`、`dex2oat` 的哪一段找证据？
+## PMS 为什么在开机早期启动
 
-这篇文章从 PMS 的启动位置讲起，再把现代 Android 的安装提交路径拆开。重点放在三个地方：PMS 与 `installd` / ART Service 的职责边界、安装阶段的主要耗时点、安装期编译策略如何影响首次启动。
+`PackageManagerService` 运行在 `system_server`。它维护已安装包、组件、签名、权限、共享库和用户安装状态，是 Activity、Service、Provider 解析以及权限检查的基础数据来源。
 
-[图：应用安装流水线全景——从用户点击“安装”到应用可启动的完整时序]
+Android 17 的 `SystemServer.startBootstrapServices()` 用 `StartPackageManagerService` trace 包住 `PackageManagerService.main(...)`。它位于 bootstrap 阶段，而不是更晚的 `startCoreServices()` 或 `startOtherServices()`。原因很直接：许多服务启动时已经需要查询包和权限信息。
 
-## PMS 在系统架构中的位置
+开机初始化会处理两类信息：
 
-`PackageManagerService` 是 `system_server` 里的基础服务。AMS 负责进程和组件调度，WMS 负责窗口与显示，PMS 负责包、权限、组件声明、共享库、安装状态这些元数据。很多系统服务在启动时都要查询这些信息，所以 PMS 要比大多数服务更早就绪。
+- 从持久化设置恢复包、用户和权限状态；
+- 扫描 APEX、系统分区和 `/data/app` 中的实际包，解析 Manifest 并让磁盘状态与设置状态保持一致。
 
-在「Android 16」的 `SystemServer.java` 里，`StartPackageManagerService` 出现在 `startBootstrapServices()`，随后调用 `PackageManagerService.main(...)`。它不在 `startCoreServices()`。启动顺序放得这么早，是因为 UserManager、Overlay、Permission、ContentProvider 解析、应用启动前的包查询都依赖 PMS 先把包状态准备好。
+`InitAppsHelper` 负责组织系统目录和 data 目录的扫描。`ParallelPackageParser.makeExecutorService()` 在 Android 17 固定使用 4 个 `package-parsing-thread` 工作线程，并设置前台线程优先级。这里的“并行”主要是包解析并行，不等于 PMS 初始化的每一步都可以并行；共享状态提交仍要遵守 PMS 的锁和阶段顺序。
+
+### 包信息不是一个对象
+
+阅读 PMS 源码时，常见的几类对象处于不同层次：
+
+- `AndroidPackage`：包解析后的内部只读视图，包含组件、权限、代码路径等声明信息；
+- `PackageSetting`：系统持久化的安装状态，例如 appId、安装路径、签名和各用户状态；
+- `PackageStateInternal`：供系统内部查询的包状态视图；
+- `PackageInfo`：根据调用者权限、用户和 flags 生成的公共 API 返回对象。
+
+因此，`getPackageInfo()` 不是从一个全局 Map 原样取出 `PackageInfo`。它要基于调用者可见性、用户状态和查询 flags 生成结果。包数量、查询 flags 和对象构造成本，都可能影响查询耗时。
+
+---
+
+## `Computer` 快照解决了什么
+
+Android 17 的 PMS 仍有多个锁，不能用“PMS 已经无锁化”概括：
+
+- `mLock` 保护内存中的包解析结果与关联状态，源码明确要求持有时间尽量短；
+- `mInstallLock` 保护对 `installd` 的访问，源码要求不要在持有 `mLock` 时再获取它；
+- `mSnapshotLock` 只用于构造或取得 `Computer` 快照。
+
+`snapshotComputer()` 会比较当前数据版本和缓存快照版本。版本一致时可直接返回缓存；版本落后时，才在 `mSnapshotLock` 与 `mLock` 的保护下重建快照。若当前线程已经持有 `mLock`，它会返回 live computer，避免在写操作中制造自相矛盾的快照。
+
+可以据此得到两个结论：
+
+1. 大量只读查询不必每次都重新获取 PMS 的主锁并复制全部状态；
+2. 查询变慢仍可能来自快照重建、对象生成、包可见性过滤、Binder 排队或其他锁竞争。
+
+所以，Perfetto 中一次慢 `getPackageInfo` 不能只凭 Android 版本就排除锁竞争，也不能看到 `Computer` 就断言读请求完全无锁。应该把 Java monitor contention、Binder 调度和对应线程 slice 放在一起看。
+
+---
+
+## 普通 APK 安装怎样提交
+
+无论入口是 `adb install` 还是应用商店的 `PackageInstaller` API，普通安装最终都会进入 session 模型。一个 session 可以包含 base APK、split APK、安装元数据以及一个或多个 child session。
+
+### 1. 写入和密封 session
+
+安装器先创建 session，再把文件写入 staging 目录。`PackageInstallerSession.commit()` 不是直接修改 PMS 的包表；它先密封 session，防止继续改写内容。
+
+Android 17 中，密封后的处理大致是：
 
 ```text
-SystemServer 启动阶段（简化）:
-  startBootstrapServices()
-    → ActivityManagerService
-    → DisplayManagerService
-    → Installer / DomainVerificationService
-    → PackageManagerService
-  startCoreServices()
-    → BatteryService
-    → UsageStatsService
-  startOtherServices()
-    → WindowManagerService
-    → InputManagerService
+PackageInstallerSession.commit()
+  └─ seal
+      └─ handleSessionSealed()
+          ├─ 持久化 sealed 状态
+          └─ handleStreamValidateAndCommit()
+              ├─ 校验 root / child sessions
+              └─ 发送 MSG_INSTALL
 ```
 
-PMS 初始化时要扫描 `/system/app/`、`/system/priv-app/`、`/product/app/`、`/vendor/app/`、`/data/app/` 等目录，解析 Manifest，校验签名，恢复 `packages.xml` 和每个包的持久化状态。首次开机、OTA 后首启、包量很多的设备，这一段在 `system_server` 里会非常显眼。android-16 源码中 PMS 开机扫描的并行路径：`InitAppsHelper.java` 的 `getApexScanPartitions()` / `scanSystemDirs()` 通过线程池（`ParallelPackageParser`）在多线程中处理。`ParallelPackageParser` 和 `mExecutorService` 并行扫描路径在「Android 13」到「Android 16」的源码中均已存在，不是「Android 16」首次引入。包数量多的设备上，并行扫描缩短了 PMS 初始化耗时。
+密封和持久化很重要。进程死亡或系统重启后，系统需要知道 session 处于可恢复、已失败还是待安装状态。
 
-[已验证: AOSP android-16.0.0_r1 `InitAppsHelper.java` parallel APEX scanning / `ParallelPackageParser`]
+### 2. 进入安装请求
 
-### PMS 管理的核心数据结构
+`InstallingSession.installStage()` 把任务发到 PMS Handler。`start()` 创建 `InstallRequest`；普通 APK 请求随后进入 `InstallPackageHelper.installPackagesTraced()`。
 
-PMS 在内存中维护了几个关键的数据结构：
+这个方法的源码注释把核心事务分成四个阶段：
 
-- **PackageSetting**：每个已安装应用的持久化设置（安装时间、UID、权限授予状态、编译过滤器等），存储在 `/data/system/packages.xml`
-- **PackageInfo**：从 APK 的 `AndroidManifest.xml` 解析出的完整包信息，包括声明的 Activity、Service、Provider、权限
-- **AndroidPackage**：AOSP 中的内部接口，封装了对 APK 文件的只读访问，包括 DEX 文件列表、native 库、签名信息
+1. **Prepare**：检查安装参数、替换关系、ABI、签名和已有包状态；
+2. **Scan**：解析待安装包，生成扫描结果；
+3. **Reconcile**：把多个扫描结果与系统现有包、共享用户和签名规则统一起来；
+4. **Commit**：在锁保护下提交包状态。
 
-这些数据结构是 PMS 服务整个系统的"数据库"。任何进程要启动一个应用、查询一个 ContentProvider、检查一个权限，最终都要通过 PMS 的这些数据结构来获取答案。
+Android 17 的实际执行还包含路径切换、应用数据准备、异步安装 dexopt 与提交后的广播：
 
-### PMS 与 installd 的协作关系
+```text
+prepareInstallPackages
+  → scanInstallPackages
+  → reconcileInstallPackages
+  → renameAndUpdatePaths
+  → prepareAppDataPostCommitLIF
+  → performDexoptIfNeededAsync
+  → commitPackages
+  → post-install / package broadcasts
+```
 
-PMS 维护包状态和安装策略，具体落到文件系统和应用数据目录的操作由 `Installer` / `installd` 完成。从 `android-9.0.0_r1` 到 `android-16.0.0_r1`，`Installer.connect()` 都通过 `ServiceManager.getService("installd")` 获取 Binder 服务，再用 `IInstalld.Stub.asInterface(...)` 发起远程调用。本节不把 `installd` Binder 化写成 Android 16 的版本断点。
+路径切换发生在 dexopt 前，因为 OAT/VDEX 等产物会关联最终代码路径。应用数据也要在编译前准备好。`DexOptHelper.performDexoptIfNeededAsync()` 使用单线程 executor 处理安装 dexopt；源码还明确规定，dexopt 失败不应让应用安装本身失败。结果可能是安装成功，但应用只能先以解释执行或较低优化级别运行，之后再由后台 dexopt 补齐。
 
-现代安装路径里，dexopt 的控制面和执行面还要再拆一层：
+### 3. 哪些阶段消耗什么资源
 
-- PMS / `InstallPackageHelper`：包扫描、签名校验、权限与组件注册、安装状态提交
-- `DexOptHelper`：基于安装原因、Profile 可用性和包状态，决定是否发起 dexopt
-- ART Service（`ArtManagerLocal` / `ArtShellCommand` 所在服务）：接收 dexopt 请求，组织编译参数和任务调度
-- `artd`：ART 的守护进程，负责把编译任务落到本机执行
-- `dex2oat`：主要消耗 CPU 和 I/O 的工作进程，负责生成 OAT / VDEX 等编译产物
-- `Installer` / `IInstalld` / `installd`：继续处理应用目录、权限、SELinux 上下文和部分编译产物相关的底层文件操作
+| 阶段 | 主要资源 | 常见变慢原因 |
+|---|---|---|
+| session 写入 | 存储 I/O | APK 大、split 多、闪存忙、增量块尚未到达 |
+| 签名与完整性校验 | CPU + I/O | 文件大、证书轮换、v4/IncFS 数据等待 |
+| Manifest 解析与扫描 | CPU + page cache | 包或组件多、压缩数据读取慢 |
+| Reconcile | CPU + 锁 | 共享库、更新关系、共享用户或签名规则复杂 |
+| 应用数据准备 | Binder + I/O | `installd` 排队、目录创建、SELinux 标签与存储压力 |
+| dexopt | CPU + I/O | DEX 大、Profile 缺失、设备热限制、后台负载 |
+| Commit 与发布 | 锁 + Binder | 多包事务、观察者和广播接收端繁忙 |
 
-因此，安装路径更适合按 `PackageInstallerSession -> InstallPackageHelper -> DexOptHelper -> ART Service -> artd -> dex2oat` 来看。`system_server` 里的 Slice 主要反映控制面决策，`dex2oat` 进程承接执行面里最重的编译开销。
+诊断时不要只看总安装时长。session 写入慢和 `dex2oat` 慢的优化方向完全不同。
 
-[已验证: AOSP android-9.0.0_r1 到 android-16.0.0_r1 `Installer.java`; AOSP android-16.0.0_r1 `DexOptHelper.java` / `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java` / `ArtShellCommand.java`]
+---
 
-### Computer 模式与无锁读
+## 签名校验与增量安装
 
-Android 13 起引入 `Computer` 接口实现读写分离，到 Android 14 已成为 PMS 的核心架构模式。此前 PMS 的所有操作（包扫描、查询、安装、更新）都共享同一把全局锁（`mPackages`），查询操作会被写操作阻塞。
+### APK 签名方案的分工
 
-`Computer` 接口的工作方式是快照隔离：
+Android 17 仍同时支持多代 APK Signature Scheme：
 
-- **写操作**（安装、更新、卸载）持锁修改活跃的 `Computer` 实例，修改完成后生成新的快照
-- **读操作**（查询包信息、组件解析、权限检查）拿到的是快照引用，不与写操作竞争锁
-- 每个读请求持有的快照在该请求完成前保持一致视图，不会被中间的写操作影响
+- v1 以 JAR 条目为单位，兼容旧系统；
+- v2 从 Android 7 引入，保护 APK 的整体内容；
+- v3 从 Android 9 引入签名密钥轮换 lineage；
+- v4 从 Android 11 引入面向流式安装的 `.idsig`，并与 v2/v3 一起使用。
 
-这对性能分析有实际意义。在 Perfetto 中观察 PMS 活动时，如果看到 `PackageManagerService` 的查询 Slice（如 `getPackageInfo`）耗时较长，在 Android 14+ 的设备上，耗时较长通常是因为快照中需要遍历的数据量本身较大，或系统处于高负载状态。Android 13 及以下则仍然可能出现读写锁竞争导致的查询延迟。
+v4 不是 v2/v3 的替代品。`.idsig` 用于让系统在 APK 尚未完整落盘时验证已读取的数据块；APK 的最终身份和完整性仍要满足相应的 APK 签名规则。
 
-[已验证: AOSP android-14.0.0_r1 `frameworks/base/services/core/java/com/android/server/pm/Computer.java` / `PackageManagerService.java` 的 `mComputer` 字段]
+### IncFS 是按块供数，不是“按需解密”
 
-## 应用安装全流程与性能关键路径
+Incremental File System 允许应用在 APK 的全部数据块下载完之前启动安装或运行。用户态数据加载器提供缺失块，IncFS 通过 Merkle tree 和签名相关元数据校验读取到的块。
 
-了解 PMS 的架构位置后，可以继续看一个应用从"用户点击安装"到"可以启动"经历的完整阶段。安装流程根据触发方式有所不同（adb install / Google Play / PackageInstaller），但核心流水线是一样的。
+平台侧入口可在 `frameworks/base/services/incremental/IncrementalService.cpp` 看到；内核侧实现在 ACK `android17-6.18-2026-06_r6` 的 `fs/incfs/main.c` 与 `fs/incfs/vfs.c`。内核负责增量文件系统和缺块读取语义，不负责 PackageManager 的签名策略。
 
-### 安装触发路径
+因此，增量安装的准确描述是“边下载、边提供并校验数据块”。它不是“APK 按需解密”。遇到 IncFS 安装卡顿，要同时观察：
 
-安装入口看起来不同，收敛点都是 session 提交和包状态更新。
+- 数据加载器是否及时提供 requested blocks；
+- 存储读取是否阻塞；
+- `.idsig` 与 APK 签名是否有效；
+- 应用启动触达的 DEX、资源或 native library 块是否已经到达。
 
-**adb install**：宿主机先把 APK 推到 `/data/local/tmp/` 一类的临时位置，设备侧 shell 再通过 `PackageManagerShellCommand` 执行 `install-create`、`install-write`、`install-commit`。adb 会一直等到 session commit 完成再返回。
+---
 
-**Google Play / 应用商店**：安装器 App 通过 `PackageInstaller` API 管理 session。对 split APK、staged install、多包安装，这条路径更常见。
+## 安装 dexopt 与 ART Service
 
-**系统预装 / 开机扫描**：PMS 在系统启动或 OTA 后扫描预装目录，把镜像里的包注册进内存状态和持久化配置。它不走 `adb install` 的 shell 命令，但后续仍然要处理包解析、状态恢复、必要的 dexopt。
+### compiler filter 不是固定答案
 
-### 现代安装控制路径
+Android 构建可以通过 `pm.dexopt.<reason>` 配置不同原因对应的 compiler filter。ART Service 文档给出的标准配置中，`bg-dexopt` 通常使用 `speed-profile`，多个开机相关原因使用 `verify`；产品配置可以覆盖这些值。
 
-以 `adb install` 为例，现代 AOSP 的入口在 `PackageManagerShellCommand`。它先创建 session，再写入 APK 或 split，提交时进入 `PackageInstallerSession.commit()`。session 封存后，`InstallingSession.installStage()` 把安装任务交给 PMS 侧逻辑；包扫描和状态提交主要在 `InstallPackageHelper`，dexopt 决策在 `DexOptHelper`，编译请求再交给 ART Service，由 `artd` 拉起 `dex2oat` 执行。Perfetto 里看到的 `system_server`、`artd`、`dex2oat`，分别对应这条链上的控制面和执行面。
+即使请求了 `speed-profile`，没有可用 Profile 时也不能假定系统一定进行完整 AOT。ART 会结合 Profile、磁盘空间、温度、现有产物和其他约束选择可执行的结果。分析设备行为时，应读取设备配置和实际产物，而不是把某个默认值写成所有 Android 17 设备的保证。
 
-这套 session 模型解决了两个实际问题。一个是 split APK、多包安装、staged install 都能共用同一套提交协议；另一个是“写入文件”和“正式生效”被拆成两个阶段，失败回滚、重试、后台安装都更容易做。
+### Baseline Profile、运行时 Profile 与 Startup Profile
 
-### 安装阶段分解
+三者解决的问题不同：
 
-从性能分析角度，安装过程可以拆成六段。
+| 类型 | 生成或提供者 | 主要用途 | 生效位置 |
+|---|---|---|---|
+| Baseline Profile | 开发者随应用交付 | 提前标记高价值类和方法，指导 AOT | 安装或后台 dexopt，取决于分发与设备路径 |
+| Runtime Profile | ART 根据真实运行采样 | 反映该设备上的热点代码 | 后台 dexopt |
+| Startup Profile | 开发者提供给 R8/D8 | 调整 DEX 中启动代码布局 | 构建期，不是 PMS 的设备端步骤 |
 
-**1. 传输与写入 session**
+Baseline Profile 通常位于 APK 的 `assets/dexopt/baseline.prof`。安装渠道可以把 Profile 编入 dex metadata（例如 `base.dm`）并随 APK 交付；使用 `ProfileInstaller` 的应用也可以在运行后把 Profile 写入系统可消费的位置，再等待后台 dexopt。
 
-APK 从 USB、网络或本地来源写入 session。大包、split 多、闪存慢时，这一段会先被拉长。
+不能笼统声称“只要 APK 带 Baseline Profile，安装按钮结束前就一定完成 AOT”。Play、ADB、IDE、本地 sideload 以及 OEM 构建可以采用不同调度时机。稳定的判断方法是检查设备上的 ART 状态和编译原因。
 
-**2. commit 与文件落位**
+Startup Profile 则更容易被误解。它影响的是 R8/D8 如何把启动相关类和方法布置到 DEX，目的是减少启动时的 page fault 和随机读取；它不会在设备上触发一个名为“Startup Profile 编译”的 PMS 阶段。
 
-session commit 之后，安装器把 APK 放到 `/data/app/` 下的目标目录。这里主要看文件 copy / rename、fsync、校验和存储写入延迟。
+### Android 17 中可用的诊断命令
 
-**3. 包扫描与签名校验**
-
-PMS 解析 `AndroidManifest.xml`、校验签名、检查 sharedUserId / 权限 / ABI / split 关系，再决定能否把这个包正式纳入系统状态。升级安装还要检查新旧签名和 `versionCode` 规则。
-
-**4. APK 签名与流式校验**
-
-APK v3 签名支持密钥轮转（key rotation，proof-of-rotation 机制），允许应用在签名密钥变更时保持更新链。Android 11 引入 APK Signature Scheme v4（merkle tree 签名，服务于增量/流式安装的 .idsig 文件），v4 需要与 v2/v3 配套使用。流式校验允许安装过程中增量验证 APK 块，而非一次性读入全部内容做校验。
-
-在 Android 12+ 设备上，`IncrementalService`（`system/incremental_delivery/` / `frameworks/base/services/incremental/IncrementalService.cpp`）配合 v4 签名实现了按需解密和校验：应用安装后不必等所有文件完整写入，先完成校验的部分就可以被访问。在 Perfetto 中，可以通过 `android.incremental` 相关的 Trace 事件观察这一过程。当设备使用 Incremental FS（`/data/incremental/` 挂载点）时，文件访问会经过 `IncrementalService` 的 ioctl 路径，触发按块的签名校验。
-
-这对大型游戏和应用商店的分发体验有直接影响：用户可以在"安装尚未完成"时就启动应用，已校验的部分可正常使用，未校验的部分按需下载和验证。
-
-[已验证: AOSP `system/incremental_delivery/` / `frameworks/base/services/incremental/IncrementalService.cpp`]
-
-**5. 应用数据目录与 native 准备**
-
-`IInstalld` 负责应用数据目录、权限、SELinux 上下文、编译产物目录等底层操作。多用户设备在这里还会处理 user 维度的数据准备。
-
-**6. dexopt 调度**
-
-现代 Android 把编译决策更多放到 `DexOptHelper` / ART Service。有没有 Baseline Profiles、Cloud Profiles、设备是否空闲、当前安装原因是什么，都会影响这里选用的编译过滤器。对 Android 12+ 的常见安装路径，没拿到可用 profile 时通常只做 `verify`；更早版本还存在 quicken 等历史行为，细节见 §1.7。
-
-**7. 状态发布与广播**
-
-包状态写回 `packages.xml` 等持久化信息，PMS 更新内存结构，随后发出 `ACTION_PACKAGE_ADDED` 等广播，Launcher 和其他系统组件才能看到这个应用。
-
-### 安装耗时分析方法
-
-在 Perfetto 中分析安装耗时，可以关注以下 Track 和 Slice：
-
-- **system_server 进程**：搜索 `PackageInstallerSession`、`installStage`、`commitPackagesLocked` 一类 Slice。这里看到的是安装控制面的提交、扫描和状态发布。
-- **`artd` 进程**：ART Service 下发编译任务后的守护进程活动，适合用来判断 dexopt 是否真的启动。
-- **`dex2oat` 相关进程**：编译耗时通常集中在这里，是安装期最重的 CPU 开销。
-- **installd 进程**：应用目录准备、文件操作耗时。
-- **I/O Track**：`ext4` / `f2fs` 的写入延迟、fsync 抖动。
-
-查看编译状态时，不要再用不存在的 `cmd package compile --dump`。Android 14+ 更稳妥的做法是直接看 ART Service 或 PMS 的输出：
+查看单个包的 ART 状态：
 
 ```bash
-# 查看 ART 侧记录的编译状态
-adb shell cmd package art dump com.example.app
-
-# 查看包管理侧的 dexopt 摘要
-adb shell dumpsys package dexopt
-```
-
-如果要排查 profile 文件，再看 `cmd package dump-profiles` 或 `cmd package snapshot-profile` 这一组子命令。`art dump` 和 `dumpsys package dexopt` 里的 `compilation_filter`、`reason`、ABI 维度输出，足够先判断这次安装落在哪条编译路径上。
-
-[待补充：安装过程在 Perfetto 中的 Trace 截图，标注各阶段]
-
-[已验证: AOSP android-16.0.0_r1 `PackageManagerShellCommand.java` / `PackageInstallerSession.java` / `InstallingSession.java`]
-
-## dex2oat 编译对安装和启动的双重影响
-
-安装时的 dex2oat 编译是一个"付出 vs 收获"的权衡：编译越多，安装越慢但运行越快；编译越少，安装越快但运行时依赖 JIT 热身。这组权衡是 Android 编译策略演进的核心驱动力。
-
-### 安装时编译 vs 后台编译 vs 运行时 JIT
-
-关于这三种编译方式的机制和演进历史，我们在 §1.7 中已有深入分析。这里从 PMS 调度的角度做一个快速梳理：
-
-**安装时编译（install-time dexopt）**：安装提交阶段会根据可用 profile 和系统版本选择过滤器。Android 12+ 的常见路径里，没有可用 Baseline / Cloud / local profile 时通常只做 `verify`；较早版本还有 quicken 等历史差异，`speed-profile` 这个字符串本身不能单独说明编译覆盖。
-
-**后台编译（bg-dexopt）**：设备空闲充电时，ART Service 通过 JobScheduler 触发的后台优化。使用设备上积累的 JIT Profile，以 `speed-profile` 级别编译热点方法。这是安装后的补充优化环节。
-
-**运行时 JIT**：应用运行时即时编译热点方法，同时在后台收集 Profile 供后续的 AOT 编译使用。
-
-从性能分析的角度，更关心的是应用当前处于哪种编译状态，冷启动路径上的方法有多少已经有 AOT 产物。查询时直接看 ART Service 或 PMS 的状态输出：
-
-```bash
-# 查看 ART 侧记录的编译状态
-adb shell cmd package art dump com.example.app
-
-# 查看系统里的 dexopt 摘要
-adb shell dumpsys package dexopt
-
-# 手动触发全量编译（调试用）
-adb shell cmd package compile -m speed -f com.example.app
-
-# 手动触发 profile 编译
-adb shell cmd package compile -m speed-profile -f com.example.app
-```
-
-需要导出 profile 文件时，再看 `cmd package dump-profiles` 或 `cmd package snapshot-profile`。
-
-### 编译模式的选择策略
-
-系统对不同场景的编译模式选择是有策略的：
-
-| 安装场景 | 默认编译级别 | 原因 |
-|---------|------------|------|
-| 首次安装（无可用 profile，Android 12+ 常见） | `verify` | 安装更快，首次启动更多依赖解释执行和 JIT |
-| 首次安装（有 Baseline Profiles） | `speed-profile` | 安装即有 AOT 覆盖 |
-| 首次安装（有 Cloud Profiles） | `speed-profile` | 聚合 Profile 覆盖更广 |
-| 系统预装 | `speed` 或 `speed-profile` | OEM 配置决定 |
-| OTA 后首次启动 | `verify` | 优先快速开机 |
-| 后台空闲充电 | `speed-profile` | 使用本地 JIT Profile |
-| 存储空间不足 | `verify` 或降级 | 节省存储 |
-
-[已验证: AOSP frameworks/base/services/core/java/com/android/server/pm/, 编译策略; art/dex2oat/dex2oat_options.cc, 编译过滤器]
-
-## Background Dexopt 策略与系统性能影响
-
-后台 dexopt 是安装后补足编译覆盖的机制。安装时可能因为用户在等待完成而只做 verify；设备空闲充电时，系统才有足够时间做更深的编译。
-
-### 触发条件
-
-后台 dexopt（Android 14+ 由 ART Service 统一调度）在 AOSP 里的约束来自 `BackgroundDexoptJob.schedule()` 对 JobScheduler 的设置：
-
-- **`setRequiresDeviceIdle(true)`**：设备处于 idle
-- **`setRequiresCharging(true)`**：设备在充电。AOSP 这一层不区分有线和无线。
-- **`setRequiresBatteryNotLow(true)`**：电量不处于 low battery 状态，不等于固定的 30% 阈值。
-- **周期性任务**：Job 会按周期重新调度，不绑定固定的“凌晨 2-5 点”窗口。
-
-夜间执行常见于用户长时间空闲充电的场景，这属于调度结果，不是 ART Service 固定写死的时间策略。OEM 可以在系统层叠加自己的限制条件，但那已经超出 AOSP 的默认语义。
-
-### dexopt 对前台应用的影响
-
-后台 dexopt 设计得尽量不影响前台体验，但仍然存在资源竞争：
-
-**CPU 争用**：dex2oat 是 CPU 密集型操作，`dexopt.cpp` 通过 `setpriority(PRIO_PROCESS, 0, ANDROID_PRIORITY_BACKGROUND)` 将后台编译进程的 nice 值设为背景优先级，降低其 CPU 调度权重。在核心数量有限的设备上仍然可能抢占前台应用的 CPU 时间。
-
-**I/O 竞争**：dex2oat 需要读取 DEX 文件、写入 OAT 文件，这些都是密集的文件 I/O。如果前台应用同时在读写存储（如加载图片、写入数据库），I/O 带宽竞争可能导致前台应用卡顿。
-
-**内存压力**：dex2oat 编译过程中会占用相当数量的内存（用于编译中间表示），在内存紧张的设备上可能触发 LMK 杀后台进程。
-
-手动触发后台 dexopt 的命令：
-
-```bash
-# 手动触发后台 dexopt（不检查充电/空闲条件）
-adb shell cmd package bg-dexopt-job
-```
-
-[已验证: AOSP android-16.0.0_r1 `art/libartservice/service/java/com/android/server/art/BackgroundDexoptJob.java` / `ArtManagerLocal.java`]
-
-## Baseline Profiles 与安装时优化
-
-Baseline Profiles 让应用在安装时就能获得一部分 AOT 编译覆盖，不必等用户先运行几天再积累本地 profile。对首次启动敏感的应用，这会直接影响“安装完立刻打开”的体验。
-
-### 安装流程中 Baseline Profiles 的工作方式
-
-Baseline Profiles 从构建阶段就进入安装路径。开发者用 Macrobenchmark 录制关键路径，AGP 把 profile 元数据打进 APK 或 AAB；包安装提交后，Package Manager / ART 会把这些 profile 用到安装期 dexopt，让首发启动就拿到一部分 AOT 覆盖。
-
-Android Developers 的《Baseline Profiles overview》给出的原始表述是：Baseline Profiles 可让应用从第一次启动开始，把代码执行速度提升约 30%。这对应的是安装期提前编译带来的收益，观察点落在编译产物是否已经准备好。
-
-放到启动分析里，读法也要分清阶段。`bindApplication` 会消费这些编译产物，表现为类加载、page fault、OAT/VDEX 映射更顺；签名校验、包扫描、profile 驱动的 dexopt 发生在安装提交阶段。
-
-### Startup Profiles 与 DEX 布局
-
-Startup Profiles 作用在 DEX 布局。它们告诉构建工具哪些启动关键类应该更早放进主 DEX 的前部，减少启动期类加载时的随机 I/O 和 page fault。AGP 8.3 之后，这条路径已经是更成熟的主流配置。
-
-同一篇官方概述页给出的表述是：Startup Profiles 会在 Baseline Profiles 的基础上，再带来约 15% 的启动性能提升，大应用的收益可能更高。在本章语境里，Baseline Profiles 影响安装期编译覆盖，Startup Profiles 影响启动期 DEX 布局。
-
-[已验证: https://developer.android.com/topic/performance/baselineprofiles/overview]
-
-## Android 16 云端编译与 SDM
-
-公开资料把 Android 16 的一条安装优化路径称为 Cloud Compilation。AOSP 设备侧能确认的是 `.sdm` 文件进入安装会话后的校验、暂存和 ART 生命周期管理；Play 服务端如何生成产物、哪些设备和包会命中、命中后是否一定免除本机 `dex2oat`，公开源码还不能串起完整链条。
-
-设备侧链路可以拆成三段：
-
-- `PackageInstallerSession.maybeStageArtManagedInstallFilesLocked()` 会把与 APK 匹配的 ART-managed install files 暂存到目标路径。
-- `PackageInstallerSession.verifySdmSignatures()` 对 `.sdm` 文件做签名校验。源码注释把 SDM 定义为包含 cloud compilation artifacts 的文件，并要求 `.sdm` 与 APK 使用同一签名密钥。
-- `ArtManagedInstallFileHelper` 把 `.dm`、`.prof`、`.sdm` 都纳入 ART-managed install files，并按 APK 路径匹配对应文件；`ArtManagerLocal` 在删除 dexopt artifacts 时同时处理 VDEX、ODEX、ART、SDM、SDC 等产物。
-
-后续分析统一把 SDM 写作 Secure Dex Metadata / `.sdm` cloud compilation artifact；无法在 AOSP android-16.0.0_r1 中对应到源码的全称和目录，不作为正文口径使用。
-
-性能分析时要把源码证据和分发侧推断分开。能写成确定事实的是：安装会话可以接收并校验 `.sdm`，ART 侧能管理 SDM/SDC 等 cloud dexopt artifacts。不能写成定稿结论的是：Play Store 一定为目标包预生成 SDM、安装时一定免除本机编译、冻结窗口一定达到某个固定毫秒数量级。
-
-抓 Play 安装 Trace 时，如果 `system_server` 仍有安装提交 Slice，但几乎没有明显的 `dex2oat` CPU 段，可以把它作为“可能命中云端产物”的线索，再对照安装来源、ART dump、`dumpsys package dexopt` 和包状态输出。没有 `.sdm` 或没有公开命中字段时，仍按常规本机 dexopt 路径排查。
-
-[已验证: AOSP android-16.0.0_r1 `PackageInstallerSession.verifySdmSignatures()` / `maybeStageArtManagedInstallFilesLocked()`; `art/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java`; `ArtManagerLocal.deleteDexoptArtifacts()`]
-
-
-
-<!-- AIW-源码调研-2026-06-09 -->
-## 源码补遗：SDM / SDC 与 DexMetadata 的设备侧实现路径
-
-> 来源：AOSP android-16-release 源码（`PackageInstallerSession.java`、`PrimaryDexopter.java`、`artd.cc`、`ArtManagedInstallFileHelper.java`、`ArtManagerLocal.java`、`DexMetadataHelper.java`）
-> 适用版本：Android 16（API 36）；Android 17 为延续性推断
-> 一手状态：以下每条结论均给出文件路径与行号
-
-### SDM 文件命名与 ISA 维度
-
-SDM（Secure Dex Metadata）按 ISA 分文件命名，与 `.dm`/`.prof` 单一文件不同：
-
-```cpp
-// art/libartbase/base/file_utils.h line 41
-static constexpr const char* kSdmExtension = ".sdm";
-
-// art/libartbase/base/file_utils.cc line 718-721
-std::string GetSdmFilename(const std::string& dex_location, InstructionSet isa) {
-    return ReplaceFileExtension(dex_location,
-        StringPrintf("%s%s", GetInstructionSetString(isa), kSdmExtension));
-}
-```
-
-`base.apk` 对应 `base.arm64.sdm`、`base.x86_64.sdm` 等 per-ISA 文件。SDM 文件名是设备侧识别 cloud compilation artifact 的入口。
-
-### ART-managed install files 三类后缀
-
-```java
-// art/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java line 41-44
-private static final List<String> FILE_TYPES = List.of(ArtConstants.DEX_METADATA_FILE_EXT,
-        ArtConstants.PROFILE_FILE_EXT, ArtConstants.SECURE_DEX_METADATA_FILE_EXT);
-```
-
-三类后缀：`.dm`、`.prof`、`.sdm`（以及 per-ISA 的 `.<isa>.sdm`）。匹配规则是纯字符串判断，不涉及 I/O，因此可在 `PackageInstallerSession` 早期调用。
-
-### 安装会话的签名校验
-
-```java
-// frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java line 4330-4360
-private static void verifySdmSignatures(List<String> artManagedFilePaths,
-        SigningDetails expectedSigningDetails) throws PackageManagerException {
-    ...
-    int minSignatureScheme = SigningDetails.SignatureSchemeVersion.SIGNING_BLOCK_V3;
-    ParseResult<SigningDetails> verified =
-            ApkSignatureVerifier.verify(input, path, minSignatureScheme);
-    ...
-    if (!expectedSigningDetails.signaturesMatchExactly(verified.getResult())) {
-        throw new PackageManagerException(
-                INSTALL_FAILED_INVALID_APK, "SDM signatures are inconsistent with APK");
-    }
-}
-```
-
-SDM 强制 v3 签名块（`SIGNING_BLOCK_V3`），校验失败抛 `INSTALL_FAILED_INVALID_APK`。注释明示："SDM is a file format that contains the cloud compilation artifacts. As a requirement, the SDM file should be signed with the same key as the APK."——这是公开源码中 SDM 与 cloud compilation 直接对应的唯一注释。
-
-### ART Service 端的 SDC 创建与立即清理
-
-```java
-// art/libartservice/service/java/com/android/server/art/PrimaryDexopter.java line 183-217
-@Override
-protected void onDexoptStart(@NonNull DetailedPrimaryDexInfo dexInfo) throws RemoteException {
-    if (!mInjector.isPreReboot() && android.content.pm.Flags.cloudCompilationPm()) {
-        boolean isInDalvikCache = isInDalvikCache();
-        for (Abi abi : getAllAbis(dexInfo)) {
-            maybeCreateSdc(dexInfo, abi.isa(), isInDalvikCache);
-        }
-    }
-}
-
-@Override
-protected void onDexoptTargetResult(@NonNull DexoptTarget<DetailedPrimaryDexInfo> target,
-        @DexoptResult.DexoptResultStatus int status) throws RemoteException {
-    if (status == DexoptResult.DEXOPT_PERFORMED && !mInjector.isPreReboot()) {
-        mInjector.getArtd().deleteSdmSdcFiles(
-                AidlUtils.buildSecureDexMetadataWithCompanionPaths(
-                        target.dexInfo().dexPath(), target.isa(), target.isInDalvikCache()));
-    }
-}
-```
-
-`cloudCompilationPm()` flag 是整套 SDM 链路的 gate；OEM 默认可关闭。dexopt 完成后立刻 `deleteSdmSdcFiles()`，注释解释为 "release disk space as soon as possible"——SDM/SDC 在本地 dexopt 完成后并不被本地运行时直接消费。
-
-### artd Native 端：SDC 的 mtime 比对
-
-```cpp
-// art/artd/artd.cc line 1000-1030
-ndk::ScopedAStatus Artd::maybeCreateSdc(const OutputSecureDexMetadataCompanion& in_outputSdc) {
-  ...
-  std::string sdm_path = OR_RETURN_FATAL(BuildSdmPath(in_outputSdc.sdcPath));
-  std::string sdc_path = OR_RETURN_FATAL(BuildSdcPath(in_outputSdc.sdcPath));
-
-  Result<std::unique_ptr<File>> sdm_file = OpenFileForReading(sdm_path);
-  if (!sdm_file.ok()) {
-    if (sdm_file.error().code() == ENOENT) {
-      // No SDM file found. That's typical.
-      return ScopedAStatus::ok();
-    }
-    return NonFatal(sdm_file.error().message());
-  }
-  struct stat sdm_st = OR_RETURN_NON_FATAL(Fstat(*sdm_file.value()));
-
-  std::unique_ptr<SdcReader> sdc_reader = SdcReader::Load(sdc_path, &error_msg);
-  if (sdc_reader != nullptr && sdc_reader->GetSdmTimestampNs() == TimeSpecToNs(sdm_st.st_mtim)) {
-    // Already has an SDC file for the SDM file.
-    return ScopedAStatus::ok();
-  }
-  ...
-```
-
-注释 "No SDM file found. That's typical." 直接说明：本地绝大多数包都不命中 `.sdm`，仅极少数由 Play 分发带 cloud compilation artifact 的包才走完整路径。SDC 通过 SDM 文件的 mtime 比对决定是否需要重写。
-
-### `DexMetadataHelper` 的两个 system property
-
-```java
-// frameworks/base/core/java/android/content/pm/dex/DexMetadataHelper.java line 44-53
-private static final String PROPERTY_DM_JSON_MANIFEST_REQUIRED = "pm.dexopt.dm.require_manifest";
-private static final String PROPERTY_DM_FSVERITY_REQUIRED = "pm.dexopt.dm.require_fsverity";
-private static final String DEX_METADATA_FILE_EXTENSION = ".dm";
-```
-
-`pm.dexopt.dm.require_manifest` 控制 `.dm` 是否必须内嵌 JSON manifest；`pm.dexopt.dm.require_fsverity` 控制是否必须携带 fs-verity 摘要。两个 prop 默认 false；调试时可通过 `adb shell setprop` 临时打开。
-
-### 调试与验证命令
-
-```bash
-# 查看包当前 dexopt 状态（Android 14+ 优先；旧设备退回 dumpsys）
 adb shell pm art dump com.example.app
-adb shell dumpsys package dexopt | grep -A 12 com.example.app
-
-# 看 ART Service 是否尝试创建 SDC（cloudCompilationPm flag 开启时）
-adb shell setprop log.tag.ArtService VERBOSE
-adb logcat -v time | grep -E "ArtService|maybeCreateSdc|sdc"
-
-# 强制 DM 校验严格度（默认 false）
-adb shell setprop pm.dexopt.dm.require_manifest true
-adb shell setprop pm.dexopt.dm.require_fsverity true
 ```
 
-### 与 AIW 现有章节的关系
-
-- 本节是 §1.9 安装会话与 SDM/SDC 链路的源码补遗，串起 PMS（`PackageInstallerSession`）→ ART Service（`PrimaryDexopter`）→ artd native（`Artd::maybeCreateSdc`）三层调用。
-- §21.11 已讲清 `.dm` 与 Baseline/Cloud Profile 在启动优化里的位置；本节补 `.sdm` 与 SDC 的产物管理细节。
-- §1.7（ART 编译管线）继续关注 dex2oat 本身机制，不重复 SDM/SDC 的产物路径。
-
-[已验证: AOSP android-16-release `PackageInstallerSession.java` L4025/L4330-4360、`PrimaryDexopter.java` L178-217、`artd.cc` L1000-1030/L1435-1442、`ArtManagedInstallFileHelper.java` L41-58、`ArtManagerLocal.java` L200-250、`DexMetadataHelper.java` L44-53、`file_utils.h/cc` L41/L178/L718-721]
-
-
-## App Archiving 机制（Android 15+）
-
-Android 15 引入 OS 级 App Archiving，通过 `PackageArchiver`（`services/core/java/com/android/server/pm/PackageArchiver.java`）实现。归档后的应用移除 APK 和缓存文件，但保留用户数据，Launcher 显示灰显图标。
-
-**ActivityStarter 拦截入口**（`ActivityStarter.java` 行 1155-1167）：当 `startActivity` 无法解析 Activity 类时（`err == START_CLASS_NOT_FOUND && aInfo == null`），若 `Flags.archiving()` 为 true，则调用 `PackageArchiver.isIntentResolvedToArchivedApp()` 检查 Intent 是否指向归档应用：
-
-```java
-if (isArchivingEnabled()) {
-    PackageArchiver packageArchiver = mService
-            .getPackageManagerInternalLocked()
-            .getPackageArchiver();
-    if (packageArchiver.isIntentResolvedToArchivedApp(intent, mRequest.userId)) {
-        err = packageArchiver
-                .requestUnarchiveOnActivityStart(
-                        intent, callingPackage, mRequest.userId, realCallingUid);
-    }
-}
-```
-
-**isIntentResolvedToArchivedApp 逻辑**（PackageArchiver.java 行 377-400）：检查 Intent 的 component 是否在 `ArchiveState.getActivityInfos()` 中出现过。若是，`requestUnarchiveOnActivityStart()` 向应用的 installer（Google Play 等）发送 `ACTION_UNARCHIVE_PACKAGE` Intent，完成下载恢复。
-
-**ArchiveState 数据结构**（`services/core/java/com/android/server/pm/pkg/ArchiveState.java`）：保存 `List<ArchiveActivityInfo>`（activity title、originalComponentName、iconBitmap）、`installerTitle`、`archiveTimeMillis`。
-
-**与 LMK 的关系**：App Archiving 与 LowMemoryKiller 无直接关联。归档操作通过 `DELETE_ARCHIVE | DELETE_KEEP_DATA` 标志位移除 APK，data 目录保留，归档 App 不直接触发 LMK。
-
-[已验证: AOSP android-15.0.0_r1 / android-16.0.0_r1 `PackageArchiver.java` / `ActivityStarter.java` / `ArchiveState.java`]
-
-## 应用更新与 OTA 更新的性能影响
-
-### 应用更新时的编译策略
-
-应用更新时，PMS 需要处理版本升级和编译产物的更新。编译策略取决于更新前后的变化：
-
-**增量更新（Delta Update）**：Google Play 支持增量更新，只下载 APK 中变化的部分。但编译方面仍然是全量重新编译——DEX 文件可能因 R8 混淆导致类名和方法索引整体变化，ART 侧尚未将增量编译作为标准流程。
-
-**全量更新**：删除旧版本的编译产物，重新运行 dex2oat。编译级别遵循与首次安装相同的策略（有 Profile 用 speed-profile，没有用 verify）。
-
-更新耗时通常比首次安装短，因为系统已经有了该应用的 Profile（本地 JIT Profile 或 Cloud Profile），speed-profile 会实际编译有意义的方法。
-
-### 系统 OTA 更新后的 mass dexopt
-
-系统 OTA 更新是一个特殊的性能场景。OTA 更新可能改变了系统框架（framework.jar）、运行时（ART 模块）、或系统库，导致所有应用的编译产物失效——因为 OAT 文件中包含了编译时系统 API 的内联和优化，系统代码变了，这些优化可能不再正确。
-
-**传统流程（Android 13 及以前）**：OTA 后首次启动时，系统对所有应用执行 mass dexopt，编译级别为 `verify`。用户在开机后会看到"正在优化应用 X/Y"的进度界面，这在大量应用的低端设备上可能需要很长时间。
-
-**现代流程（Android 14+ ART Service）**：ART Service 的策略更加细分：
-
-1. OTA 后首次启动，只对 primary DEX 文件做 `verify`，跳过 secondary DEX
-2. 如果已有可用的 VDEX 文件且 verify filter 可以容忍依赖不匹配，则跳过编译
-3. 不再在开机后立即运行后台 dexopt 补偿，避免与前台应用竞争
-
-**A/B / Virtual A/B 更新**：这套方案逐步改善了 OTA 体验。更新可以在后台写入另一套分区，用户可见的停机时间更短；是否还会出现“优化应用”界面或后台补偿编译，仍取决于 Android 版本、ART 策略和设备实现，不能概括成某一个版本之后全部消失。
+`PackageManagerShellCommand` 也支持把 `art` 子命令转交给 ART Service：
 
 ```bash
-# 查看 OTA 后的编译状态
-adb shell getprop pm.dexopt.boot-after-ota
-# 通常返回 "verify"
-
-# 手动触发全量 dexopt（调试用，慎用——可能耗时很长）
-adb shell cmd package compile -m speed -f -a
-```
-
-[已验证: AOSP android-16.0.0_r1 `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java` / `BackgroundDexoptJob.java`]
-
-## 在 Perfetto 中的表现与调试方法
-
-前面讲了安装流程、编译策略、OTA 更新，这些理论知识在实际分析中需要对应到 Trace 中的具体位置。这些过程在 Perfetto Trace 中有明确的表现特征，可以据此定位问题。
-
-### 安装过程的 Trace 特征
-
-抓取安装过程的 Trace 需要一些技巧，因为安装涉及多个进程（adb → system_server → installd → dex2oat）。推荐的抓取方式：
-
-```bash
-# 在安装之前开始抓取
-adb shell perfetto \
-  -c - --txt \
-  -o /data/misc/perfetto-traces/install-trace.pb \
-<<EOF
-buffers: {
-    size_kb: 63488
-}
-data_sources: {
-    config {
-        name: "linux.ftrace"
-        ftrace_config {
-            ftrace_events: "sched/sched_switch"
-            ftrace_events: "power/cpu_frequency"
-            atrace_categories: "am"
-            atrace_categories: "pm"
-            atrace_categories: "dalvik"
-            atrace_apps: "system_server"
-            atrace_apps: "installd"
-        }
-    }
-}
-duration_ms: 60000
-EOF
-```
-
-然后在另一个终端执行安装操作。Trace 中应该能看到：
-
-- **system_server 进程**：`PackageInstallerSession`、`installPackage` 等 Slice
-- **installd 进程**：文件操作相关的事件
-- **dex2oat 进程**：作为子进程出现，CPU 使用率通常很高
-- **I/O Track**：密集的文件写入
-
-### dex2oat 活动的识别
-
-dex2oat 在 Trace 中以独立进程的形式出现，进程名通常为 `dex2oat` 或 `dex2oat64`。关键特征：
-
-- **CPU 占用高**：多线程并行编译，在 8 核设备上可能占满 4-6 个核心
-- **内存占用**：编译过程中会分配数百 MB 的内存用于中间表示
-- **I/O 密集**：读取 DEX 文件（数百 MB），写入 OAT 文件（可能跟原 DEX 一样大）
-- **运行时间**：取决于编译级别和 DEX 大小，从几秒（verify）到几分钟（speed）
-
-如果我们在 Trace 中看到 dex2oat 进程运行时间异常长，可以检查：
-
-1. 编译级别是否过高（应该是 verify 或 speed-profile 而不是 speed）
-2. 设备是否处于低内存状态（导致 dex2oat 被迫使用更少线程）
-3. 存储性能是否正常（eMMC 设备上 I/O 可能是瓶颈）
-
-### 后台 dexopt 在 Trace 中的特征
-
-后台 dexopt 通常在凌晨用户不用手机时运行。在 Trace 中的特征：
-
-- **JobScheduler** 触发的 `bg-dexopt-job`
-- **dex2oat 进程**以较低的 CPU 优先级运行
-- **批量执行**：对所有需要优化的应用逐个编译
-- **可中断**：用户点亮屏幕后，dexopt 会被中止
-
-### 常用的调试命令
-
-```bash
-# 查看单个应用在 ART 侧的编译状态
 adb shell cmd package art dump com.example.app
-
-# 查看所有应用的编译状态摘要
-adb shell dumpsys package dexopt
-
-# 手动为应用设置编译级别
-adb shell cmd package compile -m speed-profile -f {package_name}
-
-# 手动触发后台 dexopt
-adb shell cmd package bg-dexopt-job
-
-# 查看 installd 的日志
-adb logcat -s installd
-
-# 查看 dex2oat 的详细日志
-adb shell setprop persist.sys.dex2oatlog 1
-
-# 分析 OAT 文件内容（查看哪些方法被编译了）
-adb shell oatdump --oat-file=/data/app/~~xxx/{pkg}-xxx/oat/arm64/base.odex | head -100
-
-# 分析 Profile 文件内容
-adb shell profman --dump-profile-file=/data/misc/profiles/cur/0/{pkg}/primary.prof
 ```
 
-[待补充：安装过程和后台 dexopt 在 Perfetto 中的 Trace 截图]
+强制按 `speed-profile` 请求编译，适合在可控测试设备上做前后对比：
 
-## 与其他机制的关系
+```bash
+adb shell pm compile -m speed-profile -f -v com.example.app
+```
 
-Package Manager Service 与全书多个章节有交叉：
+清理 Profile 后重新验证：
 
-- **§1.7 ART 编译管线与 dex2oat 优化**：dex2oat 的编译机制、编译级别、Profile 体系的详细说明。本节聚焦 PMS 如何调度 dex2oat，§1.7 聚焦 dex2oat 本身的工作原理
-- **§1.8 Activity Manager Service**：AMS 启动 Activity 时需要从 PMS 获取 PackageInfo 和组件信息，PMS 的响应速度直接影响启动延迟
-- **§8.2 App 启动全流程**：冷启动时 `bindApplication` 会消费安装期已经准备好的 OAT/VDEX/DEX 布局结果；签名校验和包扫描不在这一步发生
-- **§8.3 启动优化策略**：Baseline Profiles 和 Startup Profiles 是启动优化的关键手段，配置方法详见该节
-- **§4.3 ART 虚拟机内存管理**：dex2oat 编译过程的内存占用和 JIT 代码缓存在 ART 的内存预算中
+```bash
+adb shell pm art clear-app-profiles com.example.app
+```
+
+手动运行后台 dexopt：
+
+```bash
+adb shell pm bg-dexopt-job
+```
+
+这类命令会改变设备编译状态。性能实验应记录执行前后的包版本、Profile 状态、compiler filter、温度和电量条件，不能把人工编译后的结果与普通用户首次安装直接比较。
+
+---
+
+## 后台 dexopt 与 OTA
+
+Android 14+ 的后台编译由 ART Service 的 `BackgroundDexoptJob` 管理。标准调度通常每天一次，要求设备空闲且充电；设备退出 idle 后，运行中的任务会被取消。厂商可以调整约束和策略。
+
+ART Service 不再保留旧 PMS 模型中的 post-boot dexopt job。这样可以避免刚开机时的编译任务与用户操作直接争抢资源。需要补齐的编译工作交给后台任务，在满足 idle、charging 等条件时继续。
+
+OTA 或 Mainline 更新后，已有编译产物是否还能复用取决于 boot image、classpath、APEX 版本、编译依赖和产物校验结果。不要把 OTA 后的行为概括成“所有应用重新编译”：
+
+- 可继续验证并复用的产物不必重做；
+- 失效产物可能先用 `verify` 或解释执行保证可用性；
+- 更积极的 `speed-profile` 编译可以在后台逐步完成。
+
+用户不再长时间看到“正在优化第 N 个应用”，不代表编译成本消失了，而是系统把更多工作改成了可验证、可复用和可延后的任务。
+
+---
+
+## `.sdm` / `.sdc`：Android 17 源码中的云编译产物
+
+Android 17 固定 tag 中确实存在 `.sdm` 和 `.sdc`，但应按源码能够证明的范围描述。
+
+`PackageInstallerSession` 的注释把 `.sdm` 说明为承载 cloud compilation artifacts 的文件。`ArtManagedInstallFileHelper` 把 `.dm`、`.prof` 和 `.sdm` 列为 ART 管理的安装文件；`.sdm` 文件名还要包含有效 ISA，例如 `base.arm64.sdm`。源码注释说明该格式从 Android 16 引入。
+
+验证要求比普通附属文件更严格：
+
+- 必须能找到对应 APK；
+- 文件名中的 ISA 必须有效；
+- APK 与 `.sdm` 至少使用 v3 签名；
+- APK 和 `.sdm` 的签名必须精确匹配。
+
+ART Service 的 `PrimaryDexopter` 会尝试为各 ABI 创建 `.sdc`。`artd.maybeCreateSdc()` 的行为说明了几个重要边界：
+
+1. 没有 `.sdm` 是常见情况，不是安装错误；
+2. 可复用 `.sdc` 需要匹配 `.sdm` 时间戳和相关 APEX 版本；
+3. 一旦实际 dexopt 已完成，临时 `.sdm` / `.sdc` 可以被提前删除；
+4. 删除 dexopt artifacts 时，ART Service 会把 ODEX、VDEX、ART、SDM 和 SDC 一并纳入管理。
+
+这说明 `.sdm` / `.sdc` 是受签名与版本约束的可选优化输入，不是 Android 17 所有应用都必须经历的安装阶段。源码类名使用 `SecureDexMetadata` 相关命名，但没有必要自行扩展一个未经源码或官方文档定义的全称。
+
+---
+
+## 分阶段安装与 APEX
+
+普通 APK session 通常在当前开机周期完成。`StagingManager` 处理的是必须重启后才能完成的 staged session，常见于 APEX 或需要原子应用的系统更新。
+
+`PackageSessionVerifier` 会进行公共校验；对 staged session，还要处理重启前验证、`apexd` 交互、checkpoint/rollback，以及 ready、applied、failed 等状态。可以把它理解成一个跨重启事务：
+
+```text
+session committed
+  → pre-reboot verification
+  → mark ready
+  → reboot
+  → apply and verify
+  → mark applied
+      或失败后进入回滚/失败处理
+```
+
+并非所有 `PackageInstallerSession` 都是 staged session。看到 session API 时，先检查参数和包类型，再判断是否应跨重启分析。
+
+---
+
+## 应用归档
+
+Android 15（API 35）引入系统级 App Archiving，Android 17 延续了这套能力。归档不是普通卸载：
+
+- APK 和 cache 可以被移除；
+- 用户数据被保留；
+- Launcher 仍可展示归档入口；
+- 用户点击后，由负责的 installer 执行 unarchive。
+
+Android 17 的 `PackageArchiver` 使用带 `DELETE_ARCHIVE` 与 `DELETE_KEEP_DATA` 语义的删除路径，并保存 `ArchiveState`。归档状态可包含可启动 Activity 信息、安装器标题和归档时间。`ActivityStarter` 遇到归档目标时，可以转入请求恢复流程，而不是按“组件不存在”直接失败。
+
+恢复完成后会出现相应包添加事件。对启动性能而言，归档后的第一次点击包含重新获取和恢复包的成本，不能与普通冷启动放在同一组数据里。
+
+---
+
+## 用 Perfetto 定位安装瓶颈
+
+### 采集配置
+
+至少采集以下信息：
+
+- `system_server`、`installd`、`artd`、`dex2oat` 和安装器进程；
+- `sched` 线程调度；
+- Binder transaction；
+- 文件系统与块 I/O；
+- atrace 的 `pm`、`dalvik` 分类；
+- 如果分析 IncFS，再加入相关内核与 I/O 事件。
+
+Android 17 源码中可直接找到的 trace 名称包括：
+
+- `StartPackageManagerService`
+- `scanDir [...]`
+- `parallelScanDir`
+- `parallel parsePackage [...]`
+- `installStage`
+- `queueInstall`
+- `startInstall`
+- `installPackages`
+- `reconcilePackages`
+- `dexopt`
+- `commitPackages`
+
+具体设备可能因 feature flag、厂商修改或代码分支而少掉部分 slice。先搜索现有 slice，再围绕时间段展开，不要依赖一套固定 SQL 名单。
+
+### 诊断顺序
+
+1. **确定时间边界**：从 session commit 到安装结果回调，不要把 APK 下载时间混进来。
+2. **看 `system_server` 的阶段**：prepare、scan、reconcile、dexopt、commit 中哪段最长。
+3. **下钻执行进程**：dexopt 长就看 `artd` / `dex2oat`；数据目录长就看 `installd`；增量读取长就看数据加载器与 IncFS。
+4. **区分运行、排队和 I/O 阻塞**：长 slice 不等于线程一直在 CPU 上执行。
+5. **核对设备状态**：温度、充电、idle、存储压力和并发安装都会改变结果。
+
+下面的 SQL 可先列出安装相关 slice，作为人工下钻入口：
+
+```sql
+SELECT
+  p.name AS process_name,
+  t.name AS thread_name,
+  s.name,
+  ROUND(s.dur / 1e6, 2) AS dur_ms
+FROM slice s
+JOIN thread_track tt ON s.track_id = tt.id
+JOIN thread t ON tt.utid = t.utid
+LEFT JOIN process p ON t.upid = p.upid
+WHERE s.name GLOB '*install*'
+   OR s.name GLOB '*Install*'
+   OR s.name GLOB '*dexopt*'
+   OR s.name GLOB '*scanDir*'
+   OR s.name GLOB '*parsePackage*'
+ORDER BY s.dur DESC
+LIMIT 100;
+```
+
+这条查询只能发现已有 slice。某个阶段没有 slice 时，还要结合线程状态、Binder、I/O 和日志判断，不能把“没搜到名字”当作“阶段没有执行”。
+
+---
+
+## 常见误区
+
+### “PMS 执行所有安装工作”
+
+PMS 负责事务和包状态，文件操作、数据目录、编译调度和机器码生成分布在 `installd`、ART Service、`artd`、`dex2oat` 等组件中。
+
+### “`Computer` 让所有查询完全无锁”
+
+缓存快照减少了主锁争用，但快照重建和其他系统锁仍然存在。查询本身也可能耗在过滤、对象生成、Binder 排队或 CPU 调度上。
+
+### “安装成功就说明 dexopt 成功”
+
+Android 17 的安装路径明确允许 dexopt 失败而不让整个安装失败。应用可以先运行，再由后台任务补齐优化。
+
+### “有 Baseline Profile 就必然安装时完成 AOT”
+
+Profile 是否可用、由谁交付、何时编译都取决于安装渠道和设备策略。应以 `pm art dump` 和实际 trace 为准。
+
+### “Startup Profile 是设备端编译步骤”
+
+Startup Profile 主要在构建期影响 DEX 布局。它与指导 ART AOT 的 Baseline Profile 有关联，但职责不同。
+
+### “IncFS 会按需解密 APK”
+
+IncFS 按需提供并验证数据块。加密不是这套机制的定义。
+
+### “`.sdm` 是每个 Android 17 安装都必须有的文件”
+
+Android 17 源码把它作为可选 ART 管理文件。没有 `.sdm` 是正常路径。
+
+---
 
 ## 版本演进
 
-Android 10 到 Android 17 期间，包管理系统经历了显著优化，主要集中在以下几个方向：
+| 版本 | 已确认的变化 | 对分析的影响 |
+|---|---|---|
+| Android 11 | IncFS 与 APK Signature Scheme v4 支持增量安装 | 安装与下载可以重叠，需要观察缺块读取和 `.idsig` |
+| Android 14 | on-device dexopt 迁移到 ART Service | 编译问题要从 PMS 继续追到 `ArtManagerLocal`、`artd` 和 `dex2oat` |
+| Android 15 | 系统级 App Archiving | 归档恢复不是普通冷启动 |
+| Android 16 | Android 17 源码注释确认 `.sdm` 格式由此引入 | 可选云编译输入进入 session 签名与 ART 产物管理 |
+| Android 17 | 本章当前固定基线；保留 ART 管理文件校验、SDM/SDC 复用判断和现代安装提交路径 | 以 `android-17.0.0_r1` 的实际 feature flag 和产品配置判断行为 |
 
-### 包管理架构演进
-- **Android 10-11**：引入分拆安装（Split APK），支持动态 feature 模块；PackageInstaller API 完善异步安装流程
-- **Android 12**：强化隐私权限管理，安装时需声明敏感权限；PackageInstallerSession 支持会话级别的安装状态管理
-- **Android 13**：引入 App Bundle 强制签名验证；支持非对称签名验证流程，增强 APK 安全性
-- **Android 14-15**：PackageInstaller API 标准化，新增 PackageInstaller.SessionParams 参数控制安装行为；支持 APK 大小限制配置
-- **Android 16-17**：PackageInstaller 支持并行安装会话，提升多应用批量安装性能；安装状态查询接口完善
+版本表只记录能由固定 tag 或官方文档确认的机制变化。诸如“某版本引入并行安装委员会”“某版本所有安装全面云编译”之类说法，如果没有类、提交或官方行为说明支撑，不应写成平台事实。
 
-### 编译调度优化
-- **Android 10-11**：引入 Baseline Profiles 概念，但尚未与 PMS 深度集成；dexopt 编译调度仍以同步为主
-- **Android 12**：PMS 集成 Baseline Profiles，安装期可引用预编译的 profile 优化 dexopt 决策
-- **Android 13**：Compilation Committee 编译调度器引入，支持多阶段 dexopt 策略（verify-only/dexopt-mode/force-dexopt）
-- **Android 14**：BackgroundDexoptJob 后台任务调度机制完善，支持电量/网络/存储状态感知的 dexopt
-- **Android 15**：引入增量编译（Incremental Compilation），PMS 支持分块编译大 APK；PackageInstallerSession 支持编译进度回调
-- **Android 16-17**：编译调度进一步智能化，支持编译缓存复用；安装期编译与后台编译解耦
+---
 
-### OTA 更新优化
-- **Android 10-11**：OTA 过程中仍需全量 dexopt，更新包体积较大
-- **Android 12**：OTA 过程引入编译产物缓存机制，减少重复编译
-- **Android 13**：A/B 更新架构完善，PMS 支持增量 OTA 更新策略；dexopt 产物可跨 OTA 会话复用
-- **Android 14-15**：OTA 过程中的编译调度优化，支持根据设备性能动态选择编译级别；更新验证流程简化
-- **Android 16-17**：OTA 更新支持分块下载与并行处理；PackageInstaller 与系统更新框架深度集成，提升更新成功率
+## 源码阅读顺序
 
-### 安装性能提升
-- **Android 10-12**：安装时间主要集中在 APK 解析与 dexopt 编译，同步流程较长
-- **Android 13-14**：安装流程异步化，PackageInstallerSession 支持安装状态回调；dexopt 可延后执行
-- **Android 15-17**：并行安装与编译调度结合，多应用安装性能提升显著；安装过程可中断恢复
+建议按一次普通 APK 安装的控制流阅读：
 
-## SDM 在 PMS 侧的集成细节
+1. `PackageInstallerSession.commit()`：session 如何密封、校验和进入安装；
+2. `InstallingSession.installStage()` / `start()`：怎样形成 `InstallRequest`；
+3. `InstallPackageHelper.installPackagesTraced()`：Prepare、Scan、Reconcile、Commit 四阶段；
+4. `DexOptHelper.performDexoptIfNeededAsync()`：PMS 怎样把安装 dexopt 交给 ART Service；
+5. `ArtManagerLocal.dexoptPackage()`、`PrimaryDexopter`、`artd.cc`：编译任务如何组织和执行；
+6. `Installer.java` 与 `InstalldNativeService.cpp`：应用数据和底层文件操作；
+7. `PackageManagerService.snapshotComputer()`：查询快照怎样缓存和重建。
 
-上一节讲了 SDM 在安装会话中的校验和 ART 生命周期管理。从 PMS 调度面看，`DexOptHelper` 也在安装阶段参与识别 SDM 文件（`DEXOPT_INSTALL_WITH_DEX_METADATA_FILE`），负责在编译决策中把 SDM 纳入安装期产物管理。
+分析 staged install 时，再加入 `PackageSessionVerifier` 与 `StagingManager`；分析增量安装时，再加入平台 `IncrementalService.cpp` 和 ACK 的 `fs/incfs`。
 
-**产物管理分工**：
-- Package Manager：APK、Split、.dm 文件的安装配对和基础校验
-- ART Service：管理 SDM、SDC、VDEX、ART 等编译产物；`ArtManagerLocal.deleteDexoptArtifacts()` 清理时一并移除 SDM/SDC
+---
 
-**调用链**：
-```
-PackageDexOptimizer → ArtManagerLocal.deleteDexoptArtifacts() →
-mInjector.getArtFileManager().getWritableArtifacts() →
-SecureDexMetadataWithCompanionPaths → deleteSdmSdcFiles()
-```
+## 小结
 
-> ⚠️ 以上调用链基于 AOSP main 分支，尚未确认是否进入 Android 17 稳定版本。生产分析时以 android-17.0.0_r1 或更早 tag 的源码为准。
+Android 17 的安装流程可以压缩成一句话：`PackageInstallerSession` 管事务，PMS 管包状态，`installd` 管应用数据和底层文件，ART Service 与 `artd` 管 dexopt，`dex2oat` 执行最重的编译工作。
+
+真正有用的性能结论必须回答三个问题：
+
+1. 慢的是安装事务中的哪个阶段；
+2. 该阶段实际运行在哪个进程、哪条线程上；
+3. 观察到的是 CPU 执行、锁等待、Binder 排队，还是文件与增量数据 I/O。
+
+只要沿着这三个问题收集证据，就能把“安装慢”从一个模糊现象拆成可验证、可复现的系统问题。
