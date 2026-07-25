@@ -6,10 +6,26 @@ status: finalized
 pipeline_stage: ready-to-publish
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 tags: [flutter, rendering, impeller, skia, cross-platform, shader-compilation, jank]
-confidence: medium-low
-last_verified: 2026-05-09
-last_verified_against: Flutter 3.32 architecture/thread merge docs (issue #150525 + release-notes-3.32.0) + Flutter 3.44 source (VsyncWaiterAndroid / Android Choreographer / VsyncWaiter.java fallback / PlatformViewsController / FlutterRenderer) + Flutter Impeller docs/engine impeller README + Android 16 Vulkan 1.4 VPA16 specs + ADPF PerformanceHintManager
-sources: [{'type': 'official', 'path': 'https://docs.flutter.dev/perf/rendering-performance'}, {'type': 'official', 'path': 'https://docs.flutter.dev/perf/impeller'}, {'type': 'blog', 'path': 'https://github.com/flutter/flutter/wiki/Impeller'}, {'type': 'source', 'path': 'https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/shell/platform/android/vsync_waiter_android.cc'}, {'type': 'source', 'path': 'https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/impeller/toolkit/android/choreographer.cc'}, {'type': 'source', 'path': 'https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java'}, {'type': 'source', 'path': 'https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java'}]
+confidence: high
+last_verified: 2026-07-25
+last_verified_against: Flutter 3.44.8 (058e0af2c2b57e369d905a03ac9748b0ebf543c6, engine 0cd610717bde95fd88343c64f81c11ba4e5c0010) + AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + official Flutter and Android documentation
+sources:
+- type: source
+  path: https://github.com/flutter/flutter/tree/3.44.8/engine/src/flutter/shell/platform/android
+- type: source
+  path: https://github.com/flutter/flutter/tree/3.44.8/engine/src/flutter/impeller
+- type: official
+  path: https://docs.flutter.dev/resources/architectural-overview
+- type: official
+  path: https://docs.flutter.dev/perf/impeller
+- type: official
+  path: https://docs.flutter.dev/platform-integration/android/platform-views
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/
+- type: aosp
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/
 drafted_date: 2026-04-01
 drafted_by: openclaw-task2a
 finalized_date: 2026-05-22
@@ -58,8 +74,8 @@ last_task9_autofix_at: "2026-07-02"
 ### 锚点(必须覆盖)
 
 - 🔹 Flutter 的渲染架构:Framework(Dart) → Engine(C++) → Platform Embedder 三层模型
-- 🔹 Flutter 的线程模型:Flutter 3.32 stable+ 的 Main(UI+Platform) / Raster / IO,以及 Flutter 3.31- 或定制 Embedder 的旧四线程模型
-- 🔹 与原生 Android 渲染管线的根本区别:通过 Choreographer 获取 VSync、跳过 ViewRootImpl Traversal、无 RenderThread
+- 🔹 Flutter 的线程模型:Flutter 3.29 stable+ 的 Main(UI+Platform) / Raster / IO,以及 Flutter 3.28- 或定制 Embedder 的旧四线程模型
+- 🔹 与原生 Android 渲染管线的核心区别:通过 Choreographer 获取 VSync、跳过 ViewRootImpl Traversal、无 RenderThread
 - 🔹 PlatformView 的 Virtual Display / Hybrid Composition / TLHC 多路径及性能影响
 - 🔹 常见性能问题:Shader 编译卡顿、Widget 过度重建、列表滚动卡顿
 - 🔹 Impeller 引擎的 AOT shader 编译设计与 Skia 的对比
@@ -81,413 +97,576 @@ last_task9_autofix_at: "2026-07-02"
 
 # 2.11 Flutter 渲染管线与性能
 
-## 为什么要了解 Flutter 的渲染
+Flutter 页面进入 Perfetto 后，不能只找一条“Flutter UI 线程”。页面最终怎样显示，由三组配置共同决定：
 
-在 Perfetto 中分析 Flutter 应用，第一个要切换的是线程视角。原生应用里熟悉的 `ViewRootImpl.Traversal`、RenderThread 绘制阶段，在 Flutter 自绘 UI 路径上不会出现；trace 中 `1.platform` 或 `io.flutter.platform` 上有时能看到 `PlatformVsync` / `VsyncProcessCallback`，或 Java 回退路径里的 `Choreographer#doFrame`，那只是 Flutter 订阅系统 VSync 的入口，不等于回到了原生 View 绘制流程。
+- Flutter root 使用 `surface`、`texture` 还是 `image` render mode；
+- 相机、视频或 native renderer 是否通过 external texture 提供内容；
+- PlatformView 使用 TLHC、Hybrid Composition、旧 Virtual Display 还是 HCPP。
 
-Flutter 的 Android Embedder 当前优先通过 `VsyncWaiterAndroid` 走 NDK `AChoreographer` 路径：`Choreographer::PostFrameCallback()` 收到帧时间后进入 `OnVsyncFromNDK()`，再由 `VsyncWaiter::FireCallback()` 投递到 UI task runner。Java `VsyncWaiter.asyncWaitForVsync()` / `FlutterJNI.onVsync()` 仍是 `AChoreographer` 不可用时的回退路径。后续的 Build、Layout、Paint 和 Raster 调度由 Flutter Engine 接管。Flutter 不使用 Android 原生 View 树渲染自己的 Widget,也没有原生应用里的 RenderThread 分工。
+同一页面可以同时存在 Flutter root Surface、相机输入、原生地图 View、Flutter overlay 和系统窗口。每个对象都有自己的 producer、buffer、fence 与节拍。
 
-这个差异直接影响排查入口。列表滚动卡顿时，Flutter 3.32 stable+ 要同时看 Android 主线程上的 Dart / Platform 工作和 `1.raster` / `io.flutter.raster`；如果是 Flutter 3.31- 或定制 Embedder，才需要单独看 `1.ui` / `io.flutter.ui`。
+本章固定两条版本线：
 
-排查 Flutter 卡顿时，需要先定清三个问题：Flutter 在 Android 上怎么渲染，它的渲染管线和原生 Android 有什么差异，性能问题出现时应该看哪里、怎么分析？
+- Android 平台：Android 17 / API 37 / `android-17.0.0_r1`；
+- kernel：`android17-6.18-2026-06_r6`；
+- Flutter：用稳定 tag `3.44.8`、framework commit `058e0af2c2b57e369d905a03ac9748b0ebf543c6`、engine revision `0cd610717bde95fd88343c64f81c11ba4e5c0010` 验证当前实现。
 
-## Flutter 的渲染架构
+Android 决定 Surface、BufferQueue、SurfaceFlinger、HWC 与 kernel 同步语义。Flutter framework、engine、Android embedding 和插件随 App 发布；分析线上问题时，仍要回到 APK 实际携带的 Flutter SDK、engine revision、renderer/backend 与插件版本。
 
-Flutter 的渲染架构分三层：Framework 层（Dart）、Engine 层（C++）和平台嵌入层（Platform Embedder）。
+## 三层架构与一帧的公共前半段
 
-Framework 层是应用开发者直接接触的部分。Widget、State、Element,以及 Rendering 目录下的 RenderObject,都在这一层。当 UI 需要更新时,Framework 层会经历 Build → Layout → Paint 三个阶段:Build 阶段根据状态构建 Widget 树;Layout 阶段计算每个 RenderObject 的大小和位置;Paint 阶段将绘制指令记录到一个 DisplayList 中。
+### Framework：生成绘制意图
 
-Engine 层是 Flutter 的核心引擎,用 C++ 编写。它负责两件事:一是把 Framework 层产生的 DisplayList 光栅化为实际的像素数据;二是管理与底层图形 API(Vulkan 或 OpenGL ES)的交互。Engine 层还包含了 Dart 虚拟机、文本排版引擎(最近从 libtxt 迁移到了 SkParagraph)、以及网络、文件等基础能力。
+Framework 层运行 Dart 代码，主要对象包括 Widget、Element、RenderObject 与 Layer。
 
-平台嵌入层相对较薄，负责把 Flutter Engine 嵌入到具体平台中。在 Android 上,它创建和管理 FlutterView(通常是一个 SurfaceView 或 TextureView),处理 Android 的生命周期事件,并将触摸等输入事件转发给 Flutter Engine。
+- Build 根据状态更新 Element/Widget 配置；
+- Layout 计算 RenderObject 的约束、尺寸和位置；
+- Paint 把绘制操作记录为 DisplayList，并组织 Layer tree；
+- semantics、animation 和 input callback 也会占用同一帧的 CPU 预算。
 
-这套三层结构把原生 View 体系留在 Android Embedder 边界。Widget 的 Build/Layout/Paint 不走 `ViewRootImpl.performTraversals()`,Raster 也不走原生应用的 RenderThread;但 Flutter 仍然通过 Android `Surface` / `ANativeWindow` 向 BufferQueue 提交 buffer,SurfaceFlinger 仍负责最终合成。差异在 producer:原生应用通常由 HWUI/RenderThread 生产图层内容,Flutter 自绘 UI 由 Engine 的 Raster 路径生产。
+Widget rebuild 不等于整页 layout 或 repaint。Element 更新后，只有相应 RenderObject 被标记为需要 layout/paint，后续阶段才会继续执行。判断“重建过多”时，应同时看 rebuild 数量、layout/paint 范围和帧耗时。
 
-`[图:Flutter 三层架构与 Android 系统服务的关系。展示 Framework(Dart) → Engine(C++) → Platform Embedder(Android) 的层次关系,以及与 SurfaceFlinger、InputManager 的交互点]`
+### Engine：把 DisplayList 变成 GPU 工作
 
-### 线程模型
+Engine 用 C++ 实现，承接 Dart runtime、frame scheduling、DisplayList、rasterizer、文本、图片与图形 backend。Rasterizer 消费 Layer tree/DisplayList，通过 Impeller 或 legacy renderer 创建 GPU command，最后面向 Android render target 提交 buffer。
 
-Flutter 3.32 stable 之后,Android / iOS 的主线线程模型改成 Main(UI+Platform) / Raster / IO。原先单独的 UI 线程不再作为移动端主线存在,Dart main isolate 与 Platform Embedder 运行在同一个原生平台主线程上。旧文档、旧 Trace 或定制 Embedder 仍可能出现 Platform / UI / Raster / IO 四线程形态,读 Trace 时先用 Flutter 版本判断。
+Flutter 3.44.8 的 Impeller 目录把职责分成 compiler、renderer、backend、entity、display_list、typographer 和 shader_archive 等子系统。离线 shader compiler `impellerc` 在 engine 构建期处理 Impeller 自带 shader；运行时 renderer 仍要处理 pipeline、纹理、buffer、render pass、同步和具体 GPU driver。
 
-**Main(UI + Platform)线程**(Android 主线程,Perfetto 中可能显示为 `1.platform`、`io.flutter.platform` 或进程主线程):承接 Android 生命周期、输入、Platform Channel、插件回调,也执行 Dart main isolate 上的 Widget Build、Layout、Paint,生成 DisplayList。这个线程被同步插件调用、Dart 计算或 View / PlatformView 工作占满时,都会直接压缩本帧预算。
+### Android Embedder：接入系统对象
 
-**Raster 线程**(`1.raster` / `io.flutter.raster`):接收 DisplayList,调用 Skia 或 Impeller 生成 GPU 命令并提交到 Surface。Raster 线程 CPU 占用高,通常说明光栅化、纹理上传、shader / pipeline 或 GPU 提交工作偏重。
+Android embedding 负责：
 
-**IO 线程**(`1.io` / `io.flutter.io`):负责图片、文件等资源加载与部分 GPU 资源准备。它不直接执行 Widget Build,但图片解码、上传或资源等待会间接拖慢后续帧。
+- Activity/Fragment 与 `FlutterView` 生命周期；
+- `SurfaceView`、`TextureView` 或 `ImageReader` render target；
+- `Choreographer` VSync；
+- 输入、IME、accessibility 与 system UI；
+- Platform Channel、plugin 与 PlatformView；
+- 把 engine 输出接到 Android `Surface` / `ANativeWindow`。
 
-**Flutter 3.31- 旧模型**:Platform 线程处理 Android 主线程事件,UI 线程单独运行 Dart main isolate,Raster 与 IO 线程保持独立。读旧 Trace 时,`1.ui` / `io.flutter.ui` 上的 Build/Layout/Paint 是 Dart 侧主入口;读 3.32 stable+ Trace 时,这些工作会并入 Main(UI+Platform) 线程观察。
+纯 Flutter Widget 不进入 Android View 的 measure/layout/draw。Android View hierarchy 仍负责宿主窗口、`FlutterView` 容器、输入、系统栏与 PlatformView。
 
-在 Perfetto 中,线程名受内核 16 字符限制和 Embedder 命名影响。搜索 `io.flutter`、`flutter`、`BeginFrame`、`DrawFrame` 比只搜 `1.ui` 更稳。一个 3.32 stable+ Flutter 应用的一帧大致是:Main(UI+Platform) 收到 VSync → Dart Build/Layout/Paint 生成 DisplayList → Raster 线程光栅化并提交 Surface → SurfaceFlinger 合成。
+下面的简化链路用于确定责任边界：
 
-`[图:Flutter 3.32 stable+ 线程模型在 Perfetto 中的表现。展示 Main(UI+Platform)、1.raster / io.flutter.raster、1.io / io.flutter.io 三组 Track,旁注 Flutter 3.31- 或定制 Embedder 中 1.ui / io.flutter.ui 仍可能独立出现]`
-
-## 与 Android 原生渲染的差异
-
-理解 Flutter 的渲染架构后，再和原生 Android 的渲染管线做系统对比。这个对比的用途是帮助实际排查快速定位问题，不做路线优劣判断。
-
-### 渲染管线的根本区别
-
-原生 Android 的渲染管线在 §2.3 和 §2.5 已经展开:VSync → Choreographer → MainThread(doFrame: Input/Animation/Traversal) → RenderThread → SurfaceFlinger。这条管线有几个特征:它由系统的 VSync-app 信号触发;MainThread 和 RenderThread 是流水线式的协作关系;最终的帧提交要通过 BufferQueue 和 SurfaceFlinger。
-
-Flutter 的帧起点仍来自系统 VSync。当前 Android Engine 优先在 C++ 侧通过 `VsyncWaiterAndroid::AwaitVSync()` 调用 NDK `AChoreographer`;只有该路径不可用时,才回退到 Java `VsyncWaiter.asyncWaitForVsync()` / `FlutterJNI.onVsync()`。Flutter 使用系统 Choreographer 获取帧信号,随后由 Engine 接管 Dart 与 Raster 调度。它没有脱离 Choreographer 自己计时,也不会进入原生 View 的 traversal 流程。
-
-拿到帧信号之后,Dart 层的 `setState()` 只负责标记需要重建的 Element;Build/Layout/Paint 在 Flutter Framework 内生成 DisplayList,再交给 Raster 线程执行 Skia 或 Impeller 绘制。在 Perfetto 中,如果开启 `view`/`gfx` 相关 atrace 类别,`1.platform` 或 `io.flutter.platform` 上可能出现 `PlatformVsync`、`VsyncProcessCallback` 或 Java 回退路径中的 `Choreographer#doFrame`。判断是否走原生 View 绘制,不看有没有 Choreographer,而看后面有没有 `ViewRootImpl.Traversal`、HWUI / RenderThread 绘制和对应的 Android View 层级工作。Flutter 自绘 UI 的主路径会更多显示为 `Animator::BeginFrame`、`Rasterizer::DrawToSurfaces` 等 Engine 事件。
-
-### Surface 的使用方式
-
-Flutter 在 Android 上通过一个 Surface(通常是 SurfaceView 或 TextureView 提供的 Surface)来输出渲染结果。Flutter Engine 在 Raster 线程上完成光栅化后,直接将帧 buffer queue 到这个 Surface 中。SurfaceFlinger 在 VSYNC-SF 到来时,像合成其他任何 Surface 一样合成 Flutter 的 Surface。
-
-还有一个细节:Flutter 没有绕过 BufferQueue。原生 Android 中,App 通过 `queueBuffer` 将 `GraphicBuffer` 提交给 BufferQueue,然后 SurfaceFlinger 通过 `acquireBuffer` 拿到 buffer 进行合成;Flutter 也走 Surface/BufferQueue 这条系统边界。Flutter 的 buffer producer 在 Engine Raster 路径里,提交动作来自 Engine 对 `Surface` / `ANativeWindow` 的使用,不经过 Android Framework 的 HWUI / RenderThread。
-
-`[已验证: Flutter Engine 通过 Android Surface/ANativeWindow 提交帧,SurfaceFlinger 仍按普通 layer 合成;Engine VSync 入口见 Flutter 3.44 vsync_waiter_android.cc / choreographer.cc,Java fallback 见 VsyncWaiter.java]`
-
-### PlatformView:Flutter 与原生 View 的桥梁
-
-Flutter 应用有时候需要嵌入原生的 Android View，比如 WebView、MapView，或者某些只有 Android 原生实现的控件。这就是 PlatformView 的工作。
-
-PlatformView 不能再只按"两种模式"理解。Flutter Engine 源码里至少有三条可核对路径:
-
-- **Virtual Display**:早期路径,把原生 View 渲染到 VirtualDisplay 的 Surface,再通过 Texture Widget 显示。Android 10 之前常见的额外拷贝来自这条路径,滚动和输入同步也更容易出问题。
-- **Hybrid Composition / PlatformViewLayer**:把原生 View 放回 Android View 层级,适合承载 `SurfaceView` 这类无法稳定投影到 TextureLayer 的 View。`PlatformViewsController#createForPlatformViewLayer()` 会进入 `configureForHybridComposition()`,这条路径仍可能带来 Platform 线程上的布局、offset 和同步开销。
-- **TextureLayer Hybrid Composition(TLHC)**:`PlatformViewsController#createForTextureLayer()` 的默认路径。源码注释把它标为 default / recommended for better performance;条件是 API 23+,且嵌入 View 不能包含需要 Virtual Display 的类型(典型是 `SurfaceView`)。Android 侧用 `PlatformViewWrapper` 把 View 放在 View 层级中,再把画面投影到 `PlatformViewRenderTarget`,由 Engine 以 TextureLayer 方式合成。
-
-现代 Flutter 的 PlatformView 性能边界还要看 render target。`FlutterRenderer#createSurfaceProducer()` 在 API 29+ 且 AHB 可用时优先使用 `ImageReaderSurfaceProducer`,否则回退到 `SurfaceTextureSurfaceProducer`;`ImageReaderPlatformViewRenderTarget` 在 API 33+ 才能通过 `Image.getFence()` 等待同步 fence。这个分支解释了为什么 Android 10、Android 13 以后 PlatformView 的表现不能只套用早期 Hybrid Composition 结论。
-
-分析 PlatformView 卡顿时,不要直接把所有问题归因成"线程合并"。如果走 PlatformViewLayer / Hybrid fallback,`1.platform` 上通常会出现更重的 View hierarchy、layout/offset/sync 工作;如果走 TLHC + ImageReader/SurfaceProducer,开销更多体现在 render target resize、image acquire、fence 等待和 SurfaceFlinger 合成上。WebView、MapView、SurfaceView、叠加动画和滚动列表会触发不同路径,Perfetto 里要同时看 `io.flutter.platform`、`io.flutter.raster` 和 SurfaceFlinger。
-
-到了 Android 14 这一代,公开可核对的 Flutter 官方资料并没有给出"Hybrid Composition 再减少一次拷贝"这类新的通用结论。PlatformView 相关路径经历了一轮兼容性修复,Flutter 3.24 release notes 记录了 `Workaround HardwareRenderer breakage in Android 14` 和 `Fix another instance of platform view breakage on Android 14` 等修复项。Android 14+ 的收益更偏向 PlatformView / Surface 管理路径的稳定性修复,Hybrid Composition 的基本合成模型没有被重新设计。`[已验证: Flutter 3.24 release notes, https://docs.flutter.dev/release/release-notes-3.24.0]`
-
-### 16KB Page Size 合规与 Flutter 原生插件
-
-Flutter 的渲染最终通过 Android Surface 提交帧，但 Flutter 应用里如果引入原生插件（PlatformView、FFI 或预编译 .so），Android 15+ 的 16KB page size 要求就会直接影响这些原生代码的兼容性。这一点不是渲染管线本身的问题，但多数 Flutter 应用都会用到原生插件，排查异常崩溃时经常要回到这里。
-
-Android 15+ 已支持 16KB page-size 设备。Google Play 从 2025-11-01 起要求所有面向 Android 15+ 的新应用和更新兼容 16KB page sizes。对 Flutter 开发者来说，影响的是包含原生代码的第三方插件，而不是 Dart 代码本身。
-
-Flutter plugin 中的 `.so` 文件对齐要求取决于 NDK 版本：
-
-- **NDK r28+**：默认生成 16KB-aligned shared libraries，无需额外配置
-- **NDK r27 及以下**：必须显式配置 linker flags（如 `-Wl,-z,max-page-size=16384` / `-Wl,-z,common-page-size=16384`），否则在 16KB 环境下会出现内存对齐错误和运行时崩溃
-
-排查清单：
-
-- `flutter pub deps` 列出所有依赖，逐个检查含原生代码的 plugin 是否已适配 16KB
-- 搜索 plugin 的 `build.gradle` / `CMakeLists.txt`，优先升级 NDK r28+（默认生成 16KB-aligned `.so`）
-- 若必须使用 NDK r27 或更低版本，在 `CMakeLists.txt` 或 `android` 块中显式配置 linker flags，并确保 AGP 8.5.1+ packaging 对齐
-- 在 16KB 模拟器（`--16kb-page-size`）或 16KB 真机上跑集成测试，验证 native 层行为
-- 重点检查 PlatformView、FFI、`dart:ffi` 直连 native 库这三类路径——对齐错误在这些场景下最容易触发
-- 复测预编译 `.so` 和 `libc++_shared.so` 的对齐状态
-
-如果某个关键 plugin 还没有适配，需要区分两类问题：若是 AGP/APK zip alignment 问题，可升级 AGP 8.5.1+（自动处理 uncompressed shared libraries 的 16KB 对齐），或在旧版 AGP 下临时使用 compressed shared libraries；若是 plugin 内含未重新编译的 `.so`（ELF `p_align` 仍为 4KB）或 native 代码中 hardcoded `PAGE_SIZE=4096`，必须等待 plugin 作者更新、本地 fork 用 NDK r28+ 重编、或替换 plugin。`packagingOptions` 不能修复 ELF segment alignment 和 native 代码的 4KB 假设。
-
-`[已验证: Android 15+ 16KB page size requirements, developer.android.com/guide/practices/page-sizes; NDK r28 release notes]`
-
-## 性能分析方法
-
-分析 Flutter 应用的性能有一个天然难点：Flutter Engine 内部的 Dart/C++ 层面和 Android 系统的内核/GPU 层面各管一摊，问题可能出在任何一层。因此需要两套工具配合：Flutter DevTools 看 Engine 内部的执行细节，Perfetto 看系统层面的调度和合成状态。
-
-### Flutter DevTools
-
-Flutter DevTools 是 Flutter 官方的性能分析套件。它提供了几个关键的分析面板:
-
-**Performance 面板**(集成 Perfetto trace viewer):这是最常用的面板。它记录每一帧的 UI / Main 侧和 Raster 线程耗时,用火焰图展示。Flutter DevTools 在 2.21.1 版本就已经把旧的 timeline trace viewer 替换成 Perfetto trace viewer。DevTools 的演进节奏和 Flutter SDK 版本不一一绑定，分析问题时以 DevTools 自身版本为准。`[已验证: Flutter DevTools 2.21.1 release notes, https://docs.flutter.dev/tools/devtools/release-notes/release-notes-2.21.1]`Performance 面板中展示的信息包括：
-
-- 每一帧在 UI / Main 侧的 Build、Layout、Paint 各自花了多少时间
-- Raster 线程的光栅化耗时
-- 是否有帧超出了帧预算(60Hz 下 16ms,120Hz 下 8ms)
-- 具体是哪个 Widget 或哪个 Dart 函数消耗了最多的时间
-
-**CPU Profiler 面板**:提供 Dart 代码的 CPU 采样分析,展示 Dart 函数级别的 CPU 占用。
-
-**Memory 面板**:监控 Dart 堆的内存使用,帮助发现内存泄漏。
-
-使用 DevTools 分析时有一个前提：必须在 Profile 模式下运行。Debug 模式引入了大量调试断言和 JIT 编译开销，性能数据不能代表真实发布环境。在命令行中用 `flutter run --profile` 启动即可。
-
-### Perfetto 系统级分析
-
-当 Flutter 应用出现性能问题,但 DevTools 中找不到明显的 Dart 层面瓶颈时,问题可能出在系统层面。这时就需要用 Perfetto 抓取系统级 Trace。
-
-抓取 Flutter 应用的 Perfetto Trace 和抓取原生应用的没有本质区别。一个推荐的抓取配置:
-
-```bash
-# 抓取包含 Flutter 线程和 SurfaceFlinger 的 Trace(持续 10 秒)
-adb shell perfetto -c - --txt <<EOF
-buffers: { size_kb: 63488 }
-data_sources: {
-  config {
-    name: "linux.ftrace"
-    ftrace_config {
-      ftrace_events: "sched/sched_switch"
-      ftrace_events: "power/cpu_frequency"
-      atrace_categories: "view"
-      atrace_categories: "gfx"
-      atrace_categories: "input"
-    }
-  }
-}
-duration_ms: 10000
-EOF
+```text
+Android Choreographer
+  → Flutter VsyncWaiter
+  → Dart animation / build / layout / paint
+  → Layer tree / DisplayList
+  → Rasterizer
+  → Impeller or legacy renderer
+  → selected Android render target
+  → BufferQueue / host HWUI
+  → SurfaceFlinger
+  → HWC or RenderEngine
+  → display present
 ```
 
-在 Perfetto UI 中查看时,需要关注不同的 Track:
+这条链只覆盖 Flutter root 的公共主干。external texture 与 PlatformView 会在中间或显示端加入额外 producer 和 layer。
 
-- Flutter 3.32 stable+ 的 Main(UI+Platform) 线程:看 Dart Build/Layout/Paint、Platform Channel、插件同步调用和 PlatformView 工作是否挤占同一帧预算
-- Flutter 3.31- 或定制 Embedder 的 `1.ui` / `io.flutter.ui`:看 Dart 代码执行耗时、Widget 重建和 Dart VM GC
-- `1.raster` / `io.flutter.raster`:看光栅化、纹理上传、shader / pipeline 和 GPU 提交耗时
-- `1.io` / `io.flutter.io`:看图片解码、资源加载和 GPU 资源准备是否拖慢后续帧
-- CPU 整体使用率:看 Flutter 线程和系统服务是否在争抢 CPU 时间
-- SurfaceFlinger Track:看 Flutter 的 Surface 合成是否正常
+## VSync 与线程模型
 
-在 Perfetto 中,Flutter Engine 会输出自己的 trace event。系统抓 trace 时要保留 `gfx`、`view` 这类 atrace 类别,并在 UI 里同时搜索 `flutter`、`io.flutter`、`PlatformVsync`、`VsyncProcessCallback`、`BeginFrame`。Flutter 3.44 源码中的常见 slice 包括 `PlatformVsync`、`VsyncProcessCallback`、`Animator::BeginFrame`、`Rasterizer::DrawToSurfaces`;不同 Flutter 版本的事件名会变化,过滤时不要只依赖单个字符串。
+### Android 入口优先走 NDK AChoreographer
 
-### ADPF 系统级调频（待验证）
+Flutter 3.44.8 的 `VsyncWaiterAndroid::AwaitVSync()` 先检查 `impeller::android::Choreographer::IsAvailableOnPlatform()`。可用时，它在 UI task runner 上调用 NDK `AChoreographer_postFrameCallback64()` 或旧 callback；回调进入 `OnVsyncFromNDK()`，计算 frame start/target，再由 `FireCallback()` 交给 engine。
 
-排查 Flutter 性能时，还有一种情况是 Raster 线程本身负载正常，但帧仍然超时——可能是系统没有及时给到足够的 CPU / GPU 频率。Android 的 ADPF 框架提供了一种机制来解决这个问题，下面说明 Flutter Engine 当前对它的支持程度。
+NDK 路径不可用时，engine 才把任务投到 platform task runner，通过 Java `VsyncWaiter.asyncWaitForVsync()` 获取 `Choreographer` callback，再经 `FlutterJNI.onVsync()` / native callback 返回 C++。
 
-ADPF（Adaptive Performance Framework）的 `PerformanceHintManager` 是 Android 平台提供的动态调频接口。App 或引擎可以创建 HintSession,逐帧调用 `reportActualWorkDuration()` 反馈渲染负载,系统根据反馈调整 CPU/GPU 频率。
+因此，trace 中看到 `PlatformVsync`、`VsyncProcessCallback` 或 Java `Choreographer#doFrame`，只能证明 Flutter 在订阅系统 VSync。纯 Flutter Widget 后面不会出现 Android ViewRoot 的 traversal 与 HWUI RenderThread 绘制。
 
-Flutter 应用中 Raster 线程的工作量波动比原生应用更大。原生应用可以靠 Hardware Layer 缓存跳过部分帧的重绘,Flutter 自绘每一帧的内容,因此负载波动更剧烈。ADPF 的动态调频在理论上能更好地匹配这种波动特征。
+### Flutter 3.29 起合并 UI 与 Platform 线程
 
-截至当前,Flutter Engine 主干（ae5c360）的 `shell/platform/android`、`impeller`、`fml`、`runtime`、`lib/ui`、`common` 目录中未检索到 `PerformanceHint`、`APerformanceHint`、`reportActualWorkDuration`、`HintSession` 等符号；Flutter issue #155097（[Android] Determine if Android Performance Hint Manager is useful）已关闭为 not_planned。当前公开源码不能支撑“Flutter Engine 已自动启用 ADPF HintSession”这一结论。
+当前官方架构文档明确：Flutter 3.29 起，Android 和 iOS 默认把 UI thread 与 platform thread 合并，独立 UI thread 被移除，Dart main isolate 在原生 platform thread 上运行。
 
-在 Perfetto 中观察 ADPF 效果的方法：检查 `ADPF` 相关 slice 与 CPU frequency counter 的联动。当 Raster 线程进入高负载区间时,后续帧的 CPU 频率应该被拉高。如果频率没有响应,可能是设备的 ADPF 实现存在延迟或厂商定制限制。
+当前移动端主线可按三组执行者理解：
 
-如果后续 Flutter Engine 显式接入了 ADPF,排查性能问题时可以把调频响应时间作为一个辅助诊断维度——如果调频延迟超过了当前帧的剩余预算,提频就来不及挽救当前帧。
+| 执行者 | 主要工作 | 常见风险 |
+| --- | --- | --- |
+| Platform + Dart UI | Android callback、Platform Channel、plugin、animation、build、layout、paint | 同步 plugin、Dart 计算、View/PlatformView 工作互相争用 |
+| Raster | DisplayList raster、texture upload、pipeline、GPU submit | 复杂效果、首次资源、GPU/driver back-pressure |
+| IO | 图片与资源 I/O、解码、GPU resource context 相关工作 | 大图解码、磁盘 I/O、资源准备迟到 |
 
-### 自定义 Trace
+Flutter 3.28 及更早版本、部分过渡版本、定制 Embedder 或旧 trace 仍可能看到 Platform/UI/Raster/IO 分离形态。不要只凭 `1.ui`、`1.platform` 等线程名判断版本；线程名还会受到 Linux 16 字符限制和 engine 命名变化影响。
 
-Flutter 支持在 Dart 代码中插入自定义的 trace event,这些 event 会同时出现在 DevTools 和 Perfetto 中:
+### 合并线程改变了卡顿归因
 
-```dart
-import 'dart:developer' as developer;
+在合并模型中，下面几类工作会占用同一条 platform/Dart UI 时间线：
 
-// 在需要追踪的代码块前后添加
-developer.Timeline.startSync('my_custom_operation');
-// ... 需要追踪的代码
-developer.Timeline.finishSync();
+- Dart build/layout/paint；
+- Android 生命周期和输入 callback；
+- 同步 Platform Channel/plugin 调用；
+- PlatformView 的创建、布局和 View hierarchy 工作；
+- 某些 FFI 或主线程限定 API。
+
+Platform callback 很长时，Dart frame 可能迟到；Dart 计算很长时，Android callback 也会等待。排查时要看 task 的调用来源和 Running/Runnable 状态，不能把整条线程统一归为“Dart 慢”。
+
+## 与原生 Android HWUI 的边界
+
+原生 View 页面的一般路径是：
+
+```text
+Choreographer
+  → ViewRootImpl traversal
+  → View measure / layout / draw
+  → RenderNode / DisplayList
+  → HWUI RenderThread
+  → App Window buffer
 ```
 
-这在定位某个特定操作的耗时时非常有用。比如怀疑某个列表的 item builder 太慢时,可以在 builder 中添加 trace event,然后在 DevTools 或 Perfetto 中直接看到它的耗时。
+Flutter 自绘 UI 的路径跳过 `ViewRootImpl.performTraversals()` 对 Widget tree 的绘制，也没有 App HWUI 的 RenderThread 分工。它由 Flutter framework 生成 DisplayList，再由 Flutter Raster thread 生产 root target。
+
+两条路径仍共享 Android 显示后半段：
+
+- engine 通过 `Surface` / `ANativeWindow` 连接 BufferQueue；
+- SurfaceFlinger latch 可见 layer；
+- HWC 尝试 DEVICE composition，必要时由 RenderEngine 做 CLIENT composition；
+- dma-buf 与 dma-fence/sync_file 负责跨进程、跨设备共享与同步。
+
+PlatformView、`RenderMode.texture`、`RenderMode.image` 和宿主 Android UI 会重新引入 ViewRoot/HWUI，所以上述区别只适用于纯 Flutter root 主路径。
+
+## Root RenderMode：surface、texture、image
+
+Flutter 3.44.8 的 `RenderMode.java` 定义三种 root 输出。它描述 Flutter 主画面接到哪种 Android View，不描述 PlatformView 的合成策略。
+
+### `RenderMode.surface`
+
+`FlutterSurfaceView` 继承 `SurfaceView`，背后有独立 Surface。engine 直接面向这条 BufferQueue 生产 root buffer，GPU completion 通过 producer fence 传给 Consumer，SurfaceFlinger 通常看到独立的 child layer。
+
+优点：
+
+- 少一次回到宿主窗口的纹理采样；
+- `RenderMode.java` 将其标为性能首选；
+- opaque `FlutterActivity` 默认返回 `RenderMode.surface`。
+
+边界：
+
+- 独立 layer 的 z-order、alpha、生命周期和 transition 需要协调；
+- 不能像普通 View 内容一样任意夹在两个 Android View 之间做变换；
+- Surface 创建、销毁或尺寸变化时，engine 必须切换输出 target。
+
+### `RenderMode.texture`
+
+`FlutterTextureView` 让 engine 先写入 `SurfaceTexture`。Android 17 `TextureView` 由宿主 HWUI 取得最新 texture image，再采样进 host App Window buffer。
+
+这条路径至少包含两个节拍：
+
+```text
+Flutter Raster / GPU
+  → SurfaceTexture producer buffer
+  → onFrameAvailable / TextureView update
+  → host ViewRoot traversal + HWUI draw
+  → host App Window buffer
+  → SurfaceFlinger
+```
+
+Flutter 中间 image ready 后，宿主窗口还要及时发起 traversal、取得 texture、完成 HWUI draw 并提交 host buffer。透明背景的 `FlutterActivity` 默认使用 texture mode，因为它需要与其他 Android View 做 z-order 与变换。
+
+### `RenderMode.image`
+
+`FlutterImageView` 通过 `ImageReader` 接收 engine 输出，再把 image 作为 Android View 内容画回宿主 Canvas。它主要服务 render surface 切换和 PlatformView 等特定交互场景。
+
+分析时要检查：
+
+- ImageReader 是否有新 image；
+- acquire、fence wait 与 image release；
+- `HardwareBuffer`/Bitmap 包装；
+- 宿主 View draw 与 App Window buffer。
+
+它不应被当作普通 Flutter 页面默认的高性能模式。
+
+### 三种模式怎样从 layer tree 识别
+
+| RenderMode | 中间对象 | SurfaceFlinger 主要可见对象 | 常见等待 |
+| --- | --- | --- | --- |
+| surface | 独立 Surface buffer | Flutter root child layer | dequeue、GPU fence、SF latch |
+| texture | SurfaceTexture image | host App Window | image acquire、host traversal/HWUI |
+| image | ImageReader image | host App Window | image acquire/release、host draw |
+
+只看进程名不够。需要同时检查 Android View hierarchy、SurfaceFlinger layer tree、buffer size/format、frame number 和 fence。
+
+## External texture 与 SurfaceProducer
+
+相机、视频或 native renderer 可以通过 `TextureRegistry` 向 Flutter scene 提供 external texture。这里有两级 producer：
+
+1. plugin producer 把 camera/codec/GL 内容写入 Android Surface；
+2. Flutter Raster 采样最新 image，再生成 Flutter root buffer。
+
+plugin buffer ready 不表示 Flutter 已采样；Flutter root 提交也不表示显示已经 present。插件帧率、Flutter 帧率和 display 刷新率可以不同。
+
+### 3.44.8 的 backing 选择
+
+`FlutterRenderer.createSurfaceProducer()` 的稳定 tag 实现是：
+
+- 未强制使用 GL texture；
+- Android API 29+；
+- 设备不命中已知 `HardwareBuffer` 缺陷；
+- 满足以上条件时创建 `ImageReaderSurfaceProducer`；
+- 其他情况回退 `SurfaceTextureSurfaceProducer`。
+
+`SurfaceProducer` 在 Flutter 3.24 稳定可用。plugin 应使用该抽象取得 Surface，不应假设 backing 永远是 `SurfaceTexture`。
+
+### 生命周期与 fence
+
+默认 `createSurfaceProducer()` 使用 `SurfaceLifecycle.manual`。显式选择 `resetInBackground` 时，ImageReader 路径会注册 trim-memory listener，在后台或内存压力清理时通过 `onSurfaceCleanup()` 通知 plugin，恢复时再调用 `onSurfaceAvailable()`。
+
+`SurfaceTextureSurfaceProducer.setCallback()` 在 3.44.8 中为空，它不会收到相同的 platform cleanup callback。plugin 必须按实际 backing 契约处理 Surface 重建，不能只验证其中一条路径。
+
+`ImageReaderSurfaceProducer` 只在 Android API 33+ 使用 `Image.getFence()` 等待 image fence；低版本没有同一套 Java fence API。`handlesCropAndRotation()` 在 ImageReader 路径返回 `false`，SurfaceTexture 路径返回 `true`，相机 plugin 还要处理传感器方向与裁剪差异。
+
+## PlatformView：四类路径
+
+PlatformView 用于嵌入 WebView、地图、广告或其他原生 Android View。Flutter Widget tree 与 Android View hierarchy 是两套对象树，合成策略决定原生 View 被转成 texture，还是保留为 Android layer。
+
+### Texture Layer Hybrid Composition（TLHC）
+
+TLHC 把 Android View 的绘制结果送入 Flutter 可采样 texture，再由 Flutter scene 合入 root target。
+
+优势：
+
+- Flutter transform、clip 和 opacity 更容易保持；
+- 当前官方文档把 texture layer 列为默认路径；
+- Flutter 与普通 Android View 的视觉组合较直接。
+
+成本：
+
+- 多一段 buffer/texture acquire；
+- 快速滚动的 WebView 可能出现 jank；
+- 包含 `SurfaceView` 的控件会遇到 accessibility、text magnifier 或重定向限制；
+- invalidate、输入与 accessibility 需要桥接。
+
+`PlatformViewsController.createForTextureLayer()` 会先判断是否支持 texture layer；不满足时再回退 Hybrid Composition 或 Virtual Display。
+
+### 旧 Virtual Display
+
+Virtual Display 把原生 View 放进虚拟显示，通过中转 Surface/texture 给 Flutter 使用。它可能增加 buffer、内存、输入与延迟成本。
+
+旧 plugin、包含特殊 Surface 的 View 或 fallback 条件仍可能使用该路径。看到 `AndroidView` 时，应查创建 API、engine 版本和 layer tree，不能直接推断合成模式。
+
+### Hybrid Composition（HC）
+
+HC 让平台 View 按 Android View 正常绘制，Flutter 内容和 overlay 通过 Android/SurfaceFlinger 与平台 View 组合。
+
+优点是 native fidelity、accessibility 与 `SurfaceView` 支持较完整。代价是 Flutter root、overlay、host window 和 Surface-backed child 可能形成多条提交节拍。Flutter 官方文档仍提示 HC 会降低 Flutter FPS；分析时要看 platform/raster 调度、两套 View traversal、transaction 与 layer latch。
+
+### Hybrid Composition++（HCPP）
+
+HCPP 从 Flutter 3.44 起提供，当前仍为实验性 opt-in。官方要求：
+
+- Android API 34+；
+- Vulkan rendering；
+- Impeller；
+- manifest 或本地运行 flag 显式开启。
+
+发布版本可在 `<application>` 下使用下面的配置：
+
+```xml
+<meta-data
+    android:name="io.flutter.embedding.android.EnableHcpp"
+    android:value="true" />
+```
+
+这项配置请求 HCPP；设备不满足条件时，Flutter 会回退到 App 原先配置的平台 View 策略。HCPP 使用 Android 14 起的 native transaction synchronization 改善旧 HC 的同步开销，但仍可能存在多个 Surface/layer，也有复杂透明 overlay 的已知限制。
+
+Android 14、15、16 或 17 不会自动开启 HCPP。问题报告应记录 Flutter 版本、flag、API level、Vulkan/Impeller 状态与实际 fallback。
+
+## Impeller 与 legacy renderer
+
+### 默认范围
+
+Flutter 官方文档规定：
+
+- Flutter 3.27 起，Android API 29+ 默认启用 Impeller；
+- 系统低于 API 29 或设备不支持 Vulkan 时，回退 legacy OpenGL renderer；
+- `--no-enable-impeller` 和 manifest opt-out 可用于诊断当前版本，但 engine 已提示未来会移除 opt-out。
+
+renderer 由 App 携带的 Flutter engine 决定。Android 15、16 或 17 系统升级不会替旧 APK 切换 renderer。
+
+### 离线 shader 解决什么
+
+Impeller 3.44.8 README 的目标包括：
+
+- shader compilation 与 reflection 在 engine build 期完成；
+- pipeline state object 提前构建；
+- cache 由 engine 显式控制；
+- 资源有标签，便于工具分析；
+- 单帧 workload 可以在需要时分给多个线程。
+
+`impellerc` 处理 Impeller 自带的 GLSL 4.60 shader，生成 SPIR-V、后端 shader archive 与 C++ reflection bindings。编译器不随 App 运行时发布。
+
+这能减少 legacy Skia/OpenGL 路径中常见的运行时 shader compilation jank，但不能让首帧没有成本。下面工作仍可能迟到：
+
+- Vulkan context 和 driver 初始化；
+- pipeline/cache miss 与 driver 机器码准备；
+- 字体 atlas、图片 decode/upload；
+- 大纹理、blur、saveLayer 和多 pass；
+- external texture fence；
+- GPU 队列、内存带宽与温控。
+
+Flutter 3.44.8 的 `ShellSetupGPUSubsystem` 还明确把某些 Android Vulkan context 创建移出启动关键路径，因为它可能超过 100 ms。这说明“shader 离线编译”与“所有 GPU 初始化都已消失”是两件事。
+
+### 怎样做 renderer A/B
+
+诊断时固定同一设备、build、页面数据、分辨率、刷新率和温度，对比 Impeller 与 opt-out：
+
+1. 分开冷启动、首次进入和热路径；
+2. 比较 platform/Dart、Raster、GPU completion 与 display deadline；
+3. 检查画面正确性、memory、功耗与持续运行温度；
+4. 记录实际 Vulkan/GLES backend 与 GPU driver；
+5. 不使用跨设备百分比作为结论。
+
+如果只有首次 Vulkan context 初始化改善，不能写成列表长期帧率提升；如果 Raster CPU 下降但 GPU fence 仍晚，还要继续查像素和带宽。
 
 ## 常见性能问题
 
-这些工具可以对应到 Flutter 在 Android 上最常见的几类性能问题。不同问题在 Perfetto 和 DevTools 中有不同表现,识别这些特征是定位问题的关键。
+### Widget rebuild 范围过大
 
-### Shader 编译卡顿(Skia 时代)
+先用 DevTools 的 rebuild/layout/paint 信息确认哪一阶段超时。常见修复包括：
 
-这是 Flutter 使用 Skia 渲染引擎时长期最容易被提到的问题。Skia 在运行时编译 shader 程序，这些 shader 是 GPU 用来执行特定绘制操作的小程序。当 Flutter 应用首次遇到一种新的绘制操作(比如第一次使用某个复杂的 BlendMode、第一次绘制带有特定 path 操作的裁剪)时,Skia 需要在 Raster 线程上编译对应的 shader。
+- 把状态放到最小更新范围；
+- 对稳定子树使用 `const`；
+- 避免在 build 中做同步 I/O、JSON 解析或大计算；
+- 大计算移到 isolate 前，先评估消息复制与调度成本；
+- 不为减少 rebuild 引入更昂贵的 layout 或 repaint。
 
-这个编译过程可能明显超出一帧预算。常见现象是:应用启动后第一次滚动到某个页面时,或者第一次播放某个动画时出现卡顿;第二次经过同样的页面或动画时,shader 已经进入缓存,卡顿会减轻或消失。具体耗时要以目标设备和驱动为准。
-
-在 Perfetto 中,这种现象表现为 Raster 线程上突然出现一个很长的 slice,内部包含 `ShaderCompile` 相关的标记。整个 Raster 线程在这段时间被阻塞,UI / Main 侧虽然已经准备好了 DisplayList,但必须等 Raster 线程完成 shader 编译才能继续。
-
-Flutter 团队曾提供 `flutter drive` 配合 SkSL warm-up 的方案来预热 shader,但这个方案使用复杂,效果也不稳定。更稳的方向是切换到 Impeller 引擎。
-
-### Widget 过度重建
-
-这是 Dart 层面最常见的性能问题。Flutter 的声明式 UI 框架在状态变化时会重建 Widget 树,但如果不注意控制重建范围,很容易导致整棵树都在重建。
-
-最常见的表现是:在 Perfetto 或 DevTools 中,UI / Main 侧每一帧耗时都很长,火焰图显示大量的 `build` 方法在执行。但 Raster 线程很空闲，因为 UI / Main 侧虽然生成了大量 DisplayList，很多内容并没有变化。
-
-这类问题的诊断和修复属于 Flutter 开发层面的优化,核心思路是:用 `const` 构造函数标记不需要重建的 Widget、将大的 build 方法拆分为小组件、使用合适的 State 管理方案限制重建范围。DevTools 的 "Rebuild Tracker" 功能可以帮助定位哪些 Widget 被频繁重建。
-
-### PlatformView 相关的性能问题
-
-当 Flutter 应用中嵌入了原生 View(如 WebView、MapView),性能特征会发生显著变化。
-
-一是 Main(UI+Platform) 线程压力。旧模型里常把 Hybrid Composition 的回退称为 thread merging:当 Flutter 内容和 PlatformView 内容重叠时,部分渲染与 View hierarchy 工作会压到 Platform 线程。Flutter 3.32 stable+ 已把 Dart UI 与 Platform 主线程合并,表现会变成同一条主线程同时承担 Dart Build/Layout/Paint、插件回调、View 布局和 PlatformView 同步工作。Perfetto 中要同时看 Main(UI+Platform) 与 `1.raster` 是否一忙一闲,不能只套用旧的 `1.ui` / `1.platform` 分离模型。
-
-另一个常见场景是可滚动列表中嵌入多个 PlatformView。每个 PlatformView 在滚动时都需要更新 offset、size 或 Surface 状态,这会触发布局、同步 fence 或 SurfaceControl transaction。如果列表快速滚动,这些操作可能超出帧预算。
+rebuild 数量只是线索。一个很小但高频的 Widget rebuild 可能便宜，一个触发全屏 layout/paint 的单次更新可能更贵。
 
 ### 列表滚动卡顿
 
-Flutter 的 ListView/GridView/CustomScrollView 在数据量大时可能出现卡顿。原因通常是 item builder 太慢：每个 item 在构建时做了太多工作（网络请求、图片解码、复杂的 Widget 树等）。
+列表问题常混合多种成本：
 
-在 Perfetto 中的表现是 UI / Main 侧在滚动时持续高负载,每一帧的 Build 阶段耗时过长。Flutter 提供了 `ListView.builder` 和 `cacheExtent` 等机制来缓解这个问题：builder 只构建可见区域附近的 item，cacheExtent 控制预构建范围。
+- item build/layout 过重；
+- intrinsic layout 或高度反复变化；
+- 图片 decode、缩放、上传和 cache miss；
+- blur、clip、opacity、`saveLayer` 与大阴影；
+- PlatformView、WebView 或地图；
+- GC、Dart heap 与 native/GPU memory 压力；
+- merged thread 上的 Android callback/plugin 竞争。
 
-## Impeller 引擎
+排查时固定列表数据与滚动手势，分别关闭图片、复杂效果、PlatformView 和业务计算。一次只改变一个变量，再比较 UI/Raster/GPU/display。
 
-前面讨论的性能问题里，shader 编译卡顿是最难绕过的一类：即使 Dart 代码已经优化到位，Widget 树管理得很干净，用户第一次看到某个动画时依然可能卡顿。这就是 Flutter 团队开发 Impeller 的原因。
+### Raster 或 GPU 慢
 
-### 为什么需要 Impeller
+Raster thread 长 slice 不一定表示 GPU 正在执行；它可能在准备 display list、上传资源、创建 pipeline、提交或等待 back-pressure。
 
-Impeller 是 Flutter 的新一代渲染引擎,从 Flutter 3.16 开始在 iOS 上默认启用,从 Flutter 3.27 开始在 Android API 29+ 上默认启用。它的目标是把 shader compilation jank 从移动端运行时路径里移出去。
+证据上要分开：
 
-Skia 时代,某些 shader / pipeline 在首次遇到时才由驱动编译,复杂 path、blend、mask、clip 或特定 GPU 驱动组合可能让 Raster 线程出现长 slice。耗时没有通用数字,受 GPU、驱动、shader 类型、缓存状态影响;排查时以目标设备的 DevTools / Perfetto 为准。
+- Raster CPU Running/Runnable；
+- driver/pipeline 相关 slice；
+- GPU submission 与 completion；
+- root producer fence；
+- SurfaceFlinger latch 与 display present。
 
-Impeller 的离线处理发生在 engine build 阶段;应用构建阶段不会把业务里所有可能 shader 逐个预编译。engine 的 `impellerc` 将 Impeller 源码树中的 GLSL 4.60 shader 转成后端格式,生成 shader archive / binary blob,并通过 reflector 生成 C++ translation units,减少运行时 shader reflection。应用运行时使用随 engine 打包的 shader 资产和生成代码,再按绘制场景创建或复用 pipeline state object。官方文档把它概括为:shader compilation and reflection offline at build time,pipeline state objects built upfront,缓存由 engine 显式控制。
+降低 effect 面积或 render target 像素后 GPU completion 同步下降，才支持 fragment/带宽方向。只看到 Raster thread 忙，不能直接归因 GPU。
 
-### Impeller 的架构
+### Platform Channel 与 plugin
 
-Impeller 的内部架构可以分为几个层次:
+同步 Platform Channel、主线程限定 plugin、FFI 和 native callback 都可能占用合并后的 platform/Dart UI 线程。需要记录：
 
-**DisplayList / Entity 层**负责接收 Flutter Framework 生成的 DisplayList,并把绘图意图转换为 Impeller 内部的 2D render entity。每个 entity 描述一次绘制操作,包括变换、裁剪、纹理、颜色和 shader 参数等信息,后续再由 renderer 转成具体后端命令。
+- 调用方向与 payload；
+- serialization/deserialization；
+- Dart 与 Java/Kotlin/native 执行时间；
+- task 是否 Runnable 但未调度；
+- 是否等待 Surface、binder、锁或 I/O。
 
-**Renderer / backend 层**管理纹理、buffer、render pass、pipeline state object(PSO)和后端 API 适配。Impeller 支持 Vulkan、Metal 和 OpenGL ES 等后端;具体后端实现位于 `//impeller/renderer/backend` 之下,上层通过 backend-agnostic 的接口组织绘制。
+异步 API 只能释放调用方等待，不会自动减少总工作量。高频小消息还可能被调度和序列化成本放大。
 
-**离线 shader 管线**由 `//impeller/compiler`、`//impeller/shader_archive` 和生成的 C++ translation units 组成。`impellerc` 不随应用发布;它在 engine build 阶段把 shader 与 reflection 信息处理成 engine 可打包的资产和代码,运行时再用这些资产创建或复用 PSO。
+## DevTools 与 Perfetto 怎样配合
 
-**渲染执行**阶段,Impeller 按 render pass / command buffer 组织绘制,并尽量利用现代图形 API 的并发和显式资源管理。公开 README 说明 Impeller 可以在需要时把单帧 workload 分发到多线程,以及 entity 层有 pass optimization / pass rewriting;"只光栅化变化 Tile"缺少一手资料支撑,本节不把它当成 Android 通用行为。
+### DevTools：先分 Framework 与 Raster
 
-`[图:Impeller 渲染管线的层次结构。展示 DisplayList / Entity → Renderer → backend → GPU (Vulkan/Metal/OpenGL ES) 的数据流,标注 engine build 阶段的 impellerc、shader archive 与 C++ translation units]`
+性能测试应使用 Profile 或 Release build。Debug/JIT、assert、service protocol 与工具插桩会改变时序。
 
-### Impeller 在 Android 上的表现
+DevTools 适合回答：
 
-Impeller 在 Android 上优先使用 Vulkan 后端。Flutter 3.27 起,Android API 29+ 默认启用 Impeller;低于 API 29、设备不支持 Vulkan,或 API 29+ 但 AHB / 后端条件不满足时,会回退到 legacy OpenGL / SurfaceTexture 路径。
+- 哪一帧的 UI/Framework 或 Raster 时间超预算；
+- 哪些 Dart 函数占 CPU；
+- Widget rebuild、layout、paint 是否异常；
+- memory/GC、图片与 shader 事件是否相关。
 
-从公开可核对的资料看,Impeller 相比 Skia 最明确的收益是更可预测的渲染时序。Flutter 官方文档强调的是两件事:一是 shader 在 engine build 阶段就完成预编译,不再把编译压力留到运行时;二是 pipeline state object 会提前构建好,所以复杂动画第一次出现时更不容易被 shader compilation jank 打断。`[已验证: Flutter Impeller 文档, https://docs.flutter.dev/perf/impeller]`
+DevTools 的“帧完成”不等于 panel 已显示。它不能单独解释 CPU 调度、GPU fence、SurfaceFlinger、HWC 与 present。
 
-这也是为什么前文的"30-50% 改善"不适合当作通用结论。那组数字更接近 2024-2025 年第三方样本中的经验区间,受 GPU 型号、驱动版本、场景复杂度、是否夹杂 PlatformView 等因素影响很大。更稳妥的写法是:社区测试经常观察到光栅化时间下降、jank 帧减少,但 Flutter 官方并没有给出一个对所有 Android 设备都成立的统一基准。
+### Perfetto：补齐系统责任边界
 
-项目评估 Impeller 时,需要关注两类现象:第一,首次进入复杂页面或首次播放动画时,Raster 线程是否还会被 shader 编译长时间阻塞;第二,在同一段动画里,帧时间分布是否比 Skia 更稳定。提升幅度最好直接用目标机型的 Perfetto 和 Flutter DevTools 做实测,不套用别人的百分比。
+Perfetto 采集至少关注：
 
-#### Vulkan 1.4 Host Image Copy 与纹理上传
+- process/thread scheduling、Running/Runnable；
+- `PlatformVsync`、Flutter frame、Rasterizer/Impeller 事件；
+- GPU render stages/counters（设备支持时）；
+- BufferQueue、BLAST、fence 和 FrameTimeline；
+- SurfaceFlinger、RenderEngine、HWC；
+- CPU/GPU frequency、thermal、memory 与 I/O。
 
-Impeller 在 Android 上优先使用 Vulkan 后端，而 Android 16+ 出厂设备强制支持 Vulkan 1.4，这带来了纹理上传路径的潜在优化空间。虽然 Flutter Engine 当前尚未启用这个能力，但了解它的原理有助于判断未来版本中的纹理上传性能变化。（升级到 Android 16 的旧设备可选支持,需运行时查询 `vkEnumerateInstanceVersion` / device extension / feature bit）。`VK_EXT_host_image_copy` 扩展允许 CPU 直接把纹理数据写入 GPU 可访问的内存,省掉了传统路径中的 Staging Buffer 中转和 GPU 搬运命令。这属于 Android/Vulkan 通用能力,不作为 Flutter 当前可依赖能力。
+线程名会变化，优先从事件、task runner、slice 调用关系和 Surface/layer 对象定位。`Rasterizer::DrawToSurfaces` 等 Engine 事件也不能替代 GPU completion。
 
-但截至当前 Flutter Engine 主干（ae5c360）,Impeller Vulkan 后端的 capability 枚举只包含 `VK_EXT_pipeline_creation_feedback`、`VK_KHR_portability_subset`、`VK_EXT_image_compression_control` 三个可选扩展,未启用 `VK_EXT_host_image_copy`。`impeller/renderer/backend/vulkan/texture_vk.cc` L75-L130 仍创建 staging buffer 并调用 `vk_cmd_buffer.copyBufferToImage()`。全局搜索 `host_image_copy` / `CopyMemoryToImage` 无命中。
+### 自定义 trace event
 
-Android Developers 公开的 Vulkan benchmark 数据显示,启用该扩展后纹理上传速度提升约 45%,上传期间的内存峰值降低约 50%——这是 Android/Vulkan 层面的合成 benchmark,不是 Flutter 实测结果。Impeller 未来可能采纳该扩展作为优化方向,但当前 Flutter 场景下的纹理上传仍走传统 Staging Buffer 路径。
+Dart 可用 `dart:developer` 的 `Timeline.startSync()` / `finishSync()` 或 `TimelineTask` 标注业务阶段。标记应覆盖可验证的工作边界，例如“解析一页数据”“等待 plugin 返回”“生成一批列表模型”。
 
-该扩展仅在出厂搭载 Android 16+ 且 GPU 驱动支持 Vulkan 1.4 的设备上生效；升级到 Android 16 的旧设备需运行时查询 device extension 是否可用。低于该版本的设备不受影响。
+事件名保持稳定，并附 request/frame id，才能与 native callback、buffer id 和 FrameTimeline 对齐。不要把整次交互包成一个大 slice，否则仍无法判断内部等待。
 
-`[已验证: Impeller 默认状态基于 Flutter 3.27 release notes, flutter.dev]`
+## 一套可复现的 Flutter 帧排查流程
 
-不过,Impeller 在 Android 上的成熟度不如 iOS。在 Flutter 3.27 刚发布时,一些开发者报告了 Impeller 在 Android 上的兼容性问题,包括某些 ListView 场景下的性能退化、首次启动时的视觉质量问题等。Flutter 团队在持续修复这些问题,如果在使用中遇到问题,可以通过 `--no-enable-impeller` 参数回退到 Skia 来验证是否是 Impeller 导致的。
+### 1. 固定双版本与配置
 
-## 常见误区
+记录：
 
-分析 Flutter 应用性能时,下面几个认知陷阱最容易干扰判断:
+- Android build、API level、设备、GPU/driver；
+- Flutter SDK、engine revision、Dart SDK；
+- Profile/Release、Impeller 与 Vulkan/GLES backend；
+- root RenderMode；
+- PlatformView API、HCPP flag 与 plugin 版本；
+- 刷新率、分辨率、温度和页面数据。
 
-**误区一:"Flutter 不卡,因为渲染不走 Android 主线程"**
+### 2. 画 View、Surface 与 layer 对象树
 
-Flutter 3.32 stable+ 的 Dart UI 工作就在 Android 主线程上运行;旧模型里 Dart UI 即使在独立 UI 线程,也仍受固定帧预算约束。Dart Build/Layout/Paint、Raster、Platform Channel、PlatformView 任一段超预算,用户都会感知到卡顿。120Hz 下每帧预算约 8.33ms,在 Perfetto 中看到 Main(UI+Platform)、`1.ui` 或 `1.raster` 上的长 slice,都需要继续拆。
+确认 root 是 `FlutterSurfaceView`、`FlutterTextureView` 还是 `FlutterImageView`；列出 external texture、PlatformView、overlay 与系统窗口。每个对象写清 Producer、Consumer、buffer size/format 和 SurfaceFlinger layer。
 
-**误区二:"DevTools 够用了,不需要 Perfetto"**
+### 3. 锁定 Flutter frame
 
-DevTools 能看到 Dart 层面的性能数据,但看不到系统层面的问题。如果 Flutter 应用因为内存压力被系统杀掉、因为 CPU 调度被限频、或者因为 SurfaceFlinger 合成延迟导致掉帧,DevTools 完全看不到这些信息。两者结合使用才能拼出完整的性能图景。
+从 DevTools 或 engine trace 选出一帧，记录 frame id 和：
 
-**误区三:"换成 Impeller 就不需要优化了"**
+- VSync callback；
+- Dart animation/build/layout/paint；
+- Raster begin/end；
+- GPU submit/completion；
+- root buffer queue；
+- SF latch；
+- display present。
 
-Impeller 解决的是 shader 编译卡顿这一类特定问题。Widget 过度重建、PlatformView 主线程压力、列表 item builder 过慢仍然要单独优化。Impeller 让渲染管线的性能更可预测,每帧工作量仍然要控制。
+### 4. 按现象补证据
 
-**误区四:"Flutter 的帧率和原生应用用同一套方法分析"**
+| 现象 | 优先检查 | 直接证据 |
+| --- | --- | --- |
+| Platform/Dart 晚 | build、layout、paint、plugin、Runnable | Dart CPU、task slice、scheduler |
+| Raster 晚 | display list、resource upload、pipeline、submit | Raster/Impeller、driver、GPU queue |
+| Raster 已交付但 fence 晚 | GPU workload、frequency、bandwidth | GPU stage/counter、producer fence |
+| external texture 不更新 | camera/codec/plugin producer、Surface lifecycle | texture id、queue、callback |
+| texture root ready但 host 晚 | SurfaceTexture、ViewRoot、HWUI | host traversal、DrawFrame、host queue |
+| PlatformView 错位 | 两套 traversal/transaction/latch | layer id、transaction、fence、present |
 
-虽然最终都是 SurfaceFlinger 合成,但 Flutter 的线程模型和原生不同。原生应用主要看 MainThread、RenderThread 和 SurfaceFlinger;Flutter 3.32 stable+ 要看 Main(UI+Platform)、Raster、IO 与 SurfaceFlinger,旧模型还要单独看 `1.ui`。工具和分析思路都需要切换。
+### 5. 做单变量 A/B
 
-## 优化策略
+可控制的变量包括：
 
-Flutter 渲染性能优化可以先抓三个要点。
+- Widget 更新范围；
+- 图片 decode 尺寸；
+- blur/saveLayer/opacity/clip；
+- PlatformView 数量与策略；
+- Impeller opt-out；
+- root RenderMode；
+- external texture 帧率与尺寸；
+- 页面分辨率和刷新率。
 
-### 必须做的事
+比较 P50/P95/P99 frame time、missed deadline、input-to-present、memory、功耗和画面正确性。平均 FPS 会掩盖少量长帧。
 
-**始终在 Profile/Release 模式下测试性能**。Debug 模式的性能数据没有参考价值——JIT 编译、调试断言、DevTools 的通信开销会让性能看起来比实际差得多。
+## Fence、FrameTimeline 与最终显示
 
-**优先使用 Impeller**。运行在 Android API 29+ 的 Flutter 3.27+ 应用默认启用 Impeller;低版本系统、无 Vulkan 支持或后端条件不满足时会回退到 legacy OpenGL。评估时用 `--no-enable-impeller` 做 A/B,对比 Raster 线程首次进入复杂页面或动画时是否仍有 shader / pipeline 长 slice。
+### 不同 root 有不同 fence 链
 
-**控制 Widget 重建范围**。使用 `const` 构造函数、拆分大 Widget、选择合适的状态管理方案。用 DevTools 的 Rebuild Tracker 来定位不必要的重建。
+`surface` root 有独立 producer fence 与 layer release fence。`texture`/`image` root 先产生中间 image ready/release，再由宿主 HWUI 生成新的 App Window producer fence。PlatformView 与 overlay 还会加入各自 buffer 与 transaction。
 
-### 分析策略
+SurfaceFlinger 在 Android 17 FrontEnd 中处理 layer snapshot。CompositionEngine 与 HWC 协商 DEVICE/CLIENT composition；需要 CLIENT 时，RenderEngine 生成 client target。display present fence 与 per-layer release fence 属于显示端反馈。
 
-遇到 Flutter 性能问题时,按照以下步骤排查:
+### FrameTimeline token 不一定一一对应
 
-1. **先在 DevTools Performance 面板看**:是 Main / UI 侧慢,还是 Raster 线程慢?这会决定后续排查方向。
-2. **Main(UI+Platform) 或 UI 侧慢**:打开 CPU Profiler 看 Dart 函数热点,检查 Widget 重建、同步 IO、插件同步调用和耗时计算。重计算应移到 Isolate,插件同步调用要拆成可等待的异步路径。
-3. **Raster 线程慢**:检查是否还有 shader / pipeline 长 slice;检查过度绘制、纹理上传、复杂 Clip / Opacity / ShaderMask 和 PlatformView 合成。
-4. **两边都不慢但帧率仍低**:可能是系统层面的问题。用 Perfetto 抓系统 Trace,看 CPU 调度、GC、内存压力等。
+Flutter root Surface、host App Window 和独立 PlatformView layer 可能有不同 frame number/token。external texture 的中间帧也可能没有标准 App FrameTimeline。
 
-### PlatformView 的优化
+关联时使用多组标识：
 
-- 尽量减少可滚动区域中 PlatformView 的数量
-- 在 PlatformView 上方执行 Flutter 动画时,考虑使用截图纹理(snapshot texture)替代实时渲染
-- 确保目标 Android 版本为 10+,以获得 Hybrid Composition 的 GPU 内存优化
-- 如果使用自定义 Plugin 渲染到 Surface,优先使用 `SurfaceProducer` API(API 29+)
+- Flutter engine frame id；
+- texture id；
+- buffer id/frame number；
+- SurfaceFlinger layer id；
+- expected/actual present time；
+- producer/acquire/release/present fence。
 
-## 与其他章节的关联
+Dart frame end 只表示 framework/engine 的一个阶段结束，不能作为上屏时间。
 
-Flutter 的渲染虽然自成体系,但它仍然运行在 Android 系统之上。理解本书前面讲的基础知识对分析 Flutter 性能同样重要:
+### kernel 边界
 
-- **§2.3 VSync 机制**:Flutter 的 VSync 监听最终依赖 Android 的 VSync-app 信号,理解 VSync 的调度逻辑有助于排查帧同步问题
-- **§2.5 MainThread 与 RenderThread 协作**:Flutter 3.32 stable+ 的 Dart UI 与 Platform 主线程已经合并;PlatformView、插件同步调用和原生 View 工作会直接影响同一条主线程的帧预算
-- **§4.4 Low Memory Killer**:Flutter 应用占用内存通常比原生应用高(Dart VM 堆 + Skia/Impeller 资源),在低内存场景下更容易被 LMK 杀掉
-- **§5.4 DVFS**:Flutter 的多线程模型(UI + Raster 同时运行)对 CPU 频率调度有影响,可能导致 DVFS 策略不如预期
-- **§7.1 卡顿的定义与分类**:Flutter 应用的掉帧表现和原生应用在 Perfetto 中的 Track 不同,但卡顿的分类框架同样适用——理解 jank 的分类有助于在 DevTools 中快速判断是 UI / Main 侧 jank 还是 Raster 线程 jank
-- **§7.7 Jetpack Compose 性能**:Compose 和 Flutter 都是"自绘引擎"路线(不依赖原生 View 体系),两者在 PlatformView/互操作场景下遇到类似的主线程压力和合成性能问题,优化思路可以互相参考
-- **§18.12 Flutter 渲染路径**:该章节按 Flutter 3.32 stable+ 的 Main(UI+Platform) / Raster / IO 口径展开,可作为本章实践分析部分的延伸阅读
+`android17-6.18-2026-06_r6` 提供通用 dma-buf、dma-heap、dma-fence 与 sync_file 语义。它能解释 buffer 共享、引用和 fence transport，不能证明设备具体使用哪种 GPU scheduler、allocator、压缩或 fence tracepoint。
 
+fence wait 表示某个依赖未完成。判断根因还要找到 fence owner、对应 submission、频率、queue depth 和 workload。
 
-### Flutter 3.44 源码侧补充（2026-06-25）
+## 16 KB page size 与 Flutter plugin
 
+Android 15 起支持 16 KB page-size 设备。Flutter App 中的 engine/AOT native library、FFI library 和含 `.so` 的 plugin 都要同时满足：
 
-**版本锚点**
+- APK 中未压缩 `.so` 的 zip 对齐；
+- ELF load segment 的 `p_align`；
+- native 代码不能假定 `PAGE_SIZE == 4096`；
+- mmap、shared memory 与自定义 allocator 按运行时 page size 工作。
 
-- 稳定版序列（git tag，按版本号倒排）：`3.46.0-0.1.pre` → `3.45.0-0.1.pre` → `3.44.4` → `3.44.3` → `3.44.2` → `3.44.1` → `3.44.0`
-- 引擎版本（`bin/internal/engine.version`，3.44.0 与 3.44.4 一致）：`4c525dac5ebe5971c5708ef73558ed8edcf4a362`
-- Dart SDK（DEPS 中）：`98116461144f4429ab873f8497023a5ec3b08127`
-- AGP 模板（CP-beta #186099）：3.44 起 **Android 模板升级到 AGP 9**
+工程检查可按下面执行：
 
-**Agentic 能力**
+- 使用支持 16 KB packaging 的 AGP；Android 官方建议 AGP 8.5.1+；
+- 使用 NDK r28+ 让新构建的 shared library 默认适配 16 KB；
+- 旧 NDK 明确配置 linker page-size 选项，并用 ELF 工具复核；
+- 检查所有预编译 plugin `.so` 与 `libc++_shared.so`；
+- 在 16 KB emulator/真机运行启动、PlatformView、camera/video、FFI 和后台恢复测试。
 
-1. `agent-artifacts/` 顶层目录：`agent-artifacts/README.md` 明确为 AI 编码代理的临时文件沙箱，`.gitignore` 排除所有非 README 文件。
-2. `.agents/skills/` 顶层目录：遵循 [agentskills.io 开放标准](https://agentskills.io/specification) 与 [Claude Agent Skills 命名约定](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices#naming-conventions)。首个落地 skill 为 `find-release/SKILL.md`，调用契约：
+`packagingOptions` 只能影响 APK packaging，不能修复 ELF `p_align` 或 native 代码中的 4 KB 常量。Android 17 平台锚点也不会替未重编译的 plugin 修复这些问题。
 
-   ```
-   dart run ${FIND_RELEASE_TOOL_PATH:-engine/src/flutter/third_party/dart/tools/find_release.dart} \
-     --commit=<SHA> --channel=<CHANNEL>
-   ```
+## Android 12—17 与 Flutter 版本边界
 
-   **.agents/skills/README.md 的关键约束**：
-   - 提交 PR 时必须附 agent 实际使用 prompt 与产出示例
-   - "One Skill Per CLI Tool""Read-Only Mode by default""Dart Scripts"
-   - 作者负责制（Ownership），不可无主修改
+两条版本线需要分开记录：
 
-   "Agentic Hot Reload" 和 "GenUI 生成式 UI" 这两个特性在 3.44 稳定版源码中没有对应的运行时类或 Service Extension。`agent` 命中 6 个文件全是 devicelab/skills 文档，`genui` 零命中——目前仍是 keynote 营销口径，尚未进入稳定版代码。
+| 平台/Flutter 版本 | 与本章直接相关的变化 |
+| --- | --- |
+| Android 12 / API 31 | BLAST 与 FrameTimeline 形成现代显示分析基线；App 仍携带自己的 Flutter engine。 |
+| Android 13 / API 33 | Image fence Java API 可供当前 ImageReader producer 路径使用；显示 HAL 进入 AIDL 时代。 |
+| Android 14 / API 34 | 提供 HCPP 所需的 transaction synchronization 平台前提，但不会自动开启 HCPP。 |
+| Android 15 / API 35 | 16 KB page-size 兼容成为 Flutter engine/plugin 的 native 约束。 |
+| Android 16 / API 36 | 新出厂设备 Vulkan 1.4；旧 APK 的 Flutter renderer/thread 模型不会随 OS 更新。 |
+| Android 17 / API 37 | 本章平台源码锚点；继续按 Surface、FrontEnd、CompositionEngine、AIDL Composer 与 kernel fence 分析。 |
+| Flutter 3.24 | `SurfaceProducer` 稳定可用。 |
+| Flutter 3.27 | Android API 29+ 默认启用 Impeller。 |
+| Flutter 3.29 | Android/iOS 默认合并 UI 与 platform thread。 |
+| Flutter 3.44 | HCPP 作为 API 34+、Vulkan/Impeller 条件下的实验性 opt-in 能力。 |
+| Flutter 3.44.8 | 本章 Flutter 源码验证 tag。 |
 
-**性能侧改进**
+运行在 Android 17 上的旧 Flutter App 仍可能使用旧线程模型、legacy renderer、Virtual Display 或旧 plugin。OS 版本不能替代 APK/engine 版本识别。
 
-`packages/flutter_tools/lib/src/run_hot.dart`：
+## 常见误判
 
-- line 44–45：`HotRunnerConfig.asyncScanning` 新增字段
-- line 524：调用点 `asyncScanning: hotRunnerConfig!.asyncScanning`
-- line 1576–1643：`invalidateForReloadSources(..., bool asyncScanning = false)` 用 `package:pool` 的 `Pool` 做并发受控文件扫描，缩短 `findInvalidationTimer` 阶段耗时
+| 误判 | 应怎样验证 |
+| --- | --- |
+| Flutter 固定有独立 UI、Platform、Raster 三线程 | Flutter 3.29+ 默认合并 UI/Platform，按 engine revision 与 task runner 确认 |
+| Flutter frame end 就是上屏 | 继续追 GPU fence、root/host queue、SF latch 与 present |
+| `RenderMode.surface` 内容属于 host App Window | 查 `FlutterSurfaceView` child layer |
+| `RenderMode.texture` 只有一个 BufferQueue | 分开 SurfaceTexture producer 与 host App Window |
+| external texture ready 等于画面已更新 | 还要等待 Raster 采样、root 提交与 display present |
+| `AndroidView` 固定使用 Hybrid Composition | 查 TLHC、VD、HC、HCPP 与 fallback |
+| Android 14+ 自动使用 HCPP | 还需 Flutter 3.44+、opt-in、API 34+、Vulkan 和 Impeller |
+| Android 15+ 自动切到 Impeller | renderer 由 APK 携带的 Flutter engine 决定 |
+| Impeller 消除了所有首次卡顿 | 继续检查 context、pipeline、atlas、upload、driver 和 GPU |
+| Raster thread 长就是 GPU 慢 | 分开 Raster CPU、submit、GPU completion 与 fence |
 
-默认 `asyncScanning: false`（向后兼容），需在 `HotRunnerConfig` 注入开启。**仅影响 dev mode 热重载延迟，不影响生产帧率**。
+## 源码与官方资料
 
-**3.44 hotfix 链的"性能"相关修复**
+### Flutter 3.44.8
 
-| PR       | 描述                                                                         |
-| -------- | ---------------------------------------------------------------------------- |
-| #188192  | 修 `FlAccessibleTextField` bounds checking                                  |
-| #186899  | 修 Android 平台 GLES fence 释放时序导致 texture 崩溃                          |
-| #186953  | 修 SwiftPM 并发 build 目录竞争                                                |
-| #183179  | 修 animated PNG 帧的 pixel buffer overflow                                   |
-| #186723  | 修 `SystemUiMode → edge-to-edge` 切换后 system bars 不显示（2.11 全屏边界更新） |
+- [`VsyncWaiterAndroid`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/vsync_waiter_android.cc)、[`Choreographer`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/impeller/toolkit/android/choreographer.cc)、[Java `VsyncWaiter`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/view/VsyncWaiter.java)：NDK 优先与 Java fallback。
+- [`RenderMode.java`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/RenderMode.java)、[`FlutterSurfaceView`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/FlutterSurfaceView.java)、[`FlutterTextureView`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/FlutterTextureView.java)、[`FlutterImageView`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/FlutterImageView.java)：root target。
+- [`FlutterRenderer.java`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java)、[`TextureRegistry.java`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/view/TextureRegistry.java)、[`SurfaceTextureSurfaceProducer.java`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/embedding/engine/renderer/SurfaceTextureSurfaceProducer.java)：external texture、backing、lifecycle 与 fence。
+- [`PlatformViewsController.java`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java)、[`PlatformViewsController2.java`](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController2.java)：TLHC、HC、VD 与 HCPP。
+- [Impeller README](https://github.com/flutter/flutter/blob/3.44.8/engine/src/flutter/impeller/README.md)：离线 shader、pipeline、cache 与子系统边界。
 
-**Impeller 边界**
+### Android 17 与 kernel
 
-3.44 稳定版（engine `4c525dac5e…`）**未携带** Impeller 新特性合并。3.44 之后的 master 才有大动作：
+- Android 17 [`SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java)、[`TextureView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java)、[`ImageReader.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/media/java/android/media/ImageReader.java)：root/host target。
+- Native [`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp)、[`Surface.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/Surface.cpp)、[`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)：buffer 提交与显示。
+- Kernel [`dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)、[`dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)、[`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：共享 buffer 与 fence。
 
-- `#188056 [Impeller] Add anisotropic filtering support to samplers`（2026-06-25）
-- `#187573 Turn linux impeller on by default`（2026-06-24）
-- `#188188 Migrates flutter windows test to impeller`（2026-06-24）
+### 官方文档
 
-Impeller 在 Android API 29+ 默认启用、低版本或无 Vulkan 时回退 legacy OpenGL 的边界，3.44 没有变化。
+- [Flutter architectural overview](https://docs.flutter.dev/resources/architectural-overview)
+- [Impeller rendering engine](https://docs.flutter.dev/perf/impeller)
+- [Android Platform Views and HCPP](https://docs.flutter.dev/platform-integration/android/platform-views)
+- [SurfaceProducer migration](https://docs.flutter.dev/release/breaking-changes/android-surface-plugins)
+- [Flutter rendering performance](https://docs.flutter.dev/perf/rendering-performance)
+- [Flutter performance best practices](https://docs.flutter.dev/perf/best-practices)
+- [Flutter DevTools Performance view](https://docs.flutter.dev/tools/devtools/performance)
+- [Android 16 KB page-size support](https://developer.android.com/guide/practices/page-sizes)
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
 
-**AGP 9 模板的影响**
-
-切换到 3.44 模板后，`./gradlew assembleRelease` 会走 AGP 9 的 R8/dexopt 路径。建议做一次 AGP 9 和 AGP 8 的 APK 体积与启动初始化 A/B 对比。配合 `#186040` 和 `#186106` 的文档修正，3.44 模板是稳定工程动作。
-
-## 参考资料
-
-- Flutter 官方性能文档:https://docs.flutter.dev/perf/rendering-performance
-- Impeller 文档:https://docs.flutter.dev/perf/impeller
-- Impeller engine README:https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/impeller/README.md
-- Flutter 3.32 线程模型说明 (merged UI+Platform 默认合并):https://docs.flutter.dev/release/release-notes/release-notes-3.32.0
-- Flutter 性能最佳实践:https://docs.flutter.dev/perf/best-practices
-- PlatformView 性能:https://docs.flutter.dev/platform-integration/android/platform-views
-- Flutter Engine 源码(Impeller 目录):https://github.com/flutter/flutter/tree/3.44.0/engine/src/flutter/impeller
-- Flutter Engine VsyncWaiterAndroid 源码:https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/shell/platform/android/vsync_waiter_android.cc
-- Flutter Engine Android Choreographer wrapper 源码:https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/impeller/toolkit/android/choreographer.cc
-- Flutter Engine Java VSync fallback 源码:https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/shell/platform/android/io/flutter/view/VsyncWaiter.java
-- Flutter Engine PlatformViewsController 源码:https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java
-- Flutter Engine FlutterRenderer SurfaceProducer 源码:https://github.com/flutter/flutter/blob/3.44.0/engine/src/flutter/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java
-- Flutter DevTools 文档:https://docs.flutter.dev/tools/devtools
+本章的 root RenderMode、external texture、PlatformView、SurfaceFlinger 与 HWC 对象关系还对照了 `rendering_pipelines/S10_flutter_type.md`。Writer 系列用于建立完整出图拓扑，Flutter 3.44.8、Android 17 与 kernel 固定 tag 用于确认当前代码边界。
