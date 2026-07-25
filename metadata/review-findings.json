@@ -16,6 +16,26 @@
       "summary": "Compose Runtime Tracing 事件命名与 Release 启用矩阵缺少官方/实测证据，暂不能 finalized",
       "type": "missing-source",
       "updated_at": "2026-07-25T14:10:58.427069+08:00"
+    },
+    {
+      "chapter": "14.30",
+      "close_note": "正文 14.30.9 已补充 android.gpu.memory 一手源码边界，并维持待实机验证项。",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260725-203501-deep-review-1ef0e8ab",
+      "created_at": "2026-07-25T20:36:18.328078+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260725-203501-deep-review-1ef0e8ab",
+      "details": "已核对 GpuMemTracer.h @ android-17.0.0_r1: kGpuMemDataSource = android.gpu.memory；正文补充 deep-review 说明并排除早期材料 android.gpu_mem 写法。",
+      "id": "AIW-14.30-20260725-P2-perfetto-source-boundary",
+      "log_path": "logs/deep-review/2026-07-25-20260725-203501-deep-review-1ef0e8ab-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/native/services/gpuservice/tracing/include/tracing/GpuMemTracer.h@android-17.0.0_r1"
+      ],
+      "status": "fixed",
+      "summary": "§14.30 早期材料中 Perfetto data source 名称存在 android.gpu_mem/android.gpu.memory 不一致，正文需显式锁定 android-17.0.0_r1 一手源码结论。",
+      "type": "source-boundary",
+      "updated_at": "2026-07-25T20:36:18.379848+08:00"
     }
   ],
   "schema_version": 1
