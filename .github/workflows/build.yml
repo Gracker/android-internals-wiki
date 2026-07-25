@@ -18,6 +18,15 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: pip install pyyaml
+      - name: Check no-new-chapter freeze
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git fetch origin "${{ github.base_ref }}" --depth=1
+            AIW_FREEZE_BASE="origin/${{ github.base_ref }}" AIW_FREEZE_HEAD="HEAD" python scripts/check-no-new-chapters.py
+          else
+            AIW_FREEZE_BASE="HEAD^" AIW_FREEZE_HEAD="HEAD" python scripts/check-no-new-chapters.py
+          fi
       - name: Collect changed markdown files
         id: changed
         shell: bash
