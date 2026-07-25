@@ -6,7 +6,7 @@ title: GPU 渲染深入
 chapter: '2.10'
 applicable_versions: Android 5.0 - Android 17 (API 21-37)
 last_verified: '2026-07-25'
-last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + official Android GPU documentation
+last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + official Android/Perfetto GPU documentation + AndroidX WebGPU 1.0.0-alpha05 + Writer rendering_pipelines S01/S02/S05/S08/S13
 confidence: medium-high
 sources:
 - type: aosp
@@ -21,6 +21,46 @@ sources:
   path: https://developer.android.com/games/develop/vulkan/overview
 - type: official
   path: https://developer.android.com/reference/android/os/health/SystemHealthManager
+- type: official
+  path: https://developer.android.com/develop/ui/views/graphics/webgpu
+- type: official
+  path: https://developer.android.com/jetpack/androidx/releases/webgpu
+- type: official
+  path: https://developer.android.com/games/develop/vulkan/frame-pacing-extensions
+- type: official
+  path: https://developer.android.com/android-performance-analyzer
+- type: official
+  path: https://perfetto.dev/docs/data-sources/gpu
+- type: official
+  path: https://source.android.com/docs/compatibility/17/android-17-cdd
+- type: aosp
+  path: frameworks/base/libs/hwui/pipeline/skia/PersistentGraphicsCache.cpp (android-17.0.0_r1)
+- type: aosp
+  path: frameworks/base/libs/hwui/pipeline/skia/ShaderCache.cpp (android-17.0.0_r1)
+- type: aosp
+  path: frameworks/base/libs/hwui/pipeline/skia/PipelineCache.cpp (android-17.0.0_r1)
+- type: aosp
+  path: frameworks/base/core/java/android/os/health/SystemHealthManager.java (android-17.0.0_r1)
+- type: aosp
+  path: frameworks/native/vulkan/libvulkan/swapchain.cpp (android-17.0.0_r1)
+- type: kernel
+  path: kernel/common/drivers/dma-buf/dma-buf.c (android17-6.18-2026-06_r6)
+- type: kernel
+  path: kernel/common/drivers/dma-buf/dma-heap.c (android17-6.18-2026-06_r6)
+- type: kernel
+  path: kernel/common/drivers/dma-buf/dma-fence.c (android17-6.18-2026-06_r6)
+- type: kernel
+  path: kernel/common/drivers/dma-buf/sync_file.c (android17-6.18-2026-06_r6)
+- type: writer
+  path: Writer/rendering_pipelines/S01_rendering_types_overview.md
+- type: writer
+  path: Writer/rendering_pipelines/S02_aosp_standard_type.md
+- type: writer
+  path: Writer/rendering_pipelines/S05_mixed_rendering_type.md
+- type: writer
+  path: Writer/rendering_pipelines/S08_native_graphics_type.md
+- type: writer
+  path: Writer/rendering_pipelines/S13_game_type.md
 tags:
 - gpu
 - rendering
@@ -223,7 +263,7 @@ GLES 的 `glCompileShader()` / `glLinkProgram()` 可以触发编译与链接。V
 - `pipeline/skia/PipelineCache.*`；
 - `renderthread/CacheManager.*`。
 
-`PersistentGraphicsCache` 向 Skia 提供 persistent-cache 接口，`ShaderCache` 负责加载、保存和磁盘持久化；Vulkan 帧 flush 后还会处理 pipeline cache 数据。缓存命中可以减少重复编译，下面情况仍可能产生 miss：
+`CacheManager::configureContext()` 把 `PersistentGraphicsCache` 挂到 Skia 的 `fPersistentCache`。`separate_pipeline_cache()` 关闭时，shader 与 Vulkan pipeline 数据都交给 `ShaderCache`；该 flag 开启时，`PipelineCache` 只接收描述为 `VkPipelineCache` 的数据，其余条目仍进 `ShaderCache`。Vulkan 帧 flush 后，代码会先检查是否出现新的 pipeline cache 数据，再按大小上限和写入节流策略持久化。缓存命中可以减少重复编译，下面情况仍可能产生 miss：
 
 - 首次使用新的 shader/pipeline 变体；
 - app、framework、Skia 或 GPU driver 更新；
@@ -282,6 +322,8 @@ Android 17 的 `frameworks/native/vulkan/libvulkan/swapchain.cpp` 把 Vulkan swa
 - BufferQueue、BLAST、SurfaceFlinger 和 HWC 继续负责 Android 显示后半段。
 
 `vkQueuePresentKHR()` 返回不表示 panel 已显示，`vkQueueSubmit()` 返回也不表示 GPU 已完成。需要区分 GPU fence/semaphore、producer fence、SurfaceFlinger latch、display present fence 和 buffer release。
+
+Android 17 的 loader/swapchain 路径增加 `VK_EXT_present_timing` 支持，可以按 present ID 查询 dequeue、queue operations end、first pixel out、first pixel visible 等阶段。它不是所有 Android 17 设备无条件可用的 API：应用要枚举 extension，同时检查 `VK_KHR_present_id2`、`presentTiming` / `presentId2` feature，并在创建 swapchain 时启用 `VK_SWAPCHAIN_CREATE_PRESENT_TIMING_BIT_EXT`。缺少条件时可回退到 `VK_GOOGLE_display_timing` 或 Swappy。
 
 ### Render pass 与 tile-based GPU
 
@@ -445,7 +487,7 @@ Android 12 GKI 2.0 开始用 DMA-BUF heaps 替代 ION。DMA-BUF heaps 提供稳�
 
 ### 16 KB page 与 GPU buffer
 
-16 KB page 兼容性会影响 native ELF、mmap、allocator 对齐和驱动交互。它不表示每张纹理固定浪费 16 KB，也不能从 page size 直接推导 GraphicBuffer 总量。应以实际 allocation size、stride、heap 与映射数据为准。
+16 KB page 兼容性首先约束 native ELF 的 segment 对齐、APK 中未压缩 `.so` 的 zip 对齐，以及 mmap 等代码对 page size 的假设。它不会把 gralloc buffer 自动改成线性 16 KB 分块，也不表示每张纹理固定浪费 16 KB。GraphicBuffer 仍应以 allocator 返回的 allocation size、stride、plane layout、heap 与映射数据为准。
 
 ## GPU 内存怎样追踪
 
@@ -455,13 +497,13 @@ Android 12 GKI 2.0 开始用 DMA-BUF heaps 替代 ION。DMA-BUF heaps 提供稳�
 
 根据设备支持，可以采集：
 
-- `gpu_mem/gpu_mem_total`：进程 GPU memory total；
+- `linux.ftrace` 中的 `gpu_mem/gpu_mem_total`：进程 GPU memory total；
 - `vulkan.memory_tracker`：Vulkan allocation/bind；
-- `gpu.counters[.<vendor>]`：设备声明的 counters；
-- `gpu.renderstages[.<vendor>]`：graphics/compute submission timeline；
+- `gpu.counters`，或 `gpu.counters.adreno` 等硬件后缀名称：设备声明的 counters；
+- `gpu.renderstages`，或 `gpu.renderstages.mali` 等硬件后缀名称：graphics/compute submission timeline；
 - dma-buf、process memory、频率和调度 ftrace。
 
-数据源名称可以带 Adreno/Mali 等硬件后缀，counter id/name 由 descriptor 声明。不存在跨 Android 16/17 通用的单一 `gpu_busy` 轨道或固定 counter ID。
+Perfetto 对 data source 名称做精确匹配，带后缀的 producer 必须在 trace config 中写出完整名称。counter id/name、单位和分组由 descriptor 声明；不存在跨 Android 16/17 通用的单一 `gpu_busy` 轨道或固定 counter ID。
 
 ### 系统与厂商数据
 
@@ -519,13 +561,15 @@ Perfetto 适合把下面的时间放在同一时钟域：
 
 先用 FrameTimeline 选中目标 `SurfaceFrame` / `DisplayFrame`，再追 producer fence 和 GPU submission。GPU 数据缺失时，不要用 RenderThread slice 代替 GPU completion。
 
-### AGI：系统 profile 与单帧 profile
+### APA 与 AGI：系统 profile、单帧 profile 分开选
 
-AGI System Profiler 可看 CPU、GPU、memory、battery 和设备 counters。Frame Profiler 可检查受支持应用的一帧，包括 Vulkan API call、framebuffer、draw call、pipeline、shader、texture、render state 与 memory。
+截至 2026 年 5 月，Android Performance Analyzer（APA）处于 public beta，官方已把它作为 system profiling 的推荐工具，可联合查看 CPU、GPU、memory、power 和系统行为。AGI System Profiler 仍可采集 Perfetto 与 GPU 数据，但新建 system profile 应优先评估 APA 的设备支持与数据源覆盖。
+
+AGI Frame Profiler 继续承担单帧检查：对受支持应用查看 Vulkan API call、framebuffer、draw call、pipeline、shader、texture、render state 与 memory。
 
 当前 AGI Frame Profiler 直接支持 Vulkan；GLES frame profile 使用 OpenGL on ANGLE 模式，由工具的 ANGLE build 转成 Vulkan 进行抓取。capture 和插桩会改变时序，适合分析命令与相对差异，不宜把抓帧耗时当作生产性能。
 
-官方 quickstart 还提示 Android Performance Analyzer 是新的 system profiling 推荐工具。工具版本变化独立于 Android platform，要记录版本与 supported-device 状态。
+工具版本变化独立于 Android platform，要记录 APA/AGI 版本、capture 模式与 supported-device 状态。
 
 ### 厂商 profiler
 
@@ -602,8 +646,8 @@ AGI System Profiler 可看 CPU、GPU、memory、battery 和设备 counters。Fra
 | Android 12 / API 31 | FrameTimeline；`FrameMetrics.GPU_DURATION` 与 `DEADLINE`；GPU/SF 责任更容易关联。 |
 | Android 13 / API 33 | AGSL `RuntimeShader`；Choreographer FrameData/FrameTimeline 公共 API。 |
 | Android 15 / API 35 | ANGLE 作为可选 GLES-on-Vulkan 层；支持设备引入 ARR。 |
-| Android 16 / API 36 | GPU Headroom；launch-device Vulkan 1.4 要求；`RuntimeColorFilter` / `RuntimeXfermode`。 |
-| Android 17 / API 37 | 当前源码锚点；WebGPU 和 GLES `prefer_angle` 请求加入公共能力，HWUI 仍按设备选择 SkiaOpenGL/SkiaVulkan。 |
+| Android 16 / API 36 | GPU Headroom；64 位、非 low-memory launch device 的 Vulkan 1.4 要求；`RuntimeColorFilter` / `RuntimeXfermode`。 |
+| Android 17 / API 37 | 当前源码锚点；`VK_EXT_present_timing`；Jetpack WebGPU `1.0.0-alpha05`；GLES `prefer_angle` 请求。HWUI 仍按设备选择 SkiaOpenGL/SkiaVulkan。 |
 
 版本号不能替代运行时 capability。Vulkan extension、ASTC、ANGLE、GPU counter、ARR 和 HWC plane 都要在目标设备上查询。
 
@@ -661,8 +705,11 @@ ANGLE 可能增加翻译成本，也可能因 Vulkan driver 质量改善表现�
 - [Perfetto GPU data sources](https://perfetto.dev/docs/data-sources/gpu)
 - [Android GPU Inspector](https://developer.android.com/agi)
 - [AGI Frame Profiler](https://developer.android.com/agi/frame-trace/frame-profiler)
+- [Android Performance Analyzer](https://developer.android.com/android-performance-analyzer)
 - [SystemHealthManager GPU Headroom](https://developer.android.com/reference/android/os/health/SystemHealthManager#getGpuHeadroom(android.os.GpuHeadroomParams))
 - [Vulkan on Android](https://developer.android.com/games/develop/vulkan/overview)
+- [Vulkan frame pacing extensions](https://developer.android.com/games/develop/vulkan/frame-pacing-extensions)
+- [WebGPU for Android](https://developer.android.com/develop/ui/views/graphics/webgpu)、[AndroidX WebGPU releases](https://developer.android.com/jetpack/androidx/releases/webgpu)
 - [Texture compression](https://developer.android.com/games/optimize/textures)
 - [FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
 
