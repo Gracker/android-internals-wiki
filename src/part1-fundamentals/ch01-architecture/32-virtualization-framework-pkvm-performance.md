@@ -1,5 +1,5 @@
 ---
-title: "Android Virtualization Framework 架构与 pKVM 隔离性能边界"
+title: "Android 17 AVF 架构与 pKVM 隔离性能边界"
 chapter: "1.32"
 status: ready-for-review
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
@@ -8,391 +8,381 @@ related_chapters: ["1.3", "1.4", "4.1", "4.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-27"
 drafted_date: "2026-06-28"
-last_verified: "2026-06-28"
-last_verified_against: "AOSP android-17.0.0_r1"
+last_verified: "2026-07-25"
+last_verified_against: "AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6"
 confidence: high
 sources:
   - type: official
     path: "source.android.com/docs/core/virtualization"
+  - type: official
+    path: "source.android.com/docs/core/virtualization/architecture"
+  - type: official
+    path: "source.android.com/docs/core/virtualization/virtualization-service"
+  - type: official
+    path: "source.android.com/docs/core/virtualization/microdroid"
+  - type: official
+    path: "source.android.com/docs/core/virtualization/security"
   - type: aosp
-    path: "packages/modules/Virtualization/"
+    path: "packages/modules/Virtualization/android/virtualizationservice/src/main.rs"
+  - type: aosp
+    path: "packages/modules/Virtualization/android/virtmgr/src/main.rs"
+  - type: aosp
+    path: "packages/modules/Virtualization/libs/framework-virtualization/src/android/system/virtualmachine/"
+  - type: aosp
+    path: "packages/modules/Virtualization/tests/benchmark/"
   - type: aosp
     path: "external/crosvm/"
-  - type: aosp
-    path: "system/libvirtlb/"
+  - type: kernel
+    path: "arch/arm64/kvm/hyp/nvhe/mem_protect.c (android17-6.18-2026-06_r6)"
+  - type: kernel
+    path: "arch/arm64/include/asm/kvm_pkvm.h (android17-6.18-2026-06_r6)"
 ---
 
-# 1.32 Android Virtualization Framework 架构与 pKVM 隔离性能边界
+# 1.32 Android 17 AVF 架构与 pKVM 隔离性能边界
 
-## 要点
+Android Virtualization Framework（AVF）从 Android 13 开始提供受保护虚拟机能力。它面向需要抵御 host Android 被攻破的敏感工作负载：host 仍负责创建、调度和终止虚拟机，但不能读取 protected VM（pVM）私有内存，也不能悄悄替换经过验证的 Microdroid 和 payload。
 
-### 🔹 AVF 全景：从 Android 13 到 Android 17 的演进
+“运行在虚拟机里会慢多少”没有跨设备固定答案。AVF 的成本取决于 vCPU 调度、VM exit、共享内存窗口、virtio I/O、验证启动以及 payload 行为。本章先把 Android 17 的组件和安全边界讲清楚，再给出可复现的测量方法。
 
-Android Virtualization Framework（AVF）是 Google 在 Android 13（API 33）引入的系统级虚拟化框架，为 Android 提供硬件辅助的虚拟机隔离能力。其核心目标是：在不依赖 TrustZone 的前提下，为安全敏感型工作负载提供 **VM 级别的强隔离**。
+## 一、Android 17 中的 AVF 组件
 
-**核心组件三件套**：
+### 1.1 host 侧有两个服务层次
 
-| 组件 | 语言 | 职责 | AOSP 路径 |
-|------|------|------|-----------|
-| pKVM | C/Rust | protected KVM — Linux KVM 的安全增强版，guest 内存对 host 不可见 | `arch/arm64/kvm/hyp/` |
-| crosvm | Rust | 用户态 VMM（Virtual Machine Monitor），管理 VM 生命周期和 VirtIO 设备 | `external/crosvm/` |
-| Microdroid | Java/C++ | 轻量级 Android guest 镜像，可运行 Android 应用子集 | `packages/modules/Virtualization/microdroid/` |
+AVF 文档里的 `VirtualizationService` 容易与 system_server 中的 Java 服务混淆。API 37 的实现是独立进程组合：
 
-[已验证: AOSP android-17.0.0_r1, packages/modules/Virtualization/README.md]
-
-**版本演进时间线**：
-
-- **Android 13（API 33）**：AVF 首次引入。pKVM 作为 Linux KVM 的扩展集成在内核中。crosvm 作为 VMM 运行在用户态。VirtualizationService 作为系统服务管理 VM 生命周期。初始版本仅支持 `VIRTUAL_MACHINE` 模式，即应用通过 `VirtualMachineManager` API 创建和管理 VM。
-- **Android 14（API 34）**：VirtualizationService API 稳定化（从 `@SystemApi` 提升为稳定 AIDL）。引入 binder over vsock 支持，允许 host 和 guest 之间的 Binder IPC 通信。ADB inside VM 支持改善了开发调试体验。
-- **Android 15（API 35）**：增加虚拟设备支持（`VirtualDeviceInfo`），允许 VM 获取虚拟的设备标识。引入 multi-VM 能力的早期框架，允许同一应用创建多个并发 VM。
-- **Android 16（API 36）**：性能调优成为重点。crosvm 引入 free page reporting 支持，减少 VM 的 balloon 开销。pKVM 的 shadow page table 管理优化，降低 TLB miss 率。
-- **Android 17（API 37）**：AVF 进入成熟期。多 VM 并发稳定化，VM 启动时间显著缩短（Microdroid 冷启动从 Android 13 的 3-5 秒优化至约 1-2 秒）。Perfetto 在 guest 内的原生支持使性能分析体验大幅改善。
-
-[已验证: 官方文档, source.android.com/docs/core/virtualization]
-
-**与 TrustZone / TEE 的定位区分**：
-
-AVF 和 TrustZone 提供两种不同级别的隔离：
-
-| 维度 | TrustZone / TEE | AVF / pKVM |
-|------|----------------|------------|
-| 隔离级别 | 硬件级（CPU 安全世界切换） | VM 级（hypervisor Stage-2 页表隔离） |
-| 隔离强度 | 更强（硬件信任根） | 强（依赖 hypervisor 正确性） |
-| 性能开销 | 低（世界切换约 1-10μs） | 中-高（VM 退出/重入约 5-50μs） |
-| 可用资源 | 极有限（TEE OS 精简） | 较丰富（Microdroid 含 Android runtime） |
-| 典型用途 | 密钥存储、DRM、指纹识别 | 代码隔离、安全计算、远程证明 |
-| TUI 支持 | 支持（ Trusted UI） | 不支持（需 host 配合） |
-
-AVF 不是 TrustZone 的替代品，而是补充——两者形成**两级隔离体系**。
-
-### 🔹 pKVM 内存隔离机制
-
-pKVM（protected Kernel-based Virtual Machine）是 AVF 的安全基石。与标准 KVM 的核心区别在于：**host 内核无法访问 guest VM 的物理内存**。
-
-**protected guest 内存模型**：
-
-标准 KVM 中，host 内核可以随意映射 guest 物理内存（这对迁移、快照等功能很方便）。pKVM 彻底切断了这一路径：
-
-1. **Stage-2 页表由 hypervisor 独占管理**：ARMv8.1 VHE（Virtualization Host Extension）下，pKVM 在 EL2 运行，独占管理 guest 的 Stage-2 页表。host kernel（EL1）无法修改 Stage-2 页表项，因此无法将 guest 物理页映射到 host 的地址空间。
-
-2. **内存所有权标记**：每页物理内存有明确的所有权标记——host-owned 或 guest-owned。pKVM 初始化时为 guest 分配的内存页被标记为 guest-owned，host 尝试访问这些页会触发 Stage-2 fault。
-
-3. **内存共享机制**：host 和 guest 之间的数据交换必须通过显式的共享内存区域。pKVM 使用 `shared_buf` 机制：
-   - guest 通过 hypercall 请求将某页内存的所有权转给 host
-   - pKVM 验证并更新页表，将该页映射为 host 可见
-   - 数据传输完成后，guest 可以请求回收该页
-   - 这个过程涉及 TLB 刷新，有不可忽略的性能开销
-
-[已验证: AOSP android-17.0.0_r1, arch/arm64/kvm/hyp/nvhe/mem_protect.c]
-
-**性能代价分析**：
-
-内存隔离不是免费的。关键开销点：
-
-- **非共享区域的数据传输**：所有跨 VM 数据传输（virtio-blk 请求、virtio-net 包、virtio-console 数据）都必须通过共享内存区域。对于大量数据传输（如文件读写），需要内存拷贝或页面所有权切换，开销显著。
-- **TLB 开销**：pKVM 维护独立的 shadow page table（Stage-2），guest 的内存映射需要额外的 TLB 条目。TLB 容量有限时，guest 的 TLB miss 率可能高于 host。
-- **页面所有权切换**：每次 `shared_buf` 操作需要 TLB 刷新，在多核系统上需要 IPI（Inter-Processor Interrupt）通知其他核，开销约 10-100μs（取决于核数和缓存状态）。
-
-**内存分配独立性**：
-
-guest memory 一旦分配给 VM，就**脱离了 host 的内存回收体系**：
-- guest 物理内存不被 host 的 `kswapd` 扫描
-- host 的 `lmkd`（Low Memory Killer Daemon）无法回收 guest 页面
-- host 的 KSM（Kernel Samepage Merging）无法合并 guest 页面
-- 这意味着每运行一个 VM，host 可用内存**硬性减少** VM 配置大小
-
-[已验证: AOSP android-17.0.0_r1, drivers/staging/android/lowmemorykiller.c 中 lmkd 扫描逻辑不包含 guest 页面]
-
-这对内存受限的移动设备影响显著。例如，一个 128MB 配置的 Microdroid VM 会永久占用 128MB 物理内存直到 VM 销毁。
-
-### 🔹 crosvm VMM 架构与 VirtIO 设备模型
-
-crosvm 是用 Rust 编写的用户态 VMM，是 AVF 的 VM 生命周期管理核心。
-
-**架构特点**：
-
-```
-┌──────────────────────────────────────────┐
-│           VirtualizationService           │
-│    (system_server 进程内, AIDL API)        │
-├──────────────────────────────────────────┤
-│              crosvm (VMM)                 │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐    │
-│  │virtio-  │ │virtio-  │ │virtio-  │    │
-│  │blk      │ │net      │ │console  │    │
-│  │(线程)   │ │(线程)   │ │(线程)   │    │
-│  └────┬────┘ └────┬────┘ └────┬────┘    │
-│       │           │           │          │
-│  ┌────┴───────────┴───────────┴────┐    │
-│  │         KVM ioctl 接口           │    │
-│  └────────────┬────────────────────┘    │
-├───────────────┼──────────────────────────┤
-│          pKVM (EL2)                      │
-│     Stage-2 页表 / 内存隔离              │
-├──────────────────────────────────────────┤
-│      Guest VM (Microdroid)               │
-│   ┌────────────────────────────────┐    │
-│   │  Linux Kernel (guest)          │    │
-│   │  init | binder | service mgr   │    │
-│   │  Android runtime (ART)         │    │
-│   └────────────────────────────────┘    │
-└──────────────────────────────────────────┘
+```text
+Host app / system component
+        │  VirtualMachineManager / VirtualMachine (@SystemApi)
+        ▼
+framework-virtualization Java library
+        │  spawn + RpcBinder over Unix-domain socket
+        ▼
+virtmgr child process (Rust)
+        │  one crosvm child process for each running VM
+        ├─────────────────────────────┐
+        ▼                             ▼
+VirtualizationServiceInternal     crosvm
+(global Rust lazy Binder service)    │ /dev/kvm ioctls
+        │ CID / global resources     ▼
+        └────────────────────────► pKVM at EL2
+                                      │
+                                      ▼
+                           pvmfw → bootloader → guest OS
 ```
 
-[已验证: AOSP android-17.0.0_r1, external/crosvm/src/main.rs]
+`libs/framework-virtualization/.../VirtualizationService.java` 对这个关系写得很直接：该类代表“一个正在运行、承载 AIDL 服务的 virtmgr 实例”，`nativeSpawn()` 创建子进程，Unix-domain socket 上的 RpcBinder 负责 host 客户端与 `virtmgr` 通信。
 
-**每个 VirtIO 设备运行在独立线程**：
+`android/virtualizationservice/src/main.rs` 则注册全局的 `android.system.virtualizationservice` lazy Binder 服务。它承担 CID、全局资源、统计和维护职责。它与每个客户端拉起的 `virtmgr` 不是同一个进程，也不位于 system_server。
 
-crosvm 的设计哲学是：每个 VirtIO 设备是一个独立线程，通过 message pipe 与主线程通信。这种设计的好处是设备处理不会阻塞主线程的 KVM 调度，但代价是线程间通信开销和潜在的锁竞争。
+每个 crosvm 进程只运行一台 VM；一个 `virtmgr` 可以管理多台 crosvm 子进程。crosvm 通过 `/dev/kvm` 的系统、VM、vCPU 和设备 ioctl 创建并运行虚拟机。
 
-关键 VirtIO 设备及其性能特征：
+### 1.2 pKVM、crosvm 与 Microdroid 的分工
 
-| 设备 | 功能 | 典型开销 |
-|------|------|---------|
-| virtio-blk | 块设备（磁盘 I/O） | 每次 I/O 请求需 VM exit → crosvm 处理 → VM entry，约 10-50μs |
-| virtio-net | 网络设备 | 每个网络包需拷贝到共享内存，延迟约 20-100μs |
-| virtio-console | 控制台 I/O | 逐字节传输（有批量优化），延迟较高 |
-| virtio-vsock | VM socket | 类似 TCP socket 语义，延迟约 15-50μs |
-| virtio-gpu | GPU 虚拟化 | Android 16+ 引入，支持 virgl 渲染 |
+| 组件 | 所在位置 | 主要职责 | 不负责什么 |
+|---|---|---|---|
+| pKVM | ARM64 EL2，来自 ACK/KVM | host/guest Stage-2 权限、页面所有权、vCPU 切换和 pVM 保护 | VM 配置、磁盘组装、payload 生命周期 |
+| crosvm | host 用户空间 Rust 进程 | VMM、KVM ioctl、vCPU 线程、virtio 设备、VM 内存布局 | 判定 APK/payload 业务可信性 |
+| `virtmgr` | host 用户空间 Rust 进程 | AIDL 生命周期、镜像/fd 准备、启动和监控 crosvm | 在 system_server 中常驻 |
+| pvmfw | pVM 首段固件 | 验证初始镜像、维护实例身份、派生每 VM 机密 | 提供 Android framework API |
+| Microdroid | guest OS | 验证启动、SELinux、Bionic、native payload、Binder RPC | 完整 Android UI 和应用框架 |
 
-**VM exit/entry 开销分析**：
+Microdroid 是 AVF 提供的一种轻量 guest OS，不是 AVF 的唯一 guest。API 37 还允许 custom VM 配置；Android 的 Linux 开发环境也是基于 AVF 的 non-protected VM 用例。
 
-每次 guest 因 I/O 需要访问 host 资源时，触发 VM exit：
-1. Guest 执行 MMIO/PIO 访问 → 触发异常 → 陷入 EL2（pKVM）
-2. pKVM 将控制权转给 crosvm（用户态）
-3. crosvm 处理设备请求（如读取文件）
-4. crosvm 通过 KVM_RUN ioctl 重新进入 guest
-5. Guest 恢复执行
+## 二、Microdroid 不是“小号完整 Android”
 
-这个 round-trip 的开销：
-- VM exit + entry 基础开销：约 5-10μs（ARM64, 单核）
-- 包含 crosvm 设备处理：约 15-50μs（取决于设备和数据量）
-- 与传统系统调用对比：传统 syscall 约 1-5μs，VM exit/entry 约是其 3-10 倍
+Microdroid 为 native payload 提供熟悉的 Android 基础设施：Bionic、Verified Boot、SELinux、APEX、日志/崩溃调试能力，以及基于 vsock 的 Binder RPC。它明确不提供：
 
-[已验证: AOSP android-17.0.0_r1, 基准数据来自 crosvm benchmarks]
+- `system_server` 和 Zygote；
+- 图形/UI；
+- HAL；
+- `android.*` Java framework API。
 
-**与 QEMU/KVM 的对比**：
+启用 ART APEX 后可以使用 `java.*` 核心 API，但这不等于拥有常规 Android 应用运行环境。payload 通常是 APK 内嵌的 native shared library，由 Microdroid payload launcher 执行。
 
-crosvm 相比 QEMU 的关键差异：
-- **精简设备模型**：crosvm 只实现 Android 需要的 VirtIO 设备，没有 QEMU 的 legacy 设备仿真负担
-- **Rust 内存安全**：整个 VMM 用 Rust 编写，消除了 C 语言常见的缓冲区溢出等内存安全问题
-- **启动速度**：精简模型使 crosvm 的 VM 初始化路径远短于 QEMU，启动时间约快 2-3 倍
-- **单一目的**：crosvm 专为 AVF 设计，不支持 QEMU 的迁移、快照等通用功能
+因此，下列推断在 API 37 中没有依据：
 
-**Android 17 中 crosvm 的性能优化**：
+- Microdroid 默认含完整 ART、SystemServer 和 service manager 服务集；
+- protected Microdroid 可以直接使用 virtio-gpu 或 NPU HAL 加速通用 AI 推理；
+- 它能直接承载完整工作资料、Launcher 或 SystemUI。
 
-- **Balloon driver 改进**：guest 内核通过 balloon driver 主动报告空闲页面给 host，crosvm 可以将这些页面归还给 host 的页面分配器。Android 17 优化了 balloon 的批量报告机制，减少了单个页面报告的 TLB 刷新次数。
-- **Free page reporting**：guest 周期性扫描空闲页，批量报告给 crosvm，降低 VM 的实际内存占用。
-- **VirtIO 异步通知**：减少 VM exit 频率，通过 ioeventfd 和 irqfd 实现异步设备通知。
+需要 UI、GPU 或设备直通的 custom VM，应按具体 guest、crosvm 构建选项和产品安全策略单独评估，不能套用 Microdroid 的能力表。
 
-### 🔹 VM 生命周期性能
+## 三、pKVM 如何阻止 host 读取 pVM 内存
 
-**VM 启动时间分解**：
+### 3.1 host 也受 Stage-2 约束
 
-Microdroid VM 的启动流程包含以下阶段：
+传统 KVM 在 host 运行时通常不使用 Stage-2 限制，因此 host kernel 可以访问承载 guest 内存的物理页。pKVM 在 host 上下文也启用 Stage-2：
 
-| 阶段 | Android 13 耗时 | Android 17 耗时 | 说明 |
-|------|-----------------|-----------------|------|
-| VM 配置解析 | ~50ms | ~30ms | 解析 VM 配置文件，加载镜像路径 |
-| 内存分配与映射 | ~200ms | ~100ms | 分配 guest 物理内存，建立 Stage-2 页表 |
-| 内核加载 | ~300ms | ~150ms | 加载 guest Linux kernel + initramfs |
-| Guest kernel init | ~1s | ~400ms | guest 内核初始化（驱动、挂载、设备树） |
-| Guest init | ~1.5s | ~600ms | Microdroid init（启动 service manager、binder） |
-| 应用就绪 | ~1s | ~300ms | VM 内应用启动并准备接收请求 |
-| **总计** | **~4s** | **~1.6s** | — |
+- host Stage-2 使用 identity mapping，地址不重排，主要承担访问控制；
+- guest 仍有自己的 Stage-2，把 guest IPA 映射到物理地址；
+- EL2 维护页面所有者，并决定 host、某台 pVM、hypervisor 或设备能否映射该页。
 
-[待验证: 具体耗时数据为基于架构分析的估算值，实际数据需在 Pixel 设备上实测]
+Android 启动之初，除 hypervisor 保留区外的内存归 host 所有。创建 pVM 时，host 把页面 donate 给 guest；EL2 随后从 host Stage-2 中撤销这些页的访问权限。crosvm 进程仍保留用于建立 KVM memslot 的虚拟地址区间和内存记账关系，但对应物理页已不在 host Stage-2 的可访问映射中。host CPU 或受 host 控制的设备不能凭借这段用户空间地址绕过 EL2 读取 pVM 私有页。
 
-Android 17 的启动优化主要来自：
-- **内核裁剪**：Microdroid 使用的 Linux 内核进一步精简，移除了不必要的驱动和子系统
-- **并行初始化**：guest init 中的服务启动并行化
-- **预加载镜像**：VM 镜像使用增量加载（sparse image），减少 I/O
-- **pKVM 初始化优化**：Stage-2 页表建立使用大页映射（2MB block），减少页表条目数量
+当前内核把 host Stage-2 标记为 `KVM_PGTABLE_S2_IDMAP`，并在 `host_stage2_set_owner_locked()` 中根据 owner id 建立 host 映射或记录其他所有者。保护来自 EL2 管理的权限，不是某个用户空间 `shared_buf` 名称。
 
-**VM 内存开销**：
+### 3.2 donate、share、unshare、relinquish 是四类动作
 
-Microdroid 最小配置的内存占用：
+| 动作 | 所有权 | host 是否可访问 | 常见用途 |
+|---|---|---|---|
+| donate | host → pVM | 否 | guest 私有 RAM |
+| share | 所有者不变 | 是，按授权范围 | virtio 共享窗口、host/guest 通信 |
+| unshare | 所有者不变 | 取消 host 映射 | 结束临时共享 |
+| relinquish | pVM → host | 是，重新归 host | balloon/长期 VM 归还不用的页 |
 
-| 组件 | 内存占用 |
-|------|---------|
-| Guest Linux kernel | ~8MB |
-| Guest initramfs | ~4MB |
-| Guest page cache | ~8-16MB |
-| Guest Android runtime（ART + binder） | ~24-32MB |
-| crosvm 进程开销 | ~8MB |
-| VirtIO 设备缓冲区 | ~4-8MB |
-| **总计（最小配置）** | **~56-76MB** |
+guest 归还页面时，内核会撤销 guest Stage-2 映射，清理页面内容，再把 owner 改回 host。下面的片段展示的是“归还私有页”这一段核心顺序：
 
-[适用版本: Android 13 - Android 17]
+```c
+/* Zap the guest stage2 pte and return ownership to the host */
+WARN_ON(kvm_pgtable_stage2_unmap(&vm->pgt, ipa, PAGE_SIZE));
 
-**VM 销毁延迟**：
+if (!(flags & KVM_FUNC_MEM_RELINQUISH_NO_POISON))
+    hyp_poison_page(phys, PAGE_SIZE);
+else
+    hyp_flush_page(phys, PAGE_SIZE);
 
-`VirtualMachine.stop()` 到 VM 资源完全释放的流程：
-1. 发送 shutdown 信号给 crosvm
-2. Guest kernel 执行 graceful shutdown（如果 guest 响应）
-3. crosvm 关闭所有 VirtIO 设备线程
-4. 释放 guest 物理内存（归还给 host）
-5. 清理 KVM 和 pKVM 状态
-
-正常销毁约 100-500ms。如果 guest 不响应 shutdown，强制 kill 后约 50-200ms。
-
-**并发 VM 数量限制**：
-
-Android 17 中 pKVM 的并发 VM 限制：
-- **硬件限制**：ARMv8.1+ 支持最多 16 个 VM（包含 host），即最多 15 个 guest
-- **软件限制**：Android 17 默认限制每个应用最多 1 个活跃 VM（可通过系统配置调整）
-- **内存约束**：实际并发数受设备可用内存限制（每个 VM 最少 ~64MB）
-- **crosvm 进程限制**：每个 VM 对应一个 crosvm 进程，受系统进程数限制
-
-### 🔹 VM 与 host 的 IPC 通信性能
-
-AVF 环境下的 IPC 是性能分析的重点关注领域，因为它直接决定了 VM 内应用的响应速度。
-
-**vsock 通信模型**：
-
-vsock（VM socket）是专为虚拟机通信设计的 socket 地址族：
-
-```
-AF_VSOCK socket API
-  ├── SOCK_STREAM (TCP-like, 可靠传输)
-  ├── SOCK_DGRAM (UDP-like, 不可靠传输)
-  └── SOCK_SEQPACKET (顺序数据包, Android 14+ 优先使用)
+ret = __host_stage2_set_owner_locked(
+        phys, PAGE_SIZE, PKVM_ID_HOST, 0,
+        HOST_SET_PSCI_MEM_PROTECT);
 ```
 
-vsock 的 CID（Context Identifier）区分 host（CID 2）和各个 guest（CID > 2）。数据传输通过 virtio-vsock 设备的共享内存环形缓冲区完成。
+这段代码说明两个关键边界：页面回收伴随权限变更和内容处理；配置给 VM 的内存并非只能等到 VM 销毁才归还。pKVM 提供 relinquish hypercall，virtio balloon 可以借此回收长期运行 VM 中不用的页。
 
-性能特征：
-- 连接建立：~200-500μs（含 virtio-vsock 设备协商）
-- 单次 send/recv（小消息）：~20-50μs（VM exit + virtio 处理 + VM entry）
-- 吞吐量：~1-5 Gbps（取决于共享内存缓冲区大小和 VM exit 频率）
-- 与本地 TCP loopback 对比：延迟约高 3-5 倍，吞吐量低 30-50%
+### 3.3 共享窗口为什么影响 I/O
 
-[已验证: AOSP android-17.0.0_r1, drivers/vhost/vsock.c 和 net/vmw_vsock/virtio_transport.c]
+virtio 的常规设计假设 host 设备后端可以跟随 virtqueue 描述符访问 guest buffer。pVM 私有页不满足这个假设。若每次请求都临时 share 一个小 buffer，页面粒度共享还可能暴露同页中的无关数据。
 
-**binder over vsock**：
+AVF 的 protected guest 因此为 virtqueue 和数据 buffer 预留固定共享内存窗口，guest 在私有页与共享窗口之间进行 bounce copy。性能后果很具体：
 
-Android 14+ 引入了跨 VM Binder 通信机制：
+- 小 MMIO 控制访问可能触发 guest → EL2 → host VMM → guest 的往返；
+- 大数据通常走共享 virtqueue，不需要每个字节都 VM exit；
+- bounce copy、cache 维护和唤醒次数会影响吞吐与尾延迟；
+- buffer 大小、批量深度和 I/O 模式不同，结果会相差很大。
 
-- **架构**：在 vsock 之上建立 Binder 协议传输层，使 guest 内的 binder 调用可以到达 host 或另一 VM
-- **延迟**：跨 VM Binder 调用延迟约 50-150μs（vsock 传输 + binder 序列化/反序列化），是同进程内 Binder（~5-20μs）的 3-10 倍
-- **限制**：不支持 binder 共享内存传递（因为 guest 内存对 host 不可见），需要通过拷贝替代
-- **Android 17 改进**：引入了 batching 机制，多个小 Binder 调用可以批量传输，减少 VM exit 次数
+这也是不能给所有 virtio-blk、vsock 或 Binder RPC 写一个固定微秒数的原因。
 
-**共享内存通信**：
+## 四、内存占用与 host 内存压力
 
-通过 `gralloc` / `dmabuf` 在 host 和 guest 之间共享内存：
-- host 分配的 dmabuf 可以通过 virtio-gpu 或 virtio-wl 传递给 guest
-- guest 持有 dmabuf fd 后可以直接映射该内存（pKVM 将该区域标记为 shared）
-- 这是最高效的跨 VM 数据传输方式，避免了拷贝
-- **限制**：protected VM 中，dmabuf 共享需要 pKVM 显式批准（安全策略）
+### 4.1 guest RAM 记在 crosvm 名下
 
-**与传统进程间 Binder IPC 的性能对比**：
+crosvm 通过 `mmap` 分配 VM 物理内存，再用 `KVM_SET_USER_MEMORY_REGION` 建立 memslot。Android 官方架构文档指出，这部分内存归属管理该 VM 的 crosvm 进程；host 内存不足时，crosvm 可以被杀，结果是整台 VM 终止。
 
-| 通信方式 | 典型延迟 | 吞吐量 | 适用场景 |
-|----------|---------|--------|---------|
-| 进程内调用 | ~0.1μs | N/A | 函数调用 |
-| Binder（同进程组） | ~5-20μs | ~10+ Gbps | 常规 IPC |
-| Binder（跨进程组） | ~10-50μs | ~5+ Gbps | 跨应用 IPC |
-| vsock（小消息） | ~20-50μs | ~1-5 Gbps | VM 间轻量通信 |
-| binder over vsock | ~50-150μs | ~1-3 Gbps | VM 间 Binder 调用 |
-| 共享内存（dmabuf） | ~5μs（映射后） | 带宽极限 | 大数据传输 |
+对于已 donate 的 pVM 私有页：
 
-### 🔹 AVF 对系统整体性能的影响
+- host 不能 swap 或 KSM merge；
+- host 不能把它当普通匿名页读取；
+- guest relinquish/balloon 后可以回到 host；
+- VM 停止时，hypervisor 清理并归还剩余页面。
 
-pKVM 的启用对整个 Android 系统有全局性影响，即使对于不使用 AVF 的应用。
+所以“128 MiB 配置永久硬占 128 MiB，直到销毁”过于绝对；“host 的 lmkd 能直接回收 guest 内某几页”也不对。内存压力的控制单元通常是 crosvm/VM，细粒度回收依赖 guest 主动配合。
 
-**pKVM 启用的全局开销**：
+### 4.2 不要用静态组件表估算最小内存
 
-1. **host 可用内存减少**：pKVM 自身的代码和数据占用约 8-16MB 物理内存（hypervisor 区域）。这部分内存 host 完全不可用。
-2. **host 页面合并限制**：pKVM 的内存保护机制导致 KSM（Kernel Samepage Merging）无法扫描被 pKVM 管理的内存区域。对于大量使用 KSM 的设备（低内存设备），这会减少内存合并收益。
-3. **shadow page table 维护**：pKVM 为每个 VM 维护独立的 Stage-2 页表。当 VM 创建、销毁或内存映射变化时，pKVM 需要更新 Stage-2 页表并刷新相关 TLB。
+Microdroid 的最低可启动内存受下列因素影响：
 
-**VM 运行时的 host CPU 开销**：
+- protected 或 non-protected 模式；
+- debug level；
+- 启用的 APEX、ART 和 payload；
+- vCPU 数、内核和 vendor 模块；
+- huge page 可用性；
+- guest page cache 与运行时峰值。
 
-当 VM 运行时，host CPU 开销主要来自：
-- **crosvm 线程**：每个 VirtIO 设备线程在 host 上消耗 CPU。对于活跃的 VM，crosvm 可能占用 5-15% 的一个 CPU 核。
-- **VM exit 处理**：每次 VM exit 切换到 crosvm 处理，然后返回 guest。高频 VM exit（如密集 I/O）会显著消耗 CPU。
-- **pKVM 过头**：Stage-2 页表查找、TLB 管理等 hypervisor 操作的开销约 1-3% CPU。
+AOSP 的 `MicrodroidBenchmarks.canBootMicrodroidWithMemory()` 在 16～512 MiB 区间做二分尝试，只有 payload 成功启动才记录结果。源码选择运行时探测，说明“kernel 8 MiB + ART 24 MiB + 设备 4 MiB”这类静态加法不能作为产品容量结论。
 
-**对 thermal 和功耗的影响**：
+### 4.3 AOSP 如何测内存
 
-- VM 计算密集型任务会导致额外的 CPU 功耗。由于 VM 的虚拟化开销，同样的计算任务在 VM 中比直接在 host 上运行多消耗约 5-15% 的 CPU 周期。
-- crosvm 的设备线程保持活跃会阻止 CPU 进入深度休眠状态（C-state），影响待机功耗。
-- Android 17 优化：当 VM 空闲时，crosvm 可以通过 `KVM_HALT` 指令让 guest 进入 halt 状态，释放 host CPU。
+API 37 的 benchmark 同时采集三组数据：
 
-**Android 17 中 AVF 的性能 profiling 工具**：
+1. guest `/proc/meminfo`：`MemTotal`、`MemAvailable`、cache、slab；
+2. host `/proc/<crosvm-pid>/smaps`：区分 `crosvm_guest` 映射与 VMM 自身 RSS/PSS；
+3. KVM debug stats（设备支持时）：如 protected shared/hyp 相关内存。
 
-- **VM 内 Perfetto 支持**：Android 17 的 Microdroid 内置 Perfetto traced，可以直接在 VM 内采集 trace。通过 virtio-vsock 将 trace 数据流式传输到 host 的 Perfetto 收集器。
-- **host 侧 VM 监控**：crosvm 提供 metrics 接口，输出 VM exit 次数、virtio 设备吞吐量、内存使用等指标。
-- **Perfetto VM 插件**：host 的 Perfetto 可以标注 VM exit/entry 事件，帮助开发者理解 host 和 guest 的交互模式。
+这三组数的口径不同，不能相加后当作“AVF 总内存”。建议分别报告：guest 配置量、guest 工作集、crosvm host PSS、pKVM/KVM 额外开销，以及回收前后的变化。
 
-## 扩展
+## 五、CPU 调度与 VM exit
 
-### 🔸 Microdroid 内部 Android 运行时
+### 5.1 vCPU 是 host 调度器管理的线程
 
-Microdroid 是一个高度裁剪的 Android 运行时，运行在 VM 内：
+每个 vCPU 对应 crosvm 中的 POSIX 线程。线程调用 `KVM_RUN` 后进入 guest；出现需要 VMM 处理的 I/O、vCPU halt 或其他退出原因时，`KVM_RUN` 返回 host 用户空间。
 
-- **init**：Microdroid 的 init 是标准 Android init 的精简版，去除了大部分服务（如 surfaceflinger、audioserver），只保留 service manager 和应用所需的最小服务集。
-- **binder**：Microdroid 包含完整的 binder 库，可以发起和接收 Binder 调用（通过 binder over vsock 与 host 通信）。但 service manager 只注册了少量系统服务。
-- **ART**：Microdroid 内包含 ART（Android Runtime），可以运行 Java/Kotlin 代码。但 JIT/AOT 配置更保守（默认仅 interpreter + JIT，无 AOT 预编译），因为 Microdroid 的存储空间有限。
-- **应用安装**：应用 payload 通过 VM 配置文件指定，以 APK 形式嵌入 VM 镜像。不支持动态安装应用。
-- **网络栈**：Microdroid 包含完整的 Linux 网络栈，通过 virtio-net 访问网络。但默认配置限制了网络访问范围（可通过 VM 配置控制）。
+host Linux scheduler 仍可抢占 vCPU 线程，并把 guest 执行时间计入该线程。vCPU 线程可以使用常规 QoS 工具设置 affinity、cpuset、uclamp 和调度策略。guest 自己不能绕过 host scheduler 获得物理 CPU。
 
-[待验证: Microdroid 的 ART 默认配置可能已在 Android 17 中更新为支持 AOT]
+因此，VM 内看到的慢任务至少可能来自三层：
 
-### 🔸 AVF 安全性与性能的 trade-off
+1. guest 内线程没有被 guest scheduler 选中；
+2. 对应 vCPU 线程在 host 上 runnable 但未获 CPU；
+3. vCPU 因 MMIO/virtio/中断等事件退出，在 crosvm 或 host 内核等待。
 
-**protected VM vs non-protected VM**：
+只看 guest 内 Perfetto，无法区分后两层。性能分析需要把 guest 时间线与 host 的 crosvm/vCPU 线程调度对齐。
 
-AVF 支持两种 VM 模式：
+### 5.2 不能把每次 I/O 等同于一次完整 VM exit
 
-| 模式 | host 可见 guest 内存？ | 性能 | 安全性 |
-|------|----------------------|------|--------|
-| protected VM | ❌ | 较低（内存隔离开销） | 高（host 被攻破不影响 guest） |
-| non-protected VM | ✅ | 较高（可使用标准 KVM 路径） | 中等（隔离弱于 protected） |
+virtio 用 MMIO 完成设备控制与通知，数据面主要通过共享 virtqueue 传输。一次高层文件读写可能拆成多个队列请求，也可能批量消费多个描述符。eventfd、epoll、interrupt coalescing 和队列深度都会改变 exit/唤醒次数。
 
-**决策树**：
+准确的优化目标通常是：
 
+- 每单位业务数据产生多少次通知和唤醒；
+- vCPU 线程退出后在 host 停留多久；
+- crosvm 设备处理是否受 CPU、I/O 或锁限制；
+- guest 提交深度能否覆盖 host 处理延迟。
+
+没有设备型号、CPU 频点、负载、virtqueue 配置和统计分布时，`VM exit = 5–10 μs` 或“比 syscall 慢 3–10 倍”都不能作为 Android 17 平台结论。
+
+## 六、vsock 与 Binder RPC 的边界
+
+### 6.1 vsock 是 host/pVM 的基础通信通道
+
+`VirtualizationServiceInternal` 为运行中的 VM 分配 CID。CID 在 VM 存活期间唯一；VM 结束且相关 `IVirtualMachine` 引用释放后，数值可以复用。端口由 guest 服务自行选择。
+
+Java `VirtualMachine.connectVsock(port)` 返回一个新的 `ParcelFileDescriptor`。它是字节流通信入口，调用方负责 framing、超时、背压和关闭。不要把一次 `write()` 等同于对端一次 `read()`。
+
+### 6.2 Binder RPC 运行在预连接的 vsock 上
+
+Microdroid 支持 Binder RPC over vsock。API 37 的 `connectToVsockServer()` 代码关系可以概括为：
+
+```text
+connectToVsockServer(port)
+    = connectVsock(port)
+    + binderFromPreconnectedClient(connectionProvider)
 ```
-需要运行不可信代码？ → non-protected VM
-需要保护代码/数据不被 host 读取？ → protected VM
-需要与 host 高频通信？ → non-protected VM（避免内存拷贝开销）
-需要远程证明（Remote Attestation）？ → protected VM（证明依赖隔离）
-```
 
-**Android 17 中 zero-copy 路径在 protected VM 中的限制**：
+这条链路使用 Binder RPC 协议和 Binder 对象模型，但传输不是 host 与 guest 共享同一个 `/dev/binder` 驱动实例。guest 私有内存也不会因为传了 Binder 对象而自动对 host 可见。
 
-protected VM 的内存隔离机制导致 zero-copy 受到严格限制：
-- dmabuf 可以在 host 和 protected VM 之间共享，但 pKVM 需要验证 dmabuf 的来源和权限
-- virtio-gpu 的 resource 模式受限：某些 GPU 操作（如 resource assign back）在 protected VM 中不可用
-- 网络包传输无法使用 zero-copy（virtio-net 的 mergeable buffer 在 protected 模式下被禁用）
+对 payload API，Binder RPC 适合控制面和结构化小消息；大数据应评估流式 vsock、文件交换或专用共享机制。选择依据是拷贝次数、批量大小、失败恢复和数据敏感性，不是未经测量的固定延迟表。
 
-### 🔸 商业应用场景与性能预期
+### 6.3 AOSP 的测量方式值得复用
 
-**Remote Attestation（远程证明）**：
+`MicrodroidBenchmarks` 分开测量：
 
-远程证明是 AVF 的旗舰应用场景。VM 可以向远程验证者证明自己运行在受保护的 AVF 环境中：
-- 基于 pKVM 的硬件信任根（Device Unique Key，DICE）
-- 证明链：硬件信任根 → bootloader → pKVM → Microdroid → 应用 payload
-- 性能开销：一次完整的远程证明约 100-500ms（涉及加密签名和证书链验证）
-- Android 17 优化：引入批量证明（一次证明多个 VM），减少重复的密码学运算
+- `testRpcBinderLatency()`：10 次 warmup，随后 10,000 次小 RPC；
+- `testVsockLatency()`：独立的 echo/reverse 协议，同样 warmup 后循环测量；
+- `testVsockTransferFromHostToVM()`：48 MiB 连续发送，报告吞吐；
+- `testVirtioBlkSeqReadRate()` / `RandReadRate()`：区分顺序与随机读，并丢弃首次受 host page cache 冷启动影响的样本。
 
-**隔离工作档案（Isolated Work Profile）**：
+这些用例没有把某一台实验设备的结果固化为平台常量。复用时应保留原始样本，报告 P50/P90/P99，并记录 protected mode、debug level、内存、vCPU topology、huge page、uclamp、温度和 CPU 频点。
 
-基于 AVF 的工作档案方案将企业数据隔离在 VM 内，提供比现有工作档案更强的隔离：
-- 当前限制：Android 17 的 Microdroid 不含完整的 SystemUI 和 Launcher，无法直接作为完整工作环境
-- 未来方向：Google 内部在探索基于 AVF 的轻量级工作环境
+## 七、VM 生命周期的真实语义
 
-**端侧 AI 模型在 VM 中推理的性能边界**：
+### 7.1 `run()` 返回不代表 payload 已就绪
 
-在 protected VM 中运行 AI 推理的场景：
-- **优势**：模型权重和推理结果对 host 不可见，保护知识产权和隐私
-- **限制**：GPU 访问受限于 virtio-gpu，推理速度可能比直接在 host 上慢 2-5 倍
-- **替代方案**：使用 CPU 推理（XNNPACK / LiteRT），受限于 VM 的 CPU 调度优先级
-- **Android 17**：引入了对 NPU（Neural Processing Unit）虚拟化的早期支持，但性能和兼容性仍在完善
+`VirtualMachine.run()` 完成启动请求后即可返回。VM 是否开始运行、OS 是否启动、payload 是否 ready，要通过 `VirtualMachineCallback` 观察。常用节点包括：
 
-[待补充: NPU 虚拟化的具体 API 和性能数据待 Android 17 正式发布后验证]
+- API 调用开始；
+- vCPU 开始；
+- bootloader/pvmfw 完成；
+- guest kernel 运行 `/init`；
+- `onPayloadStarted()`；
+- `onPayloadReady()`。
 
----
+AOSP boot benchmark 将总时长分成 `VM_START`、`BOOTLOADER`、`KERNEL` 和 `USERSPACE`。更细的分段依赖 FULL debug 输出中的日志标记；debug 配置本身会改变启动路径，因此总时长与分段测试应分别标注配置。
 
-> 本节基于 AOSP android-17.0.0_r1 源码和官方文档撰写。部分性能数据为基于架构分析的估算，需在真实硬件上实测校准。
+### 7.2 `stop()` 是强制停止
+
+API 文档把 `VirtualMachine.stop()` 比作拔电源：guest 软件不会收到正常关机通知，加密存储写入可能未持久化。需要 graceful shutdown 时，应通过 payload 的 Binder/vsock 协议请求退出，并等待 `onPayloadFinished()`。
+
+“正常销毁 100–500 ms，强杀 50–200 ms”没有平台保证。应分别测量：
+
+- payload 收到退出请求到 `onPayloadFinished()`；
+- `stop()` 调用到 `onStopped()`；
+- crosvm 退出后 RSS、KVM 和 pKVM 页面归还完成的时间。
+
+### 7.3 引用生命周期会影响 VM 存活
+
+`IVirtualMachine` Binder 对象跟踪 VM 所有权。没有强引用后，`VirtualizationService` 会关闭 VM；启动它的客户端若被 LMK 杀死，VM 也会随引用消失而终止，避免孤儿资源长期占用。
+
+### 7.4 并发 VM 没有“Arm 最多 16 台”的通用规则
+
+API 37 的 `VirtualMachine.run()` 注释写明：并发运行数量除可用内存外没有 Java API 固定限制。当前 6.18 内核定义 `KVM_MAX_PVMS = 255`，这是内核对象上限，也不是设备可承载 255 台 VM 的性能承诺。
+
+产品上限还受以下条件约束：
+
+- 每台 VM 的 guest RAM、crosvm PSS 和共享内存；
+- vCPU 总数与调度容量；
+- CID、fd、进程和 SELinux 策略；
+- pKVM firmware、IOMMU 和可分配设备资源；
+- 前后台管理策略。
+
+AOSP benchmark 甚至有同时创建 8 台 VM 的测试路径，这足以否定“每个应用默认只能运行 1 台”的概括，但不代表所有设备都应以 8 台为容量目标。
+
+## 八、protected 与 non-protected 的选择
+
+| 维度 | protected VM | non-protected VM |
+|---|---|---|
+| host 是否可映射 guest 私有内存 | 不可，除非 guest 显式共享 | VMM 保留访问能力 |
+| 主要目标 | host 被攻破时仍保护 guest 机密性和完整性 | 常规虚拟化与开发环境 |
+| 启动链 | pvmfw/受保护启动与实例身份参与 | 不需要同等 pVM 保护链 |
+| I/O 数据路径 | virtio 固定共享窗口与 bounce 更重要 | 可使用常规 KVM/VMM guest memory 路径 |
+| 可用性 | host 仍能停止、饿死或拒绝服务 | host 同样控制资源 |
+| 远程证明 | 依赖设备和 AVF 能力，可用于 pVM | 不提供同等级 pVM 证明 |
+
+pKVM 保护的是机密性和完整性，不承诺 guest 对 host 的可用性。host scheduler 可以不给 vCPU 时间，host 也可以杀掉 crosvm。安全设计不能把“数据不被读取”误写成“服务不会被中断”。
+
+AVF 也没有完全替代 TrustZone。TEE 仍承载 KeyMint、Gatekeeper 等依赖 secure world 的设备能力；pVM 提供更丰富、可动态创建的隔离执行环境。两者的信任根、设备访问和攻击面不同，不宜用一个固定“谁更强”或世界切换微秒数排序。
+
+## 九、Android 17 的性能验证清单
+
+### 9.1 固定实验条件
+
+至少记录以下配置：
+
+- build fingerprint、AOSP/GKI/vendor 内核版本；
+- protected/non-protected；
+- Microdroid 或 custom guest；
+- debug `NONE`/`FULL`；
+- vCPU topology、guest memory、huge page；
+- payload/APEX 集合与存储镜像；
+- host 温度、频点、充电状态和前后台负载。
+
+### 9.2 启动
+
+1. 以 `run()` 调用时刻为起点；
+2. 以 `onPayloadStarted()` 或业务自定义 ready 为终点，两者分开报告；
+3. FULL debug 下再采 vCPU、bootloader、kernel、userspace 分段；
+4. 至少区分首次实例创建、已有实例重启和 page cache 冷热；
+5. 报告分布，不只报平均值。
+
+### 9.3 CPU 与 I/O
+
+1. guest Perfetto 观察 payload、guest scheduler 和 guest I/O；
+2. host Perfetto 观察 crosvm、vCPU 线程、sched 和块 I/O；
+3. 统计每单位请求的 VM exit/通知次数；
+4. 顺序/随机、吞吐/延迟、小消息/大流量分别测试；
+5. 检查 host page cache、CPU affinity 和 uclamp 是否改变结论。
+
+### 9.4 内存与回收
+
+1. 记录配置内存与 guest `MemAvailable`；
+2. 从 crosvm `smaps` 分开 VMM PSS 和 `crosvm_guest` 映射；
+3. 设备允许时记录 protected shared/hyp KVM stats；
+4. 对 balloon/trim 前后使用相同工作集；
+5. 模拟 host 内存压力，确认 crosvm 被杀后的 VM 终止和客户端恢复策略。
+
+### 9.5 通信与停止
+
+1. Binder RPC 与原始 vsock 使用相同 payload 逻辑和消息大小；
+2. 明确 warmup、迭代数、连接复用与序列化格式；
+3. 单独测连接建立、单次 RPC、steady-state 吞吐和尾延迟；
+4. 分开测 graceful payload exit 与 `stop()` 强制终止；
+5. 对敏感数据验证它只进入预期共享区或加密存储。
+
+## 十、源码锚点
+
+- Android 17 / API 37：AOSP `android-17.0.0_r1`
+  - `packages/modules/Virtualization/android/virtualizationservice/src/main.rs`
+  - `packages/modules/Virtualization/android/virtmgr/src/main.rs`
+  - `packages/modules/Virtualization/android/virtmgr/src/virtualmachine.rs`
+  - `packages/modules/Virtualization/libs/framework-virtualization/src/android/system/virtualmachine/VirtualizationService.java`
+  - `.../VirtualMachineManager.java`、`VirtualMachine.java`、`VirtualMachineConfig.java`
+  - `packages/modules/Virtualization/tests/benchmark/src/java/com/android/microdroid/benchmark/MicrodroidBenchmarks.java`
+  - `external/crosvm/`
+- Kernel `android17-6.18-2026-06_r6`
+  - `arch/arm64/kvm/hyp/nvhe/mem_protect.c`
+  - `arch/arm64/include/asm/kvm_pkvm.h`
+- 官方架构说明
+  - [AVF overview](https://source.android.com/docs/core/virtualization)
+  - [AVF architecture](https://source.android.com/docs/core/virtualization/architecture)
+  - [VirtualizationService](https://source.android.com/docs/core/virtualization/virtualization-service)
+  - [Microdroid](https://source.android.com/docs/core/virtualization/microdroid)
+  - [AVF security](https://source.android.com/docs/core/virtualization/security)
+
+从 Android 13 到 Android 17，AVF 的 API 与 guest 能力持续增加；性能结论仍必须绑定设备、内核、guest、调试级别和具体负载。缺少这些条件的固定启动时间、微秒延迟或百分比开销，不应写成平台事实。
