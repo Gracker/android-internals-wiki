@@ -20,7 +20,7 @@ sources:
   - "frameworks/base/core/java/android/view/Choreographer.java"
   - "frameworks/base/core/java/android/os/Looper.java"
   - "frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java"
-  - "frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java"
+  - "frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java"
   - "frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java"
   - "https://source.android.com/docs/core/graphics/implement-vsync"
   - "https://developer.android.com/about/versions/16/features"
@@ -183,7 +183,7 @@ flowchart LR
     B --> C["VSyncPredictor<br/>维护周期与相位预测"]
     C --> D["VSyncDispatchTimerQueue<br/>计算目标 VSync 和唤醒时刻"]
     D --> E["SurfaceFlinger MessageQueue<br/>SF frame callback"]
-    D --> F["EventThread(app)<br/>VSync event"]
+    D --> F["EventThread#lpar;app#rpar;<br/>VSync event"]
     F --> G["BitTube / DisplayEventReceiver"]
     G --> H["Choreographer<br/>doFrame()"]
     E --> I["latch / composition / HWC present"]
@@ -401,7 +401,7 @@ App 与 SF 共享同一物理显示的预测基础，但它们有不同的注册
 
 ### 7.1 Android 15 引入 ARR
 
-Android 15 引入 Adaptive Refresh Rate。Android 17 延续这套 Composer3 v3 模型。支持 ARR 的 mode 在 `DisplayConfiguration` 中提供 `vrrConfig`：
+Android 15 引入 Adaptive Refresh Rate。ARR 所需的 `vrrConfig`、`getDisplayConfigurations()` 与 `notifyExpectedPresent()` 基础契约从 Composer3 AIDL version 3 开始出现。Android 17 tag 同时保留 version 3、4、5 的冻结快照；本章引用 version 3 是为了标出这组契约的起点，不表示 Android 17 设备只能实现 version 3。支持 ARR 的 mode 在 `DisplayConfiguration` 中提供 `vrrConfig`：
 
 - `vsyncPeriod` 表示显示 VSync/TE 节奏；
 - `VrrConfig.minFrameIntervalNs` 约束最快呈现间隔；
