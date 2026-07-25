@@ -2,14 +2,78 @@
 title: Sync Fence 框架与帧同步机制
 chapter: 2.16
 section: 2.16
-applicable_versions: Android 7 (API 24) - Android 17 (API 37)
-last_verified: 2026-07-03
-last_verified_against: AOSP android-17.0.0_r1 (Fence.cpp / HWC2.h / libsync / HWUI Skia GL-Vulkan release fence) + android-8.1.0_r81 / android-7.0.0_r1 history, source.android.com/docs/core/graphics/sync
-confidence: medium
+applicable_versions: Android 7 (API 24) - Android 17 (API 37); earlier Android
+  sync terminology retained only as version history
+last_verified: 2026-07-25
+last_verified_against: Android 17 / API 37 / android-17.0.0_r1; android17-6.18-2026-06_r6;
+  Writer rendering_pipelines
+confidence: high
 drafted_date: 2026-04-05
 drafted_by: openclaw-task2a
-sources: 
+sources:
 - type: official
+  path: https://source.android.com/docs/core/graphics/sync
+- type: official
+  path: https://source.android.com/docs/core/graphics/architecture
+- type: official
+  path: https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html
+- type: aosp
+  path: frameworks/native/libs/ui/Fence.cpp
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/native/libs/ui/FenceTime.cpp
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/native/libs/gui/Surface.cpp
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/native/libs/gui/BufferQueueProducer.cpp
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/native/libs/gui/BufferQueueConsumer.cpp
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/native/libs/gui/BLASTBufferQueue.cpp
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.h
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/libs/hwui/renderthread/EglManager.cpp
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/libs/hwui/renderthread/VulkanManager.cpp
+  ref: android-17.0.0_r1
+- type: aosp
+  path: system/core/libsync/sync.c
+  ref: android-8.1.0_r81
+- type: kernel
+  path: drivers/dma-buf/dma-fence.c
+  ref: android17-6.18-2026-06_r6
+- type: kernel
+  path: drivers/dma-buf/sync_file.c
+  ref: android17-6.18-2026-06_r6
+- type: kernel
+  path: drivers/dma-buf/sw_sync.c
+  ref: android17-6.18-2026-06_r6
+- type: kernel
+  path: include/trace/events/dma_fence.h
+  ref: android17-6.18-2026-06_r6
+- type: obsidian
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/diagrams/S01_baseline_12_anchor_pipeline/source.md
+- type: obsidian
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md
+- type: obsidian
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S11_camera_type.md
 path: https://source.android.com/docs/core/graphics/architecture
 tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
@@ -22,7 +86,7 @@ last_task9_at: 2026-07-03T12:32:56+08:00
 last_task2b_at: 2026-05-05T23:51:15+08:00
 repaired_date: 2026-04-26
 repaired_by: openclaw-task2b
-task9_review_notes: 2026-05-05 task9 deep-review: needs-rework。2.16 P0 1；12.1 P1 1；P2 3 随队列记录。 | 2026-05-24 Task9 闲时抽检：needs-rework。P1 1：Vulkan Timeline Semaphore 不能直接导出 Android sync fd / Perfetto fence track 只能观察 native fence；P2 1：dequeueBuffer fence 命名需改为 dequeue/release fence。 | 2026-07-03 Task9 idle audit AUTO-FIX: P1 1；将 Sync Fence 主线源码验证从 android-16.0.0_r1 更新到 android-17.0.0_r1，复核 Fence::merge/libsync/HWC2/HWUI GL+Vulkan release fence/Binary Semaphore sync fd 边界；回到 Task6 复审。详见 logs/deep-review/2026-07-03-09-audit.md。 | 2026-07-03 12 Task9 deep-review: pass-tech-review。Task6 复审后复核 android-17.0.0_r1 Fence.cpp/libsync/HWUI GL+Vulkan release fence/Binary Semaphore 边界；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。
+task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。2.16 P0 1；12.1 P1 1；P2 3 随队列记录。 | 2026-05-24 Task9 闲时抽检：needs-rework。P1 1：Vulkan Timeline Semaphore 不能直接导出 Android sync fd / Perfetto fence track 只能观察 native fence；P2 1：dequeueBuffer fence 命名需改为 dequeue/release fence。 | 2026-07-03 Task9 idle audit AUTO-FIX: P1 1；将 Sync Fence 主线源码验证从 android-16.0.0_r1 更新到 android-17.0.0_r1，复核 Fence::merge/libsync/HWC2/HWUI GL+Vulkan release fence/Binary Semaphore sync fd 边界；回到 Task6 复审。详见 logs/deep-review/2026-07-03-09-audit.md。 | 2026-07-03 12 Task9 deep-review: pass-tech-review。Task6 复审后复核 android-17.0.0_r1 Fence.cpp/libsync/HWUI GL+Vulkan release fence/Binary Semaphore 边界；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。"
 status: finalized
 pipeline_stage: ready-to-publish
 task6_state: reviewed
@@ -33,7 +97,7 @@ reviewed_date: 2026-07-03
 task6_reviewed_date: 2026-05-06
 last_task6_at: 2026-07-03T12:13:55+08:00
 last_task6_audit: 2026-07-03
-review_notes: 2026-04-27 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。 | 2026-05-05 Task6 23:26：revisiting 写作复审，清理 fence 章节 L1/L2 表达（填充词、否定纠正式、参考资料重复块）；写作层通过。Task9 已有 P0 queue pending，等待 Task2B。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：复审通过。复核 HWC2 fence 语义、libsync merge、HWUI GL/Vulkan release fence、Timeline Semaphore 边界；无新增 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；Vulkan native fence 边界已改为 Binary Semaphore → sync fd 桥接，dequeue fence 命名已修正；仅留 Binary Semaphore reset 语义 P2 建议；queue 无 pending，Task6 已通过，自动晋升 finalized。
+review_notes: "2026-04-27 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。 | 2026-05-05 Task6 23:26：revisiting 写作复审，清理 fence 章节 L1/L2 表达（填充词、否定纠正式、参考资料重复块）；写作层通过。Task9 已有 P0 queue pending，等待 Task2B。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：复审通过。复核 HWC2 fence 语义、libsync merge、HWUI GL/Vulkan release fence、Timeline Semaphore 边界；无新增 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-05-24 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；Vulkan native fence 边界已改为 Binary Semaphore → sync fd 桥接，dequeue fence 命名已修正；仅留 Binary Semaphore reset 语义 P2 建议；queue 无 pending，Task6 已通过，自动晋升 finalized。"
 last_task9_audit: 2026-07-03
 last_task9_review_log: logs/deep-review/2026-07-03-12-deep-review.md
 deepseek_cn_review_state: done
@@ -50,311 +114,321 @@ p0: 0
 p1: 0
 p2: 0
 ---
--
 
 # 2.16 Sync Fence 框架与帧同步机制
 
-当我们在 Perfetto 里看到 `latchBuffer`、`presentDisplay()` 或 `dequeueBuffer()` 旁边挂着一段 `fence wait` 时，重点在于追清楚这个 buffer 现在归谁用、什么时候才能安全换手。光记一个“这里卡了 X 毫秒”对排查没有帮助。Fence 就是这条换手协议。
+Fence 是异步工作的完成凭证。它不保存像素、不拥有 BufferQueue slot，也不让两个线程自动互斥；它只表达一条依赖：“在这项工作完成前，后续访问不能越过这个点。”
 
-App、GPU、SurfaceFlinger、HWC、Display Controller 都在异步工作。App 调完 `queueBuffer()`，不等于 GPU 已经把像素写完；`presentDisplay()` 返回了，也不等于屏幕已经完成这一帧扫描显示。如果没有显式同步，系统只能靠猜时机来复用 buffer，不是撕裂，就是白等。Fence 把“还没完成但迟早会完成”的状态封装成一个可传递、可等待、可调试的 fd，于是我们才能既避免读半成品，又把等待精确归因到 producer、consumer 或 display 侧。
+Android 图形链路需要 fence，是因为 CPU、GPU、Camera ISP、codec、SurfaceFlinger、HWC 和 display controller 可以并行工作。Producer 可以先把 buffer 与 fence 交给 consumer，再让 GPU 继续写；consumer 也可以先安排显示，再返回一条稍后才 signal 的 release fence。这样既避免 CPU 在每个阶段同步阻塞，也避免 consumer 读到尚未写完的像素。
 
-<!-- outline-start -->
-## 本节要点大纲
+本文以 Android 17 / API 37、`android-17.0.0_r1` 为平台锚点，kernel 侧以 `android17-6.18-2026-06_r6` 为锚点。阅读时先记住一句话：fence 的名称由观察边界决定，同一个同步对象从 producer 传到 consumer 后，角色名称可能变化。
 
-### 锚点（必须覆盖）
+## 1. Fence 描述完成，不描述开始
 
-- 🔹 **Fence 为什么存在**：[已验证: source.android.com/docs/core/graphics/sync]
-  显式同步解决 CPU、GPU、HWC、Display Controller 异步读写同一 buffer 的先后次序问题，避免半成品被消费，也避免靠固定 sleep 猜时机。
+一个 fence 通常经历三种状态：
 
-- 🔹 **legacy Android sync framework 与 modern sync_file API 的关系**：[已验证: AOSP android-8.1.0_r81, system/core/libsync/sync.c]
-  文档里常见 `sync_timeline`、`sync_pt`、`sync_fence`，当前 userspace 更常见 `sync_file_info`、`sync_fence_info` 等 modern API。前者是理解模型和兼容层名词，后者是现代调试接口。
+- pending：异步工作尚未完成；
+- signaled：工作已完成，依赖可以继续；
+- error：工作以错误结束，等待方必须按接口约定处理。
 
-- 🔹 **Acquire fence、Release fence、Present fence 的方向与两侧视角**：[已验证: source.android.com/docs/core/graphics/sync, AOSP android-7.0.0_r1 HWC2.h]
-  producer 在 `queueBuffer()` 输入的 fence，到了 consumer 一侧就叫 acquire fence；consumer 在 `getReleaseFences()` / `releaseBuffer()` 返回的 fence，回到 producer 下一次 `dequeueBuffer()` 时就是“写之前先等我读完”的 release fence；present fence 表示本帧上屏。
+signal 是单向状态变化。已经 signal 的 fence 不会回到 pending。多个 frame 需要多个完成点；驱动可以在同一 execution context 中用递增 seqno 表示顺序，但用户空间拿到的 sync_file fd 仍代表一个固定完成条件。
 
-- 🔹 **Fence Merge 解释多 layer 合成里的多对一等待**：[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/ui/Fence.cpp, system/core/libsync/sync.c]
-  `Fence::merge()` / `sync_merge()` 可以把多条 fence fd 合成一个等待对象。合并后的 fence 要等所有输入 fence signal 后才 signal，SurfaceFlinger client composition 和 HWC 多层提交都依赖这个语义。
+`-1` 在 Android native fence API 中通常表示 `NO_FENCE`，也就是没有待等待的依赖。它不是“未知 fence”或错误 fd。具体函数仍要以其参数约定为准。
 
-- 🔹 **在 Perfetto 中如何判断 fence 是正常同步还是掉帧瓶颈**：[已验证: source.android.com/docs/core/graphics/architecture]
-  需要把 `queueBuffer()`、`latchBuffer`、`presentDisplay()`、BufferQueue 状态和 GPU busy 片段连起来看，不能只盯一段 `fence wait`。
+## 2. Android 17 的三层实现
 
-- 🔹 **版本演进的真实主线**：[已验证: AOSP android-7.0.0_r1 HWC2.h, android-8.1.0_r81 system/core/libsync/sync.c, android-17.0.0_r1 SkiaOpenGLPipeline.cpp / SkiaVulkanPipeline.cpp / renderthread/VulkanManager.cpp]
-  Android 7 已有 HWC2；Android 8+ 用户空间已经能看到 modern libsync / sync_file API；Skia 管线在 Android 8.1 已存在。Android 14-17 核对 release fence 时要分 GL/EGL 与 Vulkan 两条后端：GL 看 `SkiaOpenGLPipeline.cpp` / `EglManager::createReleaseFence()`，Vulkan 看 `SkiaVulkanPipeline.cpp` / `VulkanManager::createReleaseFence()` / `presentFence`。
+### 2.1 Kernel：dma-fence
 
-### 扩展（可选深入）
+`struct dma_fence` 是 kernel 内的跨驱动完成原语。Android 17 kernel 的 `drivers/dma-buf/dma-fence.c` 定义了 context、seqno、signal、error、timestamp、callback 与 wait 语义。
 
-- 🔸 **sw_sync 的边界**：`sw_sync` 保留测试与特定软件管线接口；生产路径中的 acquire / release / present fence 仍由内核驱动或硬件推进。生产设备 user build 上，普通 App 通常无法访问 `/dev/sw_sync` 或 `/sys/kernel/debug/sync`。
-- 🔸 **常见误区**：fd 泄漏、slot 长时间不可复用、GPU hang 是三类不同问题，排查入口不能混用。
-<!-- outline-end -->
+同一 context 中的 fence 按 seqno 完全有序；不同 context 可能来自独立 GPU engine、display pipeline 或 codec queue，不能只比较 seqno 大小。驱动还必须保证 fence 在合理时间内结束，并提供 hang recovery 或强制完成策略，防止等待永久卡住内存管理和其他设备。
 
-## 为什么需要 Fence：渲染管线不是一条直线
+### 2.2 Kernel 到 userspace：sync_file
 
-如果没有显式同步，producer 只能靠“我猜你差不多用完了”来复用 buffer。桌面系统有时还能把这种不确定性交给单一驱动兜底，Android 不行。这里至少有 App、BufferQueue、SurfaceFlinger、HWC、Display Controller 五个环节，跨线程、跨进程、跨硬件单元是常态，任何一段快一点或慢一点，都会影响同一个 GraphicBuffer 什么时候能读、什么时候能写。
+`sync_file` 把一个 `dma_fence` 或 fence 集合包装成匿名文件，用户空间通过 fd 传递、poll、wait 和查询。`drivers/dma-buf/sync_file.c` 的主要职责包括：
 
-官方图形同步文档把这套机制称为 explicit synchronization。producer 把“我什么时候写完”随 buffer 一起传出去，consumer 再把“我什么时候读完”随旧 buffer 还回来。于是同样一段卡顿，我们就能继续追问：是 App/GPU 产出太慢，还是 SurfaceFlinger/HWC 长时间占着旧 buffer 不放。这个区分在 Perfetto 里非常关键，因为两类问题的优化方向完全不同。
+- `sync_file_create()`：持有 fence 引用并建立 file；
+- `sync_file_get_fence()`：从 fd 取得 fence 引用；
+- `SYNC_IOC_MERGE`：建立新的合并 sync_file；
+- `SYNC_IOC_FILE_INFO`：返回 sync_file 名称、整体状态，以及内部 fence 的 driver、timeline、状态与 signal timestamp；
+- poll callback：fence signal 后唤醒等待者。
 
-[已验证: source.android.com/docs/core/graphics/sync]
+关闭 sync_file fd 会释放该 file 持有的 fence 引用。它不会自动释放 GraphicBuffer，也不会改变 BufferQueue slot 状态；buffer 和 fence 是两类对象。
 
-## 核心机制：内核同步原语与 userspace 名词
+### 2.3 Framework：`android::Fence`
 
-Android 图形栈的同步基础来自内核里的显式同步框架。官方文档仍然用 `sync_timeline`、`sync_pt`、`sync_fence` 这组三件套解释它：`sync_timeline` 表示某个硬件上下文上的单调前进时间线，`sync_pt` 是时间线上的一个完成点，`sync_fence` 则把一个或多个完成点包装成可等待对象。这套命名适合建立概念模型，读内核文档和旧资料时经常会遇到它。
+`frameworks/native/libs/ui/Fence.cpp` 用 `unique_fd` 管理一个 sync_file fd：
 
-但如果我们直接去读较新的 userspace 源码，会发现另一个视角更常见：`sync_file_info`、`sync_fence_info`、`sync_pt_info`。`system/core/libsync/sync.c` 在 `android-8.1.0_r81` 里已经同时包含 `legacy_sync_merge()` 和 `modern_sync_merge()`，也同时保留 `legacy_sync_fence_info()` 与 `modern_sync_file_info()`。这说明从 Android 8 开始，modern `sync_file` 风格的 userspace API 已经摆在台面上了，而 legacy 名词并没有立刻消失，它更多以兼容层和文档术语的形式继续存在。
+- `Fence::wait()` 向下调用 `sync_wait()`；
+- `waitForever()` 先等 3 秒，超时后打印 fence 信息，再继续无限等待；
+- `Fence::merge()` 调用 `sync_merge()`；
+- `getSignalTime()` 通过 `sync_file_info()` 读取状态与最晚 signal timestamp；
+- flatten / unflatten 只传 0 或 1 个 fd；
+- `Fence::NO_FENCE` 内部持有 `-1`。
 
-[已验证: AOSP android-8.1.0_r81, system/core/libsync/sync.c]
+这层 RAII 能减少 framework 内的 fd 泄漏，但跨 API 交接时仍要遵守所有权规则。
 
-| 资料里常见的名词 | 更适合的理解 |
-| --- | --- |
-| `sync_timeline` / `sync_pt` / `sync_fence` | legacy Android sync framework 的理解模型，也是兼容层里继续保留的命名 |
-| `sync_file` / `sync_file_info` / `sync_fence_info` | modern userspace API，当前 libsync 调试与查询接口更常见 |
-| `dma-fence` | 内核里的通用同步原语，驱动实现显式同步时最终落到这一层 |
+## 3. 旧 sync 术语与当前内核对象
 
-把这三层拆开后，很多“资料和源码对不上”的困惑就消失了。旧文档在讲概念模型，libsync 在讲 userspace 查询接口，驱动代码则在讲内核对象本身，它们站在不同抽象层。
+Android 官方同步文档仍用 `sync_timeline`、`sync_pt`、`sync_fence` 解释早期模型。它们适合帮助理解“时间线、完成点、完成点集合”，但 Android 17 kernel 的主线类型已经是 `dma_fence`、`sync_file` 与 `dma_resv`。
 
-### Fence Merge：多条 fence 合成一个等待对象
+| 历史/文档术语 | Android 17 对应理解 |
+|---|---|
+| `sync_timeline` | 某个执行上下文的有序工作序列；kernel fence 使用 context / seqno 表达 |
+| `sync_pt` | 序列中的一个完成点；由具体 `dma_fence` 表达 |
+| `sync_fence` | 旧 Android sync 对象名称；现代 userspace 边界主要看到 sync_file fd |
+| `sync_file_info` / `sync_fence_info` | userspace 查询 sync_file 及其内部 fence 的 UAPI |
+| `dma_resv` | 随 dma-buf 保存 implicit fence 集合，和 Android 显式传 fd 的路径要分开分析 |
 
-单层 buffer 示例只覆盖一对一传递；多 layer 合成需要把多条 acquire fence 收束成一个等待对象。AOSP 的入口是 `frameworks/native/libs/ui/Fence.cpp` 里的 `Fence::merge()`，它向下调用 `system/core/libsync/sync.c` 的 `sync_merge()`。返回的新 fd 代表一组 fence 的合集，只有所有输入 fence 都 signal 后才会 signal。
+Android 8.1 的 `libsync` 已同时处理 legacy 与 modern ioctl。读历史代码时可以保留旧名；分析 Android 17 trace 时，应以 driver / timeline / context / seqno 和实际 fd 流向为准。
 
-这个语义支撑 Client Composition 和 HWC 多层提交。比如同一帧里既有 App 主 Surface，又有 SurfaceView 或视频 layer，SurfaceFlinger 不能只等其中一条 fence；它需要把多个 producer 的完成点合并成一个可传递对象，再交给后续合成或显示阶段。Perfetto 里看到一个 wait 覆盖多个 buffer 的完成状态时，可以沿 `Fence::merge()` / `sync_merge()` 去核对。
+## 4. Acquire、release、present：先看方向
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/ui/Fence.cpp, system/core/libsync/sync.c]
+三种名称描述的是接口角色，并非三种不同的 kernel 类。
 
-### sw_sync 的边界：测试接口受权限和场景限制
+| 名称 | 谁产生或返回 | 谁等待 | 保护的访问 |
+|---|---|---|---|
+| acquire fence | producer 随新 buffer 提交 | consumer、SurfaceFlinger、HWC 或下一处理级 | producer 对新 buffer 的写入尚未完成 |
+| release fence | consumer 释放旧 buffer 时返回 | producer 再次写旧 buffer 前 | consumer 对旧 buffer 的读取尚未完成 |
+| present fence | HWC `present` / `presentDisplay` 每个 display frame 返回 | SurfaceFlinger、时间统计与后续显示资源管理 | 本轮 display composition 的 present 完成条件 |
 
-`android-17.0.0_r1` 的 `system/core/libsync/sw_sync.h` 公开了下面三个接口：
+### 4.1 Producer completion 到 consumer 侧叫 acquire fence
 
-```c
-int sw_sync_timeline_create(void);
-int sw_sync_timeline_inc(int fd, unsigned count);
-int sw_sync_fence_create(int fd, const char *name, unsigned value);
+应用调用 `queueBuffer(buffer, fence)` 时，这条 fence 表示 producer 的写入可能仍在进行。`BufferQueueProducer::queueBuffer()` 把 `QueueBufferInput` 中的字段命名为 `acquireFence`，保存到 slot，并随 `BufferItem` 交给 consumer。
+
+这里有两个常见说法：
+
+- 从 producer 看：GPU completion fence、render-done fence；
+- 从 consumer 看：acquire fence，读取 buffer 前要遵守的依赖。
+
+两种说法可以指向同一个 fd。判断语义时要注明观察方。
+
+### 4.2 Consumer release 到 producer 侧是 dequeue/release fence
+
+`BufferQueueConsumer::releaseBuffer(slot, frameNumber, releaseFence)` 把 release fence 保存回 slot。之后 producer 再次 `dequeueBuffer()` 选中该 slot，`BufferQueueProducer` 把同一字段作为 `outFence` 返回并清空 slot 中的引用。
+
+Vulkan、EGL 和 `ANativeWindow` 代码常把这个返回值叫 `dequeue_fence`。它的语义仍是“上一位 consumer 何时不再使用旧内容”。Producer 可以把它导入 GPU queue，让 GPU 等待；也可以由 CPU wait，后者会占用调用线程。
+
+### 4.3 Present fence 的边界
+
+Android 官方文档说明：物理显示的 present fence 表示当前 frame 出现在屏幕上的完成点；虚拟显示则表示 output buffer 可以安全读取。它是 per-display、per-frame，不是 per-layer release fence。
+
+present fence 很接近显示完成边界，但仍不是面板光学测量值，也不能代替输入到显示延迟测试。可变刷新率、panel scanout 与厂商 display pipeline 会影响“用户看到”的细节。
+
+## 5. 一帧中的 fence 流向
+
+下面的图以标准应用窗口的 BLAST 路径为基线，用于区分生产完成、显示消费与旧 buffer 回收。
+
+```mermaid
+sequenceDiagram
+    participant RT as App RenderThread
+    participant GPU
+    participant BBQ as BLASTBufferQueue
+    participant SF as SurfaceFlinger
+    participant HWC
+    participant D as Display
+
+    RT->>BBQ: dequeueBuffer()
+    BBQ-->>RT: old buffer + dequeue/release fence
+    RT->>GPU: wait old-buffer release, then render
+    RT->>BBQ: queueBuffer(new buffer, producer completion fence)
+    BBQ->>BBQ: acquire BufferItem
+    BBQ->>SF: Transaction.setBuffer(buffer, acquire fence)
+    SF->>HWC: setLayerBuffer / setClientTarget(acquire fence)
+    HWC->>HWC: wait ready buffers, validate / compose
+    HWC->>D: present
+    HWC-->>SF: display present fence + per-layer release fences
+    SF-->>BBQ: buffer release callback(release fence)
+    BBQ-->>RT: release fence later returned by dequeueBuffer()
 ```
 
-这些接口说明 Android 保留了 userspace software timeline 能力。生产路径里的 GPU、HWC、display fence 仍由内核驱动或硬件 signal，以保证 forward progress；`sw_sync` 主要服务内核开发测试、模拟器、root/debug 环境和少量软件管线。
+图中 BLASTBufferQueue 位于应用进程，先作为窗口 BufferQueue 的 consumer，再把 buffer 与窗口状态放进 `SurfaceControl.Transaction`。`BLASTBufferQueue.cpp` 会复制 `BufferItem.mFence` 作为 transaction 的 acquire fence；SurfaceFlinger 的 release callback 返回 release fence 后，BLAST 再调用本地 consumer 的 `releaseBuffer()`。
 
-生产设备的 user build 上，普通 App 通常无法打开 `/dev/sw_sync`，也无法读取 `/sys/kernel/debug/sync` 这类 debugfs 节点。访问权限会被文件权限、SELinux domain、root/system/graphics 组策略共同限制。排查图形问题时，可以把 `sw_sync` 当作测试和调试入口，不能把它写成业务进程控制 acquire / release / present fence 的方案。
+`SurfaceView`、Camera、codec 和自定义 native producer 可以有不同进程拓扑。三类 fence 的方向仍相同，但 producer、consumer 与 IPC 边界要从对应 BufferQueue 和 layer 确认。Camera 还会有 HAL output acquire/release fence，不能用 display present fence 替代 camera frame completion。
 
-[已验证: AOSP android-17.0.0_r1, system/core/libsync/sw_sync.h]
+## 6. SurfaceFlinger 与 HWC 的 fence
 
-## 渲染管线里的三类 Fence
+SurfaceFlinger 交给 HWC 的 layer buffer 和 client target 都带 acquire fence。HWC 在 present 后提供：
 
-先把方向钉住。Fence 的名字经常让人绕晕。**同一个 fd 从 producer 这边传到 consumer 那边，语义会跟着观察角度变化**。
+- 每层 release fence：该层上一张 buffer 何时不再被 HWC 使用；
+- display present fence：本轮 display frame 的 present 完成条件。
+
+Android 17 `HWComposer.cpp` 有两条 present 路径：
+
+1. `presentOrValidate()` 返回 state 1 时，present 已在快路径完成，代码直接保存 `outPresentFence` 并获取 release fences；
+2. 普通路径在 validate / accept 后，由 `presentAndGetReleaseFences()` 调用 `present()`，再调用 `getReleaseFences()`。
+
+因此，不能把所有 frame 固定画成“validate → presentOrValidate → 再 present”。分析 trace 时先看 `validateWasSkipped` / PresentSucceeded 语义。
+
+CLIENT composition 还会引入 RenderEngine GPU 工作和 client target。Layer acquire fence 保护源 buffer；RenderEngine 完成 client target 的 fence 再交给 HWC。此时 trace 里可能同时存在应用 GPU、SurfaceFlinger GPU 与 display fence，不能把所有 GPU fence 归到应用。
+
+## 7. Fence merge 的语义
+
+一个操作若依赖两项或更多异步工作，可以合并 fence。Android 17 `Fence::merge(name, f1, f2)` 调用 `sync_merge()`；kernel `sync_file` merge 建立一个新 file，并通过 `dma_fence_unwrap_merge()` 组合输入 fence。
+
+合并后的依赖在所有输入完成后才满足。原输入 sync_file 仍独立有效，merge 不会替调用者关闭它们。输入之一为 `NO_FENCE` 时，framework 会用另一条有效 fence 与自身 merge，从而获得指定名称的新 fence；两条都无效时返回 `NO_FENCE`。
+
+merge 适合表达“等待所有前置工作”，但不应无条件合并整条显示管线：
+
+- HWC layer release fence 本来就是 per-layer；
+- present fence 是 per-display；
+- 为了方便只保留一个 fd 而合并无关 fence，会扩大等待范围并掩盖慢依赖；
+- debug 名称、driver / timeline 与内部 fence 列表要保留，便于定位哪一项最后 signal。
+
+## 8. EGL 与 Vulkan 怎样桥接 native fence
+
+### 8.1 EGL
+
+`EGL_ANDROID_native_fence_sync` 能把 Android native fence fd 包装成 `EGLSyncKHR`，也能从 EGL 同步对象导出 fd。`EGL_KHR_wait_sync` / `EGL_ANDROID_wait_sync` 允许 GPU 等待，减少 CPU 阻塞。
+
+Android 17 HWUI 的 `EglManager::createReleaseFence()` 优先创建 `EGL_SYNC_NATIVE_FENCE_ANDROID`，`glFlush()` 后通过 `eglDupNativeFenceFDANDROID()` 导出 fd。设备不支持 native fence、但支持普通 EGL fence sync 时，`SkiaOpenGLPipeline::flush()` 会在 CPU 侧等待 EGLSync，然后返回 `-1`，表示同步已经在本地完成。
+
+### 8.2 Vulkan
+
+Android native fence 使用 `VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT` 与 Vulkan binary semaphore 互操作。Android 17 HWUI 展示了两个方向：
+
+- dequeue 返回的 fence fd 被临时导入 binary `VkSemaphore`，GPU 在写 buffer 前等待；
+- Skia flush signal 一个可导出的 binary `VkSemaphore`，随后用 `vkGetSemaphoreFdKHR()` 取出 sync fd，随 buffer 提交。
+
+源码中的 `VkSemaphoreCreateInfo` 没有挂 `VkSemaphoreTypeCreateInfo`，所以这条边界使用 binary semaphore。变量 `VkDrawResult.presentFence` 最终传给 `presentCurrentBuffer()`，站在 BufferQueue consumer 侧看，它是新 buffer 的 acquire fence；它不是 HWC display present fence。
+
+Timeline semaphore 是 Vulkan 1.2 的计数器型同步，可用于应用或引擎内部的多轮 queue 依赖。`SYNC_FD` 是一次性 copy-transference payload，规范要求相关 export 使用 binary semaphore。Timeline semaphore 因而不能直接替代 BufferQueue、SurfaceFlinger 与 HWC 的 native fence fd 协议。设备是否支持 timeline feature仍需运行时查询。
+
+## 9. fd 所有权与错误处理
+
+Fence fd 的所有权由每个 API 约定。Android 官方 HAL 约定可以概括为：
+
+- API 把 fd 提供给调用方时，接收方负责 close；
+- 调用方把 fd 传给会接管所有权的 API 后，不再 close；
+- 还需要继续使用时，先 `dup()`，再传副本。
+
+`Fence`、`unique_fd`、EGL 和 Vulkan import 的接管规则不同，不能用一条“调用后总要 close”覆盖。Android 17 `VulkanManager` 在成功导入 temporary semaphore 后，由 semaphore 持有并关闭 fd；导入失败的分支显式 close。
+
+Fence fd 泄漏会消耗 fd 表并延长 fence 引用寿命，但不等价于 GraphicBuffer 泄漏。BufferQueue 是否把 slot 放回 free 集合取决于 consumer release 协议；GraphicBuffer backing storage 是否回收取决于 handle、Mapper、attachment 与 buffer 引用。两类问题可以同时出现，也可以互不相关。
+
+error fence 也不能按普通 signal 静默忽略。`sync_file_info.status` 小于 0 表示 error；`Fence::getSignalTime()` 会返回 invalid。驱动 hang recovery 可能强制完成 fence 并附带错误，等待结束不代表 GPU 输出内容有效。
+
+## 10. Perfetto：先确定谁在等哪条 fence
+
+Fence wait 是因果链的观察点，并非自动等于 bug。先确定 waiter、目标 fence 和被保护的 buffer，再看 signal 之前发生了什么。
+
+| 现象 | 初步解释 | 需要补的证据 |
+|---|---|---|
+| SF / HWC 等 layer acquire fence | producer 写入未到完成点 | 应用 submit、GPU renderstage、buffer / frame ID |
+| App `dequeueBuffer()` 变长 | 无可用 slot，或选中 slot 的 release fence 未完成 | queue depth、release callback、HWC layer release、pacing |
+| present fence 晚 | display present 链路晚 | HWC validate / present、display mode、FrameTimeline |
+| CPU 上 `sync_wait` 很长 | 调用线程被同步阻塞 | 调用栈、是否可改 GPU-side wait、driver forward progress |
+| fence 已 signal 但帧仍晚 | 同步完成后还有调度、latch、composition 或 present 延迟 | sched、SF snapshot、HWC 与 display |
+| fence 长期 pending 且 driver 无进展 | GPU / display hang 或依赖环 | driver error、reset、IOMMU fault、kernel log |
+
+标准 App Window 还要区分本地 `queueBuffer()` 与 SF 收到 BLAST transaction 的时间。`queueBuffer()` 返回只说明帧进入应用侧 BLAST consumer，不代表 SurfaceFlinger 已看到 BufferTX。
+
+### 10.1 可用的 trace 事件
+
+Android 17 kernel 的 `include/trace/events/dma_fence.h` 定义了 emit、init、destroy、enable_signal、signaled、wait_start 和 wait_end。下面的 Perfetto ftrace 配置用于 userdebug/root 环境验证 fence 生命周期。
 
 ```text
-Producer（App / RenderThread）
-  queueBuffer(buffer, fence_fd)
-    └─ 这边的语义：我可能还在写这个 buffer
-
-Consumer（SurfaceFlinger / HWC）
-  收到同一个 fence_fd
-    └─ 到了这边就叫 acquire fence：读之前先等 producer 写完
-
-Consumer 完成读取后返回 release fence
-Producer 下次 dequeueBuffer() 拿回旧 buffer 时收到这个 fence
-  └─ 这边的语义：写之前先等 consumer 读完
+data_sources {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      ftrace_events: "dma_fence/dma_fence_emit"
+      ftrace_events: "dma_fence/dma_fence_signaled"
+      ftrace_events: "dma_fence/dma_fence_wait_start"
+      ftrace_events: "dma_fence/dma_fence_wait_end"
+      atrace_categories: "gfx"
+      atrace_categories: "view"
+    }
+  }
+}
 ```
 
-### Producer → Consumer：`queueBuffer()` 带过去的是 consumer 侧的 acquire fence
+设备必须先检查 tracefs `available_events`。vendor kernel 可能裁剪事件，user build 也可能限制访问。缺少 dma_fence 事件时，可以结合 `gfx` atrace、`FenceMonitor`、BufferQueue / BufferTX、FrameTimeline、GPU renderstage、HWC slice 与 kernel log补齐。
 
-官方同步文档写得很直白，acquire fences 会跟着输入 buffer 一起传给 `setLayerBuffer` 和 `setClientTarget`。它表示的是“这个 buffer 还有一个 pending write，没有 signal 之前别读”。所以从 producer 视角看，这个 fence 代表“我还没写完”；到了 consumer 视角，它就变成“我 acquire 这个 buffer 之前先等它写完”。
+### 10.2 四步归因
 
-`android-7.0.0_r1` 的 HWC2 头文件已经把这件事写进接口里了：
+1. 锁定 Surface / layer、buffer ID、slot 和 frame number。
+2. 标出 queue、transaction、latch、validate / present、release callback 与下一次 dequeue。
+3. 找出长 wait 对应的 driver / timeline / context / seqno，以及 signal 时刻。
+4. 回到 signal 方之前的 CPU 调度、GPU queue、HWC、display 或 error 事件。
 
-```cpp
-// frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.h
-Error setBuffer(buffer_handle_t buffer,
-        const android::sp<android::Fence>& acquireFence);
-Error setClientTarget(buffer_handle_t target,
-        const android::sp<android::Fence>& acquireFence,
-        android_dataspace_t dataspace);
-Error getReleaseFences(...);
-Error present(android::sp<android::Fence>* outRetireFence);
-```
+只看 wait duration 无法区分 producer 晚、consumer 持有过久、queue-stuffing、线程抢占或硬件 hang。
 
-所以把 “Android 8 才引入 HWC2” 写进版本线是不对的，Android 7 的 HWC2 接口已经明确了 acquire / release / present 这组 fence 语义。
+## 11. `sw_sync` 的边界
 
-[已验证: source.android.com/docs/core/graphics/sync, AOSP android-7.0.0_r1 HWC2.h]
+kernel `drivers/dma-buf/sw_sync.c` 提供软件 timeline，主要用于测试、selftest 与受控软件路径。普通应用不应创建可任意 signal 的 fence 去伪造 GPU / HWC 完成；设备节点权限和 SELinux 通常也会阻止这类访问。
 
-### Consumer → Producer：release fence 会在下一次 `dequeueBuffer()` 前拦住写入
+测试代码使用 `sw_sync` 时，仍需保证依赖图会向前推进。由用户空间任意决定 signal 的 fence 进入内核资源回收或设备依赖后，容易形成无法由 kernel 观察完整因果的死锁。
 
-release fence 的方向正好相反。官方文档对它的定义是：它表示 consumer 仍在读取上一个 buffer；只有当当前 buffer 已经取代旧 buffer 上屏后，旧 buffer 对应的 release fence 才会 signal。随后这个 fence 会跟着旧 buffer 一起回到 producer，producer 在再次写这个 buffer 之前必须先等它完成。
+## 12. 版本演进
 
-这也是为什么我们不能把 producer 在 `queueBuffer()` 输入的那个 fence 写成 release fence。**producer `queueBuffer()` 输入的 fence，到 consumer 一侧叫 acquire fence；consumer 返回给 producer 的 fence，才是 release fence。** 两边说的是同一轮 buffer 交接的两个方向。
+### Android 7 / API 24
 
-如果把这两个方向说反，后面分析 `dequeueBuffer()` 阻塞和 `latchBuffer` 等待时就一定会乱。一个常见误判是把 App 侧等待旧 buffer 可重用的时间，写成“等待 acquire fence”；它等的是 consumer 返回来的 release fence，只是 producer 拿到的字段名未必总把这个语义写在脸上。
+HWC2 已明确 layer / client target acquire fence、per-layer release fence 与 display present fence 的接口职责。这是本文选用 Android 7 作为现代基线的原因。
 
-### Present fence（旧资料里也常叫 retire fence）：本帧上屏的时刻
+### Android 8–11
 
-present fence 是每帧一个，它在 `presentDisplay()` 之后返回。对物理屏来说，它表示当前帧出现在屏幕上的时间点；对虚拟显示来说，它表示什么时候可以安全读取输出 buffer。HWC1 文档里常见 retire fence 这个名字，HWC2/HWC3 语境下更常用 present fence；读旧资料时要把协议版本和术语放在一起看。
+libsync userspace 同时兼容旧 Android sync ioctl 与 modern sync_file UAPI；kernel 主线逐步收敛到 dma-fence / sync_file。Skia 的 GL / Vulkan 后端在这一阶段发展，但具体 release fence 路径应按对应 tag 读取。
 
-这条 fence 很适合用来理解端到端显示延迟。`queueBuffer()` 只能说明 producer 把帧交出来了，present fence 才更接近“用户什么时候实际看到这一帧”。如果我们在 SurfaceFlinger / HWC 侧做帧耗时分析，不把 present fence 连起来看，很容易把“已经提交”和“已经显示”混为一谈。
+### Android 12 / API 31
 
-[已验证: source.android.com/docs/core/graphics/sync]
+BLAST 与 FrameTimeline 成为现代应用窗口诊断基线。应用 RenderThread 的 queue 先进入进程内 BLAST consumer，再通过 buffer transaction 到 SurfaceFlinger；fence 方向未改变，观察点增加了一层。
 
-## 在 Perfetto 里怎么读 Fence
+### Android 13–16
 
-Fence wait 本身不是 bug。正常渲染里本来就会有同步等待。要区分的是，这段等待只是合理的跨硬件换手，还是已经拖跨了帧预算。
+Composer HAL 向 Stable AIDL 演进，Vulkan、EGL 与 native fence 互操作继续使用 sync fd。Timeline semaphore 适合 Vulkan 内部同步，未替代 Android 显示边界的 binary semaphore / sync_file。
 
-### 正常 trace：先把三段时间线连起来
+### Android 17 / API 37
 
-从 App / RenderThread 侧找到 `queueBuffer()` 或 `eglSwapBuffers()`，再去 SurfaceFlinger 侧看 `latchBuffer`、composition、`presentDisplay()`，并结合 GPU busy 片段和 BufferQueue 状态。只要这三段能对上，我们就能回答两个关键问题：第一，producer 是不是按时把新帧交出来了；第二，consumer 有没有在合理时间内把旧 buffer 释放回去。
+`android-17.0.0_r1` 的 BufferQueue、BLAST release callback、SurfaceFlinger `presentOrValidate` 快路径、HWUI GL/Vulkan fence 桥接仍遵循 acquire / release / present 三类方向。`android17-6.18-2026-06_r6` 继续以 dma-fence、sync_file 与对应 tracepoint 提供 kernel 同步基础。Android 17 没有把 16 KB page size 与 fence signal latency 建立通用性能保证。
 
-[图：正常帧里的 Fence 流转。上半部分是 App/RenderThread 的 `queueBuffer()`，中间是 SurfaceFlinger 的 `latchBuffer` 与 composition，下半部分是 HWC `presentDisplay()` / present fence。标出 producer 写完成 fence、consumer release fence、present fence 三段时间关系。]
+## 13. 常见误区
 
-### 异常一：SurfaceFlinger 长时间等 acquire fence，根因通常在 producer 侧
+### `queueBuffer()` 的 fence 一定叫 release fence
 
-如果 `latchBuffer` 或 client composition 前面有长时间 wait，而同一时段 GPU 也很忙，通常说明 producer 交出来的 buffer 还没有完成写入。此时瓶颈更像是 RenderThread / GPU 渲染慢，而不是 SurfaceFlinger 自己慢。SurfaceFlinger 只是在等一条“读之前先等我写完”的 acquire fence。
+站在 producer 局部代码中，它可能被描述为“释放给下一阶段”的 fence；进入 BufferQueue consumer 后，接口字段与语义是 acquire fence。写文档时应注明方向。
 
-[图：异常案例一，SurfaceFlinger `latchBuffer` 长时间等待 acquire fence。标出等待区间、对应 GPU busy slice，以及同一窗口的 BufferQueue 状态。]
+### `dequeueBuffer()` 返回的是 acquire fence
 
-### 异常二：App 长时间等 release fence，根因通常在 consumer 侧占着旧 buffer 不放
+代码里常叫 dequeue fence，表示该 buffer 上一轮 consumer 访问尚未结束。站在 producer 即将写入的视角，它是 consumer release fence。
 
-如果 App 侧 `dequeueBuffer()` 明显变长，同时同一窗口的旧 buffer 很久没有回收，问题更可能出在 consumer 侧。要么 SurfaceFlinger / HWC 合成慢，要么 display 侧迟迟没有把旧 buffer 替换掉。这里 producer 等的是“对方到底什么时候读完”，不是“我自己写完没有”。
+### Present fence 等于屏幕每个像素完成发光
 
-[图：异常案例二，BufferQueue 长时间满载。标出 App 侧 `dequeueBuffer()` 阻塞、SurfaceFlinger 侧 release fence 延迟，以及同一窗口多帧 `queued/acquired` 累积。]
+它是 HWC/display 协议的 present 完成点。面板扫描与光学响应仍需专用测量。
 
-### 不要背死阈值，要在同一条 trace 里做关联
+### Fence signal 后 buffer 一定 free
 
-“60fps 时 `queued` 在 0-1 之间正常，持续到 2 就异常”这种口诀太容易误导。不同刷新率、BLAST 与非 BLAST、SurfaceView 与 TextureView、可用 slot 数量和厂商实现都可能改变这个形态。只在同一条 trace、同一个窗口类型、同一台设备上做关联判断：如果某个窗口连续多帧处于高占用状态，同时 App 侧 `dequeueBuffer()` 变长，或者 SurfaceFlinger `latchBuffer` wait 和 GPU busy 时间重合，我们再把它当成 congestion signal。否则，单看一个数字没有太大意义。
+signal 只满足同步依赖。slot 状态、GraphicBuffer 引用、Mapper handle、HWC / GPU cache 与应用对象仍会影响 buffer 生命周期。
 
-## 版本演进：变化的是谁负责什么
+### Timeline semaphore 能直接导出 Android sync fd
 
-### Android 7：HWC2 已经把 acquire / release / present fence 语义钉清楚
+`SYNC_FD` 桥接使用 binary semaphore。Timeline semaphore 可用于 Vulkan 内部计数同步，不能直接替换 native fence fd。
 
-这一版最重要的变化，是 HWC2 接口把每层 buffer 输入、release fence 回收、present fence 返回的职责分得更清楚。对排查来说，这个拆分让我们能明确区分：当前等待发生在 producer 交帧之前，还是 consumer 释放旧帧之后。把所有等待都糊成一句“显示慢”，排查就失去了方向。
+### 长 fence wait 的问题在 Fence 框架
 
-### Android 8+：userspace 已经能看到 modern `sync_file` API，legacy 名词继续保留
+Fence 让等待可见。GPU 工作慢、HWC 持有、display 迟到、queue 深度、调度延迟与 driver hang 都可能让它变长；根因位于 signal 方或依赖拓扑时，修改 wait 本身没有帮助。
 
-`system/core/libsync/sync.c` 在 Android 8.1 就同时有 legacy 和 modern 两套查询 / merge 路径，所以“Android 10 才迁移到 libsync”也不准确。Android 8+ 的 userspace 已经能看到 `sync_file_info`、`sync_fence_info` 这类 modern API，后续版本继续保留 legacy `sync_timeline` / `sync_pt` 命名的兼容层与历史文档语境。
+## 14. Android 17 源码入口
 
-这也是我们今天读代码时经常会遇到的现象，文档还在讲 `sync_timeline`，调试工具却在打印 `sync_file_info`。同一套显式同步体系在不同层暴露出的命名不同。
-
-### Android 14-17：GL/EGL 与 Vulkan 的 release fence 路径要分开看
-
-Skia 管线在 Android 8.1 源码里已经存在。Android 17 的 HWUI 后端不能写成 Graphite 已验证路径。AOSP android-17.0.0_r1 的 `frameworks/base/libs/hwui/pipeline/skia/` 目录包含 `SkiaOpenGLPipeline.cpp`、`SkiaVulkanPipeline.cpp`、`SkiaGpuPipeline.cpp`；没有 `SkiaGraphitePipeline.cpp`。如果后续讨论 Graphite，只能标成非该 tag 已验证路径或待核对内容。
-
-GL 后端的 release fence 入口在 `SkiaOpenGLPipeline::flush()`。读代码时看下面两行就够：
-
-```cpp
-skgpu::ganesh::FlushAndSubmit(surface);
-mEglManager.createReleaseFence(true, &sync, &fence);
-```
-
-这条路径先通过 Ganesh flush/submit 提交，再让 `EglManager::createReleaseFence()` 创建 native fence；如果设备不支持 native fence，代码会退到 EGL sync wait 后返回无效 fd。
-
-Vulkan HWUI 后端走另一条入口。`SkiaVulkanPipeline::flush()` 直接调用 `VulkanManager`：
-
-```cpp
-vulkanManager().createReleaseFence(&fence, mRenderThread.getGrContext());
-```
-
-`VulkanManager::createReleaseFence()` 会创建可导出 sync fd 的 `VkSemaphore`，通过 Skia `GrFlushInfo` signal semaphore，再用 `vkGetSemaphoreFdKHR` 导出 fence fd。`finishFrame()` 还会返回 `presentFence`，并在 `VulkanManager::swapBuffers()` 里随当前 buffer 提交给底层 surface。
-
-Trace 分析时，GL 后端把 `flush commands`、EGL release fence、SurfaceFlinger acquire/release fence 放在同一时间窗里看。Vulkan 后端还要把 GPU queue submit、semaphore 导出的 sync fd、`presentFence` 和 FrameTimeline 放在同一时间窗里看。这样才能判断等待来自 HWUI 后端提交、SurfaceFlinger 消费，还是显示侧 present。
-
-[已验证: AOSP android-8.1.0_r81 / android-17.0.0_r1, frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp, frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp, frameworks/base/libs/hwui/renderthread/VulkanManager.cpp]
-
-## Vulkan Timeline Semaphores：从一次性 fd 到长效计数器（Android 16）
-
-前面的内容围绕 `dma_fence` / `sync_fence` 的 fd 模型展开——每个同步点对应一个 fd，signal 后就失效，多轮同步需要反复创建和传递新 fd。Vulkan Timeline Semaphores 是另一套同步模型，属于 Vulkan 1.2 核心特性。实际可用性取决于设备 GPU 驱动是否暴露 `VkPhysicalDeviceTimelineSemaphoreFeatures.timelineSemaphore`。
-
-### Binary Semaphore vs Timeline Semaphore
-
-传统 Vulkan Binary Semaphore 的行为和 `sync_fence` 的 fd 类似：signal 一次后回到 unsignal 状态，只能表达"这一轮完成了"。Timeline Semaphore 引入了 64 位单调计数器：每次 signal 时计数器递增，等待端可以指定"我等计数器到达某个值"。于是同一个 semaphore 对象可以跨多轮使用，不需要每轮创建新的 fd。
-
-```cpp
-// Timeline Semaphore 的等待语义
-VkSemaphoreWaitInfo waitInfo{};
-waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
-waitInfo.semaphoreCount = 1;
-waitInfo.pSemaphores = &timelineSemaphore;
-waitInfo.pValues = &waitValue;  // 等计数器到达这个值
-vkWaitSemaphores(device, &waitInfo, UINT64_MAX);
-```
-
-### Binary Semaphore Export：HWUI 当前的真实路径
-
-进入 Android 图形栈边界时，需要通过 fd export/import 衔接 Vulkan 与 native fence。当前 AOSP `android-17.0.0_r1` 中 HWUI 的实际路径使用的是 **Binary Semaphore**（非 Timeline Semaphore）：
-
-1. `VulkanManager::createReleaseFence()` 创建一个带有 `VkExportSemaphoreCreateInfo(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT)` 的 `VkSemaphore`——这是 Binary Semaphore
-2. 通过 `GrFlushInfo` 把 semaphore 附加到 Skia flush 操作，GPU 完成后 signal
-3. 调用 `vkGetSemaphoreFdKHR` 导出 sync fd
-4. 这个 fd 随 buffer 通过 `queueBuffer()` 交给 BufferQueue → SurfaceFlinger
-5. SurfaceFlinger/HWC 侧拿到的就是标准 native fence fd，走正常 acquire/release 流程
-
-反向同理：`dequeueBuffer()` 返回的 fence fd（AOSP `VulkanManager.cpp` 字段名 `bufferInfo->dequeue_fence`）通过 `vkImportSemaphoreFdKHR` 导入为 Vulkan Binary Semaphore，GPU 等待该 semaphore 后再开始写入 buffer。这个 fd 按 Android 图形同步语义是 release fence（consumer 释放旧 buffer 给 producer），不是 BufferQueue acquire fence——两者方向不同，不要混淆。
-
-注意：`VulkanManager::createReleaseFence()` / `finishFrame()` 并没有设置 `VkSemaphoreTypeCreateInfo`（Timeline Semaphore 需要 `semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE`），所以当前 HWUI 导出的都是 Binary Semaphore，与 WSI / native fence 的语义完全匹配。
-
-### Timeline Semaphore 与 Binary Semaphore 的分工
-
-Timeline Semaphore 优化的是 Vulkan 队列内部的多帧同步——用一个 64 位计数器替代多轮 Binary Semaphore，减少同步对象分配开销并支持提前提交。但 WSI / native fence 边界仍然以 Binary Semaphore fd 为交换格式，原因是 `dma_fence` / `sync_file` 的内核语义就是一次性的 signal/wait。
-
-所以"Vulkan 用了 Timeline Semaphore"和"Android 图形栈还在用 Binary Semaphore fd"不矛盾——Timeline Semaphore 优化的是 Vulkan 队列内部，Binary Semaphore export/import 负责 Vulkan 与 Android 图形栈的桥接。
-
-### 对图形管线的影响
-
-**Vulkan 内部减少同步对象开销。** 传统 Vulkan Binary Semaphore 每轮 submit 都需要独立的 semaphore/fence 对象。Timeline Semaphore 用一个 64 位计数器替代了多轮 binary semaphore，减少了 Vulkan 队列内部的同步对象分配和等待开销。
-
-**支持 Vulkan 队列内提前提交。** 计数器模型允许 producer 提交第 N+1 帧的渲染命令，同时等待第 N 帧 fence signal（等待值 = N），而不是先等第 N 帧 signal 再提交第 N+1 帧。这种"提前提交等待"在流水线化的 GPU 命令提交中减少了上下文切换延迟。
-
-**与 Android native fence fd 的边界。** Timeline Semaphore 是 Vulkan 同步模型内部的优化。Android 图形栈的跨进程/跨驱动边界——BufferQueue 的 `queueBuffer()` / `dequeueBuffer()`、SurfaceFlinger 的 `latchBuffer`、HWC 的 `setLayerBuffer` / `presentDisplay()`——仍然以 native fence / `sync_file` fd 作为交换格式。Vulkan 队列通过 `vkGetSemaphoreFdKHR`（`VK_KHR_external_semaphore_fd`）导出 sync fd 进入 Android 图形管线，或通过 `vkImportSemaphoreFdKHR` 导入外部 fence。HWUI 的 `SkiaVulkanPipeline` / `VulkanManager::createReleaseFence()` 正是走这条 export → import interop 路径。
-
-**Perfetto 可观测性。** Perfetto 的 `android.fence` / fence wait slice 观测的是 native fence fd（`dma_fence`）的 signal/wait 事件，也就是 Vulkan 与 Android 图形栈边界上的 Binary Semaphore → sync fd 桥接。纯 Vulkan Timeline Semaphore 等待不会直接进入 `android.fence` 轨道，需要 GPU counter、Vulkan layer trace 或应用侧标记辅助观察。Vulkan 规范要求 `SYNC_FD` 这类 copy payload handle 导出使用 Binary Semaphore（`VUID-VkSemaphoreGetFdInfoKHR-handleType-03253`），所以 Android native fence 边界始终以 Binary Semaphore 为桥梁，不是 Timeline Semaphore 直接导出。
-
-截至 AOSP `android-17.0.0_r1`，HWUI/native fence 边界仍然使用 Binary Semaphore 与 sync fd 桥接，未在 `VulkanManager.cpp` 中创建 Timeline Semaphore。Timeline Semaphore 是 Vulkan 1.2 核心特性，实际可用性取决于设备 GPU 驱动是否支持 `VkPhysicalDeviceTimelineSemaphoreFeatures.timelineSemaphore`。Android 16 / VPA16 并未将 Timeline Semaphore 列为强制设备要求（VPA16 追加的是 `VK_EXT_host_image_copy`、maintenance6 等特性）；Android 17 侧是否提升为设备要求，需以 Android 17 CDD / VPA 正式条款为准。进入 Android native fence 边界的 interop 依赖 `VK_KHR_external_semaphore_fd` / `VK_KHR_external_fence_fd` 扩展。
-
-以下内容涉及一个跨内核配置的研究假设，目前缺少同机对照实测，先记在这里供后续验证。
-
-### 16KB 页对 Fence 路径的潜在影响
-
-[待验证：以下为研究假设，尚缺同机 4KB/16KB 内核对比的 kernel ftrace（irq/dma_fence signal、sched wakeup）与 Perfetto fence wait 尾部抖动的实测证据。]
-
-16KB 页对 fence 同步路径的潜在影响不在 fence 对象本身，而在内核中断处理路径的 TLB 命中率。假设链条：GPU 完成渲染 → 通过中断通知 CPU → 内核中断处理函数访问 fence 状态所在内存页 → 16KB 页面扩大 TLB 覆盖范围 → 理论上减少中断路径 TLB Miss → 可能缩短 GPU signal 到 SurfaceFlinger wakeup 的延迟。
-
-这条链条目前没有同机 4KB/16KB kernel ftrace（irq/dma_fence signal、sched wakeup）、perf counter（TLB miss）或 Perfetto fence wait 尾部抖动的实测对照。如果假设成立，高频 VSync（120Hz / 144Hz）设备受益更明显，因为帧间隔越短，fence signal 和下一帧 fence wait 之间的余量越小。验证方式：同设备分别启动 4KB/16KB 内核，对比 GPU IRQ 到 SurfaceFlinger wakeup 延迟、TLB miss perf counter，以及 Perfetto fence wait 尾部抖动。
-
-### [待验证] 未来展望：Timeline Semaphore 与 fd 路径的演进
-
-[待验证：以下为基于技术趋势的合理推测，当前未找到 Android 17 CDD、source.android.com 或 AOSP tag 中关于"强推 Timeline Semaphores"或"移除图形管线 fd 依赖"的公开依据。补到正式 API/CDD/AOSP 变更后再升级为确定内容。]
-
-fd 泄漏是 Android 图形栈长期存在的稳定性隐患：一个未关闭的 fence fd 会阻止对应 buffer 被 Gralloc 回收，累积后可能触发图形栈卡死。Timeline Semaphore 的计数器模型理论上可以缓解 fd 泄漏问题，因为同一个 semaphore 对象在生命周期内被复用。但 Android 图形管线从 fd 模型迁移到 Timeline Semaphore 需要内核驱动、Gralloc、BufferQueue、SurfaceFlinger、HWC 的端到端配合，不是单方面可以推动的。
-
-部分 Vulkan 设备可支持 timelineSemaphore（通过 VkPhysicalDeviceTimelineSemaphoreFeatures 查询）；Android 图形栈 native fence / sync_file fd 边界是否向 Timeline Semaphore 演进，以正式 CDD / AOSP / source.android.com 为准。对开发者来说，如果使用 Vulkan 直接渲染，现在就可以迁移到 Timeline Semaphores；如果通过 ANGLE 间接使用，迁移由系统层完成。
-
-## 常见问题与误区
-
-### `sw_sync` 不是普通 App 随便 signal 生产 fence 的后门
-
-看到 `sw_sync_timeline_inc()` 公开存在，有人会顺手得出“那 fence 本来就是用户空间 signal 的”。这就把测试接口和生产路径混在一起了。`sw_sync` 解决的是测试、fallback 或特定软件管线的问题，它证明“用户空间绝对不能创建 software fence”这句话不成立，但不意味着常规图形栈里的 GPU / HWC fence 交由业务进程推进。
-
-### fd 泄漏和 buffer 长时间回不来，不是一回事
-
-拿到 fence fd 后忘记 close，会让进程 fd 数量持续上涨，这类问题适合先看 `/proc/<pid>/fd`。但“buffer 很久回不到 free pool”往往是另一类问题，它可能是 release fence 长时间不 signal，也可能是 consumer 生命周期没有结束，或者 BufferQueue 本身还持有 slot。前者该从进程 fd 和 fence 引用查起，后者该看 `dumpsys SurfaceFlinger`、BufferQueue 状态和对应窗口的 trace。把两类问题混成一句“fd 没关导致 buffer 永远不 free”，会把排查带偏。
-
-### Fence wait 是症状，不一定是根因
-
-看到长时间 `fence wait`，我们第一反应应该是“谁没按时完成自己的工作”。producer 侧渲染慢、consumer 侧合成慢、display 侧替换慢、GPU hang，都会把等待投影成 fence wait。Fence 把因果链暴露出来了，但它自己往往只是结果，不是根因。根因还要结合 RenderThread、GPU、SurfaceFlinger 和 HWC 的上下文一起看。
-
-## 与其他机制的关系
-
-VSync 决定“一帧什么时候开始”，Fence 决定“这一帧在 producer 和 consumer 之间什么时候可以安全换手”。Choreographer 在 VSync-app 到来时组织 MainThread / RenderThread 启动一帧，RenderThread 在 `queueBuffer()` 时把“我可能还没写完”的 fence 一起交出去，这个 fd 到了 SurfaceFlinger / HWC 一侧就叫 acquire fence。反过来，SurfaceFlinger / HWC 释放旧 buffer 后返回的 fence，会在 producer 下一次 `dequeueBuffer()` 时表现为 release fence。BufferQueue 是这两条方向相反的 fence 的邮局，DMA-BUF / Gralloc 则负责让同一个 GraphicBuffer 能在不同进程和硬件单元之间被共享。
-
-如果把这几章连起来看，逻辑会非常顺：VSync 管启动时机，MainThread / RenderThread 负责生产，BufferQueue 负责交接，Fence 负责同步，SurfaceFlinger / HWC 负责消费，present fence 则告诉我们“这帧到底什么时候实际显示出来了”。
+| 目标 | 源码 |
+|---|---|
+| userspace Fence wait / merge / signal time | `frameworks/native/libs/ui/Fence.cpp` |
+| BufferQueue producer acquire fence | `frameworks/native/libs/gui/BufferQueueProducer.cpp` |
+| consumer release fence 回传 | `frameworks/native/libs/gui/BufferQueueConsumer.cpp` |
+| BLAST transaction 与 release callback | `frameworks/native/libs/gui/BLASTBufferQueue.cpp` |
+| HWC present / release fence | `frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp` |
+| HWUI EGL bridge | `frameworks/base/libs/hwui/renderthread/EglManager.cpp` |
+| HWUI Vulkan binary semaphore bridge | `frameworks/base/libs/hwui/renderthread/VulkanManager.cpp` |
+| kernel fence contract | `drivers/dma-buf/dma-fence.c`、`include/linux/dma-fence.h` |
+| sync_file UAPI | `drivers/dma-buf/sync_file.c`、`include/uapi/linux/sync_file.h` |
+| fence tracepoints | `include/trace/events/dma_fence.h` |
 
 ## 参考资料
 
-### Android Sync Fence 机制深度剖析：从 dma-fence 到 Android 16 Explicit Sync
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Sync Fence 机制深度剖析-从 dma-fence 到 Android 16 Explicit Sync.md
-- 类型：DeepResearch 调研结果
-- 摘要：从 Linux 内核 dma_fence 结构体出发，详述 sync_file uABI、libsync 兼容桥到 Android libui Fence 类的完整流程。覆盖 fence 的 signal/wait/add_callback 语义、signalling critical section、dma_fence_chain merge/merge 架构、acquire/release/present fence 在 BufferQueue/SurfaceControl/HWC3 中的流转，以及 Android 16 explicit sync 与可观测性工具。
-- 注入时间：2026-04-24（更新 2026-04-29）
-- 价值：源码级贯通 Linux dma_fence 到 Android Sync Fence 的全流程，含 Android 16 Explicit Sync 迁移细节
-
-- AOSP 源码：`frameworks/native/libs/ui/Fence.cpp`
-- AOSP 源码：`frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.h`
-- AOSP 源码：`system/core/libsync/sw_sync.h`、`system/core/libsync/sync.c`
-- AOSP 源码：`frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp`
-- AOSP 源码：`frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp`
-- AOSP 源码：`frameworks/base/libs/hwui/renderthread/VulkanManager.cpp`
-- 官方文档：<https://source.android.com/docs/core/graphics/sync>
-- 官方文档：<https://source.android.com/docs/core/graphics/architecture>
+- [Android synchronization framework](https://source.android.com/docs/core/graphics/sync)
+- [Android graphics architecture](https://source.android.com/docs/core/graphics/architecture)
+- [Linux DMA-BUF / dma-fence documentation](https://docs.kernel.org/6.18/driver-api/dma-buf.html)
+- [Vulkan external semaphore specification](https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html)
+- `Writer/rendering_pipelines/diagrams/S01_baseline_12_anchor_pipeline/source.md`
+- `Writer/rendering_pipelines/S08_native_graphics_type.md`
+- `Writer/rendering_pipelines/S11_camera_type.md`（Camera output fence 边界）
