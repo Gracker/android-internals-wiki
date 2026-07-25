@@ -1,25 +1,25 @@
 ---
 title: "Media3 视频播放渲染管线性能实战"
 chapter: "22.43"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 tags: [media3, exoplayer, videoplayback, mediacodec, rendering, performance]
 related_chapters: ["22.42", "12.33", "25.17", "25.18"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "AOSP结构/官方文档"
-last_verified: "2026-07-23"
+last_verified: "2026-07-25"
 confidence: medium-high
 sources:
   - "DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md"
   - "DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md"
-last_body_apply_at: "2026-07-20T07:15:21+08:00"
-last_body_apply_run_id: "20260720-071521-dbc00327"
-last_body_apply_source: "source-index:27 DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md"
+last_body_apply_at: "2026-07-25T17:15:40+08:00"
+last_body_apply_run_id: "20260725-171540-c68b5cac"
+last_body_apply_source: "source-index:26 DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md"
 task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: finalized
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 reviewed_date: "2026-07-23"
 reviewed_by: "hermes-aiw-review-finalize-apply"
 last_review_finalize_at: "2026-07-23T11:05:47+08:00"
@@ -183,6 +183,127 @@ if (mSwapIntervalZero != wasSwapIntervalZero) {
 参考报告：`DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md`
 
 <!-- /AIW-源码调研-2026-07-17 -->
+
+
+<!-- AIW-Body-Apply-2026-07-25 -->
+## 视频渲染管线的帧丢弃策略与 consumer 回收链路（android-17.0.0_r1 补充）
+
+> 本节继续基于 AOSP `android-17.0.0_r1` 把 §22.43 上一轮 direct-inject 没有展开的几条 MediaCodec / BufferQueue / ACodec 源码机制补入实战语境。边界：仅讨论 Android 17 / API 37（AOSP `android-17.0.0_r1`）中已由材料验证的路径，不扩展到 Android 18 / API 38+。
+
+### 帧丢弃策略：`KEY_ALLOW_FRAME_DROP` 与 `disableLegacyBufferDropPostQ`
+
+排查视频卡顿时不能只看 producer 端（codec）或 consumer 端（SurfaceFlinger），还要确认 codec 在 configure 阶段是否把丢帧决策权交给了 BufferQueue / SurfaceFlinger。这是 Android 17 上 MediaCodec 的默认行为，但材料和源码只证明框架支持该字段，不能推出所有 Media3 / ExoPlayer 渲染器都把它显式置位。
+
+**`mAllowFrameDroppingBySurface` 读取**（`frameworks/av/media/libstagefright/MediaCodec.cpp@android-17.0.0_r1:5676-5678`）：
+
+```cpp
+if (!format->findInt32(KEY_ALLOW_FRAME_DROP, &mAllowFrameDroppingBySurface)) {
+    mAllowFrameDroppingBySurface = true;
+} else {
+    mAllowFrameDroppingBySurface = false;
+}
+```
+
+这里的逻辑是：输出格式里**没有** `KEY_ALLOW_FRAME_DROP` 字段时默认为 `true`（允许 surface 丢帧），字段存在时按字面值取用。[已验证: MediaCodec.cpp android-17.0.0_r1 line 5676-5678; 来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
+
+当 codec 在 configure 时把 `KEY_ALLOW_FRAME_DROP=true`，最终会通过 `disableLegacyBufferDropPostQ(surface)` 通知 BufferQueue 禁用 legacy 帧丢弃策略，让 SurfaceFlinger 自己根据 acquire fence 决定 drop。材料把这一行为描述为「ExoPlayer 默认行为——把丢帧决策权交给 SF 的 BufferQueue 机制」；从源码能验证的是 AOSP `MediaCodec` 默认 `mAllowFrameDroppingBySurface=true`，但「ExoPlayer 的实际配置值」取决于 Media3 / ExoPlayer `MediaCodecVideoRenderer` 与具体 codec adapter 实现，不应在缺少版本矩阵时写成绝对结论。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
+
+实战含义：
+
+1. **HDR / 高帧率卡顿**：若发现 codec 端 disable 了 surface frame drop（`mAllowFrameDroppingBySurface=false`），SurfaceFlinger 会等 consumer acquire 完每一帧——4K HDR 60fps 下容易产生 jank。排查时应先确认 `KEY_ALLOW_FRAME_DROP` 的实际值，而不是直接归因到 codec 解码慢。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
+2. **`disableLegacyBufferDropPostQ` 的作用**：移除 legacy drop 路径后，BufferQueue 的 FIFO 顺序由 SurfaceFlinger 维护，drop 决策更接近 Vulkan / V-Display pipeline 的 present time 模型。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
+
+### BufferQueueCore 基线默认值与 slot 上限
+
+定位「三缓冲为什么有时切不进去」这类问题时，要回到 `BufferQueueCore` 的构造基线值，而不是假设 SurfaceView 默认就是三缓冲。**`BufferQueueCore` 构造函数**（`frameworks/native/libs/gui/BufferQueueCore.cpp@android-17.0.0_r1:110-130`）初始化：
+
+```cpp
+mMaxAcquiredBufferCount(1),
+mMaxDequeuedBufferCount(1),
+mAsyncMode(false),
+mSharedBufferMode(false),
+mAutoRefresh(false),
+mLegacyBufferDrop(true),
+```
+
+槽位约束为 `mMaxAcquiredBufferCount + mMaxDequeuedBufferCount + (async ? 1 : 0) ≤ mMaxBufferCount`（line 304），其中 max buffer count = `NUM_BUFFER_SLOTS`（64）。[已验证: BufferQueueCore.cpp android-17.0.0_r1 line 110-130, 304; 来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
+
+这给出了一个可证伪的检查项：默认双缓冲（`mMaxAcquiredBufferCount=1 + mMaxDequeuedBufferCount=1`），三缓冲需要 producer 显式 `setMaxDequeuedBufferCount(2)`。如果现场观测到的 buffer 数量与默认值不符，应优先怀疑 Surface / producer 是否调过 `setBufferCount` / `setMaxDequeuedBufferCount`，而不是 BufferQueue 自身行为变化。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
+
+### ConsumerBase 回收链路：release fence 写回 producer
+
+视频播放「rendered 但 SurfaceFlinger 还没显示」的中间态，对应 `ConsumerBase::onFrameAvailable` → SurfaceFlinger `Layer` acquire → release fence 回写这一链路。**`ConsumerBase::onFrameAvailable`**（`frameworks/native/libs/gui/ConsumerBase.cpp@android-17.0.0_r1:258-271`）是 BufferQueue → 上层 frame listener 的回调入口：
+
+```cpp
+void ConsumerBase::onFrameAvailable(const BufferItem& item) {
+    sp<FrameAvailableListener> listener;
+    { Mutex::Autolock lock(mFrameAvailableMutex);
+      listener = mFrameAvailableListener.promote();
+    }
+    if (listener != nullptr) {
+        listener->onFrameAvailable(item);
+    }
+}
+```
+
+SurfaceFlinger 的 `Layer` 类继承这套机制，consumer acquire buffer 后通过 `mBufferReleaseChannel->writeReleaseFence` 把 release fence 写回 producer 端（codec），codec 据此推进内部 buffer 索引。[已验证: ConsumerBase.cpp android-17.0.0_r1 line 258-271; 来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
+
+`ConsumerBase::setMaxBufferCount`（line 446-459）调用 `mConsumer->allowUnlimitedSlots(false)`，确保 consumer 不允许超过指定数量的 slot——这是防止 SurfaceFlinger 在 GPU 端 buffer 膨胀的关键约束。[已验证: ConsumerBase.cpp android-17.0.0_r1 line 446-459; 来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
+
+排查含义：如果 Perfetto 看到 codec 端 buffer 索引推进慢，应同时看 SurfaceFlinger 的 acquire / release fence 时间线，而不是只看 `releaseOutputBuffer` 调用频率；release fence 未回写会阻塞 codec 侧 buffer 回收，表现为「codec 输出满了但 SF 端没显示」。
+
+### ACodec 端口格式与 buffer 数量
+
+`ACodec` 是 OMX 适配层。`setupVideoDecoder`（`frameworks/av/media/libstagefright/ACodec.cpp@android-17.0.0_r1:3612-3730`）完成 port format 设置：
+
+- **输入 port**：`OMX_VIDEO_CodingHEVC` / `AVC` / `VP9` 等编码格式；
+- **输出 port**：`setVideoPortFormatType(kPortIndexOutput, OMX_VIDEO_CodingUnused, colorFormat, haveNativeWindow)`——`haveNativeWindow=true` 时选择厂商 codec 自带的 surface 渲染路径（材料举例为高通 Venus 直接写进 SurfaceFlinger，但这是 SoC 实现差异，不应写成通用结论）；
+- `android._num-input-buffers` / `android._num-output-buffers` 允许上层调整 port buffer 数量（line 3692-3709）。[已验证: ACodec.cpp android-17.0.0_r1 line 3612-3730; 来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
+
+这对首帧 / buffer 回收排查的价值是：当 codec 创建正常但首批 buffer 迟迟不就绪时，应确认 `android._num-input-buffers` / `android._num-output-buffers` 的实际值，以及输出 port 是否走了 `haveNativeWindow=true` 的厂商 surface 直写路径；厂商路径下的 buffer 生命周期与通用 ByteBuffer 路径不同，不能套用同一套 Perfetto 归因模板。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
+
+### BUFFER_MODE_BLOCK 的 `QueueRequest` 分派细节
+
+§22.43 上一轮 direct-inject 已经提到 `mBufferMode` 区分 `BUFFER_MODE_LEGACY` 与 `BUFFER_MODE_BLOCK`，这里补充 block 模型下 `EventHandler.handleCallback` 的具体分派逻辑，用于排查「异步回调收到但 buffer 没暴露」类问题。**异步模式下 `EventHandler.handleCallback`**（`frameworks/base/media/java/android/media/MediaCodec.java@android-17.0.0_r1:1920-1970`）根据 `mBufferMode` 分派：
+
+```java
+case CB_INPUT_AVAILABLE: {
+    int index = msg.arg2;
+    synchronized(mBufferLock) {
+        switch (mBufferMode) {
+            case BUFFER_MODE_BLOCK:
+                while (mQueueRequests.size() <= index) {
+                    mQueueRequests.add(null);
+                }
+                QueueRequest request = mQueueRequests.get(index);
+                if (request == null) {
+                    request = new QueueRequest(mCodec, index);
+                    mQueueRequests.set(index, request);
+                }
+                request.setAccessible(true);
+                break;
+            ...
+        }
+    }
+    mCallback.onInputBufferAvailable(mCodec, index);
+    break;
+}
+```
+
+block 模型下 `mQueueRequests` 按 index 惰性扩容，每个 index 对应一个 `QueueRequest`，通过 `setAccessible(true)` 在 client 端暴露 buffer；材料据此把 block 模型描述为「Media3 ExoPlayer 可以零拷贝获取输入 / 输出 buffer，避免传统 ByteBuffer 的 JNI 跨边界开销」。[已验证: MediaCodec.java android-17.0.0_r1 line 1920-1970; 来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
+
+但需要保留上一轮复审的边界：材料只能证明 AOSP `MediaCodec` 在 `android-17.0.0_r1` 上具备 `BUFFER_MODE_BLOCK` 分支与 `QueueRequest` 分派，不能直接推出所有 Media3 / ExoPlayer `MediaCodecVideoRenderer` 默认都走 block 模型——实际是否进入该分支取决于 `mBufferMode` 的赋值，而赋值又受 Media3 版本、`MediaCodecAdapter` 实现与 codec 能力共同决定。排查时应先在 native log / systrace 里确认实际 buffer mode，再决定是否把 `QueueRequest` 路径纳入主因候选。
+
+### Media3 端集成缺口（待深入）
+
+本章基于 AOSP `android-17.0.0_r1` 源码，但 Media3 / ExoPlayer 的 `MediaCodecVideoRenderer`、`setVideoFrameMetadataListener` 等 player 端扩展不在 AOSP 主线范围内。材料在「未验证 / 待深入」一节明确列出了以下缺口，本章据此把它们标为排查边界而不是结论：
+
+- **Codec2 / CCodec 路径**：Android 17 上 `ACodec` 是 OMX adapter，但 `MediaCodecList` 在 API 30+ 同时支持 Codec2，其异步回调路径与本章描述的 ACodec 路径并行存在，未在材料中覆盖。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
+- **HWC 端帧合成时序**：MediaCodec → SurfaceFlinger 的 present fence 时序由 HWC HAL 决定，厂商实现差异大，需结合具体 SoC 的 HWC adapter 源码进一步定位。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
+- **Media3 / ExoPlayer 端集成**：`MediaCodecVideoRenderer` 与 `setVideoFrameMetadataListener` 等 ExoPlayer 扩展未在 AOSP 主线范围内，需要补充 androidx.media3 仓库调研。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
+- **`CB_LARGE_FRAME_OUTPUT_AVAILABLE` 触发条件**：材料只给出定义（line 1854），未追踪到触发链路——疑似与 `OMX.google.android.index.describeColorAspects` 格式变更有关，待深入。[来源: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md]
+
+<!-- /AIW-Body-Apply-2026-07-25 -->
 
 
 <!-- AIW-Body-Apply-ANGLE-2026-07-20 -->

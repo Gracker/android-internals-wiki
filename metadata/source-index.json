@@ -367,8 +367,12 @@
       "summary": "从 MediaCodec Java 层异步分发到 native ALooper 双线程模型，详解 BufferQueue generation number 防 buffer 复用、BUFFER_MODE_BLOCK 零拷贝路径、setOutputSurface 动态切换 consumer，形成 MediaCodec→BufferQueue→SurfaceFlinger 完整闭环。",
       "chapter": "ch02",
       "processed_at": "2026-07-18T20:43:16.552142+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "score": 19,
+      "previous_action": "indexed-only-chapter-freeze",
+      "status": "applied",
+      "applied_at": "2026-07-25T17:15:40+08:00",
+      "applied_run_id": "20260725-171540-c68b5cac",
       "target_path": "src/part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md",
       "route_confidence": 34,
       "route_terms": [
