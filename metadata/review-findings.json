@@ -61,6 +61,9 @@
     },
     {
       "chapter": "src/part5-app/ch27-application-cpu-optimization.md",
+      "close_note": "Rework fixed public SDK/system API boundary issues, removed pseudo JNI Process.times example, corrected /proc CPU sampling formula and priority guidance; chapter returned to ready-for-review.",
+      "closed_by": "rework",
+      "closed_run_id": "20260726-173554-rework-19d43518",
       "created_at": "2026-07-26T16:11:36.996629+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20260726-160837-29efbe02",
@@ -72,10 +75,10 @@
         "DeepResearch/2026-07-02-android17-app-cpu-optimization-thread-priority-source-verification.md",
         "DeepResearch/2026-07-02-android17-threadpoolexecutor-times-syscall-source-deepdive.md"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "章节仍含大量教学伪代码与普通应用/system API 边界混杂，暂不适合 finalized",
       "type": "public-api-and-example-boundary",
-      "updated_at": "2026-07-26T16:11:36.996629+08:00"
+      "updated_at": "2026-07-26T17:39:57.604525+08:00"
     }
   ],
   "schema_version": 1
