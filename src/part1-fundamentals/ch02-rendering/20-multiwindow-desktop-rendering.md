@@ -4,40 +4,66 @@ chapter: '2.20'
 section: '2.20'
 status: finalized
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
-last_verified: '2026-06-24'
-last_verified_against: AOSP android-17.0.0_r1 frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java
-  + LogicalDisplayMapper.java + LocalDisplayAdapter.java + DisplayAdapter.java + ExternalDisplayPolicy.java
-  + Android Developers multi-window / connected displays docs
-confidence: medium
+last_verified: '2026-07-25'
+last_verified_against: AOSP android-17.0.0_r1, Perfetto stdlib / FrameTimeline, kernel android17-6.18-2026-06_r6, Android Developers multi-window / desktop windowing / connected displays, Writer rendering_pipelines S01 / S06 / S08
+confidence: high
 sources:
 - type: official
-  path: https://developer.android.com/guide/topics/large-screens/multi-window-support
+  url: https://developer.android.com/develop/ui/compose/layouts/adaptive/support-multi-window-mode
 - type: official
-  path: https://developer.android.com/about/versions/16/behavior-changes-16
+  url: https://developer.android.com/about/versions/16/behavior-changes-16
 - type: official
-  path: https://developer.android.com/about/versions/17/behavior-changes-all
+  url: https://developer.android.com/about/versions/17/behavior-changes-all
 - type: official
-  path: https://developer.android.com/about/versions/17/behavior-changes-17
+  url: https://developer.android.com/about/versions/17/behavior-changes-17
 - type: official
-  path: https://developer.android.com/about/versions/17/release-notes
+  url: https://developer.android.com/about/versions/17/release-notes
 - type: official
-  path: https://developer.android.com/blog/posts/the-first-beta-of-android-17
+  url: https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html
 - type: official
-  path: https://developer.android.com/reference/android/R.attr#recreateOnConfigChanges
+  url: https://developer.android.com/reference/android/R.attr#recreateOnConfigChanges
 - type: official
-  path: https://developer.android.com/develop/ui/compose/layouts/adaptive/support-desktop-windowing
+  url: https://developer.android.com/develop/ui/compose/layouts/adaptive/support-desktop-windowing
 - type: official
-  path: https://developer.android.com/develop/ui/compose/layouts/adaptive/support-connected-displays
+  url: https://developer.android.com/develop/ui/compose/layouts/adaptive/support-connected-displays
 - type: official
-  path: https://perfetto.dev/docs/analysis/stdlib-docs
+  url: https://perfetto.dev/docs/analysis/stdlib-docs
 - type: official
-  path: https://perfetto.dev/docs/data-sources/frametimeline
+  url: https://perfetto.dev/docs/data-sources/frametimeline
 - type: official
-  path: https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager
+  url: https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager
 - type: official
-  path: https://source.android.com/docs/core/graphics/hwc
+  url: https://source.android.com/docs/core/graphics/hwc
 - type: aosp
-  path: frameworks/base/core/res/res/values/attrs_manifest.xml
+  url: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/res/values/attrs_manifest.xml
+- type: aosp
+  url: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/DisplayManagerService.java
+- type: aosp
+  url: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/LogicalDisplayMapper.java
+- type: aosp
+  url: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/LogicalDisplay.java
+- type: aosp
+  url: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/LocalDisplayAdapter.java
+- type: aosp
+  url: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/ExternalDisplayPolicy.java
+- type: aosp
+  url: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java
+- type: aosp
+  url: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/RenderThread.cpp
+- type: aosp
+  url: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp
+- type: aosp
+  url: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp
+- type: kernel
+  url: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c
+- type: kernel
+  url: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
+- type: material
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md
+- type: material
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S06_multi_window_type.md
+- type: material
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md
 tags:
 - multiwindow
 - desktop-mode
@@ -78,7 +104,8 @@ last_task9_audit_log: "logs/deep-review/2026-07-07-16-audit.md"
 last_task2b_lite_at: '2026-05-31'
 last_task6_at: '2026-06-14T16:05:00+08:00'
 last_task6_review_log: logs/review/2026-06-14-16-review.md
-task6_review_notes: "2026-07-07 Task6 revisiting review: pass-light-edit；Task9 auto-fix recreateOnConfigChanges 已验证正确；L1 修 1 处禁用词(落地→生效)；锚点 5/5 覆盖；无 L3/L4 回炉项。task9_result=auto-fixed 非 pass-tech-review，未自动晋升。"
+task6_review_notes: >-
+  2026-07-07 Task6 revisiting review: pass-light-edit；Task9 auto-fix recreateOnConfigChanges 已验证正确；L1 修 1 处禁用词(落地→生效)；锚点 5/5 覆盖；无 L3/L4 回炉项。task9_result=auto-fixed 非 pass-tech-review，未自动晋升。
   修 1 处空标题（Android 16 桌面模式公开边界段落归位）。锚点 5/5 覆盖。无 L3/L4 回炉项。task9_result=auto-fixed
   非 pass-tech-review，未自动晋升。
 last_task9_review_log: "logs/deep-review/2026-07-08-00-deep-review.md"
@@ -98,35 +125,9 @@ task9_p2_issues: 0
 
 # 2.20 多窗口与桌面模式渲染性能
 
-如果你在平板分屏、折叠屏展开态、PiP，或者外接显示器场景里看 trace，先变化的通常是同时可见的 window 和 layer 数量，而不是 App 逻辑本身。SurfaceFlinger 要在同一个 display frame 里处理更多 layer state、更多 buffer acquire，以及更复杂的 composition decision。窗口一多，掉帧来源也会分叉，App 渲染慢是一类，SurfaceFlinger 合成慢是一类，HWC 资源不够又是一类。
+在平板分屏、折叠屏展开态、PiP 或外接显示器场景中，可见 window/layer 数量、应用工作负载和 display 拓扑可能同时变化。SurfaceFlinger 要处理更大的 layer 集合和更复杂的 composition decision，窗口 resize 还会让 WMS geometry 与 App buffer 在不同时间到达。掉帧可能来自 App、WindowManager/Shell、SurfaceFlinger、GPU、Composer HAL 或显示硬件，不能只看 App 主线程。
 
-读完本节，我们要能做三件事。第一，分清 split-screen、PiP、desktop windowing、connected displays 各自对应什么显示会话。第二，在 Perfetto 里把 App 侧和 SurfaceFlinger 侧的 jank 分开。第三，知道哪些优化属于 App 自己，哪些已经到了系统或设备实现边界。
-
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 **多窗口形态要按 display 会话拆开写**：[已验证: Android Developers multi-window support, support desktop windowing, support connected displays]
-  分屏、PiP、freeform、desktop windowing、connected display 不共享一套边界。手机外接显示器时，手机和外屏可以是两套独立会话；desktop windowing 设备外接显示器时，桌面会话可以跨两块屏幕扩展。
-
-- 🔹 **SurfaceFlinger 的压力来自 layer、composition 和 display 数量**：[已验证: source.android.com SurfaceFlinger 文档]
-  多窗口先增加可见 layer，再提高 HWC 选择和 GPU composition 的概率。外接显示器还会把 display pipeline 再加一份。
-
-- 🔹 **`recreateOnConfigChanges` 是显式请求重建的补充开关**：[已验证: AOSP `frameworks/base/core/res/res/values/attrs_manifest.xml`, Android Developers `android.R.attr#recreateOnConfigChanges`]
-  这个属性用于声明哪些配置变化仍应触发 Activity 重建。Android O 口径主要覆盖 `mcc|mnc`，API 37 又覆盖 touchscreen、keyboard、keyboardHidden、navigation、colorMode 这些默认不再重建的变化；它仍不能当成窗口尺寸和方向变化的通用处理方案。
-
-- 🔹 **Android 10 之后，multi-resume 改写了优化边界**：[已验证: Android Developers multi-window support]
-  多窗口下多个可见 Activity 可以同时停留在 `RESUMED`。失去焦点不等于进入 `onStop()`，独占资源和高频渲染要参考 `onTopResumedActivityChanged()`。
-
-- 🔹 **Perfetto 里要用真实 schema 和真实 jank 名称**：[已验证: Perfetto stdlib docs, FrameTimeline docs]
-  layer 表是 `surfaceflinger_layers_snapshot` 和 `surfaceflinger_layer`。FrameTimeline 里 SurfaceFlinger 侧的 jank 分类是 `SurfaceFlingerCpuDeadlineMissed` 和 `SurfaceFlingerGpuDeadlineMissed`，正文里要统一用这两个正式名称。
-
-### 扩展（可选深入）
-
-- 🔸 折叠屏和外接显示器都可能触发 relayout、buffer 重新分配和更频繁的 `performTraversals()`，可与 §2.12、§2.13 对照阅读。
-- 🔸 多窗口渲染分析如果要继续深入，下一步通常是看 §7.4 典型场景分析，或者直接去 Perfetto SQL 做 layer / frame timeline 联合观察。
-<!-- outline-end -->
+这一章先分清 split-screen、PiP、desktop windowing、connected displays 对应的显示会话，再建立 Display、Window、进程与 layer 的映射。只有映射成立，Perfetto 里的 App jank、SurfaceFlinger jank、HWC 策略变化和 display present 才能归到正确对象。
 
 ## 多窗口形态和 display 会话
 
@@ -143,133 +144,155 @@ task9_p2_issues: 0
 | 场景 | 公开边界 | 会话形态 | 渲染观察点 |
 |---|---|---|---|
 | Split-screen | Android 7.0（API 24）平台支持 | 一块屏幕里并排两个可见 app window | 同时可见 layer 增多，分割线和系统栏常驻 |
-| PiP | Android 8.0（API 26）扩展到小屏 | 一块屏幕里主窗口 + 持续更新的小窗 | 小窗经常持续提交 buffer，主窗口和小窗互相叠加 |
+| PiP | Android 7.0 在部分设备提供，Android 8.0（API 26）扩展到小屏 | 一块屏幕里主窗口 + 持续更新的小窗 | 小窗经常持续提交 buffer，主窗口和小窗互相叠加 |
 | Freeform / desktop windowing | 大屏 / 兼容设备上的可调整大小窗口 | 一块或多块屏幕里的多个可调整大小窗口 | layer 数量和窗口遮挡关系更复杂，composition decision 更频繁 |
-| 手机 + connected display | 手机连接外接显示器 | 手机保持原有状态，外屏启动独立 desktop session，两边是两套系统 | SurfaceFlinger 同时驱动两个 display，会话彼此独立 |
+| 手机 + connected display | 手机连接外接显示器 | 手机保持原有状态，外屏启动独立 desktop session，形成两个显示会话 | SurfaceFlinger 同时驱动两个 display，会话内容彼此独立 |
 | desktop windowing 设备 + 外接显示器 | 平板等 desktop windowing 设备连接外屏 | 桌面会话跨两块屏幕扩展，窗口和光标可跨屏移动 | 仍是同一套桌面会话，但 display 范围更大、像素更多 |
 
-[图：split-screen、PiP、desktop windowing、connected display 四种形态的 display 会话示意图]
-
-## DisplayManagerService 的多 display 源码结构（Android 17）
-
-多 display 真正的「分屏」发生在 DisplayManagerService（DMS），不在 SurfaceFlinger。SurfaceFlinger 拿到的是「已经定型」的 display 列表；多 display 的 display 角色、主从关系、拓扑关系由 DMS 在 `android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java` 维护。
-
-以下梳理 `android-17.0.0_r1` 上的几条关键主线，方便排查时直接定位。
-
-### 一把 `SyncRoot` 锁守住所有 display 状态
-
-`DisplayManagerService` 内部用 `DisplayManagerService.SyncRoot`（一个 `static final` 类）做全局锁。DisplayAdapter 的 `registerLocked()`、`LogicalDisplayMapper.updateLogicalDisplaysLocked()`、`ExternalDisplayPolicy.handleExternalDisplayConnectedLocked()`、每个 `DisplayPowerController` 的 lead 切换全部在这把锁上同步（`DisplayManagerService.java` 行 285–537，构造与字段定义；行 696–770 子模块装配；行 783–797 `onStart`）。
-
-Android 17 仍未拆分这把锁。折叠屏展开同时外接显示器接入（dock 设备）时，`mSyncRoot` 持锁时间偏长是已知瓶颈。**不能把 Android 17 的 `DeliQueue` 优化（`android.os.MessageQueue` 无锁）外推到 DMS 的 `SyncRoot` 隔离**——两者是不同对象。
-
-### 物理 display 怎么被发现
-
-`LocalDisplayAdapter.registerLocked()` 在 `onStart` 后由 `MSG_REGISTER_DEFAULT_DISPLAY_ADAPTERS` 触发（`DisplayManagerService.java` 行 2543–2551），它会枚举 `SurfaceControl.getPhysicalDisplayIds()` 并对每个 physical id 调 `tryConnectDisplayLocked()`。第一次发现的 display 走 `DISPLAY_DEVICE_EVENT_ADDED`，后续 hotplug 走 `DISPLAY_DEVICE_EVENT_CHANGED`（`LocalDisplayAdapter.java` 行 121–200）。
-
-`mDevices.size() == 0` 时 `isFirstDisplay` 为 true，这块 display 就是设备的主 display。它会写进 `DisplayDeviceInfo.flags`，后续 `LogicalDisplayMapper` 据此决定 `DEFAULT_DISPLAY`（displayId=0）对应哪块物理 display。
-
-`OverlayDisplayAdapter` 和 `WifiDisplayAdapter` 在 `MSG_REGISTER_ADDITIONAL_DISPLAY_ADAPTERS` 且 `!mSafeMode` 时才注册（行 2564–2591）。Miracast 设备在 Android 17 仍走 `WifiDisplayAdapter` 路径。
-
-### 设备状态（折叠/展开/桌面模式）的统一入口
-
-折叠、展开、桌面模式都属于 `DeviceState` 概念。`LogicalDisplayMapper.setDeviceState(DeviceState state)` 是唯一入口（`LogicalDisplayMapper.java` 行 554–568），它会：
-
-1. 在 `mSyncRoot` 锁上同步执行 `setDeviceStateLocked()`（行 569–668）。
-2. 调 `resetLayoutLocked(prev, next, transitionValue=true)`，让相关 `LogicalDisplay` 标记为「即将关闭」中间态，SurfaceFlinger 关闭动画就此触发。
-3. 调 `shouldDeviceBeWoken` / `shouldDeviceBePutToSleep` 决定是否联动 `PowerManager.wakeUp(WAKE_REASON_UNFOLD_DEVICE, "server.display:unfold")` 或 `goToSleep(GO_TO_SLEEP_REASON_DEVICE_FOLD)`（行 626–666）。这就是 §2.20 中 `wakeup` / `goToSleep` trace slice 的来源。
-4. 派发 `MSG_TRANSITION_TO_PENDING_DEVICE_STATE` 延迟消息作为兜底超时（行 667）。如果 `finishStateTransitionLocked()` 回调没到，强制切到目标状态。
-
-`onBootCompleted()` 之前所有状态变化都被缓存在 `mDeviceStateToBeAppliedAfterBoot` 里，boot 完才生效（行 670–681）。这是为什么冷启动过程中观察不到 fold/unfold trace 的原因。
-
-### 逻辑 display → DisplayPowerController 一一对应
-
-每个 logical display 在 `setupLogicalDisplay()` 中都会创建一个 `DisplayPowerController` 并加到 `mDisplayPowerControllers: SparseArray<DisplayPowerController>`（`DisplayManagerService.java` 行 2603–2651）。多 display 的功耗/亮度隔离边界就在这里。
-
-设备状态切换时 `updateDisplayPowerControllerLeaderLocked(dpc, leadDisplayId)`（行 2774–2801）会做 lead/follower 重排：unregister 旧 lead → register 新 lead。每个 follower 跟着 lead 调亮度，避免多 display 各自跑亮度策略打架。
-
-### External display 单独走 `ExternalDisplayPolicy`
-
-`handleLogicalDisplayConnectedPreProcessLocked()` 中判断 `ExternalDisplayPolicy.isExternalDisplayLocked(display)`（`DisplayManagerService.java` 行 2674–2684），条件就是 `logicalDisplay.getDisplayInfoLocked().type == Display.TYPE_EXTERNAL`（`ExternalDisplayPolicy.java` 行 63–65）。外接显示器单独的 enable / disable 策略、高温不允许通知、统计由 `ExternalDisplayPolicy` 负责（行 197–243）。
-
-`isExtendedDisplayAllowed`（`DisplayManagerService.java` 行 2689–2700）在 Android 17 的变化是引入 `DisplayManagerFlags.isDisplayContentModeManagementEnabled()`：开启后**默认允许外接显示器扩展**，不再依赖 `DEVELOPMENT_FORCE_DESKTOP_MODE_ON_EXTERNAL_DISPLAYS` 这个开发选项。Android 17 设备开启该 flag 后，phone + external 不需要任何开关就能进入 desktop windowing。
-
-### 多 display 状态变更怎么传到 WindowManager
-
-DMS 通过单实例的 `mPendingTraversal` 节流地向 WindowManager 投递 `MSG_REQUEST_TRAVERSAL`（`DisplayManagerService.java` 行 3985–3991）。这条路径解释了「external display 拔插后为什么 WindowManager 跟着做一次 traversal」——DMS 调一次 → WMS 走 `WindowManagerService#requestTraversalFromDisplayManager()` → 下一个 vsync 重新计算可见 window 与 layer。
-
-DMS 自己跑在独立的 `DisplayThread` 上（`DisplayManagerService.setupSchedulerPolicies()` 行 768–777 把 DisplayThread / AnimationThread / SurfaceAnimationThread 都设为 `THREAD_GROUP_TOP_APP`）。所以 Perfetto 中 `android.display` 线程的占用反映 DMS 内部在 `updateLogicalDisplaysLocked()` 等热点上的开销，**不直接反映锁竞争**。
-
-### 多 display 调用的关键调用链
-
-```
-SurfaceFlinger hotplug
-  → SurfaceControl.DisplayEventReceiver
-  → LocalDisplayEventListener (in LocalDisplayAdapter)
-  → LocalDisplayAdapter.tryConnectDisplayLocked
-  → sendDisplayDeviceEventLocked(device, DISPLAY_DEVICE_EVENT_ADDED)
-  → DisplayAdapter.sendDisplayDeviceEventLocked
-  → mHandler.post(() -> mListener.onDisplayDeviceEvent)
-  → DisplayManagerService.LogicalDisplayListener.onDisplayDeviceEvent
-  → LogicalDisplayMapper.onDisplayDeviceEventLocked
-  → handleDisplayDeviceAddedLocked
-  → updateLogicalDisplaysLocked
-  → 触发 deliverDisplayEvents / scheduleTraversalLocked
-  → WindowManager.requestTraversalFromDisplayManager
-  → WMS 重新计算可见 window → SurfaceFlinger layer 树更新
+```mermaid
+flowchart LR
+    S["单个物理 Display"] --> SS["Split-screen<br/>两个 Task 同屏"]
+    S --> PP["PiP<br/>主窗口 + pinned window"]
+    S --> DW["Desktop windowing<br/>多个可移动 Task"]
+    CD["Connected displays"] --> PH["手机内屏会话"]
+    CD --> EX["外屏桌面会话"]
+    TD["支持 desktop windowing 的平板 + 外屏"] --> WS["同一桌面 workspace 跨两个 Display"]
 ```
 
-整条路径在 `android-17.0.0_r1` 上仍然是「单 `mSyncRoot` 串行化 + 多次 `mHandler.post` 异步派发」。在多 display 频繁切换（foldable 翻转 + 外部热插）的场景下，单锁是观察到的串行化瓶颈，handler 异步派发只是把 DMS 内部的不同步骤错开，并不能跨 display 并行化。
+这张图描述的是产品会话，不代表进程或渲染线程拓扑。两个可见窗口可能属于同一进程，也可能属于不同进程；一个应用窗口移动到外屏后，其 display、密度、刷新率、HDR 能力和窗口尺寸都可能变化。
 
-### 多 display trace 排查时回看 DMS 的几个具体切片
+## Android 17 的 Display 对象不能按一对一理解
 
-- `dumpsys display`：能直接看 `mLogicalDisplays` / `mDisplayGroups` / `mDisplayPowerControllers` / `mVirtualDeviceDisplayMapping` / 当前 `Layout` 与 `mDeviceState`。
-- `dumpsys SurfaceFlinger`：以 `Display` 维度看 `compositionType` / `layer` 归属 / `FramebufferSurface`。注意 `dumpsys SurfaceFlinger` 里看到的 display 与 DMS 的 `LogicalDisplay` 是一对一映射。
-- Perfetto 中 `surfaceflinger_display` / `transaction` / `surfaceflinger_layer` 三个表能看出多 display 的 layer 归属（`surfaceflinger_layer` 表本身没有 `display_id` 列，需要通过 `surfaceflinger_layers_snapshot.id = surfaceflinger_layer.snapshot_id` 关联到 `android_surfaceflinger_display` 再确认归属）。
-- 系统级 `frame timeline` 切片里看 `jank_type`：多 display 下 `SurfaceFlingerCpuDeadlineMissed` 只能说明该 display 自己的合成 deadline 没赶上，**不能外推到另一块 display**——每块 display 独立的 vsync、独立的 deadline。这与 §2.20 中「多 display 还会把 VSync 和 deadline 观察拆成两份」的判断一致。
+多窗口主要由 WindowManager/WM Shell 组织，多个显示设备的发现、logical display 策略和投影则由 DisplayManagerService（DMS）管理。排查前先区分五类对象：
 
-参考源码：
-- `frameworks/base/services/core/java/com/android/server/display/DisplayManagerService.java`
-- `frameworks/base/services/core/java/com/android/server/display/LogicalDisplayMapper.java`
-- `frameworks/base/services/core/java/com/android/server/display/LocalDisplayAdapter.java`
-- `frameworks/base/services/core/java/com/android/server/display/DisplayAdapter.java`
-- `frameworks/base/services/core/java/com/android/server/display/ExternalDisplayPolicy.java`
+| 对象 | 所在层 | 主要职责 |
+|---|---|---|
+| physical display / `PhysicalDisplayId` | SurfaceFlinger / Composer | 物理连接、mode、VSync、HWC present |
+| `DisplayDevice` | DMS adapter 层 | 表示 local、virtual、Wi-Fi、overlay 等显示设备 |
+| `LogicalDisplay` / `displayId` | DMS policy 层 | 对系统暴露逻辑显示、layer stack、投影和 display group |
+| `DisplayContent` | WindowManager | 按 displayId 组织 Task、Window、Insets、focus 与 transition |
+| CompositionEngine Output | SurfaceFlinger | 为目标输出构造可见 layer 集合并与 HWC 协商 |
 
+`LogicalDisplay.java` 的类注释明确说明：logical display 与 display device 是正交概念，映射可以是 many-to-many，也可能没有直接关系。镜像、虚拟显示和 display projection 都会打破“一块 logical display 对应一块物理屏”的简化模型。因此，DMS 的 `displayId`、SurfaceFlinger 的 physical display id、layer stack 和 HWC display handle 必须分别记录。
 
-## SurfaceFlinger 在多窗口下多了什么工作
+### physical display 的发现与 logical display 的建立
 
-多窗口对 SurfaceFlinger 的影响，主要落在三件事上。
+`LocalDisplayAdapter.registerLocked()` 从 SurfaceFlinger 枚举 physical display id，并用 `tryConnectDisplayLocked()` 读取 token、静态信息、动态 mode 信息和 desired mode specs。新设备先成为 `LocalDisplayDevice`，再经 `DisplayDeviceRepository` 通知 `LogicalDisplayMapper` 建立或更新 logical display。
 
-第一件事是 **可见 layer 更多**。一个普通全屏 App 只有一组主窗口 layer，再叠系统栏。分屏把第二个 App 的主窗口树加进来，PiP 再叠一层持续更新的小窗，freeform 和 desktop windowing 还会继续增加窗口标题栏、阴影、taskbar 等系统 layer。
+`mDevices.size() == 0` 只决定 `LocalDisplayDevice` 的 `mIsFirstDisplay`，影响首屏资源和背光等初始化。默认 logical display 最终还要经过 `LogicalDisplayMapper` 的 layout 与 `FLAG_ALLOWED_TO_BE_DEFAULT_DISPLAY` 规则，不能只凭枚举顺序推断 `displayId=0`。
 
-第二件事是 **composition decision 更复杂**。HWC 的 overlay plane 数量受 SoC 和显示路径限制，layer 数量、尺寸、alpha、rotation、pixel format 任何一项不合适，部分 layer 就会走 GPU composition。窗口少的时候，这种回退未必明显。窗口一多，回退出现得更频繁，SurfaceFlinger 主线程和 GPU 两边的时间都容易被拉长。
+```mermaid
+flowchart LR
+    HP["SurfaceFlinger hotplug / physical display"] --> LDA["LocalDisplayAdapter"]
+    LDA --> DDR["DisplayDeviceRepository"]
+    DDR --> LDM["LogicalDisplayMapper"]
+    LDM --> LD["LogicalDisplay / display group / layer stack"]
+    LD --> DMS["DisplayManagerService listener"]
+    DMS --> WMS["WindowManager traversal"]
+    WMS --> SCT["SurfaceControl.Transaction"]
+    SCT --> SF["SurfaceFlinger outputs"]
+```
 
-第三件事是 **display 可能不止一块**。connected display 场景里，SurfaceFlinger 可能同时维护手机内屏和外部显示器两套 display pipeline。外屏分辨率更高、刷新率不同，或者两边窗口树完全不同，都会让合成成本继续上升。
+### `DeviceState` 处理硬件布局，不等于 desktop windowing mode
 
-多 display 还会把 VSync 和 deadline 观察拆成两份。60Hz 内屏加 120Hz 外屏时，不能拿一条固定帧预算解释全部掉帧；要按目标 display 看对应的 frame timeline、presentation deadline、SurfaceFlinger slice 和 layer 集合。某块屏幕出现 `SurfaceFlingerCpuDeadlineMissed`，只说明这块 display 的提交或合成没赶上 deadline，不能直接外推到另一块屏幕。
+`LogicalDisplayMapper.setDeviceState()` 处理的是折叠、展开、lid、dock 等可能改变物理显示布局的设备状态。它会在 `mSyncRoot` 下设置 pending state，按需要临时关闭参与切换的 display，并依据 `DeviceState` property 决定 wake/sleep；若正常完成条件迟迟不到，延迟消息会强制结束 pending transition。
 
-这里不要脱离设备条件写固定毫秒数。把某组固定毫秒数直接写成通用规律，离开 trace、设备型号、刷新率和显示分辨率，就没有复用价值。直接回到观察面：看 layer 数量、看 compositionType、看 FrameTimeline，再决定是不是已经到了 SurfaceFlinger 侧瓶颈。
+普通 freeform/desktop windowing 是 Task/Window 的 windowing mode，不必触发 `LogicalDisplayMapper.setDeviceState()`。只有设备的 dock、lid 或厂商硬件状态同时改变 display layout 时，两条路径才会在一次场景中相遇。冷启动阶段的状态还可能暂存到 boot completed 后再应用，不能据此断言冷启动 trace 一定没有 fold/unfold 事件。
 
-`dumpsys SurfaceFlinger` 适合做静态快照。它能帮我们核对当前有哪些可见 layer、哪些 layer 走 HWC、哪些 layer 走 GLES。Perfetto 适合看动态变化，尤其是窗口切换、拖拽缩放、PiP 持续播放、外接显示器插拔这些过程。
+### 外接显示策略不等于自动进入扩展桌面
 
-多窗口分析中还有几个容易跟 SurfaceFlinger 混淆的边界,下面分开说清楚。
+`ExternalDisplayPolicy.isExternalDisplayLocked()` 以 `Display.TYPE_EXTERNAL` 识别外接 logical display，并负责 enable/disable、thermal 限制、连接事件和统计。Android 17 中，`isDisplayContentModeManagementEnabled()` 为真时，`isExtendedDisplayAllowed()` 不再依赖开发者选项；但“允许 extended content mode”不等于连接后必然自动进入桌面扩展。
 
-### Android 17 MessageQueue 优化不要外推到多 display 合成
+是否自动启用还受 layout、boot 阶段、用户确认、thermal 状态和设备配置影响。应用侧只能按运行时 `DisplayManager`、当前 activity context 与 window metrics 判断，不能用 Android 版本号推导外屏已经可用。
 
-Android 17 的 DeliQueue 是 `android.os.MessageQueue` 的无锁实现，公开数据里的第三方应用掉帧率下降约 4%、System UI / Launcher 交互掉帧率下降约 7.7%，对应的是 MessageQueue 锁竞争优化。它不能写成 SurfaceFlinger 多 display Transaction、Binder 路径或 `mGlobalLock` 拆分带来的多屏隔离收益。
+### DMS traversal 如何进入显示 transaction
 
-多窗口 / 多 display trace 里仍然按 display 分开看 FrameTimeline、SurfaceFlinger slice 和 layer snapshot。某个 display 出现 `SurfaceFlingerCpuDeadlineMissed` 时，只能说明这一块 display 的合成或提交没有赶上 deadline；是否影响另一块屏幕，要回到同一时间段的 display 维度数据判断。
+`mSyncRoot` 的源码注释是“保护 DMS 的大部分状态”，不是所有显示工作都在这把锁内完成。`scheduleTraversalLocked()` 用单个 `mPendingTraversal` 合并重复请求，Handler 收到 `MSG_REQUEST_TRAVERSAL` 后调用 `WindowManagerInternal.requestTraversalFromDisplayManager()`。随后 WMS 调回 DMS 的 `performTraversal()`：logical display 的 layer stack、orientation、projection 和 surface 状态进入对应的 `SurfaceControl.Transaction`；desired mode specs 则由 `ModeRequestManager` 收集后交给 display adapter 批量应用。
 
-### Android 16 桌面模式公开边界
+这条链路能证明 DMS 变更会并入 WMS/display traversal，不能保证“收到 hotplug 后恰好下一个 VSync 就完成”。`android.display` 线程的长 slice 只能证明该线程忙；若要判断 `mSyncRoot` 竞争，还需同时看到 monitor contention、线程调度和锁持有者证据。Android 17 的 lock-free `MessageQueue` 也不会拆除 DMS 自己的 `mSyncRoot`。
 
-Android 16 desktop windowing 的公开特性应按官方文档写成 customizable header insets 和 app instance management。当前公开资料不能支撑"SurfaceControl 属性持久化缓存"或 Perfetto 中存在通用 `applyCachedState` slice 的结论。
+### DMS 与 SurfaceFlinger 的观察面
 
-### 16KB 页在多窗口下的内存叠加效应
+- `dumpsys display`：查看 logical display、display group、DisplayDevice、当前 layout、device state 和 power controller。
+- `dumpsys SurfaceFlinger` / Winscope：查看 physical/virtual output、layer tree、projection 与每个 output 的 composition 状态。
+- `surfaceflinger_layer`：提供全局 layer snapshot，没有 `display_id` 列。
+- `android_surfaceflinger_display`：提供同一 snapshot 中的 display 信息，但没有通用的 layer 外键。
+- `android_surfaceflinger_transaction`：有 `layer_id` 与 `display_id`，适合确认某次 transaction 的目标，不能替代最终 output-layer 可见性。
 
-Android 15 起 AOSP 支持 16KB page size，Google Play 从 2025-11-01 要求 targeting Android 15+ 的新应用和更新支持 16KB page sizes；AOSP 文档不支持把它写成 Android 16 旗舰设备强制默认。多窗口下的内存影响可以讨论，但 PSS +9%、四窗口额外内存接近一个完整应用 PSS 这类固定数字，需要绑定设备、构建、页面大小、进程常驻集和测量方法后再写。
+多屏归属应结合 Winscope 的 output tree、display transaction、layer parent chain 和目标时间片确认。不要把两个表按 `snapshot_id` 相连后，就把 snapshot 中所有 layer 都归给每一个 display。
 
-在 Perfetto 中观察时，用 `process_memory` 数据源看多窗口场景下系统的 `MemAvailable` 变化趋势。如果切换窗口后可用内存持续下降且不回收，说明多窗口驻留的内存压力已经超过了系统的后台回收能力。优化方向是减少后台窗口的纹理缓存和 GPU buffer 持有量，在 `onTopResumedActivityChanged(false)` 时主动释放非必要资源。
+## 先建立 Window、线程和 Surface 拓扑
 
-[待补充：同一设备在全屏、分屏、外接显示器三种形态下的 `dumpsys SurfaceFlinger` layer 对比截图]
+多窗口不一定等于多进程。一个进程可以有多个顶层 Window，每个 Window 有自己的 `ViewRootImpl`、窗口 Surface 和 BLAST buffer 流；这些窗口仍可能共享 UI Looper 和 HWUI RenderThread。
+
+| 证据 | 执行拓扑 | 性能含义 |
+|---|---|---|
+| 同 pid、同 UI tid、多个 ViewRoot | 共享 UI Looper 与同一个 ThreadLocal `Choreographer` | 到期的 traversal callback 在同一线程串行执行 |
+| 同 pid、多个硬件加速窗口 | 每个窗口有 renderer/CanvasContext，共享进程级 HWUI RenderThread | 一个窗口的 DrawFrame、dequeue 或 fence wait 可能推迟另一个窗口 |
+| 不同 pid | UI Looper、Choreographer 与 RenderThread 分离 | App CPU 工作可独立，仍共享目标 Display 的 SF/HWC/GPU/带宽 |
+| 不同 displayId | 分属不同 WMS `DisplayContent` 与 SF output | mode、deadline、color、HWC 能力和 present fence 要分别分析 |
+
+`Choreographer` 的源码是 ThreadLocal，不是“每个 Window 一个”。`RenderThread::getInstance()` 则提供进程级 HWUI RenderThread。共享线程不代表共享 BufferQueue：每个 App Window 仍独立提交 buffer，拥有自己的 acquire/release 关系和 layer identity。
+
+判断时从 `pid/tid/ViewRootImpl/WindowState/layerId/displayId` 建表。屏幕上出现两个 pane 也可能只是一个 Activity 里的双栏 View，此时只有一个 ViewRoot 和 App Window buffer，不应按多窗口管线分析。
+
+## WMS geometry 与 App buffer 是两条输入
+
+窗口 resize、PiP 和 Shell transition 同时涉及管理状态、layer 几何和应用内容：
+
+| 输入 | 典型对象 | 改变什么 |
+|---|---|---|
+| `WindowContainerTransaction` | Task、TaskFragment、WindowContainer | bounds、windowing mode、层级与 reparent 请求 |
+| `SurfaceControl.Transaction` | container、transition leash、window layer | position、crop、matrix、alpha、Z、visibility |
+| App BLAST transaction | App Window buffer layer | 新 buffer、acquire fence、frame number |
+
+Shell transition 常把 Task 或 Activity surface 临时 reparent 到 leash 上做动画。此时 position/crop 可能落在 leash，应用新尺寸 buffer 则由 BLAST 单独到达。新 geometry 配旧 buffer 可以是过渡策略的一部分；只有把 WCT、leash transaction、应用 relayout/traversal 和 buffer 选择对齐，才能判断黑边、拉伸或跳变来自哪条路径。
+
+`ViewRootImpl.performTraversals()` 也不会每帧都调用 WMS relayout。首帧、尺寸、可见性、Insets 或 `LayoutParams` 等条件命中时才进入 `IWindowSession.relayout()`。稳定绘制帧没有 relayout slice 时，不要把 App draw 迟到归因于 WMS。
+
+WMS 内部的 `BLASTSyncEngine` 可以等待一组 WindowContainer 的 draw/transaction；公开的 `SurfaceSyncGroup` 面向应用与嵌入 Surface。两者只等待已注册参与者，不能替 Camera、codec 或游戏引擎的业务下一帧建立同步关系。
+
+## SurfaceFlinger 与 HWC 按 Output 组织合成
+
+SurfaceFlinger FrontEnd 接收所有窗口、Shell/WMS 几何和 buffer transaction，更新 layer hierarchy 与 snapshot；CompositionEngine 再为每个 Output/Display 构造可见 layer 集合。同一个 layer 还可能因 mirror 或 display projection 出现在多个 output，不能只看全局 layer 是否存在。
+
+多窗口的成本主要来自三类变化：
+
+1. 可见 layer、leash、caption、dim、IME 与 SystemUI layer 增多；
+2. scale、rotation、alpha、HDR/SDR、protected content 等组合让 HWC strategy 更复杂；
+3. 多个 output 带来各自的 mode、可见 layer 集合、client target 和 present。
+
+窗口变多不保证切到 CLIENT composition，单个复杂窗口也可能触发 GPU 合成。要比较的是相邻帧整个 output 的 layer 属性和 DEVICE/CLIENT 结果，而不是把 layer 数量直接换算成 GPU 开销。
+
+### fence 要按 buffer 与 Display 分层
+
+| 信号 | 粒度 | 能证明什么 |
+|---|---|---|
+| acquire fence | 一块 producer buffer | producer 何时写完，consumer 何时可读 |
+| release fence | 被消费的 layer/buffer | 旧 buffer 何时可以复用 |
+| present fence | 一次 Display present | 该 output 的 present 工作到达 Android 显示栈完成边界 |
+
+present fence 不属于某个 Window。内屏与外屏各有自己的 present 结果；它们使用不同刷新率时，也不能拿 60 Hz 的帧预算解释 120 Hz output。FrameTimeline 中出现 SurfaceFlinger jank 后，应先通过 DisplayFrame token、目标 output 和相邻 display 状态确定归属，再判断另一块屏是否受到影响。
+
+### 不用固定数字推导多窗口开销
+
+overlay plane、scaler、分辨率、刷新率、内存带宽和 vendor Composer 都会改变结果。通用文章不能给出“增加一个窗口固定多耗时几毫秒”或“必然增加多少 PSS”的结论。可复用的比较方法是：在同一设备上固定场景，记录每个 output 的可见 layer、composition type、FrameTimeline、GPU/fence 和 present。
+
+## 三个容易越界的 Android 17 话题
+
+### lock-free MessageQueue 只优化 Looper 队列
+
+Android 17 为 target SDK 37 及以上应用启用 lock-free `MessageQueue`（DeliQueue）。Google 内部 beta trace 报告的 missed-frame 降幅，归因于 MessageQueue monitor contention 减少。它不能证明 SurfaceFlinger transaction、WMS `mGlobalLock` 或 DMS `mSyncRoot` 已经拆分。
+
+### 桌面窗口公开能力按 API 与运行时查询
+
+官方 desktop windowing 文档描述 caption/header insets、可调整大小窗口、taskbar 和多实例交互；其中 `PROPERTY_SUPPORTS_MULTI_INSTANCE_SYSTEM_UI` 从 Android 15 提供。文档没有通用 `applyCachedState` Perfetto slice，也不能支撑“SurfaceControl 属性持久化缓存”这一平台结论。设备是否启用 desktop windowing、connected display content mode 和多实例入口，仍要运行时确认。
+
+### 16 KB page size 不是多窗口专属机制
+
+16 KB page size 会影响 native 库兼容和进程内存布局，但不会创建另一条多窗口渲染管线。评估多窗口驻留内存时，进程 RSS/swap 使用 `linux.process_stats`，系统 `MemAvailable` 使用 `linux.sys_stats`；再结合 `android.memory.process`、GPU memory、`dumpsys meminfo` 和 LMK 事件判断。
+
+只看到 `MemAvailable` 下降，不能直接写成“超过后台回收能力”。还要确认进程重要性、RSS/swap、GraphicBuffer/GPU memory、缓存回收和是否发生 LMK。优化对象应是已确认不再需要的纹理、离屏 buffer、解码输出或缓存，不应仅因失去 top-resumed 状态就无条件释放仍在可见窗口中使用的资源。
 
 ## 配置变更和大屏适配，先把边界写对
 
@@ -299,7 +322,9 @@ Android 16（API 36）进一步把大屏规则扩展到 `sw >= 600dp`。对 `tar
 
 这条 opt-out 只在 API 36 过渡期有效。行为变更文档已经写明，应用面向 API 37 之后，这个 opt-out 不再生效。到了 Android 17（API 37），`sw >= 600dp` 设备上的方向、宽高比和 resizability 限制会被平台直接忽略。
 
-这会改变 `android:configChanges` 的风险边界。应用仍然可以声明某些配置变化自行处理，但大屏上窗口被拉伸、旋转、进入分屏或桌面窗口时，系统给出的形态约束已经变少，Activity 更容易收到连续的尺寸、方向、screen layout 变化。声明了 `configChanges` 的应用也要真的更新资源、布局和渲染目标；没有声明或声明不完整时，系统仍可能走 Activity 重建路径。
+这条规则不适用于 `sw < 600dp` 的屏幕；按 `android:appCategory` 标记的游戏也有例外，用户的 per-app aspect-ratio 选择仍受尊重。设备厂商还可以调整多窗口行为，所以测试记录必须包含 target SDK、目标 display 的 `smallestScreenWidthDp`、应用类别与设备设置。
+
+这会改变 `android:configChanges` 的风险边界。应用仍然可以声明某些配置变化自行处理，但大屏上窗口被拉伸、旋转、进入分屏或桌面窗口时，系统给出的形态约束已经变少，Activity 更容易收到连续的尺寸、方向、screen layout 变化。声明了 `configChanges` 的应用也要更新资源、布局和渲染目标；没有声明或声明不完整时，系统仍可能走 Activity 重建路径。
 
 API 37 的 `recreateOnConfigChanges` 要和这条大屏规则分开读。它面向 touchscreen、keyboard、keyboardHidden、navigation、colorMode 变化，用来恢复“发生这些变化时重建 Activity”的旧行为；它不会让 `screenOrientation`、宽高比或 resizability 限制重新生效。对应到渲染分析，大屏和外接显示器上的窗口尺寸变化，会更频繁地触发 relayout、buffer 重新分配和 `performTraversals()`。保存 UI state，把窗口尺寸变化当成常态输入，不要把它当成少见异常。
 
@@ -307,17 +332,17 @@ API 37 的 `recreateOnConfigChanges` 要和这条大屏规则分开读。它面�
 
 多窗口优化最容易写错的地方，就是把“失去焦点”近似成“进入 `onStop()`”。Android 10（API 29）之后，这个近似已经不成立。官方 multi-window 文档明确写了 multi-resume，多个可见 Activity 可以同时停留在 `RESUMED`。PiP 这类不具备焦点的窗口可能被 pause，但只要 Activity 还在屏幕上，生命周期就不能按“后台窗口已经停掉”去推导。
 
-和独占资源绑定的是 **top resumed**。官方建议用 `onTopResumedActivityChanged()` 处理相机、麦克风这类一次只能被一个窗口稳定持有的资源。对渲染也一样。高频动画、连续 invalidation、激进的 frame rate vote，应该跟 top resumed 或真实可见性绑定，不该只盯 `onStop()`。
+**top resumed** 是资源仲裁和交互强度调整的重要信号，但不是“失去 top 就必须释放相机”的所有权契约。官方明确允许非 top-resumed 的可见 Activity 继续相机预览；应用仍要处理 `CameraDevice.StateCallback#onDisconnected()` 等资源被抢占信号。高频动画、连续 invalidation 和 frame-rate vote 应同时参考 top-resumed、真实可见性与内容是否仍在更新。
 
 ```kotlin
 override fun onTopResumedActivityChanged(topResumed: Boolean) {
     super.onTopResumedActivityChanged(topResumed)
     if (topResumed) {
         resumeHighFrequencyRendering()
-        reacquireExclusiveResources()
+        tryReacquireExclusiveResources()
     } else {
         dropNonEssentialAnimations()
-        releaseExclusiveResources()
+        prepareForExclusiveResourcePreemption()
     }
 }
 
@@ -329,8 +354,8 @@ override fun onStop() {
 
 这段代码背后的分工要说清楚。
 
-- `topResumed = true`，窗口拿到前台交互资格。相机、麦克风、手写、游戏主循环这类要争抢独占资源的工作，放在这里最稳。
-- visible 但不是 top resumed，窗口可能还在 `RESUMED`。视频小窗、导航小窗、分屏副窗口都可能属于这一类。这里适合做“降频”和“减少无效重绘”，不适合一刀切停掉全部渲染。
+- `topResumed = true`，窗口拿到前台交互资格，可以尝试获取独占资源并恢复高交互频率。
+- visible 但不是 top resumed，窗口可能还在 `RESUMED`。视频小窗、导航小窗、分屏副窗口都可能属于这一类。这里适合减少非必要重绘并准备处理资源抢占，不应一刀切停掉全部渲染。
 - `onStop()` 只在 Activity 离开屏幕时触发。停止 offscreen work，放这里才对。
 
 PiP 也要单独看。它经常是“可见，但不 focusable”。如果 PiP 还在持续播放视频，你不能把它当成静态后台窗口；如果 PiP 只是一个暂停状态的小窗，也没必要让它每帧都做完整 UI 刷新。
@@ -348,7 +373,9 @@ SELECT DISTINCT slice.name
 FROM slice
 JOIN thread_track ON slice.track_id = thread_track.id
 JOIN thread ON thread_track.utid = thread.utid
-WHERE thread.name = 'SurfaceFlinger'
+JOIN process ON thread.upid = process.upid
+WHERE process.name GLOB '*surfaceflinger*'
+  AND thread.tid = process.pid
 ORDER BY 1;
 ```
 
@@ -371,7 +398,7 @@ ORDER BY s.ts DESC, l.layer_name
 LIMIT 100;
 ```
 
-这个查询适合先看“当前有哪些可见 layer、名字是什么、HWC composition type 是什么”。Perfetto stdlib 的 `surfaceflinger_layer` 表没有 `display_id` 列，connected display trace 里不能直接写 `WHERE l.display_id = 0`。需要区分 display 时，先在 Winscope SurfaceFlinger 视图，或 `android_surfaceflinger_display` / transaction 表里确认 display id 与 layer 归属，再按目标时间片收窄。
+这个查询适合先看“某个 snapshot 有哪些可见 layer、名字是什么、HWC composition type 是什么”。Perfetto stdlib 的 `surfaceflinger_layer` 表没有 `display_id` 列，connected display trace 里不能直接写 `WHERE l.display_id = 0`。需要区分 display 时，先在 Winscope SurfaceFlinger output tree 中确认目标输出，再用 `android_surfaceflinger_transaction` 的 `layer_id/display_id` 和相邻 transaction 辅助定位。`android_surfaceflinger_display` 只有 display 记录，不能把同一 snapshot 的全部 layer 自动归到该 display。
 
 ### 3. FrameTimeline 的 jank 名称要写全
 
@@ -383,7 +410,7 @@ FrameTimeline 里，App 侧和 SurfaceFlinger 侧至少要分成三类：
 
 多窗口场景下，后两类更有价值。窗口多、layer 多、display 多，先把 SurfaceFlinger 侧 miss 和 App 侧 miss 拆开，再决定是不是回头看应用主线程、RenderThread、图片上传、视频解码，还是继续沿着 SurfaceFlinger / HWC / GPU composition 往下查。
 
-[图：Perfetto 中 SurfaceFlinger 主线程 slice、FrameTimeline jank_type、layer snapshot 三者的对照图]
+一次可复用的顺序是：先在 `actual_frame_timeline_slice` 找到异常 SurfaceFrame/DisplayFrame token，再对齐目标进程的 `doFrame`、RenderThread 与 buffer transaction；随后选择最接近异常时刻的 layer snapshot，确认 output、可见 layer 和 composition type；最后检查 SurfaceFlinger main thread、GPU fence、Composer/HAL 与 present。这样能把“某个窗口晚交帧”和“整屏合成晚”分开。
 
 ## 版本演进
 
@@ -393,14 +420,18 @@ FrameTimeline 里，App 侧和 SurfaceFlinger 侧至少要分成三类：
 | 8.0 (API 26) | PiP 扩展到小屏设备 | 主窗口之外多了一条持续更新的小窗 layer |
 | 10 (API 29) | multi-resume + `onTopResumedActivityChanged()` | 失去焦点不再等于离开 `RESUMED`，生命周期判断要更细 |
 | 12 (API 31) | large-screen 上 multi-window 成为标准行为 | 平板、折叠屏更频繁进入 resizable / compatibility mode |
-| 16 (API 36) | `sw >= 600dp` 时忽略方向、宽高比和 resizability 限制；提供临时 opt-out；connected displays 进入正式能力；desktop windowing 公开 customizable header insets 与 app instance management | 窗口尺寸变化更频繁，外接显示器把 display 维度也拉进来；桌面窗口标题栏和多实例管理会改变窗口交互与任务组织 |
-| 17 (API 37) | API 36 的 opt-out 对 target 37 不再生效；`android.os.MessageQueue` 引入 DeliQueue lock-free 优化 | `sw >= 600dp` 上的自适应布局从建议变成硬边界；DeliQueue 的掉帧收益限于 MessageQueue 锁竞争口径，不能外推为 SurfaceFlinger 多 display 隔离 |
+| 12L (API 32) | 大屏系统 UI、多任务与 Activity Embedding 体验增强 | 同一 Task window 可包含并列 Activity container，视觉双栏仍可能只有一个顶层 Window |
+| 13 (API 33) | Composer HAL 转向 AIDL；AutoSingleLayer 仅覆盖受限的单 layer buffer update | HAL 接口变化不改变 per-display HWC 职责；不能用 unsignaled latch 解释跨窗口同步 |
+| 14 (API 34) | `SurfaceSyncGroup` 成为公开 API | 应用和嵌入 Surface 可收集同步 transaction，WMS 内部仍使用独立 sync engine |
+| 15 (API 35) | target 35 edge-to-edge；`PROPERTY_SUPPORTS_MULTI_INSTANCE_SYSTEM_UI` 提供多实例声明 | caption、Insets 和多实例窗口增加布局与任务组织变量，不改变 BLAST/SF 主线 |
+| 16 (API 36) | target 36 在 `sw >= 600dp` 时忽略方向、宽高比和 resizability 限制，并提供临时 opt-out | 窗口尺寸与方向变化更常见；测试要覆盖 desktop window、外屏、折叠状态和 compatibility mode |
+| 17 (API 37) | target 37 不再能使用上述 opt-out；`recreateOnConfigChanges` 扩展到新的默认不重建配置类型；target 37 启用 lock-free MessageQueue | 大屏适配不能依赖固定方向/不可缩放；DeliQueue 收益只属于 Looper 队列，显示主线仍按 Android 17 AOSP 分析 |
 
 ## 常见问题与误区
 
 ### 误区 1：失去焦点就等于进入 `onStop()`
 
-不对。Android 10 之后，多窗口里的多个可见 Activity 可以同时停留在 `RESUMED`。焦点、可见性、top resumed 是三套不同信号。把它们混成一个状态，优化策略很容易写偏。
+Android 10 之后，多窗口里的多个可见 Activity 可以同时停留在 `RESUMED`。焦点、可见性、top resumed 是三套不同信号，资源与渲染策略要分别处理。
 
 ### 误区 2：`recreateOnConfigChanges` 能处理折叠屏和窗口尺寸变化
 
@@ -408,23 +439,44 @@ FrameTimeline 里，App 侧和 SurfaceFlinger 侧至少要分成三类：
 
 ### 误区 3：多窗口掉帧一定是 App 的问题
 
-不对。多窗口把 SurfaceFlinger 一侧的变量放大了。先看 FrameTimeline 的 jank_type，再看 layer 快照和 compositionType。确认是 `SurfaceFlingerCpuDeadlineMissed` 或 `SurfaceFlingerGpuDeadlineMissed` 之后，再决定 App 还能做多少。
+多窗口也会增加 Shell transaction、SurfaceFlinger output 和 HWC 策略变量。先看 FrameTimeline 的 jank_type，再看目标 output 的 layer 快照与 composition type；确认最早迟到阶段后，才能判断修复属于 App 还是系统/设备。
+
+### 误区 4：窗口越多就一定走 GPU composition
+
+HWC 评估的是整个 output 的 layer 属性和硬件资源。多个简单 layer 仍可能全部走 DEVICE，单个带复杂变换、HDR 混合或受保护内容的窗口也可能改变策略。
+
+### 误区 5：layer snapshot 可以直接按 displayId 过滤
+
+`surfaceflinger_layer` 没有 `display_id`。多 display trace 必须先确认 Winscope output，再结合 transaction、layer parent 和目标时间片归属，不能把 snapshot 中所有 layer 都算到每块屏幕。
 
 ## 参考资料
 
-- AOSP 源码路径：
-  - `frameworks/base/core/res/res/values/attrs_manifest.xml`
-  - `frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java`
-  - `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`
-- 官方文档：
-  - <https://developer.android.com/guide/topics/large-screens/multi-window-support>
-  - <https://developer.android.com/about/versions/16/behavior-changes-16>
-  - <https://developer.android.com/about/versions/17/behavior-changes-17>
-  - <https://developer.android.com/about/versions/17/release-notes>
-  - <https://developer.android.com/blog/posts/the-first-beta-of-android-17>
-  - <https://developer.android.com/develop/ui/compose/layouts/adaptive/support-desktop-windowing>
-  - <https://developer.android.com/develop/ui/compose/layouts/adaptive/support-connected-displays>
-  - <https://perfetto.dev/docs/analysis/stdlib-docs>
-  - <https://perfetto.dev/docs/data-sources/frametimeline>
-  - <https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager>
-  - <https://source.android.com/docs/core/graphics/hwc>
+- [AOSP `DisplayManagerService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/DisplayManagerService.java)
+- [AOSP `LogicalDisplayMapper`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/LogicalDisplayMapper.java)
+- [AOSP `LogicalDisplay`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/LogicalDisplay.java)
+- [AOSP `LocalDisplayAdapter`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/LocalDisplayAdapter.java)
+- [AOSP `ExternalDisplayPolicy`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/ExternalDisplayPolicy.java)
+- [AOSP `ViewRootImpl`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)
+- [AOSP `Choreographer`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java)
+- [AOSP HWUI `RenderThread`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/RenderThread.cpp)
+- [AOSP manifest `recreateOnConfigChanges`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/res/values/attrs_manifest.xml)
+- [AOSP `WindowContainerTransaction`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/WindowContainerTransaction.java)
+- [AOSP `SurfaceSyncGroup`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/SurfaceSyncGroup.java)
+- [AOSP `WindowContainer`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowContainer.java)
+- [AOSP `BLASTSyncEngine`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java)
+- [AOSP `BLASTBufferQueue`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)
+- [AOSP `SurfaceFlinger`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)
+- [AOSP `HWComposer`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)
+- [Android Developers：Multi-window mode](https://developer.android.com/develop/ui/compose/layouts/adaptive/support-multi-window-mode)
+- [Android Developers：Desktop windowing](https://developer.android.com/develop/ui/compose/layouts/adaptive/support-desktop-windowing)
+- [Android Developers：Connected displays](https://developer.android.com/develop/ui/compose/layouts/adaptive/support-connected-displays)
+- [Android Developers：Android 16 behavior changes](https://developer.android.com/about/versions/16/behavior-changes-16)
+- [Android Developers：Android 17 behavior changes](https://developer.android.com/about/versions/17/behavior-changes-17)
+- [Android Developers Blog：Android 17 lock-free MessageQueue](https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html)
+- [PerfettoSQL standard library](https://perfetto.dev/docs/analysis/stdlib-docs)
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- [AOSP Graphics：SurfaceFlinger and WindowManager](https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager)
+- [AOSP Graphics：Hardware Composer HAL](https://source.android.com/docs/core/graphics/hwc)
+- [`android17-6.18-2026-06_r6`：sync_file](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)
+- [`android17-6.18-2026-06_r6`：dma-fence](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)
+- Writer `rendering_pipelines`：`S01_rendering_types_overview.md`、`S06_multi_window_type.md` 与 `S08_native_graphics_type.md`
