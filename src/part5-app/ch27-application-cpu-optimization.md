@@ -11,11 +11,15 @@ gap_source: "研究盲区 Task9 发现"
 last_verified: "2026-07-26"
 last_verified_against: "AOSP android-17.0.0_r1 / android17-6.18"
 confidence: medium
-pipeline_stage: task6_pending
-task6_state: pending
-task9_state: pending
+pipeline_stage: task6_needs_rework
+task6_state: needs-rework
+task9_state: needs-rework
 last_draft_polish_at: "2026-07-26T15:35:39+08:00"
 last_draft_polish_run_id: "20260726-153539-draft-polish-19d43518"
+last_review_finalize_at: "2026-07-26T16:08:37+08:00"
+last_review_finalize_run_id: "20260726-160837-29efbe02"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+review_note: "Task6 复查发现仍有 public API/示例代码边界问题，已修正小范围错误；暂不 finalized。"
 sources:
   - type: aosp
     title: "ThreadPoolExecutor / Process / bionic times / procfs source verification"
@@ -64,7 +68,7 @@ sources:
 
 <!-- outline-end -->
 
-> Draft polish 说明（2026-07-26）：本章已按 `android-17.0.0_r1` / android17-6.18 源码调研补齐版本边界、来源标记与若干代码级风险修正，进入 Task6 复查队列。未在本轮新增章节；仍需 Task6 对所有示例代码做逐段编译性与 public API 可用性复核。
+> Review finalize 说明（2026-07-26）：Task6 复查已确认 ThreadPoolExecutor、`times()`、`/proc/stat` 主干证据基本来自 `android-17.0.0_r1` / android17-6.18 调研材料；但章节仍含大量教学型伪代码和非 public SDK 边界，需要后续按“可直接复制的 public API 示例”和“system/priv-app 示例”分层整理。因此本轮只做小范围事实/代码修正，暂不 finalized。
 
 ---
 
@@ -201,7 +205,7 @@ public void execute(Runnable command) {
 
 **三步决策的真实开销**：
 - ① 路径：`addWorker(command, true)` 走 `compareAndIncrementWorkerCount(c)` 原子 CAS（行 850-869），失败则回 ② 路径。**CAS 失败常见原因**：并发的 submit 抢到了 workerCount 增长。失败后不阻塞，直接重读 ctl 重判。
-- ② 路径：`workQueue.offer(command)` 在无界队列（`LinkedBlockingDeque()`）永远返回 true，导致**永远不会走 ③ 路径**。这是 chapter §27.1 推荐的「CPU 线程池用无界队列 + `corePoolSize==maxPoolSize`」配置的实际行为：拒绝策略（`AbortPolicy` / `CallerRunsPolicy`）永远不会被触发，所有溢出任务都堆在队列里，最终触发 OOM。
+- ② 路径：`workQueue.offer(command)` 在无界队列（如无容量上限的 `LinkedBlockingQueue`/`LinkedBlockingDeque`）通常会一直返回 true，导致**正常路径不会走 ③ 路径**。旧稿若采用「CPU 线程池无界队列 + `corePoolSize==maxPoolSize`」，拒绝策略（`AbortPolicy` / `CallerRunsPolicy`）几乎不会在突发流量下触发，溢出任务会堆在队列里，存在 OOM 风险；本章前文已改为有界 `ArrayBlockingQueue`。
 - ③ 路径：当 `workQueue` 是有界队列（`ArrayBlockingQueue(N)`）且队满时触发。`addWorker(command, false)` 检查 `workerCountOf(c) >= maxPoolSize`，满则返回 false 走 `reject(command)`。
 
 **Android 17 专属增强点**：
@@ -236,129 +240,7 @@ return new ThreadPoolExecutor(
 
 #### execute() 调度流程源码解析
 
-ThreadPoolExecutor 的 execute() 方法是线程池调度的核心入口：
-
-```java
-public class ThreadPoolExecutor {
-    
-    /**
-     * execute() 方法的完整调度流程
-     * 源码对应：ThreadPoolExecutor.java 的 execute() 方法
-     */
-    public void execute(Runnable command) {
-        if (command == null) {
-            throw new NullPointerException();
-        }
-        
-        // 1. 获取当前活跃线程数
-        int c = ctl.get();
-        
-        // 2. 检查是否需要添加新线程
-        if (workerCountOf(c) < corePoolSize) {
-            if (addWorker(command, true)) {
-                return;
-            }
-            c = ctl.get();
-        }
-        
-        // 3. 如果核心线程已满，尝试将任务加入队列
-        if (isRunning(c) && workQueue.offer(command)) {
-            int recheck = ctl.get();
-            // 再次检查线程池状态，防止状态变化
-            if (!isRunning(recheck) && remove(command)) {
-                rejectNewTask();
-            } else if (workerCountOf(recheck) == 0) {
-                addWorker(null, false);
-            }
-            return;
-        }
-        
-        // 4. 如果队列已满，尝试创建新线程
-        if (addWorker(command, false)) {
-            return;
-        }
-        
-        // 5. 如果无法创建新线程，执行拒绝策略
-        rejectNewTask();
-    }
-    
-    /**
-     * addWorker 方法详解
-     */
-    private boolean addWorker(Runnable firstTask, boolean core) {
-        retry:
-        for (;;) {
-            int c = ctl.get();
-            int rs = runStateOf(c);
-            
-            // 检查线程池状态
-            if (rs >= SHUTDOWN &&
-                ! (rs == SHUTDOWN &&
-                    firstTask == null &&
-                    ! workQueue.isEmpty())) {
-                return false;
-            }
-            
-            // 原子操作增加线程计数
-            for (;;) {
-                int wc = workerCountOf(c);
-                if (wc >= CAPACITY ||
-                    wc >= (core ? corePoolSize : maximumPoolSize)) {
-                    return false;
-                }
-                if (compareAndIncrementWorkerCount(c)) {
-                    break retry;
-                }
-                c = ctl.get();
-                if (runStateOf(c) != rs) {
-                    continue retry;
-                }
-            }
-        }
-        
-        // 创建新 Worker
-        Worker w = new Worker(firstTask);
-        final Thread t = w.thread;
-        if (t != null) {
-            final ReentrantLock mainLock = this.mainLock;
-            mainLock.lock();
-            try {
-                // 再次检查线程池状态
-                if (isRunning(ctl.get()) && t.getState() == Thread.State.NEW) {
-                    workers.add(w);
-                    workerAdded(w);
-                }
-            } finally {
-                mainLock.unlock();
-            }
-            
-            if (workerStarted(w)) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
-    /**
-     * Worker 类内部实现
-     */
-    private final class Worker implements Runnable {
-        final Thread thread;
-        Runnable firstTask;
-        volatile long completedTasks;
-        
-        Worker(Runnable firstTask) {
-            this.firstTask = firstTask;
-            this.thread = getThreadFactory().newThread(this);
-        }
-        
-        public void run() {
-            runWorker(this);
-        }
-    }
-}
-```
+上方代码块已经给出 android-17.0.0_r1 中 `execute()` 的真实源码级流程。后续阅读时请以该源码块为准，不再重复用“教学伪代码”改写 `ThreadPoolExecutor` 私有实现，避免把不存在的 helper（例如 `rejectNewTask()`、`workerStarted()`）误认为 JDK/Android API。
 
 #### 线程池参数调优法则
 
@@ -550,7 +432,7 @@ SYSCALL_DEFINE1(times, struct tms __user *, tbuf)
 - **返回值是 `jiffies`（系统启动以来的 tick 数）**——不是 `gettimeofday` 的 wall time。应用层若想计算经过时间，需 `times(NULL)` 取得 baseline，再 diff。
 - **`tms_utime` 走 `thread_group_cputime_adjusted`**（不是原始 `task_times`）——经过 cgroup 限额、irqtime、fair scheduler steer 调整。在 cgroup 限速场景下，与 `/proc/self/stat` 的 `utime` 差值可达 30%。
 - **粒度 `sysconf(_SC_CLK_TCK)`**：典型 100（10ms），高频 1000（1ms），低频 64（15.6ms）。bionic 上 `_SC_CLK_TCK` 由内核编译时 `CONFIG_HZ` 决定。
-- **单次 syscall 开销 < 100ns**（参考 NDK r27 实测，arm64 Samsung S22）。
+- **单次 syscall 开销低于常规 `/proc` 文本解析**（具体纳秒级数值强依赖设备、内核配置与 benchmark 方法；本章只把它作为 10-100Hz 低开销进程级采样方案）。
 
 #### JNI /proc/stat 解析的栈/堆双缓冲策略
 
@@ -678,8 +560,7 @@ public class CpuUsageMonitor {
     public float getProcessCpuUsagePercentage() {
         try {
             // 读取 /proc/self/stat
-            String pid = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
-            String statPath = "/proc/" + pid + "/stat";
+            String statPath = "/proc/" + android.os.Process.myPid() + "/stat";
             
             try (BufferedReader reader = new BufferedReader(new FileReader(statPath))) {
                 String line = reader.readLine();
@@ -796,7 +677,7 @@ public class CpuIdleDetector {
         float adaptiveThreshold = calculateAdaptiveThreshold();
         
         // 持续检测避免瞬时波动
-        boolean idleCount = 0;
+        int idleCount = 0;
         for (int i = 0; i < 3; i++) {
             if (checkIdle(adaptiveThreshold)) {
                 idleCount++;
@@ -1327,19 +1208,20 @@ public class LockWaitAnalysis {
 }
 ```
 
-### CAS 与偏向锁的性能对比
+### CAS 与 synchronized 的性能边界
 
 ```java
 public class LockPerformanceComparison {
     
     /**
-     * 偏向锁性能测试
+     * synchronized 轻量竞争性能测试。
+     * 注意：不要把该示例解释为“偏向锁”测试；Android ART 并不提供可依赖的 HotSpot 偏向锁优化语义。
      */
-    public static class BiasedLockBenchmark {
+    public static class SynchronizedBenchmark {
         private final Object lock = new Object();
         
-        public void benchmarkBiasedLock() {
-            // 首先让偏向锁生效
+        public void benchmarkSynchronized() {
+            // 预热：降低解释执行/JIT 冷启动对示例结果的影响
             for (int i = 0; i < 1000; i++) {
                 synchronized (lock) {
                     // 轻量级操作
@@ -1359,7 +1241,7 @@ public class LockPerformanceComparison {
             long endTime = System.nanoTime();
             double durationMs = (endTime - startTime) / 1000000.0;
             
-            System.out.println("Biased lock average time: " + 
+            System.out.println("synchronized average time: " +
                              (durationMs / 100000) + "ms");
         }
         
@@ -1405,11 +1287,11 @@ public class LockPerformanceComparison {
     public static class PerformanceAnalyzer {
         
         public void compareLockMechanisms() {
-            BiasedLockBenchmark biasedLock = new BiasedLockBenchmark();
+            SynchronizedBenchmark synchronizedBenchmark = new SynchronizedBenchmark();
             CasBenchmark casBenchmark = new CasBenchmark();
             
             // 运行基准测试
-            biasedLock.benchmarkBiasedLock();
+            synchronizedBenchmark.benchmarkSynchronized();
             casBenchmark.benchmarkCas();
             
             // 分析结果
@@ -1422,11 +1304,11 @@ public class LockPerformanceComparison {
             /*
             分析结论：
             
-            1. 偏向锁 (Biased Lock)
-               - 适用场景：单线程环境下长时间持有锁
-               - 优点：几乎无开销的锁获取
-               - 缺点：多线程竞争时需要撤销偏向，成本较高
-               - CPU 消耗：轻量级，但需要处理偏向撤销
+            1. synchronized
+               - 适用场景：低到中等竞争、临界区较清晰的共享状态保护
+               - 优点：语义简单，由 ART/运行时负责锁膨胀、阻塞与唤醒
+               - 缺点：竞争激烈或长临界区会带来调度与唤醒开销
+               - CPU 消耗：阻塞后释放 CPU；短竞争窗口可能经历轻量级快速路径
                 
             2. CAS (Compare And Swap)
                - 适用场景：高并发、短时间锁竞争
@@ -1434,9 +1316,9 @@ public class LockPerformanceComparison {
                - 缺点：忙等待消耗 CPU，ABA 问题需要额外处理
                - CPU 消耗：持续自旋等待
                
-            3. 经典锁 (synchronized)
-               - 适用场景：长时间持有锁、多线程竞争
-               - 优点：公平性保证、避免 CPU 忙等待
+            3. 经典锁/显式 Lock
+               - 适用场景：需要可中断、公平锁、条件队列等高级能力
+               - 优点：API 能力更完整，可按场景选择公平/非公平策略
                - 缺点：线程上下文切换开销大
                - CPU 消耗：阻塞时释放 CPU，唤醒时需要恢复上下文
             */
@@ -1920,9 +1802,16 @@ int set_sched_policy(pid_t tid, SchedPolicy policy) {
 }
 ```
 
-**两条通道完全独立**——`setThreadGroup` 只改 SCHED（cpu cgroup 调度权重），不改 CPUSET（CPU 拓扑限制）。CPU 闲置检测后做预加载若想同时获得大核 + 高优先级，必须调 `setThreadGroupAndCpuset`（同时走两条通道）。
+**两条通道完全独立**——`setThreadGroup` 只改 SCHED（cpu cgroup 调度权重），不改 CPUSET（CPU 拓扑限制）。平台侧如果需要同时改变调度组与 CPUSET，应使用同时走两条通道的接口；普通应用则不能把 hidden/system API 当成 public SDK 方案。
 
-**章节现有示例的修正点**：§27.1 中『CPU 闲置检测 -> 调低 Worker 线程优先级』的代码片段只走了 SCHED 通道，未调 `setThreadGroupAndCpuset`，结果预加载任务仍可能跑在小核。**修正**：把 `setThreadPriority(tid, THREAD_PRIORITY_BACKGROUND)` 替换为：
+**章节现有示例的修正点**：§27.1 中『CPU 闲置检测 -> 调低 Worker 线程优先级』的代码片段只走 nice 优先级通道，不会同时迁移 CPUSET。普通应用只能使用 public SDK 的 `setThreadPriority(...)`；`setThreadGroupAndCpuset(...)` 属于 system/priv-app 语境能力，不能写成普通应用可直接复制的方案。
+
+普通应用：
+```java
+Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);  // 当前线程 nice=10
+```
+
+system/priv-app 或平台代码在确有权限时才可同时设置 SCHED + CPUSET：
 ```java
 Process.setThreadPriority(tid, Process.THREAD_PRIORITY_BACKGROUND);  // 10
 Process.setThreadGroupAndCpuset(tid, Process.THREAD_GROUP_BACKGROUND);  // 同时设 SCHED + CPUSET
@@ -1931,7 +1820,7 @@ Process.setThreadGroupAndCpuset(tid, Process.THREAD_GROUP_BACKGROUND);  // 同�
 ### D. /proc/stat 字段顺序与 idle 语义变化（一手验证）
 
 ```c
-// kernel/common/fs/proc/stat.c (android-mainline, 6.12 LTS base)
+// kernel/common/fs/proc/stat.c (android17-6.18 baseline)
 static int show_stat(struct seq_file *p, ...) {
     for_each_possible_cpu(i) {
         // 输出顺序严格为：
@@ -1972,7 +1861,7 @@ float util  = total > 0 ? (float) busy / total : 0f;
 
 ### E. Native times() 替代方案确认
 
-`<sys/times.h>` 中的 `clock_t times(struct tms *buf)` 在 Android 17 NDK r27 中仍可直接调用，**单次 syscall 开销 < 100ns**，适合 10-100Hz 高频采样。但**时钟单位为 `sysconf(_SC_CLK_TCK)`**（典型 100，即 10ms 粒度），低于 10ms 的 burst CPU 任务会漏检。章节 §27.1 推荐方案 B 的『CPU 速率 < 0.1 = 闲置』阈值在 10ms 粒度下含义为『过去 100ms 中 busy 占比 < 10%』，与系统级 CPU 闲置检测（PSI SOME 70/100ms）口径一致，**可直接对接现有 PSI 监控**。
+`<sys/times.h>` 中的 `clock_t times(struct tms *buf)` 在 Android 17 NDK r27 中仍可直接调用，开销通常低于读取并解析 `/proc` 文本，适合 10-100Hz 采样。但**时钟单位为 `sysconf(_SC_CLK_TCK)`**（典型 100，即 10ms 粒度），低于 10ms 的 burst CPU 任务会漏检。章节 §27.1 推荐方案 B 的『CPU 速率 < 0.1 = 闲置』阈值在 10ms 粒度下含义为『过去 100ms 中 busy 占比 < 10%』；它可作为应用内启发式指标，但不能等同于系统 PSI 口径。
 
 ### F. Worker 线程默认优先级实测陷阱
 
