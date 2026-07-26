@@ -10,16 +10,18 @@ created_date: "2026-07-02"
 gap_source: "研究盲区 Task9 发现"
 last_verified: "2026-07-26"
 last_verified_against: "AOSP android-17.0.0_r1 / android17-6.18"
-confidence: medium
-pipeline_stage: task6_needs_rework
-task6_state: needs-rework
-task9_state: needs-rework
+confidence: medium-high
+pipeline_stage: task6_ready_for_review
+task6_state: ready-for-review
+task9_state: ready-for-review
 last_draft_polish_at: "2026-07-26T15:35:39+08:00"
 last_draft_polish_run_id: "20260726-153539-draft-polish-19d43518"
 last_review_finalize_at: "2026-07-26T16:08:37+08:00"
 last_review_finalize_run_id: "20260726-160837-29efbe02"
 reviewed_by: "hermes-aiw-review-finalize-apply"
-review_note: "Task6 复查发现仍有 public API/示例代码边界问题，已修正小范围错误；暂不 finalized。"
+review_note: "Rework 已将 public SDK 示例、system/priv-app 能力与源码摘录边界拆清，并移除偏向锁/伪 JNI 等误导表述；保持 ready-for-review，暂不 finalized。"
+last_rework_at: "2026-07-26T17:35:54+08:00"
+last_rework_run_id: "20260726-173554-rework-19d43518"
 sources:
   - type: aosp
     title: "ThreadPoolExecutor / Process / bionic times / procfs source verification"
@@ -52,7 +54,7 @@ sources:
 ### 🔹 锁等待对 CPU 的影响
 - synchronized 等待的自旋→休眠状态转换
 - 锁优化的四项基本原则
-- CAS 与偏向锁的性能对比分析
+- CAS 与 synchronized/显式 Lock 的性能边界
 
 ## 扩展
 
@@ -62,13 +64,13 @@ sources:
 - 网络请求与本地计算的并发优化
 
 ### 🔹 多线程 CPU 争用分析
-- 线程调度器的 EAS/EEVDF 原理与实践
+- 线程调度器的 EAS/CFS/EEVDF 口径说明
 - CPU 缓存一致性的优化技巧
-- NUMA 架构下的 CPU 资源调度策略
+- 移动 SoC big.LITTLE/异构核下的 CPU 资源调度边界
 
 <!-- outline-end -->
 
-> Review finalize 说明（2026-07-26）：Task6 复查已确认 ThreadPoolExecutor、`times()`、`/proc/stat` 主干证据基本来自 `android-17.0.0_r1` / android17-6.18 调研材料；但章节仍含大量教学型伪代码和非 public SDK 边界，需要后续按“可直接复制的 public API 示例”和“system/priv-app 示例”分层整理。因此本轮只做小范围事实/代码修正，暂不 finalized。
+> Rework 说明（2026-07-26）：本章以 Android `android-17.0.0_r1` / android17-6.18 为上限。正文中的普通应用示例只使用 public SDK/NDK；涉及 `Process.readProcFile`、`setThreadGroupAndCpuset` 等 hidden/system API 的片段均仅作为平台源码口径说明，不作为三方应用可直接复制方案。章节仍处于 `ready-for-review`，等待最终人工/Task6 finalize。
 
 ---
 
@@ -336,37 +338,9 @@ public class ThreadPoolOptimizer {
 
 android-17.0.0_r1 中 `times()` 的调用链：
 
-**1. 应用层调用**：
-```java
-// Process.java (frameworks/base/core/java/android/os/Process.java:944)
-public static native long times(long[] tms_array);
-```
+**1. 应用/NDK 调用**：普通应用不依赖 framework hidden API，直接在 native 层通过 NDK `<sys/times.h>` 调用 `times(struct tms*)`；Java 层需要进程 CPU 采样时，通过自有 JNI 暴露一个明确的 public app 接口即可。
 
-**2. JNI 层实现**：
-```cpp
-// frameworks/base/core/jni/android_util_Process.cpp:584-615
-static jlong android_os_Process_times(JNIEnv* env, jobject clazz, jlongArray tms_array) {
-    jlong result;
-    jboolean ok;
-    
-    if (tms_array == NULL) {
-        // 无 buffer 版本：只返回系统启动以来的 tick 数
-        result = __times(nullptr);
-    } else {
-        // 有 buffer 版本：填充 tms 结构体
-        jlongArray temp;
-        temp = env->NewLongArray(4);
-        ok = __times(temp);
-        if (ok) {
-            // 设置返回值和 tms 数据
-            result = ok;
-            env->SetLongArrayRegion(tms_array, 0, 4, temp);
-        }
-        env->DeleteLocalRef(temp);
-    }
-    return result;
-}
-```
+**2. framework 口径说明**：`frameworks/base/core/java/android/os/Process.java` 和 `frameworks/base/core/jni/android_util_Process.cpp` 也有若干 proc/times 相关 native 工具函数，但这些属于平台/系统实现细节。本章不把它们写成普通应用可复制 API，避免 hidden API 边界误导。
 
 **3. bionic 层实现**：
 ```c
@@ -439,7 +413,7 @@ SYSCALL_DEFINE1(times, struct tms __user *, tbuf)
 `android_util_Process.cpp:1025-1090` 的 `readProcFile()` 实现了智能缓冲策略（这是 framework 内部实现；普通应用若不能使用 hidden API，应以 `BufferedReader`/JNI 读取 `/proc/stat`）：
 
 **关键设计**：
-- **栈优先**：1024 字节栈缓冲覆盖 95% 场景（/proc/stat 约 3 KiB，会触发一次堆迁移；/proc/pid/status 约 1.5 KiB，栈直接命中）。
+- **栈优先**：先尝试 1024 字节栈缓冲；超过该大小的 proc 文件会切到堆缓冲并按需扩容。因此 `/proc/stat`、`/proc/pid/status` 在多核设备上通常不应假设“零分配命中”。
 - **`TEMP_FAILURE_RETRY(pread)`**：包装 EINTR 重试——多线程应用 PSS 采样时高频调用，被信号打断的 EINTR 必须重试。
 - **倍增而非 +4096**：与 std::vector 内存策略一致，amortized O(1) realloc。/proc/pid/maps 100 MiB 场景下 17 次 realloc 即可。
 
@@ -448,7 +422,7 @@ SYSCALL_DEFINE1(times, struct tms __user *, tbuf)
 章节现有代码的修正：
 
 ```java
-// framework / system app 可用；普通应用优先使用 BufferedReader 或 JNI 读取 /proc/stat。
+// framework / system app 可用；普通应用优先使用 BufferedReader 或自有 JNI 读取 /proc/stat。
 private static final int[] CPU_FORMAT = new int[] {
     Process.PROC_OUT_LONG,  // 0 user
     Process.PROC_OUT_LONG,  // 1 nice  
@@ -473,8 +447,8 @@ public float getCpuUsage() {
 ```
 
 **性能对比**：
-- `readProcFile("/proc/stat", ...)` 单次调用 ~50-150μs（实测 8 核设备）。
-- **10Hz 采样 = 0.5-2ms/s CPU 占用**（主线程），可接受；100Hz 采样 = 5-20ms/s，需要放 IO 线程。
+- `/proc/stat` 解析属于文本 IO；低频（约 1-10Hz）可接受，高频采样应放到后台线程并控制窗口。
+- `times()` 只给出进程级累计 CPU tick，适合 10-100Hz 的轻量启发式采样；它不能替代系统全局 `/proc/stat` 口径。
 
 ### 基于 /proc/stat 的 CPU 占用率计算
 
@@ -486,6 +460,7 @@ public class CpuUsageMonitor {
     private static final String PROC_STAT = "/proc/stat";
     private long[] lastCpuUsage;
     private long lastUpdateTime;
+    private long lastProcessTicks = -1;
     
     /**
      * 初始化 CPU 使用率监控
@@ -554,37 +529,46 @@ public class CpuUsageMonitor {
         return new long[10]; // Android 17 common kernel 输出 10 个 cpu 字段
     }
     
+    private long readProcessTicks() {
+        String statPath = "/proc/" + android.os.Process.myPid() + "/stat";
+        try (BufferedReader reader = new BufferedReader(new FileReader(statPath))) {
+            String line = reader.readLine();
+            if (line == null) return -1;
+            int endOfComm = line.lastIndexOf(')');
+            if (endOfComm < 0 || endOfComm + 2 >= line.length()) return -1;
+            String[] fieldsAfterComm = line.substring(endOfComm + 2).trim().split("\\s+");
+            // /proc/pid/stat: utime/stime 是全局第 14/15 列；去掉 pid 与 comm 后对应 fieldsAfterComm[11]/[12]
+            long utime = Long.parseLong(fieldsAfterComm[11]);
+            long stime = Long.parseLong(fieldsAfterComm[12]);
+            return utime + stime;
+        } catch (IOException | NumberFormatException e) {
+            Log.e("CpuMonitor", "Failed to read process stat", e);
+            return -1;
+        }
+    }
+
     /**
-     * 获取进程级别的 CPU 使用率
+     * 获取进程级别 CPU 使用率需要两次采样 /proc/self/stat 的 utime/stime，
+     * 再用同一窗口内的 /proc/stat totalDiff 归一化；不要把一次性累计值
+     * 与当前系统 idle 累计值直接相除。
      */
     public float getProcessCpuUsagePercentage() {
-        try {
-            // 读取 /proc/self/stat
-            String statPath = "/proc/" + android.os.Process.myPid() + "/stat";
-            
-            try (BufferedReader reader = new BufferedReader(new FileReader(statPath))) {
-                String line = reader.readLine();
-                if (line != null) {
-                    String[] parts = line.trim().split("\\s+");
-                    
-                    // utime + stime
-                    long utime = Long.parseLong(parts[13]);
-                    long stime = Long.parseLong(parts[14]);
-                    long totalCpuTime = utime + stime;
-                    
-                    // 计算总时间
-                    long totalProcessTime = totalCpuTime;
-                    
-                    // 计算使用率
-                    return getCpuUsagePercentage() * (float)totalProcessTime / 
-                           (float)(totalCpuTime + lastCpuUsage[3]);
-                }
-            }
-        } catch (IOException e) {
-            Log.e("CpuMonitor", "Failed to read process stat", e);
+        long[] currentCpuUsage = parseCpuUsage();
+        long currentProcessTicks = readProcessTicks(); // utime + stime, fields 14/15
+        if (lastCpuUsage == null || lastProcessTicks < 0 || currentProcessTicks < 0) {
+            lastCpuUsage = currentCpuUsage;
+            lastProcessTicks = currentProcessTicks;
+            return 0.0f;
         }
-        
-        return 0.0f;
+
+        long totalDiff = 0;
+        for (int i = 0; i < currentCpuUsage.length; i++) {
+            totalDiff += currentCpuUsage[i] - lastCpuUsage[i];
+        }
+        long processDiff = currentProcessTicks - lastProcessTicks;
+        lastCpuUsage = currentCpuUsage;
+        lastProcessTicks = currentProcessTicks;
+        return totalDiff > 0 ? 100.0f * (float) processDiff / (float) totalDiff : 0.0f;
     }
 }
 ```
@@ -1863,11 +1847,11 @@ float util  = total > 0 ? (float) busy / total : 0f;
 
 `<sys/times.h>` 中的 `clock_t times(struct tms *buf)` 在 Android 17 NDK r27 中仍可直接调用，开销通常低于读取并解析 `/proc` 文本，适合 10-100Hz 采样。但**时钟单位为 `sysconf(_SC_CLK_TCK)`**（典型 100，即 10ms 粒度），低于 10ms 的 burst CPU 任务会漏检。章节 §27.1 推荐方案 B 的『CPU 速率 < 0.1 = 闲置』阈值在 10ms 粒度下含义为『过去 100ms 中 busy 占比 < 10%』；它可作为应用内启发式指标，但不能等同于系统 PSI 口径。
 
-### F. Worker 线程默认优先级实测陷阱
+### F. Worker 线程默认优先级调度陷阱
 
-`ThreadPoolExecutor` 的 `Worker` 走 `new Thread(...)` -> ART `Thread_nativeCreate()` -> 默认 `setpriority(PRIO_PROCESS, 0, 0)` 把 niceness 设为 0（THREAD_PRIORITY_DEFAULT）。**章节 §27.1 推荐的『CPU 线程池等于核数』并不意味着每个 Worker 都跑在专属核上**——应用其它默认 niceness=0 的线程（如 OkHttp Dispatcher 的 IO 线程）会与 Worker 共享同一 runqueue，**实测在 8 核设备上 2-3 个 Worker 共享同一小核**，CPU 利用率统计值看着低、实际是调度热点集中。
+`ThreadPoolExecutor` 的 `Worker` 走 `new Thread(...)` -> ART `Thread_nativeCreate()`；普通线程默认可按 `THREAD_PRIORITY_DEFAULT`（nice 0）参与调度。**章节 §27.1 推荐的『CPU 线程池等于核数』并不意味着每个 Worker 都跑在专属核上**——应用其它默认 nice=0 的线程（如 OkHttp Dispatcher 的 IO 线程）仍会与 Worker 竞争 runqueue，具体落核由调度器与设备拓扑决定。
 
-**修正建议**：CPU 线程池的 `ThreadFactory` 必须显式 `setThreadPriority(tid, Process.THREAD_PRIORITY_DEFAULT)`（虽然等价，但显式声明避免 ART 在 `nicenessApis` flag 切换后行为变化），同时把 UI 主线程显式设为 `THREAD_PRIORITY_DISPLAY=-4` 提升出队优先级。
+**修正建议**：CPU 线程池的 `ThreadFactory` 可在当前 worker 内显式调用 public SDK 的 `Process.setThreadPriority(Process.THREAD_PRIORITY_DEFAULT)` 声明 nice 口径；后台 IO worker 则显式降到 `THREAD_PRIORITY_BACKGROUND`。普通应用不要把 `THREAD_PRIORITY_DISPLAY`、`setThreadGroupAndCpuset` 等需要更强权限/平台语境的能力写成通用优化手段。
 
 ---
 
