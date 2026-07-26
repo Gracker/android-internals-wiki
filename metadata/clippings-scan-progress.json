@@ -129,9 +129,9 @@
       ]
     }
   ],
-  "last_scan_date": "2026-07-26",
-  "total_knowledge_points": 662,
-  "total_suggestions": 205,
+  "last_scan_date": "2026-07-27",
+  "total_knowledge_points": 678,
+  "total_suggestions": 209,
   "total_gaps": 21,
   "skipped_files": [
     {
@@ -375,7 +375,27 @@
       "processed_at": "2026-07-26T06:30:23.322257+08:00",
       "chapter": "ch20",
       "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md": {
+      "processed_at": "2026-07-27T06:30:39.684814+08:00",
+      "chapter": "ch21",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md": {
+      "processed_at": "2026-07-27T06:30:39.685526+08:00",
+      "chapter": "ch21",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md": {
+      "processed_at": "2026-07-27T06:30:39.686164+08:00",
+      "chapter": "ch21",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md": {
+      "processed_at": "2026-07-27T06:30:39.686783+08:00",
+      "chapter": "ch20",
+      "points": 4
     }
   },
-  "cursor": 36
+  "cursor": 40
 }

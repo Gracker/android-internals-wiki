@@ -1386,6 +1386,36 @@
       "action": "indexed-only-chapter-freeze",
       "score": 15,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "https://github.com/hertz-ai/HARTOS",
+      "title": "[ClawFeed] HART OS",
+      "summary": "HART OS 把本地推理做成 OpenAI 兼容的系统服务，README 写到 Android、Linux、多硬件后端、Model Bus 与 PeerLink，也明确 public alpha、依赖较重和自进化验证等未解决问题。",
+      "chapter": "ch16",
+      "processed_at": "2026-07-27T06:20:38.089034+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-26-morning-Agent安全-GrokBuild-端侧Agent-研究材料/master-research.md",
+      "title": "[DeepResearch] 2026-07-26 morning master research · Agent 安全 / Grok Build / 端侧 Agent",
+      "summary": "# 2026-07-26 morning master research · Agent 安全 / Grok Build / 端侧 Agent ## 执行摘要 - 本次产出文件：`/Users/chris/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-26-morning-Agent安全-GrokBuild-端侧Ag",
+      "chapter": "ch16",
+      "processed_at": "2026-07-27T06:20:38.089034+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-26-morning-Agent安全-GrokBuild-端侧Agent-研究材料/03-dump-android-agent.md",
+      "title": "[DeepResearch] 03-dump-android-agent",
+      "summary": "--- phase: 1 sub_question: Android 端侧 Agent 怎样做最小可复现评测 generated: 2026-07-26 --- ## 执行摘要 - 本次产出文件：`/Users/chris/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-26-morning-Agent安全-GrokB",
+      "chapter": "ch16",
+      "processed_at": "2026-07-27T06:20:38.089034+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ]
 }
