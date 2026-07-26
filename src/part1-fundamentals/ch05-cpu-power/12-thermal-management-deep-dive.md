@@ -65,711 +65,651 @@ auto_promoted_date: 2026-06-15
 auto_promoted_by: openclaw-task6
 ---
 
- Thermal 管控深度：从内核子系统到 ADPF 主动降频
+# 5.12 Thermal 管控深度：从内核子系统到应用主动降载
 
-本章是 [5.5 Thermal 管控](05-thermal.md) 的深度扩展。5.5 讲的是"温控系统从传感器到 App 的完整流程"，适合建立全局认知。如果你已经读完 5.5，并且需要回答这些问题——"内核的 thermal governor 具体怎么决策？""power_allocator 的 PID 参数怎么调？""为什么同一款 SoC 的两台手机 thermal 表现差这么多？""在 Perfetto 里怎么用 SQL 量化 thermal throttling 对帧率的影响？"——那么你在这篇文章里能找到答案。
+本章是 [5.5 Thermal 管控](05-thermal.md) 的深入篇。5.5 建立从传感器到应用的整体视图；这里继续回答几个更具体的问题：
 
-[5.9 ADPF 自适应性能框架](09-adpf.md) 讲了 Performance Hint API 和 Game Mode API 的使用方法。本章聚焦在 thermal 这一侧：内核子系统的内部机制、Thermal HAL 的接口演进、以及从被动降频到主动温控的范式变化。ADPF 作为"App 主动参与温控"的手段，在本章中从 thermal 的视角被重新审视。
+- Linux thermal governor 根据什么决定 cooling state；
+- `power_allocator` 的功耗预算与 PID 参数如何工作；
+- Thermal HAL 的 severity、Framework status 和内核 trip 有什么区别；
+- 应用怎样正确解释 thermal headroom、CPU/GPU headroom；
+- Perfetto 中哪些信号能证明降频来自温控。
 
-## 为什么需要深挖 Thermal 子系统
+平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准，内核以 `android17-6.18-2026-06_r6` 为准。版本演进段会保留旧接口，但不会把旧分支的函数签名套到 6.18 上。
 
-5.5 中我们看到了温控对性能的影响——30 分钟游戏测试中帧率从 120fps 降到 30fps 的场景。但那篇是面向"识别问题"的：知道温控在介入就够了。本文面向的是"解决问题"：理解内核 thermal governor 的决策逻辑，才能在 Perfetto 中准确判断"为什么这一刻开始降频了"，才能在系统调优时知道该动哪个参数。
+## 先看清温控系统的分层
 
-这个区分决定了后续排查方向。有些性能问题是可以通过 App 层优化解决的（减少不必要的计算、使用 ADPF 主动降载）。但有些问题的根因在系统层——OEM 的 thermal 策略过于保守、kernel governor 的响应曲线不合理、或者 devfreq cooling 对 GPU 的限制过早介入。解决后者需要对 thermal 子系统有更深的理解。
+Android 设备的温控路径通常包含五层：
 
-## Linux 内核 Thermal 子系统：内核的温控引擎
-
-内核 thermal 子系统位于 `drivers/thermal/`，是所有温控行为的底层执行者。不管是 Android 的 ThermalManagerService 还是 OEM 的 thermal daemon，最终都是通过操作内核的 thermal zone 和 cooling device 来实现温控。
-
-### Thermal Zone：温度监控的抽象
-
-一个 thermal zone 就是一个温度监控区域。它绑定了三个东西：一个温度传感器（或者虚拟温度源）、一组 trip point（温度阈值）、和一组关联的 cooling device。
-
-```bash
-# 查看系统上所有 thermal zone
-$ ls /sys/class/thermal/
-thermal_zone0  thermal_zone1  thermal_zone2  cooling_device0  cooling_device1
-
-# 查看某个 thermal zone 的类型和温度
-$ cat /sys/class/thermal/thermal_zone0/type
-cpu-0-0-0
-$ cat /sys/class/thermal/thermal_zone0/temp
-52000    # 52.0°C
-
-# 查看这个 zone 的 trip points
-$ cat /sys/class/thermal/thermal_zone0/trip_point_*_temp
-55000   # trip_point_0: 55°C (passive)
-65000   # trip_point_1: 65°C (hot)
-85000   # trip_point_2: 85°C (critical)
-$ cat /sys/class/thermal/thermal_zone0/trip_point_*_type
-passive
-hot
-critical
+```text
+温度传感器与电源监控
+  → Linux thermal zone / vendor driver / thermal daemon
+  → cooling device、DVFS、充电与其他缓解动作
+  → Thermal HAL：Temperature + ThrottlingSeverity
+  → ThermalManagerService / PowerManager
+  → App：状态监听、headroom、主动降低 workload
 ```
 
-在 Android 设备上，典型的 thermal zone 配置包括 CPU 各个 cluster（通常每个 cluster 一个 zone）、GPU、电池、皮肤温度估算（skin thermal zone，通过多个传感器的加权模型计算）、以及 USB/充电 IC。这些配置通常定义在设备树（Device Tree）中：
+这张图表达职责关系，不表示每台手机都由内核 thermal governor 独自完成决策。厂商可以在 HAL、用户空间 daemon、vendor kernel 模块和芯片固件中加入策略。Framework 接收到的是厂商整理后的温度与 severity，无法从一个 status 值反推出全部底层动作。
+
+需要分清三套术语：
+
+| 层 | 主要概念 | 它回答的问题 |
+|---|---|---|
+| Linux thermal | zone、trip、governor、cooling device | 哪个热区越过阈值，执行多强的缓解动作 |
+| Thermal HAL | `Temperature`、`ThrottlingSeverity`、threshold | 厂商向 Framework 报告哪个传感器处于哪一级 |
+| App API | thermal status、thermal headroom、CPU/GPU headroom | 应用何时应降低负载，哪个资源可能接近容量上限 |
+
+内核的 `THERMAL_TRIP_CRITICAL` 与 Framework 的 `THERMAL_STATUS_CRITICAL` 名称相近，但它们没有固定的一一映射。前者属于某个 thermal zone 的保护阈值；后者是 HAL 上报的 severity。
+
+## Linux 6.18 thermal 子系统
+
+内核通用 thermal 框架位于 `drivers/thermal/`。它把温度采样、阈值、控制策略和执行器组织成几个对象。
+
+### Thermal zone、trip、cooling device 与 instance
+
+- **thermal zone**：一个可监控的热区，例如 SoC、CPU cluster、电池或某个虚拟 skin 模型；
+- **trip**：该热区的温度阈值、类型与 hysteresis；
+- **cooling device**：可以降低发热或移走热量的执行器，例如 cpufreq、devfreq 或风扇；
+- **thermal instance**：某个 trip 与某个 cooling device 的绑定，包含可用 state 的上下界和权重；
+- **governor**：根据温度、趋势和 trip 状态，计算各 instance 的目标。
+
+在设备树中，这些关系通常由 `trips` 与 `cooling-maps` 描述。下面只展示结构，温度、传感器和 state 范围均由具体产品标定：
 
 ```dts
-// arch/arm64/boot/dts/vendor/thermal.dtsi（简化示例）
-cpu_thermal: cpu-thermal {
-    polling-delay-passive = <100>;   // 被动降温时每 100ms 轮询
-    polling-delay = <1000>;          // 正常时每 1s 轮询
-    thermal-sensors = <&tsens 0>;    // 绑定温度传感器
+thermal-zones {
+    soc_thermal: soc-thermal {
+        polling-delay = <1000>;
+        polling-delay-passive = <100>;
+        thermal-sensors = <&sensor 0>;
 
-    trips {
-        cpu_alert0: trip-point-0 {
-            temperature = <55000>;   // 55°C
-            hysteresis = <2000>;      // 2°C 回差
-            type = "passive";
+        trips {
+            soc_passive: trip-passive {
+                temperature = <55000>;
+                hysteresis = <2000>;
+                type = "passive";
+            };
+            soc_critical: trip-critical {
+                temperature = <85000>;
+                hysteresis = <0>;
+                type = "critical";
+            };
         };
-        cpu_crit: trip-point-2 {
-            temperature = <85000>;   // 85°C
-            hysteresis = <0>;
-            type = "critical";       // 触发关机
-        };
-    };
 
-    cooling-maps {
-        map0 {
-            trip = <&cpu_alert0>;
-            cooling-device = <&cpu0 1 4>;  // cooling state 范围 1-4
+        cooling-maps {
+            map0 {
+                trip = <&soc_passive>;
+                cooling-device = <&cpu0 1 4>;
+            };
         };
     };
 };
 ```
 
-这里有几个值得注意的设计细节。`polling-delay-passive` 设为 100ms 而 `polling-delay` 设为 1000ms——当温度在安全范围内时，内核每秒检查一次就够了；一旦温度超过 passive trip point 进入被动降温模式，检查频率提高到每 100ms 一次，因为需要更快地响应温度变化。`hysteresis`（回差）的设计是为了防止温度在阈值附近震荡时频繁切换 cooling state——温度需要下降 2°C 低于阈值后才会退出 passive 模式。
+这个示例说明：超过 passive trip 后，governor 可以在 state 1 到 4 之间控制绑定的 cooling device；温度下降到带 hysteresis 的释放阈值后，再减轻限制。Hysteresis 可以减少阈值附近的频繁切换。
 
-### Trip Point 的四种类型
+### 用 sysfs 确认本机对象
 
-内核定义了四种 trip point 类型，每种对应不同的系统行为：
-
-**Passive trip point** 是最常用的。触发后，内核通知关联的 cooling device 开始被动降温（通常是限制频率）。之所以叫"被动"，是因为降温通过降低设备的"活跃度"来实现——把 CPU 频率压低，它自然就少发热了。
-
-**Active trip point** 触发主动降温措施——比如开启风扇。在手机上基本不用（手机没有风扇），但在平板、Chromebook、嵌入式设备上会用到。部分游戏手机（如 ROG Phone）的外接散热风扇就通过这个机制控制。
-
-**Hot trip point** 表示温度已经进入危险区间，但它还不是“立刻关机”的同义词。`thermal_core.c` 在温度向上跨过 `THERMAL_TRIP_HOT` 或 `THERMAL_TRIP_CRITICAL` 时，都会先走 `handle_critical_trips()`。如果 trip 类型是 `THERMAL_TRIP_HOT`，并且该 thermal zone 实现了 `tz->ops.hot()`，内核只会调用 hot 回调，让平台记录告警或触发更激进的缓解动作；是否继续限频、通知用户空间，要看 zone 的实现。
-
-**Critical trip point** 才是硬件保护开始执行的那一层。`android16-6.12` 的 `handle_critical_trips()` 在 `THERMAL_TRIP_CRITICAL` 分支调用 `tz->ops.critical(tz)`。如果平台注册 thermal zone 时没有提供 `critical` 回调，thermal core 会默认填成 `thermal_zone_device_critical()`；这个函数再调用 `thermal_zone_device_halt(tz, true)`，最终走 `hw_protection_shutdown(...)`。同文件还导出了 `thermal_zone_device_critical_reboot()`，它走 `thermal_zone_device_halt(tz, false)`，用于 reboot 保护路径；Android 16 这条主路径里没有 `thermal_zone_device_critical_shutdown()` 这个符号。
-
-不同 linux-stable 分支的热保护代码形态存在差异——`android14-6.1` / `android15-6.6` 的 `handle_critical_trips()` 仍接收 `trip`、`trip_temp`、`trip_type` 分散参数，并通过 `tz->ops->critical(tz)` 访问回调；`android16-6.12` 改成 `const struct thermal_trip *trip`，并通过复制到 `tz->ops` 的结构体成员调用 `tz->ops.critical(tz)`。本章源码锚点以 `android16-6.12` 为主，跨分支对比前要先确认对应分支。
-
-### Thermal Governor：温控策略的大脑
-
-Thermal zone 定义了"什么时候该降温"，governor 决定"降多少、怎么降"。内核提供了几种 governor，它们的核心区别在于冷却策略的激进程度。
-
-#### step_wise：逐步升温，逐步冷却
-
-`step_wise` 是最简单的 governor，也是很多设备的默认选择。它的逻辑可以用三句话概括：
-
-1. 温度超过 trip point 且仍在上升 → 增加 cooling state（降温力度更大）
-2. 温度超过 trip point 但趋势平稳 → 保持当前 cooling state
-3. 温度低于 trip point 且在下降 → 降低 cooling state（降温力度减小）
-
-"Step"的意思是每次只调整一个级别。假设 CPU 的 cooling device 有 5 个 state（0-4，0 表示无限制，4 表示最大限制），从 state 0 开始：
-
-- 第一个采样周期：温度超过 passive trip → state 变为 1（轻微限制）
-- 第二个采样周期：温度继续上升 → state 变为 2（中度限制）
-- 第三个采样周期：温度还在上升 → state 变为 3（较重限制）
-- 温度开始回落 → state 保持 3（趋势平稳）
-- 温度继续下降低于 trip point → state 变为 2
-
-这种"一步一个台阶"的策略简单可靠，但有一个缺点：响应慢。如果温度急剧上升（比如游戏场景切换到高负载），step_wise 需要多个周期才能把 cooling state 拉到位，期间温度可能已经冲到很高。
-
-```c
-// drivers/thermal/gov_step_wise.c（简化）
-// step_wise 的核心逻辑
-static unsigned long get_target_state(struct thermal_instance *instance,
-                                       enum thermal_trend trend,
-                                       bool throttle)
-{
-    struct thermal_cooling_device *cdev = instance->cdev;
-    unsigned long cur_state = instance->target;
-
-    // android16-6.12: throttle 控制是否允许增加 cooling state
-    if (!throttle && trend == THERMAL_TREND_RAISING)
-        return cur_state;
-
-    switch (trend) {
-    case THERMAL_TREND_RAISING:
-        if (cur_state < instance->upper)
-            return cur_state + 1;   // 温度在升 → 加一级
-        break;
-    case THERMAL_TREND_DROPPING:
-        if (cur_state > instance->lower)
-            return cur_state - 1;   // 温度在降 → 减一级
-        break;
-    case THERMAL_TREND_STABLE:
-        return cur_state;           // 温度平稳 → 不动
-    }
-    return cur_state;
-}
-```
-
-#### power_allocator：基于功耗预算的 PID 控制
-
-`power_allocator` 更像一个按功耗预算工作的反馈控制器。它先估算 thermal zone 在下一轮能承受多少功耗，再把这个预算分给 CPU、GPU、NPU 等 power actor，而不是像 `step_wise` 那样一次只升降一个 state。
-
-`android16-6.12` 的 `pid_controller()` 签名是 `pid_controller(struct thermal_zone_device *tz, int control_temp, u32 max_allocatable_power)`。它不再接收文中原来那组 `trip_switch_on`、`trip_temp` 或 `MAX_K*` 风格的参数，P/I/D 三项都直接围绕当前 zone 的目标温度、历史误差和最大可分配功耗展开。
-
-```c
-// drivers/thermal/gov_power_allocator.c
-static u32 pid_controller(struct thermal_zone_device *tz,
-                          int control_temp,
-                          u32 max_allocatable_power)
-{
-    struct power_allocator_params *params = tz->governor_data;
-    s64 p, i, d, power_range;
-    s32 err, max_power_frac;
-    u32 sustainable_power;
-
-    max_power_frac = int_to_frac(max_allocatable_power);
-    sustainable_power = get_sustainable_power(tz, params, control_temp);
-
-    err = int_to_frac(control_temp - tz->temperature);
-
-    p = mul_frac(err < 0 ? tz->tzp->k_po : tz->tzp->k_pu, err);
-    i = mul_frac(tz->tzp->k_i, params->err_integral);
-    if (err < int_to_frac(tz->tzp->integral_cutoff)) {
-        s64 i_next = i + mul_frac(tz->tzp->k_i, err);
-        if (abs(i_next) < max_power_frac) {
-            i = i_next;
-            params->err_integral += err;
-        }
-    }
-    d = mul_frac(tz->tzp->k_d, err - params->prev_err);
-    d = div_frac(d, jiffies_to_msecs(tz->passive_delay_jiffies));
-    params->prev_err = err;
-
-    power_range = sustainable_power + frac_to_int(p + i + d);
-    return clamp(power_range, (s64)0, (s64)max_allocatable_power);
-}
-```
-
-这段实现里，`k_po` 和 `k_pu` 分别处理 overshoot 和 undershoot。温度已经高于 `control_temp` 时，`err` 为负，控制器走 `k_po`；温度低于目标时，走 `k_pu`。积分项只有在误差低于 `integral_cutoff`，并且下一步积分值没有超过最大功耗预算时才继续累积，避免系统在轻载状态下把历史误差越攒越大。微分项直接用 `(err - prev_err)`，再按 `passive_delay_jiffies` 折算到时间尺度。`sustainable_power` 是 feed-forward 基线，P/I/D 只负责在这个基线上做修正。
-
-从调参角度看，`power_allocator` 关注的不是“下一档 state 是多少”，而是“下一轮总功耗预算是多少”。这也是它比 `step_wise` 更平滑的原因。
-
-#### fair_share 和 user_space：其他 governor
-
-`fair_share` 按比例分配 cooling 力度。如果一个 thermal zone 关联了多个 cooling device（比如同时限制 CPU 频率和 GPU 频率），fair_share 会根据每个 cooling device 的权重来分配降温任务。权重越高，分担的降温力度越大。
-
-`user_space` 把温控决策权完全交给用户空间的 thermal daemon。内核只负责检测 trip point 触发，然后通过 uevent 通知用户空间程序，由后者决定采取什么降温措施。Android 设备上很多 OEM 的 thermal 策略就是通过用户空间 daemon 实现的——内核用 user_space governor，OEM 在用户空间的 thermal engine 中实现自己的策略逻辑。
-
-### Cooling Device：降温的执行者
-
-Cooling device 是 thermal 子系统的执行机构。每个 cooling device 有一个 state 值（从 0 到 max_state），state 越高降温力度越大。governor 的工作就是决定每个 cooling device 的 target state。
-
-#### cpufreq cooling：限制 CPU 频率
-
-最常见的 cooling device。它通过限制 CPU 的最大允许频率来实现降温。在 `android16-6.12` 中，这部分实现位于 `drivers/thermal/cpufreq_cooling.c`。thermal governor 设定 target state 后，cpufreq cooling 会把该 state 映射到受限频点或受限功耗区间，再通过 cpufreq QoS 和频率表限制 CPU 的最高频率。
+在 userdebug、eng 或具有相应权限的设备上，可以先枚举 thermal 对象：
 
 ```bash
-# 查看 CPU cooling device 的当前 state
-$ cat /sys/class/thermal/cooling_device0/type
-cpufreq
-$ cat /sys/class/thermal/cooling_device0/cur_state
-0        # 0 = 无限制
-$ cat /sys/class/thermal/cooling_device0/max_state
-4        # 最高 4 级限制
+adb shell 'for z in /sys/class/thermal/thermal_zone*; do
+  echo "$z type=$(cat "$z/type" 2>/dev/null) temp=$(cat "$z/temp" 2>/dev/null)"
+done'
 
-# 当 thermal governor 提高限制时
-$ cat /sys/class/thermal/cooling_device0/cur_state
-2        # 第 2 级限制，CPU 最大频率被压低
+adb shell 'for c in /sys/class/thermal/cooling_device*; do
+  echo "$c type=$(cat "$c/type" 2>/dev/null) state=$(cat "$c/cur_state" 2>/dev/null)"
+done'
 ```
 
-state 和实际频点之间没有统一的线性关系。cpufreq cooling 更常见的做法，是按 SoC 的 OPP 表、功耗模型或 freq_qos 约束，把 target state 映射成一个最高频率上限。下面这组数字只是假想示例，用来说明“state 越高，允许的最高频率越低”，不能当成通用频点表。
+标准 thermal sysfs 的温度通常使用毫摄氏度，例如 `52000` 表示 52°C。量产机可能因 SELinux、内核配置或厂商实现而隐藏部分节点；脚本还应读取 `type`，不要把 `thermal_zone0` 固定解释为 CPU。
 
-假设某颗大核集群的 OPP 表是 [3000, 2840, 2490, 2010, 1490] MHz，厂商把 state 0-4 分别映射到“无限制 / ≤2840 / ≤2490 / ≤2010 / ≤1490”。另一颗 SoC 完全可能有不同的频点数、不同的 state 数，甚至同一个 state 还会同时绑定功耗预算，而不只是单一频点。
+### 四种 trip 类型
 
-#### devfreq cooling：限制 GPU/NPU 频率
+**Passive** 通常用于限制设备活动度，例如压低 CPU/GPU 允许的最高频率。它描述控制用途，不指定具体 cooling device。
 
-`devfreq` 是 `cpufreq` 的“设备版”，管 GPU、NPU、DSP 等非 CPU 设备。真正把 thermal governor 接到这些设备上的代码在 `drivers/thermal/devfreq_cooling.c`；`drivers/devfreq/devfreq.c` 只提供通用 devfreq 框架和 OPP/QoS 管理，不是 thermal cooling device 本体。`CONFIG_DEVFREQ_THERMAL` 打开后，thermal 子系统才能通过 devfreq cooling 限制这些设备的最高频率。
+**Active** 面向风扇、泵等主动散热执行器。无风扇手机较少使用，平板、车载、Chromebook 或带外接散热设备的产品可能使用。
 
-在 Android 设备上，GPU 的 devfreq cooling 是游戏场景 thermal throttling 的主要机制之一。当 GPU 温度升高时，thermal governor 同时提高 CPU cpufreq cooling state 和 GPU devfreq cooling state，两面夹击降低发热量。
+**Hot** 表示高温事件。Linux 6.18 的 `handle_critical_trips()` 在 HOT 分支调用可选的 `tz->ops.hot()`；没有通用的自动关机承诺。
+
+**Critical** 进入硬件保护路径。`android17-6.18-2026-06_r6` 的调用关系是：
+
+```text
+handle_critical_trips()
+  → tz->ops.critical(tz)
+  → 默认 thermal_zone_device_critical()
+  → thermal_zone_device_halt(..., HWPROT_ACT_DEFAULT)
+  → __hw_protection_trigger(...)
+```
+
+同一分支还提供 `thermal_zone_device_critical_shutdown()` 和 `thermal_zone_device_critical_reboot()`，分别传入明确的 shutdown/reboot 动作。默认动作由 `HWPROT_ACT_DEFAULT` 解析，内核默认是 shutdown，也可由平台硬件保护配置选择 reboot。应用和普通系统调优不应修改 critical 阈值或保护动作。
+
+### `step_wise`：按趋势调整 state
+
+`step_wise` 的核心入口是 `step_wise_manage()`，单个 trip-instance 的目标由：
+
+```c
+get_target_state(struct thermal_instance *instance,
+                 enum thermal_trend trend,
+                 bool throttle)
+```
+
+计算。Linux 6.18 的行为比“温度升就加一级、温度降就减一级”多几条边界：
+
+- `throttle` 由当前温度是否达到该 trip 的动态 threshold 决定；
+- instance 首次初始化且需要 throttle 时，从 cooling device 当前 state 加一级，并限制在 `lower..upper`；
+- 已经越过 trip 且趋势继续上升时，加一级；
+- 已经越过 trip 但趋势下降时，可减一级，但仍至少保持在该 instance 的有效下限附近；
+- 已低于 trip 且趋势下降时，回到 `lower`；达到释放条件后可返回 `THERMAL_NO_TARGET`；
+- HOT 与 CRITICAL trip 不交给 `step_wise` 管理。
+
+因此，同一个 cooling device 被多个 trip 绑定时，最终 state 还要综合多个 thermal instance。只看单个 trip 的温度不足以推断最终频率上限。
+
+`step_wise` 易于理解，代价是动作按离散 state 变化。采样周期、hysteresis、state 数量和温升速度会共同影响过冲与振荡。
+
+### `power_allocator`：把温度误差换成功耗预算
+
+`power_allocator` 使用反馈控制计算下一周期允许分配的总功耗，再按 cooling device 的请求、能力和权重分配给各 power actor。Cooling device 需要实现 `get_requested_power`、`state2power` 和 `power2state` 才能作为 power actor 参与。
+
+Linux 6.18 的控制器签名为：
+
+```c
+pid_controller(struct thermal_zone_device *tz,
+               int control_temp,
+               u32 max_allocatable_power)
+```
+
+核心关系可以写成：
+
+```text
+error = control_temp - current_temperature
+budget = sustainable_power
+       + k_p(error) × error
+       + k_i × accumulated_error
+       + k_d × error_change / sample_interval
+```
+
+当温度高于目标时，`error` 为负，比例项使用 `k_po`；低于目标时使用 `k_pu`。实现还会限制积分项，避免累计值越过最大可分配功耗。`sustainable_power` 是热平衡附近的前馈基线；P/I/D 项在其上修正。
+
+参数的工程含义如下：
+
+| 参数 | 增大后的主要影响 | 风险 |
+|---|---|---|
+| `sustainable_power` | 提高目标温度附近的基础预算 | 高估会持续偏热，低估会过早限制 |
+| `k_pu` | 低于目标温度时更快放开功耗 | 容易冲过目标温度 |
+| `k_po` | 高于目标温度时更强地收紧预算 | 可能造成性能突降或振荡 |
+| `k_i` | 更积极修正长期偏差 | 积分累积可能让恢复变慢 |
+| `k_d` | 根据温度误差变化速度提前修正 | 对噪声敏感；内核文档建议通常保留默认 0 |
+| `integral_cutoff` | 决定哪些误差进入积分 | 配置不当会积累无用历史误差 |
+
+调参需要同时观察 `thermal_power_allocator`、`thermal_power_actor` 与 `thermal_power_allocator_pid` tracepoint。仅看温度曲线，无法知道预算收紧来自比例项、积分项还是 actor 的功耗请求。
+
+### 其他 governor
+
+- `fair_share` 按 thermal instance 权重分配 cooling state；
+- `user_space` 把策略事件交给用户空间；
+- `bang_bang` 适合开/关式执行器，例如风扇。
+
+Android 产品常有厂商自定义路径。发现 sysfs 中的 governor 是 `user_space`，或标准 tracepoint 没有记录到预期动作时，应继续检查 vendor thermal daemon、芯片固件和厂商 trace。
+
+## Cooling device 如何限制 CPU 与 GPU
+
+### cpufreq cooling
+
+`drivers/thermal/cpufreq_cooling.c` 把 cooling state 映射到 CPU policy 的允许频率，并通过 `freq_qos` 更新上限。state 0 通常表示最少限制；state 越高，可用的最高频率越低。state 与 MHz 不保证线性关系，取决于频率表和 OPP。
+
+当使用 `power_allocator` 时，cpufreq cooling 还可以通过能量模型实现 `state2power`、`power2state` 与请求功耗估算。此时 governor 分配的是功耗预算，最终仍要转换成 cooling state 和频率限制。
+
+可以用下面的只读信息交叉确认 CPU 限制：
 
 ```bash
-# 查看 GPU 的 devfreq 信息
-$ cat /sys/class/devfreq/gpu.0/cur_freq
-500000000    # 500MHz
-$ cat /sys/class/devfreq/gpu.0/max_freq
-800000000    # 正常最高 800MHz
-
-# thermal cooling 介入后
-$ cat /sys/class/devfreq/gpu.0/max_freq
-400000000    # 被限制到 400MHz
+adb shell 'cat /sys/class/thermal/cooling_device*/type'
+adb shell 'cat /sys/class/thermal/cooling_device*/cur_state'
+adb shell 'cat /sys/devices/system/cpu/cpufreq/policy*/scaling_max_freq'
+adb shell 'cat /sys/devices/system/cpu/cpufreq/policy*/scaling_cur_freq'
 ```
 
-#### CPU hotplug：历史方案与极端保护路径
+`scaling_cur_freq` 是采样值，`scaling_max_freq` 也可能同时受用户策略、Power HAL、battery、scheduler 或其他 QoS request 影响。观察到上限下降后，还需用 thermal state、tracepoint 或 HAL severity 证明温控因果关系。
 
-Android 手机上更常见的 thermal 动作，还是 cpufreq/devfreq 限频、vendor thermal daemon、core control，或者 cpuset / cgroup 一类负载约束。CPU hotplug 更像历史方案或厂商的极端保护手段，不该写成 Framework / HAL severity 升高后的常规结果。
+### devfreq cooling
 
-这里要把三层概念拆开。kernel thermal trip 和 governor 决定 thermal zone 到 cooling device 的本地动作；Thermal HAL 再把传感器状态折算成 `ThrottlingSeverity`；Framework 的 `THERMAL_STATUS_*` 则把这个 severity 暴露给系统服务和 App。这三层之间没有“severity 升一级，内核就 hotplug 一批核心”的直接映射。
+`drivers/thermal/devfreq_cooling.c` 把 thermal 框架连接到 devfreq 设备。GPU、NPU、DSP 或内存互连只有在对应驱动注册为 devfreq cooling device 后，才会受这条通用路径控制。
 
-如果某台设备真的出现核心离线，更稳妥的解释是：厂商在用户空间 thermal daemon、vendor kernel 模块或 core control 策略里额外加了激进保护。正文把 hotplug 降格为“可能存在的设备策略”，更符合近几代 Android 手机的主流实现。
+Linux 6.18 的 devfreq cooling 同样支持普通 state 控制和可选 power actor 操作。设备节点、频率单位和 `available_frequencies` 是否公开均由驱动决定。看到 `/sys/class/devfreq/` 目录，并不能据此断言该设备已绑定 thermal cooling。
 
-## Android Thermal HAL：内核与 Framework 的桥梁
+### CPU hotplug 的边界
 
-5.5 中介绍了 Thermal HAL 的基本职责——将内核的温度数据抽象为标准化的 severity 级别，通过回调机制上报给 Framework。这里我们深入 HAL 层的接口设计和版本演进。
+CPU hotplug 曾被一些设备用于高温保护，近年的手机更常见 cpufreq/devfreq 限制、core control、厂商 daemon 和固件策略。Framework severity 没有“升一级就下线几个核心”的标准映射。
 
-### AIDL 版 Thermal HAL 的接口结构
+若 trace 中出现 CPU offline，应继续查 `cpu_hotplug` 事件、vendor driver 和 daemon 日志。不要仅凭 `THERMAL_STATUS_SEVERE` 推断是 Framework 主动 hotplug。
 
-Android 10 到 Android 13 的 Thermal HAL 2.0 仍然是 HIDL。到了 Android 14，`IThermal` 才迁到 AIDL，接口定义在 `hardware/interfaces/thermal/aidl/android/hardware/thermal/`。当前契约把数据分成三组：当前温度与 cooling device、静态 threshold、事件回调和预测。
+## Thermal HAL：把厂商状态交给 Framework
 
-```java
-// hardware/interfaces/thermal/aidl/android/hardware/thermal/IThermal.aidl
-@VintfStability
-interface IThermal {
-    CoolingDevice[] getCoolingDevices();
-    CoolingDevice[] getCoolingDevicesWithType(in CoolingType type);
+Android 17 的 AOSP 同时保留旧 HIDL 兼容路径和 AIDL Thermal HAL。AIDL 接口位于：
 
-    Temperature[] getTemperatures();
-    Temperature[] getTemperaturesWithType(in TemperatureType type);
-
-    TemperatureThreshold[] getTemperatureThresholds();
-    TemperatureThreshold[] getTemperatureThresholdsWithType(
-            in TemperatureType type);
-
-    void registerThermalChangedCallback(in IThermalChangedCallback callback);
-    void registerThermalChangedCallbackWithType(
-            in IThermalChangedCallback callback,
-            in TemperatureType type);
-
-    float forecastSkinTemperature(in int forecastSeconds);
-}
+```text
+hardware/interfaces/thermal/aidl/android/hardware/thermal/
 ```
 
-这里有两个容易混淆的点。第一，AIDL 返回的是 `Temperature[]`、`CoolingDevice[]`、`TemperatureThreshold[]` 数组，不是 `List<>`。第二，按类型过滤的注册接口是 `registerThermalChangedCallbackWithType()`，没有 `boolean filterType` 这种签名。
+`android-17.0.0_r1` 中冻结了三个 AIDL 版本：
 
-`TemperatureThreshold` 也不是一个单值阈值。它按 `ThrottlingSeverity` 提供 `hotThrottlingThresholds[]` 和 `coldThrottlingThresholds[]` 两组数组，Framework 可以据此知道同一个 skin、battery、cpu 传感器在 LIGHT、MODERATE、SEVERE 直到 SHUTDOWN 各档对应的静态温度线。`forecastSkinTemperature()` 则是 HAL 直接给出的 skin 温度预测值，单位仍是摄氏度。
+| AIDL HAL 版本 | 主要能力 | 对应平台演进 |
+|---|---|---|
+| v1 | 温度、cooling device、threshold、thermal changed callback | Android 14 |
+| v2 | cooling device changed callback | Android 15 |
+| v3 | `forecastSkinTemperature(int)`、threshold changed callback | Android 16 |
 
-对 Framework 来说，这一层做四件事：`getTemperatures*()` 读当前状态，`registerThermalChangedCallback*()` 订阅 severity 变化，`getTemperatureThresholds*()` 提供静态阈值基线，`forecastSkinTemperature()` 提供 HAL 侧预测能力。真正的 throttling status 还是要看 HAL 当前上报的 severity，不能只拿 threshold 数组硬推。
+Android 17 锚点没有新增 v4。版本号描述 HAL 契约，具体设备可以因旧 vendor image 或兼容要求继续使用 HIDL Thermal HAL 2.0/1.1/1.0；`ThermalManagerService` 会按 AIDL、HIDL 2.0、1.1、1.0 的顺序尝试连接。
 
-### OEM 实现差异：同一 SoC 的不同表现
+### AIDL 中的三类数据
 
-Thermal HAL 的实现是 OEM 差异化最严重的部分之一。即使是同一款 SoC，不同厂商的 HAL 实现可能在以下方面完全不同：
+`IThermal` 提供：
 
-**温度阈值映射**。HAL 需要将内核 thermal zone 的原始温度映射为 `ThrottlingSeverity` 枚举值。这个映射表由 OEM 定义——激进厂商可能把 SEVERE 映射到 60°C，保守厂商可能映射到 48°C。同样的温度，在两台手机上可能产生完全不同的 severity 级别。
+- `getTemperatures*()`：当前温度与 `ThrottlingSeverity`；
+- `getCoolingDevices*()`：cooling device 当前值；
+- `getTemperatureThresholds*()`：各 severity 的 hot/cold 静态阈值；
+- `registerThermalChangedCallback*()`：温度 severity 变化；
+- `registerCoolingDeviceChangedCallbackWithType()`：v2 的 cooling device 回调；
+- `forecastSkinTemperature()`：v3 的 skin 温度预测；
+- `IThermalChangedCallback.notifyThresholdChanged()`：v3 的低频 threshold 更新。
 
-**皮肤温度估算模型**。用户感受到的"手机烫不烫"取决于皮肤温度，而皮肤温度无法直接测量。OEM 通过热模型（thermal model）将 SoC 温度、电池温度、环境温度等输入估算为皮肤温度。这个模型的精度直接影响用户体验——估算偏高会导致过早降频，估算偏低会导致用户觉得烫手。
+`TemperatureThreshold.hotThrottlingThresholds[]` 和 `coldThrottlingThresholds[]` 以 severity 为索引。它们是厂商策略的阈值基线；v3 允许设备在硬件状态或 workload 改变时谨慎、低频地通知 threshold 更新。HAL 文档同时提醒：threshold 不一定完整描述厂商缓解算法；准确的当前 throttling 状态应读取 `Temperature` 或监听 callback。
 
-**多传感器融合策略**。高端设备有十几个温度传感器，HAL 需要决定哪个传感器的数据优先级最高。游戏场景可能以 GPU 和 CPU 温度为主，充电场景可能以电池温度为主。这个优先级策略因厂商而异。
+### Severity 与内核 trip 的区别
 
-## 从被动降频到主动温控：ADPF 带来的范式变化
+HAL severity 包括：
 
-5.5 中我们看到的温控过程是"被动"的：温度升高 → 内核限制频率 → App 性能下降。App 在这个过程中是被动的承受者——不知道为什么突然卡了，也无法提前准备。
-
-ADPF（Android Dynamic Performance Framework）改变了这个范式。通过 Thermal API，App 可以在系统强制降频**之前**感知到温度趋势，主动降低自己的负载。这种"主动降载"相比"被动降频"有几个优势：
-
-1. **平滑过渡**。App 可以逐步降低画质（先降阴影分辨率、再降粒子效果、最后降帧率目标），用户几乎感知不到变化。系统强制降频则是一刀切——CPU 频率突然砍半，帧率瞬间腰斩。
-
-2. **减少发热量**。App 主动降载减少了 SoC 的计算量，从源头降低了发热。如果 App 不降载，系统只能通过限制频率来降温——同样的计算量在更低频率下需要更长时间完成，帧时间反而更长。
-
-3. **延长高性能时间窗口**。通过提前降载，App 可以让温度上升更缓慢，推迟系统强制降频的时刻，整体的高性能持续时间反而更长。
-
-### HAL threshold → ThermalManagerService → headroom API
-
-`PowerManager.getThermalHeadroom(int)` 从 API 30 就有了，但它不是把 HAL 的 severity 枚举原样转给 App。Framework 这一侧的输入是 skin sensor 的当前温度样本和对应阈值，核心实现在 `ThermalManagerService.TemperatureWatcher`。AIDL 里的 `forecastSkinTemperature()` 说明 HAL 也能给绝对温度预测，不过当前 Framework 暴露给 App 的 headroom 主要还是靠 `TemperatureWatcher` 自己采样和回归。
-
-`TemperatureWatcher` 启动时先通过 `mHalWrapper.getTemperatureThresholds(true, Temperature.TYPE_SKIN)` 读取 skin 传感器的 `TemperatureThreshold`。它把每个传感器的 `SEVERE` 温度线记到 `mSevereThresholds`，再把 LIGHT 到 SHUTDOWN 的阈值归一化成 headroom threshold。多传感器设备会取更保守的一侧，也就是同一 severity 下更小的 normalized threshold。
-
-```java
-// frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java
-List<TemperatureThreshold> thresholds =
-        mHalWrapper.getTemperatureThresholds(true, Temperature.TYPE_SKIN);
-float severeThreshold =
-        threshold.hotThrottlingThresholds[ThrottlingSeverity.SEVERE];
-mHeadroomThresholds[ThrottlingSeverity.SEVERE] = 1.0f;
-
-float slope = forecastSeconds > 0 ? getSlopeOf(samples) : 0.0f;
-float normalized = normalizeTemperature(
-        currentTemperature + slope * forecastSeconds * 1000,
-        severeThreshold);
+```text
+NONE → LIGHT → MODERATE → SEVERE → CRITICAL → EMERGENCY → SHUTDOWN
 ```
 
-做预测时，Framework 维护每个 skin sensor 最近一段时间的 ring buffer 样本。`getSlopeOf(samples)` 用线性回归算温升斜率，然后用 `currentTemperature + slope * forecastSeconds * 1000` 预测未来温度，再按 severe threshold 归一化。多个 skin sensor 同时存在时，`getForecast()` 会取 normalized 值最大的那个，把最坏的一路当成当前 headroom。
+厂商可以融合 skin、SoC、电池、充电和其他模型生成 severity。内核 trip 则属于某个 thermal zone。两者可能参考相同传感器，也可能经过完全不同的策略。调试时应分别记录内核对象和 HAL 输出。
 
-API 35 新增 `PowerManager.getThermalHeadroomThresholds()`，把这些 normalized threshold 直接开放给 App。官方文档说明，`getThermalHeadroom()` 跟踪的是 skin 这类慢变传感器，没有必要高于约 1Hz 轮询，调用太频繁可能返回 `NaN`。如果设备还没有积累出足够样本，Framework 会先返回当前 headroom，而不是给一个激进的远期预测。
+## Android 17 Framework 的聚合规则
 
-## 游戏场景的 Thermal 管控策略
+Framework 服务位于：
 
-游戏是 thermal 问题最集中的场景——CPU 和 GPU 同时高负载、屏幕高亮度持续运行、用户手握设备阻碍散热。我们来看游戏场景下 thermal 管控的几个关键策略。
+```text
+frameworks/base/services/core/java/com/android/server/power/thermal/
+    ThermalManagerService.java
+```
 
-### 分辨率动态调整
+### 全局 status 取 skin severity 的最高值
 
-最有效的主动降载手段。当 thermal headroom 下降时，游戏引擎动态降低渲染分辨率（比如从 1080p 降到 720p），然后通过 GPU 的空间放大（spatial upscaling）恢复到显示分辨率。帧率基本不受影响，但 GPU 的渲染负载降低了约 50%（像素数从 207 万降到 92 万）。
+`ThermalManagerService.onTemperatureMapChangedLocked()` 遍历当前温度，只考虑 `Temperature.TYPE_SKIN`，把最高 status 作为 `PowerManager.getCurrentThermalStatus()` 的全局结果。这个规则解释了两个常见现象：
 
-从 Android 16 / API 36 开始，`SystemHealthManager.getCpuHeadroom()` 和 `getGpuHeadroom()` 可以补一层 capacity signal。它们告诉我们 CPU 和 GPU 还剩多少可用算力，不直接等同于 thermal headroom。如果 GPU capacity headroom 已经很低，而 thermal headroom 还没有逼近 severe，通常先降分辨率更合适；如果 CPU、GPU 和 thermal headroom 一起下降，再考虑同时降分辨率和帧率目标。
+- CPU 传感器很热，但 skin 模型还未升档时，全局 status 可能保持较低；
+- 多个 skin 传感器同时存在时，Framework 取 severity 更高的一路。
 
-### 帧率目标动态降级
+收到任意 CPU、GPU、NPU、SKIN 传感器的 `THROTTLING_SHUTDOWN` 时，服务会请求 thermal-state shutdown；电池 SHUTDOWN 使用 battery-thermal 原因。全局 status 的 skin 聚合与最终关机保护是两条不同逻辑。
 
-当分辨率已经降到下限但温度仍在上升时，下一步是降低帧率目标。从 120fps 降到 60fps 直接将每帧的 GPU 时间预算从 8.33ms 放宽到 16.67ms，GPU 可以在更低的频率下完成渲染。
+### 应用可用的三类信号
 
-`HintSession` 要和 ADPF 同步更新。降低帧率目标后，需要调用 `updateTargetWorkDuration()` 更新 target duration，否则 ADPF 会认为 App 还在追求 8.33ms 的帧时间，继续尝试提频——反而加剧发热。
+| API | 数值方向 | 适合用途 |
+|---|---|---|
+| `getCurrentThermalStatus()` / status listener | 等级越高越热 | 当前已发生的 throttling 档位 |
+| `getThermalHeadroom(forecastSeconds)` | 0 较冷；1 表示到达或预测到达 SEVERE；可大于 1 | skin 热包络的当前值与短期预测 |
+| `SystemHealthManager.getCpuHeadroom()` / `getGpuHeadroom()` | 0 表示没有更多容量，100 表示余量更大 | CPU/GPU 最近一段时间的容量余量 |
 
-```java
-// 游戏场景的动态帧率调整
-void adjustForThermal(float headroom) {
-    if (headroom > 0.7f) {
-        // 余量充足，保持高性能
-        targetFps = 120;
-        renderer.setResolutionScale(1.0f);
-    } else if (headroom > 0.4f) {
-        // 余量紧张，降低分辨率
-        targetFps = 120;
-        renderer.setResolutionScale(0.7f);
-    } else {
-        // 余量很低，同时降帧率和分辨率
-        targetFps = 60;
-        renderer.setResolutionScale(0.5f);
+Thermal headroom 与 CPU/GPU headroom 的数值方向相反，也没有换算公式。CPU/GPU headroom 更接近历史使用情况与剩余容量，存在 TOCTOU；thermal headroom 是慢变 skin 热趋势。应用可以组合使用，不能互相替代。
+
+### Thermal headroom 的归一化
+
+`PowerManager.getThermalHeadroom()` 从 API 30 提供，参数范围是 0 到 60 秒。Framework 把 SEVERE 的 skin threshold 归一化为 1.0；Android 17 的本地实现把 0.0 放在 SEVERE threshold 以下 30°C 的位置，并对中间温度做线性归一化。
+
+这里要记住三点：
+
+1. headroom 越接近 1，越接近 SEVERE；大于 1 表示已经越过这条线或预测将越过；
+2. 1 以上没有固定映射到 CRITICAL、EMERGENCY 或 SHUTDOWN；
+3. 设备不支持、阈值缺失或调用过快时可能返回 `NaN`。
+
+官方 API 文档说明，没有必要高于约 1 Hz 调用。更远的 forecast 更容易受负载变化影响。
+
+### HAL forecast 与 Framework fallback
+
+Android 17 启动时只在“恰好一个 skin threshold”并且 feature flag 开启时探测 HAL `forecastSkinTemperature()`。若 HAL 支持，Framework 将 HAL 返回的绝对温度按该 sensor 的 SEVERE threshold 归一化。
+
+其余情况使用 `TemperatureWatcher`：
+
+- 每秒读取 skin 温度；
+- 每个 sensor 保留最多 30 个样本；
+- 至少三个样本后用线性回归计算温升斜率；
+- 预测 `current + slope × forecastSeconds`；
+- 多 sensor 时取归一化结果最大的值；
+- 十秒无人调用后停止采样并清理缓存。
+
+所以，headroom forecast 可能来自 HAL 模型，也可能来自 Framework 线性外推。应用无需依赖内部来源，应把它当短期趋势信号。
+
+### API 35 thresholds 与 API 36 listener
+
+API 35 的 `getThermalHeadroomThresholds()` 返回 `Map<ThermalStatus, Float>`。SEVERE 保证是 1.0；其他 status 只有在 OEM 提供对应 threshold 时才存在。
+
+API 36 的 `addThermalHeadroomListener()` 在 callback 中提供：
+
+- 当前 headroom；
+- 默认十秒的 forecast headroom；
+- `forecastSeconds`；
+- 最新 threshold map。
+
+服务端有两类触发源：skin temperature/severity 事件与 threshold 变化。相似数据在五秒窗口内会被抑制；headroom 或 forecast 差值达到 0.03、threshold 差值达到 0.01 时会被视为显著变化。注册成功后会立即投递一次当前快照。
+
+这个 listener 不会只因时间推移而周期性发送 forecast。官方注释明确建议：需要提前监控预测时，仍可按合理间隔调用 `getThermalHeadroom()`。
+
+单参数重载使用 main executor；性能敏感应用更适合传入自己的 executor。生命周期结束时必须调用 `removeThermalHeadroomListener()`，因为 `PowerManager` 在应用进程中保存业务 listener 到 Binder stub 的映射。
+
+NDK 在 API 36 提供 `AThermal_registerThermalHeadroomListener()`。callback 运行在 system Binder 线程池；其中 threshold 指针仅在 callback 生命周期内有效，需要长期保存时应立即复制。API 35 的 polling thresholds 接口由调用方按文档释放返回数组，不能与 callback 指针生命周期混用。
+
+### Android 17 的虚拟设备边界
+
+Android 17 的 `PowerManager` 会识别采用自定义 thermal policy 的虚拟设备 context：
+
+- `getCurrentThermalStatus()` 和 status listener 路由到对应 deviceId；
+- thermal headroom、threshold 和 headroom listener 对这类 context 不开放。
+
+普通物理设备应用仍使用默认设备 status。多设备或虚拟显示框架不能假设所有 context 共享同一个 thermal policy。
+
+## 应用侧如何设计降载策略
+
+### 使用 OEM threshold，避免反向理解 headroom
+
+下面的判断函数展示 API 35+ 的基本思路：当前 status 是硬信号，forecast 与 OEM threshold 用于提前一级调整。
+
+```kotlin
+private enum class ThermalLoadLevel { NORMAL, REDUCED, MINIMUM }
+
+private fun chooseThermalLoad(
+    currentStatus: Int,
+    forecastHeadroom: Float,
+    thresholds: Map<Int, Float>
+): ThermalLoadLevel {
+    val forecastValid = !forecastHeadroom.isNaN()
+    val moderate = thresholds[PowerManager.THERMAL_STATUS_MODERATE]
+    val severe = thresholds[PowerManager.THERMAL_STATUS_SEVERE] ?: 1.0f
+
+    return when {
+        currentStatus >= PowerManager.THERMAL_STATUS_SEVERE ||
+            (forecastValid && forecastHeadroom >= severe) ->
+            ThermalLoadLevel.MINIMUM
+
+        currentStatus >= PowerManager.THERMAL_STATUS_MODERATE ||
+            (forecastValid && moderate != null && forecastHeadroom >= moderate) ->
+            ThermalLoadLevel.REDUCED
+
+        else -> ThermalLoadLevel.NORMAL
     }
-    // 同步更新 ADPF HintSession
-    hintSession.updateTargetWorkDuration(
-        TimeUnit.SECONDS.toNanos(1) / targetFps);
 }
 ```
 
-### MediaTek MAGT：vendor case study
+这里没有把 `0.4`、`0.7` 写成通用阈值。不同设备的 threshold 不同；headroom 数字越大，热压力越高。产品还应加入进入/退出 hysteresis 和最短驻留时间，避免画质、帧率在边界附近反复切换。
 
-Google 和 MediaTek 的公开材料，把 MAGT（MediaTek Adaptive Gaming Technology）放在 ADPF 协同优化的案例里。正文更稳妥的读法，是把它当成 vendor case study：同样是“更早感知热余量，再更早降载”，Dimensity 平台在 Unity Boat Attack、Lineage W、Ares: Rise of Guardians 这些 workload 上展示了帧率稳定性和功耗改善的方向。
+API 30—34 没有 threshold map，可组合 current status、headroom 趋势和设备实测建立策略。若 `NaN`，应退回 status listener 与保守默认值。
 
-这一组材料能证明的重点，是厂商在做芯片级热数据和游戏负载控制的联动；它还不能直接推出“所有 SoC 都能拿到同样的 FPS、功耗、续航收益”。原始页面没有同时给出完整的环境温度、测试时长、分辨率 / 帧率档位和 baseline 配置，正文不再把 8.5 FPS、12% 功耗、25 分钟续航这类数字写成通用结论。
+### 降载动作按成本分级
 
-如果要把这类案例转成项目内的决策依据，至少要补四类测试元数据：workload 场景、环境温度、单次测试时长、对照组的分辨率 / 帧率 / 画质档位。条件没补齐之前，MAGT 更适合作为“厂商做过这类协同优化”的参考，不适合直接拷贝阈值或收益百分比。
+应用无法通过 Thermal API 直接指定 CPU/GPU 频率。可控的是 workload：
 
-## 在 Perfetto 中分析 Thermal 问题
+| 阶段 | 可选动作 | 需要验证的副作用 |
+|---|---|---|
+| 轻度预警 | 延后预取、减少后台推理、降低非关键采样率 | 功能时效 |
+| 中度 | 降低渲染分辨率、阴影、粒子、相机分析帧率 | 画质与识别质量 |
+| 重度 | 降低目标 FPS、模型档位、编码规格或并发度 | 交互连续性 |
+| 恢复 | 分阶段恢复，并设置冷却驻留时间 | 防止热振荡 |
 
-5.5 介绍了如何通过 CPU Frequency Track 和 thermal 数据源观察温控介入。这里我们进一步，用 Perfetto SQL 做更精确的量化分析。
+实时管线还应丢弃过期输入，避免低频后队列继续增长。温控降载若只降低设备频率而不减少待完成工作，端到端延迟可能更差。
 
-### 查询 Thermal 状态变化时间线
+### 与 Performance Hint Session 保持一致
+
+ADPF 的 Performance Hint Session 让应用报告目标 work duration 与实际 duration，系统据此调整调度策略。它不是应用侧的“降频 API”。
+
+当应用从 120 FPS 改成 60 FPS 时，每帧目标从约 8.33 ms 变成 16.67 ms，应同步调用 `updateTargetWorkDuration()`。继续报告旧目标会让系统收到与产品策略不一致的性能需求。
+
+Hint session、thermal status 与 headroom 分工如下：
+
+- hint session：描述当前 workload 的目标和实际耗时；
+- status/headroom：说明整机热状态与趋势；
+- 应用质量策略：决定减少多少工作。
+
+### CPU/GPU capacity headroom 的使用
+
+API 36 的 `SystemHealthManager.getCpuHeadroom()` 与 `getGpuHeadroom()` 返回 0—100 的容量余量。调用可能发生同步 Binder transaction，首次或自定义参数时可能更慢，不要放在渲染关键线程。
+
+设备可以不支持这两个 API；调用方应处理 `UnsupportedOperationException` 和 `NaN`，并遵守 `getCpuHeadroomMinIntervalMillis()`、`getGpuHeadroomMinIntervalMillis()`。判断瓶颈时：
+
+- GPU headroom 长期接近 0、CPU 较高：先减少像素与 GPU pass；
+- CPU headroom 长期接近 0、GPU 较高：先减少脚本、物理、分词或后处理；
+- 两者都低且 thermal headroom 上升：同时降低目标 FPS 与内容复杂度；
+- 单次值突变：先看一段时间窗口，避免把 TOCTOU 当成稳定结论。
+
+### Sustained Performance Mode
+
+API 24 的 Sustained Performance Mode 只在设备声明支持时可用。它为长时间负载选择更可预测的性能区间，通常会牺牲峰值。它不替代应用降载，也不保证固定频率或固定 FPS。测试应分别比较普通模式与 sustained mode 的首次峰值、稳定阶段和温度。
+
+## Framework 对后台任务的 thermal 限制
+
+Android 17 的 `JobScheduler` 使用 `ThermalStatusRestriction`。TOP_APP bias 的 job 不受该 restriction 限制；其他 job 大致按三档处理：
+
+- LIGHT：限制 MIN；LOW 若尚未运行或已经 overtime 也受限；
+- MODERATE：放行 user-initiated job；expedited 和 HIGH 还要满足运行状态、重试与 overtime 条件；
+- SEVERE 及以上：限制全部非 TOP_APP job。
+
+这是 Framework 的后台调度策略，不等于应用进程在 SEVERE 时必然停止。调试 job 延迟时，可以结合 pending/stop reason 判断是否属于 thermal device state。
+
+## 用 Perfetto 建立温控证据
+
+### 录制时需要哪些数据
+
+建议同时打开：
+
+- `sched/sched_switch`、`sched/sched_wakeup`；
+- `power/cpu_frequency`、`power/cpu_idle`；
+- FrameTimeline 或目标应用的渲染打点；
+- `thermal/thermal_temperature`；
+- `thermal/thermal_zone_trip`；
+- `thermal/cdev_update`；
+- `thermal/thermal_power_cpu_limit`；
+- `thermal/thermal_power_devfreq_limit`；
+- 使用 `power_allocator` 时再开 `thermal_power_allocator/*`；
+- 厂商提供的 GPU、NPU、thermal daemon trace。
+
+这些 thermal tracepoint 是否存在取决于内核配置和设备权限。标准事件缺失时，不要把空轨道当成“没有温控”；继续查看 HAL status、cooling state、频率上限和 vendor 证据。
+
+### Framework status counter
+
+Android 17 的 `ThermalManagerService.setStatusLocked()` 写入名为 `ThermalManagerService.status` 的 trace counter。可以先用这条 SQL 查看全局 skin status：
 
 ```sql
--- 查询所有 thermal 相关事件
 SELECT
-  ts,
-  name,
-  CAST(dur / 1e6 AS FLOAT) AS duration_ms,
-  track_id
-FROM slice
-WHERE name GLOB '*thermal*' OR name GLOB '*Thermal*'
-ORDER BY ts
-LIMIT 100;
-```
-
-### 关联 Thermal 状态与帧时间
-
-这是最实用的查询——找出"thermal throttling 开始影响帧率"的精确时刻：
-
-```sql
--- 找到 thermal severity 升高的时刻
--- 然后查看后续帧时间的变化
-WITH thermal_events AS (
-  SELECT
-    ts,
-    name,
-    CAST(dur / 1e6 AS FLOAT) AS duration_ms
-  FROM slice
-  WHERE name GLOB '*thermal*throttling*'
-    OR name GLOB '*ThermalThrottling*'
-  ORDER BY ts
-),
-frame_times AS (
-  SELECT
-    ts,
-    CAST(dur / 1e6 AS FLOAT) AS frame_time_ms,
-    track_id
-  FROM slice
-  WHERE name = 'Choreographer#doFrame'
-)
-SELECT
-  f.ts AS frame_ts,
-  f.frame_time_ms,
-  MIN(ABS(f.ts - t.ts)) AS closest_thermal_event_delta_ns
-FROM frame_times f
-CROSS JOIN thermal_events t
-GROUP BY f.ts
-HAVING f.frame_time_ms > 16.67  -- 只看掉帧
-ORDER BY f.ts;
-```
-
-### 区分 Thermal 降频和调度延迟
-
-这条查询的前提，是抓 trace 时已经打开 `power/cpu_frequency` ftrace 事件，或者 `linux.sys_stats` 里的 `cpufreq_period_ms`。CPU 频率本身来自 counter 轨道，标准表是 `counter` + `cpu_counter_track`，不是 `cpu_frequency_scans`。
-
-```sql
--- 先看每个 CPU 的频率 counter
-SELECT
-  c.ts / 1e9 AS time_sec,
-  t.cpu,
-  c.value AS freq_khz
+  c.ts / 1e9 AS time_s,
+  CAST(c.value AS INT) AS thermal_status
 FROM counter c
-JOIN cpu_counter_track t
-  ON c.track_id = t.id
-WHERE t.name GLOB '*cpufreq*'
-ORDER BY c.ts, t.cpu
-LIMIT 100;
+JOIN counter_track t ON c.track_id = t.id
+WHERE t.name = 'ThermalManagerService.status'
+ORDER BY c.ts;
 ```
 
-如果这条查询没有结果，先执行 `SELECT DISTINCT name FROM cpu_counter_track;`，确认设备把 CPU 频率轨道命名成了什么。拿到频率曲线之后，再和 `sched` / `thread_state` 一起看：高 CPU 利用率 + 持续低频，更像 thermal throttling；低利用率 + 低频，很多时候只是 DVFS 正常回落。
+数值 0—6 对应 NONE、LIGHT、MODERATE、SEVERE、CRITICAL、EMERGENCY、SHUTDOWN。若查询为空，先确认录制配置包含 power atrace 类别，再执行 `SELECT DISTINCT name FROM counter_track` 查找设备上的实际轨道。
 
-这三组查询覆盖了 thermal 分析的核心需求：确认 thermal 事件发生了、量化它对帧率的影响、排除其他原因（调度延迟或代码性能问题）。
+### CPU 频率轨道
 
-### Thermal 问题分析的决策树
+CPU frequency 通常位于 `counter` 与 `cpu_counter_track`。下面的查询用于确认轨道名和频率变化：
 
-当我们看到帧率下降时，按以下决策树排查：
+```sql
+SELECT
+  c.ts / 1e9 AS time_s,
+  t.cpu,
+  t.name,
+  c.value AS frequency_khz
+FROM counter c
+JOIN cpu_counter_track t ON c.track_id = t.id
+WHERE t.name GLOB '*cpufreq*'
+ORDER BY c.ts, t.cpu;
+```
 
-1. **CPU 频率有没有突然下降？**
-   - 没有 → 不是 thermal，检查代码（锁竞争、GC、I/O 阻塞等）
-   - 有 → 继续
+某些设备的轨道名不同，应先枚举 `cpu_counter_track`。频率降低还可能来自 idle、普通 DVFS、battery saver、Power HAL 或其他 QoS request；需要和 status、trip、`cdev_update`、CPU runnable 状态一起判断。
 
-2. **下降时 CPU utilization 是高还是低？**
-   - 低 → 可能是 DVFS 正常调频，检查是否有 idle 后的提频延迟
-   - 高 → 继续
+### 证据链的阅读顺序
 
-3. **Thermal status 有没有变化？**
-   - 没有 → 可能是 OEM 的用户空间 thermal daemon 直接操作了频率（不经过内核 thermal framework），检查 uevent 日志
-   - 有（severity 升高） → 确认是 thermal throttling
+当持续负载的帧时间恶化时，按下面顺序对齐时间：
 
-4. **thermal 事件前 30-60 秒的帧时间趋势？**
-   - 稳定 → thermal 是唯一原因
-   - 逐步上升 → 可能叠加了负载增加（游戏场景切换）和 thermal，需要拆分
+1. workload 是否先变重：场景、分辨率、输入规模、线程数量；
+2. skin/SoC 温度与 HAL severity 是否上升；
+3. thermal trip 或 cooling state 是否变化；
+4. CPU/GPU 频率上限是否随之降低；
+5. runnable 线程是否在低频下持续占用 CPU，GPU work 是否延长；
+6. FrameTimeline、应用 slice 或吞吐从哪个点开始恶化。
 
-## Thermal 优化的工程实践
+只有频率下降且 CPU 利用率高，还不能单独确认 thermal。只有 status 升级，也不能证明某个 cluster 已被限频。两侧信号在时间上对应，结论才足够稳固。
 
-### App 层：ADPF 集成策略
+### `dumpsys` 与快照
 
-**梯度降载**。不要等到 SEVERE 才开始降级。正确的做法是在 LIGHT 就做轻微调整（减少非关键的后台任务），在 MODERATE 降低渲染复杂度（阴影、粒子），在 SEVERE 降低帧率目标。每个级别都应该有预定义的降级策略。
+测试前后可以保存：
 
-**API 30-34：趋势式 fallback**。这几个版本只有 `PowerManager.getThermalHeadroom(int)`。更稳妥的用法是把它当作 skin 温度的慢变趋势信号，再结合 `getCurrentThermalStatus()` 做本机标定，不要把 `0.5`、`0.7` 这种经验值写成通用阈值。官方文档明确说了，没有必要高于约 1Hz 轮询，调用太频繁可能直接返回 `NaN`。
+```bash
+adb shell dumpsys thermalservice
+adb shell dumpsys power
+adb shell cat /sys/class/thermal/thermal_zone0/temp
+adb shell cat /sys/class/thermal/cooling_device0/cur_state
+```
 
-**API 35+：thresholds-aware**。从 `PowerManager.getThermalHeadroomThresholds()` 读取设备返回的 LIGHT、MODERATE、SEVERE 对应阈值，再决定何时降分辨率、何时降帧率，才符合 OEM 自己的 skin sensor threshold。NDK 侧对应的是 `AThermal_getThermalHeadroomThresholds()` 和 thermal headroom listener。
+zone/cooling device 编号不稳定，正式脚本应先按 `type` 建立映射。`dumpsys thermalservice` 可以看到 Framework 当前温度、status、HAL 连接与 headroom 相关状态；厂商字段和权限随 build 变化。
 
-**HintSession 同步**。任何帧率目标的变更都必须同步更新 `HintSession.updateTargetWorkDuration()`。否则 ADPF 和 App 的预期不一致，App 已经按 60fps 的节奏在跑，系统却还在按 120fps 目标提频。
+## 系统与 OEM 调优
 
-### Framework 层：JobScheduler 的 thermal 感知
+### 先确认控制权在哪一层
 
-`ThermalStatusRestriction` 把热限制分成三档。`THERMAL_STATUS_LIGHT` 开始限制 `PRIORITY_MIN`，并限制尚未运行或已经进入 overtime 的 `PRIORITY_LOW`。`THERMAL_STATUS_MODERATE` 进一步只放行 user-initiated job、部分 expedited job，以及仍在运行且没有 overtime 的 `PRIORITY_HIGH`。到了 `THERMAL_STATUS_SEVERE`，框架会直接限制全部 job。这里的 `JobInfo.Builder#setPriority()` 是 API 33 才引入的；更早版本不能把它当成 Android 10 就有的接口。
+调内核参数前，先回答：
 
-### Kernel 层：governor 参数调优
+- thermal zone 使用哪个 governor；
+- cooling device 是否真的绑定到该 zone；
+- vendor daemon 是否同时写 QoS、频率或充电限制；
+- HAL severity 来自原始温度、虚拟 skin 模型还是固件；
+- 芯片固件是否还有不可见的硬件保护。
 
-如果设备使用 `power_allocator` governor，PID 参数的调优是 thermal 性能调优的核心。调优需要实机测试——在典型负载（游戏、Camera、充电时使用）下抓取 thermal zone 温度曲线和 cooling state 变化，然后调整 PID 参数使温度曲线更平稳（减少振荡和过冲）。
+多层同时控制同一资源时，修改一处参数可能没有效果，也可能引起两个控制器互相追逐。
 
-关键参数和它们的效果：
+### 调整 `power_allocator`
 
-| 参数 | 增大效果 | 减小效果 |
-|------|---------|---------|
-| `k_po`（比例系数，过热时） | 响应更快，可能过冲 | 响应更慢，温度可能超调 |
-| `k_i`（积分系数） | 消除稳态误差更积极 | 允许温度偏离目标更久 |
-| `sustainable_power`（可持续功耗） | 基线功耗预算更高 | 基线功耗预算更低，更保守 |
+建议按以下顺序：
 
-### OEM 层：散热设计与软件协同
+1. 固定环境、屏幕、充电与 workload；
+2. 记录温度、PID 各项、总请求/授予功耗和 actor state；
+3. 先校准 `sustainable_power`；
+4. 再调整 `k_pu` 与 `k_po` 的升温/过热响应；
+5. 最后评估积分项，`k_d` 保持文档建议的默认值，除非有充分数据；
+6. 重复冷热机、不同环境温度和制造偏差测试。
 
-散热设计的物理极限决定了软件策略的天花板。VC 均热板（Vapor Chamber）面积越大，SoC 的热量扩散越快，thermal throttling 触发越晚。软件调优无法突破物理限制——如果 SoC 在全速运行时发热量超过散热能力的上限，无论 governor 参数怎么调，降频都是必然的。
+调参目标应同时包含安全温度、温度过冲、性能振荡、稳定吞吐与功耗。追求更晚触发 throttling 可能把代价转移到机身温度、电池寿命或保护关机。
 
-OEM 在散热设计和软件策略之间需要找到平衡：
-- 散热堆料不足 → 软件被迫过早降频 → 性能受限
-- 散热过度 → 成本和重量增加 → 影响产品定位
-- 软件策略过于激进（允许高温运行）→ 用户体验差（烫手）→ 差评
+### HAL 与 skin 模型
 
-### 测试方法：如何复现和量化 Thermal Throttling
+同 SoC 的不同设备可以有不同散热结构、传感器位置和握持温度限制。HAL 的 skin 模型与 severity threshold 需要按整机校准，不能复制另一台设备的绝对温度表。
 
-**环境控制**。测试时控制环境温度（建议 25°C ± 2°C），每次测试前让设备冷却到环境温度。环境温度每升高 5°C，thermal throttling 触发时间大约提前 20-30%。
+验证模型时应覆盖：
 
-**标准化负载**。使用可重复的负载场景（如 Unity Boat Attack demo、GFXBench 长期稳定性测试）进行测试，确保每次测试的负载模式一致。
+- 横屏/竖屏、手持/支架、保护壳；
+- 充电、蜂窝、Wi-Fi、相机与高亮度；
+- 冷环境、常温、高环境温度；
+- CPU、GPU、NPU、ISP、modem 等不同热源；
+- 快速升温和长时间稳态。
 
-**数据记录**。记录以下数据作为测试元数据：
-- 测试前各 thermal zone 的初始温度
-- 测试过程中的 thermal status 变化时间线
-- 测试结束时的最终温度
-- 环境温度和设备散热条件（是否有风冷、是否放在桌面上）
+## 可复现的测试方法
+
+每次测试至少记录：
+
+- 设备型号、build、kernel、vendor image；
+- 环境温度、气流、保护壳、摆放与握持方式；
+- 电池电量、是否充电、充电功率；
+- 屏幕亮度、刷新率、网络和音量；
+- workload 版本、场景、分辨率、FPS 目标和输入；
+- 测试前各关键 sensor 温度；
+- time-to-LIGHT/MODERATE/SEVERE；
+- cooling state、频率上限、thermal status dwell time；
+- 稳态 P50/P95 帧时间或吞吐；
+- 功耗、温度峰值和恢复时间。
+
+每轮开始前回到相同初始温度。环境温度变化会显著改变可持续功耗，但“升高 5°C 就提前固定百分比”没有跨设备通用公式，应报告本机实测曲线。
+
+至少比较三种状态：
+
+1. 冷机短测，确认峰值能力；
+2. 长时间稳态，确认持续性能；
+3. thermal-aware 降载，确认帧稳定性、画质与功耗的综合结果。
+
+## 常见误判
+
+### “status 没变，所以没有温控”
+
+Framework 全局 status 只聚合 skin severity。内核或厂商固件可能已经限制局部资源，而 skin status 尚未升档。继续检查 cooling state、频率上限和 vendor trace。
+
+### “headroom 0.8 比 0.4 更安全”
+
+Thermal headroom 越高越接近 SEVERE，0.8 的热压力高于 0.4。CPU/GPU capacity headroom 的方向相反，这两个 API 最容易在这里混淆。
+
+### “降低 CPU 频率一定能解决热问题”
+
+设备可能由 GPU、NPU、ISP、modem、显示或充电主导发热。CPU 限频还可能延长任务运行时间。先定位主热源和 cooling actor，再选择动作。
+
+### “SEVERE 会自动下线 CPU”
+
+Framework severity 没有标准 hotplug 映射。核心离线通常来自厂商内核或 daemon 的额外策略。
+
+### “主动降载等于应用主动降频”
+
+应用通过分辨率、FPS、并发、模型和任务节奏减少工作；频率与功耗限制由系统和硬件策略决定。ADPF hint 描述 workload 目标，也不授予应用直接控制频率的能力。
 
 ## 版本演进
 
-| 版本 | 变化 | 影响 |
-|------|------|------|
-| Android 7.0 (API 24) | Sustained Performance Mode 引入 | 首次提供可预测持续性能档位 |
-| Android 8.0 (API 26) | Thermal HAL 1.0 | Framework 能轮询温度与阈值 |
-| Android 10 (API 29) | Thermal HAL 2.0（HIDL）+ thermal status callback | Framework 开始常驻监控 severity，App 可监听 thermal status |
-| Android 11 (API 30) | `PowerManager.getThermalHeadroom(int)` | App 可以做预测式预降载 |
-| Android 12 (API 31) | ADPF Performance Hint API | App 可以把 workload 目标时长告诉系统 |
-| Android 14 (API 34) | `IThermal` 从 HIDL 迁到 AIDL，基础 AIDL 接口包含 `getTemperatures()`、`getCoolingDevices()`、`getTemperatureThresholds()`、`registerThermalChangedCallback()` | HAL 契约统一到 AIDL，Framework 通过 AIDL 获取温度、cooling device 和 threshold 数组 |
-| Android 15 (API 35) | AIDL Thermal HAL 增加 cooling device changed callback；`PowerManager.getThermalHeadroomThresholds()` 开放给 App | HAL 侧可感知 cooling device 的动态变化；App 可以读取 OEM 返回的 headroom threshold，不必硬编码阈值 |
-| Android 16 (API 36) | AIDL Thermal HAL 新增 `forecastSkinTemperature(int forecastSeconds)`；Framework `TemperatureWatcher#getForecast()` 在 HAL 支持 skin forecast 且仅有一路 skin threshold 时优先走 HAL 预测，否则回落到本地 ring buffer + 线性回归；`SystemHealthManager.getCpuHeadroom()` / `getGpuHeadroom()`，NDK thermal headroom listener | HAL 侧可返回未来 skin 温度预测值，Framework 不再只依赖本地采样回归；App 可区分 CPU/GPU capacity 余量，并在 native 层订阅 headroom 变化 |
+| Android 版本 | 相关变化 |
+|---|---|
+| Android 7.0 / API 24 | Sustained Performance Mode |
+| Android 8.0 / API 26 | Thermal HAL 1.0 |
+| Android 10 / API 29 | HIDL Thermal HAL 2.0、thermal status 与 callback |
+| Android 11 / API 30 | Java `PowerManager.getThermalHeadroom()` |
+| Android 12 / API 31 | Performance Hint API；NDK thermal headroom 从 API 31 提供 |
+| Android 14 / API 34 | AIDL Thermal HAL v1 |
+| Android 15 / API 35 | AIDL HAL v2 cooling callback；Java/NDK headroom thresholds |
+| Android 16 / API 36 | AIDL HAL v3 skin forecast 与 threshold callback；Java/NDK headroom listener；CPU/GPU capacity headroom |
+| Android 17 / API 37 | Thermal HAL 仍为 AIDL v3；Framework 延续 headroom/forecast，并支持自定义 thermal policy 的虚拟设备 status 路由 |
 
-## Android 16+ Thermal Headroom Listener：事件驱动的 headroom 监控
+## Android 17 / Kernel 6.18 源码索引
 
-上一节的版本演进表里，Android 16 多了 `SystemHealthManager.getCpuHeadroom()` / `getGpuHeadroom()` 和 NDK thermal headroom listener。其中 headroom listener 改变了 App 获取温控信息的方式——从轮询变成事件驱动。下面展开这条新路径。
+### Kernel `android17-6.18-2026-06_r6`
 
-API 35 的 `getThermalHeadroomThresholds()` 让 App 能读到 OEM 返回的 headroom 阈值。Android 16 (BAKLAVA / API 36) 在此基础上补了事件驱动机制——`addThermalHeadroomListener(...)`，让 App 不需要轮询就能收到 headroom 变化。本节展开这个新机制。
+| 路径 | 关注点 |
+|---|---|
+| `drivers/thermal/thermal_core.c` | zone 更新、HOT/CRITICAL 与硬件保护 |
+| `drivers/thermal/gov_step_wise.c` | `throttle`、trend 与 target state |
+| `drivers/thermal/gov_power_allocator.c` | PID、功耗分配、power actor |
+| `drivers/thermal/cpufreq_cooling.c` | cpufreq cooling 与 `freq_qos` |
+| `drivers/thermal/devfreq_cooling.c` | devfreq cooling |
+| `drivers/thermal/thermal_trace.h` | 通用 thermal tracepoint |
+| `drivers/thermal/thermal_trace_ipa.h` | power allocator tracepoint |
+| `Documentation/driver-api/thermal/power_allocator.rst` | governor 参数与 power actor 契约 |
 
-### 公共 API 形态
+### Android `android-17.0.0_r1`
 
-| 入口 | API Level | 形式 | 说明 |
-| --- | --- | --- | --- |
-| `PowerManager.addThermalHeadroomListener(OnThermalHeadroomChangedListener)` | 36 | 单参重载 | 默认走 `mContext.getMainExecutor()`，callback 在主线程 |
-| `PowerManager.addThermalHeadroomListener(Executor, OnThermalHeadroomChangedListener)` | 36 | 多参重载 | 接收任意 `@CallbackExecutor` |
-| `PowerManager.removeThermalHeadroomListener(OnThermalHeadroomChangedListener)` | 36 | 显式清理 | **必须**显式调用；`PowerManager` 端仍保存 listener → Stub 映射，生命周期结束后要释放本地引用 |
-| `AThermal_registerThermalHeadroomListener(...)` | 36 (NDK r28+) | C API | NDK 端等价物，callback 在 system binder 线程池 |
-| `AThermal_unregisterThermalHeadroomListener(...)` | 36 (NDK r28+) | C API | NDK 端清理 |
+| 路径 | 关注点 |
+|---|---|
+| `hardware/interfaces/thermal/aidl/android/hardware/thermal/` | AIDL HAL v1—v3 |
+| `frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java` | HAL 连接、status 聚合、headroom |
+| `frameworks/base/core/java/android/os/PowerManager.java` | App thermal API |
+| `frameworks/base/core/java/android/os/health/SystemHealthManager.java` | CPU/GPU capacity headroom |
+| `frameworks/native/include/android/thermal.h` | NDK thermal API |
+| `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/restrictions/ThermalStatusRestriction.java` | JobScheduler thermal policy |
 
-listener 接口（`OnThermalHeadroomChangedListener`）由 `@FlaggedApi(Flags.FLAG_ALLOW_THERMAL_THRESHOLDS_CALLBACK)` 标记，隐藏的 `@hide` AIDL `IThermalHeadroomListener` 是 binder 桥接，framework 内部用 `IThermalHeadroomListener.Stub` 把跨进程回调 marshal 到 App 端 Executor。
+## 官方资料
 
-```java
-// 源码锚点：PowerManager.java (android-16.0.0_r1) l.2822-2852
-@FlaggedApi(Flags.FLAG_ALLOW_THERMAL_THRESHOLDS_CALLBACK)
-public interface OnThermalHeadroomChangedListener {
-    void onThermalHeadroomChanged(float headroom,
-            float forecastHeadroom, int forecastSeconds,
-            @NonNull Map<@ThermalStatus Integer, Float> thresholds);
-}
-```
+- [Android thermal mitigation](https://source.android.com/docs/core/power/thermal-mitigation)
+- [PowerManager thermal APIs](https://developer.android.com/reference/android/os/PowerManager)
+- [Optimize games for thermal conditions](https://developer.android.com/games/optimize/thermal)
+- [ADPF overview](https://developer.android.com/games/optimize/adpf)
+- [Perfetto trace analysis with SQL](https://perfetto.dev/docs/analysis/trace-analysis-with-sql)
+- [Linux power allocator documentation](https://docs.kernel.org/driver-api/thermal/power_allocator.html)
 
-回调只在以下两种条件满足其一才会触发（官方文档 + `ThermalManagerService.HeadroomCallbackData.isSignificantDifferentFrom` 双重确认）：
+## 与其他章节的关系
 
-1. **thermal throttling 事件** —— skin 温度跨过任意 threshold，且短时间内没有发送过相似值的 callback；
-2. **headroom / forecastHeadroom 变化 ≥ 0.03**（约 0.9°C），或 thresholds 数组变化 ≥ 0.01（约 0.3°C）；
-
-仅当 absolute °C threshold 变化但 headroom 与 thresholds 都没显著变化时**不回调**，避免 App 收到无意义事件。
-
-### 服务端节流与时序
-
-`ThermalManagerService` 用 `RemoteCallbackList<IThermalHeadroomListener>` 维护监听者，关键常量：
-
-```java
-// 源码锚点：ThermalManagerService.java (android-16.0.0_r1) l.101-110
-public static final int DEFAULT_FORECAST_SECONDS = 10;
-public static final int HEADROOM_CALLBACK_MIN_INTERVAL_MILLIS = 5000;
-public static final float HEADROOM_CALLBACK_MIN_DIFFERENCE = 0.03f;
-public static final float HEADROOM_THRESHOLD_CALLBACK_MIN_DIFFERENCE = 0.01f;
-```
-
-`checkAndNotifyHeadroomListenersLocked`（l.329-348）只有一个合并去抖条件：如果 `!data.isSignificantDifferentFrom(mLastHeadroomCallbackData)`，并且 `System.currentTimeMillis() < mLastHeadroomCallbackTimeMillis + 5000ms`，这一轮相似数据会被跳过。只要 headroom / forecastHeadroom / thresholds 差异达到阈值，或者 5s 窗口已经过去，就会更新 `mLastHeadroomCallbackTimeMillis` 和 `mLastHeadroomCallbackData`，再通过 `mThermalHeadroomListeners.beginBroadcast()` 投递到每个 listener。`postHeadroomListenerLocked`（l.306-326）进一步把 callback 通过 `FgThread.getHandler().post(...)` 调度到 FgThread（前台线程），**避免阻塞 system_server 的 binder 线程池**。
-
-注册成功后（`registerThermalHeadroomListener`，l.668-705）会**立即触发一次** callback（`postHeadroomListenerLocked(listener, data)`），App 端不必等下一次显著变化就能拿到当前 headroom 快照。
-
-### 与 `getThermalHeadroomThresholds()` 的关系
-
-`getThermalHeadroomThresholds()` 在 Android 16 (BAKLAVA) 文档注释（`PowerManager.java` l.3098-3102）明确说明：
-
-> Starting at `Build.VERSION_CODES.BAKLAVA` the returned map of thresholds can change between calls to this function, one could use the new `addThermalHeadroomListener(...)` API to register a listener and get callback for changes to thresholds.
-
-即 **API 36 起 `getThermalHeadroomThresholds()` 不再 cache**，每次调用都可能返回不同结果。推荐用法：
-
-- **轮询 → 事件驱动**：用 `addThermalHeadroomListener(Executor, ...)` 订阅变化，仍保留 1Hz 以下的 `getThermalHeadroom(forecastSeconds)` 作为预测 sanity check。listener 不是预测轮询器，不会单独为了 forecast 温度变化启动周期回调；但一旦进入回调判断，`HeadroomCallbackData.isSignificantDifferentFrom()` 会把 `forecastHeadroom` 差异也纳入 0.03 的去抖阈值。
-- **Main thread 还是 worker？** 单参重载默认 main thread，会进入 UI 消息队列；如果同时在做相机预览 / 游戏渲染，建议重载用单线程 `Executor`，把降分辨率、降帧率动作派发到渲染线程。
-- **清理时机**：在 `Activity.onDestroy()` / `Surface` 释放 / `View.onDetachedFromWindow` 显式 `removeThermalHeadroomListener`；否则 `PowerManager` 端本地 map 会一直保留业务 listener → Stub 映射。
-
-### 与 API 35 getThermalHeadroomThresholds 的版本差异
-
-| 维度 | API 35 (Android 15) | API 36 (Android 16) |
-| --- | --- | --- |
-| thresholds 获取 | `getThermalHeadroomThresholds()` 首次查询后 cache，**调用间不变** | 不再 cache，**调用间可能变化** |
-| 变化发现方式 | 主动轮询；Cache 失效后阈值变化要重启 App 才能感知 | listener 主动回调（thresholds 维度差异 ≥ 0.01 触发） |
-| 预测 headroom 字段 | 需轮询 `getThermalHeadroom(forecastSeconds)` | listener 回调附带 `forecastHeadroom` + `forecastSeconds` 字段（默认 10s） |
-| NDK 端等价 | `AThermal_getThermalHeadroomThresholds()` 返回常量数组 | `AThermal_registerThermalHeadroomListener` + `AThermal_HeadroomCallback` |
-| callback 线程 | N/A | Java 端由 `Executor` 控制；NDK 端在 binder 线程池，App 需自己切线程 |
-| binder 死亡清理 | N/A | App 端 listener map 不会自动清理，必须显式 `removeThermalHeadroomListener` |
-
-### 跨进程调用链
-
-```
-App 进程                                          system_server
-  │                                                  │
-  │ addThermalHeadroomListener(Executor, listener)   │
-  ├─────────────────────────────────────────────────►│ PowerManager
-  │                                                  │ .addThermalHeadroomListener
-  │                                                  │ → IThermalHeadroomListener.Stub
-  │                                                  │ → mThermalService
-  │                                                  │   .registerThermalHeadroomListener
-  │                                                  │ → ThermalManagerService
-  │                                                  │   .registerThermalHeadroomListener
-  │                                                  │ → mThermalHeadroomListeners.register
-  │                                                  │ → getHeadroomCallbackDataLocked
-  │                                                  │ → postHeadroomListenerLocked
-  │                                                  │ → FgThread.post(...)
-  │                                                  │
-  │ （温度变化触发）                                   │ onTemperatureChanged
-  │                                                  │ → TemperatureWatcher
-  │                                                  │   .onTemperatureChanged
-  │                                                  │ → mHeadroomThresholds 更新
-  │                                                  │ → checkAndNotifyHeadroomListenersLocked
-  │                                                  │   （节流：5s 窗 + 0.03/0.01 阈值）
-  │                                                  │
-  │ ◄─────────────────────────────────────────────────┤ oneway binder
-  │ listener.onHeadroomChange(headroom, forecastHeadroom,      │ IThermalHeadroomListener
-  │     forecastSeconds, thresholds[])                  │ (oneway)
-  │ → Executor.execute(() -> App.onThermalHeadroomChanged(...))
-```
-
-### 工程实践要点
-
-- **零分配 vs GC**：Java 端 `OnThermalHeadroomChangedListener` 的 `thresholds` 参数是 `Map<@ThermalStatus Integer, Float>`，由 `convertThresholdsToMap` 每次新建 `ArrayMap`；高频回调（如 OTA 后台跑温度测试）会触发频繁 GC。NDK 端返回的是常量指针 `AThermalHeadroomThreshold*`（NDK 文档明确说明「`thresholds` pointer will be a constant shared across all callbacks registered from the same process」），NDK 客户端零分配。
-- **binder 死亡 vs listener 清理**：`ThermalManagerService` 内 `mThermalHeadroomListeners` 用 `RemoteCallbackList` 维护跨进程回调；App 进程里的 `PowerManager.addThermalHeadroomListener` 还会把业务 listener 和内部 `IThermalHeadroomListener.Stub` 存到 `mThermalHeadroomListenerMap`，这个本地映射只在 `removeThermalHeadroomListener` 成功后删除。**显式 `removeThermalHeadroomListener` 是必须项**。
-- **与其他 thermal API 的关系**：listener 是 `getThermalHeadroom(int)` + `getThermalHeadroomThresholds()` 的事件驱动版本；`OnThermalStatusChangedListener` 仍然只通知 `getCurrentThermalStatus()` 跨级事件（status 变化）。两者并存，listener 粒度更细，status listener 粒度更粗。
-- **OEM 差异**：`TemperatureWatcher.getHeadroomCallbackDataLocked` 内部使用 `getForecast(0)` + `getForecast(DEFAULT_FORECAST_SECONDS=10)`；OEM 如果改 `mForecastSeconds`，listener 回调的 `forecastSeconds` 字段会同步变化（`isSignificantDifferentFrom` 把 `mForecastSeconds` 不一致视为显著差异强制回调）。`android-16.0.0_r1` 源码注释说 `currently this is always the same as DEFAULT_FORECAST_SECONDS`，未启用动态 forecast。
-
-### 常见误区
-
-- **「headroom listener 会代替 status listener」** ❌：两个 listener 走不同的判定路径，status listener 只在 thermal status 跨级时通知，headroom listener 还会通知 headroom/threshold 数值变化。两者并存。
-- **「listener 触发频率高时应在 App 端去抖」** ✅：server 端有 5s 窗 + 0.03/0.01 阈值去抖，但 App 端的 Executor 可能让多个 listener 串行；建议 App 内部维护一个 `headroomCache` + 上次处理时间，仅在跨过自身业务阈值时降画质。
-
-### 引用
-
-- `frameworks/base/core/java/android/os/PowerManager.java`（android-16.0.0_r1 l.1247-3011, l.3098-3126）
-- `frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java`（android-16.0.0_r1 l.85-705, l.1830-1870, l.2197-2208）
-- `frameworks/base/core/java/android/os/IThermalHeadroomListener.aidl`
-- `frameworks/native/include/android/thermal.h`（NDK r28+）
-- developer.android.com PowerManager#addThermalHeadroomListener
-
-## 常见问题与误区
-
-### 「Thermal throttling 只影响游戏」
-
-在 5.5 中我们已经澄清了这个误区，但从工程实践角度补充：Camera 录制（尤其是 4K60fps）、视频通话（编码器 + 屏幕 + 网络同时工作）、GPS 导航（持续定位 + 屏幕 + 语音）、甚至长时间的大文件下载（Modem 持续高负载 + 充电发热）都可能触发 thermal throttling。任何持续时间超过 3 分钟的高负载场景都需要考虑 thermal。
-
-### 「降低 CPU 频率就能降温」
-
-不完全正确。功耗和频率的关系是非线性的——在频率较高时，每次提频带来的功耗增加远大于频率增加的比例（因为电压也需要同步提高）。反过来，在频率已经较高时降频，功耗下降的幅度比频率下降的幅度更大。所以从最高频率降 20% 可能带来 40% 的功耗下降。但在中低频率段，这种非线性效应减弱，降频的"性价比"降低。
-
-thermal governor（尤其是 power_allocator）利用了这个非线性特性——在高频段优先降频（功耗收益大），在低频段更谨慎（性能损失大但功耗收益小）。
-
-### 「Thermal 问题纯靠硬件解决」
-
-软件策略的重要性经常被低估。同样的硬件条件下，好的 thermal 策略可以带来显著的用户体验差异。具体来说：
-
-- **调度策略**：将高负载线程集中到大核运行（单核高频）vs 分散到多核运行（多核中频），功耗差异可达 30%。前者利用了功耗的非线性特性——一个核跑高频的功耗通常低于多个核跑中频的总功耗。
-- **预判式降载**：通过 thermal headroom API 提前 30 秒开始降载，可以将持续性能窗口延长 40-60%。
-- **场景感知**：充电时更积极地降频（用户不太感知性能）、游戏时更保守地降频（用户极度敏感），可以在不增加散热成本的前提下改善体验。
-
-## 与其他机制的关系
-
-- **[5.5 Thermal 管控](05-thermal.md)**：本章是 5.5 的深度扩展。5.5 建立全局认知，本章深入内核机制和工程实践。
-- **[5.4 DVFS](04-dvfs.md)**：DVFS 是 thermal cooling 的执行手段。cpufreq cooling 通过限制 DVFS 的频率上限来降温。
-- **[5.9 ADPF](09-adpf.md)**：ADPF 是 App 参与温控的桥梁。本章从 thermal 视角审视 ADPF，5.9 从性能优化视角审视 ADPF。
-- **[8.9 游戏性能](09-game-performance.md)**：游戏是 thermal 问题最集中的场景。本章的游戏策略可以直接应用于 8.9 中的案例。
-- **[11.1 功耗模型](01-power-model.md)**：thermal 和功耗是一体两面——功耗决定发热量，发热量触发 thermal throttling。理解功耗模型有助于从源头减少 thermal 压力。
-
-## 参考资料
-
-### AOSP 源码
-- `drivers/thermal/thermal_core.c` — Thermal 子系统核心框架 [已验证]
-- `drivers/thermal/gov_step_wise.c` — step_wise governor 实现 [已验证]
-- `drivers/thermal/gov_power_allocator.c` — power_allocator governor (PID) 实现 [已验证]
-- `drivers/thermal/cpufreq_cooling.c` — cpufreq cooling device 实现 [已验证]
-- `drivers/thermal/devfreq_cooling.c` — devfreq cooling device 实现 [已验证]
-- `drivers/devfreq/devfreq.c` — devfreq 框架本体，不直接承担 thermal cooling decision [已验证]
-- `hardware/interfaces/thermal/aidl/android/hardware/thermal/` — Thermal HAL AIDL 接口 [已验证]
-- `frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java` — Framework 温控服务 [已验证]
-
-### 官方文档
-- [Android Thermal Management](https://source.android.com/docs/core/power/thermal-mitigation) — 系统级温控架构 [已验证]
-- [Perfetto SQL getting started](https://perfetto.dev/docs/analysis/trace-analysis-with-sql) — Trace Processor 与标准表查询 [已验证]
-- [ADPF for Games](https://developer.android.com/games/optimize/performance#adpf) — 游戏 ADPF 集成指南 [已验证]
-- [Thermal API Reference](https://developer.android.com/reference/android/os/PowerManager) — PowerManager Thermal API [已验证]
-- [Game Mode API](https://developer.android.com/games/gamemode/gamemode-api) — Game Mode 文档 [已验证]
-
-### 其他参考
-- Linux kernel `Documentation/thermal/power_allocator.rst` — power_allocator governor 文档 [已验证]
-- Linux kernel `Documentation/thermal/sysfs-api.rst` — thermal zone sysfs 接口 [已验证]
-- [MediaTek MAGT & ADPF Integration](https://mediatek.com) — MediaTek 游戏性能优化案例 [来源: MediaTek 官方]
-- [Perfetto Trace Configuration](https://ui.perfetto.dev/) — thermal/ftrace 数据源配置 [已验证]
+- **[5.4 DVFS](04-dvfs.md)**：频率、电压和 QoS 如何决定执行点；
+- **[5.5 Thermal 管控](05-thermal.md)**：从传感器到应用的入门视图；
+- **[5.9 ADPF](09-adpf.md)**：Performance Hint、Game Mode 与 thermal API 的应用方法；
+- **[8.9 游戏性能](../../part2-performance/ch08-rendering/09-game-performance.md)**：帧率、渲染负载与持续性能；
+- **[11.1 功耗模型](../../part2-performance/ch11-power/01-power-model.md)**：功耗、能量与发热的关系。
