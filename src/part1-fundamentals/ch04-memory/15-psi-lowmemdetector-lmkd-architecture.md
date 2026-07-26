@@ -27,429 +27,395 @@ drafted_by: "task2a-content-processing"
 
 # 4.15 Android 17 PSI/LowMemDetector 与 lmkd 内存压力检测架构演进
 
-4.4 节讲了 lmkd 的整体工作原理：oom_score_adj 分级、两种检测模式（minfree 阈值与 PSI 驱动）、kill 执行流程。本节关注 Android 17 上的架构变化——lmkd 源码从 `system/core/` 迁移到 `system/memory/` 后，PSI 监控、BPF memevents、zone watermark 三条信号如何被统一进 `__mp_event_psi()` 的 kill 决策链，以及老路径（memcg v1 + `mp_event_common()`）的废弃时间线。
+§4.4 介绍了 lmkd 的进程登记、`oom_score_adj` 和基本杀进程流程。本节聚焦 Android 17 的压力检测：PSI 负责报告持续停顿，BPF memevents 记录 direct reclaim、kswapd 等内核事件，zone watermark、swap 和 workingset refault 则为杀进程判断提供当前状态。
 
-## PSI 内核接口与 libpsi 适配层
+本节以 `platform/system/memory/lmkd` 的 `android-17.0.0_r1` 为用户空间基准，以 common kernel `android17-6.18-2026-06_r6` 为内核基准。
 
-### /proc/pressure/memory 的 some 与 full
+## 先厘清 LowMemDetector 这个名字
 
-Linux PSI（Pressure Stall Information）在 `/proc/pressure/memory` 暴露两类停顿信号：
+Android 17 的 lmkd 和 common kernel 源码中没有名为 `LowMemDetector` 的类或模块。本节标题中的 LowMemDetector 只表示“低内存检测层”这个概念，不能把它当作可搜索的源码符号。
 
-```
+Android 17 需要区分两套互斥入口：
+
+| 入口 | 启用条件 | 谁判断并杀进程 |
+| --- | --- | --- |
+| 用户空间 lmkd | 没有可写的旧 LMK 模块参数 | lmkd 根据 PSI、watermark、swap、thrashing 等信息决策 |
+| 旧 in-kernel LMK 兼容接口 | `/sys/module/lowmemorykiller/parameters/minfree` 可写 | 旧内核模块执行 kill，lmkd 读取 kill 记录 |
+
+AOSP lmkd 的 README 已说明，upstream Linux 从 4.12 起移除了旧 lowmemorykiller driver，Android 改由用户空间 lmkd 承担压力监控和进程选择。Android 17 的 common kernel 6.18 基准树也不包含该旧驱动。厂商内核若继续提供兼容模块，lmkd 才会进入第二行的分支。
+
+## PSI：内核怎样量化“系统被内存拖住”
+
+### some、full、avg 与 total
+
+Kernel 6.18 通过 `/proc/pressure/memory` 输出：
+
+```text
 some avg10=0.12 avg60=0.05 avg300=0.01 total=12345678
 full avg10=0.03 avg60=0.01 avg300=0.00 total=3456789
 ```
 
-- **some**：至少一个任务因内存分配而阻塞（等待 page fault、内存回收等）
-- **full**：所有任务都在等待内存分配，CPU 空转
+这两行的定义是：
 
-`avg10` / `avg60` / `avg300` 是 10 秒 / 60 秒 / 300 秒的指数衰减平均，`total` 是累计阻塞微秒数。
+- `some`：在统计区间内，至少有一部分任务因该资源发生停顿；
+- `full`：所有 non-idle 任务同时停顿，此时 CPU 没有执行有效工作；
+- `avg10`、`avg60`、`avg300`：最近 10、60、300 秒窗口的停顿时间比例，单位是百分比；
+- `total`：累计停顿时间，单位是微秒。
 
-lmkd 用 PSI monitor 机制而非轮询读取这些文件。PSI monitor 允许用户空间注册一个阈值（如"1 秒窗口内 some stall 累计 ≥ 70ms"），当阈值触发时内核通过 epoll 的 `EPOLLPRI` 通知注册者。每个 monitor fd 的生命周期绑定到文件描述符，fd 关闭后内核自动销毁 monitor。
+“full”不能简化成“所有任务都在等待内存分配”。内核文档使用的是“all non-idle tasks are stalled”，其中包括被内存压力阻塞的有效工作负载；idle task 不计入。
 
-[已验证: AOSP android-17.0.0_r1, system/memory/lmkd/libpsi/psi.cpp]
+### 从内核记账到 PSI trigger
 
-### libpsi 独立共享库
+Kernel 的 `psi_memstall_enter()` / `psi_memstall_leave()` 标记内存停顿区间，随后通过 `psi_task_change()` 和 per-CPU `psi_group_cpu` 更新状态时间。`record_times()` 把从上次状态变化到当前时刻的增量写入对应计数。
 
-Android 12 将 lmkd 从 `system/core/lmkd/` 迁移到 `system/memory/lmkd/`，同时把 PSI 操作抽成独立共享库 `libpsi`，位于 `system/memory/lmkd/libpsi/`。其他需要监控内存压力的系统组件也可以复用这套接口，不必各自实现 epoll + PSI fd 管理。
+用户空间还可以在 `/proc/pressure/memory` 上注册 trigger。trigger 的格式是：
 
-`libpsi/include/psi/psi.h` 导出五个函数：
+```text
+<some|full> <threshold_us> <window_us>
+```
 
-| 函数 | 用途 |
-|------|------|
-| `init_psi_monitor(stall_type, threshold_us, window_us, resource)` | 打开 `/proc/pressure/<resource>` 并写入阈值字符串，返回 monitor fd |
-| `register_psi_monitor(epollfd, fd, data)` | 将 monitor fd 加入 epoll 实例，监听 `EPOLLPRI` |
-| `unregister_psi_monitor(epollfd, fd)` | 从 epoll 移除 |
-| `destroy_psi_monitor(fd)` | 关闭 fd，内核自动销毁 monitor |
-| `parse_psi_line(line, stall_type, stats[])` | 解析 `/proc/pressure/*` 的 `some` / `full` 行，提取 avg 和 total |
+例如 `some 70000 1000000` 表示：任意 1 秒跟踪窗口内，some memory stall 累计达到 70ms 时通知。每个 trigger 使用独立 fd；用户空间通过 `poll()` / `epoll()` 等待 `POLLPRI` / `EPOLLPRI`，关闭 fd 后内核销毁 trigger。内核限制通知频率，单个 trigger 每个窗口最多通知一次。
 
-`init_psi_monitor` 的实现写得很直接：以 `O_WRONLY` 打开 `/proc/pressure/memory`，snprintf 拼出 `"some 70000 1000000"` 格式的阈值字符串（70ms 阈值 / 1 秒窗口），write 进去，返回 fd。`resource` 参数支持 `PSI_MEMORY`、`PSI_IO`、`PSI_CPU` 三种资源，lmkd 只用 memory。
+Kernel 6.18 使用 `psi_rtpoll_worker` 汇总 per-CPU 时间并更新 trigger。这里的 rtpoll 是内核 PSI 的实时聚合线程，不是 lmkd 收到事件后的 10ms/100ms 状态轮询，两者不要混为一谈。
 
-```c
-// libpsi/psi.cpp — init_psi_monitor 核心路径
+## libpsi：lmkd 与 PSI 文件之间的薄适配层
+
+Android 17 的 `libpsi` 位于 `system/memory/lmkd/libpsi/`。头文件导出五个操作：
+
+| 函数 | 作用 |
+| --- | --- |
+| `init_psi_monitor()` | 打开 PSI 文件并写入 trigger |
+| `register_psi_monitor()` | 把 trigger fd 以 `EPOLLPRI` 加入 epoll |
+| `unregister_psi_monitor()` | 从 epoll 删除 fd |
+| `destroy_psi_monitor()` | 关闭 fd |
+| `parse_psi_line()` | 解析某一行 avg10/60/300 与 total |
+
+下面的片段说明 trigger 如何注册：
+
+```cpp
 fd = open(psi_resource_file[resource], O_WRONLY | O_CLOEXEC);
 snprintf(buf, sizeof(buf), "%s %d %d",
          stall_type_name[stall_type], threshold_us, window_us);
 write(fd, buf, strlen(buf) + 1);
-return fd;
 ```
 
-[已验证: AOSP android-17.0.0_r1, system/memory/lmkd/libpsi/psi.cpp + libpsi/include/psi/psi.h]
+`resource` 可以选择 memory、I/O 或 CPU。lmkd 的压力 trigger 使用 memory；发生 kill 时还会读取 memory、I/O 与 CPU PSI 数据写入统计。系统级 CPU PSI 没有有意义的 `full` 值，因此 `psi_parse_cpu()` 只解析 `some`。
 
-### PSI monitor 的资源语义
+## Android 17 实际注册哪两个 PSI trigger
 
-`psi_resource_file[]` 数组把枚举映射到路径：
+### 初始化数组不等于生效配置
 
-- `PSI_MEMORY` → `/proc/pressure/memory`
-- `PSI_IO` → `/proc/pressure/io`
-- `PSI_CPU` → `/proc/pressure/cpu`
-
-lmkd 在 `__mp_event_psi()` 决策完成后还会调用 `psi_parse_mem()` / `psi_parse_io()` / `psi_parse_cpu()` 读取当前 PSI 统计值，写入 kill 日志（`KILLINFO_LOG_TAG`），用于事后分析。这些统计值不参与 kill 决策，只做记录。
-
-## lmkd 检测路径演进
-
-### 三代检测方案
-
-| 时期 | 检测方式 | 核心函数 | 状态 |
-|------|---------|---------|------|
-| Android 8-9 | vmpressure 事件 + minfree 阈值 | `mp_event_common()` | deprecated，依赖 memcg v1 |
-| Android 10-11 | PSI monitor + vmpressure 回退 | `mp_event_psi()` 或 `mp_event_common()` | 混合 |
-| Android 12-17 | PSI monitor 为主 + BPF memevents | `__mp_event_psi()` | 当前主路径 |
-
-`mp_event_common()` 在 Android 17 源码中被标记为：
-
-```cpp
-[[deprecated("memcg v1 is not supported after Dec. 2026")]]
-static void mp_event_common(int data, uint32_t events, struct polling_params *poll_params)
-```
-
-这个函数依赖 `GetCgroupAttributePath("MemUsage")` 和 `GetCgroupAttributePath("MemAndSwapUsage")`，通过读取 memcg v1 的 `memory.usage_in_bytes` 和 `memory.memsw.usage_in_bytes` 来计算内存压力比。memcg v2 的统计接口不同，这条路径不兼容。
-
-lmkd 启动时通过 `use_new_strategy` 标志选择走 `mp_event_psi` 还是 `mp_event_common`。Android 12+ 设备默认走 `mp_event_psi`。`mp_event_psi` 是一个薄封装，把 PSI 事件等级包装后调用 `__mp_event_psi(PSI, ...)`。
-
-[已验证: AOSP android-17.0.0_r1, system/memory/lmkd/lmkd.cpp]
-
-### PSI 阈值参数
-
-`psi_thresholds` 数组定义了三个压力级别的触发条件：
+`lmkd.cpp` 先定义了 low、medium、critical 三个初始值：
 
 ```cpp
 static struct psi_threshold psi_thresholds[VMPRESS_LEVEL_COUNT] = {
-    { PSI_SOME, 70 },    // 70ms / 1s — low pressure
-    { PSI_SOME, 100 },   // 100ms / 1s — medium pressure
-    { PSI_FULL, 70 },    // 70ms / 1s — critical pressure
+    { PSI_SOME, 70 },
+    { PSI_SOME, 100 },
+    { PSI_FULL, 70 },
 };
 ```
 
-窗口大小 `DEFAULT_PSI_WINDOW_SIZE_MS = 1000`（1 秒）。这些值可通过系统属性覆盖：
-
-| 属性 | 默认值 | 含义 |
-|------|--------|------|
-| `ro.lmk.psi_partial_stall_ms` | 70 | low 级 some stall 阈值（ms） |
-| `ro.lmk.psi_complete_stall_ms` | 700 | critical 级 full stall 阈值（ms） |
-
-`ro.lmk.psi_complete_stall_ms` 默认 700ms，但 `psi_thresholds[VMPRESS_LEVEL_CRITICAL]` 初始硬编码为 70ms（PSI_FULL 70ms / 1s）。`update_props()` 在运行时会用属性值覆盖数组中对应字段。低内存设备（`ro.config.low_ram=true`）的 partial stall 默认值为 200ms，检测更宽松——低内存设备 PSI 事件频繁，阈值过低会导致持续杀进程。
-
-[已验证: AOSP android-17.0.0_r1, system/memory/lmkd/lmkd.cpp — DEF_PARTIAL_STALL=70, DEF_COMPLETE_STALL=700]
-
-### PSI 事件触发后的轮询机制
-
-PSI monitor 只是入口信号。收到事件后 lmkd 进入轮询模式，在 `DEFAULT_PSI_WINDOW_SIZE_MS`（1 秒）窗口内持续读取 `/proc/meminfo`、`/proc/vmstat`、`/proc/zoneinfo`，判断压力是否持续。
-
-轮询间隔有两个档位：
-
-- `PSI_POLL_PERIOD_SHORT_MS = 10`（高压力时）
-- `PSI_POLL_PERIOD_LONG_MS = 100`（低压力时）
-
-轮询在 kill 完成、swap 充足且没有 direct reclaim 时停止，回到等待 PSI 事件状态。这个设计避免了"PSI 事件 → kill → PSI 事件"的振荡：kill 之后进入轮询窗口观察效果，如果压力仍然存在，继续 kill；如果压力消退，退出轮询。
-
-## BPF memevents 事件订阅机制
-
-### 架构概述
-
-Android 17 的 lmkd 引入了基于 BPF 的 memevents 事件订阅机制。`memevent_listener` 是一个 `std::unique_ptr<MemEventListener>` 实例，通过 BPF ring buffer 从内核订阅内存事件。
-
-初始化代码在 `init_memevent_listener_monitoring()` 中：
+这组 70/100/70 会在现代策略中被覆盖。`init_psi_monitors()` 的 `use_new_strategy` 分支执行：
 
 ```cpp
-android::bpf::waitForProgsLoaded();
-memevent_listener = std::make_unique<MemEventListener>(
-    android::bpf::memevents::MemEventClient::LMKD);
+psi_thresholds[VMPRESS_LEVEL_LOW].threshold_ms = 0;
+psi_thresholds[VMPRESS_LEVEL_MEDIUM].threshold_ms = psi_partial_stall_ms;
+psi_thresholds[VMPRESS_LEVEL_CRITICAL].threshold_ms = psi_complete_stall_ms;
 ```
 
-`waitForProgsLoaded()` 确保 BPF 程序已加载——如果 lmkd 在 BPF 程序就绪前尝试创建 listener，初始化会失败。
+阈值为 0 的 low 档不会注册 handler。因此，Android 17 的默认新策略实际使用：
 
-### 四类事件
+| 压力档 | PSI 类型 | 普通设备默认值 | low-RAM 默认值 |
+| --- | --- | ---: | ---: |
+| low | `PSI_SOME` | 关闭 | 关闭 |
+| medium | `PSI_SOME` | 70ms / 1s | 200ms / 1s |
+| critical | `PSI_FULL` | 700ms / 1s | 700ms / 1s |
 
-| 事件类型 | 触发条件 | lmkd 处理 |
-|---------|---------|----------|
-| `MEM_EVENT_DIRECT_RECLAIM_BEGIN` | 内核进入直接内存回收 | 记录 direct reclaim 开始时间戳 |
-| `MEM_EVENT_DIRECT_RECLAIM_END` | 直接回收结束 | 清除时间戳 |
-| `MEM_EVENT_KSWAPD_WAKE` | kswapd 内核线程唤醒 | 记录 kswapd 开始时间戳 |
-| `MEM_EVENT_KSWAPD_SLEEP` | kswapd 进入睡眠 | 清除时间戳 |
-| `MEM_EVENT_VENDOR_LMK_KILL` | 厂商内核 LMK 杀进程 | 转发到 `__mp_event_psi(VENDOR, ...)` |
-| `MEM_EVENT_UPDATE_ZONEINFO` | zone 水位线更新 | 调用 `update_zoneinfo_watermarks()` 刷新缓存 |
+`psi_window_size_ms` 默认 1000ms。将窗口改短时，应连同 partial/complete stall 一起评估；只改窗口会改变阈值占窗口的比例。
 
-[已验证: AOSP android-17.0.0_r1, system/memory/lmkd/lmkd.cpp — memevent_listener_notification()]
+### 新旧策略怎样选择
 
-### 注册时机：boot_completed 之后
+`use_new_strategy` 的默认表达式是：
 
-memevent listener 的注册推迟到 `LMK_BOOT_COMPLETED` 之后。`lmkd.rc` 中配置了对应的 init 触发：
-
-```
-on property:sys.boot_completed=1
-    exec_background /system/bin/lmkd --boot_completed
+```text
+low_ram_device || !use_minfree_levels
 ```
 
-lmkd 收到 `LMK_BOOT_COMPLETED` 命令后调用 `init_memevent()`。这个延迟注册的考虑是：启动阶段 BPF 程序可能尚未加载完成，`waitForProgsLoaded()` 会阻塞等待，如果在启动早期注册会拖慢 boot。
+`use_minfree_levels` 默认是 `false`，所以常规 AOSP 配置会选新策略。属性可以覆盖该选择；若请求旧策略但系统不是 memcg v1，初始化直接失败，并打印“Old kill strategy can only be used with v1 cgroup hierarchy”。
 
-`LMK_START_MONITORING` 命令是另一条路径，用于 PSI monitor 的延迟初始化。如果 `sys.boot_completed` 为 true 且 monitors 尚未初始化，`LMK_START_MONITORING` 触发 `init_monitors()`，注册 PSI epoll fd。
+旧策略的 `mp_event_common()` 依赖 cgroup v1 的 `MemUsage` 和 `MemAndSwapUsage`。Android 17 已用 `[[deprecated("memcg v1 is not supported after Dec. 2026")]]` 标注该函数。这个日期描述的是当前源码中的兼容期限，不应扩展成所有厂商设备在同一天切换的承诺。
 
-[已验证: AOSP android-17.0.0_r1, system/memory/lmkd/lmkd.rc + lmkd.cpp]
+### 属性覆盖顺序
 
-### memevents 与 PSI 的互补关系
+`GET_LMK_PROPERTY` 先读：
 
-PSI monitor 检测的是**持续的内存压力**——some stall 70ms / 1s 意味着压力已经持续了一段时间。memevents 捕获的是**瞬时内核事件**——direct reclaim 开始的那一刻就发出通知，不需要等到 stall 累积。
+```text
+persist.device_config.lmkd_native.<name>
+```
 
-在 `__mp_event_psi()` 的决策链中，direct reclaim 的持续时长是一个判定因子。如果 direct reclaim 持续超过 `direct_reclaim_threshold_ms`（通过 `ro.lmk.direct_reclaim_threshold_ms` 配置），触发 `DIRECT_RECL_STUCK` kill reason。这个时长就是通过 `MEM_EVENT_DIRECT_RECLAIM_BEGIN` / `END` 事件的时间戳差计算的。
+若不存在，再读：
 
-当 `MEM_EVENT_UPDATE_ZONEINFO` 可用时，lmkd 不再需要每分钟轮询 `/proc/zoneinfo` 刷新水位线（`wmark_update_tm` 的 60 秒超时检查被跳过），改为事件驱动刷新。
+```text
+ro.lmk.<name>
+```
 
-## lmkd kill 决策链
+`lmkd.rc` 为常用实验属性配置了变化触发器：属性变化后设置 `lmkd.reinit`，再通过控制命令重新读取配置并重建 PSI monitors。不是每个 `GET_LMK_PROPERTY` 参数都在 rc 中有热更新触发器，判断某个参数能否即时变化时要同时检查 `update_props()` 和 `lmkd.rc`。
 
-### __mp_event_psi 的判定流程
+## PSI 事件之后：1 秒窗口内继续观察
 
-`__mp_event_psi()` 是 Android 17 lmkd 的核心决策函数。无论是 PSI epoll 事件、PSI 轮询超时，还是 BPF memevents 中的 vendor kill 事件，都经过这个函数。
+PSI trigger 只是一次唤醒信号。`mp_event_psi()` 把压力档封装后调用 `__mp_event_psi(PSI, ...)`；事件处理结束后，lmkd 在 PSI window 内继续调用同一个判断函数，以确认压力是否仍在。
 
-收到压力信号后，函数依次检查以下条件，命中第一个就确定 kill reason 和 `min_score_adj`（候选进程的最低 oom_score_adj 门槛）：
+每次判断会读取或计算：
 
-1. **Vendor kill**：厂商内核 LMK 通过 `MEM_EVENT_VENDOR_LMK_KILL` 发来的杀进程请求，使用 vendor 指定的 reason 和 min_oom_score_adj
+- `/proc/meminfo` 中的 free、swap、anonymous、file cache 等数据；
+- `/proc/vmstat` 中的 scan、refill、workingset refault；
+- memory PSI，发生 kill 时再补充 I/O 与 CPU PSI；
+- 缓存的 zone watermarks，必要时刷新 `/proc/zoneinfo`；
+- memevents 提供的 direct reclaim / kswapd 状态。
 
-2. **Pressure after kill**（`cycle_after_kill`）：上一轮已经杀过进程，但 zone watermark 仍低于 LOW —— 说明上一轮 kill 释放的内存不够，继续杀，门槛降到 `pressure_after_kill_min_score`
+轮询间隔由当前状态决定：
 
-3. **Critical stall + NOT_RESPONDING**：PSI critical 事件 + watermark ≤ HIGH —— 设备已无法正常响应，`min_score_adj` 从 `lowmem_min_oom_score` 开始
+- swap 低或本轮刚杀过进程：10ms；
+- 其他情况：100ms。
 
-4. **Low swap + thrashing**：swap 低于阈值 + page cache thrashing 超过 `thrashing_limit_pct`。如果 watermark > MIN 且 thrashing < `thrashing_critical_pct`，`min_score_adj = PERCEPTIBLE_APP_ADJ + 1`（201），避免杀可感知进程
+等待 pidfd 的进程死亡通知时，轮询会暂停。事件到达、kill 后或 direct reclaim 持续时，轮询继续；单纯的 kswapd 活跃不会无限延长轮询窗口。
 
-5. **Low swap + low watermark**：swap 低 + watermark < HIGH。同样保护 perceptible 进程
+10ms/100ms 是 lmkd 对系统内存状态的复查间隔，不是 PSI trigger 的内核采样周期，也不是固定的 kill 周期。
 
-6. **Low watermark + high swap utilization**：watermark < HIGH + swap 利用率超过 `swap_util_max`
+## BPF memevents：补上瞬时回收状态
 
-7. **Low watermark + thrashing**：watermark < HIGH + thrashing > `thrashing_limit`。如果 thrashing < critical，保护 perceptible
+PSI 反映一段窗口内累积的停顿。Android 17 的 lmkd 还通过 `MemEventListener` 订阅 BPF ring buffer，用时间点事件补充当前回收状态。
 
-8. **Direct reclaim + thrashing**：处于直接回收状态 + thrashing > limit。主要出现在低内存设备上
+### 为什么在 boot completed 后初始化
 
-9. **Direct reclaim stuck**：direct reclaim 持续时长 > `direct_reclaim_threshold_ms`。依赖 memevents 提供的时间戳
+`LMK_BOOT_COMPLETED` 命令到达后，lmkd 调用 `init_memevent()`。源码注释给出的原因是：避免启动期间等待 BPF programs 加载。若 lmkd 在系统已经完成启动后重启，也会在初始化末尾直接建立 listener。
 
-10. **Low filecache after thrashing**：thrashing 之后 file-backed page cache 低于 `filecache_min_kb`
+`lmkd.rc` 在 `sys.boot_completed=1` 时执行：
 
-11. **Low watermark (fallback)**：以上都不命中，但 watermark < HIGH 且 `lowmem_min_oom_score <= OOM_SCORE_ADJ_MAX`，按 `lowmem_min_oom_score` 门槛杀
+```text
+exec_background /system/bin/lmkd --boot_completed
+```
 
-所有条件都未命中时，`kill_reason = NONE`，本轮不杀进程。
+另一个 `LMK_START_MONITORING` 命令只负责补做曾被 `delay_monitors_until_boot` 推迟的 PSI monitor 初始化，不能与 memevents 初始化命令混用。
 
-### Critical stall 的特殊处理
+### 六类事件的作用
 
-在确定要 kill 之后，还有一个关键检查：
+Android 17 注册的 memevents 如下：
+
+| 事件 | lmkd 的处理 |
+| --- | --- |
+| `MEM_EVENT_DIRECT_RECLAIM_BEGIN` | 记录 direct reclaim 起始时间 |
+| `MEM_EVENT_DIRECT_RECLAIM_END` | 清除 direct reclaim 起始时间 |
+| `MEM_EVENT_KSWAPD_WAKE` | 记录 kswapd 起始时间 |
+| `MEM_EVENT_KSWAPD_SLEEP` | 清除 kswapd 起始时间 |
+| `MEM_EVENT_VENDOR_LMK_KILL` | 携带厂商 reason 与最低 `oom_score_adj`，进入 `__mp_event_psi(VENDOR, ...)` |
+| `MEM_EVENT_UPDATE_ZONEINFO` | 立即刷新 zone watermarks |
+
+direct reclaim 和 kswapd 四个事件是 listener 成功初始化的必要订阅；注册失败会放弃 memevents listener。vendor kill 与 update-zoneinfo 是可选能力，单项失败不会让整个 listener 失效。
+
+只有 vendor kill 会直接调用 `__mp_event_psi()`。direct reclaim / kswapd 事件更新状态，等 PSI 事件或轮询调用时再参与判断；update-zoneinfo 只更新水位线缓存。
+
+若 memevents 不可用，lmkd 通过 `pgscan_direct`、`pgscan_kswapd` 和 `pgrefill` 的变化推断 reclaim 状态。此时 `direct_reclaim_threshold_ms` 会被禁用，因为 vmstat 增量不能提供可靠的 direct reclaim 起始时间。
+
+## Zone watermark：把压力落到可用页状态
+
+lmkd 从 `/proc/zoneinfo` 读取每个 zone 的 `min`、`low`、`high`，并给每一档加上该 zone 的 `max_protection` 后求和。判断时先从 free pages 中减去 CMA free：
 
 ```cpp
-if (critical_stall) {
-    min_score_adj = 0;
-}
-```
-
-`critical_stall` 的判定依据是 `psi_parse_mem()` 读取的 `PSI_FULL` avg10 值是否超过 `stall_limit_critical`。当系统进入 critical stall——所有任务都因内存阻塞——lmkd 将 `min_score_adj` 设为 0，意味着前台进程（FOREGROUND_APP_ADJ = 0）也在候选范围内。这是 lmkd 的最后一道防线：宁可杀前台 App 也不让整个系统挂死。
-
-### kill 执行：find_and_kill_process
-
-确定 `min_score_adj` 后，`find_and_kill_process()` 从 `OOM_SCORE_ADJ_MAX`（1000）向下扫描到 `min_score_adj`，逐级查找候选进程：
-
-```cpp
-for (i = OOM_SCORE_ADJ_MAX; i >= min_score_adj; i--) {
-    procp = choose_heaviest_task ? proc_get_heaviest(i) : proc_adj_tail(i);
-    // ...
-    killed_size = kill_one_process(procp, min_score_adj, ...);
-}
-```
-
-当候选 `oom_score_adj ≤ PERCEPTIBLE_APP_ADJ`（200）时，切换为 `choose_heaviest_task` 策略——选内存占用最大的进程，试图用最少的 kill 数量释放最多的内存。
-
-`kill_one_process()` 最终走 `reaper.kill()`：先 `pidfd_send_signal(SIGKILL)`，再 `process_mrelease()` 促使内核尽快回收匿名页和页表。`process_mrelease()` 是 Linux 5.11+ 的系统调用，lmkd 从 Android 16 开始使用（详见 4.4 节对 reaper 的分析）。
-
-[已验证: AOSP android-17.0.0_r1, system/memory/lmkd/lmkd.cpp + reaper.cpp]
-
-## PSI 阈值调优与性能影响
-
-### 阈值过高与过低的后果
-
-PSI 阈值直接控制 lmkd 的反应速度。配置过高（如 partial stall 200ms 以上），内存压力积累到很严重才触发 kill，用户感知到 ANR 和全局卡顿。配置过低（如 partial stall 30ms），lmkd 过于激进，缓存进程很快被清空，用户切回 App 时频繁冷启动。
-
-Android 17 的默认值（partial 70ms / complete 700ms / window 1s）是 AOSP 在 Pixel 设备上的经验值。OEM 通过 `ro.lmk.psi_partial_stall_ms` 和 `ro.lmk.psi_complete_stall_ms` 调整，也可以通过 DeviceConfig（`persist.device_config.lmkd_native.*`）在运行时动态切换。
-
-### 不同 RAM 容量下的差异
-
-低内存设备（`ro.config.low_ram=true`，通常 ≤ 2GB RAM）的 partial stall 默认 200ms——这些设备内存回收频繁，阈值过低会导致 lmkd 几乎不停地在杀进程。同时 `low_ram_device` 标志让 `find_and_kill_process()` 每轮只杀一个进程（`For Go devices kill only one task`）。
-
-大内存设备（8GB+）通常不需要调高阈值——PSI 事件触发频率本来就低。OEM 更关注的是 thrashing 阈值和 swap 相关参数，因为大内存设备的内存压力更多表现为 swap 耗尽和 file cache thrashing，而非纯粹的空闲内存不足。
-
-### DeviceConfig 暴露的调优参数
-
-`lmkd.rc` 在 Android 17 中通过 init property 触发 lmkd 重新初始化（`lmkd.reinit=1` → `lmkd --reinit`）。以下参数均支持运行时热更新：
-
-| DeviceConfig 属性 | 对应内部变量 | 默认值 |
-|---|---|---|
-| `psi_partial_stall_ms` | `psi_partial_stall_ms` | 70 |
-| `psi_complete_stall_ms` | `psi_complete_stall_ms` | 700 |
-| `psi_window_size_ms` | `psi_window_size_ms` | 1000 |
-| `thrashing_limit` | `thrashing_limit_pct` | 设备配置 |
-| `thrashing_limit_decay` | `thrashing_limit_decay_pct` | 设备配置 |
-| `thrashing_limit_critical` | `thrashing_critical_pct` | 设备配置 |
-| `swap_free_low_percentage` | `swap_free_low_percentage` | 设备配置 |
-| `swap_util_max` | `swap_util_max` | 100 |
-| `filecache_min_kb` | `filecache_min_kb` | 设备配置 |
-| `kill_heaviest_task` | `kill_heaviest_task` | false |
-| `kill_timeout_ms` | `kill_timeout_ms` | 设备配置 |
-| `lowmem_min_oom_score` | `lowmem_min_oom_score` | PREVIOUS_APP_ADJ+1 |
-| `direct_reclaim_threshold_ms` | `direct_reclaim_threshold_ms` | 0（禁用） |
-
-[已验证: AOSP android-17.0.0_r1, system/memory/lmkd/lmkd.rc]
-
-## LowMemDetector 与 lmkd 的协作边界
-
-Android 系统中"低内存杀进程"这件事有两个独立机制：内核里的 LowMemoryKiller（旧版已被移除的驱动）和用户空间的 lmkd。但在 Android 17 上还有一个内核侧的内存检测组件需要厘清。
-
-### /proc/lowmemorykiller 的 poll 接口
-
-lmkd.cpp 中有一行容易被忽视的代码：
-
-```cpp
-kpoll_fd = TEMP_FAILURE_RETRY(
-    open("/proc/lowmemorykiller", O_RDONLY | O_NONBLOCK | O_CLOEXEC));
-```
-
-这个 fd 被加入 epoll，当内核检测到内存水位跌破最低水位线（min watermark）时，`/proc/lowmemorykiller` 变为可读，通知 lmkd。这是一种内核到用户空间的主动通知机制，让 lmkd 不必轮询 `/proc/meminfo`。
-
-这个接口的存在取决于内核是否编译了对应的 driver（部分厂商内核有，AOSP 通用内核不一定有）。如果 `open()` 失败，lmkd 回退到纯 PSI + zoneinfo 轮询路径。
-
-[已验证: AOSP android-17.0.0_r1, system/memory/lmkd/lmkd.cpp — kpoll_fd 初始化]
-
-### Zone watermark 作为 kill 决策的底层锚点
-
-lmkd 的 kill 决策链中，zone watermark 是几乎每个条件都要检查的基础指标。`get_lowest_watermark()` 比较当前空闲页（减去 CMA 区域）与三个水位线：
-
-```cpp
-int64_t nr_free_pages = mi->field.nr_free_pages - mi->field.cma_free;
-
-if (nr_free_pages < watermarks->min_wmark)  return WMARK_MIN;
-if (nr_free_pages < watermarks->low_wmark)  return WMARK_LOW;
-if (nr_free_pages < watermarks->high_wmark) return WMARK_HIGH;
+int64_t free = nr_free_pages - cma_free;
+if (free < min_wmark)  return WMARK_MIN;
+if (free < low_wmark)  return WMARK_LOW;
+if (free < high_wmark) return WMARK_HIGH;
 return WMARK_NONE;
 ```
 
-水位线从 `/proc/zoneinfo` 的每个 zone 的 `min` / `low` / `high` 字段加上 `max_protection`（zone 的累积保护页数）计算得来。`MEM_EVENT_UPDATE_ZONEINFO` 事件可用时，内核在水位线变化时主动通知 lmkd 刷新缓存；不可用时 lmkd 每 60 秒刷新一次。
+`MEM_EVENT_UPDATE_ZONEINFO` 可用时，内核事件负责触发缓存更新；不支持该事件时，lmkd 至少每 60 秒重新读取一次 zoneinfo。第一次 kill 前，代码还会强制重新计算，降低陈旧 watermark 导致误判的风险。
 
-### 两个检测层的分工
+watermark 只表示空闲页所处区间。lmkd 还需要结合 swap、refault 和 reclaim 状态，才能区分“短时低水位”与“系统正在持续抖动”。
 
-| 层 | 检测目标 | 响应方式 |
-|---|---|---|
-| PSI monitor（内核 → lmkd） | 持续性内存停顿（some/full stall） | epoll EPOLLPRI，触发 `__mp_event_psi()` |
-| BPF memevents（内核 → lmkd） | 瞬时回收事件（direct reclaim、kswapd、vendor kill） | ring buffer 通知，更新状态变量 |
-| Zone watermark（lmkd 读取） | 空闲页数量是否低于水位线 | kill 决策中的核心判定因子 |
-| `/proc/lowmemorykiller` poll（内核 → lmkd） | 内存极度不足（min watermark 以下） | epoll 可读通知 |
+## ZRAM-aware free swap：逻辑容量还要受物理内存约束
 
-PSI 负责"压力已经持续了一阵"的检测，memevents 负责"内核正在做内存回收"的即时通知，zone watermark 是两者共同的底层量化依据。lmkd 把这三条信号汇入同一个决策函数，根据 watermark 级别、thrashing 程度、swap 状态、reclaim 状态的组合，决定是否 kill 以及 kill 到哪个优先级。
-
-## 扩展
-
-### PSI for I/O 与 CPU 的分析价值
-
-`/proc/pressure/io` 和 `/proc/pressure/cpu` 不被 lmkd 用于 kill 决策，但在性能分析中有直接价值。IO stall 高通常意味着存储子系统成为瓶颈——可能是 f2fs garbage collection、或者大量脏页 writeback。CPU stall 高说明 CPU 调度延迟大，可能是 RT 进程抢占或者 CPU 频率锁定在低位。
-
-lmkd 在 kill 事件日志中会一并记录当时的 IO 和 CPU PSI avg10 值（`psi_parse_io()` / `psi_parse_cpu()` 的输出），在事后分析内存 kill 是否伴随 IO 或 CPU 压力时可以参考。
-
-### memcg v2 迁移对内存管理的影响
-
-`mp_event_common()` 的 deprecated 标注标志着 memcg v1 的退出。memcg v2 的统计接口从 `memory.usage_in_bytes` 变为 `memory.current`，粒度更细（新增 `memory.peak`、`memory.swap.current` 等）。但 lmkd 的现代路径（`__mp_event_psi()`）完全不依赖 memcg 统计——它用的是全局 `/proc/meminfo` 和 `/proc/zoneinfo`。
-
-memcg v2 迁移影响更大的是 per-app 内存归因和 `dumpsys meminfo` 的输出格式，对 lmkd kill 策略本身没有直接影响。对应用开发者来说，`Debug.getMemoryInfo()` 和 `ActivityManager.getProcessMemoryInfo()` 的返回值在 memcg v2 下可能略有差异，但框架层做了兼容。
-
-### 开发者可观测的 PSI 信号
-
-应用进程可以读取 `/proc/pressure/memory` 做主动内存管理。Android 的 Memory Advice API（`android.performance.MemoryAdvice`，Jetpack library）底层就参考了 PSI 数据。开发者可以注册 `MemoryAdvice.OnAvailabilityListener`，在收到 `PRESSURE_MEDIUM` 或 `PRESSURE_HIGH` 时主动释放缓存。
-
-在低内存设备上，主动释放的效果比被动等 lmkd kill 好得多——lmkd kill 是 SIGKILL，进程没有机会做清理；MemoryAdvice 回调允许 App 在被杀之前主动缩减内存占用。
-
-[适用版本: Android 11+ — Memory Advice API 通过 Jetpack 分发]
-
-## 延伸阅读
-
-### Android 17 ZRAM 与 PSI 压力管理机制
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md
-- 类型：DeepResearch 调研结果
-- 摘要：ZRAM 从 mm/zram.c 迁移到 drivers/block/zram/ 子目录，支持 CONFIG_ZRAM_MULTI_COMP 多 compressor（最多 4 个）按 slot recompression。PSI 通过 per-CPU state 记账 + epoll 事件通知 lmkd，监听间隔分 10ms（高压力）与 100ms（低压力）。
-- 注入时间：2026-07-17
-- 价值：ZRAM 多后端架构与 PSI 分级监听的源码级补强
-
-
-### Android 17 LMKD 用户态迁移 + PSI 协同机制源码级调研
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-07-android17-lmkd-userspace-migration-psi.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 17 LMKD 从 system/core 迁移至 system/memory/lmkd/，全面采用 PSI（Pressure Stall Information）替代 vmpressure。通过 BPF ring buffer 实时监听 direct reclaim/kswapd/vendor kill 事件，基于 zone watermarks、thrashing 和 swap utilization 三维决策模型选择 kill 目标。pidfd 等待取代传统信号量，PSI 监听间隔分 10ms（高压力）和 100ms（低压力），通过 epoll 事件驱动高效响应。
-- 注入时间：2026-07-08
-- 价值：补全 ch04 关于 LMKD PSI 监听机制和内存压力三维决策模型的源码级盲区
-
-
-<!-- AIW-源码调研-2026-07-14:PSI 内核态聚合 + lmkd 三档阈值 + ZRAM-aware free_swap（Android 17） -->
-
-## Android 17 PSI 内核态聚合 + lmkd 三档阈值与 ZRAM-aware free_swap（源码补全）
-
-> 调研日期：2026-07-14  
-> 源码基准：`kernel/common refs/tags/android17-6.18-2026-06_r6:kernel/sched/psi.c`（1689 行） + `platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1`  
-> 调研依据：`DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md`
-
-**PSI 内核态核心数据结构**（`kernel/sched/psi.c`）：
-
-```c
-struct psi_group_cpu {
-    u64 state_start;          // 当前 state 起点时间戳
-    u32 state_mask;           // 当前 state 位图（PSI_IO/MEM/CPU/IRQ × SOME/FULL）
-    u32 times[PSI_NONIDLE + 1];  // 各状态累计时间
-};
-
-struct psi_group {
-    struct psi_group_cpu __percpu *pcpu;
-    struct mutex avgs_lock;
-    u64 avg[PSI_AVGS_MAX][3];   // avg10 / avg60 / avg300
-    u64 total[PSI_AVGS][PSI_RES_MAX * 2 + 1];
-    struct delayed_work avgs_work;
-    struct timer_list rtpoll_timer;
-    struct task_struct *rtpoll_task;
-    ...
-};
-```
-
-`record_times()` 在每次 `psi_task_change()` 入口被调用，把 `state_start → now` 的 delta 累加到 `times[]`。`psi_rtpoll_work()` 由独立 kthread 跑 `wait_event_interruptible(rtpoll_wait, atomic_cmpxchg(rtpoll_wakeup, 1, 0))`，被 epoll `EPOLLPRI` 唤醒后调用 `collect_percpu_times()` + `update_triggers()`。`psi_memstall_enter/leave()` 是 direct reclaim / kswapd 路径的入口，在 `__alloc_pages_slowpath()` 中调用。
-
-**lmkd 三档 PSI 阈值**（`lmkd.cpp` 第 231-234 行）：
+直接使用 `SwapFree` 可能高估 ZRAM 还能接收的数据量：ZRAM 的逻辑 swap slot 最终仍需要物理内存保存压缩页。Android 17 用下面的计算限制有效 free swap：
 
 ```cpp
-static struct psi_threshold psi_thresholds[VMPRESS_LEVEL_COUNT] = {
-    { PSI_SOME, 70 },    // low: 70ms / 1s SOME stall
-    { PSI_SOME, 100 },   // medium: 100ms / 1s SOME stall
-    { PSI_FULL, 70 },    // critical: 70ms / 1s FULL stall
-};
-```
-
-`init_psi_monitors()` 在新策略下覆盖默认值：
-
-```cpp
-if (use_new_strategy) {  // low_ram_device || !use_minfree_levels
-    psi_thresholds[VMPRESS_LEVEL_LOW].threshold_ms = 0;     // 关闭 low
-    psi_thresholds[VMPRESS_LEVEL_MEDIUM].threshold_ms = psi_partial_stall_ms;
-    psi_thresholds[VMPRESS_LEVEL_CRITICAL].threshold_ms = psi_complete_stall_ms;
+if (swap_compression_ratio) {
+  return std::min(
+      free_swap,
+      easy_available * swap_compression_ratio /
+          swap_compression_ratio_div);
 }
+return free_swap;
 ```
 
-`use_new_strategy = low_ram_device || !use_minfree_levels`，且要求 memcg v1 才走老策略；否则 `ALOGE("Old kill strategy can only be used with v1 cgroup hierarchy"); return false;`。
+例如 ratio/div 配为 2/1，表示 1 页容易获得的物理内存按平均 2:1 压缩率估算可承载 2 页 swap 数据。最终值仍取 `free_swap` 与该估算的较小者，防止逻辑 slot 或物理内存任何一侧被高估。把 ratio 设为 0 会忽略这一物理内存约束，直接返回 `free_swap`。
 
-**`get_free_swap()` ZRAM 适配**（`lmkd.cpp` 第 2026-2033 行）：
+这个值参与 low-swap 判断、swap utilization 和 kill 日志。它不会改变 ZRAM 驱动的压缩器或 slot 数，只改变 lmkd 对“还能换出多少”的估算。
 
-```cpp
-// In the case of ZRAM, mi->field.free_swap can't be used directly because
-// swap space is taken from the free memory or reclaimed. Use the lowest of
-// free_swap and easily available memory to measure free swap
-static inline int64_t get_free_swap(union meminfo *mi) {
-    if (swap_compression_ratio)
-        return std::min(mi->field.free_swap,
-            mi->field.easy_available * swap_compression_ratio / swap_compression_ratio_div);
-    return mi->field.free_swap;
-}
+## `__mp_event_psi()`：判断顺序决定 kill reason
+
+`__mp_event_psi()` 先处理未结束的 kill，再读取 vmstat、meminfo、reclaim、thrashing、watermark 和 PSI。随后按源码顺序检查条件，前面的分支命中后不会继续选择后面的 reason。
+
+| 顺序 | 主要条件 | kill reason |
+| ---: | --- | --- |
+| 1 | vendor memevent | vendor reason |
+| 2 | 上一轮已 kill，仍低于 low watermark | `PRESSURE_AFTER_KILL` |
+| 3 | critical PSI 事件且任一 watermark 被突破 | `NOT_RESPONDING` |
+| 4 | low swap 且 thrashing 超阈值 | `LOW_SWAP_AND_THRASHING` |
+| 5 | low swap 且低于 high watermark | `LOW_MEM_AND_SWAP` |
+| 6 | 低于 high watermark 且 swap utilization 超阈值 | `LOW_MEM_AND_SWAP_UTIL` |
+| 7 | 低于 high watermark 且 thrashing 超阈值 | `LOW_MEM_AND_THRASHING` |
+| 8 | direct reclaim 且 thrashing 超阈值 | `DIRECT_RECL_AND_THRASHING` |
+| 9 | direct reclaim 持续时间超阈值 | `DIRECT_RECL_STUCK` |
+| 10 | 抖动后 file cache 仍低且 watermark 被突破 | `LOW_FILECACHE_AFTER_THRASHING` |
+| fallback | 低于 high watermark 且允许 low-memory kill | `LOW_MEM` |
+
+其中“低于 high watermark”在枚举比较中指 `WMARK_MIN` 或 `WMARK_LOW`；“任一 watermark 被突破”还包括 `WMARK_HIGH`。
+
+### Thrashing 怎样计算
+
+lmkd 使用 `workingset_refault`（新内核字段名为 `workingset_refault_file`）相对于 file-backed page cache 基线的增长率：
+
+```text
+thrashing =
+    (current_refault - initial_refault) * 100 /
+    (base_active_file + base_inactive_file + 1)
 ```
 
-`swap_compression_ratio / div` 通过 `ro.lmk.swap_compression_ratio`（默认 1）调节：当 ZRAM 把匿名页压缩到 1/2 时，free_swap 在内存视角相当于翻倍。这一逻辑保证 lmkd 不会在 ZRAM 实际可用内存还很多时仍触发 kill。
+默认每个 `THRASHING_RESET_INTERVAL_MS` 窗口重设基线。若上一窗口没有合适进程可杀，代码会保留并衰减部分增长量，以便新的候选进程出现时继续判断。成功 kill 后，部分 reason 还会按 `thrashing_limit_decay_pct` 下调下一轮阈值。
 
-**`__mp_event_psi()` 统一事件入口**（`lmkd.cpp` 第 2773 行）：从 `mp_event_psi()` / `memevent_listener_notification()` / vendor hook 汇入，先 `record_wakeup_time()` 记时间戳，再按 `level_oomadj[]` 选 oom_score_adj 区间映射的 candidate，启用 `kill_heaviest_task` 时优先 RSS+swap 最大者。Reaper 通过 `pidfd_send_signal()` + `pidfd` 监听死亡，`poll_params->update = POLLING_PAUSE` 等待死亡通知。
+这个指标描述 file-backed page cache 的 refault 压力，不能直接当作匿名页换入率或 ZRAM 压缩率。
 
-**监听间隔分级**：`PSI_POLL_PERIOD_SHORT_MS = 10`（高压力），`PSI_POLL_PERIOD_LONG_MS = 100`（低压力），避免 lmkd 自旋轮询 `/proc/pressure/*`。事件通知走 epoll `EPOLLPRI`（`libpsi/psi.cpp` 第 79 行 `epev.events = EPOLLPRI`）。
+### PSI critical event 与 `critical_stall` 是两个条件
 
-[适用版本: Android 17 (API 37) / Kernel 6.18 + lmkd android-17.0.0_r1]
+这两个名字很接近，但用途不同：
 
+- critical PSI trigger：默认是 1 秒内累计 700ms `PSI_FULL`，配合 watermark 产生 `NOT_RESPONDING` reason；
+- `critical_stall`：当前 memory `full avg10` 大于 `stall_limit_critical` 时为真；已有任意 kill reason 时，它把 `min_score_adj` 改为 0。
+
+`stall_limit_critical` 默认值为 100，而 `avg10` 是 0—100 的百分比，源码使用严格的大于号，因此默认配置下这个额外放宽条件通常不会成立。只有设备把该阈值调低等情况，`critical_stall` 才可能把 foreground-adj 进程纳入候选。
+
+不能把“critical PSI trigger 到达”直接等同于“`critical_stall` 为真”，也不能笼统地说 critical 事件必然允许杀前台进程。
+
+## 选谁杀：`oom_score_adj`、重量与 Reaper
+
+确定 `min_score_adj` 后，`find_and_kill_process()` 从 1000 向下扫描：
+
+- 默认在每个 adj 档选择队列尾部候选；
+- `kill_heaviest_task=true` 时，从一开始就选择内存占用最大的候选；
+- 扫描进入 `oom_score_adj <= 200` 的可感知进程范围后，即使全局开关为 false，也会改选该档最重进程，希望减少 victim 数量。
+
+多数非紧急分支会把 `min_score_adj` 保持在 201 或 `lowmem_min_oom_score` 以上，以保护可感知进程。`lowmem_min_oom_score` 的默认值是 `PREVIOUS_APP_ADJ + 1`，即 701，并且代码把配置下限夹到 201。vendor、pressure-after-kill、NOT_RESPONDING 等分支可以给出更低门槛。
+
+### Android 17 Reaper 的执行顺序
+
+`reaper.cpp` 的异步线程先尝试：
+
+1. 向目标进程所属 cgroup 的 `cgroup.kill` 写入 `1`；5.10 兼容分支会遍历 `cgroup.procs`；
+2. cgroup 路径不可用或失败时，回退到 `pidfd_send_signal(SIGKILL)`；
+3. kill 发出后调用 `process_mrelease(pidfd, 0)`，尽早回收目标地址空间。
+
+`process_mrelease()` 需要有效 pidfd。lmkd 的主循环可以借助 pidfd 获知进程死亡；等待期间暂停压力轮询，收到通知或超时后再继续。
+
+## `/proc/lowmemorykiller` 的正确角色
+
+lmkd 只有在检测到旧 in-kernel LMK 模块时才打开 `/proc/lowmemorykiller`。`poll_kernel()` 从中读取的记录包含 pid、uid、group leader、fault、RSS、`oom_score_adj`、最低 adj、启动时间和进程名，用于上报由内核模块完成的 kill。
+
+它不是现代用户空间 lmkd 的 low-watermark 唤醒接口。走该兼容分支时，lmkd 使用内核 LMK 的 minfree/adj 参数；没有旧模块时，lmkd 初始化 PSI monitors，并由用户空间完成判断和 kill。
+
+Android 17 common kernel 6.18 基准树不含旧 lowmemorykiller driver。某台设备出现该 proc 文件时，应把它视为厂商或旧内核兼容实现，并对照该设备内核源码解释。
+
+## 诊断步骤
+
+### 1. 确认 lmkd 使用哪套入口
+
+先查看启动日志中的以下信息：
+
+- `Using in-kernel low memory killer interface`
+- `Using psi monitors for memory pressure detection`
+- `Using memevents for direct reclaim and kswapd detection`
+- `Using vmstats for direct reclaim and kswapd detection`
+
+这些日志比只看 Android 版本可靠。它们分别说明旧内核接口、PSI 新路径、BPF memevents 或 vmstat fallback 的选择结果。
+
+### 2. 读取 PSI 与关键属性
+
+在具备相应权限的调试环境中，可以采集：
+
+```bash
+adb shell cat /proc/pressure/memory
+adb shell getprop ro.config.low_ram
+adb shell getprop ro.lmk.use_new_strategy
+adb shell getprop ro.lmk.use_minfree_levels
+adb shell getprop ro.lmk.psi_partial_stall_ms
+adb shell getprop ro.lmk.psi_complete_stall_ms
+adb shell getprop ro.lmk.psi_window_size_ms
+adb shell getprop ro.lmk.direct_reclaim_threshold_ms
+adb shell getprop ro.lmk.lowmem_min_oom_score
+```
+
+DeviceConfig 的 `persist.device_config.lmkd_native.*` 优先级更高，排查时也要读取同名覆盖项。量产机可能限制 proc 文件或部分属性的访问，命令失败时应转向 bugreport、statsd 和系统日志。
+
+### 3. 按同一时间轴关联证据
+
+一次 lmkd kill 至少应关联：
+
+- kill reason 与 victim 的 `oom_score_adj`；
+- free pages、有效 free swap、watermark；
+- workingset refault / thrashing；
+- direct reclaim 或 kswapd 状态；
+- memory some/full PSI，以及记录到 kill stats 的 I/O、CPU PSI；
+- kill 前后的可用内存、swap 与业务延迟。
+
+单独看到 PSI 升高只能说明任务因资源压力停顿。它不能证明某个进程泄漏，也不能证明杀掉某个缓存进程一定能解除压力。
+
+## 应用工程师需要知道的边界
+
+lmkd 选中进程后会发送 SIGKILL，应用没有清理回调。`onTrimMemory()` 等通知可以帮助应用提前缩减可重建缓存，但回调是否到达、到达级别和后续是否被杀都不构成保证。
+
+应用侧更值得关注：
+
+- 后台进程是否长期持有可重建的大缓存；
+- file-backed 数据是否因访问模式不当产生高 refault；
+- native / Java heap 增长是否把系统推入 low-swap 或低 watermark；
+- 进程恢复是否依赖未持久化状态；
+- 一次优化是否减少了 PSI、thrashing 和 kill，而非只让 victim 换成另一个进程。
+
+普通应用不应依赖直接注册系统级 PSI trigger 来实现业务内存管理。Android 权限、SELinux 和厂商配置可能限制 `/proc/pressure` 的写入；系统服务或调试工具也要先验证目标设备权限。
+
+## 版本阅读原则
+
+Android 17 的当前主路径可以概括为：
+
+```text
+PSI trigger
+  + meminfo / vmstat / zoneinfo
+  + BPF memevents 或 vmstat reclaim fallback
+  + ZRAM-aware free-swap 估算
+  -> __mp_event_psi()
+  -> find_and_kill_process()
+  -> cgroup kill / pidfd + process_mrelease
+```
+
+旧版本或厂商分支可能仍使用 memcg v1 的 `mp_event_common()`、minfree levels 或 in-kernel LMK。版本比较时要同时核对 lmkd tag、内核实现、cgroup 层级和属性，不能只按 API level 推断设备行为。
+
+## 小结
+
+- Android 17 没有名为 `LowMemDetector` 的源码组件；现代低内存检测由 lmkd、PSI、memevents 和内存统计共同完成。
+- 新策略默认关闭 low PSI 档，注册 medium SOME 与 critical FULL 两个 trigger；初始数组的 70/100/70 不是最终默认值。
+- direct reclaim 与 kswapd memevents 更新状态，只有 vendor kill memevent 直接进入统一判断函数。
+- zone watermark、有效 free swap、workingset refault 和 reclaim 状态共同决定 kill reason。
+- critical PSI trigger 与 `critical_stall` 是不同条件，默认配置不能简单推导出“critical 事件会杀前台”。
+- `/proc/lowmemorykiller` 用于旧 in-kernel LMK 的 kill 记录，common kernel 6.18 基准树没有该驱动。
+- Android 17 Reaper 优先尝试 cgroup kill，必要时回退 pidfd signal，再调用 `process_mrelease()`。
+
+## 源码索引
+
+- AOSP lmkd `android-17.0.0_r1`
+  - `lmkd.cpp`
+  - `lmkd.rc`
+  - `reaper.cpp`
+  - `libpsi/psi.cpp`
+  - `libpsi/include/psi/psi.h`
+- Android common kernel `android17-6.18-2026-06_r6`
+  - `Documentation/accounting/psi.rst`
+  - `kernel/sched/psi.c`
