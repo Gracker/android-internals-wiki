@@ -50,4 +50,4 @@ Android 17 中 Binder 事务状态机从 Android 12 的基础实现演进为更�
 
 <!-- outline-end -->
 
-> 本节内容基于 AOSP android-17.0.0_r1 源码分析，深入解析了 Binder IPC 的优先级继承与批处理机制。
+> **废弃说明**：本页标题指向内存管理，protected outline 却讨论 Binder，并把 io_uring 批处理、32 进程上限、1MB 失败条件和 30%～50% 收益写成 Android 17 事实；这些结论没有本页可追踪的源码或测试证据。AppFlow 与 `LMKD v2` 也不是 `android-17.0.0_r1` 中的正式组件/版本名。Android 17 lmkd 的真实 PSI、控制 packet、候选选择与 Reaper 边界以 [4.50 LMKD PSI 分层内存压力治理](4.50-lmkd-v2-psi-tiered-pressure-governance.md) 为准，本页不再维护。
