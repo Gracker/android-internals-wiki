@@ -102,518 +102,416 @@ last_deepseek_cn_review_at: 2026-06-09
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么要了解 Linux 内核内存管理
-
-我们在 Perfetto 中分析 Android 性能问题时，经常会遇到一些"看不见的瓶颈"：应用卡顿但主线程没有耗时操作，启动变慢但 CPU 利用率并不高，滑动掉帧但渲染管线一切正常。这类问题的根因，往往藏在 Linux 内核的内存管理子系统里。
-
-内核内存管理平时不显眼，但一旦出问题，整条性能链都会被拖慢。当系统内存紧张时，kswapd 线程开始工作，大量 CPU 时间花在页面回收上；当物理内存碎片化严重时，大块连续内存分配变慢，相机启动、游戏加载这类需要大块图形内存的操作就会被拖慢。在 Perfetto 中，我们更可能看到的是 kswapd 线程占用了异常的 CPU 时间，或者某个进程在缺页处理、内存分配相关路径上阻塞。
-
-理解内核内存管理的机制，我们就能从 Perfetto 中读出更多信号：为什么 kswapd 突然活跃了？为什么 direct reclaim 导致了卡顿？为什么图形缓冲区分配失败？这些都是做 Android 性能分析时绕不开的问题。
-
-
-## 虚拟内存与物理内存映射
-
-### 从虚拟地址到物理地址
-
-现代操作系统都采用虚拟内存管理。CPU 访问的每一个内存地址都是虚拟地址，它需要经过 MMU（Memory Management Unit，内存管理单元）翻译成物理地址后，才能访问 DRAM 中的数据。
-
-这个翻译过程依赖页表（Page Table）。页表是内核维护的一种数据结构，记录了虚拟页（Virtual Page）到物理页（Physical Page，也叫 Page Frame）的映射关系。在 64 位 Linux 系统上，为了高效管理巨大的地址空间，内核使用多级页表结构。ARM64 在 Linux 中默认使用四级页表（PGD → PUD → PMD → PTE），Linux 4.11 引入了五级页表支持。每一级页表就像一层目录索引，逐级缩小查找范围，最终定位到具体的物理页。
-
-[已验证: 官方文档, kernel.org doc/vm — Linux 使用多级页表结构管理 64 位地址空间]
-
-### TLB：页表的缓存
-
-页表的查找是一个多级遍历过程，如果每次内存访问都要查 4-5 级页表，性能开销是无法接受的。所以 CPU 内部有一个专门的缓存叫做 TLB（Translation Lookaside Buffer），用来缓存最近使用过的虚拟地址到物理地址的映射。
-
-TLB 的命中率直接影响程序的执行效率。当 TLB miss 发生时，CPU 需要遍历多级页表（即 Page Table Walk），这个过程可能需要几十到上百个时钟周期。这也是为什么内核和硬件都倾向于使用更大的页面（如 16KB 或 2MB Huge Page）——更大的页面意味着同等虚拟地址空间需要更少的页表项，TLB 能覆盖更大的地址范围。
-
-[已验证: 官方文档, ARM Architecture Reference Manual — TLB 作为页表缓存减少地址翻译延迟]
-
-### Page Fault：缺页异常
-
-当 CPU 访问一个虚拟地址，但在页表中找不到对应的映射（页表项为空或无效）时，就会触发 Page Fault（缺页异常）。Page Fault 并不总是坏事——它是 Linux 实现按需分配（Demand Paging）和内存超卖的核心机制。
-
-Page Fault 在 Android 上有几类典型场景：
-
-- **首次访问新分配的内存**：进程调用 `mmap()` 或 `malloc()` 时，内核只记录了虚拟地址的分配，还没有分配物理页。等到进程第一次读写这块内存时，触发 Page Fault，内核此时才分配物理页并建立映射。这就是为什么我们在 Perfetto 中看到应用启动初期会有密集的 page fault。
-- **页面被回收后再次访问**：当内存紧张时，内核可能回收了一些页面的物理内存。进程再次访问这些页面时，会触发 Page Fault——如果是文件页（File-backed Page），内核会从磁盘重新读入；如果是匿名页（Anonymous Page），且之前被写入了 swap/zRAM，则从压缩存储中解压恢复。
-- **写时复制（Copy-on-Write）**：`fork()` 创建子进程时，内核只复制父进程的页表，两个进程指向相同的物理页。当其中一方尝试写入时，触发 Page Fault，内核此时才复制那个页面。Android 的 Zygote 进程正是利用这个机制——所有从 Zygote fork 出来的应用进程共享同一份物理内存页，直到它们需要修改时才各自持有副本。
-
-[已验证: 官方文档, kernel.org — Demand Paging 和 Copy-on-Write 机制]
-
-### 在 Perfetto 中的表现
-
-在 Perfetto Trace 中，与虚拟内存相关的信号主要体现在：
-
-- **Page Fault 计数**：通过 `ftrace` 的 `exceptions/page_fault_user` 和 `exceptions/page_fault_kernel` tracepoint，能分别观察用户态与内核态的缺页异常。抓 trace 时要在 `exceptions` 类下启用这两个事件，不要写成 `mm_page_fault`。如果要统计总 fault 数，还要区分 ftrace tracepoint 与 perf software counter 的口径。
-- **kswapd 线程活动**：在 Perfetto 的进程列表中能看到 `kswapd0`（每个 NUMA 节点一个），它的 CPU 使用率直接反映了系统的内存压力。
-- **Direct Reclaim 延迟**：当进程在内存分配路径上被迫同步回收页面时，在 Trace 中表现为该进程的长时间不可中断睡眠（`D` 状态）。
-
-[待补充: Perfetto 中 page fault 和 kswapd 活动的 Trace 截图]
-
-## Buddy 分配器与 Slab 分配器
-
-Linux 内核管理物理内存采用三级分配体系：Buddy System → Slab Allocator → kmalloc/vmalloc。这三层各有分工，从大块连续内存到小块频繁分配，层层细化。
-
-### Buddy System：大块内存的分配基石
-
-Buddy 分配器是 Linux 物理内存管理的基础。它以页（通常 4KB）为最小单位，管理所有物理内存页。
-
-Buddy 的核心思想很直接：将空闲内存按 2 的幂次方组织成不同的阶（order）。order-n 对应 2^n 个连续物理页，字节数 = 2^n × PAGE_SIZE。
-
-以常见的两种页大小为例：
-
-| order | 连续页数 | 4KB 页 | 16KB 页 |
-|-------|---------|--------|---------|
-| 0 | 1 | 4 KB | 16 KB |
-| 1 | 2 | 8 KB | 32 KB |
-| 2 | 4 | 16 KB | 64 KB |
-| ... | ... | ... | ... |
-| 10 | 1024 | 4 MB | 16 MB |
-
-最高 order 受 `CONFIG_ARCH_FORCE_MAX_ORDER`（或 `MAX_PAGE_ORDER`）控制，不同内核配置和架构下可能不同，不能把 4KB 页下的 order-10=4MB 写成全版本通用结论。
-
-分配时，如果请求的大小对应的 order 没有空闲块，就从更大的 order 拆分。比如请求 8KB（order-1），但 order-1 空闲列表为空，就从 order-2（16KB）拆成两个 8KB 的"伙伴"（buddy），分配一个，另一个放入 order-1 空闲列表。释放时反过来——如果被释放的块和它的"伙伴"都空闲，就合并成更大的块。这就是"伙伴"这个名字的由来：每一对相邻且大小相同的空闲块都是伙伴，它们可以合并。
-
-Buddy 分配器的优势是能快速分配和释放连续的物理页，且能有效减少外部碎片。但它有一个固有的限制：只能分配 2 的幂次方大小的块。如果我们只需要 3KB，它也得给我们 4KB（一整个页），造成内部碎片。
-
-为了进一步减少碎片，现代 Linux 内核还把页面按迁移类型（Migration Type）分组：不可移动页（Unmovable，如内核使用的页）、可回收页（Reclaimable，如文件缓存）、可移动页（Movable，如用户进程的匿名页）。把相同类型的页放在一起，使得在需要大块连续内存时，可以通过移动可移动页来腾出空间。
-
-[已验证: L1 Linux kernel, mm/page_alloc.c — Buddy allocator 实现，支持 migration type 分组]
-
-### Slab 分配器：内核对象的高效复用
-
-Buddy 分配器以页为单位分配，但内核内部有大量远小于一页的数据结构需要频繁分配和释放——比如 `task_struct`（进程描述符）、`inode`（文件索引节点）、`dentry`（目录项）等。如果每次都通过 Buddy 分配整页然后自己切分，既浪费又低效。
-
-Slab 分配器就是在 Buddy 之上构建的一层"批发-零售"机制。它从 Buddy 分配器获取连续的物理页，然后把这些页切成固定大小的对象（object），缓存起来。当内核需要某种类型的对象时，直接从 Slab 缓存中取一个已初始化好的实例，用完后不立即销毁，而是放回缓存中，下次直接复用。这样就避免了反复分配-初始化-销毁的开销。
-
-Linux 内核历史上出现过三种 Slab 实现：
-
-- **SLAB**：最早的实现，设计精巧但复杂度高，在大型系统上锁竞争严重。
-- **SLOB**：面向嵌入式系统的极简实现，内存开销小但性能一般，适用于内存极度受限的场景。
-- **SLUB**：当前 Linux 内核的默认实现（Android 的 GKI 内核也使用 SLUB）。它简化了 SLAB 的设计，减少了元数据开销，在多核系统上扩展性更好。
-
-在实际的 Android 性能分析中，我们不太会直接观察 Slab 分配器的行为，但需要知道它的存在——当我们看到内核内存使用量异常增长时，可能需要检查 Slab 缓存的大小（通过 `/proc/meminfo` 中的 `Slab` 字段）。
-
-[已验证: 官方文档, kernel.org — SLUB 为现代 Linux 内核默认 slab 实现]
-
-### kmalloc 与 vmalloc
-
-在 Slab 分配器之上，内核还提供了两个常用接口：
-
-- **kmalloc**：分配物理连续的内存，适用于 DMA 等需要物理连续的场景。大小通常不超过几页，底层走 Slab 分配器。这是内核中最常用的分配接口。
-- **vmalloc**：分配虚拟连续但物理不一定连续的内存。它把多段不连续的物理页映射到连续的虚拟地址空间。适用于需要大块内存但不要求物理连续的场景（如内核模块加载、大型缓冲区）。vmalloc 的开销比 kmalloc 大，因为需要修改页表，且访问时 TLB miss 更多。
-
-在 Android 的性能分析中，如果发现 `vmalloc` 占用异常增大，可能是某些内核模块（如 GPU 驱动、相机驱动）在大量分配虚拟连续内存。
-
-
-## 页面回收（Page Reclaim）
-
-当系统的空闲内存低于一定阈值时，内核需要回收一些已经被使用但"价值较低"的页面，腾出空间给更需要内存的进程。这个回收过程是 Linux 内存管理中最复杂也最影响性能的部分之一。
-
-### LRU 链表：决定回收谁的标尺
-
-Linux 内核使用 LRU（Least Recently Used）链表来跟踪页面的"热度"。内核为每个内存区域（zone）维护两组 LRU 链表：
-
-- **Active List（活跃链表）**：存放最近被频繁访问的页面。
-- **Inactive List（非活跃链表）**：存放有一段时间没被访问的页面，是回收的首选目标。
-
-页面在两个链表之间移动遵循一个简单的"第二次机会"算法：页面首次被访问时进入 Inactive List，如果在 Inactive List 期间被再次访问，就提升到 Active List。长期不被访问的 Active 页面会逐渐降级回 Inactive List。回收时，优先从 Inactive List 尾部取页面。
-
-页面还分为两大类，回收策略不同：
-
-- **文件页（File-backed Page）**：对应磁盘上的文件内容。如果页面是干净的（没有被修改过），可以直接丢弃——下次需要时从文件重新读取即可。如果页面是脏的（被修改过但还没写回磁盘），需要先写回磁盘再回收。
-- **匿名页（Anonymous Page）**：没有对应磁盘文件的页面，如堆内存、栈内存。回收匿名页需要将其内容压缩后存入 zRAM（Android 没有 swap 分区，使用 zRAM 替代）。
-
-Android 上通常没有传统意义上的 swap 分区，所以匿名页的回收依赖 zRAM 压缩。因此，回收匿名页的 CPU 开销通常比回收干净文件页更高。
-
-[已验证: 官方文档, kernel.org — LRU 双链表机制，active/inactive 页面分类]
-
-### kswapd：后台回收守护线程
-
-kswapd 是内核为每个 NUMA 节点创建的后台线程。它的工作方式可以用三个水位线来描述：
-
-1. **High Watermark（高水位线）**：空闲内存充足，kswapd 不需要工作。
-2. **Low Watermark（低水位线）**：空闲内存下降到此线以下，唤醒 kswapd 开始回收。
-3. **Min Watermark（最低水位线）**：空闲内存极度紧张，触发 direct reclaim。
-
-kswapd 被唤醒后，会持续回收页面，直到空闲内存恢复到 High Watermark 以上。这个过程的 CPU 开销和耗时直接影响了前台应用的性能——kswapd 虽然在后台运行，但它需要扫描 LRU 链表、处理页面、可能触发 I/O，这些都会占用 CPU 和 I/O 带宽。
-
-在 Android 上，kswapd 过度活跃是一个常见的性能问题。Nubia 曾分享过一个案例：三方应用唯品会在内存不足时滑动严重掉帧，Perfetto 中能看到 kswapd 线程大量占用 CPU，同时把前台应用的 Page Cache 也回收了，导致前台应用读写文件时产生更多 page fault，形成恶性循环。
-
-针对这类问题，一些 OEM 厂商采用了"冷热文件分离"策略：区分前台应用的热文件和后台应用的冷文件，优先回收后台冷文件的页面，保护前台应用的 Page Cache。
-
-另一种思路是常态化少量回收——每分钟定时少量回收页面，避免内存不足时 kswapd 的突发性高开销。这种做法用可预测的低开销替代不可预测的高开销，与渲染优化中"分帧加载"的思路类似。
-
-[已验证: L4 交叉验证, Nubia案例 + OPPO内存反碎片优化 + 荣耀MGLRU实践经验]
-
-### Direct Reclaim：同步回收的代价
-
-当内存分配请求发现空闲内存已经低于 Min Watermark 时，分配请求的进程会被迫自己执行页面回收——这就是 Direct Reclaim。与 kswapd 的异步回收不同，Direct Reclaim 是同步的：发出内存分配请求的进程必须等待回收完成才能继续执行。
-
-如果前台应用在渲染帧的过程中触发 Direct Reclaim，这一帧的渲染时间就会被拉长，掉帧风险也会随之上升。在 Perfetto 中，Direct Reclaim 通常表现为进程长时间处于不可中断睡眠状态（`D` 状态），调用栈中通常会出现 `__alloc_pages_direct_reclaim` 相关函数。
-
-[已验证: 官方文档, kernel.org — Direct reclaim 在内存分配路径中同步执行]
-
-### MGLRU：下一代页面回收算法
-
-传统的双链表 LRU 在 Android 场景下有一些固有缺陷：
-
-- **粒度太粗**：只有 active 和 inactive 两个层级，难以精确区分页面的热度。
-- **GC 干扰**：ART 虚拟机的 GC 线程在遍历对象时会访问大量页面，导致内核把这些页面判断为"热的"（pseudo-hot），即使 GC 访问后这些页面可能很长时间不会再被访问。
-- **前台保护不足**：传统 LRU 不区分前台和后台进程的页面，可能错误地回收前台应用的热页面。
-
-Google 为 Linux 内核开发了 MGLRU（Multi-Generational LRU），用多代（generation）模型替代了传统的双链表。页面按访问时间被分配到不同的 generation 中，越年轻的 generation 表示越近被访问过。回收时优先从最老的 generation 开始。
-
-MGLRU 在 Android 上的实测效果显著：kswapd CPU 使用率明显下降，低内存杀进程（LMK）频率降低，应用启动速度提升。
-
-但 MGLRU 在 Android 上也面临一些挑战。荣耀在 2026 年 LSF/MM 峰会上提出了几个实际问题：
-
-1. **匿名页和文件页分布不均衡**：匿名页集中在最年轻的 2 个 generation，而文件页分散在多个 generation 且被过度回收，导致 16GB 设备上 MGLRU 可用内存比传统 LRU 少约 1GB。
-2. **回收量难以精确控制**：memcg 回收时容易超出预期回收量。
-3. **低端设备回收延迟**：在内存较少的设备上，单次回收可能耗时过长。
-
-#### Android 版本与 MGLRU 启用状态
-
-MGLRU 在 Linux 6.1 合入主线，但 Android 设备的实际启用状态取决于内核分支和 OEM 配置：
-
-| Android 版本 | 内核分支 | CONFIG_LRU_GEN | 默认状态 | 验证命令 |
-|-------------|---------|----------------|---------|---------|
-| Android 10-12 | common 4.14-4.19 | 未合入主线 | 不可用 | — |
-| Android 13 | common 5.10/5.15 | 可选 | OEM 自行决定是否开启 | `zcat /proc/config.gz \| grep CONFIG_LRU_GEN` |
-| Android 14 | common 5.15/6.1 | 编译可用 | 多数旗舰 Pixel/高通平台已启用 | `zcat /proc/config.gz \| grep CONFIG_LRU_GEN` |
-| Android 15 | GKI 6.1/6.6 | 编译可用 | 主流旗舰默认启用 | `zcat /proc/config.gz \| grep CONFIG_LRU_GEN` |
-| Android 16 | GKI 6.12 | GKI 基线可用 | 6.12 common kernel 包含 MGLRU；是否启用取决于 CONFIG_LRU_GEN/CONFIG_LRU_GEN_ENABLED 和 `/sys/kernel/mm/lru_gen/enabled` | `cat /sys/kernel/mm/lru_gen/enabled` |
-
-Android 16 (GKI 6.12) 的 common kernel 包含 MGLRU 基础设施。是否作为平台强制基线，需要 CDD/VTS 或 GKI config 引用确认——当前可验证的判断方式是检查 `CONFIG_LRU_GEN`、`CONFIG_LRU_GEN_ENABLED` 和 `/sys/kernel/mm/lru_gen/enabled`。对于非 GKI 设备（部分低端机型使用旧内核），MGLRU 的可用性仍取决于 OEM 的内核配置。
-
-[待验证: Android 16/17 非 GKI 低端设备的 MGLRU 覆盖率]
-
-[已验证: 官方文档, kernel.org — MGLRU 自 Linux 6.1 合入主线]
-
-
-#### 源码分析：MGLRU vs 传统双级 LRU 锁竞争
-
-传统双级 LRU 的核心问题是 **per-node 全局 `lru_lock` 的竞争**。`struct lruvec` 持有单一 `spinlock_t lru_lock`，所有 CPU 上的页面引用事件（`folio_mark_accessed()` / `activate_page()`）和页面回收路径（`shrink_inactive_list()` / `shrink_active_list()`）都在这把锁下操作。在 8+ 核的手机 SoC 上，多核并发访问导致这把锁成为瓶颈。
-
-MGLRU 通过三个机制削减锁竞争（以下源码以 Linux 6.12 / Android common kernel 为参考）：
-
-**1. 减少 per-lruvec 锁内的操作量**
-
-传统 LRU 和 MGLRU 都围绕 `lruvec`（每个 node+memcg 组合）组织 LRU 链表。MGLRU 的优势不在于引入 per-lruvec——传统 LRU 也有 `struct lruvec`——而在于减少了锁内的操作量和持有时间。
-
-```c
-// 伪代码，基于 include/linux/mmzone.h / mm/vmscan.c
-// lruvec 通过 mem_cgroup_lruvec() 获取
-struct lruvec *mem_cgroup_lruvec(struct mem_cgroup *memcg, struct pglist_data *pgdat);
-// 不同 App（不同 memcg）的内存回收操作各自的 lruvec
+## 这一层为什么会让应用卡住
+
+应用线程执行 `malloc()`、访问文件映射、创建线程栈或申请图形缓冲区时，最终都要经过内核。大多数请求走快速路径，耗时很短；空闲页不足、目标 zone 不满足水位、需要高阶连续页或页面已经换出时，请求会进入慢路径。
+
+慢路径可能包含缺页处理、页面回收、Swap I/O、页迁移和内存规整。它们有的在后台内核线程执行，有的直接占用发起分配的应用线程。后者进入关键帧或启动关键路径时，就会形成用户可感知的延迟。
+
+本文以 AOSP `android-17.0.0_r1` 和 Android Common Kernel `android17-6.18-2026-06_r6` 为锚点。厂商内核可以修改配置和回收策略，排查时仍需读取运行设备的配置、节点与 Trace。
+
+下面这张图先给出物理页从分配到回收的主路径。
+
+```mermaid
+flowchart LR
+    A["应用或内核申请内存"] --> B["页分配快速路径"]
+    B --> C{"满足 zone、水位与 order？"}
+    C -->|"是"| D["返回页面"]
+    C -->|"否"| E["页分配慢路径"]
+    E --> F["按 GFP 条件唤醒 kswapd"]
+    E --> G["允许时执行 direct reclaim"]
+    E --> H["高阶请求允许时执行 compaction"]
+    F --> I["回收文件页或可换出的匿名页"]
+    G --> I
+    H --> J["迁移可移动页并形成连续空闲块"]
+    I --> K["重试分配"]
+    J --> K
+    K --> D
+    K --> L["返回失败或进入 OOM 处理<br/>取决于分配上下文"]
 ```
 
-**2. `folio_update_gen()` 无锁化**
+图中“取决于分配上下文”很重要。GFP flags、order、可用 zone、memcg、是否允许阻塞和是否允许 I/O，都会改变慢路径。不能只凭 `MemFree` 推断一次分配会走到哪里。
 
-传统 LRU 每次页面引用都做 `list_move()`（持锁）。MGLRU 用 generation 编号替代：页面引用时只更新 `folio->flags` 中的 `LRU_GEN_MASK` 位（不需要锁），由 `lru_gen_look_around()` 做批量 PTE accessed bit 清除：
+## 虚拟地址怎样变成物理访问
 
-```c
-// 伪代码，基于 mm/vmscan.c lru_gen_look_around()
-void lru_gen_look_around(struct page_vma_mapped_walk *pvmw)
-{
-    for (i = 0, addr = start; addr != end; i++, addr += PAGE_SIZE) {
-        pte_t ptent = ptep_get(pte + i);
-        if (!pte_young(ptent))
-            continue;
-        ptep_test_and_clear_young(vma, addr, pte + i);  // 批量清除 accessed bit
-        old_gen = folio_update_gen(folio, new_gen);  // 只更新 flags，无锁
-    }
-}
+### 页表层级由架构配置决定
+
+CPU 发出虚拟地址，MMU 按页表项完成地址翻译和权限检查。Linux 用 PGD、P4D、PUD、PMD、PTE 这些通用层级描述页表；某些层级在具体架构配置中会折叠。
+
+因此，ARM64 设备不能统一写成固定四级页表。页大小、`VA_BITS` 和架构能力共同决定有效层级。例如内核文档给出的 4 KiB 配置可以采用三级或四级翻译表；Android 的 16 KiB 配置又有自己的层级与块大小。分析页表成本时，应读取运行内核配置，避免照搬某一种服务器配置。
+
+页表项除了物理页帧号，还携带可读、可写、可执行、用户态权限、accessed/young、dirty 等状态。内核的回收与 MGLRU 老化会使用其中一部分访问状态。
+
+### TLB 缓存地址翻译结果
+
+逐次访问都遍历多级页表会带来很高成本。CPU 使用 TLB 缓存近期的虚拟页到物理页翻译；TLB miss 后，硬件或软件执行 page-table walk。
+
+更大页大小让同样数量的 TLB 条目覆盖更多地址空间，也减少表示同等内存所需的页表项。收益会受访问局部性、TLB 结构、cache、页表层级和工作负载影响，不能换算成固定的时钟周期或固定性能比例。
+
+### Page Fault 是按需建立映射的入口
+
+当当前页表项无法直接完成访问时，CPU 进入缺页处理。合法地址上的 fault 可能是正常机制的一部分：
+
+- 首次写匿名映射：内核分配并清零物理页，再建立可写映射；
+- 首次读取文件映射：页面已在 page cache 时可直接建立映射，缺失时需要读取文件；
+- 写时复制：Zygote fork 后的共享只读页在子进程写入时复制；
+- Swap-in：匿名页已换出时，需要从 ZRAM 或其他 Swap 后端恢复；
+- 权限或无效地址：无法修复时向进程发送 `SIGSEGV`、`SIGBUS` 等信号。
+
+Linux 统计中的 minor fault 通常不需要等待存储 I/O，例如零页、COW 或命中 page cache；major fault 表示处理被标记为 `VM_FAULT_MAJOR`，常见于需要等待文件或 Swap 数据的情况。两者都可能发生在正常执行中，数量要结合延迟和场景解释。
+
+### Android 17 上怎样观察 fault
+
+ARM64 kernel 6.18 的 `arch/arm64/mm/fault.c` 在合法缺页路径调用 `perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, ...)`。Perfetto `linux.perf` 数据源也定义了 `SW_PAGE_FAULTS`、`SW_PAGE_FAULTS_MIN` 和 `SW_PAGE_FAULTS_MAJ` 软件事件。
+
+进程累计值还可以从 `/proc/<pid>/stat` 的 `minflt`、`majflt` 及其子进程字段读取。下面的命令先定位 PID，再输出原始 stat；生产脚本应使用可靠解析器，因为进程名字段可能含空格和括号。
+
+```bash
+adb shell 'pid=$(pidof com.example.app); cat /proc/$pid/stat'
 ```
 
-**3. `evict_folios()` 锁持有时间从 O(n) 降到 O(1)**
+不要把 `exceptions/page_fault_user`、`exceptions/page_fault_kernel` 当成所有 ARM64 Android 内核都提供的 ftrace 事件。Android 17 r6 的通用内存 Trace 更适合使用 `filemap/mm_filemap_fault`、`vmscan/*`、`kmem/*` 与 perf fault 计数；事件是否启用仍要检查 tracefs。
 
-传统 `shrink_inactive_list()` 在整个扫描期间（可能数千次 `list_move()`）持有 `lru_lock`。MGLRU 的 `evict_folios()` 持锁后只做一代链表的批量 `isolate_folios()`，然后立即释放锁：
+## 物理页分配：PCP、Buddy 与 SLUB
 
-```c
-// 伪代码，基于 mm/vmscan.c evict_folios()
-static int evict_folios(struct lruvec *lruvec, ...)
-{
-    spin_lock_irq(&lruvec->lru_lock);
-    scanned = isolate_folios(lruvec, sc, swappiness, &type, &list);
-    // try_to_inc_min_seq() 也在这里执行
-    spin_unlock_irq(&lruvec->lru_lock);  // 立即释放！
+### 从 node、zone 到 Per-CPU Pageset
 
-    // shrink 在锁外执行
-    reclaimed = shrink_folio_list(&list, pgdat, sc, &stat, false);
-}
+内核把物理内存组织为 node，并在 node 内按寻址与迁移约束划分 zone。Android 手机通常是 UMA 视角，但具体 SoC 仍可能有多个内存域或厂商扩展。分配请求的 GFP flags 决定可以访问的最高 zone、是否允许回收、是否允许 I/O 等条件。
+
+对常见低阶页面，分配器先尝试 Per-CPU Pageset（PCP），减少每次分配都获取 zone 全局锁的成本。PCP 不满足时，再进入 zone 的 Buddy free area。Linux 6.18 `physical_memory.rst` 明确描述了“PCP 快速路径 → Buddy”的两步策略。
+
+### Buddy 按 order 管理连续物理页
+
+Buddy 的 order 以二次幂表示连续页数量：
+
+`order-n = 2^n × PAGE_SIZE`
+
+同一 order 在 4 KiB 和 16 KiB 内核上的字节数如下：
+
+| order | 连续页数 | 4 KiB base page | 16 KiB base page |
+|---:|---:|---:|---:|
+| 0 | 1 | 4 KiB | 16 KiB |
+| 1 | 2 | 8 KiB | 32 KiB |
+| 2 | 4 | 16 KiB | 64 KiB |
+| 4 | 16 | 64 KiB | 256 KiB |
+| 9 | 512 | 2 MiB | 8 MiB |
+| 10 | 1024 | 4 MiB | 16 MiB |
+
+在 `android17-6.18-2026-06_r6` 中，未设置 `CONFIG_ARCH_FORCE_MAX_ORDER` 时，`MAX_PAGE_ORDER` 是 10，`free_area` 覆盖 order 0 到 10。厂商可以覆盖最大 order，所以工具应读取当前内核构建，不要把表中最后一行当作所有设备的上限。
+
+分配较小 order 时，如果对应 free list 为空，Buddy 可以拆分更大块；释放时，地址与 order 匹配的空闲伙伴可以逐级合并。迁移类型会把 pageblock 分为 `Unmovable`、`Movable`、`Reclaimable`、`CMA` 等类别，降低不同生命周期页面长期混杂造成的外部碎片。
+
+这里还要区分两种浪费：
+
+- 内部碎片：获得的块大于请求，例如高阶页或对齐造成的未用空间；
+- 外部碎片：空闲页总数足够，却分散到无法满足目标 order。
+
+### SLUB 服务小型内核对象
+
+Buddy 的最小单位是页。`task_struct`、`dentry`、`inode` 和常见 `kmalloc` 对象通常小于一页，内核使用 SLUB 从一组 folio 中切分对象，并用 slab cache 复用相同布局。
+
+Linux 6.18 的 `mm/Kconfig` 将 `CONFIG_SLUB` 定义为默认启用；旧的 SLAB、SLOB 属于历史背景，不应描述为 Android 17 中并列运行的三种实现。Android 17 arm64 GKI 还启用了 freelist randomization 和 hardening，并关闭默认 slab cache 合并。
+
+`kmalloc()` 对常见小分配使用 kmalloc slab cache；较大请求可能直接需要高阶页。返回区域在内核虚拟地址上连续，通常也满足其接口承诺的物理连续性。`vmalloc()` 则把离散物理页映射成连续内核虚拟区，适合不要求物理连续的大区域，代价包括页表管理和 TLB 压力。
+
+### 三个原始诊断入口
+
+下面的命令分别观察各 order 空闲块、迁移类型与 slab cache。量产设备可能限制其中部分节点。
+
+```bash
+adb shell cat /proc/buddyinfo
+adb shell cat /proc/pagetypeinfo
+adb shell cat /proc/slabinfo
 ```
 
-**sysfs 监控接口**：`/sys/kernel/mm/lru_gen/enabled`（bitmask 主开关）+ `/sys/kernel/mm/lru_gen/lru_gen`（各代页面数量直方图）。
+`buddyinfo` 每一列是对应 order 的空闲块数量。换算字节时要乘以 `2^order × PAGE_SIZE`。低 order 有很多空闲块，不能证明高阶请求一定成功；高 order 长期接近零也需要结合目标分配 order、CMA 和 compaction 结果判断。
 
-<!-- AIW-源码调研-2026-06-11 -->
-**4. dead folio 预回收：减少 24% lruvec 锁竞争（-mm 树未合入主线）**
+`slabinfo` 适合定位内核对象缓存增长。`/proc/meminfo` 中的 `Slab`、`SReclaimable` 和 `SUnreclaim` 提供系统汇总，但不会直接指出哪个 cache 或驱动持有对象。
 
-上述三类机制都属于 MGLRU 对回收路径的优化。**classic LRU 自身的 lruvec 锁竞争**也有独立优化路径：Meta 工程师 JP Kobryn 在 -mm 树（`git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git` `mm-unstable` commit `9669b87065a6fe96198f3df2c3d125c5f5c1f210`，2026-04-24）提交了 `mm/lruvec: preemptively free dead folios during lru_add drain` patch。**该 patch 截至 2026-06-11 仍在 -mm 树，未进入 `mm-stable` / `mainline` / `android17-6.18`，本节作为前瞻性分析，不作为 Android 17 正文结论。**
+## 页面回收：文件页、匿名页与工作集
 
-核心问题：classic LRU 通过 per-CPU `cpu_fbatches` 把分散的 `lru_add` 攒成 batch。`mm/swap.c:folio_batch_move_lru()`（line 160-179）在 batch drain 时，对每个 folio 调 `lru_add()` 加入 LRU（持 lruvec 锁①），然后立即调 `folios_put_refs()` 释放 batch 引用——若该 folio 引用数仅剩 batch 这 1 个，`folios_put_refs()` 会再次进入 `__page_cache_release()` 重新拿 lruvec 锁② 删除它。**一个 dead folio 的一生内两次进入 lruvec 锁**。Meta 在 fleet 上统计：约 24% 的 lruvec 锁竞争来自这条路径。
+### 两类页的回收成本不同
 
-修复思路：在 `folio_batch_move_lru()` 的循环中、获取 lruvec 锁之前，用 `folio_ref_freeze(folio, 1)` 探测 dead folio。`folio_ref_freeze()` 来自 `include/linux/page_ref.h`，基于 `atomic_cmpxchg(&page->_refcount, count, 0)`，仅当 refcount 恰好为 1 时将其原子置 0 并返回 1。返回 1 即说明该 folio 引用数只剩 batch 这一个，可以直接绕过 LRU 加入流程。patch 把 dead folio 从 `fbatch->folios[i]` 移到临时 `free_fbatch`（同时把 `fbatch->folios[i] = NULL` 留给 `folios_put_refs()` 跳过），循环结束后统一 `mem_cgroup_uncharge_folios()` + `free_unref_folios()` 回收。
+文件页有文件作为后备存储。干净文件页可以从 page cache 删除，后续访问再读文件；脏页需要写回或由相应文件系统处理。
 
-```c
-// mm/swap.c:folio_batch_move_lru() — patch 关键插入（-mm 树版本，line 174-188）
-if (is_lru_add && folio_ref_freeze(folio, 1)) {
-    __folio_clear_active(folio);             // 绕过 lru_add 内部清理路径
-    __folio_clear_unevictable(folio);
-    folio_unqueue_deferred_split(folio);     // 避免 huge page deferred split 悬挂
-    fbatch->folios[i] = NULL;                // 与 folios_put_refs() 的契约
-    folio_batch_add(&free_fbatch, folio);
-    continue;                                // 跳过 lruvec 锁
-}
+匿名页包含堆、栈和匿名映射的数据。它没有可重新读取的普通文件，内核只有在存在可用 Swap 或内存分层目标时才能在保留内容的前提下回收其物理页。Android 常用 ZRAM 作为 Swap，也可以由厂商配置 ZRAM writeback；没有可用 Swap 时，匿名页回收空间更受限制。
+
+回收的目标是腾出可分配页，同时尽量保留近期工作集。代价可能来自：
+
+- 扫描大量页却回收很少；
+- 文件页 refault 触发存储读取；
+- 匿名页在 RAM 与 ZRAM 之间频繁换入换出；
+- 压缩与解压消耗 CPU；
+- 脏页写回占用 I/O；
+- 应用线程自己进入 direct reclaim。
+
+### zone 水位与 kswapd
+
+每个 zone 维护 min、low、high 等水位。Linux 6.18 的物理内存文档给出的主语义是：
+
+- 空闲页低于 low 时，分配路径会唤醒该 node 的 `kswapd`；
+- `kswapd` 在后台回收，zone 回到 high 以上时通常视为平衡；
+- 空闲页低于 min 时，允许阻塞的分配可能进入 direct reclaim 或 direct compaction；
+- watermark boost、order、zone、保留页和 GFP flags 会改变单次判断。
+
+所以“低于 min 一定 direct reclaim”仍然过于绝对。原子分配、禁止 I/O 的请求、memcg 限制、高阶请求和保留页访问都有不同路径。
+
+### direct reclaim 在发起分配的任务上下文执行
+
+Android 17 r6 的 `__alloc_pages_slowpath()` 先按条件唤醒 kswapd；高阶请求可能先尝试 direct compaction；允许 `__GFP_DIRECT_RECLAIM` 时，再调用 `__alloc_pages_direct_reclaim()`，随后重试分配和 compaction。
+
+direct reclaim 会延长发起请求的线程。线程可能在 CPU 上执行扫描，也可能等待写回、锁或其他资源；单看调度状态中的 `D` 不能证明 direct reclaim。可靠证据来自调用栈、PSI memory stall，以及下面这些 ftrace 事件：
+
+- `vmscan/mm_vmscan_direct_reclaim_begin`
+- `vmscan/mm_vmscan_direct_reclaim_end`
+- `vmscan/mm_vmscan_kswapd_wake`
+- `vmscan/mm_vmscan_kswapd_sleep`
+- `vmscan/mm_vmscan_lru_shrink_inactive`
+- `vmscan/mm_vmscan_lru_shrink_active`
+
+`/proc/vmstat` 中的 `pgscan_*`、`pgsteal_*`、`allocstall_*`、`pswpin`、`pswpout` 还能补充累计证据。字段会随内核版本变化，分析器应按 key 读取。
+
+### MGLRU 在 Android 17 内核锚点中的状态
+
+Multi-Gen LRU 用多代模型记录访问新旧程度，老化阶段依据页表 accessed bit 等信息推进 generation，驱逐阶段从较老 generation 选择页面。匿名页与文件页还会按 refault 信号调整保护与回收选择。
+
+`android17-6.18-2026-06_r6` 的 arm64 GKI defconfig 设置了：
+
+- `CONFIG_LRU_GEN=y`
+- `CONFIG_LRU_GEN_ENABLED=y`
+
+这表示该 GKI 配置编译并默认启用 MGLRU。设备仍可能使用不同内核、不同 config 或运行时开关。下面的命令读取稳定的运行时位掩码：
+
+```bash
+adb shell cat /sys/kernel/mm/lru_gen/enabled
 ```
 
-A/B 测试（生产 Instagram 高频短请求负载，95% CPU，60 host / 3 × 60s）：
+主开关对应 bit `0x0001`。其他 bit 控制批量清理叶子或非叶子页表 accessed bit，硬件不支持的组件即使写入也不会生效。
 
-| 指标 | unpatched | patched | 变化 |
-|------|----------|---------|------|
-| dead folios/min per host | 1,297,785 | 14 | -99.99% |
-| 节省 lruvec lock acquisitions/min per host | — | ~2.6M | — |
-| direct reclaim 扫描 | 基线 | -7% | — |
-| allocation stalls | 基线 | -5.2% | — |
-| compaction stalls | 基线 | -12.3% | — |
-| page frees | 基线 | -4.9% | — |
-| RPS / p99 延迟 | 基线 | 无回归 | — |
+代际直方图不在 `/sys/kernel/mm/lru_gen/lru_gen`。内核文档将实验接口放在 debugfs：
 
-**对端侧 AI 应用的含义**（仅当 patch 进入 mainline 后有效）：高频短生命周期 buffer（RecyclerView item view holder、Bitmap decode-then-discard、推理中间张量）产生的 dead folio 比例高，可观测地降低 kswapd CPU 占用与 lmkd 触发频率。**注意 commit message 明示测试在 classic LRU 下完成**，MGLRU 设备（`CONFIG_LRU_GEN_ENABLED=y`）下的具体收益需独立验证。
+- `/sys/kernel/debug/lru_gen`
+- `/sys/kernel/debug/lru_gen_full`
 
-**AIW 版本边界**：本节内容基于 -mm 树 patch，**未进入 Android 17 / API 37**。写入 AIW 章节的目的：记录一个具体可引用的源码级 patch（commit + 文件 + 函数 + 行号），便于 Android 17 GKI 后续 backport 时回查。
+后者还依赖 `CONFIG_LRU_GEN_STATS`。debugfs 通常不面向量产应用开放。
 
+普通 LRU 与 MGLRU 都会在 `lruvec->lru_lock` 下完成部分列表操作，并把昂贵的 `shrink_folio_list()` 放到锁外。Android 17 r6 的 `shrink_inactive_list()` 和 `evict_folios()` 都能看到这种结构。因此，不能用“普通 LRU 全程持锁、MGLRU 将持锁复杂度从 O(n) 变成 O(1)”概括两者差异。MGLRU 的价值应从代际老化、页表扫描、refault 反馈与具体设备指标评价。
 
-### Silk：GC 与内核页面回收的协同优化
+## 内存规整与物理碎片
 
-华中科技大学在 TACO '25 上发表的 Silk 论文提出了一个更深层的观察：ART 虚拟机的 GC 行为会严重干扰内核的 LRU 判断。论文发现了"Object Hotness Inversion"（对象热度倒置）问题：
+### compaction 解决连续块问题
 
-1. **应用线程维度**：热页中有 80% 的对象对应用来说是冷的（pseudo-hot），导致内核错误地保留了大量不必要的页面。
-2. **GC 线程维度**：GC 遍历对象时不区分冷热，访问冷页时触发不必要的内存换入；同时 GC 最近访问过的冷页被误判为热页。
+Memory compaction 会从一端扫描可迁移页，从另一端寻找空闲页，把内容迁移后形成更大的连续空闲范围。它不等同于压缩数据；ZRAM 才涉及数据压缩。
 
-Silk 的解决方案是在对象级别跟踪热度信息，并将其传递给内核的页面回收机制。实测效果：应用线程换入减少 18.6%-48.4%，GC 线程换入减少 15.2%-51.2%，JankFrame 降低 55.3%-60.7%。
+高阶页分配在 Buddy 快速路径失败时，可能进入：
 
-这个工作展示了 Android 内存优化的一个前沿方向：让虚拟机层和内核层协同工作，而不是各自为政。
+- direct compaction：由当前分配任务同步执行；
+- kcompactd：每个 node 的后台规整线程；
+- proactive compaction：由 `vm.compaction_proactiveness` 等机制触发，具体配置取决于设备。
 
+Android 17 r6 的 `try_to_compact_pages()` 是 direct compaction 入口；`kcompactd_do_work()` 处理后台请求。页面迁移本身需要 CPU、锁和内存带宽，失败或反复扫描也会产生延迟。
 
-#### 待验证方向：madvise(MADV_COLD) 作为 GC-内核协同路径
+### 怎样证明延迟来自 compaction
 
-截至 android-16.0.0_r1，ART runtime/gc 中尚未包含对 `MADV_COLD` 的直接调用；android-17.0.0_r1 尚未公开。以下描述基于 Silk 论文方向和社区提案，不是已进入 AOSP 公开树的实现。
+下面这些 tracepoint 比“线程处于 D 状态”更直接：
 
-Silk（TACO '25）论文提出了一种 GC-内核协同思路：ART 虚拟机在 GC 标记阶段识别出对象冷热信息后，由 GC 向内核传达哪些页面近期不会再被访问，从而帮助内核更准确地回收冷页。
+- `compaction/mm_compaction_begin`
+- `compaction/mm_compaction_end`
+- `compaction/mm_compaction_migratepages`
+- `compaction/mm_compaction_try_to_compact_pages`
+- `compaction/mm_compaction_kcompactd_wake`
+- `kmem/mm_page_alloc_extfrag`
 
-这条路径的具体工作方式是：GC 对识别为冷对象所在的匿名页调用 `madvise(MADV_COLD)`。内核处理 `MADV_COLD` 的实际路径取决于内核版本和 LRU 实现：
+还可以读取 `/proc/vmstat` 的 `compact_*`、`compact_stall`、`compact_fail`、`compact_success` 和迁移相关字段。一次失败可能来自目标 zone、水位、不可移动页、CMA 约束或目标 order；总空闲页只是其中一个条件。
 
-- **`mm/madvise.c` 中的 MADV_COLD 处理**：对目标 `vma` 范围内的页面调用 `folio_deactivate()`，清掉 `referenced` flag 并将 folio 移到 inactive LRU 链表的尾部。在 MGLRU（Multi-Gen LRU，主线 Linux 6.1+；Android common 5.10/5.15 需看 backport 与 CONFIG）中，等效操作是清除 generation 计数的 `PG_referenced` 标记，使页面在下一次老化（aging）扫描时更容易被降代。
-- **实际效果**：这些页面不再因为 GC 扫描时的访问而被错误标记为"活跃"（前面提到的 pseudo-hot 问题），从而在内存压力下优先被回收，减少不必要的 swap-in。
+### CMA 为特定连续分配保留迁移能力
 
-**版本边界**：AOSP `platform/art`（android-16.0.0_r1）未发现 ART runtime/gc 中对 `MADV_COLD` 的显式调用点；主线（main）资料未进入 Android 17 tag，不能作为 Android 17 正文结论。ART GC 触发 `MADV_COLD` 的精确调用点、触发条件、频率和指标口径目前仍是待研究项（已在 `research-gaps.md` 中记录）。在没有 AOSP commit、release note 或独立 benchmark 支撑之前，本节不将 MADV_COLD 路径作为正文结论。
+Contiguous Memory Allocator（CMA）在启动时建立区域。区域空闲时可以容纳可移动页；需要连续内存时，内核尝试迁走这些页，为 CMA 请求形成连续范围。
 
+启用 CMA 的设备通常在 `/proc/meminfo` 提供 `CmaTotal` 和 `CmaFree`。`CmaFree` 小不必然表示泄漏，因为区域中可能暂存可移动页；一次 CMA 分配能否成功，还取决于这些页是否可迁移、目标大小与规整成本。
 
-## 内存压缩（Memory Compaction）与碎片化
+相机、编解码器和显示路径是否使用 CMA，由 DMA 能力、IOMMU、heap 类型与驱动实现决定。不能把所有图形缓冲区都归为物理连续 CMA 内存。
 
-### 物理内存碎片化的本质
+## ION、DMA-BUF Heaps 与共享缓冲区
 
-物理内存碎片化是嵌入式和移动设备上特别棘手的问题。随着系统运行时间增长，内存页被分配、释放、再分配，空闲页面逐渐散落在不同的物理地址区域，导致虽然总空闲内存够用，但无法找到足够大的连续物理内存块。
+### 先区分分配器与共享框架
 
-在 Android 上，这个问题尤其突出：
+DMA-BUF 是跨设备、跨驱动和跨进程共享缓冲区的框架。一个驱动导出 `struct dma_buf`，其他驱动作为 importer 通过 attachment 获取适合设备访问的 scatter-gather 映射。用户空间通常持有一个 opaque fd。
 
-- **图形内存**：GPU、相机、视频编解码器等硬件模块通常需要可被设备 DMA 访问的大块 buffer；在缺少 IOMMU 或使用 CMA heap 的路径上，才更依赖物理连续内存。碎片化严重时，这些硬件模块的内存分配会变慢甚至失败。
-- **大页面支持**：Transparent Huge Pages（THP）需要 2MB 连续物理内存（512 个连续的 4KB 页），碎片化使得 THP 难以生效。
+DMA-BUF Heaps 提供从指定 heap 分配 dma-buf 的 UAPI。两者关系如下：
 
-OPPO 曾经详细分析过这个问题，并提出了两种反碎片化机制：
+```mermaid
+flowchart LR
+    A["用户空间分配请求"] --> B["/dev/dma_heap/heap_name"]
+    B --> C["heap 分配物理页"]
+    C --> D["导出 dma_buf fd"]
+    D --> E["App / Codec / SurfaceFlinger 持有或传递 fd"]
+    D --> F["GPU / HWC / Camera 驱动导入"]
+    F --> G["按设备能力建立 IOMMU / DMA 映射"]
+```
 
-- **Multi-Freearea（MF）**：将空闲物理页面集中在某段物理页帧号（pfn）范围内，增大空闲页面合并成大块物理页面的概率。
-- **Centralize-Small-VirtualMem（CSVM）**：将小段虚拟内存分配集中在特定的虚拟地址范围，减少虚拟地址空间被"污染"。
+fd 传递共享的是同一个 dma-buf 对象，避免复制整块像素数据。各进程是否建立 CPU `mmap`、设备怎样映射以及哪一方仍持有引用，需要分别核对。
 
+### ION 到 DMA-BUF Heaps 的版本边界
 
-### kcompactd 和 Direct Compaction
+ION 和 DMA-BUF Heaps 都可以作为 dma-buf exporter。历史 ION 通过 `/dev/ion` 加 heap mask 与私有 flags 选择分配器；DMA-BUF Heaps 为不同 heap 暴露独立字符设备 `/dev/dma_heap/<heap_name>`，便于稳定 UAPI、测试和 SELinux 权限控制。
 
-内核有两种内存压缩机制：
+Android 12 的 GKI 2.0 以 DMA-BUF Heaps 替换 ION；`android12-5.10` common kernel 已关闭 `CONFIG_ION`。升级设备仍可能通过 `libdmabufheap` 的兼容映射访问旧 ION heap，所以历史代码和旧内核仍能看到 `/dev/ion`。
 
-- **kcompactd**：类似 kswapd 的后台守护线程，在后台异步执行内存压缩。它会把可移动的页面迁移到一起，腾出连续的空闲区域。kswapd 在回收页面后可能会唤醒 kcompactd 进行后续的碎片整理。
-- **Direct Compaction**：同步压缩，在分配大块连续内存失败时触发。进程必须等待压缩完成才能继续执行，类似于 Direct Reclaim 对性能的影响。
+Android 17 新设备应从 DMA-BUF Heaps 视角分析，同时确认厂商 heap：
 
-在 Perfetto 中，如果我们看到应用进程出现长时间 D 状态睡眠，且调用栈中出现 `__alloc_pages_direct_compact`，说明该进程在等待内存压缩完成。这通常意味着系统碎片化严重或者可用内存不足。
+- `system` heap：内核文档定义为虚拟连续、可缓存缓冲区；
+- `default_cma_region`：CMA heap，提供物理连续、可缓存缓冲区；
+- secure、uncached 或设备优化 heap：名称、权限和语义由平台实现决定。
 
-[已验证: 官方文档, kernel.org — Memory compaction 在页面分配路径中作为 reclaim 的补充]
+有 IOMMU 的设备常能让硬件访问 scatter-gather 页面；缺少相应能力或特定硬件约束时，才需要 CMA 等物理连续来源。
 
-### CMA（Contiguous Memory Allocator）
+### DMA-BUF 统计不能简单归给一个进程
 
-CMA 是 Linux 内核为解决大块连续内存分配问题而引入的一种机制。它在系统启动时预留一块连续的物理内存区域，平时可以给可移动页使用，当需要大块连续内存时，把这块区域内的页面迁移走即可。
+同一缓冲区可以被 App、SurfaceFlinger、GPU 和 HWC 同时引用。把它的完整 size 计到每个持有者会重复计算；只看 App 的 `smaps` 也会漏掉未映射到该进程、但仍由 fd 或驱动持有的缓冲区。
 
-Android 的很多硬件模块（如相机、多媒体编解码器）依赖 CMA 来保证大块连续内存的供应。我们可以在 `/proc/meminfo` 中看到 `CmaTotal` 和 `CmaFree` 字段，反映 CMA 区域的使用情况。
+Linux 6.18 在启用 `CONFIG_DMABUF_SYSFS_STATS` 时提供：
 
-[已验证: 官方文档, kernel.org — CMA 机制说明]
+- `/sys/kernel/dmabuf/buffers/<inode>/size`
+- `/sys/kernel/dmabuf/buffers/<inode>/exporter_name`
 
-## ION / DMA-BUF 在 Android 图形内存中的角色
+`/proc/<pid>/fdinfo/<fd>` 可以把进程 fd 与 dma-buf inode、size 等导出信息关联；debugfs 的 `/sys/kernel/debug/dma_buf/bufinfo` 适合调试构建。生产系统更适合 sysfs/procfs，权限仍由设备策略决定。
 
-### 从 ION 到 DMA-BUF Heaps 的演进
+Perfetto `linux.process_stats` 的 `record_process_dmabuf_rss` 可读取 `/proc/<pid>/dmabuf_rss`，proto 明确注明该节点只存在于部分 Android 内核。它统计进程通过 fd 或 VMA 引用的 dma-buf 总大小，仍是“引用规模”，不能直接解释为该进程独占 RAM。
 
-Android 的图形内存管理经历了一次重要的架构迁移：从 ION 分配器迁移到 DMA-BUF Heaps。
+## 16 KiB base page 对上述机制的影响
 
-ION 是 Android 4.0（Ice Cream Sandwich）引入的内存分配器，目的是统一不同硬件模块（GPU、相机、视频编解码器等）的内存分配接口。ION 通过一个 `/dev/ion` 设备节点提供分配接口，不同的 heap（如 system heap、carved-out heap）通过 flags 和 heap mask 来区分。
+Android 15 起 AOSP 支持 16 KiB base page，Android 17 应用和原生库应同时覆盖 4 KiB 与 16 KiB 设备。先用运行时 API 或下面的命令读取页大小：
 
-但 ION 有几个严重问题：
+```bash
+adb shell getconf PAGE_SIZE
+```
 
-- **安全性差**：所有分配都通过一个 `/dev/ion` 节点，权限控制粒度太粗。
-- **ABI 不稳定**：ION 的 IOCTL 接口不在主线 Linux 内核中维护，不同厂商的实现各不相同，与 GKI（Generic Kernel Image）的 ABI 稳定性目标冲突。
-- **实现碎片化**：不同 SoC 厂商自定义了各种 heap 类型和 flags，导致碎片化严重。
+页从 4 KiB 增至 16 KiB 后：
 
-从 Android 12 和 GKI 2.0（Linux 5.10+）开始，Google 用 DMA-BUF Heaps 框架替代了 ION。DMA-BUF Heaps 的核心改进：
+- 同等地址范围需要更少 PTE，TLB 覆盖范围增大；
+- 顺序触碰同等字节数时，理论上需要的 base-page fault 数减少，业务中的变化幅度取决于访问模式与映射方式；
+- Buddy 的同一 order 对应四倍字节数；
+- 页表、mmap、`mprotect`、文件 offset 与 ELF `PT_LOAD` 对齐需要适配；
+- 小映射、尾页和部分 slab 布局可能产生更多内部碎片；
+- 单次回收或迁移的基本粒度增大。
 
-- **每个 heap 是独立的设备节点**：如 `/dev/dma_heap/system`、`/dev/dma_heap/system_uncached`，可以通过 sepolicy 精确控制每个 heap 的访问权限。
-- **ABI 稳定**：DMA-BUF Heaps 的接口在主线 Linux 内核中维护，属于稳定的 UAPI。
-- **标准化**：统一了 heap 的命名和语义，减少了厂商间的差异。
+Android 官方初始测试报告了应用启动、功耗、相机启动和系统启动等平均收益，也明确说明 16 KiB 设备平均会使用略多内存，设备和应用结果会变化。不要从官方平均值推导某个应用的预期收益；应在目标构建上测量 fault、页表、RSS、启动 I/O 和帧时间。
 
-[已验证: 官方文档, source.android.com — ION to DMA-BUF Heaps 迁移, Android 12+]
+使用 Native 代码的应用还要保证 ELF LOAD 段和打包对齐，避免把 4096 写死。只使用 Java/Kotlin 的应用通常已经兼容，但仍需在 16 KiB 环境执行功能与性能测试。完整迁移要求见 4.7 节。
 
-### DMA-BUF 的工作机制
+### THP 的尺寸也不能写死为 2 MiB
 
-DMA-BUF 是 Linux 内核中用于跨设备、跨进程共享大块内存的框架。在 Android 图形系统里，Gralloc 分配出的图形缓冲区通常会以 dma-buf fd 或 handle 的形式在 App、SurfaceFlinger、GPU 和 HWC 之间传递。
+Transparent Huge Pages 以 PMD 等大页映射减少 TLB 压力。常见 4 KiB base page 配置下，PMD THP 是 2 MiB；其他 base page 与页表几何会产生不同大小。Android 17 r6 arm64 GKI 编译了 THP，并把默认策略配置为 `madvise`，应用范围仍由运行时 sysfs、内存类型和调用方建议决定。
 
-1. **Gralloc（Graphics Allocator）**：Gralloc 底层从 DMA-BUF Heaps 申请 buffer，并拿到一个 dma-buf fd。这里不能把所有 heap 都写成“物理连续”。`/dev/dma_heap/system` 提供的是虚拟连续 buffer，只有 CMA 类型 heap（例如 `default_cma_region`）才保证物理连续。设备是否需要物理连续，还取决于 IOMMU 和具体硬件能力。
-2. **BufferQueue 传递**：App 通过 BufferQueue 传递的是 dma-buf fd 或其封装句柄，不是像素数据本身。SurfaceFlinger 导入同一个 dma-buf 对象。CPU 侧调试或软件访问可以通过 `mmap()` 建立映射，但合成阶段更常见的是驱动侧导入，而不是所有参与方都去访问同一段 CPU 虚拟地址。
-3. **GPU / HWC 导入**：SurfaceFlinger、GPU 和 HWC 会按各自驱动模型导入 dma-buf。支持 IOMMU 的设备可以导入非物理连续 buffer，缺少这类映射能力的硬件才更依赖 CMA 这类物理连续分配。
+THP 需要规整、迁移和更大粒度的内存管理，适合连续访问的大区域；小而稀疏的工作集可能付出额外内存成本。判断是否有收益应同时观察 TLB、fault、compaction 与 RSS。
 
-这个 fd 传递机制减少了数据副本。各组件共享的是同一个 dma-buf 对象，但 CPU 访问方式、GPU/HWC 的导入方式、是否要求物理连续，取决于 heap 类型和硬件内存映射能力，不能压成“始终共享同一块物理连续内存”。
+## KASAN、MTE 与版本测量
 
-Android 12+ 的 DMA-BUF 统计主要通过 `/sys/kernel/dmabuf/buffers/`、`libdmabufinfo`、`dmabuf_dump` 和 memtrack 汇总；不同内核也可能在 `/proc/meminfo` 暴露 `Dmabuf` 一类汇总字段，但不能写成固定存在的 `DmaBufTotal` / `DmaBufMapped` / `DmaBufUnmapped`。在 Perfetto 的内存分析视图中，DMA-BUF 通常占据了设备总内存的相当大比例（在高端设备上可能达到数百 MB 甚至超过 1GB）。
+KASAN 检测内核内存越界和 use-after-free。软件 shadow 模式与硬件 tag 模式的成本差异很大；调试选项、采样模式和运行硬件都会改变结果。
 
-[已验证: 官方文档, source.android.com — Graphics buffer 管理与 DMA-BUF 框架]
+Arm MTE 可以支持用户空间 allocator 检查，也可以支撑 HW_TAGS KASAN。Android 17 r6 arm64 GKI 配置包含 KASAN/HW_TAGS 能力，运行设备是否启用、采用什么模式仍由启动参数、硬件和构建决定。
 
-### 在 Perfetto 中的表现
+因此，本节不使用跨设备的固定开销比例。比较内存与性能基线时，应记录：
 
-图形内存相关的性能问题在 Perfetto 中通常表现为：
+- kernel config 与启动参数；
+- userspace MTE 的 sync、async 或关闭状态；
+- KASAN 类型与采样配置；
+- base page size、ABI 和同一业务负载。
 
-- **DMA-BUF 分配延迟**：当系统碎片化严重或内存紧张时，Gralloc 的 DMA-BUF 分配可能变慢，在 Trace 中表现为 RenderThread 或 SurfaceFlinger 的长时间阻塞。
-- **GPU 内存压力**：GPU 驱动的内存使用（部分通过 DMA-BUF 管理）会影响整体系统内存可用量。
-- **Buffer 被回收导致重新分配**：Android 14 引入了强制清除 buffer 缓存的机制，在内存紧张时会回收空闲的图形 buffer，后续需要时重新分配。
+## ART 与内核回收的 Android 17 边界
 
-Google 在 LPC 2025 上介绍了使用 eBPF 替代 sysfs 来统计 DMA-BUF 使用量的工作，目标是提供更精确、更低开销的图形内存监控能力。
+ART 会通过 `madvise()` 把不再需要的页退还或标为可丢弃。Android 17 r1 的 ART 源码中可以看到 `MADV_DONTNEED`、`MADV_FREE`、`MADV_WILLNEED` 等调用，覆盖 RegionSpace、LargeObjectSpace、线程栈和映射预取等场景。
 
-[待补充: Perfetto 中 DMA-BUF 相关 Track 和事件的 Trace 截图]
+同一 tag 的 `platform/art` runtime 与 GC 目录没有直接调用 `MADV_COLD`。Linux 6.18 内核支持 `MADV_COLD`，其 `mm/madvise.c` 会对范围内合适 folio 执行 `folio_deactivate()`，让它们在压力下更容易被回收。内核具备接口不代表 Android 17 ART 已采用该 GC 协作路径。
 
-了解了图形内存的底层机制后，我们再来看一个影响整个内存管理架构的系统性变更：16KB 页面大小。前面讨论的 Buddy 分配器、TLB、Page Fault 等机制，在页面大小从 4KB 增大到 16KB 后，行为都会发生变化。
+Silk 等研究工作讨论了对象热度与内核页热度之间的偏差，这类方案可以作为研究方向；没有进入 `android-17.0.0_r1` 的 ART 调用链时，不能写成 Android 17 系统行为。
 
-> **ANON_VMA_LAZY 优化**：该专题已交由 4.13 节独立加工。ANON_VMA_LAZY 是华为团队提出的匿名 vma 延迟分配优化，当前以 LKML patch / 社区讨论形式存在，android-16.0.0_r1 中尚未发现合入；android-17.0.0_r1 尚未公开，不能写成 Android 17 结论。性能数字（anon_vma 节省 92-97%、24 个应用节省约 45MB、fork 性能提升 5-10%）来自厂商内部测试，缺少设备、内核版本、patch 版本和公开可复核出处，不作为 AIW 正文结论。详见 [4.13 Linux ANON_VMA_LAZY 优化与 Android 内存性能](13-anon-vma-lazy-memory-optimization.md)。
+ANON_VMA_LAZY 同理。`android17-6.18-2026-06_r6` 中没有该接口或配置，相关社区 patch 与厂商测试应放在独立专题，并清楚标注 patch 版本、测试设备和未合入状态。
 
+## 一套面向性能问题的取证顺序
 
-## 16K Page Size 对内存和性能的影响
+### 第一步：确认问题属于哪条慢路径
 
-Android 15 开始支持 16KB 页面大小（之前一直是 4KB），这是一个对整个 Android 生态影响深远的变更。
+先在 Perfetto 中对齐卡顿、启动或分配失败时间：
 
-### 为什么要增大页面大小
+- 应用线程是否出现 `vmscan/mm_vmscan_direct_reclaim_*`；
+- `kswapd` 是否运行，`mm_vmscan_kswapd_wake/sleep` 是否覆盖问题窗口；
+- 是否出现 `compaction/mm_compaction_*`；
+- `filemap/mm_filemap_fault`、perf major fault 与块 I/O 是否相关；
+- memory PSI 是否显示持续 stall。
 
-增大页面大小的主要动机来自硬件和性能两个方面：
+### 第二步：读取累计计数和物理布局
 
-- **减少 TLB miss**：更大的页面意味着同等地址空间需要更少的页表项，TLB 的覆盖范围更大。对于内存密集型应用，TLB miss 率会下降。
-- **减少页表内存开销**：每个页表项本身也占内存。页面越大，相同内存量需要的页表项越少，页表占用的内存也越少。
-- **减少 Page Fault 次数**：每次 Page Fault 可以映射更大的地址范围，减少总的 Page Fault 次数。实测中，16KB 页面使 `page_fault_user` 频率骤降约 75%，显著缩短了 IO 密集型路径的内核等待时间。
+下面的命令一次采集常用系统证据：
 
-Google 的实测数据（来自 developer.android.com）：
+```bash
+adb shell cat /proc/pressure/memory
+adb shell cat /proc/vmstat
+adb shell cat /proc/buddyinfo
+adb shell cat /proc/meminfo
+```
 
-| 指标 | 改善幅度 |
-|------|---------|
-| 应用启动时间 | 平均降低 3.16%，部分应用最高 30% |
-| 功耗（启动时） | 平均降低 4.56% |
-| 相机热启动 | 平均快 4.48% |
-| 相机冷启动 | 平均快 6.60% |
-| 系统启动时间 | 约改善 8%（约 950ms） |
+将问题前后的快照做差，比单次绝对值更有意义。重点寻找 scan/steal 比例、allocation stall、Swap in/out、compaction 成败、CMA 与高阶空闲块变化。
 
-[已验证: 官方文档, developer.android.com — 16KB page size 性能数据]
+### 第三步：按资源类型进入专用工具
 
-### 对应用开发的影响
+- 文件 refault：检查文件映射、I/O、预读和缓存生命周期；
+- 匿名页换入换出：检查 ZRAM、工作集、GC 后保留量与 PSI；
+- slab 增长：按 `/proc/slabinfo` 或 slab tracepoint 定位 cache；
+- 高阶/CMA 失败：检查目标 order、迁移类型、extfrag 与 compaction；
+- DMA-BUF 增长：按 inode、exporter、fd 持有者和 Surface/驱动生命周期分析。
 
-16KB 页面大小主要影响使用原生代码（NDK）的应用。涉及的关键变更：
+## 常见结论的校正
 
-- **ELF 对齐要求**：native library（.so 文件）的 ELF LOAD 段必须对齐到 16KB。4KB 对齐的 .so 文件在 16KB 页面设备上可能导致功能异常或无法加载。
-- **内存使用增加**：更大的页面意味着更多的内部碎片——如果一个对象只用了 1KB，也要占用整个 16KB 页面。平均内存使用会有小幅增加。
-- **mprotect 粒度**：`mprotect()` 的最小粒度从 4KB 变为 16KB，可能影响一些内存保护策略。
+### “内存总量够，高阶分配就会成功”
 
-Google 在 LPC 2025 上分享了为 16KB 页面适配旧 ELF 库的技术探索，包括"Simple Shift"方案和"memfd 双映射"方案。其中最棘手的挑战来自亚洲市场的应用——重度混淆的 ELF 和自定义 loader 使得自动化适配非常困难。
+高阶分配需要目标 zone 中的连续页。总空闲量充足时，外部碎片、不可移动页、CMA 与水位限制仍可能让请求进入 compaction 或失败。
 
-从 2025 年 11 月 1 日起，提交到 Google Play 且面向 Android 15（API 35）及以上设备的新应用和既有应用更新必须支持 16KB 页面大小。
+### “看到 kswapd 占 CPU，就说明它拖慢了前台”
 
-[已验证: 官方文档, developer.android.com — 16KB page size 要求]
+kswapd 活跃说明内核在后台回收，也可能来自 watermark boost 或主动策略。要证明影响，需要同时看到 CPU 竞争、I/O、前台 refault、PSI 或关键线程延迟。
 
-### 在 Perfetto 中的表现
+### “线程进入 D 状态就是 direct reclaim”
 
-16KB 页面大小对 Perfetto 分析的影响：
+D 状态表示不可中断睡眠，来源很多。direct reclaim 还可能在 CPU 上执行。应使用 vmscan tracepoint、内核调用栈和 PSI 归因。
 
-- Page Fault 频率下降，但单次 Page Fault 映射的内存量增大。
-- kswapd 的回收效率变化——每回收一个页面释放 16KB 而非 4KB，但页面移动的开销也相应增大。
-- Slab 分配器行为变化——对象在 16KB 页面中的布局不同，可能影响 Slab 的利用率。
+### “lmkd 只在内核回收失败后运行”
 
-[待验证: 16KB 页面在 Android 16 GKI 内核中的实际 Perfetto 表现]
+现代 Android 的 userspace `lmkd` 监控 PSI 等压力信号，可以在内核 OOM 之前选择进程。它与 kswapd 协作于同一压力环境，但不是严格的顺序兜底。详细决策见 4.4 节。
 
-## 扩展方向：内存安全与大页面
+### “每个 DMA-BUF 都是物理连续内存”
 
-本节先覆盖 Linux 内核内存管理的主干机制。后面还有两个与性能直接相关的扩展方向：
+heap 决定分配方式。system heap 提供虚拟连续 buffer，CMA heap 提供物理连续 buffer；设备还可以定义其他 heap。IOMMU 与驱动能力决定硬件如何访问。
 
-**内存安全机制**：KASAN（Kernel Address SANitizer）通过 shadow memory 检测内核空间的越界访问，但会带来约 2-3 倍的内存开销和可感知的性能下降，通常只在调试版本启用。MTE（Memory Tagging Extension）是 ARMv8.5+ 引入的硬件级内存标签机制，开销远低于 KASAN——快手在 2023 年分享了 MTE 在 Android 上的探索，标签检查的额外延迟约 1-2%。GWP-ASan 采用采样策略，在生产环境中以极低概率（约千分之一）分配带毒标记的内存块，能在几乎零开销的前提下捕获部分内存安全漏洞。
+### “App 持有 100 MiB DMA-BUF，就独占 100 MiB RAM”
 
-**Huge Pages**：Transparent Huge Pages（THP）在服务器场景中已被广泛采用，但在 Android 上仍处于实验阶段。THP 需要 2MB 连续物理内存（512 个 4KB 页），碎片化严重的移动设备很难满足。Android 15 的 pKVM（Protected Kernel Virtual Machine）对 THP 的支持也在探索中。大页面的核心权衡是：TLB miss 率降低带来的性能收益 vs. 内存浪费（内部碎片增加）vs. 碎片化加剧的风险。对于移动场景，16KB page size 可能是比 THP 更务实的折中方案。
+持有 fd 或 VMA 表示进程引用该 buffer。共享者、exporter、驻留状态和设备映射仍需核对，跨进程求和会重复。
 
+## 小结
 
-## 与其他机制的关系
+Linux 内存性能问题可以分成四个问题来问：
 
-Linux 内核内存管理不是孤立的，它与 Android 系统的其他层面有密切关联：
+1. 虚拟访问为什么触发 fault，它是 minor、major、COW、文件 refault 还是 Swap-in？
+2. 物理页分配需要什么 zone 和 order，PCP/Buddy 能否满足？
+3. 回收或 compaction 是否进入应用线程，造成多长 stall？
+4. 图形缓冲区由哪个 heap 导出，哪些进程和设备仍持有引用？
 
-- **与 ART 虚拟机（4.3 节）**：ART 的 GC 和内核的页面回收相互影响。Silk 论文展示了 GC 行为对内核 LRU 判断的干扰，说明两个层面需要协同优化。
-- **与 Low Memory Killer（4.4 节）**：LMK 是页面回收失败后的兜底机制——当 kswapd 和 direct reclaim 都无法满足需求时，LMK 会杀掉后台进程释放内存。
-- **与 SurfaceFlinger（2.6 节）**：SurfaceFlinger 的图形缓冲区通过 DMA-BUF 管理，是系统内存的大户。
-- **与 CPU 调度（5.1 节）**：kswapd 和 kcompactd 都是内核线程，它们的 CPU 使用会影响前台应用的调度。
-- **与存储 I/O（6.3 节）**：页面回收中的脏页回写会产生 I/O 压力，影响前台应用的文件读写性能。
+Android 17 的关键边界也应明确：arm64 GKI 配置默认启用 MGLRU；DMA-BUF Heaps 是新设备的主要分配接口；16 KiB base page 已是需要兼容的设备形态；ART r1 没有直接使用 `MADV_COLD` 的 GC 路径。把这些边界与运行设备证据对齐，才能从“内存看起来很高”推进到可验证的原因。
 
-## 常见问题与误区
+## 源码与文档锚点
 
-### "物理内存够用就不会有性能问题"
-
-这是最常见的误解。即使物理内存总量充足，碎片化问题也会导致大块连续内存分配变慢。手机长期运行（不重启）后，相机或游戏的启动速度下降，很大程度上就是因为碎片化。
-
-### "kswapd 是后台线程，不影响前台"
-
-kswapd 虽然在后台运行，但它占用 CPU 和 I/O 带宽，会直接影响前台应用的性能。更严重的是，kswapd 可能回收前台应用的 Page Cache，导致前台应用的文件读写变慢，形成恶性循环。
-
-### "Android 没有 swap，所以不用担心内存回收延迟"
-
-Android 使用 zRAM 替代 swap。回收匿名页时，内核需要将其压缩后存入 zRAM，这个压缩过程消耗 CPU。在内存压力大时，频繁的 zRAM 压缩/解压缩本身就是性能瓶颈。
-
-### "DMA-BUF 内存不算应用的内存"
-
-通过 DMA-BUF 分配的图形缓冲区在 `/proc/<pid>/smaps` 中是可以追踪的。一个 App 的 Gralloc 内存（主要是图片、Surface buffer）可能占其总内存的 30% 以上。在分析 App 内存问题时，不能忽略图形内存部分。
-
-## 参考资料
-
-### MTE ASYMM 模式与 android:memtagMode 源码级验证
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-android-mte-memtag-async-asymm-analysis.md
-- 摘要：源码级验证 Android MTE 实现多层机制：应用层 android:memtagMode 仅支持 off/sync/async（ASYMM 非 Java API 选项）；Zygote 始终以 ASYNC MTE 运行（因 MTE 只能在进程初始化后禁用）；decideTaggingLevel()→SpecializeCommon→mallopt 完整调用链；Linux Kernel per-CPU mte_tcf_preferred 覆盖机制。
-- Linux kernel / Android common kernel 路径：
-  - `mm/page_alloc.c` — Buddy 分配器实现
-  - `mm/slub.c` — SLUB 分配器实现
-  - `mm/vmscan.c` — 页面回收主流程（kswapd / direct reclaim / MGLRU 相关入口）
-  - `mm/compaction.c` — 内存压缩
-  - `drivers/dma-buf/` — DMA-BUF 框架
-  - `drivers/dma-buf/heaps/` — DMA-BUF Heaps 实现
-- 官方文档：
-  - developer.android.com — 16KB page size 支持
-  - source.android.com — Graphics buffer 管理与 DMA-BUF
-  - kernel.org — Linux Memory Management Documentation
-- 高质量参考：
-  - 程磊《五万字深入理解Linux内存管理》
-  - draveness.me《为什么Linux需要虚拟内存》
-  - OPPO《内存反碎片优化原理》
-  - Silk (TACO '25) — GC 与内核页面回收的协同优化
-  - LPC 2025 — HW/SW Design Recommendations for 16KB Devices
-
-### MGLRU vs 传统双级 LRU 锁竞争差异
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-mglru-vs-traditional-lru-lock-contention.md
-- 摘要：Linux 6.12 / Android common kernel MGLRU 与传统双级 LRU 的锁竞争对比。传统 LRU 每次页面引用做 `list_move()`（持 `lruvec->lru_lock`），多核时成为瓶颈；MGLRU 用 generation 编号替代 `list_move()`（`folio_update_gen()` 无锁），`lru_gen_look_around()` 批量 PTE 扫描，`evict_folios()` 持锁时间从 O(n) 降到 O(1)。含关键数据结构与调用链。
-
-
-### Linux 内核 LRU dead folio 预回收优化（Meta patch，前瞻性参考）
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-11-linux-kernel-lru-dead-folios-preemptive-free.md
-- 摘要：Meta 工程师 JP Kobryn 提交的 mm/swap.c LRU 锁竞争优化 patch（+40/-1 行），通过 folio_ref_freeze() 在 lru_add drain 前探测并剥离 dead folio，把"加锁加入 LRU → 加锁删除"的二次锁压缩为"加锁前直接释放"。Meta 生产环境实测单台 host 节省 ~2.6M lock acquisitions/min，dead folio 比例从 6.71% 降至 0.0001%，system 级 direct reclaim 扫描 -7%、allocation stalls -5.2%、compaction stalls -12.3%。
-- ⚠️ 版本边界：此 patch 当前仍在 Linux mm-unstable 分支（-mm 树），未进入 mm-stable，**未进入 Android 17 / API 37**。仅作为 LRU 锁竞争优化的前瞻性技术参考。
+- [Android 17 kernel `mm/page_alloc.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/page_alloc.c)
+- [Android 17 kernel `mm/vmscan.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c)
+- [Android 17 kernel `mm/compaction.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/compaction.c)
+- [Android 17 kernel `mm/madvise.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/madvise.c)
+- [Android 17 kernel arm64 GKI defconfig](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig)
+- [Linux 6.18 physical memory](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/mm/physical_memory.rst)
+- [Linux 6.18 Multi-Gen LRU](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/multigen_lru.rst)
+- [Linux 6.18 DMA-BUF](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/driver-api/dma-buf.rst)
+- [Linux 6.18 DMA-BUF Heaps](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/userspace-api/dma-buf-heaps.rst)
+- [AOSP：ION 迁移到 DMA-BUF Heaps](https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps)
+- [Android：支持 16 KiB page size](https://developer.android.com/guide/practices/page-sizes)
+- [Perfetto `ProcessStatsConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/process_stats/process_stats_config.proto)
+- [Perfetto `PerfEventConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/perf_event_config.proto)
+- [AOSP Android 17 ART `mem_map.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartbase/base/mem_map.cc)
