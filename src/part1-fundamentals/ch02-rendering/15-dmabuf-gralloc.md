@@ -1,6 +1,6 @@
 ---
 title: DMA-BUF、Gralloc 与跨进程图形内存共享
-chapter: '2'
+chapter: '2.15'
 section: '2.15'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37); earlier ION and
@@ -8,6 +8,7 @@ applicable_versions: Android 12 (API 31) - Android 17 (API 37); earlier ION and
 last_verified: '2026-07-25'
 last_verified_against: Android 17 / API 37 / android-17.0.0_r1; hardware/interfaces
   android-17.0.0_r1; android17-6.18-2026-06_r6; Writer rendering_pipelines
+  S08/S11/S12
 confidence: high
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
@@ -15,32 +16,27 @@ reviewed_date: "2026-07-08"
 reviewed_by: "openclaw-task6"
 sources:
 - type: aosp
-  path: frameworks/native/libs/ui/GraphicBuffer.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/ui/GraphicBuffer.cpp
 - type: aosp
-  path: frameworks/native/libs/ui/GraphicBufferAllocator.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/ui/GraphicBufferAllocator.cpp
 - type: aosp
-  path: frameworks/native/libs/gui/BufferQueueProducer.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/ui/GraphicBufferMapper.cpp
 - type: aosp
-  path: frameworks/native/libs/gui/BufferQueueConsumer.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/ui/Gralloc5.cpp
 - type: aosp
-  path: frameworks/native/libs/gui/BLASTBufferQueue.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp
 - type: aosp
-  path: hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp
 - type: aosp
-  path: hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp
 - type: aosp
-  path: hardware/interfaces/graphics/mapper/stable-c/include/android/hardware/graphics/mapper/IMapper.h
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl
 - type: aosp
-  path: hardware/interfaces/graphics/common/aidl/android/hardware/graphics/common/BufferUsage.aidl
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/allocator/aidl/android/hardware/graphics/allocator/BufferDescriptorInfo.aidl
+- type: aosp
+  path: https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/mapper/stable-c/include/android/hardware/graphics/mapper/IMapper.h
+- type: aosp
+  path: https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/common/aidl/android/hardware/graphics/common/BufferUsage.aidl
 - type: official
   path: https://source.android.com/docs/core/graphics/architecture
 - type: official
@@ -51,28 +47,26 @@ sources:
   path: https://developer.android.com/ndk/reference/group/a-hardware-buffer
 - type: official
   path: https://developer.android.com/guide/practices/page-sizes
+- type: official
+  path: https://perfetto.dev/docs/quickstart/heap-profiling
 - type: kernel
-  path: Documentation/driver-api/dma-buf.rst
-  ref: android17-6.18-2026-06_r6
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/driver-api/dma-buf.rst
 - type: kernel
-  path: drivers/dma-buf/dma-buf.c
-  ref: android17-6.18-2026-06_r6
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c
 - type: kernel
-  path: include/linux/dma-buf.h
-  ref: android17-6.18-2026-06_r6
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/dma-buf.h
 - type: kernel
-  path: drivers/dma-buf/dma-heap.c
-  ref: android17-6.18-2026-06_r6
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-heap.c
 - type: kernel
-  path: drivers/dma-buf/dma-fence.c
-  ref: android17-6.18-2026-06_r6
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
 - type: kernel
-  path: drivers/dma-buf/sync_file.c
-  ref: android17-6.18-2026-06_r6
-- type: obsidian
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c
+- type: material
   path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md
-- type: obsidian
+- type: material
   path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S11_camera_type.md
+- type: material
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S12_video_overlay_hwc_type.md
 tags:
 - dma-buf
 - gralloc
@@ -269,7 +263,7 @@ Android 12 的 GKI 2.0 用 DMA-BUF Heaps 替换 ION 作为 GKI 分配框架。`l
 2. 创建新的 `GraphicBuffer`；
 3. `GraphicBufferAllocator` 按 Mapper 版本选择 Gralloc 2/3/4/5 allocator wrapper；
 4. vendor Allocator 按 descriptor 分配，并返回 raw native handle；
-5. framework 根据请求决定是否立即 import，再把新对象放回 slot；
+5. 常规 `GraphicBuffer` 分配会把 allocator 返回的 raw handle 导入为当前进程可用的 handle；显式请求 raw handle 的内部调用方才会跳过这一步；
 6. producer 看到 reallocation flag 后调用 `requestBuffer(slot)`，取得这一 slot 的 `GraphicBuffer`；
 7. `queueBuffer()` 要求该 slot 已执行过 `requestBuffer()`。
 
@@ -323,14 +317,13 @@ Android 15 起平台支持 16 KB page size 设备。它会影响 ELF、mmap、�
 
 BufferQueue 两端按 slot 缓存 buffer。`BufferQueueConsumer::acquireBuffer()` 在某个 slot 第一次 acquire 新对象时返回 `mGraphicBuffer`；该 slot 之前已被 consumer acquire 过时，源码把输出的 `mGraphicBuffer` 设为 null，避免 consumer 再次 remap。后续帧仍会携带 slot、frame number、fence、crop、transform、dataspace、damage 和时间信息。
 
-下面的序列用于说明 classic BufferQueue 的 handle 缓存点。
+下面的序列用于说明 classic BufferQueue 的 handle 缓存点。以跨进程 consumer 为例，首次返回的 `GraphicBuffer` 在 IPC 反序列化时由 `GraphicBuffer::unflatten()` 调用 Mapper import；这不是 consumer 业务代码额外发起的一次调用。
 
 ```mermaid
 sequenceDiagram
     participant P as Producer
     participant BQ as BufferQueue
     participant C as Consumer
-    participant M as Mapper
 
     P->>BQ: dequeueBuffer(attributes)
     BQ->>BQ: slot 为空或属性不兼容，分配 GraphicBuffer
@@ -339,8 +332,8 @@ sequenceDiagram
     BQ-->>P: GraphicBuffer handle
     P->>BQ: queueBuffer(slot, fence, metadata)
     C->>BQ: acquireBuffer()
-    BQ-->>C: 首次返回 slot + GraphicBuffer + fence
-    C->>M: importBuffer(raw handle)
+    BQ-->>C: 首次返回 slot + GraphicBuffer transport + fence
+    C->>C: IPC unflatten 导入 raw handle
     C->>BQ: releaseBuffer(slot, release fence)
     P->>BQ: 后续 queueBuffer(slot, fence, metadata)
     C->>BQ: 后续 acquireBuffer()
@@ -365,7 +358,7 @@ Producer 把 GPU 或 CPU 写入完成的 fence 随 buffer 提交给 consumer。c
 
 `AHardwareBuffer_lock()` 接收一个 fence fd。fence 非负时，API 会在 lock 过程中等待；传入负值时，调用者要保证先前写入已经完成。lock 还可能因硬件完成、cache synchronization 或实现条件而阻塞。
 
-创建 buffer 时必须声明兼容的 CPU usage。受保护 buffer 不能与 CPU read/write usage 组合。CPU 写完后应通过对应 unlock API 取得或传递完成 fence，不能只依赖“同一进程里调用顺序”推断设备可见性。
+创建 buffer 时必须声明兼容的 CPU usage。受保护 buffer 不能与 CPU read/write usage 组合。CPU 写完后调用 `AHardwareBuffer_unlock()`：若传入 fence 输出指针，函数返回有效 fence fd 或 `-1`，调用者负责关闭有效 fd；若传入 `nullptr`，函数会阻塞到 unlock 工作完成。不能只依赖“同一进程里调用顺序”推断设备可见性。
 
 ## 7. 生命周期与内存占用
 
@@ -444,6 +437,8 @@ Camera preview 常把 HAL 产出的 buffer 交给 SurfaceTexture、ImageReader�
 
 因此，零拷贝不等于零带宽。分析相机打开后 UI 掉帧时，应分别测 Camera fence、GPU pass、最终 Surface present、内存控制器与热状态；heap 名称本身不能证明物理带宽隔离。`Writer/rendering_pipelines/S11_camera_type.md` 的两条 BufferQueue 与中间 consumer / producer 模型可用于确认是哪一段积压。
 
+视频也遵循同一原则。SurfaceView 视频可能保留独立 layer，TextureView 会把解码 buffer 再采样进宿主窗口；是否获得 HWC DEVICE composition 取决于格式、变换、protected 属性、plane 和带宽等整屏条件。`Writer/rendering_pipelines/S12_video_overlay_hwc_type.md` 可用于区分“共享了同一 buffer”“省掉一次 RenderEngine 合成”和“没有内存带宽成本”这三种不同结论。
+
 ### 9.3 引用泄漏
 
 fd 数上涨只是线索。若 imported handle 被释放但进程还保留 mmap，或 fd 已关闭但 GPU object 仍持有 attachment，单看 `/proc/<pid>/fd` 都会漏判。反过来，同一个 dma-buf 在多个进程各有 fd 也不能按 fd 数乘以 size。
@@ -518,6 +513,8 @@ slot 复用表示继续持有同一个 `GraphicBuffer`。buffer 被释放后，v
 - [Transition from ION to DMA-BUF Heaps](https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps)
 - [AHardwareBuffer NDK reference](https://developer.android.com/ndk/reference/group/a-hardware-buffer)
 - [Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
+- [Perfetto memory profiling：DMA-BUF ftrace event](https://perfetto.dev/docs/quickstart/heap-profiling)
 - [Linux DMA-BUF documentation](https://docs.kernel.org/6.18/driver-api/dma-buf.html)
 - `Writer/rendering_pipelines/S08_native_graphics_type.md`
 - `Writer/rendering_pipelines/S11_camera_type.md`（Camera 共享 buffer 与带宽边界）
+- `Writer/rendering_pipelines/S12_video_overlay_hwc_type.md`（Video / HWC 共享、合成与带宽边界）
