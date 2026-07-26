@@ -29,309 +29,273 @@ sources:
 
 # 5.31 Android 17 内核 EEVDF 调度器：从 CFS 到 Earliest Eligible Virtual Deadline First
 
-> **一句话总结**：Android 17 的 android17-6.18 内核已完整搭载 EEVDF 调度器——Linux 6.6 合入、经过 12 个版本迭代演进的 Earliest Eligible Virtual Deadline First 算法。EEVDF 用 vlag/eligibility + virtual deadline 的双维度选人逻辑替代了 CFS 的纯 vruntime 排序，内建延迟感知能力，大幅减少了启发式调优参数。本节深入算法实现、与 EAS/uclamp 的协作链路、sched_ext 可编程调度器的 Android 支持边界，以及对应用帧调度和交互响应的实际影响。
+> **一句话总结**：以 Android 17 / API 37 / `android-17.0.0_r1` 和 Android Common Kernel `android17-6.18-2026-06_r6` 为基准，普通公平调度任务由 EEVDF 在“有资格的实体”中选择虚拟截止时间最早者；EAS、PELT、uclamp 与 schedutil 分别负责或参与选核、负载跟踪和调频，不能把这些机制混成同一次调度决策。
 
 ---
 
-## 要点
+## 先划清版本与职责边界
 
-### 🔹 EEVDF 核心算法：eligibility 与 virtual deadline 计算
+Android 平台版本和 Linux 内核版本是两个锚点。本文讨论的 framework 行为以 `android-17.0.0_r1` 为准，调度器实现以 `android17-6.18-2026-06_r6` 为准。量产设备还会叠加 SoC 厂商配置、vendor hook 和设备内核补丁，因此分析具体设备时仍要核对 `uname -r`、内核配置与调度器运行状态。
 
-> 关于 EEVDF 的基本概念（CFS 局限性、eligibility/deadline 两步选人、与 CFS 的关键差异表、vlag 基本定义），详见 §5.1「Linux 进程调度基础」中的 EEVDF 章节。此处不再重复，而是聚焦于算法的数学模型和源码实现细节。
+| 问题 | Android 17 / 6.18 中的主要机制 |
+|---|---|
+| 唤醒任务应放在哪个 CPU | `select_task_rq_fair()`，满足条件时进入 EAS 的 `find_energy_efficient_cpu()` |
+| 当前 CPU 下一次运行哪个公平调度实体 | EEVDF 的 `pick_eevdf()` |
+| 任务近期占用了多少算力 | PELT 的 `util_avg`、`load_avg` 等信号 |
+| CPU 应请求多少性能 | schedutil 结合有效利用率、uclamp 和架构信号计算 |
+| 实时任务能否抢占普通任务 | 由调度类优先级处理，不归 EEVDF 决定 |
 
-#### vlag：从"欠账"到"虚拟滞后"
+Linux 文档把 6.6 描述为“开始从早期 CFS 选择方式迁移到 EEVDF”。在 6.18 源码中，`fair_sched_class` 仍然存在，`SCHED_NORMAL`、`SCHED_BATCH` 和 `SCHED_IDLE` 也仍由公平调度代码管理。更准确的说法是：**公平调度类保留了 CFS 的大量基础设施，选人算法已经采用 EEVDF**。它不会取代 `SCHED_FIFO`、`SCHED_RR`、`SCHED_DEADLINE` 等更高调度类。
 
-EEVDF 的核心数据结构是 **vlag（virtual lag）**，量化了一个调度实体相对公平份额的偏差：
+## EEVDF 如何判断“轮到谁”
 
-- vlag > 0：实体被"欠"CPU 时间 → 有资格参与调度
-- vlag < 0：实体已"超支" → 需要等待资格恢复
-- vlag = 0：实体恰好处于公平份额
+### 1. Lag 表示服务欠账
 
-在 Linux 6.6+ 源码（`kernel/sched/fair.c`）中，vlag 的更新发生在 `update_curr()` 路径。每次时钟 tick 或任务状态变更时，调度器累计当前运行实体的 `delta_exec`（实际执行时间），并相应调整 vlag。关键设计是 vlag 使用**虚拟时间域**而非物理时间域计算——权重高的任务，其 vlag 变化速度更慢（因为虚拟时间 = 物理时间 / 权重），不会被频繁判定为超支。
+内核注释给出的关系是：
 
-[已验证: AOSP android-17.0.0_r1, kernel/sched/fair.c — update_curr() 包含 vlag 更新逻辑]
+$$
+lag_i = S - s_i = w_i(V-v_i)
+$$
 
-#### Eligibility 判定：entity_eligible()
+- $S$ / $s_i$ 分别表示理想服务量和实体已经获得的服务量。
+- $w_i$ 是由 nice 等因素形成的调度权重。
+- $V$ 是运行队列的虚拟时间，$v_i$ 是实体的 `vruntime`。
+- `lag >= 0` 表示实体尚未拿足公平份额，具备 eligibility；`lag < 0` 表示它已经多拿了服务。
 
-一个调度实体是否有资格运行，由 `entity_eligible()` 函数判定。实际实现中，eligibility 的判定会考虑整个 cfs_rq 的平均 vruntime，确保全局公平性。当一个任务的 vlag 降到负值时，它被移出可运行候选集，直到其他任务执行使其 vlag 回升到 ≥ 0。
+这里有一个容易误读的实现细节：运行队列中的实体并不依赖持续写回的 `se->vlag` 来判断资格。`entity_eligible()` 调用 `vruntime_eligible()`，直接用 `cfs_rq->sum_w_vruntime`、`sum_weight`、当前实体和待判断实体的 `vruntime` 完成等价比较，还特意避开了先做除法带来的精度损失。
 
-[已验证: AOSP android-17.0.0_r1, kernel/sched/fair.c — entity_eligible() 函数签名与逻辑]
+`se->vlag` 主要承担离队与重新入队之间的 lag 保存：
 
-这个机制直接解决了 CFS 的"睡眠唤醒报复"问题：一个长时间睡眠的任务醒来后，其 vlag 可能很高（因为 ideal_runtime 一直在累积），所以它有资格运行；但随着 actual_runtime 增加，vlag 会快速下降到负值，让出 CPU 给其他任务——不会像 CFS 那样靠追赶 vruntime 长时间霸占 CPU。
+1. `update_curr()` 用 `rq_clock_task()` 计算已经运行的 `delta_exec`，再通过 `calc_delta_fair()` 推进 `curr->vruntime`。
+2. 实体离开运行队列时，`dequeue_entity()` 调用 `update_entity_lag()`，把当前虚拟 lag 保存到 `se->vlag`。
+3. 实体重新入队时，`place_entity()` 以运行队列平均虚拟时间为基准，补偿加入实体对加权平均值的扰动，并恢复应保留的 lag。
 
-#### Virtual Deadline：pick_eevdf()
+所以，“`update_curr()` 每个 tick 直接更新 vlag”这个说法不符合 6.18 实现。它更新执行时间和 `vruntime`；eligibility 随运行队列的虚拟时间关系变化，离队前才把 lag 快照保存到字段中。
 
-在所有 eligible 实体中，EEVDF 选择 **virtual deadline 最早**的来运行。`pick_eevdf()` 在 augmented rbtree 中按 deadline 排序，取最早的实体。Virtual deadline 的计算考虑了任务的时间片请求：申请短时间片的任务（通常是延迟敏感型）会获得更早的 virtual deadline，从而被优先调度。
+### 2. Deadline 表示当前服务请求的虚拟期限
 
-这是 EEVDF 内建延迟感知的核心——不需要像 CFS 那样依赖 `sched_wakeup_granularity_ns` 等启发式参数来控制唤醒抢占。
+每个公平调度实体拥有请求长度 `slice`。6.18 的 `update_deadline()` 在一个请求耗尽后按下式生成新期限：
 
-[已验证: AOSP android-17.0.0_r1, kernel/sched/fair.c — pick_eevdf() 使用 augmented rbtree 按 deadline 排序]
+$$
+deadline_i = vruntime_i + \operatorname{calc\_delta\_fair}(slice_i, entity_i)
+$$
 
-#### 选人逻辑对比
+同一权重下，较短的请求会得到较近的虚拟 deadline。权重也会参与 `calc_delta_fair()`，因此 nice 值仍会改变虚拟时间推进速度和 deadline 距离。
 
-| 维度 | CFS (Linux < 6.6) | EEVDF (Linux 6.6+) |
-|------|-------------------|---------------------|
-| 选人入口 | `pick_next_entity()` → 红黑树最左（vruntime 最小） | `pick_eevdf()` → eligible 实体中 deadline 最早 |
-| 延迟感知 | 无内建机制，依赖启发式参数 | 算法内建，通过 deadline 体现 |
-| 公平性控制 | 纯 vruntime 追赶 | vlag 双向约束（正→可运行，负→等待） |
-| 唤醒处理 | `check_preempt_wakeup()` + 启发式参数 | `entity_eligible()` + deadline 比较 |
+普通实体默认使用 `sysctl_sched_base_slice`。这个内核锚点的未缩放基值是 700,000 ns，默认采用对数缩放，CPU 数量最多按 8 个计算：
 
-> 详见 §5.1 中关于 CFS vruntime、红黑树选人逻辑和 `base_slice_ns` 参数的基础解析。
+$$
+base\_slice = 0.7ms \times (1+\log_2(\min(nr\_online\_cpus, 8)))
+$$
 
-### 🔹 Linux 6.6 → 6.18：EEVDF 演进历程与 AOSP kernel 适配
+8 核及以上设备的源码默认值由此得到 2.8 ms。它是默认请求长度，不能理解为“任务一旦运行便有 2.8 ms 绝对不可抢占”：高调度类仍可抢占公平任务，EEVDF 自身还有 eligibility、deadline、slice protection 和唤醒抢占判断，vendor hook 也可能改变决定。
 
-#### 合入时间线
+6.18 还允许公平调度任务通过 `sched_setattr()` 的 `sched_runtime` 请求自定义 slice。`__setparam_fair()` 会把非零值限制在 0.1 ms 到 100 ms；传 0 则恢复默认 `base_slice`。这项内核能力不能推导出 Android UI 线程已经使用它，判断某个线程是否设置了 custom slice 应查看设备运行状态或对应调用方。
 
-EEVDF 不是一步到位的——从 Linux 6.6 初次合入到 Android 17 使用的 6.18 内核，经过了 12 个版本的迭代：
+### 3. 红黑树按 deadline 排序，用 min_vruntime 剪枝
 
-| 内核版本 | 时间 | EEVDF 关键变更 |
-|---------|------|---------------|
-| 6.6 | 2023-10 | EEVDF 初次合入，替换 CFS fair class 选人逻辑；移除 `sched_latency_ns` / `sched_min_granularity_ns` / `sched_wakeup_granularity_ns` |
-| 6.7 | 2024-01 | `update_deadline()` 逻辑修正，修复唤醒场景 deadline 计算偏差 |
-| 6.8 | 2024-03 | vlag 衰减策略优化，改善长时间睡眠任务唤醒后的公平性 |
-| 6.9 | 2024-05 | `base_slice_ns` 默认值调整公式优化 |
-| 6.10 | 2024-07 | EEVDF 与 EAS 交互路径修正，确保 `find_energy_efficient_cpu()` 兼容新选人逻辑 |
-| 6.11 | 2024-09 | cgroup v2 CPU 控制器适配 EEVDF 的 vlag 语义 |
-| 6.12 | 2024-11 | `sched_ext` 可编程调度器框架合入 |
-| 6.13-6.18 | 2025-01 ~ 2025-09 | 持续稳定性修复和性能调优；vendor 级别适配路径完善 |
+`cfs_rq->tasks_timeline` 是增强红黑树：
 
-[已验证: 官方文档, Documentation/scheduler/sched-eevdf.rst — EEVDF 合入历史]
-[已验证: AOSP android-17.0.0_r1 — Android Common Kernel android17-6.18 基于 Linux 6.18]
+- `entity_before()` 比较 `se->deadline`，因此树的排序键是虚拟 deadline。
+- 每棵子树记录最小 `vruntime`，同时维护最小和最大 slice。
+- `__pick_eevdf()` 先用子树的 `min_vruntime` 判断其中是否可能存在 eligible 实体；不能满足资格的子树可以跳过。
+- 在 eligible 候选中，调度器选择 deadline 最早的实体，并把仍在运行的当前实体一并比较。
 
-#### AOSP android17-6.18 内核适配
+这使选人保持在 $O(\log n)$ 量级，同时满足两道条件：先有资格，再比较期限。只看红黑树最左节点、只看最小 `vruntime` 或只看最早 deadline，都会漏掉一部分算法。
 
-Android 17 使用 android17-6.18 作为其 Android Common Kernel (ACK) 基线。这意味着：
+### 4. Slice protection 控制过度抢占
 
-1. **EEVDF 是默认且唯一的 fair class 调度器**：不存在 CFS 回退路径。所有 `SCHED_OTHER` / `SCHED_BATCH` 任务都走 EEVDF 选人逻辑
-2. **EAS 与 EEVDF 协同**：`find_energy_efficient_cpu()` 在选核时使用 PELT utilization 信号，但 CPU runqueue 内部的选人由 EEVDF `pick_eevdf()` 完成
-3. **uclamp 通过 schedutil 生效**：uclamp.min/max 影响 schedutil governor 的频率选择，但不直接干预 EEVDF 的 eligibility/deadline 计算
-4. **sched_ext 可用但默认未启用**：6.18 内核包含 sched_ext 框架代码，但 Android 17 默认不开启 `CONFIG_SCHED_EXT`（需要 OEM 显式配置）
+6.18 默认启用 `RUN_TO_PARITY`。当前实体在到达 0-lag 点或耗尽受保护的请求前，`pick_eevdf()` 可以继续返回它，避免每次唤醒都引发切换。`PREEMPT_SHORT` 也默认启用：新唤醒实体具有更短 slice 且 eligible 时，可以缩短当前实体的保护区间。
 
-[已验证: AOSP android-17.0.0_r1 — android17-6.18 内核 fair class 使用 EEVDF]
+因此，EEVDF 的唤醒抢占需要同时看当前实体的保护状态、唤醒实体的资格、slice 与 deadline。用“deadline 更早便立即抢占”概括 6.18 行为会过于简单。
 
-#### OEM 适配影响
+### 5. 睡眠任务不会靠短暂阻塞清空负 lag
 
-EEVDF 对 OEM 内核团队的影响主要体现在：
+`DELAY_DEQUEUE` 和 `DELAY_ZERO` 在本内核锚点中默认开启。一个准备睡眠且尚不 eligible 的实体会先标记为 `sched_delayed`，暂留在竞争集合中，让它的负 lag 随虚拟时间变化逐步衰减。它被选中准备完成延迟出队，或在此期间重新唤醒时，再进入相应路径；完成延迟出队时，正 lag 还会被裁到 0。
 
-1. **旧调优参数失效**：厂商如果之前调优了 `sched_latency_ns` / `sched_min_granularity_ns` 等参数，这些调优在 6.6+ 内核上不再生效。需要重新基于 `base_slice_ns` 进行调优
-2. **EAS 选核逻辑兼容**：厂商自定义的 `find_energy_efficient_cpu()` 实现需要确保与 EEVDF 的 vlag 更新路径兼容
-3. **vendor hook 适配**：Android 的 vendor scheduler hook（如 `android_vh_scheduler_tick` 等）需要验证在 EEVDF 路径下仍然有效
+这个设计抑制了“运行超额后短睡一下，醒来便重置欠账”的利用方式。长睡眠任务也不会因为理想执行时间持续无界累积而自动得到巨大正 lag；lag 的保存、边界限制和延迟出队共同约束了唤醒位置。
 
-> 详见 §5.28「PELT Boost 回退与 AMU/PMU 微架构感知调频」中关于传音团队发现 PELT boost 在新内核上导致功耗浪费的案例分析——这正是 EEVDF 时代 OEM 调优策略需要重新审视的典型例子。
+## 从旧 CFS 选人方式迁移时，哪些认识要更新
 
-### 🔹 与 EAS/PELT 的协作：EEVDF 在大小核架构下的能效表现
+| 观察点 | 早期 CFS 常见描述 | 6.18 EEVDF 实现 |
+|---|---|---|
+| 公平依据 | 选择最小 `vruntime` | `vruntime` 仍是服务记账基础，先以 lag 判断资格 |
+| 候选排序 | 时间线按 `vruntime` 排序 | 时间线按 deadline 排序，子树增强信息用于 eligibility 剪枝 |
+| 请求长度 | 调度周期和最小粒度共同影响 | 默认请求由 `base_slice_ns` 给出，也支持 custom slice |
+| 唤醒抢占 | 依赖 vruntime 差值及 wakeup granularity | 结合 EEVDF 选人结果、slice protection 与短 slice 规则 |
+| 睡眠补偿 | 调整新入队实体的 `vruntime` | 保存 lag，并对负 lag 睡眠实体使用延迟出队 |
 
-#### 分工边界
+不要把 Linux 6.6 到 6.18 之间每个小版本的变化编成一张“版本功能表”。官方 EEVDF 文档只确认 Linux 从 6.6 开始迁移，并描述 6.18 所采用的 lag、deadline、延迟出队和自定义 slice 等方向；具体补丁应按 commit 或目标标签验证。本文只对 `android17-6.18-2026-06_r6` 的最终代码作结论。
 
-EEVDF 和 EAS 是互补关系，不是替代关系：
+旧版调优经验也应重新核查。这个标签的公平选人直接使用 `base_slice_ns`，但源码中仍可能保留供其他调度功能使用或导出的历史变量。看到变量名仍在源码里，不等于它仍以旧 CFS 语义控制 EEVDF。可靠做法是从读写点追到 `update_deadline()`、`place_entity()`、`check_preempt_wakeup_fair()` 和 `pick_eevdf()`。
 
-| 层级 | 机制 | 职责 | 信号来源 |
-|------|------|------|---------|
-| **选核（Task Placement）** | EAS | 决定任务放到哪个 CPU 核心 | PELT `util_avg` + Energy Model |
-| **选人（Task Selection）** | EEVDF | 决定 CPU runqueue 中哪个任务先运行 | vlag + virtual deadline |
-| **调频（Frequency Scaling）** | schedutil | 决定 CPU 运行在什么频率 | PELT `util_avg` + uclamp |
+## EEVDF、EAS、PELT、uclamp 和 schedutil 的关系
 
-三者的交互链路：
+任务从唤醒到运行，大致经过下面几个阶段：
 
-```
-任务唤醒
-  → EAS: find_energy_efficient_cpu() → 选择能效最优的 CPU
-  → 任务被加入目标 CPU 的 cfs_rq
-  → EEVDF: entity_eligible() → 判断是否有资格运行
-  → EEVDF: pick_eevdf() → 在 eligible 任务中选 deadline 最早的
-  → PELT: update_curr() → 更新 util_avg
-  → schedutil: sugov_get_util() → 根据 util_avg + uclamp 选择频率
-```
+1. `select_task_rq_fair()` 先处理 CPU 亲和性、唤醒关系和 vendor hook。
+2. EAS 可用且 root domain 未进入 overutilized 状态时，`find_energy_efficient_cpu()` 评估性能域候选、剩余容量和 Energy Model。
+3. 任务进入目标 CPU 的 `cfs_rq`，EEVDF 决定该队列下一次运行的公平实体。
+4. PELT 持续维护利用率与负载信号。
+5. schedutil 的 `sugov_get_util()` 取得有效 CPU 利用率，并结合性能上下限形成频率请求。
 
-[已验证: AOSP android-17.0.0_r1 — select_task_rq_fair() 调用 find_energy_efficient_cpu()，pick_next_task_fair() 调用 pick_eevdf()]
+overutilized 后，唤醒选核不会进入 EAS 的能耗比较，会继续走亲和性和调度域负载均衡路径。目标 CPU 内的公平选人仍由 EEVDF 完成，把这种回退称作“退回旧 CFS 选人算法”并不准确。
 
-#### PELT 信号的双重角色
+### PELT 仍然重要，但不直接充当 EEVDF 的候选键
 
-PELT 的 `util_avg` 在 EEVDF 时代仍然承担两个关键角色：
+`util_avg` 会参与 EAS 容量判断、能耗估计、负载均衡与 schedutil 调频。EEVDF 的 `entity_eligible()` 和 `entity_before()` 不读取 `util_avg`，它们使用运行队列虚拟时间、实体 `vruntime`、权重、slice 和 deadline。
 
-1. **EAS 选核输入**：`find_energy_efficient_cpu()` 使用 `util_avg` 判断任务适合放在大核还是小核
-2. **schedutil 调频输入**：`sugov_get_util()` 使用 `util_avg` 计算目标频率
+`vruntime` 也不是 PELT 的延伸。两者都是公平调度代码维护的状态，但时间尺度和用途不同：
 
-但 PELT **不再参与 fair class 的选人决策**——这是 EEVDF 带来的最大变化。在 CFS 时代，vruntime（PELT 体系的延伸）是选人的唯一标准；在 EEVDF 中，vlag 和 virtual deadline 取代了 vruntime 的选人角色，但 vruntime 仍然作为 lag 计算的基础存在。
+- `vruntime` 按执行时间和权重推进，用于公平服务与 EEVDF 期限。
+- PELT 对 runnable/running 信号做时间衰减，估计近期负载与利用率。
 
-> 关于 PELT 的 `util_avg` 与 `runnable_avg` 的区别及其在 schedutil 中的影响，详见 §5.28。
+### uclamp 限制的是利用率信号，不是 MHz
 
-#### 大小核场景下的实际表现
+`uclamp.min` 和 `uclamp.max` 的数值处在容量归一化尺度上，通常是 0 到 1024。它们会影响：
 
-在 ARM big.LITTLE 架构上，EEVDF 的表现有几个值得注意的方面：
+- EAS 判断任务是否适合某个容量等级的 CPU；
+- 运行队列的有效利用率上下界；
+- schedutil 根据利用率请求性能时使用的边界。
 
-1. **小核 runqueue 内的公平性提升**：小核通常承载更多后台任务，EEVDF 的 vlag 约束能更有效地防止单个任务长时间霸占小核
-2. **大核唤醒延迟改善**：EEVDF 的 deadline 机制使得延迟敏感型任务（如 UI 线程）被唤醒到大核后，能更快地获得 CPU 时间——因为它们的 virtual deadline 通常更早
-3. **overutilized 阈值边界**：当系统进入 overutilized 状态时，EAS 退化为 CFS load balance，但 EEVDF 仍然在单个 CPU runqueue 内生效。这意味着即使在过载场景下，CPU 内部的调度公平性仍有保障
+uclamp 值不是直接的最低或最高 CPU 频率。最终频点还取决于 CPU 容量、DVFS 映射、策略域、thermal 限制和驱动。
 
-> 详见 §5.2「EAS 能量感知调度」中关于 overutilized 阈值和 EAS/load balance 切换机制的解析。
+更重要的是，CPU 高频不会让同一段墙上执行时间记成更小的 `delta_exec`。`update_se()` 计算的是 `rq_clock_task()` 的时间差，`update_curr()` 再据此推进 `vruntime`。频率提高后，线程可能更早完成一批指令并主动阻塞，从而缩短本次 runnable 区间；只要它持续占用 CPU，相同的运行时长会得到相同量级的调度时间记账。由此不能推出“高 uclamp.min 让 vlag 下降更慢”或“低 uclamp.max 让任务更快失去资格”。
 
-### 🔹 uclamp 与 EEVDF：用户空间 clamp_hint 对 deadline/eligibility 的影响
+Android 17 的 `system/core/libprocessgroup/profiles/task_profiles.json` 基线定义了 `UClampMin`、`UClampMax` 和 `UClampLatencySensitive` 对应的 cgroup 属性，也定义了 foreground、top-app、background 等调度组。基线文件没有原文所写的 `SetClamps` / `BoostPct` / `ClampPct` 动作。具体 clamp 数值来自 cgroup 配置与设备覆盖，分析时应读取设备上的有效值。
 
-#### uclamp 的作用层级
+### ADPF 没有通用的“帧 deadline → EEVDF deadline”映射
 
-需要明确一个关键设计：**uclamp 不直接干预 EEVDF 的 eligibility 和 deadline 计算**。uclamp 的影响是间接的，通过改变 CPU 频率来影响任务执行速度，进而影响 vlag 的更新速率。
+ADPF Hint Session 描述目标工作时长和每轮实际工作时长，后端可以据此调整性能资源。厂商实现可能借助 uclamp、调频或其他内核接口，但 `PerformanceHintManager` 的 deadline 也不会自动写入 `sched_entity.deadline`。
 
-uclamp 的两个值：
-- **uclamp.min**：任务希望的最低 CPU 频率。当任务在 runqueue 中时，schedutil 不会将频率降到 uclamp.min 以下
-- **uclamp.max**：任务允许的最高 CPU 频率。schedutil 不会将频率提升到 uclamp.max 以上
+EEVDF 的 deadline 是公平调度器内部的**虚拟服务期限**；ADPF 的 target duration 是应用工作周期的**墙上时间目标**。两者名称相近，单位和决策语义不同。Android 17 framework 是否为某类线程设置 custom slice，必须用调用点或运行时 `sched_debug` 信息验证，不能从 ADPF API 的存在推断。
 
-在 Android 中，uclamp 通过 `task_profiles.json` 配置，由 `libprocessgroup` 在任务创建时设置：
+## UI 线程会自动获得更早 deadline 吗
 
-```json
-// device/google/<board>/task_profiles.json (示例结构)
-{
-  "Profiles": [
-    {
-      "Name": "HighPriority",
-      "Actions": [
-        {
-          "Name": "SetClamps",
-          "Params": {
-            "BoostPct": "100",
-            "ClampPct": "100"
-          }
-        }
-      ]
-    }
-  ]
-}
-```
+EEVDF 不识别 `main`、`RenderThread`、Vsync 或应用包名。UI 线程的响应优势可能来自：
 
-[已验证: 官方文档, source.android.com/docs/core/perf/uclamp — uclamp 通过 task_profiles.json 配置]
-[已验证: AOSP android-17.0.0_r1 — libprocessgroup SetClamps action 实现 uclamp 设置]
+- 线程睡眠等待事件后唤醒时的 lag 状态；
+- nice 权重、调度策略或 custom slice；
+- foreground/top-app 调度组、cpuset、CPU affinity 和 uclamp；
+- EAS 选核结果；
+- Android vendor hook 与设备调度补丁；
+- 更高调度类的优先级。
 
-#### 间接影响链路
+只要两个 `SCHED_NORMAL` 线程具有相同权重、相同 slice 和相近 lag，EEVDF 没有理由因为其中一个名为 `RenderThread` 就给它更早 deadline。系统策略若只提高 uclamp，主要改变选核与性能请求，也不会直接改写 EEVDF deadline。
 
-虽然 uclamp 不直接改变 EEVDF 的算法参数，但它通过改变 CPU 频率间接影响 EEVDF 的行为：
+对后台任务也要区分两层限制。JobScheduler 决定工作何时具备运行条件，调度组、cpuset、CPU weight 和 quota 决定它能在哪些 CPU 上竞争以及能拿多少组级份额；EEVDF 只处理已经进入公平运行队列的调度实体。启用 `CONFIG_FAIR_GROUP_SCHED` 时，任务组本身也是分层调度实体，单个线程的资格不能越过 cgroup 配额或层级权重。
 
-1. **高 uclamp.min → 高频率 → 任务执行更快 → delta_exec 减小 → vlag 下降更慢 → 任务保持 eligible 的时间更长**：高优先级任务在 EEVDF 视角下"更持久"地保持运行资格
-2. **低 uclamp.max → 频率受限 → 任务执行更慢 → delta_exec 增大 → vlag 下降更快 → 任务更快失去 eligibility**：低优先级任务在 uclamp.max 限制下，会更快地让出 CPU
+## `sched_ext`：GKI 已编译，运行时是否启用另算
 
-这种间接影响链路是 Android 性能调优的关键——通过 uclamp 控制频率，间接影响 EEVDF 的调度行为，而不需要直接修改内核调度器参数。
+`android17-6.18-2026-06_r6` 的 arm64 GKI defconfig 明确设置：
 
-#### PerformanceHintManager 的交互
+- `CONFIG_SCHED_CLASS_EXT=y`
+- `CONFIG_BPF_SYSCALL=y`
+- `CONFIG_BPF_JIT=y`
+- `CONFIG_BPF_JIT_ALWAYS_ON=y`
 
-Android 13+ 引入的 `PerformanceHintManager`（ADPF）通过 `hintSession.updateTargetWorkDuration()` 向内核传递帧渲染预期时间。这个 hint 会影响 schedutil 的频率选择，某些实现中还会动态调整关联线程的 uclamp.min。通过频率变化，这间接传导到 EEVDF 的 vlag 更新速率。
+正确配置符号是 `CONFIG_SCHED_CLASS_EXT`。这证明 GKI 编译了 sched_ext 调度类；在没有加载 BPF 调度器时，sched_ext 仍处于 disabled 状态，普通公平任务继续由 EEVDF 处理。
 
-> 详见 §5.9「ADPF 自适应性能提示」和 §8.37「PerformanceHintManager 实战」中关于 ADPF Hint Session 的完整解析。
+sched_ext 的覆盖范围由 BPF 调度器的 `ops->flags` 决定：
 
-### 🔹 sched_ext 框架：Android 17 对 BPF 可编程调度器的支持边界
+- 默认可以接管 `SCHED_NORMAL`、`SCHED_BATCH`、`SCHED_IDLE` 和 `SCHED_EXT` 任务；
+- 设置 `SCX_OPS_SWITCH_PARTIAL` 时，只接管显式使用 `SCHED_EXT` 策略的任务；
+- BPF 调度器退出或发生错误时，内核停止该 sched_ext 实例，并把任务交回内核调度器。
 
-#### sched_ext 简介
-
-`sched_ext`（又称 SCHED_EXT 或 extsched）是 Linux 6.12 合入的可编程调度器框架，允许通过 BPF 程序自定义 fair class 的调度策略。核心价值：
-
-1. **OEM 差异化不再需要修改 mainline 内核**：厂商可以通过 BPF 程序实现自定义调度策略，无需 fork 内核或提交 LKML patch
-2. **运行时可切换**：调度策略可以动态加载和卸载，不需要重启设备
-3. **安全沙箱**：BPF verifier 确保自定义调度器不会 crash 内核
-
-#### Android 17 的支持现状
-
-Android 17 的 android17-6.18 内核**包含 sched_ext 框架代码**（自 6.12 合入），但默认配置中 `CONFIG_SCHED_EXT` 通常未启用：
+下面的命令用于区分“编译进内核”和“已经加载调度器”；它们通常需要 root，节点是否可读还受设备构建类型和 SELinux 约束。
 
 ```bash
-# 检查 sched_ext 支持（需要 root）
-zcat /proc/config.gz | grep SCHED_EXT
-# 输出: # CONFIG_SCHED_EXT is not set  (默认情况)
+zcat /proc/config.gz | grep CONFIG_SCHED_CLASS_EXT
+cat /sys/kernel/sched_ext/state
+cat /sys/kernel/sched_ext/root/ops
+cat /sys/kernel/sched_ext/enable_seq
 ```
 
-[待验证: Android 17 具体设备 defconfig 中 CONFIG_SCHED_EXT 的默认值——需查阅 android17-6.18 的 cuttlefish 或 pixel defconfig]
+第一行检查构建配置；`state` 显示 sched_ext 当前状态，`root/ops` 显示已注册调度器名称，`enable_seq` 可辅助判断是否曾启用。只看到配置为 `y`，不能证明量产设备正在用 BPF 调度器。
 
-未默认启用的原因：
+sched_ext 提供完整的调度接口，BPF 策略需要自行处理选 CPU、排队和时间片等问题。它不会自动继承 Android EAS 策略的所有行为。任何游戏、AI 或省电收益都要靠具体 BPF 实现、设备拓扑与实验数据证明，不能由框架存在直接推出。
 
-1. **EAS 兼容性**：sched_ext 目前与 EAS 的集成路径仍在完善中。Android 的任务放置强依赖 EAS + Energy Model，sched_ext 的自定义调度策略可能覆盖 EAS 决策，导致能效退化
-2. **vendor hook 生态**：Android 已有成熟的 vendor hook 机制（`android_vh_*`），OEM 通过这些 hook 实现差异化调度，切换到 sched_ext 的动力不足
-3. **验证成本**：BPF 调度器的行为难以在所有工作负载下充分验证，Android 的兼容性要求比 mainline Linux 更严格
-4. **Power HAL 集成**：Android 的 Power HAL / schedutil 闭环与 fair class 调度器有深度耦合，sched_ext 的引入需要重新验证整个调频链路
+## 如何在设备上验证 EEVDF
 
-#### 未来演进方向
+### 1. 查看 slice、eligibility 和 deadline
 
-尽管 Android 17 未默认启用 sched_ext，但它为未来的 OEM 试用提供了基础：
+下面的命令用于检查当前构建是否开放调度调试信息。`/proc/sched_debug` 依赖相应内核配置，user 构建可能不可用。
 
-- **游戏模式调度**：游戏场景下，OEM 可以用 sched_ext 实现更激进的前台优先调度策略
-- **AI 推理调度**：在模型推理期间，用 sched_ext 将推理任务绑定到特定 CPU 集合并自定义调度顺序
-- **功耗实验**：替代 §5.28 中传音团队通过修改 mainline `cpu_util()` 来实现的 AMU/PMU 频率限制——sched_ext 可以在不修改内核源码的前提下实现类似效果
+```bash
+adb shell su 0 cat /sys/kernel/debug/sched/base_slice_ns
+adb shell su 0 cat /proc/sched_debug
+```
 
-> 详见 §5.28 中关于 sched_ext 与 AMU/PMU 微架构感知调频的关系讨论。
+在这个 6.18 源码中，`sched_debug` 的 runnable task 表包含 `vruntime`、`eligible`、`deadline`、是否为 custom slice、`slice`、累计执行时间和优先级。它没有直接打印每个在队实体的原始 `vlag`，但已经能验证“是否 eligible”“deadline 谁更早”“slice 是否自定义”三个关键问题。
 
-### 🔹 对应用性能的实际影响：帧调度、后台任务排队、前台交互优先级
+### 2. 用 Perfetto 测量 Runnable 等待
 
-#### UI 线程与 RenderThread 的调度行为变化
-
-在 EEVDF 下，Android 的 UI 关键线程（主线程、RenderThread）的调度行为有以下变化：
-
-**正面影响：**
-
-1. **唤醒后更快获得 CPU**：EEVDF 的 deadline 机制使延迟敏感型任务天然排在前面。UI 线程被 Vsync 唤醒后，其 virtual deadline 通常早于后台任务，能更快地被 `pick_eevdf()` 选中
-2. **减少"报复性占用"**：CFS 中，长时间睡眠的线程唤醒后 vruntime 很小，可能长时间占用 CPU 追赶。EEVDF 的 vlag 约束防止了这种行为——即使刚唤醒，如果 vlag 已经为负（超支），也需要等待资格恢复
-
-**需要关注的现象：**
-
-1. **base_slice_ns 对帧调度的影响**：`base_slice_ns` 默认约 3ms（8 核设备，公式 0.75ms × (1 + ilog(ncpus))），意味着一个任务获得 CPU 后至少运行约 3ms 才会被抢占。对于 120Hz 设备（帧预算 8.3ms），如果 UI 线程和 RenderThread 在同一 CPU 上竞争，3ms 的最小运行粒度可能影响帧内调度时序
-2. **Runnable 等待时间分布变化**：从 CFS 迁移到 EEVDF 后，Perfetto 中观察到的 Runnable → Running 等待时间分布会发生变化。EEVDF 下，高 vlag 任务的等待时间更短，低 vlag（超支）任务的等待时间更长
-
-#### 后台任务排队的变化
-
-1. **更公平的排队**：后台任务之间通过 vlag 相互约束，防止单个后台任务长期占用 CPU。在 CFS 中，一个 vruntime 很小的后台任务可以持续抢占其他后台任务；EEVDF 中，一旦 vlag 降为负值，该任务必须等待
-2. **与 JobScheduler 的交互**：JobScheduler 调度的后台任务通常通过 cgroup 被限制在 background CPU 集合上。在这些 CPU 的 runqueue 内部，EEVDF 保证公平性。但 EEVDF 不改变 cgroup 级别的 CPU 配额限制
-
-#### 前台交互优先级的算法化保障
-
-CFS 时代，前台交互优先级依赖多个启发式参数：`sched_wakeup_granularity_ns`、`sched_latency_ns`、以及 vendor hook 自定义策略。
-
-EEVDF 将这些启发式规则算法化：
-- **唤醒抢占** → 通过 deadline 比较自动实现（前台任务 deadline 更早）
-- **调度延迟** → 通过 `base_slice_ns` × runnable 数量推导，不再需要独立 tunable
-- **前台优先** → 通过短时间片请求（前台任务通常请求短时间片获得更早 deadline）实现
-
-这意味着 OEM 在 EEVDF 时代的前台优化策略需要调整：**从调参数转向调 vlag/deadline 的输入**。
-
-#### Perfetto 观测方法
-
-在 EEVDF 内核（6.6+）上，Perfetto 的调度轨道使用方法不变，但分析关注点需要调整：
+采集包含 `sched_switch`、`sched_waking` / `sched_wakeup` 的 Perfetto trace 后，可用下面的 SQL 比较目标线程从 Runnable 到 Running 的等待时长。先用准确进程或线程名缩小范围，避免把系统中同名线程混在一起。
 
 ```sql
--- EEVDF 分析：观察 Runnable 等待时间分布变化
--- 对比 UI 线程 vs 后台线程的调度延迟
 SELECT
   t.name AS thread_name,
-  COUNT(*) AS wakeup_count,
-  AVG(s.dur / 1e6) AS avg_runnable_ms,
-  MAX(s.dur / 1e6) AS max_runnable_ms,
-  -- P90 等待时间（Perfetto SQL 支持 quantile 函数）
-  quantile(s.dur / 1e6, 0.9) AS p90_runnable_ms
-FROM thread_state s
-JOIN thread t ON s.utid = t.utid
-WHERE s.state = 'R'
-  AND t.name IN ('main', 'RenderThread', 'binder:xxxx_1', 'binder:xxxx_2')
+  COUNT(*) AS runnable_slices,
+  ROUND(AVG(ts.dur) / 1e6, 3) AS avg_runnable_ms,
+  ROUND(MAX(ts.dur) / 1e6, 3) AS max_runnable_ms
+FROM thread_state AS ts
+JOIN thread AS t USING (utid)
+WHERE ts.state IN ('R', 'R+')
+  AND ts.dur > 0
+  AND t.name IN ('main', 'RenderThread')
 GROUP BY t.name
 ORDER BY avg_runnable_ms DESC;
 ```
 
-**注意**：vlag 是 EEVDF 调度器的内部字段，stock Linux v6.6 / v6.12 和 Android common kernel 都没有通过 ftrace 或 perf_event 暴露该字段。要量化调度公平性，只能基于已有的 `sched_switch`、`sched_wakeup`、`thread_state` 轨道观察 Runnable 等待时间。
+结果反映端到端 runnable 等待，其中同时包含 EEVDF 选人、CPU 亲和性、选核、迁移、cgroup 竞争、更高调度类占用和 CPU 过载等影响。它可以确认“线程在等 CPU”，单凭这张表还不能把原因归到 vlag 或 deadline。
 
-> 详见 §5.1 中关于 vlag 量化诊断的替代方法和 SQL 查询模板。
+### 3. 沿源码调用点定位
 
-## 扩展
+| 要验证的行为 | `android17-6.18-2026-06_r6` 入口 |
+|---|---|
+| 增加执行时间与 `vruntime` | `update_se()`、`update_curr()` |
+| 计算运行队列虚拟时间 | `avg_vruntime()` |
+| 判断 eligibility | `vruntime_eligible()`、`entity_eligible()` |
+| 选择下一实体 | `__pick_eevdf()`、`pick_eevdf()` |
+| 生成新 deadline | `update_deadline()` |
+| 保存 lag | `update_entity_lag()`、`dequeue_entity()` |
+| 恢复 lag 与放置实体 | `place_entity()` |
+| 处理睡眠负 lag | `DELAY_DEQUEUE`、`finish_delayed_dequeue_entity()` |
+| 唤醒抢占 | `check_preempt_wakeup_fair()` |
+| EAS 选核 | `select_task_rq_fair()`、`find_energy_efficient_cpu()` |
+| schedutil 取有效利用率 | `sugov_get_util()`、`effective_cpu_util()` |
 
-### 🔸 EEVDF 与游戏高性能场景：ADPF Hint Session 与 deadline 联动
+## 排查卡顿时的判断顺序
 
-游戏场景下，ADPF（Adaptive Performance Framework）的 Hint Session 与 EEVDF 的 deadline 机制存在潜在的联动空间：
+看到 UI 线程 Runnable 时间偏长，可以按下面的顺序缩小范围：
 
-1. ADPF 传递 work duration hint → schedutil 调整频率 → 任务执行速度变化 → delta_exec 变化 → vlag 更新速率变化
-2. EEVDF 的 `sched_setattr()` 接口理论上支持 `sched_runtime` 字段来请求特定时间片长度，从而直接影响 virtual deadline 计算。但 Android 17 框架层尚未使用此接口
+1. 确认目标线程、进程和卡顿区间，避免只看全程平均值。
+2. 检查线程的调度策略、nice、CPU affinity、cpuset 和 cgroup。
+3. 看它被放到哪个 CPU，该 CPU 是否被实时任务、IRQ 或大量公平任务占用。
+4. 在可调试内核上读取 `eligible`、`deadline` 和 `slice`，确认是否存在资格等待或 custom slice。
+5. 对照 CPU frequency、idle 和 thermal 轨道。频率不足会延长完成工作所需的墙上时间，但不能据此断言 EEVDF 记账错误。
+6. 检查 vendor hook、设备调度补丁和 sched_ext 状态。GKI 源码结论不能覆盖设备私有改动。
 
-[待验证: Android 17 框架层是否已使用 sched_setattr() 的 sched_runtime 字段向 EEVDF 传递帧 deadline]
+最后记住五条边界：
 
-> 详见 §5.9「ADPF」和 §8.37「PerformanceHintManager 实战」中关于游戏性能 hint 的完整讨论。
+- EEVDF 是公平调度类中的选人算法，CFS 基础设施和层级公平机制仍在。
+- eligibility 来自运行队列虚拟时间关系，`se->vlag` 主要保存离队状态。
+- 较短 slice 才会直接形成较近 deadline，线程名称和 ADPF target duration 不会自动做到这一点。
+- uclamp 影响容量匹配与性能请求，不会改变同一段 CPU 执行时间的记账速率。
+- `CONFIG_SCHED_CLASS_EXT=y` 只表示支持 sched_ext；是否正在运行要读取 `/sys/kernel/sched_ext/`。
 
-### 🔸 OEM 自定义调度策略在 EEVDF 时代的适配路径
+## 参考与验证锚点
 
-EEVDF 时代，OEM 的调度策略适配可以从三个层次考虑：
+- Linux 官方文档：`Documentation/scheduler/sched-eevdf.rst`
+- Linux 官方文档：`Documentation/scheduler/sched-design-CFS.rst`
+- Android Common Kernel：`android17-6.18-2026-06_r6`
+  - `kernel/sched/fair.c`
+  - `kernel/sched/features.h`
+  - `kernel/sched/debug.c`
+  - `kernel/sched/cpufreq_schedutil.c`
+  - `kernel/sched/ext.c`
+  - `arch/arm64/configs/gki_defconfig`
+- Android 平台：`android-17.0.0_r1`
+  - `system/core/libprocessgroup/profiles/task_profiles.json`
 
-1. **参数层**：调整 `base_slice_ns`（通过 debugfs 或 vendor init script）。最简单的适配方式，但影响范围有限
-2. **vendor hook 层**：利用 `android_vh_scheduler_tick`、`android_vh_select_task_rq_fair` 等 hook 插入自定义逻辑。Android 生态的主流方式
-3. **sched_ext 层**：用 BPF 程序实现完全自定义的 fair class 调度策略。最灵活但验证成本最高，适合未来探索
-
-> 详见 §17.21「SoC 厂商 Power HAL 与 schedutil 闭环」中关于 OEM 调度策略与 Power HAL 集成的讨论。
+相关基础知识见 §5.1「Linux 进程调度基础」、§5.2「EAS 能量感知调度」、§5.9「ADPF 自适应性能提示」、§5.28「PELT Boost 回退与 AMU/PMU 微架构感知调频」以及 §17.21「SoC 厂商 Power HAL 与 schedutil」。
