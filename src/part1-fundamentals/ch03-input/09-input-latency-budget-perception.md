@@ -58,177 +58,266 @@ last_task6_audit: "2026-07-01"
 
 # 3.9 端到端输入延迟预算与感知阈值
 
-输入延迟不能只按 InputDispatcher 或主线程耗时判断。用户感知到的是从手指动作到屏幕反馈之间的端到端距离，这段距离同时受触控硬件、输入分发、应用处理、渲染提交、SurfaceFlinger 合成和显示刷新影响。
+用户感知到的是手指或触控笔动作与屏幕反馈之间的距离。InputDispatcher 很快，只能说明事件交付没有明显拖延；应用可能尚未处理事件，GPU 可能仍在工作，SurfaceFlinger 也可能还没有 present 对应画面。
 
-本节把 HCI 感知阈值、Android 输入路径和 Perfetto 指标放在同一个口径下，给后续排查留一张预算表。3.2 节已经讲触摸响应路径，3.4 节已经讲重采样和预测输入；这里补齐“多少算慢、慢在哪一段、怎样和用户体感对上”这三个问题。
+这一章先统一测量起点，再讨论分段预算和感知研究。没有统一起点的“输入延迟 30 ms”无法判断是好是坏，也无法和另一份报告比较。
 
-[已验证: source.android.com/docs/core/interaction/input; developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features]
+## 先统一四种延迟口径
 
-## 端到端输入延迟的拆分口径
+工程中常见的四种口径覆盖范围不同：
 
-Android 官方输入文档给出的路径是：物理设备产生信号，Linux 驱动转成 evdev 事件，EventHub 读取事件，InputReader 解码成 Android 输入事件，再交给 InputDispatcher 分发到目标窗口。应用收到事件后，才进入 ViewRootImpl、View 树分发和渲染提交阶段。
+| 口径 | 起点 | 终点 | 能回答的问题 | 主要限制 |
+| --- | --- | --- | --- | --- |
+| touch-to-photon / stylus-to-photon | 传感器检测到物理动作，或高速相机看到手指开始运动 | 面板目标像素发光 | 用户看到反馈前总共等了多久 | 需要外部仪器；Android trace 看不到触控 IC 内部延迟和面板像素响应 |
+| event-to-present | Linux input event 的 `eventTime` | 对应 frame 的 present | 从内核输入时间戳到系统呈现用了多久 | `eventTime` 不一定等于物理接触时刻；帧关联可能不确定 |
+| read-to-present | EventHub / InputReader 的 `read_time` | 关联 frame 的 present | Android 软件从读取事件到呈现的路径是否变慢 | 不包含触控硬件到 evdev 的完整时间；也不等于 photon 时刻 |
+| dispatch-to-ACK | InputDispatcher 发送事件 | InputDispatcher 收到应用的 FINISHED ACK | 窗口接收和完成输入处理是否及时 | 不包含 InputReader 前段，也不包含对应画面何时显示 |
 
-对性能分析来说，这条路径要拆成两类时间：
+产品指标名称应把起止点写出来，例如 `touch-to-photon P95`、`input-read-to-present P90`、`dispatch-to-ack P95`。只写 `input latency` 会把不同问题混在一起。
 
-- **输入到应用消费**：从触控样本进入内核，到应用主线程开始处理 `MotionEvent`。这部分受硬件采样率、EventHub 读取、InputReader 坐标转换、InputDispatcher 队列和 Binder/socket 传输影响。
-- **应用消费到画面呈现**：从应用处理输入，到新画面被 SurfaceFlinger 合成并在显示设备上呈现。这里受 Choreographer 回调、主线程工作、RenderThread、BufferQueue、SurfaceFlinger 合成和 VSync 节奏影响。
+## Android 17 的端到端路径
 
-一条滑动出现“跟手性差”时，先把输入交付和画面呈现拆开看。输入阶段只决定事件何时交给应用；用户看到的反馈还要等应用提交新 buffer，并且等到对应 present 时刻。
+```mermaid
+flowchart LR
+    PHY["手指 / 触控笔动作"] --> IC["触控 IC 与固件"]
+    IC --> KD["Linux input driver"]
+    KD --> EV["evdev input_event"]
+    EV --> EH["EventHub：when + readTime"]
+    EH --> IR["InputReader"]
+    IR --> ID["InputDispatcher"]
+    ID -->|InputChannel socket| APP["应用接收与处理"]
+    APP -->|FINISHED ACK| ID
+    APP --> CH["Choreographer / UI / RenderThread"]
+    CH --> BQ["BufferQueue"]
+    BQ --> SF["SurfaceFlinger / HWC"]
+    SF --> PANEL["scanout 与面板发光"]
+```
 
-[已验证: 官方文档, source.android.com/docs/core/interaction/input] [已验证: 官方文档, source.android.com/docs/core/graphics/implement-vsync]
+AOSP 官方输入文档描述了前半段：驱动把设备信号转换成 Linux input event，EventHub 打开 `/dev/input/event*` 对应的 evdev 节点，InputReader 解码并生成 Android 输入事件，InputDispatcher 再把事件发给目标窗口。
 
-## 一张预算表：从触摸到上屏
+Android 17 的 `EventHub.cpp` 为每个 `RawEvent` 保存两个时间：
 
-下面这张表用于估算端到端延迟，不用于给所有设备设固定 SLO。触摸 IC、显示面板、刷新率、内核调度、OEM 提频策略都会改变数值，表里的范围只适合作为排查时的分段参照。
+- `when` 来自 evdev `input_event` 的时间戳；
+- `readTime` 是 EventHub 读到该事件时的 `CLOCK_MONOTONIC` 时间。
 
-| 阶段 | 典型责任边界 | 常见预算 | 主要观测点 | 超预算后的判断 |
-| --- | --- | ---: | --- | --- |
-| 触控采样与驱动上报 | 触控 IC、固件、Linux input driver | 4-16 ms | 硬件采样率、`/dev/input/event*` 时间戳 | 高采样率只能缩短样本间隔，不能保证画面更早呈现 |
-| EventHub / InputReader | evdev 读取、设备映射、坐标转换 | 1-5 ms | input 线程 slice、InputReader 日志 | 这里异常通常和设备配置、驱动事件风暴或线程调度有关 |
-| InputDispatcher | 命中窗口、队列、派发到 InputChannel | 1-8 ms | `android_input_event_dispatch`、`iq/oq/wq` 队列 | 队列积压时先看目标窗口是否阻塞 ACK |
-| 应用主线程消费 | ViewRootImpl、ViewGroup、业务回调 | 1-16 ms | 主线程 `deliverInputEvent`、`doFrame`、业务 slice | UI 线程阻塞会把输入延迟和帧延迟同时抬高 |
-| 渲染提交 | Choreographer、RenderThread、GPU 提交 | 1 个刷新周期内 | FrameTimeline app frame、RenderThread | 渲染在 deadline 内完成才有机会赶上本帧 |
-| SurfaceFlinger 合成与 present | BufferQueue、HWC/GPU composition、显示刷新 | 1-2 个刷新周期 | FrameTimeline SF frame、present time | late present 会让帧率看起来平稳，但输入反馈滞后一帧以上 |
+通用内核 `android17-6.18-2026-06_r6` 中，驱动可以用 `input_set_timestamp()` 提供更准确的 `CLOCK_MONOTONIC` 事件时间；驱动未提供时，input core 在事件进入子系统时用 `ktime_get()` 生成时间戳。evdev 再把该时间写入客户端队列。
 
-[已验证: Perfetto docs, perfetto.dev/docs/data-sources/frametimeline]
+所以，`eventTime` 的精度取决于驱动何时采集和设置时间戳。它通常比 EventHub 的 `readTime` 更接近事件发生时刻，但仍可能晚于触控 IC 检测到物理动作的时刻。只有外部高速相机、光电传感器或专用延迟仪能覆盖 physical-to-photon。
 
-## HCI 阈值和 Android 工程指标的换算
+InputDispatcher 到应用采用 InputChannel socket 传输，并要求应用返回 FINISHED ACK。ACK 表示输入消费流程完成，不表示对应像素已经显示。用户看到反馈还要经过 `Choreographer`、应用 UI / RenderThread、BufferQueue、SurfaceFlinger、HWC、显示扫描和像素响应。
 
-HCI 研究中的延迟阈值来自受控实验，Android 工程指标来自真实设备和生产负载。两类数据不能直接互换，但可以放在同一张表里建立分层判断。
+## 用时间戳差值建立预算
 
-| 体感区间 | HCI / 产品含义 | Android 侧工程解释 | 建议指标口径 |
+跨设备的固定阶段预算缺少可靠依据。触控控制器、固件、驱动、刷新率、显示扫描方式、应用架构和厂商策略都会改变结果。更稳妥的做法是先在目标设备上测出每个边界的分布，再为场景分配 P50、P90、P95 或 P99 预算。
+
+| 阶段 | 可计算的差值或观察点 | 超预算时优先检查 |
+| --- | --- | --- |
+| 硬件与内核前段 | 外部物理动作 → evdev `eventTime` | 触控采样率、固件批处理、总线、IRQ / 驱动线程、时间戳位置 |
+| evdev 等待读取 | `readTime - eventTime` | EventHub 调度延迟、事件风暴、驱动积压、系统负载 |
+| InputReader 到 dispatch | `dispatch_ts - read_time`，配合 input 线程 slices | InputReader 映射与过滤、InputDispatcher 排队、线程调度 |
+| socket 交付 | `receive_ts - dispatch_ts` | InputChannel、目标进程调度、应用主线程是否获得运行机会 |
+| 应用处理与 ACK | `finish_ts - receive_ts` | `ViewRootImpl` 输入阶段、手势处理、同步 I/O、锁、重布局 |
+| ACK 返回 | `finish_ack_ts - finish_ts` | socket 回程与 InputDispatcher 调度 |
+| 输入到呈现 | `present_time - read_time`，同时查看 frame association | `doFrame` 等待、UI / RenderThread、GPU、BufferQueue、SurfaceFlinger、HWC |
+| 呈现到 photon | 外部 present / scanout 信号 → 目标像素发光 | 扫描方向、面板响应、显示处理与厂商硬件 |
+
+这些区间并非总能简单相加。CPU 与 GPU 可能并行，多个输入样本可能合并进同一帧，FrameTimeline 的 present 也早于面板某个像素完成响应。预算表的作用是确定责任边界，不是用若干估计值拼出一个看似精确的总数。
+
+## HCI 研究为什么不能变成一套通用阈值
+
+触摸延迟的可感知程度与任务关系很大。连续拖动时，手指和目标同时可见，空间偏差持续存在；点击只在落下后显示一次反馈，感知线索不同。
+
+| 研究 | 实验条件 | 结果 | 能支持的工程结论 |
 | --- | --- | --- | --- |
-| < 20 ms | 用户很难稳定区分延迟差异，手写笔、绘图等场景仍可能受影响 | 需要高采样率、低处理耗时、低延迟渲染同时成立 | 用实验室设备测 click-to-photon 或 stylus-to-photon |
-| 20-50 ms | 多数普通 UI 仍可接受，精细拖动会开始变钝 | 端到端通常只容纳 2-3 个 120Hz 刷新周期 | 看 P50/P90，不只看均值 |
-| 50-100 ms | 拖动、游戏、手写会明显感到滞后 | 常见原因是主线程阻塞、渲染错过 present、BufferQueue 积压 | 以场景级 P90 / P95 作为治理线 |
-| > 100 ms | 交互反馈迟钝，用户会停止动作或重复点击 | 输入、应用、渲染任一阶段长尾都可能把总耗时推过阈值 | 必须拆分输入阶段和呈现阶段 |
-| 秒级 | 已经不是体感延迟，而是无响应或卡死 | InputDispatcher / ANR 保护开始介入 | 交给 ANR、Watchdog、主线程堆栈分析 |
+| Ng 等，UIST 2012，*Designing for Low-Latency Direct-Touch Input* | 10 名参与者；连续拖动；1 ms 为 reference；probe 为 1–65 ms | 各参与者 JND 为 2.38–11.36 ms，均值 6.04 ms | 连续直接操控可感知很小的延迟差异；该数值只适用于论文装置、拖动任务和 1 ms reference |
+| Jota 等，CHI 2013，*How Fast Is Fast Enough?* | 首个实验 45 名参与者；拖动条件为 1、10、25、50 ms | 延迟增加会降低拖动表现，目标越小或越远时影响更明显 | 25 ms 不能作为“人类感觉不到”的通用下限 |
+| 同一篇 CHI 2013 论文的 land-on 实验 | 比较触点落下后的离散反馈与 1 ms reference | JND 为 20–100 ms，均值 64 ms | 同一个人机系统中，点击初始反馈与连续拖动的阈值也可能差一个数量级 |
+| Henze 等，MobileHCI 2016，*Software-Reduced Touchscreen Latency* | Nexus 7 上测得约 100 ms 基线；用预测补偿 33.3 / 66.7 ms | 预测可降低轨迹落后，但更长预测会增加位置误差和抖动 | 减少感知延迟不能忽略预测误差；预测距离越远并不总是越好 |
 
-HCI 研究报告过 2 ms 级别的触摸延迟差异可被感知，也有研究把当前移动设备触摸延迟放在约 50-200 ms 的范围。这个结论适合提醒工程团队：ANR 的 5 秒阈值只说明系统容错边界，和“用户觉得跟手”不是一个指标。
+早期论文中“商业触摸设备约 50–200 ms”的数字来自十多年前的硬件测量，适合说明研究背景，不能拿来评价 Android 17 设备。
 
-[引用: ACM MobileHCI 2016 "Software-reduced touchscreen latency"; J. Pratt et al., "User Perception of Touch Screen Latency"]
+建立产品阈值时，应先固定交互原语和测量定义：
 
-## InputReader 到应用消费的预算
+1. 点击看首个可见反馈，报告 touch-to-photon 或 event-to-present。
+2. 拖动、书写看连续轨迹与手指 / 笔尖的空间差，同时报告延迟、步幅波动和预测误差。
+3. 游戏还要区分输入到本地判定、输入到渲染帧、网络确认和最终显示。
+4. 同一脚本覆盖目标机型、刷新率、温控状态和电源模式，至少比较 P50、P90、P95。
+5. ANR 属于秒级响应保护，不能代替交互延迟 SLO。
 
-输入事件进入 Android 后，InputReader 和 InputDispatcher 的目标是把事件可靠送到焦点窗口，而不是主动决定用户看到什么。官方文档里的路径足够清楚：EventHub 读取 evdev，InputReader 按设备类型和配置文件解码，InputDispatcher 把事件转发给合适窗口。
+## 刷新率只改变显示节拍的一部分
 
-这段预算要重点看三件事：
+刷新周期为 `1000 / refreshRate` 毫秒：
 
-- **样本是否稳定进入系统**：触控硬件采样不稳、驱动上报抖动、设备配置错误，会让后续所有平滑策略都只能补救视觉轨迹，不能补回原始样本质量。
-- **InputDispatcher 是否排队**：如果目标窗口没有及时 ACK，dispatcher 的 outbound / wait queue 会增长，后续输入会被拖住。这里和 ANR 有关系，但几十毫秒的输入长尾不能等同于 ANR。
-- **应用主线程何时拿到事件**：`ViewRootImpl` 收到输入后，事件还要经过输入阶段、动画阶段、遍历阶段。主线程上一段同步 I/O、锁等待或重布局都会推迟消费时间。
+| 刷新率 | 一个刷新周期 |
+| --- | ---: |
+| 60 Hz | 16.67 ms |
+| 90 Hz | 11.11 ms |
+| 120 Hz | 8.33 ms |
+| 144 Hz | 6.94 ms |
 
-输入重采样属于这一段的特殊处理。AOSP `InputConsumer.cpp` 和 `Resampler.cpp` 中定义了 `RESAMPLE_LATENCY = 5ms`、`RESAMPLE_MIN_DELTA = 2ms`、`RESAMPLE_MAX_PREDICTION = 8ms` 等参数，用插值或外推把触摸坐标贴近 VSync 时刻。它改善的是轨迹平滑和视觉贴合，不等于把端到端延迟减少 5 ms。
+更高刷新率增加了应用和显示系统呈现新画面的机会，并缩短错过一个显示节拍的时间成本。它不会缩短业务同步任务、GPU shader、BufferQueue 积压或面板处理本身。高刷设备持续错过 deadline 时，拖动仍会滞后。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/input/InputConsumer.cpp] [已验证: AOSP android-17.0.0_r1, frameworks/native/libs/input/Resampler.cpp] [交叉引用: §3.4 输入延迟与预测输入技术]
+Android 15 及后续版本的 ARR 还会让 render rate 随内容和交互策略变化。分析 trace 时要读取当时的 refresh / render rate，不能用启动时的峰值刷新率换算整段时间。2.18、2.19 和 3.8 节继续讨论刷新率选择。
 
-## 应用渲染到上屏的预算
+## 重采样和预测改变的是坐标时间
 
-应用消费输入后，只有产生新画面并赶上 present，用户才会感到反馈。VSync 文档说明了显示管线的同步对象：应用渲染、SurfaceFlinger 合成、HWC present 都要围绕 VSync 节奏运行。应用错过一个节拍，端到端延迟就增加一个刷新周期。
+Android 17 的 `InputConsumer.cpp` 使用以下边界处理触摸重采样：
 
-FrameTimeline 对这段很有用。Perfetto 文档把 high latency state 标成浅绿色：帧率是平稳的，但帧呈现晚了，输入延迟增加。Buffer Stuffing 也是同类问题，应用不断提交新帧，队列里堆着尚未呈现的 buffer，每帧都可能至少晚一个 VSync。
+- `RESAMPLE_LATENCY = 5ms`；
+- `RESAMPLE_MIN_DELTA = 2ms`；
+- `RESAMPLE_MAX_DELTA = 20ms`；
+- `RESAMPLE_MAX_PREDICTION = 8ms`，并且外推不超过最近样本间隔的一半。
 
-排查时要把“做完”和“显示出来”分开：
+批量消费事件时，目标采样时间是 `frameTime - 5ms`。存在未来样本时做插值，只有历史样本时才在限制内外推。这里的 5 ms 是重采样目标相对 frame time 的偏移，用来限制误预测；不能解读为“系统固定增加 5 ms”，也不能写成“端到端减少 5 ms”。
 
-- 主线程和 RenderThread 都在 deadline 内完成，只说明应用侧没有明显慢帧。
-- SurfaceFlinger present 晚，用户仍会感觉输入反馈慢。
-- BufferQueue 被塞满时，后续 dequeue 可能阻塞，应用看起来又会变成渲染慢。
+Motion Prediction Jetpack 库提供更上层的未来 `MotionEvent` 估计。官方文档要求在真实事件到达后用真实数据替换预测数据。预测可以填补笔尖与轨迹之间的视觉空隙，也会引入误差；效果评估要同时记录 lag、抖动、过冲和回滚痕迹。3.4 节详述这两类机制。
 
-[已验证: 官方文档, source.android.com/docs/core/graphics/implement-vsync] [已验证: Perfetto docs, perfetto.dev/docs/data-sources/frametimeline]
+## Perfetto `android.input` 的精确语义
 
-## Perfetto 中怎样关联输入事件和帧
+Android 17 对应的 Perfetto `android.input` 标准库包含两组不同来源的数据。
 
-Perfetto 的 `android.input` 标准库把 InputReader、InputDispatcher 和应用 ACK 之间的阶段整理成表。`android_input_events` 是输入延迟的主表，包含事件 ID、时间戳等核心字段。`android_input_event_dispatch` 作为补充表，提供窗口 ID（`window_id`）和 vsync 决策（`vsync_id`）等信息，但不包含 display、dispatch 开始与结束等字段——这些字段分布在 `android_input_event_motion` / `android_input_event_key` 等事件子表中。标准库还暴露 `total_latency_dur` 和 `end_to_end_latency_dur` 这类时间。
+### `android_input_events`：socket 往返与帧关联
 
-这几个指标的边界要分清：
+这张表从 input atrace slices 和 FrameTimeline 构建，核心字段的定义是：
 
-- `total_latency_dur` 更接近 input dispatch 到 input ACK 的耗时，适合看窗口是否及时消费输入。
-- `end_to_end_latency_dur` 关联到 frame present，适合看输入反馈是否被渲染和呈现阶段拉长。
-- 没有关联帧的输入事件不能硬算“触摸到上屏”，只能作为输入分发样本分析。
+- `dispatch_latency_dur = receive.ts - dispatch.ts`；
+- `handling_latency_dur = finish.ts - receive.ts`；
+- `ack_latency_dur = finish_ack.ts - finish.ts`；
+- `total_latency_dur = finish_ack.ts - dispatch.ts`；
+- `end_to_end_latency_dur = frame.present_time - frame.read_time`。
 
-这条规则能避免一个常见误判：看到 InputDispatcher 耗时很短，就判断用户不会感到延迟。输入阶段健康，只能说明事件交付及时；画面晚到仍然会形成可感知延迟。
+`total_latency_dur` 只覆盖 dispatch 到 FINISHED ACK。`end_to_end_latency_dur` 从 InputReader 的 read time 开始，不含可见的触控硬件前段，也不含 panel photon 延迟。
 
-[已验证: Perfetto stdlib docs, perfetto.dev/docs/analysis/stdlib-docs#android-input] [交叉引用: §13.8 Perfetto 输入延迟 SQL 深度分析]
+标准库先尝试把 `deliverInputEvent` 与同线程的 `Choreographer#doFrame` 按时间区间关联；找不到时，会选择后续最近的一帧并把 `is_speculative_frame` 标成 `true`。因此：
 
-## 刷新率改变预算，不自动解决延迟
+- `end_to_end_latency_dur IS NULL` 表示没有关联帧；
+- `is_speculative_frame=true` 表示该帧是推测关联，适合分析分布，不宜作为单个事件的确定因果证据；
+- 事件合并、批处理、没有引发重绘的手势都可能让关联结果与业务语义不同。
 
-刷新率决定的是显示节拍，也就是“晚一帧”的时间成本。60Hz 下一帧约 16.67 ms，90Hz 约 11.11 ms，120Hz 约 8.33 ms，144Hz 约 6.94 ms。高刷新率缩短了等待下一个 present 的时间，但不会让主线程同步任务、GPU 工作或 SurfaceFlinger 合成自动变短。
+下面的查询先把 dispatch-to-ACK 和 read-to-present 分开，并保留关联可信度：
 
-| 刷新率 | 单帧间隔 | 50 ms 内大约容纳的帧数 | 对输入延迟的影响 |
-| --- | ---: | ---: | --- |
-| 60Hz | 16.67 ms | 3 帧 | 错过一帧的体感成本高，输入反馈容易跨过 50 ms |
-| 90Hz | 11.11 ms | 4-5 帧 | present 等待缩短，但应用长任务仍会主导延迟 |
-| 120Hz | 8.33 ms | 6 帧 | 手写、拖动收益更明显，调度和功耗压力也更高 |
-| 144Hz | 6.94 ms | 7 帧 | 适合游戏和低延迟渲染，稳定供帧比峰值刷新率更重要 |
+```sql
+INCLUDE PERFETTO MODULE android.input;
 
-如果业务只把刷新率拉高，却没有减少输入回调、布局、绘制、GPU 提交和队列积压，高刷只会把问题拆得更细，不会消除端到端长尾。
+SELECT
+  process_name,
+  event_action,
+  total_latency_dur / 1e6 AS dispatch_to_ack_ms,
+  end_to_end_latency_dur / 1e6 AS read_to_present_ms,
+  is_speculative_frame
+FROM android_input_events
+WHERE end_to_end_latency_dur IS NOT NULL
+ORDER BY read_to_present_ms DESC
+LIMIT 50;
+```
 
-[已验证: 官方文档, source.android.com/docs/core/graphics/implement-vsync] [交叉引用: §2.18 Adaptive Refresh Rate 与动态帧率控制]
+结果中的高 `dispatch_to_ack_ms` 指向事件交付或应用处理，高 `read_to_present_ms` 还可能来自帧等待、渲染、合成与队列。下一步要回到对应线程和 FrameTimeline，而不能只按最大值归因。
 
-## 低延迟模式的验证方法
+### `android_motion_events`、`android_key_events` 与 `android_input_event_dispatch`
 
-厂商游戏模式、触控增强、低延迟渲染通常会同时改动刷新率、触控采样率、CPU/GPU 频率和调度策略。标准 AOSP GameMode 主要管理 GameMode 状态、帧率策略和 Power HAL `Mode.GAME`，没有公开的“输入优先级提升”API。焦点窗口机制、`requestDisallowInterceptTouchEvent(true)`、游戏窗口的刷新率选择优先级，是公开框架里能确认的能力。
+这三张 view 来自 `android.input.inputevent` data source：
 
-验证低延迟模式时，FPS 不是唯一指标。更稳的办法是抓两组同场景 Perfetto：
+- `android_motion_events` / `android_key_events` 提供 `event_id`、`source`、`action`、`device_id`、`display_id` 等事件属性；
+- `android_input_event_dispatch` 只提供 `event_id`、`arg_set_id`、`vsync_id` 和目标 `window_id`。
 
-1. 固定刷新率、亮度、温控状态和操作脚本，分别记录普通模式与低延迟模式。
-2. 对比 InputDispatcher dispatch / ACK、主线程 `deliverInputEvent`、FrameTimeline present、SurfaceFlinger 合成耗时。
-3. 对比 P50、P90、P95，不只看某一次滑动的最小值。
-4. 如果低延迟模式只改善 present 等待，结论应写成“渲染呈现延迟降低”；如果 InputDispatcher 队列也下降，才讨论输入分发侧收益。
+`android_input_event_dispatch` 本身没有 dispatch 开始、结束或 ACK 耗时。需要按 `event_id` 与 motion / key view 关联；socket 往返耗时仍看 `android_input_events`。抓 trace 时要同时开启所需 input atrace 和 FrameTimeline 数据，否则表或字段可能为空。
 
-厂商私有 HAL 或 Framework 修改没有公开源码时，只能标成 `[待验证]`。营销名词不能写成 AOSP 机制。
+## FrameTimeline：帧很稳也可能延迟很高
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/app/GameManagerService.java / frameworks/base/services/core/java/com/android/server/wm/RefreshRatePolicy.java / frameworks/base/core/java/android/view/ViewGroup.java]
+Perfetto 把浅绿色 FrameTimeline slice 定义为 high latency state：帧率平稳，但帧晚于预期呈现，输入延迟随之增加。
 
-## 游戏、手写和普通 UI 的阈值差异
+`Buffer Stuffing` 是典型例子。应用在前一帧 present 前持续提交新 buffer，队列中积压了待呈现内容。应用每帧的工作甚至可能按时完成，但画面仍至少晚一个 VSync；队列占满后，应用还可能阻塞在 dequeue。
 
-不同交互对延迟的容忍度不同。普通点击更关注“点了以后有没有反馈”，拖动和手写更关注轨迹是否贴着手指，游戏还会叠加判定窗口和操作节奏。
+因此要同时读取：
 
-| 场景 | 用户最敏感的部分 | 建议关注指标 | 常见优化方向 |
-| --- | --- | --- | --- |
-| 普通点击 | 点击后首个视觉反馈 | click-to-display P90/P95 | 减少主线程同步任务，保证首帧反馈先出 |
-| 列表拖动 | 手指位置和内容位移的差距 | input-to-present、步幅波动、FrameTimeline | 重采样、稳定刷新率、减少布局和绘制抖动 |
-| 手写 / 绘图 | 笔尖和墨迹之间的距离 | stylus-to-photon、预测误差 | MotionPredictor、前缓冲渲染、低延迟画笔路径 |
-| 游戏 | 操作到画面反馈和命中判定 | input-to-frame、P95、温控后长尾 | 高刷稳定供帧、GameMode、减少队列堆积 |
+- App frame 的 `on_time_finish`；
+- `present_type` 是否为 `Late Present`；
+- `jank_type` 是否包含 `Buffer Stuffing`；
+- 对应 SurfaceFlinger DisplayFrame；
+- `actual_frame_timeline_slice` 的 present 时间。
 
-Android 的高级手写笔文档把低延迟拆成硬件和 OS 输入处理、应用处理、系统合成、硬件渲染几个部分，并推荐低延迟图形和运动预测来改善笔迹体验。这些技术适合对轨迹贴合敏感的场景，不适合作为所有 UI 的默认方案。
+主线程和 RenderThread 都按 deadline 完成，只能排除一部分应用慢帧；它不能证明输入反馈已经及时显示。
 
-[已验证: 官方文档, developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features] [交叉引用: §7.9 感知流畅性：步幅波动与无掉帧卡顿]
+## 游戏模式和厂商低延迟模式怎样验证
+
+Android 17 的 `GameManagerService` 可确认的 AOSP 能力包括：
+
+- Game Mode 状态与每个模式的配置；
+- FPS override、分辨率缩放和 ANGLE 配置；
+- 前台游戏对应的 Power HAL `Mode.GAME`；
+- 游戏加载阶段的 `Mode.GAME_LOADING`。
+
+AOSP 没有公开的通用“提高 InputDispatcher 输入优先级”游戏 API。厂商模式仍可能修改触控固件、CPU/GPU 调度、刷新率、HAL 或 Framework 私有代码，具体效果需要按设备测量。
+
+验证模式差异时，使用同一设备、同一温度区间、同一刷新率和同一自动化操作脚本：
+
+1. 分别抓普通模式和待测模式的 Perfetto。
+2. 对比 `readTime - eventTime`、dispatch / ACK、应用处理、FrameTimeline present 与 SurfaceFlinger。
+3. 报告 P50、P90、P95 和样本量，不用单次最小值代表整场体验。
+4. 只有 input 侧时间差稳定下降时，才把收益归因到输入路径；只缩短 present 等待时，应归因到渲染或显示策略。
+
+没有公开源码的厂商机制应记录为设备特定假设，并附上 trace 证据和测试条件。
+
+## 手写场景还要看前缓冲与预测误差
+
+Android 官方手写笔文档把延迟拆为硬件与 OS 输入处理、应用处理、系统合成和硬件渲染。Jetpack low-latency graphics library 从 Android 10 / API 29 起可用，它用 front-buffer rendering 减少多 buffer 交换带来的等待。
+
+前缓冲适合笔迹这类小区域、持续更新的内容。应用写入显示正在读取的 buffer，存在 tearing 风险；全屏复杂 UI 不应直接套用同一方案。
+
+| 场景 | 首要测量 | 同时观察 |
+| --- | --- | --- |
+| 普通点击 | touch-to-photon 或 read-to-first-present P90/P95 | 主线程首次反馈、目标 View 是否 invalidate |
+| 列表拖动 | input-to-present 分布 | 每帧位移、刷新率、重采样、Buffer Stuffing |
+| 手写 / 绘图 | stylus-to-photon 与笔尖—墨迹距离 | 预测误差、front-buffer tearing、笔迹合并 |
+| 游戏 | input-to-local-frame P95 | 判定线程、GPU、Game Mode、温控后的长尾 |
 
 ## 常见误判
 
-### 误判一：InputDispatcher 很快，端到端延迟就低
+### InputDispatcher 很快，用户就会立刻看到反馈
 
-InputDispatcher 快，只说明输入事件较快交给目标窗口。应用消费、渲染提交、SurfaceFlinger present 仍可能让用户晚一帧或多帧看到反馈。
+dispatch-to-ACK 健康只说明窗口及时消费了输入。应用可能没有重绘，或新 buffer 仍在等待 present。
 
-### 误判二：刷新率越高，触摸就一定越跟手
+### `eventTime` 就是手指接触屏幕的时刻
 
-高刷新率缩短 present 节拍，触摸采样率提高缩短样本间隔。两者都不能替应用主线程、RenderThread 和 GPU 减少工作量。高刷下错过一帧的时间更短，但持续错过 deadline 时，用户仍会感到拖拽滞后。
+`eventTime` 是 Linux input 路径提供的时间戳。触控 IC 扫描、固件处理、总线传输和驱动设置时间戳之前的耗时可能不在其中。
 
-### 误判三：ANR 阈值能代表输入体验
+### 高刷新率一定带来低输入延迟
 
-ANR 是系统容错机制，处理的是秒级无响应。输入体验通常在几十毫秒级发生变化，不能用 5 秒超时去评估跟手性。
+高刷新率缩短显示机会的间隔。CPU、GPU、BufferQueue 或 HWC 的长尾仍会跨过多个节拍。
 
-### 误判四：低延迟模式一定改了输入系统
+### 平均值足够描述跟手性
 
-公开 AOSP 里没有通用的游戏输入优先级 API。低延迟模式可能只是提频、锁高刷、调整帧率选择、改变触控固件参数或启用厂商私有路径。没有 trace 和源码证据时，不要把效果归因到 InputDispatcher。
+连续交互对偶发长尾很敏感。平均值会掩盖 P95 / P99 的停顿，还可能被不同刷新率和温控阶段混合污染。
 
-## 与其他章节的关系
+### ANR 超时可以当成交互指标
 
-- 3.2 节讲触摸响应路径，本节给路径加预算和体感阈值。
-- 3.4 节讲重采样、MotionPredictor 和低延迟图形，本节解释这些技术放在端到端预算里的位置。
-- 7.9 节讲感知流畅性，本节补输入到画面呈现之间的延迟口径。
-- 13.8 节给 Perfetto SQL，这里定义指标边界。
-- 15.3 节讲指标体系，本节把 click-to-display / input-to-present 纳入响应速度指标。
+ANR 用来保护系统免受秒级无响应影响。触摸、拖动和书写的体验问题发生在更短时间尺度，应使用场景化的 input-to-present 指标。
 
-## 参考资料
+## 版本与源码边界
 
-- [已验证: 官方文档, source.android.com/docs/core/interaction/input]
-- [已验证: 官方文档, source.android.com/docs/core/graphics/implement-vsync]
-- [已验证: 官方文档, developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features]
-- [已验证: Perfetto docs, perfetto.dev/docs/data-sources/frametimeline]
-- [已验证: Perfetto stdlib docs, perfetto.dev/docs/analysis/stdlib-docs#android-input]
-- [已验证: AOSP android-17.0.0_r1, frameworks/native/libs/input/InputConsumer.cpp]
-- [已验证: AOSP android-17.0.0_r1, frameworks/native/libs/input/Resampler.cpp]
-- [引用: https://dl.acm.org/doi/10.1145/2935334.2935381]
-- [引用: https://www.researchgate.net/publication/221100500_User_Perception_of_Touch_Screen_Latency]
+- Android 平台实现按 `android-17.0.0_r1` 复核。
+- 内核 input core / evdev 按 `android17-6.18-2026-06_r6` 复核；触控驱动和固件仍取决于设备厂商。
+- Jetpack low-latency graphics 的官方可用起点是 Android 10 / API 29。
+- HCI 论文中的装置与历史设备数据用于解释任务差异，不代表 Android 17 设备的基准值。
+
+## 参考源码与文档
+
+### Android 17 与 Perfetto
+
+- [AOSP Input 架构](https://source.android.com/docs/core/interaction/input)
+- [EventHub.cpp：evdev 读取、eventTime 与 readTime](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/reader/EventHub.cpp)
+- [InputConsumer.cpp：重采样目标与边界](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/input/InputConsumer.cpp)
+- [Resampler.cpp：插值与外推实现](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/input/Resampler.cpp)
+- [GameManagerService.java：Game Mode 与干预项](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/app/GameManagerService.java)
+- [Android 17 通用内核 input core](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/input/input.c)
+- [Android 17 通用内核 evdev](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/input/evdev.c)
+- [Perfetto android.input SQL：Android 17 tag](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/input.sql)
+- [PerfettoSQL `android.input` 标准库文档](https://perfetto.dev/docs/analysis/stdlib-docs#android-input)
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- [Android Developers：高级手写笔与低延迟图形](https://developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features)
+
+### HCI 原始研究
+
+- [Ng 等：Designing for Low-Latency Direct-Touch Input，UIST 2012](https://dl.acm.org/doi/10.1145/2380116.2380124)
+- [Jota 等：How Fast Is Fast Enough?，CHI 2013](https://www.tactuallabs.com/papers/howFastIsFastEnoughCHI13.pdf)
+- [Henze 等：Software-Reduced Touchscreen Latency，MobileHCI 2016](https://nhenze.net/uploads/Software-Reduced-Touchscreen-Latency.pdf)
