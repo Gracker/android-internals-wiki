@@ -25,7 +25,19 @@ sources:
   - type: aosp
     path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/InputMonitor.java"
   - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowSurfacePlacer.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/window/SurfaceSyncGroup.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java"
+  - type: aosp
     path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp"
   - type: aosp
     path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/"
   - type: official
@@ -36,6 +48,10 @@ sources:
     path: "https://developer.android.com/about/versions/17/changes/ff-restrictions-ignored"
   - type: official
     path: "https://developer.android.com/guide/topics/resources/runtime-changes"
+  - type: official
+    path: "https://developer.android.com/reference/android/window/SurfaceSyncGroup"
+  - type: material
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S06_multi_window_type.md"
 tags: [WMS, WindowManagerService, Surface, Window, StartingWindow, Window动画, 多窗口, SurfaceControl, WindowInsets, Desktop Windowing]
 related_chapters: ["2.1", "2.6", "3.1", "8.2", "8.4"]
 created_by: "task2a-knowledge-gap"
@@ -104,17 +120,35 @@ WMS 负责维护 WindowContainer/WindowState 树，并把 Activity/Task 状态�
 
 ## WMS 的定位：窗口状态与 Surface 拓扑
 
-从图形架构看，WMS 夹在 App、Input 系统和 SurfaceFlinger 三者之间。它维护 WindowContainer / WindowState 树，决定窗口的层级、可见性、bounds、focus、Insets 和动画状态。SurfaceFlinger 负责把 App 提交的内容合成上屏；WMS 的 `InputMonitor` 则把可触摸区域、层级、focusability 与 input channel token 写入 `InputWindowHandle`，通过 transaction 发布给 InputDispatcher。
+从图形架构看，WMS 夹在 App、Input 系统和 SurfaceFlinger 三者之间。它维护 WindowContainer / WindowState 树，决定窗口的层级、可见性、bounds、focus、Insets 和动画状态。SurfaceFlinger 负责把 App 提交的内容合成上屏；WMS 的 `InputMonitor` 则把可触摸区域、层级、focusability 与 input channel token 写入 `InputWindowHandle`，通过 transaction 附着到对应 layer。SurfaceFlinger 提交 layer 状态后，再把窗口快照交给 InputDispatcher。
 
-WMS 运行在 system_server 进程中，但性能问题不能简化成“AMS、IMS、WMS 共用一条主线程”。现代实现更接近“同进程、多线程、全局锁耦合”：`Binder:*` 线程接收 `IWindowSession` 和 `IWindow` 调用，`DisplayThread` 承载大量窗口管理逻辑，策略相关初始化和回调会经过 `UiThread` / `WindowManagerPolicyThread`，动画推进挂在 `AnimationThread`。Perfetto 里更常见的阻塞形态是这些线程围绕 `mGlobalLock` 和共享窗口状态互相等待，不是单个 `android.server` 线程把所有事务串行做完。
+WMS 运行在 system_server 进程中，但性能问题不能简化成“AMS、IMS、WMS 共用一条主线程”。Android 17 的线程边界需要按调用方式判断：
 
-这直接影响排查方法。看到 `relayoutWindow`、StartingWindow 切换、窗口动画掉帧时，先判断耗时发生在 Binder 线程执行本身、等待 `mGlobalLock`，还是等待策略线程和动画线程推进共享状态。
+- `WindowManagerService.main()` 在 `DisplayThread` 上构造 WMS，因此 WMS 的 `mH` 绑定该线程；
+- `IWindowSession` 等 Binder 调用先在 `Binder:*` 线程执行。同步 `relayout()` 与 oneway `relayoutAsync()` 最终都进入 `WindowManagerService.relayoutWindow()`；该方法持有 `mGlobalLock` 时直接调用 `performSurfacePlacement(true)`，不会为了 placement 自动切到 DisplayThread；
+- WMS 的 `mAnimationHandler` 绑定 `AnimationThread`。`WindowSurfacePlacer.requestTraversal()` 把常规的延后 placement 投递到这个 handler，`WindowAnimator` 的帧推进也使用该线程；
+- `initPolicy()` 在 `UiThread` 执行，并把它登记为 `WindowManagerPolicyThread`。
+
+这些线程会围绕 `mGlobalLock` 和共享窗口状态互相等待。看到 `relayoutWindow`、StartingWindow 切换或窗口动画掉帧时，应先确认耗时在哪条线程执行，再判断是函数本身慢、在等锁，还是等待 policy/animation 侧推进共享状态。
 
 WMS 与其他主要组件的职责可以这样分：
 
 - **AMS / ATMS**：负责 Activity 和 Task 的生命周期推进；当 Activity 需要显示、隐藏、切换或调整窗口模式时，把窗口侧约束交给 WMS 处理
 - **SurfaceFlinger**：负责 layer 创建、transaction 消费和最终合成；WMS 管的是窗口容器与 `SurfaceControl` 属性，不直接负责像素合成
-- **Input 系统**：InputDispatcher 依赖 WMS 提供的可见区域、Z-order 和 focus 信息做 hit-test；窗口焦点切换和输入命中测试因此会直接受 WMS 状态影响
+- **Input 系统**：WMS 把可见区域、层级、focusability 和 input channel token 写入 layer 的 input info；SurfaceFlinger 从已提交的 layer snapshot 生成 `WindowInfosUpdate`，InputDispatcher 再用这份按 Display 划分的缓存做 hit-test
+
+### 多窗口先按共享域分组
+
+“屏幕上有多个窗口”不能直接说明它们竞争哪条线程或哪份显示资源。先按 Display、进程和 ViewRoot 分组：
+
+| 拓扑关系 | 共享对象 | 各自独立的对象 | 常见瓶颈 |
+|---------|---------|---------------|---------|
+| 同进程、同一 UI 线程的多个 ViewRoot | UI Looper；`Choreographer.getInstance()` 返回该线程的 ThreadLocal 实例 | 每个 ViewRoot 的 traversal、窗口 Surface 与 BLAST 队列 | 一个窗口的主线程工作挤占其他窗口的 traversal 时段 |
+| 同进程的多个硬件加速窗口 | 进程内 `RenderThread::getInstance()` 单例 | 各窗口的渲染目标、buffer 队列和 fence | RenderThread 排队、GPU 上下文与内存带宽竞争 |
+| 不同进程、位于同一 Display | SurfaceFlinger 的该 Display layer 集合、HWC/overlay、输出带宽和本轮 present | App UI 线程、进程 RenderThread、窗口 buffer 队列 | 单个慢窗口拖延同步组，或合成资源不足 |
+| 位于不同 Display | 设备级 GPU/HWC 资源仍可能共享 | 各 Display 的 layer 集合、时序和 present fence | 只看默认屏会漏掉外接屏的掉帧 |
+
+因此，多窗口 trace 的第一层索引应是 Display，第二层是 Window/ViewRoot，第三层才是进程、UI 线程、RenderThread 和内容 producer。每个 ViewRoot 有自己的 Surface/BLAST 内容通道；同进程只意味着部分执行资源共享，不意味着多个窗口共用一条 BufferQueue。
 
 ## Window 与 Surface 的关系
 
@@ -162,6 +196,18 @@ t.apply(); // 一次性提交给 SurfaceFlinger
 
 这段代码展示的是属性批处理，不代表 buffer 内容已完成或 panel 已显示。`Transaction.apply()` 的常规路径经 JNI 进入 native `SurfaceComposerClient::apply()`，再通过 Binder 交给 SurfaceFlinger；调用通常不等待本次合成上屏。同步场景要单独看 `apply(true)`、BLAST sync、transaction committed/completed listener 与 present fence。首帧耗时还要拆到 layer 创建、relayout、buffer 分配和 fence。
 
+### 三类 transaction 的职责不同
+
+窗口 resize 或 transition 中经常同时出现三类 transaction：
+
+| 类型 | 表达的内容 | 典型持有者 |
+|------|-----------|-----------|
+| `WindowContainerTransaction`（WCT） | Task、Activity、DisplayArea 等 WindowContainer 的 bounds、窗口模式和层级操作 | WM Shell、ATMS/WMS organizer 路径 |
+| `SurfaceControl.Transaction` | layer 的位置、crop、alpha、matrix、reparent、visibility 和 input info | WMS、WM Shell、App 或其他系统组件 |
+| BLAST 的 buffer transaction | 新内容 buffer 及 acquire fence，与目标 layer 的内容更新配套 | App producer、BLASTBufferQueue、SurfaceFlinger |
+
+WCT 是“窗口容器要变成什么状态”的管理请求，处理后可能引发一个或多个 SurfaceControl transaction；它本身不是 SurfaceFlinger 的几何 transaction。几何与内容也是两路输入：resize 时可以短暂出现新 geometry 配旧 buffer，或新 buffer 已到但同步组尚未放行 geometry。遇到拉伸、黑边或一帧错位，需要分别核对 container 状态、layer geometry、buffer 尺寸和 fence，不能只找一个笼统的 “transaction”。
+
 ## StartingWindow 与启动性能
 
 冷启动期间，进程创建、Runtime/Application/Activity 初始化和首帧绘制尚未完成。StartingWindow 在这段空档提供可见内容，避免用户只看到桌面、空白或旧画面。
@@ -187,11 +233,11 @@ Perfetto 里要把三段分开看：system_server 侧是 starting data、Activit
 
 ### Android 12 SplashScreen API
 
-在 Android 12 之前，StartingWindow 的外观主要由 `windowBackground` 决定，OEM 定制差异较大。Android 12 引入 SplashScreen API（`android.window.splashscreen`），把启动页主题、icon、背景色、退出动画等配置收敛到统一接口：
+在 Android 12 之前，StartingWindow 的外观主要由 `windowBackground` 决定，OEM 定制差异较大。Android 12 引入 SplashScreen API（`android.window.SplashScreen`），把启动页主题、icon、背景色、退出动画等配置收敛到统一接口：
 
 - 开发者通过 `Theme.SplashScreen` 配置 icon、背景色、动画等元素。
 - 退出动画通过 `setOnExitAnimationListener` 接入，移除时机仍要和主 Window 首帧完成信号配合。
-- `androidx.core:splashscreen` 向后支持 Android 5.0+，但 Android 12+ 的系统 starting surface 创建仍落在 Shell starting-surface 路径。
+- `androidx.core:core-splashscreen` 向后支持 Android 5.0+，但 Android 12+ 的系统 starting surface 创建仍落在 Shell starting-surface 路径。
 
 这套 API 的性能价值在于减少 App 自建 SplashActivity。自建启动页会多一次 Activity 启动、窗口切换和可能的 relayout；系统 SplashScreen 则复用 starting surface 生命周期，不增加 App 侧 Activity 数量。
 
@@ -230,11 +276,11 @@ WMS 侧的执行过程不能简化成“`relayoutWindow()` 直接调 `performLay
 
 1. App 侧 `performTraversals()` 判断本轮是否需要同步 relayout，随后通过 Binder 进入 `WindowManagerService.relayoutWindow()`
 2. WMS 在 `mGlobalLock` 保护下更新 `WindowState`、可见性、布局参数、Insets 请求和 surface 生命周期状态
-3. 需要重新摆放窗口树时，WMS 会走 `mWindowPlacerLocked.performSurfacePlacement(true)`，由 `WindowSurfacePlacer` 统一完成布局、layer 调整、Insets 计算和 transaction 应用
+3. `relayoutWindow()` 会在当前 Binder 线程内直接调用 `mWindowPlacerLocked.performSurfacePlacement(true)`；同步与 oneway 异步 relayout 都经过这里，其他状态变化可由 `requestTraversal()` 把常规 placement 投到 AnimationThread
 4. 同步路径返回 `ClientWindowFrames`、`MergedConfiguration`、`InsetsState`、`InsetsSourceControl` 与 sync 序列；surface control 由 service-surface 返回或 client-surface 传入
 5. App 侧收到同步结果后继续 post-relayout 的 measure/layout/draw；异步路径则等待后续 resize/Insets/configuration callback 更新本地状态
 
-这条路径解释了一个常见现象：同样叫 traversal，有的帧只是在 App 主线程做 measure / layout / draw，有的帧会把耗时扩散到 App 主线程、system_server Binder 线程、DisplayThread 和动画线程。两类 trace 长得完全不同。
+这条路径解释了一个常见现象：同样叫 traversal，有的帧只在 App 主线程执行 measure / layout / draw；有的帧会发起 system_server Binder 线程上的 relayout 和强制 placement，其中同步调用会嵌套在 App UI 线程等待区间内；另一些窗口状态更新则由 DisplayThread 的 WMS handler 或 AnimationThread 的常规 placement 继续处理。判断线程要看调用栈和 runnable 来源，不能从函数名推断。
 
 ### App 侧 traversal 与 WMS relayout 的对应关系
 
@@ -242,7 +288,7 @@ WMS 侧的执行过程不能简化成“`relayoutWindow()` 直接调 `performLay
 |------|------------------|------------------|
 | `invalidate()` 触发的纯重绘 | 否 | App 主线程 `performDraw` 与 RenderThread |
 | `requestLayout()` 但窗口尺寸未变 | 通常否 | App 主线程 measure / layout / draw |
-| 首帧、窗口 resize、需要服务端新 frame/Insets 状态 | 同步或异步 | App relayout 调用，加 system_server Binder / DisplayThread 配套工作 |
+| 首帧、窗口 resize、需要服务端新 frame/Insets 状态 | 同步或异步 | App relayout 调用、system_server Binder 执行；两种服务端路径都可能直接强制 placement |
 | 只改不会影响 frame 同步的窗口属性，且命中 `relayoutAsync()` 条件 | 异步 | App 当前 traversal 不等 `RelayoutResult`；后续 `W.resized()` / Insets 回调再刷新本地状态 |
 
 ### scheduleTraversals() 与 performTraversals() 的职责边界
@@ -280,7 +326,7 @@ if (relayoutRequested) {
 |-----------|------|------|------|
 | `ViewRootImpl#doTraversal` | App | UI Thread | App 侧 measure/layout/draw 调度 |
 | `ViewRootImpl#performTraversals` | App | UI Thread | 完整 measure+layout+draw，内可能嵌套 `relayoutWindow` |
-| `relayoutWindow` | system_server | `Binder:*` 入口 | WMS 侧 Window 属性更新；后续可能联动 DisplayThread/AnimationThread |
+| `relayoutWindow` | system_server | `Binder:*` 入口 | WMS 侧 Window 属性更新；同步/oneway 异步入口都可在当前线程内执行强制 placement |
 
 **时序判读**：
 
@@ -330,6 +376,13 @@ Activity 切换、回到桌面、打开 Recents、predictive back——这些过
 5. SurfaceFlinger 在后续 `commit` / `composite` 中消费这些 transaction，完成合成与 present。
 
 过渡包含两类成本：开始前的 participant collect、draw sync 与 ready；播放期间的 Shell/remote handler、leash transaction 和 SurfaceFlinger composition。120Hz 屏幕的周期约 8.33ms，播放阶段任何一帧迟交 transaction 或迟完成合成，都会错过目标 present。
+
+这里还要区分两个名字相近的同步机制：
+
+- system_server 内部的 `BLASTSyncEngine` 收集参与变化的 WindowContainer，等待需要重绘的窗口通过 `finishDrawing` 交付内容，再把各子树的 pending transaction 合并给 `TransactionReadyListener`。窗口 transition、旋转和同步 resize 常从这里追；
+- API 34 引入的公开 `SurfaceSyncGroup` 面向 `AttachedSurfaceControl`、`SurfaceView`、`SurfaceControlViewHost` 等 surface，可跨组件甚至跨进程等待多个 surface ready 后一起应用 transaction。
+
+两者都在解决“多个 surface 何时一起可见”，但调用方和对象层级不同。Trace 中看到 sync id 时，先确认它属于 WMS 的 WindowContainer 同步，还是 App/组件侧的 `SurfaceSyncGroup`，再查超时和缺帧参与者。
 
 源码阅读可从这些入口进入：
 
@@ -387,6 +440,16 @@ Split-screen、freeform、Picture-in-Picture、Activity Embedding 和多 Display
 
 静止且没有状态变化的可见窗口不一定持续触发 relayout。拖拽分隔线、自由窗口 resize、跨 Display 移动、IME 动画和 transition 才更容易形成高频更新。应记录每轮参与的 WindowContainer、sync id、transaction 和 buffer，不用总窗口数替代证据。
 
+排查时按下面的对象顺序取证：
+
+1. **Display**：先确认物理/逻辑 Display、刷新周期、layer 集合和本轮 present fence；
+2. **Window**：找发生 bounds、Insets、visibility、focus 或 layer 变化的 WindowState/ViewRoot；
+3. **执行资源**：确认它属于哪个进程、UI 线程和 RenderThread，是否与其他窗口共享；
+4. **内容通道**：检查该窗口自己的 BLAST 队列、buffer 尺寸、acquire fence 和 latch；
+5. **合成结果**：回到该 Display 的 SurfaceFlinger composition 与 HWC present。
+
+同一 Display 的不同进程拥有独立的 App 执行链，但最终仍在该 Display 的同一轮合成和 present 汇合。不同 Display 要分别核对 present fence；默认屏正常不能证明外接屏也按时显示。
+
 ### 折叠屏与大屏配置变更
 
 折叠、展开或跨 Display 移动会改变 display area、window bounds、Insets 与 configuration。App 是否重建 Activity，取决于变化类型、target SDK、compat change、`configChanges` 与 Android 17 的新默认行为。
@@ -407,7 +470,7 @@ Connected-display desktop windowing 在 Android 16 QPR3 对受支持设备达到
 
 对 WMS 来说，自由窗口、caption bar Insets、多实例和跨 Display 移动会增加 WindowContainer、WCT、transition 与 resize 工作。App 还要处理不同 Display 的密度、刷新率、color mode、input 与资源。
 
-这类场景里的 Binder 线程只是入口。DisplayThread/AnimationThread、WM Shell transition、App traversal/RenderThread 和每个 Display 的 SF/HWC/present 都需要放到对应时间线上。
+这类场景里的 Binder 线程只是入口。还要分别检查 DisplayThread 上的 WMS handler 工作、AnimationThread 上的常规 surface placement/动画、WM Shell transition、App traversal/RenderThread，以及每个 Display 的 SF/HWC/present。
 
 ## 在 Perfetto 中的综合表现
 
@@ -417,9 +480,10 @@ Connected-display desktop windowing 在 Android 16 QPR3 对受支持设备达到
 
 | 线程 / 进程 | 常见职责 | 观察意义 |
 |-----------|---------|---------|
-| system_server `Binder:*` | `relayoutWindow`、visibility、window transaction 入口 | 看 IPC 本身和锁等待 |
-| system_server DisplayThread | 窗口摆放、display 相关更新 | 看 `performSurfacePlacement(true)` 和 display 变更 |
-| system_server `android.anim*` | 窗口动画、transition 推进 | 看动画帧是否被别的线程拖慢 |
+| system_server `Binder:*` | `relayoutWindow`、visibility、window transaction 入口；relayout 可直接执行强制 placement | 看 IPC、`mGlobalLock` 等待和 `performSurfacePlacement(true)` 调用栈 |
+| system_server DisplayThread | WMS `mH` 消息与 display 服务工作 | 看 display 变更和 WMS handler 队列，不要默认把所有 placement 归到这里 |
+| system_server `android.anim*` / AnimationThread | `requestTraversal()` 投递的常规 placement、WindowAnimator 和 surface animation | 看 placement/动画任务是否过期或被锁阻塞 |
+| system_server UiThread / WindowManagerPolicyThread | policy 初始化与策略回调 | 只在调用栈涉及 policy 时纳入关键路径 |
 | App 主线程 | `performTraversals`、resize callback、首帧 draw | 看 traversal 是否因 relayout 变重 |
 | RenderThread | `syncAndDrawFrame` | 区分 WMS 问题和渲染问题 |
 | SurfaceFlinger | transaction apply、latch、composition | 看 buffer / transaction 是否在合成侧堆积 |
@@ -437,13 +501,13 @@ Connected-display desktop windowing 在 Android 16 QPR3 对受支持设备达到
 **场景 1：冷启动**
 
 1. 在 App 主线程确认首帧 `performTraversals` 是否命中 `mFirst`
-2. 在 system_server Binder 线程和 DisplayThread 找首次 relayout / surface placement
+2. 在 system_server Binder 线程找首次 relayout 及其内嵌的强制 placement；另查 AnimationThread 是否还有延后 placement
 3. 回看 App 的首帧 draw 完成点，再确认 StartingWindow 退出时机
 
 **场景 2：多窗口切换掉帧**
 
 1. 从掉帧帧号回看 App 主线程和 RenderThread
-2. 再看 system_server 的 AnimationThread、Binder 线程、DisplayThread 是否在同一时段变重
+2. 再看 system_server 的 Binder 线程、AnimationThread 和 DisplayThread，按调用栈区分强制 placement、常规 placement 与 handler 工作
 3. 如果同时出现窗口 resize 或 Insets 变化，再把 relayout 和 animation 拆开计时
 
 **场景 3：旋转或桌面模式 resize 卡顿**
@@ -469,7 +533,7 @@ WMS 不是一个孤立的系统服务，它的性能表现受到多个上下游�
 
 | 版本 | 变化 | 性能影响 | 参考锚点 |
 |------|------|---------|---------|
-| Android 12 (API 31) | SplashScreen API 统一 StartingWindow | 启动反馈路径更标准，但 Android 12+ 的 SplashScreen / TaskSnapshot starting window 创建与绘制主要落在 WM Shell starting-surface 路径 | `developer.android.com/develop/ui/views/layout/splash-screen` |
+| Android 12 (API 31) | SplashScreen API 统一 StartingWindow | 启动反馈路径更标准，但 Android 12+ 的 SplashScreen / TaskSnapshot starting window 创建与绘制主要落在 WM Shell starting-surface 路径 | `developer.android.com/develop/ui/views/launch/splash-screen` |
 | Android 13 (API 33) | `OnBackInvokedCallback` 与 Predictive Back 早期能力 | 应用可接入新的 back callback；系统预测返回动画多处仍需要开发者选项辅助测试 | `developer.android.com/guide/navigation/custom-back/predictive-back-gesture` |
 | Android 14 (API 34) | Predictive Back 跨 Activity / 自定义过渡能力继续完善 | 返回手势进入实时预览，Input、WMS transition 与 Shell transition 需要放在同一段时间轴内分析 | `developer.android.com/guide/navigation/custom-back/predictive-back-gesture` |
 | Android 15 (API 35) | Predictive Back 系统动画不再依赖开发者选项；Edge-to-Edge enforcement 扩大覆盖面 | 已 opt-in 的应用 / Activity 会显示 back-to-home、cross-task、cross-activity 等系统动画；Insets 分发也更常见 | `developer.android.com/guide/navigation/custom-back/predictive-back-gesture` / `developer.android.com/about/versions/15/behavior-changes-15` |
@@ -480,7 +544,7 @@ WMS 不是一个孤立的系统服务，它的性能表现受到多个上下游�
 
 ### 误区 1："WMS 在主线程上运行，所以很慢"
 
-WMS 横跨 system_server 内的 Binder 线程、DisplayThread、UiThread / WindowManagerPolicyThread 和 AnimationThread。常见耗时来自 `mGlobalLock` 竞争、共享窗口状态更新、surface placement 或动画推进。Perfetto 里要同时看 Binder 入口、DisplayThread 的布局摆放、AnimationThread 的过渡推进，以及主线程上是否有策略或 AMS 工作交叉干扰。
+WMS 横跨 system_server 内的 Binder 线程、DisplayThread、UiThread / WindowManagerPolicyThread 和 AnimationThread。常见耗时来自 `mGlobalLock` 竞争、共享窗口状态更新、surface placement 或动画推进。Perfetto 里要按调用方式归属：`relayoutWindow()` 直接执行的强制 placement 在 Binder 线程，`requestTraversal()` 调度的常规 placement 在 AnimationThread，WMS `mH` 消息在 DisplayThread，policy 工作在 UiThread。函数属于 WMS，不等于它固定运行在某条“WMS 线程”。
 
 ### 误区 2："Window 数量越多越卡"
 
@@ -515,16 +579,19 @@ WMS/InsetsStateController 维护状态栏、导航栏、IME、caption、cutout �
 
 ### 🔸 WMS 与 Input 系统的协作
 
-Android 17 `InputMonitor.UpdateInputWindows` 在 `mGlobalLock` 下遍历可能接收输入的窗口，填充 `InputWindowHandle`，并用 `SurfaceControl.Transaction.setInputWindowInfo()` 绑定到对应 SurfaceControl。transaction 的 window-info listener 完成后，native 侧更新 InputDispatcher 的窗口 snapshot。
+Android 17 `InputMonitor.UpdateInputWindows` 使用 WMS 的 `mAnimationHandler`，在 `mGlobalLock` 下按从上到下的窗口顺序填充 `InputWindowHandle`，再通过 `SurfaceControl.Transaction.setInputWindowInfo()` 把变化绑定到对应 SurfaceControl。非立即路径会把这批 input transaction 合并进 `DisplayContent` 的 pending transaction，并调度下一轮 animation/placement。
+
+SurfaceFlinger 消费 transaction 后，从已经提交的 layer snapshot 构造 `WindowInfo` 和 `DisplayInfo`。`updateInputFlinger()` 把 `WindowInfosUpdate` 交给 window-info listeners；InputDispatcher 的 `onWindowInfosChanged()` 随即按 Display 拆分窗口列表，调用 `setInputWindowsLocked()` 替换缓存并唤醒 poll loop。`onWindowInfosReported()` 一类 callback 表示监听器已经处理完这次更新，用于完成通知；它不是 InputDispatcher 更新窗口缓存之前必须等待的条件。
 
 InputDispatcher 处理触摸时使用当前 display 的 window snapshot 做 hit-test，再通过已注册的 InputChannel 投递。它不会为每个触摸事件同步 Binder 调用 WMS 拉取窗口列表。
 
 窗口移动、transition、focus 或 touchable region 变化时，需要对齐：
 
 1. WMS 何时标记并发布新的 input window info；
-2. window-info transaction 何时 reported；
-3. InputDispatcher 何时切换 focus/target；
-4. App input channel 何时收到事件。
+2. SurfaceFlinger 在哪次 transaction 提交后生成新的 layer/window snapshot；
+3. InputDispatcher 何时收到 `WindowInfosUpdate`、替换窗口缓存并处理 focus request；
+4. window-info listeners 何时 reported；
+5. App input channel 何时收到事件。
 
 “点击没有响应”可能来自旧 snapshot、目标 window 不可触摸、focus request 未完成、App channel backlog 或 App 主线程迟到。focus 切换本身不等于事件必然丢失。§3.1 会继续展开 InputDispatcher 的队列与超时证据。
 
@@ -538,6 +605,10 @@ InputDispatcher 处理触摸时使用当前 display 的 window snapshot 做 hit-
 - [AOSP ViewRootImpl 源码](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/ViewRootImpl.java) ，App 侧 traversal、`relayout()` 判定和 `updateBlastSurfaceIfNeeded()`
 - [AOSP IWindowSession / Session 源码](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/IWindowSession.aidl) ，同步 `relayout`、oneway `relayoutAsync` 与 `relayout2` 协议
 - [AOSP InputMonitor 源码](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/InputMonitor.java) ，`InputWindowHandle` 填充与 transaction 发布
+- [AOSP SurfaceFlinger 输入窗口发布](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) ，`updateInputFlinger()` 从 layer snapshot 生成 `WindowInfosUpdate`
+- [AOSP InputDispatcher 源码](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp) ，`onWindowInfosChanged()` 更新按 Display 划分的窗口缓存
+- [AOSP BLASTSyncEngine 源码](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java) / [SurfaceSyncGroup 源码](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/window/SurfaceSyncGroup.java) ，服务端 WindowContainer 同步与公开 surface 同步 API 的边界
+- [Android API reference，SurfaceSyncGroup](https://developer.android.com/reference/android/window/SurfaceSyncGroup) ，API 34 起公开的跨 surface 同步接口
 - [AOSP SurfaceControl JNI 路径](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/jni/android_view_SurfaceControl.cpp) ，native `createSurfaceChecked(...)` 入口
 - [AOSP BLASTBufferQueue 源码](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/graphics/java/android/graphics/BLASTBufferQueue.java) ，客户端 surface materialization
 - [Kernel dma-fence](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c) / [sync_file](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c) ，窗口 buffer 与显示同步边界
