@@ -83,552 +83,346 @@ last_deepseek_cn_review_at: 2026-06-13
 - 🔸 文件系统碎片化对长期使用后性能退化的影响
 <!-- outline-end -->
 
-## 从一个真实的 fsync 卡顿说起
+## 先把 `fsync` 卡顿放回完整 I/O 路径
 
-在 Perfetto 中分析 App 卡顿时，有一类问题几乎每个 Android 工程师都会遇到——主线程在 `fsync` 上阻塞了几十甚至几百毫秒。Trace 中主线程时间条上出现一大段橘红色的 "Uninterruptible Sleep"（D 状态），放大后 syscall 是 `fsync`，对应的是一个 SQLite 数据库或 SharedPreferences 的 XML 文件。
+Perfetto 中偶尔会看到主线程进入不可中断睡眠，调用栈停在 `fsync()`、`fdatasync()` 或文件关闭附近。这个现象只能说明线程在等待持久化路径完成，不能只凭一个 syscall 就认定文件系统存在缺陷。
 
-这个现象之所以在 Android 上特别常见，是因为 Android 对 SQLite 的依赖远超服务器或桌面 Linux——几乎所有 App 的配置、缓存、状态信息都存在 SQLite 数据库里，而 SQLite 每次事务提交都要 `fsync` 确保数据落盘。再加上 SharedPreferences 在早期 Android 版本中也是通过 `fsync` 同步写入 XML 文件，一个 App 在启动阶段可能触发数十次 `fsync`。
+一次同步写可能经过这些层次：
 
-这个问题的根因，往往不在 App 代码本身，而在 App 之下那一层——文件系统。不同的文件系统对 `fsync` 的实现策略差异巨大，直接影响着 App 的 I/O 延迟。Android 设备上的文件系统选择，经历了从 ext4 到 f2fs、再到 EROFS 的演进，每一次切换都是为了解决前一代在手机场景下暴露出的特定问题。
+1. App 或数据库提交修改。
+2. VFS 把脏页交给 ext4 或 F2FS。
+3. 文件系统写数据、必要的元数据和恢复信息。
+4. 块层处理请求合并、调度、加密与 device-mapper 映射。
+5. UFS 控制器和设备内部 FTL 完成写入与缓存刷新。
 
-理解这三个文件系统的设计思想和性能特性，是我们诊断存储相关卡顿的基础。
+`fsync()` 的返回语义还受挂载参数、写屏障以及存储设备对 flush/FUA 的实现影响。文件系统会改变其中一部分成本，却无法消除器件尾延迟、温度降频、磨损控制或队列拥塞。
 
-## VFS：文件系统的统一抽象
+SQLite 也不等于“每执行一条 SQL 就调用一次 `fsync()`”。同步次数取决于事务边界、journal 模式、`PRAGMA synchronous`、是否发生 cache spill，以及文件系统是否提供 SQLite 能识别的原子批写能力。SharedPreferences 的 `apply()` 会先更新内存并把磁盘写入排到后台；它减少调用线程的直接等待，但排队的写入仍可能在组件生命周期切换时参与 ANR。
 
-在深入各个具体的文件系统之前，我们先理解一个关键的中间层——VFS（Virtual File System，虚拟文件系统）。
+> 本章源码锚点：Android 17 / API 37 / `android-17.0.0_r1`，Android Common Kernel `android17-6.18-2026-06_r6`。
 
-Linux 内核在用户进程和具体文件系统之间引入了 VFS 抽象层。VFS 定义了一组所有文件系统都必须支持的标准接口和数据结构：`superblock`（超级块）、`inode`（索引节点）、`dentry`（目录项）、`file`（打开文件）。上层代码无论是操作 ext4 还是 f2fs，调用的都是同一套 POSIX 接口——`open()`、`read()`、`write()`、`fsync()`，VFS 负责把请求分发到对应文件系统的实现。
+## VFS 与 Page Cache：统一接口不代表相同行为
 
+VFS 用 `super_block`、`inode`、`dentry` 和 `file` 等对象向上提供统一接口。App 调用相同的 `open()`、`read()`、`write()` 和 `fsync()`，VFS 再分发到具体文件系统的 `file_operations`、`address_space_operations` 等实现。
 
-从 App 开发者的角度看，不需要关心底层用的是哪种文件系统；但从性能分析的角度，同一个 `fsync()` 调用在 ext4 和 f2fs 上的行为完全不同。这也是为什么我们在 Perfetto 中看到 I/O 延迟异常时，需要先确认文件系统类型。
+普通缓冲 I/O 的 `write()` 通常先修改 Page Cache，页面随后被标记为 dirty。内核回写线程可以异步提交这些页面；`fsync()` 则要求指定文件在相应范围内达到持久化语义，所以调用者可能需要等待：
 
-VFS 层管理的另一个关键组件是 Page Cache（页缓存）。通过 `read()` 读取文件时，内核先检查 Page Cache 中是否已有对应数据——如果有，直接从内存返回，不触发磁盘 I/O；如果没有，才向文件系统发起实际的读请求。`write()` 也是类似，数据先写入 Page Cache，标记为"脏页"（dirty page），由内核的 `flush` 线程在后台异步写回磁盘。这种机制对读性能有巨大的提升——被频繁访问的文件数据几乎全部缓存在内存中，这也是为什么手机在内存充足时读操作通常很快，而写操作（尤其是同步写）更容易成为瓶颈。
+- 文件数据写回；
+- 影响文件可读性的元数据更新；
+- journal、F2FS node 或 checkpoint 等恢复信息；
+- 块设备 cache flush。
 
-## ext4：成熟但不适合手机场景
+Page Cache 命中会掩盖很多读取差异。分析随机读时，应先区分缓存命中、缺页读取和存储设备读取，避免把内存速度记到文件系统名下。
 
-### ext4 的核心设计
+## ext4：成熟的通用读写文件系统
 
-ext4 是 Linux 生态中最成熟、最广泛使用的文件系统。它是 ext3 的直接继任者，在 2008 年合并入 Linux 主线。ext4 的核心特性包括：
+### ext4 解决了哪些问题
 
-**日志（Journal）**：ext4 使用 jbd2（Journal Block Device v2）作为日志系统，保证文件系统在异常断电后的一致性。jbd2 支持 journal、ordered、writeback 三种模式。Android 上默认使用 ordered 模式——日志只记录元数据（metadata），但保证在元数据提交到日志之前，对应的数据块已经写入磁盘。这是一种在安全性和性能之间的折中。
+ext4 在 Android 17 的 arm64 GKI 中仍为内建能力：`CONFIG_EXT4_FS=y`。它并未退出 Android，也不应被概括为“不适合手机”。设备可以根据分区职责、升级方案、故障恢复经验和性能目标选择 ext4。
 
-**延迟分配（Delayed Allocation）**：ext4 不会在 `write()` 调用时立即分配磁盘块，而是等到数据需要刷新到磁盘时（`fsync` 或内核的 `flush` 线程触发）才统一分配。这种策略可以合并和优化写入模式，提升大文件写入的顺序性。
+几个重要机制如下：
 
-**多块分配（Multiblock Allocator）**：与延迟分配配合，一次性为一组数据分配连续的磁盘块，减少碎片。
+- **extent**：用连续区间描述物理块，降低大文件块映射的元数据量。
+- **delayed allocation**：缓冲写入阶段可以暂缓物理块分配，给多块分配器更多机会形成连续布局。
+- **multiblock allocator**：批量选择连续空闲块。
+- **jbd2 journal**：记录一致性所需的文件系统修改。常见 `data=ordered` 模式主要记录元数据，并要求相关数据先于元数据提交完成。
+- **fast commit**：条件允许时只记录较小的增量；遇到不支持的操作会回退到完整 journal commit。
 
-**Extent**：用 extent（区间）替代传统的间接块映射。一个 extent 可以描述一段连续的物理块，大幅减少了大文件的元数据开销。
+“就地更新”描述的是 ext4 的逻辑块分配倾向。NAND 的物理擦除、搬移和磨损均衡由 UFS/eMMC 内部 FTL 处理，文件系统看不到固定的 NAND erase block。把每次 ext4 小写都描述成一次固定大小的“读—改—擦—写”并不准确。
 
+### Android 17 内核中的 ext4 `fsync`
 
-### ext4 在 Android 上的性能问题
-
-ext4 面向服务器和桌面场景设计，它的优化策略在 HDD 时代是合理的。但 Android 设备的 I/O 特征与服务器截然不同，导致 ext4 暴露了明显的性能问题。
-
-**问题一：fsync 的放大效应**
-
-这是 ext4 在 Android 上最严重的问题。SQLite 使用 WAL（Write-Ahead Log）模式或 rollback journal 模式，每次事务提交都需要调用 `fsync`。在 ext4 + jbd2（ordered 模式）+ 延迟分配的组合下，一次 `fsync` 会触发一系列连锁反应：
-
-1. 延迟分配意味着脏页还没有分配物理块。`fsync` 时必须先为所有相关的脏页分配物理块——如果其他进程也积累了大量脏页（内核的 `flush` 线程每 30 秒触发一次），`fsync` 需要等待这些脏页的块分配完成。
-
-2. ordered 模式要求在提交元数据日志之前，先把对应的数据块写入磁盘。jbd2 的 commit 线程需要等待所有脏数据刷盘，然后才能提交日志。
-
-3. I/O 优先级倒置——`flush` 线程的异步 I/O 可能占据了存储设备队列，导致 `fsync` 的同步 I/O 被阻塞在队列后面等待。
-
-最终的结果是：一次本应只需几毫秒的 `fsync`，在极端情况下可能需要几百毫秒甚至超过一秒。这就是用户感知到的"App 卡死"的直接原因。
-
-**问题二：原地更新与写放大**
-
-ext4 采用就地更新（in-place update）策略——修改文件时，直接覆盖原有的磁盘块。HDD 的扇区可以无限次覆盖写入，所以这不是问题；但 NAND 闪存做不到就地覆盖写，它必须先擦除整个 block（通常 128KB-256KB），再写入新数据。修改一个 4KB 的页面，实际需要：读取整个 block → 在内存中修改 → 擦除 block → 写回整个 block。4KB 的写入被放大成了 128KB+，这就是写放大（Write Amplification）。
-
-就地更新策略使得 ext4 无法有效利用闪存内部的并发能力，加速了存储芯片的磨损，也增加了垃圾回收（GC）的压力。
-
-**问题三：缺乏闪存感知**
-
-ext4 的块分配策略没有考虑 NAND 闪存的物理特性——它不知道哪些块在闪存内部是相邻的，也不知道哪些块已经在被 GC 搬运。这导致文件系统的分配模式和闪存内部的管理策略可能产生冲突，进一步加剧写放大和延迟。
-
-### ext4 在 Android 上的现状
-
-尽管 f2fs 已经成为 `data` 分区的首选，ext4 在 Android 上并没有完全消失。部分厂商的 `data` 分区仍在使用 ext4（通常配合厂商自定义的优化补丁），而 `metadata` 等小分区仍然普遍使用 ext4。此外，ext4 的成熟度和稳定性在业界是公认的——经过二十多年的打磨和大量线上验证，它的可靠性是新兴文件系统短期内难以匹敌的。[待验证: 具体哪些厂商的哪款机型仍在 data 分区使用 ext4]
-
-## f2fs：为闪存而生的文件系统
-
-### 设计背景与核心思想
-
-f2fs（Flash-Friendly File System）由 Samsung 的 Jaegeuk Kim 于 2012 年开发，2013 年合并入 Linux 主线。它的设计目标很明确：针对 NAND 闪存的物理特性优化文件系统行为，解决 ext4 在移动设备上的性能瓶颈。[已验证: 官方文档, kernel.org/doc/html/latest/filesystems/f2fs.html]
-
-f2fs 的核心设计思想可以概括为：**把随机写转换为顺序写**。NAND 闪存最擅长的就是顺序写入——因为它可以直接往空闲区域追加数据，不需要先擦除。f2fs 通过 Copy-on-Write（CoW）和日志结构（Log-Structured）的设计，尽可能让所有写入操作都变成追加写。
-
-### 磁盘布局：六个区域
-
-f2fs 把整个分区划分为六个区域，每个区域有明确的职责：
-
-```
-┌──────────────┐
-│  Superblock  │  文件系统元信息（魔数、版本、块大小等）
-├──────────────┤
-│  Checkpoint  │  文件系统的一致性检查点（两组，交替使用）
-├──────────────┤
-│     SIT      │  Segment Information Table：记录每个 segment 的有效块数和位图
-├──────────────┤
-│     NAT      │  Node Address Table：inode/node 编号到物理块地址的映射
-├──────────────┤
-│     SSA      │  Segment Summary Area：记录每个 block 属于哪个 node 的哪个 offset
-├──────────────┤
-│   Main Area  │  主存储区，存放实际的 node（元数据）和 data（文件内容）
-└──────────────┘
-```
-
-
-这里有几个关键的设计要点值得展开：
-
-**NAT（Node Address Table）**：f2fs 不像 ext4 那样把物理块地址直接存在 inode 里，而是引入了一层间接映射——inode 中存储的是 node ID（nid），NAT 负责 nid 到物理块地址（physical block address）的翻译。这层间接映射是 f2fs 实现 CoW 的基础——修改数据时，新数据写到新的物理位置，只需要更新 NAT 中的映射，不需要修改 inode 本身。
-
-**SIT（Segment Information Table）**：记录每个 segment 的使用状态——有多少有效块、哪些块是空闲的。f2fs 的垃圾回收器依赖 SIT 来决定哪些 segment 可以回收。
-
-**冷热数据分离**：f2fs 把 Main Area 中的 segment 分为六种类型：hot/warm/cold × data/node。频繁更新的"热"数据（如 SQLite 日志）和很少修改的"冷"数据（如照片、APK 文件）被分配到不同的 segment。这样热数据的频繁修改不会影响冷数据所在的 block，垃圾回收时只需要处理热数据区域，大幅减少了 GC 的开销和写放大。
-
-### SQLite 原子写：f2fs 的杀手级优化
-
-这是 f2fs 对 Android 性能贡献最大的一个特性。
-
-SQLite 在写入数据库时，传统流程是这样的（以 rollback journal 模式为例）：先创建 journal 文件记录原始数据 → 修改数据库文件 → 调用 `fsync` 确保 journal 写入 → 调用 `fsync` 确保数据库文件写入 → 删除 journal 文件。每次事务至少两次 `fsync`，每次 `fsync` 都要等数据落到存储介质。
-
-f2fs 在 `kernel/common/include/uapi/linux/f2fs.h` 里定义了 `F2FS_IOC_START_ATOMIC_WRITE`、`F2FS_IOC_COMMIT_ATOMIC_WRITE` 和 `F2FS_IOC_ABORT_ATOMIC_WRITE` 这组 ioctl，允许数据库把一批页修改包成一次原子提交。工作流程可以概括成：
-
-1. SQLite 调用 `ioctl(F2FS_IOC_START_ATOMIC_WRITE)` 告知内核，后续写入进入原子上下文
-2. 事务页写到新的物理位置，旧数据仍然保持可读
-3. 成功路径调用 `ioctl(F2FS_IOC_COMMIT_ATOMIC_WRITE)`，让 NAT / node 映射一次性切到新版本
-4. 失败或回滚路径调用 `ioctl(F2FS_IOC_ABORT_ATOMIC_WRITE)`，丢弃本轮改动
-
-这条路径的收益，在于把 journal 文件和多次同步点压成一次提交边界。提交阶段通常只剩一轮主要的持久化边界，而不是 journal 文件和数据文件各做一轮同步。Android 8.1 之后，SQLite / AOSP 已经具备 batch atomic write 的接入点；但是否走到这条路径，还要看设备是否使用 f2fs，以及内核、挂载选项和 SQLite 构建配置是否同时满足条件。[已验证: sqlite.org/src/info/5c5e4f6f6d + kernel/common/include/uapi/linux/f2fs.h]
-
-### f2fs 的 fsync 优化
-
-除了 SQLite 原子写，f2fs 在 `fsync` 本身的实现上也比 ext4 更高效。
-
-默认 ext4 并不是把“被修改的数据块完整内容”都写进 jbd2。`data=ordered` 只把 metadata 写入 journal，同时要求相关 data blocks 先落到主文件系统；只有 `data=journal` 才会把 file data 连同 metadata 一起 journal。Android 常见的 ext4 `fsync` 成本，更多来自 ordered 模式下的数据先落盘约束、延迟分配触发的块分配，以及 jbd2 commit 等待。新一些内核里的 fast commit 也只是把受影响 metadata 的最小 delta 写进 fast commit 区，用来降低 commit latency，不等于默认双写整块数据。
-
-f2fs 的路径不同。它用日志结构的追加写配合 NAT / node 映射更新，把数据写入和元数据切换拆成“新块落盘 + 映射翻转”两步。`fsync` 仍然要把这次修改涉及的数据块和必要的 node / NAT 元数据刷稳，必要时再带上 checkpoint 相关元数据，但不需要再走一遍 `data=journal` 式的数据全文 journal。这也是它在随机写和高频同步写场景里更容易把延迟压低的原因。
-
-### f2fs 的代价：垃圾回收
-
-f2fs 的 CoW 设计带来了优秀的写入性能，但也有代价——垃圾回收（Garbage Collection，GC）。因为数据不断写到新位置，旧的 segment 中会产生大量"过时"的数据（被新版本替代），f2fs 需要定期清理这些 segment，把仍然有效的数据搬到新位置，然后释放整个 segment。
-
-f2fs 的 GC 分为前台和后台两种。后台 GC 由内核线程在存储负载较低时自动触发，对前台 App 的影响较小。但如果存储空间紧张（可用 segment 少于阈值），f2fs 会强制触发前台 GC——在 App 的写入路径上同步执行 GC。前台 GC 可能导致写入延迟飙升到数百毫秒，是 f2fs 用户在存储空间不足时感知到卡顿的主要原因。
-
-在 Perfetto 中，f2fs 的 GC 活动可以通过 `f2fs_gc_*` 相关的 trace event 观察到。如果我们看到 App 线程在写入时出现长时间的 D 状态等待，同时有 `f2fs_gc` 相关的活动，那大概率是前台 GC 在阻塞写入。[待补充：Trace截图展示f2fs前台GC期间的I/O延迟]
-
-### f2fs 前台 GC 触发机制详解
-
-f2fs 的前台 GC 触发决策由 `has_not_enough_free_secs()` 函数（`fs/f2fs/segment.h`）控制。android15-6.6 的实现使用了三段判定逻辑：
+下面的源码片段用于说明 ext4 同步文件时等待了哪些对象，摘自 `fs/ext4/fsync.c`：
 
 ```c
-// fs/f2fs/segment.h — android15-6.6
-static inline bool has_not_enough_free_secs(struct f2fs_sb_info *sbi,
-        int freed, int needed)
-{
-    unsigned int free_secs, lower_secs, upper_secs;
-    bool curseg_space;
+ret = file_write_and_wait_range(file, start, end);
+if (ret)
+        goto out;
 
-    if (unlikely(is_sbi_flag_set(sbi, SBI_POR_DOING)))
-        return false;
+ret = ext4_fsync_journal(inode, datasync, &needs_barrier);
 
-    __get_secs_required(sbi, &lower_secs, &upper_secs, &curseg_space);
-    free_secs = free_sections(sbi) + freed;
-    lower_secs += needed + reserved_sections(sbi);
-    upper_secs += needed + reserved_sections(sbi);
-    // 情况 1：空闲充裕，直接返回 false
-    if (free_secs > upper_secs)
-        return false;
-    // 情况 2：空闲不足，需要前台 GC
-    if (free_secs <= lower_secs)
-        return true;
-    // 情况 3：空闲处于中间地带，取决于 curseg 是否还有空间
-    return !curseg_space;
-}
+if (needs_barrier)
+        err = blkdev_issue_flush(inode->i_sb->s_bdev);
 ```
 
-**三段判定逻辑**：
-- `__get_secs_required()` 同时返回三个值：`lower_secs`（最低需求）、`upper_secs`（充裕阈值）和 `curseg_space`（布尔值，当前 curseg 是否能容纳余下的 node/data/dentry blocks）
-- `free_secs > upper_secs`：空闲充足，不需要 GC
-- `free_secs <= lower_secs`：空闲不足，必须触发前台 GC
-- 介于两者之间时：取决于 curseg 是否还有可用空间（`curseg_space` 为 `false` 表示 curseg 不足以容纳余数，仍需 GC）
-- `lower_secs` 和 `upper_secs` 的计算包含 node/dentry/imeta 三类 dirty sections 加上 reserved sections（over-provisioning，默认约 5%）
+这条路径先提交并等待目标文件范围的数据，再等待对应 journal 事务；需要写屏障时还会发出块设备 flush。`ext4_fsync_journal()` 对普通文件尝试 `ext4_fc_commit()`，能否使用 fast commit 由文件系统特性和本次修改类型共同决定。
 
-**VFS 入口**：`f2fs_balance_fs()`（`fs/f2fs/segment.c`）在每次 VFS 写请求时被调用。当空闲不足需要前台 GC 时，根据 `GC_MERGE` mount option 决定执行方式：`GC_MERGE`=true 时写线程等待 `fggc_wq`，后台 `gc_thread` 被唤醒执行前台 GC（`wake_up(&gc_wait_queue_head)`）；否则同步调用 `f2fs_gc()`。
+因此，ext4 的一次 `fsync()` 可能等待同一 journal transaction 中的其他工作，但不能扩写成“等待所有进程的脏数据”或“每次都做完整 checkpoint”。诊断时应同时看 `ext4_sync_file_enter/exit`、jbd2 commit 和块层事件。
 
-**Victim 选择**：前台 GC（`FG_GC`）使用 `GC_GREEDY` 算法——选择有效块最少的 segment 进行清理，以最快速度释放空间。后台 GC 则使用 `GC_CB`（Cost Benefit）或 `GC_AT`（Age Threshold）算法，在不阻塞前台 I/O 的前提下平衡清理效率。
+## F2FS：围绕闪存负载组织写入
 
-**性能特征**：前台 GC 触发时可能导致 50-500ms 的同步 I/O 阻塞。CVE-2024-53220 修复了 `has_not_enough_free_secs()` 判定逻辑相关的问题，影响的是 free section 判定和 GC 触发时机。
+### LFS 思路与 F2FS 的修正
 
-`[源码锚点: kernel/common fs/f2fs/segment.h — has_not_enough_free_secs() / __get_secs_required(); fs/f2fs/segment.c — f2fs_balance_fs()]`
+F2FS 基于 log-structured file system 思路，目标是减少随机覆盖写，并控制经典 LFS 的 wandering tree 与清理成本。Android 17 的 arm64 GKI 启用了：
 
-### f2fs 的 LFS / SSR 切换机制
+- `CONFIG_F2FS_FS=y`
+- `CONFIG_F2FS_FS_COMPRESSION=y`
+- `CONFIG_F2FS_FS_SECURITY=y`
 
-#### 默认路径：LFS
-f2fs 默认按 log-structured 的方式把新写入追加到干净 segment。这对应资料里常说的 LFS / copy-and-compaction：先顺序写新数据，后续再靠 GC 回收旧 segment。对闪存来说，这条路径通常比原地更新更友好。
+F2FS 的关键磁盘结构可以这样理解：
 
-#### 什么时候切到 SSR
-Android 15-6.6 的决策入口在 `kernel/common/fs/f2fs/segment.c` 里的 `f2fs_need_SSR()`。它会同时看 dirty node sections、dirty dentry sections、dirty imeta sections、`min_ssr_sections`、`reserved_sections`，以及 `GC_URGENT_HIGH`、checkpoint disabled 这类强制条件；当前实现不是单一的固定 5% 阈值。源码里的核心判断可以概括成：
+- **NAT（Node Address Table）**：把 `nid` 映射到最新 node block 的物理地址。inode、direct node 和 indirect node 都属于 node。
+- **SIT（Segment Information Table）**：记录 segment 中有效块数量、有效位图和类型信息，供分配与 GC 使用。
+- **SSA（Segment Summary Area）**：保存 segment 内块的归属摘要，GC 可据此回查块是否仍有效。
+- **Checkpoint**：保存一组可恢复的一致状态。双 checkpoint pack 让挂载恢复可以选择有效版本。
+- **多路 active logs**：按 node/data、冷热等类别分配写入，尽量降低 GC 搬移有效块的成本。
+
+NAT 只负责 `nid → node block address`。文件数据块地址位于 inode 或其他 node 的地址数组中。把 NAT 说成“文件逻辑块到数据块的直接映射”会漏掉 F2FS 解决 wandering tree 的关键层。
+
+### F2FS 并非所有写入都永远顺序追加
+
+默认 adaptive 模式会在 LFS 分配与 SSR（Selective Segment Reuse）之间选择。空间宽裕时，out-of-place update 更容易保持追加式写入；空间紧张时，SSR 可以复用已用 segment 中的空洞。挂载为 `mode=lfs` 时，主区域不使用随机覆盖分配，代价是需要更多连续空闲空间。
+
+F2FS 还存在 IPU（in-place update）路径。例如 Android 17 内核的 `f2fs_do_sync_file()` 会在 `fdatasync()` 或脏页较少时设置 `FI_NEED_IPU`，随后执行范围写回。由此可见，“F2FS 的每一次数据修改都是 CoW”同样过度简化。
+
+当前 `f2fs_need_SSR()` 的判断包含几条清晰边界：
+
+- `mode=lfs` 直接禁用 SSR；
+- `GC_URGENT_HIGH` 或 checkpoint disabled 状态需要 SSR；
+- 常规模式比较 free sections 与 dirty node/dentry/inode metadata、`min_ssr_sections`、reserved sections 的需求。
+
+这里的单位是 section，阈值来自运行时状态和格式参数，没有一个适用于所有设备的固定百分比。
+
+### `fsync`、roll-forward 与 checkpoint
+
+F2FS 的常见 `fsync` 路径先写回目标文件数据，再判断是否需要 checkpoint。普通可 roll-forward 的情况会写带 fsync 标记的 node 链并发出必要的 flush；以下情况可能转入完整 checkpoint，包括非普通文件、压缩文件、硬链接、超级块明确要求 checkpoint 等。
+
+短路径可以减少恢复信息和等待范围，但仍需满足掉电恢复语义。设备 cache flush、node writeback、checkpoint 以及 GC 都可能成为尾延迟来源，所以“F2FS 上的 `fsync` 没有成本”是错误结论。
+
+### 原子文件写与 Android SQLite
+
+Android 17 内核在 `include/uapi/linux/f2fs.h` 中定义了：
+
+- `F2FS_IOC_START_ATOMIC_WRITE`
+- `F2FS_IOC_COMMIT_ATOMIC_WRITE`
+- `F2FS_IOC_ABORT_ATOMIC_WRITE`
+- `F2FS_IOC_START_ATOMIC_REPLACE`
+
+`f2fs_ioc_start_atomic_write()` 会为普通文件准备 COW inode；commit 路径调用 `f2fs_commit_atomic_write()`，随后以 atomic 语义同步文件，失败或结束后再清理原子写状态。这里的“原子”指一批文件页修改在崩溃恢复时全有或全无，并不表示写入没有 I/O 等待。
+
+Android 17 的 AOSP SQLite 在 `external/sqlite/dist/Android.bp` 中启用了 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE`。Unix VFS 只有在 `F2FS_IOC_START_ATOMIC_WRITE` 探测成功后才报告 `SQLITE_IOCAP_BATCH_ATOMIC`，SQLite pager 还会检查数据库状态和事务条件。编译期开关提供了使用机会，不能据此推断每个 SQLite 事务都走 F2FS 原子写。
+
+### GC：空间紧张时为什么会抬高尾延迟
+
+out-of-place update 会留下无效块。F2FS 需要选择 victim segment，核对其中仍有效的数据与 node，然后搬移有效块以释放 segment。后台 GC 可利用空闲窗口；当写入路径发现可用 section 不足时，请求线程可能参与或等待空间回收。
+
+Android 17 的判定已经不同于旧版 kernel 6.6 的 lower/upper 阈值写法。下面的摘录用于固定当前 6.18 源码中的比较对象，来自 `fs/f2fs/segment.h`：
 
 ```c
-free_sections <= node_secs + 2 * dent_secs + imeta_secs
-                + min_ssr_sections + reserved_sections
+free_secs = free_sections(sbi) + freed;
+required_secs = needed + reserved_sections(sbi) +
+                __get_secs_required(sbi);
+
+return free_secs < required_secs;
 ```
 
-命中后，分配策略会更积极地复用 dirty segment 里的 invalid blocks，也就是 SSR（selective segment reuse）。旧文里把它叫成 threaded logging，只能算历史描述的近似说法；放到当前源码语境里，直接写 LFS / SSR 更贴近实现。
+`__get_secs_required()` 会把 dirty node、dentry、inode metadata，以及特定模式下的 dirty data 换算为所需 section。`f2fs_balance_fs()` 在空间足够时直接返回；空间不足时，它可以唤醒启用 `gc_merge` 的 GC 线程并等待，也可以调用 `f2fs_gc()` 释放 section。普通后台 victim 策略可使用 cost-benefit 或 age-threshold，前台 GC 使用 greedy 选择逻辑。
 
-#### SSR 与 GC 的关系
-SSR 不是 GC 的替代品。它的作用，是在 free section 紧张时先让写入路径继续向前推进，少等一次“先清理出干净 segment再写”的过程。空间回收仍然由 `kernel/common/fs/f2fs/gc.c` 里的前台 / 后台 GC 完成，victim 选择和回收节奏也都在那套回收逻辑里。SSR 负责缓冲写入压力，GC 负责把空间拿回来。
+这也解释了“剩余容量尚未显示为 0，写入已经变慢”的现象：文件系统要保留可完成写回、checkpoint 和 GC 搬移的工作空间；UFS 自身也需要预留块进行 FTL 回收。两层空间压力可能同时出现。
 
-#### Perfetto 里怎么观察
-Perfetto 通常不会给出一个名为“SSR”的直接 slice。排查时更可操作的线索是：
-- block I/O 延迟是否在空间逼近上限时突然抬高；
-- 有没有 `f2fs_gc_*` 相关 trace event 或内核日志同步出现；
-- 主线程 / binder 线程是否在 `fsync`、`fdatasync`、`pwrite` 一类 syscall 上进入 D 状态。
+### 4 KB 与 16 KB 页大小
 
-如果这三类信号一起出现，更像是 free section 紧张后写路径开始复用旧 segment，并且 GC 跟不上了。
+Android 15 开始支持 16 KB page size，Android 17 继续支持 4 KB 与 16 KB 设备。ELF 的 16 KB 对齐兼容性和 F2FS 磁盘格式是两件事：
 
-### 在 Perfetto 中的观察要点
+- AOSP 用户空间可以构建为 page-size agnostic，ELF 以 16 KB 对齐后可在 4 KB/16 KB kernel 上运行。
+- `android17-6.18-2026-06_r6` 的 `include/linux/f2fs_fs.h` 明确规定 `F2FS_BLKSIZE == PAGE_SIZE`。
+- 同一源码中的默认 segment 仍含 512 个 block，因此 4 KB 页时默认 segment 为 2 MB，16 KB 页时为 8 MB。
 
-对于 f2fs 分区上的 I/O 分析，在 Perfetto 中我们应该关注：
+这意味着 16 KB kernel 使用的 F2FS 格式参数需要按 16 KB block 生成。设备升级是否能够保留 `/data`，取决于 OEM 的分区、迁移和升级方案，不能仅从 App 的 ELF 兼容结论推导出“旧 4 KB `/data` 可原样挂载”。对 App 工程师而言，重点仍是修复 native library 对页大小的硬编码；格式化与用户数据迁移由设备实现负责。
 
-1. **block I/O slice 的延迟**：先看同一台设备、同一 workload 下的相对变化，不要把某个 UFS 代际的经验值当成通用门槛。延迟突然抬高时，再分辨是 GC、I/O 调度还是存储器件本身的问题。
+### quota、casefold 与 fscrypt
 
-2. **f2fs 相关的 trace event**：如果内核编译时启用了 f2fs 的 tracepoint，能看到 GC 活动、segment 分配等信息。
+F2FS 和 ext4 都可以承载 Android 所需的配额、大小写无关目录与文件加密能力，但可用性取决于内核配置、文件系统 feature、格式化参数和挂载参数：
 
-3. **主线程的 D 状态等待**：配合 syscall 信息，确认是否是 `fsync` / `fdatasync` / `pwrite` 之类的同步写导致阻塞。
+- project quota 可帮助系统按目录项目统计或限制空间；看到 `CONFIG_QUOTA=y` 不代表目标分区已经启用 `prjquota`。
+- casefold 使用 Unicode 规则进行大小写无关查找；只有带相应 feature 且目录被设置为 casefold 时才生效。
+- fscrypt 提供文件级加密策略，Android 的 FBE 在其上组织 DE/CE 密钥域。
+- inline encryption 可以把数据加解密交给存储控制器，但文件系统仍负责密钥上下文与 bio 标记。
 
-## 三类文件系统能力
+检查设备行为时，应读取实际 superblock feature、mount options 和内核配置，不能只看文件系统类型。
 
-ext4 和 f2fs 除了通用的读写路径，还承载了几组与分区管理强相关的能力——配额、目录匹配和加密。这些能力在日常性能分析中经常直接遇到，放在一起看更容易理解它们各自在 I/O 路径中的位置。
+## EROFS：面向不可变镜像的只读文件系统
 
-### Project Quota：把“存储统计”从全盘遍历变成计数读取
+### 适用边界
 
-系统设置页、`StorageStatsManager` 和很多空间分析工具都要回答一个问题：某个用户、某个 UID、某个包到底占了多少空间。没有 quota 时，只能递归扫目录，耗时和 I/O 压力都很高。
+EROFS 没有运行时写入、journal 和空闲块分配路径，适合 `system`、`vendor`、`product`、`system_ext` 等构建期生成、启动后只读的镜像。`/data` 需要创建和修改文件，不能使用 EROFS。
 
-Android 在 ext4 / f2fs 打开 project quota 后，可以把目录树映射到 project id，再由内核维护计数器。这样系统查询存储占用时，不需要每次都对 `/data` 做一轮 `du` 式遍历。对性能分析来说，“查看占用”本身通常不是一次重 I/O 扫描。
+AOSP 的 EROFS 文档给出了 BoardConfig、fstab、压缩和 Virtual A/B 配置。文档中的示例允许为 `/system` 同时保留 EROFS 与只读 ext4 fstab 条目，以便测试 ext4 GSI。这说明 Android 提供了完整支持，具体分区采用哪一种格式仍由产品配置决定。
 
-### Casefolding：让大小写无关匹配留在文件系统层
+EROFS 的核心能力包括：
 
-Android 需要兼顾 Linux 的大小写敏感语义和移动设备上常见的大小写无关文件名习惯。ext4 / f2fs 的 casefold 机制会在目录查找阶段做 Unicode case-insensitive 匹配，目录比较逻辑直接落在文件系统层。
+- compact/extended inode 布局与 tail packing；
+- 可选透明压缩；
+- in-place decompression，减少额外解压缓冲与 Page Cache 抖动；
+- chunk-based 与 rolling-hash 压缩数据去重；
+- 面向随机访问的索引设计。
 
-这类能力常见于共享存储相关目录。它减少了把名字匹配逻辑放在用户态适配层的压力，也让目录查找路径更短。
+AOSP 当前构建文档的默认 compressor 是 `lz4hc`，也允许禁用压缩和调整 PCluster 大小。官方给出的镜像体积数据是平均约缩小 25%，高压缩配置可到约 45%；这组数据只适合说明文档测试范围，不能换算为任意设备的启动耗时。
 
-### fscrypt 与 Inline Encryption：加密在 I/O 路径里的真实位置
+Android 17 的 6.18 arm64 GKI 已启用 `CONFIG_EROFS_FS=y`、`CONFIG_EROFS_FS_ZIP_ZSTD=y` 和 `CONFIG_EROFS_FS_PCPU_KTHREAD=y`。所以 ZSTD 在这个源码锚点中具备内核解压支持；镜像是否使用 ZSTD 仍由产品构建配置决定，且 6.18 Kconfig 仍把该能力标为 experimental。LZ4HC 依然是 AOSP EROFS 构建文档中的默认选择。
 
-Android 的文件级加密建立在 fscrypt 上，进入 ext4 / f2fs 的读写路径时，还会继续和块层的 inline encryption 能力配合。
+### EROFS、dm-verity 与 Virtual A/B
 
-设备具备 Inline Crypto Engine 时，文件系统可以把数据加解密工作交给存储硬件，CPU 主要负责密钥和请求编排。对 trace 分析来说，加密不再等同于“每次写入都多跑一段 CPU 密集计算”。
+EROFS 负责解释只读文件和压缩数据，dm-verity 负责校验块完整性，AVB/vbmeta 提供受信任的根摘要与签名信息。正常挂载时，常见的简化层次是：
 
-16KB page size 设备上，这里还会出现 data unit size 约束；块大小、页大小和 inline crypto 能力需要一起看，单看文件系统名字不够。
+1. `super` 物理分区；
+2. `dm-linear` 映射出的动态逻辑分区；
+3. `dm-verity` 校验设备；
+4. EROFS 或只读 ext4；
+5. `/system` 等挂载点。
 
-> [源码锚点: frameworks/base/services/usage/java/com/android/server/usage/StorageStatsService.java]
-> [源码锚点: frameworks/base/core/java/android/app/usage/StorageStatsManager.java]
-> [源码锚点: kernel/common/fs/f2fs/dir.c — `f2fs_match_name`]
-> [源码锚点: kernel/common/fs/crypto/inline_crypt.c]
+dm-verity 按需读取哈希树并验证数据，不会在每次挂载时重算整棵树。哈希算法、数据块大小和错误策略来自 AVB descriptor 与设备配置，不能固定写成“所有设备每块都用 4 KB SHA-256”。
 
-这三组能力都和具体的文件系统实现绑在一起，不属于单独的分区选型决策。下面我们转向另一个方向——只读分区。
+Virtual A/B OTA 合并期间还可能插入 `dm-user`/`snapuserd` snapshot 层。AOSP 从 Android 13 起完整支持 EROFS 与 Virtual A/B，并能在生成增量 OTA 时理解 LZ4 数据流。EROFS 镜像压缩和 Virtual A/B snapshot 压缩属于不同层次：前者缩小只读文件系统镜像，后者缩小更新时暂存的 COW 数据。
 
-## EROFS：为只读分区设计的极致压缩
+## 文件系统如何影响随机 I/O
 
-### 从 ext4 到 EROFS 的切换
+下表比较的是机制与风险点，不是脱离设备和负载的性能排名：
 
-在 6.1 节中我们讨论过，`system`、`vendor` 等分区是只读的，受 dm-verity 保护。既然只读，使用 ext4 这种读写文件系统就存在开销浪费——日志系统、块分配器、空闲空间管理等模块在只读场景下全部多余。
+| 场景 | ext4 | F2FS | EROFS |
+|---|---|---|---|
+| 缓冲随机读 | Page Cache + extent 映射 | Page Cache + node/NAT 映射 | Page Cache + 压缩索引与解压 |
+| 随机写 | delayed allocation、extent 分配、journal | OPU/IPU、LFS/SSR、node 更新 | 不支持 |
+| 同步提交 | 数据写回 + journal/fast commit + 必要 flush | 数据写回 + roll-forward node 或 checkpoint + 必要 flush | 不支持写入 |
+| 空间回收 | 空闲 extent 管理、discard | segment GC、SSR、discard | 构建期生成镜像 |
+| 主要尾延迟来源 | journal 竞争、块分配、flush、器件延迟 | GC/checkpoint、flush、器件延迟 | cache miss、压缩块读取与解压、verity、器件延迟 |
 
-EROFS（Enhanced Read-Only File System）就是为解决这个问题而生的。它由华为工程师高翔（Xiang Gao）开发，2019 年合并入 Linux 5.4 主线。华为在 EMUI 9.0.1 中首次大规模部署 EROFS，随后 Samsung、OPPO、小米等厂商也陆续跟进。Android 13 之后，AOSP 已经给出完整的 EROFS BoardConfig / fstab 配置，Virtual A/B 也正式支持 EROFS。这里需要收窄表述：官方要求的是设备侧具备 EROFS 支持，GMS/VTS 生态把它推成了只读分区的主流方案；这不等于“所有只读分区都被 CDD 强制格式化成 EROFS”。[已验证: 官方文档, source.android.com/docs/core/architecture/kernel/erofs and kernel.org]
+随机写成本来自多个层次。文件系统决定逻辑块如何分配，块层决定请求如何提交，FTL 决定 NAND 页如何搬移与回收。F2FS 尝试向 FTL 提供更有规律的写入并分离冷热数据，但双层日志式管理也可能叠加写放大。哪种文件系统更快，需要在同机型、同镜像、同挂载参数和同工作集下测量 P50/P95/P99 延迟。
 
-### EROFS 的核心优势
+## `fsync()` 与 `fdatasync()`：差别在持久化范围
 
-**压缩与去重**：EROFS 最大的价值在于它对存储空间的高效利用。Android 13-15 的常见只读分区以 LZ4 为主（默认压缩），内核可选启用 LZMA 或 DEFLATE。ZSTD 压缩在 upstream Linux 6.10+ 出现（`CONFIG_EROFS_FS_ZIP_ZSTD`），但 android15-6.6 ACK 不含 ZSTD 支持；Android 设备上 ZSTD 需要 ACK/厂商 backport 并启用 `CONFIG_EROFS_FS_ZIP_ZSTD`。EROFS 还具有字节粒度的去重（deduplication）能力。实测数据显示，EROFS 压缩后的 system 分区镜像比未压缩的 ext4 镜像小 30%-45%，相当于为 128GB 的设备节省了 800MB 到 2GB 的空间——这些空间可以分配给 `data` 分区供用户使用。
+POSIX 语义可以简化为：
 
+- `fsync(fd)`：同步文件数据，以及恢复该文件状态所需的元数据。
+- `fdatasync(fd)`：可以跳过不影响后续数据读取的元数据，例如仅修改时间戳；文件大小变化仍需持久化。
 
-**随机读性能提升**：EROFS 的压缩不仅节省空间，还能提升读性能——因为压缩后需要从存储读取的数据量更小。对于随机读场景（如 App 启动时加载大量小文件），EROFS 相比 ext4 有约 20% 的性能提升，某些场景下可达 300%。在 Pixel 设备上，EROFS 压缩带来了 10%-15% 的启动时间改善。
+`fdatasync()` 不保证“固定少一次元数据写”，两者最终走到哪些写回和 flush，取决于文件修改类型与文件系统实现。Android 17 的 F2FS 甚至会在 `fdatasync()` 路径设置 `FI_NEED_IPU`，所以 syscall 名称不足以估算成本。
 
-**无日志开销**：作为只读文件系统，EROFS 不需要日志系统。没有 jbd2 的 commit 开销，没有 metadata 的同步写入，mount 速度也更快。这使得设备启动时 `system` 分区的挂载时间更短。
+SQLite 在 rollback journal、WAL 和不同 `synchronous` 配置下会安排不同的同步操作。要求断电恢复的安全配置需要保留相应同步保证；修改 pragma 换性能前，需要先定义允许丢失多少数据、是否允许数据库损坏。业务层最稳妥的优化通常是减少事务数量和主线程等待，而非关闭同步保证。
 
-**安全增强**：只读属性本身就是一种安全机制——`system` 分区上的文件无法被运行时修改，配合 dm-verity 的完整性校验，构成了双重保护。
+### App 侧能做的事
 
+1. **批量提交数据库修改**：把同一业务动作的多条写入放在一个明确事务中，避免循环内反复提交。Room 可以用 `@Transaction` 或批量 DAO 方法表达边界。
+2. **谨慎选择 WAL**：WAL 通常改善读写并发，但仍有 WAL sync、checkpoint 和文件增长成本。用目标 workload 验证，别把它当作免同步开关。
+3. **避免主线程等待持久化**：文件写、数据库事务和 `SharedPreferences.commit()` 不应占用 UI 关键路径。
+4. **理解 `SharedPreferences.apply()` 的限制**：它会立即更新进程内视图并异步写磁盘；连续 `apply()` 仍产生磁盘工作，生命周期切换可能等待排队任务。
+5. **合并小文件更新**：频繁创建、rename、删除小文件会增加目录与 inode 元数据修改。可在保持崩溃一致性的前提下合并更新频率。
 
-### dm-verity 与 EROFS 的协同工作机制
+### 如何定位
 
-在第 6.1 节中我们提到 dm-verity，但未深入展开它与 EROFS 的协作机制。两者是**互补关系**，而非耦合关系：
+下面的命令用于确认目标挂载点的文件系统与关键挂载参数：
 
-**dm-verity 的职责**（完整性校验）：
-- 在运行时**按需逐块**验证 system/vendor 分区的数据完整性（每个 4KB block 的 SHA256 hash）
-- 信任锚点是 build 阶段由 OEM 私钥签名的 root hash，存储在 vbmeta 分区
-- dm-verity 要求保护分区必须是**只读**的——EROFS 天生只读，两者的要求天然匹配
-
-**EROFS 的职责**（高效只读存储）：
-- 提供压缩的只读文件系统（LZ4 默认压缩，镜像减小 30-45%）
-- 本身不提供完整性校验，需要 dm-verity 在下层叠加完整性保护
-- 设计为与 dm-verity 协同工作（Android build system 中 EROFS 分区配置 `ro + verify` flag）
-
-**Build 阶段协作**：
-`avbtool add_hashtree_footer`（`external/avb/avbtool.py`）生成 EROFS 镜像的哈希树：
-1. 对每个 4KB data block 计算 SHA256 hash（leaf）
-2. 递归聚合形成 Merkle tree，最终得到 root hash
-3. root hash + salt + hash tree offset 存入 vbmeta struct
-4. vbmeta struct 由 OEM 私钥签名，嵌入 vbmeta partition
-
-**Boot 阶段协作**：
-1. Bootloader 读取 vbmeta partition，用内置 OEM 公钥验证签名
-2. 从 vbmeta 提取 system 分区的 root hash，传递给 kernel
-3. kernel dm-verity 模块挂载 EROFS 时重建 hash tree，逐块验证
-4. 每读一块数据 → 计算 SHA256(data + salt) → 查 hash tree → 验证到 root
-5. 验证通过 → 数据返回给 EROFS 文件系统层；验证失败 → I/O error
-
-**dm-verity 保护下的 EROFS 挂载栈**（以 Dynamic Partition 为例）：
-```
-物理 super partition
-  → dm-linear（映射 dynamic partition 边界）
-    → dm-verity（哈希校验层）
-      → EROFS 文件系统
-        → /system 挂载点
+```bash
+adb shell cat /proc/mounts
+adb shell stat -f -c '%T %s' /data
+adb shell getconf PAGE_SIZE
 ```
 
-**性能数据**（来源：android.com 官方文档）：
-- 顺序读取：dm-verity 额外开销约 5-15%（SHA256 计算）
-- 缓存读取：几乎无额外开销（hash 结果被内核页缓存）
-- 内存开销：10GB 分区约需 81MB hash storage（约 0.8% overhead）
-- EROFS 压缩带来 10-15% 启动时间改善（间接减少 dm-verity 校验的绝对数据量）
+第一条显示实际 mount options，第二条显示 `/data` 的文件系统类型和基本块大小，第三条确认运行内核的页大小。`stat` 的基本块大小不能代替对 F2FS on-disk feature 的完整检查。
 
-**为什么 EROFS 是 dm-verity 的「理想搭档」**：
-1. EROFS 只读设计满足 dm-verity 对保护分区的只读要求，无需额外 flag 检查
-2. EROFS 的 in-place decompression（LZ4 在同一 page 内解压）减少了 dm-verity 按需校验时的内存分配开销
-3. EROFS 压缩使相同数据量的 dm-verity 校验绝对字节数减少 30-45%
-4. Android 13 之后 EROFS 在 launch device 上快速普及，使 dm-verity 保护的系统分区更小、更快
+Perfetto/ftrace 中可以按设备开放情况观察：
 
-**Perfetto 中的可观测性**：
-dm-verity 的 block-level 验证目前没有独立的 Trace slice。在 Perfetto 中，它通常只会折叠进底层 storage I/O 延迟里。更可操作的观察路径，是先看 block layer 的 `block_rq_issue` / `block_rq_complete`，再按设备内核是否开放对应事件，补看 mmc / UFS host controller tracepoint；如果内核还打开了 dm 或 dm-verity 相关 ftrace 事件，再把映射层时延一起对照。公开默认配置里通常看不到一个单独名为 dm-verity 的轨道，因此很难把“读数据”和“验 hash”完全拆开。dm-verity hash prefetch 机制（`DM_VERITY_HASH_PREFETCH_MIN_SIZE`，默认 128 blocks）会进一步把一部分验证开销藏在预取里。
+- `ext4_sync_file_enter` / `ext4_sync_file_exit`
+- `f2fs_sync_file_enter` / `f2fs_sync_file_exit`
+- F2FS GC 与 checkpoint 事件
+- `block_rq_issue` / `block_rq_complete`
+- UFS host controller、device-mapper 和 writeback 事件
 
-### EROFS 与 OTA 升级
+先用 sync_file 的 enter/exit 确认文件系统层等待，再看时间是否消耗在 writeback、journal/checkpoint、GC、块队列或设备完成阶段。不要用统一的 10 ms 阈值判定所有设备；应与同机型正常场景的分位数比较。
 
-EROFS 完全支持 Android 13+ 的 Virtual A/B OTA 升级机制。OTA 包生成工具能够智能地解压 LZ4 流来生成增量包（delta），因此 EROFS 分区的 OTA 包大小与 ext4 分区相比几乎没有差异，切换到 EROFS 不会增加用户的 OTA 下载量和升级时间。[已验证: 官方文档, source.android.com/docs/core/ota]
+## 厂商选型：以设备事实为准
 
-### [图：ext4 vs EROFS system 分区布局对比]
+Android 没有规定所有厂商的 `/data` 必须使用 F2FS，也没有规定所有只读动态分区必须使用 EROFS。AOSP 和 GKI 提供能力，产品还要结合：
 
-EROFS 在 Android 上的布局通常是：
-- `system` 分区：EROFS + LZ4 压缩
-- `vendor` 分区：EROFS + LZ4 压缩（或 ext4，取决于厂商配置）
-- `product` 分区：EROFS 或 ext4
-- `data` 分区：f2fs（需要读写，不能用 EROFS）
+- launch/upgrade 路径与 Virtual A/B 方案；
+- UFS 特性、容量与 FTL 行为；
+- 4 KB/16 KB kernel 选择；
+- FBE、metadata encryption、quota 和 casefold 需求；
+- 故障恢复、量产工具和售后升级成本；
+- 厂商内核回移植与测试覆盖。
 
-## 文件系统对随机读写性能的影响
+同一品牌的不同 SoC、地区版本和代际也可能不同。文章或发布会信息只能当作线索，现场问题应以 `/proc/mounts`、fstab、superblock 与 build config 为准。
 
-### 为什么随机写是瓶颈？
+## 碎片化与长期性能变化
 
-在分析存储性能时，我们通常关注顺序读写和随机读写两大类指标。对于 Android 设备来说，**随机写性能几乎总是最薄弱的环节**。
+ext4 和 F2FS 都会出现布局不连续，只是形成方式和维护机制不同。
 
-原因有两层。第一层在闪存硬件层面——NAND 闪存的写入粒度是 page（通常 4KB 或 8KB），但擦除粒度是 block（通常包含 128-512 个 page）。即使只修改一个 page，也需要读取整个 block → 在内存中修改 → 擦除 block → 写回整个 block。随机写入导致大量 block 被部分修改，产生大量的"读-改-写"操作。
+ext4 的空闲空间可能随着文件创建、扩展、截断和删除而分散。extent 与 delayed allocation 能缓解碎片，但无法保证长期使用后所有文件仍连续。闪存没有机械寻道，碎片仍可能增加 bio 数量、削弱 readahead 和请求合并。
 
-第二层在文件系统层面。ext4 的就地更新策略使得每次随机写入都可能触发上述的"读-改-写"循环。f2fs 的 CoW 策略通过把修改写到新位置来避免这个问题，但代价是需要维护复杂的映射表和定期执行 GC。
+F2FS 的更新会产生旧无效块，GC 再搬移 victim 中的有效块。冷热数据混放、空闲 section 少或后台 GC 缺少运行窗口时，需要搬移的有效数据增多，前台分配更容易等待。F2FS 也可能出现文件逻辑块映射到分散物理地址的情况，因此“F2FS 没有文件碎片”不成立。
 
-### 不同文件系统的随机 I/O 特性
+保持空闲空间通常有利于文件系统和 FTL 回收，但不存在跨设备统一适用的“至少 10%”安全线。系统开发者应结合 `/sys/fs/f2fs/<dev>/` 统计、GC trace、块层延迟和产品容量策略建立阈值；普通 App 不应依赖 root 工具定期对用户设备强制 defrag。
 
-| 操作 | ext4 | f2fs | EROFS |
-|------|------|------|-------|
-| 顺序读 | 优秀（Page Cache 加速） | 优秀 | 优秀（压缩减小读取量） |
-| 随机读 | 良好 | 良好 | 优秀（紧凑布局+压缩） |
-| 顺序写 | 良好 | 优秀（追加写） | N/A（只读） |
-| 随机写 | 较差（就地更新+写放大） | 良好（CoW转换为追加写） | N/A（只读） |
-| fsync | 较差（日志+延迟分配连锁） | 良好（逻辑日志+无延迟分配） | N/A（只读） |
+恢复出厂设置会重建或清空用户数据，短期内改变空间与布局状态。它无法修复持续制造高频小写、无边界缓存或过多事务提交的业务模式。
 
+## 版本脉络：保留能力边界，不推导统一选型
 
-这个对比清楚地解释了为什么 Android 的 `data` 分区从 ext4 切换到 f2fs——f2fs 在手机最敏感的两个维度（随机写和 fsync）上都有明显优势。
+| 版本阶段 | 可确认的变化 |
+|---|---|
+| 早期 Android | 设备曾使用 YAFFS2、ext4 等多种格式；“Android 从诞生起所有分区都用 ext4”不成立。 |
+| Android 8–12 | F2FS 原子写 ioctl 与 SQLite 适配进入 Android 设备软件栈；是否使用仍需运行时探测与事务条件满足。 |
+| Android 10–12 | F2FS、ext4 继续用于可写分区；动态分区与 Virtual A/B 改变系统镜像的映射和更新方式。 |
+| Android 13 | AOSP 文档明确 EROFS 完整支持 Virtual A/B，EROFS 成为只读分区的产品选项。 |
+| Android 15 | AOSP 支持 16 KB page size；文件系统格式、kernel page size 与 native ELF 对齐需要分别检查。 |
+| Android 16 | AOSP 增加预编译 ELF 最大页大小检查等迁移工具，16 KB 兼容要求继续收紧。 |
+| Android 17 | 平台锚点为 API 37 / `android-17.0.0_r1`；6.18 arm64 GKI 同时启用 ext4、F2FS、EROFS，并启用 EROFS ZSTD 解压能力。 |
 
-## fsync 与 fdatasync：同步写入的两种策略
+这条时间线描述 AOSP 能力，不代表每台上市设备在相同版本都采用相同格式。版本分析还要结合设备是 launch 还是 upgrade，以及 vendor kernel 和产品配置。
 
-### 两者的区别
+## 常见误区
 
-`fsync()` 和 `fdatasync()` 是 POSIX 定义的两个同步写入接口，它们的行为有细微但重要的区别：
+### “F2FS 一定比 ext4 快”
 
-- `fsync(fd)`：确保 fd 对应文件的所有修改（包括数据和元数据）都写入磁盘。元数据包括文件大小、修改时间、权限等。
-- `fdatasync(fd)`：只确保文件数据写入磁盘，不保证元数据（除非元数据的变化会影响后续的数据读取，比如文件大小变化）。
+F2FS 对闪存随机更新做了有针对性的设计，空间紧张时又可能付出 GC 和 checkpoint 成本。ext4 的 journal 可能抬高同步提交延迟，fast commit、工作集和设备 flush 行为也会改变结果。文件系统名只能帮助建立假设，结论来自同条件测量。
 
-`fdatasync()` 比 `fsync()` 少了一次元数据的磁盘写入，理论上更快。但实际在 Android 上，绝大多数 I/O 库（包括 SQLite）使用的都是 `fsync()`，因为数据完整性是第一优先级——在手机可能随时异常掉电的场景下，保证数据的完全一致性比节省几毫秒更重要。
+### “EROFS 自带 dm-verity”
 
-### fsync 优化策略
+EROFS 提供只读文件系统语义和压缩访问；dm-verity 是独立的 device-mapper 完整性层。Android 常把两者叠加使用，EROFS 镜像也可以在没有 dm-verity 的其他 Linux 场景挂载。
 
-在 App 层面，减少 `fsync` 的影响有几种策略：
+### “`apply()` 已经消除了 SharedPreferences I/O”
 
-**SharedPreferences 的 apply() vs commit()**：这是最简单也最常见的优化。`commit()` 同步写入并等待 `fsync` 完成，会阻塞调用线程；`apply()` 异步写入，立即返回，`fsync` 在后台线程执行。对于不需要立即确认写入结果的场景，应该始终使用 `apply()`。
+`apply()` 把磁盘阶段移出当前调用点，写入仍会发生。Android API 文档明确提醒，排队写入可能在组件生命周期切换时引发 ANR。高频配置更新应先合并和限频。
 
-**SQLite 事务批处理**：不要在循环中逐条执行 `INSERT`/`UPDATE` 并自动提交（每次提交都触发 `fsync`），而是用 `BEGIN TRANSACTION` ... `COMMIT` 把多条语句包在一个事务里——这样只在 `COMMIT` 时触发一次 `fsync`。
+### “`fsync()` 慢就换文件系统”
 
-**WAL 模式**：SQLite 的 WAL（Write-Ahead Log）模式相比默认的 rollback journal 模式，在读写并发场景下性能更好。WAL 模式允许读操作和写操作并发进行（读操作访问旧的数据库内容，写操作追加到 WAL 文件），减少了锁竞争。
+App 无法在运行时把 `/data` 从 ext4 切换为 F2FS；这需要设备级格式化、升级和数据迁移设计。发现慢同步后，应先确认调用者、事务边界、文件系统内部等待和设备 I/O，再决定 App、framework、kernel 或产品分区层的修改。
 
-**Room 的增量写入**：如果使用 Jetpack Room，可以利用 `@Transaction` 注解和批量操作 API 来减少隐式 `fsync` 的调用次数。
+## 参考资料与源码锚点
 
-在 Perfetto 中观察 `fsync` 行为时，可以通过 `ftrace` 事件跟踪 `ext4_sync_file_enter`/`ext4_sync_file_exit`、`f2fs_sync_file_enter`/`f2fs_sync_file_exit` 等 tracepoint，直接看到每次 `fsync` 的耗时。注意区分 `*_sync_file`（per-file fsync）和 `*_sync_fs`（superblock sync），前者才对应应用层调用的 `fsync()`。还可以结合 `block_rq_issue`/`block_rq_complete` 观察底层块设备 I/O 完成情况。如果发现主线程上频繁出现超过 10ms 的 `fsync`，就需要排查是否是不必要的同步写入或者文件系统层面的瓶颈。
+### Android 17 / kernel 6.18 源码
 
-## 扩展：各厂商的文件系统选型
-
-Android 设备上的文件系统选型并非完全统一，各厂商有不同的策略：
-
-**Google Pixel**：从 Pixel 3 开始，`data` 分区使用 f2fs。Google 在 AOSP 中积极推动 EROFS 的标准化，近几代 Pixel 机型的只读分区也广泛采用 EROFS。
-
-**Samsung**：f2fs 的创始者，`data` 分区长期使用 f2fs。Samsung 也是 EROFS 的早期采用者之一。
-
-**OPPO/一加**：OPPO 内核团队对 f2fs 有深度的优化经验，发表过多篇 f2fs 相关的技术文章。`data` 分区使用 f2fs，`system` 分区在较新机型上切换到 EROFS。
-
-**小米**：跟进 Google 的 AOSP 标准，新机型上 `system` 使用 EROFS，`data` 使用 f2fs。
-
-
-开发者可以通过 `adb shell mount` 或 `adb shell cat /proc/mounts` 命令查看设备上各分区实际使用的文件系统类型。在 Perfetto trace 中，如果 I/O 延迟异常，先确认 `data` 分区的文件系统类型——如果是 ext4，很多 fsync 相关的性能问题在 f2fs 上可能不存在。
-
-## 扩展：文件系统碎片化与长期性能退化
-
-我们在 6.1 节中讨论过写入放大，现在从文件系统层面再深入看一下碎片化导致的性能退化。
-
-ext4 的碎片化问题尤为突出。随着使用时间增长，频繁的创建-删除-修改操作使得 ext4 的空闲空间变得越来越零散。新写入的文件只能分散在不连续的物理块中，导致读取时需要多次寻道——虽然对 SSD 来说没有物理寻道的开销，但分散的块意味着更多的 I/O 请求和更低的预读效率。
-
-f2fs 的碎片化问题表现形式不同。f2fs 的 CoW 机制本身不会产生传统意义上的文件碎片（因为写入总是追加到新位置），但 CoW 会产生大量的"无效 segment"——被旧版本数据占据但已经不再被引用的 segment。当无效 segment 积累到一定程度，f2fs 必须执行 GC 来回收空间。GC 的效率取决于冷热分离的效果——如果冷热数据混合在一起，GC 需要搬运大量仍然有效的冷数据，增加了写放大。
-
-性能退化的直接表现，通常是同一台设备在存储空间充足时随机写延迟较低，空间逼近上限、GC 和磨损控制变重之后，尾延迟会明显拉长。这里不要把 0.1ms、1ms、5ms 这类数字当成通用基线；它们强依赖 UFS 代际、容量、挂载参数、温度和 workload。更稳的做法，是对比同机型、同测试条件下的基线与尾延迟分布。
-
-缓解碎片化的方法包括：保持足够的可用空间（至少 10%-15%）、避免频繁的小文件创建删除、使用 f2fs 的 `f2fs_io` 工具定期触发碎片整理（需要 root 权限）、以及在 App 层面做好数据缓存策略，减少不必要的磁盘写入。
-
-## 版本演进：三个文件系统在 Android 中的变迁
-
-我们在前面分别讲了 ext4、f2fs 和 EROFS 的设计思想和性能特征，现在把它们放到 Android 的版本时间线上，看看 Google 和厂商是如何一步步推动文件系统演进的。理解这条时间线，有助于我们在分析 Trace 时快速判断"这台设备用的是哪个时代的文件系统配置"，从而缩小问题排查的范围。
-
-### ext4：从起点到逐步退守
-
-Android 自诞生以来就使用 ext4 作为所有分区的默认文件系统。在 Android 4.x 到 7.x 的时代，`system`、`data`、`cache` 等分区清一色都是 ext4。这个选择不难理解——ext4 是 Linux 生态中最成熟稳定的文件系统，社区支持完善，出问题的概率最低。
-
-但正如我们前面分析的，ext4 在闪存设备的随机写和 fsync 场景下暴露了越来越明显的性能问题。随着 App 功能越来越复杂、数据库操作越来越频繁，主线程因 fsync 阻塞导致的卡顿成了用户投诉的重灾区。Google 从 Android 8.0 开始，在 AOSP 推荐配置中将 `data` 分区转向 f2fs，ext4 逐步退守到 `metadata`、`cache` 等小分区以及部分厂商的定制场景。到 Android 13 之后，ext4 在主流设备上的可见范围已经很小了——`system` 让位给 EROFS，`data` 让位给 f2fs，ext4 主要留在一些对小分区可靠性要求极高的场景中。
-
-### f2fs：从 Samsung 自研到行业标配
-
-f2fs 的演进路径比较独特，项目起点来自 Samsung 的 Jaegeuk Kim：2012 年启动开发，2013 年合并入 Linux 3.8 主线。Samsung 自然是最早的采用者，在 Galaxy S 系列的 `data` 分区上率先部署 f2fs。
-
-其他厂商的跟进速度不一。OPPO 在 2016 年前后开始在部分机型上使用 f2fs，并组建了专门的内核团队做深度优化。一加在较新机型上全面采用。小米的跟进稍晚，但在 2019 年后的机型上 `data` 分区基本都用了 f2fs。
-
-Google 自己的 Pixel 系列从 Pixel 3（2018 年）开始在 `data` 分区使用 f2fs。从 Android 10 开始，AOSP 的推荐配置明确建议 `data` 分区使用 f2fs。一个关键的里程碑是 Android 8.1——这一版本引入了对 SQLite batch atomic write 的支持（编译选项 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE`）。当 SQLite 检测到文件系统和内核能力都满足条件时，可以用原子写接口替代传统的 journal + 多次同步流程；收益主要体现在减少额外写放大和同步等待，具体幅度要看 workload。
-
-Android 15 把 16KB 页面大小（Page Size）带进正式适配范围，f2fs 的格式限制也随之变严格。内核头文件 `include/linux/f2fs_fs.h` 直接把 `F2FS_BLKSIZE` 定义为 `PAGE_SIZE`，也就是块大小必须和页大小一致。结果是：4KB 时代创建的 4KB f2fs 镜像，不能直接搬到 16KB kernel 上继续挂载为 `/data`；设备切到 16KB 方案时，通常要重建文件系统并完成数据迁移。这一项是格式兼容约束，不是普通的 GC 调优。
-
-### EROFS：从华为自研到事实标准
-
-EROFS 的演进是 Android 文件系统历史上推进最快的案例之一。
-
-华为工程师高翔在 2018 年开始开发 EROFS，2019 年合并入 Linux 5.4 主线。同年华为在 EMUI 9.0.1（基于 Android 9）中首次大规模部署——当时华为的 P30 系列是首批使用 EROFS 的消费级设备。实测数据显示，EROFS 压缩后的 system 镜像比 ext4 小约 30%，随机读性能提升约 20%，App 启动速度改善 10%-15%。
-
-Samsung、OPPO、小米等厂商在 2020-2021 年间陆续跟进，在各自的高端机型上启用 EROFS。但由于缺乏统一标准，各厂商的实现细节（压缩算法选择、分区布局）存在差异。
-
-转折点在 Android 13。AOSP 的 EROFS 文档已经补齐 BoardConfig、fstab 和 Virtual A/B OTA 支持，GMS 设备也在这一代开始大规模把只读分区迁移到 EROFS。这里更稳的说法是：Android 13 以后，EROFS 成为只读分区的事实标准；是否所有只读分区都一刀切使用 EROFS，仍取决于设备分区方案和内核支持。
-
-到 Android 16（2025 年），EROFS 在 Android 生态中的渗透率已经非常高。新增加的改进包括对更大压缩单元的支持和去重能力的增强，进一步提升了存储空间利用率。
-
-### 时间线速览
-
-| Android 版本 | 年份 | ext4 | f2fs | EROFS |
-|---|---|---|---|---|
-| 4.0–7.x | 2011–2016 | 全分区默认 | 仅 Samsung 部分机型 | 未使用 |
-| 8.0 | 2017 | 全分区默认 | Samsung/OPPO 部分机型 | 未使用 |
-| 8.1 | 2017 | data 仍为 ext4 | 引入 SQLite batch atomic write | 未使用 |
-| 9 | 2018 | data 仍为 ext4 | Pixel 3 开始使用 f2fs | 华为 EMUI 9.0.1 首次部署 |
-| 10 | 2019 | 退守小分区 | AOSP 推荐配置 | 多厂商跟进 |
-| 11–12 | 2020–2021 | 小分区 | 主流设备普及 | 高端机型采用 |
-| 13 | 2022 | 小分区 | data 分区标配 | 只读分区大规模转向 EROFS |
-| 14 | 2023 | 小分区 | data 分区标配 | 全面普及 |
-| 15 | 2024 | 小分区 | 适配 16KB Page Size，4KB `/data` 不能原样迁移 | 全面普及 |
-| 16 | 2025 | 小分区 | 持续优化 | 持续优化 |
-
-
-## 常见问题与误区
-
-在分析存储相关的性能问题时，我们经常会遇到一些根深蒂固的误解。这些误解不仅会浪费排查时间，还可能导致错误的优化方向。我们梳理了几个最常见的误区。
-
-### "f2fs 一定比 ext4 快"
-
-这是最常见也最危险的误解之一。f2fs 在随机写和 fsync 场景下通常比 ext4 有明显优势，但这不意味着它在所有场景下都更快。
-
-顺序读写方面，在 Page Cache 命中率高的情况下，ext4 和 f2fs 的性能几乎没有差异——因为数据根本不经过文件系统的写入路径。f2fs 的 GC 机制在存储空间紧张时会引入不可预测的延迟峰值，这种峰值在 ext4 上不会出现。在存储接近满的情况下，f2fs 的前台 GC 可能导致比 ext4 更严重的卡顿。此外，f2fs 的成熟度和边缘情况处理（如异常断电后的恢复）虽然经过多年改进已经非常可靠，但与经过二十多年打磨的 ext4 相比，在极端场景下仍然可能存在风险。
-
-所以正确的理解是：f2fs 在 Android 手机的典型 I/O 负载下（随机写密集、fsync 频繁）整体优于 ext4，但不是"全面碾压"。在分析 Trace 时，不应该因为看到 f2fs 就假设存储性能一定没问题。
-
-### "EROFS 可以用于 data 分区"
-
-EROFS 是只读文件系统——这个限制是设计层面决定的，不是通过配置可以绕过的。EROFS 没有 journal、没有块分配器、没有空闲空间管理，因为它根本不需要处理运行时的写入操作。试图把 data 分区格式化为 EROFS 是不可行的，即使强行挂载，任何写入操作都会直接失败。
-
-有些开发者会把 EROFS 的压缩能力和 App 的资源压缩混淆——EROFS 的压缩发生在构建时（系统镜像打包），运行时是解压读取。App 的资源压缩（如 WebP、compressed XML）是另一层优化，两者互不冲突，但解决的问题完全不同。
-
-### "fsync 在 f2fs 上完全没有开销"
-
-f2fs 通过逻辑日志和 CoW 机制大幅降低了 fsync 的开销，但"大幅降低"不等于"没有"。在正常情况下，f2fs 上的 fsync 通常比 ext4 快得多——只需更新少量的元数据映射。但当 f2fs 正在执行 GC（尤其是前台 GC）时，fsync 仍然可能被阻塞数十甚至数百毫秒。存储器件本身的健康状况（磨损程度、预留空间是否充足）也会影响 fsync 的实际延迟。
-
-在 Perfetto 中看到 f2fs 分区上的 fsync 延迟异常时，不要因为"用了 f2fs 就不应该有问题"而跳过存储层面的排查。正确的做法是检查 GC 活动、存储空间使用率和器件健康状态。
-
-### "手机卡一定是存储变慢了"
-
-这是从用户角度最容易产生的直觉判断，但实际情况远比这复杂。手机使用一段时间后变卡，可能的原因包括：存储碎片化和 GC 压力增大（这属于存储层面）、后台进程数量增加导致内存和 CPU 竞争、App 缓存和数据膨胀导致数据库查询变慢、系统更新引入了新的性能回退等。
-
-在 Trace 中排查"手机变卡"问题时，应该先确认瓶颈在哪里——是主线程在 I/O 上阻塞（存储问题），还是在 CPU 上跑满了计算（算法或渲染问题），还是因为内存不足导致频繁的低内存回收（内存问题）。只有当 Trace 明确显示主线程在 D 状态等待 I/O 时，才需要深入到文件系统层面分析。
-
-### "恢复出厂设置能彻底解决文件系统碎片化"
-
-恢复出厂设置会清除 data 分区的所有数据并重新格式化，短期内能消除碎片化和 GC 压力。但这只是"重置"，不是"解决"——恢复后随着使用，碎片化问题会再次累积。如果根本原因是不良的 I/O 使用模式（某个 App 频繁创建和删除大量小文件），恢复出厂设置后问题会再次出现。
-
-更有针对性的做法是：识别产生大量随机 I/O 的 App（通过 Perfetto 的 block I/O 视图），优化其数据存储策略，保持足够的可用存储空间（至少 10%-15%），以及在系统层面确保 f2fs 的后台 GC 有足够的执行窗口。
-
-## 参考资料
-
-### AOSP 源码路径
-
-- f2fs 核心实现：`kernel/common/fs/f2fs/`（内核源码树）
-- f2fs SSR / 分段分配：`kernel/common/fs/f2fs/segment.c`
-- f2fs GC：`kernel/common/fs/f2fs/gc.c`
-- f2fs ioctl 接口定义：`kernel/common/include/uapi/linux/f2fs.h`（`F2FS_IOC_START_ATOMIC_WRITE` / `COMMIT` / `ABORT`）
-- f2fs 块大小与磁盘布局结构：`kernel/common/include/linux/f2fs_fs.h`（`F2FS_BLKSIZE == PAGE_SIZE` 以及 Superblock / Checkpoint 等定义）
-- f2fs 目录匹配：`kernel/common/fs/f2fs/dir.c`（`f2fs_match_name` / casefold 路径）
-- ext4 / jbd2 实现：`kernel/common/fs/ext4/`、`kernel/common/fs/jbd2/`
-- EROFS 实现：`kernel/common/fs/erofs/`
-- fscrypt / inline encryption：`kernel/common/fs/crypto/`
-- Storage Stats 服务：`frameworks/base/services/usage/java/com/android/server/usage/StorageStatsService.java`
-- SQLite batch atomic write 适配：AOSP SQLite dist sources（搜索 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE`）
-- VFS 层：`kernel/common/fs/`、`kernel/common/include/linux/fs.h`
+- `kernel/common/fs/ext4/fsync.c`：`ext4_sync_file()`、fast commit 与 flush。
+- `kernel/common/fs/f2fs/file.c`：`f2fs_do_sync_file()`、atomic write ioctls。
+- `kernel/common/fs/f2fs/segment.h`：`__get_secs_required()`、`has_not_enough_free_secs()`。
+- `kernel/common/fs/f2fs/segment.c`：`f2fs_need_SSR()`、`f2fs_balance_fs()`。
+- `kernel/common/fs/f2fs/gc.c`：BG/FG GC 与 victim policy。
+- `kernel/common/include/linux/f2fs_fs.h`：F2FS block/page、NAT、SIT 磁盘结构。
+- `kernel/common/include/uapi/linux/f2fs.h`：F2FS ioctl ABI。
+- `kernel/common/fs/erofs/`、`kernel/common/fs/erofs/Kconfig`：EROFS 与压缩算法支持。
+- `kernel/common/arch/arm64/configs/gki_defconfig`：Android 17 arm64 GKI 文件系统配置。
+- `external/sqlite/dist/Android.bp` 与 `dist/sqlite-autoconf-*/sqlite3.c`：SQLite batch atomic write 编译选项与 F2FS 探测。
 
 ### 官方文档
 
-- Android Storage 文档：<https://source.android.com/docs/core/storage>
-- AOSP EROFS 文档：<https://source.android.com/docs/core/architecture/kernel/erofs>
-- 16 KB page size 概览：<https://source.android.com/docs/core/architecture/16kb-page-size/16kb>
-- Android Data Storage 指南：<https://developer.android.com/training/data-storage>
-- f2fs 内核文档：<https://www.kernel.org/doc/html/latest/filesystems/f2fs.html>
-- ext4 内核文档：<https://www.kernel.org/doc/html/latest/filesystems/ext4.html>
-- EROFS 内核文档：<https://www.kernel.org/doc/html/latest/filesystems/erofs.html>
-- VFS 内核文档：<https://www.kernel.org/doc/html/latest/filesystems/vfs.html>
-- SQLite 官方文档（fsync 与事务）：<https://www.sqlite.org/atomiccommit.html>
-- SQLite atomic write 特性说明：<https://www.sqlite.org/src/info/5c5e4f6f6d>
+- [AOSP EROFS](https://source.android.com/docs/core/architecture/kernel/erofs)
+- [AOSP 16 KB page size](https://source.android.com/docs/core/architecture/16kb-page-size/16kb)
+- [AOSP Virtual A/B](https://source.android.com/docs/core/ota/virtual_ab)
+- [Android SharedPreferences.Editor](https://developer.android.com/reference/android/content/SharedPreferences.Editor)
+- [Linux F2FS documentation](https://www.kernel.org/doc/html/latest/filesystems/f2fs.html)
+- [Linux ext4 documentation](https://www.kernel.org/doc/html/latest/filesystems/ext4/index.html)
+- [Linux EROFS documentation](https://www.kernel.org/doc/html/latest/filesystems/erofs.html)
+- [Linux VFS documentation](https://www.kernel.org/doc/html/latest/filesystems/vfs.html)
+- [SQLite Atomic Commit](https://www.sqlite.org/atomiccommit.html)
 
-### 深入阅读
+## 小结
 
-- LWN: f2fs 介绍与设计理念（2012）：<https://lwn.net/Articles/518988/>
-- LWN: EROFS 合并入主线（2019）：<https://lwn.net/Articles/799717/>
-- Samsung f2fs 技术分享： Jaegeuk Kim 在 Linux Storage Filesystem & Memory Management Summit 的历次演讲
-- 华为 EROFS 技术分享：高翔在 Linux Plumbers Conference 的演讲
-- Android 13 CDD 存储相关要求：<https://source.android.com/docs/compatibility/13/android-13-cdd>
-- esper.io Android 文件系统分析系列
+遇到同步写卡顿时，可以按四个问题推进：
 
+1. 谁发起了同步，事务或配置更新是否过于频繁？
+2. `/data` 使用 ext4 还是 F2FS，页大小和挂载参数是什么？
+3. 时间消耗在数据回写、journal/fast commit、F2FS node/checkpoint/GC，还是块设备 flush？
+4. 问题属于 App 调用方式、系统服务、文件系统策略，还是 UFS/FTL 尾延迟？
 
-### F2FS Adaptive Logging 机制与 I/O 调度性能
+ext4 是成熟的通用读写文件系统；F2FS 用 segment、NAT/SIT、冷热日志和 GC 适配闪存更新负载；EROFS 服务于构建期生成的只读镜像。它们的职责与代价不同。Android 17 同时保留三者的内核能力，产品配置和现场证据决定该分析哪一条路径。
 
-- 分析了 F2FS 6 种持久化日志温度分类（HOT_DATA/WARM_DATA/COLD_DATA/HOT_NODE/WARM_NODE/COLD_NODE）、active_logs 配置（2–6）、adaptive logging 策略切换（低利用率 copy-and-compaction ↔ 高利用率 threaded log）、LFS/SSR/AT_SSR 三种 segment 分配模式，以及 f2fs_balance_fs 前台 GC 触发条件。直接解释了"存储满时变卡"的内核层原因。
-- 注意：基于 Linux main/master 分支，部分特性可能未进入 Android Common Kernel 正式版本
-
-## 小结：文件系统选择对性能的影响
-
-回到我们开头提到的 `fsync` 卡顿问题。当我们看到主线程在 `fsync` 上阻塞时，分析路径应该是：
-
-1. **确认文件系统类型**：通过 `/proc/mounts` 或 Perfetto trace 信息查看 `data` 分区用的是 ext4 还是 f2fs。如果是 ext4，fsync 的放大效应是已知问题。
-
-2. **检查是否是 SQLite/SharedPreferences**：确认阻塞是否由数据库操作或配置写入引起。如果是，检查是否使用了事务批处理、是否使用了 `apply()` 替代 `commit()`。
-
-3. **观察 f2fs GC 活动**（如果使用 f2fs）：检查是否有前台 GC 阻塞了写入。如果是，可能需要清理存储空间。
-
-4. **评估文件系统切换的可行性**：对于仍然使用 ext4 的 `data` 分区，切换到 f2fs 可能带来显著的 fsync 性能提升——尤其是在 SQLite 密集使用的场景下。
-
-Android 文件系统的演进路线清晰：ext4 负责通用场景，f2fs 负责闪存设备的随机写密集场景，EROFS 负责只读分区。没有万能的文件系统，理解它们各自的设计取舍，是存储性能优化的基础。
-
-下一节（6.3）我们将深入 I/O 调度层，看看在文件系统之下、存储器件之上，Linux 内核是如何管理和调度 I/O 请求的。
+下一节（6.3）会继续向下进入块层 I/O 调度，解释文件系统生成的 bio 如何变成设备请求。
