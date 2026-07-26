@@ -5,27 +5,43 @@ section: "2.17"
 status: "finalized"
 applicable_versions: "Android 4.4 (API 19, Swappy 当前 release minSdk) - Android 17 (API 37)；Java Choreographer 自 API 16 可用"
 last_verified: "2026-07-25"
-last_verified_against: "frameworks/base、frameworks/native、external/perfetto @ android-17.0.0_r1；kernel/common @ android17-6.18-2026-06_r6；frameworks/opt/gamesdk refs/heads/android-games-sdk-games-frame-pacing-release @ f81f888fe11e；Android Frame Pacing、Vulkan present timing 与 Perfetto FrameTimeline 官方文档"
+last_verified_against: "Android 17 / API 37 / android-17.0.0_r1；android17-6.18-2026-06_r6；AGDK frame-pacing release @ f81f888fe11e；Vulkan 1.4.335；Writer rendering_pipelines S01/S08/S12"
 confidence: high
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 sources:
   - type: "aosp"
-    path: "frameworks/native/vulkan/libvulkan/driver.cpp @ android-17.0.0_r1"
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/libvulkan/driver.cpp"
   - type: "aosp"
-    path: "frameworks/native/vulkan/libvulkan/swapchain.cpp @ android-17.0.0_r1"
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp"
   - type: "aosp"
-    path: "frameworks/base/core/java/android/view/Surface.java @ android-17.0.0_r1"
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json"
   - type: "aosp"
-    path: "frameworks/native/libs/gui/BufferQueueProducer.cpp @ android-17.0.0_r1"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java"
   - type: "aosp"
-    path: "external/perfetto/src/trace_processor/metrics/sql/android/android_frame_timeline_metric.sql"
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/nativewindow/include/android/native_window.h"
   - type: "aosp"
-    path: "frameworks/opt/gamesdk/games-frame-pacing @ f81f888fe11e"
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp"
+  - type: "aosp"
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp"
+  - type: "aosp"
+    path: "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/metrics/sql/android/android_frame_timeline_metric.sql"
+  - type: "library"
+    path: "https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/f81f888fe11e9540dd580edf5993232172ed3cbe/games-frame-pacing/"
+  - type: "kernel"
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c"
+  - type: "specification"
+    path: "https://github.com/KhronosGroup/Vulkan-Docs/blob/v1.4.335/proposals/VK_EXT_present_timing.adoc"
   - type: "official"
-    path: "developer.android.com/games/sdk/frame-pacing"
+    path: "https://developer.android.com/games/sdk/frame-pacing"
   - type: "official"
-    path: "developer.android.com/games/develop/vulkan/frame-pacing-extensions"
+    path: "https://developer.android.com/games/develop/vulkan/frame-pacing-extensions"
+  - type: "material"
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/diagrams/S01_baseline_12_anchor_pipeline/source.md"
+  - type: "material"
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md"
+  - type: "material"
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S12_video_overlay_hwc_type.md"
 tags: ["rendering", "frame-pacing", "swappy", "perfetto", "vulkan"]
 related_chapters: ["2.3", "2.6", "2.13", "2.18", "16.4"]
 created_by: "task2a-knowledge-gap"
@@ -266,7 +282,7 @@ choreographer.postFrameCallback(callback);
 
 ## Android 17 的 Vulkan present timing
 
-Android 17 / API 37 新增 `VK_EXT_present_timing` 平台支持。它允许自研 Vulkan pacing 查询 swapchain 支持的时间域、为 present 请求指定目标时间，并读取 `QUEUE_OPERATIONS_END`、`REQUEST_DEQUEUED`、`IMAGE_FIRST_PIXEL_OUT`、`IMAGE_FIRST_PIXEL_VISIBLE` 等 present stage 的反馈。Android 17 的 `swapchain.cpp` 分别用 render-complete、composition-latch 和 actual-present timestamp 填充这些阶段。该扩展与较早的 `VK_GOOGLE_display_timing` 解决相近问题，但接口更标准，反馈阶段也更细。
+Android 17 / API 37 新增 `VK_EXT_present_timing` 平台支持。它允许自研 Vulkan pacing 查询 swapchain 支持的时间域、为 present 请求指定目标时间，并读取 `QUEUE_OPERATIONS_END`、`REQUEST_DEQUEUED`、`IMAGE_FIRST_PIXEL_OUT`、`IMAGE_FIRST_PIXEL_VISIBLE` 等 present stage 的反馈。Android 17 的 `swapchain.cpp` 把前两项分别映射到 render-complete 与 composition-latch timestamp；后两项目前都映射到同一个 actual-present timestamp，不能用两者之差估算 scan-out 时长。该扩展与较早的 `VK_GOOGLE_display_timing` 解决相近问题，但接口更标准，反馈阶段也更细。
 
 AOSP 的 `VP_ANDROID_17_requirements.json` 把 `VK_EXT_present_timing`、`VK_KHR_present_id2` 和 `VK_KHR_present_wait2` 列在 Android 17 profile 的 `MUST` 集合中。这个 profile 约束相应的 Android 17 launch / chipset 能力线，不能代替应用的运行时检查：升级设备、定制系统、驱动状态和 feature 开关都可能造成差异。
 
@@ -276,7 +292,9 @@ AOSP 的 `VP_ANDROID_17_requirements.json` 把 `VK_EXT_present_timing`、`VK_KHR
 2. `present_timing_ext` 平台 flag 已开启；
 3. ICD 支持该扩展硬依赖的 calibrated timestamps 能力。
 
-应用仍需执行 `vkEnumerateDeviceExtensionProperties()`，并通过 `VkPhysicalDevicePresentTimingFeaturesEXT`、`VkPhysicalDevicePresentId2FeaturesKHR` 等 feature 结构查询和启用所需能力。查询 past presentation timing 前，还要用 `vkSetSwapchainPresentTimingQueueSizeEXT()` 配置反馈队列。Android 上相关时间戳使用 `CLOCK_MONOTONIC`，目标时间为 0 或超过未来 1 秒时会被忽略。
+应用仍需执行 `vkEnumerateDeviceExtensionProperties()`，并通过 `VkPhysicalDevicePresentTimingFeaturesEXT`、`VkPhysicalDevicePresentId2FeaturesKHR` 等 feature 结构查询和启用所需能力。查询 past presentation timing 前，还要用 `vkSetSwapchainPresentTimingQueueSizeEXT()` 配置反馈队列。Android 17 实现只公布 absolute scheduling，不支持 relative scheduling；`vkGetSwapchainTimeDomainPropertiesEXT()` 返回 `VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT`。需要与 CPU 时钟关联时，应按规范通过 calibrated timestamp 机制转换，不能把接口时间域直接写死为 `CLOCK_MONOTONIC`。
+
+`targetTime = 0` 时，Android Vulkan WSI 不设置 requested-present timestamp。非零目标会传入 native window；`BufferQueueConsumer::acquireBuffer()` 只在目标位于合理的未来窗口时返回 `PRESENT_LATER`，若目标比本轮 `expectedPresent` 晚超过 1 秒，会按安全规则视为应当立即处理，避免异常时间戳长期占住队列。
 
 这里要特别区分平台能力和库实现。`f81f888fe11e` 的 `SwappyVk` 仍按 `VK_GOOGLE_display_timing` 是否可用，在 `SwappyVkGoogleDisplayTiming` 与 `SwappyVkFallback` 之间选择；该提交没有使用 `VK_EXT_present_timing`、`VK_KHR_present_id2` 或 `VK_KHR_present_wait2`。所以：
 
@@ -286,7 +304,7 @@ AOSP 的 `VP_ANDROID_17_requirements.json` 把 `VK_EXT_present_timing`、`VK_KHR
 
 ### Android 17 的 producer throttling 开关
 
-Android 17 / API 37 还新增了 `Surface.setProducerThrottlingEnabled()` 和对应的 `ANativeWindow_setProducerThrottlingEnabled()`。默认值为 true：producer 在 consumer 仍处理上一块 buffer 时执行 queue buffer，CPU 可能在 `eglSwapBuffers()` 或 `vkQueuePresentKHR()` 附近等待上一帧 GPU 工作完成。
+Android 17 / API 37 还新增了 `Surface.setProducerThrottlingEnabled()` 和对应的 `ANativeWindow_setProducerThrottlingEnabled()`。Java API 带 `FLAG_BQ_PRODUCER_BACKPRESSURE_CONTROL` 标记，`BufferQueueProducer` 的分支也受 `bq_producer_backpressure_control` 平台 flag 保护；若设备行为与 API 37 文档不符，要同时确认系统镜像的 flag 状态。功能启用时默认值为 true：producer 在 consumer 仍处理上一块 buffer 时执行 queue buffer，CPU 可能在 `eglSwapBuffers()` 或 `vkQueuePresentKHR()` 附近等待上一帧 GPU 工作完成。
 
 设置为 false 会关闭这处 queue-buffer CPU throttle。CPU 生产速度超过 GPU 时，队列容量仍会在后续 dequeue 或 `vkAcquireNextImageKHR()` 处形成自然反压；该 API 不会取消 BufferQueue 容量、fence 语义或应用自己的 in-flight 限制。异步模式下它没有效果，throttling 始终启用。
 
@@ -412,6 +430,8 @@ Pacing 决定每一帧落在哪个显示周期，frame-rate vote 帮助系统选
 - Android Developers：[Vulkan frame pacing extensions](https://developer.android.com/games/develop/vulkan/frame-pacing-extensions)、[`Surface` API](https://developer.android.com/reference/android/view/Surface) 与 [Choreographer API](https://developer.android.com/reference/android/view/Choreographer)
 - AGDK `f81f888fe11e`：[`SwappyGL.cpp`](https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/f81f888fe11e9540dd580edf5993232172ed3cbe/games-frame-pacing/opengl/SwappyGL.cpp)、[`SwappyCommon.cpp`](https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/f81f888fe11e9540dd580edf5993232172ed3cbe/games-frame-pacing/common/SwappyCommon.cpp)、[`ChoreographerThread.cpp`](https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/f81f888fe11e9540dd580edf5993232172ed3cbe/games-frame-pacing/common/ChoreographerThread.cpp) 与 [`SwappyVk.cpp`](https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/f81f888fe11e9540dd580edf5993232172ed3cbe/games-frame-pacing/vulkan/SwappyVk.cpp)
 - Android 17 AOSP：[`vulkan/libvulkan/driver.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/libvulkan/driver.cpp)、[`vulkan/libvulkan/swapchain.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp) 与 [`VP_ANDROID_17_requirements.json`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json)
-- Android 17 producer throttling：[`Surface.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java)、[`native_window.h`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/nativewindow/include/android/native_window.h) 与 [`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp)
+- Khronos Vulkan 1.4.335：[`VK_EXT_present_timing` proposal](https://github.com/KhronosGroup/Vulkan-Docs/blob/v1.4.335/proposals/VK_EXT_present_timing.adoc)
+- Android 17 BufferQueue / producer throttling：[`Surface.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java)、[`native_window.h`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/nativewindow/include/android/native_window.h)、[`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp) 与 [`BufferQueueConsumer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp)
 - Perfetto：[FrameTimeline 文档](https://perfetto.dev/docs/data-sources/frametimeline)、[`actual_frame_timeline_slice` schema](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/prelude/after_eof/events.sql) 与 [`android_frame_timeline_metric.sql`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/metrics/sql/android/android_frame_timeline_metric.sql)
 - Kernel `android17-6.18-2026-06_r6`：[`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c) 与 [`dma-fence.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/dma-fence.h)
+- Writer `rendering_pipelines`：`S01_baseline_12_anchor_pipeline/source.md`、`S08_native_graphics_type.md` 与 `S12_video_overlay_hwc_type.md`
