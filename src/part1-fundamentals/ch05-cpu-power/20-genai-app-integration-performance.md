@@ -31,346 +31,309 @@ rework_summary: "修复待核验标记：更正 AICore 进程段落错字，移�
 
 # 5.20 GenAI 应用集成性能边界：AICore 调度、Google Intelligence API 与资源竞争
 
-应用集成端侧 GenAI 能力时，性能开销不只来自推理本身。AICore 作为独立系统进程运行，每次推理请求都要跨进程通信；推理占用的内存归在 AICore 进程名下，App 自身的内存压力指标可能看不出异常；多个 App 同时请求推理时，NPU 时间片的分配由系统决定，调用方无法控制优先级。这些边界条件决定了 GenAI 集成方案的性能天花板。
+在 Android 17 / API 37 上讨论端侧 GenAI，先要分清“平台版本”和“模型服务版本”。Android 17 决定 App 可使用的系统 API；AICore、Gemini Nano 模型和 ML Kit GenAI 库仍可独立更新。同一台 Android 17 设备上，模型版本、支持的能力和下载状态都可能不同。因此，`SDK_INT >= 37` 不能代替运行时能力检测。
 
-本章关注 App 调用 AICore / Google Intelligence API 时的工程性能边界。模型推理本身的基础设施（NNAPI、LiteRT、TFLite 运行时选型）详见 §5.11，ADPF 会话调度与热管理详见 §5.19。
+本章标题中的 “Google Intelligence API” 是早期公开资料使用过的称谓。面向应用的当前入口是 **ML Kit GenAI APIs**：摘要、校对、改写、图片描述、语音识别等场景优先使用专用 API，自定义文本或多模态提示词使用 Prompt API。它们在 AICore 上调用 Gemini Nano。旧版 `com.google.ai.edge.aicore` 示例不能直接当作当前 ML Kit API 使用。
 
-## AICore 进程模型与 IPC 管线
+本章以 Android 17 / `android-17.0.0_r1` 为平台锚点。AICore 和 Gemini Nano 不属于该 AOSP 源码标签，涉及它们的结论以当前公开 API 契约为准；公开文档没有说明的进程名、Binder 次数、加速器选择、队列策略和 OOM 优先级，本章不作实现承诺。
 
-### AICore 不是进程内 SDK
+## 先选清楚执行架构
 
-AICore 以 Mainline 模块（Project Mainline）形式存在，运行在独立进程 `com.google.android.aicore` 中（包名以实际设备为准，部分文档和抓包结果显示该进程名可能因设备而异）。App 通过 Google AI Edge SDK 或 ML Kit GenAI APIs 发起推理请求时，请求经 Binder IPC 传递到 AICore 进程，推理完成后结果再经 Binder 返回。
+端侧生成式 AI 常见的两条路径，资源归属和可控范围差别很大：
 
-调用链路：
+| 维度 | ML Kit GenAI + AICore | App 内 LiteRT-LM |
+|---|---|---|
+| 模型 | 系统管理并供多个 App 共享的 Gemini Nano | App 选择并管理的 `.litertlm` 模型 |
+| 可用性 | 受设备、模型版本、功能配置和下载状态共同影响 | 受模型文件、ABI、运行时和所选后端支持情况影响 |
+| 硬件控制 | AICore 隐藏底层硬件接口，App 不指定具体 NPU/GPU 路径 | App 在运行时支持范围内选择 CPU、GPU 或 NPU 后端 |
+| 存储与模型生命周期 | AICore 负责模型分发和更新 | App 负责下载、校验、存储、初始化与释放 |
+| 内存观测 | App 进程指标只覆盖调用端分配，不能代表系统总开销 | 权重、KV cache、工作区等主要进入 App 的进程与驱动分配 |
+| 适合场景 | 支持设备上的标准能力、低接入成本、共享系统模型 | 自选模型、离线模型版本控制、专用后端和自定义推理流程 |
 
+两条路径都在设备上执行，但工程责任并不相同。AICore 路径应围绕“状态、配额、前台限制和端到端延迟”设计；LiteRT-LM 路径还要承担模型文件、内存峰值、后端兼容和引擎关闭等工作。
+
+## AICore 公开保证了什么
+
+官方文档对 AICore 给出的稳定边界包括：
+
+- AICore 是 Android 的系统级服务，负责运行 Gemini Nano、管理模型分发与更新，并使用设备硬件加速推理。
+- ML Kit GenAI 在 AICore 之上提供高阶接口。同一设备上的 App 可以复用系统已有的 Gemini Nano，避免每个 App 重复保存模型。
+- 提示词、推理和输出在设备本地处理。AICore 不直接访问互联网；包括模型下载在内的网络请求经 Private Compute Services 处理。
+- AICore 隔离各次请求，处理结束后不保存输入和输出记录。
+
+下图只表达公开文档能支持的层级关系，不把内部调用拆成未经公开保证的 Binder 事务或固定 HAL：
+
+```text
+App
+  └─ ML Kit GenAI API
+       └─ AICore 系统服务
+            ├─ Gemini Nano、功能配置与安全处理
+            ├─ 设备选择的硬件加速路径
+            └─ Private Compute Services（模型下载等网络请求）
 ```
-App 进程
-  → ML Kit GenAI API / Google AI Edge SDK
-    → Binder IPC（推理请求序列化）
-      → AICore 系统服务进程
-        → NNAPI HAL → NPU/GPU 执行
-      ← Binder IPC（推理结果反序列化）
-    ← 回调 / Future
-  ← 结果返回给业务代码
-```
 
-[已验证: developer.android.com/ai/aicore — AICore 作为系统服务运行，模型管理独立于 App]
+这条链路说明控制权的边界：App 能控制请求内容、调用时机和结果消费方式；AICore 负责模型、运行时和底层硬件。即使某台设备的 trace 显示了特定包名、Binder 调用或 GPU/NPU 活动，也只能把它当作该设备当时版本的观测结果。
 
-每次推理至少经历两次 Binder 事务（请求 + 响应），生成式推理的流式输出（streaming）还会产生多次回调。Binder 本身的单次开销在亚毫秒级，对大模型推理（首 token 延迟通常 200ms 以上）占比可忽略。但如果推理请求频繁（如实时翻译逐句调用），Binder 事务的序列化 / 反序列化开销和线程切换成本会累积。
+### 不要从“系统服务”推导内部细节
 
-### Private Compute Services 的角色
+旧稿中以下推论都超出了公开契约：
 
-AICore 没有直接的 internet access。模型下载和更新由 Private Compute Services（PCS）完成。这意味着模型准备阶段涉及另一个独立进程：
+- 固定 AICore 包名或进程名；
+- 每个请求固定发生两次 Binder 事务；
+- 一定经过 NNAPI HAL，或一定使用 NPU/GPU；
+- 回调一定运行在 Binder 线程池；
+- AICore 对前后台 App 使用某种确定的排队或时间片策略；
+- AICore 拥有固定 `oom_score_adj`，内存压力时一定先杀其他 App。
 
-- 首次使用 GenAI 能力时，AICore 向 PCS 发起模型下载请求
-- 模型文件可能已经缓存（系统 OTA 或其他 App 触发过下载），也可能需要现场下载
-- 模型校验、解压、优化编译在 AICore 进程中完成，CPU 和 I/O 开销归在 AICore 进程
+这些实现可能随设备厂商、AICore 模块和模型版本变化。应用代码不应依赖它们，性能报告也应写清设备、系统构建、AICore/ML Kit 版本、基础模型名和测试时的热状态。
 
-[已验证: developer.android.com/ai/aicore — "AICore 没有直接的 internet access，模型下载通过 Private Compute Services 完成"]
+## ML Kit GenAI 的准备状态机
 
-对 App 性能的影响：首次冷启动延迟不可预测。同样的推理调用，在模型已缓存的设备上 200ms 返回，在需要下载的设备上可能要等待数十秒。App 侧需要检测模型可用性（`Availability` 回调），并为未就绪状态准备 fallback。
+Prompt API 的可用性至少由设备支持、AICore 配置和模型下载状态共同决定。当前公开 API 使用四个具名状态：
 
-### Google Intelligence API 的版本映射
+- `FeatureStatus.UNAVAILABLE`：设备不支持，或设备尚未取得可用配置；
+- `FeatureStatus.DOWNLOADABLE`：支持该能力，但模型尚未下载；
+- `FeatureStatus.DOWNLOADING`：下载正在进行；
+- `FeatureStatus.AVAILABLE`：当前可以使用。
 
-Google Intelligence API 是 AICore 对外暴露的高阶接口（`com.google.ai.edge.aicore` 包）。API 层面包含：
-
-- `InferenceSession`：管理推理上下文和会话生命周期
-- `GenerativeAIException.ErrorCode`：错误码枚举，包括模型不可用、安全过滤触发、资源不足等
-- `DownloadCallback`：模型下载进度和状态回调
-
-[已验证: developer.android.com/ai/reference/kotlin/com/google/ai/edge/aicore/package-summary]
-
-API 能力随 AICore 模块版本演进，不受系统大版本严格绑定。AICore 起源于 Android 14（API 34），通过 Mainline 更新机制可以独立于系统版本迭代。App 集成时需要做运行时能力检测，不能按 `Build.VERSION.SDK_INT` 硬编码能力假设。
-
-## 推理调用与线程调度
-
-### 同步调用的主线程风险
-
-AICore 推理 API 设计为异步模式（回调或 `ListenableFuture`），但开发者的使用方式可能引入同步阻塞：
-
-- 在回调中直接执行后续逻辑，回调本身运行在 Binder 线程池而非主线程
-- 使用 `Future.get()` 同步等待结果，阻塞调用线程
-- 流式输出回调中触发 UI 更新时，如果未切回主线程，可能引入线程安全风险
-
-推理期间 App 进程的线程状态变化：发起推理的线程（通常是业务线程）在等待回调期间处于 WAITING/BLOCKED；Binder 线程池中有一个线程负责接收 AICore 返回的回调。如果 App 在回调中执行重逻辑（如 JSON 解析、数据库写入），Binder 线程会被占用，影响其他 IPC 事务的响应速度。
-
-### 推理与渲染的资源争抢
-
-GenAI 推理任务执行期间，NPU/GPU 和 CPU 都可能被占用。对前台 App 来说，最直接的影响是：
-
-- **GPU 争抢**：如果推理使用 GPU 路径（部分模型通过 GPU delegate 执行），与 RenderThread 的 GPU 命令队列竞争同一硬件队列。表现为帧时间变长、GPU frequency 被拉满但帧率下降。
-- **CPU 争抢**：推理的预处理和后处理（tokenization、tensor 转换、安全过滤）在 AICore 进程的 CPU 线程上执行，与 App 的主线程和工作线程共享 CPU 时间片。大 SoC 上影响较小，中低端 SoC 上可能导致明显卡顿。
-- **内存带宽争抢**：推理期间的高带宽内存访问（模型权重读取、中间 tensor 计算）会挤占渲染管线和 UI 布局的内存带宽，这种争抢在 Perfetto trace 里不容易直接观测到。
-
-排查推理导致的卡顿时，先在 Perfetto 中对比推理开始前后的帧时间分布、CPU frequency 和 GPU frequency 变化。如果推理期间 CPU/GPU frequency 都在高位但帧率下降，资源争抢的概率高于纯 CPU 耗尽。
-
-## 内存归属与竞争边界
-
-### AICore 推理内存不归 App 管
-
-AICore 运行在独立进程中，模型权重、推理中间 tensor、Delegate workspace 等内存开销首先记录在 AICore 进程的 PSS/RSS 下，而不是调用方 App。这意味着：
-
-- App 侧的 `Debug.getMemoryInfo()` 或 `ActivityManager.getProcessMemoryInfo()` 不会反映推理内存
-- 系统 LMK 判定基于进程级别内存压力，AICore 进程的内存增长可能触发 LMK 杀其他后台进程，而不是杀调用方 App
-- App 被 LMK 杀掉后 AICore 推理可能仍在执行，造成资源浪费
-
-[已验证: 当前公开文档未确认 AICore 内存回算机制 — developer.android.com/ai/aicore 和 Android memory 文档未描述跨进程工作归属]
-
-Android 16 引入了 `ATTRIBUTE_WORK_TO_OTHER_APPS` 属性用于标记跨进程工作归属。该属性的设计意图是让系统在做资源调度决策时能正确归因跨进程工作。AICore 是否使用该属性回算推理内存到调用方 App，当前公开文档未确认。排查内存水位时建议同时观察调用方 App 和 AICore / Private Compute Services 进程的内存变化。
-
-### 模型大小与内存占用范围
-
-端侧 GenAI 模型的内存占用主要由模型权重、KV cache / 中间 tensor、delegate workspace 和模型准备阶段的临时缓冲区共同决定。公开 AICore 文档能确认的是模型由 AICore 管理、下载和执行；但到 Android 17/API 37 的公开资料为止，Google 并没有给出可作为跨机型基线的 Gemini Nano / Gemma 端侧 RSS 表，也没有确认 AICore 会把这些 PSS/RSS 回算到调用方 App。
-
-因此，本章不把社区测试中的“1.x GB / 3-4 GB”数字写成通用结论。工程排查时应采用更保守的口径：
-
-| 观测对象 | 建议观测项 | 安全结论 |
-|---------|------------|---------|
-| 调用方 App | `Debug.getMemoryInfo()`、`ActivityManager.getProcessMemoryInfo()`、App 自定义 trace | 只能反映 App 进程自身水位，不能单独证明推理总内存 |
-| AICore 进程 | Perfetto / `dumpsys meminfo` 中的 AICore PSS/RSS、线程活跃度 | 用于判断模型加载、推理和后处理是否把系统水位推高 |
-| Private Compute Services | 模型下载/准备阶段的进程水位与 I/O 活动 | 用于解释首次使用时的冷启动和临时内存/I/O 峰值 |
-| 系统整体 | available memory、lmkd 事件、后台进程回收记录 | 用于判断 GenAI 任务是否间接触发全局内存压力 |
-
-[已验证: developer.android.com/ai/aicore — 模型由 AICore 管理且模型下载经 Private Compute Services；截至 Android 17 公开文档未给出跨设备模型 RSS 基线]
-
-这些内存不是在 App 进程中直接分配的，但系统总内存是有限的。实际风险应以目标设备的 Perfetto / meminfo / lmkd 证据为准，而不是按模型名硬编码一个固定阈值。
-
-### 与 LMK 的交互
-
-当 AICore 推理导致系统内存压力升高时，LMD（lmkd）会按 oom_adj 分数从高到低杀进程。AICore 进程的 oom_adj 通常较低（系统服务级别），不会被优先杀掉。被杀的更可能是后台 App（包括调用方 App 的后台实例）。如果调用方 App 在前台，推理期间一般安全；但如果 App 在推理过程中切到后台，被 LMK 杀掉的概率取决于系统的整体内存压力。
-
-详见 §4.4 关于 LMK 机制和 oom_adj 的分析。
-
-## ADPF Thermal 与推理降级
-
-### GenAI 推理是热源
-
-大模型推理是典型的计算密集任务，持续推理会快速拉高 SoC 温度。AICore 内部有温度监控机制，但 App 侧也需要关注热状态变化对推理性能的影响。
-
-推理导致 thermal throttling 时的典型表现：
-
-1. 首次推理正常（NPU frequency 未被限制），延迟在预期范围
-2. 持续推理 30-60 秒后，温度触发 thermal mitigation，NPU/GPU frequency 被降低
-3. 推理延迟从 200ms 上升到 500ms-1000ms，流式输出的 token rate 明显下降
-4. 温度恢复后，frequency 回升，但恢复速度取决于设备的散热能力
-
-ADPF 的角色：App 可以通过 PerformanceHintManager 的 `setPreferPowerEfficiency(true)` 告诉系统「这个会话更注重能效而非峰值性能」。系统会据此调整 CPU/NPU frequency 调度策略，可能在更低的频率稳定运行，减少热降频的概率。
-
-[已验证: PerformanceHintManager.Session.setPreferPowerEfficiency — API 35+]
-
-ADPF 会话管理和 hint 机制的详细使用方式详见 §5.19。
-
-### 降级策略设计
-
-GenAI 集成方案应该内置降级策略，不能假设推理性能恒定：
-
-- **模型降级**：准备多个量化级别的模型或多个模型版本。温度升高时切换到更小、更快的模型，牺牲精度换取响应速度。
-- **请求延迟**：非实时场景（如批量内容生成）可以降低请求频率或暂停推理，让设备冷却。
-- **功能 fallback**：当 AICore 不可用（设备不支持、模型未下载、温度过高）时，退回到规则引擎或云端推理。
-
-降级触发条件不应只看 App 自身的性能指标，还要监听系统 thermal 状态。`PowerManager.addThermalStatusListener` 可以获取当前热状态（`THERMAL_STATUS_NONE` 到 `THERMAL_STATUS_SHUTDOWN`），在 `THERMAL_STATUS_MODERATE` 以上时就应该考虑降级。
-
-[已验证: PowerManager.addThermalStatusListener — API 29+]
-
-## 多 App 推理调度
-
-### 共享 NPU 的时间片分配
-
-AICore 作为系统级服务，可能同时接收多个 App 的推理请求。NPU 硬件时间片的分配由 AICore 调度器和 NPU 驱动决定，调用方 App 无法指定优先级。这意味着：
-
-- 前台 App 的推理请求与后台 App 的推理请求在 AICore 内部可能被同等对待
-- 多个 App 交替推理时，每个 App 观察到的延迟会高于独占时的延迟
-- 如果一个 App 发起长时间流式推理，其他 App 的推理请求可能排队等待
-
-App 侧能做的有限：优先使用流式输出而非整段生成，减少单次推理的 NPU 占用时间；在非实时场景中使用 `WorkManager` 错峰调度推理任务；监听 `onTrimMemory` 回调，在系统资源紧张时主动暂停推理。
-
-### 观测多租户推理的方法
-
-Perfetto trace 中不会直接标注"AICore 正在为谁推理"。排查多 App 推理争抢问题时：
-
-1. 查看 `com.google.android.aicore` 进程的 CPU 线程活跃度，判断是否有多个推理并发执行
-2. 对比 NPU/GPU frequency 持续时间和单次推理预期耗时，间接判断是否存在排队
-3. 在 App 侧的推理调用前后打 `Trace.beginSection("aicore_inference_request")`，测量从发起到回调的实际墙钟时间
-4. 如果回调延迟方差很大（同一模型有时 200ms 有时 800ms），排队或 thermal throttling 的可能性高
-
-## Perfetto 观测要点
-
-| 观测目标 | Track / Counter | 预期表现 |
-|---------|----------------|---------|
-| 推理期间 CPU 负载 | CPU track + CPU frequency | AICore 进程线程活跃，CPU frequency 抬升 |
-| GPU 路径推理争抢 | GPU frequency + GPU work | frequency 拉高，与 RenderThread 重叠时帧时间变长 |
-| 内存压力 | RSS / memory counter | AICore 进程 RSS 上升，系统可用内存下降 |
-| Thermal 变化 | Thermal track | 持续推理后温度上升，frequency 被限制 |
-| Binder 延迟 | Binder track | 推理请求和回调的 Binder 事务耗时 |
-| 推理墙钟延迟 | App 自定义 Trace section | 从请求到回调的完整时间，方差大说明存在排队 |
-
-默认 system trace 能稳定看到线程调度、CPU/GPU frequency、内存水位和 thermal 变化。模型内部推理阶段的细节（tokenization、权重加载、NPU 执行）在 AICore 进程内部，App 侧无法通过 Perfetto 直接观测。
-
-
-
-<!-- AIW-源码调研-2026-06-23 增补 -->
-## 附录：ML Kit GenAI API 状态机与 LiteRT-LM 集成规范（2026-06-23 源码增补）
-
-本章上述内容基于 Google 官方文档对 AICore 进程模型、IPC 管线与资源争抢的概览式描述。本节补全**生产级集成代码**层面的具体 API surface 与状态机，来自 `github.com/dev-vikas-soni/android-ai-agents`、`github.com/blundell/AICoreMinSdkTemplate`、`github.com/google-ai-edge/LiteRT-LM` 三个一手开源仓库。
-
-### A.1 ML Kit GenAI API 状态机（`com.google.mlkit.genai.prompt`）
-
-`Generation` 客户端在生成内容前需走完以下状态机，**每次 agent 任务启动时** 都必须显式重走：
+下面的代码用于展示状态判断、下载和可选预热的顺序。它保留具名枚举，不使用来源不明的整数值：
 
 ```kotlin
-import com.google.mlkit.genai.prompt.Generation
-import com.google.mlkit.genai.prompt.GenerationConfig
-import com.google.mlkit.genai.prompt.ModelConfig
+private val generativeModel by lazy { Generation.getClient() }
 
-val mConfig = ModelConfig.Builder().apply {
-    preference = 1   // 1 = FAST, 0 = QUALITY
-    releaseStage = 1 // 1 = PREVIEW
-}.build()
-val client = Generation.getClient(GenerationConfig.Builder().apply {
-    modelConfig = mConfig
-}.build())
+suspend fun preparePromptModel(warmUpForInteractiveUse: Boolean): Boolean {
+    when (generativeModel.checkStatus()) {
+        FeatureStatus.AVAILABLE -> Unit
 
-val status = client.checkStatus()
-// 1 = AVAILABLE → 直接 generateContent
-// 2 = DOWNLOADABLE → client.download().collect { progress } 等待
-// 3 = DOWNLOADING → 排队等待
-// 0 = NOT_SUPPORTED → fallback（云端 / 简化模型）
-
-client.warmup()  // 显式预热，绑定服务
-val response = client.generateContent(prompt)
-response.candidates.firstOrNull()?.text
-```
-
-[一手来源: github.com/dev-vikas-soni/android-ai-agents/ai-runtime/.../RealGeminiNanoClient.kt]
-
-「Feature 636」是 Android 系统 feature flag，控制 Samsung 设备上 Gemini Nano 启用。`checkStatus()` 返回 0 时，错误信息常含 "606"/"636"，需提示用户在「设置 → 高级功能 → 高级智能」中开启。
-
-`preference=1 (FAST)` vs `0 (QUALITY)` 是 NPU 路径选择开关：**长时程 agent 推理应固定使用 FAST**，能效比与散热更优；`releaseStage=1 (PREVIEW)` 在 Gemini Nano 正式 GA 前必须保留。
-
-### A.2 AI Edge SDK 低阶 Kotlin DSL（`com.google.ai.edge.aicore`）
-
-```kotlin
-import com.google.ai.edge.aicore.GenerativeModel
-import com.google.ai.edge.aicore.generationConfig
-
-@ChecksSdkIntAtLeast(api = Build.VERSION_CODES.TIRAMISU)
-fun isSupported() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-
-val gm = GenerativeModel(
-    generationConfig = generationConfig {
-        context = application
-        temperature = 0.2f
-        topK = 16
-        maxOutputTokens = 256
-    }
-)
-```
-
-[一手来源: github.com/blundell/AICoreMinSdkTemplate/gemini/.../SecondViewModel.kt]
-
-`com.google.ai.edge.aicore` 是**无状态 model 构造**（每次 `GenerativeModel(...)` 重建实例），适合轻量级一次性调用；ML Kit GenAI 是**有状态 client**（`Generation.getClient()` 复用），适合 agent 类持续会话。
-
-### A.3 LiteRT-LM Android 集成规范（开源引擎路径）
-
-对于希望绕开 AICore、直接在 App 进程内跑 LLM 的场景，Google 开源的 `LiteRT-LM` 提供了完整的 Android 集成规范（仓库 `google-ai-edge/LiteRT-LM` 下的 `agents/skills/create-litert-lm-android-demo-app/references/inference_implementation.md`）。
-
-**A.3.1 AndroidManifest 强制声明**（防 Adreno GPU 启动 crash）：
-
-```xml
-<uses-native-library android:name="libOpenCL.so" android:required="false"/>
-```
-
-**A.3.2 Cascading Fallback 三级回退**（Google Agent Skill 明文要求）：
-
-```kotlin
-// 所有 native init 都必须在 withContext(Dispatchers.IO) 内
-withContext(Dispatchers.IO) {
-    val engine = try {
-        // Step 1: 多模态优先 GPU（或 CPU）
-        val cfg = EngineConfig(
-            modelPath = path,
-            backend = Backend.GPU(),
-            visionBackend = Backend.GPU(),
-            audioBackend = Backend.CPU()  // 音频多模态强制 CPU
-        )
-        Engine.create(cfg).also { it.initialize() }
-    } catch (e: Throwable) {
-        try {
-            // Step 2: 多模态全 CPU 回退
-            Engine.create(EngineConfig(
-                modelPath = path,
-                backend = Backend.CPU(),
-                visionBackend = Backend.CPU(),
-                audioBackend = Backend.CPU()
-            )).also { it.initialize() }
-        } catch (e: Throwable) {
-            // Step 3: 纯文本 CPU 兜底（省略 vision/audio backend）
-            Engine.create(EngineConfig(
-                modelPath = path,
-                backend = Backend.CPU()
-            )).also { it.initialize() }
+        FeatureStatus.DOWNLOADABLE -> {
+            var completed = false
+            generativeModel.download().collect { event ->
+                when (event) {
+                    DownloadStatus.DownloadCompleted -> completed = true
+                    is DownloadStatus.DownloadFailed -> throw event.e
+                    else -> Unit // DownloadStarted 或 DownloadProgress
+                }
+            }
+            if (!completed) return false
         }
+
+        FeatureStatus.DOWNLOADING,
+        FeatureStatus.UNAVAILABLE -> return false
+
+        else -> return false
     }
-    val conversation = engine.createConversation()
-    conversation.sendMessageAsync(prompt)  // sendMessageAsync 内部托管线程
+
+    if (warmUpForInteractiveUse) {
+        generativeModel.warmup()
+    }
+    return true
 }
 ```
 
-关键约定：
-- `EngineConfig` / `Backend` 是 data class，**必须用命名参数构造**，禁止 `.builder()` 模式
-- `Backend.CPU` / `Backend.GPU` 必须显式加括号 `Backend.CPU()`、`Backend.GPU()`
-- 构造后**必须显式调 `engine.initialize()`**，否则后续 `createConversation()` 失败
-- `sendMessageAsync` 是 high-level JNI 消息 API，**不需要** 外部包 `Dispatchers.IO`
+这段代码只负责“本次是否可进入推理”。`DOWNLOADING` 应映射成可理解的 UI 状态，并在下载状态变化后重新检查；`UNAVAILABLE` 应走产品预先设计的替代功能。`warmup()` 会把 Gemini Nano 加载进内存并初始化运行时组件，可改善第一次推理的延迟，也会提前产生时间、内存和能耗开销。它适合用户即将进入交互式生成场景时调用，不适合在每次任务开始前无条件重复调用。
 
-### A.4 AppFunctions：Android 16+ 的 on-device MCP 协议
+生成长响应时，流式接口能更早把内容交给 UI。它改善的是可感知的首段响应时间，不代表总计算量一定下降。消费 `Flow` 时仍需限制文本累计、Markdown 解析和 UI 刷新频率，避免每个很小的分片都触发一次完整重组或布局。
 
-AppFunctions 是 Android 16+ 引入的平台级 API + Jetpack 库，让 App 暴露自身能力为「可被 agent 调用的工具」，对应 server-side 的 Model Context Protocol（MCP）。
+### 不能只检查 `SDK_INT`
+
+当前官方支持列表会随模型和设备扩展，专用 GenAI API 与 Prompt API 的设备列表也不相同。还应注意：
+
+- 同一 API 在不同设备上可能使用不同 Gemini Nano 版本；
+- `getBaseModelName()` 可用于记录当前基础模型名；
+- 相同提示词在不同模型版本上可能得到不同输出；
+- 解锁 bootloader 的设备不支持当前 ML Kit GenAI API；
+- AICore 刚初始化、清除数据或重新安装后，配置同步可能尚未完成。
+
+因此，UI 入口是否显示、是否提示下载、是否启用功能，都应由 API 的实时状态决定。SDK 版本适合做最低平台 API 检查，不能用来猜测模型是否可用。
+
+## 前台限制与配额是硬边界
+
+ML Kit GenAI 当前只允许 **top foreground application** 执行推理。App 离开前台后，即使保留前台服务，调用仍会收到 `ErrorCode.BACKGROUND_USE_BLOCKED`。这会直接否定两类常见设计：
+
+- 不能把 AICore 推理放进 WorkManager，期待离开页面后继续完成；
+- 不能用 foreground service 规避前台限制。
+
+页面切到后台时，应停止提交新请求，取消不再需要的结果收集，并把 UI 标记为可恢复状态。恢复前台后重新检查能力和业务上下文，不要假设旧请求仍会完成。
+
+AICore 还按 App 执行推理配额：
+
+- 短时间请求过多可能返回 `ErrorCode.BUSY`；官方建议采用指数退避；
+- 长时间累计使用可能返回 `ErrorCode.PER_APP_BATTERY_USE_QUOTA_EXCEEDED`。
+
+指数退避要有最大次数和用户可见的终止状态。交互页面中无限重试会同时放大耗电、热量和排队时间。App 内也应合并重复请求，并限制并发数；这是调用方的流量控制，不应被描述成 AICore 的多租户调度规则。
+
+## 线程、取消与 UI 更新
+
+Kotlin 的 Prompt API 以挂起函数和 `Flow` 表达异步工作，Java 包装层使用 `ListenableFuture` 和显式 `Executor`。调用方应遵循所选 API 的线程契约，不要假定回调来自 Binder 线程。
+
+工程上可以按三段拆开：
+
+1. 在 App 自己的工作线程中完成图片缩放、文本整理、token 预算和业务数据读取；
+2. 通过 ML Kit 发起请求，不在主线程同步等待 Java `Future.get()`；
+3. 对流式结果做节流和增量渲染，把需要操作 View 的工作切到主线程。
+
+取消也要按产品语义设计。用户修改输入、离开页面或开始新请求时，旧结果通常已经失去价值；停止收集输出可避免继续更新 UI。但“调用端停止收集”是否立即停止设备侧计算，应以具体 API 版本的取消契约和实测为准，不能由协程取消自行推导。
+
+## 内存归属：App 指标不等于系统总成本
+
+AICore 管理共享模型，使 App 不必把 Gemini Nano 放进自己的 APK、数据目录和模型运行时预算。这个优势不表示调用方没有内存开销：
+
+- Prompt 字符串、输入图片及其缩放副本属于 App；
+- 请求构造、结果对象、流式文本累计和 UI 富文本缓存属于 App；
+- AICore 管理的模型权重、运行时与服务侧工作不在 App 的 Java/Kotlin heap 中；
+- 驱动共享缓冲区和硬件工作区的归属还会受设备实现与统计口径影响。
+
+所以，`Debug.getMemoryInfo()` 或对 App 单进程执行 `dumpsys meminfo`，只能回答“调用端增长了多少”，不能回答“这次功能给整机增加了多少内存压力”。公开文档也没有给出跨设备通用的 Gemini Nano RSS/PSS 数字。
+
+建议分层观测：
+
+| 层级 | 记录内容 | 能回答的问题 |
+|---|---|---|
+| App | Java/native/graphics 内存、输入图片大小、结果累计长度 | 调用端是否有泄漏、重复位图或无界文本缓存 |
+| 相关系统组件 | 在可观测的测试设备上记录服务进程 PSS/RSS、启动与下载阶段 | 模型准备或推理期间，服务侧水位是否明显变化 |
+| 整机 | MemAvailable、PSI、lmkd 事件、后台进程回收 | 功能是否把设备推入持续内存压力 |
+| 业务 | 请求成功率、页面重建、进程死亡与恢复 | 内存压力是否已经影响用户流程 |
+
+不要根据“系统服务”身份猜测 LMK 的回收顺序，也不要假定调用方死亡后推理一定继续。若需要分析回收原因，应把 lmkd 事件、进程状态、PSI 和请求时间线放在一起。§4.4 说明了 Android 17 的 LMK 机制，§5.18 说明了 PSS/RSS/USS 与 memtrack 的统计边界。
+
+## 渲染、CPU 与共享硬件资源
+
+AICore 隐藏具体加速器，但推理仍会消耗 CPU、内存带宽和某类硬件执行资源。App 侧还会承担预处理、结果解析与 UI 更新。因此，生成期间出现掉帧有多种可能：
+
+- 主线程对输入图片做缩放或格式转换；
+- 每个流式分片都触发 Compose 重组、Markdown 全量解析或 RecyclerView 更新；
+- App 的工作线程挤占主线程和 RenderThread 所需的 CPU 时间；
+- 服务侧工作与渲染在内存带宽、功耗或设备选定的加速器上相互影响；
+- 持续生成使设备进入更强的热限制。
+
+GPU frequency 上升不能单独证明 AICore 正在用 GPU；CPU frequency 上升也可能来自输入处理、安全处理或 UI。更可靠的方法是做成对实验：相同页面、相同输入、相同热起点，分别关闭和开启推理，多次比较帧时间、首段延迟、总延迟、CPU 调度和热状态。
+
+流式输出的 UI 更新建议按时间窗口或字符量批处理。例如每 50～100 ms 合并一次短分片，再更新可见文本。这个数值是 UI 调度策略的起点，需要用目标设备的帧时间验证，不是 AICore 的性能保证。
+
+## ADPF 能做的事很有限
+
+Android 17 的 `PerformanceHintManager.createHintSession()` 要求线程 ID 属于调用进程的线程组；`Session.setThreads()` 对不属于该 App 的线程会抛出 `SecurityException`。`setPreferPowerEfficiency(true)` 描述的也是该 hint session 内线程的调度偏好。
+
+由此可以得到一个明确边界：App 可以为自己长期存在的预处理、后处理或渲染相关工作线程建立 ADPF 会话，不能把 AICore 内部线程加入会话，也不能借此要求 AICore 的 NPU/GPU 选择某个频率。把 `setPreferPowerEfficiency(true)` 写在 `checkStatus()` 和 `generateContent()` 之间，不会自动把推理切到“能效 NPU 模式”。
+
+对短促且到达时间不固定的请求，也不要为了“用了 ADPF”临时创建线程和会话。AOSP 源码要求 hint session 面向一组相互关联、长期存在的线程；周期性工作应报告目标时间和实际工作时间。具体用法见 §5.19。
+
+## 热状态与降级
+
+Android 的 `PowerManager.addThermalStatusListener()` 能通知设备当前的整体热限制级别。该状态适合做产品降级信号，但它是粗粒度、设备相关的信号，不能换算成固定的 NPU 频率或 token/s。
+
+旧稿中“持续 30～60 秒后从 200 ms 上升到 500～1000 ms”没有跨设备依据，应改为逐机型测量以下指标：
+
+- cold start、warm start 和预热后的首段延迟；
+- prefill 时间、首 token 时间、decode token/s 和完整请求时间；
+- 连续请求中的 P50、P95、P99 及随时间的变化；
+- 请求期间的 thermal status、thermal headroom、帧时间与电量消耗；
+- `BUSY`、电量配额、后台阻止、下载失败和模型不可用的比例。
+
+降级策略可以包括缩短输入、限制最大输出、降低连续请求频率、暂停非必要生成，或切换到规则功能/云端服务。是否在 `THERMAL_STATUS_MODERATE` 就降级，应由功能的交互要求和目标设备测试决定，不应写成所有 App 共用的阈值。
+
+## 需要自选模型时：LiteRT-LM
+
+如果产品需要固定模型版本、自己管理上下文、选择后端，或目标设备不在 AICore 支持列表中，可以评估 LiteRT-LM。当前官方 Kotlin API 支持 Android，并提供 CPU、GPU 和 NPU 后端；`Engine.initialize()` 可能耗时较长，官方要求放在后台线程或协程中，同时在使用结束后关闭 `Conversation` 与 `Engine`。
+
+下面的代码用于说明资源生命周期。生产代码还要补上版本固定、模型校验、设备能力探测和可观测的错误处理：
 
 ```kotlin
-@AppFunction(isDescribedByKDoc = true)
-suspend fun createTask(
-    context: AppFunctionContext,
-    title: String,
-    dueDateTime: LocalDateTime? = null,
-    location: String? = null
-): Task
+withContext(Dispatchers.IO) {
+    val config = EngineConfig(
+        modelPath = modelPath,
+        backend = Backend.GPU(),
+        cacheDir = context.cacheDir.path,
+    )
+
+    Engine(config).use { engine ->
+        engine.initialize()
+        engine.createConversation().use { conversation ->
+            conversation.sendMessageAsync(prompt).collect { message ->
+                consumeIncrementally(message)
+            }
+        }
+    }
+}
 ```
 
-[一手来源: developer.android.com/ai/appfunctions]
+这里的 `GPU` 只是一次显式选择示例，不是所有 Android 设备的默认答案。GPU 需要清单中的相应 native library 声明；NPU 还可能需要厂商库目录。初始化失败时应记录后端、设备和模型信息，再按目标设备验证过的策略回退。旧稿给出的“GPU → 多模态 CPU → 纯文本 CPU”固定三级顺序不是 LiteRT-LM 的通用要求，也不应捕获所有 `Throwable` 后静默继续。
 
-**关键事实**：
-- AppFunctions **从 Android 16 起可用**，在 Android 17 上是 GA 能力
-- 调用方需 `EXECUTE_APP_FUNCTIONS` 权限，可由 agents / apps / Gemini 等助手持有
-- 截至 2026-05，AppFunctions ↔ Gemini 集成仍处 private preview，但 App 可开始准备注册
-- 配套有 `AppFunctions skill` 仓库，可让 agent 自动分析 App 工作流并生成 KDoc + Kotlin 代码 + ADB 调试命令
+LiteRT-LM 把更多控制权交给 App，也把模型存储、进程内内存、引擎初始化、会话并发和关闭责任交给 App。它与 AICore 是两种资源模型，不能只比较一次请求的平均延迟。
 
-**对长时程 agent 的工程含义**：AppFunctions 是 on-device MCP 协议，让 agent 能跨 App 调度多端能力，背后由 AICore 提供 NPU 推理。Sakana Marlin 这类 8h 连续推理 agent 跨多个 App 协作时，AppFunctions 是公开的协议基础。
+## AppFunctions 不负责模型推理
 
-### A.5 章节关联更新
+AppFunctions 从 Android 16 起提供 Android 平台 API 和 Jetpack 库，让 App 把自身操作注册成设备上的工具；调用者必须拥有 `EXECUTE_APP_FUNCTIONS` 权限。它与 MCP 的概念相近，解决的是“授权调用者如何发现并执行 App 能力”。
 
-本节增补的源码细节与本章其他章节的关联：
-- **§5.14**（ML Runtime 与 NPU 访问边界）：LiteRT-LM 是 AOSP NNAPI HAL 之外的 App 进程内推理路径，与 AICore 互补
-- **§5.19**（ADPF 与端侧 AI 调度）：`setPreferPowerEfficiency(true)` 应在 `checkStatus` 通过后、`generateContent` 前调用
-- **§1.4**（Binder IPC）：ML Kit GenAI 每次 `checkStatus` / `generateContent` 都是独立 Binder 事务
-- **§5.13**（移动端 LLM 推理 DVFS 与能效）：FAST 路径 (`preference=1`) 是能效优先的开关
+截至 Android 17，官方仍把 AppFunctions 标为 experimental preview；截至 2026 年 5 月，与 Gemini 的集成仍是 private preview。AppFunctions 没有承诺由 AICore 执行模型，也没有给出“支持 8 小时 agent”的运行保证。一个 agent 可以使用 AICore、云端模型或其他本地运行时来决定调用哪个工具，这与 AppFunction 本身的执行协议是两个问题。
 
-[调研报告: 2026-06-23-android17-ondevice-llm-inference-architecture.md]
+## 性能测量清单
+
+### 每个请求都记录
+
+- 设备型号、Android build fingerprint、App/ML Kit 版本；
+- `getBaseModelName()`、`checkStatus()` 结果、是否发生下载和预热；
+- 输入类型、输入 token/图片尺寸、`maxOutputTokens`；
+- 请求开始、首分片、最后分片、取消和失败时间；
+- 错误码、前后台状态、当前 thermal status；
+- 同一页面的帧时间和流式 UI 更新次数。
+
+Prompt API 当前要求输入少于 4000 token，并建议避开超过 4K token 的长输出。把 token 数写进性能记录，才能区分“模型变慢”和“请求规模变大”。
+
+### 把一次请求拆成阶段
+
+| 阶段 | 计时边界 | 常见问题 |
+|---|---|---|
+| 能力检查 | 调用 `checkStatus()` 到返回 | 配置未完成、服务连接、设备不支持 |
+| 下载 | `DownloadStarted` 到 `DownloadCompleted` | 网络、磁盘、配置与模型分发 |
+| 预热 | `warmup()` 开始到返回 | 模型装载与运行时初始化 |
+| 首段 | 发起生成到收到第一段 | 冷启动、prefill、排队、热限制 |
+| 持续生成 | 第一段到最后一段 | decode 速度、配额、热限制 |
+| UI 消费 | 收到分片到画面呈现 | 主线程、解析、重组与布局 |
+
+只记录“点击到完整文本出现”的总时间，无法判断优化应放在模型准备、请求规模还是 UI。也不要把墙钟时间直接命名为 Binder 延迟、NPU 时间或 AICore 排队时间，除非 trace 中有能支持该分解的设备级证据。
+
+### Perfetto 的正确用途
+
+App 应为状态检查、下载、预热、推理请求、首分片和结束点增加自定义 trace。Perfetto 可以帮助对齐：
+
+- App 主线程、工作线程和 RenderThread 调度；
+- 帧时间、CPU frequency、GPU counter（设备支持时）；
+- 内存计数器、PSI、lmkd 和 thermal 事件；
+- 可见的 Binder 与系统服务活动。
+
+Perfetto 中看到时间重叠只说明相关性。要证明某个资源竞争导致延迟，应配合关闭推理的对照组、重复实验和目标设备上的更细指标。
+
+## 审查时常见的错误结论
+
+| 错误写法 | 可验证的改写 |
+|---|---|
+| Android 17 设备都支持 Gemini Nano | Android 版本只是条件之一，以支持列表和运行时状态为准 |
+| AICore 固定运行在某个进程名 | 进程名是设备实现细节，应用只依赖公开 API |
+| 每次生成固定两次 Binder | IPC 形态和流式回调属于实现细节，不把次数写成契约 |
+| AICore 一定走 NPU | 官方只保证使用设备硬件加速并隐藏底层接口 |
+| App PSS 正常说明推理内存正常 | App PSS 只覆盖调用端，需结合相关组件和整机压力 |
+| ADPF 可以调 AICore/NPU 频率 | App 的 hint session 只包含本进程线程 |
+| 前台服务可以继续生成 | 当前 ML Kit GenAI 要求 App 是 top foreground |
+| AppFunctions 由 AICore 提供推理 | AppFunctions 提供工具注册与调用协议，不规定模型运行时 |
 
 ## 与其他章节的关联
 
-- **§5.11 端侧 AI 推理性能**：NNAPI、LiteRT、模型优化技术的基础设施
-- **§5.19 端侧 AI 调度与 ADPF 智能优化**：ADPF 会话管理、PerformanceHintManager 使用方式
-- **§5.13 移动端 LLM 推理的 DVFS 与能效边界**：LLM 推理的能效分析
-- **§5.14 Android 17 ML Runtime 与 NPU 访问边界**：NPU 访问的版本演进
-- **§4.4 Low Memory Killer**：推理内存压力与 LMK 的交互
-- **§1.4 Binder IPC**：Binder 事务的基础机制
-- **§2.5 MainThread 与 RenderThread**：推理与渲染的资源争抢
+- **§5.11 端侧 AI 推理性能**：LiteRT、模型优化和设备后端的基础。
+- **§5.13 移动端 LLM 推理的 DVFS 与能效边界**：prefill、decode 与持续负载测量。
+- **§5.14 Android 17 ML Runtime 与 NPU 访问边界**：平台与厂商加速器边界。
+- **§5.19 端侧 AI 调度与 ADPF 智能优化**：本进程工作线程的 hint session 用法。
+- **§5.18 CPU Cache Locality 与 PSS 统计**：PSS/RSS/USS、SwapPss 与 memtrack。
+- **§4.4 Low Memory Killer**：lmkd、PSI 与进程状态。
+- **§2.5 MainThread 与 RenderThread**：流式结果更新与帧时间。
 
 ## 参考资料
 
-### Android 17 端侧 LLM 推理架构：AICore、ML Kit GenAI、AppFunctions 与 LiteRT-LM
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-23-android17-ondevice-llm-inference-architecture.md
-- 类型：DeepResearch 调研结果
-- 摘要：系统梳理了 Android 17 端侧 LLM 三层 SDK（ML Kit GenAI 高阶 Builder、AI Edge SDK 低阶 Kotlin DSL、LiteRT-LM 开源引擎）及 AppFunctions 平台 API。涵盖 Generation.checkStatus() 四态状态机（AVAILABLE/DOWNLOADABLE/DOWNLOADING/NOT_SUPPORTED）、warmup() 预热、preference FAST/QUALITY 的 NPU 路径选择，以及 LiteRT-LM「GPU→多模态 CPU→纯文本 CPU」三级 cascading fallback 规范。
-- 注入时间：2026-06-23
-- 价值：补完 §5.20 缺失的 AICore 调用链源码级细节和 AppFunctions 跨 App Agent 协议基础
+- [Gemini Nano 与 AICore 架构](https://developer.android.com/ai/gemini-nano)：AICore 的系统服务定位、隐私边界、Private Compute Services、模型管理与硬件加速。
+- [ML Kit GenAI APIs 概览](https://developers.google.com/ml-kit/genai)：共享模型、设备支持、模型版本、配额和前台限制。
+- [Prompt API Android 入门](https://developers.google.com/ml-kit/genai/prompt/android/get-started)：`FeatureStatus`、下载、生成、流式输出、`warmup()` 与输入限制。
+- [LiteRT-LM Android Kotlin API](https://developers.google.com/edge/litert-lm/android)：`Engine`、后端选择、初始化、会话和资源关闭。
+- [AppFunctions 概览](https://developer.android.com/ai/appfunctions)：Android 16+、实验状态、权限与工具协议边界。
+- [PerformanceHintManager.java（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/os/PerformanceHintManager.java)：hint session 的线程归属和能效偏好。
+- [PowerManager.java（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/os/PowerManager.java)：thermal status 与监听器。
+- `DeepResearch/2026-06-23-android17-ondevice-llm-inference-architecture.md`：作为历史调研导航使用；具体 API 结论以上述当前官方资料为准。
