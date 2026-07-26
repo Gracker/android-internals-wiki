@@ -34,256 +34,349 @@ drafted_by: "openclaw-task2a"
 
 # Predictive Back 系统架构与动画管线性能
 
-Predictive Back 把"返回"从一个离散按键事件变成了一段连续手势。这个变化的重量不在 App 侧——App 只是多注册几个回调——而在系统侧。InputDispatcher 要决定事件归谁，WindowManagerService 要协调当前层和目标层的动画，ActivityTaskManagerService 要处理 Activity 状态转换，SurfaceFlinger 要在动画期间管理合成层级。3.3 节覆盖了手势检测和回调模型；22.13 节覆盖了 App 侧动画接入。本节覆盖系统侧的分发架构、转场管线和性能边界。
+Predictive Back 把返回操作分成“手势预览”和“提交导航”两个阶段。手指移动时，系统或应用只更新可撤销的视觉状态；手势提交后，返回 callback 才执行 finish、pop back stack、隐藏 IME 等动作。
 
-## 系统分发架构：从 InputDispatcher 到 WMS 的完整路径
+这个模型让系统可以提前知道返回目的地，但也引入了三套容易混淆的路径：
 
-### 两条分发路径的分流点
+- 应用 callback 处理页面内部返回；
+- WM Shell 对 dialog、cross-activity、cross-task 和 back-to-home 执行系统动画；
+- 条件不足时回退到 callback，极端情况下再回退到 `KEYCODE_BACK`。
 
-返回手势的系统分发在 InputDispatcher 层面有一个关键分流：事件是被当成传统 KEYCODE_BACK 注入，还是被当成 predictive back progress 事件分发。这个分流由 EdgeBackGestureHandler 中 `mBackAnimation` 是否为 null 决定。
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 为源码锚点，重点分析 SystemUI、WM Shell、system_server、应用和 SurfaceFlinger 之间的责任边界。应用侧接入方法见 22.13，边缘手势识别见 3.3。
 
-`mBackAnimation` 的赋值来自 WM Shell 的 `BackAnimation` 接口。当 App 的 Activity 或 Application 显式 opt in（通过 manifest `android:enableOnBackInvokedCallback="true"`）且系统版本 ≥ Android 13 时，`BackAnimation` 对象会被创建并绑定到 `EdgeBackGestureHandler`。此时手势进度通过 `dispatchToBackAnimation()` 进入 WM Shell 的 `BackAnimation.onBackMotion()` 路径。如果 `mBackAnimation` 为 null——包括 App 未 opt in、App 拦截了返回但未注册 `OnBackInvokedCallback`、或者系统版本低于 Android 13——手势退回 legacy path，松手后 `triggerBack()` 直接注入 `KEYCODE_BACK` 的 down/up 序列。
+## 1. 先建立正确的阶段模型
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java]
+### 1.1 预提交与提交后
 
-这个分流对性能分析有直接影响。在 Perfetto trace 中，legacy path 的特征是 `InputDispatcher` 发出 key event → App 主线程处理 `onBackPressed`；predictive path 的特征是 SystemUI 进程的 `EdgeBackGestureHandler` 持续调用 `BackAnimation.onBackMotion()` → WMS 通过 `OnBackInvokedDispatcher` 分发 progress 事件 → App 的 `OnBackAnimationCallback.onBackProgressed()` 被调用。如果分析返回卡顿时只搜 key event slice，predictive path 的问题会被漏掉。
+`OnBackAnimationCallback` 的四个回调对应两类工作：
 
-### OnBackInvokedDispatcher 的系统侧实现
+| 回调 | 所属阶段 | 合适的工作 |
+|---|---|---|
+| `onBackStarted()` | 预提交 | 保存起始状态，准备轻量动画对象 |
+| `onBackProgressed()` | 预提交 | 根据 progress 更新可撤销的属性 |
+| `onBackCancelled()` | 取消 | 把视觉状态恢复到起点 |
+| `onBackInvoked()` | 已提交 | 执行导航、关闭容器或提交业务状态 |
 
-`OnBackInvokedDispatcher` 不只是一个 Java 接口。在系统侧，它的实现链是：
+在 `onBackProgressed()` 中 finish Activity、pop Fragment 或写数据库，会破坏取消语义。系统动画同样遵守这一边界：手势阶段只变换 leash；提交后才调用真实 callback，并把预览接入正式 Transition。
 
-`ActivityClient` → `ActivityThread.loadConcerns()` → `OnBackInvokedDispatcher` 创建 → 注册到 `WindowManagerService` 的 `WindowState`
+### 1.2 返回目的地与动画执行者
 
-当 WindowState 注册了 `OnBackInvokedCallback`，WMS 会在处理返回手势时优先检查目标窗口是否有激活的 callback。有则走 callback dispatch 路径，没有则退回 `KEYCODE_BACK` 注入。这个检查发生在 `WindowManagerService.prepareAppTransition()` 之前，决定了后续动画管线走 cross-activity 转场还是 App 内部处理。
+`BackNavigationInfo` 是 system_server 返回给 WM Shell 的决策结果。Android 17 定义以下主要类型：
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/window/OnBackInvokedDispatcher.java; frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java]
+| 类型 | 含义 | 常见动画执行者 |
+|---|---|---|
+| `TYPE_CALLBACK` | 应用或 IME callback 接管 | 应用进程的 callback |
+| `TYPE_DIALOG_CLOSE` | 关闭当前 Activity 上方的窗口 | 取决于产品是否注册 runner |
+| `TYPE_CROSS_ACTIVITY` | 返回同一 Task 中的前一个 Activity | WM Shell |
+| `TYPE_CROSS_TASK` | 返回前一个 Task | WM Shell |
+| `TYPE_RETURN_TO_HOME` | 返回 Home | Launcher 或产品注册的 runner |
+| `TYPE_IN_TRANSITION` | 当前已有 Transition，暂不能准备 | 等 Transition idle 后重试 |
+| `TYPE_TASK_ROOT_INTERCEPTION` | Root Task 拦截返回 | 按系统 override 处理 |
 
-`OnBackInvokedDispatcher` 内部维护两个优先级队列：`PRIORITY_OVERLAY` 和 `PRIORITY_DEFAULT`。Android 16 新增 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER`（值=2），后者不消费返回事件，只观察。分发时从高优先级往低优先级遍历，第一个消费 callback 拿到返回权。如果只有 observer 注册，系统会继续走默认返回动画（back-to-home 或 cross-task）。
+“谁处理进度”由这个类型和 `isPrepareRemoteAnimation()` 共同决定。应用 callback 获胜时，系统不会同时运行 cross-activity 系统动画；系统转场获胜时，逐帧 Surface 变换主要发生在 WM Shell。
 
-### WMS 中的返回手势协调
+## 2. Android 17 的端到端架构
 
-WindowManagerService 在 predictive back 期间承担三个职责：
-
-**动画准备**：`WindowManagerService.prepareAppTransition()` 在收到 back 触发后设置 `APP_TRANSITION_STATE` 为 `APP_STATE_READY`。如果目标是另一个 Activity（cross-activity back），WMS 调用 `AppTransitionController.goodToGo()` 启动转场动画。如果目标是 Launcher（back-to-home），WMS 通过 `RecentsAnimationController` 协调 Launcher 的 surface 和当前 Task 的 surface。
-
-**Surface 层级管理**：back 动画期间，当前 Activity 的窗口和目标（下一个 Activity 或 Launcher）的窗口需要同时合成。WMS 通过 `SurfaceControl` 调整窗口 z-order，确保两个 surface 在动画期间都可见。具体操作在 `DisplayContent.prepareAppTransition()` 中完成。
-
-**Input target 切换**：动画期间 InputDispatcher 的 input target 需要从当前窗口切换到目标窗口。WMS 通过 `InputMonitor.updateInputWindowsLw()` 通知 InputDispatcher 更新焦点。在 cross-activity back 中，这个切换发生在 Activity `onPause()` 之后、目标 Activity `onResume()` 之前。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java]
-
-## Task 转场动画的系统管线
-
-### TaskAnimationCoordinator 的角色
-
-Cross-activity 和 back-to-home 的转场动画由 `TaskAnimationCoordinator` 统一协调。这个类管理三类资源：
-
-1. **Snapshot surface**：目标 Activity 或 Task 的 `TaskSnapshot`。当用户触发返回手势，系统会先检查是否有可用的 snapshot。有则直接用 snapshot 作为预览层，避免目标 Activity 在动画期间被迫提前完成 `onCreate` → `onResume` 全流程。Snapshot 的渲染开销远低于 live render，系统会优先使用。
-
-2. **Live layer**：如果目标 Activity 已经在缓存中存活（如从详情页返回列表页，列表页进程未销毁），系统会使用 live layer 而非 snapshot。Live layer 的渲染成本更高，但交互体验更好——用户可以在返回动画期间看到目标页面的实时状态。
-
-3. **动画帧调度**：`TaskAnimationCoordinator` 通过 `Choreographer` 的 vsync 信号驱动每帧动画。每帧的工作包括：更新 snapshot 或 live layer 的 transform（translateX、scale、alpha）、通知 WMS 更新 surface 层级、触发 SurfaceFlinger 合成。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/TaskAnimationCoordinator.java]
-
-### Snapshot 渲染与内存成本
-
-`TaskSnapshot` 在 Android 12 引入，到 Android 17 的实现持续优化。Snapshot 是一张硬件 composite 的 GraphicBuffer，在 Activity 切到后台时由 `TaskSnapshotController.snapshotTask()` 捕获。Snapshot 的尺寸与 Task 的 bounds 一致，格式为 `PIXEL_FORMAT_RGBA_8888`。
-
-内存占用计算：一个 1080×2400 的 Task，snapshot buffer ≈ 10 MB。折叠屏展开态 2208×1840 ≈ 16 MB。多任务场景下，每个 Task 都可能持有一份 snapshot，总内存增量需要纳入内存预算分析。Android 17 引入了 snapshot 压缩（`SnapshotCompressionType`），对非当前可见 Task 的 snapshot 使用更低分辨率缓存。
-
-Snapshot 的性能优势体现在 back 动画的首帧延迟。使用 snapshot 时，目标层的第一帧几乎零延迟（只是一次 texture upload + composite）；使用 live layer 时，目标层需要等 `onResume()` → measure/layout/draw → RenderThread 提交 → SurfaceFlinger 合成的完整渲染管线，首帧延迟可能达到 16-50ms（取决于目标页面的布局复杂度）。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/TaskSnapshotController.java]
-
-### Back-to-Home 转场的特殊路径
-
-Back-to-home 转场不经过 `TaskAnimationCoordinator` 的标准路径，而是走 `RecentsAnimationController`。这个控制器的职责是协调当前 Task 和 Launcher 的 surface：
-
-1. WMS 通知 `RecentsAnimationController` 开始动画。
-2. Launcher 进程收到 `onStartRecentsAnimation()` 回调，准备 Recents view。
-3. 当前 Task 的 surface 被 attach 到一个 leash（`SurfaceControl.Transaction` 创建的临时父节点）上。
-4. 动画期间，Launcher 通过 `RemoteAnimationTarget` 接收当前 Task 的 surface 引用，执行缩放和位移。
-5. 动画结束后，leash 被移除，Task 按 `finishTask` 或 `keepTask` 决定是否进入 cached state。
-
-性能上，back-to-home 转场的瓶颈通常在 Launcher 进程。Launcher 的 Recents view 需要在动画开始前完成 inflate 和数据加载。如果 Launcher 进程冷启动或 Recents view 布局复杂，首帧动画可能延迟 100ms 以上。这类问题的 Perfetto 特征是：SystemUI 进程发出 `startRecentsAnimation` 后，Launcher 进程的 MainThread 有一段长时间的布局/draw 占用。
-
-## 帧预算与渲染管线分配
-
-### 每帧的工作分配
-
-Predictive back 动画运行期间，每一帧需要完成以下工作：
-
-| 阶段 | 耗时预算 | 工作内容 | 执行线程 |
-|------|----------|----------|----------|
-| Input 事件处理 | < 2ms | EdgeBackGestureHandler 处理 MotionEvent，更新手势进度 | SystemUI MainThread |
-| WMS 协调 | < 4ms | 更新 surface transform、z-order、input target | system_server MainThread |
-| App 回调 | < 4ms | OnBackAnimationCallback.onBackProgressed() 执行动画属性更新 | App MainThread |
-| RenderThread | < 8ms | View hierarchy draw → DisplayList → GPU 提交 | App RenderThread |
-| SurfaceFlinger 合成 | < 4ms | 合成当前层 + 目标层 + 系统装饰层 | SurfaceFlinger HWC |
-
-总预算 ≤ 1 帧（16.6ms @ 60Hz，8.3ms @ 120Hz）。任何一段超支都会导致掉帧。120Hz 设备上预算更紧，App 回调和 RenderThread 需要特别注意。
-
-### 超支时的降级策略
-
-系统有内置降级机制应对帧预算超支：
-
-**Snapshot fallback**：如果 live render 跟不上 vsync，`TaskAnimationCoordinator` 会临时切换到 snapshot 模式。用户感知是动画从"实时跟随"变成"静态图片在移动"，但不会卡顿。
-
-**帧率降低**：在持续掉帧时，`Choreographer` 可能跳过中间帧。SurfaceFlinger 的 `FrameRateOverride` 可以在动画期间临时降低合成帧率，减少 GPU 和 display 负载。
-
-**动画时长压缩**：如果系统检测到连续掉帧（通过 `FrameTimeline` 的 missed frame 计数），`WindowManagerService` 的 `AppTransition` 动画会缩短总时长，尽快完成转场。这比让用户看一个持续卡顿的动画体验更好。
-
-开发者无法直接控制这些降级策略，但可以通过 Perfetto 的 `FrameTimeline` track 观察掉帧模式。`expected_frame_timeline_slice` 和 `actual_frame_timeline_slice` 的间距直接反映每帧的超支程度。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/TaskAnimationCoordinator.java; frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp]
-
-## Cross-Activity / Cross-Task Back 转场
-
-### Cross-Activity 的状态转换路径
-
-Cross-activity back（从详情页返回列表页）的性能关键路径在 Activity 状态转换：
-
-```
-当前 Activity: RESUMED → PAUSING → PAUSED
-目标 Activity: STARTED → RESUMED
+```mermaid
+flowchart TD
+    A["SystemUI: EdgeBackGestureHandler 观察边缘手势"] --> B["WM Shell: BackAnimationController 跟踪手势"]
+    B --> C["ATMS.startBackNavigation() Binder 调用"]
+    C --> D["system_server: BackNavigationController"]
+    D --> E["读取 focused WindowState 的 top callback"]
+    E --> F{"能否预测并准备系统目标"}
+    F -->|应用或 IME callback| G["返回 TYPE_CALLBACK"]
+    F -->|dialog / activity / task / home| H["准备 RemoteAnimationTarget 与 leash"]
+    G --> I["应用 ViewRoot 分发 start / progress / cancel / invoke"]
+    H --> J["WM Shell 对 leash 应用 SurfaceControl.Transaction"]
+    J --> K{"手势提交"}
+    K -->|取消| L["播放取消动画并恢复层级"]
+    K -->|提交| M["启动 post-commit，并按类型触发真实 callback"]
+    M --> N["Transition 合并并完成收尾"]
 ```
 
-`PAUSING` 阶段，WMS 调用当前 Activity 的 `onPause()`。如果 `onPause()` 中有重操作（数据库写入、网络请求取消、动画清理），这段耗时直接叠加到 back 动画的首帧延迟上。Android 14+ 的 `onTopResumedActivityChanged()` 回调比 `onPause()` 更早触发，适合做提前的资源释放准备。
+其中两个类承担核心协调职责：
 
-目标 Activity 的 `onResume()` 在 back 动画进行中调用。如果目标 Activity 使用 live layer（进程未销毁），`onResume()` 主要是恢复状态；如果进程已销毁需要重建，back 动画会使用 snapshot 作为过渡，直到新 Activity 完成首帧渲染后做一次 crossfade。
+- `BackNavigationController` 位于 system_server，负责确定 focused window、top callback、返回目标和可动画性，并准备 WindowContainer/Transition 侧资源；
+- `BackAnimationController` 位于 WM Shell，负责手势状态、pointer pilfer、remote animation readiness、progress 分发以及提交后的收尾。
 
-### Cross-Task Back 的窗口层级处理
+Android 17 的 WMS 中没有 `TaskAnimationCoordinator`。用这个类解释 cross-activity、cross-task 或 snapshot 路径会把不存在的抽象写进架构。
 
-Cross-task back（跨 Task 返回，如从分享面板 Task 返回调用方 Task）的复杂度高于 cross-activity。WMS 需要调整 Task 的 z-order：
+## 3. 输入事件怎样到达返回动画
 
-1. 目标 Task 被 `reorderTask` 提到前台。
-2. 当前 Task 的 surface 被 attach 到动画 leash 上，执行缩小/淡出动画。
-3. 目标 Task 的 surface 从后台状态（可能被冻结或低分辨率）恢复到前台全分辨率。
-4. 动画结束后，当前 Task 进入 cached state（如果系统内存允许）或被直接销毁。
+### 3.1 分流不发生在 InputDispatcher 的业务判断中
 
-Cross-task back 的性能风险点在目标 Task 的恢复延迟。如果目标 Task 被冻结过（`App Freezer`），解冻 + 恢复 window surface 的耗时可能达到 200-500ms。这段时间内系统只能依赖 snapshot 做过渡动画。
+`EdgeBackGestureHandler` 通过系统输入监视通道观察边缘 pointer stream，判断手势是否满足起点、方向、排除区域和阈值条件。InputDispatcher 提供事件路由与 input monitor 能力，但它不负责决定“这是 legacy back 还是 predictive progress”。
 
-### enableOnBackInvokedCallback 对分发路径的影响
+当 SystemUI 已连接 WM Shell 的 `BackAnimation`：
 
-Android 16 起，`targetSdk >= 36` 的应用不再需要手动在 manifest 中声明 `android:enableOnBackInvokedCallback="true"`——系统默认按 opt-in 处理。这个变化意味着更多应用会走 predictive back 路径而非 legacy key event 路径。
+1. `ACTION_DOWN`、`MOVE`、`UP/CANCEL` 被转给 `BackAnimationController.onBackMotion()`；
+2. Shell 在第一次 `MOVE` 时启动 back navigation，使 pointer-down 导致的焦点变化有机会先完成；
+3. 手势越过阈值后，Shell 按配置调用 `pilferPointers()`，从原接收者接管后续 pointer；
+4. 松手时根据 `triggerBack` 进入提交或取消。
 
-对性能分析的影响：
-- legacy path 的 key event 注入延迟消失，取而代之的是 progress 事件的分发延迟。
-- 不兼容的应用（拦截了返回但未注册 `OnBackInvokedCallback`）会走系统默认 back 动画，这个动画本身的开销由系统承担，但应用页面切换仍然需要自行处理。
-- Android 17 进一步收紧：`targetSdk >= 37` 的应用如果不注册 callback 但拦截了返回事件，系统会在 LogCat 输出警告，未来版本可能直接忽略应用拦截。
+`EdgeBackGestureHandler.mBackAnimation` 是否为空反映 SystemUI 与 WM Shell 的功能接线状态，不等同于当前应用是否在 manifest 中 opt in。应用是否启用新返回模型，主要体现在窗口有没有注册可供 WMS 使用的 callback。
 
-[已验证: 官方文档, https://developer.android.com/about/versions/15/changes/predictive-back]
+### 3.2 仍然存在 KEYCODE_BACK 回退
 
-## Predictive Back 与 IME 的交互
+Android 17 的 ahead-of-time 路径也保留异常回退。例如 `startBackNavigation()` 因找不到有效 focused window、当前状态无法建立 `BackNavigationInfo`，或系统正在处理不兼容状态而返回 `null`，Shell 可在手势提交后异步注入 `KEYCODE_BACK`。
 
-### 软键盘显示期间的返回处理
+这是兜底分支。对目标 SDK 36 及以上且未显式退出的新模型应用，常规路径通过 callback 分发；官方行为边界明确指出 `Activity.onBackPressed()` 与返回 `KEYCODE_BACK` 不再作为正常分发入口。
 
-软键盘（IME）显示期间用户触发返回手势，系统需要先处理 IME 再处理返回。流程是：
+## 4. Window callback 如何进入 WMS
 
-1. `EdgeBackGestureHandler` 检测到边缘滑动，判断当前窗口是否有 IME input connection。
-2. 如果有，返回手势的第一个目标是收起 IME（通过 `InputMethodManagerService.hideInputFromInputMethod()`）。
-3. IME 收起动画与返回手势动画并行执行。`WindowInsets.ime` 的动画由 `InsetsAnimationControlImpl` 驱动。
-4. IME 完全收起后，下一次返回手势才走标准 predictive back 路径。
+### 4.1 每个窗口只向 WMS 暴露 top callback
 
-这意味着用户在键盘显示时滑动返回，看到的效果是"键盘先收，页面不退"；再次滑动才"页面退"。两步返回的设计来自 `ImeFocusController` 的 input connection 状态检查，不能通过注册 `OnBackInvokedCallback` 绕过。
+`WindowOnBackInvokedDispatcher` 在应用进程维护 callback 集合。top callback 改变时，它把 `OnBackInvokedCallbackInfo` 经 `IWindowSession.setOnBackInvokedCallbackInfo()` 写入对应 `WindowState`。这个对象包含：
 
-### IME 提取模式的特殊路径
+- callback 的 Binder；
+- priority；
+- 是否实现 `OnBackAnimationCallback`；
+- 是否请求系统 override 行为。
 
-Android 11+ 的 IME 提取模式（Extract Mode，横屏全屏输入）有独立的事件处理路径。在提取模式下，返回手势直接交给 IME 进程的 `ExtractEditLayout` 处理，不经过标准的 `OnBackInvokedDispatcher`。这导致：
+WMS 无需遍历应用全部 callback，只读取当前窗口已经选出的 top callback。
 
-- App 注册的 `OnBackInvokedCallback` 在提取模式下不生效。
-- 返回手势的视觉反馈由 IME 进程渲染，不走 App 的 RenderThread。
-- 如果 IME 进程的动画卡顿，App 无法干预。
+### 4.2 优先级与同级顺序
 
-Android 14+ 逐步废弃了提取模式（`flagNoExtractUi` 默认为 true 的应用增多），Android 17 中提取模式几乎不再出现在主流应用中。
+Android 17 的关键优先级是：
 
-### WindowInsets.ime 动画与 back 动画的并行协调
+| 常量 | 值 | 用途 |
+|---|---:|---|
+| `PRIORITY_OVERLAY` | `1_000_000` | 菜单、抽屉等应先关闭的覆盖层 |
+| `PRIORITY_DEFAULT` | `0` | 普通应用 callback |
+| `PRIORITY_SYSTEM` | `-1` | framework 内部默认导航 callback |
+| `PRIORITY_SYSTEM_NAVIGATION_OBSERVER` | `-2` | 只观察系统导航，不消费 |
 
-当返回手势触发时 IME 正在显示，`InsetsAnimationControlImpl` 会同时驱动 IME insets 动画和返回转场动画。两个动画共享同一个 `Choreographer` vsync 信号，但各自维护独立的动画值（ime insets 和 window transform）。
+高优先级先执行；同一优先级按注册顺序逆序选择。应用不能注册普通负优先级 callback，`PRIORITY_SYSTEM_NAVIGATION_OBSERVER` 是允许的特殊观察者。API 36 对 observer 数量有限制，API 37 起可注册多个；它们不会改变系统返回结果。
 
-性能上的潜在冲突：IME insets 动画需要更新 IME window 的 position 和 visibility，这涉及一次 `SurfaceControl.Transaction`。返回转场动画需要更新 App window 的 transform。两个 transaction 在同一帧内合并提交，不会产生额外合成开销。但如果 IME 进程响应 `onStartInsetsAnimation` 延迟（IME 进程 MainThread 忙），IME 动画的首帧会延后，导致用户感知"键盘先闪了一下再开始收"。
+`Activity` 在新模型启用时会以 `PRIORITY_SYSTEM` 注册默认 callback。应用注册 DEFAULT 或 OVERLAY callback 后，它会成为 top callback，`BackNavigationController` 将本次导航归类为 `TYPE_CALLBACK`。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/inputmethod/InputMethodManagerService.java]
+### 4.3 Android 17 的本地 progress 生成
 
-## Android 16/17 强制启用与性能边界
+Android 17 还存在一条降低逐帧跨进程调用的优化路径。满足以下条件时，`BackNavigationInfo.isAppProgressGenerationAllowed()` 可为 true：
 
-### 从 opt-in 到默认启用的迁移
+- 当前 callback 是 animation callback；
+- 窗口允许 app progress generation；
+- 手势 touchable region 与窗口区域匹配；
+- 没有需要转交手势的 embedded window。
 
-Android 13-15 期间 predictive back 是 opt-in 特性，开发者需要在 manifest 中声明 `android:enableOnBackInvokedCallback="true"`。Android 16 把这个门槛降低了：
+此时应用 `ViewRootImpl` 根据本地 `MotionEvent` 更新 `BackTouchTracker` 与 `BackProgressAnimator`，Shell 跳过对应的 Binder progress 分发。条件不满足时，Shell 仍通过 `IOnBackInvokedCallback.onBackProgressed()` 发送进度。
 
-- `targetSdk >= 36`：系统默认 opt-in，不需要 manifest 声明。
-- `targetSdk < 36`：仍需手动 opt-in。
-- 应用可以选择 `android:enableOnBackInvokedCallback="false"` 显式退出。
+因此，看到应用 callback 每帧运行，不能直接推断每帧都经过 SystemUI → system_server → app 的完整 IPC。
 
-Android 17 在此基础上没有改变默认策略，但增强了系统动画的覆盖范围：更多的 cross-activity 场景自动使用 predictive back 动画，即使应用没有自定义返回动画。
+## 5. system_server 如何预测返回目标
 
-### 强制启用后的系统性能观测
+`BackNavigationController.startBackNavigation()` 在 WMS global lock 下完成一轮快照式判断：
 
-大规模强制启用 predictive back 带来的系统级性能影响：
+1. 找到目标 display 的 focused window；必要时退到 focused task 的窗口；
+2. 要求窗口已有有效绘制 Surface；
+3. 检查当前是否处于不允许插入预测返回的 Transition；
+4. 读取窗口的 `OnBackInvokedCallbackInfo`；
+5. 若应用 callback 获胜，直接返回 `TYPE_CALLBACK`；
+6. 若 framework system callback 获胜，再计算 dialog、前一 Activity、前一 Task 或 Home；
+7. 确认 Shell 声明支持该类型后，准备 remote animation。
 
-**帧率影响**：predictive back 动画运行期间，系统多了一组 surface（snapshot 或 live layer）参与合成。GPU 合成开销增加约 15-25%（取决于设备分辨率和合成层数）。HWC（硬件合成器）通常能覆盖大部分场景，但当 HWC overlay 容量不足（已有 video layer + app layer + systemUI layer），额外的返回动画层会被降级到 GPU 合成。
+### 5.1 系统宁可回退，也不盲目展示错误目标
 
-**内存增量**：每个 Task 的 snapshot buffer 占用 10-16 MB（前面已计算）。在多任务场景下（用户快速切换 5-8 个 Task），snapshot 总内存增量可达 80-128 MB。Android 17 的 snapshot 压缩机制（低分辨率缓存非当前 Task）可以把这个数字压到 30-50 MB。
+以下情况会让系统放弃某类预览，改走 callback：
 
-**不兼容应用的回退路径**：未注册 `OnBackInvokedCallback` 但拦截了返回的应用，系统会播放默认 back 动画并注入 `KEYCODE_BACK`。这条回退路径的性能开销与 legacy path 基本一致，但多了一段默认动画的渲染成本。在 Perfetto 中，这类应用的返回操作会显示 `AppTransition` 动画 slice 但 App 侧没有对应的 `onBackProgressed()` 调用。
+- 前一个 Activity 没有进程或窗口；
+- Activity 尚未 created，无法安全作为 cross-activity 目标；
+- 参与者包含不适合该路径的透明 Activity；
+- keyguard、app lock、lock task 或 floating task 条件不满足；
+- 当前 Activity 使用 scene transition；
+- multi-window 中前后 Task 不在兼容的父层级。
 
-[已验证: AOSP android-17.0.0_r1; 官方文档, https://developer.android.com/about/versions/15/changes/predictive-back]
+这也解释了一个重要性能边界：cross-activity/cross-task 预测动画通常要求目标已经有进程和窗口。系统不会为了预览强行冷启动一个已死亡的目标进程。此时用户看到普通 callback/Transition，属于安全回退，不应先归因于“snapshot 丢失”。
 
-## 扩展
+### 5.2 预览阶段不会提前完成返回生命周期
 
-### Perfetto 观测方法
+对于可动画目标，core 可以创建 `TRANSIT_PREPARE_BACK_NAVIGATION`，收集 opening/closing WindowContainer，并把前一 Activity 设置为 launch-behind 或准备 starting surface。手势取消时这些临时状态需要恢复；手势提交后才由真实 callback 和正式 Transition 完成导航。
 
-定位 predictive back 性能问题时，关键 Perfetto slice 和 track 包括：
+不要假设 `onPause()` 一定发生在首个 progress 前，也不要把 input focus 切换固定在 `onPause()` 与目标 `onResume()` 之间。实际顺序受返回类型、目标可见状态、Transition 合并和窗口绘制情况影响。应用只能依赖公开生命周期契约。
 
-**SystemUI 进程**：
-- `EdgeBackGestureHandler` 相关 slice：手势检测和进度更新
-- `BackAnimation.onBackMotion()`：WM Shell 的手势进度回调
+## 6. WM Shell 如何执行系统动画
 
-**system_server 进程**：
-- `WindowManagerService.prepareAppTransition`：转场准备
-- `TaskAnimationCoordinator`：转场动画协调
-- `AppTransitionController.goodToGo`：转场执行
-- `InputMonitor.updateInputWindowsLw`：input target 切换
+### 6.1 Animation registry 与 RemoteAnimationTarget
 
-**App 进程**：
-- `OnBackAnimationCallback.onBackProgressed`：进度回调执行
-- `Choreographer.doFrame`：每帧调度
-- `RenderThread`：渲染管线
-- `FrameTimeline` track：`expected_frame_timeline_slice` vs `actual_frame_timeline_slice`
+`ShellBackAnimationRegistry` 按 `BackNavigationInfo` 类型保存 runner。AOSP Android 17 的默认 Dagger module 装配 cross-activity、cross-task 和定制 cross-activity runner；return-to-home 可由 Launcher 运行时注册，dialog-close 槽位默认是 `null`。`BackNavigationInfo` 有某个 type，只说明 core 能表达该目的地；`BackAnimationAdapter.isAnimatable(type)` 还要确认当前产品已经提供 runner。
 
-**SurfaceFlinger 进程**：
-- `composite` / `present` slice：合成和提交
-- HWC `DEVICE` vs `CLIENT` composition type 变化
+core 准备完成后，把 opening/closing `RemoteAnimationTarget` 及其 leash 交给 Shell。手势阶段的典型每帧工作是：
 
-分析返回卡顿时，推荐的时间轴对齐方式：以 `EdgeBackGestureHandler` 检测到边缘滑动的 `ACTION_DOWN` 时刻为 t=0，逐帧检查 SystemUI → system_server → App → SurfaceFlinger 的执行时序。某个进程的 slice 在某一帧突然延长，就是瓶颈所在。
+- 把触摸位移映射为 progress；
+- 计算 opening/closing bounds、scale、translation、crop、corner radius、alpha；
+- 在同一个 `SurfaceControl.Transaction` 中写入目标 leash；
+- 用当前 `Choreographer` vsync id 标记 transaction；
+- 提交给 SurfaceFlinger 合成。
 
-### 三方应用 Back 拦截的性能陷阱
+这一阶段无需让目标 Activity 每帧重新 measure/layout。目标页面自身若仍在绘制，则它的 buffer 更新与 Shell 的 leash transform 是两条不同工作流。
 
-`OnBackPressedDispatcher`（AndroidX）和 `OnBackInvokedCallback`（Platform）的性能差异不大，但使用方式会带来性能差异：
+### 6.2 提交后的顺序
 
-- **每帧 dispatch 的额外开销**：如果在 `handleOnBackProgressed()` 中执行了数据库查询、Bitmap 操作或复杂计算，每帧（60Hz 设备每 16.6ms 一次）都会重复执行。这类开销不是 API 本身造成的，是使用方式问题。
-- **Dispatcher 链的遍历成本**：`OnBackPressedDispatcher` 维护一个 callback 栈，每次返回手势会从栈顶遍历到第一个 enabled callback。正常使用下 callback 数量不多（1-3 个），遍历成本可忽略。但深度拦截（Fragment 多层嵌套，每层注册 callback）时，遍历 + 每层 callback 的 `isEnabled()` 检查叠加起来，可能会增加 1-2ms 的 MainThread 占用。
-- **Compose PredictiveBackHandler 的 Flow 开销**：`activity-compose:1.8.0+` 的 `PredictiveBackHandler` 把 progress 事件包装成 `Flow<BackEventCompat>`。每帧的 Flow emission 和 collect 会产生少量对象分配（适合用 `key` 去重和 `distinctUntilChanged` 过滤）。
+手势松开后有三种主要结果：
 
-### Foldable / Large Screen 的特殊处理
+- 取消：active runner 收到 `onBackCancelled()`，播放回弹并恢复目标；
+- callback 路径：Shell 直接调用应用 callback 的 cancel 或 invoke；
+- 系统动画路径：Shell 启动 post-commit；cross-activity、cross-task 和 return-to-home 会在这一阶段开始时触发真实 callback，让 close Transition 与动画衔接，其他类型可在动画结束时再触发。
 
-大屏设备（折叠屏展开态、平板）上 predictive back 有额外考量：
+`BackAnimationController` 会在触发真实 callback 前同步通知 core 当前动画结果，避免 close Transition 再播放一套重复动画。runner 完成或 watchdog 到期后，Shell 释放 targets、结束 navigation，并由 `BackTransitionHandler` 完成后续 Transition 协调。
 
-- **手势区域宽度调整**：`EdgeBackGestureHandler` 的边缘检测宽度 `mEdgeWidth` 在大屏上会按密度缩放。展开态折叠屏的边缘区域可能宽达 48dp（手机通常 24-32dp），减少误触但也降低了边缘手势的触发灵敏度。
-- **多窗口模式下的 back 目标判定**：分屏模式下，返回手势的目标是当前 focused 的窗口而非整个 Task。`InputDispatcher` 通过 `WindowState.getFrame()` 判断触摸点落在哪个窗口，然后按标准路径分发。双窗口并排时，左窗口的返回手势不会影响右窗口。
-- **折叠态 → 展开态的 Configuration Change**：如果在返回动画进行中发生了配置变更（折叠→展开），系统会取消当前返回动画并重新构建。这个取消-重建过程可能在 Perfetto 中表现为一段 `onBackCancelled()` 后紧跟的 Configuration change slice 序列。
+源码中的 2 秒 `MAX_ANIMATION_DURATION` 是等待 remote animation 完成的 watchdog。它处理 runner 未回调或动画迟到等异常，不能当作产品动画时长或性能目标。
 
-### Edge Defense 系统的冲突处理
+## 7. Snapshot 在预测返回中的准确角色
 
-OEM 自定义的边缘手势（Samsung edge panel、小米边缘防误触等）通过 `SystemGestureExclusionRects` 或 OEM 私有接口与系统 back 手势协调。冲突处理遵循以下优先级：
+Android 17 可以在以下组合条件下为 opening target 创建 windowless starting surface：
 
-1. OEM 边缘面板如果声明了 `setSystemGestureExclusionRects()`，系统 back 手势在该区域内被抑制。
-2. 未声明 exclusion 的 OEM 手势区域，系统按标准 `edge-swipe` monitor 逻辑处理——OEM 手势和系统 back 手势并行观察同一 pointer stream，谁先越过阈值谁赢。
-3. 冲突期间两个手势都未越过阈值时，App 仍然收到正常的 `MotionEvent`。
+- TaskOrganizer 支持 windowless starting surface；
+- `config_predictShowStartingSurface` 开启；
+- 当前策略没有直接采用 launch-behind；
+- 存在与目标 orientation、night mode 和 component 兼容的 Task/Activity snapshot。
 
-性能退化路径：两个手势同时竞争时，`EdgeBackGestureHandler` 需要额外检查 OEM 手势状态，每帧多一次 `mExcludeRegion.contains()` 调用（通常 < 0.1ms）。真正的性能问题不是这次 contains 调用，而是两个手势同时触发后，其中一个发送 `pilferPointers()` 导致另一个收到 cancel，引发 App 端的动画中断和状态错乱。
+Snapshot 用于在 opening window 尚未绘制时提供临时内容。Android 17 没有“live layer 掉帧后动态切换 snapshot”的通用降级，也不通过 `TaskAnimationCoordinator` 每帧选择预览层。系统在开始动画前决定目标与 preview strategy。
 
-[结构参考: 3.3 节覆盖手势检测和回调模型，本节覆盖系统侧分发架构与转场管线；22.13 节覆盖应用侧动画实践]
+Snapshot 的尺寸、格式、是否包含 IME Surface、是否采用降采样以及缓存寿命都受实现和设备配置影响。仅用屏幕分辨率乘四估算全部 snapshot 内存，会忽略实际 buffer、缓存策略和安全窗口限制。需要内存结论时，应在目标设备读取图形内存和 TaskSnapshot 现场数据。
 
-> 适用版本：Android 13 (API 33) 引入 OnBackInvokedCallback；Android 14 (API 34) 增加进度回调；Android 15 (API 35) 系统动画默认开启；Android 16 (API 36) targetSdk ≥ 36 默认 opt-in；Android 17 (API 37) 增强系统动画覆盖范围。所有源码锚定 android-17.0.0_r1。
+## 8. 应用 callback 路径的性能
+
+应用 callback 获胜时，`WindowOnBackInvokedDispatcher.OnBackInvokedCallbackWrapper` 把 Binder 回调 post 到创建 `ViewRootImpl` 的 Handler，通常是应用主线程。`BackProgressAnimator` 对 progress 做平滑处理后，再调用应用的 `onBackProgressed()`。
+
+应用侧每帧应限制在可预测的属性更新：
+
+- 预先保存起止位置；
+- 更新 translation、scale、alpha 或已创建动画的 fraction；
+- 避免同步 I/O、Bitmap 解码、导航提交和大对象分配；
+- 不在每帧反复修改复杂 `LayoutParams`；
+- cancel 后完整恢复 UI 状态。
+
+下面的代码只用于标记应用 callback 的 CPU 时间：
+
+```kotlin
+override fun onBackProgressed(backEvent: BackEvent) {
+    Trace.beginSection("AppBackProgress")
+    try {
+        content.translationX = maxTranslation * backEvent.progress
+    } finally {
+        Trace.endSection()
+    }
+}
+```
+
+如果 `AppBackProgress` 很短而画面仍不连续，还要检查应用 RenderThread、WM Shell、SurfaceFlinger 和显示刷新率；主线程 slice 只是其中一段。
+
+AndroidX `OnBackPressedDispatcher`、Navigation、Fragment 与 Compose `PredictiveBackHandler` 会把平台事件桥接到库 callback。具体分发与对象分配取决于 AndroidX 版本，应记录 Activity/Navigation/Compose 依赖版本，不能归因给 `frameworks/base` 的 Android 17 实现。
+
+## 9. Predictive Back 与 IME
+
+Android 17 的 IME 返回路径跨越 IME 和应用两个进程：
+
+```mermaid
+flowchart LR
+    A["IME: ImeBackCallbackSender"] --> B["ResultReceiver"]
+    B --> C["App: ImeBackCallbackProxy"]
+    C --> D["App WindowOnBackInvokedDispatcher"]
+    D --> E["ImeBackAnimationController"]
+    E --> F["App InsetsController 控制 IME Insets"]
+```
+
+IME 进程通过 `ImeBackCallbackSender` 把 callback 注册转发给当前应用。应用侧 `ImeBackCallbackProxy` 收到默认 system callback 后，会把它映射到 `PRIORITY_DEFAULT`；若 ViewRoot 已提供 `ImeBackAnimationController`，dispatcher 用该 controller 处理预测动画。
+
+默认结果是 IME callback 的优先级高于 Activity 的 framework system callback，所以一次返回先隐藏 IME。这个行为仍有明确例外：
+
+- IME 可通过 back disposition 选择跳过默认 callback；
+- 应用更高优先级的 overlay callback 可以先处理；
+- multi-window 与 IME fullscreen mode 禁用预测 IME 动画；
+- `adjustResize` 且没有应用 Insets animation callback、页面也未 edge-to-edge 时，Android 17 会回退到普通隐藏动画；
+- `onKeyPreIme()` 的兼容分支仍可能消费事件并取消 IME 动画。
+
+`ImeBackAnimationController` 在预提交阶段只移动 IME 高度的一小部分作为 peek，提交后再完成隐藏；取消则回到 shown state。它直接控制 `WindowInsetsAnimationController`，没有让 IMMS 与页面 cross-activity 动画并行运行。
+
+IME 隐藏提交后，controller 会暂时清除 IME callbacks，使下一次返回可以交给后续 callback，即使隐藏动画还在收尾。这是常见“两次返回”的状态基础，但应用不能把“两次”写成所有 IME、window mode 和 callback 组合下的硬性规则。
+
+## 10. 如何建立性能结论
+
+### 10.1 先判定卡在哪个阶段
+
+| 现象 | 优先证据 | 可能范围 |
+|---|---|---|
+| 手势开始后预览迟迟不出现 | `ACTION_BACK_SYSTEM_ANIMATION`、Shell readiness 日志 | WMS 目标计算、remote target、目标窗口 |
+| 手指移动时持续掉帧 | FrameTimeline、Shell/App 主线程、RenderThread、SF | progress 回调或 Surface transaction |
+| 松手后停顿 | post-commit runner、Transition、真实 callback | 应用导航、动画 runner、Transition 合并 |
+| 取消后 UI 没恢复 | app cancel trace 或 Shell runner | callback 状态机错误 |
+| 偶发退回旧动画 | `BackNavigationInfo` type、目标进程/窗口 | 预测条件不足 |
+| 键盘先闪再隐藏 | `ImeBackAnimationController`、Insets control | IME control readiness、回退模式 |
+
+### 10.2 不使用固定的分段毫秒预算
+
+60 Hz 一帧约 16.7 ms，120 Hz 一帧约 8.3 ms，但 SystemUI、Shell、应用、RenderThread 和 SurfaceFlinger 的工作会流水执行，并不共享一张可以简单相加的“2 + 4 + 4 ms”表。评估时应把每一帧的 expected/actual FrameTimeline、CPU runnable 时间和 Surface transaction 对齐。
+
+系统也没有在这条源码路径中实现“持续掉帧就自动缩短 AppTransition”或“live layer 跟不上就实时改用 snapshot”的通用策略。省略帧、动态刷新率和 HWC/GPU composition 都可能出现，但要以 SurfaceFlinger 与调度证据判断，不能由卡顿现象反推某个固定降级算法。
+
+## 11. Perfetto 与系统状态观测
+
+### 11.1 平台已有的指标
+
+Android 17 在 WM Shell 中提供两类内建观测：
+
+- `LatencyTracker.ACTION_BACK_SYSTEM_ANIMATION`：从 Shell 发起 `startBackNavigation()` 到收到有效 remote animation targets；
+- InteractionJankMonitor CUJ：包括 predictive-back home、cross-task、cross-activity，对相应 leash 的动画帧做 jank 统计。
+
+WMS 的 proto dump / window trace 还包含 `BackNavigationController` 的 `ANIMATION_IN_PROGRESS` 与 `LAST_BACK_TYPE`。WM Shell dump 会输出 `BackAnimationController` 的 gesture、post-commit、pointer-pilfer 以及 current/queued tracker 状态。
+
+### 11.2 Perfetto 需要覆盖的线程
+
+录制 System Trace 时至少保留：
+
+- SystemUI / WM Shell 主线程；
+- `system_server` 中 WindowManager/ActivityTaskManager 相关线程和 Binder；
+- 应用主线程与 RenderThread；
+- SurfaceFlinger、GPU/HWC 及 FrameTimeline；
+- input、sched、freq、view、wm、gfx 等相关数据源。
+
+分析顺序建议如下：
+
+1. 以边缘手势开始为时间原点；
+2. 确认本次 `BackNavigationInfo` 类型；
+3. 检查 remote animation targets 到达时间；
+4. 区分进度在 Shell 还是应用生成；
+5. 对齐每帧 transaction、app buffer 与 SurfaceFlinger present；
+6. 松手后继续观察到真实 callback 和 Transition 完成。
+
+FrameTimeline 的 jank type 只描述帧结果。判断是布局、callback、Binder、GPU 还是合成开销，需要展开同一时间范围的线程 slice。
+
+### 11.3 建议的覆盖组合
+
+至少覆盖以下状态，并分别记录 P50/P90/P95：
+
+- app callback / 系统 cross-activity / cross-task / return-to-home；
+- 目标 Activity 已有窗口 / 条件不足回退；
+- 手势提交 / 中途取消 / 快速连续两次返回；
+- IME shown / hidden，`adjustResize` / edge-to-edge；
+- 60 Hz / 高刷新率；
+- 分屏、freeform、折叠状态变化；
+- AndroidX callback enabled / disabled；
+- 目标 SDK 35 与 36+ 的兼容边界。
+
+## 12. 版本边界
+
+- Android 13 / API 33 引入 `OnBackInvokedCallback` 和 ahead-of-time 返回模型；
+- Android 14 / API 34 向应用开放 `OnBackAnimationCallback` 的 progress 能力；
+- Android 15 / API 35 移除 predictive-back 动画的开发者开关，已 opt-in 应用显示系统 back-to-home、cross-task 和 cross-activity 动画；
+- Android 16 / API 36 对目标 SDK 36+ 应用默认启用新模型，仍可通过 `android:enableOnBackInvokedCallback="false"` 临时退出；启用时不再走 `onBackPressed()` 和返回 `KEYCODE_BACK` 的常规分发；
+- Android 17 / API 37 延续该默认行为，并允许同一 dispatcher 注册多个 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER`。
+
+本章不采用 Android 17 后续小版本或 AndroidX 新版本行为解释 `android-17.0.0_r1`。OEM 对 SystemUI 手势、Launcher runner、动画资源和窗口策略的修改需要在对应构建上复核。
+
+## 13. 源码索引
+
+- [`EdgeBackGestureHandler.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java)
+- [`BackAnimationController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/back/BackAnimationController.java)
+- [`ShellBackAnimationRegistry.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/back/ShellBackAnimationRegistry.java)
+- [`CrossActivityBackAnimation.kt`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/back/CrossActivityBackAnimation.kt)
+- [`CrossTaskBackAnimation.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/back/CrossTaskBackAnimation.java)
+- [`BackNavigationController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/BackNavigationController.java)
+- [`BackNavigationInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/BackNavigationInfo.java)
+- [`WindowOnBackInvokedDispatcher.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/WindowOnBackInvokedDispatcher.java)
+- [`ImeBackAnimationController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ImeBackAnimationController.java)
+- [`ImeBackCallbackSender.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/ImeBackCallbackSender.java)
+- [`ImeBackCallbackProxy.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/ImeBackCallbackProxy.java)
+- [Add support for the predictive back gesture](https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture)
+- [Android 16 behavior changes for target SDK 36+](https://developer.android.com/about/versions/16/behavior-changes-16)
