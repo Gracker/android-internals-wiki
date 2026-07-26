@@ -64,293 +64,466 @@ last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
 
 # 5.13 移动端 LLM 推理的 DVFS 与能效边界
 
-端侧 LLM 推理把 Android 的功耗问题从“单个线程跑得快不快”推到 CPU、GPU、内存带宽和温控共同约束的区间。prefill 阶段更像批量计算，decode 阶段更像短周期串行生成；两段对频率、带宽和调度延迟的要求并不相同。读完本节，应该能把 TTFT、TPOT、energy-per-token、热余量和 ADPF 可控范围放到同一张验证表里。
+端侧 LLM 推理同时占用 CPU、GPU 或 NPU、内存带宽以及散热预算。它也不是一段形态固定的计算：prefill 负责处理输入上下文，decode 负责持续生成输出；模型加载、后端编译、采样和 KV cache 管理又会在两段计算之外引入额外开销。只看平均 CPU 利用率或一次 tokens/s，通常不足以解释用户感受到的等待、抖动和发热。
 
-EAS、DVFS、ADPF 和端侧 AI 推理栈的基础见 5.2、5.4、5.9、5.11、5.12 节。这里补端侧 LLM 场景下的工程判断：哪些现象会误导 governor，哪些能力普通 App 能用，哪些手段只适合 root、实验机或厂商实现。
+本节以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，以 `android17-6.18-2026-06_r6` 为内核锚点，回答四个工程问题：
 
-## LLM 推理负载与传统交互负载的差异
+1. TTFT、TPOT 与 energy-per-token 应该怎样定义和测量；
+2. EAS、CPUFreq、GPU/内存 DVFS、ADPF 和温控分别负责什么；
+3. 普通应用能调节哪些负载参数，哪些操作只属于系统、厂商或 root 实验；
+4. 怎样判断优化是在节能，还是把耗电和热限频推迟到下一轮请求。
 
-LLM 推理通常分成两个阶段：prefill 处理输入 prompt，decode 逐 token 生成输出。prefill 的并行度更高，GPU 或 NPU 更容易达到高利用率；decode 每次只推进一个或少量 token，CPU 要持续做采样、KV cache 管理、命令提交和运行时调度，GPU 侧却可能呈现较低利用率。[引用: https://arxiv.org/abs/2507.02135]
+EAS、CPUFreq、ADPF、端侧 AI 后端和温控的基础分别见 5.2、5.4、5.9、5.11、5.12 节。本节把这些机制放到同一条 LLM 请求时间线上。
 
-这和传统触控、滑动、动画负载差异很大。交互负载通常围绕帧 deadline 组织，16.6ms、8.3ms 或更短的周期会给系统比较清楚的目标；LLM decode 的用户感知指标是 token 间隔，常用 TPOT（time per output token）衡量。一个 token 慢 30ms 不一定触发帧率报警，但连续几十个 token 都慢，用户会感到生成速度变钝。
+## 先统一指标和测量边界
 
-| 阶段 | 主要指标 | 常见瓶颈 | 对频率策略的要求 |
-|---|---:|---|---|
-| prefill | TTFT | GPU/NPU 算力、内存带宽、模型加载后的首轮 kernel 调度 | 需要较快升频，避免首 token 等待被拉长 |
-| decode | TPOT / tokens/s | CPU 喂数、采样、KV cache 访问、短 kernel 启停 | 需要稳定频率组合，不能只看单一硬件利用率 |
-| 连续对话 | energy-per-token、温升 | 热余量、后台任务、屏幕和网络并发耗电 | 需要可持续的能耗曲线，避免前段冲高后段降频 |
+LLM 性能指标只有在起止点一致时才能比较。建议在应用侧给每个请求分配 ID，并记录下列时间戳：
 
-prefill 和 decode 的差异还会改变 trace 解读方式。单看 GPU utilization 可能会低估 decode 对 GPU 频率的敏感性；单看 CPU utilization 也可能会低估 CPU 频率对 GPU 提交节奏的影响。更可靠的口径是把 token 时间戳、CPU/GPU/内存频率、功耗和温度放在同一条时间轴上。
+- `t_request`：请求进入推理 API；
+- `t_prefill_start`、`t_prefill_end`：后端开始和结束处理输入；
+- `t_first_token`：第一个可交付 token 到达应用；
+- `t_i`：第 `i` 个输出 token 到达应用；
+- `t_done`：生成结束、取消或报错。
 
-## DVFS governor 在 CPU、GPU、内存之间的独立决策
+常见指标可按下式计算：
 
-Android 设备上的频率控制通常分散在多个层级：CPU 由 cpufreq 与调度器信号驱动，GPU 常由厂商 devfreq / GPU governor 管理，内存频率由内存控制器与厂商策略决定。EAS 负责 CPU 选核与能量估算，Power HAL 接收系统模式和性能提示，Thermal HAL 再把温度约束反馈给框架与内核。各部分共享同一块电池和散热空间，却未必共享同一个推理任务目标。[已验证: 官方文档, source.android.com/docs/core/power/performance]
+```text
+TTFT = t_first_token - t_request
 
-AOSP 的 `PerformanceHintManager` 把一组线程作为 `Session` 提交给系统，AIDL Power HAL 也有 `createHintSession(tgid, uid, threadIds, durationNanos)`。公开 API 的设计单位是“线程组 + 目标时长”，不能指定某个 CPU/GPU 频点。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/PerformanceHintManager.java][已验证: AOSP android-16.0.0_r1, hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl]
+TPOT = (t_last_token - t_first_token) / (N_output - 1)
+       仅在 N_output > 1 时定义
 
-LLM 推理会碰到一个调度错位：GPU governor 往往根据 GPU 自身忙闲判断频率，CPU 调度器根据 CPU 近期负载判断算力需求，内存频率策略又按带宽和访问模式响应。decode 阶段如果 GPU kernel 很短，GPU 侧可能判断负载偏低；CPU 侧又因为周期性等待 GPU 或内存而看起来不够忙。两个判断叠加后，频率组合就可能偏离 decode 的最优区间。
+request_energy_per_output_token
+    = (E_done - E_request) / N_output
+```
 
-工程上不要把“某个硬件利用率不高”直接翻译成“这块硬件不影响推理”。LLM decode 的慢点可能藏在跨硬件交接处：CPU 发不出足够快的命令，GPU 频率太低导致短 kernel 尾延迟变长，内存频率不足让 KV cache 访问抖动。详见 5.4 节的 cpufreq / governor 背景和 5.11 节的端侧 AI 执行后端。
+这组定义把 tokenizer、排队和冷启动都计入 TTFT，适合描述用户等待。如果需要分析后端，应同时报告 `t_prefill_end - t_prefill_start`，并把模型文件读取、权重映射、delegate 初始化、图编译和首轮 kernel warm-up 分开。不能把预热后的后端时间称为冷启动 TTFT。
 
-## decode 阶段的频率误判与延迟放大
+TPOT 是整段 decode 的平均值，容易掩盖卡顿。工程报告还应给出 inter-token latency 的 P50、P95、最大值和随时间变化的曲线。采用 speculative decoding、并行解码或一次提交多个 token 的运行时，输出回调与硬件 kernel 可能不再一一对应；此时仍可用 token 到达间隔描述用户体验，但不能据此推断每个 token 的底层执行周期。
 
-FUSE 论文在 Pixel 7 / Pixel 7 Pro（Google Tensor G2，Mali-G710 MP7）上测到一个典型现象：默认 governor 在 decode 阶段给 GPU 选择较低频率，TPOT 明显变长；把 GPU 固定到更高频率后，TPOT 下降，能耗接近不变。论文给出的 TinyLlama 数据是 GPU 424.4MHz 时 TPOT 215.1ms，固定到 848MHz 后 TPOT 126.9ms，单 token 能耗从 396.5mJ 到 402.7mJ。[来源: 论文/Android-2026-05-15-DVFS-LLM-Performance/03-精读.md][引用: https://arxiv.org/abs/2507.02135]
+能耗也需要明确分母：
 
-CPU 侧也有类似现象。论文记录 TinyLlama decode 阶段 CPU 运行在约 1130.8MHz，而对应的较优频点是 2252MHz；StableLM 从约 1038.8MHz 提到 2401MHz 后，TPOT 也下降。这组数据的结论要收窄：默认 governor 使用的局部利用率信号没有表达 decode 的跨硬件依赖，不能直接推出“频率越高越好”。
+- `prefill_energy / input_token` 反映长 prompt 的处理成本；
+- `decode_energy / output_token` 适合比较连续生成；
+- `request_energy / output_token` 包含加载、prefill、decode 和应用开销；
+- `joules / successful_request` 还能覆盖取消、超时与失败带来的浪费。
 
-| 论文场景 | 默认频率表现 | 调整后表现 | 论文给出的变化 |
-|---|---|---|---:|
-| TinyLlama decode / GPU | GPU 约 424.4MHz，TPOT 215.1ms | GPU 848MHz，TPOT 126.9ms | TPOT 下降 41.0%，能耗接近 |
-| StableLM decode / GPU | 默认 GPU 频率偏低 | GPU 762MHz | TPOT 下降 34.6%，能耗接近 |
-| TinyLlama decode / CPU | CPU 约 1130.8MHz | CPU 2252MHz | TPOT 下降 13.2% |
-| StableLM decode / CPU | CPU 约 1038.8MHz | CPU 2401MHz | TPOT 下降 13.4% |
+不同口径可以同时报告，不能把其中一个简称为“模型能效”后横向比较。
 
-这组数据的适用范围要写清楚。它来自 Pixel 7 / 7 Pro、Tensor G2、Mali GPU、特定模型和推理框架，不应直接外推到 Snapdragon、MediaTek 或厂商 NPU delegate。对其他 SoC，可信做法是复刻测量口径：固定模型、输入长度、温度初始状态、线程绑定策略和采样工具，再比较默认 governor 与候选频率组合。
+## 一次请求经过哪些硬件
 
-## 能效目标下的频率组合选择
+典型端侧推理请求会经过多个执行层。具体分工由模型格式、运行时和 delegate 决定，下面的表格用于建立排查顺序，不代表每台设备都采用同一后端。
 
-端侧 LLM 的优化目标不能只写“更快”。至少要同时看四个指标：TTFT 决定用户第一次看到输出的等待，TPOT 决定生成阶段的体感速度，energy-per-token 决定续航和发热，热余量决定连续对话能坚持多久。只压低 TPOT 可能让前几轮很快，几分钟后进入热限频，整体体验反而不稳。
+| 层级 | 常见工作 | 容易漏看的成本 |
+|---|---|---|
+| 应用与 tokenizer | 文本预处理、tokenize、流式回调、UI 更新 | Java/Kotlin 分配、日志、频繁跨语言调用 |
+| CPU 运行时 | 图调度、采样、算子补位、GPU/NPU 命令提交 | 单线程串行段、线程迁移、锁与唤醒 |
+| GPU | 张量乘加、向量算子、部分 attention 与后处理 | 短 kernel 间隙、命令提交等待、频率爬升 |
+| NPU | 支持范围内的编译图与加速算子 | 图切分、回退、编译缓存、厂商驱动约束 |
+| DRAM / 系统缓存 | 读取权重和 KV cache，交换各后端数据 | 带宽竞争、容量压力、数据布局转换 |
+| 存储 | 首次读取模型与编译产物 | 冷页、解压、校验、低存储空间 |
+| 显示、网络及其他进程 | 展示流式文本、下载上下文、系统并发任务 | 全机功耗与模型功耗混在一起 |
 
-FUSE 的思路是把 CPU、GPU、内存频率组合当作一个整体评估，在离线阶段搜索给定能耗预算下的低延迟组合，运行时按请求特征查表。论文在 ShareGPT 数据集上的结果是 TTFT 平均降低 7.0%-16.9%，TPOT 平均降低 25.4%-36.8%，并保持相同 energy-per-token。[引用: https://arxiv.org/abs/2507.02135]
+### Prefill：并行度较高，但先别假定它只受算力限制
 
-对 Android App 团队，可执行的版本更克制：
+Prefill 会一次处理较长的输入序列，张量运算通常比单 token decode 更容易形成批量工作。随着 prompt 增长，计算量、权重读取、attention 中间数据和 KV cache 写入都可能增加。GPU 或 NPU 利用率高并不自动证明瓶颈在计算单元；内存带宽、图切分、首次编译和 CPU 提交也可能拉长 TTFT。
 
-- 建立基线：固定模型、delegate、线程数、prompt 长度分布和设备温度，记录 TTFT、TPOT、tokens/s、energy-per-token、表面温度和热状态。
-- 分段看频率：prefill 和 decode 分别统计 CPU cluster、GPU、内存频率，不把整段平均值混在一起。
-- 设计候选组合：普通 App 不锁频，可通过线程数、batch、采样策略、delegate、ADPF hint session 和 thermal headroom 控制负载形状；root 或实验机才考虑 `scaling_min_freq` / `scaling_max_freq` 这类频率固定手段。
-- 给出边界：同一模型在不同 SoC 上的最优点可能完全不同，频率表、散热设计、GPU 驱动和厂商 Power HAL 都会改变结果。
+### Decode：周期性明显，但并非恒定周期
 
-Android 7 以后有 sustained performance mode，OEM 可以通过 Power HAL 做 CPU/GPU 上限或其他温控优化，让长时间负载更稳定。[已验证: 官方文档, source.android.com/docs/core/power/performance] 这类能力适合解释“平台能做什么”，不能等同于普通 App 可以任意改频率。
+传统自回归 decode 每轮根据已有上下文生成后续 token。每轮之间存在数据依赖，批量并行空间通常小于 prefill。CPU 可能负责采样、运行时调度与命令提交，加速器读取权重和不断增长的 KV cache。token 周期还会受到采样策略、停止条件、上下文长度、图回退和系统抢占影响。
 
-## ADPF、Power HAL 与应用可控边界
+因此，decode 常呈现“CPU 短暂工作—提交—等待加速器—读取结果—采样”的交替形态。某个硬件在一个采样窗口内不够忙，不等于它的频率不会影响端到端 token 间隔。
 
-ADPF 给 App 的能力是表达目标和反馈工作时长。`PerformanceHintManager.createHintSession()` 绑定一组线程和目标时长，`setThreads()` 可更新线程集合，`reportActualWorkDuration()` 把本轮工作耗时回报给系统。官方文档明确说明 App 不能直接指定 CPU 频率，也不应该用 busy loop 伪造负载。[已验证: 官方文档, source.android.com/docs/core/perf/performance-hint-api][已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/PerformanceHintManager.java]
+## Android 17 的调度与频率控制分工
 
-端侧 LLM 可以把 hint session 用在推理线程组上，但要处理两个问题。线程集合必须稳定，推理框架如果频繁创建销毁 worker，需要在框架层收敛线程生命周期；目标时长也要按阶段设置，prefill 的目标和 decode 的目标不应混用。Android 15 的 Power Efficiency Mode 允许 session 表达“优先能效”的调度偏好，适合在连续推理、后台摘要或低电量模式里测试。[已验证: 官方文档, developer.android.com/games/optimize/adpf]
+讨论 LLM DVFS 时，最容易出现的概念错误是把 EAS、CPUFreq governor 和 Power HAL 写成同一个控制器。Android 17 的执行路径应分层理解。
 
-Power HAL 在系统侧接收模式、boost 和 hint session。普通 App 不直接调用 Power HAL，也不能假设某个 hint 一定映射到某个频点；厂商可能把同一 hint 映射为 CPU capacity、uclamp、GPU 策略、热策略或什么都不做。结论要以 Perfetto、PowerStats 和端到端 token 日志为准。
+### EAS 负责 CPU 放置
 
-可控边界可以这样划分：
+在 `android17-6.18-2026-06_r6` 中，`kernel/sched/fair.c` 的 `find_energy_efficient_cpu()` 会调用 `compute_energy()`，借助 Energy Model 估算把唤醒任务放到不同 CPU 后的能量变化。它回答的是“这个任务放在哪个可用 CPU 上更合适”。
 
-| 能力 | 普通 App | 系统 / 厂商 | root / 实验机 |
+Energy Model 是估算模型，不是全机功耗计。估算结果还会受到任务利用率、CPU 容量、调度域、CPU 空闲状态、利用率钳制以及厂商扩展影响。它不能看到一次 LLM 请求的 token deadline，也不直接控制 GPU 或内存频率。
+
+### schedutil 与 CPUFreq 负责 CPU 频率
+
+同一内核锚点下，`kernel/sched/cpufreq_schedutil.c` 的 schedutil governor 从调度器利用率推导下一目标频率。`get_next_freq()` 会经过 `map_util_freq()` 一类映射，并考虑策略容量、I/O wait boost、更新速率等条件；Android vendor hook `android_vh_map_util_freq` 允许厂商介入映射。最终频率还受 CPUFreq policy 的 `min` / `max`、`freq_qos` 请求、热限制和硬件可用频点约束。
+
+简化后的关系如下：
+
+```text
+任务唤醒
+  ├─ EAS / fair scheduler：选择可运行的 CPU
+  └─ scheduler utilization → schedutil / vendor policy
+                         → CPUFreq target
+                         → policy、QoS、thermal clamp
+                         → 硬件频点
+```
+
+选核与选频会互相影响：任务落到哪个 cluster 会改变可用容量和频点，频率又会影响执行时间。不过，两条路径必须分开观察。看到任务迁核后变快，不能直接归因为 governor 升频；看到 `cpu_frequency` 变化，也不能断言 EAS 改了放置决策。
+
+### GPU 与内存 DVFS 多由厂商实现
+
+Linux 提供 devfreq 框架和通用 governor，但 Android 设备的 GPU、互连、内存控制器、带宽投票以及相关 telemetry 往往由 SoC 厂商驱动和策略管理。AOSP 没有面向普通应用的统一 API，让应用指定 GPU 或 DRAM 频点。某台设备上的 sysfs 节点、tracepoint 或频率表不能当作跨设备接口。
+
+GPU delegate、NPU delegate 或厂商运行时可能通过驱动提交工作，并间接触发性能状态变化。是否升频、升到哪里、维持多久，仍受厂商实现、系统功耗模式和热预算约束。
+
+### Power HAL、ADPF 与 Thermal 是约束和提示层
+
+Android 17 的 AIDL `IPower` 支持创建 hint session，框架把应用线程组、目标工作时长及实际工作时长交给 Power HAL。系统和厂商可以用这些信息调节调度、频率或其他策略，也可以在不支持相应能力时忽略提示。提示不会给应用返回一个已保证的 CPU/GPU 频点。
+
+温度达到限制后，thermal cooling device、CPUFreq/Devfreq 限制、Power HAL 和厂商策略都可能收紧性能上限。此时增加负载、放宽线程数或反复请求性能提示，可能只会增加排队与功耗，无法越过热限制。
+
+## 为什么独立的利用率反馈会误读 LLM decode
+
+利用率驱动的策略并没有“失效”；它只掌握局部信号。LLM decode 在以下条件下容易让局部信号和端到端目标错位：
+
+1. **串行依赖**：CPU 必须等待加速器结果后才能采样和发起下一轮，任一侧的空闲可能代表依赖等待；
+2. **短 burst**：短 kernel 在采样窗口内被平均，频率还没升稳，工作已经结束；
+3. **跨设备交接**：CPU 提交慢会让 GPU 出现空洞，GPU 执行慢又会让 CPU 睡眠，两边的平均利用率都可能不高；
+4. **状态切换成本**：升降频、唤醒 cluster、加载图和缓存恢复都需要时间；
+5. **带宽瓶颈**：计算单元频率提高后，如果权重或 KV cache 受带宽限制，延迟改善会很小；
+6. **热与功率上限**：观测到的低频可能来自 thermal clamp 或平台功率预算，并非 governor 对利用率判断偏低；
+7. **后台竞争**：相机、显示、网络、系统服务和其他应用会共同消耗 CPU、内存带宽与热余量。
+
+所以，诊断顺序应从 token 时间线出发，再关联 CPU 放置、CPU/GPU 频率、调度、内存、功耗和温度。单张 utilization 截图无法证明升频策略有问题。
+
+## FUSE 论文：有边界的 Pixel 7 案例
+
+论文 *Dissecting the Impact of Mobile DVFS Governors on LLM Inference Performance and Energy Efficiency*（arXiv:2507.02135）提供了一个很有价值的案例：独立 governor 选择的频率组合，可能偏离某个 LLM 请求在给定能耗预算下的低延迟组合。
+
+先看实验边界：
+
+- 设备为已 root 的 Pixel 7 / Pixel 7 Pro，SoC 是 Tensor G2，GPU 是 Mali-G710 MP7；
+- 系统为 Android 13，CPU 使用论文所述 `sched-pixel` / EAS 配置，GPU governor 为 `quickstep`，内存策略为 `interactive`；
+- 推理运行时为带 OpenCL / CLBlast 后端的 llama.cpp，论文原型基于 llama.cpp `b2202`；
+- 设备拆机并绕过电池供电，屏幕关闭，Monsoon 以 0.2 ms 间隔采样；
+- 实验通过 root 接口把 min/max 设为同一值来固定频率；
+- FUSE 评估包含 4-bit 模型和 ShareGPT 请求子集，prompt 与输出长度受到论文设定限制。
+
+在这些条件下，论文报告了以下代表性现象：
+
+| 场景 | governor 观测值 | 固定频率实验 | 论文报告的 TPOT 变化 |
+|---|---:|---:|---:|
+| TinyLlama decode / GPU | 约 424.4 MHz | 848 MHz | 降低 41.0% |
+| StableLM decode / GPU | 约 411.4 MHz | 762 MHz | 降低 34.6% |
+| TinyLlama decode / CPU | 约 1130.8 MHz | 2252 MHz | 降低 13.2% |
+| StableLM decode / CPU | 约 1038.8 MHz | 2401 MHz | 降低 13.4% |
+
+TinyLlama 的 GPU 案例中，论文给出的 TPOT 从 215.1 ms 降到 126.9 ms，单 token 能耗从 396.5 mJ 变为 402.7 mJ。这个数据说明，在该设备与该请求上，缩短执行时间抵消了大部分瞬时功率增加。它不支持“GPU 总应该跑高频”这一结论。
+
+FUSE 把 CPU、GPU 与内存频率组合一起搜索，再按请求特征选择组合。论文在其工作负载上报告：相同 energy-per-token 条件下，TTFT 平均改善 7.0%～16.9%，TPOT 平均改善 25.4%～36.8%。
+
+这项研究能支持的工程判断是：需要联合测量 CPU、GPU、内存和请求阶段，独立利用率策略可能错过更好的组合。它不能直接外推到：
+
+- Android 17 的调度器和厂商策略；
+- Snapdragon、MediaTek 或其他 Tensor 代际；
+- 当前 LiteRT-LM、其他 llama.cpp 版本或不同算子后端；
+- NPU delegate；
+- 未 root 的量产应用；
+- 屏幕点亮、联网、边充边测等不同整机条件。
+
+复现论文时，应把它当作 root 实验机上的机制验证。把固定频率脚本放入量产应用既不可移植，也会绕过平台功耗与温控约束。
+
+## 普通应用、系统组件与 root 实验的权限边界
+
+| 能力 | 普通应用 | 系统 / 厂商组件 | root 实验机 |
 |---|---|---|---|
-| ADPF hint session | 可用，受 API 等级和设备实现影响 | 决定 hint 到调度策略的映射 | 可配合内核观测验证 |
-| Thermal API / headroom | 可读热状态并降级模型或采样参数 | 决定热阈值和 cooling device | 可读取更多 sysfs 节点 |
-| CPU/GPU 固定频率 | 不可直接指定 | 可在 Power HAL / kernel policy 中实现 | 可通过 sysfs 或调试接口固定 |
-| NPU/GPU delegate 策略 | 可选公开 delegate 和线程参数 | 决定驱动、runtime、频率策略 | 可抓取更多厂商 counters |
+| 选择模型、量化、上下文长度、采样参数 | 可以 | 可以 | 可以 |
+| 选择运行时公开的 CPU/GPU/NPU 后端 | 可以，受设备支持限制 | 可以 | 可以 |
+| 调整线程数、批次与请求队列 | 可以 | 可以 | 可以 |
+| 创建 ADPF hint session | API 与设备支持时可以 | 可以 | 可以 |
+| 查询公开 thermal status / thermal headroom | API 支持时可以 | 可以访问更多内部信号 | 可以 |
+| 调用 AIDL Power HAL | 不可以直接调用 | 可以按平台权限和架构调用 | 可实验，不代表应用接口 |
+| 固定 CPU/GPU/内存频率 | 不可以 | 厂商策略可管理 | 常可通过 debug/sysfs 实验 |
+| 修改 governor、调度器或 thermal 配置 | 不可以 | 平台集成阶段可以 | 可实验 |
+| 读取原始 PowerStats / 厂商能量通道 | 通常受权限限制 | 可以按权限获取 | 常可获取 |
 
-## 端侧 AI 推理的验证方法
+普通应用的优化重点是改变工作负载形状并向系统描述期限，而不是指定硬件频率。系统团队才适合评估 Power HAL、调度参数、GPU/内存策略和 thermal 配置。两类结论要分开记录，避免把 root 实验结果写成 SDK 能力。
 
-验证端侧 LLM 能效要同时采集“业务事件”和“系统事件”。业务侧至少记录每次请求的 prompt token 数、输出 token 数、TTFT、每个 token 的完成时间、delegate、线程数、模型版本和温度初始状态；系统侧记录 CPU 调度、CPU/GPU/内存频率、功耗、温度、thermal throttling 和后台任务干扰。
+## 用 ADPF 描述周期工作
 
-Perfetto 的 CPU frequency 数据源可通过 `power/cpu_frequency` ftrace 事件记录频率变化，也可用 `linux.sys_stats` 周期性读取 `/sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_cur_freq`。Perfetto 官方建议把事件和 polling 结合使用，因为频率事件只在变化时出现，trace 开头可能缺初始值。[已验证: 官方文档, perfetto.dev/docs/data-sources/cpu-freq]
+Android 17 的 `android.os.PerformanceHintManager` 为一组相互关联的长生命周期线程创建 `Session`：
 
-这段配置用于采集 CPU 频率、调度事件和 Android 电源数据；设备如果支持 power rails，可打开 `collect_power_rails` 观察硬件域能耗。
+```java
+PerformanceHintManager manager =
+        context.getSystemService(PerformanceHintManager.class);
+
+long targetNanos = initialDecodeTargetNanos;
+PerformanceHintManager.Session session =
+        manager.createHintSession(workerTids, targetNanos);
+
+if (session != null) {
+    session.reportActualWorkDuration(actualDecodeNanos);
+}
+```
+
+这段代码表达“这些线程周期性完成一轮工作，希望在目标时间内结束”。`createHintSession()` 可能返回 `null`，应用必须保留没有 hint session 时的正确执行路径。线程 ID 应来自承担推理工作的长期 worker，不能填 UI 线程 ID 来替代真实执行线程。
+
+Android 17 源码中的主要操作包括：
+
+- `updateTargetWorkDuration(long)`：目标发生变化时更新期限；
+- `reportActualWorkDuration(long)`：每个周期报告实际时长；
+- `setThreads(int[])`：长期 worker 集合变化时更新线程；
+- `setPreferPowerEfficiency(boolean)`：在对应 flagged API 可用时表达能效偏好；
+- `reportActualWorkDuration(WorkDuration)`：在对应 flagged API 可用时报告总时长及 CPU/GPU 时长；
+- `close()`：工作结束后释放 session。
+
+LLM decode 有周期性，可以把稳定的 token 或一组 token 作为工作周期，但需要满足三个条件：
+
+1. session 覆盖长期 worker，不要每生成一个 token 就创建和销毁 session；
+2. target 来自产品可接受的 token 周期或吞吐目标，不能长期填一个无法达到的极小值；
+3. actual duration 的边界固定，不能这轮只量 GPU、下一轮又把采样与 UI 回调计入。
+
+Prefill 往往是一段较长的批量工作。若运行时没有稳定、可重复的 prefill chunk 周期，硬把整段 prefill 当作高频周期上报会削弱信号含义。可以为具有明确边界的 prefill chunk 使用独立 session，也可以只为 decode 建立 session，并用 trace 单独评估 TTFT。
+
+目标时长也不应等同于“越短越好”。如果产品只要求稳定达到某个 token 速率，可以把 target 设在体验预算附近，并在温度升高、电量策略变化或后台化时放宽。`setPreferPowerEfficiency(true)` 表达的是偏好，最终选择仍由平台决定；调用前还要检查当前 SDK、flag 和设备能力。
+
+普通应用不要直接调用 `IPower.createHintSession()`。Framework API 负责身份、权限、生命周期与兼容处理，AIDL HAL 是系统和厂商之间的接口。
+
+## 从模型和运行时减少无效工作
+
+频率策略只能在既定工作量上做取舍。对普通应用，先减少每个请求必须完成的计算和数据搬运，通常比寻找某个频点更稳定。
+
+### 量化与模型尺寸
+
+权重位宽降低通常能减少模型体积和权重带宽，但收益取决于后端是否有对应的高效 kernel。某种量化格式文件更小，不代表设备上的 delegate 一定更快。需要同时检查：
+
+- 后端是否原生支持该位宽与分组方式；
+- 不支持的算子是否回退 CPU；
+- 反量化是否增加临时内存和计算；
+- 精度、输出稳定性和安全评测是否仍满足产品要求。
+
+### KV cache 与上下文长度
+
+未压缩 KV cache 的主体容量可用下式做一阶估算：
+
+```text
+KV bytes ≈ 2 × layers × tokens
+           × num_kv_heads × head_dim × bytes_per_element
+```
+
+系数 2 对应 key 与 value。采用 GQA/MQA、分页 cache、量化 cache、滑动窗口或特殊布局后，公式参数和额外元数据都会变化。上下文越长，cache 容量与访问成本通常越高，也更容易触发内存压力。应记录运行时真实分配和 RSS/PSS，不能只用模型配置推算。
+
+可以从产品侧控制历史消息长度、检索片段数量、system prompt 大小和最大输出 token。截断规则要与语义评测一起验证，避免用明显的回答质量下降换取漂亮的 tokens/s。
+
+### 后端选择与图切分
+
+CPU、GPU、NPU 的名字不能代表整张图都在该硬件执行。应从运行时日志、delegate 诊断或厂商工具确认：
+
+- 哪些算子被加速后端接收；
+- 是否发生 CPU 回退和频繁同步；
+- 权重格式是否匹配目标后端；
+- 编译缓存是否命中；
+- 首次请求和后续请求是否使用同一路径。
+
+后端切换需要按设备型号、模型和版本建立基线。GPU 在某台设备上更快，不意味着它在短 prompt、低电量或持续温控场景中仍然更省电。
+
+### 模型与 session 生命周期
+
+如果内存预算允许，应复用模型映射、已编译图、tokenizer 和长期运行的 session，避免每次对话重复加载与编译。复用同时需要处理：
+
+- 前后台生命周期与进程回收；
+- 多会话 KV cache 的上限和淘汰；
+- 模型升级后的缓存失效；
+- 取消请求后 worker、buffer 和 hint session 的清理；
+- 低内存回调和设备热状态变化。
+
+### LiteRT-LM 的版本边界
+
+LiteRT-LM 是 Google AI Edge 在 AOSP 之外维护的端侧生成式 AI 运行时项目。其公开仓库提供 Kotlin / C++ 接口、`.litertlm` 模型格式以及 CPU、GPU、NPU 后端支持说明；具体硬件覆盖受版本、模型和设备影响。应用应锁定经过验证的 LiteRT-LM 版本和模型产物，并保存运行时日志。
+
+`android-17.0.0_r1` 只能锚定 Android 平台 API、Framework 与 HAL，不能用来锚定 LiteRT-LM 的仓库版本。阅读 AOSP 源码和阅读 LiteRT-LM release 必须分成两条版本记录。系统服务提供的模型能力也不等同于应用内嵌 LiteRT-LM，二者的模型、权限、更新和资源管理边界不同，详见 5.11 节。
+
+## 建立可复现的能效实验
+
+### 1. 固定工作负载组合
+
+至少记录以下维度：
+
+- 设备型号、SoC、系统 build、内核 build；
+- 模型名称、精度、量化格式和文件哈希；
+- 运行时、delegate、驱动版本；
+- prompt token 数、目标输出 token 数和采样参数；
+- CPU 线程数、affinity 或运行时调度选项；
+- 冷启动、热启动、首轮 warm-up 是否计入；
+- 屏幕亮度、网络、充电状态、后台进程；
+- 环境温度、测试开始时的电池温度和 thermal status。
+
+结果要按这些维度分组。把 32-token prompt 和 2K-token prompt 的 TTFT 求平均，得到的数字很难指导优化。
+
+### 2. 用应用 trace 标记请求阶段
+
+为请求、prefill、decode、sampling、回调和模型加载添加 Perfetto slice。token 事件应带请求 ID 与序号，避免并发请求互相覆盖。标记只围绕阶段边界，不要为每个微小函数生成大量 trace 事件，以免测量本身改变 token 周期。
+
+### 3. 同时采集 CPU 频率变化与轮询值
+
+Perfetto 的 `power/cpu_frequency` tracepoint 只在频率变化时产生事件，trace 开始时不保证给出初始频率。`linux.sys_stats` 的 `cpufreq_period_ms` 可以补充周期轮询。下面是用于分析的精简配置片段：
 
 ```protobuf
-data_sources: {
+buffers {
+  size_kb: 65536
+  fill_policy: RING_BUFFER
+}
+
+data_sources {
   config {
     name: "linux.ftrace"
     ftrace_config {
-      ftrace_events: "sched/sched_switch"
       ftrace_events: "power/cpu_frequency"
       ftrace_events: "power/cpu_idle"
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_wakeup"
     }
   }
 }
 
-data_sources: {
+data_sources {
   config {
     name: "linux.sys_stats"
     sys_stats_config {
-      cpufreq_period_ms: 50
+      cpufreq_period_ms: 100
     }
   }
 }
+```
 
-data_sources: {
+100 ms 是观察长期趋势的起点，不适合解析单个很短的 kernel。要看短周期，应结合频率变化事件、调度 slice 和应用 token 标记，同时评估 trace 开销。GPU、NPU、互连和内存频率数据源依赖设备，采集前要确认 counter 名称、单位和更新语义。
+
+### 4. 明确整机功耗和部件能量的区别
+
+Perfetto `android.power` 可采集电池计数器：
+
+```protobuf
+data_sources {
   config {
     name: "android.power"
     android_power_config {
       battery_poll_ms: 250
+      battery_counters: BATTERY_COUNTER_CHARGE
+      battery_counters: BATTERY_COUNTER_CAPACITY_PERCENT
+      battery_counters: BATTERY_COUNTER_CURRENT
+      battery_counters: BATTERY_COUNTER_VOLTAGE
       collect_power_rails: true
     }
   }
 }
 ```
 
-这份配置只能解决观测入口，不能保证每台设备都有 GPU、NPU、内存频率和 rail 级能耗。Perfetto 的 power rails 依赖设备厂商暴露的硬件计量能力，平台侧通过 `IPowerStats` HAL 读取能耗数据；AIDL `IPowerStats` 也说明 `EnergyConsumerResult`、`EnergyMeasurement` 不保证每次请求都有结果。[已验证: 官方文档, perfetto.dev/docs/data-sources/battery-counters][已验证: AOSP android-16.0.0_r1, hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl]
+电池电流和电压代表整机，屏幕、调制解调器与后台任务都会进入结果。USB 充电会改变电池计数器含义，边充边测的数据不能直接与放电测试比较。`collect_power_rails` 依赖设备的 `IPowerStats` 实现，很多量产设备不会提供可用的 rail；没有 rail 数据时应报告“不可用”，不能用估算值填补。
 
-实验报告建议固定这几个口径：
+Android 17 的 `IPowerStats` 把能量消费者和能量通道作为厂商定义的数据返回。累计能量使用微瓦秒等明确单位，调用方还要处理结果暂不可用、UID 归因缺失以及通道名称因设备而异等情况。原始 HAL 数据通常不属于普通应用权限范围。
 
-- 温度初始状态：冷机、稳态温度、连续推理 15 分钟后的热状态分开记录。
-- 输入输出分布：短 prompt、长 prompt、多轮对话分别统计，TTFT 和 TPOT 不混算。
-- 设备状态：屏幕亮度、网络、充电状态、省电模式、游戏模式、后台任务都写进测试条件。
-- 能耗口径：优先用外接功耗仪或 power rails；只能用电池计数器时，写明采样间隔和设备支持情况。
-- 复现边界：论文级结论只在同类 SoC、同类 delegate、同类模型规模下迁移，跨平台必须重测。
+使用外置功耗仪时，要记录供电路径、采样频率、电压设置、电池是否旁路、屏幕与 ADB 状态。外置仪器能提高采样一致性，但拆机旁路电池后的结论仍属于实验条件，不能与正常电池供电数据混用。
 
-## 扩展：FUSE 与 llama.cpp 的实验复现边界
+### 5. 积分、基线与重复试验
 
-FUSE 的价值在于把 CPU、GPU、内存频率组合放到同一张搜索表里评估，而不是让三个 governor 各自按局部信号行动。论文称其在 llama.cpp 中实现，并在 Pixel 7 / 7 Pro 上完成实验。[来源: 论文/Android-2026-05-15-DVFS-LLM-Performance/03-精读.md]
+若测得电压 `V(t)` 和电流 `I(t)`，请求窗口能量可近似为：
 
-FUSE 的开源实现、补丁接口和复现实验脚本待后续核实。[待验证: FUSE 开源实现与 llama.cpp 集成方式] 如果要写成可复现实验，需要补齐模型文件、量化格式、OpenCL / GPU delegate 版本、输入长度分布、频率控制权限、功耗采样设备和温度控制流程。
+```text
+E_request = ∫ V(t) × I(t) dt
+```
 
-## 扩展：NPU / GPU delegate 与 DVFS 联动
+电流正负方向由数据源定义，积分前必须核对。若要扣除 idle baseline，应使用相同屏幕、网络、温度和采样配置，在邻近时间测量，并同时保留未扣除的整机能量。baseline subtraction 会放大短请求的误差。
 
-GPU delegate、LiteRT / TFLite delegate、NNAPI 或厂商 NPU runtime 的频率观测点差异很大。GPU 路径通常还能在 Perfetto、vendor profiler 或 devfreq 节点里看到部分频率信息；NPU 路径更依赖厂商计数器、PowerStats rail 命名和 runtime 日志。公开资料不足时，不要把 GPU 结论直接迁移到 NPU。
+每组配置需要多次重复并随机化顺序，避免所有“高性能配置”都在冷机运行、所有“节能配置”都在热机运行。至少报告样本数、中心趋势、离散程度和失败请求；对长时间测试还应分时间窗口展示。
 
-可操作的写法是把执行后端作为实验维度：CPU / XNNPACK、GPU delegate、NNAPI / vendor delegate、AICore 或厂商 SDK 分别测 TTFT、TPOT、energy-per-token 和热状态。某个后端如果缺少频率计数器，就把它标成黑盒路径，用端到端指标和可见 power rails 做旁证。[待补充: 各厂商 NPU 频率与能耗计数器公开入口]
+## 把温控纳入性能结论
 
-## 扩展：持续推理下的热衰减与用户感知指标
+短 benchmark 常奖励激进的升频策略，连续对话更容易暴露热约束。一个完整测试应包含：
 
-连续推理要按时间窗看，而不是只取前 20 个 token。建议把 0-1 分钟、1-5 分钟、5-15 分钟、15 分钟以后分开统计 TPOT P50 / P90、energy-per-token、thermal status、表面温度和前台帧率干扰。这样能区分“短时响应快”和“长时间稳定”。
+1. 一组从相同初始温度开始的短请求，用于分析 TTFT 和单轮 decode；
+2. 持续多轮或固定时长的 steady-state 测试；
+3. thermal status、thermal headroom、CPU/GPU 频率上限和 token 延迟的同轴记录；
+4. 进入限制前、限制发生时、限制后的分段统计；
+5. 冷却后复测，排除后台任务与偶发驱动错误。
 
-用户感知还会受 UI 干扰影响。LLM 输出如果和 Compose / RecyclerView 流式渲染、语音播报、网络请求并发，CPU 与 GPU 的频率预算会被共享。可观测性方案应把 token 日志和 FrameTimeline、主线程、RenderThread、推理线程放进同一个 trace，避免把 UI 卡顿误判成模型推理慢，或把推理降速误判成渲染问题。
+“race to idle”只有在更高瞬时功率被更短执行时间抵消，并且没有提前触发温控或挤压其他部件预算时才有能效优势。判断依据是请求总能量、持续 TPOT、热状态和恢复时间，不是峰值频率。
 
-## 扩展：Agent 长期记忆系统在 Android 端侧 AI 应用的适配
+应用可以按产品目标采取降载措施：
 
+- 缩短允许的上下文或输出上限；
+- 降低并发请求数；
+- 切换更小模型或更低成本后端；
+- 放宽 token 速率目标；
+- 在后台或高温时暂停非必要 prefill；
+- 提前向用户展示“设备较热，生成速度可能下降”，并支持取消。
 
-本节补充 Mem0、M3-Agent 等 Agent 长期记忆系统在 Android 端侧 AI 应用中的工程映射。详细源码分析见 [DeepResearch/2026-06-04-agent-longterm-memory-on-android.md](../../../../../DeepResearch/2026-06-04-agent-longterm-memory-on-android.md)。
+thermal headroom 是预测信号，数值方向和可用性要按 API 文档处理。它适合辅助选择负载档位，不能保证未来某一时刻仍有固定频率预算。相关 API 与 Android 17 的阈值语义见 5.12 节。
 
-### 两个代表系统的核心差异
+## 常见现象的排查顺序
 
-| 维度 | Mem0 v3 (April 2026) | M3-Agent (ICLR 2026, arXiv 2508.09736) |
-| --- | --- | --- |
-| 记忆粒度 | 离散 fact（LLM ADD-only 抽取） | 实体节点 + 边权（episodic / semantic） |
-| 存储抽象 | 24 种 vector store + SQLite 缓存 | 单个 `VideoGraph` (`pickle.dump`) |
-| 默认 LLM | `gpt-5-mini`（云） | Qwen2.5-Omni-7B（GPU 服务）+ `text-embedding-3-large`（云） |
-| 输入模态 | 文本 / vision | 视频 + 音频 + 声纹 + 人脸 |
-| Android SDK | 无 | 无 |
-
-### Android 端侧适配分四个层面
-
-1. **Embedding 层**：`mem0/embeddings/fastembed.py` 的 `FastEmbedEmbedding` 用 `thenlper/gte-large`（1024 维 ONNX 模型），可经 `onnxruntime-android` + NNAPI 跑在 Android 8.1+（API 27）；量化后 ~250 MB。
-2. **LLM 层**：替换云端 GPT/Qwen 时优先评估 `LiteRT-LM`；`MediaPipe LLM Inference` 仍可作为兼容路径，但 Google AI Edge 文档已标记为 deprecated 并推荐迁移到 LiteRT-LM，官方示例最低系统版本是 SDK 24（Android 7.0）。Android 14+/API 34+ 这类边界应只用于 AICore / Gemini Nano 等系统级能力。M3-Agent 的 7B 模型量化为 4-bit 约 4 GB，端侧只能跑量化蒸馏版。
-3. **存储层**：`mem0/memory/storage.py` 的 `SQLiteManager`（history + messages 双表）可直接映射为 `SQLiteOpenHelper`；`mmagent/videograph.py:30-65` 的 `VideoGraph` 用 `androidx.room` 关系表（nodes / edges / embeddings 分表）实现，**避免用 `pickle`**（ndarray 体积大且 NDK 不可控）。
-4. **触发层**：`android.app.Application.OnProvideAssistDataListener`（AOSP `Application.java`，自 API 23 引入）允许 App 在系统 `ACTION_ASSIST` 时把当前 Session 的 Mem0 摘要塞进 `EXTRA_ASSIST_CONTEXT`，作为「App 暴露给系统级 Assistant 的官方通道」。
-
-### 资源消耗边界（与 5.13 节 DVFS/能效模型的关系）
-
-- Mem0 v3 单次检索 p50 0.88–1.09 s（云端，6.8K–7.0K token）；端侧 LLM（3B 量化）decode 2–5 s。
-- M3-Agent Memorization 单 30s 视频片段在云端 Qwen2.5-Omni-7B 上需 4× A100（80GB）；端侧只能离线批处理，单片段 10–30 s。
-- `VideoGraph` 单节点 120 KB（10 img + 20 audio embeddings，FP32）；1 小时视频约 120 clip，量化 + FlatBuffers 后可压至 ~20 MB。
-- 端侧 7B LLM decode 一小时约 1500–2500 mAh（@3.8V），加上 embedding / storage I/O 估 +5–10%，与 5.13 节的能效模型区间一致。
-
-### 端侧化的具体工程判断
-
-- 24 种 vector store 里 `faiss` 是 Android 端可行选项（faiss-cpu 在 NDK 编译可行），其余均要远端访问。
-- `mem0/vector_stores/configs.py:VectorStoreConfig` 的 `_provider_configs` 字典列出全部适配，**新增「本地 SQLite + HNSW」 provider 即可满足端侧最小化部署**。
-- M3-Agent 的 `mmagent/retrieve.py:back_translate` 在端侧要砍掉笛卡尔积（用一次 top-k 反向翻译替代全展开），把 100 query 限制改成 10。
-- `pickle` 不可用，推荐用 LiteRT 自带的 `TensorBuffer` 序列化 embedding，或用 FlatBuffers（参见 MediaPipe Tasks 现有 `.task` 文件格式）。
-
-[已验证: Mem0 仓库 `mem0/memory/storage.py`、`mem0/embeddings/fastembed.py`、`mem0/vector_stores/configs.py`][已验证: M3-Agent 仓库 `m3_agent/memorization_memory_graphs.py`、`mmagent/videograph.py`、`mmagent/retrieve.py`][已验证: AOSP android-16.0.0_r1 `Application.OnProvideAssistDataListener`]
-[待验证: AOSP `android-17.0.0_r1` 标签下 `ApplicationAiContext.java` 的 API 形态（cs.android.com 渲染被重定向到 main，未直接抓到目标文件）][待验证: Mem0 v3 `ADDITIVE_EXTRACTION_PROMPT` 完整 prompt 内容]
-
-
-## 端侧 LLM 运行时的源码骨架（2026-06-10 源码调研补遗）
-
-> 以下内容基于 `google-ai-edge/LiteRT-LM` main 分支、`google-ai-edge/mediapipe-samples` LLM Inference Android 样例、`karpathy/llama2.c` master 分支的一手源码，未引用博客或公众号。完整调研过程见 `DeepResearch/2026-06-10-ondevice-llm-runtime-source-walk.md`。
-
-### Transformer 前向的最小骨架（来自 llama2.c run.c）
-
-`karpathy/llama2.c` 是教学级单文件 LLM 推理，结构对应关系清晰：
-
-| llama2.c 结构 | 含义 | 端侧内存影响 |
+| 现象 | 先检查 | 后续验证 |
 |---|---|---|
-| `Config` (L21-29) | dim / hidden_dim / n_layers / n_heads / n_kv_heads / vocab_size / seq_len | GQA 由 `n_kv_heads < n_heads` 触发，KV cache 容量按比例缩小 |
-| `TransformerWeights` (L32-49) | embedding / rms / wq wk wv wo / w1 w2 w3 / rms_final / wcls | `mmap` 一次性映射，避免 `malloc(n_layers*dim*dim*4)` 爆内存 |
-| `RunState` (L52-65) | x/xb/hb/q/k/v/att/logits + key_cache/value_cache | KV cache 占 `n_layers * seq_len * kv_dim * sizeof(half)`，是端侧 LLM 的刚性成本 |
-| `forward(token, pos)` (L238+) | embedding → n×(RMSNorm+QKV+RoPE+attention+residual+SwiGLU) → final RMSNorm → wcls | 真正决定 prefill / decode 边界 |
+| 冷启动 TTFT 高，热启动正常 | 模型读取、权重映射、图编译、cache 命中 | 分离 I/O、compile 和首轮 kernel slice |
+| 冷热 TTFT 都高 | prompt 长度、prefill 后端、CPU 回退 | 固定输入，比较后端覆盖和频率/带宽 |
+| 平均 TPOT 尚可，偶发停顿明显 | P95 inter-token latency、线程抢占、GC、回调阻塞 | 对齐 `sched_switch`、GC 与 token 事件 |
+| CPU/GPU 利用率都不高但 TPOT 高 | 跨设备等待、短 burst、单线程采样 | 看线程状态、提交间隙和频率变化 |
+| 频率提高后速度不变 | 内存带宽、图回退、串行段、thermal clamp | 比较算子时间与 CPU/GPU 上限 |
+| 前几轮快，随后持续变慢 | 温度、频率上限、系统 thermal status | 冷却复测并观察限制发生点 |
+| tokens/s 提高但能量明显增加 | 请求总时长、瞬时功率与 idle tail | 比较 joules/request 和 joules/token |
+| 更换 NPU 后端反而慢 | 图切分、编译、数据转换、CPU fallback | 查看后端日志和冷/热启动差异 |
+| 并发吞吐提高但单请求体验变差 | 队列等待、带宽竞争、热预算 | 分开报告吞吐、TTFT、TPOT 和公平性 |
 
-`forward()` 入口（`run.c` L238-260）显示端侧推理是**单 token 单位置**的串行循环；KV cache 通过 `s->k = s->key_cache + loff + pos * kv_dim` 直接寻址复用，**不重新分配内存**。
+排查时每轮只改变一个主要变量。若同时换模型、delegate、线程数和系统版本，即使结果改善，也无法判断哪个变化产生了作用。
 
-### Android 官方运行时入口（来自 MediaPipe LLM Inference 样例 + LiteRT-LM c/engine.h）
+## 发布前检查清单
 
-App 与 LiteRT-LM 之间的胶水代码在 `InferenceModel.kt`：
+- [ ] Android 平台结论锚定 `android-17.0.0_r1`；
+- [ ] 内核调度与 CPUFreq 结论锚定 `android17-6.18-2026-06_r6`；
+- [ ] EAS 选核与 schedutil/CPUFreq 选频已分开解释；
+- [ ] GPU、NPU、内存频率数据标明设备和厂商边界；
+- [ ] TTFT 的冷/热启动口径明确；
+- [ ] TPOT 同时提供 P50/P95 或时间曲线；
+- [ ] 能耗分母和采样窗口明确；
+- [ ] prompt、输出长度、模型、运行时与 delegate 固定；
+- [ ] root 固频实验没有写成普通应用能力；
+- [ ] ADPF session 使用长期 worker，target 与 actual 边界一致；
+- [ ] Power rail 不可用时没有伪造部件能量；
+- [ ] 持续测试包含 thermal status/headroom 与频率上限；
+- [ ] 性能收益通过回答质量、失败率和取消路径验证。
 
-```kotlin
-// InferenceModel.kt L40-77（核心三段）
-private fun createEngine(context: Context) {
-    val inferenceOptions = LlmInference.LlmInferenceOptions.builder()
-        .setModelPath(modelPath(context))
-        .setMaxTokens(MAX_TOKENS)                       // 1024
-        .apply { model.preferredBackend?.let { setPreferredBackend(it) } }
-        .build()
-    llmInference = LlmInference.createFromOptions(context, inferenceOptions)
-}
-private fun createSession() {
-    val sessionOptions = LlmInferenceSessionOptions.builder()
-        .setTemperature(model.temperature).setTopK(model.topK).setTopP(model.topP)
-        .build()
-    llmInferenceSession = LlmInferenceSession.createFromOptions(llmInference, sessionOptions)
-}
-fun generateResponseAsync(prompt: String, progressListener: ProgressListener<String>)
-        : ListenableFuture<String> {
-    llmInferenceSession.addQueryChunk(prompt)
-    return llmInferenceSession.generateResponseAsync(progressListener)
-}
-```
+## 版本边界与源码索引
 
-**对 DVFS/能效调优的含义**：
+### Android 17 平台
 
-- `LlmInference` 持有模型权重，**一次创建全局共享**——多轮对话不能靠反复创建 Engine 来"省电"，反而会因为重新 mmap 权重付出 cold start 代价。
-- `LlmInferenceSession` 持有 KV cache + sampling 配置，可以 `close() / createSession()` 反复重置。**长会话 KV cache 增长是 TTFT 二次上升的主因**——结合 `ConversationConfig::filter_channel_content_from_kv_cache` 显式剔除工具/函数调用通道可以缓解。
-- `MAX_TOKENS=1024` 与 `DECODE_TOKEN_OFFSET=256`（`InferenceModel.kt` L13-15）是上下文窗口的工程安全网。`sizeInTokens()` 只是估算，**真正的硬约束是 LiteRT-LM 在 `kMaxNumTokensReached` 状态主动截断**（见 `c/engine.cc` L40-46 的 TaskState 状态机映射）。
-- `generateResponseAsync` 返回 `ListenableFuture<String>` 但**内部是流式的**——每个 token 触发一次 `ProgressListener<String>`，对应我们在 5.13 节强调的"分段看频率：prefill 和 decode 分别统计"。
+- `frameworks/base/core/java/android/os/PerformanceHintManager.java`
+  - `createHintSession()`
+  - `Session.updateTargetWorkDuration()`
+  - `Session.reportActualWorkDuration()`
+  - `Session.setThreads()`
+  - flagged `Session.setPreferPowerEfficiency()`
+  - flagged `Session.reportActualWorkDuration(WorkDuration)`
+- `hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl`
+  - `createHintSession()`
+  - `createHintSessionWithConfig()`
+  - hint session channel 与支持信息
+- `hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl`
+  - energy consumer、energy meter 与 residency 接口
 
-### 采样（Sampling）的工程分层
+上述平台路径按 `android-17.0.0_r1` 复核。
 
-`runtime/components/sampler.h` 把 Sampler 抽象成"输入 logits，输出 ids + 可选 scores"：
+### Android 17 内核
 
-```cpp
-// sampler.h L37-43
-virtual absl::Status SampleToIdAndScoreBuffer(
-    const TensorBuffer& logits_tensor,        // [batch, seq, vocab]
-    TensorBuffer& ids_tensor,                 // [batch, seq]
-    TensorBuffer* scores_tensor) = 0;         // [batch, seq]，log(p)
-```
+- `kernel/sched/fair.c`
+  - `find_energy_efficient_cpu()`
+  - `compute_energy()`
+- `kernel/sched/cpufreq_schedutil.c`
+  - `get_next_freq()`
+  - `map_util_freq()`
+  - Android vendor hook `android_vh_map_util_freq`
+- `drivers/cpufreq/cpufreq.c`
+  - CPUFreq policy 与 QoS 约束
+- `drivers/devfreq/`
+  - 通用 devfreq 框架；具体 GPU/内存实现需继续查看设备内核
 
-CPU 实现在 `top_p_cpu_sampler.cc` 把校验提到构造时（L69-79）：`k > 0`、`0 ≤ p ≤ 1`、`temperature ≥ 0`，任一违反直接返回 `InvalidArgumentError`。数学部分拆成 `sampling_cpu_util.h` 的三个函数：
+上述内核路径按 `android17-6.18-2026-06_r6` 复核。
 
-| 步骤 | 函数 | 工程作用 |
-|---|---|---|
-| 1. 剪枝 | `TopKTokenIds(logits, k)` | 省 vocab_size×float 内存带宽 |
-| 2. 缩放+归一 | `Softmax(topk, temperature)` | temperature=0 时退化为 greedy |
-| 3. 截断+采样 | `TopKTopPSampling(logits, k, p, temperature, rng)` | Top-P 累积概率 ≤ p |
+### 外部运行时与研究
 
-**对 DVFS 的含义**：当 k=1 时，`TopKTopPSampling` 走 greedy 路径，CPU 端数学开销最小、TPOT 最短；这与 §5.13 节能效模型"减小 sampler 计算量"是同一方向。
+- LiteRT-LM：<https://github.com/google-ai-edge/LiteRT-LM>
+- FUSE 论文：<https://arxiv.org/abs/2507.02135>
+- Perfetto CPU frequency：<https://perfetto.dev/docs/data-sources/cpu-freq>
+- Perfetto battery counters：<https://perfetto.dev/docs/data-sources/battery-counters>
+- Android Performance Hint API：<https://source.android.com/docs/core/perf/performance-hint-api>
 
-### Conversation 与 KV cache 策略
-
-`runtime/conversation/conversation.h` 暴露的开关（精简版）：
-
-```cpp
-class ConversationConfig {
- public:
-  const SessionConfig& GetSessionConfig() const;          // temperature/topK/topP/...
-  const Preface& GetPreface() const;                      // 系统级 prompt
-  const PromptTemplate& GetPromptTemplate() const;        // Gemma/ChatGLM 模板
-  bool prefill_preface_on_init() const;                   // 影响 TTFT
-  const std::vector<Channel>& GetChannels() const;        // system/user/function_call
-  bool filter_channel_content_from_kv_cache() const;      // 工具调用过滤
-  bool enable_thinking() const;                           // 思考/推理模式
-};
-```
-
-`prefill_preface_on_init=true` 会在 Engine 构造时把系统级 prompt 前向一遍，预热 KV cache，结果是首 token 延迟下降、Engine 构造时间上升——和本节 TTFT 优化方向一致，但具体代价取决于模型规模和 preface 长度。
-
-`filter_channel_content_from_kv_cache=true` 显式把 tool/function_call 通道的内容从 KV cache 抹除，**对长会话的内存压力和 TPOT 衰减至关重要**——这是 sliding window / H2O 之外的另一条路。
-
-### 与本节 5.13 已有结论的交叉
-
-- 5.13 §"decode 阶段的频率误判与延迟放大"提到的 GPU/CPU 频率偏低导致的 TPOT 上升，**根因之一**是 LiteRT-LM CPU sampler 路径下 forward → sample → forward 串行执行，GPU 短 kernel 触发的频率 ramp-down 没被下一轮 forward 及时"踩刹车"；切换到 GPU 后端（`Backend::GPU`）+ `Sampler::CanHandleInput()` 自跑下一轮 forward，**forward 与采样 overlap，TPOT 通常能再降一半**。
-- 5.13 §"ADPF、Power HAL 与应用可控边界"列举的"普通 App 不能指定 CPU 频率"边界，**与 LiteRT-LM 暴露的能力完全一致**——`setPreferredBackend()` 是 App 能控制的硬件入口，再往下就是厂商 delegate 内部黑盒。这与 5.13 的"普通 App 不可指定频率"互相印证。
-- 5.13 §"持续推理下的热衰减"提到的"分时间窗统计"，与 `ConversationConfig::prefill_preface_on_init` + `MAX_TOKENS=1024` 共同决定了**真实测试里"0-1 分钟"和"5-15 分钟"窗口的差异来源**——前者是 preface prefill 阶段，后者是 KV cache 增长 + 热限频叠加。
-
-### 待验证
-
-- `LiteRT-LM/runtime/components/tokenizer.h`（BPE/SentencePiece 实现）未直接抓取，本节关于 `sizeInTokens()` 行为的描述基于 `InferenceModel.kt` 反推。
-- NPU delegate（Qualcomm AI Engine / MediaTek APU）路径在 `runtime/executor/llm_executor_settings.h` 决定 backend；具体算子映射未本轮抓取。
-- Android 18 / API 38+ 的端侧 LLM 增强不在本调研范围。
-
-[已验证: AOSP 外部 LiteRT-LM main 分支 + MediaPipe LLM Inference 官方样例 main 分支 + karpathy/llama2.c master 分支][未进入 Android 17: 上述仓库均以 main/master 为锚点，未对应到 android-17.0.0_r1 tag（LiteRT-LM 与 MediaPipe 不属于 AOSP tree）；运行时栈与 Android 17 / API 37 兼容性的具体边界仍需在 android-17.0.0_r1 设备上复测]
+LiteRT-LM 和论文各自使用独立版本。它们不随 `android-17.0.0_r1` 标签一起冻结。
