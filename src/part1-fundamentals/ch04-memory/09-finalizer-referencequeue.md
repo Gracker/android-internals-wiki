@@ -57,7 +57,6 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-24
 ---
 
-----
 # 4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界
 
 <!-- outline-start -->
@@ -91,35 +90,117 @@ last_deepseek_cn_review_at: 2026-06-24
 
 <!-- outline-end -->
 
-`finalize()`、`ReferenceQueue`、`Cleaner` 和资源泄漏经常出现在同一类问题里:内存降不下来,FD 数持续涨,日志里出现 CloseGuard 警告,Trace 里还能看到 `FinalizerDaemon` 在忙。本节把这条链路拆开:哪些工作由 GC 和 ART 守护线程完成,哪些必须由应用显式释放,遇到队列堆积时应该采集哪些证据。
+看到 `FinalizerDaemon` 忙、FD 数量上涨或 CloseGuard 告警时，先把几个相邻概念分开：
 
-本节的判断基于 AOSP `android-16.0.0_r1` 的 libcore 源码。结论边界也要写在前面:Android 16 的 `ReferenceQueue` 仍是带锁 FIFO 队列,未找到它接入 `ConcurrentMessageQueue` 或无锁投递路径的证据;Android 17/API 37 的公开源码 tag 仍需后续复核；在 tag 出现前，本节不把 Android 17 行为写成正文结论。
+- GC 判断对象的可达性，并把需要后续处理的 `Reference` 交给引用处理机制。
+- `ReferenceQueueDaemon` 把 GC 提供的 pending 引用转移到目标 `ReferenceQueue`。
+- `FinalizerDaemon` 串行执行 `finalize()`，也负责 Android 共享 `SystemCleaner` 的清理动作。
+- 应用代码负责在确定的生命周期边界释放 FD、socket、游标、图形缓冲区和 native handle。
 
-[已验证: AOSP android-16.0.0_r1, platform/libcore/ojluni/src/main/java/java/lang/ref/ReferenceQueue.java]
-[已验证: AOSP android-16.0.0_r1, platform/libcore/libart/src/main/java/java/lang/Daemons.java]
-[来源: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-art-finalizerdaemon-referencequeue-concurrency.md]
+前三项属于运行时机制，最后一项才是资源所有权。运行时可以延后清理，也可能在进程结束前来不及执行；因此不能用 GC 是否发生来证明资源已经释放。
 
-## ReferenceQueue 和 FinalizerDaemon 负责不同阶段
+本章源码锚点为 AOSP `android-17.0.0_r1` 的 `platform/libcore`。其中 `ReferenceQueue.java`、`FinalizerReference.java` 和 `Daemons.java` 共同定义了 Android 17 的引用入队、对象终结和超时监控行为。
 
-`ReferenceQueue` 只是一个引用对象队列。GC 判断某个 `Reference` 可以进入后续处理阶段后,会把它放入 pending list;`ReferenceQueueDaemon` 再把这批引用转移到对应的 `ReferenceQueue`。如果引用对应的是带 `finalize()` 的对象,后续由 `FinalizerDaemon` 取出 `FinalizerReference`,调用对象的 `finalize()`。
+## 1. 一张表分清四个角色
 
-这几个角色不能混成一个"GC 清理资源"的动作:
+| 角色 | 输入 | 主要动作 | 不提供的保证 |
+|---|---|---|---|
+| GC 的引用处理 | 对象图和各类 `Reference` | 判定引用状态，生成待入队引用 | 不关闭应用资源 |
+| `ReferenceQueueDaemon` | `ReferenceQueue.unenqueued` | 把 pending 引用批量放入各自队列；处理旧式 `sun.misc.Cleaner` | 不消费应用自己的 `ReferenceQueue` |
+| `FinalizerDaemon` | `FinalizerReference.queue` | 调用 `finalize()`；执行 `SystemCleaner` 的 `Cleanable` | 不保证资源何时释放 |
+| 资源 owner | 明确的业务生命周期 | 调用 `close()`、`release()` 或 native 释放函数 | 不应等待对象不可达后才开始释放 |
 
-- GC: 判断对象可达性,生成待处理引用列表,触发引用入队。它不负责关闭业务资源。
-- `ReferenceQueueDaemon`: 把 GC 提供的 pending list 转移到 Java 层队列;对 `sun.misc.Cleaner` 类型的引用直接调用 `Cleaner.clean()`,无需经过 `FinalizerDaemon`。
-- `FinalizerDaemon`: 从 `FinalizerReference.queue` 取对象,执行 `finalize()`,处理异常和超时监控。
-- 应用代码: 对 FD、socket、数据库 cursor、native handle、图形 buffer 等资源执行确定性释放。
+`ReferenceQueue` 是引用对象的容器。应用创建了 `WeakReference`、`PhantomReference` 和对应队列后，还需要自己消费队列；ART 只负责把符合条件的引用放进去。
 
-`ReferenceQueue` 在源码里用一个实例锁保护队列状态,`poll()`、`remove()`、`enqueue()` 都围绕同一个 `lock` 工作。它保证队列结构一致,但不保证释放动作及时。
+`FinalizerDaemon` 是进程内单线程守护线程。某个 finalizer 或系统 Cleaner 动作耗时过长，会推迟同一队列后面的所有工作。
 
-这段源码展示了 `ReferenceQueue` 的同步边界,重点看 `lock` 和 FIFO 头尾指针:
+## 2. Android 17 的对象终结路径
+
+### 2.1 finalizable 对象先注册 `FinalizerReference`
+
+Android 17 的隐藏类 `java.lang.ref.FinalizerReference` 为每个可终结对象维护一个引用节点。运行时调用 `FinalizerReference.add()` 后，节点进入由 `LIST_LOCK` 保护的双向链表。
+
+关键字段可以简化为：
 
 ```java
-// platform/libcore, android-16.0.0_r1
-// ojluni/src/main/java/java/lang/ref/ReferenceQueue.java
-private Reference<? extends T> head = null;
-private Reference<? extends T> tail = null;
+// platform/libcore, android-17.0.0_r1
+// luni/src/main/java/java/lang/ref/FinalizerReference.java
+public static final ReferenceQueue<Object> queue = new ReferenceQueue<>();
 
+private static final Object LIST_LOCK = new Object();
+private static FinalizerReference<?> head;
+
+private T zombie;
+```
+
+这里有两套独立结构：
+
+- `head` 指向的链表覆盖堆中所有 finalizable 对象，对象此时可能仍然可达。
+- `queue` 只存放已经具备执行终结条件的 `FinalizerReference`。
+
+`FinalizerReference.get()` 返回 `zombie`，不返回普通 `Reference.referent`。源码注释给出的状态变化是：GC 需要终结对象时，把对象从 `referent` 移到 `zombie`。这样对象在 `finalize()` 执行前仍被保留。
+
+### 2.2 GC 先交给 `ReferenceQueueDaemon`
+
+GC 产生的 pending 引用通过静态字段 `ReferenceQueue.unenqueued` 交给 Java 层。`ReferenceQueueDaemon` 在 `ReferenceQueue.class` 上等待；拿到一批引用后，先把全局字段置空，再调用：
+
+```java
+ReferenceQueue.enqueuePending(list, progressCounter);
+```
+
+这一段只负责“从 pending list 到目标队列”。对于 `FinalizerReference`，目标队列就是 `FinalizerReference.queue`。
+
+Android 17 还在这个循环里观察 full GC 计数。当没有 pending 引用且发现 full GC 次数增加时，它会调用 `VMRuntime.onPostCleanup()`。这属于运行时的 GC 后处理，不能用来推导某个业务资源已经关闭。
+
+### 2.3 `FinalizerDaemon` 串行执行
+
+`FinalizerDaemon` 先用 `poll()` 走忙碌时的快速路径；队列为空后，关闭 watchdog 的活动标记并在 `remove()` 上阻塞。取到元素后，`processReference()` 区分两类对象：
+
+```java
+private void processReference(Object ref) {
+    if (ref instanceof FinalizerReference finalizingReference) {
+        finalizingObject = finalizingReference.get();
+        try {
+            doFinalize(finalizingReference);
+        } finally {
+            Reference.reachabilityFence(finalizingObject);
+        }
+    } else if (ref instanceof Cleaner.Cleanable cleanableReference) {
+        finalizingObject = cleanableReference;
+        doClean(cleanableReference);
+    } else {
+        throw new AssertionError("Unknown class was placed into queue: " + ref);
+    }
+}
+```
+
+这段代码有三个重要细节：
+
+1. 普通 finalizer 和 `SystemCleaner` 共用同一个 `FinalizerDaemon`。
+2. `reachabilityFence(finalizingObject)` 把对象的可达性保持到终结处理结束，避免后续 PhantomReference 过早入队。
+3. 该线程只有一个；队首的慢任务会推迟后续任务。
+
+`doFinalize()` 的顺序是：
+
+1. 从全体 finalizer 引用链表移除当前节点。
+2. 从 `zombie` 取出对象。
+3. 清空引用节点。
+4. 调用 `object.finalize()`。
+5. 清掉守护线程持有的 `finalizingObject`。
+
+Android 会记录 `finalize()` 抛出的异常。常规情况下，这类异常不会沿业务调用栈传播；异常日志本身如果也长时间卡住，watchdog 还有专门的超时处理。
+
+Java 允许 finalizer 把对象重新放回可达对象图，但终结机制不会因此成为可靠的复用协议。对象复活会显著增加生命周期推理难度，工程代码应禁止这种做法。
+
+## 3. `ReferenceQueue` 的同步边界
+
+### 3.1 每个队列一把实例锁，队内保持 FIFO
+
+Android 17 的 `ReferenceQueue` 用 `head`、`tail` 和私有 `lock` 实现 FIFO：
+
+```java
+private Reference<? extends T> head;
+private Reference<? extends T> tail;
 private final Object lock = new Object();
 
 public Reference<? extends T> poll() {
@@ -127,334 +208,446 @@ public Reference<? extends T> poll() {
         return reallyPollLocked();
     }
 }
-
-public Reference<? extends T> remove(long timeout)
-        throws IllegalArgumentException, InterruptedException {
-    synchronized (lock) {
-        Reference<? extends T> r = reallyPollLocked();
-        if (r != null) return r;
-        for (;;) {
-            lock.wait(timeout);
-            r = reallyPollLocked();
-            if (r != null) return r;
-            // Timeout handling omitted.
-        }
-    }
-}
 ```
 
-`remove()` 阻塞在队列锁上,`poll()` 走非阻塞路径。两者只回答"有没有引用可处理",不回答"资源是否已经释放"。把资源释放寄托在这条路径上,等于把释放时机交给了 GC、队列转移、守护线程调度和 `finalize()` 的执行速度。
+`poll()` 立即返回；`remove(timeout)` 在同一把锁上调用 `wait()`，入队方完成修改后调用 `notifyAll()`。`wait()` 会释放锁，因此阻塞消费者不会持续占住入队锁。
 
-[已验证: AOSP android-16.0.0_r1, ReferenceQueue.java lines 46-51, 170-217]
+由此得到的并发边界是：
 
-## 从 GC 标记到 finalize 执行的路径
+- 不同 `ReferenceQueue` 有不同实例锁。
+- 同一个队列的头尾修改串行进行。
+- 队列锁只保护引用节点，不保护引用关联的业务资源。
+- 入队成功只说明引用可以被消费者看到，不说明清理动作已经完成。
 
-带 `finalize()` 的对象在分配/构造阶段就通过 `FinalizerReference.add()` 注册了对应的 `FinalizerReference` 链表节点(参见 `luni/src/main/java/java/lang/ref/FinalizerReference.java` L25-L45、L59-L70)。GC 判定对象不可达后,不会重新创建引用,只是把已有 `FinalizerReference` 的 referent 置为 zombie 状态,然后挂到 `ReferenceQueue.unenqueued`。`ReferenceQueueDaemon` 再通过 `enqueuePending()` 把这批引用转移到 `FinalizerReference.queue`,`FinalizerDaemon` 才能取出并调用 `object.finalize()`。
+### 3.2 `enqueuePending()` 按相邻同队列引用批处理
 
-这条路径按四段排查:
-
-1. 对象构造时注册 `FinalizerReference`(`FinalizerReference.add()`),此时引用节点已在链表中,referent 仍指向存活对象。
-2. GC 判定对象不可达,把 referent 移到 zombie,将已有引用挂到 `ReferenceQueue.unenqueued`,唤醒 `ReferenceQueueDaemon`。
-3. `ReferenceQueueDaemon` 调用 `ReferenceQueue.enqueuePending()`,按队列分组批量入队。
-4. `FinalizerDaemon` 从队列取出引用,调用 `object.finalize()`,完成后清掉对对象的强引用。
-
-`FinalizerDaemon` 的运行循环用了快慢两条路径。有待处理对象时走 `queue.poll()`,少做一次 watchdog 通信;没有对象时切到 `queue.remove()` 阻塞等待,避免空闲设备被周期性唤醒。
-
-下面的片段只保留运行循环的骨架:
+GC 交来的 pending list 可能包含多个目标队列。Android 17 会把连续指向同一个队列的引用放在一次加锁区间内处理：
 
 ```java
-// platform/libcore, android-16.0.0_r1
-// libart/src/main/java/java/lang/Daemons.java
-private static class FinalizerDaemon extends Daemon {
-    private final ReferenceQueue<Object> queue = FinalizerReference.queue;
-    private final AtomicInteger progressCounter = new AtomicInteger(0);
-    private Object finalizingObject = null;
-
-    @Override public void runInternal() {
-        int localProgressCounter = progressCounter.get();
-        FinalizerWatchdogDaemon.INSTANCE.monitoringNeeded(
-                FinalizerWatchdogDaemon.FINALIZER_DAEMON);
-        while (isRunning()) {
-            Object nextReference = queue.poll();
-            if (nextReference != null) {
-                progressCounter.lazySet(++localProgressCounter);
-                processReference(nextReference);
-            } else {
-                finalizingObject = null;
-                FinalizerWatchdogDaemon.INSTANCE.monitoringNotNeeded(
-                        FinalizerWatchdogDaemon.FINALIZER_DAEMON);
-                nextReference = queue.remove();
-                FinalizerWatchdogDaemon.INSTANCE.monitoringNeeded(
-                        FinalizerWatchdogDaemon.FINALIZER_DAEMON);
-                processReference(nextReference);
-            }
-        }
-    }
-}
-```
-
-`processReference()` 遇到 `FinalizerReference` 时会取出对象并调用 `doFinalize()`。`doFinalize()` 里先把引用从 finalizer 链表移除,再调用 `object.finalize()`;如果 `finalize()` 抛异常,Android 会记录日志,而不是让异常静默消失。
-
-这解释了一个常见现象:堆里对象已经不可达,但 native 内存或 FD 还没降。对象要经过 finalizer 执行后才可能释放资源;如果队列堆积,释放动作会继续拖后。
-
-[已验证: AOSP android-16.0.0_r1, Daemons.java lines 295-401]
-
-## ReferenceQueue 的并发优化边界
-
-Android 的 `ReferenceQueue` 和 OpenJDK 的实现有一个结构差异:Android 版本在源码注释里标明是 FIFO,OpenJDK 版本是 LIFO。FIFO 让引用按入队顺序处理,更适合 Android 的对象生命周期语义;代价是队列头尾都要受同一把实例锁保护。
-
-Android 16 的 `enqueuePending()` 已经做了批处理优化。它会把同一个 `ReferenceQueue` 的连续引用放在一次 `synchronized (queue.lock)` 里处理，并用 `MAX_ITERS = 100` 限制单次持锁时间。这个优化减少重复加锁，但没有改变"同一个队列同一时间只有一个线程修改队列"的约束。
-
-> **MAX_ITERS=100 的进度监控归属**：`enqueuePending()` 接收的 `AtomicInteger progressCounter` 属于 `ReferenceQueueDaemon`（`Daemons.java` L224-L229、L275-L277；`ReferenceQueue.java` L236-L275）。它在每处理一个 `sun.misc.Cleaner` 或同队列批次后递增；`FinalizerDaemon` 另有独立 counter（`Daemons.java` L295-L352）。`FinalizerWatchdogDaemon` 用 `VMRuntime.getFinalizerTimeoutMs()` 推导 timeout 窗口，同时读取两个 counter；RQD 超时需要超过 `TOLERATED_REFERENCE_QUEUE_TIMEOUTS = 5` 才构造异常（`Daemons.java` L563-L648）。两者是两个独立的监控对象，不要把 RQD 入队进度当成 finalization 速度。
-
-> **Android 17 源码状态**：截至本轮复核，`platform/libcore` 与 `platform/art` 仓库的 `git ls-remote` 未返回 `android-17*` tag，无法引用 android-17.0.0_r1 源码。本节正文结论仅基于 `android-16.0.0_r1`，Android 17 不作为正文结论。
-
-`enqueuePending()` 的关键路径如下:
-
-```java
-// platform/libcore, android-16.0.0_r1
-// ojluni/src/main/java/java/lang/ref/ReferenceQueue.java
-public static void enqueuePending(Reference<?> list,
-        AtomicInteger progressCounter) {
-    Reference<?> start = list;
+final int MAX_ITERS = 100;
+int i = 0;
+synchronized (queue.lock) {
     do {
-        ReferenceQueue queue = list.queue;
-        if (queue == null || sun.misc.Cleaner.isCleanerQueue(queue)) {
-            // Cleaner path omitted.
-        } else {
-            final int MAX_ITERS = 100;
-            int i = 0;
-            synchronized (queue.lock) {
-                do {
-                    Reference<?> next = list.pendingNext;
-                    list.pendingNext = list;
-                    queue.enqueueLocked(list);
-                    list = next;
-                } while (list != start
-                        && list.queue == queue
-                        && ++i < MAX_ITERS);
-                queue.lock.notifyAll();
-            }
-        }
-        progressCounter.incrementAndGet();
-    } while (list != start);
+        Reference<?> next = list.pendingNext;
+        list.pendingNext = list;
+        queue.enqueueLocked(list);
+        list = next;
+    } while (list != start
+            && list.queue == queue
+            && ++i < MAX_ITERS);
+    queue.lock.notifyAll();
 }
+progressCounter.incrementAndGet();
 ```
 
-这段实现给出三个排查结论:
+`MAX_ITERS = 100` 限制一个批次的规模。它同时让 `ReferenceQueueDaemon.progressCounter` 能够定期更新，供 watchdog 判断线程是否仍在前进。
 
-- 高并发分配很多可终结对象时,排查重点通常不在"GC 有没有工作",而在引用入队和 finalizer 执行速度是否跟得上对象产生速度。
-- `queue.lock` 是每个 `ReferenceQueue` 的实例锁,不同队列之间可以分开处理,同一个队列仍可能出现竞争。
-- `ConcurrentMessageQueue` 这类消息队列优化不能直接外推到 `ReferenceQueue`。在 Android 16 libcore 源码里,没有看到 `ReferenceQueue` 接入无锁队列的证据。
+需要准确理解这个计数器：
 
-[已验证: AOSP android-16.0.0_r1, ReferenceQueue.java lines 236-278]
-[待验证: Android 17 公开源码 tag 出现后的 ReferenceQueue 实现差异（当前 android-16.0.0_r1 为最新可引用版本）]
+- 普通引用按“同队列批次”递增，不是每处理一个引用都递增。
+- 旧式 `sun.misc.Cleaner` 每处理一个就递增。
+- `FinalizerDaemon` 有自己的 `progressCounter`，两者互不共用。
+- 该数值是运行时内部的活性信号，不是公开的队列长度或性能指标。
 
-## 队列堆积带来的内存和卡顿表现
+### 3.3 Android 17 没有接入 `ConcurrentMessageQueue`
 
-Finalizer 堆积最容易误判成"GC 没回收"。更准确的排查对象是资源释放延迟:Java 对象已经进入 finalization 路径,但它持有的 native 资源、FD 或外部句柄还没释放。
+在 `android-17.0.0_r1` 的 `ReferenceQueue.java`、引用类目录和 `Daemons.java` 中，`ReferenceQueue` 仍采用上述 FIFO、实例锁和批处理实现，没有 `ConcurrentMessageQueue` 接入点。
 
-常见表现有四类:
+消息队列的并发改动不能外推到 Java 引用队列。分析引用性能时，应以 `ReferenceQueue.enqueuePending()`、队列锁持有区间和两个 daemon 的实际线程状态为依据。
 
-- FD 数上涨: `/proc/<pid>/fd` 里的文件描述符数量持续增加,日志里可能伴随 CloseGuard "A resource was acquired but never released" 类警告。
-- native 内存上涨: Java heap 变化不大,`dumpsys meminfo` 里的 Native Heap、Graphics 或 Unknown 项持续上升。
-- 守护线程忙: Trace 或线程 dump 里 `FinalizerDaemon` 长时间运行,`ReferenceQueueDaemon` 也可能频繁被唤醒。
-- 偶发卡顿: finalizer 里执行文件、Binder、JNI 或复杂清理逻辑时,虽然不直接跑在主线程,也会争抢 CPU、触发锁等待,间接影响帧预算。
+## 4. watchdog 监控的精确含义
 
-FD 泄漏的证据采集可以从最小命令开始,不要一上来只看 Java heap:
+`FinalizerWatchdogDaemon` 同时观察：
 
-```bash
-# 取目标进程 pid 后,观察 FD 数是否随操作次数单调上涨
-adb shell pidof com.example.app
-adb shell 'ls -l /proc/<pid>/fd | wc -l'
-adb shell dumpsys meminfo com.example.app
-```
+- `FinalizerDaemon` 是否长时间没有推进；
+- `ReferenceQueueDaemon` 是否长时间没有推进。
 
-如果 FD 数每轮操作后都增加,heap dump 里再去找对应 wrapper 对象才有意义。常见对象包括 `FileInputStream`、`ParcelFileDescriptor`、`CursorWindow`、`SQLiteClosable` 子类、自定义 JNI wrapper。只看到 `FinalizerDaemon` 忙,不能反推出具体泄漏源。
+超时时间来自 `VMRuntime.getFinalizerTimeoutMs()`，不应在应用文档里写成固定秒数。厂商配置、运行环境和后续平台版本都可能影响具体值。
 
-CloseGuard 的价值在于把"资源获取点"留下来。Android 官方 API 文档把它定位为调试资源泄漏的工具:资源获取后调用 `open()`,正常释放后调用 `close()`,对象终结时用 `warnIfOpen()` 发出警告。生产治理仍要靠显式释放和测试门禁,不能把 CloseGuard 当成兜底释放器。
+watchdog 把一个超时窗口分成 5 次唤醒。每次醒来都会比较活动标记和进度计数器，这能降低进程被冻结、CPU 没有获得调度时的误判概率。
 
-[已验证: 官方文档, developer.android.com/reference/android/util/CloseGuard]
-[已验证: 官方文档, developer.android.com/reference/android/os/StrictMode]
+两种超时的判定力度不同：
 
-## 诊断流程与证据采集
-
-遇到疑似 finalizer 或 `ReferenceQueue` 问题时,排查顺序要从"资源是否持续增长"开始,再看 ART 守护线程。只看一次 heap dump 很容易漏掉时间维度。
-
-建议采集五组证据:
-
-- 资源计数: 每轮复现前后记录 FD 数、`dumpsys meminfo`、native heap、graphics memory。观察是否随操作次数增长,还是 GC 后能回落。
-- Java heap: 导出 hprof,按 dominator tree 找持有资源 wrapper 的对象;关注已经不可达但仍等待 finalization 的对象,必要时对比两次 dump。
-- 线程状态: 抓 `debuggerd -b <pid>` 或 ANR trace,查看 `FinalizerDaemon`、`ReferenceQueueDaemon`、`FinalizerWatchdogDaemon` 的栈。
-- Perfetto: 查看目标进程里的 daemon 线程轨道、CPU running 区间、主线程卡顿区间是否重叠;如果资源释放触发 Binder 或文件操作,还要看对应线程的阻塞状态。
-- 日志: 收集 CloseGuard、StrictMode VM policy、`Uncaught exception thrown by finalizer`、`FinalizerWatchdogDaemon` 相关日志。
-
-一轮较稳的现场记录模板:
-
-```bash
-# 复现前
-adb shell pidof com.example.app
-adb shell dumpsys meminfo com.example.app > meminfo_before.txt
-adb shell 'ls -l /proc/<pid>/fd | wc -l' > fd_before.txt
-
-# 执行 N 轮打开/关闭/切换/退出操作后
-adb shell dumpsys meminfo com.example.app > meminfo_after.txt
-adb shell 'ls -l /proc/<pid>/fd | wc -l' > fd_after.txt
-adb shell debuggerd -b <pid> > threads_after.txt
-```
-
-证据判读要区分三种情况:
-
-| 现象 | 更可能的原因 | 下一步 |
+| 监控对象 | 可疑状态 | 上报策略 |
 |---|---|---|
-| FD 数持续上涨,CloseGuard 出现资源未关闭警告 | 显式 `close()` 缺失或异常路径漏关 | 查资源获取栈和关闭路径,补 `try/finally` 或 Kotlin `use {}` |
-| Java heap 可回落,Native Heap 不回落 | Java wrapper 生命周期和 native 释放脱节 | 查 JNI 引用、native handle 所有权、析构函数是否只放在 finalizer |
-| `FinalizerDaemon` 长时间卡在业务清理 | `finalize()` 做了慢操作或拿了业务锁 | 移走慢操作,改成显式关闭和后台释放队列 |
+| `FinalizerDaemon` | 一个 finalizer 或 `SystemCleaner` 动作跨过完整超时窗口仍无进展 | 当次即可构造 `TimeoutException` |
+| `ReferenceQueueDaemon` | 一个旧 Cleaner 或同队列批处理长期没有可见进展 | 容忍计数为 5；同一段未完成处理期间第 6 次被判定超时才构造异常 |
 
-`FinalizerWatchdogDaemon` 的设计说明 ART 将 finalizer 卡住视为 VM 级风险。源码注释写明:如果 `FinalizerDaemon` 处理一个实例超过阈值,或者 `ReferenceQueueDaemon` 长时间卡在 `enqueuePending()`,watchdog 会构造超时异常并结束 VM。应用侧不应该把复杂清理逻辑放进 `finalize()`。
+一批 pending 引用处理完成后，`ReferenceQueueDaemon` 会重置其超时观察计数。这个容忍机制补偿了 RQD 不是每处理一个引用都更新进度的事实。
 
-[已验证: AOSP android-16.0.0_r1, Daemons.java lines 414-449]
+当超时成立且调试器未连接时，watchdog 会先给本进程发送 `SIGQUIT`，留出时间记录 native 栈，再把超时异常交给未捕获异常处理机制。Zygote 派生的应用进程通常由 `RuntimeInit` 的处理器生成崩溃报告并终止进程。调试器连接期间，源码明确跳过这次致命超时处理。
 
-## 工程治理边界
+所以，“看到 FinalizerDaemon 很忙”和“watchdog 判定进程必须终止”之间还有进度、超时窗口、调试器状态等条件。诊断报告要保留这些条件。
 
-资源治理的原则很直接:拥有资源的一方负责确定性释放,finalizer 只能用于发现遗漏或兜底报警。
+## 5. Android 17 的三种 Cleaner 路径
 
-更稳的做法有几类:
+Cleaner 这个名字覆盖了三套执行模型。混写它们会直接导致线程归因错误。
 
-- `AutoCloseable` / `Closeable`: Java 用 `try-with-resources`,Kotlin 用 `use {}`,把释放动作绑定到语法结构,避免异常路径漏关。
-- `StrictMode.VmPolicy`: 调试包启用 leaked closable / leaked registration 等检测,把资源泄漏尽早变成日志或测试失败。
-- CloseGuard: 自定义资源 wrapper 可以在获取资源后 `open()`,正常释放时 `close()`,终结阶段只报警,不承担主释放路径。
-- 资源池: 对昂贵对象做复用时要有最大容量、空闲回收和生命周期 owner,不能只依赖对象不可达后的清理。
-- JNI wrapper: native 资源要明确所有权。Java 对象关闭时调用 native release;native 层不能长期持有不释放的 global ref。
+### 5.1 平台旧实现：`sun.misc.Cleaner`
 
-`Cleaner` 的使用要看 API level、desugaring 和团队规范。Android 上有三条 Cleaner 执行路径:
+`sun.misc.Cleaner` 是平台内部实现，不属于应用可依赖的稳定 SDK。它继承 `PhantomReference`，使用一个占位队列。
 
-- `sun.misc.Cleaner`(API 26+):在 `ReferenceQueueDaemon` 的 `enqueuePending()` 中,检测到引用的 queue 是 `Cleaner` 队列时直接调用 `Cleaner.clean()`。不存在独立的 `CleanerDaemon` 线程。
-- `java.lang.ref.Cleaner.create()`(API 33 公开):通过 `CleanerImpl.start()` 创建名为 `Cleaner-N` 的独立 daemon 线程执行清理,不经过 `FinalizerDaemon`。
-- Android system cleaner(`android.system.SystemCleaner.cleaner()` API 33 公开入口,内部使用隐藏的 `Cleaner.createSystemCleaner()`):把 queue 设为 `FinalizerReference.queue`,由 `FinalizerDaemon.processReference()` 中的 `doClean()` 执行。
+`ReferenceQueue.enqueuePending()` 识别到这个占位队列后，不把引用放进普通队列，而是在 `ReferenceQueueDaemon` 上直接调用 `clean()`：
 
-三条路径都不提供确定性执行时间。对 FD、socket、数据库 cursor、GraphicBuffer、Bitmap native allocation 这类资源,主路径仍然是显式关闭。
+```text
+GC pending list
+  -> ReferenceQueueDaemon
+     -> ReferenceQueue.enqueuePending()
+        -> sun.misc.Cleaner.clean()
+           -> thunk.run()
+```
 
-一个资源 wrapper 的最小结构应该像这样:
+因此旧 Cleaner 的慢动作会卡住全进程的 `ReferenceQueueDaemon`，连带推迟其他引用入队。应用不应通过反射或隐藏 API 依赖这套实现。
+
+### 5.2 公开 `java.lang.ref.Cleaner.create()`
+
+`java.lang.ref.Cleaner` 从 API 33 起成为 Android 公共 API。每次调用 `Cleaner.create()` 都创建一个由 `CleanerImpl` 管理的 daemon 线程，默认名称形如 `Cleaner-0`：
+
+```text
+Cleaner.create()
+  -> CleanerImpl.start()
+     -> 独立 daemon 线程
+        -> queue.remove(60 s)
+           -> Cleanable.clean()
+```
+
+该线程捕获并忽略 cleaning action 抛出的 `Throwable`。一个 action 阻塞时，会推迟注册在同一个 Cleaner 上的其他动作，但不会直接占住 `ReferenceQueueDaemon` 或 `FinalizerDaemon`。
+
+独立 Cleaner 带来线程隔离，也带来线程和栈空间成本。库不宜各自无条件创建 Cleaner；是否共享要依据 action 的耗时、阻塞风险和故障隔离需求决定。
+
+### 5.3 `android.system.SystemCleaner`
+
+`SystemCleaner.cleaner()` 同样从 API 33 起公开。它返回进程共享的 Cleaner，内部通过隐藏入口 `Cleaner.createSystemCleaner()` 把队列设置为 `FinalizerReference.queue`：
+
+```text
+SystemCleaner.cleaner()
+  -> shared Cleaner
+     -> FinalizerReference.queue
+        -> FinalizerDaemon.processReference()
+           -> Cleanable.clean()
+```
+
+官方契约要求这类动作快速结束，并避免显式 I/O、IPC 和网络访问。原因有两层：
+
+- 全进程共享，同一 action 会挡住后续共享清理动作；
+- 它与普通 finalizer 共用 `FinalizerDaemon`，还受 finalizer watchdog 监控。
+
+`SystemCleaner` 不忽略共享 daemon 上未捕获的清理异常，异常通常会让进程崩溃并暴露问题。这与 `Cleaner.create()` 的独立线程行为不同。
+
+### 5.4 三者对比
+
+| 类型 | Android 17 执行线程 | 慢动作的主要影响 | 异常边界 |
+|---|---|---|---|
+| `sun.misc.Cleaner` | `ReferenceQueueDaemon` | 阻塞全进程 pending 引用转移 | 内部实现，不提供应用兼容承诺 |
+| `Cleaner.create()` | 每个 Cleaner 自己的 daemon | 阻塞同一 Cleaner 的后续 action | 后台线程忽略 action 异常 |
+| `SystemCleaner.cleaner()` | `FinalizerDaemon` | 阻塞共享 Cleaner 和普通 finalizer | 未捕获异常通常导致进程崩溃 |
+
+三种机制都只保证 action 至多执行一次，不保证 GC 触发时间，也不保证进程退出前一定执行。
+
+## 6. 正确的资源所有权设计
+
+### 6.1 主路径必须显式关闭
+
+资源 wrapper 应满足四个条件：
+
+1. owner 明确，创建者知道由谁关闭；
+2. `close()` 幂等；
+3. 正常、异常和取消路径都会关闭；
+4. 兜底清理只处理遗漏，不承担日常释放流量。
+
+Java 用 `try-with-resources`，Kotlin 用 `use`：
 
 ```kotlin
-class NativeHandleOwner(
-    private var handle: Long
-) : AutoCloseable {
-    private var closed = false
-
-    override fun close() {
-        if (closed) return
-        closed = true
-        val h = handle
-        handle = 0L
-        if (h != 0L) nativeRelease(h)
+fun decode(path: String): Result {
+    ParcelFileDescriptor.open(
+        File(path),
+        ParcelFileDescriptor.MODE_READ_ONLY
+    ).use { descriptor ->
+        return decodeFromFd(descriptor.fileDescriptor)
     }
 }
 ```
 
-这段代码只表达所有权转移和幂等释放,不把释放逻辑放进 `finalize()`。如果必须加 CloseGuard,也应该只在未调用 `close()` 时报警,不能在报警路径里补做复杂业务清理。
+`use` 把关闭动作绑定到词法作用域。`decodeFromFd()` 正常返回或抛出异常时，`ParcelFileDescriptor.close()` 都会执行。
 
-## Cleaner / CloseGuard / StrictMode 的组合使用
+### 6.2 Cleaner action 不能捕获 owner
 
-三者的职责可以分开:
+Cleaner 只在 owner 变成 phantom reachable 后自动执行。如果 action 直接或间接引用 owner，owner 会一直可达，自动清理也就永远没有机会开始。
 
-| 工具 | 适合做什么 | 不适合做什么 |
+下面的 Java 示例适用于 API 33 及以上。它使用静态嵌套状态对象，并用 `AtomicLong.getAndSet(0)` 让 native handle 最多释放一次：
+
+```java
+final class NativeSession implements AutoCloseable {
+    private static final Cleaner CLEANER = SystemCleaner.cleaner();
+
+    private static final class State implements Runnable {
+        private final AtomicLong handle;
+
+        State(long handle) {
+            this.handle = new AtomicLong(handle);
+        }
+
+        @Override
+        public void run() {
+            long value = handle.getAndSet(0L);
+            if (value != 0L) {
+                nativeRelease(value);
+            }
+        }
+    }
+
+    private final State state;
+    private final Cleaner.Cleanable cleanable;
+
+    NativeSession(long handle) {
+        state = new State(handle);
+        cleanable = CLEANER.register(this, state);
+    }
+
+    @Override
+    public void close() {
+        cleanable.clean();
+    }
+
+    private static native void nativeRelease(long handle);
+}
+```
+
+这里的 `State` 不持有 `NativeSession`。显式调用 `close()` 时，`cleanable.clean()` 在调用线程执行释放；遗忘关闭时，SystemCleaner 才提供延迟兜底。
+
+如果 `nativeRelease()` 可能等待 Binder、磁盘、网络或不可控锁，这个 action 不适合 `SystemCleaner`。应把耗时释放设计成可显式等待或受控调度的业务操作，Cleaner 中只保留快速、有限、不会阻塞的最后防线。
+
+低于 API 33 的设备不能直接假设存在公共 `java.lang.ref.Cleaner`。项目可以在兼容层选择其他实现，但 `AutoCloseable` 的调用契约应保持一致。不要把隐藏 `sun.misc.Cleaner` 当作兼容方案，也不要在没有验证构建配置和运行时语义时宣称 desugaring 与 Android 17 原生 Cleaner 完全等价。
+
+### 6.3 CloseGuard 负责定位遗漏
+
+公共 `android.util.CloseGuard` 从 API 30 起可用。典型使用顺序是：
+
+1. 获取资源后 `open("close")`，记录获取位置；
+2. 显式关闭后调用 `close()`；
+3. 兜底检查阶段调用 `warnIfOpen()`。
+
+CloseGuard 的输出用于回答“资源在哪里获取却没有关闭”。它不释放资源，也不保证告警何时出现。只记录一条告警而不修复 owner 生命周期，FD 和 native 内存仍会继续增长。
+
+### 6.4 StrictMode 负责尽早暴露问题
+
+调试包和自动化测试可开启：
+
+```kotlin
+StrictMode.setVmPolicy(
+    StrictMode.VmPolicy.Builder()
+        .detectLeakedClosableObjects()
+        .penaltyLog()
+        .build()
+)
+```
+
+`detectLeakedClosableObjects()` 从 API 11 起提供，用来发现 `Closeable` 在没有显式关闭的情况下走到终结处理。设置 VM policy 会替换当前进程策略，项目应在统一的调试初始化入口合并其他检测项，避免多个模块互相覆盖。
+
+StrictMode 适合把错误提前带到开发和 CI 阶段。生产环境是否启用、采用日志还是更强 penalty，需要结合噪声、性能和隐私要求评估。
+
+## 7. 队列堆积为何表现为内存或卡顿
+
+### 7.1 finalizable 对象仍占用资源
+
+对象进入 finalization 后，`FinalizerReference.zombie` 会在 `finalize()` 开始前保留它。Java wrapper 可能很小，但它代表的资源可能很大：
+
+- 一个文件或 socket FD；
+- SQLite cursor 与 CursorWindow；
+- native 堆中的解码缓冲区；
+- GraphicBuffer、ImageReader image 或 Surface；
+- JNI global reference 和它间接保活的对象图。
+
+因此 Java heap 变化不大、Native Heap 或 Graphics 持续上涨，是合理且常见的组合。只按 Java 对象 shallow size 排序会漏掉这类问题。
+
+### 7.2 单线程清理形成排队等待
+
+`FinalizerDaemon` 串行处理普通 finalizer 和 SystemCleaner。假设每个动作只耗时 20 ms，前面堆积 500 个对象时，队尾对象也可能等待很久。这里不能用固定公式预测线上延迟，因为 GC 触发、线程调度和 action 耗时都在变化；但“生成速度长期高于消费速度”一定会扩大积压。
+
+慢清理一般不会直接运行在主线程，却仍可能造成：
+
+- 与主线程争抢 CPU；
+- 持有主线程需要的 native 或 Java 锁；
+- 发起 Binder、文件系统操作，增加系统服务压力；
+- 推迟 FD 和图形缓冲区归还，最终触发资源耗尽；
+- 被 watchdog 判定为超时，导致进程崩溃。
+
+## 8. 诊断顺序：先证明增长，再定位执行点
+
+### 8.1 建立可重复的资源曲线
+
+先定义一轮固定操作，例如进入页面、打开资源、完成任务、退出页面。每轮结束后记录同一组指标：
+
+```bash
+adb shell pidof com.example.app
+adb shell dumpsys meminfo com.example.app
+# 假设上一条 pidof 返回 12345
+adb shell ls /proc/12345/fd
+```
+
+`/proc/<pid>/fd` 在量产设备上可能受权限和 SELinux 限制；无权限时应使用 debuggable 构建、受控测试设备或应用自己的诊断计数。不要把“命令被拒绝”写成“FD 没有增长”。
+
+比对时关注趋势：
+
+- 每轮净增，且离开页面后不回落；
+- 只在 GC 后部分回落；
+- Java heap 回落，Native Heap 或 Graphics 不回落；
+- FD 到达某一水平后出现 `EMFILE`、打开文件失败或 socket 异常。
+
+一次采样只能给出快照。稳定复现、多个时间点和同一测试基线的对照更有判断力。
+
+### 8.2 收集日志和线程栈
+
+重点日志包括：
+
+- `A resource was acquired ... but never released` 一类 CloseGuard 告警；
+- StrictMode leaked closable 违规；
+- `Uncaught exception thrown by finalizer`；
+- `FinalizerDaemon` 或 `ReferenceQueueDaemon` timeout；
+- FD、ashmem、gralloc、SQLite 或相机模块的资源失败。
+
+在有权限的 debuggable 环境中，可用下面的命令获取线程和 native 栈：
+
+```bash
+# 假设目标 PID 是 12345
+adb shell debuggerd -b 12345
+```
+
+判断线程栈时，先看具体执行点：
+
+| 线程 | 常见栈位置 | 能支持的结论 |
 |---|---|---|
-| `Closeable` / `AutoCloseable` | 主释放路径,保证正常和异常分支都释放资源 | 发现调用方忘记释放后的来源栈 |
-| CloseGuard | 调试期记录资源获取点,在对象终结时报警 | 代替 `close()` 释放资源 |
-| StrictMode VM policy | 在 debug、CI、灰度包里暴露泄漏类问题 | 在 release 包里无差别开启高噪声策略 |
-| Cleaner | 给少数资源做兜底清理,避免 `finalize()` 语义 | 保证释放延迟、承载慢操作或业务锁 |
+| `ReferenceQueueDaemon` | `enqueuePending()` 普通分支 | 正在转移 pending 引用 |
+| `ReferenceQueueDaemon` | 某个 `sun.misc.Cleaner.clean()` | 平台旧 Cleaner action 可能阻塞 RQD |
+| `FinalizerDaemon` | 某类 `finalize()` | 该类终结代码正在执行 |
+| `FinalizerDaemon` | `Cleaner.Cleanable.clean()` | `SystemCleaner` action 正在执行 |
+| `Cleaner-N` | `CleanerImpl.run()` 或业务 action | 某个独立 Cleaner 正在处理 |
 
-CI 里可以把资源泄漏测试写成固定复现脚本:执行 N 轮打开/关闭,记录 FD 数和 `dumpsys meminfo`,再配合 StrictMode 日志判断是否有未关闭资源。测试失败条件不要只看单次绝对值,最好看增长斜率;一次启动里的基线 FD 数受系统版本、WebView、厂商组件影响较大。
+只看到线程处于 RUNNABLE 不能证明它连续消耗了整个时间窗口；需要多次栈快照或调度 trace 确认。
 
-[已验证: 官方文档, developer.android.com/reference/android/os/StrictMode]
+### 8.3 Perfetto 和 simpleperf 各回答什么
 
-## Cleaner / CloseGuard 的版本对照表与源码路径
+Perfetto 可用来观察：
 
-三个机制在不同 API level 的可用性有明确边界,源码路径也不同。`dalvik.system.CloseGuard`(非公开)和 `android.util.CloseGuard`(API 30 公开)是两套独立的 CloseGuard 实现,分别服务于虚拟机层和应用层;`sun.misc.Cleaner`(API 26+)和 `java.lang.ref.Cleaner`(API 33 公开)是两条 Cleaner 路径:前者在 `ReferenceQueueDaemon.enqueuePending()` 中直接执行清理,后者由 `CleanerImpl` 创建的独立 daemon 线程处理。Android system cleaner 复用 `FinalizerReference.queue`,由 `FinalizerDaemon#doClean()` 触发。
+- daemon 线程何时获得 CPU、运行了多久；
+- daemon 的运行区间是否与主线程掉帧重叠；
+- 是否伴随 Binder、文件系统或调度等待；
+- GC、堆变化和应用生命周期事件的时间关系。
 
-**版本对照表**:
+Perfetto 默认没有公开的 `FinalizerReference.queue` 深度计数器。线程轨道繁忙只能说明 daemon 活跃，不能单独证明队列里有多少对象。
 
-| 机制 | API 26-29 | API 30-32 | API 33+ |
-|------|-----------|-----------|---------|
-| `dalvik.system.CloseGuard` | ✅ 非公开 | ✅ 非公开 | ✅ 非公开 |
-| `android.util.CloseGuard` | ❌ | ✅ 公开 | ✅ 公开 |
-| `sun.misc.Cleaner` | ✅ | ✅ | ⚠️ 已废弃(推荐迁移) |
-| `java.lang.ref.Cleaner` | ❌(需 desugaring) | ❌(需 desugaring) | ✅ 公开 |
-| `FinalizerDaemon` | ✅ | ✅ | ✅ |
+simpleperf 适合在 CPU 异常时找热点函数；具备符号和可展开栈时，可以看到 native 清理函数或锁竞争相关调用。它也不提供引用队列长度，阻塞型问题仅看 CPU profile 还可能没有明显热点。
 
-> 注:`Daemons.DAEMONS` 数组只包含 `HeapTaskDaemon`、`ReferenceQueueDaemon`、`FinalizerDaemon`、`FinalizerWatchdogDaemon` 四个 daemon(android-16.0.0_r1 `Daemons.java` L59-L64),不存在 `CleanerDaemon`。`sun.misc.Cleaner` 的清理动作在 `ReferenceQueueDaemon.enqueuePending()` 内完成;`java.lang.ref.Cleaner` 使用 `CleanerImpl` 自有线程。
+### 8.4 heap dump 能做什么
 
-**源码路径**:
+Heap dump 适合：
 
-- `libcore/libart/src/main/java/java/lang/Daemons.java` - 四个 daemon 定义(L59-L64 `HeapTaskDaemon`/`ReferenceQueueDaemon`/`FinalizerDaemon`/`FinalizerWatchdogDaemon`),L363-L411 `processReference()`/`doFinalize()`/`doClean()`
-- `libcore/ojluni/src/main/java/java/lang/ref/ReferenceQueue.java` - `enqueuePending()` 批量入队与 `sun.misc.Cleaner` 清理触发,L236-L279
-- `libcore/luni/src/main/java/java/lang/ref/FinalizerReference.java` - `FinalizerReference.add()`、`queue` 字段,L25-L45、L59-L70
-- `libcore/ojluni/src/main/java/sun/misc/Cleaner.java` - 旧版 Cleaner,在 `ReferenceQueueDaemon.enqueuePending()` 中由 `isCleanerQueue(queue)` 分支直接 `clean()`,L123-L166 `isCleanerQueue()`/`create()`/`clean()`
-- `libcore/ojluni/src/main/java/java/lang/ref/Cleaner.java` - API 33 公开 Cleaner,L178-L221 `create()`/`createSystemCleaner()`,L234-L237 `register()`
-- `libcore/ojluni/src/main/java/jdk/internal/ref/CleanerImpl.java` - `CleanerImpl.start()` 创建独立 daemon 线程,L113-L144
-- `frameworks/base/core/java/android/util/CloseGuard.java` - API 30 公开 CloseGuard,应用层泄漏检测
-- `libcore/luni/src/main/java/android/system/SystemCleaner.java` - API 33 公开 `SystemCleaner.cleaner()`,L39-L50
-- `libcore/dalvik/src/main/java/dalvik/system/CloseGuard.java` - API 26+ 非公开 CloseGuard,Dalvik 内部使用
+- 比较资源 wrapper 的实例数；
+- 查仍被业务对象、缓存或 JNI 引用保活的 owner；
+- 观察 `FinalizerReference`、Cleaner state 等相关对象数量；
+- 对比操作前后的类直方图和保留关系。
 
-**Cleaner 三条执行路径**:
+Heap dump 不适合直接宣称“这些对象都不可达、只是在等待 finalizer”。生成 HPROF 本身会触发暂停和运行时活动，工具对终结状态、native 所有权的呈现也有限。结论需要和线程栈、资源计数、日志及 native 证据互相印证。
 
-路径 A - `sun.misc.Cleaner`(`ReferenceQueueDaemon.enqueuePending()` 直接执行):
-```
-ReferenceQueueDaemon.enqueuePending(list, progressCounter)
-  → if (sun.misc.Cleaner.isCleanerQueue(queue))
-      → cleaner.clean()
-        → thunk.run()
-```
-路径 B - `java.lang.ref.Cleaner.create()`(`CleanerImpl` 自有线程):
-```
-Cleaner.create() → CleanerImpl.start()
-  → Cleaner-N daemon thread
-    → CleanableChain.clean()
-      → Cleaner.Cleanable.clean()
-```
-路径 C - Android system cleaner(`FinalizerDaemon` 触发):
-```
-FinalizerDaemon.processReference()
-  → FinalizerReference.doClean()
-    → SystemCleaner 的 queue 上引用执行清理
-```
+## 9. Native 资源排查模板
 
-关键区别:`sun.misc.Cleaner` 不经过独立线程,在 `ReferenceQueueDaemon` 的入队循环中直接执行;`java.lang.ref.Cleaner.create()` 使用 `CleanerImpl` 创建的独立线程,不经过 `FinalizerDaemon`;`android.system.SystemCleaner.cleaner()` 这个共享 Cleaner 才通过内部 `createSystemCleaner()` 走 `FinalizerReference.queue` + `FinalizerDaemon#doClean()` 路径。
-
-**Core Library Desugaring 影响**: `java.lang.ref.Cleaner` 可通过 AGP 8.0+ `coreLibraryDesugaring` 在 API 26+ 设备上使用,需要在 `build.gradle` 中添加 `coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.x")` 依赖。但 desugared Cleaner 的每次清理调用会增加桥接层开销,且运行时语义不保证与原生实现完全一致(例如线程调度、异常处理路径可能有差异);对 FD、GraphicBuffer 这类高频资源,建议用 `AutoCloseable` 显式关闭,不依赖 desugared Cleaner。
-
-[已验证: AOSP android-16.0.0_r1, Daemons.java L59-L64 (四个 daemon), L363-L411 (processReference/doFinalize/doClean)]
-[已验证: AOSP android-16.0.0_r1, ReferenceQueue.java L236-L278]
-[已验证: 官方文档, developer.android.com/reference/android/util/CloseGuard - Added in API 30]
-[已验证: Android Developers API reference, `java.lang.ref.Cleaner` / `android.system.SystemCleaner` Added in API level 33]
-
-## Native 资源释放与 Java wrapper 生命周期
-
-Native 资源问题通常来自"小 wrapper 持有大资源",不一定对应 Java heap 里最大的对象。Java wrapper 只有几十字节,却可能指向一个 FD、ashmem、GraphicBuffer、Bitmap native allocation 或 JNI global ref。wrapper 生命周期稍微拉长,native 侧就会积压。
-
-排查时要把所有权写成表格:
-
-| 资源 | Java 入口 | Native 所有者 | 释放动作 | 证据 |
+| 资源 | Java wrapper | 释放动作 | 首选证据 | 常见遗漏位置 |
 |---|---|---|---|---|
-| FD / socket | `FileInputStream`、`ParcelFileDescriptor`、OkHttp socket | Linux fd table | `close()` | `/proc/<pid>/fd`、CloseGuard |
-| Cursor / SQLite | `CursorWindow`、`SQLiteClosable` | sqlite / ashmem | `close()` | `dumpsys meminfo`、logcat |
-| Bitmap native allocation | `Bitmap` wrapper | native heap / gralloc | 引用释放后由运行时处理,业务缓存要主动移除 | heap dump、meminfo Graphics/Native |
-| GraphicBuffer / Surface | Surface / ImageReader / Camera buffer | gralloc / BufferQueue | `close()`、`release()`、生命周期回调 | Perfetto、meminfo Graphics |
-| JNI global ref | 自定义 Java wrapper | native 全局引用表 | `DeleteGlobalRef` | native heap、debug log、JNI 检查 |
+| FD / socket | `ParcelFileDescriptor`、流、网络连接 | `close()` | FD 计数、CloseGuard、异常日志 | 异常、取消、重试 |
+| SQLite | `Cursor`、`CursorWindow`、statement | `close()` | StrictMode、SQLite 日志、meminfo | 提前 return、分页切换 |
+| ImageReader / Image | `Image`、reader/session wrapper | `close()` | 相机日志、Graphics、BufferQueue trace | 回调异常、消费速度不足 |
+| Surface / GraphicBuffer | Surface 类 wrapper | `release()` / `close()` | Perfetto、dumpsys、Graphics | 页面销毁、重建 |
+| Bitmap / native allocation | `Bitmap` 与缓存 owner | 移除强引用、按 API 契约回收关联资源 | heap、Native Heap、Graphics | 无界缓存、后台任务保活 |
+| JNI handle | 自定义 owner | 对应 native destroy/free | native 日志、ASan/HWASan、堆分析 | Java 异常、重复 owner |
+| JNI global ref | native 模块 | `DeleteGlobalRef` | CheckJNI、自建计数、native 调试 | unload、失败分支 |
 
-这张表的作用是防止排查过程只在 Java heap 里绕圈。`ReferenceQueue` 和 `FinalizerDaemon` 能解释"为什么释放滞后",但不能替业务代码决定资源什么时候释放。工程治理要把释放动作前移到生命周期边界:页面销毁、请求结束、图片解码完成、Camera session 关闭、数据库 cursor 用完。
+排查 JNI wrapper 时，建议把状态机明确写成：
 
-对 Camera、WebView、Bitmap、SQLite 这类模块,finalizer 堆积往往只是表象。排查重点是 owner 生命周期和异常路径:页面退出时有没有释放,失败回调有没有释放,缓存淘汰有没有释放,native 层有没有引用环。
+```text
+NEW -> OPEN -> CLOSING -> CLOSED
+```
 
-## 小结
+每个状态转换都要规定：
 
-`ReferenceQueue` 是 ART 引用处理路径里的队列设施,`FinalizerDaemon` 是执行 finalizer 的守护线程。Android 16 源码显示,这条路径仍然依赖 `ReferenceQueue` 实例锁、批量入队和 watchdog 进度监控;没有证据表明 `ReferenceQueue` 已接入无锁消息队列。
+- 哪个线程执行；
+- native handle 是否仍有效；
+- 失败能否重试；
+- 并发 `close()` 如何合并；
+- owner 被取消或销毁时由谁触发关闭。
 
-工程上的结论是:不要把 finalizer 当成资源释放方案。发现 FD、native 内存或图形资源上涨时,先采集资源计数和线程证据,再回到 owner 生命周期修关闭路径。finalizer 只能提示"有对象没被及时处理",不能替代显式释放。
+资源池还要额外限定最大容量、空闲回收和进程前后台策略。复用可以减少创建成本，但没有上限的池本身就是资源泄漏。
 
-## 延伸阅读
+## 10. 一个可执行的定位案例
 
-Cleaner、Finalizer 和 CloseGuard 在 Android 8-16 区间的四条清理路径——`sun.misc.Cleaner`(在 `ReferenceQueueDaemon.enqueuePending()` 直接执行)、`java.lang.ref.Cleaner`(独立的 `CleanerImpl` daemon 线程)、Android system cleaner(`FinalizerDaemon#doClean()` 路径)、以及 `dalvik.system.CloseGuard` 与 `android.util.CloseGuard`——已在正文版本对照表中覆盖。`ReferenceQueue.enqueuePending()` 的批处理与 FIFO 队列实现也已在源码分析中验证。
+假设页面反复打开相机预览后，Graphics 和 FD 同时上涨，日志偶尔出现 `Image` 未关闭。
 
+建议按以下顺序处理：
+
+1. 固定“进入预览—拍摄—退出”为一轮，记录每轮 FD、Graphics 和 `ImageReader` 相关业务计数。
+2. 在所有 `onImageAvailable` 分支检查 `Image.close()`，包括解码失败、队列取消和 callback 抛异常。
+3. 检查页面销毁时 session、reader、surface 的关闭顺序，确认后台任务不会继续持有它们。
+4. 抓 `FinalizerDaemon` 多次线程栈。如果栈停在图像 wrapper 的终结代码，只能说明兜底清理正在追赶，修复点仍是显式生命周期。
+5. 用 Perfetto 对齐相机回调、页面退出、daemon 运行和主线程掉帧，确认是否存在锁或 Binder 竞争。
+6. 修复后重复同样轮数，要求资源曲线回到稳定区间，并让 StrictMode/CloseGuard 不再报告遗漏。
+
+这个流程把“守护线程很忙”的表象还原成可验证的资源所有权问题。
+
+## 11. Android 8 到 Android 17 的版本边界
+
+| 机制 | Android 8-9 | Android 10-12 | Android 13-17 |
+|---|---|---|---|
+| `FinalizerDaemon` / `ReferenceQueueDaemon` | 平台运行时机制 | 平台运行时机制 | 平台运行时机制 |
+| `sun.misc.Cleaner` | 平台内部实现，非稳定 SDK | 平台内部实现，非稳定 SDK | 平台内部仍存在，应用不应依赖 |
+| `android.util.CloseGuard` | 公共类尚不可用 | API 30 起公开 | 公开 API |
+| `java.lang.ref.Cleaner` | 公共类尚不可用 | 公共类尚不可用 | API 33 起公开 |
+| `android.system.SystemCleaner` | 公共类尚不可用 | 公共类尚不可用 | API 33 起公开 |
+
+Android 17 的源码复核结果是：
+
+- `Daemons.DAEMONS` 仍由 `HeapTaskDaemon`、`ReferenceQueueDaemon`、`FinalizerDaemon`、`FinalizerWatchdogDaemon` 组成；
+- `ReferenceQueue` 仍为带实例锁的 FIFO，并在 `enqueuePending()` 中按同队列引用批处理；
+- 普通 finalizer 与 `SystemCleaner` 仍由 `FinalizerDaemon` 串行执行；
+- 独立 `Cleaner.create()` 仍由 `CleanerImpl` 创建自己的 daemon 线程；
+- 没有证据支持把消息队列的并发实现变化写成 `ReferenceQueue` 的 Android 17 行为。
+
+版本演进可以说明 API 何时公开，但资源设计原则没有变化：显式关闭是主路径，终结和 Cleaner 是延迟且不确定的兜底机制。
+
+## 12. Review 清单
+
+提交资源 wrapper 前，逐项确认：
+
+- [ ] 正常、异常、取消和超时路径都会调用 `close()` 或 `release()`。
+- [ ] `close()` 可重复调用，不会 double free。
+- [ ] Cleaner action 没有直接或间接引用 owner。
+- [ ] SystemCleaner action 不执行 I/O、IPC、网络或无界等待。
+- [ ] native handle 的 owner、线程和状态转换已经写清。
+- [ ] 调试构建启用了适合项目的 StrictMode 检测。
+- [ ] CloseGuard 告警包含有用的资源获取位置。
+- [ ] 压力测试比较资源趋势，不用单个绝对值替代结论。
+- [ ] Perfetto、simpleperf 和 heap dump 的结论没有超出各自可观测范围。
+- [ ] 没有通过隐藏 `sun.misc.Cleaner` 规避公共 API 版本限制。
+
+## 13. 小结
+
+Android 17 的 `ReferenceQueueDaemon` 负责 pending 引用入队，`FinalizerDaemon` 负责普通 finalizer 和 SystemCleaner，两者由独立进度计数器接受 watchdog 监控。`ReferenceQueue` 仍是带实例锁的 FIFO；按同队列批处理减少了加锁次数，却没有提供实时清理保证。
+
+定位问题时，先证明 FD、native heap 或 Graphics 随操作持续增长，再用日志、线程栈、Perfetto、simpleperf 和 heap dump 确认资源 owner 与清理执行点。最终修复应回到显式生命周期，而不是依靠增加 GC、主动调用 `System.gc()` 或等待 FinalizerDaemon 追赶。
+
+## 参考源码与文档
+
+- AOSP `platform/libcore`，`android-17.0.0_r1`：
+  - `ojluni/src/main/java/java/lang/ref/ReferenceQueue.java`
+  - `luni/src/main/java/java/lang/ref/FinalizerReference.java`
+  - `libart/src/main/java/java/lang/Daemons.java`
+  - `ojluni/src/main/java/java/lang/ref/Cleaner.java`
+  - `ojluni/src/main/java/jdk/internal/ref/CleanerImpl.java`
+  - `ojluni/src/main/java/sun/misc/Cleaner.java`
+  - `luni/src/main/java/android/system/SystemCleaner.java`
+- Android Developers：`java.lang.ref.Cleaner`
+  - <https://developer.android.com/reference/java/lang/ref/Cleaner>
+- Android Developers：`android.system.SystemCleaner`
+  - <https://developer.android.com/reference/android/system/SystemCleaner>
+- Android Developers：`android.util.CloseGuard`
+  - <https://developer.android.com/reference/android/util/CloseGuard>
+- Android Developers：`StrictMode.VmPolicy.Builder.detectLeakedClosableObjects()`
+  - <https://developer.android.com/reference/android/os/StrictMode.VmPolicy.Builder>
