@@ -3,6 +3,32 @@ title: "可变刷新率渲染管线"
 chapter: "18.19"
 status: finalized
 applicable_versions: "多刷新率背景：Android 11 (API 30) - Android 14；ARR 主体：Android 15-QPR1 - Android 17 (API 37)；Display 查询 API：Android 16 (API 36)"
+last_verified: "2026-07-26"
+last_verified_against: "AOSP android-17.0.0_r1 frameworks/base + frameworks/native SurfaceFlinger Scheduler；Android Developers ARR/View/Display/Surface 文档；Perfetto android.frames.timeline stdlib"
+confidence: high
+sources:
+  - type: official
+    path: https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate
+  - type: official
+    path: https://developer.android.com/reference/android/view/View
+  - type: official
+    path: https://developer.android.com/reference/android/view/Display
+  - type: official
+    path: https://developer.android.com/reference/android/view/Surface
+  - type: official
+    path: https://perfetto.dev/docs/analysis/stdlib-docs
+  - type: aosp
+    path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java
+  - type: aosp
+    path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Display.java
+  - type: aosp
+    path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java
+  - type: aosp
+    path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp
+  - type: aosp
+    path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp
+  - type: aosp
+    path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp
 tags: ["VRR", "ARR", "Variable-Refresh-Rate", "LTPO", "setFrameRate", "FrameTimeline", "渲染管线"]
 related_chapters: ["2.3", "2.18", "2.19"]
 created_by: "rendering-pipelines-merge"
@@ -29,6 +55,11 @@ last_task9_review_log: "logs/deep-review/2026-06-12-00-audit.md"
 updated_date: 2026-06-12
 updated_by: openclaw-task9
 task9_review_notes: "2026-06-12 00:20 Task9 idle audit auto-fix: 修正 18.19 源码补充段的版本锚点与两个源码符号名；AOSP android-16.0.0_r4 与官方 ARR/Perfetto 文档复核无新增 P0/P1，回到 Task6 复审。"
+last_idle_audit_at: "2026-07-26T10:37:31+08:00"
+last_idle_audit_run_id: "20260726-103558-idle-audit-c11ac4a7"
+last_idle_audit_log: "logs/audit/2026-07-26-20260726-103558-idle-audit-c11ac4a7-idle-audit.md"
+last_task9_audit_log: "logs/audit/2026-07-26-20260726-103558-idle-audit-c11ac4a7-idle-audit.md"
+idle_audit_notes: "2026-07-26 Hermes idle audit: 补齐 last_verified/confidence/sources；按 android-17.0.0_r1 复核 Scheduler.cpp 与 RefreshRateSelector.cpp 的同名入口，修正源码锚点函数名 calculateLayerScoreLocked；未发现 Android 18/API38 越界或需降级问题。"
 
 last_task6_at: "2026-06-12T04:05:00+08:00"
 deepseek_cn_review_state: done
@@ -224,9 +255,9 @@ LIMIT 20;
 ---
 
 
-**源码锚点补充（android-16.0.0_r4 复核）：**
-- `Scheduler.cpp` 的 `chooseRefreshRateForContent()` 实际通过 `RefreshRateSelector::getRankedFrameRates()` 计算分数
-- `RefreshRateSelector.cpp` 的 `calculateLayerScore()` 中，`FrameRateCategory::NoPreference` 或 `isNoVote()` 的 Layer 直接跳过（关键剪枝逻辑）
+**源码锚点补充（android-17.0.0_r1 复核）：**
+- `frameworks/native/services/surfaceflinger/Scheduler/Scheduler.cpp` 的 `Scheduler::chooseRefreshRateForContent()` 会进入 `RefreshRateSelector::getRankedFrameRates()` 计算候选刷新率排序
+- `frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp` 的 `calculateLayerScoreLocked()` 负责单 Layer 评分；在排序循环中，`FrameRateCategory::NoPreference`、`isNoVote()` 或 `LayerVoteType::Min` 的 Layer 会直接跳过（关键剪枝逻辑）
 - LayerVote 优先级：ExplicitExact(1.0) > ExplicitGte(0.75f 阈值) > Heuristic(计算 divisor 距离) > Min(跳过)
 - VRR 启用时 `VSYNC-app/sf` 周期动态变化，但 missed deadline **仍表现为 jank**，ARR 只改变目标节拍不补救慢帧
 - `KernelIdleTimerController` / `IdleTimer` 控制 kernel idle timer；`Scheduler.cpp` 里 `FPS_THRESHOLD_FOR_KERNEL_TIMER = 65_Hz`，刷新率 ≤65Hz 时用于降功耗
