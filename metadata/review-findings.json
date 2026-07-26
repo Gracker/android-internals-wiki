@@ -5,17 +5,18 @@
       "created_at": "2026-07-25T14:10:58.427069+08:00",
       "created_by": "hermes-aiw-review-finalize-apply",
       "created_run_id": "20260725-140518-2c766e00",
-      "details": "本轮已移除/收敛未证实的 recompose:start/end、compose:start/end、subcompose:start/end 固定事件名表述；仍需官方 Runtime Tracing 示例或同版本 Perfetto/trace_processor 结果验证可见 Slice 命名、重组原因字段、Release 显式开启 API 与版本矩阵。",
+      "details": "本轮补强手动 Perfetto 采集官方边界：terminal 采集需要 tracing-perfetto/tracing-perfetto-binary、track_event data source，并通过 androidx.tracing.perfetto.action.ENABLE_TRACING + TracingReceiver 广播激活；同时继续保留 open，因为可见 Slice 命名、重组原因字段与 Release 短窗口采集矩阵仍缺同版本 trace_processor/实测样本。",
       "id": "finding-cc5b12ae4ba9",
       "log_path": "",
       "severity": "P2",
       "source_paths": [
-        "src/part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md"
+        "src/part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md",
+        "developer.android.com/develop/ui/compose/tooling/tracing"
       ],
       "status": "open",
       "summary": "Compose Runtime Tracing 事件命名与 Release 启用矩阵缺少官方/实测证据，暂不能 finalized",
       "type": "missing-source",
-      "updated_at": "2026-07-25T14:10:58.427069+08:00"
+      "updated_at": "2026-07-26T14:07:36.458321+08:00"
     },
     {
       "chapter": "14.30",

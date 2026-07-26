@@ -24,7 +24,7 @@ sources:
     path: "developer.android.com/develop/ui/views/touch-and-input/keyboard-input"
 ---
 
-# 3.11 InputMethodManager 与软键盘性能
+# 3.11 InputMethodManager 与软键盘性能（rewrite backup）
 
 软键盘（IME）的弹出和收起是 Android 输入链路中延迟感知最强的环节之一。一次 `showSoftInput()` 调用横跨三个进程（应用、system_server、IME 进程），经过至少两次 Binder IPC，再叠加 WindowInsets 动画和布局重算，端到端耗时从 80ms 到 300ms 不等。这个章节拆解这条链路中每一步的性能开销，以及应用侧可观测和可优化的部分。
 

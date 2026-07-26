@@ -24,9 +24,9 @@ task9_state: needs-rework
 pipeline_stage: needs-rework
 reviewed_date: "2026-07-26"
 reviewed_by: "hermes-aiw-review-finalize-apply"
-last_review_finalize_at: "2026-07-26T12:17:49+08:00"
-last_review_finalize_run_id: "20260726-121635-46911438"
-rework_reason: "本轮补核官方 Compose tracing 文档：已确认 runtime-tracing 依赖、Android Studio Flamingo/Compose UI 1.3.0/Compiler 1.3.0/API 30+ 前提，以及手动 Perfetto 采集需要 tracing-perfetto 与 tracing-perfetto-binary 且 binary 不应随生产包发布；但可见 Slice 命名清单、重组原因字段与线上 Release 短窗口采集矩阵仍需同版本 trace_processor/实测样本后才能 finalized。"
+last_review_finalize_at: "2026-07-26T14:06:43+08:00"
+last_review_finalize_run_id: "20260726-140527-6618c180"
+rework_reason: "本轮复核官方 Compose tracing 文档并补强手动 Perfetto 采集边界：已确认 runtime-tracing 依赖、Android Studio Flamingo/Compose UI 1.3.0/Compiler 1.3.0/API 30+ 前提、terminal 采集需 track_event data source 与 androidx.tracing.perfetto.action.ENABLE_TRACING 广播，以及 tracing-perfetto-binary 不应随生产包发布；但可见 Slice 命名清单、重组原因字段与线上 Release 短窗口采集矩阵仍需同版本 trace_processor/实测样本后才能 finalized。"
 ---
 
 # 22.37 Compose Runtime Tracing — runtime-tracing 与 Perfetto 组合阶段追踪
@@ -37,8 +37,8 @@ rework_reason: "本轮补核官方 Compose tracing 文档：已确认 runtime-tr
 ### 🔹 锚点 1：Compose Runtime Tracing 架构与启用方式
 - `androidx.compose.runtime:runtime-tracing` 是官方 Compose Runtime Tracing 依赖；官方 setup 明确要求 Android Studio Flamingo+、Compose UI 1.3.0+、Compose Compiler 1.3.0+、API 30+ 设备/模拟器，并可通过 Compose BOM 管理版本。不要误写为不存在的 `androidx.tracing.compose` 模块。[来源: developer.android.com/develop/ui/compose/tooling/tracing；developer.android.com/jetpack/androidx/releases/compose-runtime]
 - CompositionTracer 接口：组合阶段追踪的钩子设计 [结构参考: 本章原始大纲]
-- 启用方式：开发期、Benchmark 和 Android Studio/Perfetto 场景优先验证；Release 线上使用需要由采样、限流和开关保护，具体 API/版本矩阵需补官方示例后再定稿。[结构参考: developer.android.com/jetpack/androidx/releases/compose-runtime]
-- 手动 Perfetto 采集路径需要额外加入 `androidx.tracing:tracing-perfetto` 与 `androidx.tracing:tracing-perfetto-binary`；官方同时警告不要把 `tracing-perfetto-binary` 随生产应用发布，因为它会显著增加包体积。因此本章的 Release 策略只能写成“动态开关 + 受控采样 + 构建产物隔离”，不能写成无条件常驻依赖。[来源: developer.android.com/develop/ui/compose/tooling/tracing；developer.android.com/jetpack/androidx/releases/tracing]
+- 启用方式：开发期、Benchmark 和 Android Studio/Perfetto 场景优先验证；Release 线上使用需要由采样、限流和开关保护，具体 API/版本矩阵需补同版本样本后再定稿。[结构参考: developer.android.com/jetpack/androidx/releases/compose-runtime]
+- 手动 Perfetto 采集路径需要额外加入 `androidx.tracing:tracing-perfetto` 与 `androidx.tracing:tracing-perfetto-binary`，Perfetto record config 至少要包含 `track_event` data source，并在应用进程上通过 `androidx.tracing.perfetto.action.ENABLE_TRACING` / `androidx.tracing.perfetto.TracingReceiver` 广播启用 tracing；官方同时警告不要把 `tracing-perfetto-binary` 随生产应用发布，因为它会显著增加包体积。因此本章的 Release 策略只能写成“动态开关 + 受控采样 + 构建产物隔离”，不能写成无条件常驻依赖。[来源: developer.android.com/develop/ui/compose/tooling/tracing；developer.android.com/jetpack/androidx/releases/tracing]
 
 ### 🔹 锚点 2：Compose 组合阶段的 Trace 事件
 - 可见事件应以实际 Perfetto Slice 名称为准；本轮材料不能支撑固定写死 `recompose:start/end`、`compose:start/end`、`subcompose:start/end` 这类事件名，因此正文只保留“组合/重组/子组合相关 Slice”的能力边界。[待验证: 本轮 review]
@@ -106,8 +106,9 @@ Compose Runtime Tracing 的价值不只是“在 Perfetto 里多看几条 Slice�
 
 1. Debug/Benchmark 构建中优先完整采集 Compose Trace，用于开发期回归和 Macrobenchmark 对比；官方 composition tracing 文档给出的最低前提是 Android Studio Flamingo+、Compose UI/Compiler 1.3.0+、API 30+，本章适用版本 Android 13—17 均高于该设备 API 前提。[来源: developer.android.com/develop/ui/compose/tooling/tracing]
 2. Release 构建中默认关闭全量 Trace，只保留 FPS/FrameMetrics 等轻量观测；当动态配置命中目标页面、设备档位或慢帧阈值时，再按已验证的 AndroidX tracing/runtime-tracing 接入方式采集短窗口 Trace，并确保 `tracing-perfetto-binary` 不进入常规生产包，避免在缺少版本矩阵证据时宣称某个统一的显式开启 API。[来源: developer.android.com/develop/ui/compose/tooling/tracing；2026-07-25-76336249-Android-App-最强APM来袭.md；待验证: trace_processor 实测]
-3. 上传链路沿用 APM 的本地存储、批量重试和压缩上传策略，避免在弱网或高频异常场景中放大性能问题。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
-4. Trace 产物只作为问题归因证据进入后台，不作为普通埋点高频上报；这与材料中“令牌桶限流 + 灰度发布 + 动态配置，生产环境可用”的思路一致。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+3. 手动从 terminal 采集时，Perfetto 配置需要显式包含 `track_event` data source；启动采集前先向目标包名发送 `androidx.tracing.perfetto.action.ENABLE_TRACING` 广播并指定 `androidx.tracing.perfetto.TracingReceiver`，这一步是 Android Studio 自动代做的激活流程，不应省略成“只加依赖即可”。[来源: developer.android.com/develop/ui/compose/tooling/tracing]
+4. 上传链路沿用 APM 的本地存储、批量重试和压缩上传策略，避免在弱网或高频异常场景中放大性能问题。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+5. Trace 产物只作为问题归因证据进入后台，不作为普通埋点高频上报；这与材料中“令牌桶限流 + 灰度发布 + 动态配置，生产环境可用”的思路一致。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
 
 ## 4. 归因流程：从慢帧到 Compose 重组证据
 
