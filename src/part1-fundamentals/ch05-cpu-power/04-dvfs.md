@@ -86,589 +86,340 @@ last_deepseek_cn_review_at: 2026-06-30
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么需要了解 DVFS
+> [!NOTE] 源码锚点
+> 本章的平台源码以 AOSP `android-17.0.0_r1`（Android 17 / API 37）为准，内核调频路径以 `android17-6.18-2026-06_r6` 为准。厂商仍可替换 CPUFreq 驱动、固件和 Power HAL 策略，因此文中会区分通用机制、Android 接口与设备实现。
 
-在 Perfetto 中打开一段 Trace，我们会看到每个 CPU 下方都有一条「CPU Frequency」轨迹，频率会随着负载和策略上下跳变。每一次跳变，背后都是 DVFS 子系统在决定：此刻的 CPU 应该跑多快。
+## 先分清两个问题：完成得多快，以及消耗多少能量
 
-如果我们做过性能优化，一定遇到过这样的场景：明明代码逻辑没问题，但第一帧就是卡了一下。或者列表滑动时偶尔掉帧，抓 Trace 一看，发现掉帧那个瞬间 CPU 频率很低——原来 CPU 还没来得及升频，帧就被渲染了。这就是 DVFS 调频延迟导致的性能问题，和我们之前在 [5.1 Linux 进程调度基础](01-linux-scheduling.md) 中讨论的调度问题不同：调度决定「哪个任务跑在哪个核上」，DVFS 决定「这个核跑多快」。
+调度器决定任务何时运行、运行在哪个 CPU 上；DVFS（Dynamic Voltage and Frequency Scaling）决定一个电压与频率域以哪个性能档位运行。两者互相影响：
 
-理解 DVFS 机制，能让我们在分析 Trace 时准确判断：一个掉帧是代码问题，还是 CPU 没跑起来？在 Perfetto 中看到的频率曲线，哪些变化是正常的，哪些意味着 governor 的参数需要调优？
+- 同一段 CPU 指令在高频下通常更早完成，但瞬时功率往往更高。
+- 任务更早完成后，CPU 可能更早进入空闲态，整段工作的能量未必更高。
+- 多个 CPU 共享一个频率策略时，一个繁忙 CPU 的需求可能抬高整个策略域的频率。
+- 温控、电池电流限制或固件约束可以压低可用上限，即使调度器希望继续升频。
 
-## DVFS 的基本原理
+所以，看到掉帧附近的低频只能提出一个假设。还要继续确认任务是否在运行、是否等待锁或 I/O、是否被迁移，以及该设备报告的是请求档位还是硬件测得的频率。
 
-### 频率、电压与功耗的关系
+## DVFS 的物理基础
 
-CPU 的功耗来自两部分：静态功耗（漏电流）和动态功耗（充放电）。动态功耗是主要的，可以用这个公式描述：
+### 动态功耗、漏电功耗与能量
 
-**P_dynamic ∝ C × V² × f**
+CMOS 电路的动态功耗常用下面的近似式说明：
 
-其中 C 是电容（由芯片工艺和电路设计决定），V 是工作电压，f 是时钟频率。这里电压是平方关系——如果电压从 1.2 V 降到 0.8 V，仅电压变化就能将功耗降低到原来的 (0.8/1.2)² ≈ 44%，降幅超过一半。
+**P_dynamic ≈ α × C × V² × f**
 
+其中：
 
-这就是 DVFS 存在的主要原因。CPU 不需要时刻保持最高频率和最高电压——当负载较轻时，降低频率和电压可以大幅节省功耗，而对用户体验几乎没有影响。
+- `α` 是电路的翻转活动因子；
+- `C` 是等效开关电容；
+- `V` 是供电电压；
+- `f` 是时钟频率。
 
-但频率和电压之间存在一个约束：**更高的频率需要更高的电压来维持稳定运行**。这是因为更高的时钟频率意味着信号翻转更快，电路需要在更短的时间内完成充放电。如果电压不够，信号就无法在时钟周期内稳定到可识别的逻辑电平，导致计算错误。
+这个式子说明，在其他条件近似不变时，电压对动态功耗呈平方关系，频率呈一次关系。它适合解释趋势，却不能直接预测整颗 SoC 或整机功耗。芯片还存在漏电功耗，漏电会随工艺、电压和温度变化；GPU、内存、显示与电源转换损耗也不在这个式子里。
 
-DVFS 的任务是：根据当前负载，从预先定义好的频率-电压对中选择合适档位，同时调整时钟频率和供电电压。
+讨论续航时还要从功率走到能量：
 
-### 为什么降压比降频更省电
+**E = ∫ P(t) dt**
 
-回到功耗公式 P ∝ C × V² × f。假设我们将频率从最高频率 f_max 降到 f_max/2，电压可能从 V_max 降到约 0.8 × V_max（具体取决于工艺），那么：
+低频会降低单位时间内的动态功率，也会延长任务执行时间。对短任务而言，高性能档位快速完成、随后进入更深空闲态，可能比长时间低速运行更省能，这通常称为 race to idle。结论要以同一工作量下的能量和完成时间为准，不能只看某个瞬时频点。
 
-- 功耗变为原来的 0.8² × 0.5 = 0.32 倍（约降 68%）
-- 如果只降频不降压（某些简单实现），功耗变为原来的 1 × 0.5 = 0.5 倍（只降 50%）
+### 为什么频率与电压通常一起变化
 
-因此，DVFS 必须同时调整电压和频率——单纯降频的效果远不如同时降压。功耗中电压项的二次方贡献，使得降压成为最有效的节能手段。
+更高时钟频率缩短了组合逻辑完成一次传播的时间。为了在目标温度和芯片个体差异下保持时序裕量，较高频率通常需要较高电压。SoC 厂商会对芯片进行表征，为一个性能域提供经过验证的频率—电压组合。
 
+由此可以得到更严谨的表述：
 
-### 4 GHz 时代的能效红线
+- 降低频率常常允许同时降低电压，因此节能幅度可能大于单独降低频率。
+- 电压由平台认可的工作档位约束。随意欠压可能破坏时序稳定性，通用 Android 接口也不承诺支持欠压。
+- 高频端的能效通常会变差，但拐点、幅度和可持续时间都依赖具体芯片、温度与封装，不能用一个固定 GHz 数字概括。
 
-旗舰 SoC 的大核最高频率已突破 4 GHz（如骁龙 8 Elite 的 Oryon 核心）。在这个频率段，V/F 曲线变得极端陡峭：从 3.5 GHz 到 4.0 GHz 的频率提升可能不到 15%，但电压和功耗的增加可能超过 40%。功耗公式 P ∝ C × V² × f 在这里体现得淋漓尽致——频率线性增长，电压二次方增长，两者叠加后功耗呈超线性爆发。
+## OPP：离散的工作档位
 
-到 4 GHz 这个档位，性价比会迅速下降。性能测试中，将最高频率限制在 3.5-3.8 GHz（通过 sysfs 写入 `scaling_max_freq`），通常只损失 5-10% 的单核算力，但整机功耗可以降低 20-30%。厂商的日常调度策略通常很少触及 4 GHz——它们留给短时 burst（如应用冷启动）使用。做性能优化时，如果 Trace 显示 CPU 长时间驻留在 4 GHz，反而需要检查 governor 的限频逻辑是否失效。
+OPP（Operating Performance Point）描述一个设备域可采用的性能状态，典型内容是频率和电压，也可以附带电流、功耗或硬件版本等约束。下面的表只用于说明离散档位，不对应任何量产 SoC：
 
+| 示例档位 | 频率 | 电压 | 含义 |
+| --- | ---: | ---: | --- |
+| OPP 0 | 500 MHz | 650 mV | 低负载档 |
+| OPP 1 | 1.2 GHz | 780 mV | 中间档 |
+| OPP 2 | 2.0 GHz | 950 mV | 高性能档 |
 
-**获取实际 V/F 数据的方法**：每个 CPU cluster 的频率档位可以通过 sysfs 读取。`/sys/devices/system/cpu/cpufreq/` 下的 policy 目录（如 `policy4` 对应大核 cluster）包含 `scaling_available_frequencies` 和 `cpuinfo_max_freq` 等文件。对应的电压信息通常不在 sysfs 直接暴露，但在部分设备上可以通过 debugfs 的 `regulator` 节点（`/sys/kernel/debug/regulator/`）观察实际供电电压。限频的实际影响可以直接测试：找到大核 cluster 的 policy 目录，向 `scaling_max_freq` 写入目标频率上限（如 `3800000` 表示 3.8 GHz），在同一 workload 下用 Perfetto 对比帧时间分布和功耗——这种设备上的 A/B 对比比引用任何第三方数字都可靠。
+Linux OPP 库位于 `drivers/opp/`。OPP 可以来自 Device Tree，也可以由驱动或固件在运行时提供；平台还能根据芯片分档、温控状态等条件启用或禁用某些档位。因此：
 
-## OPP Table：频率与电压的档位表
+1. governor 计算出来的通常是性能需求或目标频率。
+2. CPUFreq 驱动把目标解析到策略允许且硬件支持的档位。
+3. 固件、电源控制器和热管理还可能进一步约束最终状态。
+4. 用户空间未必能看到完整的电压表，也不能假定 `scaling_available_frequencies` 在每台设备上存在。
 
-CPU 并不能以任意频率运行。每个 SoC 在设计时，会为 CPU 定义一组离散的、经过验证的频率-电压组合，称为 Operating Performance Points（OPP）。
+在使用 SCMI、ACPI CPPC 或厂商固件的系统上，Linux 可能提交的是抽象 performance level。这个 level 如何映射到时钟、电压与电源域，由平台定义；一次 level 查询也不等于对物理时钟的独立测量。
 
-### 什么是 OPP
+## CPUFreq：core、governor 与 driver
 
-一个 OPP 就是一个 (频率, 电压) 元组。例如，某个大核的 OPP 表可能长这样：
+Linux CPUFreq 可以分成三层理解：
 
-| OPP | 频率 (MHz) | 电压 (mV) |
-|-----|-----------|----------|
-| 0   | 300       | 600      |
-| 1   | 576       | 680      |
-| 2   | 768       | 760      |
-| 3   | 1014      | 840      |
-| 4   | 1248      | 920      |
-| 5   | 1496      | 1000     |
-| 6   | 1728      | 1080     |
-| 7   | 1958      | 1160     |
-| 8   | 2208      | 1240     |
+| 层次 | 主要职责 |
+| --- | --- |
+| CPUFreq core | 维护 policy、频率上下限和 governor/driver 的公共接口 |
+| governor | 根据负载或用户策略计算性能需求 |
+| scaling driver | 将需求提交给硬件寄存器、固件或性能状态接口 |
 
+### policy 不等于单个 CPU
 
-这里有两点：第一，频率不是连续的——CPU 只能在这些预设的档位之间切换，不能运行在比如 500 MHz 这种没有验证过的频率上。第二，频率越高，需要的电压越高，而且电压的增长不是线性的——从低频到中频，电压增幅较小；从中频到高频，电压增幅变大。这也是功耗在高频段急剧上升的原因。
+`/sys/devices/system/cpu/cpufreq/policyN/` 表示一个 CPUFreq policy。一个 policy 可以包含多个共享性能状态接口的 CPU。分析前可读取：
 
-### OPP 在内核中的实现
+- `related_cpus`：属于该 policy 的 CPU；
+- `scaling_driver`：当前驱动；
+- `scaling_governor`：当前 governor；
+- `scaling_min_freq` / `scaling_max_freq`：策略允许范围；
+- `cpuinfo_min_freq` / `cpuinfo_max_freq`：驱动报告的硬件范围；
+- `cpuinfo_transition_latency`：驱动能够提供时才有意义；
+- `scaling_cur_freq`：通常是最近请求的 P-state 对应频率，不保证是物理时钟读数；
+- `cpuinfo_cur_freq` 或 `cpuinfo_avg_freq`：驱动和硬件支持反馈时，才可能提供当前值或平均值。
 
-Linux 内核通过 OPP 框架（`drivers/opp/`）管理这些档位信息。OPP 数据通常定义在设备树（Device Tree）中，以 `operating-points-v2` 属性描述：
+这些节点的存在和权限由驱动、内核配置及设备策略决定。写入频率上下限会改变系统行为，需要 root 或调试能力，也可能破坏温控与性能策略。通用排障先做只读采集；限频 A/B 应限定在可恢复的工程设备实验，并记录温度、电量和工作负载。
 
-```dts
-// 典型的设备树 OPP 定义（简化示例）
-cpu0: cpu@0 {
-    operating-points-v2 = <&cpu0_opp_table>;
-};
+## Android 17 内核中的 schedutil
 
-cpu0_opp_table: opp-table-0 {
-    compatible = "operating-points-v2";
-    opp-shared;
+schedutil 让调度器的利用率信号参与 CPUFreq 决策。`android17-6.18-2026-06_r6` 的核心实现位于 `kernel/sched/cpufreq_schedutil.c`。
 
-    opp-300000000 {
-        opp-hz = /bits/ 64 <300000000>;
-        opp-microvolt = <600000>;
-    };
-    opp-576000000 {
-        opp-hz = /bits/ 64 <576000000>;
-        opp-microvolt = <680000>;
-    };
-    // ... 更多档位
-};
+### 利用率信号来自哪里
+
+CFS 任务的利用率主要由 PELT 跟踪。PELT 以 1024 微秒为周期衰减，半衰期约 32 毫秒；它不是“每隔固定毫秒统计一次”的滑动窗口。内核还会结合或约束多类信号：
+
+- CFS utilization 与 `util_est`；
+- runqueue 上的 UClamp 最小值、最大值；
+- I/O wait boost；
+- RT、DL 和 IRQ 对可用 CPU 容量的占用；
+- thermal pressure 等容量修正；
+- sched_ext 启用时的 CPU performance target。
+
+Android 17 这一内核分支的 `sugov_get_util()` 会读取 `scx_cpuperf_target()`；未将全部任务切到 sched_ext 时还会加入 CFS boost，再经 `effective_cpu_util()` 和 DVFS headroom 处理。可见，使用“CPU 百分比 × 最高频率”描述当前实现会漏掉多个关键输入。
+
+### 从 util 映射到支持的频率
+
+为了帮助阅读源码，下面用伪代码保留主干，省略锁、缓存与边界处理：
+
+```text
+util, uclamp_min, uclamp_max = collect_effective_cpu_util()
+util = apply_iowait_or_other_boost(util)
+perf = clamp(add_dvfs_headroom(util), uclamp_min, uclamp_max)
+
+raw_frequency = reference_frequency * perf / capacity
+next_frequency = resolve_to_driver_supported_frequency(raw_frequency)
 ```
 
+源码中的参考频率会根据频率不变性能力和架构反馈选择；常规频率映射还带有约 1.25 的 headroom。最终频点由 CPUFreq 驱动在 policy 限制内解析，通常选择不低于目标的受支持频点。这里的 headroom 是调频算法的一部分，不代表应用获得了固定比例的性能提升。
 
-OPP 框架为上层子系统（如 cpufreq、devfreq）提供了统一的接口来查询可用的频率-电压对。当 cpufreq governor 决定将 CPU 调到某个频率时，它会从 OPP 表中选择对应的条目，再由底层驱动（clock framework + regulator framework）去设置实际的频率和电压。
+若一个 policy 覆盖多个 CPU，共享策略路径会遍历 `policy->cpus`，使用能够代表最高性能需求的 util/容量组合。看到某个 CPU 负载不高时，也要检查同 policy 的其他 CPU。
 
-### 现代 SoC 中的 OPP 映射：SCMI / CPPC
+### 提交目标有三条主要路径
 
-以上模型解释了“平台有哪些可用档位”。但在 Android 15/16 常见的 ARMv8.4+ 平台上，OS 并不总是直接指定 MHz。很多 SoC 通过 SCMI（System Control and Management Interface）或 CPPC（Collaborative Processor Performance Control）把请求表达成抽象的性能等级，再由固件映射到具体的电压/频率档位。
+Android 17 的 schedutil 不能概括成“每次都排队给 kthread”：
 
-这带来两个变化：第一，OPP 仍然存在，但更多是固件内部的映射表，Linux 看到的接口从“请求某个频点”逐步扩展到“请求更高或更低的 performance level”。第二，切换路径可以缩短——带 Fastchannels 的 SCMI 实现把部分控制路径做成内存映射通道，请求不必每次都走高开销的 mailbox 往返。
+1. policy 开启 fast switch 时，频率路径可调用 `cpufreq_driver_fast_switch()`。
+2. 驱动支持 adjust-perf 且满足频率不变性条件时，可调用 `cpufreq_driver_adjust_perf()` 传递性能参数。
+3. 不能快速切换时，schedutil 通过 `irq_work` 和 kthread work 延后执行，最后进入 `__cpufreq_driver_target()`。
 
-具体映射过程是：OS 通过 `PERF_LEVEL_SET` 发出一个整数的 performance level（比如 level 7），固件端的 SCP（System Control Processor）收到后，在内部的 OPP 映射表中查找该 level 对应的 (frequency, voltage) 组合，再通过硬件驱动分别设置 PLL 和供电电压。映射在固件侧完成，Linux 内核不直接看到从 level 到 MHz 的对应关系——这就是为什么 Perfetto 中的 `power/cpu_frequency` 轨迹记录的是内核请求的频率，而固件实际下发的频率可能不同。Fastchannels 把控制路径从"mailbox 中断 → SCP 处理 → 中断返回"缩短为共享内存写入，省掉了 mailbox 往返开销。没有 Fastchannel 的平台，每次调频请求都要经过完整的 mailbox 交互，延迟更高。下文的"SCMI 频率真值"一节会展开如何用 Perfetto 追踪这个协商过程。
+具体设备走哪条路，由 CPUFreq 驱动能力与 policy 配置决定。Perfetto 的频率事件本身不能证明调用走了 fast switch、固件邮箱或延后线程。
 
-对性能分析有两点影响。Perfetto 里的频率跳变是 cpufreq / 驱动层记录到的状态变化，最终落点仍受 OPP、热约束和 governor 策略共同限制；如果怀疑固件压频，需要结合 SCMI 事件或平台映射表复核。端到端升频偏慢时，排查重点通常落在负载估计、uclamp、rate limit 和固件协商过程，单次 PLL 或 regulator 动作往往不是主要耗时项。
+### rate limit 与 I/O wait boost
 
-### OPP 与 Perfetto
+schedutil 的 `rate_limit_us` 初值来自 `cpufreq_policy_transition_delay_us(policy)`，不是 Android 统一规定的固定毫秒值。它限制连续调频更新的节奏，设备和驱动可能提供不同的转换延迟。
 
-在 Perfetto 中，CPU 频率的变化通过 `power/cpu_frequency` ftrace 事件记录。我们可以在每个 CPU 下方的「CPU Frequency」track 中看到频率随时间的变化曲线。频率变化的阶梯状特征，正是因为 CPU 只能在 OPP 表定义的离散频率之间切换。
+I/O wait boost 用来响应刚从 I/O 等待中唤醒的任务。在这一内核版本中，boost 从容量的八分之一开始，连续的 I/O 唤醒可以令其逐步增大，长于一个 tick 没有更新时会重置，没有新的 boost 请求时还会衰减。它改善突发响应的同时也可能增加能量消耗，分析时应结合唤醒来源与持续时间。
 
-## cpufreq 子系统与 Governor 机制
+## 为什么“升频晚了”会影响一帧
 
-### cpufreq 的三层架构
+一帧的关键 CPU 工作可能经历以下路径：
 
-Linux 内核的 cpufreq 子系统采用经典的「机制与策略分离」设计，分为三层：
+1. 线程被唤醒并进入 runnable。
+2. 调度器选择 CPU，任务开始消耗执行时间。
+3. PELT、util_est、UClamp 或提示会形成新的性能需求。
+4. schedutil 通过 rate limit 和 policy 共享逻辑计算目标。
+5. 驱动或固件接受请求，时钟和电源域完成转换。
+6. 温控与电源预算决定该档位是否可用、能维持多久。
 
-1. **cpufreq core**：提供基础设施，包括 sysfs 接口、策略管理、通知机制等
-2. **cpufreq governor**（策略层）：决定 CPU 应该运行在什么频率——这是 DVFS 的「大脑」
-3. **cpufreq driver**（驱动层）：执行实际的频率和电压切换，与硬件交互
+其中任何一步都可能受设备实现影响，无法给出适用于所有手机的固定“升频耗时”。PELT 的 32 毫秒半衰期也不能直接当作升频延迟：`util_est`、UClamp、I/O wait boost 和平台提示都可能让需求更早抬升。
 
+### 判断低频是否导致掉帧
 
-这种分层设计意味着：同一套硬件（同一个 SoC），不同的 governor 会产生截然不同的频率行为。在 Android 设备上，最常用的 governor 是 schedutil。
+建议把下列证据放在同一时间窗口：
 
-### schedutil：调度器驱动的调频
+- 应用主线程、RenderThread 或工作线程何时 runnable、何时 running；
+- 运行 CPU 与该 CPU 所属 policy；
+- CPU frequency 事件、CPU idle 状态和调度切片；
+- 帧 deadline、关键 slice 和锁/I/O 等待；
+- UClamp、thermal throttling、CPU capacity 或厂商电源轨迹（若设备提供）；
+- 同一场景多次复现时，低频与超时是否稳定共现。
 
-schedutil 从 Linux 4.7 开始引入，它的核心思路是：**既然调度器最了解 CPU 的负载情况，为什么不直接让调度器来决定频率？**
+如果关键线程大部分时间在睡眠或等待锁，升频通常不能消除瓶颈。如果线程持续 running、指令工作量相近，低频区间与 deadline miss 反复对齐，才有较强理由继续调查 governor、UClamp、驱动响应或热限制。
 
+## Android 怎样向性能策略表达需求
 
-在 schedutil 出现之前，主流的 governor 是 ondemand。ondemand 的工作方式是定时采样（默认每 100 ms 一次）CPU 的 idle 时间，如果发现利用率超过阈值（默认 80%），就提高频率。这种方式的缺点是：**采样有延迟**。在采样间隔内，CPU 可能已经在高负载运行了，但 governor 还不知道。
+应用和 Framework 通常表达工作特征或时限，由系统及厂商策略决定如何分配 CPU、GPU 和内存资源。它们不向应用承诺某个频率。
 
-schedutil 解决这个问题的方法是直接挂钩到调度器的负载追踪机制——PELT（Per-Entity Load Tracking）。PELT 我们在 [5.1 Linux 进程调度基础](01-linux-scheduling.md) 中介绍过，它为每个调度实体（task、task group、CPU runqueue）维护一个指数加权移动平均（EWMA）的利用率值。schedutil 直接读取这个值来决定频率，无需额外的采样开销。
+### Task Profiles 与 UClamp
 
-#### schedutil 的频率计算
+Android 可以借助 task profile、cpuset 和 UClamp 调整线程的放置范围及性能提示。UClamp min 给 schedutil 一个利用率下界，适合短时保证响应；UClamp max 可限制性能需求。它们仍受 policy 上限、CPU 容量、thermal pressure 和厂商实现约束。
 
-对于 CFS 调度类管理的普通任务，schedutil 仍然沿着 `1.25 × f_max × util / max_capacity` 这一类比例关系换算目标频率，但这里的 `util` 已经不是“裸 PELT 值”。在 android15-6.6 内核里，参与计算的是 `sugov_get_util()` 整理过的有效利用率，可以写成下面这个简化关系：
+长时间把 UClamp min 设得很高会增加功耗和温度，也可能挤压其他工作。应围绕关键线程和关键阶段使用，并通过帧时间与能量数据验证。
 
-**util_eff = apply_iowait_boost(uclamp(PELT_util))**
+### ADPF Performance Hint Session
 
-这里叠在一起的有三类信息：
+Android Dynamic Performance Framework（ADPF）的 `PerformanceHintManager` 允许应用创建 hint session：
 
-- **PELT 利用率**：调度器看到的近期负载
-- **uclamp 钳位**：框架或内核给线程组施加的性能下限 / 上限
-- **iowait boost**：I/O 唤醒后的短时提频
+- 设置目标工作时长；
+- 报告每轮工作的实际时长；
+- 更新参与该 session 的线程；
+- 在受支持的 Android 17 API 中报告 `WorkDuration`，其中可以包含工作周期起点、总时长、CPU 时长和 GPU 时长。
 
-schedutil 的调频入口是 `sugov_update_single_freq()` / `sugov_update_single_perf()`（单 policy CPU 的两种模式）和 `sugov_update_shared()`（共享 policy CPU），公共逻辑由 `sugov_update_single_common()` 承载。这几个函数由调度器通过 cpufreq callback 触发，内部调用 `sugov_get_util()` 获取有效利用率，再经 `sugov_iowait_apply()` 处理 I/O 提频，最终换算目标频率。
+这些反馈让平台知道“工作是否赶上目标”，厂商 Power HAL 再据此调整资源。session 受到前台状态、线程所有权、HAL 支持等条件约束。它不会保证 CPU 进入某个 OPP，也不能代替对锁等待、算法复杂度和 GPU 瓶颈的分析。
 
-android15-6.6 和 android16-6.12 的 `sugov_get_util()` 签名和调用链有明确差异：
+### Power HAL 的 Mode、Boost 与 hint session
 
-```c
-// kernel/sched/cpufreq_schedutil.c（简化伪代码，省略部分字段和分支）
-// android16-6.12: sched_ext 性能目标 + 统一频率计算
-static void sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost) {
-    unsigned long min = 0, max = 0;
-    unsigned long util;
-    // 始终从 sched_ext 性能目标起算
-    util = scx_cpuperf_target(cpu);
-    // 非 scx 独占模式时，叠加 CFS 负载
-    if (!scx_switched_all())
-        util += cpu_util_cfs_boost(cpu);
-    // effective_cpu_util 返回钳位后的有效利用率，同时输出 min/max 约束
-    util = effective_cpu_util(cpu, util, &min, &max);
-    // boost（来自 iowait）与 util 取大值
-    util = max(util, boost);
-    // bw_min 保存带宽约束下限
-    sg_cpu->bw_min = min;
-    // 统一计算最终频率目标，返回值赋给 sg_cpu->util
-    sg_cpu->util = sugov_effective_cpu_perf(cpu, util, min, max);
-    // 省略：uclamp 钳位、bw_dl 计算、其他 sg_cpu 字段赋值等细节
-}
-```
+Android 17 的 AIDL `android.hardware.power.IPower` 提供三类相关接口：
 
-```c
-// kernel/sched/cpufreq_schedutil.c（简化伪代码，省略部分字段和分支）
-// android15-6.6: 纯 CFS 负载，无 sched_ext，boost 由调用方处理
-static void sugov_get_util(struct sugov_cpu *sg_cpu) {
-    unsigned long util = cpu_util_cfs_boost(sg_cpu->cpu);
-    sg_cpu->bw_dl = cpu_bw_dl(cpu_rq(sg_cpu->cpu));
-    // effective_cpu_util 以 FREQUENCY_UTIL 模式计算有效利用率，无 min/max 输出
-    sg_cpu->util = effective_cpu_util(sg_cpu->cpu, util, FREQUENCY_UTIL, NULL);
-    // 省略：uclamp 钳位、其他 sg_cpu 字段赋值等细节
-}
-```
+- `setMode()`：表达持续或阶段性模式，例如 `INTERACTIVE`、`GAME`、`GAME_LOADING`；
+- `setBoost()`：表达短时 boost，例如 `INTERACTION`、`DISPLAY_UPDATE_IMMINENT`；
+- performance hint session：基于目标与实际工作时长持续反馈。
 
-两个版本的核心区别：android15-6.6 的 `sugov_get_util()` 只收集有效利用率（`cpu_util_cfs_boost()` → `effective_cpu_util(..., FREQUENCY_UTIL, NULL)`），iowait boost 由调用方 `sugov_iowait_apply()` 单独叠加；android16-6.12 将 boost 作为参数传入 `sugov_get_util()`，始终从 `scx_cpuperf_target(cpu)` 起算（非 scx 独占时叠加 `cpu_util_cfs_boost()`），`effective_cpu_util()` 返回值赋给 util 并输出 min/max 约束，最终由 `sugov_effective_cpu_perf(cpu, util, min, max)` 计算频率目标并赋给 `sg_cpu->util`，`sg_cpu->bw_min = min` 保存带宽下限。上方代码块为简化伪代码，展示了核心调用链和关键差异点，省略了部分字段赋值和边界分支。
+`isModeSupported()` 和 `isBoostSupported()` 用于查询支持情况；即使接口存在，vendor 也可以不支持或忽略某个提示。HAL 内部如何映射到 UClamp、CPUFreq、devfreq、内存带宽或固件参数，不属于 AOSP 的统一保证。
 
+Android 17 的 `GameManagerService` 在游戏前台状态变化时控制 `Mode.GAME`；`setGameState()` 和 `notifyGraphicsEnvironmentSetup()` 可触发 `Mode.GAME_LOADING`，源码还为 loading 模式设置了最长 5 秒的限制。`setGameMode()` 主要改变用户选择与配置，不能简单等同于一次固定时长的升频。
 
-于是会出现一个在 Trace 里很常见的现象：即使 PELT 利用率还不高，只要 top-app 或关键线程被设置了较高的 `uclamp_min`，频率也会提早拉升；I/O 密集路径刚被唤醒时，也可能先吃到一段 iowait boost。
+WakeLock 的职责是约束系统挂起或相关电源状态。AOSP 没有“每次 acquire WakeLock 都调用 `Boost.INTERACTION` 200 毫秒”的通用链路，排障时不要把两者混为一谈。
 
+## 用 Perfetto 观察 CPU DVFS
 
-对于实时（RT）和 Deadline 调度类的任务，schedutil 的策略取决于 uclamp 是否启用。Android 设备上 uclamp 通常已开启（top-app `uclamp_min` 由 ActivityManager 设置），此时 RT 任务受 `uclamp_min` / `uclamp_max` 约束，不会无条件拉到最高频率。只有 `uclamp` 未启用时，schedutil 才会在 RT runnable 的 CPU 上直接返回 `max`。Deadline 调度类通过 `cpu_bw_dl` 提供带宽下限和饱和判断，影响目标频率——饱和时到 `max`，未饱和时按带宽比例贡献。`effective_cpu_util()` 会汇总 CFS、RT、DL、IRQ 各部分的利用率，最终由 `uclamp` / `schedutil` 计算频率目标，不存在 RT/DL 无条件 `fmax` 的单一策略。
+### 频率轨迹表示什么
 
+Perfetto 标准库模块 `linux.cpu.frequency` 提供 `cpu_frequency_counters`，包含：
 
-#### schedutil 的调频速率限制
+- `ts`：频率状态开始时间；
+- `dur`：持续时长；
+- `cpu`：逻辑 CPU；
+- `freq`：kHz。
 
-schedutil 有一个 `rate_limit_us` 参数（通过 sysfs 可配置），控制两次频率调整之间的最小间隔。默认值通常在 0.5 ms 到 2 ms 之间。这个参数的目的是避免频率过于频繁地来回切换（即所谓的频率抖动），因为每次频率切换本身都有开销。
+这类轨迹来自内核 cpufreq 事件，适合观察内核报告的频率状态与驻留时间。它通常接近 CPUFreq 的请求或状态通知，不自动等价于片上计数器测得的瞬时物理时钟。若需要硬件反馈，应寻找设备支持的 `cpuinfo_cur_freq`、`cpuinfo_avg_freq`、固件计数器或厂商遥测，并说明数据语义与采样周期。
 
-但在 Android 设备上，许多厂商会通过 vendor hook 或直接修改内核来调整这个参数，以适应自家 SoC 的特性。例如，某些厂商会在触摸事件到来时临时将 rate_limit 降到 0，以实现更快速的升频响应。
+### 先算频率驻留，再与调度切片关联
 
-### Qualcomm 平台的扩展：DCVS 与 RTG
-
-在 Qualcomm 平台上，schedutil 不是孤立工作的。Qualcomm 在其内核中实现了更复杂的调频策略，通常统称为 DCVS（Dynamic Clock and Voltage Scaling）。其他 SoC 厂商（如 MediaTek、Samsung）也有各自的调频增强机制，原理类似但实现不同，本节以 Qualcomm 为例。其中 RTG（Related Thread Group）机制对性能分析特别重要。
-
-
-我们在 [5.3 大小核架构](03-big-little.md) 中提到过，Android 前台应用通常有多个线程协同工作（如 MainThread + RenderThread）。如果这些线程被分散到不同的 CPU 上运行，每个 CPU 的单独利用率可能都不高（比如只有 50%），schedutil 就不会积极升频。但这些线程的**总负载**已经很高了。
-
-RTG 的「聚合调频」功能就是为了解决这个问题。当 Android 的 top-app cgroup 中的线程被标记为同一组后，RTG 会将这组线程在同一个 cluster 上的负载**累加计算**，再将累加后的负载反馈给 schedutil。这样即使线程分散在多个核上，调频决策也能反映真实的总需求。
-
-
-因此在 Perfetto 中分析性能问题时，我们需要关注 CPU 频率和负载分布之间的关系——单核利用率低不代表 CPU 性能有余量，可能是调频策略没有识别到跨线程的负载聚合。
-
-## 调频延迟对性能的影响
-
-### DVFS 的升频延迟
-
-从 governor 决定升频到频率实际生效，需要经过这些步骤：
-
-1. 调度器更新 PELT 利用率（每个调度周期 ~1 ms 或 ~4 ms）
-2. schedutil 根据利用率计算目标频率
-3. 通过 cpufreq driver 发起频率切换请求
-4. clock framework 调整 PLL（锁相环）配置
-5. regulator framework 调整电压（如果需要）
-6. 等待电压稳定后切换到新频率
-
-整个过程的端到端延迟，从几十微秒到数百毫秒都有可能。单次 PLL / regulator 切换通常只占微秒到毫秒级，Google 官方文档里提到的约 **200 ms** 主要来自上游信号建立：PELT 的指数平滑需要时间积累，`rate_limit_us` 会压住过密的切频，请求到固件或驱动后才轮到硬件切换。Trace 里看到“频率升得晚”时，排查顺序通常先看负载估计和 governor 节流，再看底层时钟路径。
-
-
-### 升频延迟导致的掉帧
-
-以 60 fps 为例，每帧的预算是 16.6 ms。如果在一个 VSync 周期内，CPU 突然需要更多算力（比如用户快速滚动列表），但 CPU 还在低频率运行，会发生什么？
-
-1. VSync 到来，Choreographer 触发 doFrame
-2. 主线程开始执行 measure/layout/draw，但 CPU 在低频运行
-3. 由于频率低，本来 8 ms 能完成的工作现在需要 20 ms
-4. 等到 PELT 反映出高利用率，schedutil 开始升频
-5. 频率切换完成，但已经错过了当前帧的 deadline
-6. 结果：掉帧
-
-在 Perfetto 中，这类掉帧的特征是：**帧处理时间较长的区间，对应 CPU 频率处于低位的区间**。我们会在 CPU Frequency track 上看到频率在一个 doFrame 的前半段处于低位，后半段才升上去，但为时已晚。
-
-
-### ADPF：让应用参与调频决策
-
-Android 12 引入的 ADPF（Adaptive Performance Framework）通过 Performance Hint API 来缓解升频延迟问题。
-
-
-ADPF 的做法是让应用主动告知系统自己需要多少算力，而不是被动等待 governor 检测到负载变化。具体做法是：
-
-1. 应用创建一个 Hint Session，将关键线程（如渲染线程）注册进去
-2. 应用设定一个目标工作时长（target work duration），通常等于帧间隔（如 16.6 ms）
-3. 每帧完成后，应用报告实际工作时长（actual work duration）
-4. 系统根据 target 和 actual 的差异，调整 CPU 频率
-
-如果应用报告 actual > target（即帧超时），系统会更快地提升 CPU 频率。如果 actual < target（即帧提前完成），系统可以更快地降低频率以省电。这比被动等待 PELT 反映负载变化要快得多。
-
-```cpp
-// ADPF 使用示例（NDK API）
-APerformanceHintSession* session =
-    APerformanceHint_createSession(manager, tids, num_tids, target_duration_ns);
-
-// 每帧完成后报告
-APerformanceHint_reportActualWorkDuration(session, actual_duration_ns);
-```
-
-
-Android 15 开始，ADPF 不再只接收一个 CPU 总时长。`PerformanceHintManager.WorkDuration` 可以同时上报 work period 起点、CPU 实际时长、GPU 实际时长和总时长，`reportActualWorkDuration(WorkDuration)` 更适合游戏、相机预览和重 GPU 渲染路径，因为系统终于能分清“CPU 已经做完，GPU 还在忙”这一类负载。
-
-Android 16 又补了 GPU 余量查询能力。应用可以通过 `SystemHealthManager.getGpuHeadroom()` 一类接口估算当前 GPU 余量，再结合 ADPF 的工作时长上报决定是该降分辨率、减 shader 负载，还是继续维持当前目标帧率。CPU hint session 负责把工作周期交给系统，headroom API 负责把当前余量交回应用，ADPF 在这一代已经接近 CPU/GPU 协同调优框架。
-
-
-Google 在官方文档中还特别强调了一点：**不要通过忙循环（busy loop）来人为拉高 CPU 频率**。这是一种在游戏开发中曾经流行的 hack 手段——在后台线程中跑一个死循环，让 governor 以为 CPU 负载很高从而持续高频运行。这种做法浪费电量、加剧发热，而且不同 SoC 平台效果不可控。ADPF 正是为了提供一种规范的替代方案。
-
-## 在 Perfetto 中观察 DVFS 行为
-
-### CPU 频率 Track
-
-在 Perfetto UI 中，每个 CPU 都有一个「CPU Frequency」track，显示该 CPU 当前的运行频率。这个数据来自内核的 `power/cpu_frequency` ftrace 事件。
-
-
-观察频率变化时的几个要点：
-
-- **频率跳变的阶梯状**：由于 OPP 表是离散的，频率变化是跳跃式的，不是平滑渐变的。我们可以数出 CPU 有几个频率档位。
-- **大小核的频率差异**：在 Perfetto 中同时展开 CPU 0-3（小核）和 CPU 4-7（大核）的频率 track，我们会发现它们的频率范围完全不同。小核通常运行在 300 MHz-1.8 GHz，大核在 300 MHz-3.0 GHz（具体数值因 SoC 而异）。
-- **频率与任务的对应关系**：把 CPU Frequency track 和 CPU Scheduling track 放在同一时间轴上看，通常会发现当一个重负载任务被调度到某个 CPU 时，该 CPU 的频率会随之升高。但如果升频延迟较大，频率升高会滞后于任务调度。
-
-### CPU Idle State Track
-
-与频率 track 配合观察的还有 CPU Idle State track（来自 `power/cpu_idle` 事件）。Idle state 0 表示 CPU 在运行任务，数值越大表示睡眠越深。
-
-CPU 频繁进出深度睡眠也会带来额外开销。虽然深度睡眠能省电，但从深度睡眠唤醒需要时间——退出延迟可达数百微秒甚至超过 1 ms。如果某个线程组需要频繁唤醒 CPU，而 CPU 每次短暂空闲都进入深度睡眠又被唤醒，反复的进出不仅浪费时间，进出低功耗模式本身也消耗能量。RTG 的 Busy Hysteresis 功能用来缓解这种情况：当 RTG 组中的线程活跃时，即使 CPU 短暂空闲，也延迟进入深度睡眠。
-
-
-### SCMI 频率真值：内核意图 vs 固件实值
-
-前面提到，SCMI / CPPC 平台上 OS 发出的频率请求是抽象的 performance level，实际频率由固件映射。因此，Perfetto 中的 CPU Frequency 轨迹记录的是**内核请求的频率**，不一定是固件最终执行的频率——温控、电源管理策略等固件侧因素都可能压低实际输出。
-
-Android 16（GKI 6.12）的 SCMI 框架提供了多个 ftrace 事件，可用于观察固件侧的频率协商过程。android16-6.12 的 `include/trace/events/scmi.h` 中定义的事件包括 `scmi_fc_call`、`scmi_xfer_begin`、`scmi_xfer_response_wait`、`scmi_xfer_end` 等。其中 `scmi_fc_call`（Fastchannel call）是直接观察 performance level 请求的关键事件——通过 `protocol_id`（0x13）和 `msg_id` 过滤 `PERF_LEVEL_GET` 类消息，可以追踪固件实际返回的 performance level，再与 `power/cpu_frequency` 轨迹中的内核请求频率对比。注意：`scmi_fc_call` 只在平台实现了 Fastchannel 地址时才会出现；没有 fastchannel 的平台需观察 `scmi_xfer_begin` / `scmi_xfer_end` 事件来追踪请求与响应。
-
-如果两者出现持续偏差（内核请求高频，固件实际给低频），说明 SoC 固件的温控或电源策略正在介入。这种内核以为在高频、实际被压低的情况，是排查不明性能下降的重要线索。
-
-SCMI Performance Protocol 的完整协商链涉及多个环节：OS 通过 `PERF_LEVEL_SET` (msg_id 0x7) 请求目标 performance level，固件将其映射到具体的 OPP 条目（frequency + voltage），再由 `PERF_LEVEL_GET` (msg_id 0x8) 查询固件实际下发的 level。每个 CPU domain 由 `res_id` 标识（通常与 CPU cluster 对应），`protocol_id` 为 0x13（SCMI_PROTOCOL_PERF，定义在 include/linux/scmi_protocol.h；注意 0x10 是 Base Protocol，不要混淆）。`scmi_fc_call` 事件中的 `protocol_id` 和 `msg_id` 可用来过滤不同类型的消息。这里要分清：performance level 到实际频率的映射是平台私有的——同一段 SCMI level 值在不同 SoC 上可能对应不同的 MHz。分析时必须结合设备的 OPP 表或 vendor dtbo 才能完成 level→freq 的换算。在没有平台映射表时，SCMI 事件只能定位"固件协商是否异常"，不能直接等同于实际频率真值。
-
-
-要启用 SCMI 事件，在 Perfetto 配置中添加：
-
-```protobuf
-data_sources: {
-  config {
-    name: "linux.ftrace"
-    ftrace_config {
-      ftrace_events: "scmi/scmi_fc_call"
-      ftrace_events: "scmi/scmi_xfer_begin"
-      ftrace_events: "scmi/scmi_xfer_end"
-      ftrace_events: "power/cpu_frequency"
-    }
-  }
-}
-```
-
-### SQL 查询分析频率变化
-
-Perfetto 的 Trace Processor 提供 SQL 接口，可以量化分析频率变化：
+下面的 SQL 用于汇总每个 CPU 在各频点的驻留时长：
 
 ```sql
 INCLUDE PERFETTO MODULE linux.cpu.frequency;
 
--- 查看每个 CPU 的频率驻留统计
 SELECT
   cpu,
-  freq / 1000.0 AS freq_mhz,
-  round(sum(dur) / 1e9, 3) AS time_s,
-  round(sum(dur) * 100.0 / sum(sum(dur)) over (partition by cpu), 1) AS pct
+  freq,
+  ROUND(SUM(dur) / 1e6, 3) AS residency_ms
 FROM cpu_frequency_counters
+WHERE dur > 0
 GROUP BY cpu, freq
 ORDER BY cpu, freq;
-
--- 找出频率最低的时段（可能影响性能）
-SELECT
-  cpu,
-  freq / 1000.0 AS freq_mhz,
-  round(dur / 1e6, 2) AS duration_ms
-FROM cpu_frequency_counters
-WHERE freq < 500000  -- 低于 500 MHz（freq 单位为 kHz）
-ORDER BY dur DESC
-LIMIT 20;
 ```
 
-`cpu_frequency_slices` 不是 Perfetto stdlib 标准表。频率分析应通过 `INCLUDE PERFETTO MODULE linux.cpu.frequency;` 引入 `cpu_frequency_counters` 模块后查询，列名是 `cpu`、`freq`、`dur`。如果环境未加载 stdlib，可退回原始 `counter` / `counter_track` 方案自行派生。
+这张表回答“内核报告在某频点停留多久”。下一步应把目标时间窗与 `sched_slice`、应用 slice 和帧时间相交，确认关键线程在低频区间内处于 running。只统计整段 Trace 的平均频率，容易被空闲时间稀释。
 
-## GPU DVFS 机制
+### CPU idle 的值要按设备解释
 
-GPU 也有类似 CPU 的 DVFS 机制，但由 Linux 内核的 devfreq 子系统管理（而不是 cpufreq）。
+Perfetto 标准库 `linux.cpu.idle` 的 `cpu_idle_counters` 使用 `idle = -1` 表示 CPU 处于 active；非负值是平台报告的 idle state ID。较大的编号通常对应更深状态，但状态名称、退出延迟和编号映射由设备决定，应结合 `/sys/devices/system/cpu/cpuN/cpuidle/state*/` 或平台文档核对。
 
-### GPU 调频的特点
+“低频”与“深 idle”也要分开：
 
-GPU 的调频策略和 CPU 有几个重要差异：
+- 低频表示 active 执行时采用较低性能状态；
+- idle 表示 CPU 当时没有执行普通任务并进入空闲状态；
+- 从深 idle 唤醒与随后升频可能同时出现在启动阶段，但二者有不同的控制路径和延迟来源。
 
-1. **负载模式不同**：CPU 负载通常是细粒度、频繁变化的（每次调度周期），而 GPU 负载更「批量」——一帧的 GPU 工作可能集中在几个 burst 中完成
-2. **带宽关联**：GPU 性能不仅取决于 GPU 自身的频率，还受内存带宽影响。GPU 的功耗中，带宽相关的功耗占比很高——这在移动设备上尤为突出
-3. **厂商定制化更深**：Adreno、Mali、PowerVR 各家 GPU 的调频策略差异很大，且大部分逻辑在闭源的用户态驱动中实现
+## GPU DVFS 与内存调频
 
+### GPU 是独立的性能域
 
-### GPU DVFS 在 Perfetto 中的观察
+GPU 通常有自己的时钟、电压域、利用率统计和 governor/固件策略，Linux 平台可能通过 devfreq，也可能通过厂商驱动管理。CPU schedutil 不直接决定 GPU 频率。
 
-GPU 频率变化同样可以通过 Perfetto 观察。如果设备支持，我们可以在 GPU track 中看到 GPU 频率的变化。不过 GPU 频率事件的可用性因平台而异——Qualcomm Adreno 和 ARM Mali 的暴露程度不同，有些设备需要在 Trace 配置中额外启用 devfreq 相关的数据源。
+分析 GPU 卡顿时应同时看：
 
-## 内存频率（DDR/LPDDR）调频
+- GPU queue、fence 和完成时间；
+- GPU frequency 或性能级别轨迹（设备提供时）；
+- thermal 与功率限制；
+- CPU 是否及时提交了 GPU 工作。
 
-移动设备的内存（LPDDR）也有频率调节机制，通常称为 DDR scaling 或 LPDDR DVFS。
+Android 17 的 ADPF `WorkDuration` 可以携带 CPU/GPU 实际工作时长，目的是给平台更完整的反馈；它不会把 CPUFreq governor 变成 GPU governor。Perfetto 是否显示 GPU 频率、轨迹叫什么、数值是请求级别还是硬件反馈，都取决于 GPU 驱动和数据源。
 
-### 内存调频对性能的影响
+### DDR/LPDDR 关注带宽、延迟与竞争
 
-内存频率影响的是内存带宽——即 CPU 和 GPU 在单位时间内能从内存中读写多少数据。在以下场景中，内存频率不足会直接影响性能：
+内存控制器与互连也可能采用动态频率或带宽投票。CPU 和 GPU 同时访问内存时，瓶颈可能出现在：
 
-- **大图加载和渲染**：Bitmap 的解码和上传到 GPU 需要大量内存带宽
-- **列表快速滚动**：大量 ViewHolder 的创建和数据绑定涉及频繁的内存访问
-- **GPU 渲染**：复杂的 shader 需要从内存中读取大量纹理数据
+- 可用带宽不足；
+- 内存访问延迟上升；
+- 多个主设备争用；
+- 热或功率预算限制内存域；
+- CPU cache miss 增多，使核心频率上升但吞吐没有同比增加。
 
-然而，内存在移动设备上是多个组件共享的（CPU、GPU、ISP、Modem 等），LPDDR 的功耗在整机功耗中占比较大。因此，内存调频策略通常比较保守——只有在检测到持续的带宽需求时才会升频，这又引入了和 CPU 类似的升频延迟问题。
+DDR 频率高低不能单独证明内存瓶颈。优先使用设备提供的内存带宽计数器、LLC/cache miss、stall、GPU counter 与互连轨迹，并核对采样单位。AOSP 不统一规定厂商的 DDR governor、节点名称或 Perfetto track。
 
+## 一套可复现的 DVFS 排障顺序
 
-## 与其他机制的关联
+### 第一步：界定超时工作
 
-DVFS 和本书多个机制互相影响，理解这些关联对性能分析很重要：
+标出掉帧、启动或交互的 deadline，找到关键线程和最重的 slice。先区分 running、runnable、sleeping 与 blocked。
 
-- **[5.1 进程调度基础](01-linux-scheduling.md)**：schedutil 直接依赖 PELT 的利用率数据，调度器的负载追踪精度决定了调频的质量
-- **[5.2 EAS 能量感知调度](02-eas.md)**：EAS 在选核时需要考虑不同 CPU 的能效比，而能效比本身取决于当前的频率/电压（即 DVFS 状态）
-- **[5.3 大小核架构](03-big-little.md)**：大小核的迁移策略和 DVFS 互相影响——迁核后频率可能需要重新调整，频率变化又可能影响迁核决策
-- **[5.5 Thermal 管控](05-thermal.md)**：当温度过高时，thermal 机制会限制 DVFS 的最高频率（即降频限频），这是功耗管理与热管理的交汇点
-- **[7.3 卡顿分析方法论](../../part2-performance/ch07-smoothness/03-jank-methodology.md)**：在分析卡顿时，CPU 频率是需要优先排查的因素之一
+### 第二步：确定 CPU 与 policy
 
-## 常见问题与误区
+记录线程运行过的 CPU，再读取 policy 的 `related_cpus`、驱动、governor 和频率上下限。不要用“CPU 0—3 一定是小核”之类的固定编号推断拓扑。
 
-### 误区 1：「CPU 利用率不高就不需要升频」
+### 第三步：对齐请求、执行和限制
 
-这在有 RTG/聚合调频机制的平台上是错误的。如果多个关联线程分散在不同 CPU 上，每个 CPU 的单独利用率可能只有 40-50%，但总负载已经需要更高的频率。在 Perfetto 中分析时，需要关注整个 cluster 上所有 CPU 的负载总和，而不仅仅是单个 CPU。
+把 schedutil 输入线索、频率事件、idle 状态、thermal/capacity 与关键 slice 对齐。设备若提供硬件频率反馈，再把“内核请求”和“硬件反馈”分开比较。
 
-### 误区 2：「固定最高频率就能解决所有卡顿」
+### 第四步：建立对照
 
-将 CPU 固定在最高频率可以消除调频延迟导致的掉帧，但代价是巨大的功耗浪费和发热。长期来看，发热反而会触发 thermal throttling，导致更严重的性能下降。正确的做法是理解 DVFS 的行为，针对性地优化（如使用 ADPF），而不是一刀切地拉满频率。
+保持工作负载、温度、电量、屏幕刷新率和网络条件尽量一致，重复采集。工程设备上的 UClamp、hint session 或受控频率上限实验可以帮助验证因果，但每次只改变一个变量，并在实验后恢复策略。
 
-### 误区 3：「调频延迟只有几十微秒，对性能没影响」
+### 第五步：选择对应修复
 
-从硬件角度看，单次频率切换可能只需要几十微秒。但从端到端的角度看——PELT 的响应时间 + rate_limit + 硬件切换延迟——整个过程可能达到数十甚至上百毫秒。在 60 fps 的场景下，可能错过 1-6 帧。所以调频延迟是一个真实的性能因素。
+- 线程长期 running 且算力不足：先优化工作量，再评估 hint/UClamp 和调频响应。
+- 线程 runnable 却没得到 CPU：处理调度竞争、优先级或 CPU 放置。
+- 线程 sleeping/blocked：处理锁、Binder、I/O 或生产者依赖。
+- 频率请求很高但硬件反馈偏低：调查 thermal、电源预算、固件或驱动。
+- GPU/内存受限：转到对应性能域，避免只调 CPU。
 
-### 误区 4：「schedutil 的调频策略对所有场景都合适」
+## 常见误区
 
-schedutil 是一个通用方案，它对典型 Android 应用场景做了优化，但对特殊场景（如游戏、相机预览、音频处理）不一定是最优的。这就是为什么 Android 引入了 ADPF——让应用有机会根据自身特点影响调频决策。
+### “CPU 利用率不高，就没有升频需求”
 
-## DVFS 在 Framework 层的调度协同
+平均利用率会掩盖短促 burst，也会把不同 CPU 和时间段混在一起。schedutil 还会考虑 util_est、UClamp、I/O wait、RT/DL/IRQ 和容量约束。应观察关键 policy 内、关键时间窗内的需求。
 
-以上是内核层的 DVFS 机制。在实际 Android 设备上，Framework 层还会通过 GameManagerService 和 Power HAL 向内核注入性能模式，影响 governor 的调频决策。下面展开 Framework 到 HAL 的下发路径。
+### “固定最高频率可以解决卡顿”
+
+锁等待、I/O、GPU fence 和调度竞争不会因为 CPU 固定最高频而消失。持续最高频还会提高温度，随后可能触发更强的 thermal throttling。限频或定频适合作为受控实验，不是通用产品方案。
+
+### “scaling_cur_freq 就是硬件实频”
+
+Linux CPUFreq 文档明确区分了请求状态和硬件反馈。`scaling_cur_freq` 在多数驱动上代表最近请求的 P-state；`cpuinfo_cur_freq`、`cpuinfo_avg_freq` 也只有在驱动与硬件支持时才存在。报告数据时要写清节点或 tracepoint 的语义。
+
+### “看到频率晚升，就能判定 governor 有问题”
+
+任务可能刚从深 idle 唤醒，也可能在等待依赖；thermal 或 policy 上限还能压制目标。只有当关键任务处于 running、需求已经抬升、目标仍长期没有提交或兑现时，才应把排查重点移到 governor、driver 或 firmware。
+
+## 版本边界与源码索引
+
+| 主题 | Android 17 / 6.18 锚点 | 边界 |
+| --- | --- | --- |
+| schedutil | `kernel/sched/cpufreq_schedutil.c` | 精确到 `android17-6.18-2026-06_r6`；其他内核分支可能不同 |
+| OPP | `drivers/opp/`、`Documentation/power/opp.rst` | OPP 来源和可见性由平台决定 |
+| CPUFreq | `Documentation/admin-guide/pm/cpufreq.rst` | driver 决定 fast switch、反馈节点和固件接口 |
+| ADPF | `android.os.PerformanceHintManager` | API 可用性、session 权限和 HAL 支持需运行时确认 |
+| Power HAL | `hardware/interfaces/power/aidl/android/hardware/power/` | Mode/Boost 到资源策略的映射由 vendor 实现 |
+| 游戏模式 | `GameManagerService` | `GAME`/`GAME_LOADING` 调用点应以当前 tag 源码为准 |
+| Perfetto | `linux.cpu.frequency`、`linux.cpu.idle` | GPU、DDR 和硬件实频轨迹不具备跨设备统一性 |
 
 ## 参考资料
 
-- Linux 内核 cpufreq 文档：kernel.org/doc/Documentation/cpu-freq/
-- Linux 内核 OPP 框架：kernel.org/doc/Documentation/power/opp.txt
-- schedutil 源码：kernel/sched/cpufreq_schedutil.c
-- Android ADPF 官方文档：developer.android.com/games/optimize/adpf
-- Perfetto CPU frequency 文档：perfetto.dev/docs/data-sources/cpu-frequency
-- RTG 聚合调频分析：OPPO 内核工匠《调度器分支之RTG》
-- GPU 性能原理：腾讯技术工程《GPU 性能原理拆解》
-
-## Framework 层：GameManagerService 与 Power HAL
-
-
-### GameManagerService 游戏模式感知层
-
-AOSP android-17.0.0_r1 中，`GameManagerService`（路径：`frameworks/base/services/core/java/com/android/server/app/GameManagerService.java`）负责检测和管理游戏状态。关键函数：
-
-- `setGameMode(String packageName, @GameMode int gameMode, int userId)` — 切换游戏模式（标准/性能/省电），更新 game mode interventions
-- `getGameMode()` — 查询当前游戏模式
-
-游戏启动/加载阶段的性能提升路径不经过 `powerHint` / `POWER_HINT_*` 常量。可验证调用路径是：
-
-```
-GameManagerService → PowerManagerInternal.setPowerMode(Mode.GAME_LOADING, isLoading)
-```
-
-具体地，游戏进入 loading 状态有两条可验证入口：`setGameState(...)` 在应用上报 loading 状态时通过 handler 设置 `Mode.GAME_LOADING`；`notifyGraphicsEnvironmentSetup(...)` 在游戏启动的 graphics env 初始化后按配置开启 loading boost，并通过延迟消息关闭。`setGameMode(...)` 本身只更新模式与 interventions，不直接下发 loading power mode。`PowerManagerInternal` 是系统服务内部接口（`@hide`），不暴露给第三方应用。
-
-
-> **PowerManager.java / IPowerManager.aidl 复核**：android-17.0.0_r1 的 `PowerManager.java` 和 `IPowerManager.aidl` 未命中 `powerHint` 方法或 `POWER_HINT_*` 常量簇。旧版 Android（API 28 之前）曾存在 `powerHint()` / `POWER_HINT_INTERACTIVE` 等常量，已在后续版本移除，不是 Android 16/17 的公开 API。
-
-### PowerManagerService 与 Power HAL AIDL
-
-`PowerManagerService`（路径：`frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java`，android-17.0.0_r1）内部通过 `setPowerModeInternal()` 承载游戏/相机/VR 等场景的性能模式请求，JNI 入口为 `nativeSetPowerMode()`（路径：`frameworks/base/services/core/jni/com_android_server_power_PowerManagerService.cpp`），最终通过 Power HAL AIDL 接口 `IPower.setMode()` 下发到 HAL 层。
-
-`hardware/interfaces/power/aidl/android/hardware/power/Mode.aidl` 中的 `Mode` 枚举（如 `GAME_LOADING`、`GAME`、`SUSTAINED_PERFORMANCE`、`CAMERA_STREAMING_HIGH` 等）取代了旧的 `powerHint` 整型常量机制。Android 15-17 的系统侧下发路径使用 AIDL Power HAL，具体模式到频率、调度或功耗策略的映射由 vendor 实现决定。
-
-
-### Power HAL 的 vendor 配置边界
-
-Power HAL 如何把 `Mode.GAME_LOADING` 映射到具体的调频/调压动作，由 vendor 实现决定。常见的映射手段包括：
-
-- 向 kernel cpufreq governor 注入 uclamp 下限或性能提示
-- 调整 cpuset cgroup 的 CPU 亲和性（`/dev/cpuset/top-app/cpus`）
-- 通过 SoC 私有接口（如 `/proc/cpufreq/sched_dcvs_perf`，属 vendor 路径）下发调频目标
-
-这些映射逻辑不在 AOSP 主线范围内，不同 SoC 平台和 OEM 的配置差异很大，无法用一条通用调用链覆盖。在 Perfetto 中观察时，可以对比 `power/cpu_frequency` 轨迹与游戏加载区间的时间对齐关系，判断厂商的 GAME_LOADING → 提频映射是否生效，但映射表本身不暴露在 AOSP 的 public API 或 sysfs 标准接口中。
-
-### Android 17 三层协作：PowerManagerService × IPower HAL × schedutil/cpuidle menu
-
-<!-- AIW-源码调研-2026-07-04 -->
-
-本节用源码锚定的方式把上层 wake lock 摘要 → 中层 IPower HAL hint → 下层 schedutil + cpuidle menu governor 的协作时序落到 AOSP 可读文件上, 替代此前用图示/概览描述的电源管理栈。三层对应文件:
-
-- **上层 (Framework)**: `frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java` (android-17.0.0_r1, 8258 行)
-- **中层 (HAL)**: `hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl` (android-17.0.0_r1, 200 行, `@VintfStability`)
-- **下层 (Kernel)**: `kernel/sched/cpufreq_schedutil.c` + `drivers/cpuidle/governors/menu.c` (kernel.org mainline v6.x 参照, ACK android17-6.18-2026-06_r1 继承算法)
-
-#### PowerManagerService 的 DIRTY 掩码与 wake lock 摘要
-
-PMS 用 17 个 `DIRTY_*` 位掩码追踪需要更新的电源状态子集 (line 210-237), 任何 wake lock 状态变更都触发 `mDirty |= DIRTY_WAKE_LOCKS; updatePowerStateLocked();` (line 1797-1798)。`updateWakeLockSummaryLocked()` (line 3029-3111) 聚合所有活跃 wake lock 的 flags 到 `mWakeLockSummary`, 经过 `getWakeLockSummaryFlags()` (line 3151-3177) 把 `PowerManager.PARTIAL_WAKE_LOCK` 等公共 API 映射成内部 `WAKE_LOCK_CPU` / `WAKE_LOCK_SCREEN_BRIGHT` 等 10 个 `WAKE_LOCK_*` 状态位 (line 243-251)。
-
-`adjustWakeLockSummary()` (line 3113-3177) 在已知 wakefulness (Asleep/Dozing/Awake/Dreaming) 的前提下做隐含状态推断: 例如 wakefulness == Asleep 或带 `WAKE_LOCK_DOZE` 时强制移除 `WAKE_LOCK_SCREEN_BRIGHT | WAKE_LOCK_SCREEN_DIM | WAKE_LOCK_BUTTON_BRIGHT`。这条收敛规则意味着上游组件不需要感知所有组合, wake lock summary 总是收敛到合法集合。
-
-Android 17 引入 `mPowerGroups` 多 display group 概念 (line 2400+), 每个 group 单独维护 wakefulness + wakeLockSummary。`dozePowerGroupLocked()` 在 `Flags.separateTimeouts()` 启用时引入相邻 group 唤醒规则: 默认 group 在相邻 group 仍交互时不能 doze, 这条对折叠屏/外接显示器影响很大。
-
-#### IPower HAL 的 setBoost vs HintSession
-
-`@VintfStability IPower` AIDL 接口 (android-17.0.0_r1) 提供两类调频 hook:
-
-```aidl
-oneway void setMode(in Mode type, in boolean enabled);
-boolean isModeSupported(in Mode type);
-oneway void setBoost(in Boost type, in int durationMs);  // durationMs: 0=未知, <0=取消
-IPowerHintSession createHintSession(
-    in int tgid, in int uid, in int[] threadIds, in long durationNanos);
-long getHintSessionPreferredRate();
-```
-
-关键语义差: `setMode` 是无 timeout 开关 (如 `Mode.LOW_POWER`), `setBoost` 是有 durationMs 的瞬时 hint (`Boost.INTERACTION` 抬频率几秒), vendor HAL 可完全忽略 (`A particular platform may choose to ignore any mode hint`)。Android 17 新增 `CpuHeadroomResult/GpuHeadroomResult/CompositionData/CompositionUpdate`, 让应用查询 headroom 而非单向提需求, 这是 ADPF 主动探测模式的物质基础。
-
-#### schedutil governor 的异步刷新路径
-
-`struct sugov_policy` (line 30-37) 把每次调频请求拆成 irq_work + kthread_worker 异步路径:
-
-```c
-struct sugov_policy {
-    s64 freq_update_delay_ns;  // rate_limit_us * NSEC_PER_USEC
-    struct irq_work irq_work;
-    struct kthread_work work;
-    struct kthread_worker worker;
-    struct task_struct *thread;
-    bool work_in_progress;
-};
-```
-
-调用链 `schedutil_update_util → sugov_get_util → sugov_should_update_freq → sugov_deferred_update → sugov_irq_work → sugov_work → __cpufreq_driver_target`, 其中 `sugov_get_util()` (line 220) 始终从 `scx_cpuperf_target(cpu)` 起算 (sched_ext 性能目标接口, 与 android16-6.12 一致), 非 scx 独占时叠加 `cpu_util_cfs_boost()`, 走 `effective_cpu_util()` → `sugov_effective_cpu_perf()`。`sugov_should_update_freq()` (line 79-110) 用 `delta_ns >= freq_update_delay_ns` 守门, 这是 vendor hook 临时降 rate_limit_us 到 0 实现"触摸瞬时升频"的接入点。
-
-`sugov_iowait_boost()` (line 250+) 实现"连续 IO 唤醒指数提频": 每次 IO 唤醒 `iowait_boost <<= 1`, 封顶 `SCHED_CAPACITY_SCALE`, `delta_ns > TICK_NSEC` 时由 `sugov_iowait_reset()` 重置回 `IOWAIT_BOOST_MIN`。这条逻辑保证"连续 IO 唤醒给强 boost, 偶发 IO 唤醒给弱 boost", 避免长尾抖动。
-
-#### cpuidle menu governor 的预测修正因子
-
-menu governor 用 6 个 bucket + DECAY=8 修正因子预测下一次 idle 持续时间 (line 22-24):
-
-```c
-#define BUCKETS 6
-#define DECAY 8
-#define RESOLUTION 1024
-#define MAX_INTERESTING (50000 * NSEC_PER_USEC)  // 50ms 上限
-```
-
-`menu_select()` 优先级: (1) `latency_req == 0` 或下一个 timer 很近 → state[0]; (2) 第一个 `target_residency_ns <= predicted_ns` 的 state; (3) polling state 且 `target_residency_ns < RESIDENCY_THRESHOLD_NS && <= next_timer_ns && exit_latency_ns <= predicted_ns` 选 polling (空转); (4) tick 未停止时优先保留 tick, 防止浅 state 卡住太久。
-
-`menu_update()` (line 410+) 在 wakeup 后回写实测值, 修正因子 `new_factor -= new_factor / DECAY; new_factor += div64_u64(RESOLUTION * measured_ns, data->next_timer_ns);`——DECAY=8 让旧值衰减因子 7/8, 新值贡献 1/8, 预测曲线对单次偶发长 idle 不敏感。
-
-`tick_wakeup` 特殊处理 (line 444-453): 如果 tick 没被停止但 predictor 以为停了, 强制 measured_ns 设为 `9 × MAX_INTERESTING / 10`, 防止"CPU 醒得太早导致没机会进深 idle"的死循环。
-
-#### 三层协作时序示例
-
-App `PowerManager.WakeLock.acquire()` 触发的事件序列 (基准时间):
-
-```
-T+0ms    PowerManagerService.acquireWakeLockInternal()
-         → mWakeLocks.add(wakeLock)
-         → mDirty |= DIRTY_WAKE_LOCKS
-         → updatePowerStateLocked()            [同步]
-
-T+0ms    notifyWakeLockAcquiredLocked(wakeLock)
-         → mNotifier.onWakeLockAcquired(...)  [Binder]
-         → BatteryStatsService.noteStartWakelock(...)
-         → mHandler.post(() -> mStats.noteStartWakeLocked(...))
-
-T+0ms    acquireSuspendBlockerLocked("PowerManagerService.WakeLocks")
-         → JNI nativeAcquireSuspendBlocker
-         → SystemSuspend 引用计数 +1, 阻止 deep suspend
-
-T+1ms    PowerHAL.setBoost(Boost.INTERACTION, 200ms)
-         → mPowerHal.setBoost(...)
-         → vendor HAL 内部: schedutil rate_limit_us → 0
-         → 唤醒 idle CPU, schedutil 立即升频
-
-T+200ms  PowerHAL Boost 超时
-         → vendor HAL 还原 rate_limit_us 默认值
-         → idle CPU 重新进入 cpuidle, menu governor 预测 idle 时长
-```
-
-在 Perfetto 里抓这条调用路径时, 关注三类 slice: (1) `power/wake_lock` 看到 PMS 注册的 suspend blocker 状态; (2) `power/cpu_frequency` 与 wake lock 摘要变更的时间对齐; (3) `sched/cpu_util` 与 `sched/cpu_frequency` 同步轨迹, 看 schedutil 是否在 `freq_update_delay_ns` 内刷新。
-
-> ⚠️ 本节源码以 kernel.org mainline v6.x 为参照, ACK android17-6.18-2026-06_r1 在 menu / schedutil 算法上一致, 差异主要在 SoC cpuidle driver (`arm_idle`) 的 state 表与厂商私有 governor hook, 不在 AOSP 主线范围。
-
-### Linux cpufreq + cpuset + thermal 协同
-
-Android 的 CPU 调频栈最终由 Linux kernel 实现：
-
-```
-/sys/devices/system/cpu/cpu0/cpufreq/
-├── scaling_governor      # schedutil（默认）/ ondemand / performance
-├── scaling_max_freq      # 软件上限（可写入）
-└── scaling_cur_freq      # cpufreq 驱动可见频率，常是上次请求的 P-state
-```
-
-cpuset cgroup 控制进程 CPU 亲和性：
-
-```
-/dev/cpuset/top-app/cpus   # 顶层应用（如游戏）
-/dev/cpuset/foreground/cpus # 前台进程
-```
-
-thermal 降频路径：`/sys/class/thermal/thermal_zone*/`。具体 trip point 和降频动作由内核 thermal zone / vendor thermal engine 配置决定，不能按固定温度阈值概括；分析时读取 `trip_point_*`、Thermal HAL severity 或设备侧配置，再和 `power/cpu_frequency` 对齐。
-
-### 荣耀 MUSCHED 说明
-
-荣耀 MUSCHED 为厂商私有实现，AOSP 未见源码。已验证 AOSP 路径仅覆盖通用 Android 调度框架，厂商特异调度器（如 MUSCHED）属于 vendor 分支，不在 android-17.0.0_r1 主线范围内。Android 17 厂商扩展仍需设备厂商源码或 trace 复核。
-
+- Linux kernel `android17-6.18-2026-06_r6`：`kernel/sched/cpufreq_schedutil.c`
+- Linux kernel：`Documentation/admin-guide/pm/cpufreq.rst`
+- Linux kernel：`Documentation/scheduler/schedutil.rst`
+- Linux kernel：`Documentation/power/opp.rst` 与 `drivers/opp/`
+- AOSP `android-17.0.0_r1`：`frameworks/base/core/java/android/os/PerformanceHintManager.java`
+- AOSP `android-17.0.0_r1`：`frameworks/base/services/core/java/com/android/server/app/GameManagerService.java`
+- AOSP `android-17.0.0_r1`：`hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl`、`Mode.aidl`、`Boost.aidl`
+- Perfetto SQL standard library：`linux.cpu.frequency`、`linux.cpu.idle`
