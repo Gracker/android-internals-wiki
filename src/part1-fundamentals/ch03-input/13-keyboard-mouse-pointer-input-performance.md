@@ -39,313 +39,548 @@ gap_source: "官方文档/AOSP结构/每日信息"
 
 # 3.13 键盘、鼠标与指针输入性能 — 桌面模式交互管线
 
-## 为什么单独看键盘/鼠标输入
+手机上的输入优化常以触摸为中心。到了大屏、多窗口和桌面窗口场景，键盘、鼠标、触控板会把另外几类问题放大：
 
-第 3.1 节给出了 Input 事件从硬件到 App 的完整路径，第 3.2 节聚焦触摸响应延迟。本节关注的是另一类输入设备——键盘、鼠标和指针——在桌面模式（Desktop Mode）下的性能特征。这些设备的事件管线与触摸事件在 source 分类、事件频率、分发路径和 ANR 风险点上存在结构性差异。
+- 键盘按键先经过系统策略和 IME，目标由窗口焦点决定；
+- 鼠标移动需要维护屏幕光标，窗口目标来自坐标命中；
+- 触控板先识别移动、滚动、捏合和多指手势，应用平时收到的未必是原始触点；
+- hover 没有按下状态，却持续触发窗口命中、View 命中、指针图标解析和应用回调；
+- 跨窗口拖放同时涉及 InputDispatcher、WindowManager、SurfaceControl 和应用主线程。
 
-Android 13 (API 33) 开始提供桌面模式窗口管理雏形，Android 15 (API 35) 引入桌面窗口（Desktop Windowing）特性，Android 16 (API 36) 将桌面模式作为可用户切换的功能入口，Android 17 (API 37) 继续完善桌面体验。鼠标和键盘作为桌面模式的核心交互设备，其事件管线性能直接影响用户体验。
+这些事件最终仍通过 input channel 进入应用。性能问题的共同终点也相同：应用没有及时完成事件，`InputDispatcher` 的连接等待队列持续增长，用户先看到光标、焦点或快捷键响应落后，随后才可能出现 input dispatching timeout。
 
-[适用版本: Android 13 - Android 17]
+本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点。历史版本只在解释兼容边界时出现。
 
-## 桌面模式输入设备模型
+## 1. 先建立一张完整的路径图
 
-### 输入设备分类与 source 标记
-
-Android 输入系统通过 `InputDevice` 类描述物理输入设备，每个设备关联一个或多个 `source`。与桌面模式性能相关的 source 包括：
-
-- `SOURCE_KEYBOARD`：物理键盘，产生 `KeyEvent`
-- `SOURCE_MOUSE`：鼠标，产生 `MotionEvent`，坐标为绝对指针位置
-- `SOURCE_TOUCHPAD`：触控板，产生 `MotionEvent`，坐标为相对位置
-- `SOURCE_TOUCHSCREEN`：触摸屏，产生 `MotionEvent`，直接映射屏幕坐标
-- `SOURCE_STYLUS`：触控笔，产生 `MotionEvent`，附带压力和倾斜数据
-- `SOURCE_GAMEPAD`：游戏手柄，产生 `KeyEvent`（按钮）和 `MotionEvent`（摇杆轴）
-
-[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/reader/InputDevice.cpp]
-
-鼠标和触摸的关键区别在于指针精度和事件语义。触摸屏的坐标分辨率受限于触摸矩阵的物理传感器密度（通常 100-300 DPI），鼠标的指针精度取决于系统设置的指针速度乘数和鼠标硬件 DPI（通常 400-3200 DPI）。在 `PointerController` 中，鼠标移动经过加速曲线映射到屏幕坐标位移，这条曲线由 `PointerProperties` 和 `PointerCoords` 共同决定。
-
-### InputReader 对设备类的分流
-
-`InputReader` 在 `InputDevice` 初始化时根据设备的 device classes 加载对应的 `InputMapper`：
-
-- `KeyboardInputMapper`：处理 `EV_KEY` 类型的键盘扫描码，生成 `KeyEvent`
-- `MultiTouchInputMapper` / `SingleTouchInputMapper`：处理 `EV_ABS` / `EV_SYN` 类型的绝对坐标事件，生成触摸或指针 `MotionEvent`
-- `CursorInputMapper`：处理鼠标的相对移动（`EV_REL`），通过 `PointerController` 转换为绝对坐标后生成 `MotionEvent`，source 标记为 `SOURCE_MOUSE`
-- `TouchpadInputMapper`（Android 14+）：处理触控板多点触控，source 标记为 `SOURCE_TOUCHPAD`
-
-[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/reader/mapper/]
-
-桌面模式下，鼠标事件经过 `CursorInputMapper` → `PointerController` → `InputDispatcher` 的路径。`PointerController` 负责将鼠标硬件的相对位移转换为屏幕绝对坐标，并应用加速曲线。这个转换步骤是鼠标独有的——触摸事件直接从 `InputMapper` 进入 `InputDispatcher`，不需要经过指针位置转换。
-
-## 键盘事件分发管线
-
-### KeyEvent 的完整分发链路
-
-键盘事件从 `InputReader` 读取到 App 层消费的完整路径：
-
-```
-Kernel keyboard event (EV_KEY)
-  → InputReader::process()
-  → KeyboardInputMapper::process()
-  → EventHub::scancode_to_keycode() 转换扫描码
-  → InputDispatcher::notifyKey()
-  → InputDispatcher::dispatchKey()
-  → 焦点窗口的 InputChannel (socket pair)
-  → App 端 ViewRootImpl.EnqueueInputEvent()
-  → ViewRootImpl.deliverInputEvent()
-  → DecorView.dispatchKeyEvent()
-  → Activity.dispatchKeyEvent() / Window.superDispatchKeyEvent()
-  → View hierarchy: View.dispatchKeyEvent()
-  → Compose: View.onKeyEventListener → Modifier.onKeyEvent()
-  → InputMethodManager（如果未被消费，触发 IMS 的候选词处理）
+```mermaid
+flowchart LR
+    A["Linux evdev 事件"] --> B["EventHub"]
+    B --> C["InputReader / InputDevice"]
+    C --> D["KeyboardInputMapper"]
+    C --> E["CursorInputMapper"]
+    C --> F["TouchpadInputMapper"]
+    D --> G["NotifyKeyArgs"]
+    E --> H["NotifyMotionArgs"]
+    F --> H
+    G --> I["InputDispatcher"]
+    H --> I
+    I --> J["系统按键策略 / 窗口目标选择"]
+    J --> K["应用 InputChannel"]
+    K --> L["WindowInputEventReceiver"]
+    L --> M["ViewRootImpl InputStage"]
+    M --> N["View 或 Compose UI"]
 ```
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp + frameworks/base/core/java/android/view/ViewRootImpl.java]
+图中的三个 mapper 共享 `EventHub → InputReader → InputDispatcher` 主干，但设备语义不能互换：
 
-与触摸事件相比，`KeyEvent` 分发有两个性能特征值得注意：
+| 输入 | 原始内核事件 | Android 17 的主要转换者 | 常见应用事件 |
+| --- | --- | --- | --- |
+| 物理键盘 | `EV_KEY` | `KeyboardInputMapper` | `KeyEvent` |
+| 鼠标 | `EV_REL`、按键、滚轮 | `CursorInputMapper` | `MotionEvent`，通常为 `SOURCE_MOUSE` |
+| 触控板 | `EV_ABS` 多点槽位、按键 | `TouchpadInputMapper` + gestures library | 普通模式通常表现为鼠标或已分类手势 |
+| 触摸屏 | `EV_ABS` 多点槽位 | `MultiTouchInputMapper` | `SOURCE_TOUCHSCREEN` 的 `MotionEvent` |
 
-1. **View 树遍历开销**：`dispatchKeyEvent` 沿 View 树自顶向下分发，直到有 View 返回 `true` 消费事件。在 View 层级深的场景中（如嵌套 Dialog + PopupWindow + RecyclerView），遍历本身会产生可测量的开销。Perfetto 中表现为 `deliverInputEvent` slice 下连续的 `View.dispatchKeyEvent` 调用。
+一个物理设备可以支持多个 source。例如，Android 17 的 `TouchpadInputMapper::getSources()` 返回 `SOURCE_MOUSE | SOURCE_TOUCHPAD`。这表示设备具备这些能力，不代表每个事件的 `MotionEvent.getSource()` 都包含两个值。普通未捕获的触控板移动由 `UncapturedGestureConverter` 生成，事件 source 是 `SOURCE_MOUSE`。
 
-2. **InputMethodManager 回退路径**：如果 `KeyEvent` 未被 View 树消费，会回退到 `InputMethodManager` 处理候选词、快捷键等。这条路径涉及 Binder 调用（`IInputMethodManager`），在桌面模式下 IME 可能为空，但回退检查本身仍有开销。
+### source 描述分发语义，不能代替硬件能力判断
 
-### Key Repeat 的生成与频率
+应用应同时看 `InputDevice` 能力、事件 source、action、axis 和 tool type，不能只用设备名称猜测输入类型。
 
-Key Repeat（长按重复）由 `InputReader` 在用户态生成，不是内核驱动行为。`InputReader` 内部维护一个 `KeyRepeatInfo` 结构，包含初始延迟（`CONFIGURATION_KEY_REPEAT_DELAY`，默认 500ms）和重复间隔（`CONFIGURATION_KEY_REPEAT_RATE`，默认 50ms / 20 Hz）。
+- `SOURCE_MOUSE` 属于 `SOURCE_CLASS_POINTER`，坐标对应显示空间中的指针位置；
+- `SOURCE_MOUSE_RELATIVE` 属于 `SOURCE_CLASS_TRACKBALL`，用于 pointer capture 下的相对移动；
+- `SOURCE_TOUCHPAD` 属于 `SOURCE_CLASS_POSITION`，API 37 的绝对捕获模式用它报告触控板原始触点；
+- `SOURCE_GAMEPAD` 描述按钮能力，摇杆轴通常来自 `JoystickInputMapper`，没有独立的 `GamepadInputMapper`。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/reader/InputReader.cpp]
+这一区分会直接影响 `ViewRootImpl` 选择 `dispatchPointerEvent()`、`dispatchCapturedPointerEvent()` 或 `dispatchGenericMotionEvent()`。
 
-长按一个键时，`InputReader` 以 20 Hz 频率连续生成 `ACTION_DOWN` 事件（`getRepeatCount()` 递增）。每次重复事件走完整的 `notifyKey` → `dispatchKey` → `deliverInputEvent` 链路。如果目标 Activity 的 `dispatchKeyEvent` 实现里有重逻辑（如文本搜索、列表过滤），Key Repeat 会导致主线程负载突增。
+## 2. InputReader 如何把设备转换成 Android 事件
 
-快捷键组合（Ctrl/Shift + 字母键）的匹配走 `Activity.onKeyShortcut()` → `View.onKeyShortcut()` 路径，在每个重复事件中都会被调用。桌面模式下快捷键使用频率高，需要确认 `onKeyShortcut` 实现是否做了去抖。
+### 2.1 mapper 由设备 class 决定
 
-### 键盘事件 ANR 阈值
+`InputDevice::createMappers()` 根据 `EventHub` 识别出的 device class 创建 mapper。Android 17 中相关分支为：
 
-键盘事件的 ANR 超时与触摸事件相同，都是 5 秒（`DEFAULT_INPUT_DISPATCHING_TIMEOUT` = 5000ms）。但键盘交互的特性使得 ANR 更容易被用户感知：按下一个快捷键后如果窗口无响应，用户通常会连续按键，每次按键都重置 ANR 计时器的等待起点，反而延长了无响应状态的持续时间。
+- `KEYBOARD`、`DPAD`、`GAMEPAD` 组合出 keyboard source，再创建 `KeyboardInputMapper`；
+- `CURSOR` 创建 `CursorInputMapper`；
+- 同时具有 `TOUCHPAD` 与 `TOUCH_MT` 时创建 `TouchpadInputMapper`；
+- 其余 `TOUCH_MT` 设备才进入 `MultiTouchInputMapper`；
+- `JOYSTICK` 创建 `JoystickInputMapper`。
 
-详见 3.7 节对 `InputDispatcher` 反压和 ANR 计时边界的分析。
+因此，同样来自 `EV_ABS` 的多点数据，触控板与触摸屏也可能在 mapper 创建阶段分开。
 
-## 鼠标 Hover 与 MotionEvent 性能
+### 2.2 键盘：scan code、key code 与字符是三层概念
 
-### Hover 事件的生成频率
+`KeyboardInputMapper` 收到 `EV_KEY` 后，以 scan code 和可选 HID usage 查表。Android 17 的 `EventHub::mapKey()` 会先检查 key character map，再检查 key layout，之后应用用户按键重映射和 KCM 中的 key behavior。输出包含：
 
-鼠标 Hover（悬停）事件是桌面模式下最高频的输入事件类型。当用户移动鼠标时，`CursorInputMapper` 将相对位移转换为绝对坐标，生成 `ACTION_HOVER_MOVE` 类型的 `MotionEvent`。鼠标的 USB 轮询率通常为 125-1000 Hz，系统层面经过 `InputReader` 的事件合并后，实际分发到 App 的 Hover 事件频率在 200-500 Hz 范围。
+- `scanCode`：接近 Linux 输入设备报告的物理键编号；
+- `keyCode`：Android 的 `KEYCODE_*` 语义；
+- `metaState`：Shift、Ctrl、Alt、Meta 等组合状态；
+- policy flags：是否唤醒、是否为虚拟键等策略信息。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp — batching 逻辑]
+字符生成还要结合布局、修饰键、死键和输入法。业务代码不应把 `scanCode` 当成稳定快捷键，也不应假设同一个 `keyCode` 在所有键盘布局上产生同一个字符。
 
-### Hover 事件对重绘的影响
+### 2.3 鼠标：相对位移先更新系统光标
 
-每次 `ACTION_HOVER_MOVE` 事件触发 `View.onHoverEvent()` 回调。`View` 的默认实现会更新 `hovered` 状态并调用 `refreshDrawableState()`，后者触发 `invalidate()`。如果 View 树中有大量注册了 hover 监听的 View（例如 RecyclerView 中每个 item 都有 hover 效果），一次鼠标移动可能在单帧内产生数十次 `invalidate()` 调用。
+普通鼠标由 `CursorInputMapper` 处理 `REL_X`、`REL_Y`、滚轮和按钮。未捕获时：
 
-`InputDispatcher` 内部有事件合并（batching）机制：对同一个连接的连续 `MotionEvent`，如果时间戳差小于一个 frame（约 16ms），会尝试合并为一个事件。但这个合并不是强制的——如果 App 的主线程消费速度跟不上事件生产速度，`InputDispatcher` 的 `outboundQueue` 会积压。
+1. 相对位移经过 pointer velocity control；
+2. `PointerController` 更新显示中的光标位置；
+3. mapper 生成带屏幕光标坐标的 `SOURCE_MOUSE` 事件；
+4. 未按按钮时通常是 `ACTION_HOVER_MOVE`，按下期间是 `ACTION_MOVE`；
+5. 滚轮生成 `ACTION_SCROLL`，数值位于 `AXIS_VSCROLL` 和 `AXIS_HSCROLL`；
+6. 按钮状态还会产生 `ACTION_BUTTON_PRESS`、`ACTION_BUTTON_RELEASE`，主按钮状态变化伴随 `ACTION_DOWN`、`ACTION_UP`。
 
-Hover 事件的性能排查方法：
+应用看到的指针坐标已经经过显示映射和速度曲线。鼠标 DPI、USB/Bluetooth 报告间隔、用户指针速度、显示刷新率都会改变观测结果，不宜写成固定的事件频率或固定精度。
 
-- Perfetto 中观察 `deliverInputEvent` slice 的频率，确认 Hover 事件是否被有效合并
-- `dumpsys input` 查看 `inboundQueue` 和 `outboundQueue` 长度，队列持续增长说明 App 消费速度不足
-- 在 `onHoverEvent` 中加入 `FrameMetrics` 监控，确认单次 hover 处理的耗时
+### 2.4 触控板：普通模式先解释手势
 
-### onHoverEvent 与 onGenericMotionEvent 的分发顺序
+Android 17 的触控板路径比“相对坐标转光标”多一层：
 
-`MotionEvent` 的分发路径取决于 action 类型：
-
-- `ACTION_HOVER_ENTER` / `ACTION_HOVER_MOVE` / `ACTION_HOVER_EXIT`：走 `View.dispatchHoverEvent()` → `View.onHoverEvent()`
-- `ACTION_SCROLL`：走 `View.dispatchGenericMotionEvent()` → `View.onGenericMotionEvent()`
-- `ACTION_DOWN` / `ACTION_MOVE` / `ACTION_UP`（鼠标按键按下拖动）：走 `View.dispatchTouchEvent()` → `View.onTouchEvent()`
-
-三种分发路径互不干扰，但都会在 `deliverInputEvent` 中执行。高频 Hover 事件和触摸事件混合到达时，`deliverInputEvent` 的排队延迟会叠加。
-
-## Compose 指针输入性能
-
-### PointerInputModifier 的处理链路
-
-Compose 的指针输入系统通过 `Modifier.pointerInput()` 挂载到 Composable 上。底层实现是 `SuspendingPointerInputModifierNode`，每个 `pointerInput` modifier 启动一个协程，在协程内部通过 `PointerInputEventHandler` 接收 `PointerEvent`。
-
-鼠标 Hover 在 Compose 中的处理路径：
-
-```
-MotionEvent (ACTION_HOVER_MOVE)
-  → AndroidComposeView.dispatchHoverEvent()
-  → PointerInputEventProcessor.processHoverEvent()
-  → 遍历所有注册了 pointerInput 的 ModifierNode
-  → 每个 Node 的 coroutine 收到 PointerEvent
-  → detectHoverGestures / Modifier.hoverable 处理
-```
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/compose/.../AndroidComposeView]
-
-### Hover 导致的聚合负载
-
-桌面模式下，屏幕上可见的每个 Composable 如果注册了 `Modifier.hoverable()` 或 `Modifier.pointerInput()`，都会收到 Hover 事件。在一个包含 50 个可 hover 元素的列表中，一次鼠标移动触发 50 次协程调度和状态检查。
-
-Compose 的 Hover 处理性能取决于三个因素：
-
-1. **协程调度开销**：每个 `pointerInput` 块独占一个协程，Hover 事件需要将 `PointerEvent` 发送到所有活跃协程。协程数量与 Composable 数量线性相关。
-2. **重组触发**：Hover 状态变化（`isHovered`）会触发依赖该状态的重组。如果 Hover 状态被用于控制背景色、边框等视觉效果，每次状态翻转都会触发重组。
-3. **指针命中测试**：`PointerInputEventProcessor` 对每个 `PointerEvent` 需要做 hit-testing，确定事件落在哪些 Composable 上。hit-testing 的开销与 Composable 数量和布局复杂度成正比。
-
-优化方向：
-
-- 对不需要 Hover 效果的 Composable，不要添加 `Modifier.hoverable()`
-- 对列表项的 Hover 效果，使用 `Modifier.composed()` 配合 `MutableInteractionSource` 避免每个 item 创建独立的 `pointerInput` 协程
-- 在 `pointerInput` 内部使用 `awaitEachEvent` 而非 `awaitPointerEventScope`，前者减少了 coroutine 挂起/恢复次数
-
-[待验证: awaitEachEvent 的性能优势基于 Compose Foundation 1.7+ 的实现分析，未在 Android 17 上跑过基准测试]
-
-## 窗口焦点与输入路由
-
-### FocusedWindow 与输入分发
-
-`InputDispatcher` 维护当前焦点窗口句柄（`mFocusedWindowHandle`），所有 `KeyEvent` 分发到焦点窗口。焦点窗口由 `WindowManagerService` 通过 `InputManagerService.setInputWindows()` 设置。
-
-桌面模式下多窗口共存时的焦点判定规则：
-
-- **按键事件**：始终分发到 `mFocusedWindowHandle`，即最近获得焦点的窗口
-- **鼠标移动（Hover）**：分发到鼠标指针所在的可触摸窗口（`touchedWindowHandle`），不要求该窗口拥有焦点
-- **鼠标点击**：先触发窗口聚焦（`windowFocusChanged` 回调），然后分发触摸事件到新焦点窗口
-
-[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp — findFocusedWindowTargetsLocked / findTouchedWindowTargetsLocked]
-
-### 窗口聚焦切换的性能
-
-鼠标点击非焦点窗口时，窗口聚焦切换的链路：
-
-```
-InputDispatcher 发现点击目标 ≠ mFocusedWindowHandle
-  → 通过 InputDispatcher.Callback 通知 WindowManagerService
-  → WMS 执行 focusChange 流程
-  → 旧焦点窗口的 Activity.onWindowFocusChanged(false)
-  → 新焦点窗口的 Activity.onWindowFocusChanged(true)
-  → InputManagerService.setInputWindows() 更新 mFocusedWindowHandle
-  → InputDispatcher 分发触摸事件到新焦点窗口
+```text
+多点槽位
+  → HardwareStateConverter
+  → gestures library
+  → UncapturedGestureConverter / 捕获模式 converter
+  → NotifyMotionArgs
 ```
 
-这个链路涉及 2-3 次 Binder 调用（`IInputMethodManager`、`IWindowSession`）和 WMS 内部的窗口重排。在 Perfetto 中表现为点击后 5-15ms 的 `relayoutWindow` 和 `windowFocusChanged` slice。如果 Activity 的 `onWindowFocusChanged` 回调中有重逻辑（如重新加载数据、刷新 UI），延迟会更大。
+普通模式下，单指移动会更新光标并报告 `SOURCE_MOUSE` 的 hover/move；双指滚动可转成 scroll；捏合和多指滑动带有相应 classification，部分系统手势还会被系统消费。掌压过滤、tap-to-click、自然滚动、右键区域和加速曲线都在进入应用前参与解释。
 
-### 多显示器场景的输入路由
+所以，应用收到一条触控板事件时，不能反推“硬件只报告了一个相对坐标”。底层可能有多个绝对触点，平台已经把它们解释成鼠标或手势语义。
 
-Android 15+ 支持外接显示器上的桌面窗口。多显示器场景下，`InputDispatcher` 为每个 display 维护独立的窗口列表：
+## 3. Android 17 的 pointer capture 边界
 
-- `InputReader` 读取鼠标事件后，`PointerController` 根据指针当前所在的 display ID 设置事件的 display target
-- `InputDispatcher` 按 display target 分发到对应显示器上的窗口
-- 焦点窗口是 per-display 的：每个显示器有自己的焦点窗口
+Pointer capture 适用于第一人称视角、远程桌面、三维编辑器等需要持续相对移动的场景。普通表单、列表和桌面窗口不应主动捕获指针。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp — displayId 路由逻辑]
+捕获有三个重要前提：
 
-详见 2.20 节对多窗口和桌面模式渲染性能的分析。
+- 所属 View hierarchy 必须具有窗口焦点；
+- 获取和失去捕获会触发设备重新配置，source 和 motion range 可能改变；
+- 窗口失去焦点时捕获会被释放；focused display 改变时，`InputDispatcher` 也会强制关闭现有捕获。
 
-## 拖放（Drag and Drop）性能
+### 3.1 鼠标捕获
 
-### DragEvent 分发链路
+鼠标被捕获后，`CursorInputMapper` 切换到 `SOURCE_MOUSE_RELATIVE`，关闭指针加速与缩放，应用通过 captured pointer 回调读取相对移动。此时系统光标隐藏且位置不再移动。
 
-Android 拖放在桌面模式下是核心交互。拖放流程从 `View.startDragAndDrop()` 开始：
+### 3.2 API 37 的两种触控板捕获模式
 
-1. App 调用 `startDragAndDrop()`，提供 `ClipData` 和 `DragShadowBuilder`
-2. `DragRemoteViews` 通过 `ViewRootImpl` 向 WMS 发起拖放请求
-3. WMS 创建系统级 overlay 窗口绘制拖放阴影（`DragShadow`）
-4. 拖放过程中，`InputDispatcher` 将鼠标移动事件同时分发到拖放阴影窗口和鼠标指针下方的 App 窗口
-5. 每个被拖放阴影覆盖的 View 都收到 `DragEvent`（`ACTION_DRAG_ENTERED` / `ACTION_DRAG_LOCATION` / `ACTION_DRAG_EXITED`）
+Android 17 为触控板明确了两种模式：
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/DragEventController.java]
+| 模式 | 事件 source | 平台处理 | 适合场景 |
+| --- | --- | --- | --- |
+| `POINTER_CAPTURE_MODE_RELATIVE` | `SOURCE_MOUSE_RELATIVE` | 继续识别移动、按钮和滚动，再按相对量报告 | 游戏视角、远程桌面 |
+| `POINTER_CAPTURE_MODE_ABSOLUTE` | `SOURCE_TOUCHPAD` | 跳过 gestures library，报告触控板坐标空间中的多点数据 | 自定义触控板手势、原始触点分析 |
 
-### 拖放性能的瓶颈点
+Android 17 中，无参数 `requestPointerCapture()` 的默认方向是相对模式；需要原始多点触控板数据时应显式请求 absolute。绝对模式还会提供 `AXIS_RELATIVE_X/Y`，但 `getX(index)`、`getY(index)` 的坐标空间属于触控板表面，不能直接当屏幕坐标使用。
 
-拖放过程中 `ACTION_DRAG_LOCATION` 的分发频率与鼠标移动频率一致（200-500 Hz）。`View.dispatchDragEvent()` 会在 View 树中冒泡——从被覆盖的 View 开始，沿 parent 链向上传递，直到有 View 返回 `true` 消费事件。
+下面的代码用于在 compileSdk 37 的项目中明确表达捕获意图：
 
-性能瓶颈通常出现在：
+```kotlin
+fun View.captureForCameraControl() {
+    if (hasWindowFocus()) {
+        requestPointerCapture(View.POINTER_CAPTURE_MODE_RELATIVE)
+    }
+}
 
-1. **ViewTree 遍历**：拖放阴影每经过一个 View，都会触发一次 `dispatchDragEvent` 遍历。在复杂布局中（如 RecyclerView + GridLayout），单次拖放移动可能触发 10+ 次 `dispatchDragEvent` 调用。
-2. **ClipDescription 检查**：每个 `onDragEvent` 实现通常会检查 `DragEvent.getClipDescription()` 的 MIME type，判断是否接受拖放内容。`ClipDescription` 的 MIME type 比较是字符串匹配，开销可控但累积。
-3. **跨应用拖放**：跨应用拖放需要 `ClipData` 在进程间序列化传输。大数据量（如图片 URI 列表）的序列化通过 Binder 传输，受 1MB Binder transaction buffer 限制。接近 buffer 上限时，`startDragAndDrop` 可能抛出 `TransactionTooLargeException`。
+override fun onCapturedPointerEvent(event: MotionEvent): Boolean {
+    if (!event.isFromSource(InputDevice.SOURCE_MOUSE_RELATIVE)) return false
+    cameraController.rotateBy(event.x, event.y)
+    return true
+}
+```
 
-[已验证: Binder transaction buffer 1MB 限制详见 1.30 节 Binder Transaction Buffer 演进]
+`event.x/y` 在相对模式中表示本次移动量。回调执行期间只做输入状态更新；渲染工作交给帧循环，避免每个硬件采样都触发一套重计算。
 
-## InputDispatcher 在桌面模式的调度差异
+## 4. 键盘从系统策略到应用的路径
 
-### 事件合并策略
+### 4.1 系统策略早于应用窗口
 
-`InputDispatcher` 对连续的 `MotionEvent` 有两种合并策略：
+`KeyboardInputMapper` 创建 `NotifyKeyArgs` 后，`InputDispatcher::notifyKey()` 会先调用 policy 的 `interceptKeyBeforeQueueing()`。Android 17 的 `InputManagerService` 还会让 `KeyGestureController` 检查组合键。进入目标选择前，policy 还可通过 `interceptKeyBeforeDispatching()` 延迟或消费按键。
 
-- **Batching**：将同一连接的多个未消费 `MotionEvent` 合并为最后一个事件的快照，丢弃中间事件。适用于触摸移动和鼠标 Hover 移动。
-- **Cancelation**：当新事件到达时取消正在等待的旧事件分发。适用于触摸取消（`ACTION_CANCEL`）。
+电源、音量、系统导航和系统快捷键可能在这里结束，应用没有“所有物理按键都能收到”的保证。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp — enqueueInboundEventLocked / shouldPruneInboundQueueLocked]
+未被系统消费的按键按以下规则选择目标：
 
-鼠标 Hover 移动受益于 batching：如果 App 在一次 VSync 周期内收到 10 次 `ACTION_HOVER_MOVE`，batching 会将前 9 次丢弃，只保留最后一次的坐标。但 batching 只发生在 `inboundQueue` 阶段——如果事件已经进入 `outboundQueue`（即已经写入 socket pair 等 App 消费），batching 不再生效。
+1. 事件带有效 display id 时使用该 display；
+2. display id 无效时使用 `mFocusedDisplayId`；
+3. 在目标 display 上查找 focused window；
+4. 若 focused application 已存在但窗口尚未获得焦点，进入 no-focused-window 等待与超时逻辑；
+5. 对 key event，分发器还会等待先前未完成的输入，因为前一条点击可能打开新窗口并改变焦点。
 
-### ANR 阈值在桌面模式的考量
+第 5 点解释了一个常见现象：主线程积压的鼠标事件不仅拖慢 hover，也可能让紧随其后的键盘输入等待。这段等待用于保持焦点顺序，不能归因于键盘硬件。
 
-ANR 超时阈值（5 秒）在桌面模式下没有单独调整。桌面模式特有的 ANR 风险点：
+### 4.2 按键重复在 InputDispatcher
 
-- **Hover 事件不触发 ANR**：`ACTION_HOVER_MOVE` 事件被标记为非阻塞事件，不会触发 ANR 计时。即使 App 的 `onHoverEvent` 长时间不返回，也不会产生 Input ANR。
-- **鼠标点击触发 ANR**：鼠标按键按下（`ACTION_DOWN`）走触摸事件路径，会触发 ANR 计时。
-- **KeyEvent 触发 ANR**：键盘事件会触发 ANR 计时，包括 Key Repeat 事件。
+Android 17 的重复链路有清晰分工：
 
-桌面模式下用户高频使用快捷键，如果 IME 弹窗或窗口切换导致主线程阻塞，键盘 ANR 的发生率会高于纯触摸场景。
+- `EventHub` 打开设备时尝试用 `EVIOCSREP` 关闭内核重复；
+- `KeyboardInputMapper` 忽略 Linux `EV_KEY value == 2`；
+- `InputDispatcher` 保存最近的可重复 key-down，并在 inbound queue 为空时合成重复；
+- 第一条重复事件的 `repeatCount` 为 1，并带 `FLAG_LONG_PRESS`；
+- 后续重复按 `keyRepeatDelay` 继续产生；
+- key-up、设备 reset、dispatch disabled 等状态会清理重复状态。
 
-详见 3.7 节对 InputDispatcher ANR 机制的完整分析。
+`InputDispatcherConfiguration` 的默认值是首次等待 500 ms、后续间隔 50 ms。系统可以重新配置这两个值，应用应读取 `repeatCount` 和事件时间，不要把默认值写成业务定时器的协议。
 
-### 桌面模式 Hover 事件聚合
+长按操作应保持幂等，并明确区分初次按下与重复：
 
-[待验证: Android 17 是否对 Hover 事件引入了 frame-aligned 聚合策略——即按 VSync 周期对齐 Hover 事件分发，而非按 InputReader 的原始频率分发。AOSP android-17.0.0_r1 的 `InputDispatcher` 中没有找到显式的 frame-aligned Hover 聚合代码路径，但 `PointerController` 层面的运动平滑处理可能间接降低了 Hover 事件频率。]
+```kotlin
+override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+    if (keyCode != KeyEvent.KEYCODE_DPAD_RIGHT) {
+        return super.onKeyDown(keyCode, event)
+    }
 
-## 扩展
+    if (event.repeatCount == 0) {
+        selection.beginKeyboardMove()
+    }
+    selection.moveRightOneStep()
+    return true
+}
+```
 
-### 触控笔（Stylus）与鼠标的性能差异
+这段代码允许系统重复驱动连续移动，同时把一次性的初始化限定在首个 down。若每次重复都启动动画、I/O 或对象图重建，50 ms 的默认间隔很快会压住主线程。
 
-触控笔的 `source` 为 `SOURCE_STYLUS`，事件类型是 `MotionEvent`，但携带额外数据：
+### 4.3 IME 位于 View 的 pre-IME 与 post-IME 之间
 
-- `MotionEvent.PRESSURE`：压力值（0.0-1.0），来自笔尖压力传感器
-- `MotionEvent.AXIS_TILT`：倾斜角（0-90 度），来自倾斜传感器
-- `MotionEvent.AXIS_ORIENTATION`：方向角，来自笔身方向传感器
+应用窗口中的 key event 会依次经过：
 
-触控笔的事件频率通常为 120-240 Hz，低于鼠标的 USB 轮询率，但每个事件携带更多数据。`InputDispatcher` 对触控笔事件的处理路径与触摸事件一致（`findTouchedWindowTargetsLocked`），不需要经过 `PointerController` 的坐标转换。
+```mermaid
+flowchart LR
+    A["NativePreImeInputStage"] --> B["ViewPreImeInputStage"]
+    B --> C["ImeInputStage"]
+    C --> D["EarlyPostImeInputStage"]
+    D --> E["NativePostImeInputStage"]
+    E --> F["ViewPostImeInputStage"]
+    F --> G["SyntheticInputStage"]
+```
 
-触控笔的性能差异点在于 `MotionEvent` 的 parcel 化开销：每个事件需要序列化压力、倾斜、方向等额外 axis 数据，通过 socket pair 传输时的数据量比纯坐标事件大约 40-60%。
+关键点有三项：
 
-### 游戏手柄输入性能
+- `dispatchKeyEventPreIme()` 发生在 IME 之前；
+- `ImeInputStage` 可以异步处理，IME 返回未处理后才进入 post-IME；
+- `ViewPostImeInputStage` 先 `dispatchKeyEvent()`，再检查 modifier shortcut、fallback policy 和自动焦点导航。
 
-游戏手柄的 `source` 为 `SOURCE_GAMEPAD`，按钮产生 `KeyEvent`（映射为 `KEYCODE_BUTTON_A` 等），摇杆产生 `MotionEvent`（`AXIS_X` / `AXIS_Y` / `AXIS_Z` / `AXIS_RZ`）。
+因此，把 IME 描述成 View 未消费后的 Binder 兜底会颠倒执行顺序。硬件键盘事件可以先交给 IME；软键盘输入又常通过 `InputConnection.commitText()`、`setComposingText()` 等编辑协议送入文本控件，不保证对应一串 `KeyEvent`。
 
-手柄输入的性能特征：
+应用快捷键应按语义消费并返回 `true`，只在 `ACTION_DOWN && repeatCount == 0` 执行一次性命令。系统快捷键、IME 组合和辅助功能仍有更高优先级。
 
-- **KeyEvent 频率低**：手柄按钮不是高频事件源，按钮按下和释放各产生一次 `KeyEvent`
-- **MotionEvent 频率中等**：摇杆事件频率约 60-120 Hz，取决于手柄硬件轮询率
-- **输入映射开销**：`GamepadInputMapper`（如果存在）或 `JoystickInputMapper` 负责将原始 axis 值映射到标准游戏手柄 axis，映射过程是纯计算，开销可忽略
+## 5. 鼠标、hover、滚轮与窗口命中
 
-桌面模式下游戏手柄不是主要交互设备，但如果 App 同时监听手柄输入和键盘输入，两套 `KeyEvent` 都走 `dispatchKeyEvent` 链路，存在事件处理争用。
+### 5.1 指针目标来自位置
 
-### Android 17 桌面体验输入管线
+键盘沿焦点路由，鼠标与触摸等 pointer event 通常按 display 坐标命中 input window。`InputDispatcher` 维护每个 display 的窗口信息和 touch/hover 状态：
 
-[待验证: Android 17 对桌面模式输入管线的具体优化尚未通过 AOSP android-17.0.0_r1 源码全量确认。以下为基于 Android 16 行为和官方文档的推断，标注待验证。]
+- hover 进入新窗口时生成 `HOVER_ENTER`；
+- 离开旧窗口时生成 `HOVER_EXIT`；
+- `ACTION_SCROLL` 不改变当前 hover window；
+- 按下后的手势通常保持既有 touch target，直到 up/cancel；
+- 普通 hover 不自动等价于窗口焦点变化。
 
-Android 16 引入的桌面窗口（Desktop Windowing）在 Android 17 中预期继续演进。输入管线层面可能的方向：
+窗口焦点由 WindowManager 的焦点规则决定。鼠标点击可能促成焦点切换，多指触控板系统手势还可带 `NO_FOCUS_CHANGE` 标志。应用不应在每条 hover 中自行调用 `requestFocus()`。
 
-- Hover 事件按 frame 对齐分发（降低主线程 Hover 处理频率）
-- 窗口聚焦切换的异步化（减少 `windowFocusChanged` 回调对主线程的阻塞）
-- 拖放事件的 View 局部化分发（只通知指针正下方区域的 View，而非整个 ViewTree）
+### 5.2 View 树会做第二次目标选择
 
-[待验证: 以上三点均为方向性推断，未在 android-17.0.0_r1 源码中确认具体实现。如果后续验证发现 Android 17 没有实现，应删除本节。]
+事件进入窗口后，`ViewRootImpl` 对 `SOURCE_CLASS_POINTER` 调用根 View 的 `dispatchPointerEvent()`。鼠标 hover 和 scroll 会进入 generic motion 分发，`ViewGroup` 再根据坐标寻找子 View，并维护 View 级 hover enter/exit。
 
-## 排查清单
+窗口命中和 View 命中是两层工作：
 
-桌面模式输入性能问题的排查入口：
+```text
+InputDispatcher：显示坐标 → input window
+ViewGroup：窗口局部坐标 → child View
+```
 
-| 症状 | 排查方向 | 工具 |
-|------|----------|------|
-| 鼠标移动卡顿 | `deliverInputEvent` 频率和耗时 | Perfetto `input` track |
-| 快捷键响应慢 | `dispatchKeyEvent` 链路耗时 | Perfetto `view` track + `Choreographer#doFrame` |
-| Hover 导致 jank | `onHoverEvent` → `invalidate` 频率 | FrameMetrics `Layout/Draw` 阶段 |
-| 窗口切换后输入丢失 | `mFocusedWindowHandle` 更新延迟 | `dumpsys input` + `dumpsys window` |
-| 拖放卡顿 | `dispatchDragEvent` 遍历次数 | Perfetto `view` track |
+深层 View 树、频繁变化的变换属性、每次 hover 都触发布局，都会提高后半段成本。框架不会因为 hover 到达就无条件让所有 View 重绘；重绘通常来自组件状态变化或应用自己的 `invalidate()`、`requestLayout()`。
+
+### 5.3 滚动使用 axis，不要只看 x/y
+
+鼠标滚轮和相对捕获触控板的滚动以 `ACTION_SCROLL` 报告，读取：
+
+- `AXIS_VSCROLL`；
+- `AXIS_HSCROLL`；
+- 必要时结合 `ViewConfiguration` 的水平、垂直 scroll factor 转成 UI 距离。
+
+不同设备可能报告离散刻度或高分辨率连续量。业务逻辑宜累计浮点 delta，在帧边界统一更新画面，避免先取整导致小量滚动丢失。
+
+## 6. batching、主线程背压与 ANR
+
+### 6.1 batching 保留采样历史
+
+应用侧 `BatchedInputEventReceiver` 会尽量在 vsync input callback 消费可批处理的 motion。native `InputConsumer` 只把兼容的样本放进同一批次：device、source、action、display、pointer 数量和 pointer properties 必须匹配。
+
+合批后，一个 `MotionEvent` 的当前样本之外还包含 history。它减少 Java 回调数量，但没有按固定比例删除硬件采样。需要轨迹细节的组件应遍历历史样本：
+
+```kotlin
+fun consumeMotion(event: MotionEvent, sink: (Long, Float, Float) -> Unit) {
+    for (index in 0 until event.historySize) {
+        sink(
+            event.getHistoricalEventTime(index),
+            event.getHistoricalX(index),
+            event.getHistoricalY(index),
+        )
+    }
+    sink(event.eventTime, event.x, event.y)
+}
+```
+
+这段代码按时间顺序消费 history 和当前样本。若 UI 只需要最新光标位置，可以只保存末尾状态；绘图、手写或速度估算才需要完整历史。
+
+`ViewRootImpl` 还会对尚未处理的 `ACTION_DRAG_LOCATION` Handler 消息保留最新一条。这个优化只针对拖放位置消息，不能推广成“所有 hover 或 move 都只保留最后一条”。
+
+### 6.2 input timeout 看连接等待队列
+
+事件写入应用 input channel 后，`InputDispatcher` 将对应 `DispatchEntry` 放入该连接的 `waitQueue`。应用通过 `finishInputEvent()` 回报处理完成后，条目才会移除。
+
+Android 17 的默认兜底 dispatching timeout 是 5 秒，并会乘硬件 timeout multiplier；具体窗口可以提供自己的 timeout。ANR 判断围绕“连接中是否有超过 timeout 的未完成条目”，没有“键盘固定 5 秒、hover 永不 ANR”这种按类型划分。
+
+连续 hover、滚轮或按键重复的危险在于放大积压：
+
+1. 一条事件在主线程执行了昂贵工作；
+2. 后续事件继续进入 outbound/wait queue 或 input channel；
+3. input pipe 填满后 publisher 返回 `WOULD_BLOCK`，分发器等待应用追上；
+4. 最旧条目超时后，连接被标为 unresponsive；
+5. 后续键盘还可能因“等待先前输入完成”而暂缓目标选择。
+
+重复事件本身不会重置最旧条目的超时。
+
+### 6.3 应用回调中的安全边界
+
+输入回调适合做：
+
+- 更新少量输入状态；
+- 执行有上限的命中或快捷键判断；
+- 把渲染所需状态提交给下一帧；
+- 对需要异步处理的数据做最小复制。
+
+输入回调应避开：
+
+- 同步文件、数据库或网络访问；
+- 对整棵 UI 树调用 `requestLayout()`；
+- 为每条 hover 创建大量临时对象；
+- 在锁内调用不可控的业务回调；
+- 保存框架传入的 `MotionEvent` 供回调结束后继续使用。确需保存时使用 `MotionEvent.obtain()`，完成后 `recycle()`。
+
+## 7. 多窗口、多显示与焦点
+
+Android 17 的 input focus 需要分成两个概念：
+
+- `FocusResolver` 记录各 display 的 focused window token；
+- `mFocusedDisplayId` 为没有指定 display 的焦点型事件提供目标 display。
+
+键盘事件带 display id 时可以投向该 display 的 focused window；未指定时落到 focused display。鼠标事件通常已绑定 display 并按坐标命中窗口。
+
+focused display 改变时，`InputDispatcher` 会：
+
+- 取消旧 focused display 上尚未释放、且 display 未指定的非 pointer 事件；
+- 通知 policy focused display 已改变；
+- 强制关闭现有 pointer capture；
+- 向旧、新 focused window 发送焦点变化。
+
+桌面模式的测试不能只覆盖“单显示器中两个 Activity”。至少要加入：
+
+- 内屏与外屏之间移动鼠标；
+- 外屏窗口持有键盘焦点；
+- 点击后立即输入；
+- 弹窗创建或销毁期间连续输入；
+- pointer capture 中拔掉设备、切换窗口或切换 display；
+- IME 显示时使用硬件快捷键和 Tab 导航。
+
+## 8. 跨窗口拖放的控制面与数据面
+
+跨应用拖放会脱离普通 `MotionEvent` 的窗口分发路径。Android 17 中的职责大致如下：
+
+```mermaid
+flowchart LR
+    A["源 View.startDragAndDrop"] --> B["WMS DragDropController / DragState"]
+    B --> C["SurfaceControl 拖影"]
+    B --> D["拖放 input channel"]
+    D --> E["InputDispatcher 命中目标窗口"]
+    E --> F["DRAG_LOCATION / DRAG_EXITED"]
+    E --> G["抬起时通知 WMS drop window"]
+    G --> H["ACTION_DROP + ClipData"]
+    H --> I["目标 ViewRootImpl / ViewGroup"]
+    I --> J["reportDropResult"]
+    J --> B
+```
+
+### 8.1 移动阶段
+
+WMS 创建 `DragState`，将拖影 surface 放到 display overlay，并把正在拖动的 pointer 转交给 drag input channel。`InputDispatcher` 根据 pointer 位置寻找目标窗口：
+
+- 目标改变时向旧窗口发送 drag exit；
+- 对当前目标发送 drag location；
+- `ViewRootImpl` 把坐标转换到应用窗口空间；
+- `ViewGroup` 在窗口内部维护具体 View 的 drag enter/exit 和 location。
+
+拖影由 SurfaceControl 更新，不需要目标应用每次重绘拖影。目标应用仍可能因为高亮、自动滚动或预览而产生布局和绘制开销。
+
+### 8.2 drop 阶段
+
+pointer 抬起后，`InputDispatcher` 把目标窗口及局部、原始坐标通知 WMS。`DragState` 再向合法目标发送 `ACTION_DROP`；普通应用目标到这个阶段才取得用于 drop 的 `ClipData` 和必要的 URI permission token。能够拦截全局拖放的特权窗口有单独的数据传递规则。目标窗口报告是否消费，WMS 再结束拖放并广播 `ACTION_DRAG_ENDED`。
+
+WMS 对 drop 结果另有 5 秒等待。这个计时属于拖放状态机，和 input channel 的 connection timeout 是两个观察点。
+
+### 8.3 大数据不要直接塞进 ClipData
+
+跨进程拖放适合传 URI、MIME 描述和少量文本。图片、视频或大文档应由 `content://` URI 指向内容提供者，目标通过 `requestDragAndDropPermissions()` 获得临时访问权，再按需读取。
+
+把性能问题概括为“Binder 只有 1 MB”会漏掉权限、序列化、provider I/O 和目标解码等成本。更稳妥的设计是：
+
+- `ClipDescription` 尽早、准确地表达 MIME；
+- `ACTION_DRAG_STARTED` 只做轻量可接收判断；
+- `ACTION_DRAG_LOCATION` 只更新必要的 hover 状态；
+- `ACTION_DROP` 校验 URI、MIME 和来源，再把耗时读取移出主线程；
+- 使用完 URI permission 后及时释放。
+
+## 9. View 与 Compose 的优化边界
+
+平台源码能验证事件到应用窗口的路径。Jetpack Compose 属于 AndroidX，版本节奏独立于 `android-17.0.0_r1`，分析其 pointer node、协程或 modifier 行为时应同时固定 Compose 版本。
+
+### View 系统
+
+- 快捷键优先在靠近窗口或页面入口的位置处理，避免多个子 View 重复匹配；
+- hover 仅在“进入、离开、命中对象改变”时更新视觉状态；
+- 滚动保留浮点累计量，在帧回调中统一提交；
+- 自定义 View 的 `onResolvePointerIcon()` 避免创建重复资源；
+- 方向键焦点顺序不稳定时，显式设置 `nextFocus*` 或验证 `FocusFinder` 结果。
+
+### Compose
+
+- 使用 `onPreviewKeyEvent`、`onKeyEvent` 或明确的 shortcut 层级表达消费顺序；
+- `pointerInput` 的 key 改变会重启其处理协程，避免把每次重组都变化的对象当 key；
+- 高频 pointer handler 只更新轻量状态，重计算放到可控的 state/帧边界；
+- modifier 顺序会影响命中、消费和语义，性能测试时保留可复现的 modifier 链；
+- 遇到 pointer 性能问题时同时记录 Compose 版本、编译器版本和平台版本，避免把 AndroidX 行为误归因于 framework。
+
+View 与 Compose 最终共享同一个应用主线程和 input channel。换 UI toolkit 不会消除主线程阻塞、错误焦点或跨窗口命中问题。
+
+## 10. 诊断：先定位慢在哪一段
+
+### 10.1 原始设备层
+
+先用 `getevent` 判断延迟是否已经出现在内核设备层：
+
+```bash
+adb shell getevent -lt
+```
+
+用它确认设备节点、`EV_KEY`、`EV_REL`、`EV_ABS` 和 `SYN_REPORT` 的到达顺序。量产设备上可能受权限限制。这里看到间隔异常，优先检查硬件、蓝牙链路、USB hub 和内核驱动。
+
+### 10.2 InputReader 与 InputDispatcher
+
+再用 input service dump 检查平台识别、目标选择和连接队列：
+
+```bash
+adb shell dumpsys input
+```
+
+重点看：
+
+- 设备 classes、sources、mapper 与 motion ranges；
+- focused display、各 display 的 focused window；
+- pointer capture mode；
+- touch/hover/drag state；
+- connection 的 outbound queue、wait queue 与 responsive 状态；
+- key repeat timeout 和 delay。
+
+再配合：
+
+```bash
+adb shell dumpsys window
+```
+
+核对 WindowManager 看到的 focused app、focused window、display 和拖放状态。两个 dump 的焦点不一致时，先查窗口生命周期和 surface/input window 更新，别急着改 View 的 key listener。
+
+### 10.3 Perfetto / System Trace
+
+采集时至少包含 input、WindowManager、View、调度和 Frame Timeline。按同一事件 id 或相邻时间线观察：
+
+1. EventHub/InputReader 收到时间；
+2. InputDispatcher inbound、target 与 dispatch；
+3. 应用 `deliverInputEvent`；
+4. 对应主线程 callback；
+5. 帧开始、提交与显示。
+
+常见判读：
+
+| 现象 | 优先检查 |
+| --- | --- |
+| `getevent` 已晚 | 设备、传输、驱动 |
+| InputReader 到 dispatcher 间隔大 | mapper、手势识别、input 线程调度 |
+| dispatcher 等 target | 焦点、窗口创建、前序事件未完成 |
+| wait queue 增长 | 应用未及时 `finishInputEvent`，通常是主线程阻塞 |
+| callback 快，下一帧仍晚 | Choreographer、布局/绘制、RenderThread 或 SurfaceFlinger |
+| 只有触控板异常 | gestures 配置、capture mode、source 分支 |
+| 只有跨应用 drop 异常 | URI 权限、provider I/O、drop 结果超时 |
+
+### 10.4 应用内轻量测量
+
+下面的代码只用于抽样记录“事件时间到回调开始”的应用可见延迟：
+
+```kotlin
+private fun inputAgeMs(event: InputEvent): Long {
+    return SystemClock.uptimeMillis() - event.eventTime
+}
+```
+
+`eventTime` 与 `uptimeMillis()` 使用同一时间基准。这个值包含回调前的等待，却不能单独区分驱动、InputReader、dispatcher 和主线程队列；分段结论仍需 Perfetto。
+
+## 11. Review 清单
+
+### 语义正确性
+
+- 是否用 `event.isFromSource()` 判断事件，而非设备名称？
+- 是否区分 `SOURCE_MOUSE`、`SOURCE_MOUSE_RELATIVE` 与 `SOURCE_TOUCHPAD`？
+- 是否读取 scroll axis、button state、repeat count 和 meta state？
+- 是否把软键盘文本输入误当成硬件 `KeyEvent`？
+- 是否只在拥有窗口焦点时请求 pointer capture？
+- API 37 上是否明确选择触控板 relative 或 absolute capture？
+
+### 主线程成本
+
+- hover/move 回调是否包含 I/O、全树布局或大对象分配？
+- 是否按需要读取 `MotionEvent` history？
+- 滚动和视角更新是否可以在一帧内合并？
+- 按键重复是否反复启动一次性任务？
+- `ACTION_DRAG_LOCATION` 是否只更新目标状态？
+- `ACTION_DROP` 的 provider 读取和解码是否移出主线程？
+
+### 桌面场景覆盖
+
+- USB 与 Bluetooth 键盘、鼠标；
+- 传统滚轮与高分辨率滚轮；
+- 单指、双指、多指触控板手势；
+- 单窗口、多窗口、弹窗、外接显示器；
+- 捕获中切焦点、切 display、拔设备；
+- 不同键盘布局、修饰键、长按重复；
+- View 与当前项目固定版本的 Compose；
+- URI 拖放、拒绝 drop、目标进程退出。
+
+## 12. 版本与源码边界
+
+本文的平台结论核对到：
+
+- Android platform：`android-17.0.0_r1`
+- API：37
+- 核心 native 路径：`frameworks/native/services/inputflinger`
+- 核心 Java 路径：`frameworks/base/core/java/android/view`
+- 窗口拖放路径：`frameworks/base/services/core/java/com/android/server/wm`
+
+Android 17 需要特别记住的变化是触控板 pointer capture 模式：默认相对模式继续识别移动与滚动，显式 absolute 模式才把原始多点触控板数据作为 `SOURCE_TOUCHPAD` 交给应用。设备厂商仍可调整输入配置、手势属性、超时倍率和窗口策略，所有固定数值都应在目标设备上用 dump 与 trace 复核。
 
 ## 参考资料
 
-- 3.1 节：Input 事件分发全流程
-- 3.2 节：触摸响应的性能分析
-- 3.4 节：输入延迟与预测输入技术
-- 3.5 节：输入事件拦截与安全机制
-- 3.7 节：InputDispatcher 反压与无响应窗口降级
-- 2.20 节：多窗口与桌面模式渲染性能
-- 1.30 节：Binder Transaction Buffer 演进与大事务性能边界
-- AOSP `frameworks/native/services/inputflinger/` — InputDispatcher / InputReader / PointerController
-- [Input events overview](https://developer.android.com/develop/ui/views/touch-and-input/input-events) — Android Developers
+- [AOSP `InputDevice.cpp`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/inputflinger/reader/InputDevice.cpp)
+- [AOSP `KeyboardInputMapper.cpp`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/inputflinger/reader/mapper/KeyboardInputMapper.cpp)
+- [AOSP `CursorInputMapper.cpp`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/inputflinger/reader/mapper/CursorInputMapper.cpp)
+- [AOSP `TouchpadInputMapper.cpp`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/inputflinger/reader/mapper/TouchpadInputMapper.cpp)
+- [AOSP `InputDispatcher.cpp`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp)
+- [AOSP `ViewRootImpl.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/ViewRootImpl.java)
+- [AOSP `View.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/View.java)
+- [AOSP `DragDropController.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/wm/DragDropController.java)
+- [AOSP `DragState.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/wm/DragState.java)
+- [Android Developers：Android 17 行为变更](https://developer.android.com/about/versions/17/behavior-changes-all)
+- [Android Developers：跟踪触摸和指针移动](https://developer.android.com/develop/ui/views/touch-and-input/gestures/movement)
+- [Android Developers：处理键盘操作](https://developer.android.com/develop/ui/views/touch-and-input/keyboard-input/commands)
+- [Android Developers：键盘焦点导航](https://developer.android.com/develop/ui/views/touch-and-input/keyboard-input/navigation)
+- [Android Developers：拖放](https://developer.android.com/develop/ui/views/touch-and-input/drag-drop)
+- [Android Developers：Compose pointer input](https://developer.android.com/develop/ui/compose/touch-input/pointer-input)
