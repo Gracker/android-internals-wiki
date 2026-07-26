@@ -24,9 +24,9 @@ task9_state: needs-rework
 pipeline_stage: needs-rework
 reviewed_date: "2026-07-26"
 reviewed_by: "hermes-aiw-review-finalize-apply"
-last_review_finalize_at: "2026-07-26T14:06:43+08:00"
-last_review_finalize_run_id: "20260726-140527-6618c180"
-rework_reason: "本轮复核官方 Compose tracing 文档并补强手动 Perfetto 采集边界：已确认 runtime-tracing 依赖、Android Studio Flamingo/Compose UI 1.3.0/Compiler 1.3.0/API 30+ 前提、terminal 采集需 track_event data source 与 androidx.tracing.perfetto.action.ENABLE_TRACING 广播，以及 tracing-perfetto-binary 不应随生产包发布；但可见 Slice 命名清单、重组原因字段与线上 Release 短窗口采集矩阵仍需同版本 trace_processor/实测样本后才能 finalized。"
+last_review_finalize_at: "2026-07-26T20:17:07+08:00"
+last_review_finalize_run_id: "20260726-201059-2af9c099"
+rework_reason: "本轮复核确认章节仍只能作为工程策略草稿：官方 runtime-tracing 依赖、Flamingo/Compose UI 1.3.0/Compiler 1.3.0/API 30+ 前提、track_event + ENABLE_TRACING 手动采集边界和 tracing-perfetto-binary 生产包隔离要求已在正文中保留；但章节仍含多处原始大纲占位，且可见 Slice 命名清单、重组频次统计字段、重组原因归因与 Release 短窗口采集矩阵缺同版本 Perfetto/trace_processor 实测样本，因此不得 finalized。"
 ---
 
 # 22.37 Compose Runtime Tracing — runtime-tracing 与 Perfetto 组合阶段追踪
@@ -36,7 +36,7 @@ rework_reason: "本轮复核官方 Compose tracing 文档并补强手动 Perfett
 
 ### 🔹 锚点 1：Compose Runtime Tracing 架构与启用方式
 - `androidx.compose.runtime:runtime-tracing` 是官方 Compose Runtime Tracing 依赖；官方 setup 明确要求 Android Studio Flamingo+、Compose UI 1.3.0+、Compose Compiler 1.3.0+、API 30+ 设备/模拟器，并可通过 Compose BOM 管理版本。不要误写为不存在的 `androidx.tracing.compose` 模块。[来源: developer.android.com/develop/ui/compose/tooling/tracing；developer.android.com/jetpack/androidx/releases/compose-runtime]
-- CompositionTracer 接口：组合阶段追踪的钩子设计 [结构参考: 本章原始大纲]
+- CompositionTracer/Runtime tracing 内部钩子如何映射到可见 Slice 仍需源码与 trace 样本双重核对；当前正文不把内部接口名写成可稳定调用 API。[待验证: trace_processor 实测]
 - 启用方式：开发期、Benchmark 和 Android Studio/Perfetto 场景优先验证；Release 线上使用需要由采样、限流和开关保护，具体 API/版本矩阵需补同版本样本后再定稿。[结构参考: developer.android.com/jetpack/androidx/releases/compose-runtime]
 - 手动 Perfetto 采集路径需要额外加入 `androidx.tracing:tracing-perfetto` 与 `androidx.tracing:tracing-perfetto-binary`，Perfetto record config 至少要包含 `track_event` data source，并在应用进程上通过 `androidx.tracing.perfetto.action.ENABLE_TRACING` / `androidx.tracing.perfetto.TracingReceiver` 广播启用 tracing；官方同时警告不要把 `tracing-perfetto-binary` 随生产应用发布，因为它会显著增加包体积。因此本章的 Release 策略只能写成“动态开关 + 受控采样 + 构建产物隔离”，不能写成无条件常驻依赖。[来源: developer.android.com/develop/ui/compose/tooling/tracing；developer.android.com/jetpack/androidx/releases/tracing]
 
@@ -48,7 +48,7 @@ rework_reason: "本轮复核官方 Compose tracing 文档并补强手动 Perfett
 
 ### 🔹 锚点 3：Perfetto 中分析 Compose 组合开销
 - 在 Perfetto UI 中识别 Compose 重组 Track [结构参考: 本章原始大纲]
-- 重组频率热点定位：某 Composable 单帧重组次数 [结构参考: 本章原始大纲]
+- 重组热点定位应先以 Slice 频次/时长趋势描述，不能在未验证 trace schema 前承诺“某 Composable 单帧重组次数”这样的固定字段。[待验证: trace_processor 实测]
 - 子组合嵌套深度的 Perfetto 可视化 [结构参考: 本章原始大纲]
 - 重组与布局/绘制阶段的耗时占比分析 [结构参考: 本章原始大纲]
 - 使用 Perfetto SQL 查询重组统计（与 13.22 Perfetto SQL Cookbook 联动）[结构参考: 本章原始大纲]
@@ -120,7 +120,7 @@ Compose Runtime Tracing 的价值不只是“在 Perfetto 里多看几条 Slice�
 
 材料中的慢方法模块同时使用 Looper Hook 与 ASM 字节码插桩，并通过 AGP instrumentation API 提供方法耗时采集能力。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md] 这类方法级监控适合回答“哪个函数慢”，而 Compose Runtime Tracing 更适合回答“组合阶段何时发生、与帧时序如何重叠”。[结构参考: 本章原始大纲]
 
-两者可以互补，但不应互相替代：如果某个 Composable 的业务计算函数被 ASM 标记为慢方法，再结合 Compose Trace 中的重组次数，就能判断问题是单次计算过重，还是状态订阅导致重复计算过多。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md] 对 CI/CD 门禁而言，可以用 Macrobenchmark 固定场景采集 Trace，再用慢方法统计验证是否有新增热点方法；材料中明确包含“构建 + 测试”和基于 AGP instrumentation API 的插桩能力，可作为自动化门禁的工程基础。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
+两者可以互补，但不应互相替代：如果某个 Composable 的业务计算函数被 ASM 标记为慢方法，再结合 Compose Trace 中同一时间窗口的组合/重组 Slice 分布，就能判断问题更像是单次计算过重，还是状态订阅导致重复进入组合路径；具体“次数”统计仍需以同版本 trace_processor schema 验证后再固化。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md；待验证: trace_processor 实测] 对 CI/CD 门禁而言，可以用 Macrobenchmark 固定场景采集 Trace，再用慢方法统计验证是否有新增热点方法；材料中明确包含“构建 + 测试”和基于 AGP instrumentation API 的插桩能力，可作为自动化门禁的工程基础。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
 
 ## 6. 事件模型建议
 
