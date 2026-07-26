@@ -43,6 +43,21 @@ last_task9_review_log: "logs/deep-review/2026-07-03-08-deep-review.md"
 task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 0
+last_verified: "2026-07-26"
+last_verified_against: "AOSP android-17.0.0_r1; Android Graphics/BufferQueue docs; Perfetto FrameTimeline and Trace Processor docs"
+confidence: high
+last_idle_audit_at: "2026-07-26T22:35:34+08:00"
+last_idle_audit_run_id: "20260726-223534-idle-audit-c8b734d5"
+last_idle_audit_log: "logs/audit/2026-07-26-20260726-223534-idle-audit-c8b734d5-idle-audit.md"
+idle_audit_result: "pass-frontmatter-source-marking"
+sources:
+  - "Android Graphics Architecture: https://source.android.com/docs/core/graphics/architecture"
+  - "Android Graphics BufferQueue and Gralloc: https://source.android.com/docs/core/graphics/arch-bq-gralloc"
+  - "Perfetto Trace Processor: https://perfetto.dev/docs/analysis/trace-processor"
+  - "Perfetto FrameTimeline: https://perfetto.dev/docs/data-sources/frametimeline"
+  - "AOSP android-17.0.0_r1 frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp"
+  - "AOSP android-17.0.0_r1 frameworks/native/libs/gui/BLASTBufferQueue.cpp"
+  - "AOSP android-17.0.0_r1 frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.h"
 ---
 
 <!-- outline-start -->
