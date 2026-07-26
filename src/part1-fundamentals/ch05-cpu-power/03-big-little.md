@@ -58,410 +58,429 @@ last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度
 
 # 大小核架构
 
-## 为什么要了解大小核架构
+> [!info] 本章源码锚点
+> 正文按 Android 17 / API 37 / `android-17.0.0_r1` 与 kernel `android17-6.18-2026-06_r6` 复核。具体 SoC 的核心名称、编号、capacity 与 cpufreq policy 属于设备实现；未从目标设备内核或 sysfs 读取的数据不当作平台保证。
 
-Perfetto 的 CPU 视图会列出 8 个（或更多）CPU 核心，编号从 0 开始。点击某个线程的 Running 切片，详情面板里的 `cpu` 字段会标出这个线程此刻跑在几号核心上。仔细观察会发现，同一线程在不同时间段跑在不同的核心上——有时候在 CPU 0，有时候在 CPU 7，而且在这两个核心上的执行速度差异巨大。
+## 先区分四个容易混用的概念
 
-现代手机 SoC 普遍采用大小核（big.LITTLE）异构多核架构，不同类型的核心在性能和功耗之间存在巨大的设计权衡。理解这种架构，是读懂 CPU Scheduling 轨道、判断调度器行为是否合理的基础。一个计算密集型任务如果长时间运行在小核上，它的耗时可能比在大核上慢 2-3 倍；反过来，一个后台同步任务如果被错误地调度到大核上，会白白浪费电量。
+Perfetto 会显示 CPU 编号、线程运行切片和频率计数器。要解释这些数据，先把四个概念分开：
 
-这一节讲大小核架构的设计方式、核心迁移的触发机制，以及 cpufreq governor（尤其是 schedutil）如何根据负载动态调频。读懂这些，后面分析 CPU Scheduling 轨道时才知道线程为什么跑在某个核心上。
+| 概念 | 回答的问题 | 可靠来源 |
+| --- | --- | --- |
+| CPU microarchitecture | 同频下每周期大约能完成多少工作 | SoC/Arm 技术资料、目标设备测试 |
+| scheduler capacity | 内核认为 CPU 的最大相对算力与当前可用能力是多少 | `arch_scale_cpu_capacity()`、scheduler topology、thermal/IRQ pressure |
+| cpufreq policy | 哪些 CPU 共享一套频率控制，以及可选频点是什么 | `/sys/devices/system/cpu/cpufreq/policy*` |
+| Energy Model performance domain | 哪组 CPU 共享 active power cost table | 目标内核注册的 EM、scheduler debug 信息 |
 
-## ARM big.LITTLE 与 DynamIQ 架构原理
+这四者经常重合，却没有一一对应的保证。两个 CPU 可以共享 cpufreq policy，但 capacity 不同；宣传材料中的“中核”也不一定对应独立 performance domain。
 
-### 从问题说起：性能与功耗的矛盾
+CPU 编号更没有跨设备语义。CPU 7 可能是最高 capacity CPU，也可能只是某个同构簇成员。分析前先识别拓扑，再谈“大核”“小核”。
 
-移动设备的电池容量是有限的，但用户对性能的期望却不断增长。如果一个 8 核处理器所有核心都是高性能设计，那么在处理后台同步、推送消息这类轻负载任务时，大部分算力被浪费了，而功耗却居高不下。反过来，如果所有核心都是低功耗设计，用户打开应用、滑动列表时又会有明显的卡顿。
+## 从 big.LITTLE 到多档异构 CPU
 
-ARM 在 2011 年提出的 big.LITTLE 架构就是为了解决这个矛盾：在同一个 SoC 上集成两种（后来发展为多种）不同微架构的 CPU 核心——**大核（big cores）**追求单线程性能，**小核（LITTLE cores）**追求能效比。调度器根据任务负载的特征，把任务分配到最合适的核心上。
+### 早期 big.LITTLE 的软件模型
 
-### 早期 big.LITTLE：集群迁移模式
+Arm big.LITTLE 把侧重单线程性能的 CPU 与侧重能效的 CPU 放进同一 SoC。早期实现经历过几种软件模型：
 
-最初的大核小核实现采用**独立的两个集群（cluster）**，一个集群全是小核，另一个集群全是大核。两个集群通过 Cache Coherent Interconnect（CCI）互联。
+1. **Cluster migration**：一个 cluster 工作时，另一个对应 cluster 关闭；切换粒度较粗。
+2. **In-kernel switcher**：把一颗高性能 CPU 与一颗高能效 CPU 配成逻辑对，任一时刻只启用其中一颗。
+3. **Global task scheduling / HMP**：所有 CPU 对内核可见，调度器按任务需求选择 CPU，并允许不对称数量配置。
 
-这种架构下有三种软件调度模型：
+这些模型用于理解历史演进。Android 17 / kernel 6.18 的公共调度路径以 capacity-aware scheduling、EAS、cpuset、UClamp 和负载均衡为主，不应继续套用早期“一次切换整个 cluster”的运行图。
 
-1. **集群迁移（Cluster Migration）**：同一时刻只有一个集群在线。负载低时用小核集群，负载高时整个系统切换到大核集群。切换过程需要把缓存数据从 L2 搬到另一个集群的 L2，会需要一次明显的中断。如果系统里只有一个高负载任务，但其他核心都在空闲，也会被迫把整个集群切到大核，浪费功耗。
+历史资料常给迁移标注固定微秒数。迁移成本会随互连、cache hierarchy、工作集、源/目标 CPU 是否共享 LLC、频率状态和内核路径变化，不能把某个平台测得的数值写成架构常量。
 
-2. **CPU 迁移（In-Kernel Switcher, IKS）**：每个大核和一个小核组成虚拟对，调度器在配对的核心之间迁移任务。迁移延迟大约 30 微秒，比 DVFS 变频还快，用户基本感知不到。但限制是大核和小核数量必须 1:1 配对，且同一时刻只有一半核心在线。
+### DynamIQ 改变了 cluster 内组织方式
 
-3. **全局任务调度（Global Task Scheduling / HMP）**：调度器同时感知所有大核和小核，可以独立地把单个任务分配到任意核心上。所有核心可以同时在线，也支持不对称配置（比如 4 小核 + 2 大核）。这是 big.LITTLE 最成熟的软件模型，也是 Android 设备实际采用的方案。
+DynamIQ 允许不同 CPU microarchitecture 在同一 DynamIQ cluster 中协作，并通过 DSU 提供共享的系统级 cache 与一致性支持。它降低了部分跨类型 CPU 共享数据的成本，也允许更灵活的核心组合。
 
-### DynamIQ：从双集群到统一集群
+仍要保留三个边界：
 
-2017 年 ARM 推出了 DynamIQ 技术，这是 big.LITTLE 的重大演进。核心变化在于：**大核和小核可以放在同一个集群（cluster）里**，由一个 DynamIQ Shared Unit（DSU）统一管理。
+- 共享 LLC 不会搬走源 CPU 私有的 L1/L2 内容，迁移后仍可能发生 cold miss；
+- DynamIQ 提供的能力不等于每款 SoC 都实现 per-CPU DVFS，实际频率控制看 cpufreq policy；
+- DSU 型号、cache 容量和互连拓扑由 SoC 决定，不能用一个 Arm IP 上限描述所有 Android 设备。
 
-DSU 提供了集群内的共享 L3 缓存（最高可达 32MB）和一致性的缓存管理。大核和小核之间的任务迁移不再需要跨集群搬运缓存数据——它们共享同一个 L3，迁移的开销大幅降低。
+16 KB page size 主要改变 TLB reach、页表层级行为和内存管理成本。公开的通用 DSU 接口没有把“16 KB 页会降低 snoop filter 探测频率”定义为平台保证，因此本章不据此推导互连收益。
 
-DynamIQ 带来了几个关键优势：
+### 当代 SoC 不止“大”和“小”
 
-- **更灵活的核心配置**：不再受限于对称的集群配置，可以在一个集群内自由组合大核、中核、小核。比如 1 个超大核 + 3 个大核 + 4 个小核，这种 1+3+4 的配置在旗舰 SoC 上非常常见。
-- **独立的核心控制**：DynamIQ 架构支持每个核心独立的频率和休眠控制。传统 big.LITTLE 中同一集群内的核心共享同一个电压/频率域，必须同步变频；DynamIQ 在架构层面提供了 per-core DVFS 的能力。但需要注意，**架构能力不等于设备实现**——实际 SoC 出于功耗域设计和成本考量，仍可能把同类型核心归入同一个 cpufreq policy 组，在 Perfetto 中表现为同簇核心频率联动。区分"架构能力"和"实装策略"的方式是看 `/sys/devices/system/cpu/cpu<N>/cpufreq/related_cpus`，如果多个核心出现在同一列表中，说明它们共享一个 DVFS 域。
-- **更低迁移延迟**：由于大核和小核共享 L3 缓存，任务在核心间迁移时不再需要通过 CCI 互联搬运缓存行，迁移延迟从"跨集群级别"降低到"集群内级别"。
-- **更大的 L3 缓存**：DSU-120（配合 Armv9 世代的核心）支持最高 32MB L3 缓存，显著减少了核心访问主存的次数，对内存密集型任务的性能提升尤为明显。
-- **16KB 页与互联层的潜在收益**：理论上，更大的页粒度可能降低 DSU 内部 snoop filter 的探测频率——每个页表条目覆盖更大的物理地址范围，跨核缓存一致性事务的粒度也随之放大。但这一机制取决于 SoC 厂商对 DSU-120 的具体实装方式，公开 ARM TRM 目前未明确记载"16KB 页模式"作为 DSU 的可配置选项。16KB 页在 CPU 侧的确定性收益主要来自 TLB Reach 提升（§4.7 有展开），互联层的收益可作为性能分析的观察方向，但不应作为已验证事实引用。
+常见布局可以抽象为：
 
-### 在 Perfetto 中识别核心类型
+- 两档：高能效 CPU + 高性能 CPU；
+- 三档：高能效 CPU + performance CPU + prime CPU；
+- 多颗 performance CPU + 少量 prime CPU；
+- 市场上称为“全大核”的组合。
 
-在 Perfetto 的 CPU 视图中，核心从 0 开始编号。不同设备的编号规则不同，但通常有一个规律：**小核编号靠前，大核编号靠后**。
+这些名称适合描述产品，不适合作为调度器输入。Linux 关心的是每颗 CPU 的 capacity、允许范围、当前压力、performance domain 和 Energy Model。即使两类 CPU 的 capacity 很接近，power cost 仍可能不同；反过来也一样。
 
-不过不能完全依赖编号来判断核心类型——最可靠的方式是查看每个核心的 `cpuinfo_max_freq`。在 Perfetto 中，我们可以通过 SQL 查询获取：
+因此，不从公开规格外推诸如“某 CPU capacity=837”这样的数字。精确分析应读取目标设备的 capacity 数据或对应 kernel tree。
+
+## Linux 怎样表达 CPU capacity
+
+### original capacity 与当前 capacity
+
+kernel 6.18 的 Capacity Aware Scheduling 文档把最大能力近似写成：
+
+```text
+capacity(cpu) = work_per_hz(cpu) × max_freq(cpu)
+```
+
+系统中最强 CPU 的 original capacity 归一化为 `SCHED_CAPACITY_SCALE=1024`，其他 CPU 按相对能力缩放。`arch_scale_cpu_capacity(cpu)` 返回 original capacity。
+
+运行时可用 capacity 还会扣除部分压力，例如 IRQ、thermal pressure 与 cpufreq pressure。对 EAS、misfit migration 或 `util_fits_cpu()` 来说，静态的 1024/某个较小值只是起点。
+
+单个 capacity 标量也有局限。两种 microarchitecture 在整数、浮点、向量、分支和内存访问上的相对性能不同，无法由一个数字完整表达。capacity 适合调度器做快速近似，微基准与业务测试仍是性能结论的依据。
+
+### util 与 capacity 的比较带有余量
+
+任务的 PELT/util_est 经 frequency invariance 与 CPU invariance 处理后，可以与 capacity 比较。kernel 6.18 的 `fits_capacity(util, capacity)` 采用约 20% margin：
+
+```text
+util × 1280 < capacity × 1024
+```
+
+所以 `util=800` 并不能算作“刚好装进 capacity=800 的 CPU”。这段余量用于避免任务在临界位置反复迁移，也给突发负载留出空间。
+
+UClamp 会进一步影响 `util_fits_cpu()`。`uclamp.min` 可能表达更高性能点，`uclamp.max` 可能让被封顶任务在较低 capacity CPU 上仍被视为 fit。UClamp 没有提供 CPU 时间配额，也不会单独决定目标 CPU。
+
+### thermal pressure 会改变“装得下吗”
+
+当 thermal 或 cpufreq 限制使 CPU 无法达到原有最高性能时，内核会降低相应可用 capacity。于是同一个任务在冷机时可能 fit，热稳态下可能变成 misfit，并被负载均衡迁往其他可用 CPU。
+
+这也是持续性能分析必须进入热稳态的原因。只比较冷机前几秒的核心分布，无法说明设备在长期功耗预算下的行为。
+
+## 在设备和 Perfetto 中识别拓扑
+
+### 先读 sysfs，再看 Trace
+
+下面的命令只读取目标设备状态，可用于建立 CPU、capacity 与 cpufreq policy 的对应关系：
+
+```shell
+adb shell 'for c in /sys/devices/system/cpu/cpu[0-9]*; do
+  echo "$c"
+  cat "$c/cpu_capacity" 2>/dev/null
+  cat "$c/cpufreq/cpuinfo_max_freq" 2>/dev/null
+  cat "$c/cpufreq/related_cpus" 2>/dev/null
+done'
+
+adb shell 'for p in /sys/devices/system/cpu/cpufreq/policy*; do
+  echo "$p"
+  cat "$p/related_cpus" 2>/dev/null
+  cat "$p/scaling_available_frequencies" 2>/dev/null
+  cat "$p/scaling_driver" 2>/dev/null
+  cat "$p/scaling_governor" 2>/dev/null
+done'
+```
+
+有些量产设备会隐藏 `cpu_capacity`、可用频点或 governor 节点。读不到时，应转向设备内核配置、vendor 源码或具备权限的 debug 接口，不能只用最大频率替代 capacity。
+
+Perfetto 的 stdlib 可以汇总 Trace 期间观测到的频率。下面的查询用于发现共享变化模式和观测上限：
 
 ```sql
--- 查看每个 CPU 在 trace 期间观测到的最高运行频率
 INCLUDE PERFETTO MODULE linux.cpu.frequency;
 
-SELECT cpu, max(freq) / 1000.0 AS observed_max_freq_mhz
+SELECT
+  cpu,
+  MIN(freq) / 1000.0 AS observed_min_mhz,
+  MAX(freq) / 1000.0 AS observed_max_mhz,
+  ROUND(SUM(dur) / 1e9, 3) AS covered_s
 FROM cpu_frequency_counters
+WHERE dur > 0
 GROUP BY cpu
 ORDER BY cpu;
 ```
 
-> 注意：`cpu_frequency_counters` 返回的是 trace 期间实际观测到的频率，不等同于 sysfs 的 `cpuinfo_max_freq`。如果某个核心在 trace 期间没有跑到最高频，查询结果会偏低。需要完整频率上限时，仍应读取 `/sys/devices/system/cpu/cpu<N>/cpufreq/cpuinfo_max_freq`。
+`freq` 的单位是 kHz。`observed_max_mhz` 只是采集窗口内出现过的最高频率；设备若未跑到最高 OPP，它会低于 `cpuinfo_max_freq`。同样，两个 CPU 的频率同时变化只能提示共享 policy，还应由 `related_cpus` 确认。
 
-或者在设备上直接读取 sysfs 节点：
+### 不要用 CPU 编号或最高频率单独分类
 
-```bash
-$ cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
-1804800
-$ cat /sys/devices/system/cpu/cpu7/cpufreq/cpuinfo_max_freq
-2841600
+最高频率较高的 CPU 往往 capacity 也较高，但 work-per-Hz 可能不同。仅看频率无法区分：
+
+- 同频但 microarchitecture 不同；
+- 不同频但最大 capacity 相近；
+- policy 被 thermal 或省电模式临时封顶；
+- 硬件自治 DVFS 让软件 counter 与瞬时执行频率存在差异。
+
+可靠做法是把 capacity、cpufreq policy、频率、线程 runtime 与业务 deadline 放在一起看。
+
+## 任务为什么会换 CPU
+
+### 唤醒时放置
+
+对 fair task，`select_task_rq_fair()` 处理唤醒、fork 和 exec 等 placement。Android 17 kernel r6 在普通 `WF_TTWU` 路径中，root domain 未 overutilized 时会尝试 `find_energy_efficient_cpu()`。
+
+EAS 不会遍历所有 CPU 后简单选“最省电的一颗”。它从每个 Energy Model performance domain 选出有代表性的 spare-capacity 候选，与 `prev_cpu` 比较 fit 和 energy delta。同步唤醒满足条件时，还可能直接使用当前 CPU fast path。
+
+root domain overutilized 后，这次唤醒会跳过 EAS 能量估算，转到基于负载和 idle sibling 的选择路径。看到线程跑在某颗 CPU 上，不能默认归因于 EAS。
+
+### 运行时负载均衡与 misfit migration
+
+任务开始运行后，周期 load balance、newidle balance、active balance 和 misfit migration 可以继续迁移它。常见原因包括：
+
+- 原 CPU runqueue 过载；
+- 低 capacity CPU 无法满足任务需求；
+- 其他 CPU 进入 idle，允许拉取任务；
+- sched domain 的不均衡超过阈值；
+- thermal pressure 改变 CPU 的可用 capacity。
+
+这些路径不会为每次迁移调用 Energy Model。wake-up placement 与运行时 migration 属于不同问题，Perfetto 里要结合迁移前的线程状态判断。
+
+### affinity、cpuset、hotplug 与隔离
+
+线程最终可用 CPU 是 online CPU、affinity mask 与 cpuset 允许范围的交集。系统改变前后台 task profile、CPU offline、isolated CPU 或 vendor policy 时，即使线程负载没变，也可能被迫迁移。
+
+下面的命令用于确认某个 tid 当时可去哪些 CPU：
+
+```shell
+adb shell 'cat /proc/<pid>/task/<tid>/status | grep Cpus_allowed_list'
+adb shell 'cat /proc/<pid>/task/<tid>/cgroup'
 ```
 
-通过最大频率，可以把核心分组。比如一个 8 核处理器中，`cpuinfo_max_freq` 为 1804800 的 4 个核心是小核，2419200 的 3 个核心是大核，2841600 的 1 个核心是超大核。
+affinity 只能缩小候选范围。把 RenderThread 固定到某一颗高 capacity CPU 会让它无法避开该 CPU 的竞争或 thermal 限制，应只作为有对照组的实验。
 
-## 典型 SoC 核心配置
+### RTG 属于厂商实现
 
-不同 SoC 厂商和型号的核心配置差异很大，但近几年的旗舰芯片呈现出一个明显的趋势：**核心类型越来越多样化，配置从简单的 4+4 演变为三档甚至全大核设计**。
+Related Thread Group、colocation boost、preferred cluster 等机制常见于部分 vendor kernel。它们可以按相关线程组聚合需求、偏好 cluster 或影响频率提示。
 
-### 经典配置类型
+这些符号不属于 Android 17 common kernel 的通用接口。不同厂商、不同代际的 RTG 数据结构和策略也可能变化。若 Trace 疑似受到 RTG 影响，应在目标 kernel tree、vendor hook 和 Power HAL 中寻找证据，不能根据线程名推断。
 
-**4+4（四小核 + 四大核）**
+## 迁移成本怎样判断
 
-这是最早期的 big.LITTLE 配置，现在主要出现在中低端芯片上。比如早期的 Exynos 5 Octa 就是 4 个 Cortex-A7 小核 + 4 个 Cortex-A15 大核。这种配置在今天看来比较粗糙——大核和小核的性能差距大，中间没有过渡。
+### cache locality
 
-**1+3+4（一个超大核 + 三个大核 + 四个小核）**
+迁移不会复制源 CPU 的私有 L1/L2 内容。目标 CPU 需要从共享 LLC、系统 cache 或内存重新取得数据。实际成本取决于工作集、cache 共享边界、写共享、NUMA/内存拓扑和迁移间隔。
 
-这是 2023-2025 年旗舰 SoC 的主流配置。一个典型的例子是联发科天玑 9400：
+DynamIQ 的共享 cache 能降低部分数据获取成本，但无法消除 private-cache cold miss。固定的“迁移需要 30 μs”或“新架构只需几微秒”都不适合作为跨设备结论。
 
-- 1 个 Cortex-X925 超大核（3.62GHz+）——负责最苛刻的单线程场景（应用启动、JS 执行）
-- 3 个 Cortex-X4 大核（约 3.0GHz）——负责多线程重负载（游戏渲染、后台编译）
-- 4 个 Cortex-A720 中/小核（约 2.3GHz）——负责日常轻负载（后台同步、消息推送）
+### 频率与 policy 状态
 
-高通骁龙 8 Gen 3 也采用类似的 1+5+2 配置（1 个 Cortex-X4 + 5 个 Cortex-A720 + 2 个 Cortex-A520），思路相同：三层核心各自对应不同的性能区间。
+任务迁入新 cpufreq policy 后，该 policy 可能还在低频。schedutil、I/O-wait boost、UClamp、Power HAL 和硬件 DVFS 会共同决定爬升速度。若多个 CPU 共享 policy，另一个 CPU 的负载也可能已经把频率拉高。
 
-**2+6（两个大核 + 六个性能核）**
+因此，“迁到大核后仍慢”至少要同时检查：
 
-高通骁龙 8 Elite（2024 年底发布）采用了一种更激进的配置：2 个 Oryon Prime 核心（4.32GHz）+ 6 个 Oryon Performance 核心（3.53GHz）。它完全去掉了传统意义上的"小核"，所有核心都有较强的性能输出，但 Prime 核心在频率和微架构上仍然更激进。从 capacity 标定看，Performance 核与 Prime 核之间的级差仅为约 18%（Prime 核 capacity≈1024，Performance 核 capacity≈837），“跑错了核”的惩罚远低于传统大小核架构。这使得 EAS 的迁核逻辑更倾向于负载均衡而非节能压制。
+- 迁移前后的 Running 和 Runnable 时间；
+- 源/目标 CPU 的 capacity 与 frequency；
+- 是否跨 LLC 或 cpufreq policy；
+- thermal/省电上限；
+- 工作集是否发生 cache miss 增长。
 
-> ⚠️ **容量数值标注**：capacity 值约 837/1024 是基于骁龙 8 Elite 公开技术规格的外推估算，并非直接从设备的 `/sys/devices/system/cpu/cpu*/cpu_capacity` 或内核 EM/DT 中读取的实测值。不同设备、不同固件版本的 capacity 标定可能不同。如需对特定设备做精确分析，应从该设备的 cpu_capacity sysfs 节点或 Energy Model 中获取一手数据。这种设计反映了厂商对"全大核"趋势的探索——随着工艺进步和功耗控制的改善，低性能小核的价值在下降。
+### 用 Perfetto 统计分布与迁移
 
-**全大核设计**
-
-联发科天玑 9400 也被称为"All Big Core"设计——它的"最小"核心是 Cortex-A720，这在几年前已经算是大核级别了。这说明 ARM 的核心设计也在不断提升：每一代小核的性能都在逼近上一代大核的水平。
-
-### 配置趋势对性能分析的影响
-
-核心配置的多样化意味着性能分析时不能简单地套用一个通用的"大核 = CPU 7"规则。分析时需要注意：
-
-1. **确认目标设备的核心布局**。不同设备的核心编号、频率、capacity 值都不同。在 Perfetto 中可以通过 CPU Frequency 轨道和 CPU Scheduling 轨道来推断。
-2. **关注线程在核心间的迁移模式**。一个线程如果频繁在小核和大核之间反复迁移，可能意味着调度器的 upmigrate/downmigrate 阈值设置不合理，或者线程本身的负载波动很大。
-3. **理解不同 SoC 厂商的客制化策略差异很大**。OEM 厂商通常会对调度器做大量定制（比如 OPPO 的蜂鸟引擎、小米的 MIUI 调度策略），导致同样的负载在不同手机上的调度行为完全不同。
-
-## 核心迁移的触发条件与性能影响
-
-在 [5.1 Linux 进程调度基础] 中我们讨论了 CFS 调度器的基本原理，在 [5.2 EAS 能量感知调度] 中了解了 EAS 如何利用能量模型进行选核决策。这里我们聚焦在核心迁移的实际触发机制和性能影响上。
-
-### 核心迁移的触发条件
-
-任务从一个小核迁移到大核（或反向），主要有以下几种触发条件：
-
-**1. 唤醒时选核（Wake-up Placement）**
-
-当线程从 Sleep 状态被唤醒时，调度器需要为它选择一个目标 CPU。EAS 调度器会：
-
-- 评估线程的 `util`（利用率），反映它需要多少计算资源。这个值是通过 PELT（Per-Entity Load Tracking）机制持续追踪的——PELT 使用指数衰减移动平均来计算每个调度实体（线程、cgroup、CPU rq）的最近负载，时间常数约 32ms（一个 PELT 窗口的 1024us × 32），确保近期活跃的权重远大于历史活跃。
-- 遍历所有可用的 CPU 核心，比较线程的 `util` 和每个核心的 `capacity`（容量）。capacity 是内核在启动时根据每个核心的最高频率和微架构 IPC 差异计算出的归一化算力值（以同 SoC 中最强核心为 1024 基准），可以通过 `/sys/devices/system/cpu/cpu<N>/cpu_capacity` 读取。大核的 capacity 远高于小核。
-- 在所有满足 `capacity > util` 的核心中，利用内核中预置的**能量模型（Energy Model）**选择一个让系统总功耗最低的核心。
-
-唤醒时选核是最常见的迁移时机，因为它天然就是一个"需要做决策"的时刻。
-
-**2. 负载均衡（Load Balancing）**
-
-调度器会周期性地检查系统的负载分布。如果发现某个核心（比如一个小核）上的任务过多导致利用率饱和，而另一个核心（比如一个大核）很空闲，调度器会将一个高负载任务从小核"拉"到大核上，以恢复负载平衡。
-
-负载均衡的检查周期和迁移阈值是可调的，Android 设备上通常会针对前台应用的交互场景做激进的优化——在触摸屏幕或启动应用时，关键线程会更积极地被迁移到大核上。
-
-**3. RTG（Related Thread Group）驱动的集群偏好**
-
-部分 Android 厂商内核（以 Qualcomm vendor 分支为代表）中有一个客制化机制叫 **RTG（Related Thread Group）**。它的核心思想是：把一组有关联的线程（比如同一个 App 的主线程、RenderThread、Binder 线程）放在同一个 CPU 集群上，以利用集群内的共享缓存，减少缓存未命中。
-
-RTG 维护了一个 `preferred_cluster`（偏好集群）字段，根据组内所有线程的累计负载来决定应该优先使用哪个集群。当组内某个线程被设置了 `SCHED_BOOST_ON_BIG` 属性时，整个组都会被"boost"到大核集群上。
-
-RTG 还有一个重要功能是**负载聚合（Colocation Boost）**：当 RTG 组内的高负载线程被调度到大核上时，schedutil governor 在计算大核的频率时，会把 RTG 组的累计负载也纳入考虑，而不仅仅是当前核心上的单个任务负载。大核频率会被适当拉高，以更好地服务整组线程。
-
-> **注意：** RTG 并非 AOSP/GKI 主线机制，在 android16-6.12 common kernel 的 `kernel/sched/` 中未找到对应符号。它主要存在于 Qualcomm 等厂商的 vendor kernel 分支中。GKI 主线上实现类似效果的机制包括 task_profiles、cpuset、uclamp 和 Power HAL 提示链（§5.2、§5.4）。
-
-### 迁移的性能影响
-
-核心迁移不是免费的。它带来的性能影响主要有两方面：
-
-**缓存效应**
-
-当任务从一个核心迁移到另一个核心时，它的 L1/L2 缓存数据不会跟着走。新核心的 L1/L2 缓存是冷的，需要从 L3（如果是 DynamIQ 集群）或主存重新加载数据。在 DynamIQ 架构下，由于所有核心共享 L3 缓存，迁移后的缓存恢复速度比传统 big.LITTLE 快得多。但如果在 Trace 中看到线程在大核和小核之间频繁来回迁移（"乒乓效应"），那么每次迁移都要付出缓存冷启动的代价，实际性能可能还不如一直待在一个核心上。
-
-**DVFS 延迟**
-
-同一集群内的核心通常共享电压/频率域。当任务从小核迁移到大核时，大核可能处于低频状态，需要 DVFS 把频率提上来。DVFS 的响应时间通常在几百微秒到几毫秒之间，取决于硬件和驱动实现。任务迁移到大核后，需要一小段时间才能达到全速运行。这也是为什么 Android 厂商在应用启动等场景会通过 Power HAL 预先把大核频率拉高——减少迁移后的"爬坡时间"。
-
-### 在 Perfetto 中观察核心迁移
-
-在 Perfetto 中，可以通过以下方式观察线程的核心迁移行为：
-
-1. **线程的 CPU 轨道**：选中一个线程，在 thread_state 轨道中查看每个 Running 切片的 `cpu` 字段。如果频繁在不同的 CPU 之间跳转，说明迁移频繁。
-2. **CPU Frequency 轨道**：结合频率变化看——线程迁移到一个核心后，那个核心的频率是否及时拉高了？如果频率迟迟上不去，说明 DVFS 响应慢或者有温控限制。
-3. **SQL 查询**：
+下面的第一条查询统计目标线程在各 CPU 上的运行时长：
 
 ```sql
--- 查看某线程在各 CPU 上的调度片段数和累计运行时间
-SELECT s.cpu, COUNT(*) AS slices, SUM(s.dur) / 1e6 AS total_running_ms
-FROM sched s
-JOIN thread t USING (utid)
-WHERE t.tid = <target_tid>
-GROUP BY s.cpu
-ORDER BY s.cpu;
-```
-
-## cpufreq governor：schedutil 的工作原理
-
-了解了核心迁移的机制后，自然要问：选定核心之后，这个核心应该跑多快？CPU 频率直接影响代码执行速度，也与功耗正相关。在 Perfetto 中，CPU Frequency 轨道显示了每个核心在不同时间的运行频率。但频率不是随便变化的——它由 **cpufreq governor** 决定。
-
-### 从性能 governor 到 schedutil
-
-早期的 Android 使用 `interactive` 或 `ondemand` governor，它们的调频逻辑比较简单：看 CPU 空闲时间的比例。空闲多了就降频，空闲少了就升频。这种方式有一个明显的问题：**它只能看到"当前 CPU 繁不忙"，看不到"是谁在忙"**。
-
-`schedutil`（scheduler utilization governor）从 Linux 4.7 开始引入，Android 从 Android 9（Pie）开始大规模采用。它的核心改进是直接**与调度器集成**，利用 PELT（Per-Entity Load Tracking）数据来做调频决策。
-
-### schedutil 的工作流程
-
-schedutil 的调频决策可以简化为以下步骤：
-
-1. **获取 CPU 利用率**：调度器在每次调度事件（唤醒、迁移、负载均衡等）时，会计算目标 CPU 的总利用率——即该 CPU 上所有 runnable 线程的 `util` 之和。
-2. **线性映射到频率**：schedutil 使用一个近似线性映射把利用率换算成目标频率：`next_freq ≈ 1.25 × max_freq × util / capacity`（这里的 1.25 是 `map_util_perf()` 加的性能裕量 / headroom）。实际频率还要经过 `sugov_effective_cpu_perf()` 综合 uclamp 约束、deadline 带宽下限（`bw_min`）、`rate_limit_us` 和 cpufreq driver 约束后才能确定，不能把上面的近似公式当作最终输出。
-3. **应用 rate_limit**：为了避免频率抖动（短时间内频繁升降频），schedutil 有一个 `rate_limit_us` 参数（通常为 1-2ms），限制两次调频之间的最小间隔。
-4. **特殊处理**：
-   - **实时任务（RT/DL）**：现代内核（v6.6/android16-6.12）中，schedutil 已不再对 RT/DL 任务直接置顶频率。实际路径是 `effective_cpu_util()` 将 RT/DL 带宽需求纳入 `bw_min` 计算，`sugov_update_single_freq()` / `sugov_update_shared()` 在检测到 `bw_min > 0` 时把频率下限锁定到满足带宽的最低值。当 RT/DL 带宽占满 CPU 时，频率自然会映射到最高，但这走的是带宽约束路径，不是“直接置顶”。
-   - **I/O Boost**：当线程在进行 I/O 操作时（比如从磁盘读取数据），schedutil 会临时抬升其利用率估计，让频率更快地提上去。这是因为 I/O 操作通常与用户体验直接相关（比如加载页面、读取文件），需要更快的响应。
-
-schedutil 的核心调频函数是 `sugov_get_util()`，它负责汇总目标 CPU 上所有调度类的利用率。以下展示 android16-6.12 GKI 内核中的实际实现（简化展示关键逻辑）：
-
-```c
-// android16-6.12（GKI）kernel/sched/cpufreq_schedutil.c
-// 简化展示核心路径，省略部分变量声明和边界处理
-static void sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost)
-{
-    unsigned long min, max;
-    // ① 以 sched_ext CPU perf target 为初值
-    unsigned long util = scx_cpuperf_target(sg_cpu->cpu);
-
-    // ② 如果当前 CPU 未全部被 sched_ext 接管，叠加 CFS util
-    if (!scx_switched_all())
-        util += cpu_util_cfs_boost(sg_cpu->cpu);
-
-    max = arch_scale_cpu_capacity(sg_cpu->cpu);
-    // ③ effective_cpu_util 合并 CFS + RT + DL 利用率，
-    //    并根据 FREQUENCY_UTIL 类型应用 uclamp 约束
-    util = effective_cpu_util(sg_cpu->cpu, util, &min, &max);
-
-    // ④ boost 在 effective_cpu_util 之后叠加，作为最低性能保障
-    util = max(util, boost);
-
-    // bw_min: deadline 带宽的最低频率保障
-    sg_cpu->bw_min = min;
-    // ⑤ sugov_effective_cpu_perf: 综合 util、max，计算最终目标性能值
-    sg_cpu->util = sugov_effective_cpu_perf(sg_cpu->cpu, util, min, max);
-}
-```
-
-这段代码的要点：
-
-1. **sched_ext 优先**（①）：`scx_cpuperf_target()` 返回 sched_ext 调度器对当前 CPU 的 perf target。如果 CPU 已全部切到 sched_ext（`scx_switched_all()` 为 true），则跳过 CFS util，完全按 sched_ext 的目标来。
-2. **CFS util 叠加**（②）：仅在 CPU 未被 sched_ext 完全接管时才叠加 `cpu_util_cfs_boost()`。
-3. **三类调度实体汇总**（③）：`effective_cpu_util()` 把 CFS、RT、deadline 三类实体的利用率合并，并应用 uclamp 约束裁剪出 `util` 和 `min/max` 范围。
-4. **boost 后置**（④）：`boost` 参数在 `effective_cpu_util()` 汇总后通过 `max(util, boost)` 确保不低于 boost 要求，与 mainline 把 boost 内置在 `map_util_perf()` 计算中的做法不同。
-5. **最终映射**（⑤）：`sugov_effective_cpu_perf()` 综合 util、max 等约束计算最终目标性能值。
-
-android16-6.12 与 Linux v6.6 mainline 的关键差异：mainline 的 `sugov_get_util` 接受单个 `struct sugov_cpu *` 参数，内部用 `FREQUENCY_UTIL` / `ENERGY_UTIL` 枚举区分调频与选核；android16-6.12 增加了 `unsigned long boost` 参数，显式拆分 util 汇总和 perf 映射两步，并前置了 `scx_cpuperf_target()` 对 sched_ext 的支持。RT/DL 任务的频率映射在 `sugov_update_single_freq()` / `sugov_update_shared()` 中处理：`bw_min > 0` 时频率下限被锁定到带宽约束对应的最低频率，如果带宽需求接近 CPU 满载，最终频率自然会接近最高值。
-
-### schedutil 与 EAS 的配合
-
-在上一节 [5.2 EAS 能量感知调度] 中我们讲到，EAS 负责决定任务放在哪个核心上。schedutil 负责决定核心跑多快。两者通过 PELT 共享的利用率数据来协调：
-
-- EAS 选核时用的是任务的 `util` 值。如果一个小核的 capacity 足够装下任务（`capacity > util`），EAS 会倾向选小核以节省功耗。
-- 但如果任务持续运行在小核上、且 util 接近小核的 capacity 上限，schedutil 会把小核频率拉到最高。这时候可能出现在 Perfetto 中的现象是：**小核频率很高，但任务仍然很慢**——因为小核的绝对性能上限低，即使跑在最高频率也比大核的中频慢。
-
-这就是为什么在 Perfetto 中看到"高频 + 小核 + 仍慢"时，不应该简单地认为"频率不够"，而应该优先考虑**选核问题**——任务是否应该被迁移到大核上。
-
-### uclamp：约束调度器和 governor 的利用率先验
-
-在 cpufreq / schedutil 这条线上，uclamp 可以直接理解成对 util 信号加上下限和上限。`effective_cpu_util()` 汇总 CFS、RT、DL 负载之后，还会把 `UCLAMP_MIN` / `UCLAMP_MAX` 一起算进去，所以 schedutil 看到的是 clamp 之后的有效 util，不再等同于原始 PELT util。
-
-这会直接改变调频结果。前台关键线程带着较高的 `uclamp_min` 被唤醒时，即使 PELT 还没爬起来，schedutil 也会按更高的 util 计算目标频率，大核频率因此更早拉起；后台任务如果被写了较低的 `uclamp_max`，瞬时 util 冲高时也更难把频率和选核一路推到顶。Android 用户态怎样通过 task profile、libprocessgroup 和 cgroup 把 clamp 值送进内核，§5.2 已完整展开，这里只保留与频率选择直接相关的部分。
-
-排查这类场景时，把 `/proc/<tid>/sched` 里的 clamp 字段、CPU Frequency 轨和线程迁移一起看，通常就能解释“util 看起来不高，频率却先上来了”的现象。
-
-### 影响频率的其他因素
-
-schedutil 的决策并不是最终频率，还有几个约束会叠加在 schedutil 的选择之上：
-
-1. **Power HAL 的场景策略**：Android Framework 通过 Power HAL 向内核传递当前的系统"场景"信息。比如在应用启动（LAUNCH）、触摸交互（INTERACTION）、游戏等场景，Power HAL 会抬高 CPU 的**地板频（floor frequency）**——即 `scaling_min_freq`。这保证了在关键场景下 CPU 不会因为利用率低而降频到很低的水平。
-
-2. **温控（Thermal Throttling）**：当设备温度超过预设阈值时，温控系统会强制降低 `scaling_max_freq`（天花板频）。此时即使 schedutil 想要更高的频率、Power HAL 也申请了更高的性能，CPU 频率也上不去。这是分析游戏掉帧、持续负载性能下降时优先要排查的因素。
-
-3. **省电模式**：低电量或手动开启省电模式时，系统同样会压低天花板频。
-
-在 Perfetto 中，CPU Frequency 轨道上能直接看到频率的上下限变化。如果频率被压在某个较低值不变，且不受负载变化影响，大概率是温控或省电模式在起作用。
-
-## 不同核心对单线程性能和多线程吞吐量的差异
-
-核心迁移和调频机制之后，还有一个更基础的问题：不同类型的核心在同样频率下，性能差距到底有多大？
-
-### "同频不同效"——频率不是衡量性能的唯一标准
-
-在 Perfetto 中我们会看到不同核心的频率值，但**大核 2.0GHz 和小核 2.0GHz 的实际性能完全不同**。这背后的原因有几个层次：
-
-**微架构差异导致 IPC 不同**
-
-大核通常有更宽的乱序执行窗口、更多的执行端口、更大的 L1/L2 缓存、更激进的分支预测和预取。在同样的时钟周期内，大核能完成更多的指令（IPC 更高）。同频下，大核完成同样工作所需的时间更短，消耗的能量也更少。
-
-**缓存层次差异**
-
-大核通常有更大的 L2 缓存（比如 1-2MB vs 小核的 256-512KB），对访存密集型任务的性能影响显著。如果工作集（working set）超过小核的 L2 容量但不超过大核的 L2 容量，性能差距可能达到 2-3 倍——这在 Perfetto 中会直接体现为同一段代码在小核上的 wall duration 是大核的 2-3 倍。
-
-**能效曲线非线性**
-
-小核在接近最高频时，电压会急剧升高，导致边际能耗飙升——频率只提升了一点点，功耗却翻倍了。而大核在中等频点的"每瓦性能"可能反而更好。这就是为什么在性能分析中，不能简单地用频率来比较不同核心的"能效"。
-
-### 单线程性能：超大核的价值
-
-对于 UI 响应、应用启动这类**单线程延迟敏感**的场景，超大核（Cortex-X 系列）的价值就体现出来了。以 Cortex-X925（2024 年发布）为例：
-
-- 相比上一代 Cortex-X4，单核性能提升约 36%（Geekbench 6 测试），得益于更高的时钟频率（最高 3.6GHz vs 3.4GHz）和 15% 的 IPC 提升。
-- 微架构改进包括：4 条加载流水线、双周期 ALU、向量单元数量增加 50%、指令缓存和数据缓存带宽翻倍。
-- 代价是更大的芯片面积和更高的峰值功耗，所以通常只配置 1 个超大核。
-
-在 Perfetto 中，如果在 Trace 中观察到前台 UI 线程始终没有运行在超大核上，而应用又有明显的启动或响应延迟，这可能是调度策略需要优化的信号。
-
-### 多线程吞吐量：核心数量的权衡
-
-对于视频编码、图片处理、后台编译这类**多线程吞吐量敏感**的场景，所有核心的总算力更关键。一个 1+3+4 的配置意味着：
-
-- 短时间的突发负载：4 个小核 + 3 个大核 + 1 个超大核全部出动，总并发能力是 8 线程。
-- 持续负载：受限于热设计功耗（TDP），通常不可能所有核心都以最高频率同时运行。调度器会根据温度和功耗预算动态调整每个核心的频率上限。
-
-这也解释了为什么在持续重负载场景（如长时间游戏），即使有 8 个核心，我们可能也只能看到 3-4 个核心在高频运行，其余核心被降频甚至离线。
-
-## 在 Perfetto/工具中的表现
-
-### 识别核心类型
-
-在 Perfetto 中，最直接的方式是看 CPU Frequency 轨道上的频率上限差异。同簇核心的频率会同步变化，不同簇核心的频率独立变化。通过观察频率变化模式，可以推断出核心的分组。
-
-也可以使用以下 SQL 查询来辅助判断：
-
-```sql
--- 按 CPU 分组，查看全局调度片段的时长分布
 SELECT
   s.cpu,
-  COUNT(*) AS num_slices,
-  SUM(s.dur) / 1e6 AS total_running_ms
-FROM sched s
+  COUNT(*) AS slice_count,
+  ROUND(SUM(s.dur) / 1e6, 3) AS running_ms
+FROM sched_slice AS s
+JOIN thread AS t USING (utid)
+JOIN process AS p USING (upid)
+WHERE p.name = 'your.package.name'
+  AND t.name = 'RenderThread'
+  AND s.dur > 0
 GROUP BY s.cpu
 ORDER BY s.cpu;
 ```
 
-通常，大核上会有更多前台关键线程（如主线程、RenderThread）的运行时间，而小核上更多是后台进程。
+这张表只能说明分布。要数相邻 Running slice 之间的 CPU 变化，可以用窗口函数：
 
-### 正常与异常的核心分配模式
+```sql
+WITH target_slices AS (
+  SELECT
+    s.ts,
+    s.cpu,
+    LAG(s.cpu) OVER (ORDER BY s.ts) AS previous_cpu
+  FROM sched_slice AS s
+  JOIN thread AS t USING (utid)
+  JOIN process AS p USING (upid)
+  WHERE p.name = 'your.package.name'
+    AND t.name = 'RenderThread'
+    AND s.dur > 0
+)
+SELECT
+  previous_cpu,
+  cpu,
+  COUNT(*) AS transitions
+FROM target_slices
+WHERE previous_cpu IS NOT NULL
+  AND previous_cpu != cpu
+GROUP BY previous_cpu, cpu
+ORDER BY transitions DESC;
+```
 
-**正常模式**：
-- 应用启动时，主线程迅速迁移到超大核或大核上，大核频率被拉高。
-- 滑动/交互时，UI 线程和 RenderThread 在大核上运行。
-- 后台同步、推送等轻量任务在小核上运行。
+相邻 slice 跨 CPU 表示两次运行之间目标 CPU 发生变化，但中间可能经历睡眠、唤醒和排队。它不能单独证明 cache migration 是延迟根因，还要与业务 slice、频率和 cache/PMU 数据对齐。
 
-**异常模式**：
-- 主线程长时间运行在小核上（CPU 0-3），导致启动慢、卡顿多。可能的原因：调度器 upmigrate 阈值过高，或者 RTG 没有正确地将关键线程聚合到大核。
-- 线程在大核和小核之间频繁来回迁移（乒乓效应），导致缓存命中率低。在 Perfetto 中会看到同一时段内，线程的 Running 切片分布在不同 CPU 上。
-- 大核频率被限制在较低水平（温控或省电模式），即使有高负载任务也无法提速。在 CPU Frequency 轨道上会看到频率上限被压低。
+## Android 17 schedutil 怎样选频
 
-## 与其他机制的关系
+### 当前源码路径
 
-大小核架构不是孤立运作的，它与多个系统机制紧密关联：
+schedutil 使用调度器的利用率信号决定 cpufreq policy 的目标性能点。`android17-6.18-2026-06_r6` 的 `sugov_get_util()` 可概括为：
 
-- **EAS 能量感知调度**（[5.2]）：EAS 利用了大小核架构的异构特性，通过能量模型在选核时优先考虑功耗效率。
-- **DVFS 与功耗管理**（[5.4]）：DVFS 决定了每个核心簇的运行频率，与大小核的核心选择策略共同决定系统的性能-功耗平衡。
-- **Thermal 管控**（[5.5]）：温控系统会限制大核的最高频率，甚至直接把大核离线（offline），这会改变大小核架构的可用核心组合。
-- **Android 功耗管理**（[5.6]）：Power HAL 通过场景策略影响 CPU 频率的地板频和天花板频，间接影响大小核的实际性能表现。
-- **MainThread 与 RenderThread 协作**（[2.5]）：这两个线程是 Android 渲染管线的关键，它们的 CPU 核心分配直接影响帧渲染时间。
+```text
+util = sched_ext CPU perf target
+if CPU 没有完全交给 sched_ext:
+    util += boosted CFS util
 
-## 常见问题与误区
+util, min, max = effective_cpu_util(CFS + RT + DL + IRQ, UClamp)
+util = max(util, I/O-wait boost)
+target_perf = sugov_effective_cpu_perf(util, min, max)
+```
 
-### 误区 1："大核频率高，所以大核总是更快"
+`sugov_effective_cpu_perf()` 先用 `map_util_perf()` 添加约 25% DVFS headroom，再应用 minimum/maximum performance 约束。这个线性映射是假设，不等于硬件的实际性能曲线。
 
-不完全对。大核的优势来自微架构（更宽的流水线、更大的缓存、更好的分支预测），不仅仅是频率。即使大核和小核运行在相同频率下，大核的 IPC 仍然更高。反之，大核被温控降频到低频时，性能可能还不如高频小核——但这种情况在实际中不太常见，因为大核的微架构优势通常足以弥补频率差距。
+如果一个 cpufreq policy 覆盖多个 CPU，`sugov_next_freq_shared()` 会遍历 policy CPU，并采用其中最高的目标性能需求来选频。所以 Perfetto 中同 policy CPU 的频率联动符合源码预期。
 
-### 误区 2："小核没用，应该全部用大核"
+### rate limit 没有跨设备固定值
 
-从纯性能角度看，全大核有优势（骁龙 8 Elite 就在尝试）。但从能效角度看，小核在处理大量低负载后台任务时比大核更省电。关键在于调度器能否正确地识别任务特征，把轻量任务留在小核上。如果调度策略合理，小核可以显著延长续航。
+`rate_limit_us` 限制调频请求频率。kernel 6.18 初始化时采用 `cpufreq_policy_transition_delay_us(policy)`，之后可以由 governor tunable 改写。它取决于 driver 与 policy，不应写成 Android 固定 1 ms 或 2 ms。
 
-### 误区 3："频率越高越好"
+### I/O-wait boost 的适用范围
 
-在异构 CPU 上，频率必须结合核心类型理解。小核 2.0GHz 和大核 2.0GHz 的实际性能完全不同。而且小核在接近最高频时能效会急剧恶化——频率只提升了一点点，功耗却可能翻倍。所以"拉高小核频率"不是一个好的优化策略。
+kernel 6.18 在 `SCHED_CPUFREQ_IOWAIT` 唤醒上维护 I/O-wait boost。连续、频繁的 I/O completion wakeup 会逐步提高 boost；超过一个 tick 没有新请求时会重置或衰减。它用于缩短 I/O 后续处理延迟，无法据此推断所有文件读取都会直接升到最高频。
 
-### 误区 4："线程在哪个核心上是调度器的事，我管不了"
+### RT、DL、UClamp 与 sched_ext
 
-虽然应用开发者通常不直接控制线程的 CPU 亲和性（affinity），但有一些间接方式可以影响调度决策：
-- **线程优先级**：通过 `Process.setThreadPriority()` 设置更高的优先级（更低的 nice 值），调度器会更积极地把高优先级线程放到大核上。
-- **线程亲和性**：通过 `sched_setaffinity` 系统调用直接指定线程可以运行在哪些核心上。这在系统级开发和 OEM 定制中很常见（比如绑定 RenderThread 到大核上，参见高爷的文章"Android性能优化之绑定RenderThread到大核CPU"）。
-- **cgroup 和 cpuset**：Android 使用 cgroup 来划分前台/后台进程组，前台组的线程更容易被调度到大核上。
+`effective_cpu_util()` 合并 CFS、RT、deadline 与 IRQ 影响，并给 schedutil 返回性能上下界。RT/DL 并非简单地“出现就永久锁最高频”；deadline bandwidth、默认 RT UClamp 和设备配置会影响结果。
 
-### 误区 5："绑核（affinity）能解决所有选核问题"
+Android 17 common kernel 的 schedutil 还接受 `scx_cpuperf_target()`。只有 sched_ext 实际接管 CPU 或提供 perf target 时，这条输入才有意义；源码存在不代表量产设备默认启用 sched_ext 调度器。
 
-绑核能解决"关键线程被调度到小核"的问题，但也有代价：一旦绑定了某个核心，即使那个核心被温控降频，线程也无法迁移到其他核心上。在实际优化中，绑核通常是"兜底手段"，更稳的做法是调整 RTG 策略或调度器 upmigrate 阈值，让调度器自己做出正确的选核决策。绑核适合用于经过充分验证的固定场景（比如已知 RenderThread 的负载特征稳定），但不适合负载波动大的场景。
+### Power HAL 和省电/温控是外部约束
 
-## 版本演进
+Power HAL 的实现可以应用 task profile、UClamp、cpuset、devfreq 或厂商节点，也可能调整 cpufreq floor/ceiling。Android 平台没有保证每个 LAUNCH/INTERACTION hint 都通过 `scaling_min_freq` 实现。
 
-| 时期 | 架构/技术 | 特点 |
-|------|----------|------|
-| 2011-2014 | big.LITTLE 第一代 | 双集群，集群迁移模式，4+4 配置 |
-| 2014-2016 | HMP（异构多处理） | 所有核心同时在线，独立调度 |
-| 2017-2019 | DynamIQ 发布 | 统一集群，共享 L3 缓存，独立核心控制 |
-| 2019-2021 | Cortex-X 系列引入 | 超大核概念，1+3+4 配置成为主流 |
-| 2022-2024 | 三层核心普及 | A710/A715/A720 + A510/A520 + X2/X3/X4，三层核心成为旗舰标配 |
-| 2024-2025 | "全大核"趋势 | 天玑 9400（全 Cortex-A 系核心），骁龙 8 Elite（2+6 Oryon 核心），小核逐步退出旗舰 |
+thermal 和省电模式可以限制最大 OPP，hardware DVFS 也可能在软件请求之外做选择。Perfetto 看到的频率是最终可观测结果，解释时应同时检查：
 
-## 扩展：Cortex-X 系列超大核的定位与功耗特性
+- `scaling_driver` 与 `scaling_governor`；
+- policy min/max 与 thermal cap；
+- UClamp/task profile；
+- Power HAL 或 ADPF session；
+- 硬件计数器是否提供 frequency invariance。
 
-Cortex-X 系列是 ARM 从 2020 年开始推出的"超大核"产品线，定位是"超越标准 Cortex-A 大核的极致单线程性能"。它的设计目标是缩短与苹果 A 系列（以及后来的 M 系列）自研核心在单核性能上的差距。
+## 如何理解不同 CPU 的性能
 
-Cortex-X 系列的核心特点：
+### 同频不等性能
 
-- **更大的微架构**：相比同代 Cortex-A 大核，Cortex-X 有更宽的流水线、更多的执行单元、更大的缓存。以 Cortex-X925 为例，它有 4 条加载流水线和翻倍的缓存带宽，这些在标准 Cortex-A725 上是没有的。
-- **更高的峰值性能，但峰值功耗也更高**：Cortex-X925 在 Geekbench 6 上的单核分数比 Cortex-X4 高 36%，但维持最高频率时的功耗也显著更高。所以在持续重负载场景（如长时间游戏），超大核通常不会持续跑在最高频率，而是在中高频区间波动。
-- **通常只配置 1 个**：由于芯片面积和功耗预算的限制，旗舰 SoC 通常只配置 1 个 Cortex-X 核心，专门用于应用启动、页面加载等突发单线程场景。
+capacity 文档把最大能力拆成 work-per-Hz 与 max frequency。高性能 microarchitecture 往往有更宽的前后端、更大的乱序窗口、cache 和分支预测资源；相同频率下，它可能完成更多工作。
 
-从性能分析角度看，超大核的存在意味着"CPU 7 上的线程不一定比 CPU 4-6 上的线程快多少"这个判断不再成立——如果设备有 Cortex-X 超大核，CPU 7 上的单核性能可能比其他大核高 20-30%。在分析启动性能时，确认主线程是否被调度到了超大核上是一个重要的检查点。
+差距依 workload 而变：
 
-## 扩展：GPU + NPU 的协同调度概念
+- 计算与分支密集代码更受执行宽度、预测和前端影响；
+- cache-resident workload 受 L1/L2 容量与延迟影响；
+- memory-bound workload 可能主要受 LLC、DRAM 和带宽争用限制；
+- 向量或加密代码还取决于具体执行单元。
 
-[需补充素材: GPU + NPU 与大小核架构的交互关系仍缺少可靠素材，需要补充任务卸载（offloading）策略、GPU/NPU 在异构计算中的角色、以及这些任务对 CPU 调度的影响。]
+因此，“大核一定快 2—3 倍”“同频大核耗能更少”都需要目标 workload 的实测支撑。
 
-## 参考资料
+### 单线程延迟
 
-- ARM big.LITTLE 技术介绍：https://developer.arm.com/Architectures/big.LITTLE
-- ARM DynamIQ 技术白皮书：https://developer.arm.com/documentation
-- Cortex-X925 技术规格：https://developer.arm.com/products/silicon-ip-cpu/cortex-x925
-- Linux kernel schedutil 源码：kernel/sched/cpufreq_schedutil.c
-- Perfetto CPU Scheduling 文档：https://perfetto.dev/docs/data-sources/cpu-scheduling
-- 高爷原创：Android性能优化之绑定RenderThread到大核CPU [来源: Personal-Knowlodge/source/2026-03-06_wechat_Android性能优化之绑定RenderThread到大核CPU.md]
-- 高爷原创：Android Perfetto 系列 — CPU [来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
-- 调度器分支之 RTG [来源: Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md]
+应用启动、UI 主线程和部分脚本执行包含单线程关键路径，高 capacity CPU 可能缩短 CPU-bound 段。但线程若主要等待 Binder、锁、I/O 或 GPU，迁到 prime CPU 也不会消除等待。
+
+判断是否需要更高 capacity CPU，应先比较 wall time、CPU time、Runnable wait 和 deadline。主线程没有运行在编号最大的 CPU，本身不构成问题。
+
+### 多线程吞吐与热稳态
+
+图片处理、编译和软件编解码等吞吐任务可以利用多颗 CPU，但并行度还受任务划分、锁、内存带宽和 thermal budget 限制。短时跑满全部 CPU 与长期维持最高频是两回事。
+
+热稳态下，系统可能降低多个 policy 的频率、调整 task placement，甚至 offline 部分 CPU。有效指标应覆盖完成量/秒、能量/任务、温度和尾延迟，不能只数高频 CPU 数量。
+
+## 一套可复现的分析顺序
+
+1. **标出业务 deadline**：定位启动、帧、音频或推理区间。
+2. **确认线程状态**：区分 Running、`R/R+`、锁/Binder/I/O 等等待。
+3. **建立设备拓扑**：记录 capacity、cpufreq policy、online CPU、affinity 与 cpuset。
+4. **对齐运行结果**：统计各 CPU runtime、迁移、频率和 idle。
+5. **检查外部约束**：thermal、battery saver、Power HAL、UClamp、ADPF 和 vendor hook。
+6. **提出单一假设**：例如“低 capacity CPU 无法在 deadline 内完成 CPU-bound 段”。
+7. **做 A/B 验证**：比较延迟分位数、功耗与热稳态，不只看一次 Trace。
+
+### 正常现象
+
+- 短任务留在低 capacity CPU 且按时完成；
+- 唤醒后保留 `prev_cpu`，减少不必要迁移；
+- 高 util 任务在 thermal 允许时进入更高 capacity domain；
+- 同一 cpufreq policy 的 CPU 共享频率变化；
+- 运行迁移发生，但没有对应的 deadline 或 cache 指标退化。
+
+### 需要继续排查的现象
+
+- CPU-bound 关键段持续超时，同时仅能在低 capacity CPU 运行；
+- 有空闲且允许的高 capacity CPU，目标线程却长时间 Runnable；
+- 迁移点与 cache miss、wall time 尖峰稳定相关；
+- policy 频率长期受限，且与 thermal 或省电状态一致；
+- 前后台状态变化后，cpuset/UClamp/profile 没有按预期更新。
+
+这些现象是调查入口，不是单凭一条就能定责的规则。
+
+## 常见误区
+
+### “CPU 编号越大，性能越高”
+
+编号由固件和设备拓扑决定。用 capacity、policy 与实测识别 CPU 类型。
+
+### “降低 nice 值会让线程自动去大核”
+
+nice 主要改变 fair CPU 份额。选核还要看 util、capacity、EAS、UClamp、cpuset 和当前负载；更高权重不等于强制选择高 capacity CPU。
+
+### “最高频率越高，CPU 就越快”
+
+最高频率缺少 work-per-Hz、cache、内存与 thermal 信息。它只能描述一个维度。
+
+### “迁移次数多，调度一定有问题”
+
+迁移是负载均衡和异构调度的正常手段。只有迁移与 deadline、cache 或能耗退化稳定相关时，才有优化依据。
+
+### “绑核可以修复所有选核问题”
+
+affinity 会减少调度器选择，也可能把线程留在拥塞或降频 CPU。先验证根因，再以可回滚的实验评估。
+
+### “全大核 SoC 不需要 EAS”
+
+产品名称无法替代 kernel topology。只要 CPU capacity 或 Energy Model cost 存在差异，energy-aware placement 仍有分析价值。
+
+## GPU、NPU 与 CPU 调度的边界
+
+EAS、EEVDF 和 schedutil 处理 CPU task placement、CPU runqueue 与 CPU frequency。GPU 和 NPU 有各自的队列、driver、devfreq/固件调度与功耗域，不能称为由 CPU EAS “协同调度”。
+
+任务卸载仍会在 CPU 上产生准备、Binder/HAL 调用、command submission、同步 fence 和结果处理。分析异构计算时可按下面的依赖检查：
+
+```text
+CPU 准备与提交
+    → GPU/NPU 队列等待与执行
+    → fence / callback 唤醒 CPU
+    → CPU 后处理
+```
+
+若 CPU 长时间睡眠等待 fence，调整 CPU affinity 无法缩短 accelerator execution；若提交线程长时间 Runnable 或 CPU-bound，则回到本章的 CPU 调度证据链。GPU/NPU 的频率、队列和利用率应使用对应数据源分析。
+
+## 版本演进与当前边界
+
+| 时期 | 变化 | 本章怎样使用 |
+| --- | --- | --- |
+| 2011 起 | Arm big.LITTLE 与早期 cluster/switcher 模型 | 解释异构 CPU 的由来 |
+| Linux 4.7 起 | schedutil 进入主线 | 解释调度器利用率驱动 DVFS |
+| Linux 5.0 起 | EAS 进入主线 | 解释异构 CPU 的 wake-up placement |
+| Android 9 起 | Android 设备广泛采用 EAS/schedutil，但 vendor 实现各异 | 只作历史范围，不假定所有设备一致 |
+| Android 17 / API 37 | AOSP `android-17.0.0_r1` | task profile、UClamp、Power HAL/ADPF 控制面 |
+| Android 17 kernel | `android17-6.18-2026-06_r6` | capacity-aware scheduling、EAS、schedutil、thermal pressure 与 sched_ext 接口 |
+
+## 源码索引与参考资料
+
+本章的公共源码结论可从以下入口复核：
+
+- kernel `Documentation/scheduler/sched-capacity.rst`；
+- kernel `Documentation/scheduler/sched-energy.rst`；
+- kernel `Documentation/scheduler/schedutil.rst`；
+- kernel `kernel/sched/fair.c`：`util_fits_cpu()`、`find_energy_efficient_cpu()`、misfit/load-balance 路径；
+- kernel `kernel/sched/cpufreq_schedutil.c`：`sugov_get_util()`、`sugov_effective_cpu_perf()`、I/O-wait boost；
+- Android `system/core/libprocessgroup/profiles/task_profiles.json`；
+- Perfetto `linux.cpu.frequency`、`sched_slice` 与 `thread_state`。
+
+参考链接：
+
+- [Linux Capacity Aware Scheduling](https://docs.kernel.org/scheduler/sched-capacity.html)
+- [Linux Energy Aware Scheduling](https://docs.kernel.org/scheduler/sched-energy.html)
+- [Linux schedutil](https://docs.kernel.org/scheduler/schedutil.html)
+- [Arm big.LITTLE](https://developer.arm.com/Architectures/big.LITTLE)
+- [Perfetto CPU Scheduling](https://perfetto.dev/docs/data-sources/cpu-scheduling)
+- [Android UClamp](https://source.android.com/docs/core/perf/uclamp)
