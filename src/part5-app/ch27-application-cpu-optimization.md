@@ -1,13 +1,28 @@
 ---
 title: "应用层 CPU 优化实战指南"
 chapter: "27.1"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [CPU优化, 应用实践, 线程池, 性能优化]
 related_chapters: ["5.1", "5.27"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-02"
 gap_source: "研究盲区 Task9 发现"
+last_verified: "2026-07-26"
+last_verified_against: "AOSP android-17.0.0_r1 / android17-6.18"
+confidence: medium
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+last_draft_polish_at: "2026-07-26T15:35:39+08:00"
+last_draft_polish_run_id: "20260726-153539-draft-polish-19d43518"
+sources:
+  - type: aosp
+    title: "ThreadPoolExecutor / Process / bionic times / procfs source verification"
+    path: "DeepResearch/2026-07-02-android17-app-cpu-optimization-thread-priority-source-verification.md"
+  - type: aosp
+    title: "ThreadPoolExecutor 三层源码 + bionic times() 系统调用深挖"
+    path: "DeepResearch/2026-07-02-android17-threadpoolexecutor-times-syscall-source-deepdive.md"
 ---
 
 # 27.1 应用层 CPU 优化实战指南
@@ -31,7 +46,7 @@ gap_source: "研究盲区 Task9 发现"
 - 预加载对冷启动体验的改善效果
 
 ### 🔹 锁等待对 CPU 的影响
-- synchronize 等待的自旋→休眠状态转换
+- synchronized 等待的自旋→休眠状态转换
 - 锁优化的四项基本原则
 - CAS 与偏向锁的性能对比分析
 
@@ -49,7 +64,7 @@ gap_source: "研究盲区 Task9 发现"
 
 <!-- outline-end -->
 
-> 本节内容待加工。
+> Draft polish 说明（2026-07-26）：本章已按 `android-17.0.0_r1` / android17-6.18 源码调研补齐版本边界、来源标记与若干代码级风险修正，进入 Task6 复查队列。未在本轮新增章节；仍需 Task6 对所有示例代码做逐段编译性与 public API 可用性复核。
 
 ---
 
@@ -66,8 +81,8 @@ public class ThreadPoolConfigManager {
     
     /**
      * CPU 线程池配置
-     * 特点：核心线程数 = 最大线程数，固定大小，任务队列使用 LinkedBlockingDeque
-     * 目标：避免线程切换开销，最大化 CPU 利用率
+     * 特点：核心线程数 = 最大线程数，固定大小，任务队列使用有界队列
+     * 目标：避免线程切换开销，并防止突发任务在无界队列中堆积到 OOM
      */
     public static ExecutorService createCpuThreadPool() {
         int cpuCount = Runtime.getRuntime().availableProcessors();
@@ -75,11 +90,11 @@ public class ThreadPoolConfigManager {
         return new ThreadPoolExecutor(
             cpuCount,                    // 核心线程数 = CPU 核心数
             cpuCount,                    // 最大线程数 = CPU 核心数（避免上下文切换）
-            60,                          // 空闲线程存活时间
-            TimeUnit.SECONDS,
-            new LinkedBlockingDeque<>(),  // 无界队列，避免任务丢弃
+            0L,                          // core=max 且默认不回收核心线程，keepAliveTime 不应误导
+            TimeUnit.MILLISECONDS,
+            new ArrayBlockingQueue<>(cpuCount * 4),  // 有界队列：让拒绝策略真实生效
             new CpuThreadFactory(),      // 自定义线程工厂
-            new ThreadPoolExecutor.AbortPolicy()  // 拒绝策略：直接抛出异常
+            new ThreadPoolExecutor.CallerRunsPolicy()  // 背压：回调用者线程执行
         );
     }
     
@@ -110,8 +125,12 @@ public class ThreadPoolConfigManager {
         
         @Override
         public Thread newThread(Runnable r) {
-            Thread t = new Thread(r, namePrefix + threadNumber.getAndIncrement());
-            t.setPriority(Thread.NORM_PRIORITY);  // 正常优先级
+            Thread t = new Thread(() -> {
+                android.os.Process.setThreadPriority(
+                    android.os.Process.THREAD_PRIORITY_DEFAULT);
+                r.run();
+            }, namePrefix + threadNumber.getAndIncrement());
+            t.setPriority(Thread.NORM_PRIORITY);  // Java 层优先级；Linux nice 由 Process 显式设置
             t.setDaemon(false);                  // 非守护线程
             return t;
         }
@@ -123,8 +142,12 @@ public class ThreadPoolConfigManager {
         
         @Override
         public Thread newThread(Runnable r) {
-            Thread t = new Thread(r, namePrefix + threadNumber.getAndIncrement());
-            t.setPriority(Thread.NORM_PRIORITY);  // 正常优先级
+            Thread t = new Thread(() -> {
+                android.os.Process.setThreadPriority(
+                    android.os.Process.THREAD_PRIORITY_BACKGROUND);
+                r.run();
+            }, namePrefix + threadNumber.getAndIncrement());
+            t.setPriority(Thread.NORM_PRIORITY);  // Java 层优先级；后台 IO 线程显式降 nice
             t.setDaemon(false);                  // 非守护线程
             return t;
         }
@@ -190,7 +213,7 @@ public void execute(Runnable command) {
 源码行 998-1030 显示 keepAliveTime 的真实语义：
 
 **关键发现**：
-- `allowCoreThreadTimeOut == false`（默认）时：`timed = wc > corePoolSize` —— **只有 worker 数量超过 corePoolSize 时才计时**。但**这一条件是循环内每次重新计算**，所以即使初始 `wc == corePoolSize`，一旦因为某种原因超出，core thread 就开始计时收缩；除非调用 `setCorePoolSize()` 提升到当前 wc 之上。
+- `allowCoreThreadTimeOut == false`（默认）时：`timed = wc > corePoolSize` —— **只有超过 corePoolSize 的 worker 才按 keepAliveTime 计时回收**；当 `corePoolSize == maximumPoolSize` 且没有超额 worker 时，核心线程会阻塞等待任务，不会因 keepAliveTime 到期退出。
 - `allowCoreThreadTimeOut == true` 时：`timed = true` —— **核心线程也会超时回收**，要保留核心线程必须始终有任务运行（poll 不超时）。
 
 **章节 §27.1 现有代码的潜在问题**：
@@ -209,7 +232,7 @@ return new ThreadPoolExecutor(
 - 一旦任务激增触发 `corePoolSize == maxPoolSize` 边界，`wc > corePoolSize` 永远为 false，timed 永远为 false —— **60s keepAliveTime 完全是死代码**。
 - 真正的回收只发生在 `shutdownNow()` 或线程异常退出时。
 
-**修正建议**：CPU 线程池的 `keepAliveTime` 应设为 `0L, TimeUnit.MILLISECONDS`（避免误导性参数），或显式调用 `allowCoreThreadTimeOut(true)`（要求队列不能是无界的，否则可能所有 worker 都回收导致线程池空）。
+**修正建议**：固定大小 CPU 线程池的 `keepAliveTime` 应设为 `0L, TimeUnit.MILLISECONDS`（避免误导性参数）。若希望核心线程也回收，需显式调用 `allowCoreThreadTimeOut(true)`，并配合有界队列和清晰的冷启动唤醒策略。
 
 #### execute() 调度流程源码解析
 
@@ -379,8 +402,8 @@ public class ThreadPoolOptimizer {
         // 限制队列大小为可用内存的 1/10
         config.queueCapacity = (int)(availableMemory / 10 / 1024 / 1024);
         
-        // 空闲线程存活时间
-        config.keepAliveTime = 60; // 60秒
+        // 固定 CPU 线程池默认不回收核心线程，keepAliveTime 用 0 避免误导
+        config.keepAliveTime = 0;
         
         // 拒绝策略选择
         if (profile.isCritical()) {
@@ -531,7 +554,7 @@ SYSCALL_DEFINE1(times, struct tms __user *, tbuf)
 
 #### JNI /proc/stat 解析的栈/堆双缓冲策略
 
-`android_util_Process.cpp:1025-1090` 的 `readProcFile()` 实现了智能缓冲策略：
+`android_util_Process.cpp:1025-1090` 的 `readProcFile()` 实现了智能缓冲策略（这是 framework 内部实现；普通应用若不能使用 hidden API，应以 `BufferedReader`/JNI 读取 `/proc/stat`）：
 
 **关键设计**：
 - **栈优先**：1024 字节栈缓冲覆盖 95% 场景（/proc/stat 约 3 KiB，会触发一次堆迁移；/proc/pid/status 约 1.5 KiB，栈直接命中）。
@@ -543,6 +566,7 @@ SYSCALL_DEFINE1(times, struct tms __user *, tbuf)
 章节现有代码的修正：
 
 ```java
+// framework / system app 可用；普通应用优先使用 BufferedReader 或 JNI 读取 /proc/stat。
 private static final int[] CPU_FORMAT = new int[] {
     Process.PROC_OUT_LONG,  // 0 user
     Process.PROC_OUT_LONG,  // 1 nice  
@@ -610,9 +634,12 @@ public class CpuUsageMonitor {
             totalDiff += currentCpuUsage[i] - lastCpuUsage[i];
         }
         
-        // 计算使用率
-        float usagePercentage = totalDiff > 0 ? 
-            100.0f * (1.0f - (float)idleDiff / (float)totalDiff) : 0.0f;
+        long iowaitDiff = currentCpuUsage.length > 4
+            ? currentCpuUsage[4] - lastCpuUsage[4] : 0;
+        long busyDiff = totalDiff - idleDiff - iowaitDiff;
+        // Android 17 procfs 仍输出 idle / iowait 两列；iowait 单独统计，避免把 IO 等待误判为可用于预加载的 CPU 空闲。
+        float usagePercentage = totalDiff > 0 ?
+            100.0f * (float) busyDiff / (float) totalDiff : 0.0f;
         
         // 更新时间戳
         lastCpuUsage = currentCpuUsage;
@@ -642,7 +669,7 @@ public class CpuUsageMonitor {
             Log.e("CpuMonitor", "Failed to read /proc/stat", e);
         }
         
-        return new long[8]; // 默认返回 8 个 cpu 字段
+        return new long[10]; // Android 17 common kernel 输出 10 个 cpu 字段
     }
     
     /**
@@ -686,48 +713,50 @@ public class CpuUsageMonitor {
 Android NDK 提供了更高效的 CPU 使用率检测方法：
 
 ```cpp
-#include <android/native_activity.h>
-#include <sys/sysinfo.h>
+#include <sys/times.h>
 #include <unistd.h>
 
 class CpuIdleDetector {
 public:
-    CpuIdleDetector() : lastCpuTime(0), lastProcessTime(0) {}
+    CpuIdleDetector() : lastWallTicks(0), lastProcessTicks(0) {}
     
     /**
-     * 使用 Native times 函数检测 CPU 闲置状态
+     * 使用 Native times 函数检测进程 CPU 闲置状态。
+     * times() 的时间单位为 sysconf(_SC_CLK_TCK)，Android 17 arm64 常见粒度为 10ms。
      */
     bool isCpuIdle(float threshold = 0.1f) {
         struct tms cpuTimes;
-        clock_t currentTime = times(&cpuTimes);
+        clock_t currentWallTicks = times(&cpuTimes);
         
-        if (currentTime == (clock_t)-1) {
+        if (currentWallTicks == (clock_t)-1) {
             return false;
         }
         
-        // 计算时间差
-        time_t timeDiff = currentTime - lastCpuTime;
-        if (timeDiff < 1000) { // 少于 1 秒的数据不处理
+        const long hz = sysconf(_SC_CLK_TCK);
+        clock_t wallDiff = currentWallTicks - lastWallTicks;
+        clock_t currentProcessTicks = cpuTimes.tms_utime + cpuTimes.tms_stime;
+        if (lastWallTicks == 0 || wallDiff < hz / 10) { // 少于约 100ms 的窗口不处理
+            lastWallTicks = currentWallTicks;
+            lastProcessTicks = currentProcessTicks;
             return false;
         }
         
-        // 计算用户态 + 内核态 CPU 使用时间
-        clock_t totalCpuTime = cpuTimes.tms_utime + cpuTimes.tms_stime;
-        clock_t totalDiff = totalCpuTime - (lastCpuTime - lastProcessTime);
+        // 计算用户态 + 内核态 CPU 使用时间差
+        clock_t processDiff = currentProcessTicks - lastProcessTicks;
         
-        // 计算使用率
-        float usageRatio = (float)totalDiff / (float)timeDiff;
+        // 计算进程级 CPU 使用率；多核归一化需在上层除以可用 CPU 数。
+        float usageRatio = (float) processDiff / (float) wallDiff;
         
         // 更新状态
-        lastCpuTime = currentTime;
-        lastProcessTime = totalCpuTime;
+        lastWallTicks = currentWallTicks;
+        lastProcessTicks = currentProcessTicks;
         
         return usageRatio < threshold;
     }
     
 private:
-    clock_t lastCpuTime;
-    clock_t lastProcessTime;
+    clock_t lastWallTicks;
+    clock_t lastProcessTicks;
 };
 
 /**
@@ -816,7 +845,7 @@ public class CpuIdleOptimizer {
         // 2. 执行闲置预加载
         preloadManager.executePreloadTasks();
         
-        // 3. 资源清理
+        // 3. 资源清理：只释放业务缓存；不要把 System.gc() 当成常规优化手段
         performResourceCleanup();
         
         // 4. 性能监控
@@ -824,9 +853,6 @@ public class CpuIdleOptimizer {
     }
     
     private void performResourceCleanup() {
-        // 清理不必要的资源
-        System.gc();  // 建议在闲置时执行 GC
-        
         // 清理缓存
         clearCaches();
         
