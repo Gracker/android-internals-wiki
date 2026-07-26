@@ -21,6 +21,9 @@ sources:
 - Google ANGLE 项目文档 (chromium.googlesource.com/angle)
 - 'Android 官方文档: ANGLE on Android'
 - AOSP external/angle/
+- AOSP android-17.0.0_r1 frameworks/base/core/java/android/os/GraphicsEnvironment.java
+- AOSP android-17.0.0_r1 frameworks/native/opengl/libs/EGL/Loader.cpp
+- AOSP android-17.0.0_r1 external/angle/src/libANGLE/renderer/vulkan/SyncVk.cpp
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 task6_state: "reviewed"
@@ -52,6 +55,12 @@ last_deepseek_cn_review_at: 2026-06-14
 last_task9_autofix_at: "2026-06-14"
 last_task2b_verifier_at: "2026-06-14T19:31:17"
 task2b_verifier_result: "status-fix-ready-for-task6"
+last_verified: "2026-07-26"
+confidence: high
+last_idle_audit_at: "2026-07-26T14:35:30+08:00"
+last_idle_audit_run_id: "20260726-143530-idle-audit-2c5482aa"
+last_idle_audit_log: "logs/audit/2026-07-26-20260726-143530-idle-audit-2c5482aa-idle-audit.md"
+idle_audit_result: "pass-safe-metadata-and-source-marking-fix"
 ---
 
 
@@ -286,7 +295,7 @@ final String paths = angleInfo.nativeLibraryDir
         + "!/lib/" + abi;
 nativeSetAngleInfo(paths, false, packageName, features);
 ```
-namespace 通过 `GraphicsEnv::getAngleNamespace()` 在 native 侧构建（Loader.cpp:188-194）。**b/370113081 仍没修**：若 ANGLE APK 装了但 native lib 漏拷，Loader 静默回退到 system partition，crash 风险散落到不同设备。
+namespace 通过 `GraphicsEnv::getAngleNamespace()` 在 native 侧构建（Loader.cpp:188-194）。排查 APK ANGLE 时不要只看包是否安装，还要确认 native library 路径、loader 日志和进程 maps；若 APK 路径不可用，实际落点可能回到 system ANGLE 或 native GLES。
 
 ### Loader 状态机（Loader.cpp:160-225）
 
@@ -335,9 +344,9 @@ if (IsOutputSPIRV(output))
 ```
 `CompilerVk::getTranslatorOutputType()`（`CompilerVk.cpp:23-25`）返回 `SH_SPIRV_VULKAN_OUTPUT`，所以 **ANGLE-Vulkan backend 所有 shader 统一走 TranslatorSPIRV**。
 
-`TranslatorSPIRV::translate()`（line 1158-1182）三阶段：`translateImpl()` AST 转换 + DriverUniform 注入 → `OutputSPIRV()` 序列化为 SPIR-V blob → 命中 PipelineCache 时跳过整个流程。cold compile 时单 shader 实测 5-30ms（**未经源码验证，参考 Perfetto translator slice**），建议游戏启动预热一组 shader 把 blob 提前落盘。
+`TranslatorSPIRV::translate()`（line 1158-1182）三阶段：`translateImpl()` AST 转换 + DriverUniform 注入 → `OutputSPIRV()` 序列化为 SPIR-V blob；命中 shader / pipeline cache 的场景会减少重复翻译与编译成本。不要把单次 trace 中的 shader 编译耗时直接外推为通用结论，发布前应在目标设备和目标 workload 上对比 cold / warm 两组数据。
 
-`ProgramVk.cpp:43-78` 用 `PackedSPIRVBlockEncoder`（不是 std140）做 UBO layout，sampler/opaque type 不占 user-visible offset。**如果游戏写 `layout(std140)`，跨 ANGLE-Vulkan 与 native GLES 时 uniform buffer 偏移不一致**——双端调试最常见踩坑点。
+`ProgramVk.cpp:43-78` 用 `PackedSPIRVBlockEncoder` 处理 ANGLE 内部 SPIR-V block 编码，sampler / opaque type 不占 user-visible offset。应用侧若依赖 uniform block 或 vendor 扩展，仍应按 GLES 规范和目标设备实际反射结果核对 layout，避免把 ANGLE 内部编码细节误当成 App ABI。
 
 ### 引擎侧判断 ANGLE-Vulkan 是否启用
 
@@ -358,7 +367,7 @@ GPU 抖动排查：
 | 4 | TranslatorSPIRV 翻译为 SPIR-V，厂商 Vulkan driver 编译为 GPU binary |
 | 5 | ANGLE Vulkan Backend 包装 Vulkan command buffer，vkQueueSubmit → SurfaceFlinger |
 | 6 | SyncHelperNativeFence 处理 producer-consumer fence 同步 |
-| 7 | vkQueuePresentKHR → Swappy → SurfaceFlinger |
+| 7 | vkQueuePresentKHR → ANativeWindow / BufferQueue → SurfaceFlinger |
 
 翻译开销集中在 3+4 阶段，且 PipelineCache 命中后基本消失。如果 trace 上反复看到 `SyncHelperNativeFence::clientWait block (unlocked)` 长 slice，**优先级先查 SwapInterval / ACQUIRE fence 来源**，再查 ANGLE 等待路径。
 
@@ -377,21 +386,21 @@ GPU 抖动排查：
 
 ## Driver Selection 机制：按版本看入口
 
-ANGLE driver selection 集中在 `android.os.GraphicsEnvironment`（`frameworks/base/core/java/android/os/GraphicsEnvironment.java`），但 Android 14、15、16 的方法名和 allowlist 入口不同。源码阅读时先确认平台 tag，不能把 android-14.0.0_r1 的方法名直接套到 Android 15/16。
+ANGLE driver selection 集中在 `android.os.GraphicsEnvironment`（`frameworks/base/core/java/android/os/GraphicsEnvironment.java`），但 Android 14、15、16/17 的方法名和 allowlist 入口不同。源码阅读时先确认平台 tag，不能把 android-14.0.0_r1 的方法名直接套到 Android 15 之后的实现。
 
 | Android 版本 | 决策入口 | allowlist / 额外来源 | 排查边界 |
 |:---|:---|:---|:---|
 | Android 14 | `shouldUseAngleInternal()`，Game Mode 分支会走 `isAngleEnabledByGameMode()` | Settings、Game Mode、ANGLE APK 规则 | 这一版可以按旧方法名读源码 |
 | Android 15 | `queryAngleChoiceInternal()` | Settings 与包级配置 | 方法名已从 Android 14 口径变化 |
-| Android 16 | `queryAngleChoice()` | Settings 与 framework resource `config_angleAllowList` | 复核树中不再有 `shouldUseAngleInternal()` / `isAngleEnabledByGameMode()` 作为主路径 |
+| Android 16/17 | `queryAngleChoice()` | Settings 与 framework resource `config_angleAllowList` | 复核树中不再有 `shouldUseAngleInternal()` / `isAngleEnabledByGameMode()` 作为主路径 |
 
-Android 16 的常用排查顺序如下：
+Android 16/17 的常用排查顺序如下：
 
 1. `Settings.Global.ANGLE_GL_DRIVER_ALL_ANGLE`，ADB 对应键 `angle_gl_driver_all_angle`。值为 `1` 时，全局强制走 ANGLE。
 2. `angle_gl_driver_selection_pkgs` 和 `angle_gl_driver_selection_values`。两个设置按逗号分组，按包名给出 `angle`、`native` 或 `default`。
-3. `config_angleAllowList`。这是 Android 16 平台 allowlist 入口，适合核对系统为什么默认允许某个包走 ANGLE。
+3. `config_angleAllowList`。这是 Android 16/17 平台 allowlist 入口，适合核对系统为什么默认允许某个包走 ANGLE。
 
-分析 Android 15/16 时不要沿用 Android 14 的 `shouldUseAngleInternal()`，先按平台 tag 确认当前版本的方法名，再看 Settings 和 allowlist 命中情况。
+分析 Android 15/16/17 时不要沿用 Android 14 的 `shouldUseAngleInternal()`，先按平台 tag 确认当前版本的方法名，再看 Settings 和 allowlist 命中情况。
 
 ### ANGLE 包发现：Debug Package 与 System ANGLE
 
@@ -409,15 +418,15 @@ adb shell settings put global angle_debug_package org.chromium.angle
 
 **路径 B — System ANGLE（预装系统应用）**：
 
-- AOSP android-16.0.0_r1 的 `external/angle/android/AndroidManifest.xml` 包名是 `com.android.angle`
+- AOSP android-17.0.0_r1 的 `external/angle/android/AndroidManifest.xml` 包名是 `com.android.angle`
 - `GraphicsEnvironment.getAnglePackageName()` 通过 `ACTION_ANGLE_FOR_ANDROID` 和 `PackageManager.MATCH_SYSTEM_ONLY` 查询系统 ANGLE 包
-- `org.chromium.angle` 只能作为历史包名或 debug package 示例，不能写成 Android 16 system package
+- `org.chromium.angle` 只能作为历史包名或 debug package 示例，不能写成 Android 16/17 system package
 
 ANGLE 只能用于 Java 运行时启动的进程；SurfaceFlinger 和 native executable 不走这套 App 侧 driver selection。
 
 ### A4A Rules JSON 的边界
 
-Chromium / 旧版 ANGLE APK 里包含 `a4a_rules.json`（如 `src/feature_support_util/a4a_rules.json`），用于描述 APK 自带的应用规则。Android 16 的平台 allowlist 入口是 framework resource `config_angleAllowList`。分析具体 ANGLE APK 时可以读 `a4a_rules.json`；分析 AOSP 16 平台决策时，应回到 `config_angleAllowList` 和 `GraphicsEnvironment.queryAngleChoice()`。
+Chromium / 旧版 ANGLE APK 里包含 `a4a_rules.json`（如 `src/feature_support_util/a4a_rules.json`），用于描述 APK 自带的应用规则。Android 17 的平台 allowlist 入口是 framework resource `config_angleAllowList`。分析具体 ANGLE APK 时可以读 `a4a_rules.json`；分析 AOSP 17 平台决策时，应回到 `config_angleAllowList` 和 `GraphicsEnvironment.queryAngleChoice()`。
 
 ### Debuggable / Dumpable 限制
 
@@ -461,7 +470,7 @@ ANGLE 在 `SyncHelperNativeFence::initializeWithFd()` 中接收来自 EGL 层的
 
 ```cpp
 // external/angle/src/libANGLE/renderer/vulkan/SyncVk.cpp:508-538
-// AOSP android-16.0.0_r1
+// AOSP android-17.0.0_r1
 angle::Result SyncHelperNativeFence::serverWait(ContextVk *contextVk)
 {
     // 创建默认 Binary 类型 Vulkan Semaphore
