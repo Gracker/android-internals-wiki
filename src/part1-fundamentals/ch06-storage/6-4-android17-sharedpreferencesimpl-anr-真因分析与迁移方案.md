@@ -10,9 +10,7 @@ created_date: "2026-07-03"
 gap_source: "素材驱动+AOSP结构"
 gap_score: 18
 ---
-> ⚠️ **本节已废弃 (deprecated 2026-07-04)**：与 6.2-sharedpreferences-anr-optimization.md (ready-for-review, 504 lines) 内容重复。duplicate of 6.2; outline incorrectly contains Binder IPC content。
-
-
+> ⚠️ **本节已隔离**：文件名和章节号与 SharedPreferences 主题相符，但受保护 outline 混入了 Binder IPC 错稿，且选题与 6.2 重复。为保留 Hermes/OpenClaw 的任务识别信息，本文件不删除，也不改写受保护 outline；它不能作为技术资料引用。
 
 # 6.4 Android 17 SharedPreferencesImpl ANR 真因分析与迁移方案
 
@@ -50,4 +48,8 @@ Android 17 中 Binder 事务状态机从 Android 12 的基础实现演进为更�
 
 <!-- outline-end -->
 
-> 本节内容基于 AOSP android-17.0.0_r1 源码分析，深入解析了 Binder IPC 的优先级继承与批处理机制。
+## 审阅结论
+
+本文件不再承载 SharedPreferences 或 Binder 的技术正文。上方受保护 outline 是历史流水线生成的错误内容，其中关于 `BC_SET_PRIORITY`、Binder io_uring 批处理、固定批量上限和性能百分比的说法均未在本章完成源码验证，请勿引用。
+
+SharedPreferencesImpl 的 Android 17 / API 37 源码机制与 ANR 路径请阅读 [6.2 Android 17 SharedPreferencesImpl ANR 深度机制](./6.2-sharedpreferences-anr-optimization.md)；SharedPreferences 与 DataStore 的选型、迁移和故障边界请阅读 [6.5 SharedPreferences/DataStore 性能与 ANR 优化](./05-sharedpreferences-datastore.md)。这两章分别以 `android-17.0.0_r1` 和稳定版 AndroidX DataStore 源码校验。
