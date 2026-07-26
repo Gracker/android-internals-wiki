@@ -39,253 +39,371 @@ sources:
 ---
 
 # 5.17 Android 17 FGS 类型声明与后台执行性能边界
+Android 14 以后，前台服务（Foreground Service，FGS）的约束不再只有“展示通知”。系统还要判断服务类型、类型权限、运行时前置条件、后台启动资格和时长额度。任何一项不满足，都可能让服务无法晋升、被限时结束，或使进程进入 ANR / Crash 路径。
 
-Android 14 把前台服务从"声明一个就能跑"变成"声明类型 + 补齐权限 + 接受时长预算"。到 Android 17，这套约束已经演进出三类时间边界——`shortService` 的 3 分钟硬超时、`dataSync`/`mediaProcessing` 的 6 小时滚动窗口、以及后台启动 FGS 的 5 秒通知挂出窗口——每类边界背后都有独立的系统惩罚路径。
+本节以 Android 17 / API 37 / `android-17.0.0_r1` 为基线，说明这些检查在 `system_server` 中怎样衔接，以及它们对启动延迟、后台任务和功耗意味着什么。FGS 的选择原则见 5.8，JobScheduler / WorkManager 配额见 5.10，面向业务的迁移方案见 25.13。
 
-本节聚焦这些边界在 `system_server` 内部的实现机制和性能影响：超时判定怎么触发、ANR 和 Crash 走哪些不同的代码路径、冻结进程和超时计时器怎么交互、以及 Android 17 在 While-In-Use（WIU）能力判定上的变化。后台执行模型的演进脉络和各 FGS 类型的使用场景，详见 5.8 节；应用层的超时治理和 WorkManager 迁移策略，详见 25.13 节。
+## 先区分 FGS 的五道门
 
-## FGS 类型声明机制与版本演进
+调用 `startForegroundService()` 只完成了服务启动请求。一次合法的 FGS 还要依次通过以下条件：
 
-### 从无类型到强制类型
+1. 当前状态允许启动 FGS，或命中后台启动豁免；
+2. manifest 声明了服务类型；
+3. manifest 声明了基础权限和对应的类型权限；
+4. 调用时满足该类型的运行时前置条件；
+5. 服务及时调用 `startForeground()`，并且没有耗尽该类型的时长额度。
 
-Android 13 及以前，前台服务不需要声明类型。`startForeground(notificationId, notification)` 一个调用就够了。Android 14（API 34）要求 `foregroundServiceType` 必须声明，同时要求对应权限。Android 15（API 35）把 `dataSync` 和 `mediaProcessing` 纳入 6 小时预算管理，并新增 `onTimeout(int startId, int fgsType)` 双参数回调。Android 16（API 36）没新增超时类型，但让与 FGS 并发的 Job 回到 runtime quota 约束下。Android 17（API 37）在 timeout 框架本身没有新增类型，但强化了两类边界条件：
+这五道门对应不同异常和处理位置。排障时先判断失败发生在“请求启动”“晋升 FGS”还是“运行超时”，比从一长串 `RemoteServiceException` 文本猜原因更有效。
 
-1. **WIU（While-In-Use）能力判定**：Android 17 对后台音频场景的 FGS 要求非 `SHORT_SERVICE` 类型且具备 WIU 能力，或同时持有 exact alarm 权限并使用 `USAGE_ALARM` 用途。这意味着后台启动 FGS 的合法性检查多了一层"能力"维度，不再只看类型和权限。[已验证: developer.android.com/about/versions/17/behavior-changes-17]
-2. **AnrTimer 冻结感知扩大**：`mActiveServiceAnrTimer` 在 Android 17 上使用 `AnrTimer.Args().freeze(true)` 构造，当目标进程被 `CachedAppOptimizer` 冻结时计时暂停、解冻后恢复。但 `mShortFGSAnrTimer`（`shortService` 专用）未设置 freeze flag——这意味着 `shortService` 超时不受进程冻结影响，即使进程已被降级并冻结，3 分钟计时仍在继续。 [已验证: AOSP ActiveServices.java, AnrTimer.java]
+### Android 14：类型和权限进入强校验
 
-### 类型校验发生在哪个环节
+对于 targetSdk 34 及以上的应用，Android 14 要求每个 FGS 在 manifest 中声明用途类型，并声明相应的 FGS 类型权限。例如，一个数据同步服务的最小声明如下：
 
-`Service.startForeground()` 的 Binder 调用进入 `ActiveServices.setServiceForegroundInnerLocked()`，在这里系统做三件事：
+```xml
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
-1. 校验 `foregroundServiceType` 与 manifest 声明是否一致（`ForegroundServiceTypePolicy`）
-2. 检查对应的运行时权限是否存在
-3. 对有时间预算的类型（`shortService`、`dataSync`、`mediaProcessing`），启动或更新对应的计时器
-
-校验不通过时，Android 14+ 直接抛 `ForegroundServiceStartNotAllowedException`（非 `RemoteServiceException` 子类，在 Binder 调用栈上同步抛回 caller，可以被 `try-catch` 捕获）。这和后文讨论的异步超时异常是两条不同的投递路径。[已验证: AOSP ActiveServices.java, ForegroundServiceTypePolicy.java]
-
-## 各 FGS 类型的性能预算差异
-
-三组时间边界覆盖了当前所有受约束的 FGS 类型：
-
-| 类型 | 时间边界 | 计时粒度 | 超时惩罚 | 超出后能否重新启动同类型 |
-|:---|:---|:---|:---|:---|
-| `shortService` | 单次 ~3 分钟 | 单次 `startForeground()` 到 now | ANR（走 `AnrHelper`） | 可以（新一次 `startForeground` 开启新计时周期） |
-| `dataSync` | 24 小时滚动窗口内累计 ~6 小时 | per-uid per-type 聚合 | `ForegroundServiceDidNotStopInTimeException`（进程 Crash，非 ANR） | 额度耗尽后再启动直接抛 `ForegroundServiceStartNotAllowedException` |
-| `mediaProcessing` | 24 小时滚动窗口内累计 ~6 小时 | per-uid per-type 聚合 | 同 `dataSync` | 同 `dataSync` |
-| `location`、`connectedDevice`、`health`、`mediaPlayback` 等 | 无硬性时长上限 | — | — | — |
-
-### shortService 的三段时间线
-
-`shortService` 在 `ServiceRecord.ShortFgsInfo` 中维护三个时间点 [已验证: AOSP ServiceRecord.java]：
-
-```
-getTimeoutTime()         = mStartTime + SHORT_FGS_TIMEOUT_DURATION        // ~3 min: onTimeout 回调
-getProcStateDemoteTime() = mStartTime + SHORT_FGS_TIMEOUT_DURATION
-                           + SHORT_FGS_PROCSTATE_EXTRA_WAIT_DURATION       // 进程降级为 cached
-getAnrTime()             = mStartTime + SHORT_FGS_TIMEOUT_DURATION
-                           + SHORT_FGS_ANR_EXTRA_WAIT_DURATION             // 触发 ANR
+<application>
+    <service
+        android:name=".SyncService"
+        android:exported="false"
+        android:foregroundServiceType="dataSync" />
+</application>
 ```
 
-三个时间点的间隔由 `ActivityManagerConstants` 控制，可通过 `DeviceConfig` 覆盖。进程降级后，`OomAdjuster` 以 `OOM_ADJ_REASON_SHORT_FGS_TIMEOUT` 为原因码更新 adj 值——这意味着超时后的进程按 cached app 对待，可被 LMK 杀掉或被 `CachedAppOptimizer` 冻结。[已验证: AOSP OomAdjuster.java]
+这段声明只让服务具备申请该类型的静态资格。应用仍要在允许的时机启动服务，并在服务中调用 `ServiceCompat.startForeground()`。涉及 camera、microphone、location 等类型时，还必须在调用时满足相应的运行时权限和 while-in-use 条件。
 
-`mStartForegroundCount` 是单调递增的计数器。每次 `startForeground()` 调用都会递增它，`ShortFgsInfo.isCurrent()` 通过比较计数决定当前 info 是否对应最新一次前台周期——旧的 info 对应的 timeout 自动作废。这个设计允许同一个 `shortService` 实例多次进出前台状态，每次重新开始计时。
+`ActiveServices.validateForegroundServiceType()` 通过 `ForegroundServiceTypePolicy` 执行类型检查。Android 17 源码中的失败类型需要分别理解：
 
-### dataSync / mediaProcessing 的滚动窗口
+- manifest 没有类型：`MissingForegroundServiceTypeException`；
+- 类型被策略禁止：`InvalidForegroundServiceTypeException`；
+- 缺少类型权限或运行时前置条件：`SecurityException`；
+- 把 manifest 未声明的类型传给 `startForeground()`：公开 API 文档规定为 `IllegalArgumentException`；
+- 后台启动资格不足：`ForegroundServiceStartNotAllowedException`。
 
-与 `shortService` 的 per-record 模型不同，`dataSync` 和 `mediaProcessing` 采用 per-uid per-type 的聚合对象 `ActiveServices.mTimeLimitedFgsInfo`（`SparseArray<SparseArray<TimeLimitedFgsInfo>>`）。同一个 app 下多个 `dataSync` service 共享同一个 6 小时额度。 [已验证: AOSP ActiveServices.java, ServiceRecord.java]
+类型或权限错误不能统一归为 `ForegroundServiceStartNotAllowedException`。它们的修复位置不同：有的要改 manifest，有的要改运行时权限流程，有的要把启动动作移到用户可见状态。
 
-`TimeLimitedFgsInfo` 用 `mFirstFgsStartRealtime`（`elapsedRealtime`，非 `uptimeMillis`）标记窗口起点。24 小时后自动 `reset()`——用 `elapsedRealtime` 而非 `uptime` 的原因是把设备深度睡眠时间也算进 24 小时。当 app 被用户带入前台（`PROCESS_STATE_TOP`），AMS 也会对该 uid 的 `TimeLimitedFgsInfo` 执行 `reset()`。这解释了官方文档"以用户交互为起点启动同步服务"的源码依据。
+### Android 15：两种长时类型开始共享额度
 
-## FGS 启动延迟与启动链路性能
+targetSdk 35 及以上时，`dataSync` 与 `mediaProcessing` 在应用处于后台期间受到时长限制。`mediaProcessing` 类型也是 Android 15 新增的。默认规则是：
 
-### startForegroundService → startForeground 的 5 秒窗口
+- 每个类型在 24 小时窗口内共有 6 小时；
+- `dataSync` 与 `mediaProcessing` 分开计量；
+- 同一 UID 下多个同类型服务共享额度；
+- 应用进入 TOP 状态后，用户交互会让该类型重新获得可用时间；
+- 额度耗尽后再次启动同类型服务会抛 `ForegroundServiceStartNotAllowedException`。
 
-Android 8.0 引入的 `startForegroundService()` 要求应用在约 5 秒内调用 `startForeground()` 把通知挂出来。这个窗口由 `mServiceFGAnrTimer`（`ServiceAnrTimer` 类型）计时。超时后系统调用 `serviceForegroundCrash()`，向应用投递 `ForegroundServiceDidNotStartInTimeException`——这是 Crash 不是 ANR，不经过 `AnrHelper`，不产生 `/data/anr` trace 文件。[已验证: AOSP ActiveServices.java]
+Android 15 还增加了 `Service.onTimeout(int startId, int fgsType)`，用于通知 `dataSync` / `mediaProcessing` 停止。收到回调后应立即保存可恢复状态并停止服务。
 
-5 秒窗口内最常见的阻塞来源：
+### Android 16：FGS 不再替 Job 规避 quota
 
-- 冷启动路径上的静态初始化（ContentProvider、`Application.onCreate`）过长
-- `Service.onCreate()` 内做了同步 I/O
-- Notification channel 未预先创建，`startForeground()` 内部抛异常
+Android 16 起，与 FGS 并发执行的普通 Job 和 expedited Job 仍受 JobScheduler runtime quota 约束。这个变化同时影响 JobScheduler、WorkManager 和 DownloadManager。
 
-### Android 17 通知权限对 FGS 启动的影响
+因此，“FGS 活着”不能推出 Worker 正在执行。遇到 FGS 通知仍在、后台任务却没有进度时，应读取 `WorkInfo.getStopReason()` 或 `JobParameters.getStopReason()`，并用 `JobScheduler.getPendingJobReasonsHistory()` 和 `dumpsys jobscheduler` 核对原因。
 
-Android 13 引入的 `POST_NOTIFICATIONS` 运行时权限影响 FGS 通知显示。如果应用没有通知权限，`startForeground()` 仍然会成功（系统保证 FGS 生命周期不受通知权限影响），但通知不会展示给用户。Android 17 对此没有改变核心行为，但后台音频硬化引入了新的约束：后台音频场景下，FGS 不仅需要合法类型，还需要 WIU 能力。WIU 能力的判定涉及进程当前的前台状态和 FGS 启动入口——如果 FGS 是由后台触发器（如 `BOOT_COMPLETED`）拉起的，即使类型正确，WIU 能力也可能不满足。详见 25.17 节。[已验证: developer.android.com/about/versions/17/behavior-changes-17]
+用户发起的数据传输应评估 User-Initiated Data Transfer Job。它与普通 Job 的适用条件和配额不同，不能只把原有 Worker 套进 FGS 来获得长期运行时间。
 
-### 后台启动 FGS 的豁免路径
+### Android 17：后台音频增加生命周期条件
 
-Android 12 起后台启动 FGS 受限，`ForegroundServiceStartNotAllowedException` 是 Binder 调用栈上同步抛回的 `RuntimeException`（非 `RemoteServiceException`），可以被调用方 `try-catch`。豁免路径包括：
+Android 17 的后台音频加固适用于音频播放、audio focus 请求和音量修改：
 
-- 高优先级 FCM 消息（但 FCM 被系统降级后仍会失败）
-- 用户可见交互（Activity 前台、Notification action）
-- `exact alarm` 触发
-- `FgsTempAllowList` 临时豁免
+- 对所有运行在 Android 17 上的应用，后台音频交互要求有可见 Activity，或运行一个类型不为 `shortService` 的 FGS；
+- targetSdk 37 的应用若在后台，还要求该 FGS 具备 while-in-use（WIU）能力；
+- 从可见界面或明确的用户动作启动的 FGS 通常具备 WIU 能力；
+- exact alarm 权限与 `USAGE_ALARM` 音频用途同时成立时，WIU 要求可豁免。
 
-豁免列表的具体条件随版本收紧。排查"为什么后台起不了 FGS"时，`dumpsys activity services <pkg>` 输出中的 `allow-start-foreground` 字段记录了系统判定结果。详见 5.8 节。[已验证: AOSP FgsTempAllowList.java]
+这项变化约束音频 API 的使用条件，没有把 WIU 变成新的 FGS 类型，也没有要求所有 FGS 都额外声明“WIU 权限”。不满足条件时，播放与音量 API 可能静默失败，audio focus 请求返回 `AUDIOFOCUS_REQUEST_FAILED`。排查时查看 `dumpsys audio` 和带有 `AudioHardening` 前缀的 logcat；只盯着 FGS 启动日志会漏掉失败点。
 
-## FGS 类型不匹配的系统惩罚链路
+对播放器，推荐由用户操作启动 `mediaPlayback` FGS，并让 Media3 `MediaSessionService` 管理播放生命周期。由 `BOOT_COMPLETED` 拉起一个 FGS 后直接播放音频，不具备同样的用户意图条件。
 
-### SHORT_SERVICE：从 onTimeout 到 ANR 的完整路径
+## FGS 类型决定用途，不承诺算力
 
-`shortService` 的超时惩罚分三步走 [已验证: AOSP ActiveServices.java, ServiceRecord.java]：
+进入 FGS 状态会提高进程在内存回收与后台执行模型中的重要性，并向用户展示持续工作的状态。它不会为业务线程保留 CPU 核心、固定频率或网络带宽，也不会取消 Thermal、Job quota、Doze 和厂商功耗策略。
 
-**第一步（~3 分钟）**：`AnrTimer` 触发 → `ActiveServices.onShortFgsTimeout()` → `ActivityThread.scheduleTimeoutService()` → 应用主线程 `H.handleMessage(SCHEDULE_TIMEOUT_SERVICE)` → `Service.onTimeout(startId, fgsType)`。应用应在回调内立即 `stopSelf(startId)`。
+对性能工程而言，FGS 有三层影响：
 
-**第二步（procstate demote）**：进程被 `OomAdjuster` 降级为 cached app（`OOM_ADJ_REASON_SHORT_FGS_TIMEOUT`）。此时进程可被 LMK 杀掉或被 `CachedAppOptimizer` 冻结。
+| 层级 | 系统提供什么 | 系统没有承诺什么 |
+|---|---|---|
+| 生命周期 | 在合法用途下允许用户可感知的持续任务 | 任意后台任务都可长期运行 |
+| 进程优先级 | FGS 进程通常获得较高的进程重要性 | 不会永不被杀，也不等于实时调度 |
+| 用户可见性 | 通知或任务管理界面暴露持续工作 | 通知权限不能替代 FGS 类型与权限 |
 
-**第三步（ANR）**：若进程仍未退出，`mShortFGSAnrTimer` 在 `getAnrTime()` 触发 → `ActiveServices.onShortFgsAnr()` → `AMS.appNotResponding()` → `AnrHelper` 入队 → 标准 ANR dump 流程（`/data/anr/anr_*` 文件生成）。同时通过 `throwRemoteServiceException` 投递 `ForegroundServiceDidNotStopInTimeException` 到应用主线程。
+`POST_NOTIFICATIONS` 被拒绝时，应用仍可启动合法 FGS。通知不会按常规方式出现在通知抽屉中，但系统仍会在 Task Manager 等系统界面提供可见性。不要把通知运行时权限当作 `startForeground()` 的开关。
 
-堆栈特征始终经过 `ActivityThread$H.handleMessage`，看不到业务代码是哪一段阻塞了——这也是 `shortService` 超时问题在现场 debug 时定位困难的原因。必须结合 `dumpsys activity services` 的超时记录和 logcat 中 `ActivityManager` 的 `onShortFgsAnr` 日志反推。[已验证: developer.android.com/develop/background-work/services/fgs/troubleshooting]
+## `shortService` 的三段式超时
 
-### dataSync / mediaProcessing：Crash 而非 ANR
+`shortService` 用于很快完成且不能推迟的关键工作，默认时限约 3 分钟。它不要求类型专用权限，但仍要求基础 `FOREGROUND_SERVICE` 权限。
 
-`dataSync` 和 `mediaProcessing` 的超时惩罚不经过 `AnrHelper`。超时后系统直接调用 `throwRemoteServiceException`，投递 `ForegroundServiceDidNotStopInTimeException` 到应用主线程。进程收到的是 Fatal Exception，不是 ANR——不产生 `/data/anr` trace 文件。 [已验证: AOSP ActiveServices.java]
+Android 17 的 `ServiceRecord.ShortFgsInfo` 记录以下时间：
 
-两类惩罚的关键区别：
+```text
+timeout = shortFgsStartUptime + short_fgs_timeout_duration
+demote  = timeout + short_fgs_proc_state_extra_wait_duration
+ANR     = shortFgsStartUptime + short_fgs_timeout_duration
+          + short_fgs_anr_extra_wait_duration
+```
 
-| 维度 | SHORT_SERVICE | dataSync / mediaProcessing |
-|:---|:---|:---|
-| 惩罚性质 | ANR + Exception | Exception only |
-| ANR trace | 有（`/data/anr/`） | 无 |
-| 投递路径 | `AnrHelper` + `throwRemoteServiceException` | 仅 `throwRemoteServiceException` |
-| 对 App Standby Bucket 的影响 | procstate demote 后影响 bucket | 额度耗尽后直接失败 |
+`ActivityManagerConstants` 在 `android-17.0.0_r1` 中的默认值分别为 3 分钟、额外 5 秒降级进程状态、额外 10 秒触发 ANR。这些是 AOSP 默认实现，可由 `DeviceConfig` 调整，应用不能把额外宽限期当作可用执行预算。
 
-### startForeground 5 秒窗口超时
+### 到期后的系统路径
 
-这条路径也不经过 ANR。`mServiceFGAnrTimer` 超时后调用 `serviceForegroundCrash()`，直接投递 `ForegroundServiceDidNotStartInTimeException`（也是 Crash）。堆栈同样经过 `ActivityThread` 的异常重建路径。[已验证: AOSP ActiveServices.java]
+超时后的步骤如下：
 
-### 四类异常的辨析
+1. `ActiveServices.onShortFgsTimeout()` 调用应用侧的 `Service.onTimeout(int startId)`；
+2. 系统安排进程状态降级；
+3. 系统启动 `mShortFGSAnrTimer`；
+4. 服务仍未停止时，`onShortFgsAnrTimeout()` 通过 `appNotResponding()` 进入标准 ANR 流程。
 
-| 异常 | 触发条件 | 同步/异步 | 可 catch | 有 ANR trace |
-|:---|:---|:---|:---|:---|
-| `ForegroundServiceStartNotAllowedException` | 后台启动 FGS 不满足豁免 / 类型校验失败 / 额度耗尽 | 同步（Binder 栈上） | 可以 | 无 |
-| `ForegroundServiceDidNotStartInTimeException` | `startForegroundService()` 后 ~5 秒未调 `startForeground()` | 异步 | 不可以（Fatal） | 无 |
-| `ForegroundServiceDidNotStopInTimeException`（SHORT_SERVICE） | `shortService` ~3 分钟未退出 | 异步 | 不可以（Fatal） | 有 |
-| `ForegroundServiceDidNotStopInTimeException`（dataSync/mediaProcessing） | 24h 窗口内累计 ~6h 未退出 | 异步 | 不可以（Fatal） | 无 |
+应用应覆盖单参数回调，并根据对应的 `startId` 停止服务：
 
-[已验证: AOSP ActiveServices.java, RemoteServiceException.java, developer.android.com/develop/background-work/services/fgs/troubleshooting]
+```kotlin
+override fun onTimeout(startId: Int) {
+    persistCheckpoint()
+    stopSelfResult(startId)
+}
+```
 
-## Data Sync 替代方案与 WorkManager 协调性能
+这里的 checkpoint 只能做轻量、可预测的收尾。若保存动作本身可能阻塞，应在正常执行过程中持续写入可恢复状态，不能等到回调才开始一轮大 I/O。
 
-Android 15 给 `dataSync` 加了 6 小时预算后，长时间下载/同步任务不再能无限制地依赖 FGS。迁移方向和 WorkManager 接入方案详见 25.13 节。这里只讲机制层面的性能边界。
+### 再次调用不一定续时
 
-### FGS + Job 并发的 quota 合流
+官方规则要求应用当前可见，或满足后台启动 FGS 的某项豁免，才能再次以 `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE` 调用 `startForeground()` 并获得新的约 3 分钟。
 
-Android 16 起，与 FGS 并发执行的 Job 受 App Standby Bucket 的 runtime quota 约束。即使 FGS 在 6 小时预算内，其内部跑的 `OneTimeWorkRequest` 仍可能因 bucket（例如 `RESTRICTED`）被挂起。外在表现是"FGS 存活但 Worker 不执行"。排查时用 `dumpsys jobscheduler <pkg>` 核对 effective quota 和 pending reason。[已验证: developer.android.com/about/versions/16/behavior-changes-all; 详见 5.10 节]
+源码中的 `maybeUpdateShortFgsTrackingLocked()` 只有在 `extendTimeout` 为真或首次进入 short-service 状态时才重建计时。若后台启动资格不成立，再次调用可以更新通知或 start count，但旧计时继续运行。单独再次调用 `startService()` / `startForegroundService()` 也不会延长 short-service 时限。
 
-### 用户前台 reset 的架构意义
+把 `shortService` 与其他 FGS type 同时传入时，系统忽略 `shortService` bit，服务按其他类型处理。这个组合不能用来取得短服务的额外时间。
 
-`TimeLimitedFgsInfo` 在 app 进入 `PROCESS_STATE_TOP` 时 `reset()`。这意味着以用户交互为起点的同步服务会获得完整的 6 小时额度。反过来，纯后台触发的同步任务（如定时 WorkManager 触发）额度可能已经被之前的后台同步消耗。这是"用户主动触发优于系统自动触发"的架构依据。[已验证: AOSP ServiceRecord.java TimeLimitedFgsInfo]
+## `dataSync` 与 `mediaProcessing` 的共享时长
 
-## Perfetto 观测与调试方法
+这两种类型使用 `ActiveServices.mTimeLimitedFgsInfo`，按 UID 和类型保存 `TimeLimitedFgsInfo`。数据结构包含：
 
-### dumpsys activity services 输出解读
+- 第一次启动的 uptime 与 elapsed realtime；
+- 最近一次启动的 uptime；
+- 累计运行时长；
+- 同类型并发服务数；
+- 最近一次额度耗尽时间。
+
+运行时长使用 `uptimeMillis` 累积，24 小时窗口判断使用 `elapsedRealtime`。这样可以把“CPU 可执行时间的累计”和“经过一个自然时间窗口”分开。
+
+### 并发不会得到多份额度
+
+同一应用同时运行两个 `dataSync` 服务，不会得到 12 小时。它们共享同一类型额度。源码用 `mNumParallelServices` 记录并发实例，但总预算仍属于 UID + type。
+
+如果一个服务同时声明多个受限类型，`getTimeLimitedFgsType()` 会选择当前配置下时限更宽松的类型进行跟踪。由于 Android 17 默认的两类时限同为 6 小时，业务代码仍应让 type 精确匹配用途，不能依赖内部选择顺序延长执行。
+
+### 用户进入前台怎样影响额度
+
+官方行为可概括为：用户把应用带到前台后，该类型重新获得完整的 6 小时。
+
+源码实现比一句“进入 TOP 就调用 `reset()`”更细：
+
+- 超时消息触发时，`onFgsTimeout()` 检查进程的当前 TOP 状态和 `lastTopTime`；
+- 若 FGS 启动后发生过有效的 TOP 交互，系统按该时间重新安排超时；
+- 后续调用 `startForeground()` 时，若当前是 TOP、24 小时窗口已过，或额度耗尽后出现过 TOP，`TimeLimitedFgsInfo.reset()` 才会清空累计数据。
+
+所以不能把进程状态采样中的一次短暂 TOP 直接解释为“后台已有对象当场清零”。对应用而言，可靠做法仍是从明确的用户操作发起长任务，并自行维护剩余工作和恢复点。
+
+### 超时回调与 Crash
+
+额度到期后，`ActiveServices.onFgsTimeout()` 调用应用的双参数回调：
+
+```kotlin
+override fun onTimeout(startId: Int, foregroundServiceType: Int) {
+    persistCheckpoint()
+    stopSelfResult(startId)
+}
+```
+
+系统随后安排一小段清理宽限期。如果服务仍保留受限 FGS 类型，`onFgsCrashTimeout()` 通过 `ForegroundServiceDidNotStopInTimeException` 让应用进程崩溃。该路径与 short-service ANR 不同，通常不会生成 `/data/anr/` 报告。
+
+## 从启动请求到 `startForeground()` 的窗口
+
+`Context.startForegroundService()` 会先创建或启动普通 Service，并把 `ServiceRecord.fgRequired` 设为真。服务必须尽快调用 `startForeground()` 完成晋升。
+
+开发文档把这个要求表述为“几秒内”。Android 工程中常说的“5 秒规则”不能继续当作 Android 17 的固定常量：`android-17.0.0_r1` 的 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS` 为 30 秒，另有默认 10 秒的 ANR 延迟；`mServiceFGAnrTimer` 还允许在系统重载时扩展。这些值属于内部实现，也可受设备配置影响。
+
+工程代码仍应在 `onCreate()` 或 `onStartCommand()` 开头完成通知构建和 `startForeground()`，不要主动消耗内部宽限时间。宽限期增长的目的不是允许更多初始化工作。
+
+### 常见启动阻塞
+
+- `Application.onCreate()` 或 ContentProvider 做同步 I/O；
+- Service 主线程等待数据库迁移、网络或 Binder；
+- 首次创建 NotificationChannel 时发生额外工作；
+- 通知对象无效、channel 不存在或权限前置条件失败；
+- 业务先初始化 SDK，最后才调用 `startForeground()`。
+
+更稳的顺序是：预先创建稳定的通知渠道；Service 启动后立即发布最小可用通知；随后把业务工作交给有明确取消和恢复语义的执行单元。通知内容可在获得进度后更新。
+
+### Android 17 源码中的两条失败分支
+
+`ActiveServices.serviceForegroundTimeout()` 在转前台计时到期后停止服务，并安排后续 ANR 检查。服务在仍处于 `fgRequired` 状态时被销毁，`bringDownService` 分支还会安排 `ForegroundServiceDidNotStartInTimeException`。因此，不能把所有版本、所有竞态下的结果简化成“只 Crash”或“只 ANR”。
+
+面向应用的稳定结论是：
+
+- `startForegroundService()` 后必须马上晋升；
+- `ForegroundServiceDidNotStartInTimeException` 属于系统向进程投递的内部致命异常，不能依靠普通业务 `try/catch` 恢复；
+- 日志中出现 `Context.startForegroundService() did not then call Service.startForeground()` 时，应回查冷启动和 Service 主线程；
+- 不要把它和调用点同步抛出的后台启动异常混为一类。
+
+## 后台启动资格与 WIU 权限要分开
+
+targetSdk 31 及以上的应用通常不能从后台启动 FGS，除非命中官方豁免。常见豁免包括用户可见状态刚结束、通知或 widget 交互、高优先级 FCM、用户请求的 exact alarm、特定系统角色和 Companion Device Manager。
+
+豁免只解决“能否从后台发起 FGS”。涉及 camera、microphone、location 或部分 health 能力时，还要通过 while-in-use 权限检查。Android 14 及以上会在创建相应 FGS 时检查当前可用权限；即使静态 `checkSelfPermission()` 返回 `PERMISSION_GRANTED`，后台状态也可能没有当下的 while-in-use 能力，并抛出 `SecurityException`。
+
+因此，下面两句话含义不同：
+
+- 应用命中后台 FGS 启动豁免；
+- 这个 FGS 具备访问 while-in-use 资源的能力。
+
+Android 17 的后台音频规则又复用了 WIU 能力作为音频交互门槛。排查时要同时记录 FGS 启动原因、服务类型、`allow-start-foreground` 判定和音频侧 `AudioHardening` 结果。
+
+### 高优先级 FCM 与 exact alarm 的边界
+
+高优先级 FCM 可能被服务端或系统降级。尝试启动 FGS 前应检查收到消息的实际优先级；降级后继续启动会得到 `ForegroundServiceStartNotAllowedException`。
+
+exact alarm 豁免要求闹钟对应用户请求的操作。它既不是通用后台执行许可，也不会自动提供 camera / microphone 等 WIU 权限。Android 17 后台音频中的 exact-alarm 例外还要求音频用途为 `USAGE_ALARM`。
+
+## 异常表：先看触发阶段
+
+| 现象或异常 | 触发阶段 | 处理性质 | 首要修复方向 |
+|---|---|---|---|
+| `ForegroundServiceStartNotAllowedException` | 启动或晋升 | 调用点异常 | 检查后台资格、豁免、类型额度 |
+| `MissingForegroundServiceTypeException` | `startForeground()` 类型检查 | 调用点异常 | 补 manifest type |
+| `InvalidForegroundServiceTypeException` | `startForeground()` 类型策略 | 调用点异常 | 使用受支持且已声明的类型 |
+| `IllegalArgumentException` | 传入 manifest 未声明的 type | 调用点异常 | 对齐动态 type 与 manifest |
+| `SecurityException` | 类型权限 / 运行时前置条件 | 调用点异常 | 补权限并调整启动时机 |
+| `ForegroundServiceDidNotStartInTimeException` | 未及时晋升 | 系统投递的致命异常 | 缩短冷启动和主线程路径 |
+| short-service ANR | 约 3 分钟后仍未停止 | ANR | 正常路径提前结束，回调立即收尾 |
+| `ForegroundServiceDidNotStopInTimeException` | `dataSync` / `mediaProcessing` 到期后仍未停 | 进程 Crash | 实现双参数回调和可恢复任务 |
+
+“可在调用点捕获”也不等于应该把异常当作控制流长期依赖。应用应在调用前判断状态，捕获用于处理状态变化造成的竞态。
+
+## 调试与观测
+
+### 先收集系统状态
+
+以下命令用于读取服务、进程和 Job 状态：
 
 ```bash
-# 查看当前 FGS 状态、类型和超时记录
-adb shell dumpsys activity services <package_name>
+adb shell dumpsys activity services <package>
+adb shell dumpsys activity processes <package>
+adb shell dumpsys jobscheduler <package>
+adb shell am get-standby-bucket <package>
+adb shell dumpsys audio
 ```
 
-关键字段：
-- `foregroundServiceType`：当前 FGS 类型
-- `isForeground`：是否在前台服务状态
-- `allow-start-foreground`：后台启动 FGS 的豁免判定结果和原因
-- `short-fgs-info`：`shortService` 的计时起点和各阶段时间点
+`dumpsys activity services` 的具体字段会随版本变化。常见线索包括当前 FGS type、`isForeground`、`allow-start-foreground`、`fgRequired` 和 short-FGS 计时信息。不要让自动化脚本只依赖一段未经版本校验的文本字段。
 
-### FGS 启动延迟的 Perfetto 追踪
+### 再把应用阶段放进 Perfetto
 
-FGS 启动链路在 Perfetto 中的关键 slice：
+应用至少为这些位置加 trace slice：
 
-1. `am_proc_start`：系统决定启动进程（冷启动场景）
-2. `ActivityThread.handleBindApplication`：Application 初始化
-3. `Service.onCreate`：Service 创建
-4. `Service.onStartCommand`：接收启动命令
-5. `Service.startForeground`：通知挂出、FGS 类型校验
+- 发起 `startForegroundService()`；
+- `Application.onCreate()`；
+- `Service.onCreate()`；
+- `Service.onStartCommand()`；
+- 调用 `startForeground()` 前后；
+- 业务工作启动、checkpoint 和停止；
+- `onTimeout()` 进入与返回。
 
-从 `startForegroundService()` 到 `startForeground()` 超过 5 秒的案例，在 trace 上表现为 `Service.onStartCommand` 到 `Service.startForeground` 之间的 gap 过长。
+同时采集 `am`、Binder、sched、CPU frequency 和进程线程轨道。这样可以区分：
 
-### FGS 超时的系统日志关联
+- 进程尚未创建；
+- 主线程被初始化占用；
+- `startForeground()` 调用被 Binder 或通知处理阻塞；
+- 服务已晋升，后续 Worker 又被 quota 停止；
+- 超时回调已投递，但主线程迟迟无法处理。
 
-`shortService` 超时在 logcat 中的时序特征：
+Perfetto 中不保证出现名为 `Service.startForeground` 的平台 slice。依赖应用自定义标记和系统事件的时间关联会更稳。
 
-```
-# onTimeout 回调
-ActivityManager: Short FGS timeout for <component>
+### 使用测试开关时保存并恢复原值
 
-# procstate demote
-ActivityManager: OOM_ADJ_REASON_SHORT_FGS_TIMEOUT
-
-# ANR（若应用未退出）
-ActivityManager: ANR in <package>, reason=A foreground service of type FOREGROUND_SERVICE_TYPE_SHORT_SERVICE did not stop within its timeout
-```
-
-`dataSync`/`mediaProcessing` 超时的日志特征不同——不会有 ANR 行，只有 `AndroidRuntime` 的 Fatal Exception 和堆栈。
-
-### App Standby Bucket 对 FGS 行为的影响
+官方提供 compat change 和 `DeviceConfig` 入口来缩短 `dataSync` / `mediaProcessing` 测试周期，例如：
 
 ```bash
-# 查看当前 bucket
-adb shell deviceidle whitelist +<package_name>  # 临时豁免
-adb shell am get-standby-bucket <package_name>
+adb shell am compat enable FGS_INTRODUCE_TIME_LIMITS <package>
+adb shell device_config put activity_manager \
+    data_sync_fgs_timeout_duration <milliseconds>
+adb shell device_config put activity_manager \
+    media_processing_fgs_timeout_duration <milliseconds>
 ```
 
-`RESTRICTED` bucket 下，FGS 的 Job quota 受限更严重。Battery Historian 中可以查看 FGS 活跃时段与功耗的关联。Perfetto 的 `android.app_standby` counter track 显示 bucket 变化时点。
+这些命令改变测试设备行为。运行前先读取原值，测试后恢复；测试报告也要标记覆盖值。模拟结果只能证明应用的停止路径可工作，不能替代真实长时功耗和热稳定性测试。
 
-## 实战迁移建议与性能测试策略
+Android 17 后台音频可用 `adb shell cmd audio set-enable-hardening` 测试。`throw` 模式会把部分静默失败改为响亮失败，便于定位，但它不代表默认用户设备的错误呈现方式。
 
-### 类型迁移 checklist
+## 架构与性能建议
 
-| 旧做法 | Android 17 推荐方案 | 迁移要点 |
-|:---|:---|:---|
-| 无类型 FGS | 声明 `foregroundServiceType` + 对应权限 | 最低 targetSdk 34 |
-| `dataSync` 长时间同步 | `WorkManager` foreground worker + `User Initiated Data Transfer` API | 控制单次时长在 6 小时内 |
-| 后台静默下载 | `DownloadManager` 或 `WorkManager` + 进度持久化 | FGS 不再是绕过后台限制的通道 |
-| 后台音乐播放 | `mediaPlayback` FGS + WIU 能力 | Android 17 后台音频硬化要求 |
-| BLE 后台连接 | `connectedDevice` FGS | 无硬性时长上限 |
+### 把 FGS 当作用户可感知生命周期
 
-### 性能回归测试矩阵
+选择 FGS 的首要问题是：用户是否明确知道任务正在持续运行，并需要随时停止或查看进度。若任务可以延迟、合并、重试，JobScheduler / WorkManager 往往更符合系统调度模型。若任务是用户刚刚发起的大文件传输，评估 User-Initiated Data Transfer Job。
 
-FGS 相关的性能测试应覆盖：
+FGS 类型要匹配用途。`specialUse` 需要声明具体 subtype，并接受应用商店审核；`systemExempted` 也不是普通系统应用的通用特权。Android 官方列出的资格包括设备所有者、特定系统角色、VPN、exact alarm 等受控场景。Android 17 的 `SystemExemptedFgsTypePermission` 会核对权限和系统豁免原因，不满足条件时按类型权限校验失败处理。
 
-1. **FGS 启动延迟**：`startForegroundService()` → `startForeground()` 间隔。冷启动和热启动分别测量。
-2. **超时回调延迟**：`onTimeout()` 回调到达的抖动。Android 17 的 DeliQueue 改善了主线程消息分发延迟，`onTimeout` 回调的抖动应比 Android 16 小（从数百毫秒级缩小到数十毫秒级）。[待验证: 需实际 Android 17 设备 trace 对比]
-3. **后台任务完成率**：各 bucket 下的 FGS + Job 组合完成率。`RESTRICTED` bucket 下需要单独测试。
-4. **电池影响**：Battery Historian 中 FGS 活跃时段的功耗归因。
-5. **兼容性**：Android 14-17 各版本的 FGS 行为差异。`onTimeout(int, int)` 双参数回调在 Android 14 不存在。
+### 所有长任务都要可恢复
 
-## Android 17 WIU 能力与后台执行边界 [自动发现]
+进程重要性提高仍不能保证任务完成。可靠任务至少需要：
 
-Android 17 把 WIU（While-In-Use）能力引入 FGS 启动判定。WIU 能力不是一个新的 FGS 类型，而是对现有类型的附加约束：后台启动 FGS 时，系统不仅检查类型和权限，还检查这次启动是否具备"用户正在使用"的语义。
+- 幂等的工作单元；
+- 持久化 checkpoint；
+- 明确的取消信号；
+- 进程重建后的恢复策略；
+- type timeout 和 Job stop reason 的统一记录；
+- 用户主动结束时清理通知、session 和临时文件。
 
-具体影响：
+收到 timeout 后才持久化全部状态，风险较高。按工作单元持续写 checkpoint，回调只负责关闭入口和提交最后一个已完成位置。
 
-- 后台音频播放的 FGS 必须是非 `SHORT_SERVICE` 类型且具备 WIU 能力
-- 同时持有 exact alarm 权限并使用 `USAGE_ALARM` 用途可以满足 WIU 要求
-- 由 `BOOT_COMPLETED`、`MY_PACKAGE_REPLACED` 等系统广播触发的 FGS 可能不满足 WIU 要求，即使类型正确
+### 测试范围要覆盖启动、额度和用户状态
 
-这对音乐播放器和语音通话类 App 影响最大。适配方案详见 25.17 节。[已验证: developer.android.com/about/versions/17/behavior-changes-17]
+FGS 回归测试至少包含：
 
-## FGS 进程冻结与超时计时的交互 [自动发现]
+| 维度 | 必测场景 |
+|---|---|
+| 启动状态 | 前台、刚离开前台、后台无豁免、通知 / widget 交互 |
+| 进程状态 | 热进程、冷启动、低内存重建 |
+| 类型 | 单一类型、动态增加 type、short-service 转换 |
+| 权限 | 已授予、拒绝、while-in-use 在后台失效 |
+| 时长 | 正常完成、收到 timeout 后停止、故意不停止 |
+| Job | FGS 与 Worker 并发、不同 standby bucket、quota 停止 |
+| Android 17 音频 | 可见 Activity、具备 WIU 的 FGS、后台无 WIU、alarm 例外 |
 
-`CachedAppOptimizer` 对 FGS 进程（procstate ≥ `PROCESS_STATE_FOREGROUND_SERVICE`）不冻结。但在 `shortService` 的 procstate demote 之后，进程可以被冻结。
+除了成功率，还要记录 FGS 晋升延迟、主线程阻塞、任务吞吐、能量、温度、停止响应时间和用户可见错误。FGS 让任务可见，并没有让功耗变得合理。
 
-`mShortFGSAnrTimer` 未设置 `freeze(true)` flag，所以即使进程被冻结，ANR 计时仍在继续。边界场景：
+## 源码核对索引
 
-1. `shortService` 超时 → procstate demote → 进程被冻结
-2. ANR 计时继续 → 解冻后 ANR 立即触发
+本节的 Android 17 判断对应以下源码位置：
 
-在 dumpsys 中通过 `*freezer*` 日志核对冻结时间点，与 ANR 触发时间交叉对比。[已验证: AOSP ActiveServices.java, CachedAppOptimizer.java, AnrTimer.java]
+- `services/core/java/com/android/server/am/ActiveServices.java`
+  - `setServiceForegroundInnerLocked()`；
+  - `validateForegroundServiceType()`；
+  - `maybeUpdateShortFgsTrackingLocked()`；
+  - `onShortFgsTimeout()` / `onShortFgsAnrTimeout()`；
+  - `onFgsTimeout()` / `onFgsCrashTimeout()`；
+  - `serviceForegroundTimeout()`。
+- `services/core/java/com/android/server/am/ServiceRecord.java`
+  - `ShortFgsInfo` 与 `TimeLimitedFgsInfo`。
+- `services/core/java/com/android/server/am/ActivityManagerConstants.java`
+  - short-service、time-limited FGS 与晋升超时默认值。
+- `core/java/android/app/ForegroundServiceTypePolicy.java`
+  - 各 FGS type 的权限策略。
+- `core/java/android/app/Service.java`
+  - 两个 `onTimeout()` 回调的契约。
+- `core/java/android/app/RemoteServiceException.java`
+  - FGS 未及时启动和未及时停止的内部异常。
 
-## 扩展
+## References
 
-### 🔸 Android 17 用户发起的 FGS 豁免机制
-
-`FgsTempAllowList` 管理后台启动 FGS 的临时豁免。豁免窗口和条件随版本收紧，Android 17 未新增豁免入口，但对已有豁免路径的 WIU 能力判定更严格。源码路径：`frameworks/base/services/core/java/com/android/server/am/FgsTempAllowList.java`。[待验证: 需 android-17.0.0_r1 源码确认 FgsTempAllowList 变更]
-
-### 🔸 System Exempt FGS 与系统应用性能特权
-
-`systemExempted` 类型的 FGS 不受时间预算约束。这个类型保留给系统应用（`privileged` app），普通应用无法使用。对性能工程师的意义：在系统日志中看到 `systemExempted` 类型的 FGS 长时间运行时，这不是异常行为，是设计特权。[待验证: 具体准入条件需核对 ForegroundServiceTypePolicy.java]
-
-### 🔸 FGS 与 JobScheduler 配额的交互预算模型
-
-Android 16 起 FGS + Job 并发的 quota 合流机制，使得 FGS 不再是绕过 Job 配额的通道。交互模型：FGS 负责用户可见生命周期和通知提示，Job/WorkManager 负责任务调度和进度管理，两侧共享同一份任务状态。完整的 quota 模型和排障方法详见 5.10 节和 25.13 节。[已验证: developer.android.com/about/versions/16/behavior-changes-all]
+- [Android FGS changes by version](https://developer.android.com/develop/background-work/services/fgs/changes)
+- [Declare foreground services and permissions](https://developer.android.com/develop/background-work/services/fgs/declare)
+- [Launch a foreground service](https://developer.android.com/develop/background-work/services/fgs/launch)
+- [Foreground service types](https://developer.android.com/develop/background-work/services/fgs/service-types)
+- [Foreground service timeouts](https://developer.android.com/develop/background-work/services/fgs/timeout)
+- [Background FGS start restrictions](https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start)
+- [Troubleshoot foreground services](https://developer.android.com/develop/background-work/services/fgs/troubleshooting)
+- [Android 17 background audio hardening](https://developer.android.com/about/versions/17/changes/bg-audio)
+- [Android 16 JobScheduler quota changes](https://developer.android.com/about/versions/16/behavior-changes-all)
+- [AOSP Android 17 `ActiveServices`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java)
+- [AOSP Android 17 `ServiceRecord`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ServiceRecord.java)
+- [AOSP Android 17 `ForegroundServiceTypePolicy`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ForegroundServiceTypePolicy.java)
+- [AOSP Android 17 `Service`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/Service.java)
