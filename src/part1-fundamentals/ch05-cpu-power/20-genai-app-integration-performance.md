@@ -4,9 +4,9 @@ chapter: "5.20"
 status: ready-for-review
 drafted_date: "2026-06-18"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
-last_verified: "2026-06-18"
+last_verified: "2026-07-26"
 last_verified_against: "Android 17/API 37 公开文档"
-confidence: medium
+confidence: medium-low
 sources:
   - type: official
     path: "developer.android.com/ai/aicore"
@@ -14,11 +14,19 @@ sources:
     path: "developer.android.com/ai/reference/kotlin/com/google/ai/edge/aicore/package-summary"
   - type: blog
     path: "developer.android.com/ai/get-started"
+  - type: deepresearch
+    path: "DeepResearch/2026-06-23-android17-ondevice-llm-inference-architecture.md"
 tags: ["GenAI", "AICore", "端侧AI", "性能优化", "NPU", "IPC"]
 related_chapters: ["5.11", "5.13", "5.14", "5.19", "25.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-18"
 gap_source: "官方文档/章节深挖"
+task6_state: fixed
+task9_state: reviewed
+pipeline_stage: ready-for-review
+last_rework_at: "2026-07-26T09:35:49+08:00"
+last_rework_run_id: "20260726-093549-rework-4d26677f"
+rework_summary: "修复待核验标记：更正 AICore 进程段落错字，移除未经核验的具体模型内存表，改为 Android 17 基线下的安全观测口径；补充 DeepResearch 来源并明确剩余风险。"
 ---
 
 # 5.20 GenAI 应用集成性能边界：AICore 调度、Google Intelligence API 与资源竞争
@@ -100,7 +108,7 @@ GenAI 推理任务执行期间，NPU/GPU 和 CPU 都可能被占用。对前台 
 
 ### AICore 推理内存不归 App 管
 
-AICore 迨行在独立进程中，模型权重、推理中间 tensor、Delegate workspace 等内存开销都记录在 AICore 进程的 PSS/RSS 下，而不是调用方 App。这意味着：
+AICore 运行在独立进程中，模型权重、推理中间 tensor、Delegate workspace 等内存开销首先记录在 AICore 进程的 PSS/RSS 下，而不是调用方 App。这意味着：
 
 - App 侧的 `Debug.getMemoryInfo()` 或 `ActivityManager.getProcessMemoryInfo()` 不会反映推理内存
 - 系统 LMK 判定基于进程级别内存压力，AICore 进程的内存增长可能触发 LMK 杀其他后台进程，而不是杀调用方 App
@@ -112,17 +120,20 @@ Android 16 引入了 `ATTRIBUTE_WORK_TO_OTHER_APPS` 属性用于标记跨进程�
 
 ### 模型大小与内存占用范围
 
-端侧 GenAI 模型的内存占用主要由模型权重决定，量化后的范围大致为：
+端侧 GenAI 模型的内存占用主要由模型权重、KV cache / 中间 tensor、delegate workspace 和模型准备阶段的临时缓冲区共同决定。公开 AICore 文档能确认的是模型由 AICore 管理、下载和执行；但到 Android 17/API 37 的公开资料为止，Google 并没有给出可作为跨机型基线的 Gemini Nano / Gemma 端侧 RSS 表，也没有确认 AICore 会把这些 PSS/RSS 回算到调用方 App。
 
-| 模型 | 参数量 | 量化方式 | 权重大小 | 运行时 RSS 范围 |
-|------|--------|---------|---------|---------------|
-| Gemini Nano | ~1.8B | INT4 | ~1.5 GB | 1.8-2.5 GB |
-| Gemini Nano 4 | ~4B | INT4 | ~2.5 GB | 3-4 GB |
-| Gemma 4 | ~4B | INT4 | ~2.5 GB | 3-4 GB |
+因此，本章不把社区测试中的“1.x GB / 3-4 GB”数字写成通用结论。工程排查时应采用更保守的口径：
 
-[待验证: 模型参数和内存数据来自 AICore Developer Preview 文档和社区测试，未经 AOSP 源码一手验证。具体数字以官方兼容列表和机型实测为准。]
+| 观测对象 | 建议观测项 | 安全结论 |
+|---------|------------|---------|
+| 调用方 App | `Debug.getMemoryInfo()`、`ActivityManager.getProcessMemoryInfo()`、App 自定义 trace | 只能反映 App 进程自身水位，不能单独证明推理总内存 |
+| AICore 进程 | Perfetto / `dumpsys meminfo` 中的 AICore PSS/RSS、线程活跃度 | 用于判断模型加载、推理和后处理是否把系统水位推高 |
+| Private Compute Services | 模型下载/准备阶段的进程水位与 I/O 活动 | 用于解释首次使用时的冷启动和临时内存/I/O 峰值 |
+| 系统整体 | available memory、lmkd 事件、后台进程回收记录 | 用于判断 GenAI 任务是否间接触发全局内存压力 |
 
-这些内存不是在 App 进程中分配的，但系统总内存是有限的。在 8GB 或 12GB 的设备上，一个占用 2-4 GB 内存的推理任务会把系统内存压力推到很高水平，间接影响所有前台和后台进程。
+[已验证: developer.android.com/ai/aicore — 模型由 AICore 管理且模型下载经 Private Compute Services；截至 Android 17 公开文档未给出跨设备模型 RSS 基线]
+
+这些内存不是在 App 进程中直接分配的，但系统总内存是有限的。实际风险应以目标设备的 Perfetto / meminfo / lmkd 证据为准，而不是按模型名硬编码一个固定阈值。
 
 ### 与 LMK 的交互
 
