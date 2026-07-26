@@ -8,9 +8,10 @@ related_chapters: ["22.28", "22.3", "13.21", "26.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "AOSP结构/官方文档"
-last_verified: "2026-07-25"
-confidence: low
+last_verified: "2026-07-26"
+confidence: medium-low
 sources:
+  - "developer.android.com/develop/ui/compose/tooling/tracing"
   - "developer.android.com/jetpack/androidx/releases/tracing"
   - "developer.android.com/jetpack/androidx/releases/compose-runtime"
   - "技术文章/source/juejin-android/2026-07-25-76336249-Android-App-最强APM来袭.md"
@@ -21,11 +22,11 @@ task2b_state: fixed
 task6_state: needs-rework
 task9_state: needs-rework
 pipeline_stage: needs-rework
-reviewed_date: "2026-07-25"
+reviewed_date: "2026-07-26"
 reviewed_by: "hermes-aiw-review-finalize-apply"
-last_review_finalize_at: "2026-07-25T14:10:14+08:00"
-last_review_finalize_run_id: "20260725-140518-2c766e00"
-rework_reason: "本轮复查继续确认：官方 Compose Runtime Tracing 的可见 Slice 命名、重组原因字段、Release 显式开启 API/版本矩阵仍缺少官方示例或实测 Perfetto/trace_processor 证据；已收敛未证实的事件名表述，但本章仍只能作为 APM 部署策略草稿，暂不 finalized。"
+last_review_finalize_at: "2026-07-26T12:17:49+08:00"
+last_review_finalize_run_id: "20260726-121635-46911438"
+rework_reason: "本轮补核官方 Compose tracing 文档：已确认 runtime-tracing 依赖、Android Studio Flamingo/Compose UI 1.3.0/Compiler 1.3.0/API 30+ 前提，以及手动 Perfetto 采集需要 tracing-perfetto 与 tracing-perfetto-binary 且 binary 不应随生产包发布；但可见 Slice 命名清单、重组原因字段与线上 Release 短窗口采集矩阵仍需同版本 trace_processor/实测样本后才能 finalized。"
 ---
 
 # 22.37 Compose Runtime Tracing — runtime-tracing 与 Perfetto 组合阶段追踪
@@ -34,14 +35,14 @@ rework_reason: "本轮复查继续确认：官方 Compose Runtime Tracing 的可
 ## 要点
 
 ### 🔹 锚点 1：Compose Runtime Tracing 架构与启用方式
-- `androidx.compose.runtime:runtime-tracing` 依赖 Compose Runtime，并与 `androidx.tracing:tracing-perfetto` / `tracing-perfetto-binary` 协同输出 Perfetto 可读事件；不要误写为不存在的 `androidx.tracing.compose` 模块。[结构参考: developer.android.com/jetpack/androidx/releases/compose-runtime；developer.android.com/jetpack/androidx/releases/tracing]
+- `androidx.compose.runtime:runtime-tracing` 是官方 Compose Runtime Tracing 依赖；官方 setup 明确要求 Android Studio Flamingo+、Compose UI 1.3.0+、Compose Compiler 1.3.0+、API 30+ 设备/模拟器，并可通过 Compose BOM 管理版本。不要误写为不存在的 `androidx.tracing.compose` 模块。[来源: developer.android.com/develop/ui/compose/tooling/tracing；developer.android.com/jetpack/androidx/releases/compose-runtime]
 - CompositionTracer 接口：组合阶段追踪的钩子设计 [结构参考: 本章原始大纲]
 - 启用方式：开发期、Benchmark 和 Android Studio/Perfetto 场景优先验证；Release 线上使用需要由采样、限流和开关保护，具体 API/版本矩阵需补官方示例后再定稿。[结构参考: developer.android.com/jetpack/androidx/releases/compose-runtime]
-- tracing-perfetto 的 AAR 集成、二进制依赖与系统 Trace/Perfetto 行为边界需按 AndroidX tracing release notes 逐项核对。[结构参考: developer.android.com/jetpack/androidx/releases/tracing]
+- 手动 Perfetto 采集路径需要额外加入 `androidx.tracing:tracing-perfetto` 与 `androidx.tracing:tracing-perfetto-binary`；官方同时警告不要把 `tracing-perfetto-binary` 随生产应用发布，因为它会显著增加包体积。因此本章的 Release 策略只能写成“动态开关 + 受控采样 + 构建产物隔离”，不能写成无条件常驻依赖。[来源: developer.android.com/develop/ui/compose/tooling/tracing；developer.android.com/jetpack/androidx/releases/tracing]
 
 ### 🔹 锚点 2：Compose 组合阶段的 Trace 事件
 - 可见事件应以实际 Perfetto Slice 名称为准；本轮材料不能支撑固定写死 `recompose:start/end`、`compose:start/end`、`subcompose:start/end` 这类事件名，因此正文只保留“组合/重组/子组合相关 Slice”的能力边界。[待验证: 本轮 review]
-- 若后续定稿需要事件名表，应从官方 Runtime Tracing 示例或同一 Compose/AndroidX 版本下的 `trace_processor` 查询结果抽取，而不是沿用大纲占位名称。[待验证: 本轮 review]
+- 若后续定稿需要事件名表，应从同一 Compose/AndroidX 版本下的 Perfetto trace 与 `trace_processor` 查询结果抽取，而不是沿用大纲占位名称；官方文档只承诺 system trace 可看到 composable function slices，并未在本轮核对中给出固定事件名表。[来源: developer.android.com/develop/ui/compose/tooling/tracing；待验证: trace_processor 实测]
 - Trace 事件通常能帮助定位组合/重组相关 Slice，但“每个事件都携带重组原因”未在本轮来源中得到充分证明，定稿前应以官方 Runtime Tracing 示例或实测 trace_processor 输出校验。[待验证: 本轮 review]
 - Trace 事件与 FrameTimeline 的时序对齐 [结构参考: 本章原始大纲]
 
@@ -85,7 +86,7 @@ rework_reason: "本轮复查继续确认：官方 Compose Runtime Tracing 的可
 
 ## 1. 本章定位：把 Compose Trace 放进 APM 闭环
 
-> Review 状态：本章当前适合作为“Compose Trace 如何接入 APM 闭环”的工程策略草稿；依赖名已修正为 `androidx.compose.runtime:runtime-tracing`，本轮进一步收敛了未证实的固定事件名，但可见 Slice 命名、重组原因字段、Release 显式开启 API 与版本矩阵仍缺少官方示例或实测 Perfetto/trace_processor 证据，因此暂不 finalized。
+> Review 状态：本章当前适合作为“Compose Trace 如何接入 APM 闭环”的工程策略草稿；依赖名已修正为 `androidx.compose.runtime:runtime-tracing`，本轮补核了官方 Compose tracing setup 前提（Android Studio Flamingo+、Compose UI/Compiler 1.3.0+、API 30+）与 `tracing-perfetto-binary` 不应随生产包发布的边界，但可见 Slice 命名、重组原因字段和线上 Release 短窗口采集矩阵仍缺少同版本 Perfetto/trace_processor 实测证据，因此暂不 finalized。
 
 Compose Runtime Tracing 的价值不只是“在 Perfetto 里多看几条 Slice”，而是把组合、重组、子组合等 UI 运行时开销纳入可回放、可归因、可门禁的性能观测链路。[结构参考: 本章原始大纲] 对应用侧来说，它应当和启动、FPS、慢方法、网络、IO 等信号一起进入 APM 事件模型，而不是停留在一次性的本地调试截图。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
 
@@ -103,8 +104,8 @@ Compose Runtime Tracing 的价值不只是“在 Perfetto 里多看几条 Slice�
 
 一个可执行的落地规则如下：
 
-1. Debug/Benchmark 构建中优先完整采集 Compose Trace，用于开发期回归和 Macrobenchmark 对比。[结构参考: 本章原始大纲]
-2. Release 构建中默认关闭全量 Trace，只保留 FPS/FrameMetrics 等轻量观测；当动态配置命中目标页面、设备档位或慢帧阈值时，再按已验证的 AndroidX tracing/runtime-tracing 接入方式采集短窗口 Trace，避免在缺少版本矩阵证据时宣称某个统一的显式开启 API。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md；待验证: 本轮 review]
+1. Debug/Benchmark 构建中优先完整采集 Compose Trace，用于开发期回归和 Macrobenchmark 对比；官方 composition tracing 文档给出的最低前提是 Android Studio Flamingo+、Compose UI/Compiler 1.3.0+、API 30+，本章适用版本 Android 13—17 均高于该设备 API 前提。[来源: developer.android.com/develop/ui/compose/tooling/tracing]
+2. Release 构建中默认关闭全量 Trace，只保留 FPS/FrameMetrics 等轻量观测；当动态配置命中目标页面、设备档位或慢帧阈值时，再按已验证的 AndroidX tracing/runtime-tracing 接入方式采集短窗口 Trace，并确保 `tracing-perfetto-binary` 不进入常规生产包，避免在缺少版本矩阵证据时宣称某个统一的显式开启 API。[来源: developer.android.com/develop/ui/compose/tooling/tracing；2026-07-25-76336249-Android-App-最强APM来袭.md；待验证: trace_processor 实测]
 3. 上传链路沿用 APM 的本地存储、批量重试和压缩上传策略，避免在弱网或高频异常场景中放大性能问题。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
 4. Trace 产物只作为问题归因证据进入后台，不作为普通埋点高频上报；这与材料中“令牌桶限流 + 灰度发布 + 动态配置，生产环境可用”的思路一致。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
 
@@ -134,5 +135,5 @@ Compose Runtime Tracing 的价值不只是“在 Perfetto 里多看几条 Slice�
 - 是否把 Trace 摘要接入统一事件模型、本地存储和重试上传链路。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
 - 是否在 Perfetto 中把重组/组合/子组合 Slice 与慢帧窗口对齐分析。[结构参考: 本章原始大纲]
 
-[结构参考: 官方文档 developer.android.com/jetpack/androidx/releases/tracing]
-[适用版本: Android 13 (API 33) - Android 17 (API 37)；composition tracing 的复现前提需按官方工具链文档核对，既有章节记录为 Android Studio Flamingo+、Compose UI/Compiler 1.3.0+、API 30+、加入 `androidx.compose.runtime:runtime-tracing`]
+[结构参考: 官方文档 developer.android.com/develop/ui/compose/tooling/tracing；developer.android.com/jetpack/androidx/releases/tracing]
+[适用版本: Android 13 (API 33) - Android 17 (API 37)；composition tracing 的官方复现前提为 Android Studio Flamingo+、Compose UI/Compiler 1.3.0+、API 30+、加入 `androidx.compose.runtime:runtime-tracing`]
