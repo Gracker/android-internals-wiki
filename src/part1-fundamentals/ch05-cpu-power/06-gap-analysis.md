@@ -20,6 +20,9 @@ gap_score: "19/20"
 
 # 05.06 Android 17 CPU 缓存局部性与 PSS 内存核算源码机制
 
+> [!CAUTION] 隔离内容说明
+> 下方受保护大纲来自错误的 LMKD/PSI 模板，与本页标题无关。为了保留 Hermes 的隔离记录，本轮不改动大纲；它不属于可引用的技术正文。
+
 <!-- outline-start -->
 ## 本节要点大纲
 
@@ -48,7 +51,14 @@ gap_score: "19/20"
 
 <!-- outline-end -->
 
-> [知识缺口评分：19/20]
-> [缺口来源：AOSP结构]
-> [素材深度：CPU缓存局部性、CardTable核算、PSS内存核算、Android 17实现差异]
-> [适用版本：Android 16 (API 35) - Android 17 (API 37)]
+## 本页去向
+
+这个文件同时混入“CPU cache/PSS”和“LMKD/PSI”两个主题，无法在不改写受保护大纲与 quarantine 元数据的前提下形成自洽章节。当前可引用内容已经分别进入：
+
+- [4.35 Android 17 CPU 缓存局部性与 PSS 内存核算](../ch04-memory/4.35-android17-cpu-cache-locality-pss-accounting.md)
+- [5.18 CPU 缓存局部性与 PSS 核算](5.18-android17-cpu-cache-locality-pss-accounting.md)
+- [5.25 Android 17 CPU 缓存局部性](5.25-android17-cpu-cache-locality.md)
+- [4.37 Android 17 LMKD userspace 迁移](../ch04-memory/4.37-android17-lmkd-userspace-migration.md)
+- [4.50 LMKD v2 与 PSI 分级压力治理](../ch04-memory/4.50-lmkd-v2-psi-tiered-pressure-governance.md)
+
+CPU cache/PSS 相关修订应采用 AOSP `android-17.0.0_r1`；LMKD/PSI 同时采用 AOSP `android-17.0.0_r1` 与 kernel `android17-6.18-2026-06_r6`。本页只承担隔离与迁移提示，不复制上述章节的技术论述。
