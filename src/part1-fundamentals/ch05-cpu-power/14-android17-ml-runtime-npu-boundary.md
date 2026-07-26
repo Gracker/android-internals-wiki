@@ -113,15 +113,22 @@ last_deepseek_cn_review_at: 2026-06-03
 
 <!-- outline-end -->
 
-Android 17 把端侧 AI 推理从“能不能调用加速器”推进到“调用边界是否被系统显式管理”。对性能工程师来说，NPU 不再只是 NNAPI 或厂商 delegate 背后的一个加速选项，还会受清单声明、目标 SDK、运行时分发和厂商栈覆盖率共同约束。
+Android 17 为 NPU 访问增加了明确的平台控制面：目标 API 37 的应用要直接访问 NPU，必须在清单中声明 `android.hardware.npu`。这项变化解决的是 UID 能否直接向 NPU 提交工作，以及系统如何把应用优先级传给 NPU 调度层。它没有给普通应用增加一个通用的“执行任意模型”Framework API。
 
-内容聚焦新增边界：Android 17 的 NPU feature 声明、LiteRT CompiledModel / AOT 的执行路径、NNAPI HAL 与厂商 NPU delegate 的关系，以及哪些能力属于公开 Android API，哪些能力只能按 Google Play services、AICore 或厂商 SDK 的文档口径判断。端侧推理的一般性能分析流程见 5.11 节，持续推理的 DVFS 和热衰减见 5.13 节。
+应用仍需选择 LiteRT、厂商 SDK、系统托管服务或旧 NNAPI 路径。每条路径都有自己的模型格式、运行时、硬件覆盖和分发方式。本节以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，先讲平台怎样限制直接访问，再讲 LiteRT CompiledModel、AOT/JIT、Neural Networks HAL 和厂商后端怎样衔接。
 
-## NPU feature 声明：Android 17 开始的访问门槛
+端侧推理的通用性能分析见 5.11 节；LLM 的 TTFT、TPOT、DVFS 与能效测量见 5.13 节。
 
-Android 17 release notes 对 NPU 管理给出了新的平台约束：面向 Android 17 的应用，如果要直接访问 NPU，必须在清单中声明 NPU 硬件特性。API 37 公开引用中对应常量为 `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT`，值为 `android.hardware.npu`。[已验证: 官方文档, developer.android.com/about/versions/17/release-notes; developer.android.com/reference/android/content/pm/PackageManager]
+## `android.hardware.npu`：声明、安装过滤与能力检测
 
-声明方式放在 `AndroidManifest.xml` 中。是否设置 `required`，取决于产品是否允许 CPU / GPU 回退：
+Android 17 release notes 的要求很具体：**目标 Android 17 的应用需要直接访问 NPU 时，必须声明 NPU hardware feature**。API 37 在 `PackageManager` 中新增：
+
+```java
+public static final String FEATURE_NEURAL_PROCESSING_UNIT =
+        "android.hardware.npu";
+```
+
+清单通常这样写：
 
 ```xml
 <uses-feature
@@ -129,192 +136,407 @@ Android 17 release notes 对 NPU 管理给出了新的平台约束：面向 Andr
     android:required="false" />
 ```
 
-`required="true"` 会把没有 NPU feature 的设备排除在安装范围外，适合功能完全依赖 NPU 的独立应用；大多数业务功能更适合设为 `false`，在运行时检测能力后选择 NPU、GPU 或 CPU 路径。
+这里有两个容易混淆的维度：
 
-运行时检测优先使用 API 37 常量；如果 compileSdk 还没升到 37，只能临时使用 `android.hardware.npu` 字符串，并在升级 SDK 后替换回常量。
+- 是否存在 `<uses-feature>`，决定目标 API 37 应用能否获得直接访问资格；
+- `android:required` 决定应用商店和安装器是否把缺少该 feature 的设备排除。
+
+大多数同时提供 CPU/GPU 路径的应用应使用 `required="false"`。声明仍然存在，Android 17 可以识别该应用请求 NPU 能力；没有 NPU 的设备也能安装，然后由应用选择 CPU 或 GPU。只有核心功能无法在其他后端运行时，才适合使用 `required="true"`。
+
+Android 17 源码也印证了这个区别。`packages/modules/NpuManager` 的 `PriorityManager.doesPackageUseNpuFeature()` 遍历 `PackageInfo.reqFeatures`，检查 feature 名称是否等于 `FEATURE_NEURAL_PROCESSING_UNIT`；它不使用 `required` 标志决定直接访问。`required` 仍属于安装兼容性语义。
+
+运行时检测使用：
 
 ```kotlin
-val hasNpu = appContext.packageManager.hasSystemFeature(
+val hasNpuFeature = context.packageManager.hasSystemFeature(
     PackageManager.FEATURE_NEURAL_PROCESSING_UNIT
 )
 ```
 
-这条检测只回答“系统声明这台设备提供 NPU feature”。它不保证当前模型可以完整跑在 NPU 上，也不保证厂商 delegate 支持模型里的每个算子。工程判断要拆成三层：
+`true` 只说明设备声明了 NPU 或类似的 AI 加速硬件。它没有回答下列问题：
 
-- **安装与声明层**：清单是否声明 `android.hardware.npu`，目标 SDK 是否触发 Android 17 的访问约束。
-- **设备能力层**：`PackageManager.hasSystemFeature()` 是否返回 true，设备是否提供对应 NPU 运行时或 Play services 分发的 delegate。
-- **模型覆盖层**：当前模型的算子、量化格式、输入尺寸和内存布局是否被目标 NPU 后端支持。
+- LiteRT NPU runtime 和厂商库是否已安装；
+- 当前 SoC 是否在所用 LiteRT 版本的兼容范围内；
+- 模型能否编译；
+- 算子、数据类型、动态形状和量化格式是否受支持；
+- 运行时最终使用 NPU、部分回退，还是完全回退；
+- NPU 路径是否比 CPU/GPU 更快或更省电。
 
-未声明 feature 时，Android 17 文档的口径是直接 NPU 访问会被阻断。阻断后的表现取决于调用栈：高层 LiteRT 可能回退到 GPU / CPU；厂商 SDK 或低层路径可能返回初始化失败或 capability 不满足。写业务降级逻辑时不要只捕获一次 `run()` 异常，更应该在模型加载、编译、delegate 初始化、首轮推理四个阶段各自记录结果。
+所以，`hasSystemFeature()` 是访问前置条件之一，不是模型兼容性探测器。应用还要调用所选运行时的兼容性 API，并对模型编译、buffer 创建和首轮执行分别处理失败。
 
-## LiteRT CompiledModel：把硬件选择前置到模型编译阶段
+使用低于 37 的 `compileSdk` 时，清单仍可写字面值 `android.hardware.npu`；Java/Kotlin 代码无法引用 API 37 常量，可以临时用同一字符串。项目升级到 API 37 后应切换到常量，让 IDE、lint 和 API 检查参与维护。
 
-旧 TFLite 管线通常是 `Interpreter` 加 delegate：应用加载 `.tflite` 模型，创建解释器，再把 GPU / NNAPI / 厂商 delegate 绑定进去。这个模型在通用性上很好，但硬件选择、算子划分和部分回退都发生在运行时，冷启动阶段容易出现初始化尖峰。
+## Android 17 如何阻断未声明的直接访问
 
-LiteRT Next 文档把 NPU 路径收敛到 `CompiledModel` 和 accelerator 选择上，支持通过 NPU、GPU、CPU 组合描述执行偏好。Qualcomm AI Engine Direct 与 MediaTek NeuroPilot 文档都明确写到：LiteRT 通过 `CompiledModel` API 支持 AOT 编译和设备侧编译。[已验证: 官方文档, ai.google.dev/edge/litert/next/npu; ai.google.dev/edge/litert/next/qualcomm; ai.google.dev/edge/litert/next/mediatek]
-
-`CompiledModel` 可以按三个阶段看：
-
-| 阶段 | 输入 | 输出 | 性能风险 |
-|------|------|------|----------|
-| 模型准备 | `.tflite` / LiteRT 模型、目标 accelerator 列表、厂商运行时 | 编译后的模型对象或设备专属产物 | 首次编译耗时、峰值内存、厂商 SDK 初始化 |
-| buffer 准备 | 输入 tensor 形状、数据类型、内存布局 | 输入 / 输出 buffer | 额外拷贝、对齐要求、量化参数不匹配 |
-| 推理执行 | 输入 buffer、编译产物、执行后端 | 输出 buffer、状态码、fallback 结果 | partial delegation、CPU 回退、热降频 |
-
-这条路径的价值不在于“强制使用 NPU”，而在于把硬件选择和编译结果显式化。模型对 NPU 友好时，编译阶段会生成适配目标 SoC 的执行产物；模型不适配时，开发者应该尽早得到 capability 不满足、子图拆分或 fallback 的信号。
-
-业务代码里的 accelerator 更适合写成优先级链，避免单点假设：
-
-- `NPU -> GPU -> CPU`：适合图像理解、OCR、语音特征提取、固定输入尺寸的小模型。
-- `GPU -> CPU`：适合没有稳定 NPU 覆盖、但 GPU delegate 已验证的模型。
-- `CPU`：作为基线和灰度回退路径，便于用 XNNPACK 跑出可重复数据。
-
-如果产品依赖首帧或首 token 延迟，初始化阶段要独立打点。不要把模型加载、编译、预热和单次推理混在一个平均耗时里；这会掩盖冷启动和稳态执行的不同问题。
-
-## AOT 编译与 AI Pack：用包体积换首次推理稳定性
-
-AOT 编译把模型编译动作从设备运行时前移到主机侧或发布流程。LiteRT NPU 文档提到 AOT 与设备侧编译两条路径；Qualcomm 和 MediaTek 页面也都把 AOT 作为 NPU 支持方式之一。[已验证: 官方文档, ai.google.dev/edge/litert/next/npu]
-
-AOT 的工作流通常包括四步：
-
-1. **选择目标后端**：例如 Qualcomm QNN、MediaTek NeuroPilot，或 Google Tensor 设备公开支持的后端。
-2. **按 SoC / 运行时编译模型**：同一个 `.tflite` 模型可能生成多个设备专属产物。
-3. **打包分发**：通过 App 包、动态特性模块，或 Google Play 的 AI Pack 机制把匹配产物下发到设备。
-4. **运行时加载**：设备端加载对应编译产物，跳过部分即时编译和 delegate 协商成本。
-
-AOT 适合两类场景：模型固定、输入尺寸稳定、冷启动预算紧；或者设备范围可控，例如只面向少数高端机型。它不适合模型频繁更新、SoC 覆盖范围很宽、国内外分发渠道差异大的业务。
-
-| 取舍项 | AOT 收益 | AOT 代价 |
-|--------|----------|----------|
-| 首次推理 | 减少设备侧编译和 delegate 协商时间 | 首次加载仍可能受产物校验和 运行时初始化影响 |
-| 包体积 | 无直接收益 | 多 SoC 产物会增加下载和存储成本 |
-| 兼容性 | 针对目标硬件做优化 | 固件、运行时、delegate 版本变化可能要求重新编译 |
-| 可观测性 | 编译产物和后端更明确 | 需要记录命中的产物版本、SoC、delegate 日志 |
-
-AI Pack 的价值在于把设备匹配和产物下发交给 Google Play 流程处理。代价也很清楚：这条路径依赖 Google Play 生态，国内渠道或无 GMS 设备必须准备本地包内产物、设备侧编译或 CPU / GPU 回退方案。
-
-## NNAPI HAL 与厂商 NPU delegate：公共接口和厂商实现之间的缝隙
-
-NNAPI 的 NDK API 从 Android 15 起被官方标记为 deprecated，迁移指南建议转向 TensorFlow Lite in Play services、AICore 等替代方案。[已验证: 官方文档, developer.android.com/ndk/guides/neuralnetworks/migration-guide]
-
-底层 NPU 驱动没有因此消失。AOSP 仍然保留 Neural Networks HAL；Android 11 及以下可按 HIDL 1.3 历史口径理解，Android 12+ 的 NNAPI HAL revision 使用 AIDL，不走 HIDL。源码锚点要同时区分 `hardware/interfaces/neuralnetworks/1.3/` 与 `hardware/interfaces/neuralnetworks/aidl/`。[已验证: source.android.com/docs/core/ota/modular-system/nnapi; AOSP hardware/interfaces/neuralnetworks/]
-
-工程图景可以拆成：
+Android 17 的源码链横跨 Framework feature、NpuManager 模块和新的 NPU scheduling HAL：
 
 ```text
-应用 / SDK
-  └─ LiteRT CompiledModel
-      ├─ Qualcomm QNN / AI Engine Direct delegate
-      ├─ MediaTek NeuroPilot delegate
-      ├─ GPU delegate
-      └─ CPU XNNPACK baseline
-          └─ 底层驱动、NN HAL 或厂商运行时
+PackageManager.FEATURE_NEURAL_PROCESSING_UNIT
+                    │
+                    ▼
+packages/modules/NpuManager
+  PriorityManager 读取 targetSdk 与 reqFeatures
+                    │
+                    ▼
+android.hardware.npu.SchedulingConfig
+  uid / priority / hasDirectAccess / canAttributeOtherUid
+                    │
+                    ▼
+android.hardware.npu.IScheduling
+  setSchedulingConfigs() / updateSchedulingConfigs()
+                    │
+                    ▼
+厂商 NPU 调度实现
 ```
 
-厂商 delegate 解决的是“如何让 LiteRT 模型跑到特定 SoC 的 NPU 上”。NNAPI HAL 解决的是“系统和驱动之间如何抽象神经网络加速设备”。两者分属不同层，不能把 LiteRT 文档里的 QNN 能力直接写成 Android 平台通用能力。
+在 `android-17.0.0_r1` 中，`PriorityManager.createPriorityInfo()` 对 `targetSdkVersion >= Build.VERSION_CODES.CINNAMON_BUN` 的应用检查 NPU feature。在对应 feature flag 启用时，缺少声明会把 `SchedulingConfig.hasDirectAccess` 设为 `false`。包更新后，`onPackageModified()` 还会重新判断 target SDK 与 feature，更新直接访问状态。
 
-partial delegation 是这条路径最容易踩坑的地方。模型里一部分算子命中 NPU，另一部分回到 CPU，平均耗时可能比纯 CPU 更差：跨设备调度、buffer 复制和同步成本会抵消 NPU 对单个子图的收益。验证时至少记录三类信号：
+`hardware/interfaces/npu/aidl/android/hardware/npu/SchedulingConfig.aidl` 定义了四个关键字段：
 
-- **算子覆盖率**：当前模型有多少算子或子图被 NPU 接管，哪些节点回退。
-- **buffer 成本**：输入输出是否发生 CPU 内存、GPU buffer、NPU buffer 之间的复制。
-- **端到端耗时**：只看 NPU 子图耗时不够，预处理、后处理和回退子图都要算入前台交互预算。
+- `uid`：应用 Linux UID；
+- `priority`：UID 级优先级，数值越小优先级越高；
+- `hasDirectAccess`：该 UID 能否直接在 NPU 上执行；
+- `canAttributeOtherUid`：中介服务能否把工作归因给另一个 UID。
 
-## 性能与功耗边界：NPU 命中不等于体验变好
+`IScheduling` 用整表或增量方式把配置交给 NPU，并可注册调度事件回调。HAL 文档要求厂商尽力遵循优先级，硬件能力仍可限制实际顺序。它没有给应用承诺固定延迟或专属 NPU 时间片。
 
-NPU 的收益通常来自三点：单位能耗更低、特定张量乘加 / 卷积类算子吞吐更高、CPU 被释放出来处理前台交互。但这些收益只在模型、输入尺寸、量化格式和后端覆盖匹配时成立。
+`SchedulingConfig` 还明确区分直接与中介访问：`hasDirectAccess=false` 的应用不能直接执行，但仍可能通过获准的中介服务请求能力。这与 release notes 使用“directly access”一词一致。调用系统托管的 AI 服务和在进程内加载厂商 NPU runtime，是两种不同的访问形态，不能用同一条 manifest 结论替代各自文档。
 
-端侧推理建议拆成五组指标：
+Android 17 的 NpuManager CTS 包含两类缺少 feature 的测试：
 
-| 指标 | 适用场景 | 观察方式 | 判断边界 |
-|------|----------|----------|----------|
-| 首次推理延迟 | 相机、OCR、实时翻译、语音助手 | App trace、初始化日志、Perfetto slice | 分离模型加载、编译、预热、首轮执行 |
-| 稳态单次延迟 | 分类、检测、分割、小模型生成 | p50 / p90 / p99 latency | 同机型对比 CPU、GPU、NPU 三条路径 |
-| TTFT / token 速率 | LLM、VLM、流式生成 | TTFT、prefill tokens/s、decode tokens/s | 标明模型版本、量化方式、上下文长度 |
-| 峰值内存 | 大模型、批处理、多模型并发 | RSS / PSS、native heap、allocator 日志 | 区分模型权重、中间 tensor、delegate workspace |
-| 持续功耗与热衰减 | 连续相机、离线转写、后台理解 | thermal 状态、频率、帧时间、电流数据 | 单次 benchmark 不能替代 3-10 分钟稳态测试 |
+- 通过 NNAPI 路径运行推理应失败；
+- 通过测试 LiteRT/vendor delegate 路径直接运行推理也应失败。
 
-Perfetto 默认能稳定看到线程调度、CPU / GPU 频率、内存水位和 thermal 状态。NPU 是否有专用轨道取决于厂商实现；没有厂商 tracepoint 时，只能用 delegate 日志、CPU 负载下降、GPU 频率变化和 thermal 信号交叉判断。详见 5.11 节的 Perfetto 对照表。
+这些测试证明控制面覆盖多种直接访问路径。它们没有规定上层库必须抛出哪一种异常，也没有保证库一定自动改用 CPU/GPU。应用仍应按运行时文档配置 fallback，并记录最后选中的 accelerator。
 
-ADPF 与 NPU 的关系也要谨慎。ADPF 更适合表达应用线程的工作时长和性能目标，不等于应用能直接控制 NPU 调度。涉及协程线程迁移和 hint session 绑定时，见 25.11 节；涉及持续推理的频率组合和热衰减时，见 5.13 节。
+## NpuManager 的系统控制面边界
 
-后台推理还有一层约束：JobScheduler、WorkManager、前台服务限制和电池策略会决定任务什么时候能跑，NPU feature 只说明设备能力，不替代后台执行资格。把模型任务放进后台前，先确认它的属性：是用户可见的即时工作，能接受一定延迟的批量任务，还是只能在充电或空闲窗口执行的后台工作。
+`packages/modules/NpuManager/framework/java/android/npumanager/NpuManager.java` 容易因名字被误读成应用侧推理入口。Android 17 的 API 签名显示：
 
-## 公开 API、预览能力与闭源组件边界
+- `NpuManager` 是 flagged `@SystemApi`；
+- 模型装载请求受 `ACCESS_NPU_MODEL_MANAGER_API` 权限保护；
+- 接口用于协调模型能否装载、卸载通知、模型大小和装载策略；
+- 公共 SDK 没有借此获得提交张量或执行模型的通用接口。
 
-端侧 AI 最容易写错的地方，是把不同来源的能力混成一个“Android 支持”。发布稿应给每个能力标清归属层。
+NpuManager 的模型装载策略负责共享 NPU 资源：它可以按 normal/background 优先级、模型大小和预算决定某个模型现在能否装载，或者请求已装载模型释放资源。普通应用不能把这些 `@SystemApi` 当作 SDK 调用。
 
-| 能力 | 可验证来源 | 能写成平台能力吗 | 写作边界 |
-|------|------------|------------------|----------|
-| `PackageManager.FEATURE_NEURAL_PROCESSING_UNIT` 声明 | Android 17 release notes / API 37 reference | 可以，但限 Android 17 目标应用访问约束 | 常量值为 `android.hardware.npu` |
-| NNAPI NDK API | Android NDK 文档 | 可以，但需标注 Android 15 起 deprecated | 不建议新性能敏感项目依赖它做主路径 |
-| NN HAL | AOSP `hardware/interfaces/neuralnetworks/1.3/`、`hardware/interfaces/neuralnetworks/aidl/`、source.android.com | 可以，属于系统与驱动抽象 | Android 11 及以下看 HIDL，Android 12+ 看 AIDL |
-| LiteRT CompiledModel / NPU | ai.google.dev LiteRT Next 文档 | 不能写成 AOSP 公共 API | 属于 LiteRT 运行时能力，版本和分发渠道要标清 |
-| Qualcomm QNN / MediaTek NeuroPilot | ai.google.dev 厂商后端页、厂商 SDK | 不能写成全 Android 通用能力 | 只对对应 SoC、运行时、delegate 版本成立 |
-| AICore / Gemini Nano | developer.android.com/ai/aicore | 不能写成 AOSP 开放服务 | 属于 Google 生态能力，受设备、地区、GMS 版本影响 |
-| Google Play AI Pack | ai.google.dev / Play 分发文档 | 不能写成所有渠道可用 | 国内渠道、无 GMS 设备需要替代分发策略 |
+同样，`android.hardware.npu.IScheduling` 是系统与 NPU 实现之间的稳定 AIDL HAL。普通应用既不直接配置 UID 优先级，也不注册该 HAL 的调度回调。应用可见的稳定入口仍来自 LiteRT、厂商公开 SDK 或系统服务文档。
 
-只要文章里出现 “Android 17 NPU 支持”“LiteRT NPU 加速”“AICore 调度” 这类句子，都要追问一句：这是 SDK API、AOSP 源码、Google Play services、AICore 闭源服务，还是厂商 SDK？答案不同，工程边界完全不同。
+## LiteRT CompiledModel 的执行边界
 
-## 扩展：Google Tensor / EdgeTPU 能力验证
+LiteRT 由 Google AI Edge 独立发布，不随 AOSP `android-17.0.0_r1` 一起冻结。当前官方文档把 `CompiledModel` 作为 Android 上面向 CPU、GPU、NPU 的现代推理 API，`Interpreter` 继续承担兼容路径。工程记录应分别锁定：
 
-Google Tensor 设备常被直接等同于“有 Google 自家的 NPU / TPU 能力”，但对第三方 App 来说，能不能调用、通过哪条 API 调用、是否可观测，是三件不同的事。
+- Android build 与 target/compile SDK；
+- LiteRT Maven/C++ 版本；
+- 模型文件哈希和量化格式；
+- NPU compiler plugin、dispatch library 和厂商 runtime 版本；
+- 设备 SoC、固件和驱动版本。
 
-当前可发布的表述是：Google Tensor 平台提供端侧 AI 加速能力，AICore / Gemini Nano 属于 Google 生态公开文档覆盖的路径；LiteRT NPU 对 Google Tensor 的具体后端能力、算子覆盖和 AI Pack 交付方式，需要以 LiteRT Next 文档和设备兼容列表为准。[待验证: Google Tensor 设备上 LiteRT NPU 后端的公开兼容表]
+### 创建模型前先选择可用产物
 
-验证 Tensor 设备时建议保留四类证据：
+NPU 路径不只是把 `Accelerator.CPU` 改成 `Accelerator.NPU`。官方示例先根据 SoC 兼容性选择模型产物和 runtime，再创建 `CompiledModel`：
 
-- 设备侧 feature：`android.hardware.npu` 是否存在。
-- LiteRT 运行时日志：命中的 accelerator、delegate 名称、fallback 信息。
-- 模型侧数据：算子覆盖率、量化格式、输入尺寸、编译产物版本。
-- 系统侧信号：CPU / GPU 频率、thermal、内存，以及厂商或 Google 暴露的额外 tracepoint。
+```text
+设备 feature 与 NPU compatibility
+              │
+              ├─ 选择 AOT AI Pack 中匹配的模型
+              │
+              └─ 或选择设备侧编译使用的原始模型
+                         │
+                         ▼
+Environment + NPU runtime/compiler libraries
+                         │
+                         ▼
+CompiledModel.Options(NPU, fallback...)
+                         │
+                         ▼
+createInputBuffers / createOutputBuffers / run
+```
 
-没有这些证据时，不要把“Tensor 芯片有 AI 加速器”写成“这个模型会跑在 NPU 上”。
+`ModelSelector`、`AiPackModelProvider` 和 `NpuCompatibilityChecker` 负责模型产物与设备的匹配；`CompiledModel.Options` 描述候选 accelerator。模型选择和执行后端选择虽然相邻，仍要分别记录。
 
-## 扩展：从 TFLite / NNAPI 迁移到 LiteRT 的检查清单
+### Fallback 要显式配置并验证
 
-旧项目迁移不要从替换 API 名字开始，而是先把现有推理路径量出来。基线不清楚时，换成 LiteRT 也只是在换一种不确定性。
+LiteRT NPU 文档支持在 `CompiledModel.Options` 中同时给出 NPU 与 CPU/GPU，让 NPU 不可用时选择后备硬件；AOT 模型也支持后备路径。官方还说明，不支持的子图可以部分委派给 CPU/GPU。
 
-| 检查项 | 旧项目常见状态 | 迁移到 LiteRT 时的处理 |
-|--------|----------------|------------------------|
-| CPU 基线 | 只记录线上平均耗时 | 用 XNNPACK 固定线程数跑同机型 p50 / p90 / p99 |
-| NNAPI 使用 | 依赖 `NnApiDelegate`，fallback 不透明 | 对照 Android 15 deprecated 口径，准备 LiteRT / GPU / CPU 回退 |
-| GPU delegate | 只看单次加速比 | 加入渲染并发、GPU 频率和掉帧指标 |
-| NPU 路径 | 依赖厂商 SDK 或未公开 delegate | 明确 SoC、运行时、delegate 版本和算子覆盖率 |
-| 模型格式 | 多个模型版本并存 | 固化模型 hash、输入尺寸、量化策略，再比较迁移收益 |
-| 冷启动 | 初始化和推理混在一个耗时 | 拆出模型加载、编译、预热、首轮执行 |
-| 分发渠道 | 只考虑 Google Play | 为无 GMS 设备准备包内运行时、设备侧编译或 CPU / GPU 路径 |
+这并不等于任何模型都能无损回退。需要验证：
 
-迁移后的验收标准也要写清楚：如果目标是降低首轮延迟，就优先验证 AOT 和预热；如果目标是降低稳态功耗，就做持续运行测试；如果目标是减少主线程阻塞，就看初始化线程和 buffer 复制。每个目标对应的证据不同，不能只用一组平均 latency 结束评估。
+- fallback 模型产物是否包含 CPU/GPU 可执行部分；
+- 候选 accelerator 的次序与当前 LiteRT 版本语义；
+- NPU 子图和 CPU/GPU 子图之间有多少同步与复制；
+- NPU 编译失败、runtime 库缺失、执行失败分别会走哪条路径；
+- fallback 后的精度、延迟、内存和温度是否仍满足要求。
 
-## 小结
+为了让线上数据可解释，至少记录一次“请求的 accelerator 集合”和“最终使用的后端/子图分布”。只记录 `hasNpuFeature=true`，无法证明一次请求在 NPU 上完成。
 
-Android 17 的 NPU feature 声明让端侧 AI 加速多了一道系统边界；LiteRT CompiledModel 和 AOT 则把硬件选择、编译产物和分发策略推到工程流程前面。NPU 加速是否成立，要同时满足清单声明、设备 feature、运行时可用、模型算子覆盖和功耗预算五个条件。
+### Buffer 与零复制
 
-写这类内容时，发布稿的分层口径是：Android 平台只写 release notes、NNAPI / NN HAL 和 SDK 明确公开的内容；LiteRT 写运行时和 delegate 文档能验证的内容；AICore、Google Play AI Pack、厂商 QNN / NeuroPilot 都按各自生态能力处理。这样才能避免把闭源组件或厂商能力误写成所有 Android 设备都具备的公共能力。
+`CompiledModel` 会根据模型和后端创建输入输出 `TensorBuffer`。官方 NPU 文档还给出基于 `AHardwareBuffer` 的零复制示例。零复制成立需要生产者、消费者、数据布局、同步 fence 和后端都支持同一种 buffer；把 Java 数组写入 NPU buffer 后再读回 CPU，仍然发生数据搬运。
+
+相机、GPU 预处理与 NPU 串接时，应测量完整管线：
+
+```text
+camera / GPU producer
+        → buffer acquire 与 fence wait
+        → NPU inference
+        → output consumer
+        → buffer release
+```
+
+只报告 NPU kernel 时间会漏掉格式转换、cache maintenance、同步和 CPU 后处理。
+
+## AOT、设备侧编译与分发
+
+LiteRT NPU 文档把编译分成两类：
+
+| 路径 | 适用条件 | 首次运行成本 | 分发成本 |
+|---|---|---|---|
+| AOT / offline compilation | 目标 SoC 已知，模型较大或初始化预算紧 | 可跳过大部分设备侧编译 | 要为不同 SoC/版本准备匹配产物 |
+| on-device / JIT compilation | 希望分发较通用的原始模型，设备后端支持 JIT | 首次初始化会消耗时间与内存 | 产物准备较少，但需携带 compiler/runtime |
+| JIT compilation cache | 模型、compiler、build fingerprint 和选项稳定 | 命中时减少重复编译 | 需要应用私有可写目录和失效管理 |
+
+官方文档指出，AOT 对目标 SoC 已知的大模型更适合，可降低启动时的编译成本和内存压力。它仍可能有模型文件读取、产物校验、runtime 加载、buffer 分配和首轮预热，不能把 AOT 描述成“零初始化”。
+
+设备侧编译的缓存键至少会受模型、厂商 compiler plugin、Android build fingerprint 和编译选项影响。应用升级、系统 OTA 或模型替换后出现一次新的编译峰值，可能属于正常失效；需要把 cache miss 原因写入诊断日志。
+
+### Play AI Pack 与 runtime library 是两类产物
+
+当前官方流程将它们分开：
+
+- AOT 编译模型可导出为 Play AI Pack，由 Google Play 按设备目标交付匹配模型；
+- NPU runtime library 通过 Play Feature Delivery 分发；
+- JIT 路径把原始 `.tflite` 放入应用，并提供对应 compiler/runtime library。
+
+AI Pack 可用 install-time、fast-follow 或 on-demand 等交付方式，具体能力以 Play for On-device AI 文档为准。on-demand 能减小首次安装下载量，但会增加首次进入功能时的网络等待和失败分支。应用应把“模型尚未下载”与“NPU 编译或执行失败”分开呈现。
+
+Google Play 交付不覆盖所有渠道。无 GMS 设备或其他应用商店需要独立方案，例如：
+
+- APK/App Bundle 内携带适配产物；
+- 自有下载服务按设备安全交付；
+- 设备侧编译；
+- 回退到可随应用分发的 CPU/GPU 路径。
+
+多渠道方案还要检查模型许可、厂商 runtime 再分发条款、动态代码/原生库政策、完整性校验和磁盘配额。
+
+## 各 NPU 后端的公开支持不同
+
+当前 LiteRT NPU 文档列出的能力不能统一概括成“Android NPU 都支持 AOT 和 JIT”：
+
+| 后端 | `CompiledModel` 文档能力 | 需要额外确认 |
+|---|---|---|
+| Google Tensor | AOT 执行；Google Tensor SDK 处于 Beta，文档注明暂不支持设备侧 JIT | 支持的 Tensor 代际、模型产物和 AI Pack |
+| Qualcomm AI Engine Direct | AOT 与设备侧编译 | QNN/HTP 版本、支持的 SoC 与算子 |
+| MediaTek NeuroPilot | AOT 与设备侧编译 | 支持的 Dimensity SoC、runtime 与算子 |
+| Samsung Exynos AI LiteCore | AOT 与设备侧编译 | 公开兼容列表和 runtime 版本 |
+| Intel OpenVINO | AOT 与设备侧编译 | Android/目标平台覆盖和模型限制 |
+
+这些列表随 LiteRT release 更新，不能用 Android 17 平台版本替代。发布前应保存所用文档日期或 release、兼容性查询结果和测试设备。
+
+### Google Tensor 仍需逐层验证 NPU 命中
+
+对 Google Tensor 设备，当前可核实的公开结论是：LiteRT NPU 文档支持通过 `CompiledModel` 执行 AOT 产物，并提供 `NpuCompatibilityChecker.GoogleTensor` 与设备匹配示例；设备侧 JIT 仍标为不支持。
+
+仍需验证四层证据：
+
+1. 设备是否声明 `android.hardware.npu`；
+2. LiteRT compatibility checker 是否接受该设备；
+3. AI Pack 是否交付了对应 Tensor 代际的模型产物；
+4. 运行时是否成功加载 NPU dispatch/runtime，并按预期执行或回退。
+
+芯片名称、营销材料或 `hasSystemFeature()` 都不能替代这四项。AICore 或其他系统托管模型服务也有独立的设备、地区、模型与更新条件，不等同于应用内嵌 LiteRT 的 NPU 后端。
+
+## NNAPI、Neural Networks HAL 与 NPU scheduling HAL
+
+Android 17 中同时存在名字相近、职责不同的接口。
+
+### NNAPI NDK API 已进入弃用期
+
+NNAPI 是应用通过 NDK 使用的 C API。官方从 Android 15 开始将 NNAPI NDK API 标记为 deprecated，并建议应用迁移到 LiteRT 等受支持的路径。弃用不表示 Android 17 删除了 NNAPI，也不表示已发布应用会立即无法运行；它表示新项目不应再把 NNAPI NDK API 当作长期主路径。
+
+迁移时应保留旧设备基线，并验证 LiteRT 的 CPU、GPU、NPU 结果和精度，不能只替换 API 名字。
+
+### Neural Networks HAL 继续存在
+
+官方 NNAPI Runtime 文档明确说明：
+
+- Android 11 及以下使用 HIDL HAL 版本脉络；
+- Android 12 及以上的 NNAPI HAL revision 使用 AIDL；
+- NNAPI NDK API 弃用不影响 Neural Networks HAL 和驱动支持。
+
+在 `android-17.0.0_r1` 中：
+
+- 历史 HIDL 1.3 位于 `hardware/interfaces/neuralnetworks/1.3/`；
+- 当前 AIDL 位于 `hardware/interfaces/neuralnetworks/aidl/`；
+- 冻结 AIDL API 目录包含版本 1～4；
+- 当前接口仍有 `IDevice.getSupportedOperations()`、模型 preparation、compilation cache、device buffer、同步/围栏执行；
+- AIDL v4 还包含 `ExecutionConfig`、`IExecution` 和带 config 的执行入口。
+
+这些接口面向 NNAPI Runtime 与 vendor driver。普通应用不直接把 AIDL `IDevice` 当作 SDK。
+
+### NPU scheduling HAL 只管理调度身份与生命周期
+
+Android 17 新增的 `hardware/interfaces/npu/aidl/` 提供 `IScheduling`、`SchedulingConfig`、`WorkInfo` 和回调。它传递 UID 优先级、直接访问资格、归因和工作开始/结束事件，不定义模型图、tensor、算子或编译。
+
+两套 HAL 的关系可以这样理解：
+
+```text
+Neural Networks HAL
+  关注：model / operation / prepared model / execution / buffer
+
+NPU scheduling HAL
+  关注：UID / priority / direct access / attribution / work lifecycle
+```
+
+LiteRT NPU 还可能使用厂商 compiler plugin、dispatch library 和 runtime，不保证经过 Neural Networks HAL。只要它直接向受 Android 17 控制的 NPU 提交工作，仍需满足 `android.hardware.npu` 声明要求。
+
+## Partial delegation 的收益与代价
+
+LiteRT 官方 NPU 路径支持让未被 NPU 接收的子图回到 CPU/GPU。partial delegation 能提高模型兼容性，也会增加边界成本：
+
+- 子图切换需要调度与同步；
+- 不同后端的 tensor layout 可能触发转换；
+- 中间 buffer 可能在 CPU、GPU、NPU 可见内存之间复制；
+- 短小 NPU 子图的加速时间可能小于切换成本；
+- CPU/GPU fallback 会重新占用原本希望释放的功耗与热预算。
+
+评估时至少记录：
+
+- NPU、GPU、CPU 各自执行的子图或算子数；
+- 编译警告与不支持的 op；
+- 中间 buffer 大小和复制次数；
+- 端到端 latency，而非单个 NPU 子图时间；
+- fallback 发生率和触发原因；
+- 结果精度与确定性。
+
+如果运行时没有公开子图分布，应把结论写成“请求 NPU 并成功完成”，再用运行时日志和系统信号说明推断依据；不要写成“模型完整运行在 NPU”。
+
+## 性能、内存与功耗验证
+
+NPU 命中只有在端到端指标改善时才有产品价值。建议把实验分成初始化和稳态两部分。
+
+| 指标 | 测量边界 | 常见问题 |
+|---|---|---|
+| 模型可用时间 | 请求下载到产物可加载 | AI Pack 未交付、磁盘不足、校验失败 |
+| 编译/加载时间 | 创建 environment 到 `CompiledModel` 可用 | JIT cache miss、runtime 加载、AOT 不匹配 |
+| 首次推理 | buffer 准备到第一份结果 | 首轮预热、内存页、后端初始化 |
+| 稳态延迟 | 固定输入、多次执行 | 调度抖动、复制、partial delegation |
+| LLM TTFT/TPOT | 按 5.13 节的 token 边界 | prefill/decode 后端不同、KV cache 增长 |
+| 峰值内存 | 初始化和执行阶段分别采集 | compiler workspace、tensor、cache、重复模型 |
+| 请求能量 | 同一供电与屏幕条件下积分 | 整机基线、USB 充电、后台任务 |
+| 持续性能 | 运行到温度和频率趋于稳定 | thermal clamp、共享 NPU 竞争 |
+
+### Trace 能看到什么
+
+Perfetto 通常可以稳定采集应用 slice、CPU 调度、CPU 频率、进程内存与部分电源/温度信号。GPU、NPU、互连和内存频率轨道依赖设备与厂商数据源。没有 NPU track 时，可以联合观察：
+
+- 应用标注的 compile/run slice；
+- LiteRT 或厂商 runtime 日志；
+- CPU/GPU 执行时间与频率；
+- PowerStats 可用的能量消费者或 power rail；
+- thermal status/headroom；
+- 输出回调时间。
+
+这些信号可用于建立有证据的推断，但不能把“CPU 利用率下降”单独当作 NPU 命中证明。整机电流也不能直接当作 NPU 部件功耗。
+
+### 稳态测试要覆盖共享资源
+
+NPU 可能被系统模型服务、相机、语音或其他应用共享。测试应包含单请求、并发请求、前后台切换和持续运行。Android 17 的 scheduling HAL 支持 UID 级优先级与工作生命周期回调，不代表第三方应用能自行设置最高优先级。
+
+持续测试需要运行到 token/帧延迟、温度和频率上限显现稳定趋势，并按时间窗口报告。固定写“运行 3 分钟”或“运行 10 分钟”都不适用于所有设备；终止条件和环境温度应写入报告。
+
+## 后台执行边界
+
+NPU feature 只描述设备与访问资格，不授予后台执行机会。JobScheduler、WorkManager、前台服务、Doze、App Standby 和电池策略仍会决定任务何时运行、能运行多久。
+
+按用户意图选择执行方式：
+
+- 用户正在等待的即时推理，应与可见界面和取消操作绑定；
+- 允许延迟的摘要、索引或批处理，使用 JobScheduler/WorkManager 约束；
+- 体积大的模型下载交给合适的下载和存储管理组件；
+- 高温、低电量或后台受限时，减少并发、缩小模型或推迟非必要任务。
+
+系统中介服务能否替应用访问 NPU，要看该服务的公共契约、配额和归因规则。不能因为 `SchedulingConfig` 有 `canAttributeOtherUid`，就推断任意应用可通过 Binder 服务绕过 feature 要求。
+
+## 从 TFLite / NNAPI 迁移到 LiteRT
+
+迁移前先保存可比较的旧路径基线：
+
+| 检查项 | 迁移前要记录 | LiteRT 路径要验证 |
+|---|---|---|
+| 模型 | 文件哈希、输入形状、量化 | 转换后精度和支持 op |
+| CPU | 线程数、XNNPACK、亲和性 | CompiledModel CPU 基线 |
+| GPU | delegate 配置、缓存、精度 | GPU backend 与渲染竞争 |
+| NNAPI | 设备选择、fallback、缓存 | NPU/CPU/GPU 候选和失败处理 |
+| 冷启动 | 加载、编译、预热 | AOT/JIT/cache 分段 |
+| 内存 | 权重、workspace、tensor | compiler 峰值与 buffer 生命周期 |
+| 分发 | APK、动态模块、渠道 | AI Pack、PFD 与非 Play 方案 |
+| 可观测性 | 旧日志和 trace | 最终 accelerator、子图分布、错误码 |
+
+推荐按以下顺序迁移：
+
+1. 用 LiteRT CPU 路径复现旧 CPU 的正确性和性能；
+2. 加入 GPU，验证算子覆盖、精度和 UI 渲染竞争；
+3. 对兼容设备加入 NPU feature、runtime 与模型产物；
+4. 明确 `CompiledModel.Options` 的 fallback；
+5. 分开测 AOT、JIT 首次编译和缓存命中；
+6. 做持续功耗、温控、后台与并发测试；
+7. 最后决定哪些设备启用 NPU，哪些设备保留 GPU/CPU。
+
+若目标是改善首次结果，就重点比较模型交付、编译和预热；若目标是降低持续功耗，就比较稳定状态下的请求能量、温度和吞吐。一个平均 latency 无法同时回答这两个问题。
+
+## 发布前检查清单
+
+- [ ] 目标 API 37 的直接 NPU 访问路径声明了 `android.hardware.npu`；
+- [ ] `required` 与产品的安装范围一致；
+- [ ] 运行时同时检查设备 feature、SoC 兼容性和模型编译结果；
+- [ ] Android build、LiteRT、runtime、compiler、模型与 SoC 版本均可追溯；
+- [ ] `NpuManager` 没有被写成普通应用推理 API；
+- [ ] NPU scheduling HAL 与 Neural Networks HAL 的职责已分开；
+- [ ] AOT、JIT 和缓存命中的初始化时间分别记录；
+- [ ] AI Pack 与 NPU runtime library 的分发方式分别记录；
+- [ ] Google Tensor、Qualcomm、MediaTek 等后端按各自文档写边界；
+- [ ] fallback 与 partial delegation 有运行时证据；
+- [ ] 端到端 latency 包含复制、同步、预处理和后处理；
+- [ ] 功耗结论包含供电、屏幕、温度与持续时间；
+- [ ] 无 GMS 或非 Play 渠道有替代模型/runtime 交付方案；
+- [ ] NNAPI 弃用没有被写成 HAL 或驱动已删除。
+
+## Android 17 源码索引
+
+以下路径按 `android-17.0.0_r1` 复核：
+
+- `frameworks/base/core/java/android/content/pm/PackageManager.java`
+  - `FEATURE_NEURAL_PROCESSING_UNIT`
+- `packages/modules/NpuManager/service/java/com/android/server/npumanager/PriorityManager.java`
+  - `createPriorityInfo()`
+  - `doesPackageUseNpuFeature()`
+  - `onPackageModified()`
+- `packages/modules/NpuManager/framework/java/android/npumanager/NpuManager.java`
+  - flagged `@SystemApi` 模型装载协调接口
+- `packages/modules/NpuManager/tests/cts/cts_npu_manager_test.py`
+  - 有/无 NPU feature 的 NNAPI 与 delegate 访问测试
+- `hardware/interfaces/npu/aidl/android/hardware/npu/`
+  - `IScheduling.aidl`
+  - `SchedulingConfig.aidl`
+  - `WorkInfo.aidl`
+  - `ISchedulingCallback.aidl`
+- `hardware/interfaces/neuralnetworks/aidl/android/hardware/neuralnetworks/`
+  - `IDevice.aidl`
+  - `IPreparedModel.aidl`
+  - `IExecution.aidl`
+  - `ExecutionConfig.aidl`
+- `hardware/interfaces/neuralnetworks/1.3/`
+  - Android 11 及以下 HIDL 历史接口
 
 ## 参考资料
 
-### Android 17 NPU 管理与 PackageManager feature
-- 来源：developer.android.com/about/versions/17/release-notes；developer.android.com/reference/android/content/pm/PackageManager
-- 摘要：Android 17 / API 37 对直接访问 NPU 的应用增加 `FEATURE_NEURAL_PROCESSING_UNIT` 声明要求，公开常量值为 `android.hardware.npu`。
-- 用途：支撑本节 NPU feature 声明、运行时检测和安装范围判断。
+- Android 17 release notes：<https://developer.android.com/about/versions/17/release-notes>
+- `PackageManager` API 37 reference：<https://developer.android.com/reference/android/content/pm/PackageManager>
+- NNAPI Runtime：<https://source.android.com/docs/core/ota/modular-system/nnapi>
+- NNAPI migration guide：<https://developer.android.com/ndk/guides/neuralnetworks/migration-guide>
+- LiteRT Android：<https://developers.google.com/edge/litert/android>
+- LiteRT NPU acceleration：<https://developers.google.com/edge/litert/next/npu>
+- Qualcomm NPU：<https://developers.google.com/edge/litert/next/qualcomm>
+- MediaTek NPU：<https://developers.google.com/edge/litert/next/mediatek>
 
-### NNAPI 迁移指南与 NN HAL 文档
-- 来源：developer.android.com/ndk/guides/neuralnetworks/migration-guide；source.android.com/docs/core/ota/modular-system/nnapi；AOSP `hardware/interfaces/neuralnetworks/1.3/`、`hardware/interfaces/neuralnetworks/aidl/`
-- 摘要：NNAPI NDK C API 从 Android 15 起 deprecated；Neural Networks HAL 仍是系统与驱动之间的抽象层，Android 11 及以下保留 HIDL 版本口径，Android 12+ 使用 AIDL HAL。
-- 用途：统一 Android 17 / API 37 范围内 NNAPI、NN HAL 与厂商 delegate 的边界。
-
-### LiteRT Next NPU delegate 与厂商后端
-- 来源：ai.google.dev/edge/litert/next/npu；ai.google.dev/edge/litert/next/qualcomm；ai.google.dev/edge/litert/next/mediatek
-- 摘要：LiteRT Next 通过 NPU delegate 对接 Qualcomm QNN、MediaTek NeuroPilot 等厂商后端，模型是否完整跑在 NPU 上取决于 SoC、delegate、算子覆盖和回退策略。
-- 用途：支撑 LiteRT CompiledModel、AOT 编译、AI Pack 分发和厂商 NPU delegate 的工程边界。
-
-### NeuralNetworks HAL 1.3 接口族与推理加速机制
-- 来源：DeepResearch/2026-05-26-android-17-npu-aicore-lert-capability-boundary.md（NN HAL 1.3 接口族与推理加速机制部分）
-- 摘要：梳理 NN HAL 1.3 的 IDevice/IPreparedModel/IExecutionCallback/IFencedExecutionCallback 四接口架构，fenced execution、burst execution、compilation caching、QoS priority 等加速特性均通过 HAL 层实现；Android 17 未引入新的 NN HAL 主版本，AI 推理加速集中在 system 级 profiling 与 driver 端对 HAL 1.3 既有能力的最佳实践。
-- 用途：支撑本节 NNAPI / NN HAL 与厂商 delegate 的底层接口边界。
-
-### Android 端侧 AI 推理栈边界验证
-- 来源：DeepResearch/2026-05-26-android-17-npu-aicore-lert-capability-boundary.md（端侧 AI 推理栈边界验证部分）
-- 摘要：整理 AICore、LiteRT、NNAPI / NN HAL 和厂商 SDK 的分层关系，明确 AICore 与 LiteRT 不属于 AOSP 公共平台能力，Android 17 新增的是 NPU feature 声明管理边界。
-- 用途：支撑本节“公开 API、Preview 能力与闭源组件边界”小节。
+LiteRT、Play for On-device AI 和厂商兼容列表会独立更新。使用这些资料时应记录 runtime release 和查询日期，不能只记录 Android 17 平台版本。
