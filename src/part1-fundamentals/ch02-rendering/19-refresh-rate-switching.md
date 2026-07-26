@@ -17,23 +17,43 @@ last_task2b_lite_at: 2026-06-06
 task2b_notes: "2026-06-06 Task2B main 回炉 #3：P1 ARR版本表重写（拆分MRR/ARR边界 Android 15-QPR1+），ARR原理和场景描述修正，厂商功耗/延迟/百分比声明全部去量化为定性描述，移除60-80%切换减少和无法回溯的设备条件声明。"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-07-25"
-last_verified_against: AOSP android-17.0.0_r1, Composer3 AIDL, Perfetto android-17.0.0_r1, kernel android17-6.18-2026-06_r6, Android MRR / frame-rate / ARR 官方文档
+last_verified_against: AOSP android-17.0.0_r1, Composer3 AIDL, Perfetto android-17.0.0_r1, kernel android17-6.18-2026-06_r6, Android MRR / frame-rate / ARR 官方文档, Writer rendering_pipelines S01 / S08 / S12
 confidence: high
 sources:
   - type: aosp
-    path: "frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp"
+    url: "https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp"
   - type: aosp
-    path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
+    url: "https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
   - type: aosp
-    path: "frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp"
+    url: "https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp"
   - type: aosp
-    path: "frameworks/native/services/surfaceflinger/Scheduler/LayerHistory.cpp"
+    url: "https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/Scheduler/LayerHistory.cpp"
   - type: aosp
-    path: "hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/"
+    url: "https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp"
+  - type: aosp
+    url: "https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayConfiguration.aidl"
+  - type: aosp
+    url: "https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayCommand.aidl"
+  - type: aosp
+    url: "https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/ActiveConfigCommand.aidl"
+  - type: kernel
+    url: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_vblank.c"
+  - type: kernel
+    url: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_atomic_helper.c"
+  - type: kernel
+    url: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c"
   - type: official-doc
     url: "https://source.android.com/docs/core/graphics/multiple-refresh-rate"
   - type: official-doc
+    url: "https://source.android.com/docs/core/graphics/arr"
+  - type: official-doc
     url: "https://developer.android.com/media/optimize/performance/frame-rate"
+  - type: material
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md"
+  - type: material
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md"
+  - type: material
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S12_video_overlay_hwc_type.md"
 tags: [refresh-rate, frame-rate, SurfaceFlinger, VSync, setFrameRate, jank, rendering, display-mode, ARR]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
 task9_reviewed_date: "2026-06-06"
@@ -66,11 +86,13 @@ last_deepseek_cn_review_at: 2026-07-17
 
 1. SurfaceFlinger 选出了新的显示模式；
 2. Composer HAL 开始执行模式切换；
-3. 新模式已经由显示硬件采用，并通过 present fence 得到确认。
+3. SurfaceFlinger 将目标模式更新为 active。
 
-这三个时刻可能相隔若干次合成。只看 App 主线程、`Choreographer#doFrame` 或某一帧的 CPU 耗时，无法证明显示模式是否已经切换，也无法证明掉帧由模式切换引起。
+第三步有两种完成方式：DisplayCommand modeset 成功且不要求刷新帧时，平台立即完成 active 状态更新；HAL 要求先提交刷新帧时，SurfaceFlinger 会等相关 FrameTarget 不再 pending 后再完成更新。后一路径用到了 present fence 状态，但 fence 只证明对应显示提交已经完成，不能单独证明面板内部的 PLL、命令序列或扫描周期。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，讨论离散多刷新率显示（Multiple Refresh Rate，MRR）的模式切换、应用帧率请求和系统侧诊断。面板在同一配置内改变 VSync 周期的自适应刷新率（Adaptive Refresh Rate，ARR）见 [2.18 自适应刷新率：原理、接口与策略](18-adaptive-refresh-rate.md)。
+这些时刻可能相隔若干次合成。只看 App 主线程、`Choreographer#doFrame` 或某一帧的 CPU 耗时，无法证明显示模式是否已经切换，也无法证明掉帧由模式切换引起。
+
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，讨论离散多刷新率显示（Multiple Refresh Rate，MRR）的模式切换、应用帧率请求和系统侧诊断。面板在同一 ARR 配置内按离散 TE/VSync 步进改变实际刷新节奏，不需要为每次节奏变化切换显示配置；相关机制见 [2.18 自适应刷新率：原理、接口与策略](18-adaptive-refresh-rate.md)。
 
 ## 1. 先区分三类变化
 
@@ -80,7 +102,7 @@ last_deepseek_cn_review_at: 2026-07-17
 |---|---|---|
 | Render rate 变化 | SurfaceFlinger 改变调度和合成节奏，物理 display mode 不变 | 否 |
 | MRR 模式切换 | 在多个离散 display mode 之间切换，例如 60 Hz → 120 Hz | 是 |
-| ARR 周期调整 | 在一个支持 ARR 的配置内动态改变面板 VSync 周期 | 否，走 ARR 配置与周期控制路径 |
+| ARR 刷新节奏调整 | 在一个 ARR 配置内按 TE/VSync 的离散倍数改变实际刷新或自刷新间隔；配置的 `vsyncPeriod` 仍表示 TE/VSync 基准 | 否，走 ARR cadence 提示与面板自刷新控制路径 |
 
 ### 1.1 Render rate 变化不等于显示模式切换
 
@@ -106,9 +128,9 @@ MRR 不意味着应用能指定最终模式。`Surface.setFrameRate()` 提供内
 
 应用必须能在请求没有被满足时正常运行。
 
-### 1.3 ARR 在一个配置内调整周期
+### 1.3 ARR 在一个配置内调整实际刷新节奏
 
-Android 15 QPR1 起的平台 ARR 支持允许兼容硬件在一个显示配置内改变刷新周期。Android 17 中，`FRAME_RATE_CATEGORY_*`、`requestedFrameRate` 以及平台的启发式分类可参与 ARR 决策。
+Android 15 QPR1 起的平台 ARR 支持允许兼容硬件在一个显示配置内调整实际刷新节奏。ARR 配置中的 `DisplayConfiguration.vsyncPeriod` 表示 TE 信号周期；面板可以在满足 `minFrameIntervalNs` 的前提下，选择 TE/VSync 周期的离散倍数来展示下一帧。Android 17 中，`FRAME_RATE_CATEGORY_*`、`requestedFrameRate` 以及平台的启发式分类可参与 ARR 决策。
 
 ARR 减少了频繁切换离散模式的需求，却不会消除应用自身的帧生产抖动、错误的 presentation timestamp、GPU 超预算或 HWC 合成延迟。排查时仍要把“应用生产”“SurfaceFlinger 合成”“显示消费”分开观察。
 
@@ -149,7 +171,9 @@ Android 12 / API 31 增加了 `Display.Mode.getAlternativeRefreshRates()`。返�
 
 ## 3. Android 17 的模式切换状态机
 
-Android 17 把显示模式请求分成 `desired`、`pending` 和 `active` 三个阶段。这套状态机能解释很多“选择已经发生，但屏幕还没有进入新频率”的 Trace。
+从诊断角度，可以把 Android 17 的显示模式请求分成 `desired`、`pending` 和 `active` 三个阶段。这套模型能解释很多“选择已经发生，但 SurfaceFlinger 还没有把目标模式记为 active”的 Trace。
+
+源码中的内部状态还受 `modeset_state_machine` 平台 flag 控制。启用新状态机时，`pendingModeOpt` 明确保存待完成请求；legacy 路径还会使用 `isModeSetPending`。flag 会改变请求合并、pending 保存和完成清理的实现，下面的三阶段模型及四组 Trace 计数器仍适合跨设备定位问题，不能据此假定所有 Android 17 系统镜像走完全相同的内部代码分支。
 
 ```text
 Layer 请求 / 内容检测 / 系统策略
@@ -159,10 +183,10 @@ Layer 请求 / 内容检测 / 系统策略
                 │
                 ▼
              desired
-                │  下一次提交给 HWC
+                │  提交给 HWC
                 ▼
              pending
-                │  HAL 时间线 + present fence
+                │  立即完成，或等待刷新帧退出 pending
                 ▼
               active
 ```
@@ -201,23 +225,28 @@ SurfaceFlinger 调用 `DisplayModeController::setDesiredMode()`。同一帧内�
 - `desiredTimeNanos`：`CLOCK_MONOTONIC` 时间点；显示周期不得早于该时间改变；
 - `seamlessRequired`：这次切换是否必须无缝。
 
-请求经 `DisplayModeController`、`HWComposer` 到 Composer3 的 `setActiveConfigWithConstraints()`。成功时 HAL 返回 `VsyncPeriodChangeTimeline`：
+Android 17 的 `DisplayModeController::initiateModeChange()` 会根据 Composer 能力选择两条路径：
+
+- Composer 不支持 DisplayCommand modeset：调用 `setActiveModeWithConstraints()`，向 HAL 请求受约束的 active config 切换，并接收 `VsyncPeriodChangeTimeline`；
+- Composer 支持 DisplayCommand modeset：调用 `setDisplayMode()`，由 `DisplayCommand.activeConfig` 携带目标 config 和 `seamlessRequired`。源码把成功结果视为立即生效，设置 `refreshRequired = false`，并以当前 `systemTime()` 填入 `newVsyncAppliedTimeNanos`。
+
+受约束切换路径返回的 `VsyncPeriodChangeTimeline` 包含：
 
 - `newVsyncAppliedTimeNanos`：硬件预计开始使用新周期的时间；
 - `refreshRequired`：切换前是否需要客户端再提交一帧；
 - `refreshTimeNanos`：需要提交该帧的预计时间。
 
-Scheduler 使用这条时间线调整 VSync 预测。如果 `refreshRequired` 为真，SurfaceFlinger 会安排相应的合成；若到期仍需要刷新帧，还会继续请求一次合成。此时模式请求处于 pending。
+Scheduler 使用时间线调整 VSync 预测。如果 `refreshRequired` 为真，SurfaceFlinger 会安排相应的合成；Composer 后续也可以通过 timing-changed 回调更新这条时间线。DisplayCommand 分支以及其他返回 `refreshRequired = false` 的成功路径会直接调用 `finalizeDisplayModeChange()`，不进入刷新帧等待。
 
-### 3.4 `active`：由 present fence 确认
+### 3.4 `active`：完成平台侧状态更新
 
-提交模式切换命令后，SurfaceFlinger 不会立即把目标模式记为 active。Android 17 的提交路径会检查相关 present fence：
+需要刷新帧的模式切换不会在命令提交后立即被记为 active。Android 17 的 commit 路径通过 `FrameTarget::isFramePending()` 检查相关前序显示提交；该状态包含 present fence 的完成情况：
 
-- fence 尚未 signal：安排下一帧，继续等待；
-- fence 已 signal：调用 `finalizeDisplayModeChange()`；
+- FrameTarget 仍 pending：安排下一帧，继续等待；
+- FrameTarget 不再 pending：调用 `finalizeDisplayModeChange()`；
 - 完成后更新 active mode、active render rate 和 RefreshRateSelector 的当前模式。
 
-present fence 给出了“这一批显示提交已经完成”的时序证据。它比仅看请求发起时间更接近用户看到新模式的时刻。
+DisplayCommand modeset 成功且 `refreshRequired = false` 时不经过这段等待，SurfaceFlinger 会立即 finalize。对需要等待的路径，present fence 给出了“对应显示提交已经完成”的时序证据，通常比请求发起时间更接近用户看到新模式的时刻；它仍不是面板内部时序的独立测量。
 
 ### 3.5 分辨率切换要单独分析
 
@@ -239,9 +268,9 @@ present fence 给出了“这一批显示提交已经完成”的时序证据。
 
 第三项需要用 FrameTimeline、CPU/GPU slice 和 present timing 证明，不能由 display mode 推断。
 
-### 4.2 HAL 时间线可能要求额外刷新帧
+### 4.2 受约束切换的 HAL 时间线可能要求额外刷新帧
 
-某些显示实现需要 SurfaceFlinger 在切换前发送一帧，Composer HAL 会通过 `refreshRequired` 和 `refreshTimeNanos` 明确表达。若该帧准备、合成或显示较晚，切换窗口附近会出现较长帧。
+`setActiveModeWithConstraints()` 路径中的某些显示实现需要 SurfaceFlinger 在切换前发送一帧，Composer HAL 会通过 `refreshRequired` 和 `refreshTimeNanos` 明确表达。若该帧准备、合成或显示较晚，切换窗口附近会出现较长帧。Android 17 的 DisplayCommand modeset 成功路径明确填写 `refreshRequired = false`，不能把“额外刷新帧”当成所有模式切换的固定步骤。
 
 这不是一个固定的“一到三帧”规则。持续时间取决于面板、显示控制器、Composer 实现、当前队列和切换类型，必须从目标设备的 Trace 与 HAL 证据得出。
 
@@ -490,7 +519,7 @@ Android 平台没有这种通用映射。结果由内容请求、系统策略、
 3. 在 Perfetto 中定位 `HasDesiredMode`、`PendingModeFps`、`ActiveModeFps`、`RenderRateFps`。
 4. 用 FrameTimeline 判断 missed deadline 位于 App 还是 SurfaceFlinger。
 5. 对齐 HWC/present fence，确认模式何时完成。
-6. 区分纯刷新率切换、跨分辨率切换、render rate 调整和 ARR 周期变化。
+6. 区分纯刷新率切换、跨分辨率切换、render rate 调整和 ARR 实际刷新节奏变化。
 7. 在目标设备上核对 Composer 与内核日志，不用芯片平台经验替代证据。
 8. 固定显示模式做对照实验，避免把同时发生的解码、加载或 GPU 压力误归因给 modeset。
 
@@ -500,13 +529,21 @@ Android 平台没有这种通用映射。结果由内容请求、系统策略、
 - [AOSP `SurfaceFlinger`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp)
 - [AOSP `RefreshRateSelector`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp)
 - [AOSP `LayerHistory`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/Scheduler/LayerHistory.cpp)
+- [AOSP `HWComposer`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp)
+- [Composer3 `DisplayConfiguration.aidl`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayConfiguration.aidl)
+- [Composer3 `DisplayCommand.aidl`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayCommand.aidl)
+- [Composer3 `ActiveConfigCommand.aidl`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/ActiveConfigCommand.aidl)
 - [Composer3 `IComposerClient.aidl`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/IComposerClient.aidl)
 - [Composer3 `VsyncPeriodChangeConstraints.aidl`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/VsyncPeriodChangeConstraints.aidl)
 - [Composer3 `VsyncPeriodChangeTimeline.aidl`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/VsyncPeriodChangeTimeline.aidl)
 - [AOSP：Multiple refresh rate](https://source.android.com/docs/core/graphics/multiple-refresh-rate)
+- [AOSP：Adaptive refresh rate](https://source.android.com/docs/core/graphics/arr)
 - [Android Developers：Frame rate](https://developer.android.com/media/optimize/performance/frame-rate)
 - [Android Developers：`Surface.setFrameRate()`](https://developer.android.com/reference/android/view/Surface#setFrameRate(float,int,int))
 - [Android Developers：`Display.Mode.getAlternativeRefreshRates()`](https://developer.android.com/reference/android/view/Display.Mode#getAlternativeRefreshRates())
 - [Android Developers：Optimize refresh rates for games](https://developer.android.com/games/optimize/display-refresh-rate-change)
 - [Android Developers：Adaptive refresh rate](https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate)
 - [`android17-6.18-2026-06_r6`：DRM VBlank](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_vblank.c)
+- [`android17-6.18-2026-06_r6`：DRM atomic helper](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_atomic_helper.c)
+- [`android17-6.18-2026-06_r6`：DMA fence](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)
+- Writer `rendering_pipelines`：`S01_rendering_types_overview.md`、`S08_native_graphics_type.md` 与 `S12_video_overlay_hwc_type.md`
