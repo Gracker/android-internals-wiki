@@ -231,6 +231,8 @@ Batterystats 适合回答“某 UID 在多长时间内持有哪些锁、触发�
 
 这些机制可以叠加。一次 Job 延迟可能同时受到 Doze、standby bucket、后台限制、quota、网络约束和 thermal 状态影响。
 
+Low Power Standby 开启后，设备处于非交互状态且不在 device-idle 维护窗口时，应用的网络访问会被禁用，持有的 WakeLock 会被忽略；运行 foreground service 的应用也在限制范围内。Android 14 / API 34 增加了 `isExemptFromLowPowerStandby()` 与 `isAllowedInLowPowerStandby()`，用于查询当前策略下的豁免和允许能力。该查询只描述 Low Power Standby，不能代替 Doze allowlist、standby bucket 或用户后台限制检查。
+
 ### Doze 的行为
 
 设备满足平台定义的空闲条件后进入 Doze。Android 不给应用承诺“灭屏 30 分钟后进入”等固定时间；Light/Deep 状态机的延迟、维护窗口和运动检测都可以由系统配置。
@@ -238,7 +240,7 @@ Batterystats 适合回答“某 UID 在多长时间内持有哪些锁、触发�
 Doze 期间，普通应用通常会遇到：
 
 - 网络访问暂停；
-- framework WakeLock 被忽略；
+- 未获豁免应用的 partial WakeLock 被忽略；
 - JobScheduler、WorkManager 和 Sync 延后；
 - 普通 Alarm 延后到维护窗口；
 - Wi-Fi 扫描等高成本操作受限。
@@ -409,7 +411,7 @@ Perfetto energy consumer、Power Profiler 或 rail 数据是否存在取决于�
 
 ### Android vitals 口径
 
-截至 2026 年 Android vitals 文档，非豁免 partial WakeLock 在 24 小时内累计达到 2 小时会被报告为 excessive；若 28 天窗口内受影响会话超过 5%，还可能影响 Play 可见性。音频、位置和 JobScheduler UIJ 等用户收益明确的场景有统计豁免。
+截至 2026 年 Android vitals 文档，非豁免 partial WakeLock 在 24 小时内累计达到 2 小时会被报告为 excessive；这里仅统计应用处于后台或运行 foreground service 时持有的时长。若 28 天窗口内受影响会话超过 5%，从 2026 年 3 月 1 日起可能影响 Play 可见性。音频、位置和 JobScheduler user-initiated API 等用户收益明确的场景有统计豁免。
 
 这是 Play 质量政策指标，可能更新，也不等同于系统强制释放阈值。应用内部应采用更严格、与业务时限匹配的预算。
 
@@ -475,7 +477,8 @@ Batterystats 包含记账和模型估算。硬件 rail、采样周期和归因�
 | Android 8 / API 26 | 后台执行与前台服务限制 | 长期后台服务受到更强约束 |
 | Android 9 / API 28 | App Standby Buckets、Adaptive Battery | bucket 可由使用历史或预测影响 |
 | Android 12 / API 31 | RESTRICTED bucket | 增加更严格的应用级资源限制 |
-| Android 13+ | restricted 行为与启动限制继续加强 | 精确规则需按 target SDK 与设备核对 |
+| Android 13 / API 33 | Low Power Standby、RESTRICTED bucket 规则更新 | 非交互阶段可进一步限制网络和 WakeLock；restricted 行为仍需按设备核对 |
+| Android 14 / API 34 | Low Power Standby policy 查询 | 增加豁免、allowed reason 与 allowed feature 查询 |
 | Android 16 / API 36 | Active bucket Job runtime quota 等规则调整 | WorkManager/DownloadManager 也受平台 Job quota 影响 |
 | Android 17 / API 37 | 以 `android-17.0.0_r1` PMS、SystemSuspend、JobScheduler APEX 为准 | 不假设新的固定 Doze 时序或 vendor 策略 |
 
@@ -499,6 +502,7 @@ Batterystats 包含记账和模型估算。硬件 rail、采样周期和归因�
 - [Optimize for Doze and App Standby](https://developer.android.com/training/monitoring-device-state/doze-standby)
 - [App Standby Buckets](https://developer.android.com/topic/performance/appstandby)
 - [Background optimization](https://developer.android.com/topic/performance/background-optimization)
+- [PowerManager：Low Power Standby](https://developer.android.com/reference/android/os/PowerManager#isLowPowerStandbyEnabled())
 - [Batterystats and Battery Historian setup](https://developer.android.com/topic/performance/power/setup-battery-historian)
 - [Excessive partial WakeLocks](https://developer.android.com/topic/performance/vitals/excessive-wakelock)
 - [WorkManager task scheduling](https://developer.android.com/develop/background-work/background-tasks/persistent)
