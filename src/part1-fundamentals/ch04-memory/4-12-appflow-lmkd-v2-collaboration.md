@@ -70,5 +70,4 @@ gap_source: "AOSP结构"
 
 <!-- outline-end -->
 
-> 本节内容待加工。
-[结构参考: Clippings/Android性能优化.md]
+> **废弃说明**：本页没有独立源码或测试材料，且 protected outline 中的 AppFlow 协作协议、`LM_PROCS_PRIO`、32 进程批处理、io_uring 与启动保护窗口均无法在 `android-17.0.0_r1` 中成立。正确命令名为 `LMK_PROCS_PRIO`，每个控制 packet 最多携带 3 条记录；详见 [4.36 LMK_PROCS_PRIO 批量命令](4.36-android17-lmkd-procs-prio-batch.md)。Android 17 lmkd 的全局 PSI 与 cgroup 边界见 [4.50 LMKD PSI 分层内存压力治理](4.50-lmkd-v2-psi-tiered-pressure-governance.md)。本页不再维护。
