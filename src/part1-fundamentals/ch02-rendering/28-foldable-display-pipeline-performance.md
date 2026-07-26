@@ -1,5 +1,5 @@
 ---
-title: "折叠屏显示管线与铰链状态渲染性能"
+title: "折叠屏显示切换、窗口连续性与渲染性能"
 chapter: "2.28"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -8,267 +8,584 @@ related_chapters: ["2.6", "2.12", "2.18", "2.20", "3.4", "7.12", "22.14"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-23"
 drafted_date: "2026-06-24"
-last_verified: "2026-06-24"
-last_verified_against: "AOSP android-14.0.0_r1 + official docs (developer.android.com)"
-confidence: medium
+last_verified: "2026-07-25"
+last_verified_against: "AOSP android-17.0.0_r1 + Android Developers 2026-07"
+confidence: high
 sources:
   - type: official
-    path: "https://developer.android.com/guide/topics/large-screens/learn-about-foldables"
+    path: "https://developer.android.com/develop/adaptive-apps/guides/foldables/make-your-app-fold-aware"
   - type: official
     path: "https://developer.android.com/reference/androidx/window/layout/FoldingFeature"
   - type: official
-    path: "https://developer.android.com/about/versions/16/behavior-changes-16"
+    path: "https://developer.android.com/about/versions/17/changes/ff-restrictions-ignored"
+  - type: official
+    path: "https://developer.android.com/studio/test/espresso-api"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/policy/DeviceStateProviderImpl.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/devicestate/DeviceStateManagerService.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/display/LogicalDisplayMapper.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/hardware/Sensor.java (TYPE_HINGE_ANGLE)"
+    path: "frameworks/base/services/core/java/com/android/server/display/DeviceStateToLayoutMap.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/display/DisplayModeDirector.java"
+    path: "frameworks/base/packages/SystemUI/unfold/"
 ---
 
-# 2.28 折叠屏显示管线与铰链状态渲染性能
+# 2.28 折叠屏显示切换、窗口连续性与渲染性能
 
-折叠屏设备从 Android 12（API 31）起作为一等公民进入系统设计。与直板机相比，折叠屏在硬件通路（内屏/外屏双显示路径）、显示尺寸/分辨率动态切换、铰链传感器输入三个方面对渲染管线提出了额外要求。本节从显示硬件架构、WindowManager 折叠状态 API、转换期间 SurfaceFlinger 行为、铰链角度传感器延迟、双屏合成开销五个维度展开，给出性能观测方法和优化方向。
+折叠屏的性能问题常被简化成“大屏像素更多，所以 GPU 更慢”。这只能解释一小部分现象。一次折叠或展开可能同时触发：
 
-## 折叠屏显示硬件架构
+- 设备姿态条件变化；
+- 内建物理 Display 的开关或重映射；
+- WMS 的 DisplayContent、Task、Window 与 Insets 更新；
+- Shell/SystemUI 的可选 unfold transition；
+- 应用窗口尺寸、资源配置与布局变化；
+- SurfaceFlinger 为目标 Display 重新构建可见 layer 集合；
+- HWC 针对新 Display、mode 和 layer 属性重新选择合成策略。
 
-折叠屏设备的显示硬件配置与直板机有三处结构差异。
+这些阶段属于不同进程和时间边界。排查时先判断问题落在哪一层，再讨论 GPU、Activity 重建或铰链传感器。
 
-**双显示通路**：设备同时搭载内屏（inner display，展开后使用）和外屏（cover display，折叠态使用）。两条显示通路各自连接到 SurfaceFlinger 的不同 Display 节点。内屏展开态分辨率通常在 2200×1768 到 2176×1812 之间（Samsung Galaxy Z Fold 系列、Honor Magic V 系列），像素密度高于典型手机外屏。GPU 填充率和 SurfaceFlinger 合成负载随之上升——同一帧内容在内屏全分辨率下需要填充的像素数量约为外屏的 2-3 倍。
+本文主线固定到 Android 17 / API 37 / `android-17.0.0_r1`。Android 12–16 仅用于说明演进。
 
-**铰链区域像素排布**：柔性 OLED 面板在铰链弯折区域采用与主显示区不同的像素排布密度。这个区域在展开态可以正常显示内容，在折叠态则物理隐藏。双屏设备（如 Microsoft Surface Duo）的铰链区域完全无像素，用物理铰链连接两块独立面板——这种情况下 FoldingFeature 的 occlusionType 为 FULL。[已验证: 官方文档, developer.android.com/reference/androidx/window/layout/FoldingFeature]
+## 1. 先建立对象模型
 
-**可变刷新率策略**：折叠屏设备的面板通常支持多档刷新率（如 1Hz/10Hz/60Hz/120Hz）。DisplayModeDirector 根据设备折叠状态选择不同的刷新率档位——展开态倾向于高刷新率（120Hz）以匹配大屏交互预期，折叠态可能降频以节省功耗。详见 §2.18 自适应刷新率。[已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/display/mode/DisplayModeDirector.java]
+### 1.1 Physical Display、DisplayDevice 与 LogicalDisplay
 
-## Jetpack WindowManager 折叠状态 API 与布局性能
+Android 显示框架区分物理设备和系统对外使用的逻辑 Display：
 
-Jetpack WindowManager（`androidx.window:window`）提供折叠状态感知 API，不依赖平台 API level。核心接口链路如下。
+- **物理 Display**：面板与 HWC display，由物理地址标识；
+- **`DisplayDevice`**：DisplayManager 对物理或虚拟显示设备的包装；
+- **`LogicalDisplay`**：系统用于组织 layer stack、DisplayInfo、display group 和窗口内容的逻辑对象；
+- **SurfaceFlinger Display / CompositionEngine Output**：针对最终输出建立合成状态并执行 present。
 
-### WindowInfoTracker → FoldingFeature 回调链路
+折叠设备可能让一个稳定的逻辑 display id 在不同设备状态下映射到不同内建面板。它也可能保留多个逻辑 Display，并在 layout 中改变 enabled 状态。设备厂商通过配置决定采用哪种方式。
 
-```
-WindowInfoTracker.windowLayoutInfo(activity)
-  → WindowLayoutInfo流(包含 DisplayFeature 列表)
-    → FoldingFeature(state, orientation, bounds, occlusionType)
-```
+因此：
 
-FoldingFeature 暴露四个关键属性：
+- “内屏/外屏切换”不一定表现为 `DisplayListener.onDisplayRemoved()` 再 `onDisplayAdded()`；
+- logical display id 没变，也不能推导底层物理面板、分辨率、density 或 mode 没变；
+- 看到两个内建面板，不代表两个面板始终能同时点亮。
 
-- **state**：`FLAT`（完全展开平放）或 `HALF_OPENED`（中间态）
-- **orientation**：`HORIZONTAL`（水平铰链，如书本翻页）或 `VERTICAL`（垂直铰链）
-- **occlusionType**：`NONE`（连续柔性屏，铰链区域可显示）或 `FULL`（物理铰链，不可显示）
-- **isSeparating()**：返回 `true` 时表示铰链将屏幕分成两个逻辑显示区域
+### 1.2 DeviceStateToLayoutMap 决定什么
 
-[已验证: 官方文档, developer.android.com/reference/androidx/window/layout/FoldingFeature]
+Android 17 的 `DeviceStateToLayoutMap` 从以下位置读取 display layout：
 
-### 回调频率与 UI 线程协调
-
-`WindowInfoTracker` 通过 `Activity.getWindowManager()` 和 `WindowMetrics` 推送布局信息变更。当铰链物理状态改变时，系统依次发出：
-
-1. `WindowLayoutInfo` 更新（包含新的 FoldingFeature）
-2. Configuration change（如果 manifest 声明了 `configChanges`）
-3. `onConfigurationChanged()` 回调
-
-铰链快速开合（用户在 1-2 秒内完成折叠/展开动作）时，上述回调可能连续触发 2-3 次。每次回调都会触发 `measure()` / `layout()` 重新执行。如果布局层级复杂（深度 > 10 层），measure/layout 耗时可能超过一帧预算（120Hz 下 8.33ms）。
-
-### Activity Embedding 与折叠态切换
-
-Activity Embedding（`androidx.window.extensions`）允许在展开态自动将两个 Activity 以 split rule 排列。折叠态切换时，split rule 需要同步更新：
-
-- 展开态 → 折叠态：split pair 从并排变为堆叠，触发 `SplitLayout` 重新计算
-- 折叠态 → 展开态：检测到 `FoldingFeature.state == FLAT` 且屏幕宽度 ≥ 600dp 时，重新激活 split rule
-
-`SplitRule` 的 `minWidthDp` 和 `minSmallestWidthDp` 决定了 split 是否激活。如果阈值设置不当，折叠态切换会出现 split 反复激活/失活的抖动。
-
-### Android 16 大屏强制可缩放
-
-Android 16（API 36）对 targetSdk 36 的应用强制忽略 `screenOrientation`、`resizableActivity="false"`、`minAspectRatio`、`maxAspectRatio` 等限制，前提是显示设备 smallest width ≥ 600dp。折叠屏展开态通常满足这个条件。这意味着应用无法再通过 manifest 声明来避免折叠态下的配置变更——必须处理 `onConfigurationChanged()` 或承受 Activity 重建的开销。Android 17 移除了 `PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY` 临时豁免。[已验证: 官方文档, developer.android.com/about/versions/16/behavior-changes-16]
-
-## 折叠/展开转换期间的渲染管线行为
-
-折叠→展开或展开→折叠转换期间，显示管线的核心变化发生在三个层面。
-
-### Display 设备变更与 LogicalDisplayMapper
-
-AOSP 的 `LogicalDisplayMapper` 负责将物理 `DisplayDevice` 映射到逻辑 `LogicalDisplay`。对于折叠屏设备，`DeviceStateManager` 维护设备状态（如 `STATE_OPEN`、`STATE_HALF_OPENED`、`STATE_CLOSED`），`DeviceStateToLayoutMap` 定义每种设备状态对应的 display 布局。
-
-转换发生时的处理序列：
-
-1. `DeviceStateManager` 检测到铰链状态变更，发出 `onBaseStateChanged`
-2. `LogicalDisplayMapper` 收到新的设备状态，查询 `DeviceStateToLayoutMap` 确定新的 display 映射
-3. 如果内屏/外屏需要切换：`LogicalDisplay` 从一个 `DisplayDevice` 重映射到另一个
-4. 发出 `LOGICAL_DISPLAY_EVENT_SWAPPED` 事件
-5. `DisplayManagerService` 通知所有 `DisplayListener`
-
-[已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/display/LogicalDisplayMapper.java]
-
-### SurfaceFlinger 重新协商合成策略
-
-Display 物理分辨率或 active 区域变化后，SurfaceFlinger 需要执行：
-
-- 重新查询 HWC 支持的 layer 数量和 format
-- 重新分配 overlay plane（如果 HWC 支持多层 overlay）
-- 重新计算 DisplayFrameRate 和合成管线目标帧率
-
-转换期间可能出现 1-3 帧的丢弃——Surface resize 后的第一帧 latency 通常高于稳态 30-50%。如果应用在转换期间收到 Configuration change 且触发 Activity 重建，首帧延迟可能达到 100ms 以上。
-
-### Configuration change 处理与避免重建
-
-折叠/展开触发的 Configuration change 包含 `screenSize`、`smallestScreenSize`、`screenLayout`、`orientation`（如果方向也变化）。在 manifest 中声明 `android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"` 可以让 Activity 通过 `onConfigurationChanged()` 处理，避免重建。
-
-不声明 `configChanges` 时，Activity 重建流程：`onDestroy` → `onCreate`（含 inflate、measure、layout），耗时与布局复杂度正相关。复杂页面重建可能超过 200ms（120Hz 设备约 24 帧），用户可感知为卡顿。
-
-## 铰链角度传感器延迟与输入管线
-
-`Sensor.TYPE_HINGE_ANGLE`（类型常量 36）提供铰链角度数据，从 Android 11（API 30）起可用。[已验证: AOSP, frameworks/base/core/java/android/hardware/Sensor.java, TYPE_HINGE_ANGLE = 36]
-
-### 传感器到 UI 帧的延迟链路
-
-```
-HAL 传感器采样
-  → SensorService (system_server)
-    → SensorManager.registerListener() 回调 (app 线程)
-      → Choreographer.onVsync() → doFrame()
-        → View invalidate → measure/layout
-          → RenderThread → GPU 渲染
-            → SurfaceFlinger 合成
-              → Display 显示
+```text
+/data/system/displayconfig/display_layout_configuration.xml
+/vendor/etc/displayconfig/display_layout_configuration.xml
 ```
 
-端到端延迟由各环节累积：
+每个 device-state layout 可以为 Display 配置：
 
-- 传感器采样到回调：受 `samplingPeriodUs` 控制，典型值 5-16ms（60Hz-120Hz 采样率）
-- 回调到 Choreographer 对齐：如果回调到达时 Choreographer 已经过了一帧的 VSYNC，延迟增加一帧
-- doFrame 到 Display：标准渲染管线延迟，详见 §2.4 Choreographer 和 §2.5 主线程/RenderThread
+- 物理 `DisplayAddress`；
+- logical display id；
+- 是否 enabled；
+- display group；
+- 前后位置；
+- lead display；
+- brightness / refresh-rate / thermal / power throttling 策略 id。
 
-### 高频采样的调度压力
+这说明刷新率和亮度策略可以随 layout 改变，但 AOSP 没有“展开态固定 120 Hz、折叠态固定低刷新率”的通用规则。具体 mode 还要经过 `DisplayModeDirector`、设备配置、内容投票、热限制和用户设置。
 
-铰链传感器以 120Hz 采样时，每 8.33ms 触发一次 `onSensorChanged` 回调。如果回调处理逻辑执行在主线程，与 `doFrame()` 竞争 CPU 时间。建议做法：
+### 1.3 多内屏并发属于设备能力
 
-- 使用 `Handler` 将传感器回调调度到独立线程
-- 在回调中只更新轻量状态（角度值），不直接触发 `invalidate()`
-- 让 Choreographer 在下一个 VSYNC 自然拾取最新角度值，而非每帧强制 push
+`config_supportsConcurrentInternalDisplays` 表示设备是否支持同时点亮多个内建 Display。layout 还要把相应 Display 设为 enabled，系统才会进入并发内屏状态。
 
-折叠动画的流畅度直接取决于这条链路的端到端延迟。延迟超过两帧（120Hz 下约 16ms）时，动画会出现肉眼可感知的滞后。
+即使两个 Display 同时工作，也不能假设它们的硬件资源完全隔离。HWC 对每个 Display 进行 validate/present，但 overlay、内存带宽、GPU、显示控制器和功耗预算可能受 SoC 与 vendor 实现共同约束。
 
-## 双屏显示与多 Surface 合成开销
+## 2. Android 17 的设备状态主线
 
-部分折叠设备在转换期间短暂同时点亮内外屏。SurfaceFlinger 需要管理两个 Display 输出的合成。
+### 2.1 状态来源由设备配置决定
 
-### 双 Display 合成路径
+`DeviceStateProviderImpl` 从 vendor 或 data 分区的 `device_state_configuration.xml` 读取状态及条件。条件可以引用：
 
-SurfaceFlinger 为每个 Display 维护独立的合成流水线。HWC overlay plane 分配在两个 Display 之间独立进行——一个 Display 的 overlay 分配不会影响另一个，但 GPU fallback 策略需要考虑总 GPU 带宽预算。
+- lid switch；
+- 指定 string type 与 name 的 sensor；
+- 一个 sensor 的一个或多个数值范围。
 
-关键性能指标：
+Provider 按状态 id 从小到大检查条件，选择首个匹配状态。需要的 sensor 会以 `SENSOR_DELAY_FASTEST` 注册，但事件频率仍受具体 sensor 能力与 HAL 行为限制。
 
-- 两块 Display 同时活跃时的合成帧率（是否都能维持目标帧率）
-- Display hotplug 处理期间的帧丢弃
-- `DisplayManager.getDisplays()` 返回列表变化频率和应用感知延迟
+这里没有强制规定“所有折叠设备只看 `TYPE_HINGE_ANGLE`”。厂商可以组合 hall sensor、hinge angle、lid switch 或其他传感器条件。DeviceState id 也是设备配置值，不应在跨设备脚本中写死 `STATE_OPEN=...`。
 
-### DisplayListener 监听延迟
+### 2.2 从 DeviceState 到显示 layout
 
-`DisplayManager.DisplayListener` 的 `onDisplayAdded` / `onDisplayRemoved` 回调通过 Handler 投递，延迟受 Handler 队列长度和主线程负载影响。如果应用在 `onDisplayAdded` 中执行重初始化（如创建新的 Surface、重新分配 buffer），可能进一步阻塞主线程。
+Android 17 的关键路径可以概括为：
 
-`dumpsys SurfaceFlinger --display` 和 `dumpsys display` 可以查看当前 Display 配置、合成策略和 frame rate 目标，用于诊断折叠态 Display 相关的性能问题。
+```mermaid
+flowchart TD
+    A["lid / hinge / vendor sensor 条件"] --> B["DeviceStateProviderImpl"]
+    B --> C["DeviceStateManagerService 提交 DeviceState"]
+    C --> D["DisplayManagerService DeviceStateListener"]
+    D --> E["LogicalDisplayMapper.setDeviceState()"]
+    E --> F["标记需切换的 LogicalDisplay 为 in-transition"]
+    F --> G["请求相关 Display 进入 OFF"]
+    G --> H["全部关闭或 500 ms 超时"]
+    H --> I["应用新的 DeviceState layout"]
+    I --> J["LogicalDisplay 与 DisplayDevice 重映射 / enabled 更新"]
+    J --> K["WMS / Display traversal / SurfaceControl display transaction"]
+    K --> L["SurfaceFlinger / HWC 处理新输出"]
+```
 
-## 折叠屏 Continuity 动画与 App Continuity 性能
+`DeviceStateManagerService` 提交状态时会写入：
 
-App Continuity（应用连续性）确保折叠/展开时应用状态不丢失。核心机制涉及三个层面。
+- `DeviceStateChanged` trace instant；
+- `debug.tracing.device_state` system property；
+- `DEVICE_STATE_CHANGED` stats atom。
 
-### 状态保存与恢复
+DisplayManager 收到回调后，先向 WMS 投递 device state 消息，再调用 `LogicalDisplayMapper.setDeviceState()`。源码注释说明，这个次序用于让 WMS 的 device-state 更新与 display change 事件保持可控次序。
 
-- **SavedStateHandle**：Jetpack ViewModel + SavedStateHandle 在 Activity 重建时保留 UI 状态
-- **WindowMetrics API**：`WindowManager.getCurrentWindowMetrics()` 提供实时窗口尺寸，用于在 `onConfigurationChanged` 中调整布局
-- **ViewModel 生命周期**：Configuration change 不会销毁 ViewModel（如果用 `configChanges` 避免 Activity 重建），但 Activity 重建会触发新的 ViewModel 创建（除非使用 `NonConfigurationScope`）
+### 2.3 为什么切换过程中会看到黑场或过渡层
 
-### 过渡动画帧预算
+`LogicalDisplayMapper` 比较旧 layout 与新 layout。以下情况会把 Display 标成 `in-transition`：
 
-展开态的过渡动画（SplashScreen 退出、布局扩展）需要控制帧预算。`Activity.setLocusContext` 和 SplashScreen API 在折叠态切换时的过渡动画帧率取决于 Choreographer 的 VSYNC 对齐。Jetpack WindowManager 1.2+ 的 `AnimatedPane` 和 Material 3 的 `PaneExpansion` 动画在折叠态切换时的帧率表现取决于：
+- enabled 状态变化；
+- 同一个物理 DisplayDevice 将映射到新的 logical display id；
+- DisplayDevice 只出现在新旧 layout 的一侧；
+- Display 已处于 transition。
 
-- 动画是否跑在 RenderThread（硬件加速）还是主线程（软件渲染）
-- 布局变更是否触发完整 measure/layout 还是局部 invalidate
-- Compose 动画是否在 `BoxWithConstraints` 中正确处理 constraint 变更
+系统先发送 transition 阶段更新，让相关 Display 关闭。全部 transitioning Display 确认 OFF 后，才清除 transition 标记、应用新 layout 并发出后续更新。源码给这段等待设置了 **500 ms** 的强制推进超时。
 
-[待验证: Jetpack WindowManager 1.2+ AnimatedPane 在折叠态切换的帧率基准数据]
+这个机制的目的，是用 display blanking 遮住 resize 过程中可能出现的错误窗口尺寸。500 ms 是框架状态转换的兜底上限，不是用户一定看到 500 ms 黑屏，也不是折叠动画时长。
 
-## 折叠屏性能测试方法
+原始正文中“固定丢 1–3 帧”“第一帧高 30–50%”之类数值没有 AOSP 保证。设备的面板时序、power sequence、Shell transition、应用重绘和 HWC 能力都会改变观测结果。
 
-### Perfetto capture
+### 2.4 layout 应用与 SurfaceFlinger 的边界
 
-折叠/展开转换的性能测试，需要在 Perfetto 中同时捕获以下轨道：
+`applyLayoutLocked()` 会：
 
-- **铰链传感器轨道**：`android.sensor.hinge_angle` 数据
-- **SurfaceFlinger 轨道**：`SurfaceFlinger` 下的 layer timeline 和 VSYNC-sf
-- **App 主线程轨道**：`main` 线程的 measure/layout/draw slice
-- **RenderThread 轨道**：GPU 渲染命令提交和 fence signal
-- **DisplayModeDirector 轨道**：刷新率切换事件
+1. 按 layout 中的物理地址查找 `DisplayDevice`；
+2. 查找或创建对应 `LogicalDisplay`；
+3. 必要时交换 `LogicalDisplay` 背后的 `DisplayDevice`；
+4. 更新 position、lead display、refresh-rate zone、thermal throttling 与 enabled 状态。
 
-测量 fold transition 期间的帧时间线，重点关注：
+后续 DisplayManager traversal 使用 `SurfaceControl.Transaction` 更新 display layer stack、flags、projection、size 和 surface。SurfaceFlinger 接收 display transaction，并为新的 display/output 状态构建合成输入。
 
-- 转换开始后第一帧到最后一帧的时间跨度
-- 丢帧数量和分布（集中在转换起始还是持续整个转换）
-- Display 设备切换时 SurfaceFlinger 的 hotplug 处理耗时
+SurfaceFlinger 不负责识别“手机现在是书本姿态还是桌面姿态”。它处理的是已经由 system_server 转换好的 Display 与 layer 状态。
 
-### Macrobenchmark 局限
+## 3. WMS、Shell 与应用窗口
 
-Macrobenchmark 目前没有原生的 fold 事件触发支持——无法通过代码模拟铰链物理折叠/展开。测试方案只能是：
+### 3.1 Display 树和 Surface 树要分开看
 
-1. 物理操作设备（人工或机械臂），同时运行 Perfetto capture
-2. 使用 `adb shell cmd device_state set-state <STATE>` 模拟设备状态切换（需要 root 或 ADB 权限，且不触发铰链传感器路径）
-3. 使用 UI Automator 模拟用户操作引发的间接配置变更
+WMS 侧按以下对象组织窗口：
 
-[待验证: Macrobenchmark 对 fold 场景的支持现状，上述限制基于 Android 14 公开 API 推断]
+```text
+RootWindowContainer
+  DisplayContent
+    DisplayArea / TaskDisplayArea
+      Task / TaskFragment
+        ActivityRecord
+          WindowToken / WindowState
+```
 
-### dumpsys 诊断
+这棵管理树不会与 SurfaceFlinger layer tree 一一对应。Shell transition 可以创建 leash，把 Task 或窗口 surface 临时 reparent 到 leash，再对 leash 设置 matrix、crop、corner radius 和 position。
+
+折叠动画期间看到 task leash 缩放，不能据此判断 App 每个 progress 都重新提交了一张完整 buffer。
+
+### 3.2 Android 17 的可选 unfold 动画
+
+平台资源 `config_unfoldTransitionEnabled` 与 `config_unfoldTransitionHingeAngle` 决定设备是否启用相应能力。启用角度进度时，SystemUI 的 `HingeSensorAngleProvider` 获取 `TYPE_HINGE_ANGLE`，在后台 handler 上以 `SENSOR_DELAY_FASTEST` 接收事件。
+
+`PhysicsBasedUnfoldTransitionProgressProvider` 把 hinge angle 映射到 0–1 progress，并用 spring animation 平滑更新。WM Shell 的 `UnfoldTransitionHandler` 在进度回调中创建 `SurfaceControl.Transaction`，让 task animator 更新 leash。
+
+以 fullscreen task 为例，AOSP 的 animator 主要更新：
+
+- `setWindowCrop()`；
+- `setMatrix()`；
+- `setCornerRadius()`；
+- `show()`。
+
+这些是 layer 几何事务。App 仍按自己的 Choreographer、View/HWUI 或其他 Producer 路径生产内容。
+
+动画由资源和设备能力控制。没有启用这组模块的设备、厂商自定义 transition、锁屏/AOD 和半开状态都可能走不同路径。
+
+### 3.3 configuration 与 WindowLayoutInfo 没有固定先后表
+
+物理 Display 切换、窗口 bounds 更新和 WindowManager Extensions posture 更新来自不同组件。应用不应依赖以下固定顺序：
+
+```text
+WindowLayoutInfo → Configuration → onConfigurationChanged
+```
+
+一次折叠/展开可能改变 `screenSize`、`smallestScreenSize`、`screenLayout`、`orientation`、`density` 或其他配置；具体集合取决于物理面板、windowing mode、rotation 与厂商实现。
+
+默认情况下，未由 Activity 声明自行处理的 configuration change 会触发 Activity 重建。若使用 `android:configChanges`，应用必须重新读取受影响资源并更新 UI，不能只记录回调后原样返回。
+
+## 4. Jetpack WindowManager：给应用的窗口 posture
+
+### 4.1 WindowInfoTracker 的职责
+
+Jetpack WindowManager 的 `WindowInfoTracker.windowLayoutInfo(activity)` 返回 `WindowLayoutInfo` 流。`displayFeatures` 中可能包含 `FoldingFeature`。
+
+它描述的是 **当前应用窗口坐标系中的 fold/hinge 特征**：
+
+- `bounds`：feature 在应用窗口中的矩形；
+- `state`：`FLAT` 或 `HALF_OPENED`；
+- `orientation`：fold/hinge 轴线为 `HORIZONTAL` 或 `VERTICAL`；
+- `occlusionType`：`NONE` 或 `FULL`；
+- `isSeparating`：该 feature 是否把可用窗口视为两个逻辑区域。
+
+`FoldingFeature` 没有 `CLOSED` 状态，也不提供精确 hinge angle。应用切到外屏后，当前窗口可能不再包含 folding feature。
+
+### 4.2 orientation 的含义容易读反
+
+`FoldingFeature.Orientation.HORIZONTAL` 表示 feature 的宽大于高，铰链线沿水平方向；`VERTICAL` 表示铰链线沿垂直方向。
+
+判断 tabletop posture 时通常检查：
+
+```kotlin
+foldingFeature.state == FoldingFeature.State.HALF_OPENED &&
+    foldingFeature.orientation == FoldingFeature.Orientation.HORIZONTAL
+```
+
+判断 book posture 时把方向换成 `VERTICAL`。双屏设备即使报告 `FLAT`，hinge 仍可能保持 separating。
+
+### 4.3 occlusion 与 separating 回答不同问题
+
+- `occlusionType == FULL`：feature bounds 内的内容不可见或不可触达；
+- `occlusionType == NONE`：feature 自身不遮挡内容；
+- `isSeparating == true`：布局应把 feature 视作两个逻辑区域的边界。
+
+连续柔性屏在平放时可以 `NONE` 且不 separating；半开时通常 separating。双面板 hinge 可以 separating，即使 feature bounds 的某个维度为零。
+
+布局代码应按 `bounds`、occlusion 和 separating 分别判断，不能只用 `state == FLAT` 推导“整个窗口没有铰链约束”。
+
+### 4.4 生命周期安全的收集方式
+
+官方推荐在 `STARTED` 生命周期内收集，停止时自动取消：
+
+```kotlin
+lifecycleScope.launch(Dispatchers.Main) {
+    lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+        WindowInfoTracker.getOrCreate(this@MainActivity)
+            .windowLayoutInfo(this@MainActivity)
+            .collect { layoutInfo ->
+                val fold = layoutInfo.displayFeatures
+                    .filterIsInstance<FoldingFeature>()
+                    .firstOrNull()
+                renderPosture(fold)
+            }
+    }
+}
+```
+
+这段代码解决订阅生命周期，不限制重组或 View layout 成本。回调中应先把 posture 归一化成小而稳定的 UI state，再让受影响的区域读取它。
+
+## 5. 原始 hinge angle sensor 的使用边界
+
+### 5.1 TYPE_HINGE_ANGLE 是 on-change sensor
+
+`Sensor.TYPE_HINGE_ANGLE` 的类型值是 36，string type 为 `android.sensor.hinge_angle`。AOSP 传感器规范将它定义为：
+
+- on-change reporting mode；
+- 角度单位为 degree；
+- 默认 sensor 为 wake-up sensor。
+
+它不是每台设备都必须提供的公共能力。应用需要检查 `getDefaultSensor(TYPE_HINGE_ANGLE)` 是否为 null。
+
+on-change 也意味着不能把它写成固定 60 Hz 或 120 Hz 的周期源。`SENSOR_DELAY_FASTEST` 只是请求尽快交付，不会突破 sensor 的实际 min delay、HAL 去抖或事件变化规律。
+
+### 5.2 精确角度动画需要设备校准
+
+Android 官方明确提醒：不同设备的上报范围和精度可能不同，基于精确角度的动画或业务逻辑需要针对设备调校。
+
+面向普通应用：
+
+- posture/layout 优先使用 `FoldingFeature`；
+- 只有需要连续角度体验时再订阅 sensor；
+- 在后台线程接收并保存最新值；
+- 按 UI frame 节奏采样最新值，避免每个 sensor event 都触发全树 `requestLayout()`；
+- 页面停止或不需要动画时及时注销。
+
+“角度回调到屏幕超过两帧即可感知”没有统一依据。应按目标刷新率、设备、动画速度和输入到显示的测量结果设门槛。
+
+### 5.3 系统状态与 App sensor 回调不是同一条时间线
+
+DeviceStateProvider 可以用 hinge sensor 条件产生离散设备状态；SystemUI 又可能直接使用 hinge angle 驱动 unfold progress；App 还可以注册自己的 listener。三者的线程、过滤、权限与消费时机不同。
+
+Perfetto 中出现 `DeviceStateChanged`，只能证明 DeviceState 已提交。它不能替代原始 hall/hinge 采样时间。要测 sensor-to-photon，需要平台 tracepoint、App 自定义 trace 或外部硬件时间基准。
+
+## 6. 应用连续性与布局成本
+
+### 6.1 Activity 重建与 ViewModel
+
+默认 configuration handling 会销毁并重建 Activity。Architecture Components `ViewModel` 会跨 configuration change 保留；`SavedStateHandle`、`rememberSaveable` 等用于恢复可保存 UI 状态，并应覆盖系统进程被回收的情况。
+
+原文“Activity 重建会创建新的 ViewModel，除非使用 NonConfigurationScope”不符合常规 `ViewModelStore` 行为。
+
+需要保留的状态通常包括：
+
+- 导航位置；
+- 列表滚动位置；
+- 输入中的表单；
+- 媒体播放位置；
+- 当前选中 pane 或 item；
+- 尚未提交的编辑内容。
+
+这些状态应与窗口尺寸和 posture 分离。折叠/展开改变布局，不应顺带清空业务状态或跳到另一个导航 destination。
+
+### 6.2 自行处理 configChanges 的代价
+
+声明：
+
+```xml
+android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
+```
+
+可以让 Activity 自行处理列出的变化。任何未声明变化仍可能触发重建。自行处理还要求：
+
+- 重新读取尺寸与资源；
+- 更新 View/Compose 的 layout state；
+- 处理 display、density、Insets 与 camera preview 等派生状态；
+- 验证资源限定符是否重新生效。
+
+它是生命周期选择，不是通用性能开关。Activity 重建较慢时，应先找 inflate、同步 I/O、重复初始化或状态恢复成本；不能仅靠增加 `configChanges` 掩盖问题。
+
+### 6.3 Compose 的关键是依赖范围
+
+Compose 中 window size 或 posture state 改变后，读取该 state 的 composable 会失效，随后可能发生 recomposition、remeasure 和 redraw。成本取决于依赖范围与布局结构，没有“`BoxWithConstraints` 必然慢”或“Crossfade 在 RenderThread 上所以更快”的通用结论。
+
+建议：
+
+- 在靠近自适应布局决策的位置读取 `WindowSizeClass` / posture；
+- 传递稳定、语义化的 compact/medium/expanded 或 pane strategy；
+- 避免把原始 hinge angle 放进页面根节点的高频 state；
+- 用 Layout Inspector、Compose tracing 与 Perfetto 找具体失效范围；
+- 对 list-detail、supporting pane 等结构优先使用 Material 3 Adaptive 组件。
+
+### 6.4 Android 17 大屏行为
+
+Android 16 对 target 36 应用引入大屏方向、宽高比与 resizability 限制忽略行为，并提供临时开发者 opt-out。
+
+Android 17 对 target 37 应用移除该 opt-out。官方文档将适用范围写为 smallest width 大于 600dp 的 Display；在这类环境中，以下限制不再能作为布局前提：
+
+- 固定方向的 `screenOrientation` 值；
+- 对应的 `setRequestedOrientation()` / `getRequestedOrientation()`；
+- `resizeableActivity="false"`；
+- `minAspectRatio` / `maxAspectRatio`。
+
+按 `android:appCategory` 分类的 game、smallest width 小于 600dp 的屏幕，以及用户在设备比例设置中选择应用默认行为的情况属于官方列出的例外。
+
+这项变更增加了应用遇到旋转、resize、折叠和桌面窗口边界的机会，但没有替换 BLAST、SurfaceFlinger 或 HWC 的基本显示管线。
+
+## 7. SurfaceFlinger、HWC 与像素成本
+
+### 7.1 每个目标 Display 都有自己的 Output
+
+SurfaceFlinger FrontEnd 接收 App、WMS 和 Shell 的 layer transaction。CompositionEngine 针对每个 Display/Output 构建可见 layer 集合，HWC 再为该 Display 执行 validate/present。
+
+分析并发内外屏时，需要分别记录：
+
+- display id 与物理地址；
+- active mode、resolution、density 与 refresh rate；
+- 目标 Output 的 visible layers；
+- DEVICE / CLIENT composition；
+- 每个 Display 的 present fence。
+
+同一 layer 经 mirror 或 projection 出现在两个 Output 时，不能把两个 present 合并成一条时间线。
+
+### 7.2 分辨率更高只说明潜在工作量上升
+
+展开后的 app window 可能有更大像素面积，影响：
+
+- HWUI/游戏/视频的渲染分辨率；
+- RenderEngine client target 面积；
+- GPU texture、render target 与带宽；
+- buffer 内存占用；
+- HWC scaler 和 overlay 约束。
+
+最终成本还取决于 damage、遮挡、DEVICE composition、动态分辨率、buffer format、刷新率和内容复杂度。不同设备的内外屏尺寸差异很大，不能套用“内屏固定是外屏 2–3 倍像素”。
+
+### 7.3 几何、buffer 与 present 是三个证据
+
+折叠 transition 中常同时出现：
+
+- Shell/WMS 对 task leash 的 matrix、crop、position；
+- App 按新 bounds 提交的 BLAST buffer；
+- SF/HWC 针对目标 Display 的 present。
+
+新 geometry 可以暂时显示旧 buffer，系统也可能用 snapshot、starting window 或背景层遮住重绘间隙。判断“第一帧已适配”时，应同时确认：
+
+1. 应用收到新 window bounds/configuration；
+2. 对应 App Window 提交新尺寸 buffer；
+3. SF latch 了该 buffer；
+4. 目标 Display 的 present 到达预期边界。
+
+## 8. 性能测量：先定义起点与终点
+
+### 8.1 推荐的时间点
+
+一次 display switch 可以记录：
+
+| 时间点 | 含义 | 可用证据 |
+|---|---|---|
+| T0 | 原始物理动作 | 外部夹具、平台 sensor trace 或 App 自定义 sensor trace |
+| T1 | DeviceState 已提交 | `DeviceStateChanged` trace instant |
+| T2 | display transition / WMS switch 开始 | DisplayThread、WMS/Shell transition |
+| T3 | App 已收到新窗口信息 | configuration / WindowLayoutInfo 自定义 trace |
+| T4 | App 新 bounds 的 buffer 被 SF 采纳 | App frame、`BufferTX`、latch |
+| T5 | 目标 Display 完成对应 present | DisplayFrame、HWC、present fence |
+
+先声明测量的是 T1→T5、T3→T5 还是 T0→光学显示。三种数值回答的问题不同。
+
+### 8.2 Perfetto 采集
+
+快速采集可以覆盖调度、图形、窗口、Binder 与 power 类别：
 
 ```bash
-# 查看 SurfaceFlinger 当前 Display 配置和合成策略
-adb shell dumpsys SurfaceFlinger --display
-
-# 查看 DisplayManager 的 LogicalDisplay 映射
-adb shell dumpsys display
-
-# 查看设备状态（折叠/展开）
-adb shell dumpsys devicestate
+adb shell perfetto \
+  -o /data/misc/perfetto-traces/fold-switch.perfetto-trace \
+  -t 20s \
+  sched freq idle binder_driver gfx view wm power
 ```
 
-`dumpsys display` 的输出包含 `DisplayDeviceInfo`（分辨率、刷新率、density）、`LogicalDisplay` 映射（displayId → DisplayDevice）和 `DisplayModeDirector` 状态，可以确认折叠态切换是否正确触发了 display 重映射和刷新率调整。
+分析时重点找：
 
-## 扩展
+- system_server 的 `DeviceStateChanged`；
+- `DisplayThread` 上的 DeviceState/DMS/WMS 工作；
+- `LogicalDisplayMapper`、display power state 与 logical display events；
+- WM Shell transition、task leash transaction；
+- `FoldUnfoldTransitionInProgress` 异步 slice/counter（设备启用对应模块时）；
+- App `onConfigurationChanged`、Activity recreation、`Choreographer#doFrame`、measure/layout、Compose recomposition；
+- App Window `BufferTX`、latch 与 FrameTimeline；
+- SurfaceFlinger 每个目标 Display 的 composition 与 present。
 
-### 🔸 OEM 折叠屏渲染优化
+系统不保证默认 trace 里有原始 `android.sensor.hinge_angle` 连续轨道。需要原始角度时，应显式加入可控的 App/platform instrumentation。
 
-各 OEM 在折叠屏渲染管线上有自定义扩展：
+### 8.3 功能自动化与性能测试分开
 
-- **Samsung Flex Mode**：HALF_OPENED 状态下，Samsung 自定义 SystemUI 将底部区域作为独立控制区。这一行为通过 Samsung 的 ExtensionWindowLayoutInfo 回调暴露给应用，但渲染管线层面的实现（是否涉及独立 Surface 合成）未公开。
-- **Honor/华为平行视界**：自动检测大屏展开态，将应用 UI 强制分为左右双列。实现机制可能是 WindowManagerService 层面的 Activity Embedding 注入，对应用 measure/layout 开销的影响取决于应用布局层级深度。
-- **SystemUI 适配**：折叠态切换时状态栏、导航栏的位置和尺寸需要重新计算。各 OEM 的实现差异主要体现在 transition 动画的帧率和 SystemUI 重建耗时上。
+截至 2026-07，Espresso Device API 1.0.1 可在兼容虚拟设备上执行：
 
-[待补充: 需要 OEM 设备实测数据]
+```kotlin
+onDevice().setClosedMode()
+onDevice().setFlatMode()
+```
 
-### 🔸 大屏/折叠屏与 Compose 性能交互
+它适合验证 compact/expanded UI、pane、导航和状态保存。`@RequiresDeviceMode` 可跳过不支持相应 mode 的设备。
 
-Compose 在折叠态的性能关注点：
+模拟器适合功能回归，不适合产出代表用户设备的性能结论。官方 Macrobenchmark 文档也建议在物理设备上测量。性能测试可以用 `FrameTimingMetric` 和系统 trace，但必须提供稳定、可重复的折叠触发方式，例如人工节拍、机械夹具或受控系统测试接口。
 
-- `WindowSizeClass` 变更触发 recomposition 的范围——如果 `WindowSizeClass` 作为 state 传入多个 Composable，变更会触发大范围重组
-- `BoxWithConstraints` 在折叠转换时收到新的 Constraints，内部内容需要重新 measure
-- `NavigationSuiteScaffold` 在大屏/折叠态切换导航组件（底部导航 → 导航轨），涉及多个 Composable 的组合/销毁
-- `Crossfade` 在折叠转换时的过渡动画帧率取决于动画是否在 RenderThread 加速
+### 8.4 device_state shell 命令的边界
 
-控制 Compose recomposition 范围的关键手段：将 `WindowSizeClass` 读取限制在尽可能窄的 Composable 子树中，避免顶层状态变更引发全页重组。
+Android 17 支持：
 
-### 🔸 桌面模式与折叠屏协同
+```bash
+adb shell cmd device_state print-states
+adb shell cmd device_state state <STATE_ID>
+adb shell cmd device_state state reset
+```
 
-Android 17 桌面模式（Desktop Windowing）在折叠屏展开态的行为参见 §22.14 桌面窗口化与大屏渲染性能实践。桌面模式下多窗口对 GPU 合成负载的影响、以及展开态进入桌面模式的窗口管理开销，在 §2.20 多窗口与桌面模式渲染中有基础机制说明。
+`state <STATE_ID>` 请求的是 emulated device state，shell 帮助明确说明它不会改变设备的物理状态。它可以覆盖 DMS/WMS/SF 的状态切换测试，却跳过真实 hall/hinge 运动、面板机械过程以及部分 power timing。
 
-> 本节已加工完成，等待 Review。
+STATE_ID 来自当前设备配置，先用 `print-states` 查询，测试结束后必须 reset。
 
+### 8.5 dumpsys 快照
 
-## 参考资料
+```bash
+adb shell dumpsys devicestate
+adb shell dumpsys display
+adb shell dumpsys window displays
+adb shell dumpsys SurfaceFlinger --display
+```
 
-### 源码调研：DisplayManagerService 多 display 管理性能边界（Android 17 / API 37）
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-24-android-17-displaymanagerservice-multi-display-architecture.md
-- 类型：DeepResearch 调研结果
-- 摘要：基于 android-17.0.0_r1 源码，深入 DMS 的 SyncRoot 单锁模型、四类 DisplayAdapter 事件投递、LogicalDisplayMapper 到 DisplayTopologyCoordinator 的完整架构。揭示 Android 17 新增 DisplayGroup/DisplayTopology 拓扑关系显式化机制，以及设备状态驱动的异步 display 转换路径。分析多 display 锁竞争边界——序列化路径的锁等待是潜在瓶颈但当前瓶颈更可能在 SF 合成。
-- 注入时间：2026-06-24
-- 价值：为折叠屏/多显示器渲染管线性能分析提供了 DMS 侧的系统服务级上下文，补充了 §2.28 仅有 SF/Compose 视角的不足
+这些快照分别回答：
+
+- base/pending/committed DeviceState 与 override；
+- DeviceState layout、LogicalDisplay、DisplayDevice、enabled/state/mode；
+- WMS 的 DisplayContent、Task 和窗口边界；
+- SF 侧 Display token、layer stack 与输出配置。
+
+快照没有时间信息，不能代替 Perfetto。最好在切换前、异常时、稳定后各保存一份，并用 display id、physical address 和 layer stack 对齐。
+
+## 9. 常见故障模式
+
+### 9.1 切换后旧布局闪现
+
+检查顺序：
+
+1. 新 configuration / WindowLayoutInfo 到达时间；
+2. Activity 是否重建，旧 window 是否仍可见；
+3. 新 bounds 的首个 buffer 何时提交；
+4. Shell transition 是否在缩放旧 buffer 或 snapshot；
+5. SF 何时 latch 新 buffer。
+
+### 9.2 折叠时状态丢失
+
+先确认 Activity recreation 和进程生命周期，再检查 ViewModel、SavedStateHandle、`rememberSaveable` 与业务持久化。不要把 layout mode 本身当成导航状态。
+
+### 9.3 动画跟手性差
+
+区分：
+
+- 原始 angle 交付慢；
+- SystemUI progress thread 或 spring 更新慢；
+- Shell transaction 提交慢；
+- SF/HWC present 晚；
+- App 自己用 angle 驱动大范围 layout。
+
+只看 App `onSensorChanged()` 间隔无法定位显示后段。
+
+### 9.4 展开后 GPU/功耗上升
+
+记录新旧 Display 的：
+
+- render target 与 app buffer 尺寸；
+- refresh rate 和 display mode；
+- CLIENT/DEVICE composition；
+- visible layer set 与 transition leash；
+- GPU frequency/busy、内存带宽和 thermal 状态。
+
+面积、刷新率、合成策略和动画可能同时变化，应逐项对照。
+
+### 9.5 双屏模式只有一侧更新
+
+确认设备是否处于支持 concurrent internal displays 的 state，两个 logical Display 是否 enabled，目标内容是 extended、mirrored 还是 rear/dual-display session。随后分别检查每个 Display 的 layer stack、Output 和 present。
+
+## 10. 版本演进
+
+| 平台 | 本章相关变化 | Review 时的边界 |
+|---|---|---|
+| Android 11 / API 30 | `TYPE_HINGE_ANGLE` 进入平台 sensor API | sensor 可选、on-change；不等同于窗口 posture |
+| Android 12 / API 31 | 本文使用的现代 BLAST/FrameTimeline 基线 | 可按 App buffer、SF layer、DisplayFrame 分阶段分析 |
+| Android 12L / API 32 | 大屏系统体验与 Activity Embedding 进入主流支持范围 | foldable 展开态常进入多 pane / split，但要运行时查询能力 |
+| Android 13 / API 33 | 多窗口与大屏路径继续演进 | 不改变 DeviceState、LogicalDisplay、App Window、SF Output 的分层 |
+| Android 14 / API 34 | 公开 `SurfaceSyncGroup`；部分设备提供 rear/dual display mode | 同步 API 与 fold posture API职责不同；特殊 display mode 需查询设备能力 |
+| Android 15 / API 35 | WindowManager Extensions 6 可查询 supported postures | supported posture 是能力信息，不给出连续 hinge angle |
+| Android 16 / API 36 | target 36 大屏方向/比例/resizability 限制忽略，保留临时 opt-out | 应用要覆盖更多 resize、rotation 与展开态 |
+| Android 17 / API 37 | 移除上述 opt-out；本文平台源码锚点 | smallest width 大于 600dp 时不能依赖固定方向与不可缩放声明 |
+
+## 11. 源码与官方文档入口
+
+### Android 17 AOSP
+
+- [`DeviceStateProviderImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/policy/DeviceStateProviderImpl.java)：vendor 条件、lid/sensor 监听与 state 选择；
+- [`DeviceStateManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/devicestate/DeviceStateManagerService.java)：pending/committed state、trace 与 callback；
+- [`LogicalDisplayMapper.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/LogicalDisplayMapper.java)：transition、OFF 等待、500 ms 超时、logical/physical remap；
+- [`DeviceStateToLayoutMap.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/DeviceStateToLayoutMap.java) 与 [`Layout.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/layout/Layout.java)：每个 state 的 display layout；
+- [`DisplayManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/DisplayManagerService.java)：DeviceState callback、logical display event、Display traversal；
+- [`HingeSensorAngleProvider.kt`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/unfold/src/com/android/systemui/unfold/updates/hinge/HingeSensorAngleProvider.kt) 与 [`PhysicsBasedUnfoldTransitionProgressProvider.kt`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/unfold/src/com/android/systemui/unfold/progress/PhysicsBasedUnfoldTransitionProgressProvider.kt)：可选 angle-to-progress 路径；
+- [`UnfoldTransitionHandler.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/unfold/UnfoldTransitionHandler.java) 与 [`FullscreenUnfoldTaskAnimator.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/unfold/animation/FullscreenUnfoldTaskAnimator.java)：Shell task leash 动画；
+- [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) 与 [`CompositionEngine`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/)：display transaction、snapshot 与 per-display output。
+
+### 应用与测试文档
+
+- [Make your app fold aware](https://developer.android.com/develop/adaptive-apps/guides/foldables/make-your-app-fold-aware)：`WindowInfoTracker`、`FoldingFeature` 与 lifecycle-aware 收集；
+- [`FoldingFeature` API](https://developer.android.com/reference/androidx/window/layout/FoldingFeature)：state、orientation、occlusion、separating 的定义；
+- [Android 17 大屏方向与缩放行为](https://developer.android.com/about/versions/17/changes/ff-restrictions-ignored)：target 37 规则与例外；
+- [Configuration and continuity](https://developer.android.com/guide/topics/large-screens/configuration-and-continuity)：Activity 重建、自行处理配置与状态连续性；
+- [Espresso Device API](https://developer.android.com/studio/test/espresso-api)：虚拟设备上的 closed/flat mode 功能测试；
+- [AOSP hinge angle sensor](https://source.android.com/docs/core/interaction/sensors/sensor-types#hinge_angle)：on-change、wake-up 与单位。
+
+## 小结
+
+折叠屏显示切换应按五层理解：
+
+1. vendor 条件产生离散 DeviceState；
+2. DMS 选择 layout，并在需要时先关闭 transitioning Display；
+3. WMS/Shell 更新 Display、窗口树和 transition leash；
+4. App 处理新 window bounds、configuration 与 `FoldingFeature`；
+5. SurfaceFlinger/HWC 为每个目标 Display 合成并 present。
+
+性能 Review 的重点，是用明确的起止时间把这五层对齐。没有同设备、同状态、同刷新率的 trace 与显示证据时，不应给折叠切换套固定帧数或毫秒结论。
+
+> 版本锚点：本文平台路径已按 AOSP `android-17.0.0_r1` 验证；Android 17 / API 37 为结论上限。
