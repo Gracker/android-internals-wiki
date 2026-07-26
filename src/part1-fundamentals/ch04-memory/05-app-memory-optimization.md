@@ -110,908 +110,621 @@ last_deepseek_cn_review_at: 2026-06-24
 > 锚点内容需 L1/L2 验证,扩展内容至少 L2 验证,自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么要系统性地看待 App 内存优化
+## 先确定优化对象
 
-前面几节已经讲过 Android 内存模型的底层架构:Linux 内核如何管理物理页(4.2),ART 虚拟机如何分配和回收 Java 堆内存(4.3),系统在内存不足时如何通过 LMK 杀进程(4.4)。这些都是系统层面的机制--作为 App 开发者,无法直接控制 `lmkd` 的杀进程策略,也无法修改 ART 的 GC 算法。
+本节以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，兼顾 Android 8～16 的行为差异。App 的内存并非一个数字：Java/Kotlin 对象主要在 ART 管理的堆中，`malloc`、Bitmap 像素和部分运行时数据位于 Native 侧，GraphicBuffer、硬件 Bitmap、Surface 等还可能出现在 Graphics、memtrack 或 dmabuf 口径中。文件描述符不属于堆，却同样可能耗尽进程资源。
 
-但这并不意味着 App 层面无能为力。**App 的内存使用方式直接决定了系统级机制的触发频率**。一个内存管理良好的 App,不容易触发 GC 暂停导致卡顿,不容易被 LMK 杀死导致冷启动,也不容易因为内存抖动让整个系统的内存压力增大。
+因此，“Java 堆没有到上限”无法证明进程没有内存问题。一次完整排查至少要回答四个问题：
 
-很多开发者对"内存优化"的理解是碎片化的:知道 Bitmap 要 recycle,知道 Activity 泄漏要用 WeakReference,知道 onTrimMemory 要处理,但缺少一个框架把这些点串起来。
+1. 哪个内存口径在增长：Java、Native、Graphics、共享页、swap，还是 FD？
+2. 增长发生在哪个业务场景，退出场景后能否回落？
+3. 增长来自仍在使用的对象、缓存、延迟释放，还是不可达却仍被引用的对象？
+4. 问题表现为 OOM、系统低内存终止、GC 干扰帧执行，还是后台驻留能力下降？
 
-本节要做的就是建立这个框架。
+这四个问题决定工具选择。只看一张总 PSS 曲线，通常无法定位到具体引用或调用栈。
 
-## 内存优化的分层思路
+## 四层治理顺序
 
-内存优化实践可以拆成一个有严格先后顺序的层次模型,每一层都是下一层的前提。
+App 侧可以按“减少分配 → 缩短持有时间 → 消除泄漏 → 监控和回归”推进。它是一个排查顺序，并非四套彼此独立的技巧。
 
-### 第一层:减少分配
+### 第一层：减少无效分配
 
-最有效的优化,是避免不必要的内存分配。
+高频路径中的临时对象会增加分配速率，也可能增加 GC、线程停顿和内存带宽开销。优先检查：
 
-这个道理不复杂,但在实际项目中,大量内存问题恰恰来自"分配了不需要的东西"。几个典型例子:
+- `onDraw()`、动画回调和触摸处理中的 `Paint`、`Path`、数组与临时集合；
+- `onBindViewHolder()` 和 Compose 重组中的排序、映射、字符串格式化；
+- 循环内不必要的装箱、复制和中间集合；
+- 先解码原图、再缩放成缩略图的图片链路；
+- 每次请求都新建的大缓冲区、编解码器或解析器。
 
-- 在 `onDraw()` 中创建 `Paint`、`Path` 对象。`onDraw()` 在一帧中可能被调用多次,每帧创建新对象意味着大量短命对象,触发频繁 GC。正确做法是将 `Paint` 作为成员变量,在构造函数中初始化一次。
-- 在循环中使用字符串拼接 `"" + value`。每次拼接都创建一个 `StringBuilder` 和一个新的 `String` 对象。使用 `StringBuilder` 的 `append()` 方法可以复用同一个实例。
-- 使用 `AutoBoxing`。在 `HashMap<Integer, Value>` 中,每次 put/get 都会创建 `Integer` 对象。使用 `SparseArray` 可以避免自动装箱。
+优化前先用分配记录或 Trace 证明热点。把偶发的小对象改成成员变量，可能延长对象存活时间；为了“零分配”长期保留大缓冲区，也会抬高常驻内存。
 
-[已验证: 官方文档, developer.android.com/topic/performance/memory - 避免内存抖动的最佳实践]
+### 第二层：缩短持有时间
 
-这些问题的共同特点是:它们不是"bug"--代码能正确运行,测试不会失败。但它们在运行时悄悄制造了大量短命对象,当 App 在 120Hz 设备上运行时,帧间隔只有 8.3ms,GC 暂停 3-5ms 就可能导致掉帧。
+对象离开业务场景后，应尽快断开强引用并释放其拥有的外部资源。典型动作包括：
 
-### 第二层:及时释放
+- 页面销毁时取消任务、移除回调和监听器；
+- 对有容量的缓存设置上限，并根据场景主动缩容；
+- `Closeable`、游标、文件、ParcelFileDescriptor 和 Native handle 使用确定的关闭路径；
+- Fragment 在 `onDestroyView()` 清除 View Binding，而非等到 Fragment 销毁；
+- 图片请求离开目标 View 后交还给图片库，不继续由业务对象持有。
 
-如果必须分配,那就确保用完之后尽快释放。
+“及时”应按所有权定义判断。仍在被 View、Canvas、解码任务或跨线程工作使用的资源，提前释放会把内存问题变成崩溃或数据竞争。
 
-"及时释放"的核心不是手动调用 `System.gc()`(Android 明确不建议这样做),而是让对象的生命周期尽可能短,让 GC 能尽早回收。
+### 第三层：消除泄漏
 
-最常见的反面模式是"对象的生命周期比它应该存在的长"。比如:
+泄漏意味着业务已经不再需要某个对象，但 GC Root 到它仍存在强引用路径。页面反复进入和退出后，Activity、Fragment View、Bitmap 或监听器实例数量持续增加，是常见信号。
 
-- 一个 `Handler` 持有了 `Activity` 的引用,`Activity` 销毁后 `Handler` 还在处理消息--这个 `Activity` 的所有 View 树、资源都无法被回收。
-- 一个缓存 Map 没有大小限制,对象放进去就再也不会出来--随着时间推移,这个 Map 会越来越大。
-- 在 `Fragment` 的 `onCreateView` 中注册了广播接收器,但没有在 `onDestroyView` 中反注册。
+弱引用只能改变引用强度，无法自动取消工作、注销观察者或关闭资源。首选方案是让任务和注册行为服从生命周期，再根据 API 合约决定是否需要弱引用。
 
-[已验证: 官方文档, developer.android.com/topic/performance/memory - 管理对象生命周期]
+### 第四层：监控和回归
 
-解决思路是让对象的引用链在合适的时机断开。具体模式见下一节"内存泄漏的常见模式"。
+开发期可用 LeakCanary 和 Heap Dump 查引用链，用 Android Studio Memory Profiler 看分配热点；性能测试可用 Perfetto、heapprofd、`dumpsys meminfo` 和 `/proc` 指标；线上则关注退出原因、用户可感知的低内存终止率以及分设备档位的内存水位。
 
-### 第三层:避免泄漏
+每次优化都应保留可复现的场景、设备、构建类型和前后数据。内存值会受 GC 时机、共享页归属、系统服务和设备实现影响，单次快照不适合作为结论。
 
-"泄漏"是指对象已经不再被使用,但 GC 无法回收它--因为还有一条从 GC Root 到这个对象的强引用链。
+## 内存抖动与帧预算
 
-避免泄漏比"减少分配"和"及时释放"更难,因为泄漏通常是隐式的:开发者并没有显式地"持有"一个对象,但某个回调、某个内部类、某个系统服务隐式地持有了。而且泄漏的影响是累积的--一个 Activity 泄漏可能只浪费几 MB,但如果用户在一个列表页反复进出 20 次,就是 20 个 Activity 实例同时驻留在内存中。
+内存抖动指短时间内大量分配并很快失效。Profiler 中常见锯齿曲线：分配使曲线上升，回收使曲线下降；问题在于分配速率、回收频率和停顿是否干扰用户路径。
 
-后面的"内存泄漏的常见模式"部分会逐一分析这些模式。
+ART 的收集器和代际策略会随版本、设备配置与运行状态变化。本章不假设所有进程都固定使用某一种 Collector，也不把某个停顿时长当成通用门槛。诊断时应在同一设备上同时观察：
 
-### 第四层:监控兜底
+- 主线程与 RenderThread 的 FrameTimeline；
+- GC slice、线程调度和 safepoint；
+- 分配速率、存活对象数量与回收后基线；
+- 60 Hz、90 Hz、120 Hz 等目标刷新率下的业务负载。
 
-即使代码质量再高,也难免有遗漏。特别是大型项目,几十个开发者的代码合在一起,泄漏和过度分配几乎是不可避免的。
+120 Hz 的帧间隔约为 8.33 ms，60 Hz 约为 16.67 ms。更高刷新率缩短了每帧可用时间，同样的暂停会占据更大比例；是否掉帧还取决于该帧其余工作、调度和设备性能。固定的“3 ms GC 黄金线”缺少跨设备依据，应用应以 FrameTimeline 与 GC 事件的时间重叠为证据。
 
-所以需要监控兜底。工程上通常分三个阶段布防:
+### 谨慎使用对象池
 
-- **开发期**:LeakCanary 自动检测 Activity/Fragment 泄漏
-- **测试期**:Android Studio Memory Profiler 检查内存分配热点
-- **线上**:通过 `Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory() + Runtime.getRuntime().freeMemory()` 监控可用堆空间,接近上限时主动释放缓存
+Android 提供了 `Message.obtain()`、`MotionEvent.obtain()` 等具有明确获取/归还合约的复用 API。业务自建对象池需要额外评估：
 
-在工具层面,Perfetto 提供了几个直接面向内存的观察 Track:
+- 加锁或并发容器可能比重新分配更贵；
+- 归还前必须清理所有状态，遗漏会造成脏数据或引用泄漏；
+- 池中的对象保持可达，会抬高存活集和常驻内存；
+- 池大小和对象尺寸如果随输入增长，池会成为无界缓存。
 
-- **Java Heap counter**:通过 `process_counter_track` 查看目标进程的 `java_heap` / `total_heap` / `native_heap`。正常状态下 Java Heap 呈锯齿形(分配→GC 回收→再分配),如果下限持续上移,是泄漏的信号
-- **GC Event Track**:在 `HeapTaskDaemon` 线程上观察 GC slice(`ConcurrentCopying GC`、`MarkCompact GC`)。频繁的 Young GC(每秒多次)指向对象抖动,偶发的长时间 Full GC 指向老年代压力或泄漏
-- **Native Heap(heapprofd)**:按调用栈聚合 Native 分配,找到哪些代码路径分配了最多内存。heapprofd 本身有性能开销,不建议在 Release 构建中长期开启
-- **dmabuf / GPU memory Track**:在 `gfx` 相关 counter track 中观察 GPU 纹理和 GraphicBuffer 占用。`dmabuf` 持续增长但 Java Heap 稳定,通常是 Hardware Bitmap 或 Surface 相关资源未释放
+Android 官方内存指南也提醒，对象池可能因同步、状态清理和存活集扩大而降低性能。只有 Trace 证明某类对象的分配是热点，并且所有权清晰、容量有界时，才值得引入自定义池。
 
-[已验证: 官方文档, developer.android.com/studio/profile/memory-profiler - Memory Profiler 使用方法]
+## Bitmap：先控制解码尺寸，再讨论复用
 
-这四层不是孤立的,而是一个递进的防御体系:第一道防线是"减少分配";剩余的分配要"及时释放";没释放干净的风险要靠"避免泄漏"控制;监控负责兜底。
+例如，一张 1080 × 1920 的 `ARGB_8888` 图片仅像素数据就约为：
 
-## 内存抖动:当"减少分配"失败时的连锁反应
+`1080 × 1920 × 4 = 8,294,400` 字节，约 7.91 MiB。
 
-在讲具体优化手段之前,需要先理解一个贯穿整个内存优化话题的核心概念--**内存抖动(Memory Churn)**,以及它如何与 4.3 节的 ART GC 产生连锁反应。
+压缩文件大小不能代表解码后的内存大小。JPEG 或 WebP 在磁盘上可能只有几百 KiB，解码后仍按宽、高、像素格式和行跨度占用内存。
 
-### 什么是内存抖动
+### 像素数据的版本变化
 
-内存抖动是指**短时间内大量临时对象的创建与销毁**。在 Android Studio 的 Memory Profiler 中看到一个上下剧烈波动的"锯齿图"--内存曲线快速上升又快速下降,反复循环--那就是内存抖动的典型表现。
+Bitmap 像素数据所在位置经历过三段变化：
 
-锯齿的上升沿是对象分配,下降沿是 GC 回收。GC 触发的频率才是问题所在(回收本身是 GC 的本职工作)。
+| Android 版本 | 像素数据主要位置 | 管理要点 |
+| --- | --- | --- |
+| Android 2.2 / API 8 及更早 | Native 内存 | Java 对象与 Native 像素的释放时机需要特别谨慎 |
+| Android 3.0～7.1 / API 11～25 | Dalvik/ART 堆 | 像素数据计入受管理堆 |
+| Android 8.0 / API 26 及以后 | Native 内存 | 平台通过 `NativeAllocationRegistry` 把 Native 分配压力反馈给运行时 |
 
-### 为什么内存抖动会导致卡顿
+API 26+ 的像素数据离开 Java 堆，不代表它脱离了进程内存限制。Bitmap 仍会增加物理内存压力，Native 分配注册也会影响 ART 的回收决策；分配失败仍可能表现为 `OutOfMemoryError`。排查时要同时查看 Java、Native、Graphics/memtrack 和 dmabuf 口径。
 
-4.3 节讲过,ART 使用 Concurrent Copying Collector,虽然是并发的,但仍然有 Young Generation 暂停。当高频分配导致 GC 频繁触发时,会出现这样的时间线:
+### `inSampleSize`：在解码阶段减小像素数
 
-```
-帧 N         | 帧 N+1       | 帧 N+2
-UI Thread    | GC Pause!    | UI Thread
-12ms         | ████ 8ms     | 4ms + GC 3ms
-             ↑ 掉帧!          ↑ 卡顿!
-```
+只显示 200 × 200 缩略图时，不应先完整解码 4000 × 3000 原图。`BitmapFactory.Options.inSampleSize` 的平台规则是：
 
-帧 N+1 中,GC 暂停了 8ms,加上 UI 线程自身的工作时间,帧 N+1 的总耗时超过了 VSync 周期(120Hz 设备仅 8.3ms,60Hz 设备为 16.6ms),结果就是掉帧。
+- 小于或等于 1 的值按 1 处理；
+- 最终使用 2 的幂；非 2 的幂会向下取最近的 2 的幂；
+- 值为 `n` 时，解码宽高约为原图的 `1/n`，像素数约为 `1/n²`。
 
-在高刷新率设备上,这个问题更加严峻。120Hz 设备的帧间隔只有 8.3ms,GC 暂停 5ms 会挤占 60% 的帧预算,几乎必然导致掉帧;而把 GC 暂停控制在 3ms 以内,则有较大概率"藏入"任务间隙,不触发掉帧。将 GC 暂停从 5ms 降到 3ms 后,应用掉帧率通常会有明显改善--具体改善幅度依赖设备、刷新率、负载和采样方法,无法给出通用倍数。实际收益应以同机 Trace 前后对比为准。
-
-可以把"3ms 黄金停顿准则"作为 120Hz 设备上 GC 优化的量化目标--Young GC 单次暂停不应超过 3ms,否则就应该排查对象抖动源头。
-
-所以一个反直觉的结论:**App 在高刷新率设备上反而更容易暴露内存抖动**。60Hz 设备的帧间隔 16.6ms,GC 暂停 5ms 还有 11.6ms 给 UI 工作;120Hz 设备帧间隔只有 8.3ms,同样的 5ms 暂停就只剩 3.3ms——只要 UI 工作超过 3.3ms,必然掉帧。
-
-### 对象池:对抗内存抖动的利器
-
-根因清楚了——高频分配触发 GC 频繁暂停,导致掉帧——策略也就很自然:复用对象,减少分配。
-
-Android 系统自身就大量使用了对象池模式:
-
-- **`Message.obtain()`**:系统自带的 Message 对象池,最大容量 50。`Handler.obtainMessage()` 和 `Handler.post()` 内部调用 `Message.obtain()` 从池中取对象复用。注意 `Handler.sendMessage()` 不会调用 `obtain()`--它直接使用调用方传入的 Message 对象,所以调用方需自行通过 `Message.obtain()` 获取。
-- **`Parcel.obtain()` / `Parcel.recycle()`**:Binder IPC 的数据载体,通过对象池复用。
-- **`MotionEvent.obtain()`**:触摸事件对象,从池中获取后必须调用 `recycle()` 归还。
-
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Message.java - Message 池的链表实现]
-
-如果代码中存在高频创建的自定义对象(比如游戏中的粒子、列表中的临时数据对象),可以考虑实现自己的对象池:
+下面的函数先读取图片边界，再计算不会小于目标尺寸的采样值：
 
 ```kotlin
-class ObjectPool<T>(
-    private val factory: () -> T,
-    private val maxSize: Int = 16
-) {
-    private val pool = ArrayDeque<T>(maxSize)
-
-    fun acquire(): T = pool.removeFirstOrNull() ?: factory()
-
-    fun release(obj: T) {
-        if (pool.size < maxSize) {
-            // 重置对象状态,避免脏数据
-            pool.addLast(obj)
-        }
+fun calculateInSampleSize(
+    outWidth: Int,
+    outHeight: Int,
+    requiredWidth: Int,
+    requiredHeight: Int
+): Int {
+    var sample = 1
+    while (
+        outWidth / (sample * 2) >= requiredWidth &&
+        outHeight / (sample * 2) >= requiredHeight
+    ) {
+        sample *= 2
     }
+    return sample
 }
 ```
 
-使用对象池时需要注意三个陷阱:
+这个结果只负责粗粒度下采样。还要结合 EXIF 方向、目标密度、裁剪方式和图片库的尺寸解析，避免把尺寸刚好的图片再次放大。
 
-1. **线程安全**:如果多线程访问,需要加锁或使用 `ConcurrentLinkedDeque`
-2. **状态重置**:对象从池中取出后,必须重置所有状态字段,否则会携带上一轮的脏数据
-3. **池大小控制**:过大的池本身就是一种内存浪费--对象虽然不被使用了,但因为被池持有而无法回收
+### `inBitmap`：复用有严格前提
 
-## Bitmap 内存优化
+`inBitmap` 允许 `BitmapFactory` 尝试复用已有 Bitmap 的像素分配。Android 17 的约束可归纳为：
 
-Bitmap 是 Android App 中最大的内存消费者之一。一张 1080×1920 的 ARGB_8888 图片,在内存中占用 `1080 × 1920 × 4 = 8,294,400 字节 ≈ 8MB`。一个信息流 App 的列表页同时缓存十几张图片,仅图片就占了上百 MB。
+- 候选 Bitmap 必须可变，且不能是 `Bitmap.Config.HARDWARE`；
+- API 19+ 要求解码所需字节数不超过候选对象的 `getAllocationByteCount()`；
+- API 11～18 只支持 JPEG/PNG、尺寸相同且 `inSampleSize == 1` 的严格复用；
+- 候选对象无法使用时，解码会抛出 `IllegalArgumentException`；
+- 调用方必须使用 `decode*()` 的返回值，不能假设返回对象一定就是传入的候选对象。
 
-### Bitmap 在 Android 8.0 前后的存储变化
-
-这是一个经常被忽略但影响深远的变更。
-
-在 Android 8.0(API 26)之前,Bitmap 的像素数据存储在 **Java 堆**中,因此会直接计入 App 的 `dalvikHeapSize`,受 `Runtime.getRuntime().maxMemory()` 限制。当 Bitmap 过多导致 Java 堆超限时,就会抛出 `OutOfMemoryError`。
-
-从 Android 8.0 开始,Bitmap 的像素数据移到了 **Native 堆**。这带来了几个变化:
-
-- **不再直接受 Java 堆限制**:Bitmap 占用不再计入 `dalvikHeapSize`,通过 `Runtime.getRuntime().freeMemory()` 观察到的可用空间不再包含 Bitmap 占用
-- **仍然计入进程的 PSS**:虽然不在 Java 堆,但通过 `dumpsys meminfo` 看到的 `Native Heap` 会增加
-- **释放路径变更**:Native 堆的 Bitmap 像素数据通过 `NativeAllocationRegistry` 注册到 ART 的 `Cleaner` 机制。当 Java 层的 Bitmap 对象变为不可达时,`Cleaner` 触发 Native 释放回调(而非旧版的 `finalize()`)。`Bitmap.recycle()` 仍可主动立即释放像素内存,不需要等 Cleaner 队列处理
-
-[已验证: 官方文档, developer.android.com/topic/performance/graphics/manage-memory - Bitmap 内存管理]
-
-所以在 Android 8.0+ 上,不能仅凭 Java 堆的使用量来判断 App 的真实内存占用。一个 App 可能 Java 堆只用了一半,但 Native 堆被大量 Bitmap 填满了。
-
-### inBitmap:复用 Bitmap 的内存
-
-[已验证: 官方文档, developer.android.com/reference/android/graphics/BitmapFactory.Options.html#inBitmap]
-
-`inBitmap` 是 BitmapFactory 提供的一种复用机制:解码新图片时,不分配新的内存块,而是复用已有 Bitmap 的像素数组。
+下面的示例展示最小的防御式写法，候选池本身仍需负责容量和并发：
 
 ```kotlin
 val options = BitmapFactory.Options().apply {
-    inBitmap = reusableBitmap  // 复用已有 Bitmap 的内存
-    inSampleSize = 2
+    inMutable = true
+    inBitmap = candidate
+    inSampleSize = sampleSize
 }
-val bitmap = BitmapFactory.decodeResource(res, resId, options)
+
+val decoded = try {
+    BitmapFactory.decodeFile(path, options)
+} catch (_: IllegalArgumentException) {
+    options.inBitmap = null
+    BitmapFactory.decodeFile(path, options)
+} ?: error("Bitmap decode failed: $path")
 ```
 
-`inBitmap` 的规则在不同 API 级别有差异:
+失败后移除候选再解码，可以避免把尺寸不匹配当成图片损坏。成熟图片库通常已经实现了更完整的候选筛选、引用计数和并发保护，业务代码无需重复造池。
 
-- **API 11-18**:复用 Bitmap 的大小必须与解码后的 Bitmap **精确匹配**(限制极大,几乎不可用)
-- **API 19+**:复用 Bitmap 的大小只需要 **≥** 解码后的 Bitmap(实用性强得多)
+### 像素格式要按内容选择
 
-直接好处是它完全跳过了内存分配和释放,减少了 malloc/free 调用,也降低了 GC 压力。在列表滑动场景中,图片不断进出屏幕,`inBitmap` 可以显著减少 Bitmap 相关的内存分配--具体减少比例取决于图片尺寸、列表复用策略和采样方法,应以同机 Memory Profiler 对比为准。
+| `Bitmap.Config` | 常见字节数/像素 | 适用边界 |
+| --- | ---: | --- |
+| `ARGB_8888` | 4 | 常用格式，支持透明度和较完整的颜色精度 |
+| `RGB_565` | 2 | 无 Alpha，颜色精度下降，渐变可能出现色带 |
+| `ALPHA_8` | 1 | 只保存 Alpha，适合遮罩 |
+| `RGBA_F16` | 8 | 宽色域或高精度处理，内存成本高 |
+| `RGBA_1010102` | 4 | 更高 RGB 精度，Alpha 只有 2 bit |
+| `HARDWARE` | 后端决定 | 只读、面向硬件渲染，不能按固定字节数估算 |
 
-### 下采样(inSampleSize)
+`RGB_565` 是否可接受应由视觉验收决定，不能仅凭“照片没有透明度”直接切换。文字截图、渐变和需要后处理的图片尤其容易暴露精度损失。
 
-如果只需在 UI 上显示一张 200×200 的缩略图,但原图是 4000×3000 的高分辨率照片,直接加载会浪费大量内存。
+### 硬件 Bitmap 仍占用物理内存
 
-`inSampleSize` 用于在解码时缩小图片:
+Android 8.0 引入 `Bitmap.Config.HARDWARE`。其像素由图形缓冲区管理，可减少绘制时向 GPU 上传纹理的成本，但 Android 设备通常使用 CPU/GPU 共享的统一物理内存。把它称为“不占系统 RAM”会误导内存分析。
+
+硬件 Bitmap 的主要边界是：
+
+- 对象不可变，`getPixel()`、`copyPixelsToBuffer()` 等 CPU 像素访问会失败；
+- 不能作为软件 Canvas 的绘制目标，也不能绘制到软件 Canvas；
+- 适合解码后直接在硬件加速 UI 中展示；
+- 需要像素编辑、软件渲染或某些截图链路时，应请求软件 Bitmap；
+- 内存可能显示在 Graphics、memtrack、dmabuf 或设备特定分类中。
+
+Android 17 的 `Bitmap` 仍实现 `Parcelable`，源码包含硬件 Bitmap 的 Parcel 处理，反序列化时像素格式还可能变化。因此“硬件 Bitmap 不能经 Binder 传递”不成立。跨进程传大图仍有同步、缓冲区所有权和接收端格式变化等成本，很多场景更适合传 URI、文件描述符或共享缓冲区协议。
+
+### `recycle()` 是所有权操作
+
+Android 17 的 `Bitmap.recycle()` 会立即释放像素资源。调用它的前提是调用方能证明 Bitmap 此后不会被 View、Drawable、Canvas、图片库、后台任务或其他线程使用，否则后续访问会失败。
+
+官方 Bitmap 内存指南把手动 `recycle()` 的重点放在 Android 2.3.3 / API 10 及更早版本。现代应用通常应让清晰的所有权、GC 和图片库管理生命周期。图片变换产生的中间 Bitmap若由当前函数独占，并且下游已经取得新结果，可以考虑及时回收；由 Glide 等库管理的 Bitmap 不应由业务代码手动回收。
+
+### Glide、Coil 与 Fresco 的差异
+
+三类图片库都提供内存缓存，但实现和所有权合约不同：
+
+- **Glide**：使用内存缓存和 `LruBitmapPool`，并通过 `ComponentCallbacks2` 调整缓存。默认容量由屏幕尺寸、密度、memory class 和低内存设备状态共同计算，不是固定的 `maxMemory / 8`。资源仍受 Glide 管理时，业务代码不要调用 `recycle()`。
+- **Coil 3**：推荐进程内共享一个 `ImageLoader`，统一管理内存缓存、磁盘缓存和请求生命周期。硬件 Bitmap、解码器和缓存策略取决于版本、平台与单次请求配置。
+- **Fresco**：区分已解码、已编码和磁盘缓存，并以 `CloseableReference` 管理引用。早期 Android 版本曾使用 ashmem 等方案，这段历史不能外推为现代版本的固定存储方式。
+
+库升级可能修改默认缓存和硬件 Bitmap 策略。应用应查阅所用版本的官方文档，并用相同图片集和滚动场景测量峰值、回落值与命中率。
+
+## 常见泄漏：从生命周期和所有权修起
+
+### Activity 与异步工作
+
+匿名内部类、回调、线程或协程一旦比 Activity 活得更久，就可能保留整个 View 树。修复重点是取消或脱离生命周期：
+
+- UI 相关协程放进 `lifecycleScope`；
+- 需要按可见状态收集 Flow 时使用 `repeatOnLifecycle`；
+- 网络、定位、传感器和播放器任务在对应生命周期取消；
+- ViewModel 不保存 Activity、Fragment、View 或其 Drawable；
+- 进程级工作只保存完成工作所需的数据，不保存页面对象。
+
+`WeakReference<Activity>` 可以避免一条强引用，但工作仍会继续，竞态也仍存在。线程在读取弱引用后，Activity 可能已经进入销毁流程。生命周期取消和主线程状态检查更可靠。
+
+### Handler 与延迟回调
+
+消息队列会持有尚未执行的 `Message` 和 `Runnable`。页面退出时应移除由该页面发布的任务。下面的写法保留显式 Runnable，便于精确移除：
 
 ```kotlin
-fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
-    val (height, width) = options.outHeight to options.outWidth
-    var inSampleSize = 1
-    if (height > reqHeight || width > reqWidth) {
-        val halfHeight = height / 2
-        val halfWidth = width / 2
-        while ((halfHeight / inSampleSize) >= reqHeight &&
-               (halfWidth / inSampleSize) >= reqWidth) {
-            inSampleSize *= 2
-        }
+class DetailActivity : AppCompatActivity() {
+    private val handler = Handler(Looper.getMainLooper())
+    private val refreshTask = Runnable { renderLatestState() }
+
+    override fun onStart() {
+        super.onStart()
+        handler.postDelayed(refreshTask, 5_000)
     }
-    return inSampleSize
-}
-```
 
-注意 `inSampleSize` 的值必须是 2 的幂(2, 4, 8, ...)。如果不是 2 的幂,系统会向下取最近的 2 的幂。`inSampleSize = 2` 意味着宽高各缩小一半,像素数减少为原来的 1/4,内存也减少为 1/4。
-
-### 硬件 Bitmap(Hardware Bitmap)
-
-[已验证: 官方文档, developer.android.com/reference/android/graphics/Bitmap.Config#HARDWARE]
-
-Android 8.0(API 26)引入了一种特殊的 Bitmap 配置:`Bitmap.Config.HARDWARE`。
-
-硬件 Bitmap 的像素数据存储在 **GPU 内存**中,而不是系统 RAM 中。直接结果是:
-
-- **不计入 Java Heap**:从 dumpsys meminfo 角度看,像素常见于 Graphics/GL/memtrack/Other dev 等口径,是否归入单进程 PSS 取决于 OEM/memtrack 实现,设备差异大。不能写成"不占内存"--它仍然形成系统内存压力
-- **渲染更快**:GPU 直接使用自己的显存绘制,不需要从系统 RAM 拷贝到 GPU
-- **不能修改**:不能对硬件 Bitmap 使用 Canvas 绘制或 `setPixel()`--它是只读的
-- **不能跨进程**:硬件 Bitmap 不能通过 Binder 传递(比如不能直接传给 Remote Views)
-
-硬件 Bitmap 最适合的场景是"只显示一次的图片"--比如信息流中的图片、广告图、聊天中的表情。Glide 和 Coil 默认在 API 26+ 上使用硬件 Bitmap。
-
-### Bitmap 格式选择
-
-另一个容易被忽略的优化点是 Bitmap 的颜色格式:
-
-| 格式 | 每像素字节数 | 说明 |
-|------|-------------|------|
-| ARGB_8888 | 4 | 默认格式,支持透明度,质量最高 |
-| RGB_565 | 2 | 无透明度,内存减半,适合照片类 |
-| ALPHA_8 | 1 | 只有透明度通道,适合遮罩 |
-| HARDWARE | GPU 管理 | 最优内存,但不支持修改 |
-
-如果图片不需要透明度(比如照片、缩略图),使用 `RGB_565` 可以省掉 50% 的内存。代价是色彩精度降低(16 位色 vs 32 位色),但在小尺寸图片上几乎看不出差异。
-
-### 图片加载库的内存管理
-
-[已验证: Glide 官方文档, bumptech.github.io/glide/doc/bitmap-pool.html]
-
-现代 Android 开发中,很少有人手动管理 Bitmap。常见做法是使用 Glide、Coil 或 Fresco 这类图片加载库,它们都内建了完善的 Bitmap 内存管理。
-
-**Glide** 使用 `LruBitmapPool` 管理 Bitmap 复用池。池的默认大小是 `maxMemory / 8`。当 Bitmap 不再使用时,Glide 不调用 `recycle()`,而是将 Bitmap 放入池中等待复用。下次解码新图片时,优先从池中取一个大小匹配的 Bitmap,通过 `inBitmap` 复用它的内存。
-
-**Coil** 是 Kotlin-first 的图片加载库。Coil 1.x 曾有 BitmapPool,但 Coil 2.x/3.x 已移除了 BitmapPool 与 PoolableViewTarget,改为依赖 memory cache、hardware/immutable bitmap 和 Android 平台内置的 ImageDecoder 来管理 Bitmap 生命周期。
-
-**Fresco** 采用了完全不同的方案--它使用 Native 层的 `CloseableReference` 和三层缓存(Bitmap 缓存 + 内存缓存 + 磁盘缓存)管理图片。Fresco 在 Android 5.0 之前就已经将 Bitmap 放在 Native 堆上了(Ashmem 区),比 Android 8.0 的官方迁移更早。
-
-| 特性 | Glide | Coil | Fresco |
-|------|-------|------|--------|
-| Bitmap Pool | ✅ LruBitmapPool | ❌(Coil 2.x+ 已移除) | ✅ CloseableReference |
-| 内存缓存 | LRU + WeakRef | LRU | 三层缓存 |
-| 硬件 Bitmap | API 26+ 默认 | API 26+ 默认 | 可配置 |
-| Kotlin 支持 | Java 优先 | Kotlin-first | Java 优先 |
-
-## 内存泄漏的常见模式
-
-内存泄漏是 App 内存优化中最棘手的问题--它不像崩溃那样立刻暴露,而是像温水煮青蛙一样慢慢消耗可用内存,直到 App 被系统杀死或者开始严重卡顿。
-
-三种最常见的泄漏模式分别如下。
-
-### 模式一:Activity 引用泄漏
-
-这是 Android 开发中最经典的泄漏模式。触发条件是:一个长生命周期的对象持有了一个已经应该被销毁的 `Activity` 的引用。
-
-最常见的触发场景是**非静态内部类**。在 Java 中,非静态内部类(包括匿名内部类)隐式持有外部类的引用。如果这个内部类的实例比外部 `Activity` 活得更长,`Activity` 就泄漏了。
-
-```java
-// 泄漏代码
-public class MyActivity extends Activity {
-    private void startAsyncWork() {
-        new Thread() {
-            @Override
-            public void run() {
-                // 这个匿名 Thread 隐式持有 MyActivity 的引用
-                // 如果 Activity 销毁时 Thread 还在运行,Activity 就泄漏了
-                doSomethingSlow();
-            }
-        }.start();
+    override fun onStop() {
+        handler.removeCallbacks(refreshTask)
+        super.onStop()
     }
 }
 ```
 
-修复方法是使用**静态内部类 + WeakReference**:
+清理点要与任务含义匹配：只应在页面可见时运行的任务放在 `onStop()` 清理；可以覆盖整个 Activity 生命周期的任务可在 `onDestroy()` 清理。Java 匿名 Handler 还会隐式持有外部类，静态内部类能去掉这条引用，但仍需取消消息。
 
-```java
-// 修复后
-public class MyActivity extends Activity {
-    private static class MyWorker extends Thread {
-        private final WeakReference<MyActivity> activityRef;
+### 单例持有 Context
 
-        MyWorker(MyActivity activity) {
-            activityRef = new WeakReference<>(activity);
-        }
+进程级组件可以保存 `context.applicationContext`，前提是它执行的工作适合 Application Context。主题、窗口、对话框、页面导航和部分资源解析依赖 Activity 或带主题的 Context，盲目替换会产生功能错误。
 
-        @Override
-        public void run() {
-            // 耗时逻辑在 run() 中执行,不依赖 Activity 实例
-            doSlowBackgroundWork();
+判断时比较两端生命周期：
 
-            // 需要更新 UI 时,通过 WeakReference 判空后再回调 Activity
-            MyActivity activity = activityRef.get();
-            if (activity != null && !activity.isFinishing()) {
-                activity.onWorkCompleted();
-            }
-        }
-    }
+- 进程级缓存、数据库、网络客户端可使用 Application Context；
+- UI 控制器只在页面作用域内持有 Activity Context；
+- 静态字段和单例不保存 View、Activity、Fragment 或以它们创建的短生命周期对象。
+
+### Fragment View、监听器与观察者
+
+Fragment 的生命周期可能长于它创建的 View。View Binding 应在 `onDestroyView()` 清空：
+
+```kotlin
+private var _binding: DetailBinding? = null
+private val binding get() = requireNotNull(_binding)
+
+override fun onCreateView(
+    inflater: LayoutInflater,
+    container: ViewGroup?,
+    savedInstanceState: Bundle?
+): View {
+    _binding = DetailBinding.inflate(inflater, container, false)
+    return binding.root
+}
+
+override fun onDestroyView() {
+    adapter.onItemClick = null
+    recyclerView.adapter = null
+    _binding = null
+    super.onDestroyView()
 }
 ```
 
-修复的关键点在于:`static` 修饰的内部类不再隐式持有外部类引用,代码通过 `WeakReference` 显式地、可空地获取 Activity。当 Activity 被销毁后,`activityRef.get()` 返回 `null`,worker 线程就知道应该停止工作。
+这里同时断开 Adapter 回调和 RecyclerView 对 Adapter 的引用。广播接收器、ContentObserver、传感器监听器、WebView 回调及第三方 SDK listener 也要在与注册点对应的时机注销。
 
-[已验证: 官方文档, developer.android.com/reference/java/lang/ref/WeakReference]
+### LeakCanary 与 Heap Dump
 
-### 模式二:Handler 泄漏
+LeakCanary 适合在 debug 构建中自动观察已销毁组件和保留对象。依赖版本应从其官方安装页获取，避免把文档中的固定版本长期复制到项目。
 
-Handler 泄漏是 Activity 泄漏的一个特例,但因为太常见,值得单独讲。
+发现泄漏后需要阅读引用链：
 
-```java
-// 泄漏代码
-public class MyActivity extends Activity {
-    private final Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            // 匿名 Handler 子类隐式持有 Activity 引用
-            updateUI();
-        }
-    };
+1. 确认对象已经离开业务生命周期；
+2. 找到最靠近 GC Root 的业务强引用；
+3. 判断它属于未取消任务、未注销注册、无界缓存，还是错误所有权；
+4. 修复后重复同一路径，比较实例数和 retained size。
 
-    private void postDelayedWork() {
-        mHandler.postDelayed(() -> {
-            // Lambda/Runnable 也隐式持有 Activity
-            updateUI();
-        }, 5000);  // 5 秒后执行
-    }
-}
-```
+强制 GC 可用于测试工具确认“对象是否仍可达”，但不能进入业务修复方案。
 
-问题出在 `postDelayed`:如果用户在 5 秒内退出了 Activity,`Handler` 的消息队列中还有一个待处理的 `Message`,这个 `Message` 持有 `Runnable`,`Runnable` 持有 `Activity` 引用--整个 Activity 无法被回收,直到 5 秒后消息被处理。
+## Native 内存：用所有权和调用栈定位
 
-修复方案有两个层面:
+Native 侧没有 Java GC 替开发者调用 `free()` 或 `close()`。常见问题包括：
 
-**方案一:在 `onDestroy` 中清理消息队列**
+- `malloc/new` 与 `free/delete` 不配对，错误分支提前返回；
+- `NewGlobalRef()` 缺少 `DeleteGlobalRef()`，导致 Java 对象也无法回收；
+- `GetStringUTFChars()`、数组 pin/copy API 缺少相应 `Release*()`；
+- `open()`、socket、`AHardwareBuffer`、codec 或图形 handle 缺少关闭；
+- `DirectByteBuffer` 的 Java 包装对象与底层内存所有权不明确；
+- 跨线程回调在 owner 销毁后仍使用 Native 指针。
 
-```java
-@Override
-protected void onDestroy() {
-    mHandler.removeCallbacksAndMessages(null);  // null 表示移除所有消息
-    super.onDestroy();
-}
-```
-
-**方案二:使用静态 Handler + WeakReference**
-
-```java
-private static class SafeHandler extends Handler {
-    private final WeakReference<MyActivity> ref;
-
-    SafeHandler(MyActivity activity) {
-        ref = new WeakReference<>(activity);
-    }
-
-    @Override
-    public void handleMessage(Message msg) {
-        MyActivity activity = ref.get();
-        if (activity == null || activity.isFinishing()) return;
-        activity.updateUI();
-    }
-}
-```
-
-### 模式三:单例持有 Context
-
-单例(Singleton)的生命周期等于进程的生命周期--它永远不会被 GC 回收。如果单例持有了一个 `Activity` 或 `View` 的 `Context`,那这个 Activity 就永远无法被回收。
-
-```java
-// 泄漏代码
-public class ImageLoader {
-    private static ImageLoader instance;
-    private Context context;  // 如果传入的是 Activity Context,就泄漏了
-
-    public static ImageLoader getInstance(Context context) {
-        if (instance == null) {
-            instance = new ImageLoader(context);
-        }
-        return instance;
-    }
-}
-```
-
-如果调用 `ImageLoader.getInstance(activity)`,单例就持有了 Activity 的引用,直到进程结束。
-
-修复非常简单:使用 `Application Context`。
-
-```java
-// 修复后
-public static ImageLoader getInstance(Context context) {
-    if (instance == null) {
-        instance = new ImageLoader(context.getApplicationContext());
-    }
-    return instance;
-}
-```
-
-`Application Context` 的生命周期与进程相同,和单例的生命周期一致,不存在泄漏问题。
-
-**判断规则**:如果一个对象的生命周期可能比 Activity 长(单例、静态变量、Application 级 Service、长生命周期线程),它持有的 Context 必须是 `Application Context`,不能是 `Activity Context`。
-
-### 如何检测内存泄漏
-
-**LeakCanary** 是 Android 内存泄漏检测的事实标准。它通过以下方式工作:
-
-1. 监听 `Activity` 和 `Fragment` 的生命周期
-2. 当 `Activity.onDestroy()` 被调用后,创建一个 `WeakReference` 指向该 Activity
-3. 触发 GC 后检查 `WeakReference` 是否被清除
-4. 如果没有被清除,说明 Activity 泄漏了,dump heap 分析引用链
-
-```gradle
-dependencies {
-    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.14'
-}
-```
-
-只需要添加依赖,不需要写任何代码。LeakCanary 在 debug 构建中自动工作,不影响 release 构建。
-
-[已验证: LeakCanary 官方文档, square.github.io/leakcanary/]
-
-**Android Studio Memory Profiler** 是另一个重要工具。它可以:
-
-- 实时查看内存分配曲线(发现内存抖动)
-- 抓取 Heap Dump(分析内存泄漏)
-- 按 class 排序查看实例数量(发现异常的对象数量增长)
-
-在 Memory Profiler 中抓取 Heap Dump 后,按 "Retained Size"(该对象通过引用链持有的总内存大小)排序,可以快速定位"哪些对象占用了最多的内存且无法被回收"。
-
-[图:Memory Profiler 中的 Heap Dump 分析界面,标注 Retained Size 排序、泄漏 Activity 的引用链展开]
-
-## Native 内存管控
-
-Java 层的内存泄漏可以通过 GC 和工具比较容易地发现,但 Native 内存(C/C++ 通过 `malloc`/`new` 分配的内存)完全没有 GC 的帮助--分配了多少就占多少,直到手动 `free`/`delete` 或者进程被杀。
-
-### JNI 层的常见泄漏模式
-
-JNI 层的内存泄漏比 Java 层更隐蔽,因为 Native 代码没有 GC 机制。Code Review 中反复出现的模式有三种:
-
-- **`NewGlobalRef` 不 `DeleteGlobalRef`**:JNI 中的全局引用会阻止 GC 回收被引用的 Java 对象。每次 `NewGlobalRef` 都必须有对应的 `DeleteGlobalRef`。
-- **`malloc` 不 `free`**:最基础的 C 层泄漏,但当代码路径复杂(提前 return、异常分支)时很容易遗漏。
-- **文件描述符不关闭**:`open()` 后不 `close()`。虽然不占堆内存,但 FD 耗尽可能导致系统无法打开新文件(`Too many open files`)。
+C++ 代码优先用 RAII：`std::unique_ptr`、容器、带自定义 deleter 的智能指针和作用域封装能覆盖异常与提前返回。JNI 封装还要把线程附着、局部引用容量和全局引用的所有者写清楚。
 
 ### malloc debug
 
-Android 提供了 `malloc debug` 工具来追踪 Native 内存分配:
+bionic 的 malloc debug 可以记录 Native 分配回溯，适合 rooted/userdebug 设备或平台开发环境。下面的命令为目标进程设置包装属性，然后重启进程：
 
 ```bash
-# 方式一:通过 adb shell 设置进程 wrap 属性(需 force-stop 后重启进程)
+adb shell setprop wrap.com.example.app \
+  '"LIBC_DEBUG_MALLOC_OPTIONS=backtrace logwrapper"'
 adb shell am force-stop com.example.app
-adb shell setprop wrap.com.example.app '"LIBC_DEBUG_MALLOC_OPTIONS=backtrace"'
-
-# 方式二:通过 app_process 设置(适用于 debuggable 应用)
-adb shell am force-stop com.example.app
-adb shell setprop wrap.com.example.app '"LIBC_DEBUG_MALLOC_OPTIONS=backtrace_enable_on_signal"'
-adb shell am start -n com.example.app/.MainActivity
+adb shell monkey -p com.example.app 1
 ```
 
-`backtrace` 选项记录每次 native 分配的调用栈,`backtrace_enable_on_signal` 在收到 `SIGUSR1` 后才开始记录,减少运行时开销。启用后通过 `dumpsys mallocinfo <pid>` 查看分配统计,或结合 `heapprofd`(见下节)做更详细的性能分析。
+复现问题后，可以让 `dumpsys meminfo` 搜索无法从已知根到达的 Native 块：
 
-> [已验证: 官方文档, source.android.com/docs/core/debug/native-crash - malloc debug 选项列表]
-
-### ASan(AddressSanitizer)
-
-ASan 是 LLVM/Clang 提供的内存错误检测工具,可以检测:
-
-- 堆缓冲区溢出(heap-buffer-overflow)
-- 栈缓冲区溢出(stack-buffer-overflow)
-- 使用已释放的内存(use-after-free)
-- 双重释放(double-free)
-
-在 Android 上启用 ASan 需要通过 NDK/Clang 编译参数,而非 Gradle DSL。正确路径如下:
-
-```gradle
-// build.gradle - 仅影响符号保留,不启用 ASan 插桩
-android {
-    buildTypes {
-        debug {
-            packagingOptions {
-                doNotStrip "**/*.so" // 仅保留符号表,方便 crash 定位
-            }
-        }
-    }
-}
+```bash
+adb shell dumpsys meminfo --unreachable "$(adb shell pidof com.example.app)"
 ```
 
-`doNotStrip` 只保留 .so 符号表,**不会启用 ASan**。启用 ASan 的正确方式是通过 NDK 编译参数:
+启用 backtrace 后，报告能提供更多分配来源。malloc debug 有显著开销，不适合作为长期线上开关；普通三方应用在非 root 设备上应使用 debuggable `wrap.sh`、Sanitizer 或 heapprofd。完成测试后应清除 `wrap.<APP>` 属性并重启进程。
 
-1. 在 `CMakeLists.txt` 或 `Android.mk` 中为目标库添加编译/链接参数:
+### HWASan、ASan 与 GWP-ASan
+
+Android 17 的 64 位 Native 测试优先考虑 HWAddressSanitizer（HWASan），它擅长发现越界和 use-after-free。AddressSanitizer（ASan）仍可作为设备、ABI 或构建链限制下的替代方案。两者都更适合测试构建，不能只凭一次通过证明没有内存错误。
+
+CMake 目标需要同时添加编译和链接选项。下面以 HWASan 为例：
 
 ```cmake
-# CMakeLists.txt
-target_compile_options(my-native-lib PRIVATE -fsanitize=address -fno-omit-frame-pointer)
-target_link_options(my-native-lib PRIVATE -fsanitize=address)
+target_compile_options(native-lib PRIVATE
+    -fsanitize=hwaddress
+    -fno-omit-frame-pointer)
+target_link_options(native-lib PRIVATE
+    -fsanitize=hwaddress)
 ```
 
-2. 准备 `wrap.sh` 包装脚本(Android API 27+ / O_MR1,debug 构建专用):
+运行时库、系统镜像、ABI 和最低 API 要求应按所用 NDK 的官方指南配置。`doNotStrip` 只能影响符号保留，不能启用 Sanitizer。
+
+GWP-ASan 使用抽样方式检测部分堆内存错误，开销更适合生产环境。Android 14 / API 34 起，可恢复的 GWP-ASan 默认覆盖所有应用；抽样意味着一次未命中不能排除问题。它用于发现越界和释放后使用，不负责统计长期 Native 泄漏。
+
+### heapprofd
+
+Perfetto 的 heapprofd 按采样记录 Native 分配和释放，并聚合调用栈，适合回答“哪条 Native 路径仍保留最多字节”。Android 10+ 支持该能力；user 版本通常要求目标应用可调试或允许 profiling。
+
+主机侧快速采集可使用当前 `heap_profile` 子命令：
 
 ```bash
-#!/system/bin/sh
-# app/src/main/resources/lib/arm64-v8a/wrap.sh
-# ASan 运行时库路径取决于 NDK 版本,以下为典型路径
-ASAN_LIB=$(dirname $0)/libclang_rt.asan-aarch64-android.so
-export LD_PRELOAD=$ASAN_LIB
-ASAN_OPTIONS=alloc_dealloc_mismatch=0:detect_stack_use_after_return=1
-export ASAN_OPTIONS
-exec "$@"
+tools/heap_profile android \
+  -n com.example.app \
+  --interval=16000
 ```
 
-关键运行条件:
-- `wrap.sh` 仅在 `android:debuggable=true`(或通过 `android.testOnly`)的进程中生效
-- `LD_PRELOAD` 加载的 ASan runtime `.so` 需要正确打包到 APK 的 `lib/<abi>/` 下
-- 在 `build.gradle` 中确保 `debug` 构建类型的 `jniDebuggable true` 和正确的 NDK sanitizer 配置
+默认采样间隔为 4096 字节。增大间隔会降低开销，也会降低小分配的可见性。采集结果要同时看 outstanding size、allocation count 和调用栈，不能只按累计分配量排序。
 
-ASan 会使 App 性能下降 2-5 倍,所以只在 debug 构建中使用。但它能捕获到 malloc debug 无法发现的越界访问和 use-after-free 问题。
+需要放进系统 Trace 时，可配置 `linux.heapprofd` 数据源：
 
-[已验证: 官方文档, developer.android.com/ndk/guides/asan]
-
-### heapprofd:Native 内存性能分析
-
-[已验证: 官方文档, perfetto.dev/docs/data-sources/native-heap-profiler]
-
-`heapprofd` 是 Perfetto 提供的 Native 堆分析工具,可以精确追踪每一次 Native 内存分配的调用栈:
-
-```bash
-# 追踪特定进程的 Native 堆分配(主机侧 Perfetto 脚本)
-tools/heap_profile -p <PID>
-
-# 追踪特定包名的 Native 堆分配
-tools/heap_profile -n <package_name>
-
-# Java 堆分配采样:通过 --heaps 指定 ART heap
-tools/heap_profile -n <package_name> --heaps com.android.art
-```
-
-或在 Perfetto TraceConfig 中配置:
-
-```protobuf
+```textproto
 data_sources {
-    config {
-        name: "linux.heapprofd"
-        heapprofd_config {
-            sampling_interval_bytes: 4096
-            heaps: "com.android.art"  # Java 堆分配采样
-            pid: <PID>
-        }
+  config {
+    name: "linux.heapprofd"
+    heapprofd_config {
+      process_cmdline: "com.example.app"
+      sampling_interval_bytes: 16384
     }
+  }
 }
 ```
 
-[图:Perfetto UI 中 heapprofd 的 Heap Profiles 面板,标注按分配大小排序的调用栈火焰图]
+Android 12+ 还可用 `heaps: "com.android.art"` 采样 Java 堆分配。它与完整 Heap Dump 的目标不同：采样更适合观察分配来源和趋势，Heap Dump 更适合追踪具体对象引用。
 
-在 Perfetto UI 中,`heapprofd` 的数据出现在 "Heap Profiles" 面板中。按分配大小排序可以找到分配最多的调用栈--这就是内存热点。
+## `onTrimMemory`：把它当作释放机会
 
-`heapprofd` 的开销取决于采样间隔、分配频率和设备负载,可以在内测、灰度或高价值样本中按需采样。Perfetto 的配置中可以设置采样间隔,比如每 4096 字节采样一次,用更低的采样密度换取更低的运行时扰动。
+### Android 14 之后的回调范围
 
-## onTrimMemory 与 ComponentCallbacks2
+`ComponentCallbacks2` 的 trim level 是历史演进接口。Android 14 / API 34 起，平台不再向应用发送以下已废弃 level：
 
-前面讲的优化都是"主动优化"--写代码时就注意到了内存问题。但还有一种"被动优化"场景:**系统通知内存紧张,需要配合释放一些资源**。这就是 `onTrimMemory` 的作用。
+- `TRIM_MEMORY_RUNNING_MODERATE`（5）
+- `TRIM_MEMORY_RUNNING_LOW`（10）
+- `TRIM_MEMORY_RUNNING_CRITICAL`（15）
+- `TRIM_MEMORY_MODERATE`（60）
+- `TRIM_MEMORY_COMPLETE`（80）
 
-### onTrimMemory 的回调级别
+仍会发送的公开 level 是：
 
-[已验证: 官方文档, developer.android.com/reference/android/content/ComponentCallbacks2]
+- `TRIM_MEMORY_UI_HIDDEN`（20）：进程的 UI 已不可见，适合释放只服务于可见界面的资源；
+- `TRIM_MEMORY_BACKGROUND`（40）：进程处于后台 LRU，适合缩减可重建缓存。
 
-`ComponentCallbacks2.onTrimMemory(int level)` 的回调级别在 API 33 及以下和 API 34+ 存在显著差异:
+所以 `TRIM_MEMORY_COMPLETE` 已不能作为现代 Android 的“即将被杀”通知。系统可以在没有先发高等级 trim 回调的情况下终止缓存进程，关键状态应按正常生命周期及时持久化。
 
-**API 33 及以下--全部回调可用:**
+### Android 17 的 App 侧分发
 
-前台回调:
+在 `android-17.0.0_r1` 中，`ActivityThread.ApplicationThread.scheduleTrimMemory()` 接到 Binder 调用后，会优先把处理安排到主线程 `Choreographer.CALLBACK_COMMIT`，让回调位于绘制帧之后，以降低卡顿风险；没有可用 Choreographer 时退回 Handler。
 
-| 级别 | 值 | 含义 | 建议操作 |
-|------|---|------|----------|
-| `TRIM_MEMORY_RUNNING_LOW` | 10 | 系统内存开始紧张 | 释放非关键缓存 |
-| `TRIM_MEMORY_RUNNING_MODERATE` | 5 | 内存进一步紧张 | 释放更多缓存 |
-| `TRIM_MEMORY_RUNNING_CRITICAL` | 15 | 内存严重紧张,后台进程可能被杀 | 释放所有可释放的缓存 |
+随后私有方法 `ActivityThread.handleTrimMemory()` 收集进程内的 `ComponentCallbacks2` 并分发，最后通知 WindowManager。通过 `Application.registerComponentCallbacks()` 注册的对象由 Application 的 callback controller 继续分发。业务不能依赖各回调的相对顺序。
 
-注意:这些回调在进程**仍然在前台运行**时就会触发。及时响应可以降低系统进入更严重内存压力状态的概率。
+Android 17 还有两条需要知道的系统边界：
 
-后台回调:
+- 配置标志 `skipBgMemTrimOnFgApp` 可以让重要前台进程跳过 background-or-higher 的 trim；
+- `CachedAppOptimizer` 在部分缓存进程进入冻结调度前发送 `TRIM_MEMORY_BACKGROUND`，该回调是异步的，系统不会等待应用完成清理。
 
-| 级别 | 值 | 含义 | 建议操作 |
-|------|---|------|----------|
-| `TRIM_MEMORY_UI_HIDDEN` | 20 | UI 不可见了 | 释放 UI 相关资源(Bitmap 缓存等) |
-| `TRIM_MEMORY_BACKGROUND` | 40 | 进程进入 LRU 列表 | 释放所有可以重新创建的资源 |
-| `TRIM_MEMORY_MODERATE` | 60 | 进程在 LRU 列表中部 | 释放更多缓存 |
-| `TRIM_MEMORY_COMPLETE` | 80 | 进程即将被杀 | 释放一切,保存关键数据 |
+回调在主线程执行，应只做快速、可预测的操作。耗时压缩、磁盘写入或遍历超大缓存会把内存响应变成卡顿。
 
-**API 34+--回调范围收窄:**
+### 推荐响应策略
 
-从 API 34 起,以下回调级别不再投递给 App(AOSP `ComponentCallbacks2.java` 中带 `@Deprecated` 且明确标注"Apps are not notified of this level since API level 34"):
-
-| 废弃级别 | 值 | 说明 |
-|----------|---|------|
-| `TRIM_MEMORY_RUNNING_MODERATE` | 5 | 前台回调,已停止投递 |
-| `TRIM_MEMORY_RUNNING_LOW` | 10 | 前台回调,已停止投递 |
-| `TRIM_MEMORY_RUNNING_CRITICAL` | 15 | 前台回调,已停止投递 |
-| `TRIM_MEMORY_MODERATE` | 60 | 后台 LRU 回调,已停止投递 |
-| `TRIM_MEMORY_COMPLETE` | 80 | 后台"即将被杀"回调,已停止投递 |
-
-API 34+ 仍会实际投递的回调为:
-
-| 级别 | 值 | 含义 | 建议操作 |
-|------|---|------|----------|
-| `TRIM_MEMORY_UI_HIDDEN` | 20 | UI 不可见 | 释放 UI 相关资源(Bitmap 缓存等) |
-| `TRIM_MEMORY_BACKGROUND` | 40 | 进程进入 LRU 列表 | 释放所有可以重新创建的资源 |
-
-说明:`TRIM_MEMORY_BACKGROUND`(40)和 `TRIM_MEMORY_UI_HIDDEN`(20)在 AOSP `ComponentCallbacks2.java` 中**没有** `@Deprecated` 标注,不应写成"已废弃/不投递"。在 API 34+ 设备上,内存压力判断应回到 PSI(`/proc/pressure/memory`)、`lmkd` 指标、`dumpsys meminfo` 等系统级信号,不要只依赖 `onTrimMemory` 作为全部内存压力来源。
-
-在 API 34+ 设备上,系统内存压力判断应回到 PSI(`/proc/pressure/memory`)、`mm_vmscan` tracepoint、`lmkd` 指标等系统级信号,不要依赖不再投递的 `TRIM_MEMORY_COMPLETE` 作为"即将被杀"的信号。
-
-[已验证: AOSP ComponentCallbacks2.java - RUNNING_MODERATE=5, RUNNING_LOW=10, RUNNING_CRITICAL=15, UI_HIDDEN=20, BACKGROUND=40, MODERATE=60, COMPLETE=80]
-
-### onTrimMemory 的分发路径
-
-了解回调级别之后,还要看 `onTrimMemory` 是怎么从系统到达 App 的。沿着 AOSP 源码追踪,完整分发链路可以拆成三步。
-
-1. **System Server**:`ActivityManagerService` 检测到内存压力变化后,通过 Binder 向目标进程发送 `scheduleTrimMemory(level)`。
-2. **App 侧 ApplicationThread**:Binder 入口是 `ApplicationThread.scheduleTrimMemory(level)`,它不会直接在 Binder 线程执行 `handleTrimMemory()`;Android 16 源码会把 `handleTrimMemory()` 投递到主线程的 `Choreographer.CALLBACK_COMMIT`,没有 Choreographer 时才退回 `mH.post(r)`。
-3. **主线程分发**:`handleTrimMemory(int level)` 调用 `collectComponentCallbacks(true)` 收集 `Application`、未结束的 `Activity`、`Service` 和本地 `ContentProvider`,再逐个调用 `onTrimMemory(level)`。通过 `Application.registerComponentCallbacks()` 注册的回调会在 `Application.onTrimMemory()` 内部分发。
-
-```java
-// frameworks/base/core/java/android/app/ActivityThread.java
-// handleTrimMemory 的核心分发(简化)
-public final void handleTrimMemory(int level) {
-    final ArrayList<ComponentCallbacks2> callbacks =
-            collectComponentCallbacks(true /* includeUiContexts */);
-    for (int i = 0; i < callbacks.size(); i++) {
-        callbacks.get(i).onTrimMemory(level);
-    }
-}
-```
-
-> [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java - handleTrimMemory]
-
-两个排查边界:
-
-- **回调顺序不应假设**:`handleTrimMemory` 会按 `collectComponentCallbacks(true)` 收集到的组件列表分发;通过 `Application.registerComponentCallbacks()` 注册的回调再由 `Application.onTrimMemory()` 分发。业务代码不要假设某个回调一定在另一个之前执行。
-- **API 34+ 收窄发生在 System Server 侧**:前文提到的 `RUNNING_*`、`MODERATE`(60)、`COMPLETE`(80) 等旧 level 在 API 34+ 不再投递--`ActivityManagerService` 直接跳过这些 level,App 侧的 `handleTrimMemory` 不会收到。
-
-### 正确的响应策略
-
-很多开发者对 `onTrimMemory` 的处理过于粗糙--要么不处理,要么一收到回调就清空所有缓存。更好的做法是根据级别做差异化的释放:
+下面的实现只依赖 Android 14+ 仍投递的 level：
 
 ```kotlin
 override fun onTrimMemory(level: Int) {
-    when (level) {
-        TRIM_MEMORY_RUNNING_LOW,
-        TRIM_MEMORY_RUNNING_MODERATE -> {
-            // 释放非关键缓存,比如预加载的数据
-            releaseNonCriticalCaches()
+    when {
+        level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND -> {
+            imageCache.trimTo(backgroundLimitBytes)
+            decodedDocumentCache.clear()
         }
-        TRIM_MEMORY_RUNNING_CRITICAL -> {
-            // 释放更多缓存,但保留核心数据
-            releaseNonCriticalCaches()
-            releaseImageCache(size = imageCache.size / 2)
-        }
-        TRIM_MEMORY_UI_HIDDEN -> {
-            // UI 不可见了,释放 UI 相关资源
-            releaseUIResources()
-        }
-        TRIM_MEMORY_BACKGROUND,
-        TRIM_MEMORY_MODERATE -> {
-            // 后台状态,释放大部分缓存
-            releaseImageCache(size = imageCache.size / 3)
-            releaseSecondaryCaches()
-        }
-        TRIM_MEMORY_COMPLETE -> {
-            // 即将被杀,释放一切
-            releaseAllCaches()
-            saveCriticalState()
+        level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> {
+            prefetchQueue.cancelAll()
+            visibleOnlyCache.clear()
         }
     }
 }
 ```
 
-处理原则:**`onTrimMemory` 的回调不应该导致用户可感知的体验下降**。当进程在前台时收到 `TRIM_MEMORY_RUNNING_LOW`,应释放的是预加载缓存、二级缓存这类"有更好、没有也不影响核心功能"的资源。不要在前台状态下清空图片缓存--用户正在看的列表会突然变成白屏。
+`UI_HIDDEN` 不等于内存压力，只说明 UI 不可见；响应动作应当便宜且可重建。支持 Android 8～13 的应用仍可能收到旧 level，可在兼容分支中渐进缩容，但不能让核心状态依赖这些回调。
 
-### 注册方式
+进程级缓存可以在 `Application` 实现 `ComponentCallbacks2`，短生命周期组件也可以注册独立回调。后者离开作用域时必须调用 `unregisterComponentCallbacks()`，避免注册表继续持有它。
 
-`onTrimMemory` 不只是 `Activity` 的回调。任何组件都可以通过 `ComponentCallbacks2` 接收:
+## 16 KB Page Size
 
-```kotlin
-// 在 Application 或任何组件中注册
-override fun onCreate() {
-    super.onCreate()
-    registerComponentCallbacks(object : ComponentCallbacks2 {
-        override fun onTrimMemory(level: Int) {
-            // 处理内存压力回调
-        }
-        override fun onConfigurationChanged(newConfig: Configuration) {}
-        override fun onLowMemory() {
-            // 兼容旧 API 的回调,优先使用 onTrimMemory
-        }
-    })
-}
+Android 15 起 AOSP 支持 16 KB page size。自 2025 年 11 月 1 日起，Google Play 要求面向 Android 15 / API 35+ 设备的新应用和更新在 64 位设备上支持 16 KB page size。
+
+纯 Java/Kotlin 应用只有在所有依赖也不包含 Native 代码时，通常无需源码修改，仍应在 16 KB 环境测试。包含 `.so` 的应用需要同时检查：
+
+- 自有 Native 库；
+- AAR、SDK、游戏引擎和预编译库中的 `.so`；
+- APK/AAB 打包时的未压缩库对齐；
+- 代码中硬编码的 `4096`、页对齐和 `mmap` 假设。
+
+AGP 8.5.1+、NDK r28+ 和兼容的预编译依赖可提供默认支持。NDK r27 及更早版本需要按构建链配置兼容选项；直接控制链接器时，至少同时设置以下参数：
+
+```cmake
+target_link_options(native-lib PRIVATE
+    "-Wl,-z,max-page-size=16384"
+    "-Wl,-z,common-page-size=16384")
 ```
 
-`registerComponentCallbacks` 注册的回调会在进程的所有生命周期中生效,而不仅限于某个 Activity 的生命周期。
-
-## 16KB Page Size 迁移
-
-[已验证: 研究素材, research-feed 2026-03-31-19-ch04-app-memory-16kb-migration.md]
-
-前面几节聚焦 App 可控的内存策略——减少分配、复用对象、检测泄漏。但有一项平台级变更会直接影响所有这些策略的实际效果：**16KB Page Size 迁移**。Google Play 要求:自 2025-11-01 起,提交到 Google Play、面向 Android 15/API 35+ 设备的新应用和更新必须支持 16KB page size。此要求不作用于所有已发布应用的存量版本,也不作用于仅面向 Android 14 及以下设备的提交。
-
-### 为什么 16KB Page Size 能提升性能
-
-传统 Android 使用 4KB 内存页。16KB 页的优势在于:
-
-- **TLB 压力降低**:更大的页意味着更少的 TLB entry,减少了 Page Table Walk 的开销
-- **冷启动加速**:Google 官方数据,冷启动时间平均提升 3.16%,最佳案例提升 30%
-- **启动功耗降低**:启动期间功耗降低 4.56%
-
-[已验证: Google 官方博客, android-developers.googleblog.com/2024/10/16kb-page-size-android-15.html]
-
-### 对 App 的影响
-
-**Java/Kotlin 纯应用**:几乎不需要改动。ART 自动处理内存分配的对齐问题。
-
-**NDK/C++ 应用**:需要重新编译。关键改动:
-
-```gradle
-// AGP 8.5.1+ 自动处理 16KB 对齐
-android {
-    // NDK r28+ 默认 16KB ELF alignment
-    // 旧版 NDK 需手动添加链接器标志:
-    // -Wl,-z,max-page-size=16384
-}
-```
-
-最需要注意的代码模式是**硬编码页大小**:
+代码应在运行时获取页大小：
 
 ```c
-// 错误:硬编码 4KB
-#define PAGE_SIZE 4096
-
-// 正确:运行时获取
 long page_size = sysconf(_SC_PAGESIZE);
+if (page_size <= 0) {
+    /* 处理查询失败，不能回退到未经验证的 4096 假设 */
+}
 ```
 
-[已验证: 官方文档, developer.android.com/build/apps/16kb-page-size - 迁移指南]
+在目标设备和构建产物上分别验证：
 
-**第三方 SDK**:React Native、Flutter 等框架已提供兼容版本。如果 App 依赖了包含 Native 代码的第三方 SDK,需要确认其是否已适配 16KB 页。
+```bash
+adb shell getconf PAGE_SIZE
+zipalign -c -P 16 -v 4 app-release.apk
+```
 
-### 测试方法
+16 KB 页可能减少 TLB miss 和部分启动开销，也可能增加小映射或页内碎片带来的内存消耗。收益取决于工作负载，不能写成所有应用都会更快。Bitmap、GraphicBuffer 和 allocator 的变化应通过同机 4 KB/16 KB 对照测量。
 
-- **Pixel 8/9**:开发者选项中启用 "Boot with 16KB page size"
-- **Android Studio AVD**:使用 API 35 的 "16KB" 镜像
-- **APK Analyzer(Android Studio Panda+)**:APK Analyzer 新增了 16KB 对齐状态列,开发者可以直接审计 APK 中所有 `.so` 文件的页对齐合规性。打开 APK Analyzer 后,在 `lib/` 目录下查看 Native 库列表,"16KB Aligned"列会标注每个 `.so` 是否满足 16KB 对齐要求。第三方 SDK 的 `.so` 文件如果没有对齐,会在这一列直接暴露
+## Jetpack Compose 的内存边界
 
-### 对 Bitmap 的影响
+Compose 改变了 UI 对象的组织方式，但生命周期和所有权原则没有改变：
 
-Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下,分配对齐从 4KB 提升到 16KB,可能影响 native allocation、GraphicBuffer/allocator 分配路径。具体影响需用 heapprofd、dumpsys meminfo 和特定图像库版本实测确认。Glide/Coil 等图片加载库在构造 Bitmap 时依赖平台 API,其对齐行为由平台 allocator 和 GraphicBuffer 决定,未必在库层面做了显式 16KB 对齐优化。
+- `remember` 的值在对应 composable 留在 Composition 且 key 不变时保留；节点被移除或 key 变化后会被遗忘；
+- `rememberSaveable` 的状态要写入 Bundle，不应保存 Bitmap、大数组或复杂对象图；
+- `DisposableEffect` 适合成对注册/注销 listener、observer 和其他外部资源；
+- Flow 和生命周期数据应使用生命周期感知的收集方式；
+- Lazy 列表提供稳定 key，避免因位置变化丢失或重建错误状态；
+- 排序、解析和大集合转换移出高频重组路径，必要时使用 `derivedStateOf` 等工具，但先测量重组与分配。
 
-## 扩展:大型 App 的内存预算管理
+`remember` 不是通用缓存。把 Activity Context、大 Bitmap 或播放器长期记在高层 Composition，会使它们跟随该节点存活。资源已有 ViewModel、图片库或进程级 owner 时，Composable 只保存轻量句柄和展示状态。
 
-对于大型 App(DAU 百万级以上),单纯靠"哪里泄漏修哪里"是不够的。需要有系统性的内存预算管理。
+## 大型应用的内存预算
 
-### 确定内存预算
+固定的“核心 30%、业务 40%、缓存 20%、预留 10%”缺少设备和场景依据。更可用的预算来自重复测试。
 
-一个 App 的内存预算取决于两个因素:
+### 建立设备与场景分组
 
-1. **设备可用内存**:通过 `ActivityManager.getMemoryClass()` 获取设备给单个 App 的堆大小限制(通常是 128MB-512MB)
-2. **App 自身的内存分配模式**:不同的业务场景有不同的内存热点
+先按总 RAM、low-RAM 标志、API、ABI、屏幕尺寸和 page size 选择代表设备，再固定场景：
 
-### 内存分区策略
+- 冷启动、首页稳定、前后台切换；
+- 长列表快速滚动并返回；
+- 大图、视频、地图、相机或文档等峰值业务；
+- 页面反复进入退出、旋转和多窗口；
+- 低内存回调、后台冻结与恢复。
 
-大型 App 的典型做法是将可用内存划分为几个"区域":
+每个场景记录稳定值、峰值、退出后的回落值以及多轮后的基线漂移。至少区分 Java、Native、Graphics、总 PSS/RSS、swap、FD 和关键对象数量，并观察 p50、p95、p99，而非只保留平均值。
 
-- **核心区(约 30%)**:Framework、基础库、长生命周期对象。这部分内存相对稳定,不容易波动。
-- **业务区(约 40%)**:当前页面的 View 树、数据模型、业务逻辑。随页面切换波动。
-- **缓存区(约 20%)**:图片缓存、网络缓存、预加载缓存。最容易被释放。
-- **预留区(约 10%)**:为突发场景(如大图编辑、视频处理)预留的缓冲空间。
+### 正确理解 heap class
 
-当 `onTrimMemory` 回调触发时,按照"缓存区 → 预留区 → 业务区的非核心部分"的顺序释放。
+`ActivityManager.getMemoryClass()` 返回普通应用近似的受管理堆等级，`getLargeMemoryClass()` 对应声明 `largeHeap` 后的等级。它们不是进程总 PSS 上限，也不包含所有 Native、Graphics 和共享内存。
 
-[已验证: 公开技术分享, 货拉拉 Android 端内存治理实践等]
+下面的计算只能估算 Java 堆当前已用量与可增长余量：
 
-### 线上监控
+```kotlin
+val runtime = Runtime.getRuntime()
+val javaUsed = runtime.totalMemory() - runtime.freeMemory()
+val javaHeadroom = runtime.maxMemory() - javaUsed
+```
 
-线上内存监控的关键指标:
+它不能回答 Bitmap、dmabuf 或 Native 堆还有多少空间。缓存上限应同时参考设备档位、业务峰值和系统回收信号，并为突发分配保留经过压测的余量。
 
-- **Java 堆使用率**:`Runtime.getRuntime().totalMemory() / Runtime.getRuntime().maxMemory()`
-- **PSS 总量**:通过 `Debug.getPss()` 获取(API 14+ 可用)
-- **FD 数量**:通过 `/proc/self/fd` 的文件数量
-- **Bitmap 数量**:通过 `Debug.getMemoryInfo()` 中的 `nativePss` 间接推算
+### 采样成本与指标解释
 
-当这些指标接近阈值时,触发降级策略(释放缓存、降低图片质量、关闭预加载)。
+`Debug.getPss()` 从 API 14 可用，`Debug.getRss()` 从 API 35 可用。PSS 统计需要读取和归并内存映射，不能每帧轮询。生产采样应低频、限量，并在设备上评估成本。
 
-### 线上诊断路径
+`Debug.MemoryInfo.nativePss` 不能换算 Bitmap 数量。Bitmap 对象统计可看 `dumpsys meminfo <package>` 的对象区、Heap Dump 或图片库自身的请求/缓存指标；Graphics 和 dmabuf 还需要对应的系统计数器。
 
-当前已公开的诊断路径:
+## 线上诊断
 
-- **`ApplicationExitInfo`(Android 11 / API 30+)**:通过 `getHistoricalProcessExitReasons()` 获取进程终止原因、状态、PSS/RSS 快照。`getPss()` / `getRss()` 也是 API 30 口径;Android 10 / API 29 设备无法按此路径回查低内存退出原因。如果 `reason == REASON_LOW_MEMORY`,说明进程被系统因内存压力终止
-- **`ProfilingManager`(Android 15/API 35+)**:可在内存水位达到阈值时触发系统级 Trace 采集,提供零侵入的内存异常捕获
+### `ApplicationExitInfo`
 
-Android 17 是否在 `ApplicationStartInfo` 中新增了上次运行周期的峰值内存回查方法,确认前可先用 `ApplicationExitInfo.getPss()` 和 `getRss()` 作为替代诊断数据源。
+Android 11 / API 30 起，`ActivityManager.getHistoricalProcessExitReasons()` 可以回查进程退出记录。`ApplicationExitInfo` 提供 reason、importance、description、trace，以及最后采样到的 PSS/RSS。
 
-[待验证: Android 17 ApplicationStartInfo 峰值内存回查 API]
+这些 PSS/RSS 值可能为 0，也不保证等于死亡瞬间峰值。`REASON_LOW_MEMORY` 能说明系统按低内存原因记录了退出，仍需结合设备内存档位、业务场景和版本分布分析。
 
-## 常见问题与误区
+Android vitals 的用户可感知低内存终止率适合观察整体影响。它能指出问题规模，定位仍要依靠可复现路径、退出信息和内存采样。
 
-内存优化是 Android 开发中最容易产生误解的领域之一。一部分原因是 Android 的内存管理机制在不同版本之间发生了显著变化,一些曾经正确的做法在新版本上不再适用,而一些从未正确过的做法却因为"看起来有效"而被广泛传播。这里梳理几个在实际开发和技术面试中反复出现的典型误区。
+### `ProfilingManager`
 
-### 误区一:"调用 System.gc() 能解决内存问题"
+Android 15 / API 35 引入 `ProfilingManager`，应用可以请求系统管理的 profiling 采集。Android 17 / API 37 的 `ProfilingTrigger` 增加：
 
-这个想法的出发点可以理解--内存不够了,那就主动告诉系统"来回收一下吧"。但 Android 明确不建议手动触发 GC,原因有两层。
+- `TRIGGER_TYPE_OOM`：应用发生未捕获的 `OutOfMemoryError` 时触发 Java Heap Dump；自定义 `UncaughtExceptionHandler` 必须继续调用默认 handler；
+- `TRIGGER_TYPE_ANOMALY`：由系统检测异常并触发相应 artifact。
 
-第一层原因是 **GC 本身有开销**。ART 的 Concurrent Copying Collector 虽然大部分工作是并发的,但仍然需要短暂的"暂停"阶段(Young Generation 暂停)来拷贝存活对象。调用 `System.gc()` 时,就是在主动制造一次 GC 周期,这会让正在运行的线程暂停--如果这个调用发生在主线程的渲染路径中,就是一次额外的掉帧风险。
+该能力受系统策略、速率限制和用户构建条件约束，不能保证每次异常都有产物。接入时要记录请求结果、回调状态、文件上传策略和隐私边界。
 
-第二层原因是 **它掩盖了问题本身**。内存紧张通常意味着存在泄漏或过度分配。调用 `System.gc()` 可能在短时间内"解决"内存不足的症状(GC 可能回收一些刚变为不可达的对象(比如清空缓存后,原先被缓存强引用持有的对象断开了引用链)),但它不会修复泄漏--泄漏的对象仍然有从 GC Root 到达的强引用链,GC 无法回收它们。正确的做法是用 Memory Profiler 或 LeakCanary 找到泄漏源头,而不是用 `System.gc()` 掩盖症状。
+### 从现象选择工具
 
-极少数受控压测场景下,刚执行完一次大批量内存释放操作(比如清空大型缓存 Map)后,可以用 `System.gc()` 辅助观察"引用是否已经断开"。这不应进入用户路径,也不应作为 `onTrimMemory` 响应策略;线上治理仍应依赖减少分配、断开引用、释放缓存和观察内存水位。
+| 现象 | 首选证据 |
+| --- | --- |
+| 页面退出后 Java 对象不回落 | LeakCanary、Heap Dump 引用链 |
+| 滚动时分配率高并伴随卡顿 | Allocation recording、Perfetto FrameTimeline 与 GC |
+| Native PSS 持续上涨 | heapprofd、malloc debug、HWASan/ASan |
+| Graphics/dmabuf 上涨 | `dumpsys meminfo`、memtrack、dmabuf/Surface 相关 Trace |
+| 后台进程频繁消失 | `ApplicationExitInfo`、Android vitals、lmkd/系统内存压力 |
+| FD 持续增长 | `/proc/self/fd`、StrictMode、资源所有权审查 |
 
-[已验证: 官方文档, developer.android.com/topic/performance/memory - 避免手动触发 GC]
+## 常见误区
 
-### 误区二:"Android 8.0+ 不需要 recycle Bitmap"
+### `System.gc()` 能修复内存问题
 
-前文讲过,Android 8.0(API 26)将 Bitmap 的像素数据从 Java 堆移到了 Native 堆。Bitmap 因此不再直接占用 Java 堆配额,也不再直接导致 `OutOfMemoryError`。但"不需要 recycle"这个结论过于简化了。
+`System.gc()` 只是向运行时提出显式 GC 请求。它可能增加回收工作和暂停，无法回收仍可从 GC Root 到达的泄漏对象，也不能关闭 FD 或释放所有 Native owner。受控测试可以在断开引用后借它辅助验证，生产路径应修复引用、所有权和分配行为。
 
-实际情况是:Bitmap 的 Java 对象仍然在 Java 堆中(它是一个普通 Java 对象,包含宽高、配置等元数据),而像素数据在 Native 堆。当 Java 层的 Bitmap 对象变得不可达时,GC 回收 Java 对象后,`NativeAllocationRegistry` 注册的 `Cleaner` 回调触发 Native 像素释放。这个过程是**异步的、延迟的**--GC 不保证立即回收,Cleaner 队列的处理也可能滞后。
+### Android 8+ 的 Bitmap 不会 OOM
 
-在以下场景中,显式调用 `Bitmap.recycle()` 仍然有意义:
+API 26+ 像素位于 Native 侧，平台仍登记这部分分配，进程也仍受物理内存和系统策略约束。只盯 `Runtime.maxMemory()` 会漏掉 Bitmap、Graphics 和 dmabuf 压力。
 
-- **内存密集型操作**(如图片编辑 App 同时操作多张大图),需要尽快释放 Native 内存,而不是等待 finalize 队列慢慢处理
-- **低内存设备**上,Native 内存的压力同样会触发系统的 OOM Killer,不 recycle 意味着大量 Bitmap 像素数据占着 Native 堆
-- **需要确认 Bitmap 已被释放**:`recycle()` 会将 Bitmap 标记为"dead",后续任何使用都会抛异常--这比让一个"僵尸 Bitmap"悄悄占用内存要好
+### 每次用完 Bitmap 都调用 `recycle()`
 
-不过,如果使用 Glide、Coil 这样的图片加载库,通常不需要手动 recycle。这些库通过 Bitmap Pool 管理 Bitmap 的生命周期,会自动决定何时复用、何时释放。手动 recycle 一个由 Glide 管理的 Bitmap,反而会破坏它的复用池。
+`recycle()` 会立即让像素不可用。共享给 View、Drawable、异步任务或图片库的 Bitmap 不能由局部代码擅自回收。现代应用优先使用清晰所有权和库提供的释放 API。
 
-[已验证: 官方文档, developer.android.com/topic/performance/graphics/manage-memory - Bitmap 管理最佳实践]
+### `onTrimMemory` 会提前通知进程死亡
 
-### 误区三:"onTrimMemory 触发 = App 即将被杀"
+Android 14+ 只保留 `UI_HIDDEN` 和 `BACKGROUND` 两个公开投递 level，系统可以直接终止缓存进程。状态保存要遵守正常生命周期，trim 回调只负责快速释放可重建资源。
 
-这个误解导致了很多 App 在收到 `onTrimMemory` 回调时反应过度--清空所有缓存、停止所有后台任务、甚至弹窗提示用户"内存不足"。
+### `largeHeap` 可以解决所有 OOM
 
-`onTrimMemory` 有多个级别,大部分是**预警**而非"死刑通知"。前面已经列出每个级别的含义,这里用一个简化的判断框架来帮助理解:
+`largeHeap` 只改变设备为应用提供的受管理堆等级，具体大小由设备决定。它不修复泄漏，不扩大 FD 上限，也不消除 Native、Graphics 或 Android 17 MemoryLimiter 带来的进程压力。只有业务确有大 Java 堆需求并经过多档设备验证时才应使用。
 
-- **前台回调**(`TRIM_MEMORY_RUNNING_LOW/MODERATE/CRITICAL`):App 仍在前台运行,系统只是说"整个设备的内存有点紧了"。这时候应释放非关键缓存(比如预加载的数据),但不要影响用户正在使用的核心功能--不要清空当前列表的图片缓存,不要停止正在播放的视频。
-- **`TRIM_MEMORY_UI_HIDDEN`**:App 的 UI 不可见(比如用户按了 Home 键)。这是最常见的前后台切换回调,和"即将被杀"没有关系。只需释放 UI 相关的资源(比如大的 View 缓存)。
-- **后台回调**(`TRIM_MEMORY_BACKGROUND/MODERATE`):App 在后台 LRU 列表中,系统在考虑是否回收进程。应释放大部分可重建的缓存,但还没到最高压力级别。
-- **`TRIM_MEMORY_COMPLETE`**:这是唯一一个可以理解为"系统正在认真考虑终止进程"的级别。到了这个级别,应释放一切可释放的资源,并保存关键状态数据,以备下次冷启动时恢复。
+### 高端设备可以忽略内存抖动
 
-**不要把 `onTrimMemory` 当成 `onDestroy`**。它是一个梯度式的预警系统,不是一次性开关。正确的做法是根据级别做差异化的响应,而不是一收到回调就清空一切。
+高端设备 CPU 更快，但高刷新率也缩短了帧间隔。结论必须来自目标设备的 FrameTimeline、GC 与分配数据。低端设备关注总量和回收压力，高刷设备还要关注暂停与帧工作的重叠。
 
-### 误区四:"申请 largeHeap 是解决内存不足的好办法"
+## Review 清单
 
-`android:largeHeap="true"` 看起来是一个简单的解决方案--在 Manifest 里加一行配置,Java 堆的大小限制就提高了。但它有几个不容易被注意到的代价。
-
-**GC 开销增大**。ART 的 GC 时间与堆的大小正相关--堆越大,GC 需要扫描的对象越多,单次 GC 的耗时越长。在 120Hz 设备上,帧间隔只有 8.3ms,GC 暂停多出 2-3ms 就可能导致掉帧。一个普通堆大小 256MB 的 App 和一个 largeHeap 512MB 的 App,在相同分配模式下,后者的 GC 暂停时间可能是前者的 1.5-2 倍。
-
-**设备碎片化问题**。而且"large heap"的具体大小由设备厂商决定,不同设备差异很大:高内存设备上可能是 512MB,低内存设备上可能只有 384MB——申请了"很大"的堆,实际增量可能很小。
-
-**largeHeap 不解决内存泄漏**。如果 App 存在 Activity 泄漏,申请更大的堆只是让泄漏的"容量"变大了--从"泄漏 20 个 Activity 后 OOM" 变成了"泄漏 40 个 Activity 后 OOM"。泄漏仍然存在。
-
-Google 的官方建议是:`largeHeap` 仅适用于需要大内存的特定场景(图片/视频编辑、大型游戏、地图渲染),而不应该作为解决 OOM 的常规手段。在申请 largeHeap 之前,先用 Memory Profiler 分析 App 的内存分配模式,确认是需要更多内存,还是只需要修复泄漏和优化分配。
-
-[已验证: 官方文档, developer.android.com/guide/topics/manifest/application-element - largeHeap 属性说明]
-
-### 误区五:"内存抖动只发生在低端设备上"
-
-直觉上容易这样判断:低端设备内存小、CPU 慢,所以更容易出现内存抖动导致的卡顿;高端设备内存大、CPU 快,应该不会有这个问题。
-
-但实际情况是反过来的:**120Hz 高刷新率设备比 60Hz 设备更容易暴露内存抖动问题**。
-
-前面的"内存抖动"小节已经分析过原因:卡顿是否发生,取决于 GC 暂停时间是否超过帧间隔。60Hz 设备的帧间隔是 16.6ms,GC 暂停 5ms 还有 11.6ms 的余量。但 120Hz 设备的帧间隔只有 8.3ms,同样的 5ms GC 暂停就只剩 3.3ms--如果这一帧的 UI 工作本身需要 5ms,总共就是 10ms,超过了 8.3ms 的帧间隔,掉帧就发生了。
-
-结果是:在 60Hz 设备上测试可能毫无卡顿,到了 120Hz 设备上就可能暴露。这也是为什么内存优化不应该只在低端设备上做--高刷设备同样需要减少不必要的对象分配,特别是 `onDraw()`、`onBindViewHolder()` 这类高频回调路径中的分配。
-
-[待验证: 120Hz vs 60Hz 设备上 GC 暂停导致掉帧的实际测试数据对比]
+- [ ] 是否分别观察 Java、Native、Graphics/dmabuf、PSS/RSS、swap 和 FD？
+- [ ] 是否用可复现 Trace 证明高频分配或 GC 与帧问题有关？
+- [ ] Bitmap 是否按目标尺寸解码，并遵守 `inBitmap`、硬件 Bitmap 和 `recycle()` 的所有权？
+- [ ] Activity、Fragment View、Handler、listener、observer 和协程是否在正确生命周期解绑？
+- [ ] JNI 的内存、全局引用、字符/数组访问和 FD 是否成对释放？
+- [ ] `onTrimMemory` 是否只做快速、可重建的资源缩减，并兼容 API 34+ 行为？
+- [ ] 所有 Native 依赖是否通过 16 KB page size 构建与设备验证？
+- [ ] Compose 是否避免在 Composition 或 Bundle 中保存大对象？
+- [ ] 内存预算是否来自设备×场景的 p50/p95/p99 与回落数据？
+- [ ] 线上退出指标是否能关联版本、设备档位和业务场景？
 
 ---
 
 ## 参考资料
 
-### AOSP 源码
-- `frameworks/base/core/java/android/graphics/BitmapFactory.java` - inBitmap 实现
-- `frameworks/base/core/java/android/graphics/Bitmap.java` - Bitmap 配置和回收
-- `frameworks/base/core/java/android/app/ActivityManager.java` - getMemoryClass() / onTrimMemory
-- `frameworks/base/core/java/android/content/ComponentCallbacks2.java` - TRIM_MEMORY 常量
-- `frameworks/base/core/java/android/os/Message.java` - Message 对象池实现
+### AOSP Android 17 源码
+
+- `frameworks/base/graphics/java/android/graphics/Bitmap.java`：Native 分配注册、硬件 Bitmap、Parcel 与 `recycle()`
+- `frameworks/base/graphics/java/android/graphics/BitmapFactory.java`：解码与 `inBitmap`
+- `frameworks/base/core/java/android/app/ActivityThread.java`：`scheduleTrimMemory()` 与主线程分发
+- `frameworks/base/core/java/android/app/Application.java`：注册回调的分发
+- `frameworks/base/core/java/android/content/ComponentCallbacks2.java`：trim level 公共契约
+- `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java`：冻结前的后台 trim
+- `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`、`ProfilingTrigger.java`：系统 profiling 与 API 37 trigger
+
+以上源码均以 `android-17.0.0_r1` 为核查锚点。
 
 ### 官方文档
-- [Managing Bitmap Memory](https://developer.android.com/topic/performance/graphics/manage-memory)
-- [Investigate RAM Usage](https://developer.android.com/topic/performance/memory)
-- [16KB Page Size](https://developer.android.com/build/apps/16kb-page-size)
-- [Bitmap.Config.HARDWARE](https://developer.android.com/reference/android/graphics/Bitmap.Config#HARDWARE)
-- [heapprofd (Perfetto)](https://perfetto.dev/docs/data-sources/native-heap-profiler)
-- [AddressSanitizer (NDK)](https://developer.android.com/ndk/guides/asan)
-- [malloc debug](https://developer.android.com/ndk/guides/debug-gdb)
 
-### 技术博客与参考
-- [16KB Page Size - Android Developers Blog](https://android-developers.googleblog.com/2024/10/16kb-page-size-android-15.html)
-- [Glide Bitmap Pool](https://bumptech.github.io/glide/doc/bitmap-pool.html)
+- [Memory overview](https://developer.android.com/topic/performance/memory)
+- [Manage Bitmap memory](https://developer.android.com/topic/performance/graphics/manage-memory)
+- [BitmapFactory.Options.inBitmap](https://developer.android.com/reference/android/graphics/BitmapFactory.Options#inBitmap)
+- [Bitmap.Config.HARDWARE](https://developer.android.com/reference/android/graphics/Bitmap.Config#HARDWARE)
+- [Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
+- [Debug native Android platform code](https://developer.android.com/ndk/guides/debug)
+- [HWAddressSanitizer](https://developer.android.com/ndk/guides/hwasan)
+- [GWP-ASan](https://developer.android.com/ndk/guides/gwp-asan)
+- [heapprofd](https://perfetto.dev/docs/data-sources/native-heap-profiler)
+- [ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+- [ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager)
+- [Glide configuration](https://bumptech.github.io/glide/doc/configuration.html)
+- [Coil ImageLoaders](https://coil-kt.github.io/coil/image_loaders/)
+- [Fresco caches](https://frescolib.org/docs/caching.html)
 - [LeakCanary](https://square.github.io/leakcanary/)
 
-### 交叉引用
-- 本章 4.1 节「Android 内存模型全景」- 系统内存组成和度量方法
-- 本章 4.3 节「ART 虚拟机内存管理」- Java 堆 GC 机制
-- 本章 4.4 节「Low Memory Killer」- 系统杀进程策略
-- 第 7 章第 2 节「卡顿原因体系」- 内存抖动作为卡顿根因之一
-- 第 7 章第 3 节「卡顿分析方法论」- heapprofd 在卡顿分析中的使用
+### 交叉阅读
+
+- 4.1「Android 内存模型全景」：进程内存口径
+- 4.2「Linux 内存管理」：页、回收与内核压力
+- 4.3「ART 虚拟机内存管理」：分配与 GC
+- 4.4「Low Memory Killer」：lmkd、冻结与进程终止
+- 4.7「16 KB Page Size」：构建、加载与兼容性细节
+- 7.2、7.3：卡顿分类与 Perfetto 分析
