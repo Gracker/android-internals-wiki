@@ -4,10 +4,11 @@ chapter: '2.14'
 section: '2.14'
 status: finalized
 applicable_versions: Android 1.0 (API 1) - Android 17 (API 37); OpenGL ES 1.x from API 1,
-  OpenGL ES 2.0 from API 8, Vulkan from API 24, WebGPU developer preview from API 24
+  OpenGL ES 2.0 from API 8, Vulkan from API 24; AndroidX WebGPU developer preview requires
+  minSdk 24
 last_verified: '2026-07-25'
 last_verified_against: Android 17 / API 37 / android-17.0.0_r1; android17-6.18-2026-06_r6;
-  Writer rendering_pipelines/S08_native_graphics_type.md
+  Writer rendering_pipelines/S08_native_graphics_type.md and S13_game_type.md
 confidence: high
 sources:
 - type: official
@@ -25,33 +26,31 @@ sources:
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/webgpu
 - type: official
+  path: https://developer.android.com/games/sdk/frame-pacing
+- type: official
+  path: https://developer.android.com/games/develop/vulkan/frame-pacing-extensions
+- type: official
   path: https://perfetto.dev/docs/data-sources/frametimeline
 - type: aosp
-  path: frameworks/base/core/java/android/os/GraphicsEnvironment.java
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/GraphicsEnvironment.java
 - type: aosp
-  path: frameworks/native/opengl/libs/EGL/Loader.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/opengl/libs/EGL/Loader.cpp
 - type: aosp
-  path: frameworks/native/libs/graphicsenv/GraphicsEnv.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/graphicsenv/GraphicsEnv.cpp
 - type: aosp
-  path: frameworks/native/vulkan/libvulkan/swapchain.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp
 - type: aosp
-  path: frameworks/native/vulkan/libvulkan/driver.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/libvulkan/driver.cpp
 - type: aosp
-  path: frameworks/native/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json
 - type: aosp
-  path: frameworks/native/vulkan/include/vulkan/vk_android_native_buffer.h
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/include/vulkan/vk_android_native_buffer.h
 - type: kernel
-  path: drivers/dma-buf/sync_file.c
-  ref: android17-6.18-2026-06_r6
-- type: obsidian
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c
+- type: material
   path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md
+- type: material
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S13_game_type.md
 tags:
 - fundamentals
 - rendering
@@ -212,9 +211,11 @@ Android 17 同时存在 CDD、平台源码内的设备要求 profile，以及面
 | `VP_ANDROID_17_requirements` | Android 17 首发或重新进行 Google Requirements Freeze 的芯片组 | AOSP JSON 声明 `api-version: 1.4.335`，并列出该代芯片组的强制 feature / extension |
 | AVP 2025 | 活跃 Vulkan 设备生态 | 用一组已统计覆盖率的能力帮助应用选择兼容路径，不等同于某个 Android 平台版本 |
 
-Android 17 CDD 新增或明确了 present 相关要求，包括 `VK_EXT_present_mode_fifo_latest_ready`、`VK_KHR_present_wait2`、`VK_KHR_present_id2`、`VK_KHR_android_surface` 和 `VK_KHR_swapchain` 等。CDD 还约束外部 layer 注入：普通非 debuggable 应用不能被任意插入图形 layer，除非满足 CDD 指定的 metadata 条件；OEM 或平台 layer 属于例外。这一变化会影响抓帧、验证层和图形调试工具的接入方式。
+Android 17 CDD 的强制项与建议项要分开读。对包含 Vulkan 实现的设备，CDD 7.1.4.2 要求支持 `VK_EXT_present_mode_fifo_latest_ready`、`VK_KHR_present_wait2`、`VK_KHR_android_surface`、`VK_KHR_incremental_present`、`VK_KHR_present_id`、`VK_KHR_present_id2`、`VK_KHR_surface` 和 `VK_KHR_swapchain`。`VK_EXT_present_timing`、`VK_GOOGLE_display_timing` 与 `VK_KHR_driver_properties` 在 CDD 中是强烈建议项，不是同一层级的强制项。
 
-`frameworks/native/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json` 列出的 Android 17 芯片组要求更宽。它除了 present 扩展，还包含 `VK_KHR_pipeline_binary`、`VK_KHR_pipeline_library`、`VK_EXT_graphics_pipeline_library`、`VK_EXT_present_timing`，并要求 Vulkan 1.4 的 `hostImageCopy` feature。
+Android 17 还收紧了两类边界。第一，声明 Vulkan 1.1 及相应 feature flag 的实现必须支持 `SYNC_FD` external semaphore handle 和 `VK_ANDROID_external_memory_android_hardware_buffer`，而 `VK_KHR_external_fence_fd` 仍是强烈建议项。第二，普通非 debuggable 应用不能枚举包外 layer，也不能被包外实现追踪或拦截 Vulkan API；只有应用设置 `com.android.graphics.injectLayers.enable=true` 时才放行这一入口，OEM 和平台 layer 按 CDD 例外处理。这会直接影响抓帧、验证层和图形调试工具的接入方式。
+
+`frameworks/native/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json` 列出的 Android 17 芯片组要求更宽。它除了 present 扩展，还包含 `VK_KHR_pipeline_binary`、`VK_KHR_pipeline_library`、`VK_EXT_graphics_pipeline_library`、`VK_EXT_present_timing`，并要求 Vulkan 1.4 的 `hostImageCopy` feature。该 JSON 的说明把适用范围限定为在 Android 17 首发或重新进行 Google Requirements Freeze 的芯片组，不能拿它约束所有从旧版本升级到 Android 17 的设备。
 
 应用仍应运行时枚举。AOSP `libvulkan/driver.cpp` 就提供了一个直接例子：`VK_EXT_present_timing` 只有在 SurfaceFlinger present timestamp 属性开启、对应平台 flag 开启，并且 ICD 支持 `VK_KHR_calibrated_timestamps` 时才由 loader 暴露。系统镜像、设备首发条件、厂商 ICD 和升级路径会共同影响最终结果。
 
@@ -325,12 +326,12 @@ Android 17 提供 manifest 偏好。下面的配置适合希望优先测试或�
 
 Android 17 `GraphicsEnvironment.java` 的决策来源包括：
 
-1. 全局强制 ANGLE 设置；
-2. 每包开发设置；
-3. 平台 allowlist；
-4. 静态与动态 deny 规则；
-5. game mode / game driver 配置；
-6. 应用 manifest 的 `prefer_angle`。
+1. 半全局设置 `angle_gl_driver_all_angle`；
+2. 每包设置 `angle_gl_driver_selection_pkgs` / `angle_gl_driver_selection_values`；
+3. 平台资源 `config_angleAllowList`；
+4. 在 `enableAngleDenyList` flag 开启时检查 device、global 与 dynamic denylist；
+5. 同一 flag 分支内，对 `ApplicationInfo.CATEGORY_GAME` 再检查调试属性 `debug.graphics.angle.force_enable_angle_for_games` 和资源 `config_angleForGamesEnabled`；
+6. 应用 manifest 的 `com.android.graphics.driver.prefer_angle`。
 
 manifest 偏好还有设备门槛。源码会排除 essential tier、low-RAM，以及 vendor API level 早于 `202604` 的设备。选路成立后，系统先配置 ANGLE APK；没有对应 APK 时再尝试 system ANGLE。`GraphicsEnv.cpp` 保存包名、ANGLE 路径与规则结果，EGL loader 据此选择 ANGLE、可更新驱动、指定原生驱动或系统默认驱动。
 
@@ -478,5 +479,8 @@ present 只是把 swapchain image 交给 presentation engine。Android 上还要
 - [WebGPU on Android](https://developer.android.com/develop/ui/views/graphics/webgpu)
 - [Get started with WebGPU](https://developer.android.com/develop/ui/views/graphics/webgpu/getting-started)
 - [AndroidX WebGPU release notes](https://developer.android.com/jetpack/androidx/releases/webgpu)
+- [AGDK Frame Pacing / Swappy](https://developer.android.com/games/sdk/frame-pacing)
+- [Android 17 Vulkan present timing](https://developer.android.com/games/develop/vulkan/frame-pacing-extensions)
 - [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
 - `Writer/rendering_pipelines/S08_native_graphics_type.md`（本章的 Native Graphics 架构基线）
+- `Writer/rendering_pipelines/S13_game_type.md`（本章的游戏帧节拍与 queue-stuffing 交叉验证材料）
