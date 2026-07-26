@@ -1,126 +1,146 @@
 ---
-title: Compose Text 性能深度优化
-chapter: '22.27'
+title: "Compose Text 性能深度优化"
+chapter: "22.27"
 status: draft
-applicable_versions: Android 10 (API 29) - Android 17 (API 37)
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags:
-- Compose
-- 性能优化
-- 文本渲染
-- Android 17
-- 实践
-author: AIW Task 2A
-created: '2026-06-25'
+  - Compose
+  - 性能优化
+  - 文本渲染
+  - Android 17
+  - 实践
+author: "AIW Task 2A"
+created: "2026-06-25"
+task6_state: pending-source-material
+task9_state: pending
+pipeline_stage: draft_polish_blocked
+last_draft_polish_at: "2026-07-26T19:35:41+08:00"
+last_draft_polish_run_id: "20260726-193510-draft-polish-0202a6c7"
+last_verified: "2026-07-26"
+confidence: low
+sources: []
 ---
 
 # 25 Compose Text 性能深度优化
 
-> Android 17 中 Compose Text 的性能陷阱与深度优化策略，涵盖长列表、复杂样式、内存分配优化。
+> **Draft polish 说明（2026-07-26）**：本章当前没有随同输入材料（`materials=[]`），因此本次只做安全打磨：补齐元数据、收敛 Android 17/API 37 版本边界、删除未来源化的“Android 17 特有 API/收益数字”表述，并把正文定位为待 Task6 复核的实践清单。要推进到 `ready-for-review`，需要补充 Jetpack Compose Text 官方文档、Compose release notes、Macrobenchmark/Perfetto 实测或 AOSP/AndroidX 源码定位证据。
 
-## 25.1 Compose Text 渲染原理概述
+## 25.1 版本边界与来源状态
 
-Compose Text 是 Android 应用中最频繁使用的组件之一，但也是性能问题的高发区。在 Android 17 中，Text 渲染的底层机制发生了重要变化，理解这些变化对写出高性能的文本界面至关重要。
+- **Android 基线**：本文面向 Android 10（API 29）到 Android 17（API 37）；不引入 Android 18 / API 38+ 结论。
+- **Compose 口径**：Compose Text 的行为主要由 AndroidX Compose UI / Foundation / Material 版本决定，不能把 Android 17 平台版本直接写成 Compose Text 新 API 或默认优化。
+- **当前状态**：本章仍是 draft。没有可路由来源材料时，文中的建议只能作为经验性检查清单，不能作为“已由源码或基准验证”的结论。
+- **待补证据**：需要在 Task6 中补充官方文档、AndroidX 源码路径、Compose release notes，以及至少一组 Macrobenchmark/Perfetto 或 Android Studio Profiler 复现实验。
 
-### 25.1.1 Text 基础架构
+## 25.2 Compose Text 渲染与性能关注点
 
-Compose Text 的渲染链路：
+Compose `Text` 是 Android 应用中最常见的 UI 元素之一。性能问题通常不来自单个短文本，而来自以下组合场景：
+
+- 列表中大量文本项反复组合、测量和绘制；
+- 复杂 `AnnotatedString`、多 span、多语言或 emoji 文本导致布局成本升高；
+- 滚动、输入、主题切换时不必要的 recomposition；
+- 在 `onTextLayout` 或组合阶段执行过重的同步计算；
+- 未用 Macrobenchmark、Perfetto 或 Profiler 区分“组合、布局、绘制、GC”各自的耗时来源。
+
+### 25.2.1 基础链路（待源码复核）
+
+可以把 Compose Text 的 UI 成本粗略拆成：
+
+```text
+Composable 参数变化 → recomposition → measure/layout → draw → frame presentation
 ```
-Text composable → ParagraphStyle → TextPaint → Layout → Canvas.drawText()
-```
 
-关键优化点：
-- **测量阶段**：textWidth、textHeight 计算
-- **布局阶段**：linespacing、alignment、maxLines 处理  
-- **绘制阶段**：textRenderingStrategy、alpha 处理
+其中需要重点观察：
 
-### 25.1.2 Android 17 的新变化
+- **组合阶段**：是否在组合中构造昂贵对象，或把不稳定参数传入大量列表项；
+- **测量/布局阶段**：长文本、复杂 span、换行、`maxLines`、overflow 是否触发布局开销；
+- **绘制阶段**：文本数量、透明度、背景、裁剪与父布局层级是否叠加；
+- **内存分配**：滚动中是否出现大量短生命周期的 `TextStyle`、`AnnotatedString` 或列表项模型对象。
 
-Android 17 对 Text 的核心改进：
+> 待验证：以上链路需要用 AndroidX Compose Text 源码与 trace 对齐，不能仅凭本文描述作为源码结论。
 
-1. **TextPaint 优化**：默认启用更高效的 font rendering
-2. **ParagraphStyle 缓存**：减少 style 重建开销  
-3. **TextMetrics 预计算**：避免重复计算文本尺寸
-4. **VectorDrawable 支持**：更高效的矢量文本渲染
+## 25.3 常见性能陷阱与安全改写
 
-### 25.1.3 性能关键指标
-
-重点关注：
-- **帧率稳定**：60fps 不因文本复杂度下降
-- **内存分配**：避免 TextStyle、AnnotatedString 重复创建
-- **测量耗时**：减少 Layout 过程耗时
-- **重绘次数**：minimize recomposition
-
-## 25.2 常见性能陷阱
-
-### 25.2.1 无限重绘问题
+### 25.3.1 在组合路径中重复构造样式
 
 ```kotlin
-// ❌ 问题代码：每次重绘都创建新 TextStyle
+// ❌ 风险示例：如果该 Text 位于高频重组路径中，重复构造对象会增加分配和稳定性分析成本。
 Text(
     text = "Hello",
     style = TextStyle(
-        fontWeight = FontWeight.Bold,  // 每次都是新对象
-        color = MaterialTheme.colorScheme.primary
-    )
-)
-
-// ✅ 修复：使用 remember 缓存
-val textStyle = remember {
-    TextStyle(
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.primary
     )
-}
-
-Text(text = "Hello", style = textStyle)
+)
 ```
 
-### 25.2.2 长文本性能问题
+更安全的做法是优先复用主题样式，或在参数稳定、语义明确时使用 `remember`：
 
 ```kotlin
-// ❌ 问题：LongText 使用 AnnotatedString 每次 rebuild
 @Composable
-fun LongText(text: String) {
+fun TitleText(text: String) {
+    val color = MaterialTheme.colorScheme.primary
+    val style = remember(color) {
+        TextStyle(
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
+    }
+
+    Text(text = text, style = style)
+}
+```
+
+注意：`remember` 不是万能优化。若样式本身来自 `MaterialTheme.typography` 且没有额外昂贵构造，优先保持代码简单，并用实际 trace 判断是否需要缓存。
+
+### 25.3.2 长文本和富文本构造
+
+```kotlin
+// ❌ 风险示例：在大量列表项或高频更新路径中反复构造富文本。
+@Composable
+fun RichTextExample(text: String) {
+    val annotatedText = buildAnnotatedString {
+        append(text)
+        addStyle(
+            style = SpanStyle(color = Color.Red),
+            start = 0,
+            end = text.length
+        )
+    }
+    Text(text = annotatedText)
+}
+```
+
+如果 span 规则只依赖输入文本和少量主题参数，可以把构造边界收敛到 `remember`：
+
+```kotlin
+@Composable
+fun RichTextOptimized(text: String) {
     val annotatedText = remember(text) {
         buildAnnotatedString {
-            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                append(text)
+            append(text)
+            if (text.isNotEmpty()) {
+                addStyle(
+                    style = SpanStyle(color = Color.Red),
+                    start = 0,
+                    end = text.length
+                )
             }
         }
     }
+
     Text(
         text = annotatedText,
-        maxLines = 50,
+        maxLines = 3,
         overflow = TextOverflow.Ellipsis
-    )
-}
-
-// ✅ 优化：预计算样式，使用 LaunchedEffect 缓存
-@Composable
-fun LongTextOptimized(text: String) {
-    val textMetrics = remember { mutableStateOf<TextMetrics?>(null) }
-    
-    LaunchedEffect(text) {
-        textMetrics.value = TextMetrics.calculate(text)
-    }
-    
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyLarge,
-        maxLines = 50,
-        overflow = TextOverflow.Ellipsis,
-        onTextLayout = { textLayoutResult ->
-            // 异步计算，不阻塞主线程
-            textMetrics.value = TextMetrics.fromLayout(textLayoutResult)
-        }
     )
 }
 ```
 
-### 25.2.3 列表中的 Text 性能
+### 25.3.3 列表中的 Text
 
 ```kotlin
-// ❌ 问题：每个列表项都创建新的 Text
+// ❌ 风险示例：列表项缺少稳定 key，且样式在每个 item 中重复构造。
 LazyColumn {
     items(largeList) { item ->
         Text(
@@ -132,285 +152,84 @@ LazyColumn {
         )
     }
 }
+```
 
-// ✅ 优化：使用 cache key + style 缓存
+建议优先处理列表层面的稳定性，再考虑样式缓存：
+
+```kotlin
 @Composable
-fun OptimizedLazyText() {
-    val textStyleCache = remember { mutableStateMapOf<String, TextStyle>() }
-    
+fun OptimizedLazyText(largeList: List<ArticleItem>) {
+    val titleStyle = remember {
+        TextStyle(
+            fontWeight = FontWeight.Medium,
+            fontSize = 16.sp
+        )
+    }
+
     LazyColumn {
-        items(largeList) { item ->
+        items(
+            items = largeList,
+            key = { item -> item.id }
+        ) { item ->
             Text(
                 text = item.title,
-                style = textStyleCache.getOrPut(item.title) {
-                    TextStyle(
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 16.sp
-                    )
-                }
+                style = titleStyle,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
 }
 ```
 
-## 25.3 深度优化策略
+> 待验证：`ArticleItem` 的稳定性、`id` 的唯一性、列表数据更新方式，需要结合业务代码和 Compose compiler metrics 检查。
 
-### 25.3.1 TextStyle 缓存机制
+## 25.4 测量与定位
 
-```kotlin
-object TextStyleCache {
-    private val cache = mutableStateMapOf<String, TextStyle>()
-    
-    fun getOrPut(
-        key: String,
-        factory: () -> TextStyle
-    ): TextStyle {
-        return cache.getOrPut(key) { factory() }
-    }
-    
-    fun invalidateKey(key: String) {
-        cache.remove(key)
-    }
-    
-    fun clear() {
-        cache.clear()
-    }
-}
+### 25.4.1 Macrobenchmark / JankStats / Profiler
 
-// 使用示例
-@Composable
-fun CachedTextStyleText() {
-    val textStyle = remember("bold_style") {
-        TextStyle(
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-    }
-    
-    Text(text = "Cached Style", style = textStyle)
-}
-```
+在没有一手 benchmark 前，不应写固定收益百分比。更稳妥的评估顺序是：
 
-### 25.3.2 AnnotatedString 优化
+1. 用 Macrobenchmark 覆盖关键滚动、首屏和文本更新路径；
+2. 用 Android Studio Profiler 或 allocation tracking 检查滚动中的对象分配；
+3. 用 Perfetto 观察 frame timeline、主线程阻塞、GC、RenderThread 与 GPU 相关片段；
+4. 对比改动前后相同设备、相同 Compose 版本、相同数据规模下的结果。
+
+### 25.4.2 `onTextLayout` 的使用边界
 
 ```kotlin
-// ❌ 低效：每次都重建 AnnotatedString
 @Composable
-fun RichTextExample(text: String) {
-    val annotatedText = remember(text) {
-        buildAnnotatedString {
-            append(text)
-            addStyle(
-                style = SpanStyle(color = Color.Red),
-                start = 0,
-                end = text.length
-            )
-        }
-    }
-    Text(text = annotatedText)
-}
+fun TextLayoutProbe(text: String) {
+    var lineCount by remember { mutableIntStateOf(0) }
 
-// ✅ 高效：使用 TextRange 和 SpanStyle 组合
-@Composable
-fun RichTextOptimized(text: String) {
-    val spans = remember(text) {
-        listOf(
-            TextRangeStyle(
-                range = TextRange(0, text.length),
-                style = SpanStyle(color = Color.Red)
-            )
-        )
-    }
-    
     Text(
         text = text,
-        style = TextStyle(color = Color.Red),
-        maxLines = 3,
-        overflow = TextOverflow.Ellipsis
-    )
-}
-
-// 数据结构
-data class TextRangeStyle(
-    val range: TextRange,
-    val style: SpanStyle
-)
-```
-
-### 25.3.3 懒加载文本内容
-
-```kotlin
-@Composable
-fun LazyLoadText(
-    initialText: String,
-    fullText: String,
-    threshold: Int = 100
-) {
-    val showFullText = remember { mutableStateOf(false) }
-    val displayedText = remember {
-        derivedStateOf {
-            if (showFullText.value) fullText else 
-                initialText.take(threshold)
-        }
-    }
-    
-    Text(
-        text = displayedText.value,
-        modifier = Modifier.clickable {
-            showFullText.value = !showFullText.value
+        maxLines = 5,
+        overflow = TextOverflow.Ellipsis,
+        onTextLayout = { result ->
+            // 只记录轻量状态；避免在这里执行重 IO、复杂解析或同步上报。
+            lineCount = result.lineCount
         }
     )
-    
-    if (!showFullText.value && initialText.length > threshold) {
-        Text(
-            text = "...",
-            color = Color.Gray,
-            modifier = Modifier.clickable {
-                showFullText.value = true
-            }
-        )
-    }
+
+    Text(text = "lines: $lineCount")
 }
 ```
 
-## 25.4 测试与测量工具
+`onTextLayout` 适合记录布局结果或驱动轻量 UI 状态；如果要做耗时分析、日志聚合或埋点上报，应放到可控的异步链路中，并避免每帧触发。
 
-### 25.4.1 性能测量
+### 25.4.3 Perfetto 观察点
 
-```kotlin
-@Composable
-fun TextPerfMonitor() {
-    val frameTime = remember { mutableStateOf(0L) }
-    val textComplexity = remember { mutableStateOf(0) }
-    
-    val textMeasurer = rememberTextMeasurer()
-    
-    LaunchedEffect(Unit) {
-        while (true) {
-            val start = System.currentTimeMillis()
-            
-            // 测量文本布局
-            val layoutResult = textMeasurer.measure(
-                text = "Test Text",
-                style = TextStyle(fontSize = 16.sp),
-                constraints = Constraints()
-            )
-            
-            val end = System.currentTimeMillis()
-            frameTime.value = end - start
-            textComplexity.value = layoutResult.size.height
-            
-            delay(1000)
-        }
-    }
-    
-    Text(text = "Frame time: ${frameTime.value}ms")
-}
-```
+在 Perfetto 中建议围绕以下问题看 trace，而不是只搜索单一固定 slice 名称：
 
-### 25.4.2 Android Studio Profiler 使用
+- frame 是否出现 missed deadline 或 jank；
+- 主线程是否被文本构造、数据变换、同步 IO 或 GC 阻塞；
+- layout/draw 是否与列表滚动、主题切换、输入联动；
+- 改动前后是否使用同一测试场景、设备温度和数据量。
 
-1. **GPU 调试**：查看 Text 渲染帧耗时
-2. **Memory Profiler**：监控 TextStyle 对象分配
-3. **CPU Profiler**：分析 TextLayout 计算
+## 25.5 实战场景
 
-### 25.4.3 Peretto 分析要点
-
-在 Perfetto 中查找：
-- `MeasuredFrameDuration`：文本测量耗时
-- `RenderedFrameDuration`：文本绘制耗时  
-- `DrawCommandCount`：绘制命令数量
-- `TextureUploadTime`：文本纹理上传时间
-
-## 25.5 高级优化模式
-
-### 25.5.1 自定义 Text 组件
-
-```kotlin
-@Composable
-fun OptimizedText(
-    text: String,
-    modifier: Modifier = Modifier,
-    style: TextStyle = MaterialTheme.typography.bodyLarge,
-    maxLines: Int = Int.MAX_VALUE,
-    overflow: TextOverflow = TextOverflow.Clip,
-    onTextLayout: (TextLayoutResult) -> Unit = {}
-) {
-    val textMetrics = remember { mutableStateOf<TextMetrics?>(null) }
-    val textStyleCache = remember { mutableStateMapOf<String, TextStyle>() }
-    
-    Text(
-        text = text,
-        modifier = modifier,
-        style = textStyleCache.getOrPut(text) { style },
-        maxLines = maxLines,
-        overflow = overflow,
-        onTextLayout = { layoutResult ->
-            textMetrics.value = TextMetrics.fromLayout(layoutResult)
-            onTextLayout(layoutResult)
-        }
-    )
-    
-    SideEffect {
-        // 可以在这里添加性能监控
-    }
-}
-```
-
-### 25.5.2 条件文本渲染
-
-```kotlin
-@Composable
-fun ConditionalTextRenderer(
-    condition: Boolean,
-    enabledText: String,
-    disabledText: String
-) {
-    Text(
-        text = if (condition) enabledText else disabledText,
-        color = if (condition) Color.Green else Color.Gray,
-        style = MaterialTheme.typography.bodyLarge,
-        modifier = Modifier.padding(8.dp)
-    )
-}
-```
-
-### 25.5.3 适配性文本缓存
-
-```kotlin
-@Composable
-fun ResponsiveText(
-    text: String,
-    fontSize: TextUnit,
-    fontWeight: FontWeight = FontWeight.Normal,
-    color: Color = Color.Unspecified
-) {
-    val textStyle = remember(text, fontSize, fontWeight, color) {
-        TextStyle(
-            fontSize = fontSize,
-            fontWeight = fontWeight,
-            color = color
-        )
-    }
-    
-    val textSize = remember(textStyle) {
-        mutableStateOf(0)
-    }
-    
-    Text(
-        text = text,
-        style = textStyle,
-        onTextLayout = { layoutResult ->
-            textSize.value = layoutResult.size.width
-        }
-    )
-}
-```
-
-## 25.6 实战案例
-
-### 25.6.1 聊天应用消息列表
+### 25.5.1 聊天消息列表
 
 ```kotlin
 @Composable
@@ -418,18 +237,14 @@ fun ChatMessageItem(
     message: ChatMessage,
     isMe: Boolean
 ) {
-    val messageStyle = remember(isMe) {
-        if (isMe) {
-            MaterialTheme.typography.bodyLarge.copy(
-                color = MaterialTheme.colorScheme.onPrimary
-            )
-        } else {
-            MaterialTheme.typography.bodyLarge.copy(
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
+    val colors = MaterialTheme.colorScheme
+    val baseStyle = MaterialTheme.typography.bodyLarge
+    val messageStyle = remember(isMe, colors, baseStyle) {
+        baseStyle.copy(
+            color = if (isMe) colors.onPrimary else colors.onBackground
+        )
     }
-    
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -440,12 +255,7 @@ fun ChatMessageItem(
             text = message.text,
             style = messageStyle,
             modifier = Modifier
-                .background(
-                    color = if (isMe) 
-                        MaterialTheme.colorScheme.primary 
-                    else 
-                        MaterialTheme.colorScheme.surface
-                )
+                .background(if (isMe) colors.primary else colors.surface)
                 .padding(12.dp),
             maxLines = 5,
             overflow = TextOverflow.Ellipsis
@@ -454,45 +264,40 @@ fun ChatMessageItem(
 }
 ```
 
-### 25.6.2 长文档阅读器
+复核重点：
+
+- `ChatMessage` 是否是稳定模型；
+- `LazyColumn` 是否使用稳定 key；
+- 消息更新是否只影响变更项，而非整屏消息重组；
+- 长消息、emoji、多语言文本是否纳入 benchmark 数据集。
+
+### 25.5.2 长文档阅读器
 
 ```kotlin
 @Composable
 fun DocumentReader(
-    content: String,
+    paragraphs: List<String>,
     chapter: Int
 ) {
-    val scrollState = rememberScrollState()
-    val textStyles = remember {
-        mutableStateMapOf<Int, TextStyle>()
-    }
-    
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
+    LazyColumn(
+        modifier = Modifier.fillMaxSize()
     ) {
-        // 标题
-        Text(
-            text = "Chapter $chapter",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(16.dp)
-        )
-        
-        // 内容 - 分段优化
-        content.split("\n\n").forEach { paragraph ->
+        item(key = "chapter-title-$chapter") {
+            Text(
+                text = "Chapter $chapter",
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+
+        itemsIndexed(
+            items = paragraphs,
+            key = { index, paragraph -> "$index-${paragraph.hashCode()}" }
+        ) { _, paragraph ->
             Text(
                 text = paragraph,
-                style = textStyles.getOrPut(
-                    paragraph.hashCode(),
-                    {
-                        MaterialTheme.typography.bodyLarge.copy(
-                            lineHeight = 24.sp,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-                ),
-                modifier = Modifier.padding(horizontal = 16.dp),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 softWrap = true
             )
         }
@@ -500,97 +305,24 @@ fun DocumentReader(
 }
 ```
 
-## 25.7 边界与限制
+对长文档而言，优先避免一次性把所有段落放入 `Column.verticalScroll`。如果业务需要全文搜索、高亮、选择或分页，应单独验证富文本构造和滚动性能。
 
-### 25.7.1 内存分配限制
+## 25.6 边界与限制
 
-- TextStyle 对象过多会导致 GC 压力
-- AnnotatedString 在循环中创建会分配大量内存
-- 建议：缓存常用样式，避免频繁创建
+- **不要把 Android 17 直接等同于 Compose Text 性能提升**：除非有 AndroidX / AOSP 源码或 release notes 支撑，否则只能写“待验证”。
+- **不要写固定收益数字**：例如“减少 60% 分配”“提升 40% 滚动流畅度”必须有可复现 benchmark；本章当前已移除这类数字。
+- **不要引入未确认 API**：当前没有材料证明 `TextMetrics.calculate`、`Android17TextMetrics`、`PlatformFontLoadingStrategy.Async` 等示例可用，已从正文删除。
+- **不要过度缓存**：全局 `mutableStateMapOf` 缓存可能引入生命周期、内存增长和状态一致性问题；缓存策略应绑定明确作用域。
 
-### 25.7.2 渲染性能边界
+## 25.7 Task6 复核清单
 
-- 复杂文本样式会影响渲染速度
-- 长文本测量会阻塞主线程
-- 建议：使用 LazyColumn，异步测量复杂文本
+- [ ] 补充 AndroidX Compose Text 官方文档和源码路径。
+- [ ] 补充 Compose release notes，确认是否存在与本文相关的 Text 行为变化。
+- [ ] 用 Macrobenchmark 覆盖列表滚动、长文本展示、富文本构造、主题切换等场景。
+- [ ] 用 Perfetto 或 Profiler 标注改动前后的 jank、主线程耗时、GC 和分配。
+- [ ] 对 Android 10、Android 14、Android 17 至少各选一个测试环境，避免把单设备结果泛化。
+- [ ] 复核所有 Kotlin 片段的可编译性与导入依赖。
 
-### 25.7.3 适配性限制
+## 25.8 当前结论
 
-- 不同设备上的文本渲染性能差异较大
-- 多语言文本处理开销更大
-- 建议：针对关键设备进行性能测试
-
-## 25.8 Android 17 特有优化
-
-### 25.8.1 新 API 使用
-
-```kotlin
-@Composable
-fun Android17OptimizedText() {
-    val textStyle = remember {
-        TextStyle(
-            platformStyle = PlatformTextStyle(
-                fontLoadingStrategy = PlatformFontLoadingStrategy.Async
-            )
-        )
-    }
-    
-    Text(
-        text = "Android 17 优化文本",
-        style = textStyle,
-        modifier = Modifier.fillMaxWidth()
-    )
-}
-```
-
-### 25.8.2 性能监控
-
-```kotlin
-@Composable
-fun TextPerfMonitorAndroid17() {
-    val perfMetrics = remember { mutableStateOf<TextPerfMetrics?>(null) }
-    
-    SideEffect {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            Android17TextMetrics.monitor { metrics ->
-                perfMetrics.value = metrics
-            }
-        }
-    }
-    
-    Text(text = "Performance: ${perfMetrics.value?.fps ?: 0} FPS")
-}
-```
-
-## 25.9 最佳实践总结
-
-### 25.9.1 核心原则
-
-1. **缓存复用**：频繁使用的样式使用 remember 缓存
-2. **懒加载**：长内容分批加载，避免一次性处理
-3. **异步处理**：复杂文本测量放到协程中
-4. **监控测量**：建立性能监控体系
-
-### 25.9.2 性能检查清单
-
-- [ ] TextStyle 是否使用 remember 缓存
-- [ ] 长文本是否使用了合适的 maxLines 和 overflow
-- [ ] 列表中的 Text 是否优化了重绘
-- [ ] 是否监控了文本渲染的性能指标
-- [ ] 是否针对不同设备进行了性能测试
-
-### 25.9.3 优化收益
-
-经过以上优化，Compose Text 性能有显著提升：
-- **内存分配**：减少 60% 的 TextStyle 分配
-- **渲染帧率**：保持稳定的 60fps
-- **启动速度**：加快 30% 的界面启动时间
-- **滚动性能**：提升 40% 的列表滚动流畅度
-
----
-
-## 扩展点
-
-🔸 **与选择器交互的性能**：TextSelectionManager 在 Android 17 中的优化  
-🔸 **国际化文本性能**：多语言文本处理的优化策略  
-🔸 **Text-to-Speech 集成**：语音合成与文本界面的性能影响
+本章已经从“带有未来源化 Android 17 特性和收益数字的草稿”收敛为“Compose Text 性能复核清单”。由于本轮没有输入材料，状态继续保持 `draft`，置信度为 `low`。下一步应由 Task6 获取来源和实测后，再决定是否提升到 `ready-for-review`。
