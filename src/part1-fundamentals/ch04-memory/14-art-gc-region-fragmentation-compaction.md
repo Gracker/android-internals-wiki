@@ -47,330 +47,343 @@ last_task6_audit: "2026-07-17"
 
 # 4.14 ART GC Region 碎片化与 Compaction 策略
 
-§4.3 讲过 ART 堆的整体结构和 GC 策略演进，§4.8 讲过分代垃圾回收如何减少 GC 暂停。这一节聚焦一个更窄但实战影响很大的问题：**ART 怎么控制 Region 级内存碎片，以及两条碎片压缩路径（CC 的 UnevacFromSpace 和 CMC 的 userfaultfd 压缩）各自怎么工作**。
+§4.3 介绍了 ART 堆和收集器，§4.8 讨论了分代回收。本节进一步回答一个容易混淆的问题：Android 17 中的 Concurrent Copying（CC）和 Concurrent Mark Compact（CMC）分别怎样处理移动空间，`UnevacFromSpace` 又解决了什么问题。
 
-读完这一节，应该能回答三个问题：为什么 Region 反复搬迁会造成 RSS 持续增长；UnevacFromSpace 和 CMC 分别在什么条件下生效；以及在做端侧大模型推理这类长生命周期对象密集的场景时，GC 碎片控制方案有什么影响。
+本节以 AOSP `android-17.0.0_r1` 为平台源码基准，以 `android17-6.18-2026-06_r6` 为内核基准。厂商可以通过构建选项、启动参数和系统属性改变收集器配置，因此“源码包含 CMC”不等于任意 Android 17 设备都在运行 CMC。
 
-## RegionSpace 的区域分配模型
+## 先区分三类问题
 
-[已验证: AOSP android-17.0.0_r1, art/runtime/gc/space/region_space.h]
+“GC 碎片”常被当作一个笼统概念，排查时至少要拆成三类：
 
-ART 的 ConcurrentCopying（CC）收集器使用 RegionSpace 作为主分配空间。RegionSpace 把堆内存切成等大的 region（默认 256KB），每个 region 有独立的状态和类型标记：
+| 问题 | 典型空间 | 关注点 |
+| --- | --- | --- |
+| region 内有死亡对象留下的空洞 | CC 的 `RegionSpace` | region 能否整体搬空并重新使用 |
+| 搬迁期间需要目标空间和复制带宽 | CC 的 from-space / to-space | 低收益搬迁是否推高 GC 峰值与耗时 |
+| 非移动空间或虚拟地址空间不连续 | `LargeObjectSpace`、non-moving space、native 映射 | 总空闲量足够时，某次分配仍可能失败 |
 
-```cpp
-// region_space.h
-enum RegionType : uint8_t {
-  kRegionTypeAll,           // All types
-  kRegionTypeFromSpace,     // From-space, to be evacuated
-  kRegionTypeUnevacFromSpace, // Unevacuated from-space, NOT to be evacuated
-  kRegionTypeToSpace,       // To-space
-  kRegionTypeNone,          // None
-};
-```
+CMC 的 compaction 主要压紧 ART moving space。它不会自动整理 LOS、native heap、图形缓冲区或模型权重映射。应用进程的 RSS 很高时，先确认内存归属，再讨论 ART GC 策略。
 
-每次 CC GC 运行时，RegionSpace 的 region 会在 from-space 和 to-space 之间切换。存活对象从 from-region 搬迁到 to-region，已清空的 from-region 回收。这个模型的问题在于：如果一个 region 的存活率一直很高，每次 GC 都要复制大部分有效对象，但回收收益很小，白白消耗拷贝带宽，还会导致 from-space 和 to-space 在回收窗口里同时占用内存，RSS 居高不下。
+## Android 17 怎样选择 CC 或 CMC
 
-Android 内部 bug b/33795328 记录的就是这个问题：region 级的循环分配碎片。
-
-## UnevacFromSpace：区域级碎片控制
-
-### 75% 存活率阈值
-
-[已验证: AOSP android-17.0.0_r1, art/runtime/gc/space/region_space.cc]
-
-CC 收集器在每次 GC 的 marking 阶段结束后，逐 region 统计存活对象占 region 总大小的比例。核心判断逻辑在 `Region::ShouldBeEvacuated()`：
+Android 17 的动态读屏障配置中，`ShouldUseUserfaultfd()` 先决定是否使用 UFFD，随后得到：
 
 ```cpp
-// region_space.cc
-static constexpr uint kEvacuateLivePercentThreshold = 75U;
+const bool gUseUserfaultfd = ShouldUseUserfaultfd();
+const bool gUseReadBarrier = !gUseUserfaultfd;
 ```
 
-- 存活率 < 75% → 设为 from-space，本轮搬迁
-- 存活率 ≥ 75% → 设为 **UnevacFromSpace**，不搬迁，原地保留
+这两行的含义是：当前动态配置选择 UFFD 时走 CMC；未选择 UFFD 时保留读屏障并走 CC。判断过程的优先级如下。
 
-这个 75% 阈值在 Android 8.0 的 CC 路径中已经存在，Android 10-17 仍保留这一判断口径。
+```mermaid
+flowchart TD
+    A["ART 读取 -Xgc 收集器类型"] --> B{"是否显式指定"}
+    B -- "CMC" --> C["gUseUserfaultfd = true"]
+    B -- "CC 或其他类型" --> D["gUseUserfaultfd = false"]
+    B -- "未指定" --> E{"Android target<br/>且属性允许 UFFD GC"}
+    E -- "否" --> D
+    E -- "是" --> F{"KernelSupportsUffd()"}
+    F -- "否" --> D
+    F -- "是" --> C
+    C --> G["gUseReadBarrier = false<br/>选择 CMC 配置"]
+    D --> H["gUseReadBarrier = true<br/>选择 CC 配置"]
+```
 
-### 原地保留如何消除循环碎片
+显式请求 CMC 的分支不会先调用 `KernelSupportsUffd()`。它属于运行时配置入口，调用方需要保证环境满足要求。常规 Android target 在没有显式指定收集器时，必须同时满足系统属性和内核能力检查。
 
-降级为 UnevacFromSpace 的 region 在本轮 GC 中不会被清空，也不会被 to-space 替代。下一轮 GC 再次按 75% 阈值重新评估。长期高占用的 region 自然稳定下来——它们不会在 from/to 之间反复搬迁。
+### 系统属性门控
 
-从实际效果看：
+`SysPropSaysUffdGc()` 读取启动时缓存的 DeviceConfig 属性和只读构建属性：
 
-| 场景 | region 存活率 | GC 行为 | 对 RSS 的影响 |
-|------|-------------|---------|-------------|
-| 新分配、短生命周期对象多 | < 75% | 搬迁到 to-region，原 region 回收 | 正常回收 |
-| 常驻对象、缓存、大模型权重引用 | ≥ 75% | UnevacFromSpace，不搬迁 | 避免 from/to 双份占用 |
-| 混合 region（部分常驻 + 部分临时） | ≈ 75% | 按阈值边界波动 | 稳定后固定为 unevac |
+- `persist.device_config.runtime_native_boot.enable_uffd_gc_2`
+- `persist.device_config.runtime_native_boot.force_disable_uffd_gc`
+- `ro.dalvik.vm.enable_uffd_gc`
 
-### CC GC 单轮调用链
+代码还保留了面向旧平台版本的兼容条件。Android 17 上分析某台设备时，应读取设备的实际属性，不能用平台版本代替属性值。
 
-1. `ConcurrentCopying::RunPhases()` 判断当前是否走 generational CC 路径
-2. `CreateInterRegionRefBitmaps()` 创建 region 间引用位图（仅 generational CC）
-3. 逐 region 调用 `ShouldBeEvacuated(evac_mode)` 做搬迁决策
-4. 满足阈值 → `SetAsFromSpace()`；否则 → `SetAsUnevacFromSpace(clear_live_bytes)`
-5. 仅 from-space 的 region 参与对象搬迁；UnevacFromSpace 的对象保持不动
+### 内核能力门控
 
-## 并发 MarkCompact（CMC）与 userfaultfd 压缩
+常规并发 CMC 的 `KernelSupportsUffd()` 依次检查：
 
-CC 系列通过 UnevacFromSpace 在 region 级做碎片控制，但整个方案不涉及全堆压缩。ART 的另一条路径——**Concurrent MarkCompact（CMC）**——直接在堆级别做并发压缩，依赖 Linux 内核的 `userfaultfd` 机制。
+1. 运行环境具有 `MREMAP_DONTUNMAP`；
+2. `userfaultfd(O_CLOEXEC | UFFD_USER_MODE_ONLY)` 可以打开；
+3. `UFFDIO_API` 返回的 feature 包含 `UFFD_FEATURE_SIGBUS`。
 
-### CMC 与 CC 的分工
+Android 17 的代码把 SIGBUS 视为启用该 GC 所需的最低 UFFD feature。低于 5.16 的 Android 内核还会探测 `UFFDIO_ZEROPAGE_MODE_MMAP_TRYLOCK`，探测结果用于选择具体处理方式，并非上述函数最终返回 `true` 的独立必要条件。
 
-[已验证: AOSP android-17.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
+`gKernelHasFaultRetry = IsKernelVersionAtLeast(5, 7)` 只改变并发压缩的终止处理效率。它不负责决定 CMC 能否启用。`ro.dalvik.vm.force_cmc_stw_compaction` 则是特殊的强制 STW 配置：开启时，`KernelSupportsUffd()` 直接返回 `true`，语义与常规并发 CMC 不同。
 
-这两条路径在代码层是互斥的：
+内核 `android17-6.18-2026-06_r6` 的 UAPI 定义包含 `UFFD_FEATURE_SIGBUS`、`UFFD_USER_MODE_ONLY`、`UFFDIO_MOVE` 和 `MREMAP_DONTUNMAP`。最终能否启用仍要看运行内核、权限限制、ART 属性以及 `UFFDIO_API` 的运行时返回值。
 
-| 条件 | GC 路径 |
-|------|--------|
-| `gUseReadBarrier == true` | CC（读屏障形态取决于构建配置，可能是 Baker 或 table-lookup） |
-| `gUseReadBarrier == false && gUseUserfaultfd == true` | CMC（依赖 UFFD；还要满足 collector 选项 / 系统属性、`MREMAP_DONTUNMAP`、UFFD SIGBUS 等门控） |
+### 分代回收还有额外门槛
 
-CC 的读屏障成本不能写成固定纳秒值：Baker read barrier 和 table-lookup read barrier 的实现路径不同，实际开销还取决于编译配置与负载。CMC 关闭 read barrier，但 `gUseUserfaultfd` 不是单纯的 Linux 版本判断；`KernelSupportsUffd()` 在 Android 17 中会检查 `MREMAP_DONTUNMAP`（Linux 5.13 或 GKI backport）和 UFFD SIGBUS 能力。Linux 5.7 的 fault-retry 只影响并发压缩终止逻辑，不是 CMC 启用门槛。
+`runtime.cc` 中的分代开关并非只看一个属性。Android 17 需要同时考虑：
 
-### userfaultfd 页级压缩模型
+- 构建形态为 Baker read barrier，或者当前已选择 UFFD；
+- `-Xgc` 选项允许 generational GC；
+- `persist.device_config.runtime_native_boot.use_generational_gc` 为 `true`，默认值是 `true`；
+- UFFD/CMC 路径还要求 ART flag `use_generational_cmc()` 为 `true`。
 
-[已验证: AOSP android-17.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
+因此，同一个 `use_generational_gc` 属性会影响 CC 与 CMC；`use_generational_cmc` 只给 CMC 增加一道限制。
 
-CMC 把堆压缩改造为页级 fault-retry 模型：
+## CC：RegionSpace 与搬迁决策
 
-1. 标记阶段并发标记所有存活对象
-2. 计算压缩后的目标布局
-3. 按页迁移对象，利用 UFFD/SIGBUS fault 路径处理 mutator 线程对该页的并发访问
-4. 内核 ≥ 5.7 支持 fault-retry 特性时，同一页可以重复 fault，并发压缩终止逻辑会更高效
+CC 把 moving space 实现为 `RegionSpace`。Android 17 中 `kRegionSize` 固定为 256KB。普通对象在一个 region 内按 bump-pointer 分配；大于一个 region 的分配可以占用一个 large head region 和若干 large tail region。
 
-源码注释明确标注了内核依赖：
+每轮 CC 开始搬迁前，非空 region 从 `ToSpace` 转换成两类之一：
+
+- `FromSpace`：其中的存活对象需要复制到新的 to-space；
+- `UnevacFromSpace`：本轮保留在原地址，不做整体搬迁。
+
+GC 完成后，被搬空的 from-space region 可以整体回收。Unevac region 中死亡对象留下的洞不会因为这次选择而被压紧。
+
+### 75% 不是所有 region 的通用规则
+
+`Region::ShouldBeEvacuated()` 的判断顺序很重要。下面的等价伪代码保留了 Android 17 源码中的关键分支：
 
 ```cpp
-// mark_compact.cc
-// Concurrent compaction termination logic is different (and slightly more
-// efficient) if the kernel has the fault-retry feature (allowing repeated
-// faults on the same page), which was introduced in 5.7
-```
-
-### YoungMarkCompact 委托模式
-
-CMC 的 young 收集器 `YoungMarkCompact` 是 `MarkCompact` 的薄包装，共享同一个状态机：
-
-```cpp
-// mark_compact.cc
-void YoungMarkCompact::RunPhases() {
-  DCHECK(!main_collector_->young_gen_);
-  main_collector_->young_gen_ = true;
-  main_collector_->RunPhases();
-  main_collector_->young_gen_ = false;
-}
-```
-
-设计意图在 `mark_compact.h` 的注释中写得很清楚：使用委托模式避免为 young 和 full 收集器各创建一套数据结构。
-
-`MarkCompact` 构造函数中的 `young_gen_` 布尔字段控制当前走 young 还是 full 路径。两套逻辑共享 heap bitmap、info-map 和压缩状态机。
-
-## Generational CMC 的三代模型
-
-### 三代分区：young / mid / old
-
-[已验证: AOSP android-17.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
-
-Android 16 引入的三代 CMC 通过 `mid_gen_end_` 字段把连续的 bump-pointer space 切成两段：
-
-```
-[moving_space_begin_  ...  mid_gen_end_  ...  moving_space_end_]
- |<-------- old + mid -------->|<----------- young ---------->|
-```
-
-- young 区在两次 GC 后晋升到 mid
-- mid 区再晋升到 old
-- `MarkCompact` 构造函数中 `mid_gen_end_` 初始值设为 `moving_space_begin_`（即初始时 young 区覆盖整个空间）
-
-### 门控开关
-
-[已验证: AOSP android-17.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
-
-三代 CMC 的启用受两层开关控制：
-
-```cpp
-// mark_compact.cc
-#ifdef ART_TARGET_ANDROID
-bool ShouldUseGenerationalGC() {
-  if (gUseUserfaultfd && !com::android::art::flags::use_generational_cmc()) {
-    return false;
-  }
-  return GetBoolProperty(
-    "persist.device_config.runtime_native_boot.use_generational_gc", true);
-}
-#endif
-```
-
-- `use_generational_cmc` flag：编译期 flag，控制是否允许三代 CMC
-- `persist.device_config.runtime_native_boot.use_generational_gc`：运行时持久化属性，默认 `true`
-- 两个条件必须同时满足才启用三代模型
-- 非 Android 目标（如 dex2oat 宿主编译）不受此限制
-
-`Heap` 构造函数中根据 `ShouldUseGenerationalGC()` 的返回值决定是否创建 `YoungMarkCompact` 实例：
-
-```cpp
-// heap.cc
-if (ShouldUseGenerationalGC()) {
-  young_mark_compact_ = new collector::YoungMarkCompact(this, mark_compact_);
-  garbage_collectors_.push_back(young_mark_compact_);
-}
-```
-
-### 降级策略
-
-当设备不支持 `gUseUserfaultfd` 时，`ShouldUseGenerationalGC()` 在非 Android 目标上返回 `true`，但 Heap 构造函数中 foreground collector type 不是 `kCollectorTypeCMC` 时不会创建 MarkCompact 实例。不支持 UFFD 的设备上，系统自动回退到 CC 路径，不会走 CMC。
-
-`gUseUserfaultfd` 的设备级默认值由厂商在 `BoardConfig.mk` 或 `parsed_options.cc` 中配置，各厂商的分布情况未在源码中直接体现。
-
-## LargeObjectSpace：不参与压缩的大对象
-
-[已验证: AOSP android-17.0.0_r1, art/runtime/gc/space/large_object_space.h]
-
-LargeObjectSpace（LOS）的 `CanMoveObjects()` 硬编码返回 `false`：
-
-```cpp
-// large_object_space.h
-bool CanMoveObjects() const override {
+if (IsLarge()) {
   return false;
 }
+if (evac_mode == kEvacModeForceAll) {
+  return true;
+}
+if (is_newly_allocated_) {
+  return true;
+}
+if (evac_mode == kEvacModeLivePercentNewlyAllocated &&
+    live_bytes_ is valid) {
+  size_t allocated = RoundUp(BytesAllocated(), kRegionSize);
+  return live_bytes_ * 100 < 75 * allocated;
+}
+return false;
 ```
 
-LOS 不参与任何形式的压缩。这是 ART 对「大对象压缩成本不划算」的工程取舍——单个 MB 级对象的拷贝开销远高于保留它所在的内存页。
+这段判断带来四个边界：
 
-### 碎片诊断接口
+1. live large region 不参与搬迁；对象死亡后，相关 large regions 才能整体回收。
+2. `kEvacModeForceAll` 会搬迁所有非 large region。
+3. newly-allocated 的非 large region 总是搬迁，因为源码按“新分配区更可能含有短命对象”的分代假设处理。
+4. 只有 `kEvacModeLivePercentNewlyAllocated`、非 newly-allocated、live bytes 有效时，才比较 75%。
 
-当 LOS 分配失败时，`LogFragmentationAllocFailure()` 打印当前最大连续可分配块长度。`Heap::ThrowOOME` 在分配失败路径调用此接口输出 LOS 占用和碎片情况，用于判断 OOM 是否由大对象碎片化导致。
+比较式使用严格的小于号。恰好 75% 不搬迁。分母是 `RoundUp(BytesAllocated(), 256KB)`，不能把它改写成任意口径的“存活对象数占比”。
 
-```cpp
-// large_object_space.h
-bool LogFragmentationAllocFailure(std::ostream& os, size_t failed_alloc_bytes)
-    override REQUIRES_SHARED(Locks::mutator_lock_);
-```
+### 三种 EvacMode 对应什么收集
 
-LOS 通过 `LargeObjectSpaceType` 枚举支持 `kMap` 和 `kFreeList` 两种实现。`kMap` 按对象 `mmap` / `munmap`，`kFreeList` 预留一段连续空间并用空闲链表复用洞；不能把两种实现都概括成 `dlmalloc`。`kFreeList` 的收益主要是减少频繁大对象分配时的映射管理开销，与 APK 体积没有直接关系。
+`ConcurrentCopying::FlipCallback` 根据本轮 GC 选择 evacuation mode：
 
-## kCyclicRegionAllocation：Debug 模式的碎片放大器
+| 条件 | `EvacMode` | 普通 region 的主要行为 |
+| --- | --- | --- |
+| generational CC 的 young/sticky GC | `kEvacModeNewlyAllocated` | 只搬迁 newly-allocated region |
+| 常规 full CC | `kEvacModeLivePercentNewlyAllocated` | 搬迁 newly-allocated region，并按 live bytes 判断旧 region |
+| `force_evacuate_all_` | `kEvacModeForceAll` | 搬迁所有非 large region |
 
-[已验证: AOSP android-17.0.0_r1, art/runtime/gc/space/region_space.h]
+所以，“低于 75% 搬、高于 75% 留”只描述了表格第二行中的一部分 region，不能用于解释 sticky GC 或 force-all GC。
 
-```cpp
-// region_space.h
-// strategy reduces region reuse and should help catch some GC bugs
-// earlier. However, cyclic region allocation can also create memory
-// fragmentation at the region level (see b/33795328); therefore, we
-// only enable it in debug mode.
-static constexpr bool kCyclicRegionAllocation = kIsDebugBuild;
-```
+### UnevacFromSpace 的收益与代价
 
-`kCyclicRegionAllocation` 在 debug 构建中启用，循环分配 region 而不是线性分配。这样做的好处是能更早暴露 GC bug（region 不被复用时错误更容易被发现），但代价是加剧 region 级碎片。
+对于存活率很高的 region，复制大量对象只能回收少量空间。把它标成 `UnevacFromSpace` 可以减少：
 
-生产环境使用线性分配，不受此影响。debug 构建中观察到的 region 碎片化程度会比生产环境更严重，做 GC 分析时需要注意区分。
+- 本轮对象复制量；
+- 对应的目标 region 需求；
+- 搬迁期间的内存写入和缓存压力。
 
-## CC 与 CMC 的路径选择矩阵
+代价是 region 内部的死亡对象空洞继续保留，普通 bump-pointer 分配也不能把这些离散空洞当作完整新 region 使用。后续 full GC 若发现存活率已低于阈值，才可能搬空该 region。
 
-把前面的条件汇总，得到不同设备能力下的 GC 策略选择：
+因此，UnevacFromSpace 是“复制成本与可回收空间”之间的取舍，不是消除碎片的压缩算法。高存活率 region 长期保留时，复制峰值可能下降，但内部浪费仍可能存在。
 
-| 设备条件 | GC 路径 | 碎片控制手段 | 暂停特性 |
-|---------|--------|------------|---------|
-| `gUseReadBarrier == true` | CC | RegionSpace + UnevacFromSpace 75% 阈值 | 暂停时间需看实际 Perfetto GC slice |
-| `gUseReadBarrier == false && gUseUserfaultfd == true` | CMC | BumpPointerSpace + UFFD 并发压缩 | 关闭逐引用 read barrier，收益需同设备实测 |
-| CMC + generational 开关开启 | 三代 CMC | young/mid/old 分代 + 压缩 | young / full 路径按 collector slice 区分 |
+### RegionSpace 的 large region 不等于 LOS
 
-注意：CMC 依赖 UFFD 能力和 ART 运行时门控，不能只用 kernel 版本判断。CC 路径的读屏障形态也要按构建配置区分，不能把所有设备写成 read barrier table 查询。
+这里还有一组相似术语：
 
-### 版本演进路径
+- `RegionState::kRegionStateLarge` 表示一次 RegionSpace 分配跨越一个或多个 256KB region；
+- `LargeObjectSpace` 是 Heap 中独立的非移动空间。
 
-| 版本 | 默认 GC | 三代模型 | Region 碎片机制 | 关键 flag |
-|------|---------|---------|---------------|----------|
-| Android 8（API 26） | CC + PartialMarkSweep | 无 | 75% UnevacFromSpace 已存在 | — |
-| Android 10（API 29） | CC | 无 | 75% UnevacFromSpace 保留 | — |
-| Android 11（API 30） | CC + Generational CC | young + old 两代 | 75% 阈值 | — |
-| Android 14-15（API 34-35） | CC 为主，CMC 源码路径进入主线 | young + old / CMC 非三代路径 | 同上 | UFFD / CMC 相关门控 |
-| Android 16（API 36） | CC / CMC 二选一 | **young + mid + old 三代**（CMC 路径） | UnevacFromSpace + 75% 阈值 | `use_generational_gc` 默认 true |
-| Android 17（API 37） | Android 17 源码已验证 CC / CMC 二选一 | 三代 CMC 源码已验证 | 同上 | `use_generational_cmc` flag |
+前者由 RegionSpace 管理，`ShouldBeEvacuated()` 对其返回 `false`；后者走 `kAllocatorTypeLOS`。分析日志或源码时，先看空间类型，不能只凭“large object”字样判断。
 
-[适用版本: Android 8（API 26）已有 UnevacFromSpace 75% 阈值；本节主线范围从 Android 10（API 29）开始，Android 11（API 30）引入 Generational CC，Android 16（API 36）引入三代 CMC]
+### Debug 构建会主动减少 region 复用
 
-> Android 17 行为已通过 `refs/tags/android-17.0.0_r1` 源码验证。`art/runtime/gc/collector/` 目录结构在 android-15 / android-16 / android-17 之间保持一致。
+`region_space.h` 把 `kCyclicRegionAllocation` 定义为 `kIsDebugBuild`。开启后，RegionSpace 循环选择 region，减少对近期 region 的复用，用来更早暴露部分 GC 错误。
 
-## GC 暂停预算与端侧 AI 场景
+源码注释也明确指出，这种策略可能制造 region 级碎片，因此只在 debug 构建启用。对比 userdebug/debug 与 release 设备时，要把这项分配策略差异纳入分析；debug 设备上的 region 分布不能直接代表量产构建。
 
-整套碎片控制方案的设计目标，是减少 region 反复搬迁造成的 RSS 增长，并尽量缩短前台可见暂停。具体暂停预算不能从源码常量直接推出，必须结合设备、系统版本和 Perfetto GC slice 实测。
+## CMC：压紧 BumpPointerSpace
 
-### 对端侧大模型推理的影响
+选择 CMC 后，ART 的 moving space 是 `BumpPointerSpace`，不再使用 CC 的 RegionSpace 搬迁模型。CMC 先计算存活对象压缩后的地址，再按页完成对象内容和引用更新，使 moving space 的存活对象更紧密地排列。
 
-端侧大模型推理通常在 native 侧维持较大的连续权重缓冲，Java 侧只保留句柄、buffer 包装对象或调度对象。不能从 native 权重大小直接推断 Java 对象所在 region 一定超过 75% 存活率；只有当长生命周期 Java 对象在 region 中占比足够高时，CC 才会把这些 region 归入 UnevacFromSpace。
+### 一轮 MarkCompact 的阶段
 
-需要注意的点：
+Android 17 的 `MarkCompact::RunPhases()` 依次执行：
 
-- Java 侧应避免在主线程持续分配不进入 LOS 的中等大小对象；超过 LOS 阈值的 primitive array / `String` 会走 LargeObjectSpace，其他对象仍可能进入 moving space
-- 对 `byte[]`、大 `String` 这类 LOS 对象，优先预分配并复用 buffer，让它们保持在 non-moving 的 LOS 路径
-- ART metrics 和 Perfetto slice 名称会随版本、构建和数据源配置变化；分析时先在实际 trace 中确认 `ConcurrentCopying`、`MarkCompact`、`HeapTaskDaemon` 等可见事件
+1. `InitializePhase()` 准备本轮状态；
+2. 持有共享 mutator lock 运行 `MarkingPhase()`；
+3. 执行 `MarkingPause()`；
+4. 进入 `ReclaimPhase()`，再由 `PrepareForCompaction()` 判断是否需要压缩；
+5. 需要压缩时，通过 `FlipThreadRoots()` 调用 `CompactionPause()`，完成线程根翻转和暂停期准备；
+6. UFFD 有效时执行 `CompactionPhase()`；
+7. `FinishPhase()` 收尾并更新分代边界。
 
-### 对长生命周期对象密集应用的影响
+`MarkingPause` 和 `CompactionPause` 都说明 CMC 并非“全程没有 STW”。它把大量标记、准备和页处理工作放到并发阶段，但暂停时间仍需在目标设备上测量。
 
-相册、长会话直播等应用常驻大量 Bitmap 和 VideoDecoder buffer 对应的 Java 引用对象。这些对象所在的 region 自然晋升到 mid/old 后，UnevacFromSpace 的评估开销会随 region 稳定而降低。对象池复用可以让对应 region 更快稳定。
+### UFFD/SIGBUS 怎样参与页处理
 
-在 Perfetto 中观察 CC/CMC 行为：搜索 ART GC、`ConcurrentCopying`、`MarkCompact`、`HeapTaskDaemon` 等 slice，对比 young GC 和 full GC 的频率与耗时。如果 young GC 频率异常高，需要结合对象分配速率、young space 大小和应用负载一起判断。
+CMC 的压缩元数据记录压缩前后的页和对象位置。并发压缩期间，GC 线程可以处理并映射目标页；mutator 若访问尚未完成的页，SIGBUS handler 会参与该页的处理。源码中的复制、zero-page、move ioctl 和状态字都以运行时 `gPageSize` 为单位。
 
-## 扩展
+这套机制减少了把整个 moving space 一次性停住再复制的需要，但会引入页错误处理、页表更新、TLB 刷新和调度成本。某个设备是否受益，要结合 GC 暂停、总耗时、fault 计数和应用卡顿同时判断。
 
-### 🔸 CMC 与 ZRAM 压缩的交互
+## Generational CMC：YoungMarkCompact 与三代边界
 
-压缩内存页对 UFFD minor-fault 路径的影响：当 ZRAM 压缩了正在被 CMC 引用的内存页时，fault 处理路径会多一步解压，可能增加单次 GC 延迟。量化数据需要在真实设备上测量。
-
-### 🔸 16KB Page Size 对 Region 大小选择与碎片化率的影响
-
-RegionSpace 的 region 大小（默认 256KB）基于 4KB page size 设计。16KB page size 下，每个 region 包含的页数从 64 降到 16，分配粒度变粗。对碎片化率的量化影响需要基于设备内核配置验证。
-
-### 🔸 端侧 LLM 推理场景下 GC 暂停对推理延迟的实际影响案例
-
-端侧 LLM 推理通常以 token 为单位，每个 token 的推理延迟在 10-50ms 量级。如果 GC 暂停恰好发生在推理关键路径上，单次 2-3ms 的暂停对整体延迟的影响约 5-15%。在 batch 推理或多模型并行场景下，GC 暂停的叠加效应需要实测。
-
----
-
-### 🔸 Android 17 源码级补充：CMC 代际包装器 `YoungMarkCompact` 不是新算法
-
-<!-- AIW-源码调研-2026-07-15 -->
-
-> 本节基于 `DeepResearch/2026-07-15-android17-art-markcompact-young-wrapper-source-verification.md` 摘录。所有结论可从 `mark_compact.h:58-114`、`mark_compact.cc:507-511`、`heap.cc:876-892 / 2940-2945`、`gc_type.h:23-37` 一手核对。
-
-AOSP 17 的 `art/runtime/gc/collector/` 目录下同时存在 `MarkCompact` 和 `YoungMarkCompact` 两个文件，二者**不是两个独立算法**。源码直证：
+`Heap::CreateGarbageCollectors()` 在允许 CMC 时先创建一个 `MarkCompact`。若 `use_generational_gc_` 为真，再创建 `YoungMarkCompact`：
 
 ```cpp
-// mark_compact.h:60-62
-// The actual young GC code is also implemented in MarkCompact class. However,
-// using this class saves us from creating duplicate data-structures, which
-// would have happened with two instances of MarkCompact.
-class YoungMarkCompact final : public GarbageCollector { /* ... */ };
-
-// mark_compact.cc:507-511 —— 全部实现 4 行
-void YoungMarkCompact::RunPhases() {
-  DCHECK(!main_collector_->young_gen_);
-  main_collector_->young_gen_ = true;
-  main_collector_->RunPhases();
-  main_collector_->young_gen_ = false;
+mark_compact_ = new collector::MarkCompact(this);
+if (use_generational_gc_) {
+  young_mark_compact_ =
+      new collector::YoungMarkCompact(this, mark_compact_);
 }
 ```
 
-从源码可以看出：
+这段代码用于说明对象关系。`YoungMarkCompact` 是选择 sticky GC 时使用的轻量入口，不持有另一套标记和压缩数据结构。
 
-- `YoungMarkCompact` 是 `MarkCompact` 的**轻量级适配器**（thin wrapper / view），不持有独立的 marking / compacting 实现。所有 `MarkObject`、`VisitRoots`、`IsMarked` 等 9 个虚函数在 `YoungMarkCompact` 中均为 `UNIMPLEMENTED(FATAL)`。
-- 触发条件唯一：`MayUseCollector(kCollectorTypeCMC)` ✓ + `use_generational_gc_ == true` ✓ + `gc_type == kGcTypeSticky` 三者同时满足时，`Heap::CollectGarbageInternal` 把 `young_mark_compact_` 注入 GC（`heap.cc:2944`）。
-- 算法骨架仍是 CMC：`MarkingPause → MarkingPhase(concurrent) → CompactionPause → CompactMovingSpace(concurrent + UFFD/SIGBUS)`；young 模式只是把扫描范围裁到 `[young_gen_begin_, moving_space_end_)`，跳过对 old-gen 的 compaction。
+它的 `RunPhases()` 只临时设置主收集器的 `young_gen_`，然后委托给同一个 `MarkCompact::RunPhases()`。其他需要独立实现收集算法的虚函数在该包装器中是 `UNIMPLEMENTED(FATAL)`，不应把它描述成第二套 MC 算法。
 
-代际布局（`mark_compact.h:991-1005` 注释）：
+### young、mid、old 如何轮转
 
-> "we maintain 3 generations: young, mid, and old. Mid generation is collected during young collections. This means objects need to survive two GCs before they get promoted to old-gen."
+Android 17 的 `mark_compact.h` 明确写有三代：
 
-| 世代 | 何时收集 | 升迁路径 |
-| --- | --- | --- |
-| young | 每轮 Sticky GC 收集 | → mid |
-| mid | young GC 时连带收集 | → old（连续存活两轮） |
-| old | Full GC 时才参与 | 长期驻留 |
+- young：新分配对象所在范围；
+- mid：young collection 时也参与回收；
+- old：young collection 时按 dense 区域处理，不参与本轮压缩。
 
-这与 §4.8 的"分代 GC 设计动机"一致：在 young collection 时跳过对 old-gen 的重复扫描，从而把 STW 从「全堆」压回「young+mid」子集。
+关键地址标记满足下面的顺序：
 
-工程含义：行业资料里偶尔将 `YoungMarkCompact` 写作"新增 GC 类型"，源自 `garbage_collectors_` 列表中它是一个独立对象；源码层面它是策略层（Heap 选择器）的 view，而不是算法层的新实现。下游文档需要保持术语准确——AIW 正文应以"CMC 的代际入口"称呼，而非"独立的 MC 算法"。
+```text
+[moving_space_begin_,
+ black_dense_end_ / old_gen_end_,
+ mid_gen_end_,
+ post_compact_end_,
+ moving_space_end_)
+```
 
-> 本节内容基于 AOSP android-17.0.0_r1 一手源码验证。相关源码锚点已按 `refs/tags/android-17.0.0_r1` 二次核对。
+`mid_gen_end_` 在压缩前表示旧的 mid 末端，在压缩过程中改为压缩后的 mid 末端。`FinishPhase()` 再把旧 mid 晋升为 old，把本轮存活的 young 变成下一轮 mid。于是，一个 young 对象需要连续存活两轮相关收集，才会进入 old。
+
+Full CMC 可以把 `black_dense_end_` 设为 moving-space 起点以处理整个 moving space，也可以保留一个被认为足够密集的前缀。Generational 模式把 old 区按同类 dense 前缀处理。这里的 dense 前缀优化与 CC 的 `UnevacFromSpace` 都会跳过低收益搬迁，但二者的数据结构、判断单位和压缩实现不同。
+
+## LargeObjectSpace：非移动边界
+
+`LargeObjectSpace::CanMoveObjects()` 固定返回 `false`，所以 CC 和 CMC 都不会压缩 LOS。Android 17 的默认及最小 large-object threshold 是 12KB，但达到阈值还不够，`Heap::ShouldAllocLargeObject()` 还要求对象是 primitive array 或 `String`：
+
+```cpp
+return byte_count >= large_object_threshold_ &&
+       (c->IsPrimitiveArray() || c->IsStringClass());
+```
+
+普通对象即使较大，也不能只凭大小断言它会进入 LOS。阈值还可以由运行时配置调整。
+
+LOS 有 `map` 和 `freelist` 两种实现，也可以被配置为 disabled。`map` 实现按大对象维护独立映射；`freelist` 实现在预留范围内管理空闲块。两者都属于 non-moving space，碎片行为不同。
+
+### LOS 分配失败时会发生什么
+
+Android 17 有两个容易被忽略的处理：
+
+1. 初次 LOS 分配失败时，`heap-inl.h` 会清除这次异常并用普通 allocator 重试。源码注释指出，显著的虚拟地址空间碎片可能导致 LOS 先失败。
+2. 最终抛出 OOME 时，`Heap::ThrowOutOfMemoryError()` 对 `kAllocatorTypeLOS` 明确跳过 `LogFragmentationAllocFailure()`；`LargeObjectSpace` 的该虚函数实现也是 `UNIMPLEMENTED(FATAL)`。
+
+因此，不能声称 ART 会在 LOS OOM 时通过这个接口打印“最大连续可分配块”。这类详情只对 RegionSpace、BumpPointerSpace、RosAlloc 等相应空间的实现成立。
+
+## 16KB 页大小改变了什么
+
+Android 17 的 `RegionSpace::kRegionSize` 仍是 256KB：
+
+- 4KB 页下，一个 region 对应 64 页；
+- 16KB 页下，一个 region 对应 16 页。
+
+RegionSpace 的 75% 公式按字节计算，没有因 16KB 页而改阈值。CMC 则广泛使用运行时 `gPageSize` 划分页处理单元，压缩缓冲区、UFFD 注册范围和页状态都会随页大小变化。
+
+这只能推出“每个 region 的页数”和“CMC 页处理粒度”发生变化，不能仅凭页数减少断言碎片率一定升高或 GC 一定更快。对象尺寸分布、dirty 页比例、内存带宽、TLB 行为和内核实现都会影响结果。
+
+## 诊断：先确认收集器，再解释现象
+
+### 第一步：读取配置
+
+下面的命令用于采集与 UFFD/分代配置直接相关的属性：
+
+```bash
+adb shell getprop ro.dalvik.vm.enable_uffd_gc
+adb shell getprop persist.device_config.runtime_native_boot.enable_uffd_gc_2
+adb shell getprop persist.device_config.runtime_native_boot.force_disable_uffd_gc
+adb shell getprop persist.device_config.runtime_native_boot.use_generational_gc
+adb shell getprop ro.dalvik.vm.force_cmc_stw_compaction
+```
+
+属性只反映一部分条件。还要结合进程启动参数、ART 启动日志和内核能力，确认最后选择的是 CC、CMC、young 还是 full 收集。
+
+### 第二步：用 trace 区分暂停、并发工作和页错误
+
+Perfetto 中先搜索设备实际出现的 ART GC slice，再查看 `ConcurrentCopying`、`concurrent mark compact`、young GC、线程暂停以及 `HeapTaskDaemon` 附近的事件。slice 名称会随构建和数据源配置变化，不要把文档中的示例名字当成固定 ABI。
+
+`MarkCompact::TraceFaults()` 会记录 GC 线程的两个 atrace counter：
+
+- `Majflt-GC`：GC 线程遇到的 major faults，包括从磁盘取页以及 ZRAM 解压；
+- `Minflt-GC`：GC 线程遇到的 minor faults，例如 COW 和匿名页分配。
+
+源码同时注明，这两个 counter 只统计 GC 线程的资源使用，不统计 userfault。看到 `Majflt-GC` 上升可以继续核对 ZRAM、文件回读和内存压力，不能直接认定是 CMC 访问了某个被压缩的特定页。
+
+### 第三步：把 ART heap 与其他内存分开
+
+配合 `dumpsys meminfo`、heap dump、Perfetto heap profiling、`/proc/<pid>/smaps_rollup` 和相关映射明细，至少区分：
+
+- ART moving space；
+- LOS 和其他 non-moving space；
+- native heap；
+- `mmap` 文件、模型权重与共享内存；
+- Bitmap、GPU 和媒体缓冲区。
+
+只有 moving space 的现象才能直接用 CC/CMC 的搬迁策略解释。native 权重占用不会因为一次 ART compaction 自动下降。
+
+## 应用侧应该怎样应对
+
+应用不能把某个 Java 对象直接指定为 `UnevacFromSpace`，也不应依赖 75% 阈值设计对象布局。更可靠的做法是：
+
+- 用 allocation profiling 找出高频、短命的大分配，先减少无意义的对象创建；
+- 对 `byte[]`、primitive array 和大 `String`，确认它们是否进入 LOS，并评估复用是否会造成过量常驻；
+- 避免在主线程把大块解析、复制和对象图构造集中到一个帧预算内；
+- 同时观察 GC 频率、暂停、总回收量、RSS 和业务延迟，不用单一 GC 耗时推导结论；
+- 在同一设备、同一构建和同一负载下比较，防止把厂商属性或内核差异误认为 Android 版本差异。
+
+端侧模型通常把大权重放在 native buffer 或文件映射中，Java/Kotlin 层持有句柄、张量包装器和调度对象。模型文件很大，不代表某个 RegionSpace region 的 live ratio 必然超过 75%。若推理期间频繁创建临时数组、字符串或包装对象，应分别检查 moving space、LOS 和 native 分配，不能把所有延迟都归因于 GC compaction。
+
+## 版本阅读原则
+
+Android 17 同时保留 CC、CMC、generational CC 和 generational CMC 代码，但设备采用哪一条路径由构建与运行时条件共同决定。阅读 Android 10—16 的材料时，应回到对应 tag 核对以下内容：
+
+- 当时的默认收集器和 read barrier 构建配置；
+- `EvacMode` 与 live-percent 判断是否相同；
+- UFFD feature、系统属性名和内核要求；
+- `YoungMarkCompact` 与三代边界是否已经存在。
+
+不能根据 Android 17 目录中存在某个类，反推它在旧版本的首次引入时间或默认启用状态。本节的行为结论以 `android-17.0.0_r1` 为准，历史版本只用于演进对比。
+
+## 小结
+
+- CC 使用 256KB RegionSpace；75% 只作用于特定 full-GC 模式下、live bytes 有效的旧普通 region。
+- `UnevacFromSpace` 减少低收益复制和目标空间需求，同时保留 region 内部空洞。
+- CMC 压紧 BumpPointerSpace，并通过 UFFD/SIGBUS 支持页级并发处理；它仍有标记和压缩暂停。
+- `YoungMarkCompact` 是主 `MarkCompact` 的分代入口，young 存活对象先进入 mid，再在下一轮晋升 old。
+- LOS 不移动；只有达到阈值的 primitive array 或 `String` 才满足默认 LOS 判定，LOS OOM 也不会通过 `LogFragmentationAllocFailure()` 输出最大连续块。
+- 16KB 页改变 CMC 页处理粒度和每个 region 的页数，不改变 256KB region 大小或 75% 字节阈值。
+
+## 源码索引
+
+- AOSP ART `android-17.0.0_r1`
+  - `runtime/gc/space/region_space.h`
+  - `runtime/gc/space/region_space.cc`
+  - `runtime/gc/collector/concurrent_copying.cc`
+  - `runtime/gc/collector/mark_compact.h`
+  - `runtime/gc/collector/mark_compact.cc`
+  - `runtime/gc/heap.cc`
+  - `runtime/gc/heap-inl.h`
+  - `runtime/gc/space/large_object_space.h`
+  - `runtime/gc/space/large_object_space.cc`
+- Android common kernel `android17-6.18-2026-06_r6`
+  - `include/uapi/linux/userfaultfd.h`
+  - `include/uapi/linux/mman.h`
