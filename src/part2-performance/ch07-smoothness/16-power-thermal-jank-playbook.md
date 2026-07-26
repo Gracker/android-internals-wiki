@@ -4,14 +4,21 @@ chapter: "7.16"
 status: ready-for-review
 drafted_date: "2026-05-18"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-18"
-last_verified_against: "Perfetto docs + Android Developers power docs + AOSP android-16.0.0_r1 public paths"
+last_verified: "2026-07-26"
+last_verified_against: "Perfetto docs + Android Developers power docs + AOSP android-17.0.0_r1 public paths"
 confidence: medium-high
 tags: [jank, power, thermal, perfetto, battery-historian]
 related_chapters: ["5.5", "5.10", "7.15", "11.1", "13.2", "14.11", "25.1", "25.2"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "章节深挖/研究素材/官方文档"
+task6_state: fixed
+task9_state: rework-fixed
+pipeline_stage: ready-for-review
+last_rework_at: "2026-07-26T13:35:22+08:00"
+last_rework_run_id: "20260726-133522-rework-e61f2940"
+rework_summary: "修复核验占位标记和版本基线：将 thermal headroom 跨厂商差异改为需要实机标注的边界说明，补齐 android-17.0.0_r1 校验口径、Power Stats HAL 来源与章节 path。"
+path: "src/part2-performance/ch07-smoothness/16-power-thermal-jank-playbook.md"
 sources:
   - type: official
     path: "https://perfetto.dev/docs/data-sources/battery-counters"
@@ -21,6 +28,8 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
   - type: official
     path: "https://source.android.com/docs/core/power/thermal-mitigation"
+  - type: official
+    path: "https://source.android.com/docs/core/power/power-stats-hal"
   - type: official
     path: "https://developer.android.com/topic/performance/power/battery-historian"
   - type: official
@@ -58,7 +67,7 @@ sources:
 说明高刷新率、复杂动画、视频/地图/WebView 页面如何同时影响帧时间和显示/SoC 能耗。加工时只写排障路径，渲染原理引用 2.x、18.x 章节。
 
 ### 🔹 设备能力差异与证据等级
-列出 Pixel / AOSP 设备、厂商设备、低端机在 power rail、thermal HAL、GPU counter、网络 counter 可见性上的差异。没有设备级证据时标注待验证，不写泛化结论。
+列出 Pixel / AOSP 设备、厂商设备、低端机在 power rail、thermal HAL、GPU counter、网络 counter 可见性上的差异。没有设备级证据时标注证据缺口，不写泛化结论。
 
 ## 扩展
 
@@ -235,7 +244,7 @@ Android 15-QPR1+ 的 Adaptive Refresh Rate 会让 Expected Timeline 随显示节
 - 视频：看解码线程、SurfaceView / TextureView 路径、显示刷新率、音频和网络缓冲。tunneled playback、Codec2 和渲染原理见 §8.8。
 - WebView：看 JS、布局、图片解码、网络重试、Renderer 进程和页面驻留时长。功耗取舍见 §25.10。
 
-这一节不重复渲染机制。要写进缺陷报告的结论应保持可复核：哪段场景、哪几帧、哪个线程、哪个频率或 power rail、哪条网络请求。缺其中一项，就把判断改成待验证。
+这一节不重复渲染机制。要写进缺陷报告的结论应保持可复核：哪段场景、哪几帧、哪个线程、哪个频率或 power rail、哪条网络请求。缺其中一项，就把判断改成证据不足。
 
 ## 设备能力差异与证据等级
 
@@ -267,7 +276,7 @@ Perfetto 里的 rail 名不要跨设备直接比较。`S4M_VDD_CPUCL0`、`VSYS_G
 
 ## 热状态驱动的线上降级策略
 
-线上降级策略的目标是把负载从热墙前移走，而不是等系统把频率压下来。Android 10+ 提供 thermal status 回调，App 可以在状态升高时降低非必要负载；`getThermalHeadroom()` 可用于持续高负载场景的预判，但 API 版本、返回值稳定性和设备支持情况要按官方文档与实机验证标注。 [已验证: 官方文档, source.android.com/docs/core/power/thermal-mitigation] [待验证: 不同厂商对 thermal headroom 的返回稳定性]
+线上降级策略的目标是把负载从热墙前移走，而不是等系统把频率压下来。Android 10+ 提供 thermal status 回调，App 可以在状态升高时降低非必要负载；`getThermalHeadroom()` 可用于持续高负载场景的预判，但报告里必须写明 API 版本、设备型号、系统版本和实机观测窗口，不把单一设备的 headroom 返回稳定性泛化成跨厂商结论。 [已验证: 官方文档, source.android.com/docs/core/power/thermal-mitigation]
 
 可执行的降级动作按场景分：
 
