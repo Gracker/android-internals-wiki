@@ -7,8 +7,8 @@ applicable_versions: Android 12 (API 31) - Android 17 (API 37); earlier ION and
   Gralloc generations retained only as version history
 last_verified: '2026-07-25'
 last_verified_against: Android 17 / API 37 / android-17.0.0_r1; hardware/interfaces
-  android-17.0.0_r1; android17-6.18-2026-06_r6; Writer rendering_pipelines
-  S08/S11/S12
+  android-17.0.0_r1; system/memory/libdmabufheap android-17.0.0_r1;
+  android17-6.18-2026-06_r6; Writer rendering_pipelines S08/S11/S12
 confidence: high
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
@@ -37,6 +37,8 @@ sources:
   path: https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/mapper/stable-c/include/android/hardware/graphics/mapper/IMapper.h
 - type: aosp
   path: https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/common/aidl/android/hardware/graphics/common/BufferUsage.aidl
+- type: aosp
+  path: https://android.googlesource.com/platform/system/memory/libdmabufheap/+/android-17.0.0_r1/BufferAllocator.cpp
 - type: official
   path: https://source.android.com/docs/core/graphics/architecture
 - type: official
@@ -251,7 +253,7 @@ DMA-BUF 文档要求 exporter 创建 fd 时支持原子设置 `O_CLOEXEC`，避�
 
 DMA-BUF 本身不规定 backing storage 从哪里来。DMA-BUF Heap 是一个标准用户空间分配前端，通过 `/dev/dma_heap/<heap-name>` 分配并返回 dma-buf fd；GPU GEM、Camera 或 vendor allocator 也可以成为 exporter。
 
-Android 12 的 GKI 2.0 用 DMA-BUF Heaps 替换 ION 作为 GKI 分配框架。`libdmabufheap` 帮助用户空间从 ION 迁移，并能在对应 heap 不存在时映射到 ION 配置。设备上的 heap 名称、secure / contiguous 策略、cache policy 与访问权限仍由产品和 vendor 决定。看到 `/dev/dma_heap/system` 等节点可以确认分配入口，不能据此断定物理内存控制器或带宽已经隔离。
+Android 12 的 GKI 2.0 用 DMA-BUF Heaps 替换 ION 作为 GKI 分配框架。`libdmabufheap` 在迁移阶段曾支持把 heap name 映射回 ION；Android 17 的 `android-17.0.0_r1` 已移除 ION 实现。当前 `Alloc()` 打开 `/dev/dma_heap/<name>` 后直接执行 `DMA_HEAP_IOCTL_ALLOC`，打开失败就返回错误。带旧参数的 overload 和 `MapNameToIonHeap()` 仅为二进制兼容保留，`CheckIonSupport()` 固定返回 false，不能再据此推导 ION fallback。设备上的 heap 名称、secure / contiguous 策略、cache policy 与访问权限仍由产品和 vendor 决定。看到 `/dev/dma_heap/system` 等节点可以确认分配入口，不能据此断定物理内存控制器或带宽已经隔离。
 
 ## 4. 一次分配怎样发生
 
@@ -449,7 +451,7 @@ fd 数上涨只是线索。若 imported handle 被释放但进程还保留 mmap�
 
 ### Android 12 / API 31
 
-Android 12 的 GKI 2.0 以 DMA-BUF Heaps 替换 ION 分配框架。BufferQueue、GraphicBuffer 和 dma-buf 共享早已存在，变化集中在 allocator 的内核入口与 GKI 可维护性。旧设备或 vendor 组件仍可能通过兼容层接入 ION，不能仅按系统 API level 猜测节点。
+Android 12 的 GKI 2.0 以 DMA-BUF Heaps 替换 ION 分配框架。BufferQueue、GraphicBuffer 和 dma-buf 共享早已存在，变化集中在 allocator 的内核入口与 GKI 可维护性。旧版本或 vendor 私有组件仍可能保留 ION，不能仅按系统 API level 猜测节点；Android 17 AOSP 的 `libdmabufheap` 本身不再提供 ION fallback。
 
 ### Android 13–14
 
