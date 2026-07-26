@@ -33,550 +33,453 @@ material_count: 5
 ---
 
 # 5.18 CPU Cache 友好代码与数据布局优化
+CPU cache 优化的难点不在于记住“顺序数组比链表快”，而在于先证明当前负载受内存层级限制，再让数据布局匹配访问模式。移动 SoC 的核心、频率、cache 容量、共享层级和 PMU 事件均有差异；没有测量支撑的 padding、prefetch 或对象池，很容易增加内存占用，却没有改善延迟。
 
-CPU 一次内存访问的成本取决于数据在哪个层级——L1 cache 1-2 个时钟周期，主存 100-200 个时钟周期。一个 cache miss 就能让 CPU 空等几十纳秒，换算到 120fps 的帧预算只有 8.3ms，几个 miss 就会吃掉可观的余量。
+本节以 Android 17 / API 37 / `android-17.0.0_r1` 和 `android17-6.18-2026-06_r6` 为基线，分别讨论 Kotlin/Java、NDK C/C++、DEX 布局和系统源码中的局部性设计。调度与大小核见 5.1、5.2、5.3，Baseline Profile 见 8.7，启动测量见 21.4。
 
-这一节从 Android 性能优化的视角讲 CPU cache：移动端 ARM 核心的 cache 结构是什么样的、哪些代码模式容易造成 cache miss、怎么用工具观测、以及 Android 系统层和应用层各有哪些已知的 cache 优化实践。
+## 先建立准确的 cache 模型
 
-阅读前置：本章 5.1 讲 Linux 调度基础，5.3 讲大小核架构——这两个节解释了线程在不同核心间迁移时 cache 会发生什么。8.7 和 21.4 讲 Baseline Profile 和编译优化，与本节的 DEX 重排序有协同关系。
+现代移动 CPU 通常有每核私有的 L1 instruction/data cache、每核或小组共享的 L2，以及 cluster 或 SoC 级共享 cache。具体容量、关联度、包含关系和访问延迟由 CPU 与 SoC 实现决定。Cortex-A510、A710、A715 等核心就允许多种 L1/L2 配置，芯片厂商还可以加入 system-level cache。
 
-[已验证: ARM Cortex-A72/A77/A710 Technical Reference Manual, cache hierarchy]
+因此，不应把一张“L1 2 周期、L2 10 周期、主存 200 周期”的表当作所有 Android 设备的参数。延迟还会受频率、未完成访存数、预取、TLB、DRAM 状态和争用影响。工程上需要关注的是数量级与相对关系：
 
-## 移动端 CPU Cache 层级
+- 靠近执行核心的层级通常容量小、延迟低；
+- 访问逐渐落到共享 cache 和 DRAM 时，延迟和能耗会上升；
+- 连续、可预测的访问更容易利用 cache line 和硬件预取；
+- 频繁写共享 line 会产生一致性流量；
+- 工作集大于有效 cache 容量时，命中率会下降。
 
-### ARM Cortex-A 的 cache 结构
+### 64 字节的适用范围
 
-移动 SoC 上常见的 ARM Cortex-A 系列核心，每一级 cache 的典型延迟如下（以时钟周期计）：
-
-| 层级 | 容量 | 关联度 | 延迟（周期） | 延迟（ns @ 2GHz） |
-|------|------|--------|------------|-------------------|
-| L1 指令 cache | 64 KB | 4-way | 1-2 | 0.5-1 |
-| L1 数据 cache | 64 KB | 4-way | 2-3 | 1-1.5 |
-| L2 cache | 256 KB-1 MB | 8-16 way | 8-12 | 4-6 |
-| L3/SLC | 2-8 MB | 16-way | 20-30 | 10-15 |
-| 主存 (LPDDR5) | — | — | 150-300 | 80-150 |
-
-数据来源：ARM Cortex-A72/A77/A710 TRM，Qualcomm Kryo 量产文档。不同 SoC 厂商的实际延迟有差异，但量级一致。
-
-ARMv8 的 cache line 大小固定为 64 字节。CPU 不按字节加载内存，每次加载一整条 cache line。访问数组中第一个字节时，后续 63 字节会被一并拉进 L1。这是理解所有 cache 优化策略的起点。
-
-### 大小核对 cache 的影响
-
-5.3 节讲过 DynamIQ 架构下大核和小核共享 L3/SLC 但拥有独立的 L1/L2。关键差异：
-
-- **大核（A7xx 系列）**：L1 数据 cache 通常是 64 KB，L2 512 KB-1 MB，cache 关联度更高，硬件预取器更激进。
-- **小核（A5xx 系列）**：L1 数据 cache 通常 32-64 KB，L2 128-256 KB，硬件预取器更保守。
-
-当一个线程从小核迁移到大核（或反向），它的 L1/L2 cache 内容全部失效，需要从 L3 或主存重新加载。这就是 5.1 节提到的 "cache affinity"——调度器会尽量让线程留在同一个核心上，避免迁移带来的 cache 冷启动。
-
-[已验证: ARM DynamIQ Shared Unit (DSU) TRM]
-
-### Cache miss 的性能代价
-
-量化一个 cache miss 的成本：假设 CPU 运行在 2 GHz，一次 L2 miss 访问主存需要约 100ns = 200 个时钟周期。这段时间 CPU 可以执行 200 条指令（假设 IPC=1）。
-
-在实际场景中：
-- **启动阶段**：冷启动时 instruction cache miss 是主要瓶颈。应用的代码散布在 DEX 编译后的 OAT 文件中，如果启动路径上的类在 OAT 中排列不连续，CPU 需要反复从主存加载指令。一次冷启动可能产生数百万次 icache miss。
-- **渲染帧**：帧预算 8.3ms（120fps）或 16.6ms（60fps）。一个 RenderThread 在遍历 DisplayList 指令时，如果指令结构体散布在不连续的内存地址，每次间接跳转都可能触发 dcache miss。
-
-[待验证: 具体启动阶段 icache miss 计数需 Simpleperf 实测数据]
-
-## False Sharing 与多线程性能陷阱
-
-### False sharing 的产生机制
-
-两个线程各自修改一个共享结构体的不同字段，如果这两个字段恰好在同一条 cache line（64 字节）内，CPU 的 cache coherency 协议（ARM 的 AMO/ACP 接口，最终走 MESI 或 MOESI 协议）会让两个核心反复 invalidate 对方的 cache line。
-
-两个核心交替写同一 cache line 的不同偏移——数据层面没有共享，硬件层面却在频繁同步。这叫 false sharing。
-
-典型症状：多线程代码在单核上跑得比多核快——因为单核没有 cache coherency 开销。
-
-### Android Framework 中的案例
-
-**MessageQueue 的 `mPtr` 和 `mMessages`**
-
-`MessageQueue.java` 中 `mPtr`（native 层 Looper 指针，long 类型，8 字节）和 `mMessages`（链表头引用，对象引用，4 或 8 字节）是相邻字段。主线程在 `next()` 中频繁读取 `mMessages`，其他线程在 `enqueueMessage()` 中写入 `mMessages`。如果这两个字段和 `mIdleHandlers`（ArrayList 引用）恰好落在同一条 cache line 内，主线程轮询 `next()` 时就会被其他线程的 enqueue 操作干扰。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/MessageQueue.java]
-
-**ART GC Card Table**
-
-ART 的分代 GC 用 card table 标记堆中被修改的区域。Card table 是一个 byte 数组，每 512 字节堆空间对应 1 字节 card。写入屏障（write barrier）在对象引用被修改时标记对应的 card 字节。
-
-当多个线程并发修改堆中相邻区域的对象引用时，它们会写 card table 中相邻的字节——这些字节落在同一条 cache line 上。结果是 GC 线程在扫描 card table 时，会被应用线程的写入屏障反复 invalidate。
-
-[已验证: AOSP android-17.0.0_r1, art/runtime/gc/accounting/card_table.h]
-
-### 检测手段
-
-Simpleperf 支持 ARM PMU 的 cache 事件采样：
-
-```bash
-# 统计 L1 dcache miss 和 LLC miss
-simpleperf stat -e L1-dcache-load-miss,LLC-load-miss \
-  -p <pid> --duration 5
-
-# 采样模式，定位 miss 发生在哪个函数
-simpleperf record -e L1-dcache-load-miss \
-  -p <pid> --duration 5
-simpleperf report --sort dso,symbol
-```
-
-ARM 平台上的硬件事件名因 SoC 不同有差异。`raw-l1-dcache-refill` 和 `raw-l2-dcache-refill` 是更通用的名字。
-
-### 解决手段
-
-1. **手动 padding**：在热字段之间插入占位符，强制它们分布到不同的 cache line：
-
-```java
-// 让 value 独占一条 cache line，避免和前后的 header 字段 false sharing
-public class PaddedAtomicLong {
-    public volatile long value;
-    public long p1, p2, p3, p4, p5, p6, p7; // padding
-}
-```
-
-2. **`@Contended` 注解**（JVM 层面，Android 上需自行实现等价逻辑）：JDK 8 引入的注解，让 JVM 自动在标注字段间插入 padding。Android Runtime 不直接支持 `@Contended`，但可以手写等价的 padding 类。
-
-3. **结构体字段重排**：把只读字段和读写字段分组，让只读字段集中在一条 cache line，读写字段集中在另一条。
-
-[已验证: Linux kernel 6.12, include/linux/cache.h 中 ____cacheline_aligned 宏定义]
-
-## 数据结构布局与 Cache 局部性
-
-### AoS vs SoA
-
-**AoS（Array of Structures）**：每个元素是一个完整的结构体，数组中连续存储。
+Android common kernel `android17-6.18-2026-06_r6` 的 arm64 `arch/arm64/include/asm/cache.h` 定义：
 
 ```c
+#define L1_CACHE_SHIFT  6
+#define L1_CACHE_BYTES  (1 << L1_CACHE_SHIFT)
+```
+
+这个内核基线按 64 字节 L1 cache line 构建。相同文件还从 `CTR_EL0.CWG` 读取 cache writeback granule，并把 arm64 的 `ARCH_DMA_MINALIGN` 设为 128 字节，说明“CPU L1 line”“DMA 安全对齐”和“跨 CPU 避免干扰的间隔”不能只用一个常量概括。
+
+应用代码可以把 64 字节作为当前常见设备的实验起点，但不能写成 Armv8/Armv9 规范保证。涉及共享库、DMA 或多代设备时，应结合目标 ABI、设备资料和测量决定布局。
+
+### 线程迁移不会清空原核心的 cache
+
+线程从一个 CPU 迁移到另一个 CPU 后，新核心的私有 cache 可能没有该线程最近使用的数据，需要从共享层级或其他 coherent cache 获取。原核心的全部 L1/L2 不会因此被软件统一失效；硬件一致性协议仍负责维护共享数据的可见性。
+
+迁移成本取决于：
+
+- 工作集是否仍在共享 cache；
+- 数据是否能从同一 cluster 的其他 cache 获取；
+- 两个核心是否跨 cluster；
+- 迁移间隔与工作集大小；
+- 迁移前后 CPU 的微架构和频率；
+- 同期内存带宽与其他任务。
+
+所以 `cpu-migrations` 上升只是一条线索。需要同时比较 CPU time、周期数、cache refill、运行核心和端到端延迟，才能判断迁移是否伤害局部性。
+
+### Hardware cache、ART inline cache 与软件缓存属于不同机制
+
+本章讨论的 L1/L2/L3 是硬件 cache。ART 的 inline cache 用接收者类型记录来优化虚调用，业务代码中的 LruCache 保存计算结果；二者也叫 cache，却不表示同一种存储层级。
+
+ART inline cache 可能让编译器生成更直接的调用路径，从而间接影响指令前端和数据访问。它不能拿来证明某个对象“进入 L1”，也不能用 L1 miss 解释所有多态调用开销。
+
+## 局部性的两个方向
+
+### 空间局部性
+
+空间局部性描述相邻地址在接近的时间被访问。CPU 以 cache line 为单位传输数据，顺序遍历连续数组通常能充分利用一次 refill，并让预取器提前请求后续 line。
+
+以 C++ 为例，`std::vector<float>` 的元素连续；链表节点通常分散分配。批量求和时，数组通常更有利。不过“链表每个节点必 miss、数组每 line 只 miss 一次”只是最坏与理想模型，分配器复用、节点大小、预取器和 cache 容量都会改变结果。
+
+在 Java/Kotlin 中也要分清容器内容：
+
+- `IntArray` 连续保存 primitive 值；
+- `Array<Int>` / `List<Int>` 保存引用，并涉及装箱对象；
+- `Array<MyObject>` 连续保存对象引用，对象本体仍分散在堆中；
+- `ByteArray` / `FloatArray` 适合紧凑的批量处理；
+- Java 多维数组是“数组的数组”，每一行是独立对象。
+
+把热循环从 boxed collection 改为 primitive array，收益可能同时来自减少装箱、减少分配和改善局部性。报告中要说明改动包含哪些因素，不能把全部收益都归给 cache。
+
+### 时间局部性
+
+时间局部性描述数据在短时间内重复使用。一个工作块在仍位于 cache 时完成多次计算，通常比每轮扫描整个大数据集更有效。
+
+二维数值计算、图片卷积和张量预处理常用 tiling：把输入拆成能适配目标 cache 的小块，在块内完成多个操作后再进入下一块。tile 大小需要基准测试，因为代码、栈、其他数组和并发线程也会占用 cache。简单地把 tile 设为“L1 容量除以元素大小”会低估这些竞争。
+
+## False sharing：不同字段，共享一条一致性 line
+
+当多个 CPU 并发访问同一 cache line，且至少一个 CPU 写入时，一致性协议需要转移或失效副本。如果线程操作的是不同字段，却因为字段位于同一 line 而产生大量一致性流量，就构成有害的 false sharing。
+
+典型模式包括：
+
+- 多线程分别更新数组中的相邻计数器；
+- 一个线程频繁写状态，其他线程频繁读同 line 中的配置；
+- 锁与被其他 CPU 高频读取的数据挤在同一 line；
+- 多生产者把各自的 head/tail 或统计字段放得过近。
+
+运行变慢不能单凭“字段相邻”定性。锁竞争、atomic 重试、调度和内存带宽也会产生相似症状。
+
+### 先修并发模型，再考虑 padding
+
+false sharing 的常用缓解顺序是：
+
+1. 减少共享写入，例如每线程 / 每 CPU 累积后批量归并；
+2. 避免无条件写相同值；
+3. 把一起读取、一起更新的字段分组；
+4. 将高频写字段与高频只读字段分开；
+5. 最后才为已证实的热点增加对齐或 padding。
+
+padding 会增加对象大小、cache/TLB 占用和内存流量，可能把问题移动到相邻字段。Linux 6.18 的 false-sharing 文档也要求根据性能证据权衡空间成本。
+
+### NDK 可以控制布局，Java/Kotlin 没有同等保证
+
+C++ 可用 `alignas` 明确对齐，并用 `sizeof` / `offsetof` 验证构建结果。下面的结构用于实验性隔离两个高频计数器：
+
+```cpp
+struct alignas(64) CounterSlot {
+    std::atomic<int64_t> value{0};
+    std::byte padding[64 - sizeof(std::atomic<int64_t>)];
+};
+
+static_assert(sizeof(CounterSlot) == 64);
+```
+
+它只保证 C++ 对象布局满足这次构建的 64 字节设计。目标硬件若使用更大的 coherence granule，或数组起始、allocator、ABI 发生变化，仍要重新验证。原子操作也必须使用符合算法的 memory order；padding 不能修复 data race。
+
+Java/Kotlin 对象布局属于 ART 实现细节，应用无法通过添加若干 `long` 字段可靠地保证字段独占 cache line。`@Contended` 不是 Android 公共 SDK 契约。应用层更稳的方案是减少共享可变对象、分片计数、批量提交，并以基准测试验证。
+
+### 不要把 MessageQueue 当作已证实案例
+
+Android 17 的 `MessageQueue` 有 Legacy、Combined 与 CombinedDeli 等实现变体，字段布局还要经过 ART 对象布局。`mPtr` 与 `mMessages` 在源码中相邻，不能证明它们位于同一 cache line，更不能证明它们引发了可测 false sharing。
+
+`enqueueMessage()` 与队列消费还包含锁、native poll/wake 和主线程调度。没有 PMU、地址级采样和对照布局时，应把它作为共享队列案例分析，不能标记成 framework 的 false-sharing 事实。
+
+## C/C++ 数据布局：AoS、SoA 与 hot/cold split
+
+### AoS 与 SoA 由访问模式决定
+
+Array of Structures（AoS）把一个元素的所有字段放在一起：
+
+```cpp
 struct Particle {
-    float x, y, z;      // position
-    float vx, vy, vz;   // velocity
-    float r, g, b, a;   // color
+    float x, y, z;
+    float vx, vy, vz;
+    float r, g, b, a;
 };
-struct Particle particles[10000];
+std::vector<Particle> particles;
 ```
 
-如果只需要更新所有粒子的位置（x, y, z），每加载一条 cache line（64 字节 = 4 个 float × 16），只有前 3 个 float 有用，其余 13 个是被顺带加载的无效数据——cache 利用率 3/16 = 18.75%。
+这个结构每个元素为 40 字节（忽略额外对齐）。若循环只读 `x/y/z`，有用数据约占对象流量的 12/40，即 30%，并非固定的 18.75%。cache line 还可能跨越两个对象，边界与数组起始地址有关。
 
-**SoA（Structure of Arrays）**：把每个字段拆成独立的数组。
+Structure of Arrays（SoA）把同类字段拆成连续数组：
 
-```c
-float pos_x[10000], pos_y[10000], pos_z[10000];
-float vel_x[10000], vel_y[10000], vel_z[10000];
-float color_r[10000], color_g[10000], color_b[10000], color_a[10000];
-```
-
-更新位置时只需遍历 `pos_x/y/z` 三个数组，每条 cache line 的利用率接近 100%（16 个 float 全部是 position 数据）。
-
-AoS 适合需要同时访问一个元素所有字段的场景（如渲染单个粒子）。SoA 适合批量处理同一字段的场景（如物理更新所有粒子的位置）。选择依据是访问模式，不是哪个 "更好"。
-
-### 热路径数据紧凑排列
-
-把一个结构体中频繁访问的字段集中在头部，确保它们落在尽可能少的 cache line 里。低频字段（调试信息、统计计数器）放在尾部。
-
-```c
-// 优化前：hot 和 cold 字段交错
-struct RenderNodeBad {
-    std::string name;          // cold: 仅调试用
-    float transform[16];       // hot: 每帧读取
-    int debug_id;              // cold
-    DisplayList* display_list; // hot: 每帧遍历
-    int frame_count;           // cold: 统计用
-    float clip_rect[4];        // hot: 每帧裁剪判断
-};
-
-// 优化后：hot 字段集中在前两条 cache line
-struct RenderNodeGood {
-    // cache line 0-1 (hot)
-    float transform[16];       // 64 bytes = 1 cache line
-    DisplayList* display_list; // 8 bytes
-    float clip_rect[4];        // 16 bytes
-    // --- cache line boundary ---
-    // cold fields
-    std::string name;
-    int debug_id;
-    int frame_count;
+```cpp
+struct ParticleBatch {
+    std::vector<float> x, y, z;
+    std::vector<float> vx, vy, vz;
+    std::vector<float> r, g, b, a;
 };
 ```
 
-Android 渲染链路中的 `RenderNode` 就是这种布局思路。5.5 节讲过 RenderThread 的遍历路径——它逐个读取 RenderNode 的 transform 和 display_list，这两个字段如果紧凑排列，遍历数千个 RenderNode 时就能让 L1 cache 保持在热状态。
+只更新位置时，SoA 能避免拉入颜色与速度；处理一个粒子的全部字段时，AoS 可能更紧凑。还可以采用 Array of Structures of Arrays（AoSoA），按 SIMD 宽度或 tile 分组，在向量化与单元素访问之间折中。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/libs/hwui/RenderNode.h]
+选择时测量以下指标：
 
-### 内存对齐
+- 目标循环端到端耗时；
+- bytes processed / item；
+- L1D refill、LLC miss 与 TLB miss；
+- 向量化报告和生成代码；
+- 内存占用与构造成本。
 
-C/C++ 中可以用 `alignas` 或 `__attribute__((aligned))` 强制变量对齐到 cache line 边界：
+### hot/cold split 要考虑对象生命周期
 
-```c
-// 确保结构体起始地址对齐到 cache line
-struct alignas(64) PerCoreCounter {
-    std::atomic<int64_t> count;
+把每次迭代都读取的字段放进紧凑结构，把调试字符串、低频统计和错误信息放到 cold side，可以缩小热工作集。常见形式是：
+
+```cpp
+struct RenderItemHot {
+    float transform[16];
+    uint32_t flags;
+    uint32_t resourceIndex;
 };
 
-// 每个核心有自己的计数器，不会 false sharing
-PerCoreCounter counters[8]; // 8 个核心
+struct RenderItemCold {
+    std::string debugName;
+    uint64_t createdAt;
+};
 ```
 
-Linux 内核用 `____cacheline_aligned` 宏做同样的事（定义在 `include/linux/cache.h`），在 per-CPU 变量中大量使用。
+热结构可以连续存入 vector，cold 数据通过稳定索引关联。这里的代价是多一层索引、两套生命周期和更复杂的更新逻辑。若 cold 字段在常见路径也频繁访问，拆分反而增加一次间接访问。
 
-[已验证: Linux kernel 6.12, include/linux/cache.h]
+不要用想象中的 `RenderNode` 布局证明方案。应对自己的结构运行 `sizeof` / `offsetof`、编译器布局 dump 和 workload benchmark。
 
-## DEX 类重排序与启动 Cache 优化
+### 连续内存也有扩容与复制成本
 
-### 为什么 DEX 中的类排列顺序影响启动性能
+`std::vector` 和 Binder `Parcel` 使用连续缓冲区，顺序读写具备空间局部性。但容量增长可能触发重新分配和复制。已知大小时合理 `reserve()` 可以减少扩容；过度预留会增加 RSS。
 
-DEX 文件中的类按源码中出现的顺序排列（或按 multidex 的文件顺序）。ART 的 `dex2oat` 编译器把 DEX 编译成 OAT（ELF 格式），类在 OAT 中的排列和 DEX 中的排列直接对应。
+Android 17 `frameworks/native/libs/binder/Parcel.cpp` 中，`mData`、`mDataSize`、`mDataCapacity` 和 `mDataPos` 管理连续数据区，写入按 4 字节 padding，增长路径使用 `realloc` 或分配并复制。Parcel 另有对象偏移数组，读取也可以调整 data position，因此“Parcel 只能从头顺序读、不能随机访问”并不准确。
 
-冷启动时，应用按依赖顺序加载类——先加载 Application 类，再加载它依赖的基类和接口，然后是 ContentProvider，最后是首个 Activity。如果这些类在 OAT 文件中散布在不同的页（page，通常 4KB 或 16KB），CPU 的 icache 就会被反复淘汰再重新加载。
+Parcel 的布局服务于 Binder wire format、安全检查和对象管理，cache 局部性是其连续数据区带来的性质之一。它不构成“Parcel 总比 JSON 快”的充分证据；序列化格式、数据规模、解析器和 IPC 拷贝都要纳入比较。
 
-OAT 文件的 mmap 布局决定了类的物理页位置。类排列紧凑，启动路径上的类集中在少数几页，icache 命中率高；类排列分散，同一启动路径可能要映射几十个 page，每次 page fault 都是数十微秒的主存访问。
+## Java/Kotlin 热路径：先减少工作，再谈对象池
 
-### Redex interdex pass
+### 避免装箱和指针追踪
 
-Facebook 的 Redex 工具链提供了一个 `interdex` pass，核心思路是：
+在图像、音频、统计和几何运算中，优先评估 primitive array、紧凑 buffer 或专用 collection。`List<Float>` 的每个元素访问要经过引用与装箱对象，数据密度通常低于 `FloatArray`。
 
-1. 从 Baseline Profile（或历史启动 trace）提取冷启动路径上的类调用序列。
-2. 构建类依赖图，做拓扑排序。
-3. 按拓扑序重排 DEX 中的类：被最先加载的类排在 DEX 文件头部。
+这不意味着业务层所有模型都要改成数组。对不在热点的代码，可读性与正确性更重要。常见做法是保留清晰的业务对象，在经过 profile 证实的计算边界转换为批量 buffer。
 
-这样新生成的 DEX 经 `dex2oat` 编译后，启动路径上的类在 OAT 中物理连续，icache 命中率显著提升。
+### 谨慎复用可变对象
 
-Redex 的实测数据（Facebook 公开分享）：冷启动 P50 降低 2-5%，P90 降低 3-7%。效果取决于应用本身的类数量和启动路径复杂度——类越多、启动路径越长，重排收益越大。
+ART 的线程局部分配路径很快，短命对象也可能在年轻代高效回收。对象池会带来：
 
-[待验证: Redex 官方文档 interdex pass 说明，当前引用来源为 Facebook 技术博客]
+- 状态重置不完整；
+- 生命周期和线程安全更复杂；
+- 池保留对象，抬高 live set；
+- 旧对象未必仍在目标 CPU 的 cache；
+- 池自身产生锁竞争或共享写入。
 
-### Android Gradle Plugin 的 DEX 布局优化
+`Message.obtain()` 的回收池证明 framework 有特定复用策略，不证明所有临时对象都应池化。应用应先用 allocation profiler、GC pause、CPU 和内存数据确认分配成本，再比较“直接分配”“批量分配”“复用”三种方案。
 
-Android Gradle Plugin 8.0+ 引入了 `reorderClassesWithProfiling` 选项：
+### 分支与 cache 要分开归因
 
-```groovy
-android {
-    dexOptions {
-        // 使用 Baseline Profile 数据指导 DEX 布局
-        // AGP 8.0+ 默认在 release 构建时启用
-    }
-}
-```
+不可预测分支会造成 pipeline flush，间接跳转也会影响前端；这些问题与 data-cache miss 不同。三元表达式不保证生成无分支指令，`__builtin_expect` 也只是给编译器概率信息。
 
-AGP 的实现和 Redex interdex 思路相同：从 Baseline Profile 提取热点类列表，在 DEX 打包阶段重排类顺序。与 Redex 的区别在于 AGP 直接在构建管线中完成，不需要额外的后处理步骤。
+优化分支时查看 branch-misses、生成代码和端到端时间。把错误路径移出热函数可能改善指令布局，但函数内联、LTO 和 PGO 会再次改变代码，源码排列不能直接代表最终 instruction-cache 布局。
 
-Baseline Profile 的编译优化流程详见 8.7 节。DEX 重排序和 Baseline Profile 的关系：Profile 决定了哪些类是热点的，重排序决定这些热点类在 DEX 中的物理位置。两者配合使用时，`dex2oat` 会先编译 Profile 中的类为 speed 模式，而这些类又物理连续排列——icache 效率最高。
+### 手动 prefetch 只能由实验决定
 
-[已验证: AOSP android-17.0.0_r1, art/dex2oat/dex2oat.cc 中 profile-guided layout 相关代码]
+`__builtin_prefetch()` 是提示，编译器和硬件可以按各自规则处理。线性数组通常已有硬件预取；链表、树或多流访问有时能从软件 prefetch 获益。
 
-### 实测影响
+prefetch 距离太近会来不及，太远会污染 cache，地址无效还可能造成额外页表工作。至少在两类核心、冷/热数据和有/无并发负载下比较，并检查能耗；只看一个 microbenchmark 的 p50 不足以进入通用库。
 
-DEX 重排序的效果受多种因素影响：
+## DEX 局部性：使用 Startup Profile，不手写不存在的开关
 
-| 应用规模 | 类数量 | 冷启动 P50 改善 | P90 改善 |
-|---------|--------|----------------|---------|
-| 小型（< 1000 类） | < 1000 | < 1% | < 2% |
-| 中型（1000-5000 类） | 1000-5000 | 1-3% | 2-5% |
-| 大型（> 5000 类） | > 5000 | 3-7% | 5-10% |
+DEX 标识符与 class definitions 受格式排序约束，不能描述为“按源码出现顺序排列”。ART 的 AOT/JIT 产物布局也不等于机械复制 DEX 顺序。
 
-数据来源：Redex 技术博客公开数据 + AGP release notes 中的基准测试。具体数值因应用而异，这里的量级用于判断是否值得投入。
+Android 当前的官方路径把两个 profile 分工：
 
-[待验证: 上述改善幅度需在具体应用上实测确认，不同 SoC 的 cache 大小会影响结果]
+- Baseline Profile 供 ART 对常用方法进行 AOT 编译；
+- Startup Profile 在构建期指导 R8/D8 优化 DEX 中启动代码的布局。
 
-## Cache 友好代码的编写准则
+Startup Profile 让启动关键类和方法更集中，并尽量放入首个 `classes.dex`，从而减少启动阶段需要触及的代码页。收益可能来自 DEX page locality、fault、解压 / 映射和编译代码布局等多项变化，不能全部写成 instruction-cache miss。
 
-### 顺序访问 vs 随机访问
+### 当前构建要求
 
-```c
-// 顺序访问：cache line 被充分利用，硬件预取器可以预测访问模式
-float sum = 0;
-for (int i = 0; i < N; i++) {
-    sum += array[i];  // 每 64 字节触发一次 cache miss，之后 16 个 float 都是命中
-}
+官方文档给出的版本边界是：
 
-// 链表遍历：每次跳转的地址不确定，硬件预取器无法提前加载
-float sum = 0;
-Node* node = head;
-while (node) {
-    sum += node->value;  // 每个 node 可能在不同的 cache line
-    node = node->next;
-}
-```
+- DEX layout optimization 从 AGP 8.1 可用；
+- AGP 8.1–8.2 需要在 Baseline Profile 配置中启用；
+- AGP 8.3 起默认启用；
+- release 构建需要开启 R8、minification 和完整优化；
+- startup journey 通过 `includeInStartupProfile = true` 进入 Startup Profile。
 
-在 N=10000 时，数组遍历的 cache miss 数约为 10000/16 ≈ 625 次（每条 cache line 装 16 个 float）。链表遍历的 cache miss 数最差可达 10000 次（每个 node 在不同 cache line）。差距 16 倍。
+现稿中的 `dexOptions.reorderClassesWithProfiling` 不是对应的公开 AGP 配置，不应出现在示例中。
 
-选择数据结构时，如果访问模式是批量顺序遍历，数组优于链表——不仅是指针开销的问题，cache 命中率的差异更显著。
+### 生成、验证、A/B 测量
 
-### 分支预测与指令 cache
+Startup Profile 应覆盖 launcher、常见 deep link、通知入口等真实启动路径，又要避免把大量非启动 journey 塞满首个 DEX。
 
-CPU 的分支预测器会记录条件跳转的历史模式。如果分支模式稳定（如循环条件 `i < N` 总是 true），预测准确率高，流水线不会被打断。如果分支模式不可预测（如对随机数据的 if-else），预测失败会导致流水线冲刷，损失 10-20 个时钟周期。
+验证时：
 
-```c
-// 分支预测友好：数据已排序，分支模式稳定
-if (data[i] < threshold) { ... }
+1. 用 APK Analyzer 查看 startup 类和方法是否进入预期 DEX；
+2. AGP 8.8 及以上可检查 AAB 内 `BUNDLE-METADATA/com.android.tools/r8.json` 的 `"startup": true`；
+3. 用 Macrobenchmark 分别测冷启动、温启动和多个入口；
+4. 固定 APK、编译状态、设备温度和系统版本。
 
-// 分支预测不友好：数据随机，分支模式不可预测
-// 考虑用无分支写法替代
-result = (data[i] < threshold) ? a : b;
-```
+不要引用与当前应用、构建链无关的 Redex 百分比作为预期收益。官方给出的经验范围也只能用于决定是否实验，发布结论应来自自己的 A/B 数据。
 
-`__builtin_expect`（GCC/Clang）可以提示编译器哪个分支更可能执行，让热路径的指令紧凑排列：
+## Simpleperf：从症状到证据
 
-```c
-if (__builtin_expect(error_code != 0, 0)) {
-    // cold path: 错误处理，放在函数末尾
-}
-```
+### 先查看设备支持哪些 PMU 事件
 
-Android NDK 从 r21 起默认使用 Clang，完全支持 `__builtin_expect` 和 `__builtin_prefetch`。
-
-### Prefetch 指令
-
-`__builtin_prefetch(addr)` 向 CPU 发出提示：即将访问 `addr` 附近的数据，请提前加载到 cache。
-
-适用场景：在遍历链表或树结构时，访问当前节点的同时预取下一个节点。
-
-```c
-Node* node = head;
-while (node) {
-    if (node->next) {
-        __builtin_prefetch(node->next, 0, 1);  // 预取下一个节点
-    }
-    process(node);
-    node = node->next;
-}
-```
-
-误用风险：
-- Prefetch 太早：数据在用到之前就被淘汰出 cache。
-- Prefetch 太晚：数据还没加载完就要用了，和不用 prefetch 一样。
-- 过度 prefetch：占用 cache 空间，把热数据挤出 L1。
-
-经验法则：在访问延迟 50-200 个时钟周期的场景下（即 L2 miss 可能性大的链表/树遍历），prefetch 可能有收益。线性数组遍历不需要手动 prefetch——硬件预取器已经能处理。
-
-[已验证: ARM Cortex-A Software Optimization Guide]
-
-### 循环分块（Loop Tiling）
-
-处理大数组时，如果数组大小远超 L2 cache 容量，直接遍历会导致 cache thrashing——刚加载的数据在第二次使用前就被淘汰。循环分块把大数组拆成 cache 友好的小块：
-
-```c
-#define TILE 64  // 选择让一个 tile 刚好装进 L1 cache 的大小
-
-for (int i = 0; i < N; i += TILE) {
-    for (int j = 0; j < M; j += TILE) {
-        // 处理 TILE×TILE 的子矩阵
-        for (int ii = i; ii < i + TILE && ii < N; ii++) {
-            for (int jj = j; jj < j + TILE && jj < M; jj++) {
-                C[ii][jj] += A[ii][jj] * B[jj][ii];
-            }
-        }
-    }
-}
-```
-
-矩阵乘法是经典案例——两个 NxN 矩阵相乘，朴素实现的三重循环对 cache 完全不友好。分块后，每个 TILE×TILE 子矩阵的计算在 L1 cache 内完成，miss 数量从 O(N³) 降到 O(N³/TILE)。
-
-### 避免热路径上的临时对象
-
-在热循环中创建临时对象（Java 中的 `new`，C++ 中的栈上大对象）会污染 cache——临时对象占用了热数据的空间，用完后被淘汰时又浪费了写回带宽。
-
-```java
-// 不要在热路径中这样写
-for (int i = 0; i < count; i++) {
-    Point p = new Point(x[i], y[i]);  // 每次循环分配对象
-    process(p);
-}
-
-// 改为复用对象
-Point p = new Point(0, 0);
-for (int i = 0; i < count; i++) {
-    p.set(x[i], y[i]);  // 复用同一对象
-    process(p);
-}
-```
-
-Android 渲染链路中，`RenderNode` 对象池、`Message` 对象池（`Message.obtain()`）都是这种复用策略的实例。这些对象池不仅减少了 GC 压力，也减少了 cache 污染——频繁分配的新对象分布在堆的不同位置，每次访问都是 cache cold。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/Message.java 中 obtain() 回收池实现]
-
-## 性能观测：如何确认 Cache 瓶颈
-
-### Simpleperf cache 事件采样
-
-Simpleperf 是 Android 上最直接可用的 PMU 采样工具。支持的 cache 相关事件：
+事件名和可用性取决于 CPU PMU、内核及权限。采集前先运行：
 
 ```bash
-# 统计模式：看全局 miss 率
-simpleperf stat \
-  -e raw-cpu-cycles,raw-instructions,raw-l1-dcache-refill,raw-l2-dcache-refill \
-  -p <pid> --duration 5
+simpleperf list
+simpleperf list raw
+simpleperf stat --print-hw-counter
+```
 
-# 采样模式：定位哪个函数 miss 最多
+第一条列出内核封装事件，第二条列出当前 Arm PMU 的 raw event，第三条显示可用硬件 counter 数量。不能假设每台设备都支持 `raw-l2-dcache-refill`，也不能把某个 Cortex 文档中的 event number 直接用于另一款 SoC。
+
+### 先做成组计数
+
+如果设备支持通用事件，可以先比较周期、指令和 cache 事件：
+
+```bash
+simpleperf stat \
+  --group cpu-cycles,instructions \
+  --group cache-references,cache-misses \
+  -p <pid> --duration 10
+```
+
+同组事件尽量同时调度，适合计算 IPC 或 miss ratio。硬件 counter 不足时会发生 multiplexing，输出中的 enabled/running 时间和警告必须保留。不同 cluster 可能使用不同 PMU，线程迁移也会影响解释。
+
+没有一个通用的“cache miss 超过 10% 就该优化”阈值。miss 的种类、每次代价、memory-level parallelism 和业务 deadline 都不同。应该比较相同工作量下的前后变化，并确认 latency / throughput 同向改善。
+
+### 再做热点采样
+
+确认 cache 事件与慢样本相关后，再定位符号：
+
+```bash
 simpleperf record \
-  -e raw-l1-dcache-refill \
-  -p <pid> --duration 5
+  -e cache-misses:u \
+  -p <pid> --duration 10 --call-graph dwarf
 simpleperf report --sort dso,symbol
 ```
 
-注意事项：
-- ARM 的 PMU 事件名因 SoC 而异。`raw-l1-dcache-refill` 是 ARMv8 架构定义的标准事件（事件号 0x04），在绝大多数 Cortex-A 核心上可用。
-- `simpleperf list` 可以查看当前设备支持的事件列表。
-- 非 root 设备需要 `adb shell setenforce 0`（debuggable build）或使用 `simpleperf` 的 app 模式（从应用进程内启动）。
+是否支持该事件采样、用户态过滤和 DWARF call graph 要由 `simpleperf list` 与设备能力确认。采样结果告诉你哪些指令附近出现事件，不一定包含被访问的数据地址，也不能单独证实 false sharing。
 
-[已验证: Android NDK Simpleperf 文档]
+debuggable / profileable 应用可使用 Simpleperf 的应用分析流程。不要把 `setenforce 0` 写成普通开发步骤；量产设备的 PMU 与 tracing 权限由系统安全策略决定。
 
-### Perfetto 中 IPC 与 CPU 频率关联
+### 低 IPC 不能单独证明 memory-bound
 
-Perfetto 的 CPU 轨道默认显示调度信息和频率变化。判断 cache 瓶颈的信号组合：
+IPC 低还可能来自：
 
-- **IPC（Instructions Per Cycle）持续低于 1.0** + **CPU 频率在高频档**（> 1.5 GHz）= 内存受限（memory-bound）。CPU 在等数据，不是在等调度。
-- **IPC 波动剧烈** + **线程在核心间频繁迁移** = cache 迁移成本（参考 5.1 节的 cache affinity 讨论）。
+- branch miss 或 instruction-cache / TLB 压力；
+- 长依赖链；
+- 锁等待附近的短运行片段；
+- 前后端 stall；
+- 不同核心宽度与频率；
+- PMU multiplexing 或统计窗口错误。
 
-在 Perfetto SQL 中计算 IPC：
+判断 memory-bound 至少需要观察 cache/TLB refill、backend stall、内存带宽或 latency 采样中的一部分，并通过改变数据布局或工作集做可控实验。
 
-```sql
-SELECT
-  t.name as thread,
-  EXTRACT(SUM(cycles) / SUM(instructions)) as ipc
-FROM thread t
-JOIN cpu_counter_track cycles ON ...
-JOIN cpu_counter_track instructions ON ...
-GROUP BY t.name
-ORDER BY ipc ASC
-LIMIT 20;
-```
+Perfetto 的 sched、CPU frequency、thread state 和应用 slice 用于提供时间上下文。默认 trace 不会自动产生每线程 instructions/cycles，也不存在可以直接复制的通用 SQL，把任意 counter 按线程求 IPC。可以用相同 workload 的时间窗口关联 Simpleperf 与 Perfetto，但需注明两次采集还是同次采集。
 
-低 IPC 的线程就是 cache 优化的优先目标。
+### False sharing 需要地址级证据
 
-[已验证: Perfetto 文档 CPU counters 数据源]
+普通 cache-miss 采样只能提示热点。定位 false sharing 通常需要：
 
-### Linux perf stat 的可用性
+- 支持 Arm SPE 的设备；
+- 内核 perf data-source 信息；
+- `perf c2c` 或等价厂商工具；
+- 带符号的 binary；
+- 结构体布局信息，例如 `pahole` / `offsetof`。
 
-在 rooted 设备或 userdebug build 上可以直接使用 `perf stat`：
+这些条件在量产 Android 手机上经常不齐。可行的替代实验是：固定线程和工作量，只改变计数器分片或字段间距；同时比较吞吐、atomic retry、cache event 与功耗。若无法得到地址级证据，结论应写成“与共享 line 竞争一致”，不写成已经定位到某个字段。
 
-```bash
-perf stat -e cycles,instructions,cache-references,cache-misses,L1-dcache-load-misses \
-  -p <pid> -- sleep 5
-```
+## Android 17 源码中的局部性设计
 
-`perf stat` 的输出中 `cache-misses / cache-references` 比值是整体 cache miss 率的粗略估计。大于 10% 意味着存在可优化的 cache 问题。
+### ART CardTable：一字节表示 1 KiB 堆区间
 
-限制：`perf stat` 需要内核支持（`kernel.perf_event_paranoid` 设置），普通 Android 设备上通常不可用。Simpleperf 是更通用的替代方案。
+Android 17 ART 的 `CardTable` 定义 `kCardShift = 10`，所以每个 card-table byte 对应 1 KiB heap。对象引用写屏障把相应 byte 标为 `kCardDirty`，GC 再扫描 dirty card。
 
-[已验证: Linux kernel 6.12, tools/perf/Documentation]
+`CardTable::Create()` 为表额外分配 256 字节，并调整 `biased_begin`，使其地址低字节等于 `kCardDirty`。源码注释说明，这样 JIT 写屏障不必另行构造或加载 dirty 常量。这是减少生成代码指令的一项具体设计。
 
-## Android 系统层的 Cache 优化实践
+可确认的边界是：
 
-### ART 内联 cache
+- card granularity 是 1 KiB heap / 1 byte table；
+- biased base 服务于高效计算 card 地址与 dirty store；
+- dirty、aged、aged2 是 GC 状态。
 
-ART 虚拟机的解释器使用内联 cache（Inline Cache, IC）加速虚方法调用。原理：
+不能从这些常量推出“每次写屏障节省一条 cache line”或固定性能百分比。实际指令序列依赖 ISA、编译器后端和运行模式；多个 mutator 写相邻 card byte 也不自动等于已经观测到的 false sharing。
 
-- 第一次调用某个虚方法时，ART 记录接收者的实际类型。
-- 后续调用时先检查接收者类型是否和之前记录的一致。如果一致，直接跳转到上次的目标方法，跳过 vtable 查找。
-- 如果类型不一致（多态调用点），IC 会退化为 megamorphic 状态，走正常的 vtable 分发。
+### Binder Parcel：连续数据与独立对象表
 
-IC 的 cache 友好性在于：大多数虚方法调用点的接收者类型是 monomorphic（单态）的。IC 把 "类型检查 + 直接跳转" 压缩在少数几条指令内，对 icache 非常友好。相比之下，每次走 vtable 查找需要加载 vtable 数组（可能不连续）、间接跳转，icache 命中率低。
+Android 17 `Parcel` 的普通数据存储在 `mData` 连续缓冲区，通过 `mDataPos` 顺序写入，并按 4 字节边界 padding。容量不足时 `growData()` 扩大缓冲区，`continueWrite()` 负责所有权与复制。Binder 对象位置另存于 `mObjects` 或 RPC object-position 容器。
 
-[已验证: AOSP android-17.0.0_r1, art/runtime/entrypoints/entrypoint_utils-inl.h 中 IC 查找逻辑]
+这套布局方便顺序序列化和内核 Binder 处理，也能减少普通字段的指针追踪。与此同时，扩容、对象验证、FD 复制和大 blob 仍可能主导成本。源码结构能解释数据在哪里，性能结论仍要由具体 transaction 测量。
 
-### SurfaceFlinger 的 Layer 列表遍历
+### Linux cache 对齐宏表达了取舍
 
-SurfaceFlinger 每帧都要遍历当前所有 layer，执行合成决策。Layer 列表在 `SurfaceFlinger::computeLayerStacks()` 中以 `std::vector<sp<Layer>>` 形式存储。
+内核 6.18 的 `include/linux/cache.h` 提供：
 
-`std::vector` 的内存是连续的，遍历时硬件预取器能高效工作。Layer 对象本身通过智能指针引用，如果 layer 对象在堆上分布不连续，指针追踪会带来 dcache miss。Android 14+ 中 SurfaceFlinger 引入了 `LayerSnapshot`（快照）机制，把合成决策所需的字段拷贝到连续内存中，减少对 layer 对象本身的访问。
+- `__read_mostly`，把热路径中很少修改的数据集中；
+- `__cacheline_aligned` / `____cacheline_aligned_in_smp`；
+- cacheline group begin/end；
+- `cache_line_size()`。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp]
+文件注释明确要求谨慎使用 `__read_mostly`，并用 profile 决定；紧凑读取减少 line 数，对齐隔离则增加空间。应用层可借鉴这套决策顺序，不能直接复制内核宏或认为所有结构都应独占一条 line。
 
-### Binder Parcel 的连续内存布局
+### 删除与 cache 无关的伪案例
 
-Binder 的 `Parcel` 类把序列化数据写入一块连续的内存缓冲区（`malloc` 分配，4 字节对齐）。写入的数据按顺序紧凑排列——先写的数据在低地址，后写的在高地址。
+PSS 的 Dalvik/native/other 分类用于内存归因，不能说明“cache 流分离”。`anon_huge_pages`、`file_pmd_mapped` 等 smaps 字段反映大页映射状态，也不能用于避免 false sharing。它们属于内存统计和 TLB/页表主题，不应作为本章的 Android 17 cache 优化案例。
 
-这种设计的 cache 好处：读取 Parcel 时从头到尾顺序扫描，和数组遍历一样对 dcache 友好。对比 XML/JSON 这类结构化序列化（需要解析树状结构，指针跳转频繁），Parcel 的 flat layout 对 cache 友好得多。
+同样，SLUB 不会把所有对象大小统一向上取整到 cache-line 整数倍；具体 alignment 取决于架构、cache flags、对象大小和创建参数。16 KiB page 对 slab order、碎片和 TLB 的影响也需要单独测量。
 
-代价是灵活性：Parcel 不支持随机访问某个字段，必须从头读到目标位置。这个 tradeoff 在 IPC 场景下合理——Binder 调用通常读写全部参数，不需要跳过中间字段。
+## 一套可执行的优化流程
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/libs/binder/Parcel.cpp]
+### 1. 固定业务指标
 
-### Kernel SLUB 分配器
+先选用户可见或系统目标：帧耗时、启动时间、音频 deadline、每秒处理量、单次能量。cache counter 是解释指标，不能取代业务指标。
 
-Linux 内核的 SLUB 分配器（Android 默认使用）在分配对象时保证 cache line 对齐。关键设计：
+### 2. 找到 CPU 热点
 
-- 每个 per-CPU slab 中的对象连续排列，对象大小向上取整到 cache line 大小的整数倍。
-- 热对象（刚释放的）放在 per-CPU 列表的头部，下次分配时命中同一核心的 L1 cache 概率高。
-- `kmem_cache_create()` 允许指定 `align` 参数，驱动和子系统可以要求更大的对齐。
+用 Perfetto 确认线程何时在运行、是否被抢占或迁移；用 Simpleperf 的 cycles / instructions 找 CPU 热点。若线程多数时间阻塞，先查锁、I/O 或 Binder。
 
-Android 16KB page size（4.7 节讨论过）对 SLUB 没有直接影响——SLUB 管理的是对象级别的分配，page size 影响的是页表和 TLB。但 16KB page 意味着更大的 slab 碎片开销（每个 slab 占整数个 page），对小对象分配有轻微的内存浪费。
+### 3. 验证 memory hierarchy 假设
 
-[已验证: Linux kernel 6.12, mm/slub.c]
+在设备支持范围内加入 cache/TLB/stall 事件。改变工作集大小、遍历顺序或字段布局，看事件和业务耗时是否产生可重复的同向变化。
 
+### 4. 一次只改一个主要变量
 
-### ART Biased CardTable 的硬件 cache 优化（Android 17）
+分别比较：
 
-从 Android 17 的 ART GC 代码看，CardTable 的写屏障经过特殊设计以减少指令 cache 消耗：
+- primitive array 与 boxed collection；
+- AoS、SoA、AoSoA；
+- 每线程分片与共享 atomic；
+- 有无 reserve；
+- 有无 Startup Profile；
+- 有无 prefetch / 不同 tile。
 
-- **kCardSize = 1024 bytes**：每张 card 表项跨 16 条 64-byte cache line，GC 扫描器一次处理 1 KB 数据块，预取粒度天然对齐。
-- **biased base 技巧**：`CardTable::Create()` 时多分配 256 字节，计算 `biased_begin` 使其低 8 位恰好等于 `kCardDirty`（0x70）。这样 JIT 写屏障只需一条指令：`st1b [biased_base + (addr>>10)], 0x70`，无需单独加载常量到寄存器，**每写操作节省 1 条 icache 行**。
-- **dirty/aged/aged2 三级标记压缩**：`kCardDirty=0x70`、`kCardAged=0x6f`、`kCardAged2=0x6e`——三个值差一位，可在单字节比较中完成，减少分支预测失败概率。
+避免一次同时改算法、线程数、数据结构和编译选项，否则无法解释收益来源。
 
-此设计让卡表写操作从"取指令→取地址→存数据"三步简化为"存数据"一步，在频繁对象赋值的场景下（如启动过程 onCreate 中创建大量对象）对性能有显著提升。
+### 5. 覆盖大小核与热状态
 
-[已验证: AOSP android-17.0.0_r1, art/runtime/gc/accounting/card_table.h + card_table.cc]
+至少在目标机型的常见调度状态下重复。不要为了 cache 实验把生产代码永久绑核；可在受控 benchmark 中记录运行 CPU，并分别观察两类核心。长时负载还要记录 thermal 和频率，防止把降频差异误认为 cache 收益。
 
-### Android 17 PSS 三段核算机制（cache 流分离）
-
-Android 17 将进程内存划分为 three buckets：`otherPss/dalvikPss/nativePss`，每桶有不同的 cache 局部性：
-
-| Heap 桶 | 数据源 | Cache 特征 |
-|---------|--------|------------|
-| `dalvikPss` | `/proc/<pid>/smaps` 中 `[anon:dalvik-` 范围 | 高频扫描，GC CardTable 1 KB 粒度已 cache 对齐 |
-| `nativePss` | `mallinfo()` | syscall 快路径，几乎不占 cache 带宽 |
-| `otherPss` | `libmemtrack HAL` | 跨进程 IPC，cache cold |
-
-这种分离使不同类型内存的采样策略可差异化优化。Dalvik 桶启动后即可 cache warm，而 native 桶采样可更粗粒度以减少干扰。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/jni/android_os_Debug.cpp]
-
-### libmeminfo 的 MemUsage 扩展（Android 17）
-
-`system/memory/libmeminfo/include/meminfo/meminfo.h` 在 Android 17 扩展了内存统计字段：
-
-- **anon_huge_pages**：跟踪 THP 使用（2 MB 大页），启动阶段 OAT 文件映射可受益
-- **file_pmd_mapped**：DEX 文件的大页映射优化，减少连续内存访问的 TLB miss
-- **shmem_pmd_mapped**：共享内存的大页使用，对 ProcessList 创建进程时的 fork 优化明显
-
-这些字段允许开发者精准跟踪大页使用情况，在内存分配策略中避免 false sharing。
-
-[已验证: AOSP android17-release, system/memory/libmeminfo/include/meminfo/meminfo.h]
-<!-- AIW-源码调研-2026-07-06 -->
-
-## 扩展
-
-### 🔸 GPU Cache 与异构计算
-
-GPU 有自己的 cache 层级（L1 per SM/CU、L2 shared），和 CPU cache 独立。GPU 着色器中的 shared memory（CUDA 的 shared memory、Vulkan 的 workgroup shared memory）是程序员显式管理的 cache，用于在 workgroup 内共享中间结果。
-
-对 Android 性能的影响：GPU texture cache 的命中率影响图片解码和渲染管线的吞吐量。Vulkan 的 `VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT` 内存对 GPU cache 友好但 CPU 不可直接访问；`VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT` 允许 CPU 访问但可能不走 GPU cache。详见 2.15 节 DMA-BUF 和 2.10 节 GPU 渲染。
-
-[待补充]
-
-### 🔸 Rust/NDK 层的 Cache 优化
-
-Rust 的所有权模型天然有利于数据布局优化：编译器可以在不违反借用规则的前提下自由重排结构体字段（`#[repr(Rust)]` 的默认行为）。对 cache 优化的影响：
-
-- 编译器可能自动把频繁访问的字段排在前面。
-- `#[repr(C)]` 固定字段顺序为声明顺序，和 C 兼容但放弃了自动优化。
-
-NDK native 代码中使用 `alignas(64)` 确保 cache line 对齐。Android 15+ 的 `libdmabufheap` 分配的 buffer 默认对齐到 page（4KB/16KB），远超 cache line 需求。
-
-[待补充]
-
-### 🔸 SoC 级 Cache 架构差异
-
-不同 SoC 厂商的 cache 配置差异主要在 L2/L3 大小和互联拓扑上：
-
-- **Qualcomm Kryo**（骁龙 8 系列）：大核 L2 1MB，共享 L3 6-8MB，延迟相对较低。
-- **MediaTek Dimensity**（天玑 9000+）：大核 L2 512KB-1MB，共享 L3 4-8MB。
-- **Samsung Exynos**：Mongoose 核心 L2 512KB，共享 L3 4MB。
-
-这些差异对应用开发者的影响有限——cache 优化策略（顺序访问、紧凑布局、减少 false sharing）在所有 ARM 平台上通用。差异主要体现在优化效果的绝对数值上：cache 越大，miss 惩罚越低，优化收益也越低。
-
-5.2 节的 EAS 调度器在做能量估算时会考虑不同核心的 cache 命中率差异。这部分信息不需要应用开发者手动处理。
-
-[待补充]
+### 6. 检查代价
+
+布局优化可能增加：
+
+- RSS 与 allocator 碎片；
+- TLB miss；
+- 初始化和转换成本；
+- 代码复杂度；
+- 低端设备上的工作集；
+- 多份数据的一致性维护。
+
+只有业务指标在代表性设备和输入上稳定改善，改动才值得保留。
+
+## 结论
+
+Cache 友好代码的核心是让“经常一起使用的数据”在时间和地址上靠近，让“被不同 CPU 频繁写的数据”减少共享。实现方式会随语言层变化：
+
+- Kotlin/Java 优先减少装箱、指针追踪和共享可变状态；
+- NDK 使用连续容器、hot/cold split、SoA/AoSoA 和经过验证的对齐；
+- 启动代码通过 Startup Profile 交给 R8/D8 做 DEX layout；
+- 系统级问题通过 PMU、地址级采样和源码布局核对。
+
+所有规则都有反例。数组可能因转换成本输给对象模型，padding 可能因内存膨胀变慢，prefetch 可能污染 L1，Startup Profile 也可能因为覆盖错误入口而收益很小。先测量，再做最小改动，最后回到端到端指标验收。
+
+## 源码核对索引
+
+- `art/runtime/gc/accounting/card_table.h`
+  - `kCardShift`、card 状态和 biased base 字段。
+- `art/runtime/gc/accounting/card_table.cc`
+  - 额外 256 字节映射与 `biased_begin` 计算。
+- `frameworks/native/libs/binder/Parcel.cpp`
+  - 连续 `mData`、4 字节 padding、增长与对象位置管理。
+- `kernel/arch/arm64/include/asm/cache.h`
+  - 64 字节 L1 基线、`CTR_EL0.CWG` 与 DMA alignment。
+- `kernel/include/linux/cache.h`
+  - read-mostly、cacheline alignment 与 group 宏。
+- `kernel/Documentation/kernel-hacking/false-sharing.rst`
+  - 检测条件、`perf c2c` 与缓解原则。
+
+## References
+
+- [Android Simpleperf documentation](https://developer.android.com/ndk/guides/simpleperf)
+- [AOSP Simpleperf command reference](https://android.googlesource.com/platform/system/extras/+/android-17.0.0_r1/simpleperf/doc/executable_commands_reference.md)
+- [Baseline Profiles overview](https://developer.android.com/topic/performance/baselineprofiles/overview)
+- [Startup Profiles overview](https://developer.android.com/topic/performance/startupprofiles/overview)
+- [Create Startup Profiles and optimize DEX layout](https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations)
+- [Confirm Startup Profile optimization](https://developer.android.com/topic/performance/baselineprofiles/confirm-startup-profiles)
+- [AOSP Android 17 ART CardTable](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/accounting/card_table.h)
+- [AOSP Android 17 Binder Parcel](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/Parcel.cpp)
+- [Android common kernel 6.18 arm64 cache definitions](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/include/asm/cache.h)
+- [Android common kernel 6.18 cache helpers](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/cache.h)
+- [Android common kernel 6.18 false-sharing guide](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/kernel-hacking/false-sharing.rst)
+- [Arm Cortex-A processor comparison](https://developer.arm.com/documentation/109140/latest/)
