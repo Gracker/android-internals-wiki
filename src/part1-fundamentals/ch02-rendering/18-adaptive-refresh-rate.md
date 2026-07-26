@@ -10,7 +10,7 @@ drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
 applicable_versions: ARR 主体：Android 15-QPR1 - Android 17 (API 37)；背景：Android 11-14 多刷新率支持
 last_verified: '2026-07-25'
-last_verified_against: "AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Composer3 v3+ + developer.android.com + source.android.com + Perfetto android-17.0.0_r1"
+last_verified_against: "Android 17 / API 37 / android-17.0.0_r1；android17-6.18-2026-06_r6；Composer3 v3+；Android ARR 与 Perfetto 官方文档；Writer rendering_pipelines S01/S08/S12"
 confidence: high
 sources:
 - type: official
@@ -33,14 +33,36 @@ sources:
   path: https://perfetto.dev/docs/data-sources/frametimeline
 - type: official
   path: https://perfetto.dev/docs/analysis/stdlib-docs
-- type: official
+- type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java
-- type: official
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Display.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Window.java
+- type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/display/mode/DisplayModeDirector.java
-- type: official
+- type: aosp
   path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp
-- type: official
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/VsyncModulator.cpp
+- type: aosp
   path: https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayConfiguration.aidl
+- type: aosp
+  path: https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/VrrConfig.aidl
+- type: aosp
+  path: https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/IComposerClient.aidl
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_vblank.c
+- type: material
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/diagrams/S01_baseline_12_anchor_pipeline/source.md
+- type: material
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md
+- type: material
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S12_video_overlay_hwc_type.md
 tags:
 - ARR
 - refresh-rate
@@ -174,6 +196,8 @@ ARR 设备需要 Composer3 v3 或更高版本的接口。Android 17 的关键字
 
 SurfaceFlinger 的 `onExpectedPresentTimePosted()` 会读取当前 mode 的 `VrrConfig.notifyExpectedPresentConfig`。`notifyExpectedPresentIfRequired()` 判断下一帧是否仍在原 cadence 内、是否超时；需要通知时，再经 `HWComposer::notifyExpectedPresent()` 进入 Composer HAL。
 
+`notifyExpectedPresentConfig == null` 时，框架不会调用这项 HAL 提示；`timeoutNs == 0` 表示每帧都要提示。非零 `headsUpNs` 则给出提示必须领先下一次 expected-present 的最短时间。它们描述的是显示硬件需要多少准备时间，不是应用可支配的额外帧预算。
+
 这套接口允许面板在没有 mode switch 的情况下准备下一次刷新。它不替应用修复晚提交、错误时间戳、BufferQueue 堆积或 acquire fence 过晚。
 
 ### 2.4 VsyncModulator 负责工作预算，不负责选择刷新率
@@ -254,7 +278,7 @@ Android 15（API 35）提供两个 Window 级控制：
 - `setFrameRateBoostOnTouchEnabled(boolean)`：控制触摸时是否升频，默认启用；
 - `setFrameRatePowerSavingsBalanced(boolean)`：控制该 Window 是否允许 ARR 的功耗平衡策略，默认启用。
 
-关闭 touch boost 会影响触摸响应感；关闭 power-savings balance 会提高高刷驻留和功耗。官方指南只建议在出现严重兼容问题时关闭，并要求用目标设备上的 Trace 和功耗数据证明必要性。
+关闭 touch boost 会影响触摸响应感；关闭 power-savings balance 可能增加高刷驻留和功耗。官方指南只建议在出现严重兼容问题时关闭，并要求用目标设备上的 Trace 和功耗数据证明必要性。
 
 ## 4. Surface：给独立 Layer 声明内容节奏
 
@@ -490,3 +514,4 @@ Android 17 的 ARR 分为四层：应用通过 View、Compose 或 Surface 表达
 - [Perfetto：FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
 - [Perfetto Android 17 metric：`frames.sql`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/metrics/sql/android/jank/frames.sql)
 - [Android Frame Pacing Library](https://developer.android.com/games/sdk/frame-pacing)
+- Writer `rendering_pipelines`：`S01_baseline_12_anchor_pipeline/source.md`、`S08_native_graphics_type.md` 与 `S12_video_overlay_hwc_type.md`
