@@ -1,21 +1,40 @@
 # 第 6 章：存储与 I/O
 
-I/O 问题在 Android 性能分析里经常很隐蔽。  
-表面上看是“主线程怎么突然卡住了”“启动为什么偶发慢”“为什么低端机越用越差”，往下追才发现问题并不在业务逻辑本身，而在磁盘、文件系统、队列竞争或者存储设备特性上。
+> 本章的平台源码统一锚定 AOSP `android-17.0.0_r1` / Android 17（API 37）；涉及内核机制时，以 `android17-6.18-2026-06_r6` 为核对基线。量产设备的文件系统、块设备、调度器和厂商补丁以产品配置为准。
 
-这一章的重点，不是把文件系统知识讲成一门操作系统课程，而是把 Android 场景下真正常用的那部分挑出来：分区布局、文件系统选择、I/O 调度、设备差异，以及它们怎样影响启动、卡顿和后台行为。
+Android I/O 问题常以“偶发”的样子出现：主线程某次读取被 page fault 拉长，`fsync()` 等待闪存完成写入，后台任务与前台启动争用块设备，或共享存储请求经过 MediaProvider 和 FUSE 后增加了延迟。只看 Java 调用栈，容易把存储等待误判成业务计算。
 
+这一章不按“哪个文件系统一定更快”给结论，而是先确认请求经过哪条路径、在什么位置等待，再讨论优化：
 
-Android 存储栈的核心演进集中在两个方向：存储器件从 eMMC 迁移到 UFS（命令队列化、随机 I/O 性能提升数倍、并发读写能力大幅增强），文件系统从 ext4 向 F2FS 过渡（针对闪存特性的日志结构文件系统，随机写性能显著优于 ext4 的覆盖写模型）。但即便硬件持续升级，Android I/O 仍然面临几个结构性难题：`fsync` 的同步等待特性使主线程写入路径难以异步化；FUSE 虚拟文件系统在外部存储访问中引入额外的内核态切换开销；FBE（File-Based Encryption）加密层对随机读写吞吐有不可忽略的影响；多 App 并发写同一分区时 I/O 调度器的隔离能力直接决定前台 App 是否被后台 I/O 拖慢。这些瓶颈在 Perfetto 中的表现形式通常是主线程 `D`（Uninterruptible Sleep）状态、`block_io` slice 或 `io_uring` 相关等待。理解瓶颈在 I/O 路径中的分布位置，是选择正确优化策略的前提。
+- 应用私有目录通常经由 VFS、ext4/F2FS、device-mapper 和块层到达存储设备；
+- 共享存储还要考虑 MediaProvider、FUSE、passthrough、FUSE BPF 和 scoped storage 权限检查；
+- SharedPreferences 的 `commit()`、`apply()` 与 `QueuedWork` 决定 XML 写盘何时反压调用线程；
+- DataStore 解决的是异步、一致性和结构化存储问题，不会消除底层 I/O 延迟；
+- 文件级加密、闪存回收、热节流、内存回写和并发负载都可能改变同一段代码的长尾。
+
+eMMC、UFS 和 NVMe 的队列能力不同，ext4 与 F2FS 的写入、回收和一致性策略也不同。Android 平台允许产品选择其中的组合，不能把“UFS 已普及”或“F2FS 随机写一定优于 ext4”当作设备事实。调试前应记录挂载表、文件系统、块设备、内核配置和测试负载。
 
 ## 本章内容
 
-- Android 存储架构
-- 文件系统
-- I/O 调度与性能
-- 存储相关的版本演进
+- [6.1 Android 存储架构](./01-storage-architecture.md)：分区、挂载、FBE、vold、应用目录与共享存储边界；
+- [6.2 Android 文件系统](./02-filesystem.md)：ext4、F2FS、EROFS、OverlayFS 及产品选择；
+- [6.3 I/O 调度与性能](./03-io-scheduling.md)：块层、调度器、writeback 与请求延迟；
+- [6.4 Android 存储演进](./04-storage-evolution.md)：按版本梳理权限、加密与共享存储变化；
+- [6.5 SharedPreferences 与 DataStore](./05-sharedpreferences-datastore.md)：同步写盘、异步持久化与迁移边界；
+- [6.6 vold、FUSE 与 scoped storage I/O](./06-vold-fuse-scoped-storage-io.md)：共享存储访问路径和性能边界；
+- [6.7 FUSE passthrough 与 FUSE BPF](./07-fuse-bpf-scoped-storage-io-performance.md)：Android 17 下快路径的适用条件与观测方法。
+
+本目录还保留若干专题页，分别解释 SharedPreferences ANR、AndroidX DataStore 多进程一致性，以及 Linux 物理内存规整。部分 deprecated 文件是为 Hermes/OpenClaw 流水线保留的历史隔离页，页面会明确指向可引用的正文。
 
 ## 阅读建议
 
-- 如果你经常在 trace 里看到主线程 D 状态、page fault、读写阻塞，这一章值得和内存、启动章节一起看。
-- 如果你更关心设备差异和 I/O 特性，`6.2`、`6.3` 会比 `6.1` 更直接。
+遇到主线程 `D` 状态时，先查看它等待的内核栈、调度事件和 I/O 区间。`D` 只表示不可中断睡眠，原因还可能是驱动、内存回收或其他内核等待；单独出现 `block_io`、page fault 或 `io_uring` 事件也不能证明它造成了卡顿。
+
+推荐的排查顺序是：
+
+1. 明确文件路径、文件系统、挂载选项和调用线程；
+2. 用 Perfetto/ftrace 对齐应用延迟、调度、page fault、writeback 和块 I/O；
+3. 区分同步语义、队列拥塞、闪存长尾、文件系统回收和权限路径成本；
+4. 在同一设备、同一构建和同一温度条件下做单变量复测。
+
+如果问题发生在应用启动，可把本章与启动章节一起阅读；如果伴随 reclaim、PSI 或 page fault，应同时查看内存管理章节。
