@@ -36,6 +36,27 @@
       "summary": "§14.30 早期材料中 Perfetto data source 名称存在 android.gpu_mem/android.gpu.memory 不一致，正文需显式锁定 android-17.0.0_r1 一手源码结论。",
       "type": "source-boundary",
       "updated_at": "2026-07-25T20:36:18.379848+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch18-connectivity/18-android17-bluetooth-le-audio-power-optimization.md",
+      "close_note": "Unsupported claims removed/reframed; chapter confidence kept medium-low pending Bluetooth/audio HAL source material.",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260726-083540-deep-review-632029fc",
+      "created_at": "2026-07-26T08:37:40.733437+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260726-083540-deep-review-632029fc",
+      "details": "Deep-review rewrote unsupported Android 17 LE Audio API/percentage/latency claims into source-backed hardening and low-latency boundary notes.",
+      "id": "finding-e7aed0d237fa",
+      "log_path": "logs/deep-review/2026-07-26-20260726-083540-deep-review-632029fc-deep-review.md",
+      "severity": "P1",
+      "source_paths": [
+        "DeepResearch/2026-07-05-background-audio-hardening-power.md",
+        "intake/research-feeds/2026-04-08-15-audioflinger-fast-mixer-aaudio-mmap-pipeline-architecture.md"
+      ],
+      "status": "fixed",
+      "summary": "LE Audio API, latency and power-saving claims lacked source support",
+      "type": "unsupported-claim",
+      "updated_at": "2026-07-26T08:37:46.366917+08:00"
     }
   ],
   "schema_version": 1
