@@ -6,7 +6,7 @@ applicable_versions: Android 7 (API 24) - Android 17 (API 37); earlier Android
   sync terminology retained only as version history
 last_verified: 2026-07-25
 last_verified_against: Android 17 / API 37 / android-17.0.0_r1; android17-6.18-2026-06_r6;
-  Writer rendering_pipelines
+  Writer rendering_pipelines S01 diagram/S08/S11/S12
 confidence: high
 drafted_date: 2026-04-05
 drafted_by: openclaw-task2a
@@ -16,64 +16,53 @@ sources:
 - type: official
   path: https://source.android.com/docs/core/graphics/architecture
 - type: official
-  path: https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html
+  path: https://github.com/KhronosGroup/Vulkan-Docs/blob/v1.4.335/chapters/synchronization.adoc
 - type: aosp
-  path: frameworks/native/libs/ui/Fence.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/ui/Fence.cpp
 - type: aosp
-  path: frameworks/native/libs/ui/FenceTime.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/ui/FenceTime.cpp
 - type: aosp
-  path: frameworks/native/libs/gui/Surface.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/Surface.cpp
 - type: aosp
-  path: frameworks/native/libs/gui/BufferQueueProducer.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp
 - type: aosp
-  path: frameworks/native/libs/gui/BufferQueueConsumer.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp
 - type: aosp
-  path: frameworks/native/libs/gui/BLASTBufferQueue.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp
 - type: aosp
-  path: frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.h
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferReleaseChannel.cpp
 - type: aosp
-  path: frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Layer.cpp
 - type: aosp
-  path: frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWC2.h
 - type: aosp
-  path: frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp
 - type: aosp
-  path: frameworks/base/libs/hwui/renderthread/EglManager.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp
 - type: aosp
-  path: frameworks/base/libs/hwui/renderthread/VulkanManager.cpp
-  ref: android-17.0.0_r1
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp
 - type: aosp
-  path: system/core/libsync/sync.c
-  ref: android-8.1.0_r81
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/EglManager.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/system/core/+/android-8.1.0_r81/libsync/sync.c
 - type: kernel
-  path: drivers/dma-buf/dma-fence.c
-  ref: android17-6.18-2026-06_r6
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
 - type: kernel
-  path: drivers/dma-buf/sync_file.c
-  ref: android17-6.18-2026-06_r6
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c
 - type: kernel
-  path: drivers/dma-buf/sw_sync.c
-  ref: android17-6.18-2026-06_r6
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sw_sync.c
 - type: kernel
-  path: include/trace/events/dma_fence.h
-  ref: android17-6.18-2026-06_r6
-- type: obsidian
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/dma_fence.h
+- type: material
   path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/diagrams/S01_baseline_12_anchor_pipeline/source.md
-- type: obsidian
+- type: material
   path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md
-- type: obsidian
+- type: material
   path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S11_camera_type.md
+- type: material
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S12_video_overlay_hwc_type.md
 path: https://source.android.com/docs/core/graphics/architecture
 tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
@@ -230,19 +219,26 @@ sequenceDiagram
 
     RT->>BBQ: dequeueBuffer()
     BBQ-->>RT: old buffer + dequeue/release fence
-    RT->>GPU: wait old-buffer release, then render
+    RT->>GPU: import/wait old-buffer release dependency, then render
     RT->>BBQ: queueBuffer(new buffer, producer completion fence)
     BBQ->>BBQ: acquire BufferItem
     BBQ->>SF: Transaction.setBuffer(buffer, acquire fence)
-    SF->>HWC: setLayerBuffer / setClientTarget(acquire fence)
-    HWC->>HWC: wait ready buffers, validate / compose
+    SF->>HWC: set layer state + DEVICE candidate buffer/fence
+    SF->>HWC: validate or presentOrValidate
+    opt CLIENT composition required
+        SF->>GPU: RenderEngine waits source fences and composes
+        GPU-->>SF: client target completion fence
+        SF->>HWC: setClientTarget(buffer, fence)
+    end
     HWC->>D: present
     HWC-->>SF: display present fence + per-layer release fences
     SF-->>BBQ: buffer release callback(release fence)
     BBQ-->>RT: release fence later returned by dequeueBuffer()
 ```
 
-图中 BLASTBufferQueue 位于应用进程，先作为窗口 BufferQueue 的 consumer，再把 buffer 与窗口状态放进 `SurfaceControl.Transaction`。`BLASTBufferQueue.cpp` 会复制 `BufferItem.mFence` 作为 transaction 的 acquire fence；SurfaceFlinger 的 release callback 返回 release fence 后，BLAST 再调用本地 consumer 的 `releaseBuffer()`。
+图中 BLASTBufferQueue 位于应用进程，先作为窗口 BufferQueue 的 consumer，再把 buffer 与窗口状态放进 `SurfaceControl.Transaction`。`BLASTBufferQueue.cpp` 会复制 `BufferItem.mFence` 作为 transaction 的 acquire fence；SurfaceFlinger 返回 release fence 后，BLAST 进入 `releaseBufferCallback()`，再调用本地 consumer 的 `releaseBuffer()`。
+
+Android 17 还为 BLAST 建立了 `BufferReleaseChannel`。SurfaceFlinger 可把 callback ID、release fence 和当前最大 acquired buffer 数写入 channel；应用侧既会非阻塞 drain，也能在没有空闲 slot 时由 `BBQBufferQueueProducer::waitForBufferRelease()` 做可中断的阻塞读取。旧的 transaction listener / completion 信息仍参与释放与兜底，排查时不要把所有 release 都归成一次同步 Binder callback。
 
 `SurfaceView`、Camera、codec 和自定义 native producer 可以有不同进程拓扑。三类 fence 的方向仍相同，但 producer、consumer 与 IPC 边界要从对应 BufferQueue 和 layer 确认。Camera 还会有 HAL output acquire/release fence，不能用 display present fence 替代 camera frame completion。
 
@@ -292,7 +288,9 @@ Android native fence 使用 `VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT` 与 
 
 源码中的 `VkSemaphoreCreateInfo` 没有挂 `VkSemaphoreTypeCreateInfo`，所以这条边界使用 binary semaphore。变量 `VkDrawResult.presentFence` 最终传给 `presentCurrentBuffer()`，站在 BufferQueue consumer 侧看，它是新 buffer 的 acquire fence；它不是 HWC display present fence。
 
-Timeline semaphore 是 Vulkan 1.2 的计数器型同步，可用于应用或引擎内部的多轮 queue 依赖。`SYNC_FD` 是一次性 copy-transference payload，规范要求相关 export 使用 binary semaphore。Timeline semaphore 因而不能直接替代 BufferQueue、SurfaceFlinger 与 HWC 的 native fence fd 协议。设备是否支持 timeline feature仍需运行时查询。
+`SYNC_FD` 的 import 只支持 temporary、copy-transference payload。成功调用 `vkImportSemaphoreFdKHR()` 后，fd 所有权交给 Vulkan；binary semaphore 的 wait 消费临时 payload，随后恢复原来的 permanent payload。对 `SYNC_FD` 调用 `vkGetSemaphoreFdKHR()` 也具有 copy-transference 的消费语义，不能把同一次 signal 当成可重复导出的状态。Android 17 HWUI 为每次桥接创建 semaphore，交给 Skia wait / signal 后销毁，避免把一次性 payload 当成可复用计数器。
+
+Timeline semaphore 是 Vulkan 1.2 的计数器型同步，可用于应用或引擎内部的多轮 queue 依赖。Vulkan 1.4.335 规范要求 copy-transference handle 从 binary semaphore 导出。Timeline semaphore 因而不能直接替代 BufferQueue、SurfaceFlinger 与 HWC 的 native fence fd 协议。设备是否支持 timeline feature 仍需运行时查询。
 
 ## 9. fd 所有权与错误处理
 
@@ -415,7 +413,7 @@ Fence 让等待可见。GPU 工作慢、HWC 持有、display 迟到、queue 深�
 | userspace Fence wait / merge / signal time | `frameworks/native/libs/ui/Fence.cpp` |
 | BufferQueue producer acquire fence | `frameworks/native/libs/gui/BufferQueueProducer.cpp` |
 | consumer release fence 回传 | `frameworks/native/libs/gui/BufferQueueConsumer.cpp` |
-| BLAST transaction 与 release callback | `frameworks/native/libs/gui/BLASTBufferQueue.cpp` |
+| BLAST transaction、release callback 与 channel | `frameworks/native/libs/gui/BLASTBufferQueue.cpp`、`BufferReleaseChannel.cpp` |
 | HWC present / release fence | `frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp` |
 | HWUI EGL bridge | `frameworks/base/libs/hwui/renderthread/EglManager.cpp` |
 | HWUI Vulkan binary semaphore bridge | `frameworks/base/libs/hwui/renderthread/VulkanManager.cpp` |
@@ -428,7 +426,8 @@ Fence 让等待可见。GPU 工作慢、HWC 持有、display 迟到、queue 深�
 - [Android synchronization framework](https://source.android.com/docs/core/graphics/sync)
 - [Android graphics architecture](https://source.android.com/docs/core/graphics/architecture)
 - [Linux DMA-BUF / dma-fence documentation](https://docs.kernel.org/6.18/driver-api/dma-buf.html)
-- [Vulkan external semaphore specification](https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html)
+- [Vulkan 1.4.335 synchronization specification](https://github.com/KhronosGroup/Vulkan-Docs/blob/v1.4.335/chapters/synchronization.adoc)
 - `Writer/rendering_pipelines/diagrams/S01_baseline_12_anchor_pipeline/source.md`
 - `Writer/rendering_pipelines/S08_native_graphics_type.md`
 - `Writer/rendering_pipelines/S11_camera_type.md`（Camera output fence 边界）
+- `Writer/rendering_pipelines/S12_video_overlay_hwc_type.md`（Video / HWC fence 与 present 边界）
