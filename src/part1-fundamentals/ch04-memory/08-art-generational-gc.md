@@ -65,98 +65,71 @@ last_deepseek_cn_review_at: 2026-05-27
 ---
 # 4.8 ART 分代垃圾回收与 GC 暂停优化
 
-阅读本节之前，建议先了解 §4.3 中 ART 堆结构和 GC 策略演进的基础内容。本节在 §4.3 的基础上，深入分代垃圾回收的内部实现——Write Barrier 如何工作、Card Table 怎么记录跨代引用、Android 17 对分代 GC 做了哪些增强——然后把视角拉回到实际工作：GC 暂停怎么导致掉帧，在 Perfetto 中怎么分析，App 端有哪些手段可以减轻 GC 压力。
+这一章讨论 Android 17 / API 37 上 ART 分代垃圾回收的实现与应用侧诊断。源码以 `android-17.0.0_r1` 为准，内核能力以 `android17-6.18-2026-06_r6` 为准。阅读前可先看 §4.3，那里介绍了 ART 堆、分配器与收集器的整体关系。
 
-读完这一节，应该能回答三个问题：为什么一个"只有 1-3ms"的 GC 暂停仍然可能导致掉帧；Android 17 的分代 GC 做了哪些底层改变来减少这种影响；以及在自己的应用中，发现 GC 相关的卡顿后应该怎么排查和优化。
+需要先建立一个判断：看到 GC 与慢帧重叠，只能说明两件事同时发生。要判断 GC 是否参与造成慢帧，还要拆开暂停时间、GC 线程运行时间、GC 线程等待 CPU 的时间，以及主线程和 RenderThread 当时的调度情况。
 
-## GC 暂停为什么会影响流畅性
+## 1. GC 为什么会干扰一帧
 
-§4.3 提到，ART 的 Concurrent Copying GC 将大部分 GC 工作放在应用线程之外并发执行，stop-the-world 暂停只有 1-5ms。这个数字看起来很小——但掉帧的主因是 GC 活动与渲染管线的**时间冲突**。
+应用线程分配对象，GC 负责找出不可达对象并回收空间。现代 ART 收集器把大量工作放在并发阶段，但部分阶段仍需暂停 mutator，也就是会读写 Java 堆的应用线程。
 
-在一个 120Hz 的设备上，帧间隔只有 8.33ms。主线程的 `doFrame()` 需要在这个窗口内完成 input 处理、animation 计算、measure、layout、draw，然后交给 RenderThread 进行 GPU 渲染。如果一次 Young GC 的暂停恰好发生在这个窗口内，主线程被暂停的 2-3ms 直接吃掉了整个帧预算的 25-36%。更严重的情况是：GC 并发阶段虽然不暂停主线程，但会与主线程争抢 CPU 时间，导致 `doFrame()` 执行变慢，间接造成掉帧。
+一次 GC 可能从三个方向影响界面：
 
-```text
-正常帧（120Hz, 8.33ms 窗口）:
-┌────────────────────────────────┐
-│ Input → Animation → Traversal  │  8ms
-└────────────────────────────────┘  ✓ 按时完成
+1. **暂停应用线程**：暂停若落在主线程的帧工作内，会直接占用这帧的时间。
+2. **争用 CPU**：并发标记、扫描、压缩会运行 GC 线程。GC 线程处于 runnable 却迟迟得不到 CPU，也说明系统当时存在调度压力。
+3. **拖慢分配路径**：堆空间紧张时，分配线程可能等待 GC 完成；这类 blocking GC 比后台并发回收更值得优先检查。
 
-GC 干扰帧:
-┌────────────────────────────────────────┐
-│ Input │ ██ GC Pause 2.5ms ██ │ Anim…  │  > 8.33ms
-└────────────────────────────────────────┘  ✗ 掉帧
-```
+60 Hz 的名义帧间隔约为 16.67 ms，120 Hz 约为 8.33 ms。这个数字只是显示节奏，不能直接当作应用可独占的执行预算。输入、主线程、RenderThread、GPU、SurfaceFlinger 与调度延迟都会占用其中一部分。因而同样一次暂停，在设备负载、刷新率和它落入帧内的位置不同的情况下，结果也会不同。
 
-[图：Perfetto 片段，标出一次 GC event 与同一帧 doFrame 时间窗的重叠区域，并标出该帧的 jank_type]
+官方 GC 调试文档给过一次 young concurrent copying 平均暂停 1.83 ms 的示例。它来自一份特定设备和进程的统计输出，只能帮助理解字段，不能当作 Android 设备的统一指标。应用应以自己的发布构建、目标设备和真实交互 trace 为准。
 
-问题不止于暂停时间。GC 线程在并发标记和拷贝阶段需要占用 CPU——在 4 核的设备上，一个 GC 线程就吃掉了 25% 的计算资源。如果应用在滑动列表时触发了频繁的 Young GC，主线程和 RenderThread 可用的 CPU 时间被压缩，帧率下降可能比"暂停导致掉帧"更常见。
+## 2. 从 CC 到 Android 17 的分代 CMC
 
-因此，Android 17 在 ART 中继续强化分代 GC。重点不在把单次暂停再压短一点，而在减少 GC 的总 CPU 开销和触发频率，给渲染管线留出更充足的 CPU 时间。
+### 2.1 分代解决什么问题
 
-[已验证: 官方文档, https://developer.android.com/about/versions/17]
-[待补充: Trace 截图 — GC pause 与 doFrame 时间冲突的具体 Perfetto 片段]
+很多临时对象存活时间很短。若每次回收都扫描整个堆，长期存活对象会被反复处理。分代收集让常见回收优先处理较新的对象，并借助写屏障记录老对象中可能指向新对象的区域，从而减少单轮扫描范围。
 
-## 从 Concurrent Mark-Sweep 到分代 GC：ART 的演进路径
+这里不采用“90% 对象很快死亡”或“young 一定占堆的 10%～20%”一类固定数字。对象寿命分布、堆布局和收集边界都依赖工作负载与 ART 实现。判断收益时应看回收吞吐、回收量、GC CPU 时间和业务帧表现。
 
-§4.3 已经梳理了 CMS → CC → CMC 的 GC 策略演进。这一节把焦点放在分代策略本身——它是如何叠加到这些收集器之上的。
+### 2.2 版本边界
 
-### 分代假说：为什么要把堆分成两块
+ART 的演进可按下面三步理解：
 
-分代垃圾回收的理论基础是"分代假说"（Generational Hypothesis）：在一次 GC 中存活下来的对象，大概率会在后续的 GC 中继续存活。反过来说，绝大多数对象都是短命的。
+- **Android 8.0**：Concurrent Copying（CC）成为默认收集器。它使用读屏障和 RegionTLAB，主要工作可并发执行。
+- **Android 10 及以后**：CC 支持分代模式，young collection 可以延后成本更高的 full-heap collection。
+- **Android 17**：Concurrent Mark-Compact（CMC）增加分代 GC，频繁执行成本较低的 young collection。Android 17 官方发布说明提到，它降低了 GC 对应用线程的干扰和最大 RSS。
 
-ART 的实测数据支撑了这个假设：在典型的 Android 应用中，超过 90% 的对象在创建后很快就会变成垃圾。以一个列表滑动场景为例：`onBindViewHolder()` 中创建的临时字符串、`MeasureSpec` 对象、`Rect` 实例——它们在一次 `doFrame()` 结束后就不再被引用。
+ART 属于可通过 Google Play 系统更新下发的 Mainline 模块。系统版本相同的两台设备，ART 模块版本、厂商配置和内核能力仍可能不同。因此，“运行 Android 17”不能单独证明某个进程正在使用分代 CMC；应结合设备构建和运行时观测判断。
 
-如果不分代，每次 GC 都要扫描整个堆。假设堆有 128MB，其中 90% 的存活对象集中在老年代，那 GC 每次都要遍历这 128MB 来找出那 10% 的垃圾。分代策略的核心收益是：**Young GC 只扫描 Young Generation（通常只占堆的 10-20%），找出短期垃圾的速度快得多，暂停时间也短得多。**
+## 3. Android 17 如何选出收集器
 
-### ART 分代 GC 的版本时间线
+`Heap` 初始化时会按运行时配置创建可用收集器。Android 17 源码中有两条分代路径：
 
-分代策略在 ART 里经历了两条实现路线。前一段是 Concurrent Copying，后一段是 Concurrent Mark-Compact。把这两段拆开，Android 10 和 Android 17 的说法就不容易混在一起。
+- 使用 CC 且启用分代时，同时创建 full CC 与 young CC。
+- 使用 CMC 且启用分代时，同时创建 `MarkCompact` 与 `YoungMarkCompact`。
 
-**Android 8.0（Oreo）**：CC 成为默认 moving collector。本节把它当作分代 GC 的前置背景，因为后面的 young collection 思路、RegionSpace 分配和更短 pause time，都是在这一段稳定下来。
-
-**Android 10 前后的 CC 路径**：`android-17.0.0_r1` 的 `art/runtime/gc/collector/concurrent_copying.cc` 构造函数带有 `young_gen` 和 `use_generational_cc` 两个参数，`art/runtime/gc/heap.cc` 也会在 `use_generational_gc_` 为 true 时同时创建 `concurrent_copying_collector_` 和 `young_concurrent_copying_collector_`。这说明 CC 的分代模式在当前 Android 17 基线中仍是正式实现，不是概念示意。至于“最早对应到哪一个 Android 10 tag”这一点，本节暂时不写死，等补 Android 10 分支源码再回填。
-
-**Android 16+ 的 CMC 路径（含 Android 17 Generational CMC）**：`refs/tags/android-17.0.0_r1` 的 `art/runtime/gc/collector/mark_compact.h` 和 `art/runtime/gc/collector/mark_compact.cc` 包含 `YoungMarkCompact`、`young_gen_`、`old_gen_end_`、`mid_gen_end_` 这些字段和类型（android-14.0.0_r1 / android-15.0.0_r1 未包含）。`ShouldUseGenerationalGC()` 还会检查 `persist.device_config.runtime_native_boot.use_generational_gc`；UFFD 路径下还要看 `com::android::art::flags::use_generational_cmc()`。这组代码说明 Android 17 对外宣传的 generational CMC 能在 Android 17 tag 中找到对应落点，但具体设备是否启用，还得看版本、内核能力和 runtime flag。
-
-本节后面谈 Android 17 时，默认语境是“CMC 路径下可见的分代实现”，不再把它和 Android 10 的分代 CC 混成一个机制。
-
-[已验证: AOSP android-17.0.0_r1, art/runtime/gc/collector/concurrent_copying.cc + art/runtime/gc/collector/mark_compact.cc + art/runtime/gc/heap.cc]
-[已验证: 官方文档, https://source.android.com/docs/core/runtime/configure]
-[待补充: Android 10 首次引入分代 CC 的精确 tag]
-
-## Android 17 分代 GC 的内部实现
-
-这一节只保留当前 AOSP 能直接定位到的实现，不把概念图里的函数名写成源码事实。4.8 覆盖 Android 14-17，所以这里把“通用分代 GC 思路”和“Android 16+/17 的 CMC 细节”分开写。
-
-### Write Barrier：写引用时先做 card mark
-
-在 `android-17.0.0_r1` 中，Write Barrier 更稳的源码锚点是 `art/runtime/write_barrier-inl.h`。这一节直接落到 `WriteBarrier::ForFieldWrite()` 这一层，不再追一个分支间容易变化的 quick entrypoint 符号。
+是否走 CMC 与 userfaultfd（UFFD）能力有关。`mark_compact.cc` 中的 `ShouldUseUserfaultfd()` 会综合命令行选项、系统属性、内核 API 和所需 UFFD feature。`runtime.cc` 对分代 GC 还有一层组合条件：
 
 ```cpp
-// art/runtime/write_barrier-inl.h
-template <WriteBarrier::NullCheck kNullCheck>
-inline void WriteBarrier::ForFieldWrite(ObjPtr<mirror::Object> dst,
-                                        MemberOffset offset,
-                                        ObjPtr<mirror::Object> new_value) {
-  if (kNullCheck == kWithNullCheck && new_value == nullptr) {
-    return;
-  }
-  DCHECK(new_value != nullptr);
-  GetCardTable()->MarkCard(dst.Ptr());
-}
+use_generational_gc =
+    (kUseBakerReadBarrier || gUseUserfaultfd) &&
+    xgc_option.generational_gc &&
+    ShouldUseGenerationalGC();
 ```
 
-`ForArrayWrite()` 和 `ForEveryFieldWrite()` 也会走到 `GetCardTable()->MarkCard(...)`。这说明本节讨论的 write barrier，落到 AOSP 上就是“对象字段或数组元素写入后，把目标对象所在 card 标脏”。
+这段代码的用途是展示分代开关并非单一布尔量。读屏障或 UFFD 路径、`-Xgc` 配置和运行时开关都要满足相应条件。
 
-### Card Table：记录最近被改过的堆区域
+在 Android 17 的 `ShouldUseGenerationalGC()` 中，UFFD 路径还会检查 `use_generational_cmc` flag；随后读取 `persist.device_config.runtime_native_boot.use_generational_gc`，默认值为 true。默认值不等于每台设备都会启用，前置条件和产品配置仍需成立。
 
-`art/runtime/gc/accounting/card_table.cc` 文件注释写明：所有对 heap object 的非空对象指针写入，都应该经过 WriteBarrier；heap 按 `kCardSize` 划成 card；card byte 用来表示 clean / dirty 状态。Young GC 不会重新扫完整个 old generation，而是先看这些 dirty card。
+`android17-6.18-2026-06_r6` 的 arm64 GKI defconfig 含 `CONFIG_USERFAULTFD=y`。这只说明通用内核具备编译期支持。ART 启动时仍会探测 `userfaultfd`、`UFFD_FEATURE_SIGBUS`、`MREMAP_DONTUNMAP` 等能力，并接受产品属性和运行时 flag 的约束。
 
-很多资料会把这一步统称为 Remembered Set。对 4.8 这一节来说，写成“由 dirty card 导出的跨代引用候选集合”更稳，因为这部分在 CMC 代码里能直接落到 card scanning，而不是依赖一个尚未核实到类名的抽象名词。
+进程在 post-fork 初始化后会记录类似 `Using generational <collector> GC.` 的日志。它适合在可调试环境中确认选择结果；量产设备是否输出、日志级别和读取权限由构建配置决定。
 
-### Android 16+/17 的 CMC 三代模型
+## 4. 分代 CMC 的 young、mid、old
 
-`art/runtime/gc/collector/mark_compact.h` 的注释已经把分代模型写明了：
+### 4.1 三代模型
+
+Android 17 的 `mark_compact.h` 明确描述了三代：
 
 ```cpp
 // In generational-mode, we maintain 3 generations: young, mid, and old.
@@ -164,11 +137,26 @@ inline void WriteBarrier::ForFieldWrite(ObjPtr<mirror::Object> dst,
 // need to survive two GCs before they get promoted to old-gen.
 ```
 
-这三代在结构上对应 `young_gen_`、`mid_gen_end_` 和 `old_gen_end_`。和“对象只要在 young GC 里活下来一次就直接进 old generation”相比，这个三代模型多了一个 mid generation，目的是减少刚分配不久对象的过早晋升。
+这段注释给出两条信息：
 
-### YoungMarkCompact 与 MarkCompact 的关系
+- young collection 会同时处理 young 和 mid。
+- 新对象需要连续存活两轮 GC，才会晋升到 old。
 
-`YoungMarkCompact` 不是另一套完全独立的 GC。`art/runtime/gc/collector/mark_compact.cc` 里，`YoungMarkCompact::RunPhases()` 只是先把 `main_collector_->young_gen_` 置为 true，再复用 `MarkCompact::RunPhases()`：
+边界由 `mid_gen_end_` 和 `old_gen_end_` 等状态维护。一轮 young collection 结束后，原 mid 中存活的对象进入 old，原 young 中存活的对象成为下一轮的 mid。多一层 mid 可以减少短期对象过早进入 old 后带来的后续扫描成本。
+
+可以把连续两轮回收理解为：
+
+```text
+分配后：        old | mid | young
+第 1 轮存活：   old | 原 young 的存活对象 | 新分配对象
+第 2 轮存活：   old + 原 mid 的存活对象 | 原 young 的存活对象 | 新分配对象
+```
+
+这里的 young、mid、old 是 CMC 的代际边界。它们与 Card Table 中 dirty、aged、aged2 的 card 状态不是同一组概念。
+
+### 4.2 YoungMarkCompact 复用主收集器
+
+`YoungMarkCompact` 没有复制一整套标记压缩实现。它是 `MarkCompact` 的包装器：
 
 ```cpp
 void YoungMarkCompact::RunPhases() {
@@ -179,81 +167,97 @@ void YoungMarkCompact::RunPhases() {
 }
 ```
 
-这段代码提示：Young GC 和 whole-heap GC 共享同一套 CMC 主实现，差别在于 `young_gen_` 分支怎么限制扫描和压缩范围。
+调用时先进入 young 模式，再执行主收集器的阶段，结束后恢复标记。因此，young 和 full CMC 共用主要数据结构与阶段实现，`young_gen_` 决定扫描和标记时采用哪组范围与分支。
 
-### Young GC 里 old generation 是怎么被扫描的
+### 4.3 Write Barrier 标记的是持有者
 
-`mark_compact.h` 声明了 `ScanOldGenObjects()`，旁边的注释是“Scan old-gen for young GCs by looking for cards that are at least aged in the card-table”。配合 `mark_compact.cc` 里对 card age 的处理，可以把 Young GC 的 old-to-young 扫描顺序概括成这样：
+老对象可能在 young collection 前写入一个指向新对象的字段。若回收器只从 young 区域内部找引用，就可能漏掉这个仍可达的新对象。ART 在引用写入时执行 Write Barrier：
 
-1. mutator 写引用时，通过 WriteBarrier 把 card 标脏；
-2. Young GC 开始时，只处理 young / mid generation，再加上 old generation 里被 card table 标出来的区域；
-3. old generation 不做整堆扫描，扫描范围受 dirty / aged card 约束；
-4. GC 结束后，mid generation 会被消费并向 old generation 推进，young generation 为下一轮 GC 重新准备。
-
-这比原来“young 对象直接 young→old 提升”的说法更贴近 CMC 当前代码。
-
-[已验证: AOSP android-17.0.0_r1, art/runtime/write_barrier-inl.h + art/runtime/gc/accounting/card_table.cc + art/runtime/gc/collector/mark_compact.h + art/runtime/gc/collector/mark_compact.cc]
-
-## GC 对应用性能的实际影响
-
-### 不同分配模式下的 GC 行为
-
-理解 GC 对帧率的影响，需要区分三种典型的对象分配模式：
-
-**稳态分配**：应用在正常运行中持续分配少量短期对象（如 UI 渲染中的临时 `Rect`、`Matrix`）。Young GC 以稳定的频率触发（每 2-5 秒一次），每次 1-3ms。这种模式下 GC 对帧率几乎没有影响。
-
-**脉冲分配**：在某个操作（如页面跳转、列表滑动到新区域、加载 JSON 数据）中突然分配大量对象。短时间内触发多次 Young GC，如果脉冲恰好与 `doFrame()` 冲突，就可能掉帧。脉冲分配是"偶尔卡一下"的常见原因。
-
-**持续高分配（内存抖动）**：应用持续高速分配和丢弃对象。典型场景：在 `onDraw()` 中创建新对象、在 `RecyclerView.Adapter.onBindViewHolder()` 中分配大量临时字符串、Compose recomposition 产生大量临时 lambda 和状态对象。Young GC 频率飙升到每秒 3 次以上，虽然每次暂停只有 2-3ms，但累积的 CPU 开销和与渲染管线的冲突导致持续掉帧。
-
-```text
-稳态分配：     |GC|               |GC|               |GC|
-帧时间线：     |f|f|f|f|f|f|f|f| |f|f|f|f|f|f|f|f| |f|f|f|f|
-              ✓ 流畅
-
-脉冲分配：     |GC GC|GC|         |GC GC|GC|
-帧时间线：     |f|f|  X |f|f|f|f| |f|f|  X |f|f|f|
-                        ↑ 掉帧              ↑ 掉帧
-
-内存抖动：     |GC|GC|GC|GC|GC|GC|GC|GC|GC|GC|
-帧时间线：     |f| X |f| X |f| X |f| X |f| X |
-                 持续掉帧
+```cpp
+template <WriteBarrier::NullCheck kNullCheck>
+inline void WriteBarrier::ForFieldWrite(
+    ObjPtr<mirror::Object> dst,
+    MemberOffset offset,
+    ObjPtr<mirror::Object> new_value) {
+  if (kNullCheck == kWithNullCheck && new_value == nullptr) {
+    return;
+  }
+  DCHECK(new_value != nullptr);
+  GetCardTable()->MarkCard(dst.Ptr());
+}
 ```
 
-### 内存抖动如何触发频繁 GC
+`MarkCard()` 接收的是 `dst`，也就是持有字段的对象。它标记持有者所在的 card，而非 `new_value` 指向的对象。数组写入和批量字段写入也有对应屏障。
 
-内存抖动（Memory Churn）是指应用在短时间内大量创建和丢弃临时对象的行为。在 Android Studio 的 Memory Profiler 中，它表现为堆大小的"锯齿图"——快速上升（大量分配），陡峭下降（GC 回收），然后又快速上升。
+### 4.4 Card Table 缩小老年代扫描范围
 
-为什么内存抖动在高刷新率设备上更严重？60Hz 设备的帧间隔是 16.67ms，Young GC 暂停 2-3ms 只占帧预算的 12-18%。120Hz 设备帧间隔 8.33ms，同样的 2-3ms 暂停占帧预算的 24-36%。240Hz 设备帧间隔只有 4.17ms，一次 2-3ms 的 GC 暂停直接超过半帧。帧率越高，对 GC 暂停越敏感。
+Android 17 的 `CardTable` 以 `kCardShift = 10` 划分堆，因此一个 card 覆盖 1024 字节地址范围。card byte 有 clean、dirty、aged、aged2 等值。
 
-[待验证: 240Hz 设备上 GC 暂停的实际影响数据]
+dirty card 只表示这段堆地址最近发生过引用写入，是一个保守候选。它不能说明其中必然有 old-to-young 引用。GC 仍需扫描 card 覆盖的对象并检查字段。
 
-大对象分配会进一步加剧问题。超过 12KB 的基本类型数组或 String 会进入 Large Object Space。大对象的分配不走 TLAB 的快速路径，需要获取堆锁；大对象空间的 GC 策略也不同，可能触发同步 GC（而不是并发 GC），暂停时间更长。
+young CMC 的 `ScanOldGenObjects()` 会扫描 moving old 区域和 non-moving space 中达到指定 card age 的区域。这样可以找到老对象指向年轻对象的引用，同时避免每轮都遍历完整 old generation。
 
-## 在 Perfetto 中分析 GC 行为
+## 5. Young 之后何时执行 Full
 
-### ART / Frame Timeline 的观测面
+ART 不按固定次数轮换 young 与 full。`heap.cc` 在一次非 sticky 回收后把下一次设为 sticky；完成 sticky 回收后，则比较本次 sticky 回收吞吐和历史非 sticky 回收的平均吞吐，并结合目标阈值决定下一次继续 sticky，还是改用非 sticky 回收。
 
-不同 trace 配置能看到的 GC 信息并不一样，所以先区分“默认可见”与“补充 data source 后可见”。
+在这里：
 
-- **默认更稳的观测面**：GC 线程 slice、主线程 `doFrame()`、Frame Timeline 里的 jank frame。
-- **SQL 更适合的观测面**：`android_garbage_collection_events` 和 `actual_frame_timeline_slice`。
-- **需要额外抓取或 profile 的观测面**：ART 分配热点、对象保留关系、native heap 波动。
+- sticky 对分代收集器对应 young collection；
+- non-sticky 对应覆盖更大范围的 collection；
+- 回收吞吐关注单位时间释放的字节等运行数据。
 
-在 Perfetto UI 里，先做两件事：
-1. 找 jank frame，确认它对应的 `actual_frame_timeline_slice`；
-2. 再看同一进程的 GC thread slice 是否在同一时间窗内密集出现。
+若 young collection 仍能快速释放足够空间，继续 young 往往更划算。随着新生代存活率上升或可回收量下降，full collection 可能获得更好的回收效率。这个决策会随堆状态变化，所以“每 N 次 young 执行一次 full”以及固定 GC 周期都不适合作为诊断依据。
 
-如果 young GC 短而密，通常是内存抖动；如果单次 GC 很长，或者 GC 线程的 runnable 时间很高，再把视线转回 CPU 争抢、heap size 和大对象分配。
+应用启动阶段还有特殊处理。post-fork 后 ART 会先采用 full collection，并在启动期临时调整堆阈值，避免把稳态策略机械套到冷启动过程。
 
-[图：Perfetto 片段，对比单次长 GC 和短而密的 Young GC 两种模式]
-[待补充: 如果后续补到自采 trace，再把本节的 UI 截图换成真实设备样本]
+## 6. 暂停时间、总时长和调度时间
 
-### GC 相关的 Perfetto SQL 查询
+分析一轮 GC 时，至少分开看四类时间：
 
-这部分以 Perfetto stdlib 当前公开的表结构为准。`android_garbage_collection_events` 有 `process_name`、`thread_name`、`gc_ts`、`gc_dur`、`gc_running_dur` 等字段；`actual_frame_timeline_slice` 有 `upid`、`ts`、`dur`、`jank_type`。查询时不要在 `slice` 上直接混用 `package_name` 或 `thread_name` 过滤，因为这些字段来自不同表。
+| 指标 | 回答的问题 |
+| --- | --- |
+| mutator pause | 应用线程被暂停了多久 |
+| GC wall duration | 从 GC 开始到结束经过了多久 |
+| GC running duration | GC 线程得到 CPU 并执行了多久 |
+| GC runnable duration | GC 线程可运行但在等待 CPU 多久 |
 
-**统计 GC 类型、耗时和回收量**：
+wall duration 很长，不一定代表应用线程全程暂停。running 高说明 GC 消耗了较多 CPU；runnable 高说明 GC 线程本身也受调度竞争影响。若同一时段主线程或 RenderThread 也频繁 runnable，应进一步看 CPU 核、优先级、频率和其他进程负载。
+
+暂停也不能只看平均值。少量长尾、time to suspend 偏高、blocking GC，常常比稳定的小暂停更容易伤害交互。对滚动、动画和输入响应，应同时看 P95/P99 或最大值，并回到发生长尾的 trace 片段。
+
+## 7. Large Object Space 的精确边界
+
+Android 17 的默认 large-object threshold 是 12 KiB，但它不适用于所有 Java 对象。`Heap::ShouldAllocLargeObject()` 的核心条件是：
+
+```cpp
+byte_count >= large_object_threshold_ &&
+    (c->IsPrimitiveArray() || c->IsStringClass())
+```
+
+达到阈值的 primitive array 或 `String` 会先尝试 Large Object Space（LOS）分配；若 LOS 分配失败，分配器仍可回退到普通 space。普通业务对象即使整体很大，也不能仅凭“超过 12 KiB”断言它进入 LOS。
+
+LOS 对排查的意义主要在于识别大块 `byte[]`、`char[]`、`int[]`、解码缓冲区和大字符串。频繁创建这些对象会增加大对象分配、扫描和回收成本。是否产生 blocking GC 取决于当时的堆空间与分配结果，不能把每次 LOS 分配都描述为同步 GC。
+
+Android 8.0 起，`Bitmap` 像素数据放在 native heap。Android 14～17 中，大图带来的内存压力仍很重要，但像素内存不能按 Java LOS 对象计算。应结合 Java wrapper、native allocation、图形缓冲和 GPU 资源分别观察。
+
+## 8. 用 Perfetto 判断 GC 是否参与慢帧
+
+### 8.1 先保证 trace 有所需数据
+
+抓取交互 trace 时，至少需要应用调度、ART/GC 事件和 Frame Timeline。不同 Android 构建与 trace 配置能看到的轨道不同。若 SQL 表为空，应先检查 data source 和目标进程是否被采集，再判断应用没有 GC。
+
+推荐按这个顺序阅读：
+
+1. 找到 `actual_frame_timeline_slice` 中的 jank 帧。
+2. 查看主线程和 RenderThread 在这一帧内处于 Running、Runnable、Sleeping 还是被阻塞。
+3. 查看同进程 GC event 是否与帧重叠，以及 GC 是短而密还是单次长尾。
+4. 对重叠事件比较 wall、running、runnable 和 interruptible/uninterruptible 时间。
+5. 再决定是否抓分配 profile 或 heap dump。
+
+### 8.2 汇总 GC 类型与时长
+
+下面的查询适合回答“哪类 GC 多、总共回收了多少、wall time 多长”：
 
 ```sql
 INCLUDE PERFETTO MODULE android.garbage_collection;
@@ -263,6 +267,7 @@ SELECT
   gc_type,
   COUNT(*) AS gc_count,
   ROUND(AVG(gc_dur) / 1e6, 2) AS avg_gc_ms,
+  ROUND(MAX(gc_dur) / 1e6, 2) AS max_gc_ms,
   ROUND(SUM(reclaimed_mb), 2) AS reclaimed_mb
 FROM android_garbage_collection_events
 WHERE process_name = 'com.example.app'
@@ -270,9 +275,11 @@ GROUP BY process_name, gc_type
 ORDER BY gc_count DESC;
 ```
 
-这个表已经带上了 `process_name`、`thread_name`、`gc_dur`、`gc_running_dur`、`gc_runnable_dur` 和 `reclaimed_mb`，先用它就能回答“GC 多不多、慢不慢、到底回收了多少”。
+`gc_dur` 是事件 wall duration。`reclaimed_mb` 由 Perfetto 的 heap counter 区间变化推导，适合在同一 trace 中比较趋势，不应当作所有堆空间释放量的精确账本。
 
-**查 GC 和 jank 帧是否重叠**：
+### 8.3 查 GC 与 jank 帧的时间交集
+
+下面的查询按进程和时间区间找交集：
 
 ```sql
 INCLUDE PERFETTO MODULE android.garbage_collection;
@@ -295,472 +302,191 @@ WHERE gc.process_name = 'com.example.app'
 ORDER BY gc.gc_ts;
 ```
 
-这里用 `upid` 锁定同一个 app 进程，再用时间区间求交集。这样查出来的结果，比只靠肉眼在 Timeline 里看重叠更稳。
+查询结果证明两者重叠，不证明因果。接下来仍要检查应用线程暂停、GC 线程调度以及同一帧中的其他阻塞。
 
-**区分 GC 真在跑，还是在等 CPU**：
+### 8.4 区分 GC 执行和等待 CPU
+
+下面的查询把 running 与 runnable 分开：
 
 ```sql
 INCLUDE PERFETTO MODULE android.garbage_collection;
 
 SELECT
   thread_name,
+  gc_type,
   COUNT(*) AS gc_count,
   ROUND(AVG(gc_running_dur) / 1e6, 2) AS avg_running_ms,
-  ROUND(AVG(gc_runnable_dur) / 1e6, 2) AS avg_runnable_ms
+  ROUND(AVG(gc_runnable_dur) / 1e6, 2) AS avg_runnable_ms,
+  ROUND(MAX(gc_runnable_dur) / 1e6, 2) AS max_runnable_ms
 FROM android_garbage_collection_events
 WHERE process_name = 'com.example.app'
-GROUP BY thread_name
+GROUP BY thread_name, gc_type
 ORDER BY avg_running_ms DESC;
 ```
 
-如果 `gc_runnable_dur` 明显高，说明 GC 线程本身也在等 CPU，这时要把目光放回 CPU 争抢，而不是只盯 pause time。
+running 高时，继续查分配速率、存活对象和 full collection；runnable 高时，同时查系统负载和 CPU 调度。二者也可能一起升高。
 
-[已验证: 官方文档, https://perfetto.dev/docs/analysis/stdlib-docs]
-[图：Perfetto 片段，选中一个 jank 帧，标出 `actual_frame_timeline_slice` 与同进程 GC event 的时间重叠区域]
-[图：Perfetto 片段，对比稳态场景和内存抖动场景下 `android_garbage_collection_events` 的密度差异]
+## 9. 用 GC timing、分配 profile 和 heap dump 补证据
 
-### 用 heap_profile 找分配热点，用 Java heap dump 看保留关系
+### 9.1 SIGQUIT 的累计 GC 统计
 
-对 Java allocation churn，Perfetto 文档提供了 host 侧 `tools/heap_profile` 入口。`heap_profile` 文档写明 `--heaps` 可以填 `malloc,art`，需要 Android 12。
+在允许调试的设备上，可以向目标进程发送 `SIGQUIT`：
 
 ```bash
-tools/heap_profile -p <PID> --heaps art
+adb shell kill -s QUIT <PID>
 ```
 
-这个模式适合看 allocation churn。它回答的是“谁在分配”。
+ART 会把线程栈、锁和累计 GC timing 写入 ANR trace，搜索 `Dumping cumulative Gc timings` 可找到各收集器阶段、暂停直方图、time to suspend、吞吐和 blocking GC 统计。量产设备对 `/data/anr` 的读取常有限制，可通过可调试构建或 bugreport 获取允许访问的记录。
 
-如果关注点变成“谁把对象留住了”，应该切到 Java heap dump 数据源。Perfetto 的 Java heap dump 文档写明需要 Android 11 或更高版本。它给的是对象保留关系，不是分配调用栈。
+发送 `SIGQUIT` 会触发一次诊断转储。压测脚本应控制次数，并避免在用户生产会话中随意执行。
 
-两者不要混用：
-- `tools/heap_profile -p <PID> --heaps art`：看分配热点、内存抖动
-- Java heap dump：看保留关系、泄漏对象图
+### 9.2 ART allocation profiling 看谁在分配
 
-[已验证: 官方文档, https://perfetto.dev/docs/reference/heap_profile-cli + https://perfetto.dev/docs/data-sources/java-heap-profiler]
-[图：Perfetto Heap Profiles flamegraph，标出单个列表绑定周期里的 ART 分配热点]
+Perfetto 的 `heap_profile` 工具在 Android 12 及以后可选择注册的 heap。当前命令行示例使用的 ART heap 名称为 `com.android.art`：
 
-## App 端的 GC 优化策略
-
-理解 GC 的工作原理和影响方式后，App 端优化要回到一个核心思路：**减少需要 GC 处理的对象数量**。
-
-### 减少对象分配
-
-最直接的优化是在热点路径上避免创建不必要的对象：
-
-**在 `onDraw()` 中避免分配**：`onDraw()` 在每一帧都会被调用，是最高频的方法之一。将 `Paint`、`Path`、`Rect` 等对象作为成员变量在构造函数中创建，而不是在 `onDraw()` 中每次 new。
-
-```java
-// 错误：每帧创建新对象
-@Override
-protected void onDraw(Canvas canvas) {
-    Paint paint = new Paint();  // 每帧分配
-    paint.setColor(Color.RED);
-    canvas.drawRect(rect, paint);
-}
-
-// 正确：复用成员变量
-private final Paint paint = new Paint();  // 只创建一次
-
-@Override
-protected void onDraw(Canvas canvas) {
-    paint.setColor(Color.RED);  // 复用
-    canvas.drawRect(rect, paint);
-}
+```bash
+tools/heap_profile -p <PID> --heaps com.android.art
 ```
 
-**避免在循环中创建临时对象**：字符串拼接、boxed 类型（`Integer`、`Long`）、临时集合是循环中最常见的分配来源。使用 `StringBuilder`、原始类型、对象池来替代。
+它以采样方式记录 ART 分配及调用栈，适合定位滚动、解析或动画期间的分配热点。采样间隔会影响精度与开销，profile 也会扰动被测进程，因此要使用相同场景做前后对照。
 
-### 对象池模式（Object Pool）
+### 9.3 Java heap dump 看谁在保留
 
-对于需要频繁创建和销毁的对象，对象池是一种有效的优化方式。Android 系统自身就大量使用了这个模式：
+Perfetto ART heap dump 需要 Android 11 及以后。它记录完整的 Java 对象引用图和保留关系，不记录分配调用栈，也不包含普通 HPROF 中的对象内容。
 
-- `Message.obtain()`：Android 的 Message 对象池，最大容量 50。调用 `obtain()` 从池中取，调用 `recycle()` 归还。
-- `Parcel.obtain()` / `Parcel.recycle()`：跨进程通信的 Parcel 对象池。
-- `MotionEvent.obtain()` / `MotionEvent.recycle()`：触摸事件对象池。
+Android 13 及以后，某些通过 `NativeAllocationRegistry` 关联的 native size 会以额外节点显示。这个数字只覆盖被注册并能关联的 native 分配，不能代表进程全部 native heap。
 
-自定义对象池的实现需要注意几点：
+选择工具时可用一个简单问题区分：
+
+- “谁在高频创建对象？”——抓 ART allocation profile。
+- “谁把这批对象一直留着？”——抓 Java heap dump。
+
+## 10. 应用侧如何降低 GC 干扰
+
+### 10.1 从已证实的热点开始
+
+先录制可重复场景，确认分配调用栈、GC 类型和慢帧关系，再改代码。只看到 heap 曲线呈锯齿状还不够，因为正常运行的 managed heap 本来就会分配和回收。
+
+优先级通常是：
+
+1. 每帧、每次列表绑定、每个音视频数据包等高频路径。
+2. 大块 primitive array、字符串与序列化缓冲。
+3. 造成 full 或 blocking GC 的存活对象和短时峰值。
+4. 普通低频业务对象。
+
+### 10.2 移出每帧分配
+
+自定义绘制中，确定可安全复用的绘图对象可以放到字段中：
 
 ```kotlin
-class ObjectPool<T>(private val factory: () -> T, private val maxSize: Int = 16) {
-    private val pool = ArrayDeque<T>(maxSize)
+class MeterView(context: Context) : View(context) {
+    private val barPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val barBounds = RectF()
 
-    fun acquire(): T = pool.removeFirstOrNull() ?: factory()
-    fun release(obj: T) {
-        if (pool.size < maxSize) {
-            // 重要：归还前重置对象状态，避免脏数据
-            reset(obj)
-            pool.addLast(obj)
-        }
+    override fun onDraw(canvas: Canvas) {
+        barBounds.set(0f, 0f, width * progress, height.toFloat())
+        canvas.drawRect(barBounds, barPaint)
     }
 }
 ```
 
-对象池的注意事项：
-- **必须重置状态**：归还对象时清除所有字段，否则下一个使用者会拿到脏数据
-- **池大小要合理**：过大的池等于另一种形式的内存泄漏，过小的池起不到复用效果
-- **注意线程安全**：如果对象在多线程间共享，需要用 `ConcurrentLinkedDeque` 或加锁
+这段代码复用 `Paint` 和 `RectF`，但复用对象仍需遵守线程与重入边界。若对象会跨线程使用，或一次调用尚未结束就可能再次进入，共享可变实例会带来数据竞争。
 
-### 避免 finalize()
+循环中的字符串拼接、装箱、临时集合也值得检查。优化目标是减少 profile 中已经出现的热点分配，不需要把所有小对象都改成手写缓存。
 
-`finalize()` 方法会在 GC 回收对象前被调用。它的代价是：包含 `finalize()` 的对象需要经过额外的 Finalizer 队列处理，这增加了 GC 的工作量，也延迟了对象被回收的时间。一个有 `finalize()` 的对象至少要经过两次 GC 才能被回收。
+### 10.3 谨慎使用对象池
 
-Android 10+ 已经标记 `finalize()` 为 deprecated，推荐使用 `Cleaner`（API 33+）或 `AutoCloseable` 模式。对于已有的使用 `finalize()` 的代码，迁移优先级取决于对象创建频率：高频创建的对象上的 `finalize()` 影响更大。
+Android 系统中的 `Message`、`MotionEvent` 等类型有明确的高频使用模式和生命周期约束。普通应用对象未必适合照搬对象池。
 
-### Bitmap 复用
+对象池会延长对象存活时间，增加状态清理、容量管理和线程安全成本，还可能让更多对象进入 old。只有在 profile 证明创建成本或分配量显著，并且对象可完整重置、生命周期清楚时，才值得引入有上限的池。
 
-Bitmap 还是值得复用，但原因要说准。Android 官方文档写明，从 Android 8.0（API 26）开始，bitmap pixel data 存在 native heap。4.8 这一节的适用范围是 Android 14-17，所以一张 1920x1080 的 ARGB_8888 Bitmap，其像素内存不会作为 Java 大对象进入 ART Large Object Space。
+对短小的 managed 对象，ART 的 TLAB 分配通常很快。先消除无意义的分配或调整算法，往往比维护通用对象池更可靠。
 
-更容易把 ART GC 频率拉高的，通常是大块 `byte[]`、`char[]`、较大的 `String`、解压缓冲区、一次性 JSON / protobuf 缓冲区。这些对象就在 Java heap 里，分配和回收都会直接反映到 GC。
+### 10.4 复用大缓冲区要限制生命周期
 
-Bitmap 复用仍然有价值，原因主要有两点：
-- 减少 native heap 的频繁申请和释放
-- 减少解码、拷贝和 GPU 上传带来的额外开销
+网络、图片、音视频和序列化代码常反复创建大 `byte[]`。可以按业务并发上限复用缓冲区，或分批处理数据，避免短时间堆积多个峰值。
 
-如果 trace 里看到的是 Bitmap 抖动，本节更适合联动 native heap、GraphicBuffer 或 GPU memory 去看，不要把它误算到 ART LOS。
+缓存过大会抬高常驻内存，并可能触发 Android 17 的应用内存限制或系统回收。缓冲池应有容量上限，页面离开或任务结束后释放长期引用；低内存回调可作为收缩信号，不能代替容量设计。
 
-从 API 19（Android 4.4）开始，`BitmapFactory.Options.inBitmap` 允许把一块已有的 Bitmap 内存复用给新的 Bitmap。图片加载库（Glide、Coil）内部已经自动处理了 Bitmap 复用。对于手动管理 Bitmap 的场景（如相机预览、自定义图片编辑），使用 `inBitmap` 可以显著减少大对象分配：
+### 10.5 Compose 以重组证据为准
 
-```kotlin
-val options = BitmapFactory.Options().apply {
-    inBitmap = reusableBitmap  // 复用已有 Bitmap 的内存
-    inSampleSize = 1
-}
-val newBitmap = BitmapFactory.decodeResource(resources, resId, options)
-```
+Compose 重组不等于每次都会创建 lambda 或状态对象。编译器可以记忆部分值，稳定性推断、参数变化和 API 使用方式也会影响重组范围。
 
-### Compose 的 GC 压力
+排查 Compose 场景时，先用系统 trace、Compose tooling 或基准测试确认哪些 composable 频繁重组，再处理：
 
-Jetpack Compose 的 recomposition 机制会创建大量临时对象——lambda、状态快照（Snapshot）、remember 的值。这些短期对象主要分配在 Young Generation，通常不会导致严重问题。但在以下场景中，Compose 可能产生过度的 GC 压力：
+- 把状态读取推迟到更接近使用位置，缩小受影响范围。
+- 让输入类型满足可验证的稳定性约束。
+- 对昂贵且可安全复用的计算使用 `remember`，并确保 key 能表达失效条件。
+- 绘制阶段仅复用 profile 证明频繁分配的对象。
 
-- **不稳定的 lambda 参数**：在 recomposition 范围外创建的 lambda（如 `onClick = { ... }` 在 Composable 函数体内），每次 recomposition 都会创建新实例。使用 `remember` 缓存或 `rememberUpdatedState` 可以避免。
-- **频繁变化的 State**：`mutableStateOf` 的值变化会触发 recomposition。如果在 `LaunchedEffect` 中高频更新 state（如动画、传感器数据），可能产生大量临时对象。
-- **LazyColumn/LazyRow 中的不稳定 key**：如果 item key 的 equals 语义不正确，会导致不必要的 recomposition 和对象分配。
+`remember` 会延长对象生命周期。将大型集合或上下文相关对象无条件记忆，可能以更高保留量换取更少分配，需要同时看 allocation profile 和 heap dump。
 
-这些优化点在 §7.7（Jetpack Compose 性能优化）中有更详细的讨论。
+### 10.6 显式资源关闭与 GC 分工
 
-## 与其他机制的关系
+文件、游标、压缩器、图像解码器和 native handle 应通过 `close()`、`use {}` 或明确的生命周期释放。GC 负责 managed object 的可达性，不能提供及时释放外部资源的时限保证。
 
-### 与 §4.3 ART 内存管理的关系
+避免依赖 finalization。带 finalizer 的对象需要额外处理，回收会延后。`Cleaner` 可以作为无法显式关闭时的安全网，但不应替代 `AutoCloseable` 和结构化资源管理。
 
-§4.3 覆盖了 ART 堆结构、GC 策略演进和对象分配路径。本节（§4.8）是 §4.3 中"分代 GC"部分的深度展开，聚焦在分代实现的内部机制（Write Barrier、Card Table、Remembered Set）和 Android 17 的增强。两节的关系是：§4.3 回答"ART 的 GC 是什么"，§4.8 回答"分代 GC 怎么工作，怎么影响帧率，怎么优化"。
+不要把 `System.gc()` 当作常规优化。若显式 GC 未被运行时禁止，`Heap::CollectGarbage()` 会以 explicit cause 请求 `gc_plan_.back()` 对应的回收计划，通常涉及较大范围；调用也可能被配置忽略。业务代码无法借它稳定控制暂停时机。
 
-### 与 §7.2 滑动卡顿分析的关系
+## 11. 一次 GC 卡顿排查示例
 
-GC 暂停和 CPU 争抢是滑动卡顿的常见原因之一。在 §7.2 的滑动卡顿分析流程中，"检查 GC 活动"是标准排查步骤之一。本节提供了 GC 分析的具体方法（Perfetto SQL 查询、heapprofd 用法），可以直接应用到 §7.2 的实战中。
+假设列表快速滚动时出现间歇性慢帧，可以按以下顺序缩小范围：
 
-### GC 暂停与 VSync 的交互
+1. 用 Macrobenchmark 或固定手势重复滚动，保留发布构建、设备温度和刷新率。
+2. 录制包含 Frame Timeline、sched 和 ART/GC 的 Perfetto trace。
+3. 用时间交集查询找出 GC 与 jank frame 重叠的样本。
+4. 对样本查看主线程 pause、GC running/runnable，以及是否有 blocking GC。
+5. 若 GC 短而密，抓 ART allocation profile，定位每次绑定或绘制中的分配栈。
+6. 若 full GC 后仍释放很少，或堆持续增长，抓 heap dump 查保留关系。
+7. 只修改已定位的热点，再用相同脚本复测 GC 次数、CPU 时间、长尾帧和 RSS。
 
-GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行期间，影响最大。因为 `doFrame()` 有严格的帧预算，任何在这个窗口内的暂停都可能导致帧超时。在 Perfetto 中检查 GC 与 VSync 的时间关系是一个有用的诊断手段：如果 GC 暂停集中在 VSync-app 和 VSYNC-sf 之间，说明 GC 正在"偷"App 的渲染时间。
+若修改后分配量下降，而长尾帧没有改善，说明原来的 GC 重叠可能只是伴随现象。此时应回到 binder、锁、I/O、CPU 调度或 GPU 等方向继续查。
 
-## 版本演进
+## 12. 常见问题
 
-| Android 版本 | GC 变化 | 对分析的影响 |
-|---|---|---|
-| 8.0 (Oreo) | CC 成为默认 moving collector，pause time 明显短于 Android 7.0。 | 流畅性问题开始更多表现为短 pause 与 CPU 争抢，不再只有几十毫秒的长停顿。 |
-| 10 前后 | CC 路径进入分代模式，`ConcurrentCopying` 已区分 `young_gen` 和 non-young collector。首次对应的精确 tag 待补源码核对。 | 分析 GC 时要区分 young collection 和 whole-heap collection，不能把所有 GC 都当成 full GC。 |
-| 16+ | CMC 路径包含 `YoungMarkCompact`、`use_generational_gc` 和 `persist.device_config.runtime_native_boot.use_generational_gc`（本轮源码锚点验证至 `android-17.0.0_r1`，android-15.0.0_r1 未包含）。 | 设备是否启用 generational CMC，需要结合版本、flag、内核和 build 配置一起判断。 |
-| 17 | Android 17 对外把 “Concurrent Mark-Compact collector enhanced with generational GC” 当成性能特性来讲，`android-17.0.0_r1` 的 ART 源码中可核到 CMC 分代实现。 | 做问题归因时，先确认设备是否已启用这条路径，再决定是否把观测到的行为套用到更早版本。 |
+### Young GC 没有扫描整个 old，如何保证不漏对象？
 
-[已验证: AOSP android-17.0.0_r1, art/runtime/gc/collector/concurrent_copying.cc + art/runtime/gc/collector/mark_compact.cc + art/runtime/gc/heap.cc]
-[已验证: 官方文档, https://developer.android.com/about/versions/17 + https://source.android.com/docs/core/runtime/configure]
-[待补充: Android 10 引入分代 CC 的 tag 级证据]
+引用写入会通过 Write Barrier 标记持有者所在 card。young collection 扫描 young/mid，并检查 old 与 non-moving space 中符合条件的 card，从中找到指向年轻对象的引用。
 
-## 常见问题与误区
+### dirty card 是否等于存在跨代引用？
 
-### "System.gc() 能帮助减少 GC 卡顿"
+不等于。dirty 表示对应地址范围发生过非空引用写入。它是保守候选，GC 还要扫描对象字段确认引用。
 
-`System.gc()` 不能减少 GC 卡顿。它会强制触发一次 Full GC，暂停时间比正常的 Young GC 长得多。ART 的 GC 是自适应的，它知道什么时候该回收、回收哪一代。手动触发 GC 只会打乱这个调度。如果发现自己需要手动触发 GC 来"缓解"问题，根因通常是内存泄漏或对象抖动。
+### 一次 GC 与 jank frame 重叠，能否直接判定 GC 导致掉帧？
 
-### "GC 暂停只有 1-3ms，不可能导致掉帧"
+不能。还要看 mutator pause、GC running/runnable、主线程状态和同一帧的其他阻塞。时间重叠是后续调查入口。
 
-单次暂停可能只有 1-3ms，但在高刷新率设备上，帧预算本身就很紧张。更关键的是，GC 的影响不只体现在暂停时间上，并发 GC 的 CPU 开销也会与渲染线程争抢计算资源。多次"小暂停"叠加后的累积效应，再加上 CPU 争用导致的帧处理变慢，完全可能变成可感知的卡顿。
+### Android 17 应用需要主动开启分代 CMC 吗？
 
-### "分代 GC 意味着我不需要关心对象分配了"
+普通应用没有稳定的公开 API 去选择 ART 收集器。选择结果由 ART、设备配置和内核能力决定。应用能做的是控制自身分配与保留行为，并用 trace 验证目标设备。
 
-分代 GC 让 Young GC 更高效，但它不能消除 GC 的存在。如果应用持续产生大量垃圾（每秒分配数百 MB 的临时对象），即使每次 Young GC 只暂停 1ms，GC 线程的 CPU 开销和 TLAB 分配慢路径的争用仍然会影响性能。减少不必要的对象分配始终是正确做法——分代 GC 是一个更好的安全网，不是替代优化。
+### 为什么优化后 GC 次数可能增加？
 
-### "finalize() 只是 deprecated，还能用"
+分代策略可以用更多次、成本较低的 young collection 替代 full collection。次数单独增加不代表退化，应同时比较总 GC CPU、暂停长尾、blocking GC、回收吞吐、RSS 和用户场景耗时。
 
-虽然 `finalize()` 目前还能工作，但它会显著增加 GC 的负担。每个有 `finalize()` 的对象都需要进入 FinalizerReference 队列，由 FinalizerDaemon 线程异步处理。这会让对象至少多存活一个 GC 周期，FinalizerDaemon 本身也会消耗 CPU。在高频分配场景下，FinalizerDaemon 可能成为性能瓶颈。
+## 13. 版本结论
+
+| 版本 | 与本章相关的变化 |
+| --- | --- |
+| Android 8.0 | CC 成为默认收集器，提供并发压缩和 RegionTLAB |
+| Android 10 | CC 默认支持分代模式，以 young collection 延后 full-heap collection |
+| Android 12+ | ART Mainline 更新可把部分运行时改进下发到旧系统设备 |
+| Android 17 / API 37 | CMC 支持分代 GC；AOSP tag 中可见 young/mid/old、`YoungMarkCompact` 与相关运行时条件 |
+
+对 Android 17 的工程结论可以压缩成一句话：分代 CMC 降低了处理短命对象的平均成本，但它不会消除高分配、过度保留、CPU 争抢或显式资源管理问题；这些问题仍需用目标设备上的 trace 和 heap 数据逐项确认。
 
 ## 参考资料
-### Android 17 ART 分代 GC 与 Compose Composition 分配/停顿因果链分析
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-23-android17-art-generational-gc-compose-composition.md
-- 类型：DeepResearch 调研结果
-- 摘要：ART CC 收集器分代架构（Young Gen BumpPointerSpace + Old Gen MarkCompactSpace）源码分析，Compose Composition 阶段 SlotTable/LayoutNode/Snapshot 短生命周期对象分配模式，年轻代 STW copy 快速回收对帧停顿的影响路径，含完整调用链和 Perfetto 可观测性指标。
-- 价值：建立 ART 分代 GC 与 Compose Composition 对象分配的完整因果链，含可观测性指标
 
-### Android 17 ART 分代 GC 与 Compose Composition 性能链路
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android17-art-generational-gc-compose-composition链路.md
-- 类型：DeepResearch 调研结果
-- 摘要：从 AOSP art/runtime 源码验证 Generational CMC 三代模型（young/mid/old）演进路径、YoungMarkCompact 复用 MarkCompact 主实现的设计、Write Barrier + Card Table 协同机制、Compose recomposition 短期对象（lambda/Snapshot/remember）与 Young GC 的因果链。明确指出「20% 对象分配开销降低」无一手 Benchmark 证据，标注为未经验证。
-- 价值：首次从源码级梳理 ART 三代 GC 与 Compose 对象分配的因果链，并对官方定性描述做了严谨的验证状态标注
-
-### AOSP 源码路径
-- CC 分代实现：`art/runtime/gc/collector/concurrent_copying.cc`
-- CMC 分代类型定义：`art/runtime/gc/collector/mark_compact.h`
-- CMC 分代实现：`art/runtime/gc/collector/mark_compact.cc`
-- Heap 创建与 generational 开关：`art/runtime/gc/heap.cc`
-- Write Barrier：`art/runtime/write_barrier-inl.h`
-- Card Table：`art/runtime/gc/accounting/card_table.cc`
-
-### 官方文档
-- Android 17 开发者页面：https://developer.android.com/about/versions/17
-- ART runtime 配置：https://source.android.com/docs/core/runtime/configure
-- Bitmap 内存管理：https://developer.android.com/topic/performance/graphics/manage-memory
-- Perfetto stdlib docs：https://perfetto.dev/docs/analysis/stdlib-docs
-- heap_profile 命令行：https://perfetto.dev/docs/reference/heap_profile-cli
-- Java heap dump 数据源：https://perfetto.dev/docs/data-sources/java-heap-profiler
-- 调查 RAM 使用量：https://developer.android.com/topic/performance/memory
-
-### 研究素材（本节引用来源）
-- intake/research-feeds/2026-04-03-19-ch04-android17-generational-gc.md
-- intake/research-feeds/2026-03-31-11-ch04-art-generational-gc.md
-- intake/research-feeds/2026-04-02-07-ch04-art-gc-pause-time-data.md
-- intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md
-
-### Android 17 ART 分代 GC：Concurrent Mark-Compact
-- 来源：https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/
-- 类型：research
-- 摘要：早期 AOSP master 仅作为实现线索；2026-07-02 闲时抽检已用公开 `android-17.0.0_r1` tag 复核正文 ART GC 源码锚点，不再依赖 master 写正文结论。DeliQueue 联动未作为本节确定结论。
-- 入库时间：2026-04-08
-
-### Android 16 QPR2 Gen-CMC 源码级深度技术分析
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 QPR2 Gen-CMC 源码级深度技术分析 .md
-- 类型：DeepResearch 调研结果
-- 摘要：围绕 Android 16 QPR2 的 Gen-CMC，追溯 CC→Gen-CC→CMC→Gen-CMC 演进，分析分代假说、card table/write barrier 回归、young/old 回收边界，以及对 jank、CPU 与续航的潜在收益。
-- 价值：能帮助理解 Android 16 ART GC 变化对卡顿与功耗的影响。
-
----
-
-### Android 17 ART 分代 GC 与 Compose Composition 阶段分配/停顿因果验证
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android-17-art-generational-gc-compose-composition.md
-- 类型：DeepResearch 调研结果
-- 摘要：源码级验证ART CC收集器分代模式调度策略（young CC吞吐量→full-heap CC切换）、GcType三枚举、Compose短期对象分配与Young GC因果关系，young GC平均暂停1.83ms不致丢帧，但堆持续增长直到full-heap GC触发。
-- 价值：首次从GC吞吐量调度策略角度量化Compose composition与Young GC的因果链，为GC调优提供数据支撑
-
-## 附录：mid_generation 晋升阈值确认
-
-### mid_generation 晋升阈值的源码级确认
-
-**调研主题**：mid_generation 具体晋升阈值——确认是否硬编码为 1 次或存在动态调整逻辑
-
-**核心结论**：
-
-基于 `refs/tags/android-17.0.0_r1` 的 AOSP `art/runtime/gc/collector/mark_compact.h` 注释，CMC 分代路径的晋升逻辑如下。这个三代模型不能直接套到 Android 10+ 的 Generational CC 路径上：
-
-| 晋升路径 | 触发条件 | 阈值是否可动态调整 |
-|---|---|---|
-| Young → Mid | 对象存活过 **1 次** Minor GC | **否，硬编码为 1** |
-| Mid → Old | 对象再存活过 **1 次** Minor GC（总共存活过 2 次） | **否，硬编码为 1** |
-
-**关键源码证据**（来自 mark_compact.h 注释）：
-
-```cpp
-// In generational-mode, we maintain 3 generations: young, mid, and old.
-// Mid generation is collected during young collections. This means objects
-// need to survive two GCs before they get promoted to old-gen.
-```
-
-这说明每个 Generation 边界只需存活一次 GC 即可晋升，未发现动态调整逻辑。
-
-**大对象的直接晋升**：
-
-当基本类型数组或 String 的大小达到 `large_object_threshold_`（默认 `12 * KB`）时，ART 会走 Large Object Space 分配路径，绕过 Young/Mid 晋升路径；这不是直接晋升到 CMC 的 old generation。
-
-**报告来源**：
-`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-art-gc-mid-generation-promotion-threshold.md`
-
-**待深入**：
-- 是否存在独立 `kPromotionAgeThreshold`：android-17.0.0_r1 未发现该符号，当前证据只支持“存活过两次 young collection 后进入 old-gen”的注释语义
-- Young/Mid/Old 各自默认堆空间占比配置（AOSP 默认值可能因设备厂商而异）
-
----
-
-## 附录：userfaultfd CMC GC 机制与设备能力判断
-
-### userfaultfd-based CMC GC 机制与设备能力判断
-
-**调研主题**：Android 17 Generational CMC 机制源码与设备能力判断路径验证
-
-**核心结论**：
-
-1. **userfaultfd-based CMC 从 Android 12 (S) 开始默认启用**
-   - 关键 commit：`854cb7d94594f027cf0f056d6cd023e7a00df0cd`（platform/art）
-   - 变更说明：Extend userfaultfd-based CMC GC to Android S and above. Before this change, the Concurrent Mark-Compact Garbage Collector (CMC GC) was enabled by default (provided the kernel supports userfaultfd) on Android T and above.
-   - Android 13 (T) 及以上已默认支持，Android 12 (S) 通过此 commit 扩展默认启用
-
-2. **分代 CMC 架构**：Generational CMC = 分代堆（young/mid/old）+ userfaultfd 驱动并发压缩
-   - young generation：高频回收短生命周期对象
-   - mid generation：缓冲层，防止过早晋升
-   - old generation：full heap GC，延迟触发
-   - userfaultfd 机制：GC 移动对象时通过 UFFDIO_COPY 填充页面，避免 CMS 的内存一致性开销
-
-3. **设备能力判断**：`gUseUserfaultfd` 变量控制
-   - 编译时探测：检查内核是否支持 userfaultfd 系统调用
-   - 运行时判断：低 RAM 设备（low-RAM device）通常禁用以节省内存
-   - DeviceConfig 覆盖：`persist.device_config.runtime_native_boot.enable_uffd_gc_2` 可控制 UFFD GC 启用（`gUseUserfaultfd` 变量）
-
-4. **对 Compose 性能的影响**
-   - Young GC 暂停区间需要用目标设备 trace 实测；短生命周期 lambda/state 对象通常更容易被 young collection 覆盖
-   - Whole-heap GC 暂停区间需要结合堆大小、设备负载和 collector 路径判断，不能直接套用固定毫秒范围
-   - 关键路径：`Compose.onUserInteraction` → `Snapshot.enter` → `SlotTable.commit` → GC 触发
-
-**源码证据**：
-- platform/art commit `854cb7d94594`（一手）
-- source.android.com/docs/core/runtime/gc-debug（官方文档，一手）
-- github.com/SagerNet/sing-box/issues/3875（userfaultfd MOVE ioctl SELinux 限制，交叉验证用）
-
-**待深入**：
-- `gUseUserfaultfd` 的具体初始化逻辑（需读取 `art/runtime/gc/heap.cc` 源码验证）
-- DeviceConfig 属性 `persist.device_config.runtime_native_boot.enable_uffd_gc_2` 的具体生效路径
-- low-RAM 设备判定阈值（是否为 `ActivityManager.isLowRamDevice()`）
-
-**报告来源**：
-`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-16-android-generational-cmc-userefaultfd.md`
-
-### Android 16 ART Generational CMC / userfaultfd GC 机制
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-18-android-16-art-generational-cmc-uffd.md
-- 类型：DeepResearch 调研结果
-- 摘要：验证 CMC GC 的 DeviceConfig 启用逻辑（enable_uffd_gc_2），厘清 UFFD GC 从 Android T 扩展至 S 的版本路径。分析 Bionic __libc_init_mte 与 SELinux 策略对 userfaultfd 的权限要求，澄清 Generational CMC 属于描述性概念，不对应独立开关。
-- 价值：源码级完整 CMC GC 启用机制，补充 UFFD 与 SELinux 策略交互、版本扩展路径
-
----
-
-## 附录：Android 17 ART Generational CMC 调研补充
-
-### 调研结论
-
-1. **Generational CC 扩展**：ART CC GC 在 Android 10（API 29）扩展为 Generational CC，通过 Sticky Mark Sweep 专门收集自上次 GC 以来分配的新对象（young objects），增加 GC throughput 并延迟 full-heap GC 触发。
-
-2. **Android 17 Gen-CMC**：`android-17.0.0_r1` 已能核到 Gen-CMC 源码锚点；Android 17 release notes 对外把 CMC 的 generational GC 支持列为运行时性能特性。具体设备是否启用还要看 UFFD、runtime flag 和 build 配置。
-
-3. **Compose 场景优化**：Compose Composition 阶段短生命周期可组合对象密集分配，恰好落在 Young Generation 高频收集窗口，与 Generational CMC 协同降低对象分配开销。
-
-4. **版本表**：Android 8.0-13 → CC / Generational CC 路径；Android 14/15 未核到 `YoungMarkCompact` 三代模型；Android 16 源码锚点与 Android 17 release notes 支撑 Gen-CMC 口径。
-
-### 源码来源
-
-- `art/runtime/gc/collector/concurrent_copying.h` l.108：`ConcurrentCopying` collector 类定义
-- `art/runtime/gc/heap.cc` l.2168-2173：heap region 结构与 young/old 分离
-- `source.android.com/docs/core/runtime/gc-debug`：Generational CC 行为文档
-- `art/runtime/gc/collector/mark_compact.cc`：CMC UFFD minor fault 处理
-
-### 待验证
-
-- Generational CMC 开关机制（`use_generational_cmc` flag 与 `persist.device_config.runtime_native_boot.use_generational_gc` 生效路径）
-- UFFD write_range 在 concurrent_copying.cc 中的具体调用
-- 20%+ 对象分配开销降低的设备/场景 benchmark 数据
-- §4.5 章节（Compose Composition 与 GC 因果链）需进一步补充
-
----
-
-## 附录：三代晋升阈值精化
-
-### 三代晋升阈值：硬编码为 1，无动态调整
-
-**调研主题**：mid_generation → old_generation 晋升阈值的精确语义
-
-**核心结论**：
-
-基于 `android-17.0.0_r1` 的 `art/runtime/gc/collector/mark_compact.h` 注释和源码分析，CMC 分代路径的晋升路径如下；Android 17 口径同时由 release notes 和 tag 源码支撑：
-
-| 晋升路径 | 触发条件 | 阈值是否可动态调整 |
-|---|---|---|
-| Young → Mid | 对象存活过 **1 次** Young GC | **否，硬编码为 1** |
-| Mid → Old | 对象再存活过 **1 次** Young GC（总共存活过 2 次） | **否，硬编码为 1** |
-
-```cpp
-// art/runtime/gc/collector/mark_compact.h
-// In generational-mode, we maintain 3 generations: young, mid, and old.
-// Mid generation is collected during young collections. This means objects
-// need to survive two GCs before they get promoted to old-gen.
-```
-
-**关键补充**：`mark_compact.cc` 中 `YoungMarkCompact::RunPhases()` 直接复用 `MarkCompact::RunPhases()`，通过 `main_collector_->young_gen_` 标志位区分扫描范围，无需独立实现。
-
-### Compose Composition 对象与 Generational CMC 协同
-
-**调研发现**：
-
-Compose recomposition 产生的短期对象（不稳定 lambda、Snapshot、remember 值）生命周期极短，通常在 1-2 次 Young GC 后即成为垃圾。Generational CMC 的 young/mid 分代设计使这些对象在 Young GC 阶段被吸收，无需进入 full-heap GC 流程，从而减少对 doFrame() 时间预算的侵蚀。
-
-具体暂停时间需要用目标设备 trace 或 benchmark 验证，不能把固定毫秒范围当成通用结论。对于高频 recomposition 场景（如动画状态更新、传感器数据驱动 UI），Generational CMC 的价值在于优先处理 young generation，降低频繁短命对象进入 whole-heap GC 的概率。
-
-### "20% 对象分配开销降低" 验证状态
-
-**未经一手 Benchmark 验证**。Android Developers Blog（Android 16 QPR2 发布页）原文仅给出定性描述（"reduces CPU/battery"），未标注具体数字、设备型号、版本号和负载场景。原始描述中的 "20%+/AOSP 版本/设备 benchmark" 无法在 AOSP 源码或官方文档中找到对应一手数据源。引用时应标注「未经一手 Benchmark 验证」。
-
-**报告来源**：
-`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-21-android17-art-generational-gc-compose-composition链路.md`
-
----
-
-## 附录：Generational CMC 开关与年轻代参数
-
-### 调研结论
-
-**核心发现**：Android 16 QPR2 引入的 Generational CMC 并非独立 GC 类型，而是基于 `MarkCompact` 收集器扩展的分代模式（当前正文源码锚点：`refs/tags/android-17.0.0_r1` 的 `mark_compact.cc`/`heap.cc`）。开关机制位于收集器类型选择层，设备能力判断路径在 `heap.cc` 收集器初始化逻辑中。
-
-### 源码锚点
-
-| 文件 | 行号 | 内容 |
-|------|------|------|
-| `art/runtime/gc/collector/mark_compact.h` | — | `MarkCompact` / `YoungMarkCompact` collector 类定义（CMC Gen 路径） |
-| `art/runtime/gc/heap.cc` | ~197 | 堆初始化与年轻代相关参数 |
-| `art/runtime/gc/heap.cc` | 2168-2173 | 年轻代字节管理（young_generation bytes） |
-| `art/runtime/gc/heap.cc` | ~2793 | 堆大小调整与分代策略 |
-| `art/runtime/gc/heap.h` | ~148 | 堆布局分代 API |
-| `art/runtime/gc/heap.h` | ~1176 | 年轻代空间定义 |
-
-### 开关机制精化
-
-**非独立 flag，而是收集器类型选择**：
-
-Generational CMC 的启用并非通过独立 system property 或 DeviceConfig flag 直接控制。其本质是：当 ART 选择 CMC (Mark-Compact) 收集器时，`heap.cc` 通过 `use_generational_gc_` 变量同时创建两个 collector 实例（`refs/tags/android-17.0.0_r1`）：
-- `MarkCompact`：whole-heap GC
-- `YoungMarkCompact`：young GC（复用 `MarkCompact::RunPhases()` 并切换 `young_gen_`）
-
-注：`concurrent_copying_collector_` / `young_concurrent_copying_collector_` 只属于 CC 路径，与 CMC Gen 路径无关。
-
-开关路径可以写成：堆初始化 → 收集器类型选择 → generational 模式启用/禁用。
-
-**设备能力判断路径**（未经一手源码验证）：
-- 设备 RAM 容量（触发阈值待验证）
-- 支持的 ABI（64-bit vs 32-bit）
-- 厂商自定义 ART GC 属性（名称待核）
-
-### 年轻代参数
-
-年轻代参数需要分开看：
-- Large Object Space 阈值来自 `Heap::kDefaultLargeObjectThreshold` / `large_object_threshold_`，默认 `12 * KB`，只适用于基本类型数组或 String 的 LOS 分配判断。
-- CMC 三代晋升没有核到独立的动态年龄阈值；`mark_compact.h` 注释支持的口径是对象需要存活两次 young collection 才进入 old-gen。
-- Young/Mid/Old 的空间边界会随压缩周期推进，默认占比和设备策略仍需单独验证。
-
-### 版本表更新
-
-| 版本 | GC 类型 | 分代支持 |
-|------|---------|---------|
-| Android 8.0-9 | Concurrent Copying | 无（moving collector） |
-| Android 10-13 | CC + Generational CC | Sticky Mark Sweep 收集 young objects |
-| Android 14-15 | UFFD/CMC 相关能力需按 ART Mainline、内核和设备配置判定 | 未核到 `YoungMarkCompact` / `mid_gen_end_` 三代模型 |
-| Android 16 | **Generational CMC** | `android-16.0.0_r1` 可核到 young/mid/old 三代模型 |
-| Android 17 | Generational GC | release notes 对外列为 ART CMC collector 的 generational GC 支持；`android-17.0.0_r1` 可核到 young/mid/old 三代模型，不使用 AOSP main 写正文结论 |
-
-### 待验证
-
-1. 厂商 ART GC 属性的具体名称和启用值
-2. 年轻代大小的具体默认值（AOSP 默认值可能因设备厂商而异）
-3. `heap.cc` 中设备能力判断的 RAM 阈值具体数值
-4. Android 17 之后 ART GC 的具体差异（未进入 Android 17 的 main/master 内容不能写入正文结论）
-
-**报告来源**：
-`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android-16-generational-cmc-switch-source-anchor.md`
-`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-27-android-17-art-generational-gc-compose-composition.md`
-`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-28-android16-17-generational-collector-cmc-memory-management.md`
-
-### Android 17 Generational CMC 与 ART 虚拟机内存管理
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-30-android-17-generational-cmc-art-gc.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 17 release notes 把 ART CMC collector 的 generational GC 支持列为运行时性能特性；源码细节已用公开 `android-17.0.0_r1` tag 约束。调试开关和 Mainline 下发范围仍需一手资料复核，不作为正文结论。
-- 注入时间：2026-05-31
-- 价值：提供 Generational CMC 的官方博客一手来源、调试属性、版本差异对照和向后兼容下发机制，填补章节中源码级开关与版本边界细节
+- [Android 17 is Here：Generational garbage collection](https://developer.android.com/blog/posts/android-17-is-here)
+- [AOSP：Debug ART garbage collection](https://source.android.com/docs/core/runtime/gc-debug)
+- [AOSP：Android 8.0 ART improvements](https://source.android.com/docs/core/runtime/improvements)
+- [AOSP android-17.0.0_r1：mark_compact.h](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.h)
+- [AOSP android-17.0.0_r1：mark_compact.cc](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc)
+- [AOSP android-17.0.0_r1：heap.cc](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc)
+- [AOSP android-17.0.0_r1：write_barrier-inl.h](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/write_barrier-inl.h)
+- [AOSP android-17.0.0_r1：card_table.h](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/accounting/card_table.h)
+- [Android 17 GKI 6.18：arm64 gki_defconfig](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig)
+- [Perfetto stdlib：android.garbage_collection](https://perfetto.dev/docs/analysis/stdlib-docs)
+- [Perfetto heap_profile 命令行](https://perfetto.dev/docs/reference/heap_profile-cli)
+- [Perfetto ART Heap Dumps](https://perfetto.dev/docs/data-sources/java-heap-profiler)
