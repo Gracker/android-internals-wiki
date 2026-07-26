@@ -262,7 +262,7 @@ API 37 的 observer priority 值为 `-2`。虽然普通注册参数声明了非�
 
 `DisplayBackGestureHandlerImpl` 和 `EdgeBackGestureHandler` 使用带 `@BackPanelUiThread` 的 `UiThreadContext`。Android 17 的 `SysUIConcurrencyModule` 会根据 `Flags.edgeBackGestureHandlerThread()` 把它映射到独立的 `BackPanelUiThread`（display 优先级）或 SystemUI 主线程。因此，不能固定写成“所有判定都在 SystemUI MainThread”。
 
-Trace 中应先确认 `edge-swipe` receiver 和 `EdgeBackGestureHandler` slice 落在哪条线程，再检查该线程在 `ACTION_DOWN` 到阈值越过之间是否被长任务、锁等待或 Binder 调用占用。阈值前还有排除区、SystemUI flags、PiP、desktop corner、手势阻塞 Activity 和可选 ML 分类等判断；这些路径都不适合加入同步 I/O。
+Trace 中应先根据线程名和 `InputConsumer processing on...` 等 receiver slice 确认事件落在哪条线程，再检查该线程在 `ACTION_DOWN` 到阈值越过之间是否被长任务、锁等待或 Binder 调用占用。`EdgeBackGestureHandler` 没有为每个事件提供稳定的同名 slice，必要时应在可控构建中增加自定义 trace 点。阈值前还有排除区、SystemUI flags、PiP、desktop corner、手势阻塞 Activity 和可选 ML 分类等判断；这些路径都不适合加入同步 I/O。
 
 ### 长按超时的影响
 
@@ -350,7 +350,7 @@ Trace Processor 的 `android.input` 模块提供 `android_motion_events` 和 `an
 1. 用 structured input event 的 `event_id` 确认初始触摸同时分发到前台窗口和 gesture monitor。
 2. 在阈值附近寻找原窗口的 cancel，并检查 SystemUI 对应线程是否正在处理该手势。
 3. 提交后查找注入的 `KEYCODE_BACK` 及其后续窗口分发。
-4. 若原窗口收到完整 pointer stream 且无 cancel，再检查这次是否未命中边缘、被 exclusion 拒绝，或根本没有达到方向阈值。
+4. 若原窗口收到完整 pointer stream 且无 cancel，再检查这次是否未命中边缘、被 exclusion 拒绝，或没有达到方向阈值。
 
 ### 2. Predictive Back：看 progress 回调和目标层预览
 
@@ -365,7 +365,7 @@ Trace Processor 的 `android.input` 模块提供 `android_motion_events` 和 `an
 排除区问题要把三类证据放在同一次复现中：
 
 - App 记录的 rect 与 `WindowInsets.Type.systemGestures()` / `mandatorySystemGestures()`；
-- `dumpsys window` 中请求值、granted exclusion height 和最终 display region；
+- App 日志中的请求 rect、`dumpsys window` 的 `mSystemGestureExclusion` 最终 display region，以及 SystemUI dump 中的 restricted / unrestricted region；
 - Perfetto 中该 pointer stream 是否被 pilfer，以及 SystemUI 判定线程是否及时运行。
 
 只看 App 传给 `setSystemGestureExclusionRects()` 的列表，无法证明 WMS 最终批准了同样大小的区域；只看 Perfetto，也无法还原所有 rect 的布局坐标。二者需要互相校验。
