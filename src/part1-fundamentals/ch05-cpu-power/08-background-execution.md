@@ -127,17 +127,17 @@ reviewed_date: 2026-06-21
 
 当我们在 Perfetto 里看到灭屏后某个进程还在持续跑 CPU，或者在 Battery Historian 里看到后台 alarm、job、network 活动一直冒出来，排查往往会卡在同一个问题上：这是应用代码没收住，还是系统已经开始限流了。
 
-Android 的后台限制是一套逐步收紧的制度。Android 6.0 引入 Doze 和 App Standby，Android 8.0 开始限制后台 service，Android 9 把 App Standby 细化成 Buckets，Android 12 加入 Restricted bucket 并限制后台启动 FGS，Android 14 和 15 又把 FGS 类型、权限和超时写成了更明确的运行时规则，Android 16 补上了 JobScheduler 的待执行原因观测接口。
+Android 的后台限制持续演进。Android 6.0 引入 Doze 和 App Standby，Android 8.0 开始限制后台 service，Android 9 把 App Standby 细化成 Buckets，Android 12 加入 Restricted bucket 并限制后台启动 FGS，Android 14 和 15 又把 FGS 类型、权限和超时写成了更明确的运行时规则。JobScheduler 的单个 pending reason 在 API 34 已公开，API 36 增加多原因与历史视图，API 37 再增加按原因统计的累计等待时长。
 
 理解这套机制，主要是为了解决两类问题。第一，后台任务没按预期执行时，先判断它是被系统延后了，还是代码本身有 bug。第二，真有后台需求时，选对 API，别拿前台服务、精确闹钟或者轮询把系统拖热。
 
 本章前面讨论了 CPU 调度（5.1）、EAS（5.2）、大小核（5.3）、DVFS（5.4）、Thermal（5.5）和 Android 功耗管理框架（5.6）。那些章节回答的是硬件怎么分配资源，这一节回答的是框架什么时候允许 App 在后台继续消耗这些资源。
 
-## Android 后台限制的演进：从“能跑就行”到“按规则跑”
+## Android 后台限制如何逐步细化
 
-### Android 6.0 之前：后台几乎没有总闸门
+### Android 6.0 之前：还没有 Doze 这类设备空闲总控
 
-在 Android 6.0（Marshmallow）之前，App 在后台几乎没有统一的系统级约束。一个 App 只要拿到 `WAKE_LOCK`，再配一个长期存活的 service，就能在灭屏后继续占着 CPU、拉网络、做同步。那时很多厂商做“自启动管理”“后台白名单”，是在给 AOSP 补一层额外管控。
+在 Android 6.0（Marshmallow）之前，平台还没有 Doze 这类统一的设备空闲状态机。进程优先级、Service 生命周期、Alarm 批处理和厂商省电策略已经存在，但应用更容易借助 WakeLock、Service、Alarm 和轮询在灭屏后继续运行。这里不能概括成“后台完全没有限制”，差别在于 framework 尚未用 Doze 和 App Standby 系统性地推迟设备空闲期工作。
 
 ### Android 6.0-7.1：Doze、App Standby 与 Light Doze
 
@@ -147,9 +147,9 @@ Android 7.0（API 24）又加了 **Light Doze**。设备只要灭屏，就会先
 
 ### Android 8.0：后台 service 被系统限制
 
-Android 8.0（API 26，Oreo）是后台执行模型的分水岭。后台 App 再直接调 `startService()`，系统会抛 `IllegalStateException`。如果必须在后台拉起持续工作，就要改成 `startForegroundService()`，并在很短时间内调用 `startForeground()` 把通知挂出来。
+Android 8.0（API 26，Oreo）是后台执行模型的分水岭。这组限制默认作用于 target API 26 及以上的应用。应用转入后台后，已有后台 Service 通常还有数分钟宽限期；宽限期结束后会被停止，后台创建 Service 也会受限。通知 `PendingIntent`、高优先级 FCM 等入口还可能让应用进入临时允许名单。因而，调用 `startService()` 是否失败要结合进程状态、target SDK 与豁免条件判断。
 
-同一轮变更里，隐式广播也被大幅收紧。很多靠 manifest 常驻 receiver 拉起后台逻辑的旧做法，从这一代开始就走不通了。
+需要延续用户可感知工作时，可以先调用 `startForegroundService()`，再及时调用 `startForeground()` 显示通知。可延迟工作更适合 JobScheduler 或 WorkManager。同一轮变更还限制了 target API 26 及以上应用在 manifest 中注册多数隐式广播；显式广播、只面向本应用的广播、签名权限广播、豁免广播与运行时注册仍有各自入口。
 
 ### Android 9-10：Buckets 与 BAL
 
@@ -157,7 +157,7 @@ Android 9（API 28）把 App Standby 进一步细化为 **App Standby Buckets**�
 
 Android 10（API 29）开始限制 **Background Activity Launch（BAL）**。后台弹 Activity 不再是想弹就弹，很多“锁屏后突然跳广告页”的路径从系统层就被卡掉了。
 
-### Android 12-16：Restricted bucket、FGS 类型和调试接口
+### Android 12-17：Restricted bucket、FGS 类型和调试接口
 
 Android 12（API 31）把后台限制又拧紧了一圈：
 
@@ -165,13 +165,11 @@ Android 12（API 31）把后台限制又拧紧了一圈：
 - 后台启动前台服务时，如果不满足豁免条件，会抛 `ForegroundServiceStartNotAllowedException`
 - exact alarm 进入 special app access 体系，targetSdk 31+ 需要先处理权限门禁
 
-Android 13（API 33）把“长期未交互后更容易进入 Restricted bucket”的阈值，从 Android 12 / 12L 的 45 天收紧到 8 天。官方 App Standby 文档同时说明，满足 exemption 的应用不走这条自动降桶路径。
+Android 13（API 33）继续调整 Restricted bucket 与后台资源策略。分桶条件和阈值属于系统实现，厂商也能采用自己的非 Active 分桶标准，应用不能把某个天数写成稳定契约。Doze allowlist 等豁免还会改变待机桶限制是否生效。
 
 Android 14（API 34）要求 FGS **显式声明类型**。类型、专属权限和运行时前提开始做强校验。Android 15（API 35）又补了 `mediaProcessing` 类型，并给 `dataSync` / `mediaProcessing` 加上 6 小时预算和 `Service.onTimeout(...)` 超时回调。
 
-Android 16（API 36）没有推翻这套模型，但把 JobScheduler 的可观测性补得更像样了，开发者可以直接看 pending reason 和 pending reason history，不必只靠 `dumpsys jobscheduler` 猜原因。
-
-[图：Android 后台限制演进时间线，从 6.0 到 16，标注 Doze、App Standby Buckets、Restricted bucket、FGS 类型与 JobScheduler 调试接口]
+Android 16（API 36）加入 `getPendingJobReasons()` 与 `getPendingJobReasonsHistory()`，并把 Active bucket、top-started job 和与 FGS 并行执行的 Job 纳入运行时配额。Android 17（API 37）增加 `getPendingJobReasonStats()`，用于按原因汇总累计等待时长；后台音频也新增生命周期与 WIU 约束。
 
 ## Doze 与 App Standby 机制的内部工作
 
@@ -196,7 +194,7 @@ Android 7.0 引入 Light Doze。设备只要灭屏，就可能先进入这一层
 
 ### App Standby Buckets：桶常量在 UsageStatsManager，分桶逻辑在 AppStandbyController
 
-App Standby Bucket 的常量定义在 UsageStatsManager，不是 DeviceIdleController。在 android-16.0.0_r1 中，App 的桶位管理由 AppStandbyController 负责，Doze / device idle 才由 DeviceIdleController 负责。
+App Standby Bucket 的常量定义在 `UsageStatsManager`，桶位管理由 `AppStandbyController` 负责；Doze / device idle 则由 `DeviceIdleController` 负责。在 `android-17.0.0_r1` 中，后两个服务都位于 JobScheduler APEX。
 
 ```java
 // frameworks/base/core/java/android/app/usage/UsageStatsManager.java
@@ -208,7 +206,7 @@ public static final int STANDBY_BUCKET_RESTRICTED = 45;
 public static final int STANDBY_BUCKET_NEVER = 50; // @hide
 ```
 
-对应用开发者，常用的是五个公开桶：Active、Working Set、Frequent、Rare、Restricted。`NEVER` 是内部桶，表示安装后从未真正使用过的应用。
+对应用开发者，常用的是五个公开桶：Active、Working Set、Frequent、Rare、Restricted。`NEVER` 是内部桶，表示安装后一次也未启动的应用。
 
 当前官方 `power-details` 页面给出的资源上限如下，表里是“App state 与 device state 没有进一步放宽或收紧”时的基线值：
 
@@ -233,34 +231,32 @@ public static final int STANDBY_BUCKET_NEVER = 50; // @hide
 - `adb shell dumpsys deviceidle`，确认当前是否进入 light / deep doze，以及 allowlist 状态
 - `adb shell dumpsys usagestats appstandby` 或 `adb shell am get-standby-bucket <package>`，确认 bucket
 - `adb shell dumpsys jobscheduler <package>`，确认 job 的 pending reason、quota 和实际约束
-- Battery Historian，观察灭屏后 alarm、job、network、wakelock 的时间分布
+- bugreport / Battery Historian，观察灭屏后 alarm、job、network、wakelock 的时间分布
 - Perfetto，在 trace config 已包含 framework / power / batterystats 相关数据源时，再去看 screen-off 期间的 CPU、wakeup、alarm/job slice 和网络活动
 
 Perfetto 更适合回答“后台工作有没有把前台拖慢、有没有在灭屏后持续跑 CPU”，`dumpsys` 和 Battery Historian 更适合回答“系统为什么没让它现在执行”。
 
-现成的等价证据可以直接从 `bugreport` + `dumpsys` 组合里拿到，不必等 Trace 里刚好有现成的 `device_idle` 轨道。
+Battery Historian 已不再积极维护，适合读取已有 bugreport 的系统事件关联；新的性能采集和可重复实验应优先使用 Perfetto、Android Studio Power Profiler 与明确的 `dumpsys` 快照。
+
+现成的等价证据可以直接用 `bugreport` 与 `dumpsys` 组合取得，不必等 Trace 里刚好有现成的 `device_idle` 轨道。
 
 第一组证据看 Doze 状态切换。设备灭屏、静止、未充电后，`dumpsys deviceidle` 会从 active 进入 idle / idle maintenance。对应的 Battery Historian 时间线里，`screen` 熄灭后 `cpu_running` 会从连续活跃收缩成稀疏脉冲，`job`、`alarm`、`network` 条带集中出现在短暂窗口里；这和官方 Doze 文档描述的 maintenance window 行为一致。14.11《Battery Historian 与功耗分析工具》已经把 `cpu_running`、`wake_lock`、`job`、`alarm` 这些行的读法拆开讲过，可以直接拿来做对照。
 
-第二组证据看后台任务被延后。把目标包切到 `Rare` 或 `Restricted` 桶后，先用 `dumpsys jobscheduler <package>` 看 pending reason、quota 和约束，再看 Battery Historian 的 `job` 行或 Perfetto 里的 CPU / network burst。正常现象是任务没有消失，而是执行时间被挪到配额允许或 Doze 维护窗口到来之后。11.4《功耗分析案例集》里的 AlarmManager 滥用案例能看到每 60 秒一次的 `alarm` 唤醒条带，JobScheduler 生命周期错误案例能看到 30 分钟 `WakeLock` 条带；两组样本虽然问题类型不同，但都给了我们一个可复核的对照基线，方便把“系统主动延后”和“任务自己跑飞”区分开来。
+第二组证据看后台任务被延后。把目标包切到 `Rare` 或 `Restricted` 桶后，先用 `dumpsys jobscheduler <package>` 看 pending reason、quota 和约束，再看 Battery Historian 的 `job` 行或 Perfetto 里的 CPU / network burst。正常现象是任务没有消失，而是执行时间被挪到配额允许或 Doze 维护窗口到来之后。11.4《功耗分析案例集》里的 AlarmManager 滥用案例能看到每 60 秒一次的 `alarm` 唤醒条带，JobScheduler 生命周期错误案例能看到 30 分钟 `WakeLock` 条带；两组样本的问题类型不同，但都提供了可复核的对照，方便区分“系统主动延后”和“任务自己跑飞”。
 
-如果 trace config 已打开 power、batterystats 和调度数据源，Perfetto 里通常还能看到同一时间段的 CPU frequency 下降、进程 runnable slice 稀疏化，以及维护窗口内短促的 network / alarm burst。没有这些数据源时，不要硬从空白轨道猜结论，回到 `dumpsys` + Battery Historian 更稳。
+如果 trace config 已打开 power、batterystats 和调度数据源，Perfetto 里可能看到进程 runnable slice 变少，以及维护窗口附近出现短促的 network / alarm burst。CPU 频率是否下降取决于同期系统负载，不能作为 Doze 的单独证据。缺少这些数据源时，不要根据空白轨道猜结论，应回到 `dumpsys` 与 bugreport。
 
-[图：Doze 等价证据对照图。左侧是 `dumpsys deviceidle` 的 idle / idle maintenance 状态切换，右侧是 Battery Historian 中 `cpu_running`、`job`、`alarm` 条带只在短窗口出现。]
-
-[图：后台任务延后对照图。上方是 `dumpsys jobscheduler <package>` 的 pending reason / quota 信息，下方是 Battery Historian 或 Perfetto 中任务实际开始执行的延后时间点。]
-
-## 前台服务：后台工作的“合法通行证”
+## 前台服务：用户可感知工作的运行契约
 
 当 App 需要在后台持续做用户可感知的事情，前台服务（Foreground Service，FGS）仍然是最直接的手段。代价也很明确，系统要求它对用户可见，并且越来越严格地校验“你为什么要开这个 FGS”。
 
 ### 前台服务类型体系
 
-Android 14 起，FGS 类型是运行时约束。manifest 没声明类型，或者声明了类型却没补齐专属权限 / 运行时前提，startForeground() 就可能失败。
+面向 API 34 及以上的应用必须声明合适的 FGS 类型。manifest 没声明类型，或者声明了类型却没补齐专属权限 / 运行时前提，`startForeground()` 就可能失败。
 
-| 类型 | 专属权限 | 首个要求版本 | 典型场景 |
+| 类型 | API 34+ 专属权限 | 强校验版本 | 典型场景 |
 |------|------|------|------|
-| `camera` | `FOREGROUND_SERVICE_CAMERA` | Android 14 | 后台拍摄、视频通话 |
+| `camera` | `FOREGROUND_SERVICE_CAMERA` | Android 14 | 用户发起的相机操作、视频通话 |
 | `connectedDevice` | `FOREGROUND_SERVICE_CONNECTED_DEVICE` | Android 14 | BLE、USB、外设连接 |
 | `dataSync` | `FOREGROUND_SERVICE_DATA_SYNC` | Android 14 | 云同步、备份、上传下载 |
 | `health` | `FOREGROUND_SERVICE_HEALTH` | Android 14 | 运动 / 健康数据采集 |
@@ -289,11 +285,13 @@ manifest 声明至少要把类型和权限写完整：
     android:foregroundServiceType="dataSync" />
 ```
 
+这段声明只完成类型与权限登记。应用仍需满足 FGS 启动来源、通知、目标版本和相应类型的运行时条件。
+
 ### 超时机制：`shortService` 看单次时长，`dataSync` / `mediaProcessing` 看 24 小时预算
 
 `shortService` 的规则来自 Android 14 的 FGS types 文档。它没有类型专属权限，但只能跑大约 3 分钟，超时从 `startForeground()` 开始计时。Android 14 文档明确要求实现 `Service.onTimeout()`：超时后系统会给应用几秒钟调用 `stopSelf()` / `stopForeground()`；如果服务还不退出，应用会收到带 `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE` 的 ANR。官方同时说明，这个回调在 Android 13 及以下不存在，所以兼容旧版本时不能把“等回调再停”当成前提。
 
-Android 15 又给 `dataSync` 和 `mediaProcessing` 加了累计预算。两种类型分别按 24 小时窗口统计，同一类型所有 FGS 共用 6 小时额度，用户把应用带回前台后计时器重置。预算用完后，再启动同类型 FGS 会直接失败；Android 15 行为变更页给出的报错示例是 `Time limit already exhausted for foreground service type dataSync`。
+对于 target API 35 及以上的应用，Android 15 给 `dataSync` 和 `mediaProcessing` 加了累计预算。两种类型分别按 24 小时窗口统计，同一类型所有 FGS 共用 6 小时额度，用户把应用带回前台后计时器重置。预算用完后，再启动同类型 FGS 会直接失败；Android 15 行为变更页给出的报错示例是 `Time limit already exhausted for foreground service type dataSync`。
 
 这一组超时回调以 Android Developers 的 `Service` API reference 和 Android 15 behavior changes 页为准。当前 reference 同时列出 `onTimeout(int startId)` 和 `onTimeout(int startId, int fgsType)` 两个重载：前者对应 `shortService`，后者对应 Android 15 新增的类型化超时。`dataSync` / `mediaProcessing` 收到 `Service.onTimeout(int, int)` 后如果几秒内还不 `stopSelf()`，Logcat 会记录 `RemoteServiceException`；`shortService` 超时不退出则会走 ANR。
 
@@ -320,19 +318,21 @@ WorkManager 适合“可以延迟，但希望最终能执行”的任务。它�
 
 如果任务要尽快开始，又不该拉一个长期 FGS，WorkManager 2.7+ 的 `setExpedited()` 是更合适的入口。官方文档把 expedited work 定义成“重要、用户在意、几分钟内完成、希望立刻开始”的短任务。它仍然受 quota 控制，但比普通 work 更不容易被 Doze 或 Battery Saver 拖得太久。
 
+long-running worker 也不是无限执行通道。WorkManager 即使为它启动 FGS，底层工作仍由 JobScheduler 调度；Android 16 起，这类工作可能耗尽应用的 Job runtime quota。用户主动发起的大数据上传或下载，应评估 user-initiated data transfer job。
+
 ### JobScheduler：系统原生调度层
 
-JobScheduler 是系统原生调度 API。和 WorkManager 相比，它需要你自己处理更多细节，但也能直接用到一些 WorkManager 还没完全封装的能力，比如 `setPrefetch()`、`setUserInitiated(true)`，以及 Android 16 的 pending reason 调试接口。
+JobScheduler 是系统原生调度 API。和 WorkManager 相比，它需要你自己处理更多细节，但也能直接用到一些 WorkManager 还没完全封装的能力，比如 `setPrefetch()`、`setUserInitiated(true)`，以及不同版本逐步加入的 pending reason 调试接口。
 
-这部分在 Android 16 的 public API 里，可以直接写成：
+API 版本边界如下：
 
-- `getPendingJobReason(int jobId)`，返回当前主因
-- `getPendingJobReasons(int jobId)`，返回可能的原因集合 `int[]`
-- `getPendingJobReasonsHistory(int jobId)`，返回 `List<PendingJobReasonsInfo>`，也就是“有限历史视图”，不是 `List<String>`
+- API 34：`getPendingJobReason(int jobId)` 返回当前一个主因。存在多个原因时，它不会全部返回。
+- API 36：`getPendingJobReasons(int jobId)` 返回当前可能原因的 `int[]`；`getPendingJobReasonsHistory(int jobId)` 返回有限的 `List<PendingJobReasonsInfo>` 历史视图。
+- API 37：`getPendingJobReasonStats(int jobId)` 返回 `Map<Integer, Duration>`，按原因汇总任务生命周期内的累计等待时长。
 
-Android 17 又补了 `getPendingJobReasonStats()`，返回 `Map<Integer, Duration>`，按 reason 汇总 pending job 统计。这里要把两类数据分开：Android 16 的 history 看最近一段时间的原因变化，Android 17 的 stats 看按原因聚合后的累计时长。
+history 适合观察约束变化顺序，stats 适合判断哪类约束累计影响最大。多个约束可以同时存在，所以 stats 中各项时长之和可能大于总等待时长；统计在重启后不保留，任务完成或取消时也会清除。
 
-Android 16 三个 pending reason API 可在 `frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java` 复核；Android 17 的 `getPendingJobReasonStats()` 以官方 API reference 和 features 文档为准。
+这些 API 可以在 `android-17.0.0_r1` 的 `frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java` 复核。
 
 对性能排查，`getPendingJobReasonsHistory()` 的价值在于把“最近一段时间为什么一直没跑”变成可读数据；`getPendingJobReasonStats()` 则适合看一段时间内是哪类约束反复压住 Job。
 
@@ -341,6 +341,8 @@ Android 16 三个 pending reason API 可在 `frameworks/base/apex/jobscheduler/f
 AlarmManager 的强项是精确时间点触发，代价是最难和系统的省电批处理和平共处。只要你开始频繁调 `setExact()` / `setExactAndAllowWhileIdle()`，就等于主动放弃系统帮你合并唤醒窗口的机会。
 
 从 Android 12（targetSdk 31）开始，如果要用 exact alarm 的 PendingIntent 路径，应用必须先声明并处理 exact alarm special access。targetSdk 33+ 可以根据场景选择 `SCHEDULE_EXACT_ALARM` 或 `USE_EXACT_ALARM`。代码里要先用 `AlarmManager.canScheduleExactAlarms()` 做门禁；未获授权时继续调 exact API，会命中 `SecurityException`，系统不会替你偷偷改成非精确闹钟。
+
+API 37 新增接收 `OnAlarmListener` 与 `Executor` 的 `setExactAndAllowWhileIdle()` 重载。它适合调用进程会持续存活的短期回调；组件结束或进程不再有活动组件时，系统可以取消 listener alarm。需要跨越进程生命周期交付时，仍应使用 `PendingIntent` 路径。这个重载也不会取消 allow-while-idle 的频率限制。
 
 处理方式通常有三种：
 
@@ -370,127 +372,85 @@ AlarmManager 的强项是精确时间点触发，代价是最难和系统的省�
 5. 需要 JobScheduler 的底层能力或细粒度调试接口，再直接用 JobScheduler
 6. 任务需要持续运行且必须让用户清楚知道它在干什么，才用 FGS
 
-以上是任务调度层面的限制。下面从另一个角度看后台管控：系统对缓存进程的冻结机制。当 App 退到 cached 状态后，CachedAppOptimizer 会决定何时暂停其执行，这和 Doze、Standby bucket 是两条并行的管控线。
+以上是任务调度层面的限制。系统还会单独管理缓存进程：App 退到 cached 状态后，`CachedAppOptimizer` 决定何时暂停其执行。这条控制线与 Doze、Standby bucket 并行。
 
-## CachedAppOptimizer 与 Binder 协同：Android 14 冻结窗口与 Android 16 回调 API
+## CachedAppOptimizer 与 Binder：缓存进程冻结是另一条控制线
 
-后台限制不只体现在 job、alarm 和 FGS 门禁上。应用退到 cached 之后，系统还会通过 CachedAppOptimizer 决定它何时进入 freezer。这套机制处理的是缓存进程何时暂停执行，Doze 和 Standby bucket 处理的是后台任务何时允许运行。
+Doze、待机桶和 Job 配额决定后台工作何时获得执行机会；cached apps freezer 处理已经进入 cached 进程状态的进程能否继续占用 CPU。两者可能同时影响同一个应用，但触发条件和证据不同。
 
-从 Android 14 起，进程进入 cached 状态后约 10 秒才会被冻结。这个窗口避免用户来回切任务时频繁 freeze / unfreeze；最近刚离开前台的应用，回切时更少撞上“刚被冻结又马上解冻”的额外开销。Android 14 同时把冻结前 GC 请求、冻结后的内存压缩和上下文注册广播延迟投递写进 cached apps freezer 行为边界。
+Android 11 起支持 cached apps freezer。Android 14 及以上的官方行为是：在支持并启用该功能的设备上，应用进程进入 cached 状态 10 秒后被冻结；收到 Intent、启动 JobService、恢复 Activity 等生命周期事件时，系统立即解冻。设备可以通过配置关闭 freezer，文件锁或特定绑定关系也可能让 cached 进程暂不冻结，所以“cached 已满 10 秒”仍不能单独证明进程处于 frozen。
 
-Android 16 / API 36 侧补了公开的 Binder 冻结通知 API。`IBinder.FrozenStateChangeCallback` 允许系统服务感知远端进程已经 frozen 或恢复运行。对高频 callback 分发器，这个信号的作用是暂停发送非必要回调，或者改用丢弃策略，避免事务堆积在 frozen 进程前面。排查后台任务时，如果 Job、Alarm 和配额都正常，但进程长时间停在 cached + frozen 状态，就要把 CachedAppOptimizer 和 Binder 回调一起看。
+冻结后，该进程的所有线程暂停，不能执行 CPU 工作、GC 或内存 trim 回调。Android 14 还配套处理了几件事：
 
-### BINDER_FREEZE ioctl 与竞态处理
+- 进入 cached 后，系统可能先请求 runtime 做一次 GC，为后续冻结准备；
+- 冻结后可能触发额外内存 compaction，例如把脏页写回 backing storage、把匿名页换出到 ZRAM；
+- context-registered broadcast 可以排队到进程解冻后再交付，manifest receiver 的广播会把进程提升出 cached 状态；
+- 如果某个应用的所有进程都被冻结，系统会终止该应用仍保持的 TCP socket，避免 keepalive 继续唤醒 modem。
 
-排查 freezer 相关问题时，以下三类细节值得关注：
+这些动作都带有“可能”或设备支持条件。不能由一次 freeze 推导必然发生 GC、compaction、ZRAM 写入，也不能用 4 KB/16 KB 页大小推导固定的回收收益。
 
-**BINDER_FREEZE ioctl 结构体**（`kernel/common/drivers/android/binder.c`）：
-```c
-struct binder_freeze_info {
-    __u32 pid;        // 目标进程 group-leader PID
-    __u32 enable;     // 1=冻结, 0=解冻
-    __u32 timeout_ms; // 等待事务排空超时（ms），0=立即返回-EAGAIN
-};
+### framework 的两阶段冻结
+
+Android 17 的 `CachedAppOptimizer` 先冻结 Binder 接口，再把进程迁入 frozen cgroup：
+
+```text
+Freezer.freezeBinder(pid, true, timeout = 0)
+    ↓ 检查是否有未排空或新到达的事务
+Freezer.setProcessFrozen(pid, uid, true)
+    ↓ BINDER_GET_FROZEN_INFO 再检查竞态
+记录 frozen 状态，并执行冻结后的可选处理
 ```
 
-**BINDER_GET_FROZEN_INFO 查询结果**：
-```c
-struct binder_frozen_status_info {
-    __u32 pid;
-    __u32 sync_recv;   // bit 0 = 冻结后收到同步事务；bit 1 = race window 内新事务
-    __u32 async_recv;  // 异步事务接收计数
-};
-```
+顺序很重要。先阻止新的同步 Binder 事务，再暂停全部线程，可以降低调用方等待一个已经不能处理事务的进程所产生的死锁风险。两步并非原子操作，所以 framework 在 cgroup freeze 之后还会读取 Binder freezer 状态；发现冻结窗口中出现新的 pending transaction 时，会取消本次冻结或执行失败处理。
 
-**竞态修复**（commit `58a9e28781be68`）：
-- 两步冻结之间检测到新同步事务 → 允许回滚 cgroup freeze
-- 若响应在回滚前到达 → 按 oneway 事务处理，等解冻后处理
+Android 17 的相关源码入口是：
 
-**FrozenStateChangeCallback 注册路径（API 36+）**：
-```
-IBinder.addFrozenStateChangeCallback(executor, callback)
-  → BpBinder::addFrozenStateChangeCallback()  // libs/binder/BpBinder.cpp:566
-    → IPCThreadState::addFrozenStateChangeCallback(handle, proxy)  // IPCThreadState.cpp:1015
-      → mOut.writeInt32(BC_REQUEST_FREEZE_NOTIFICATION)  // 写入 kernel driver
-        → 内核维护 frozen 状态，变更时通过 BR_FROZEN_NOTIFICATION 推送
-```
+- `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java`
+- `frameworks/base/services/core/java/com/android/server/am/Freezer.java`
+- `system/core/libprocessgroup/profiles/cgroups.json`
+- `kernel/common/include/uapi/linux/android/binder.h`
+- `kernel/common/drivers/android/binder.c`
 
-**BR_TRANSACTION_PENDING_FROZEN**（Android 14+）：内核告知用户空间 oneway 事务正在等待目标解冻，用于避免 buffer 溢出导致的进程崩溃。
+### Binder 返回值的准确含义
 
-**关键源码索引**：
-- `libs/binder/BpBinder.cpp` L566-L605 — addFrozenStateChangeCallback 转发
-- `libs/binder/IPCThreadState.cpp` L1015-L1026 — BC_REQUEST_FREEZE_NOTIFICATION 发送
-- `services/core/java/com/android/server/am/CachedAppOptimizer.java` L2037-L2055 — 冻结编排里先冻结 Binder 接口
-- `services/core/java/com/android/server/am/Freezer.java` L44-L61 — freezeBinder() 抽象入口
-### CachedAppOptimizer 的 GC 联动与内存压缩
+在 `android17-6.18-2026-06_r6` 中，冻结相关 UAPI 包含 `BINDER_FREEZE`、`BINDER_GET_FROZEN_INFO` 以及三个容易混淆的 driver return：
 
-从 Android 14 开始，CachedAppOptimizer 在冻结 cached 进程前可能先触发一次 GC，冻结后再对进程做内存压缩（compaction）：脏页回写到 backing storage，匿名页压缩到 ZRAM。
+| 返回项 | 接收方看到的含义 |
+|---|---|
+| `BR_FROZEN_REPLY` | 调用方发出的同步事务因目标进程 frozen 而被拒绝 |
+| `BR_TRANSACTION_PENDING_FROZEN` | 调用方发出的异步事务已排队，等待目标解冻 |
+| `BR_FROZEN_BINDER` | 已注册冻结通知的一方收到远端 Binder 宿主 frozen/unfrozen 状态变化 |
 
-这套机制不依赖 16KB 页，在 4KB 页设备上同样生效。但 16KB 页设备的单次页面释放粒度更大（16KB vs 4KB），压缩后内存回收效率更高。排查时可在 Perfetto 中对比系统压缩事件前后，目标进程的 GC slice 与 `malloc_stats` 变化。
+`BR_FROZEN_REPLY` 不是 `BINDER_FREEZE` ioctl 的“冻结成功确认”。同步事务到达 frozen 目标时，驱动把失败返回给调用方；异步事务可以留在目标队列中。`CachedAppOptimizer` 通过 `BINDER_GET_FROZEN_INFO` 发现进程在 frozen 期间收到同步事务后，可能按 framework 策略终止该 cached 进程。这个终止决定不应写成“Binder 驱动直接杀目标进程”。
 
-## Binder Freezer Driver 协同机制的实现细节
+`binder_frozen_status_info.sync_recv` 的 bit 0 表示进程被冻结后收到同步事务，bit 1 表示冻结步骤中出现新的 pending 同步事务；`async_recv` 记录冻结后是否收到异步事务。排查时要结合 framework 的 freeze/unfreeze 日志和调用方错误，不能只看一个 bit 猜完整时序。
 
-CachedAppOptimizer 与 Binder Driver 协同冻结时，关键实现细节集中在 Binder 冻结、cgroup freezer 和回调策略几处。
+### API 36 的冻结通知与回调队列策略
 
-### 两步冻结的原子性问题
+API 36 公开 `IBinder.addFrozenStateChangeCallback(Executor, FrozenStateChangeCallback)`。它只观察远端 Binder 宿主进程的 frozen/unfrozen 状态，不控制进程冻结。内核不支持冻结通知时会抛出 `UnsupportedOperationException`；监听者自己也被冻结或事件到达过快时，状态通知还可能合并，因此不能用回调次数统计 freeze 次数。
 
-CachedAppOptimizer 对单个进程执行冻结时，严格按以下顺序操作：
-
-```
-1. freezeBinder(pid)  // BINDER_FREEZE ioctl → 冻结 Binder 接口
-2. setProcessFrozen(uid, pid, true)  // 写 cgroup.freeze → 冻结进程线程
-```
-
-这两步**不是原子操作**。commit `58a9e28781be68d9a91fe9b8975c5c4bbf4be481`（2021-09-07）修复了如下竞态：
-
-> 步骤 1-2 之间如果有新的同步 Binder 事务到达目标进程的已冻结主线程，该线程会收到 response 后尝试处理，导致崩溃或无响应。
-
-修复方案：在两步之间增加 pending transaction 检测，如有新事务则回滚主线程冻结状态。
-
-**关键源码路径**：
-- 冻结入口：`services/core/java/com/android/server/am/CachedAppOptimizer.java`
-- Kernel 实现：`kernel/common/drivers/android/binder.c` — `BINDER_FREEZE` ioctl handler
-- cgroup v2 freezer：`kernel/common/kernel/cgroup/freezer.c`
-- libprocessgroup 抽象：`system/core/libprocessgroup/profiles/cgroups.json` — FreezerState 定义
-
-### BINDER_FREEZE ioctl 的返回语义
-
-| 返回值/返回码 | 含义 |
-|-------------|------|
-| -EAGAIN | 有未排空的 Binder 事务，需重试 |
-| BR_FROZEN_REPLY | Binder 驱动向用户空间返回的冻结确认 |
-| 同步事务发往 frozen 进程 | 内核直接杀死目标进程，防止调用线程死锁 |
-
-### FrozenStateChangeCallback 的实际使用模式
-
-`IBinder.addFrozenStateChangeCallback()`（API 36）让系统服务在远端进程冻结/解冻时收到通知。公开 API 签名要求传入 `Executor` 和 `FrozenStateChangeCallback`，回调参数是 `(IBinder who, @State int state)`，状态值为 `STATE_FROZEN` / `STATE_UNFROZEN`：
+下面的回调用于暂停向 frozen 远端发送非必要事务：
 
 ```java
-// 公开 API (API 36+): 需要传入 Executor
 binder.addFrozenStateChangeCallback(executor, (who, state) -> {
     if (state == IBinder.FrozenStateChangeCallback.STATE_FROZEN) {
-        // 暂停向该进程发送非关键 callback
-        // 或改用 FROZEN_CALLEE_POLICY_DROP
+        pauseNonEssentialCallbacks(who);
     } else {
-        // STATE_UNFROZEN：恢复发送
+        resumeCallbacks(who);
     }
 });
-// 单参数 overload (callback only) 是 @hide / internal，不在公开 API 中
 ```
 
-**源码路径**：`frameworks/base/core/java/android/os/IBinder.java`
+回调必须配合 `removeFrozenStateChangeCallback()` 管理注册生命周期。远端为本地 Binder 时不会出现独立的冻结状态，因为宿主和监听者处于同一进程。
 
-### RemoteCallbackList 的 frozen 策略
+API 36 的 `RemoteCallbackList.Builder` 进一步提供 frozen callee policy：
 
-`RemoteCallbackList` 提供三种内置策略处理发往 frozen 进程的回调：
+- `FROZEN_CALLEE_POLICY_DROP`：冻结期间不保留回调；
+- `FROZEN_CALLEE_POLICY_ENQUEUE_MOST_RECENT`：只保留最新状态，解冻后交付；
+- `FROZEN_CALLEE_POLICY_ENQUEUE_ALL`：保留事件序列，并受最大队列长度约束；
+- `FROZEN_CALLEE_POLICY_UNSET`：保持 API 35 及以前的立即调用行为，仅用于兼容，不推荐新代码采用。
 
-- `FROZEN_CALLEE_POLICY_DROP`：静默丢弃，节省 buffer 避免溢出崩溃
-- `FROZEN_CALLEE_POLICY_ENQUEUE_MOST_RECENT`：只保留最新一条，解冻后送达
-- `FROZEN_CALLEE_POLICY_ENQUEUE_ALL`：保留全部事件，解冻后依次送达。适用于必须保留完整事件历史的场景，但可能导致 buffer overflow 或 stale events，默认不推荐
-
-大多数场景推荐 `DROP` 或 `ENQUEUE_MOST_RECENT`。
-
-**源码路径**：`frameworks/base/core/java/android/os/RemoteCallbackList.java`
+状态同步通常选 `ENQUEUE_MOST_RECENT`，可重建的提示事件可以选 `DROP`；只有业务必须保留完整事件历史时才选 `ENQUEUE_ALL`，并设置有限队列。这样能避免 frozen 进程解冻后一次接收大量陈旧回调。
 
 ## 后台执行对前台性能的影响
 
@@ -498,29 +458,27 @@ binder.addFrozenStateChangeCallback(executor, (who, state) -> {
 
 ### CPU 争抢
 
-最直接的影响是 CPU 资源争抢。当前台 App 正在做 layout 或 draw 操作时，后台进程的网络请求、数据同步、图片解码等工作会同时竞争 CPU 时间。在大小核架构（5.3 节）下，如果后台任务被调度到大核上运行，会直接影响前台 App 获得的大核时间片。
+最直接的影响是 CPU 资源争抢。当前台 App 正在做 layout 或 draw 操作时，后台进程的网络请求、数据同步、图片解码等工作会同时竞争 CPU 时间。在大小核架构（5.3 节）下，后台任务如果长期占用前台关键线程需要的 CPU，还可能增加 RenderThread 的 runnable delay。
 
-在 Perfetto 中，这类问题表现为：在滑动或动画的 Trace 片段中，CPU Track 显示多个后台进程的线程在同一个大核上有活动，导致前台 App 的 RenderThread 被抢占，出现帧延迟。
-
-[待高爷补充：Perfetto 中后台进程抢占 CPU 导致前台掉帧的 Trace 截图]
+Perfetto 中看到后台线程与 RenderThread 同时活跃，只能说明存在并发负载。要证明抢占关系，还要对齐掉帧区间，检查 RenderThread 的 wakeup、runnable、Running 切换，以及同一 CPU 上的 `sched_switch` 前驱线程。后台线程刚好出现在同一核上，不足以单独归因。
 
 ### 内存压力
 
-后台进程消耗的内存会增加系统的整体内存压力。当内存紧张时，LMK（4.4 节）会开始杀进程，而 kswapd 后台回收会增加 I/O 负载。这些都会间接影响前台 App 的性能——GC 暂停变长、I/O 操作变慢、页面切换时因内存分配延迟导致卡顿。
+后台进程消耗的内存会增加系统整体内存压力。压力升高后，内核可能执行 direct reclaim、kswapd 回收和 swap I/O，lmkd 也可能按 PSI 与进程优先级选择牺牲进程。分析前台卡顿时，应对齐 `mm_vmscan`、PSI、I/O、lmkd 事件与应用分配/GC slice；不能只看到后台 PSS 较大就认定它造成某次 GC 停顿。
 
 ### 热节流
 
-这是最容易被忽略但影响最严重的。持续的后台工作（尤其是网络 + CPU 密集型任务）会推高 SoC 温度。当温度达到 Thermal 阈值（5.5 节），系统开始降频——此时前台 App 也被连累。这就是为什么有时候 App 用着用着突然变卡，去查 Trace 发现 CPU 频率被 Thermal 降到了最低档。
+持续的后台计算、媒体处理与无线传输会增加整机功耗，进而缩小前台工作负载可用的 thermal headroom。达到设备热策略阈值后，thermal、Power HAL 或频率上限可能共同压低 CPU/GPU 能力。
 
-一个典型案例是：某个 App 在后台持续上传照片（CPU 做图片压缩 + Radio 做网络传输），导致 SoC 温度升高，前台正在玩的 60fps 游戏被 Thermal 降频到 30fps。在 Perfetto 中可以同时看到 CPU Frequency Track 的下降和 Thermal Zone 的温度上升。
+排查时应同时观察后台负载开始时间、thermal status/温区、CPU/GPU 频率上限、冷却设备状态和帧耗时。频率下降也可能来自低利用率或省电策略；温度上升与掉帧同时发生仍需通过控制变量实验确认因果。
 
 ## 与其他机制的关系
 
 **与 CPU 调度（5.1）的关系**：Standby bucket 主要控制的是 job、alarm、network 这类后台资源额度，不是直接给线程改一个固定的 CPU 优先级。它对调度的影响更多是间接的，后台任务被延后了，可运行线程自然变少，前台争抢压力也会下降。线程一旦真的进入 runnable，最终怎么分配 CPU，还要看进程状态、cgroup / uclamp、线程策略和具体子系统规则。
 
-**与 EAS（5.2）的关系**：后台任务越碎、唤醒越频繁，EAS 就越难把工作稳定压在合适的核上。大量短时唤醒会让大小核迁移变多，额外吃掉能量和调度开销。
+**与 EAS（5.2）的关系**：碎片化后台任务会制造更多唤醒和短 runnable 区间，可能增加核选择、迁移和频率响应成本。是否发生迁移仍要看 CPU affinity、cpuset、利用率与设备 Energy Model。
 
-**与 DVFS（5.4）的关系**：后台工作把利用率顶上去后，DVFS 会升频，功耗跟着走高。Doze 和 bucket 限流的价值之一，就是少让这类后台负载在灭屏后把频率拉起来。
+**与 DVFS（5.4）的关系**：后台工作提高调度利用率后，CPUFreq governor 可能请求更高频率。Doze 和 bucket 限流减少了不必要的 runnable 负载，也给系统合并唤醒、延长 idle 时间创造条件。
 
 **与 Thermal（5.5）的关系**：后台同步、转码、上传这类持续工作，最容易把 SoC 温度慢慢推高。温度一旦过阈值，Thermal 降频打到的是整个前台体验，不会只处罚后台线程。
 
@@ -534,21 +492,21 @@ binder.addFrozenStateChangeCallback(executor, (who, state) -> {
 |------|----------|-------------|
 | Android 6.0 (API 23) | 引入 Doze 和 App Standby | 灭屏后后台任务开始系统级延后 |
 | Android 7.0 (API 24) | 引入 Light Doze | 刚灭屏就可能开始限流 |
-| Android 8.0 (API 26) | 限制后台 `startService()`，收紧隐式广播 | 很多旧式后台常驻方案直接失效 |
+| Android 8.0 (API 26) | 对 target API 26+ 限制后台 Service 与 manifest 隐式广播 | 需要结合宽限期、临时允许名单与广播种类判断 |
 | Android 9.0 (API 28) | 引入 App Standby Buckets | Job、alarm、network 开始按桶分级限流 |
 | Android 10 (API 29) | BAL 收紧 | 后台弹 Activity 的路径明显变少 |
 | Android 12 (API 31) | Restricted bucket、后台启动 FGS 限制、exact alarm special access | 后台任务调度和 FGS 启动都要先过门禁 |
-| Android 13 (API 33) | Restricted bucket 的长期未交互阈值从 45 天降到 8 天 | 很久不用的 App 更快进入重限流状态 |
+| Android 13 (API 33) | Restricted bucket 与后台资源规则继续调整 | 分桶阈值不是应用可依赖的公开契约 |
 | Android 14 (API 34) | FGS 类型强制声明，新增 `remoteMessaging`、`shortService`、`systemExempted` 等类型；cached app 进入 cached 约 10 秒后冻结，并引入冻结前 GC 请求 + 冻结后 compaction | FGS 类型、权限和运行时前提都要写完整 |
 | Android 15 (API 35) | `mediaProcessing` 类型加入，`dataSync` / `mediaProcessing` 引入 6 小时预算 | 长时间同步和媒体加工要处理超时回调 |
-| Android 16 (API 36) | `getPendingJobReasons()` / `getPendingJobReasonsHistory()` 进入 public API；Binder 增加 `FrozenStateChangeCallback` | Job pending 原因更容易直接定位，系统服务也能按远端 frozen 状态处理回调分发 |
-| Android 17 (API 37) | 后台音频操作必须具备 While-In-Use 能力；`getPendingJobReasonStats()` 增加 Job pending reason 统计 | 后台保活路径进一步收窄，Job 未执行原因更容易聚合分析 |
+| Android 16 (API 36) | 多原因/history API、Job runtime quota 扩围；Binder 增加 frozen callback | 可定位多重 Job 约束，并按远端 frozen 状态处理回调 |
+| Android 17 (API 37) | `getPendingJobReasonStats()`；后台音频要求可见 Activity 或非 short FGS，target 37 后台 FGS 还需 WIU 或满足 alarm 豁免 | Job 原因可聚合分析，后台音频要核对完整生命周期条件 |
 
 ## 常见问题与误区
 
 ### 误区 1："WorkManager 保证任务在指定时间执行"
 
-WorkManager 不保证精确时间。它定义的是"约束条件"，系统会在满足约束条件后的某个时刻执行任务，但这个时刻由系统决定。如果你需要"精确在 10:00 执行"，必须使用 AlarmManager。
+WorkManager 不保证精确时间。它定义约束条件，系统在条件满足后的合适时机执行。只有闹钟、日历提醒等用户明确要求准确时刻的功能，才应在处理 exact alarm 权限后使用 AlarmManager；普通定时同步应接受非精确触发或改用 WorkManager / JobScheduler。
 
 ### 误区 2："前台服务不会被系统杀掉"
 
@@ -556,7 +514,7 @@ WorkManager 不保证精确时间。它定义的是"约束条件"，系统会在
 
 ### 误区 3："我的 JobScheduler 不执行一定是系统 bug"
 
-大部分情况下，问题出在 bucket、quota、约束条件或者设备状态。先用 `adb shell am get-standby-bucket <package>` 看桶位，再用 `adb shell dumpsys jobscheduler <package>` 看具体约束；如果平台版本够新，还可以直接看 `getPendingJobReason()` 和 `getPendingJobReasonsHistory()`。
+常见原因包括 bucket、quota、任务约束和设备状态。先用 `adb shell am get-standby-bucket <package>` 看桶位，再用 `adb shell dumpsys jobscheduler <package>` 看具体约束。API 34 可查单个 `getPendingJobReason()`，API 36 可查多原因和 history，API 37 可查累计 stats。
 
 ### 误区 4："Doze 只在晚上才生效"
 
@@ -564,21 +522,24 @@ Doze 的触发条件是灭屏 + 静止 + 未充电，与时间无关。白天如
 
 ### 误区 5："后台限制只影响后台 App"
 
-不完全是。后台工作对前台的影响上面已经详细讨论了——CPU 争抢、内存压力、热节流都会直接拖慢前台 App。优化后台行为本身就是前台性能优化的一部分。
+后台规则直接控制的是后台机会，但后台工作造成的 CPU 争抢、内存压力和热节流会拖慢前台 App。减少无效后台工作也属于前台性能优化的一部分。
 
 ## 参考资料
 
 ### AOSP 源码路径
-- `frameworks/base/services/core/java/com/android/server/DeviceIdleController.java` — Doze / device idle 状态机
+- `frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java` — Doze / device idle 状态机
 - `frameworks/base/core/java/android/app/usage/UsageStatsManager.java` — App Standby bucket 常量定义
-- `frameworks/base/services/usage/java/com/android/server/usage/AppStandbyController.java` — App Standby bucket 管理逻辑
-- `frameworks/base/services/core/java/com/android/server/job/JobSchedulerService.java` — JobScheduler 服务端实现
+- `frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java` — App Standby bucket 管理逻辑
+- `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java` — JobScheduler 服务端实现
 - `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java` — Job quota 与 bucket 约束控制
 - `frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java` — JobScheduler public API
-- `frameworks/base/core/java/android/app/AlarmManager.java` — AlarmManager public API
+- `frameworks/base/apex/jobscheduler/framework/java/android/app/AlarmManager.java` — AlarmManager public API
 - `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java` — cached 进程 freeze 调度入口
+- `frameworks/base/services/core/java/com/android/server/am/Freezer.java` — cgroup / Binder freezer 抽象
 - `frameworks/base/core/java/android/os/IBinder.java` — `FrozenStateChangeCallback` 定义
+- `frameworks/base/core/java/android/os/RemoteCallbackList.java` — frozen callee policy
 - `frameworks/base/core/java/android/app/Service.java` — Service 生命周期；FGS timeout 签名以 `Service` API reference 为准
+- `kernel/common` `android17-6.18-2026-06_r6`：`include/uapi/linux/android/binder.h`、`drivers/android/binder.c`
 
 ### 官方文档
 - [Optimize for Doze and App Standby](https://developer.android.com/training/monitoring-device-state/doze-standby)
@@ -588,6 +549,8 @@ Doze 的触发条件是灭屏 + 静止 + 未充电，与时间无关。白天如
 - [Foreground service types are required (Android 14)](https://developer.android.com/about/versions/14/changes/fgs-types-required)
 - [Android 15 behavior changes: foreground services](https://developer.android.com/about/versions/15/behavior-changes-15#fgs-hardening)
 - [Android 15 foreground service types](https://developer.android.com/about/versions/15/changes/foreground-service-types)
+- [Foreground service timeouts](https://developer.android.com/develop/background-work/services/fgs/timeout)
+- [Android 16 JobScheduler quota changes](https://developer.android.com/about/versions/16/behavior-changes-all)
 - [Define work requests with WorkManager](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work)
 - [Data transfer background task options](https://developer.android.com/develop/background-work/background-tasks/data-transfer-options)
 - [Schedule alarms](https://developer.android.com/develop/background-work/services/alarms/schedule)
@@ -596,12 +559,9 @@ Doze 的触发条件是灭屏 + 静止 + 未充电，与时间无关。白天如
 - [JobScheduler API reference](https://developer.android.com/reference/android/app/job/JobScheduler)
 - [Android 17 Features](https://developer.android.com/about/versions/17/features)
 - [Android 17 Background audio hardening](https://developer.android.com/about/versions/17/changes/bg-audio)
+- [Cached apps freezer](https://source.android.com/docs/core/perf/cached-apps-freezer)
 
 ### 深入阅读
-- [Battery Historian 使用指南](https://developer.android.com/topic/performance/power/setup-battery-historian)
+- [Battery Historian 使用指南](https://developer.android.com/topic/performance/power/battery-historian)
 - [Perfetto Power Analysis](https://perfetto.dev/docs/quickstart/android-power)
 - [Perfetto trace 配置与数据源说明](https://perfetto.dev/docs/concepts/config)
-
-### Android 16 CachedAppOptimizer Freezer 进程冻结机制深度解析
-- 类型：源码调研资料
-- 摘要：聚焦 Android 16 Freezer 演进，覆盖 10 秒 debounce、新拆分的 Freezer 类、FrozenStateChangeCallback API，以及 cgroup v2 freezer 与 Binder freeze driver 的协同约束。
