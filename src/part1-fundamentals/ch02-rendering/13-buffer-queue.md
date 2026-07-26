@@ -30,51 +30,57 @@ drafted_date: '2026-04-04'
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-12"
 last_verified: '2026-07-25'
-last_verified_against: 'AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Android 4.1/11/12 historical tags + rendering_pipelines'
+last_verified_against: 'AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Android 4.1/11/12 historical tags + Writer rendering_pipelines S01/S02/S05/S06'
 confidence: high
 sources:
 - type: aosp
-  path: frameworks/native/libs/gui/include/gui/IGraphicBufferProducer.h
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/include/gui/IGraphicBufferProducer.h
 - type: aosp
-  path: frameworks/native/libs/gui/include/gui/IGraphicBufferConsumer.h
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/include/gui/IGraphicBufferConsumer.h
 - type: aosp
-  path: frameworks/native/libs/gui/include/gui/BufferSlot.h
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/include/gui/BufferSlot.h
 - type: aosp
-  path: frameworks/native/libs/gui/include/gui/BufferItem.h
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/include/gui/BufferItem.h
 - type: aosp
-  path: frameworks/native/libs/gui/include/gui/BufferQueueCore.h
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/include/gui/BufferQueueCore.h
 - type: aosp
-  path: frameworks/native/libs/gui/BufferQueueProducer.cpp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp
 - type: aosp
-  path: frameworks/native/libs/gui/BufferQueueConsumer.cpp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp
 - type: aosp
-  path: frameworks/native/libs/gui/BLASTBufferQueue.cpp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp
 - type: aosp
-  path: frameworks/native/libs/gui/BufferReleaseChannel.cpp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferReleaseChannel.cpp
 - type: aosp
-  path: frameworks/native/libs/gui/Surface.cpp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/Surface.cpp
 - type: aosp
-  path: frameworks/native/services/surfaceflinger/Layer.cpp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Layer.cpp
 - type: aosp
-  path: frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp
 - type: aosp
-  path: frameworks/base/core/java/android/view/ViewRootImpl.java
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/FrontEnd/RequestedLayerState.cpp
 - type: aosp
-  path: frameworks/base/core/java/android/view/Choreographer.java
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/window/SurfaceSyncGroup.java
 - type: kernel
-  path: drivers/dma-buf/sync_file.c
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c
 - type: kernel
-  path: drivers/dma-buf/dma-fence.c
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
 - type: material
-  path: Writer/rendering_pipelines/S01_rendering_types_overview.md
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md
 - type: material
-  path: Writer/rendering_pipelines/S02_aosp_standard_type.md
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S02_aosp_standard_type.md
 - type: material
-  path: Writer/rendering_pipelines/S05_mixed_rendering_type.md
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S05_mixed_rendering_type.md
 - type: material
-  path: Writer/rendering_pipelines/images/S06_window_geometry_sync_pipeline/source.md
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S06_multi_window_type.md
 - type: official
   path: https://source.android.com/docs/core/graphics/architecture
+- type: official
+  path: https://source.android.com/docs/core/graphics/unsignaled-buffer-latch
 - type: official
   path: https://perfetto.dev/docs/data-sources/frametimeline
 pipeline_stage: "ready-to-publish"
@@ -290,7 +296,7 @@ SF 的 release 信息还会携带当前刷新率对应的 acquired 数。对于 
 
 `waitForFreeSlotThenRelock()` 先统计当前 dequeued/acquired 数，再选择 free buffer 或 free slot。Android 17 需要区分三种结果：
 
-1. 已经有 buffer 入队，且 `dequeuedCount >= mMaxDequeuedBufferCount`：直接返回 `INVALID_OPERATION`。这条分支不会等待 Consumer release。
+1. 历史标志 `mBufferHasBeenQueued` 已为 true，且 `dequeuedCount >= mMaxDequeuedBufferCount`：直接返回 `INVALID_OPERATION`。它表示 Producer 试图超过 dequeued 上限，不要求当前 `mQueue` 非空，也不会等待 Consumer release。
 2. 没有满足条件的 free slot，或 `mQueue.size() > maxBufferCount`：进入重试。
 3. 重试时处于 async/non-blocking 模式，且 acquired 数未超过允许的临时额外值：返回 `WOULD_BLOCK`；其余情况等待 buffer 状态变化，超时配置生效时也可能返回 `TIMED_OUT`。
 
@@ -345,6 +351,8 @@ BLAST 初始化时创建 `BufferReleaseChannel` 两端，并通过独立的 `Sur
 
 `BBQBufferQueueCore::notifyBufferReleased()` 的当前实现会中断阻塞读取，让等待线程重新检查本地 free slot。由此可见，标准 App Window 的长 dequeue 不能只按 `mDequeueCondition` 分析。
 
+正常归还主要来自 SF 的 release callback / release channel。BLAST 注册的 transaction-completed callback 还有一条兜底：如果较新的 transaction 已越过仍留在 `mSubmitted` 中的旧 buffer，它会以 `fakeRelease=true` 补发 stale-buffer release，再由同一个 `releaseBufferCallbackLocked()` 去重和归还。这个 “fake” 只处理漏掉正常 release 的旧提交，不能据此把每次 buffer 回收都归到 transaction-completed callback。
+
 ## BLAST 如何把 buffer 变成 transaction
 
 Android 17 的 `ViewRootImpl.updateBlastSurfaceIfNeeded()` 在应用进程创建或更新 `BLASTBufferQueue`，再把它生成的 `Surface` 交给 HWUI。BLAST 内部包含 Producer、`BufferQueueCore`、`BufferQueueConsumer` 和 `BLASTBufferItemConsumer`。
@@ -388,6 +396,12 @@ SurfaceFlinger
 这些机制只覆盖已经加入 transaction 或 sync group 的状态与 buffer。外部 codec、Camera、另一个进程的独立帧循环、未加入同步组的 Surface，不会因为同屏显示就自动采用同一业务帧。acquire fence 未满足时，目标更新也可能被推迟。
 
 BLAST 提供的是明确的事务边界，不是“所有窗口永远同帧”的承诺。
+
+### latch 与读取是两个同步边界
+
+Android 13 起，`AutoSingleLayer` 允许 SurfaceFlinger 在严格条件下先 latch 尚未 signal 的 acquire fence。Android 17 的 `transactionReadyBufferCheck()` 会检查 `shouldLatchUnsignaled()`；`AutoSingleLayer` 路径要求本次只更新一个 layer、位于 transaction 队首、不是 early VSync 配置，并且通过 `RequestedLayerState::isSimpleBufferUpdate()`。包含 geometry change 或 sync transaction 的更新不符合该模型。
+
+满足这些条件，只表示 transaction readiness 阶段可以先采纳 buffer 状态。RenderEngine 或 HWC 开始读取像素前仍需遵守 acquire fence。因此，trace 中“buffer 已 latch”和“Producer 写入已完成”是两个时间点；反过来，看到 queue 时 fence 尚未 signal，也不能直接断言本轮一定无法 latch。
 
 ## 三类 fence 的方向
 
@@ -521,6 +535,7 @@ BLAST 的关键职责是把 buffer、frame number、fence 和受控 layer 状态
   - [`Surface.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/Surface.cpp)
   - [`Layer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Layer.cpp)
   - [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)
+  - [`RequestedLayerState.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/RequestedLayerState.cpp)
   - [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)
   - [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java)
 - Kernel `android17-6.18-2026-06_r6`：
@@ -529,10 +544,11 @@ BLAST 的关键职责是把 buffer、frame number、fence 和受控 layer 状态
   - [`dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)
 - 官方文档：
   - [Graphics architecture](https://source.android.com/docs/core/graphics/architecture)
+  - [Unsignaled buffer latching](https://source.android.com/docs/core/graphics/unsignaled-buffer-latch)
   - [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
 - 本地渲染资料：
-  - `Writer/rendering_pipelines/S01_rendering_types_overview.md`
-  - `Writer/rendering_pipelines/S02_aosp_standard_type.md`
-  - `Writer/rendering_pipelines/S05_mixed_rendering_type.md`
-  - `Writer/rendering_pipelines/images/S06_window_geometry_sync_pipeline/source.md`
+  - `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md`
+  - `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S02_aosp_standard_type.md`
+  - `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S05_mixed_rendering_type.md`
+  - `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S06_multi_window_type.md`
 - 交叉阅读：§2.1、§2.4、§2.5、§2.6、§2.16、§7.2。
