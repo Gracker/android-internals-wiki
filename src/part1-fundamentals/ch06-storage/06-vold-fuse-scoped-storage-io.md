@@ -66,142 +66,298 @@ gap_score: 16
 
 <!-- outline-end -->
 
-## `/storage/emulated/0` 不是一条普通文件路径
+## 本节解决什么问题
 
-App 访问 `/storage/emulated/0/DCIM/Camera/a.jpg` 时，表面上调用的是 `open()`、`read()`、`write()` 这类 POSIX 接口，系统侧处理的却是共享外部存储的权限、挂载、索引和内容改写。这个路径和 `/data/user/0/<package>/files/` 的性能模型不同，不能只按 ext4 / f2fs 的读写成本估算。
+`/storage/emulated/0/DCIM/Camera/a.jpg` 看起来是一条普通路径，背后却包含挂载会话、调用方身份、媒体归属、权限、元数据脱敏、兼容转码和底层文件系统访问。把所有耗时都归到“FUSE 慢”或“UFS 慢”，很难得到可复现的结论。
 
-`vold` 负责把 emulated volume 准备成面向用户的挂载点。AOSP `system/vold/model/EmulatedVolume.cpp` 中，`EmulatedVolume::doMount()` 会设置内部路径和 `/storage/<label>`，再通过 `MountUserFuse()` 挂出用户视角的 FUSE volume。`MediaProvider` 则维护媒体索引、执行 Scoped Storage 访问策略，并在 Android 11+ 的共享存储路径上参与 FUSE 文件访问决策。二者的分工很清楚：`vold` 管挂载生命周期，`MediaProvider` 管共享文件是否能被当前调用方看到、打开、改写或遮盖敏感数据。[已验证: AOSP android-16.0.0_r1, system/vold/model/EmulatedVolume.cpp; packages/providers/MediaProvider/jni/FuseDaemon.cpp]
+本节不重复 §6.4 的完整版本史，重点回答三个排障问题：
 
-这张图只画 App 通过直接文件路径访问共享媒体时会经过的关键节点：
+1. `vold`、MediaProvider 和 FUSE 各自在什么时候参与。
+2. 直接路径、MediaStore URI、SAF URI 和 App 私有路径的成本为何不同。
+3. Android 17 设备上怎样确认 passthrough、FUSE BPF、文件系统与块 I/O 的实际状态。
+
+当前源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点为 `android17-6.18-2026-06_r6`。
+
+## 先分清控制面与数据面
+
+### `vold` 管卷和挂载会话
+
+`vold` 负责卷发现、准备挂载点、用户切换、卷挂载/卸载和设备插拔等生命周期。它不在每个 `open()`、`read()`、`write()` 请求中做媒体权限判断。
+
+下面的 Android 17 源码片段用于定位 `vold` 把 FUSE 会话交给上层的位置：
+
+```cpp
+res = MountUserFuse(user_id, getInternalPath(), label, &fd);
+if (res != 0) {
+    return res;
+}
+
+mFuseMounted = true;
+auto callback = getMountCallback();
+if (callback) {
+    callback->onVolumeChecking(
+            std::move(fd), getPath(), getInternalPath(), &is_ready);
+}
+```
+
+代码位于 `system/vold/model/EmulatedVolume.cpp` 的 `EmulatedVolume::doMount()`。`MountUserFuse()` 建立挂载并返回 FUSE 设备 fd，随后 mount callback 接管会话准备。普通文件打开变慢时，除非同时发生卷状态变化、用户切换或挂载错误，否则不应先追 `vold` 的 CPU 使用。
+
+Android 17 的同一文件还会为 FUSE 配置 read-ahead 和 dirty ratio，并按 `IsFuseBpfEnabled()` 选择 bind mount 或 FUSE BPF 相关路径。这些属于产品与会话配置，App 不能据 Android 版本号推断具体开关。
+
+### MediaProvider 模块启动 FUSE daemon
+
+MediaProvider 中的 `ExternalStorageServiceImpl.onStartSession()` 接收 session id、FUSE 设备 fd、上层路径和底层路径，创建 `FuseDaemon` 并调用 `start()`。`FuseDaemon.run()` 最终进入阻塞式的 `native_start()`，读取内核提交的 FUSE 请求。
+
+MediaProvider 同时承担两种角色：
+
+- 作为 ContentProvider，维护媒体索引并处理 MediaStore 的查询、插入、更新、删除和打开 URI。
+- 作为共享存储 FUSE handler，根据 uid、包归属、权限、脱敏与转码状态处理文件系统请求。
+
+这两种入口最终可能访问同一份底层文件，但 Binder 查询、Provider 打开文件和直接路径进入 FUSE 的前半段不同。不能把 `content://` URI 简化成“换一种字符串表示的 `/storage` 路径”。
+
+## 两类常见 I/O 路径
+
+### 直接文件路径
+
+下面的图用于展示没有命中 BPF/passthrough 时的关键节点，以及打开后可能缩短的数据路径：
 
 ```mermaid
-sequenceDiagram
-    participant App as App 线程
-    participant Kernel as Linux VFS / FUSE driver
-    participant Fuse as MediaProvider FUSE daemon
-    participant MP as MediaProvider 策略与索引
-    participant FS as lower file system (/data/media 或外置卷)
-
-    App->>Kernel: open/read/write /storage/emulated/0/...
-    Kernel->>Fuse: FUSE request
-    Fuse->>MP: 检查 uid、路径、权限、redaction / transcode 策略
-    MP-->>Fuse: allow / deny / redact / transformed fd
-    Fuse->>FS: 访问 lower file system
-    FS-->>App: 数据或错误码
+flowchart LR
+    App["App：File / fopen / NDK"] --> VFS["Linux VFS 与 FUSE driver"]
+    VFS --> Daemon["MediaProvider FuseDaemon"]
+    Daemon --> Policy["归属、权限、redaction、transcode"]
+    Policy --> Lower["lower file system：/data/media 或卷的 backing path"]
+    VFS -. "open 获准且满足条件后<br/>read/write passthrough" .-> Lower
 ```
 
-顺着这条路径看，外部共享存储的成本来自四类动作：FUSE 内核态和用户态切换、`MediaProvider` 策略检查、目录项与属性缓存命中情况、底层文件系统和块设备读写。前两类是 Scoped Storage 带来的额外成本，后两类才是 6.2 和 6.3 节讨论的文件系统、调度器和页缓存问题。
+目录 lookup、`getattr()`、`readdir()`、打开文件和数据读写不是同一种请求。passthrough 只会在文件打开获准且条件满足后，缩短该文件后续的数据传输；路径可见性、打开权限和需脱敏/转码的请求仍由 MediaProvider 决定。
 
-## FUSE 为什么会回来
+### MediaStore 与其他 Provider URI
 
-Android 早期外部存储曾经使用 FUSE。AOSP 文档给出的历史线是：Android 7 及更早版本的 FUSE 实现存在性能和死锁问题；Android 8 引入 SDCardFS；Android 11 废弃 SDCardFS，并把 FUSE 作为 storage emulation 的默认方案。这里的变化不是单纯为了性能，而是为了在共享文件路径上拦截文件操作，让 `MediaProvider` 能在用户态执行 allow、deny、redact 这类策略。[已验证: AOSP 文档, source.android.com/docs/core/storage/scoped; source.android.com/docs/core/storage/fuse-passthrough]
+MediaStore 查询先通过 Binder 进入 MediaProvider 数据库。打开某个媒体 URI 时，Provider 可以根据访问模式、缓存一致性、脱敏和转码要求返回合适的 fd。Android 17 的 `FuseDaemon.shouldOpenWithFuse()` 也表明，Provider 打开的 fd 是否还要回到 FUSE 路径，需要按文件与锁条件决定。
 
-SDCardFS 退场也有内核工程原因。AOSP `sdcardfs-deprecate` 文档列出两类替代能力：大小写不敏感由文件系统自身处理，存储统计由 project quota 在用户态配置；某些高敏场景使用 bind mount；Scoped Storage 需要的直接路径访问由新的 FUSE 实现提供。对于 launching with Android 11 且 kernel 5.4+ 的设备，VTS 不允许挂载 SDCardFS；升级到 Android 11 的旧设备可能仍在 SDCardFS 上叠一层 FUSE 来拦截文件操作。[已验证: AOSP 文档, source.android.com/docs/core/storage/sdcardfs-deprecate; source.android.com/docs/core/storage/scoped]
+官方文档还建议重度批量操作使用 ContentProvider 的批处理能力，减少逐个路径进入 FUSE 的元数据操作。这类“非 FUSE 优化路径”指的是访问入口与批处理方式得到优化，不代表媒体内容脱离底层文件系统或块设备。
 
-这也解释了一个排障现象：同样是 Android 11+，不同设备上的 `/storage/emulated/0` 性能并不一致。launch 设备、升级设备、kernel 版本、是否启用 FUSE BPF / passthrough、`MediaProvider` 模块版本，都会影响直接文件路径的尾部延迟。只按 Android 大版本判断“FUSE 一定慢”或“passthrough 一定生效”，都会误判。
+SAF URI 经过 `DocumentsProvider`，提供者可能是本地文件系统、USB 盘或云端服务。它不保证低延迟，也不保证可以转换成普通路径。App 应按 `ContentResolver` 契约使用流或 fd，并处理 Provider 被杀、授权撤销和远端读取失败。
 
-## 性能代价落在哪里
+App 内部目录 `/data/user/<userId>/<package>/` 不属于共享存储 FUSE mount。App-specific external 目录位于外部存储命名空间，但 AOSP 对 `Android/data` 与 `Android/obb` 使用专门的绕过/加速路径。Android 17 中该实现还会随 FUSE BPF 和 bind mount 配置变化，不能把“App-specific external”与“内部私有目录”视为完全相同的安全与性能模型。
 
-AOSP 对 FUSE 成本的描述很具体：FUSE 处理页和属性这类可缓存信息时表现较好；访问共享外部存储时，用户态 FUSE daemon、内核 FUSE driver 和 lower file system 之间的协作会带来额外切换。官方还给出 Pixel 2 调优对比：顺序读可以接近 MediaStore API，顺序写略差，随机读写在某些场景可慢到接近 2 倍。这个数字不能外推到所有设备，但足够作为路径选择依据。[已验证: AOSP 文档, source.android.com/docs/core/storage/scoped]
+## FUSE 的成本出现在哪些操作
 
-不同 I/O 模式的风险不一样：
+Android 11 的 FUSE 调优包含 read-ahead、writeback cache、权限缓存、App 专属目录绕过和 all-files 批量操作优化。官方曾在调优后的 Pixel 2 上比较直接路径与 MediaStore：顺序读取接近，FUSE 顺序写略差，随机读写在该测试中最高可慢约两倍。这个结果只说明随机小 I/O 更容易暴露用户态转发成本，不能外推为 Android 17 或任意设备的固定倍率。
 
-| I/O 模式 | 常见场景 | FUSE 风险点 | 更稳的路径 |
-| --- | --- | --- | --- |
-| 顺序读大文件 | 播放视频、上传单张原图 | 多一次打开和策略检查，后续读可能被 readahead 缓解 | 通过 `MediaStore` 拿 `Uri` 后打开 fd；旧库才用直接路径 |
-| 随机读写 | 图片编辑、断点续传、数据库误放共享目录 | 小块请求频繁穿过 FUSE，尾部延迟放大 | 先复制到 App 私有目录处理，完成后再写回共享媒体 |
-| 大目录枚举 | 相册首扫、文件管理器全盘扫描 | `readdir`、`getattr`、权限检查和索引查询互相叠加 | 媒体文件先查 `MediaStore`，非媒体才做受控文件遍历 |
-| 批量删除 / 改名 | 清理相册、聊天媒体迁移 | 逐文件事务、逐次权限判断、数据库更新和磁盘 I/O 混在一起 | Android 11+ 批量请求 API；业务侧分批执行 |
-| App 内部缓存 | 日志、临时文件、图片解码中间产物 | 放在共享目录会进入不必要的共享存储策略 | `/data/user/0/<package>/` 或 App-specific external directory |
+| 访问模式 | 可能放大的环节 | 优先检查 |
+| --- | --- | --- |
+| 单个大文件顺序读 | 首次打开、缓存未命中、底层 read-ahead | 打开耗时与持续吞吐分开测；确认是否 passthrough |
+| 小块随机读写 | 多次 FUSE 请求、页缓存、文件系统与闪存尾延迟 | 请求大小、随机偏移、FUSE/块事件重合情况 |
+| 大目录枚举 | `readdir`、lookup、属性读取、权限与索引一致性 | 文件数、目录层级、是否可以改用 MediaStore 查询 |
+| 批量创建/删除/改名 | 元数据更新、逐项权限检查、MediaProvider 数据库更新 | 单项耗时分布、事务/批处理边界、失败重试 |
+| 脱敏或兼容转码 | 不能进入普通 passthrough，可能产生额外 CPU 与临时数据 | `ACCESS_MEDIA_LOCATION`、转码状态、FuseDaemon 日志 |
+| SAF/云端 URI | Provider Binder、网络、缓存与远端限流 | Provider 身份、Binder 等待、网络和本地 I/O 分开 |
 
-`Android/data` 和 `Android/obb` 的边界要单独看。AOSP scoped storage 文档写明，外部私有目录会绕过 FUSE，内部存储 `/data/data` 也不是 FUSE mount。App 自己的缓存、数据库、临时解码结果不应该写进共享相册或下载目录；那会把本来只属于本进程的 I/O 变成共享存储治理问题。[已验证: AOSP 文档, source.android.com/docs/core/storage/scoped]
+文件很大时，底层 I/O 可能盖过 FUSE overhead；文件数量很大时，元数据和策略判断可能比数据传输更显眼。性能实验应同时记录文件数量、大小分布、操作类型、缓存冷热和授权状态。
 
-## FUSE passthrough 能解决什么
+## passthrough 与 FUSE BPF 的边界
 
-Android 12 支持 FUSE passthrough，目标是降低 FUSE overhead，让性能接近直接访问 lower file system。AOSP 文档把条件写得很窄：支持落在 `android12-5.4`、`android12-5.10` 和 `android-mainline` 测试内核；从 Android 11 升级到 Android 12 的设备通常不能支持，因为内核已经冻结；launching with Android 12 且使用官方内核的设备才可能支持。框架侧实现位于 `MediaProvider` Mainline 模块。[已验证: AOSP 文档, source.android.com/docs/core/storage/fuse-passthrough]
+### passthrough 是逐文件打开决策
 
-AOSP `MediaProvider` 的 `FuseDaemon.cpp` 也能看到这个判断边界。`IsUpstreamPassthroughSupported()` 会读取 `/sys/fs/fuse/features/fuse_passthrough`，只有返回 `supported\n` 才启用 upstream passthrough；`FuseDaemon::ShouldOpenWithFuse()` 中也保留了“passthrough 打开时继续从 FUSE 入口打开文件，但 read/write 发生在内核”的注释。也就是说，passthrough 不是把 Scoped Storage 权限模型拿掉，而是让通过策略检查后的数据读写少走用户态数据转发。[已验证: AOSP android-16.0.0_r1, packages/providers/MediaProvider/jni/FuseDaemon.cpp]
+Android 12 支持 FUSE passthrough。Android 11 升级到 Android 12 的设备受冻结内核限制，不能因系统升级自动获得该能力；以 Android 12 出厂且使用官方支持内核的设备才具备当时的启用条件。
 
-passthrough 的定位可以压成一句话：它优化的是文件内容读写的数据路径，不替 App 选择访问模型。目录遍历、元数据查询、权限判断、媒体索引、兼容转码、位置信息遮盖，这些仍然要由 `MediaProvider` 和上层 API 处理。相册、备份、文件管理器这类 App 若把全量扫描都压在 `/storage/emulated/0` 递归遍历上，passthrough 只能减少一部分读写转发成本，不能消掉枚举和策略判断。
+Android 17 MediaProvider 仍会先检查内核能力：
 
-## Scoped Storage 下的四类 App 场景
+```cpp
+const char* filename = "/sys/fs/fuse/features/fuse_passthrough";
+if (contents == "supported\n") {
+    return true;
+}
+```
 
-相册类 App 的主路径应该是 `MediaStore`。列表页先查索引，projection 只带 `_ID`、`DATE_TAKEN`、`MIME_TYPE`、`WIDTH`、`HEIGHT`、`SIZE` 等展示需要的字段；用户打开详情、编辑或上传时，再通过 `ContentResolver.openFileDescriptor()` 打开具体 `Uri`。Android Developers 文档给出的访问建议也相同：顺序读直接路径和 `MediaStore` 接近，随机读写直接路径可能慢到接近 2 倍，随机场景推荐 `MediaStore`。[已验证: 官方文档, developer.android.com/training/data-storage/shared/media]
+仅看到 sysfs 返回 `supported` 还不够，它只表示内核具备 upstream passthrough 能力。产品属性、FUSE 协商结果和单次文件打开条件也必须满足。
 
-下载目录和文档类文件不要套用相册模型。非媒体文件不一定有完整 `MediaStore` 元数据，用户选择的 PDF、压缩包、导出文件更适合走 Storage Access Framework，或者由 App 明确创建到 Downloads 集合。性能重点是减少无边界目录扫描：只处理用户选中的 `Uri`，后台索引用增量游标，失败时保留重试记录。
+下面两行用于说明文件级决策：
 
-日志导出和缓存迁移要避开共享目录里的同步小写。日志文件在 App 内部目录滚动写，用户点“导出”时再批量复制到 Downloads 或分享 `Uri`。图片编辑、视频裁剪、压缩上传这类任务也应先在 App 私有目录完成随机读写和临时文件整理，再把成品一次性插入共享媒体集合。这样能把随机 I/O 留在内部存储路径，把共享存储访问压成可控的顺序写和一次索引更新。
+```cpp
+bool passthrough = !redaction_needed && transforms_complete;
+bool direct_io = open_info_direct_io && !passthrough;
+```
 
-聊天 App 的媒体迁移容易踩到两类坑：一类是历史媒体散落在自建共享目录里，迁移时递归扫描触发大量 FUSE 操作；另一类是边下载边让相册可见，半成品文件被其他 App 扫到。Android 10+ 的 `IS_PENDING` 可以把写入中的媒体先隐藏，写完后再清除 pending；迁移任务按批次提交，失败项保留原路径和目标 `Uri`，避免一轮失败后重新扫全量目录。[已验证: 官方文档, developer.android.com/training/data-storage/shared/media]
+文件需要位置元数据脱敏，或者转码尚未完成时，MediaProvider 不能让后续读取绕过 daemon。passthrough 的收益集中在已获准文件的 `read`/`write` 数据搬运，对目录枚举、MediaStore 查询和首次 `open` 没有同等作用。
 
-## 观察入口：先分清等待发生在哪一层
+### FUSE BPF 当前主要服务 App 专属目录
 
-外部存储卡顿不要只看 App 线程耗时。要同时确认 App 是否在等 Binder、FUSE daemon 是否在处理请求、`MediaProvider` 是否被数据库或策略判断拖慢、block 层是否有真实设备 I/O。
+`android17-6.18-2026-06_r6` 的 GKI 配置包含 `CONFIG_FUSE_FS=y` 与 `CONFIG_FUSE_BPF=y`。Android 17 MediaProvider 源码注明，FUSE BPF 当前限制在 `Android/data` 与 `Android/obb`，通过 backing fd 把符合规则的请求交给底层文件系统。
 
-排查时可以按这组入口收集证据：
+这仍然是条件性能力：
 
-- App 线程：Perfetto 中看主线程、I/O 线程、上传/解码线程的 D 状态、Binder 调用和自定义 Trace；主线程直接打开共享文件通常先改代码，不先调系统。
-- FUSE / MediaProvider：看 `MediaProvider` 进程 CPU、Binder 线程、数据库 slice、文件读取 slice；logcat 搜索 `MediaProvider`、`FuseDaemon`、权限拒绝和转码相关日志。
-- `vold`：只在挂载、用户切换、卷插拔、外置卡异常、FUSE mount 失败时优先看；普通媒体文件打开慢通常不从 `vold` 开始查。
-- block I/O：启用 `block_rq_issue` / `block_rq_complete`、f2fs/ext4/writeback 相关 ftrace 事件，判断慢在设备队列、文件系统同步写，还是策略层等待。
-- 设备配置：记录 Android 版本、kernel 版本、`MediaProvider` 模块版本、当前文件系统、`/sys/fs/fuse/features/fuse_passthrough`、目标路径是否位于 shared external storage。
+- 内核编译开关存在，不等于产品运行时已经启用。
+- 当前 MediaProvider 源码的路径范围不应扩写到整个共享媒体目录。
+- 路径归属和 Zygote 的 App data isolation 仍参与访问控制。
+- 详细机制见 §6.7，本节只把它作为路径判断条件。
 
-这些命令用于快速确认路径和设备能力，执行前先确保目标设备是测试机：
+## Scoped Storage 下的 App 场景
+
+### 相册与媒体列表
+
+相册列表优先查询 MediaStore，projection 只保留界面和分页所需列，例如 `_ID`、`DATE_TAKEN`、`MIME_TYPE`、`WIDTH`、`HEIGHT`。用户打开详情、编辑或上传时，再通过 URI 打开具体文件。
+
+不要为了得到“文件路径”而先查询整个媒体库，再对每个项目执行 `stat()`。这会把数据库查询、FUSE 元数据请求和缩略图解码叠在一起。确有 native 库只接受 fd 时，可用 `ParcelFileDescriptor.detachFd()` 明确移交所有权；库只接受路径时，再评估复制到私有工作目录的成本。
+
+### 图片编辑、视频处理与断点续传
+
+随机改写、临时分片和中间产物适合放在内部私有目录。处理完成后，把成品作为一次受控写入提交到 MediaStore。这样可以把高频随机 I/O 留在不经过共享存储策略的路径，并避免半成品被其他 App 扫描。
+
+Android 10+ 写入媒体时可使用 `IS_PENDING`：创建条目后保持 pending，写完并完成必要的同步处理后再发布。崩溃恢复还要记录未完成 URI，不能只依赖进程内状态。
+
+### 文档与 Downloads
+
+用户选择的 PDF、压缩包等文档使用 SAF。App 自己生成并希望用户长期保留的下载文件，可按官方 API 写入 Downloads。不要递归扫描整个下载目录寻找某一个用户文件；持久化 URI 权限后直接访问目标。
+
+Provider 可能返回不可 seek 的管道 fd。调用前应检查业务是否需要随机访问；需要时复制到受控的临时文件，并在操作结束后清理。
+
+### 日志导出、备份与聊天媒体迁移
+
+日志在内部目录滚动写，用户触发导出时再复制或分享。备份和聊天媒体迁移应维护待处理清单，以增量方式扫描与重试，避免每次失败后重新遍历整个共享存储。
+
+批量删除、回收、收藏或写入其他 App 创建的媒体时，使用平台提供的用户确认与批量请求 API。每批数量按目标设备、Binder payload、取消粒度和失败恢复测试决定，不使用脱离 workload 的固定数字。
+
+## 诊断：先证明慢在哪一层
+
+### 记录最小环境信息
+
+下面的命令用于确认平台、内核、挂载和 FUSE 能力，不修改设备状态：
 
 ```bash
-adb shell mount | grep -E 'emulated|media_rw|fuse|sdcardfs'
 adb shell getprop ro.build.version.release
-adb shell getprop ro.kernel.version
-adb shell cat /sys/fs/fuse/features/fuse_passthrough 2>/dev/null || true
-adb shell dumpsys media_provider 2>/dev/null | head -80
+adb shell getprop ro.build.version.sdk
+adb shell getprop ro.build.fingerprint
+adb shell uname -r
+adb shell 'cat /proc/mounts | grep -E "fuse|sdcardfs|emulated|media_rw|ext4|f2fs"'
+adb shell 'cat /sys/fs/fuse/features/fuse_passthrough 2>/dev/null'
+adb shell 'dumpsys -l | grep -i media'
 ```
 
-如果 `dumpsys media_provider` 不可用，说明目标 ROM 未暴露相同服务名或输出被裁剪；改用 `adb shell dumpsys activity provider`、logcat 和 Perfetto 侧证据。[待验证: `dumpsys media_provider` 在不同 OEM Android 16/17 构建上的字段一致性]
+`/proc/mounts` 展示的是实际挂载，不要用机型宣传页代替。passthrough sysfs 文件缺失或无输出表示不能从该入口确认能力；它不单独证明功能关闭。`dumpsys -l` 的服务名随构建变化，先列服务再选择具体 `dumpsys`，比假设存在 `dumpsys media_provider` 更可靠。
 
-## App 侧优化策略
+### Perfetto 观察点
 
-外部共享存储的优化不是把所有 File API 改成 `MediaStore`，而是按数据归属和访问模式分流。
+一轮有用的 Trace 至少要覆盖：
 
-- 只给当前 App 使用的数据放内部目录。数据库、日志、解码中间产物、上传分片、临时压缩文件，都应优先放 `/data/user/0/<package>/`；需要用户可见时再导出。
-- 媒体列表用 `MediaStore` 查询。目录遍历只作为文件管理器和导入工具的补充路径，不能作为相册首屏默认路径。
-- 随机读写先复制到私有目录。图片编辑、视频处理、断点续传的工作文件在私有目录完成，成品再写回共享存储。
-- 批量操作合并授权与事务。Android 11+ 的删除、收藏、回收站、写入请求可以合并多个 `Uri`；业务侧再按 100 到 500 个项目拆批，便于取消和重试。
-- 直接文件路径只留给兼容场景。第三方 native 库必须拿路径时，记录文件大小、访问模式、系统版本和耗时；随机访问慢时优先换成 fd / `Uri` 路径或复制到私有目录。
-- 线上埋点要区分路径。`content://`、`/storage/emulated/0`、App-specific external、内部目录分开统计；否则同一个“文件读取慢”指标会混入完全不同的系统路径。
+1. App 主线程、工作线程与 Binder 调用。
+2. MediaProvider 进程、Binder 线程和 FUSE session 线程。
+3. `sched_switch`、`sched_wakeup`，区分 CPU 竞争与睡眠等待。
+4. `block/block_rq_issue`、`block/block_rq_complete`，以及目标设备支持的 ext4/F2FS/writeback 事件。
+5. App 自定义 async slice：查询、打开、首字节、完整读写和发布媒体分别计时。
 
-与 24.12 节的关系也要分清：24.12 更偏 App 侧媒体访问模型；共享存储直接路径变慢时，排查重点放在 FUSE、`vold`、`MediaProvider` 和 block 层。读者做 App 侧方案时，优先按 24.12 的媒体访问模型改代码；追系统机制和 trace 时，再回到这里定位系统侧等待点。
+主线程处于 `D` 状态说明它在不可中断睡眠中等待内核资源，但不能据此直接判定 FUSE。Binder、块 I/O、文件系统锁和驱动等待都可能出现相似表现。需要调用栈、目标线程活动和块事件一起判断。
 
-## Android 10-17 版本边界
+对于目录扫描，建议记录：
 
-| 版本 | 存储访问变化 | 性能判断 |
+- 文件/目录项数量与深度。
+- `getdents64`、`statx`/`newfstatat`、`openat` 次数。
+- MediaStore 查询返回行数和 projection。
+- 首次扫描与热缓存扫描分别耗时。
+
+### strace 只在可调试测试环境使用
+
+下面的示例用于在 userdebug/rooted 实验机上观察目标进程的文件系统调用，不应直接用于生产设备：
+
+```bash
+adb shell su 0 strace -f -ttT \
+  -e trace=openat,read,write,getdents64,newfstatat,fsync \
+  -p <pid>
+```
+
+`strace` 会扰动时序，ROM 也可能没有该工具。它适合回答“是否出现大量小 read/stat/目录枚举”，不适合直接产出性能基线。发布结论仍应使用无附加或低扰动的 Perfetto/应用埋点复测。
+
+### `vold` 何时才是优先调查对象
+
+出现以下信号时再把重点移到 `vold`：
+
+- 卷长时间停在 checking/mounting。
+- 用户切换或工作资料切换后路径不可用。
+- USB/SD 卡插拔后 mount namespace 不一致。
+- logcat 出现 `MountUserFuse`、session start/end、unmount 或 bind mount 失败。
+- 大量请求返回 `ENOTCONN`、`EIO`，并与卷状态变化重合。
+
+单个已挂载媒体文件的稳定慢读，通常先看 App 访问模式、MediaProvider/FUSE、文件系统与块设备。
+
+## FBE、16KB 页与底层文件系统
+
+FBE 位于 `/data` 文件系统的数据与文件名加密路径，FUSE 位于共享存储的命名空间和策略层。同一次访问可能同时承担两者成本。`android17-6.18-2026-06_r6` 的 GKI 配置包含 `CONFIG_FS_ENCRYPTION=y` 与 inline encryption 支持，但产品是否使用 inline crypto、密钥策略和硬件加速仍由设备实现决定。
+
+区分两层成本可以设计对照实验：同一设备、相同大小与访问模式，比较内部私有文件、App-specific external 和共享媒体；同时控制缓存冷热与加密策略。不同目录的文件系统、配额和挂载选项可能不同，结果只能解释已记录的设备配置。
+
+Android 17 `FuseDaemon.cpp` 使用下面的上限计算：
+
+```cpp
+#define FUSE_MAX_MAX_PAGES 256
+const size_t MAX_READ_SIZE = FUSE_MAX_MAX_PAGES * getpagesize();
+```
+
+页大小会改变 FUSE 连接协商的最大读取上限，但单次请求仍受 App buffer、read-ahead、内核限制和文件状态影响。16KB 页不会自动让共享存储吞吐提高四倍，也不能仅凭 `MAX_READ_SIZE` 推导尾延迟改善。需要在 4KB 与 16KB 设备上使用相同 workload 实测。
+
+## Android 10—17 边界速查
+
+| 版本 | 与本节直接相关的变化 | 排障边界 |
 | --- | --- | --- |
-| Android 10 | 引入 Scoped Storage；`MediaProvider` 对媒体访问执行分区存储规则；直接文件路径适配成本较高 | 旧 App 可能依赖 `requestLegacyExternalStorage`；新路径应开始迁到 `MediaStore` / SAF |
-| Android 11 | FUSE 支持让 Scoped Storage App 保留直接文件路径访问；SDCardFS 在 launching with Android 11、kernel 5.4+ 设备上退场 | 直接路径能工作不代表性能等同内部存储；随机读写和大目录枚举要单独测 |
-| Android 12 | launching with Android 12 且官方 kernel 的设备可支持 FUSE passthrough | passthrough 降低内容读写转发成本，权限、索引、目录枚举成本仍存在 |
-| Android 13 | 媒体权限拆成图片、视频、音频等更细粒度权限 | 权限模型更细，性能模型仍按 `MediaStore` / FUSE / 私有目录分流 |
-| Android 14 | 选择性照片访问强化用户授权边界 | 相册类 App 更要把“用户可见集合”和“全库后台扫描”分开 |
-| Android 15-17 | 当前公开文档没有给出会推翻 Android 11/12 FUSE 路径判断的通用变更 | 以目标设备 kernel、`MediaProvider` 模块和 `/sys/fs/fuse/features/fuse_passthrough` 为准 |
+| Android 10 | 引入 Scoped Storage；MediaProvider 路径执行新访问规则 | 可使用 legacy 过渡；直接路径能力与 Android 11 不同 |
+| Android 11 | MediaProvider 成为共享存储 FUSE handler；新发布 5.4+ 内核设备不能使用 SDCardFS | 升级设备可能保留 SDCardFS 下层，必须看实际挂载 |
+| Android 12 | 符合出厂与内核条件的设备可支持 FUSE passthrough | 系统版本不能证明运行时已启用 |
+| Android 13 | 细粒度媒体权限；MediaProvider 仍可通过 Mainline 更新 | 权限变化与 I/O 路径要分别记录 |
+| Android 14 | Selected Photos Access | 用户可见集合可能动态变化，不应后台遍历未授权媒体 |
+| Android 15—16 | Photo Picker 与局部媒体访问继续演进；支持 16KB 页设备 | 页大小、模块版本和授权状态加入复现条件 |
+| Android 17 | 当前平台仍沿用 MediaProvider FUSE；源码包含 passthrough、FUSE BPF、脱敏和转码分支 | 以 `android-17.0.0_r1`、内核配置、MediaProvider 模块与实机状态共同判断 |
 
-这张表不能替代实机确认。FUSE、passthrough、外部私有目录绕过、`MediaProvider` 模块版本都可能受设备配置影响。发布性能结论前，至少把 Android 版本、kernel、文件系统、路径类型和访问模式写进复现条件。
+MediaProvider 是 Mainline 模块，同一个 Android 大版本也可能因模块更新而出现修复或行为差异。性能报告除 build fingerprint 外，还应保存模块版本。
 
-## FBE、16KB Page Size 与厂商案例
+## 常见误区
 
-FBE 位于共享存储路径之下，影响的是 `/data` 分区中文件内容和目录项的加解密成本；FUSE 位于共享存储策略层，影响的是路径访问、权限判断和用户态转发。二者会在同一次文件访问中叠加，但不要把 FBE 成本误判成 FUSE 成本。判断方法是找对照路径：同一设备上比较内部私有目录、App-specific external、共享媒体 `Uri` 和直接 `/storage/emulated/0` 路径，才能看出策略层和底层文件系统各占多少。[已验证: 相关 FBE 背景见 6.1 节]
+### “访问 `/storage/emulated/0` 慢，说明 `vold` 在处理每次 I/O”
 
-16KB Page Size 对外部存储 I/O 的影响还缺少稳定公开数据。AOSP `FuseDaemon.cpp` 中 `MAX_READ_SIZE` 按 `FUSE_MAX_MAX_PAGES * getpagesize()` 计算，说明页大小会进入 FUSE 读请求上限的计算；但这不等于 16KB 页设备在共享存储上一定更快。页缓存命中、readahead、底层 UFS、文件系统 block size、App 的读写块大小都会一起影响结果。[待验证: 需要 Android 15/16 16KB page size 真机 trace 对比]
+`vold` 负责挂载生命周期。稳定挂载后的请求主要经过 VFS/FUSE、MediaProvider 和底层文件系统。
 
-厂商文件管理器、相册首扫、聊天媒体迁移是最值得补案例的三类场景。当前章节只给机制和排查入口，还缺脱敏 trace：图库首扫应展示 `MediaProvider` 查询、缩略图解码、FUSE 枚举和 block I/O 的相对占比；文件管理器复制应展示顺序读写和目录项更新；聊天媒体迁移应展示私有目录处理再批量导出的收益。[待补充: 需要真实设备 trace 或可公开复现脚本]
+### “sysfs 显示 passthrough supported，所有文件都会直通”
+
+内核支持只是前提。文件仍需通过打开检查，脱敏、转码和 fd 来源等条件会阻止单次请求进入 passthrough。
+
+### “使用 MediaStore 就没有磁盘 I/O”
+
+MediaStore 提供索引、授权和优化后的打开路径。读取媒体内容仍会访问文件系统与存储设备，Provider 查询本身也有数据库与 Binder 成本。
+
+### “SAF URI 一定对应本地路径”
+
+SAF 可以连接本地或远端 Provider。URI 可能只支持流式读取，甚至依赖网络。
+
+### “16KB page size 会直接解决随机 I/O”
+
+页大小改变内存与 FUSE 协商粒度，无法消除用户态策略判断、文件系统元数据或闪存尾延迟。
+
+## 小结
+
+共享存储排障的第一步是确认访问模型：
+
+- `vold` 负责卷与 FUSE 会话的创建/销毁。
+- MediaProvider 既是媒体 ContentProvider，也是共享存储 FUSE handler。
+- 直接路径、MediaStore、SAF 和私有目录拥有不同的前半段成本。
+- passthrough 只缩短满足条件文件的后续数据请求；FUSE BPF 在当前 Android 17 源码中主要服务 `Android/data`、`Android/obb`。
+- FBE、文件系统、块调度和 UFS 仍在 FUSE 下层，策略层与设备层可能同时变慢。
+
+App 侧优先让数据归属与 API 匹配：媒体列表使用 MediaStore，文档使用 SAF，高频临时 I/O 放私有目录，成品再发布。系统侧则用挂载、FuseDaemon、Binder、文件系统和块事件逐层取证，避免只凭 Android 版本或一条总耗时下结论。
 
 ## 参考资料
 
-- [已验证: AOSP 文档, Scoped storage](https://source.android.com/docs/core/storage/scoped)
-- [已验证: AOSP 文档, FUSE passthrough](https://source.android.com/docs/core/storage/fuse-passthrough)
-- [已验证: AOSP 文档, SDCardFS deprecation](https://source.android.com/docs/core/storage/sdcardfs-deprecate)
-- [已验证: 官方文档, Access media files from shared storage](https://developer.android.com/training/data-storage/shared/media)
-- [已验证: AOSP android-16.0.0_r1, system/vold/model/EmulatedVolume.cpp](https://android.googlesource.com/platform/system/vold/+/refs/tags/android-16.0.0_r1/model/EmulatedVolume.cpp)
-- [已验证: AOSP android-16.0.0_r1, packages/providers/MediaProvider/jni/FuseDaemon.cpp](https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-16.0.0_r1/jni/FuseDaemon.cpp)
-- [已验证: AOSP android-16.0.0_r1, packages/providers/MediaProvider/src/com/android/providers/media/MediaProvider.java](https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-16.0.0_r1/src/com/android/providers/media/MediaProvider.java)
-- 详见 6.1 节：Android 存储架构
-- 详见 6.2 节：文件系统
-- 详见 6.3 节：I/O 调度与性能
-- 详见 24.12 节：MediaStore 与 MediaProvider 性能治理
+- [Scoped storage](https://source.android.com/docs/core/storage/scoped)
+- [FUSE passthrough](https://source.android.com/docs/core/storage/fuse-passthrough)
+- [SDCardFS deprecation](https://source.android.com/docs/core/storage/sdcardfs-deprecate)
+- [Access media files from shared storage](https://developer.android.com/training/data-storage/shared/media)
+- AOSP `system/vold/model/EmulatedVolume.cpp`（`android-17.0.0_r1`）
+- AOSP `packages/providers/MediaProvider/src/com/android/providers/media/fuse/ExternalStorageServiceImpl.java`（`android-17.0.0_r1`）
+- AOSP `packages/providers/MediaProvider/src/com/android/providers/media/fuse/FuseDaemon.java`（`android-17.0.0_r1`）
+- AOSP `packages/providers/MediaProvider/jni/FuseDaemon.cpp`（`android-17.0.0_r1`）
+- Android common kernel `arch/arm64/configs/gki_defconfig`（`android17-6.18-2026-06_r6`）
+- §6.1「Android 存储架构」
+- §6.2「文件系统」
+- §6.3「I/O 调度与性能」
+- §6.4「存储相关的版本演进」
+- §6.7「FUSE BPF 与 Scoped Storage I/O 性能」
+- §24.12「MediaStore 与 MediaProvider 性能治理」
