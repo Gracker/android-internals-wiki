@@ -35,7 +35,7 @@ sources:
 - 没有 `anon_vma_tree_t`、`anon_vma_lazy_enable` 或 proposal 中的 VMA 引用机制；
 - `mm/rmap.c` 仍使用 `struct anon_vma`、`struct anon_vma_chain` 和 interval tree；
 - `include/linux/rmap.h` 中的 `vma->anon_vma` 仍指向常规 `struct anon_vma`；
-- `rmap_walk_anon()` 仍经 `folio_lock_anon_vma_read()` 与 anon_vma interval tree 查找映射。
+- `rmap_walk_anon()` 仍通过 `rmap_walk_anon_lock()` 取得并锁定相关 anon_vma；`try_to_unmap()` 等调用会提供 `folio_lock_anon_vma_read()`，随后沿 anon_vma interval tree 查找映射。
 
 邮件线程中的主要维护者还对该实现给出了明确反对意见，集中在 VMA 生命周期、RCU 与锁、migration、VMA split/merge/remap、large folio、MAP_PRIVATE COW 和缺少测试等问题。到本章基线日期，不能把这组补丁描述为上游 Linux、Android 17 GKI 或任一 OEM 的通用能力。
 
@@ -183,7 +183,7 @@ Zygote fork 是 Android 的重要 fork 场景，但不能由此推出“所有 Z
 - folio 如何记录“当前映射由哪个 lazy VMA 表示”；
 - VMA split、merge、remap、teardown 与 rmap 并发时，lazy 表示如何保持有效。
 
-### 不是一个局部 Kconfig 改动
+### 改动范围远超一个 Kconfig
 
 该系列共 15 个 patch，修改 28 个文件，统计为 1279 行新增、206 行删除。涉及：
 
