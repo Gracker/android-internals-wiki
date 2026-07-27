@@ -29,230 +29,307 @@ gap_source: "章节深挖"
 
 # 21.15 Compose 首次组合开销与启动性能
 
-Compose 应用冷启动时，首帧绘制前有一段 View 体系不会出现的开销：Compose Runtime 初始化 + 首次组合（First Composition）。这段开销在纯 Compose 应用的中端设备上通常占用 30-80ms，取决于 UI 树复杂度和 Baseline Profile 覆盖率。本节拆解首次组合的成本结构、度量方法和优化手段，覆盖 Android 12-17 和 Compose BOM 2025.12.00（Compose 1.10）。
+Compose 首屏比传统 View 页面多一个 composition 阶段，但“用了 Compose 就固定多花几十毫秒”不是可复用的结论。View 页面也要承担 XML inflate、对象绑定、measure、layout 和 draw；Compose 则把 UI 描述执行、Slot Table 维护、节点创建，以及后续的 layout、draw 放进首帧路径。两者的成本结构不同，不能脱离设备、构建类型、编译状态和页面内容给出统一差值。
 
-## 首次组合的成本模型
+本章把平台边界固定在 Android 17 / API 37 / `android-17.0.0_r1`。Compose 仍是随应用发布的 AndroidX 库，并没有并入 Android 17 framework。平台侧仍由 Activity 生命周期、`ViewRootImpl` traversal、HWUI 与 `RenderThread` 承接首帧；Compose 在应用进程内完成 composition，并通过一个 View host 接入这条渲染路径。
 
-### 从 setContent 到首帧的完整链路
+## 1. 从 `setContent` 到首帧：源码中的边界
 
-`ComponentActivity.setContent {}` 执行后，Compose 的启动链路分四步：
+### 1.1 Activity 安装的是 `ComposeView`
 
-1. **AndroidComposeView 安装**：Activity 的 `DecorView` 下插入 `AndroidComposeView`（继承 `ViewGroup`）。这一步包括 `ContextThemeWrapper` 创建、`UiModeManager` 读取、`Configuration` 快照。
-2. **Recomposer 启动**：`AndroidComposeView` 通过 `currentRecomposer` 获取或创建 `Recomposer` 实例。`Recomposer` 在主线程的 `CoroutineScope` 上运行，负责驱动整个组合-布局-绘制循环。
-3. **首次 Composition（applyChanges）**：`Recomposer.runRecomposeAndApplyChanges()` 执行根 Composable 函数，生成第一棵 `Composition` 树。所有 `remember` 块执行初始计算，所有 `@Composable` 函数体完整执行（无法跳过，因为没有上一轮的参数对比）。
-4. **Layout + Draw**：生成的 UI 树经过 AndroidComposeView 的 `onLayout` / `onDraw`，走标准 View 布局和绘制管线，最终通过 `RenderThread` 提交到 GPU。
+AndroidX 的 `ComponentActivity.setContent` 扩展先检查 `android.R.id.content` 的第一个子 View 是否已经是 `ComposeView`。没有可复用实例时，它会：
 
-第 3 步是 Compose 特有的额外开销。View 体系在 `setContentView` 后直接进入 measure/layout/draw，没有"首次组合"这一层。一个典型的 Compose Activity，首次组合的 CPU 耗时占冷启动可感知阶段（`Activity.onCreate` 到第一帧 `Choreographer.doFrame`）的 15-30%。
+1. 创建 `ComposeView`；
+2. 设置父 `CompositionContext` 和 content lambda；
+3. 把 `LifecycleOwner`、`ViewModelStoreOwner`、`SavedStateRegistryOwner` 安装到 decor view；
+4. 调用 Activity 的 `setContentView()`。
 
-### 首次组合 vs 重组的开销差异
+这里不应写成“Activity 直接插入 `AndroidComposeView`”。公开 host 是 `ComposeView`；内部 composition 创建时，`AbstractComposeView.setContent` 才会创建或复用 `AndroidComposeView`。后者继承 `ViewGroup`，是 Compose UI 节点与 Android View 渲染管线之间的 owner。
 
-重组（Recomposition）可以跳过未变化的子树，首次组合不能。首次组合时每个被调用的 `@Composable` 函数都会完整执行函数体，包括：
+`ComposeView.setContent` 在 View 尚未 attach 时只保存 content，并把 `shouldCreateCompositionOnAttachedToWindow` 置为 `true`。初始 composition 在 attach 或显式调用 `createComposition()` 时创建，以先发生者为准。因此，`setContent {}` 不能简单标成“一次纯异步入队”，它会随 View attach、Lifecycle 状态和父 composition 的准备时机推进。
 
-- 所有 `remember` 的 factory 调用
-- 所有 `Modifier` 链的组装
-- 所有子 Composable 的递归调用
-- `CompositionLocalProvider` 的值安装
+### 1.2 窗口级 `Recomposer` 受 Lifecycle 驱动
 
-Composable 函数树的深度和广度直接影响首次组合耗时。根节点下的第一层有 N 个子 Composable，每个又有 M 个子节点，首次组合的总执行次数约为 N×M（简化模型，实际取决于具体树结构）。层级嵌套深的页面（如嵌套 `Column`/`Row` 5 层以上）首次组合的开销明显高于扁平结构。
+`AbstractComposeView` 会优先使用显式父 context、View 树中的 composition context 或缓存；都没有时，再通过 `windowRecomposer` 为窗口创建或取得 `Recomposer`。默认的窗口 factory 使用 UI 线程的 `AndroidUiDispatcher`，并从 View 树寻找 `LifecycleOwner`：
 
-### AndroidComposeView 的创建成本
+- Lifecycle 至少到 `STARTED` 时，frame clock 才持续提供可见帧；
+- `ON_STOP` 会暂停 frame clock；
+- `ON_DESTROY` 会取消对应 `Recomposer`；
+- 找不到必需的 View tree owner 时，当前实现会抛出异常，而非安静等待一个不确定时长。
 
-`AndroidComposeView` 的构造函数做了不少初始化工作：
+这也是 Fragment 中使用 `ComposeView` 时必须让 View 树 owner 与 composition disposal 策略匹配的原因。它关乎生命周期正确性，不应被描述成固定的若干毫秒成本。
 
-- `ModifierInfo` 全局状态注册
-- `Density` / `FontFamilyResolver` / `HapticFeedback` 等环境对象创建
-- `OwnerSnapshot` 系统初始化
-- `MotionEventDispatcher` 创建
-- `AutofillTree` 注册
-- `ViewModelStoreOwner` / `SavedStateRegistryOwner` 查找
+### 1.3 初始 composition 做了哪些工作
 
-这段初始化在 `ComposeView` attach 到 window 时触发。用 `ComposeView` 替代直接 `AndroidComposeView` 会多一层 `ViewTreeLifecycleOwner` 的查找和 `AbstractComposeView` 的抽象方法调用，额外开销约 1-3ms。
+composition 创建路径会启动全局 Snapshot 管理、建立 `Composition(UiApplier, parentContext)`，再把 Activity/窗口提供的 CompositionLocal 环境和业务 content 交给 runtime。进入业务根节点后，runtime 执行本次会进入的 composable group，记录 Slot Table，并把变化交给 `UiApplier` 创建或更新 Compose UI 节点。
 
-[已验证: androidx-compose-release, compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt]
+需要把“会进入的内容”说清楚：
 
-## Class 加载与 Compose Runtime 初始化
+- 初始 composition 没有上一份相同 composition 的结果可复用，因此已经进入的 group 不能依靠上一轮参数跳过；
+- 条件分支没有选中的内容不会执行；
+- Lazy layout 尚未请求的 item 不会因为数据集合存在就全部执行；
+- 已进入 group 中的 `remember { ... }` calculation 会执行一次；
+- 一个 composable 可以不产生布局节点，也可以产生多个节点，函数调用数不等于 UI 节点数。
 
-### Compose Runtime 类加载链
+所以，首次成本不是 `N × M` 这样的层数公式。更有用的模型是：被进入的 composable 工作量、创建的 layout/modifier/semantics 节点、业务计算、子组合、文本与图片处理，再加上 apply、measure、layout、draw 的总和。
 
-首次使用 Compose 时，ART 需要加载一系列类。加载链大致如下：
+### 1.4 composition 完成后仍要经过 View traversal
 
-```
-ComposeView
-  → AbstractComposeView
-    → AndroidComposeView
-      → Recomposer
-        → CoroutineScope (runtimeDispatcher)
-          → Snapshot (SnapshotKt.takeMutableSnapshot)
-            → CompositionData / CompositionImpl
-              → ComposerKt (compositionLocalMap)
-```
+初始结果应用到 UI 树后，`AndroidComposeView` 仍是 `ViewRootImpl` 管理的一棵 View 子树。Android 17 上的可见路径可以按边界理解为：
 
-每个类的加载包括：`.dex` 文件查找 → `ClassDef` 解析 → `ClassLinker` 链接 → `Init` 静态块执行。Compose Runtime 涉及约 200-300 个类，首次冷启动时类加载总耗时约 5-15ms（中端设备），取决于 `dexopt` 编译模式和类是否在 `boot.art` 中。
+1. `AndroidComposeView.onMeasure()` 驱动 Compose 节点测量；
+2. `onLayout()` 完成节点放置，并派发位置回调；
+3. `dispatchDraw()`/内部 draw 路径记录绘制命令；
+4. HWUI 与 `RenderThread` 处理 display list、GPU 工作和 buffer 提交；
+5. SurfaceFlinger 合成后，像素才出现在屏幕上。
 
-没有 Baseline Profile 时，Compose Runtime 的方法首次执行走解释器或 JIT，速度比 AOT 编译慢 2-5 倍。这就是 Baseline Profile 对 Compose 启动至关重要的根本原因——详见 §21.4。
+composition 只是首帧中的一段。若 Perfetto 显示 composition 很短，而主线程 I/O、文本测量、图片解码、View traversal 或 RenderThread 很长，继续删 composable 层级不会处理对应瓶颈。
 
-### AppCompatActivity vs ComponentActivity
+## 2. 初始 composition 与重组不能混为一谈
 
-`AppCompatActivity` 在 `onCreate` 中额外执行了 `AppCompatDelegateImpl` 的初始化，包括 `SupportActionBar` 相关逻辑和 `AppCompatViewInflater` 的替换。如果 Activity 使用 Compose 作为根视图（`setContent {}`），这些 AppCompat 基础设施大部分不参与渲染，但初始化开销仍然存在：
+重组优化关注“输入改变后，哪些 group 可以跳过”；初始 composition 关注“首屏第一次需要建立多少内容”。稳定类型、Strong Skipping、延后状态读取等能力主要减少后续重复工作，不能免除首屏需要进入的根内容。
 
-- `AppCompatDelegateImpl.create()`：约 2-5ms
-- `AppCompatViewInflater` 注册：约 0.5-1ms
+`remember` 也只缓存当前 composition 后续可复用的结果。下面的写法可以避免每次重组都重新排序，但排序仍处于初始 composition 的关键路径。
 
-纯 Compose Activity 推荐继承 `ComponentActivity`，跳过 AppCompat 初始化链路。如果项目因历史原因必须用 `AppCompatActivity`，这部分开销约 3-6ms，属于可接受范围但不理想。
+```kotlin
+@Composable
+fun HomeScreen(items: List<Item>) {
+    val sortedItems = remember(items) {
+        items.sortedByDescending(Item::score)
+    }
 
-[已验证: Compose BOM 2025.12.00 行为，Android 12-17]
-
-## Baseline Profile 对 Compose 首次组合的优化
-
-### 为什么 Compose 需要 Baseline Profile
-
-Compose 的编译产物有两个特点导致 Baseline Profile 的收益特别大：
-
-1. **生成代码量大**：Compose compiler 为每个 `@Composable` 函数生成 `Group` 框架代码（`startRestartGroup` / `endRestartGroup` / `updateGroup` 等），生成的方法数远多于源码中的函数数。
-2. **运行时高频调用的 Runtime API**：`Composer.skipToGroupEnd()`、`Snapshot.takeMutableSnapshot()`、`Recomposer.recompositionStarted()` 等方法在首次组合中被密集调用。没有 AOT 编译时，这些方法走解释器，性能差距明显。
-
-Baseline Profile 让 ART 在安装时（或 OTA 后首次启动时）预先将这些方法 AOT 编译为机器码，跳过解释器和 JIT 预热阶段。
-
-### Compose Baseline Profile 的获取方式
-
-从 Android Studio Flamingo（2023）起，新建 Compose 项目默认包含 Compose 预置 Baseline Profile（`androidx.compose:compose-bom` 携带）。但预置 Profile 只覆盖 Compose 库自身代码，不覆盖应用自己的 Composable 函数。
-
-获取完整 Baseline Profile 的方法：
-
-1. **Macrobenchmark + BaselineProfileRule**：编写 `BaselineProfileRule` 测试，在测试中启动 App 并操作核心页面（特别是冷启动后第一个可见页）。生成的 profile 覆盖冷启动路径上的所有 Compose 调用。
-
-2. **Startup Profile（Android 15+）**：Startup Profile 是 Baseline Profile 的子集，专门聚焦 App 启动路径。Android 运行时安装时优先处理 Startup Profile，编译速度更快。从 `androidx.profileinstaller:profileinstaller` 1.4.0 起，如果项目同时提供 Baseline Profile 和 Startup Profile，安装时两者协同生效。详见 §21.12。
-
-### Baseline Profile 对 Compose 首帧的效果
-
-以下数据来自 Google 官方 Macrobenchmark 示例和社区公开报告（[来源: Google I/O 2024 "Compose Performance" talk, Android 开发者博客]）：
-
-- 纯 Compose 冷启动首帧：Baseline Profile 覆盖后，首次组合耗时降低约 20-40%
-- 中端设备（如 Pixel 6a / Snapdragon 7 系列）效果最明显，高端设备（Pixel 9 Pro）因 CPU 算力富裕差距收窄
-
-[待验证: 具体百分比数据随设备和 Compose 版本变化，建议用项目自身 Macrobenchmark 验证]
-
-## 延迟组合与按需 Composition
-
-### SubcomposeLayout 的拆分效果
-
-`SubcomposeLayout` 允许 Compose 在 measure 阶段按需组合子节点，而不是在组合阶段一次性组合所有子节点。这对首帧的优化效果是：将一次大的组合拆分为多次小的组合，首帧只需完成可见部分。
-
-Compose 标准库中大量使用 `SubcomposeLayout`：`Box`（带 `Modifier.align`）、`LazyColumn`/`LazyRow`、`TextField` 等。自定义布局如果子节点数量不确定或按需展示，也应该考虑 `SubcomposeLayout`。
-
-`SubcomposeLayout` 的代价是：每次 `measure` 可能触发额外组合，总体 CPU 开销高于一次性组合。对启动场景，首帧时间的收益通常值得这个代价。
-
-### LazyColumn / LazyRow 在启动中的角色
-
-`LazyColumn` 只组合当前可见区域 + `beyondBoundsItemCount` 指定的额外项目。在一个有 100 项数据的列表页面中，首帧只组合约 8-12 项（取决于屏幕高度和项目高度），而非全部 100 项。
-
-这直接影响首次组合耗时。如果启动页的根布局是一个长列表，用 `LazyColumn` 替代 `Column { items() }` 可以将首次组合耗时降低 50% 以上。
-
-### NavHost 目的地延迟组合
-
-Navigation Compose 的 `NavHost` 默认只组合当前目的地的 Composable，不预组合其他目的地。这对启动有利：启动时只组合起始目的地，其他页面等用户导航时才组合。
-
-如果项目有预加载需求（如启动时预组合第二个页面以减少导航延迟），可以用 `Lifecycle.Observer` 在 `ON_RESUME` 后触发后台预组合，但这会增加启动期内存压力。权衡取舍。
-
-### remember 与 LazyThreadSafetyMode
-
-`remember(LazyThreadSafetyMode.NONE)` 跳过 `Snapshot` 系统的读写追踪。在确定某个 `remember` 只在单线程访问的场景（如主线程的组合阶段），使用 `NONE` 可以减少 `SnapshotMutableState` 的创建和注册开销。
-
-Compose 1.10（BOM 2025.12）中，Strong Skipping 默认启用后，编译器对 `remember` 的处理更加积极，部分场景编译器会自动选择 `NONE` 模式。手动标注仍然适用于编译器无法推断的场景。
-
-## Compose 启动链路度量
-
-### 从 Activity.onCreate 到 Compose 首帧的时间线分解
-
-```
-Activity.onCreate()
-  ├─ super.onCreate()                    [1-3ms]
-  ├─ setContent {}                       
-  │   ├─ AndroidComposeView 安装          [2-5ms]
-  │   ├─ Recomposer 创建+启动             [1-3ms]
-  │   └─ 首次 Composition 队列入队         [0ms, async]
-  ├─ 数据初始化 / ViewModel 创建           [variable]
-  └─ Activity.onCreate() 返回
-                                        ↓
-Choreographer doFrame #1
-  ├─ Recomposer.runRecomposeAndApplyChanges  [10-40ms] ← 首次组合
-  ├─ AndroidComposeView.onMeasure             [2-5ms]
-  ├─ AndroidComposeView.onLayout              [1-3ms]
-  └─ AndroidComposeView.onDraw                [1-3ms]
-                                        ↓
-RenderThread
-  └─ 提交到 GPU                               [2-5ms]
-                                        ↓
-Display compositor → 像素上屏
+    HomeContent(sortedItems)
+}
 ```
 
-首次组合（`runRecomposeAndApplyChanges`）是整个链路中变异最大的环节，取决于 UI 树复杂度、Baseline Profile 覆盖率和设备 CPU 性能。
+这段代码适合计算规模可控、结果只服务 UI 的场景。数据量大或排序涉及 I/O 时，应在 repository、use case 或 ViewModel 的数据准备阶段完成，并把准备好的 UI state 传入首屏。把代码从 Activity 移进 ViewModel 并不会自动延迟它；只要首屏同步创建 ViewModel 并等待结果，它仍属于 TTID 或 TTFD 路径。
 
-### Perfetto 中的 Compose 首次组合 Trace
+`remember(LazyThreadSafetyMode.NONE)` 不是 Compose API。`remember` 的公开重载接收 calculation 和可选 keys，没有 `LazyThreadSafetyMode` 参数；该参数属于 Kotlin `lazy()`。它也不能用来关闭 Snapshot 状态跟踪。
 
-Compose Runtime 通过 `androidx.compose.runtime` 的 `Trace` API（`androidx.tracing`）向 Perfetto 输出 trace 区间。关键标记：
+## 3. 首屏开销应按来源拆分
 
-| Trace 区间名 | 含义 |
-|---|---|
-| `Compose:recompose` | Recomposer 执行重组/首次组合 |
-| `Compose:applyChanges` | 将组合结果应用到 Composition 树 |
-| `Compose:layout` | Compose 布局阶段 |
-| `Compose:draw` | Compose 绘制阶段 |
-| `Recomposer:runRecomposeAndApplyChanges` | 整个组合循环迭代 |
+| 成本来源 | 常见内容 | 判断证据 |
+|---|---|---|
+| AndroidX/应用类加载 | Compose runtime、UI、Material、导航及业务类首次加载 | Perfetto 的 class loading、ART 与主线程 slice |
+| host 与 composition 建立 | `ComposeView`、`AndroidComposeView`、window recomposer、CompositionLocal 环境 | AndroidX coarse trace、方法 trace、调用栈 |
+| 业务 composition | UI state 转换、集合处理、modifier 构建、首屏节点创建 | Composition Tracing、业务自定义 trace |
+| layout | 约束传播、文本测量、Lazy 子组合、自定义 layout | `AndroidOwner:onMeasure`、`onLayout` 附近的调用 |
+| draw/render | Canvas 记录、layer、图片上传、shader、RenderThread/GPU | `AndroidOwner:draw`、FrameTimeline、RenderThread、GPU 轨道 |
+| 首屏外部依赖 | 数据库、磁盘、Binder、网络、字体与图片资源 | I/O、Binder、线程调度、业务 ready 状态 |
 
-在 Perfetto 中搜索 `Compose:recompose` 的第一个实例，即可定位首次组合。结合 `Choreographer#doFrame` 区间，可以精确计算首次组合占用帧时间的比例。
+“Compose Runtime 有多少个类”“解释器比 AOT 慢几倍”都不能直接换算成本项目的首帧时间。R8 会改变类与方法布局，Baseline Profile 会改变编译状态，不同设备的存储、CPU、刷新率和热状态也不同。固定毫秒数只能作为某次实验的结果，必须连同设备型号、系统版本、APK、启动模式、编译模式和样本分布保存。
 
-Compose trace 默认需要引入 `androidx.tracing:tracing-perfetto` 依赖（1.0.0+），并在 `Application.onCreate` 中调用 `Trace.enable()`. Android 15+ 的 Perfetto 可以直接捕获 Compose trace 区间，不需要额外 enable 调用。详见 §22.20 Compose 性能优化盲区中的 Trace 配置部分。
+`ComponentActivity` 与 `AppCompatActivity` 也不适合套用固定差值。只需要 Activity 基础能力的纯 Compose 页面可以优先评估 `ComponentActivity`；依赖 AppCompat delegate、旧主题或兼容能力的页面保留 `AppCompatActivity`。迁移是否有收益，要比较相同 release APK 的 Macrobenchmark，不能拿基类名称代替证据。
 
-### FrameMetrics 与 Compose 首帧
+## 4. Baseline Profile 与 Startup Profile 各优化什么
 
-`FrameMetrics` API（§19.12）报告的 `TOTAL_DURATION` 和 `DRAW_DURATION` 包含了 Compose 的布局和绘制，但不区分 Compose 组合和 View measure/layout。要拆分 Compose 组合耗时，必须依赖 Perfetto trace。
+### 4.1 Compose 的库 Profile 不覆盖应用代码
 
-`reportDrawComposition` 不是公开 API。Compose 内部通过 `DisplayListCanvas` 和 `RenderNode` 与 HardwareRenderer 交互，首帧完成时 HardwareRenderer 的 `syncContent` 回调通知 Compose。在 Perfetto 中追踪更可靠。
+Compose 作为库发布，库代码没有 platform boot image 的编译条件。Compose 库随发布物提供 Baseline Profile，应用消费 library profile 后，ART 可以提前编译 profile 覆盖的库路径。
 
-## 多进程与多窗口下的 Compose 初始化
+这里有两个容易混淆的点：
 
-### 子进程 Compose 初始化开销
+- `androidx.compose:compose-bom` 只负责依赖版本对齐，不包含 Compose 实现代码，也不是 Baseline Profile 的承载 AAR；
+- Compose 自带的规则只覆盖 Compose 库代码，不会自动覆盖应用自己的 composable、ViewModel、导航和数据准备路径。
 
-每个使用 Compose 的进程独立承担 Compose Runtime 初始化成本。子进程不能复用主进程已加载的 Compose 类（ART 的类加载器是进程级的）。
+应用仍应使用 `BaselineProfileRule` 采集 launcher、通知、deep link 等主要入口，并让测试走到首屏可交互状态。Profile 只改变代码编译状态，不会让数据库查询、网络等待或图片解码消失。
 
-多进程 App（如推送服务、小工具进程）如果 UI 面板使用 Compose，需要单独评估其启动性能。优化方向：
+### 4.2 Startup Profile 是构建期 DEX 布局输入
 
-- 子进程 UI 尽量简单，减少首次组合的 UI 树复杂度
-- 子进程的 Baseline Profile 需要覆盖子进程入口路径
-- 考虑子进程是否真的需要 Compose，简单的 RemoteViews 可能更高效
+Startup Profile 是启动相关规则的子集。R8 在构建期使用它调整 DEX 布局，尽量把启动路径放在更合适的位置，尤其是主 DEX。它不是 Android 15 才出现的运行时能力，也不是 ART 在安装阶段“优先编译一份较小 Profile”。
 
-### 多窗口与桌面模式
+当前官方工具要求的核心边界是 AGP、Baseline Profile Gradle Plugin、Macrobenchmark 与 R8 配置；DEX layout optimization 自 AGP 8.3 起默认开启。library 可以贡献 Baseline Profile，但不能替应用贡献 Startup Profile，后者来自应用定义的启动测试。详细生成与产物校验见 [§21.12 Startup Profile 与 DEX 布局](./12-startup-profile-dex-layout.md)。
 
-Android 多窗口模式下，Compose 的行为与全屏模式一致。但 `AndroidComposeView` 的 `onConfigurationChanged` 可能在窗口大小调整时频繁触发重组。启动阶段的窗口尺寸变化（如桌面模式窗口默认尺寸不固定）会导致首次组合完成后立即触发额外重组。
+### 4.3 不要用类预加载代替 Profile
 
-在 Android 17 桌面模式下（详见 §2.20 多窗口与桌面模式渲染性能），推荐在 `onCreate` 中读取 `WindowManager.getCurrentWindowMetrics()` 获取稳定窗口尺寸后再触发 Compose 组合，避免启动期窗口尺寸抖动引起的重复重组。
+在 `Application.onCreate()` 中调用 `Class.forName()` 预加载 Compose 类，只是把类加载移动到更早的主线程路径，还可能扩大每次启动的必做集合。它既不能替代 AOT 编译，也不能保证 DEX 局部性。
 
-## 扩展
+更稳妥的做法是让 Baseline Profile 覆盖自然启动 CUJ，让 Startup Profile 反映相同入口，再从 release trace 中确认类加载、首次执行和 DEX 读取是否改善。不要编造“预热所有 Compose 类”的启动场景。
 
-### Compose 预编译方案
+## 5. 缩减初始 composition 的有效手段
 
-Compose 团队在探索的预编译（Precompilation）方向：在应用构建期将 Composable 函数预编译为中间表示（IR），减少运行时首次组合的开销。目前（Compose 1.10 / Kotlin 2.2）还没有公开可用的预编译 API。
+### 5.1 首帧只建立当前需要显示的内容
 
-工程实践中可考虑的替代方案：
+首屏根节点常见的无效工作包括：一次性创建未选中的 tab 内容、构建折叠区域、为暂不可见弹窗准备完整 UI、同步格式化大集合，以及在页面根部读取与首屏无关的状态。
 
-- **预加载 Compose 类**：在 `Application.onCreate` 中通过 `Class.forName()` 显式触发 Compose Runtime 核心类的加载。效果有限（类加载只是首次组合的一部分），但在超大 App 中可以减少 5-10ms。
-- **后台线程预组合**：Compose 1.8+ 的 `PausableComposition` 支持在子线程执行部分组合工作（详见 §22.3）。但首次组合必须在主线程 `Recomposer` 驱动下完成，子线程预组合目前仍有限制。
+可以把不可见且非必要的子树留在条件分支外，等业务状态或用户动作满足后再进入 composition。这里不能用空白壳层刻意压低 TTID：首帧应给出有意义的可见反馈，主要内容可用时再按业务定义上报 TTFD。
 
-[待验证: PausableComposition 在启动场景的具体效果，建议跟踪 Compose 1.11+ 更新]
+导航容器和页面预取的行为会随库版本及配置变化。不要自行用 Lifecycle observer 在后台创建第二套页面 composition；composition 与 UI owner、Snapshot、Lifecycle、资源和主线程调度有关。若某次导航确有可测的首次进入延迟，应使用对应组件公开的预取能力，或在数据层预取可复用数据。
 
-### View/Compose 混合启动的性能
+### 5.2 把重计算移出 composable，但保留状态所有权
 
-在 View 体系为主的 App 中逐步引入 Compose，启动路径可能同时包含 View inflate 和 Compose 首次组合。额外开销来源：
+适合移出的工作包括：
 
-- `ComposeView` 嵌入 `FrameLayout` 时，`AndroidComposeView` 作为子 View 参与父布局的 measure/layout，增加一次布局传递
-- `ViewTreeLifecycleOwner` / `ViewTreeViewModelStoreOwner` 的安装时机：如果 `ComposeView` attach 时 owner 未就绪，Compose 会延迟初始化直到 owner 可用，这段等待表现为 `runRecomposeAndApplyChanges` 的首次调用延迟
+- 大集合排序、分组、diff 和字符串拼装；
+- JSON/数据库读取、磁盘探测与同步 Binder 调用；
+- 与 UI 无关的正则、加密、图片解码和模型初始化；
+- 每次进入根 composable 都重新创建的 formatter、parser 或配置对象。
 
-混合迁移的性能影响详见 §22.15 Compose First 与 View/Compose 混合迁移性能边界。
+`remember` 适合缓存 UI 局部对象，不能把阻塞工作变成安全的首帧工作。`rememberSaveable` 还涉及保存/恢复语义，也不应承载大对象或无法稳定序列化的业务模型。
 
----
+`LaunchedEffect` 会在进入 composition 后启动协程，不等于“首帧后免费执行”。它的启动、主线程片段以及切换 dispatcher 前的代码仍可能与首帧竞争。首屏必需数据应有明确的 loading/ready 状态；非必需任务交给受生命周期管理的后台工作，并用 trace 验证调度位置。
 
-> 本节内容已加工，状态变更：draft → ready-for-review。
-> 加工日期：2026-06-27
-> 交叉引用：§21.3 ContentProvider 启动治理、§21.4 Baseline Profile 实战、§22.3 Compose 性能优化实战、§22.20 Compose 性能优化盲区、§22.26 Compose Snapshot 系统与状态观测性能、§18.25 Jetpack Compose 渲染管线架构
-> [结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
+### 5.3 正确选择 `Column` 与 Lazy layout
+
+官方文档给出的边界很直白：固定且数量很少的内容可以使用 `Column`/`Row`；数量大或未知时，Lazy layout 避免一次组合并布局所有 item。不能据此承诺“100 项只组合 8 项”或“耗时降低 50%”，因为可见数量取决于 viewport、item 尺寸、content padding、预取与版本实现。
+
+Lazy 首屏还要注意：
+
+- item 在异步内容到达前不要是 0 像素，否则一次 measure 可能判断 viewport 能容纳大量 item，造成无效组合；
+- 为可重排数据提供稳定 `key`；
+- 异构列表提供合适的 `contentType`，帮助后续 composition reuse；
+- 不要把大量元素塞进同一个 `item { ... }`，否则它们仍会作为一个单元一起组合和测量；
+- 小型固定按钮组、标签组不应只为“懒加载”换成 `LazyRow`。
+
+### 5.4 `SubcomposeLayout` 不是通用加速器
+
+`SubcomposeLayout` 允许父布局拿到约束后，在 measure 期间选择并组合子内容。`LazyColumn`、`LazyRow` 和 `BoxWithConstraints` 属于官方文档列出的典型“子内容依赖父布局阶段”场景。
+
+普通 `Box` 即使使用 `Modifier.align`，源码仍调用常规 `Layout` 和 `BoxMeasurePolicy`，并不因此变成 `SubcomposeLayout`。自定义页面也不应为了推迟工作就默认选择 subcomposition：它会把 composition 工作拆到 layout 阶段，Perfetto 中经常表现为两个相邻工作块，并可能增加当前帧总成本。只有子内容必须依赖测量约束或需要按 viewport 创建时才使用。
+
+### 5.5 避免制造“首帧后立刻再来一帧”
+
+下面这种模式会让首帧先用旧值绘制，再由 layout 回调写状态，触发下一帧 composition：
+
+- `onSizeChanged()` / `onGloballyPositioned()` 得到尺寸；
+- 把尺寸写进 `MutableState`；
+- 在同一布局关系中把该状态读成 `padding`、`height` 或子节点位置。
+
+若父子关系可以在同一次 measure 中求解，应使用现有布局组件或自定义 `Layout`。自适应页面也应从当前 constraints 或窗口尺寸类别派生结构，避免把一次布局结果绕回 composition。
+
+## 6. Android 17 多窗口与多进程边界
+
+Android 17 的自由窗口、分屏和旋转都可能改变窗口约束。约束变化后发生 remeasure，页面读取窗口类别时发生必要的 recomposition，这属于正确行为。不要在 `onCreate()` 里等待所谓“稳定的 `WindowMetrics`”再调用 `setContent`：可调整窗口没有永久稳定尺寸，这种等待还会推迟首帧。
+
+启动测试至少覆盖一个常用全屏尺寸和一个可调整窗口尺寸。若窗口拖动期间重组过多，应检查状态读取范围、窗口类别离散化和布局到状态的反馈，不要冻结一次 `getCurrentWindowMetrics()` 结果。
+
+每个 Android 进程有独立的 heap、ClassLoader 和 Compose runtime 状态。只有在某个进程创建 Compose UI host 时，它才承担对应类加载与 composition 成本。通知、App Widget 的 `RemoteViews`，以及基于 Glance 生成 `RemoteViews` 的路径，不能按 Activity 中的 `AndroidComposeView` 首帧模型解释。多进程 Baseline Profile 是否覆盖入口，也应通过该进程的启动 trace 验证。
+
+## 7. View/Compose 混合页面
+
+混合页面会同时承担 View inflate/binding 和 Compose host 的初始 composition。每个独立 `ComposeView` 都有自己的 composition 生命周期，并在内部持有 Compose UI owner；首屏分散许多 `ComposeView` 可能放大 host、owner 查找和 composition 管理工作。
+
+优化时可以评估把相邻 Compose 内容放进同一个 host，但要保留 Fragment/View 生命周期边界。`ViewCompositionStrategy` 的选择应先保证 composition 在正确时机释放。为了少一个 host 而让 composition 越过 Fragment view 生命周期，会把小幅性能猜测换成泄漏或状态错误。
+
+反方向的 `AndroidView`/`AndroidViewBinding` 也会把 View 创建和测量带入 Compose 页面。归因时应在 trace 中拆开 XML inflate、View 构造、composition、layout 和 draw，不能把整个混合页耗时都记到 Compose。
+
+## 8. 用 TTID、TTFD 和 Perfetto 测量
+
+### 8.1 TTID 与 TTFD 回答不同问题
+
+`StartupTimingMetric.timeToInitialDisplayMs` 从系统收到启动 intent 到目标 Activity 第一帧显示。`timeToFullDisplayMs` 到应用报告 fully drawn，并以包含或紧随该报告的首帧为结束边界。
+
+Compose 首屏可以用 `ReportDrawnWhen` 把“主要内容可交互”定义成可审查条件。下面示例用于等待状态加载完成；合法空态也必须能够进入 `Ready`。
+
+```kotlin
+@Composable
+fun HomeRoute(state: HomeUiState) {
+    ReportDrawnWhen {
+        state is HomeUiState.Ready
+    }
+
+    HomeScreen(state)
+}
+```
+
+这段条件描述业务 ready，而不是“列表必须非空”。若应用把错误页或离线页也定义为可交互完成态，应让这些状态同样释放 fully drawn reporter，避免 TTFD 样本永久缺失。
+
+### 8.2 Macrobenchmark 固定实验条件
+
+下面的基准骨架用于测量带 Baseline Profile 的冷启动；目标 variant 应接近 production、`profileable`、non-debuggable，并开启 R8。
+
+```kotlin
+@RunWith(AndroidJUnit4::class)
+class HomeStartupBenchmark {
+    @get:Rule
+    val benchmarkRule = MacrobenchmarkRule()
+
+    @Test
+    fun coldStartupWithProfile() {
+        benchmarkRule.measureRepeated(
+            packageName = TARGET_PACKAGE,
+            metrics = listOf(StartupTimingMetric()),
+            compilationMode = CompilationMode.Partial(
+                baselineProfileMode = BaselineProfileMode.Require
+            ),
+            startupMode = StartupMode.COLD,
+            iterations = 10,
+            setupBlock = { pressHome() }
+        ) {
+            startActivityAndWait()
+        }
+    }
+}
+```
+
+`CompilationMode.Partial(Require)` 会要求 APK 内存在可安装的 Baseline Profile 和 ProfileInstaller，适合验证交付链。另建 `CompilationMode.None()` 场景可以观察无预编译的下界，但它代表偏差的最差条件，不能当成用户默认安装状态。比较前要固定设备、系统、APK、启动入口、数据集、网络替身和温控条件，并看多轮分布。
+
+### 8.3 Perfetto 负责归因
+
+Macrobenchmark 会产出 system trace。初始分析可按这条顺序进行：
+
+1. 在 Android App Startups/TTID 区间确认主线程何时进入 Activity、`setContent` 和首次 traversal；
+2. 对齐 `Choreographer#doFrame`、FrameTimeline、主线程、RenderThread、Binder、I/O 与 GC；
+3. 查看 Compose coarse slice，再判断长段位于 composition、measure/layout 还是 draw；
+4. 开启 Composition Tracing 后，把长段定位到具体 composable；
+5. 给业务数据准备、图片请求和路由解析增加低基数自定义 trace，和 Compose slice 对齐。
+
+当前 AndroidX 源码能看到 `Compose:initializeView`、`Recomposer:recompose`、`AndroidOwner:onMeasure`、`AndroidOwner:onLayout`、`AndroidOwner:draw` 等内部 slice。名称会随 AndroidX 版本变化，不是公开 API，也不能假定每条 trace 都完整出现。分析脚本若依赖名称，必须与被测 Compose 版本一起维护。
+
+细粒度 composable 名称需要 `androidx.compose.runtime:runtime-tracing`。使用 Compose BOM 时依赖无需单列版本。Android Studio 可以自动完成常规 system trace 配置；手动 terminal 采集还需要 `tracing-perfetto`、仅测试构建使用的 `tracing-perfetto-binary`、`track_event` data source 和 `ENABLE_TRACING` 广播。Macrobenchmark 的完整 composition tracing 还要按官方文档配置 `androidx.benchmark.fullTracing.enable=true`。
+
+不要在 `Application.onCreate()` 中调用一个笼统的 `Trace.enable()`，也不要假定 Android 15 到 Android 17 会自动打开细粒度 Compose tracing。采集方式取决于 Android Studio、Macrobenchmark 或手动 Perfetto 路径，详见 [§22.37 Compose Runtime Tracing](../ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md)。
+
+`FrameMetrics` 和 `FrameTimingMetric` 适合回答帧是否超时，不能单独说明慢在 composition。反过来，某个 composable slice 较长也不等于用户已经看到卡顿；还要与同一帧 deadline、主线程和 RenderThread 工作对齐。
+
+## 9. 常见症状与下一步证据
+
+| 症状 | 先看什么 | 常见处理方向 |
+|---|---|---|
+| TTID 高，initial composition 明显长 | 进入的首屏子树、业务计算、Profile 覆盖 | 推迟不可见内容、移出重计算、补应用 Profile |
+| TTID 高，Compose slice 很短 | Provider、DI、I/O、类加载、Splash、View traversal | 回到完整启动链，不改 UI 结构猜测 |
+| composition 正常，measure/layout 长 | 文本、Lazy item、subcomposition、自定义 layout | 减少重复测量，检查约束与 0 尺寸 item |
+| TTID 正常，TTFD 长 | 数据 ready、图片、错误/空态、report 条件 | 优化异步依赖并修正 fully drawn 定义 |
+| 首帧后立即出现同结构重组 | layout 回写状态、effect 更新、窗口类别抖动 | 消除 phase feedback，缩小状态读取范围 |
+| `Partial` 明显优于 `None`，发布包却无收益 | Profile 打包、安装和编译状态 | 检查 APK/AAB profile 产物与安装渠道 |
+| View/Compose 混合页首帧变慢 | XML inflate、多个 host、`AndroidView` 创建 | 分段 trace 后按最大成本处理 |
+
+## 10. Review 检查清单
+
+- 是否把平台锚点限制在 Android 17 / API 37，并把 Compose 视为 AndroidX 库？
+- 是否准确区分 `ComposeView`、内部 `AndroidComposeView`、`Composition` 与 `Recomposer`？
+- 是否删除没有设备、构建、编译模式和样本分布的固定毫秒数或百分比？
+- 是否明确初始 composition 只执行进入的分支与被请求的 Lazy 内容？
+- 是否理解 `remember` 的 calculation 在初始 composition 仍要执行？
+- 是否把 Baseline Profile 的 AOT 编译和 Startup Profile 的构建期 DEX 布局分开？
+- 是否避免 `Class.forName()` 预热、后台自行驱动 composition 和无效的 `remember(LazyThreadSafetyMode.NONE)`？
+- 是否按内容规模选择 `Column`/`Row` 或 Lazy layout，并避免 0 像素 item？
+- 是否只在子内容依赖 constraints 时使用 subcomposition，并确认普通 `Box` 不属于这一路径？
+- 是否用 release-like Macrobenchmark 同时记录 TTID/TTFD，并以 Perfetto 做阶段归因？
+- 是否把内部 trace slice 名称视作版本相关实现细节？
+- 是否在多窗口和混合页面中优先保证生命周期、状态与布局正确，再比较性能？
+
+## 参考资料
+
+- [AndroidX `ComponentActivity.setContent` 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-compose-release/activity/activity-compose/src/main/java/androidx/activity/compose/ComponentActivity.kt)
+- [AndroidX `ComposeView` 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeView.android.kt)
+- [AndroidX `WindowRecomposer` 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/WindowRecomposer.android.kt)
+- [AndroidX `Recomposer` 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt)
+- [AndroidX `remember` 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composables.kt)
+- [AndroidX `Box` 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-compose-release/compose/foundation/foundation-layout/src/commonMain/kotlin/androidx/compose/foundation/layout/Box.kt)
+- [Compose phases](https://developer.android.com/develop/ui/compose/phases)
+- [Compose performance](https://developer.android.com/develop/ui/compose/performance)
+- [Compose Baseline Profile](https://developer.android.com/develop/ui/compose/performance/baseline-profiles)
+- [Baseline Profiles overview](https://developer.android.com/topic/performance/baselineprofiles/overview)
+- [Create Startup Profiles](https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations)
+- [Lazy lists and grids](https://developer.android.com/develop/ui/compose/lists)
+- [Jetpack Glance](https://developer.android.com/develop/ui/compose/glance)
+- [Composition tracing](https://developer.android.com/develop/ui/compose/tooling/tracing)
+- [Macrobenchmark metrics](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)
+- [App startup time: TTID and TTFD](https://developer.android.com/topic/performance/vitals/launch-time)
+- [§21.4 Baseline Profile 实战](./04-baseline-profile-practice.md)
+- [§21.8 启动性能监控](./08-startup-monitoring.md)
+- [§22.3 Compose 性能优化](../ch22-rendering-practice/03-compose-performance.md)
+- [§22.15 View/Compose 混合迁移](../ch22-rendering-practice/15-compose-first-view-migration-performance.md)
+- [§22.22 Compose LazyList 性能](../ch22-rendering-practice/22-compose-lazylist-performance.md)
+- [§18.25 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md)
