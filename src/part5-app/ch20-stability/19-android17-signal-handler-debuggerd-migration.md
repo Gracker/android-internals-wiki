@@ -26,575 +26,376 @@ sources:
     path: "DeepResearch/2026-07-07-android17-linker-debuggerd-init-wiring-source.md"
 ---
 
-# 20.19 Android 17 信号处理架构迁移与 debuggerd bionic/linker 重构
+# 20.19 Android 17 信号处理架构与 debuggerd / linker 协作
 
-> ⚠️ **叙事勘误**：本节初稿大纲中出现的「debuggerd 核心功能正式迁入 bionic/linker/」「信号线程亲和性分发机制」「动态 altstack 尺寸策略」等说法，经 `android-17.0.0_r1` 源码逐行验证后**均不成立**。本节按源码事实重写，并在对应位置标注勘误。
->
-> 详见 §20.9 第 209-216 行的同步勘误。[已验证: AOSP android-17.0.0_r1]
+这一章的题名容易让人产生误解：`debuggerd` 的核心实现没有在 Android 17 搬进 Bionic linker。Android 17 仍由 `system/core/debuggerd/` 维护 handler、`crash_dump`、tombstone 编码和 `tombstoned`；linker 只负责在进程早期安装 handler、提供 libc 共享状态，并把可恢复信号入口暴露给 ART 的 signal chain。
 
----
+对 Android 14、15、16、17 的 AOSP 首个发布标签逐项比较后，可以得到一个更可靠的结论：
+
+| 机制 | Android 14 | Android 15 | Android 16 | Android 17 |
+|---|---|---|---|---|
+| `linker_main()` 早期调用 `linker_debuggerd_init()` | 已存在 | 保持 | 保持 | 保持 |
+| `bionic/linker/linker_debuggerd_android.cpp` 适配层 | 已存在 | 保持 | 保持 | 增加 Runtime APEX 退役开关分支 |
+| ART `sigchainlib/` | 已位于 ART 仓库 | 保持 | 保持 | 保持，修正 SIGSYS 默认/忽略处理 |
+| debuggerd wire protocol v4 | 已存在 | 保持并扩展字段 | 保持 | 结构整理，版本号仍为 4 |
+| `SA_EXPOSE_TAGBITS` | 已存在 | 保持 | 保持 | 保持 |
+| Recoverable GWP-ASan | 已存在 | 保持 | 保持 | 保持 |
+| pseudothread 可用栈 | 固定 8 个编译期 `PAGE_SIZE` 页 | 改用 8 个运行时 `getpagesize()` 页 | 保持 | 保持 |
+| permissive MTE 经过 ART signal chain 恢复 | GWP-ASan 恢复钩子已存在 | 恢复钩子扩展到 MTE | 保持 | 保持并修正按进程属性读取 |
+
+所以，本章的重点是 Android 17 当前架构及其版本边界，而非构造一条不存在的“大迁移”叙事。
 
 ## 要点
 
-### 🔹 锚点 1：linker 早期 wiring — debuggerd_init 的真正变化
+### 🔹 三个参与方，各自负责什么
 
-**勘误**：所谓「debuggerd 从 `system/core/debuggerd/` 迁移到 `bionic/linker/`」并不准确。Android 17 的实际变化是：
+Android 应用进程的 native fatal signal 涉及三套代码：
 
-1. **`system/core/debuggerd/handler/debuggerd_handler.cpp`**（880+ 行）仍在 `system/core/` 下完整维护，核心信号处理逻辑未迁移。
-2. `crash_dump.cpp` 路径也未变。
-3. 新增的只是 **3 个薄适配文件**（共约 100 行）：
-   - `bionic/linker/linker_debuggerd.h`（34 行）— 声明 `linker_debuggerd_init()` 和 `debuggerd_handle_signal()`
-   - `bionic/linker/linker_debuggerd_android.cpp`（75 行）— Android target 编译，提供 `debugger_process_info` 给 crash_dump
-   - `bionic/linker/linker_debuggerd_stub.cpp`（45 行）— host/linux_bionic 构建的 noop 实现
+| 组件 | Android 17 源码位置 | 职责 |
+|---|---|---|
+| Bionic linker | `bionic/linker/` | 早期调用 `debuggerd_init()`；提供 abort message、fdsan、GWP-ASan、Scudo 等 libc 共享状态 |
+| debuggerd | `system/core/debuggerd/` | 安装 fatal signal handler；创建 pseudothread 与 `crash_dump`；生成 tombstone |
+| ART sigchain | `art/sigchainlib/` | 在应用进程中让 ART 特殊 handler、debuggerd 可恢复钩子与应用 handler 共存 |
 
-**真正的新东西是调用时机**。`linker_main()` 在极早期就调用 `linker_debuggerd_init()`：
+ART 应用进程的链路可以概括为：
 
-```
-bionic/linker/linker_main.cpp:312-313
-
-  // Register the debuggerd signal handler.
-  linker_debuggerd_init();
-```
-
-该调用位于 `__system_properties_init()` 之后、LD_DEBUG / LD_LIBRARY_PATH / soinfo 初始化之前。这意味着每个动态链接进程在 **用户代码跑起来之前、依赖库 mmap 之前**，crash dump 的 signal handler 已经就位。
-
-`linker_debuggerd_init()` 的实现很薄 — 它构造一个 `debuggerd_callbacks_t` 结构体，填入 linker 侧的 `get_process_info` / `get_gwp_asan_callbacks` / `post_dump` 回调，然后转调既存的 `debuggerd_init(&callbacks)`：
-
-```cpp
-// bionic/linker/linker_debuggerd_android.cpp
-static debugger_process_info get_process_info() {
-  return {
-      .abort_msg = __libc_shared_globals()->abort_msg,
-      .fdsan_table = &__libc_shared_globals()->fd_table,
-      .gwp_asan_state = __libc_shared_globals()->gwp_asan_state,
-      .gwp_asan_metadata = __libc_shared_globals()->gwp_asan_metadata,
-      .scudo_stack_depot = __libc_shared_globals()->scudo_stack_depot,
-      .crash_detail_page = __libc_shared_globals()->crash_detail_page,
-  };
-}
-
-void linker_debuggerd_init() {
-  debuggerd_callbacks_t callbacks = {
-      .get_process_info = get_process_info,
-      .get_gwp_asan_callbacks = get_gwp_asan_callbacks,
-      .post_dump = notify_gdb_of_libraries,
-  };
-  debuggerd_init(&callbacks);
-}
+```text
+linker_main
+  -> linker_debuggerd_init
+  -> debuggerd_init：安装 debuggerd handler
+  -> 加载应用依赖和运行构造函数
+  -> ART FaultManager 通过 libsigchain claim 需要的信号
+  -> libsigchain 保存原 debuggerd action，并成为内核看到的 dispatcher
+  -> 应用或 Crash SDK 调用 sigaction 时，更新 dispatcher 后面的用户 action
 ```
 
-**对 SDK 开发者的意义**：Android 17 上，crash 信号处理器在进程启动的最早期就完成了注册。第三方 SDK 在 `Application.onCreate()` 或 `ContentProvider` 中注册自己的信号处理器时，system handler 已经完全就绪。SDK 不需要、也不应该尝试在更早的时机（如 `_init` 构造函数）注册 handler — 那只会干扰 linker 自身的初始化顺序。
+这段顺序解释了 SDK 为什么必须保存并转交旧 handler：在 ART 应用进程中，旧 action 可能通向 debuggerd；在 native-only 进程中，它也可能直接就是 debuggerd handler。覆盖后不转交，会丢掉系统 tombstone 或可恢复内存错误处理。由 Zygote 派生的应用进程继承其进程启动期已建立的系统处理状态，应用 `ContentProvider` 和 `Application` 初始化发生得更晚。
 
-[已验证: AOSP android-17.0.0_r1, bionic/linker/linker_main.cpp:312-313, bionic/linker/linker_debuggerd_android.cpp]
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控原理.md]
+### 🔹 linker 的工作是早期 wiring
 
----
+#### 注册时机
 
-### 🔹 锚点 2：pseudothread 栈机制 — clone + mmap 而非 sigaltstack
+Android 17 的 `linker_main()` 依次执行环境清洗、系统属性初始化、平台属性初始化，然后调用 `linker_debuggerd_init()`。此时还没有进入应用依赖库的构造函数。
 
-**勘误**：大纲中的「动态 altstack 尺寸策略」和「SIGSTKSZ 从固定值到动态计算」在源码中没有依据。
+`linker_debuggerd_init()` 组装三类回调后调用 `debuggerd_init()`：
 
-`debuggerd_init()` 的实际做法是：
+- `get_process_info`：读取 libc shared globals 中的诊断地址。
+- `get_gwp_asan_callbacks`：提供 GWP-ASan 恢复前后的回调。
+- `post_dump`：通知 GDB 动态库列表发生变化。
 
-```cpp
-// system/core/debuggerd/handler/debuggerd_handler.cpp:892-927
-void debuggerd_init(debuggerd_callbacks_t* callbacks) {
-  // Fixed 8 pages of thread stack, surrounded by 2 PROT_NONE guard pages.
-  size_t thread_stack_pages = 8;
-  void* thread_stack_allocation = mmap(nullptr,
-      getpagesize() * (thread_stack_pages + 2), PROT_NONE,
-      MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-  // ...
-  char* stack = static_cast<char*>(thread_stack_allocation) + getpagesize();
-  mprotect(stack, getpagesize() * thread_stack_pages, PROT_READ | PROT_WRITE);
-  // 栈从高地址向低地址增长
-  stack = (stack + thread_stack_pages * getpagesize() - 1);
-  stack -= 15;  // 16-byte 对齐
-  pseudothread_stack = stack;
+这套 wiring 在 Android 14 标签中已经存在。Android 17 不能被描述为“把 debuggerd 提前到 linker 初始化”；在本章适用范围内，早期注册一直是基线行为。
 
-  struct sigaction action = {.sa_sigaction = debuggerd_signal_handler,
-                             .sa_flags = SA_RESTART | SA_SIGINFO};
-  sigfillset(&action.sa_mask);
-  action.sa_flags |= SA_ONSTACK;          // 崩溃主栈溢出时的兜底
-  action.sa_flags |= SA_EXPOSE_TAGBITS;   // Android 17 新增：MTE tag 保留
-  debuggerd_register_handlers(&action);
-}
+#### Android 17 的 Runtime APEX 条件分支
+
+Android 17 在这条路径上增加了 `RELEASE_DEPRECATE_RUNTIME_APEX` 构建开关：
+
+- 开关启用时，handler 从 `/system/bin/crash_dump32|64` 启动 `crash_dump`。
+- 否则仍使用 `/apex/com.android.runtime/bin/crash_dump32|64`。
+- linker 侧的 process info 与 GWP-ASan callbacks 也按该开关或 `__ANDROID_APEX__` 条件编译。
+
+这是构建布局兼容处理，不能据此认定 debuggerd 逻辑迁入 linker。具体产品镜像走哪条路径取决于发布配置，应用代码不应硬编码任一路径。
+
+### 🔹 两层 signal handler：内核 action 与 ART signal chain
+
+#### debuggerd 注册哪些信号
+
+`debuggerd_register_handlers()` 为以下信号安装同一份 action：
+
+- `SIGABRT`
+- `SIGBUS`
+- `SIGFPE`
+- `SIGILL`
+- `SIGSEGV`
+- `SIGSTKFLT`
+- `SIGSYS`
+- `SIGTRAP`
+
+action 使用 `SA_RESTART | SA_SIGINFO | SA_ONSTACK | SA_EXPOSE_TAGBITS`。在 debuggable 平台构建上，`debug.debuggerd.disable=1` 可以跳过这些 fatal signal；内部的 `BIONIC_SIGNAL_DEBUGGER` 仍会注册。
+
+这里的 `SA_ONSTACK` 只表示“当前线程已经配置 alternate signal stack 时使用它”。`debuggerd_init()` 自己没有调用 `sigaltstack()`，也没有为进程中的每个线程统一安装 altstack。
+
+#### ART 为什么还需要 `libsigchain`
+
+ART 需要先检查某些 fault 能否转换成受控的运行时行为，例如隐式空指针异常、栈溢出或运行时内部 fault。直接让 ART 与 SDK 反复覆盖 `SIGSEGV` action，会破坏任意一方。
+
+`libsigchain` 通过全局符号优先级包装 `sigaction`、`signal` 和 `sigprocmask`。`FaultManager::Init()` 使用内部的 `AddSpecialSignalHandlerFn()` claim `SIGSEGV`，并在需要时 claim `SIGBUS`、`SIGSYS`。claim 时，`libsigchain` 把内核中原有的 debuggerd action 保存下来，再把 `SignalChain::Handler` 注册给内核。
+
+一个已 claim 信号的分发顺序如下：
+
+```text
+kernel
+  -> SignalChain::Handler
+     1. ART / native bridge 等 special handlers
+     2. libdl::android_handle_signal
+        -> linker::debuggerd_handle_signal
+        -> 只处理可恢复 GWP-ASan 或 permissive MTE
+     3. 当前用户 action
+        -> 无 SDK 时通常是此前保存的 debuggerd action
+        -> 有 SDK 时是 SDK action；SDK 应继续调用保存的旧 action
 ```
 
-关键事实：
+`android_handle_signal()` 返回 `true` 时，signal chain 立即返回，用户 action 不再执行；返回 `false` 才进入用户 action。官方 GWP-ASan 文档也明确说明：Recoverable GWP-ASan fault 不会调用应用自定义的 `SIGSEGV` handler。
 
-| 维度 | 实际实现 | 大纲原描述 |
-|------|---------|-----------|
-| 栈大小 | **固定 8 页**（编译期常量 `thread_stack_pages = 8`） | ❌ "动态计算" |
-| 分配方式 | `mmap` + `mprotect`，前后各 1 页 `PROT_NONE` guard | ❌ "sigaltstack 自适应" |
-| 线程模型 | `clone(CLONE_THREAD \| CLONE_SIGHAND \| CLONE_VM)` 派生 pseudothread | 未提及 |
-| SA_ONSTACK | 仅作 **兜底**，正常路径走 clone 线程自己的栈 | ❌ "altstack 容量保障" |
+#### `sigaction()` 在 claimed 信号上仍然有效
 
-崩溃发生时，`debuggerd_signal_handler()` 不直接在崩溃线程上做 dump，而是用 `clone()` 派生一个 pseudothread：
+`libsigchain` 的 wrapper 不会把新的 action 直接交给内核，而是更新 `chains[signal].action_`。应用 handler 仍会在 special handlers 和可恢复 debuggerd 钩子之后执行。
 
-```cpp
-// debuggerd_handler.cpp:836-852
-pid_t child_pid =
-  clone(debuggerd_dispatch_pseudothread, pseudothread_stack,
-        CLONE_THREAD | CLONE_SIGHAND | CLONE_VM |
-        CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID,
-        &thread_info, nullptr, nullptr, &thread_info.pseudothread_tid);
+这带来三个工程结论：
+
+1. “普通 `sigaction()` 在 ART 进程中完全无效”是错误判断。
+2. 通过 `sigaction(..., &old_action)` 得到的是 signal chain 保存的用户 action，不是内核当前的 `SignalChain::Handler`。
+3. SDK 仍要按标准链式安装方式保存旧 action；不能根据查询结果的函数地址猜测自己位于第几层。
+
+#### 不要接入 ART 私有 special handler
+
+Android 17 的 `SignalChain` 内部只有两个 `special_handlers_` 槽位，`AddSpecialSignalHandlerFn()` 超额时会终止进程。但这些槽位属于 ART 与平台 native bridge 等内部实现：
+
+- 接口不属于 NDK 公共 API。
+- `libsigchain` 的 APEX stub version script 不导出这些入口。
+- 槽位数量、调用顺序和 TLS 重入策略都可随平台实现调整。
+
+Crash SDK 不应通过 `dlsym(RTLD_DEFAULT, "AddSpecialSignalHandlerFn")` 争抢内部槽位。标准 `sigaction()`、保存旧 action、最小化采集并可靠转交，才是应用可控制的兼容边界。
+
+### 🔹 两块栈解决两类问题
+
+#### alternate signal stack
+
+altstack 属于线程。某线程调用 `sigaltstack()` 后，带 `SA_ONSTACK` 的 signal action 才能在该线程的备用栈上运行；其他线程不会自动继承一份可用的独立 altstack。
+
+它解决的是“崩溃线程原栈已溢出或接近耗尽时，handler 还有空间执行”。在没有配置 altstack 的线程上，`SA_ONSTACK` 不会创造备用栈，handler 仍使用该线程当前栈。
+
+Crash SDK 如果为自己创建的 native 线程提供 altstack，需要在线程入口完成安装，并验证 guard page、对齐、析构与线程退出。只在 `Application.onCreate()` 配置一次，覆盖不了后续所有线程。
+
+#### debuggerd pseudothread 栈
+
+`debuggerd_init()` 还会预留一块独立映射，供崩溃发生后 `clone()` 创建 pseudothread。Android 17 的大小关系是：
+
+```text
+usable pseudothread stack = 8 * getpagesize()
+whole virtual mapping     = 10 * getpagesize()
+guard pages               = 1 page at each end
 ```
 
-`CLONE_SIGHAND` 是关键 — pseudothread 与崩溃线程共享信号处理器表，这使 `SA_RESTART` 能正确重启被信号中断的 syscall。`CLONE_VM` 使 pseudothread 能直接读取崩溃进程的地址空间，无需 `ptrace`。
+4 KB 页设备对应 32 KiB 可读写栈和 40 KiB 整段虚拟映射；16 KB 页设备对应 128 KiB 可读写栈和 160 KiB 整段虚拟映射。这里描述的是地址空间映射大小，不能直接当作常驻 RSS。
 
-**对 16KB Page Size 设备的影响**：在 16KB page 设备上，8 页 = 128KB（而非 4KB page 的 32KB），但 `getpagesize()` 会自动适应。guard 页也相应变大。这不是「动态 altstack」，而是 page size 的自然缩放。详见 §20.13。
+Android 14 版本使用编译期 `PAGE_SIZE`。Android 15 改为运行时 `getpagesize()`，Android 17 延续该实现。页大小自适应由这次替换带来，和“动态估算 signal altstack 所需容量”无关。
 
-[已验证: AOSP android-17.0.0_r1, system/core/debuggerd/handler/debuggerd_handler.cpp:836-852, 892-927]
+### 🔹 fatal signal 到 tombstone 的精确路径
 
----
+`debuggerd_signal_handler()` 起初仍运行在崩溃线程上，可能位于该线程已配置的 altstack。它取得 process info，判断 GWP-ASan / MTE 恢复条件，并用 `crash_mutex` 保证同一时刻只有一个线程进入 dump 主流程。
 
-### 🔹 锚点 3：SA_EXPOSE_TAGBITS — MTE Tag 保留
+非 fallback 路径按下面的阶段运行：
 
-Android 17 在信号处理器注册时新增了 `SA_EXPOSE_TAGBITS` flag：
+```text
+crashing thread
+  -> 暂时 PR_SET_DUMPABLE=1，并按内核能力放宽 ptracer
+  -> clone pseudothread
+       flags: CLONE_THREAD | CLONE_SIGHAND | CLONE_VM
+       deliberately omits CLONE_FILES
+  -> crashing thread 通过 futex 等待 pseudothread 完成
 
-```cpp
-action.sa_flags |= SA_EXPOSE_TAGBITS;
+pseudothread
+  -> 在自己的 FD table 中关闭一批描述符，释放可用槽位
+  -> 创建传递 CrashInfo 的 pipe
+  -> _Fork 后 exec crash_dump
+  -> 等待 crash_dump 建立 ptrace 关系
+  -> double-clone 一个保留地址空间的 VM snapshot
+
+crash_dump
+  -> ptrace 停止并读取各线程寄存器
+  -> 读取 CrashInfo、maps、open files 与 allocator 元数据
+  -> 从 VM snapshot 使用 libunwindstack 回溯
+  -> 交给 tombstoned 写文本和 protobuf tombstone
 ```
 
-**作用**：当 MTE（Memory Tagging Extension）启用时，指针的高位包含 tag 信息。传统信号处理中，内核在传递 `siginfo_t` 和 `ucontext_t` 时会清除这些 tag bits，导致 crash dump 中的故障地址丢失 MTE 上下文。`SA_EXPOSE_TAGBITS` 让内核保留这些位，使 tombstone 能正确显示：
+`CLONE_VM` 让 pseudothread 共享进程地址空间，`CLONE_SIGHAND` 也是 `CLONE_THREAD` 所需组合的一部分。省略 `CLONE_FILES` 才是这里的重要设计：即使原进程耗尽文件描述符，pseudothread 也能在独立 FD table 中关闭描述符并创建 pipe。
 
-- 故障地址的 MTE tag（`si_addr`）
-- 寄存器中的 tagged pointer（`ucontext->uc_mcontext`）
-- 栈回溯中的 tagged return address
+所以，pseudothread 没有消除 ptrace。Android 17 的 `crash_dump` 仍通过 ptrace 停止线程、读取非崩溃线程寄存器，并协调 VM snapshot。完整回溯路径见 20.18。
 
-**对 Crash SDK 的影响**：如果 SDK 的信号处理器读取 `siginfo_t->si_addr`，在 Android 17 + MTE 设备上需要正确处理 tag bits。直接将 tagged 地址传给 `log_print` 或 `write` 可能导致输出不可读的地址值。正确做法是使用 `untag_address()` 宏（bionic 提供）分离 tag 和实际地址。
+#### `PR_SET_DUMPABLE` 已由系统临时处理
 
-[已验证: AOSP android-17.0.0_r1, system/core/debuggerd/handler/debuggerd_handler.cpp:915]
+handler 会读取原 `dumpable` 值，临时设为 1，完成 pseudothread 流程后恢复；支持 Yama ptrace 限制的内核上也会临时设置 `PR_SET_PTRACER_ANY` 并恢复。
 
----
+因此，SDK 不需要在崩溃现场自行把 `dumpable` 改成 1。此类额外操作会扩大短暂攻击面，还可能与系统恢复顺序冲突。若应用在正常运行期主动设置 `dumpable=0`，仍需用目标 OEM、SELinux 策略和 fallback 路径验证 tombstone 完整性。
 
-### 🔹 锚点 4：Wire Protocol v4 — debugger_process_info 扩展
+### 🔹 CrashInfo wire protocol：v4 不是 Android 17 新协议
 
-Android 17 将 crash_dump 与 pseudothread 之间的通信协议升级到 **v4**。pseudothread 通过两个匿名 pipe 向 `crash_dump` 进程投递数据：
+pseudothread 通过 pipe 向 `crash_dump` 写四部分数据：
 
-```
-dynamic executable (linker-loaded): version = 4
-  part 1: uint32_t version
-  part 2: siginfo_t
-  part 3: ucontext_t
-  part 4: debugger_process_info   ← v4 新增
-
-static executable (non-linker): version = 1
-  part 4: uintptr_t abort_msg only
+```text
+part 1: uint32_t version
+part 2: siginfo_t
+part 3: ucontext_t
+part 4:
+  dynamic payload -> debugger_process_info
+  static payload  -> abort message address
 ```
 
-v4 新增的 `debugger_process_info` 结构体包含：
+Android 17 以 `process_info.fdsan_table != nullptr` 选择 v4，否则选择 v1。v4 payload 包含：
 
-| 字段 | 来源 | 用途 |
-|------|------|------|
-| `abort_msg` | `__libc_shared_globals()->abort_msg` | `android_set_abort_message()` 设置的消息 |
-| `fdsan_table` | `__libc_shared_globals()->fd_table` | FD sanitizer 状态 |
-| `gwp_asan_state` | `__libc_shared_globals()->gwp_asan_state` | GWP-ASan 分配器状态 |
-| `gwp_asan_metadata` | `__libc_shared_globals()->gwp_asan_metadata` | GWP-ASan 元数据 |
-| `scudo_stack_depot` | `__libc_shared_globals()->scudo_stack_depot` | Scudo 分配器 stack trace depot |
-| `crash_detail_page` | `__libc_shared_globals()->crash_detail_page` | 共享内存 crash detail 页 |
+- abort message；
+- fdsan table；
+- GWP-ASan allocator state 与 allocation metadata；
+- Scudo stack depot、region info、ring buffer 及其尺寸；
+- `recoverable_crash` 标记；
+- crash detail page。
 
-**判断条件**：`fdsan_table != nullptr` 是走 v4 协议的触发条件。linker-loaded 的 dynamic executable 总会通过 `linker_debuggerd_android.cpp:get_process_info()` 返回非空 fdsan。纯 static executable（如 musl 工具）仍走 v1。
+v4 在 Android 14 标签中已经存在。Android 17 重排了 `CrashInfoDataCommon` / `CrashInfoDataDynamic` 的结构表达，并用 `static_assert` 核对发送结构与协议字段偏移，没有把版本改为 v5。
 
-**ABI 安全保障**：发送侧（`debuggerd_handler.cpp`）与接收侧（`crash_dump.cpp` + `libdebuggerd_protocol`）之间用 `static_assert(offsetof(...))` 双侧校验结构体偏移一致性。这意味着 OEM 如果修改 `debugger_process_info` 结构体，必须在两侧同步更新，否则 crash_dump 会拒绝连接。
+源码注释给出的理由是：动态 sender 与 receiver 版本锁定。linker 也专门避免让可能与 APEX `crash_dump` 版本不匹配的 bootstrap linker 传递 process info。这个 pipe payload 是平台内部 ABI，OEM 修改时需要保持整套构建一致；应用与 SDK 不应解析或构造它。
 
-[已验证: AOSP android-17.0.0_r1, system/core/debuggerd/handler/debuggerd_handler.cpp:447-560]
+### 🔹 `SA_EXPOSE_TAGBITS` 的范围
 
----
+Android 17 debuggerd action 请求 `SA_EXPOSE_TAGBITS`，目的是让支持该标志的内核在 fault signal 的 `siginfo_t.si_addr` 中保留地址 tag，便于诊断 MTE。
 
-### 🔹 锚点 5：Permissive MTE 与 GWP-ASan Recoverable
+它的边界需要说清：
 
-Android 17 在 `debuggerd_signal_handler()` 内增加了两条 **可恢复 crash** 路径：
+- 该标志在 Android 14 源码中已经存在。
+- Linux 语义重点是 fault address 的 tag bits，不能把它扩写为“保证所有 ucontext 寄存器和返回地址自动保留或清洗”。
+- `libsigchain` 会探测内核是否支持该 flag。
+- 转交用户 `SA_SIGINFO` handler 前，如果用户 action 没请求该 flag，`libsigchain` 会对适用 fault 的 `si_addr` 调用内部 `untag_address()`。
+- `untag_address()` 位于 Bionic platform 私有头文件，不是应由 NDK SDK 直接依赖的公共 API。
 
-#### Permissive MTE 模式
+因此，应用 handler 收到的 `si_addr` 可能已经被 signal chain 去 tag。SDK 若需要 MTE 诊断，应优先保留系统 tombstone；自定义格式要同时记录 signal、`si_code`、原始字节和自身是否获得 tag 的能力，不能假设 Android 17 上总能看到 tagged fault address。
 
-当 `SIGSEGV` 的 `si_code` 为 `SEGV_MTESERR`（synchronous tag check failure）或 `SEGV_MTEAERR`（asynchronous tag check failure），且系统处于 permissive MTE 模式时：
+### 🔹 Recoverable GWP-ASan 与 permissive MTE
 
-1. 通过 `prctl(PR_SET_TAGGED_ADDR_CTRL)` 将 MTE TCF（Tag Check Fault）模式切换到 `PR_MTE_TCF_NONE`
-2. 用 `timer_create(CLOCK_THREAD_CPUTIME_ID, ...)` 设定一个 CPU 时间计时器
-3. 计时器到期后重新打开 MTE 检查
-4. **进程不终止**，继续执行
+#### Recoverable GWP-ASan
 
-**设计意图**：permissive MTE 是一种诊断模式 — 发现 tag mismatch 后不立即杀进程，而是暂时关闭检查，让应用有机会恢复，同时记录事件供后续分析。避免一次轻微的 tag 错误导致整个应用崩溃。
+Android 14 / API 34 起，应用支持 Recoverable GWP-ASan。平台命中被采样保护的地址后：
 
-**判断条件**：检查 `MTE_PERMISSIVE` 环境变量和 `persist.sys.mte.permissive` 系统属性。
+1. debuggerd 生成一次带分配/释放证据的 crash report。
+2. allocator 回调解除对应保护，使线程可以继续。
+3. 同一进程后续命中仍会执行修复回调，但 debuggerd 只为首次命中生成报告，避免 ActivityManager 因短时间多次 native crash 记录而终止应用。
+4. 在 ART 应用进程中，`android_handle_signal()` 返回 `true`，用户自定义 `SIGSEGV` handler 不会收到这次 fault。
 
-#### GWP-ASan Recoverable
+“Recoverable”只描述平台处理策略。官方文档明确指出：内存破坏已经发生，进程后续行为未定义，仍可能在另一个位置崩溃。治理系统必须把该报告当作高优先级真实缺陷，不能当成无害告警。
 
-GWP-ASan（Google-Wide-Performance ASan）是一种采样式内存错误检测器。Android 17 为首次 GWP-ASan 触发的 SEGV 增加了 recoverable 路径：
+#### permissive MTE
 
-1. 首次 crash：调用 `gwp_asan_pre_crash_report()` 生成 crash report
-2. **返回**（不终止进程）
-3. patch allocator 防止再次分配同一区域
-4. 第二次及以后：只 patch，不上 report
-5. 用 `pthread_mutex` 保护 `first_crash` 标志，保证线程安全
+permissive MTE 是受属性或测试环境控制的平台诊断模式。Android 17 遇到 `SEGV_MTESERR` 或 `SEGV_MTEAERR` 且 permissive 条件成立时，会：
 
-**设计意图**：防止 ActivityManager 因 GWP-ASan 检测到的短时多次 crash 直接 kill app。让 GWP-ASan 在生产环境中也能运行，而不影响应用可用性。
+- 把当前线程的 MTE TCF 模式改成 `PR_MTE_TCF_NONE`；
+- 生成 recoverable crash report；
+- 可按配置使用 `CLOCK_THREAD_CPUTIME_ID` timer，在一段线程 CPU 时间后恢复原检查模式；
+- 返回并让线程继续。
 
-**对 Crash SDK 的影响**：
-- SDK 的信号处理器可能会收到 MTE/GWP-ASan 的 SIGSEGV，但随后 system handler 会 **消费** 这个信号并恢复执行
-- 如果 SDK handler 先于 system handler 执行并自行调用了 `_exit()` 或 `abort()`，会破坏 recoverable 机制
-- 正确做法：SDK handler 应检查 `si_code`，遇到 `SEGV_MTESERR` / `SEGV_MTEAERR` 时 **不要** 自行终止进程，让 system handler 处理
+同步 MTE 的 `SEGV_MTESERR` 能对应触发 load/store；异步 MTE 的 `SEGV_MTEAERR` 可能延后到内核入口才上报，并没有精确 fault address。两者不能用同一套“重试故障指令”解释。
 
-[已验证: AOSP android-17.0.0_r1, system/core/debuggerd/handler/debuggerd_handler.cpp:663-880]
+Android 14 的 direct debuggerd 路径已有 permissive MTE 处理；Android 15 把 ART signal chain 的 `debuggerd_handle_signal()` 扩展到 permissive MTE，使应用进程也能在用户 handler 前完成该恢复。Android 17 的相关修正是用不分配内存的 `/proc/self/cmdline` 读取进程名，以便查询按进程配置的 permissive 属性。
 
----
+#### SDK 不要自行判定“可恢复”
 
-### 🔹 锚点 6：第三方 Crash 监控 SDK 适配要点
+仅看到 `SEGV_MTESERR` / `SEGV_MTEAERR`，无法得知平台属性、allocator 回调和当前进程路径是否允许恢复。GWP-ASan fault 还需要判断地址是否属于受保护采样区域。
 
-基于上述 Android 17 变化，主流 Native Crash 监控 SDK（Bugly / Firebase Crashlytics / xCrash 等）需要注意：
+SDK 的安全策略是保留系统链：
 
-#### 信号处理器注册顺序
+- ART recovery hook 成功时，SDK handler 本来就不会被调用。
+- SDK handler 被调用时，不能仅凭 `si_code` 吞掉信号。
+- SDK 完成最小记录后，应按保存的旧 action 继续分发，让 debuggerd 或其他先安装 handler 作出决定。
 
-Android 的 `SignalChain` 机制保证了系统处理器（`debuggerd_signal_handler`）优先于应用注册的处理器执行。但 SDK 仍需注意：
+### 🔹 `BIONIC_SIGNAL_DEBUGGER` 是平台内部协议
 
-- **不要在 `_init` 构造函数中注册 handler**：linker 在 `linker_main()` 早期才调 `linker_debuggerd_init()`，`_init` 构造函数的执行时机取决于 `.init_array` 的排列，可能早于或晚于 linker_debuggerd_init。在 ContentProvider 或 Application.onCreate 中注册最安全。
-- **不要使用 `SA_NODEFER` 除非明确需要嵌套信号处理**：`SA_NODEFER` 允许在信号处理器执行期间再次接收同一信号，容易导致栈溢出。
+Android 17 把 `BIONIC_SIGNAL_DEBUGGER` 定义为 `__SIGRTMIN + 3`。平台 `debuggerd_client` 会先向 `tombstoned` 注册 intercept，再通过 `sigqueue()` 发送该信号：
 
-#### async-signal-safe 约束收紧
+- `si_value = 0` 请求 protobuf tombstone；
+- `si_value = 1` 请求 native backtrace。
 
-Android 17 对信号处理器内的操作安全约束更加严格：
+这条协议还包含目标 PID/TID、tombstoned socket、超时、fallback 特殊值和权限约束。直接 `kill()` 或硬编码实时信号编号绕过了这些条件，也可能与 Bionic 的保留信号用途冲突。
 
-| 操作 | Android 14 及之前 | Android 17 |
-|------|-------------------|------------|
-| `malloc` / `free` | 不安全但通常能工作 | **会触发 SIGABRT**（Scudo 检测到 re-entry） |
-| `dlopen` / `dladdr` | 不安全但通常能工作 | **可能触发二次崩溃** |
-| `pthread_mutex_lock` | 不安全 | **可能死锁**（内核 priority ceiling 变更） |
-| `write(fd, buf, len)` | ✅ safe | ✅ safe |
-| `readlink` / `stat` | ✅ safe | ✅ safe |
+`BIONIC_SIGNAL_DEBUGGER`、`debuggerd_client` 和 `AddSpecialSignalHandlerFn()` 都不属于普通应用的 NDK 公共接口。Crash SDK 不应把它们包装成“主动采集 API”。普通应用获取自身历史 native tombstone 应使用 API 31 起的 `ApplicationExitInfo.getTraceInputStream()`；平台或 root 调试工具可使用其权限范围内的 debuggerd 命令。
 
-SDK handler 应遵循 **最小快照原则**：只做 `write()` 写入预分配的 buffer，不做任何内存分配或锁操作。复杂分析交给 `crash_dump` 进程。
+### 🔹 async-signal-safe 规则没有在 Android 17 才收紧
 
-#### tombstone 格式变化
+`malloc()`、`free()`、`dlopen()`、`dladdr()`、C++ 容器、普通日志和 `pthread_mutex_lock()` 从来都不是应用 fatal signal handler 可依赖的通用安全操作。不能写成“Android 14 勉强可用，Android 17 才会失败”。
 
-Android 17 的 tombstone 新增字段：
-- MTE tag 信息（依赖 `SA_EXPOSE_TAGBITS`）
-- GWP-ASan 分配/释放栈（依赖 wire protocol v4 的 `gwp_asan_state`）
-- Scudo stack depot 信息
+平台 debuggerd 源码内部会使用专门的 async-safe 日志、raw syscall，也会在受控流程里使用 mutex、property API、clone 和 fork 变体。这些选择依赖 Bionic 内部实现、进程启动时预分配状态和平台测试，不能据此放宽第三方 handler 的约束。
 
-SDK 解析 tombstone 时需要兼容这些新字段。如果 SDK 自行采集 crash 信息（而非依赖 tombstone），需要同步更新采集逻辑。
+SDK handler 建议只做以下工作：
 
-#### `prctl(PR_SET_DUMPABLE)` 交互
+- 从参数复制固定大小的 `siginfo_t` 与 `ucontext_t`；
+- 写入预分配缓冲或预打开 FD；
+- 使用 `sig_atomic_t` 或经证明 lock-free 的极小重入标记；
+- 记录失败与截断，不在 handler 中补做符号化；
+- 转交保存的旧 action，并保留原信号退出语义。
 
-- `prctl(PR_SET_DUMPABLE, 0)` 会阻止 `ptrace` attach，但 **不影响** `debuggerd_signal_handler` 的执行（因为 handler 在进程内通过 clone 派生，不依赖 ptrace）
-- 但如果 dumpable=0，`crash_dump` 进程将无法读取 `/proc/<pid>/` 下的信息，导致 tombstone 不完整
-- SDK 不应设置 `dumpable=0`；如果因安全原因必须设置，需在 crash 时临时恢复 `dumpable=1`
+即使 `write()` 属于 async-signal-safe，它仍可能在阻塞 FD 上卡住。崩溃通道还要设置非阻塞/超时策略，并处理 partial write 与 `EINTR`。
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Crash 监控原理.md, Native Crash 监控：为我们应用插上监控 Native Crash 的电子眼.md]
-[已验证: AOSP android-17.0.0_r1]
+### 🔹 Android 17 中可以确认的相关改动
 
----
+与 Android 16 首个发布标签比较，Android 17 这条链上的可见变化主要有：
 
-### 🔹 锚点 7：ART SignalChain 边界与 BIONIC_SIGNAL_DEBUGGER
+| 位置 | Android 17 变化 | 影响 |
+|---|---|---|
+| `linker_debuggerd_android.cpp` | 增加 `RELEASE_DEPRECATE_RUNTIME_APEX` 条件 | Runtime APEX 退役配置下仍提供 process info / GWP-ASan callbacks |
+| `debuggerd_handler.cpp` | `crash_dump` 路径按同一开关选择 `/system/bin` 或 Runtime APEX | 产品构建路径差异，应用不可硬编码 |
+| `debuggerd_handler.cpp` | permissive MTE 的按进程属性改用无分配 cmdline 读取 | 避免 signal handler 中依赖会分配的字符串路径，并修正 fork 后进程名 |
+| `protocol.h` / handler | 整理 CrashInfo common/dynamic 结构和偏移断言 | 内部 wire 表达更清楚，协议号保持 v4 |
+| `crash_dump.cpp` / handler | 额外传递原父 PID 等上下文 | 改善 fork/快照场景下的进程关系记录 |
+| `sigchain.cc` | `SIGSYS + SYS_SECCOMP + SIG_IGN` 改走默认处置并重新 raise | 避免把内核强制的 seccomp `SIGSYS` 当作可忽略信号 |
 
-#### ART SignalChain 与 debuggerd 的分工
-
-Android 有两层信号处理：
-
-```
-信号到达
-  ↓
-Bionic SignalChain（art::SignalChain）
-  ├─ art::FaultManager（ART 内部）
-  │   ├─ Java NPE 等运行时异常 → 转换为 Java Exception
-  │   ├─ Stack overflow 检测
-  │   └─ GC barrier 相关信号
-  └─ debuggerd_signal_handler（系统级）
-      ├─ Native crash dump
-      ├─ MTE permissive 处理
-      └─ GWP-ASan recoverable
-```
-
-ART `FaultManager` 在 Android 17 中没有大的架构调整，但因为 `SA_EXPOSE_TAGBITS` 的引入，能更准确地处理 tagged pointer 相关的 fault。
-
-#### BIONIC_SIGNAL_DEBUGGER 协议
-
-bionic 保留了一个专用信号 `BIONIC_SIGNAL_DEBUGGER`（通常是一个 real-time signal），供应用通过 `kill(pid, BIONIC_SIGNAL_DEBUGGER)` 或 `rt_tgsigqueueinfo()` 主动请求一份 backtrace 或 tombstone，而 **不终止进程**。
-
-这条通道在 ANR trace 采集中也被使用：
-- `debug.debuggerd.disable=1`（debuggable build）可抑制前 8 个 fatal 信号注册
-- 但 `BIONIC_SIGNAL_DEBUGGER` 的 handler **始终保留**，保证 ANR trace 仍可通过 fallback 通道采集
-
-**对 SDK 的意义**：SDK 可以安全地使用 `BIONIC_SIGNAL_DEBUGGER`（通过 `debuggerd_request_backtrace()` API）获取其他线程的 backtrace，无需担心与 crash handler 冲突。但不应直接使用 signal number — 应通过 bionic 公开 API 调用。
-
-[已验证: AOSP android-17.0.0_r1, system/core/debuggerd/include/debuggerd/handler.h, bionic/libc/include/bionic/reserved_signals.h]
-
----
+这些是局部兼容性和正确性修正。pseudothread、早期 linker wiring、sigchain 三段结构、wire v4 与 Recoverable GWP-ASan 都不是 Android 17 才出现。
 
 ## 扩展
 
-### 🔸 扩展点 1：SDK 适配检查清单
-
-基于本节分析，第三方 Crash 监控 SDK 在 Android 17 上的适配检查清单：
-
-| 检查项 | 要求 | 风险等级 |
-|--------|------|---------|
-| 信号 handler 内是否只调用 async-signal-safe 函数 | `write`/`readlink`/`sigaction` 等，禁止 `malloc`/`dlopen`/`pthread_mutex_lock` | 🔴 P0 |
-| 是否检查 `si_code` 区分 MTE/GWP-ASan crash | `SEGV_MTESERR`/`SEGV_MTEAERR` 不应自行终止进程 | 🟡 P1 |
-| 是否正确处理 tagged pointer | 使用 `untag_address()` 处理 `si_addr` | 🟡 P1 |
-| 信号 handler 注册时机 | ContentProvider 或 Application.onCreate，不在 `_init` 中 | 🟢 P2 |
-| tombstone 解析是否兼容 v4 新字段 | MTE tag / GWP-ASan / Scudo stack depot | 🟢 P2 |
-| 是否避免 `SA_NODEFER` | 除非明确需要嵌套信号处理 | 🟢 P2 |
-| 是否不设置 `PR_SET_DUMPABLE=0` | 或在 crash 时临时恢复 | 🟢 P2 |
-
-### 🔸 扩展点 2：信号处理性能基准
-
-基于源码分析的性能指标参考：
-
-| 指标 | Android 14 | Android 17 | 说明 |
-|------|-----------|-----------|------|
-| handler 注册时机 | 进程启动中期 | linker 初始化最早期 | `linker_main.cpp:312` |
-| pseudothread 栈常驻 | 未知 | 8 × `getpagesize()`（4K page = 32KB，16K page = 128KB） | 编译期固定 |
-| crash dump 通信 | IPC（socket/ptrace） | 进程内 clone + pipe | 避免 ptrace attach 开销 |
-| MTE crash 可恢复 | ❌ | ✅ permissive 模式 | 不终止进程 |
-| GWP-ASan 可恢复 | ❌ | ✅ 首次 crash 恢复 | 不终止进程 |
-
-> ⚠️ 上表中 Android 14 的数据为基于架构推断的估算值，非实测。Android 17 的数据基于 `android-17.0.0_r1` 源码静态分析。[待验证: 实测 P50/P99 延迟数据]
-
----
-
-## 版本边界声明
-
-- 本节所有源码引用基于 `android-17.0.0_r1`（Android 17 / API 37）
-- 不得将本节内容外推到 Android 18 / API 38 及更高版本
-- 「debuggerd 迁移到 bionic/linker」「线程亲和性信号分发」「动态 altstack 尺寸」三种说法在 `android-17.0.0_r1` 源码中 **均未得到验证**，不应作为事实陈述
-- 如果后续 Android 版本确实引入了这些机制，需要重新验证并更新本节
-
----
-
-## 交叉引用
-
-- **§20.3** Native Crash 分析与治理 — crash 收集整体流程、信号处理器链基础
-- **§20.9** 稳定性治理案例集 — 已同步勘误（第 209-216 行），删除「线程亲和性」和「动态 altstack」未证陈述
-- **§20.13** 16KB Page Size 适配 — page size 对 pseudothread 栈大小的影响
-- **§20.18** Native 堆栈回溯与符号化 — unwind 表与 tombstone 的符号化衔接
-
-
-### Android 17 信号处理机制与 debuggerd 架构迁移
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-08-android17-debuggerd-signal-handler-architecture.md
-- 类型：DeepResearch 联合调研结果
-- 摘要：Android 17 debuggerd 维持 libc linker 注册→handler→ptrace 三段式架构，altstack 按 page-size 自适应（4K→32KiB / 16K→128KiB），SA flags 包含 SA_RESTART|SA_SIGINFO|SA_ONSTACK|SA_EXPOSE_TAGBITS。信号线程亲和性由内核保证，崩溃 handler 在崩溃线程 altstack 上执行，crash_dump 通过双端 ptrace+clone(CLONE_FILES) 完成 tombstone 落盘。
-- 注入时间：2026-07-10
-- 价值：源码级厘清 altstack 动态尺寸、SA_EXPOSE_TAGBITS MTE 标签解码与 crash_dump 双 clone 路径
-
-
-
-
----
-
-<!-- AIW-源码调研-2026-07-11 -->
-### 🔹 补充调研：页大小自适应机制与性能实测
-
-基于对 AOSP android-17.0.0_r1 源码的深度调研，我们发现了一些细节：
-
-#### 伪线程栈的实际页大小适应性
-
-虽然源码中 `thread_stack_pages = 8` 是编译期常量，但在不同 page size 设备上实际占用空间会自适应：
-
-| 设备类型 | page size | 实际栈大小 | 守护页大小 |
-|---------|-----------|------------|-----------|
-| 4K 页设备 | 4096 | 32KB + 8KB = 40KB | 8KB |
-| 16K 页设备 | 16384 | 128KB + 32KB = 160KB | 32KB |
-
-源码实现：
-```cpp
-// system/core/debuggerd/handler/debuggerd_handler.cpp:892-927
-void* thread_stack_allocation = mmap(nullptr,
-    getpagesize() * (thread_stack_pages + 2), PROT_NONE,
-    MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-char* stack = static_cast<char*>(thread_stack_allocation) + getpagesize();
-```
-
-这里的关键是 `getpagesize()` 会在运行时返回实际的页面大小，因此 8 页在不同设备上会自动缩放。
-
-#### BIONIC_SIGNAL_DEBUGGER 主动dump通道
-
-新增的主动dump通道API：
-
-```cpp
-// system/core/debuggerd/handler/debuggerd_handler.cpp:1050-1100
-#define BIONIC_SIGNAL_DEBUGGER 1234
-ioctl(fd, BIONIC_SIGNAL_DEBUGGER, &data);
-```
-
-用于在不触发crash的情况下获取进程快照，支持：
-- 主动内存快照采集
-- 线程状态快照
-- 无锁同步机制
-
-#### 性能基准数据实测
-
-实测的延迟统计：
-
-| 操作类型 | P50延迟 | P99延迟 | 内存开销 |
-|---------|---------|---------|---------|
-| pseudothread创建 | < 1ms | < 3ms | 40-160KB |
-| crash_dump创建 | < 5ms | < 10ms | < 1KB |
-| MTE tag保留 | < 0.1ms | < 0.2ms | 零 |
-| wire protocol传输 | < 2ms | < 5ms | pipe缓冲 |
-
-关键发现：Android 17的伪线程栈创建延迟比Android 14降低了约15%，主要得益于CLONE_VM优化，减少了内存拷贝操作。
-
-#### SA_NODEFER 最佳实践建议
-
-基于源码分析，Android 17对SA_NODEFER的处理更加谨慎：
-
-```cpp
-// system/core/debuggerd/handler/debuggerd_handler.cpp:267-275
-if (action.sa_flags & SA_NODEFER) {
-    // 记录警告但不直接拒绝
-    async_safe_format_log(ANDROID_LOG_WARN, "libc",
-        "SA_NODEFER detected - may cause stack overflow risk");
-}
-```
-
-建议：除非明确需要嵌套信号处理，否则避免使用SA_NODEFER。如果必须使用，应确保：
-1. 信号处理函数极简（<50行）
-2. 没有递归调用风险
-3. 使用volatile sig_atomic_t进行简单状态标记
-
-<!-- AIW-源码调研-2026-07-11 -->
-
-
----
-
-<!-- AIW-源码调研-2026-07-13 -->
-
-### 🔹 锚点 4：Sigchain 机制 — libsigchain 与 ART APEX 的链式拦截
-
-> 本节是对 §20.19 的关键补充：之前章节只覆盖 debuggerd 侧，本节补齐 ART/libsigchain 侧的"链首"实现细节，以及 SDK/APM 接入的关键约束。
-
-Android 17 把原本位于 `system/core/libcutils/` 的 sigchain 迁移到了 **ART APEX** 内部：
-
-```
-art/sigchainlib/Android.bp
-cc_library {
-    name: "libsigchain",
-    ldflags: ["-Wl,-z,global"],          // DF_1_GLOBAL：让符号优先级高于 libc.so
-    shared_libs: ["libunwindstack"],
-    static_libs: ["libasync_safe"],
-    apex_available: ["com.android.art", "com.android.art.debug"],
-    visibility: ["//frameworks/base/cmds/app_process"],
-}
-```
-
-[已验证: AOSP android-17.0.0_r1, art/sigchainlib/Android.bp]
-
-**核心机制 — SignalChain::Handler 中心调度器**：
-
-```cpp
-// art/sigchainlib/sigchain.cc:445
-void SignalChain::Handler(int signo, siginfo_t* siginfo, void* ucontext_raw) {
-  // Step 1: special_handlers_[]（最多 2 个槽位，先注册先调用）
-  if (!GetHandlingSignal(signo)) {
-    for (const auto& handler : chains[signo].special_handlers_) {
-      if (handler.sc_sigaction == nullptr) break;
-      sigset_t previous_mask;
-      linked_sigprocmask(SIG_SETMASK, &handler.sc_mask, &previous_mask);
-      ScopedHandlingSignal restorer(signo, !(handler.sc_flags & SIGCHAIN_ALLOW_NORETURN));
-      if (handler.sc_sigaction(signo, siginfo, ucontext_raw)) return;
-      linked_sigprocmask(SIG_SETMASK, &previous_mask, nullptr);
-    }
-  }
-  // Step 2: libdl::android_handle_signal（weak symbol，Android 14+ GWP-ASan 钩子）
-  if (android_handle_signal != nullptr &&
-      android_handle_signal(signo, siginfo, ucontext_raw)) return;
-  // Step 3: 用户 sigaction handler
-  chains[signo].action_.sa_sigaction(signo, siginfo, ucontext_raw);
-}
-```
-
-[已验证: AOSP android-17.0.0_r1, art/sigchainlib/sigchain.cc:445-555]
-
-**SIGSEGV 完整调用链**：
-
-```
-crash in app code
-  ↓
-kernel delivers SIGSEGV → SignalChain::Handler（已被 Claim 注册到 kernel）
-  ↓
-Step 1: iterate special_handlers_[]（最多 2 个）
-  ├─ slot 0: ART sigsegv handler → 检查 GWP-ASan/MTE permissive，可能 longjmp
-  └─ slot 1: debuggerd_handle_signal → 仅 SIGSEGV，检查可恢复性
-  ↓
-Step 2: libdl::android_handle_signal（weak，可选）
-  ↓
-Step 3: chains[signo].action_.sa_sigaction → 最后才是 APM SDK 注册的 handler
-```
-
-[已验证: AOSP android-17.0.0_r1, art/sigchainlib/sigchain.cc + debuggerd_handler.cpp:963-994]
-
-**对 APM SDK 的三个关键约束**：
-
-| 约束 | 实际后果 | 正确做法 |
-|------|---------|---------|
-| `special_handlers_[2]` 写死 2 槽位 | 第三个库注册同一信号会 `fatal()` | 多 SDK 协作时协商单一入口 |
-| sigaction() 在 Claimed 信号上不真正注册 kernel handler | APM 用普通 sigaction 只能排在 ART 之后 | 通过 `dlsym(RTLD_DEFAULT, "AddSpecialSignalHandlerFn")` 抢 special 槽 |
-| 用户 sigprocmask 不能屏蔽 Claimed 信号 | `pthread_sigmask(SIG_BLOCK, {SIGSEGV})` 静默丢弃 SIGSEGV 位 | 无需尝试屏蔽，关键 signal 永远可达 |
-
-**初始化时序陷阱**：
-
-```cpp
-// art/sigchainlib/sigchain.cc:170
-__attribute__((constructor)) static void InitializeSignalChain() {
-  static std::once_flag once;
-  std::call_once(once, []() {
-    lookup_libc_symbol(&linked_sigaction, sigaction, "sigaction");
-    // ...
-  });
-}
-```
-
-构造函数里通过 `dlsym(libc, "sigaction")` 缓存真实 libc 函数指针。如果 APM SDK 自己的 .so 动态导出了同名符号，可能在 `RTLD_DEFAULT` 回退路径上命中错误实现。**生产实践**：APM so 中**不要**导出任何 libc 重名符号。
-
-**特殊 handler 注册接口**：
-
-```cpp
-// art/sigchainlib/sigchain.h:35
-struct SigchainAction {
-  bool (*sc_sigaction)(int, siginfo_t*, void*);
-  sigset_t sc_mask;
-  uint64_t sc_flags;       // 支持 SIGCHAIN_ALLOW_NORETURN
-};
-extern "C" void AddSpecialSignalHandlerFn(int signal, SigchainAction* sa);
-extern "C" void RemoveSpecialSignalHandlerFn(int signal, bool (*fn)(int, siginfo_t*, void*));
-extern "C" void EnsureFrontOfChain(int signal);     // 防御性：检测并修复 kernel handler
-extern "C" void SkipAddSignalHandler(bool value);    // 调试：禁用整个 hook
-```
-
-[已验证: AOSP android-17.0.0_r1, art/sigchainlib/sigchain.h]
-
-**SIGCHAIN_ALLOW_NORETURN 标志**：声明本 handler 可能 longjmp 出去（如 native bridge、ART 的 GWP-ASan recovery）。设置后 libsigchain 不会用 TLS bitmap 标记此信号进入处理中，避免恢复路径上的死锁。
-
-**诊断技巧**：判断自家 handler 是否"接在最末"，可用：
-
-```cpp
-struct sigaction old_act;
-sigaction(SIGSEGV, nullptr, &old_act);
-// old_act.sa_sigaction == &SignalChain::Handler ⇒ 已 Claim，排在 ART 之后
-```
-
-**版本演进（API 21 → API 37）**：
-
-| Android 版本 | libsigchain 位置 | 关键变化 |
-|--------------|------------------|---------|
-| 5.0–6.0 (API 21–23) | `system/core/libcutils/sigchain.c` | 初版：sigaction 包装 |
-| 7.0–10 (API 24–29) | 同上 | 加入 AddSpecialSignalHandlerFn、SIGCHAIN_ALLOW_NORETURN |
-| 11–13 (API 30–33) | 同上 | 增加 sigaction64 支持 |
-| 14 (API 34) | 同上 | GWP-ASan recoverable、android_handle_signal weak symbol |
-| **15–17 (API 35–37)** | **art/sigchainlib/** | **迁移到 ART APEX**，SA_EXPOSE_TAGBITS 探测，符号依赖 com.android.art |
-
-[未深入] debuggerd_init 是否在内部也调 AddSpecialSignalHandlerFn、android_handle_signal 在 libdl 中的完整实现，本次未验证。
-
-[已验证: AOSP android-17.0.0_r1, art/sigchainlib/sigchain.cc:147-180, 383-401, 407, 445-555, 559-595, 643-668, 672-685, 712-730 + system/core/debuggerd/handler/debuggerd_handler.cpp:967-994]
-
-
-## 参考资料
-
-### Android 17 Sigchain 机制与 APM 信号拦截实战
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-13-android17-sigchain-apm-signal-interception.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 17 将 libsigchain 从 system/core/libcutils 迁移至 art/sigchainlib，由 ART APEX 提供。该库通过 -Wl,-z,global 全局符号覆盖包装 sigaction/sigprocmask 等五个 libc 入口，实现内核态 signal handler 与用户态 sigaction 设置的分离。APM SDK 直接调 sigaction 注册 SIGSEGV handler 在应用进程完全无效，正确做法是调用 AddSpecialSignalHandlerFn() 插入链头并使用 SIGCHAIN_ALLOW_NORETURN 标志。深入剖析了 Sigchain 初始化时序、构造函数符号解析、special_handlers 排序机制。
-- 注入时间：2026-07-13
-- 价值：填补了 AIW 在 Native Crash 监控接入层面的关键技术空白——Sigchain 优先级与拦截链头机制是 APM 厂商必读
+### 🔸 Crash SDK 接入检查表
+
+| 检查项 | 合格条件 | 典型故障 |
+|---|---|---|
+| handler 安装 | 每个信号保存对应旧 `sigaction` | 多个信号共用一份旧 action，转交错误 |
+| handler 链 | 采集后按 `SA_SIGINFO`、`SIG_DFL`、`SIG_IGN` 等语义转交 | 吞掉 debuggerd，系统无 tombstone |
+| 重入 | 二次 signal 有固定退出或降级路径 | handler 递归直到栈耗尽 |
+| signal 安全 | 无分配、无普通锁、无动态链接解析 | allocator/loader 锁中二次死锁 |
+| altstack | SDK 自有线程逐线程配置并带 guard | 只配置主线程，误以为覆盖全进程 |
+| 系统私有 API | 不使用 reserved signal、debuggerd client、sigchain special API | 系统升级后符号缺失或协议冲突 |
+| Recoverable GWP-ASan | 通过系统报告采集，不期待自定义 `SIGSEGV` handler 被调用 | 线上漏报或重复生成伪 crash |
+| MTE | 区分 SYNC/ASYNC，保留系统 tombstone | 把异步 fault 错归到当前 PC |
+| `dumpable` | 不在 signal handler 里自行切换 | 与系统临时恢复流程冲突 |
+| 16 KB 页 | 不写死 pseudothread/altstack 字节数 | guard、对齐或容量假设失效 |
+
+注册时机通常放在 SDK 初始化或 `ContentProvider` 即可。linker 的 debuggerd 注册早于普通应用库构造函数，使用 `_init` 争抢“更早”没有收益，还会增加加载器重入和依赖顺序风险。
+
+### 🔸 建议的验证范围
+
+一套 Crash SDK 至少在以下场景做真机或系统镜像测试：
+
+1. `SIGABRT`、`SIGSEGV`、`SIGBUS`、`SIGILL`、`SIGFPE`、`SIGSYS` 各自保留原退出语义。
+2. 两个线程近同时崩溃时，只产生一份主报告，其他线程不会永久死锁。
+3. 文件描述符接近耗尽时，pseudothread 仍能建立 pipe 并启动 `crash_dump`。
+4. 原 `dumpable=0`、`no_new_privs=1` 和常规状态分别覆盖系统主路径与 fallback。
+5. 主栈溢出时，配置 altstack 的线程能保留原始 PC；未配置线程的失败能被识别。
+6. ART 应用进程、纯 native 进程、isolated process 和多进程组件分别验证 handler 顺序。
+7. Recoverable GWP-ASan 命中后，自定义 handler 不被调用，但 `ApplicationExitInfo` 能取得报告。
+8. MTE SYNC 与 ASYNC 分开验证，不用 ASYNC 的上报 PC 做精确归因。
+9. 4 KB 与 16 KB 页设备都运行同一套 crash case。
+10. 多个 Crash/APM SDK 共存时，安装顺序交换后仍能到达系统 handler。
+
+性能指标必须来自可复现设备、构建号、信号类型、线程数和 tombstone 大小。没有这些条件的“pseudothread 小于 1 ms”“Android 17 比 Android 14 快 15%”不能进入工程结论。
+
+### 🔸 与相邻章节的分工
+
+- 20.3：Native Crash 分类、信号收集与治理流程。
+- 20.11：MTE 的模式、报告解读和灰度策略。
+- 20.13：16 KB 页对 ELF、打包和 native 运行时的影响。
+- 20.18：`crash_dump`、`libunwindstack`、地址归一化与符号化。
+- 20.23：GWP-ASan 采样、Recoverable 模式和线上处置。
+
+## 源码与官方资料
+
+- [Bionic `linker_main.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_main.cpp)
+- [Bionic `linker_debuggerd_android.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_debuggerd_android.cpp)
+- [Bionic `dlfcn.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/dlfcn.cpp)
+- [debuggerd handler（android-17.0.0_r1）](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)
+- [debuggerd handler API（android-17.0.0_r1）](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/include/debuggerd/handler.h)
+- [debuggerd wire protocol（android-17.0.0_r1）](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/protocol.h)
+- [`crash_dump.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp)
+- [ART `sigchain.cc`（android-17.0.0_r1）](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/sigchainlib/sigchain.cc)
+- [ART `fault_handler.cc`（android-17.0.0_r1）](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/fault_handler.cc)
+- [Bionic reserved signals（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/platform/bionic/reserved_signals.h)
+- [Android 14 debuggerd handler：版本对照](https://android.googlesource.com/platform/system/core/+/refs/tags/android-14.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)
+- [Android 15 debuggerd handler：版本对照](https://android.googlesource.com/platform/system/core/+/refs/tags/android-15.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)
+- [Android NDK：GWP-ASan](https://developer.android.com/ndk/guides/gwp-asan)
+- [Android NDK：Arm MTE](https://developer.android.com/ndk/guides/arm-mte)
+- [ApplicationExitInfo API](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+
+> 源码核查基线：AOSP `android-17.0.0_r1`；版本演进对照 `android-14.0.0_r1`、`android-15.0.0_r1`、`android-16.0.0_r1`。平台私有信号与协议不构成 NDK 兼容承诺。
