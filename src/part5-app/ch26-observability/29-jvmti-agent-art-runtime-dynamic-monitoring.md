@@ -22,11 +22,11 @@ task9_state: needs-rework
 pipeline_stage: needs-rework
 reviewed_date: "2026-07-27"
 reviewed_by: "hermes-aiw-review-finalize-apply"
-last_review_finalize_at: "2026-07-27T18:05:34+08:00"
-last_review_finalize_run_id: "20260727-180515-f7d5f885"
+last_review_finalize_at: "2026-07-27T22:06:11+08:00"
+last_review_finalize_run_id: "20260727-220547-6ad77cd6"
 last_rework_at: "2026-07-25T13:35:15+08:00"
 last_rework_run_id: "20260725-133515-rework-afd64006"
-rework_summary: "2026-07-27 复核判定仍需 rework：当前唯一正文材料是 Android CLI 预览版介绍，只能支撑实验工程/SDK/设备/UI/文档检索入口；无法支撑题名中的 JVMTI Agent、ART runtime/jvmti、attachAgent、事件回调、对象 tag 或线上 attach/detach 源码结论。需补 Android 17.0.0_r1 ART/Framework 一手源码与可复现实测后再 finalized。"
+rework_summary: "2026-07-27 22:06 复核判定仍需 rework：本轮重新核对正文与唯一来源材料后，确认章节已诚实降级为 Android CLI 实验准备/证据边界说明，未继续断言 JVMTI 运行时语义；但材料仍只能支撑工程生成、SDK、设备/UI 与文档检索入口，不能支撑 runtime/jvmti、android.os.Debug.attachAgent、Agent_OnLoad/OnUnload、事件回调、对象 tag 或线上 attach/detach 的 Android 17.0.0_r1 源码级结论。需补 ART/Framework 一手源码与可复现实测后再 finalized。"
 ---
 
 # 26.29 JVMTI Agent — ART 运行时动态监控的实验入口与证据边界

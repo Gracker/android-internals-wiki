@@ -30,6 +30,56 @@ last_task9_audit_log: "logs/deep-review/2026-06-11-10-audit.md"
 last_task9_autofix_at: "2026-06-11"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-26
+last_verified: "2026-07-27"
+last_verified_against: "AOSP android-17.0.0_r1 (SurfaceView.java, Surface.java, PerformanceHintManager.java, GameManager.java, GameState.java, vulkan/libvulkan/swapchain.cpp, libs/gui/Surface.cpp, services/surfaceflinger/SurfaceFlinger.cpp) + kernel android17-6.18-2026-06_r6 (dma-buf, dma-fence, sync_file) + AGDK Frame Pacing / Swappy + ADPF + Game Mode API docs"
+confidence: medium
+last_idle_audit_at: "2026-07-27T22:35:52+08:00"
+last_idle_audit_run_id: "20260727-223552-idle-audit-6c95044a"
+sources:
+  - type: aosp
+    path: "platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceView.java"
+  - type: aosp
+    path: "platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Surface.java"
+  - type: aosp
+    path: "platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java"
+  - type: aosp
+    path: "platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/GameManager.java"
+  - type: aosp
+    path: "platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/GameState.java"
+  - type: aosp
+    path: "platform/frameworks/native/+/refs/tags/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp"
+  - type: aosp
+    path: "platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/Surface.cpp"
+  - type: aosp
+    path: "platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp"
+  - type: kernel
+    path: "kernel/common/+/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c"
+  - type: kernel
+    path: "kernel/common/+/android17-6.18-2026-06_r6/include/linux/dma-fence.h"
+  - type: kernel
+    path: "kernel/common/+/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c"
+  - type: official
+    path: "developer.android.com/games/agdk/game-activity"
+  - type: official
+    path: "developer.android.com/games/sdk/frame-pacing"
+  - type: official
+    path: "developer.android.com/games/sdk/reference/frame-pacing/group/swappy-vk"
+  - type: official
+    path: "developer.android.com/games/develop/vulkan/frame-pacing-extensions"
+  - type: official
+    path: "developer.android.com/games/optimize/adpf"
+  - type: official
+    path: "developer.android.com/reference/android/os/PerformanceHintManager.Session"
+  - type: official
+    path: "developer.android.com/games/optimize/adpf/gamemode/gamemode-api"
+  - type: official
+    path: "developer.android.com/games/optimize/display-refresh-rate-change"
+  - type: official
+    path: "docs.unity3d.com/Manual/profiler-markers.html"
+  - type: official
+    path: "dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine"
+  - type: official
+    path: "dev.epicgames.com/documentation/en-us/unreal-engine/unreal-insights-in-unreal-engine"
 ---
 
 <!-- outline-start -->
