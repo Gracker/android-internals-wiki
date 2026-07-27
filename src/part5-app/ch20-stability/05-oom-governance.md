@@ -40,7 +40,7 @@ reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
 last_task6_at: "2026-07-12T07:10:35+08:00"
 last_task6_review_log: "logs/review/2026-07-12-07-review.md"
-task6_review_notes: "2026-07-12 07:10 Task6 re-review (post-Task9-auto-fix #2): pass-light-edit。L1/L2 全通过，禁用词扫描零命中，"不是X而是Y" 仅 1 处（FD FORTIFY 说明，事实性叙述），"真正/确实/其实" 零命中，无物理动作动词。4 个 outline 锚点全部覆盖，正文 174 行有效内容，[待验证] 比例 0%。task9_result=auto-fixed，不满足自动晋升条件（需 pass-tech-review），设 task9_state=pending 路由回 Task9 做最终确认。"
+task6_review_notes: "2026-07-12 07:10 Task6 re-review (post-Task9-auto-fix #2): pass-light-edit。L1/L2 全通过，禁用词扫描零命中，\"不是X而是Y\" 仅 1 处（FD FORTIFY 说明，事实性叙述），\"真正/确实/其实\" 零命中，无物理动作动词。4 个 outline 锚点全部覆盖，正文 174 行有效内容，[待验证] 比例 0%。task9_result=auto-fixed，不满足自动晋升条件（需 pass-tech-review），设 task9_state=pending 路由回 Task9 做最终确认。"
 task9_result: "pass-tech-review"
 task2b_result: "fixed-lite"
 last_task2b_at: '2026-05-13T19:33:05+08:00'
@@ -78,354 +78,379 @@ last_deepseek_cn_review_at: 2026-07-12
 > 锚点是最低覆盖要求，review 时需要确认每个锚点都有对应正文和验证标注。
 <!-- outline-end -->
 
-Android 应用遇到的 OutOfMemoryError 并不只有"堆内存不够"这一种。按照错误来源，可以分成两类：ART 虚拟机自身由设备属性配置的 Java 堆 growth limit / heap size，和 Linux 进程层面的虚拟内存、FD、线程数限制。两类 OOM 的约束来源不同，排查路径也不同——归类是治理的第一步。
+`OutOfMemoryError` 只是 Android 进程资源失败的一种表现。Java heap 达到 ART growth limit、native-backed API 分配失败、线程创建失败，都可能投递 OOME；普通 `malloc()` / `mmap()` 失败也可能只返回错误，FD 耗尽通常表现为 `EMFILE` 或 abort，LMKD 结束进程时则没有 Java 异常。
 
-本节从 OOM 的产生路径入手，逐类讲解 Java Heap OOM、Native 内存 OOM、线程数 OOM、FD 泄漏 OOM、虚拟内存空间耗尽的排查思路和治理策略。
+治理工作的入口是保留原始错误、退出原因和进程资源快照，再按分配域选择证据。本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点；涉及 Linux 资源限制的说明以 `android17-6.18-2026-06_r6` 为 kernel 锚点。
 
 ## OOM 的投递机制
 
-ART 里所有 OutOfMemoryError 最终都经过 `Thread::ThrowOutOfMemoryError`（`art/runtime/thread.cc`）。该函数在 Native 层设置 `tls32_.throwing_OutOfMemoryError` 标志，通过 `ThrowNewException` 构造 `Ljava/lang/OutOfMemoryError;` 对象。线程从 Native 返回 Java 层时检查 pending exception，触发 `UncaughtExceptionHandler`，应用崩溃。
+同一个“内存不足”告警可能来自完全不同的系统层。先把事件放入正确类别：
 
-如果 OOM 在 OOM 对象自身的构造过程中触发（递归场景），ART 会切到预分配的 `PreAllocatedOutOfMemoryErrorWhenThrowingOOME` 对象，避免在内存不足时再分配新对象。
+| 事件 | 常见表现 | 主要证据 | 是否经过 Java `OutOfMemoryError` |
+|---|---|---|---|
+| ART Java heap 分配失败 | `Failed to allocate ... growth limit ...` | OOME 错误文本、Java 栈、heap dump、GC/heap 指标 | 是 |
+| native-backed Java API 分配失败 | `native alloc`、Bitmap OOM、特定 JNI 错误 | Java 栈、native allocation 栈、PSS/RSS | 由 API 决定 |
+| platform thread 创建失败 | `Could not allocate JNI Env` 或 `pthread_create (...) failed` | OOME 错误文本、线程数、线程栈、VmSize、进程限制 | ART 会投递 OOME |
+| 普通 native 分配失败 | `malloc/calloc/mmap` 返回空指针或 `ENOMEM`，也可能被调用方转换为异常或 abort | native 栈、heapprofd、maps/smaps、errno | 不一定 |
+| 低内存结束进程 | 进程被系统终止，重启后看到 `ApplicationExitInfo.REASON_LOW_MEMORY` | `ApplicationExitInfo`、LMKD/系统日志、内存压力 | 否 |
+| FD 耗尽 | `EMFILE`、创建 socket/pipe/Looper 失败、FORTIFY abort | `/proc/self/fd`、rlimit、FD 创建与关闭记录 | 通常否 |
+| 虚拟地址空间或 VMA 耗尽 | `mmap` 返回 `ENOMEM`，后续表现取决于调用方 | `/proc/self/maps`、VmSize、映射数、失败栈 | 不一定 |
 
-[已验证: AOSP art/runtime/thread.cc, Thread::ThrowOutOfMemoryError]
+这张表决定采集工具。Java heap dump 看不到所有 native 映射；heapprofd 也看不到 Java 对象引用；崩溃捕获 SDK 无法在 LMKD 终止进程后执行收尾代码。
+
+### ART 如何投递 OOME
+
+ART 的多条 native 失败路径会调用 `Thread::ThrowOutOfMemoryError()`。Android 17 的实现先尝试构造带错误文本的 `java.lang.OutOfMemoryError`；若构造 OOME 时再次发生 OOM，线程改用 Runtime 启动阶段准备的 OOME 对象。
+
+下面是 `art/runtime/thread.cc` 的关键分支，省略了日志和无关代码。
+
+```cpp
+void Thread::ThrowOutOfMemoryError(const char* msg) {
+  if (!tls32_.throwing_OutOfMemoryError) {
+    tls32_.throwing_OutOfMemoryError = true;
+    ThrowNewException("Ljava/lang/OutOfMemoryError;", msg);
+    tls32_.throwing_OutOfMemoryError = false;
+  } else {
+    Dump(LOG_STREAM(WARNING));
+    SetException(
+        Runtime::Current()->GetPreAllocatedOutOfMemoryErrorWhenThrowingOOME());
+  }
+}
+```
+
+预分配对象保证异常状态可以被设置，却不保证完整错误文本和 Java 栈；递归分支还会主动 dump 当前线程帮助诊断。`Heap::ThrowOutOfMemoryError()` 另有 native stack overflow 分支，使用 `GetPreAllocatedOutOfMemoryErrorWhenHandlingStackOverflow()`。
+
+OOME 成为 ART 的待处理异常后，控制流回到托管代码。没有被业务捕获时，它沿 `Thread.UncaughtExceptionHandler` 处理并结束对应进程。自定义处理器必须继续调用原处理器；API 37 的 `ProfilingTrigger.TRIGGER_TYPE_OOM` 也把这条调用路径作为自动生成 Java heap dump 的前提之一。
+
+OOME 错误文本用于诊断，格式会随分配器和平台版本变化。监控平台可以提取 allocation size、growth limit 等已知字段做辅助分组，原始文本和栈必须保留，不能把正则结果当成长期接口。
 
 ## Java Heap OOM 分类与治理
 
-堆内存 OOM 的排查，先看错误信息里的关键字段。
+Java heap OOM 要回答三个问题：请求多大、GC 后还活着多少对象、growth limit 之前还剩多少可用空间。只看“当前 free bytes”很容易误判。
 
 ### 从错误信息定位
 
-一个典型的 Java Heap OOM 错误信息如下：
+典型 Android 17 heap OOME 可能包含以下信息：
 
 ```text
-java.lang.OutOfMemoryError: Failed to allocate a 48 byte allocation with 3610680 free bytes
-and 3526KB until OOM, target footprint 536870912, growth limit 536870912;
-giving up on allocation because <1% of heap free after GC.
+java.lang.OutOfMemoryError: Failed to allocate a 48 byte allocation with
+3610680 free bytes and 3526KB until OOM, target footprint 536870912,
+growth limit 536870912; giving up on allocation because <1% of heap free after GC.
 ```
 
-需要关注的字段：
+字段应按 ART 语义解释：
 
-- **growth limit**：虚拟机为应用设置的 Java 堆增长上限（`Runtime.getRuntime().maxMemory()` 对普通应用通常反映这个值），来源是设备的 `dalvik.vm.heapgrowthlimit` / `dalvik.vm.heapsize` 等 VM 属性；进程绑定应用时，`ActivityThread.handleBindApplication()` 会根据 `android:largeHeap` 调用 `VMRuntime.clampGrowthLimit()` 或 `clearGrowthLimit()`。
-- **target footprint**：当前堆的目标大小，ART 的 GC 会尽量把堆控制在这个值附近。当 target footprint 等于 growth limit 且空闲内存不够分配时，OOM 产生。
-- **free bytes / until OOM**：当前空闲内存和距 OOM 的余量。单独看 free bytes 大于请求大小不能直接断定碎片化——需要结合下文的 `LogFragmentationAllocFailure` 输出判断。
-- **<1% of heap free after GC**：说明 GC 后堆空闲比例极低，属于整体堆占用饱和，不是碎片化问题。
-- **largest contiguous chunk < N** 或 fragmentation alloc failure 信息：这才是堆碎片化的明确信号——空闲字节数足够但连续空间不够。
+- **allocation size**：本次请求大小。请求很小仍失败，通常说明堆已接近限制；一次超大请求则要检查输入尺寸和乘法溢出。
+- **free bytes**：ART 统计的 heap 空闲总量。它大于请求值也不能单独证明分配可成功，目标 space 的连续块和最小剩余比例仍会参与判断。
+- **until OOM**：`GetFreeMemoryUntilOOME()` 给出的剩余增长空间，受当前 footprint 和 growth limit 约束。
+- **target footprint**：GC 用来调节 heap 增长的目标，不等同于硬上限。
+- **growth limit**：应用 Java heap 的增长限制。设备通过 `dalvik.vm.heapgrowthlimit`、`dalvik.vm.heapsize` 等属性配置 Runtime；`android:largeHeap="true"` 会让 `ActivityThread` 调用 `VMRuntime.clearGrowthLimit()`，普通应用走 `clampGrowthLimit()`。
+- **fragmentation 文本**：当空闲总量不小于请求且目标 allocator 支持碎片诊断时，`LogFragmentationAllocFailure()` 会报告最大连续块。Large Object Space 分支没有这段碎片详情。
+- **`<1% of heap free after GC`**：分配后无法保留 ART 要求的最小空闲比例。它描述的是 heap 水位策略，不能仅凭这句话断定存在引用泄漏。
 
-### 产生路径
+### ART 分配失败路径
 
-Java 层的 `new` 操作符进入 ART 后走到 `Heap::AllocObjectWithAllocator`（声明在 `art/runtime/gc/heap.h`，内联实现位于 `art/runtime/gc/heap-inl.h`）。常规快路径分配失败后，`heap-inl.h` 会调用 `AllocateInternalWithGc`（`art/runtime/gc/heap.cc`）触发 GC；如果 GC 后仍然分配不了，进入 `Heap::ThrowOutOfMemoryError`：
+`Heap::AllocateInternalWithGc()` 会尝试分配、执行适用的 GC，并在满足条件时重试。仍无法得到对象后才调用 `Heap::ThrowOutOfMemoryError()`。
+
+下面的节选展示 Android 17 生成错误文本和选择碎片诊断的条件。
 
 ```cpp
-// art/runtime/gc/heap.cc 简化逻辑
-void Heap::ThrowOutOfMemoryError(Thread* self, size_t byte_count,
-                                  AllocatorType allocator_type) {
-  std::ostringstream oss;
-  oss << "Failed to allocate a " << byte_count << " byte allocation with "
-      << GetFreeMemory() << " free bytes and "
-      << PrettySize(GetFreeMemoryUntilOOME()) << " until OOM,"
-      << " target footprint " << target_footprint_.load(std::memory_order_relaxed)
+void Heap::ThrowOutOfMemoryError(
+    Thread* self,
+    size_t byte_count,
+    AllocatorType allocator_type) {
+  size_t total_bytes_free = GetFreeMemory();
+  oss << "Failed to allocate a " << byte_count
+      << " byte allocation with " << total_bytes_free
+      << " free bytes and " << PrettySize(GetFreeMemoryUntilOOME())
+      << " until OOM, target footprint "
+      << target_footprint_.load(std::memory_order_relaxed)
       << ", growth limit " << growth_limit_;
-  // 根据分配类型定位到具体 space
-  if (allocator_type == kAllocatorTypeLOS) { /* LargeObjectSpace */ }
-  else {
-    space::AllocSpace* space = /* 根据 allocator_type 选对应 space */;
-    space->LogFragmentationAllocFailure(oss, byte_count);
+
+  if (total_bytes_free >= byte_count &&
+      allocator_type != kAllocatorTypeLOS) {
+    // 省略按 allocator_type 选择 AllocSpace 的代码。
+    if (!space->LogFragmentationAllocFailure(oss, byte_count)) {
+      oss << "; giving up on allocation because <"
+          << kMinFreeHeapAfterGcForAlloc * 100
+          << "% of heap free after GC.";
+    }
   }
   self->ThrowOutOfMemoryError(oss.str().c_str());
 }
 ```
 
-`Heap::ThrowOutOfMemoryError` 是堆 OOM 的唯一出口。它根据分配类型（ROS_ALLOC、DL_MALLOC、BUMP_POINTER、REGION_TLAB、LOS 等）定位到具体的 Space，输出碎片化信息。
+这段代码说明两点：碎片诊断只在“空闲总量足够”且不是 LOS 时尝试；错误文本描述的是失败时状态，不能替代 heap dump 的引用关系。
 
-### 诊断分类
+### 四类 Java heap 问题
 
-`Heap::ThrowOutOfMemoryError` 的内部逻辑把 OOM 分成两类，排查时先区分：
+| 类型 | 证据特征 | 治理方向 |
+|---|---|---|
+| 引用泄漏 | 同一类对象和 GC Root 路径跨场景持续增长 | 修复生命周期、监听器、线程本地变量、静态集合或错误缓存所有权 |
+| 设计性常驻过大 | 对象都有合法持有者，但稳定态存活集已接近预算 | 缩小模型、分页、按需加载、限制缓存和减少多份表示 |
+| 分配抖动 | 存活集不高，短时间分配速率与 GC 频率很高 | 复用缓冲区、减少中间对象、流式解析、避免热路径装箱 |
+| 单次大对象或尺寸错误 | OOME 栈集中在数组、Bitmap、解压或反序列化入口 | 校验输入上限、分块处理、目标尺寸解码、检查宽高与字节数乘法 |
 
-| 诊断信号 | 含义 | 排查方向 |
-|----------|------|----------|
-| `largest contiguous chunk < N` / `LogFragmentationAllocFailure` | 空闲总字节数够，但连续空间不足 | 减少大对象分配频率、对象池化、避免频繁分配/释放不同大小对象 |
-| `<1% of heap free after GC` | GC 后整体堆空闲比例极低 | 排查内存泄漏、降低常驻内存、评估是否需要 growth limit 扩展 |
+heap dump 更适合在接近风险水位但进程仍健康时采集。发生 OOME 后再完整 dump 需要额外内存和 I/O，成功率低，还可能延长用户可见停顿。线上可用趋势采样找到水位上升场景，再在可控设备、灰度或实验室复现并抓取 HPROF。
 
-内存泄漏的具体检测手段（Shark 解析 hprof、GC Root 引用链追踪）详见 §23.1。Java 堆优化策略（减少对象分配、对象池、缓存策略）详见 §23.4。
+`Runtime.totalMemory() - Runtime.freeMemory()` 表示当前已提交 heap 中尚未空闲的部分，不等于 GC 后存活集。判断泄漏要比较同一场景、同一 GC 状态下的对象数量和 retained size，不能用一次 Runtime 采样下结论。
 
+### `largeHeap` 的边界
+
+`largeHeap` 只改变应用可使用的 Java heap 上限，不会增加设备物理内存，也不会降低 native、图形缓冲、线程栈和其他进程的压力。更大的 heap 还会容纳更多存活对象，让系统更早承受内存竞争。
+
+可以为少数确有大内存工作集的产品评估 `largeHeap`，前提是低内存设备、后台切换、进程重建和系统压力测试都有数据。泄漏、无界缓存和错误尺寸分配不能靠它处理。修改 ART 私有字段、反射调用隐藏接口或动态“扩堆”的做法依赖内部实现，也可能破坏 GC 假设，不应进入生产方案。
 
 ## Native 内存 OOM
 
-Native 层的 OOM 发生在 `malloc`、`mmap` 等 Linux 内存分配 API 返回失败时，和 Java 堆是独立的两个限制维度。
+native 分配没有统一的“native heap 上限”。`malloc()` 可能因地址空间、提交、allocator 元数据或系统策略失败；mmap、图形缓冲和线程栈又分别经过不同分配路径。进程也可能在分配函数返回失败前被 LMKD 结束。
 
-### 常见触发路径
+### 哪些路径会转换为 OOME
 
-**JNI 分配**
+Android 17 中有明确的转换点：
 
-`NewStringUTF` 在构造字符串时，如果长度超过 `INT_MAX`，即使内存空间充足也会抛出 OOM：
+- `jdk_internal_misc_Unsafe.cc` 的 `Unsafe_allocateMemory()` 调用 `malloc()`；空指针时通过 `Thread::ThrowOutOfMemoryError("native alloc")` 投递 OOME。
+- `libs/hwui/hwui/Bitmap.cpp` 的 `allocateHeapBitmap()` 使用 `calloc()` 分配普通 Bitmap 像素；返回空指针后，`libs/hwui/jni/Bitmap.cpp` 的 JNI 入口调用 `doThrowOOME()`。
+- JNI 的某些 API 会在输入无法表示或分配失败时投递 OOME，例如超长 `NewStringUTF`。具体结果由 JNI 入口实现决定。
+- 应用或第三方 native 库直接调用 `malloc/calloc/realloc/mmap` 时，失败结果属于调用方契约。忽略空指针可能转成 SIGSEGV，主动 `abort()` 会成为 SIGABRT，只有显式调用 JNI/ART 异常接口才会变成 Java OOME。
 
-```cpp
-// art/runtime/jni/jni_internal.cc 简化
-if (utf16_length > std::numeric_limits<int32_t>::max()) {
-  soa.Self()->ThrowOutOfMemoryError(
-      StringPrintf("NewStringUTF input has 2^31 or more characters: %zu", utf16_length).c_str());
-  return nullptr;
-}
-```
+普通 Bitmap 自 Android 8.0 起由 native heap 持有像素；`Bitmap.Config.HARDWARE` 使用 GraphicBuffer / AHardwareBuffer。两者都能增加进程或系统内存压力，但采集方式和归属不同，Java heap dump 中的 Bitmap wrapper 大小不能代表全部像素或图形缓冲成本。
 
-**Unsafe.allocateMemory**
+### 先区分虚拟地址、驻留页和比例分摊
 
-`sun.misc.Unsafe` 的 `allocateMemory` 底层调用 `malloc`。`malloc` 返回 `nullptr` 时，ART 抛出 `"native alloc"` OOM：
+| 指标 | 回答的问题 | 不能回答的问题 |
+|---|---|---|
+| VmSize / `/proc/self/maps` | 进程保留和映射了多少虚拟地址区间 | 这些页是否常驻、是否独占 |
+| VmRSS / `smaps_rollup` RSS | 当前有多少页驻留内存 | 共享页应由哪个进程承担 |
+| PSS | 共享页按映射进程数分摊后的进程成本 | 单个 native allocation 的调用栈 |
+| `Debug.getNativeHeapAllocatedSize()` | bionic malloc 管理的已分配字节趋势 | mmap、线程栈、GraphicBuffer 等全部 native 成本 |
+| heapprofd | 被采样的 malloc/free 调用栈、大小和存活情况 | 未经过受支持 allocator 的所有映射与图形内存 |
 
-```cpp
-// art/runtime/native/jdk_internal_misc_Unsafe.cc 简化
-// 函数名: Unsafe_allocateMemory()
-void* mem = malloc(malloc_bytes);
-if (mem == nullptr) {
-  soa.Self()->ThrowOutOfMemoryError("native alloc");
-  return 0;
-}
-```
+因此，“native heap 指标没涨”不能排除 mmap、线程栈或图形缓冲增长；“VmSize 很大”也不能直接认定物理内存泄漏。
 
-> **边界说明**：Gson 等反序列化框架使用 `Unsafe.allocateInstance(Class)` 绕过构造函数——这条路径分配的是 Java 对象，走 Java 堆，不应归入 Native 内存 OOM。`allocateInstance` 增加的是 Java 堆压力（对象数），`allocateMemory` 增加的是 Native 堆压力（字节数），两者的 OOM 触发机制完全不同。
+### 诊断顺序
 
-**Bitmap 像素存储（Android 8.0+）**
+1. 用 `ApplicationExitInfo` 区分 OOME crash、native crash 和 `REASON_LOW_MEMORY`。先调用 `ActivityManager.isLowMemoryKillReportSupported()` 判断设备是否支持低内存退出归因；不支持时，缺少 `REASON_LOW_MEMORY` 不能排除系统内存压力。低内存终止进程没有可依赖的 uncaught 回调。
+2. 对比同场景的 PSS/RSS、Java heap、native malloc、图形内存、线程和映射数，先确定增长域。
+3. malloc 域使用 heapprofd 或 Android Studio native allocation profiler，保留分配与释放栈；接入条件受构建类型、`profileable` 配置、设备和系统策略影响。
+4. mmap 域解析 `/proc/self/maps` / `smaps`，按文件路径、匿名映射名称和权限聚合。
+5. 图形与媒体对象结合 Perfetto、`dumpsys meminfo`、dma-buf/GraphicBuffer 工具和对象生命周期检查。
+6. 对 JNI 资源建立明确的所有权与释放协议：`close()`、RAII、引用计数和失败路径都要覆盖，不能只等待 Java GC 调用 `Cleaner`。
 
-Android 8.0 起，普通 Bitmap 的像素数据通过 `calloc` 分配在 Native 堆（`frameworks/base/libs/hwui/hwui/Bitmap.cpp` 的 `allocateHeapBitmap`），不再占用 Java 堆。Hardware Bitmap（`Bitmap.Config.HARDWARE`）走 GraphicBuffer / AHardwareBuffer 路径。大量 Bitmap 创建不会触发 Java Heap OOM，但会耗尽 Native 堆或虚拟内存。Native 堆 OOM 的错误信息取决于分配路径：`calloc` 失败时返回 `nullptr`，最终触发 ART 的 `ThrowOutOfMemoryError`；极少数超大块连续内存分配由 allocator 内部走 `mmap`，失败时报告 `Failed anonymous mmap`——但不要把所有 Bitmap OOM 都归结为 `Failed anonymous mmap`。
-
-### 排查手段
-
-1. **`/proc/pid/status` 查看 VmSize / VmRSS**：VmSize 持续增长说明虚拟地址空间在扩张；要结合 VmRSS、smaps 和 native heap profile 区分 malloc 泄漏、mmap 增长、线程栈增长或文件映射。
-2. **`/proc/pid/smaps` 按内存类型统计**：关注 `[anon:dalvik-...]`、`[anon:libc_malloc]` 段的增长趋势。
-3. **Perfetto Native Heap Profile**（Android 10+）：`heapprofd` 可以抓取 Native 分配调用栈，定位泄漏点；user build 上通常要求应用设置 `debuggable` 或 `profileable`。
-4. **`android.os.Debug.getNativeHeapAllocatedSize()`**：在代码中周期性采样，绘制趋势图。
-
-Native 内存管理的详细优化策略详见 §23.3。
-
+采样本身会增加内存与 CPU，线上应限制时长、采样率和目标进程。接近风险水位时优先保存轻量计数与场景，详细分析放到灰度或可复现设备。
 
 ## 线程数 OOM（pthread_create 失败）
 
-每个 Java 线程在底层对应一个 `pthread`，需要分配栈空间（默认约 1 MB）和 JNI 环境结构体。`Thread::CreateNativeThread`（`art/runtime/thread.cc`）调用 `pthread_create` 时，如果虚拟内存不够分配线程栈，或内核资源不足（`EAGAIN`），创建失败，抛出 OOM。线程数 OOM 的根因是虚拟地址空间耗尽或内核线程配额——与 FD 泄漏是两个独立的治理路径。
+已启动的传统 Java platform thread 需要 native thread、栈与 guard 区、ART `Thread`、JNI 环境和内核 task 资源。线程数增加会同时消耗虚拟地址空间、native 内存和调度能力；协程或任务数量不能直接换算为 OS 线程数。
 
-### 错误信息区分
+### Android 17 的失败分支
 
-`CreateNativeThread` 的错误处理区分两种失败原因：
+`Thread::CreateNativeThread()` 先创建 ART `Thread` 和 `JNIEnvExt`，设置 pthread 栈大小，再调用 `pthread_create()`。下面是失败后错误文本的关键代码。
 
 ```cpp
-// art/runtime/thread.cc 简化
-std::string msg(child_jni_env_ext.get() == nullptr ?
-    StringPrintf("Could not allocate JNI Env: %s", error_msg.c_str()) :
-    StringPrintf("pthread_create (%s stack) failed: %s",
-                 PrettySize(stack_size).c_str(), strerror(pthread_create_result)));
+std::string msg(
+    child_jni_env_ext.get() == nullptr
+        ? StringPrintf("Could not allocate JNI Env: %s",
+                       error_msg.c_str())
+        : StringPrintf("pthread_create (%s stack) failed: %s",
+                       PrettySize(stack_size).c_str(),
+                       strerror(pthread_create_result)));
 soa.Self()->ThrowOutOfMemoryError(msg.c_str());
 ```
 
-- **"Could not allocate JNI Env"**：`JNIEnvExt::Create` 阶段失败，通常是 `mmap` 分配 JNI 环境所需的内存页失败。说明进程虚拟内存已耗尽。
-- **"pthread_create (XXX stack) failed"**：`pthread_create` 返回非零错误码，常见 `EAGAIN`（资源不足）。需要看 `strerror` 的具体内容。
+`Could not allocate JNI Env` 说明失败发生在 pthread 启动前；`pthread_create ... failed` 要继续看 strerror。Android 17 的 Bionic 在 stack/TLS 映射失败时返回 `EAGAIN`，kernel clone 也可能因 task 数、`RLIMIT_NPROC` 或资源不足返回错误。`android17-6.18-2026-06_r6/kernel/fork.c` 的 `copy_process()` 会在相关限制失败时返回 `-EAGAIN`，诊断时必须保留设备上的原始 errno 文本。
 
-### 治理策略
+栈大小由 ART 的 `FixStackSize()` 和线程请求共同决定，不存在适用于所有设备与架构的“每线程固定 1 MB”。诊断应从 OOME 错误文本里的栈大小、`/proc/self/task` 数量和 maps 中的 stack/guard 映射出发。
 
-**线程治理**（预防）
+### 线程治理与监控
 
-1. 全局线程池统一管理异步任务，禁止直接 `new Thread`。使用 `Executors.newFixedThreadPool` 或 Kotlin 协程的 `Dispatchers.Default` / `Dispatchers.IO`。
-2. 三方库的线程创建需要监控。通过统一 `ThreadFactory` 或协程 dispatcher 封装记录创建堆栈；必要时 hook `Thread.start()`、`pthread_create()` 或三方库线程工厂，在阈值触发时同时上报当前线程堆栈与创建堆栈。
-3. 设定进程线程数上限阈值（线上通常设 400-500），超过阈值触发告警。
+- 对自有任务使用有界 executor、结构化协程和统一调度入口，记录池大小、active、queue depth、拒绝和取消。
+- 审计 SDK、WebView、媒体、数据库和网络库的线程池。多个库各自“合理”的池相加后仍可能过量。
+- `Dispatchers.IO` 适合阻塞 I/O，但它不是全应用线程总额控制器；多个 `limitedParallelism` 视图也需要产品级并发预算。
+- 在线程创建点记录责任模块、名称和创建场景。优先使用自有 `ThreadFactory` / executor 观察，native hook 只用于受控诊断，需处理递归、性能和兼容性。
+- 周期读取 `/proc/self/status` 的 `Threads`，并统计 `/proc/self/task`。两者是采样值，线程快速创建与退出时可能不同。
+- 告警阈值来自设备和场景基线，例如稳定态分布、增长速度和剩余地址空间。固定 400 或 500 对不同进程没有通用意义。
+- 高水位时不要立即调用 `Thread.getAllStackTraces()` 抓取所有栈；它会创建大量对象。平时保留线程名、责任模块和采样栈，高水位只补充有限线程证据。
 
-**线程监控**（发现）
-
-定期读取 `/proc/pid/status` 的 Threads 字段：
-
-```text
-Threads:	387
-```
-
-或者遍历 `/proc/pid/task/` 目录统计线程数。线上监控中，当线程数超过基线 50% 时记录当前所有线程的堆栈（`Thread.getAllStackTraces()`），上报分析。
-
-**线程回溯兜底**（防护）
-
-针对子线程的 Native Crash，`sigsetjmp` / `siglongjmp` 只能作为强约束下的线程级隔离实验：信号处理函数只能执行 async-signal-safe 的最小跳转逻辑，跳回后也不能假定锁、堆、JNI 和业务状态仍然一致。具体实现通过 PLT Hook 拦截 `pthread_create`，替换执行函数实现；命中后应记录最小状态并尽快结束进程，详见扩展小节"OOM 兜底与安全降级"。
-
+线程数下降也要看任务是否仍能完成。把线程改成一个无界队列，可能把资源 OOM 改成排队延迟或 ANR。
 
 ## FD 泄漏导致的资源型崩溃
 
-Linux 进程的 FD（文件描述符）是有限资源。单个进程的 FD 上限由 `ulimit -n` 决定，Android 上通常为 1024 或更高（取决于厂商配置）。FD 耗尽后，无法打开新文件、创建新 socket。每个 Looper 线程初始化时都会创建 epoll FD 和 eventfd（`system/core/libutils/Looper.cpp`），FD 不够时 Looper/InputChannel 初始化就会失败。这类问题通常表现为 FD 创建失败、Looper/InputChannel 初始化失败或 FORTIFY abort，不等价于 ART 投递的 `OutOfMemoryError`；放在 OOM 治理章，是因为线上内存告警常把 FD、线程、虚拟地址空间一起作为进程资源水位管理。
+FD 是独立的内核资源。进程达到 `RLIMIT_NOFILE` 后，`open()`、`socket()`、`pipe()`、`eventfd()` 或 `epoll_create1()` 可能返回 `EMFILE`；系统级 file table 压力还可能表现为 `ENFILE`。`android17-6.18-2026-06_r6/fs/file.c` 的 FD 分配路径会按当前 files table 与 limit 返回 `-EMFILE`。
 
-### 典型崩溃堆栈
+FD 耗尽通常不经过 ART OOME。它保留在本章，是为了让内存、线程、FD 和地址空间使用同一套进程资源看板，同时保持事件类型分开。
+
+### FORTIFY 与真实上限
+
+下面的日志表示代码把过大的 fd 交给基于 `fd_set` 的 `select()` 接口：
 
 ```text
-signal:6 (SIGABRT), code:-6 (SI_TKILL)
 FORTIFY: FD_SET: file descriptor >= FD_SETSIZE
 ```
 
-这个崩溃不是"FD 超限"的直接原因，而是 FD 编号超过 `FD_SETSIZE`（通常 1024）后，`FD_SET` 宏触发的 fortify 检查。出现这个崩溃时，FD 泄漏已经持续了很长时间——崩溃点只是资源耗尽后暴露出来的表层位置。
+`FD_SETSIZE` 是 `select()` 数据结构的表示上限，和 `RLIMIT_NOFILE` 不是同一个值。只要进程拿到的 fd 编号超过 `FD_SETSIZE`，FORTIFY 就可能 abort；此时仍可能没有达到进程 fd limit。修复既要找 fd 增长源，也要检查库是否错误地用 `select()` 处理高编号 fd。
 
-### 常见 FD 消耗者
+### 采集一份可解释的 FD 快照
 
-| 类型 | 示例 | 说明 |
-|------|------|------|
-| 文件 | `open()` / `FileInputStream` | 日志库 mmap、数据库 WAL 文件 |
-| Socket | 网络请求、网络长连接 | HTTP、WebSocket 长连接 |
-| Pipe | `pipe()` / `eventfd` | Looper 的 `mWakeEventFd`、线程间通信 |
-| epoll | `epoll_create()` | 每个 Looper 线程创建一个 epoll 实例 |
-| anon_inode | `memfd_create()` | 共享内存、Ashmem |
+一份有效快照至少包含：
 
-### 排查与监控
+- `getrlimit(RLIMIT_NOFILE)` 的软限制、硬限制和当前 FD 数。
+- `/proc/self/fd/<n>` 的 readlink 结果，按 socket、pipe、anon_inode、文件、设备和未知类型归组。
+- 持续增长类别的创建方、创建栈、创建时间和可用的业务 ID。
+- close 结果、重复 close、dup 关系和对象生命周期。
+- 快照时的线程数、网络连接、页面或任务场景。
 
-**第一步：读取 `/proc/pid/fd` 目录**
+遍历 `/proc/self/fd` 本身会短暂打开目录 FD，其他线程也可能同时 close/dup，因此结果是近似快照。readlink 失败要按竞态处理，不能把它记成泄漏。
 
-```kotlin
-val fdFile = File("/proc/${Process.myPid()}/fd/")
-val files = fdFile.listFiles()
-// files.size 即为当前 FD 总数
-```
+常见泄漏点包括未关闭的 `ParcelFileDescriptor`、`Cursor`、`AssetFileDescriptor`、`InputStream`、socket、`Image`、`MediaExtractor` 和重复注册的 pipe/eventfd。Kotlin `use {}`、Java try-with-resources 和 C++ RAII 应覆盖成功、异常、取消与超时路径。
 
-对每个 FD 调用 `Os.readlink()` 获取指向路径：
+### 何时使用 native 插桩
 
-```text
-socket:[12345]    → 网络连接
-pipe:[789]        → 管道
-anon_inode:[...]  → Looper / InputChannel
-/data/app/...     → 打开的文件
-```
+只统计数量无法定位创建方时，可以在受控版本观察 `open/openat`、`socket/accept`、`pipe/pipe2`、`dup*`、`eventfd`、`epoll_create*` 与 `close`。实现要处理可变参数、符号别名、递归调用、采样和 fd 复用；漏掉 `dup` 或 `accept` 会让账目失真。
 
-统计各类型 FD 的数量，找到增长最快的类别。
-
-**第二步：Native Hook 监控 FD 创建**
-
-当 FD 数量监控无法定位到具体泄漏点时，通过 PLT Hook 拦截 `open`、`socket`、`pipe`、`dup`、`epoll_create` 等 FD 创建函数：
-
-```cpp
-// 使用 bhook 拦截 open 函数
-typedef int(*open_type)(char*, int, int);
-int proxy_open(char* path, int flags, int mode) {
-  int fd = BYTEHOOK_CALL_PREV(proxy_open, open_type, path, flags, mode);
-  // 记录 fd → backtrace 到 FD_MAP
-  BYTEHOOK_POP_STACK();
-  return fd;
-}
-```
-
-在 `close` 时从 `FD_MAP` 中移除对应记录。定期检查 `FD_MAP` 中存活时间过长的 FD，取其创建堆栈上报。
-
-`FD_MAP` 的实现采用分桶锁（类似 `ConcurrentHashMap`），避免多线程环境下锁竞争影响业务性能。
-
+不要直接把全量调用栈和全局映射表放进每次 open/close。更稳妥的方式是先找增长类别，再对目标模块采样；fd 接近高水位时输出已有轻量记录，避免监控组件自己申请更多 FD 或大块内存。
 
 ## 虚拟内存空间耗尽（32 位进程）
 
-32 位进程的用户空间虚拟地址上限约 3 GB（`0x00000000` - `0xBFFFFFFF`，内核占用高 1 GB）。虽然 64 位设备已普及，但部分应用（含 32 位 so 库）或特定场景下仍以 32 位模式运行。
+32 位进程的地址空间窄，so、Java heap、native heap、线程栈和 mmap 更容易互相挤压。Android 17 主线设备与应用以 64 位为主要形态，但兼容 32 位 ABI 的设备仍可能运行 32 位进程；用 `Process.is64Bit()` 记录当前进程架构，不要只看设备 CPU。
 
-### 虚拟内存的主要消费者
+“32 位用户空间固定为 3 GB、内核固定占 1 GB”不能作为跨设备结论。内核配置、架构、ASLR、保留区和进程映射共同决定可用范围，可分配的最大连续区间还会小于剩余总地址空间。
 
-一个 Android 进程的虚拟内存布局（可通过 `/proc/pid/maps` 查看）：
+### 地址空间由哪些映射构成
 
-| 区域 | 典型大小 | 说明 |
-|------|----------|------|
-| Java 堆 | 256-512 MB | ART 的 Region Space / Bump Pointer Space |
-| Native 堆 | 几十到数百 MB | `malloc` 分配，受 `mallopt` 参数影响 |
-| mmap 区域 | 数十到数百 MB | so 库映射、Bitmap 像素、日志 mmap |
-| 线程栈 | N × ~1 MB | 每个线程约 1 MB 栈空间 |
-| GPU / Gralloc | 几十 MB | Surface / BufferQueue 的图形缓冲区 |
+| 区域 | 观察方式 | 边界 |
+|---|---|---|
+| ART heap spaces | maps/smaps 中的 dalvik/ART 匿名区 | Java heap footprint 与 growth limit 相关，但保留量和已提交量要区分 |
+| native allocator arenas | libc malloc 匿名映射 | `Debug.getNativeHeapAllocatedSize()` 只覆盖 allocator 统计，不等于全部映射 |
+| so、dex、oat、vdex | 带文件路径的映射 | 同一文件可有多个权限区段，共享页不能按 VmSize 当作独占物理成本 |
+| 线程栈与 guard | stack/匿名映射、线程创建记录 | 大量线程会消耗地址区间，即使栈页尚未全部驻留 |
+| Bitmap、媒体和共享内存 | 匿名、memfd、dma-buf 或设备映射 | 是否计入进程 RSS/PSS 取决于映射与统计方式 |
+| 保留地址区间 | `PROT_NONE` 或 allocator/Runtime 保留区 | VmSize 会增长，但页可能尚未常驻 |
 
-3 GB 的空间里，Java 堆占用一半以上后，留给线程栈、Native 分配、mmap 映射的空间就很紧张。
+64 位进程也可能因无界映射、VMA 数量、异常地址保留或超大连续映射而收到 `ENOMEM`。`android17-6.18-2026-06_r6/mm/mmap.c` 的 `do_mmap()` 会在长度、地址或 `map_count` 超过系统约束等条件下返回 `-ENOMEM`；“64 位地址多”不能替代映射生命周期管理。
 
-### 排查方法
+### 排查顺序
 
-1. **`/proc/pid/maps` 全量分析**：关注 `[anon]` 段的数量和大小，统计各 so 库的映射大小。
-2. **`/proc/pid/status` 的 VmSize / VmPeak**：观察虚拟内存总量是否接近 3 GB。
-3. **`Debug.getMemoryInfo()` 的 `getTotalPrivateDirty()`**：作为内存趋势的辅助指标。
+1. 保存进程位数、失败 errno、请求长度、调用栈和连续性要求。
+2. 读取 `/proc/self/status` 的 VmSize/VmPeak 和 `/proc/self/maps` 区间数量，和同设备同场景健康样本比较。
+3. 按映射名称、权限和责任模块聚合 maps/smaps，区分持续增长与单次巨型请求。
+4. 同时检查线程、Java growth limit、native allocator、文件映射和图形/媒体资源，避免只盯一个总量。
+5. 对 32 位进程检查最大空洞和碎片；总剩余地址空间足够，不代表存在满足本次请求的连续区间。
+6. 对 64 位异常 VmSize 先识别 Runtime 保留区。较大的保留区可以是正常实现，证据要回到失败栈和映射增长。
+
+`Debug.MemoryInfo.getTotalPrivateDirty()` 是物理脏页指标，不能判断虚拟地址空间是否接近限制。
 
 ### 治理方向
 
-- 迁移到 64 位：从地址空间上解决 32 位进程的虚拟地址上限。
-- 减少线程数：线程栈是虚拟内存的大头消费者。合并线程池、使用协程替代线程。
-- 减少 so 库数量：每个 so 的代码段 + 数据段都要占用虚拟地址空间。动态合并或按需加载。
-- 拆分进程：将功能模块拆到独立进程，分摊虚拟地址空间压力。
-- `mallopt(M_PURGE, 0)` 归还空闲 arena 的物理页：它降低的是 Native RSS / 物理内存压力，不能释放已保留的虚拟地址区间，对 32 位虚拟地址空间耗尽的直接帮助有限。放在 §23.3 Native 内存优化中一起看更合适。
-
-虚拟内存优化详见 §23.6（大型 App 的多进程内存策略）。
+- 能迁移时提供完整 64 位 ABI，并验证指针变大带来的 native heap 增量和第三方 `.so` 兼容。
+- 限制线程、映射和内存映射文件的数量与生命周期，及时 `munmap()` 或关闭资源所有者。
+- 大对象采用分块、流式或尺寸上限，避免要求巨型连续区域。
+- `mallopt(M_PURGE, 0)` 可清理 allocator 空闲物理页，不能自动释放所有保留地址区间，也不能修复映射泄漏。
+- 拆进程会获得独立地址空间，却会复制 Runtime、so、线程和缓存，增加整机内存与 IPC 成本。只有隔离边界和测量数据同时成立时才采用。
 
 ## 扩展
 
 ### OOM 兜底与安全降级
 
-线上环境无法完全避免 OOM，但可以做两层兜底。
+OOME 发生后，当前线程连创建异常对象都可能失败。可靠方案把观测和降级放在资源接近预算时完成，uncaught 阶段只保留最小记录并沿默认处理路径结束进程。
 
-**Java 层：`UncaughtExceptionHandler` 捕获 OOM**
+### 在 OOM 前释放可重建资源
 
-OOM 是 `Error` 不是 `Exception`，默认的 `UncaughtExceptionHandler` 会终止进程。注册自定义 Handler 后，可以拦截 OOM 并做降级处理：
+降级动作按风险排序：
+
+1. 对图片、页面模型、预取、媒体缓冲和离线队列设置硬上限与逐出策略，不能等待系统回调才控制。
+2. 当页面退出、UI 隐藏或任务取消时释放资源所有者；`close()` 和协程取消路径都要测试。
+3. 内存水位持续上升时停止非必要预取、降低目标图片尺寸、缩小并发，并保留用户当前操作所需数据。
+4. 后台阶段释放可快速重建的 UI 缓存，避免同步序列化或磁盘写入阻塞主线程。
+5. 重任务支持检查点或幂等重试，让进程被系统结束后能够恢复，不依赖 OOM 处理器抢救。
+
+API 34 及以上不再向应用发送旧的 `TRIM_MEMORY_RUNNING_*`、`TRIM_MEMORY_MODERATE` 和 `TRIM_MEMORY_COMPLETE`。面向 Android 17 的代码聚焦 `TRIM_MEMORY_UI_HIDDEN` 与 `TRIM_MEMORY_BACKGROUND`；需要兼容旧系统时，再为旧常量保留分支。
+
+下面的示例让项目自定义缓存根据仍会送达的两个级别缩容；回调运行在主线程，`trimTo()` 只能释放引用和完成有界操作。
 
 ```kotlin
-val oomMemInfo = Debug.MemoryInfo()
-
-Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-  if (throwable is OutOfMemoryError) {
-    // 复用预分配对象，避免 OOM 路径再分配
-    Debug.getMemoryInfo(oomMemInfo)
-    val runtime = Runtime.getRuntime()
-    logOOMState(runtime.totalMemory(), runtime.freeMemory(),
-                runtime.maxMemory(), oomMemInfo.totalPrivateDirty)
-    safeExit()
-  } else {
-    defaultHandler.uncaughtException(thread, throwable)
-  }
+override fun onTrimMemory(level: Int) {
+    when {
+        level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND -> {
+            memoryCaches.trimTo(CacheProfile.BACKGROUND)
+        }
+        level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> {
+            memoryCaches.trimTo(CacheProfile.UI_HIDDEN)
+        }
+    }
 }
 ```
 
-注意：OOM 场景下创建新对象可能再次触发 OOM。降级逻辑中避免分配大对象，使用预分配的字符串和日志缓冲区。
+释放引用后由 Runtime 决定 GC 时机，不要在生产路径主动调用 `System.gc()`。需要关闭文件或 native 资源时，关闭动作必须快速；耗时清理由后台任务处理，但不能继续持有本应释放的大对象。
 
-**Native 层：`sigsetjmp` / `siglongjmp` 线程级隔离**
+### `UncaughtExceptionHandler` 与 API 37 OOM 触发器
 
-对子线程的 Native Crash（包括 SIGSEGV、SIGABRT），可以通过 PLT Hook 拦截 `pthread_create`，在执行函数入口调用 `sigsetjmp` 设置安全点。信号处理函数收到 crash 信号时，只能执行 async-signal-safe 的最小逻辑并调用 `siglongjmp` 跳回安全点：
+全局 `UncaughtExceptionHandler` 不适合执行 `Debug.getMemoryInfo()`、heap dump、JSON 序列化或网络上报，这些动作会继续申请内存。若产品需要 OOM 标记，应预先准备固定大小记录和有界写入路径，失败时立即放弃。
 
-```cpp
-static void* pthread_wrapper(void* arg) {
-  ThreadArgs* args = (ThreadArgs*)arg;
-  if (sigsetjmp(args->env, 1)) {
-    // 从 crash 中恢复：通知上层线程异常退出
-    notifyThreadCrash(args->thread_id);
-    return nullptr;
-  }
-  // 执行原始线程函数
-  args->original_func(args->original_arg);
-  return nullptr;
-}
-```
+自定义处理器必须保存安装前的处理器，并对所有 `Throwable` 调用它。API 37 的 `ProfilingTrigger.TRIGGER_TYPE_OOM` 可以在 OOM 时提供 Java heap dump；官方明确要求自定义处理器调用默认处理器。触发器仍受系统资源和速率限制，不能保证每次产生结果。
 
-适用场景只限后台线程的非关键 crash（如日志写入、数据上报）。跳回后进程可能已经持有不一致的锁、堆或 JNI 状态，只能做最小上报和安全退出；主线程 crash 不建议拦截，用户可见操作中断后继续运行，状态难以保证一致性。
+在可控的可选分配边界捕获 OOME，只适用于输入尺寸已知、没有共享状态写到一半、可以返回低分辨率或失败结果的操作。全局吞掉 OOME 后继续运行，进程可能仍处于高水位，其他线程也可能已失败。
+
+`sigsetjmp` / `siglongjmp` 处理 SIGSEGV、SIGABRT 属于 native crash 隔离实验，不能处理 Java heap OOME，也不能修复 native allocator 失败。跳过栈展开会绕过锁、析构和 JNI 状态恢复，不应作为 OOM 降级方案。
 
 ### 大型 App 的内存预算管理
 
-模块化程度高的大型 App，各业务线独立开发，容易各自膨胀内存。内存预算管理是约束手段。
+预算要同时覆盖 Java、native、graphics、线程、FD 和地址空间；只盯 Java `maxMemory()` 会漏掉大量进程成本。
 
-**建立内存基线**
+### 预算维度与测量方式
 
-在不同设备档次（低/中/高端）上测量冷启动后 5 秒的 Java 堆、Native 堆、线程数、FD 数，建立各模块的内存消耗基线。测量工具推荐：
+| 维度 | 实验室/CI 证据 | 线上轻量指标 |
+|---|---|---|
+| Java live heap | HPROF、对象数、retained size、场景前后差值 | Runtime heap 水位、GC 次数/时间、风险事件 |
+| native malloc | heapprofd、Android Studio native allocations | `getNativeHeapAllocatedSize()` 趋势 |
+| 进程物理成本 | `dumpsys meminfo`、PSS/RSS、smaps_rollup | 低频 PSS/RSS 或平台允许的 MemoryInfo |
+| graphics/media | Perfetto、dma-buf/GraphicBuffer 与媒体工具 | 自有缓冲区数量、尺寸、格式和生命周期 |
+| 线程与调度 | `/proc/self/task`、线程栈、executor 指标 | 线程数、线程池 active/queue/reject |
+| FD | rlimit、`/proc/self/fd` 分类、创建方 | FD 总数、主要类别和增长率 |
+| 虚拟地址 | maps/smaps、映射数、最大空洞 | VmSize、映射数、进程位数 |
 
-- Java 堆：`Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()`
-- Native 堆：`Debug.getNativeHeapAllocatedSize()`
-- 线程数：`/proc/pid/status` 的 `Threads` 行
-- FD 数：`/proc/pid/fd` 目录 size
+所有指标都要绑定场景和时间点。冷启动后固定等待 5 秒无法代表首页稳定态：网络、图片、延迟初始化和 GC 时机都可能不同。更可靠的采样点是“场景完成条件满足 + 短暂稳定窗口”，并记录测试数据、账户、网络、设备温度和进程冷热状态。
 
-**设定模块级预算**
+### 从产品预算到模块责任
 
-根据基线数据，为各业务模块设定内存预算（如启动阶段 ≤ 80 MB，首页稳定态 ≤ 150 MB）。CI 流水线中集成内存检测：模块合入前对比基线，增量超过阈值（如 +5 MB）则阻断合入。
+预算制定可以按以下步骤执行：
 
-**`onTrimMemory` 分级响应**
+1. 选择低内存、主流和高配置设备组，记录 `ActivityManager.getMemoryClass()`、`getLargeMemoryClass()`、`isLowRamDevice()` 与进程位数。
+2. 为冷启动、首页稳定态、重页面峰值、后台驻留和多次往返分别建立基线，至少重复多轮并报告分布。
+3. 把增量归到可行动的责任模块：缓存、图片、模型、线程池、native 句柄、图形缓冲或映射文件。无法可靠归因时保留“进程共享”项。
+4. 模块预算同时规定稳定态、峰值、回落时间和失败策略。只有“不得超过 N MB”会鼓励把内存推迟到另一个阶段。
+5. CI 比较同设备同数据的分布与基线，门槛结合测量噪声、置信区间和产品余量，不能固定使用“增加 5 MB 就阻断”。
+6. 发布后按设备、系统、ABI、版本和场景观察 OOME 用户率、`REASON_LOW_MEMORY`、PSS 长尾、线程与 FD 水位。
+7. 回归发生时同时检查分母和场景覆盖，避免测试样本减少后误判为优化。
 
-`ComponentCallbacks2.onTrimMemory(level)` 是系统通知应用释放内存的回调，不同 level 对应不同的释放策略。Android 14（API 34）以后，AOSP 已把 `TRIM_MEMORY_RUNNING_MODERATE`、`TRIM_MEMORY_RUNNING_LOW`、`TRIM_MEMORY_RUNNING_CRITICAL`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 标记为 deprecated，并注明应用不再收到这些 level；面向 Android 17 的治理代码不能依赖它们触发，只能作为兼容旧系统的兜底分支。
+模块预算之和不能直接等于进程预算：Runtime、共享库、allocator、系统组件和模块共享对象都需要单独余量。进程预算也不能挤到设备可承受上限，前后台切换、相机、WebView、媒体与系统更新都会改变整机竞争。
 
-| Level | Android 17 边界 | 含义 | 建议动作 |
-|-------|-----------------|------|----------|
-| `TRIM_MEMORY_UI_HIDDEN` | 仍会通知 | UI 不可见 | 释放 UI 相关缓存（图片、布局缓存） |
-| `TRIM_MEMORY_BACKGROUND` | 仍可作为后台水位 | 进程进入后台 LRU | 释放可快速重建的数据 |
-| `TRIM_MEMORY_RUNNING_MODERATE` | API 34+ 不再通知应用 | 运行中轻度内存压力 | 仅兼容旧系统，释放低成本缓存 |
-| `TRIM_MEMORY_RUNNING_LOW` | API 34+ 不再通知应用 | 运行中较高内存压力 | 仅兼容旧系统，释放非关键缓存 |
-| `TRIM_MEMORY_RUNNING_CRITICAL` | API 34+ 不再通知应用 | 运行中极高内存压力 | 仅兼容旧系统，释放更多可重建资源 |
-| `TRIM_MEMORY_MODERATE` | API 34+ 不再通知应用 | 后台应用，内存中等压力 | 仅兼容旧系统，释放可重建的数据 |
-| `TRIM_MEMORY_COMPLETE` | API 34+ 不再通知应用 | 后台应用，内存极度紧张 | 仅兼容旧系统，释放所有可释放的资源 |
+### 验证降级是否有效
 
-关键点：`onTrimMemory` 在主线程回调，释放操作必须快速。耗时操作（如写磁盘、序列化）放到子线程异步执行。
+每个降级动作都要验证三类结果：
+
+- **资源结果**：目标指标是否下降，下降发生在多长时间内，是否只是从 Java 转移到 native 或磁盘。
+- **功能结果**：当前操作是否有明确失败提示、低规格结果或可重试状态，进程重建后数据是否一致。
+- **性能结果**：缓存缩小后是否引入启动、网络、解码、功耗或 ANR 回归。
+
+OOM 治理达到可发布状态时，高水位事件有责任模块，系统终止与 OOME 分开统计，慢设备和 32 位兼容进程都有覆盖，任何 `UncaughtExceptionHandler` 都保留平台默认处理路径。
 
 ## 参考资料
 
-### OOM 治理 — ART 堆内存分区与黑科技扩量
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-15-oom-art-heap-analysis.md
-- 类型：DeepResearch 调研结果
-- 摘要：ART 多层堆架构（Linear Alloc / Zygote / Active 堆分区）的内存管理机制。黑科技扩量在 OOM 风险时动态扩展堆内存，延长应用存活 2-3 秒为后台任务和内存清理提供缓冲，涉及 GC、内存监控和动态扩展三个模块。
-- 内容：ART 多层堆架构（Linear Alloc / Zygote / Active 堆分区）的内存管理机制，以及 OOM 时堆增量技术
+- [Android Developers：Prioritizing memory efficiency for Android 17](https://developer.android.com/blog/posts/prioritizing-memory-efficiency-essential-steps-for-android-17)
+- [Android Developers：ComponentCallbacks2](https://developer.android.com/reference/android/content/ComponentCallbacks2)
+- [Android Developers：ProfilingTrigger.TRIGGER_TYPE_OOM](https://developer.android.com/reference/android/os/ProfilingTrigger#TRIGGER_TYPE_OOM)
+- [Android Developers：ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+- [Android Developers：ActivityManager](https://developer.android.com/reference/android/app/ActivityManager)
+- [Android Developers：Record native allocations](https://developer.android.com/studio/profile/record-native-allocations)
+- [AOSP Android 17：ART Heap](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc)
+- [AOSP Android 17：ART Thread](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc)
+- [AOSP Android 17：Unsafe native allocation](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/jdk_internal_misc_Unsafe.cc)
+- [AOSP Android 17：HWUI Bitmap allocation](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/hwui/Bitmap.cpp)
+- [AOSP Android 17：Bitmap JNI](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/jni/Bitmap.cpp)
+- [AOSP Android 17：ActivityThread largeHeap handling](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [AOSP Android 17：Bionic pthread creation](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/pthread_create.cpp)
+- [AOSP Android 17：Bionic malloc controls](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/include/malloc.h)
+- [AOSP Kernel `android17-6.18-2026-06_r6`：FD allocation](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/file.c)
+- [AOSP Kernel `android17-6.18-2026-06_r6`：Process/thread creation](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/fork.c)
+- [AOSP Kernel `android17-6.18-2026-06_r6`：Memory mapping](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/mmap.c)
