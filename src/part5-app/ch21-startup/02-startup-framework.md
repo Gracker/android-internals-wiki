@@ -320,818 +320,513 @@ mLoggerHandler.post(() -> mSupervisor.mService.mWindowManager.mAmInternal
 
 ## 本节定位
 
-21.1 节梳理了冷 / 温 / 热启动各阶段的耗时分布，给出了 Perfetto 中逐段读耗时的方法。这一节回答紧接着的工程问题：**拿到一份启动任务清单，怎么编排它们的执行顺序和线程分配，把墙上时钟时间（wall-clock time）压到最低？**
+21.1 节说明了怎样测量启动；本节处理测量后的工程问题：把必须执行的初始化工作建成可验证的任务图，在满足依赖、线程和故障边界的前提下缩短关键路径。
 
-8.3 节从策略层面讲了延迟初始化、异步初始化、Splash Screen 等手法。本节聚焦"编排"这件事本身——如何建模任务之间的依赖关系、如何选型或设计一个启动框架、如何配置线程池让并发效率最大化。
+本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点。Jetpack App Startup 固定到 1.2.0；Alpha 的代码结论固定到仓库提交 `04fe7f22c469de66fed98c341334c954dfabafb2`。
 
-## 启动任务有向无环图（DAG）设计
+> 说明：上方受流水线保护的 outline 保留了旧调研和后续勘误。旧段落中的 `SystemHealthManager.STARTUP_INFO_COLLECTOR`、`startupTiming()`、`registerStartupMonitor()` 以及 `<1 ms`、`8 KB` 等接口或数字不属于 Android 17 AOSP。正文不使用这些内容；`ApplicationStartInfo` 的准确分析见 [Startup Insights API 与启动可观测性](./17-startup-insights-api-observability.md)。
 
-[已验证: AOSP android-17.0.0_r1, Jetpack AppStartup 1.2.0 依赖图构建逻辑]
+## 1. 编排前先删任务
 
-### 为什么用 DAG
+启动框架不能把不必要的工作变便宜。拿到初始化清单后，先逐项回答：
 
-Application.onCreate 到首帧绘制之间的初始化工作，少则十几个，多则上百个。这些任务之间存在两类关系：
+- 当前进程是否需要它？
+- 当前入口是否需要它？
+- 第一帧之前是否必须完成？
+- TTFD 之前是否必须完成？
+- 失败时能否显示降级界面？
+- 能否在功能首用、用户同意或空闲阶段再初始化？
 
-1. **依赖关系**：SDK B 的初始化依赖 SDK A 的初始化结果（比如 Analytics SDK 需要先拿到 CrashReport SDK 的 deviceId）。
-2. **线程约束**：某些任务必须在主线程执行（如 Looper 相关组件），某些只能在后台线程（如磁盘 IO）。
+建议把任务分为四个阶段：
 
-如果按线性顺序逐个执行，启动时间等于所有任务耗时之和。如果能把无依赖关系的任务并行化，启动时间趋近于关键路径上任务耗时之和。DAG 是表达这种并行机会的数据结构。
+| 阶段 | 完成边界 | 典型内容 |
+| --- | --- | --- |
+| `PRE_APP` | `Application.onCreate()` 之前 | 少量由 Provider 强制触发的初始化 |
+| `PRE_FIRST_FRAME` | TTID 之前 | 首屏渲染不可缺少的同步状态 |
+| `PRE_FULLY_DRAWN` | TTFD 之前 | 首要操作所需的数据和能力 |
+| `DEFERRED` | 页面可用之后 | 二级功能、预取、非必要 SDK |
 
-### DAG 建模方法
+`PRE_APP` 是被组件生命周期强制出来的阶段，不应作为追求“更早”的优化手段。Android 17 的 [`ActivityThread.handleBindApplication()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)先安装 Provider，再调用 `Application.onCreate()`；放进 Provider 的重活会直接进入更早的主线程关键路径。
 
-把每个初始化任务建模为一个节点，任务间的依赖关系建模为有向边：
+启动任务只应包含“初始化完成”可以清晰定义的工作。长期轮询、常驻连接和周期任务属于运行期调度，不应让启动 DAG 一直保持未完成。
 
-```text
-节点属性：
-  - taskId: 唯一标识
-  - dependencies: 依赖的任务 ID 列表
-  - threadMode: MAIN / IO / CPU / ANY
-  - priority: CRITICAL / HIGH / NORMAL / LOW
-  - timeout: 超时时间（ms）
+## 2. DAG 表达依赖，不表达愿望
 
-边：
-  A → B 表示 B 依赖 A（A 完成后 B 才能开始）
+### 2.1 节点契约
+
+一个可调度节点至少要声明：
+
+| 字段 | 含义 |
+| --- | --- |
+| `id` | 稳定且唯一的标识，用于依赖和观测 |
+| `process` | 允许执行的进程 |
+| `phase` | TTID、TTFD 或延后阶段 |
+| `dependencies` | 硬依赖与软依赖 |
+| `executionContext` | Main、CPU、I/O 或供应商指定线程 |
+| `run` | 任务逻辑及完成信号 |
+| `failurePolicy` | 失败、降级、跳过后继或终止启动 |
+| `timeoutPolicy` | 超时后的协作取消与替代结果 |
+| `traceName` | 固定低基数的诊断名称 |
+
+下面的接口用于说明任务完成必须带结果，不能只返回“已提交异步工作”：
+
+```kotlin
+interface StartupTask<T> {
+    val id: String
+    val process: String
+    val phase: StartupPhase
+    val dependencies: Set<Dependency>
+    val executionContext: ExecutionContext
+
+    suspend fun run(scope: StartupScope): TaskResult<T>
+}
+
+sealed interface TaskResult<out T> {
+    data class Success<T>(val value: T) : TaskResult<T>
+    data class Degraded<T>(val fallback: T, val cause: Throwable) : TaskResult<T>
+    data class Failed(val cause: Throwable) : TaskResult<Nothing>
+}
 ```
 
-构建 DAG 后，用拓扑排序确定执行层级。同一层级内无相互依赖的任务可以并行执行：
+这里用 `suspend` 表达逻辑完成点，框架也可以用 `ListenableFuture`、`CompletionStage` 或回调实现。关键要求是：后继只能在前驱产生允许传播的终态后就绪。某个 SDK 的 `startAsync()` 返回，不代表 SDK 已可供后继使用。
+
+### 2.2 边的语义
+
+约定 `A → B` 表示 B 等待 A。依赖需要区分：
+
+- **硬依赖**：A 成功或给出满足契约的降级结果后，B 才能运行。
+- **软依赖**：B 希望在 A 之后运行；A 失败时，B 有明确的独立路径。
+- **顺序约束**：两者不共享结果，只因线程安全或供应商契约需要排序。
+
+“A 超时就当作完成”会破坏硬依赖语义。安全做法是把超时映射成 `Degraded` 或 `Failed`，再由 B 的契约决定能否继续。
+
+条件任务也不能简单从运行期跳过。构图时移除节点后，需要重新检查所有后继：依赖是否仍有提供者、是否存在备用节点、图是否仍然连通。
+
+### 2.3 构图阶段必须拒绝无效输入
+
+在任何任务执行前检查：
+
+- 重复 ID 和不存在的依赖；
+- 自依赖与环；
+- 被禁用的节点仍被硬依赖；
+- Main 任务等待一个需要 Main 才能完成的 worker；
+- 当前进程不允许的节点；
+- phase 倒挂，例如首帧任务硬依赖 `DEFERRED`；
+- 多个节点写同一非线程安全状态却没有顺序约束。
+
+DFS 的 GRAY 集或 Kahn 拓扑排序都能检测环。错误信息应输出完整环路径，例如 `A → B → C → A`，方便配置和模块负责人定位。
+
+## 3. 关键路径决定理论下界
+
+### 3.1 最长依赖链
+
+在一个不考虑资源竞争的 DAG 中，结束节点的最早完成时间由最长依赖路径决定：
 
 ```text
-Level 0（无依赖，可立即并行）:
-  [Logger, DeviceId, ProcessInit]
-
-Level 1（依赖 Level 0）:
-  [CrashReport(depends: Logger), NetworkConfig(depends: DeviceId)]
-
-Level 2（依赖 Level 1）:
-  [Analytics(depends: CrashReport, NetworkConfig)]
-
-Level 3:
-  [AppFacade(depends: Analytics)]
+Logger(8 ms) ─→ Crash(20 ms) ─┐
+                               ├→ HomeState(15 ms) → FirstFrame
+Device(12 ms) → Config(10 ms) ┘
 ```
 
-### 关键路径分析
+上例两条前驱路径分别是 28 ms 和 22 ms，汇合后的理论关键路径是 43 ms。缩短不在关键路径上的任务，不一定改变第一帧结束时间。
 
-DAG 建好后，可以用关键路径算法（CPM）计算从入口到最远节点的最长路径——这条路径决定了启动耗时的理论下限。关键路径上的任务就是优化重点：缩短它们才能缩短总启动时间。
+这只是理论模型。设备上的完成时间还受以下因素影响：
 
-```text
-关键路径 = max(各路径上任务耗时之和)
+- 就绪任务在 executor 队列中等待；
+- CPU 核心、频率、热状态和其他进程竞争；
+- 多个任务争用磁盘、Binder、类加载锁或同一连接池；
+- Main 与 RenderThread 被后台初始化抢占；
+- GC 和大量对象分配；
+- 任务时长会随缓存、网络和入口变化。
 
-示例：
-  Logger(20ms) → CrashReport(50ms) → Analytics(30ms) → AppFacade(40ms) = 140ms
-  DeviceId(10ms) → NetworkConfig(15ms) ↗
+因此，关键路径应从每次 Trace 的真实开始/结束和依赖关系重建，而非把代码评审中的估计耗时写死。P50 的关键路径也可能与 P95 不同。
 
-关键路径：140ms（Logger → CrashReport → Analytics → AppFacade）
-非关键路径：DeviceId → NetworkConfig = 25ms，有 115ms 的 slack time
-```
+### 3.2 优先级只影响已经就绪的任务
 
-优化思路：缩短关键路径上的任务耗时，或者把关键路径上的任务拆分出可并行的子任务。非关键路径上的任务即使再慢，只要不超过关键路径长度，对总启动时间没有影响。
+优先级不能越过依赖。它只在多个任务同时就绪且争用同一执行资源时决定谁先运行。
 
-### 环检测
+需要区分三种概念：
 
-DAG 中如果出现循环依赖，拓扑排序无法完成。实际工程中循环依赖通常由以下原因引入：
+1. **业务阶段**：TTID 前、TTFD 前、延后。
+2. **executor 排队优先级**：同一队列中先取哪个任务。
+3. **Linux 线程 nice 值**：线程被内核调度时的 CPU 权重。
 
-- SDK A 依赖 SDK B，SDK B 又依赖 SDK A（双向依赖）
-- 间接循环：A → B → C → A
+把三者压成一个 `priority` 整数，会让“高优任务在后台队列靠前”和“把线程 nice 调高”混成同一操作。框架 API 应分别建模。
 
-框架层面必须在构建阶段做环检测，常用方法是 DFS + 节点状态标记（WHITE/GRAY/BLACK）。检测到环时抛出明确异常，列出环路径，而不是让框架在运行时死锁。
+## 4. 失败、超时和取消属于任务协议
 
-## 任务优先级与依赖管理
+### 4.1 超时不等于停止
 
-### 任务的四种分类维度
+Java/Kotlin 的超时通常只让等待方停止等待。底层网络、Binder、文件 I/O 或供应商线程可能继续运行。`Future.cancel(true)` 和线程 interrupt 也是协作信号，代码若不响应，工作不会消失。
 
-启动任务需要从四个维度做分类，才能决定编排策略：
+每个可超时任务要回答：
 
-| 维度 | 取值 | 判断依据 |
-|------|------|----------|
-| **线程约束** | MAIN / IO / CPU / ANY | 是否涉及 UI 操作、是否需要 Handler/Looper |
-| **优先级** | CRITICAL / HIGH / NORMAL / LOW | 是否在首帧渲染的关键路径上 |
-| **依赖方向** | 上行依赖 / 下行被依赖 | 这个任务完成后有多少任务等着它的结果 |
-| **耗时量级** | <5ms / 5-50ms / >50ms | 决定是否值得拆分或异步化 |
+- 超时后能否取消底层操作？
+- 晚到结果是否还允许写共享状态？
+- 重试会不会与旧请求并发？
+- 后继使用什么备用值？
+- 下一次启动能否安全重试？
 
-**CRITICAL** 任务的定义：首帧渲染前必须完成，且没有可替换的降级方案。典型的有主线程 Looper 初始化、Window 注册、首屏布局 inflate。HIGH 任务是首屏可见但不阻塞渲染的——比如日志 SDK、网络配置。NORMAL 和 LOW 任务可以延迟到首帧之后。
+不要为每个任务临时创建一个线程，再用 `CountDownLatch.await(timeout)` 包住它。这样会让 executor 中的工作线程等待另一个线程，增加线程和栈内存，还无法停止被包裹任务。
 
-### 依赖声明方式
+### 4.2 失败传播
 
-依赖关系的声明方式直接影响框架的可用性。常见的三种方式：
+建议至少支持这些策略：
 
-**1. 接口声明（编译期检查）**
+| 策略 | 行为 |
+| --- | --- |
+| `FAIL_GRAPH` | 终止依赖该结果的关键路径，展示可恢复错误 |
+| `USE_FALLBACK` | 产出类型一致的本地或默认结果 |
+| `SKIP_DEPENDENTS` | 跳过所有无法满足硬依赖的后继 |
+| `CONTINUE_SOFT` | 仅软依赖继续，记录能力缺失 |
 
-```java
-public class AnalyticsInitializer implements Initializer<Analytics> {
-    @Override
-    public List<Class<? extends Initializer<?>>> dependencies() {
-        return Arrays.asList(CrashReportInitializer.class, NetworkConfigInitializer.class);
+框架要保存原始异常、任务 ID、进程、线程和已运行时长。捕获 `Throwable` 后无条件继续会掩盖 `OutOfMemoryError` 等进程级风险，也会让后继在半初始化状态运行。
+
+### 4.3 幂等与重入
+
+初始化任务可能因配置变化、进程恢复、失败重试或测试重复执行。理想任务应：
+
+- 多次调用返回同一有效状态；
+- 部分失败后能清理临时资源；
+- 注册监听器时能成对注销；
+- 不把“对象已创建”误当作“初始化已完成”；
+- 并发调用由单一状态机合并。
+
+若供应商 SDK 不支持重入，适配层应串行化调用并保存明确状态，禁止多个业务模块各自初始化。
+
+## 5. App Startup：同步依赖图
+
+### 5.1 1.2.0 的执行模型
+
+[Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup) 用一个 `InitializationProvider` 发现 manifest `<meta-data>` 中的 `Initializer`。1.2.0 源码中的 `AppInitializer`：
+
+1. 读取 Provider 的 metadata，找到值为 `androidx.startup` 的类名；
+2. 通过反射创建 `Initializer`；
+3. 深度优先初始化 `dependencies()`；
+4. 用 `initializing` 集合检测环；
+5. 调用 `create(context)` 并缓存结果；
+6. 用 AndroidX Trace 包住发现和每个 Initializer。
+
+自动初始化发生在 `InitializationProvider.onCreate()`，也就是应用主线程上的 Provider 安装阶段。它不是 Binder 线程回调，也不会自动把 `create()` 移到 worker。
+
+下面的初始化器声明 Logger 依赖本地配置：
+
+```kotlin
+class LoggerInitializer : Initializer<Logger> {
+    override fun create(context: Context): Logger {
+        return Logger.create(context)
+    }
+
+    override fun dependencies(): List<Class<out Initializer<*>>> {
+        return listOf(LocalConfigInitializer::class.java)
     }
 }
 ```
 
-Jetpack App Startup 采用这种方式。优点是编译期就能检查依赖是否存在，缺点是依赖关系硬编码在类中，运行时无法调整。
+App Startup 会先完成 `LocalConfigInitializer.create()`，再调用 Logger。`create()` 必须同步返回可用实例；内部若只提交异步任务，依赖顺序对逻辑就绪没有保证。
 
-**2. 配置文件声明（运行时解析）**
+### 5.2 适用范围与限制
 
-```json
-{
-  "tasks": [
-    {"id": "analytics", "depends": ["crash_report", "network_config"], "thread": "IO", "priority": "HIGH"}
-  ]
-}
-```
+App Startup 适合：
 
-自研框架常采用这种方式。优点是可以通过远程配置动态调整任务编排，缺点是失去了编译期类型安全。
+- 合并多个自动初始化 Provider；
+- 用静态、同步依赖表达少量必要初始化；
+- 提供可手动触发的惰性初始化入口；
+- 让库与应用通过 manifest merger 合并初始化声明。
 
-**3. Builder 声明（运行时构建）**
+它没有任务优先级、内建超时、取消、异步结果或运行期改图。所有 eager initializer 仍占用 Provider 启动阶段的主线程时间。
+
+需要惰性初始化时，从最终 Manifest 删除对应 `<meta-data>`，再在需要处调用 `AppInitializer.initializeComponent()`。官方文档明确指出，关闭一个组件的自动初始化也会关闭经它自动发现的依赖；手动初始化时依赖会一并初始化。
+
+### 5.3 多进程边界
+
+`AppInitializer` 是进程内单例，但 `InitializationProvider` 是否运行由 Manifest 的 `android:process` 决定：
+
+- 未声明 `android:process` 时，Provider 属于应用默认进程；
+- 若应用显式为多个进程声明不同 Provider，相关进程各有自己的单例和结果；
+- 一个默认 Provider 不会因为应用存在四个子进程就自动执行四次。
+
+1.2.0 修复了 Provider 定义在 secondary process 时的 metadata 查找问题，这表示库支持显式的多进程 Provider 配置，不表示所有 initializer 默认复制到每个进程。最终行为必须以 merged manifest 为准。
+
+## 6. Alpha：旧代码可以参考，不能按现代库假设
+
+### 6.1 固定提交中的行为
+
+Alpha 的选定提交 `04fe7f2` 日期为 2018-12-14，当前仓库默认分支仍停在这一提交。它提供：
+
+- `Project.Builder.add(task).after(predecessors)` 构建任务图；
+- `Task(name, true)` 通过 Main `Handler` 执行；
+- 后台 Task 使用 `AlphaConfig` 的共享 `ExecutorService`；
+- `MAIN_PROCESS_MODE`、`SECONDARY_PROCESS_MODE`、`ALL_PROCESS_MODE` 和精确进程名选图；
+- 任务耗时记录与 Project 完成回调。
+
+下面的写法与该提交的 Builder 和 Manager 签名一致：
 
 ```java
-// Alpha 框架的配置方式（基于 alibaba/alpha 04fe7f2，artifact 1.0.0.1）
-Task crashReport = new CrashReportTask();
-Task networkConfig = new NetworkConfigTask();
-Task analytics = new AnalyticsTask();
+Task config = new LocalConfigTask();
+Task logger = new LoggerTask();
 
 Project project = new Project.Builder()
-    .setProjectName("app_init")
-    .add(crashReport)
-    .add(networkConfig)
-    .add(analytics).after(crashReport, networkConfig)
-    .create();
+        .setProjectName("app-init")
+        .add(config)
+        .add(logger).after(config)
+        .create();
 
-AlphaManager alphaManager = AlphaManager.getInstance(context);
-alphaManager.addProject(project);
-alphaManager.start();
+AlphaManager manager = AlphaManager.getInstance(appContext);
+manager.addProject(project, AlphaManager.MAIN_PROCESS_MODE);
+manager.start();
 ```
 
-Alpha 框架使用 Builder API 在运行时构建任务图，兼顾了灵活性和类型安全。同时支持 XML 配置。注意：Alpha 的 `Task` 构造函数通过 `Task(String taskName, boolean isInUiThread)` 表达 UI 线程任务，也可以通过 `Task(String taskName, int threadPriority)` 指定线程 nice 值；`Project.Builder` 使用无参构造，依赖关系通过 `add(task).after(taskA, taskB)` 声明，入口调用需要拆成 `addProject(project)` 和 `start()` 两步，因为 `addProject()` 返回 `void`。默认 `ExecutorService` 来自 `AlphaConfig`，核心线程数默认为 `Runtime.getRuntime().availableProcessors()`，队列是无界 `LinkedBlockingQueue`。
+`addProject()` 返回 `void`，因此不能与 `start()` 链式调用。`after(config)` 表示 Logger 等待 Config。
 
-### 依赖的边界情况
+### 6.2 源码中需要补强的边界
 
-几种需要特殊处理的依赖场景：
+采用 Alpha 时至少核对这些实现事实：
 
-**软依赖**：B 最好在 A 之后执行，但如果 A 超时，B 也不应该被阻塞。框架需要支持 `dependsWithTimeout` 或 `softDepends` 语义，让 B 在 A 超时后继续执行，而不是无限等待。
+- 默认 executor 的 core/max 都是 `availableProcessors()`，队列是无界 `LinkedBlockingQueue`；max 与 core 相同，且所有后台任务共用一池。
+- `Task.run()` 返回后立刻标记完成并通知后继，不支持异步完成信号。
+- 用户 `run()` 外层没有 `try/finally`；异常会阻止完成通知，后继可能永远不启动。
+- `waitUntilFinish()` 与 Main Task 同时使用会死锁，源码注释已经警告。
+- execute priority 只在通知 successor 时排序；后台任务提交到普通 FIFO executor 后，没有全局优先队列保证。
+- 状态机把非 IDLE 的重复 `start()` 报告为可能存在循环，但没有在执行前输出完整环路径。
+- 没有内建的类型化结果、取消和单任务超时协议。
 
-**条件依赖**：B 在某些配置下依赖 A，其他配置下不依赖。比如海外版依赖 Google Play Services 初始化，国内版不依赖。框架需要支持运行时依赖判断。
+这些问题不说明 DAG 思想无效，只说明该仓库更适合作为源码参考或内部 fork 的起点。直接引入前要评估 target API 37、构建工具、并发安全、维护责任和依赖供应链。
 
-**传递依赖**：A 依赖 B，B 依赖 C。框架应该自动解析传递依赖，而不需要开发者显式声明 A → C。
+## 7. 什么时候需要自研
 
-## 主流启动框架对比：App Startup、Alpha、自研方案
+任务数不是选型的决定条件。十个带异步完成、跨进程和复杂失败语义的任务，可能比一百个同步任务更需要专用框架。
 
-### Jetpack App Startup
+自研通常由这些需求触发：
 
-[已验证: AOSP androidx.startup:AppInitializer.java, StartupLogger.java]
+- 异步结果必须成为依赖图的一等状态；
+- 需要类型化的失败、降级、超时和协作取消；
+- 每个进程使用不同任务图；
+- 编译期聚合多模块声明，并在构建阶段检查图；
+- 需要基于真实 Trace 重建关键路径；
+- 远程实验只能在受控白名单内改变阶段或开关；
+- crash loop 后要进入安全图；
+- 现有库的生命周期、维护或供应链风险不可接受。
 
-App Startup 解决的核心问题：**消除启动阶段多个 SDK 各自注册 ContentProvider 带来的冗余开销**。
+自研成本包括调度状态机、可观测性、故障注入、并发测试、进程测试和长期兼容。若需求只是统一几个同步 initializer，App Startup 更简单。
 
-在 App Startup 出现之前，第三方 SDK 普遍通过 ContentProvider 实现"免初始化"——在 Manifest 中注册一个 ContentProvider，在 onCreate 中做 SDK 初始化。21.3 节会详细分析这种做法的性能问题。App Startup 提供了一个统一的 InitializationProvider，所有 SDK 把初始化逻辑注册到这个 Provider 中，避免创建多个 ContentProvider。
-
-**核心机制**：
-
-1. SDK 实现 `Initializer<T>` 接口，声明 `dependencies()` 和 `create(context)`。
-2. 在 Manifest 中声明 `<meta-data>` 指向实现类。
-3. `AppInitializer` 在 `InitializationProvider.onCreate()` 中按依赖拓扑排序执行所有 Initializer。
-
-**适用场景**：
-
-- 替换多个 SDK 的 ContentProvider 初始化为单一 Provider
-- 依赖关系简单的线性或浅层树结构
-- 不需要运行时动态调整初始化顺序
-
-**限制**：
-
-| 限制项 | 说明 |
-|--------|------|
-| 主线程执行 | 所有 Initializer 在主线程顺序执行，无法异步 |
-| 无超时控制 | 单个 Initializer 耗时长会阻塞后续所有任务 |
-| 无优先级概念 | 完全按拓扑排序结果执行，无法表达优先级 |
-| 配置静态 | 依赖关系在 Manifest 中声明，运行时无法修改 |
-| 粒度粗 | 以 `Initializer` 为单位，不支持任务内部的部分异步 |
-
-### Alpha 框架
-
-[已验证: GitHub alibaba/alpha 04fe7f2 README + Task.java / Project.java / AlphaConfig.java / AlphaManager.java]
-
-Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个基于 DAG 的异步任务调度器。
-
-**核心概念**（基于 alibaba/alpha 04fe7f2 源码，artifact 版本 1.0.0.1）：
-
-- `Task`：最小调度单位。通过 `Task(String taskName, boolean isInUiThread)` 构造，`isInUiThread=true` 的 Task 通过主线程 Handler 执行，`false` 的走 ExecutorService。Task 支持设置 `executePriority`（调度优先级）和 `threadPriority`（OS 线程优先级）。
-- `Project`：Task 的容器，对应一个启动阶段（如"Application 初始化""首屏准备"）。`Project.Builder` 使用 `add(task)` 添加任务，`add(task).after(taskA, taskB)` 声明依赖。Project 之间可以串行或并行。
-- `AlphaManager`：入口类，先通过 `AlphaManager.getInstance(context).addProject(project)` 注册 Project，再调用 `AlphaManager.getInstance(context).start()` 启动调度。支持 Java Builder 和 XML 两种配置方式。
-
-**执行流程**（基于 `AlphaManager.start()` 源码）：
+一个最小架构应包含：
 
 ```text
-1. 通过 AlphaManager.getInstance(context).addProject(project) 注册所有 Project/Task
-   （Task 依赖通过 Project.Builder.add(...).after(...) 声明）
-2. AlphaManager.start() 按当前进程选择匹配的 Project，然后调用 project.start()
-3. Project.start() 从内部 start anchor task 启动任务图
-   - isInUiThread=true 的 Task 通过主线程 Handler 执行
-   - isInUiThread=false 的 Task 通过配置的 ExecutorService 执行
-   - 默认 ExecutorService 为 CPU 核数固定线程池 + 无界 LinkedBlockingQueue，可通过 AlphaConfig 替换
-4. Task.notifyFinished() 通知 successor，successor 在 onPredecessorFinished() 中移除已完成前驱；前驱集合清空后调用 start()
-5. 所有任务完成后回调 onProjectFinish
+声明层 → Graph Validator → Scheduler → Main / CPU / I/O executors
+             │                │
+             ├─ 环与契约检查   ├─ 结果、超时、取消
+             └─ 进程/阶段校验  └─ Trace 与指标
 ```
 
-**适用场景**：
-
-- 任务数量多（>20）且依赖关系复杂
-- 需要异步执行部分任务
-- 需要区分 IO 密集型和 CPU 密集型任务的线程池
-
-**限制**：
-
-- 框架层面无超时控制（需要业务自行实现）
-- Java Builder 配置在编译期确定，运行时无法远程下发
-- 默认 ExecutorService 只有一个通用线程池，不能天然区分 IO 密集型与 CPU 密集型任务；大型项目通常需要替换 `AlphaConfig` 的 executor 或在任务内部再做资源隔离
-- 项目社区活跃度一般，最近一次发布距今较久
-
-
-
-### 错误处理与超时机制
-
-Alpha 框架层面没有内置超时控制，需要在 Task 内部自行实现，或在上层封装统一的超时策略。
-
-**单个任务超时控制**：
-
-下面这个封装只适合后台初始化任务；主线程任务应通过 `onProjectFinish`、`Handler` 或业务状态机做超时观察，避免在 Task 内部再开线程破坏 UI 时序。
-
-```java
-// 封装层：在 Task 执行时包装超时逻辑
-public class TimeoutTask extends Task {
-    private final Runnable delegate;
-    private final long timeoutMs;
-
-    public TimeoutTask(String name, Runnable delegate, long timeoutMs) {
-        super(name, false);
-        this.delegate = delegate;
-        this.timeoutMs = timeoutMs;
-    }
-
-    @Override
-    public void run() {
-        final CountDownLatch latch = new CountDownLatch(1);
-        final AtomicReference<Throwable> error = new AtomicReference<>();
-
-        Thread worker = new Thread(() -> {
-            try {
-                delegate.run();
-            } catch (Throwable t) {
-                error.set(t);
-            } finally {
-                latch.countDown();
-            }
-        }, "timeout-" + mName);
-        worker.start();
-
-        final boolean finished;
-        try {
-            finished = latch.await(timeoutMs, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            reportError(mName, e);
-            return;
-        }
-
-        if (!finished) {
-            // 超时：记录日志，标记任务为 finished，让后续依赖继续
-            reportTimeout(mName, timeoutMs);
-        } else if (error.get() != null) {
-            // 执行异常：同样标记 finished，避免后续依赖永久等待
-            reportError(mName, error.get());
-        }
-    }
-}
-```
-
-不要在 `run()` 内部用 `Thread.interrupt()` 强制中断超时任务——被中断线程的后续行为不可控，可能留下脏状态。超时后应让原线程自行结束（它可能卡在 IO 等待或死锁中），同时通过 `notifyFinished()` 通知后续任务继续。
-
-**整图超时检测**：
-
-在 `AlphaManager` 启动后启动一个 watchdog，如果整个启动图在预期时间内未完成，触发降级策略：
+声明层不应允许业务直接拿 executor；调度器才能记录排队时间、运行时间和依赖状态，并在退出或降级时保持一致行为。
 
-```java
-// 在 Application.onCreate 末尾启动 watchdog
-mainHandler.postDelayed(() -> {
-    if (!startupFinished) {
-        // 启动超时：跳过剩余未完成的低优先级任务，直接进入首屏
-        startupManager.cancel(priority < CRITICAL);
-        // 上报超时指标：哪些任务未完成、总耗时
-        reportStartupTimeout(unfinishedTasks, elapsed);
-    }
-}, TOTAL_STARTUP_TIMEOUT_MS);
-```
+## 8. 异步初始化与 executor 策略
 
-注意：取消任务不等于 kill 线程。已在执行中的任务只能通过标志位协作式退出：
-
-```java
-@Override
-public void run() {
-    for (int i = 0; i < items.size() && !isCancelled(); i++) {
-        process(items.get(i));
-    }
-}
-```
-
-### Application 生命周期集成
-
-Alpha 不限定调用时机，但实际集成时 `addProject()` 和 `start()` 的调用位置会影响初始化能力和 DAG 构建灵活性。
-
-**标准集成方式**（`Application.onCreate`）：
-
-```java
-public class MyApplication extends Application {
-    @Override
-    public void onCreate() {
-        super.onCreate();
-
-        // 阶段 1：注册任务（可以在 onCreate 之前通过 ContentProvider 提前完成）
-        AlphaManager alpha = AlphaManager.getInstance(this);
-        alpha.addProject(buildAppInitProject());
-        alpha.addProject(buildFirstScreenProject());
-
-        // 阶段 2：启动调度
-        alpha.start();
-    }
-}
-```
+### 8.1 Main 是 Looper，不是线程池
 
-**ContentProvider 提前初始化**（App Startup 模式的思想复用）：
+Main 任务通过当前调用或 `Handler`/dispatcher 排队。`post()` 只表示入队，执行时间取决于前方消息、同步屏障和 frame callback。把十个任务从 `Application.onCreate()` 改成十次 `mainHandler.post()`，可能只是把成本移动到首帧附近。
 
-如果少量无 UI 依赖的预热任务必须早于 `Application.onCreate` 完成，可以利用 ContentProvider 的 `onCreate`。AOSP `ActivityThread.handleBindApplication()` 的顺序是先创建 Application 实例，再安装 ContentProvider，最后调用 `Application.onCreate()`。因此 Provider 只适合做早于 `onCreate` 的注册或轻量预热；MultiDex 这类必须放在 `attachBaseContext()` 的工作不适合走 Provider。
+Main 线程上禁止：
 
-```java
-public class StartupInitProvider extends ContentProvider {
-    @Override
-    public boolean onCreate() {
-        // 此时 Application 对象已创建，但 Application.onCreate 尚未执行
-        AlphaManager alpha = AlphaManager.getInstance(getContext());
-        alpha.addProject(buildPreInitProject());
-        // 注意：不要在这里 start()——Application.onCreate 中再 start
-        return true;
-    }
-}
-```
+- 等待 worker 的 `CountDownLatch`、`Future.get()` 或阻塞式 `await`；
+- 让 worker 依赖 Main 回调后完成，形成反向等待；
+- 在 rejection handler 中执行原本要去后台的任务；
+- 用 SplashScreen 无限覆盖尚未结束的初始化。
 
-ContentProvider 中注册的 Project 和 `Application.onCreate` 中注册的 Project 共享同一个 `AlphaManager` 实例，最后在 `onCreate` 中一次性 `start()`。
+必须在 Main 调用但可拆分的 API，应只把很短的状态切换留在 Main，准备工作在 worker 完成后通过非阻塞状态机继续。
 
-**与 Splash Screen 的时序配合**：
+### 8.2 CPU 任务
 
-如果应用有 Splash Screen，要在 Splash 显示期间完成启动初始化，不要让用户在 Splash 消失后还在等初始化完成：
+CPU 并发不是 `availableProcessors() + 1` 的固定公式。`availableProcessors()` 只报告当前可用逻辑处理器数量，不能表达大小核性能、调频、温度、RenderThread 竞争和设备负载。
 
-```java
-// SplashActivity.onCreate
-AlphaManager.getInstance(this).addProject(buildSplashProject());
-AlphaManager.getInstance(this).start();
+CPU executor 应：
 
-// 等所有 CRITICAL 任务完成后跳转主页
-StartupAwaiter awaiter = new StartupAwaiter(AlphaManager.getInstance(this));
-awaiter.await(criticalTasks, () -> {
-    startActivity(new Intent(this, MainActivity.class));
-    finish();
-});
-```
+- 使用有限并发和有界队列；
+- 把首帧关键计算与延后预计算分开；
+- 避免多个库各建一个“按核数”线程池造成过度并发；
+- 在低、中、高设备档位用 Perfetto 检查 Main/RenderThread 的 Runnable 等待；
+- 记录 submit-to-start 排队时间与 run 时间。
 
-`await()` 需要封装层实现——Alpha 本身只提供 `onProjectFinish` 回调，不提供等待特定任务集合完成的 API。
+线程更多只会在有可用 CPU 时提高并行度。首帧期间把所有核心占满，可能让 Main 与 RenderThread 更慢。
 
-**与 Jetpack App Startup 的共存方式**：
+### 8.3 I/O 任务
 
-如果团队从 App Startup 渐进式迁移到 Alpha，可以这样共存：
+I/O 会阻塞，不代表线程数可以无限增加。启动时大量并发读会放大：
 
-1. App Startup 处理依赖关系简单的 SDK 初始化（不需要异步、没有超时需求）
-2. Alpha 处理复杂启动图的异步任务编排
-3. App Startup 的 `InitializationProvider`（ContentProvider）中只注册最关键的初始化器，其余迁移到 Alpha
+- 存储队列和 page fault；
+- 数据库锁与连接池等待；
+- Binder 服务排队；
+- TLS、DNS 和服务端限流；
+- 每个线程的栈内存。
 
-两套框架的衔接点：App Startup 的 `Initializer` 在 ContentProvider 阶段已执行完毕，Alpha 在 `Application.onCreate` 中 `start()` 时这些依赖已就绪，不需要在 DAG 中声明对 App Startup 初始化器的依赖。
+磁盘、数据库、Binder 和网络最好按资源设置并发上限，避免一个慢域名占满所有 worker。网络配置也不应成为首帧硬依赖；使用上一份已验证缓存或本地默认值更稳妥。
 
+### 8.4 队列与拒绝策略
 
-### 自研方案：什么时候需要自己做启动框架
+[`ThreadPoolExecutor`](https://developer.android.com/reference/java/util/concurrent/ThreadPoolExecutor) 在 core 线程满后先尝试入队。无界 `LinkedBlockingQueue` 会让线程数停在 core，`maximumPoolSize` 不再发挥扩容作用，同时允许积压无限增长。
 
-[已验证: 基于多家大厂公开技术分享的综合分析]
+有界队列便于限制资源，但拒绝策略必须符合启动语义。`CallerRunsPolicy` 会在提交线程直接执行被拒任务；若调用者是 Main，后台重活会回到 UI 线程。因此：
 
-当以下条件满足 2 个以上时，考虑自研：
+- 关键任务被拒应记录并走明确降级或失败路径；
+- 延后任务可以丢弃、合并或稍后重试；
+- 主线程提交禁止使用会执行重活的 caller-runs；
+- 同一 key 的预热任务应去重，避免队列重复。
 
-1. **任务数量 > 50**：DAG 规模大到需要精细的调度策略（如任务拆分、动态依赖、超时降级）。
-2. **需要运行时动态配置**：通过远程配置调整任务顺序、跳过某些任务、A/B 测试不同的初始化策略。
-3. **需要启动监控集成**：每个任务的耗时、成功率、超时率需要上报到 APM 系统。
-4. **多进程差异化初始化**：主进程、后台进程、:push 进程的初始化任务集合不同。
-5. **需要与编译优化联动**：比如根据 Baseline Profile（详见 21.4 节）中记录的类加载顺序来优化 DAG 层级分配。
+### 8.5 线程优先级
 
-自研方案的核心模块：
+[`Process.setThreadPriority()`](https://developer.android.com/reference/android/os/Process)设置当前线程的 Linux nice；它不改变 DAG 依赖，也不保证 I/O 顺序。
 
-```text
-┌─────────────────────────────────────┐
-│         StartupManager              │
-│  (入口：start / await / callback)   │
-├─────────────────────────────────────┤
-│         DAG Engine                  │
-│  拓扑排序 · 环检测 · 关键路径计算    │
-├─────────────────────────────────────┤
-│         Scheduler                   │
-│  任务分发 · 优先级队列 · 超时控制    │
-├───────────┬───────────┬─────────────┤
-│ MainPool  │  IOPool   │  CpuPool    │
-│ (主线程)  │ (IO密集)  │ (CPU密集)   │
-├───────────┴───────────┴─────────────┤
-│         Monitor (可选)               │
-│  耗时采集 · 上报 · 告警              │
-└─────────────────────────────────────┘
-```
+低紧迫度 worker 可使用 `THREAD_PRIORITY_BACKGROUND`，但首帧关键 worker 是否保留默认优先级要通过 Trace 验证。盲目提升后台线程会抢占 Main 和 RenderThread。新线程可能继承创建线程的调度属性，线程工厂应显式命名，并在线程执行体内设置允许的优先级。
 
-### 三种方案的选型决策
+## 9. 多进程任务图
 
-| 维度 | App Startup | Alpha | 自研 |
-|------|-------------|-------|------|
-| 接入成本 | 低（几行配置） | 中（继承 Task 类） | 高（需设计 API + 测试） |
-| DAG 支持 | 静态依赖 DAG（同步主线程） | 完整 DAG | 完整 DAG |
-| 异步执行 | 不支持 | 支持 | 支持 |
-| 超时控制 | 无 | 无 | 可自定义 |
-| 动态配置 | 不支持 | Builder/XML 本地配置 | 可自定义 |
-| 监控集成 | 无 | 基础回调 | 可自定义 |
-| 维护成本 | 低（Google 维护） | 低（社区维护） | 高（团队自行维护） |
-| 适用规模 | <15 个初始化任务 | 15-50 个 | >50 个或需要动态配置 |
+### 9.1 每个进程只构建自己的图
 
-选型建议：先用 App Startup 收敛 ContentProvider 初始化，当 DAG 复杂度上升后迁移到 Alpha 或自研方案。迁移路径：App Startup（消除 ContentProvider 开销）→ Alpha（引入 DAG + 异步）→ 自研（动态配置 + 监控 + 多进程）。21.3 节会展开讲 ContentProvider 治理的细节。
+Android 10+ 可用 `Application.getProcessName()` 获取当前进程。推荐先选择进程配置，再实例化任务，避免子进程加载主进程 initializer 类及其静态依赖。
 
-
-
-### 启动框架选型中的常见陷阱
-
-团队在选型或迁移启动框架时，以下问题反复出现：
-
-**陷阱 1：把"消除 ContentProvider 的数量"当作优化目标**
-
-App Startup 的设计初衷是收敛多个 SDK 各自注册的 ContentProvider 为一个。但"ContentProvider 多"本身不是性能问题——Android 文档明确描述了 multiple ContentProvider 初始化的开销。优化目标是缩短从 `Application.attachBaseContext` 到首帧的 wall-clock time。把 10 个轻量 ContentProvider 合并成 1 个 App Startup Initializer，如果所有初始化都在主线程串行执行，启动耗时不会减少。减少的是系统为每个 Provider 创建进程中 jni/jit 开销，以及 Manifest 解析耗时。
-
-正确做法：先通过 Perfetto trace 确认哪些初始化步骤是启动瓶颈，再决定迁移哪些、并发化哪些。不要为了"统一入口"把本来可以并发的东西串行化。
-
-**陷阱 2：DAG 建得太细，拓扑排序本身成为瓶颈**
-
-有人把上百个初始化任务全部拆成独立 Task 节点，每个不到 5ms。结果 DAG 本身的构建、排序、回调链比任务执行还耗时。框架调度一次 Task 的上下文切换和回调链开销通常在 0.05-0.2ms 量级。100 个空任务，调度开销就接近 10-20ms。
-
-粒度原则：Task 的执行时间应远大于调度开销。执行时间 < 2ms 的任务应该合并；2-10ms 的看情况；>10ms 的才值得独立调度。
-
-**陷阱 3：关键路径被非关键任务拖慢**
-
-DAG 建完后发现关键路径 150ms，但优化了 4 个 5ms 的任务只节约了 5ms——因为它们不在关键路径上。常见的是：关键路径上的 Analytics 初始化 45ms，但因为里面有 30ms 的磁盘 IO 在 IO 线程池，主线程不直接受影响，被误判为"不是瓶颈"。它占用了 IO 线程池资源，阻塞了同在 IO 线程池的其他关键任务。
-
-正确做法：建完 DAG 后先跑一遍关键路径分析，标出关键路径上的任务。然后区分三个维度优化——缩短关键任务耗时、把关键任务移出共享线程池的阻塞队列、检查是否有依赖可以打断。
-
-**陷阱 4：线程池共享导致的优先级反转**
-
-CPU 线程池和 IO 线程池共享同一个默认 ExecutorService。低优先级 IO 任务占满了线程池队列，高优先级 CPU 任务在队列中等待。这种情况下，DAG 拓扑排序再合理也发挥不出来。
-
-解决方案：IO 密集型和 CPU 密集型分池，且 IO 线程池的队列要有界（`LinkedBlockingQueue(capacity)` 而非无界）。队列满时让提交的线程直接执行（`CallerRunsPolicy`），或设置两队列——高优和低优分离。
-
-**陷阱 5：远程配置下发后客户端无校验**
-
-远程配置修改了任务依赖关系后，客户端直接执行。如果配置写错了（循环依赖、不存在的 taskId、非法线程模式），客户端可能启动失败或死锁。
-
-必须在客户端做配置校验：DAG 构建前做环检测、taskId 存在性检查、threadMode 合法性检查。校验失败时回退到内置默认 DAG，并上报校验错误详情。
-
-**陷阱 6：动态配置依赖网络，首次启动无配置**
-
-远程配置需要网络请求才能拉取，首次安装后的启动没有缓存配置。如果启动逻辑依赖远程配置来决定任务编排，首次启动的 DAG 和后续启动不同——出现两类用户的启动耗时分布不一致。
-
-解决方式：客户端内置默认 DAG 作为基线；远程配置只对已存在的内置任务做顺序/优先级/开关微调，不引入新任务。首次启动用内置 DAG，配置拉取成功后下次启动生效。
-
-
-## 异步初始化与线程池策略
-
-[已验证: AOSP android-17.0.0_r1, ThreadPoolExecutor 配置参数]
-
-### 主线程是瓶颈
-
-21.1 节的耗时分段已经说明：从 `Application.onCreate` 到首帧绘制，主线程的执行时间直接决定 TTID（Time To Initial Display）。每在主线程增加 50ms 的同步初始化，TTID 就增加 50ms。
-
-异步初始化的原则：**除了必须访问 UI 组件、必须使用主线程 Handler/Looper、或 Android API 强制要求主线程调用的任务，其余全部放到后台线程。**
-
-判断标准：
-
-```java
-// 必须在主线程的任务特征：
-// 1. 操作 View / Window 对象
-// 2. 调用 Looper.myLooper() == Looper.getMainLooper() 的 API
-// 3. 访问非线程安全的单例且后续首帧流程会访问同一单例
-
-// 可以异步的任务特征：
-// 1. 纯计算（算法、编解码）
-// 2. 磁盘 IO（数据库、文件读写、SharedPreferences 读取）
-// 3. 网络请求（SDK 配置拉取、AB 实验拉取）
-// 4. 初始化全局状态但不涉及 UI（SDK init、日志系统）
-```
-
-### 三种线程池的分工
-
-启动阶段的任务按资源占用特征分为三类，分别对应不同的线程池配置：
-
-**IO 线程池**（处理磁盘读写、网络等阻塞操作）
-
-```java
-// 核心线程数 = CPU 核心数，最大线程数 = CPU 核心数 * 2
-// 使用无界队列或大容量队列，因为 IO 任务的阻塞等待时间占比较高
-int cpuCount = Runtime.getRuntime().availableProcessors();
-ExecutorService ioPool = new ThreadPoolExecutor(
-    cpuCount,           // corePoolSize
-    cpuCount * 2,       // maximumPoolSize
-    30, TimeUnit.SECONDS,
-    new LinkedBlockingQueue<>(128),
-    new ThreadFactory() {
-        @Override
-        public Thread newThread(Runnable r) {
-            Thread t = new Thread(() -> {
-                // IO 线程降低优先级，避免和主线程争抢 CPU
-                // 在线程执行体内设置优先级，确保使用当前线程的 Linux tid
-                Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
-                r.run();
-            }, "startup-io-" + threadId.getAndIncrement());
-            return t;
-        }
-    }
-);
-```
-
-**CPU 线程池**（处理计算密集型任务：JSON 解析、数据序列化、编解码）
-
-```java
-// 核心线程数 = CPU 核心数 + 1（经典公式，多出的线程在偶尔的上下文切换时填满空闲）
-// 使用有界队列 + CallerRunsPolicy，CPU 任务不宜排队过长
-int cpuCount = Runtime.getRuntime().availableProcessors();
-ExecutorService cpuPool = new ThreadPoolExecutor(
-    cpuCount + 1,       // corePoolSize
-    cpuCount + 1,       // maximumPoolSize
-    10, TimeUnit.SECONDS,
-    new LinkedBlockingQueue<>(64),
-    new ThreadPoolExecutor.CallerRunsPolicy()  // 队列满时在提交线程执行，起到背压作用
-);
-```
-
-**主线程任务池**（标记为 MAIN 的任务，实际不创建线程，直接 `handler.post()`）
-
-```java
-// 主线程任务通过 Handler 排队执行，确保顺序性
-// 需要注意：这些任务排在 Application.onCreate 返回之后的消息队列中
-// 如果主线程任务太多，会延迟首帧的 measure/layout
-mainHandler.post(() -> { /* 主线程初始化任务 */ });
-```
-
-### 线程优先级策略
-
-启动阶段主线程和渲染线程的 Nice 值分别是 0 和 -4。后台线程默认 Nice 值为 0，如果不做区分，后台线程会和主线程争抢 CPU 时间片。
-
-优先级策略：
-
-| 线程类别 | Nice 值 | 说明 |
-|----------|---------|------|
-| 主线程 | 0 | 系统默认 |
-| 渲染线程 | -4 | 系统默认，应用不可配置（THREAD_PRIORITY_DISPLAY） |
-| 关键启动线程 | 0 或 -2 | 默认保持 0；只有首帧关键路径上的短任务才考虑 `THREAD_PRIORITY_FOREGROUND` |
-| 普通启动线程 | 0 | 非关键路径的异步任务（THREAD_PRIORITY_DEFAULT） |
-| 低优先级线程 | 10 | IO 线程和后台任务（THREAD_PRIORITY_BACKGROUND） |
-
-```java
-// 关键启动线程默认保持 THREAD_PRIORITY_DEFAULT；确需提升时只对当前短任务线程设置
-try {
-    Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);  // -2
-} catch (SecurityException ignored) {
-    Process.setThreadPriority(Process.THREAD_PRIORITY_DEFAULT);     // 0
-}
-
-// 设置 IO 线程优先级
-Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);  // 10
-```
-
-线程优先级不要作为启动优化的默认开关。关键路径上的异步线程可以在小范围实验中提升到 `THREAD_PRIORITY_FOREGROUND`（-2），但要同时满足三个条件：任务耗时短、不会阻塞主线程、Perfetto `sched` 轨道能观察到 TTID 收益。非关键路径的 IO 线程更适合设置为 `THREAD_PRIORITY_BACKGROUND`（10），避免和主线程抢占 CPU。`THREAD_PRIORITY_DISPLAY`（-4）及其以上优先级专供系统显示/合成线程使用；`Process.setThreadPriority()` 文档说明无权限使用给定 priority 时会抛出 `SecurityException`。应用侧不要把 `-4` 当成常规启动优化开关。线程优先级的原理详见 1.5 节。
-
-### 线程池的监控指标
-
-启动框架上线后需要持续监控线程池的健康状态：
-
-- **活跃线程数 / 最大线程数**：如果活跃线程持续接近最大值，说明线程池容量不足，任务在排队。
-- **队列积压量**：队列中等待执行的任务数。积压意味着任务提交速率 > 处理速率。
-- **任务平均等待时间**：从提交到开始执行的间隔。超过 100ms 说明线程池成为瓶颈。
-- **任务拒绝次数**：CallerRunsPolicy 触发时意味着线程池已满，提交线程（通常是主线程）被阻塞。
-
-这些指标进入启动框架看板后，线程池配置才有调整依据。
-
-## 启动任务的动态配置与 A/B 测试
-
-[已验证: 基于行业实践经验]
-
-### 为什么需要动态配置
-
-启动框架的 DAG 一旦硬编码在客户端中，每次调整初始化顺序都需要发版。对于大型 App（千万级 DAU），直接改启动顺序有风险——某个 SDK 的初始化时序变化可能导致不可预见的崩溃。动态配置解决两个问题：
-
-1. **灰度验证**：只让 1% 的用户体验新的启动编排，观察崩溃率和性能指标，确认无问题后再扩大范围。
-2. **快速回滚**：如果新编排方案导致线上异常，通过远程配置立即回退到旧方案，不需要紧急发版。
-
-### 动态配置的接入方式
-
-```text
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│  远程配置中心  │────→│   配置解析器   │────→│   DAG 重建    │
-│  (JSON 配置)  │     │ (版本/进程/渠道)│     │ (拓扑排序+验证)│
-└──────────────┘     └──────────────┘     └──────────────┘
-```
-
-配置格式示例：
-
-```json
-{
-  "version": "3.2",
-  "target": {
-    "process": "main",
-    "min_api": 29,
-    "countries": ["CN"]
-  },
-  "tasks": {
-    "analytics": {"enabled": true, "priority": "HIGH", "timeout_ms": 500},
-    "crash_report": {"enabled": true, "priority": "CRITICAL", "timeout_ms": 1000},
-    "feature_flag": {"enabled": true, "priority": "NORMAL", "depends": ["network"]},
-    "preload_data": {"enabled": false}
-  },
-  "experiment": {
-    "group": "parallel_v2",
-    "sample_rate": 0.01
-  }
-}
-```
-
-### A/B 测试的关键指标
-
-启动编排 A/B 测试需要同时关注性能指标和稳定性指标：
-
-| 类别 | 指标 | 说明 |
-|------|------|------|
-| 性能 | P50 / P90 / P99 TTID | 首帧出现时间 |
-| 性能 | P50 / P90 / P99 TTFD | 首帧完全绘制时间 |
-| 性能 | 关键路径总耗时 | DAG 关键路径 wall-clock time |
-| 稳定性 | 启动阶段崩溃率 | 初始化顺序变化导致的崩溃 |
-| 稳定性 | 初始化超时率 | 单个任务超时的频率 |
-| 稳定性 | 依赖不满足率 | 任务执行时依赖未就绪的频率 |
-
-A/B 测试的持续时间：至少收集一个完整周（覆盖工作日 + 周末不同使用模式），样本量达到统计显著性（通常 p < 0.05）再下结论。
-
-### 注意事项
-
-动态配置虽然灵活，但也引入了新的风险：
-
-1. **配置延迟**：远程配置下发到客户端有 1-2 次启动的延迟。首次启动（无缓存配置）需要走默认 DAG，不能因为"等配置"而延长启动时间。
-2. **配置校验**：客户端收到远程配置后必须做合法性校验——环检测、任务 ID 存在性检查、线程模式合法性。校验失败时回退到内置默认配置。
-3. **版本兼容**：新版本客户端可能增加了新任务或删除了旧任务，远程配置中引用的任务 ID 需要和当前版本兼容。推荐在配置中增加 `min_client_version` 字段。
-
-
-## 模块化启动框架在多进程与微服务场景下的实践
-
-上面讨论的选型、线程池和陷阱，都是以单进程为前提。多进程或模块化 App 还要面对一个额外问题：每个进程该跑哪些初始化任务，跨模块的初始化器怎么发现和路由。
-
-以下内容基于 `android-17.0.0_r1` + `androidx.startup 1.2.0` + `alibaba/alpha 1.0.0.1` 源码。
-
-### InitializationProvider 在 Application.onCreate 之前抢先执行
-
-`android-17.0.0_r1:frameworks/base/core/java/android/app/ActivityThread.java` 行 8260-8330 的 `handleBindApplication()` 顺序固定为：`makeApplicationInner` → `installContentProviders` → `mInstrumentation.callApplicationOnCreate`。`installContentProviders` 会触发系统中所有声明的 `<provider>` 的 `onCreate`，App Startup 的 `InitializationProvider.onCreate` 恰好卡在这个位置，于是业务在 `Application.onCreate` 里写 `AppInitializer.getInstance(ctx).initializeComponent(X.class)` 时拿到的永远是已 ready 的对象。
-
-`InitializationProvider.onCreate` 用 `getClass()` 把自己的 Class 对象传给 `AppInitializer.discoverAndInitialize`（注释 `b/183136596#comment18`），目的是让多进程 App 在 `:push` / `:web` 等子进程也能正确读到该进程 manifest 合并结果。`AppInitializer.sInstance` 是**进程内**单例（`sLock + 双重检查`），`mDiscovered` 和 `mInitialized` 在每个进程独立维护一份 HashMap/HashSet——子进程的 Initializer 集合与主进程独立。
-
-### 跨模块服务发现：`<meta-data>` 合并机制
-
-业务方在子模块的 manifest 声明：
-
-```xml
-<provider android:name="androidx.startup.InitializationProvider"
-    android:authorities="${applicationId}.androidx-startup"
-    android:exported="false" tools:node="merge">
-    <meta-data android:name="com.example.push.PushInitializer"
-        android:value="androidx.startup" />
-</provider>
-```
-
-`AppInitializer.discoverAndInitialize` 用一行 `if (startup.equals(value))`（`startup = "androidx.startup"`）过滤——SDK 作者不能任意占用 namespace。主 App 可用 `tools:node="remove"` 关掉整个机制。这是模块化 App "主 App 零代码接入新 SDK"的关键支撑。
-
-### Alpha 框架的多进程 Project 路由
-
-`AlphaManager.MAIN_PROCESS_MODE / SECONDARY_PROCESS_MODE / ALL_PROCESS_MODE` 三态路由在 `AlphaManager.start()` 中按四步优先级查找：
-
-1. `mProjectForCurrentProcess`（最高优先级，特定进程特定图）
-2. 当前若是主进程且配置了 `MAIN_PROCESS_MODE`
-3. 当前若是子进程且配置了 `SECONDARY_PROCESS_MODE`
-4. 通配 `ALL_PROCESS_MODE`
-
-`Project` 本身是 `Task` 子类，可作为 `Task` 嵌套进另一个 `Project`——这是"子模块启动图嵌入主启动图"的实现基础。`Task.start()` 状态机 `STATE_IDLE → STATE_WAIT → STATE_RUNNING → STATE_FINISHED`，重复 `start()` 抛 `"You try to run task X twice, is there a circular dependency?"`，环检测在运行时（与 App Startup DFS 构建期检测形成对比）。`Task` 通过 `android.os.Process.setThreadPriority(mThreadPriority)` 设置线程优先级——这是与 §5 线程优先级控制打通的 hook。
-
-### App Startup vs Alpha 多进程适配差异
-
-| 维度 | App Startup 1.2.0+ | Alpha 1.0.0.1 |
+| 进程 | 常见必要任务 | 不应默认加载 |
 | --- | --- | --- |
-| 多进程识别 | 进程内单例，子进程独立维护集合 | `AlphaUtils.isInMainProcess()` 在 `start()` 时按进程名判断 |
-| 差异化方式 | 运行时主动调用 `initializeComponent()` | 启动时按 MAIN/SECONDARY/ALL 选 Project |
-| 默认执行线程 | 主线程（`InitializationProvider.onCreate` 跑在系统 binder 线程） | 显式声明 `isInUiThread` |
-| 依赖声明 | `Initializer.dependencies()` 编译期安全 | `Builder.add(task).after(...)` 运行时构建 |
-| 环检测 | DFS + `initializing` Set，构建时 | 运行时状态机 |
-| 进程内单例 | 进程级 singleton | `sInstance` 静态 + `synchronized` |
+| 主进程 | UI、首屏状态、核心观测 | push 专用连接、独立下载器 |
+| `:push` | 消息解析、最小存储与上报 | UI、图片、广告、主页数据 |
+| `:web` | WebView 所需配置 | 主进程全部 SDK |
+| 隔离/远端服务 | 服务契约所需能力 | 宿主业务单例 |
 
-**关键差异**：App Startup 的"零业务代码"属性在多进程下变成"零业务代码 × N 进程"——子进程会重复初始化主进程跑过的 Initializer。Alpha 显式按模式选 Project，子进程只跑自己那一份 DAG。
+跨进程依赖不能用进程内 DAG 边表达。应使用 Binder/Provider 等明确协议，包含 Ready、Degraded、Dead、超时和版本状态。主进程首帧尽量不阻塞等待子进程启动。
 
-### App Startup 多进程放大效应
+### 9.2 Provider 与 App Startup
 
-每个进程都会跑 `discoverAndInitialize` 全表，进程数 N → Initializer 总执行次数 = Σ(每个进程实际匹配数)。如果 20 个 Initializer 在 4 个进程都会跑，每进程首屏会被初始化 20 次（除非业务自己做进程分支）。App Startup 的官方做法是 Initializer 内部按进程名 `if (processName.equals(...))` 分支——这与 §21.7 `Application.onCreate` 按进程分支的设计一致。另一种做法是 Alpha 的 `MAIN_PROCESS_MODE` 让子进程只加载子进程应该跑的那张 DAG，从源头避免重复执行。
+检查 merged manifest 中每个 Provider 的进程。某个库若把 `InitializationProvider` 显式放到子进程，该进程会有独立 App Startup 图；默认 Provider 只属于默认进程。
 
-### 启动监控集成
+不要在 `Initializer.create()` 里加载全量模块后再用 `if (processName...)` 跳过，这时类加载和静态初始化可能已经发生。更好的方式是：
 
-App Startup 在 `AppInitializer.doInitialize` 已经对每个 Initializer `Trace.beginSection(component.getSimpleName())` / `Trace.endSection()`，Perfetto 抓 trace 时即可看到 `Startup:PushInitializer` 这种分段切面。Alpha 用 `ExecuteMonitor.recordTaskStart/Finish` 自维护 task 级耗时，通过 `OnGetMonitorRecordCallback.onGetTaskExecuteRecord(Map<String, Long>)` 上报，需要业务自行收集。对比：App Startup 走系统 trace 不需要额外 APM；Alpha 需要对接 APM。
+- 不在该进程声明 initializer；
+- 该进程使用专用 Provider/graph；
+- 或在更早、依赖更少的入口选择专用实现类。
 
-### 与动态加载/动态特性模块的集成要点
+## 10. 动态配置与 A/B 实验
 
-1. **动态模块 Initializer**：动态特性 manifest 在安装后才合并，`InitializationProvider` 仅扫描当前已安装的子模块——已安装但未激活的动态模块的 Initializer 不会被发现，行为正确。
-2. **类加载器隔离**：动态模块走独立 ClassLoader，`Class.forName(key)` 默认用调用方 ClassLoader；生产中需要 `clazz.getClassLoader()` 或 `Thread.currentThread().getContextClassLoader()` 显式指定。
-3. **Beta/灰度下发**：Alpha 用 XML 配置或 Builder 在运行时构建 DAG，可以从远程配置中心拉任务列表；App Startup 走静态 manifest，需要动态模块自身实现 LazyLoad 包装 Initializer。
+### 10.1 远程配置只能调整已知安全空间
 
-### 微服务架构下的启动治理建议
+启动不能等待当次网络配置。客户端使用上一轮持久化且校验通过的配置；缺失、过期或解析失败时回到内置图。
 
-- 主进程首帧不依赖任何子进程 Ready（§21.7 已述握手状态机 `NotStarted → Starting → Ready / Degraded → Dead`）。
-- App Startup 的 Initializer 必须按进程分支或被 `tools:node="remove"` 关闭，否则多进程放大效应会把首屏拉长。
-- Alpha 的 `MAIN_PROCESS_MODE / SECONDARY_PROCESS_MODE` 让每个进程只加载该进程的 DAG，是大应用多进程的更优解。
-- 跨进程数据同步走 Binder/ContentProvider，不走 `SharedPreferences.MODE_MULTI_PROCESS`（§21.7 已述 API 23 deprecated）。
+远程配置建议只允许：
 
+- 开关一个已有且可独立禁用的任务；
+- 在预定义 phase 集合中选择；
+- 在安全范围内调整 executor 排队优先级；
+- 选择客户端内置的完整图版本。
 
-<!-- AIW-源码调研-2026-07-05 -->
-## Android 17 Startup Insights（ApplicationStartInfo）源码级补充
+远程数据不应提供类名、任意依赖边或可执行代码。对配置执行真实性/完整性校验、schema 和客户端版本校验，并设置有效期与一键回退。
 
-> 本节为 2026-07-05 源码调研反哺。版本基线 `android-17.0.0_r1`（API 37）。对应报告：`DeepResearch/2026-07-05-android17-startup-insights-application-start-info.md`。
+### 10.2 客户端验证
 
-### §21.2.5 Startup Insights 与启动框架的协同
+启用配置前检查：
 
-Android 17（API 37）引入的 **Startup Insights** 机制是 §21.2 启动框架在「观测层」的天然搭档。`android.app.ApplicationStartInfo` 通过系统侧持久化每个进程最近 14 天的启动快照（`APP_START_INFO_HISTORY_LENGTH_MS = TimeUnit.DAYS.toMillis(14)`），提供 Pull（`ActivityManager.getHistoricalProcessStartReasons(maxNum)`）与 Push（`addApplicationStartInfoCompletionListener(executor, listener)`）两种消费模式，**与 §21.4 启动监控使用的 Perfetto trace 形成"瞬时 trace"与"持久化 telemetry"的互补视角**。
+1. 图版本与当前应用版本兼容。
+2. 所有 task ID 来自本地白名单。
+3. 硬依赖存在且没有被禁用。
+4. 图无环、phase 合法、进程匹配。
+5. 关键功能保留可用路径。
+6. 配置未过期，实验分组稳定。
 
-**源码位置**：
-- `frameworks/base/core/java/android/app/ApplicationStartInfo.java`（行 81-218 定义 13 种 `START_REASON_*`、4 种 `START_TYPE_*`、8 种 `START_TIMESTAMP_*`、5 种 `LAUNCH_MODE_*`、4 种 `START_COMPONENT_*`）
-- `frameworks/base/core/java/android/app/ActivityManager.java:4580-4720`（客户端 API）
-- `frameworks/base/services/core/java/com/android/server/am/AppStartInfoTracker.java`（服务端核心）
-- `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java:10866-10950`（AMS 集成）
+校验失败只上报低基数错误码和图版本，不执行部分配置。默认图要随客户端一起经过功能与性能测试。
 
-### §21.2.5.1 关键状态机（AppStartInfoTracker.mInProgressRecords）
+### 10.3 实验指标
 
-```
-ActivityMetricsLaunchObserver.onActivityIntentStarted()
-   └─ new ApplicationStartInfo(monotonicTimeMs) + START_TIMESTAMP_LAUNCH
-       └─ 放入 mInProgressRecords（ArrayMap<Long, ApplicationStartInfo>，max 5 条）
-            └─ 超过 5 条按 timestampNanos 升序淘汰最旧
-   onActivityLaunched()
-   └─ setStartType(COLD/WARM/HOT) + addBaseFieldsFromProcessRecord
-       └─ addStartInfoLocked() → mData[包名][UID] → AppStartInfoContainer 环形缓冲
-   onActivityReportFullyDrawn()
-   └─ addStartupTimestamp(START_TIMESTAMP_FULLY_DRAWN)
-       └─ mInProgressRecords.removeAt()
-   首帧绘制完
-   └─ checkCompletenessAndCallback() → 触发 Push 模式一次性回调
-```
+实验同时观察：
 
-### §21.2.5.2 与现有启动框架的差异化集成点
+- 冷/温/热启动 TTID 与 TTFD 分布；
+- 每个任务的排队、运行、结果和关键路径；
+- 启动 crash、ANR、进程异常退出；
+- 首屏错误、降级率和关键操作成功率；
+- CPU、内存、线程、I/O 与首帧 FrameTimeline；
+- 按入口、设备档位、系统版本和进程分组的长尾。
 
-| 维度 | App Startup / Alpha（§21.2 主体） | Startup Insights（本节） |
-|---|---|---|
-| 触发时机 | 进程内执行任务时 | `ActivityMetricsLaunchObserver` 在系统侧捕获 |
-| 数据可见性 | 进程内内存，进程死即失 | 系统侧持久化 14 天，跨重启可查 |
-| 观测对象 | 任务 DAG 内部粒度 | 整进程粒度（包含 fork、bindApplication、onCreate、首帧、fully drawn） |
-| 消费方式 | 业务代码直接读 `Task.start()` | Pull: `getHistoricalProcessStartReasons(maxNum)`；Push: `addApplicationStartInfoCompletionListener` |
-| 与 Perfetto 关系 | Alpha 自维护 `ExecuteMonitor`，App Startup 走 `Trace.beginSection` | 与 Perfetto trace 共用 `elapsedRealtimeNanos()` 时钟域，但走独立序列化通道 |
+样本量和持续时间由基线方差、最小可检测差异、分流比例和业务周期决定，不能统一写成“一周且 p < 0.05”。要预先定义主指标、护栏指标和停止条件，避免在多个分位与分组中反复挑选有利结果。
 
-### §21.2.5.3 Android 17 任务编排增强：`START_COMPONENT_*`
+### 10.4 crash loop 与回退
 
-Android 17 在 `ApplicationStartInfo` 新增 `START_COMPONENT_*` 字段（`ACTIVITY=1 / BROADCAST=2 / CONTENT_PROVIDER=3 / SERVICE=4 / OTHER=5`），由 `@FlaggedApi(Flags.FLAG_APP_START_INFO_COMPONENT)` 守门。**对启动框架的实战意义**：
+启动图变更可能在监控 SDK启动前崩溃。应用应在框架外保存很小的启动状态：
 
-```java
-// 业务可在 onApplicationStartInfoComplete 回调里实现"按组件类型选择性初始化"
-public void onApplicationStartInfoComplete(ApplicationStartInfo info) {
-    switch (info.getStartComponent()) {
-        case ApplicationStartInfo.START_COMPONENT_BROADCAST:
-            // 广播触发的拉起：跳过 UI 初始化，仅做数据预热
-            initDataLayerOnly();
-            break;
-        case ApplicationStartInfo.START_COMPONENT_ACTIVITY:
-            // Activity 触发的全量启动：走完整 DAG
-            appInitializer.discoverAndInitialize();
-            break;
-        case ApplicationStartInfo.START_COMPONENT_CONTENT_PROVIDER:
-            // ContentProvider 触发的子进程：与 §21.3 ContentProvider 优化联动
-            initProviderCriticalPath();
-            break;
-    }
-}
-```
+- 本次图版本；
+- 进入启动与成功到达可用态的标记；
+- 连续失败计数和过期时间；
+- 安全图版本。
 
-**与 §21.3 ContentProvider 优化的闭环**：
-- §21.3 用 `tools:node="remove"` 关闭 Initializer，**事前**减少不必要任务
-- §21.2.5 Startup Insights 提供 `START_COMPONENT_CONTENT_PROVIDER` 标识，**事后**让 App 知道"本次拉起是 ContentProvider 触发，下次启动是否需要主动初始化 UI 模块"
+检测到连续早期失败时，下一次启动使用内置安全图并禁用实验配置。状态写入本身要轻量、原子且不放大主线程 I/O。
 
-### §21.2.5.4 数据时效与持久化边界
+## 11. 可观测性：测量排队和结果
 
-`AppStartInfoTracker` 的设计上有两条重要的"硬性边界"，工程上必须了解：
+每个任务至少记录：
 
-1. **14 天保留窗口**（`APP_START_INFO_HISTORY_LENGTH_MS`）：超过 14 天的记录在 `removeOlderThan` 路径被裁掉，**任何启动框架的"基于历史优化"策略应限制在最近 14 天数据内**。
-2. **30 分钟持久化周期**（`APP_START_INFO_PERSIST_INTERVAL`）：所有 in-memory 修改不会立刻落盘，**最坏情况下丢失 30 分钟内的新增记录**。但 `addStartInfoLocked` 末尾会调用 `schedulePersistProcessStartInfo(false)`，意味着正常情况下 30 分钟内一定持久化一次。
-3. **首次启动丢失风险**：`addStartInfoLocked` 头部检查 `mAppStartInfoLoaded.get()`，系统启动初几秒钟如果应用启动，记录会被丢弃并打 `Slog.w(TAG, "Skipping saving the start info due to ongoing loading from storage")`。
-4. **跨重启时钟**：`MonotonicClock` 持久化 offset（行 120 注释），跨重启时钟稳定；不依赖 system uptime。
+| 时间/状态 | 用途 |
+| --- | --- |
+| graph ready | 图验证完成 |
+| task ready | 依赖已经满足 |
+| task start | executor 开始运行 |
+| task finish | 逻辑结果产生 |
+| outcome | success/degraded/failed/cancelled/timeout |
+| thread/process | 解释调度与进程路径 |
 
-### §21.2.5.5 与 §5（CPU/电源）和 §21.1（启动分析）的联动
+`task start - task ready` 是排队时间，`task finish - task start` 是运行时间。只记录运行时间会漏掉 executor 饱和和优先级反转。
 
-`AppStartInfoTracker` 写入的 `START_TIMESTAMP_*` 字段是 §21.1 Perfetto trace 时间线的**同构子集**——应用可以：
-- 从 `ApplicationStartInfo.getStartupTimestamps()` 拿到与 Perfetto 一致的 `elapsedRealtimeNanos()` 时间戳
-- 通过 `pid` + `startupTimestampsNs[START_TIMESTAMP_BIND_APPLICATION]` 与 Perfetto 中对应 pid 的 `bindApplication` slice 做交叉校验
-- 与 §5 cpuidle/schedutil 的 IRT (interrupt response time) 关联——如果 `START_TIMESTAMP_FORK` 到 `START_TIMESTAMP_BIND_APPLICATION` 间隔异常长，可怀疑是 §15 调度或 §5 大核冷启动延迟
+使用 `androidx.tracing` 给任务增加稳定 slice，并把依赖关系与 Task ID 一同保存在本地基准结果中。线上指标控制采样和维度，不把动态 URL、用户 ID 或异常全文作为标签。
+
+验证优化时使用与 21.1 相同配置的 Macrobenchmark：
+
+1. A/B 产物只改变任务图或 executor 策略。
+2. 编译模式、入口、数据、设备和温度条件一致。
+3. 同时比较 TTID、TTFD、FrameTimeline 与任务图关键路径。
+4. 打开回归样本 Trace，确认收益来自预期任务，而非首屏内容减少。
+5. 在小流量中确认稳定性和功能护栏。
+
+Android 17 的 `ApplicationStartInfo` 适合补充历史启动类型、原因和系统时间戳。完成监听或历史记录不能回到过去改变当前启动图；当前进程的 DAG 选择应基于已知入口、进程和本地安全配置。
+
+## 12. 选型结论
+
+| 需求 | App Startup 1.2.0 | Alpha `04fe7f2` | 自研 |
+| --- | --- | --- | --- |
+| 合并自动 Provider | 适合 | 不负责 | 可实现，但收益有限 |
+| 同步静态依赖 | 适合 | 支持 | 支持 |
+| worker 并发 | 不支持 | 支持单共享池 | 可按契约实现 |
+| 异步完成信号 | 不支持 | 不支持 | 可实现 |
+| 类型化失败/降级 | 不支持 | 不支持 | 可实现 |
+| 超时/取消 | 不支持 | 无内建协议 | 可实现 |
+| 多进程选图 | 依赖 Manifest | 内建模式 | 可实现 |
+| 动态安全配置 | 不支持 | 本地 Builder/XML | 可实现受控版本 |
+| 维护责任 | AndroidX | 团队需接管旧代码风险 | 团队完全负责 |
+
+推荐从需求出发：
+
+- 少量必须 eager 的同步组件，用 App Startup，并移除不必要的自动 initializer。
+- 需要简单 worker DAG 且团队愿意维护 fork，可参考 Alpha 的图模型，同时补齐结果、异常、环检测和 executor。
+- 需要异步结果、复杂失败、多进程和安全实验时，再建设自研框架。
+
+无论选哪一种，收益都来自减少首屏工作、缩短真实关键路径和控制资源竞争。框架名称本身不会改善 TTID。
+
+## Review 清单
+
+- [ ] 每个任务有 owner、进程、phase、线程和完成定义。
+- [ ] 硬依赖、软依赖、失败和降级语义明确。
+- [ ] 构图阶段检查缺失节点、环、phase 与进程。
+- [ ] Main 不阻塞等待 worker，worker 不反向依赖 Main。
+- [ ] 异步 API 的逻辑完成点进入任务状态。
+- [ ] 超时不会把硬依赖伪装成成功。
+- [ ] executor 有界，并记录排队与运行时间。
+- [ ] caller-runs 不会把后台重活带回 Main。
+- [ ] 每个进程只构建所需图，Provider 归属已核对。
+- [ ] 远程配置来自本地白名单，失败回到内置图。
+- [ ] 具备早期 crash 安全图和回退演练。
+- [ ] Macrobenchmark 同时验证 TTID、TTFD、帧与功能。
+
+## 参考资料
+
+- [AOSP Android 17 `ActivityThread`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [Jetpack App Startup 指南](https://developer.android.com/topic/libraries/app-startup)
+- [Jetpack Startup 1.2.0 发布说明](https://developer.android.com/jetpack/androidx/releases/startup)
+- [Jetpack Startup 1.2.0 源码包](https://dl.google.com/dl/android/maven2/androidx/startup/startup-runtime/1.2.0/startup-runtime-1.2.0-sources.jar)
+- [Alibaba Alpha 固定提交](https://github.com/alibaba/alpha/tree/04fe7f22c469de66fed98c341334c954dfabafb2)
+- [`ThreadPoolExecutor` 队列与拒绝策略](https://developer.android.com/reference/java/util/concurrent/ThreadPoolExecutor)
+- [Android 线程性能指南](https://developer.android.com/topic/performance/threads)
+- [`android.os.Process` 线程优先级](https://developer.android.com/reference/android/os/Process)
