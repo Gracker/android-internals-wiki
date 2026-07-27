@@ -29,48 +29,90 @@ gap_score:
 
 # 18.26 Android 17 HWUI Vulkan 多队列并行渲染与帧边界管理
 
-Android 17 HWUI 的 Vulkan 后端用 `VulkanManager` 管理整个 GPU 设备生命周期。android-17.0.0_r1 的实现中，`VulkanManager` 创建了两条图形队列——`mGraphicsQueue` 给 RenderThread 画帧，`mAHBUploadQueue` 给 HardwareBitmapUploader 上传位图。两条队列共享同一个 `VkDevice`，通过 `VK_EXT_global_priority` 声明优先级，通过 `VK_ANDROID_frame_boundary` / `VK_EXT_frame_boundary` 暴露帧边界给 GPU 分析工具。
+Android 17 的 HWUI Vulkan 后端会从同一个 graphics queue family 取得两条 `VkQueue`：queue 0 服务 RenderThread 的窗口绘制，queue 1 服务 `HardwareBitmapUploader` 的 AHardwareBuffer 上传。它们共享 `VkDevice`，各自绑定一个 Skia `GrDirectContext`。
 
-本节基于 `frameworks/base/libs/hwui/renderthread/VulkanManager.cpp`（910 行）、`VulkanManager.h`（219 行）和 `RenderThread.cpp`（512 行）的完整源码阅读，拆解这套架构的设计决策和性能影响。
+“两条 queue”是源码事实，“GPU 一定并行执行”则不是。不同 `VkQueue` 可以分别接受 host submission，驱动仍可根据 GPU 引擎、依赖、内存带宽、频率和调度策略将工作交错或串行执行。本章会把可依赖的接口行为、合理推断和需要 trace 验证的硬件行为分开说明。
 
-## VulkanManager 单例与跨线程共享
+还有一个版本边界需要提前说明：对 `android-14.0.0_r1` 至 `android-17.0.0_r1` 的 `VulkanManager.cpp` 做标签对比后，双 queue 在 Android 14 基线中已经存在。本文标题表示“以 Android 17 为源码锚点”，不表示该结构由 Android 17 新增。
 
-VulkanManager 用弱引用单例 + 互斥锁的模式，让 RenderThread 和 HardwareBitmapUploader 共享同一份 Vulkan 设备资源。
+## 复核基线
 
-下面这段代码是设备共享的基础。`sWeakInstance` 是 `wp<VulkanManager>` 弱指针，`sLock` 保护实例创建。`getInstance()` 在锁内尝试 promote 弱指针，成功就返回已有实例，失败就 new 一个新的：
+| 层级 | 本文基线 | 负责内容 |
+|---|---|---|
+| Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | HWUI、VulkanManager、SkiaVulkanPipeline、ANativeWindow、FrameTimeline |
+| Android 内核 | `android17-6.18-2026-06_r6` | 调度、GPU 驱动执行、dma-buf、sync fence；没有 `VulkanManager` 或 Skia 逻辑 |
+| 历史对照 | `android-14.0.0_r1`、`android-15.0.0_r1`、`android-16.0.0_r1` | 判断双 queue 与 frame-boundary 代码何时已出现 |
+
+正文讨论 HWUI 选择 `SkiaVulkan` 的进程。应用自己创建的 Vulkan device/queue、SurfaceFlinger 的 RenderEngine Vulkan 上下文，以及厂商 GPU 服务不属于这个 `VulkanManager` 实例。
+
+## 先看完整路径
+
+下面的流程图用于定位两条 queue 在 HWUI 中的位置。
+
+```mermaid
+flowchart LR
+    UI["UI 线程录制 RenderNode display list"] --> RT["RenderThread / SkiaVulkanPipeline"]
+    RT --> Q0["VkQueue 0: mGraphicsQueue"]
+    DEC["Bitmap decode / createBitmap"] --> UP["GrallocUploadThread / VkUploader"]
+    UP --> Q1["VkQueue 1: mAHBUploadQueue"]
+    Q0 --> DEV["同一个 VkDevice / graphics queue family"]
+    Q1 --> DEV
+    DEV --> WIN["App Window AHardwareBuffer"]
+    WIN --> BQ["ANativeWindow queueBuffer + producer completion fence"]
+    BQ --> SF["SurfaceFlinger latch / composition"]
+    SF --> HWC["HWC / RenderEngine / present"]
+```
+
+queue 1 只负责把 CPU 侧 bitmap 像素复制进新分配的 AHardwareBuffer；窗口帧仍由 queue 0 生成。上传完成的 hardware bitmap 后续可以被 queue 0 采样，但两条 queue 不会共同 present 同一个 App Window 帧。
+
+## VulkanManager：共享 device，不共享 GrDirectContext
+
+`VulkanManager` 通过进程内弱引用缓存，让 RenderThread 与上传线程复用仍然存活的 Vulkan device。下面的代码展示实例获取规则。
 
 ```cpp
-// frameworks/base/libs/hwui/renderthread/VulkanManager.cpp
 static wp<VulkanManager> sWeakInstance = nullptr;
 static std::mutex sLock;
 
 sp<VulkanManager> VulkanManager::getInstance() {
     std::lock_guard _lock{sLock};
-    sp<VulkanManager> vulkanManager = sWeakInstance.promote();
-    if (!vulkanManager.get()) {
-        vulkanManager = new VulkanManager();
-        sWeakInstance = vulkanManager;
+    sp<VulkanManager> manager = sWeakInstance.promote();
+    if (!manager.get()) {
+        manager = new VulkanManager();
+        sWeakInstance = manager;
     }
-    return vulkanManager;
+    return manager;
 }
 ```
 
-调用方是 `RenderThread::initThreadLocals()`（`RenderThread.cpp` L268），把 `mVkManager = VulkanManager::getInstance()` 存到 RenderThread 的成员变量。HardwareBitmapUploader 通过同样的 `getInstance()` 拿到同一个实例。两个线程持有同一个 `VkInstance`、`VkPhysicalDevice`、`VkDevice`，但各自创建独立的 `GrDirectContext` 和命令提交流。
+弱引用本身不拥有对象。RenderThread、`VkUploader` 以及各 `GrDirectContext` 会持有强引用；`createContext()` 还通过 context delete callback 增减 `VulkanManager` 的强引用。只要上传 context 仍存活，RenderThread 清理自己的引用不会导致 manager 被另建一份。所有强引用释放后，下一次 `getInstance()` 才会创建新实例。
 
-弱指针而不是强指针，原因在于 VulkanManager 的生命周期跟 RenderThread 绑定。RenderThread 销毁时释放强引用，VulkanManager 可以被回收；如果 HardwareBitmapUploader 还在用，promote 会失败并创建新实例。这种设计避免了跨线程引用计数的生命周期僵局。
+共享范围包括：
 
-## 双图形队列并行设计
+- `VkInstance`；
+- `VkPhysicalDevice`；
+- `VkDevice`；
+- graphics queue family index；
+- 已启用的 Vulkan extension 与 feature 信息。
 
-Android 17 的 VulkanManager 从同一个 graphics queue family 中取出两个 queue index，分别绑定到不同用途。
+隔离范围包括：
 
-设备创建阶段，`setupDevice()` 遍历 queue family properties 找到 graphics queue，然后硬性要求该 family 至少支持 2 个并发 queue：
+- RenderThread 和 UploadThread 各自的 `GrDirectContext`；
+- 两个 context 各自创建的 Skia Vulkan memory allocator；
+- device-lost 回调中的上下文标签；
+- queue 0 与 queue 1 的提交顺序。
+
+`SkiaVMA::Options{.fThreadSafe = false}` 不能解释成“整个 VkDevice 无需跨线程同步”。它只说明每个 context 创建的 allocator 不承担多线程并发访问；共享 Vulkan 对象、queue 和跨 queue 资源依赖仍要遵守 Vulkan 的 external synchronization 与 semaphore/fence 规则。
+
+## 两条 graphics queue 如何创建
+
+### 同一 queue family，两个 queue index
+
+`setupDevice()` 选中第一个带 `VK_QUEUE_GRAPHICS_BIT` 的 family，并要求该 family 至少提供两个 queue。下面的缩写代码保留了能力检查与取 queue 的关键点。
 
 ```cpp
-// VulkanManager.cpp L237-257
-constexpr auto kRequestedQueueCount = 2;
+constexpr uint32_t kRequestedQueueCount = 2;
 
-mGraphicsQueueIndex = queueCount;
-for (uint32_t i = 0; i < queueCount; i++) {
+for (uint32_t i = 0; i < queueFamilyCount; i++) {
     if (queueProps[i].queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
         mGraphicsQueueIndex = i;
         LOG_ALWAYS_FATAL_IF(
@@ -79,287 +121,265 @@ for (uint32_t i = 0; i < queueCount; i++) {
     }
 }
 
-const VkDeviceQueueCreateInfo queueInfo = {
-        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-        queueNextPtr,
-        0,
-        mGraphicsQueueIndex,        // 同一个 family
-        kRequestedQueueCount,       // count = 2
-        queuePriorities,
+VkDeviceQueueCreateInfo queueInfo{
+    .queueFamilyIndex = mGraphicsQueueIndex,
+    .queueCount = kRequestedQueueCount,
+    .pQueuePriorities = queuePriorities,
 };
-```
 
-`LOG_ALWAYS_FATAL_IF(queueCount < 2)` 是硬约束——如果 GPU 驱动报告某个 graphics queue family 只有 1 个 queue，HWUI 直接 abort，不会回退到 OpenGL ES。这意味着 Android 17 HWUI Vulkan 后端对 GPU 驱动有最低能力要求：同一 graphics family 至少 2 个并发 queue。
-
-`initialize()` 把两条 queue 拉出来：
-
-```cpp
-// VulkanManager.cpp L427-428
 mGetDeviceQueue(mDevice, mGraphicsQueueIndex, 0, &mGraphicsQueue);
 mGetDeviceQueue(mDevice, mGraphicsQueueIndex, 1, &mAHBUploadQueue);
 ```
 
-分配关系：
-- `mGraphicsQueue` → RenderThread 帧绘制主路径
-- `mAHBUploadQueue` → HardwareBitmapUploader 异步位图上传
+两个 queue 拥有相同 capability 和同一个 family index，因此共享 queue-family ownership 语义。`setupDevice()` 内没有“只有一条 queue 时改为复用 queue 0”的分支；HWUI 一旦走到这段 Vulkan device 初始化，能力不满足会触发 fatal。渲染后端是否选择 Vulkan 由更上层的设备配置与进程策略决定，不能据此推导“所有 Android 17 设备都会启动 Vulkan HWUI”。
 
-两条 queue 属于同一个 family（具备相同的 queue capability），但物理上是两个独立的提交队列。GPU 调度器可以在硬件层面让上传和绘制并发执行，RenderThread 不需要等待 HardwareBitmapUploader 完成。
+### 两个 Skia context 绑定不同 queue
 
-## GrDirectContext 分配：ContextType 分流
+`createContext(ContextType)` 把同一组 device 信息交给 Skia，只替换 `fQueue`：
 
-VulkanManager 的 `createContext()` 接受 `ContextType` 参数，为 RenderThread 和 UploadThread 创建各自独立的 Skia GrDirectContext：
+- `kRenderThread` → `mGraphicsQueue`；
+- `kUploadThread` → `mAHBUploadQueue`。
 
-```cpp
-// VulkanManager.cpp L521-555
-skgpu::VulkanBackendContext backendContext;
-backendContext.fInstance = mPhysicalDevice;  // 共享
-backendContext.fDevice = mDevice;            // 共享
-backendContext.fQueue =
-        (contextType == ContextType::kRenderThread) ? mGraphicsQueue : mAHBUploadQueue;
-backendContext.fDeviceLostProc = (contextType == ContextType::kRenderThread)
-        ? deviceLostProcRenderThread
-        : deviceLostProcUploadThread;
+这样做的直接收益是 host 侧提交隔离：硬件位图上传不会被塞进 RenderThread 使用的同一个 Vulkan queue 顺序中。可见性能收益仍取决于驱动：
 
-SkiaVMA::Options opts{.fThreadSafe = false};
-backendContext.fMemoryAllocator = SkiaVMA::Make(backendContext, opts);
+- GPU 有可重叠的 copy/graphics 执行资源时，上传可能与窗口绘制部分重叠；
+- 两条 queue 争用内存带宽、cache 或同一图形引擎时，驱动可能交错甚至串行；
+- AHardwareBuffer 上传涉及的分配、页映射和 cache 维护也可能反向影响渲染；
+- 两条 queue 使用同一个 global priority 请求，queue 1 没有天然的低优先级。
+
+所以，双 queue 更准确的描述是“允许独立提交并减少 queue 级顺序约束”，不能写成“保证硬件并行”或“RenderThread 无需等待任何上传影响”。
+
+## HardwareBitmapUploader：上传隔离不等于异步返回
+
+### CPU 像素会被复制
+
+`Bitmap.Config.HARDWARE` 的这条创建路径先分配带 `AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE` 的 AHardwareBuffer，再调用 `SkImages::TextureFromAHardwareBufferWithData()` 把 `SkPixmap` 数据写进去。`Bitmap.cpp` 也明确把 `allocateHardwareBitmap()` 描述为复制 bitmap contents。
+
+因此，这里不是“已有像素零拷贝变成 GPU 纹理”。AHardwareBuffer 省去了后续再建一份应用可见像素存储的需要，但首次创建仍包含 CPU 源像素到 gralloc buffer 的数据传输。
+
+### GrallocUploadThread 与调用方等待
+
+Vulkan 上传在 `GrallocUploadThread` 上执行：
+
+1. 取得或创建共享 `VulkanManager`；
+2. 创建绑定 queue 1 的 `GrDirectContext`；
+3. 调用 `TextureFromAHardwareBufferWithData()` 记录上传；
+4. 执行 `mGrContext->submit(GrSyncCpu::kYes)`；
+5. `runSync()` 返回后，`uploadHardwareBitmap()` 才把结果交回调用方。
+
+`GrSyncCpu::kYes` 表示上传线程等待 GPU 完成。它避免调用方拿到仍在写入的 hardware bitmap，也意味着单次 hardware bitmap 创建并非“发出请求立刻返回”。主线程若同步创建大图，仍可能被解码、AHB 分配、上传和 GPU 等待拖住。
+
+queue 1 与 queue 0 可以在这段时间分别提交工作。即便如此，GPU 资源争用仍可能拉长 RenderThread 的 queue 0 工作，必须用 trace 验证。
+
+### 60 秒闲置回收
+
+`HardwareBitmapUploader.cpp` 把 `kThreadTimeout` 设为 60000 ms。没有 pending upload 且超过该间隔后，`VkUploader::onIdle()` 会释放上传 `GrDirectContext` 和 manager 强引用；下一次上传按需重建。
+
+源码只证明“释放上传 context 及其持有资源”。具体回收多少 GPU 内存取决于驱动、Skia cache、AHardwareBuffer 的其他持有者和设备内存策略，不能写成固定的“回收数十 MB”。
+
+## Global priority：可选请求，不是实时保证
+
+`Properties::contextPriority` 默认值为 0。系统代码只有在 Vulkan context 创建前通过隐藏的 `HardwareRenderer.setContextPriority()` 设置 EGL priority 常量，`VulkanManager` 才尝试映射到：
+
+- `VK_QUEUE_GLOBAL_PRIORITY_LOW_EXT`；
+- `VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT`；
+- `VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT`。
+
+Android 17 源码在 `contextPriority != 0` 且识别到 `VK_EXT_global_priority` v2 时才附加 `VkDeviceQueueGlobalPriorityCreateInfoEXT`。如果 global-priority query 可用，代码先确认选中的 queue family 报告了所请求档位；不支持时记录 warning，并继续创建 device。
+
+还要注意三点：
+
+- `mAPIVersion` 固定为 Vulkan 1.1，不能因为源码检查了 `VK_API_VERSION_1_4` 就宣称 HWUI 在 Android 17 使用 Vulkan 1.4 core priority；
+- 两条 queue 来自同一个 `VkDeviceQueueCreateInfo`，global priority 请求对这次创建的两条 queue 一起生效；
+- global priority 是交给驱动的调度提示与权限受控能力，不等于 Linux 线程实时优先级，也不承诺 GPU 抢占时延。
+
+## 两种“帧边界”不能混用
+
+### Vulkan frame-boundary 是 GPU 工具标记
+
+Android 17 的 `finishFrame()` 在提交 Skia 工作时有两条标记路径：
+
+1. AGI capture layer 提供私有 `VK_ANDROID_frame_boundary` 时，HWUI 把本帧的 signal semaphore 和 render-target image 传给 `vkFrameBoundaryANDROID()`；
+2. 该私有入口不存在时，HWUI 设置 `GrSubmitInfo.fMarkBoundary = Yes` 和进程内递增的 `fFrameID`，由 Skia/可用的 `VK_EXT_frame_boundary` 支持向工具描述 frame boundary。
+
+Khronos `VK_EXT_frame_boundary` 的用途是给 queue submission 附加应用定义的 frame ID、结果 image/buffer 和工具 tag。它是 profiling annotation，不会自动创建执行依赖，也不会替代 present semaphore。
+
+`VK_ANDROID_frame_boundary` 在 AOSP 头文件中被明确描述为 AGI 专用扩展，由 AGI Vulkan capture layer 在抓帧时提供。普通运行时查不到该 proc pointer 属于预期情况。
+
+### FrameTimeline 是窗口 present 时间线
+
+FrameTimeline 的 `vsyncId` 走另一条路径。`CanvasContext::draw()` 取得 `FrameTimelineVsyncId`，构造 `ANativeWindowFrameTimelineInfo`，再由 render pipeline 在 queueBuffer 前设置给 ANativeWindow。SurfaceFlinger 用它建立 App `SurfaceFrame` 与显示 `DisplayFrame` 的 expected/actual 关系。
+
+两类 ID 的差异如下：
+
+| 对象 | 生成位置 | 主要消费者 | 是否直接表示 expected present |
+|---|---|---|---|
+| Vulkan `currentFrameID` | HWUI `VulkanManager::finishFrame()` 的进程内计数器 | Skia、Vulkan 工具、AGI capture | 否 |
+| FrameTimeline `vsyncId` | Choreographer / 平台帧时间线传入 HWUI | ANativeWindow、SurfaceFlinger、Perfetto FrameTimeline | 是 |
+| BufferQueue frame number | Producer queue 次序 | BLAST、SurfaceFlinger、transaction/trace | 不单独表示 |
+
+AOSP 没有把 `currentFrameID` 赋值为 `FrameTimelineVsyncId`。工具可以按时间、submission、render target 或其他元数据做关联，但正文不能声称二者天然相等。
+
+### Frame boundary 也不等于 present
+
+Vulkan frame-boundary 标记发生在 queue submission 附近。后面还有：
+
+- GPU 完成对窗口 image 的写入；
+- producer completion fence signal；
+- `ANativeWindow::queueBuffer()`；
+- BLAST buffer transaction；
+- SurfaceFlinger latch；
+- HWC DEVICE 或 RenderEngine CLIENT 合成；
+- display present。
+
+因此，GPU 工具把 draw call 归到某帧，只解决“这些 GPU 命令属于哪组工作”。用户何时看到该帧仍要看 FrameTimeline 与 present fence。
+
+## dequeue fence 与 producer completion fence
+
+### dequeue fence：等待旧消费者释放 buffer
+
+`VulkanSurface::dequeueNativeBuffer()` 从 App Window 的 ANativeWindow 取得 buffer 和 dequeue fence。该 fence 表示这块复用 buffer 的上一轮消费者工作何时结束，Producer 要等它 signal 后才能安全写入。
+
+当 fence 尚未 signal 时，`VulkanManager::dequeueNextBuffer()` 会尝试：
+
+1. `dup()` fence fd；
+2. 创建 `VkSemaphore`；
+3. 以 `VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT` 和 `VK_SEMAPHORE_IMPORT_TEMPORARY_BIT` 临时导入；
+4. 让 Skia surface 在该 semaphore 上等待；
+5. 立即 `FlushAndSubmit()`，确保 wait 进入 GPU 提交。
+
+导入或创建失败时，源码退回 CPU `sync_wait()`。这条 fence 不是“SurfaceFlinger 作为 Producer 告诉 App 内容准备好”，方向应理解为 Consumer/HWC 释放旧 buffer 给 App Producer 复用。
+
+### finishFrame：导出本轮 GPU 完成 fence
+
+queue 0 绘制结束时，`finishFrame()` 创建可导出 sync-fd 的 semaphore，把它放进 `GrFlushInfo.fSignalSemaphores`，flush/submit 后通过 `vkGetSemaphoreFdKHR()` 取得 fd。`VulkanSurface::presentCurrentBuffer()` 把这个 fd 传给 `ANativeWindow::queueBuffer()`。
+
+这个 fd 在 BufferQueue 消费侧成为当前 buffer 的 acquire fence：SurfaceFlinger 可以接收 buffer 元数据，但必须尊重 fence，等待 GPU 写完后再安全读取。`presentCurrentBuffer()` 这个函数名容易让人误会；源码行为是 queue buffer，不是屏幕 present。
+
+如果导出 semaphore 失败，`finishFrame()` 会用 `mQueueWaitIdle(mGraphicsQueue)` 做保守兜底。正常路径不需要 RenderThread 在 CPU 上等待整帧 GPU 完成。
+
+下面的时序图用于检查 fence 方向。
+
+```mermaid
+sequenceDiagram
+    participant BQ as "ANativeWindow / BufferQueue"
+    participant RT as "RenderThread"
+    participant VK as "VkQueue 0 / GPU"
+    participant SF as "SurfaceFlinger"
+    participant D as "HWC / Display"
+
+    BQ-->>RT: "dequeueBuffer(buffer, release/dequeue fence)"
+    RT->>VK: "import fence as wait semaphore"
+    RT->>VK: "Skia draw + signal exportable semaphore"
+    VK-->>RT: "export sync_fd（producer completion）"
+    RT->>BQ: "queueBuffer(buffer, sync_fd)"
+    BQ-->>SF: "buffer + acquire fence"
+    SF->>D: "latch / compose / present"
+    D-->>BQ: "release fence for later reuse"
 ```
 
-两个 GrDirectContext 绑定到不同 `VkQueue`，共享同一个 `VkDevice`/`VkInstance`/`VkPhysicalDevice`。`fThreadSafe = false` 表示 VMA（Vulkan Memory Allocator）对象不做跨线程同步——因为两个 GrDirectContext 各自持有独立的 VMA 实例，不存在跨线程访问同一分配器的场景。
+这条链路解释了两个常见现象：`queueBuffer()` 可以在 GPU 完成前返回；下一次 `dequeueBuffer()` 也可能因为旧 buffer 仍被 GPU/HWC 使用而等待。
 
-Device lost 回调按 ContextType 分流到不同上下文（`"RenderThread"` vs `"UploadThread"`），GPU fault 发生时能定位是哪个路径的问题。
+## Buffer age 与 partial update
 
-## 队列全局优先级：VK_EXT_global_priority
+当 `Properties::enablePartialUpdates` 和 `Properties::useBufferAge` 同时开启时，`VulkanManager` 使用 `SwapBehavior::BufferAge`。`VulkanSurface` 按本进程的 present count 与每块 buffer 上次成功 queue 的 count 计算 age；新 buffer、内容无效或 transform 改变时返回 0。
 
-VulkanManager 在设备创建时通过 `VK_EXT_global_priority`（或 Vulkan 1.4 core）向 GPU 驱动声明队列优先级。映射逻辑从 EGL 的 context priority 常量转到 Vulkan 的 queue priority 枚举：
+HWUI 会把 buffer age 与 swap history 结合，扩大本次需要恢复的 damage，并通过 `native_window_set_surface_damage()` 把窗口 damage 交给 ANativeWindow。这里有三个限制：
 
-```cpp
-// VulkanManager.cpp L337-360
-if (Properties::contextPriority != 0 &&
-    mExtensions.hasExtension(VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME, 2)) {
-    VkQueueGlobalPriorityEXT globalPriority;
-    switch (Properties::contextPriority) {
-        case EGL_CONTEXT_PRIORITY_LOW_IMG:
-            globalPriority = VK_QUEUE_GLOBAL_PRIORITY_LOW_EXT; break;
-        case EGL_CONTEXT_PRIORITY_MEDIUM_IMG:
-            globalPriority = VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT; break;
-        case EGL_CONTEXT_PRIORITY_HIGH_IMG:
-            globalPriority = VK_QUEUE_GLOBAL_PRIORITY_HIGH_EXT; break;
-        default:
-            LOG_ALWAYS_FATAL("Unsupported context priority");
-    }
-    VkDeviceQueueGlobalPriorityCreateInfoEXT queuePriorityCreateInfo;
-    queuePriorityCreateInfo.globalPriority = globalPriority;
-    queueNextPtr = &queuePriorityCreateInfo;
-}
-```
+- buffer age 表示内容可复用历史，不等于“系统只执行脏矩形内的所有 GPU 指令”；
+- age 为 0 时需要按完整内容处理；
+- driver、tile 架构、offscreen layer、blend 和 SurfaceFlinger 合成仍会影响最终带宽。
 
-Vulkan 1.4 设备走 core 路径（`hasGlobalPriority = mAPIVersion >= VK_API_VERSION_1_4`），1.3 及以下走 extension。两条路径最终都把 `VkDeviceQueueGlobalPriorityCreateInfoEXT` 挂到 `VkDeviceQueueCreateInfo::pNext` 链上。
+因此，partial update 的收益要用 GPU counter、render stage 和功耗数据评估，不能只凭 `bufferAge != 0` 认定 fill rate 已按比例下降。
 
-如果驱动报告不支持所请求的优先级，HWUI 不会 fatal，而是打印 warning 并丢弃优先级请求：
+## VkFunctor 只说明 WebView 私有互操作
 
-```cpp
-// VulkanManager.cpp 注释
-// SysUI and Launcher will request HIGH when SF has RT but it is a known issue that
-// upstream drm drivers currently lack a way to grant them the granular privileges
-// they need for HIGH (but not RT) so they will fail queue creation.
-// For now, drop the unsupported global priority request so that queue creation succeeds.
-```
+`getVkFunctorInitParams()` 会向 HWUI 的 WebView Vulkan functor 回调提供 `VkInstance`、`VkPhysicalDevice`、`VkDevice`、queue 0、queue family index 和已启用 feature/extension。`VkFunctorDrawable` 明确持有 `WebViewFunctor::Handle`，并在 RenderThread 上调用相关回调。
 
-这个兜底是给 SysUI 和 Launcher 留的——SurfaceFlinger 占用 RT（Real-Time）优先级时，SysUI 请求 HIGH 会因为 drm 驱动权限不足而失败。丢弃请求让 queue 创建继续，代价是 UI 帧率可能略低于 RT 级别。
+它不是面向普通应用的通用 Vulkan 接口，也不是 SurfaceView 自定义渲染自动复用 HWUI device 的桥梁。任意 native renderer 都不能据此取得 HWUI 私有 device；应用应使用公开 Vulkan/ANativeWindow API 管理自己的实例、device、queue 与同步。
 
-## 帧边界暴露：VK_ANDROID_frame_boundary
+## 与 SkiaGL 的正确比较方式
 
-GPU 分析工具（AGI、Perfetto）需要知道每一帧的 GPU 命令边界，才能把 GPU 渲染轨迹和 FrameTimeline 对齐。VulkanManager 通过两种机制暴露帧边界。
+旧结论常把 SkiaGL 写成“只有一个 context，所以 hardware bitmap 上传必定和 RenderThread 串行”。Android 17 的 `HardwareBitmapUploader` 对 GL 同样有独立 `EGLUploader`、`GrallocUploadThread` 与 EGL context，并通过 EGL fence 等待上传。
 
-`VulkanManager.h` 声明了 AGI 定制的扩展：
+两种后端的可观察差异应这样描述：
 
-```cpp
-// VulkanManager.h L36-39
-// VK_ANDROID_frame_boundary is a bespoke extension defined by AGI
-// (https://github.com/google/agi) to enable profiling of apps rendering via
-// HWUI. This extension is not defined in Khronos, hence the need to declare it
-// manually here. There's an extension (VK_EXT_frame_boundary) which we will use
-// instead if available.
-typedef void(VKAPI_PTR* PFN_vkFrameBoundaryANDROID)(VkDevice device,
-        VkSemaphore semaphore, VkImage image);
-#define VK_ANDROID_FRAME_BOUNDARY_EXTENSION_NAME "VK_ANDROID_frame_boundary"
-```
+| 维度 | SkiaVulkan | SkiaGL |
+|---|---|---|
+| HWUI 明确管理的提交对象 | 同一 VkDevice 上两条 graphics `VkQueue` | RenderThread 与 uploader 各自的 EGL/GL context；驱动内部 queue 拓扑不可由 GL API直接得知 |
+| AHB 上传完成等待 | UploadThread `GrSyncCpu::kYes` | UploadThread `eglClientWaitSyncKHR()` |
+| 窗口完成 fence | Vulkan semaphore 导出 sync fd | EGL/GL native fence 路径 |
+| GPU frame annotation | 可使用 `VK_EXT_frame_boundary` 或 AGI 私有扩展 | 依赖 GL/驱动/工具支持，不能概括成“无分析能力” |
+| 是否保证上传与绘制并行 | 否 | 否 |
 
-sEnableExtensions 同时启用 `VK_ANDROID_frame_boundary` 和 Khronos 标准的 `VK_EXT_frame_boundary`。优先使用 AGI capture layer 注入的 proc pointer（`mFrameBoundaryANDROID`），不可用时回退到 Skia 层方案。
+Vulkan 的价值在于 queue、semaphore 和外部句柄关系由 API 显式表达；它不自动让同一负载变快。性能判断仍需在同设备、同内容、同刷新率和同热状态下测量。
 
-`finishFrame()` 中的关键分支：
+## 性能观测：分清 queue、GPU 与 present
 
-```cpp
-// VulkanManager.cpp L702-721
-static uint64_t currentFrameID = 0;
-GrSubmitInfo submitInfo;
-if (!mFrameBoundaryANDROID) {
-    submitInfo.fMarkBoundary = GrMarkFrameBoundary::kYes;
-    submitInfo.fFrameID = currentFrameID++;
-}
-context->submit(submitInfo);
+### Perfetto
 
-if (submitted == GrSemaphoresSubmitted::kYes && mFrameBoundaryANDROID) {
-    VkImage image = VK_NULL_HANDLE;
-    GrBackendRenderTarget backendRenderTarget = SkSurfaces::GetBackendRenderTarget(
-            surface, SkSurfaces::BackendHandleAccess::kFlushRead);
-    if (backendRenderTarget.isValid()) {
-        GrVkImageInfo info;
-        if (GrBackendRenderTargets::GetVkImageInfo(backendRenderTarget, &info)) {
-            image = info.fImage;
-        }
-    }
-    mFrameBoundaryANDROID(mDevice, sharedSemaphore->semaphore(), image);
-}
-```
+建议同时采集以下证据：
 
-`currentFrameID` 是 `static` 局部变量，整个 HWUI 进程唯一递增。Perfetto GPU renderer 用这个 ID 对应 FrameTimeline 中的帧标记。走 `mFrameBoundaryANDROID` 路径时，Skia submit 不带 frame boundary 标记（由 AGI 扩展负责），同时把当前帧的 semaphore 和 image 传给 AGI capture layer。
+- Main thread 与 RenderThread 调度、`syncAndDrawFrame`、`Vulkan finish frame`、`flush commands`；
+- `GrallocUploadThread` 的 hardware bitmap 上传 slice；
+- `dequeueBuffer` / `queueBuffer` duration；
+- FrameTimeline expected/actual 与 jank type；
+- `gpu.renderstages`：设备 producer 支持时，可用 `hw_queue_iid`、context、submission ID 和 render stage 查看 GPU 活动；
+- `gpu.counters`：设备支持时查看频率、busy、带宽、cache 等计数器；
+- GPU/DRM ftrace 与 dma-buf/fence 事件：用来判断驱动调度和 fence 等待。
 
-## SurfaceFlinger 跨进程同步
+Perfetto 的 GPU data source 由设备/驱动 producer 提供，名称可能带 `.adreno`、`.mali` 等后缀，字段丰富度也会不同。看到两条 HWUI `VkQueue` 不保证 trace 一定显示两条可命名的硬件 queue。
 
-VulkanManager `dequeueNextBuffer()` 负责从 BufferQueue 取 buffer 时处理与 SurfaceFlinger 的同步。核心是把 SurfaceFlinger 返回的 Linux `sync_fd` 转成 `VkSemaphore`：
+### AGI
 
-```cpp
-// VulkanManager.cpp L580-647
-if (bufferInfo->dequeue_fence != -1) {
-    int fence_clone = dup(bufferInfo->dequeue_fence);
-    VkSemaphoreCreateInfo semaphoreInfo{...};
-    VkSemaphore semaphore;
-    mCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &semaphore);
+AGI frame profiling 可检查 Vulkan API call、render pass、shader、texture、pipeline state 与资源。抓取 HWUI 渲染时，`VK_ANDROID_frame_boundary` 由 AGI capture layer 注入，帮助工具识别窗口帧。
 
-    VkImportSemaphoreFdInfoKHR importInfo;
-    importInfo.sType = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR;
-    importInfo.semaphore = semaphore;
-    importInfo.flags = VK_SEMAPHORE_IMPORT_TEMPORARY_BIT;
-    importInfo.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT;
-    importInfo.fd = fence_clone;
-    mImportSemaphoreFdKHR(mDevice, &importInfo);
+AGI 不替代系统 trace：它擅长解释一帧 GPU 命令做了什么；FrameTimeline、BufferQueue、SurfaceFlinger、HWC 和 present timing 仍需要 Perfetto、dumpsys 或厂商显示工具。
 
-    GrBackendSemaphore beSemaphore = GrBackendSemaphores::MakeVk(semaphore);
-    bufferInfo->skSurface->wait(1, &beSemaphore);
-    skgpu::ganesh::FlushAndSubmit(bufferInfo->skSurface.get());
-}
-```
+### 常见症状与证据
 
-`VK_SEMAPHORE_IMPORT_TEMPORARY_BIT` + `VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT` 是 Android Vulkan 后端的标准同步范式。`sync_fd` 来自 SurfaceFlinger 的 producer 端，表示 buffer 内容已经就绪。临时导入意味着 semaphore 在 signal 后自动恢复未导入状态，不会累积资源。
+| 症状 | 先看 | 避免的误判 |
+|---|---|---|
+| hardware bitmap 创建卡住调用线程 | decode、AHB allocation、GrallocUploadThread、`GrSyncCpu` wait | 看到 queue 1 就认定调用异步返回 |
+| RenderThread 慢且 upload 同期发生 | queue 0/1 submission、GPU busy、带宽、频率、调度 | 把两个 queue 直接当成两套 GPU 引擎 |
+| `dequeueBuffer` 长等待 | 上一轮 release fence、buffer 数量、SF/HWC/GPU 使用期 | 归因于 Vulkan command recording |
+| `queueBuffer` 按时但帧晚 | acquire fence、SF latch、composition、present | 把 queue 时间当上屏时间 |
+| AGI 有清晰 frame boundary，Perfetto token 对不上 | Vulkan frame ID 与 FrameTimeline vsyncId 分开对齐 | 假设两个 ID 数值相同 |
+| partial update 开启但 GPU 仍重 | buffer age、damage、offscreen layer、overdraw、tile load/store | 认为 surface damage 会裁掉所有上游工作 |
 
-每次 `dequeueNextBuffer` 都执行 `dup()` → `mCreateSemaphore` → `mImportSemaphoreFdKHR`，没有复用 semaphore 池。高频帧场景下这是性能热点候选，后续可以用 explicit fence API 替代。
+## 版本演进
 
-## 缓冲区年龄与 Partial Update
+以下结论只来自固定 tag 的代码对照：
 
-```cpp
-// VulkanManager.cpp L431-433
-if (Properties::enablePartialUpdates && Properties::useBufferAge) {
-    mSwapBehavior = SwapBehavior::BufferAge;
-}
-```
+| 平台标签 | 双 graphics queue | frame-boundary 相关代码 | global-priority 相关代码 |
+|---|---|---|---|
+| `android-14.0.0_r1` | 已有 queue 0 + AHB upload queue 1 | 本次对照未见 Android 17 形态的 boundary 分支 | 已有 `VK_EXT_global_priority` 请求 |
+| `android-15.0.0_r1` | 保持双 queue | 本次对照未见 Android 17 形态的 boundary 分支 | 保持 extension 请求 |
+| `android-16.0.0_r1` | 保持双 queue | 已有 `VK_EXT_frame_boundary`、AGI 私有扩展与 `fFrameID` | 增加 global-priority query/KHR 相关处理 |
+| `android-17.0.0_r1` | 保持双 queue | 保持两条 boundary 路径 | 保持 query 与不支持时的降级处理 |
 
-BufferAge 模式下，`dequeueNextBuffer()` 返回的 `bufferAge` 非 0，HWUI 据此做精准 `invalidate()`，只重绘脏区域，减少 GPU fill rate。详见 §2.8（过度绘制）关于 partial update 的讨论。
+这张表能支持“Android 17 当前是什么”，也能排除“双 queue 是 Android 17 新特性”的说法。若要定位某个提交首次进入主线，还需继续查 support branch 与 Git history，不能只用四个 release tag 推断精确日期。
 
-## 与 OpenGL ES 后端的对比
+## 源码核对索引
 
-双队列并行仅在 Vulkan 后端生效。OpenGL ES 受限于单上下文模型——同一 GL context 只有一个提交队列，位图上传和帧绘制串行执行。这是 Vulkan 后端相对 GLES 的结构性优势之一：硬件层面并行，不需要应用层协调。
+- [`VulkanManager.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp) / [`VulkanManager.h`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.h)：device、两条 queue、context、global priority、frame boundary、fence 导入导出；
+- [`HardwareBitmapUploader.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/HardwareBitmapUploader.cpp)：GL/Vulkan 上传线程、CPU 等待与 60 秒 idle timeout；
+- [`SkiaVulkanPipeline.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp)：dequeue、draw、finishFrame、swapBuffers 的调用关系；
+- [`VulkanSurface.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanSurface.cpp)：ANativeWindow buffer、dequeue fence、surface damage 与 queueBuffer；
+- [`CanvasContext.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp)：FrameTimeline info、swap history、dequeue/queue duration；
+- [Khronos `VkFrameBoundaryEXT`](https://registry.khronos.org/vulkan/specs/latest/man/html/VkFrameBoundaryEXT.html)：Vulkan frame annotation 的规范语义；
+- [Perfetto GPU data sources](https://perfetto.dev/docs/data-sources/gpu)：GPU counter、render stage 与设备 producer 的观察口径；
+- [AGI Frame Profiler](https://developer.android.com/agi/frame-trace/frame-profiler)：单帧 Vulkan/GL 调用和 GPU 资源分析。
 
-| 维度 | Vulkan 后端 | OpenGL ES 后端 |
-|------|-------------|----------------|
-| Queue 数量 | 2（graphics + upload） | 1（单 context） |
-| 位图上传与帧绘制 | 并行 | 串行 |
-| 帧边界暴露 | VK_*_frame_boundary + Skia fallback | 无原生机制 |
-| 队列优先级 | VK_EXT_global_priority | EGL_CONTEXT_PRIORITY |
-| 最低驱动要求 | Vulkan 1.1+，queue family >= 2 | 无额外要求 |
+上述平台源码均固定在 `android-17.0.0_r1`。内核侧采用 `android17-6.18-2026-06_r6`，只用于解释线程调度、GPU driver、dma-buf 与 fence 机制，不把厂商 driver 行为伪装成 AOSP HWUI 保证。
 
-## 性能观测方法
+## 总结
 
-通过 Perfetto 的两个 GPU 数据源观察 Vulkan 队列利用率：
+Android 17 HWUI Vulkan 的双 queue 架构可以压缩成四句话：
 
-- `gpu.counters`：GPU 计数器（时钟频率、ALU 利用率、带宽），反映两条 queue 的总体负载
-- `gpu.renderstages`：渲染阶段标记，对应 Skia submit 的 command buffer 分段
+1. queue 0 供 RenderThread 生成 App Window 帧，queue 1 供 GrallocUploadThread 上传 hardware bitmap；
+2. 两条 queue 共享 VkDevice，但使用独立 Skia context 和 allocator，允许独立提交，不保证硬件同时执行；
+3. Vulkan frame-boundary 是 GPU 工具标记，FrameTimeline `vsyncId` 才是窗口 expected/actual present 的时间锚点；
+4. dequeue fence 保护旧 buffer 的安全复用，queueBuffer 携带的 producer completion fence 保护 SurfaceFlinger 的安全读取，二者方向不能颠倒。
 
-SurfaceFlinger FrameTracer（§13.19）追踪 buffer 生命周期事件（dequeue / queue / acquire / present），与 HWUI 的 `currentFrameID` 对应。
-
-AGI（Android GPU Inspector）通过 `VK_ANDROID_frame_boundary` 抓取完整 GPU 帧内容，可以看到每帧的 draw call、纹理绑定、shader 执行情况。没有 AGI capture layer 时，Perfetto 是唯一的 GPU 性能观测手段。
-
-## 适用版本范围
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/libs/hwui/renderthread/VulkanManager.cpp]
-
-本节描述的是 android-17.0.0_r1 tag 的 VulkanManager 实现。Vulkan 后端在 Android 10 首次引入（SkiaVulkanPipeline），经过多个版本迭代到 Android 17 的当前形态。本节未逐版本对比 Android 14-16 的代码变更，"Android 17 新增"的断言需要补充旧版 tag 对照才能成立。
-
-[适用版本: Android 14 (API 34) - Android 17 (API 37)]
-
-[来源: DeepResearch/2026-06-26-android17-hwui-vulkanmanager-multi-queue-frame-boundary.md]
-[结构参考: DeepResearch/2026-06-26-android17-hwui-vulkanmanager-multi-queue-frame-boundary.md]
-
-
-<!-- AIW-源码调研-2026-06-28 (id=38 重验证) -->
-
-## 源码重验证补充（2026-06-28）
-
-本章基于 android-17.0.0_r1 tag 重新走读 `VulkanManager.cpp`（910 行）、`VulkanManager.h`（219 行）、`RenderThread.cpp`（512 行）、`HardwareBitmapUploader.cpp`（481 行），事实与正文一致。补充三处源码级细节：
-
-### VkUploader 上传路径
-
-`HardwareBitmapUploader.cpp` L223-289 定义 `class VkUploader : public AHBUploader`。关键上传入口：
-
-```cpp
-// HardwareBitmapUploader.cpp L252-259
-mGrContext = vkManager->createContext(options,
-        renderthread::VulkanManager::ContextType::kUploadThread);
-sk_sp<SkImage> image =
-    SkImages::TextureFromAHardwareBufferWithData(mGrContext.get(), bitmap.pixmap(), ahb);
-mGrContext->submit(GrSyncCpu::kYes);
-```
-
-调用链：`allocateHardwareBitmap()` → `sUploader->uploadHardwareBitmap()` → `VkUploader::onUploadHardwareBitmap()` 在 `GrallocUploadThread` 上执行 → `VulkanManager::createContext(kUploadThread)` 创建专属 GrDirectContext → `SkImages::TextureFromAHardwareBufferWithData` 把 `AHardwareBuffer` 直接绑成 Skia 纹理对象（零拷贝入口）→ `GrSyncCpu::kYes` 等待 GPU 完成。
-
-### UploadThread 闲置超时（kThreadTimeout = 60000_ms）
-
-`HardwareBitmapUploader.cpp` L48：
-
-```cpp
-static constexpr auto kThreadTimeout = 60000_ms;
-```
-
-`AHBUploader::postIdleTimeoutCheck()` 发起 60 秒后的一次性任务。`VkUploader::onIdle()` → `onDestroy()` → `mGrContext.reset()` + `mVulkanManagerStrong.clear()`。闲置 60 秒后 GrDirectContext 与 Skia VMA pool 释放，下次上传时重建。中低端设备长时间浏览图片/视频后切换应用，能回收数十 MB GPU 内存。RenderThread 自身的 GrContext 没有此超时机制（始终保持活跃）。
-
-### VkFunctorInitParams 暴露路径
-
-`VulkanManager::getVkFunctorInitParams()`（L557-573）：
-
-```cpp
-return VkFunctorInitParams{
-        .instance = mInstance,
-        .physical_device = mPhysicalDevice,
-        .device = mDevice,
-        .queue = mGraphicsQueue,           // 只暴露 graphics queue，不暴露 upload queue
-        .graphics_queue_index = mGraphicsQueueIndex,
-        .api_version = mAPIVersion,
-        .enabled_instance_extension_names = mInstanceExtensions.data(),
-        .enabled_device_extension_names = mDeviceExtensions.data(),
-        .device_features_2 = &mPhysicalDeviceFeatures2,
-};
-```
-
-这是 HWUI Vulkan 设备与 native 渲染代码（WebView Chromium Skia、SurfaceView 自定义渲染）的桥梁，让调用方复用 HWUI 已创建的 `VkInstance/VkDevice`，避免重复创建。**只暴露 `mGraphicsQueue`**——VkFunctor 调用方做主帧渲染，理论上不应抢 upload queue 优先级。
-
-### 事实自检
-
-正文 12 项核心断言全部与 android-17.0.0_r1 源码一致（详见 `DeepResearch/2026-06-28-android17-hwui-vulkanmanager-multi-queue-reverified.md` 自检表）。
-
-### 待验证事项
-
-- 硬件层「Vulkan 1.1+，queue family >= 2」的最低要求基于 `LOG_ALWAYS_FATAL_IF` 推断，未在芯片厂商驱动层验证降级路径
-- `Properties::contextPriority` 在 SysUI/Launcher 进程的真实生效机制未追溯调用链
-- `SkiaVMA::Options{.fThreadSafe = false}` 在 AGI capture layer 路径下的跨线程行为未追踪
-
-[来源: DeepResearch/2026-06-28-android17-hwui-vulkanmanager-multi-queue-reverified.md]
-[验证状态: 一手源码重读完成，2026-06-28]
-
-## 延伸阅读
-
-### Android 17 Vulkan 多队列并行渲染与 GPU 负载均衡
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-android17-vulkan-dual-queue-graphics-ahb-upload.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 17 HWUI Vulkan 后端强制要求同一 graphics queue family 申请 2 个 queue（mGraphicsQueue + mAHBUploadQueue），分别服务 RenderThread 和 GrallocUploadThread。两 queue 共享 VkDevice 但各自独立 GrDirectContext 与 VMA。VK_EXT_global_priority 默认关闭。
-- 注入时间：2026-06-30
-- 价值：Vulkan 双队列创建、上传线程独立 GrDirectContext、global_priority 降级策略的源码级分析
+分析问题时，应把 RenderThread、GrallocUploadThread、两条 queue、GPU completion fence、BufferQueue、FrameTimeline 和 present 放进同一个时间区间。只看到 queue 数量，仍不足以判断并行度、卡顿原因或用户看到的显示时刻。
