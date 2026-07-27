@@ -177,7 +177,13 @@ fun findApvEncoders(
         val bitrateSupported = videoCaps.bitrateRange.contains(bitrate)
 
         fun supports(colorFormat: Int, colorAdvertised: Boolean): Boolean {
-            if (!profileAdvertised || !colorAdvertised) return false
+            if (!profileAdvertised ||
+                !colorAdvertised ||
+                !sizeRateSupported ||
+                !bitrateSupported
+            ) {
+                return false
+            }
             return runCatching {
                 caps.isFormatSupported(requestedFormat(colorFormat))
             }.getOrDefault(false)
