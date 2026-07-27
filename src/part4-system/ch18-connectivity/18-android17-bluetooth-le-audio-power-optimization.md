@@ -1,24 +1,28 @@
 ---
 title: "Android 17 蓝牙低功耗音频与功耗优化"
 chapter: "18.1"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 17 (API 37)"
 tags: ["Android", "连接性", "功耗优化", "蓝牙", "LE Audio"]
 related_chapters: ["ch05-cpu-power", "12.33", "25.17"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-07"
 gap_source: "research-feeds"
-last_verified: "2026-07-26"
-confidence: medium-low
+last_verified: "2026-07-27"
+confidence: medium
 sources:
   - "DeepResearch/2026-07-05-background-audio-hardening-power.md"
   - "intake/research-feeds/2026-04-08-15-audioflinger-fast-mixer-aaudio-mmap-pipeline-architecture.md"
 last_deep_review_at: "2026-07-26T08:35:40+08:00"
 last_deep_review_run_id: "20260726-083540-deep-review-632029fc"
+reviewed_date: "2026-07-27"
+reviewed_by: "hermes-aiw-review-finalize-apply"
 task6_state: reviewed
-task9_state: pending
-pipeline_stage: task9_pending
-review_notes: "Deep-review removed unsupported LE Audio numeric/codec/API claims and scoped the chapter to source-backed Android 17 audio hardening + low-latency audio boundaries; keep ready-for-review until Bluetooth HAL/AudioPolicy LE Audio source material is supplied."
+task9_state: reviewed
+pipeline_stage: finalized
+last_review_finalize_at: "2026-07-27T10:05:45+08:00"
+last_review_finalize_run_id: "20260727-100506-18e6f7de"
+review_notes: "Review/finalize confirmed the chapter is technically safe as an evidence-boundary page: unsupported LE Audio API/LC3/latency/power-saving claims remain removed, Android 17 hardening and low-latency audio boundaries are source-backed, and Bluetooth HAL/AudioPolicy LE Audio details stay explicitly out of scope until supplied."
 ---
 
 # Android 17 蓝牙低功耗音频与功耗优化
