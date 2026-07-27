@@ -86,175 +86,330 @@ last_deepseek_cn_review_at: 2026-06-17
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么要看启动优化复盘框架
+## 本节定位：案例要能被复查
 
-前面几节已经把启动分析、任务编排、`ContentProvider`、Baseline Profile、启动页、延迟初始化、多进程和线上监控逐一拆开讲过。本章收束到复盘框架视角：拿到一个启动慢的大型 App，怎样把 trace、任务清单、profile、线上指标串成一次可复用的优化过程。
+启动优化复盘的价值不在“列出做过哪些动作”，而在于留下可验证的因果链：
 
-本节不重复前文原理，重点放在三个工程场景的排查框架：`Application` 初始化过重、启动框架从散点初始化演进为任务图、Baseline Profile 从“文件已生成”走到“收益可验证”。
+```text
+用户症状
+  -> 指标确认影响范围
+  -> trace / 平台时间戳定位阶段
+  -> 代码与配置证明触发条件
+  -> 单变量实验验证改动
+  -> 线上同 cohort 回看
+  -> 门禁、负责人和回滚条件
+```
 
-> **定位说明**：本节提供排查框架和复盘模板，暂不包含脱敏后的真实案例。团队拿到自己的 Perfetto trace 和线上指标后，按末尾“启动案例复盘模板”填写，就能产出可复查的优化记录；有可脱敏分享的真实案例时，再补充到对应场景。
+这条链路把现象、证据、改动和结果分开记录。缺少任一段，后续读者都很难判断收益来自代码、编译状态、缓存、设备差异还是样本结构变化。
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
+本文提供三组复盘演练：大型 App 初始化、启动框架演进、Baseline Profile。它们是可套用的分析框架，不冒充某个产品的脱敏数据，也不提供脱离设备、构建和样本的固定收益百分比。启动链路见[启动完整路径分析](./01-startup-analysis.md)，任务调度见[启动任务编排框架](./02-startup-framework.md)，编译状态见[Baseline Profile 实战](./04-baseline-profile-practice.md)，线上验收见[启动监控与度量](./08-startup-monitoring.md)。
 
-## 大型 App 启动优化实战
+## 案例一：大型 App 的 `Application` 阶段持续变长
 
-### `Application.onCreate()` 被 SDK 初始化占满
+### 1. 先写问题陈述
 
-大型 App 的冷启动慢，最常见的形态是 `Application.onCreate()` 里堆了大量同步初始化：Crash、埋点、推送、广告、网络、配置、数据库、实验平台、图片库都想抢启动入口。每个 SDK 单看只花 20-50 ms，串起来就是几百毫秒。
+一个合格的问题陈述应包含：
 
-排查时先把启动分成 4 段量出来，再决定改动位置：进程创建到 `attachBaseContext()`、`Application` 初始化、入口 `Activity` 创建、首帧绘制。21.1 节已经给出 TTID / TTFD 和 Perfetto 读法，本案例只看 `Application` 段。
+- 哪个版本开始变化；
+- cold、warm、hot 中哪一类变化；
+- 哪些入口、设备档位、Android 版本和安装状态受影响；
+- TTID、TTFD、首屏前 ANR/Crash 和 fully drawn 完成率怎样变化；
+- 变化是否超过历史噪声和产品预算；
+- 监控 schema、采样率与启动类型占比是否同时变化。
 
-可执行的复盘表如下：
+“`Application.onCreate()` 有很多 SDK，所以启动慢”只是猜测。先用 Android 15+ `ApplicationStartInfo`、应用阶段事件和 Perfetto 判断时间消耗在哪个区间。Android 10–14 没有平台启动信息 API 时，使用 Macrobenchmark、Logcat `Displayed`、应用单调时钟和 Perfetto 互相校准。
 
-| 任务 | 线程 | 启动前是否必需 | 耗时口径 | 处理方式 |
-|---|---|---|---|---|
-| Crash SDK | 主线程 / 后台线程 | 启动前必需，但只需要最小捕获能力 | wall time + CPU time | 拆成同步安装 handler、异步上传历史报告 |
-| 埋点 SDK | 后台线程 | 首帧前不必完整初始化 | wall time | 首帧后补全，启动阶段只缓存事件 |
-| 推送 SDK | 主线程回调较多 | 多数业务不需要阻塞首帧 | wall time | 延迟到首页首帧后，或按进程判断跳过 |
-| 数据库打开 | 主线程风险高 | 首屏如不读取本地数据就不必启动前打开 | I/O time | 改为懒打开，升级迁移放到后台窗口 |
-| 远程配置 | 网络 / I/O | 不应阻塞首帧 | 等待时间 | 使用本地缓存，网络刷新放到首帧后 |
+### 2. 从阶段区间缩小范围
 
-这张表用来区分三类任务：首帧前必须完成、首帧前只要完成最小能力、首帧后再做也不影响用户第一眼内容。改完后再对比 TTID、TTFD、启动慢帧和启动阶段 Crash / ANR，防止把启动耗时转移成首屏不可用。
+| 区间 | 证据 | 常见方向 |
+| --- | --- | --- |
+| launch → fork | `ApplicationStartInfo` / Perfetto | 系统负载、进程创建竞争、设备或 ROM 集中性 |
+| fork → bindApplication | 平台时间戳 / Perfetto | 进程准备、运行时与应用绑定 |
+| bindApplication → Application.onCreate | `ActivityThread`、Provider trace | Provider、类加载、Instrumentation |
+| Application 入口 → 出口 | task 埋点、自定义 trace | SDK、同步 I/O、锁、序列化、线程创建 |
+| Activity 创建 → first frame | Activity、View/Compose、RenderThread trace | 布局、首次组合、资源、主线程与渲染调度 |
+| first frame → fully drawn | ready 状态、数据链路、`reportFullyDrawn()` | 数据库、缓存、网络和首屏业务条件 |
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
+阶段表只能指向排查区域。比如 Application 区间变长，并不证明某个后台 task 消耗了同样长的 CPU 时间；它可能在 Binder、文件锁或调度队列中等待。需要展开对应线程轨道才能下结论。
 
-### 从 trace 里判断优化方向
+### 3. 建立初始化清单
 
-同样是 300 ms，trace 中的形态不同，处理方式也不同。
+把所有自动与显式入口放进一张清单，包括 manifest 合并得到的 Provider、`Application`、AndroidX App Startup initializer、依赖注入容器、静态初始化和首屏 Activity。
 
-| 观测现象 | 更可能的问题 | 优先处理 |
-|---|---|---|
-| 主线程长时间 Running，函数集中在 JSON、反射、初始化逻辑 | CPU 计算或类加载成本高 | 精简代码路径、拆任务、Baseline Profile |
-| 主线程 Blocked / Sleeping，附近有文件读写或数据库 | I/O 或锁等待 | 移出启动路径、使用缓存、拆锁 |
-| `HeapTaskDaemon` 在启动阶段抢占 CPU，伴随频繁对象分配 | 启动分配过多触发 GC 压力 | 减少临时对象、复用缓存、推迟大对象创建 |
-| 后台线程过多，CPU 被大量初始化任务占满 | 并发过度 | 限制启动线程池、按优先级分层执行 |
+| 字段 | 说明 |
+| --- | --- |
+| `componentId` | 稳定 ID，与 trace、线上事件、owner 映射一致 |
+| 入口 | Provider、Application、Activity、手动调用或类加载 |
+| 进程 | 主进程、指定远程进程或所有相关进程 |
+| 首帧需求 | 必须完成、只需最小能力、可以延后 |
+| TTFD 需求 | 是否影响核心内容和首个操作 |
+| 依赖 | 硬依赖、可降级依赖、仅顺序约束 |
+| 线程与等待 | 主线程、CPU、I/O、Binder、锁 |
+| 失败语义 | fail-fast、降级、重试、跳过 |
+| 幂等与重入 | 多入口并发、进程重建、配置切换时是否安全 |
+| owner / 开关 | 负责人、灰度开关、回滚方式 |
 
-把速度优化拆成 CPU、缓存、任务调度三个方向来看，放到启动场景里对应的工程动作是：减少启动路径上必须执行的代码；让会被马上访问的类、资源、配置更早命中缓存；让首帧相关线程拿到足够 CPU 时间。不要把线程数开大当成通用解法——启动阶段 CPU 核心有限，过量并发会让主线程和 RenderThread 排队。
+“公共基础设施”不能自动获得首帧优先级。Crash SDK 可能只需要尽早安装最小异常捕获，历史报告扫描与上传可以延后；埋点 SDK 可以先缓存内存事件，再补全设备信息和发送；网络库若首屏没有请求，可以到首个调用再初始化。
 
+### 4. 用最小能力拆分 SDK
 
-### 对 GC 抑制方案的取舍
+| 模块 | 首帧前的最小能力 | 可延后部分 | 需要验证的风险 |
+| --- | --- | --- | --- |
+| Crash | 安装必要 handler，记录最小进程信息 | 历史文件扫描、符号/设备扩展、上传 | 延后窗口内是否丢失关键崩溃信息 |
+| 埋点 | 接受事件并写入有界内存队列 | 设备画像、压缩、批量发送 | 队列溢出、进程死亡与事件顺序 |
+| Push | 当前入口必需的 token/路由状态 | 非关键注册、上报和扩展能力 | 通知点击路径是否依赖同步初始化 |
+| 数据库 | 首屏必需查询与 schema 可用性 | 非首屏表预热、清理、统计 | 迁移独占、跨进程访问与失败恢复 |
+| 远程配置 | 已验证的本地快照与默认值 | 网络刷新 | 旧配置兼容、过期策略和回滚 |
+| 图片/媒体 | 首屏解码所需最小配置 | 非首屏缓存扫描、预取和大池创建 | 首帧后 CPU/内存竞争 |
 
-有一类激进方案值得了解：通过分析 ART 的 `HeapTaskDaemon` 和 `ConcurrentGCTask`，在启动阶段延后 GC 执行。这个方向说明了一个事实：启动期 GC 会抢 CPU，也会放大锁等待。但 App 侧不建议把 hook ART 内部符号作为常规线上方案。
+数据库迁移不能简单丢到后台。只要首屏或其他进程会打开同一数据库，schema 必须先达到可用状态。可延后的是非关键数据库、可拆分的数据搬运或首屏不访问的迁移阶段，并且要有单一迁移者、版本检查、超时和恢复策略。
 
-App 侧优先按这个顺序处理：
+### 5. 判断一次改动是否只是“挪时间”
 
-- 减少启动期对象分配，尤其是大 JSON、临时集合、反射元数据和一次性 Bitmap。
-- 把非首屏对象创建推迟到首帧后，避免 `Application` 和入口 `Activity` 同时制造分配峰值。
-- 用 Perfetto 或 Android Studio Profiler 确认 GC 是否出现在启动关键区间，不能只凭“启动慢”推断 GC。
-- 只有在实验分支中评估底层 hook，且要按 Android 版本、ABI、厂商 ROM 单独验证崩溃和兼容性。
+把工作移出 `Application.onCreate()` 可能改善 TTID，也可能产生四种副作用：
 
-这类方案适合作为研究素材，不适合作为启动优化的默认动作。
+- 首帧后立即争抢 CPU，让首屏滚动或动画掉帧；
+- 数据未 ready，TTFD 和首个点击延迟上升；
+- 初始化顺序改变，低概率路径出现空引用或旧配置；
+- 延后上传、注册或恢复任务，导致数据完整性变化。
 
+验收需要同时看 TTID、TTFD、首屏 frame timeline、首个操作延迟、ANR/Crash、关键能力成功率和资源峰值。若 TTID 下降但 TTFD、交互或稳定性变差，这次改动只能算成本转移。
 
-## 启动框架演进案例
+### 6. GC 只能由 trace 证明
 
-### 阶段一：散点初始化
+启动阶段出现 GC 时，先检查分配来源、对象存活和堆增长：
 
-早期项目通常有三类初始化入口：`Application.onCreate()`、多个 SDK 的 `ContentProvider`、入口 Activity 的临时代码。入口多不一定是问题；缺少统一的依赖关系、耗时统计和失败策略，才会让启动阶段失控。
+- 大 JSON/Proto 解码是否创建重复中间对象；
+- 依赖注入或反射扫描是否构造大量元数据；
+- 图片、字体、Bitmap 或 native buffer 是否过早创建；
+- 多个初始化任务是否同时制造分配峰值；
+- 堆大小和 GC pause 是否与慢样本同一时间窗口相关。
 
-Jetpack App Startup 官方文档指出，多个组件各自声明 `ContentProvider` 会增加启动成本，并且系统初始化不同 Provider 的顺序不适合表达复杂依赖。App Startup 用单个 Provider 和 `Initializer` 依赖声明改善这个问题，适合把多个静态初始化点集中管理。
+看到 `HeapTaskDaemon`、GC slice 或 allocation spike，仍不能直接断言 GC 是全部瓶颈。要比较主线程 pause、Runnable 等待、并发 GC CPU 和关键路径重叠。
 
-[已验证: 官方文档, developer.android.com/topic/libraries/app-startup]
+Hook ART 内部符号、暂停 GC daemon 或改写运行时策略依赖私有实现，会跨 Android 版本、ABI 与厂商构建失效，还可能把回收压力推到更危险的时点。应用默认方案应是减少分配、缩短对象存活、延后非关键对象和修复堆峰值。底层 hook 只适合作为隔离实验，不进入常规生产路径。
 
-### 阶段二：统一清单和分层执行
+## 案例二：启动框架从散点入口演进为可治理任务
 
-当启动任务超过几十个，只靠 App Startup 的拓扑依赖不够用。团队需要维护一张启动任务清单，给每个任务补齐字段：
+### 1. App Startup 解决哪一层
 
-| 字段 | 用途 |
-|---|---|
-| `taskId` | 稳定标识，便于 trace、日志、看板互相对应 |
-| `dependencies` | 声明必须等待哪些任务完成 |
-| `threadMode` | 标记主线程、I/O、CPU、任意线程 |
-| `priority` | 标记首帧前必需、首帧前最小能力、首帧后执行 |
-| `timeoutMs` | 防止软依赖无限等待 |
-| `owner` | 任务异常、耗时回归时能找到负责人 |
-| `metricsName` | 对应线上启动阶段指标 |
+早期项目常见多个 SDK Provider、`Application.onCreate()` 和入口 Activity 各自初始化。AndroidX App Startup 可以让多个 initializer 共用一个 `InitializationProvider`，并通过 `dependencies()` 表达顺序；不需要自动初始化的组件可以移除 manifest metadata，改为手动懒初始化。
 
-这张清单是启动框架演进的分水岭。有了它，启动任务会按依赖、优先级和线程约束调度，不再由 `Application` 中的代码顺序决定执行顺序。21.2 节已经展开 DAG、关键路径和线程池策略，本案例关注演进结果：每个任务有位置、有耗时、有责任人、有可回滚开关。
+它有清晰边界：
 
-[已验证: 官方文档, developer.android.com/topic/libraries/app-startup]
+- `InitializationProvider` 仍是 Provider，仍早于 `Application.onCreate()`；
+- 自动发现的 initializer 会在 Provider 初始化调用链中执行；
+- `dependencies()` 表达初始化先后，不提供任务优先级、超时、取消或线程切换；
+- `Initializer.create()` 的重工作仍会阻塞调用它的线程；
+- 移除单个 initializer 的自动初始化时，它的自动依赖也会受影响，需要重新检查手动入口。
 
-### 阶段三：把框架接入发布流程
+因此，App Startup 适合合并 Provider 和显式描述小型同步初始化。首帧前的大型异步任务图需要独立调度设计。
 
-启动框架除了运行时调度任务，还要进入发布检查。一个实用的发布门禁可以包含这些项：
+### 2. 从“代码顺序”迁移到任务契约
 
-| 检查项 | 阈值建议 | 失败动作 |
-|---|---|---|
-| 新增首帧前任务 | 每个版本必须 review | 没有 owner 和耗时预估不允许合入 |
-| 单任务启动耗时 | 主线程任务超过 10 ms 需要说明 | 拆分、延迟或移到后台线程 |
-| 启动关键路径长度 | 相比上个版本上升需解释 | 关联变更列表，灰度前修复 |
-| 任务超时次数 | 灰度阶段持续出现要报警 | 降级软依赖或关闭任务 |
-| 入口 Provider 数量 | 增加必须说明原因 | 改用 App Startup 或显式初始化 |
+启动任务不能只包含 `Runnable` 和 dependency list。建议把任务契约写成：
 
-这些阈值需要按项目基线调整。稳定的做法是先连续观测 2-3 个版本，确认 P50 / P90 / P95 波动范围，再把阈值写进 CI 和灰度看板。
+| 字段 | 必须回答的问题 |
+| --- | --- |
+| phase | Provider、Application、pre-first-frame、post-first-frame、on-demand 中哪一段 |
+| process | 哪个进程执行，是否可能被多个进程重复运行 |
+| hard dependencies | 缺少结果就不能执行的依赖 |
+| soft dependencies | 超时或失败后可降级的依赖 |
+| executor | 主线程、CPU 池、I/O 池或专用串行执行器 |
+| result | 输出值、版本和生命周期 |
+| timeout | 等待方 deadline；超时是否会取消底层工作 |
+| failure policy | 阻断、降级、重试或跳过 |
+| idempotence | 多入口、重试和进程重建是否安全 |
+| metrics / owner | trace 名、线上指标、负责人和开关 |
 
-## Baseline Profile 实施效果
+`timeoutMs` 只限制等待方，不一定能停止已经开始的磁盘、网络或 Binder 工作。框架若声称支持取消，任务实现必须接受 cancellation token，并在底层操作可取消的位置检查。
 
-### 文件生成了，但收益不稳定
+### 3. DAG 优化看关键路径
 
-Baseline Profile 失败时常表现为本地测试有收益，线上新安装用户收益不稳定。原因通常出在三个位置：profile 没打进正确 variant、生成脚本没有覆盖真实启动路径、设备侧还没按 profile 完成编译。
+总耗时由最长依赖链和主线程/资源竞争决定，不由所有任务耗时相加得到。把互不依赖的任务并发执行，只有在设备还有 CPU 或 I/O 余量时才可能缩短关键路径；低端设备上过量并发会让主线程和 RenderThread 更晚获得调度。
 
-验证顺序要按 21.4 节的清单走：源码文件、构建产物、设备编译状态、性能收益。跳过任一层，都会把问题看错。
+框架演进应分批进行：
 
-| 验证层 | 具体检查 | 常见问题 |
-|---|---|---|
-| 源码 | `baseline-prof.txt` 是否随启动改动更新 | 脚本只跑入口 Activity，漏掉登录态、弹窗、首页 tab |
-| 构建 | APK / AAB 是否包含 `baseline.prof` 和 `baseline.profm` | 只在 benchmark variant 生效，release 包没带上 |
-| 安装 | 安装渠道是否支持 profile 交付 | 侧载包、第三方商店、Play 分发路径不同 |
-| 编译 | `ProfileVerifier` 或 `dumpsys package dexopt` 是否显示已按 profile 编译 | profile 已入队但还没完成编译 |
-| 收益 | Macrobenchmark 与线上 A/B 是否方向一致 | 样本状态不同，网络、缓存、弹窗污染结果 |
+1. 只接入清单、trace 和 owner，不改变原执行顺序。
+2. 标记硬依赖、软依赖与首帧阶段，验证循环依赖和缺失依赖。
+3. 移动一个风险较低的任务，保留旧路径开关。
+4. 按设备档位观察 TTID、TTFD、线程 Runnable 时间和失败率。
+5. 逐步扩大覆盖，任何批次都能回退到已验证顺序。
 
-[已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/overview]
-[已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/create-baselineprofile]
+一次迁移同时改十几个任务、线程池和初始化顺序，出现回归时很难归因。任务框架自身也有类加载、对象创建、拓扑排序和 trace 成本，应进入启动预算。
 
-### Baseline Profile 适合解决哪类启动慢
+### 4. 发布门禁使用项目基线
 
-Baseline Profile 解决的是启动路径上的类加载、解释执行、JIT 预热和代码布局相关成本。它不能处理主线程 I/O、网络等待、锁竞争、数据库升级和 SDK 同步初始化。
+下面这些检查比统一的“主线程任务不得超过 10 ms”更可靠：
 
-判断是否应该优先做 profile，可以看 trace：
+| 检查项 | 判定方式 | 失败动作 |
+| --- | --- | --- |
+| 新增 pre-first-frame 任务 | 必须有首屏需求、owner、trace 和回滚开关 | 缺任一项则不进入关键路径 |
+| 关键路径增长 | 同设备、同入口、同编译模式下超过噪声带和预算 | 拆依赖、延后或取消变更 |
+| 主线程长区间 | Perfetto 证明确有连续占用或同步等待 | 移除重工作或同步边 |
+| task 超时/失败 | 灰度同 cohort 的失败率和降级成功率 | 关闭任务、修协议或恢复旧顺序 |
+| manifest Provider 增长 | 检查 merged manifest 与进程归属 | 合并、手动初始化或接受并记录成本 |
+| 首帧后资源竞争 | frame timeline、TTFD 与首个操作回归 | 降低并发、延后或按设备分级 |
 
-| trace 表现 | Profile 优先级 | 说明 |
-|---|---|---|
-| 启动路径里类加载、反射、Compose 首次进入占比高 | 高 | profile 可以让热点方法更早编译 |
-| 首装首开慢，打开几次后明显变快 | 高 | 符合 JIT / profile 收敛特征 |
-| 主线程卡在文件、数据库、锁等待 | 低 | 先移除同步等待 |
-| 启动慢来自远程配置、广告、网络请求 | 低 | profile 不会缩短网络等待 |
-| 首页首帧很快，内容完整时间很慢 | 中 | 需要拆 TTID 和 TTFD，看慢在代码还是数据 |
+阈值应绑定设备、构建、入口、编译状态、分位数和样本量。人眼可读的 trace 证据与机器门禁要使用同一 task ID，避免线上告警找不到代码责任点。
 
-AOSP `Activity.reportFullyDrawn()` 的注释说明，系统会用这个信号辅助启动耗时诊断和优化；`ActivityMetricsLogger` 也会在 fully drawn 时更新启动统计。做 profile A/B 时，TTID 和 TTFD 都要看，不能只看首帧。
+## 案例三：Baseline Profile 已生成，收益却无法复现
 
-[已验证: AOSP, frameworks/base/core/java/android/app/Activity.java#reportFullyDrawn]
-[已验证: AOSP, frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java#notifyFullyDrawn]
+### 1. 先判断瓶颈是否受编译状态影响
 
-### 和 Dex 布局优化的关系
+Baseline Profile 可以减少被覆盖路径的解释执行和 JIT 预热，并引导 ART 做 profile-guided 编译。它无法缩短网络、Binder、锁、主线程磁盘 I/O、数据库迁移和业务等待。
 
-Redex 的 Dex 类重排序可以解释空间局部性：把启动路径上会连续访问的类排得更近，减少加载和缓存 miss。现代 Android 工程里，Baseline Profile、Startup Profile、AGP / R8 / D8 的 profile 处理已经覆盖了很大一部分工作。
+| trace 现象 | Profile 相关性 | 下一步 |
+| --- | --- | --- |
+| 解释/JIT、类加载和首次执行位于关键路径 | 高 | 检查规则覆盖和编译状态 |
+| 新装或升级后慢，稳定使用后明显改善 | 中到高 | 控制缓存、Cloud Profile 与本地运行时 profile 后复测 |
+| 主线程等待文件、数据库、Binder 或锁 | 低 | 修复同步等待 |
+| TTID 快，TTFD 等网络或数据 | 低到中 | 先拆内容 ready 路径，再看其中代码执行部分 |
+| Compose 首次组合有较多首次执行 | 中到高 | 覆盖正确入口，并同时检查 composition 工作量 |
 
-工程上不建议同时叠很多黑盒优化。App 侧先按这条路径验证：
+“多启动几次会变快”只能提示编译或缓存可能参与，不能单独证明 Profile 命中。页缓存、数据库缓存、网络连接和业务数据也会在重复运行中变热。
 
-1. 用 Macrobenchmark 生成覆盖启动和高频路径的 Baseline Profile。
-2. 检查构建产物和设备编译状态。
-3. 用同一设备池对比 `CompilationMode.None()` 和 `CompilationMode.Partial()`。
-4. 如果仍然有明确的 Dex 布局问题，再评估 Redex 或构建系统级布局优化。
+### 2. 四层证据缺一不可
 
+| 层级 | 要证明的事实 | 推荐证据 |
+| --- | --- | --- |
+| 生成 | 脚本走了正确入口，规则随当前代码生成 | generator 断言、规则 diff、设备与工具链记录 |
+| 构建 | 目标 release variant 消费并重写规则 | APK/AAB 中 binary profile、R8/AGP 构建日志 |
+| 安装与编译 | 目标设备已拥有 profile-guided 编译状态 | `ProfileVerifier`、`dumpsys package dexopt` |
+| 性能 | 同场景的编译状态差值超过噪声 | Macrobenchmark `None` vs `Partial(...Require)`、trace |
 
-## 启动案例复盘模板
+源码仓库有 `baseline-prof.txt`，不能证明 release 包携带二进制 profile；包内有 `baseline.prof`，不能证明设备已经完成编译；设备显示 `speed-profile`，也不能证明当前启动入口被规则覆盖。
 
-启动优化案例写成文章或内部复盘时，建议保留同一套字段。否则每次复盘都只剩“优化了几个点、快了多少”，后续版本很难复用。
+### 3. 设计能解释因果的实验
 
-| 字段 | 内容 |
-|---|---|
-| 背景 | 版本、设备池、用户状态、冷 / 温 / 热启动口径 |
-| 问题 | TTID、TTFD、启动慢帧、启动 ANR 或 Crash 的异常表现 |
-| 证据 | Perfetto trace、Macrobenchmark、线上看板、代码变更 |
-| 瓶颈 | CPU、I/O、锁、GC、类加载、渲染、网络中的哪一类 |
-| 改动 | 删除、延迟、并行、降级、profile、缓存、框架调整 |
-| 风险 | 首屏不可用、初始化顺序变化、上报延迟、低端机副作用 |
-| 验证 | 本地多轮测试、灰度 A/B、低端机、回滚开关 |
-| 后续 | 新增门禁、任务 owner、指标看板、待验证项 |
+本地 Profile 实验应固定：
 
-这个模板和 21.8 的启动监控配合使用：本地 trace 负责解释原因，线上指标负责证明影响范围。案例的价值来自后续复用：下一次启动退化时，团队能更快定位到任务、owner 和版本变更。
+- 同一 release APK、设备、入口、账号和数据；
+- 同一网络响应、弹窗状态、电量和温度范围；
+- 相同迭代次数与测试顺序；
+- 只改变 Macrobenchmark 的 `CompilationMode.None()` 和 `CompilationMode.Partial(BaselineProfileMode.Require)`；
+- 同时采集 TTID、TTFD、关键 trace 与功能正确性。
 
-[来源: src/part5-app/ch21-startup/01-startup-analysis.md]
-[来源: src/part5-app/ch21-startup/02-startup-framework.md]
-[来源: src/part5-app/ch21-startup/04-baseline-profile-practice.md]
+`BaselineProfileMode.Require` 可以在产物没有 profile 时让测试失败。`None` 构造无预编译的受控状态，`Partial` 构造 Profile 参与编译的状态。这个差值用于解释当前设备和场景中的编译收益，不代表线上所有“未使用 Profile”用户，因为线上还可能有 Cloud Profile、本地 JIT profile、后台 dexopt 和不同安装渠道。
+
+若要比较两版 profile 规则，应保持业务代码和资源相同，只替换 profile 产物，并检查两边最终 APK、混淆映射和编译状态。代码也发生变化时，结果只能解释“整个版本组合”的差异。
+
+### 4. Baseline Profile 与 Startup Profile 分开验收
+
+两者可以来自同一套 generator，但消费方不同：
+
+| 类型 | 消费阶段 | 改变什么 | 验收重点 |
+| --- | --- | --- | --- |
+| Baseline Profile | 设备安装/编译 | ART 对覆盖代码的编译状态 | binary profile、设备编译状态、`None`/`Partial` |
+| Startup Profile | release 构建 | R8/D8 的启动 DEX 布局与读取局部性 | 构建配置、DEX 内容/布局、page fault 与同编译模式 benchmark |
+
+比较 Startup Profile 布局收益时，两组必须保持 ART 编译状态一致；比较 Baseline Profile 编译收益时，应使用相同 APK 布局。把两项一起打开后只看总差值，无法说明各自贡献，也不能把两个独立实验的收益百分比直接相加。
+
+更完整的生成、构建、安装和 Macrobenchmark 操作见[Baseline Profile 实战](./04-baseline-profile-practice.md)，DEX 布局见[Startup Profile 与 DEX 布局](./12-startup-profile-dex-layout.md)。
+
+### 5. `reportFullyDrawn()` 的源码边界
+
+Android 17 的 `Activity.reportFullyDrawn()` 会把 fully drawn 事件交给 system_server，并调用 `VMRuntime.notifyStartupCompleted()`。`ActivityMetricsLogger.notifyFullyDrawn()` 若发现 Activity 窗口尚未绘制，会暂存请求，等窗口完成绘制后再记录；它还会把 fully drawn 时间写入启动统计。
+
+这两个源码点说明 fully drawn 既是诊断信号，也参与系统对启动阶段的理解。上报过早会把未完成工作排除在 TTFD 之外，上报过晚会扩大启动窗口并可能影响优化。Profile 场景应把条件绑定到核心 UI 和数据可用，不能为了 benchmark 数字提前调用。
+
+## 一份可直接使用的复盘模板
+
+下面的 Markdown 模板用于 PR、故障复盘或性能专项文档。字段可以裁剪，证据、测量条件和风险不应省略：
+
+```markdown
+# <入口 / 问题> 启动优化复盘
+
+## 1. 范围
+- App commit / versionCode:
+- Android: 17 / API 37 / android-17.0.0_r1
+- 设备 / RAM / ABI / 温度与电量:
+- release variant / R8 / 编译模式:
+- 入口 / 账号 / 数据 / 网络:
+- cold / warm / hot 定义:
+- 统计窗口、样本量、采样率:
+
+## 2. 用户症状
+- TTID P50 / P90:
+- TTFD P50 / P90 / 完成率:
+- 首屏 ANR / Crash / 退出:
+- 受影响 cohort:
+
+## 3. 证据
+- ApplicationStartInfo 区间:
+- Macrobenchmark 报告:
+- Perfetto trace:
+- task / Provider / manifest:
+- 首次出现的版本、配置或实验:
+
+## 4. 根因假设
+- 假设:
+- 支持证据:
+- 反证:
+- 仍未知:
+
+## 5. 单变量改动
+- 改动:
+- 为什么会影响目标区间:
+- 风险:
+- 回滚开关:
+
+## 6. 验证
+- 线下 before / after 分布:
+- 线上同 cohort 灰度:
+- TTID / TTFD / frame / ANR / Crash / 业务 guardrail:
+- 结果是否超过噪声与预算:
+
+## 7. 后续
+- CI / 灰度门禁:
+- task owner:
+- Profile / 脚本更新:
+- 未解决问题与复查日期:
+```
+
+模板要求把“观察”和“推断”分开。根因假设可以失败，但必须写出支持证据和反证；这样下一位排查者不会重复同一条无效路径。
+
+## 复盘中常见的错误结论
+
+| 写法 | 问题 | 改写方式 |
+| --- | --- | --- |
+| “延迟初始化后启动提升 30%” | 没有起止点、设备、样本和 TTFD 风险 | 写明移动了哪个 task、影响哪个区间、before/after 分布与 guardrail |
+| “Provider 越少越快” | Provider 工作量与进程归属比数量更关键 | 检查 merged manifest、初始化内容、顺序和 trace |
+| “并行后总耗时等于最长任务” | 忽略依赖、线程切换、CPU/I/O 竞争 | 用关键路径和 Runnable/Running 时间验证 |
+| “出现 GC，所以 GC 是根因” | GC 可能是分配结果，也可能未阻断关键线程 | 对齐 pause、并发 GC CPU、分配来源和主线程 |
+| “Profile 文件存在，所以已生效” | 缺构建、安装/编译和性能证据 | 完成四层验收 |
+| “本地快了，线上会同比例变快” | 线上编译、设备、入口和缓存分布不同 | 用本地建立因果，线上验证范围 |
+| “TTID 下降，优化完成” | 工作可能移动到首帧后 | 同时检查 TTFD、frame、首个操作和稳定性 |
+
+## Review 清单
+
+- [ ] 问题陈述包含版本、启动类型、入口、设备和安装状态。
+- [ ] before/after 使用同一构建条件、场景和统计口径。
+- [ ] 平台区间、应用 task 和 trace 能互相对齐。
+- [ ] Provider 清单来自 merged manifest，包含进程归属。
+- [ ] 首帧前任务区分最小能力、硬依赖和可降级依赖。
+- [ ] timeout 与 cancellation 的语义分别验证。
+- [ ] 延后任务同时检查 TTFD、首屏帧和首个操作。
+- [ ] GC 结论有 pause、CPU、分配和关键路径证据。
+- [ ] Baseline Profile 完成生成、构建、编译和性能四层验收。
+- [ ] Baseline Profile 与 Startup Profile 使用独立实验口径。
+- [ ] 收益数字带设备、构建、样本量、分位数和置信范围。
+- [ ] 灰度包含 Crash、ANR、业务成功率和回滚条件。
+- [ ] 复盘产出 owner、门禁和下一次复查条件。
+
+## 小结
+
+大型 App 启动优化通常会同时遇到初始化扩散、任务依赖、编译状态和首帧后资源竞争。复盘时不要按“做过的优化技巧”组织材料，应沿着用户症状、阶段区间、代码证据、单变量实验和线上 cohort 展开。
+
+Application 精简、任务框架和 Baseline Profile 各自解决不同问题。前者减少关键路径工作，任务框架约束执行阶段与依赖，Profile 改善覆盖代码的编译与布局条件。把边界写清、把副作用放进 guardrail、把证据留在模板里，下一次回归才有可复用的起点。
+
+## 参考资料
+
+- [Android 17 `Activity.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Activity.java)：`reportFullyDrawn()` 与 `VMRuntime.notifyStartupCompleted()`。
+- [Android 17 `ActivityMetricsLogger.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityMetricsLogger.java)：`notifyFullyDrawn()` 的窗口等待与启动统计。
+- [App startup time](https://developer.android.com/topic/performance/vitals/launch-time)：TTID、TTFD、cold/warm/hot 与 excessive startup。
+- [App Startup](https://developer.android.com/topic/libraries/app-startup)：单一 Provider、initializer 依赖和手动初始化。
+- [Baseline Profiles overview](https://developer.android.com/topic/performance/baselineprofiles/overview)：Baseline Profile、Cloud Profile 与 Startup Profile 边界。
+- [Create Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile)：生成场景、构建配置与 Macrobenchmark。
+- [Debug Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles)：产物与设备编译状态验证。
+- [Startup Profiles and DEX layout](https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations)：构建期 DEX 布局优化。
