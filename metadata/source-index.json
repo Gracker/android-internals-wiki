@@ -262,7 +262,7 @@
       "chapter": "ch14",
       "section": "14.13",
       "processed_at": "2026-07-17T06:14:31.983422",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-applied",
       "target_path": "src/part5-app/ch20-stability/20.15-native-hook-technology-selection-implementation.md",
       "route_confidence": 64,
       "route_terms": [
@@ -276,7 +276,11 @@
         "lazy"
       ],
       "route_status": "existing-chapter-routed",
-      "routed_at": "2026-07-25T13:53:24.486291+08:00"
+      "routed_at": "2026-07-25T13:53:24.486291+08:00",
+      "status": "applied",
+      "applied_at": "2026-07-28T07:15:05+08:00",
+      "applied_run_id": "20260728-071505-5c898420",
+      "previous_action": "indexed-only-chapter-freeze"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-windowmanager-architecture-sourcecode.md",
@@ -1413,6 +1417,96 @@
       "summary": "--- phase: 1 sub_question: Android 端侧 Agent 怎样做最小可复现评测 generated: 2026-07-26 --- ## 执行摘要 - 本次产出文件：`/Users/chris/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-26-morning-Agent安全-GrokB",
       "chapter": "ch16",
       "processed_at": "2026-07-27T06:20:38.089034+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-28-76228855-Remote-Compose下发原生UI.md",
+      "title": "[技术文章] Google 藏大招！AndroidX 悄悄上线 Remote Compose：服务端直接下发原生 UI，再也不用发版了",
+      "summary": "> 发布时间: 2026-03-31T00:44:43.000Z > 原文链接: https://juejin.cn/post/7622885592716328969 2026-03-31 1,842 阅读6分钟 > 本文同步自微信公众号 “Android技术圈” > Google 新出了个 androidx.compose.remote，服务端直接下发原生 UI 到客户...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-28T06:20:57.723788+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-28-76241685-Android17定位权限大改.md",
+      "title": "[技术文章] 紧急预警！Android 17 定位权限大改，你的 App 要适配了做过定位相关功能的开发者都知道，定位权限是用户最敏感",
+      "summary": "> 发布时间: 2026-04-03T00:58:50.000Z > 原文链接: https://juejin.cn/post/7624168579077357614 2026-04-03 1,975 阅读4分钟 > 本文首发于微信公众号“Android技术圈” 做过定位相关功能的开发者都知道，定位权限是用户最敏感的权限之一。 弹窗一出来，用户的第一反应往往是\"拒绝\"。就...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-28T06:20:57.723788+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-28-76288743-Android官方6大技能.md",
+      "title": "[技术文章] 解放双手！Android 发布官方 6 大技能，一键搞定迁移、优化、适配近日，Google 在 GitHub 上开源了",
+      "summary": "> 发布时间: 2026-04-16T00:50:23.000Z > 原文链接: https://juejin.cn/post/7628874305070563337 2026-04-16 2,611 阅读5分钟 > 本文首发于微信公众号“Android技术圈”，未经许可禁止转载 近日，Google 在 GitHub 上开源了 android/skills 仓库，目前里面...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-28T06:20:57.723788+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-28-76292762-跨端框架横评2026.md",
+      "title": "[技术文章] 跨端框架横评 2026：Flutter、React Native、KMP、Kuikly、小程序，谁是你下一个项目的正确答案？",
+      "summary": "> 发布时间: 2026-04-17T05:31:39.000Z > 原文链接: https://juejin.cn/post/7629276299651645486 2026-04-17 2,428 阅读18分钟 2024 年有一个被反复讨论的话题：跨端框架已经\"卷\"出结果了吗？现在是 2026 年，答案依然是：没有。 不是因为这些框架还不够成熟，而是因为它们在各自的战...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-28T06:20:57.723788+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-28-76388970-Android不用接口做Activity通信.md",
+      "title": "[技术文章] 为什么 Android 不用接口做 Activity 通信？一、一个 iOS 开发者，把我问住了 上周，一个刚从 iO",
+      "summary": "> 发布时间: 2026-05-13T00:03:47.000Z > 原文链接: https://juejin.cn/post/7638897090145075246 2026-05-13 4,323 阅读4分钟 上周，一个刚从 iOS 转过来的同事问我： > “Android 为啥不喜欢用接口回调传结果？ iOS 那边 delegate、closure 不就挺好吗？”...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-28T06:20:57.723788+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-28-76500740-Repository暴露suspend.md",
+      "title": "[技术文章] 现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch",
+      "summary": "> 发布时间: 2026-06-11T22:41:13.000Z > 原文链接: https://juejin.cn/post/7650074080125599790 2026-06-12 2,346 阅读12分钟 写这篇文章，其实是因为最近看到有些公众号在介绍 Kotlin 协程时，都推荐在 Repository 中这样写： fun load() { repositor...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-28T06:20:57.723788+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-28-juejin-android.md",
+      "title": "[技术文章] 掘金 Android 技术文章抓取 · 2026-07-28",
+      "summary": "> 来源：掘金 Android 推荐流 | 抓取时间：2026-07-28 04:11 (Asia/Shanghai) > 候选：20 篇 | 过初筛：17 篇 | 读完全文评分：6 篇 | 最终入选（>7.0）：6 篇 标题：跨端框架横评 2026：五个方案各自的战场在哪里 推荐语：这篇横评没给\"都挺好\"式结论，而是按团队背景和跨端目标拆开讲——前端团队选 RN New...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-28T06:20:57.723788+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-27-morning-Agent成本-ClaudeCode-HBM-研究材料/master-research.md",
+      "title": "[DeepResearch] Master Research · Agent 成本、Claude Code 控制面、HBM 内存墙",
+      "summary": "--- phase: master topic: Agent loop 成本、Claude Code 控制面、AI 推理内存墙 created: 2026-07-27 --- # Master Research · Agent 成本、Claude Code 控制面、HBM 内存墙 ## 执行摘要 - 产出文件：`/Users/chris/Library/Mobile Documents/iCloud~md~obsidian/Docume",
+      "chapter": "ch04",
+      "processed_at": "2026-07-28T06:20:57.723788+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-27-morning-Agent成本-ClaudeCode-HBM-研究材料/03-dump-hbm-flashattention-android.md",
+      "title": "[DeepResearch] Dump 03 · AI 推理里的内存墙，Android 工程师并不陌生",
+      "summary": "--- phase: 1 topic: HBM、FlashAttention 与 Android 性能类比 created: 2026-07-27 --- # Dump 03 · AI 推理里的内存墙，Android 工程师并不陌生 ## 执行摘要 - 产出文件：`/Users/chris/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearc",
+      "chapter": "ch04",
+      "processed_at": "2026-07-28T06:20:57.723788+08:00",
       "action": "indexed-only-chapter-freeze",
       "score": 15,
       "route_status": "unrouted-existing-chapter-needed"

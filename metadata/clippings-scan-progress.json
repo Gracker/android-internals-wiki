@@ -129,9 +129,9 @@
       ]
     }
   ],
-  "last_scan_date": "2026-07-27",
-  "total_knowledge_points": 678,
-  "total_suggestions": 209,
+  "last_scan_date": "2026-07-28",
+  "total_knowledge_points": 694,
+  "total_suggestions": 213,
   "total_gaps": 21,
   "skipped_files": [
     {
@@ -395,7 +395,27 @@
       "processed_at": "2026-07-27T06:30:39.686783+08:00",
       "chapter": "ch20",
       "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md": {
+      "processed_at": "2026-07-28T06:30:59.256717+08:00",
+      "chapter": "ch23",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md": {
+      "processed_at": "2026-07-28T06:30:59.257277+08:00",
+      "chapter": "ch20",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 虚拟内存优化（下）：一些“黑科技”优化手段.md": {
+      "processed_at": "2026-07-28T06:30:59.257882+08:00",
+      "chapter": "ch20",
+      "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 资源文件的体积优化实战.md": {
+      "processed_at": "2026-07-28T06:30:59.258698+08:00",
+      "chapter": "ch24",
+      "points": 4
     }
   },
-  "cursor": 40
+  "cursor": 44
 }
