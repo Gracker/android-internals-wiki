@@ -22,570 +22,400 @@ last_verified_against: "AOSP android-17.0.0_r1"
 
 # 2.30 CameraX ZSL 与 HAL Reprocessing Request 的映射关系
 
-CameraX 的零快门延迟 (Zero Shutter Lag, ZSL) 功能是移动摄影优化的关键技术，它通过预捕获机制实现了近乎即时的拍照响应。本节深入分析 CameraX ZSL 功能与底层 HAL Reprocessing Request 的映射关系，揭示其实现原理、性能特性和优化策略。
+本文的源码基线分成两部分：
 
-## ZSL 技术原理与 HAL 层对应
+- Android 平台：Android 17 / API 37 / `android-17.0.0_r1`；
+- Jetpack CameraX：1.6.1，对应 AndroidX release 分支提交
+  `987b9ac8585b31424a397206c492196dd163997b`；
+- 涉及 dma-buf 观测时的内核基线：`android17-6.18-2026-06_r6`。
 
-**ZSL 核心机制**：
-ZSL 技术的核心在于预捕获机制，即在用户按下快门前持续捕获并缓存图像帧。当用户触发拍照时，系统直接从缓存中选择最佳帧进行处理，避免了传统相机从启动传感器到捕获图像的物理延迟。
+这两个版本号不能混用。CameraX 是独立发布的 Jetpack 库，应用即使运行在 Android 17
+上，也可能使用更旧的 CameraX；同一个 CameraX 版本又要兼容多个平台版本。排查 ZSL
+问题时，要同时记录设备系统版本、CameraX 版本、camera id 和已绑定的 use case。
 
-**HAL Reprocessing Request 架构**：
-在 Android HAL3 层，ZSL 功能通过 Reprocessing Request 实现，其核心组件包括：
-- **Reprocessing Session**：管理 Reprocessing 生命周期
-- **Input Buffer**：预捕获的图像数据缓冲区
-- **Output Buffer**：处理后的最终图像缓冲区
-- **Parameters**：处理参数配置，包括去噪、锐化等
+## 1. 先把“零快门延迟”说准确
 
-**CameraX 到 HAL 的映射**：
+CameraX 的 ZSL 会在快门按下前持续保留候选帧。用户拍照时，CameraX 从候选帧中取出
+一帧，把该帧及其 `TotalCaptureResult` 送回 camera reprocessing session，生成 JPEG
+等输出。被选中的图像在按键之前已经完成 sensor exposure，所以它可以缩短“按键到
+成像时刻”的间隔。
+
+ZSL 没有消除后处理、JPEG 编码、文件写入和回调调度的耗时。两个时间指标应分开：
+
+- **capture lag**：快门事件与所选帧 sensor timestamp 的差；
+- **delivery latency**：快门事件到 `onImageSaved()` 或应用拿到 `ImageProxy` 的差。
+
+所选帧可能早于快门事件，capture lag 因而可能是负值。delivery latency 通常仍为
+正值。只统计 `takePicture()` 到回调的时间，会把 ZSL 的选帧收益和后处理耗时混在
+一起。
+
+### 1.1 三个容易混淆的概念
+
+| 名称 | CameraX / Camera2 表达 | 含义 |
+| --- | --- | --- |
+| 低延迟拍照 | `CAPTURE_MODE_MINIMIZE_LATENCY` | 对新拍摄的 still request 偏向低延迟，不会自动启用 CameraX ZSL 缓存 |
+| CameraX ZSL | `CAPTURE_MODE_ZERO_SHUTTER_LAG` | 缓存合格帧，并通过 Camera2 reprocessing 生成输出 |
+| 设备侧 ZSL | `CaptureRequest.CONTROL_ENABLE_ZSL` | 由相机设备决定是否启用设备内部 ZSL，语义与应用管理的 reprocessing 不同 |
+
+`TEMPLATE_ZERO_SHUTTER_LAG` 是 Camera2 request 模板。它用于给应用管理的 ZSL
+提供一组默认控制参数，本身不代表已经有可用的缓存帧，也不代表每次拍照都会走
+reprocessing。
+
+## 2. CameraX 的公开用法
+
+下面的示例只演示开启模式、保持闪光灯关闭和查询能力；应用仍要按自己的生命周期
+保存 `ImageCapture` 实例。
+
 ```kotlin
-// CameraX ImageCapture useCase 配置
-val imageCapture = ImageCapture.Builder()
-    .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-    .build()
+import androidx.annotation.OptIn
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalZeroShutterLag
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.lifecycle.LifecycleOwner
 
-// 转换为 Camera2Config
-val camera2Config = Camera2Config.Builder()
-    .apply(imageCapture)
-    .setCaptureRequestTemplate(CaptureRequest.CONTROL_AF_TRIGGER_START)
-    .build()
+@OptIn(markerClass = [ExperimentalZeroShutterLag::class])
+fun bindForZsl(
+    cameraProvider: ProcessCameraProvider,
+    lifecycleOwner: LifecycleOwner,
+    preview: Preview,
+): Pair<ImageCapture, Boolean> {
+    val imageCapture = ImageCapture.Builder()
+        .setCaptureMode(ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG)
+        .setFlashMode(ImageCapture.FLASH_MODE_OFF)
+        .build()
 
-// 生成 HAL Reprocessing Request
-val reprocessingRequest = camera2Config.reprocessingRequest
-reprocessingRequest.set(CaptureRequest.REPROCESSING_INPUT, inputBuffer)
-reprocessingRequest.set(CaptureRequest.REPROCESSING_STREAM_ID, reprocessStreamId)
+    val camera = cameraProvider.bindToLifecycle(
+        lifecycleOwner,
+        CameraSelector.DEFAULT_BACK_CAMERA,
+        preview,
+        imageCapture,
+    )
+
+    return imageCapture to camera.cameraInfo.isZslSupported
+}
 ```
 
-## CameraX Pipeline 到 HAL Request 的转换
+`isZslSupported` 表示 camera id 具备 CameraX 所需的静态能力，并且没有命中
+`ZslDisablerQuirk`。返回 `true` 也不能保证当前拍照一定采用 ZSL：VideoCapture、
+Extensions、非 `FLASH_MODE_OFF` 状态以及运行时没有合格缓存帧都会使本次请求回退。
+业务层应把它当作能力和观测信息，不能把 `false` 当成拍照失败。
 
-**CameraX 架构层次**：
-CameraX 架构分为四个主要层次，每个层次负责不同的功能模块：
+CameraX 1.6.1 的 `CAPTURE_MODE_ZERO_SHUTTER_LAG` 仍带
+`ExperimentalZeroShutterLag` 标记。升级 CameraX 时需要重新编译并回归，不应把实验
+API 当成长期不变的二进制接口。
 
-1. **CameraX Core**：提供统一的 API 接口
-2. **Camera2 Extensions**：封装 Camera2 API 复杂性
-3. **Camera2 Implementation**：直接调用 Camera2 API
-4. **HAL3 Interface**：与相机硬件交互
+## 3. 从 CameraX 到 HAL3 的对应关系
 
-**转换流程详解**：
+下面的图用于定位每一层持有什么对象，以及 reprocessing 在哪里变成 HAL3 的
+`inputBuffer`：
+
 ```mermaid
-graph TD
-    A[CameraX ImageCapture] --> B[Camera2Config.Builder]
-    B --> C[CaptureRequest.Builder]
-    C --> D[设置 reprocessing 标志]
-    D --> E[指定 inputBuffer]
-    E --> F[指定 reprocessStream]
-    F --> G[生成 Reprocessing Request]
-    G --> HAL[HAL3 Camera Device]
+flowchart TD
+    IC["ImageCapture<br/>CAPTURE_MODE_ZERO_SHUTTER_LAG"]
+    ZC["ZslControlImpl<br/>PRIVATE input configuration"]
+    MR["MetadataImageReader<br/>ImageProxy + capture metadata"]
+    RB["ZslRingBuffer<br/>3 个合格候选帧"]
+    CCA["CaptureConfigAdapter<br/>InputRequest(image, frameInfo)"]
+    PIPE["Camera2CaptureSequenceProcessor<br/>ImageWriter + createReprocessCaptureRequest"]
+    C2["Camera2 reprocessable session<br/>input Surface + JPEG output Surface"]
+    CS["cameraserver / Camera3Device<br/>camera3_capture_request_t"]
+    HAL["Camera HAL3<br/>processCaptureRequest(input + outputs)"]
+    OUT["JPEG / ImageCapture result"]
+
+    IC --> ZC
+    ZC --> MR --> RB
+    RB --> CCA --> PIPE --> C2 --> CS --> HAL --> OUT
 ```
 
-**关键转换点**：
-- **模式转换**：`CAPTURE_MODE_MINIMIZE_LATENCY` 自动触发 ZSL 模式
-- **参数映射**：CameraX 参数转换为 HAL3 CaptureRequest 参数
-- **流配置**：预捕获流与处理流的双重流配置
-- **缓冲区管理**：预捕获 BufferQueue 的创建和维护
+HAL3 没有名为 `processReprocessingRequest()` 的标准入口。普通请求与 reprocessing
+请求都通过 `processCaptureRequest()` 提交；后者的区别是
+`camera3_capture_request_t::input_buffer` 非空，同时仍带有目标 output buffers。
 
-**参数映射表**：
-| CameraX 参数 | HAL3 参数 | 说明 |
-|--------------|-----------|------|
-| captureMode | CONTROL_CAPTURE_INTENT | 捕获意图设置 |
-| flashMode | FLASH_MODE | 闪光灯控制 |
-| afMode | CONTROL_AF_MODE | 自动对焦模式 |
-| aeMode | CONTROL_AE_MODE | 自动曝光模式 |
-| reprocessing | REPROCESSING_INPUT | Reprocessing 输入缓冲区 |
+### 3.1 建立可重处理 session
 
-## Reprocessing Request 的数据流转
+`ImageCapture.createPipeline()` 在 API 23 及以上、capture mode 为 ZSL、stream spec
+没有禁用 ZSL 时调用 `addZslConfig()`。CameraX 1.6.1 的
+`ZslControlImpl.addZslConfig()` 会依次检查：
 
-**完整数据流转路径**：
+1. 当前 use case 组合是否禁用 ZSL；
+2. 设备是否命中 `ZslDisablerQuirk`；
+3. `REQUEST_AVAILABLE_CAPABILITIES_PRIVATE_REPROCESSING` 是否存在；
+4. `ImageFormat.PRIVATE` 是否有输入尺寸；
+5. PRIVATE 输入能否生成 JPEG 输出。
 
-1. **预捕获阶段**：
-   ```kotlin
-   // 预捕获 Buffer 配置
-   val previewConfig = PreviewConfig.Builder()
-       .setTargetResolution(Size(1920, 1080))
-       .setTargetRotation( Surface.ROTATION_0)
-       .build()
-   
-   // 预捕获流创建
-   val preview = Preview(previewConfig)
-   preview.setOnPreviewFrameCallback { buffer, _ ->
-       // 缓存到 BufferQueue
-       bufferQueue.add(buffer)
-       // 限制队列大小防止内存溢出
-       if (bufferQueue.size > maxQueueSize) {
-           bufferQueue.removeFirst()
-       }
-   }
-   ```
+Camera2 平台同时定义 PRIVATE 与 YUV reprocessing 能力。CameraX 1.6.1 这条实现只
+选择 PRIVATE reprocessing；不能因为设备声明
+`REQUEST_AVAILABLE_CAPABILITIES_YUV_REPROCESSING` 就推断 CameraX ZSL 可用。
 
-2. **请求触发阶段**：
-   ```kotlin
-   // 用户按下快门
-   captureButton.setOnClickListener {
-       // 从 BufferQueue 选择最佳帧
-       val bestBuffer = selectBestBuffer(bufferQueue)
-       
-       // 生成 Reprocessing Request
-       val reprocessingRequest = createReprocessingRequest(bestBuffer)
-       
-       // 提交到 HAL 处理
-       cameraCameraControl.submitCaptureRequest(
-           reprocessingRequest,
-           CameraCaptureCallback(),
-           handler
-       )
-   }
-   ```
+通过检查后，CameraX 选择 PRIVATE 输入尺寸中面积最大的一个，创建
+`MetadataImageReader`，并给 session 设置同尺寸、同格式的
+`InputConfiguration`。`MetadataImageReader` 的作用是按 timestamp 配对图像和
+capture result；只有二者配对成功，后续才能用该 result 创建 reprocess request。
 
-3. **HAL 处理阶段**：
-   ```cpp
-   // HAL3 Reprocessing Request 处理
-   status_t Camera3Device::processReprocessingRequest(
-       const camera3_callback_ops_t& callback,
-       const camera3_capture_request_t* request) {
-       
-       // 1. 验证输入 Buffer
-       if (!validateReprocessingInput(request)) {
-           return BAD_VALUE;
-       }
-       
-       // 2. 获取处理参数
-       camera3_reprocessing_parameters_t params = 
-           getReprocessingParameters(request);
-       
-       // 3. 执行图像处理
-       camera3_buffer_t* outputBuffer = 
-           executeReprocessing(params, request->input_buffer);
-       
-       // 4. 返回结果
-       callback.notify(callback->notify, 
-                     CAMERA3_MSG_SHUTTER,
-                     request->frame_number,
-                     nullptr);
-       
-       return OK;
-   }
-   ```
+CameraX 1.6.1 在这里使用两个不同的数量：
 
-4. **结果返回阶段**：
-   ```kotlin
-   // 处理结果回调
-   cameraCameraCaptureSession.capture(
-       reprocessingRequest,
-       object : CameraCaptureSession.CaptureCallback() {
-           override fun onCaptureCompleted(
-               session: CameraCaptureSession,
-               request: CaptureRequest,
-               result: TotalCaptureResult
-           ) {
-               // 获取处理后的图像
-               val image = result CaptureResult.get(CaptureResult.SENSOR)
-               // 返回给 CameraX
-               imageCapture.onCaptureCompleted(image)
-           }
-       },
-       backgroundHandler
-   )
-   ```
+- `RING_BUFFER_CAPACITY = 3`：最多保留 3 个合格候选帧；
+- `MAX_IMAGES = RING_BUFFER_CAPACITY * 3`：`MetadataImageReader` 的上限为 9。
 
-## HAL Reprocessing 的性能影响
+这两个值是库内部常量，没有 `ImageCapture.Builder.setBufferCount()` 之类的公开 ZSL
+调节接口。旧稿中通过应用代码修改缓存深度的示例无法编译。
 
-**性能影响分析**：
-Reprocessing Request 在 HAL 层引入了额外的处理开销，主要体现在以下几个方面：
+### 3.2 重复请求持续产生候选帧
 
-1. **CPU 负载增加**：
-   - YUV 到 RGB 转换：约 5-15ms 高分辨率图像
-   - 去噪算法：根据算法复杂度 10-50ms
-   - 锐化处理：2-8ms
-   - 色彩空间转换：3-12ms
+ZSL 的 PRIVATE surface 被加入 session 输出。相机重复请求产生 PRIVATE 图像时，
+`MetadataImageReader` 使用 `acquireLatestImage()` 获取新图，并送入
+`ZslRingBuffer`。
 
-2. **GPU 负载增加**：
-   - GPU 加速去噪：2-8ms
-   - GPU 锐化和色彩校正：3-10ms
-   - HDR 合成：5-20ms（HDR 模式下）
+`ZslRingBuffer` 只接受满足以下 3A 条件的帧：
 
-3. **内存带宽消耗**：
-   - 高分辨率图像：4032×3024 ≈ 12MB
-   - 双缓冲：24MB 内存占用
-   - 三缓冲：36MB 内存占用
+- AF 为 `LOCKED_FOCUSED` 或 `PASSIVE_FOCUSED`；
+- AE 为 `CONVERGED`；
+- AWB 为 `CONVERGED`。
 
-4. **延迟累积**：
-   ```kotlin
-   // ZSL 延迟组成分析
-   data class ZSLLatency(
-       var captureLatency: Long = 0,    // 预捕获延迟
-       var queueLatency: Long = 0,     // Buffer 队列延迟
-       var processingLatency: Long = 0, // 处理延迟
-       var outputLatency: Long = 0     // 输出延迟
-   )
-   
-   fun calculateZSLLatency(): ZSLLatency {
-       val latency = ZSLLatency()
-       latency.captureLatency = 16.7ms // 60fps 预捕获
-       latency.queueLatency = 33.3ms   // 2 帧队列延迟
-       latency.processingLatency = calculateProcessingTime()
-       latency.outputLatency = 8.3ms   // 输出延迟
-       
-       return latency
-   }
-   ```
+不合格帧会立即 `close()`。队列已满时，环形队列移除旧帧并调用同样的关闭回调。
+所以低光、持续运动、对焦搜索或白平衡未稳定时，缓存可能暂时为空。ZSL 配置成功与
+“快门时一定有候选帧”是两件事。
 
-**性能优化策略**：
+### 3.3 快门请求选帧并构造 `InputRequest`
+
+ImageCapture 的默认 capture config 在 ZSL 模式下使用
+`CameraDevice.TEMPLATE_ZERO_SHUTTER_LAG`。`CaptureConfigAdapter` 还会检查 use case
+与 flash 两个禁用标志。条件允许时，它从环形队列取出一张 `ImageProxy`，再从
+`imageInfo` 取出与其匹配的 `CaptureResultAdapter` / `FrameInfo`，组成
+`InputRequest(image, frameInfo)`。
+
+这一步没有把 buffer handle 写入某个公开的 `CaptureRequest.REPROCESSING_INPUT`
+键。Camera2 API 也没有这个键。图像和 metadata 由 CameraPipe 的内部
+`InputRequest` 成对携带。
+
+### 3.4 CameraPipe 转成 Camera2 reprocess request
+
+CameraX 1.6.0 起，Camera2 实现迁移到统一的 CameraPipe 栈；1.6.1 的实际提交路径在
+`Camera2CaptureSequenceProcessor`。它执行两个相关动作：
+
+- 把缓存的 PRIVATE `Image` 送入 reprocessable session 的 `ImageWriter`；
+- 用对应 `FrameInfo` 解出 `TotalCaptureResult`，调用
+  `CameraDevice.createReprocessCaptureRequest(totalCaptureResult)`。
+
+`TotalCaptureResult` 很重要。Camera2 用它把输入帧当时的 sensor、3A 和处理 metadata
+带入 reprocess request。只传一块图像内存、另行拼装一组无关参数，会失去输入图像
+与采集状态的对应关系。
+
+CameraPipe 随后给 builder 添加 JPEG 等目标 Surface，并通过
+`CameraCaptureSession.capture()` 提交。`ImageWriter` 连接的是 session 的 input
+Surface；JPEG `ImageReader` 等连接的是 output Surface。输入和输出承担不同方向的
+buffer 传递。
+
+### 3.5 Camera service 与 HAL3 看到什么
+
+Android 17 的 `CameraDevice` 文档对 reprocess request 有三条约束：
+
+- 它从当前 reprocessable session 的 input Surface 取得下一块 buffer；
+- 它不会从 sensor 采集新图像；
+- 输入图像必须来自同一 camera device、同一 session 先前的直接或间接输出。
+
+进入 camera service 后，`Camera3Device::RequestThread` 为请求取 input buffer 和
+各路 output buffer，形成 `camera3_capture_request_t`。AIDL HAL 路径中的
+`AidlCamera3Device` 把 input stream id、buffer id、buffer handle 和 acquire fence
+写入 `CaptureRequest.inputBuffer`；HIDL 兼容路径也做对应转换。两条路径都调用 HAL
+session 的 `processCaptureRequest()`。
+
+返回阶段，HAL 通过 capture result 交回 input buffer 状态、input release fence、
+output buffers 和结果 metadata。camera service 把输入 buffer 还给 input stream，
+各输出 buffer 则按各自 consumer 的协议继续流转。
+
+## 4. Buffer 所有权：为什么 `ImageProxy.close()` 很关键
+
+ZSL 环形队列里的每个 `ImageProxy` 都持有一张 PRIVATE 图像。候选帧还在队列中时，
+这块 buffer 不能回到 producer 可用集合。CameraX 在以下位置释放引用：
+
+- 帧不满足 3A 条件时；
+- 环形队列淘汰旧帧时；
+- ZSL 配置被清理或 use case 组合改为禁用时；
+- reprocess request 完成、失败或被取消时。
+
+`CaptureConfigAdapter` 给选中的 `ImageProxy` 安装请求 listener，在
+`onComplete()`、`onFailed()`、`onAborted()` 或 total result 路径关闭它，并用原子
+引用保证只关闭一次。这个兜底处理防止提交异常时占住 input buffer。
+
+应用通常接触不到 CameraX 的 PRIVATE 候选帧，却仍可能在最终输出端制造回压：
+
+- 使用内存回调拿到 `ImageProxy` 后没有及时 `close()`；
+- 文件保存 executor 长时间阻塞；
+- 同时绑定的 ImageAnalysis 使用阻塞策略且分析过慢；
+- 频繁解绑、重绑 use case，使 session 和旧 buffer 的清理长期交叠。
+
+PRIVATE buffer 的布局由 gralloc 与 HAL 决定，不能用 `width * height * 1.5` 精确计算
+其物理占用。评估内存时要看 gralloc/dma-buf 分配、stream 数量、每条 stream 的
+buffer 深度和是否存在旧 session，而不能套用 YUV420 的平面公式。
+
+## 5. 自动回退发生在哪里
+
+CameraX 把 ZSL 当作可回退的优化。下面这些情况会禁用或跳过它：
+
+| 情况 | 1.6.1 行为 |
+| --- | --- |
+| API 小于 23 | 不创建 reprocessing 配置 |
+| 缺少 PRIVATE reprocessing | `isZslSupported()` 返回 false，不建立 ZSL input |
+| 命中 `ZslDisablerQuirk` | 报告不支持并使用普通预览 / 拍照路径 |
+| 绑定 VideoCapture | stream spec 标记 ZSL disabled |
+| 启用 OEM Extension | extension 配置禁用 CameraX ZSL |
+| flash mode 不是 OFF | session 可保留，但本次拍照不取 ZSL 输入 |
+| PRIVATE 输入不能输出 JPEG | 不建立 ZSL input |
+| 环形队列为空或 metadata 缺失 | 无法构造 `InputRequest` |
+
+当 `CaptureConfigAdapter` 没拿到 `InputRequest` 时，它把
+`TEMPLATE_ZERO_SHUTTER_LAG` 改为常规 still capture template，再采集一张新图。对
+调用方来说，这仍可能是一次成功拍照，只是 capture lag 变长。
+
+因此业务代码不应设计“ZSL 失败就报拍照失败”的分支。更合适的做法是记录本次是否
+具备 ZSL 条件，并按普通 still capture 可以完成来设计体验。
+
+## 6. 诊断：证明本次是否走了 reprocessing
+
+### 6.1 先记录配置事实
+
+每次建立 camera session 时，至少记录这些字段：
+
+- CameraX 版本和 Android build fingerprint；
+- camera id、hardware level、PRIVATE reprocessing capability；
+- `cameraInfo.isZslSupported()`；
+- 已绑定的 use case，是否启用 Extensions；
+- ImageCapture capture mode 与当前 flash mode；
+- ImageCapture 的选定分辨率和最终输出格式。
+
+CameraX 1.6.1 的 `ZslControlImpl` 会输出“private reprocessing 不支持”“选中的 ZSL
+尺寸”“JPEG 不是有效输出”等日志。`CaptureConfigAdapter` / CameraPipe 还会记录
+队列为空、创建 `ImageWriter` 失败、创建 reprocess request 失败等分支。调试包可将
+CameraX 日志级别设为 DEBUG；量产包要控制日志量和隐私字段。
+
+### 6.2 用时间轴区分选帧与交付
+
+下面的伪代码用于说明测量点，`sensorTimestampNs` 需要从 capture metadata 或应用
+自己的 Camera2 观测层取得，CameraX 的普通文件回调不会直接提供它。
+
 ```kotlin
-// 性能优化配置
-val optimizedZSLConfig = ImageCapture.Builder()
-    .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-    .setBufferCount(3)  // 合理缓冲区数量
-    .setTargetResolution(Size(1280, 960)) // 降低分辨率
-    .setJpegQuality(85) // 压缩质量平衡
-    .build()
+data class ZslTiming(
+    val shutterEventNs: Long,
+    val selectedSensorTimestampNs: Long?,
+    val callbackNs: Long,
+) {
+    val captureLagNs: Long?
+        get() = selectedSensorTimestampNs?.let { it - shutterEventNs }
 
-// 内存优化
-val bufferPool = object : BufferPool {
-    private val pool = mutableListOf<ByteBuffer>()
-    
-    fun acquireBuffer(size: Int): ByteBuffer {
-        return pool.find { it.capacity() >= size } 
-            ?: ByteBuffer.allocateDirect(size)
-    }
-    
-    fun releaseBuffer(buffer: ByteBuffer) {
-        if (pool.size < MAX_POOL_SIZE) {
-            pool.add(buffer)
-        }
-    }
+    val deliveryLatencyNs: Long
+        get() = callbackNs - shutterEventNs
 }
 ```
 
-## 实际应用场景与调优建议
+`captureLagNs` 回答“照片对应哪个时刻”，`deliveryLatencyNs` 回答“用户多久拿到
+结果”。对比普通 still capture 时，两项都要保留；只看平均值还会掩盖队列为空时的
+回退长尾。
 
-**典型应用场景**：
+### 6.3 Perfetto 和 dumpsys 看什么
 
-1. **运动场景**：
-   - **场景特点**：快速移动对象，需要快速响应
-   - **ZSL 配置**：高帧率预捕获（120fps），3-5 帧队列
-   - **优化策略**：减少处理复杂度，使用硬件加速
-   - **性能预期**：<50ms 总延迟
+Perfetto 录制应包含 camera、binder、sched、freq、memory/gralloc 相关数据源，并在
+应用侧给快门事件、`takePicture()`、回调、保存完成添加 trace slice。分析时按这条
+顺序检查：
 
-2. **低光场景**：
-   - **场景特点**：光线不足，需要降噪处理
-   - **ZSL 配置**：降低预捕获分辨率，增强降噪
-   - **优化策略**：使用 AI 降噪算法，分步处理
-   - **性能预期**：100-200ms 处理延迟
+1. 快门时是否已有稳定的 repeating results；
+2. 是否出现 reprocessable input / ImageWriter 活动；
+3. camera request 提交后，线程是在 HAL、fence、encoder 还是应用 executor 上等待；
+4. JPEG output 到达后，应用回调与文件 I/O 是否又产生一段长延迟；
+5. 多次拍照后，buffer 数和 dma-buf 占用是否回落。
 
-3. **人像场景**：
-   - **场景特点**：需要背景虚化和美颜
-   - **ZSL 配置**：标准预捕获，美颜处理
-   - **优化策略**：预计算美颜参数，减少实时计算
-   - **性能预期**：80-150ms 处理延迟
+`adb shell dumpsys media.camera` 可用于确认 active client、session streams、request
+和错误状态。不同厂商 dump 字段不完全一致，不要依赖某个私有字段名写自动判定；
+应将 dumpsys、CameraX DEBUG 日志与 Perfetto 时间轴互相对照。
 
-**调优建议**：
-```kotlin
-// ZSL 参数调优配置
-class ZSLConfigOptimizer {
-    
-    // 预捕获帧数配置
-    fun getOptimalFrameCount(scene: SceneType): Int {
-        return when (scene) {
-            SceneType.MOVEMENT -> 5  // 运动场景多预捕获
-            SceneType.LOW_LIGHT -> 3 // 低光场景减少处理
-            SceneType.PORTRAIT -> 4  // 人像场景中等预捕获
-            SceneType.DEFAULT -> 3   // 默认配置
-        }
-    }
-    
-    // Buffer 大小优化
-    fun getOptimalBufferSize(resolution: Size): Int {
-        val pixelCount = resolution.width * resolution.height
-        return when {
-            pixelCount > 8_000_000 -> 2 // 高分辨率减少缓冲
-            pixelCount > 2_000_000 -> 3 // 中等分辨率标准配置
-            else -> 4 // 低分辨率增加缓冲
-        }
-    }
-    
-    // 处理算法选择
-    fun getProcessingAlgorithm(scene: SceneType): ProcessingAlgorithm {
-        return when (scene) {
-            SceneType.LOW_LIGHT -> ProcessingAlgorithm.AI_DENOISE
-            SceneType.PORTRAIT -> ProcessingAlgorithm.BEAUTY
-            SceneType.MOVEMENT -> ProcessingAlgorithm.FAST
-            else -> ProcessingAlgorithm.BALANCED
-        }
-    }
-}
-```
+## 7. 调优边界
 
-## 扩展：ZSL 深度优化
+### 7.1 应用能控制的部分
 
-### ZSL 延迟分析与优化
+- 在需要 ZSL 的相机模式中保持 `FLASH_MODE_OFF`；
+- 不要同时绑定会禁用 ZSL 的 VideoCapture 或 Extension，再期待 ZSL 仍生效；
+- 让 ImageAnalysis 及时返回，优先选择适合实时分析的回压策略；
+- 及时关闭应用收到的 `ImageProxy`；
+- 避免在每次快门前后重建 use case 和 session；
+- 以目标设备实测选择分辨率，不要假设最高分辨率一定能得到更低延迟；
+- 同时统计 capture lag、delivery latency、回退率和错误率。
 
-**延迟组成分析**：
-ZSL 功能虽然解决了快门延迟问题，但引入了额外的处理延迟。主要延迟来源包括：
+### 7.2 应用不能通过 CameraX 公共 API 控制的部分
 
-1. **数据拷贝延迟**：
-   - Buffer 在不同内存区域间的拷贝
-   - DMA 传输开销
-   - Cache miss 导致的内存访问延迟
+- ZSL 环形队列的 3 帧容量；
+- `MetadataImageReader` 的 9 张上限；
+- PRIVATE buffer 的内存布局；
+- HAL 内部去噪、锐化、JPEG 和厂商算法的执行单元；
+- 某次 reprocessing 的固定毫秒预算；
+- CameraX 设备 quirk 的启用条件。
 
-2. **算法处理延迟**：
-   - 图像处理算法的计算复杂度
-   - 硬件加速 vs 软件处理的权衡
-   - 多步骤处理的累积延迟
+旧稿给出的“CPU 转换 5–15 ms”“运动场景 120 fps”“某厂商成功率 98%”等数值没有
+对应测试设备、trace 或源码依据，不能作为 Android 17 的平台结论。性能数字必须附
+设备、camera id、分辨率、输出格式、CameraX 版本、温控状态、样本分布和 trace。
 
-3. **同步等待延迟**：
-   - GPU/CPU 同步等待
-   - 多线程同步开销
-   - I/O 操作阻塞
+## 8. 常见误判
 
-**优化策略**：
-```kotlin
-// 延迟优化配置
-class ZSLLatencyOptimizer {
-    
-    // 减少数据拷贝
-    fun optimizeDataCopy(): DataCopyConfig {
-        return DataCopyConfig(
-            useHardwareBuffer = true,    // 使用硬件缓冲区
-            directMemoryAccess = true,    // 直接内存访问
-            cacheOptimization = true,    // 缓存优化
-            zeroCopyEnabled = true        // 零拷贝技术
-        )
-    }
-    
-    // 硬件加速处理
-    fun getHardwareAccelerationConfig(): HardwareConfig {
-        return HardwareConfig(
-            gpuAcceleration = true,       // GPU 加速
-            neuralNetworkEngine = true,   // 神经网络引擎
-            imageProcessor = true,        // 图像处理器
-            optimizedShaders = true       // 优化着色器
-        )
-    }
-    
-    // 算法复杂度优化
-    fun optimizeAlgorithmComplexity(): AlgorithmConfig {
-        return AlgorithmConfig(
-            resolutionScaling = true,     // 分辨率缩放
-            qualityTier = QualityTier.MEDIUM, // 中等质量
-            parallelProcessing = true,    // 并行处理
-            earlyTermination = true       // 提前终止
-        )
-    }
-}
-```
+| 误判 | 源码事实 |
+| --- | --- |
+| `CAPTURE_MODE_MINIMIZE_LATENCY` 会开启 ZSL | ZSL 使用独立的 `CAPTURE_MODE_ZERO_SHUTTER_LAG` |
+| CameraX 暴露 `REPROCESSING_INPUT` key | Camera2 没有该公开 key；CameraPipe 用内部 `InputRequest` 携带图像与 metadata |
+| HAL3 有 `processReprocessingRequest()` | HAL session 使用 `processCaptureRequest()`，以非空 input buffer 区分 reprocessing |
+| 支持 YUV reprocessing 就满足 CameraX ZSL | CameraX 1.6.1 的 `ZslControlImpl` 检查并使用 PRIVATE reprocessing |
+| `isZslSupported() == true` 代表每次命中缓存 | use case、flash、3A 状态和队列可用性仍会触发回退 |
+| ZSL 消除了拍照总耗时 | 它主要改变成像时刻；后处理、编码、I/O 与回调耗时仍存在 |
+| 可以在 Builder 中设置 ZSL buffer 数 | 1.6.1 没有对应公共 API，容量是库内部常量 |
+| PRIVATE buffer 可按 YUV420 公式精确估算 | PRIVATE 布局 opaque，必须结合 allocator 与 dma-buf 观测 |
 
-### 多设备兼容性考虑
+## 9. 版本边界
 
-**不同厂商 HAL 实现差异**：
-1. **Qualcomm 处理器**：
-   - 支持 Reprocessing Request 优化
-   - 提供 GPU 加速图像处理
-   - 支持硬件级 ZSL
+Android 17 保留 Camera2 的 reprocessable session、`InputConfiguration`、
+`createReprocessCaptureRequest()` 和 HAL3 input buffer 语义。本文的平台结论以
+`android-17.0.0_r1` 为上限。
 
-2. **MediaTek 处理器**：
-   - Reprocessing 支持程度有限
-   - 主要依赖 CPU 处理
-   - 需要特定参数配置
+CameraX 1.6.0 将 Camera2 实现迁移到统一 CameraPipe 栈，1.6.1 延续这条路径。因此
+分析旧版日志或堆栈时，类名可能不同；不能用旧实现中的类名否定 1.6.1 的行为。
+`CAPTURE_MODE_ZERO_SHUTTER_LAG` 在 1.6.1 仍是实验 API，后续库版本可能调整内部队列、
+quirk 和提交路径。升级时应重新核对对应 tag 的源码。
 
-3. **Samsung 处理器**：
-   - 自定义 Reprocessing 流程
-   - 专用的图像处理单元
-   - 需要厂商特定参数
+## 10. 源码核对入口
 
-**兼容性处理策略**：
-```kotlin
-// 设备兼容性处理
-class DeviceCompatibilityHandler {
-    
-    // 设备能力检测
-    fun detectDeviceCapabilities(): DeviceCapabilities {
-        val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-        val characteristics = cameraManager.getCameraCharacteristics(cameraId)
-        
-        return DeviceCapabilities(
-            supportsReprocessing = characteristics.get(
-                CameraCharacteristics.REPROCESSING_MAX_DETECTED_PROCESSING)
-            supportsHardwareAcceleration = characteristics.get(
-                CameraCharacter.INFO_SUPPORTED_HARDWARE_LEVEL) ==
-                CameraCharacter.INFO_SUPPORTED_HARDWARE_LEVEL_FULL
-            vendorSpecificCapabilities = characteristics.get(
-                CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL)
-        )
-    }
-    
-    // 设备特定配置
-    fun getDeviceSpecificSettings(): DeviceSettings {
-        return when (Build.MANUFACTURER) {
-            "samsung" -> SamsungDeviceSettings()
-            "xiaomi" -> XiaomiDeviceSettings()
-            "huawei" -> HuaweiDeviceSettings()
-            else -> DefaultDeviceSettings()
-        }
-    }
-    
-    // 回退策略
-    fun getFallbackConfiguration(): FallbackConfig {
-        return FallbackConfig(
-            useSoftwareProcessing = true,
-            reduceResolution = true,
-            disableZSL = false,
-            useAlternativeMethod = true
-        )
-    }
-}
-```
+CameraX 1.6.1：
 
-### 内存使用监控
+- `camera-core/.../ImageCapture.java`：ZSL 模式语义、自动禁用条件；
+- `camera-core/.../CameraInfo.java`：`isZslSupported()` 契约；
+- `camera-core/.../internal/utils/ZslRingBuffer.java`：3A 选帧条件；
+- `camera-camera2/.../adapter/ZslControl.kt`：PRIVATE input、3 帧环形队列、9 张 reader
+  上限；
+- `camera-camera2/.../adapter/CaptureConfigAdapter.kt`：`InputRequest` 构造与普通拍照
+  回退；
+- `camera-camera2-pipe/.../compat/Camera2CaptureSequenceProcessor.kt`：
+  `ImageWriter` 与 `createReprocessCaptureRequest()`。
 
-**内存管理挑战**：
-ZSL 功能在长时间运行时可能导致内存累积，主要问题包括：
+Android 17：
 
-1. **BufferQueue 内存泄漏**：
-   - 未及时释放的 Buffer
-   - 内存碎片化
-   - 内存溢出风险
+- `frameworks/base/core/java/android/hardware/camera2/CameraDevice.java`：
+  reprocessable session 与 reprocess request 契约；
+- `frameworks/base/core/java/android/hardware/camera2/params/InputConfiguration.java`：
+  输入 stream 的尺寸与格式；
+- `frameworks/av/services/camera/libcameraservice/device3/Camera3Device.cpp`：
+  request thread 获取 input buffer；
+- `frameworks/av/services/camera/libcameraservice/device3/aidl/AidlCamera3Device.cpp`：
+  input buffer、buffer id 与 fence 的 AIDL HAL 映射；
+- `frameworks/av/services/camera/libcameraservice/device3/Camera3OutputUtilsTemplated.h`：
+  result 侧 input buffer 和 release fence 回收。
 
-2. **处理过程内存占用**：
-   - 多 Buffer 并存
-   - 处理中间结果缓存
-   - 线程栈内存消耗
+公开版本与源码链接：
 
-3. **内存带宽限制**：
-   - 高分辨率图像传输
-   - 频繁的内存访问
-   - Cache miss 率高
+- [CameraX release notes](https://developer.android.com/jetpack/androidx/releases/camera)
+- [CameraX 1.6.1 对应 AndroidX 源码](https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/)
+- [Android 17 `CameraDevice.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/camera2/CameraDevice.java)
+- [Android 17 `Camera3Device.cpp`](https://android.googlesource.com/platform/frameworks/av/+/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3Device.cpp)
 
-**内存监控策略**：
-```kotlin
-// 内存监控实现
-class ZSLMemoryMonitor {
-    
-    private val memoryTracker = MemoryTracker()
-    private val bufferQueue = mutableListOf<ByteBuffer>()
-    
-    // BufferQueue 管理
-    fun manageBufferQueue(maxSize: Int = 10) {
-        while (bufferQueue.size > maxSize) {
-            val buffer = bufferQueue.removeFirst()
-            memoryTracker.release(buffer)
-        }
-    }
-    
-    // 内存使用监控
-    fun monitorMemoryUsage(): MemoryUsage {
-        return MemoryUsage(
-            totalAllocated = memoryTracker.totalAllocated,
-            currentlyUsed = memoryTracker.currentlyUsed,
-            peakUsage = memoryTracker.peakUsage,
-            bufferCount = bufferQueue.size,
-            allocationRate = memoryTracker.allocationRate
-        )
-    }
-    
-    // 内存优化建议
-    fun getOptimizationSuggestions(): List<String> {
-        val suggestions = mutableListOf<String>()
-        
-        if (memoryTracker.currentlyUsed > MEMORY_THRESHOLD) {
-            suggestions.add("Reduce buffer count")
-            suggestions.add("Lower capture resolution")
-            suggestions.add("Enable compression")
-        }
-        
-        if (memoryTracker.fragmentationRate > FRAGMENTATION_THRESHOLD) {
-            suggestions.add("Force GC")
-            suggestions.add("Use direct allocation")
-        }
-        
-        return suggestions
-    }
-    
-    // 定期清理
-    fun performPeriodicCleanup() {
-        val currentTime = System.currentTimeMillis()
-        
-        // 清理超时 Buffer
-        bufferQueue.removeAll { buffer ->
-            buffer.timestamp + BUFFER_TIMEOUT < currentTime
-        }
-        
-        // 内存压缩
-        if (memoryTracker.shouldCompact()) {
-            memoryTracker.compact()
-        }
-    }
-}
-```
-
-**性能监控工具**：
-```kotlin
-// ZSL 性能监控工具
-class ZSLPerformanceMonitor {
-    
-    private val performanceMetrics = mutableListOf<PerformanceMetric>()
-    
-    // 性能数据收集
-    fun collectMetrics() {
-        val metrics = PerformanceMetric(
-            timestamp = System.currentTimeMillis(),
-            frameRate = getFrameRate(),
-            latency = getLatency(),
-            memoryUsage = getMemoryUsage(),
-            cpuUsage = getCpuUsage(),
-            gpuUsage = getGpuUsage()
-        )
-        
-        performanceMetrics.add(metrics)
-    }
-    
-    // 性能分析
-    fun analyzePerformance(): PerformanceAnalysis {
-        val recentMetrics = performanceMetrics.takeLast(100)
-        
-        return PerformanceAnalysis(
-            averageLatency = recentMetrics.average { it.latency },
-            maxLatency = recentMetrics.maxOf { it.latency },
-            minLatency = recentMetrics.minOf { it.latency },
-            memoryTrend = calculateMemoryTrend(recentMetrics),
-            frameRateStability = calculateFrameRateStability(recentMetrics),
-            cpuLoad = recentMetrics.average { it.cpuUsage }
-        )
-    }
-    
-    // 性能报告
-    fun generatePerformanceReport(): String {
-        val analysis = analyzePerformance()
-        
-        return """
-        ZSL 性能报告:
-        平均延迟: ${analysis.averageLatency}ms
-        最大延迟: ${analysis.maxLatency}ms
-        最小延迟: ${analysis.minLatency}ms
-        内存趋势: ${analysis.memoryTrend}
-        帧率稳定性: ${analysis.frameRateStability}
-        CPU 负载: ${analysis.cpuLoad}%
-        """
-    }
-}
-```
-
-## 实际应用案例
-
-**案例 1：运动摄影应用**：
-- **场景**：体育摄影，需要快速捕捉运动瞬间
-- **ZSL 配置**：120fps 预捕获，3 帧队列，硬件加速处理
-- **性能表现**：平均延迟 35ms，成功率 98%
-- **优化效果**：比传统相机快门速度快 2.5 倍
-
-**案例 2：低光摄影应用**：
-- **场景**：夜间摄影，光线不足需要降噪
-- **ZSL 配置**：30fps 预捕获，AI 降噪算法
-- **性能表现**：处理延迟 150ms，噪点减少 60%
-- **优化效果**：在低光环境下保持较好的成像质量
-
-**案例 3：人像摄影应用**：
-- **场景**：自拍和人像摄影，需要美颜效果
-- **ZSL 配置**：60fps 预捕获，实时美颜处理
-- **性能表现**：处理延迟 80ms，美颜效果自然
-- **优化效果**：在保证实时性的前提下提供良好的人像效果
+读源码时沿“候选帧进入队列 → 图像与 metadata 配对 → `InputRequest` →
+`createReprocessCaptureRequest()` → HAL `inputBuffer` → input release fence”检查。
+这条路径能解释一次拍照是否采用 ZSL，也能把选帧问题、session 配置问题、HAL
+处理问题和应用输出回压分开。
 
 <!-- outline-end -->
