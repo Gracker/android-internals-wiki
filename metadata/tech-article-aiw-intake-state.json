@@ -1412,6 +1412,90 @@
       "status": "appended",
       "title": "Juejin Android intake · 2026-07-27"
     },
+    "source/juejin-android/2026-07-28-76228855-Remote-Compose下发原生UI.md": {
+      "chapter": "待分类",
+      "entry_id": "0b0123ad5059fd5a",
+      "last_appended": "2026-07-28T05:25:49.772483+08:00",
+      "last_seen": "2026-07-28T05:25:49.772483+08:00",
+      "mtime": 1785183238.8219688,
+      "score": 11,
+      "sha256": "631bb23e8bfe052fee777ae494bb5a64094fed69fc312a6680a452bcf5608c9b",
+      "size": 11595,
+      "status": "appended",
+      "title": "Google 藏大招！AndroidX 悄悄上线 Remote Compose：服务端直接下发原生 UI，再也不用发版了"
+    },
+    "source/juejin-android/2026-07-28-76241685-Android17定位权限大改.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "c5189f5ed155b7c4",
+      "last_appended": "2026-07-28T05:25:49.772483+08:00",
+      "last_seen": "2026-07-28T05:25:49.772483+08:00",
+      "mtime": 1785183227.8223925,
+      "score": 7,
+      "sha256": "89a455dcf342c8894dddb3c73678880fcb3057ef0af059d065e7f84262517e5d",
+      "size": 5856,
+      "status": "appended",
+      "title": "紧急预警！Android 17 定位权限大改，你的 App 要适配了做过定位相关功能的开发者都知道，定位权限是用户最敏感"
+    },
+    "source/juejin-android/2026-07-28-76288743-Android官方6大技能.md": {
+      "chapter": "待分类",
+      "entry_id": "0de5ff908bde3b92",
+      "last_appended": "2026-07-28T05:25:49.772483+08:00",
+      "last_seen": "2026-07-28T05:25:49.772483+08:00",
+      "mtime": 1785183212.8350933,
+      "score": 9,
+      "sha256": "9ec8668ca608bde9937a348ec22c322de491b4198b24d43af8ce031f50bfdafd",
+      "size": 8332,
+      "status": "appended",
+      "title": "解放双手！Android 发布官方 6 大技能，一键搞定迁移、优化、适配近日，Google 在 GitHub 上开源了"
+    },
+    "source/juejin-android/2026-07-28-76292762-跨端框架横评2026.md": {
+      "chapter": "待分类",
+      "entry_id": "e880b10ba46b40c0",
+      "last_appended": "2026-07-28T05:25:49.772483+08:00",
+      "last_seen": "2026-07-28T05:25:49.772483+08:00",
+      "mtime": 1785183276.8405092,
+      "score": 13,
+      "sha256": "cc6a5e918d4cf074b17da3e735603d1095c2231033603434d081b3126a69036a",
+      "size": 30552,
+      "status": "appended",
+      "title": "跨端框架横评 2026：Flutter、React Native、KMP、Kuikly、小程序，谁是你下一个项目的正确答案？"
+    },
+    "source/juejin-android/2026-07-28-76388970-Android不用接口做Activity通信.md": {
+      "chapter": "待分类",
+      "entry_id": "b74517343b882582",
+      "last_appended": "2026-07-28T05:25:49.772483+08:00",
+      "last_seen": "2026-07-28T05:25:49.772483+08:00",
+      "mtime": 1785183200.8176563,
+      "score": 13,
+      "sha256": "aac4e553fa7e70b897f6a03b0139110fc4eb7a44f93c7840db6abbf417e38a38",
+      "size": 6182,
+      "status": "appended",
+      "title": "为什么 Android 不用接口做 Activity 通信？一、一个 iOS 开发者，把我问住了 上周，一个刚从 iO"
+    },
+    "source/juejin-android/2026-07-28-76500740-Repository暴露suspend.md": {
+      "chapter": "待分类",
+      "entry_id": "abb0f0214ceca98e",
+      "last_appended": "2026-07-28T05:25:49.772483+08:00",
+      "last_seen": "2026-07-28T05:25:49.772483+08:00",
+      "mtime": 1785183232.827709,
+      "score": 11,
+      "sha256": "2afdd676c44e6352bf271440fde94d6bb6952ac44ee793324c052b899fbb849d",
+      "size": 18388,
+      "status": "appended",
+      "title": "现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch"
+    },
+    "source/juejin-android/2026-07-28-juejin-android.md": {
+      "chapter": "待分类",
+      "entry_id": "a144a042cc8d32f1",
+      "last_appended": "2026-07-28T05:25:49.772483+08:00",
+      "last_seen": "2026-07-28T05:25:49.772483+08:00",
+      "mtime": 1785183366.5501757,
+      "score": 17,
+      "sha256": "d495a287cfaf2399a63bfdbc370c3645a9f095c879472d2e83ba03789a92801b",
+      "size": 5806,
+      "status": "appended",
+      "title": "掘金 Android 技术文章抓取 · 2026-07-28"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -3219,24 +3303,24 @@
     }
   },
   "last_report": {
-    "appended": 1,
-    "considered": 1,
-    "cutoff": "2026-07-26T05:20:14.093748+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-27.md",
+    "appended": 7,
+    "considered": 7,
+    "cutoff": "2026-07-27T05:20:30.793854+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-28.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1715,
+    "scanned": 1722,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 28,
-      "unchanged": 283
+      "unchanged": 284
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-07-27T05:25:30.793854+08:00",
+  "last_run_at": "2026-07-28T05:25:49.772483+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
