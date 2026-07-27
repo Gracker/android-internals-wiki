@@ -48,31 +48,66 @@ last_deepseek_cn_review_at: 2026-07-17
 
 ## 这章要解决什么问题
 
-Android 17 提供了一个通过 Intent 拉起的系统级取色入口。公开 API 没有提供可实例化的 `EyeDropper` 对象。工程上要掌握的重点是四件事：启动入口、结果读取、隐私边界、以及跨设备协作时应用自己要承担的同步工作。
+Android 17 / API 37 增加了一个标准 Activity action：调用方发送 `Intent.ACTION_OPEN_EYE_DROPPER`，用户在系统取色界面选择像素，系统再通过 Activity result 的 `Intent.EXTRA_COLOR` 返回颜色。
 
-公开 API 的核心就两个：`Intent.ACTION_OPEN_EYE_DROPPER` 负责拉起系统取色器，`Intent.EXTRA_COLOR` 负责回传 ARGB 颜色值。系统不会把完整屏幕像素流交给应用，也没有公开的跨设备同步 API。
+公开 API 很小，但实现边界容易被说错。本章要厘清五件事：
 
-## 真实调用链
+- 它是隐式 Intent 协议，没有可实例化的 `EyeDropper` 对象；
+- API 37 常量存在，不代表每个 Android 17 产品都安装并启用了处理器；
+- AOSP EyeDropper 内部会截取 display，普通调用方拿不到截图；
+- AOSP 支持同一 Android 系统内的多 display，这与设备到设备同步是两回事；
+- 返回值没有 ColorSpace 元数据，不能把它当作跨屏幕一致的色度测量结果。
 
-对调用方来说，流程很短：`Intent.ACTION_OPEN_EYE_DROPPER` → 系统取色界面 → 用户点选像素 → activity result 回传 `Intent.EXTRA_COLOR`。
+本文的平台源码固定到 `android-17.0.0_r1`。该功能的结论来自 `frameworks/base` 的 `Intent` 契约和 `packages/apps/EyeDropper` 的 AOSP 实现；本章不依赖 kernel 函数。需要进入显示驱动或 dma-buf 时，kernel 统一使用 `android17-6.18-2026-06_r6`。
 
-### App 侧入口
+## 公开 API 契约
 
-下面这段代码只演示真实的启动和回调路径，重点看 `ACTION_OPEN_EYE_DROPPER`、`EXTRA_COLOR` 和降级分支。
+### Action 与结果
+
+`Intent.ACTION_OPEN_EYE_DROPPER` 的公开文档定义了以下行为：
+
+1. 处理该 action 的 Activity 提供取色 UI；
+2. 用户确认后，以 `RESULT_OK` 返回；
+3. `Intent.EXTRA_COLOR` 保存被选像素的颜色；
+4. secure window 与 protected buffer 的像素会被涂黑；
+5. action 的输出写成 opaque ARGB：`0xFFRRGGBB`。
+
+`EXTRA_COLOR` 自身是一个可保存 `0xAARRGGBB` 的通用 `int` extra，但 EyeDropper action 的具体输出契约把 alpha 写死为 `0xFF`。调用方应以 action 契约为准，也要先检查 extra 是否存在，不能用默认颜色掩盖异常结果。
+
+### 这是带 feature flag 标记的 API
+
+Android 17 的 `Intent.java` 和 `current.txt` 都包含这两个 public field，同时源码仍保留：
+
+```text
+@FlaggedApi("com.android.eyedropper.enable_eye_dropper_api")
+Intent.ACTION_OPEN_EYE_DROPPER
+Intent.EXTRA_COLOR
+```
+
+这段声明说明 API 曾由 aconfig flag 管理。对应用而言，可靠的产品判断仍是“当前设备能否处理这个 Intent”，不能根据 `SDK_INT == 37` 推断 handler 必然存在。应用需要使用 `compileSdk 37` 编译，旧系统则走应用内取色等降级路径。
+
+## App 侧正确接入
+
+下面的示例避免依赖 `resolveActivity()`。Android 的 package visibility 可能影响查询结果，而 `startActivity()` 本身并不要求调用方预先查询处理器；直接启动并捕获 `ActivityNotFoundException` 更接近最终能力判断。
 
 ```kotlin
 class EditorActivity : ComponentActivity() {
 
     private val eyeDropperLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode != Activity.RESULT_OK) return@registerForActivityResult
+            if (result.resultCode != Activity.RESULT_OK) {
+                onEyeDropperCanceled()
+                return@registerForActivityResult
+            }
 
-            val color = result.data?.getIntExtra(
-                Intent.EXTRA_COLOR,
-                Color.TRANSPARENT
-            ) ?: return@registerForActivityResult
+            val data = result.data
+            if (data == null || !data.hasExtra(Intent.EXTRA_COLOR)) {
+                onEyeDropperInvalidResult()
+                return@registerForActivityResult
+            }
 
-            applyPickedColor(color)
+            val opaqueArgb = data.getIntExtra(Intent.EXTRA_COLOR, Color.BLACK)
+            applyPickedColor(opaqueArgb)
         }
 
     fun openSystemEyeDropper() {
@@ -81,73 +116,196 @@ class EditorActivity : ComponentActivity() {
             return
         }
 
-        val intent = Intent(Intent.ACTION_OPEN_EYE_DROPPER)
-        if (intent.resolveActivity(packageManager) == null) {
+        try {
+            eyeDropperLauncher.launch(Intent(Intent.ACTION_OPEN_EYE_DROPPER))
+        } catch (_: ActivityNotFoundException) {
             openInAppColorPicker()
-            return
         }
-
-        eyeDropperLauncher.launch(intent)
     }
 }
 ```
 
-应用拿到的是一个 `0xAARRGGBB` 格式的整型颜色值。取色界面的宿主 Activity、覆盖层形态和内部控制器属于系统实现细节，公开文档没有承诺固定的类名和进程边界。
+这段代码覆盖了确认、取消、结果缺失、无 handler 与旧系统五条分支。如果产品仍想用 `resolveActivity()` 控制按钮可见性，应在 manifest 的 `<queries>` 中声明对应 action，并保留启动时的异常兜底；查询成功与 Activity 成功完成也不是同一个保证。
 
-### 系统负责的部分
+返回值是 Java/Kotlin 的有符号 `Int`。显示十六进制时应按 32 位无符号位模式格式化，颜色计算则使用 `Color` 或 Compose `Color` 的明确转换，不要把负数误判为错误码。
 
-`Intent.ACTION_OPEN_EYE_DROPPER` 的文档给了两个硬边界：
+## Android 17 AOSP 的真实实现
 
-- 颜色结果通过 activity result 回传，读取键是 `Intent.EXTRA_COLOR`
-- secure window 和 protected buffer 上的像素会被涂黑，应用拿不到这些内容的真实颜色
+公开契约只要求“启动 Activity 并返回颜色”，处理器的包名、进程和 UI 结构都不是 SDK 保证。`android-17.0.0_r1` 的 AOSP 参考实现位于 `platform/packages/apps/EyeDropper`，是一款 platform-signed privileged app。
 
-EyeDropper 解决的是“用户明确点一次，系统返回一个颜色值”这个场景。它不等价于屏幕截图，也不等价于持续采样。
+### 从 Intent 到颜色结果
 
-## 为什么不需要屏幕捕获授权
+AOSP 实现的主路径如下：
 
-EyeDropper 不把整帧图像交给调用方。应用最终只收到一个颜色值，像素采样和安全内容裁剪都由系统侧完成。
+```text
+Caller Activity
+  └─ ACTION_OPEN_EYE_DROPPER
+       └─ com.android.eyedropper.MainActivity
+            ├─ 枚举当前 DisplayManager.displays
+            ├─ 并发请求每个 display 的系统截图
+            ├─ 绑定 EyeDropperControllerService
+            ├─ 为每个 display 创建 TYPE_SCREENSHOT 透明 Compose overlay
+            ├─ 用户用触屏、鼠标或键盘移动 reticle
+            └─ Bitmap.getPixel(x, y)
+                 └─ setResult(RESULT_OK, Intent(EXTRA_COLOR = color))
+```
 
-从权限边界看，它和 MediaProjection 是两条不同的路：
+这里的“多 display”表示同一个 Android 系统管理的内屏、外接屏或其他 display。它没有把截图或指针位置发送到另一台 Android 设备。
 
-| 方案 | 应用拿到的数据 | 用户确认方式 | 适用场景 |
+### 系统侧会截屏
+
+`ScreenCaptureHelper` 通过内部 `IWindowManager.screenCapture()` 获取每个 display 的 `HardwareBuffer`。关键参数包括：
+
+| 参数 | Android 17 AOSP 取值 | 含义 |
+|:---|:---|:---|
+| secure content policy | `SECURE_CONTENT_POLICY_REDACT` | secure window 内容被遮蔽 |
+| protected content policy | `PROTECTED_CONTENT_POLICY_REDACT` | protected buffer 内容被遮蔽 |
+| pixel format | `HardwareBuffer.RGBA_8888` | 每像素四字节的捕获格式 |
+| include system overlays | `true` | 截图请求包含系统 overlay |
+| preserve display colors | `false` | 不保留 display 原始颜色表达 |
+| capture timeout | 2000 ms | 单次异步封装的超时上限 |
+
+回调拿到 `HardwareBuffer` 后，代码先用 `Bitmap.wrapHardwareBuffer()` 创建 hardware Bitmap，再调用 `copy(Bitmap.Config.ARGB_8888, false)` 生成 software Bitmap，因为 `Bitmap.getPixel()` 不能读取 hardware Bitmap。用户确认时，ViewModel 从这份 software Bitmap 读取一个像素并返回。
+
+因此，准确的隐私表述是：**系统特权实现内部持有 display 截图，普通调用方只收到一个颜色整数。** “调用方不需要 MediaProjection 授权”不等于“系统内部没有屏幕捕获”。
+
+### 为什么普通 App 做不了同样的内部流程
+
+AOSP EyeDropper manifest 使用了三个普通第三方应用拿不到的权限：
+
+| 权限 | 用途 |
+|:---|:---|
+| `READ_FRAME_BUFFER` | 调用系统屏幕捕获能力 |
+| `INTERNAL_SYSTEM_WINDOW` | 添加 `TYPE_SCREENSHOT` 系统 overlay |
+| `INJECT_EVENTS` | 使用受限的输入/指针能力 |
+
+应用通过标准 action 委托给系统处理器，无需也不应申请这些权限。用户的显式选择、secure/protected redaction 和仅返回单色值共同构成这条能力边界。
+
+### 多显示器行为
+
+Android 17 AOSP 实现会：
+
+- 在 `MainActivity` 获得焦点后读取所有 display id；
+- 在 `Dispatchers.IO` 上为各 display 并发发起截图；
+- 为每个 display 创建独立 `WindowContext`、`ComposeView` 和 ViewModel；
+- 用 `ActiveDisplayTracker` 在 display 之间切换当前 reticle；
+- display 被添加或移除时取消当前会话；
+- configuration 变化时取消当前会话，而不是复用旧截图。
+
+多屏截图是某一时刻的快照。取色 UI 出现后，底层应用继续动画或视频播放时，reticle 展示和返回的仍是已捕获 Bitmap 上的像素，不是持续从 SurfaceFlinger 采样的实时流。
+
+## 颜色语义与安全边界
+
+### 返回的是 UI 颜色，不是测色数据
+
+Activity result 只有一个 `int`，没有携带：
+
+- `ColorSpace`；
+- HDR metadata 或 headroom；
+- 原 display id；
+- 像素坐标；
+- 取样时间；
+- secure/protected 状态标记。
+
+AOSP 捕获参数还设置了 `preserveDisplayColors(false)`。因此，`0xFFRRGGBB` 适合用于色板、画笔或普通 UI 颜色，不适合证明两块屏幕上的物理亮度、广色域坐标或 HDR 观感一致。跨设备同步相同整数后，两台设备仍可能因为面板、色彩管理、亮度和 HDR 状态而显示不同。
+
+### 与其他取色方案的区别
+
+| 方案 | 调用方拿到什么 | 权限/确认 | 适用范围 |
 |:---|:---|:---|:---|
-| EyeDropper | 单个 ARGB 颜色值 | 用户在系统取色界面中点选 | 取一个颜色、吸色笔、配色 |
-| 应用内取色器 | 应用自己的 View / Bitmap 像素 | 无额外系统确认 | 只在应用内容内取色 |
-| MediaProjection | 屏幕图像流 | 系统屏幕捕获授权 | 录屏、远程协作、全屏分析 |
+| EyeDropper | 用户选择的一个 opaque ARGB 值 | 系统取色 UI；调用方无截图权限 | 跨 App 的一次性人工取色 |
+| 应用内取色 | App 自有 Bitmap/View 数据 | 不需要额外系统授权 | 只处理应用拥有的内容 |
+| PixelCopy | 指定 Window/Surface 等的像素副本 | 受目标对象和权限边界约束 | App 自有窗口或 Surface 的局部复制 |
+| MediaProjection | 经用户授权的屏幕/应用内容流 | 系统捕获授权 | 录屏、共享、连续分析 |
 
-如果产品需求是连续采样、批量颜色分析、远端屏幕共享，EyeDropper 不能替代 MediaProjection。它的边界更窄，换来的是更小的数据面和更直接的隐私隔离。
+EyeDropper 不适合后台自动化、连续采样、批量颜色分析或远端屏幕共享。secure/protected 区域返回的黑色与普通黑色没有额外标记，调用方不能据此反推出原内容。
 
-## 性能和可观测性该怎么理解
+## 性能成本来自哪里
 
-### 默认没有公开保证的 EyeDropper 专属 Trace 标记
+从调用方看，Intent 和颜色 extra 都很轻；主要成本发生在系统处理器：
 
-公开 API 文档只定义了 Intent action 和 result extra，没有承诺稳定的 Perfetto slice 名或 counter 名。实战中直接按 EyeDropper 关键字去搜系统 slice，通常得不到可靠结果。
+1. Activity/window 启动与转场；
+2. 每个 display 的 screen capture；
+3. `RGBA_8888 HardwareBuffer → ARGB_8888 software Bitmap` 全帧复制；
+4. 每个 display 的 Compose overlay 初始化与首帧；
+5. 用户移动 reticle 时的 Compose 状态更新和局部绘制；
+6. 返回结果后，调用方更新自己的 UI。
 
-更稳妥的做法是把观测口径放在调用链两端：
+### 内存与带宽的量级
 
-- App 发起 `eyeDropperLauncher.launch()` 的时刻
-- App 收到 `Intent.EXTRA_COLOR` 并更新 UI 的时刻
-- 取色界面弹出和返回期间，调用方页面的 FrameTimeline 是否出现额外 jank
+忽略 stride、对齐和中间合成 Buffer，一张 `RGBA_8888` 截图约占 `width × height × 4` 字节。AOSP 路径同时存在 hardware screenshot 与 software copy 时，单 display 的可见数据量级约为：
 
-### 建议的打点方式
+```text
+minimum working-set estimate ≈ width × height × 4 × 2 bytes
+```
 
-如果要量化“点开系统取色器到拿回颜色”的耗时，直接在应用侧补自定义 trace marker。下面的代码只做一件事，给 launch 和 result callback 各留一个稳定锚点。
+这个公式只用于估算量级。常见分辨率对应的两份像素数据约为：
+
+| 分辨率 | 两份 4 B/px Buffer 的数据量 |
+|:---|---:|
+| 1920 × 1080 | 15.8 MiB |
+| 2560 × 1440 | 28.1 MiB |
+| 3840 × 2160 | 63.3 MiB |
+
+多 display 时还要按各屏分辨率求和。真实峰值可能更高，因为存在 row stride、分配对齐、合成中间结果、Compose 纹理和运行时对象；也不能把这张估算表当成进程 PSS 的精确预测。
+
+### 该量什么
+
+“launch 到 result”包含用户寻找像素和确认的思考时间，不能直接当作系统性能指标。建议拆成三类：
+
+| 指标 | 起止点 | 回答的问题 |
+|:---|:---|:---|
+| 启动可用延迟 | launch → overlay 首次可交互 | capture、Bitmap copy、service/overlay 初始化是否慢 |
+| 交互流畅度 | reticle 移动期间 | Compose/UI/GPU 是否 miss 当前帧 deadline |
+| 结果应用延迟 | result callback → 调用方新颜色帧 present | 调用方自己的状态更新是否造成卡顿 |
+
+公开 API 没有承诺稳定的 EyeDropper 专属 Perfetto slice。Android 17 AOSP 中的类名、日志和内部 track 可以帮助平台调试，但应用性能基线不应依赖这些实现名。
+
+### 用异步 Trace 标记一次会话
+
+同步的 `Trace.beginSection()/endSection()` 只能量到 `launch()` 调用本身，覆盖不了用户在另一个 Activity 中操作的时间。下面的代码用 async section 标记跨 Activity 的会话，并单独量调用方应用颜色的同步工作。
 
 ```kotlin
+private const val EYE_DROPPER_COOKIE = 1
+private var eyeDropperTraceOpen = false
+
+private fun beginEyeDropperTrace() {
+    if (eyeDropperTraceOpen) return
+    Trace.beginAsyncSection("eye_dropper_session", EYE_DROPPER_COOKIE)
+    eyeDropperTraceOpen = true
+}
+
+private fun endEyeDropperTrace() {
+    if (!eyeDropperTraceOpen) return
+    Trace.endAsyncSection("eye_dropper_session", EYE_DROPPER_COOKIE)
+    eyeDropperTraceOpen = false
+}
+
 fun openSystemEyeDropper() {
-    Trace.beginSection("eye_dropper_launch")
+    if (Build.VERSION.SDK_INT < 37) {
+        openInAppColorPicker()
+        return
+    }
+
+    beginEyeDropperTrace()
     try {
         eyeDropperLauncher.launch(Intent(Intent.ACTION_OPEN_EYE_DROPPER))
-    } finally {
-        Trace.endSection()
+    } catch (_: ActivityNotFoundException) {
+        endEyeDropperTrace()
+        openInAppColorPicker()
     }
 }
 
 private fun onEyeDropperResult(result: ActivityResult) {
-    Trace.beginSection("eye_dropper_result")
+    endEyeDropperTrace()
+    if (result.resultCode != Activity.RESULT_OK) return
+
+    val data = result.data ?: return
+    if (!data.hasExtra(Intent.EXTRA_COLOR)) return
+    val color = data.getIntExtra(Intent.EXTRA_COLOR, Color.BLACK)
+
+    Trace.beginSection("apply_picked_color")
     try {
-        if (result.resultCode != Activity.RESULT_OK) return
-        val color = result.data?.getIntExtra(Intent.EXTRA_COLOR, Color.TRANSPARENT) ?: return
         applyPickedColor(color)
     } finally {
         Trace.endSection()
@@ -155,35 +313,55 @@ private fun onEyeDropperResult(result: ActivityResult) {
 }
 ```
 
-这样抓 Perfetto 时，至少可以稳定回答两个问题：
+`eye_dropper_session` 适合定位一次具体复现，不适合作为自动化性能分数，因为它包含人为停留时间。若要量 overlay 首次可交互，需要 UI 自动化的可识别条件，或在可控系统构建中增加内部打点；result 后的 `apply_picked_color` 则可以直接结合调用方 FrameTimeline。
 
-- 系统取色器拉起到结果回调，中间隔了多久
-- 返回结果后，应用自己的配色刷新有没有把主线程或 RenderThread 顶慢
+## 跨设备协作：只同步结果
 
-如果没有应用侧打点，只靠系统默认 Trace，通常只能看到普通 activity / window transition 和显示合成片段，难以把取色流程单独摘出来。
+Android 17 EyeDropper 没有设备发现、连接、传输、冲突处理或远端 UI API。若产品希望把颜色同步给另一台设备，这一段完全属于应用协议。
 
-## 跨设备协作怎么实现
+一个最小事件可以包含：
 
-当前公开 API 到 `Intent.EXTRA_COLOR` 为止。跨设备协作需要应用自己补后一段流程，把已经选中的颜色值同步给另一台设备。系统取色器本身仍然只在本地设备上工作。
+```text
+session_id
+event_id
+opaque_argb
+source_device_id
+selected_at_elapsed_or_server_time
+document_revision
+```
 
-工程上更可控的做法是：
+传输通道可以复用产品已有的已认证连接。事件处理需要明确：
 
-- 本地设备完成一次 EyeDropper 取色，得到 `argb`
-- 把 `argb`、时间戳、会话 ID 这类小负载发到已有协作通道，比如 WebSocket、Nearby、WebRTC 或业务后端
-- 远端设备只消费颜色结果，按自己的 UI 状态更新色板、画笔或选中态
+- 同一会话是否只保留新事件，还是保留颜色历史；
+- 离线重连后如何去重；
+- 文档 revision 已变化时是拒绝、提示还是应用到新对象；
+- 远端更新是否触发渲染，是否需要合并同一帧内的多次状态变化；
+- 日志是否记录了不必要的设备标识或用户操作时间。
 
-这段流程里，网络带宽通常不是瓶颈。颜色值本身只有几个字节，真正要控制的是同步频率、重复事件合并、以及远端 UI 回放节奏。把截图、放大镜位置、持续采样流一起同步，会把问题从“配色协作”扩大成“屏幕共享”。
+单个颜色事件的网络负载很小，体验通常受往返时延、重连、冲突处理和远端下一帧 present 影响。若协议开始传输截图、reticle 坐标或连续像素流，需求已经进入屏幕共享或远程画布，应重新做权限、带宽和隐私设计，不能继续沿用“一次性颜色结果”的风险判断。
 
-## 降级策略和边界
+由于 API 不返回 ColorSpace，跨设备协议也应明确这个值只是 opaque 8-bit ARGB UI 色值。对印刷、摄影、HDR 调色或需要 ΔE 指标的业务，应使用带色彩空间与校准信息的专用数据模型。
 
-- API 下限是 Android 17 / API 37。更老的设备继续走应用内取色器或导入图片取色。
-- `ACTION_OPEN_EYE_DROPPER` 在 Android 17（API 37）引入。工程实现中应将 `resolveActivity()` 检查作为运行时前置条件，不要硬编码对该 API 的存在性假设。
-- 取色结果依赖系统提供的处理器。防御式代码仍然应该保留 `resolveActivity()` 或异常兜底。
-- secure window 和 protected buffer 会被涂黑，不能把 EyeDropper 当成绕过内容保护的入口。
-- EyeDropper 面向用户显式操作，不适合后台自动化或高频批量取样。
+## 降级与异常检查表
+
+- [ ] 项目使用 `compileSdk 37`，运行时对 `SDK_INT < 37` 降级；
+- [ ] 启动时捕获 `ActivityNotFoundException`；
+- [ ] `RESULT_CANCELED` 不当成错误；
+- [ ] `RESULT_OK` 后用 `hasExtra(EXTRA_COLOR)` 验证结果；
+- [ ] 不请求 `READ_FRAME_BUFFER`、`INTERNAL_SYSTEM_WINDOW` 或 `INJECT_EVENTS`；
+- [ ] 不把返回的黑色解释为 secure/protected 内容证明；
+- [ ] 不把 opaque ARGB 当作带 ColorSpace 的测量值；
+- [ ] 多显示器能力不写成跨设备能力；
+- [ ] 跨设备只同步业务需要的字段，不扩大发送范围；
+- [ ] Perfetto 指标区分系统启动、用户操作和调用方结果应用。
 
 ## 参考资料
 
-- [Intent.ACTION_OPEN_EYE_DROPPER](https://developer.android.com/reference/android/content/Intent#ACTION_OPEN_EYE_DROPPER)
-- [Intent.EXTRA_COLOR](https://developer.android.com/reference/android/content/Intent#EXTRA_COLOR)
-- [Get a result from an activity](https://developer.android.com/training/basics/intents/result)
+- Android Developers, [`Intent.ACTION_OPEN_EYE_DROPPER`](https://developer.android.com/reference/android/content/Intent#ACTION_OPEN_EYE_DROPPER) 与 [`Intent.EXTRA_COLOR`](https://developer.android.com/reference/android/content/Intent#EXTRA_COLOR)
+- Android Developers, [API 36 → 37 `Intent` diff](https://developer.android.com/sdk/api_diff/37/changes/android.content.Intent)
+- Android Developers, [Get a result from an activity](https://developer.android.com/training/basics/intents/result)
+- AOSP Android 17, [`Intent.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/Intent.java)
+- AOSP Android 17 EyeDropper, [`Android.bp`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/android-17.0.0_r1/Android.bp)、[`AndroidManifest.xml`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/android-17.0.0_r1/AndroidManifest.xml) 与 [`eye_dropper_flags.aconfig`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/android-17.0.0_r1/flags/eye_dropper_flags.aconfig)
+- AOSP Android 17 EyeDropper, [`MainActivity.kt`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/android-17.0.0_r1/src/com/android/eyedropper/MainActivity.kt)、[`ScreenCaptureHelper.kt`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/android-17.0.0_r1/src/com/android/eyedropper/util/ScreenCaptureHelper.kt) 与 [`BaseEyeDropperViewModel.kt`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/android-17.0.0_r1/src/com/android/eyedropper/ui/BaseEyeDropperViewModel.kt)
+- AOSP Android 17 EyeDropper, [`EyeDropperControllerService.kt`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/android-17.0.0_r1/src/com/android/eyedropper/EyeDropperControllerService.kt) 与 [`ActiveDisplayTracker.kt`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/android-17.0.0_r1/src/com/android/eyedropper/ui/touchscreen/ActiveDisplayTracker.kt)
+- Kernel common [`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6)
