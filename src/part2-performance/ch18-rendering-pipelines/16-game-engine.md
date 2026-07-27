@@ -47,312 +47,499 @@ last_deepseek_cn_review_at: 2026-06-26
 - 常见游戏性能问题的诊断思路
 
 <!-- outline-end -->
+## 游戏渲染要从输入追到显示
 
-## 为什么游戏引擎的渲染链路不同于普通 App
+普通 Android View 页面通常由事件触发：输入、动画或数据变化引起 `invalidate()`，`Choreographer` 在 VSync 节点驱动 ViewRootImpl 和 HWUI。游戏也要处理 Activity 生命周期、窗口和输入事件，但画面生产通常由引擎自己的 game loop 持续推进。
 
-普通 App 的渲染是事件驱动的——用户操作触发 `invalidate()`，Choreographer 在 VSync 时回调 `doFrame()`，UI 线程执行 Measure/Layout/Draw。但游戏引擎不是这样工作的：它有一个**自主运行的 Game Loop**，不管有没有用户输入，都会按照固定节奏持续更新和渲染。
+这一区别改变了性能分析的起点。普通页面常从 UI Thread 的 `doFrame()` 往后看；游戏要从“哪一次输入被哪一轮 simulation 读取”开始，继续跟踪 Render / RHI、GPU、swapchain、BufferQueue、SurfaceFlinger 和显示 present。
 
-游戏引擎渲染链路面临一个普通 App 不存在的问题：**如何让游戏逻辑帧率与屏幕刷新率同步**。跑 40fps 的游戏在 60Hz 屏幕上如果不做帧节奏控制，会导致部分帧显示 16ms、部分显示 33ms，视觉抖动非常明显。[已验证: Android Game SDK 文档]
+本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点，内核侧以 `android17-6.18-2026-06_r6` 为锚点。Unity、Unreal、Cocos、自研引擎、Swappy 和 GPU driver 各有独立版本，采集数据时要把引擎版本、graphics API、渲染后端、frame pacing 配置、Game Mode 和设备 build fingerprint 一起记录。
 
-## Game Loop 模型
+## Game Loop 与事件驱动 UI 有什么不同
 
-游戏引擎通常采用双线程或三线程架构：
+下面的伪代码只用于解释职责和节奏，不代表某个引擎的固定实现：
+
+```text
+while (running) {
+    pollLifecycleAndInput();
+
+    accumulator += elapsedTime();
+    while (accumulator >= fixedStep) {
+        simulatePhysicsAndGameplay(fixedStep);
+        accumulator -= fixedStep;
+    }
+
+    buildRenderSnapshot(accumulator / fixedStep);
+    recordAndSubmitGpuCommands();
+    presentWithFramePacing();
+}
+```
+
+很多引擎用固定步长更新物理，用可变步长或插值生成渲染快照。输入也可能在 game thread 开头、VSync 附近或更靠近提交时采样。只知道“游戏 60 FPS”无法推出 simulation 每秒运行 60 次，更无法推出触控到显示只有一帧延迟。
+
+| 对比维度 | 普通 View 页面 | 游戏引擎 |
+|:---|:---|:---|
+| 主要驱动力 | View 失效、输入、动画、数据变化 | 自有 game loop 持续执行 |
+| 逻辑更新 | UI Thread 上的回调与状态更新 | Game / Logic thread 的 simulation、脚本、物理、动画 |
+| 渲染准备 | HWUI 在 UI Thread / RenderThread 协作 | Render / RHI thread、task workers、引擎 render graph |
+| 提交接口 | HWUI 通过 Skia / RenderThread 输出 | GLES `eglSwapBuffers()` 或 Vulkan `vkQueuePresentKHR()` |
+| 节奏控制 | Choreographer 与系统帧调度 | Swappy、自研 pacer、引擎 limiter、Frame Rate API |
+| 核心延迟 | 输入到 App FrameTimeline | 输入采样到对应游戏帧 present 的完整链路 |
+
+游戏仍然生活在 Android 窗口系统里。自有 game loop 不会绕开 SurfaceFlinger，也不能用阻塞的 swap/present 代替完整的线程和 GPU 同步设计。
+
+## 一帧的完整路径
+
+下面的图用于把 CPU、GPU 和显示端放进同一条时间线：
 
 ```mermaid
-sequenceDiagram
-    participant Logic as Game Logic Thread
-    participant Render as Render Thread
-    participant Driver as GPU Driver
-    participant BBQ as BLAST Adapter
-    participant SF as SurfaceFlinger
+flowchart TD
+    Input["InputReader / InputDispatcher<br/>touch event"]
+    Game["Game / Logic thread<br/>script + physics + animation"]
+    Workers["Worker threads<br/>jobs + streaming + animation"]
+    Render["Render thread<br/>culling + render graph + draw preparation"]
+    RHI["RHI / graphics thread<br/>command recording + submit"]
+    Pacer["Swappy or engine pacer<br/>target time + in-flight control"]
+    API["GLES / Vulkan driver<br/>GPU queue submit"]
+    GPU["GPU execution<br/>producer completion fence"]
+    Swap["eglSwapBuffers / vkQueuePresentKHR"]
+    BQ["ANativeWindow / BufferQueue<br/>buffer + fence"]
+    SF["SurfaceFlinger<br/>snapshot + latch"]
+    Compose["HWC / RenderEngine<br/>composition"]
+    Driver["Composer HAL / display driver"]
+    Present["display present"]
 
-    Note over Logic: Frame N Pipeline
-    
-    Logic->>Logic: 1. Input / AI / Physics
-    Logic->>Logic: 2. Update Transforms
-    Logic->>Logic: 3. Culling (剔除不可见物体)
-    Logic->>Render: CommandBuffer (DrawList)
-    
-    Render->>Render: 4. Batching (合批)
-    Render->>Render: 5. Set Pass / Shader
-    Render->>Driver: 6. DrawCall (x100~1000)
-    Render->>BBQ: vkQueuePresent / eglSwap
-    
-    BBQ->>SF: Transaction(Buffer)
-    SF->>SF: Latch & Composite
+    Input --> Game
+    Workers --> Game
+    Game --> Render --> RHI --> Pacer --> API
+    API --> GPU
+    API --> Swap --> BQ
+    GPU --> BQ
+    BQ --> SF --> Compose --> Driver --> Present
+    Present -. timing feedback .-> Pacer
+    Compose -. layer release fence .-> BQ
 ```
 
-关键阶段：
+CPU 提交返回时，GPU 往往还在执行。生产者 fence signal 后，SurfaceFlinger 或 HWC 才能安全读取游戏 buffer；Layer release fence 控制旧 buffer 何时能回到生产者；present timing / present fence 描述显示端的后续阶段。把三个时间都写成“渲染完成”会掩盖瓶颈位置。
 
-1. **Logic Thread**：运行 C#/Lua/C++ 脚本，处理物理模拟、AI、输入、动画。产物是 DrawCall List（渲染指令列表）。
-2. **Render Thread**：接收 DrawList，执行 Batching（合批减少 DrawCall），设置 Shader/Texture，提交 GPU 指令。
-3. **GPU**：执行渲染指令，将结果写入 Back Buffer。
-4. **Present**：通过 `eglSwapBuffers`（GLES）或 `vkQueuePresentKHR`（Vulkan）提交给 SurfaceFlinger。
+### 五段职责
 
-## Unity 与 Unreal 的线程模型
+1. **Input 与 Game / Logic**：读取输入，更新脚本、AI、物理、动画和世界状态。
+2. **Render preparation**：做可见性裁剪、LOD、render graph、draw item 与资源依赖准备。
+3. **RHI / graphics submission**：把引擎命令转换成 GLES/Vulkan 调用，录制并提交 GPU command buffer。
+4. **GPU 与 swapchain**：GPU 写入可呈现 image，`eglSwapBuffers()` 或 `vkQueuePresentKHR()` 把该 image 交给 Android native window。
+5. **Android display**：BufferQueue、SurfaceFlinger、HWC/RenderEngine、Composer HAL 和显示驱动完成 latch、合成与 present。
 
-### Unity
+这些阶段可以跨帧流水执行。Game thread 在准备 N+1 帧时，Render thread 可能处理 N 帧，GPU 仍在执行 N-1 帧。吞吐量会提高，输入也可能多等一到两轮。评审时要同时写“每秒完成多少帧”和“同一输入经历了多少个 in-flight frame”。
 
-| 线程 | 职责 | Trace 标签 |
+## 多线程架构：职责比线程名更可靠
+
+引擎会按版本、graphics job、渲染后端和构建选项改变线程数量。先按职责识别，再用线程名辅助确认：
+
+| 角色 | 常见工作 | 过载或阻塞时的表现 |
 |:---|:---|:---|
-| **UnityMain / Main** | C# 脚本，Update/LateUpdate，物理模拟 | `PlayerLoop`, `Physics.FixedUpdate` |
-| **UnityGfx / Gfx** | 渲染命令提交，Batching，GPU 调度 | `Gfx.WaitForPresent`, `RenderThread` |
-| **UnityJobWorker** | 多线程任务，Burst 编译任务 | `JobSystem`, `ParallelFor` |
+| Game / Logic thread | input、script、physics、animation、world tick | GPU 队列出现空洞，Render thread 等新命令 |
+| Render thread | culling、draw preparation、render graph | Game thread 可能在帧边界等 Render thread |
+| RHI / graphics thread | API command、driver 调用、queue submit | CPU submit 晚，GPU 开工也晚 |
+| Worker threads | jobs、animation、visibility、streaming | 主线程在 barrier / future 等 worker |
+| GPU queue | vertex、fragment、compute、copy | producer fence 晚，swapchain image 回收慢 |
+| SurfaceFlinger / display | latch、composition、present | buffer 已 ready，仍错过目标 present |
 
-### Unreal
+### Unity 的典型结构与证据边界
 
-| 线程 | 职责 | Trace 标签 |
+Unity 的 main thread 运行 `PlayerLoop`，脚本 `Update` / `FixedUpdate` / `LateUpdate` 等工作位于其下。启用多线程渲染后，render thread 处理图形命令；Job System worker 承担可并行任务。
+
+Unity Profiler 中常用的 marker 包括：
+
+- `PlayerLoop`：播放器主循环；
+- `Gfx.ProcessCommands`：render thread 处理图形命令；
+- `Gfx.WaitForCommands`：render thread 等 main thread 产生新命令；
+- `Gfx.PresentFrame` / `Gfx.WaitForPresentOnGfxThread`：present、VSync、GPU 或队列等待相关区间；旧版本可能使用较短的 `Gfx.WaitForPresent` 名称；
+- Job worker 上的任务与 idle 区间。
+
+这些是 Unity Profiler marker，不能假定系统 Perfetto 默认会完整显示。Perfetto 至少能看到进程、Linux 线程、调度状态、futex、binder、图形和 GPU/SurfaceFlinger 信息；要把 Unity 内部阶段与系统帧准确对应，应同时采 Unity Profiler，或在关键阶段加 `ATrace` / Perfetto TrackEvent，并携带统一 frame id。
+
+`Gfx.WaitForPresentOnGfxThread` 也不能单独证明 GPU bound。等待可能来自 VSync、frame pacer、swapchain back-pressure 或 GPU；要结合 GPU 完成时间和 BufferQueue 深度判断。
+
+### Unreal 的典型结构与证据边界
+
+Unreal 常见 Game Thread、Rendering Thread、可选 RHI Thread 与 Task Graph workers。Epic 的线程渲染文档明确说明 Rendering Thread 可能落后 Game Thread 一到两帧，Game Thread 会在帧边界限制这种领先距离。
+
+Perfetto 中常能按 OS 线程名找到 Game、Render、RHI 和 worker 轨道，但名字会受引擎版本、平台封装和 Linux 线程名长度影响。`GameThread::Tick`、render pass、RHI command 等细节属于 Unreal 的引擎 trace 语义，完整证据通常来自 Unreal Insights 的 `.utrace`。推荐同时保留：
+
+- Perfetto：系统调度、频率、GPU、BufferQueue、SurfaceFlinger 和 display；
+- Unreal Insights：引擎 task、Game/Render/RHI dependency、asset loading 和自定义事件；
+- 统一帧号：把同一 frame id 写入两边的自定义 marker。
+
+### 线程等待怎样解读
+
+等待本身没有好坏标签。Render thread 等 Game thread，可能说明逻辑慢；Game thread 等 Render thread，可能说明渲染准备积压；Swappy 或 acquire 上的短等待，可能是在主动限制 in-flight 深度。需要看等待对象、前驱 fence、目标帧率和下一段是否按预算启动。
+
+## 游戏 Surface、SurfaceView 与 BLAST
+
+大多数 Android 游戏把最终画面输出到独立 Surface。常见入口有：
+
+- `GameActivity`：官方文档说明它渲染到 `SurfaceView`，并把 `ANativeWindow` 生命周期回调给 C/C++；
+- Unity / Unreal 的 Android Player Activity：通常持有供引擎渲染的 Surface 或 native window，具体封装随版本变化；
+- 自研 Native 游戏：从 `SurfaceView`、`NativeActivity` 或 `GameActivity` 获得 `ANativeWindow`。
+
+这也是“游戏普遍使用 SurfaceView + BLAST”的准确含义：现代 Android 上常见的独立 `SurfaceView` 生产链会由 BLASTBufferQueue 与 SurfaceControl 事务管理。它不是所有引擎的 API 保证，也不表示引擎直接调用 BLAST。
+
+### Android 17 的 SurfaceView 路径
+
+`android-17.0.0_r1` 的 `SurfaceView.java` 直接持有 `BLASTBufferQueue`、`mBlastSurfaceControl` 和 `SurfaceControl.Transaction`。创建、resize、destination frame、crop、z-order 与窗口同步都在这套 SurfaceControl/BLAST 路径里处理。
+
+稳态游戏帧仍由引擎通过 `ANativeWindow` 生产。以 Vulkan 为例，Android 17 的 `vulkan/libvulkan/swapchain.cpp` 会：
+
+- 用 native window 查询 `NATIVE_WINDOW_MIN_UNDEQUEUED_BUFFERS` 等能力；
+- 按 swapchain 配置设置 buffer format、dimensions、dataspace 和 transform；
+- 在 acquire 路径调用 `dequeueBuffer()`；
+- 在 present 路径把 GPU release fence 随 `queueBuffer()` 交给 BufferQueue。
+
+因此 Vulkan swapchain image 与 Android BufferQueue buffer 在平台实现中有明确映射。`vkQueuePresentKHR()` 只是进入 present 路径，不代表该帧已经被 SurfaceFlinger latch 或显示。
+
+### 游戏 Layer 仍要经过 SurfaceFlinger
+
+独立 Surface 绕开的是 App 的 HWUI RenderThread，不会绕开 SurfaceFlinger。SurfaceFlinger 仍为游戏建立 Layer snapshot，并与 HWC 协商 `CLIENT` / `DEVICE` composition。
+
+即便游戏 Layer 被 HWC 判为 `DEVICE`，游戏场景本身已经由 GLES/Vulkan 在 GPU 中渲染完成。`DEVICE` 只减少显示合成阶段对该 Layer 的额外 GPU 采样，无法消除游戏渲染的 GPU 成本。
+
+### 生命周期和 resize
+
+GameActivity 的 `onNativeWindowDestroyed` 文档要求：回调返回前，使用该 window 的其他渲染线程必须停止访问。旋转、分屏、折叠、自由窗口或 Surface 重建时，要按引擎规范停提交、等待必要的 GPU 使用结束、销毁或重建 EGLSurface/Vulkan swapchain，再使用新 window。
+
+“旧 swapchain 继续画到已销毁 window”会表现为 `VK_ERROR_OUT_OF_DATE_KHR`、`VK_ERROR_SURFACE_LOST_KHR`、黑帧或 native crash。这个问题与 shader 或 Game thread 性能无关。
+
+## Frame pacing：稳定间隔与低延迟要一起看
+
+假设游戏在 60 Hz 屏幕上只能产出约 40 FPS。未经控制的提交会让某些帧停留一个刷新周期，另一些帧停留两个刷新周期，形成明显的 16.7 ms / 33.3 ms 交替。平均 FPS 可能接近目标，present-to-present 间隔仍很难看。
+
+### Queue-stuffing 为什么会增加延迟
+
+游戏持续按最快速度 present 时，display pipeline 的 buffer 会逐渐填满。队列没有空位后，render thread 在 acquire、swap 或 present 附近阻塞，看起来像系统自动帮游戏限速。此时输入可能已在更早的逻辑帧采样，玩家看到结果前还要等队列中的旧帧，输入延迟增加。
+
+不能把“swap 调用阻塞”直接写成 GPU 慢。它可能由以下因素引起：
+
+- Swappy 或引擎 pacer 主动等待目标时刻；
+- swapchain image 仍被显示端使用；
+- BufferQueue 已满；
+- GPU producer fence 还未完成；
+- resize / display mode change；
+- Vulkan present mode 与 driver 行为。
+
+### Swappy 做了什么
+
+Swappy 是 AGDK Frame Pacing library：
+
+- GLES 使用 `SwappyGL_swap()` 包装 `eglSwapBuffers()`；
+- Vulkan 使用 `SwappyVk_queuePresent()`，它会代为调用 `vkQueuePresentKHR()`；
+- 库利用 Choreographer、presentation timestamp 和 sync fence 控制 swap interval 与 pipeline mode；
+- GLES 侧可使用 `EGL_ANDROID_presentation_time`，Vulkan 侧可使用 `VK_GOOGLE_display_timing` 等能力；
+- 目标是避免帧过早 present 和 queue-stuffing，同时兼顾不同刷新率。
+
+Swappy 中的 wait 可能是有意的 pacing。评审这段等待时，要问三个问题：目标 interval 是否正确、队列里有几帧、输入到 present 是否缩短。只把 wait slice 优化掉，常会把问题变回 queue-stuffing。
+
+### Pipeline 与 non-pipeline
+
+Pipeline mode 允许 CPU 和 GPU 跨 VSync 并行，吞吐更稳定，但可能多一轮 in-flight latency。Non-pipeline mode 适合 CPU+GPU 工作能落在一个 interval 内的轻负载场景，输入到显示延迟更低。Swappy 的 auto pipeline mode 会根据工作量调整，不能只用平均 FPS评价模式选择。
+
+### Choreographer 不是完整替代品
+
+游戏可以用 Choreographer 对齐显示节拍，但回调偏移随设备而异，长帧也可能继续造成 buffer-stuffing。Swappy在 Choreographer 之外还结合 presentation timestamp 与 fence。
+
+Perfetto 中没有默认保证存在名为 `Swappy` 的 track。若要看到 `preWait`、`postWait`、`preSwapBuffers` 等内部边界，需要通过 Swappy tracer 回调写入 ATrace/TrackEvent。默认 trace 更适合观察 present 调用点、FrameTimeline、BufferQueue、GPU 和 SurfaceFlinger。
+
+## Android 17 的 present timing 与 producer throttling
+
+### `VK_EXT_present_timing`
+
+Android 17 支持 `VK_EXT_present_timing`，自研 Vulkan pacer 可以请求 target present time，并查询 queue operations end、request dequeued、first pixel out / visible 等 present stage。它依赖 `VK_KHR_present_id2`，也要在创建 device 和 swapchain 前枚举 extension、feature 与相关 flag。
+
+Android 17 平台的 `swapchain.cpp` 已解析 `VkPresentTimingsInfoEXT` 和 `VkPresentId2KHR`，并从 native window timestamp 填充 past presentation timing。支持 Android 17 不代表每个驱动组合都能跳过能力检查；扩展不可用时可退回 `VK_GOOGLE_display_timing` 或 Swappy。
+
+### `Surface.setProducerThrottlingEnabled()`
+
+API 37 新增 `Surface.setProducerThrottlingEnabled(boolean)`。默认开启时，Vulkan/EGL producer 在 queue buffer、而 consumer 仍处理上一帧的情况下会受到 CPU back-pressure，阻塞可能出现在 `eglSwapBuffers()` 或 Vulkan present 附近。
+
+Android 17 的 API 文档建议 Vulkan 应用关闭这类隐式 throttling，并使用正确的显式同步。关闭后，生产速度超过 GPU 时，压力会自然移到 `vkAcquireNextImageKHR()` / dequeue 一侧。接入现成引擎时不要绕过引擎擅自改 Surface；应确认引擎版本已适配这项 API，且 semaphore、fence、in-flight frame 上限和 frame pacer 都有完整设计。
+
+### 不要手工套用“二缓冲/三缓冲”结论
+
+`BufferQueueDefs::NUM_BUFFER_SLOTS` 或 `mMaxBufferCount=64` 是 slot / 上限语义，不能推出当前稳定分配了 64 块，也不能推出应用默认只能使用两块。可 dequeue 数量、consumer 最少保留数量、async/shared mode、EGL swap behavior、Vulkan `minImageCount` 和设备实现共同决定在途 buffer。
+
+普通应用也没有理由通过隐藏的 `Surface::setBufferCount()` 强改活动队列。Vulkan 应按 `VkSurfaceCapabilitiesKHR` 协商 swapchain image count，GLES 应交给 EGL/ANativeWindow 协议与引擎管理。低内存、resize 或模式切换时，如果需要减少 image count，应走引擎的 swapchain 重建流程，确保旧 image 和 fence 已退出使用。
+
+## 三组系统调优 API 各管什么
+
+Swappy、Frame Rate、ADPF 和 Game Mode 经常一起出现，职责并不相同：
+
+| 机制 | 表达的内容 | 不负责什么 |
 |:---|:---|:---|
-| **GameThread** | C++ 游戏逻辑 | `GameThread::Tick` |
-| **RenderThread** | 渲染指令生成和提交 | `FRenderingThread` |
-| **RHIThread** | 底层图形 API 调用（GLES/Vulkan） | `FRHICommandList::Execute` |
+| Swappy / engine pacer | 每帧何时提交、swap interval、in-flight 深度 | 不保证 CPU/GPU 资源，也不决定用户画质偏好 |
+| Frame Rate API | Surface 希望显示系统采用什么刷新节奏 | 不是强制刷新率，也不安排每一帧的 CPU/GPU 工作 |
+| Performance Hint Session | 一组周期性线程的 target / actual work duration | 不能锁核、锁频或绕过 thermal |
+| Game Mode | 用户选择 PERFORMANCE / BATTERY / STANDARD 等目标 | 不规定各 OEM 必须使用同一套 intervention |
+| Game State | 当前是否 loading、是否 gameplay 及业务标签 | 不等同于 Game Mode |
 
-Unity 和 Unreal 都采用了**逻辑线程与渲染线程分离**的架构。逻辑线程产出 DrawList 后交给渲染线程，两者形成流水线——逻辑线程在计算第 N+1 帧的同时，渲染线程在渲染第 N 帧。
+### ADPF Performance Hint Session
 
-## SurfaceView + BLAST
+`PerformanceHintManager` 从 API 31 提供 Hint Session。正确使用要点如下：
 
-游戏引擎通常把画面输出到 `SurfaceView`，或 `GameActivity` 暴露的 `ANativeWindow`。不论哪种方式，游戏 Surface 都独立于 App View 树，提交路径绕开 App RenderThread，由 SurfaceFlinger 直接消费游戏帧。
+- session 关联同一进程中一组长期存在、工作相关的线程；
+- 创建时给出正数 target duration；
+- 每个周期调用 `reportActualWorkDuration()`；
+- 目标 FPS 或工作预算改变时调用 `updateTargetWorkDuration()`；
+- API 34 可用 `setThreads()` 替换线程集合；
+- API 35 可用 `WorkDuration` 报告 CPU/GPU 分量，并可用 `setPreferPowerEfficiency()` 表示这些线程可偏向能效调度；
+- session 不受支持时，`createHintSession()` 可以返回 `null`。
 
-- **Android 5-10**：常见路径是 `eglSwapBuffers` / `vkQueuePresentKHR` → `BufferQueue` → `SurfaceFlinger` → `HWC`。窗口尺寸和位置变化仍按旧版 SurfaceView 机制处理，排查 resize 闪烁、几何不同步时要按 [18.6 SurfaceView 章节](06-surfaceview.md) 里的 pre-BLAST 路径去看。
-- **Android 11+**：SurfaceView 更常和 `BLASTBufferQueue`、`SurfaceControl.Transaction` 一起出现。折叠、分屏、自由窗口、分辨率切换这类几何变化会经过事务同步，Buffer 与几何信息更容易在同一批次提交。对应细节见 [18.6 SurfaceView 章节](06-surfaceview.md) 的现代 SurfaceView 路径。
+这类 hint 帮助系统调整线程放置和 CPU 频率，不保证大核、固定频率或某个 GPU 档位。target、线程集合和 actual duration 写错时，系统得到的反馈也会失真。
 
-Android 14 之后，`SurfaceView` 支持 arbitrary alpha，但两种 Z 顺序的含义不同：默认 Z-Below 模式下，alpha 作用在宿主窗口为 `SurfaceView` 留出的 hole punch 区域；调用 `setZOrderOnTop(true)` 后，alpha 才直接作用在 Surface 内容本身。排查半透明游戏画面时，应先确认 SurfaceView 的 Z 顺序——否则容易把合成器行为误判为引擎输出问题。
+持续性能还要结合 Thermal API。画质调节应分别评估 render scale、阴影、后处理、粒子、LOD 和目标 FPS，加入滞回与最短保持时间，避免热状态在阈值附近反复切换导致资源重建和 frame-time 尖峰。
 
-稳态渲染阶段，两条路径的判断方法一致：游戏线程负责生产帧，SurfaceFlinger 负责消费，App 主线程的 `doFrame()` 不是主提交流程里的提交点。
+### Frame Rate API
 
-## Swappy Frame Pacing
+Android 11 / API 30 起，Java 可调用 `Surface.setFrameRate()`，Native 可调用 `ANativeWindow_setFrameRate()`；API 31 增加 change strategy。对游戏内容应使用 `FRAME_RATE_COMPATIBILITY_DEFAULT`，不要使用面向固定帧率视频的 `FIXED_SOURCE`，也不要使用明确不适合游戏的 `AT_LEAST`。
 
-**Swappy** 是 Google 官方的帧节奏库（属于 Android Game SDK），解决游戏引擎帧节奏控制的核心问题——让游戏帧率与屏幕刷新率同步，消除帧间隔不均匀导致的视觉抖动：
+Frame Rate API 只是投票。系统可能因 thermal、battery、其他可见 Surface 或 display mode 能力选择不同刷新率。Android 15 起，游戏默认刷新率策略更偏向 60 Hz；想要 90/120 Hz 的游戏应显式申请，并继续用 Swappy或自研 pacer控制提交节奏。
 
-### 问题
+目标帧率改变时需要同时更新：
 
-游戏跑 40fps，屏幕 60Hz。如果不做控制：
-- 帧 1：显示 16ms
-- 帧 2：显示 33ms（等了一个 VSync）
-- 帧 3：显示 16ms
-- 视觉上严重抖动
+- display frame-rate vote；
+- Swappy swap interval 或引擎 pacer；
+- Performance Hint Session target duration；
+- render scale / quality budget。
 
-### 解决方案
+只更新其中一项，常会出现“屏幕 120 Hz、游戏仍按 60 FPS 提交”或“pacer 已降到 45 FPS，ADPF 还按 120 FPS 预算申请资源”的矛盾配置。
 
-Frame Pacing library 在 present 路径里结合 Choreographer 节拍、presentation timestamp 和 sync fence 调整提交时机，目标是减少 queue stuffing，让每帧停留时间更接近目标刷新周期。[已验证: Android Game SDK Frame Pacing 文档说明使用 Choreographer、presentation timestamps、sync fences]
+### Game Mode 与 Game State
 
-```mermaid
-sequenceDiagram
-    participant App as Game Engine
-    participant Swappy as Frame Pacing
-    participant GPU as GPU
-    participant SF as SurfaceFlinger
+`GameManager.getGameMode()` 从 API 31 提供 `STANDARD`、`PERFORMANCE`、`BATTERY` 和 `UNSUPPORTED`；API 34 增加 `CUSTOM`。官方要求游戏在每次 `onResume()` 重新查询，因为用户可能在暂停期间改变模式。
 
-    App->>Swappy: eglSwapBuffers() / SwappyVk_queuePresent()
-    Swappy->>Swappy: 计算目标提交时刻
-    Swappy->>GPU: 按目标时刻安排 present
-    GPU->>SF: queueBuffer / vkQueuePresentKHR
-    SF->>SF: FrameTimeline + 合成
+`PERFORMANCE` 也不是“所有质量选项拉满”。为了稳定高帧率，游戏可能需要适当降低重特效；`BATTERY` 可以降低帧率、刷新率或分辨率。OEM 还可能为未主动适配的游戏配置 Game Mode intervention。Android 13+ 的 FPS throttling intervention 只会限制帧率，不能把 60 FPS 提升到 120 FPS。
+
+API 33 的 `GameManager.setGameState(GameState)` 用于报告 loading、`MODE_GAMEPLAY_INTERRUPTIBLE`、`MODE_GAMEPLAY_UNINTERRUPTIBLE`、`MODE_CONTENT` 等状态。`isLoading` 与 mode 是独立维度，加载也可能发生在后台。系统如何使用这些信号取决于 OEM 实现。
+
+稳定出现 30、40、45、60 或 90 FPS 上限时，先查询 Game Mode、intervention 和 frame-rate vote，再检查引擎 limiter。不要看到固定上限就直接归因于 GPU。
+
+## Draw call、Batching 与 GPU 成本
+
+每个 draw call 都会产生 CPU 侧命令准备、状态检查和 driver 成本，但“draw call 少”不自动代表 GPU 快：
+
+- **Mesh batching**：把可合并几何放入较少的提交，减少 draw call，代价是更新、内存、culling 粒度可能变粗；
+- **GPU instancing**：用一次或少量 draw 描述多个同网格/材质实例；
+- **状态排序**：减少 pipeline、descriptor、texture 和 render target 切换；
+- **Indirect / GPU-driven draw**：把部分可见性与提交工作移向 GPU；
+- **缓存 render state**：减少 CPU 重建成本，不一定减少 draw call 数。
+
+Unity SRP Batcher 的重点是降低兼容材质的 CPU 状态设置成本，不应简单写成“把 Mesh 合成一次 DrawCall”。Unreal Mesh Draw Commands 也包含缓存、排序和可能的 dynamic instancing，不能等同于传统静态合批。
+
+“每帧超过 1000 draw call 就有问题”没有跨设备意义。要一起看：
+
+- Render / RHI thread 花在 draw preparation 和 driver 的时间；
+- pipeline / shader 是否在游戏过程中同步创建；
+- GPU vertex、fragment、compute、texture、tile memory 和带宽；
+- pass 数、阴影级联、透明 overdraw、分辨率和 MSAA；
+- 降低 draw call 后 CPU、GPU 与画面质量是否得到预期变化。
+
+CPU draw-call bound 常表现为 Render/RHI 晚、GPU 队列有空洞；fragment 或带宽 bound 常表现为 CPU 早早提交，GPU producer fence 仍然很晚。两者的优化方向不同。
+
+## Perfetto：建立逐帧证据
+
+### 采集前记录配置
+
+至少记录这些变量：
+
+- 引擎及版本、GLES/Vulkan、renderer / RHI、Swappy或自研 pacer；
+- SurfaceView/GameActivity/native window 结构；
+- display refresh rate、游戏目标 FPS、frame-rate vote；
+- Game Mode、intervention、充电状态、亮度和温度；
+- render scale、HDR、画质档、最大 in-flight frame 数；
+- 场景、相机路径、网络状态和输入脚本。
+
+没有这些信息，同一台设备的两份 trace 也可能无法比较。
+
+### 一次基础系统 trace
+
+下面的命令用于采集图形、调度、频率、窗口和输入相关的基础数据：
+
+```bash
+adb shell perfetto \
+  -o /data/misc/perfetto-traces/game.perfetto-trace \
+  -t 20s -b 256mb \
+  gfx view sched freq idle am wm input binder_driver
+adb pull /data/misc/perfetto-traces/game.perfetto-trace
 ```
 
-### Vulkan 接入顺序
+GPU stage、counter 和 Vulkan API 细节依设备数据源和权限而异。Perfetto 数据不足时，用 AGI、GPU 厂商 profiler、Unity Profiler 或 Unreal Insights补齐，不要用一个模糊的 `GPU completion` slice推导所有 GPU 阶段。
 
-Vulkan 接入不能只写 `init` 和 `queuePresent` 两个调用，顺序要和设备创建过程保持一致：
+### 连续三到五帧要标什么
 
-1. 在创建 `VkDevice` 之前，先枚举设备扩展并调用 `SwappyVk_determineDeviceExtensions()`，把 Swappy 需要的扩展一并放进 `VkDeviceCreateInfo`。
-2. 创建 `VkQueue` 后，调用 `SwappyVk_setQueueFamilyIndex(device, queue, queueFamilyIndex)`，把 present queue 对应的 queue family index 告诉 Swappy。
-3. 创建 `VkSwapchainKHR` 后，调用 `SwappyVk_initAndGetRefreshCycleDuration(...)` 初始化 swapchain 级实例，再用 `SwappyVk_setSwapIntervalNS(device, swapchain, swap_ns)` 设置目标帧间隔。
-4. 提交帧时，应用调用 `SwappyVk_queuePresent(queue, &presentInfo)`，由 Swappy 代为调用 `vkQueuePresentKHR()`，并在需要时向 `VkPresentInfoKHR::pNext` 插入额外结构或补充命令。
-5. 销毁阶段按 swapchain / device 粒度调用 `SwappyVk_destroySwapchain()`、`SwappyVk_destroyDevice()` 释放资源。
-
-```c
-// Vulkan 最小接入顺序
-SwappyVk_determineDeviceExtensions(physicalDevice,
-    availableExtensionCount,
-    availableExtensions,
-    &requiredExtensionCount,
-    requiredExtensions);
-
-// vkCreateDevice(... requiredExtensions ...)
-SwappyVk_setQueueFamilyIndex(device, presentQueue, presentQueueFamilyIndex);
-SwappyVk_initAndGetRefreshCycleDuration(env, activity,
-    physicalDevice, device, swapchain, &refreshDuration);
-SwappyVk_setSwapIntervalNS(device, swapchain, 16666666);  // 60fps
-SwappyVk_queuePresent(presentQueue, &presentInfo);        // 不再直接调用 vkQueuePresentKHR()
-```
-
-### OpenGL ES 接入顺序
-
-OpenGL ES 仍然围绕 `eglSwapBuffers()` 接入。判断这条路径时，看 `eglSwapBuffers()` 所在渲染线程、FrameTimeline，以及 SurfaceFlinger / GPU 轨道，不要把 Vulkan 的 `SwappyVk_*` 调用模式套到 GLES 路径上。
-
-### 在 Perfetto 中看 Swappy
-
-Swappy 没有一个默认必然出现的 `Swappy` Track。排查时把信号分成三类更稳妥：
-
-| 观测层级 | 默认是否可见 | 该看什么 |
+| 节点 | 要找的证据 | 常见误读 |
 |:---|:---|:---|
-| 默认可见 | 通常可见 | 引擎线程上的 present 调用点，`eglSwapBuffers()`、`vkQueuePresentKHR()` 或引擎自己的 present 包装，Android 12+ 的 FrameTimeline `Expected` / `Actual`，以及 SurfaceFlinger 与 GPU 轨道 |
-| 自定义埋点 | 取决于应用 | 应用调用 `SwappyVk_injectTracer()` 或同类接口后，如果在 `preWait` / `postWait` / `preSwapBuffers` / `postSwapBuffers` 回调里主动写 `ATrace` / TrackEvent，Perfetto 才会出现对应 Slice |
-| 额外 graphics tracing / AGI | 需单独开启 | GPU driver queue、Vulkan present timing、更细的图形栈事件 |
+| Input | event time、dispatch、游戏采样点 | dispatch 到达等于本帧已经使用 |
+| Game | tick start/end、physics、script、worker dependency | 主线程 Running 时间等于有效工作 |
+| Render/RHI | draw preparation、command recording、submit | draw call 多就一定是瓶颈 |
+| GPU | queue submit、job、producer fence | `vkQueueSubmit()` 返回等于 GPU 完成 |
+| Swapchain | acquire、swap/present、queueBuffer、in-flight depth | 所有 wait 都是 GPU 慢 |
+| SurfaceFlinger | latch、FrameTimeline、composition type | SF 沿用旧帧等于 SF 算慢 |
+| Display | requested/actual present、present fence | fence 一定是精确首像素可见时刻 |
 
-### 最小 trace case
+最有价值的是给同一输入和同一游戏帧分配稳定 ID，并把 ID写入 Game、Render、submit 和 present marker。这样才能回答“这次触控对应哪一帧”，而不只是看到几条相似的周期曲线。
 
-| 场景 | 期望表现 | 先查哪里 |
-|:---|:---|:---|
-| 60Hz 面板，同一段场景，未接 Swappy | 默认只看 present 调用点和 FrameTimeline。负载上来时，`Actual Timeline` 常会出现 16.6ms / 33.3ms 混合，重复帧偏多 | CPU 帧时间、GPU 帧时间、是否出现 queue stuffing |
-| 60Hz 面板，同一段场景，接入 Swappy，目标 60fps | `Expected` 与 `Actual` 更接近 16.6ms 节奏，重复帧减少。若应用埋了 tracer，`preWait` / `postWait` 会围绕帧提交点出现 | swap interval 设置、前一帧 release 时机、是否有长 GPU slice |
-| 120Hz 面板，游戏锁 60fps，Swappy `swap_ns=16666666` | FrameTimeline 表现为每两次显示刷新消费一帧，`Actual` 仍接近 16.6ms，不会去追 8.3ms | swap interval 是否写错，display mode / ARR / VRR 投票是否把游戏推到 120fps |
+### Unity 与 Unreal 的 trace 组合
 
-`Choreographer#doFrame` 只能当辅助线索。Frame Pacing library 内部会用 Choreographer 做同步，但 trace 里是否出现 `doFrame()`，取决于引擎接入方式、线程模型和采集配置。只靠 `doFrame()` 判断是否接入 Swappy，很容易误判。
+| 引擎 | Perfetto 默认侧重 | 引擎工具侧重 | 推荐关联方式 |
+|:---|:---|:---|:---|
+| Unity | OS 线程、调度、GPU/显示、SurfaceFlinger | `PlayerLoop`、script、render marker、Job System | 自定义 frame id + Unity Profiler timestamp |
+| Unreal | OS 线程、调度、GPU/显示、SurfaceFlinger | Game/Render/RHI task、asset loading、render events | 自定义 frame id + `.utrace` |
 
-**常见 Trace 表现**：
+不要在 Perfetto 里没看到 `PlayerLoop` 就认定 Unity main thread 没工作，也不要把一个名为 `RenderThread` 的线程自动归为 Unreal。进程包名、线程周期、调用栈、引擎 marker 和 frame id应共同成立。
 
-| 现象 | 可能含义 |
+## 常见瓶颈怎样区分
+
+### CPU bound
+
+表现通常是 Game、Render 或 RHI 超出预算，GPU 队列出现空洞。原因包括 script、physics、animation、draw preparation、同步 shader/pipeline creation、资源上传、JNI、锁和 worker barrier。
+
+降低分辨率对纯 CPU draw-call bound 帮助有限；降低对象数、pass、状态切换或并行任务依赖更有针对性。
+
+### GPU bound
+
+CPU 提交较早，GPU 长时间占满，producer fence 晚。需要用 GPU stage/counter 区分 vertex、fragment、compute、texture、overdraw、tile memory、带宽、同步 bubble 和频率限制。
+
+动态分辨率主要缓解像素与带宽成本；如果瓶颈是 vertex、compute 或同步，降低 render scale 可能几乎没有改善。
+
+### Queue / pacing bound
+
+acquire、swap、present 或 Swappy wait 周期性变长。继续检查 pending buffer、release fence、目标 interval、pipeline mode 和 producer throttling。主动 pacing wait 可保持低队列深度，不能按 CPU idle 一概删除。
+
+### Display bound
+
+游戏 buffer 已 ready，SurfaceFlinger仍错过 latch 或显示端 present 变晚。检查 desired present、FrameTimeline、HWC `CLIENT` composition、display mode change 和 Composer/driver fence。游戏 Layer 本身 GPU 很重时，额外的 RenderEngine client composition还会与游戏争抢 GPU 和带宽。
+
+### 稳态 thermal bound
+
+首分钟正常，运行十分钟后 CPU/GPU 频率、内存带宽或功耗策略收紧，frame time持续恶化。测试要覆盖足够长的会话，并同时记录 thermal status/headroom、频率、亮度、充电和环境温度。
+
+平均 FPS 会掩盖长帧簇。至少统计 frame-time 分布、P90/P99、1% low、present-to-present 间隔和输入到显示延迟。
+
+## Android 12 到 Android 17 的关键演进
+
+| 版本 | 与游戏渲染直接相关的变化 |
 |:---|:---|
-| `Expected Timeline` 与 `Actual Timeline` 持续错位 | 帧提交晚于目标时刻，先检查 swap interval、CPU 帧时间和 GPU 帧时间 |
-| 自定义 `preWait` / `postWait` Slice 很长 | 应用已埋入 Swappy tracer，长等待多半指向 GPU 负载高或前一帧释放太晚 |
-| 只有 `vkQueuePresentKHR` / `eglSwapBuffers`，没有单独 `Swappy` Track | 这很常见，不能据此判断 Swappy 未接入 |
-| 需要看到 GPU queue 与 present timing 细节 | 额外打开 graphics tracing 或用 AGI 复查 |
+| Android 12 / API 31 | Game Mode 与 Performance Hint Manager 公布；三参数 `setFrameRate()` 可带 change strategy；FrameTimeline成为系统分析基线 |
+| Android 13 / API 33 | `GameState` / `setGameState()` 公布；FPS throttling intervention 可在平台侧限制游戏帧率 |
+| Android 14 / API 34 | `GAME_MODE_CUSTOM`、Hint Session `setThreads()`；SurfaceView alpha能力扩展，但 z-order语义仍需区分 |
+| Android 15 / API 35 | `WorkDuration` 和 `setPreferPowerEfficiency()`；游戏需要显式请求高于默认策略的刷新率 |
+| Android 16 / API 36 | 支持设备可提供更丰富的 ARR / headroom 能力，游戏仍需按设备检查并做反馈控制 |
+| Android 17 / API 37 | `VK_EXT_present_timing` 与 `Surface.setProducerThrottlingEnabled()` 提供更细的 present反馈和 producer back-pressure控制 |
 
-[已验证: Android Game SDK Frame Pacing 文档, SwappyVk API Reference 中 `SwappyVk_determineDeviceExtensions` / `SwappyVk_setQueueFamilyIndex` / `SwappyVk_queuePresent` / `SwappyVk_injectTracer` / `SwappyVk_setSwapIntervalNS`, Perfetto FrameTimeline]
+版本升级不会改变引擎和 GPU driver 的具体线程模型。Android 17 分析仍要记录 Unity/Unreal版本、Swappy版本、Vulkan extension 和设备 driver。
 
-## ADPF / Frame Rate / Game Mode：游戏侧的系统调优 API
+## 小游戏、云游戏、AR 与 XR 的边界
 
-Swappy 解决帧节奏，但不解决"系统该给我多少 CPU/GPU 资源"的问题——这由 ADPF（Android Dynamic Performance Framework）和两组配套 API 承担。它们各自独立调用，但分析游戏 trace 时通常一起考察：
+- **小游戏容器**：可能多出 JS/TS runtime、Canvas/WebGL 翻译与宿主 bridge。最终 producer 可能是独立 Surface，也可能回到 TextureView/WebView host window。
+- **云游戏**：本机主链是输入、网络、MediaCodec解码和视频 Surface；云端排队、渲染、编码和网络往返需要服务端 timestamp 补齐。
+- **手机 AR**：在 game loop前增加 camera sensor timestamp、IMU、VIO/SLAM和 pose prediction，必须统一时钟域。
+- **头显 XR/OpenXR**：运行时 compositor负责 predicted display time、reprojection/timewarp和最终显示；App FrameTimeline可能不是最终 motion-to-photon边界。
 
-### ADPF：Performance Hint + Thermal + Game Mode/State 的集合
+看到“游戏包名”不代表一定套用本地 GLES/Vulkan game loop。先确认谁生产最终 buffer、哪一层负责 present，再选择证据。
 
-ADPF **不是单一 API**，而是几组 API 的集合。常用的有：
+## 内核和驱动侧
 
-- **Performance Hint API**（`PerformanceHintManager`，Android 12+ / API 31）：App 通过 `createHintSession(threadIds, targetDurationNanos)` 告诉系统哪些是关键线程和期望帧时；每帧调 `reportActualWorkDuration(actualDurationNanos)` 反馈实际耗时，也可以用 `updateTargetWorkDuration(targetDurationNanos)` 更新目标耗时。Android 14 / API 34 增加 `setThreads(int[])`，Android 15 / API 35 增加 `setPreferPowerEfficiency(boolean)`；公开 API 中没有名为 “CPU load up/down hint” 的入口。
-- **Thermal API**（`PowerManager#getCurrentThermalStatus`，`addThermalStatusListener`）：让 App 感知设备热状态，主动降低画质或帧率以避免 throttling。
-- **Game Mode / Game State API**：见下文。
+Android 通用内核提供 dma-buf、dma-fence 和 sync_file，负责 buffer 共享与异步硬件依赖。GPU scheduler、devfreq、thermal、IOMMU fault、memory reclaim和 display driver tracepoint多由设备实现提供。
 
-主流引擎都有官方 ADPF 集成（Unity 2023.2+、UE 5.3+），开启后 Perfetto 上能看到 `PerformanceHintManager` 相关系统调用。判断 App 是否接入 ADPF，比起单看 trace 标签，更可靠的是看引擎版本和构建配置。
+在 `android17-6.18-2026-06_r6` 中可从以下入口核对通用语义：
 
-[已验证: Android Developers `PerformanceHintManager.Session` API Reference；`frameworks/base/core/java/android/os/PerformanceHintManager.java` 为源码锚点，android-17.0.0_r1 Gitiles tag 本轮未公开可取。]
+- `drivers/dma-buf/dma-buf.c`：buffer attachment与跨设备共享；
+- `include/linux/dma-fence.h`：GPU/HWC等异步任务的同步原语；
+- `drivers/dma-buf/sync_file.c`：把 fence封装成跨进程 fd。
 
-### Frame Rate API（Android 11+）
+vendor GPU job长、GPU频率低和 producer fence晚要放在同一帧分析。仅凭 Render/RHI线程睡眠无法判断GPU scheduler出了问题。
 
-App 显式告知系统期望帧率：
+## 常见误判
 
-- **Java 侧**：Android 11 / API 30 是 `Surface.setFrameRate(float, int)`；Android 12 / API 31 起可用 `Surface.setFrameRate(float, int, int)` 指定 change strategy。Android 16 / API 36 增加 `FRAME_RATE_COMPATIBILITY_AT_LEAST`，但游戏内容仍优先使用 `FRAME_RATE_COMPATIBILITY_DEFAULT`。
-- **Native 侧**：`ANativeWindow_setFrameRate()` 从 API 30 可用，`ANativeWindow_setFrameRateWithChangeStrategy()` 从 API 31 可用；`ANATIVEWINDOW_FRAME_RATE_COMPATIBILITY_AT_LEAST` 不适合游戏或视频内容。
-- **Android 17 / API 37**：`Surface.setProducerThrottlingEnabled(boolean)` 允许控制 Vulkan / EGL producer 在 `eglSwapBuffers()` / `vkPresentKHR()` 附近的 CPU throttling。默认行为仍可能让 producer 在 consumer 处理上一帧时阻塞；游戏引擎只有在自己做好同步时才应该关闭它。
+### “FPS 高，输入延迟就低”
 
-App 把期望帧率告知系统后，display stack 可以据此切换 VRR 档位、调度合成节奏。Perfetto 上能看到 refresh rate 切换和 `setFrameRate` 注册相关的 slice。这与 Swappy 的 swap interval 是两件事——前者表达**意图**（让系统知道我要多快），后者控制**提交时机**。
+队列中可能有多帧，输入也可能很早采样。应对齐 input、frame id、in-flight depth与display present。
 
-更细的 VRR 投票机制详见 [18.19 可变刷新率渲染管线](19-variable-refresh-rate.md)。
+### “`vkQueueSubmit()` 返回，GPU 已完成”
 
-### Game Mode API（Android 12+）
+提交是异步操作。要看GPU job和producer fence。
 
-`GameManager#getGameMode()` 返回当前 GameMode intervention 状态：
+### “`vkQueuePresentKHR()` 慢，说明 Vulkan driver 差”
 
-| GameMode | 版本边界 | 含义 |
-|:---|:---|:---|
-| `GAME_MODE_UNSUPPORTED` | API 31+ | 当前应用不是 game，或平台不支持该应用的 Game Mode |
-| `GAME_MODE_STANDARD` | API 31+ | 默认 |
-| `GAME_MODE_PERFORMANCE` | API 31+ | 用户偏好性能（最高帧率 / 画质） |
-| `GAME_MODE_BATTERY` | API 31+ | 用户偏好省电（降帧 / 降分辨率） |
-| `GAME_MODE_CUSTOM` | API 34+ | OEM 自定义干预；targetSdk <= 33 时会兼容返回 `GAME_MODE_STANDARD` |
+present附近可包含Swappy等待、BufferQueue back-pressure、GPU fence、resize或display mode change。需要沿依赖追踪。
 
-系统或 OEM 会据此对特定包做帧率、分辨率、HDR 等调优。**写 trace 分析报告时要先确认当前包是不是被 Game Mode 干预过**——同一台设备不同 GameMode 下的同一段游戏 trace，行为可能差异很大。看到帧率被压制 / 分辨率被改写而 App 自己什么都没设时，先查 GameMode。
+### “Unity/Unreal 的 marker 在 Perfetto 里默认都有”
 
-[已验证: Android Developers `GameManager` API Reference；`frameworks/base/core/java/android/app/GameManager.java` 为源码锚点，android-17.0.0_r1 Gitiles tag 本轮未公开可取。]
+引擎 profiler、Unreal Insights与Perfetto是不同数据源。未显式导出时，Perfetto可能只显示线程和系统事件。
 
-## DrawCall 合批（Batching）
+### “Vulkan 一定比 GLES 快”
 
-DrawCall 是 GPU 渲染的基本单元。每次 `glDrawElements` 或 `vkCmdDraw` 都有 CPU 开销（状态切换、驱动验证）。游戏场景中可能有上千个物体，如果不做合批，DrawCall 数量会爆炸。
+Vulkan把更多调度和同步责任交给引擎。性能取决于render graph、driver、pipeline、资源管理和workload。
 
-**Batching 策略**：将材质（Shader + Texture）相同的物体合并成一个大 Mesh，用一次 DrawCall 画完。Unity 的 SRP Batcher 和 Unreal 的 Mesh Draw Command 合并都是这个思路。
+### “ADPF 可以锁大核或锁频”
 
-在 Perfetto 中，如果 RenderThread 的 `DrawCall` 数量过多（>1000/帧），可能需要优化 Batching 策略。
+Hint Session提供target/actual workload信息，资源决策仍由系统和thermal策略完成。
 
-## 在 Perfetto 中识别游戏引擎链路
+### “Game Mode Performance 会自动提高 FPS”
 
-| Trace 特征 | 可能的引擎 |
-|:---|:---|
-| `PlayerLoop`, `Physics.FixedUpdate` | Unity |
-| `GameThread::Tick`, `FRenderingThread` | Unreal |
-| `Expected Timeline` / `Actual Timeline` 与游戏 Surface 同步波动 | 默认可见的帧节奏信号 |
-| 自定义 `preWait` / `postWait` Slice | 已接入 Swappy tracer 且应用主动埋点 |
-| `vkQueueSubmit` / `eglSwapBuffers` | Vulkan / GLES 后端 |
-| 密集的 `DrawCall` Slice | 游戏引擎渲染 |
+OEM策略、画质、thermal、frame-rate vote与引擎上限都可能限制结果。Performance mode也可能通过降低部分画质来换稳定帧率。
 
-**常见性能问题诊断**：
+### “BufferQueue 有64个slot，所以游戏要手工改成三缓冲”
 
-| 现象 | 可能原因 | 查看 |
-|:---|:---|:---|
-| 逻辑帧率低 | 物理模拟/AI 太重 | Logic Thread Track |
-| 渲染帧率低 | GPU 过载或 DrawCall 过多 | RenderThread + GPU Track |
-| 帧率波动 | 未接入 Swappy，帧节奏不稳 | VSync 同步情况 |
-| 帧延迟高 | 呈现模式不优或 BufferQueue 阻塞 | `dequeueBuffer` 耗时 |
-
-<!-- AIW-源码调研-2026-07-17 -->
-
-## BufferQueue 内存预算与多分辨率适配（源码级）
-
-### 默认 BufferQueue 配额（android-17.0.0_r1 同 android-14+）
-
-`frameworks/native/libs/gui/BufferQueueCore.cpp` line 113-115 把构造函数默认值钉死在 `mMaxBufferCount=64`、`mMaxAcquiredBufferCount=1`、`mMaxDequeuedBufferCount=1`。配合 line 246-253 的 `getMaxBufferCountLocked`：
-
-```cpp
-int maxBufferCount = mMaxAcquiredBufferCount + mMaxDequeuedBufferCount +
-        ((mAsyncMode || mDequeueBufferCannotBlock) ? 1 : 0);
-maxBufferCount = std::min(mMaxBufferCount, maxBufferCount);
-```
-
-默认实际可分配 buffer 上限为 **2 块**（双缓冲）。游戏引擎拿到新 Surface 后必须显式 `Surface::setBufferCount(3)`，否则即使 `targetFrameRate=60` 也会卡在双缓冲、平均 latency 多 16ms。
-
-### `setMaxDequeuedBufferCount` 校验顺序（BufferQueueProducer.cpp:127-202）
-
-校验路径是严格的「先取当前 dequeue 状态，再算 minUndequeued + maxDequeued，最后比对 mMaxBufferCount」：
-
-| 校验 | 来源 | 失败返回 |
-|:---|:---|:---|
-| 当前 dequeue 计数超过新值 | `mCore->mActiveBuffers` 遍历 | `BAD_VALUE` |
-| bufferCount > 64 (`NUM_BUFFER_SLOTS`) | `BufferQueueDefs::NUM_BUFFER_SLOTS` | `BAD_VALUE` |
-| bufferCount < minBufferSlots | `getMinMaxBufferCountLocked()` (= minUndequeued + 1) | `BAD_VALUE` |
-| bufferCount > mMaxBufferCount | 上限保护 | `BAD_VALUE` |
-
-**实战意义**：折叠屏/分屏分辨率切换时游戏线程还持有一帧 buffer，引擎调用 `setMaxDequeuedBufferCount(2)` 会立即 `BAD_VALUE`——这种场景应**降级到 `setMaxDequeuedBufferCount(1)` 或干脆 keep 现状**，不要重试或拉低 target。
-
-### 低内存设备降级路径
-
-| 触发条件 | 引擎侧应做 |
-|:---|:---|
-| `onTrimMemory(TRIM_MEMORY_RUNNING_LOW)` | `setBufferCount(2)` 把三缓冲砍到双缓冲，立省 8.3 MB（1080p RGBA8） |
-| `PowerManager.getCurrentThermalStatus() >= THERMAL_STATUS_MODERATE` | 降 QualitySettings / shadowDistance / postProcessQuality |
-| `PerformanceHintManager.Session.reportActualWorkDuration > 1.2 × target` 持续 | 主动调 `setPreferPowerEfficiency(true)`，让小核跑 |
-| `GameManager.getGameMode() == BATTERY` | Unity 2023.2+ / UE 5.3+ 在 GameStateChanged 回调里降 QualitySettings 等级 |
-
-### Texture 压缩格式查询（Vulkan / GLES / NDK 三条路径）
-
-| 路径 | 关键 API | 适用场景 |
-|:---|:---|:---|
-| Vulkan | `vkGetPhysicalDeviceImageFormatProperties2` + `textureCompressionASTC_LDR` | 主推；支持 ASTC HDR (`VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK_EXT`) |
-| GLES | `glGetCompressedTexFormats` / `GL_COMPRESSED_RGBA_ASTC_4x4_KHR` | 旧引擎或 fallback 路径 |
-| NDK | `AHardwareBuffer_allocate` + `AHARDWAREBUFFER_FORMAT_*` | 跨 API 共享硬件缓冲；HDR10+ 推荐 `AHARDWAREBUFFER_FORMAT_R10X6G10X6B10X6A10X6_UNORM` |
-
-[已验证: frameworks/native/libs/gui/BufferQueueCore.cpp:113-145/224-253, BufferQueueProducer.cpp:127-202, Surface.cpp:1994-2024; android-17.0.0_r1 Gitiles tag 本轮未公开可取，与 android-14-release 行为一致。]
-
-<!-- /AIW-源码调研-2026-07-17 -->
+64是slot上限语义。swapchain image count应通过EGL/Vulkan和native window协议协商，不应调用隐藏接口硬改活动队列。
 
 ## 与其他章节的关系
 
-- **8.9 游戏性能与 Game Mode API**：游戏性能优化实战
-- **18.8 OpenGL ES / 18.9 Vulkan**：底层图形 API 管线
-- **2.17 Frame Pacing Library**：帧节奏控制原理
+- [2.4 Choreographer](../../part1-fundamentals/ch02-rendering/04-choreographer.md)：VSync、回调与帧调度。
+- [8.9 游戏性能与 Game Mode](../ch08-responsiveness/09-game-performance.md)：游戏侧性能治理。
+- [18.6 SurfaceView](06-surfaceview.md)：独立 Surface、BLAST与生命周期。
+- [18.8 OpenGL ES](08-opengl-es.md)：EGL window surface和GLES提交。
+- [18.9 Vulkan](09-vulkan-native.md)：Android Vulkan swapchain与显式同步。
+- [18.19 可变刷新率](19-variable-refresh-rate.md)：frame-rate vote、ARR和display mode。
 
-## 参考资料
+## Android 17 源码核对清单
 
-- Android Game SDK：Frame Pacing 官方文档（Swappy 库介绍与集成指南）  
-  https://developer.android.com/games/sdk/frame-pacing
-- SwappyVk API Reference（`SwappyVk_setSwapIntervalNS` / `SwappyVk_initAndGetRefreshCycleDuration` / `SwappyTracer` 等）  
-  https://developer.android.com/games/sdk/reference/frame-pacing/group/swappy-vk
-- Surface / Frame Rate API Reference（API 30/31/36/37 帧率与 producer throttling 边界）：https://developer.android.com/reference/android/view/Surface
-- Native Window NDK Reference（`ANativeWindow_setFrameRate*` 与 compatibility 边界）：https://developer.android.com/ndk/reference/group/a-native-window
-- PerformanceHintManager.Session API Reference（API 31/34/35 方法边界）：https://developer.android.com/reference/android/os/PerformanceHintManager.Session
-- GameManager API Reference（API 31/34 GameMode 边界）：https://developer.android.com/reference/android/app/GameManager
-- SurfaceView API Reference（Android N 起位置同步，Android 14 起 arbitrary alpha）：https://developer.android.com/reference/android/view/SurfaceView
-- Unity 文档：Android Player Settings — Optimized Frame Pacing 选项说明  
-  https://docs.unity3d.com/Manual/class-PlayerSettingsAndroid.html
-- Unreal Engine 文档：Frame Pacing for Mobile Devices（Swappy 集成与 CVars 配置）  
-  https://dev.epicgames.com/documentation/en-us/unreal-engine/frame-pacing-for-mobile-devices-in-unreal-engine
-- **TextureView 游戏引擎集成机制（Unity/Unreal）**（2026-06-04 DeepResearch）
-  - 游戏引擎主渲染不走 TextureView（走 SurfaceView 或 Native Surface），TextureView 仅用于游戏内视频纹理、AR 相机预览等 UI 叠加场景。Unity 使用 IAndroidPlayerSurface 通过 ANativeWindow 直接绑定 GL context；Unreal Engine 通过 AndroidCanvas/OpenGL ES 直接绑定 Surface。TextureView 在游戏引擎场景的核心价值是 VideoTexture 和 AR 相机预览，非主渲染路径。
+### 平台
+
+- [`SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java)：SurfaceControl、BLASTBufferQueue、resize和窗口同步。
+- [`Surface.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java)：Frame Rate API与API 37 producer throttling。
+- [`PerformanceHintManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java)：Hint Session、WorkDuration和power efficiency。
+- [`GameManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/GameManager.java)：Game Mode和Game State入口。
+- [`GameState.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/GameState.java)：loading与gameplay state语义。
+- [`swapchain.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp)：Vulkan swapchain到ANativeWindow/BufferQueue，以及Android 17 present timing。
+- [`Surface.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/Surface.cpp)：native frame-rate和producer throttling调用。
+- [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)：Layer snapshot、composition与present主路径。
+
+### 通用内核
+
+- [`dma-buf.c`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)
+- [`dma-fence.h`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/include/linux/dma-fence.h)
+- [`sync_file.c`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)
+
+### 官方文档
+
+- [AGDK Frame Pacing / Swappy](https://developer.android.com/games/sdk/frame-pacing)
+- [Swappy Vulkan API](https://developer.android.com/games/sdk/reference/frame-pacing/group/swappy-vk)
+- [Vulkan frame pacing extensions](https://developer.android.com/games/develop/vulkan/frame-pacing-extensions)
+- [GameActivity](https://developer.android.com/games/agdk/game-activity)
+- [ADPF](https://developer.android.com/games/optimize/adpf)
+- [PerformanceHintManager.Session](https://developer.android.com/reference/android/os/PerformanceHintManager.Session)
+- [Game Mode API](https://developer.android.com/games/optimize/adpf/gamemode/gamemode-api)
+- [Optimize refresh rates](https://developer.android.com/games/optimize/display-refresh-rate-change)
+- [Unity Profiler markers](https://docs.unity3d.com/Manual/profiler-markers.html)
+- [Unreal threaded rendering](https://dev.epicgames.com/documentation/en-us/unreal-engine/threaded-rendering-in-unreal-engine)
+- [Unreal Insights](https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-insights-in-unreal-engine)
+
+## 小结
+
+- 游戏用自有game loop持续推进，性能分析要从输入采样追到对应帧present。
+- Game、Render、RHI、worker和GPU可以跨帧并行；吞吐提高时也要约束in-flight latency。
+- Unity Profiler、Unreal Insights和Perfetto各自覆盖不同层级，统一frame id比猜线程名可靠。
+- 游戏常使用独立SurfaceView/GameActivity路径；Android 17的现代SurfaceView由BLAST和SurfaceControl管理，游戏buffer仍经SurfaceFlinger。
+- Swappy控制提交节奏和队列深度，Frame Rate API表达刷新率意图，ADPF报告workload，Game Mode表达用户目标。
+- Android 17新增present timing与producer throttling控制，但显式同步、extension检查和设备验证仍由引擎负责。
+- BufferQueue slot上限不能当作当前buffer数量，也不应据此建议应用强改二缓冲或三缓冲。
