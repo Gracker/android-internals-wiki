@@ -19,6 +19,10 @@ pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
+last_verified: "2026-07-27"
+confidence: high
+last_idle_audit_at: "2026-07-27T18:35:19+08:00"
+last_idle_audit_run_id: "20260727-183519-idle-audit-207a0280"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-02"
 task6_result: pass-light-edit
@@ -358,7 +362,7 @@ SurfaceFlinger 不要求每个可见 layer 在每个 display frame 都有新 buf
 
 SurfaceFlinger 可能因 sync group、barrier、desired present、acquire fence 或其他条件推迟更新。满足 latch-unsignaled 条件时，transaction 可以先通过部分 readiness；RenderEngine 或 HWC 读取 buffer 前仍要遵守 fence。
 
-看到 transaction committed、`BufferTX` 墈加或 snapshot 更新，都不能单独证明目标 display 已使用新 buffer。
+看到 transaction committed、`BufferTX` 增加或 snapshot 更新，都不能单独证明目标 display 已使用新 buffer。
 
 ### HWC present 路径
 

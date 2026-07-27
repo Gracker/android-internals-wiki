@@ -8,8 +8,8 @@ related_chapters: ["26.21", "26.23", "26.27", "1.35", "14.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "Clippings参考书+AOSP源码+章节深挖"
-last_verified: "2026-07-25"
-confidence: medium-low
+last_verified: "2026-07-27"
+confidence: low
 sources:
   - "技术文章/source/juejin-android/2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md"
   - "本章既有提纲: JVMTI/ART/runtime-monitoring"
@@ -17,16 +17,16 @@ last_body_apply_at: "2026-07-24T07:15:55+08:00"
 last_body_apply_run_id: "20260724-071534-2a71a09c"
 last_body_apply_source: "source-index:91"
 task2b_state: fixed
-task6_state: fixed
-task9_state: reviewed
-pipeline_stage: ready-for-review
-reviewed_date: "2026-07-24"
+task6_state: needs-rework
+task9_state: needs-rework
+pipeline_stage: needs-rework
+reviewed_date: "2026-07-27"
 reviewed_by: "hermes-aiw-review-finalize-apply"
-last_review_finalize_at: "2026-07-24T23:06:14+08:00"
-last_review_finalize_run_id: "20260724-230556-dd7a6e56"
+last_review_finalize_at: "2026-07-27T18:05:34+08:00"
+last_review_finalize_run_id: "20260727-180515-f7d5f885"
 last_rework_at: "2026-07-25T13:35:15+08:00"
 last_rework_run_id: "20260725-133515-rework-afd64006"
-rework_summary: "将章节从未核验的 ART/JVMTI 源码结论改写为 Android CLI 支撑的 JVMTI 实验入口、证据采集和待核验边界；删除/降级 Agent_OnLoad、MethodEntry、FieldAccess、TagObject、线上 attach/detach 等未获材料支撑的正文承诺。"
+rework_summary: "2026-07-27 复核判定仍需 rework：当前唯一正文材料是 Android CLI 预览版介绍，只能支撑实验工程/SDK/设备/UI/文档检索入口；无法支撑题名中的 JVMTI Agent、ART runtime/jvmti、attachAgent、事件回调、对象 tag 或线上 attach/detach 源码结论。需补 Android 17.0.0_r1 ART/Framework 一手源码与可复现实测后再 finalized。"
 ---
 
 # 26.29 JVMTI Agent — ART 运行时动态监控的实验入口与证据边界
@@ -85,6 +85,8 @@ JVMTI Agent 的研究目标，是把 ART 运行期的部分行为转化为可观
 
 ## 复查结论
 
-本轮 rework 已把未获材料支撑的 JVMTI 运行时断言降级为待核验清单，并把正文主线固定为 Android CLI 支撑的实验入口、证据采集和版本边界说明。章节可回到 `ready-for-review`，但置信度保持 `medium-low`：它适合作为 JVMTI 后续实验的准备章，不应被引用为 ART/JVMTI API 细节的源码级最终结论。
+本轮 finalize 复核结论更新为“保留 `ready-for-review`、但 `task6_state` / `task9_state` / `pipeline_stage` 标记 `needs-rework`”。原因不是正文仍包含已确认为真的错误结论，而是章节题名与目标范围仍指向 JVMTI Agent / ART runtime dynamic monitoring；当前唯一可追溯正文材料却只是 Android CLI 预览版介绍，只能支撑实验环境、SDK、设备/UI 操作和文档检索入口，不能支撑 `runtime/jvmti`、`android.os.Debug.attachAgent`、Agent 加载卸载、事件回调、对象 tag 或线上 attach/detach 的 Android 17.0.0_r1 源码级结论。
+
+在补齐 Android 17.0.0_r1 ART/Framework 一手源码与可复现实测前，本章可以作为“JVMTI 实验准备与证据边界”草稿保留，但不应进入 finalized，也不应被引用为 JVMTI API/ART 语义的最终章节。
 
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 53.md]
