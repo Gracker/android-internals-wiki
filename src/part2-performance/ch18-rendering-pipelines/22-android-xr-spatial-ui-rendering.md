@@ -74,130 +74,246 @@ sources:
 
 ## 这章要解决的问题
 
-Android XR 把 Android 应用放进头显、wired XR glasses 和 AI glasses 这类设备形态里。普通手机应用可以作为 2D 面板运行；大屏适配较好的应用会以空间面板呈现；差异化 XR 应用会加入空间面板、环境、3D 模型、空间音频、3D / spatial video、锚点等 XR 专属内容。性能分析要先判断应用处在哪一档，再决定看标准 Android UI 渲染、3D 资源加载，还是 Unity / OpenXR 渲染路径。[已验证: 官方文档, developer.android.com/docs/quality-guidelines/android-xr]
+Android XR 覆盖多种运行形态。手机或大屏应用可以作为兼容面板运行；XR 差异化应用可以增加 Subspace、空间面板、3D 模型、环境和感知能力；Unity/OpenXR 应用由引擎向 XR runtime 提交 swapchain image；display glasses 上的 Projected Activity 则运行在 companion host device。
 
-XR 场景比普通 2D 页面多了三类成本：每帧预算更紧、资源更大、用户对姿态延迟更敏感。官方质量指南给出的渲染目标是 90Hz 下单帧小于 11.1ms，72Hz 下单帧小于 13.8ms；差异化 XR 应用还要满足每眼至少 1856 × 2160 的分辨率要求。这个预算不是“普通页面多加一点 3D 内容”的余量，而是从输入、姿态、渲染、合成到显示一起消耗的时间窗口。[已验证: 官方文档, developer.android.com/docs/quality-guidelines/android-xr]
+这些形态共享 Android 进程、CPU、GPU、内存、I/O 和功耗约束，但显示终点不完全相同。普通 2D 内容的应用侧仍能看到 `Choreographer`、HWUI RenderThread 和 Surface Buffer，XR runtime 还要负责空间放置、视点/姿态、可能的 reprojection，以及向 XR 显示设备提交。Unity/OpenXR 的帧循环也不能直接套用普通 View 的 `doFrame → DrawFrame → queueBuffer`。
 
-本章只讨论工程排查口径：UI 栈怎么分、环境资产怎么控、3D 模型怎么入场、帧时间怎么观测。产品设计、沉浸叙事和交互美术不展开。
+本章解决三个问题：
+
+1. 当前内容属于兼容 2D 面板、Jetpack XR 空间内容、Unity/OpenXR，还是 Projected/Glimmer；
+2. 帧时间、资源加载和显示延迟分别在哪里观测；
+3. 哪些数字是 Android XR 质量目标，哪些只是资产制作建议或工具观测值。
+
+### 当前版本与源码边界
+
+Android 平台锚点固定为 Android 17 / API 37 的 `android-17.0.0_r1`，kernel 固定为 `android17-6.18-2026-06_r6`。Jetpack XR 独立于平台 tag 发布，截至 2026-07-15 的公开版本如下：
+
+| 组件 | 当前公开版本 | 稳定性边界 |
+|:---|:---|:---|
+| Jetpack Compose for XR | `1.0.0-alpha16` | 仍是 alpha；API 可能继续变化 |
+| Jetpack SceneCore | `1.0.0-beta01` | beta；`Session.create` 等 API 已在近期变化 |
+| ARCore for Jetpack XR | `1.0.0-beta01` | beta；`RenderViewpoint`、tracking API 仍需按版本锁定 |
+| Jetpack XR SDK 总体 | Android XR Developer Preview | 官方仍把整组 API 标为开发中 |
+
+Compose for XR 从 `1.0.0-alpha14` 起把 `compileSdk` 更新到 API 37，并要求至少 AGP 9.2.0；使用 alpha16 时也应按对应 release notes 配置构建环境。正文只使用当前文档仍存在的概念，不拿早期 alpha 的类名推断长期 API。
+
+公开 AOSP tag 可以验证 Android 的 HWUI、Surface、BufferQueue、fence 和调度公共层，但不能据此补写未公开的 XR compositor 内部调用链。本文对 XR runtime 的描述只到公开 Jetpack、Unity/OpenXR 和质量文档给出的边界。
 
 ## Android XR 在渲染体系中的位置
 
-Android XR 的兼容性分成三档，三档对应不同的性能检查入口。
+Android XR 质量指南把 Android 应用分成 compatible mobile、compatible large screen 和 differentiated 三档。工程上还应单列 Unity/OpenXR 与 Projected/Glimmer，因为它们的帧循环和设备边界不同。
 
-| 应用形态 | 官方定义里的运行方式 | 渲染性能入口 |
+| 应用形态 | 内容如何进入 XR | 优先观察点 |
 |:---|:---|:---|
-| Android XR compatible mobile app | 现有手机应用自动进入 XR，以用户环境中的面板运行，可能不支持自由缩放 | 仍按普通 Android UI 看主线程、RenderThread、SurfaceFlinger、输入延迟和启动耗时 |
-| Android XR compatible large screen app | 已完成 large screen Tier 1 / Tier 2 适配，以 1024dp × 720dp 空间面板运行 | 在普通 UI 基础上增加大尺寸布局、外设输入、多任务和 resize 状态切换检查 |
-| Android XR differentiated app | 显式使用 XR 能力，例如空间面板、环境、3D 模型、空间音频、3D / spatial video、锚点 | 增加 3D 资源加载、环境资产、姿态延迟、Full Space 切换和引擎渲染路径检查 |
+| compatible mobile app | 现有 Activity 作为 2D 面板运行 | App 主线程、HWUI、SurfaceFrame、输入、启动与 resize |
+| compatible large screen app | 大屏自适应 Activity 作为可调整面板运行 | 2D 路径，加窗口尺寸、外设输入、多任务和状态恢复 |
+| Jetpack XR differentiated app | Subspace、SpatialPanel、SceneCore entity、环境等进入 XR scene | 2D 面板 Buffer、Subspace layout、模型/纹理、scene attach、XR runtime |
+| Unity / OpenXR | 引擎渲染 swapchain image，经 `xrEndFrame` 等边界交给 runtime | simulation、render thread、GPU、swapchain wait/release、spacewarp/late latching |
+| Projected / Compose Glimmer | Activity 在 host phone 运行，体验投射到 audio/display glasses | host CPU/GPU、projected display 状态、连接、眼镜输入与远端 present |
 
-移动端和大屏兼容应用没有因为进入 XR 就自动变成 3D 引擎应用。它们多数仍是 View / Compose → RenderThread → SurfaceFlinger 这条路径，只是窗口承载位置变成空间面板。差异化应用才会把更多工作移到 Jetpack SceneCore、Unity 或 OpenXR 侧。[已验证: 官方文档, developer.android.com/docs/quality-guidelines/android-xr]
+兼容面板没有自动变成 3D 引擎应用，但“应用 Buffer 生成完成”也不是 XR 显示完成。Android App FrameTimeline 能帮助定位应用侧 SurfaceFrame；XR runtime 的姿态更新、空间合成、reprojection 与光学显示需要 runtime、引擎或设备专用证据。
 
-分析时不要把“在 XR 设备上运行”和“使用 XR 渲染能力”混成一个结论。前者可能只多了面板尺寸、输入方式和窗口状态；后者会引入 glTF / glb、IBL、passthrough、空间视频和姿态预测，排查入口完全不同。
+下面的概念图只划分责任，不表示公开 API 承诺了固定进程或固定 compositor 名称。
+
+```text
+2D compatible / SpatialPanel
+App UI → HWUI/Surface Buffer → XR scene/runtime → XR compositor/display
+
+Jetpack XR 3D
+App state → Subspace/SceneCore entity → model/material resources
+          → XR scene/runtime → XR compositor/display
+
+Unity/OpenXR
+Simulation → RenderThread/GPU → OpenXR swapchain image
+           → xrEndFrame → XR runtime/reprojection → display
+
+Projected glasses
+Host Activity/Compose → projected session/transport → glasses display/input
+```
+
+这四条路径可能共享 GPU 和显示资源，也可能由不同 runtime 实现。trace 分析从“本帧是谁生产、提交到哪个 surface/swapchain、谁负责姿态与最终 present”开始，不能只按框架名找最长 slice。
 
 ## Jetpack XR SDK 的 UI 栈边界
 
-Jetpack XR SDK 不是单一渲染器，它更像一组面向不同内容类型的库。Compose for XR 负责把熟悉的 Compose 行列布局扩展到空间 UI；SceneCore 负责实体、空间环境、3D 模型、空间音频和可移动 / 可缩放组件；ARCore for Jetpack XR 负责 motion tracking、anchors、hit testing、plane detection、depth understanding 等感知能力。[已验证: 官方文档, developer.android.com/develop/xr/jetpack-xr-sdk]
+Jetpack XR SDK 是一组库，不是单一渲染器：
 
 | 内容类型 | 主要 API / 库 | 性能观察点 |
 |:---|:---|:---|
-| 普通 View / Compose 内容 | View interoperability、Compose for XR、`SpatialPanel` | 仍要看主线程布局、重组、RenderThread、窗口 buffer 提交 |
-| 空间 UI 组件 | Compose for XR subspace composables、orbiter、spatial panel | 看面板数量、尺寸、resize、内容更新频率和输入反馈 |
-| 3D 模型 | `SpatialGltfModel`、`GltfModel.create()`、`SceneCoreEntity` | 看 glb 体积、纹理压缩、异步加载、首次可见时间和运行时显存压力 |
-| 空间环境 | `SpatialEnvironment`、skybox、glTF geometry、IBL ZIP | 看环境资源体积、IBL 分离、材质采样、Full Space 切换时机 |
-| Unity / OpenXR 内容 | Unity OpenXR Android XR package、Android XR Extensions | 看 Unity 主线程、渲染线程、URP / Vulkan 配置、spacewarp、late latching |
+| 2D View / Compose | 普通 Activity 内容、View interoperability、`SpatialPanel` | UI thread、recomposition/layout、HWUI、面板 Buffer cadence |
+| Subspace layout | `Subspace`、`SpatialRow`、`SpatialColumn`、orbiter | Subspace measure/layout、实体数量、尺寸/位置更新频率 |
+| 3D 模型 | `SpatialGltfModel`、`GltfModel.create()`、`GltfModelEntity` / `SceneCoreEntity` | I/O、解析、纹理转码/上传、首次可见、动画与材质成本 |
+| 外部媒体 Surface | `SpatialExternalSurface`、SceneCore `SurfaceEntity` | codec/Camera Producer、surface size、stereo shape、Buffer/fence |
+| 空间环境 | `SpatialEnvironment`、glTF geometry、skybox、IBL ZIP | 环境切换、资产常驻、纹理带宽、Full Space |
+| 感知 | ARCore for Jetpack XR、`ArDevice`、`RenderViewpoint`、anchors/planes/depth | tracking state、数据新鲜度、感知 CPU、业务更新频率 |
+| Display glasses | Compose Glimmer、Jetpack Projected | host Activity、projected display capability、输入与连接 |
 
-Compose for XR 文档明确给出 `SpatialPanel`：它能在空间面板中显示视频、静态图片或其他应用内容。3D 模型则通过 `SpatialGltfModel` 或 `SceneCoreEntity` 进入空间布局，模型加载是异步过程，初始 composition 期间 intrinsic size 可能为 0，资源就绪后布局会再次测量。[已验证: 官方文档, developer.android.com/develop/xr/jetpack-xr-sdk/ui-compose]
+`Subspace` 只在 spatialization enabled 时渲染；在 Home Space 或非 XR 设备上，Subspace 中的内容可能被忽略。`SpatialPanel` 把 2D 内容放进空间布局，`SceneCoreEntity` 把 SceneCore 实体接入 Compose for XR，`SpatialExternalSurface` 面向媒体或其他 Surface 内容。三者不能只按“都是空间组件”合并统计。
 
-这个边界决定了 trace 的读法。普通列表卡顿仍从 `Choreographer#doFrame`、RenderThread、FrameTimeline 入手；glb 首次加载慢要看资源读取、解码、GPU 上传和布局重测；Unity 内容要走引擎自己的 profiler 和 Android 系统 trace 双口径。详见 18.1、18.8、18.12 和 18.20 节。
+截至 alpha16，`SpatialGltfModel` 的加载与动画 API 仍在调整，动画相关 API 还被标为 experimental。业务代码必须固定具体依赖版本；诊断文档也应记录 `xr.compose`、`xr.scenecore`、`xr.arcore` 的完整版本，不能只写“Jetpack XR”。
 
 ## 空间环境资产的成本构成
 
-Jetpack XR SDK 的空间环境由 `SpatialEnvironment` 管理。官方文档把它描述成 skybox 图像与 glTF geometry 的组合；同一时间只能设置一个 skybox 和一个 glTF geometry。空间环境只在 Full Space 可见，passthrough 可以作为另一种环境配置，在 full opacity 时完全遮挡 skybox 和 geometry。[已验证: 官方文档, developer.android.com/develop/xr/jetpack-xr-sdk/add-environments]
+`SpatialEnvironment` 管理应用的空间环境偏好。公开文档描述的环境由 skybox 与 glTF geometry 组成，同一时间只能设置一个 skybox 和一个 glTF geometry。环境只在 Full Space 可见；passthrough 达到 full opacity 时会遮住 skybox 和 geometry。
 
-从 alpha04 起，官方建议把环境资产拆成两个部分：
+从 Jetpack XR alpha04 起，官方建议把可见环境与 IBL 数据拆开：
 
-| 资产 | 用途 | 性能约束 |
+| 资产 | 用途 | 官方建议的边界 |
 |:---|:---|:---|
-| `.glb` / `.gltf` | 环境 geometry 和用户看到的主 skybox 纹理 | 文件大小建议不超过 80MB；mesh 离用户近处更密、远处更稀；每个 geometry patch 不超过 10,000 vertices |
-| IBL ZIP | 从 HDR EXR 通过 `cmgen` 生成，用于 lighting、reflection、specular 等计算 | 低分辨率 EXR 即可，官方示例使用 1024 × 512；ZIP 不承担可见 skybox 纹理职责 |
-| black PNG | 配合 IBL 生成流程的优化纹理 | 官方示例使用 100 × 50，用户不会直接观看这张图 |
+| `.glb` / `.gltf` | 环境 geometry 与用户看到的 skybox texture | geometry 文件建议控制在 80 MB 或更小；近处 mesh 更密、远处更稀；每个 geometry patch 不超过 10,000 vertices |
+| IBL ZIP | lighting、reflection、specular 计算 | 由 HDR EXR 经 `cmgen` 生成；示例 EXR 为 1024 × 512 |
+| black PNG | IBL 生成流程中的优化纹理 | 示例为 100 × 50，用户不会直接看到 |
 
-拆分后的收益很明确：可见 skybox 和 lighting map 可以分别优化，减少纹理内存读取带宽和功耗。若应用设置自定义环境但不提供 IBL ZIP，3D 对象可能出现过亮、过暗或反射不匹配。[已验证: 官方文档, developer.android.com/develop/xr/jetpack-xr-sdk/optimize-environment-assets]
+80 MB 与 10,000 vertices 是内容制作建议，不是 runtime parser 的硬限制。超过建议值可能提高解析、内存、GPU 和功耗成本，但不能仅凭文件大小判定某帧一定卡顿。
 
-环境资产不要只按“画质越高越好”处理。官方给出 Android XR 环境视距 200m，超过这个距离的 parallax 已经难以感知；用户高度建议约 1.5m，用来减少大型 UI 元素与地形裁剪。纹理和 geometry 的预算应围绕这个观察距离设计，而不是把桌面端 3D 场景资源原样塞进 APK。[已验证: 官方文档, developer.android.com/develop/xr/jetpack-xr-sdk/optimize-environment-assets]
+拆分可见 skybox 与 lighting map 后，两者可以独立选择分辨率，降低 texture memory read bandwidth 和功耗。自定义环境含 3D 对象时，缺少匹配 IBL 可能导致过亮、过暗或反射与环境不一致。
+
+官方还给出 200 m 的环境 view distance 和约 1.5 m 的用户高度建议。它们服务于资产作者控制 parallax、mesh 密度和裁剪，不是传感器量程或平台 API 上限。
 
 ## 3D 模型与纹理资源的加载预算
 
-Android XR 支持 glTF 格式，常见落盘形式是 `.gltf` 或 `.glb`。官方文档给了两条路径：Compose 侧用 `SpatialGltfModel`，SceneCore 侧先通过 `GltfModel.create()` 把 glTF 加载到内存，再创建实体。3D 模型、环境 geometry 这类内容只在 Full Space 可见；Scene Viewer 在 Android XR 上也会进入 Full Space，并且只支持指向 glTF 文件的 file URI 参数。[已验证: 官方文档, developer.android.com/develop/xr/jetpack-xr-sdk/add-3d-models]
+Jetpack XR 支持 glTF 2.0，常见文件形式是 `.gltf` 或 `.glb`。Compose for XR 可使用 `SpatialGltfModel`；SceneCore 路径先通过 `GltfModel.create()` 加载，再用 `GltfModelEntity.create()` 放进 ActivitySpace。部分 3D 内容只在 Full Space 可见，创建前应检查 `SpatialCapability.SPATIAL_3D_CONTENT`。
 
 加载预算可以按四段拆：
 
 | 阶段 | 常见成本 | 排查入口 |
 |:---|:---|:---|
-| 文件读取 | APK / asset / URI 读取，压缩包展开，冷启动路径上的 I/O 竞争 | 启动 trace、文件 I/O、APK 体积和 asset 分包策略 |
-| 模型解析 | glTF JSON / binary chunk 解析，node、mesh、material、animation 数据结构创建 | 首次显示前的 CPU slice、对象分配、GC |
-| 纹理准备 | KTX2、mipmap、纹理尺寸和材质数量决定上传量与采样成本 | GPU memory、纹理格式、AGI / GPU counter（具备设备支持时） |
-| 场景接入 | `SpatialGltfModelState.status` 变化、布局重测、entity 创建和可见性切换 | Compose recomposition、Subspace layout、Full Space 切换耗时 |
+| 文件读取与交付 | APK/asset/URI、压缩、Play Asset Delivery、冷缓存 | I/O trace、下载/解包时间、资源命中 |
+| 解析与对象创建 | glTF chunk、node、mesh、material、animation、对象分配 | CPU、allocation、GC、加载 coroutine |
+| 纹理转码与 GPU 上传 | KTX2/Basis、mipmap、纹理尺寸、材质与 sampler | GPU memory/counter、upload、带宽、首次 shader |
+| scene attach 与首帧 | Entity 创建、Subspace measure/layout、Full Space capability | 首次可见时间、layout、runtime submit |
 
-官方环境资产文档明确建议 glb 使用 mipmaps 和 KTX2 textures 来优化 GPU 性能。这里的收益不是只看包体积，更多体现在纹理采样、显存带宽和远近距离切换。移动 GPU 常见 tile-based rendering 架构对带宽很敏感，过大的 skybox、无 mipmap 的高分辨率纹理、材质数量过多，都会把功耗和温度推高。详见 2.10 节。
+压缩后的 `.glb` 或 KTX2 文件大小不等于 GPU resident size。运行时转码格式、mip chain、每眼目标、材质数量和 runtime 缓存都会改变内存。官方建议环境 glb 使用 mipmaps 与 KTX2，主要收益包含纹理采样、远近层级、内存带宽和包体；仍需在目标 GPU 上确认最终格式与常驻量。
 
-对业务代码来说，最稳的策略是把 3D 模型加载从用户操作的关键路径移开：进入 Full Space 前预取可复用资源，首帧只挂必要模型，动画和高精度材质等候资源就绪后再开启。若必须在交互后加载，UI 要给出明确状态，不要让用户在头显里盯着无反馈的空场景。
+大模型宜异步预取，但“尽早加载全部资源”会把启动、峰值内存与热压力前移。工程上应按可见优先级加载：
+
+1. 首个可交互面板与必要模型；
+2. 用户视野内近期会出现的纹理和动画；
+3. 远处环境或低概率内容；
+4. 离开场景后可以释放或降级的缓存。
+
+资源加载、scene attach 与首帧 present 要分别打点。若只记录 `GltfModel.create()` 返回时刻，会漏掉 GPU upload、shader warm-up 和首次被 runtime 采用的时间。
 
 ## 视点、姿态与显示配置对帧时间的影响
 
-XR 的帧时间分析不能只看“App 是否掉帧”。头显里用户头部姿态变化会不断改写可见画面，渲染晚一帧、姿态用旧一帧、显示提交再晚一帧，体感上都比普通手机页面明显。Unity 的 Android XR Extensions 文档把 late latching 描述为在 frame generation pipeline 的较晚阶段更新 head pose，用来降低 motion-to-photon latency；官方说法是可接近减少一个 frame time 的输入延迟。[已验证: 官方文档, developer.android.com/develop/xr/unity/performance/androidxr-extension-settings]
+XR 需要同时看四条时间线：
 
-Jetpack XR release notes 还提到 `PanelEntity` / `SurfaceEntity.getPerceivedResolution()` 现在接收开发者提供的 `RenderViewpoint`，ARCore for Jetpack XR 增加了 `ArDevice` 和 `RenderViewpoint`，让应用读取设备 pose 和显示配置用于渲染。公开文档给出的接口仍在快速变化，章节中的判断只落到“要把视点和显示配置纳入预算”，不推断 runtime 内部实现。[已验证: 官方文档, developer.android.com/jetpack/androidx/releases/xr-scenecore；developer.android.com/jetpack/androidx/releases/xr-arcore]
+| 时间线 | 要回答的问题 |
+|:---|:---|
+| simulation / UI | 本帧状态、输入和动画是否及时更新 |
+| App GPU | 当前 eye buffer 或 panel buffer 是否在 deadline 前完成 |
+| XR runtime | pose 更新、spacewarp/reprojection、空间合成是否采用了本帧 |
+| display | runtime 提交后何时扫描与显示；光学响应是否另有延迟 |
 
-排查时按两条线分开看：
+应用完成一帧，不等于用户看到了同一姿态下的这帧。反过来，spacewarp/reprojection 可能让显示继续刷新，而 App 没有为每个 display refresh 生产全新 render frame。引擎 FPS、App FrameTimeline 与 display refresh rate 需要分开记录。
 
-- App 生产帧是否准时：主线程、渲染线程、引擎渲染线程、GPU 队列是否超过当前刷新周期。
-- 姿态到显示是否够短：Unity / OpenXR 内容看 late latching、spacewarp、Vulkan subsampling 这类 XR 扩展；Jetpack XR 内容看资源加载、面板更新和 Full Space 状态切换。
+ARCore for Jetpack XR 的 `ArDevice` 与 `RenderViewpoint` 可提供设备 pose 和显示配置相关数据。这些 API 让应用获得渲染输入，并不说明 runtime 在何时 latch pose，也不提供最终 motion-to-photon latency。读取频率、时间戳/坐标空间和实际使用该 pose 的 render frame 必须在应用侧对齐。
 
-Unity 文档还提供 URP Application Spacewarp 和 Vulkan subsampling。spacewarp 通过 motion vectors 和 depth data 合成隔帧，降低 GPU 渲染工作量；Vulkan subsampling 面向 GPU 负载优化。这些是引擎路径的能力，不能套用到普通 Compose 面板。[已验证: 官方文档, developer.android.com/develop/xr/unity/performance/androidxr-extension-settings]
+Unity Android XR Extensions 提供三类不同优化：
+
+| 能力 | 作用 | 不能省略的验证 |
+|:---|:---|:---|
+| Application Spacewarp | 使用 motion vector 与 depth 合成交替帧，降低 App GPU 渲染频率 | motion vector/depth 正确性、合成伪影、App 与 display cadence |
+| Vulkan subsampling | 借助 Fragment Density Map 让不同区域以不同密度渲染/采样 | 目标设备支持、画质、GPU/带宽收益 |
+| late latching | 在帧生成后段更新 head pose，官方描述可接近减少一个 frame time 的输入延迟 | 标记节点正确、runtime 支持、MTP 或可替代指标 |
+
+这些能力属于 Unity/OpenXR 引擎路径，不能当作普通 Compose panel 的开关，也不能叠加名义收益后宣称得到固定延迟。
 
 ## Android XR 质量分级的性能检查项
 
-官方质量指南里的兼容性分级可以直接转成检查清单。
+官方 90/72 Hz、per-eye resolution 和启动目标位于 Android XR-differentiated quality requirements。它们是评审目标，不是所有兼容 2D 面板的硬件规格承诺。
 
-| 检查项 | mobile / large screen 口径 | differentiated 口径 |
+| 检查项 | compatible mobile / large screen | XR-differentiated |
 |:---|:---|:---|
-| 布局 | critical task flows 可完成；large screen app 要覆盖所有屏幕尺寸和设备状态 | 空间面板、orbiter、环境和 3D 内容要按 XR 使用方式组织 |
-| 输入 | eye tracking + gesture 或 raycast hands 基本可用；键鼠、触控板、手柄有基础支持 | 手部、视线、控制器、空间控件反馈要和内容延迟一起看 |
-| 渲染 | 普通 Android UI 帧时间与 resize 状态切换 | 90Hz 小于 11.1ms，72Hz 小于 13.8ms；每眼分辨率至少 1856 × 2160 |
-| 启动 | 冷启动和 warm start 不拖慢 first interaction | 指南给出 mean cold start 小于 2s、mean warm start 小于 1s 的目标 |
-| 环境 | 不一定有自定义环境 | 环境亮度不能刺眼；中间水平视线区域内 UI 要可读；Full Space / Home Space 入口要清楚 |
+| 布局 | 核心任务可完成；large screen app 遵守对应 Tier 指南 | Subspace、面板、环境和 3D 内容适配 Full/Home Space |
+| 输入 | Android 常规输入与必要的外设路径 | natural hand input、raycast/gesture 等适用能力 |
+| 渲染 | 2D App 自身 deadline、resize 和输入响应 | 每帧 `<11.1 ms @ 90 Hz`、`<13.8 ms @ 72 Hz` |
+| 分辨率 | 由兼容面板与设备策略决定 | 至少 `1856 × 2160` per eye |
+| 启动 | 记录 cold/warm 与 first interaction | mean cold `<2 s`、mean warm `<1 s` |
+| 稳定性 | crash、ANR、恢复 | 长会话、tracking/runtime 异常、内存与 thermal |
 
-这张表可以作为评审入口，不适合当作通过 / 不通过的唯一依据。Android XR 文档仍处于 Developer Preview 3，Jetpack XR 库也在 alpha 版本，公开 API、工具能力和设备策略都会继续变化。章节里凡是涉及稳定 trace 名、固定系统进程或设备厂商实现的判断，都应保留版本边界。
+11.1 ms 与 13.8 ms 是整个 App render budget 的目标量级，不代表主线程可以独占这段时间。CPU simulation、render thread、GPU、swapchain wait 和 runtime 提交会共同占用时间；native XR App 还需使用引擎或 OpenXR timing 证据。
+
+“每眼 1856 × 2160”也不能直接换算成两次完整 render pass。multiview、foveation、subsampling、spacewarp 与设备 compositor 都可能改变实际像素和 pass 数，必须从 AGI、引擎 frame debugger 或 GPU counter 观察目标设备。
 
 ## 工具与验证入口
 
-XR 问题要把 Android 平台工具和引擎工具一起用，单个工具很难覆盖全路径。
+单个工具无法覆盖从 App 到光学显示的全部路径。每次复盘应明确工具看到的边界。
 
 | 工具 | 适合确认的问题 | 不适合承担的判断 |
 |:---|:---|:---|
-| Android Studio Canary + Android XR Emulator | 功能路径、布局、空间面板、Full Space / Home Space 流程 | 不能代表真实设备的 GPU、温度、光学和传感器延迟 |
-| Perfetto / FrameTimeline | App 主线程、RenderThread、SurfaceFlinger、CPU 调度、I/O、帧 deadline | 公开文档没有承诺稳定的 Android XR 专属 slice 名，不能只按 XR 关键字检索 |
-| AGI / GPU counter | 支持设备上的 GPU workload、纹理带宽、shader 和 render pass 观察 | 设备、驱动和权限差异很大，数据要带设备型号和采集条件 |
-| Unity Profiler / Android XR Extensions | Unity 主线程、渲染线程、URP、Vulkan、spacewarp、late latching | 不能解释普通 View / Compose 面板的重组和 RenderThread 卡顿 |
-| dumpsys SurfaceFlinger / Winscope | Layer、窗口、合成状态、resize 和可见性变化 | 不能替代应用内部资源加载和引擎 profiler |
+| Android Studio + XR Emulator | capability、布局、Home/Full Space、输入与功能验证 | 真实 GPU、传感器、thermal、光学与 MTP |
+| Perfetto / FrameTimeline | Android 线程、调度、I/O、HWUI panel、部分 GPU/SF 证据 | 未公开的 XR compositor 全时序与 panel 光学响应 |
+| AGI / GPU counter | 支持设备的 render pass、shader、纹理、带宽与 GPU 时间 | 无目标驱动支持时不能推断；也不等于 MTP |
+| Unity Profiler / Frame Debugger | simulation、render thread、URP、资源、spacewarp 输入 | Android 调度、系统 I/O、host thermal 的完整原因 |
+| OpenXR/厂商 runtime 工具 | swapchain、runtime timing、reprojection、pose | 普通 View/Compose 内部重组与业务调用栈 |
+| Winscope / SurfaceFlinger dump | Android Window/Layer、resize、可见性、panel Buffer | SceneCore entity graph 与 XR runtime 最终合成 |
 
-Android 官方要求使用 Android Studio Canary 来获得较好的 XR 开发体验，并提供 Android XR Emulator 的虚拟设备入口。[已验证: 官方文档, developer.android.com/develop/xr/jetpack-xr-sdk/get-studio]
+### 推荐的单帧检查顺序
 
-实战记录里至少保留这些元数据：设备类型（headset / wired XR glasses / AI glasses）、系统版本、Jetpack XR / Unity package 版本、刷新率、是否 Full Space、是否开启 passthrough、环境资产文件大小、glb 数量与最大纹理尺寸。缺少这些条件，XR 性能数据很难复现。
+1. 记录设备形态、系统版本、显示 refresh rate、Home/Full Space、passthrough；
+2. 记录 Jetpack XR 或 Unity/OpenXR 的准确 package 版本与开关；
+3. 识别目标内容是 Android panel、external surface、SceneCore entity 还是 OpenXR swapchain；
+4. 对齐 App CPU、render thread、GPU submit 与 Buffer/swapchain 边界；
+5. 查 runtime 是否采用当前帧，是否使用 spacewarp/reprojection；
+6. 查 display cadence、thermal、CPU/GPU frequency 和长会话趋势；
+7. 将 App render miss、runtime miss、tracking stale 和显示延迟分开写结论。
+
+公开文档没有承诺统一的 Android XR Perfetto slice 名。按 `XR` 关键字搜不到事件不能证明 runtime 没有工作；应从目标线程、surface/swapchain、GPU 和设备工具逐层建立证据。
+
+每份报告至少保留：设备类型、系统 build、Jetpack XR/Unity package、refresh mode、空间模式、passthrough、模型/环境版本、纹理上限、采集工具版本与复现动作。
 
 ## XR 与游戏 / Vulkan 渲染路径的交叉
 
-Unity for Android XR 建在 OpenXR 之上，官方建议 Unity Android XR 使用 URP；foveated rendering 在 Unity 文档里和 URP / Vulkan 支持有明确关系。游戏或 3D 引擎内容进入 XR 后，排查重点会回到 18.8、18.9 和 18.16 节里的几个老问题：buffer 提交是否准时，fence 是否长时间等待，GPU 队列是否堆积，帧 pacing 是否和显示刷新周期匹配。[已验证: 官方文档, developer.android.com/develop/xr/unity]
+Unity for Android XR 建立在 OpenXR 之上，Android XR Extensions 再提供 spacewarp、Vulkan subsampling 和 late latching 等能力。引擎路径仍需检查 18.8、18.9、18.16 的公共问题：simulation 是否按时，GPU queue 是否积压，swapchain image 是否及时 acquire/release，fence 是否延后，frame pacing 是否匹配 runtime 节奏。
 
-XR 增加的是姿态和用户舒适度约束。普通游戏里偶发慢帧可能只是视觉卡顿；头显里慢帧、错误姿态或 motion-to-photon latency 变大，会更快转成眩晕、疲劳和交互失准。引擎优化要和 Android 系统 trace 一起看，不能只盯 Unity Profiler 的 FPS 曲线。
+OpenXR 的 `xrWaitFrame → xrBeginFrame → acquire/wait swapchain image → render → release image → xrEndFrame` 是应用和 runtime 的关键协议边界。它不是 Android `BufferQueue` API；trace 中即使都出现“acquire”“wait”“release”，也要按对象类型区分。
+
+XR 还增加姿态新鲜度和用户舒适度约束。Unity Profiler 的平均 FPS 只能说明引擎的一部分；需要结合 slow frame 分布、spacewarp 状态、runtime cadence、tracking 与 Android 系统调度。
 
 ## 眼镜形态下 host device 的功耗边界
 
-Jetpack XR SDK 覆盖 XR headsets、wired XR glasses 和 AI glasses。AI glasses 还引入 Jetpack Projected、Compose Glimmer 等能力，文档建议应用检查投射设备是否有 display 以及 display 状态，再决定如何呈现视觉内容。这个形态下，功耗不只在眼镜端，也可能落在 host device 的渲染、传感器、网络和编解码路径上。[已验证: 官方文档, developer.android.com/develop/xr/jetpack-xr-sdk]
+设备类型不能混写：
 
-眼镜场景的性能记录要把 host device 和外设分开：host 端 CPU / GPU / 编解码 / 网络，外设端显示、传感器、输入和连接稳定性。没有这层拆分，看到发热或掉帧时很难判断是应用渲染过重、连接带宽不足，还是设备进入 thermal 限频。功耗和温控分析详见 5.12、11.1 和 25.1 节。
+- XR headset / wired XR glasses：Compose for XR、SceneCore、Unity/OpenXR 文档覆盖的空间/沉浸路径；
+- audio/display glasses：Jetpack Projected 让应用运行在 companion host（如 Android phone），Compose Glimmer 为透明 display glasses 提供 UI；
+- audio glasses 没有可视 display 时，应用应按 capability 降级为音频或其他交互。
 
-## 小结
+Projected 场景要同时记录两端：
 
-Android XR 性能分析的入口不是“有没有 XR”，而是内容到底走哪条渲染路径。兼容面板按 Android UI 看，空间环境按 glb / IBL / skybox 看，3D 模型按资源加载和 GPU 上传看，Unity / OpenXR 内容按引擎渲染和姿态延迟看。把这几条路径分清，Perfetto、AGI、Unity Profiler 和 Android Studio XR Emulator 才能各自回答该回答的问题。
+| host device | glasses / projected device |
+|:---|:---|
+| Activity 生命周期、Compose、CPU/GPU、相机/编解码、网络、thermal | display on/off、输入、camera/sensor、连接、显示 cadence、设备功耗 |
+
+host 上的帧生成按时，不代表传输和眼镜 present 按时；眼镜发热也不能直接归到 host GPU。两端时钟若不能统一，应使用可关联的事件 id 与往返测量，避免用不同设备的原始 timestamp 相减。
+
+## Review 检查表
+
+- [ ] 平台版本不高于 Android 17，平台源码锚点为 `android-17.0.0_r1`；
+- [ ] Jetpack XR / Unity / OpenXR package 使用完整版本号；
+- [ ] compatible panel、Subspace、external surface、OpenXR 与 Projected 路径已区分；
+- [ ] App SurfaceFrame 没有被当作最终 XR present；
+- [ ] App render rate、runtime/display refresh 与 spacewarp cadence 已区分；
+- [ ] 90/72 Hz 与 per-eye resolution 明确标为 differentiated quality target；
+- [ ] glb 80 MB、10,000 vertices、200 m 等明确标为资产建议；
+- [ ] I/O、解析、纹理转码/上传、scene attach、首次 present 分别打点；
+- [ ] `RenderViewpoint` 数据没有被误写成 runtime pose latch 保证；
+- [ ] emulator 数据没有替代真机 GPU、thermal、tracking 或光学延迟；
+- [ ] host phone 与 projected glasses 的性能和功耗分开记录。
+
+## 参考资料
+
+- [Develop with the Jetpack XR SDK](https://developer.android.com/develop/xr/jetpack-xr-sdk)
+- [Android XR app quality guidelines](https://developer.android.com/docs/quality-guidelines/android-xr)
+- [Jetpack Compose for XR release notes](https://developer.android.com/jetpack/androidx/releases/xr-compose)
+- [Jetpack SceneCore release notes](https://developer.android.com/jetpack/androidx/releases/xr-scenecore)
+- [ARCore for Jetpack XR release notes](https://developer.android.com/jetpack/androidx/releases/xr-arcore)
+- [Develop spatial UI with Compose for XR](https://developer.android.com/develop/xr/jetpack-xr-sdk/ui-compose)
+- [Add a Subspace](https://developer.android.com/develop/xr/jetpack-xr-sdk/add-subspace)
+- [Add 3D models](https://developer.android.com/develop/xr/jetpack-xr-sdk/add-3d-models)
+- [Add spatial environments](https://developer.android.com/develop/xr/jetpack-xr-sdk/add-environments)
+- [Optimize environment assets](https://developer.android.com/develop/xr/jetpack-xr-sdk/optimize-environment-assets)
+- [Android XR Extensions performance settings for Unity](https://developer.android.com/develop/xr/unity/performance/androidxr-extension-settings)
+- [Jetpack Projected and Compose Glimmer device boundaries](https://developer.android.com/develop/xr/jetpack-xr-sdk)
+- [OpenXR specification](https://registry.khronos.org/OpenXR/specs/1.1/html/xrspec.html)
+- AOSP [`frameworks/base android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1) and [`frameworks/native android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1)
+- Kernel common [`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6)
