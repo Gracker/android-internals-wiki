@@ -31,424 +31,301 @@ sources:
 
 # 20.24 Crash 状态下 Java 线程堆栈获取与锁等待分析
 
-## 要点
+“Crash 时取全部 Java 栈”不是一个单一问题。Java 未捕获异常、Native 致命信号、系统 ANR 和进程退出后的回捞，拥有不同的运行时状态、权限和安全边界。把它们放进同一个 signal handler 方案，往往会把一次可诊断故障变成死锁、二次崩溃或残缺报告。
 
-### 🔹 Crash 时获取 Java 线程堆栈的挑战
+本文的平台与 ART 源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。涉及 futex 与线程调度的底层判断时，内核锚点为 `android17-6.18-2026-06_r6`；Java monitor 的 owner、held lock 和栈帧仍由 ART 解释，不能从一个内核睡眠状态直接反推。
 
-#### 问题的本质
+## 先按现场选择取证路径
 
-当 Native Crash（如 SIGSEGV、SIGABRT）发生时，ART 虚拟机可能处于不稳定状态。此时获取所有 Java 线程的堆栈面临三重困难：
+| 现场 | 进程状态 | 应用可优先保存的证据 | 不应依赖的动作 |
+| --- | --- | --- | --- |
+| Java 未捕获异常 | ART 通常还能运行，但可能正处于 OOM、栈溢出或锁异常 | 已抛出的 `Throwable`、崩溃线程、预存 breadcrumb；资源允许时补少量目标线程 | 无限制遍历全部线程、同步网络、等待业务锁 |
+| 系统 ANR / 调试 SIGQUIT | 进程仍存在，由 ART 的 SignalCatcher 执行诊断流程 | 系统 ANR trace、重复的主线程预采样、Perfetto | 把自定义 `sigaction(SIGQUIT)` 当成稳定公开接口 |
+| Native 致命信号 | Java 堆、线程栈或运行时锁都可能不一致 | `siginfo_t`、`ucontext_t`、debuggerd tombstone 或外部 minidump | JNI、Java API、私有 ART 遍历、普通分配和锁 |
+| 进程已经退出 | 进程内 Java 状态已经不存在 | `ApplicationExitInfo`、tombstone/ANR trace、进程退出前写好的记录 | 重启后再查询旧进程的 Java 对象或 monitor |
 
-1. **JNI 环境可能已损坏**：Crash 发生在 JNI 调用过程中时，`JNIEnv` 指针可能无效，常规 JNI 函数（如 `ExceptionOccurred`、`CallObjectMethod`）可能引发二次 Crash [结构参考: Clippings/Android 应用稳定性剖析与优化 - Java Crash 分析与监控原理.md]
-2. **GC 可能正在运行**：如果 Crash 发生在 GC 期间，ART 内部的 `Locks::mutator_lock_` 可能被持有，任何需要访问 Java 堆的操作都会死锁
-3. **线程状态不一致**：Crash 时某些线程可能正处于状态转换（如 `kRunnable` → `kBlocked`），ThreadList 中的线程状态可能不完整
+这里的分界比“能不能调用某个函数”更重要。一个 API 在正常运行期可用，不代表它适合未捕获异常回调；Java fatal handler 中偶尔成功的代码，也不代表它能放进 Native signal handler。
 
-#### 常规堆栈获取方式的局限性
+## `Thread.getAllStackTraces()` 的 Android 17 语义
 
-Java 层获取线程堆栈的标准方式是通过 `Thread.getAllStackTraces()` 或 `new Throwable().getStackTrace()`。但这些方式在 Crash 场景下不可用的原因：
+### 它逐线程抓取，不做一次全局 `SuspendAll`
 
-```java
-// 方式一：Throwable 构造时抓栈 — 依赖 ART 完整运行
-public Throwable() {
-    fillInStackTrace();  // → JNI → Thread::CreateInternalStackTrace()
-}
-```
-
-`fillInStackTrace()` 最终调用到 ART 的 `Thread::CreateInternalStackTrace()`，该方法需要：
-- 获取 `Locks::mutator_lock_` 共享锁（确保堆一致性）
-- 遍历当前线程的 `ManagedStack` 链表（ShadowFrame / QuickFrame）
-- 为每一帧创建 `StackTraceElement` 对象（需要在 Java 堆上分配内存）
-
-[已验证: AOSP android-17.0.0_r1, art/runtime/thread.cc — CreateInternalStackTrace()]
+Android 17 的 [`Thread.getAllStackTraces()`](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java) 先取得活动线程数组，再循环调用每个线程的 `getStackTrace()`。下面的等价伪代码只保留影响一致性的部分：
 
 ```java
-// 方式二：Thread.getAllStackTraces() — 需要挂起所有线程
-public static Map<Thread, StackTraceElement[]> getAllStackTraces() {
-    // 内部调用 VMStack.getThreadStackTrace()
-    // → 需要通过 SuspendThread + 挂起所有线程 + 逐个抓栈
+AllThreadsRecord record = getAllThreadsInternal();
+Map<Thread, StackTraceElement[]> result = new HashMap<>();
+for (int i = 0; i < record.count; i++) {
+    Thread thread = record.threads[i];
+    result.put(thread, thread.getStackTrace());
 }
 ```
 
-`getAllStackTraces()` 需要发起一次全局 GC 暂停（所有线程挂起），在 Crash 状态下极不安全。
+这段流程会分配线程数组、`HashMap`、各线程的栈数组和 `StackTraceElement`。线程列表与每条栈的采样时刻不同；遍历期间线程可以继续运行、创建或退出。公开 API 文档也明确说明，每条栈只是快照，并且可能在不同时间取得。
 
-#### ART 堆栈获取的底层链路
+因此，下面两种说法都不成立：
 
-理解挑战的关键在于了解 ART 如何获取 Java 堆栈。完整的调用链路：
+- “`getAllStackTraces()` 会先触发一次全局 GC 暂停，再原子地抓取全进程。”
+- “这张 Map 表示同一个时刻的完整线程与锁状态。”
 
-```
-Throwable构造 / Thread.getStackTrace()
-    ↓
-nativeFillInStackTrace() / VMStack.getThreadStackTrace()
-    ↓
-Thread::CreateInternalStackTrace(soa)
-    ↓
-StackVisitor::WalkStack()                    ← 核心：遍历 ManagedStack 链
-    ↓
-FetchStackTraceVisitor::VisitFrame()         ← 收集 ArtMethod + DexPC
-    ↓
-BuildInternalStackTraceVisitor::AddFrame()   ← 构造 StackTraceElement
-    ↓
-CreateStackTraceElement(method, dex_pc)      ← 解析类名/方法名/行号
-```
+它适合正常运行期的诊断、受控 watchdog 或测试工具，不适合承担严格一致的死锁证明。
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md — CreateInternalStackTrace 分析]
+### 当前线程与其他线程走不同路径
 
-其中 `StackVisitor::WalkStack()` 遍历的核心数据结构是 `ManagedStack` 链表：
+`Thread.getStackTrace()` 进入 Android 私有的 `VMStack.getThreadStackTrace()`，Android 17 的 [`dalvik_system_VMStack.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/native/dalvik_system_VMStack.cc) 在 `GetThreadStack()` 中区分两种情况：
 
-```cpp
-void StackVisitor::WalkStack(bool include_transitions) {
-    for (const ManagedStack* current_fragment = thread_->GetManagedStack();
-         current_fragment != nullptr;
-         current_fragment = current_fragment->GetLink()) {
-        // 遍历 ShadowFrame 或 QuickFrame
-        cur_shadow_frame_ = current_fragment->GetTopShadowFrame();
-        do {
-            bool should_continue = VisitFrame();
-            cur_depth_++;
-            cur_shadow_frame_ = cur_shadow_frame_->GetLink();
-        } while (cur_shadow_frame_ != nullptr);
-    }
-}
-```
+1. 目标就是调用线程：直接调用 `Thread::CreateInternalStackTrace()`。
+2. 目标是另一条 Java 线程：调用线程先离开 runnable 状态，再用 `ThreadList::SuspendThreadByPeer()` 挂起这一条目标线程；栈对象生成后恢复目标线程。
 
-[已验证: AOSP android-17.0.0_r1, art/runtime/stack.cc — StackVisitor::WalkStack()]
+跨线程取栈是逐个挂起目标线程，不是一次挂起所有线程。目标线程若正在执行不可及时到达 suspend point 的代码，取栈延迟就会增加；目标已经退出时，结果可以为空。
 
-每个 `ShadowFrame` 包含一个 `ArtMethod*` 指针（标识 Java 方法）和 `DexPC`（标识方法内的字节码位置），这是 Java 堆栈的本质数据。
+`CreateInternalStackTrace()` 通过 `StackVisitor` 遍历 managed stack，并在 Java 堆上构造内部 trace 与后续的 `StackTraceElement[]`。这条路径要求 ART、mutator lock 和对象分配仍可工作。它不是 async-signal-safe 操作，也不是 OOM 下的保底写入原语。
 
-### 🔹 方案一：ThreadList::ForEach 间接遍历
+### `Throwable` 栈与“此刻的线程栈”也不同
 
-#### 原理
+未捕获异常到达 handler 时，传入的 `Throwable` 通常已经保存了创建或上次 `fillInStackTrace()` 时的栈。它是 Java Crash 的主证据，但不一定等于 handler 执行时的栈：
 
-ART 内部的 `ThreadList::ForEach()` 方法允许遍历所有已注册的 Java 线程。在 Crash 信号处理器中，可以通过以下步骤获取所有线程的 Java 堆栈：
+- 异常对象可以先创建、稍后抛出；
+- 代码可以重写 `fillInStackTrace()` 或再次调用它；
+- cause 与 suppressed exception 各自有栈；
+- R8、日志截断和服务端限制会影响可见结果。
 
-1. 获取 ART 的 `Runtime` 单例指针
-2. 通过 `Runtime::GetThreadList()` 获取 `ThreadList` 指针
-3. 调用 `ThreadList::ForEach()` 遍历每条线程
-4. 对每条线程调用 `Thread::CreateInternalStackTrace()` 获取堆栈
+handler 再调用 `thread.getStackTrace()` 得到的是更晚的采样，栈顶很可能已经进入 handler。分析时应保留原始 `Throwable`，不要用 handler 时刻的新栈覆盖它。
 
-#### 关键实现考量
+## ART 的 SIGQUIT 线程转储不是应用 Crash Handler
 
-**获取 Runtime/ThreadList 指针**：
-ART Runtime 是单例，可通过已知符号偏移获取。在不同 Android 版本中，获取方式有所不同：
+### SignalCatcher 在普通线程上下文中处理 SIGQUIT
 
-| 方式 | 适用版本 | 说明 |
-|------|---------|------|
-| `dlsym("art::Runtime::instance_")` | 不直接可用 | 符号被 strip |
-| JavaVM → JNIEnv → 内部偏移 | Android 8+ | 通过 `JavaVM::GetEnv()` 获取 `JNIEnv`，再通过固定偏移找到 `Thread*` |
-| Profilo / xCrash 方案 | 全版本 | 通过预先 Hook 关键函数记录偏移 |
+ART 会让相关线程屏蔽 `SIGQUIT`，再由专门的 SignalCatcher 线程通过 `sigwait()` 同步接收。Android 17 的 [`SignalCatcher::HandleSigQuit()`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/signal_catcher.cc) 调用 `Runtime::DumpForSigQuit()`，后者再进入 `ThreadList::DumpForSigQuit()` 等诊断模块。
 
-[待验证: 具体偏移量在不同 Android 版本和设备上可能不同，需要动态计算]
+这不是“给每条 Java 线程各发送一次 SIGQUIT”，也不是在任意业务线程的异步 signal handler 中直接遍历 Java 堆。SignalCatcher 是 ART 已知、已附着的线程，能使用运行时锁、C++ stream 和诊断对象；普通应用的 Native fatal handler 不具备这个前提。
 
-**挂起目标线程**：
-在遍历其他线程的堆栈之前，必须确保目标线程已挂起（处于 `kSuspended` 状态），否则其 `ManagedStack` 链可能在遍历过程中发生变化。`ThreadList::ForEach()` 内部不自动挂起线程，需要配合 `ThreadList::SuspendAll()` 使用：
+Android 17 的 [`ThreadList::Dump()`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/thread_list.cc) 创建 `DumpCheckpoint`，通过 `RunCheckpoint()` 请求各线程执行 dump checkpoint，再等待并按诊断价值排序输出。已经处于挂起状态的线程和运行中的线程由 ART 按各自状态处理。
 
-```cpp
-// 伪代码 — 实际实现需处理偏移和版本兼容
-void* self = art::Thread::Current();  // 当前线程（信号处理器线程）
-{
-    art::ScopedSuspendAll ssa(self);  // 挂起所有其他线程
-    thread_list->ForEach([&](art::Thread* thread) {
-        // 对每条线程获取堆栈
-        art::StackHandleScope<1> hs(self);
-        auto trace = thread->CreateInternalStackTrace(soa);
-        // 保存 trace ...
-    });
-}  // 自动恢复所有线程
+这带来三个诊断边界：
+
+- 各线程的 dump 仍不是同一 CPU 指令时刻的原子快照；
+- checkpoint、栈遍历、native unwind 和输出都可能耗时，故障或进程退出也可能让 trace 缺帧；
+- 这条系统路径可以服务 ANR 和调试，不能被简化成普通 SDK 可复制的 `ThreadList::ForEach()` 调用。
+
+### ART dump 可以附加 Java monitor 关系
+
+Android 17 的 [`StackDumpVisitor`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/thread.cc) 会把 monitor 信息写在相应 Java frame 附近：
+
+- `waiting to lock ... held by thread N`：线程处于 `BLOCKED` 或锁膨胀等待，ART 找到了目标 monitor 及 owner。
+- `waiting on ...`：线程在 `Object.wait()` 一类等待中；它已经释放该对象 monitor，不能把该对象当前 owner 直接解释为唤醒责任方。
+- `locked ...`：该 frame 被识别为持有某个 Java monitor。
+
+下面是用于说明读取方式的简化示例，不是固定的 Android 17 输出格式：
+
+```text
+"main" ... tid=1 Blocked
+  at com.example.Cache.read(Cache.kt:81)
+  - waiting to lock <0x01234567> held by thread 23
+
+"cache-writer" ... tid=23 TimedWaiting
+  at com.example.Cache.refresh(Cache.kt:132)
+  - locked <0x01234567>
+  at java.lang.Object.wait(Native method)
+  - waiting on <0x07654321>
 ```
 
-[已验证: AOSP android-17.0.0_r1, art/runtime/thread_list.cc — ForEach + SuspendAll 模式]
+这份样本支持“main 正在等待 thread 23 持有的第一个 monitor”。第二个 `waiting on` 表示 `cache-writer` 在等待通知或超时，它不等同于“第二个对象被某线程长期持有”。`held by thread 23` 应与同一份 ART dump 头部的 Java `tid=23` 对应，不能误配为 Linux `sysTid`。
 
-**风险**：在 Crash 状态下调用 `SuspendAll` 是有风险的——如果 Crash 发生在 GC 或其他持有 `mutator_lock_` 的线程中，`SuspendAll` 会尝试获取该锁，导致死锁。实际方案通常设置超时或 try-catch 机制。
+### `AnnotatedStackTraceElement` 是隐藏的平台能力
 
-### 🔹 方案二：Profilo Unwinder 模拟 StackVisitor
+ART 的 `Thread::CreateAnnotatedStackTrace()` 能构造带 `blockedOn` 与 `heldLocks` 的对象数组。frameworks/base 中的 [`WatchdogDiagnostics`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/WatchdogDiagnostics.java) 会通过隐藏的 `VMStack.getAnnotatedThreadStackTrace()` 使用这项能力。
 
-#### 设计思路
+这里有两个常被忽略的限制：
 
-Facebook Profilo 框架采用了另一种方案：**不完全依赖 ART 内部接口**，而是自行模拟 `StackVisitor` 的栈遍历逻辑。
+- 它是 `system_server` 等平台代码可用的内部接口，不是普通应用 SDK。
+- 实现会遍历 Java 栈、访问对象并分配数组，不是 Native fatal signal 下的安全替代方案。
 
-核心思想：
-1. 通过 `Thread::GetCurrent()` 或线程句柄获取目标线程的栈顶寄存器值（SP、PC）
-2. 直接读取目标线程的 `ManagedStack` 链（不通过 ART 接口，而是直接读内存）
-3. 对每一帧，从 `ShadowFrame` 或 `QuickFrame` 中提取 `ArtMethod*` 指针
-4. 自行解析 `ArtMethod` 的 ` DexFile`、`CodeItem`，从中提取方法名和行号
+公开的 `Thread.getStackTrace()` 只返回 `StackTraceElement[]`，不包含持锁对象、阻塞对象或 owner。普通应用不能假设存在稳定的 `thread.getLockedObjects()`；Android 也没有面向应用公开 Java SE `ThreadMXBean.findDeadlockedThreads()` 这一套管理接口。
 
-#### 优势
+## 不同故障现场怎样取 Java 栈
 
-- **更少的锁依赖**：不调用 `SuspendAll`，而是通过 `ptrace` 或 `/proc/<pid>/mem` 读取目标线程内存
-- **更低的侵入性**：不分配 Java 对象（避免 GC 依赖），所有解析在 Native 层完成
-- **Crash 安全**：即使 ART Runtime 状态已损坏，只要线程的 `ManagedStack` 链在内存中完好，就能遍历
+### Java 未捕获异常：以已有 `Throwable` 为主
 
-> Profilo 框架的线上 ATrace 收集方案详见 **26.27 Facebook Profilo 框架线上 ATrace 收集方案**。
+自定义 `Thread.UncaughtExceptionHandler` 运行在抛出未捕获异常的线程上。ART 通常仍能执行 Java 代码，所以它比 Native signal handler 有更多选择，但资源状态无法保证。
 
-#### ArtMethod 解析
+建议按下面的顺序收敛工作量：
 
-无论采用哪种方案，最终都需要从 `ArtMethod*` 指针解析出可读的方法信息。`ArtMethod` 的关键字段（Android 17）：
+1. 写入一次性 guard，避免多线程同时崩溃时重复进入采集器。
+2. 优先保存传入的 `Throwable`、崩溃线程标识和正常运行期已经准备好的 breadcrumb。
+3. 只有在不是 `OutOfMemoryError`、`StackOverflowError`，并且写入预算允许时，补采主线程或少量白名单线程。
+4. 限制 frame 数、cause 深度、suppressed 数量和总字节数。
+5. 在 `finally` 中委托安装前保存的 default handler，让 Android 的上报与进程终止链继续执行。
 
-```cpp
-class ArtMethod {
-    GcRoot<mirror::Class> declaring_class_;     // 声明类
-    uint32_t access_flags_;                      // 访问标志（含 static/final 等）
-    uint32_t dex_code_item_offset_;             // Dex CodeItem 偏移
-    uint16_t method_index_;                      // Dex 方法索引
-    uint16_t hotness_count_;                     // JIT 热度计数
-    struct PtrSizedFields {
-        void* entry_point_from_quick_compiled_code_;  // OAT/JIT 编译入口
-    } ptr_sized_fields_;
-};
-```
+时间预算只能阻止继续采下一条线程，不能中断一次已经进入 `getStackTrace()` 的跨线程挂起。若业务要求 fatal 回调必须在很小时间内返回，就不要在这里枚举全部线程。
 
-[已验证: AOSP android-17.0.0_r1, art/runtime/art_method.h]
+OOM 路径尤其要克制。`getAllStackTraces()` 本身会创建 Map 和大量对象，完整 JSON、压缩、数据库事务也会继续申请内存。更可靠的做法是正常运行期维护有界记录，OOM handler 只写固定字段和已经存在的数据。自定义 handler 的委托结构见 [Java Crash 治理](02-java-crash-governance.md)。
 
-从 `ArtMethod` 提取可读信息的链路：
-1. `declaring_class_` → `mirror::Class` → 类描述符（如 `Lcom/example/MyClass;`）
-2. `dex_code_item_offset_` → 在 DexFile 中定位 `CodeItem` → `line_table` → 源码行号
-3. `method_index_` → 在 DexFile 的 `method_ids` 表中查找方法名
+应用不应通过“吞掉未捕获异常”来保留现场。Android 的默认 `KillApplicationHandler` 会报告 crash 并终止进程；自定义 handler 若截断这条链，会让部分线程与业务状态继续处在未定义的失败后状态。此时讨论“崩溃线程留下了一把永远不释放的锁”也失去了正确前提：标准应用进程会退出，而强行续命的进程不再具备可依赖的一致性。
 
-### 🔹 MonitorInfo 构造与 Object 锁等待分析
+### Native 致命信号：不要进入 ART 私有遍历
 
-#### Java 层的锁监控需求
+`SIGSEGV`、`SIGABRT`、`SIGBUS` 等同步致命信号发生时，故障可能位于 allocator、GC、JNI、线程栈或 ART 自身。应用 signal handler 中不应执行以下工作：
 
-在 Crash 或 ANR 场景中，**锁竞争** 是最常见的不直接产生堆栈错误的根因之一。典型场景：
+- 调 JNI 或 Java 方法，包括 `Thread.getAllStackTraces()`；
+- 通过偏移寻找 `Runtime::instance_`、`ThreadList`、`ManagedStack` 或 `ArtMethod`；
+- 调 `SuspendAll()`、`SuspendThreadByPeer()` 或构造 ART handle scope；
+- 使用 `malloc/new`、STL 扩容、普通 mutex、数据库和网络；
+- 用 `sigsetjmp/siglongjmp` 跳过错误后继续运行应用。
 
-- 线程 A 持有 ` synchronized(lock)` 锁
-- 线程 B（如 main 线程）尝试获取同一把锁 → 被阻塞
-- 线程 A 执行缓慢（或 Crash 后未释放锁）→ 线程 B ANR
+`ArtMethod`、对象布局、JIT frame、read barrier 和 ART APEX 更新都属于私有实现。按设备版本维护偏移只能增加脆弱性，不能把损坏进程变成可信的远程调试目标。采样 profiler 在受控挂起点完成 Java unwind，也不等于它能在任意 fatal signal 上安全复用同一逻辑。
 
-此时，即使获取了所有线程的堆栈，也看不到"谁持有锁"的信息。`MonitorInfo` 就是用来解决这个问题的。
+Android 8 起，系统按需启动 `crash_dump32/64`，由 debuggerd/tombstoned 生成诊断数据。系统 tombstone 能提供崩溃线程寄存器、maps，并为进程内各线程生成 native 或可识别的混合栈；它不等价于 ART SIGQUIT 的 Java monitor dump，也不能保证给出 Java monitor owner。
 
-#### 通过 ART Monitor 获取锁持有者
+普通应用应保留 debuggerd 的 signal 链。Android 12 / API 31 起，应用可在下次启动查询 `ApplicationExitInfo.REASON_CRASH_NATIVE`，并从 `getTraceInputStream()` 读取 tombstone protobuf。完整的 Native 栈采集与符号化边界见 [Native 栈回溯与符号化](18-native-stack-unwinding-symbolication.md) 和 [Android 17 signal/debuggerd 迁移](19-android17-signal-handler-debuggerd-migration.md)。
 
-ART 中每个 Java 对象的锁信息记录在 `Monitor` 类中（`art/runtime/monitor.cc`）。获取锁信息的调用链路：
+### ANR：系统 trace 与事前采样互补
 
-```java
-// Java 层调用
-Thread.holdsLock(obj)  // 仅返回 boolean
+系统 ANR trace 更适合分析全线程 Java 状态和 monitor 关系。API 30 起，应用可在后续启动通过 `ActivityManager.getHistoricalProcessExitReasons()` 查询历史记录，并尝试读取 `ApplicationExitInfo.getTraceInputStream()`。
 
-// 获取详细的锁持有者需要 Native 层
-// Thread 类有隐藏方法：
-// Object[] thread.getLockedObjects()  → 获取该线程持有的所有锁
-```
+使用这份数据时要保留以下条件：
 
-在 Native 层，`Monitor::GetLockOwnerThreadId()` 可以返回持有某把锁的线程 ID：
+- trace 位于独立的全局循环存储，可能被后续记录覆盖，所以流可以为 `null`；
+- 进程发生 ANR 后若恢复、后来因别的原因退出，该退出记录仍可能带有早先 ANR trace；
+- trace 抓取可能晚于阻塞点，看到 `nativePollOnce()` 不足以证明当时主线程一直空闲；
+- 系统 trace 缺失时，单个 crash handler 或单次主线程栈不能补出完整 ANR 因果。
 
-```cpp
-uint32_t Monitor::GetLockOwnerThreadId(Thread* self, ObjPtr<mirror::Object> obj) {
-    LockWord lw = obj->GetLockWord(true);
-    switch (lw.GetState()) {
-        case LockWord::kThinLocked:
-            return lw.ThinLockOwner();  // 轻量级锁 — 直接从对象头读取
-        case LockWord::kFatLocked:
-            return lw.FatLockMonitor()->GetOwnerThreadId();  // 重量级锁 — 从 Monitor 读取
-        default:
-            return -1;  // 未锁定
-    }
-}
-```
+端侧 watchdog 可以在正常 Java 环境中定期或触发式采主线程栈，并在持续卡顿期间保留少量连续样本。它能够补充“阻塞从何时开始、栈是否变化”，但没有 system_server 掌握的输入分发、广播、service 或 provider 超时上下文，只能标记为疑似卡顿/疑似 ANR。系统 ANR 分析方法见 [ANR 分析](../../part2-performance/ch09-anr/03-anr-analysis.md)。
 
-[已验证: AOSP android-17.0.0_r1, art/runtime/monitor.cc — GetLockOwnerThreadId]
+### 进程退出后：只合并进程外与预存证据
 
-#### 锁状态的三种级别
+旧进程死亡后，新的应用进程不能再访问旧 ART 的线程、Java 对象或 monitor。重启后的工作是：
 
-ART 的锁实现有三个递进级别，理解这些级别对诊断锁问题至关重要：
+1. 查询 `ApplicationExitInfo` 并按时间、进程名、PID、reason 和 status 去重。
+2. 区分 ANR 文本 trace 与 API 31+ Native tombstone protobuf，不能都按 UTF-8 解析。
+3. 用进程启动时生成的 session ID 关联 crash 前 breadcrumb、资源水位和业务阶段。
+4. 保存“系统证据”“端侧预判”“服务端推断”三种来源，不用一个字段混写。
 
-| 锁级别 | 触发条件 | 存储位置 | 开销 |
-|--------|---------|---------|------|
-| **Thin Lock**（偏向锁） | 单线程访问 | 对象头 `LockWord` (32-bit) | 几乎为零 |
-| **Fat Lock**（膨胀） | 多线程竞争 | 独立的 `Monitor` 对象 | 需要分配 Monitor |
-| **HashCode Lock** | Thin 状态下调用 `hashCode()` | 对象头存储 hash + Monitor | 类似 Fat Lock |
+没有拿到 trace 时应记录缺失原因和采集版本，而不是根据退出时间附近的一条普通日志补写成“完整线程现场”。
 
-锁膨胀是不可逆的——一旦从 Thin 膨胀到 Fat，即使后续没有竞争也不会回退。这意味着**曾经发生过的锁竞争**可以通过检查 `LockWord` 状态间接发现。
+## 锁等待分析：先确认等待类型
 
-#### 实战中的锁等待诊断流程
+### Java 线程状态不是锁类型
 
-在 Crash/ANR 发生时，推荐的信息收集顺序：
+`BLOCKED`、`WAITING` 和 `TIMED_WAITING` 描述 Java 线程状态，不足以单独确定 owner：
 
-```
-1. 获取所有线程的 Java + Native 堆栈
-    ↓
-2. 标记处于 BLOCKED/WAITING 状态的线程
-    ↓
-3. 对每个 BLOCKED 线程，找到它等待的锁对象
-    ↓
-4. 通过 Monitor 查询锁的持有者线程
-    ↓
-5. 检查持有者线程的堆栈 — 它为什么持锁不放？
-    ↓
-6. 分类：死锁 / 长时间持锁 / 锁泄漏
-```
+| 表象 | 常见路径 | 能否直接从 ART monitor dump 找 owner | 分析重点 |
+| --- | --- | --- | --- |
+| `BLOCKED` + `waiting to lock` | `synchronized` / monitor enter | 通常可以，dump 可给 `held by thread N` | owner 的栈、持锁 frame、等待链 |
+| `WAITING` + `Object.wait()` | monitor wait set | 不能把等待对象当成当前 owner；调用者已释放 monitor | 谁负责 `notify/notifyAll`、条件是否可能成立 |
+| `WAITING/TIMED_WAITING` + `LockSupport.park()` | AQS、`ReentrantLock`、`Condition` | 不属于 ART monitor owner 模型 | AQS 队列、业务锁对象、重复样本或埋点 |
+| native `futex_wait*` | `pthread_mutex`、condvar 或其他 futex 用户 | 不能 | native 栈、锁埋点、调度时间线 |
+| `BinderProxy.transact*` | 同步 Binder 等回复 | 不能 | client/server transaction、服务端线程与后续等待 |
+| `nativePollOnce()` / `epoll_wait()` | Looper 或事件循环空闲 | 通常没有需要修复的 owner | 是否有到期消息、trace 是否抓晚 |
 
-### 🔹 锁竞争导致的假死/ANR 诊断
+`ReentrantLock` 最终可能使用 park/futex，但它不是对象 monitor；native mutex 也不在 ART monitor 表中。内核的 `futex_wait` 只说明线程睡在某个 futex 慢路径，不能证明是哪一把高级语言锁，更不能自动给出 owner。
 
-#### 死锁 vs 长时间持锁 vs 锁泄漏
+### 等待图只接受有 owner 的边
 
-这三种锁问题的表现类似（线程卡住、ANR），但根因和修复方案完全不同：
+从 ART dump 构造 wait-for graph 时，可以把线程作为节点，把 `waiting to lock ... held by thread N` 转换为 `waiter -> owner` 边。`locked ...` 用于核对 owner 当前持有的 monitor；`waiting on ...`、Binder、I/O 和普通 park 不应凭猜测加入 monitor owner 图。
 
-**死锁（Deadlock）**：
-- 线程 A 持锁 L1，等待锁 L2
-- 线程 B 持锁 L2，等待锁 L1
-- 诊断特征：形成锁的环形等待图
-- `ThreadMXBean.findDeadlockedThreads()` 可自动检测（Java 层）
+一个可用的判断流程是：
 
-**长时间持锁（Long Hold）**：
-- 某线程在 `synchronized` 块内执行了耗时操作（如 I/O、数据库查询、大量计算）
-- 诊断特征：持锁线程堆栈显示阻塞操作（如 `FileInputStream.read`、`SQLiteQuery`)
-- 这是线上最常见的"锁问题"
-
-**锁泄漏（Lock Leak）**：
-- 某线程获取了锁但因异常路径未正确释放
-- `ReentrantLock` 在 `try-finally` 缺失时容易发生
-- `synchronized` 由 JVM 保证释放，一般不会泄漏（除非 Crash 后未恢复）
-
-#### ANR 与锁竞争的关联
-
-Android 的 ANR 机制（详见 **20.18 ANR 全链路追踪**）与锁竞争密切相关：
-
-- **InputDispatcher 超时**（5s）：主线程被锁阻塞，无法处理输入事件
-- **BroadcastQueue 超时**（10s前台/60s后台）：主线程被锁阻塞，无法处理 Receiver
-- **ServiceManager 超时**（20s前台/200s后台）：主线程被锁阻塞，无法处理 Service 生命周期
-
-当 ANR 发生时，系统自动生成的 `anr_trace.txt`（通过 `signal_catcher` 线程向各线程发送 `SIGQUIT`）包含了所有线程的堆栈和锁信息。其底层机制与本节描述的 `ThreadList::ForEach + CreateInternalStackTrace` 链路一致。
-
-### 🔹 FinalizerWatchdog 系统防护机制
-
-#### 工作原理
-
-`FinalizerWatchdogDaemon` 是 ART 的一个内部守护线程，负责监控 `finalize()` 方法的执行时间。其工作流程：
-
-1. 当 GC 将一个对象放入 Finalizer 队列时，记录时间戳
-2. FinalizerDaemon 线程逐个取出对象调用 `finalize()`
-3. FinalizerWatchdog 检查每个 `finalize()` 是否超时（默认 10s）
-4. 如果超时 → 发送 `SIGABRT` → 进程退出
-
-这就是为什么某些 App 会"莫名退出"——不是 Crash，而是某个类的 `finalize()` 方法执行过慢，被 Watchdog 杀掉。
-
-[已验证: AOSP android-17.0.0_r1, libcore/libart/src/main/java/java/lang/Daemons.java — FinalizerWatchdogDaemon]
-
-#### 与 Crash 堆栈收集的关系
-
-FinalizerWatchdog 触发的 `SIGABRT` 会走标准的 Crash 处理流程，因此：
-- 它产生的 tombstone / Crash 报告中，堆栈指向 `FinalizerWatchdogDaemon` 而非实际耗时操作
-- 要定位真正的根因，需要查看 FinalizerDaemon 线程的堆栈（看它正在执行哪个 `finalize()`）
-- 这就是为什么"获取所有线程的堆栈"在 Crash 诊断中如此重要
-
-#### 排查建议
-
-当发现 Crash 堆栈包含 `FinalizerWatchdog` 时：
-1. 搜索应用的 `finalize()` 方法实现
-2. 检查是否有 I/O 操作、线程等待、死循环
-3. 最佳实践：Android 17 上应完全避免使用 `finalize()`，改用 `Cleaner` 或 `AutoCloseable`
-
-> Android 17 中 `finalize()` 已被标记为 `@Deprecated`（for-removal），推荐使用 `java.lang.ref.Cleaner`。[已更新至 Android 17]
-
-### 🔹 线程堆栈符号化与去重
-
-#### 符号化
-
-从 ART 获取的堆栈通常是 `ArtMethod* + DexPC` 的原始形式，需要转换为可读的 `类名.方法名(文件:行号)` 格式。
-
-**Java 方法符号化**：
-- 从 `ArtMethod` 提取 `declaring_class_` → `Class` → 类描述符
-- 从 `dex_code_item_offset_` 在 DexFile 中定位 `CodeItem`
-- 查找 `DebugInfoItem` 的 `line_table` → 源码行号
-
-**Native 方法符号化**：
-- 通过 `_Unwind_Backtrace` 获取 PC 值
-- 使用 `dladdr()` 解析 PC → `Dl_info`（包含 so 路径、符号名、基地址）
-
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Backtrace：Native 堆栈信息获取.md — CFI/libunwind 方案]
-
-对于 Native 符号化，Android 17 中 CFI（Call Frame Information）方式是首选：
-- 从 `.eh_frame` / `.eh_frame_hdr` 段读取帧信息
-- 支持跨 Java/Native 边界的符号解析
-- 缺点是 backtrace 速度相对较慢（相比 FP 方式）
-
-#### 堆栈去重
-
-一个应用可能有数十甚至上百个线程，在 Crash 时全部收集会导致：
-- Crash 报告体积过大（每个线程堆栈几十 KB）
-- 后端去重/聚合困难
-- 排查时需要从大量信息中找到关键线程
-
-推荐的去重策略：
-
-| 去重维度 | 方法 | 用途 |
-|---------|------|------|
-| 按线程名 | 聚合同名线程（如 `OkHttpDispatcher-*`） | 关注线程类型分布 |
-| 按栈顶 N 帧 | 比较前 5-10 帧 fingerprint | 识别相同等待状态的线程 |
-| 按锁等待 | 聚合等待同一把锁的线程 | 快速定位锁瓶颈 |
-| 按线程状态 | 分组 RUNNING/BLOCKED/WAITING | 优先关注 BLOCKED |
-
-## 扩展
-
-### 🔸 Framework 异常的反射/代理绕过思路
-
-在 Android 应用开发中，某些系统 Framework 组件（如 `Toast`、`ServiceManager`、`ContentProvider`）的内部异常可能导致 Crash。由于这些组件的代码在系统进程中，应用层无法直接修改，需要通过反射/代理方式绕过：
-
-**Toast BadTokenException 绕过**：
-```java
-// Android 12+ 对 Toast 的 Window Token 检查更严格
-// 如果 Notification 没有权限，可能抛出 BadTokenException
-// 通过反射替换 Toast 内部的 INotificationManager 代理：
-Field field = Toast.class.getDeclaredField("sService");
-field.setAccessible(true);
-Object proxy = Proxy.newProxyInstance(
-    Toast.sService.getClassLoader(),
-    new Class[]{INotificationManager.class},
-    (p, method, args) -> {
-        if ("enqueueToast".equals(method.getName())) {
-            // 包装调用，捕获 BadTokenException
-        }
-        return method.invoke(Toast.sService, args);
-    }
-);
-field.set(null, proxy);
-```
-
-这类方案的通用思路是：通过 `Proxy.newProxyInstance` 或 `Hook` 替换 Framework 对象的远程接口代理，在代理层捕获特定异常。但需要注意：
-- Android 17 对隐藏 API 访问的限制更严格（`hiddenapi-check`）
-- 反射访问 Framework 内部字段可能触发 `UnsupportedOperationException`
-- 推荐优先使用官方替代方案（如 `Snackbar` 替代 `Toast`）
-
-[待验证: Android 17 具体的隐藏 API 限制列表变化]
-
-### 🔸 Memory Allocation Trace 监控模块
-
-在 OOM 根因定位中，仅知道 Crash 时的堆栈往往不够——需要知道**哪些分配路径消耗了最多内存**。
-
-**方案：Hook `malloc`/`calloc`/`realloc`，按调用栈聚合分配量**：
-
-```c
-// 通过 PLT/GOT Hook 拦截 malloc
-void* hooked_malloc(size_t size) {
-    void* ptr = real_malloc(size);
-    if (should_trace(size)) {  // 仅追踪大对象
-        // 获取当前线程的 Native 堆栈
-        void* stack[32];
-        int depth = backtrace(stack, 32);
-        // 按堆栈 fingerprint 累加分配量
-        record_allocation(stack, depth, size);
-    }
-    return ptr;
-}
-```
-
-关键设计决策：
-- **采样而非全量**：对每次 `malloc` 都做 backtrace 会有显著性能开销（~10μs/次），需要按 size 或概率采样
-- **聚合维度**：按 `so + 符号` 聚合（而非完整堆栈），减少内存占用
-- **与 Java 堆联动**：通过 `art::gc::Heap` 的 `GCListener` 回调，在 GC 时获取当前的分配 Trace 分布
-
-> 关于内存分配监控与泄漏检测的完整框架设计，参见 **23.25 Android 17 内存泄漏监控框架实战**。
-
----
-
-## Crash 堆栈收集的工程实践总结
-
-| 维度 | 推荐方案 | 备选方案 | 注意事项 |
-|------|---------|---------|---------|
-| Java 线程堆栈 | ThreadList::ForEach + WalkStack | Profilo Unwinder 模拟 | 处理 mutator_lock 死锁风险 |
-| Native 线程堆栈 | libunwind (CFI) | libbacktrace | 预先加载符号表 |
-| 锁持有者 | Monitor::GetLockOwnerThreadId | LockWord 直接读取 | 区分 Thin/Fat Lock |
-| 全量 Crash 报告 | 信号处理器中收集 + 异步落盘 | debuggerd tombstone | 避免在处理器中分配内存 |
-| Crash 兜底 | sigsetjmp/siglongjmp + pthread_create Hook | 进程级 Crash 重启 | [结构参考: pthread_create 回溯方案] |
-
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - pthread_create 回溯：原来 Native 也有 try catch！.md — 非局部跳转 Crash 兜底]
+1. 在同一份 dump 内按 Java `tid` 关联 waiter 与 owner。
+2. 核对 waiter 等待的对象标识与 owner 的 `locked` 对象是否一致。
+3. 继续检查 owner 是否又 `waiting to lock` 另一把 monitor。
+4. 出现循环等待时，用第二份样本或 Perfetto 再确认，因为各线程快照并非严格同时。
+5. 没有循环等待时，继续判断是长持锁、owner 未获 CPU、owner 在 I/O/Binder，还是 trace 已经抓晚。
+
+单次 dump 能证明“采样附近观察到了等待关系”，不能给出锁已经持有多久。对象标识也只适合同一份现场内关联，不应跨进程或跨多次 GC 后当作永久 lock ID。
+
+### 需要时长，就引入时间轴
+
+堆栈回答“采样时在哪里”，trace 才能回答“持续多久、期间怎样变化”。Android 17 上可按问题类型选择：
+
+- Java monitor：Perfetto 的 `android.monitor_contention`，查看 waiter、owner、双方方法和等待时长。
+- 线程调度：`sched_switch` / thread state，确认 owner 是 Running、Runnable 还是睡眠。
+- Binder：关联 transaction 与 reply，继续进入服务端线程。
+- native 锁：结合 native callstack、futex wait 和应用/平台锁事件。
+- 主线程长任务：Looper/atrace slice、帧时间线和多次主线程栈。
+
+Perfetto 没记录到 contention 也不能证明没有竞争；trace 配置、采样、设备实现和数据裁剪都会影响可见性。系统化的锁诊断见 [锁竞争与同步性能分析](../../part1-fundamentals/ch01-architecture/14-lock-contention.md)。
+
+## 推荐的端侧采集分层
+
+### 正常运行期
+
+- 维护固定容量 breadcrumb、进程 session ID、页面/任务阶段和资源水位。
+- 对主线程卡顿使用有界、低频、可关闭的选定线程采样。
+- 对关键业务锁记录等待开始、获得、释放和稳定的逻辑 lock name；不要上传对象地址。
+- 记录线程名时同时保留稳定角色，例如 main、render、binder-worker、业务 executor。
+- 采集代码本身要有耗时、分配量、失败率和丢弃数监控。
+
+### Java fatal handler
+
+- 原始 `Throwable` 是主栈，不再用 handler 栈覆盖。
+- OOM/栈溢出走最小写入路径。
+- 只在预算允许时补主线程或少量白名单线程。
+- 不同步上传，不等待普通业务锁。
+- 委托之前保存的 default handler。
+
+### Native fatal handler
+
+- 使用预注册的 signal handler、备用栈、固定内存和预打开 IPC/FD。
+- 只保存 signal、fault address、寄存器上下文和预存注解，或通知外部 dumper。
+- 继续交给 debuggerd/既有 handler，避免吞掉系统 tombstone。
+- Java 全线程与 monitor 图留给 ANR/SIGQUIT、正常期采样或平台级工具。
+
+### 下次启动
+
+- 延迟到非首帧关键路径读取历史退出记录。
+- 有界读取 trace，校验类型、大小和完整性。
+- 用 build ID、R8 mapping ID、版本和 ABI 做精确符号化。
+- 合并预存证据并上传，服务端按证据强度聚类。
+
+## 常见误判
+
+| 误判 | 修正 |
+| --- | --- |
+| `getAllStackTraces()` 会全局暂停并生成原子快照 | Android 17 逐线程调用 `getStackTrace()`，每条栈采样时间不同 |
+| `Thread.getStackTrace()` 只读内存，几乎没有成本 | 跨线程路径会挂起目标线程，并创建 Java 栈对象 |
+| Native Crash 时直接调用 ART `ThreadList::ForEach()` 更完整 | 私有 ABI、运行时锁和对象分配在 fatal signal 下都不安全 |
+| SIGQUIT 会逐个 signal 所有 Java 线程 | ART SignalCatcher 用 `sigwait()` 接收，再通过 checkpoint 组织线程 dump |
+| 公开 `StackTraceElement[]` 能看到锁 owner | 普通公开栈没有 blocked/held object；详细注解来自 ART/platform 私有路径 |
+| `WAITING` 就是等某线程持锁 | `Object.wait()` 已释放 monitor；park、Binder、I/O 也可表现为等待 |
+| 一个 `futex_wait` frame 就能定位 Java 锁 | futex 是底层等待原语，还要用 native/Java 栈和事件关联语义 |
+| 单次线程 dump 能证明死锁和等待时长 | 它只是一组时间接近的快照；循环等待与持续时间应由重复样本或 trace 确认 |
+| Crash handler 返回后继续跑能保住用户数据 | 未捕获异常后的共享状态不可依赖，还会截断 Android 的报告与终止链 |
+| `ApplicationExitInfo` 一定带完整 trace | trace 可能缺失或被全局循环存储覆盖，类型也随退出原因不同 |
+
+## Android 版本边界
+
+| 版本 | 与本章相关的公开或系统能力 |
+| --- | --- |
+| Android 8 / API 26 | Native crash 进入按需启动的 `crash_dump32/64` 架构；普通应用仍不能读取系统 tombstone 目录 |
+| Android 11 / API 30 | `ApplicationExitInfo` 与历史退出查询公开，可在可用时回捞 ANR trace |
+| Android 12 / API 31 | `REASON_CRASH_NATIVE` 的 trace stream 可返回 tombstone protobuf |
+| Android 17 / API 37 | 本章源码锚点；公开 `Thread` API 仍不给普通应用 monitor owner 或原子全线程快照 |
+
+本文没有把 Android 17 的 Java monitor 解释强行套到内核。`android17-6.18-2026-06_r6` 的 scheduler/futex 证据用于说明线程为什么睡眠或迟迟未运行；`synchronized` 对象、held lock 与 owner 的解释仍以 `android-17.0.0_r1` 的 ART dump 为准。
+
+## 验证清单
+
+- [ ] Java Crash 样本保留原始 `Throwable`，没有被 handler 当前栈覆盖。
+- [ ] 自定义 handler 委托原 default handler，多 SDK 安装顺序经过测试。
+- [ ] OOM 与 `StackOverflowError` 不执行全线程 Map、压缩或数据库事务。
+- [ ] 正常期线程采样限制线程数、frame 数、总字节和会话频率。
+- [ ] Native handler 不调用 JNI、Java、私有 ART、allocator 或普通 mutex。
+- [ ] Native crash 后能保留系统 tombstone，API 31+ 按 protobuf 读取。
+- [ ] ANR trace 与端侧 watchdog 样本分别标明系统证据和疑似事件。
+- [ ] `waiting to lock`、`waiting on`、park、Binder 和 futex 使用不同解释。
+- [ ] wait-for graph 使用 Java `tid`，并通过重复样本或 Perfetto 确认循环等待。
+- [ ] 无 trace、截断、读取失败和被覆盖都作为明确结果上报。
+
+## 源码与文档入口
+
+- Android 17 [`java.lang.Thread`](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java)：核对逐线程 `getAllStackTraces()` 与公开栈语义。
+- Android 17 [`dalvik_system_VMStack.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/native/dalvik_system_VMStack.cc)：核对当前线程直接取栈、其他线程 `SuspendThreadByPeer()` 路径。
+- Android 17 [`thread_list.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/thread_list.cc) 与 [`signal_catcher.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/signal_catcher.cc)：核对 SIGQUIT、checkpoint 与线程 dump。
+- Android 17 [`thread.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/thread.cc)、[`stack.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/stack.cc) 与 [`monitor.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/monitor.cc)：核对 StackVisitor、locked/waiting/blocked 输出和 monitor owner。
+- Android 17 [`WatchdogDiagnostics.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/WatchdogDiagnostics.java)：核对平台隐藏 annotated stack 的使用边界。
+- [`Thread.getAllStackTraces()` API](<https://developer.android.com/reference/java/lang/Thread#getAllStackTraces()>)：核对非原子、多时刻快照的公开契约。
+- [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)：核对 ANR trace、API 31+ Native tombstone stream 与可能为空的循环存储。
+- [Android Native crash 与 tombstone](https://source.android.com/docs/core/tests/debug/native-crash)：核对 debuggerd 产物和全线程 backtrace。
+- [查找 ANR 无响应线程](https://developer.android.com/topic/performance/anrs/find-unresponsive-thread)：核对 monitor、Binder、I/O 和抓取过晚等诊断分支。
+- kernel `android17-6.18-2026-06_r6` 的 [ftrace 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/trace/ftrace.rst)：核对调度与内核 trace 能力，不把内核等待状态误写成 Java monitor owner。
