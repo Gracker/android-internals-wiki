@@ -83,274 +83,291 @@ last_deepseek_cn_review_at: 2026-07-16
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## Matrix 适合做客户端侧的监控框架
+## 先判断：2026 年还能不能接 Matrix
 
-Matrix 是微信团队开源的插件式 APM 框架，Android 侧覆盖 APK 检查、卡顿与慢函数、启动耗时、内存泄漏、文件 I/O、SQLite、耗电、native memory leak 检测、MemGuard、pthread hook 等模块。它最适合的场景，是团队已经有上报和分析平台，需要一个客户端 SDK 把常见性能现场采回来。
+Matrix 是微信团队开源的客户端性能监控框架。它提供插件、采集器和部分离线分析工具，不提供托管式上传、查询、聚合、告警或工单系统。选择它，等于选择一组可改造的客户端组件；服务端数据平台仍由接入方建设。
 
-它不是开箱即用的 SaaS 平台。Matrix 定位在客户端采集层，数据格式、采样、上传、聚合、报警和工单流转，都由接入方自己补齐。
+截至 2026-07-25，Maven Central 中 `matrix-android-lib` 的最新正式版仍是 `2.1.0`，发布时间为 2023-03-21；GitHub 主分支最近一次提交停在 2023-07-31。官方 README 只声明 Matrix Gradle 插件可配合 AGP 3.5.0、4.0.0、4.1.0 使用。这个时间差决定了采用策略：
 
-## 模块怎么分
+- 已有 Matrix 项目可以继续维护，但要把自有分支、工具链升级和设备验证视为产品代码的一部分。
+- 新项目若采用现代 AGP，不应直接把官方 2.1.0 插件加入构建并期待它兼容。
+- 只引入某个运行时模块，也要核对它是否依赖旧系统实现、native hook 或旧版预编译 `.so`。
 
-Matrix Android 侧常见模块可以按问题类型理解：
+本节的平台检查锚点是 Android 17 / API 37 / `android-17.0.0_r1`。Matrix 位于应用进程，没有对应的 AOSP 或 `android17-6.18-2026-06_r6` 内核实现；内核锚点只在 Perfetto 的调度、锁等待和 I/O 证据中作为系统侧参照。
 
-| 模块 | 解决的问题 | 主要采集方式 |
-|---|---|---|
-| Trace Canary | 卡顿、ANR、启动、慢函数、FPS | 字节码插桩 + Looper / Choreographer 监听 |
-| Resource Canary | Activity 泄漏、重复 Bitmap | 弱引用观察 + Hprof 裁剪分析 |
-| IO Canary | 主线程 I/O、小 buffer、重复读、Closeable 泄漏 | native I/O Hook + Java 层资源检查 |
-| SQLite Lint | SQLite 语句质量和风险 | SQLite 官方工具能力封装 |
-| Battery Canary | 线程、WakeLock、Alarm、GPS、Wi-Fi、蓝牙等耗电行为 | 系统接口采样与行为监控 |
-| Memory Hook | native 内存泄漏候选 | PLT Hook + alloc/free backtrace |
-| MemGuard | heap overlap、use-after-free、double free | GWP-ASan 相关能力 |
-| Pthread Hook | Java / native 线程泄漏、线程栈空间修剪 | PLT Hook + pthread 生命周期拦截 |
+## 按“数据来源”理解模块
 
-这个分法比“Matrix 很全”更有用。Trace Canary 和 IO Canary 适合线上卡顿现场，Resource Canary 关注 Activity leak 与 duplicate bitmap，Memory Hook 和 MemGuard 则分别覆盖 native leak 与 native heap 错误。APK Checker 更适合 CI 或发版前检查。
+下面这张表把模块、观测来源和结论边界放在一起。只有知道数据如何产生，才能判断报告能证明什么。
 
-Battery Canary、Memory Hook、MemGuard、Pthread Hook 都不适合无差别开启。Battery Canary 会接触 WakeLock、Alarm、线程和系统服务调用，定制 ROM 上的行为差异会放大兼容风险；Memory Hook / Pthread Hook 依赖 native hook，系统库、架构和安全策略变化都可能引入 crash。生产环境更适合云端开关、低采样灰度、按机型放量，并保留一键关闭能力。
+| 模块 | 观测来源 | 适合回答 | 不能单独证明 |
+|---|---|---|---|
+| Trace Canary | 编译期方法插桩、`AppMethodBeat`、主线程 Looper 与帧回调 | 哪段主线程调用路径耗时、启动阶段分布、FPS 分桶、部分 ANR 现场 | 线程为何没获得 CPU、Binder 对端为何慢、锁由谁长期持有 |
+| IO Canary | 对指定 Java 运行库的 `open/read/write/close` PLT hook；`CloseGuard` reporter | 主线程文件 I/O 的路径、Java 栈、次数、大小、耗时；Closeable 泄漏 | 任意 native 库或后台线程的全部 I/O；SQL 语句质量 |
+| Resource Canary | Activity 销毁后的弱引用重检；可选 Hprof dump/分析 | 哪类 Activity 销毁后长期存活、灰度样本中的引用链 | 所有 Fragment/View 泄漏；一次存活必然是永久泄漏 |
+| 重复 Bitmap 分析 | Hprof 离线分析器 | 堆中内容相同的 Bitmap 与引用链 | 图片为何重复解码、线上每次分配的调用现场 |
+| SQLite Lint | 独立 SQLite Lint 插件，hook 或业务回调提供 SQL | SQL 规则问题、索引与查询质量风险 | 某次页面卡顿一定由该 SQL 引起 |
+| Battery Canary | 线程活动、系统 API 使用和 `HealthStats` 等采样 | WakeLock、Alarm、定位、网络、线程等可疑行为 | 单个行为对应的精确耗电量、系统归因的因果关系 |
+| Memory Hook | alloc/free 的 PLT hook 与 native backtrace | native 分配未释放的候选与聚合 | 每个候选一定是泄漏 |
+| MemGuard | Matrix 自己实现的 GWP-ASan 风格抽样保护与 PLT hook | 越界访问、use-after-free、double free | 全量内存安全覆盖；平台 GWP-ASan 已经启用 |
+| Pthread Hook | `pthread` 生命周期 PLT hook | Java/native 线程泄漏候选、32 位进程线程栈裁剪 | 线程业务逻辑是否正确 |
+| APK Checker | 构建产物离线扫描 | 包体构成、资源与 native 库问题 | 运行时性能 |
 
-## Trace Canary 的工程边界
+Resource Canary 的“重复 Bitmap”能力主要位于 `matrix-resource-canary-analyzer-cli` 的 Hprof 分析路径，不应描述成 Activity watcher 在运行时自动给出每次重复解码栈。SQLite Lint 也有自己的安装配置和 SQL 输入路径；看到数据库文件 I/O，只能提示继续检查 SQL、索引和事务，不能据此生成一条 SQLite Lint 结论。
 
-Trace Canary 最容易被误解。它在编译期对目标方法插入入口和出口记录，再由运行时逻辑把方法耗时、调用栈和 Looper 消息耗时组织成报告。
+Battery Canary、Memory Hook、MemGuard 和 Pthread Hook 都不宜作为全量常开项。它们会增加采样、回调、栈回溯或 hook 路径。MemGuard 的源码还明确限制它不能在 `MemoryHook` 已经 commit 后安装。生产使用要按模块准备独立开关、进程范围、采样比例、目标 `.so` 正则和停止采集后的恢复验证。
 
-这条路线有两个好处：
+## Android 17 下有两个硬门槛
 
-- 方法级耗时来自插桩记录，比单纯定时抓栈更容易还原业务调用路径。
-- 可以通过包名、黑名单、白名单控制插桩范围，避免全项目方法都进监控。
+### 构建插件不是 AGP 8+ 实现
 
-代价同样明确：
+AGP 8.0 删除了 `com.android.build.api.transform`。Matrix 2.1.0 的源码仍有以下依赖：
 
-- 构建链变复杂，AGP 升级要重新确认插件适配情况。
-- 混淆后需要稳定的 mapping / method map 关系，否则线上报告难以阅读。
-- 插桩范围过大时，方法记录本身会产生额外开销。
+- `MatrixPlugin` 把 `android` extension 强制转换为旧的 `AppExtension`。
+- `MatrixTraceInjection` 无条件注册 `MatrixTraceTransform`。
+- `MatrixTraceTransform` 继承已经删除的 `Transform`，并使用 AGP 内部 pipeline 类型。
+- 所谓 task injection 仍依赖 `BaseVariant`、`DexArchiveBuilderTask` 等旧 API；它也不是 Android Components Instrumentation API 的实现。
 
-AGP 8.0 移除了 Transform API 和 `com.android.build.api.transform` 包。仍在调用 `android.registerTransform` 的 Matrix Trace 插件会在配置阶段直接失败，典型错误是 `API 'android.registerTransform' is removed`。接入 AGP 8+ 项目前，先确认所用官方版本、内部分支或社区 fork 的插件源码。如果插件仍然注册 `MatrixTraceTransform`，可选路径有三条：留在 AGP 7.x；切到已完成 Android Components Instrumentation API 迁移的分支；或把插桩逻辑迁到 `androidComponents.onVariants { variant.instrumentation.transformClassesWith(...) }`。
+因此，“切换为 task injection 就能支持 AGP 8”是不成立的。官方仓库中也没有 `MatrixTraceClassVisitorFactory` 之类的迁移类。现代项目只有三种可审计的选择：
 
-迁移时要保留旧 Transform 的三项核心能力：按包名和黑白名单过滤类、给被插桩方法分配稳定整数 id、输出与混淆 mapping 同版本保存的 `methodMapping.txt`。线上 `Issue` payload 通常只适合携带 method id、栈摘要和耗时；服务端必须用对应构建产物的 `methodMapping.txt` 反解方法名，否则慢函数报告无法聚合到源码位置。
+1. 继续使用官方明确覆盖的旧构建环境，并承担旧工具链的维护代价。
+2. 采用一个持续维护的 fork，逐项检查它是否已迁到 Android Components API，并在目标 AGP、R8、Kotlin、动态特性模块上跑回归。
+3. 自己移植插桩器。逐类 ASM 插桩可用 Instrumentation API；需要全程序分析时，应评估 Scoped Artifacts API，而不能只改一个注册方法名。
 
-下面这段是 AGP 8+ 注册位置示意，`MatrixTraceClassVisitorFactory` 代表迁移后的 ASM visitor 工厂名，实际项目要替换为自己的实现类：
+移植必须保留类过滤、忽略方法规则、方法 id 分配、`methodMapping.txt`、R8 mapping 读取、增量构建和各 variant 产物隔离。方法 id 不是天然跨版本稳定：若没有正确使用并保存 `baseMethodMapFile`，同一个方法在下一次构建中可能换 id。
 
-```kotlin
-androidComponents {
-    onVariants { variant ->
-        variant.instrumentation.transformClassesWith(
-            MatrixTraceClassVisitorFactory::class.java,
-            InstrumentationScope.PROJECT
-        ) { params ->
-            params.traceConfig.set(traceConfigFile)
-            params.methodMapOutput.set(methodMapFile)
-        }
-    }
-}
-```
+### 所有预编译 native 库都要检查 16 KB page size
 
-这段只说明注册入口。迁移时还要把原 `MatrixTraceTransform` 中的方法过滤、id 分配、method map 输出和增量构建处理搬到新的 visitor 工厂里。
+Android 15 起，AOSP 支持 16 KB page size 设备；Android 17 还提供关闭兼容模式并让不兼容二进制立即终止的测试方式。Matrix 的 IO Canary、SQLite Lint、Memory Hook、MemGuard、Pthread Hook、Backtrace 等模块都包含 native 代码，不能因为 Java 层初始化成功就判定兼容。
 
-## IO Canary 补的是 Perfetto 看不到的文件信息
+采用 2023 年发布的预编译产物前，要检查 APK/AAB 中每个 Matrix `.so` 的 ELF load segment alignment 和包内 zip alignment，并在 16 KB 模式的 Android 17 设备或模拟器上覆盖安装、启动、hook、停止 hook 和异常回调。Google 的当前建议是使用 AGP 8.5.1 以上与 NDK r28 以上获得默认的 16 KB 构建支持；这又与 Matrix 官方 Gradle 插件的旧 AGP 依赖形成直接冲突。工程上通常需要拆开处理：移植构建插件，同时重编 native 模块，或换用已经给出现代工具链产物与验证记录的维护分支。
 
-Perfetto 能看到线程进入 D 状态、主线程被 I/O 拖住，也能看到调度和系统调用相关线索，但它通常不会直接告诉你“哪个业务文件被读了几次、buffer 多大、是否忘了 close”。IO Canary 补的就是这块应用层上下文。
+## 接入结构：先注册，再初始化，再启动
 
-典型报告应该回答三件事：
+运行时框架本身很直接：`Matrix.Builder.plugin()` 注册插件，`pluginListener()` 接收 `Issue`，`Matrix.init()` 安装单例，随后启动所需插件。源码锚点以 2.1.0 的 `Matrix.java` 为准：其中没有 `patchListener()`，准确 API 是 `pluginListener()`。
 
-- 哪个线程触发文件读写，是否发生在主线程。
-- 哪个文件路径产生高耗时或重复读取。
-- 单次读写 buffer 是否过小，是否存在 Closeable 泄漏。
-
-线上使用时要处理路径脱敏。文件名、用户目录、业务缓存 key 都可能包含敏感信息，上报前应该做裁剪或哈希。
-
-## Resource Canary 和 LeakCanary 的分工
-
-Resource Canary 通过弱引用观察 Activity 销毁后的存活情况，再在需要时 dump 和裁剪 Hprof。Matrix README 公开写明的两类能力是 Activity leak 和 duplicate bitmap，线上更适合把它当成“某类页面反复泄漏”或“同图被重复解码”的趋势探针。
-
-如果排查目标是 Fragment 泄漏、View 引用链或更完整的 leak trace，通常还要交给 LeakCanary 或团队自己的 lifecycle watcher。LeakCanary 更适合开发和测试阶段。它会在本地展示完整 leak trace，帮助开发者直接修代码。两者不冲突：线上用 Resource Canary 发现 Activity leak / duplicate bitmap 分布，本地用 LeakCanary 还原引用链。
-
-## 接入建议
-
-Matrix 适合已经有一定工程能力的团队。接入前至少确认四件事：
-
-1. 当前 AGP、Gradle、Kotlin、R8 版本是否被所选 Matrix 版本支持。
-2. Release 包是否只打开必要模块，Debug 包是否保留更完整诊断能力。
-3. 上报 schema 是否能承载页面、线程、堆栈、文件、版本、机型等字段。
-4. 每个模块是否有远程开关、采样率、阈值和灰度策略。
-
-Matrix 的优势是客户端能力完整。它的风险也来自这里：模块一多，采集范围、构建适配和平台消费都会变重。稳妥做法是按问题接入，先让一个模块的数据能被团队稳定使用，再扩到下一类问题。
-
-## 接入结构：插件、配置和上报回调
-
-Matrix Android 的接入模型可以分成三层：
-
-1. Gradle 插件负责在构建阶段处理 Trace Canary 需要的字节码插桩和 method map。
-2. App 运行时初始化 Matrix，并按需安装 `TracePlugin`、`ResourcePlugin`、`IOCanaryPlugin` 等模块。
-3. `PluginListener` 接收 `Issue`，业务侧把它转换成自己的上报 schema。
-
-代码层面通常会落到这样的结构。下面这段是接入骨架，重点看 `builder.plugin(...)` 的注册顺序和 `onReportIssue()` 的职责分离。`TraceConfig` 细节要按项目所用 Matrix 版本补齐，但不能跳过注册直接 `getPluginByClass(...).start()`。
-
-源码锚点是 `matrix-android-lib/src/main/java/com/tencent/matrix/Matrix.java`：`Matrix.Builder` 公开 `plugin(Plugin)` 和 `pluginListener(PluginListener)`，`build()` 在 listener 为空时补 `DefaultPluginListener`。示例应调用 `pluginListener(...)`，不存在 `patchListener(...)` 这个 Builder API。
+下面的骨架只演示 Matrix 2.1.0 中存在的运行时 API。它假设调用方已经完成进程筛选，并且构建期 Trace 插桩器已在当前工具链上通过验证：
 
 ```java
-public final class MatrixInitializer {
-    public static void init(Application app) {
-        Matrix.Builder builder = new Matrix.Builder(app);
-        builder.pluginListener(new DefaultPluginListener(app) {
-            @Override
-            public void onReportIssue(Issue issue) {
-                super.onReportIssue(issue);
-                MatrixReportBridge.enqueue(issue);
-            }
-        });
+public final class MatrixInstaller {
+    public static void install(
+            Application app,
+            IDynamicConfig dynamicConfig) {
+        TraceConfig traceConfig = new TraceConfig.Builder()
+                .dynamicConfig(dynamicConfig)
+                .enableFPS(true)
+                .enableEvilMethodTrace(true)
+                .enableAnrTrace(true)
+                .enableStartup(true)
+                .isDebug(false)
+                .isDevEnv(false)
+                .build();
 
-        IDynamicConfig dynamicConfig = new DynamicConfigImpl();
-
-        TracePlugin tracePlugin = buildTracePlugin(dynamicConfig); // 示意：补齐 TraceConfig
-        IOCanaryPlugin ioCanaryPlugin = new IOCanaryPlugin(
+        TracePlugin tracePlugin = new TracePlugin(traceConfig);
+        IOCanaryPlugin ioPlugin = new IOCanaryPlugin(
                 new IOConfig.Builder()
                         .dynamicConfig(dynamicConfig)
                         .build());
 
-        builder.plugin(tracePlugin);
-        builder.plugin(ioCanaryPlugin);
+        Matrix.Builder builder = new Matrix.Builder(app)
+                .pluginListener(new DefaultPluginListener(app) {
+                    @Override
+                    public void onReportIssue(Issue issue) {
+                        super.onReportIssue(issue);
+                        MatrixReportQueue.enqueue(issue);
+                    }
+                })
+                .plugin(tracePlugin)
+                .plugin(ioPlugin);
 
         Matrix.init(builder.build());
-
-        tracePlugin.start();
-        ioCanaryPlugin.start();
+        Matrix.with().startAllPlugins();
     }
 }
 ```
 
-实际接入时，顺序是“先构造插件，再 `builder.plugin(...)` 注册，再 `Matrix.init(...)`，再按需 `start()`”。如果少了注册步骤，`getPluginByClass(...)` 拿不到实例，示例就会把读者带到一条不存在的接入路径上。
+这里的 `MatrixReportQueue` 是应用自建的上传队列，不属于 Matrix API。注册顺序也有实际约束：未加入 `builder.plugin(...)` 的实例不会进入 Matrix 的插件集合，`getPluginByClass()` 也找不到它。示例没有表达采样和远程开关；项目代码应在构造插件前完成进程允许列表和实验分组，并让 `IDynamicConfig` 返回当前策略。
 
-真实项目还要把远程开关、进程过滤、采样率、Debug / Release 差异放进去。Matrix 模块不应该在所有进程里默认启动，尤其是推送进程、WebView 独立进程、插件进程和短命进程。
+多进程应用不要在每个 `Application` 中照搬同一配置。主进程可开启 Trace；WebView、推送、下载或短命进程只选择能回答该进程问题的模块。还要记录“未安装”“安装失败”“已停止”三种状态，否则没有报告时无法区分“没有问题”和“监控没有工作”。
 
-## Trace Canary 的时间线
+## Trace Canary：插桩记录与 Looper 窗口如何配合
 
-Trace Canary 要解决的主要问题，是把卡顿发生时的主线程执行路径和方法耗时保留下来。一个典型流程如下：
+构建期的 `MethodCollector` 为被选中的方法分配整数 id，写出 `methodMapping.txt`；字节码在方法进入和退出处调用 `AppMethodBeat.i(id)` 与 `AppMethodBeat.o(id)`。运行时的 `AppMethodBeat` 用环形缓冲记录 id、进出标志和相对时间，Looper dispatch 边界则切出一次主线程消息的分析窗口。
+
+下面的时序图说明构建产物和运行时报告之间的依赖：
 
 ```mermaid
 sequenceDiagram
-    participant Build as Gradle 插件
-    participant App as App 字节码
-    participant Main as Main Looper
-    participant Trace as Trace Canary
-    participant Platform as 业务上报平台
+    participant Build as "Matrix 构建插件"
+    participant Bytecode as "业务字节码"
+    participant Main as "Main Looper"
+    participant Trace as "Trace Canary"
+    participant AppAPM as "自建 APM"
 
-    Build->>App: 方法入口/出口插入计时逻辑
-    Main->>Trace: Message dispatch 开始
-    App->>Trace: 记录方法 id、进入时间、退出时间
-    Main->>Trace: Message dispatch 结束
-    Trace->>Trace: 判断 block / slow method / startup
-    Trace->>Platform: 上报 Issue + 调用路径摘要
+    Build->>Build: "分配 method id，输出 methodMapping.txt"
+    Build->>Bytecode: "插入 AppMethodBeat.i/o"
+    Main->>Trace: "dispatch begin"
+    Bytecode->>Trace: "记录 method id、进出标志、相对时间"
+    Main->>Trace: "dispatch end"
+    Trace->>Trace: "整理调用树、cost、stackKey、scene"
+    Trace->>AppAPM: "PluginListener.onReportIssue(Issue)"
 ```
 
-这条路径里有三个容易出错的点：
+这条时序说明两个常见故障：没有与样本同构建保存的 `methodMapping.txt`，服务端无法可靠反解整数栈；插桩器没有工作时，Looper/FPS 信号可能仍存在，但方法树会缺失，不能把它误判为“主线程没有业务方法”。
 
-- method id 必须能还原到混淆后的真实方法，否则线上报告不可读。
-- 插桩范围要控制，三方 SDK、生成代码、热路径小函数都可能制造噪声。
-- block 阈值要结合业务场景，统一 700ms 只能捕获严重主线程卡顿，抓不到慢帧级别问题。
+Trace Canary 会生成不同 tag。2.1.0 源码中包括 `Trace_FPS`、`Trace_EvilMethod` 和 `Trace_StartUp`；payload 常见字段有 `scene`、`cost`、`stack`、`stackKey`、`detail` 和启动阶段耗时。服务端应该按 `tag + type + payload schema version` 解码，不能假设所有 `Issue` 都有同一组字段。
 
-Trace Canary 更适合抓“大块主线程工作”和“启动阶段长函数”。对 16ms 级别的帧预算，它不是唯一信号源，还要配 JankStats / FrameMetrics。
+阈值应按场景配置，不要把一个固定毫秒数写成通用标准。卡顿窗口、冷启动、热启动和 FPS 分桶使用不同信号。方法插桩也不是逐帧性能指标的替代品：JankStats/FrameMetrics 适合确认坏帧及界面状态，Trace Canary 的方法树适合解释较长的主线程工作；需要系统归因时，再转到 Perfetto。
 
-## Matrix 报告应该怎样入库
+## IO Canary：覆盖范围比名称窄
 
-Matrix 原始 `Issue` 不能直接当平台事件使用。书稿级工程里，至少要转换出稳定字段：
+2.1.0 的 native 实现通过 xHook 查找 `libopenjdkjvm.so`、`libjavacore.so`、`libopenjdk.so`，代理 `open/open64/read/write/close` 等符号。代理函数发现当前线程不是主线程时会直接调用原函数，不进入收集器。其文件性能检测因此主要覆盖经这些 Java 运行库路径发生的主线程 I/O，不是进程中任意库、任意线程的 I/O 审计。
 
-| 字段 | 说明 |
+一次被跟踪的文件从 `open` 开始保存路径、线程名和 Java 栈；`read/write` 累加操作次数、请求大小与耗时；`close` 时补文件大小并运行三类 detector：
+
+- Main-thread detector 关注单次很慢或连续读写超过阈值的主线程 I/O。
+- Small-buffer detector 按操作次数、平均请求大小和连续读写耗时判断。
+- Repeat-read detector 比较路径、线程、Java 栈、文件大小和读取大小，在短窗口内发现重复读取。
+
+Closeable 泄漏是另一条路径：`CloseGuardHooker` 反射替换 `dalvik.system.CloseGuard$Reporter`，将其 `Throwable` 栈转换成 type 4 的 `Issue`。这是对隐藏实现的反射与代理，Android 17 上必须单独验证 hook 成功率和停止后的 reporter 恢复情况。源码中虽预留 network I/O、cursor leak 的常量，也不能据此宣称 2.1.0 已完整实现这些 detector。
+
+Perfetto 与 IO Canary 提供的证据不同。Perfetto 在数据源和权限允许时可以看到调度、I/O、文件描述符或系统调用线索；Matrix 报告保留的是应用层路径、Java 栈以及一次文件生命周期内的聚合字段。一次主线程 I/O 报告可按以下顺序读：
+
+1. 用 `thread`、`scene` 和时间窗口判断它是否处在启动或交互路径。
+2. 看 `path`、`opType`、`op`、`opSize`、`buffer`、`cost` 与 `repeat`，区分单次慢、连续小块操作和重复读取。
+3. 从 Java 栈找到调用入口，但不要把 `open` 时的栈当作每次 `read/write` 的精确栈。
+4. 在 Perfetto 中检查相同窗口内主线程是在运行、等待 I/O、等待锁、等待 Binder，还是因调度压力未及时运行。
+5. 若路径属于 SQLite，转去检查 SQL、索引、事务和 SQLite Lint 结果；文件路径本身不能指出哪条 SQL 有问题。
+
+上报前不要上传原始私有目录、数据库名、账号、URL query 或缓存 key。保留受控的路径类型与稳定哈希即可支持聚合，原始路径只留在用户授权的本地调试或受限灰度环境。
+
+## Resource Canary：Activity 观察和 Hprof 分开看
+
+`ActivityRefWatcher` 在 Activity 销毁后保存弱引用，后台任务按间隔触发 GC 并重检。2.1.0 默认最大重检次数是 10；达到上限且对象仍存活后，才交给所选 leak processor。这个过程降低了短暂保留造成的噪声，但 `Runtime.getRuntime().gc()` 只是请求，重检次数也不是“永久泄漏”的数学证明。
+
+`ResourceConfig.DumpMode` 提供 `NO_DUMP`、`AUTO_DUMP`、`MANUAL_DUMP`、`SILENCE_ANALYSE`、`FORK_DUMP`、`FORK_ANALYSE`、`LAZY_FORK_ANALYZE`。这些模式的暂停时间、磁盘占用、Android 版本支持范围并不相同。官方 2.1.0 release note 只明确提到 ResourcePlugin 对 API 31 的兼容改动，不能从这句话推导出它已经验证到 API 37。
+
+生产侧建议把发现和分析分开：
+
+- 大盘只上报 Activity 类名、进程、版本、次数、ref key、dump mode 和分析状态。
+- Hprof 只在受控设备、充电/空闲条件或内部测试中生成；设置目录配额、LRU 与超时。
+- 上传前评估对象数据的隐私风险。Hprof 可能含用户输入、token、URL 和业务对象。
+- Fragment、View、listener 等引用问题，可在本地用 LeakCanary 或 heap analyzer 补足引用链；Resource Canary 的 watcher 入口以 Activity 为中心。
+
+重复 Bitmap 是 Hprof analyzer 的独立分析结果。它适合指出“堆里有内容相同的 bitmap buffer 及其引用链”，随后再检查图片缓存 key、变换参数、尺寸和生命周期。不要把结果直接翻译成“同一文件被解码了多少次”，Hprof 没有保留完整的解码事件时间线。
+
+## Battery、Memory Hook、MemGuard 与 Pthread Hook
+
+这些模块靠近系统 API 或 native 分配/线程路径，启用前应先写出假设和退出条件。
+
+| 模块 | 建议的启用范围 | 关键风险与校验 |
+|---|---|---|
+| Battery Canary | 低比例样本、后台异常版本、专项实验 | 观察行为不等于精确能耗归因；对照 Battery Historian、Perfetto、`dumpsys batterystats` 与复现实验 |
+| Memory Hook | 指定进程与指定 `.so`，短时采集 | alloc/free hook 和回溯有成本；检查未释放聚合能否稳定复现 |
+| MemGuard | 内部/小流量，限定目标 `.so` 与分配尺寸 | 抽样覆盖、guard page 内存成本、潜在对齐影响；不能与已 commit 的 Memory Hook 同时安装 |
+| Pthread Hook | 线程暴涨或 32 位虚拟地址空间专项 | pthread hook 兼容性、栈裁剪对深调用的影响、停止 hook 后状态 |
+
+Matrix MemGuard “based on GWP-ASan”表示实现思路相近，不表示 Android 平台的 GWP-ASan 配置已生效。它可以按正则选择目标库，默认选项也包含最大分配尺寸、最大受保护分配数和跳过分配数，说明它有明确采样范围。报告没有出现时，只能说明本次采样未捕获问题。
+
+## 报告入库：原始 Issue 之外再建稳定协议
+
+Matrix 的 `Issue` 只有 `type`、`tag`、`key`、`content` 和 `plugin`。进程、发生时间、应用版本、构建 id、采样策略、隐私级别与上传状态应由接入方补齐。建议至少保留以下字段：
+
+| 字段 | 用途 |
 |---|---|
-| `issue_type` | `trace_block`、`slow_method`、`startup`、`io_main_thread`、`activity_leak` 等 |
-| `process_name` | 多进程应用必须带进程名 |
-| `thread_name` / `tid` | 卡顿、I/O、ANR 样本的线程归因 |
-| `page` / `scene` | 当前 Activity、Fragment、路由或业务场景 |
-| `duration_ms` | 统一毫秒口径，避免 ns / ms 混用 |
-| `stack_signature` | 堆栈或调用路径归一化后的签名，用于聚合 |
-| `sample_payload_id` | 大 payload 单独存储，主事件只保存索引 |
-| `privacy_level` | 标记是否包含路径、URL、日志、文件名等敏感信息 |
+| `schema_version` | 解析规则升级，避免用新代码误读旧 payload |
+| `matrix_version` / `matrix_fork_revision` | 定位官方版本与自有补丁 |
+| `issue_tag` / `issue_type` | 保留 Matrix 原始路由信息 |
+| `process_name` / `thread_name` / `tid` | 多进程和线程归因 |
+| `scene` / `page` | 业务入口 |
+| `duration_ms` | 接入层统一时间单位，并保留原字段 |
+| `stack_signature` | 去地址、去动态 id 后的聚合键 |
+| `app_build_id` | 关联 APK、R8 mapping 和 native symbols |
+| `method_map_id` | 关联 Trace `methodMapping.txt` |
+| `sample_policy_id` | 解释样本如何被选中 |
+| `payload_object_id` | 大栈、Hprof 或 dump 文件的独立存储索引 |
+| `privacy_class` | 路径、URL、对象数据的处理规则 |
 
-如果缺少 `page` 和 `stack_signature`，Matrix 数据会很快变成“很多样本，但无法排序”。如果缺少 `sample_payload_id`，服务端会被大堆栈、Hprof 摘要和 I/O 明细拖慢。
-
-Trace Canary 慢函数样本入库时，至少要保留 method id、耗时、场景和 method map 版本。下面是服务端事件 schema 示例，字段名按团队平台调整：
+下面的 JSON 只定义自建平台协议，字段名不是 Matrix 2.1.0 的原生 payload：
 
 ```json
 {
-  "issue_type": "slow_method",
+  "schema_version": 3,
+  "matrix_version": "2.1.0+company.12",
+  "issue_tag": "Trace_EvilMethod",
+  "issue_type": 0,
   "process_name": "com.example.app",
   "thread_name": "main",
-  "scene": "HomeActivity#onCreate",
+  "scene": "HomeActivity",
   "duration_ms": 1280,
-  "stack_signature": "home_startup_load_config",
-  "method_ids": [10231, 20488, 30412],
-  "method_mapping_version": "app-8.3.0-20260427-release",
-  "sample_payload_id": "matrix-trace-20260427-0001"
+  "stack_signature": "sha256:77c0...",
+  "app_build_id": "8.3.0-370412-release",
+  "method_map_id": "sha256:aa91...",
+  "sample_policy_id": "trace-prod-2026-07",
+  "payload_object_id": "matrix/trace/2026/07/25/0001",
+  "privacy_class": "internal-pseudonymized"
 }
 ```
 
-读这类样本时，先用 `method_mapping_version` 找到同一包的 `methodMapping.txt`，把 `method_ids` 反解成方法名，再按 `scene` 和 `stack_signature` 聚合同类问题。只有单条 `duration_ms` 时，判断空间很小；同一签名在同版本、同机型或同入口上持续出现，才进入排查。
+服务端收到它后，要按 `app_build_id + method_map_id` 找到同一构建的映射文件，再解码 Matrix 的整数方法栈。`stack_signature` 用于聚合同类样本，不能代替原始栈；`sample_policy_id` 用来提醒读者，发生率只对当前采样方案有意义。
 
-IO Canary 样本要保留文件类型、线程、次数和 buffer 信息，方便和 Perfetto 的线程状态互证。下面是主线程重复小 buffer 读取的事件 schema 示例：
+IO 事件可以复用同一信封，在 payload 中放受控字段。下面给出一个经过路径分类和哈希的例子：
 
 ```json
 {
-  "issue_type": "io_main_thread",
+  "issue_tag": "io",
+  "issue_type": 3,
   "process_name": "com.example.app",
   "thread_name": "main",
   "scene": "ColdStart",
   "path_type": "shared_prefs",
   "path_hash": "sha256:8d31...",
-  "op": "read",
+  "op_type": "read",
+  "op_count": 42,
+  "op_size_bytes": 5376,
+  "max_buffer_bytes": 128,
   "cost_ms": 86,
-  "repeat_count": 42,
-  "buffer_size_bytes": 128,
-  "sample_payload_id": "matrix-io-20260427-0032"
+  "repeat_count": 6
 }
 ```
 
-这个样本的读法是：`thread_name=main` 和 `scene=ColdStart` 说明它可能影响首屏；`repeat_count=42` 与 `buffer_size_bytes=128` 指向重复小块读取；`path_hash` 保留聚合能力，同时避免把真实文件路径传到平台。
+这个例子只支持“冷启动主线程在短窗口内反复小块读取某类文件”的判断。它不能证明 86 ms 全部是存储等待，也不能证明提高 buffer 就一定消除首屏慢；仍需结合调用栈、缓存策略和系统时间线验证。
 
-## IO Canary 的分析路径
+## 从 Matrix 样本转向系统证据
 
-一次主线程 I/O 上报不要只看“耗时大于阈值”。更稳的排查顺序是：
+Matrix 给出应用语义，Perfetto 给出同一时间窗内的系统执行状态。联合诊断时不要只寻找一个能对上时间的 slice，要检验互相竞争的解释：
 
-1. 看线程：是否主线程，是否启动阶段，是否用户交互期间。
-2. 看文件：路径属于数据库、SharedPreferences、图片缓存、日志、动态资源还是业务文件。
-3. 看次数：一次大文件读取和短时间重复小文件读取是两类问题。
-4. 看 buffer：小 buffer 会放大系统调用次数。
-5. 看 Perfetto：主线程是否进入 D 状态，I/O 是否和慢帧/启动慢时间窗口重合。
+- 慢方法的 wall time 很长，但 CPU time 很短：检查锁、Binder、I/O 和调度等待。
+- wall time 与 CPU time 都长：查看 CPU 频点、核心分配、同机并发负载和方法内部工作量。
+- Matrix 报主线程 I/O：核对系统调用或 I/O 事件是否与该窗口重合，同时检查 page fault、锁和 Binder。
+- 启动慢：核对进程创建、`bindApplication`、ContentProvider、`Application`、Activity launch 与首帧，不要把 Matrix 的“启动总时长”当成单一函数耗时。
+- ANR：Matrix 的主线程栈只是一个观察点；还要查看 Binder 对端、锁持有线程、CPU 饥饿、系统服务与平台 ANR trace。
 
-优化动作也要按类型分：
+Perfetto 复现不到线上样本时，保留 Matrix 的 scene、构建 id、设备、进程、发生时间和实验分组，用相同入口制造可比较样本。若无法控制输入和环境，一条 trace 与一条线上 Issue 的相似栈还不足以建立因果关系。
 
-- 启动主线程读配置：改成预加载、异步读取或首屏后加载。
-- 重复读同一文件：补内存缓存或合并调用。
-- 小 buffer：调整缓冲区，减少 read/write 次数。
-- 数据库文件大：回到 SQLite 查询、索引和事务设计。
+## 上线前检查表
 
-## Resource Canary 的线上限制
+- [ ] 明确使用官方 2.1.0、哪个 fork revision，以及每个补丁的维护人。
+- [ ] 当前 AGP、Gradle、Kotlin、R8、Java、动态特性模块和增量构建均有 CI 覆盖。
+- [ ] Trace 插桩失败会让构建失败或产生显式诊断，不会静默发布空方法栈。
+- [ ] 每个 release 的 APK/AAB、R8 mapping、`methodMapping.txt`、native symbols 可由同一 `app_build_id` 找回。
+- [ ] 所有 Matrix `.so` 通过 16 KB ELF 与 zip alignment 检查，并在 Android 17 的严格 16 KB 模式运行。
+- [ ] hook 模块覆盖安装、启用、禁用、重复初始化、异常回调、进程退出和版本回滚。
+- [ ] 各进程的模块允许列表明确；WebView、推送、下载和短命进程没有继承主进程配置。
+- [ ] 插桩方法数、APK 体积、冷/热启动、帧耗时、CPU、内存、线程数和耗电有对照实验。
+- [ ] 本地队列有条数、字节数、文件数和保留时长上限；上传失败不会制造新的主线程 I/O。
+- [ ] 路径、SQL、URL、Hprof、native dump 与日志按隐私等级裁剪、哈希、加密和授权。
+- [ ] 每个模块有远程停止方式，并验证停止后 hook、listener、线程和文件状态。
+- [ ] 后端区分“无问题”“未采样”“安装失败”“采集被关闭”“上传失败”。
 
-Resource Canary 的 Activity 泄漏检测依赖生命周期和弱引用观察，报告“销毁后仍存活”这件事。线上要防两个误判：
+## 源码与版本依据
 
-- Activity 刚销毁后短时间仍被系统或异步任务持有，过早判泄漏会误报。
-- 某些页面在转场、配置变化、Dialog、Fragment manager 状态恢复期间会出现短暂保留。
-
-所以线上策略一般不会“第一次没回收就上报”。更合理的策略是多轮 GC 后仍然存活，再结合页面、版本、出现次数、引用链摘要判断是否进入修复队列。
-
-Hprof 处理也要克制。完整 Hprof 体积大，还可能包含业务对象和用户数据。生产环境更适合上传裁剪后的引用链摘要、对象类型、页面和签名，把完整文件留在内部灰度或本地复现。
-
-## 和 Perfetto 的联合诊断
-
-Matrix 能提供应用侧现场，Perfetto 能提供系统时间线。两者联合时，先用 Matrix 定位样本窗口，再用 Perfetto 复现同一路径：
-
-- Matrix 报慢函数：Perfetto 看这段时间线程是否在 CPU 上运行。
-- Matrix 报主线程 I/O：Perfetto 看线程状态是否 D，是否有其他系统负载。
-- Matrix 报启动慢：Perfetto 看 Zygote fork、bindApplication、Activity launch、首帧路径是否对应。
-- Matrix 报 ANR：Perfetto 看 Binder 对端、锁等待、CPU 饥饿和系统负载。
-
-单看 Matrix 容易把“方法栈停在哪里”当作“方法耗时原因”。单看 Perfetto 又缺少业务语义。两者合在一起，结论才更稳。
-
-## 上线检查清单
-
-Matrix 进入 Release 前，至少跑完这组检查：
-
-- AGP、Gradle、R8、Kotlin、multidex、动态特性模块都能构建通过。
-- 插桩后方法数、包体积、启动耗时没有异常增长。
-- 所有模块都有远程开关和采样率。
-- 多进程只在目标进程启动，短命进程不采集重模块。
-- 混淆 mapping / method map 能和线上样本关联。
-- I/O 路径、URL、日志、Hprof 摘要经过脱敏。
-- 上报失败时本地缓存有大小上限，不会反过来制造 I/O 问题。
+- [Matrix v2.1.0 release](https://github.com/Tencent/matrix/releases/tag/v2.1.0)
+- [Maven Central: matrix-android-lib metadata](https://repo1.maven.org/maven2/com/tencent/matrix/matrix-android-lib/maven-metadata.xml)
+- [Matrix.java（v2.1.0）](https://github.com/Tencent/matrix/blob/1ef57301201f9f65a755573afaee4ebada5a53a1/matrix/matrix-android/matrix-android-lib/src/main/java/com/tencent/matrix/Matrix.java)
+- [MatrixPlugin.kt（v2.1.0）](https://github.com/Tencent/matrix/blob/1ef57301201f9f65a755573afaee4ebada5a53a1/matrix/matrix-android/matrix-gradle-plugin/src/main/kotlin/com/tencent/matrix/plugin/MatrixPlugin.kt)
+- [MatrixTraceInjection.kt（v2.1.0）](https://github.com/Tencent/matrix/blob/1ef57301201f9f65a755573afaee4ebada5a53a1/matrix/matrix-android/matrix-gradle-plugin/src/main/kotlin/com/tencent/matrix/plugin/trace/MatrixTraceInjection.kt)
+- [AppMethodBeat.java（v2.1.0）](https://github.com/Tencent/matrix/blob/1ef57301201f9f65a755573afaee4ebada5a53a1/matrix/matrix-android/matrix-trace-canary/src/main/java/com/tencent/matrix/trace/core/AppMethodBeat.java)
+- [IO Canary native hook（v2.1.0）](https://github.com/Tencent/matrix/blob/1ef57301201f9f65a755573afaee4ebada5a53a1/matrix/matrix-android/matrix-io-canary/src/main/cpp/io_canary_jni.cc)
+- [ActivityRefWatcher.java（v2.1.0）](https://github.com/Tencent/matrix/blob/1ef57301201f9f65a755573afaee4ebada5a53a1/matrix/matrix-android/matrix-resource-canary/matrix-resource-canary-android/src/main/java/com/tencent/matrix/resource/watcher/ActivityRefWatcher.java)
+- [Android Gradle plugin API updates](https://developer.android.com/build/releases/gradle-plugin-api-updates)
+- [Android 16 KB page size compatibility](https://developer.android.com/guide/practices/page-sizes)
