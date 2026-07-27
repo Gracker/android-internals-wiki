@@ -337,7 +337,7 @@ Baseline Profile 可以改变安装期编译覆盖和运行时 JIT 工作量。�
 
 不能仅凭 ReDex 能读写 DEX 就宣布 Android 17 兼容，也不能把某个旧版本的冷启动收益当作当前应用预期。
 
-## 5. 用 Simpleperf 和 Perfetto验证假设
+## 5. 用 Simpleperf 和 Perfetto 验证假设
 
 PMU 事件取决于 CPU、内核与权限。Android 17 的 Simpleperf 文档要求先用 `list` 查看设备可用事件；异构核心还可能支持不同 raw event。量产非 root 设备通常只能分析 debuggable 或 `<profileable android:shell="true" />` 的应用。
 
