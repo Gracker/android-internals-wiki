@@ -56,283 +56,357 @@ updated_date: "2026-07-10"
 
 # 稳定性度量与指标体系
 
-20.1 节建立了 Crash / ANR / OOM 的分类框架和 Google Play Vitals 的底线阈值。本节聚焦团队内部怎么用这些数据：**计算口径怎么选、看板怎么搭、SLO 怎么定**。
+20.1 节说明了 Crash、ANR 与 OOM 的边界，本节解决另一个容易出错的问题：同一批故障数据，怎样算出可以解释、可以复算、可以指导发版的指标。
 
-崩溃率不止一个数字。不同计算口径回答不同问题——选错口径，结论就错了。下面逐一说明。
+这里的平台基准是 Android 17（API 37，`android-17.0.0_r1`）。Google Play 和 Firebase 的统计规则独立于 AOSP 版本，文中的阈值与产品口径按 2026 年 7 月的官方文档核对。把这些外部数字写进长期门禁之前，仍要确认服务端文档没有更新。
 
-## 崩溃率指标定义：四种口径，四种用途
+## 先确定统计对象
 
-### UV 崩溃率（User Crash Rate）
+“崩溃率”这个名字至少可能指五种分数。它们的分母不同，回答的问题也不同。
 
-$$\text{UV 崩溃率} = \frac{\text{当日发生过崩溃的去重用户数}}{\text{当日活跃用户数（DAU）}}$$
+| 统计对象 | 分子 | 分母 | 回答的问题 |
+|---|---|---|---|
+| 活跃安装实例日 | 当天至少发生一次故障的安装实例日 | 当天活跃安装实例日 | 有多大比例的日活受到影响 |
+| 用户或安装实例 | 观察期内至少发生一次 fatal 的去重实例 | 观察期内有活动的去重实例 | 观察期内有多少实例保持无崩溃 |
+| 会话 | 至少发生一次 fatal 的会话 | 有效会话 | 一次使用过程有多大概率因崩溃结束 |
+| 启动尝试 | 以 fatal 或进程异常退出结束的启动尝试 | 有效启动尝试 | 用户能否进入可用界面 |
+| 原始故障事件 | Crash、ANR 或其他故障事件 | 启动数、会话数或运行时长 | 故障发生频率与诊断负荷 |
 
-UV 崩溃率衡量：**崩溃影响了多少比例的用户**。分子是"发生过至少一次崩溃的独立用户"，不去重意味着一个用户崩溃 10 次和崩溃 1 次在 UV 崩溃率里等价。
+文档、埋点协议和 SQL 必须写出分子、分母、时间窗、范围和去重键。只写“UV 崩溃率”或“PV 崩溃率”仍然不够：UV 可能是账号、设备或安装实例；PV 在多数分析系统中表示页面浏览量，不应拿来代称 Session。
 
-这是最常用的对外汇报指标，也是 Google Play Vitals 的核心指标。但 UV 崩溃率有一个盲区：它和应用的使用时长强相关。用户在 App 里停留 60 分钟和 5 分钟，遇到崩溃的概率差一个数量级。日活 1 亿、人均 120 分钟的社交 App，跟日活 500 万、人均 10 分钟的工具 App，放在一起比 UV 崩溃率没有意义。
+### 原始事件和派生指标分开保存
 
-### PV 崩溃率（Session Crash Rate）
+端侧至少要为一次故障携带这些关联键：
 
-$$\text{PV 崩溃率} = \frac{\text{崩溃次数}}{\text{总会话数（Session 数）}}$$
+- `event_id`：一次采集事件的稳定标识，用来消除重传产生的重复记录；
+- `installation_id`：经过隐私设计的安装实例标识，不要直接上传账号、IMEI 或 Android ID；
+- `process_start_id`：区分同一安装实例的不同进程生命周期；
+- `session_id`：由团队明确规则生成的会话标识；
+- `launch_id`：一次有效启动尝试的标识；
+- `cluster_id`：服务端符号化、归一化之后得到的问题簇标识。
 
-PV 崩溃率也叫 Session 崩溃率（本节中 PV 和 Session 等价使用，指一次完整的使用会话），用来衡量：**平均多少次会话会出现一次崩溃**。它消除了用户使用时长带来的偏差，适合做跨应用、跨版本的横向对比。
+原始事件表保留每次故障。诸如“同一安装实例、同一问题簇、五分钟只算一次”的规则只能用于派生表，不能覆盖原始事件，否则重复崩溃和 crash loop 会被数据清洗隐藏。
 
-Firebase Crashlytics 报告中的 "Crash-Free Sessions" 就是基于这个口径的变形：
+分母也需要可观测。会话开始记录没有成功上传、旧版本没有接入 SDK、用户关闭采集、进程在 SDK 初始化前退出，都会让指标看起来偏好。建议同时展示：
 
-$$\text{Crash-Free Session Rate} = 1 - \text{PV 崩溃率}$$
+- 具备采集能力的版本覆盖率；
+- 会话开始与会话结束的上报完整率；
+- 崩溃本地暂存和下次启动补传的成功率；
+- Java mapping、Native 符号表和 Build ID 的匹配率；
+- Google Play 安装来源、用户授权和隐私门槛带来的样本范围。
 
-行业基线：Crash-Free Session Rate ≥ 99.5% 是发版门禁的常见标准。低于 99% 意味着平均每 100 次使用就有一次崩溃，用户体验已经很差了。
+遥测缺口不是脚注，它决定了指标能不能用于门禁。
 
-[已验证: Firebase Crashlytics 文档, firebase.google.com/docs/crashlytics]
+## 常用 Crash 指标
 
-### 启动崩溃率
+### 日活受影响率
 
-$$\text{启动崩溃率} = \frac{\text{启动阶段崩溃次数}}{\text{总启动次数}}$$
+内部系统常把匿名安装实例近似为“用户”。在这种定义下，日活受影响率为：
 
-启动阶段的定义因团队而异，常见做法是取 `Application.onCreate()` 到第一个 Activity `onResume()` 的时间窗口。这个指标要单独看，原因有两个：
+$$
+\text{Daily affected rate}
+=
+\frac{\text{当天至少发生一次 Crash 的去重安装实例数}}
+{\text{当天活跃安装实例数}}
+$$
 
-1. 启动崩溃对用户伤害最大——App 打不开，热修复也无法自救
-2. 启动阶段代码路径集中（初始化、配置下发、资源加载），崩溃的归因相对明确
+同一个安装实例当天崩溃一次或十次，分子都只增加一。这项指标适合描述影响面，却看不出重复崩溃的严重程度。用户每天使用时长、会话次数和设备分布也会改变暴露机会，因此不同产品之间不宜直接横比。
 
-启动崩溃率的目标通常比整体崩溃率严格一个数量级。大型团队常见内部红线：≤ 0.01%。超过这个值，灰度立即暂停。
+若产品使用账号去重，必须额外说明游客、多账号和多设备的处理方式。Google Play 与 Crashlytics 都不是按业务账号统计，不能把三个系统的“用户”当成同一个实体。
 
-### 重复崩溃率
+### Crash-Free Users
 
-$$\text{重复崩溃率} = \frac{\text{同一用户连续发生相同堆栈崩溃的次数}}{\text{总崩溃次数}}$$
+[Firebase Crashlytics 的官方定义](https://firebase.google.com/docs/crashlytics/crash-free-metrics)是：
 
-这个指标衡量的是崩溃后的恢复能力。如果同一个用户反复在同一个地方崩溃，说明恢复逻辑有问题（比如状态没有清理干净，重启后又走到同样的错误路径）。
+$$
+\text{Crash-Free Users}
+=
+1 -
+\frac{\text{观察期内发生过 fatal 的去重安装实例数}}
+{\text{观察期内有活动的去重安装实例数}}
+$$
 
-重复崩溃率 > 30% 意味着相当一部分崩溃是"可复现但未修复"的，应该优先处理。这与崩溃堆栈的去重聚合（crash clustering）配合使用——先看 Top 10 堆栈簇的影响用户数，再看每个簇的重复崩溃率，决定修复优先级。
+Crashlytics 把一台设备上的一次应用安装视为一个 user。一个人在两台设备上安装应用，会被计为两个 user。这个指标只使用 fatal 事件；non-fatal 与 ANR 过滤条件不会进入 Crash-Free 图表。
 
-### 口径选择指南
+它是整个观察期的去重聚合，并非每天 Crash-Free Users 的算术平均。观察期越长，同一实例遇到至少一次崩溃的机会越大，所以 1 天与 28 天的数值不能直接比较。
 
-| 场景 | 推荐指标 | 原因 |
-|------|----------|------|
-| 对外汇报（老板 / Play Store） | UV 崩溃率 | 与用户体感最接近 |
-| 跨版本对比 | PV 崩溃率（Crash-Free Session） | 消除使用时长偏差 |
-| 发版门禁 | Crash-Free Session + 启动崩溃率 | 兼顾整体质量和关键路径 |
-| 崩溃治理优先级排序 | 堆栈簇影响用户数 + 重复崩溃率 | 定位影响面和恢复能力 |
+### Crash-Free Sessions
 
-## ANR 率与 Google Play Vitals 标准
+Crash-Free Sessions 的分子是“未因 fatal 结束的会话数”：
 
-### Google Play Vitals 的定义
+$$
+\text{Crash-Free Sessions}
+=
+1 -
+\frac{\text{发生 fatal 的去重会话数}}
+{\text{全部有效会话数}}
+$$
 
-Google Play 通过 Android Vitals 对所有上架应用做持续性监控。两个核心指标：
+这个公式不能改写为 `1 - 崩溃事件数 / 会话数`。一个会话即使记录到多次重试或重复 fatal，上面的分子也只能计一个受影响会话。
 
-**User-Perceived Crash Rate（用户感知崩溃率）**
+Crashlytics 当前把冷启动视为新会话；应用进入后台至少 30 分钟后再次回到前台，也开始新会话。自建指标可以采用别的边界，但名字中要标明是内部会话，避免与 Crashlytics 数值互相校验时产生误判。
 
-$$\text{User-Perceived Crash Rate} = \frac{\text{在前台经历过至少一次崩溃的用户数}}{\text{每日活跃用户数}}$$
+会话口径减少了“重度用户只计一个 user”的影响，却没有消除会话长度、前后台切换习惯和埋点完整率的差异。跨应用比较前，仍要确认会话定义和采集范围一致。
 
-**User-Perceived ANR Rate（用户感知 ANR 率）**
+### 启动失败率
 
-$$\text{User-Perceived ANR Rate} = \frac{\text{在前台经历过至少一次用户可感知 ANR 的用户数}}{\text{每日活跃用户数}}$$
+把 `Application.onCreate()` 到第一个 Activity `onResume()` 当作启动窗口，会漏掉 `Application.onCreate()` 之前的崩溃，也无法区分“界面出现”与“内容可用”。更稳妥的做法是为冷启动、温启动和热启动分别建立启动尝试，并为每次尝试记录终态：
 
-两个指标都限定"前台"——后台崩溃或后台 ANR 不计入分子。这是因为用户只感知到前台异常。
+- `first_frame_presented`：首帧已经提交，用户能看到界面；
+- `fully_drawn`：关键内容可用，可与 `Activity.reportFullyDrawn()` 的语义对应；
+- `fatal`：启动窗口内发生 Java 或 Native Crash；
+- `abnormal_exit`：没有 fatal 事件，但系统记录到相关进程异常退出；
+- `abandoned`：应用转入后台或用户离开，不能误算为成功。
 
-> **Android Vitals 的"用户感知 ANR"口径**：Google Play Vitals 只把 `Input dispatching timed out` 类型的 ANR 计入 User-Perceived ANR Rate，Service ANR、Broadcast ANR 等类型即使发生在前台也不计入。团队内部度量通常会统计所有前台 ANR，口径比 Vitals 更宽，做内外数据对比时要注意这个差异。
+以“关键内容可用”为成功条件时，可以计算：
 
-[已验证: Android Vitals 文档, support.google.com/googleplay/android-developer/answer/9844486]
+$$
+\text{Startup failure rate}
+=
+\frac{\text{以 fatal 或 abnormal\_exit 结束的有效 launch\_id 数}}
+{\text{全部有效 launch\_id 数}}
+$$
 
-Google Play 的不良行为阈值（Bad Behavior Threshold）：
+API 35 起，[`ApplicationStartInfo`](https://developer.android.com/reference/android/app/ApplicationStartInfo) 提供系统记录的应用启动信息；`ActivityManager.addStartInfoTimestamp()` 允许在 `reportFullyDrawn()` 之前补充开发者时间点。它们可以改善启动时间线，但进程内采集仍看不到自身启动前的所有故障，需要和 Android vitals、Crash 平台以及下次进程启动读取的退出记录互相补充。
 
-| 指标 | 全机型阈值 | 单机型阈值 |
-|------|-----------|-----------|
-| User-Perceived Crash Rate | ≥ 1.09% | ≥ 8% |
-| User-Perceived ANR Rate | ≥ 0.47% | ≥ 8% |
+启动门禁不应照搬一个通用百分比。支付、导航等关键路径与内容浏览应用承担的风险不同；冷启动量、灰度样本和历史波动也不同。目标应来自稳定版本基线和产品容忍度。
 
-超过全机型阈值，Play Store 在应用详情页展示警告标签，搜索排名和推荐权重下降。超过单机型阈值但未超全机型，只在特定设备上触发警告。
+### 重复崩溃与 crash loop
 
-[已验证: 官方文档, support.google.com/googleplay/android-developer/answer/9844486]
+“相同堆栈事件数 / 全部崩溃事件数”混合了问题热度、用户活跃度和重试次数，不能单独表示恢复能力。更有解释力的两个指标是：
 
-### 团队内部的 ANR 率度量
+$$
+\text{Repeated-affected rate}_{cluster}
+=
+\frac{\text{观察期内该簇发生至少两次的受影响安装实例数}}
+{\text{观察期内该簇的全部受影响安装实例数}}
+$$
 
-Google Play 的阈值是面向所有开发者的底线。团队内部度量 ANR，通常要细分：
+$$
+\text{Crash-loop launch rate}_{cluster}
+=
+\frac{\text{连续若干次启动均命中该簇的安装实例数}}
+{\text{该簇受影响安装实例数}}
+$$
 
-**按触发原因拆分**：
+“连续若干次”和观察窗口要由产品的启动频率确定。例如，短时间内连续三次启动都在同一初始化簇崩溃，可以作为 crash loop 候选；低频工具应用可能需要更长窗口。这个条件是团队规则，不是 Android 系统阈值。
 
-**系统 ANR 触发阈值（AOSP / 官方文档）**
+## Google Play Android vitals 的口径
 
-| ANR 类型 | 系统超时阈值 | 版本差异 |
-|----------|-------------|----------|
-| Input dispatching | 5 秒 | 全版本一致 [AOSP `InputDispatcher.cpp`] |
-| 前台 Service / FGS | `startForegroundService()` 后必须在短时间内调用 `startForeground()`；普通 Service 执行超时默认约 20 秒；shortService FGS 约 3 分钟后触发 ANR | Android 14 引入 shortService 超时；Android 15+ 对 dataSync / mediaProcessing FGS 增加 6 小时 / 24 小时后台运行限额（mediaProcessing 类型 Android 15 加入），超时未停止通常是 `RemoteServiceException` 崩溃，不计作 ANR 触发阈值 [developer.android.com FGS troubleshooting/timeout; AOSP `ActivityManagerConstants.java`] |
-| 前台 Broadcast | fg ~10 秒 / bg ~60 秒 | Android 14+ 引入 soft/hard 两级超时: soft timeout 更短，超过后广播排队等待; hard timeout 到达才触发 ANR [AOSP `BroadcastQueue.java`] |
-| ContentProvider 发布等待 / 调用阻塞 | 发布等待超时为 10 秒；远端 provider 调用阻塞的 ANR 超时由 `ContentProviderClient.setDetectNotResponding()` 调用方指定 | Android 17 中 10 秒发布等待来自 `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`，超时后按 `REASON_INITIALIZATION_FAILURE` 移除进程，不等价于通用 provider 调用 ANR；调用阻塞型 ANR 走 `ContentProviderClient` / `ContentProviderHelper.appNotRespondingViaProvider()` [AOSP `ContentResolver.java` / `ContentProviderClient.java` / `ContentProviderHelper.java`] |
+Android vitals 使用系统侧数据，覆盖范围受安装来源、设备认证、用户数据共享选择和匿名报告门槛影响。它与自建 SDK 的数据不必完全一致。[官方 FAQ](https://developer.android.com/topic/performance/vitals)也明确列出了 SDK 初始化前故障、统计范围和分母差异。
 
-**团队内部监控目标（示例）**
+### Crash
 
-| ANR 类型 | 内部 P90 目标 | 说明 |
-|----------|-------------|------|
-| Input dispatching | < 2 秒 | 用户可感知的主线程卡顿，要求最严 |
-| 前台 Service | < 10 秒 | 启动和执行分别统计 |
-| Broadcast | < 5 秒 | 团队内部阈值，严于系统触发线 |
-| ContentProvider | < 5 秒 | 重点关注冷启动阶段 |
+[Android vitals Crash 文档](https://developer.android.com/topic/performance/vitals/crash)给出三项不同指标：
 
-单独看总 ANR 率会掩盖结构性问题。比如总 ANR 率 0.3% 看起来不错，但其中 80% 是 Input ANR——主线程卡了 5 秒以上用户才会触发 ANR 对话框，实际卡顿问题远比数字显示的严重。
+| 指标 | 官方分子 |
+|---|---|
+| Crash rate | 当天经历过任意类型 Crash 的日活用户 |
+| User-perceived crash rate | 当天在应用处于 active use 时至少经历一次 Crash 的日活用户 |
+| Multiple crash rate | 当天至少经历两次 Crash 的日活用户 |
 
-**按版本 / 渠道 / 机型拆分**：
+这里的 daily active user 是“单个设备上的单日活跃用户”：同一人在两台设备使用应用，会贡献两个日活；多人当天使用同一设备，只计一个日活。一次日活可以包含多个应用会话。
 
-- 按版本：灰度阶段的核心观测维度。新版本 ANR 率较上个版本上升 > 10%，灰度暂停
-- 按渠道：国内各厂商 ROM 对前台 Service 超时处理不同，部分厂商修改了超时阈值
-- 按机型：低端机（≤ 4GB RAM）的 ANR 率通常是高端机的 3-5 倍，需要单独建立基线
+对手机和平板，active use 指应用正在显示 Activity 或执行 foreground service。后台组件崩溃仍会进入总体 Crash rate，只是不一定进入 user-perceived crash rate。Wear OS 有单独规则，不能沿用手机口径。
 
-### ANR 采集方式对比
+User-perceived crash rate 才是 Google Play 的 core vital。任意内部“UV 崩溃率”只有在事件范围、日活定义和采样范围均一致时，才可能与它接近。
 
-| 方式 | 能力 | 局限 |
-|------|------|------|
-| Google Play Console | 零接入，自动采集前台 ANR | 延迟约 24h，无法附加自定义上下文 |
-| `FileObserver` 监听 `/data/anr/` | 可获取完整 traces 文件 | Android 10+ 大部分设备无读取权限 |
-| `Handler` 超时检测 | 可在 App 内检测主线程卡顿 | 无法确认是否触发系统 ANR 对话框，属于卡顿监控 |
-| 自建 APM SDK + `ActivityManager.getHistoricalProcessExitReasons()` | API 30+ 可获取退出原因和 ANR trace | 仅 API 30+，需与 Firebase / Crashlytics 互补 |
+### ANR
 
-推荐组合：Google Play Console（海外）+ 自建 SDK `ApplicationExitInfo` 采集（API 30+）+ 主线程卡顿监控。详见 15.3 节 `ApplicationExitInfo` 的使用方式。
+[Android vitals ANR 文档](https://developer.android.com/topic/performance/vitals/anr)也区分总体 ANR rate、user-perceived ANR rate 和 multiple ANR rate。当前只有 `Input dispatching timed out` 被计为 user-perceived ANR。Service、Broadcast、ContentProvider、JobService 等 ANR 仍要进入内部故障分析，但不能直接加到 Play 的 user-perceived 分子里。
 
-## 无崩溃用户占比（Crash-Free Users）
+各类 ANR 的系统期限和版本差异见 20.4 节。本章不再用一张“统一超时表”代替系统判断，因为 Input、Broadcast、Service、FGS 与 Provider 走的是不同检测路径，部分超时也会以异常退出而非 ANR 收场。
 
-### 定义与计算
+### Bad behavior thresholds
 
-$$\text{Crash-Free Users} = 1 - \text{UV 崩溃率} = \frac{\text{当日未发生崩溃的 DAU}}{\text{当日 DAU}}$$
+截至 2026 年 7 月，[Google Play 公布的手机阈值](https://developer.android.com/topic/performance/vitals)如下：
 
-Firebase Crashlytics 默认展示这个指标。它的含义直白：每天有多少用户完全没有遇到过崩溃。
+| Core vital | 全机型阈值 | 单手机型号阈值 |
+|---|---:|---:|
+| User-perceived crash rate | 1.09% | 8% |
+| User-perceived ANR rate | 0.47% | 8% |
 
-### 为什么 Crash-Free Users 比 PV 崩溃率更适合做发版门禁
+达到或超过阈值属于 bad behavior。Play 可能降低应用的可见度，也可能在商店详情页显示警告；不能把“可能”写成每次都会降权或展示标签。Play 按最近 28 天的数据评估质量，这些阈值是商店质量边界，不是团队 SLO 的推荐值。
 
-Crash-Free Users 回答"多少用户完全不受影响"，PV 崩溃率回答"会话级别崩溃有多频繁"。看一个长尾场景：
+也不能用 `100% - 1.09% = 98.91%` 推导 Crashlytics 的 Crash-Free Users 门禁。两边的故障范围、用户定义、采样范围和时间聚合均不相同。
 
-- App A：100 万 DAU，人均 2 次 Session（200 万总 Session），1 万用户各崩溃 1 次。Crash-Free Users = 99%，PV 崩溃率 = 1 万次 / 200 万 = 0.5%
-- App B：100 万 DAU，人均 2 次 Session（200 万总 Session），2 万用户受影响：1 万用户各崩溃 1 次，另 1 万用户因特定 bug 反复崩溃（每人平均 5 次，共 5 万次崩溃）。Crash-Free Users = 98%（2 万去重用户受影响），PV 崩溃率 = (1 万 + 5 万) / 200 万 = 3%
+## Android 17 下的 ANR 观测
 
-Crash-Free Users 揭示了 App B 的崩溃影响面是 App A 的 2 倍（98% vs 99%）。但只看 Crash-Free Users 看不到 App B 存在严重的重复崩溃问题——PV 崩溃率 3% 远高于 App A 的 0.5%。这正是两个指标需要配合使用的原因：前者控制影响面，后者控制频率。
+### 四类数据各有边界
 
-### 行业参考值
+| 数据来源 | 能看到什么 | 不能据此断言什么 |
+|---|---|---|
+| Google Play Android vitals | Play 范围内的系统 Crash/ANR、问题簇与 core vitals | 不能代表全部安装来源，也没有应用自定义上下文 |
+| 主线程 watchdog | 消息延迟、线程栈和卡顿前后的业务状态 | 检测到卡顿不等于系统已经判定 ANR |
+| `ApplicationExitInfo` | API 30+ 的近期进程死亡记录；部分 ANR trace | ANR 可能恢复而不杀进程；历史记录是环形缓冲，trace 也可能为空 |
+| ANR warning / profiling trigger | 系统给出的预警信息或诊断产物 | 回调和产物均为 best effort，不能当成必达事件 |
 
-| 应用级别 | Crash-Free Users 目标 | 说明 |
-|----------|----------------------|------|
-| Play Store 不良行为线 | < 98.91%（即 User-Perceived Crash Rate > 1.09%） | 超过此值 Play Store 展示警告 [来源: Google Play Console Android Vitals] |
-| 行业经验及格线 | ≥ 99.0% | 中大型 App 的常见最低标准 [匿名行业经验区间] |
-| 发版门禁 | ≥ 99.5% | 常见内部发版标准 [匿名行业经验区间，各团队根据自身基线调整] |
-| 头部 App 目标 | ≥ 99.8% | 超级 App 的内控标准 [匿名行业经验区间，各团队实际目标因应用类型和用户分布差异较大] |
+普通应用不能依赖读取 `/data/anr/`。`FileObserver` 即使能观察路径变化，也不意味着进程有权读取系统 traces。
 
-实际操作中，Crash-Free Users 需要和 Crash-Free Session 配合使用。前者控制影响面，后者控制频率。两者同时满足才算达标。
+API 30 起，`ActivityManager.getHistoricalProcessExitReasons()` 返回近期进程死亡记录。只有关联记录存在时，才能从 [`ApplicationExitInfo.getTraceInputStream()`](https://developer.android.com/reference/android/app/ApplicationExitInfo#getTraceInputStream()) 尝试读取 trace；该方法允许返回 `null`，系统的全局环形缓冲也可能已经覆盖旧数据。API 37 的 `ApplicationExitInfo.getAnrInfo()` 会在 `reason == REASON_ANR` 时提供结构化 ANR 信息，其他退出原因返回 `null`。
 
-## 稳定性看板搭建与趋势分析
+API 36 起，可以通过 [`ProfilingTrigger.TRIGGER_TYPE_ANR`](https://developer.android.com/reference/android/os/ProfilingTrigger#TRIGGER_TYPE_ANR) 请求系统在识别 ANR 后提供运行中的 system trace 快照。触发不表示应用一定被杀，系统也不保证每次都返回产物。
 
-### 看板的核心维度
+API 37 新增 [`ActivityManager.registerAnrWarningListener()`](https://developer.android.com/reference/android/app/ActivityManager#registerAnrWarningListener(java.util.concurrent.Executor,%20java.util.function.Consumer%3Candroid.app.AnrWarningResult%3E))。下面的示意代码只负责在非主线程保存轻量预警字段：
 
-稳定性看板不是一个图，是一组联动视图。最少需要以下四个维度：
+```kotlin
+@RequiresApi(37)
+fun registerAnrWarningCollector(
+    activityManager: ActivityManager,
+    executor: Executor,
+    persist: (AnrWarningResult) -> Unit,
+): Consumer<AnrWarningResult> {
+    val listener = Consumer<AnrWarningResult> { warning ->
+        persist(warning)
+    }
+    activityManager.registerAnrWarningListener(executor, listener)
+    return listener
+}
+```
 
-**1. 时间趋势图**
+调用方要保存返回的同一个 `Consumer`，停止采集时传给 `unregisterAnrWarningListener()`。执行器不能是主线程，`persist` 也应有严格耗时上限。`AnrWarningResult` 提供 `anrId`、`anrType`、`consumedMillis`、`timeoutMillis` 和不保证格式稳定的描述；若事件后来成为 ANR，`anrId` 可与退出信息关联。预警回调可能缺席，也可能来不及执行，不能在这里安排网络请求或复杂恢复。
 
-X 轴：日期（按天或按小时）。Y 轴：Crash Rate / ANR Rate。叠加版本上线时间点和灰度比例，让版本变更和指标波动的关系一目了然。
+## Crash 采集与问题聚类
 
-建议双 Y 轴：左轴 Crash Rate，右轴 ANR Rate。两个指标趋势方向一致说明整体稳定；方向相反可能是新版本修了 Crash 但引入了卡顿（比如加锁过度）。
+### 端侧只做必要工作
 
-**2. 版本对比图**
+Java/Kotlin 未捕获异常可以由 `Thread.UncaughtExceptionHandler` 记录。自定义处理器必须把异常继续交给安装前保存的默认处理器，并限制磁盘写入量。Android 17 的 [`RuntimeInit.KillApplicationHandler`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java)在 `finally` 中调用 `Process.killProcess()` 和 `System.exit(10)`；吞掉默认处理会破坏系统 Crash 语义，也可能让 OOM profiling trigger 等能力拿不到预期信号。更完整的实现和故障边界见 20.2 节。
 
-按版本分组的 Crash Rate 柱状图。每个版本展示 UV 崩溃率 + PV 崩溃率 + 启动崩溃率三个指标。
+Native Crash 不能只写成“读取 debuggerd tombstone”。普通应用不能任意读取系统 tombstone。可用数据包括自有信号处理器生成的 minidump、Crash 平台 SDK 产物，以及 API 31+ 在 `ApplicationExitInfo` 中可能提供的 `REASON_CRASH_NATIVE` protobuf tombstone。Native 符号化必须按 ABI、版本和 Build ID 找到完全匹配的未裁剪符号，详见 20.3 节。
 
-关键观测点：新版本的三项指标是否同时优于上一版本。如果 UV 崩溃率下降了但启动崩溃率上升了，灰度需要暂停。
+Crash 或 ANR 时进程随时可能结束，端侧应优先写入应用私有目录的短记录，并在下次启动补传。同步网络上报、长时间加锁、大对象序列化和再次分配大量内存都会扩大失败概率。
 
-**3. Top 崩溃堆栈排名表**
+### 聚类键不能只取前几帧
 
-按堆栈簇聚合的崩溃排名，字段至少包括：
+同一根因在混淆、协程、内联和版本变化后，堆栈前几帧可能变化；不同根因也可能共享顶部框架帧。聚类至少要考虑：
 
-- 堆栈摘要（首行 + 异常类型）
-- 影响用户数
-- 崩溃次数
-- 首次出现时间
-- 近 7 天趋势（↑↓→）
-- 修复状态（未处理 / 修复中 / 已修复）
+- Java/Kotlin：异常类型、cause 链、归一化后的应用代码根因帧、mapping 版本；
+- Native：signal、fault 类型、归一化后的应用帧、ABI、Build ID 和符号版本；
+- ANR：ANR 类型、主线程阻塞点、锁持有者或 Binder 对端、组件类型；
+- 公共字段：应用版本、动态模块版本、Android 版本和必要的功能开关。
 
-这个表是每天稳定性巡检的核心。Top 10 堆栈簇覆盖了 80% 以上的崩溃量——先看这张表，再决定今天修什么。
+聚类算法更新时要保留旧 `cluster_id` 到新 `cluster_id` 的映射，否则看板会把算法变化误判成新问题或问题消失。
 
-**4. 机型 / 系统版本分布**
+问题排序也不应只看事件数。建议同时展示受影响实例数、受影响会话数、重复受影响率、crash loop、是否命中启动或支付等关键路径、首次出现版本和近期增长速度。
 
-Crash Rate 按 Android 版本和机型的热力图。用于发现特定设备上的集中问题。部分厂商 ROM 的兼容性 bug 会在热力图上呈现为局部高亮。
+## 看板怎样组织
 
-### 告警策略
+一张图承载不了商店风险、发版判断、问题诊断和采集健康度。更清楚的做法是分成四层。
 
-看板是被动的，告警是主动的。最低限度的告警规则：
+### 质量概览
 
-| 规则 | 阈值（示例） | 级别 |
-|------|-------------|------|
-| Crash Rate 较上一版本上升 | > 20% | P1：灰度暂停 |
-| 新堆栈簇出现且影响用户数 | > 100 人 / 小时 | P1：立即排查 |
-| Crash Rate 绝对值 | > 0.5%（单版本） | P2：24h 内响应 |
-| ANR Rate 较上一版本上升 | > 30% | P2：版本 review |
-| 单机型 Crash Rate | > 5% | P2：定向排查 |
+- Play user-perceived crash rate 与 user-perceived ANR rate，标出 28 天窗口和官方阈值；
+- 内部 all-crash、all-ANR 与 OOM/LMK 等分类指标；
+- Crash-Free Users、Crash-Free Sessions、启动成功率；
+- 当前版本覆盖率、Play 灰度比例和主要渠道占比。
 
-告警不是越多越好。太多告警会导致团队麻木，太少会漏掉重要问题。P1 告警要求 5 分钟内响应，每天不超过 2 条；P2 告警要求当天响应，每天不超过 5 条。
+不同量纲使用对齐的上下图，不用双 Y 轴制造视觉相关性。每条曲线在图例中写明数据源和分母。
 
-### 看板的技术实现
+### 发版对比
 
-看板的数据来源分两层：
+新旧版本对比要满足相近的日期、渠道、国家、Android 版本、机型档位与使用场景。灰度比例很小时，绝对事件数低并不表示质量更好。
 
-**端侧采集**：
-- Java Crash：`UncaughtExceptionHandler` 上报堆栈 + 设备信息 + 用户状态
-- Native Crash：系统 debuggerd 生成 tombstone + `ApplicationExitInfo` 获取退出原因；App 侧也可自建 minidump 采集（需要符号表做堆栈还原，详见 20.3 节）
-- ANR：`ApplicationExitInfo`（API 30+）读取 `REASON_ANR` 退出记录，配合 `getTraceInputStream()` 获取 ANR traces
+比例指标应同时给出：
 
-**服务端聚合**：
-- 堆栈聚类：按异常类型 + 堆栈前 N 帧的相似度做聚类，同一簇内的崩溃视为同一问题
-- 去重逻辑：同一用户同一堆栈簇，在 5 分钟内只计一次
-- 时序存储：指标数据按分钟粒度写入时序数据库，看板查询按小时或天聚合
+- 分子、分母和点估计；
+- 绝对变化，例如增加 `0.03` 个百分点；
+- 相对变化，例如相对基线增加 `20%`；
+- Wilson 区间或其他适合二项比例的置信区间；
+- 与基线同口径的版本和时间窗。
 
-## 扩展：稳定性 SLO 设定与行业对标
+“从 0.10% 上升到 0.12%”的相对增幅是 20%，绝对增幅只有 0.02 个百分点。只展示其中一个数字都可能放大或掩盖风险。样本很小时，区间会很宽；此时应继续灰度或补充分层证据，不能把波动直接归因给新版本。
 
-### SLO vs SLI vs SLA
+### 问题诊断
 
-三个概念的关系：
+问题簇表至少包含影响实例数、事件数、受影响会话数、首次与近期出现时间、版本、机型/API 分布、符号化状态、责任模块和修复状态。Top N 是展示限制，不代表前 N 个问题必然覆盖固定比例。
 
-- **SLI**（Service Level Indicator）：具体指标，如 "Crash-Free Session Rate"
-- **SLO**（Service Level Objective）：目标值，如 "Crash-Free Session Rate ≥ 99.8%"
-- **SLA**（Service Level Agreement）：对外承诺 + 违约后果。大部分 Android 应用没有 SLA，SLO 是内部管理的核心工具
+机型与 API 热力图的每个格子要同时显示分母。只有三次启动的机型出现一次崩溃，点估计会很高，但证据不足以支持大范围机型屏蔽。
 
-### SLO 设定的实践方法
+### 遥测健康
 
-**第一步：选 SLI**
+单独展示 SDK 覆盖率、上报成功率、延迟分布、事件重传率、会话配对率、符号匹配率和各数据源差异。采集链路异常时，质量曲线下降可能只是漏报。
 
-稳定性领域推荐三个核心 SLI：
+## 告警与灰度门禁
 
-1. Crash-Free Users（度量影响面）
-2. Crash-Free Session Rate（度量频率）
-3. 启动崩溃率（度量关键路径）
+固定写死“上涨 20% 就停发”会同时产生两类错误：低基数的小波动触发大量告警，高基数的严重绝对增量却可能被放过。稳健的规则通常组合四类信号：
 
-**第二步：定目标**
+1. **绝对质量边界**：超过团队 SLO 或 Play bad behavior threshold；
+2. **相对回归**：同人群、同时间窗下显著差于稳定版本；
+3. **新问题簇**：新簇命中启动、登录、支付等高风险路径；
+4. **重复失败**：出现 crash loop 或同一实例短时间多次 ANR。
 
-目标分三档：
+规则还要设置最小分母、置信条件、持续时间和恢复条件。P1/P2 的响应时限由团队值班能力与业务损失确定，不存在适用于所有 Android 应用的每日告警配额。
 
-| 档位 | 含义 | 示例 |
-|------|------|------|
-| 目标值（Target） | 日常运营的及格线 | Crash-Free Users ≥ 99.5% |
-| 警戒值（Alert） | 触发告警的阈值 | Crash-Free Users < 99.3% |
-| 红线（Hard Limit） | 不可逾越的底线 | Crash-Free Users < 99.0% |
+灰度系统应记录每次扩量、暂停和回滚的时间点。告警评估使用当时的暴露量，而不是用全量 DAU 作为新版本分母。设备、国家和渠道分层异常可以只暂停对应人群，不必在证据不足时直接推断全局回归。
 
-**第三步：建 Error Budget**
+## 用 SLO 和 Error Budget 管理稳定性
 
-$$\text{Error Budget} = 1 - \text{SLO Target}$$
+### SLI、SLO 与 SLA
 
-如果 SLO 是 Crash-Free Users ≥ 99.8%，那 30 天的 Error Budget = 30 × DAU × 0.2%。假设 DAU 100 万，30 天内允许崩溃的用户上限是 6 万人。超出 Error Budget 的版本，必须先修复稳定性问题再推进新需求。
+- **SLI（Service Level Indicator）**：带完整统计规则的观测指标；
+- **SLO（Service Level Objective）**：某个时间窗内 SLI 要达到的目标；
+- **SLA（Service Level Agreement）**：面向外部的承诺及违约后果。
 
-### 行业对标参考
+多数 Android 团队需要的是内部 SLO。若没有对客户或合作方作出带后果的承诺，不必把内部门禁称为 SLA。
 
-> 下表中的具体数字均为匿名行业经验区间，用于团队设定 SLO 时做横向参考。不同应用类型（社交/工具/游戏）、用户分布和采集 SDK 差异都会影响实际值，不要直接照搬。
+一个可执行的 SLO 要写全六项：事件范围、分母、观察窗口、用户范围、数据延迟与完整率要求、例外处理。例如：
 
-| 应用级别 | Crash-Free Users | ANR Rate | 说明 |
-|----------|-----------------|----------|------|
-| Google Play 不良行为线 | < 98.91% | > 0.47% | 全机型阈值 [来源: Google Play Console Android Vitals] |
-| 头部超级 App | ≥ 99.8% | < 0.1% | 内控标准 [匿名行业经验区间] |
-| 大型团队发版门禁 | ≥ 99.5% | < 0.2% | 常见内部标准 [匿名行业经验区间] |
-| 中型应用 | ≥ 99.0% | < 0.5% | 行业及格线 [匿名行业经验区间] |
-| 长尾应用 | < 98% | > 1% | Play Store 会展示警告 |
+> 生产环境 Google Play 渠道中，已接入指定采集版本的有效会话，滚动 30 天 Crash-Free Sessions 不低于 99.8%；会话开始记录完整率低于 99% 时，该窗口只告警采集异常，不给出发版通过结论。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md]
+上面的 99.8% 只是演示写法，不是行业推荐值。团队应根据稳定版本分布、关键场景风险和可承受的故障量选择目标。
 
-[已验证: 结构参考文档与当前内容一致性]
+### Error Budget 的单位必须与 SLI 一致
 
-对标的注意事项：
+如果 SLO 是 Crash-Free Sessions：
 
-- 应用类型差异：社交 / 内容类应用使用时长长，UV 崩溃率天然偏高；工具类应用使用频次低，数值容易"好看"
-- 设备分布差异：出海东南亚（大量低端机）和只做国内旗舰机型的崩溃率基准不同
-- 采集 SDK 差异：用 try-catch 吞掉异常，或者不采集 Native Crash，数字会好看但问题没解决
+$$
+\text{Allowed bad-session ratio}
+=
+1 - \text{SLO target}
+$$
 
-稳定性 SLO 的价值不在数字本身，而在它迫使团队建立一套可量化、可追溯、可改进的治理闭环——避免把"修了几个崩溃"当成"稳定性做好了"。
+假设滚动 30 天有 3000 万个有效会话，目标为 99.8%，预算是 6 万个受影响会话。一个受影响会话里出现多条 Crash 记录，仍只消耗一个会话单位。
+
+如果 SLI 使用日活受影响率，预算单位则是“受影响安装实例日”，不是跨 30 天去重后的“用户数”。把 `30 × DAU × 0.2%` 描述成允许崩溃的独立用户数，会重复计算多日活跃的同一实例。
+
+### Burn rate 让告警对应预算消耗
+
+Burn rate 表示当前坏事件比例相对允许比例的倍数：
+
+$$
+\text{Burn rate}
+=
+\frac{\text{observed bad-event ratio}}
+{\text{allowed bad-event ratio}}
+$$
+
+目标 99.8% 时，允许坏会话比例为 0.2%。若最近一小时坏会话比例为 0.6%，该小时 burn rate 为 3。短窗口能发现突发故障，长窗口能过滤瞬时噪声；把两者组合，比单个固定百分比更适合控制 30 天预算。
+
+预算耗尽后的动作也要预先约定，例如暂停扩量、只允许稳定性修复进入版本，或回滚命中高风险路径的变更。动作强度取决于剩余预算、问题范围和修复把握，不由某个匿名“行业及格线”决定。
+
+## Review 清单
+
+发布稳定性数据或把它接入门禁前，可以按下面的顺序复核：
+
+1. 指标名称之后是否写清分子、分母、时间窗、范围和去重键；
+2. Google Play、Crashlytics 与内部系统的“用户”“会话”“前台”是否被错误等同；
+3. 原始事件是否保留，重复事件与受影响实体是否分别统计；
+4. 启动、Crash、ANR、OOM、LMK 的终态是否互斥且可解释；
+5. 新旧版本是否在相近暴露人群上比较，并展示分母和统计区间；
+6. API 30/31/35/36/37 的采集能力是否按版本降级，best-effort 数据是否被当成必达；
+7. 看板是否能识别漏报、延迟、符号缺失和 SDK 覆盖变化；
+8. Error Budget 的单位是否与 SLI 一致。
+
+稳定性指标的用途，是把“哪些用户在什么场景受到何种影响”变成可复查的证据。口径写清之后，团队才知道应该暂停灰度、修哪个问题簇，以及修复后该用什么数据证明风险已经下降。
+
+## 参考资料
+
+- [Android vitals 总览与 bad behavior thresholds](https://developer.android.com/topic/performance/vitals)
+- [Android vitals：Crashes](https://developer.android.com/topic/performance/vitals/crash)
+- [Android vitals：ANR](https://developer.android.com/topic/performance/vitals/anr)
+- [Google Play Console：监控应用技术质量](https://support.google.com/googleplay/android-developer/answer/9844486)
+- [Firebase Crashlytics：Crash-Free 指标定义](https://firebase.google.com/docs/crashlytics/crash-free-metrics)
+- [Android 17 `RuntimeInit.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java)
+- [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+- [`ActivityManager.registerAnrWarningListener()`](https://developer.android.com/reference/android/app/ActivityManager#registerAnrWarningListener(java.util.concurrent.Executor,%20java.util.function.Consumer%3Candroid.app.AnrWarningResult%3E))
+- [`ProfilingTrigger`](https://developer.android.com/reference/android/os/ProfilingTrigger)
