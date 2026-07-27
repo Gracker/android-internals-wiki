@@ -105,11 +105,22 @@ Sentry、APMPlus、Bugly 这类平台的付费点主要落在 SDK、服务端、
 
 选型前要先确认团队短板：崩溃治理、性能指标、用户会话回查、跨端追踪、国内访问、合规审计、私有化部署，还是数据迁移能力。商业 APM 接入后会进入 App 启动、异常捕获、网络、页面和用户标识等敏感路径，采购评审必须同时看能力、成本和退出方式。
 
+本文在 2026 年 7 月 25 日按公开文档核对了以下 Android 端版本。商业合同可能提供不同分支，PoC 必须以拿到的制品、合同能力表和部署清单为准。
+
+| 平台 | 本文核对的公开 Android 制品 | 版本边界 |
+|---|---|---|
+| Sentry | `io.sentry:sentry-android:8.50.1`、Android Gradle plugin `6.16.0` | core AAR 的 `minSdk=21`；Session Replay 的运行时实现只在 API 26+ 启用 |
+| APMPlus 国内版 | `apm_insight:1.5.25.cn`、`apm_insight_crash:1.5.21`、plugin `1.4.2` | 国内与海外制品、上报地域不同，不能混用 |
+| APMPlus 海外版 | `apm_insight:1.5.24.oversea`、`apm_insight_crash:1.5.21.oversea` | 当前公开接入页写明上报到马来西亚柔佛 |
+| Bugly Pro | `com.tencent.bugly:bugly-pro:4.4.7.8` | 16KB page size 需要选择 `com.tencent.bugly_16kb` 下的对应版本 |
+
+Android 17 / API 37 没有一套通用于所有商业 APM 的新采集协议。需要验证的是厂商 SDK 在 API 37 上使用的公开 API、native library、前后台判断、网络插桩和采样行为，而不是把“兼容 Android 17”当成一项无法复现的承诺。
+
 ## 三个平台的定位
 
 ### Sentry：错误监控起家，移动端 APM 能力逐步补齐
 
-Sentry Android 文档显示，除了错误捕获，它还支持 tracing、profiling、session replay、logs、user feedback 等能力。Android SDK 可以通过 Gradle plugin、manifest 配置和采样率接入。
+Sentry Android 除了错误捕获，还支持 tracing、profiling、Session Replay、logs、user feedback 和 release health。Gradle plugin 负责 source context、mapping、native symbol 等构建产物的上传；运行时 SDK 负责事件、span、profile 和 replay。两者的版本与开关要分别管理。
 
 它适合这些团队：
 
@@ -117,41 +128,50 @@ Sentry Android 文档显示，除了错误捕获，它还支持 tracing、profil
 - 需要异常、performance transaction、profiling 和 release health 放在一起看。
 - 面向海外用户，Sentry SaaS 可稳定访问。
 
-Sentry profiling 需要低采样。官方资料说明 Android 侧 profiling 依赖 runtime tracer；线上启用后，如果崩溃集中出现在 `libart.so`、`art::Trace::StopTracing`、`pthread_getcpuclockid` 等栈帧附近，排查顺序是降低 profiling 采样率、升级 SDK、按 Android 版本和机型灰度验证。
+Sentry profiling 需要低采样。到 SDK `8.50.1`，Android UI Profiling 仍使用 ART runtime tracer；官方文档明确提示该 tracer 在部分设备上可能触发 Android runtime crash。基于 `ProfilingManager` / Perfetto 的实现仍标为后续方案，不能因为设备运行 Android 17 就推断 Sentry 已经改用平台 `ProfilingManager`。
+
+线上启用 profiling 后，如果新增 crash 集中在 `libart.so`、`art::Trace::StopTracing`、`pthread_getcpuclockid` 等 runtime 栈附近，应先关闭或降低 profiling 采样率，再按 Sentry SDK、Android 版本和机型分组复现。升级 SDK 也要重新做灰度，不能把 runtime crash 全部归因给业务 native code。
 
 Sentry Android 各能力存在 SDK/API 版本门槛，接入前要按版本表核对：
 
 | 能力 | 最低 SDK / API 版本 | 边界与约束 |
 |---|---|---|
-| Session Replay 录制 | Android 8（API 26）+ | 录制内容受 SDK 采样率和隐私规则控制 |
-| UI Profiling | Sentry Android SDK 8.7.0+ | 替代旧版 transaction-based profiling；当前推荐路径 |
+| Session Replay | Sentry Android SDK `7.12.0+`；运行时 API 26+ | 默认遮盖文本、图片和 WebView；PixelCopy 仍可能出现遮盖位置偏差 |
+| UI Profiling | Sentry Android SDK `8.7.0+` | manual 与 trace lifecycle 两种模式互斥；仍基于 ART tracer |
 | Transaction-based profiling | Sentry Android SDK 6.16.0+、API 22+ | 单次最长 30 秒；Sentry 文档建议迁移到 UI Profiling |
-| App start profiling | Sentry Android SDK 7.3.0+ | 需在 SentryOptions 配置中启用 |
+| App start profiling | Sentry Android SDK 7.3.0+ | 需在 options 中启用；安装后的首次运行不会执行 app-start profile |
 
-以上门槛数据来自 Sentry Android SDK 官方文档（docs.sentry.io），非 AOSP 源码。接入前用 Sentry 官方 changelog 复核最新版本要求。正文示例优先用 span / UI Profiling 口径，transaction-based profiling 保留为兼容旧 SDK 的术语。接入评审时在灰度配置里按 SDK 版本和 Android 版本分桶验证。
+Session Replay 默认遮盖不代表已经满足业务合规要求。默认 PixelCopy 策略先截图，再依据同一帧附近的 View hierarchy 计算遮盖位置，异步时序可能造成错位；实验性的 Canvas 策略遮盖更可靠但开销更高。`SurfaceView` 需要单独开启实验性采集，而且只能整体处理，无法遮盖其中某个地图标签、视频帧或 Unity 元素。涉及支付、健康、聊天或身份信息的页面，应在 PoC 中逐屏检查录制结果。
 
 ### APMPlus：国内移动 APM 平台型方案
 
 APMPlus 是火山引擎的应用性能监控产品，覆盖 Android、iOS、鸿蒙、Web、PC、服务端等多平台。公开文档中 App 侧能力包括崩溃、卡顿、内存、网络、启动、自定义事件、日志回捞、报警和自定义看板等。
 
-它适合国内业务、需要平台托管和移动端专项能力的团队。选型时要验证：SDK 支持的 Android 版本、targetSdk、ABI、主流网络库，卡顿 / ANR / OOM / Native crash 的采集口径，符号表和 mapping 绑定方式，日志回捞授权流程，远程采样和阈值调整能力。
+它适合国内业务、需要托管平台和移动端专项能力的团队。当前 Android 接入页把国内与海外 artifact 分开：国内版上报到中国，海外版上报到马来西亚柔佛。数据地域应以合同、网络抓包和实际项目配置三方核对，不能只看依赖后缀。
 
-私有化形态还要看服务端架构。移动 APM 的高吞吐数据通常需要列式存储承接查询压力，实时聚合通常需要流处理层；APMPlus 或同类私有化方案在采购时应让厂商给出 ByteHouse / ClickHouse、Flink、Kafka、对象存储、冷热分层、备份恢复的 BOM 和容量模型。具体组件以合同和部署清单为准。
+公开验证页还给出了几个重要边界：crash 默认 100% 上报；其他监控项要命中平台采样配置；ANR 需要同时接入 crash 组件，只有性能组件时看不到 ANR 日志；网络自动监控依赖 Gradle plugin 和对应网络开关。PoC 设备应加入白名单或把目标模块临时调到 100%，否则“没有数据”可能只是没有命中采样。
+
+选型时要验证 SDK 支持的 Android 版本、targetSdk、ABI、主流网络库，卡顿 / ANR / OOM / native crash 的采集口径，符号表和 mapping 绑定方式，日志回捞授权流程，远程采样和阈值调整能力。若采购专有云或私有化形态，应让厂商给出采集网关、消息缓冲、计算、查询存储、对象存储、冷热分层、备份恢复的实际 BOM 和容量模型；不要根据同厂商其他产品推测 APMPlus 使用了哪种数据库或流处理组件。
 
 ### Bugly：普通版和 Pro 版要拆开评估
 
-Bugly 普通版更偏 crash、ANR、符号表和版本稳定性看板。它在国内 Android 团队里常被用作崩溃和 ANR 上报基础设施，接入成本通常较低。
+Bugly 普通版更偏 crash、ANR、符号表和版本稳定性看板。公开普通版 Android changelog 的最新条目仍是 `3.4.4`（2021 年），不能拿普通版文档推断 Bugly Pro `4.4.x` 的 API 或能力。
 
-Bugly Pro 不能按普通版边界评估。公开资料和 review 记录显示，Pro 版增加了 ANR 全线程堆栈抓取（`builder.enableAllThreadStackAnr = true`）、启动 Span 测量等 APM 能力。ANR 诊断时主线程调用栈由周期性采样生成，疑似 ANR 时自动抓取全线程堆栈辅助定位。评审 Bugly 时要写清使用的是普通版还是 Pro 版，并按套餐确认慢帧、启动、ANR 诊断、数据留存和私有化范围。
+Bugly Pro 不能按普通版边界评估。Pro 版公开文档覆盖 crash、ANR、OOM、卡顿、FPS、内存、启动和页面回放等能力。ANR 有两组容易混淆的配置：
+
+- `enableAllThreadStackAnr=true`：ANR 发生时抓取线程堆栈，当前 builder 文档标为默认开启；`4.4.6.2` 的更新说明写明全线程抓取时不再重复抓主线程。
+- `setEnableRecordAnrMainStack(true)`：记录 ANR 发生前的主线程堆栈，`4.4.7.3` 新增，当前示例默认 `false`。
+
+这两者采集时点不同，控制台缺少某份 stack 时要先核对配置、系统是否在采集完成前终止进程，以及当前机型能否取得 ANR trace。
 
 ## 选型表
 
 | 平台 | 更适合 | 能力边界 | 数据与部署 | 成本和退出点 |
 |---|---|---|---|---|
-| Sentry | 海外业务、跨端错误监控、tracing / profiling / replay 统一 | 移动 profiling 和 replay 必须低采样；国内访问、数据地域和 PII 规则要单独核验 | SaaS 为主，也可评估自托管成本 | 按事件量、seat、保留周期、附件和 replay 用量估算；退出时要导出 issue、release、event、trace、alert |
-| APMPlus | 国内业务、移动端性能和稳定性一体化平台 | 启动、卡顿、ANR、OOM、网络、内存、日志回捞、单点查询、报警和看板较全 | SaaS、专有云、私有化都要核验；私有化要看存储、流处理和运维责任 | 费用与事件量、留存、日志回捞、私有化资源、值班支持相关；退出时要迁移指标口径和 dashboard |
+| Sentry | 海外业务、跨端错误监控、tracing / profiling / replay 统一 | profiling 和 replay 必须低采样；ART tracer 风险、遮盖可靠性、国内访问和 PII 规则要单独核验 | SaaS 与 self-hosted 的功能、升级和支持责任不同 | 按事件量、seat、保留周期、附件、profile 和 replay 用量估算；退出时导出 issue、release、event、trace、alert |
+| APMPlus | 国内业务、移动端性能和稳定性一体化平台 | 启动、卡顿、ANR、OOM、网络、内存、日志回捞、单点查询、报警和看板较全 | 公开接入页区分中国与柔佛上报；专有云或私有化能力以合同为准 | 费用与事件量、留存、日志回捞、部署资源、支持服务相关；退出时迁移指标口径和 dashboard |
 | Bugly Regular | 国内稳定性治理、崩溃 / ANR / 符号表 | 偏稳定性入口，性能能力按套餐确认 | SaaS 为主，和腾讯生态流程结合较深 | 接入成本低；退出时要处理 crash issue、mapping、symbol、Webhook 和版本趋势 |
-| Bugly Pro | 需要 ANR 全线程堆栈、启动 Span 等增强 APM 能力 | Pro 能力覆盖面更大，但要按合同确认采样、留存、隐私和性能开销 | 关注 ANR 诊断字段、Span 数据和私有化选项 | 费用和数据量、采样、保留周期相关；退出时要迁移诊断字段和 Span 数据 |
+| Bugly Pro | 需要卡顿、内存、启动 Span、页面回放等增强能力 | `4.4.7.8` 的模块与远端配置要逐项验收；16KB 还要选对 groupId | 关注 ANR 诊断字段、replay、Span 数据和合同部署形态 | 费用和数据量、采样、保留周期相关；退出时迁移诊断字段、附件和 Span 数据 |
 
 选型结论不要只看功能列表。商业平台越深入 App 运行路径，越要确认数据归属、字段合规、留存周期、费用模型、16KB Page Size 适配和退出成本。
 
@@ -161,7 +181,7 @@ Bugly Pro 不能按普通版边界评估。公开资料和 review 记录显示�
 |---|---|---|
 | SDK 覆盖 | Android 版本、targetSdk、ABI、主流网络库、Flutter / RN / WebView 是否支持 | 用试点 App 接入，覆盖 release、debug、混淆、multi-ABI 包 |
 | 稳定性 | SDK 自身 crash、ANR、启动开销、线程数、包体积 | 灰度 1% 用户，跟踪 SDK crash、启动 P95、主线程耗时、包体积增量 |
-| 16KB Page Size 兼容（Android 15+） | SDK 内置 `.so` 是否 16KB ELF alignment，是否说明支持 16KB page size 设备（Android 15 起 AOSP 支持 16KB 设备；Android Studio / APK Analyzer / Lint 可检查 prebuilt 或 APK alignment；Google Play 要求面向 Android 15+ 的 64 位应用支持 16KB） | 用 16KB page size 模拟器或真机启动 App；对 Native SDK 检查 `readelf -l` 的 LOAD alignment；关注 `SIGSEGV`、`SIGBUS`、`UnsatisfiedLinkError` |
+| 16KB Page Size 兼容（Android 15+） | SDK 及其传递依赖中的 `.so` 是否支持 16KB ELF alignment，APK/AAB 中未压缩 native library 的 ZIP alignment 是否正确 | 用 16KB 模拟器或真机运行 release 包；执行官方 `check_elf_alignment.sh`，再用 `zipalign -c -P 16 -v 4` 检查 APK；关注加载失败与 native crash |
 | 性能数据 | 启动、慢帧、卡顿、ANR、OOM、网络、磁盘、功耗是否有清晰口径 | 用已知慢帧、弱网、OOM、ANR 样本回放，核对平台展示与本地 trace / log 是否一致 |
 | 现场能力 | 堆栈、日志回捞、trace、截图、session replay、用户路径 | 检查是否有授权流程、脱敏规则、采样上限和故障时的人工取证路径 |
 | 符号化 | ProGuard mapping、native symbol、版本和 build id 绑定 | 用一个已知混淆 crash 和一个 Native crash 验证还原率 |
@@ -177,7 +197,7 @@ Bugly Pro 不能按普通版边界评估。公开资料和 review 记录显示�
 
 Sentry 的性能模型围绕 transaction / span 展开。移动端可以把启动、页面加载、网络请求、业务操作建成 transaction，再在其中记录 span。这样移动端事件能和后端服务 trace 关联。
 
-适合这样建模：
+下面的结构把页面加载作为根 transaction，把网络、解析和渲染作为子 span：
 
 ```text
 transaction: HomeScreen.load
@@ -187,24 +207,57 @@ transaction: HomeScreen.load
   span: ui.render
 ```
 
-如果后端也接了 Sentry 或 OpenTelemetry，移动请求带上 trace header 后，可以从 App 的慢请求跳到服务端处理路径。跨端问题排查时，这比单独看移动网络耗时更有价值。
+这些 span 的名称必须稳定，动态 URL、feed id 或 user id 应放在经过约束的 attribute/tag 中，不能拼进 span description。
 
-Profiling、session replay 和日志回捞都要低采样，并且只在明确场景启用。接入评审里要单列采样率、回放时长、脱敏规则、附件大小和上传失败策略。
+下面的 Kotlin 示例确保子 span 和根 transaction 在成功、异常两条路径上都会结束：
+
+```kotlin
+import io.sentry.Sentry
+import io.sentry.SpanStatus
+
+fun loadHome(): Feed {
+    val transaction = Sentry.startTransaction("HomeScreen.load", "ui.load")
+    return try {
+        val networkSpan = transaction.startChild("http.client", "GET /feed")
+        try {
+            api.loadFeed().also {
+                networkSpan.status = SpanStatus.OK
+            }
+        } catch (t: Throwable) {
+            networkSpan.throwable = t
+            networkSpan.status = SpanStatus.INTERNAL_ERROR
+            throw t
+        } finally {
+            networkSpan.finish()
+        }
+    } finally {
+        transaction.finish()
+    }
+}
+```
+
+漏掉任意一次 `finish()` 都可能让 span 缺失或 duration 失真。生产封装应把 `try/finally` 放进 facade，让业务调用者只提供待计时的 block。
+
+如果后端也接了 Sentry 或 OpenTelemetry，移动请求携带受支持的 trace headers 后，可以从 App span 跳到服务器路径。应通过 `tracePropagationTargets` 只允许自有 API host，避免把 `sentry-trace` 或 baggage 发给广告、支付等第三方域名。客户端采样与后端采样规则也要一起核对，否则一端存在、另一端缺失并不一定是传输故障。
+
+Tracing、profiling、Session Replay 和附件要使用彼此独立的采样预算。接入评审里要单列 `tracesSampleRate`/sampler、`profileSessionSampleRate`、replay 的 `sessionSampleRate` 与 `onErrorSampleRate`，还要记录回放时长、脱敏规则、附件大小、丢弃原因和上传失败策略。`1.0` 适合白名单验收设备，不适合作为默认生产配置。
 
 ## APMPlus 的移动专项能力
 
 国内商业 APM 的优势是贴近 Android App 线上治理常见问题：崩溃、ANR、卡顿、启动、网络、内存、日志回捞、单点查询、报警和 SDK 远程配置。
 
-接入时要验证这几条：
+APMPlus 公开文档中的“卡顿分析”监控主线程 message 执行超时，默认卡顿阈值为 2.5 秒、严重卡顿为 4 秒；“流畅性/丢帧”是另一组数据。它们不能与 Android Vitals 慢帧、JankStats jank 或系统 ANR 混成一个指标。接入时要验证这些问题：
 
 - ANR 是系统 ANR、SDK 自判卡死，还是两者都有。
-- 卡顿是 Looper block、慢帧，还是方法 trace。
+- 卡顿是 Looper message timeout、慢帧，还是方法 trace；各自阈值和分母是什么。
 - 内存是 OOM、泄漏、PSS、Java heap，还是 native 内存。
 - 日志回捞是否按用户授权和配置触发。
 - SDK 采样是否能按版本和灰度动态调整。
 - 私有化是否给出存储容量、查询 QPS、冷热分层、备份恢复和升级窗口。
 
-这些名词在不同平台里的口径可能不同。合同和接入文档里要把口径写清，否则后面告警会变成争论。
+网络模块的公开接入示例通过 `ApmPlugin.okHttp3Switch` 开启 OkHttp3 插桩。若应用使用 OkHttp 4/5、Cronet、native stack 或自研 client，应使用真实请求核对，不要由“网络分析”四个字推断所有协议都被覆盖。
+
+这些名词在不同平台里的口径可能不同。合同和接入文档里要写明起止点、阈值、采样、上报时机和聚合分母，否则多个控制台即使显示同名指标，也无法比较。
 
 ## Bugly 的稳定性边界
 
@@ -217,7 +270,9 @@ Bugly 普通版常见价值在：
 - mapping / symbol 管理。
 - Webhook 对接内部流程。
 
-Bugly Pro 的评审口径要扩到 APM：ANR 全线程堆栈抓取能把疑似 ANR 时各线程状态留下来（主线程调用栈由周期性采样提供），启动 Span 可以把启动过程拆成可查询阶段。启用这些能力前，要确认采样率、低端机开销、数据留存和 Android 15 16KB 适配版本。
+Bugly Pro 的评审口径要扩到性能监控：ANR 发生时的线程栈、发生前主线程记录、卡顿高频抓栈、启动 Span 是不同数据源，必须分别构造样本。启用这些能力前，要确认远端开关、采样率、低端机开销、上报时机、数据留存和 16KB artifact。
+
+公开 Android 接入页写明 crash、ANR、OOM 默认 100% 上报且不支持采样，其他性能监控项支持采样。这个差异会直接影响事件费用、流量与隐私评审，不能用“统一采样率”估算 Bugly Pro。
 
 如果团队只需要 crash / ANR 基础设施，普通版可能足够。如果要把 Bugly 当完整性能平台，要按 Pro 能力做 PoC，不要用普通版经验推断 Pro 版边界。
 
@@ -225,11 +280,18 @@ Bugly Pro 各增强能力存在 SDK 版本门槛，PoC 前要确认当前集成�
 
 | 能力 | 最低 SDK 版本 | PoC 验证动作 |
 |---|---|---|
-| Android 15 16KB Page Size 支持 | Android SDK 4.4.6.2+ | 在 16KB page size 模拟器/真机启动 App，检查 `.so` alignment 和采集是否正常 |
-| 页面启动耗时 / Span | Android SDK 4.4.3+ | 冷启动后在控制台检查 Span 数据是否拆分到各阶段 |
-| ANR 全线程堆栈抓取 | `builder.enableAllThreadStackAnr = true` | 触发 ANR 后检查上报中是否包含全线程堆栈；主线程调用栈由周期性采样提供，不依赖独立 API |
+| 页面启动耗时 | Android SDK `4.4.3+` | 核对 Activity 的渲染耗时、加载耗时与本地时间点 |
+| 页面启动 Span | Android SDK `4.4.3.5+` | 检查 `startSpan()` / `endSpan()` 成对；同名 span 后写会覆盖前写 |
+| ANR 发生时线程栈 | 当前 builder 的 `enableAllThreadStackAnr=true` | 检查 ANR 详情中的线程栈；主线程可能由独立字段呈现 |
+| ANR 前主线程记录 | Android SDK `4.4.7.3+`，`setEnableRecordAnrMainStack(true)` | 对比关闭与开启后的 ANR 前主线程样本 |
+| 页面回放 | Android SDK `4.4.7.3+` | 检查二次启动后的附件上报、采样、敏感页面与数据遮盖 |
+| 16KB Page Size | `4.4.6.2+` 开始提供独立 16KB artifact；建议使用当前 `4.4.7.8` | 依赖必须来自 `com.tencent.bugly_16kb`；对 release APK 做 ELF/ZIP alignment 和运行验证 |
 
-frontmatter sources 同步补充：`https://bugly.tds.qq.com/docs/` 和对应能力页。以上门槛数据来自 Bugly Android SDK 官方文档，非 AOSP 源码——Bugly 是腾讯商业 SDK，版本阈值由其官方 changelog 控制。如果当前集成版本低于上述最低版本，先升级 SDK 再做 PoC，否则会误判能力缺失。
+Bugly 的 16KB 文档存在历史措辞差异：changelog 与 Android 接入页写的是从 `4.4.6.2` 开始提供，单独的升级指南又以 `4.4.6.4` 为示例。不会产生歧义的判断方式是使用 Maven Central 已发布的 `com.tencent.bugly_16kb:bugly-pro:4.4.7.8`，再检查最终 release 包；只升级版本号但仍使用 `com.tencent.bugly` groupId，不足以证明选择了 16KB 制品。
+
+页面回放在当前文档中仍标为完善中的功能。它每秒采集一张 view hierarchy 与 screenshot，crash 后缓存为附件，等 App 二次启动再上传；截图采用整图马赛克，不是按字段证明敏感信息已被可靠识别。默认采样率是 0，文档建议 `0.01～0.1`。PoC 应检查 `replay.zip` 中的 JPEG 和 JSON 原始内容、资源开销、附件权限与删除流程。
+
+以上门槛来自 Bugly Pro 官方 Android 接入页、更新日志和功能页。Bugly 是商业 SDK，版本阈值由厂商制品控制；当前集成版本低于门槛时，应先在独立分支升级并做小流量验证。
 
 ## PoC 验收表
 
@@ -239,14 +301,16 @@ frontmatter sources 同步补充：`https://bugly.tds.qq.com/docs/` 和对应能
 |---|---|---|
 | Java crash | 构造一个已知异常，带混淆 mapping | 平台能聚合、还原符号、按版本和用户查询 |
 | Native crash | 构造一个测试 `.so` 崩溃，上传 symbol | 能显示 native 栈、build id、ABI、系统版本 |
-| ANR | 主线程 sleep / 锁等待 / Binder 等待各做一例 | 能区分系统 ANR 与 SDK 自判卡死；能拿到主线程与相关线程栈 |
+| ANR | 在受控测试包中用 input、BroadcastReceiver、Service 等超时路径构造系统 ANR，再补锁等待 / Binder 等待 | 能区分系统 ANR 与 SDK 自判卡死；记录触发类型、主线程与相关线程栈 |
 | 慢帧 / 卡顿 | 构造 60Hz 和 120Hz 页面卡顿 | 能给出慢帧时间、页面、设备、系统版本；与 Perfetto FrameTimeline 大体一致 |
 | 启动 | 冷启动、温启动各跑 30 次 | 能按版本、渠道、机型看 P50/P95；采样对启动耗时影响可接受 |
-| 网络阶段 | 弱网、DNS 慢、TLS 慢、服务端慢各做一例 | 能拆出 DNS、connect、TLS、TTFB、download 等阶段 |
+| 网络阶段 | 对每种受支持 client 构造 DNS 慢、connect 慢、TLS 慢、服务端慢 | 文档承诺的阶段都能出现；未支持的 client 或协议有明确补点方案 |
 | OOM / 内存 | 构造 Java heap 压力和 native 内存压力 | 能拿到内存趋势、设备水位、进程存活信息；不把 LMK 误写成 Java OOM |
+| 采样准确性 | 白名单设备发固定数量事件，再把采样率改为 25% 重复测试 | 100% 配置下无系统性漏报；采样配置的生效时间、误差和服务端限流可解释 |
 | 告警噪声 | 构造一次低量级异常和一次集中异常 | 告警阈值可控；不会因采样波动反复报警 |
 | 低端机开销 | 低端设备跑 30 分钟常用场景 | SDK 线程数、CPU、内存、流量、包体积增量在接入预算内 |
-| 16KB Page Size | Android 15+ 16KB 环境启动并触发 crash / ANR / profiling | App 不因 SDK `.so` alignment 问题崩溃；Native 采集能力正常 |
+| 16KB Page Size | Android 15～17 的 16KB 环境运行 release 包并触发 crash / ANR / profiling | 所有 `.so` 的 ELF/ZIP alignment 通过；App 与 native 采集能力正常 |
+| 删除与权限 | 创建专用测试用户，产生 event、replay、log、attachment 后发起删除 | 数据在合同 SLA 内删除；导出、审计和离职权限回收均有记录 |
 
 ## 成本模型与 ROI 估算
 
@@ -296,7 +360,6 @@ ROI 不要写成口号。可量化的收益包括：崩溃率下降带来的留�
 ```kotlin
 data class MonitorContext(
     val pageName: String,
-    val userType: String,
     val appVersion: String,
     val buildId: String,
     val experimentId: String?,
@@ -310,12 +373,16 @@ interface TraceHandle {
 }
 
 interface AppMonitor {
+    fun setUser(anonymousId: String?, userType: String)
+    fun clearUser()
     fun setContext(context: MonitorContext)
-    fun reportCrash(throwable: Throwable, tags: Map<String, String>)
+    fun captureException(throwable: Throwable, tags: Map<String, String>)
     fun startTrace(name: String, context: MonitorContext): TraceHandle
     fun reportMetric(name: String, value: Long, tags: Map<String, String>)
 }
 ```
+
+实现层要保证 `finish()` 幂等，并提供内部 `try/finally` 包装，避免某个 vendor 要求手工结束 span 时产生悬挂数据。`anonymousId` 应是经过隐私评审的假名标识；退出登录时调用 `clearUser()`，不要把手机号、邮箱、广告标识符或可逆业务主键直接传给厂商。
 
 字段合同要比代码接口更早定下来：
 
@@ -323,6 +390,7 @@ interface AppMonitor {
 |---|---|
 | `page.name` | 用产品页面名，不用 Activity 类名直接当展示名 |
 | `user.type` | 匿名、登录、会员、内测等有限枚举 |
+| `user.id` | 只允许经同意的假名标识；定义生成、轮换、删除和跨平台映射规则 |
 | `app.version` / `build.id` | 和 release、mapping、native symbol 一一绑定 |
 | `experiment.id` | 灰度、A/B、功能开关统一命名 |
 | `network.stage` | DNS、connect、TLS、request、TTFB、download 统一枚举 |
@@ -347,13 +415,45 @@ interface AppMonitor {
 
 ## 核验来源
 
-- Sentry Android docs：error、tracing、profiling、session replay、logs、user feedback。
-- Android 15 16KB Page Size 官方文档：原生库需要 16KB page size 兼容，APM SDK 内置 `.so` 必须随之验证。
-- Bugly / Bugly Pro 文档与更新记录：ANR 全线程堆栈抓取（`enableAllThreadStackAnr`）、启动 Span 等能力按套餐确认；Pro 能力以官方 Android SDK 文档与 changelog 为准，不在公开文档中的能力不做正文承诺。
-- APMPlus / 火山引擎文档：移动端崩溃、卡顿、启动、网络、内存、日志回捞、报警、看板和私有化部署资料。
+商业 APM 的实现不是 AOSP 组成部分，无法用 Android 17 platform tag 验证厂商闭源逻辑。本文采用三层证据：
 
+1. 厂商公开接入页、功能页和 changelog，用于确认制品版本、开关和产品口径。
+2. 可下载 AAR 的 Manifest、source package 和最终 APK，用于确认 `minSdk`、API 分支、native library 与打包结果。
+3. Android 8～17 真机或模拟器的构造样本，用于确认运行行为、采样、上传、符号化和开销。
+
+“文档写了支持”只完成第一层。采购验收要把第二、三层的制品哈希、测试包 build id、设备、系统版本和平台截图归档。
 
 ## 参考资料
 
-### 商业 APM 平台 Android 17 SDK/API 版本兼容性分析
-- [DeepResearch: android-17-commercial-apm-sdk-version-boundary](https://github.com) — 验证 Sentry 8.x、Bugly Pro 在 Android 17 的 SDK 兼容性边界；AOSP 源码锚点优先使用已公开 release tag，API 37 能力以 Android Developers API reference 和 Android 17 版本资料为准
+### Sentry
+
+- [Sentry Android SDK](https://docs.sentry.io/platforms/android/)
+- [Android tracing](https://docs.sentry.io/platforms/android/tracing/)
+- [Android profiling](https://docs.sentry.io/platforms/android/profiling/)
+- [Android profiling troubleshooting](https://docs.sentry.io/platforms/android/profiling/troubleshooting/)
+- [Android Session Replay](https://docs.sentry.io/platforms/android/session-replay/)
+- [Sentry Java/Android SDK 8.50.1 release](https://github.com/getsentry/sentry-java/releases/tag/8.50.1)
+
+### APMPlus
+
+- [APMPlus 产品简介](https://www.volcengine.com/docs/6431/69088)
+- [Android SDK 接入](https://www.volcengine.com/docs/6431/68852)
+- [Android SDK 数据上报验证](https://www.volcengine.com/docs/6431/1175072)
+- [卡顿分析](https://www.volcengine.com/docs/6431/68854)
+- [内存优化](https://www.volcengine.com/docs/6431/68858)
+
+### Bugly
+
+- [Bugly Pro 文档中心](https://bugly.tds.qq.com/docs/)
+- [Bugly Pro Android SDK 接入](https://bugly.tds.qq.com/docs/sdk/android/)
+- [Bugly Pro SDK 更新日志](https://bugly.tds.qq.com/docs/sdk/change_log/)
+- [Bugly Pro 16KB Page Size 升级指南](https://bugly.tds.qq.com/docs/tutorial/Android/16kb_version)
+- [Bugly Pro 16KB `4.4.7.8` Maven artifact](https://repo1.maven.org/maven2/com/tencent/bugly_16kb/bugly-pro/4.4.7.8/)
+- [Bugly Pro ANR](https://bugly.tds.qq.com/docs/tutorial/Android/anr)
+- [Bugly Pro 页面启动耗时](https://bugly.tds.qq.com/docs/tutorial/Android/pagelaunch/)
+- [Bugly Pro 页面回放](https://bugly.tds.qq.com/docs/tutorial/Android/replay_report)
+- [Bugly 普通版 Android changelog](https://bugly.qq.com/docs/release-notes/release-android-bugly/)
+
+### Android
+
+- [Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
