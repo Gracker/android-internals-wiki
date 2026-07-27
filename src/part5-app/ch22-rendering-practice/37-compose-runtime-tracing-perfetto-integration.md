@@ -8,7 +8,7 @@ related_chapters: ["22.28", "22.3", "13.21", "26.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "AOSP结构/官方文档"
-last_verified: "2026-07-26"
+last_verified: "2026-07-27"
 confidence: medium-low
 sources:
   - "developer.android.com/develop/ui/compose/tooling/tracing"
@@ -22,11 +22,11 @@ task2b_state: fixed
 task6_state: needs-rework
 task9_state: needs-rework
 pipeline_stage: needs-rework
-reviewed_date: "2026-07-26"
+reviewed_date: "2026-07-27"
 reviewed_by: "hermes-aiw-review-finalize-apply"
-last_review_finalize_at: "2026-07-26T22:05:54+08:00"
-last_review_finalize_run_id: "20260726-220530-dad2c951"
-rework_reason: "本轮复核确认章节仍只能作为工程策略草稿；因元数据校验当前不接受 needs-rework 作为 status 值，frontmatter 继续保持 ready-for-review，但 task6_state/task9_state/pipeline_stage 均维持 needs-rework：官方 runtime-tracing 依赖、Flamingo/Compose UI 1.3.0/Compiler 1.3.0/API 30+ 前提、track_event + ENABLE_TRACING 手动采集边界和 tracing-perfetto-binary 生产包隔离要求已在正文中保留；但章节仍含多处原始大纲占位，且可见 Slice 命名清单、重组频次统计字段、重组原因归因与 Release 短窗口采集矩阵缺同版本 Perfetto/trace_processor 实测样本，因此不得 finalized。"
+last_review_finalize_at: "2026-07-27T08:23:36+08:00"
+last_review_finalize_run_id: "20260727-082309-5af88f00"
+rework_reason: "2026-07-27 复核确认章节仍只能作为工程策略草稿；frontmatter status 继续保持 ready-for-review，task6_state/task9_state/pipeline_stage 均维持 needs-rework：官方 runtime-tracing 依赖、Flamingo/Compose UI 1.3.0/Compiler 1.3.0/API 30+ 前提、track_event + ENABLE_TRACING 手动采集边界和 tracing-perfetto-binary 生产包隔离要求已在正文中保留；本轮仅做小范围 API 命名收敛。章节仍含多处原始大纲占位，且可见 Slice 命名清单、重组频次统计字段、重组原因归因与 Release 短窗口采集矩阵缺同版本 Perfetto/trace_processor 实测样本，因此不得 finalized。"
 ---
 
 # 22.37 Compose Runtime Tracing — runtime-tracing 与 Perfetto 组合阶段追踪
@@ -73,7 +73,7 @@ rework_reason: "本轮复核确认章节仍只能作为工程策略草稿；因�
 ## 扩展
 
 ### 🔸 扩展点 1：自定义 Trace Section 与 Composable 关联
-- 使用 Trace.beginSection() 在自定义 Composable 中添加细粒度追踪 [结构参考: developer.android.com/jetpack/androidx/releases/tracing]
+- 使用 `androidx.tracing.Trace.beginSection()` / `endSection()` 在自定义 Composable 或业务边界中添加细粒度追踪；命名应稳定、短小且便于 Perfetto Slice 聚合。[结构参考: developer.android.com/jetpack/androidx/releases/tracing]
 - Modifier.Node 架构下的自定义追踪粒度控制 [结构参考: 本章原始大纲]
 - 追踪命名规范与 Perfetto Slice 聚合 [结构参考: 本章原始大纲]
 
@@ -86,7 +86,7 @@ rework_reason: "本轮复核确认章节仍只能作为工程策略草稿；因�
 
 ## 1. 本章定位：把 Compose Trace 放进 APM 闭环
 
-> Review 状态：本章当前适合作为“Compose Trace 如何接入 APM 闭环”的工程策略草稿；依赖名已修正为 `androidx.compose.runtime:runtime-tracing`，本轮继续核对官方 Compose tracing setup 前提（Android Studio Flamingo+、Compose UI/Compiler 1.3.0+、API 30+）与 `tracing-perfetto-binary` 不应随生产包发布的边界。由于可见 Slice 命名、重组原因字段和线上 Release 短窗口采集矩阵仍缺少同版本 Perfetto/trace_processor 实测证据，且大纲占位尚未全部展开，frontmatter 按当前 metadata 校验规则保留 `status: ready-for-review`，但 task6/task9/pipeline 均维持 needs-rework，暂不 finalized。
+> Review 状态（2026-07-27）：本章当前适合作为“Compose Trace 如何接入 APM 闭环”的工程策略草稿；依赖名已修正为 `androidx.compose.runtime:runtime-tracing`，本轮继续核对官方 Compose tracing setup 前提（Android Studio Flamingo+、Compose UI/Compiler 1.3.0+、API 30+）与 `tracing-perfetto-binary` 不应随生产包发布的边界。由于可见 Slice 命名、重组原因字段和线上 Release 短窗口采集矩阵仍缺少同版本 Perfetto/trace_processor 实测证据，且大纲占位尚未全部展开，frontmatter 按当前 metadata 校验规则保留 `status: ready-for-review`，但 task6/task9/pipeline 均维持 needs-rework，暂不 finalized。
 
 Compose Runtime Tracing 的价值不只是“在 Perfetto 里多看几条 Slice”，而是把组合、重组、子组合等 UI 运行时开销纳入可回放、可归因、可门禁的性能观测链路。[结构参考: 本章原始大纲] 对应用侧来说，它应当和启动、FPS、慢方法、网络、IO 等信号一起进入 APM 事件模型，而不是停留在一次性的本地调试截图。[来源: 2026-07-25-76336249-Android-App-最强APM来袭.md]
 
