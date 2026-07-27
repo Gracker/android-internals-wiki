@@ -135,7 +135,7 @@ Microbenchmark 在测试进程内反复执行同一段代码，适合纯 CPU 或
 
 - JSON、Proto、图片元数据等解析和编码。
 - diff、排序、查找、正则与格式转换。
-- 小块图像处理或矩阵运算。
+- 小块图像处理、向量或数值运算。
 - 缓存命中路径、对象池与数据结构操作。
 
 以下对象不适合放进 Microbenchmark：
@@ -178,27 +178,23 @@ class FeedParserBenchmark {
 
     private lateinit var parser: FeedParser
     private lateinit var payload: String
-    private var lastSize: Int = 0
 
     @Before
     fun setUp() {
         parser = FeedParser()
         payload = Fixtures.feedJson(itemCount = 100, seed = 42)
+        check(parser.parse(payload).size == 100)
     }
 
     @Test
-    fun parse100Items() {
-        benchmarkRule.measureRepeated {
-            val result = parser.parse(payload)
-            lastSize = result.size
-            BlackHole.consume(result)
-        }
-        check(lastSize == 100)
+    fun parse100Items() = benchmarkRule.measureRepeated {
+        val result = parser.parse(payload)
+        BlackHole.consume(result)
     }
 }
 ```
 
-被测对象是 `parser.parse(payload)`；准备数据固定为 seed 42；循环由 Benchmark 管理；指标是执行时间与库采集的分配信息；解析错误或条目数不符会让测试失败。该结果只能说明这一固定输入下的局部解析成本。
+被测对象是 `parser.parse(payload)`；准备数据固定为 seed 42；循环由 Benchmark 管理；指标是执行时间与库采集的分配信息；准备阶段会校验条目数，解析异常则直接让测试失败。该结果只能说明这一固定输入下的局部解析成本。
 
 可变状态要在每轮恢复，但恢复成本不应混进算法时间。下面的片段演示对原数组做副本，再只测排序。
 
@@ -262,7 +258,7 @@ Macrobenchmark 使用单独的 test APK 控制目标应用，适合启动、滚�
 |---|---|---|
 | `DEFAULT` | `Partial(BaselineProfileMode.UseIfAvailable)` | 模拟安装后可用 profile 的默认体验；profile 缺失时不失败 |
 | `None()` | 清除预编译，运行时可发生 JIT | 看 fresh install 无 Baseline Profile 的较差口径 |
-| `Partial(Require)` | 安装 APK 内 Baseline Profile，并以 `speed-profile` 编译 | 验证 profile 确实可安装、可使用 |
+| `Partial(Require)` | 安装 APK 内 Baseline Profile，并以 `speed-profile` 编译 | 验证 profile 能否安装和使用 |
 | `Partial(Disable, warmupIterations=N)` | 用 N 次 warmup 生成运行时 profile 后部分编译 | 模拟使用一段时间后的 profile-guided 状态 |
 | `Full()` | 以 `speed` 全量 AOT 编译方法 | 稳定性或上限对照；不代表现代用户设备常态 |
 | `Ignore()` | 不重置、不改变外部准备的编译状态 | 由脚本管理编译时使用 |
@@ -299,9 +295,14 @@ android {
         getByName("release") {
             isMinifyEnabled = true
             isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
         create("benchmark") {
             initWith(getByName("release"))
+            isDebuggable = false
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += listOf("release")
         }
@@ -344,16 +345,31 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    buildTypes {
+        create("benchmark") {
+            isDebuggable = true
+            signingConfig = getByName("debug").signingConfig
+            matchingFallbacks += listOf("release")
+        }
+    }
+
     targetProjectPath = ":app"
+    experimentalProperties["android.experimental.self-instrumenting"] = true
 }
 
 dependencies {
     implementation("androidx.benchmark:benchmark-macro-junit4:1.4.1")
     implementation("androidx.test.ext:junit:1.3.0")
 }
+
+androidComponents {
+    beforeVariants(selector().all()) {
+        it.enable = it.buildType == "benchmark"
+    }
+}
 ```
 
-测试代码放在这个 test-only module 的 `src/main`。`benchmark-macro-junit4:1.4.1` 已依赖 UiAutomator 2.3.0；若项目显式覆盖 UiAutomator 版本，需要重新验证选择器与手势行为。
+测试代码放在这个 test-only module 的 `src/main`。test APK 的 `benchmark` variant 可以 debuggable，受测的 `:app` benchmark APK 必须保持 non-debuggable；两者不要混淆。`self-instrumenting` 让测试 APK 与目标应用分进程运行。`benchmark-macro-junit4:1.4.1` 已依赖 UiAutomator 2.3.0；若项目显式覆盖 UiAutomator 版本，需要重新验证选择器与手势行为。
 
 Microbenchmark module 应应用与依赖同版本的 Gradle 插件。
 
@@ -377,6 +393,8 @@ android {
         testInstrumentationRunner =
             "androidx.benchmark.junit4.AndroidBenchmarkRunner"
     }
+
+    testBuildType = "release"
 }
 
 dependencies {
