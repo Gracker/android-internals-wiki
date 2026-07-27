@@ -32,347 +32,393 @@ sources:
 
 # 21.18 缓存优化实战：冷热端分离、重排序与 CPU 缓存命中率提升
 
-CPU 缓存命中率是影响应用性能的底层因素之一。与算法优化或多线程并发不同，缓存优化不改变程序的逻辑，而是通过改善数据在内存中的布局和访问模式，让 CPU 更高效地工作。本节从 Android 工程实践角度，介绍两个维度的缓存优化：**应用层的数据结构布局优化**（冷热端分离）与 **系统层的代码布局优化**（DEX 类重排序）。
+“缓存优化”在 Android 工程里至少指三种机制：
 
-关于 CPU 缓存与调度的底层原理，详见 5.1 节。本节聚焦"工程上如何改善缓存命中率"这个实战问题。
+- `LruCache` 命中：业务对象或计算结果是否还在应用的内存缓存中；
+- CPU cache 命中：处理器访问的指令或数据是否位于硬件 cache；
+- DEX 局部性：启动时需要读取的类与方法是否集中在较少的文件页。
 
-[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率]
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化]
+三者可能互相影响，却没有一一对应关系。把更多图片留在 `LruCache` 中，业务命中率可能提高，同时也会扩大 Java/native live set、增加 GC 和内存带宽压力。Startup Profile 改善的是 DEX 文件布局，不能直接宣称 L1 instruction cache miss 一定下降。
 
-## CPU 缓存层次与 Android 设备特性
+本节以 Android 17 / API 37 / `android-17.0.0_r1` 和 common kernel `android17-6.18-2026-06_r6` 为校验锚点，讨论能由应用控制的做法。更完整的硬件局部性与 false sharing 原理见[CPU Cache 友好代码与数据布局](../../part1-fundamentals/ch05-cpu-power/18-cpu-cache-friendly-code-data-layout.md)，DEX 构建流程见[Startup Profile 与 DEX 布局](./12-startup-profile-dex-layout.md)。
 
-### ARM 缓存层级模型
+## 1. 先把硬件 cache 模型说准
 
-Android 设备的 CPU 缓存层级从快到慢依次为：寄存器 → L1 Cache → L2 Cache → L3/LLC（Last Level Cache）→ 主存（DRAM）。每一级的访问延迟和容量差异显著：
+移动 CPU 常见每核私有的 L1 instruction/data cache、每核或一组核心共享的 L2，以及 cluster 或 SoC 级共享 cache。容量、关联度、包含关系和访问延迟都由具体 CPU 与 SoC 决定，不能用一张固定的“L1 4 cycles、L2 20 cycles、DRAM 200 cycles”表代表所有 Android 设备。
 
-| 层级 | 典型容量 | 典型延迟（cycles） | 说明 |
-|------|---------|-------------------|------|
-| 寄存器 | 数十个 | 1 | CPU 直接访问，由编译器分配 |
-| L1 I-Cache / D-Cache | 32-128 KB | 1-4 | 分指令/数据，私有于每个核心 |
-| L2 Cache | 256 KB - 1 MB | 10-20 | 通常私有于核心，部分架构共享 |
-| L3 / LLC | 2-8 MB | 30-100 | 多核共享，SoC 级别配置 |
-| 主存 (DRAM) | 4-16 GB | 100-300+ | 所有核心共享 |
+CPU 从下一级层次填充 cache 时以 cache line 为单位。Android 17 common kernel 的 arm64 `cache.h` 定义 `L1_CACHE_SHIFT = 6`，对应 64 字节 L1 基线；同一文件又把 `ARCH_DMA_MINALIGN` 定义为 128 字节。64 字节可以作为当前 arm64 应用实验的起点，却不能扩展成所有 CPU、DMA 和一致性粒度都使用同一个数值。
 
-**Cache Line 是缓存的最小传输单位**，ARM 和 x86 主流架构上均为 64 字节。当 CPU 需要读取一个 4 字节的数据时，硬件会一次性将包含该数据的整个 64 字节 cache line 从下一级存储加载进来。如果紧随其后的数据也在这 64 字节内，就不用再次访问慢速存储。
-
-### big.LITTLE / DynamIQ 架构差异
-
-[已验证: ARM DynamIQ 技术文档]
-
-现代 Android SoC 普遍采用 ARM big.LITTLE 或 DynamIQ 架构，不同核心簇的缓存配置不同：
-
-- **大核（Cortex-X 系列）**：L2 通常 512KB-1MB，独享；可优先访问 LLC
-- **中核（Cortex-A7x 系列）**：L2 通常 256-512KB；共享 LLC
-- **小核（Cortex-A5x 系列）**：L2 通常 128-256KB；共享 LLC
-
-这意味着同一个线程在大核和小核上运行时，可用的缓存容量差异可达 2-4 倍。对于缓存敏感型任务（如图片解码、大量数据遍历），绑定大核执行能显著降低 cache miss 率。这也是 ADPF Performance Hint Session 让系统优先在大核上调度关键线程的底层原因之一。
-
-### Android 17 设备典型缓存配置
-
-以高通骁龙 8 Gen 4 / 联发科天玑 9400 级别旗舰 SoC 为例：
-
-- L1 I-Cache: 64-128 KB / 核心
-- L1 D-Cache: 64-128 KB / 核心
-- L2: 256 KB - 1 MB / 核心
-- L3 / LLC: 8-12 MB，全 CPU 共享
-- System Cache (SLC): 3-8 MB，GPU/CPU/Modem 共享
-
-`[待验证]` 上述数据来自各 SoC 厂商公开的技术概览（Tech Brief），Android 17 GKI 不暴露详细的 cache topology。可通过 `getconf LEVEL1_DCACHE_LINESIZE` 或读取 `/sys/devices/system/cpu/cpu*/cache/` 在设备上确认实际值。
-
-## 缓存命中率对应用性能的量化影响
-
-### Cache miss 的代价
-
-CPU 执行指令时，每遇到一次 cache miss，就需要从下一级存储加载数据。不同层级 miss 的代价：
-
-- **L1 miss → L2 hit**：约 10 cycles 额外延迟
-- **L2 miss → L3 hit**：约 40 cycles 额外延迟
-- **L3 miss → DRAM**：约 100-300 cycles 额外延迟（即 page miss）
-
-如果一个循环体内每次访问数据都触发 L1 miss，整体性能可以比 cache hit 场景慢 10-50 倍。这就是缓存优化被称为"免费的性能提升"的原因——不需要改变业务逻辑，只需要改善数据布局。
-
-### 量化方法：simpleperf
-
-使用 simpleperf 可以直接采集 cache 事件：
+common kernel 6.18 还通过 sysfs ABI 描述 cache 的 `level`、`type`、`size`、`coherency_line_size` 和 `shared_cpu_list`。下面的命令用于查看一台测试设备实际暴露的 CPU0 cache 拓扑。
 
 ```bash
-# 采集指定进程的 cache 命中/未命中事件
-simpleperf stat -e cache-misses,cache-references -p <pid> -- sleep 5
-
-# 输出示例：
-# cache-misses:       1,234,567
-# cache-references:   5,678,901
-# Miss rate:          21.7%
+adb shell 'for dir in /sys/devices/system/cpu/cpu0/cache/index*; do
+  echo "$dir"
+  for field in level type size coherency_line_size shared_cpu_list; do
+    printf "%s=" "$field"
+    cat "$dir/$field"
+  done
+done'
 ```
 
-在 Android 17 上，也可以通过 Perfetto 的 `linux/perf/perf_event` 数据源采集 cache 相关 PMU 事件，在 trace 中关联到具体的函数调用栈。
+输出要按设备保存。部分量产机可能隐藏某些属性，CPU0 的层次也不能代表所有异构核心；需要时继续读取其他 `cpu*/cache/index*` 目录，并用 `shared_cpu_list` 去重共享实例。
 
-`[待验证]` 部分 ARM 核心的 cache-misses PMU 事件需要 `PERF_COUNT_HW_CACHE_*` 配置，不同 SoC 厂商的 PMU 实现可能有差异，建议在实际设备上用 `simpleperf list` 确认可用事件。
+### 1.1 cache miss、page fault 与逻辑 miss
 
-## 冷热端分离策略
+这几个词不能混用：
 
-### 问题场景：标准 LruCache 的命中率瓶颈
+| 事件 | 所在层次 | 表示什么 |
+| --- | --- | --- |
+| CPU cache miss/refill | PMU / 微架构 | 当前 cache 层没有目标 line，需要从其他 cache 或内存层次取得 |
+| TLB miss | 地址翻译 | TLB 中没有所需虚拟地址翻译，需要页表遍历 |
+| minor/major page fault | 内核虚拟内存 | 页表或文件页尚未按当前访问建立；major fault 还可能等待存储 |
+| `LruCache` miss | 应用数据结构 | key 不在应用缓存，需要加载或计算 |
 
-`LruCache` 是 Android 应用最常用的内存缓存方案，内部基于 `LinkedHashMap` 实现 LRU（最近最少使用）淘汰策略。在大多数场景下，LRU 是一个合理的选择，但在以下场景中命中率会明显下降：
+一次 LLC miss 落到 DRAM 不等于 page fault；页面已经驻留时也会发生硬件 cache miss。反过来，DEX 文件布局可能减少需要触及的文件页，却不能仅凭 page-fault 下降推导 L1/L2 miss 同比例下降。
 
-**场景**：低端设备上的图片聊天应用。LruCache 容量受限（如只能缓存 10 张图片）。用户进入一篇图文丰富的公众号文章，大量新图片涌入，迅速将 LruCache 填满并淘汰了之前的缓存。但这些公众号图片只看一次就不会再访问，而被淘汰的恰恰是会话列表中反复使用的高频图片。
+### 1.2 调度提示不等于绑大核
 
-**根本原因**：LRU 的淘汰依据是"最近是否被使用"，而非"是否被频繁使用"。低频但刚访问过的数据会把高频但较早访问过的数据挤出去。
+线程迁移到另一核心后，新核心的私有 cache 可能没有近期工作集，但一致性系统仍维护数据可见性，原核心 cache 也不会因为迁移被软件整体清空。迁移成本取决于共享 cache、cluster、工作集、频率和同期带宽竞争。
 
-### 冷热端分离 LruCache 设计
+`PerformanceHintManager` 让应用向系统提交相关线程、目标工作时长和实际工作时长。系统可以据此调整策略，但 API 没有承诺把线程放到某个“大核”，也没有承诺降低 cache miss。生产代码通过 `sched_setaffinity()` 固定所谓大核，会绕过系统对负载、热状态、cpuset 和能耗的判断。调度细节见[线程池与并发性能](./16-thread-pool-concurrency-performance.md)。
 
-针对上述问题，可以将单一 LruCache 拆分为**热端**和**冷端**两个缓存池：
+## 2. 冷热端分离解决的是缓存污染
 
-- **热端**：存放高频访问数据（访问次数 ≥ 2），采用按访问频率排序的策略
-- **冷端**：存放低频访问数据（访问次数 = 1），仍然采用 LRU 策略
+Android 17 的 `android.util.LruCache` 使用 `LinkedHashMap` 的 access-order 模式。命中会把条目移到队列头部，超出容量后逐出最久未访问条目。单个公开操作是线程安全的；由多次 `get`、`remove`、`put` 组成的复合操作仍要由调用方提供原子边界。
 
-核心逻辑：
+LRU 对稳定的时间局部性很有效，弱点是 scan pollution：一批只访问一次的新 key 可以占满队列，并逐出稍早访问、之后还会复用的条目。图片大列表、分页预取和一次性文档浏览都可能出现这种访问形状。
 
-1. 首次访问的数据 → 放入冷端头部；同时将缓存中所有已有数据的访问计数减 1（衰减）
-2. 再次访问某数据时，访问计数 +1；若计数 ≥ 2 → 提升到热端
-3. 冷端满了 → 淘汰冷端尾部数据（最久未访问的低频数据）
-4. 热端满了 → 将热端尾部数据降级到冷端头部
+### 2.1 用 probation/protected 两段代替全表计数
 
-这样设计的优势是：即使一次性大量涌入临时数据（如浏览公众号），也不会淘汰掉会话列表等高频场景的数据，从而提升整体缓存命中率。
+一个低开销方案是 SLRU 风格的两段缓存：
 
-工程实现建议：
+- 新条目进入 probation 段；
+- probation 条目再次命中后进入 protected 段；
+- protected 超出预算时，将最久未访问条目降回 probation；
+- probation 超出预算时，逐出最久未访问条目。
 
-```java
-public class HotColdLruCache<K, V> {
-    // 热端：存放高频数据，容量占比 40-50%
-    private final LruCache<K, CacheEntry<V>> hotCache;
-    // 冷端：存放低频数据，容量占比 50-60%
-    private final LruCache<K, CacheEntry<V>> coldCache;
-    // 总容量
-    private final int maxSize;
+这样，一次扫描只会竞争 probation 预算。它不需要每次插入时遍历所有条目做“访问次数衰减”，也不会引入无上限的计数器。两段容量比例没有通用答案，应由 key 分布、value 大小、重复访问间隔和内存预算决定。
 
-    private static class CacheEntry<V> {
-        V value;
-        int accessCount;
+下面的 Kotlin 实现展示带权重、单锁保护的核心状态机。它省略了异步加载与资源释放回调，便于把晋升、降级和逐出规则看清楚。
+
+```kotlin
+import java.util.LinkedHashMap
+
+class SegmentedLruCache<K : Any, V : Any>(
+    private val probationMaxWeight: Int,
+    private val protectedMaxWeight: Int,
+    private val weightOf: (K, V) -> Int = { _, _ -> 1 },
+) {
+    private data class WeightedValue<V>(
+        val value: V,
+        val weight: Int,
+    )
+
+    private val probation =
+        LinkedHashMap<K, WeightedValue<V>>(0, 0.75f, true)
+    private val protectedSegment =
+        LinkedHashMap<K, WeightedValue<V>>(0, 0.75f, true)
+
+    private var probationWeight = 0
+    private var protectedWeight = 0
+
+    init {
+        require(probationMaxWeight > 0)
+        require(protectedMaxWeight > 0)
     }
 
-    public V get(K key) {
-        CacheEntry<V> hot = hotCache.get(key);
-        if (hot != null) {
-            hot.accessCount++;
-            return hot.value;
-        }
-        CacheEntry<V> cold = coldCache.get(key);
-        if (cold != null) {
-            cold.accessCount++;
-            if (cold.accessCount >= 2) {
-                // 提升到热端
-                coldCache.remove(key);
-                hotCache.put(key, cold);
-            }
-            return cold.value;
-        }
-        return null; // cache miss
+    @Synchronized
+    fun get(key: K): V? {
+        protectedSegment[key]?.let { return it.value }
+
+        val entry = probation.remove(key) ?: return null
+        probationWeight -= entry.weight
+        protectedSegment[key] = entry
+        protectedWeight += entry.weight
+        trimProtected()
+        return entry.value
     }
 
-    public void put(K key, V value) {
-        CacheEntry<V> entry = new CacheEntry<>();
-        entry.value = value;
-        entry.accessCount = 1;
-        coldCache.put(key, entry); // 新数据先入冷端
+    @Synchronized
+    fun put(key: K, value: V): V? {
+        val weight = weightOf(key, value)
+        require(weight in 1..probationMaxWeight) {
+            "entry weight must fit the probation segment"
+        }
+        val replacement = WeightedValue(value, weight)
+
+        protectedSegment.remove(key)?.let { previous ->
+            protectedWeight -= previous.weight
+            protectedSegment[key] = replacement
+            protectedWeight += replacement.weight
+            trimProtected()
+            return previous.value
+        }
+
+        val previous = probation.remove(key)
+        if (previous != null) {
+            probationWeight -= previous.weight
+        }
+        probation[key] = replacement
+        probationWeight += replacement.weight
+        trimProbation()
+        return previous?.value
+    }
+
+    @Synchronized
+    fun clear() {
+        probation.clear()
+        protectedSegment.clear()
+        probationWeight = 0
+        protectedWeight = 0
+    }
+
+    private fun trimProtected() {
+        while (
+            protectedWeight > protectedMaxWeight &&
+            protectedSegment.isNotEmpty()
+        ) {
+            val (key, entry) = takeEldest(protectedSegment)
+            protectedWeight -= entry.weight
+            probation[key] = entry
+            probationWeight += entry.weight
+        }
+        trimProbation()
+    }
+
+    private fun trimProbation() {
+        while (
+            probationWeight > probationMaxWeight &&
+            probation.isNotEmpty()
+        ) {
+            val (_, entry) = takeEldest(probation)
+            probationWeight -= entry.weight
+        }
+    }
+
+    private fun takeEldest(
+        map: LinkedHashMap<K, WeightedValue<V>>,
+    ): Pair<K, WeightedValue<V>> {
+        val iterator = map.entries.iterator()
+        val eldest = iterator.next()
+        val result = eldest.key to eldest.value
+        iterator.remove()
+        return result
     }
 }
 ```
 
-> ⚠️ 以上代码为示意实现，生产环境需要处理热端淘汰时降级到冷端、并发安全（`synchronized` 或 `ConcurrentHashMap`）、内存大小计算（`sizeOf()`）等细节。
+`LinkedHashMap` 的 access-order 读取会修改内部顺序，所以两个 segment 的所有访问都放在同一把锁内。`weightOf` 返回值在条目存活期间必须稳定；图片可用实际 byte count，普通对象只能选择团队能够维护的近似权重。若 value 持有 Bitmap、文件句柄或其他待释放资源，还要收集逐出项，并在锁外执行释放回调，避免重入和长时间占锁。
 
-### 适用性判断
+### 2.2 上线前要同时观察收益与代价
 
-冷热端分离并非在所有场景下都比标准 LruCache 更优：
+分段 LRU 适合有明显“一次扫描 + 稳定热集”的 workload。均匀随机访问、工作集远大于预算或 key 很少复用时，两段结构可能只增加查找和迁移成本。
 
-- **适合**：缓存容量受限（低端设备）、访问模式有明显的冷热分化（部分数据高频、大部分数据低频）
-- **不适合**：缓存容量充裕、访问模式均匀（大部分数据访问频率相近）、对实现复杂度敏感的轻量场景
+A/B 至少记录：
 
-[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率 — 冷热端分离 LruCache 方案]
+- 逻辑 hit、miss、逐出、晋升和降级次数；
+- miss 后的解码、磁盘、数据库或网络成本；
+- 缓存总权重、Java/native heap、PSS 和 GC；
+- 主线程与后台线程耗时；
+- 按入口、页面和设备档位拆分的端到端延迟。
 
-## 数据重排序与内存布局优化
+命中率上升但 PSS、GC 或锁等待恶化时，缓存并没有给用户带来净收益。Android 内存压力回调到来后，应按产品恢复成本缩容或清理；不要为了维持命中率长期保留所有热条目。
 
-### Cache Line 对齐与空间局部性
+### 2.3 避免缓存击穿和错误复合操作
 
-CPU 从主存加载数据到缓存时，以 cache line（64 字节）为单位。如果一组高频访问的字段分散在不同的 cache line 中，每次访问都需要独立的缓存加载；反之，如果它们被紧凑地排列在同一个 cache line 中，一次加载就能覆盖多个字段。
+`LruCache.create()` 在内部锁之外计算 value。多个线程同时 miss 同一个 key 时，可能并行创建多个 value，缓存会保留其中一个并通过 `entryRemoved()` 交还其他结果。这是源码定义的行为。
 
-**Array of Structs (AoS) vs Struct of Arrays (SoA)** 是经典的内存布局选择：
+如果加载成本很高，应在缓存外为相同 key 合并 in-flight 请求，并明确失败是否缓存、失败条目多久重试。不要简单把磁盘、网络或图片解码放进全局 cache 锁；那会把缓存查找变成串行 I/O。
 
+## 3. Java/Kotlin 数据布局的可控边界
+
+### 3.1 对象数组只连续保存引用
+
+`Array<MyObject>` 和 `ArrayList<MyObject>` 的 backing array 连续保存对象引用，对象本体仍由 ART 放在 managed heap 中。它们不能当作 C/C++ 的 `Particle particles[]`，也不能由“一个 64 字节 line 能放四个对象”推导遍历 miss 数量。
+
+`LinkedList` 每个节点独立分配并需要指针追踪；`ArrayList` 通常减少节点对象并改善引用遍历。收益还会受到元素对象访问、扩容、索引操作和算法复杂度影响。没有目标设备基准时，不应写固定的 8 倍或 9 倍数字。
+
+对于图像、音频、统计、几何和模型预处理等批量数值路径，primitive array 能提供更紧凑的数据。下面的 SoA 形式只读取坐标时不会把颜色字段一起拉入热循环。
+
+```kotlin
+class ParticleColumns(capacity: Int) {
+    val x = FloatArray(capacity)
+    val y = FloatArray(capacity)
+    val z = FloatArray(capacity)
+    val color = IntArray(capacity)
+
+    fun squaredDistanceSum(): Float {
+        var sum = 0f
+        for (index in x.indices) {
+            val px = x[index]
+            val py = y[index]
+            val pz = z[index]
+            sum += px * px + py * py + pz * pz
+        }
+        return sum
+    }
+}
 ```
-// AoS: 每个对象包含所有字段 —— 常见的 OOP 写法
-class Particle { float x, y, z; int color; }
-Particle[] particles = new Particle[1000];
 
-// SoA: 每个字段独立数组 —— 数据导向设计
-float[] posX = new float[1000];
-float[] posY = new float[1000];
-float[] posZ = new float[1000];
-int[] colors = new int[1000];
-```
+这项改动的收益可能同时来自减少装箱、减少对象数量、顺序访问和编译器优化。结论应写成“该数据表示在当前 workload 更快”，不能把全部差值都归给 CPU cache。若常见操作每次都要读取一个粒子的全部字段，AoS 或分块的 AoSoA 也可能更合适。
 
-当只需要遍历位置数据（如碰撞检测）时，SoA 布局只需要顺序读取 `posX/posY/posZ` 数组，每个 cache line 可以容纳 16 个 float（64/4），cache 命中率极高。而 AoS 布局下，每个 Particle 对象占 16 字节（3 float + 1 int），一次 cache line 加载虽然能覆盖 4 个对象，但也包含了不需要的 `color` 字段。
+普通 RecyclerView 数据源常由图片请求、绑定、布局和绘制主导。只有 profile 显示大批量模型遍历占据 CPU 热点时，才值得把业务对象转换为列式数据；转换时间和双份内存也要进入结果。
 
-在 Android 应用中，SoA 布局特别适合：
+### 3.2 Java 字段声明顺序不能控制 cache line
 
-- 列表/RecyclerView 的大量 item 数据遍历
-- 图像处理（像素数据的批量操作）
-- 游戏中的实体组件系统（ECS）
+Android 17 ART 的 `ClassLinker::LinkFieldsHelper::LinkFields()` 会先放引用字段，再按 long、double、int、float、char、short、boolean、byte 的顺序处理基本类型，并尝试填充对齐空隙。同一类型还按 DEX field index 排序。
 
-### 字段排序优化
+因此，把源码中的“热字段”声明在类前面，不能保证它们位于对象的前 64 字节，也不能保证两个字段落在同一 line。R8 重写、继承关系、引用压缩和 ART 实现都会影响最终布局。Java/Kotlin 应优先通过拆分数据结构、减少对象和改用 primitive buffer 改善局部性。
 
-即使采用传统的 AoS 布局，也可以通过调整字段声明顺序来改善缓存效率：
+### 3.3 Android 上的 `@Contended` 是 no-op
 
-- **将高频访问字段集中在前 64 字节**：确保它们落在同一个 cache line 中
-- **将低频字段放到后面**：它们被访问时才触发额外的 cache line 加载
-- **避免在热路径对象中嵌入大数组引用**：引用本身只占 4/8 字节，但实际数据分散在堆的其他位置
+`jdk.internal.vm.annotation.Contended` 不是 Android 公共 SDK。Android 17 libcore 源码还明确写明它在 Android 上是 no-op，并把 retention 改为 `SOURCE`。普通 App 不能靠 VM 参数把它变成可靠的 padding 契约。
 
-`@Contended` 注解可以解决伪共享（false sharing）问题——当多个线程各自修改同一 cache line 中的不同变量时，缓存一致性协议（如 MESI）会频繁失效该 cache line。`@Contended` 会自动在变量周围填充 padding，使其独占一个 cache line。但注意 Android 上 `@Contended` 需要 `android-27+` 且 ART 默认不启用该注解的 padding，需要通过 `-XX:-RestrictContended` 参数开启。
+怀疑 false sharing 时，先减少共享写入：
 
-[已验证: AOSP android-17.0.0_r1, libcore/dalvik/src/main/java/dalvik/system/VMRuntime.java — VMRuntime 不直接暴露 @Contended 配置，需通过 system property 控制]
+- 每线程或每任务局部累计，批量归并；
+- 按 shard 分散计数器；
+- 避免循环中反复写入相同状态；
+- 把高频写状态从大块只读配置中拆出；
+- 在 NDK 中需要精确布局时，用 `alignas`、`sizeof` 和 `offsetof` 校验目标 ABI。
 
-## 代码缓存优化：DEX 类文件重排序
+手写若干无用 `long` 字段也没有稳定的 cache-line 隔离保证。普通 PMU cache-miss 计数只能提示访存压力，不能单独证明某两个字段发生 false sharing；可靠结论还需要地址级采样或只改变共享布局的对照实验。
 
-### 原理：指令缓存命中率与类加载顺序
+### 3.4 对象池不保证保留 CPU 热度
 
-应用程序的 DEX 文件中，类的排列顺序并非按运行时访问顺序排列。在冷启动时，ART 需要按需加载类（class loading），如果类分散在 DEX 文件的不同位置，每加载一个新类就可能触发一次 I/O 和 cache miss。
+ART 的短命对象分配路径很快，对象池会延长对象生命周期，并引入重置、所有权、同步和泄漏风险。一个回收到池里的对象下次取出时，未必仍位于当前核心的 cache。
 
-如果能将启动路径上需要的类集中排列在 DEX 文件的前面区域，就可以：
+对象池只适合分配与回收已被证实是瓶颈、对象重置可验证、池上限清晰的场景。启动路径应同时比较直接分配、批量分配和复用方案，并观察 allocated bytes、GC、live set、CPU time 与 TTID/TTFD。相关 GC 边界见[ART GC 与启动性能](./13-art-gc-suppression-startup-performance.md)。
 
-1. 减少启动阶段的磁盘 I/O 次数（因为预读的 cache line 中包含了接下来需要的类）
-2. 提高指令缓存命中率（因为热点类的代码段更紧凑）
-3. 减少 page fault（因为减少了虚拟内存到物理内存的映射跳转）
+## 4. DEX 重排序优化的是文件页局部性
 
-### 工程方案一：Startup Profile + DEX Layout 优化
+启动期间，ART 可能查找、验证、解析或执行多个 DEX 中的类与方法。启动代码分散时，进程需要触及更多 DEX 区域。构建期把常见入口所需代码集中到 primary DEX 的局部区域，可以减少文件页访问、fault 和相关加载工作。
 
-[已验证: 官方文档, developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations]
+这条路径不应描述成“预读一个 cache line 就得到下一个类”。DEX 项、文件页、ART metadata、AOT/JIT code cache 和 CPU instruction cache 是不同层次。
 
-Android 7+ 的 ART 编译器支持根据 profile 指导的 DEX 布局优化。R8 编译器在构建时根据 `startup-prof.txt` 重新排列 DEX 文件中类的顺序，将启动路径相关的类移到 `classes.dex` 的前面。
+### 4.1 Baseline Profile 与 Startup Profile
 
-**与 Baseline Profile 的区别**：Baseline Profile 指导的是 ART 的 AOT 预编译（哪些方法需要提前编译），而 Startup Profile 指导的是 DEX 文件中类的物理排列顺序。两者互补但作用域不同。
+| Profile | 消费时机 | 主要作用 |
+| --- | --- | --- |
+| Baseline Profile | 安装或设备编译阶段由 ART 使用 | 让选中的常用方法更早得到合适的编译 |
+| Startup Profile | 构建阶段由 R8 使用 | 调整启动类和方法在 DEX 文件中的布局 |
 
-详见 21.4 节（Baseline Profile 实战）和 21.12 节（Startup Profile 与 DEX Layout 启动优化）。
+官方建议同时使用两者。Startup Profile 是 Baseline Profile 规则的启动子集，但 Library 不能独立贡献 Startup Profile；App 必须覆盖自己的 launcher、常用 deep link、通知等主要启动入口。
 
-### 工程方案二：Redex 工具链
+当前构建边界包括：
 
-[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率 — Redex 方案]
+- DEX layout optimization 从 AGP 8.1 可用；
+- AGP 8.1–8.2 需要显式启用，AGP 8.3 起默认启用；
+- release 构建需要启用 R8、minification 和完整优化；
+- `BaselineProfileRule.collect(..., includeInStartupProfile = true)` 生成启动规则；
+- 生成文件位于 `src/<variant>/generated/baselineProfiles/startup-prof.txt`，由 AGP 消费。
 
-Facebook 开源的 [Redex](https://github.com/facebook/redex) 是一个 DEX 优化框架，其中 `InterDexPass` 模块实现了跨 DEX 文件的类重排优化。基本流程：
+规则过宽会让启动代码溢出首个 DEX，并增加文件与构建成本。生成后要用 APK Analyzer 检查关键类所在 DEX；AGP 8.8+ 还可查看 AAB 中 `r8.json` 的 DEX `"startup": true` 标记。操作步骤与 A/B 设计见[Baseline Profile 实战](./04-baseline-profile-practice.md)和[Startup Profile 与 DEX 布局](./12-startup-profile-dex-layout.md)。
 
-1. 在开发机上构建 APK
-2. 通过 `adb shell am dumpheap` 获取应用启动后的堆内存快照
-3. 使用 Redex 提供的 `dump_classes_from_hprof.py` 脚本从 hprof 中提取类加载顺序
-4. 将顺序列表写入 Redex 配置文件的 `coldstart_classes` 字段
-5. 执行 `redex input.apk -o output.apk` 重新排列 DEX
-6. 重新签名后安装
+### 4.2 不从 Baseline Profile 推导 native code 排列
 
-**Redex vs R8 Startup Profile**：
+Baseline Profile 可以改变安装期编译覆盖和运行时 JIT 工作量。没有 `dex2oat` 产物、符号和 profile 布局证据时，不能继续声称它会按调用频率把所有高频 native code 相邻排列，也不能把启动收益全部归为 instruction-cache 改善。
 
-| 维度 | R8 Startup Profile | Redex InterDexPass |
-|------|-------------------|-------------------|
-| 集成方式 | Gradle 插件，构建时自动执行 | 独立工具链，需手动或 CI 集成 |
-| 优化范围 | DEX 内类排序 + 方法内联 | 跨 DEX 类排序 + 字节码优化 |
-| 数据来源 | Macrobenchmark 自动采集 | 手动 dumpheap 采集 |
-| 维护成本 | 低（官方维护） | 中（需维护配置和 CI 流水线） |
-| Android 17 兼容 | 原生支持 | 需验证 DEX 解析兼容性 |
+测量时应把两个变量拆开：
 
-对于大多数应用，推荐优先使用官方的 R8 Startup Profile（详见 21.12 节）。只有在 DEX 布局优化有进一步需求（如多 DEX 应用、需要 Redex 的其他字节码优化能力）时，才考虑引入 Redex。
+- 保持 DEX 布局一致，对比 Baseline Profile 的编译收益；
+- 保持 Baseline Profile 和安装编译状态一致，对比 Startup Profile 的 DEX 布局收益。
 
-`[待验证]` Redex 对 Android 17 ART 的兼容性：Redex 最近一次 release 的 release notes 未明确声明 Android 17 支持，实际使用前需在目标设备上验证。
+### 4.3 ReDex 只适合已有工具链的团队
 
-### 方案三：ART AOT 编译后的代码布局
+[ReDex](https://github.com/facebook/redex) 是独立的 DEX 优化框架，`InterDexPass` 可消费 `coldstart_classes` 列表安排 cold-start 类。其官方文档仍给出了从 HPROF 提取类列表并运行 InterDex 的流程。
 
-ART 的 AOT 编译器（`dex2oat`）在编译时会将 DEX 中的方法编译为 native 代码并写入 OAT 文件。OAT 文件中代码段的布局也会影响指令缓存命中率。
+新项目优先采用 AGP、R8 和 Startup Profile。Android 官方 R8 文档提醒，其他工具在 R8 之后改写 DEX 可能破坏 R8 优化或 Baseline Profile。已经使用 ReDex 的项目需要同时验证：
 
-[已验证: AOSP android-17.0.0_r1, art/dex2oat/dex2oat.cc]
+- pass 顺序、mapping、资源与反射规则；
+- Baseline/Startup Profile 是否仍与最终 DEX 对应；
+- APK/AAB 签名与安装流程；
+- Android 8–17 目标设备上的 verifier、启动和功能回归；
+- 最终包体、DEX mmap、TTID/TTFD 与故障率。
 
-Android 12+ 引入的 Profile-Guided Compilation 不仅选择性地编译热点方法，还会根据 profile 中的调用频率信息调整编译后的代码布局，将高频方法的 native code 集中在相邻的内存区域。这是 Baseline Profile 对启动性能的间接收益之一——不仅减少了 JIT 编译开销，还改善了代码段的空间局部性。
+不能仅凭 ReDex 能读写 DEX 就宣布 Android 17 兼容，也不能把某个旧版本的冷启动收益当作当前应用预期。
 
-详见 21.4 节（Baseline Profile 实战）。
+## 5. 用 Simpleperf 和 Perfetto验证假设
 
-## 缓存命中率测量方法
+PMU 事件取决于 CPU、内核与权限。Android 17 的 Simpleperf 文档要求先用 `list` 查看设备可用事件；异构核心还可能支持不同 raw event。量产非 root 设备通常只能分析 debuggable 或 `<profileable android:shell="true" />` 的应用。
 
-### simpleperf PMU 采集
+下面的命令先查看事件和硬件 counter 数量，再在应用已运行时成组统计 cycles/instructions 与通用 cache 事件。
 
 ```bash
-# 采集完整 cache 事件统计
-simpleperf stat -e \
-  L1-dcache-load-misses,L1-dcache-loads,\
-  L1-icache-load-misses,L1-icache-loads,\
-  cache-misses,cache-references \
-  -p <pid> -- sleep 10
+adb shell simpleperf list
+adb shell simpleperf stat --print-hw-counter
+
+adb shell simpleperf stat \
+  --app com.example.app \
+  --group cpu-cycles,instructions \
+  --group cache-references,cache-misses \
+  --duration 10
 ```
 
-### Perfetto trace 分析
+只有 `simpleperf list` 确认事件可用时才运行对应组。`--group` 尽量让组内事件同时计数，便于计算 IPC 或 miss ratio；PMU counter 不足时仍可能失败或发生 multiplexing，报告中的 enabled/running 比例和警告必须保留。线程在不同 cluster 之间迁移时，事件定义和计数覆盖也要纳入解释。
 
-在 Perfetto 中可以通过 `linux/perf/perf_event` 数据源采集 PMU 事件，并在 trace 中关联到具体的函数调用栈和线程：
+`simpleperf stat` 给出窗口汇总。确认 cache 事件随性能退化同向变化后，可以用 `simpleperf record` 对受支持事件采样并生成调用栈；采样命中的指令地址不一定包含被访问数据地址，因此仍不能仅靠普通调用栈定位 false sharing。
 
-1. 在 trace config 中添加 `linux/perf` 数据源
-2. 配置 `perf_event_config` 中的事件类型为 cache 相关 PMU 事件
-3. 在 trace viewer 中，将 cache miss 事件与 CPU 调度切片对齐分析
-4. 查看热点函数执行期间的 cache miss 密集程度
+Perfetto 的正确数据源名称是 `linux.perf`。它可以采集 perf counter 或 callstack sample，并与 `linux.ftrace` 的调度、CPU frequency、进程和应用 trace 对齐。Android 设备权限、PMU 与 Perfetto producer 能力各不相同；缺失轨道表示本次配置或设备没有提供数据，不能按 0 miss 处理。
 
-### ARM PMU 事件可用性
+### 5.1 端到端指标必须与 PMU 同时改善
 
-`[待验证]` 不同的 ARM SoC 对 PMU 事件的支持程度不同。ARM 架构定义了 PMUv3 通用事件集（如 `MEM_ACCESS`、`L1D_CACHE_REFILL`），但具体的实现 ID 和计数器数量由 SoC 厂商决定。建议使用 `simpleperf list` 查看当前设备支持的事件列表。
+硬件计数器是解释信号，验收仍以 workload 为准：
 
-## 实战案例：列表滚动场景的数据结构优化
+| 改动 | 主指标 | 辅助证据 | 必查代价 |
+| --- | --- | --- | --- |
+| LRU → 分段 LRU | miss 后总延迟、滚动或启动指标 | 逻辑 hit/miss、逐出 | PSS、GC、锁等待、错误率 |
+| boxed collection → primitive arrays | ns/item、吞吐或帧耗时 | cycles、instructions、cache/TLB event | 转换成本、双份数据、可维护性 |
+| 共享计数 → 分片归并 | 吞吐、尾延迟 | atomic retry、cache event、CPU migration | 汇总延迟、内存 |
+| 加入 Startup Profile | TTID/TTFD | DEX 分布、page fault、DEX mmap | 包体、构建、入口覆盖 |
 
-### 从 LinkedList 到 ArrayBacked
+miss rate 下降但执行指令数大幅增加，应用可能更慢；miss rate 上升但算法少做了很多工作，端到端时间也可能变好。没有通用的“cache miss 超过 10%”告警线。
 
-一个常见的缓存反模式是在性能敏感路径上使用 `LinkedList`：
+### 5.2 可重复实验的最低要求
 
-- `LinkedList` 的每个 Node 都是独立堆分配，Node 之间通过指针连接
-- 遍历时，每个 Node 可能位于完全不同的 cache line 甚至不同的内存页
-- 对于 1000 个元素的遍历，`LinkedList` 可能触发近 1000 次 cache miss
+- 使用 release-like、profileable 构建，不用 Debug 结果替代发布判断；
+- 固定输入、页面、线程数、安装与编译状态；
+- 记录设备、SoC、API、kernel、温度、刷新率和电量条件；
+- 微循环用 AndroidX Microbenchmark，启动或滚动用 Macrobenchmark；
+- 同一设备交错运行 baseline 与 candidate，报告分布和样本量；
+- 一次只改变一个主要变量；
+- 同时保存 Perfetto、Simpleperf 输出和构建产物信息。
 
-改为 `ArrayList` 或裸数组后：
+CPU-bound 数值循环适合看 PMU。线程大部分时间等待 Binder、I/O、锁或网络时，应先处理等待链；cache line 重排无法缩短外部依赖。
 
-- 元素在内存中是连续排列的
-- 一次 cache line 加载（64 字节）可以覆盖 8-16 个对象引用（取决于 32/64 位）
-- 遍历 1000 个元素可能只需要 60-130 次 cache line 加载
+## 6. Review 清单
 
-在 Android 滚动列表场景中，数据源从 `LinkedList` 改为 `ArrayList` 的收益：
+- [ ] 业务 `LruCache` miss、CPU cache miss 和 page fault 使用不同指标名。
+- [ ] cache 容量、line size 和共享拓扑来自目标设备或可信硬件资料。
+- [ ] 没有使用固定 cycles、SoC cache 容量或倍率冒充通用事实。
+- [ ] 没有把 ADPF 描述成大核绑定，也没有在生产代码硬绑核心。
+- [ ] 分段 LRU 的两段操作具有共同原子边界，并按 weight 管理容量。
+- [ ] 缓存 A/B 同时观察命中率、miss 成本、PSS、GC 和锁等待。
+- [ ] `Array<MyObject>` 没有被当作连续对象数组。
+- [ ] Java 字段声明顺序没有被用作 cache-line 布局契约。
+- [ ] Android App 没有依赖 `@Contended` 或 VM 参数实现 padding。
+- [ ] 对象池有 allocation/GC 数据和上限，未依赖“对象仍在 CPU cache”的假设。
+- [ ] Startup Profile 与 Baseline Profile 的消费者和作用分开说明。
+- [ ] DEX layout 收益以文件页与启动指标解释，没有直接等同于 L1 I-cache。
+- [ ] Simpleperf 事件先用 `list` 确认，并保留 multiplexing 信息。
+- [ ] PMU 变化与端到端 latency、throughput 或帧指标一起验收。
 
-| 数据量 | LinkedList 遍历 | ArrayList 遍历 | 提升 |
-|--------|----------------|----------------|------|
-| 1,000 | ~3.2 ms | ~0.4 ms | 8x |
-| 10,000 | ~35 ms | ~3.8 ms | 9x |
+## 小结
 
-（上述数据为示意性量化，实际效果取决于设备、对象大小和访问模式。）
+冷热端分离、数据重排和 Startup Profile 分别作用于应用淘汰策略、进程内数据表示和 APK 的 DEX 文件布局。将它们都叫“提高缓存命中率”容易掩盖测量口径：分段 LRU 看逻辑 hit/miss，primitive array 看数值路径的端到端耗时与 PMU，Startup Profile 看 DEX 分布、文件页和 TTID/TTFD。
 
-### 对象池的缓存友好设计
+Android 17 上，Java 对象字段由 ART 排列，`@Contended` 对 App 没有效果，ADPF 也不承诺指定 CPU。可维护的做法是减少无效工作和指针追踪、限制共享写入、使用带预算的缓存策略，并在目标设备上让业务指标与底层证据相互印证。
 
-启动路径中创建大量临时对象会带来两个问题：GC 压力和 cache 争用。对象池（Object Pool）可以复用已有对象，减少分配开销。但对象池本身的缓存友好性也需要设计：
+## 参考资料
 
-- **数组-backed 对象池**（`Object[] pool`）比链表-backed 对象池有更好的 cache locality
-- **池大小应与 cache 容量匹配**：如果活跃对象总大小超过 L2 cache，池本身的收益会被 cache miss 抵消
-- **避免池中对象持有大字段引用**：这些引用指向的数据可能分散在堆各处，拖累 cache 局部性
-
-## 扩展
-
-### Compose 数据结构的缓存友好性
-
-Compose 的 `SlotTable` 是一个基于数组的树形数据结构，设计上已经考虑了缓存局部性——子节点在数组中倾向于相邻存储。从 Compose 1.0 到 1.10 的演进中，Google 持续优化了 SlotTable 的内存分配器（如 `PausableComposition` 减少重组范围），间接改善了 cache 命中率。
-
-`[待补充]` Compose 1.10 在 Android 17 上的缓存性能基准数据。
-
-### SoC 厂商差异化缓存配置
-
-不同 SoC 厂商（高通、联发科、三星 Exynos、Google Tensor）的缓存层级参数差异显著，尤其在中端和入门级芯片上。例如：
-
-- 高端芯片可能有 12 MB LLC + 6 MB SLC
-- 中端芯片可能只有 4-6 MB LLC，无独立 SLC
-- 入门级芯片可能 L2 只有 128 KB/核心
-
-这意味着同一个应用在中端设备上的 cache miss 率可能比高端设备高 2-3 倍。对于跨设备性能优化，建议在目标最低配设备上测试 cache 指标。
-
-`[待补充]` 主流 SoC（骁龙 8 Gen 4 / 天玑 9400 / Tensor G5）的详细缓存拓扑对比。
-
----
-
-> 本节参考资料：
-> - [结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率]
-> - [结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化]
-> - [已验证: 官方文档, developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations]
-> - [已验证: AOSP android-17.0.0_r1, art/dex2oat/dex2oat.cc]
-> - [引用: https://github.com/facebook/redex]
+- [Android 17 `LruCache.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/util/LruCache.java)：access-order、容量、线程安全和 `create()` 并发语义。
+- [Android 17 ART `ClassLinker::LinkFields`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/class_linker.cc)：对象字段类型排序与空隙填充。
+- [Android 17 libcore `Contended.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/jdk/internal/vm/annotation/Contended.java)：Android no-op 与 `SOURCE` retention。
+- [Android common kernel 6.18 arm64 `cache.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/include/asm/cache.h)：L1 cache line 基线和 DMA alignment。
+- [Android common kernel 6.18 CPU cache sysfs ABI](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/ABI/testing/sysfs-devices-system-cpu)：cache 层级、类型、大小、line size 和共享 CPU 属性。
+- [Android 17 Simpleperf command reference](https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/simpleperf/doc/executable_commands_reference.md)：事件枚举、group、multiplexing 和应用分析权限。
+- [Perfetto performance counters and CPU profiling](https://perfetto.dev/docs/quickstart/callstack-sampling)：`linux.perf`、perf counter 与调用栈采样。
+- [PerformanceHintManager API](https://developer.android.com/reference/android/os/PerformanceHintManager)：hint session 的线程与工作时长契约。
+- [Create Startup Profiles](https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations)：AGP/R8 要求、生成和 DEX layout。
+- [Debug Baseline and Startup Profiles](https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles)：APK Analyzer 与 `r8.json` 验证。
+- [Enable app optimization with R8](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization)：完整 R8 优化及后处理工具风险。
+- [ReDex InterDex](https://fbredex.com/docs/technical_details/interdex/)：`coldstart_classes`、InterDex 配置与验证方式。
