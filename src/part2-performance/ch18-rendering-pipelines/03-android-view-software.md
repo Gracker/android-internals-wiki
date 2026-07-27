@@ -64,199 +64,338 @@ last_deepseek_cn_review_at: 2026-07-13
 
 <!-- outline-end -->
 
-软件渲染是 Android 最古老的绘制方式，全程由 CPU 完成所有像素计算。在硬件加速成为默认选项的今天，它已不再是主流路径，但在特定场景下仍然会被触发。Trace 中如果出现 UI Thread 长时间满载、RenderThread 毫无活动，大概率就是走入了这条路径。持续 CPU 栅格化的能效远低于 GPU 路径，长时间高负载运行会加速温控触发，导致 CPU 频率压制，拖累整机响应。除非有明确的兼容性需求，否则不应主动选择软件渲染。
+软件渲染回答“谁生成像素”，离屏渲染回答“像素先写到哪里”。两个概念不能互换：CPU 可以直接写可见 `Surface`，GPU 也可以先画进离屏纹理或 `HardwareBuffer`。诊断时要依次确认生产者、输出位置、消费者和最终可见 layer。
+
+本文的平台实现固定到 Android 17 / API 37 的 `android-17.0.0_r1`；涉及 dma-buf、dma-fence、sync_file、调度与内存回收时，kernel 固定到 `android17-6.18-2026-06_r6`。
 
 ## 软件渲染的触发条件
 
-软件渲染在以下几种情况下会被激活：
+### 先按“生产方式 × 结果去向”分类
 
-1. **View 层级关闭硬件加速**：在 AndroidManifest 中对特定 Activity 设置 `android:hardwareAccelerated="false"`，或在代码中调用 `View.setLayerType(LAYER_TYPE_SOFTWARE, null)` 。
-2. **直接使用 `Surface.lockCanvas()`**：当代码通过 `Surface.lockCanvas()` / `Surface.unlockCanvasAndPost()` 手动绘制时，走的是纯 CPU 路径。
-3. **系统降级**：极少数情况下，GPU 驱动崩溃或设备不支持硬件加速时，系统会自动降级到软件渲染。
-4. **小型 Overlay/Widget**：部分系统组件（如 Toast、部分 Notification）出于兼容性考虑使用软件渲染。
+常见路径可以归纳成四组：
 
-**判断方法**：如果要判断当前这次 `draw()` 拿到的是不是硬件 Canvas，看 `Canvas.isHardwareAccelerated()`；`View.isHardwareAccelerated()` 只说明这个 View 所在窗口是否开启了硬件加速。官方文档写得很直接，挂在硬件加速窗口上的 View 仍可能被绘制到 software Canvas，例如绘制到 Bitmap 缓存时。
-### 整窗口软件渲染 vs 单 View software layer
+| 生产者 | 结果先写到 | 最终可见对象 | 典型入口 |
+|---|---|---|---|
+| CPU | 当前窗口或独立 `Surface` buffer | 对应 SurfaceFlinger layer | `ViewRootImpl.drawSoftware()`、`SurfaceHolder.lockCanvas()` |
+| CPU | Bitmap 中间结果 | 宿主 App Window | `LAYER_TYPE_SOFTWARE`、显式 Bitmap Canvas |
+| HWUI / GPU | GPU render target 或 `HardwareBuffer` | 取决于后续消费者 | 硬件 Canvas 的 `saveLayer()`、`RenderEffect`、`HardwareBufferRenderer` |
+| App GPU | `HardwareBuffer` | 独立 `SurfaceControl` layer | EGL / Vulkan 生产后调用 `Transaction#setBuffer()` |
 
-上一段的两类入口在 trace 上的表现完全不同，分析时要先认清楚是哪一类：
+只有前两行属于 CPU 软件栅格化。后两行属于离屏渲染，但不是软件渲染。中间结果若只交给编码器、算法或缓存，就不会自然出现 SurfaceFlinger latch、HWC present 和 display present fence。
 
-| 触发方式 | 范围 | RenderThread 在 trace 上的表现 |
-|:---|:---|:---|
-| `android:hardwareAccelerated="false"` 或 GPU 不可用 | 整个窗口走软件渲染 | **完全看不到 `DrawFrame`**——`ThreadedRenderer` 不会被初始化 |
-| `View.setLayerType(LAYER_TYPE_SOFTWARE, null)` | 单个 View 子树走 software layer | `RenderThread` 仍在，`DrawFrame` 仍出现，但会额外伴随 Bitmap 分配 + `uploadToTexture` 纹理上传 slice |
+### 整窗口软件绘制
 
-`View.buildDrawingCache()` 公开 API 在 API 28 已弃用，不建议业务代码直接调用。但 `LAYER_TYPE_SOFTWARE` 的内部实现仍通过 Java drawing cache / Bitmap 生成软件层：`View.updateDisplayListIfDirty()` 在 `layerType == LAYER_TYPE_SOFTWARE` 分支里调用 `buildDrawingCache(true)` / `getDrawingCache()` 并 `drawBitmap`，不会构建 RenderLayer（`RenderProperties.h` 明确 `LayerType::Software` 不能走硬件层路径）。看到 Bitmap 分配 + `uploadToTexture` 时，对应的就是这条内部 drawing cache 链路。
+应用或 Activity 关闭硬件加速时，普通 View 树由 `ViewRootImpl.drawSoftware()` 绘制。Android 17 的实现会锁住窗口 `Surface`，取得 software Canvas，调用 `mView.draw(canvas)`，再执行 `unlockCanvasAndPost()`。
 
-### LAYER_TYPE_SOFTWARE / LAYER_TYPE_HARDWARE / Canvas.saveLayer 的区别
+这条路径通常仍由 `ViewRootImpl` traversal 和 `Choreographer#doFrame()` 驱动，只是没有用 HWUI RenderThread 为窗口生成 GPU buffer。不能把“软件渲染”理解成“不经过 VSync”，也不能把“没有 RenderThread slice”单独当作充分证据。
 
-这三类离屏机制经常被混在一起讨论，但底层完全不同：
+### 业务线程直接写 `Surface`
 
-| 机制 | 触发位置 | 离屏承载 | Trace 上的特征 slice |
-|:---|:---|:---|:---|
-| `LAYER_TYPE_SOFTWARE` | View 属性 | CPU 在离屏 `Bitmap` 上栅格化，再上传为 GPU 纹理 | Bitmap 分配 + `uploadToTexture` |
-| `LAYER_TYPE_HARDWARE` | View 属性 | HWUI 直接在独立 GPU 离屏 buffer / FBO 上渲染子树，不经 CPU Bitmap | `eglCreateImage` / FBO 绑定 / `renderTargetBind` 等 GPU 侧 slice |
-| `Canvas.saveLayer()`（硬件加速路径下） | Canvas API | GPU FBO（不是 Bitmap），用于复杂合成效果（带透明度的子树合成、非 SRC_OVER 的 blend mode 等） | 同 hardware layer 风格的 GPU slice |
+`Surface.lockCanvas()`、`SurfaceHolder.lockCanvas()` 或 `lockHardwareCanvas()` 是显式 Surface 生产接口：
 
-看到一堆离屏相关 slice 集中出现时，先按这三类机制对号入座。如果某个 View 开了 software layer 又特别复杂，瓶颈往往就在 CPU 栅格化 + 纹理上传这一段。
+- `lockCanvas()` 返回 CPU Canvas；
+- `lockHardwareCanvas()` 返回硬件加速 Canvas，不能归入 CPU 软件路径；
+- `SurfaceHolder` 的生产循环可以放在业务线程中，节奏由应用决定，不一定跟随宿主窗口 `Choreographer`。
+
+看到 lock/post 循环时，要同时确认线程、Surface/layer 和 Canvas 类型。它可能是软件 Producer，也可能是独立硬件 Canvas Producer。
+
+### 单个 View 的 software layer
+
+`View#setLayerType(LAYER_TYPE_SOFTWARE, paint)` 只改变该 View 子树。Android 17 的公开语义仍是“software layer 由 Bitmap 承载”；`View.buildLayer()` 的 software 分支调用 `buildDrawingCache(true)`。宿主窗口若开启硬件加速，后续仍有 RenderThread、窗口 BufferQueue、BLAST transaction 和 SurfaceFlinger layer。
+
+SurfaceFlinger 看不到独立的“software View layer”。这块 Bitmap 已经在应用侧被扁平化到宿主窗口 buffer，SF 只能观察 App Window。
+
+公开的 `buildDrawingCache()` 从 API 28 起已弃用。业务代码不应依赖它；源码出现内部 drawing-cache 分支，也不意味着所有设备都会提供名为 `uploadToTexture` 的固定 Perfetto slice。稳定证据是 CPU Bitmap 栅格化、缓存失效、宿主 HWUI 帧以及可能的纹理上传成本。
+
+### 三种常被混淆的 layer
+
+| 入口 | 软件 Canvas | 硬件 Canvas |
+|---|---|---|
+| `LAYER_TYPE_SOFTWARE` | Bitmap 软件层 | 子树先栅格化到 Bitmap，再由宿主硬件帧采样 |
+| `LAYER_TYPE_HARDWARE` | 硬件加速关闭时按 software layer 行为处理 | HWUI/GPU 中间层 |
+| `Canvas.saveLayer()` | 软件离屏像素存储 | GPU render target/FBO 类中间目标 |
+
+`saveLayer()` 的执行单元取决于 Canvas，不能看到 API 名就断言 CPU 或 GPU。`Canvas.isHardwareAccelerated()` 回答当前 Canvas 是否硬件加速；`View.isHardwareAccelerated()` 只说明 View 所在窗口是否开启硬件加速。硬件加速窗口中的 View 仍可能被画到 Bitmap software Canvas。
+
+GPU 驱动错误、Surface 失效或资源不足有各自的恢复和错误处理，不能笼统写成“系统会自动把整个窗口降级为软件渲染”。如果 trace 显示软件路径，应回到窗口配置、Canvas 类型、`setLayerType()` 和调用栈确认入口。
 
 ## 完整执行流程
 
-整窗口软件渲染或 `Surface.lockCanvas()` 的执行链没有 RenderThread 参与。所有操作都在 UI Thread 上完成，从锁定画布到像素填充再到提交 Buffer，全流程串行。
+### 整窗口 `drawSoftware()` 主链
 
-单 View 的 `LAYER_TYPE_SOFTWARE` 走另一条执行链：CPU 在离屏 Bitmap 上栅格化 → 纹理上传 → RenderThread 合成进 GPU 帧流。上一节“整窗口软件渲染 vs 单 View software layer”的表格已经把两类路径区分开，后文提到的 `lockCanvas`、`unlockCanvasAndPost` 和 BufferQueue 等待，指的是整窗口软件渲染或 `Surface.lockCanvas()` 路径。
+下面的调用关系用于定位 Android 17 中 CPU 直写窗口 Surface 的阶段：
 
-### 第一阶段：Lock — 锁定画布
-
-1. **`Surface.lockCanvas()`**：App 向系统请求一块可写的内存区域。底层先调用 `dequeueBuffer()` 取回一个可写的 `GraphicBuffer`，同时拿到 consumer 侧返回的 `fenceFd`；随后 `Surface::lock()` 再调用 `GraphicBuffer::lockAsync(..., fenceFd)`，等这块 buffer 可写之后才把地址映射给 App。软件渲染没有 GPU 指令提交，但这里仍然会受 BufferQueue 槽位和 fence 等待影响。2. **返回 Canvas**：这个 Canvas 直接指向 GraphicBuffer 的像素内存。Canvas 上调用的每一个 `draw` 方法，都会**立即**写入像素数据。
-
-在 Trace 中会看到 `lockCanvas` slice，正常耗时很短（< 1ms），因为它只是内存映射操作。
-
-16KB Page Size 设备上，`lockCanvas` 首帧映射的开销会进一步降低。从 4KB 切到 16KB 后，单个页覆盖的地址空间扩大到 4 倍，同等大小的 GraphicBuffer 所需页表条目减少约 75%，`mmap` 映射像素地址时产生的 Page Fault 数量相应减少。首次 `lockAsync()` 的耗时和 CPU 微小卡顿都有改善，分辨率较高的设备（2K/4K）体感更明显。
-
-### 第二阶段：Draw — CPU 光栅化
-
-这是软件渲染最耗时的阶段。当代码在 Canvas 上调用 `drawCircle()`、`drawText()`、`drawBitmap()` 时，底层是 Skia 库用 **CPU 指令**逐像素计算颜色值并写入内存。
-
-```mermaid
-graph LR
-    A[Canvas.drawCircle] --> B[Skia C++ 库]
-    B --> C[CPU 逐像素计算]
-    C --> D[写入 GraphicBuffer 内存]
-
-    style C fill:#ff9999
+```text
+ViewRootImpl.drawSoftware(...)
+  → Surface.lockCanvas(dirty)
+    → android_view_Surface.nativeLockCanvas(...)
+      → Surface::lock(...)
+        → dequeueBuffer(...)
+        → GraphicBuffer::lockAsync(..., fenceFd)
+  → View.draw(canvas)
+  → Surface.unlockCanvasAndPost(canvas)
+    → Surface::unlockAndPost()
+      → GraphicBuffer::unlockAsync(&fenceFd)
+      → queueBuffer(buffer, fenceFd)
 ```
 
-这个阶段的特征是：**每一条绘制指令都会立刻产生像素**。不存在"先记录再回放"的 DisplayList 机制——这是与硬件加速路径最主要的区别。
+这条链没有 App HWUI RenderThread 绘制窗口 buffer，但仍受 BufferQueue slot、release fence、内存映射和下游消费速度约束。CPU 栅格化只是 lock 成功到 unlock 之间的一段。
 
-**CPU 密集的原因**：复杂图形操作（路径裁剪、高斯模糊、大图缩放、文字排版）都需要大量浮点运算和内存读写。一张 1080p 的 Bitmap 有 207 万个像素，每个像素 4 字节（RGBA），意味着单次全屏填充就要读写 8MB 数据。
+### Lock：取得可写 buffer
 
-### 第三阶段：Unlock & Post — 提交
+`Surface::lock()` 会连接 `NATIVE_WINDOW_API_CPU`，通过 `dequeueBuffer()` 取得候选 `GraphicBuffer` 和 fence fd，再调用 `GraphicBuffer::lockAsync()`。此时可能出现三类成本：
 
-1. **`unlockCanvasAndPost()`**：通知系统"这块内存我写好了"。底层先执行 `GraphicBuffer::unlockAsync()`，拿到一个表示 CPU 写入完成的 fd，再把它交给 `queueBuffer()`。2. **提交路径要按版本看**：Android 9 仍是 Legacy BufferQueue 视角，`queueBuffer()` 把 buffer 交给传统 consumer 路径；Android 10-11 进入 BLAST / SurfaceControl 过渡期，设备上可能同时看到旧模型和新事务模型；Android 12+ 再把 BLASTBufferQueue + `SurfaceControl.Transaction` 当成主视角。
-3. **没有 GPU 渲染 fence，不等于没有 fence**：软件渲染不会生成 GPU completion fence，但 `dequeueBuffer()` 取回 buffer 时仍要接收 consumer 侧的 **release fence**（消费者释放该 buffer 的信号），`unlockAsync()` 产出的 fd 经 `queueBuffer()` 传给下游消费者后，成为 consumer 侧的 **acquire fence**（消费者开始读取前需要等待的信号）。BufferQueue 槽位占满时，App 一样可能卡在 `dequeueBuffer()` 上。
+- 没有满足约束的 FREE slot，Producer 等待 Consumer 释放；
+- slot 已返回，但 release fence 尚未允许 CPU 写入；
+- buffer 首次映射、页缺失或内存回收使映射路径变慢。
 
-### 时序图
+`lockCanvas()` 不是“只做一次 mmap”，也没有跨设备有效的固定正常耗时。16KB page size 可能改变页表和 fault 行为，但无法仅凭页大小推导某次 GraphicBuffer 映射必然更快；gralloc、buffer 复用、访问模式和内存压力都要纳入测量。
 
-下图以 Android 12+ 的 BLAST 视角为主。分析 Android 9 时，需要把 `BLASTBufferQueue` / `Transaction` 替换成 Legacy BufferQueue；Android 10-11 处在过渡期，两类观测点都可能出现。
+### Draw：CPU 生成像素
+
+software Canvas 的 `drawPath()`、`drawText()`、`drawBitmap()` 等操作由 Skia CPU backend 栅格化，并写入锁定的像素内存。与硬件 Canvas 的主要区别是：这里不是先录制宿主窗口 DisplayList，再由 RenderThread 为该窗口提交 GPU draw。
+
+CPU 栅格化成本由脏区面积、像素格式、混合、clip、路径复杂度、文字与图片采样共同决定。“每条命令逐像素串行执行”也过于绝对；Skia 和 vendor 库可以使用 SIMD、专用实现或内部任务，但不能据此假设 Android View software Canvas 会自动把一帧均匀分摊到多个 CPU。
+
+### Unlock & Post：把 buffer 交给 Consumer
+
+`Surface::unlockAndPost()` 调用 `GraphicBuffer::unlockAsync(&fd)`，再用该 fd 构造 fence 并 `queueBuffer()`。CPU 路径没有 HWUI GPU draw completion fence；不过 gralloc unlock 仍可能返回有效 fd，所以“软件渲染没有任何 fence”同样错误。
+
+下游把 Producer 完成信号作为 acquire 边界：Consumer 在读取 buffer 前必须遵守它。SurfaceFlinger/HWC 完成消费后，再通过 release fence 约束 Producer 何时可以复用旧 buffer。
+
+下面的时序图以 Android 17 App Window 的 `drawSoftware()` 为主，把 CPU 生产、BLAST/SF transaction 和显示消费分开：
 
 ```mermaid
 sequenceDiagram
-    participant HW as Hardware VSync
-    participant UI as App UI Thread
-    participant CPU as Skia (CPU)
-    participant BBQ as BLAST Adapter
+    participant App as MainThread / Surface thread
+    participant BQ as Surface + BufferQueue
+    participant CPU as Skia CPU raster
+    participant BLAST as BLASTBufferQueue
     participant SF as SurfaceFlinger
-    participant HWC as HWC / Display
+    participant HWC as HWC / Composer
+    participant DD as Display path
 
-    Note over HW, UI: 1. VSync-App 唤醒
-    HW->>UI: VSync-App Signal
-
-    rect rgb(240, 240, 240)
-        Note over UI, CPU: 2. CPU 软件光栅化（全部在 UI Thread）
-        activate UI
-        UI->>BBQ: lockCanvas() → dequeueBuffer
-        BBQ-->>UI: GraphicBuffer + release fence（上一轮消费者释放）
-
-        UI->>CPU: Canvas.drawXxx()
-        CPU->>CPU: 逐像素计算并写入内存
-
-        UI->>BBQ: unlockCanvasAndPost()
-        Note right of BBQ: 传递 CPU 写入完成 fence → consumer acquire fence
-        BBQ->>SF: Transaction(Buffer)
-        deactivate UI
+    App->>BQ: lockCanvas(dirty)
+    BQ-->>App: GraphicBuffer + release fence
+    App->>CPU: Canvas.draw...
+    CPU-->>App: pixels written
+    App->>BQ: unlockCanvasAndPost
+    BQ->>BLAST: queueBuffer + producer completion fence
+    BLAST->>SF: setBuffer / apply transaction
+    SF->>SF: readiness / snapshot / latch
+    SF->>HWC: validate or presentOrValidate
+    opt CLIENT composition
+        SF->>HWC: setClientTarget
     end
-
-    Note over HW, SF: 3. VSync-SF 合成
-    HW->>SF: VSync-SF Signal
-    activate SF
-    SF->>SF: latchBuffer
-    SF->>SF: Upload to GPU Texture（如需 GPU 合成）
-    SF->>HWC: validate & present
-    deactivate SF
-
-    Note over HWC: 4. 上屏
-    HWC->>HWC: Scanout
-    HWC-->>SF: presentFence
-    SF-->>BBQ: releaseFence
+    SF->>HWC: present if not already presented
+    HWC-->>SF: present fence + layer release fences
+    DD-->>SF: present fence signals later
+    SF-->>BQ: release callback / fence
 ```
+
+图中 `queueBuffer()` 返回不表示上屏；latch 也不表示 panel 已完成扫描。CPU buffer 可能被 HWC 直接消费，也可能由 RenderEngine 采样进 client target，取决于 format、dataspace、transform、crop、alpha、保护属性、设备能力和本轮其他 layer。
+
+自定义 Surface Producer 可能连接自己的 BufferQueue/layer，不一定经过图中同一个 App Window BLAST adapter；它的生产线程和节奏也要单独确认。
+
+### Dirty Rect 与 copyback
+
+software Canvas 支持 dirty region，但“只重画脏区”还不完整。Android 17 的 `Surface::lock()` 会比较 back buffer 与上一块 `mPostedBuffer`：
+
+- 尺寸和 format 兼容时，计算上一轮有效区域与本轮新脏区的差集，并通过 `copyBlt()` 把需要保留的像素复制到当前 back buffer；
+- 无法 copyback 时，把新脏区扩成整个 bounds，并清理 slot 的 dirty-region 状态；
+- 随后用最终 dirty bounds 执行 `lockAsync()`。
+
+因此，小脏区可能减少 CPU 重画，也可能增加旧 buffer 到新 buffer 的内存复制。resize、format 变化、Surface 重建、buffer discard 或大范围脏区会削弱收益。判断 Dirty Rect 是否有效，要同时量 CPU draw 与 copyback 的内存流量。
+
+### 单 View software layer 的链路
+
+宿主窗口开启硬件加速时，单个 software layer 可以概括为：
+
+`View 子树 → CPU Bitmap 栅格化/缓存 → 宿主 RenderNode/DisplayList 引用 → RenderThread/GPU 采样 → App Window buffer`
+
+该路径同时存在 CPU 和 GPU 成本。只看到 RenderThread 不能排除 software layer；只看到 Bitmap draw 也不能说明整个窗口退出 HWUI。缓存没有失效时可以复用结果，频繁 invalidate、尺寸变化或大面积内容变化则会重复栅格化和上传。
+
+### GPU 离屏与 `HardwareBuffer`
+
+Android 14 / API 34 的 `HardwareBufferRenderer` 把 `RenderNode` 场景画入调用方提供的 `HardwareBuffer`。它与 `HardwareRenderer` 共享进程级 common render thread：
+
+- `RenderResult#getFence()` 是生产完成 fence，消费者读取 buffer 前要等待或继续传递；
+- renderer 不会在每次 draw 前清空 buffer，复用时要全量覆盖或显式清屏；
+- `close()` 释放 renderer 资源，不会替调用方关闭传入的 `HardwareBuffer`。
+
+纯离屏结果如果只给编码、算法或缓存消费，不会产生 display present fence。若稍后由宿主窗口采样，要跟踪宿主帧；若交给独立 `SurfaceControl`，则继续跟踪 transaction、latch、composition、present 与 release。
+
+### `SurfaceControl.Transaction#setBuffer()` 直接提交
+
+Android 13 / API 33 起，公开 Java API 可以把 `HardwareBuffer` 直接设置到 `SurfaceControl`。它绕过该 layer 在 Producer 侧的 `dequeueBuffer()` / `queueBuffer()` 循环，没有绕过 SurfaceFlinger。
+
+Java 文档要求 buffer 同时支持 `USAGE_COMPOSER_OVERLAY` 和 `USAGE_GPU_SAMPLED_IMAGE`，因为设备可能使用硬件 plane，也可能由 GPU 采样。usage 表示允许的消费者，不保证 HWC 选择 DEVICE composition。
+
+提交时仍在生产的 buffer 必须携带有效 `SyncFence`。Java 文档称它为 presentation fence；从消费者角度看，它保护“生产完成、可以读取”的 acquire 边界。一个 transaction 同时设置多块 buffer 时，所有 production fence 都满足后才能保持这组更新的原子一致性。
+
+连续生产还要使用专门的 release callback。回调携带的 `SyncFence` 若有效，复用 buffer 前必须等待。Transaction committed/completed 只描述事务阶段，不能替代 buffer 的安全回收协议。Android 16 / API 36 起，NDK 提供 `ASurfaceTransaction_setBufferWithRelease()` 补齐这一边界。
 
 ## 与硬件加速路径的核心差异
 
-理解软件渲染，可以与标准硬件加速路径（[18.2](02-android-view-standard.md)）做对比：
+这里把“CPU 直写可见 Surface”和标准 HWUI App Window 对比；单 View software layer 是两者的混合。
 
-| 维度 | 软件渲染 | 硬件加速渲染 |
-|:---|:---|:---|
-| **执行线程** | 全程 UI Thread | UI Thread + RenderThread |
-| **绘制机制** | 立即产生像素 | 先记录 DisplayList，再翻译为 GPU 指令 |
-| **光栅化** | CPU（Skia） | GPU（OpenGL / Vulkan） |
-| **同步开销** | 没有 RenderThread，同步点集中在 `dequeueBuffer()` / fence / BufferQueue 槽位 | `SyncFrameState` + GPU / BufferQueue 同步 |
-| **Buffer 提交** | Android 9: `unlockCanvasAndPost()` → Legacy BufferQueue；Android 10-11: 过渡期；Android 12+: `unlockCanvasAndPost()` → BLAST | `queueBuffer()` → BLAST |
-| **Fence** | 没有 GPU 渲染 fence，但仍有 acquire/release fence | GPU fence + BufferQueue fence |
-| **部分更新** | 支持 Dirty Rect | Android 12+ 逐步废弃 |
-| **复杂图形** | 极慢（阴影、模糊、大图） | GPU 并行计算，快几个数量级 |
+| 维度 | CPU 直写可见 Surface | 标准 HWUI App Window |
+|---|---|---|
+| 窗口像素生产者 | App 线程上的 Skia CPU raster | HWUI RenderThread / GPU |
+| 主线程职责 | 整窗口软件 draw 时直接生成像素 | 更新状态、measure/layout、录制 RenderNode/DisplayList |
+| RenderThread | 窗口 buffer 生产不依赖 HWUI RenderThread | 执行 sync、draw 与 GPU submission |
+| 主要 Producer 等待 | `dequeueBuffer()`、release fence、CPU buffer lock | UI↔RT sync、dequeue、GPU queue/fence |
+| 提交后 | 仍经 BLAST/SF/HWC 显示 | 经 BLAST/SF/HWC 显示 |
+| 部分更新 | dirty region 可能触发 copyback | RenderNode/display list 复用、damage 与 GPU/HWC 策略 |
+| 适合的证据 | App 线程 Running、lock/post、CPU memory traffic | `doFrame`、`syncAndDrawFrame`、`DrawFrame`、GPU、queue |
 
-两条路径的差异落在"谁在做光栅化"。GPU 天生适合并行计算——一张 1080p 的图片有 207 万个像素，GPU 可以同时在成百上千个核心上计算；CPU 只能串行处理，哪怕主频再高，像素数摆在那里。
+GPU 并非对所有工作都必然更快。极小、低频、一次性的 Bitmap 生成可能不值得支付 GPU setup 与同步成本；持续窗口动画、大面积混合、模糊和高分辨率重绘通常更适合硬件路径。结论要由目标设备的 CPU/GPU 时间、内存流量、功耗和 deadline 数据支持。
 
-同步模型也不同。软件渲染没有 RenderThread，因此看不到 `SyncFrameState`；等待点主要落在 `dequeueBuffer()`、`lockAsync()`、`queueBuffer()` 和 BufferQueue 槽位背压上。分析 Trace 时，不能因为没有 GPU slice 就把所有卡顿都归到 CPU 计算。先看 UI Thread 的 `draw` 段，再看 `lockCanvas` / `unlockCanvasAndPost` 前后有没有等待。
+### 三类 fence 不可互换
+
+| fence | 保护的边界 | 典型等待方 |
+|---|---|---|
+| production / acquire fence | Producer 已写完，Consumer 可以读 | 宿主 GPU、SurfaceFlinger、编码器或算法模块 |
+| display present fence | 本轮 display frame 到达显示 present 边界 | SurfaceFlinger 显示时间线 |
+| layer release fence | Consumer 不再读取该 buffer，可以回池复用 | Producer / buffer pool |
+
+纯离屏任务通常只有生产完成与消费者 release 边界。没有可见 layer，就没有该结果对应的 SF latch、HWC present 和 display present fence。
+
+进入 kernel 后，共享图形 buffer 通常由 dma-buf 表示，生产与消费依赖 dma-fence；sync_file 把 fence 暴露为 fd。上层 `SyncFence`、native fence fd 和 kernel dma-fence 位于同一条同步链的不同接口层，但它们各自保护的生命周期阶段仍要从调用上下文判断。
 
 ## Trace 视角
 
-软件渲染在 Perfetto 中有几个稳定特征：
+固定“`lockCanvas < 1ms`、draw 占 80%、`doFrame < 16ms`”无法覆盖不同刷新率、分辨率、设备和业务。Perfetto 诊断应从四个问题开始：
 
-### 识别特征
+1. 谁生产像素：MainThread、Surface thread、HWUI RenderThread、App GL/Vulkan thread，还是外部硬件？
+2. 结果写到哪里：可见 Surface buffer、Bitmap、GPU render target 还是 `HardwareBuffer`？
+3. 谁消费结果：宿主窗口、SurfaceFlinger、编码器、ImageReader、算法模块还是缓存？
+4. 结果是否进入显示链：有没有目标 layer 的 transaction、latch、composition 与 present？
 
-1. **UI Thread 长条**：整个帧处理（包括像素填充）都在 UI Thread 上，会出现一个很长的 `doFrame` 条，且内部没有 `syncFrameState`。
-2. **RenderThread 闲置**：几乎看不到 `DrawFrame`、`dequeueBuffer`、`queueBuffer` 等 RenderThread 的 slice。
-3. **CPU 占用飙升**：UI Thread 的 CPU 使用率显著高于正常情况，可能接近 100%。
-4. **lockCanvas / unlockCanvasAndPost**：这两个 slice 是软件渲染的标志性锚点。
+### 识别整窗口软件路径
 
-### 关键 Slice
+较强的组合证据包括：
 
-| Slice | 含义 | 关注点 |
-|:---|:---|:---|
-| `lockCanvas` | 锁定 GraphicBuffer | 正常 < 1ms |
-| `draw` | CPU 光栅化 | 可能占总帧时间的 80%+ |
-| `unlockCanvasAndPost` | 提交 Buffer | 正常 < 1ms |
-| `doFrame` | 整帧处理 | 总时长，关注是否超过 16ms |
+- 窗口配置关闭硬件加速，或调用栈进入 `ViewRootImpl.drawSoftware()`；
+- MainThread traversal 内出现 `Surface.lockCanvas()`、`mView.draw()`、`unlockCanvasAndPost()`；
+- 目标 App Window 仍有 buffer transaction / latch；
+- 同一窗口帧没有对应 HWUI `DrawFrame` 和 GPU window draw。
 
-### 与卡顿的关联
+“没有 `DrawFrame`”本身不够。trace 可能漏采、窗口可能没有重绘，主体也可能来自 SurfaceView、游戏引擎、Camera 或视频 Producer。
 
-软件渲染场景下，首要矛盾通常是 **CPU 光栅化太慢**，但不能把所有卡顿都归成"像素算不过来"。如果 `lockCanvas` 或 `unlockCanvasAndPost` 被拉长，还要继续检查 `dequeueBuffer()` 背压、BufferQueue 槽位是否被占满，以及 fence 返回是否滞后。定位完等待点之后，再决定是改绘制逻辑、减小脏区，还是切回硬件加速。
+### 识别单 View software layer
+
+这类路径应同时出现宿主 HWUI 帧和前置 CPU Bitmap 工作。可关注：
+
+- software layer 的创建、缓存失效和 Bitmap 分配；
+- App 线程 CPU raster、Bitmap upload 或 texture update；
+- 宿主 `syncAndDrawFrame` / RenderThread `DrawFrame`；
+- 最终 App Window 的 transaction、latch 和 present。
+
+slice 名会随后端、vendor 和 trace 配置变化。没有固定 `uploadToTexture` 字符串时，可用调用栈、buffer/texture id、线程和相邻时间关系建立证据。
+
+### 拆开 lock、draw 与 post
+
+`lockCanvas()` 变长时先看线程状态：
+
+- Sleeping/blocked 且落在 dequeue、futex 或 fence wait：优先查 slot、release 和 Consumer 节奏；
+- Running 且伴随 page fault、reclaim 或高内存流量：查映射、copyback 和内存压力；
+- lock 成功后 `View.draw()` / Canvas draw 长时间 Running：再归因到 CPU 栅格化与业务绘制。
+
+`unlockCanvasAndPost()` 变长也不能直接写成“CPU 画慢”。要检查 gralloc unlock、queueBuffer、Binder/transaction、队列背压和线程调度。
+
+### 离屏结果的证据链
+
+`HardwareBufferRenderer` callback 变晚时，要区分 common RenderThread 排队、GPU 执行与 completion fence signal。`setBuffer()` 已 apply 但 layer 未更新时，再查 production fence、transaction readiness、desired present time、layer 可见性和旧 buffer 是否被沿用。
+
+纯离屏任务没有目标 SF layer 是正常现象。此时要寻找编码器、ImageReader、缓存或算法 Consumer，并用 buffer id、fence 和 request/callback 关联生产与消费。
+
+### 连续帧量化
+
+至少记录多帧的请求、拿到可写 buffer、生产完成、提交、latch、present 和 release 时间。用 buffer id、frame number、SurfaceFrame token 或 transaction id 关联同一份内容，才能区分：
+
+- Producer 工作变慢；
+- Consumer 间隔变长；
+- buffer 池耗尽后反压 Producer；
+- App 按时提交，但 SF/HWC/display 后段错过 deadline。
+
+FrameTimeline 只覆盖进入相应可见 SurfaceFrame/DisplayFrame 的部分。Bitmap、纯离屏 GPU pass 或编码输入不会因为生成完成而自动得到 FrameTimeline present 结论。
 
 ## 性能特征与适用场景
 
-### 性能瓶颈
+### 先估算像素存储
 
-1. **CPU 算力瓶颈**：复杂图形（阴影、模糊、Path 裁剪、大尺寸 Bitmap 缩放）在 CPU 上极慢。一个带高斯模糊的圆角矩形，在 GPU 上可能 < 0.1ms，在 CPU 上可能 > 10ms。
-2. **内存带宽瓶颈**：1080p 屏幕的 GraphicBuffer 约 8MB。每次 `lockCanvas` / `unlockCanvasAndPost` 都涉及数据搬运。更高分辨率（2K/4K）下这个问题更严重。
-3. **主线程阻塞**：所有绘制都在 UI Thread，直接挤压输入事件和动画的执行时间。
-4. **能效代价**：CPU 栅格化的每瓦性能远低于 GPU 路径，长时间运行会加速温控触发，导致更激进的频率压制。高负载 CPU 绘制不仅自身慢，频率压制后还会拖累整机的输入响应、动画流畅度和其他进程的调度。
+RGBA_8888 的像素存储可以用下式估算：
 
-Skia 内部长期提供 `SkTaskGroup` 用于并行任务分发（`external/skia/src/core/SkTaskGroup.cpp` 自 Android 9 起已存在），但 View software Canvas 路径是否默认走多线程 CPU 栅格化，取决于 HWUI 对 Skia 的集成配置。截至 Android 16，AOSP 中未找到 View software Canvas 默认启用并行栅格化的证据——软件渲染仍然以单线程 CPU 串行为主。即便未来启用多线程，也不改变"CPU 做像素计算"的本质；对于复杂的模糊、路径裁剪、大图缩放操作，GPU 的并行计算优势仍然是数量级差距。
+`width × height × 4 × 同时存活的 buffer 数`
 
-**工程判断**：软件渲染在 2026 年的定位是能效劣势明显的应急路径，不是性能优化的可选项。如果 Trace 显示 App 持续走这条路径，应该视为一个需要修复的问题，而不是需要"优化"的路径。
+1440 × 3200 的单块 RGBA_8888 buffer 约为 17.6 MiB。若某个具体配置同时存活三块，像素存储约 52.7 MiB；“三块”只是示例，不能反推 BufferQueue 或 buffer pool 固定为三缓冲。
 
-### 软件渲染里的 Dirty Rect 为什么能成立
+此外还可能有 dirty copyback、CPU 写入、纹理上传、GPU 采样、client target 和编码/算法 Consumer。单块 buffer 的字节数不等于一帧的总内存流量。
 
-Dirty Rect 不是简单地"只画变化区域"。`Surface::lock()` 会先比较当前 back buffer 和上一帧 `mPostedBuffer` 的尺寸、格式；如果可以复用，就把本轮未失效但又不会重画的区域算成 `copyback`，再通过 `copyBlt()` 从上一帧拷回当前 buffer。App 只需要重画新的 dirty region，其余像素沿用上一帧的结果。
-一旦前一帧 buffer 不可用、尺寸变化、像素格式变化，或者 buffer 被丢弃，`Surface::lock()` 就会把 dirty region 扩成整屏，直接回到 full redraw。resize、surface 重建、buffer discard 之后 Dirty Rect 收益会明显下降。
+### 常见成本
 
-放到今天的系统里，Dirty Rect 仍然是 software Canvas 的一个能力，但它已经不是默认优化手段。现代硬件加速路径更常依赖 layer 缓存、RenderNode 复用和更稳定的 GPU 合成。
+- 大面积 CPU raster：路径、模糊、复杂 clip、图片缩放和多层 alpha 会增加算术与访存；
+- copyback：小脏区减少重画时，也可能产生旧 buffer 到新 buffer 的内存复制；
+- software layer 失效：重复生成 Bitmap、CPU draw、上传和 GC/native allocation；
+- GPU 离屏 pass：中间 render target 过大、pass 过多或 completion fence 晚；
+- buffer 池过深：内存占用和 in-flight 延迟一起增加；
+- format/transform/alpha 不匹配：可能增加 RenderEngine CLIENT composition。
 
-### 什么时候会遇到软件渲染？
+CPU 高占用不能直接推出 thermal throttling。若要写温控结论，应同时看到温度/thermal event、频率上限变化、调度状态和持续负载；单帧 CPU raster 只能证明该帧的 CPU 工作。
 
-日常开发中常遇到软件渲染的场景主要有：
+### 适用边界
 
-1. **排查问题时故意关闭硬件加速**：某些绘制 Bug 只在软件渲染下复现，开发时会临时关闭。
-2. **第三方库或老代码**：部分使用 `Canvas` 直接绘制的老库可能没有适配硬件加速。
-3. **系统组件**：Toast、部分 Overlay 窗口可能在软件渲染下运行。
-4. **多进程共享 Surface**：某些 IPC 场景下通过 `Surface.lockCanvas()` 直接写入共享内存。
+可以合理使用 CPU software 或离屏路径的场景包括：
 
-**建议**：除非有明确的需求（如需要 Dirty Rect、需要兼容特殊硬件），否则不要主动使用软件渲染。如果 Trace 中意外发现 App 走了软件渲染路径，第一步是检查 `hardwareAccelerated` 配置和 `setLayerType` 调用。
+- 生成小尺寸、低频、一次性的 Bitmap 快照；
+- 兼容性验证，需要比较 software 与 hardware Canvas 行为；
+- 明确由 CPU 算法写入、随后交给非显示 Consumer 的 buffer；
+- 简单、低刷新率的独立 Surface 绘制，且实测满足功耗和 deadline；
+- 需要 `HardwareBufferRenderer`、EGL/Vulkan 离屏或 `setBuffer()` 直提的系统级流水。
 
----
+不应仅为“解决一次硬件绘制问题”长期关闭整个窗口硬件加速，也不应把 `LAYER_TYPE_SOFTWARE` 当作通用性能开关。发现意外软件路径时，检查 Manifest/Activity 的 `hardwareAccelerated`、`setLayerType()`、实际 Canvas 类型和 Surface Producer 调用栈。
 
-> **交叉引用**：
-> - 标准 BLAST 硬件加速路径详见 [18.2 Android View 标准路径](02-android-view-standard.md)
-> - BufferQueue 机制详见 [2.13 BufferQueue](13-buffer-queue.md)
-> - Skia 渲染引擎的内部机制详见 [2.14 图形 API 演进](14-graphics-api-evolution.md)
+### Android 12—17 版本边界
+
+| 平台 | 相关公开能力 | 诊断影响 |
+|---|---|---|
+| Android 12 / API 31 | CPU Surface、View software layer、HWUI 离屏路径已成熟；`RenderEffect` 公开 | BLAST/FrameTimeline 是现代显示分析背景，纯离屏结果仍没有显示时间线 |
+| Android 13 / API 33 | `SurfaceControl.Transaction#setBuffer()`、`SyncFence` 与 Java release callback 公开 | 可用公开 Java API 表达 production fence 和 buffer 回收 |
+| Android 14 / API 34 | `HardwareBufferRenderer` 公开 | `RenderNode → HardwareBuffer` 可通过 common HWUI render thread 完成 |
+| Android 15 / API 35 | `setFrameTimeline()`、`setDesiredPresentTimeNanos()`、transaction listener 进入公开 API，并受 flag/API 条件约束 | 直接提交可以表达目标显示周期；事务反馈仍不等于 buffer release |
+| Android 16 / API 36 | NDK `ASurfaceTransaction_setBufferWithRelease()` | Native producer 获得专门的 buffer release callback |
+| Android 17 / API 37 | 本文源码锚点；四条主路径延续，SF 使用当前 FrontEnd snapshot、CompositionEngine 与 AIDL Composer 流程 | 方法名与 flag 按 `android-17.0.0_r1` 解读，不用旧 HWC2 教程替代当前完整路径 |
+
+### Android 17 源码入口
+
+平台源码统一固定到 `android-17.0.0_r1`：
+
+- [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)：`drawSoftware()`、窗口 Surface lock/draw/post；
+- [`Surface.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java) 与 [`android_view_Surface.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_view_Surface.cpp)：Java Canvas 到 native Surface；
+- [`Surface.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/Surface.cpp) 与 [`GraphicBuffer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/ui/GraphicBuffer.cpp)：dequeue、copyback、`lockAsync()`、`unlockAsync()`、queue；
+- [`View.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java) 与 [View layer 官方说明](https://developer.android.com/develop/ui/views/graphics/hardware-accel)：`LAYER_TYPE_SOFTWARE` 的 Bitmap 语义和 Canvas 判断；
+- [`HardwareBufferRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java)：common render thread、completion fence、清屏和所有权边界；
+- [`SurfaceControl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java)：`setBuffer()`、usage、production fence、release callback 和 present-time API；
+- [`include/android/surface_control.h`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/include/android/surface_control.h)：NDK acquire fence 与 API 36 `ASurfaceTransaction_setBufferWithRelease()`；
+- [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) 与 [`HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)：可见 layer 的 transaction、composition、present 和 release。
+
+Kernel 固定到 `android17-6.18-2026-06_r6`：
+
+- [`Documentation/driver-api/dma-buf.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/driver-api/dma-buf.rst)：共享 buffer；
+- [`Documentation/driver-api/sync_file.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/driver-api/sync_file.rst) 与 [`drivers/dma-buf/sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：dma-fence 到 fence fd；
+- [`mm/`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/)：page fault、reclaim、PSI 等内存侧证据。实际 gralloc、GPU driver 和 dma-buf heap 行为仍由目标设备补证。
+
+交叉阅读：
+
+- [18.2 Android View 标准管线](02-android-view-standard.md)
+- [18.10 SurfaceControl API](10-surface-control-api.md)
+- [18.17 HardwareBufferRenderer](17-hardware-buffer-renderer.md)
+- [2.13 BufferQueue](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
+- [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)
+
+### 小结
+
+CPU `lockCanvas()` 可以直接生成可见 Surface buffer；`LAYER_TYPE_SOFTWARE` 只把 View 子树栅格化成 Bitmap；硬件 Canvas、`HardwareBufferRenderer`、EGL/Vulkan 可以生成 GPU 离屏结果；`Transaction#setBuffer()` 能把 `HardwareBuffer` 接入独立 layer。
+
+定位问题时，沿 producer、intermediate buffer、consumer、visible layer 的顺序取证，再分别对齐 production fence、display present fence 和 layer release fence。这样才能区分像素生成、buffer 等待、消费衔接与 SF/HWC/display 后段。
