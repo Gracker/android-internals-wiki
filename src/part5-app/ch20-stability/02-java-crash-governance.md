@@ -67,249 +67,293 @@ last_deepseek_cn_review_at: 2026-07-06
 - 🔹 治理优先级：影响面、严重度、修复成本与监控反馈流程
 <!-- outline-end -->
 
-Java Crash 在线上稳定性问题中通常占比较高，也是工程师日常接触最多的崩溃类型。
+Java Crash 的定义很窄：`Throwable` 没有在当前线程的传播路径中被处理，逃出线程入口，Android 默认 fatal handler 随后终止应用进程。异常类型能帮助选择排查方向，却不能单独判断是否可恢复；恢复能力取决于失败发生在哪个边界、状态是否仍一致，以及调用方能否给出明确的降级结果。
 
-## Java 异常分类体系
+本文的平台与 ART 源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。
 
-Android Java 层的异常按 ART 虚拟机处理路径分为 Exception 和 Error 两类，都继承自 `Throwable`。
+## Java 异常分类：语法类别不等于恢复策略
 
-**Exception — 可恢复的异常条件**
+所有 Java 异常都继承自 `Throwable`，主要分为 `Exception` 与 `Error`。工程上要同时看语言规则和故障语义。
 
-- **Checked Exception**：编译器强制要求处理，不处理则编译不通过。典型如 `IOException`、`SQLException`。这类异常表示外部条件不可控（网络断开、文件不存在），不代表程序逻辑有 bug。
-- **RuntimeException（Unchecked）**：编译器不强制处理，运行时抛出。典型如 `NullPointerException`、`IndexOutOfBoundsException`、`ClassCastException`。这类异常几乎都指向代码逻辑缺陷——某个前置条件没检查、某个类型假设错误。
+| 类别 | 编译器约束 | 常见例子 | 治理重点 |
+|---|---|---|---|
+| Checked Exception | Java 调用方必须捕获或声明抛出 | `IOException`、`GeneralSecurityException` | 在 I/O、加密、进程间调用等边界定义重试、降级或向上返回 |
+| `RuntimeException` | 编译器不强制处理 | `NullPointerException`、`IndexOutOfBoundsException`、`IllegalStateException` | 修正契约、状态机、生命周期或并发错误 |
+| `Error` | 编译器不强制处理 | `OutOfMemoryError`、`StackOverflowError`、`NoSuchMethodError` | 判断运行时资源、递归、依赖或二进制兼容问题，避免宽泛恢复 |
 
-**Error — 虚拟机层面的严重问题**
+Checked Exception 也可能由程序错误引起，例如关闭顺序错误导致读写失败；`RuntimeException` 也可能来自系统或第三方 API 的版本差异。分类只是线索。
 
-`OutOfMemoryError`、`StackOverflowError`、`NoSuchMethodError` 等。默认行为是终止进程。部分 Error 可以通过技术手段拦截或缓解：
+`Error` 也不是“一抛出就由虚拟机杀进程”。它和其他 `Throwable` 一样可以被 `catch`；只有未处理并逃出线程入口时，才进入 uncaught exception 链。区别在于许多 `Error` 表示进程资源或链接状态已经异常：
 
-- `OutOfMemoryError`：堆增量（Heap Expansion）技术可以在 OOM 时扩大虚拟机堆上限，延长应用在线时间（详见 20.5 OOM 治理）
-- `StackOverflowError`：通常由无限递归触发，修复递归终止条件即可
+- `OutOfMemoryError` 发生后，再分配日志对象或创建上传线程都可能失败。不能通过应用代码突破 ART 为该设备配置的 heap limit。
+- `StackOverflowError` 常见于无界递归，也可能来自过深的合法递归或较小线程栈。
+- `NoSuchMethodError`、`NoClassDefFoundError` 属于 linkage 问题，应检查依赖解析、R8、动态特性模块、插件化和 OEM/API 兼容，补一层 `catch` 往往只会隐藏错误。
 
-工程上的区别：Checked Exception 的治理重点是"是否该 catch、catch 后做什么"；RuntimeException 的治理重点是"为什么会发生、在哪个版本引入"。两类问题的排查策略不同。
+判断是否捕获时可以问三个问题：
 
-[适用版本: Android 10 - Android 17]
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md]
+1. 当前层是否拥有足够信息给出业务可解释的结果？
+2. 捕获后，数据与状态机是否仍保持一致？
+3. 调用方是否会收到成功、失败、取消中的明确一种，而不是静默继续？
 
-## UncaughtExceptionHandler 机制与全局捕获
+如果三个问题不能回答清楚，就应让异常沿调用链传播到拥有决策权的边界。
 
-### 系统默认处理链
+## Android 17 的默认 fatal handler 链
 
-当一个异常在 Java 层未被捕获，ART 虚拟机的处理流程（`art/runtime/thread.cc`）：
+### 从 ART 到 `Thread.dispatchUncaughtException()`
 
-1. 虚拟机在各检查点检测到未处理异常，调用 `art::Thread::HandleUncaughtExceptions()`（`art/runtime/thread.cc`）
-2. 通过 JNI 调用 Java 层 `Thread.dispatchUncaughtException(Throwable)`
-3. 沿 handler 链执行：`getUncaughtExceptionPreHandler()` → `getUncaughtExceptionHandler()` → `ThreadGroup.uncaughtException()`
+异常在 ART 中以线程的 pending exception 状态传播。解释器或编译代码按照 catch table 查找处理器并展开栈帧；当异常逃出线程入口，线程销毁路径中的 [`Thread::HandleUncaughtExceptions()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc) 取出并清除 pending exception，然后调用 Java 层 [`Thread.dispatchUncaughtException(Throwable)`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java)。
 
-在 `com.android.internal.os.RuntimeInit.commonInit()`（`frameworks/base/core/java/com/android/internal/os/RuntimeInit.java`）中，系统注册了两个默认 handler：
+Java 层的顺序是：
 
-| Handler | 职责 | 行为 |
-|---------|------|------|
-| `LoggingHandler` | 打印 crash 日志 | 输出 `FATAL EXCEPTION` 日志（线程名、进程名、PID、Throwable 堆栈） |
-| `KillApplicationHandler` | 终止进程 | 通知 AMS → `Process.killProcess(Process.myPid())` + `System.exit(10)` |
+1. 调用 Android 私有的 uncaught exception pre-handler；
+2. 调用该线程的显式 handler；如果没有，则交给它的 `ThreadGroup`；
+3. 根 `ThreadGroup` 再委托给 `Thread.getDefaultUncaughtExceptionHandler()`。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/internal/os/RuntimeInit.java]
+[`RuntimeInit.commonInit()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java) 在应用代码运行前安装平台处理器：
 
-`KillApplicationHandler` 通知 AMS 这一步不保证完成。Android 17 源码对上报路径捕获的是 `Throwable`，其中 `DeadObjectException` 只表示 system_server 已不可用；其他上报异常会被额外记录后同样进入 `finally` 块杀进程——crash 信息可能来不及写入系统日志。
+| 处理器 | 安装位置 | Android 17 行为 |
+|---|---|---|
+| `LoggingHandler` | pre-handler | 写入 `FATAL EXCEPTION`、线程、进程、PID 和异常栈。应用通过公开 `Thread` API 不能替换它。 |
+| `KillApplicationHandler` | default handler | 必要时补写日志，调用 ActivityManager 上报 crash，并在 `finally` 中执行 `Process.killProcess()` 与 `System.exit(10)`。 |
 
-### 自定义 UncaughtExceptionHandler 的正确做法
+应用调用 `Thread.setDefaultUncaughtExceptionHandler()` 会替换 default handler 的当前位置。平台 pre-handler 仍会先执行，但 `KillApplicationHandler` 只有在自定义 handler 委托给安装前保存的 handler 时才会继续运行。
 
-通过 `Thread.setDefaultUncaughtExceptionHandler()` 注册自定义 handler，可以在进程终止前拿到异常并上报。
+线程级 handler 的优先级高于 `ThreadGroup` 和 default handler。如果某个线程通过 `setUncaughtExceptionHandler()` 安装处理器后不再委托，它也能截断进程级采集链。排查 SDK 冲突时，两种注册方式都要检查。
 
-```java
-// 1. 保存系统默认 handler（通常是 KillApplicationHandler）
-Thread.UncaughtExceptionHandler defaultHandler =
-    Thread.getDefaultUncaughtExceptionHandler();
+### 自定义 handler 的最小正确结构
 
-// 2. 注册自定义 handler
-Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
-    // 收集 crash 信息，生成最小 crash record
-    CrashRecord record = CrashRecord.fromThrowable(thread, throwable);
+下面的示例强调委托和故障隔离；`CrashSpool.tryAppendMinimal()` 代表已经在正常运行期初始化好的有界存储，不是在 fatal 路径临时创建复杂对象。
 
-    // 有界同步落盘——写入本地文件（如 app 私有目录或 DropBox）
-    // 注意：不能写入内存缓存，因为 KillApplicationHandler.finally 会
-    // 调用 Process.killProcess() + System.exit(10)，进程内存不会保留
-    CrashStore.persistSync(record);
+```kotlin
+class DelegatingFatalHandler(
+    private val previous: Thread.UncaughtExceptionHandler?,
+    private val crashSpool: CrashSpool,
+) : Thread.UncaughtExceptionHandler {
+    private val entered = AtomicBoolean(false)
 
-    // 如果有独立 crash 上报进程，可通过 IPC 转发
-    // CrashReporterService.forward(record);
-
-    // 必须链式调用上一个 handler，否则进程不会正常退出
-    if (defaultHandler != null) {
-        defaultHandler.uncaughtException(thread, throwable);
+    override fun uncaughtException(thread: Thread, error: Throwable) {
+        try {
+            if (entered.compareAndSet(false, true)) {
+                crashSpool.tryAppendMinimal(thread, error)
+            }
+        } catch (_: Throwable) {
+            // Fatal 路径只能尽力保存，采集失败不能截断平台退出链。
+        } finally {
+            if (previous != null) {
+                previous.uncaughtException(thread, error)
+            } else {
+                Process.killProcess(Process.myPid())
+                exitProcess(10)
+            }
+        }
     }
-});
+}
+
+fun installFatalHandler(crashSpool: CrashSpool) {
+    val previous = Thread.getDefaultUncaughtExceptionHandler()
+    Thread.setDefaultUncaughtExceptionHandler(
+        DelegatingFatalHandler(previous, crashSpool)
+    )
+}
 ```
 
-[已验证: AOSP RuntimeInit.KillApplicationHandler finally 会执行 Process.killProcess() + System.exit(10)，崩溃进程内存不会保留，所以 crash 信息必须在 handler 内同步持久化到磁盘或转发给独立进程。]
+`AtomicBoolean` 用于阻止多个线程同时崩溃时重复进入脆弱的写入路径。`finally` 保证自有采集失败后仍委托旧 handler。Android 应用进程里 `previous` 通常是平台或先注册 SDK 的 handler；示例保留空值兜底，避免异常线程返回后留下状态未知的进程。
 
-实操中三个容易踩的坑：
+这个示例不承诺 crash record 一定保存成功。fatal 路径可能同时面临 OOM、磁盘满、文件锁持有、栈溢出或进程被外部终止，任何“必达上报”说法都不严谨。
 
-**1. 链式调用不能断**
+### Fatal 路径只做最少工作
 
-如果应用集成了多个 SDK（Crash SDK、APM SDK），每个 SDK 都可能调用 `setDefaultUncaughtExceptionHandler`。后注册的会覆盖先注册的。解法：每个 SDK 在注册前保存前一个 handler，处理完后链式调用。不保存直接覆盖 = 前 SDK 的 crash 上报静默丢失。
+较稳妥的设计把采集拆成正常运行期和 fatal 时刻两部分。
 
-**2. handler 中不能做耗时操作**
+正常运行期持续维护：
 
-自定义 handler 执行完后才会到 `KillApplicationHandler` 的 `System.exit(10)`。在 handler 中做磁盘 IO 或网络同步请求，会延迟进程退出时间，可能触发系统的 ANR watchdog。`KillApplicationHandler.finally` 会执行 `Process.killProcess(Process.myPid())` 和 `System.exit(10)`——崩溃进程的内存不会保留到“下次启动”。所以 crash 信息的持久化策略只有三条路：
+- 固定容量的 breadcrumb 环形缓冲；
+- 版本、进程、会话、页面和关键状态的紧凑快照；
+- mapping、构建 ID、动态模块与配置版本；
+- 已打开并可独占写入的 app-private spool，或无需复杂初始化的追加策略。
 
-1. **有界同步落盘**：在 handler 内将最小 crash record 写入本地文件（控制写入量和超时），下次启动时读取并上报
-2. **独立进程接力**：通过 ContentProvider / Binder / Socket 将 crash record 转发给常驻的 crash 上报进程，由该进程负责异步网络上报
-3. **DropBox 代持**：调用 `DropBoxManager.addData()` 写入系统 DropBox，进程退出后数据仍在磁盘
+fatal handler 内只尝试写入：
 
-不能把 crash 信息放在“内存缓存”里指望下次启动读取——进程被 kill 后内存内容全部丢失。
+- wall clock 与 monotonic time；
+- 进程名、线程名和线程 ID；
+- 异常类、受限长度的 message、cause 与 suppressed 摘要；
+- 已准备好的 breadcrumb；
+- 完整性字段，如长度、版本和校验值。
 
-**3. 初始化时机**
+不要在这里发同步网络请求、执行完整 heap dump、等待其他线程释放普通业务锁，或初始化数据库与大型序列化框架。独立进程 IPC 也只是尽力传递：对端可能尚未启动、同 UID 进程可能同时被系统处理，Binder 调用也可能阻塞。
 
-`setDefaultUncaughtExceptionHandler` 应该在 `Application.attachBaseContext()` 中调用，而不是 `onCreate()`。`attachBaseContext` 是 Application 生命周期中最早可用的回调，确保 Application 创建过程中的异常也能被捕获。
+普通三方应用不应把系统 `DropBoxManager` 当作自有 crash spool。它是系统级、容量受限的诊断设施，条目可被丢弃，写入与读取还受平台权限和设备策略约束。自有数据应写入 app-private 存储，并在下次进程启动后校验、去重、脱敏和上传。
 
-[已验证: 官方文档, developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler]
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md]
+### 安装时机与多 SDK 链
 
-### 堆栈获取的代价
+`Application.attachBaseContext()` 是应用侧常用的早期安装点，比 `Application.onCreate()` 更早，也早于常规 ContentProvider 初始化。但它仍覆盖不了自定义 Application 构造、类加载或应用 handler 安装前发生的故障；这些事件要依赖平台日志、Play Vitals 等进程外来源。
 
-`new Throwable()` 在构造函数中调用 `nativeFillInStackTrace()`，触发 ART 栈回溯。回溯过程遍历 `ManagedStack` 链表中的 `ShadowFrame`/`QuickFrame`，解析每个 `ArtMethod` 指针。ART `CreateInternalStackTrace()` 内部用 `kMaxSavedFrames = 256` 做快速路径缓存——深度小于 256 时复用 saved_frames，达到或超过 256 时执行二次 `WalkStack()` 构建完整 internal stack trace。256 是 saved_frames 优化阈值，不是 Java 堆栈的最大深度。
+多个 SDK 都修改 default handler 时，后注册者只能看到注册当时的前驱。每个 handler 都应在 `finally` 中委托前驱，并限制自己的执行时间与写入量。建议在测试构建记录 handler 类名和安装顺序，覆盖以下故障注入：
 
-堆栈捕获有性能开销。不能在高频路径上频繁创建 `Throwable` 对象。如需在性能敏感位置采集调用栈，考虑用 `Thread.getStackTrace()` 替代，或做采样（如每 100 次采集 1 次）。
+- 主线程与后台线程分别抛出未捕获异常；
+- 自有持久化抛异常；
+- OOM 或磁盘满时进入 handler；
+- 两个线程接近同时崩溃；
+- SDK 初始化顺序变化。
 
-[已验证: AOSP android-17.0.0_r1, art/runtime/thread.cc CreateInternalStackTrace; art/runtime/native/java_lang_Throwable.cc]
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md]
+测试重点是“平台退出链没有被截断、记录不损坏、重启后只上传一次”，而不是只看 handler 是否被调用。
 
-## Top Crash 模式与根因分析
+## Throwable 堆栈的成本与信息边界
 
-线上 Java Crash 的分布高度集中。Top 5 类型覆盖 80% 以上的 Java Crash：
+### `kMaxSavedFrames = 256` 是优化阈值
 
-| 排名 | 异常类型 | 典型场景 | 根因特征 |
-|------|---------|---------|---------|
-| 1 | `NullPointerException` | 解析服务端返回的 JSON 字段为 null 时直接调用方法 | 服务端字段变更、网络超时返回默认值、多版本兼容 |
-| 2 | `IndexOutOfBoundsException` | 列表/数组越界访问 | 数据源变更（列表为空）、分页加载竞态、RecyclerView adapter 与数据不同步 |
-| 3 | `ClassCastException` | 序列化/反序列化类型不匹配 | Parcelable 字段类型变更、跨进程传参类型假设错误 |
-| 4 | `IllegalStateException` | 生命周期状态不正确 | Fragment 已 destroy 后操作 View、Activity 已 finish 后启动新 Activity |
-| 5 | `OutOfMemoryError` | Java 堆内存耗尽 | Bitmap 未回收、内存泄漏积累、大图加载 |
+`Throwable` 默认构造会执行 `fillInStackTrace()`，ART 再通过 [`Thread::CreateInternalStackTrace()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc) 遍历当前 managed stack。
 
-> OOM 的完整治理方案见 20.5 节。本节聚焦前四类 Exception 的排查方法。
+Android 17 源码中的 `kMaxSavedFrames = 256` 用于减少重复回溯：
 
-### 各模式的排查要点
+1. 第一次 `WalkStack()` 计算深度，并尝试在 `saved_frames` 数组保存前 256 个 frame；
+2. 当实际深度小于 256 时，直接使用已保存 frame 构造 internal stack trace；
+3. 当深度达到或超过 256 时，再执行一次 `WalkStack()` 构造完整结果。
 
-**NullPointerException**
+所以 256 不是最大 Java 栈深度，也不是日志一定展示的 frame 数。展示还会受到异常 cause 的共同尾帧折叠、日志截断、采集 SDK 限制和服务端处理影响。
 
-线上堆栈通常能直接定位到类和行号。排查时关注三个问题：
+### `Thread.getStackTrace()` 不是免费替代品
 
-- 服务端字段在哪个版本开始变化？→ 对照服务端 changelog 时间线
-- null 是正常业务逻辑（字段可选）还是 bug（应该有值但丢失了）？→ 看服务端接口文档
-- 影响范围：特定机型/系统版本/用户群，还是全量？→ crash 日志中的自定义维度（App 版本、OS 版本、用户标签）
+`new Throwable()`、`Throwable.getStackTrace()`、`Thread.currentThread().getStackTrace()` 和跨线程 stack trace 都会引入不同程度的栈遍历、对象物化或暂停成本。把 API 换成 `Thread.getStackTrace()` 不能推导出成本更低。
 
-快速止血：加 null check。长期方案：根因在服务端的推服务端修，根因在客户端的补防御逻辑。
+在高频路径采集调用来源时，应先定义：
 
-**IndexOutOfBoundsException**
+- 采样率与每个会话的上限；
+- 最大 frame 数、字符串长度和去重策略；
+- 是否只在异常状态或慢事件超过阈值后采集；
+- 对目标线程的停顿预算；
+- 数据是否包含业务参数、文件路径或其他敏感信息。
 
-列表场景中的高频原因：
+性能结论要用目标设备和目标构建实测。debug、profileable 与 release 构建的解释、JIT/AOT 和混淆状态不同，不能互相代替。
 
-- `RecyclerView.Adapter` 的 `notifyDataSetChanged()` 在异步回调中调用，但数据源已被清空或替换
-- 分页加载的并发问题：前一页还没加载完，用户滑到末尾触发第二次加载，两次回调操作同一个列表
+### 一份可诊断的 Java crash 记录
 
-排查手段：在 crash 堆栈附近找数据源操作（add/remove/clear），检查是否有并发修改。`ConcurrentModificationException` 是更明确的信号。
+只保存 `Throwable.toString()` 通常不够。建议保留：
 
-**IllegalStateException**
+- exception type、message、cause chain 与 suppressed exceptions；
+- 原始 frame，包括类、方法、文件和行号；
+- 线程名、进程名、app version、version code 与构建标识；
+- R8 mapping 标识和动态模块版本；
+- 受限、脱敏的 breadcrumb 与关键状态；
+- 首次出现版本、受影响用户数和重复次数。
 
-Fragment/Activity 生命周期场景中的高频模式：
+R8 mapping 必须和产生 crash 的构建一一对应。重发同一 version code、错配渠道包或丢失动态模块 mapping，都会让反混淆结果指向错误代码。
 
-- `commitAllowingStateLoss()` 看起来解决了 crash，实际可能导致状态丢失——需要判断是状态可以丢（弹个非关键 toast），还是不能丢（事务提交）
-- `viewLifecycleOwner` 在 `onDestroyView` 之后仍被引用——协程或 LiveData observer 没有正确取消订阅
+## 高频 Crash 模式：从栈顶继续追状态
 
-**ClassCastException**
+异常分布由业务和技术栈决定，不存在可泛用的“前五类占 80%”。下面这些模式常见，但治理优先级仍要依据本应用数据。
 
-通常出现在跨进程或反序列化场景：
+### `NullPointerException`
 
-- `Bundle.getSerializable()` 返回的类型与预期不一致——服务端在某个版本改了字段类型
-- `Parcelable` 对象的 `CREATOR` 反序列化时，发送方和接收方的类定义不一致（多进程场景下版本不同步）
+NPE 的栈顶告诉你在哪里解引用了 `null`，不一定告诉你它为什么变成 `null`。排查时按来源拆分：
 
-> Top Crash 分布数据基于行业经验，不同应用场景的排名可能有所差异。
+- **边界数据**：服务端字段、数据库迁移、Intent/Bundle 参数是否声明可空，缺失时是拒绝、默认还是降级；
+- **初始化顺序**：依赖是否在多进程、延迟初始化或冷启动竞态中尚未准备；
+- **生命周期**：Fragment view 已销毁、Activity 已结束、回调晚于 owner；
+- **并发可见性**：共享字段是否由另一线程清空，是否缺少同步或不可变快照。
 
-## 治理优先级排序与修复策略
+补 `?.` 或空字符串只能改变症状。若字段是业务必需项，应在解析边界返回明确失败，并记录协议版本；若字段允许缺失，类型本身就应表达 nullable 或可选状态。
 
-### 优先级判定
+### `IndexOutOfBoundsException`
 
-不是按 crash 类型排优先级，而是按**影响面 × 严重度 × 修复成本**三维度评估：
+越界常见于“检查 size”和“按 index 访问”基于不同快照：
 
-| 维度 | 高优先级 | 低优先级 |
-|------|---------|---------|
-| 影响面 | 核心路径（启动、首页、支付） | 边缘功能（设置页、低频入口） |
-| 严重度 | crash rate > 0.1%（千分之一） | crash rate < 0.01% |
-| 修复成本 | 一行 null check | 需要重构数据流或改服务端协议 |
+- 后台更新列表，UI 仍使用旧 position；
+- 分页请求乱序返回，旧响应覆盖新数据；
+- Adapter 数据已提交新列表，点击回调仍保存旧 position；
+- 多个 `add/remove/clear` 没有在同一串行状态容器中执行。
 
-排序时用 crash 影响用户数（UV）而不是 crash 次数——一个用户 crash 100 次和 100 个用户各 crash 1 次，后者优先级更高。
+RecyclerView 点击时应重新读取 `bindingAdapterPosition` 并处理 `NO_POSITION`，但这只是 UI 边界保护。数据层仍应使用不可变列表、单一写入者或受控同步，确保“选择项”和“读取项”来自同一版本。
 
-### 修复策略分级
+### `ClassCastException`
 
-**L1 防御性编程（快速止血）**
+类型转换失败常见于 JSON 多态字段、Bundle/Intent 参数、`Serializable`/`Parcelable`、反射和插件接口。多进程并不会让同一 APK 的两端自然运行不同版本，但动态模块、插件类加载器、进程重启时保存的旧状态，都可能造成类或 schema 不匹配。
 
-```java
-// 直接访问，可能 NPE
-String name = response.getUser().getName();
+安全转换 `as?` 适合业务允许该类型缺失的场景。若类型是协议必需项，应让解析失败携带字段、实际类型和 schema 版本，不能默默使用默认值继续写入错误数据。
 
-// 防御性访问
-User user = response != null ? response.getUser() : null;
-String name = user != null ? user.getName() : "";
-```
+### `IllegalStateException` 与生命周期错误
 
-每加一层 null check，都要回答：这个 null 是业务允许的还是 bug？如果是 bug，根源在哪？防御性编程是紧急止血的有效手段，长期方案必须追到根因。
+`IllegalStateException` 表示调用时状态不满足 API 契约，常见证据包括：
 
-**L2 根因修复**
+- FragmentManager 已保存状态后提交事务；
+- Fragment 的 view 已销毁，异步回调仍访问旧 binding；
+- 生命周期已经低于所需状态，回调或收集任务仍运行；
+- 同一个一次性结果、导航动作或状态转换被重复消费。
 
-| 根因类型 | 修复方向 |
-|---------|---------|
-| 服务端字段变更 | 加版本协商或字段兼容层 |
-| 数据源与 UI 不同步 | 统一数据源，消除并发竞态（如用 `DiffUtil` 替代 `notifyDataSetChanged()`） |
-| 生命周期问题 | 用 `Lifecycle` 组件约束操作时机（`repeatOnLifecycle` / `viewLifecycleOwner.lifecycleScope`） |
-| 类型假设错误 | Parcelable 字段加版本号，反序列化时做类型检查 |
+`commitAllowingStateLoss()` 只适合允许丢失的展示事务。支付结果、用户输入、导航主状态等不能用它掩盖时序错误。更稳妥的做法是把任务绑定到 `viewLifecycleOwner`，使用 `repeatOnLifecycle` 管理收集，并让状态机拒绝重复或过期事件。
 
-**L3 监控与反馈**
+### `OutOfMemoryError`、`StackOverflowError` 与 linkage error
 
-1. crash 发生 → APM 后台实时告警（crash rate 超阈值）
-2. 按版本聚合 → 确认是否是某个版本引入（回归检测）
-3. 按 OS 版本聚合 → 确认是否是系统行为变更
-4. 修复上线 → 验证 crash rate 下降 → 持续观察
+- OOM 要区分 Java heap、线程创建、Native/graphics 间接压力与 LMK，详见 [20.5 OOM 治理](05-oom-governance.md)。
+- Stack overflow 要从重复 frame、递归深度、线程栈大小和生成代码入手；捕获后继续在同一深栈执行也有风险。
+- `NoSuchMethodError`、`NoClassDefFoundError` 要按依赖图、R8 keep 规则、API level、动态模块和类加载器排查，不能归入普通业务异常。
 
-[适用版本: Android 10 - Android 17]
-[自动发现: 监控与反馈流程]
+## Kotlin 协程异常如何到达 Java fatal handler
 
-## 扩展
+协程异常是否触发 Java Crash，取决于它有没有传播路径，而不是只看有没有安装 `CoroutineExceptionHandler`。
 
-### ART 虚拟机异常处理流程
+| 场景 | 异常去向 |
+|---|---|
+| `coroutineScope` 内 child 失败 | 非取消异常通常向父协程传播并取消同级任务，作用域向调用者重新抛出 |
+| 根 `launch` 或 `SupervisorJob` 下无传播路径的 `launch` | 交给 `CoroutineExceptionHandler`；没有合适 handler 时进入平台兜底，JVM/Android 上可到当前线程的 uncaught handler |
+| `async` | 异常保存在 `Deferred`，由 `await()` 重新抛出；仍要考虑其 parent Job 的传播关系 |
+| `try/catch` 包围具体 suspend 调用 | 当前边界可以转换为重试、失败结果或继续向上抛 |
+| `CancellationException` | 通常表示协作取消，不应当作业务 crash；捕获 `Throwable` 时要保留取消语义 |
 
-Java 异常在 ART 中的传递路径：`art::Thread::SetException()` 设置异常标志 → 各检查点检测 → `art::Thread::HandleUncaughtExceptions()`（`art/runtime/thread.cc`）→ JNI 到 Java 层 → `Thread.dispatchUncaughtException()` → handler 链。
+`CoroutineExceptionHandler` 在协程已经失败、无法继续时收到异常，它是报告点，不是恢复点。给普通 child `launch` 单独安装 handler 也未必生效，因为异常可能先按结构化并发传播给父协程。
 
-异常标志设置后线程不会立即终止。ART 在多个位置插入异常检查：
+当前行为应以项目锁定的 `kotlinx-coroutines` 版本为准。官方 [`CoroutineExceptionHandler`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-exception-handler/) 文档说明：JVM 的兜底流程会调用通过 `ServiceLoader` 发现的 handler 和当前线程的 `Thread.uncaughtExceptionHandler`。不要把某个旧版 `kotlinx-coroutines-android` 的反射实现当成 Android 17 平台固定机制。
 
-- **编译执行的方法返回时**：编译器在每个可能抛异常的调用点之后插入 `IsExceptionClear()` 检查（`art/compiler/optimizing/code_generator.cc` 生成）
-- **解释执行时**：`ExecuteGoto()` 解释器在每条指令执行前检查异常标志（`art/runtime/interpreter/interpreter.cc`）
-- **JNI 调用返回时**：`CheckJNI` 在 JNI 方法返回后检查是否有待处理异常
-- **线程销毁时**：`Thread::Destroy()` 中调用 `HandleUncaughtExceptions()` 处理残留异常
+更完整的异常架构见 [20.7 异常处理架构](07-exception-architecture.md)。
 
-编译模式下，异常检查窗口通常只有一条指令——编译器在调用指令后立即插入检查。解释模式下，每条字节码指令前都有检查，窗口更短。
+## 第三方 SDK：线程隔离不等于进程隔离
 
-详见 1.7 节 ART 编译管线中关于异常表和 deoptimization 的部分。
+把 SDK 放到独立线程池，能限制排队、线程数和耗时任务之间的干扰，但不能隔离未捕获异常。后台线程的异常到达 Android default handler 后，`KillApplicationHandler` 仍会终止整个应用进程。
 
-### 第三方库崩溃的隔离与降级
+治理第三方 SDK 可以按风险从低到高处理：
 
-第三方 SDK 的 crash 在大型应用中占比可达 20-30%。治理思路：
+- 在有明确契约的同步调用边界捕获已知异常，并转换为 SDK 不可用或业务降级；
+- 对回调做生命周期、线程和重复调用保护；
+- 固定、审计并回归测试 SDK 版本，保留其 mapping 与 Native symbols；
+- 为非关键功能提供本地或远程关闭开关，并确保关闭路径不依赖故障 SDK 初始化成功；
+- 对不可信、可独立关闭且 IPC 成本可接受的能力使用独立进程；同时处理进程死亡、重连和状态恢复。
 
-- **handler 链保护**：注册自定义 handler 时保存前一个，确保 SDK 的 handler 不被覆盖
-- **线程池隔离**：第三方 SDK 代码运行在独立线程池中，通过 `Thread.UncaughtExceptionHandler` 捕获该线程池中未处理异常，阻止扩散到主线程
-- **降级开关**：对关键 SDK（广告、推送）设置远程开关，crash rate 飙升时动态禁用
+不要用线程级 `UncaughtExceptionHandler` 吞掉未知 SDK 异常后继续运行。异常线程已经终止，共享状态是否一致无法证明；这类处理会把显式 crash 变成更难诊断的数据错乱或无响应。
 
-### Kotlin 协程异常与 UncaughtExceptionHandler 的关系
+## 治理优先级与反馈流程
 
-> 详见 §20.7 扩展章节。
+### 先评估用户伤害，再评估修复成本
 
-Kotlin 协程异常处理与 Java 的 UncaughtExceptionHandler 形成级联体系：
+修复成本影响排期和方案选择，不应降低故障本身的严重度。建议按以下信息排序：
 
-1. **Context 中的 CoroutineExceptionHandler**（最高优先级）— 协程创建者明确指定
-2. **ServiceLoader 注册的全局 handler** — `kotlinx-coroutines-android` 通过 `META-INF` 注册 `AndroidExceptionPreHandler`
-3. **Thread.uncaughtExceptionHandler**（兜底）— 最终触发 RuntimeInit 的 LoggingHandler / KillApplicationHandler
+| 维度 | 需要回答的问题 |
+|---|---|
+| 用户伤害 | 是否阻断启动、登录、支付、创作或数据保存；是否进入 crash loop |
+| 影响范围 | 受影响用户数、用户率、会话率、机型与渠道分布 |
+| 回归证据 | 是否由当前版本新增，是否随灰度比例同步增长 |
+| 重复伤害 | 同一用户是否反复触发，是否每次进入固定路径都崩溃 |
+| 可恢复性 | 重启是否恢复，是否需要清数据、回滚配置或安全模式 |
+| 修复风险 | 改动范围、兼容性、服务端配合、验证样本和撤回能力 |
 
-**关键区别**：CoroutineExceptionHandler 只处理“无传播路径”的协程异常。在 `coroutineScope` 中，异常会通过结构化并发传播给父协程，不需要 CoroutineExceptionHandler 介入。在 `supervisorScope` 或 `GlobalScope` 中，异常没有传播路径，必须由 CoroutineExceptionHandler 处理。
+事件次数与受影响用户数都要看。一个用户在 crash loop 中产生一百次事件，严重度可能高于一百个用户各触发一次可绕过的边缘功能错误；不能固定只用 UV 或次数排序。
 
-Android 8.0/8.1 存在 pre-handler 丢失问题（协程直接调用 uncaughtExceptionHandler 绕过了 pre-handler），`kotlinx-coroutines-android` 通过反射调用修复了这个问题。
+### 从聚类到验证
 
-详细分析见 §20.7 扩展章节。
+1. **聚类**：按反混淆后的 exception type、根 cause 与稳定 frame 生成候选簇，保留 app version、mapping ID 和协程/反射边界。
+2. **分层**：按新旧版本、设备、Android 版本、渠道、RAM 档和关键业务路径比较。
+3. **建立假设**：从栈顶继续追输入、状态、生命周期和并发关系，写出能被日志或复现推翻的根因。
+4. **修复**：优先修契约与状态机；临时保护要有监控、撤除条件和失败语义。
+5. **分阶段发布**：定义暂停扩量与撤回条件，确认 mapping、告警和新簇监控已就绪。
+6. **验证**：在相同分母和可比样本下确认原簇下降，同时检查 crash 是否迁移为 ANR、数据错误或新堆栈。
+7. **预防复发**：把可机械识别的根因加入静态规则、契约测试、生命周期测试或故障注入。
+
+告警阈值应来自产品自己的历史基线、版本样本和风险等级，不使用来源不明的固定 crash rate。低样本灰度要同时看置信区间、绝对用户数和故障严重度。
+
+## 源码与文档锚点
+
+- 平台：AOSP [`android-17.0.0_r1`](https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/)
+- ART 未捕获异常与栈回溯：[`runtime/thread.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc) · [`java_lang_Throwable.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/java_lang_Throwable.cc)
+- Java handler 分发：[`Thread.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java) · [`ThreadGroup.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/ThreadGroup.java)
+- Android fatal handler：[`RuntimeInit.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java)
+- 官方 Crash 指南：[Crashes](https://developer.android.com/topic/performance/vitals/crash)
+- 协程异常：[`CoroutineExceptionHandler`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-exception-handler/) · [Coroutine exceptions handling](https://kotlinlang.org/docs/exception-handling.html)
