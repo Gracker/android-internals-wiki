@@ -97,240 +97,348 @@ last_deepseek_cn_review_at: 2026-07-09
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## PerfDog 是非嵌入式性能测试工具
+## PerfDog 的位置：实验室观测工具
 
-PerfDog 是腾讯 WeTest 的全平台性能测试分析工具，官网定位为 iOS、Android、PC、主机等平台性能测试和分析。它的关键特点是非嵌入式：被测 App 不需要接入 SDK，测试设备通常也不需要 root 或越狱。
+PerfDog 是腾讯 WeTest 提供的跨平台性能测试与分析工具。Android 测试不要求被测 App 接入 SDK，也不要求设备 root，适合下面几类工作：
 
-这让 PerfDog 很适合测试、竞品分析、游戏性能验证和外部包测量。它不是线上 APM SDK，也不负责把真实用户设备的性能数据持续采回来。
+- QA 在固定设备和固定脚本上做发版回归。
+- 开发团队快速筛出帧率、CPU、内存、温度或整机功耗异常的时间段。
+- 在拿不到源码时观察第三方 App 或游戏的外部表现。
+- 通过 PerfDog Service 或 CLI 接入实验室自动化。
 
-### Android 测试模式与权限边界
+它不能代替线上 APM。PerfDog 覆盖的是受控环境里的单台或一组设备，线上 APM 负责汇总真实用户、真实网络和设备分布下的长期数据。它也不能仅凭一条外部曲线证明某个函数、线程或缓存策略有问题；根因仍需 Perfetto、Android Studio、simpleperf、日志或业务埋点提供证据。
 
-Android 端使用 PerfDog 时，要先确认当前是免安装模式还是安装模式。两者都会保持“被测 App 不接 SDK”的前提，但设备侧权限和现场观察方式不同。
+### Android 的两种设备模式
 
-| 项目 | 免安装模式 | 安装模式 |
+PerfDog 官方客户端手册把 Android 设备分为“非安装模式”和“安装模式”。这里的“安装”指手机端的 `PerfDog.apk`，不是被测 App 接入组件；PC 端 PerfDog 本身采用解压运行方式。
+
+| 项目 | 非安装模式 | 安装模式 |
 |---|---|---|
-| 设备侧组件 | 不安装 PerfDog.apk，依赖 PC 端和 ADB 采集 | 安装 PerfDog.apk / PerfDog Service，设备端可显示实时指标 |
-| 权限重点 | USB 调试、ADB 连接稳定 | USB 调试、悬浮窗、辅助功能、通知访问、DUMP 等按官方引导授予 |
-| 适用场景 | 实验室回归、竞品包测试、减少被测环境扰动 | 现场调试、端上实时观察、需要 Service 辅助采集的指标 |
-| 风险 | 不能在手机端直接看实时悬浮指标 | 高版本系统可能拦截侧载 APK 的敏感权限 |
+| 手机端组件 | 不安装 `PerfDog.apk` | PC 端向设备安装 `PerfDog.apk` |
+| 实时显示 | 手机屏幕不显示 PerfDog 浮窗 | 手机端可显示实时指标 |
+| 基础条件 | USB 调试、ADB 授权和稳定连接 | 在基础条件上增加 USB 安装与悬浮窗权限 |
+| 适用场景 | 回归、竞品测试、希望减少手机端组件干扰 | 现场观察、演示或需要手机端实时读数 |
+| 常见误解 | “没有浮窗”不代表没有采集 | 手机端显示进程被系统回收，不一定会中断 PC 端采集 |
 
-Android 13+ 对侧载 APK 的敏感权限有 Restricted Settings 限制。PerfDog Service 如果拿不到辅助功能、通知访问或相关授权，现象通常是连接成功但指标缺失。处理顺序是先确认设备由官方渠道安装或信任，再到系统“应用信息”里允许受限设置，并按 PerfDog 提示重新授予权限。
+不要把辅助功能、通知读取或 `android.permission.DUMP` 写成所有版本都必须授予的固定清单。不同客户端、Service 版本和所选指标会给出不同提示，应以当前官方安装包和设备页面为准。若某个侧载组件在 Android 13 至 Android 17 上请求辅助功能或通知读取，系统可能显示 Restricted Settings；只对来源可信、用途已确认的版本开放对应入口，测试结束后撤销不再需要的权限。
 
-## 它能测什么
+### USB 与 Wi-Fi 模式不是同一口径
 
-PerfDog 的测试场景包括这些类型：
+USB 模式便于保持连接和采集多数指标，但连接线会给设备充电。PerfDog 官方手册明确把 Android 的 Battery Power 放在 Wi-Fi 模式下采集：先通过 USB 建立 Wi-Fi 设备连接，连接成功后拔线，再开始功耗测试。测试报告必须写明连接方式；USB 下的电流或功耗曲线不能和断线后的 Wi-Fi 结果混在同一组基线里。
 
-- FPS、帧时间、卡顿、平均帧率等帧率相关指标。
-- CPU、内存、GPU、温度、功耗等设备资源指标。
-- 网络带宽、延迟、丢包率等网络相关测试。
-- 实验室性能基线测试、深度问题分析、云端数据汇总和团队协作工具集成。
-- 支持脚本化的自动化性能测试服务。
+## 指标范围与可用条件
 
-官网强调无需修改硬件、游戏或应用，即插即用。对第三方 App、竞品包、游戏包测试很有用，因为你通常拿不到源码，也不能让对方集成 SDK。
+PerfDog 能显示的字段取决于平台、设备、SoC、驱动、测试模式、客户端版本和账号权限。开始测试前，应先查看当前设备的可用指标列表；字段为空时，不要用 `0` 代替“未采集”。
 
-帧率类指标要按采集对象理解。普通 Activity 窗口可以从 SurfaceFlinger 主窗口的 BufferQueue 时间戳推导，手工核验时可参考 `adb shell dumpsys SurfaceFlinger --latency <WindowName>`、Perfetto FrameTimeline 或 Winscope；游戏和视频常用 SurfaceView / TextureView 独立 Surface，窗口名和帧源可能不同，报告里要写清采集对象。
+| 指标组 | Android 常见字段 | 解释时必须保留的条件 |
+|---|---|---|
+| 帧呈现 | FPS、FTime、Jank、BigJank、SmallJank、TinyJank、Stutter、Smooth、1% Low、InterFrame | 被测窗口或 Surface、刷新率、前后台状态、场景标签 |
+| CPU | AppCPU、TotalCPU、规范化 CPU、各核占用、各核频率、频率上限 | PerfDog 的规范化口径、核心数、性能模式、温度 |
+| 内存 | PSS、Swap、VSS、Available Memory、Memory Detail | 目标进程、是否包含子进程、采样时长 |
+| GPU | GPU Usage、GPU Frequency、GPU Counter | SoC、GPU 型号、驱动和设备支持列表 |
+| 温度 | CTemp、GTemp、BTemp、NTemp | 传感器是否存在、起止温度、环境温度 |
+| 电池与功耗 | BatteryLevel、Current、Voltage、Power、Sum(Battery)、FPower | Wi-Fi 模式、是否拔线、亮度、电量区间 |
+| 网络流量 | 目标进程 Recv、Send | 目标进程、接口、缓存和服务器区域 |
+| 启动 | TTID、TTFD | 冷/温/热启动条件、是否允许工具重新拉起 App |
 
-几个常用指标的口径要在报告里写清：
+Android 常规测试里的 Network 指标是目标进程的接收和发送流量。延迟、抖动、丢包与弱网模拟属于 PerfDog 的“网络分析”功能，不能由 `Recv/Send` 两条曲线推导。报告应标明使用的是常规流量指标还是网络分析任务。
 
-- FTime：单帧耗时，比平均 FPS 更容易暴露偶发长帧。
-- Jank：帧时间偏离目标节奏的卡顿事件，不同刷新率下阈值不同。
-- Stutter：连续帧节奏不稳带来的抖动感，适合和 P95 / P99 frame time 一起看。
-- Smooth Index：平滑度综合指标，只适合同机、同模式、同场景比较。
+GPU 是最容易出现“设备已连接但字段缺失”的一组数据。PerfDog 官方文档也把 Android GPU Usage 和 GPU Frequency 标为仅支持部分手机，并按 Adreno、Mali、PowerVR 提供不同 Counter 集。由此可得两个约束：
 
-GPU 利用率、频率、显存类指标受 SoC 和驱动暴露程度影响。高通 Adreno 机型可读项通常更完整；Mali、联发科或低端芯片可能只有部分字段，甚至没有稳定口径。跨芯片报告不要横比 GPU 利用率绝对值，更适合看同一台设备同一场景的版本变化。
+- 同一设备、同一驱动上的版本对比价值较高。
+- 跨 SoC 的 GPU 利用率绝对值通常没有可比性，Counter 名称相同也不保证硬件含义相同。
 
-## 结果解释要看测试条件
+## 帧指标要按 PerfDog 自己的定义阅读
 
-PerfDog 数据常被横向比较，但这种比较最易出错。至少要固定这些条件：
+PerfDog 的 Jank 口径与 Android Vitals、JankStats、FrameTimeline 的分类并不相同。官方客户端手册使用固定的 24 FPS 电影帧时长作为第二个门槛，而不是根据手机的 60 Hz、90 Hz 或 120 Hz 刷新率动态换算：
 
-- 设备型号、系统版本、刷新率、性能模式。
-- 电量、充电状态、温度和散热方式。
-- 网络环境和服务器区域。
-- 测试脚本、操作路径和持续时间。
-- App 版本、账号状态、缓存状态。
-
-尤其是游戏和视频场景，温度和降频会明显影响后半段数据。只截取前 1 分钟的 FPS，很可能看不出热稳定性问题。
-
-## 和 Android Studio Profiler、Perfetto 的关系
-
-PerfDog 适合快速拿到外部指标和测试报告。Perfetto 适合深入看系统时间线。Profiler 适合开发机上看进程内 CPU、内存和网络。
-
-三者可以按这个顺序配合：
-
-1. PerfDog 发现某段操作 FPS 下跌、CPU 或功耗异常。
-2. 在同一设备上抓 Perfetto，确认主线程、RenderThread、GPU、SurfaceFlinger、调度是否参与。
-3. 如果能改源码，再用 Profiler、simpleperf、日志或业务 trace 定位到具体代码。
-
-PerfDog 给的是外部观察，Perfetto 给的是系统证据。不要用外部指标直接推断某个函数慢。
-
-## 使用建议
-
-PerfDog 最适合纳入测试基线。比如每个大版本选固定机型和固定场景跑一次，保存 FPS、卡顿、功耗、温度和内存报告。版本之间只在测试条件一致时比较。
-
-如果用于竞品分析，报告里必须写清设备、系统、网络、场景、时长、环境温度和账号状态。少了这些条件，数据只剩“看起来像比较”，不能支撑工程判断。
-
-## 测试报告应包含哪些字段
-
-PerfDog 报告要能复现，至少记录：
-
-| 字段 | 示例 |
+| 指标 | PerfDog 官方判定 |
 |---|---|
-| 设备 | Pixel 8 / Snapdragon 8 Gen 2 / 12GB RAM |
-| 系统 | Android 15，安全补丁日期 |
-| App | 包名、版本、build number、渠道 |
-| 场景 | 首页滑动 3 分钟、游戏战斗 10 分钟、视频播放 15 分钟 |
-| 网络 | Wi-Fi / 5G / 弱网参数 / 服务器区域 |
-| 状态 | 电量、是否充电、性能模式、屏幕亮度、刷新率 |
-| 环境 | 室温、是否散热、设备初始温度 |
-| 指标 | FPS、jank、CPU、GPU、内存、温度、功耗、网络 |
+| SmallJank | 当前 FTime 大于前三帧平均值的 2 倍，且大于约 41.67 ms |
+| Jank | 当前 FTime 大于前三帧平均值的 2 倍，且大于约 83.33 ms |
+| BigJank | 当前 FTime 大于前三帧平均值的 2 倍，且大于 125 ms |
+| Stutter | 测试区间内卡顿时长占比 |
+| FTime | 相邻两帧画面显示的时间间隔 |
+| 1% Low | 对最慢 1% 帧的平均帧时间取倒数并换算成 FPS |
+| Smooth | PerfDog 的稳帧指数，数值越低越稳定 |
 
-缺少这些字段，PerfDog 数据很难和下一次测试对比。性能测试报告的可复现性比单次分数更重要。
+这套定义适合在 PerfDog 报告之间保持一致，却不能直接替换系统 jank 分类。120 Hz 屏幕每帧预算约 8.33 ms，一帧 30 ms 已经错过多个刷新周期，但还没有达到 PerfDog 的 SmallJank 固定门槛。因此，高刷新率测试必须同时保留 FTime 分布、P95/P99、1% Low 和连续低帧区间。
 
-## FPS 之外还要看帧时间
+官方对 Smooth 给出的经验值是游戏或视频小于 8、滑动类 App 小于 20。这是 PerfDog 产品指标的建议区间，不是 Android 平台兼容性标准。团队应先用自身机型和场景建立基线，再决定门禁值。
 
-平均 FPS 会掩盖抖动。测试报告里至少要保留：
+### 先选对窗口，再谈 FPS
 
-- 平均 FPS。
-- P95 / P99 frame time。
-- jank 次数或卡顿时长。
-- 连续低 FPS 时间段。
-- 前半段和后半段对比。
+一个包名可能同时存在 Activity 主窗口、`SurfaceView`、`TextureView`、视频层、游戏渲染层和子进程窗口。选错窗口时，PerfDog 可能显示系统 UI、静止层或与用户所见不一致的帧率。测试开始前至少确认：
 
-游戏和视频场景尤其要看长时间曲线。前 2 分钟帧率稳定，8 分钟后温度上来开始降频，这类问题平均值很容易被掩盖。
+- 包名、进程名和前台 Activity。
+- PerfDog 当前选择的窗口或 Surface 名称。
+- 游戏、视频、小程序是否使用独立 Surface。
+- 旋转、画中画、弹窗或场景切换后，目标窗口是否发生变化。
 
-## 功耗和温度的读法
+PerfDog Service 提供 `getAppWindowsMap` 一类接口，可查询 Android 应用各进程涉及的 Activity 与 SurfaceView。人工核对时也可用 SurfaceFlinger 的 layer 列表，但 layer 名称属于系统调试信息，不能把名称相似当成归属证据。
 
-PerfDog 能采功耗和温度类指标时，要把它们当成性能稳定性的上下文：
+## 测试条件决定结果能否复现
 
-- FPS 下降同时温度上升，可能是热降频。
-- CPU 不高但 GPU 高，问题更偏图形渲染。
-- 网络和功耗同时高，可能是重试、长连接或大流量下载。
-- 内存持续上涨后出现卡顿，可能是 GC、swap 或系统回收压力。
+性能测试的首要产物是可复现的实验记录。每轮开始前固定并记录下面这些条件：
 
-功耗数据先看连接方式。设备通过 USB 连 PC 时，`/sys/class/power_supply/battery/current_now` 读到的是充电电流和设备耗电的净值，不等于 App 的真实耗电。要比较功耗，优先使用 Wi-Fi 模式或官方支持的断开充电采集方案，并记录是否充电、初始电量、屏幕亮度和环境温度。
+| 类别 | 必填项 |
+|---|---|
+| 硬件 | 品牌、完整型号、SoC、RAM；不要把 Pixel 8 写成 Snapdragon 设备，Pixel 8 使用 Google Tensor G3 |
+| 系统 | Android 版本、API、构建号、安全补丁、厂商性能模式 |
+| 显示 | 分辨率、刷新率、亮度、深色模式、自动亮度是否关闭 |
+| 电源 | 起止电量、是否充电、电池健康状态、外接供电方式 |
+| 热环境 | 室温、散热配件、起止温度、冷却等待规则 |
+| 网络 | Wi-Fi/蜂窝、SSID 或实验网络、服务器区域、弱网参数 |
+| App | 包名、versionName、versionCode、渠道、ABI、账号与配置 |
+| 数据状态 | 冷启动/热启动、缓存、下载资源、首装或覆盖安装 |
+| 操作 | 脚本版本、场景步骤、采集时长、场景标签 |
+| 工具 | PerfDog 客户端/Service 版本、连接模式、已启用指标 |
 
-功耗指标受设备、系统和采集方式影响很大，不能跨设备直接比较绝对值。更适合在同一设备、同一场景、同一测试条件下做版本对比。报告里可以增加 FPower（每帧功耗）字段，计算口径是 `Total Power / FPS`。它能把“同样帧率下谁更省电”表达得更清楚，但仍然要求功耗采集方式一致。
+自动刷新率、自动亮度、游戏加速器、厂商性能模式和后台同步都可能改变结果。测试前不要用“清理全部后台”代替条件说明：系统服务无法被等价清空，过度清理还会制造不符合用户场景的冷缓存。更稳妥的做法是列出允许保留的后台进程，并在各轮之间执行同一套恢复步骤。
 
-热降频判断不要只看 FPS 下跌。更稳的证据组合是：Temperature 接近设备热阈值，CPU / GPU Frequency 出现阶梯式下调，P95 / P99 frame time 同步恶化。如果这三项同时出现，FPS 下跌更可能来自系统 thermal 调度；如果温度和频率稳定，才继续回到业务逻辑、渲染或网络路径排查。
+长时游戏或视频至少覆盖热稳定阶段。只取开局一分钟，测到的往往是尚未受温控约束的峰值。每轮开始温度必须落入预设区间；若达不到，应延长冷却时间并记录，不应临时放宽门槛。
 
-## 与自动化脚本结合
+## 平均 FPS 不够
 
-PerfDog 这类工具最好和自动化脚本结合。人工滑动或操作的波动太大。推荐方式：
+平均值会同时掩盖“长期偏低”和“偶发长帧”。下面两个 60 秒场景可能得到相近的平均 FPS：
 
-1. 用 UIAutomator、SoloPi、内部自动化工具固定操作路径。
-2. PerfDog 同步采集性能数据。
-3. 每个场景跑多轮，丢弃明显异常轮次。
-4. 保存原始曲线和摘要。
-5. 对比当前版本和基线版本。
+| 场景 | 平均 FPS | FTime P50 | FTime P95 | FTime P99 | 体感线索 |
+|---|---:|---:|---:|---:|---|
+| A：稳定受限 | 45 | 22 ms | 24 ms | 27 ms | 持续不够顺滑，但节奏稳定 |
+| B：多数时间流畅、偶发尖峰 | 56 | 16 ms | 31 ms | 180 ms | 平时顺滑，间歇出现明显停顿 |
 
-自动化环境要把 PerfDog Service 的安装和授权写进前置步骤。常见授权包括悬浮窗、辅助功能、通知访问，以及通过 ADB 授予 `android.permission.DUMP`（以官方版本提示为准）。这些权限缺失时，脚本仍会执行，但报告字段会少或为空。
+场景 B 的平均 FPS 更高，用户仍可能更容易注意到卡顿。一次回归至少保留：
 
-这样测试结果才能进入发版门禁。手工跑一次 PerfDog 更适合快速判断，不适合做严肃回归标准。
+- FPS 的平均值、中位数、1% Low 和稳定区间。
+- FTime 的 P50、P90、P95、P99 和最大值。
+- SmallJank/Jank/BigJank 次数及 Stutter。
+- 长帧发生时的场景标签、截图或操作步骤。
+- 采集区间前半段与后半段的对比。
 
-## 竞品分析的边界
+P95/P99 若由导出数据离线计算，应在报告中写明脚本版本和空值处理方式，不要伪装成 PerfDog 界面原生字段。
 
-竞品分析时，PerfDog 可以测外部 App，但不能知道对方内部做了什么。报告结论要写成外部观察：
+## 功耗、温度和频率要一起看
 
-- “竞品 A 在同一设备同一路径下 P95 frame time 更低。”
-- “竞品 B 长时间播放后温度上升更慢。”
-- “竞品 C 首屏网络流量更小。”
+PerfDog 的 Android Battery Power 是整机口径，不是目标 App 的独占功耗。屏幕、基带、Wi-Fi、后台进程和系统服务都包含在内。对比时应固定亮度、音量、网络、账号数据和后台状态，并使用 Wi-Fi 连接后拔掉 USB。
 
-不要写成内部推断：
+`FPower` 在 PerfDog 数据处理中的口径是 `Power / FPS`，界面单位仍为 mW。它用于在相近场景和帧率下做归一化比较，不能当作物理单位为焦耳的“单帧能量”。当 FPS 接近 0、场景静止或两组帧率差距很大时，这个比值也会失去解释力。
 
-- “竞品用了某个缓存策略。”
-- “竞品没有主线程 I/O。”
-- “竞品 GPU 优化更好。”
+判断热降频时，推荐寻找同一时间轴上的证据组合：
 
-外部工具只给现象。内部原因要么来自逆向分析，要么只能作为假设。
+1. CPU、GPU、SoC、机身或电池温度持续上升。
+2. CPU Frequency Limits、CPU Clock 或 GPU Frequency 出现台阶式下降。
+3. FTime P95/P99、1% Low 或 Stutter 同步恶化。
+4. 在相同操作标签处，CPU/GPU 负载没有出现能够单独解释退化的新峰值。
 
+单个温度值不等于系统已经限频。不同厂商暴露的传感器名称、安装位置与校准方式不同；同为 `CTemp` 的绝对值也不适合跨设备排名。报告应写起止温度、曲线拐点和系统 thermal status，避免只贴峰值。
 
-## PerfDog 底层依赖的系统接口
+精确的能耗实验应使用外置功耗仪，并清楚区分电池端、USB 端和整机输入端的测量位置。PerfDog 更适合实验室回归中的相对变化监控。
 
-PerfDog 在 Android 上的性能数据采集依赖下面四组系统接口。了解这些接口对两个场景有帮助：一是 PerfDog 数据显示异常时，可以用 `dumpsys` 或 Perfetto 交叉核验；二是不同设备上同一指标的数据完整度不同，根源往往就落在 HAL 实现差异上。
+## PerfDog、Perfetto、Profiler 与 Macrobenchmark 的分工
 
-### PowerStats HAL - 核心能耗和功率统计
+| 工具 | 擅长回答的问题 | 不宜单独承担的结论 |
+|---|---|---|
+| PerfDog | 哪个版本、设备或时间段的外部指标异常 | 哪个函数造成异常 |
+| Perfetto / Android Studio System Trace | 主线程、RenderThread、SurfaceFlinger、调度、Binder、I/O 如何重叠 | 大规模版本回归评分 |
+| Android Studio Profiler | 开发机上交互查看 CPU、内存和网络，并下探代码 | 低扰动的跨版本基准 |
+| Macrobenchmark | 在受控启动和交互场景中重复测量启动与帧时序 | 第三方 App 的完整系统侧观测 |
 
-源码路径：`frameworks/base/services/core/java/com/android/server/powerstats/PowerStatsService.java`
+一个常用流程是：
 
-外部工具可通过 `dumpsys powerstats` 交叉核验的能耗数据来自 PowerStats HAL。Android 17 的 `PowerStatsHALWrapper` 会优先绑定 AIDL `android.hardware.power.stats.IPowerStats/default`，不可用时回退到旧 HAL 1.0 JNI wrapper。
+1. 用 PerfDog 在固定脚本中定位异常区间，并打上场景标签。
+2. 在同一设备、同一构建和同一操作上抓 Perfetto，查看 FrameTimeline、主线程、RenderThread、GPU 和 SurfaceFlinger。
+3. 能修改源码时，增加低开销 trace，或使用 Profiler、simpleperf、heap dump 定位代码。
+4. 对已定位且可自动重放的启动、滑动或列表场景，补 Macrobenchmark 防回归用例。
 
-- **AIDL / HAL 2.0 wrapper**：调用 `android.hardware.power.stats.IPowerStats`，支持 `PowerEntity`、`EnergyConsumer`、`EnergyMeter` 三类数据
-- **HAL 1.0 wrapper**：通过 JNI native 方法提供兼容路径
+PerfDog 的 StartupTiming 可观察 TTID/TTFD，但精确启动基准仍要写清冷、温、热启动，并优先由 Macrobenchmark 控制启动模式。两种工具的启动数据可以互证，不能把不同启动条件的数值放在同一列比较。
 
-关键数据类型：
-```java
-// PowerEntity - 功耗实体（CPU/GPU 等子系统）
-PowerEntity[] getPowerEntityInfo();
+## 三类使用流程
 
-// EnergyConsumer - 能耗消费者（GPS/display/wifi 等模块）
-EnergyConsumer[] getEnergyConsumerInfo();
+### 发版前回归
 
-// EnergyMeter - 能量表（硬件计量器）
-Channel[] getEnergyMeterInfo();
+1. 从高端、中端和业务重点机型中选固定设备池。
+2. 每个场景规定预热、冷却、账号、缓存和网络状态。
+3. 当前版本与基线版本都至少运行多轮，保存每轮原始文件。
+4. 使用各轮中位数比较，并同时检查最差有效轮次。
+5. 超过门禁后回放曲线；需要根因时补抓 Perfetto。
+
+### 专项优化
+
+1. 用场景标签缩小异常时间段。
+2. 一次只改变一个可控变量，例如纹理规格、线程数或缓存策略。
+3. 交替运行基线与实验版本，减少升温和测试顺序带来的偏差。
+4. 同时观察目标指标和副作用，例如 FPS 改善时内存、功耗是否上升。
+5. 将确认有效的场景加入持续回归。
+
+### 竞品分析
+
+1. 使用同一台设备、同一系统、同一刷新率和同一网络。
+2. 对齐账号等级、内容资源、画质、广告状态和下载完成度。
+3. A/B 交替测试，并在每轮前恢复到相同温度区间。
+4. 只报告外部可观察差异，不把现象直接写成对方的内部实现。
+5. 使用测试账号和脱敏数据，遵守产品条款，不在共享报告里泄露账号、设备标识、聊天内容或内部服务器地址。
+
+“竞品 A 在同机同场景下 FTime P95 较低”是可验证结论；“竞品 A 使用了更好的缓存算法”只是待验证假设。
+
+## 自动化：固定操作，也固定判废规则
+
+精细回归优先使用 UIAutomator 或团队内部的确定性脚本。`monkey` 适合随机稳定性和探索测试，不适合要求逐轮路径一致的性能对比。
+
+PerfDog Service 的公开 gRPC 接口覆盖设备初始化、可用指标查询、启停测试、实时数据流、场景标签、保存数据和 Android 窗口查询；当前官网也提供 CLI 与 Service 的 CI/CD 入口。接入时应把下面内容纳入脚本：
+
+- 在测试前调用可用指标查询，缺少必填字段就终止该轮。
+- 用 `setLabel` 或等价接口标记场景，而不是测试后凭曲线猜测时间点。
+- 记录脚本 commit、设备序列号映射、PerfDog 版本和报告 ID。
+- 停止采集后等待文件写完，再开始清理或下一轮。
+- 给每轮保留原始数据、控制台日志、操作日志和判定结果。
+
+“看起来异常就删掉”会带来选择偏差。应在测试前写明判废条件，例如设备断连、必填指标缺失、脚本步骤失败、App 崩溃或网络环境越界。判废轮次仍保留原始文件和原因；性能差但流程完整的轮次属于结果，不能判废。
+
+场景文件可采用下面的命名方式：
+
+`<app>-<version>-<device>-<android>-<scene>-<mode>-<round>-<timestamp>`
+
+例如：`demo-6.2.0-pixel8-android17-feed-scroll-wifi-r03-20260725T143000+0800`。名称用于定位文件，完整条件仍写入报告，避免文件名过长。
+
+## 可直接使用的报告模板
+
+下面模板用于 QA 发版记录；尖括号字段必须替换，离线计算的指标要注明来源。
+
+```markdown
+# PerfDog 性能测试报告
+
+- App：<package> / <versionName>(<versionCode>) / <channel>
+- Commit：<git sha 或构建号>
+- 设备：<品牌与完整型号> / <SoC> / <RAM>
+- 系统：Android <version> / API <level> / <build> / <security patch>
+- PerfDog：<client/service version> / <USB|Wi-Fi> / <enabled metrics>
+- 场景：<scene name> / <script version> / <duration> / <round count>
+- 显示：<resolution> / <refresh rate> / <brightness> / <performance mode>
+- 网络：<type> / <server region> / <weak-network profile>
+- 电源：<start-end battery> / <charging state> / <external meter>
+- 热环境：<ambient> / <cooling> / <start-end temperature> / <thermal state>
+- 账号与数据：<account profile> / <cache state> / <download state>
+- 判废规则：<predefined invalidation rules>
+
+| 指标 | 基线中位数 | 当前中位数 | 当前 P95 | 当前最差有效轮 | 变化 | 门禁 |
+|---|---:|---:|---:|---:|---:|---:|
+| FPS | | | | | | |
+| 1% Low FPS | | | | | | |
+| FTime (ms) | | | | | | |
+| Stutter (%) | | | | | | |
+| AppCPU (%) | | | | | | |
+| PSS (MB) | | | | | | |
+| Power (mW) | | | | | | |
+
+## 异常区间
+
+- <label / timestamp>：<外部现象与复现步骤>
+
+## 结论
+
+- <通过、阻断或继续调查；只写证据能够支持的范围>
+
+## 附件
+
+- <PerfDog 原始文件、导出表、脚本日志、Perfetto trace、截图>
 ```
 
-### Thermal AIDL HAL - 温度和散热监控
+模板把设备状态、统计汇总和原始附件放在同一份记录中。团队可增加业务指标，但不应删掉连接方式、起止温度、脚本版本和判废规则。
 
-源码路径：`hardware/interfaces/thermal/aidl/android/hardware/thermal/IThermal.aidl`
+## Android 17 上如何交叉核验
 
-外部工具可通过 `dumpsys thermal` 核验的温度数据最终来自 Thermal HAL。Android 17 的 AIDL 接口定义如下；降频状态不是单独的 `getThrottlingStatus()` 方法，而是 `Temperature` 数据结构里的字段：
-```aidl
-interface IThermal {
-    Temperature[] getTemperatures();
-    Temperature[] getTemperaturesWithType(in TemperatureType type);
-    CoolingDevice[] getCoolingDevices();
-    CoolingDevice[] getCoolingDevicesWithType(in CoolingType type);
-}
+PerfDog 没有公开 Android 客户端每个指标的完整采集实现，因此无法从公开资料证明“Power 一定调用 PowerStats HAL”或“FPS 一定通过 `SurfaceFlinger --latency` 获取”。下面的 AOSP 接口用于解释系统能够提供什么，并在字段缺失或曲线可疑时做独立核验；它们不是 PerfDog 闭源实现的调用链声明。
+
+下面这些命令用于同机排障，执行前先替换包名和 layer 名称。
+
+```bash
+adb shell dumpsys SurfaceFlinger --list
+adb shell dumpsys SurfaceFlinger --latency '<layer-name>'
+adb shell dumpsys gfxinfo com.example.app framestats
+adb shell dumpsys thermalservice
+adb shell dumpsys powerstats
+adb shell dumpsys meminfo com.example.app
 ```
 
-关键温度类型枚举（TemperatureType.aidl）：
-```aidl
-enum TemperatureType {
-    CPU = 0, GPU = 1, BATTERY = 2,    // 基础组件
-    NPU = 9, TPU = 10, SOC = 13,      // AI/ML 处理器
-    WIFI = 14, DISPLAY = 11           // 其他硬件
-}
-```
+命令输出也有权限、缓存窗口和厂商实现限制。它们适合确认“系统侧是否有数据”和“变化时间是否一致”，不能要求数值与 PerfDog 一一相等。
 
-### SurfaceFlinger 帧追踪 - GPU 帧率和渲染性能
+### 帧时间：SurfaceFlinger 与 FrameTimeline
 
-源码路径：`frameworks/native/services/surfaceflinger/FrameTracer/FrameTracer.h`
+Android 17 `android-17.0.0_r1` 中，`SurfaceFlinger.cpp` 把 `--latency` 分派给 `SurfaceFlinger::dumpStats()`。该函数先输出当前 pacesetter VSYNC 周期，再按完整 layer 名查找目标并调用 `Layer::dumpFrameStats()`。`Layer.cpp` 随后经 `Layer::getFrameStats()` 从对应 timeline 生成 `desiredPresentTimesNano`、`actualPresentTimesNano` 和 `frameReadyTimesNano` 三列。
 
-手工核验 `dumpsys SurfaceFlinger --latency` 时，Android 17 的路径是 `SurfaceFlinger::dumpStats()` → `Layer::dumpFrameStats()` → `Layer::getFrameStats()`，输出 desired / actual / ready 三列帧时间。`FrameTracer` 同时记录 dequeue / queue / latch / present fence 等事件并进入 Perfetto，但不是 `--latency` 输出的直接数据源：
+这条源码路径能解释几个常见现象：
 
-```cpp
-void SurfaceFlinger::dumpStats(const DumpArgs& args, std::string& result) const;
-void Layer::dumpFrameStats(std::string& result) const;
-void Layer::getFrameStats(FrameStats* outStats) const;
-void FrameTracer::traceTimestamp(...);
-void FrameTracer::traceFence(...);
-```
+- layer 名不完全匹配时，输出可能只有刷新周期，没有帧记录。
+- Surface 重建后名称或序列会变化，长时脚本要重新确认目标。
+- `gfxinfo framestats` 主要覆盖 Android UI Toolkit/HWUI 参与的帧。直接使用 OpenGL ES、Vulkan、Unity 或 Unreal 的应用可能只有部分数据，Android 官方慢帧文档也明确提示了这一限制。
+- Perfetto FrameTimeline 提供预期与呈现时序以及 jank 分类，更适合查“哪一段流水线错过了截止时间”。
 
-因此报告中的帧率、长帧和 Perfetto FrameTimeline 可以互相校验，但不能把 `--latency` 三列数据直接等同于 FrameTracer 事件。
+`FrameTracer` 仍在 SurfaceFlinger 中记录部分时间戳和 fence 事件，但 Android 17 的 `--latency` 路径不应简化成“直接读取 FrameTracer”。
 
-### Restricted Settings 与特殊访问授权
+### 温度与限频：`thermalservice`
 
-源码位置：`frameworks/base/core/java/android/provider/Settings.java` 及 Settings / PermissionController 相关实现
+Android 17 的 framework 实现位于：
 
-PerfDog Service 需要的某些敏感权限会受到 Android 13+ Restricted Settings 和特殊访问页面约束。Android 17 的 `Settings.java` 没有 `android.settings.action.REQUEST_MANAGE_SPECIAL_APP_ACCESS` 这个公开 action，实际要按权限类型进入对应入口：
-- `Settings.ACTION_ACCESSIBILITY_SETTINGS`
-- `Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS`
-- `Settings.ACTION_MANAGE_OVERLAY_PERMISSION`
-- `android.permission.DUMP` 按官方指引通过 ADB 或设备授权流程处理
+`frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java`
 
-### 数据采集流程
+服务通过 `Context.THERMAL_SERVICE` 发布，服务名是 `thermalservice`，所以核验命令应写成 `adb shell dumpsys thermalservice`。连接 HAL 时，Android 17 依次尝试 AIDL、Thermal HAL 2.0、1.1 和 1.0 兼容实现。
 
-PerfDog 的数据采集调用链：
-1. **能耗/功率**：`adb shell dumpsys powerstats` → PowerStatsService → PowerStats HAL → 硬件驱动
-2. **温度/散热**：`adb shell dumpsys thermal` → ThermalService → Thermal HAL → 温度传感器
-3. **帧时间**：`adb shell dumpsys SurfaceFlinger --latency` → `SurfaceFlinger::dumpStats()` → `Layer::dumpFrameStats()` / `Layer::getFrameStats()`；Perfetto FrameTimeline / FrameTracer 可用于交叉核验
-4. **GPU 统计**：`adb shell dumpsys gfxinfo` → GraphicsStatsService → 图形统计模块
+AIDL 接口位于：
 
-### 版本适配说明
+`hardware/interfaces/thermal/aidl/android/hardware/thermal/IThermal.aidl`
 
-- **Android 11 (API 30)**：引入 PowerStats HAL 2.0，支持能耗细分
-- **Android 12 (API 31)**：Thermal HAL 开始转向 AIDL，framework 侧 `ThermalManagerService` 仍存在并负责对接系统服务和应用 API；旧 HAL 兼容路径是否启用取决于设备实现
-- **Android 13 (API 33)**：增强 FrameTracer，集成 Perfetto 跨进程追踪
-- **当前限制**：部分芯片厂商可能不完全实现 HAL 接口（此为行业普遍现象，非 Android 17 特有）
+它提供温度、按类型过滤的温度、CoolingDevice、静态阈值和温度变化回调。节流等级位于返回的 `Temperature.throttlingStatus`，并不存在 `getThrottlingStatus()` 这个 HAL 方法。AIDL 注释还强调：设备温控策略可能包含迟滞和复合条件，静态阈值不足以准确推断当前节流状态，应读取温度状态或回调。
 
-这些源码分析验证了 PerfDog 能够采集 Android 底层性能数据的理论依据，也为理解不同设备间的数据差异提供了技术解释。
+Android 10 引入 framework thermal service 和 Thermal HAL 2.0；Android 14 将 `IThermal` 从 HIDL 迁移到 AIDL。Android 17 保留旧 HAL 回退是设备兼容策略，不表示每台设备都会暴露 CPU、GPU、NPU 和机身传感器。
+
+### 能耗：PowerStats 与电池口径不能混为一谈
+
+Android 17 的系统服务位于：
+
+`frameworks/base/services/core/java/com/android/server/powerstats/PowerStatsService.java`
+
+`PowerStatsService` 发布 `powerstats` Binder 服务，可列出 `PowerEntity`、`EnergyConsumer` 和 `EnergyMeter`，并通过 HAL 读取状态驻留或累计能量。`PowerStatsHALWrapper.getPowerStatsHalImpl()` 优先连接：
+
+`android.hardware.power.stats.IPowerStats/default`
+
+若 AIDL/PowerStats HAL 2.0 不可用，framework 回退到 HAL 1.0 JNI wrapper。是否有显示、CPU、GPU、Wi-Fi 等细分项，取决于设备 HAL；`dumpsys powerstats` 没有数据不等于 PerfDog 的整机 Battery Power 必然无数据。
+
+PerfDog 官方把 Android Battery Power 描述为 Wi-Fi 模式下的整机 Current、Voltage 和 Power。PowerStats HAL 则可能提供硬件能量表或子系统累计能量，两者的对象、单位、采样周期和计算过程都可能不同。只有在工具厂商公开采集细节后，才能声明它们存在直接依赖。
+
+### CPU、内存、GPU 与网络
+
+`dumpsys meminfo <package>` 可核对 PSS 分类，但多进程应用要逐个确认进程，汇总规则也要与 PerfDog 选择项一致。CPU 还要区分 AppCPU/TotalCPU、规范化/未规范化以及采样窗口。
+
+Android 没有向普通工具保证一套跨厂商一致的 GPU 利用率、频率和 Counter API。PerfDog 能否显示这些字段取决于机型适配与驱动接口，不能由 `gfxinfo` 反推出 GPU 使用率；`gfxinfo` 的核心用途是应用图形与帧统计。
+
+常规 Network 的 Recv/Send 是流量观察。要解释延迟或丢包，需要 PerfDog 网络分析、抓包、服务端日志或受控弱网记录提供额外证据。
+
+## Review 结论
+
+在 Android 17 / API 37 上，PerfDog 仍适合作为低接入成本的实验室观测和回归工具。可靠使用它依赖四条纪律：
+
+- 先确认窗口、可用指标与连接模式，再开始采集。
+- 把设备、温度、刷新率、网络和脚本写进报告。
+- 用帧时间分布、长帧和热稳定曲线补足平均 FPS。
+- 把 PerfDog 的异常区间交给 Perfetto、Profiler、Macrobenchmark 或源码 trace 继续验证。
+
+工具给出的数值只有在口径和条件可复现时才有工程意义。
+
+## 参考资料
+
+- [PerfDog 官网](https://perfdog.qq.com/)
+- [PerfDog 客户端说明书](https://perfdog.qq.com/article_detail?id=10089&issue_id=0&plat_id=1)
+- [PerfDog Jank、BigJank 与 Stutter 说明](https://perfdog.qq.com/article_detail?id=10162&issue_id=0&plat_id=1)
+- [PerfDog Android 窗口与 FPS](https://perfdog.qq.com/article_detail?id=10081&issue_id=0&plat_id=1)
+- [PerfDog Service 使用说明书](https://perfdog.qq.com/article_detail?id=10143&issue_id=0&plat_id=2)
+- [PerfDog Service 指标参数映射表](https://perfdog.qq.com/article_detail?id=10210&issue_id=0&plat_id=2)
+- [PerfDog 网络测试说明书](https://perfdog.qq.com/article_detail?id=10241&issue_id=0&plat_id=1)
+- [AOSP Android 17 PowerStatsService](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java)
+- [AOSP Android 17 PowerStatsHALWrapper](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsHALWrapper.java)
+- [AOSP Android 17 ThermalManagerService](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java)
+- [AOSP Android 17 IThermal AIDL](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/IThermal.aidl)
+- [AOSP Android 17 SurfaceFlinger](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)
+- [AOSP Android 17 Layer](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Layer.cpp)
+- [Android Thermal mitigation](https://source.android.com/docs/core/power/thermal-mitigation)
+- [Android slow rendering 与 FrameTimeline](https://developer.android.com/topic/performance/vitals/render)
+- [Android Studio UI jank detection](https://developer.android.com/studio/profile/jank-detection)
