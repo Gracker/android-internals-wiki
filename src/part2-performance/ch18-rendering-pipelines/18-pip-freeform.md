@@ -78,157 +78,334 @@ finalized_by: "openclaw-task9-auto-promote"
 
 <!-- outline-end -->
 
-## 为什么多窗口的渲染值得关注
+## 多窗口问题要先分清三个对象
 
-在 SurfaceFlinger（下文简称 SF）侧，多窗口只是更多 Layer 同时参与合成。难点是：同一时刻要管理更多窗口的几何信息、buffer 和合成时序。
+PiP、Freeform、分屏和桌面窗口是 WindowManager 的窗口形态，不是新的应用绘制引擎。普通 View 仍走 `ViewRootImpl → HWUI → Surface/BLAST`，视频 `SurfaceView` 仍由 codec 或播放器向自己的 Surface 供帧。变化集中在三处：
 
-拖拽 Freeform 边框或进入 PiP 时，窗口 bounds 往往先变，App 的新尺寸内容后到。只要几何更新和内容更新落在不同帧，画面就可能出现黑边、拉伸或一帧空洞。这类错拍现象，是多窗口渲染分析里最常见的一类问题。[已验证: AOSP WindowManagerService]
+- **Window/Task 的管理状态**：windowing mode、bounds、父子关系、focus、Insets；
+- **SurfaceFlinger 的 layer 状态**：position、crop、alpha、Z-order、reparent，以及应用提交的 buffer；
+- **Display 的合成状态**：同屏可见 layer 集合、DEVICE/CLIENT composition、present deadline 和 per-display fence。
 
-## Layer 组织架构
+分析前应建立 `Display → Window/Task → pid/tid/ViewRoot → SF layer/BufferQueue` 映射。屏幕上看见两个面板，不代表有两个 Window；同一进程里的两个 Window 也不代表它们有两套主线程和 RenderThread。
+
+## Android 17 的容器树与 layer 树
+
+WindowManager 维护的是逻辑容器树。Android 17 常见节点包括：
+
+- `RootWindowContainer` / `DisplayContent`
+- `DisplayArea` / `TaskDisplayArea`
+- `Task` / `TaskFragment`
+- `ActivityRecord` / `WindowToken` / `WindowState`
+
+PiP 通常表现为 pinned windowing mode 下的 Task；Freeform/desktop 则是带独立 bounds 的 Task。Android 17 的 desktop windowing 还引入按 Display 决定 desktop eligibility 和 desktop-first/touch-first 状态的能力，其状态源位于对应 Display 的 `TaskDisplayArea`。
+
+这棵 WMS 树不能机械映射成 SurfaceFlinger layer 树。Shell transition 可以创建临时 leash，把 Task 或 Activity surface reparent 到 leash 上做位移、缩放和透明度动画；圆角、阴影、dim、caption、输入法和 `SurfaceView` 还会增加 container/effect/buffer layer。下面只表示职责关系，不表示每台设备的固定节点数量：
 
 ```mermaid
-graph TD
-    Display[Display Root]
-    Stack[Stack / Task Container]
-    WinA[Window A - Main App]
-    WinB[Window B - PIP / Freeform]
+flowchart TB
+    subgraph WM["WindowManager 逻辑树"]
+        DC["DisplayContent"]
+        TDA["TaskDisplayArea"]
+        FT["Fullscreen / Freeform Task"]
+        PT["Pinned Task（PiP）"]
+        TF["TaskFragment / ActivityRecord"]
+        WS["WindowState"]
+        DC --> TDA
+        TDA --> FT
+        TDA --> PT
+        FT --> TF --> WS
+    end
 
-    Display --> Stack
-    Stack --> WinA
-    Stack --> WinB
+    subgraph SF["SurfaceFlinger：目标 Display 的 layer hierarchy"]
+        DR["Display root / display area layers"]
+        TL["Task / transition leash"]
+        WL["App Window container"]
+        AB["App Window BLAST buffer layer"]
+        SV["可选 SurfaceView / video buffer layer"]
+        FX["caption / shadow / dim / SystemUI"]
+        DR --> TL --> WL
+        WL --> AB
+        WL --> SV
+        DR --> FX
+    end
+
+    WM -->|"WCT 改容器状态"| TL
+    WM -->|"SurfaceControl.Transaction 改几何和层级"| SF
+    WS -->|"App relayout / draw"| AB
 ```
 
-- **Task / RootTask 容器**：WindowManager 和 Shell 先管理任务容器、windowing mode、父子层级，再把结果落成 Layer 树
-- **Activity / Window Layer**：每个可见窗口都有自己的 `SurfaceControl`，bounds、crop、alpha、z-order 这类几何属性在这一层变化
-- **App 内容 Surface**：窗口内容继续走各自的 producer 路径，常见是 ViewRoot + BLAST 窗口提交路径，视频或游戏也可能是独立 `SurfaceView` / decoder / engine producer
+SurfaceFlinger 收到的是多方 transaction：WMS/Shell 改 layer 几何，应用 BLAST 提交 App Window buffer，codec/相机/引擎还可能更新独立 Surface。SF FrontEnd 更新 layer state 和 snapshot，再由目标 Display 的 CompositionEngine/HWC 处理可见 layer 集合。一个 Window 是否顺利出帧，不能只看它自己的 `doFrame()`。
 
-同一块 display 上的 App 侧窗口共用同一套 display-driven VSync 调度。某个窗口需要重绘时，`ViewRootImpl.scheduleTraversals()` 会把 Traversal callback 投给线程单例 `Choreographer`，后者再通过 `DisplayEventReceiver` 订阅下一拍 VSync-App。多一个可见窗口，增加的是 `performTraversals`、独立 Surface / BufferQueue、更多 Layer 和更多合成负担，不会多出一条独立的 VSync 源。SF 自己还有一套 VSync-SF 调度域，两边要分开看。[已验证: `ViewRootImpl.java`、`Choreographer.java`、`DisplayEventReceiver.java`；并与 §18.5 的多窗口串行模型一致]
+### 三种 transaction 不能混写
 
-## PIP（画中画）渲染流程
+下面这段职责示意用来区分名字相近的接口，不是可编译代码：
 
-### 进入 PIP
+```text
+WindowContainerTransaction（WCT）
+  setBounds(task / taskFragment)
+  setWindowingMode(...)
+  reparent / hierarchy operation
+  -> 改 WindowManager 的高层容器状态
 
-App 调用 `enterPictureInPictureMode()` 后，WindowManager / Shell 会先改任务容器和窗口几何，再把相关变化整理成 `SurfaceControl.Transaction`。系统更倾向于复用已经存在的视频 layer 或主窗口内容，靠 reparent、position、crop、alpha 这类事务把内容送进 PiP 容器；App 是否马上按小窗尺寸重建自己的渲染目标，取决于它有没有收到配置变化、有没有真的重配 surface。[与 §18.10 的 PiP 场景描述一致]
+SurfaceControl.Transaction
+  setPosition / setCrop / setAlpha / setLayer
+  show / hide / reparent
+  -> 原子修改 SF layer 状态
 
-### Shell 控制面与渲染边界
+App BLAST buffer transaction
+  setBuffer(app window layer, buffer, acquire fence, frame number)
+  setDataspace / damage / transform / frame timeline
+  -> 提交应用这一帧的像素内容
+```
 
-进入 PiP、拖拽小窗、退出 PiP 这几类操作，Android 12+ 的设备往往还要经过 Shell 控制面。`TaskOrganizer`（Android 12 引入）负责接管任务级窗口容器，`WindowContainerTransaction` 描述 bounds、层级和 windowing mode 的变化，PiP 场景常见的是 `PipTaskOrganizer` 参与协调。它们负责“窗口树怎么改”；到了内容提交阶段，`SurfaceControl.Transaction` 和 BLAST 再负责“哪一帧带着哪块 buffer 生效”。排查时把这两层分开看，更容易定位问题。[已验证: AOSP `frameworks/base/core/java/android/window/TaskOrganizer.java`、`frameworks/base/core/java/android/window/WindowContainerTransaction.java`、`frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/pip/PipTaskOrganizer.java`]
+WCT 不携带应用下一块 buffer；SurfaceControl 几何 transaction 也不能证明 App 已按新尺寸完成绘制。PiP/resize 的错帧，常来自这三类状态没有在目标 display frame 形成预期组合。
 
-### 持续渲染、BufferQueue 和内存占用
+## 多窗口怎样共享帧调度资源
 
-PiP 不会凭空引入一套新的 BufferQueue 规则。多数场景里，原来的 producer 还在按原节奏供帧，变化的是 layer 的父节点、显示区域和几何属性。
+同一 UI Looper 上的多个 `ViewRootImpl` 会取得同一个 ThreadLocal `Choreographer`。各窗口把 traversal callback 放进同一个 Looper，callback 到期后仍在 UI 线程串行执行。Window A 的 `performTraversals()` 很长，会压缩 Window B 在同一 VSync 周期内可用的主线程时间。
 
-对视频或 `SurfaceView` 内容，producer cadence 仍然常由 decoder 或引擎自己决定，例如 24fps、30fps、60fps。对普通 View 窗口，主线程仍然走 `Choreographer#doFrame` 这条 display-driven 节拍。PiP 多出来的是合成和窗口管理成本，不是新的 VSync 源。
+同一进程的硬件加速窗口各有 renderer/`CanvasContext` 和独立 Surface，但共享进程级 HWUI RenderThread。它们的 `DrawFrame`、buffer dequeue 和 layer update 会进入同一 RenderThread 任务系统。共享线程不等于共享 BufferQueue：每个顶层 Window 仍有自己的 BLAST/buffer 周转和 release 约束。
 
-内存和带宽要分两种情况看。若系统沿用原 buffer，只在 SF / HWC 侧做缩放和裁剪，切换动作更轻，稳定阶段的带宽未必马上下降。若 App 收到小窗配置后重配 surface，稳定后单帧 buffer 占用会下降，但切换阶段往往会短暂看到“旧大 buffer 还没 release，新小 buffer 已经开始 queue”的重叠，这时峰值占用会上扬一段。[已验证: BufferQueue / BLAST 的 acquire-release 语义]
+跨进程窗口各有 UI Looper、Choreographer connection 和 RenderThread。它们不在应用线程上串行，却仍会在同一 Display 上竞争：
 
-### 性能考量
+- SurfaceFlinger/RenderEngine 的处理时间；
+- HWC overlay plane、scaler 和带宽；
+- GPU、内存带宽、CPU 与 thermal budget；
+- 同一 display mode 和 present deadline。
 
-- **几何更新快于内容更新**：PiP 边界先改了，新内容还没 queue 上来，SF 合成时就会看到旧内容配新窗口
-- **合成路径变化**：小窗的圆角、阴影、裁剪和上层 UI 容器，可能让原本稳定的 HWC 直合成退回 GPU 合成
-- **resize 重分配成本**：buffer 尺寸变化会带来重新 dequeue、旧 buffer 释放滞后、release fence 等待这几件事，切换阶段容易放大卡顿
+多 Display 还要再拆一层。每个 Display 有自己的可见 layer set、mode、HWC strategy 和 present fence；不能拿内屏的一次 present 解释外接屏结果。
 
-[待补充：PiP 进入场景 Perfetto 截图。标出 WindowManager / shell transition、App 侧 `queueBuffer()`、SurfaceFlinger `latchBuffer` 与实际呈现时刻。]
+## PiP 的渲染流程
 
-## Freeform Resize 竞态条件
+### 进入 PiP 时谁在做什么
 
-Freeform 窗口拖拽比 PiP 更容易把错拍暴露出来，因为窗口 bounds 会连续变化，App 的 layout、draw 和 buffer 提交也会连续被打断。
+应用通过 `PictureInPictureParams` 和 `enterPictureInPictureMode()`，或 Android 12+ 的 auto-enter 路径请求进入 PiP。之后大体会发生：
+
+1. WindowManager 把目标 Task 切到 pinned windowing mode，计算 PiP destination bounds。
+2. WM Shell 的 PiP/transition 组件取得 Task leash。Android 17 的 `PipTaskOrganizer` 注释明确说明：它监听 Task 进入/离开 PiP，动画期间连续应用 `SurfaceControl.Transaction`，结束时再提交最终 `WindowContainerTransaction`。
+3. transition handler 对 leash 做 position、crop、scale、round、alpha 等动画。应用原有 App Window buffer 位于这棵子树内，因此系统可以先变换旧内容，不必等待应用每个动画采样点都画一块新 buffer。
+4. 应用根据 PiP 状态、Configuration 或 layout 变化更新 UI；View/RenderThread 或独立视频 producer 继续按各自节奏提交 buffer。
+5. SurfaceFlinger 在目标 Display 上合并当前 layer 状态和可用 buffer，HWC 或 RenderEngine 完成合成。
+
+这个过程没有为 PiP 新建一套 VSync 或 BufferQueue 规则。视频可以保持 24/30fps，Display 仍按 60/90/120Hz present；SF 在多个 display frame 中复用同一块 PiP 视频 buffer 是正常的，不能按“每个 VSync 都没有新 BufferTX”判为丢帧。
+
+[Android 17 `PipTaskOrganizer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/pip/PipTaskOrganizer.java) 是控制面入口；应用窗口的像素提交仍要回到 [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java) 和 BLAST 路径。
+
+### `PictureInPictureParams` 直接影响过渡质量
+
+PiP 参数不是装饰信息，几项配置会改变 transition 的处理方式：
+
+- `sourceRectHint` 应指向进入 PiP 后仍可见的内容区域，例如视频 View 的窗口坐标 bounds。Android 12+ 进入和退出动画都会使用它；它是 transition hint，不是持续阶段的 buffer crop API。
+- `setAutoEnterEnabled(true)`（API 31+）让系统在手势返回桌面时更早掌握进入 PiP 的意图，避免应用等到较晚的生命周期 callback 才发起切换。
+- `setSeamlessResizeEnabled(true)` 只适合可以被系统连续缩放而不出现布局伪影的内容，典型是视频。Android 17 源码注释说明，设为 `false` 时系统会使用额外 transition 遮盖 resize artifact；复杂非视频 UI 应按视觉结果选择。
+- target Android 15 / API 35+ 的应用可通过 `onPictureInPictureUiStateChanged()`，在 enter animation 开始时获知 `isTransitioningToPip()`，及时隐藏标题、推荐卡片等 PiP 不需要的 overlay，避免动画结束后才骤然消失。
+
+应用应在内容 bounds 或宽高比变化时更新 params。一个很常见的错误是只在 Activity 创建时算一次 `sourceRectHint`，旋转、折叠或播放器 layout 改变后继续使用旧坐标。
+
+### PiP 的主要性能风险
+
+| 风险 | 发生机制 | 应看证据 |
+|:---|:---|:---|
+| 新 bounds 配旧 buffer | leash geometry 已推进，应用或视频 producer 尚未提供目标内容 | Shell transaction、App BufferTX、目标 DisplayFrame |
+| HWC 路径变化 | 圆角、阴影、alpha、遮挡、HDR/SDR 混合改变整屏 layer 条件 | HWC composition type、client target、SF/GPU 时间 |
+| resize 时内存峰值 | 旧大 buffer 尚未 release，新尺寸 buffer 已开始分配/queue | buffer id/size、dequeue、release fence、内存轨道 |
+| UI 切换过晚 | 非必要控件直到 enter animation 结束才隐藏 | PiP UI state callback、app traversal、录屏 |
+| producer cadence 错误 | PiP 后仍以不必要的高分辨率/高帧率生产，或生命周期误停播 | codec/engine timestamp、buffer size、`onPause`/`onStop` |
+
+SurfaceFlinger 把 layer 缩小，不会自动降低 producer 分辨率或帧率。是否在稳定 PiP 阶段重配 decoder/surface，要在画质、切换成本、功耗和内存之间测量；不要在 transition 每一个 bounds 变化上反复销毁 Surface。
+
+## Freeform Resize 的竞态
+
+Freeform/desktop 拖拽把“geometry 与 buffer 来自不同模块”放大了。系统实现可以在过渡 leash 上连续缩放旧 buffer，也可以向应用发送一系列 bounds/configuration 变化；具体策略受平台版本、Shell transition、设备配置和 resize 模式影响，不能假设每个指针采样都对应一次 `measure → layout → draw`。
+
+把旧状态记作 `G0/B0`，新状态记作 `G1/B1`，SF 可能暂时看到：
+
+| 组合 | 视觉结果 |
+|:---|:---|
+| `G0 + B0` | 仍显示旧窗口，内容一致 |
+| `G1 + B0` | 旧内容被缩放、裁剪或 letterbox；策略不当时出现拉伸/黑边 |
+| `G1 + B1` | 新几何与新内容一致 |
+| snapshot/starting layer | 系统用替代内容覆盖应用重绘间隙 |
+
+`G0 + B1` 通常是需要避免的错误组合：应用已经按新配置生成内容，控制它的 layer geometry 却仍停在旧状态。同步组件的任务是收集参与对象的 transaction，让系统在合适的 display frame 应用预期组合；它不是强制整个 Display 等待所有 producer。
+
+下面的时序展示一次需要应用重绘的 resize。虚线之外的视频/相机 producer 若没有加入同一同步关系，不会自动被等待：
 
 ```mermaid
 sequenceDiagram
-    participant User as User Drag
-    participant WMS as WindowManager / Shell
-    participant App as App Process
-    participant BLAST as BLAST / BufferQueue
-    participant SF as SurfaceFlinger
+    participant U as "用户拖拽"
+    participant SH as "WM Shell / WMS"
+    participant AP as "App ViewRoot"
+    participant BQ as "App BLASTBufferQueue"
+    participant SY as "BLASTSyncEngine"
+    participant SF as "SurfaceFlinger"
 
-    User->>WMS: Resize / bounds change
-    WMS->>App: relayout / Configuration change
-    WMS->>WMS: 组织 WindowContainerTransaction
-    App->>App: Measure → Layout → Draw
-    App->>BLAST: queueBuffer(new content)
-    BLAST->>SF: merge geometry + buffer transaction
-    SF->>SF: latchBuffer / compose
+    U->>SH: 更新 Task bounds / transition leash
+    SH->>SY: 创建 sync group，加入相关 WindowContainer
+    SH->>AP: relayout / Configuration（按策略）
+    AP->>AP: measure / layout / record / draw
+    AP->>BQ: queueBuffer(B1)
+    BQ->>BQ: acquire buffer，生成 setBuffer transaction
+    BQ-->>SY: 参与窗口的 sync transaction ready
+    SY-->>SH: onTransactionReady(syncId, mergedTx)
+    SH->>SF: apply geometry + collected buffer transaction
+    SF->>SF: 选择可用 buffer，更新 snapshot，compose/present
 ```
 
-WMS 或 Shell 先推进几何变化，App 后续才把新尺寸内容画完，这是 Freeform 黑边、拉伸、内容抖动的直接来源。窗口越复杂，`onConfigurationChanged()` 越重，buffer 重建越慢，这个时间差就越明显。
+图中 BQ 到 sync group 的箭头表示职责关系，不是一次从 native BLAST 直接调用 Java `BLASTSyncEngine`：buffer transaction 会经对应 WindowContainer 的 sync transaction 被 WMS 收集。
 
-### BLAST Sync 如何缓解 Resize 错拍
+Activity 是否重建取决于 `configChanges` 声明和实际 Configuration 变化。自行处理配置不会免除 layout 适配；让系统重建也要求可靠保存 UI/播放状态。折叠姿态、旋转、caption/Insets、Display 切换可能与 resize 同时发生，排查时要记录完整 `Configuration` 和 WindowMetrics，不能只看宽高。
 
-把多窗口 resize 问题都压成“Android 12+ 才有 BLAST”不准确。这个问题要按三段看。
+## “BLAST Sync”有两层含义
 
-Android 8.0 到 10，PiP 和自由窗口已经存在，WMS 可以先改 bounds，App 再慢慢追上新尺寸内容。若窗口里带 `SurfaceView` 或视频 layer，Android N 起的位置同步已比更早版本稳定，位移动画里的错位少了一批；buffer 内容和 geometry 仍然可能落在不同帧。
+### App Window 的 `BLASTBufferQueue`
 
-Android 11，`BLASTBufferQueue` 进入主窗口路径。`ViewRootImpl` 在 App 进程里创建 BLAST，producer `queueBuffer()` 之后，App 进程内的 BLAST consumer 会先 `acquireNextBufferLocked()`，再把 buffer、fence、`frameNumber` 塞进 `SurfaceControl.Transaction`。如果这时还有 bounds、crop、transform 这类几何变化，`syncNextTransaction()`、`mergeWithNextTransaction()` 会把它们并进同一帧，再统一提交给 SF。[已验证: `frameworks/native/libs/gui/BLASTBufferQueue.cpp` 的 `acquireNextBufferLocked()`、`syncNextTransaction()`、`mergeWithNextTransaction()`；另见 §2.13、§18.10]
+Android 17 的 `BLASTBufferQueue::acquireNextBufferLocked()` 会从 BufferQueue 取得下一块 buffer，把 buffer、acquire fence、frame number、dataspace、HDR metadata、damage、crop、transform 和 FrameTimeline 信息放入 `SurfaceComposerClient::Transaction`，再合入等待该 frame number 的 transaction。
 
-Android 12+，PiP transition 和 shell transition 的控制面继续完善，窗口容器变化、动画和 transaction 提交更集中地走 Shell / WM 这套路径。对排查来说，变化不在“突然有了 BLAST”，而在控制面和可观测性都更完整了，WindowManager / Shell transition、BLAST 提交、FrameTimeline 和 SF 合成更容易放到同一条时间线上。
+源码还有一个直接针对 resize artifact 的保护：在 scaling mode 为 `FREEZE` 时，只有新 buffer 尺寸匹配 requested size，才更新 destination size；否则避免 destination bounds 先变而拉伸不匹配的 buffer。
 
-把职责拆开看会更稳。WindowManager / Shell 负责 bounds、层级和过渡动画；BLAST 负责把这一帧的 buffer 与几何 transaction 放进同一帧；acquire fence 负责说明 buffer 何时可用；SurfaceFlinger 决定何时 latch、何时参与本轮 VSync-SF 合成。这样排查，就不会把“控制面发起了 resize”和“这一帧真的上屏了”混成一件事。
+`syncNextTransaction()` 用于把下一次取得的 buffer 放进一份 sync transaction，`mergeWithNextTransaction()` 则按 frame number 合并外部 transaction。这些能力解决“应用窗口的下一块 buffer 与相关 layer 状态如何一起提交”，不会凭空知道业务所说的“下一帧视频”是哪一块。
 
-### 版本演进
+[Android 17 `BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp) 可核查 `acquireNextBufferLocked()`、`syncNextTransaction()` 和 `mergeWithNextTransaction()`。
 
-| 版本 | 变化 | 对分析口径的影响 |
+### system_server 的 `BLASTSyncEngine`
+
+WMS 内部 `BLASTSyncEngine` 建立 `SyncGroup`，监视注册的 `WindowContainer` 子树何时进入 finished 状态：收到所需绘制内容，或对象消失。group ready 后，它把收集的 `SurfaceControl.Transaction` 交给 transition/调用方；重叠 group 还可能被串行化或建立依赖，并有 timeout 兜底。
+
+它只等待加入 group 的对象。独立 camera、codec、游戏引擎 producer 如果没有通过受控 Surface 参与这份同步，WMS 不能为它推导内容语义。[Android 17 `BLASTSyncEngine.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java)
+
+### API 34+ 的 `SurfaceSyncGroup`
+
+公开 `SurfaceSyncGroup` 面向应用和嵌入 Surface，可配合 `AttachedSurfaceControl`、`SurfaceControlViewHost.SurfacePackage` 等对象收集 transaction。它和 WMS 内部 `BLASTSyncEngine` 目的相近，但 API、权限、参与对象和生命周期不同。不能因为都带 “SyncGroup” 就把两者的 trace 或 ready 条件混在一起。
+
+同步也不是越大越好。等待对象越多，任一慢窗口或失效对象都可能延长 transition；只应把必须原子呈现的对象纳入同一组。
+
+## SurfaceFlinger 与 HWC 的多窗口成本
+
+HWC 按整个 Display 的可见 layer 集合选择 composition strategy，不按“某个 App 自己是否简单”单独决定。PiP、Freeform 和 desktop 场景里，以下变化都可能让 DEVICE/CLIENT 分配改变：
+
+- PiP 的圆角、alpha、crop、scale 和 transition leash；
+- desktop caption、shadow、dim、taskbar、IME 与更多重叠窗口；
+- 不同 buffer format、dataspace、HDR metadata、protected usage；
+- overlay plane/scaler/bandwidth 的设备限制；
+- Display mode、rotation、color mode 和全局变换。
+
+窗口数量增加不保证进入 CLIENT composition；一个带复杂变换或特殊格式的 layer 也可能改变策略。要比较异常前后的完整 layer set 和 HWC composition type，不能只看 PiP layer 名。
+
+`FLAG_SECURE` 与 protected buffer 也要分开：前者约束截图/录屏和非安全 Display，后者要求受保护的读取与显示路径。protected PiP 无法取得合适硬件路径时可能黑屏，不能让普通 RenderEngine 随意采样作为回退。
+
+Android 17 的公共 kernel 锚点只解释通用调度与 fence：[`kernel/sched/core.c`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/kernel/sched/core.c)、[`sync_file.c`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c) 和 [`dma-fence.c`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)。某台设备的 DPU、HWC plane 或 Display driver 延迟仍要看 vendor 实现和设备 trace。
+
+## Android 8 到 Android 17 的分析边界
+
+| 平台 | 变化 | Review 时怎么用 |
 |:---|:---|:---|
-| Android 8.0 | PiP 正式进入平台，多窗口内容开始经常以小窗形态参与合成 | 进入 / 退出小窗时要同时看窗口几何变化和内容供帧 |
-| Android 10 | Multi-resume 更常见，多窗口并发活跃度上升 | 同一 display 上的主线程 Traversal 串行竞争更容易暴露 |
-| Android 11 | `BLASTBufferQueue` 进入主窗口路径 | resize 排查要把 `queueBuffer()`、BLAST transaction merge、`latchBuffer` 摆到同一条时间线上 |
-| Android 12+ | `TaskOrganizer` / Shell transition 控制面引入并持续打磨，FrameTimeline 可观测性更好 | 进入小窗、拖拽、回退时可以把 WM / Shell transition 和实际呈现结果直接对照 |
+| Android 8 / API 26 | 手机 PiP 进入公开平台能力 | 进入/退出小窗要同时看 Task 几何和内容供帧 |
+| Android 11 / API 30 | BLASTBufferQueue 进入现代 App Window 提交路径 | resize 要对齐 App buffer transaction 与 layer geometry |
+| Android 12 / API 31 | WM Shell transition/PiP 控制与 FrameTimeline 成为现代分析基线；PiP 增加 auto-enter、seamless resize | PiP 过渡要结合 Shell transition、source rect 与 SurfaceFrame/DisplayFrame |
+| Android 12L / API 32 | 大屏多任务和 Activity Embedding 普及 | 可见双栏可能是一个 Task window 内的 TaskFragment，不一定是两个 Window |
+| Android 14 / API 34 | 公开 `SurfaceSyncGroup` | 应用/跨进程嵌入 Surface 可显式建立同步组 |
+| Android 15 / API 35 | PiP UI transition state、target 35 edge-to-edge 等行为影响 UI/Insets | PiP enter 可更早隐藏 overlay；resize/IME 要检查 Insets |
+| Android 16 / API 36 | OEM 可配置 desktop windowing；target 36 大屏方向/宽高比/resizability 限制开始被忽略，但有临时 opt-out | 测试 freeform、外接屏、旋转与配置重建 |
+| Android 17 / API 37 | per-display desktop windowing；target 37 在大屏移除上述 opt-out | 按 Display 记录 desktop state；固定方向和不可 resize 不能再作为大屏布局前提 |
 
-### Trace 定位
+Android 17 的 target 37 规则适用于 `sw ≥ 600dp` 大屏：固定方向值、`resizeableActivity`、`minAspectRatio`、`maxAspectRatio` 等限制被忽略；小于 `sw600dp`、按 `android:appCategory` 分类的游戏，以及用户在 aspect ratio 设置里明确选择应用偏好的情况属于例外。这个行为增加应用遇到 resize/configuration 的机会，没有替换 BLAST、SurfaceFlinger 或 HWC 主路径。
 
-排查 Freeform resize，至少把下面几条线拉到同一屏里看：
+Android 17 的 per-display desktop windowing 还意味着内屏和外接屏可以处于不同 desktop-first/touch-first 状态。窗口从一块屏移动到另一块屏时，要重新记录 displayId、density、WindowMetrics、refresh rate、color mode、Insets 和 present fence。
 
-- **WindowManager / Shell 轨道**：看 bounds 变化和 transition 从哪一拍开始
-- **App Main Thread**：看 `Choreographer#doFrame`、`performTraversals`、`relayoutWindow` 是否被 resize 拖长
-- **RenderThread / producer 线程**：看 `dequeueBuffer()` 有没有等旧 buffer，`queueBuffer()` 有没有连续推迟
-- **BLAST / BufferQueue 轨道**：看 `QueuedBuffer - <window>BLAST#<id>` 何时出现，是否和 geometry transaction 同步
-- **SurfaceFlinger / FrameTimeline**：看 `latchBuffer`、合成周期和 actual present 是在第几拍出现
+## Perfetto：从目标 DisplayFrame 反向定位
 
-正常情况里，bounds 变化后 1 个合成周期内就能看到对应的新 buffer 被 latch。异常情况里，常见模式是 `performTraversals` 先被拉长，随后 `dequeueBuffer()` 等旧 buffer，`QueuedBuffer - ...BLAST#...` 迟迟不到，末尾 actual present 连续跨帧。
+抓取至少应包含：
 
-[待补充：Freeform resize 正常 / 异常 Trace 对照截图。左侧标出 `performTraversals`、`queueBuffer()`、`QueuedBuffer - ...BLAST#...`，右侧标出 `latchBuffer` 和 actual present。]
+- `sched`、CPU frequency/idle，应用 main/RenderThread/producer 线程；
+- WindowManager 与 WM Shell transition；
+- SurfaceFlinger transactions/layers；
+- FrameTimeline、Graphics/BufferQueue；
+- GPU/HWC 轨道（设备支持时）；
+- 内存轨道（调查 resize 峰值时）。
 
-### 优化建议
+### 建立 Window 表
 
-- **压短 resize 路径里的主线程工作**：把不必跟窗口尺寸同步完成的计算移出 `onConfigurationChanged()` / relayout 热路径
-- **减少无谓的 surface 重建**：只有真的需要更小 buffer 时再重配 surface，能沿用现有内容层的场景尽量沿用
-- **拆分稳定内容和高频变化内容**：视频、预览或引擎画面保持独立 producer，控制条、阴影和装饰层按 transaction 更新，能少掉一部分整页重绘
+先为每个可见对象记录下面的映射，避免把同名旧 layer 或另一块 Display 的 frame 接进来：
 
-## 在 Perfetto 中识别多窗口问题
+| 维度 | 需要记录 |
+|:---|:---|
+| 归属 | uid、pid、package、Activity/PiP/SystemUI |
+| 执行 | UI tid/Looper、ViewRoot、RenderThread tid、独立 producer 线程 |
+| WMS | displayId、Task/TaskFragment、WindowState、windowing mode、bounds |
+| SF | container/leash/buffer layer id、parent、Z、crop、visibility |
+| Buffer | BLAST/BufferQueue 名、frame number、buffer id/size、fence |
+| FrameTimeline | SurfaceFrame、DisplayFrame、expected/actual present |
 
-抓 PiP / Freeform 问题，trace 至少要能看到 WindowManager 或 Shell transition、App 主线程、RenderThread 或 producer 线程、BLAST / BufferQueue、SurfaceFlinger、FrameTimeline 这几组轨道。缺哪一组，因果链就不完整。
+### 可执行的定位顺序
 
-### 最小可执行分析路径
+1. 在录屏或事件标记上确定 PiP enter/exit 或 resize 的时间窗，并选中发生异常的目标 DisplayFrame。
+2. 在 WMS/Shell 轨道找 WCT、sync id、transition id、leash 动画和 bounds 变化，确认 geometry 从哪一帧开始推进。
+3. 回到目标应用 main thread，检查 `performTraversals()`、relayout Binder、Configuration/Insets dispatch 和 Activity 重建。
+4. 在 RenderThread 或独立 producer 上找 draw、`dequeueBuffer()`、GPU submit、`queueBuffer()`；确认慢的是 App Window 还是视频/相机子 Surface。
+5. 在 BLAST/SF 侧找对应 layer 的 `QueuedBuffer`、`BufferTX`、frame number、buffer size 和 acquire fence，确认像素内容何时进入 SF。
+6. 对齐 geometry transaction 与 buffer transaction 在哪个 DisplayFrame 生效，再检查 SurfaceFlinger 是否等待 fence、复用旧 buffer 或使用 snapshot。
+7. 比较异常前后的 DEVICE/CLIENT、client target、GPU 合成和 HWC/present fence，确认是否为整屏合成策略变化。
+8. 从 release fence 回到 producer，判断下一块 buffer 是否因池耗尽而产生背压。
 
-1. 先在 WindowManager / Shell 轨道上找到进入 PiP 或 resize 开始的那一拍，确认问题起点。
-2. 把 App Main Thread 的 `Choreographer#doFrame` 和 `performTraversals` 摆在一起，判断是主线程 relayout 先慢，还是后面的提交流程更慢。
-3. 把 RenderThread 或 producer 线程的 `dequeueBuffer()`、`queueBuffer()` 摆在一起，判断 buffer 是不是被旧帧占住了。
-4. 找 `QueuedBuffer - <window>BLAST#<id>`，确认 BLAST 收到这帧的时间。
-5. 在 SF / FrameTimeline 侧看 `latchBuffer` 和 actual present，算清楚这帧是在第几次合成周期里上屏的。
+不要依赖某个厂商版本一定存在 `latchBuffer` 文字 slice。`BufferTX - <layerName>`、`QueuedBuffer - <window>BLAST#<id>`、FrameTimeline 名称也可能因版本或 trace 配置变化；layer id、frame number、transaction flow 和时间关系才是更稳的证据。
 
-### 正常与异常的文字样例
+### 常见症状的证据方向
 
-| 场景 | 正常表现 | 异常表现 |
+| 症状 | 起点 | 需要排除 |
 |:---|:---|:---|
-| PiP 进入 | WindowManager / Shell transition 发起后，App 很快补上一帧，`latchBuffer` 跟在后一个合成周期内 | transition 很早发起，但 `queueBuffer()` / `QueuedBuffer - ...BLAST#...` 明显滞后，actual present 连续跨帧 |
-| Freeform resize | `performTraversals` 略有抬高，但 `queueBuffer()` 和 `latchBuffer` 还能跟上 | `performTraversals` 被拉长，后面 `dequeueBuffer()` 等待，SF 先拿旧内容合成出新边界 |
-| 合成路径退化 | PiP / 小窗阶段 SF 合成耗时变化不大 | 小窗圆角、裁剪或叠加层出现后，SF 合成耗时突然升高，FrameTimeline 出现连续 miss |
+| PiP 进入时闪一下 | `sourceRectHint`、Shell overlay/leash、App 首块 PiP 内容 | 只凭录屏归因 App draw |
+| Freeform 拖拽拉伸 | requested/buffer size、destination frame、leash scale、sync group | 把所有缩放都判为 BLAST 失败 |
+| 同进程 Window B 总是晚 | UI traversal 顺序、共享 RenderThread 队列、Window A fence wait | 只量 Window B 自己的 draw duration |
+| App 两侧都按时，整屏仍 miss | SF transaction、client composition、HWC、present fence | 用单个 App FrameTimeline 代表 Display |
+| 外接屏异常、内屏正常 | displayId、mode、per-display desktop state、Output/HWC fence | 合并两块屏的 present 时间线 |
+| resize 时内存尖峰 | 新旧 buffer size/id、release fence、Activity/Surface 重建 | 把稳定态 buffer 数量乘法当作峰值 |
+| protected PiP 黑屏 | secure/protected 属性、目标 Display 与硬件保护路径 | 假设普通 GPU client composition 可兜底 |
 
-## 与其他章节的关系
+## 应用侧改进
 
-- **2.12 Window Manager Service**：窗口容器、bounds 变化和 relayout 的 system_server 视角
-- **18.10 SurfaceControl API**：PiP / 小窗过渡里的 transaction、reparent、layer 组织方式
+### PiP
+
+- 持续更新正确的 `sourceRectHint` 和 aspect ratio；Android 12+ 手势导航场景优先 auto-enter。
+- 视频等可连续缩放的内容才启用 seamless resize；非视频复杂 UI 先验证视觉结果。
+- API 35+ 在 `isTransitioningToPip()` 阶段隐藏无关 overlay，退出时再按 mode callback 恢复。
+- 不要在进入 PiP 的 `onPause()` 无条件停止视频；按官方生命周期建议在 `onStop()`/`onStart()` 或显式 PiP 状态下管理播放。
+- 稳定 PiP 阶段是否降低解码分辨率/帧率要靠功耗和画质测试，transition 中避免频繁销毁 Surface。
+
+### Freeform、折叠屏与 desktop
+
+- 使用 WindowMetrics/自适应布局，不从物理 Display 尺寸推导当前窗口尺寸。
+- 把状态保存和尺寸适配分开；Activity 重建与自行处理 Configuration 两条路径都要测试。
+- 缩短 relayout/configuration 热路径，避免同步 I/O、大图解码和重型对象重建占住 UI 线程。
+- Camera/SurfaceView/游戏引擎要按新 bounds 计算 aspect ratio、crop、rotation；独立 Surface 不会自动继承 View 布局的内容语义。
+- 测试连续拖拽、快速最大化/还原、跨 Display 移动、IME、caption、旋转、折叠姿态和进程重建。
+
+## Review 清单
+
+- [ ] 已确定目标 displayId，而不是默认所有窗口都在内屏
+- [ ] 已区分普通 View 双栏、TaskFragment 和独立顶层 Window
+- [ ] 每个 Window 的 pid、UI tid、ViewRoot、RenderThread 与 producer 已映射
+- [ ] WMS 逻辑 parent 与 SF leash/layer parent 都已记录
+- [ ] WCT、SurfaceControl geometry transaction、App buffer transaction 已分开
+- [ ] PiP 的 `sourceRectHint`、auto-enter、seamless resize 和 UI state callback 已核查
+- [ ] Freeform resize 中的 geometry/buffer 组合已落到具体 DisplayFrame
+- [ ] `BLASTBufferQueue`、`BLASTSyncEngine`、`SurfaceSyncGroup` 没有混用
+- [ ] sync group 的参与对象、ready 条件与 timeout 已确认
+- [ ] acquire/release/present fence 已按 buffer 和 Display 标注
+- [ ] HWC strategy 已按整个可见 layer set 比较
+- [ ] Android 17 target 37 大屏行为与 per-display desktop state 已测试
 
 ## 参考资料
 
-- AOSP `frameworks/base/core/java/android/view/ViewRootImpl.java`
-- AOSP `frameworks/base/core/java/android/view/Choreographer.java`
-- AOSP `frameworks/base/core/java/android/view/DisplayEventReceiver.java`
-- AOSP `frameworks/native/libs/gui/BLASTBufferQueue.cpp`：`acquireNextBufferLocked()`、`syncNextTransaction()`、`mergeWithNextTransaction()`
-- AOSP `frameworks/base/core/java/android/window/TaskOrganizer.java`
-- AOSP `frameworks/base/core/java/android/window/WindowContainerTransaction.java`
-- AOSP `frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/pip/PipTaskOrganizer.java`
-- AOSP `frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java`
-- Android 官方文档：Picture-in-Picture
-- Android 官方文档：Multi-Window Support
-- Android 官方文档：`SurfaceView` API 文档（Android N 位置同步与 Android 14 alpha 语义）
+- [Android 17 AOSP：ViewRootImpl.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)
+- [Android 17 AOSP：Choreographer.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)
+- [Android 17 AOSP：RenderThread.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/RenderThread.cpp)
+- [Android 17 AOSP：PictureInPictureParams.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/PictureInPictureParams.java)
+- [Android 17 AOSP：WindowContainer.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowContainer.java)
+- [Android 17 AOSP：BLASTSyncEngine.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java)
+- [Android 17 AOSP：PipTaskOrganizer.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/pip/PipTaskOrganizer.java)
+- [Android 17 AOSP：BLASTBufferQueue.cpp](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)
+- [Android Developers：Picture-in-picture](https://developer.android.com/develop/ui/views/picture-in-picture)
+- [Android Developers：Android 17 大屏方向与 resizability 变化](https://developer.android.com/about/versions/17/changes/ff-restrictions-ignored)
+- [AOSP：Multi-window support](https://source.android.com/docs/core/display/multi-window)
+- [AOSP：Android 17 desktop windowing](https://source.android.com/docs/core/display/desktop-windowing)
