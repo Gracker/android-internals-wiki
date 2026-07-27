@@ -85,251 +85,304 @@ last_deepseek_cn_review_at: 2026-07-10
 
 ## 本节定位
 
-21.1 节已经把冷启动拆成进程创建、`Application` 初始化、`Activity` 创建和首帧绘制几个阶段，21.2 节讲启动任务编排。本节只聚焦一件事：**manifest 里的 ContentProvider 为什么在 `Application.onCreate()` 之前执行，以及怎么把三方 SDK 借 ContentProvider 偷跑的初始化收回来**。
+ContentProvider 有两种角色：对外提供结构化数据，或借组件自动创建完成“免接入”初始化。本节只治理第二种角色及其对启动的影响，不展开 CRUD、`CursorWindow` 和 Provider ANR。
 
-ContentProvider 的系统机制详见 1.10 节。本节不重复 Binder、`CursorWindow`、CRUD 和 ANR 机制，只看 App 启动治理：怎么发现、怎么量化、怎么迁移、怎么避免改完后丢初始化依赖。
+本文的平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，App Startup 固定到 1.2.0。
 
-## ContentProvider 在启动路径中的开销
+## 1. Provider 为什么早于 `Application.onCreate()`
 
+### 1.1 Android 17 的调用顺序
 
-冷启动时，`ActivityThread.handleBindApplication()` 会先创建 `Application` 对象，再安装当前进程需要发布的 ContentProvider，之后才调用 `Application.onCreate()`。AOSP 中的调用顺序：
+在 Android 17 的 [`ActivityThread.handleBindApplication()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)中，应用进程主线程按以下关键顺序执行：
 
 ```text
-ActivityThread.handleBindApplication()
-  makeApplicationInner(...)
-  installContentProviders(app, data.providers)
-  mInstrumentation.callApplicationOnCreate(app)
+创建并 attach Application
+        ↓
+installContentProviders(app, data.providers)
+        ↓
+Instrumentation.onCreate(...)
+        ↓
+Instrumentation.callApplicationOnCreate(app)
 ```
 
-这段顺序的含义很清楚：只要 `<provider>` 被安装到主进程，它的 `onCreate()` 耗时就会进入冷启动关键路径。它甚至早于很多团队在 `Application.onCreate()` 里写的启动埋点——启动监控如果只包住 `Application.onCreate()`，会漏掉这部分耗时。
+`data.providers` 是 system_server 为当前进程准备的 Provider 列表。Provider 属于哪个进程，由最终 Manifest 中的 `android:process` 决定；默认值是应用默认进程。
 
+`installContentProviders()` 对列表逐个调用 `installProvider()`。本地 Provider 的关键路径是：
 
-### 开销来自哪里
+1. 通过应用的 `AppComponentFactory` 实例化 Provider 类；
+2. 调用 `ContentProvider.attachInfo(...)`；
+3. `attachInfo(...)` 内设置权限、authority 等信息；
+4. 在 hosting process 的主线程调用 `ContentProvider.onCreate()`；
+5. 将已经安装的 holder 汇总后，一次调用 `publishContentProviders(...)` 发布给 system_server。
 
-ContentProvider 对启动的影响主要有四类：
+Provider 多时会增加类加载、实例化、`attachInfo()` 和各自 `onCreate()` 的成本，但不要误写成“每个 Provider 都单独 publish 一次 Binder”。Android 17 的该路径把当前批次 holder 放在一个列表中发布。
 
-| 开销类型 | 典型表现 | 诊断方式 | 治理方向 |
-|---|---|---|---|
-| 类加载与反射 | 主线程加载 SDK Provider、反射扫描配置类 | Perfetto 主线程片段、方法采样 | 减少自动 Provider；改为显式初始化 |
-| 磁盘 IO | 读取配置、SharedPreferences、数据库元信息 | StrictMode、Perfetto `ftrace` / `atrace` | 首帧前只读必要配置；大文件延后 |
-| 线程与锁 | Provider 内创建线程池、等待单例锁 | 主线程栈、锁等待采样 | 初始化拆分；耗时任务放到启动框架 |
-| 跨进程唤醒 | Remote Provider 被同步访问或目标进程启动时拉起子进程 | `ps`、Perfetto process track | 按进程拆初始化；避免主进程同步访问触发子进程预热 |
+### 1.2 初始化顺序
 
-这类开销的麻烦点在于“隐式”。业务代码里看不到调用方，SDK 升级后却能多出一个 Provider。启动优化如果只盯 `Application.onCreate()`，很容易把 100ms 的 Provider 初始化误判成系统启动慢。
+同一进程的 Provider 可以用 `android:initOrder` 声明相对实例化顺序，数值高的先初始化。它只能表达静态先后关系：
 
-### 怎么量化 Provider 耗时
+- 不能让 `onCreate()` 异步；
+- 不能表达完成结果、失败或降级；
+- 不能解决跨进程依赖；
+- 不能缩短各 Provider 的工作；
+- Manifest 中元素的书写顺序不是依赖契约。
 
-自有 Provider 要在 `onCreate()` 里加 trace 标记。第三方 Provider 改不了源码，就从合并后的 manifest 和 Perfetto 主线程片段入手。
+需要完整任务依赖时，应使用 App Startup 的同步依赖图，或 [启动框架设计与任务编排](./02-startup-framework.md)中的显式任务框架。
 
-下面这段脚本用于从合并后的 manifest 里列出所有 Provider。重点看 `android:name`、`android:authorities`、`android:process` 和 `android:initOrder`。
+### 1.3 App 埋点为什么容易漏掉
+
+很多项目从 `Application.onCreate()` 第一行开始计时。Provider 已经在此前完成，因此这类埋点只能看到 Application 阶段，无法解释完整 `bindApplication` 时间。
+
+启动基线应以 Macrobenchmark 的端到端 TTID/TTFD 和 Perfetto 的 Android App Startups 窗口为主，再用自定义切片分解自有 Provider。
+
+## 2. 启动成本从哪里来
+
+Provider 框架本身并非唯一成本。一次自动初始化通常包含四层：
+
+| 层次 | 常见工作 | 需要的证据 |
+| --- | --- | --- |
+| 组件固定成本 | 类加载、构造、`attachInfo()`、authority 注册 | Framework/App 主线程 Trace |
+| `onCreate()` 负载 | 文件、数据库、反射、SDK 初始化、native load | 自定义 slice、方法栈、I/O |
+| 资源竞争 | worker 抢 CPU/I/O、锁、Binder 等待、GC | sched、thread state、Binder、GC |
+| 进程成本 | 远端 Provider 触发目标进程启动与发布 | system_server 和两个进程的 Trace |
+
+几个常见误判：
+
+- `.onCreate()` 很快，不代表它创建的 worker 不会与首帧争用资源。
+- 看到某个 Provider 类，不代表它的全部成本都归属框架；要进入供应商或业务实现。
+- 删除一个 Provider 后 TTID 下降，不足以证明固定组件成本很高；也可能是其业务初始化一起被删除。
+- 远端 Provider 不会因主进程启动自动出现在主进程。主进程同步访问其 authority 时，可能触发 hosting process 创建并等待发布。
+
+Provider 数量可以作为审计入口，不能直接换算成毫秒。
+
+## 3. 从 release Manifest 建立清单
+
+### 3.1 检查最终合并结果
+
+源码 Manifest 不是发布事实。库、渠道、build type、product flavor 和 manifest placeholder 都会改变最终组件。
+
+Android Gradle Plugin 的合并决策报告位于模块的 `build/outputs/logs/manifest-merger-<variant>-report.txt`。Android Studio 的 Merged Manifest 视图也能定位某个 Provider 来自哪个依赖。检查准备发布的每个 variant，而非只看 debug。
+
+下面的脚本读取一个文本形式的 merged Manifest，列出 Provider 的主要属性：
 
 ```python
 from pathlib import Path
+from sys import argv
 from xml.etree import ElementTree as ET
 
-manifest = Path("app/build/intermediates/merged_manifests/release/AndroidManifest.xml")
-ns = {"android": "http://schemas.android.com/apk/res/android"}
+ANDROID = "{http://schemas.android.com/apk/res/android}"
+manifest = Path(argv[1])
 root = ET.parse(manifest).getroot()
-app = root.find("application")
+application = root.find("application")
 
-for provider in app.findall("provider"):
-    name = provider.get("{http://schemas.android.com/apk/res/android}name")
-    authorities = provider.get("{http://schemas.android.com/apk/res/android}authorities")
-    process = provider.get("{http://schemas.android.com/apk/res/android}process") or "<default>"
-    init_order = provider.get("{http://schemas.android.com/apk/res/android}initOrder") or "0"
-    exported = provider.get("{http://schemas.android.com/apk/res/android}exported")
-    print(f"{name}\t{authorities}\t{process}\tinitOrder={init_order}\texported={exported}")
+for provider in application.findall("provider"):
+    value = lambda name: provider.get(f"{ANDROID}{name}")
+    print(
+        value("name"),
+        f"authorities={value('authorities')}",
+        f"process={value('process') or '<application-default>'}",
+        f"initOrder={value('initOrder') or '0'}",
+        f"enabled={value('enabled')}",
+        f"exported={value('exported')}",
+        f"directBootAware={value('directBootAware')}",
+        sep="\t",
+    )
 ```
 
-这段脚本只做审计，不改 manifest。跑完之后把结果整理成启动 Provider 清单，列出来源库、是否主进程、`onCreate()` 是否有 IO、是否首屏必需、是否能移除自动初始化。
+脚本的输入应是构建工具生成的可读 XML，不是 APK 中经过编译的二进制 XML。中间产物路径会随 AGP 变化，应从当前构建输出或 Android Studio 获取，不要把某个 AGP 版本的 `intermediates` 路径固化到工具中。
 
-自有 Provider 可以直接包 trace：
+### 3.2 每个 Provider 要记录什么
+
+| 字段 | 核对内容 |
+| --- | --- |
+| 身份 | 类名、authority、来源 artifact、精确版本 |
+| 构建 | 哪些 variant 出现、由哪条 merge 规则引入 |
+| 进程 | `android:process` 与 `<application android:process>` 的合并结果 |
+| 顺序 | `initOrder` 及是否存在静态依赖 |
+| 生命周期 | enabled、directBootAware、是否会在用户解锁前运行 |
+| 安全 | exported、read/write permission、URI grant、path permission |
+| 工作 | `onCreate()` 同步工作、worker、注册项、磁盘和网络 |
+| 必要性 | TTID 前、TTFD 前、功能首用或未使用 |
+| 运维 | 显式 init API、停止/禁用、回退和供应商联系人 |
+
+如果同一 SDK 带来多个 Provider，要按业务能力归组，避免只删表面入口却留下另一个自动入口。
+
+## 4. 如何测量 Provider 成本
+
+### 4.1 自有 Provider
+
+自有 Provider 可以直接用稳定名称包住 `onCreate()`。下面的代码只用于观测同步入口：
 
 ```kotlin
 class AppInitProvider : ContentProvider() {
     override fun onCreate(): Boolean {
-        Trace.beginSection("AppInitProvider#onCreate")
-        try {
-            // 只保留首帧前必须完成的轻量工作。
-            return true
-        } finally {
-            Trace.endSection()
+        return trace("startup/AppInitProvider") {
+            installMinimalState(requireNotNull(context))
+            true
         }
     }
 }
 ```
 
-这段 trace 会出现在 Perfetto 主线程轨道里，它和 `bindApplication`、`Application.onCreate()` 的相对位置直接说明 Provider 是否挤占了冷启动关键路径。
+这个 slice 的持续时间是同步 `onCreate()` 时间。若 `installMinimalState()` 只提交 worker，必须在 worker 端继续记录排队、运行和逻辑完成；Provider slice 结束不能代表初始化已就绪。
 
-## 三方 SDK ContentProvider 审计与治理
+开发阶段还可用 StrictMode 捕获自有代码的主线程磁盘/网络，但它不是生产耗时指标，也不一定覆盖 native 或供应商内部全部访问。
 
-三方 SDK 用 ContentProvider 做自动初始化，原因很现实：SDK 不想让接入方手写初始化代码，也不想依赖宿主在 `Application.onCreate()` 里按顺序调用。代价是所有接入方都在启动阶段支付初始化成本——即使首屏根本用不到这个 SDK。
+### 4.2 第三方 Provider
 
-### 审计清单
+闭源 Provider 无法增加切片时，使用组合证据：
 
-每个 Provider 都按这张表过一遍：
+1. 从 merged Manifest 和 merge report 锁定类与来源版本。
+2. 在 Perfetto 的 `bindApplication` 窗口看主线程栈、I/O、Binder 和类加载。
+3. 生成只改变该 Provider 自动入口的 A/B release 产物。
+4. 在 B 产物的等价场景显式初始化同一 SDK，分开测量“组件固定成本”和“SDK 业务成本”。
+5. 重复冷启动，比较分布和 Trace，不用单次差值。
 
-| 字段 | 要记录什么 | 判断方式 |
-|---|---|---|
-| Provider 类名 | `android:name` 对应的类 | 合并 manifest |
-| 来源库 | 哪个 AAR 注入了它 | `manifest-merger-*.txt` 或 Gradle 依赖树 |
-| 所在进程 | 主进程、子进程、remote 进程 | `android:process` |
-| 初始化内容 | 日志、埋点、推送、WorkManager、数据库、文件共享 | 查 SDK 文档和源码 |
-| 首屏必要性 | 首帧前必须完成、可降级、可延后 | 产品路径和实验数据 |
-| 耗时量级 | P50 / P90 / P99 | Perfetto、启动埋点、采样 trace |
-| 移除方式 | `tools:node="remove"`、关闭 SDK 自动初始化、迁移到 App Startup | SDK 文档和本地验证 |
+如果供应商不允许关闭自动初始化，要求其提供诊断构建、Trace 或源码说明。不要通过反射跳过私有方法，这会把升级风险带进启动关键路径。
 
-判断一个 Provider 能不能留在启动路径，只看两条：首帧前是否要用它的结果；移走后会不会破坏 crash、合规、安全、登录态这类基础能力。埋点、广告、推送、预加载、远程配置拉取，大多不应该堵在 Provider `onCreate()` 里。
+### 4.3 观察跨进程等待
 
-### 分级治理
+主进程调用 `ContentResolver` 获取远端 authority 时，ActivityThread 可能向 system_server 请求 Provider，并等待 hosting process 发布。诊断时同时看：
 
-| 级别 | 标准 | 处理方式 |
-|---|---|---|
-| P0 | 首屏必须依赖，且耗时 < 5ms | 保留，但加 trace 和超时保护 |
-| P1 | 首屏必须依赖，耗时 5-50ms | 拆出轻量同步部分，重任务放后台 |
-| P2 | 首屏不依赖，但启动后短时间要用 | 从 Provider 移到启动框架，安排到首帧后 |
-| P3 | 低频功能或后台功能 | 按场景懒加载，进入功能时初始化 |
-| P4 | SDK 默认注入但业务未使用 | 从 manifest 移除 |
+- 调用进程的 Binder/等待状态；
+- system_server 的 provider 获取和进程启动；
+- hosting process 的 bind、Provider `onCreate()` 和 publish；
+- 超时、死亡与重试。
 
-这张分级表要和 21.2 节的启动任务 DAG 接起来。Provider 只负责“让组件存在”，不适合承载复杂初始化。复杂初始化一旦有依赖、线程约束和超时要求，就应该进入统一启动框架。
+调用方线程若是 Main，这段等待会直接进入 UI 关键路径。远端进程并不会让同步访问自动变快。
 
-### manifest 移除要做双重验证
+## 5. 按用户可见边界分类
 
-下面是移除某个三方 Provider 的常见写法。示例里的 Provider 名只是示意，实际类名要以合并 manifest 为准。
+不要给 Provider 统一规定 5 ms 或 50 ms。准入预算应从应用的 TTID/TTFD SLO、当前余量、设备档位和入口推导。
+
+| 类别 | 判断 | 处理 |
+| --- | --- | --- |
+| 未使用 | 业务没有调用且组件仅由依赖默认注入 | 移除，并做功能/构建回归 |
+| TTID 前必要 | 首个应用帧缺少它就无法正确生成 | 只保留最小同步状态，设置明确失败路径 |
+| TTFD 前必要 | 第一帧可先出现，主要操作仍需等待 | 移出 Provider，进入任务图 |
+| 功能首用 | 分享、地图、支付、广告等特定入口才需要 | 单次按需初始化 |
+| 延后维护 | 日志整理、上传、预取等 | 在页面可用后按资源预算调度 |
+
+“Crash SDK 必须最早”“远程配置必须首帧前”等结论也要拆分。Crash 捕获、历史日志整理、符号上传可以是不同阶段；远程配置通常可先使用本地可信快照。
+
+分类完成后，每个任务都要有 owner、完成条件、失败结果和验证场景。没有这些契约，挪出 Provider 只会把隐式时序问题移到别处。
+
+## 6. 从 Manifest 删除自动入口
+
+### 6.1 优先使用供应商开关
+
+供应商若提供官方的 manifest placeholder 或 Gradle 开关，应优先使用。它通常会同时调整 Provider、metadata 和 SDK 内部状态。
+
+没有开关时，可以在高优先级应用 Manifest 中使用 merge marker。下面的规则按 Provider 类名移除下游库声明：
 
 ```xml
-<provider
-    android:name="com.vendor.sdk.AutoInitProvider"
-    android:authorities="${applicationId}.vendor-init"
-    tools:node="remove" />
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application>
+        <provider
+            android:name="com.vendor.sdk.AutoInitProvider"
+            tools:node="remove" />
+    </application>
+</manifest>
 ```
 
-移除后要做两类验证：
+Manifest merger 对 `<provider>` 的匹配键是 `android:name`。如果只想影响某个库，可在理解 merge 来源后使用 `tools:selector`，但仍要检查最终结果。
 
-- **构建验证**：release / debug / 多渠道包的合并 manifest 都不再包含该 Provider。
-- **运行验证**：冷启动、登录、推送、crash 上报、埋点、后台任务都跑一遍；如果 SDK 有远程开关，要验证关闭自动初始化后仍能通过显式 API 初始化。
+### 6.2 删除后的验证
 
-不要只在 debug 包验证——很多 Provider 来自 release-only 依赖或渠道依赖，debug 包正常不代表线上包正常。
+至少验证：
 
-## 延迟初始化与按需注册
+- release、debug、渠道、动态特性等相关变体；
+- merged Manifest 和 merger report 已无目标节点；
+- SDK 显式初始化只执行一次；
+- deep link、推送、后台任务、登录、分享、支付等入口；
+- 用户同意、拒绝、撤回与无网路径；
+- direct boot、备份恢复、升级安装和进程重建；
+- Java mapping、native symbols 和监控仍可用。
 
-ContentProvider 启动治理要把初始化挪到更合适的时机。时机分三类：首帧前、首帧后、首次使用时。
+若 Provider 对外提供 content URI，删除它属于 API/数据共享变更，不是单纯性能优化。还要检查调用方、权限、URI grant 和历史数据迁移。
 
-### 首帧前只留最小集合
+`tools:node="remove"` 只改变合并结果，不会阻止供应商以后换类名或新增另一个 Provider。SDK 升级必须重新做 Manifest 差异。
 
-首帧前只保留满足以下条件的任务：
+## 7. 显式初始化的状态机
 
-- 没有它 App 不能显示首屏。
-- 它的同步部分足够小，通常 < 5ms。
-- 它不涉及磁盘大文件读取、网络请求、数据库升级、批量反射扫描。
-- 它失败时有明确降级路径。
+按需初始化至少包含这些状态：
 
-例如 crash 捕获器的最小初始化可以保留：设置 `UncaughtExceptionHandler`、准备进程名、记录版本信息。符号表上传、远程配置、历史日志整理都应该延后。
-
-### 首帧后初始化
-
-首帧后任务适合放到启动框架的 LOW / NORMAL 队列，或者挂到首帧回调之后——在用户看到页面后继续执行，避免阻塞 TTID。
-
-下面是一种首帧绘制后调度的写法。它只表达时机，线程池和任务依赖应交给 21.2 节的启动框架处理。
-
-```kotlin
-class MainActivity : Activity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.main)
-
-        val content = window.decorView
-        // OnPreDrawListener 可在 onPreDraw 内安全移除自身；
-        // OnDrawListener.onDraw() 内调用 removeOnDrawListener() 在 android-17 上
-        // 对 targetSdk >= O 会抛 IllegalStateException
-        content.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
-            override fun onPreDraw(): Boolean {
-                content.viewTreeObserver.removeOnPreDrawListener(this)
-                content.post {
-                    StartupTasks.afterFirstDraw()
-                }
-                return true // 不阻止绘制
-            }
-        })
-    }
-}
+```text
+NotStarted → Initializing → Ready
+                   ├──────→ Degraded
+                   └──────→ Failed
 ```
 
-这个回调适合把非首屏任务移出第一轮绘制。对 TTID / TTFD 要求严格的场景，应结合 `reportFullyDrawn()`、Macrobenchmark 或 Perfetto 验证。详见 21.1 节。
+并发调用应共享同一个 `Initializing` 结果，不能重复启动；调用者可以挂起或注册回调，不要在 Main 用锁或 `Future.get()` 阻塞等待。
 
-### 首次使用时初始化
+状态机还要定义：
 
-低频能力适合按需初始化，例如分享、地图、支付、广告、客服、相机滤镜。按需初始化要处理好三个问题：
+- SDK 是否要求 Main 调用；
+- 异步回调何时代表逻辑可用；
+- 超时是否能协作取消；
+- 晚到结果是否允许写状态；
+- 失败是否缓存、何时重试；
+- 用户撤回同意后如何停止与清理；
+- 进程重建后如何恢复。
 
-1. **并发安全**：多个入口同时触发初始化时，只能执行一次。
-2. **超时和降级**：初始化失败不能卡住用户操作。
-3. **状态可观测**：初始化耗时、失败原因、版本维度要进入性能看板。
+不能笼统地把 SDK 初始化丢进 I/O 线程。有些 SDK 明确要求 Main，有些初始化同时包含 Main 注册和 worker 准备，应拆成有依赖的两个任务。
 
-下面是一个简化的按需初始化骨架。它说明并发去重和超时边界，真实项目里要接入统一任务框架和日志系统。
+## 8. “首帧后”需要说明观测点
+
+`OnPreDrawListener` 在 draw 之前执行，`View.post()` 也只表示 Runnable 进入 Main 消息队列。两者都不能证明帧已提交。
+
+本章适用范围从 API 29 开始。硬件渲染页面可以用 `registerFrameCommitCallback()` 在下一帧提交到 swap chain 后触发延后任务：
 
 ```kotlin
-object ShareSdkHolder {
-    @Volatile private var initialized = false
-    private val lock = Any()
+val root = window.decorView
 
-    fun ensureInitialized(context: Context) {
-        if (initialized) return
-        synchronized(lock) {
-            if (initialized) return
-            Trace.beginSection("ShareSdk#init")
-            try {
-                ShareSdk.init(context.applicationContext)
-                initialized = true
-            } finally {
-                Trace.endSection()
+root.doOnPreDraw {
+    if (root.isHardwareAccelerated) {
+        root.viewTreeObserver.registerFrameCommitCallback {
+            root.post {
+                startupScheduler.start(StartupPhase.DEFERRED)
             }
+        }
+    } else {
+        root.post {
+            startupScheduler.start(StartupPhase.DEFERRED)
         }
     }
 }
 ```
 
-这类代码不要放回 Provider——它的价值在于把成本绑定到真实使用场景：用户没进分享页，就不支付分享 SDK 的启动成本。
+`doOnPreDraw` 在本轮绘制前注册回调。硬件路径的 callback 表示帧已提交到 swap chain，仍不等于像素已经显示；软件渲染 fallback 只保证工作排到当前 traversal 之后。代码还需处理 Activity 销毁、重复注册和取消。
 
-## App Startup 替代方案
+延后任务可能与下一帧交互争用 CPU/I/O。调度后仍要用 FrameTimeline、TTID/TTFD 和真实交互场景验证。若任务是“主要内容可用”的必要条件，应进入 TTFD 图，而非 `DEFERRED`。
 
+## 9. App Startup 1.2.0 的准确边界
 
-Jetpack App Startup 解决的是“多个库各自声明 Provider 自动初始化”的混乱问题。它把自动初始化入口集中到一个 `InitializationProvider`，再通过 `Initializer.dependencies()` 表达依赖关系。
+### 9.1 它减少的是入口，不是业务工作
 
-`InitializationProvider` 本身就是 ContentProvider，所以自动初始化仍然发生在 `Application.onCreate()` 之前。App Startup 不会消灭 Provider 的启动成本——它只是把多个 Provider 合并成一个入口，把依赖顺序从 manifest 的隐式排列改成显式依赖图。
+[Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup) 让多个组件共享一个 `InitializationProvider`，并用 `Initializer.dependencies()` 声明顺序。相比每个 SDK 各带一个 Provider，它减少了 Provider 类、实例和 `onCreate()` 入口，也让依赖关系集中。
 
-### 适合迁入 App Startup 的任务
+App Startup 仍基于 ContentProvider。自动发现和所有 `Initializer.create()` 在 Provider 安装阶段同步运行，不会自动进入 worker，也不会删除 SDK 内部的磁盘、锁或网络成本。
 
-| 任务类型 | 是否适合 | 原因 |
-|---|---|---|
-| 轻量基础设施 | 适合 | 日志、进程判断、轻量配置读取，依赖关系清楚 |
-| 首屏必要 SDK | 谨慎 | 可以用依赖图管理顺序，但耗时仍在冷启动前段 |
-| 重 IO / 网络 / 数据库升级 | 不适合自动初始化 | 会直接阻塞 `Application.onCreate()` 之前的主线程 |
-| 低频功能 SDK | 不适合自动初始化 | 应按需初始化 |
-| 多进程功能 | 谨慎 | 要确认每个进程是否都需要初始化 |
+1.2.0 `AppInitializer` 的核心行为是：
 
-`AppInitializer` 会在运行时检查循环依赖：初始化中的组件再次进入时直接抛 `Cycle detected` 异常。这比 `android:initOrder` 更可靠——依赖关系写在 `Initializer.dependencies()` 里，框架能在运行时发现环。
+- 从 `InitializationProvider` metadata 发现入口 initializer；
+- 反射构造 initializer；
+- 深度优先执行依赖；
+- 用 `initializing` 集合检测环；
+- 缓存已经初始化的结果；
+- 给发现过程和 initializer 增加 Trace section。
 
-### 从多 Provider 迁移到 App Startup
+### 9.2 自动初始化
 
-迁移流程：
-
-1. 从合并 manifest 中列出所有 SDK Provider。
-2. 对每个 Provider 判断首屏必要性和耗时。
-3. 首屏必要且轻量的任务迁入 App Startup。
-4. 首屏不必要的任务关闭自动初始化，改成首帧后或按需初始化。
-5. 用 Perfetto 对比迁移前后的 `bindApplication` 到 `Application.onCreate()` 时间。
-
-下面是一个 App Startup 初始化器示例。重点看 `dependencies()`：它表达初始化顺序，不依赖 manifest 中 Provider 的排列。
+下面的 initializer 声明 CrashClient 依赖 Logger：
 
 ```kotlin
 class CrashInitializer : Initializer<CrashClient> {
     override fun create(context: Context): CrashClient {
-        Trace.beginSection("CrashInitializer")
-        try {
-            return CrashClient.install(context.applicationContext)
-        } finally {
-            Trace.endSection()
-        }
+        return CrashClient.install(context.applicationContext)
     }
 
     override fun dependencies(): List<Class<out Initializer<*>>> {
@@ -338,7 +391,9 @@ class CrashInitializer : Initializer<CrashClient> {
 }
 ```
 
-对应 manifest 只声明需要自动发现的入口 initializer：
+`LoggerInitializer.create()` 完成后，App Startup 才调用 `CrashInitializer.create()`。两个方法都要同步返回可用结果；内部若只提交异步任务，依赖图无法知道何时就绪。
+
+Manifest 只需要自动发现图的入口节点：
 
 ```xml
 <provider
@@ -352,7 +407,11 @@ class CrashInitializer : Initializer<CrashClient> {
 </provider>
 ```
 
-如果某个 initializer 不应该启动时自动执行，就移除它的 `meta-data`，再用 `AppInitializer` 手动触发：
+依赖节点由 `dependencies()` 发现，不必重复写 metadata。添加前要确认原 SDK Provider 已按官方方式删除，避免两条入口重复初始化。
+
+### 9.3 手动初始化
+
+不需要 eager 的 initializer，应从最终 Manifest 删除对应 metadata：
 
 ```xml
 <provider
@@ -366,39 +425,80 @@ class CrashInitializer : Initializer<CrashClient> {
 </provider>
 ```
 
+需要时显式触发该组件：
+
 ```kotlin
-AppInitializer.getInstance(context)
+val shareClient = AppInitializer.getInstance(context)
     .initializeComponent(ShareInitializer::class.java)
 ```
 
+`initializeComponent()` 会在调用线程同步初始化该组件及未完成的依赖。调用方必须满足所有 initializer 的线程契约，不能因为“手动”就默认安全地从任意 worker 调用。
 
-这套写法适合把“自动初始化”和“按需初始化”拆开。自动初始化只保留首屏前必要的轻量任务，其他任务由业务入口或启动框架显式触发。
+官方文档还指出，关闭某个组件的自动初始化会同时关闭经它自动发现的依赖。迁移时应画出完整依赖图，避免另一个入口仍然 eager 初始化同一依赖。
 
-## 多进程初始化要单独治理
+## 10. 多进程与 Direct Boot
 
+### 10.1 Provider 属于 hosting process
 
-ContentProvider 的 `android:process` 决定了初始化发生在哪个进程。主进程启动时安装主进程 Provider，子进程启动时安装子进程 Provider。问题常出在 SDK 没有进程判断——推送进程、WebView 独立进程、下载进程启动后，也跑了一遍主进程才需要的初始化。
+最终 Manifest 决定 Provider 在哪个进程创建。每个进程拥有独立 heap、类静态字段和 App Startup 单例：
 
-治理规则：
+- 默认 Provider 只随应用默认进程安装；
+- `android:process=":push"` 的 Provider 在私有 `:push` 进程运行；
+- 显式把 InitializationProvider 声明到多个进程，会形成多份独立初始化结果；
+- 一个进程不能依赖另一个进程的静态 `initialized` 布尔值。
 
-- 每个 initializer 都要判断当前进程名，明确是否只在主进程执行。
-- 子进程只初始化该进程必需的能力。例如推送进程只保留推送接收和最小日志。
-- 跨进程共享状态不要依赖静态单例，改用进程安全的持久化或 Binder 服务。
-- Perfetto 里主进程和子进程分开看，不要只看主进程的启动指标。
+进程选择应尽量在 Manifest/构图阶段完成。进入 initializer 后才按进程名 return，已经可能支付类加载和静态初始化成本。
 
-进程判断可以用 `Application.getProcessName()`（API 28+）。低版本用 `/proc/self/cmdline` 兜底时，要封装在统一工具里——避免每个 SDK 各读一次文件。
+### 10.2 Direct Boot
 
-## 验收标准
+`android:directBootAware="true"` 允许 Provider 在用户解锁前运行。此时只能依赖 device-protected storage 和 Direct Boot 可用能力。不要为了提早初始化随意打开该属性；凭据加密存储、用户数据和依赖它们的 SDK 在此阶段不可用。
 
-ContentProvider 启动治理完成后，不以“删了几个 Provider”作为结果，而看启动指标和功能回归：
+### 10.3 `multiprocess` 与重复实例
 
-| 验收项 | 通过标准 |
-|---|---|
-| Provider 清单 | release 合并 manifest 中每个 Provider 都有来源、进程、用途、保留理由 |
-| 启动耗时 | `bindApplication` 到 `Application.onCreate()` 之间的 P90 有下降或无新增 |
-| 首帧指标 | TTID / TTFD 不回退，低端机 P90 单独看 |
-| 功能回归 | crash、埋点、推送、WorkManager、登录态、分享、支付按场景验证 |
-| 多进程 | 子进程没有执行主进程专属初始化 |
-| 可观测性 | 保留的 Provider 和 initializer 都有 trace 名称和耗时上报 |
+Manifest 的 `android:multiprocess="true"` 允许在调用进程创建 Provider 实例，会增加实例与状态一致性复杂度。不要把它当作减少 Binder 延迟的通用启动优化。迁移前要核对旧应用是否依赖这项少见行为，并用目标 API 37 设备验证。
 
-如果迁移后 TTID 没变，也不代表工作白做了。很多 Provider 的成本在 `Application.onCreate()` 之前，过去监控根本没覆盖到；迁移后至少能把隐式成本变成可追踪、可编排、可按需触发的启动任务。
+## 11. 性能优化不能破坏 Provider 安全
+
+每个保留或迁移的 Provider 还要检查：
+
+- authority 是否唯一且使用 applicationId 前缀；
+- `android:exported` 是否显式符合共享需求；
+- read/write permission 与 path permission；
+- URI grant 的授予和撤回；
+- 组件是否只在必要用户/进程启用；
+- `call()`、`openFile()` 和批处理接口是否暴露越权操作。
+
+将外部 Provider 改成应用内 singleton，或把 remote Provider 改到主进程，都可能改变安全边界、故障隔离和内存成本。它们需要单独设计，不能只看 TTID。
+
+## 12. 验收标准
+
+| 验收项 | 需要的证据 |
+| --- | --- |
+| 组件清单 | 每个 release Provider 有来源、版本、进程、用途和 owner |
+| Manifest | 所有目标 variant 的合并结果和差异 |
+| 启动 | 冷启动 TTID/TTFD 分布与回归样本 Trace |
+| Provider 阶段 | bind 内同步成本、worker 竞争和跨进程等待 |
+| 功能 | 各入口、同意状态、无网、升级、进程重建 |
+| 多进程 | 每个进程只执行必要图，跨进程失败可降级 |
+| 安全 | exported、权限、authority 和 URI grant 复核 |
+| 运维 | 显式 init、禁用、回退和 SDK 升级检查 |
+
+完成治理后，报告应能回答：
+
+1. 哪些 Provider 仍会在 TTID 之前自动执行？
+2. 每个 `onCreate()` 同步做了什么？
+3. 哪些初始化被移到 TTFD 或功能首用？
+4. 失败、超时和进程死亡如何降级？
+5. SDK 升级新增 Provider 时如何被发现？
+
+Provider 数量减少只是实现变化。验收依据是用户可见启动、功能正确性和安全边界都得到可重复验证。
+
+## 参考资料
+
+- [AOSP Android 17 `ActivityThread`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [AOSP Android 17 `ContentProvider`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ContentProvider.java)
+- [Android `<provider>` manifest 元素](https://developer.android.com/guide/topics/manifest/provider-element)
+- [Manifest 合并规则](https://developer.android.com/build/manage-manifests)
+- [Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup)
+- [Jetpack Startup 1.2.0 源码包](https://dl.google.com/dl/android/maven2/androidx/startup/startup-runtime/1.2.0/startup-runtime-1.2.0-sources.jar)
+- [`ViewTreeObserver.registerFrameCommitCallback`](https://developer.android.com/reference/android/view/ViewTreeObserver)
