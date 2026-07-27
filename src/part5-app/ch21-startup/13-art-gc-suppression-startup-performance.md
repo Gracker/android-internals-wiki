@@ -24,358 +24,248 @@ sources:
 
 # 21.13 ART GC 抑制与启动性能优化
 
-ART 虚拟机的并发 GC（Concurrent Copying）虽已不再 Stop-The-World，但仍会通过 CPU 时间片争抢和内存锁持有影响启动等关键场景的性能。从 Perfetto trace 中经常能看到启动阶段 HeapTaskDaemon 线程有大块 Running 切片，与主线程、RenderThread 争抢 CPU。本节从 HeapTaskDaemon 的运行机制入手，分析 GC 对启动的影响路径，给出基于系统机制和 Native Hook 两条抑制路线，并标注各方案在 Android 14-17 的兼容性边界。
+先给工程结论：三方 App 没有受支持的“暂停 ART GC”接口，也不应修改 `libart.so` 的任务函数或 vtable。这里所说的 GC 抑制，应理解为**降低启动阶段的分配速率和存活对象规模，让 ART 更少达到 GC 触发条件**。
 
-关于 ART GC 的分代机制和 GC 暂停优化原理，详见 4.8 节。本节聚焦"如何抑制 GC 执行"这个工程问题。
+Android 17 已在 Zygote fork 后主动放宽 Java heap 的启动期阈值。App 若仍在首帧前触发 GC，通常说明启动分配接近 heap growth limit、显式请求了 GC、native allocation 反馈造成压力，或进程状态变化触发了回收。排查目标应是找到这些分配和触发原因，而非阻塞 `HeapTaskDaemon`。
+
+本节基于 `android-17.0.0_r1` 解释当前行为。ART GC 的收集器和分代机制见 4.8，启动任务治理见 21.2 和 21.6。
 
 ## GC 对启动性能的影响路径
 
-HeapTaskDaemon 是 ART 虚拟机的 GC 守护线程，在 Zygote fork 后随应用进程启动。该线程在执行 GC 操作时有两条路径影响启动性能：
+现代 ART 的回收大部分可以与 mutator 并发执行，但“并发”不表示对启动没有成本。需要区分三条影响路径：
 
-**CPU 时间片争抢。** 并发 GC 运行在 HeapTaskDaemon 线程上，GC 操作涉及大量内存扫描和拷贝，CPU 占用高。启动阶段主线程和 Binder 线程都在密集工作，HeapTaskDaemon 与它们争抢 CPU 时间片，导致关键任务变慢。
+1. **短暂停顿。** 并发收集器仍有需要挂起 mutator 的阶段。暂停若落在主线程关键路径上，会直接增加 TTID/TTFD。
+2. **分配线程等待。** 分配失败或必须等待正在运行的 GC 完成时，主线程可能阻塞；`heap.cc` 把 `kGcCauseForAlloc` 视为需要关注的暂停来源。
+3. **共享资源竞争。** `HeapTaskDaemon` 执行标记、扫描、复制或整理时，会消耗 CPU、内存带宽和缓存。主线程即使没有被挂起，也可能得到更少的 CPU 时间。
 
-**内存锁持有。** GC 过程中会持有 Heap 对象的内部锁（`Locks::mutator_lock_`、`Locks::heap_bitmap_lock_` 等），虽然并发 GC 不会完全暂停应用线程，但在 GC 的某些阶段（如标记根集、修改堆栈映射）仍需短暂持锁。主线程在分配内存时如果碰到这些阶段，就会被阻塞。
+`HeapTaskDaemon` 不只执行 GC。它还处理 collector transition、heap trim、启动完成清理等 heap task。因此，看到该线程 Running 只能证明它在工作，不能直接得出“GC 导致启动慢”的结论。还需要对齐 ART slice、主线程状态和分配记录。
 
-在 Perfetto 中观察这一现象的方法：
+## Android 17 的 HeapTaskDaemon 调度链
 
-1. 抓取启动阶段的 trace，搜索 `HeapTaskDaemon` 线程
-2. 查看 Running 状态的切片时长和分布密度
-3. 对比 HeapTaskDaemon Running 的时间段与主线程的 CPU 使用情况
-4. 如果 HeapTaskDaemon 在启动前 2 秒内有大块 Running 切片，说明 GC 正在与启动任务争抢资源
+下面的调用链用于定位 Java daemon 与 ART native 任务队列之间的边界。
 
-量化方法：用 Perfetto SQL 统计 HeapTaskDaemon 在启动阶段的 CPU 占比：
+```text
+Daemons.HeapTaskDaemon.runInternal()
+  ├─ VMRuntime.startHeapTaskProcessor()
+  └─ VMRuntime.runHeapTasks()
+       └─ TaskProcessor::RunAllTasks()
+            └─ GetTask() → HeapTask::Run()
+```
+
+`TaskProcessor` 用按 `target_run_time` 排序的 `multiset` 保存任务。队列为空时，daemon 等待条件变量；队首任务尚未到时，它执行定时等待。`AddTask()` 插入新任务后会发送 signal，因此一个 target time 更早的新任务可以唤醒 daemon 并成为新队首。
+
+Android 17 的常见任务包括：
+
+| 任务 | 源码职责 | 与启动分析的关系 |
+|---|---|---|
+| `ConcurrentGCTask` | 调用 `Heap::ConcurrentGC()` | 需要结合 GC cause、暂停与 Running 时间分析 |
+| `CollectorTransitionTask` | 处理前后台 collector 状态变化 | 进程状态变化附近可能出现，不等同于分配触发 GC |
+| `HeapTrimTask` | 尝试归还空闲页并整理相关内存 | 关注 trim slice，不能算作 GC CPU |
+| `ReduceTargetFootprintTask` | 延后收紧 post-fork heap 目标 | Android 17 启动期阈值调整的一部分 |
+| `TriggerPostForkCCGcTask` | 长时间没有发生 GC 时请求一次后台 GC | 用于回收启动垃圾，不是在 fork 后 2 秒立即执行 |
+| `StartupCompletedTask` | 通知 runtime 启动结束、释放 startup dex cache/linear alloc 等资源 | 由 framework/runtime 管理，不是 App 的 GC 开关 |
+
+`ConcurrentGCTask` 请求时使用 `NanoTime()` 作为 target time，也就是尽快运行。延时队列中已有 `ReduceTargetFootprintTask` 或 post-fork GC，不会阻止这个立即任务排到前面。
+
+## Android 17 的 post-fork 启动期策略
+
+`Heap::PostForkChildAction()` 是本章最重要的源码锚点。Android 17 做了四件事：
+
+1. 增加 GC sequence number，使 Zygote 或 fork 极早期已经排队的旧 GC 请求失效，避免子进程刚 fork 就执行旧请求。
+2. 把 `target_footprint_` 临时提高到 `growth_limit_`，再重新计算 `concurrent_start_bytes_`，源码注释直接写明目的是避免 App launch 期间 GC。
+3. 在 2 秒后尝试把目标收紧到 `max(growth_limit / 4, initial_heap_size)`；如果仍高于初始值，再过 8 秒收紧到 `initial_heap_size`。若期间已经发生 GC，这些收紧任务会成为无操作。
+4. 更晚再安排 `TriggerPostForkCCGcTask`。它只在自 fork 以来仍未发生 GC 时请求后台回收，用于避免长期保留启动垃圾；时间还加入了按 UID 生成的 0—19,999 ms 抖动。
+
+所以，“系统固定屏蔽 GC 两秒”的说法并不准确。2 秒是第一次 footprint 收紧的延迟，不是 TaskProcessor 的全局冻结窗口。启动分配若触及 growth limit、发生 allocation failure、收到其他 GC 请求或遇到进程状态变化，GC 仍可能发生。
+
+这套策略只适用于新 fork 的进程。温启动、热启动复用已有进程，不会重新执行 `PostForkChildAction()`；多进程 App 的每个新进程则有自己的 heap 和 post-fork 状态。
+
+## 用 Perfetto 建立因果证据
+
+采集配置至少要包含 `sched`、CPU frequency/idle 和 ART/dalvik trace。分析时先标出进程启动、`bindApplication`、首帧和 fully drawn 边界，再看 GC 是否与关键路径重叠。
+
+推荐按下面的顺序判断：
+
+1. 在 App 进程中找到 `HeapTaskDaemon`，确认它在启动窗口内是否 Running。
+2. 查看同一窗口的 ART/GC slice，区分 concurrent GC、blocking GC、trim 与其他 task。
+3. 检查主线程在重叠区间是 Running、Runnable、Sleeping 还是阻塞；Runnable 但长期拿不到 CPU 更支持“资源竞争”，明确的 suspend/wait slice 更支持“GC 等待”。
+4. 对照 TTID/TTFD，确认 GC 位于关键路径，而非首帧之后。
+5. 再用分配记录定位哪段代码制造了短命对象或保留了大量对象。
+
+下面的 Perfetto SQL 统计一个已知启动窗口内 `HeapTaskDaemon` 的 scheduler Running 时间。请先把 `VALUES` 中的两个数字替换为 trace 内的纳秒时间戳。
 
 ```sql
--- 统计启动前 3 秒内 HeapTaskDaemon 的 CPU 时间
+WITH bounds(start_ns, end_ns) AS (
+  VALUES (123000000000, 126000000000)
+)
 SELECT
-  EXTRACT(SECOND FROM ts) AS sec,
-  SUM(dur) / 1e6 AS cpu_ms
-FROM slice
-WHERE thread_name = 'HeapTaskDaemon'
-  AND ts BETWEEN ${launch_ts} AND ${launch_ts} + 3e9
-GROUP BY sec
-ORDER BY sec;
+  p.name AS process_name,
+  SUM(
+    MAX(
+      0,
+      MIN(ts.ts + ts.dur, b.end_ns) - MAX(ts.ts, b.start_ns)
+    )
+  ) / 1e6 AS running_ms
+FROM thread_state ts
+JOIN thread t USING (utid)
+JOIN process p USING (upid)
+CROSS JOIN bounds b
+WHERE p.name = 'com.example.app'
+  AND t.name = 'HeapTaskDaemon'
+  AND ts.state = 'Running'
+  AND ts.ts < b.end_ns
+  AND ts.ts + ts.dur > b.start_ns
+GROUP BY p.name;
 ```
 
-如果 HeapTaskDaemon 在启动前 2 秒内的 CPU 占比超过 10%，值得考虑 GC 抑制。
+这条查询只计算 CPU Running 时间，不区分是哪一种 heap task。没有适用于所有应用的“10% 就需要抑制”阈值；要用同一设备、同一构建、同一启动入口的 A/B 结果判断。
 
-## ART HeapTaskDaemon 运行机制
+Logcat 中的 ART GC 行可补充 cause、freed bytes、heap 大小、pause 和 total duration，但 Android 17 `Heap::LogGC()` 不保证打印每一次普通 GC。没有日志不能证明启动期间没有 GC。
 
-[已验证: AOSP android-17.0.0_r1, libcore/libart/src/main/java/java/lang/Daemons.java + art/runtime/gc/task_processor.cc]
+## 从 GC 事件追到分配调用栈
 
-HeapTaskDaemon 的创建路径在 Java 层：
+Perfetto 适合确认时序和关键路径，Java/Kotlin Allocation Recording 适合找到对象类型与调用栈。分配记录会引入明显开销，尤其是 Full tracking，因此只能用于归因，不应拿它的启动耗时作为性能结论。
 
-```
-Daemons.java → HeapTaskDaemon.INSTANCE → runInternal() → VMRuntime.getRuntime().runHeapTasks()
-```
+建议做两轮采集：
 
-`runHeapTasks()` 是一个 JNI 方法，对应 Native 层的 `TaskProcessor::RunAllTasks()`：
+- **release/profileable trace**：复现 TTID/TTFD，确认 GC、主线程与 CPU 调度关系；
+- **debuggable allocation recording**：只截取 `ContentProvider`、`Application.onCreate()`、首个 Activity 和首屏构建窗口，按 allocated bytes、allocation count 和 remaining size 排序。
 
-```cpp
-// art/runtime/gc/task_processor.cc
-void TaskProcessor::RunAllTasks(Thread* self) {
-  while (true) {
-    HeapTask* task = GetTask(self);
-    if (task != nullptr) {
-      task->Run(self);
-      task->Finalize();
-    } else if (!IsRunning()) {
-      break;
-    }
-  }
-}
-```
+排查时把对象分成三类：
 
-这是一个无限循环：从任务队列中取出 HeapTask 并执行。`GetTask` 会阻塞等待（tasks 集合为空时调用 `cond_.Wait()`），直到有新任务或任务的延迟时间到达。
+| 类型 | 典型信号 | 处理方向 |
+|---|---|---|
+| 大量短命对象 | allocation count 高，GC 后 remaining size 低 | 去掉临时集合/字符串/包装对象，减少重复解析 |
+| 大量启动后仍存活对象 | remaining size 高 | 检查全局缓存、SDK、DI graph、图片和首屏模型 |
+| 单个或少量大对象 | byte[]、Bitmap、大数组占比高 | 延后加载、降低尺寸、流式处理或按需映射 |
 
-### HeapTask 继承体系
+“把工作移到后台线程”不会自动降低 GC 压力。Java heap 是进程共享的，后台线程仍在同一个 heap 分配；这只能减少主线程 CPU 工作，不能消除并发 GC 或内存带宽竞争。
 
-[已验证: AOSP android-17.0.0_r1, art/runtime/gc/task_processor.h]
+## 可发布应用的治理顺序
 
-```
-Closure (定义 Run 虚函数)
-  └─ Task (定义 Finalize 虚函数)
-      └─ SelfDeletingTask (Finalize 中 delete this)
-          └─ HeapTask (加入 target_run_time_ 字段和优先队列排序)
-```
+### 1. 移出首帧前不需要的对象图
 
-`TaskProcessor` 内部用 `std::multiset<HeapTask*, CompareByTargetRunTime>` 按 `target_run_time_` 排序管理任务队列，队列头部的任务最早执行。
+对每个启动任务记录“首帧前是否必须完成”和“会保留多少对象”。分析、推送、广告、搜索索引、二级页面模型等任务若与初始显示无关，应延迟到首帧后、首次使用时或后台调度。延迟初始化的生命周期与线程安全策略见 21.6。
 
-### 主要 HeapTask 类型
+延后任务也要错峰。把所有任务一起放到首帧后的同一个回调，只会把 GC 和卡顿从 TTID 移到首次交互。
 
-| HeapTask | 触发条件 | 作用 |
-|----------|---------|------|
-| `ConcurrentGCTask` | Java 堆分配达到 `concurrent_start_bytes_` 阈值 | 执行并发 GC |
-| `CollectorTransitionTask` | 前后台切换 | 切换 GC 收集器类型（如前台用 CC，后台用 SemiSpace） |
-| `HeapTrimTask` | GC 完成后堆有空闲页 | 将空闲内存归还给内核 |
-| `TriggerPostForkCCGcTask` | Zygote fork 后（Android 8+） | 将 GC 延后 2 秒执行 |
-| `ReduceTargetFootprintTask` | 与 TriggerPostForkCCGcTask 配合 | 降低内存水位目标 |
-| `ClearedReferenceTask` | GC 回收对象后 | 调用 Java 层 `ReferenceQueue.add()` |
-| `NotifyStartupCompletedTask` | 系统判定启动完成 | 标记启动结束的校验任务 |
+### 2. 降低瞬时分配率
 
-对启动性能影响最大的是 `ConcurrentGCTask`——如果启动阶段大量创建对象，Java 堆分配量超过 `concurrent_start_bytes_`，就会触发并发 GC，HeapTaskDaemon 开始抢 CPU。
+启动热区常见的可修复模式包括：
 
-## 系统内置 GC 延后机制（Android 8+）
+- 多次把同一 JSON/XML 解析成临时树；
+- `map/filter/flatMap` 链在大集合上创建多层临时对象；
+- 字符串拼接、正则、格式化和日志参数在 release 启动路径频繁执行；
+- 未预估容量的 `ArrayList`、`HashMap` 和 buffer 反复扩容；
+- 依赖注入或反射扫描一次性构造大量 provider/metadata；
+- Compose/View 首屏重复创建等价 model、span、shape 或 listener。
 
-[已验证: AOSP android-17.0.0_r1, art/runtime/gc/heap.cc TriggerPostForkCCGcTask 相关逻辑]
+优化时先按 allocated bytes 与调用次数排序。不要因为某个对象“小”就忽略它；高频小对象形成的总分配量同样会推动 GC。
 
-Android 8 开始，系统在 Zygote fork 子进程后会插入一个 `TriggerPostForkCCGcTask`，其 `target_run_time_` 设置为当前时间 +2 秒。由于 `TaskProcessor` 的任务队列按 `target_run_time_` 排序，且 `GetTask` 在队列头任务未到执行时间时会阻塞等待，这 2 秒内 HeapTaskDaemon 线程不会执行任何其他 GC 任务——相当于系统自动为启动阶段抑制了 2 秒 GC。
+### 3. 控制存活对象和 cache
 
-配合 `ReduceTargetFootprintTask`，系统还会降低 fork 后的内存分配目标，减少启动阶段触发 GC 的概率。
+短命对象影响分配速率，长命对象抬高 live set。live set 越大，GC 需要扫描的对象越多，后续 heap 可用空间也越少。
 
-`NotifyStartupCompletedTask` 在系统判定启动完成后执行，用于重置相关状态。
+启动期 cache 应有容量、逐出和生命周期边界。对象池只适合已经证明确有高频构造且重置成本可控的对象；随意池化会扩大 live set、增加状态错误，并可能让 GC 更慢。
 
-**系统方案的限制：**
+### 4. 同时检查 native 与 graphics memory
 
-- 固定 2 秒窗口，无法根据应用实际启动时长动态调整
-- 只在冷启动时生效，温启动、热启动不触发
-- 部分中大型应用的启动耗时超过 2 秒，窗口结束后仍可能被 GC 打断
+Bitmap、字体、解码器、数据库 page cache 和 native SDK 可能通过 native allocation 反馈影响 ART 的回收决策。Java heap 看起来不大时，仍要查看进程 PSS、native heap、graphics 和对应调用栈。`Runtime.totalMemory() - freeMemory()` 只表示 Java heap 中的一个快照，不能代表进程总内存，也不能据此设置统一百分比告警。
 
-## 基于符号查找的 GC 抑制方案
+### 5. 保持编译状态与实验条件一致
 
-系统方案只能延后 2 秒，如果应用需要更长的抑制窗口，就要自己实现。思路：Hook `ConcurrentGCTask::Run`，在启动阶段让它休眠。
+Baseline Profile 会改变启动 CPU 时间和分配时序，Startup Profile 会改变 DEX 读取局部性。比较 GC 优化前后时，要固定 APK、compiler filter、安装来源、设备温度、账号数据和启动类型，避免把编译差异解释成 GC 收益。
 
-### 符号查找流程
+## 不应采用的“GC 抑制”方案
 
-libart.so 中保留了大量的符号信息（`.symtab` 段），包括 `ConcurrentGCTask` 相关的函数和虚函数表。查找步骤：
+### Hook `ConcurrentGCTask::Run`
 
-1. **获取 libart.so 在进程中的基地址。** 解析 `/proc/self/maps`，找到 libart.so 的加载地址。
-2. **解析 ELF 结构定位 `.symtab` 段。** 遍历 Section Header Table（`e_shoff` 偏移），找到 `sh_type == SHT_SYMTAB` 的段。
-3. **遍历符号表匹配目标符号。** 对每个 `Elf_Sym` 条目，用 `strcmp` 匹配符号名。
+修改 `libart.so` vtable 或 inline hook 属于未受支持的 runtime 篡改。它的问题不只是版本兼容：
 
-ConcurrentGCTask 的关键符号：
+- `ConcurrentGCTask`、vtable 布局、符号可见性和调用约定都是 ART 内部 ABI；
+- C++ 非静态成员函数调用还包含隐含的 `this` 参数，按普通 `void(Thread*)` 调用会破坏寄存器/参数；
+- vtable 所在页可能受只读映射、RELRO、CFI 和平台加固保护；
+- 在 `Run()` 中 sleep 会占住 `HeapTaskDaemon`，连 trim、transition、startup cleanup 等任务也被延迟；
+- heap 达到分配上限时，mutator 仍可能执行 blocking GC 或直接走向 OOM；
+- ART 是可通过 Mainline 更新的模块，同一 Android API 级别也不能保证内部符号和布局一致。
 
-| 符号 | 含义 |
-|------|------|
-| `_ZN3art2gc4Heap16ConcurrentGCTask3RunEPNS_6ThreadE` | Run 方法地址 |
-| `_ZTVN3art2gc4Heap16ConcurrentGCTaskE` | 虚函数表（vtable）地址 |
+因此，这种 Hook 不应进入生产 App，也不适合作为“失败就降级”的优化开关。它改变的是内存安全和 runtime 正确性，失败后果可能是随机崩溃、heap corruption 或 OOM。
 
-线上推荐使用成熟的开源库（如 [ndk_dlopen](https://github.com/Rprop/ndk_dlopen)）完成符号查找，避免手写 ELF 解析在兼容性和性能上踩坑：
+### 反射调用 `VMRuntime`
 
-```cpp
-ndk_init(env);
-void *handle = ndk_dlopen("libart.so", RTLD_NOW);
-void *runAddr = ndk_dlsym(handle,
-    "_ZN3art2gc4Heap16ConcurrentGCTask3RunEPNS_6ThreadE");
-void *vtableAddr = ndk_dlsym(handle,
-    "_ZTVN3art2gc4Heap16ConcurrentGCTaskE");
-```
+`VMRuntime.registerSensitiveThread()` 在 Android 17 中把当前线程登记为 **JIT sensitive thread**；`ActivityThread.handleBindApplication()` 已为 UI 线程调用它。它没有“优先分配”或“减少 GC 阻塞”的语义。
 
-### 虚函数 Hook 实现
+`requestConcurrentGC()`、`setTargetHeapUtilization()`、`notifyStartupCompleted()` 等也是隐藏或 module-only API，不属于三方 SDK。`StartupCompletedTask` 会释放 startup dex cache/linear alloc，并可能生成 runtime app image；它不是供 App 自己选择时机的 GC 控制器。
 
-拿到 vtable 地址后，遍历 vtable 找到与 `runAddr` 匹配的条目，替换为自定义函数：
+### 在首帧后主动调用 `System.gc()`
 
-```cpp
-// vtable 中每个条目是一个函数指针
-void **vtable = (void **)vtableAddr;
-void **targetSlot = nullptr;
+`System.gc()` 只是请求，ART 可以忽略或调整；请求本身可能引入额外暂停和 CPU/内存带宽竞争。没有 trace 证明“某个非交互窗口主动 GC”能改善后续关键路径时，不要在首帧后、页面切换或滑动开始前调用它。
 
-for (size_t i = 0; i < vtableSize; i++) {
-    if (vtable[i] == runAddr) {
-        targetSlot = &vtable[i];
-        break;
-    }
-}
+同理，不要把 GC suppression 扩展到 RecyclerView 滑动、Activity 转场或 Compose 重组。减少每帧分配是正确方向，暂停 collector 不是。
 
-// mprotect 修改页面权限后替换
-mprotect(pageAligned(targetSlot), PAGE_SIZE, PROT_READ | PROT_WRITE);
-*targetSlot = (void *)hookedRun;
-mprotect(pageAligned(targetSlot), PAGE_SIZE, PROT_READ);
-```
+## 实验设计与发布判断
 
-自定义 `hookedRun` 的核心逻辑：在启动阶段休眠指定时长，休眠结束后恢复原函数并调用：
+一项 GC 启动优化至少要回答四个问题：
 
-```cpp
-void hookedRun(void *thread) {
-    // 启动阶段休眠 N 毫秒
-    usleep(suppressDurationMs * 1000);
-    // 恢复 vtable
-    *targetSlot = runAddr;
-    // 调用原始 Run
-    ((void (*)(void *))runAddr)(thread);
-}
-```
+1. 启动窗口是否发生了 GC，cause 和 collector 是什么？
+2. GC 与 TTID/TTFD 关键路径重叠了多少？
+3. 哪些调用栈贡献了分配量与 live set？
+4. 修复后是 GC 减少了，还是业务工作量、编译状态或缓存条件变了？
 
-虚函数 Hook 比 Inline Hook 更稳定：不修改代码段，只修改数据段中的函数指针表，不依赖特定的指令结构。
+建议保留下面的实验对照表：
 
-## Android 14-17 兼容性与替代方案
-
-GC 抑制的 Hook 方案在不同 Android 版本下面临不同的限制。
-
-### Android 14+ Native DCL 对符号访问的影响
-
-[已验证: AOSP android-17.0.0_r1, bionic linker namespace 限制]
-
-Android 14 引入了 Native Dynamic Code Loading（DCL）安全限制（详见 20.15），应用对 libart.so 的符号访问受到 linker namespace 隔离。具体表现：
-
-- **Android 14-15**：`dlopen("libart.so")` 在应用进程中可能返回受限的 handle，`.symtab` 中的部分符号不可见
-- **Android 16-17**：限制进一步收紧，`ndk_dlopen` 在部分设备上可能无法打开 libart.so 或找不到 `.symtab`
-
-应对策略：
-1. 优先使用 `dladdr` 对已知地址反查符号，绕过 `.symtab` 直接查找
-2. 在 linker namespace 允许的范围内使用 `android_dlopen_ext` 配合正确的命名空间参数
-3. 对 Pixel/Nexus 设备验证符号可用性后再启用，对受限设备降级为无 Hook 方案
-
-### Android 16+ 限制性 API 环境的替代路径
-
-[待验证: Android 17 对非公开 API 的进一步限制]
-
-当 Hook 方案不可用时，有以下替代思路：
-
-**VMRuntime 接口方案。** `VMRuntime.registerSensitiveThread()` 可以向 ART 注册"敏感线程"，注册后该线程的分配操作会得到优先处理。这不能抑制 GC，但能减少 GC 对主线程分配操作的阻塞影响。
-
-**分配控制方案。** 在启动阶段减少对象分配（延迟初始化、对象池复用），从根源上降低触发 ConcurrentGCTask 的概率。配合 21.6 节的延迟初始化策略一起使用。
-
-**GC 抑制的风险提示：**
-
-- 内存水位上升：GC 被抑制期间，内存只分配不回收，Java 堆持续增长
-- 后续 GC 压力集中：抑制结束后，积累的 GC 任务会集中执行，可能造成更严重的卡顿
-- OOM 风险：在低内存设备上，长时间抑制 GC 可能导致 OOM
-- 最优抑制时长需要结合线上启动监控数据确定，通常不超过 3-5 秒
-
-## 启动阶段 GC 治理的工程实践
-
-### 抑制窗口与启动任务编排的协同
-
-GC 抑制不应孤立使用，需要与启动任务编排（详见 21.2）协同设计：
-
-1. **确定抑制起始点。** 在 Application.onCreate 之前或最早的初始化阶段开始抑制。
-2. **确定抑制结束点。** 基于线上 P90 启动耗时数据，在首帧渲染完成后的安全时间点结束抑制。
-3. **抑制期间的任务策略。** 抑制期间避免大量对象分配操作，将重度初始化延后到抑制结束后。
-
-### 抑制结束后 GC 压力的平滑释放
-
-直接结束抑制会导致积压的 GC 任务集中执行。平滑策略：
-
-- 分步恢复：先结束 GC 抑制，再在下一帧或空闲时触发一次主动 GC（`System.gc()` 或 `VMRuntime.getRuntime().requestConcurrentGC()`），让积压的回收任务在非关键路径上执行
-- 监控抑制结束后的内存水位：如果 Java 堆使用率超过 80%，立即触发 GC 而不是等待自然触发
-
-### 线上监控指标
-
-| 指标 | 采集方式 | 告警阈值 |
-|------|---------|---------|
-| GC 抑制期间 Java 堆使用率 | `Runtime.getRuntime().totalMemory() - freeMemory()` | > 80% |
-| 抑制结束后首次 GC 耗时 | Perfetto trace 中 HeapTaskDaemon 切片 | > 50ms |
-| 启动耗时变化（抑制 vs 无抑制） | FramMetrics / 自定义打点 | P90 无显著退化 |
-| 抑制期间 OOM 发生率 | ApplicationExitInfo | > 0 |
-
-### 不适用 GC 抑制的场景
-
-- **低内存设备（< 3GB RAM）：** 可用内存少，抑制期间 OOM 风险高
-- **内存敏感型应用（图片编辑、视频处理）：** 启动阶段本身就需要大量内存分配
-- **温启动 / 热启动：** 进程已存在，GC 抑制收益小而风险不变
-- **Android 14+ 未验证符号可用性的设备：** Hook 失败率不可控
-
-## 扩展
-
-### 其他 HeapTask 对性能的影响
-
-除了 ConcurrentGCTask，其他 HeapTask 也会影响性能：
-
-- `CollectorTransitionTask`：前后台切换时触发 GC 收集器类型切换，切换过程会短暂增加内存操作。如果应用频繁前后台切换（如分屏模式下），可能成为卡顿源。
-- `HeapTrimTask`：GC 后归还内存给内核，涉及 `madvise(MADV_DONTNEED)` 系统调用。在低端设备上，HeapTrim 的执行时间可能超过 10ms，但通常不在启动关键路径上。
-- `ClearedReferenceTask`：调用 Java 层 `ReferenceQueue.add()`，如果注册的 ReferenceProcessor 处理逻辑过重，会增加 GC 尾部延迟。LeakCanary 的监控钩子就挂在这个环节。
-
-[待补充: 各 HeapTask 在 Android 17 中的执行频率和耗时统计]
-
-### ART 分代 GC 对抑制策略的影响
-
-Android 12+ ART 默认启用分代 GC（详见 4.8），年轻代（RegionSpace）的 GC 频率比全堆 GC 更高。这对抑制策略的影响：
-
-- 分代 GC 的 `concurrent_start_bytes_` 阈值比全堆 GC 更低，意味着 ConcurrentGCTask 触发更频繁
-- 抑制分代 GC 期间，年轻代会更快填满，导致分配失败时触发同步 GC（`kGcCauseForAlloc`），这种 GC 无法被抑制——它直接阻塞分配线程
-- 因此在分代 GC 环境下，GC 抑制的窗口更短，需要更精准地匹配启动关键路径
-
-### GC 抑制在非启动场景的应用
-
-GC 抑制的思路可以推广到其他关键场景：
-
-- **列表滑动：** RecyclerView 滑动时，在 `onScrollStateChanged(SCROLL_STATE_DRAGGING)` 开始抑制，`SCROLL_STATE_IDLE` 结束
-- **页面切换：** Fragment/Activity 切换动画期间短暂抑制
-- **Compose recomposition 密集期：** Compose 的重组会产生大量短期对象，在重组密集时段抑制 GC 可以减少卡顿
-
-非启动场景的抑制窗口通常更短（500ms-1s），风险也更可控。但需要监控抑制期间的对象分配速率，避免年轻代快速填满触发同步 GC。
-
-<!-- AIW-源码调研-2026-06-07 -->
-
-### Android 17 ART 编译器内存管理优化（新增内容）
-
-> **调研说明**：本节为 2026-06-07 新增，基于对 Android 17 ART 编译器内存管理优化的概念性研究。由于技术访问限制，无法直接访问 `platform/art/` 分支源代码，内容主要基于 ART 编译器通用原理和版本演进规律推断。具体实现细节需待 android-17.0.0_r1 标签分支发布后验证。
-
-#### 编译器层面的内存优化
-
-除了运行时 GC 优化外，ART 编译器（AOT/JIT）在 Android 17 中可能包含以下内存管理改进：
-
-**1. 代码缓存优化**
-
-Android 14-16 已经引入了编译缓存机制，Android 17 可能进一步优化：
-
-- **编译时元数据压缩**：可能优化编译生成的元数据存储，减少缓存占用
-- **智能缓存预加载**：根据应用使用模式预测性加载常用的编译缓存
-- **缓存去重机制**：消除不同类之间的重复编译结果
-
-**2. 内存分配优化**
-
-编译器在编译时的内存分配策略可能改进：
-
-- **编译单元优化**：优化编译过程的内存分配模式，减少编译时的内存峰值
-- **增量编译增强**：改进增量编译的内存管理，减少全量编译的内存压力
-- **编译时垃圾回收**：引入编译时的内存回收机制，优化编译进程的内存使用
-
-**3. 编译调度优化**
-
-基于 Android 14-16 的编译调度基础，Android 17 可能进一步优化：
-
-- **内存压力感知调度**：根据系统内存压力动态调整编译任务优先级
-- **后台编译优化**：在低内存状态下优先保证前台应用的编译性能
-- **编译任务分片**：大编译任务分解为多个小任务，减少单次内存占用
-
-#### Android 17 特有的编译器内存管理特性
-
-**1. 针对大应用的优化**
-
-- **类加载优化**：优化大量类的加载和编译时的内存管理
-- **方法编译批处理**：将相关方法的编译批量处理，优化内存访问模式
-- **依赖图优化**：改进类依赖关系的编译时分析，减少内存碎片
-
-**2. 内存监控增强**
-
-- **编译时内存统计**：提供更详细的编译阶段内存使用统计
-- **内存泄漏检测**：在编译时检测可能的内存泄漏模式
-- **性能分析工具**：增强编译时内存性能分析能力
-
-#### 兼容性考虑
-
-基于现有 ART 运行时的 GC 抑制策略，Android 17 编译器优化需要注意：
-
-- **向后兼容**：新的编译器优化不应破坏现有应用的运行时行为
-- **渐进式部署**：通过运行时配置开关控制新特性的启用
-- **性能监控**：建立完善的编译器性能监控机制，及时发现内存问题
-
-#### 工程实践建议
-
-**1. 编译器优化与 GC 抑制的协同**
-
-编译器层面的内存优化与运行时 GC 抑制应该协同工作：
-
-- 编译时优化减少对象分配数量
-- 运行时抑制减少 GC 频率
-- 两者结合实现全方位的内存管理优化
-
-**2. 监控与调优**
-
-- **编译时内存监控**：监控编译过程的内存使用情况
-- **运行时内存分析**：结合 GC 抑制效果评估整体优化效果
-- **动态调整**：根据实际效果动态调整编译器和运行时的优化策略
-
-**3. 风险控制**
-
-- **内存边界控制**：确保编译器优化不会导致内存占用无限制增长
-- **性能回退机制**：当优化效果不理想时能够快速回退
-- **渐进式启用**：通过灰度发布逐步推广新的优化特性
-
----
-
-> **本次源码调研出处**：`DeepResearch/2026-06-07-android-17-art-memory-optimization.md`
-> **反哺编辑**（openclaw）：在 21.13 章节末尾新增关于 Android 17 ART 编译器内存管理优化的内容，补充运行时 GC 之外的编译器层面优化。
+| 组别 | 变量 | 观察 |
+|---|---|---|
+| 原始组 | 当前 release | GC 次数/重叠、HeapTaskDaemon Running、TTID/TTFD、峰值内存 |
+| 分配修复组 | 只改目标分配点 | 同一编译状态下 GC 和分位值是否改善 |
+| 延迟任务组 | 只移动非首帧任务 | TTID 改善后，首交互和首帧后是否出现反弹 |
+| 低内存设备组 | 同一构建、受控内存压力 | blocking GC、OOM、进程退出和长尾是否恶化 |
+
+线上没有通用的 GC CPU、heap 使用率或 pause 告警阈值。阈值应来自应用自身按设备档位建立的基线。至少联合观察：
+
+- TTID、TTFD 与 P50/P90/P99；
+- 启动阶段 Java allocated bytes 和 retained/live bytes 的实验室基线；
+- GC 与关键路径重叠时长；
+- 启动后首个交互的慢帧；
+- 低内存/OOM 相关退出、崩溃和 ANR；
+- 新进程冷启动与复用进程启动的分布。
+
+## Android 8—17 的版本边界
+
+Android 8 起可以使用不受 65,535 条记录限制的现代 Java/Kotlin allocation recording，但 ART 内部 heap 策略会随系统和 Mainline 模块演进。文章或方案不应把 Android 8 某个实现细节直接外推到 Android 17。
+
+本章的 Android 17 结论以 `android-17.0.0_r1` 为准：
+
+- post-fork 阶段先放宽 heap 阈值，再分阶段收紧；
+- 2 秒不是 GC 全局冻结窗口；
+- `ConcurrentGCTask` 可以作为立即任务插入队列；
+- UI 线程已由 framework 登记为 JIT sensitive thread；
+- 普通 App 没有受支持的 ART GC 暂停 API。
+
+OEM 和 ART Mainline 更新可以调整 collector、flags 和 heap 参数。应用侧可依赖的长期策略仍是：控制分配量、缩小 live set、减少首帧前任务，并用 trace 验证。
+
+## 排查清单
+
+1. 分开采集新进程冷启动与复用进程启动。
+2. 在 Perfetto 中对齐启动边界、GC slice、HeapTaskDaemon 和主线程状态。
+3. 不把 HeapTaskDaemon 的所有 Running 时间都记为 GC。
+4. 用 Allocation Recording 找对象类型和调用栈，不用它的耗时做 benchmark。
+5. 区分短命分配、live set 与大对象。
+6. 检查 Java、native、graphics 和 Bitmap，不只看 `Runtime` heap。
+7. 固定 compiler filter、安装来源和设备条件做 A/B。
+8. 禁止 libart Hook、隐藏 VMRuntime 调用和无证据的 `System.gc()`。
+9. 回归首帧后首交互、低内存设备与多进程启动。
+
+## 参考资料
+
+- [已验证: Android 17 AOSP] [`Heap::PostForkChildAction()` 与 heap tasks](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc)
+- [已验证: Android 17 AOSP] [`TaskProcessor`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/task_processor.cc)
+- [已验证: Android 17 AOSP] [`task_processor.h`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/task_processor.h)
+- [已验证: Android 17 AOSP] [`StartupCompletedTask`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/startup_completed_task.cc)
+- [已验证: Android 17 AOSP] [`VMRuntime.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/libart/src/main/java/dalvik/system/VMRuntime.java)
+- [已验证: Android 17 AOSP] [`Daemons.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/libart/src/main/java/java/lang/Daemons.java)
+- [已验证: Android 17 AOSP] [`ActivityThread.handleBindApplication()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [已验证: 官方文档] [Overview of memory management](https://developer.android.com/topic/performance/memory-overview)
+- [已验证: 官方文档] [Record Java/Kotlin allocations](https://developer.android.com/studio/profile/record-java-kotlin-allocations)
+- [研究材料] `DeepResearch/2026-05-24-android17-art-gc-compose-pause.md`
 > **可信度**：low（受技术访问限制，无法直接访问源代码，内容基于原理推断）
