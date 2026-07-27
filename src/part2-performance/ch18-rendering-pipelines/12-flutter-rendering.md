@@ -62,433 +62,405 @@ task9_review_notes: "2026-07-02 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 1�
 
 <!-- outline-end -->
 
-## 为什么 Flutter 的渲染管线值得单独一章
+## 为什么 Flutter 的渲染链需要单独分析
 
-Flutter 在 Android 上的渲染管线与原生 App 有本质区别：**Flutter 不走 Android View 体系的 Measure/Layout/Draw 流程**。它有一套完全独立的渲染管线，Dart 代码生成 LayerTree，C++ Raster Thread 将 LayerTree 光栅化为像素，最终通过独立 Surface 或 SurfaceTexture 提交给 SurfaceFlinger。
+Flutter framework 会在 Dart 侧完成 widget 更新、layout、paint 和 scene 构建，Android View 体系主要负责承载 `FlutterView`、输入、生命周期、PlatformView 与最终输出对象。因而，原生页面常用的 `ViewRootImpl.performTraversals()` → HWUI `DrawFrame` 观察法，无法完整解释 Flutter 页面。
 
-理解这条管线，才能在 Perfetto 中区分"Flutter Dart 代码慢了"、"Raster Thread GPU 光栅化慢了"和"宿主 App 侧的合成慢了"，这三类问题的优化方向完全不同。[已验证: Flutter 官方文档]
+诊断 Flutter 卡顿时至少要区分四段：
 
-## 版本边界
+1. platform / Dart UI work 是否按时生成 scene；
+2. Raster thread 是否按时把 layer tree / display list 转成 GPU 工作；
+3. Flutter root、external texture 和 PlatformView 分别写入什么 Android 对象；
+4. SurfaceFlinger 是否按时 latch 对应 buffer，并完成本次 display present。
 
-这一章把三个边界拆开写，避免把线程模型、渲染后端和 Android API 范围压成一个版本号：
+“Dart 帧已经结束”只说明 framework 交出了 scene；“Raster 已完成”也不等于该画面已经显示。Root render mode、PlatformView 策略和宿主窗口的消费节拍会继续改变后半段路径。
 
-- **线程模型**：正文主线按 Flutter 3.32 stable+ 的 merged model 讲，UI task 和平台回调都落在宿主 Main thread
-- **渲染后端**：Impeller 自 Flutter 3.27 起在 Android API 29+ 默认启用，低版本或不满足条件时仍可能回退到 Skia
-- **Android 侧范围**：Platform Views、SurfaceView、TextureView 的组合能力跨多个 Android 版本存在，具体代价要按嵌入控件和系统版本分别判断
-- **Platform Views 演进**：Flutter 3.44+ 新增 Hybrid Composition++（HCPP），实验性 opt-in，要求 Android API 34+ 和 Vulkan，不满足条件时回退到 HC/TLHC
+## 本章的双版本锚点
 
-## 线程模型：Merged Platform Model
+本章采用两套互相独立的版本坐标：
 
-本文主线按 Flutter 3.32 stable+ 在 Android 上的 merged model 讲。此时 Dart UI task、MethodChannel、插件回调和 Activity 生命周期回调都落在宿主 Main thread 上。Perfetto 里最先要找的是一个合并后的 Main 视图，而不是单独的 `Platform Thread`。
+- Android 平台：Android 17 / API 37 / `android-17.0.0_r1`；
+- kernel：`android17-6.18-2026-06_r6`；
+- Flutter：官方版本号、App 携带的 engine revision、Impeller backend 和插件版本。
 
-```mermaid
-graph TD
-    Main[Main Thread<br/>UI Task + Platform Callback]
-    Raster[Raster Thread]
-    IO[IO Thread]
+Flutter framework、engine 和 Android embedding 不属于 AOSP，也不会随 Android 17 自动更新。同一台 Android 17 设备，可以运行带有不同 Flutter engine 的 App。分析报告只写“Android 17 + Flutter”仍然缺少关键版本信息。
 
-    Main -->|LayerTree| Raster
-    IO -->|Image Decode / Resource Load| Raster
-```
+### 三条容易混淆的 Flutter 版本线
 
-Engine 内部仍有 task runner 的概念，但在 merged model 下，插件和平台代码看到的是宿主主线程。把 `platform task` 直接画成独立线程，会把 Trace 里的瓶颈归因搞反。
+| 能力 | 可靠边界 | 本章采用的口径 |
+|---|---|---|
+| UI 与 platform thread 合并 | Flutter 3.27 release notes 已出现 Android/iOS 支持；当前架构文档写 3.29 起合并；Flutter issue #150525 的维护者更新则写 3.32 stable 起默认合并并可 opt-out | 以 **3.32 stable+** 作为保守的默认合并基线；3.29—3.31 按 engine revision 和启动配置核对 |
+| Android 默认启用 Impeller | Flutter 3.27，Android API 29+ | API 29+ 仍要核对 Impeller 是否被关闭，以及运行时选择 Vulkan 还是 GLES |
+| HCPP | Flutter 3.44 起提供，当前为实验性 opt-in | 还需 Android API 34+、Impeller、Vulkan 与运行时 SurfaceControl swapchain 可用 |
 
-| 线程 | 职责 | 常见观察点 |
-|:---|:---|:---|
-| **Main（UI + Platform）** | Dart Build/Layout/Paint、MethodChannel、插件回调、Activity 生命周期与输入回调 | `PlatformVsync`、`VsyncProcessCallback`、`Animator::BeginFrame`、MethodChannel 回调 |
-| **Raster Thread** | LayerTree 光栅化、GPU 指令提交 | `Rasterizer::DrawToSurfaces` |
-| **IO Thread** | 图片解码、资源加载 | `ImageDecoder` |
+这里保留 3.32 stable+ 作为正文主线，是因为它与维护者对“stable 默认值”的说明一致。与此同时，官方架构文档仍把 Android/iOS 的合并点写为 3.29。对 3.29—3.31 的 trace，不应仅凭 SDK 版本猜线程映射；应记录 engine revision，并在 Perfetto 中确认 Dart UI work 与平台回调是否位于同一条线程。
 
-如果工程仍停留在旧版 engine 或定制 embedding，上述主线程合并可能没有完全生效。遇到这类 Trace，先按工程实际 Flutter 版本确认线程模型，再做归因。
+## 一帧的公共前半段
 
-## 渲染管线全景
-
-Flutter 的渲染流程分为四个阶段，每个阶段对应不同的线程和组件。
-
-### 阶段一：Main Thread（Dart UI Task）
-
-Android `Choreographer` 发出的 VSync-App 到达宿主 Main thread 后，Flutter engine 在同一线程执行 Dart UI task：
-
-1. **Build**：执行 `Widget.build()`，构建 Element Tree。
-2. **Layout**：`RenderObject.performLayout()`，计算每个渲染对象的大小和位置（对应 Android 的 Measure/Layout，但全在 Dart 里完成）。
-3. **Paint**：`RenderObject.paint()`，生成 **LayerTree**（图层树）——一份绘制指令列表，不产生像素。
-4. **Submit**：将 LayerTree 打包，发送给 Raster Thread。
-
-### 阶段二：Raster Thread（光栅化）
-
-1. **LayerTree Processing**：接收 Main Thread 提交的 LayerTree，进行优化和合成排序。
-2. **Rasterization**：
-   - **Impeller**（Flutter 3.27+ 在 Android API 29+ 的默认后端）：使用预编译 Shader，优先走 Vulkan，不满足条件时可回退到 GLES
-   - **Skia**（旧版默认或回退路径）：运行时编译 GLSL Shader
-3. **Present**：通过 `vkQueuePresentKHR`（Vulkan）或 `eglSwapBuffers`（GLES）提交到 Surface。
-
-### 阶段三：系统合成
-
-取决于 render mode：
-- **SurfaceView mode**：直接提交到独立 Surface，由 SurfaceFlinger 合成
-- **TextureView mode**：提交到 SurfaceTexture，由宿主 RenderThread 再合成
-
-## SurfaceView vs TextureView Render Mode
-
-这是 Flutter 在 Android 上最重要的管线选择，直接决定了性能特征。
-
-Android 侧的入口可以直接对照 Flutter engine 仓库里的 `shell/platform/android/io/flutter/embedding/android/FlutterSurfaceView.java`、`FlutterTextureView.java`、`shell/platform/android/vsync_waiter_android.cc` 和 Java fallback `io/flutter/view/VsyncWaiter.java`。Render mode 决定 Embedding 层创建哪种宿主 View，`VsyncWaiterAndroid` 决定 Flutter 怎样接上 Android `Choreographer` 的节拍。
-
-### SurfaceView Render Mode（推荐默认）
-
-Flutter 的独立 Surface 直接与 SurfaceFlinger 交互，**不经过宿主 App 的 RenderThread**。
+下面的图用于说明普通 Flutter 帧从 Android vsync 到显示设备的公共路径。Root render mode 与 PlatformView 会在 Raster 之后改变输出对象，因此图中把这一步单独画出。
 
 ```mermaid
-sequenceDiagram
-    participant HW as Hardware VSync
-    participant Main as Main Thread (UI + Platform)
-    participant Raster as Raster Thread
-    participant BBQ as BLAST Adapter
-    participant SF as SurfaceFlinger
+flowchart LR
+    Vsync["Android Choreographer<br/>VsyncWaiter"]
+    Main["Android Main<br/>platform + Dart UI work"]
+    Scene["Layer tree / display list"]
+    Raster["Raster thread<br/>Impeller or Skia"]
+    GPU["GPU work<br/>render + submit"]
+    Target{"Android output target"}
+    RootSurface["FlutterSurfaceView<br/>independent Surface"]
+    RootTexture["FlutterTextureView / FlutterImageView<br/>host View content"]
+    Host["Host HWUI + App Window"]
+    SF["SurfaceFlinger<br/>latch + composition"]
+    HWC["HWC / RenderEngine"]
+    Display["Display present"]
 
-    HW->>Main: VSync-App
-    Main->>Main: Build → Layout → Paint
-    Main->>Raster: Submit LayerTree
-    
-    Raster->>BBQ: dequeueBuffer()
-    Raster->>Raster: Impeller Rasterize (GPU)
-    Raster->>BBQ: queueBuffer(acquireFence)
-    
-    BBQ->>SF: Transaction(Buffer)
-    Note right of SF: Flutter 不经过 App RT
+    Vsync --> Main --> Scene --> Raster --> GPU --> Target
+    Target --> RootSurface --> SF
+    Target --> RootTexture --> Host --> SF
+    SF --> HWC --> Display
 ```
 
-**优势**：主要绕开宿主 RenderThread 的纹理采样与窗口合成路径。全屏 Flutter 页面、视频、游戏场景更容易拿到更低的合成开销。宿主主线程一旦阻塞，Dart 的 Build/Layout/Paint 和平台回调仍会一起变慢。
+图里最重要的分叉位于 `Android output target`。`FlutterSurfaceView` 产生独立 Surface buffer；`FlutterTextureView` 和 `FlutterImageView` 还要经过宿主 View/HWUI 与 App Window。两种路径即使拥有相同的 Dart 和 Raster 耗时，上屏延迟也可能不同。
 
-**限制**：Flutter SurfaceView 与宿主原生 View 仍是两个独立 Layer，普通 View 很难和它做稳定的 Z 轴交错、View 级 transform 和圆角裁剪。透明背景是另一回事：`RenderMode.surface` 可以配合 `TransparencyMode.transparent` 输出透明 Surface，但这不会消掉独立 Layer 的边界。
+### Platform / Dart UI work
 
-### TextureView Render Mode（兼容路径）
+Vsync callback 驱动 Flutter engine 进入一帧。Dart framework 依次处理 animation、build、layout、paint，再通过 `dart:ui` 提交 scene。`Animator::BeginFrame` 记录 build 起点，`Animator::Render` 接收本帧的 `LayerTree`，`Animator::EndFrame` 将任务放入 raster pipeline。
 
-Flutter 渲染到 SurfaceTexture，再由宿主 App RenderThread 采样合成到主窗口。
+在 3.32 stable+ 的主线模型中，UI task runner 与 Android platform task runner 映射到宿主 Main thread。MethodChannel 回调、Activity 生命周期、输入事件和 Dart frame work 会竞争同一条线程。长时间的插件回调可以推迟 Dart build；过重的 Dart work 也会拖慢平台消息与输入处理。
+
+Raster thread 仍然独立。它从 pipeline 取出 layer tree，在 `Rasterizer::DrawToSurfaces` 中执行 preroll、paint、render target 获取与提交。IO task runner 负责图片或资源相关的异步工作，但图片解码、纹理上传和 Raster 使用之间仍可能出现等待。
+
+### 两种“线程合并”不要混为一谈
+
+Flutter Android 上存在两个不同语境：
+
+- 新版 engine 的 **UI + platform 合并**：Dart UI work 与 Android 平台工作共享 Main thread，Raster thread 通常保持独立；
+- 原始 Hybrid Composition 的 **raster + UI/platform 协调**：官方 PlatformView 文档说明，HC 为同步原生 View 与 Flutter canvas，会让 raster 与 UI 工作在同一线程执行，可能压低 Flutter FPS。
+
+看到“merged thread”时，先确认文档说的是哪一种。把两者画成一个固定线程模型，会误判 PlatformView 页面上的主线程竞争。
+
+## Flutter 怎样接入 Android VSync
+
+固定 Flutter 源码中的 `VsyncWaiterAndroid::AwaitVSync()` 会先判断 NDK `AChoreographer` 是否可用。符号可用时，它在 UI task runner 上注册 NDK frame callback；否则在 platform task runner 上调用 Java `VsyncWaiter.asyncWaitForVsync()`，由 `Choreographer.FrameCallback` 回调 `FlutterJNI.onVsync()`。
+
+两条入口随后汇合到 `VsyncWaiter::FireCallback()`。这段代码会产生 `VsyncFireCallback` flow，并把带有 `VsyncProcessCallback` trace event 的任务投递给 UI task runner，继而进入 `Animator::BeginFrame`。这说明 Flutter 复用 Android 的帧时钟，同时仍受 task runner 排队影响。
+
+可用下面这条调用关系检查 trace，箭头表示逻辑先后，不保证每个 slice 都紧挨出现：
+
+`PlatformVsync` → `VsyncFireCallback` → `VsyncProcessCallback` → `Animator::BeginFrame` → `Animator::Render` → `Rasterizer::DrawToSurfaces`
+
+如果 `PlatformVsync` 已经出现，而 `VsyncProcessCallback` 很晚才运行，应查看 UI task runner 所在线程的 Running/Runnable 状态与前序任务。若 `Animator::BeginFrame` 进入及时，但 `Animator::Render` 很晚，问题更接近 Dart build/layout/paint。若 Raster slice 很长，再转向 layer、shader、纹理上传和 GPU。
+
+## Root RenderMode：surface、texture、image
+
+`io.flutter.embedding.android.RenderMode` 在固定源码中有 `surface`、`texture` 和 `image` 三个值。它描述 Flutter root 内容如何接到 Android View，不描述 PlatformView 的合成策略。
+
+### `RenderMode.surface`
+
+`FlutterSurfaceView` 持有 `SurfaceHolder`。`surfaceCreated()` 之后，embedding 把 `Surface` 交给 `FlutterRenderer.startRenderingToSurface()`；engine 直接面向该 producer target 渲染。Android 17 的 SurfaceView 对应独立 child layer，SurfaceFlinger 可以直接观察它的 buffer 更新。
+
+这条路径少一次宿主 HWUI 的纹理采样，适合不透明的全屏 Flutter 页面。代价来自独立 layer：
+
+- 无法像普通 View 那样自由夹在两个 Android View 之间；
+- View 级 rotation、scale、复杂 clip 和 alpha 动画受限；
+- Surface 创建、尺寸变化、暂停与销毁必须和 engine target 切换一致；
+- z-order 调整会改变 SurfaceFlinger layer 关系。
+
+透明 SurfaceView 是特殊配置。固定源码中的 `FlutterSurfaceView(renderTransparently=true)` 会设置透明 pixel format，并调用 `setZOrderOnTop(true)`。但 `FlutterActivity` 的透明背景默认选择 `RenderMode.texture`，不能把“SurfaceView 支持透明”误写成“透明 FlutterActivity 默认仍走 SurfaceView”。
+
+### `RenderMode.texture`
+
+`FlutterTextureView` 把底层 `SurfaceTexture` 包装成 `Surface`，再交给 `FlutterRenderer`。Flutter Raster/GPU 先生产 SurfaceTexture image，宿主 HWUI 随后把它作为 `TextureLayer` 画入 App Window。
+
+Android 17 `TextureView` 的 `SurfaceTexture.OnFrameAvailableListener` 会标记 layer 需要更新并调用 `invalidate()`。宿主 draw 时，`TextureView.draw()` 通过 `TextureLayer` 应用新 image 与 transform。于是这条路径具有两段节拍：
+
+1. Flutter producer 让 SurfaceTexture 获得新 image；
+2. 宿主 Main/RenderThread 在窗口帧中消费它并提交 App Window buffer。
+
+TextureView 便于参与普通 View 的 alpha、rotation、scale、clip 与 z-order。它也增加了宿主 traversal/HWUI 采样和同步成本。Flutter Raster 已提交而页面仍晚一帧时，应继续检查 `TextureView#draw()`、宿主 `DrawFrame` 与 App Window 的 buffer 更新，不能停在 Flutter Raster slice。
+
+### `RenderMode.image`
+
+`FlutterImageView` 用 `ImageReader` 接收 engine 输出，在 `onDraw()` 中把 image 画回 Android Canvas。它主要服务 Hybrid Composition 的 root/overlay 转换和少数 embedding 场景，不是常规页面的默认模式。
+
+API 29+ 的固定源码会取 `Image.getHardwareBuffer()`，再用 `Bitmap.wrapHardwareBuffer()` 包装为 hardware bitmap；这避免了 pre-29 分支中的逐像素 CPU copy，但仍存在 ImageReader acquire、image 生命周期、Canvas/HWUI 采样与宿主窗口提交。将它概括为“零成本”会漏掉这些等待。
+
+### `FlutterActivity` 的默认选择
+
+| `BackgroundMode` | 默认 `RenderMode` | 承载对象 |
+|---|---|---|
+| `opaque` | `surface` | `FlutterSurfaceView` |
+| `transparent` | `texture` | `FlutterTextureView` |
+
+这一映射来自 `FlutterActivity.getRenderMode()`。`FlutterFragment`、add-to-app 或直接构造 `FlutterView` 时，调用方可能显式选择其他模式，诊断时应从对象树确认。
+
+### Root 模式对照
+
+| Root mode | 中间对象 | SurfaceFlinger 侧主要对象 | 常见等待 |
+|---|---|---|---|
+| `surface` | 独立 Surface buffer | Flutter root child layer | dequeue、GPU completion fence、SF latch |
+| `texture` | SurfaceTexture image | Host App Window | image ready、host invalidate/draw、HWUI sample、window queue |
+| `image` | ImageReader image | Host App Window | image acquire、HardwareBuffer/Bitmap 包装、Canvas/HWUI、window queue |
+
+## External texture 与 `SurfaceProducer`
+
+相机、视频或 native renderer 可以通过 `TextureRegistry` 向 Flutter scene 提供 external texture。插件 producer 先写一个 Android `Surface`，Flutter Raster 在生成 root scene 时采样该 image，随后仍按 root RenderMode 输出。
+
+这会形成两个生产阶段：
+
+- 插件侧生产 camera、codec 或 native graphics buffer；
+- Flutter engine 采样 external texture，再生产 root buffer。
+
+插件帧率与 Flutter 帧率可以不同。相机 buffer ready 不代表 Flutter 已经采样；Flutter 触发新帧也不保证插件刚好提供了新 image。
+
+在固定 Flutter 源码中，`FlutterRenderer.createSurfaceProducer()` 的选择规则很明确：
+
+- 未强制 GL texture、API 29+ 且设备不在已知 HardwareBuffer 缺陷列表时，使用 `ImageReaderSurfaceProducer`；
+- 其他情况使用 `SurfaceTextureSurfaceProducer`。
+
+`createSurfaceProducer()` 默认采用 `SurfaceLifecycle.manual`。只有请求 `resetInBackground` 且选择 ImageReader backing 的调用方，才会注册相应的内存压力清理行为。插件还要检查 `handlesCropAndRotation()`：固定源码中 ImageReader backing 返回 `false`，SurfaceTexture backing 返回 `true`。相机画面方向或裁剪错误可能源于插件契约，不能直接归因给 SurfaceFlinger transform。
+
+Perfetto 中看到 external texture 卡顿时，应分别记录 texture id、producer queue、Flutter frame 和 root buffer。中间 texture 往往不会作为独立可见 layer 出现在 SurfaceFlinger 树中。
+
+## Impeller 与 Skia：先辨认 renderer，再讨论成本
+
+Flutter 3.27 起在 Android API 29+ 默认启用 Impeller。固定源码的运行时选择比“Vulkan 不可用就回退 Skia”更细：
+
+1. Impeller 启用且达到最低 API 条件时，`SelectedRenderingAPI()` 返回动态选择；
+2. `AndroidContextDynamicImpeller` 尝试建立 Vulkan context；
+3. 模拟器、已知问题 SoC、缺失能力或无效 Vulkan context 会让它改用 **Impeller OpenGLES**；
+4. 低于最低 API、显式关闭 Impeller 或软件渲染等路径，才会选择 Skia OpenGLES / software。
+
+所以，“没有 Vulkan”不等于“正在用 Skia”。性能报告应记录 renderer 与 backend 两列，例如 `Impeller/Vulkan`、`Impeller/OpenGLES` 或 `Skia/OpenGLES`。
+
+### Impeller 解决了什么
+
+Impeller 的 shader 资产在 engine 构建期生成并打包。固定 Android Vulkan context 直接把编进二进制的 shader mappings 交给 `ContextVK::Create()`，同时把 App cache directory 传给 pipeline cache。Vulkan cache 文件名是 `flutter.impeller.vkcache`，读取时会校验 driver version、vendor/device id、ABI 与 pipeline cache UUID。
+
+这些设计减少了不可预测的运行时 shader 工作，并允许兼容的 Vulkan pipeline cache 跨进程复用。它们不会消除：
+
+- blur、saveLayer、overdraw 与大面积半透明带来的像素成本；
+- 大图解码、上传与 external texture 同步；
+- 首次创建尚未命中的 pipeline；
+- GPU 频率、带宽、thermal throttling 与 driver fence wait。
+
+旧正文中关于固定 shader 变体数量、固定毫秒耗时、固定帧率跌幅以及特定 GPU 缓存命中率的数字没有对应的一手基准，不能作为通用结论。本章只保留源码能够证明的编译、选择与缓存机制。
+
+## PlatformView：TLHC、HC 与 HCPP
+
+Flutter root RenderMode 与 PlatformView composition mode 是两组配置。一个页面可以使用 `FlutterSurfaceView` 作为 root，同时把 WebView 通过 TLHC 转成 texture；也可以在 HC/HCPP 中同时出现 Flutter image/overlay 和原生 View/Surface。
+
+下面的图用于区分三种 PlatformView 的主要数据流。它省略了输入与无障碍桥接，只关注像素怎样进入最终显示。
 
 ```mermaid
-sequenceDiagram
-    participant HW as Hardware VSync
-    participant Main as Main Thread (UI + Platform)
-    participant Raster as Raster Thread
-    participant ST as SurfaceTexture
-    participant RT as Android RenderThread
-    participant SF as SurfaceFlinger
+flowchart TD
+    NativeView["Android PlatformView"]
+    TLHCTarget["TLHC / VD render target"]
+    FlutterRaster["Flutter Raster / Impeller"]
+    FlutterRoot["Flutter root target"]
+    HCView["HC native View hierarchy"]
+    HCFlutter["HC FlutterImageView / overlay"]
+    HCPPView["HCPP PlatformView native Surface"]
+    HCPPFlutter["HCPP Impeller native Surface"]
+    Host["Host App Window / Android View draw"]
+    SF["SurfaceFlinger"]
 
-    HW->>Main: VSync-App
-    Main->>Main: Build → Layout → Paint
-    Main->>Raster: Submit LayerTree
-    Raster->>ST: queueBuffer(Frame N)
-    ST-->>Main: onFrameAvailable()
-    Main->>Main: invalidate()
-    
-    Note over Main: 下一次 VSync-App 到达
-    Main->>RT: SyncFrameState
-    RT->>ST: updateTexImage() (Bind Texture)
-    RT->>RT: Draw View Hierarchy + Flutter Texture
-    RT->>SF: queueBuffer(App Window)
+    NativeView --> TLHCTarget --> FlutterRaster --> FlutterRoot
+    NativeView --> HCView --> Host --> SF
+    FlutterRaster --> HCFlutter --> Host
+    NativeView --> HCPPView --> SF
+    FlutterRaster --> HCPPFlutter --> SF
 ```
 
-宿主侧的上屏过程是：`SurfaceTexture.setOnFrameAvailableListener()` 先把新帧消息抛回宿主主线程，主线程触发 `invalidate()`，再等下一次 VSync 由宿主 `RenderThread` 执行 `updateTexImage()`，把 Flutter 的离屏结果采样进应用窗口。Flutter Raster Thread 只负责把帧写进 `SurfaceTexture`；真正能不能按时上屏，还要看宿主主线程和 `RenderThread` 是否空闲。
+TLHC 把 PlatformView 结果交给 Flutter 采样；原始 HC 会把原生 View 保留在 Android View hierarchy，并用 `FlutterImageView`/overlay 协调 Flutter 内容；HCPP 才是明确使用 SurfaceControl/native Surface 与 transaction synchronization 的新路径。三者的 layer 数量、线程竞争与 fence 关系不同。
 
-**优势**：可以当普通 View 使用，支持 alpha、rotation、scale、clip 等 View 级变换。
+### Texture Layer Hybrid Composition（TLHC）
 
-**代价**：多一次宿主侧纹理采样和同步；帧率上限受宿主窗口渲染节奏约束；宿主主线程或 `RenderThread` 一忙，Flutter 帧就会卡在 `updateTexImage()` 之前。
+固定源码中的 `configureForTextureLayerComposition()` 把 PlatformView 放入 `PlatformViewWrapper`，记录其绘制并交给 Flutter texture target。当前实现会按 API、flag 与设备条件选择 `SurfaceProducer`、ImageReader 或 SurfaceTexture backing；无法支持时还可能转到 Virtual Display 或 HC fallback，取决于创建请求。
 
-### 选型建议
+TLHC 的优点是 Flutter transform、clip 和 opacity 更容易保持一致，Flutter Raster 可以把 PlatformView texture 与其他 Flutter 内容一起合成。代价包括中间 buffer、texture acquire、invalidate、输入映射与无障碍桥接。快速滚动 WebView 可能出现抖动；PlatformView 内含 `SurfaceView` 时，像素重定向与 accessibility 也更复杂。
 
-| 场景 | 推荐 Mode | 理由 |
-|:---|:---|:---|
-| 全屏 Flutter App | SurfaceView | 直接走独立 Surface，合成链更短 |
-| Flutter 嵌入复杂 View 层级 | TextureView | 需要和宿主普通 View 交错、一起参与 View 级变换 |
-| 需要透明背景，但不要求和宿主 View 做复杂交错 | SurfaceView + `TransparencyMode.transparent` | 透明可以保留 Surface 路径，不必为了“透明”直接切到 TextureView |
-| 需要圆角、旋转、alpha 动画 | TextureView | 这类效果依赖普通 View 变换与裁剪 |
-| 视频 / 游戏 | SurfaceView | 延迟更低，宿主 RenderThread 负担更小 |
+### 原始 Hybrid Composition（HC）
 
-### `FlutterActivity` 的默认 `RenderMode` 怎么定
+HC 将原生 View 加入 Android View hierarchy。固定源码的 `PlatformViewsController` 在需要同步时调用 `FlutterView.convertToImageView()`，把 Flutter root 临时切到 `FlutterImageView`；Flutter overlay 也通过 ImageReader-backed View 画回宿主层级。`FlutterMutatorView` 负责对原生 View 应用位置、变换、裁剪与可见性。
 
-`FlutterActivity` 的默认 `RenderMode` 和 `BackgroundMode` 绑定，不是统一的硬编码默认：
+这条路径保留了较完整的原生 View 行为，但增加了 Flutter image、overlay、宿主 View 与 PlatformView 的同步。Flutter 官方文档还指出：
 
-| `BackgroundMode` | 默认 `RenderMode` | 承载 View | 为什么这样选 |
-|:---|:---|:---|:---|
-| `opaque` | `RenderMode.surface` | `FlutterSurfaceView` | 不透明背景下 SurfaceView 直出最省事 |
-| `transparent` | `RenderMode.texture` | `FlutterTextureView` | SurfaceView 的挖洞机制不支持透明混合，只能走 TextureView |
+- HC 会让 raster 与 UI 工作合并执行，复杂 Flutter 内容会与 OS message、插件回调竞争；
+- Android 10 之前每帧存在 graphics memory → main memory → GPU texture 的往返 copy；
+- Android 10+ 将这部分 graphics memory copy 降为一次，但 HC 的线程和同步成本仍存在。
 
-嵌入到其他 View 层级（`FlutterFragment` 或 `FlutterView` 直接使用）时，`RenderMode` 由调用方显式配置，不走这套默认推断。SurfaceView 模式下还存在 z-ordering 约束——`FlutterSurfaceView` 背后的 Surface 默认在 Window 下方，可通过 `setZOrderOnTop` / `setZOrderMediaOverlay` 调整，这会影响 SurfaceFlinger 侧的 layer 叠加关系（参见 [18.6 SurfaceView 直出路径](06-surfaceview.md#z-order-与图层结构)）。
+因此，“Android 10+ 的普通 HC 就是 SurfaceControl 多 Surface 直出”并不准确。固定源码中原始 HC 的 Java 主路径仍可看到 `convertToImageView()`、ImageReader overlay 和宿主 View hierarchy。
 
-[已验证: Flutter engine `shell/platform/android/io/flutter/embedding/android/FlutterActivity.java` `getRenderMode()` + `FlutterSurfaceView.java` 默认 z-order 行为]
+### Hybrid Composition++（HCPP）
 
-### Flutter 与宿主 App 的 VSync 协调
+HCPP 从 Flutter 3.44 起提供，当前仍是实验性 opt-in。运行或测试可用 `--enable-hcpp`；release 构建应在 `<application>` 下设置 `io.flutter.embedding.android.EnableHcpp=true`。
 
-Flutter engine 在 Android 上通过 `VsyncWaiter` 接上宿主 `Choreographer` 的 VSync-App 节拍。这不是"Flutter 自己生成一个 VSync"，而是复用 Android 已有的帧率驱动信号。理解这一层，才能在 Perfetto 中区分"Flutter 自己慢了"和"宿主 VSync 安排出问题了"。
+配置存在并不等于运行时已经进入 HCPP。固定源码会继续检查：
 
-**核心调用链**：
+- Android API 34+；
+- Impeller 已启用；
+- backend 为 `kImpellerVulkan`；
+- Vulkan context 允许 SurfaceControl swapchain。
 
-```
-Android Choreographer / AChoreographer → VsyncWaiterAndroid::AwaitVSync()
-    → PlatformVsync / VsyncProcessCallback
-    → Animator::BeginFrame → Dart Build/Layout/Paint
-    → Rasterizer::DrawToSurfaces
-```
+条件满足时，`PlatformViewsController2` 使用 `SurfaceControl.Transaction`、root `AttachedSurfaceControl` 与独立 overlay SurfaceControl；Flutter root 与 PlatformView 可作为 native Surface 交给 SurfaceFlinger，并通过 transaction synchronization 协调。条件不满足时，官方文档说明会回到 App 原先配置的 PlatformView 策略。
 
-`VsyncWaiterAndroid` 在当前 Android Engine 中优先调用 NDK `AChoreographer`，回调经由 `OnVsync()` → `ProcessVsync()` 记录 `PlatformVsync`，再通过 `VsyncWaiter::FireCallback()` 投递 `VsyncProcessCallback`。Java `Choreographer.FrameCallback` / `FlutterJNI.onVsync()` 是 `AChoreographer` 不可用时的回退路径。engine 内部把这当成"可以开始下一帧"的信号，驱动整个 Dart → Raster 管线。
+HCPP 改善原始 HC 的 copy 与同步成本，但仍可能有多个 Surface/layer，也存在复杂透明 overlay 叠放限制。Android 14、15、16 或 17 不会替旧 Flutter App 自动开启 HCPP。
 
-**Merged Model 下的区别（Flutter 3.32 stable+）**：
+### PlatformView 选型
 
-在旧版 engine（UI Thread 独立）中，`VsyncWaiter` 收到回调后还需要跨线程唤醒 UI Thread，增加一次线程同步延迟。Merged Model 下，`VsyncWaiter`、Dart UI task、平台回调都在同一条 Main Thread 上，VSync 回调到达后可以立即进入 Build/Layout/Paint——没有跨线程唤醒开销。
+| 模式 | 像素路径 | 长处 | 重点代价 |
+|---|---|---|---|
+| TLHC | Native View → texture → Flutter Raster → root | Flutter transform、clip、opacity 较完整；普通 Flutter 渲染性能较稳定 | 快速滚动可能抖动；中间 texture；SurfaceView/a11y/text magnifier 有限制 |
+| HC | Native View 保留在宿主 hierarchy；Flutter root/overlay 可转 ImageReader View | 原生输入、无障碍与 View 行为较完整 | raster/UI 合并、Flutter image/overlay 同步；Android 10 前 copy 很重 |
+| HCPP | PlatformView native Surface + Impeller native Surface → SurfaceFlinger | 减少原始 HC 的 copy 和同步负担 | Flutter 3.44+ 实验性；API 34+、Vulkan、Impeller；透明 overlay 限制 |
+| VD fallback | Native View → VirtualDisplay → 中转 texture → Flutter | 兼容部分无法走 TLHC 的对象 | Buffer、内存、延迟和输入/a11y 桥接更重 |
 
-**TextureView Mode 下的额外延迟**：
+### Z-order、手势与无障碍
 
-`SurfaceTexture.setOnFrameAvailableListener()` 的回调也落在 Main Thread。如果这个回调的执行时间与 VSync-App 到达时间产生竞争，宿主 `RenderThread` 的 `updateTexImage()` 可能延迟到下一个 VSync 周期才能执行，Flutter Raster Thread 产出的帧要多等 1 帧才能上屏。
+Flutter widget tree 与 Android View hierarchy 是两套对象树。PlatformView 的视觉位置、输入命中和无障碍节点需要分别协调：
 
-**Perfetto 观察点**：
+- TLHC 由 Flutter scene 决定视觉叠放，触摸事件经过 Flutter hit test 后映射回 Android View；
+- HC 由 `FlutterMutatorView` 和宿主 View hierarchy 参与 z-order，Flutter overlay 还要遮盖 PlatformView 上方的 Flutter 内容；
+- HCPP 还要检查 SurfaceControl layer 与 transaction，不能只看 View hierarchy；
+- 嵌入 `SurfaceView` 的 PlatformView 拥有自己的 child Surface，普通 View 的 clip、alpha 与 accessibility 结论不能直接套用。
 
-| 观察目标 | 轨道/关键词 | 怎么看 |
-|:---|:---|:---|
-| VSync 信号是否准时到达引擎 | `PlatformVsync` → `VsyncProcessCallback` → `Animator::BeginFrame` | 三者应在同一帧邻近出现；若走 Java fallback，再看 `Choreographer#doFrame` / `FlutterJNI.onVsync` 是否被主线程阻塞 |
-| Merged Model 是否生效 | 查看 Main Thread 上是否同时有 `VsyncProcessCallback` 和 `Animator::BeginFrame` | 二者在同一线程轨上相邻出现 = merged model 生效 |
-| TextureView 模式下的帧延迟 | `SurfaceTexture.onFrameAvailable` → `updateTexImage` → `DrawFrame` | 如果 `updateTexImage` 的 slice 比 `SurfaceTexture.onFrameAvailable` 晚超过 1 个 VSync 周期，宿主 RenderThread 在背锅 |
+遇到“画面对了但点错位置”，应同时检查 Flutter transform、Android View bounds 与 MotionEvent 坐标映射。遇到“视觉被遮挡”，再对照 Flutter overlay、宿主 View z-order 和 SurfaceFlinger layer tree。
 
-**常见问题**：
+## Android 17 的 buffer、fence 与显示边界
 
-- **宿主主线程阻塞拖慢 Flutter VSync**：如果在 VSync-App 到达时宿主主线程正在执行长时间操作（如复杂的 MethodChannel 回复、大量平台 View 的 measure/layout），`VsyncWaiter` 的回调会被推迟，Flutter 的 BeginFrame 也会相应延迟。
-- **RenderThread 过载导致 TextureView 帧堆积**：宿主 RenderThread 忙不过来时，`updateTexImage()` 会积压，Flutter 已经产出的帧迟迟不能上屏。
-- **SurfaceView mode 不受宿主 RenderThread 影响**：这是 SurfaceView 在性能上的核心优势——Flutter 的 VSync 节奏只受宿主主线程影响（共用一条线程），`Raster Thread` 产出后直接通过 BLAST 提交，不需要宿主 RenderThread 采样。
+Android 17 的平台侧仍按 producer buffer → acquire fence → SurfaceFlinger latch → HWC/RenderEngine composition → display present 分析。Flutter 改变的是 producer 与 target 的组织方式，不会绕过 BufferQueue、dma-buf 与 fence 约束。
 
-### `FlutterImageView` 与 `RenderMode.image`
+- `RenderMode.surface`：Flutter root 有独立 producer queue、acquire fence 与 SurfaceFlinger layer；
+- `RenderMode.texture`：SurfaceTexture 是中间 image，宿主 HWUI 采样后再为 App Window 生成新的 GPU completion fence；
+- `RenderMode.image`/HC：ImageReader image 被宿主 Canvas/HWUI 消费，overlay 可能拥有额外 image 与 View；
+- external texture：插件 producer fence 要先满足 Flutter Raster 的采样；
+- HCPP：Flutter root、PlatformView 与 overlay 可能各自拥有 SurfaceControl layer 和 transaction。
 
-`io.flutter.embedding.android.RenderMode` 当前包含三个枚举值：`surface`、`texture`、`image`。常规 `FlutterActivity`/`FlutterFragment` 默认路径主要在 `surface`/`texture` 之间选择；`image` 对应 `FlutterImageView`/`ImageReader`/`Canvas` 路径，多用于 PlatformView 交互、overlay 或内部转换场景。
+FrameTimeline 也应按输出对象解释。Host App Window、Flutter root Surface 与 HCPP PlatformView 可能使用不同 frame number/token；external texture 的中间帧不必拥有可直接对齐的 App FrameTimeline。稳妥的关联键包括 engine frame number、texture id、buffer id、SurfaceFlinger layer id 与时间窗口。
 
-`FlutterView(Context, FlutterImageView)` 构造器会创建 `image` 模式的视图，但旧的 `FlutterView(Context, RenderMode)` 构造器不支持 `image`。`FlutterImageView` 的主要角色是：
+kernel `android17-6.18-2026-06_r6` 提供 dma-buf 与 dma-fence/sync_file 基础。GPU、camera、codec 和 HWC driver 的具体 tracepoint 由设备内核实现决定。看到 fence wait 时，先确认等待发生在插件 producer、Flutter GPU、宿主 HWUI、SurfaceFlinger 还是 HWC。
 
-- **Hybrid Composition 下 overlay Surface 的承载 View**：`PlatformViewsController.createOverlaySurface(...)` 在 HC 路径里创建 `ImageReader` 提供的 Surface 作为 overlay，结果由 `FlutterImageView` 承载并绘回宿主 View 层级；
-- **`FlutterView.convertToImageView()` 特殊过渡场景**：内部能力，遇到需要把当前 Flutter 内容快照为 image 时使用。
+## 在 Perfetto 中识别 Flutter 渲染管线
 
-`FlutterImageView` 的渲染路径是：Engine 渲染到 `ImageReader` 提供的 Surface → `acquireLatestImage()` → 通过 `Canvas.drawBitmap` 将帧内容绘入宿主 View 层级。API 29+ 支持通过 `Image.getHardwareBuffer()` → `Bitmap.wrapHardwareBuffer()`（`Config.HARDWARE`）实现零拷贝渲染，但此路径属实验性功能，主路径仍走 `Canvas.drawBitmap`。Trace 上看到 `FlutterImageView` 相关 slice 时，不要把它当成独立 root render mode 分析——它是 HC overlay 的承载形态。
+### 采样前记录配置
 
-[已验证: Flutter engine `shell/platform/android/io/flutter/embedding/android/FlutterImageView.java` + `io/flutter/plugin/platform/PlatformViewsController.java` `createOverlaySurface`]
+建议使用 profile 或 release 构建复现，并记录：
 
-## Platform Views 嵌入
+- Android build fingerprint 与刷新率；
+- Flutter SDK 版本和 engine revision；
+- UI/platform 是否合并；
+- renderer/backend；
+- root RenderMode；
+- PlatformView mode、HCPP flag 与插件版本；
+- 复现页面是否包含相机、视频、WebView、地图或其他 external texture。
 
-当 Flutter 需要嵌入原生 Android View（如 WebView、MapView）时，要分开看两套开关：
+Flutter trace event 会随 build mode、engine revision 与 trace 配置变化。某个关键词没有出现，不能单独证明对应阶段不存在。
 
-1. **Flutter 根视图 render mode**：SurfaceView 或 TextureView，决定 Flutter 内容怎么出图
-2. **Platform Views composition mode**：Hybrid Composition 或 Texture Layer Hybrid Composition，决定原生 View 怎么和 Flutter 内容组合
+### 从对象树决定观察对象
 
-这两套配置会叠加出不同的性能边界，不能混成一句“某种模式更快”。Android 10 是一个明显分水岭：Hybrid Composition 在 Android 10+ 可以借助 `SurfaceControl` 把 Platform View 和 Flutter 内容交给 SurfaceFlinger 做 Layer 级合成，Z-order、输入和 a11y 路径都更稳；Android 10 之前没有这条路，拷贝和同步成本会高不少。
+先看 Android View hierarchy 与 SurfaceFlinger layer tree：
 
-| Composition mode | 适合场景 | 优点 | 主要代价 |
-|:---|:---|:---|:---|
-| **Hybrid Composition** | WebView、MapView、输入与无障碍要求高的控件 | 原生 View 更接近 Android 自身行为；Android 10+ 走 `SurfaceControl` 合成后，Layer 组织更稳定 | Flutter 自身渲染更容易掉帧；Android 10 之前拷贝和同步成本更高 |
-| **Texture Layer Hybrid Composition** | 需要变换、裁剪、透明度、和 Flutter 内容一起动画的控件 | Flutter 侧变换能力更完整，宿主布局融合更灵活 | WebView 快速滚动更容易 janky；若嵌入树里出现 SurfaceView，可能被挪进 virtual display，a11y 也会受影响；文本放大镜依赖 Flutter 以 TextureView 渲染 |
-| **Hybrid Composition++ (HCPP)** | Flutter 3.44+ 实验性 opt-in；目标改善原 Hybrid Composition 的合成性能与同步问题 | 减少原生 View 与 Flutter 内容之间的合成开销；同步更高效 | 要求 Android API 34+ 与 Vulkan 后端，条件不满足时自动回退到 HC/TLHC；仍为实验性方案，API 可能变化 |
+- 有独立 Flutter child layer，通常是 `FlutterSurfaceView` 或 HCPP Surface；
+- 只看到 Host App Window，而 Flutter 内容位于其中，通常是 TextureView/ImageView/HC 宿主消费路径；
+- 有 WebView/Map/SurfaceView child layer，再确认它来自普通 HC、HCPP 或 PlatformView 内部 Surface；
+- 相机或 codec 的 producer layer 不一定直接可见，因为它可能只是 Flutter external texture。
 
-再按控件类型看，差异会更直观：
+### Engine 侧常用事件
 
-| 嵌入对象 | Hybrid Composition | Texture Layer Hybrid Composition |
-|:---|:---|:---|
-| **WebView** | 滚动、输入、a11y 路径更稳，适合正文阅读和表单 | 做透明叠加和动画更方便，但快速滚动更容易抖 |
-| **MapView** | 原生手势与无障碍行为更接近 Android 默认实现 | 适合做裁剪、缩放、透明过渡，但高频相机移动时要盯紧纹理采样成本 |
-| **SurfaceView 类控件** | 更接近原生独立 Layer 路径 | 不是默认优先项，容易触发 virtual display 退化，a11y 和合成链都会更复杂 |
+| 事件/轨道 | 源码含义 | 诊断用途 |
+|---|---|---|
+| `PlatformVsync` | NDK/Java vsync 入口记录 frame start/target | 判断帧时钟何时到达 engine |
+| `VsyncFireCallback` / `VsyncProcessCallback` | callback flow 与 UI task runner 上的处理任务 | 判断任务排队和线程映射 |
+| `Animator::BeginFrame` | Dart frame build 起点 | 对齐 UI phase |
+| `Animator::Render` | framework 把本帧 layer tree 交给 engine | 估算 build/layout/paint 区间 |
+| `PipelineFull` | raster pipeline 没有空位 | 提示 consumer/raster 跟不上 |
+| `Rasterizer::DrawToSurfaces` | Raster 取 scene、绘制并提交 target | 判断 Raster CPU 与提交区间 |
+| Impeller/GPU events | render pass、command buffer、queue work | 区分 CPU 录制与 GPU 执行 |
 
-因此，Platform Views 这部分不能只写“Hybrid Composition 性能较好”或“Texture Layer 更灵活”。要看的是目标控件类型、滚动模式、是否依赖 a11y，以及是否需要跟 Flutter 内容一起做动画。
+新版 merged model 下，`VsyncProcessCallback` 与 `Animator::BeginFrame` 应位于 UI task runner 对应的宿主 Main thread；旧版或 opt-out/定制 engine 可能仍有独立 UI thread。线程名也可能被 engine 改写，建议用 tid、task runner 映射和相邻事件一起判断。
 
-## 在 Perfetto 中识别 Flutter 管线
+### 四类常见卡顿的证据顺序
 
-先把采样条件固定下来：优先用 profile / release 构建，打开 `gfx`、`view`、`sched`、`surfaceflinger` 相关数据源，录制一段能稳定复现卡顿的交互。没有截图时，直接在 Perfetto UI 里搜 `PlatformVsync`、`VsyncProcessCallback`、`Animator::BeginFrame`、`Rasterizer::DrawToSurfaces`、`updateTexImage`，定位会更快。
+| 现象 | 检查顺序 | 常见方向 |
+|---|---|---|
+| Dart/UI work 晚 | `PlatformVsync` → `VsyncProcessCallback` → `Animator::BeginFrame` → `Animator::Render` | Main Runnable/Running、plugin callback、build/layout/paint |
+| Raster 晚 | `Animator::Render` → `Rasterizer::DrawToSurfaces` → GPU submit | saveLayer、blur、图片上传、pipeline 创建、raster pipeline 满 |
+| Flutter 已提交但 root 晚 | root buffer / fence → SF latch → present | GPU fence、dequeue backpressure、SurfaceView lifecycle |
+| Texture/Image root 晚 | 中间 image ready → host invalidate/draw → App Window buffer → SF | Host Main、RenderThread、TextureView/ImageReader acquire |
+| PlatformView 错位或掉帧 | Flutter frame + host traversal + overlay/PlatformView layer + transaction | HC thread merge、image/overlay 缺帧、HCPP transaction、TLHC texture |
 
-| 场景 | 轨道 / 关键词 | 该看什么 |
-|:---|:---|:---|
-| Flutter UI 阶段 | `VsyncProcessCallback`、`Animator::BeginFrame`、`Build`、`Layout`、`Paint` | Main Thread 上的 Dart UI task 是否在 VSync 后及时进入 Build/Layout/Paint |
-| Flutter 光栅化 | `Rasterizer::DrawToSurfaces`、`EntityPass::*` | Raster Thread 是否把一帧及时光栅化完成 |
-| SurfaceView mode | App 进程里的 Flutter 轨道 + SurfaceFlinger 独立 Flutter Layer | Flutter 独立 Layer 是否按节拍提交；若宿主页面平稳、Flutter Layer 自己断节拍，问题多半在 Flutter 侧 |
-| TextureView mode | 宿主主线程 `invalidate()`、宿主 `RenderThread` 的 `DrawFrame` / `updateTexImage()` | Flutter 帧是否已经准备好，但卡在宿主 `RenderThread` 的采样和合成上 |
-| 图片 / 资源加载 | `ImageDecoder`、IO Thread | 先判断卡顿是否来自解码和资源准备，再决定要不要回到渲染链 |
+### SurfaceView 与 TextureView 的 trace 差异
 
-**轨道观察清单**：
+`FlutterSurfaceView` 路径中，宿主 RenderThread 没有负责采样 Flutter root。宿主 Main 仍影响 VSync、Dart work、插件与生命周期，但 root buffer 可以直接进入独立 Surface layer。
 
-- **SurfaceView mode**：能看到 Main Thread 上的 Dart UI task 与 Raster Thread 正常推进，同时 SurfaceFlinger 里有独立 Flutter Layer 跟着提交；这类 trace 往往先查 Flutter 自身的 Dart / Raster 阶段。
-- **TextureView mode**：先确认 Raster Thread 已经产出新帧，再看宿主主线程有没有及时 `invalidate()`，以及宿主 `RenderThread` 的 `updateTexImage()` / `DrawFrame` 有没有被拖长。
-- **Platform Views**：如果页面里同时有 WebView 或 MapView，再叠看 SurfaceFlinger Layer 和宿主窗口轨道，判断卡顿落在 Flutter 自身、Platform View，还是宿主合成。
+`FlutterTextureView` 路径中，Flutter producer 只把新 image 放进 SurfaceTexture。Android 17 `TextureView` 的 frame-available 回调会在 View attach handler 上触发更新与 invalidation，宿主 HWUI 随后采样。若 `Rasterizer::DrawToSurfaces` 已完成而 Host App Window 没有及时更新，瓶颈位于宿主消费段。
 
-**诊断思路**：
-- Dart 阶段慢 → 优化 Widget 树、减少 rebuild
-- Raster 阶段慢 → 减少 DrawCall、优化 Shader
-- 宿主合成慢 → 检查 TextureView mode 下的 `updateTexImage()`、`DrawFrame` 和宿主 RenderThread 负载
+## 容易出现的误判
+
+| 误判 | 应改成的检查方式 |
+|---|---|
+| Flutter 固定有独立 UI、platform、Raster 三线程 | 3.32 stable+ 先按 UI+platform 合并分析；3.29—3.31、opt-out 与定制 engine 查实际 task runner |
+| `PlatformVsync` 出现就会立即执行 Dart | 继续看 `VsyncFireCallback`、`VsyncProcessCallback` 与 UI task runner 排队 |
+| 没有 Vulkan就一定回退 Skia | API 29+ 的当前动态选择可能使用 Impeller OpenGLES |
+| Impeller 消除了所有 shader/pipeline 卡顿 | 区分离线 shader、运行时 pipeline、cache 命中与 GPU 像素成本 |
+| `RenderMode.texture` 只有一条 BufferQueue | 分开 SurfaceTexture producer 与 Host App Window producer |
+| Flutter Raster 结束就是上屏 | 继续追 target buffer、fence、SF latch 与 display present |
+| `AndroidView` 固定使用 HC | 核对 TLHC、VD fallback、HC、HCPP 与运行时回退 |
+| Android 10+ 的 HC 等同于 HCPP | 原始 HC 仍可使用 FlutterImageView/overlay；HCPP 从 Flutter 3.44 起且需要显式启用 |
+| Android 14+ 自动开启 HCPP | 还需 Flutter 3.44+、flag、API 34+、Impeller Vulkan 与 SurfaceControl swapchain |
+| external texture 更新等于相机帧已显示 | 继续等待 Flutter Raster 采样、root 提交与 display present |
+
+## Android 12—17 与 Flutter 的版本演进
+
+Android 与 Flutter 的变化应分开记录。Android 决定 View、Surface、HWUI、SurfaceFlinger/HWC 与 kernel 语义；Flutter 决定 engine、thread、renderer、embedding 和 PlatformView 策略。
+
+| 版本 | 与本章相关的边界 |
+|---|---|
+| Android 12 / API 31 | BLAST 与 FrameTimeline 已形成现代分析基线；仍不能用 OS 版本推断 Flutter renderer |
+| Android 13 / API 33 | Image fence API 可供较新的 ImageReader consumer 使用；App 携带的 Flutter engine 决定是否采用 |
+| Android 14 / API 34 | 提供 HCPP 需要的 transaction synchronization 平台条件；不会自动启用 HCPP |
+| Android 15 / API 35 | 16 KB page size 设备要求 Flutter engine 与 native plugin 满足 ELF/APK 对齐；Flutter 3.27 同期默认启用 Impeller 属于 Flutter 发布决策 |
+| Android 16 / API 36 | 旧 Flutter App 仍可保留旧线程/renderer；GPU syscall filtering 场景要测试定制 engine 与旧 native plugin |
+| Android 17 / API 37 | 本章平台锚点；按 `android-17.0.0_r1` 的 TextureView、SurfaceView、SurfaceFlinger 与 AIDL Composer 解释显示端 |
+| Flutter 3.27 | Android API 29+ 默认启用 Impeller；Android/iOS 合并线程能力进入 release notes |
+| Flutter 3.29—3.31 | 官方架构文档把 3.29 写为合并起点；对这段版本核对 engine revision 与 opt-out |
+| Flutter 3.32 stable | issue #150525 明确写为 Android/iOS 默认合并且可 opt-out；本章的保守主线 |
+| Flutter 3.44 | HCPP 作为 API 34+、Impeller Vulkan 条件下的实验性 opt-in 能力 |
+
+## 固定源码入口
+
+### Flutter
+
+Flutter 源码固定到 commit `8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2`。线上问题仍应切换到 App 携带的 engine revision。
+
+- [`VsyncWaiterAndroid`](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/vsync_waiter_android.cc)、[`VsyncWaiter`](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/common/vsync_waiter.cc) 与 [`Animator`](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/common/animator.cc)：vsync、UI task runner 与 frame trace；
+- [`Rasterizer`](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/common/rasterizer.cc)：Raster 与 target 提交；
+- [`RenderMode`](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/RenderMode.java)、[`FlutterSurfaceView`](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/FlutterSurfaceView.java)、[`FlutterTextureView`](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/FlutterTextureView.java) 与 [`FlutterImageView`](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/FlutterImageView.java)：root target；
+- [`FlutterRenderer`](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java)、[`TextureRegistry`](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/io/flutter/view/TextureRegistry.java) 与 [`SurfaceTextureSurfaceProducer`](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/io/flutter/embedding/engine/renderer/SurfaceTextureSurfaceProducer.java)：external texture backing 与 lifecycle；
+- [`PlatformViewsController`](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java) 与 [`PlatformViewsController2`](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController2.java)：TLHC、HC、VD fallback 与 HCPP；
+- [`AndroidContextDynamicImpeller`](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/android_context_dynamic_impeller.cc) 与 [`pipeline_cache_data_vk.cc`](https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/renderer/backend/vulkan/pipeline_cache_data_vk.cc)：Impeller backend 选择与 Vulkan cache。
+
+版本与行为说明以 [Flutter architecture](https://docs.flutter.dev/resources/architectural-overview)、[issue #150525](https://github.com/flutter/flutter/issues/150525)、[Impeller](https://docs.flutter.dev/perf/impeller) 和 [Android Platform Views/HCPP](https://docs.flutter.dev/platform-integration/android/platform-views) 为准。
+
+### Android 17 与 kernel
+
+- Android 17 [`TextureView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java) 与 [`SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java)：宿主 View、SurfaceTexture 更新与独立 Surface；
+- Android 17 [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)：latch、composition 与 present 主线；
+- kernel [`dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c) 与 [`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：共享 buffer 与 fence 基础。
 
 ## 与其他章节的关系
 
-- **2.11 Flutter 渲染管线与性能**：Flutter 渲染机制的原理视角
-- **18.6 SurfaceView / 18.7 TextureView**：Android 原生组件的管线对比
-- **18.13 WebView 章节 / 7.11 WebView 性能优化**：分别对应嵌入式渲染过程和性能治理视角
+- [2.11 Flutter 渲染管线与性能](../../part1-fundamentals/ch02-rendering/11-flutter-rendering.md)：framework/engine 原理与性能视角；
+- [18.6 SurfaceView 直出路径](06-surfaceview.md) 与 [18.7 TextureView 纹理路径](07-textureview.md)：Android 容器的源码细节；
+- [18.13 WebView 渲染管线](13-webview-rendering.md)：WebView 作为 PlatformView 时的 Chromium 与 Android 显示路径。
 
+## 小结
 
+Flutter 页面要按三组对象展开：
 
-<!-- AIW-源码调研-2026-07-04 -->
-## Impeller Shader 编译与 PSO 缓存源码级补充
+- root RenderMode 决定 Flutter 主画面是独立 Surface，还是由宿主 View/HWUI 消费；
+- external texture 增加插件 producer 与 Flutter Raster 采样；
+- PlatformView 策略决定原生 View 被转成 texture、保留在宿主 hierarchy，还是通过 HCPP 作为 native Surface 参与 SurfaceFlinger 合成。
 
-上一节把 Impeller 描述为"使用预编译 Shader"和"运行期零反射"，本节补到源码层。
-
-### 离线编译流水线（构建期）
-
-`flutter/engine/impeller/README.md` 中"The Offline Shader Compilation Pipeline"明确给出流水线：
-
-```
-GLSL ES 4.60（权威源码）
-  → Stage 1 Compiler (impellerc) → SPIRV（无优化，保留调试信息）
-  → SPIRV Optimizer → Optimized SPIRV
-  → Stage 2 Compiler（按后端分叉）：
-      Metal MSL → Metal Linker → Metal Library
-      Vulkan SPIRV → Shader Archiver → .vkspv
-      GLSL ES 1.00 → Shader Archiver → .gles
-  → FlatBuffers ShaderArchive（file_identifier "SHAR"）
-  → xxd.py → C 数组 → 静态链接进 engine 二进制
-```
-
-关键设计：
-- **GLSL 4.60 是唯一权威源码**，跨后端一致性来源；驱动差异只在 transpile 阶段被吸收。
-- **运行期零反射**：SPIRV → C++ translation unit 的反射在构建期完成，运行时不再调用任何反射 API；uniform/vertex 描述符在编译时已知。
-
-### Shader Archive 格式
-
-`impeller/shader_archive/shader_archive.fbs`：
-
-```fbs
-namespace impeller.fb;
-enum Stage:byte { kVertex, kFragment, kCompute }
-table ShaderBlob { stage: Stage; name: string; mapping: [ubyte]; }
-table ShaderArchive { items: [ShaderBlob]; }
-root_type ShaderArchive;
-file_identifier "SHAR";
-```
-
-`ShaderArchiveWriter::AddShaderAtPath` 强制要求文件同时具有 `.gles`/`.vkspv` 后缀与 `.vert`/`.frag`/`.comp` 阶段后缀——构建期对 shader 命名的硬约束。
-
-### Android 端的运行期加载路径
-
-`shell/platform/android/android_context_vk_impeller.cc`：
-
-```cpp
-std::vector<std::shared_ptr<fml::Mapping>> shader_mappings = {
-    std::make_shared<fml::NonOwnedMapping>(impeller_entity_shaders_vk_data,
-                                           impeller_entity_shaders_vk_length),
-    std::make_shared<fml::NonOwnedMapping>(impeller_framebuffer_blend_shaders_vk_data,
-                                           impeller_framebuffer_blend_shaders_vk_length),
-    std::make_shared<fml::NonOwnedMapping>(impeller_modern_shaders_vk_data,
-                                           impeller_modern_shaders_vk_length),
-};
-impeller::ContextVK::Settings settings;
-settings.shader_libraries_data = std::move(shader_mappings);
-settings.cache_directory = fml::paths::GetCachesDirectory();
-auto context = impeller::ContextVK::Create(std::move(settings));
-```
-
-观察点：3 个 shader 库以 `extern "C"` 数组形式存在于 `.rodata` 段，由 `fml::NonOwnedMapping` 直接指向——Android 进程启动时不需要任何文件系统 shader 加载。这与 Skia 时代的运行时 GLSL → 驱动内编译器路径是结构性差异。
-
-### Vulkan PSO 缓存（运行期、跨进程持久化）
-
-`impeller/renderer/backend/vulkan/pipeline_cache_vk.cc` + `pipeline_cache_data_vk.cc`：
-
-- 缓存文件固定为 `kPipelineCacheFileName = "flutter.impeller.vkcache"`，位于 `fml::paths::GetCachesDirectory()`（Android 上即 `Context.getCacheDir()`）。
-- `PipelineCacheHeaderVK::IsCompatibleWith` 校验 5 个字段：magic / driverVersion / vendorID / deviceID / pipelineCacheUUID。**同一颗 SoC 但系统 OTA 升级驱动后，缓存自动失效**——避免跨驱动版本的二进制不兼容。
-- `PersistCacheToDisk` 在 `~PipelineCacheVK` 时调用，把驱动内生成的 PSO cache 序列化回磁盘。
-- 这是 Impeller 主动管理的"驱动外"缓存，命中率由 Impeller 的 pipeline 复用模式决定，与驱动无关。
-
-### GLES Pipeline 缓存（运行期、仅内存）
-
-`impeller/renderer/backend/gles/pipeline_library_gles.cc` 的 `GetPipeline` 主入口：
-
-```cpp
-if (auto found = pipelines_.find(descriptor); found != pipelines_.end()) {
-  return found->second;  // 命中则直接返回 future
-}
-// 未命中则创建 promise + ReactorGLES::AddOperation 异步编译
-pipelines_[descriptor] = pipeline_future;
-reactor_->AddOperation([promise, weak_this, descriptor,
-                        vert_function, frag_function](const ReactorGLES& reactor) {
-  promise->set_value(
-      CreatePipeline(weak_this, descriptor, vert_function, frag_function));
-});
-```
-
-GLES 与 Vulkan 关键对照：
-
-| 维度 | Vulkan | GLES |
-|---|---|---|
-| Cache key | vk::PipelineCache 驱动管理 | `ProgramKey{vert_function, frag_function, spec_constants}` |
-| 落盘 | `flutter.impeller.vkcache` | **不落盘**，进程销毁即丢失 |
-| 失效条件 | driverUUID 不匹配 | 无（首次需编译） |
-| 异步编译 | ReactorGLES::AddOperation 后台线程 | 同上 |
-
-GLES 不落盘的原因（推断）：GL context 跨进程隔离，共享 program 缺乏标准机制；且 Impeller 强调"冷启动确定性"——所有 shader 已离线编译完成，GLES 编译只是驱动把 GLSL ES 1.00 → GPU bytecode 的轻量映射。[未经一手验证]
-
-### 不同 GPU 架构的差异点
-
-差异不在 Impeller 自身，而是驱动对 PSO 编译的内部行为：
-
-- **Adreno（Qualcomm）**：驱动内 PSO cache 通常与 `vkcache` 协同良好，跨进程命中率高。
-- **Mali（ARM）**：驱动版本敏感，`pipelineCacheUUID` 经常因小版本变动而变化，`flutter.impeller.vkcache` 命中率受 OTA 频率影响。
-- **PowerVR（Imagination）**：在 Android 上较少见，但驱动对 SPIRV 兼容性历史上有过多次破坏性更新。
-
-Impeller 通过 PSO cache 把这些差异变成"一次性成本"——冷启动第一次构建所有 PSO，之后只走 cache 命中路径。Flutter 官方推荐在跨设备/跨系统版本测试中监控 `flutter.impeller.vkcache` 命中率作为一项隐式性能指标。
-
-[已验证: flutter/engine main 分支 `impeller/README.md`、`impeller/shader_archive/*`、`impeller/renderer/backend/vulkan/pipeline_cache_vk.cc`、`impeller/renderer/backend/gles/pipeline_library_gles.cc`、`shell/platform/android/android_context_vk_impeller.cc`]
-
-## 参考资料
-
-- Flutter 官方文档：Flutter rendering pipeline
-- Flutter 官方文档：Hosting native Android views in your Flutter app with Platform Views
-- Flutter 官方文档：Impeller rendering engine
-- Flutter Android embedding Javadoc：RenderMode
-- Flutter engine 仓库：`shell/platform/android/io/flutter/embedding/android/FlutterSurfaceView.java`
-- Flutter engine 仓库：`shell/platform/android/io/flutter/embedding/android/FlutterTextureView.java`
-- Flutter engine 仓库：`engine/src/flutter/shell/platform/android/vsync_waiter_android.cc`
-- Flutter engine 仓库：`engine/src/flutter/impeller/toolkit/android/choreographer.cc`
-- Flutter engine 仓库：`engine/src/flutter/shell/platform/android/io/flutter/view/VsyncWaiter.java`（Java fallback）
-- Flutter engine 仓库：`shell/platform/android/`、`shell/`、`flow/`
-
-<!-- AIW-源码调研-2026-07-07 -->
-## 重要修正：Flutter/Impeller 在 Android 17 中的源码状态
-
-**重大发现**：Flutter/Impeller 项目未进入 Android 17 (android-17.0.0_r1) 系统源码树，完全独立于 Android 版本发布。AOSP source 中 frameworks/flutter/ 路径不存在，shader编译机制存在于 flutter/flutter 独立仓库的 src/shaders/ 和 src/impeller/ 目录下，版本发布节奏与 Android 系统版本解耦。
-
-### AOSP Android 17 源码树扫描结果
-通过 cs.android.com/android/platform/superproject/+/android-17.0.0_r1 扫描验证：
-- frameworks/flutter/shell/common/shader 路径 **不存在**
-- frameworks/flutter/ 整个目录 **不存在**
-- Impeller 相关代码 **未进入** Android 系统源码
-
-### Flutter 独立项目结构分析
-Flutter 项目位于 flutter/flutter (github.com)，源码结构：
-- src/impeller/: Impeller 渲染后端
-- src/shaders/: Shader 编译器  
-- src/shell/: Flutter Shell
-
-**关键函数**：
-- shader 编译入口：`src/shaders/compiler.cc::Compile()`
-- Shader 变体生成：`src/shaders/variant.cc::GenerateVariants()`
-- GPU 任务执行：`src/impeller/task_buffer.h::Execute()`
-
-### Shader 编译机制对渲染管线的影响
-**AOT vs JIT 性能差异**：
-- AOT 模式：编译时生成所有变体，启动时直接加载，时间开销 <100ms
-- JIT 模式：运行时按需编译，每帧编译耗时 2-5ms（Adreno GPU）
-
-**变体数量优化**：
-- 默认生成 128+ 变体（材质组合 × 帧缓冲配置）
-- 通过 shader_variant_cache 跨会话缓存变体
-
-**运行时编译影响**：
-- 编译期帧率下降 20-40%（JIT 模式）
-- 内存占用增加 50-100MB（变体存储）
-
-### Android 17 开发者的实际影响
-1. **Android Studio 监控限制**：无法监控 Impeller 内部状态（独立进程）
-2. **Shader 热重载开销**：需通过 Flutter CLI flutter doctor --verbose 诊断
-3. **GPU 架构优化**：需参考 Flutter 官方文档而非 AOSP 源码
-4. **版本兼容性**：Flutter 发布周期（每 6-8 周）与 Android 版本解耦
-
-### 结论
-Flutter/Impeller 作为独立开源项目，其 shader 编译性能机制需要通过 Flutter 项目自身源码研究，而非 Android 系统源码。此修正避免了将未进入 Android 17 的技术作为系统级事实陈述的错误。
-
-[已验证: AOSP android-17.0.0_r1 源码树扫描 + Flutter flutter/master 官方仓库]
+Perfetto 分析时，先固定 Android 与 Flutter 双版本，再确认 View/Surface/layer 对象树；随后对齐 VSync、platform/Dart UI work、Raster、GPU fence、root/host queue、SurfaceFlinger latch 和 display present。这样才能区分 Flutter framework 慢、Raster/GPU 慢、插件 producer 慢、宿主消费慢与系统合成慢。
