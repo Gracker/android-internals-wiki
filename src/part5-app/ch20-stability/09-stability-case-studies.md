@@ -62,808 +62,483 @@ last_deepseek_cn_review_at: 2026-07-11
 
 # 稳定性治理案例集
 
-前面八节分别讲了稳定性全景（20.1）、Java Crash 治理（20.2）、Native Crash 治理（20.3）、ANR 治理（20.4）、OOM 治理（20.5）、指标体系（20.6）、异常架构设计（20.7）和崩溃聚合（20.8）。这一节把这些知识落到具体案例上——用三个真实的崩溃/ANR 场景，演示从"收到报警"到"确认修复上线"的完整排查路径。
+前面八节分别讨论了稳定性全景、Java Crash、Native Crash、ANR、OOM、指标、异常恢复和崩溃聚合。本节把这些能力放进三个排障案例。案例中的代码路径来自 Android 17 / API 37 / `android-17.0.0_r1` 与 `android17-6.18-2026-06_r6`；症状由多类线上问题组合而成，数值不代表某个项目的生产数据。
 
-三个案例分别对应三类典型问题：
+采用复合案例有一个好处：读者可以复现推理过程，又不会把缺少来源的改善比例当成结论。这里关心的是证据怎样排除假设、修复怎样通过反证，而非讲一个总能命中答案的故事。
 
-1. **OOM：线程泄漏引发的虚拟内存耗尽**——Java 堆没有超标，但进程地址空间被线程栈吃光
-2. **Native Crash：信号处理器链冲突导致的堆栈丢失**——崩溃监控 SDK 之间互相覆盖信号处理器
-3. **ANR：ContentProvider 初始化阻塞主线程**——多 SDK 的自动初始化竞争
+三个案例覆盖：
 
-每个案例遵循统一的排查框架：现象复现 → 初步归因 → Perfetto/源码追踪 → 根因定位 → 修复方案 → 线上验证。
+1. `pthread_create` 失败：线程数持续增长，Java 堆仍有余量；
+2. Native Crash 产物缺失：接入多个采集器后，信号处理互相干扰；
+3. 启动阶段 ANR：清单合并引入的 ContentProvider 在主线程做重活。
 
 ---
 
-## 案例一：线程泄漏导致虚拟内存耗尽的 OOM
+## 一套可复用的排障记录
 
-### 现象
+稳定性事件经常跨越 Java、Native、系统服务和内核。只保存一个堆栈，很容易把“崩溃发生的位置”误写成“资源耗尽的原因”。建议每次调查都保留下面七项：
 
-线上报警显示某个版本的 OOM 崩溃率从万分之 0.3 飙升到千分之 1.2，集中在后台长时间运行的用户群体。崩溃堆栈指向 `Thread::CreateNativeThread`，错误信息是 `pthread_create failed: Out of memory`。
+| 项目 | 要回答的问题 | 常见误区 |
+| --- | --- | --- |
+| 事件定义 | Crash、ANR、OOM、系统杀进程还是主动退出？ | 把进程消失都算作 Crash |
+| 影响范围 | 哪个版本、ABI、进程、设备档位、运行时长和功能开关？ | 只报事件数，不报分母 |
+| 时间关系 | 变化从哪个发布、依赖升级或配置变更开始？ | 把首次观测日期当作引入日期 |
+| 候选假设 | 每个假设需要什么支持证据和反证？ | 看到相关性便停止调查 |
+| 决定性证据 | 哪一份 trace、退出记录、映射表或符号文件能区分假设？ | 无限制地增加采样字段 |
+| 修复层级 | 止血、根因修复、预防措施分别是什么？ | 用告警阈值代替修复 |
+| 验证方式 | 怎样在同一分群下证明风险下降且没有回归？ | 只比较两个总量 |
 
-乍一看像 Java 堆内存泄漏，但查看 APM 上报的 `Runtime.totalMemory()` 和 `Runtime.freeMemory()` 数据，Java 堆使用量在正常范围内（不到 growth limit 的 60%）。问题不在 Java 堆。
+调查笔记应允许另一个工程师推翻当前结论。若结论无法被反证，它通常也无法被可靠验证。
 
-### 分类：虚拟内存不足型 OOM
+---
 
+## 案例一：线程泄漏与 `pthread_create` OOM
 
-OOM 分两大类：Java 堆限制和虚拟内存不足。前者的特征是堆栈出现在 `Heap::AllocObjectWithAllocator` → `AllocateInternalWithGc` 路径上（详见 20.5 节）。后者的特征是崩溃点在 `malloc`、`pthread_create`、`mmap` 等 Native 分配路径上，Java 堆有余量。
+### 1. 症状不要过早定性
 
-本案例的错误信息 `pthread_create (... stack) failed` 明确指向线程创建失败。问题是：线程创建为什么会失败？
-
-### 追踪：从 FD 和线程数入手
-
-在 `Thread::CreateNativeThread`（AOSP `art/runtime/thread.cc`）中，线程创建失败涉及多个因素：
-
-- **虚拟地址空间不足**：32 位进程或线程栈映射耗尽可用虚拟内存
-- **物理内存不足**：线程栈的 guard page、TLS、JNI Env 等分配失败
-- **进程/用户 task 数限制**：`RLIMIT_NPROC`、cgroup `pids_max`、`/proc/sys/kernel/threads-max`
-- **FD / 资源限制**：`RLIMIT_NOFILE` 限制、epoll/timerfd 等 kernel 对象耗尽（FDSize 高不代表 FD 耗尽，只是打开文件数的近似指标）
-
-查看崩溃报告附带的 `/proc/self/status`：
+某版本在长时间后台运行后出现下面一类异常：
 
 ```text
-Threads: 387
-VmSize: 3987124 kB    (约 3.8 GB，接近 32 位进程上限)
-FDSize: 342
+java.lang.OutOfMemoryError:
+pthread_create (...) failed: Try again
+    at java.lang.Thread.nativeCreate(Native Method)
+    at java.lang.Thread.start(Thread.java:...)
 ```
 
-线程数 387，每个线程默认栈大小 1 MB（64 位设备上可能更大），仅线程栈就占用了接近 400 MB 虚拟内存。再加上线程的 TLS、JNI Env、guard page 等，每个线程实际占用约 1.2-1.5 MB 虚拟地址空间。387 个线程 ≈ 500 MB 虚拟内存被线程独占。
+这段文本只证明“创建 Java 线程失败，ART 将失败转换成了 `OutOfMemoryError`”。它没有证明 Java 堆已满，也没有证明一定是虚拟地址碎片。`Try again` 通常对应 `EAGAIN`，但失败可以发生在多个层次。
 
-**虚拟内存碎片化与 OOM 的关系**：线程泄漏导致的 OOM 通常不是"总量不够"，而是"找不到连续空闲空间"。Linux 内核分配线程栈时使用 `mmap`，要求连续的虚拟地址空间。387 个线程栈不断分配和释放（部分线程退出后再创建），在进程的虚拟地址空间中造成了碎片——可用总虚拟内存仍然充足，但没有一块连续区间能满足新线程栈的需求。进程的 `/proc/self/smaps` 中会看到大量不连续的匿名映射区域，`/proc/self/maps` 中 VmSize 虽然离上限还有余量，但已经没有 ≥1 MB 的连续空闲段。
+先按版本、ABI、进程名、设备内存档位、进程存活时长和功能开关分群。若 32 位进程占比高，需要单列；它的虚拟地址空间约束与 64 位进程差异很大。
 
-这就是虚拟内存碎片化导致 OOM 的典型模式：内存整理/compaction 在用户态不可控，最终 `pthread_create`（底层 `mmap`）返回 ENOMEM。在 Perfetto 中配合 `mem.rss` + `mem.vm` 轨道可以观察碎片化趋势：当 VmSize 增长曲线不伴随 RSS 同步增长时，通常是线程栈或 mmap 碎片化的信号。
+### 2. 从 Android 17 源码拆开失败点
 
-排查重点要放到 387 个线程的来源上。
+Android 17 的 Java 线程创建路径可以简化为：
 
-### 根因定位：匿名线程泄漏
+```text
+Thread.start()
+  -> ART Thread::CreateNativeThread()
+     -> 分配 JNIEnvExt
+     -> 调整 pthread 栈属性
+     -> bionic pthread_create()
+        -> mmap 栈、guard、TLS 与 Bionic 线程结构
+        -> clone()
+           -> Linux copy_process()
+```
 
-用 Perfetto 抓取线程创建 trace。Perfetto 的 `sched_process_free` 和 `process_track` 轨道能观察到线程生命周期。在 30 分钟的 trace 中观察到：
+这个调用序列说明 `OutOfMemoryError` 是上层表现，候选原因至少有四组：
 
-- 应用启动时线程数约 40（正常）
-- 运行 20 分钟后增长到 387
-- 增长模式：每隔 30-60 秒新增 3-5 个线程，旧线程不退出
+| 失败位置 | Android 17 源码行为 | 需要的证据 |
+| --- | --- | --- |
+| ART 分配 `JNIEnvExt` | 分配失败后抛出 `Could not allocate JNI Env` | 完整异常文本、Native 内存压力 |
+| Bionic 线程映射 | `mmap` 或 guard 页 `mprotect` 失败，`__allocate_thread()` 返回 `EAGAIN` | ABI、`/proc/self/maps`、地址空洞、提交限制 |
+| Bionic 调用 `clone` | `clone()` 失败，Bionic 记录 `clone failed` 并返回原始 `errno` | logcat、`errno`、task 与 pid 限制 |
+| 内核创建 task | `RLIMIT_NPROC`、全局线程上限以及分配 task 结构等路径均可能失败 | `/proc/self/limits`、cgroup pids、系统内存压力 |
 
-查看线程名称，大部分是空字符串或默认的 `Thread-N` 格式——没有设置 `Thread.setName()`。这种"匿名线程"的治理在 20.7 节的异常架构设计中已经建立了监控体系。本案例中，问题出在一个第三方推送 SDK：
+`art/runtime/thread.cc` 的 `Thread::CreateNativeThread()` 会先创建 `JNIEnvExt`，再调用 `pthread_create()`；失败后清理 peer 并抛出 OOM。Bionic 的 `pthread_create.cpp` 会把栈、guard、静态 TLS、`pthread_internal_t` 等放进线程映射，映射失败返回 `EAGAIN`；映射成功后才调用 `clone()`。内核锚点 `android17-6.18-2026-06_r6/kernel/fork.c` 中，`copy_process()` 对 `RLIMIT_NPROC` 和系统线程上限返回 `-EAGAIN`，其他分配步骤还可能返回 `-ENOMEM`。
+
+所以，“线程很多”是强信号，不是单独的根因证明。
+
+### 3. 最小证据集
+
+发生前后的采样应使用同一个单调时钟，并至少保留：
+
+- `/proc/self/status` 的 `Threads`、`VmSize`、`VmRSS`、`VmData`；
+- `/proc/self/task` 中的 tid 数量与线程名；
+- `/proc/self/maps`，32 位进程还要分析可用地址空洞，而不是只看 `VmSize`；
+- `/proc/self/limits` 中的进程数、地址空间和打开文件限制；
+- 设备允许读取时的 cgroup `pids.current`、`pids.max`；
+- `/proc/self/fd` 的实际条目数；
+- 完整异常文本、logcat 中的 Bionic 警告、进程 ABI 和存活时长。
+
+`FDSize` 表示文件描述符表的容量，不等于当前打开的 FD 数。FD 泄漏通常不会直接让 `pthread_create()` 失败；若每个泄漏线程同时持有 socket、eventfd 或 timerfd，它才会成为同源症状。应枚举 `/proc/self/fd`，不要用 `FDSize` 代替。
+
+`VmSize` 高、RSS 增长慢，可能来自线程栈、保留映射、共享库或其他匿名映射。要证明虚拟地址碎片，需要结合 ABI、映射区间和新线程所需的连续映射大小做 gap analysis。单条 `VmSize` 不能完成这一步。
+
+Perfetto 的调度数据源适合观察线程何时出现、运行多久、是否退出。它不会自动给出每个 Java 线程的创建调用栈。若需要创建来源，应用或 SDK 要主动命名线程，在受控构建中记录采样后的创建栈，或通过已验证的字节码插桩采集调用点。
+
+### 4. 用一个有意带缺陷的样例复现
+
+下面的代码用于复现“功能被重复启动，每次都留下一个常驻线程”的模式：
 
 ```java
-// 反编译后发现的问题代码（简化）
-public class PushSDK {
-    private void heartbeat() {
+final class LeakyHeartbeat {
+    void start() {
         new Thread(() -> {
-            // 每 30 秒发送心跳
             while (true) {
                 try {
                     sendHeartbeat();
-                    Thread.sleep(30000);
-                } catch (InterruptedException e) {
-                    // 吞掉中断，线程不会退出
+                    Thread.sleep(30_000L);
+                } catch (InterruptedException ignored) {
+                    // 错误示例：吞掉中断后继续循环。
                 }
             }
-        }).start();  // 没有线程名，没有线程池
+        }).start();
+    }
+
+    private void sendHeartbeat() {
+        // 模拟一次有界的网络请求。
     }
 }
 ```
 
-这段代码的问题：
-1. 每次调用 `heartbeat()` 都创建新线程，而不是复用
-2. `InterruptedException` 被吞掉，线程永远不会退出
-3. 没有设置线程名，无法通过名称定位来源
+如果页面重建、账号切换或组件重连都会调用 `start()`，线程数便会阶梯式上升。线程没有名字会增加定位成本；更严重的是没有所有权、没有幂等启动、没有停止协议。仅注入线程名无法修复泄漏。
 
-### 修复方案
+下面的修复示例把调度器作为依赖传入，保证重复 `start()` 不会创建新任务，并提供对称的停止动作：
 
-**短期止血**：限制进程最大线程数。在 Application 初始化时启动周期性线程数采样，超过阈值时报警：
+```kotlin
+class HeartbeatLoop(
+    private val scheduler: ScheduledExecutorService,
+    private val sendHeartbeat: () -> Unit,
+) : Closeable {
+    private val started = AtomicBoolean(false)
 
-```java
-// 周期性采样 /proc/self/status 的 Threads 字段
-private fun startThreadMonitor() {
-    val executor = Executors.newSingleThreadScheduledExecutor()
-    executor.scheduleAtFixedRate({
-        try {
-            val status = File("/proc/self/status").readLines()
-            val threads = status.first { it.startsWith("Threads:") }
-                .substringAfter(":").trim().toInt()
-        if (threads > 200) {
-            logWarning("Thread leak detected: $threads threads")
+    @Volatile
+    private var future: ScheduledFuture<*>? = null
+
+    @Synchronized
+    fun start() {
+        if (!started.compareAndSet(false, true)) return
+
+        future = scheduler.scheduleWithFixedDelay(
+            { sendHeartbeat() },
+            0L,
+            30L,
+            TimeUnit.SECONDS,
+        )
+    }
+
+    @Synchronized
+    override fun close() {
+        future?.cancel(true)
+        future = null
+    }
+}
+```
+
+这里的实例是一次性的：`close()` 后若要重新启动，应由新的所有者创建新实例，避免旧任务尚未响应中断时又调度一份。`scheduler` 应由进程级组件统一管理，线程工厂要设置可识别的名字。`sendHeartbeat()` 仍需连接、读取和总超时，并在内部处理可预期的网络异常，否则周期任务抛出异常后可能停止后续调度。取消能否中止请求，取决于网络库的取消语义。若任务属于页面或账号，所有者销毁时必须调用 `close()`。
+
+### 5. 监控要看基线和斜率
+
+下面的函数只读取进程线程总数，不会为采样再创建一个常驻线程：
+
+```kotlin
+fun readProcessThreadCount(): Int? {
+    return try {
+        File("/proc/self/status").useLines { lines ->
+            lines.firstOrNull { it.startsWith("Threads:") }
+                ?.substringAfter(':')
+                ?.trim()
+                ?.toIntOrNull()
         }
-        } catch (e: Exception) { /* ignore */ }
-    }, 0, 30, TimeUnit.SECONDS)
+    } catch (e: IOException) {
+        null
+    } catch (e: SecurityException) {
+        null
+    }
 }
 ```
 
-`Thread.activeCount()` 只统计当前 ThreadGroup 及子组的 Java 线程，不覆盖 native 线程，不适合做进程级线程监控。`/proc/self/status` 的 `Threads` 字段或枚举 `/proc/self/task` 才是准确的进程线程总数。
+调用方应复用已有的监控调度器。采样失败需要计数，不能静默吞掉；上报时携带进程存活时长、前后台状态、ABI 和功能分群。
 
-`Thread.setDefaultUncaughtExceptionHandler` 只能在 OOM 已经抛出后采集上下文，不能在 OOM 发生前提前检测。线程泄漏的预警依赖上述周期性采样。
+固定写死“200 个线程就报警”不适用于所有应用。更有用的规则是：
 
-**中期修复**：联系 SDK 厂商修复线程泄漏问题。在等待修复期间，用字节码插桩（ASM）在 `Thread.start()` 调用前注入线程名和创建栈采集：
+- 与同进程、同设备档位的稳定基线比较；
+- 同时判断绝对值和一段时间内的持续正斜率；
+- 按线程名前缀统计存量、创建量和退出量；
+- 为 SDK 升级与功能开关保留版本维度；
+- 限制采样频率和上传量，避免监控自身放大资源压力。
 
-```java
-// ASM 插桩伪代码
-@Override
-public void onMethodEnter() {
-    mv.visitLdcInsn("SDK-" + callerClassName);
-    mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Thread", "setName", "(Ljava/lang/String;)V", false);
-}
-```
+### 6. 验证结论
 
-**长期防护**：在 20.7 节的异常架构中增加线程泄漏检测模块，定期采样线程列表，检测"只创建不销毁"的模式。
+本地长稳测试要覆盖重复进入/退出功能、账号切换、网络抖动、前后台切换和进程存活。合格条件不由“两个小时后低于某个通用数字”定义。每轮生命周期结束后，属于该功能的线程应回到稳定区间，进程总线程数不再单调增长。
 
-### 验证
+线上验证要比较同一版本窗口和同一分群的：
 
-修复上线后，OOM 崩溃率从千分之 1.2 降至万分之 0.4。后台运行 2 小时的平均线程数从 300+ 降至 50 以内。
+- `pthread_create` OOM 用户率与会话率；
+- 进程存活时长分桶中的线程数分位数；
+- 32 位与 64 位进程的差异；
+- 新旧 SDK 或功能开关的对照；
+- Java heap OOM、FD 耗尽和网络失败是否出现反向回归。
 
 ---
 
-## 案例二：信号处理器链冲突导致 Native Crash 堆栈丢失
+## 案例二：多个 Native Crash 采集器互相覆盖
 
-### 现象
+### 1. 症状先拆成采集阶段
 
-接入新的崩溃监控 SDK 后，Native Crash 的堆栈上报率从 85% 下降到 40%。剩余 60% 的 Native Crash 只有信号编号（SIGSEGV、SIGABRT），没有可用的调用栈。
+接入第二个 Native Crash SDK 后，后台只收到信号编号，或收到无法符号化的地址。这个现象不能直接归因于“信号处理器冲突”。Native Crash 产物可能在四个阶段丢失：
 
-### 背景：信号处理器的工作方式
+1. 崩溃时没有生成足够的寄存器、线程和映射快照；
+2. 产物写入不完整，进程已被终止；
+3. Build ID、ABI 或符号文件不匹配；
+4. 产物已生成，但扫描、上传、去重或服务端解析失败。
 
+先验证 Build ID 和原始产物，再调查信号 disposition。否则，符号归档错误会被误诊为 handler 覆盖。
 
-Native Crash 监控的核心机制是注册信号处理器（`sigaction`）。当进程收到 SIGSEGV、SIGABRT 等信号时，内核把控制权交给注册的处理器，处理器负责 dump 调用栈和寄存器状态。
+### 2. 信号模型中的边界
 
-**一个信号只能有一个处理器**。`sigaction` 的 `oldact` 参数会返回上一个处理器，新处理器有责任在处理完后调用旧处理器，形成"链"。但这条链很容易断：
+对一个进程中的某个信号，内核维护一个 disposition。后调用的 `sigaction()` 会替换前一个 disposition，并可通过 `oldact` 取回旧值。每个线程另有自己的 signal mask，因此“每个信号只有一个处理器”不能扩写成“所有线程的信号状态完全相同”。
 
-**Android 17 信号处理机制变化（基于 AOSP `android-17.0.0_r1` 源码校核）**：经 `bionic/linker/linker_main.cpp:312-313` 与 `system/core/debuggerd/handler/debuggerd_handler.cpp:892-927` 直接验证：
+旧 handler 也不会由系统自动组成安全的调用序列。下面几种情况会破坏采集：
 
-1. **linker 启动期 wiring**：`bionic/linker/linker_main.cpp:313` 的 `linker_debuggerd_init()` 是可确认触发点 —— 在 `__system_properties_init()` 之后立即调用 `debuggerd_init(&callbacks)`。**debuggerd 本身并未迁入 linker**，只是多了 3 个薄适配文件（`linker_debuggerd.h` / `linker_debuggerd_android.cpp` / `linker_debuggerd_stub.cpp`）。`system/core/debuggerd/` 仍保留完整 880+ 行的 `debuggerd_handler.cpp`。
-2. **`SA_EXPOSE_TAGBITS` 新 flag**：`debuggerd_handler.cpp:917` 在原来的 `SA_RESTART | SA_SIGINFO | SA_ONSTACK` 基础上增加 `SA_EXPOSE_TAGBITS`，让 arm64 MTE tag 信息上送到 `ucontext_t`，用于诊断 `SEGV_MTEAERR / SEGV_MTESERR` fault。
-3. **altstack 实际是 mmap + clone_thread，不是 sigaltstack 128 KB**：`debuggerd_handler.cpp:897-913` 调用 `mmap(NULL, getpagesize() * (8+2), PROT_NONE, ...)`，再 `mprotect` 中间 8 页 `PROT_READ|PROT_WRITE`，头尾两页保留 `PROT_NONE` 作 stack guard。最后 `clone(debuggerd_dispatch_pseudothread, pseudothread_stack, CLONE_THREAD | CLONE_SIGHAND | CLONE_VM ...)` 派生同进程线程。`SA_ONSTACK` 是兜底，正常情况下用 `clone` 自己的栈。**`thread_stack_pages = 8` 是编译期常量，未见运行时 `sysconf(_SC_SIGSTKSZ)` 自适应路径**。
-4. **wire protocol v4**：`debuggerd_handler.cpp:527-560`，动态可执行文件（fdsan_table != nullptr）调用 `get_process_info()` 把 `debugger_process_info` 通过 pipe 传给 `crash_dump`（version=4）。Static exe 仍走 v1（仅 abort_msg 指针）。
+- SDK B 覆盖 SDK A，却没有保留旧 disposition；
+- SDK B 盲目调用旧 handler，形成递归、重复转发或次生崩溃；
+- handler 内执行分配内存、加普通业务锁、动态加载、格式化复杂日志等不适合信号上下文的工作；
+- 栈已损坏却没有可用的备用信号栈；
+- handler 试图用 `longjmp` 恢复业务执行，继续使用已损坏的进程状态；
+- SDK 拦截后没有保留系统 tombstone/debuggerd 所需的终止行为。
 
-**截至 android-17.0.0_r1 tag 源码，下列内容未经一手验证，建议从口径中删除**：
-- ❌ "线程亲和性信号分发"：signal handler 内未出现 `sched_setaffinity` / `CPU_SET`，崩溃线程本身就是信号接收者，谈不上"跨核分发"。
-- ❌ "动态 altstack 尺寸自适应"：handler 用的是 `mmap(8+2 pages)` 固定值，没有 `sysconf(_SC_SIGSTKSZ)` 调用。
-- ❌ "async-signal-safe 校验 / handler 降级"：handler 内只有 `pthread_mutex_lock(&crash_mutex)` 等本身就 async-signal-safe 的操作，未发现"校验并降级"的代码路径。
+“保存旧 handler，再手动调用它”只是一种机制，不是通用兼容方案。采集 SDK 必须明确处理 `SIG_DFL`、`SIG_IGN`、`SA_SIGINFO`、线程 mask、重复进入和重新发送信号等状态。业务团队不要自行拼接多个闭源 SDK 的 handler。
 
-可保留且有源码支撑的 17 增强：MTE permissive mode（`debuggerd_handler.cpp:723-749`）、GWP-ASan recoverable crash（`debuggerd_handler.cpp:929-961`）、`BIONIC_SIGNAL_DEBUGGER` 主动 dump 通道（`handler.h:78`）。
+### 3. Android 17 的 debuggerd 注册方式
 
+在 `android-17.0.0_r1` 中，`bionic/linker/linker_main.cpp` 在 linker 初始化阶段调用 `linker_debuggerd_init()`。它是启动触发点；debuggerd 的完整处理仍位于 `system/core/debuggerd/handler/debuggerd_handler.cpp`。
 
-
-<!-- AIW-源码调研-2026-07-11 -->
-### 🔹 补充调研：Android 17 SDK 适配检查清单与性能实测
-
-基于对 Android 17 信号处理机制的深度调研，我们整理了 SDK 适配的关键检查点：
-
-#### Native Crash SDK 适配检查清单
-
-| 检查项 | Android 17要求 | 风险等级 | 验证方法 |
-|--------|---------------|---------|---------|
-| 信号handler内函数 | 仅async-signal-safe函数 | 🔴 P0 | grep "handler.*{func}" sdk代码 |
-| MTE tag处理 | 使用untag_address()宏 | 🟡 P1 | 单元测试tagged地址输出 |
-| 可恢复crash识别 | 区分SEGV_MTEAERR/MTESERR | 🟡 P1 | mock SEGV验证 |
-| 注册时机 | ContentProvider/Application.onCreate | 🟢 P2 | 确认调用链早于SDK初始化 |
-| tombstone兼容性 | 解析v4新字段 | 🟢 P2 | 解析test crash的tombstone |
-| SA_NODEFER | 禁用嵌套信号处理 | 🟢 P2 | 确认handler内无递归 |
-| PR_SET_DUMPABLE | 不设置0或crash时恢复 | 🟢 P2 | 确认无prctl调用 |
-
-#### 实测性能基准数据
-
-我们在不同Android版本上测试了伪线程栈创建、crash_dump创建等操作的延迟：
-
-| 操作类型 | Android 14 P50 | Android 14 P99 | Android 17 P50 | Android 17 P99 | 优化幅度 |
-|---------|---------------|---------------|---------------|---------------|---------|
-| pseudothread创建 | 1.2ms | 3.5ms | 1.0ms | 2.8ms | ↓15% |
-| crash_dump创建 | 5.8ms | 12.1ms | 4.9ms | 9.2ms | ↓20% |
-| MTE tag保留 | 0.15ms | 0.28ms | 0.08ms | 0.15ms | ↓50% |
-| wire protocol传输 | 2.3ms | 5.8ms | 1.8ms | 4.2ms | ↓28% |
-
-关键发现：Android 17的优化主要来自：
-1. `CLONE_VM` 减少了内存拷贝操作
-2. `SA_EXPOSE_TAGBITS` 减少了tag剥离开销
-3. 优化后的pipe传输减少了context切换
-
-#### 常见SDK适配错误案例
-
-**错误案例1：在handler内调用非async-signal-safe函数**
-
-```c
-// 错误：在handler内调用dlopen
-void sigsegv_handler(int signo, siginfo_t* info, void* context) {
-    dlopen("libsome.so", RTLD_NOW);  // 会触发SIGABRT！
-    // ...
-}
-```
-
-**正确做法：**
-```c
-// 正确：只做async-signal-safe操作
-void sigsegv_handler(int signo, siginfo_t* info, void* context) {
-    char* buf = alloca(1024);  // 在栈上分配
-    write_crash_to_fd(buf);    // 使用预分配的buffer
-    // 不要做任何malloc/free/dlopen
-}
-```
-
-**错误案例2：忽略SEGV_MTEAERR/MTESERR**
-
-```c
-// 错误：统一处理所有SIGSEGV
-void sigsegv_handler(int signo, siginfo_t* info, void* context) {
-    if (info->si_code == SEGV_MTESERR || info->si_code == SEGV_MTEAERR) {
-        _exit(1);  // 会破坏permissive recovery机制！
-    }
-    // ...
-}
-```
-
-**正确做法：**
-```c
-// 正确：检查si_code
-void sigsegv_handler(int signo, siginfo_t* info, void* context) {
-    if (info->si_code == SEGV_MTESERR || info->si_code == SEGV_MTEAERR) {
-        // 记录但不终止进程，让system handler处理
-        log_mte_event(info->si_addr);
-        return;
-    }
-    // 处理其他类型的SIGSEGV
-}
-```
-
-<!-- AIW-源码调研-2026-07-11 -->
-- SDK A 注册了 SIGSEGV 处理器
-- SDK B 注册了 SIGSEGV 处理器，`oldact` 保存了 A 的处理器
-- SDK A 重新注册 SIGSEGV 处理器（例如在 `SIGPIPE` 恢复后重新初始化），此时 `oldact` 保存的是 B 的处理器
-- 调用链变成：A → B → A → ... 循环调用，或者某一方丢失了 `oldact`
-
-
-### 追踪：确认信号处理器覆盖
-
-在 `JNI_OnLoad` 阶段用调试代码检查当前的信号处理器：
-
-```c
-#include <signal.h>
-
-void dump_signal_handlers() {
-    int signals[] = {SIGSEGV, SIGABRT, SIGBUS, SIGFPE, SIGILL, SIGPIPE};
-    struct sigaction sa;
-    for (int i = 0; i < 6; i++) {
-        sigaction(signals[i], NULL, &sa);
-        __android_log_print(ANDROID_LOG_WARN, "SignalDebug",
-            "Signal %d: handler=%p, flags=0x%x",
-            signals[i], sa.sa_sigaction, sa.sa_flags);
-    }
-}
-```
-
-在应用启动后、各 SDK 初始化完毕时调用这个函数，观察到 SIGSEGV 的处理器在不同初始化顺序下指向不同的 SDK。问题确认：两个 SDK 互相覆盖了对方的信号处理器。
-
-### 根因定位
-
-崩溃监控 SDK 的初始化顺序不确定，每次进程启动时两个 SDK 可能以不同的顺序初始化。先初始化的 SDK 注册的处理器会被后初始化的 SDK 覆盖。更严重的是，其中一个 SDK 在 `SignalHandler` 内部做了 `longjmp` 跳转（试图"恢复"崩溃），这导致另一个 SDK 的处理器永远不会被调用。
-
-
-
-**Android 5.0 模式在 Android 17 中的适用性**：旧资料里常把 debuggerd signal handler 与 linker 侧入口混在一起。`android-17.0.0_r1` 下，linker 只负责启动期 `linker_debuggerd_init()` wiring，真正的 signal handler 主体仍在 `system/core/debuggerd/handler/`。应用或 SDK 侧只需要关心自己注册的 `sigaction` 调用链是否保留旧 handler、是否遵守 async-signal-safe 约束；不要把 `linker_debuggerd_signal_handler` 写成 Android 17 的实际入口。
-
-
-**Android 15+ 信号处理机制演进**：本节只保留 `android-17.0.0_r1` 已确认的变化：linker 启动期调用 `linker_debuggerd_init()`，debuggerd handler 使用固定 8 页 mmap stack、`SA_EXPOSE_TAGBITS`、MTE permissive mode 与 GWP-ASan recoverable crash 路径。没有源码证据支持“线程亲和性信号分发”“动态 altstack 尺寸自适应”或“perf_event 辅助 crash 上下文采集”。应用侧统一处理器仍应遵循最小快照、恢复默认动作、重新投递的原则。
-
-### 修复方案
-
-**统一信号处理器管理**：
-
-统一 handler 的职责要收窄到 async-signal-safe 范围。handler 内不能做 `dlopen`、`dladdr`、堆栈展开、C++ 分配、锁、复杂日志或常规文件写入；这些动作可能再次触发崩溃，或者卡在崩溃前已经被持有的锁上。
-
-实现拆法是：初始化阶段预分配 altstack、pipe/eventfd 和快照缓冲区；handler 只把信号、`siginfo_t` 中的关键字段、`ucontext_t` 里的 PC/SP 写入预分配位置，再用 `write()` 通知安全上下文，随后恢复默认处理并重新投递信号。完整 unwind、符号化、crash report 落盘交给 debuggerd/tombstone、独立采集进程、下一次启动时的 tombstone 解析，或一个不会在 handler 中执行复杂逻辑的安全采集路径。
-
-```c
-// 初始化阶段创建 pipe/eventfd，并设置为 O_NONBLOCK。
-// handler 中只允许使用预分配内存和 async-signal-safe 函数。
-static int g_crash_fd = -1;
-static volatile sig_atomic_t g_handling_crash = 0;
-static struct sigaction g_old_handlers[NSIG];
-
-struct crash_snapshot {
-    int sig;
-    int code;
-    void* fault_addr;
-    void* pc;
-    void* sp;
-};
-
-static struct crash_snapshot g_snapshot;
-
-void unified_signal_handler(int sig, siginfo_t* info, void* context) {
-    if (g_handling_crash == 0) {
-        g_handling_crash = 1;
-        g_snapshot.sig = sig;
-        g_snapshot.code = info ? info->si_code : 0;
-        g_snapshot.fault_addr = info ? info->si_addr : 0;
-
-#if defined(__aarch64__)
-        ucontext_t* uc = (ucontext_t*) context;
-        g_snapshot.pc = (void*) uc->uc_mcontext.pc;
-        g_snapshot.sp = (void*) uc->uc_mcontext.sp;
-#elif defined(__arm__)
-        ucontext_t* uc = (ucontext_t*) context;
-        g_snapshot.pc = (void*) uc->uc_mcontext.arm_pc;
-        g_snapshot.sp = (void*) uc->uc_mcontext.arm_sp;
-#endif
-
-        if (g_crash_fd >= 0) {
-            (void) write(g_crash_fd, &g_snapshot, sizeof(g_snapshot));
-        }
-    }
-
-    // 恢复默认动作后重新投递，让系统 crash_dump/debuggerd 生成 tombstone。
-    struct sigaction dfl;
-    dfl.sa_handler = SIG_DFL;
-    sigemptyset(&dfl.sa_mask);
-    dfl.sa_flags = 0;
-    sigaction(sig, &dfl, NULL);
-
-    sigset_t unblocked;
-    sigemptyset(&unblocked);
-    sigaddset(&unblocked, sig);
-    sigprocmask(SIG_UNBLOCK, &unblocked, NULL);
-
-    raise(sig);
-    _exit(128 + sig);
-}
-
-void register_unified_handler() {
-    static uint8_t altstack_mem[SIGSTKSZ * 2];
-    stack_t ss;
-    ss.ss_sp = altstack_mem;
-    ss.ss_size = sizeof(altstack_mem);
-    ss.ss_flags = 0;
-    sigaltstack(&ss, NULL);
-
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_sigaction = unified_signal_handler;
-    sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
-    sigfillset(&sa.sa_mask);
-
-    int signals[] = {SIGSEGV, SIGABRT, SIGBUS, SIGFPE, SIGILL};
-    for (int i = 0; i < 5; i++) {
-        sigaction(signals[i], &sa, &g_old_handlers[signals[i]]);
-    }
-}
-```
-
-`g_old_handlers` 仍然要保存，但不要默认在崩溃现场调用未知 SDK 的旧 handler。旧 handler 可能持锁、分配内存、执行 `longjmp`，也可能再次注册信号处理器。只有在对方明确提供 async-signal-safe 的薄 adapter 时，才把它放入链中；否则优先让系统默认动作接管，避免把一次崩溃扩散成死锁或双重崩溃。
-
-**初始化时机控制**：统一处理器注册有两种策略，各有取舍。
-
-策略一：在 `Application.attachBaseContext()` 阶段注册，此时第三方 SDK 还没有初始化，统一处理器最先入链。风险是后续 SDK 可能覆盖它。
-
-策略二：在所有第三方 SDK 初始化完毕后注册总 handler，用 `sigaction(oldact)` 捕获已有调用链。风险是不规范 SDK 可能在初始化后再次注册，绕过统一处理器。
-
-两种策略都无法 100% 保证覆盖所有 SDK 的信号注册行为。工程上推荐策略二，并在 APM SDK 中增加信号处理器监控，定期检查目标信号是否仍指向统一处理器，被覆盖时报警。
-
-**禁止 SDK 的 longjmp 恢复**：在信号处理器中执行 `longjmp` 会跳过 RAII 析构、锁释放等清理步骤，导致死锁或内存损坏。正确做法是记录最小快照、恢复默认动作、重新投递信号，让进程按系统 crash 流程终止。
-
-
-### 验证
-
-统一信号处理器上线后，Native Crash 堆栈上报率从 40% 恢复到 92%。剩余 8% 是栈内存被覆盖（`SIGSEGV` 发生在栈溢出时，调用栈本身不可读）导致的，属于不可恢复场景。
-
----
-
-## 案例三：ContentProvider 初始化阻塞主线程导致的 ANR
-
-### 现象
-
-某次版本发布后，冷启动 ANR 率从万分之 0.5 上升到万分之 3.8。ANR 发生在 `Activity.onCreate` 阶段，超时类型是 Input dispatching timed out（详见 20.4 节对 ANR 类型的分类）。
-
-查看 ANR traces 文件：
+`debuggerd_init()` 为伪线程预留一段 `mmap` 内存，中间 8 页可读写，前后页保留为 guard；随后注册 fatal signal handler。注册 flags 包含：
 
 ```text
-"main" prio=5 tid=1 TimedWaiting
-  at java.lang.Object.wait(Native method)
-  - waiting on <0x01234567> (a java.lang.Object)
-  at java.lang.Object.wait(Object.java:442)
-  at android.app.ActivityThread.handleBindApplication(ActivityThread.java:xxxx)
-  at android.app.ActivityThread.-wrap1(ActivityThread.java:xxx)
-  ...
-  at android.app.ActivityThread$H.handleMessage(ActivityThread.java:xxxx)
+SA_RESTART | SA_SIGINFO | SA_ONSTACK | SA_EXPOSE_TAGBITS
 ```
 
-主线程卡在 `handleBindApplication` → `installContentProviders`。这意味着系统在安装 ContentProvider 时阻塞了。
+`SA_EXPOSE_TAGBITS` 让 arm64 MTE fault address 的 tag 信息进入诊断上下文。`SA_ONSTACK` 用于可用时的备用信号栈；不要把源码中的伪线程栈描述成“每个应用线程都动态获得了 8 页 altstack”。这两个结构用途不同。
 
-### 追踪：ContentProvider 的初始化机制
+AOSP handler 还会处理 debuggerd 私有协议、crash_dump 协作、MTE 和 GWP-ASan 等平台能力。应用侧采集器无法仅靠复制一个 `sigaction` 示例得到同等语义。
 
+### 4. 在正常执行环境中检查覆盖
 
-`ActivityThread.handleBindApplication` 在应用启动时按以下顺序执行：
-
-1. 创建 `Application` 对象
-2. **安装所有 ContentProvider**（`ProviderInfo.initOrder` 值高的 provider 先安装；未设置 `initOrder` 时，沿用 PackageManager 解析 / manifest merge 后的 provider 列表顺序）
-3. 调用 `Application.onCreate()`
-
-ContentProvider 的 `onCreate()` 在主线程上同步执行。如果有多个 SDK 都声明了 `<provider android:authorities="..." android:name=".InitProvider">`，它们会在主线程上依次执行初始化逻辑。
-
-用 Perfetto 的 `atrace` 轨道抓取冷启动 trace，观察到：
-
-```text
-handleBindApplication     │████████████████████████████████████████ 3200ms
-  ├ installContentProviders│████████████████████████████            2100ms
-  │   ├ SDK-A Provider     │██████████████                          900ms
-  │   ├ SDK-B Provider     │████████████████                        800ms
-  │   ├ SDK-C Provider     │████                                    200ms
-  │   └ SDK-D Provider     │██████████                              400ms
-  │   └ wait for IPC       │████                                    200ms
-  └ Application.onCreate  │████████                                 500ms
-```
-
-四个 SDK 的 ContentProvider 初始化合计占了 2.3 秒，其中 SDK-A（推送服务）和 SDK-B（广告 SDK）各占了近 1 秒。
-
-### 根因定位
-
-这个版本的变更记录显示：产品侧新增了一个广告 SDK（SDK-B），该 SDK 在 `ContentProvider.onCreate()` 中执行了以下操作：
-
-1. 读取本地配置文件（磁盘 I/O，约 200ms）
-2. 向服务端拉取远程配置（网络请求，约 500ms）
-3. 初始化广告引擎（CPU 密集计算，约 100ms）
-
-三项合计约 800ms，全部在主线程同步执行。
-
-而 SDK-A（推送服务）的 ContentProvider 初始化虽然没有网络请求，但做了数据库迁移操作：检查旧版本数据库 schema → 执行 ALTER TABLE → 数据迁移。在数据量大的用户设备上，这个操作耗时超过 1 秒。
-
-两个 SDK 叠加，加上原有的 SDK-C 和 SDK-D，以及 Application.onCreate 本身的耗时，总启动时间突破 5 秒的 Input ANR 阈值。
-
-### 修复方案
-
-按治理难度从低到高排列：
-
-**1. 移除不必要的 ContentProvider 初始化**
-
-AndroidManifest 合并后，检查所有声明了 `InitProvider` 的 SDK。如果 SDK 提供了手动初始化 API，关闭自动初始化，改为在子线程手动初始化：
-
-```kotlin
-class MyApp : Application() {
-    override fun onCreate() {
-        super.onCreate()
-
-        // 不紧急的 SDK 推迟到子线程初始化
-        val initScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-        initScope.launch {
-            AdSDK.init(this@MyApp)      // 广告 SDK
-            AnalyticsSDK.init(this@MyApp) // 统计 SDK
-        }
-
-        // 只有启动页面立即需要用到的 SDK 才在主线程初始化
-        PushSDK.init(this)  // 推送 SDK
-    }
-}
-```
-
-同时在 manifest 中禁用自动初始化：
-
-```xml
-<provider
-    android:name="com.adsdk.InitProvider"
-    android:authorities="${applicationId}.adsdk-init"
-    tools:node="remove" />
-```
-
-`tools:node="remove"` 会在 manifest 合并时移除这个 provider 声明，SDK 的自动初始化不会执行。
-
-**2. 数据库迁移异步化**
-
-SDK-A 的数据库迁移改为后台线程执行，推送 SDK 先使用内存缓存工作，数据库迁移完成后再切换到持久化存储：
-
-```kotlin
-class PushSDK {
-    private val memoryCache = ConcurrentHashMap<String, Message>()
-    private var dbReady = false
-
-    fun init(context: Context) {
-        // 主线程只做轻量初始化
-        memoryCache.putAll(loadFromPrefs(context))
-
-        // 数据库迁移在子线程
-        CoroutineScope(Dispatchers.IO).launch {
-            migrateDatabase(context)
-            dbReady = true
-        }
-    }
-}
-```
-
-**3. 启动阶段监控**
-
-在 20.6 节的指标体系中增加"ContentProvider 初始化耗时"指标，按 SDK 维度统计。超过阈值（如 500ms）的 SDK 触发告警：
-
-```kotlin
-// 在 ContentProvider.onCreate 中埋点
-override fun onCreate(): Boolean {
-    val start = SystemClock.elapsedRealtime()
-    try {
-        doInit()
-    } finally {
-        val elapsed = SystemClock.elapsedRealtime() - start
-        if (elapsed > 500) {
-            reportSlowProvider(javaClass.simpleName, elapsed)
-        }
-    }
-    return true
-}
-```
-
-
-### 验证
-
-修复上线后的数据对比：
-
-| 指标 | 修复前 | 修复后 |
-|------|--------|--------|
-| 冷启动 ANR 率 | 万分之 3.8 | 万分之 0.7 |
-| ContentProvider 总耗时（P50） | 2300ms | 300ms |
-| ContentProvider 总耗时（P90） | 3800ms | 600ms |
-| SDK-B 广告 SDK 初始化位置 | ContentProvider | Application.onCreate 子线程 |
-
-P90 从 3.8 秒降至 600ms，ANR 率下降 82%。
-
----
-
-## 三个案例的共同排查框架
-
-把三个案例的排查过程抽象成一个通用框架：
-
-### 第一步：分类
-
-收到崩溃/ANR 报警后，第一步是分类。分类决定了后续追踪方向：
-
-| 问题类型 | 关键特征 | 排查入口 |
-|----------|----------|----------|
-| Java 堆 OOM | `Heap::AllocObjectWithAllocator` → `AllocateInternalWithGc` | 20.5 节 |
-| 虚拟内存 OOM | `pthread_create failed` / `mmap failed` | 查看进程 `/proc/self/status` |
-| Java Crash | `UncaughtExceptionHandler` 堆栈 | 20.2 节 |
-| Native Crash | 信号编号（SIGSEGV/SIGABRT）+ Native 堆栈 | 20.3 节 |
-| ANR | `Input dispatching timed out` / `Broadcast timeout` / `Service timeout` | 20.4 节 |
-
-### 第二步：定位阻塞点
-
-分类完成后，找到具体阻塞/崩溃的位置。工具选择：
-
-- **Java 堆/线程问题**：Android Studio Profiler 的 Memory 视图 + Perfetto 的 `process_track`
-- **Native 问题**：Perfetto 的 `sched` 轨道 + `tombstone` 文件分析 + `/proc/self/task` 线程采样
-
-**线程排查入口（Android 17 口径）**：`android.os.Process.getThreadPriority(int tid)` 在 Android 17 仍返回 Linux nice priority；`Process.java` 中可以看到 `getExclusiveCores()` 和隐藏的 `getSchedAffinity(int)`，但不能写成普通应用可直接依赖的公开监控 API。应用侧可稳定使用 `/proc/self/status` 的 `Threads` 字段、枚举 `/proc/self/task/{tid}`，并结合 Perfetto `sched_switch` 判断线程生命周期和调度状态。需要按线程统计 CPU 时间时，应解析 `/proc/self/task/{tid}/stat` 或使用 profiler / trace，而不是引用不存在的 `getThreadCpuTime(tid)` 平台 API。
-
-`THREAD_PRIORITY_*` 常量仍是 Linux nice priority 语义：`THREAD_PRIORITY_LOWEST` = 19，`THREAD_PRIORITY_BACKGROUND` = 10，`THREAD_PRIORITY_URGENT_DISPLAY` = -8。实际调度延迟会受 cgroup、cpuset、负载和热状态影响，但 `getThreadPriority(int)` 不透出 cgroup v2 `cpu.weight`；排查时应把 nice 值、线程所在 cgroup、Perfetto `sched_switch` 和 `/proc/{pid}/task/{tid}/sched` 放在一起看。
-
-在稳定性排查中，如果某个 SDK 的后台线程设置了 `THREAD_PRIORITY_DEFAULT`（0）而非 `THREAD_PRIORITY_BACKGROUND`（10），这些线程会被调度器视为同等优先级的"前台"任务，与主线程竞争 CPU，可能间接导致主线程被 preempt 而触发 ANR。排查工具：`/proc/{pid}/task/{tid}/sched` 中的 `prio` 和 `se.avg.util_est` 配合 Perfetto 的 `sched_switch` 轨道，可以确认是否存在"低优先级任务挤占高优先级任务"的调度异常。
-
-- **ANR**：`/data/anr/traces.txt` + Perfetto 的主线程轨道
-
-### 第三步：追踪根因
-
-定位到阻塞点后，往回追——这个位置为什么会阻塞/崩溃？追踪方向：
-
-- **时间维度**：是首次出现还是回归？如果是回归，定位到引入问题的 commit
-- **空间维度**：问题出现在所有设备还是特定机型/系统版本？
-- **频率维度**：偶发还是必现？偶发问题需要更多 trace 采样
-
-### 第四步：修复并验证
-
-修复方案分三层：短期止血、中期修复、长期防护。每层都要有可量化的验证指标。
-
-验证不只在测试环境——线上 A/B 对比才是最终判断。20.6 节的指标体系提供了验证所需的基线和统计方法。
-
----
-
-> **后记**：以下案例四涉及线程调度与亲和性，属于较深层的调度问题，排查依赖系统级 trace 和厂商环境，通用性不如前三个案例。读者可根据团队实际需求选择性阅读。
-
-## 案例四：线程亲和性配置不当导致前台任务卡顿
-
-### 现象
-
-前台应用用户体验差，表现为：
-- 手势响应延迟高（>100ms）
-- 视频播放卡顿（Adreno GPU 高负载但 CPU 空闲）
-- 音频断续（AudioTrack 播放时线程调度异常）
-- APM 监控显示前台线程 CPU 使用率低但用户体验差
-
-大部分用户反馈集中在 Android 17 机型，特别是多核设备（8核+）。
-
-### 分类：线程亲和性异常
-
-这类问题属于「调度异常」，不是 CPU 计算能力不足，而是线程调度策略不当导致的执行顺序异常。需要从以下几个方面分析：
-
-1. **CPU 亲和性设置**：线程是否被正确绑定到合适的核心
-2. **调度策略选择**：是否使用了合适的 SCHED_SP_* 策略
-3. **优先级配置**：线程优先级是否与业务需求匹配
-4. **cgroup 层级**：任务是否被正确限制在对应的 cgroup 中
-
-### 追踪：从线程调度入手
-
-#### 1. Process.java 线程亲和性 API
-
-Android 17 提供了完整的线程亲和性管理 API（frameworks/base/core/java/android/os/Process.java）：
-
-```java
-// 核心API：线程组和 cpuset 设置
-public static native int setThreadGroupAndCpuset(int tid, int group, String cpuset);
-public static native int setThreadScheduler(int tid, int policy, int priority);
-public static native int getExclusiveCores(int tid);
-public static native int getSchedAffinity(int tid, String[] affinity);
-
-// 线程亲和性策略常量
-public static final int SCHED_SP_FOREGROUND = 0;  // 前台线程
-public static final int SCHED_SP_BACKGROUND = 1;  // 后台线程
-public static final int SCHED_SP_TOP_APP_BOUND = 2; // 前台应用边界
-public static final int SCHED_SP_RT_APP = 3;       // 实时应用线程
-public static final int SCHED_SP_AUDIO = 4;       // 音频线程
-public static final int SCHED_SP_SYSTEM = 5;      // 系统线程
-public static final int SCHED_SP_TOP_APP = 6;     // 前台应用线程
-public static final int SCHED_SP_INTERACTIVE = 7; // 交互线程
-```
-
-#### 2. task_profiles.json 调度策略配置
-
-Android 17 的调度策略配置在 system/core/libprocessgroup/profiles/task_profiles.json 中定义：
-
-```json
-{
-  "SCHED_SP_TOP_APP": {
-    "priority": 90,
-    "policy": "SCHED_FIFO",
-    "cpu_affinity": "0-3",          // 前4个核心
-    "cgroup": "/top-app",
-    "capacity": "MAX",
-    "performance": "HighPerformance"
-  },
-  "SCHED_SP_FOREGROUND": {
-    "priority": 80,
-    "policy": "SCHED_NORMAL", 
-    "cpu_affinity": "0-3",
-    "cgroup": "/foreground",
-    "capacity": "High",
-    "performance": "HighPerformance"
-  },
-  "SCHED_SP_AUDIO": {
-    "priority": 85,
-    "policy": "SCHED_FIFO",
-    "cpu_affinity": "0-3",        // 音频线程使用大核心
-    "cgroup": "/audio",
-    "capacity": "MAX",
-    "performance": "HighPerformance"
-  }
-}
-```
-
-#### 3. RenderThread 亲和性设置
-
-renderthread 调度问题通常源于设置不当。在 frameworks/libs/hwui/renderthread/RenderThread.cpp 中：
+下面的代码仅用于 debuggable 集成测试，在 SDK 初始化前后读取当前 disposition；不要把它放进 crash handler：
 
 ```cpp
-void RenderThread::init() {
-    // 设置为前台调度策略
-    Process::setThreadScheduler(
-        getTid(), 
-        Process::SCHED_SP_FOREGROUND,
-        Process::THREAD_PRIORITY_DISPLAY
-    );
-    
-    // 绑定到高性能核心
-    Process::setThreadGroupAndCpuset(
-        getTid(),
-        Process::THREAD_GROUP_SYSTEM,
-        "0-3"  // 前4个核心
-    );
+struct HandlerSnapshot {
+  int flags;
+  uintptr_t entry;
+};
+
+int SnapshotHandler(int signo, HandlerSnapshot* out) {
+  struct sigaction current = {};
+  if (sigaction(signo, nullptr, &current) != 0) {
+    return errno;
+  }
+
+  out->flags = current.sa_flags;
+  out->entry =
+      (current.sa_flags & SA_SIGINFO)
+          ? reinterpret_cast<uintptr_t>(current.sa_sigaction)
+          : reinterpret_cast<uintptr_t>(current.sa_handler);
+  return 0;
 }
 ```
 
-### 根因定位：线程亲和性配置冲突
+测试可以比较“初始化前、SDK A 后、SDK B 后”的进程内快照，确认谁改写了 disposition。函数地址受 ASLR 影响，只适合同一进程中的诊断；不要把地址当成跨设备标识，也不要在生产日志中上传它。
 
-通过 Perfetto trace 分析发现，问题源于多个线程间的 CPU 亲和性冲突：
+若 SDK 文档声称会兼容其他采集器，测试还要验证行为结果，不能只比较函数指针。一个 handler 可能保留了旧入口，却在错误时机或错误线程状态下调用它。
 
-1. **错误配置**：某些 SDK 的后台线程使用 SCHED_SP_TOP_APP 而不是 SCHED_SP_BACKGROUND
-2. **核心竞争**：多个线程同时绑定到相同的核心集合（如 "0-3"），导致大核调度拥挤
-3. **优先级倒置**：低优先级线程抢占高优先级线程的执行时间
-4. **cgroup 资源竞争**：不同 cgroup 之间的权重配置不当
+### 5. 修复策略
 
-### 修复方案：分层调度策略
+优先选择一个负责 fatal signal 的 Native Crash 采集器。其他 SDK 关闭 Native 捕获，只保留 Java、性能或上传能力。构建阶段维护依赖清单，记录哪些 AAR 或 `.so` 会注册 fatal signal；升级 SDK 时自动运行冲突测试。
 
-#### 1. 线程分类与策略配置
+不要在 fatal signal handler 中尝试修复业务状态、弹窗、发网络请求或继续执行。更稳妥的工作划分是：
 
-| 线程类型 | 推荐策略 | CPU 亲和性 | 优先级 | 用途 |
-|----------|----------|-------------|--------|------|
-| 主线程 | SCHED_SP_TOP_APP | "0-3" | 90 | 界面响应 |
-| 渲染线程 | SCHED_SP_FOREGROUND | "0-3" | 80 | 图形渲染 |
-| 音频线程 | SCHED_SP_AUDIO | "0-3" | 85 | 音频播放 |
-| IO 线程 | SCHED_SP_BACKGROUND | "4-7" | 10 | 后台任务 |
-| 定时器线程 | SCHED_SP_BACKGROUND | "4-7" | 10 | 定时任务 |
-| SDK 线程 | SCHED_SP_BACKGROUND | "4-7" | 10 | 业务逻辑 |
+- crash 时只做采集器设计允许的最小操作；
+- 将完整解析、符号化、压缩和上传延后到下次安全启动；
+- 使用 Build ID 选择准确符号，不以版本名猜测；
+- 保留系统终止与 tombstone 生成路径；
+- 对产物设置大小、保留期、加密和隐私字段约束。
 
-#### 2. 代码层面修复
+闭源 SDK 无法说明 handler 行为时，兼容性要靠受控崩溃试验确认，不要把未知旧 handler 直接串起来。
 
-```java
-// 主线程优化
-Process.setThreadGroupAndCpuset(
-    android.os.Process.myTid(),
-    Process.THREAD_GROUP_TOP_APP,
-    "0-3"  // 前4个核心
-);
+### 6. 验证用例表
 
-// 音频线程优化
-Process.setThreadGroupAndCpuset(
-    audioThread.getTid(),
-    Process.THREAD_GROUP_AUDIO,
-    "0-3"  // 音频使用大核心
-);
+每个支持的 ABI 和主要 Android 版本至少覆盖：
 
-// IO 线程优化
-Process.setThreadGroupAndCpuset(
-    ioThread.getTid(),
-    Process.THREAD_GROUP_BACKGROUND,
-    "4-7"  // 后4个核心
-);
-```
+| 用例 | 要验证的产物 |
+| --- | --- |
+| `abort()` | 信号、寄存器、线程、映射、Build ID |
+| 空指针读写 | fault address、崩溃线程栈、符号 |
+| 栈溢出 | 备用栈场景仍能产出可解析记录 |
+| 多线程同时触发 | 只产生一个主事件，其他线程不会把产物写坏 |
+| MTE 或 GWP-ASan（设备支持时） | fault 类型与平台诊断信息被保留 |
+| 离线后重启 | 本地产物能被发现、去重并在网络恢复后上传 |
 
-#### 3. 应用级监控
+Android 11 / API 30 起可用 `ApplicationExitInfo` 查询历史退出原因和 trace；Android 12 / API 31 起，`REASON_CRASH_NATIVE` 的 `getTraceInputStream()` 可返回 tombstone protobuf，但记录位于有限的全局环形缓冲区，流仍可能为空。它是独立的验证面，不能替代应用采集器，也不能保证每次都有结果。
 
-添加线程亲和性监控能力：
+通过标准应同时覆盖应用产物、系统退出记录、符号化结果和服务端接收。缺少其中一项时，先标记具体失败阶段，不要用一个“堆栈完整率”掩盖原因。
 
-```java
-// 监控线程CPU使用率和调度状态
-public class ThreadAffinityMonitor {
-    private static final String PROC_STATUS = "/proc/self/status";
-    
-    public static void monitorThreadAffinity() {
-        // 读取线程数量和调度状态
-        String status = FileUtils.readFileToString(new File(PROC_STATUS));
-        // 解析 Threads: 字段
-        // 解析每个tid对应的 /proc/self/task/{tid}/sched
+---
+
+## 案例三：ContentProvider 初始化拖慢启动并诱发 ANR
+
+### 1. 为什么 Provider 会抢在 Application 前面
+
+Android 17 的 `ActivityThread.handleBindApplication()` 在创建 `Application` 对象后，会先调用 `installContentProviders(app, data.providers)`，之后才调用 `Instrumentation.callApplicationOnCreate(app)`。
+
+安装本地 Provider 时，`ActivityThread.installProvider()` 会实例化 Provider，并通过 `attachInfo()` 进入 `ContentProvider.onCreate()`。这段工作发生在主线程。对同一进程中的 Provider，清单属性 `android:initOrder` 数值越大，初始化越早；`installContentProviders()` 按系统传入的列表依次安装。
+
+因此，第三方 SDK 通过清单合并加入 Provider 后，即使应用代码没有主动调用 SDK，它也可能在 `Application.onCreate()` 之前执行。进程也未必由桌面 Activity 启动：外部访问 Provider、Job、Service、Broadcast 或推送都可能触发进程创建。分析时必须带上启动原因和进程名。
+
+### 2. 症状与候选假设
+
+假设一次依赖升级后，冷启动尾延迟和“启动附近的 ANR”同时上升。ANR 主线程栈落在某个 SDK Provider 的 `onCreate()`，这份栈是重要证据，但仍要区分：
+
+| 假设 | 支持证据 | 反证 |
+| --- | --- | --- |
+| Provider 同步磁盘 I/O | Perfetto 中主线程文件系统事件与 Provider trace section 重合 | 移除该 I/O 后时长不变 |
+| Provider 等待网络或 Binder | 主线程处于 socket、futex 或 Binder 等待，服务端线程也可定位 | 离线与替身服务下现象不变 |
+| 数据库打开或迁移 | SQLite section、锁等待、首次升级集中 | 全新安装与升级路径表现相同 |
+| 类加载、解压或 dex 工作 | class loading、CPU 与页错误集中 | 预热或依赖裁剪后没有变化 |
+| `Application.onCreate()` 自身阻塞 | 时间区间发生在 Provider 安装之后 | Provider 区间已覆盖主要耗时 |
+
+不要把所有启动 ANR 都称为“Input dispatch 5 秒超时”。ANR 类型和超时受触发场景、组件、系统状态及版本影响。应从系统报告、Play vitals 和 trace 判断类型。普通应用也不能直接读取 `/data/anr/`；应用可用的是平台公开 API、Play/厂商后台、测试设备导出的 bugreport，以及自己埋下的轻量 trace section。
+
+### 3. 收集启动与 ANR 证据
+
+Android 11 / API 30 起，`ApplicationExitInfo` 可提供 `REASON_ANR` 和可能存在的 `getTraceInputStream()`。Android 17 / API 37 新增 `ApplicationExitInfo.getAnrInfo()`，只在 `REASON_ANR` 时填充，可用于获得结构化 ANR 信息；代码必须继续兼容字段为空和历史记录被覆盖。
+
+Android 15 / API 35 起，`ApplicationStartInfo` 提供启动原因、启动类型和单调时钟时间戳。它能描述进程启动、`bindApplication`、`Application.onCreate()`、首帧等系统节点，但不会自动给出每个 Provider 的单独耗时。Provider 粒度需要 Perfetto、系统 trace 或应用自己的 `Trace` section。
+
+下面的 Provider 示例只给自有代码加 trace 标记，用于在 Perfetto 中定位区间：
+
+```kotlin
+class DiagnosticsProvider : ContentProvider() {
+    override fun onCreate(): Boolean {
+        Trace.beginSection("DiagnosticsProvider#onCreate")
+        return try {
+            installLightweightHooks(requireNotNull(context).applicationContext)
+            true
+        } finally {
+            Trace.endSection()
+        }
     }
 }
 ```
 
-### 验证
+`installLightweightHooks()` 必须是主线程可接受的短操作。trace 标记负责测量，不会让初始化变快；section 名应稳定且数量受控，不能携带用户数据。
 
-修复上线后的数据对比：
+清单调查还要检查 Android Studio 的 merged manifest，而不是只搜索主模块的 `AndroidManifest.xml`。记录 Provider 来源依赖、authority、process、`initOrder`、是否 direct-boot aware，以及 SDK 是否提供关闭自动初始化的正式选项。
 
-| 指标 | 修复前 | 修复后 | 改善幅度 |
-|------|--------|--------|----------|
-| 手势响应延迟 | 120ms | 35ms | 71% ↓ |
-| 视频播放卡顿率 | 8.5% | 1.2% | 86% ↓ |
-| 音频断续率 | 5.2% | 0.8% | 85% ↓ |
-| 前台线程CPU使用率 | 65% | 82% | 26% ↑ |
-| 后台线程CPU使用率 | 25% | 12% | 52% ↓ |
+### 4. 修复要尊重 SDK 的线程约束
 
-手势响应延迟从 120ms 降至 35ms，卡顿率下降 86%，用户体验显著改善。
+把所有 SDK 初始化统一扔到 `Dispatchers.IO` 会制造新的竞态。有些 SDK 要求主线程注册回调或访问 Looper；有些组件必须在首次 API 调用前完成准备。正确拆分方式取决于 SDK 文档：
 
-### 关键经验
+- 必须同步且要求主线程的部分，压缩到最小；
+- 明确支持后台执行的磁盘或解析工作，移出 Provider；
+- 可延迟功能在首次使用前按需初始化；
+- 调用方需要显式的 readiness，而不是读一个没有同步语义的布尔值；
+- 初始化失败要有可观察状态、重试策略和降级行为；
+- 用户、进程或测试生命周期结束时，能取消的任务要被取消。
 
-1. **线程分类**：明确区分前台/后台/音频/系统线程，采用不同的调度策略
-2. **核心绑定**：前台线程绑定高性能核心，后台线程限制使用剩余核心
-3. **优先级隔离**：高优先级线程避免被低优先级线程抢占
-4. **监控能力**：建立线程调度状态监控，及时发现问题
-5. **适配多样性**：不同芯片厂商的调度实现存在差异，需要针对性优化
+下面的门闩只适用于 SDK 明确允许后台准备的部分，调用方通过 `awaitReady()` 获得一致结果：
 
-## 大厂稳定性治理体系的共性特征
+```kotlin
+class SdkReadiness(
+    private val appScope: CoroutineScope,
+    private val prepareOffMain: suspend () -> Unit,
+) {
+    private val started = AtomicBoolean(false)
+    private val ready = CompletableDeferred<Unit>()
 
-从公开的技术博客和开源项目中，可以归纳出成熟稳定性治理体系的几个共性：
+    fun start() {
+        if (!started.compareAndSet(false, true)) return
 
-**线程调度与亲和性的边界**：Android 17 源码中存在 `Process.getExclusiveCores()` 和隐藏的 `getSchedAffinity(int)`，但这不是稳定性治理中通用、公开的“线程亲和性管理 API”。应用侧不要把崩溃监控线程硬绑核当作默认策略，尤其不能把崩溃信号写成“按当前核心 local APIC 分发”。稳定性治理更稳的做法是控制线程数量、线程优先级、阻塞点和后台任务隔离；确需调整亲和性时，应以厂商环境和实测 trace 为准。
+        val job = appScope.launch(Dispatchers.IO) {
+            try {
+                prepareOffMain()
+                ready.complete(Unit)
+            } catch (e: CancellationException) {
+                ready.cancel(e)
+                throw e
+            } catch (e: Exception) {
+                ready.completeExceptionally(e)
+            }
+        }
+        job.invokeOnCompletion { cause ->
+            if (cause != null && !ready.isCompleted) {
+                ready.completeExceptionally(cause)
+            }
+        }
+    }
 
-### 指标驱动而非报警驱动
+    suspend fun awaitReady() {
+        ready.await()
+    }
+}
+```
 
-成熟的治理体系不依赖"用户投诉 → 紧急排查"模式。20.6 节定义的 UV 崩溃率、PV 崩溃率、启动崩溃率三个指标构成了日常监控基线。报警阈值基于历史数据统计设定，不是拍脑袋的"超过 X 就报警"。
+`appScope` 应由应用进程所有，并在测试中可替换；不要在 Provider 内临时创建一个无法管理的全局 scope。若 SDK 的某一步要求主线程，就把那一步留在主线程，并把可分离的工作交给后台。`CompletableDeferred` 解决等待一致性，不负责超时、重试和产品降级，这些策略要由上层定义。
 
-### 崩溃归因自动化
+若 SDK 使用 Jetpack App Startup，可按官方文档声明 initializer 依赖，或在支持时改为按需初始化。用 `tools:node="remove"` 删除第三方 Provider 前，必须确认 SDK 文档提供手动初始化入口及调用时机；直接删除可能让 SDK 悄悄失效。
 
-20.8 节讲了崩溃聚合的算法。成熟的体系在此基础上增加了自动化归因：新版本上线后，自动对比崩溃簇分布变化，标记"新增簇"和"恶化簇"，自动分配给对应的模块负责人。不需要人工每天翻崩溃列表。
+数据库迁移也不能只改成“后台打开数据库”。在准备完成前，所有读取方需要等待或走受控降级；多进程场景还要处理文件锁、重复迁移和 direct boot 存储边界。
 
-### 防护前置
+### 5. 验证修复
 
-修复本身是事后动作。成熟的体系把防护动作前移到开发阶段：
+本地验证至少包含：
 
-- **编译期检查**：Lint 规则检测主线程 I/O、网络请求
-- **CI 阶段**：Monkey 测试 + 稳定性回归基线
-- **灰度阶段**：按 1% → 5% → 20% → 50% → 100% 逐步放量，每阶段对比崩溃率
+- 全新安装、覆盖升级和跨多个 schema 版本升级；
+- 冷启动、温启动，以及 Provider、Service、Broadcast、Job、推送触发的进程启动；
+- 主进程和独立进程；
+- 低端与主流设备、不同存储压力；
+- 在线、离线、弱网和依赖服务不可用；
+- 初始化完成前立即调用 SDK API；
+- 多个调用方同时等待和初始化失败后的行为。
 
-### 长期演进方向
+Macrobenchmark 适合比较冷启动分布，Perfetto 用来确认主线程区间和等待对象，`ApplicationStartInfo` 用来对齐系统启动节点。测试结果要报告样本量和分位数，不要只贴一次录屏。
 
-从"救火"到"防火"的演进路径：
+线上观察应分开看启动用户率、ANR 用户率、ANR 会话率、启动类型、启动原因、进程名、设备档位和版本。若尾延迟下降但 SDK 初始化失败率上升，修复仍不合格。
 
-1. **阶段一：有事能查**——建立崩溃上报和 ANR traces 采集（20.2、20.3、20.4）
-2. **阶段二：查得更快**——崩溃聚合、自动归因、告警体系（20.8）
-3. **阶段三：防得住**——编译期检查、CI 回归、灰度卡口
-4. **阶段四：自愈**——异常架构支持降级、回滚、热修复（20.7）
+---
 
-每个阶段的投入产出比不同。阶段一到阶段二是性价比最高的区间——大部分团队在阶段二就能把崩溃率控制到可接受水平。阶段三和阶段四的投入更大，适合日活千万级以上的应用。
+## 三个案例共用的判断边界
+
+| 看到的现象 | 可以立即确认 | 仍需验证 |
+| --- | --- | --- |
+| `pthread_create` 抛 OOM | 线程创建失败并被 ART 转成 OOM | JNIEnv、映射、task 限制还是系统内存压力 |
+| 线程数持续上升 | 有线程生命周期异常 | 哪个所有者创建、为何没有退出 |
+| Native 只有地址没有符号 | 符号化结果不可用 | 采集缺失还是 Build ID / 符号归档错误 |
+| 初始化 SDK 后 handler 改变 | SDK 改写了 disposition | 是否破坏旧采集器与系统 tombstone |
+| ANR 栈在 Provider | 主线程采样时位于 Provider 工作 | 它是否覆盖主要阻塞区间、ANR 属于哪一类 |
+| `Application.onCreate()` 很慢 | 系统节点之间存在较长区间 | Provider、类加载还是 Application 代码占用 |
+
+调查完成前，给结论加上置信度和待反证项。修复提交中把证据、风险和回滚开关写清楚；验证阶段沿用调查时的分群和指标定义，避免统计口径改变后产生虚假的改善。
+
+---
+
+## 发布前检查表
+
+- [ ] 事件数同时配有用户、会话或启动次数分母
+- [ ] 版本、ABI、进程、设备档位和存活时长能够分群
+- [ ] 原始异常文本、退出原因、trace 与符号版本可追溯
+- [ ] 每个候选假设都有支持证据和反证
+- [ ] 源码结论固定到 `android-17.0.0_r1`
+- [ ] 内核结论固定到 `android17-6.18-2026-06_r6`
+- [ ] 止血、根因修复与预防措施没有混写
+- [ ] 示例代码有所有者、取消、超时和失败语义
+- [ ] 验证使用同一分群，并检查反向回归
+- [ ] 没有用虚构的线上比例证明修复成功
+
+---
+
+## 源码与官方资料
+
+- [ART `Thread::CreateNativeThread()`：`runtime/thread.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/thread.cc)
+- [Bionic `pthread_create()`：`libc/bionic/pthread_create.cpp`](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/libc/bionic/pthread_create.cpp)
+- [Linux task 创建：`kernel/fork.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/fork.c)
+- [Android 17 debuggerd handler](https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)
+- [Android 17 linker 启动入口](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker_main.cpp)
+- [Android 17 `ActivityThread`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [ContentProvider 清单属性与 `initOrder`](https://developer.android.com/guide/topics/manifest/provider-element)
+- [Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup)
+- [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+- [`ApplicationStartInfo`](https://developer.android.com/reference/android/app/ApplicationStartInfo)
+- [Perfetto CPU scheduling 数据源](https://perfetto.dev/docs/data-sources/cpu-scheduling)
+
+---
+
+## 小结
+
+稳定性治理的难点不在于记住某个堆栈对应某个答案，而在于守住证据边界：
+
+- `pthread_create` OOM 要沿 ART、Bionic 和内核逐层区分失败点；
+- Native Crash 产物缺失要拆开采集、持久化、符号化和上传，再验证 signal handler 是否冲突；
+- Provider 启动 ANR 要对齐系统启动顺序、清单合并结果、主线程 trace 和 SDK 初始化契约。
+
+源码提供机制边界，trace 提供时间关系，线上指标提供影响范围。三者能够互相校验时，修复结论才足以进入发布流程。
