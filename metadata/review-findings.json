@@ -118,10 +118,10 @@
     },
     {
       "chapter": "src/part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md",
-      "created_at": "2026-07-26T22:08:03.919403+08:00",
+      "created_at": "2026-07-27T08:24:30.750144+08:00",
       "created_by": "hermes-aiw-review-finalize-apply",
-      "created_run_id": "20260726-220530-dad2c951",
-      "details": "本轮继续保持 open：章节保留官方 runtime-tracing 依赖、Flamingo/Compose UI 1.3.0/Compiler 1.3.0/API 30+、track_event + ENABLE_TRACING 手动采集、tracing-perfetto-binary 生产包隔离等已核边界；但仍含原始大纲占位，且可见 Slice 命名清单、重组频次/字段、重组原因归因和 Release 短窗口采集矩阵缺少同版本 Perfetto/trace_processor 实测样本。frontmatter status 因校验规则保留 ready-for-review，task6/task9/pipeline 继续标记 needs-rework。",
+      "created_run_id": "20260727-082309-5af88f00",
+      "details": "2026-07-27 复核继续保持 open：章节保留官方 runtime-tracing 依赖、Flamingo/Compose UI 1.3.0/Compiler 1.3.0/API 30+、track_event + ENABLE_TRACING 手动采集、tracing-perfetto-binary 生产包隔离等已核边界；本轮仅收敛自定义 Trace API 命名为 androidx.tracing.Trace.beginSection()/endSection()。章节仍含原始大纲占位，且可见 Slice 命名清单、重组频次/字段、重组原因归因和 Release 短窗口采集矩阵缺少同版本 Perfetto/trace_processor 实测样本。frontmatter status 保留 ready-for-review，task6/task9/pipeline 继续标记 needs-rework。",
       "id": "finding-99b46b16b19d",
       "log_path": "",
       "severity": "P2",
@@ -132,7 +132,24 @@
       "status": "open",
       "summary": "Compose Runtime Tracing 事件命名、重组统计与 Release 启用矩阵缺少官方/实测证据，暂不能 finalized",
       "type": "missing-source",
-      "updated_at": "2026-07-26T22:08:03.919403+08:00"
+      "updated_at": "2026-07-27T08:24:30.750144+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch08-startup/8.02-Android-17-系统启动优化与bootanalyze工具链.md",
+      "created_at": "2026-07-27T08:37:15.749050+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260727-083606-deep-review-dbbfc734",
+      "details": "materials 为空；本章主体仍是受保护历史错稿，deep-review 不能凭通用知识扩写。需要 body-apply/rework 基于 AOSP android-17.0.0_r1 提供可替换正文，或由目录治理合并/删除重复章节。",
+      "id": "finding-8c411b5c0b84",
+      "log_path": "logs/deep-review/2026-07-27-20260727-083606-deep-review-dbbfc734-deep-review.md",
+      "severity": "P1",
+      "source_paths": [
+        "src/part1-fundamentals/ch08-startup/8.1-bootanalyze-optimization-toolchain.md"
+      ],
+      "status": "open",
+      "summary": "历史错误 outline 已隔离但缺少可审计独立正文",
+      "type": "needs-body-apply",
+      "updated_at": "2026-07-27T08:37:15.749050+08:00"
     }
   ],
   "schema_version": 1
