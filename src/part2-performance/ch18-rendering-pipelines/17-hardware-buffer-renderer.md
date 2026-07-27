@@ -75,357 +75,350 @@ last_task6_audit: "2026-07-11"
 
 <!-- outline-end -->
 
-## 为什么需要 HardwareBufferRenderer
+## HBR 的问题边界
 
-传统软件绘制走的是 `Surface.lockCanvas()` 这套方式。`lockCanvas()` 会先从 BufferQueue 取回一个 `GraphicBuffer`，把这块像素内存映射给 CPU，然后由 Skia 在 CPU 上逐像素写入；`unlockCanvasAndPost()` 再把写好的 buffer 交回系统。[已验证: §18.3 `Surface.cpp::lock()` / `unlockAndPost()`]
+`Surface.lockCanvas()` 面向的是“CPU 直接画进一个 `Surface`”。调用方从 `BufferQueue` 取得可写 buffer，Skia 的 software backend 在 CPU 上完成光栅化，`unlockCanvasAndPost()` 再把 buffer 排回队列。复杂 Path、大尺寸缩放、滤镜或高分辨率离屏内容会消耗可观的 CPU 时间，这正是 `HardwareBufferRenderer`（下文简称 HBR）要覆盖的一类问题。
 
-这条方式的成本主要有两类：
+不过，不能据此得出“HBR 是 `lockCanvas()` 的硬件加速开关”。Android 还有 `Surface.lockHardwareCanvas()`，它已经使用 HWUI/GPU，只是输出目标仍是 `Surface`。三者的边界如下：
 
-1. **CPU 光栅化开销高**：复杂矢量图、PDF 页面、大尺寸 Bitmap 缩放都会直接挤占 UI Thread 或调用方工作线程的时间。
-2. **buffer 复用节奏由调用方自己管理**：software Canvas 依赖 dirty region、copyback、BufferQueue 槽位和 fence 同步；脏区失效或复用节奏过紧时，等待和内存搬运成本都会被放大。
+| API | 光栅化执行者 | 输出目标 | 提交与 buffer 复用 |
+|:---|:---|:---|:---|
+| `Surface.lockCanvas()` | CPU / Skia software | `Surface` 背后的 buffer | 由 `unlockCanvasAndPost()` 和 BufferQueue 协作 |
+| `Surface.lockHardwareCanvas()` | HWUI / GPU | `Surface` 背后的 buffer | 仍沿用 Surface / BufferQueue；每帧必须完整覆盖 |
+| `HardwareBufferRenderer` | HWUI RenderThread / GPU | 调用方提供的 `HardwareBuffer` | 调用方选择 consumer，并管理 presentation fence、release fence 和 buffer 池 |
 
-**HardwareBufferRenderer**（Android 14 / API 34 引入）把同一类“离屏产出一块 buffer”的需求改成了 GPU 光栅化。调用方先用 `RenderNode` 记录绘制内容，再让 `HardwareBufferRenderer` 把结果画进 `HardwareBuffer`。如果后面直接接 `SurfaceControl.Transaction.setBuffer()`，buffer 可以直接交给 system compositor；如果目标对象后面接的仍是 `Surface`、BLASTBufferQueue 或其他 consumer，再按对应提交方式接回去。[已验证: `HardwareBufferRenderer.java` 类注释]
+所以，HBR 的独特价值是：把一棵 `RenderNode` 场景树光栅化到**调用方拥有的 `HardwareBuffer`**。它适合离屏结果需要直接交给 `SurfaceControl`、跨进程传递或继续送入其他 GPU/媒体 consumer 的场景。如果手里已经有一个正常消费的 `Surface`，只需要 GPU Canvas，`lockHardwareCanvas()` 或 `HardwareRenderer` 往往更贴合问题。
 
-## 核心架构
+Android 17 的 `Surface.java` 还明确规定，`lockHardwareCanvas()` 不保留前一帧内容，调用方每次都要完整覆盖；HBR 的语义正好不同：它在 draw 前**不会自动清空**目标，未被本次绘制覆盖的像素会保留。[AOSP: `Surface.lockHardwareCanvas()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java) [AOSP: `HardwareBufferRenderer`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java)
 
-把 `HardwareBufferRenderer` 放到整体渲染流程里看，定位会更稳。标准 View 硬件渲染由 `ViewRootImpl` 按 VSync 驱动，`RenderNode` 录制、`RenderThread` 调度、窗口 buffer 提交都在框架管理范围内。`HardwareBufferRenderer` 只接管离屏光栅化这一段，调用方要先准备 `HardwareBuffer`，录好 `RenderNode`，再触发一次 GPU 绘制。
+## Android 17 中的实现边界
+
+HBR 是 Android 14 / API 34 加入的 Java API。它复用了 HWUI 的现有基础设施，并没有创建一套独立于应用 UI 的渲染系统。Android 17 源码给出了几条很重要的生命周期约束：
+
+- 所有 `HardwareBufferRenderer` 与 `HardwareRenderer` 共享应用进程里的公共 RenderThread、GPU context 和 GPU 资源。HBR 的工作量可能与普通 View 硬件渲染争用 RenderThread 和 GPU。
+- 进程里创建第一个 HBR 时可能要初始化 GPU context，冷启动成本不能算进稳态单帧数据；后续实例相对便宜。
+- 预期用法是“每个活动中的 `HardwareBuffer` 对应一个 HBR 实例”。连续渲染若有三块 in-flight buffer，通常也维护三个 renderer/slot，而不是把同一个 renderer 临时改绑到不同 buffer——HBR 没有改绑目标的 API。
+- `close()` 只释放 renderer 资源，不会替调用方关闭构造时传入的 `HardwareBuffer`。
+- `setContentRoot()` 会让内部根节点记录一次 `drawRenderNode(content)`。之后修改这棵 `RenderNode` 树的显示列表或属性，不必重复调用 `setContentRoot()`；下一次 render request 会同步最新状态。
+- `obtainRenderRequest()` 返回内部可复用的请求对象。每次调用都会把 color space 重置为 sRGB、transform 重置为 identity；请求不是线程安全对象，调用 `draw()` 后便不能继续使用或长期持有。
+
+这些行为都能直接在 Android 17 的 [`HardwareBufferRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java) 中核对。
+
+## 从 RenderNode 到屏幕的完整路径
+
+HBR 只负责下图中间的 GPU 光栅化。buffer 分配、显示提交和安全复用都属于调用方：
 
 ```mermaid
-graph LR
-    subgraph "App Process"
-        RN[RenderNode]
-        HBR[HardwareBufferRenderer]
-        HB[HardwareBuffer]
-        TX[SurfaceControl.Transaction]
-    end
-
-    subgraph "System"
-        SC[SurfaceControl Layer]
-        SF[SurfaceFlinger]
-        HWC[HWC / Display]
-    end
-
-    RN -->|setContentRoot| HBR
-    HBR -->|GPU rasterize| HB
-    HB -->|setBuffer + acquireFence| TX
-    TX -->|apply| SC
-    SC --> SF
-    SF --> HWC
-
-    HB -. 可选: 目标仍接 Surface / BLAST .-> BQ[BufferQueue / BLAST]
-    BQ -. 再进入窗口提交流程 .-> SF
+flowchart LR
+    A["记录或更新 RenderNode"] --> B["obtainRenderRequest()"]
+    B --> C["draw(executor, callback)"]
+    C --> D["RenderThread 同步场景树"]
+    D --> E["GPU 写 HardwareBuffer"]
+    E --> F["RenderResult: status + presentation fence"]
+    F --> G["SurfaceControl.Transaction.setBuffer()"]
+    G --> H["SurfaceFlinger 等 fence 后 latch"]
+    H --> I["HWC 或 GPU 合成并显示"]
+    I --> J["后续 transaction 替换/移除 buffer"]
+    J --> K["release callback / release fence"]
+    K --> B
 ```
 
-这套模型把两件事改清楚了。光栅化从 CPU 写像素换成 GPU 写 `HardwareBuffer`，buffer 的归属也回到了调用方手里。software Canvas 拿到的是已经挂在 `Surface` / BufferQueue 后面的生产者入口，`unlockCanvasAndPost()` 之后的提交、同步、复用沿着窗口体系继续往下走。HBR 拿到的是一块独立 `HardwareBuffer`，提交目标和回收时机都要自己安排。要直接上屏，就走 `SurfaceControl.Transaction.setBuffer()`；要接回窗口体系，才会再碰到 `queueBuffer()` 或 BLAST。
+这里有两个名字相近、方向相反的同步点：
 
-排查时把职责拆开，判断会更清楚：
+1. **Presentation fence**：`RenderResult.getFence()` 返回。它表示 producer 的 GPU 写入何时完成，consumer 在读取 buffer 前必须等它。直接上屏时把它传给 `Transaction.setBuffer()`，SurfaceFlinger 会负责等待，应用不需要先在 CPU 上阻塞。
+2. **Release fence**：`setBuffer(..., releaseCallback)` 的 callback 参数。它表示 SurfaceFlinger/HWC 何时不再读取这块 buffer；fence signal 后，producer 才能再次写入。
 
-1. **HBR 负责把 `RenderNode` 树画进 `HardwareBuffer`**，不负责选 consumer，也不负责安排下一次 draw。
-2. **执行阶段仍会落到硬件渲染栈**。Perfetto 里通常还能看到 app 进程的 `RenderThread` 和对应 GPU 工作，触发者从 `ViewRootImpl` 帧循环变成了 `RenderRequest.draw()`。
-3. **提交与复用是另一层职责**。transaction 何时 `apply()`、buffer 何时能重用、是否需要多 buffer 池，都要靠调用方配套处理。
+`draw()` 的 callback 能拿到 `RenderResult`，不等于该 `SyncFence` 已 signal。Android 17 的 API 注释要求：先检查 `status == SUCCESS`，consumer 再等待或接收该 fence。把 callback 到达时间当作 GPU 完成时间，会留下读写竞争。
 
+release callback 也不是本次 transaction 一 `apply()` 就调用。Java API 的定义是：**后续 transaction** 替换或移除该 buffer 后，系统通知它可以复用。如果一块 buffer 一直作为 layer 当前内容留在屏上，它就仍然处于占用状态。
 
-## API 使用
+## Java API：一个可核查的提交骨架
 
-### Java API
-
-Java 侧的调用顺序是：创建 `HardwareBuffer` → 记录 `RenderNode` 内容 → `setContentRoot()` → `obtainRenderRequest().draw()` → 把 `RenderResult` 交给 `SurfaceControl.Transaction`。
+下面的代码展示单个 buffer slot 的关键顺序。`surfaceControl`、线程池与 slot 状态机由上层持有；持续渲染时不能只创建一个 slot 然后无条件循环覆写。
 
 ```java
+long usage = HardwareBuffer.USAGE_GPU_COLOR_OUTPUT
+        | HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE
+        | HardwareBuffer.USAGE_COMPOSER_OVERLAY;
+
+if (!HardwareBuffer.isSupported(
+        width, height, HardwareBuffer.RGBA_8888, 1, usage)) {
+    throw new IllegalArgumentException("Unsupported HardwareBuffer configuration");
+}
+
 HardwareBuffer buffer = HardwareBuffer.create(
-        width,
-        height,
-        HardwareBuffer.RGBA_8888,
-        1,
-        HardwareBuffer.USAGE_GPU_COLOR_OUTPUT
-                | HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE
-                | HardwareBuffer.USAGE_COMPOSER_OVERLAY);
-
-RenderNode root = new RenderNode("HbrRoot");
-RecordingCanvas canvas = root.beginRecording(width, height);
-// 在这里记录 drawBitmap / drawText / drawPath 等操作
-root.endRecording();
-
+        width, height, HardwareBuffer.RGBA_8888, 1, usage);
 HardwareBufferRenderer renderer = new HardwareBufferRenderer(buffer);
+
+RenderNode root = new RenderNode("HbrContent");
+RecordingCanvas canvas = root.beginRecording(width, height);
+canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+// 记录本帧需要的 drawBitmap / drawText / drawPath ...
+root.endRecording();
 renderer.setContentRoot(root);
 
 HardwareBufferRenderer.RenderRequest request = renderer.obtainRenderRequest();
-request.setColorSpace(ColorSpace.get(ColorSpace.Named.DISPLAY_P3));
-request.draw(executor, result -> {
-    if (result.getStatus() != HardwareBufferRenderer.RenderResult.SUCCESS) {
+request.setColorSpace(ColorSpace.get(ColorSpace.Named.SRGB));
+request.draw(callbackExecutor, result -> {
+    SyncFence presentationFence = result.getFence();
+    if (result.getStatus()
+            != HardwareBufferRenderer.RenderResult.SUCCESS) {
+        presentationFence.close();
+        markSlotIdleAfterRenderFailure();
         return;
     }
 
-    SurfaceControl.Transaction t = new SurfaceControl.Transaction();
-    t.setDataSpace(surfaceControl, DataSpace.DATASPACE_DISPLAY_P3);
-    t.setBuffer(surfaceControl, buffer, result.getFence(), releaseFence -> {
-        // releaseFence signal 后，再把 buffer 放回池里
-    });
-    t.apply();
+    try (SurfaceControl.Transaction transaction =
+                 new SurfaceControl.Transaction()) {
+        transaction
+                .setDataSpace(surfaceControl, DataSpace.DATASPACE_SRGB)
+                .setBuffer(
+                        surfaceControl,
+                        buffer,
+                        presentationFence,
+                        releaseFence -> releaseExecutor.execute(() -> {
+                            try (releaseFence) {
+                                if (releaseFence.isValid()) {
+                                    releaseFence.awaitForever();
+                                }
+                            }
+                            markSlotIdle();
+                        }))
+                .show(surfaceControl)
+                .apply();
+    } finally {
+        // native transaction 已持有提交所需的 fence 引用。
+        presentationFence.close();
+    }
 });
 ```
 
-这段 Java API 在使用中需要特别注意四个细节：
+这段代码刻意显式 clear，因为 HBR 不会替调用方清除旧像素。若业务保证每次记录都覆盖整个 buffer，可以省掉 clear；局部更新则要自己维护未覆盖区域的正确内容。
 
-1. `setContentRoot()` 属于 `HardwareBufferRenderer`，不在 `RenderRequest` 上。
-2. `HardwareBuffer.create()` 里给 GPU render target 至少要带 `USAGE_GPU_COLOR_OUTPUT`；direct `SurfaceControl.setBuffer()` 场景还要补 `USAGE_GPU_SAMPLED_IMAGE | USAGE_COMPOSER_OVERLAY`。[已验证: `HardwareBuffer.java` / `SurfaceControl.java`]
-3. 原生 SDK 方法名是 `RenderResult.getFence()`，返回的 `SyncFence` 解决的是“consumer 什么时候能读这块 buffer”。`getSyncFence()` 属于其他封装命名，示例和正文里不要混用。SurfaceFlinger 在 latch 前要等它 signal。
-4. `setBuffer(..., fence, releaseCallback)` 里的 callback 才对应“这块 buffer 什么时候能再次写”。如果不跟踪 release，同一块 buffer 连续覆写会把上一帧还在显示的内容踩掉。[已验证: `SurfaceControl.Transaction#setBuffer(..., Consumer<SyncFence>)`]
+三个 usage flag 各有职责：
 
-### NDK API
+- `USAGE_GPU_COLOR_OUTPUT`：GPU 要把该 buffer 当作 render target 写入。
+- `USAGE_GPU_SAMPLED_IMAGE`：SurfaceFlinger 可能通过 GPU 采样合成。
+- `USAGE_COMPOSER_OVERLAY`：直接调用 `SurfaceControl.Transaction.setBuffer()` 时需要，HWC 也可能把它作为 overlay layer。
 
-公开 NDK 没有 `AHardwareBufferRenderer_*` 这层封装。native 方案要自己把 `AHardwareBuffer` 接到 EGL / OpenGL ES、Vulkan 或其他图形 API，再用 `ASurfaceTransaction` 提交：
+Android 17 的 Java `setBuffer()` 文档同时要求 `GPU_SAMPLED_IMAGE` 和 `COMPOSER_OVERLAY`。格式与 usage 的组合受 gralloc 能力约束，分配前应使用 `HardwareBuffer.isSupported()`，不能假设所有设备都支持任意尺寸、FP16 与用途组合。[AOSP: `HardwareBuffer`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/HardwareBuffer.java) [AOSP: `SurfaceControl.Transaction.setBuffer()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java)
 
-```cpp
-// API 26+: 分配可给 GPU 写入、可给 SurfaceControl 消费的 buffer
-AHardwareBuffer_Desc desc = {
-    .width = width,
-    .height = height,
-    .layers = 1,
-    .format = AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM,
-    .usage = AHARDWAREBUFFER_USAGE_GPU_COLOR_OUTPUT |
-             AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE |
-             AHARDWAREBUFFER_USAGE_COMPOSER_OVERLAY,
-};
-AHardwareBuffer* buffer = NULL;
-AHardwareBuffer_allocate(&desc, &buffer);
+### RenderNode 更新与阴影
 
-// 把 buffer 导入 EGL / OpenGL ES 或 Vulkan 作为 render target
-// 渲染完成后导出 acquire fence fd，再交给 ASurfaceTransaction
-int acquireFenceFd = -1;  // 由图形 API 的同步对象导出
-// API 29-35 回收上一块 buffer 时，需要调用方从自己的 buffer 池取出已提交过的 buffer。
-// 这里省略 buffer 池查找逻辑；没有上一块 buffer 时传 nullptr。
-AHardwareBuffer* previousBuffer = nullptr;
+内容变化时，可以重新 recording 同一个 `RenderNode`，也可以只修改 translation、alpha 等 RenderNode 属性，再发起新的 request。只有替换内容根节点时才需要再次 `setContentRoot()`。
 
-ASurfaceTransaction* tx = ASurfaceTransaction_create();
+若场景使用 elevation 阴影，还要调用 `setLightSourceGeometry()` 与 `setLightSourceAlpha()`。光源坐标应保持在 display space；窗口移动后不更新光源位置，阴影方向会跟着窗口坐标漂移。
 
-// 按平台 API 拆成互斥分支，避免同一 transaction 重复设置 buffer。
-#if __ANDROID_API__ >= 36
-// API 36+: setBufferWithRelease 带回调版本（推荐）
-// ASurfaceTransaction_OnBufferRelease callback 签名：
-//   void (*)(void* context, int release_fence_fd)
-// release_fence_fd 在回调参数中返回，不是 setBufferWithRelease 的入参。
-struct CallbackContext {
-    AHardwareBuffer* buffer;
-    ASurfaceControl* surfaceControl;
-};
-CallbackContext* ctx = new CallbackContext{buffer, surfaceControl};
-auto onBufferRelease = [](void* context, int releaseFenceFd) {
-    if (releaseFenceFd >= 0) {
-        sync_wait(releaseFenceFd, -1);
-        close(releaseFenceFd);
-    }
-    CallbackContext* ctx = static_cast<CallbackContext*>(context);
-    AHardwareBuffer_release(ctx->buffer);
-    delete ctx;
-};
-ASurfaceTransaction_setBufferWithRelease(tx, surfaceControl, buffer,
-                                         acquireFenceFd, ctx, onBufferRelease);
-#else
-// API 29-35 方案：使用 setBuffer() + OnComplete 回收被本次 transaction 替换掉的上一块 buffer。
-// 注意：previous release fence 不属于当前刚提交的 buffer，当前 buffer 要等后续 transaction 替换它时再回收。
-struct OnCompleteContext {
-    AHardwareBuffer* previousBuffer;
-    ASurfaceControl* surfaceControl;
-};
-OnCompleteContext* octx = new OnCompleteContext{previousBuffer, surfaceControl};
+### Transform 只支持直角旋转
 
-ASurfaceTransaction_setBuffer(tx, surfaceControl, buffer, acquireFenceFd);
-// ASurfaceTransaction_OnComplete 签名：void (*)(void* context, ASurfaceTransactionStats* stats)
-auto onComplete = [](void* context, ASurfaceTransactionStats* stats) {
-    OnCompleteContext* ctx = static_cast<OnCompleteContext*>(context);
+Android 17 的 HBR 源码只接受 identity、90°、180°、270° 四种 `BUFFER_TRANSFORM_*` 值。90°/270° 时，内部会交换 render width 与 height。它用于预旋转 buffer，不能替代 RenderNode 上的任意缩放、镜像或透视变换。
 
-    // 从 transaction stats 获取指定 SurfaceControl 的 previous release fence。
-    int prevReleaseFenceFd = ASurfaceTransactionStats_getPreviousReleaseFenceFd(
-            stats, ctx->surfaceControl);
+## Buffer 池：复用规则比“几缓冲”更重要
 
-    if (ctx->previousBuffer != nullptr) {
-        if (prevReleaseFenceFd >= 0) {
-            sync_wait(prevReleaseFenceFd, -1);  // 等待 fence signal
-            close(prevReleaseFenceFd);
-        }
-        AHardwareBuffer_release(ctx->previousBuffer);
-    }
-    delete ctx;
-};
-ASurfaceTransaction_setOnComplete(tx, octx, onComplete);
-#endif
+持续渲染不能把“一块 buffer 画完”当成“这块 buffer 已空闲”。一个 slot 至少要经历下面的状态：
 
-ASurfaceTransaction_apply(tx);
+```text
+IDLE
+  -> HBR_DRAW_SUBMITTED
+  -> PRESENTATION_FENCE_PENDING
+  -> SUBMITTED_TO_SURFACE_CONTROL
+  -> DISPLAY_IN_USE
+  -> RELEASE_FENCE_PENDING
+  -> IDLE
 ```
 
-如果走 EGL / OpenGL ES 路径，`AHardwareBuffer` 不能直接当纹理或 render target 使用。常见做法是通过 `EGL_ANDROID_get_native_client_buffer` 拿到 `EGLClientBuffer`，再配合 `EGL_ANDROID_image_native_buffer` 创建 `EGLImage`，然后绑定到纹理或 framebuffer。Vulkan 路径则要按 external memory / Android hardware buffer 扩展导入。
+池里放两块还是三块，要由目标帧率、GPU 时间、合成延迟和允许的排队深度决定，不能写死为“高帧率必须三缓冲”。池太小，producer 会等 release；池太大，内存与排队延迟会上升。
 
-NDK 侧的最小版本要分开记：
+每个 slot 建议一起保存：
 
-- `AHardwareBuffer` 分配与导入从 API 26 开始。
-- `ASurfaceTransaction_setBuffer()` 从 API 29 开始。
-- `ASurfaceTransaction_setBufferWithRelease()` 与 `ASurfaceTransaction_OnBufferRelease` 从 API 36 开始。[已验证: `android/surface_control.h`]
+- `HardwareBuffer`
+- 绑定该 buffer 的 `HardwareBufferRenderer`
+- 当前 generation/frame id
+- busy/idle 状态
+- 尚未完成的 release fence 或 callback
 
-Android 10-15（API 29-35）只有 `ASurfaceTransaction_setBuffer()`，没有带 release 回调的 `setBufferWithRelease()`。这几个版本通过 `ASurfaceTransaction_setOnComplete()` 设置回调，回调签名直接传入 `ASurfaceTransactionStats*`（不需要 create/delete），再调用 `ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, surfaceControl)` 取回指定 SurfaceControl 的 previous release fence。这个 fence 只对应“被本次 transaction 替换或移除的上一块 buffer”，不能拿来回收本次刚提交的 buffer；本次 buffer 要等后续 transaction 替换它时，再从那次 OnComplete 中取 previous release fence。调用方仍要维护 buffer 池大小，但不再只能靠 in-flight 计数猜测回收时机。[已验证: `frameworks/native/include/android/surface_control.h`, `ASurfaceTransaction_setOnComplete()` 与 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 自 API 29 可用]
+release callback 可以在任意线程到达。不要在回调线程里长时间等待 fence；把等待转交给专用 executor，再原子地把 slot 放回空闲队列。renderer、buffer 和 `SurfaceControl` 的关闭也要在所有 in-flight callback 结束后进行。由于 `renderer.close()` 不会关闭 buffer，二者必须分别释放。
 
-不要把 acquire fence 当 release fence 用——前者表示 producer 写完，后者表示 consumer 不再占用。
+## 与 NDK 的关系
 
-## 性能对比
+公开 NDK 没有 `AHardwareBufferRenderer_*`。`AHardwareBuffer` 加 EGL/OpenGL ES 或 Vulkan 是另一套 producer 实现，只是输出也能交给 `ASurfaceTransaction`：
 
-`HardwareBufferRenderer` 主要用于 CPU 光栅化已经成为主要成本的离屏绘制工作负载。大尺寸 PDF 页面、复杂 path、频繁缩放的 bitmap、wide color 或 HDR 离屏输出，通常更容易从 GPU 光栅化里受益。纯色块、简单文本或低分辨率静态内容，切到 HBR 后差距可能很小，事务提交和 buffer 同步还可能变成额外开销。
+```text
+AHardwareBuffer_allocate
+    -> 导入 EGLImage 或 Vulkan external memory
+    -> GPU 渲染
+    -> 导出 acquire/presentation fence fd
+    -> ASurfaceTransaction_setBuffer*
+    -> release callback/fence 后复用
+```
 
-目前缺少同一设备、同一 workload 的 A/B benchmark，下面只给出定性判断，定量数据标记为待验证。
+NDK 路径的版本和所有权容易混淆，Android 17 的头文件规定如下：
 
-| 维度 | `lockCanvas()` | `HardwareBufferRenderer` |
+| API 范围 | 提交 API | 安全复用当前 buffer 的依据 |
 |:---|:---|:---|
-| 光栅化位置 | CPU 直接写入 dequeued `GraphicBuffer` | GPU 直接写入 `HardwareBuffer` |
-| 提交路径 | `unlockCanvasAndPost()` → BufferQueue / BLAST | `SurfaceControl.Transaction.setBuffer()`；需要时再接回 `Surface` / BLAST |
-| 颜色输出 | software Canvas 通常受限于软件绘制能力 | 可输出 `RGBA_FP16` / wide color buffer；HDR 还要配合 dataspace、display capability 和 compositor 支持 |
-| CPU 占用 | 复杂绘制直接占用调用线程 | CPU 侧压力通常下降，但 GPU 与 driver 负载会上升 |
-| 调度责任 | `Surface` / BufferQueue 负责大部分提交节奏 | 调用方要自己安排 `draw()` 频率、transaction 提交和 buffer 池 |
-| 同步与复用 | acquire / release 多由 `Surface` / BufferQueue 维护 | `RenderResult.getFence()` 管 consumer 读取时机，release callback / release fence 管 buffer 再利用 |
+| API 26–28 | 有 `AHardwareBuffer`，没有公开的 `ASurfaceTransaction` buffer 提交 | 走 `ANativeWindow`/EGL/Vulkan 等对应 consumer 的同步规则 |
+| API 29–35 | `ASurfaceTransaction_setBuffer()` | 后续 transaction 的 `OnComplete` 中读取 **previous buffer** 的 release fence |
+| API 36–37 | 优先 `ASurfaceTransaction_setBufferWithRelease()` | 与当前提交 buffer 一一对应的 `ASurfaceTransaction_OnBufferRelease` |
 
-做 A/B 对比时，至少固定四个条件：设备型号与 GPU、Android 版本、buffer 尺寸和格式、绘制内容复杂度与目标帧率。缺了任何一项，结论只能当方向判断，不能当精确预算。
+API 29–35 的 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 返回“被本次 transaction 替换或移除的上一块 buffer”的 fence。它不能用来回收本次刚提交的 buffer；当前 buffer 要等下一次替换它的 transaction。
 
+API 36–37 的 release callback 更直接。若 callback 给出非负 fd，接收方拥有该 fd，要等待并关闭；`-1` 表示已经释放。传给 `setBuffer*()` 的 acquire fence fd 则由 framework 接管并关闭。`ASurfaceTransaction_create()` 返回的 transaction 仍属于调用方，`apply()` 后要调用 `ASurfaceTransaction_delete()`。[AOSP: `surface_control.h`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/include/android/surface_control.h)
 
-## 渲染时序
+## 性能：要和正确的基线比较
 
-direct `SurfaceControl.setBuffer()` 模式里，有两条 fence 要分开看：
+HBR 的收益取决于瓶颈位置。下面只能作为选型判断，不能替代同设备、同内容的测量：
 
-- `RenderResult.getFence()`：GPU 写完这块 `HardwareBuffer` 后 signal。consumer 读取 buffer 前要等它。
-- `setBuffer(..., releaseCallback)` / `ASurfaceTransaction_OnBufferRelease`：SurfaceFlinger / HWC 不再使用这块 buffer 时回给调用方的复用信号。
+| 维度 | `lockCanvas()` | `lockHardwareCanvas()` | `HardwareBufferRenderer` |
+|:---|:---|:---|:---|
+| 光栅化 | CPU | GPU / HWUI | GPU / HWUI |
+| 目标 | `Surface` | `Surface` | 调用方的 `HardwareBuffer` |
+| 局部内容保留 | software Surface 支持 dirty region 语义 | 每帧完整覆盖 | 旧内容保留，是否 clear 由调用方决定 |
+| 帧提交 | `unlockCanvasAndPost()` | `unlockCanvasAndPost()` | consumer 自定；直接显示常用 `SurfaceControl.Transaction` |
+| 同步管理 | 多数由 Surface / BufferQueue 处理 | 多数由 Surface / BufferQueue 处理 | presentation 与 release 两端都要接好 |
+| 主要风险 | CPU 光栅化占用、锁 buffer 等待 | RenderThread/GPU 争用、consumer 不及时 | 冷启动、共享 RenderThread/GPU、transaction 与 buffer 池错误 |
 
-```mermaid
-sequenceDiagram
-    participant App as App / Worker Thread
-    participant HBR as HardwareBufferRenderer
-    participant GPU as RenderThread / GPU
-    participant TX as SurfaceControl.Transaction
-    participant SF as SurfaceFlinger
-    participant HWC as HWC / Display
+下面几类内容更值得实测 HBR：
 
-    App->>HBR: setContentRoot(root)
-    App->>HBR: obtainRenderRequest().draw()
-    HBR->>GPU: sync RenderNode tree + rasterize
-    GPU-->>App: RenderResult + acquireFence
+- 大尺寸 Path、矢量场景、图片变换或复杂 RenderNode 场景，CPU software raster 已经是主要耗时。
+- 结果本来就要作为独立 `HardwareBuffer` 继续消费，避免为了得到独立 buffer 再设计一套读回路径。
+- 业务已有合法、稳定的 `SurfaceControl` layer，需要显式控制 buffer 与原子 transaction。
 
-    App->>TX: setBuffer(surfaceControl, buffer, acquireFence, releaseCallback)
-    App->>TX: apply()
-    TX->>SF: layer state update
-    SF->>SF: wait acquireFence + latch buffer
-    SF->>HWC: compose / present
-    HWC-->>SF: present complete
-    SF-->>App: releaseCallback(releaseFence)
-```
+简单图形、低分辨率静态内容或 GPU 已饱和的场景，HBR 可能没有收益。它会把工作搬到与普通 UI 共享的 RenderThread/GPU 上；HBR 离屏任务过重时，View 动画和窗口帧也可能受影响。direct `setBuffer()` 也不等于 HWC 一定给它 overlay plane，SurfaceFlinger 仍会根据格式、变换、遮挡、带宽和硬件能力选择 DEVICE 或 CLIENT composition。
 
-如果这个 `SurfaceControl` 后面还挂着 `SurfaceView`、BLASTBufferQueue 或其他标准窗口 consumer，显示阶段不会变；变化点只在 producer 这一侧。HBR 默认 producer 通过 transaction 提交 buffer，`queueBuffer()` 只在你主动把它接回标准窗口模型时出现。
+基准测试至少固定这些变量：设备与 GPU、Android build、buffer 格式/尺寸/usage、场景内容、清屏策略、目标帧率、buffer 池大小、冷启动或稳态。测量时分别记录 CPU recording、RenderThread、GPU、transaction 到 latch、release 等待，只有一个总耗时很难解释回归来自哪里。
 
-## Buffer 复用与 release fence
+## 适用场景与约束
 
-`HardwareBufferRenderer` 最容易被写漏的一段，是“GPU 画完”和“系统用完”不是同一个时刻。`RenderResult.getFence()` 只解决前者，release fence / release callback 才决定后者。
+### CPU 软件光栅化吃紧的离屏内容
 
-常见复用方式有三种：
+PDF 页、复杂图形卡片、自定义贴纸或缩略图生成，如果 CPU raster 已在 trace 中成为主要成本，可以评估 HBR。要确认后续 consumer 能直接使用 `HardwareBuffer`；若还要把结果读回 CPU，GPU readback 可能抵消收益。
 
-1. **单 buffer**：只有 release fence signal 后，才能再次覆写同一块 buffer。
-2. **双 buffer**：当前帧在显示时，下一帧写另一块 buffer。大多数持续动画场景都会从这里起步。
-3. **buffer pool**：高帧率或跨线程 producer 会维护 3 块以上 buffer，并把 release callback 接到池回收逻辑。
+### 跨进程 buffer 共享
 
-`HardwareBufferRenderer` 不会自动 clear 旧内容，所以“上一帧还在显示，本帧又开始写同一块 buffer”会直接产出错帧。连续渲染场景不要把 acquire fence 当成 release fence 用。
+`HardwareBuffer` 实现了 `Parcelable`。Binder 传递的是底层 native buffer handle/reference，不是把整幅像素复制进 Parcel。跨进程协议仍要同时定义：
 
-## 适用场景
+- width、height、format、usage、color space/dataspace；
+- producer 完成写入的 fence；
+- consumer 用完后的 release 反馈；
+- buffer id/generation，防止旧回调释放了已经重新分配的 slot；
+- 进程死亡和 binder 断连时的引用清理。
 
-### CPU 光栅化已经吃紧的离屏绘制
+只传 `HardwareBuffer` 而不传同步关系，consumer 可能读到尚未完成的 GPU 输出；producer 也可能在 consumer 使用期间覆写。
 
-当离屏内容本身就是矢量、路径、滤镜或大图缩放，`lockCanvas()` 的成本会直接落到调用线程。HBR 把这段工作交给 GPU，更适合 PDF 页面缩略图、自绘卡片、复杂贴纸编辑器这类场景。
+### Wide color 与 HDR
 
-### 需要自己控制 layer 提交节奏的模块
+`RGBA_FP16` 只表示每个 RGBA 分量使用 16 bit 浮点存储，不自动把内容变成 HDR。完整颜色契约至少包括：
 
-如果业务本来就拿着 `SurfaceControl` 做 layer 管理，例如系统浮层、桌面卡片、远端内容镜像，HBR 输出 `HardwareBuffer` 后可以直接 transaction 提交，少绕一层 `Surface`。
+1. 用 `RenderRequest.setColorSpace()` 告诉 HBR 如何解释和生成像素；未设置时每次 request 都回到 sRGB。
+2. 用 `Transaction.setDataSpace()` 告诉 SurfaceFlinger layer 中像素的编码含义。
+3. 确认 buffer format/usage 组合由设备支持。
+4. 确认显示、SurfaceFlinger 与 HWC 支持目标色域/传递函数，并准备 tone mapping 或 SDR 回退。
+5. HDR 内容可在 API 35–37 使用 `setDesiredHdrHeadroom()` 表达期望的 HDR/SDR 亮度比；它是合成 hint，不是显示能力保证。
 
-### 需要跨进程共享 buffer 的模块
+`DISPLAY_P3` 是 wide color gamut，不等于 HDR。把 FP16、P3、HLG/PQ 和 HDR headroom 混成一个开关，会导致“buffer 精度正确但显示解释错误”的问题。[Android API: `setDesiredHdrHeadroom()`](https://developer.android.com/reference/android/view/SurfaceControl.Transaction#setDesiredHdrHeadroom(android.view.SurfaceControl,float))
 
-`HardwareBuffer` 能通过 Binder 传递。producer 进程离屏画完，consumer 进程拿到同一块 buffer 再做显示或二次处理，适合内容卡片、远程渲染、系统服务代绘这类模型。
+### 高帧率直接 layer 提交
 
-### 需要 wide color 或 HDR 离屏结果的内容
+HBR 允许应用按自己的节奏生成 buffer，但不会自动接入 `Choreographer`、FrameTimeline 或 display refresh rate 策略。高帧率场景还要处理：
 
-software Canvas 很难覆盖 FP16 render target、dataspace 和 layer 级颜色控制。HBR 配合 `RGBA_FP16`、`setDataSpace()` 和显示能力探测，更适合图片编辑、相册预览、HDR UI 混排。
+- 基于 VSync 的生产节奏；
+- `Transaction.setFrameTimeline()` 或系统提供的 frame timeline token；
+- layer frame-rate vote 与显示模式切换；
+- buffer 池背压，防止 producer 无限领先；
+- GPU 预算与 UI 渲染争用。
 
-### wide color 与 HDR 要分开看
+“使用 HBR”本身既不提高刷新率，也不缩短 display pipeline。
 
-`HardwareBuffer.RGBA_FP16` 只说明 buffer 精度到了 FP16。要显示成 HDR，还要同时满足几件事：
+## Perfetto：按阶段找证据
 
-1. Layer dataspace 要和内容匹配，通常要通过 `SurfaceControl.Transaction.setDataSpace()` 声明。
-2. SurfaceFlinger、HWC 和 display 必须支持对应的 color mode / composition 能力。
-3. 设备不支持时，系统可能回退成 SDR 合成、tone mapping，或者只把它当成普通 wide color buffer 处理。
+HBR 没有承诺一个在所有版本、厂商设备上都相同的 trace slice 名。排查前可以在 `draw()`、transaction `apply()`、release callback 三处加应用自有 trace section，然后按时间关联：
 
-`DISPLAY_P3` 只能说明 wide color gamut，不能替代 HDR capability。Android 15 / API 35 之后还有 `setDesiredHdrHeadroom()` 这类 layer 亮度 hint，可继续细化 HDR 合成目标，但前提仍是下游显示系统支持。[已验证: `HardwareBuffer.java` / `SurfaceControl.java`]
+1. **调用线程**：RenderNode recording 与 `RenderRequest.draw()` 发起时间。
+2. **应用 RenderThread**：场景树同步和 HWUI 工作；它与普通 View 渲染共享。
+3. **GPU queue**：对应离屏 raster 的 GPU 工作与 fence signal 时间。
+4. **SurfaceFlinger layer / transaction**：目标 layer 何时收到 buffer、是否在等 presentation fence、何时 latch。
+5. **HWC / present fence**：合成与显示完成。
+6. **release callback**：slot 何时能再次进入 producer。
 
+| 现象 | 更可能的证据 |
+|:---|:---|
+| `draw()` 发起很晚 | recording、业务调度或空闲 slot 获取慢 |
+| callback 很快，layer 却很晚 latch | presentation fence 长时间未 signal，或 transaction 提交晚 |
+| GPU 忙而 CPU 很轻 | 离屏 raster 或系统其他 GPU 工作成为瓶颈 |
+| producer 周期性停顿 | buffer 池耗尽，等待 release |
+| HBR 任务与 UI 帧同时恶化 | 共享 RenderThread/GPU 出现争用 |
 
-## 降级策略
+看到 BufferQueue/BLAST 轨道时，不要自动认定是 HBR 自己 queue 了 buffer。HBR 的 API 只写目标 `HardwareBuffer`；BufferQueue 事件来自应用选择的其他 Surface consumer 路径。
 
-Android 14 以下没有 `HardwareBufferRenderer`。常见回退方案有两类：
+## 常见错误
+
+### 把 draw callback 当成 GPU fence 已 signal
+
+callback 提供 `RenderResult`，consumer 仍要处理 `getFence()`。直接在另一个 GPU/CPU consumer 中读取 buffer，而没有传递或等待该 fence，会产生未定义的并发读写。
+
+### 用 presentation fence 判断 buffer 可写
+
+presentation fence 约束“consumer 何时可读”，release fence 约束“producer 何时可再次写”。两者不能互换。
+
+### 一块 buffer 连续提交
+
+同一块 buffer 还在 layer 上显示时又发起 HBR draw，会让 producer 与 consumer 同时访问它。单 buffer 只有等 release 后才能下一次写；连续动画应维护有背压的 buffer 池。
+
+### 忘记 clear，或误以为能自动保留完整帧
+
+HBR 保留未覆盖像素，这既支持调用方自己做局部更新，也会保留意外的旧内容。透明背景尤其要显式决定清屏策略。
+
+### 一个 renderer 轮流“绑定”多块 buffer
+
+HBR 构造时固定输出 buffer，没有更换 target 的 API。buffer 池应按 slot 持有对应 renderer，或在不再活动时关闭旧 renderer 后重建。
+
+### 只关闭 renderer
+
+`HardwareBufferRenderer.close()` 不会关闭 `HardwareBuffer`。反过来，在 renderer 或 in-flight transaction 仍可能访问时提前关闭 buffer 也不安全。
+
+### 把 `SurfaceControl.setBuffer()` 当成任意应用窗口入口
+
+调用方必须拥有一个生命周期有效、已正确挂到 layer tree 的 `SurfaceControl`。普通 View 业务不应为了使用 HBR 绕开既有窗口渲染；很多场景用 `SurfaceView`、`AttachedSurfaceControl`、`HardwareRenderer` 或 AndroidX Graphics 更合适。
+
+## Android 14 以下的降级
+
+版本判断只解决“类是否存在”，还要按业务需要选择等价能力：
 
 ```java
 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-    // HardwareBufferRenderer + SurfaceControl.setBuffer()
+    // API 34+: RenderNode -> HardwareBufferRenderer -> consumer
 } else {
-    // Surface.lockCanvas() / EGL / Vulkan 等既有离屏方案
+    // 已有 Surface：lockHardwareCanvas() 或 HardwareRenderer
+    // 独立 GPU buffer：EGL/Vulkan + HardwareBuffer/平台兼容层
+    // CPU 可接受：lockCanvas() 或软件 Bitmap
 }
 ```
 
-如果业务只是想得到一块离屏结果，旧版本可以继续用 `lockCanvas()` 或自建 EGL / Vulkan render target；如果业务依赖 direct `SurfaceControl` buffer 提交，还要把 `SurfaceControl.Transaction`、fence 和 buffer 池的最小 API level 一起算进去。
+若目标只是画到 `Surface`，优先保留 Surface 模型；若协议必须输出独立共享 buffer，再评估 EGL/Vulkan 或 AndroidX Graphics 的兼容封装。降级路径也要保持 color space、同步和资源所有权语义，不能只替换类名。
 
-## 在 Perfetto 中识别
+## Review 清单
 
-看 HBR 时不要只盯 GPU 轨道，按“发起 draw → `RenderThread` / GPU → transaction 提交 → `SurfaceFlinger` latch”这几段找证据会更稳。
-
-- **调用线程**：先在 app 进程里找到执行 `RenderRequest.draw()` 的线程。持续动画若卡在这里，多半是在等可复用 buffer，或者上层业务还没把 `RenderNode` 录制完。
-- **`RenderThread`**：HBR 没有绕过硬件渲染栈。trace 里通常还能看到 app 进程 `RenderThread` 的工作片段。这里忙而调用线程很轻，说明时间主要花在 GPU 光栅化。
-- **GPU 轨道**：把 GPU slice 放到同一个 `draw()` 时间窗里看。GPU slice 很长，离屏内容本身通常偏重；GPU slice 很短但结果仍晚到，开销多半在 transaction 提交或 buffer 复用。
-- **`SurfaceFlinger` 与 layer**：direct `setBuffer()` 场景里，会看到目标 layer 在 transaction 后进入 `SurfaceFlinger` 的 latch / present 节奏。acquire fence 等待长，说明 producer 完成晚。
-- **BufferQueue / BLAST 轨道**：只有把 HBR 结果接回 `Surface`、`SurfaceView` 或 BLASTBufferQueue 时，才会出现熟悉的 dequeue/queue 节奏。看到这组轨道，就说明这次不是纯 transaction 直提交流程。
-
-| 想确认的现象 | 优先看的位置 | 常见信号 |
-|:---|:---|:---|
-| 调用线程是否在等可复用 buffer | app 进程业务线程 / executor | `draw()` 触发点稀疏，线程被 fence 或锁等待截断 |
-| GPU 光栅化是否过重 | app 进程 `RenderThread` + GPU 轨道 | 同一时间窗内两侧 slice 都拉长 |
-| transaction 是否提得太晚 | `SurfaceFlinger` + 目标 layer | layer 进入 SF 的时间明显晚于业务触发时间 |
-| 是否又走回 BufferQueue | BufferQueue / BLAST 轨道 | 出现 dequeue / queue 节奏 |
-
-如果 trace 配置里打开了 FrameTimeline 或 `SurfaceFlinger` 数据源，排查顺序通常是：先用 layer 名确认目标 buffer 有没有进 SF，再回到 app 进程看 `RenderThread` 和调用线程，再看 GPU 时间窗。
-
-## 常见问题与误区
-
-### 把 acquire fence 当成 buffer 已可重用
-
-`RenderResult.getFence()` 只说明 consumer 什么时候能开始读这块 buffer，不说明 producer 什么时候能安全覆写。可重用时机要看 release callback 或 release fence。
-
-### 单 buffer 连续覆写却没有完整覆盖或 clear
-
-HBR 不会自动清旧内容。单 buffer 方案下，只改一部分像素又没有显式 clear，很容易把上一帧残留带到下一帧。
-
-### 把 HBR 当成窗口帧调度器
-
-`RenderRequest.draw()` 只是一次离屏绘制请求，不会自动接入 `Choreographer` 的帧节奏。持续动画仍要自己安排触发频率、buffer 池和回收时机。
-
-### 多线程同时操作同一个 `RenderRequest` 或 `HardwareBuffer`
-
-`RenderRequest` 不是线程安全对象。draw 触发、transaction 提交、buffer 回收如果分散在多线程又没有串行化，同一块 buffer 很容易被重复提交，回调顺序也会和业务状态错位。
-
-### 只配 `RGBA_FP16` 不配 dataspace 和显示能力
-
-FP16 只解决精度问题，显示侧仍要看 dataspace、display capability、HWC 合成能力。设备不满足条件时，结果可能只是 wide color，甚至直接回退成 SDR。
-
-## 与其他章节的关系
-
-HardwareBufferRenderer 与 §18.2 的共同点，是两者都复用 `RenderNode` 和 app 进程里的硬件渲染栈，Perfetto 里也都可能落到 `RenderThread`。差别在调度边界。标准 View 路径由 `ViewRootImpl`、`Choreographer`、窗口系统串成完整帧循环；HBR 只借用其中的离屏 GPU 光栅化能力，buffer 分配、transaction 提交和回收都留给调用方。GPU 执行细节可继续看 §2.10，标准窗口提交路径可回看 §18.2。
-
+- [ ] 已确认需要的是“RenderNode → 独立 HardwareBuffer”，而不只是 GPU Canvas
+- [ ] 用 `HardwareBuffer.isSupported()` 验证 format、尺寸和 usage
+- [ ] 每个活动 buffer 有对应 renderer/slot
+- [ ] 每次 request 都显式设置需要的 color space/transform
+- [ ] 检查 `RenderResult.getStatus()`
+- [ ] presentation fence 已传给 consumer 或被正确等待
+- [ ] release callback/fence 后才把 slot 标为空闲
+- [ ] 已定义全量覆盖或显式 clear 策略
+- [ ] renderer、buffer、transaction、fence 都有清晰的关闭方
+- [ ] 高帧率 producer 有 VSync pacing 和 buffer 池背压
+- [ ] HDR 同时校验 format、color space、dataspace、headroom 与显示能力
+- [ ] Perfetto 中把 app、RenderThread、GPU、SurfaceFlinger 和 release 串成同一帧
 
 ## 参考资料
 
-- Android API reference: `HardwareBufferRenderer#setContentRoot(RenderNode)` / `obtainRenderRequest()` / `RenderRequest.draw(Executor, Consumer)`
-  https://developer.android.com/reference/android/graphics/HardwareBufferRenderer
-- Android API reference: `HardwareBuffer` usage flags 与 `RGBA_FP16`
-  https://developer.android.com/reference/android/hardware/HardwareBuffer
-- Android API reference: `SurfaceControl.Transaction#setBuffer(...)` / `setDataSpace(...)` / `setDesiredHdrHeadroom(...)`
-  https://developer.android.com/reference/android/view/SurfaceControl.Transaction
-- AOSP: `frameworks/base/graphics/java/android/graphics/HardwareBufferRenderer.java`
-- AOSP: `frameworks/base/core/java/android/hardware/HardwareBuffer.java`
-- AOSP: `frameworks/base/core/java/android/view/SurfaceControl.java`
-- NDK: `frameworks/native/include/android/surface_control.h` 中 `ASurfaceTransaction_setBuffer()` / `ASurfaceTransaction_setBufferWithRelease()` / `ASurfaceTransaction_OnBufferRelease`
+- [Android API：HardwareBufferRenderer（API 34）](https://developer.android.com/reference/android/graphics/HardwareBufferRenderer)
+- [Android API：HardwareBufferRenderer.RenderRequest](https://developer.android.com/reference/android/graphics/HardwareBufferRenderer.RenderRequest)
+- [Android API：HardwareBuffer](https://developer.android.com/reference/android/hardware/HardwareBuffer)
+- [Android API：SurfaceControl.Transaction](https://developer.android.com/reference/android/view/SurfaceControl.Transaction)
+- [Android 17 AOSP：HardwareBufferRenderer.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java)
+- [Android 17 AOSP：HardwareBuffer.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/HardwareBuffer.java)
+- [Android 17 AOSP：Surface.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java)
+- [Android 17 AOSP：SurfaceControl.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java)
+- [Android 17 AOSP：NDK surface_control.h](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/include/android/surface_control.h)
