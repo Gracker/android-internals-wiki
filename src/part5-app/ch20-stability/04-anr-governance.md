@@ -66,7 +66,7 @@ last_task9_at: "2026-07-11T20:30:00+08:00"
 last_task6_review_log: "logs/review/2026-07-12-01-review.md"
 task9_review_notes: "2026-07-11 Task9 idle audit auto-fix：按 android-17.0.0_r1 复核 ANR 阈值、Broadcast/Provider/FGS/Freezer/Binder 源码锚点；修正 ContentProvider timeout 常量、BroadcastReceiver 路径、CachedAppOptimizer freezer 锚点，并更新 AOSP sources 为 Android 17 固定链接。"
 last_task9_review_log: "logs/deep-review/2026-07-11-20-audit.md"
-task6_review_notes: "2026-05-23 Task6 08: revisiting 复审；清理 frontmatter 中的禁用词语境；Task9 ANR P0/P1 queue pending，未晋升。 2026-06-22 Task6 revisiting 复审：Task9 idle audit 补充 Android 14+ shortService FGS 计时器后回审；L1/L2 全部通过；applicable_versions 扩展至 Android 17 (API 37)；task9_result 确认 pass-tech-review；queue 无 pending，自动晋升 finalized。 2026-07-12 Task6 revisiting 复审：Task9 idle audit auto-fix（android-17 源码锚点修正）后回审；L1 修复 4 处（禁用词"链路"→"路径"、冗余副词"真的"、标点前空格、多余空行）；L2 全部通过；task9_result=auto-fixed 已接受；queue 无 pending，自动晋升 finalized。"
+task6_review_notes: "2026-05-23 Task6 08: revisiting 复审；清理 frontmatter 中的禁用词语境；Task9 ANR P0/P1 queue pending，未晋升。 2026-06-22 Task6 revisiting 复审：Task9 idle audit 补充 Android 14+ shortService FGS 计时器后回审；L1/L2 全部通过；applicable_versions 扩展至 Android 17 (API 37)；task9_result 确认 pass-tech-review；queue 无 pending，自动晋升 finalized。 2026-07-12 Task6 revisiting 复审：Task9 idle audit auto-fix（android-17 源码锚点修正）后回审；L1 修复 4 处（禁用词\"链路\"→\"路径\"、冗余副词\"真的\"、标点前空格、多余空行）；L2 全部通过；task9_result=auto-fixed 已接受；queue 无 pending，自动晋升 finalized。"
 task2b_review_notes: "2026-06-02 Task2B fallback 修复 Task9 P0/P1：Dispatchers.IO 继承关系、FGS 晋升超时版本表、SIGQUIT 自进程权限边界；系统负载过滤降为标记/降权。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-12
@@ -98,541 +98,520 @@ task2b_verifier_notes: "2026-07-11T23:25 Task2B Verifier: status finalized→rea
 本节从系统超时窗口出发，沿主线程、Binder、锁、组件回调和应用侧 Watchdog 几条路径说明 ANR 治理动作。
 <!-- outline-end -->
 
-ANR 的分析和定位方法在 9.1-9.3 节已经讲过。这一节回答一个不同的问题：已知 ANR 的成因，怎么在工程里系统性地消除它。
+ANR 是系统对应用在特定时限内未完成响应的判定。它可能来自输入分发、组件回调、进程启动、Binder 等待或锁竞争；主线程卡顿是常见成因之一。治理工作要把 ANR 类型、计时起止点和阻塞线程对应起来，再决定移出主线程、缩短临界区、调整进程间协议，还是修复组件生命周期。
 
-ANR 治理的核心约束是：主线程必须在对应超时窗口内完成系统要求的响应。工程上可以从五个方向入手：主线程瘦身、IPC 调用治理、锁竞争治理、四大组件超时治理，以及应用侧 Watchdog 搭建。每个方向都需要明确治理手段和验证方法。
+[9.1 ANR 设计原理](../../part2-performance/ch09-anr/01-anr-design.md)、[9.2 ANR 类型与判定条件](../../part2-performance/ch09-anr/02-anr-types.md)和[9.3 ANR 分析方法](../../part2-performance/ch09-anr/03-anr-analysis.md)已经说明系统判定与现场分析。本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，关注修复动作、预警能力和回归验证。
 
 ## ANR 触发场景与超时阈值
 
-不同组件类型的 ANR 超时阈值不同，系统的检测机制也各不相同。治理 ANR 的第一步是区分自己面对的是哪种类型的 ANR：
+Android 没有一只覆盖所有 ANR 的“5 秒计时器”。`InputDispatcher`、广播队列、`ActiveServices` 和 `ContentProviderHelper` 各自维护状态与时限；冷启动和线程排队会消耗窗口，Android 14 及以上的广播窗口还会因 CPU 饥饿扩展。ANR 主题、`ApplicationExitInfo`、系统 traces 和事件日志必须先确定类型。
 
-| ANR 类型 | 超时阈值（AOSP 默认值） | 检测机制 | 典型成因 |
-|----------|------------------------|---------|---------|
-| Input dispatch | 5s（AOSP `DEFAULT_INPUT_DISPATCHING_TIMEOUT`，可通过 per-window/per-application timeout 调整） | InputDispatcher 检测触摸/按键事件在超时窗口内未送达 | 主线程阻塞导致 InputConsumer 无法处理事件 |
-| BroadcastReceiver（前台） | 10s（Android 13 及以下）；10-20s（Android 14+，实际窗口取决于 `BroadcastConstants` 配置） | BroadcastQueue 检测 onReceive() 执行超时 | onReceive() 中执行同步 I/O 或 Binder 调用 |
-| BroadcastReceiver（后台） | 60s（Android 13 及以下）；60-120s（Android 14+，实际窗口取决于 `BroadcastConstants` 配置） | 同上 | 后台广播处理链过长 |
-| ContentProvider publish | 10s（AOSP `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`） | AMS 检测应用 publish provider 超时 | Application.onCreate() 或 ContentProvider.onCreate() 耗时 |
-| Service（前台） | 20s（`ActivityManagerConstants.SERVICE_TIMEOUT`） | ActiveServices 检测 onCreate()/onStartCommand() 超时 | Service 生命周期回调中执行耗时操作 |
-| Service（后台） | 200s（`ActivityManagerConstants.SERVICE_BACKGROUND_TIMEOUT`） | 同上 | 后台 Service 长时间运行 |
-| FGS shortService（Android 14+） | 3min + 10s ANR 宽限（AOSP `mShortFgsTimeoutDuration` / `mShortFgsAnrExtraWaitDuration` 默认值） | ActiveServices 短 FGS 计时器触发 `SERVICE_SHORT_FGS_ANR_TIMEOUT_MSG` | `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE` 未及时 `stopSelf()` / `stopForeground()` |
+### 常见计时器
 
-上表中的超时值是 AOSP 默认值，厂商 ROM 可能调整（通常缩短）。在多数线上治理中，Input dispatch ANR 是优先排查对象，具体占比应以应用自己的 ANR 监控口径为准。
+下表列出排查时可使用的基线。数值描述的是 AOSP 或官方文档的默认行为，设备厂商可以通过资源、设备配置或系统属性调整，应用不能把它们当作自己的执行预算。
 
-> 注意：上表超时值是 AOSP 默认值，厂商 ROM 可能调整（通常缩短）。Android 14+ 的广播超时由 `BroadcastConstants` 管理，窗口可拉长（CPU-starved、冷启动时间计入等场景），不宜写成固定值。有序广播的超时由 `BroadcastRecord.timeout` 控制，每个接收者独立计时。
+| 类型 | Android 17 基线 | 计时范围与边界 |
+|---|---|---|
+| 输入分发 | 常见基线为 5 秒 | `InputDispatcher` 按目标应用或窗口的分发超时判断；“无焦点窗口”等场景也有独立状态。5 秒不能简化成“触摸事件进入主线程后开始计时”，目标窗口、焦点和待确认事件都参与判定。 |
+| 前台优先级广播 | Android 13 及以下为 10 秒；Android 14 及以上为 10～20 秒 | `Intent.FLAG_RECEIVER_FOREGROUND` 决定短窗口。Android 14 及以上在进程 CPU 饥饿时可扩展到上限；冷启动也占用时间。 |
+| 后台优先级广播 | Android 13 及以下为 60 秒；Android 14 及以上为 60～120 秒 | 未设置 `FLAG_RECEIVER_FOREGROUND` 时使用长窗口。`goAsync()` 延续同一次计时，截止点变为 `PendingResult.finish()`。 |
+| 执行 Service | 前台 20 秒，后台 200 秒 | AOSP 的服务执行基线由 `ActivityManagerConstants` 管理，并乘以硬件超时系数；冷启动以及 `onCreate()`、`onBind()`、`onStartCommand()` 都可能消耗窗口。 |
+| 发布 ContentProvider | 10 秒 × 硬件超时系数 | `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` 约束应用启动阶段的 provider 发布。provider 就绪等待、远程请求无响应属于另外的检测路径，不能都叫“10 秒 publish 超时”。 |
+| 短时前台服务 | 约 3 分钟，随后还有短暂宽限 | Android 14 及以上的 `shortService` 到期会收到 `Service.onTimeout()`；继续不停止会进入短时 FGS ANR 路径。具体值由系统配置决定。 |
+
+广播文档里的“前台”和“后台”描述的是 Intent 优先级标志，不等同于应用界面是否可见。服务表里的前台/后台则是系统用于选择执行超时的服务状态。两个维度不要混用。
+
+输入超时也不能只看主线程。窗口没有焦点、目标窗口迟迟未创建、应用正在等待同步 Binder 返回，都会表现为输入没有按时完成。修复前应从 ANR 类型和 traces 还原计时期间发生了什么。
+
+### 前台服务的三类时限
+
+前台服务容易把三套计时器混在一起：
+
+| 约束 | Android 17 AOSP 行为 | 超时结果 |
+|---|---|---|
+| `startForegroundService()` 后晋升 | `mServiceStartForegroundTimeoutMs` 默认 30 秒；系统随后还有 `mServiceStartForegroundAnrDelayMs` 默认 10 秒的处理窗口 | 未及时调用 `startForeground()` 会进入 start-foreground-service ANR 处理。后台启动限制是另一套准入规则。 |
+| `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE` | `mShortFgsTimeoutDuration` 默认约 3 分钟；`onTimeout()` 后还有 `mShortFgsAnrExtraWaitDuration` 默认 10 秒 | 仍未停止服务时触发 ANR。 |
+| 以 Android 15 及以上为目标平台的 `dataSync` / `mediaProcessing` | 应用处于后台时，每种类型在 24 小时内累计约 6 小时；用户把应用带到前台会重置额度 | 收到 `onTimeout()` 后仍不停止会抛出内部 `RemoteServiceException` 并导致崩溃，不能归类为 ANR。 |
+
+这些默认值用于读懂 `android-17.0.0_r1`。产品代码仍应在业务可接受的时间内结束工作，不要用系统超时减去一小段时间作为日常预算。
+
+### 从类型进入修复路径
+
+ANR 主题决定后续要看哪条执行路径：
+
+| ANR 主题或类型 | 优先核对的线程与状态 | 常见修复方向 |
+|---|---|---|
+| input dispatch | 主线程、焦点窗口、同步 Binder、锁持有者 | 缩短主线程任务，移除同步等待，修复焦点或窗口创建异常 |
+| broadcast of intent | receiver 所在线程、冷启动、`goAsync()` worker | 缩短启动与 receiver 工作，隔离 worker，保证 `finish()` |
+| executing service | 主线程和进程启动 | 缩短 Application 与 Service 回调，后台执行可中断工作 |
+| content provider not responding | provider 发布线程、provider Binder 线程、调用方 | 精简初始化，限制查询成本，修复 Binder 或锁等待 |
+| start foreground / short FGS | Service 回调与停止时序 | 按时晋升或停止，处理 `onTimeout()` |
+| job service start/stop | `JobService` 主线程回调 | 立即返回并异步执行，遵守通知与完成协议 |
+
+一份主线程快照只能说明采样瞬间。广播可能运行在自定义 `Handler`，`goAsync()` 工作也可能在 worker 上；主线程出现 `nativePollOnce` 不能直接排除这类 ANR。
 
 ## 主线程瘦身策略与异步化
 
-主线程上任何超过超时阈值的同步操作都是 ANR 候选项。治理的第一步是识别哪些操作不应该出现在主线程上，再判断这些操作是否可以优化。
+主线程负责 Looper 消息、组件回调、窗口与输入相关工作。治理目标是让每个同步阶段都有明确的耗时预算、所有等待都有所有者，并让超出预算的工作可以取消、降级或延后。
 
-### 主线程耗时操作的分类
+### 先按工作性质选择执行位置
 
-按治理难度从低到高排列：
+| 工作 | 合适的执行位置 | 约束 |
+|---|---|---|
+| 磁盘、网络和其他阻塞 I/O | 专用 executor 或 `Dispatchers.IO` | 线程数和排队长度要受控；超时后还要确认底层调用能否取消 |
+| JSON 解析、图像处理、压缩等 CPU 工作 | `Dispatchers.Default` 或受控计算线程池 | 并行度应匹配 CPU 和产品负载，不能挤占所有可运行线程 |
+| UI 状态提交 | 主线程 | 后台先准备不可变结果，主线程只做短时间状态切换 |
+| 需要跨进程的查询 | 后台线程、缓存或异步协议 | 同步 Binder 没有通用调用超时，后文单独说明 |
+| 可推迟且需要进程重启后继续的任务 | WorkManager / JobScheduler | 适合持久、可延迟工作，不适合当前页面必须立即得到的结果 |
 
-| 类型 | 典型场景 | 治理难度 |
-|------|----------|----------|
-| 磁盘 I/O | SharedPreferences.apply() 在 onPause 被强制同步、日志写入、数据库查询 | 低 |
-| 网络 I/O | 同步 HTTP 请求、DNS 解析阻塞 | 低（但在低版本或第三方 SDK 里仍然常见） |
-| CPU 密集计算 | JSON 解析大对象、图片解码、正则匹配长文本 | 中 |
-| Binder 同步调用 | 调用系统服务（PackageManager、ActivityManager）获取数据 | 中 |
-| 锁等待 | 主线程持锁等后台线程、或其他线程持锁主线程需要 | 高 |
+线程切换只改变执行位置。一个无界队列仍会积压，一个不可取消的 I/O 仍会占住 worker，错误地切回 `Dispatchers.Main` 仍会阻塞界面。
 
-前两类治理手段明确：全部移到子线程。CPU 密集型和 Binder 调用需要按场景判断。锁等待涉及多线程协作，单独在后文展开。
+### 协程负责结构，不替代码选择线程
 
-### 异步化的执行模式
+协程调度器按工作性质选择即可：阻塞 I/O 用 `Dispatchers.IO`，CPU 计算用 `Dispatchers.Default`，界面状态用 `Dispatchers.Main`。`Dispatchers.IO` 与 `Default` 的内部池和并行度属于 kotlinx-coroutines 版本实现细节，项目升级依赖后可能变化，不应成为业务正确性的前提。
 
-把操作移到子线程不只是 `new Thread().start()`。工程上有三种常用模式：
-
-**1. Handler + ThreadExecutor 模式**
-
-适用于需要回调主线程更新 UI 的场景。核心是保证"异步执行 → 主线程回调"这条路径上没有意外阻塞：
-
-```java
-// 异步执行
-executorService.execute(() -> {
-    byte[] data = loadFromDisk(filePath);  // I/O 操作放在子线程
-    handler.post(() -> updateUI(data));     // 结果回主线程
-});
-```
-
-关键约束：`handler.post()` 抛回主线程的 Runnable 也必须轻量。如果 `updateUI()` 里又做了布局计算或数据库操作，只是把阻塞从一个位置挪到了另一个位置。
-
-**2. Kotlin 协程模式**
-
-Kotlin 协程用 `Dispatchers.IO` 和 `Dispatchers.Default` 把操作从主线程调度出去，用 `withContext(Dispatchers.Main)` 回到主线程。和 Handler 模式本质相同，只是写法更简洁：
+下面的示例展示一个可取消的加载过程。读取和解析在后台完成，主线程只接收已经准备好的结果。
 
 ```kotlin
-suspend fun loadData(): Data = withContext(Dispatchers.IO) {
-    // I/O 操作自动在 IO 线程池执行
-    val raw = file.readBytes()
-    parseData(raw)
-}
-```
-
-[已验证: 官方文档, developer.android.com/kotlin/coroutines]
-
-协程治理 ANR 时需要注意一点：`Dispatchers.Main` 上的协程仍然跑在主线程。如果 `withContext(Dispatchers.Main)` 代码块里做了耗时操作，和直接在主线程做没有区别。协程只是让异步代码更容易写，不自动解决线程安全问题。
-
-**3. WorkManager 后台任务模式**
-
-不需要立即返回结果的任务（数据上报、缓存清理、日志轮转）用 WorkManager 处理。这类任务的特点是"迟早要做，但不影响当前用户体验"：
-
-```kotlin
-val uploadWork = OneTimeWorkRequestBuilder<UploadWorker>()
-    .setConstraints(Constraints.Builder()
-        .setRequiredNetworkType(NetworkType.CONNECTED)
-        .build())
-    .build()
-WorkManager.getInstance(context).enqueue(uploadWork)
-```
-
-[已验证: AndroidX WorkManager 官方文档, developer.android.com/topic/libraries/architecture/workmanager]
-
-### 主线程瘦身的安全清单
-
-把同步操作改异步时，容易踩到以下坑：
-
-- **SharedPreferences 的 commit() → apply() 陷阱**：`apply()` 是异步写磁盘没错，但在 `onPause()` / `onStop()` / `Activity.onSaveInstanceState()` 等生命周期回调里，系统会等待所有 `apply()` 完成后才继续。如果 `apply()` 积压了大量未完成的写操作，这些回调里主线程仍然会被阻塞。解决方案：高频写入场景用内存缓存 + 批量异步落盘，不要每改一个值就 `apply()` 一次。
-- **StrictMode 的价值**：在开发阶段启用 `StrictMode`，它能在主线程 I/O 和网络操作发生时直接抛异常，比线上 ANR 发现成本低两个数量级。
-- **第三方 SDK 的主线程调用**：很多第三方 SDK（广告、推送、统计）在初始化或回调里做磁盘 I/O 或网络请求，而调用时机往往是 `Application.onCreate()` 或 `Activity.onCreate()`——这两个都在主线程。治理手段：SDK 初始化移到子线程（如果 SDK 支持），或者用 `ContentProvider` 的延迟初始化机制（详见后文）。
-
-### Kotlin 协程内部调度与 ANR 关系
-
-协程让异步代码更易写，但它不自动消除 ANR 风险。理解 Dispatchers 的线程池和调度行为，才能判断协程在什么场景下会间接导致主线程阻塞。本节基于 kotlinx-coroutines 1.9.x 源码说明关键点。
-
-#### Dispatchers.IO 与 Default 共享线程池
-
-Dispatchers.Default 的内部实现是 `DefaultScheduler`（继承 `SchedulerCoroutineDispatcher`）。Dispatchers.IO 的内部实现是 `DefaultIoScheduler`（实现 `ExecutorCoroutineDispatcher` / `Executor`），它通过 `UnlimitedIoScheduler.limitedParallelism()` 把 blocking 任务委托给 `DefaultScheduler.dispatchWithContext(..., BlockingContext, ...)`。两者共享底层 worker 资源，但继承关系和调度语义不同。
-
-```kotlin
-// kotlinx-coroutines-core/jvm/src/scheduling/Dispatcher.kt
-internal object DefaultScheduler : SchedulerCoroutineDispatcher(
-    CORE_POOL_SIZE, MAX_POOL_SIZE, ...
-)
-
-private object UnlimitedIoScheduler : CoroutineDispatcher() {
-    // 内部调用 DefaultScheduler.dispatchWithContext(block, BlockingContext, ...)
+class ArticleRepository(
+    private val ioDispatcher: CoroutineDispatcher,
+    private val cpuDispatcher: CoroutineDispatcher,
+) {
+    suspend fun load(path: Path): Article {
+        val bytes = withContext(ioDispatcher) {
+            Files.readAllBytes(path)
+        }
+        return withContext(cpuDispatcher) {
+            parseArticle(bytes)
+        }
+    }
 }
 
-internal object DefaultIoScheduler : ExecutorCoroutineDispatcher(), Executor {
-    private val default = UnlimitedIoScheduler.limitedParallelism(
-        systemProp(IO_PARALLELISM_PROPERTY_NAME, 64.coerceAtLeast(AVAILABLE_PROCESSORS))
-    )
-    override fun dispatch(context: CoroutineContext, block: Runnable) {
-        default.dispatch(context, block)  // 路由到 DefaultScheduler
+class ArticleViewModel(
+    private val repository: ArticleRepository,
+) : ViewModel() {
+    fun open(path: Path) {
+        viewModelScope.launch {
+            val article = repository.load(path)
+            _uiState.value = UiState.Content(article)
+        }
     }
 }
 ```
 
-关键注释（Dispatcher.kt 官方文档）：
+这段代码把线程选择作为依赖传入，测试时可以替换调度器。取消协程能阻止后续步骤，但 Java 阻塞 I/O、JNI 或同步 Binder 是否立刻停止，取决于底层 API 是否响应中断或提供取消接口。
 
-> "This dispatcher and its views share threads with the Default dispatcher, so using `withContext(Dispatchers.IO) { ... }` when already running on the Default dispatcher typically does not lead to an actual switching to another thread."
+### 启动阶段不要制造“异步假象”
 
-这意味着在 Default 线程上用 `withContext(Dispatchers.IO)` 不会发生线程切换，只是 TaskContext 从 NonBlockingContext 变成 BlockingContext。线程切换开销来自 blocking 任务释放 CPU 令牌后，调度器唤醒或创建新 worker 的过程。
+`Application.onCreate()`、Activity 创建和 provider 安装共享主线程。启动管理框架能整理依赖顺序，却不会自动把初始化移到后台。
 
-#### CoroutineScheduler 的 CPU 令牌机制
+- **AndroidX App Startup**：`InitializationProvider` 仍在启动时同步执行 `Initializer.create()`。它适合合并 provider、声明依赖和按需关闭自动初始化；耗时初始化仍需由组件作者设计异步接口。
+- **第三方 SDK**：先确认 SDK 是否允许延迟或后台初始化。擅自换线程可能违反其线程约束，造成更晚出现的崩溃或数据缺失。
+- **StrictMode**：`detectDiskReads()`、`detectDiskWrites()` 等只负责检测，`penaltyLog()`、`penaltyDeath()` 等策略决定处理方式。StrictMode 不会天然“遇到主线程 I/O 就抛异常”。
+- **SharedPreferences**：`apply()` 把磁盘写入排队，但 Android 框架会在部分组件生命周期边界等待 queued work。短时间大量 `apply()` 可能把阻塞推迟到 Activity 或 Service 回调，批量写入和减少频率比机械替换 `commit()` 更可靠。
+- **WorkManager**：适合需要持久化、满足约束后再执行的工作。页面打开后立刻需要的结果仍要使用明确的异步接口和界面状态。
 
-CoroutineScheduler 用"CPU 令牌"机制隔离 CPU 密集型和 blocking 任务：
+启动优化应记录每个初始化项的调用线程、依赖、可延迟条件、失败处理与完成时刻。仅记录“已经异步”无法证明主线程预算得到改善。
 
-```kotlin
-// kotlinx-coroutines-core/jvm/src/scheduling/CoroutineScheduler.kt
-enum class WorkerState {
-    CPU_ACQUIRED,   // 持有 CPU 令牌，只执行 CPU 任务或 steal CPU 任务
-    BLOCKING,       // 执行 blocking 任务，释放 CPU 令牌
-    PARKING,        // 空闲停车
-    DORMANT,        // 不再需要的 worker
-    TERMINATED
-}
+### 为主线程任务建立预算
 
-// Worker 寻找任务时的调度决策（行 200-230）：
-while (true) {
-    if (tryAcquireCpuPermit()) return findAnyTask(mayHaveLocalTasks)
-    // 无法获取 CPU 令牌 → 只能执行 blocking 任务
-    return findBlockingTask()
-}
-```
+固定 500 毫秒之类的全局阈值会把不同业务混成一类。更稳妥的做法是按场景建立基线：
 
-如果一个 worker 在执行 blocking 任务时阻塞（比如无限期等待 I/O），它不会影响持有 CPU 令牌的 worker 处理 CPU 任务。但一旦 blocking 任务占满所有 worker，主线程上通过 `withContext(Dispatchers.IO)` 投递的任务就必须排队等待。
+1. 对冷启动、页面切换、广播、Service 和 provider 分别采样。
+2. 记录主线程消息耗时、排队时长、同步 Binder 时间、锁等待和设备状态。
+3. 按设备等级、系统版本和温度分桶，比较 P50、P95、P99 与长尾。
+4. 结合输入响应和系统 ANR 数据设置内部告警线；告警线应早于对应系统窗口，并保留足够安全余量。
+5. 每次修复同时验证成功路径、失败路径、取消路径和进程重建。
 
-#### Dispatchers.Main 的 Handler 降级逻辑
-
-Android 上的 Dispatchers.Main 基于 Handler。**关键风险**：Handler 关闭时，任务会被重新路由到 Dispatchers.IO：
-
-```kotlin
-// ui/kotlinx-coroutines-android/src/HandlerDispatcher.kt
-override fun dispatch(context: CoroutineContext, block: Runnable) {
-    if (!handler.post(block)) {
-        cancelOnRejection(context, block)  // Handler 关闭时触发
-    }
-}
-
-private fun cancelOnRejection(context: CoroutineContext, block: Runnable) {
-    context.cancel(CancellationException("..."))
-    Dispatchers.IO.dispatch(context, block)  // 降级到 IO
-}
-```
-
-`handler.post()` 返回 false 的唯一原因是底层 Looper 正在退出。`Dispatchers.Main` 包装的是主线程 Looper，正常应用生命周期内不会退出，所以这条降级路径对主线程 ANR 分析基本不可达。Handler 降级主要出现在子线程 Looper 被 quit() 的场景。
-
-**主线程 ANR 的协程侧成因**：Handler 队列积压。主线程被一个长操作阻塞时，后续通过 `withContext(Dispatchers.Main)` 投递的恢复协程全部排在 Handler 队列后面。这些等待恢复的协程如果持有其他线程需要的资源（锁、信号量、Channel），就会形成跨线程的级联阻塞。阻塞解除后，积压的消息仍需逐个执行，新投递的 Runnable 排在队尾，响应延迟被放大。
-
-#### Dispatchers.IO 的 unlimited 线程特性
-
-Dispatchers.IO.limitedParallelism() 的视图**不共享 parallelism 限制**：
-
-> "Despite not abiding by Dispatchers.IO's parallelism restrictions, its views share threads and resources with it."
-
-```kotlin
-// Dispatchers.kt 文档注释
-// 100 threads for MySQL connection
-val myMysqlDbDispatcher = Dispatchers.IO.limitedParallelism(100)
-// 60 threads for MongoDB connection
-val myMongoDbDispatcher = Dispatchers.IO.limitedParallelism(60)
-// Peak: 64 + 100 + 60 threads possible
-```
-
-`limitedParallelism(n)` 通过 worker 计数器限制该视图同时向底层调度器投递的任务数，`n` 是并发上限。但线程数仍可能超过 `n`：当视图内的任务在 worker 上进入 BLOCKING 状态，CoroutineScheduler 释放该 worker 的 CPU 令牌并创建新 worker。多个视图同时有阻塞任务时，底层线程数上限是 `MAX_POOL_SIZE`（默认 256），上下文切换成本会明显上涨。
-
-#### 协程 ANR 的本质
-
-协程不自动防 ANR。`withContext(Dispatchers.Main)` 的代码仍然在主线程执行：
-
-```kotlin
-// 错误用法：
-suspend fun doHeavyWork() {
-    withContext(Dispatchers.Main) {
-        database.query()  // 仍然阻塞主线程！
-    }
-}
-
-// 正确用法：
-suspend fun doHeavyWork() = withContext(Dispatchers.IO) {
-    database.query()  // 在 IO 线程执行
-}
-// UI 更新时才回主线程：
-suspend fun updateUI() = withContext(Dispatchers.Main) {
-    textView.text = data  // 仅必要的 UI 操作
-}
-```
+内部告警线服务于趋势发现。超过告警线叫“主线程 stall”或“ANR 风险事件”更准确，系统尚未判定时不要直接记为 ANR。
 
 ## IPC（Binder）调用治理
 
-Binder 是 Android 进程间通信的基础设施。应用通过 Binder 和系统服务（AMS、PMS、WMS）交互，也通过 Binder 和其他应用交互。Binder 调用的特殊性在于：即使调用方在子线程，如果对方进程没有响应，调用方的线程也会被阻塞。而当这个调用发生在主线程时，就有 ANR 风险。
+同步 Binder 调用会让调用线程等待对端处理完成。Binder 驱动没有给每笔普通同步事务提供应用可配置的通用超时；对端进程 CPU 饥饿、Binder 线程池占满、锁等待或再次调用其他进程，都可能把等待拉长。
 
-### Binder 调用导致 ANR 的典型路径
+### 调用方要控制等待位置与协议
 
-1. **主线程直接调用系统服务**：`PackageManager.getPackageInfo()`、`ActivityManager.getRunningAppProcesses()` 等。这些调用在正常情况下耗时极短（< 1ms），但在系统负载高时可能飙到数百毫秒。
-2. **主线程等待子线程的 Binder 调用结果**：主线程通过 `Future.get()` 或 `CountDownLatch.await()` 等待一个包含 Binder 调用的异步任务，如果 Binder 调用阻塞，主线程也会被间接阻塞。
-3. **Binder 调用触发对方的 ANR**：应用作为 Service 提供方时，如果 `onBind()` / `onTransact()` 处理慢，调用方会触发 ANR。
+主线程上的同步 Binder 只适合经过测量、结果稳定且无法替代的轻量操作。更常见的处理方式包括：
 
-### Binder 调用的治理策略
+- 缓存变化不频繁的系统信息，明确缓存失效条件，避免在绘制或输入路径重复查询。
+- 合并多次小事务，减少往返和 Parcel 开销；单次数据量仍要受 Binder 事务大小限制。
+- 把外部服务调用放到受控后台线程，并给业务结果设计超时、默认值或稍后重试。
+- 对自有 AIDL 设计异步回调或可取消请求，使用 request ID 丢弃迟到结果。
+- 只有调用语义允许单向投递时才使用 `oneway`。它把等待转移为远端队列和背压问题，不是同步调用的通用修复。
 
-**避免在主线程调用系统服务获取数据。** 这是最直接的治理手段。在工程实践中，以下场景需要特别注意：
+`Future.get(timeout)` 等待后台任务时，可以让调用方在超时后停止等待，但执行 Binder 事务的 worker 仍可能被占用。协程 `withTimeout` 会发出取消信号，阻塞式 Binder 事务通常不会响应这次取消，worker 仍要等远端返回。两种写法都不能终止远端正在执行的 `onTransact()`；主线程也不应阻塞等待这类结果。
 
-- **PackageManager 查询**：在低端设备上 `getInstalledPackages()` 可能需要 50-200ms。做法是在应用启动时一次性查询并缓存结果，后续直接读缓存。
-- **ActivityManager 进程查询**：`getRunningAppProcesses()` 在 Android 10+ 已经不返回其他应用的信息，不要依赖它做业务判断。
-- **WindowManager 的同步事务**：`WindowManager.addView()` / `updateViewLayout()` 内部走 Binder 调用到 WindowManagerService。如果 WMS 处理队列繁忙，调用可能阻塞。
+### 服务端也会制造调用方 ANR
 
-**设置 Binder 调用超时。** Android 平台的同步 Binder 调用本身没有通用的调用超时 API。`Binder.setCallingWorkSourceUid(int)` 只做调用方 UID 归因，不提供超时控制；`Binder.allowBlocking(IBinder)` 只关闭 blocking warning 日志，也不提供超时控制。应用层能做的是在异步调用外部 Service 时，用带超时的 `Future.get(timeout)` 或协程 `withTimeout` 降级，而不是无限等待：
+远程 Binder 调用通常进入服务端 Binder 线程池。服务端常见风险有：
 
-```java
-Future<String> result = executor.submit(() -> remoteService.getData());
-try {
-    String data = result.get(2, TimeUnit.SECONDS);  // 最多等 2 秒
-} catch (TimeoutException e) {
-    // 超时降级处理
-}
-```
+- `onTransact()` 把工作同步切到主线程，再等待主线程返回。
+- Binder 线程持锁执行磁盘、网络、回调或嵌套 Binder 调用。
+- 所有 Binder 线程都被长事务占住，新请求只能排队。
+- 服务端持有锁调用客户端回调，客户端又请求服务端同一把锁，形成跨进程环路等待。
+- 大对象频繁序列化，占用 Binder 线程和内存带宽。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/Binder.java]
+自有服务应记录接口名、请求 ID、调用方、排队时间、执行时间和结果状态。生产插桩优先放在自有 proxy/stub 或调用点；依赖隐藏的 `BinderProxy.transactNative()` hook 容易随系统实现变化，也可能与运行时或其他 SDK 冲突。系统服务问题可结合 Perfetto、线程采样和系统 traces 判断。
 
-**监控 Binder 调用耗时。** 在线上环境中，通过 `BinderProxy.transact()` 的 Hook 或者 AOP 方式记录每次 Binder 调用的耗时。微信团队的实践是：在 `BinderProxy.transactNative()` 的入口和出口插桩，统计调用次数和耗时分布，发现异常 Binder 调用后推动对应模块治理。
+外部 Service 变慢不会自动给 ContentProvider 判 ANR。应用线程在 provider 发布、provider 请求或其他受监控阶段同步等待该 Service，系统计时器到期后，才会形成相应类型的 ANR。
 
 ## 锁竞争与死锁预防
 
-锁竞争导致的 ANR 有一个特征：在 traces.txt 里，主线程的堆栈显示为 `BLOCKED` 状态，等待某个 `monitor`。这类 ANR 的治理难点不在于定位（traces.txt 通常指向明确的锁对象），而在于修复——改锁的粒度和策略往往牵动多线程架构。
+主线程等待锁时，堆栈通常停在 `BLOCKED`、`LockSupport.park()`、`Object.wait()` 或某个 native mutex。修复要沿着“谁持锁、持锁期间做了什么、是否存在反向依赖”追到锁的所有者。
 
-### 锁竞争的常见模式
-
-**模式一：主线程等后台线程释放锁**
+下面这段线程摘录用于识别双锁环路，重点看两条 `held by` 关系。
 
 ```text
-"main" prio=5 tid=1 BLOCKED
-  | waiting to lock <0x0f3a4b5c> (a java.lang.Object) held by tid=15
-  at com.example.DataManager.getData(DataManager.java:87)
+"main" tid=1 BLOCKED
+  waiting to lock <0x01> held by tid=8
+
+"worker-1" tid=8 BLOCKED
+  waiting to lock <0x02> held by tid=1
 ```
 
-后台线程（tid=15）持锁做耗时操作，主线程需要同一把锁来读取数据。修复方向：
+主线程持有 `<0x02>` 等 `<0x01>`，worker 持有 `<0x01>` 等 `<0x02>`，两条依赖构成环。延长超时或增加线程数都不能修复这类死锁。
 
-- 缩小锁的粒度：把 `synchronized(dataManager)` 改为只锁住实际需要保护的数据结构。
-- 读写分离：读操作用 `ReadWriteLock` 的读锁，写操作用写锁，读操作之间不互斥。
-- Copy-on-Write：写操作先复制一份，改完再原子替换引用，读操作完全无锁。
+### 锁设计的工程约束
 
-**模式二：死锁——两个线程互相等待**
+- **固定获取顺序**：需要多把锁时，在模块内规定稳定顺序，并用代码审查或测试检查反向获取。
+- **临界区只保留内存状态变更**：磁盘、网络、Binder、等待 future 和外部回调都放到锁外。可以在锁内生成不可变快照，锁外执行耗时操作。
+- **明确数据所有者**：单线程所有权、不可变对象或消息传递常比多处共享可变状态更容易验证。
+- **主线程可以持有短而无竞争的锁**：绝对禁止会逼出复杂的无锁代码。需要禁止的是不可控等待和锁内阻塞。
+- **粗锁与细锁都要测量**：一把粗锁减少嵌套，却可能扩大竞争；多把细锁降低局部冲突，也会增加顺序错误。选择取决于访问模式。
+- **原子类只保护对应的原子操作**：`volatile`、`AtomicReference` 和并发容器无法自动保护跨字段不变量或“检查后执行”。
+- **`tryLock()` 需要安全退路**：超时后必须能返回旧值、跳过非必要工作或重试。业务必须等待结果时，`tryLock()` 只会把失败改成另一种表现。
 
-```text
-"main" prio=5 tid=1 BLOCKED
-  | waiting to lock <0x0a1b2c3d> held by tid=8
-"Worker-1" prio=5 tid=8 BLOCKED
-  | waiting to lock <0x0f3a4b5c> held by tid=1
-```
+`Thread.getStackTrace()` 可以从监测线程取得处于 `BLOCKED` 状态的主线程栈。线上样本还要采集锁持有者和相邻线程，否则只能看到“主线程在等”，看不到等待为何没有结束。
 
-主线程持有锁 A，等锁 B；后台线程持有锁 B，等锁 A。这是经典的死锁。修复手段：
+### 把跨进程调用纳入锁图
 
-- **锁排序**：所有需要同时持有多把锁的代码，按固定顺序获取锁（比如先 A 后 B），打破循环等待条件。
-- **tryLock 带超时**：用 `ReentrantLock.tryLock(timeout)` 替代 `synchronized`，超时返回 false 后走降级逻辑，避免无限等待。
-- **锁消除**：检查被保护的资源是否需要锁。很多场景下用 `ConcurrentHashMap`、`AtomicReference` 或 `volatile` 就够了，不需要显式加锁。
+下面的顺序很容易在单进程代码审查中漏掉：
 
-**模式三：synchronized 方法中的 I/O 操作**
+1. 应用主线程持有锁 A，同步调用远端服务。
+2. 远端服务处理请求时回调应用 Binder 接口。
+3. 应用 Binder 线程处理回调时也需要锁 A。
+4. 主线程等远端返回，Binder 线程等主线程释放锁 A。
 
-锁的持有时间取决于锁内代码的执行时间。如果 `synchronized` 方法里包含磁盘 I/O 或网络请求，锁的持有时间会被 I/O 延迟放大。在高负载设备上，一个 `synchronized` 块里的 10ms 文件读取可能变成 500ms，直接导致等待这把锁的主线程 ANR。
-
-[已验证: AOSP android-17.0.0_r1, art/runtime/monitor.cc — ART 的 monitor 实现中，synchronized 块的 entry/exit 通过 monitor enter/exit 指令实现，持有期间其他线程进入 BLOCKED 状态]
-
-### 锁治理的工程规范
-
-1. **主线程不持锁**。如果主线程需要访问共享数据，用无锁方案（Copy-on-Write、Atomic 类）或者把数据准备逻辑完全放在后台线程。
-2. **锁内不做 I/O**。任何可能阻塞的操作（磁盘、网络、Binder 调用）都不应该在 `synchronized` 块内。
-3. **避免嵌套锁**。需要同时操作多个共享资源时，用一把粗粒度锁保护所有资源，而不是嵌套多把细粒度锁。
-4. **线上监控**：定期 dump 主线程堆栈（通过 `Thread.getStackTrace()` 或 SIGQUIT 信号），统计主线程处于 `BLOCKED` 状态的频率。如果发现某把锁频繁出现在主线程的等待堆栈中，标记为高优先级治理对象。
+锁 A 只存在于应用进程，等待环却跨过了 Binder。规则仍相同：持锁期间不调用未知代码，也不做同步 IPC。
 
 ## ContentProvider / BroadcastReceiver 超时治理
 
-ContentProvider 的 ANR 超时阈值是 10 秒（publish provider）。BroadcastReceiver 的基础超时在 Android 13 及以下是前台 10 秒 / 后台 60 秒；Android 14+ 会在 `BroadcastConstants` 基础值上按 CPU-starved 等场景拉长到前台 10-20 秒、后台 60-120 秒。有序广播按每个接收者独立计时。完整的阈值表见 9.2 节。
+组件 ANR 的计时范围常常比组件方法本身更长。冷启动、前置初始化和线程排队都可能包含在系统窗口中，因此只测 `onReceive()` 或 `onStartCommand()` 的函数耗时不够。
 
-这两种 ANR 的治理思路和主线程 ANR 不同：治理重点从单个操作耗时，转向减少系统回调里的工作量。
+### ContentProvider：区分发布和请求
 
-### ContentProvider 超时治理
+应用冷启动时，`ActivityThread` 安装清单中的 provider，并在 `Application.onCreate()` 之前调用 provider 的 `onCreate()`。多个自动初始化 provider 会依次占用同一条启动路径。治理动作包括：
 
-ContentProvider 的超时发生在 `ActivityManagerService` 等待应用 publish provider 时。触发场景：
+- provider 的 `onCreate()` 只完成注册和必要状态创建，数据库迁移、网络访问和大文件读取移到可控时机。
+- 关闭不需要的 SDK 自动初始化 provider；如果使用 AndroidX App Startup，要逐个审计 `Initializer.create()`，不能把合并成一个 provider 当成异步优化。
+- 把可延迟组件改为显式按需初始化，并处理并发首次访问、失败重试和进程重建。
+- 记录“进程启动 → provider 安装 → `Application.onCreate()`”的分段时间，不能只统计 provider 方法内部。
 
-1. **应用启动时 ContentProvider 初始化过重**。在 `Application.onCreate()` 执行前，系统要求应用 publish 所有在 manifest 中声明的 ContentProvider。如果某个 ContentProvider 的 `onCreate()` 里做了大量初始化（SDK 初始化、数据库创建、文件读取），publish 就会被延迟。系统等待 10 秒后触发 ANR。
-2. **多个 ContentProvider 串行初始化**。Android 按 manifest 中的声明顺序逐个调用 ContentProvider 的 `onCreate()`。如果应用声明了多个 ContentProvider（很多第三方 SDK 通过 ContentProvider 做自动初始化），初始化时间会累加。
+provider 发布完成后，`query()`、`insert()`、`call()` 等入口还可能被并发调用。远程调用经 Binder 线程进入进程；同进程调用则可能在调用线程直接执行。provider 实现不能依赖“所有方法都在主线程”，也不能用一把大锁包住数据库、文件和 IPC。
 
-治理手段：
+Android 17 的 publish 基线来自 `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`。`ContentProviderHelper` 中等待 provider 就绪、请求方检测 provider 无响应等路径有各自的条件和时限。报告里必须保留 ANR 类型和描述，不能看到 provider 名称就套用 10 秒发布结论。
 
-- **延迟初始化**：`AppComponentFactory.instantiateProvider()` 只提供实例化 hook，返回的 Provider 对象尚无 Context，不能用于控制初始化时机。实际可用的做法是在 ContentProvider 的 `onCreate()` 里只做极轻量的注册操作，实质的初始化工作放到首次调用 `query()` / `insert()` 时再触发（lazy init）。
-- **App Startup 统一管理**：用 AndroidX App Startup 的 `Initializer` 替代各 SDK 自注册 ContentProvider，在 manifest 中只保留一个 `InitializationProvider`，按依赖顺序统一调度初始化。
-- **精简 ContentProvider 数量**：检查 manifest 中声明的 ContentProvider，移除不必要的。很多第三方 SDK 提供了关闭自动初始化的开关（`enable = false`），改用手动初始化。
-- **启动时序优化**：把 ContentProvider 初始化纳入启动框架统一调度（详见 21.2 节），控制并发数和依赖关系。
+### BroadcastReceiver：`goAsync()` 不增加时间
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java]
+静态注册的 receiver 通常由主线程执行；使用 `registerReceiver(..., scheduler)` 可以指定其他 `Handler`。换到后台线程能保护 UI 响应，但 receiver 仍受广播期限约束，线程池排队也会消耗时间。
 
-### BroadcastReceiver 超时治理
+`goAsync()` 返回的 `PendingResult` 允许 `onReceive()` 返回后继续处理。系统从分发广播开始计时，直到 `PendingResult.finish()`；异步工作没有获得新的窗口。进程在 receiver 完成后也可能被回收，需要持久保证的工作应交给 WorkManager 或 JobScheduler。
 
-BroadcastReceiver 的 ANR 发生在 `onReceive()` 执行超过阈值时。关键约束：`onReceive()` 在主线程执行。`goAsync()` 允许在 `onReceive()` 中调用 `PendingResult` 把工作移到其他线程，但广播执行超时仍覆盖到 `PendingResult.finish()` 为止——超时窗口不会因为 `goAsync()` 而消失。
-
-治理手段：
-
-- **onReceive() 只做转发**：收到广播后，把实际处理逻辑交给 `JobScheduler` / `WorkManager` / `Coroutine` 在后台执行。`onReceive()` 本身只做参数解析和任务调度。
-- **用 goAsync() 延长处理窗口**：`BroadcastReceiver.goAsync()` 不新增超时预算，只是延续同一个广播超时窗口——从 `onReceive()` 开始到 `PendingResult.finish()` 返回，仍然受原广播超时约束。正确用法是在 `goAsync()` 的窗口内启动异步任务，然后在任务完成后调用 `PendingResult.finish()`。
-- **静态广播 → 动态广播**：如果不需要在应用未运行时接收广播，把静态注册的 `BroadcastReceiver` 改为动态注册。动态注册可以减少应用未运行时被唤醒的广播面，但 `onReceive()` / `goAsync()` 仍受广播执行时间限制——系统不因注册方式不同而豁免超时。
+下面的示例只适合能在广播期限内完成、支持协程取消的短任务。`receiverScope` 由应用统一持有，避免每次广播创建无人管理的作用域。
 
 ```kotlin
-// goAsync 的正确用法
-override fun onReceive(context: Context, intent: Intent) {
-    val pendingResult = goAsync()
-    CoroutineScope(Dispatchers.IO).launch {
-        try {
-            processData(intent)  // 在 IO 线程处理
-        } finally {
-            pendingResult.finish()  // 必须调用，否则 ANR 仍会发生
+class SyncReceiver(
+    private val receiverScope: CoroutineScope,
+    private val processor: SyncProcessor,
+) : BroadcastReceiver() {
+
+    override fun onReceive(context: Context, intent: Intent) {
+        val pending = goAsync()
+        receiverScope.launch {
+            try {
+                withTimeout(processor.internalBudgetMillis) {
+                    processor.handle(intent)
+                }
+            } finally {
+                pending.finish()
+            }
         }
     }
 }
 ```
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/content/BroadcastReceiver.java]
+这里的内部预算必须短于对应广播窗口，并由线上基线确定。`processor.handle()` 还要能响应取消；若它进入不可取消的阻塞调用，`withTimeout` 无法保证按时执行到 `finish()`。超过广播窗口或要求进程重建后继续的任务，应在 `onReceive()` 中只入队持久任务。
 
-### Service 超时补充
+### Service：生命周期回调必须很短
 
-Service 的前台生命周期超时是 `SERVICE_TIMEOUT` 默认 20 秒，后台 `SERVICE_BACKGROUND_TIMEOUT` 默认 200 秒。FGS 晋升超时是独立的计时器（见下方）。治理要点：
+`Service.onCreate()`、`onStartCommand()`、`onBind()` 和 `onDestroy()` 默认都在应用主线程。执行 Service ANR 的窗口还可能包含进程冷启动，因此 Service 自身方法看起来很快，也要检查 `Application` 和 provider。
 
-- `onCreate()` 和 `onStartCommand()` 都在主线程执行。如果 `onStartCommand()` 需要做耗时操作，启动一个后台线程来处理，然后立即返回 `START_STICKY` 或 `START_NOT_STICKY`。
-- FGS 晋升超时（`startForegroundService()` → `startForeground()`）：Android 8 引入此约束，排查时按目标系统源码中的配置确认，不要统一写 5s。Android 10-12 的核心窗口来自 `ActiveServices.SERVICE_START_FOREGROUND_TIMEOUT`，默认 10s；Android 13+ 改为 `ActivityManagerConstants.mServiceStartForegroundTimeoutMs` 默认 30s，超时后再等待 `mServiceStartForegroundAnrDelayMs` 默认 10s 触发 ANR。此外 Android 12+ 还有 FGS 启动限制（`ForegroundServiceStartNotAllowedException`），需要满足豁免条件才能从后台启动前台 Service。
-- Android 14+ 的 `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE` 还有类型级计时器：AOSP 默认 3 分钟，超时后调用 `Service.onTimeout()`；如果再过 `short_fgs_anr_extra_wait_duration` 默认 10 秒仍未停止，`ActiveServices.onShortFgsAnrTimeout()` 触发 ANR。这个计时器与普通 Service 生命周期超时、FGS 晋升超时相互独立。
-- 普通前台 Service 生命周期执行超时（`onCreate()`/`onStartCommand()`）：`ActivityManagerConstants.SERVICE_TIMEOUT` 默认 20s（前台），`SERVICE_BACKGROUND_TIMEOUT` 默认 200s（后台）。两者与 FGS 晋升超时是独立的计时器。
+- 回调内完成参数校验、状态切换和任务调度，然后返回。
+- 后台工作使用有生命周期的 executor 或协程作用域；`onDestroy()` 取消任务并释放资源。
+- `startForegroundService()` 后尽早准备并发布通知，不要等待网络、数据库或远端配置。
+- `shortService` 实现 `onTimeout()` 并立即停止；测试超时、重复 start 和进程重建。
+- 以 Android 15 及以上为目标平台时，`dataSync`、`mediaProcessing` 等受总额度约束的 FGS 要实现 `onTimeout()`，超时后停止，避免被系统以异常结束进程。
 
-[已验证: AOSP android-14.0.0_r1 - android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java；AOSP android-16.0.0_r1 / android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActiveServices.java]
+返回 `START_STICKY` 只决定服务被杀后的重建策略，不会缩短当前回调，也不会豁免 ANR 时限。
 
 ## ANR Watchdog 搭建
 
-ANR Watchdog 是应用侧的 ANR 检测机制，用于在系统弹出 ANR 对话框之前就发现主线程阻塞。
+应用 Watchdog 通过后台线程向主 Looper 投递探针，测量探针多久才被执行。它能发现主 Looper 长时间没有响应，不能复刻 InputDispatcher、广播、Service、provider 和 `system_server` 的全部判定条件。
 
-这里需要区分两层检测。第一层是系统的 ANR 检测——上表所列的 ANR 类型各有独立的超时阈值和检测逻辑。第二层是应用侧的 Watchdog，它是一套独立的监测线程，不依赖系统信号，通过主动探测主线程的响应性来判断。Watchdog 的检测间隔和阈值由应用自己设定，通常比系统阈值低，目的是在系统判定 ANR 之前发出预警。
+### 避免探针互相确认
 
-### 工作原理
+常见示例每个周期把一个共享 tick 清零，再投递相同 Runnable。旧探针晚到时可能把新周期标记为成功，连续阻塞也会在主队列里堆积探针。生产实现应始终只保留一个待确认 token，让 Runnable 只能确认自己的 token。
 
-Watchdog 的核心是一个定期向主线程投递 `Runnable` 的监测线程：
+下面的精简实现展示单探针设计。它使用 `uptimeMillis()` 与系统 ANR 常见计时基准保持一致，并且同一次 stall 只上报一次。
 
-1. 监测线程每 N 毫秒向主线程的 `Handler` 投递一个 `Runnable`，同时记录投递时间戳。
-2. 下一个周期，监测线程检查上一个 `Runnable` 是否已被主线程执行。
-3. 如果未被执行且超过阈值，判定主线程阻塞。
+```kotlin
+data class MainStallSample(
+    val delayedMillis: Long,
+    val mainStack: Array<StackTraceElement>,
+)
 
-```java
-public class ANRWatchdog {
-    private static final long CHECK_INTERVAL_MS = 5000;  // 5 秒检测一次
-    private volatile long mainThreadTick = 0;
-    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+class MainLooperWatchdog(
+    private val pollMillis: Long,
+    private val stallThresholdMillis: Long,
+    private val onStall: (MainStallSample) -> Unit,
+) : Thread("main-looper-watchdog") {
 
-    private final Runnable ticker = () -> mainThreadTick = SystemClock.uptimeMillis();
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val mainThread = Looper.getMainLooper().thread
+    private val nextToken = AtomicLong(0L)
+    private val pendingToken = AtomicLong(0L)
+    private val postedAt = AtomicLong(0L)
+    private val reportedToken = AtomicLong(0L)
 
-    public void start() {
-        Thread watchdogThread = new Thread(() -> {
-            while (true) {
-                mainThreadTick = 0;
-                mainHandler.post(ticker);
-                try {
-                    Thread.sleep(CHECK_INTERVAL_MS);
-                } catch (InterruptedException e) {
-                    return;
+    override fun run() {
+        while (!isInterrupted) {
+            val now = SystemClock.uptimeMillis()
+            val token = pendingToken.get()
+
+            if (token == 0L) {
+                val newToken = nextToken.incrementAndGet()
+                postedAt.set(now)
+
+                if (pendingToken.compareAndSet(0L, newToken)) {
+                    val accepted = mainHandler.post {
+                        pendingToken.compareAndSet(newToken, 0L)
+                    }
+                    if (!accepted) {
+                        pendingToken.compareAndSet(newToken, 0L)
+                    }
                 }
-                if (mainThreadTick == 0) {
-                    // 主线程在 CHECK_INTERVAL_MS 内没有执行 ticker
-                    // 可能阻塞了，触发上报
-                    onANRSuspected();
+            } else {
+                val delayedMillis = now - postedAt.get()
+                if (delayedMillis >= stallThresholdMillis &&
+                    reportedToken.getAndSet(token) != token
+                ) {
+                    onStall(
+                        MainStallSample(
+                            delayedMillis = delayedMillis,
+                            mainStack = mainThread.stackTrace,
+                        )
+                    )
                 }
             }
-        }, "ANR-Watchdog");
-        watchdogThread.start();
-    }
-}
-```
 
-监测线程与主线程的交互时序如下：
-
-1. 监测线程将 `mainThreadTick` 置 0（`volatile` 写，对所有线程立即可见）
-2. 监测线程通过 `mainHandler.post(ticker)` 将 ticker 投递到主线程的 Handler 队列
-3. 监测线程 `Thread.sleep(CHECK_INTERVAL_MS)` 进入等待
-4. 主线程 Looper 取出 ticker 并执行，将 `mainThreadTick` 设为当前时间（`volatile` 写）
-5. 监测线程唤醒，检查 `mainThreadTick` 是否仍为 0
-6. `mainThreadTick == 0` → 主线程在整个检测周期内没有执行 ticker → 判定阻塞
-
-`volatile` 保证步骤 1 和 4 的写入对所有线程可见，不需要额外同步。检测存在一个盲区：ticker 可能在监测线程检查之后、`onANRSuspected()` 执行之前被主线程处理。这会导致偶发误报，通过"连续 2-3 次检测确认"来消除（见参数调优小节）。
-
-这段代码是简化版本，生产环境的 Watchdog 需要处理更多细节：误报过滤、多次确认、主线程堆栈 dump、上报策略等。
-
-### Watchdog 的参数调优
-
-- **检测间隔**：通常设为 2-5 秒。间隔太短会频繁误报（主线程可能在正常处理一帧），间隔太长会漏报。
-- **确认次数**：连续 2-3 次检测主线程未响应才判定为 ANR 嫌疑。单次检测可能只是主线程在处理一个稍长的 Message。
-- **阈值 vs 系统阈值的关系**：Watchdog 的阈值通常设为 3 秒（比系统的 5 秒 Input ANR 阈值低），这样能在系统判定 ANR 之前就发出告警。
-
-### 主线程堆栈 Dump
-
-当 Watchdog 检测到主线程阻塞时，需要 dump 主线程的调用栈来做分析。方法有两种：
-
-1. **Thread.getStackTrace()**：从监测线程调用 `mainThread.getStackTrace()`。这是最简单的方式，但有一个限制——如果主线程正处于 `BLOCKED` 状态（等锁），`getStackTrace()` 可能拿不到有意义的堆栈。
-2. **SIGQUIT 信号**：向自进程发送 `SIGQUIT` 信号可以触发 ART 虚拟机 dump 本进程线程堆栈，这个动作本身不需要 root 或 `android.permission.DUMP`。受权限限制的是读取系统写入的 `/data/anr` 产物，或对其他进程抓完整 dump；普通应用在线上环境通常拿不到这些文件。
-
-生产环境通常用方法一，因为它不依赖系统 traces 文件。如果主线程堆栈信息不够丰富，可以同时采样其他关键线程（如 Binder 线程、RenderThread）的堆栈作为补充；SIGQUIT 路径更适合内部调试包或具备日志回收能力的灰度环境。
-
-### 上报与告警
-
-Watchdog 检测到主线程阻塞后，上报的数据应该包含：
-
-- 主线程堆栈（最关键）
-- 阻塞时长估算（检测间隔 × 确认次数）
-- 当时进程的 CPU 使用率（通过 `/proc/self/stat` 读取）
-- 内存状态（`Debug.getMemoryInfo()`）
-- 是否有正在进行的 Binder 调用（通过线程栈采样中 `BinderProxy.transactNative` / `Binder.execTransact` 帧的出现频率间接判断，或在具备权限时用 SIGQUIT / debuggerd 获取完整线程状态）
-
-这些数据聚合后，按堆栈签名聚类，就能看到哪些代码路径是高频的 ANR 嫌疑点。
-
-## ANR 预警与主动发现
-
-线上 ANR 治理除了修复已知 ANR，还要发现尚未被系统判定的主线程阻塞趋势。以下是几种预警手段：
-
-### 主线程 Looper 监控
-
-在主线程 Looper 的每个 Message 分发前后插桩，记录单个 Message 的处理耗时。超过阈值（如 500ms）但未触发系统 ANR 的消息就是"准 ANR"——它在当前设备上没超时，但在更慢的设备或更高负载下可能触发。
-
-```java
-// 基于 Looper.getMainLooper().setMessageLogging() 的监控
-public class LooperMonitor implements Printer {
-    private long startTime = 0;
-
-    @Override
-    public void println(String x) {
-        if (x.startsWith(">>>>> Dispatching to Handler")) {
-            startTime = SystemClock.uptimeMillis();
-        } else if (x.startsWith("<<<<< Finished to Handler")) {
-            long duration = SystemClock.uptimeMillis() - startTime;
-            if (duration > 500) {  // 500ms 预警阈值
-                // 记录主线程堆栈和耗时，用于聚类分析
-                onMainThreadStall(duration);
+            try {
+                sleep(pollMillis)
+            } catch (_: InterruptedException) {
+                interrupt()
             }
         }
     }
 }
-
-// 注册
-Looper.getMainLooper().setMessageLogging(new LooperMonitor());
 ```
 
-### Binder 调用耗时监控
+旧 Runnable 的 token 与当前 token 不同时，`compareAndSet()` 不会确认新周期；当前 token 未完成前也不会再投递探针。示例省略了启动幂等、应用退出处理、采样限流和持久队列，`onStall` 中不能同步做网络或大文件写入。
 
-Binder 调用在主线程上的阻塞时间直接影响 ANR 风险。通过 `BinderProxy.transactNative()` 的 AOP 插桩，记录每次调用的对端进程、接口描述符和耗时。超过 50ms 的 Binder 调用需要重点关注。
+### 阈值来自产品基线
 
-### 预警数据的聚合与分析
+Watchdog 阈值没有通用的 3 秒或 5 秒答案。过短会把正常的长消息、调试器暂停和设备休眠边界记成风险事件；过长则失去预警价值。配置时应考虑：
 
-预警数据的价值在于趋势发现，而不是单次告警。将"准 ANR"事件按主线程堆栈签名聚类，就能看到哪些代码路径在逼近 ANR 阈值，在它们触发系统 ANR 之前进行治理。
+- 对应业务最常见的系统 ANR 类型及其时限。
+- 设备等级、系统版本、温度和应用进程状态。
+- 主线程消息耗时的线上分布与采样开销。
+- 同一 stall 的去重、冷却时间和每日上报配额。
+- debug、性能测试和 debugger attached 时的排除规则。
+
+Watchdog 报告应包含 token、投递时间、延迟、主线程栈、若干关键线程栈、进程状态和设备负载。`Thread.getStackTrace()` 能捕获主线程等待锁时的栈，采样一次的证据仍有限；连续样本能帮助区分正在推进的慢任务和停在同一位置的等待。
+
+向自身发送 `SIGQUIT` 会让 ART 生成线程 dump，动作本身有开销，普通应用也通常无法读取系统保存在 `/data/anr` 的文件。它适合内部调试或受控灰度，不适合每次线上 stall 都触发。
+
+### Watchdog 的能力边界
+
+- 它只能证明主 Looper 探针未按时执行，不能直接宣布系统已经产生 ANR。
+- receiver 运行在自定义线程或 `goAsync()` worker 卡住时，主 Looper 可能完全正常。
+- 无焦点窗口和部分系统侧等待不一定表现为主线程持续阻塞。
+- 系统可能在 Watchdog 上报前、同时或之后判定 ANR，没有“必定提前通知”的保证。
+- 主线程恢复后，Watchdog 样本仍有价值；ANR 不是 Java Crash，不一定终止进程。
+
+因此，Watchdog 事件应与系统 ANR 分开存储，再通过时间、进程、ANR 类型和堆栈签名关联。
+
+## ANR 预警与主动发现
+
+Android 17 增加了接近系统 ANR 时限的公开回调，Android 16 增加了 ANR 触发式 profiling。它们补充了应用 Watchdog 的证据来源，但都采用尽力提供语义。
+
+### Android 17：`registerAnrWarningListener`
+
+API 37 的 `ActivityManager.registerAnrWarningListener()` 在应用接近 ANR 超时时通知监听器。官方要求 executor 不要使用主线程；系统不保证一定回调，也不保证回调后还留有足够时间。
+
+下面的接入示例只保存小型结构化记录，`AnrWarningStore` 代表项目自定义的有界存储接口。监听器对象需要保留，以便使用同一个实例注销。
+
+```kotlin
+@RequiresApi(37)
+class AnrWarningCollector(
+    context: Context,
+    private val store: AnrWarningStore,
+) : AutoCloseable {
+
+    private val activityManager =
+        context.getSystemService(ActivityManager::class.java)
+
+    private val executor = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "anr-warning")
+    }
+
+    private val listener = Consumer<AnrWarningResult> { result ->
+        store.append(
+            anrId = result.anrId,
+            anrType = result.anrType,
+            consumedMillis = result.consumedMillis,
+            timeoutMillis = result.timeoutMillis,
+            description = result.description,
+            mainStack = Looper.getMainLooper().thread.stackTrace,
+        )
+    }
+
+    fun start() {
+        activityManager.registerAnrWarningListener(executor, listener)
+    }
+
+    override fun close() {
+        activityManager.unregisterAnrWarningListener(listener)
+        executor.shutdown()
+    }
+}
+```
+
+`AnrWarningResult` 给出 `anrId`、`anrType`、已消耗时间和总时限。`description` 面向诊断且格式不稳定，可以保存或用于辅助聚类，不能解析成长期协议。监听器里只采集有限信息并追加到预分配或有界存储，远端上报留给进程恢复后处理。
+
+如果预警最终发展为 ANR，`anrId` 可与 API 37 的 `ApplicationExitInfo.AnrInfo.getAnrId()` 关联。`AnrInfo` 还包含 ANR 类型、系统等待时限和 `isUserPerceptible()`。这个 user-perceptible 字段按系统是否展示 ANR 对话框定义，与 Google Play 当前“只有 input dispatch ANR 计入 user-perceived core vital”的统计口径不同。
+
+### Android 16 及以上：ANR Profiling Trigger
+
+API 36 的 `ProfilingTrigger.TRIGGER_TYPE_ANR` 在系统识别 ANR 后、可能结束应用前触发，返回正在运行的 system trace 快照。触发器不代表应用一定被杀，profiling 结果也受系统资源、速率限制和配置影响，不能替代 traces、`ApplicationExitInfo` 或业务监控。
+
+可以把三类信号按时间关联：
+
+| 信号 | 发生阶段 | 能回答的问题 |
+|---|---|---|
+| 应用 Watchdog | 主 Looper 超过内部阈值 | 主线程何时开始不响应，早期栈停在哪里 |
+| `AnrWarningResult` | API 37，接近系统时限 | 系统正在观察哪种 ANR、已经消耗多少预算 |
+| `ApplicationExitInfo.AnrInfo` / profiling 结果 | 系统认定 ANR 后，或进程退出后 | ANR 类型、ID、系统时限、用户可感知状态和 system trace |
+
+同一个事件用 `anrId`、进程启动标识、单调时钟时间和堆栈签名关联。只靠 wall clock 容易受到校时影响。
+
+### Looper 与 Binder 的主动监测
+
+`Looper.setMessageLogging()` 可以观察消息分发前后的文本，但它有三个边界：全局只有一个 `Printer` 槽位，没有公开 getter；文本格式属于诊断输出；持续解析会增加主线程成本。接入时由一个组件统一持有 Printer，把其他消费者合并到内部观察者列表，并在目标 Android 版本验证格式。线上使用采样、限流和远程开关。
+
+单条消息的风险阈值应来自场景基线，不能统一写成 500 毫秒。总延迟还包括消息排队、同步屏障、渲染工作、Binder 和锁等待，Looper 分发时长只覆盖其中一部分。
+
+Binder 监测优先在自有接口的调用点记录开始、结束和请求 ID。隐藏 API hook 既不稳定，也很难准确归因对端排队与执行阶段。无法修改的系统调用使用 Perfetto、采样栈和 ANR traces 交叉判断。
 
 ## 后台 ANR 与前台 ANR 的差异化治理
 
-ANR 的严重程度取决于触发时应用的状态。前台 ANR 用户可以直接感知（弹出对话框），治理优先级最高。后台 ANR 用户看不到对话框（系统静默处理），但在 Android 10+，后台 ANR 同样会被 Google Play Console 统计并影响应用评分。
+前台、后台和 Google Play 的统计口径要分开描述。
 
-### 前台 ANR
+Google Play 当前提供三项以日活跃用户为分母的指标：
 
-前台 ANR 的治理方向是"消除"。用户看到了无响应对话框，体验已经受损，所以每次前台 ANR 都需要定位并修复。
+- **ANR rate**：当天至少经历一次任意类型 ANR 的活跃用户占比。
+- **User-perceived ANR rate**：当天至少经历一次 user-perceived ANR 的活跃用户占比；当前只把 `Input dispatching timed out` 计入该指标。
+- **Multiple ANR rate**：当天至少经历两次 ANR 的活跃用户占比。
 
-治理重点：
-- Input ANR（触摸/按键无响应 5 秒）：占前台 ANR 的大多数。通常由主线程直接阻塞导致，通过 Watchdog 和 traces.txt 定位。
-- 生命周期 ANR（Service/Broadcast/Provider 超时）：由系统回调中的耗时操作导致。治理手段在前文已展开。
+User-perceived ANR rate 是 core vital。官方当前给出的全局不良行为阈值为 0.47%，单设备型号阈值为 8%。这些数值和定义可能由 Google Play 调整，发布治理规则前要再次核对官方页面。
 
-### 后台 ANR
+后台 ANR 可能不展示对话框，但仍会进入 overall ANR 数据。它也可能揭示共享线程池、锁、广播冷启动或 Service 回调问题；“用户没看到”只能影响修复优先级，不能成为忽略依据。
 
-后台 ANR 的治理方向是"控制"而非"消除"。后台 ANR 的成因更复杂：
+治理看板至少分开：
 
-- 系统在低内存条件下杀后台进程时，进程可能在执行清理逻辑，来不及响应系统回调。
-- 后台 Service 的 200 秒超时虽然很长，但如果进程被系统冻结（Android 11+ 的 CachedAppFreezer），解冻后可能来不及在超时窗口内完成工作。
-- JobScheduler 和 WorkManager 的超时行为在不同厂商 ROM 上不一致。
+- 进程重要性与界面可见状态。
+- 系统 ANR 类型和 API 37 的 `isUserPerceptible()`。
+- Google Play 的 overall、user-perceived 和 multiple 指标。
+- 会话级 stall、Watchdog 风险事件和系统确认 ANR。
+- 设备型号、RAM、系统版本、应用版本与场景。
 
-治理策略：
-- **减少后台 Service 的使用**：用 `JobScheduler` / `WorkManager` 替代长时间运行的后台 Service。
-- **处理系统冻结/解冻**：在 `onStartCommand()` 中检查进程是否刚从冻结状态恢复（通过时间差判断），如果是，跳过非必要操作直接返回。
-- **过滤上报噪声**：后台 ANR 中有大量"系统杀进程导致的假 ANR"——进程已经被杀，但 ANR 日志已经被记录。在 Watchdog 上报时检查 `ActivityManager.getRunningAppProcesses()` 中本进程的状态，过滤掉这类噪声。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java — cached app freezer 实现]
+不同指标使用各自分母，不能拿“每千次启动 ANR 数”与 Play 的“受影响日活用户占比”直接比较。
 
 ## 系统负载导致的 ANR 识别与过滤
 
-ANR 不一定都是应用代码的问题。低端设备、内存紧张、系统服务繁忙时，应用的正常操作也可能被系统拖慢到触发 ANR。这类 ANR 如果当成应用 bug 治理，投入产出比极低。
+高 CPU、存储等待、内存压力、Binder 拥塞和热限制会放大同一段代码的耗时。系统负载应该作为归因证据和分桶维度，不能凭一个信号删除 ANR 记录。
 
-### 系统负载 ANR 的特征
+### 多信号判断
 
-在 traces.txt 和 event log 中，如果看到以下特征，系统负载很可能是主因：
+一条“疑似系统负载”判断至少需要组合以下证据：
 
-- **主线程堆栈显示 `nativePollOnce`**：主线程在 Looper 中等待下一个 Message，没有在执行应用回调。它只能说明应用主线程当时处于空闲等待状态，还要结合 system_server、Binder 线程和 input dispatch 相关堆栈确认是否为系统侧阻塞。
-- **event log 中 `am_anr` 前后有大量 `am_proc_died` / `am_kill`**：系统在密集杀进程，内存压力极大。
-- **CPU iowait 异常升高**：设备存储 I/O 瓶颈严重，多个进程都在等磁盘。具体阈值要来自同设备、同版本、同采样窗口的线上基线，不能把固定百分比当成通用判据。
-- **ANR 发生在设备启动后的短时间内**：系统启动阶段各服务初始化集中，响应速度普遍偏慢。时间窗口要按设备和 ROM 基线确认，不能单靠“启动后 N 分钟”直接过滤。
+- ANR 窗口内本进程和系统 CPU 时间、可运行线程压力。
+- I/O wait、进程读写量与同设备同期基线。
+- 内存可用量、回收活动、PSI memory/CPU/I/O 压力。
+- Binder 线程状态、事务排队与 `system_server` 相关栈。
+- 设备温度、thermal throttling 状态与 CPU 频率。
+- 同型号、同系统构建、同时间窗口的其他进程是否一起变慢。
+- 应用主线程与相关 worker 是否停在同一业务位置。
 
-### 过滤策略
+固定“iowait 大于某百分比”或“RAM 小于 2 GB”都不足以定因。低端设备也属于产品用户，统计时应单独分桶并保留在整体指标中；从分母排除会让看板变好，却不会改善用户遇到的无响应。
 
-在线上监控中，对疑似系统负载导致的 ANR 做以下处理：
+### 容易误判的信号
 
-1. **标记并降权**：在 ANR 上报中增加 `likely_system_caused` 标记，和代码问题导致的 ANR 分开统计。单个信号只能用于降权或分桶；只有多项系统负载信号同时出现，并且主线程堆栈没有应用耗时回调时，才考虑从代码问题看板中剔除。
-2. **按设备分桶**：统计 ANR 率时，排除低端设备（RAM < 2GB 或 Android 10 以下）的数据，或者单独建桶。不同设备的 ANR 基线差异很大，混在一起会掩盖真实的代码问题。
-3. **关注趋势而非绝对值**：系统负载 ANR 的波动和系统版本更新、厂商 ROM 调优相关。单次突增不需要立即响应，但如果某个版本后持续上升，说明需要跟进。
+- **主线程 `nativePollOnce`**：它只说明采样时主 Looper 正在等待。广播可能在自定义 Handler 或 worker 上，快照也可能晚于阻塞点；要按 ANR 类型查看相关线程。对于 execute-service 的大量同签名晚采样，官方文档允许结合其他 cluster 降低优先级，仍不应套用到所有类型。
+- **`am_proc_died` / `am_kill` 密集**：它支持“系统内存压力高”的判断，却不能证明本次 ANR 与应用代码无关。
+- **cached app freezer**：系统冻结缓存进程是调度机制，应用侧没有可靠的“刚解冻”通用 API。不要用时间差猜测后跳过必要状态恢复，也不要把 freezer 当作删除记录的理由。
+- **`getRunningAppProcesses()`**：这是采样时刻的进程列表，无法证明先前的 ANR 为假，也不适合做上报有效性过滤。
+- **设备启动后不久**：系统服务可能繁忙，但应用冷启动和同步 IPC 同样可能有优化空间。需要与同设备基线和系统 traces 一起判断。
 
-## 总结
+监控平台可以增加 `system_load_suspected` 及证据字段，对事件降权或进入单独队列；原始事件、分母和系统确认状态应保留。多次版本对比后，如果某个设备系统构建独有且应用栈分散，再推动设备或系统侧协查。
 
-ANR 治理的五条核心策略：
+## 治理与验证流程
 
-1. **主线程瘦身**：所有 I/O、网络、Binder 调用尽量移到子线程。用 `StrictMode` 在开发期捕获遗漏。
-2. **Binder 调用治理**：缓存系统服务查询结果，异步调用外部 Service，监控 Binder 调用耗时。
-3. **锁竞争治理**：主线程不持锁，锁内不做 I/O，避免嵌套锁。用 Copy-on-Write / Atomic 类替代显式锁。
-4. **组件超时治理**：ContentProvider 和 BroadcastReceiver 的回调只做最轻量的转发，实际工作交给后台线程。
-5. **Watchdog 兜底**：在系统判定 ANR 之前主动检测主线程阻塞，dump 堆栈并上报。
+ANR 修复要能回答“系统在等什么、哪条线程没有前进、改动如何证明有效”。一章代码改完但没有同场景回归，风险只是换了位置。
 
-ANR 的机制和类型在 9.1-9.3 节已详述；本节聚焦的是工程实践层面的治理手段。遇到线上 ANR 时，先按 9.3 节的方法定位类型，再按本节对应的方向执行修复。
+1. **建立事件主键**：保存应用版本、进程启动标识、ANR 类型、单调时钟、场景和可用的 `anrId`。
+2. **保全证据**：系统 traces、ANR 主题、事件日志、`ApplicationExitInfo`、profiling 结果、Watchdog 连续栈和设备状态分别存储。
+3. **还原计时区间**：确认计时开始、结束与已消耗预算，标出冷启动、排队、执行和等待阶段。
+4. **找到等待所有者**：主线程卡住时继续查锁持有者、Binder 对端或 worker；主线程空闲时转向 receiver 线程、焦点窗口和系统状态。
+5. **选择可验证的修改**：移出主线程、减少工作、改变 IPC 协议、缩短锁区或调整持久任务模型，每次修改对应一个可观察指标。
+6. **做故障注入**：在测试环境让自有 Binder 服务延迟、锁持有时间增加、I/O 变慢、receiver 冷启动，检查取消、降级、`finish()` 和 `onTimeout()`。
+7. **覆盖慢设备与压力状态**：低 RAM、CPU 受限、存储繁忙、冷热启动和前后台切换都要进入回归集合。
+8. **观察发布前后趋势**：同时看事件数、受影响用户、会话风险事件、设备分桶和堆栈 cluster，避免分母变化掩盖回归。
+
+每个高频 cluster 都应有负责人、证据、修复版本和验证结果。没有完整证据时可以标为待归因，不能为了报表整洁直接归入“系统原因”。
+
+## 小结
+
+ANR 治理从系统类型和计时窗口开始。主线程、Binder、锁和组件回调分别有不同的等待关系；Watchdog、API 37 预警、profiling 与 `ApplicationExitInfo` 提供的是互补证据。
+
+工程动作可以压缩成四条：让主线程同步阶段可测且短；让跨线程、跨进程等待可取消或可降级；让组件生命周期遵守系统协议；让每次修复都能在同场景和慢设备上复现、对比。系统负载用于解释和分桶，原始 ANR 记录与用户分母始终保留。
+
+## 参考资料
+
+- [Android Developers：Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
+- [Android Developers：Android vitals ANR](https://developer.android.com/topic/performance/vitals/anr)
+- [Android Developers：ActivityManager.registerAnrWarningListener](https://developer.android.com/reference/android/app/ActivityManager)
+- [Android Developers：AnrWarningResult](https://developer.android.com/reference/android/app/AnrWarningResult)
+- [Android Developers：ApplicationExitInfo.AnrInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo.AnrInfo)
+- [Android Developers：ProfilingTrigger.TRIGGER_TYPE_ANR](https://developer.android.com/reference/android/os/ProfilingTrigger#TRIGGER_TYPE_ANR)
+- [Android Developers：Foreground service timeouts](https://developer.android.com/develop/background-work/services/fgs/timeout)
+- [Android Developers：Foreground service types](https://developer.android.com/develop/background-work/services/fgs/service-types)
+- [Android Developers：App Startup](https://developer.android.com/topic/libraries/app-startup)
+- [AOSP Android 17：ActivityManagerConstants.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java)
+- [AOSP Android 17：BroadcastConstants.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastConstants.java)
+- [AOSP Android 17：ActivityThread.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [AOSP Android 17：ContentResolver.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ContentResolver.java)
+- [AOSP Android 17：ContentProviderHelper.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderHelper.java)
+- [AOSP Android 17：ActiveServices.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java)
+- [AOSP Android 17：InputDispatcher.cpp](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
+- [AOSP Android 17：Binder.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Binder.java)
+- [AOSP Android 17：BroadcastReceiver.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/BroadcastReceiver.java)
