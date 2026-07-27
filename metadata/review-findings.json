@@ -187,6 +187,24 @@
       "summary": "无来源 Android 17 ART GC Region/Compaction 主线结论已降级为 source-rework-required",
       "type": "source-boundary",
       "updated_at": "2026-07-27T16:37:37.873994+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch26-observability/29-jvmti-agent-art-runtime-dynamic-monitoring.md",
+      "created_at": "2026-07-27T18:06:34.032979+08:00",
+      "created_by": "hermes-aiw-review-finalize-apply",
+      "created_run_id": "20260727-180515-f7d5f885",
+      "details": "finalize 复核判定：当前正文已诚实降级为 Android CLI 实验入口和证据边界，但章节题名/范围仍指向 JVMTI Agent 与 ART runtime dynamic monitoring。唯一材料只能支撑工程生成、SDK、设备/UI、docs/skills 工作流，不能支撑 android.os.Debug.attachAgent、runtime/jvmti、Agent_OnLoad/OnUnload、MethodEntry/Exit、FieldAccess/Modification、TagObject/GetObjectsWithTags 或线上 attach/detach 的 Android 17.0.0_r1 源码语义；需补 AOSP android-17.0.0_r1 ART/Framework 源码和可复现实测后再 finalized。",
+      "id": "finding-4b930a7ec68d",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "技术文章/source/juejin-android/2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md",
+        "src/part5-app/ch26-observability/29-jvmti-agent-art-runtime-dynamic-monitoring.md"
+      ],
+      "status": "open",
+      "summary": "JVMTI Agent 章节只有 Android CLI 材料，缺少 ART/Framework JVMTI 一手源码与实测证据",
+      "type": "source-boundary",
+      "updated_at": "2026-07-27T18:06:34.032979+08:00"
     }
   ],
   "schema_version": 1
