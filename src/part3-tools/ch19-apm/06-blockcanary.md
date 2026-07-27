@@ -117,7 +117,7 @@ Handler.dispatchMessage(msg)
 Printer: <<<<< Finished
 ```
 
-这段窗口不包含消息进入队列后等待前序消息的 delivery delay，也不等于一帧从输入、动画、布局、绘制、RenderThread 到 SurfaceFlinger 呈现的总时间。它只能说明“主线程执行这次 dispatch 的 wall time 超过自定义阈值”。
+这段窗口不包含消息进入队列后等待前序消息的 delivery delay，也不等于一帧从输入、动画、布局、绘制、RenderThread 到 SurfaceFlinger 呈现的总时间。严格看源码，它除了 `Handler.dispatchMessage()`，还包含两次 Printer 回调之间的 Observer、trace、LooperDoctor 和 slow-log 收尾；因此只能说明“这次 Looper dispatch 窗口的 wall time 超过自定义阈值”。
 
 一次长 dispatch 可能跨过多个 Vsync，造成连续慢帧；它也可能发生在后台或静止页面，对用户没有直接帧影响。反方向也成立：25 ms 的 dispatch 在高刷新率滚动中可能造成慢帧，却远低于常见的 500～1000 ms block 阈值；RenderThread、GPU、SurfaceFlinger 或调度引起的 jank 也可能没有长主线程消息。
 
@@ -138,8 +138,8 @@ wall time 很长而 thread CPU time 很短，通常意味着等待或调度不�
 2. `LooperMonitor.println()` 第一次回调记录 `System.currentTimeMillis()` 和 `SystemClock.currentThreadTimeMillis()`，再启动 stack/CPU sampler。
 3. sampler 的首个任务延迟为 `provideBlockThreshold() * 0.8`。只有 dispatch 已经接近阈值，采样才开始。
 4. 后续任务按 `provideDumpInterval()` 执行。传入 0 才回退到 sampler 内部的 300 ms；`BlockCanaryContext` 的默认 dump interval 与 block threshold 相同。
-5. 第二次 Printer 回调停止 sampler，并按 wall clock 判断是否超过阈值。
-6. 超阈值后，写日志线程从时间区间内取 stack/CPU 样本。若 stack 列表为空，`BlockInfo` 不会生成，整次超时事件直接丢失。
+5. 第二次 Printer 回调记录结束时间并按 wall clock 判断是否超过阈值。超阈值时，它先向写日志线程投递 block callback，再停止 sampler。
+6. 写日志线程执行 callback 时，从时间区间内取 stack/CPU 样本。若 stack 列表为空，`BlockInfo` 不会生成，整次超时事件直接丢失。callback 与 sampler 停止分属不同线程，不能依赖两者的竞态补抓“临近结束的一份栈”。
 
 下面的时序图标出阈值、采样和上报之间的关系：
 
@@ -156,17 +156,26 @@ sequenceDiagram
     S->>L: "Thread.getStackTrace()"
     S-->>S: "按 dump interval 重复"
     L->>M: "dispatch finish"
-    M->>S: "停止采样"
-    alt "wall time > threshold 且有 stack"
-        M->>W: "组装 BlockInfo、落盘、回调"
-    else "未超阈值或没有 stack"
-        M-->>M: "不生成报告"
+    M->>M: "比较 wall time 与 threshold"
+    alt "wall time > threshold"
+        M->>W: "投递 block callback"
+        M->>S: "停止采样"
+        W->>W: "筛选时间窗内的 stack / CPU 样本"
+        alt "stack 非空"
+            W->>W: "组装 BlockInfo、落盘、回调"
+        else "stack 为空"
+            W-->>W: "丢弃事件"
+        end
+    else "未超阈值"
+        M->>S: "停止采样"
     end
 ```
 
 例如阈值为 1000 ms、dump interval 为 300 ms，一次 1200 ms dispatch 的计划采样点大致是 800 ms 和 1100 ms，不是 300/600/900/1200 ms。最慢代码若只在前 200 ms 执行，两个样本都会错过它。计时器线程繁忙时，Handler 的延迟任务还会进一步推迟。
 
 `StackSampler` 调用 `mainThread.getStackTrace()`，把完整 Java 栈拼成字符串，保存在一个最多 100 项的静态 `LinkedHashMap` 中；访问 map 时使用 `synchronized`。上游没有“最大栈深”配置，也没有针对相同栈的去重。高频抓栈、字符串拼接和保留多份完整栈都需要纳入开销测试。
+
+`LooperMonitor` 也不解析 `>>>>>` / `<<<<<`，而是用一个布尔值把相邻两次 Printer 回调当作 start/end。若 debugger 恰好在一条消息执行期间连接或断开，`stopWhenDebugging()` 的提前返回可能让这个布尔值失配。自研实现应识别前缀、记录配对状态，并把调试器状态写入报告。
 
 ## `Printer` 是公开 API，但只有一个槽位
 
@@ -264,7 +273,7 @@ BlockCanary 1.5.0 的默认配置与影响如下：
 | `provideDumpInterval()` | 等于 block threshold | 首采样仍等到阈值的 80%，后续才用该间隔 | 单独设置采样间隔、最大样本数和总时长 |
 | `provideQualifier()` | `"unknown"` | `BlockInfo` 类初始化时缓存 | 使用 build ID/version/flavor，不依赖运行中动态变化 |
 | `provideNetworkType()` | `"unknown"` | 每次报告由 App 提供 | 只作上下文；主线程网络等待要由 stack/Binder/socket 证据确认 |
-| `providePath()` | `"/blockcanary/"` | 外部根目录可写则写外部，否则写 filesDir | 只用 app 私有 cache/noBackup 目录，并设置大小、保留期和失败清理 |
+| `providePath()` | `"/blockcanary/"` | 1.5.0 在外部根目录可写时写外部，否则拼到 `/data` 根目录；发布后的 master 才改为 filesDir | 只用 app 私有 cache/noBackup 目录，并设置大小、保留期和失败清理 |
 | `displayNotification()` | `true` | 启用旧 DisplayActivity 和旧通知 | internal 包可做现代通知；线上默认关闭 |
 | `provideWhiteList()` | `org.chromium` | UI 过滤，可配置删除命中日志 | 白名单精确到已知 signature，并保留计数；不要按大包名静默删除 |
 | `stopWhenDebugging()` | `true` | debugger 连接时 Printer 回调直接返回 | Debug 现场可暂停采集，但要记录开关状态，避免测试误判 |
@@ -387,15 +396,17 @@ BlockCanary 1.5.0 没有 native `.so`，本身不存在 16 KB ELF 对齐问题�
 
 - [AndroidPerformanceMonitor `master@ed688391`](https://github.com/markzhai/AndroidPerformanceMonitor/tree/ed688391cdf95742892ce61494736667cf5baf08)
 - [BlockCanary Maven Central 版本元数据](https://repo.maven.apache.org/maven2/com/github/markzhai/blockcanary-android/maven-metadata.xml)
-- [1.5.0 `LooperMonitor`](https://github.com/markzhai/AndroidPerformanceMonitor/blob/ed688391cdf95742892ce61494736667cf5baf08/blockcanary-analyzer/src/main/java/com/github/moduth/blockcanary/LooperMonitor.java)
-- [1.5.0 `AbstractSampler`](https://github.com/markzhai/AndroidPerformanceMonitor/blob/ed688391cdf95742892ce61494736667cf5baf08/blockcanary-analyzer/src/main/java/com/github/moduth/blockcanary/AbstractSampler.java)
-- [1.5.0 `StackSampler`](https://github.com/markzhai/AndroidPerformanceMonitor/blob/ed688391cdf95742892ce61494736667cf5baf08/blockcanary-analyzer/src/main/java/com/github/moduth/blockcanary/StackSampler.java)
-- [1.5.0 `BlockCanaryInternals`](https://github.com/markzhai/AndroidPerformanceMonitor/blob/ed688391cdf95742892ce61494736667cf5baf08/blockcanary-analyzer/src/main/java/com/github/moduth/blockcanary/BlockCanaryInternals.java)
-- [1.5.0 `BlockInfo`](https://github.com/markzhai/AndroidPerformanceMonitor/blob/ed688391cdf95742892ce61494736667cf5baf08/blockcanary-analyzer/src/main/java/com/github/moduth/blockcanary/internal/BlockInfo.java)
-- [1.5.0 旧通知实现](https://github.com/markzhai/AndroidPerformanceMonitor/blob/ed688391cdf95742892ce61494736667cf5baf08/blockcanary-android/src/main/java/com/github/moduth/blockcanary/DisplayService.java)
+- [BlockCanary 1.5.0 analyzer source JAR](https://repo.maven.apache.org/maven2/com/github/markzhai/blockcanary-analyzer/1.5.0/blockcanary-analyzer-1.5.0-sources.jar)
+- [BlockCanary 1.5.0 Android source JAR](https://repo.maven.apache.org/maven2/com/github/markzhai/blockcanary-android/1.5.0/blockcanary-android-1.5.0-sources.jar)
+- [`master@ed688391` `LooperMonitor`](https://github.com/markzhai/AndroidPerformanceMonitor/blob/ed688391cdf95742892ce61494736667cf5baf08/blockcanary-analyzer/src/main/java/com/github/moduth/blockcanary/LooperMonitor.java)
+- [`master@ed688391` `BlockCanaryInternals`](https://github.com/markzhai/AndroidPerformanceMonitor/blob/ed688391cdf95742892ce61494736667cf5baf08/blockcanary-analyzer/src/main/java/com/github/moduth/blockcanary/BlockCanaryInternals.java)
+- [`master@ed688391` 旧通知实现](https://github.com/markzhai/AndroidPerformanceMonitor/blob/ed688391cdf95742892ce61494736667cf5baf08/blockcanary-android/src/main/java/com/github/moduth/blockcanary/DisplayService.java)
 - [Android 17 `Looper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Looper.java)
 - [Android 17 InputDispatcher 默认超时计算](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
 - [Android 17 `IInputConstants.aidl`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/android/os/IInputConstants.aidl)
+- [Android 12 target 行为：`android:exported` 与 PendingIntent mutability](https://developer.android.com/about/versions/12/behavior-changes-12)
+- [通知渠道官方指南](https://developer.android.com/develop/ui/views/notifications/channels)
+- [JankStats Maven 版本元数据](https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/maven-metadata.xml)
 - [JankStats 官方指南](https://developer.android.com/topic/performance/jankstats)
 - [FrameMetrics API](https://developer.android.com/reference/android/view/FrameMetrics)
 - [Android 慢帧与冻结帧](https://developer.android.com/topic/performance/vitals/render)
