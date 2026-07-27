@@ -76,8 +76,19 @@ confidence: medium
 
 <!-- outline-end -->
 
-> 本节内容待加工。
+## 审核说明
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md]
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - 线程监控：如何解决"匿名"线程？.md]
-[缺口来源: 全书 FD monitoring 仅 7 处提及，thread monitoring 12 处，实战覆盖不足]
+上面的 outline 是重复章节创建时留下的流水线记录，为避免破坏历史任务定位而原样保留。它不是 Android 17 的技术结论，不能据此新增实现。主章节已经覆盖可验证的 FD 快照、创建归因、线程治理、资源关联和线上开关。
+
+需要特别排除以下误读：
+
+- 应用读取自身 `/proc/self/fd` 与 `/proc/self/fdinfo` 是常见诊断手段；不能笼统写成“Android 17 限制”，应以目标设备上的访问结果和错误码为准。
+- `libfdtrack` 属于 Android 平台内部实现，不是 API 37 面向普通应用提供的 FD guard SDK。应用不能把链接或 Hook 它作为稳定方案。
+- `_IO_FILE` 是特定 C 库的数据结构表达，无法覆盖 socket、epoll、eventfd、ashmem/memfd、Binder 驱动等全部 FD，也不是 Android 应用 FD 归因的统一入口。
+- `Thread.setDefaultUncaughtExceptionHandler()` 只能接收未捕获异常，不能观察线程创建、存活或泄漏。
+- PLT Hook 只能覆盖指定调用方经过动态重定位槽的 `pthread_create` 等调用；内部直接调用、内联、直接 syscall 和后装载 ELF 都要单独评估。
+- eBPF 追踪依赖内核能力、SELinux、挂载与权限配置，不是普通未特权应用可默认启用的线上方案。
+- `RLIMIT_NOFILE` 与 cgroup 配置属于设备和进程环境，不应宣称 Android 17 为所有应用统一调整了上限。采集时要记录 `getrlimit()` 的运行时结果。
+- Binder 线程池耗尽、应用线程失控和 FD 耗尽可以互相放大，但三者没有固定因果关系，必须用线程栈、Binder 状态与 FD 快照按时间关联。
+
+权威正文见 [20.14《线程与 FD 资源监控治理》](14-thread-fd-resource-monitoring.md)。本文件只保留历史路径，不再承载独立知识内容。
