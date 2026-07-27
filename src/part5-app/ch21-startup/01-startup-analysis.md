@@ -72,668 +72,406 @@ last_deepseek_polish_at: 2026-06-16
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 本节定位
+本节站在应用进程一侧分析启动：系统什么时候把执行权交给应用，应用的关键路径包含哪些阶段，以及 Trace 中的一段时间究竟代表什么。系统侧的进程创建、任务与窗口管理另见 8.2 节；初始化依赖治理、Baseline Profile 和首帧渲染分别在后续章节展开。
 
-8.2 节从系统层面说明了冷启动的完整流程——从用户点击到首帧绘制的每一步系统行为。本节切换到 App 开发者的视角，回答一个更实际的问题：**拿到一个启动慢的 App，从哪里下手分析？**
+本文的平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。AndroidX 与 Perfetto 属于独立发布的工具链，文中会明确它们与平台版本的边界。
 
-两种视角的分工：8.2 节告诉你"每一步在干什么、为什么需要这一步"，本节告诉你"每一步耗时多少、怎么量、怎么从 Perfetto 里读出来"。
+## 1. 冷、温、热描述的是启动前状态
 
-## 冷 / 温 / 热启动：App 侧的耗时分布
+[Android 应用启动文档](https://developer.android.com/topic/performance/vitals/launch-time)把启动分为 cold、warm、hot。三者概括的是启动前进程、Activity 和 UI 对象是否仍然存在；生命周期回调会随任务状态变化。
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
+| 类型 | 启动前状态 | 应用侧通常需要完成的工作 |
+| --- | --- | --- |
+| 冷启动 | 目标应用进程不存在 | 创建进程和 Application，安装 Provider，创建 Activity，生成第一帧 |
+| 温启动 | 复用了一部分状态，但 Activity 或进程中的部分对象需要重建 | 常见情况是进程仍在而 Activity 重建；恢复路径取决于任务和保存状态 |
+| 热启动 | 进程与目标 Activity 仍在内存中 | 将已有 Activity 带回前台，处理生命周期与必要的重绘 |
 
-三种启动状态的定义和系统级行为在 8.2 节已经讲过。本节从 App 侧能看到的时间段来划分。
+同一个入口在不同时间可能落入不同类型。用户从桌面点击、通知跳转、深链、最近任务恢复，也可能命中不同 Activity 和任务栈。只看 `onCreate()` 是否调用，无法可靠判断平台记录的启动类型。
 
-### 冷启动：App 侧的四个耗时阶段
+工程上要区分两件事：
 
-冷启动在 App 进程内可观测到的路径分为四段：
+- **实验分类**：Macrobenchmark 的 `StartupMode.COLD/WARM/HOT` 用固定前置条件构造可比较样本。
+- **线上分类**：使用平台或 Play 的启动指标，并按入口、进程、版本和设备分组；应用自有“进程首次启动”标记只能辅助解释。
 
+不要用“温启动一定是冷启动的某个百分比”或“热启动一定小于一帧”作为基线。后台回收、配置变化、首屏数据、CPU 调频和页面重绘都会改变成本。
+
+## 2. Android 17 冷启动的 App 侧路径
+
+### 2.1 从启动请求到应用主线程
+
+冷启动开始时，系统解析启动请求、准备任务与 starting window，并请求 Zygote fork 应用进程。这个阶段已经计入用户看到的启动等待，但应用自己的 `Application` 埋点还没有运行。
+
+子进程进入 `ActivityThread.main()` 后，会准备主线程 Looper、创建 `ActivityThread`，再通过 Binder 向 system_server attach。后续绑定信息和生命周期事务被送回应用主线程。对应用开发者而言，这段路径有两个含义：
+
+1. `Application.attachBaseContext()` 不是整个冷启动的起点，早于它的系统与进程初始化同样消耗 TTID。
+2. 只汇总应用内埋点会漏掉进程创建、调度等待、系统服务和跨进程通信时间。
+
+### 2.2 `ContentProvider` 早于 `Application.onCreate()`
+
+Android 17 的 [`ActivityThread.handleBindApplication()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)按以下关键顺序执行：
+
+```text
+创建并 attach Application
+        ↓
+installContentProviders(app, data.providers)
+        ↓
+Instrumentation.onCreate(...)
+        ↓
+Instrumentation.callApplicationOnCreate(app)
 ```
-进程启动 → Application 创建 → Activity 创建与布局 → 首帧绘制
-```
 
-**阶段 1：进程启动到 Application.attachBaseContext**
+这段顺序说明，自动初始化 Provider 的 `onCreate()` 位于应用 `Application.onCreate()` 之前。仅给 `Application.onCreate()` 计时会漏掉 App Startup、第三方 SDK 或业务 Provider 的成本。
 
-[已验证: AOSP android-15.0.0_r1, ActivityThread.java]
+`Application.attachBaseContext()` 到 `Application.onCreate()` 之间可能包含：
 
-Zygote fork 出子进程后，`ActivityThread.main()` 开始执行。这一阶段 App 开发者几乎没有可控的代码介入点——从 fork 到 `attachBaseContext` 之间的耗时完全由系统决定。主要开销在 ART 运行时初始化、主线程 Looper 创建、以及 `attachApplication` 的 Binder 调用。
+- Provider 类加载、静态初始化与 `onCreate()`；
+- 配置和资源初始化；
+- instrumentation 初始化；
+- 主线程上的 Binder、文件、数据库和锁等待。
 
-在 Perfetto 中，这个阶段对应 App 进程从出现到 `ActivityThreadMain` slice 开始之间的一段空白。典型耗时 50-150ms，与设备性能和 `.so` 库数量相关。App 侧无法优化，但可以间接加速：减少不必要的配置项解析和 `loadLibrary` 调用数量。
+Provider 治理见 [ContentProvider 启动优化](./03-contentprovider-optimization.md)。多进程应用还要核对每个 Provider 的 `android:process`：默认进程的 Provider 不会自动在每个子进程各运行一次，声明到某个进程的组件只随对应进程安装。
 
-**阶段 2：Application.attachBaseContext 到 Application.onCreate 结束**
+### 2.3 Application 阶段
 
-[已验证: AOSP, ActivityThread.handleBindApplication]
+`Application.onCreate()` 在主线程同步执行。适合保留在这里的工作应同时满足：
 
-这是 App 开发者能直接控制的第一个耗时入口。`attachBaseContext` 和 `onCreate` 之间包含了大部分 SDK 的初始化逻辑。常见耗时大户：
+- 当前进程需要；
+- 当前入口需要；
+- 在 Activity 或首帧之前必须完成；
+- 能在给定主线程预算内结束；
+- 不依赖不受控的网络或长时间锁等待。
 
-- 第三方 SDK 初始化（Analytics、Push、Crash 上报等）
-- 数据库打开与升级检查（Room、SQLiteOpenHelper）
-- MultiDex 安装（`MultiDex.install()`，仅 `minSdkVersion < 21` 的场景）
-- 全局配置读取（SharedPreferences 读取、远程配置拉取）
-- 网络框架预热（OkHttp ConnectionPool 初始化、DNS 预解析）
+常见长任务包括 SDK 初始化、同步数据库打开、反序列化大配置、原生库加载和批量对象构造。把它们全部提交到后台线程也可能延迟启动：主线程若随后等待结果，关键路径没有缩短；如果不等待，后台 CPU、I/O 和类加载仍会与首帧争用资源。
 
-在一个中大型 App 中，`Application.onCreate` 的耗时通常在 200-800ms 之间，是冷启动优化最常见的切入点。优化策略在 21.2 节展开。
+对于 `minSdkVersion >= 21` 的应用，平台原生支持从多个 DEX 加载类，不需要在 `Application` 中调用旧版 `MultiDex.install()`。只有仍支持 API 20 及以下的应用才需要单独审视这条兼容路径。
 
-**阶段 3：Activity.onCreate 到 View 树构建完成**
+### 2.4 Activity 创建与 UI 构建
 
-[已验证: AOSP, LaunchActivityItem.java]
+应用收到启动 Activity 的 lifecycle transaction 后，框架创建 Activity，并根据目标状态执行 `onCreate()`、`onStart()`、`onResume()` 等回调。不要把这串回调当作所有启动的恒定路径；已有 Activity 回前台、配置变化和任务恢复会走不同组合。
 
-`Application.onCreate` 返回后，system_server 通过 `ClientTransaction` 向 App 发送 `LaunchActivityItem`。App 主线程处理这条事务时执行 Activity 生命周期：`onCreate` → `onStart` → `onResume`。
+View UI 的 `setContentView()` 会触发布局解析、View 创建和属性解析。Compose UI 则在 `setContent` 后经历初始 composition、layout 和 draw。两种 UI 技术都要关注：
 
-在 `Activity.onCreate` 中，`setContentView` 触发 XML 布局的 inflate——同步的 XML 解析 + View 对象创建过程。复杂布局层级（嵌套超过 10 层、包含大量自定义 View）的 inflate 耗时可能达到 50-200ms。
+- 是否在主线程读取磁盘或等待 Binder；
+- 图片解码、字体和资源是否进入首帧关键路径；
+- 首屏不可见区域是否提前创建；
+- 自定义 View 构造、`onMeasure()`、`onLayout()`、`onDraw()` 是否执行重活；
+- Compose 的首轮 composition 是否创建过多对象或读取未准备好的状态。
 
-`onResume` 返回后，`ActivityThread.handleResumeActivity()` 在 `addView` 阶段创建 `ViewRootImpl` 并通过 `setView` 触发后续 traversal 调度。`ViewRootImpl` 构造时注册 `Choreographer` 回调，为主线程接收 VSync 信号做准备。但此时还没有绘制任何像素——第一帧的绘制要等下一个 VSync 到来。
+View 数量、布局深度或 Composable 数量都没有通用的危险阈值。Trace 中的耗时和调用路径才是优化依据。`ViewStub`、条件 composition、懒加载或异步 inflate 也各有语义限制，采用前要验证线程安全、状态恢复和首屏交互。
 
-**阶段 4：首帧绘制（First Draw）**
+### 2.5 第一帧从 traversal 到系统确认绘制
 
-[已验证: AOSP, ViewRootImpl.performTraversals]
+主线程在 VSync 驱动下进入 `Choreographer#doFrame`，执行 traversal，完成 measure、layout 和 draw。硬件加速路径中，UI 线程记录绘制命令，RenderThread 与 GPU 继续处理渲染，buffer 再交给系统合成路径。
 
-下一个 VSync 信号到来时，`Choreographer` 回调触发 `ViewRootImpl.performTraversals()`，执行 `measure` → `layout` → `draw` 三步。使用硬件加速（Android 4.0+ 默认开启）时，draw 阶段生成 `DisplayList` 并交给 `RenderThread` 处理。
+Android 17 的 [`ViewRootImpl`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)在首次绘制请求完成后走 `reportDrawFinished(...)` 路径，窗口系统据此结束对应的启动绘制等待。需要区分几个相邻观测点：
 
-`RenderThread` 通过 GPU 执行绘制命令，完成后通过 `queueBuffer()` 将帧提交给 `SurfaceFlinger`。从 `performTraversals` 开始到帧提交完成，典型耗时 10-50ms。
+| 观测点 | 可以说明什么 | 不能说明什么 |
+| --- | --- | --- |
+| `performTraversals` 结束 | 本轮主线程 traversal 返回 | GPU、buffer 提交和系统确认均已结束 |
+| RenderThread `DrawFrame` | 渲染线程处理这一帧 | 像素已经被面板扫描显示 |
+| frame commit callback | 硬件渲染内容已提交到 swap chain | 用户已经看到该帧 |
+| TTID | 系统记录的首帧启动指标 | 页面主要内容已经可用 |
 
-首帧绘制完成的时刻就是 TTID（Time To Initial Display）的终点。从用户视角看，这就是屏幕上第一次出现 App 内容的时刻。
+帧预算取决于刷新率、FrameTimeline deadline 和流水线阶段，不能一律写成 16 ms。120 Hz 显示器的节奏与 60 Hz 不同，一次 traversal 跨过某个 VSync 也要结合 intended/actual timeline 判断是否 missed deadline。
 
-### 冷启动各阶段典型耗时分布
+## 3. TTID 与 TTFD 回答不同问题
 
-| 阶段 | 起止点 | 典型耗时 | 可控程度 |
-|------|--------|----------|----------|
-| 进程初始化 | fork → attachBaseContext | 50-150ms | 几乎不可控 |
-| Application 初始化 | attachBaseContext → onCreate 结束 | 200-800ms | **高度可控** |
-| Activity 创建 | Activity.onCreate → onResume 结束 | 50-200ms | 可控 |
-| 首帧绘制 | performTraversals → queueBuffer | 10-50ms | 部分可控 |
+### 3.1 TTID：首个 UI 帧
 
-> **注意**：以上数据基于中大型 App 在中端设备（如 Snapdragon 778G）上的典型范围。具体数值因 App 复杂度、设备性能、Android 版本差异很大。优化前必须先量自己的数据，不要套用别人的数字。
+TTID（Time To Initial Display）从系统收到启动请求开始，直到目标 Activity 的第一帧被记录为已显示。它包含冷启动时的进程创建，也包含冷/温启动时的 Activity 创建和首帧工作。
 
-### 温启动和热启动：App 侧的简化路径
+TTID 很短只能说明用户很快看到一个应用帧。该帧可能仍是骨架、空列表或占位内容。系统 SplashScreen 的持续时间、应用第一帧和主要内容可用时间也不能混为一个数字。
 
-温启动跳过了阶段 1 和阶段 2（进程已存在、Application 已初始化），直接从 Activity 创建开始。App 侧的耗时集中在 `Activity.onCreate` 的布局重建和数据加载上。温启动的典型耗时是冷启动的 40%-60%。
+Logcat 中的 `Displayed ... +...`、`adb shell am start -W` 和 Perfetto 都能帮助本地诊断。命令行结果会受到任务栈、是否 force-stop、编译状态和设备状态影响，不应把一次 `am start -W` 当成发布门禁。
 
-热启动只走 `onRestart` → `onStart` → `onResume`，不创建新的 Activity 对象。如果 Activity 保持了视图状态，`performTraversals` 只需处理 invalidate 标记的区域，耗时通常在 16ms 以内。但如果系统在后台回收了 Bitmap 等资源，热启动可能退化为接近温启动的耗时。
+Android vitals 当前把冷启动 5 秒、温启动 2 秒、热启动 1.5 秒及以上列为 excessive。它们是 Play 的告警边界，不是优秀体验的目标值。应用自己的预算应按入口、设备档位和产品体验设得更严格。
 
-## Application.onCreate、Activity.onCreate、首帧渲染：逐阶段深入
+### 3.2 TTFD：由应用声明“主要内容可用”
 
-### Application.onCreate：常见启动耗时集中点
+TTFD（Time To Fully Drawn）从同一启动请求开始，到应用调用 `reportFullyDrawn()`，并完成包含该报告的帧。`StartupTimingMetric` 的 `timeToFullDisplayMs` 在 API 29 以前可能不可用；本章适用范围从 API 29 开始。
 
-Application.onCreate 在主线程同步执行。很多开发者习惯在这里初始化所有 SDK，因为它"只会执行一次"。但这"一次"发生在冷启动的关键路径上。
+平台不知道每个产品何时“可用”，因此团队必须先定义完成条件。例如：
 
-典型问题模式：
+- 首页主列表已经展示本地缓存或网络数据；
+- 关键按钮可点击，必要依赖已经准备好；
+- 错误态或离线态也已形成可操作界面；
+- 不影响首要任务的推荐、广告或二级卡片不进入条件。
 
-- **串行初始化**：10 个 SDK 各耗时 20-50ms，串行执行就是 200-500ms
-- **IO 操作**：`SharedPreferences` 第一次 `getSharedPreferences()` 会触发磁盘 XML 文件读取和解析（`SharedPreferencesImpl#loadFromDisk()`），首次访问可能触发异步加载并在 `awaitLoadedLocked()` 等待结果；大文件仍有 5-20ms 开销
-- **数据库操作**：`SQLiteOpenHelper.getReadableDatabase()` 首次调用可能触发 `onCreate` 或 `onUpgrade`，涉及磁盘 IO
-- **Class 加载**：某些 SDK 通过反射加载类，首次加载触发 dex 的 class 查找和验证
-
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
-
-从 CPU 时间角度看，`Application.onCreate` 中的代码如果全部是 CPU 计算逻辑，那多线程并行可以将总 CPU 时间压缩到最慢的那个任务。但如果包含 IO 操作（数据库、文件、网络），多线程的收益受限于 IO 等待。这也是为什么启动优化通常先做 IO 移除和延迟初始化，再做并行化——先把不该在启动路径上的操作拿走，再对剩下的做并行。
-
-度量 `Application.onCreate` 耗时的方法：
+下面的示例把“关键数据就绪”和“主内容完成布局”作为报告条件：
 
 ```kotlin
-class MyApplication : Application() {
-    override fun onCreate() {
-        val start = System.nanoTime()
-        super.onCreate()
-        // ... SDK 初始化 ...
-        val elapsed = (System.nanoTime() - start) / 1_000_000.0
-        Log.d("Startup", "Application.onCreate: ${"%.1f".format(elapsed)}ms")
-    }
-}
-```
+class MainActivity : ComponentActivity() {
+    private var criticalDataReady = false
+    private var mainContentLaidOut = false
+    private var fullyDrawnReported = false
 
-这段代码只能在开发阶段使用。线上监控需要用 `SystemClock.elapsedRealtime()` 记录时间戳，并通过 APM SDK 上报。注意 `System.nanoTime()` 和 `SystemClock.elapsedRealtime()` 的区别：前者用于测量区间耗时，后者可以跨进程使用同一时间基准。
-
-### Activity.onCreate：布局 inflate 是主要开销
-
-`setContentView(int)` 内部调用 `LayoutInflater.inflate()`，执行 XML 解析和 View 对象创建。每个 View 的创建涉及反射调用（`LayoutInflater.createView()`）和属性解析（`TypedArray`）。
-
-影响 inflate 耗时的因素：
-
-- **布局层级深度**：每增加一层 `ViewGroup`，多一次 `addView` 和 `requestLayout`
-- **View 数量**：单屏超过 80 个 View 时 inflate 耗时开始显著增加
-- **自定义 View**：自定义 View 的构造函数中如果有复杂初始化（如 `Paint` 对象创建、`Typeface` 加载），会放大 inflate 耗时
-- **`include` 和 `ViewStub`**：`include` 在 inflate 时立即展开，`ViewStub` 延迟到 `inflate()` 被调用时才展开
-
-减少 inflate 耗时的策略（详见 22.1 节）：
-
-- 用 `ViewStub` 延迟加载非首屏可见的布局区域
-- 用 AsyncLayoutInflater（`androidx.asynclayoutinflater`）在子线程执行 inflate
-- 减少层级：用 `ConstraintLayout` 替代多层嵌套的 `LinearLayout` + `RelativeLayout`
-- 避免在 View 构造函数中做 IO 操作
-
-### 首帧渲染：从 performTraversals 到帧提交
-
-首帧渲染的 `measure` → `layout` → `draw` 三步在主线程同步执行。`draw` 阶段如果启用了硬件加速（默认），生成 `DisplayList` 后交给 `RenderThread` 异步执行 GPU 命令。
-
-主线程在 `draw` 完成后即可继续处理后续消息，不必等 `RenderThread` 完成。但帧必须等 `RenderThread` 完成 `queueBuffer` 并经 `SurfaceFlinger` 合成后才能显示在屏幕上。
-
-在 Perfetto 中，首帧渲染的观测点：
-
-- 主线程：`performTraversals` slice
-- RenderThread：`DrawFrame` slice，结束时间对应帧提交完成
-- SurfaceFlinger：对应 `commit` 和 `composite` slice，合成完成即送显
-
-如果首帧渲染超过 16ms（一帧时间），会看到主线程的 `performTraversals` 跨越两个 VSync 边界，这就是掉帧。
-
-## 启动耗时的度量方法：TTID / TTFD / 自定义埋点
-
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
-
-### TTID（Time To Initial Display）
-
-TTID 度量的是从系统收到 `startActivity` 调用到首帧绘制完成的时间。在 Android 4.4（API 19）+ 上通过 logcat 可以观测：
-
-```
-ActivityTaskManager: Displayed com.example/.MainActivity: +1s234ms
-```
-
-这个 `+1s234ms` 就是 TTID。系统通过 `ActivityMetricsLogger` 在 `startActivity` 时记录起点，在 `reportDrawFinished` 时记录终点。
-
-TTID 的局限：它只度量到首帧显示，不关心首帧是否有实际内容。如果 `SplashScreen` 显示的是纯色背景，TTID 会偏短，但用户仍在等待有效内容。
-
-### TTFD（Time To Fully Drawn）
-
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
-
-TTFD 度量的是从 `startActivity` 到 App 声明"内容已完整加载"的时间。App 通过调用 `Activity.reportFullyDrawn()` 告知系统内容加载完毕：
-
-```kotlin
-override fun onResume() {
-    super.onResume()
-    loadData {
-        // 数据加载完成，列表渲染完毕
-        reportFullyDrawn()
-    }
-}
-```
-
-Android 12（API 31）之前，`reportFullyDrawn()` 会在 logcat 中输出：
-
-```
-ActivityTaskManager: Fully drawn com.example/.MainActivity: +2s567ms
-```
-
-Android 12+ 引入了 `SplashScreen` API，启动画面的生命周期由首帧绘制、`keepOnScreenCondition` 和退出动画控制——不是由 `reportFullyDrawn()` 直接控制。TTFD 的上报由 `Activity.reportFullyDrawn()` 触发，这是一个独立的诊断/优化度量，不改变 SplashScreen 的显示时机。两个机制可以配合使用：SplashScreen 负责视觉过渡，`reportFullyDrawn()` 负责标记内容完整加载的时间点。
-
-AndroidX `activity:activity:1.7.0+` 提供了 `FullyDrawnReporter`，支持多个组件分别注册完成回调，全部完成后再调用 `reportFullyDrawn()`。这对于需要等待多个异步操作（网络请求 + 本地缓存 + 配置加载）才能展示完整内容的页面更实用。注意 `FullyDrawnReporter` 是 AndroidX 库组件，不是 Android 15 平台 API。
-
-### 度量方法对比
-
-| 方法 | 起点 | 终点 | 获取方式 | 适用场景 |
-|------|------|------|----------|----------|
-| TTID | startActivity | 首帧绘制 | logcat `Displayed` 行、`adb shell am start -W`、Perfetto | 冷启动基准度量 |
-| TTFD | startActivity | reportFullyDrawn | logcat `Fully drawn` 行、Perfetto | 度量内容完整加载耗时 |
-| 自定义埋点 | 自定义起点 | 自定义终点 | APM SDK 上报 | 精细化分析特定阶段 |
-
-### 自定义埋点的实践
-
-TTID 和 TTFD 是系统级度量，粒度到 Activity 级别。要精细化分析 App 侧各阶段耗时，需要自己埋点。
-
-推荐的时间记录方式：
-
-```kotlin
-object StartupTracer {
-    private val marks = mutableMapOf<String, Long>()
-
-    fun mark(name: String) {
-        marks[name] = SystemClock.elapsedRealtimeNanos()
-    }
-
-    fun duration(from: String, to: String): Long? {
-        val start = marks[from] ?: return null
-        val end = marks[to] ?: return null
-        return (end - start) / 1_000_000 // ms
-    }
-}
-```
-
-建议的埋点位置：
-
-| 埋点名称 | 位置 | 记录时机 |
-|----------|------|----------|
-| `app_attach` | `Application.attachBaseContext` | 方法第一行 |
-| `app_create_start` | `Application.onCreate` | `super.onCreate()` 之前 |
-| `app_create_end` | `Application.onCreate` | 方法结束前 |
-| `activity_create_start` | `Activity.onCreate` | `super.onCreate()` 之前 |
-| `view_created` | `Activity.onCreate` | `setContentView()` 之后 |
-| `activity_resume` | `Activity.onResume` | 方法第一行 |
-| `first_frame` | `ViewTreeObserver.registerFrameCommitCallback()` | 帧提交回调 |
-
-`first_frame` 埋点有几种实现方式，观测点各不相同：
-
-- **`ViewTreeObserver.registerFrameCommitCallback()`**：在帧绘制完成后回调，最接近"帧已提交"语义。Android 10+ 可用，只对硬件渲染生效；回调表示帧已提交到 swap chain，不等于已显示。回调是一次性消费语义，如需取消尚未触发的回调，使用 `unregisterFrameCommitCallback(callback)`。
-- **`Choreographer.postFrameCallback()` 的首次回调**：回调时 VSync 已到达，`performTraversals` 即将开始或刚开始。观测点在帧绘制前，比 `registerFrameCommitCallback` 早。
-- **`Window.OnFrameMetricsAvailableListener`**：Android 7.0+ 提供，可以获取帧的绘制、布局、GPU 处理等分阶段耗时。适合线上监控，不适合做单次首帧标记。
-- **`ViewTreeObserver.OnPreDrawListener` / `OnDrawListener`**：分别在 `onPreDraw` 和 `onDraw` 阶段触发。注意 `OnDrawListener` 不能在 `onDraw()` 内调用 `removeOnDrawListener()`，否则会抛 `IllegalStateException`。
-
-选择建议：开发阶段用 `registerFrameCommitCallback()` 做首帧标记最直接；线上监控用 `OnFrameMetricsAvailableListener` 获取完整帧指标。
-
-### 线上监控注意事项
-
-[结构参考: Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md]
-
-线上启动监控需要关注几个问题：
-
-- **P90 / P95 / P99 分位**：平均数会被长尾拉高，中位数掩盖慢启动。P90 是最常用的衡量指标
-- **分设备分版本统计**：低端设备的冷启动耗时可能是高端设备的 3-5 倍，不区分设备看数据会得出错误的结论
-- **冷 / 温 / 热分开统计**：三种启动状态的耗时量级完全不同，混在一起看没有意义
-- **首次安装 vs 升级**：首次安装没有 dex2oat profile，启动速度会明显慢于升级用户。Baseline Profile 的效果主要体现在首次安装场景
-
-## Perfetto 启动分析实战
-
-这一节用一次完整的冷启动 Trace 分析，展示从 Perfetto 中提取启动各阶段耗时的方法。
-
-### Trace 抓取
-
-启动分析需要抓取的 atrace categories：
-
-```bash
-adb shell perfetto \
-  -c - --txt \
-  -o /data/misc/perfetto-traces/startup.pb \
-<<EOF
-buffers: {
-    size_kb: 63488
-}
-data_sources: {
-    config {
-        name: "linux.ftrace"
-        ftrace_config {
-            ftrace_events: "sched/sched_switch"
-            ftrace_events: "power/cpu_frequency"
-            atrace_categories: "am"
-            atrace_categories: "view"
-            atrace_categories: "dalvik"
-            atrace_categories: "sched"
-            atrace_categories: "binder_driver"
+    private fun maybeReportFullyDrawn() {
+        if (criticalDataReady &&
+            mainContentLaidOut &&
+            !fullyDrawnReported
+        ) {
+            fullyDrawnReported = true
+            reportFullyDrawn()
         }
     }
 }
-duration_ms: 30000
-EOF
 ```
 
-关键 categories：
+`criticalDataReady` 和 `mainContentLaidOut` 应由对应状态与布局回调更新，每次更新后调用 `maybeReportFullyDrawn()`。报告只发送一次；完成条件应覆盖成功、离线和可恢复错误，避免网络失败后永远没有 TTFD。若调用发生在首帧之前，平台会以系统检测到的首帧时间为下限，因此提前调用不会生成比 TTID 更早的有效 TTFD。
 
-- `am`：Activity Manager 相关事件，包含 `BindApplication`、`activityStart`、`activityResume` 等 slice
-- `view`：View 系统事件，包含 `performTraversals`、`measure`、`layout`、`draw` 等 slice
-- `dalvik`：ART 虚拟机事件，包含 GC、class loading 等 slice
-- `sched`：CPU 调度事件，显示线程在哪个 CPU 核上执行
-- `binder_driver`：Binder 事务，显示跨进程调用的耗时
+AndroidX `ComponentActivity` 的 Fully Drawn 支持可协调多个组件或异步条件。无论使用平台方法还是 AndroidX 封装，团队都要把“fully drawn”定义写进测试，避免不同页面各自解释。
 
-抓取启动 Trace 的触发方式：
+### 3.3 自定义里程碑：解释 TTID/TTFD 内部时间
 
-1. **手动触发**：先开始录制 Trace，然后通过 `adb shell am start` 启动 App
-2. **atrace + App 启动**：用 `adb shell am start -W` 配合 Trace 抓取
-3. **Perfetto 的事件触发模式**：配置 `trigger_config` 以 `am start` 命令作为触发条件
+TTID 和 TTFD 是端到端指标，无法直接说明慢在哪里。应用可补充少量稳定里程碑：
 
-### 在 Perfetto 中定位冷启动各阶段
+- Application attach；
+- 每个必要初始化器的开始和结束；
+- Activity 创建、UI 状态提交；
+- 关键数据可用；
+- 主要内容完成布局；
+- `reportFullyDrawn()` 请求。
 
-打开 Trace 后，按进程筛选目标 App。冷启动的 App 进程会在 Trace 中间位置突然出现（fork 后才有进程）。
+区间计时优先使用单调时钟。`SystemClock.uptimeNanos()` 不计深度休眠，适合进程内 CPU/主线程工作区间；`elapsedRealtimeNanos()` 计入深度休眠，并在同一设备上提供自开机以来的时间基准。`System.nanoTime()`只保证用于计算同一运行环境中的时间差，不应依赖它的绝对起点。
 
-**定位进程创建点**：
+埋点名称要稳定且基数受控，不要把用户 ID、URL 或动态参数写入 Trace 名称。线上事件还需采样，并记录启动入口、应用版本、设备档位、编译状态和进程名。
 
-在 system_server 进程中搜索 `Start proc` 或 `Start process: xxx`，这是 ATMS 决定创建新进程的时间点。
+## 4. 用 Macrobenchmark 建立启动基线
 
-**定位 Application 初始化**：
+[Macrobenchmark](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)从目标应用进程外驱动启动，并为每轮采集 Perfetto Trace。它比在 `Application` 内自行计时更适合端到端回归。
 
-在 App 进程中搜索以下关键 slice：
+下面的基准用于测量带有 Baseline Profile 的冷启动：
 
-- `ActivityThreadMain`：`ActivityThread.main()` 开始执行
-- `bindApplication`：系统向 App 发送 bindApplication 消息
-- `createApplicationContext`：Application Context 创建
-- `Application.onCreate`：如果在 `Application.onCreate` 中手动加了 trace tag，会直接显示；否则通过 `bindApplication` slice 的结束时间估算
+```kotlin
+@LargeTest
+@RunWith(AndroidJUnit4::class)
+class StartupBenchmark {
+    @get:Rule
+    val rule = MacrobenchmarkRule()
 
-**定位 Activity 创建**：
-
-搜索 `activityStart` 或 `activityCreate` slice。如果 App 有多个 Activity，需要确认是目标 Activity 的启动事件。
-
-**定位首帧绘制**：
-
-搜索 `performTraversals` slice。第一次出现的就是首帧的 `measure` → `layout` → `draw`。主线程上的 `Choreographer#doFrame` slice 也可以定位首帧。
-
-在 RenderThread 上搜索 `DrawFrame`，第一次出现对应首帧的 GPU 渲染。
-
-**定位 TTID 终点**：
-
-`performTraversals` 结束只定位了首帧 CPU traversal 的完成。首帧还要经过 RenderThread `DrawFrame`、buffer 提交和 `ViewRootImpl`/`WindowSession` 的 draw-finished 上报。系统侧的 TTID 终点是 `Displayed` 时间，可通过 logcat `ActivityManager: Displayed` 或 `am start -W` 观测。Perfetto 中如无法精确匹配 `reportDrawFinished` / frame commit 相关事件，用 `performTraversals` 结束作为 TTID 下界近似，并标注这是 CPU 侧终点，不含 RenderThread/GPU/提交阶段。
-
-### 常见的启动 Trace 图谱
-
-**典型冷启动的 Perfetto 时间线**（从上到下）：
-
-```
-system_server:
-  ├── Start proc                         ← 进程创建请求
-  └── attachApplication                  ← Binder 调用，通知进程就绪
-
-App 主线程:
-  ├── ActivityThreadMain                 ← 进程入口
-  ├── bindApplication
-  │   ├── attachBaseContext
-  │   └── Application.onCreate           ← SDK 初始化（通常最长）
-  ├── activityCreate
-  │   ├── setContentView (inflate)
-  │   └── Activity.onCreate 完成
-  ├── activityStart
-  ├── activityResume
-  │   └── ViewRootImpl 创建
-  └── performTraversals                  ← 首帧绘制
-      ├── measure
-      ├── layout
-      └── draw → DisplayList 生成
-
-RenderThread:
-  └── DrawFrame                          ← GPU 渲染首帧
-      └── queueBuffer()                  ← 帧提交给 SurfaceFlinger
+    @Test
+    fun coldStart() = rule.measureRepeated(
+        packageName = TARGET_PACKAGE,
+        metrics = listOf(StartupTimingMetric()),
+        compilationMode = CompilationMode.Partial(
+            baselineProfileMode = BaselineProfileMode.Require,
+        ),
+        startupMode = StartupMode.COLD,
+        iterations = 10,
+        setupBlock = {
+            pressHome()
+        },
+    ) {
+        startActivityAndWait()
+    }
+}
 ```
 
-### 常见异常模式
+`StartupTimingMetric`输出 `timeToInitialDisplayMs`；应用正确报告 fully drawn 时，还会输出 `timeToFullDisplayMs`。十次迭代只是一组起始配置，应根据噪声、设备数量和需要检测的回归幅度调整。
 
-**1. Application.onCreate 过长**
+每次对比必须固定：
 
-在 Perfetto 中表现为 `bindApplication` slice 持续时间超过 500ms。展开 slice 看内部是否有明显的 `GC` 事件（`dalvik` category 下的 `ConcurrentGC` slice）或 `class loading` 事件。
+- 同一 release 配置和构建工具链；
+- 相同 `CompilationMode` 与 Baseline Profile 条件；
+- 相同入口 Intent、账号、数据和网络桩；
+- 相同设备型号、系统版本、电量与温度范围；
+- 相同冷/温/热模式。
 
-GC 在启动阶段抢占 CPU 是常见问题。ART 的 `HeapTaskDaemon` 线程在 Java 堆达到阈值时触发并发 GC，虽然不 STW，但会抢占 CPU 时间片，导致主线程被调度出去。Android 10+ ART 在 fork 后会临时提高 `target_footprint` 和 `concurrent_start_bytes`，用来减少启动早期 GC；2 秒后开始收缩堆目标。这不是硬性禁止 GC，App 如果快速分配大量对象（如 SDK 初始化时创建大量配置对象），仍可能在启动期触发 GC。
+Debug 包、模拟器、低电量或温度降频样本不适合建立发布阈值。Macrobenchmark 要求目标包可 profile；不要通过压制配置错误来换取一个不可信数字。
 
-[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
+冷、温、热三组结果要分别保存。页面结构或首屏数据变化时，还要同时检查 TTFD 和帧指标，防止用更早展示空壳换取较短 TTID。
 
-**2. 布局 inflate 耗时**
+## 5. 自定义 Trace 应围绕业务边界
 
-在 `activityCreate` slice 内，如果 `setContentView` 到 `Activity.onCreate` 结束之间的耗时超过 100ms，通常可以判定为布局 inflate 问题。用 Android Studio Layout Inspector 检查布局层级，或者用 `LayoutInspector` 命令行工具 dump View 树。
+应用控制的初始化入口可以用 `androidx.tracing` 补充切片。下面的示例用于区分配置解析与崩溃监控初始化：
 
-**3. 首帧绘制跨 VSync**
+```kotlin
+fun initializeRequiredComponents() {
+    trace("startup/config") {
+        configStore.loadLocalSnapshot()
+    }
+    trace("startup/crash-reporter") {
+        crashReporter.start()
+    }
+}
+```
 
-如果 `performTraversals` 持续时间超过 16ms，在 Perfetto 中会看到主线程的 `doFrame` 跨越两个 VSync 边界。这意味着首帧掉帧，用户感知为启动后短暂的白屏或卡顿。
+Perfetto 中会显示两个命名切片。切片要包住同步工作本身；如果代码只提交异步任务，切片结束仅代表“已提交”，不能代表初始化完成。等待异步结果时，应在生产者和消费者两端记录可关联的 async trace 或 flow，并控制 ID 的数量。
 
-常见原因：布局层级过深导致 `measure`/`layout` 递归开销大，或 `draw` 阶段有复杂的自定义 `onDraw` 逻辑。
+Trace 本身有开销。不要为每个小方法加切片，也不要只凭一个总切片判定责任。较好的层级是：
 
-### SQL 查询：批量分析启动耗时
+1. 启动端到端指标；
+2. Application、Provider、Activity、首帧等阶段；
+3. 少量可行动的业务或 SDK 边界；
+4. 出现回归后再采集方法栈、Binder 或 I/O 细节。
 
-Perfetto 的 SQL 模式可以批量分析多次启动的耗时分布。以下查询提取冷启动的各阶段耗时：
+## 6. Perfetto 启动分析实战
+
+### 6.1 获取一条可复现的 Trace
+
+推荐路径是运行 Macrobenchmark，并打开某次迭代生成的 `.perfetto-trace`。这样启动模式、编译模式和操作脚本与指标结果属于同一个样本。
+
+需要手工捕获时，可以在 Perfetto UI 或设备“系统跟踪”中启用 `sched`、`freq`、`am`、`wm`、`gfx`、`view`、`binder_driver`、`dalvik` 等设备支持的类别，并指定目标应用。应用自定义 `Trace` 切片需要 `atrace_apps`。
+
+下面的 pbtxt 是一份诊断起点，目标包名应替换为被测应用：
+
+```textproto
+duration_ms: 15000
+buffers {
+  size_kb: 65536
+  fill_policy: RING_BUFFER
+}
+data_sources {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_wakeup"
+      ftrace_events: "power/cpu_frequency"
+      ftrace_events: "binder/binder_transaction"
+      ftrace_events: "binder/binder_transaction_received"
+      atrace_categories: "am"
+      atrace_categories: "wm"
+      atrace_categories: "gfx"
+      atrace_categories: "view"
+      atrace_categories: "dalvik"
+      atrace_apps: "com.example.app"
+    }
+  }
+}
+```
+
+把配置通过 `adb shell perfetto --txt -c - -o /data/misc/perfetto-traces/startup.perfetto-trace` 传入后，在另一终端按明确前置条件启动应用，再 pull Trace。pbtxt 文本模式适合诊断；Perfetto 文档提示它不是面向生产的稳定接口，自动化基准优先使用 Macrobenchmark。
+
+类别和 tracepoint 受设备内核及版本影响。采集前用 Perfetto UI 或设备支持列表确认，缺少某个事件时不要把它解释为对应工作没有发生。
+
+### 6.2 先选中 Android App Startups
+
+打开 Trace 后，先找到 **Android App Startups** 派生轨道，选中目标包的启动 slice，再固定该时间窗口。它给出的启动边界比手工搜索第一个 `performTraversals` 更可靠。
+
+随后按这条顺序阅读：
+
+1. **system_server**：启动请求、进程创建、任务和窗口事件。
+2. **应用主线程**：`bindApplication`、Provider/Application、自定义切片、Activity lifecycle。
+3. **线程状态**：Running、Runnable、Sleeping、Blocked 以及对应唤醒者。
+4. **RenderThread 与 FrameTimeline**：首帧的 CPU/GPU 工作和 deadline。
+5. **相关线程/进程**：Binder 对端、I/O、编译、GC 或 SDK 工作线程。
+
+平台 slice 名称是诊断实现，不是公开 API。名字在不同 Android/Perfetto 版本间可能变化，自动化查询应优先使用 Trace Processor 标准库和自有稳定切片。
+
+### 6.3 分解主线程的“运行”和“等待”
+
+看到一段长主线程 slice 后，先展开 thread state：
+
+- **Running**：线程正在 CPU 上运行，继续查看调用栈、类加载或计算。
+- **Runnable**：线程可运行但未获 CPU，检查 CPU 竞争、优先级、频率与其他活跃线程。
+- **Sleeping**：可能在等待 Binder、futex、I/O 或条件变量，要沿唤醒关系找生产者。
+- **Uninterruptible Sleep**：常与内核 I/O 等待有关，需要结合块设备和文件事件。
+
+不存在“Runnable 低于 70% 就是异常”这类通用判据。主线程同步等待 5 ms 可能卡住关键路径，后台线程消耗大量 CPU 也可能让主线程长时间处于 Runnable。判断依据是关键路径上的墙钟时间和依赖关系。
+
+### 6.4 阅读 bind、Activity 和首帧
+
+`bindApplication` 较长时，依次检查：
+
+- Provider 自动初始化；
+- Application attach/onCreate 自定义切片；
+- 类加载、验证、静态初始化；
+- GC、锁等待和 Binder；
+- 主线程文件 I/O；
+- 同期后台线程的 CPU/I/O 竞争。
+
+Activity 阶段较长时，检查 View inflate 或 Compose 初始 composition、图片/字体、同步状态恢复和首屏数据绑定。单看 `Activity.onCreate()` 总时间不够，应该把可修改的业务边界标出来。
+
+首帧阶段同时观察主线程 `Choreographer#doFrame`/traversal、RenderThread 和 FrameTimeline。`performTraversals` 结束只能当作主线程 traversal 的边界，不能作为 TTID 终点；也不能默认第一次同名 slice 就属于目标窗口。
+
+### 6.5 用标准库批量列出启动
+
+当前 Trace Processor 标准库提供 `android.startup.startups` 模块。下面的查询用于列出目标包在一条 Trace 中的启动类型和持续时间：
 
 ```sql
--- 提取 Application 初始化耗时
+INCLUDE PERFETTO MODULE android.startup.startups;
+
 SELECT
-  s.name as slice_name,
-  s.dur / 1e6 as dur_ms
-FROM slice s
-JOIN thread_track tt ON s.track_id = tt.id
-JOIN thread t ON tt.utid = t.utid
-JOIN process p ON t.upid = p.upid
-WHERE p.name = 'com.example.app'
-  AND s.name IN (
-    'bindApplication',
-    'activityCreate',
-    'performTraversals'
-  )
-ORDER BY s.ts;
+  startup_id,
+  package,
+  startup_type,
+  dur / 1e6 AS duration_ms
+FROM android_startups
+WHERE package = 'com.example.app'
+ORDER BY ts;
 ```
+
+这个查询使用派生启动表，不依赖 `bindApplication` 等裸 slice 是否存在。结果是 Trace Processor 对启动窗口的解析，仍应与 Macrobenchmark 报告和界面中的目标启动核对。
+
+下面的查询用于查看目标启动窗口内耗时较长的主线程 slice：
 
 ```sql
--- 提取主线程在冷启动期间的 CPU 运行状态分布
+INCLUDE PERFETTO MODULE android.startup.startups;
+
 SELECT
-  state,
-  sum(dur) / 1e6 as total_ms
-FROM thread_state
-WHERE utid = (
-  SELECT t.utid FROM thread t
-  JOIN process p ON t.upid = p.upid
-  WHERE t.name = 'main' AND p.name = 'com.example.app'
-)
-AND ts BETWEEN (
-  SELECT s.ts FROM slice s
-  JOIN thread_track tt ON s.track_id = tt.id
-  JOIN thread t ON tt.utid = t.utid
-  JOIN process p ON t.upid = p.upid
-  WHERE s.name = 'bindApplication' AND p.name = 'com.example.app'
-  LIMIT 1
-)
-AND (
-  SELECT s.ts + s.dur FROM slice s
-  JOIN thread_track tt ON s.track_id = tt.id
-  JOIN thread t ON tt.utid = t.utid
-  JOIN process p ON t.upid = p.upid
-  WHERE s.name = 'performTraversals' AND p.name = 'com.example.app'
-  LIMIT 1
-)
-GROUP BY state;
+  s.startup_id,
+  s.slice_name,
+  s.slice_dur / 1e6 AS duration_ms
+FROM android_thread_slices_for_all_startups AS s
+JOIN android_startups AS a USING (startup_id)
+WHERE a.package = 'com.example.app'
+  AND s.is_main_thread
+  AND s.slice_dur >= 5e6
+ORDER BY s.startup_id, s.slice_dur DESC;
 ```
 
-这段查询帮助判断主线程在启动期间是"在跑"还是"在等"——如果 `Runnable` 状态占比低于 70%，说明主线程被频繁调度出去，可能的原因包括 GC 抢占、Binder 调用等待、锁竞争。
+5 ms 只是缩小诊断结果的查询过滤器，不是性能合格线。标准库会继续演进，CI 应固定 `trace_processor_shell` 版本，并对查询 schema 做测试。
 
-## 扩展：启动过程中的 ClassLoader 与 dex 加载开销
+## 7. ClassLoader、编译状态与 DEX 布局
 
-[已验证: AOSP, ART 运行时 class linking]
+### 7.1 类首次使用仍可能进入启动关键路径
 
-### Class 加载在启动中的位置
+应用类通常按需加载。首次主动使用一个类时，运行时可能需要查找定义、加载、验证、解析并在需要时执行 `<clinit>`。其中一部分工作可由安装期 AOT、运行时缓存或已有编译产物减少，但静态初始化中的应用代码仍会执行。
 
-Android 的类加载在首次使用时触发（lazy loading）。`Application.onCreate` 中引用到的每个类，在首次访问时需要经历：
+启动阶段要关注：
 
-1. **Dex 文件定位**：`DexPathList` 在 dex 数组中查找类的定义
-2. **Class 数据读取**：从 dex 文件中读取类的数据结构
-3. **类验证与链接**：`ClassLinker::VerifyClass`，检查类的合法性
-4. **类初始化**：执行 `<clinit>` 静态初始化块
+- 反射或 ServiceLoader 扫描大量类；
+- 一个入口触发长依赖链的类初始化；
+- `<clinit>` 读取文件、创建线程或加载 native library；
+- 多个 SDK 同时加载重复的框架与序列化类型；
+- 编译条件不同导致解释执行、JIT 或 AOT 路径不同。
 
-在冷启动中，类加载的开销主要集中在 `Application.onCreate` 阶段——大量 SDK 的初始化代码引用了之前从未加载过的类。
+`ApplicationLoaders` 的缓存属于进程内状态。冷启动意味着旧应用进程不存在，不能依靠它让下一次冷启动“直接命中”。多次冷启动越来越快，可能来自 Linux page cache、ART 编译产物、磁盘缓存、设备频率或数据状态变化，因此基准必须控制编译与缓存条件。
 
-### 类重排（Dex Reorder）对启动的影响
+### 7.2 Baseline Profile 与 Startup Profile 分工
 
-[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+两类 profile 解决的问题不同：
 
-ART 在加载 dex 中的类时，如果类的定义在 dex 文件中分布过于分散，会导致 CPU 缓存命中率降低。通过将启动阶段需要加载的类集中排列在 dex 文件的前部，可以提升 L1/L2 缓存命中率。
+- **Baseline Profile**向 ART 提供关键类和方法，帮助安装/后台优化时进行 AOT 编译，减少关键路径上的解释与 JIT。
+- **Startup Profile**面向 DEX 布局，把启动所需代码组织到主 DEX 的局部区域，改善读取局部性。
 
-这是局部性原理的直接应用：相邻的类定义在加载时会被一起读入缓存行。Android 的 Dex Layout 优化工具（`profman` + dex layout 优化）和 Baseline Profile 机制都在做这件事。
+Baseline Profile 不会跳过业务初始化，也不会消除磁盘、Binder、锁或网络等待；Startup Profile 也不等于“把类放到文件前面就会进入 CPU cache”。它影响的是 DEX 文件组织和读取局部性，收益要用固定编译模式的启动基准验证。
 
-Baseline Profile 通过在安装时指定 AOT 编译的类和方法列表，让这些类在启动前已经被编译成机器码，跳过了运行时的 dex 解释和 JIT 编译。这比 dex 重排更进一步——不仅减少了类查找开销，还消除了首次执行时的解释开销。
+两者的实践分别见 [Baseline Profile 实战](./04-baseline-profile-practice.md)与 [Startup Profile 与 DEX 布局](./12-startup-profile-dex-layout.md)。启动期 ART/GC 行为见 [ART 启动期 GC 调节](./13-art-gc-suppression-startup-performance.md)。
 
-Baseline Profile 的制作和使用在 21.4 节详细介绍。从 dex 加载角度看，Baseline Profile 的收益取决于 App 在启动路径上引用了多少未编译的类——对于未使用任何 AOT 编译的 App，收益可能达到 20%-40%；对于已经使用过 dex2oat 编译的 App，收益主要来自更精准的热点方法选择。
+## 8. 从 Trace 到修复的判断顺序
 
-### 如何观测类加载耗时
+面对一条慢启动样本，可以按以下顺序推进：
 
-在 Perfetto 的 `dalvik` category 中能看到类加载事件。但 Perfetto 默认不记录每次类加载的详细信息——需要开启 `art::ClassLinker` 的 trace 点。
+1. 确认启动类型、入口、编译模式、设备状态和 TTID/TTFD。
+2. 选中 Android App Startups 时间窗，判断延迟位于系统、bind、Activity 还是首帧。
+3. 查看主线程是 Running、Runnable 还是等待，并追到依赖线程或 Binder 对端。
+4. 用自定义切片、调用栈、I/O 或 GC 数据缩小到可修改代码。
+5. 判断工作是否属于首屏必要条件；能移除就移除，能按需就按需，必须保留才考虑并发和局部优化。
+6. 运行同配置 A/B Macrobenchmark，并检查 TTID、TTFD、帧和功能正确性。
+7. 在小流量线上数据中按入口、设备、版本和启动类型确认回归消失。
 
-一种替代方案是使用 `Debug.startMethodTracingSampling()` 在启动阶段做采样 profiling，然后分析采样结果中 `ClassLoader.loadClass` 的出现频率。高频出现说明类加载是瓶颈。
+启动优化不能只追求更早撤掉 SplashScreen。用户需要的是更快看到可理解、可操作且状态正确的内容；TTID、TTFD 和关键页面帧必须一起看。
 
-更轻量的方式：在 `Application.attachBaseContext` 中记录时间戳，在 `Application.onCreate` 中分 SDK 记录时间戳，看哪些 SDK 初始化耗时异常长。如果某个 SDK 初始化耗时远超其文档声称的时间，类加载（首次引用 + 依赖类的级联加载）可能是隐藏的原因。
+## 参考资料
 
-上面讨论的是 App 侧能做的工作——类重排、Baseline Profile。系统侧还有一条并行的加速路径：Zygote 预热和 ClassLoader 缓存。这条路径对 App 开发者基本透明，但理解它有助于解释"为什么同一台设备上第二次冷启动比第一次快"。
-
-### Zygote 预热与 ClassLoader 缓存（Android 14+）
-
-> 源码锚点统一在 `android-14.0.0_r1`，原始调研报告见 DeepResearch/2026-06-12-android14-cold-start-warmup-mechanism。
-
-冷启动"预热"在系统侧由 Zygote 集中承担，并由 system_server 触发。三条相互衔接的路径共同决定首进程耗时：
-
-1. **Zygote 预热（`ZygoteInit.preload`）** —— 在 `ZygoteInit.java#main` 中根据 `--enable-lazy-preload` 决定是开机即预热还是推迟到首次 fork 前。lazy 模式下开机只跑 `RuntimeInit.preForkInit()` + `gcAndFinalize()`，把后续 600–900 ms 的 `preload()` 工作延后到 `bootCompleted` 之后。
-2. **ZygoteProcess 触发** —— `ZygoteProcess.preloadDefault(abi)` 走 socket 向 zygote 发 `--preload-default` 命令；`ZygoteConnection.handlePreload` 调 `ZygoteInit.lazyPreload()` 并回包 0/1。
-3. **应用侧 ClassLoader 复用** —— `ApplicationLoaders.getClassLoader` 以 APK 路径为 cacheKey 命中 `mLoaders` 缓存，省去 dex 解析/校验/define 流程。
-
-#### preload() 内部 10 段 Trace 清单
-
-| 顺序 | Trace 标签 | 关键动作 | 源码位置 |
-| --- | --- | --- | --- |
-| 1 | BeginPreload | `ZygoteHooks.onBeginPreload()`（native 触发 ART pre-fork） | `ZygoteInit.java:140-141` |
-| 2 | PreloadClasses | `preloadClasses()` 读 `/system/etc/preloaded-classes`，逐行 `Class.forName(line, true, null)` 触发 `<clinit>` | `ZygoteInit.java:270-356` |
-| 3 | CacheNonBootClasspathClassLoaders | 把 `android.hidl.base-V1.0-java` 等系统共享库的 ClassLoader 缓存到 `mSystemLibsCacheMap` | `ZygoteInit.java:357-...` |
-| 4 | PreloadResources | `Resources.getSystem().startPreloading()` + `preloadDrawables` / `preloadColorStateLists` | `ZygoteInit.java:148-149` |
-| 5 | PreloadAppProcessHALs | `nativePreloadAppProcessHALs()` | `ZygoteInit.java:151-153` |
-| 6 | PreloadGraphicsDriver | `nativePreloadGraphicsDriver()`（触发一次 OpenGL/Vulkan 初始化） | `ZygoteInit.java:154-156` |
-| 7 | preloadSharedLibraries | `loadLibrary("android")` / `loadLibrary("jnigraphics")` | `ZygoteInit.java:188-200` |
-| 8 | preloadTextResources | `Hyphenator.init()` + `TextView.preloadFontCache()` | `ZygoteInit.java:217-220` |
-| 9 | WebViewFactory.prepareWebViewInZygote | WebView 共享内存段预初始化 | `ZygoteInit.java:160-162` |
-| 10 | warmUpJcaProviders | `AndroidKeyStoreProvider.install()` + `Security.getProviders()` 遍历 `warmUpServiceProvision()` | `ZygoteInit.java:232-256` |
-
-末尾 `runtime.preloadDexCaches()` 把已加载的类、字段、方法填到 dex cache，fork 后子进程走 `Class.isResolved()` 快速路径。
-
-#### 懒预热的 socket 协议
-
-`ZygoteProcess.java#preloadDefault` 是 system_server 的调用入口：
-
-```java
-public boolean preloadDefault(String abi) throws ZygoteStartFailedEx, IOException {
-    synchronized (mLock) {
-        ZygoteState state = openZygoteSocketIfNeeded(abi);
-        state.mZygoteOutputWriter.write("1");
-        state.mZygoteOutputWriter.newLine();
-        state.mZygoteOutputWriter.write("--preload-default");
-        state.mZygoteOutputWriter.newLine();
-        state.mZygoteOutputWriter.flush();
-        return (state.mZygoteInputStream.readInt() == 0);
-    }
-}
-```
-
-`ZygoteConnection.handlePreload` 接收命令后判 `isPreloadComplete()`：若已预热回 1，否则调 `ZygoteInit.lazyPreload()` 回 0。该调用**同步阻塞**——这是 system_server 编排启动顺序的关键工具。
-
-#### ClassLoader 缓存命中路径
-
-`ApplicationLoaders.getClassLoader()` 在 `parent == baseParent` 时的快路径：
-
-```java
-synchronized (mLoaders) {
-    if (parent == baseParent) {
-        ClassLoader loader = mLoaders.get(cacheKey);  // cacheKey == zip (APK 路径)
-        if (loader != null) {
-            return loader;  // 命中：零开销
-        }
-        ...
-    }
-}
-```
-
-多进程 App 同样受益：每个子进程启动时 `ActivityThread` 走 `LoadedApk.getClassLoader()` → `ApplicationLoaders.getClassLoader()`，第二次起直接命中。
-
-#### 协同关系
-
-- 与 **ART GC 抑制**（见 `13-art-gc-suppression-startup-performance.md`）：zygote preloading 完成后，fork 后 2s 内 `TriggerPostForkCCGcTask` 抑制并发 GC，保证 `<clinit>` 触发的对象分配不被并发回收打断。
-- 与 **Baseline Profile**（见 `04-baseline-profile-practice.md`）：zygote preloading 处理 framework/系统类，Baseline Profile 处理 App hot class，两者不重叠。
-- 与 **ContentProvider 启动治理**（见 `03-contentprovider-optimization.md`）：ContentProvider.onCreate 早于 Application.onCreate，依赖 zygote 已预热的 framework 类（`ContentProviderClient`、Binder 客户端 stub 等），因此 ContentProvider 治理的可行性建立在 zygote preload 之上。
-
-#### 版本差异（与本节相关）
-
-| API level | 变化 | 证据 |
-| --- | --- | --- |
-| 26 | 引入 fork 后 2s GC 抑制 | `13-art-gc-suppression-startup-performance.md` |
-| 29 | `--enable-lazy-preload` 引入 | `ZygoteInit.java#main` 参数解析 |
-| 31 | App Zygote 引入 `preloadApp` | `ZygoteProcess.java#preloadApp` |
-| 34 | `ZygoteHooks.preFork` / `postForkCommon` 钩子独立 | `ZygoteInit.java:336-350` 周边 |
-| 35 | `Resources.preloadResources()` 静态化 | `ZygoteInit15.java#preload` |
-
-> **Android 17 / API 37 为本文最高版本边界**。未读取或引用 Android 18 / API 38+ 内容。
-
-
-## 模块化启动框架与依赖管理（Android 17 源码级全路径）
-
-> 源码调研：`DeepResearch/2026-07-04-android17-modular-startup-framework-dependency-graph.md`
-> 一手源码：`frameworks/base/core/java/android/app/ActivityThread.java`、`LoadedApk.java`、`Application.java`（android-17.0.0_r1）；AndroidX `Initializer.java` / `InitializationProvider.java` / `AppInitializer.java`（androidx-main）
-
-模块化启动框架把"每个 SDK 各自在 manifest 注入一个 ContentProvider 自动初始化"改成"单一 InitializationProvider + Initializer 依赖图"。理解它的可行性必须从 `ActivityThread` 源码看三层基座。
-
-### 三层启动流水线（Framework 侧）
-
-`ActivityThread.main()`（`ActivityThread.java:9465`）调用顺序固定：
-
-1. `initializeMainlineModules()`（`:9533`）—— Telephony/Stats/Media/Bluetooth/NFC/DeviceConfig/SE/Profiling 八类 mainline 模块通过各自 `XxxFrameworkInitializer.setXxxServiceManager(new XxxServiceManager())` 注入到进程内的 `ServiceManager` 单例。这是 Android 14+ 后替代直接 `ServiceManager.getService()` 的耦合方式。
-2. `Looper.prepareMainLooper()` + `new ActivityThread()` + `thread.attach(false, startSeq)`（`:9275`）—— `attachApplication(mAppThread, startSeq)` 把 `IApplicationThread` Binder 推给 system_server。
-3. `Looper.loop()` —— 主线程进入消息循环，等 H.BIND_APPLICATION 投递。
-
-AMS 收到 `attachApplication` 后回调 `bindApplication()`，主线程在 `handleBindApplication(AppBindData data)`（`:7974`）内串行执行：
-
-| 阶段 | 行号 | 关键动作 |
-| --- | --- | --- |
-| Compat & Ddm | `:7978-8031` | `AppCompatCallbacks.install()`、`VMRuntime.setProcessDataDirectory()` |
-| Proxy | `:8193-8220` | `ConnectivityManager.onEarlyInit()`（Android 17 新增 `enableMultiProxySystemPlatform` 路径） |
-| **ContentProvider 安装** | `:8311-8315` | `installContentProviders(app, data.providers)` —— 这一步是 AndroidX Startup 选择 ContentProvider 形态的根本原因 |
-| **Application.onCreate** | `:8335` | `mInstrumentation.callApplicationOnCreate(app)` |
-
-固定顺序：`ContentProvider.onCreate()` 早于 `Application.onCreate()`。所以模块化框架在 `Application` 之前已经把所有 Initializer 跑完。
-
-### LoadedApk 实例化与 ClassLoader 复用
-
-`LoadedApk.makeApplicationInner()`（`LoadedApk.java:1595`）通过 `ApplicationLoaders` 全局缓存（`mLoaders` map）复用 `PathClassLoader`。`getClassLoader()`（`:1276`）走 `createOrUpdateClassLoaderLocked()`（`:1003`）— 第二次同进程再调用命中缓存，零成本。`sApplications` 静态 map（`:1604`）守护同 package 单例，避免重复创建 Application。
-
-这对模块化框架的影响：
-- 同一进程的多个 `Initializer` 实现共享 ClassLoader，静态字段、单例天然一致。
-- 多进程 App 每个子进程独立创建 ClassLoader，但每个进程内仍走缓存。
-
-### AndroidX Startup 的依赖图执行模型
-
-`Initializer<T>` 接口（androidx-main `Initializer.java`）只有两个方法：`create(Context)` 和 `dependencies()`。`InitializationProvider.onCreate()`（`InitializationProvider.java:36`）调用 `AppInitializer.getInstance(context).discoverAndInitialize(getClass())`，把工作转交给单例 `AppInitializer`。
-
-`AppInitializer.discoverAndInitialize(Bundle metadata)`（`AppInitializer.java:210`）两步走：
-
-1. **Discovery**：遍历 `metaData.keySet()`，匹配 value == `androidx_startup` 字符串的 key（`mContext.getString(R.string.androidx_startup)`），把 `Class.forName(key)` 加进 `mDiscovered` 集合。
-2. **Topological initialize**：对 `mDiscovered` 每个 component 调用 `doInitialize(component, initializing)`。
-
-`AppInitializer.doInitialize()`（`AppInitializer.java:140`）是核心 DFS：
-
-```java
-private <T> T doInitialize(Class<? extends Initializer<?>> component,
-                            Set<Class<?>> initializing) {
-    if (initializing.contains(component)) {
-        throw new IllegalStateException("Cannot initialize " + component.getName()
-                + ". Cycle detected.");   // ★ 运行期环检测
-    }
-    if (!mInitialized.containsKey(component)) {
-        initializing.add(component);
-        Object instance = component.getDeclaredConstructor().newInstance();
-        Initializer<?> initializer = (Initializer<?>) instance;
-        List<Class<? extends Initializer<?>>> dependencies = initializer.dependencies();
-        if (!dependencies.isEmpty()) {
-            for (Class<? extends Initializer<?>> clazz : dependencies) {
-                if (!mInitialized.containsKey(clazz)) {
-                    doInitialize(clazz, initializing);   // 递归 DFS
-                }
-            }
-        }
-        result = initializer.create(mContext);
-        initializing.remove(component);
-        mInitialized.put(component, result);
-    }
-    return (T) result;
-}
-```
-
-四个关键属性：
-1. **DFS 后序**：每个 Initializer 在所有依赖都 `mInitialized` 后才执行 `create()`。
-2. **环检测**：`initializing` 集合记录"正在初始化栈"，再次进入抛 `Cycle detected` 异常。比 manifest `android:initOrder` 静态排序更可靠。
-3. **同步锁**：外层 `doInitialize(Class)` 通过 `synchronized (sLock)` 保护 `mInitialized` map，并发调用去重。
-4. **惰性入口**：`AppInitializer.initializeComponent(SomeInitializer.class)` 单点触发，依赖自动补齐。
-
-### 多进程微服务架构下的依赖管理
-
-把上面三层组合起来，依赖管理分三层：
-
-**(a) 进程级**：每个子进程独立跑 `main → attach → handleBindApplication` 流水线。`handleBindApplication` 不感知 Application 内部模块结构，但提供 `installContentProviders`（在 App.onCreate 之前）和 `callApplicationOnCreate` 两个钩子。
-
-**(b) 模块级**：用 `InitializationProvider` 聚合 meta-data。`android:authorities="${applicationId}.androidx-startup"` 拼接 applicationId，多进程 App 不冲突。每个进程的 `InitializationProvider.onCreate` 各自跑一次 `discoverAndInitialize`。
-
-**(c) 子模块级**：业务模块把"日志→崩溃→网络→业务"用 `Initializer.dependencies()` 串起来。运行期环检测比 `android:initOrder` 可靠——`initOrder` 是 manifest 顺序，静态且容易因 manifest merger 出错。
-
-### 与动态加载的集成约束
-
-源码调研发现三种典型冲突场景：
-
-1. **动态加载的 dex 中含 Initializer 实现**：`Class.forName(key)` 在主 ClassLoader 找不到，抛 `ClassNotFoundException` 包成 `StartupException`（`AppInitializer.java:238`）。解法：把动态 feature 的 Initializer 注册到主 module 的 manifest，或主 module 用 lazy `AppInitializer.initializeComponent()` 触发。
-2. **跨进程 feature 在多个进程重复触发**：每个进程的 `InitializationProvider.onCreate` 都跑一遍。在 `Initializer.create()` 内用 `Process.myProcessName()` 过滤非目标进程。
-3. **多模块各自声明 InitializationProvider**：manifest merger 后只剩一个（`tools:node="merge"` 默认行为），其它模块需要靠 `tools:node="remove"` 替换。用 `tools:node="merge"` 显式声明聚合策略，避免覆盖。
-
-### 性能取舍
-
-- **合并 Provider 的收益**：N 个三方 SDK 各自声明 Provider，AMS 要 publishContentProviders() N 次、`mProviderMap` 维护 N 个 holder。AndroidX Startup 合并成 1 个 Provider + 1 次 publish，但 `doInitialize` 内部仍是同步串行 DFS，整体初始化耗时不变。省的是 AMS 侧 framework 开销，不是应用侧代码开销。
-- **环检测的代价**：每次递归都做 `initializing.contains(component)` 哈希查询，开销远小于一次方法调用。`<clinit>` 和反射构造器的开销主导整体耗时。
-- **多进程二次启动**：每个子进程都跑 `InitializationProvider.onCreate`，但 `sApplications.get(mPackageName)`（`LoadedApk.java:1604`）只在 system_server 包命中，正常 App 子进程不触发"App instance already created"警告。
-
-### 版本差异（Android 17 / API 37 基线）
-
-| API level | 变化 | 证据 |
-| --- | --- | --- |
-| 26 | `Application.onCreate` 在 ContentProvider 之后 | `ActivityThread.handleBindApplication` 顺序固定 |
-| 30 | `Application.getProcessName()` 静态化 | `Application.java:343` `public static String getProcessName()` |
-| 37 | `ActivityThread.main` 增 `initializeMainlineModules()` | `ActivityThread.java:9533`（android-17.0.0_r1 实测）|
-| 37 | `handleBindApplication` 增 `NetworkSecurityConfigProvider.install` 前置化、Compat 变更安装 | `ActivityThread.java:7978-8244`（实测）|
-| 37 | `enableMultiProxySystemPlatform` 路径走 `ConnectivityManager.onEarlyInit()` | `ActivityThread.java:8205`（实测）|
-
-> **Android 17 / API 37 为本文最高版本边界**。未读取或引用 Android 18 / API 38+ 内容。
+- [Android 应用启动时间](https://developer.android.com/topic/performance/vitals/launch-time)
+- [启动分析与优化](https://developer.android.com/topic/performance/appstartup/analysis-optimization)
+- [Macrobenchmark 概览](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
+- [`StartupTimingMetric` API](https://developer.android.com/reference/androidx/benchmark/macro/StartupTimingMetric)
+- [`ViewTreeObserver.registerFrameCommitCallback`](https://developer.android.com/reference/android/view/ViewTreeObserver)
+- [Perfetto ATrace 数据源](https://perfetto.dev/docs/data-sources/atrace)
+- [PerfettoSQL 标准库](https://perfetto.dev/docs/analysis/stdlib-docs)
+- [AOSP Android 17 `ActivityThread`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [AOSP Android 17 `ViewRootImpl`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)
