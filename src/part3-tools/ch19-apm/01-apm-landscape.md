@@ -111,220 +111,376 @@ last_deepseek_cn_review_at: 2026-06-18
 
 ## APM 先解决线上可见性
 
-APM 在 Android 性能体系里的作用是把线上设备里的性能信号采回来，让团队知道哪类问题正在发生、影响多少用户、是否需要进入修复队列。它不替代 Perfetto、Android Studio Profiler、simpleperf 这类线下诊断工具，也不保证单靠 SDK 上报就能还原所有现场。
+APM（Application Performance Monitoring）负责回答三类线上问题：
 
-APM 负责发现样本和分布；Perfetto 负责还原某一次具体的慢帧、ANR、启动慢或内存异常细节。
+- 哪个版本、页面、设备群或实验组正在变差；
+- 影响面有多大，是否值得进入修复队列；
+- 能否保留一份足以继续诊断的现场样本。
 
-排查路径可以这样展开：灰度版本看板发现 `oom_rate` 在 Android 13/14 的低内存机型上抬升，按页面聚合后集中在图片编辑页。APM 拉到一条样本，主事件里有 `version`、`device`、`page`、`session_id`、`heap_used_ratio`，附件里有 Hprof 摘要：多个已销毁的 `ImageEditActivity` 仍被静态 `Handler` 消息引用。
+APM SDK 通常只能看到应用有权限采集的信号。一次慢帧可能来自主线程业务、RenderThread、CPU 抢占、Binder 对端、I/O、GPU 或 SurfaceFlinger；一次进程死亡也可能是 Java crash、native crash、ANR、LMK、force-stop、安装更新或系统策略。仅凭一个耗时或 reason 不能给出根因。
 
-服务端用样本里的 Mapping UUID 对上当前构建，把混淆栈还原到业务类名。线下再用同版本 Debug 包打开 Profiler / LeakCanary 复现，修掉 `Handler` 持有 `Activity` 的引用后，灰度观察 `oom_rate` 和同签名样本数是否回落。
+因此，APM 与 Perfetto、Android Studio Profiler、simpleperf、heap dump、AGI、dumpsys 的关系是“发现与筛选”对“复核与归因”。线上系统提供分布和样本，线下及系统工具把一个样本展开到线程、调用栈、资源、GPU 和显示路径。
 
-## 四类能力不要混在一起选
+## Android 17 复核基线
 
-Android 性能监控工具可以按采集位置和使用场景分成四类：
-
-| 层次 | 代表工具 | 最低 API / 精度边界 | 主要回答的问题 | 常见使用位置 |
-|---|---|---|---|---|
-| 客户端 APM 框架 | Matrix、KOOM、btrace、Measure | 多数依赖应用自身 minSdk、native ABI 和构建链兼容性 | 线上发生了什么，能不能保留现场 | Release 或灰度包 |
-| 官方指标 SDK | JankStats、FrameMetrics、ApplicationExitInfo、Tracing SDK、ProfilingManager | JankStats API 16+，API 24+ 改走 FrameMetrics，API 31+ 可拿到 `frameOverrunNanos`；FrameMetrics API 24+；ApplicationExitInfo API 30+；Tracing SDK 更偏应用侧自定义 trace；ProfilingManager API 35+ | 系统和 AndroidX 愿意给哪些稳定信号 | Release、测试、专项诊断 |
-| 线下研发工具 | LeakCanary、DoKit、BlockCanary、AndroidGodEye | 更依赖 Debug 构建、测试设备和人工操作 | 开发和测试阶段怎样更快发现问题 | Debug、QA、实验室 |
-| Benchmark 工具 | Macrobenchmark、Geekbench、PerfDog、AndroBench | Macrobenchmark 依赖 Jetpack 与测试基建；外部工具还受设备与测试台约束 | 设备、版本或代码改动前后差异是多少 | 自动化、实验室、竞品分析 |
-
-同样写着“性能监控”，这四类工具的工程含义差别很大。客户端 APM 关心采样、上报、隐私、服务端存储；官方 SDK 关心系统版本、API floor 和指标口径；线下工具关心诊断效率；Benchmark 关心可重复性和测试条件。
-
-官方信号不能被写成同一批等价能力。JankStats 的 API floor 最低，但精度会随系统版本变化：API 16-23 依赖 `OnPreDrawListener`，API 24-30 依赖 `FrameMetrics`，API 31+ 才能补上 `frameOverrunNanos` 这类更接近 deadline 超时的信息。FrameMetrics 只从 API 24 起可用，ApplicationExitInfo 从 API 30 起给进程退出原因，ProfilingManager 则是 API 35 之后的按需 profiling 入口。
-
-`ActivityManager.getHistoricalProcessExitReasons()` 是到 `system_server` 的查询，不放在冷启动主线程同步调用。更稳的做法是在后台线程读取退出记录，带上 `session_id`、`process_name` 和 build 标识，再和当前版本指标关联。
-
-## 一个完整线上体系至少有四类数据
-
-线上性能治理通常从四类数据开始：
-
-- **指标 metrics**：`startup_p95_ms`、`jank_frame_rate`、`oom_rate`、`anr_rate` 等聚合值，用来判断版本是否变差。误用场景：只看 P95 抬升就直接定位到某个函数。
-- **样本 sample**：`main_thread_stack`、`hprof_summary_id`、`leak_signature`、`network_phase_cost` 等单次现场，用来定位问题方向。误用场景：把未按采样率归一化的样本数当成真实发生率。
-- **Trace**：`trace_id`、`time_range_ms`、`atrace_categories`、业务 `slice` 名等时间线数据，用来复核线程调度、Binder、I/O 和渲染阶段。误用场景：把大 trace 当成高频事件上传，导致端侧磁盘和网络成本失控。
-- **上下文**：App 版本、build number、系统版本、机型、ABI、页面、实验分组、`session_id` 与 `trace_id` 的关联关系，用来判断影响范围和复现入口。误用场景：页面名或实验名不稳定，导致同一问题被拆成多个统计桶。
-
-只采指标，问题会停在“知道差了但不知道为什么”。只采样本，样本会很散，无法判断优先级。只采 trace，成本会很快失控。只采上下文，没有稳定指标，报警口径会变成业务猜测。
-
-## 工具边界优先于功能清单
-
-选 APM 时不该只看功能表。应该检查：
-
-- **采集路径**：系统回调、字节码插桩、PLT Hook、Inline Hook、JVMTI、Perfetto SDK 分别带来不同兼容成本。
-- **运行开销**：帧级回调、主线程抓栈、Hprof dump、native 分配追踪都可能影响用户侧性能，必须有采样和限流。
-- **上报策略**：异常样本、周期指标、长 trace、Hprof 摘要不能用同一套上传策略，否则要么丢现场，要么成本失控。
-- **隐私边界**：URL、请求头、日志、截图、用户标识、文件路径都可能进入合规审查范围。
-- **可回查性**：一次上报能不能关联页面、版本、用户操作、实验分组和日志，是平台是否能用的分水岭。
-
-这些检查项会直接决定工具能不能进线上包。一个 Debug 工具功能再多，也不能默认进入 Release；一个线上 SDK 再成熟，也不能省掉灰度、采样和开关。
-
-## 和 Perfetto、Profiler 的分工
-
-Perfetto 和 Android Studio Profiler 的优势是深，APM 的优势是广。
-
-Perfetto 适合回答这类问题：
-
-- 某一次滑动为什么掉帧
-- 主线程和 RenderThread 的时间花在哪里
-- Binder 对端进程是否拖慢调用
-- CPU 调度、I/O、GPU、SurfaceFlinger 是否参与了问题
-
-APM 适合回答另一类问题：
-
-- 哪个版本的慢帧率开始抬升
-- 哪些机型最容易 OOM
-- 哪个页面的启动样本最差
-- 线上 ANR 样本是否集中在同一类堆栈
-
-实战里两者会连起来用：APM 先把问题样本和分布筛出来，再用 Perfetto、Profiler、simpleperf 在线下还原和验证。APM 给入口，诊断工具给证据。
-
-## 使用建议
-
-刚开始搭体系时，不要一次接满所有 SDK。按 API floor 往上加：
-
-1. 用 Android Vitals、Crash 平台、基础启动埋点建立版本级趋势。
-2. 先接 JankStats 作为跨版本帧信号；在 Android 8+ 设备上，再配 FrameMetrics 做窗口级拆解。
-3. Android 11+ 再补 ApplicationExitInfo，把 ANR、LMK、native crash 和用户主动杀进程分开看。
-4. Android 15+ 再考虑 ProfilingManager，用它按需拉 system trace、heap dump 或 heap profile。
-5. 再选一到两个专项客户端工具补现场，比如 Matrix 看卡顿和 IO，KOOM 看内存，btrace 看方法级 trace。
-6. 再决定是否接 Measure、Firebase、Sentry、APMPlus 这类平台方案，或自建数据管道。
-
-接一个库不代表 APM 体系已经完成。它是一套持续运行的数据系统：采集要克制，指标要稳定，样本要可回查，结论要能被线下工具验证。
-
-## 书稿级分析框架
-
-后面每个工具小节都按同一套问题展开。读者可以把它当成 APM 工具评审模板：
-
-| 问题 | 要看的内容 | 为什么不能省 |
+| 层级 | 本文基线 | APM 能看到什么 |
 |---|---|---|
-| 它采什么 | 帧、启动、ANR、内存、I/O、网络、trace、benchmark 分数 | 不同信号解决的问题不同，混在一起会误判 |
-| 它怎么采 | 系统 API、Looper 监听、字节码插桩、Hook、Perfetto、adb、外部采样 | 采集方式决定兼容性、开销和失败场景 |
-| 它在哪跑 | Release、灰度、Debug、QA、CI、实验室、外部设备 | 运行位置决定是否需要隐私、采样和远程开关 |
-| 它输出什么 | 聚合指标、单点样本、trace 文件、Hprof、CSV、云端看板 | 输出形态决定平台怎么消费 |
-| 它不能回答什么 | 根因、系统调度、业务语义、服务端耗时、设备能力 | 边界写清楚，读者才知道下一步该找哪个工具 |
+| Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | `ApplicationExitInfo`、`FrameMetrics`、`ProfilingManager`、系统 trace 与进程生命周期 |
+| Android 内核 | `android17-6.18-2026-06_r6` | scheduler、I/O、binder driver、dma-buf/fence、内存压力等底层事实；普通应用不能任意读取这些数据 |
+| Jetpack Metrics | `androidx.metrics:metrics-performance:1.0.0` | JankStats 的帧时长、jank 判断与 UI state |
+| 第三方/自研 APM | 随应用版本固定 | 埋点、采样、堆栈、hook、缓存、上传和服务端聚合 |
+| Google Play | 当前 Play Console / Reporting API 口径 | Android vitals 的 crash、ANR、wake lock、启动、渲染等聚合数据 |
 
-这一章的工具很多，但判断逻辑不会变。工具名会更新，系统 API 会变化，底层采集路线相对稳定。
+平台锚点与 APM SDK 版本要分别记录。Android 17 不会自动升级应用内的 Matrix、KOOM、JankStats、Firebase 或自研 SDK；反过来，升级 SDK 也不会改变设备的 framework 和 kernel 实现。
 
-## 指标、样本、trace、上下文是四种不同证据
+## 从异常指标到可验证结论
 
-做线上性能治理时，要把四种证据分开：
-
-- **指标**：适合看趋势和排序，例如慢帧率、启动 P95、ANR 率、OOM 率。
-- **样本**：适合看单个问题现场，例如一次 ANR 堆栈、一次主线程 block 调用栈、一次泄漏引用链。
-- **Trace**：适合还原时间线，例如 Perfetto 里的线程调度、Binder、I/O、渲染阶段和业务 trace slice。
-- **上下文**：适合限定影响范围，例如版本、机型、页面、实验分组、渠道和用户操作路径。
-
-这四类证据不能互相替代。指标能告诉你“这个版本变差了”，但不能告诉你哪一行代码慢。样本能告诉你“这次卡在这里”，但不能说明影响面。trace 能还原一次现场，但没有采样体系时，团队不知道该抓哪条路径。上下文能缩小排查范围，但没有稳定指标和样本时，只能做粗略猜测。
-
-一个能用的 APM 体系通常长这样：
+下面的流程图展示一条慢帧问题从线上发现到修复验证的证据路径。
 
 ```mermaid
 flowchart LR
-    A["线上指标\n慢帧率 / 启动 / ANR / OOM"] --> B["上下文筛选\n版本 / 机型 / 页面 / 实验"]
-    B --> C["样本保留\n堆栈 / Hprof 摘要 / trace_id / 网络阶段"]
-    C --> D["线下复现\nPerfetto / Profiler / Benchmark"]
-    D --> E["修复验证\n灰度指标 + 回归测试"]
+    M["指标异常\nslow_frame_rate 上升"] --> C["上下文切分\n版本 / 机型 / 页面 / 实验"]
+    C --> S["样本筛选\nframe data / stack / session_id"]
+    S --> T["深证据\nPerfetto / profile / heap dump"]
+    T --> R["同版本复现\nMacrobenchmark / 手工场景"]
+    R --> F["修复与灰度\n同口径指标回落"]
 ```
 
-在这条路径里，APM 负责从 A 推到 C，Perfetto、Profiler、Benchmark 负责从 C 推到 E。把这些步骤混成“接个性能 SDK”会让体系失去可解释性。
+例如，灰度看板发现图片编辑页的慢帧率只在某个版本和一组低内存设备上升。JankStats 样本带有页面、操作和帧时长，但没有主线程阻塞点。团队从该分组挑选可复现设备，采集 Perfetto，看到每次缩放都会在主线程同步解码大图并伴随 I/O 等待；simpleperf 或方法 trace 再把热点定位到具体调用。
+
+修复后，用相同图片、相同操作序列和相同编译模式跑 Macrobenchmark，再在小流量灰度中观察原指标、样本签名和 crash/ANR 副作用。若只看到慢帧率下降，却更换了分母、采样率或设备范围，这次“改善”不能作为同口径结论。
+
+## 四类能力不要混在一起选
+
+Android 性能工具至少分成四类。分类依据是采集位置、运行阶段、输出证据和工程成本，不能按“都能看性能”合并选型。
+
+| 类别 | 代表能力 | 运行位置 | 主要输出 | 典型成本 |
+|---|---|---|---|---|
+| 客户端 APM | Matrix、KOOM、btrace/RheaTrace、Measure、自研 SDK | Release / 灰度 | 聚合指标、异常样本、堆栈、trace、heap 摘要 | 包体、CPU/内存、hook/插桩兼容、隐私、上传平台 |
+| 官方信号与 SDK | Android vitals、JankStats、FrameMetrics、ApplicationExitInfo、ProfilingManager、Tracing | 系统、Play、应用进程 | 平台指标、帧数据、退出记录、受控 profile、应用 slice | API floor、平台口径、回调开销、rate limit |
+| 线下诊断 | Perfetto、Profiler、simpleperf、LeakCanary、AGI、dumpsys | Debug / QA / 实验室 | trace、调用栈、heap、GPU command、系统状态 | 需要设备、复现和人工分析 |
+| Benchmark / CI | Macrobenchmark、Microbenchmark、PerfDog、设备 benchmark | CI / 实验室 | 可比较的耗时、帧、吞吐、功耗或分数 | 测试环境、预热、编译模式、设备与温度控制 |
+
+客户端 APM 擅长覆盖大量真实设备，却受权限与采样预算限制；线下工具证据更深，却只覆盖少量可复现场景；Benchmark 擅长做改动前后对比，却不能代表线上分布；平台信号的口径稳定性较好，也要服从版本、设备支持和数据可见性限制。
+
+Android vitals 与自建 APM 的数值不应强求一致。Play 数据只覆盖符合其采集条件的设备和用户，issue rate 的分母也可能按 daily active user 计算；第三方 SDK 常按 session、启动次数或采样事件计算。合并看板前要把人群、窗口、分母和去重规则写清楚。
+
+## 四类证据各有用途
+
+### 指标：发现趋势与影响面
+
+指标是聚合结果，例如：
+
+- `cold_start_p50_ms`、`cold_start_p95_ms`；
+- `slow_frame_rate`、`frozen_frame_rate`；
+- `user_perceived_anr_rate`、`crash_user_rate`；
+- `lm_kill_user_rate`、`native_crash_rate`；
+- `request_ttfb_p95_ms`、`request_failure_rate`。
+
+指标适合版本门禁、趋势和分组排序。它不能指向某一行代码；P95 上升只说明分布尾部变差，还需要样本和上下文。
+
+### 样本：保留一次现场
+
+样本是一次事件，例如：
+
+- 慢帧的 UI state、frame duration 与主线程堆栈；
+- ANR 的线程堆栈、reason、前后台和近期操作；
+- Java/native crash 的符号化栈与 Build-ID；
+- OOM/LMK 附近的 PSS/RSS、heap 摘要和页面；
+- 网络请求的 DNS/connect/TLS/TTFB 分段。
+
+样本数不能直接当发生率。异常触发采样、设备离线、磁盘满、进程死亡和上传限流都会改变样本被看见的概率。
+
+### Trace / profile：还原时间与资源关系
+
+trace、CPU sample、heap dump 和 GPU capture 属于重证据：
+
+- Perfetto 解释线程调度、Binder、I/O、渲染和系统服务；
+- simpleperf 解释 CPU hotspot 与 native 调用栈；
+- Hprof、heapprofd 或 LeakCanary 解释对象/分配和引用关系；
+- AGI 解释 GPU command、shader、资源和 pipeline；
+- ProfilingManager 在受支持版本上提供受控的 system trace、heap dump、heap profile 或 stack sample。
+
+这类文件较大、采集成本高，不适合把每个事件都上传。常见策略是先按轻量指标筛选，再对少量样本提升证据等级。
+
+### 上下文：决定样本能否比较
+
+最小上下文应覆盖：
+
+- App version、version code、build variant、发布渠道；
+- ProGuard/R8 Mapping ID、native ELF Build-ID；
+- Android 版本、build fingerprint、机型、ABI、RAM 档位；
+- 进程、页面/场景、前后台、刷新率、实验组；
+- `event_id`、`session_id`、`trace_id` 与用户匿名标识；
+- 采样概率、SDK 版本、采集配置版本。
+
+上下文字段若随意改名或高基数失控，同一个问题会被拆散，服务端存储和查询成本也会膨胀。
 
 ## 常见采集路线的工程代价
 
-| 路线 | 代表工具 | 能拿到什么 | 主要代价 |
+| 采集方式 | 可见范围 | 适合的问题 | 主要边界 |
 |---|---|---|---|
-| 系统 API | JankStats（API 16+；API 24+/31+ 精度逐级变好）、FrameMetrics（API 24+）、ApplicationExitInfo（API 30+）、ProfilingManager（API 35+） | 平台愿意暴露的稳定信号 | 口径受系统版本限制，细节不一定够 |
-| Looper / Choreographer 监听 | BlockCanary、Matrix Trace Canary、轻量自研 APM | 主线程消息耗时、帧间隔、慢帧样本 | 难以覆盖 RenderThread、GPU、系统调度 |
-| 字节码插桩 | Matrix、Rabbit、部分 ArgusAPM 能力 | 方法耗时、调用路径、启动节点 | 构建链复杂，AGP / R8 / 混淆适配成本高 |
-| PLT / native Hook | Matrix IO Canary、KOOM、部分内存工具 | I/O、malloc/free、pthread 生命周期 | ABI、linker namespace、ROM 差异、符号化成本 |
-| Perfetto / trace 文件 | btrace、ProfilingManager、Perfetto SDK | 应用和系统时间线 | 文件大，不适合高频上报 |
-| 外部采样 | PerfDog、SoloPi、Emmagee | FPS、CPU、内存、功耗、网络等外部指标 | 适合测试，不等于真实线上用户数据 |
+| Looper logging / message observer | 主线程 message 执行区间 | 长消息、主线程 block、ANR 前堆栈 | 看不到 message 之外的 RenderThread/GPU/系统等待；观察者自身会占主线程 |
+| Choreographer 回调 | App UI frame 节奏 | 连续帧间隔、动画/滚动场景 | 帧间隔不等于完整呈现耗时，刷新率变化也会改变阈值 |
+| FrameMetrics / JankStats | Window frame 与 UI state | 慢帧率、场景归因 | API 版本决定字段；回调必须快速返回 |
+| 字节码插桩 | 被插桩方法的调用与耗时 | 启动节点、热点路径、业务 trace | 增加构建复杂度与运行代码；R8/AGP/Kotlin 版本要回归 |
+| PLT/inline hook、JVMTI、malloc hook | native/Java 运行时事件 | I/O、分配、线程、函数调用 | ABI、linker、符号、ROM 与安全策略带来兼容成本 |
+| 系统 profiling | 调度、系统服务、heap、stack 等 | 少量高价值现场 | 受权限、rate limit、redaction 和系统支持约束 |
+| 外部测试采样 | FPS、CPU、内存、温度、功耗等 | QA、竞品或设备对比 | 不等于线上用户数据；采样源和指标定义要核对 |
 
-这张表比功能清单更适合做技术评审。只要知道一个工具依赖哪条路线，就能预判它的兼容性、开销、灰度策略和故障模式。
+采集代码也会改变被测系统。主线程抓栈、每帧序列化、Hprof dump、native allocation tracking 和长 trace 都可能造成额外卡顿、内存或 I/O。上线前要在高端与低端设备上测量 CPU 时间、主线程时间、内存、包体、磁盘、流量和电量，而非只测“功能能否收到数据”。
+
+## JankStats 与 FrameMetrics 的准确边界
+
+截至 2026-07-25，`androidx.metrics:metrics-performance:1.0.0` 是稳定版本。JankStats 在 API 24+ 基于 FrameMetrics，在更早版本使用 `OnPreDrawListener`；同一 API 表面不代表各版本能提供相同精度。
+
+版本差异可按下面理解：
+
+| 系统版本 | 主要来源 | 能力边界 |
+|---|---|---|
+| API 23 及以下 | `OnPreDrawListener` | 在主线程回调，估计 UI frame 时长，无法获得现代 FrameMetrics 字段 |
+| API 24—30 | `Window.OnFrameMetricsAvailableListener` | 可获得 UI/CPU 相关 duration；listener 由 FrameMetrics 线程交付 |
+| API 31—37 | FrameMetrics + deadline 信息 | 可使用 `frameOverrunNanos` / `DEADLINE` 等更接近是否错过目标帧期限的字段 |
+
+JankStats listener 每帧都会收到数据，必须快速返回。`FrameData` 会被复用，回调返回后若还要异步处理，应复制需要的值，不能缓存原对象引用。
+
+FrameMetrics 的 `TOTAL_DURATION` 表示该帧从开始到提交给显示子系统的总时长；各 stage 可能重叠，所以子项之和不必等于 total。它也不等于物理屏幕 present 时间。需要分析 SurfaceFlinger/HWC 和 display present 时，转向 Perfetto FrameTimeline、SurfaceFlinger 和 GPU/display 证据。
+
+JankStats 的 UI state 需要由应用维护。页面、滚动、过渡、列表类型等状态没有及时清理时，慢帧会被关联到过期场景，服务端统计会很精确地计算出一个错误结论。
+
+## ApplicationExitInfo：退出记录不是 OOM 结论
+
+### 应用 API 与 Android 17 服务端路径
+
+API 30 起，应用可调用 `ActivityManager.getHistoricalProcessExitReasons()` 查询历史 `ApplicationExitInfo`。Android 17 的调用路径是：
+
+```text
+App
+  → ActivityManager.getHistoricalProcessExitReasons()
+  → Binder / ActivityManagerService
+  → ProcessList.mAppExitInfoTracker
+  → per-package / per-UID exit records
+  → NativeTombstoneManager 合并可访问 tombstone
+```
+
+这段路径说明查询会跨 Binder 进入 `system_server`，还可能合并 tombstone。它不应阻塞冷启动首帧；可在后台 executor 查询最近记录，按 timestamp、process name 和 version/session 边界去重后再上报。
+
+`AppExitInfoTracker` 在 Android 17 中是独立顶层类，实例由 `ProcessList` 字段 `mAppExitInfoTracker` 创建并初始化。AOSP 基础配置每个 package/UID 最多保留 16 条记录，设备资源 overlay 可以改变容量。记录通过 AtomicFile 持久化到 `procexitstore/procexitinfo`，非紧急更新按 30 分钟间隔调度写入；package/user 移除时会清理对应记录。
+
+### reason 来自多路事实合并
+
+进程死亡与 AMS 主动 kill 形成基础记录；lmkd 和 zygote 的外部通知可以补充 status、RSS 或修正 reason。Android 17 源码还保护已经明确为 ANR、Java crash 或 native crash 的记录，避免后到的模糊信号覆盖高价值原因。
+
+常见公开 reason 包括：
+
+| reason | 值 | 解释时要保留的边界 |
+|---|---:|---|
+| `REASON_SIGNALED` | 2 | 结合 `getStatus()` 的 signal；在不支持 LMK 上报的设备上，内存压力 kill 可能表现为 SIGKILL |
+| `REASON_LOW_MEMORY` | 3 | 先检查 `ActivityManager.isLowMemoryKillReportSupported()`；没有 heap trace |
+| `REASON_CRASH` | 4 | Java 未处理异常，不等于 native crash |
+| `REASON_CRASH_NATIVE` | 5 | API 31+ 可能附带 protobuf tombstone stream，也可能因覆盖而为空 |
+| `REASON_ANR` | 6 | 通常可取得系统保存的 ANR trace，但不保证永远存在 |
+| `REASON_USER_REQUESTED` | 10 | 包含 force-stop、任务移除等用户相关路径，结合 description/场景 |
+| `REASON_OTHER` | 13 | 依赖 description 与上下文，不能直接归为应用缺陷 |
+| `REASON_FREEZER` | 14 | API 33+ 的 freezer 相关退出 |
+| `REASON_PACKAGE_STATE_CHANGE` / `UPDATED` | 15 / 16 | API 34+ 区分组件状态变化与包更新 |
+
+`getPss()` 与 `getRss()` 是系统上一次采样值，可能为 0，也不是死亡瞬间内存。`getTraceInputStream()` 通常用于 ANR；API 31+ 还可返回 native tombstone protobuf。进程曾发生并恢复的 ANR，其 trace 也可能附在之后因其他 reason 死亡的记录上。trace 和 tombstone 由独立循环存储管理，可能被更新事件覆盖，因此返回 `null` 是合法结果。
+
+下面的代码用于展示一次低优先级、可去重的历史退出查询；生产代码还要接入自己的持久化和上传队列。
+
+```kotlin
+executor.execute {
+    val records = activityManager.getHistoricalProcessExitReasons(
+        null, // 仅查询调用方 UID 可访问的记录
+        0,    // 不按 PID 过滤
+        16,
+    )
+
+    records.forEach { info ->
+        reportExitIfNew(
+            processName = info.processName,
+            timestampMs = info.timestamp,
+            reason = info.reason,
+            status = info.status,
+            pssKb = info.pss,
+            rssKb = info.rss,
+        )
+    }
+}
+```
+
+`packageName = null` 时，服务端按调用方 UID 过滤；应用不能借此读取任意包的历史。`timestamp + processName + reason/status` 只能作为去重基础，跨 reinstall、数据清除和时钟变化时还要加入 install/build/session 标识。
+
+## ProfilingManager：受控取证，不是随叫随到
+
+API 35 引入 `android.os.ProfilingManager`，支持 Java heap dump、heap profile、stack sampling 和 system trace 请求。请求会被 rate limit，也不保证执行；结果经过裁剪，只包含请求进程可访问的信息。
+
+API 36 增加 `ProfilingTrigger` 注册，允许系统事件命中后交付 profile。trigger 同样不保证产生结果，调用方需要注册全局 result listener、处理进程被杀后的重新交付，并为文件过期、上传和去重设计流程。
+
+Android 17 上可以把 ProfilingManager 接入少量高价值样本，例如：
+
+- 启动 P99 异常且设备满足采集条件；
+- 特定页面连续慢帧，并已通过轻量信号筛选；
+- 远程配置选择的低比例实验人群；
+- 系统 trigger 返回的 ANR、OOM 或冷启动 profile。
+
+不要对每次慢帧请求 system trace，也不要把 callback 未返回解释成 API 故障。rate limit、资源状态、系统策略和进程生命周期都可能让请求没有结果。
+
+## 什么时候 APM 证据不够
+
+| 线上现象 | APM 能提供的入口 | 后续验证工具 |
+|---|---|---|
+| 主线程长任务 | message duration、主线程 stack、页面 | Perfetto thread state、method trace、CPU profiler |
+| CPU 抢占或频率受限 | 慢帧/启动样本、设备与温度上下文 | Perfetto scheduler/cpufreq、simpleperf、thermal 信息 |
+| Binder 卡住 | 调用点 stack、超时样本 | Perfetto binder transaction、对端线程与服务 trace |
+| I/O 等待 | 文件类别、耗时、调用 stack | Perfetto/ftrace I/O、simpleperf；必要时检查文件系统与内核事件 |
+| GPU/显示晚 | frame duration、场景、Surface 类型 | Perfetto GPU/FrameTimeline、AGI、SurfaceFlinger/HWC |
+| Java 对象泄漏 | heap 使用趋势、页面、退出原因 | Hprof、LeakCanary、Profiler |
+| native 内存增长 | RSS/PSS 趋势、native stack sample | heapprofd、malloc debug、KOOM/厂商工具 |
+| LMK/OOM | exit reason、PSS/RSS、设备 RAM、前后台 | ApplicationExitInfo、lmkd/PSI trace、heap/native memory 分解 |
+| 网络慢 | DNS/connect/TLS/TTFB 分段与 endpoint 类别 | 客户端网络 trace、服务端 trace、网络环境复现 |
+
+普通应用看不到完整系统和内核现场。需要 scheduler、driver、dma-fence、lmkd/PSI 或系统服务内部细节时，要在可控测试设备上采集 Perfetto/ftrace，或与平台/OEM 团队协作。不能把缺失字段补成推测。
 
 ## 线上采样要先写清数据合同
 
-APM SDK 上线前，团队应该先写数据合同。至少包括：
+数据合同要先于 SDK 接入。它规定“客户端采什么、服务端怎样解释、多久删除、如何关联构建”，避免同名字段在不同版本中表达不同含义。
 
-- **事件名**：例如 `jank_frame_batch`、`startup_sample`、`anr_trace`、`io_issue`。
-- **稳定维度**：App 版本、build number、Mapping UUID、Native Build-ID、系统版本、机型、ABI、进程名、页面、前后台。
-- **指标字段**：耗时单位、计数窗口、分位口径、阈值来源。
-- **样本字段**：堆栈、线程名、文件路径哈希、trace id、session id、Hprof 摘要 id、leak signature。
-- **隐私策略**：URL 是否脱敏、文件路径是否哈希、日志是否裁剪、用户标识如何匿名化。
-- **采样策略**：全量、按用户、按会话、按异常、按远程配置。
-- **保留周期**：指标、样本、trace、Hprof 摘要的存储期限和删除策略。
+下面的 JSON 只展示最小结构，用于讨论字段职责，不代表特定后端协议。
 
-Java/Kotlin 堆栈必须带 Mapping UUID 或等价构建标识，Native 栈必须带 ELF Build-ID。缺少这些标识时，服务端无法把 `a.b.c.a()` 或裸地址还原到源码位置，样本只能做粗略聚合。
+```json
+{
+  "schema_version": 3,
+  "event_name": "jank_frame_sample",
+  "event_id": "01J...ULID",
+  "occurred_at_epoch_ms": 1784908800123,
+  "duration_ns": 42800000,
+  "sample_probability": 0.02,
+  "session_id": "anonymous-session-id",
+  "trace_id": null,
+  "app": {
+    "version_name": "8.4.0",
+    "version_code": 804000,
+    "mapping_id": "r8-mapping-uuid",
+    "native_build_ids": ["7f3a..."]
+  },
+  "device": {
+    "sdk_int": 37,
+    "build_fingerprint_hash": "sha256:...",
+    "model_class": "mid_ram_6g",
+    "abi": "arm64-v8a"
+  },
+  "context": {
+    "process": "main",
+    "screen": "image_editor",
+    "interaction": "pinch_zoom",
+    "foreground": true
+  }
+}
+```
 
-没有数据合同，客户端和服务端会各自解释字段。常见结果是：平台能画图，但每个图都难以解释；问题能上报，但每条样本都缺定位所需的上下文。
+耗时字段在名称或 schema 中固定单位；`sample_probability` 用于加权估计，不能丢失；Mapping ID 与 Build-ID 用于还原 Java/Kotlin 和 native 栈；高基数原始机型、URL、文件路径和用户信息要按数据最小化原则处理。
 
-## 书稿中的判断边界
+一份可执行的数据合同至少定义：
 
-APM 工具没有单一最优解。Matrix 适合客户端采集框架，KOOM 适合内存专项，JankStats 适合帧级基础信号，Firebase / Measure / Sentry / APMPlus 适合平台化，PerfDog 适合外部测试，Benchmark 适合可重复验证。
+- 事件名、schema version、字段类型、单位和 nullable 规则；
+- 指标窗口、分母、去重、分位数算法和时区；
+- 用户/session/event/trace 的关联与生命周期；
+- Java Mapping ID、native Build-ID 和 source revision；
+- 采样单位是用户、session、事件还是异常；
+- URL、请求头、日志、路径、截图和标识符的脱敏规则；
+- 本地保留、上传重试、服务端保留和删除周期；
+- SDK 配置版本、远程开关与回滚方式。
 
-每个工具小节的正文里都会写清边界。对照这三个问题来读：
+## 端侧采样、缓存与上传
 
-1. 这个工具能放在体系里的哪一层。
-2. 它产出的数据能支撑哪类判断。
-3. 问题继续往下查时，要接哪个工具或哪条分析路径。
+### 采样
 
-## AppExitInfoTracker 内部机制
+不同事件使用不同策略：
 
-以下内容基于 AOSP 源码调研，补充到 §19.01 作为 AppExitInfoTracker 的实现细节参考。
+- crash、ANR 等低频高价值事件优先保留完整轻量元数据；
+- 每帧、每请求等高频数据先在端侧聚合；
+- trace、heap dump 等重文件只对少量候选样本采集；
+- 用户/session 采样尽量使用稳定 hash，避免每次启动换一批人导致纵向比较困难；
+- 服务端展示发生率时校正采样概率和上传成功率。
 
-### AppExitInfoTracker 在 AOSP 中的位置
+“异常才采样”会产生选择偏差。例如只在设备空闲、充电且网络良好时上传 trace，样本天然偏向特定设备状态；结论中要保留这项限制。
 
-`AppExitInfoTracker` 是 `services/core/java/com/android/server/am/AppExitInfoTracker.java` 中的顶层 `public final` 类，由 `ActivityManagerService` 实例化，`ProcessList` 持有并创建 `mAppExitInfoTracker` 字段（`ProcessList.java` L525, AOSP android-16.0.0_r1）。
+### 本地缓冲
 
-它在系统侧维护每个包名的进程退出记录环形缓冲区。`KillHandler` 处理的消息分为基础记录来源和外部修正来源两层：
+缓冲区应有总字节、单事件、单文件、条数和年龄上限。写入使用临时文件与原子 rename 或具备事务语义的存储，避免进程被杀后留下半文件。重文件与普通指标分目录管理，过期和低价值事件优先淘汰。
 
-**基础记录来源**（`AppExitInfoTracker` 内部 `KillHandler` 处理的消息）：
+敏感数据应在写盘前完成裁剪或脱敏。不能先保存原始 URL、token、日志和用户数据，再指望上传阶段处理；进程死亡后，这些原始文件仍可能留在磁盘。
 
-| 消息类型 | 来源 | 创建/修正的 exitInfo.reason |
+### 上传
+
+上传需要批量、压缩、指数退避、抖动、幂等 event ID 和服务端去重。网络、充电、温度、前后台等条件应按文件价值设置，不能让 APM 自身制造启动竞争、流量尖峰或发热。
+
+服务端收到事件不代表数据完整。客户端要上报丢弃原因计数，例如 quota、serialization error、disk full、expired、rate limited、upload failed；否则看板只描述“成功上传的人群”。
+
+## 选型：从团队约束推导组合
+
+| 团队条件 | 优先能力 | 原因 |
 |---|---|---|
-| `MSG_PROC_DIED` | 进程死亡通知（`scheduleNoteProcessDied()` → `handleNoteProcessDiedLocked()`） | 根据死亡原因写入基础 reason |
-| `MSG_APP_KILL` | AMS 主动杀进程（`scheduleNoteAppKill()` → `handleNoteAppKillLocked()`） | 记录 AMS 主动 kill 的 reason/subreason |
-| `MSG_APP_RECOVERABLE_CRASH` | 可恢复 crash 通知 | 记录可恢复 crash 事件 |
-| `MSG_STATSD_LOG` | 统计日志记录 | 辅助记录，不直接决定 reason |
+| 没有线上性能平台 | Android vitals + crash/ANR + 基础启动/页面指标 | 建立稳定趋势和版本分组，再补专项 |
+| UI 卡顿是主问题 | JankStats + UI state + 少量 Perfetto/Macrobenchmark | 轻量覆盖真实场景，深证据用于归因 |
+| Java/native 内存问题多 | ApplicationExitInfo + heap/native 专项工具 | 区分 crash、LMK、ANR，再选择 Hprof/heapprofd/KOOM |
+| 已有日志与数据平台 | 自研轻量 SDK 或开源采集组件 | 可复用鉴权、上传、查询和告警，但仍需评估客户端维护成本 |
+| 发版节奏快、AGP/Kotlin 升级频繁 | 少 hook、少插桩，优先稳定系统/Jetpack API | 降低构建链和 runtime 兼容风险 |
+| 低端设备占比高 | 更低采样、更小缓冲、端侧聚合、严格 kill switch | APM 开销更容易污染被测性能 |
+| 隐私或合规限制严格 | 数据最小化、端侧聚合、短保留期、可审计 schema | 降低原始内容离开设备的范围 |
 
-**外部修正来源**（对基础记录的 reason 做补充修正）：
+Matrix、KOOM、btrace/RheaTrace、Measure、Firebase、Sentry、APMPlus 等工具各自覆盖一部分问题。项目活跃度、license、版本兼容和维护者状态会变化，接入前要查看对应仓库/release 和最小验证应用，不能沿用旧文章中的“主流/维护中”标签。
 
-| 消息类型 | 来源 | 修正说明 |
-|---|---|---|
-| `MSG_LMKD_PROC_KILLED` | lmkd 杀进程后通知 AMS | 将 reason 修正为 `REASON_LOW_MEMORY (3)` |
-| `MSG_CHILD_PROC_DIED` | Zygote 感知子进程异常退出（SIGCHLD/SIGKILL） | 修正为 `REASON_SIGNALED (2)` / `REASON_CRASH_NATIVE (5)` |
+## 分阶段建设顺序
 
-`handleNoteProcessDiedLocked()` 和 `handleNoteAppKillLocked()` 是核心处理函数；`updateExistingExitInfoRecordLocked()` 会在已有记录上做 reason 修正。Java crash（`REASON_CRASH(4)`）、ANR（`REASON_ANR(6)`）、用户/系统 kill（`REASON_USER_REQUESTED(10)`）等退出记录通过基础路径进入历史列表，lmkd/zygote 作为外部来源补充和修正 reason 值。
+1. 统一 build、version、device、process、screen、session 和采样字段。
+2. 接入 Android vitals、crash/ANR 与基础启动/页面指标，建立版本门禁。
+3. 按主要问题加入 JankStats、ApplicationExitInfo、网络分段或内存信号。
+4. 建立样本升级机制：从轻事件请求 trace、profile、heap 或实验室复现。
+5. 把 Macrobenchmark/Microbenchmark 和关键场景回归接入 CI。
+6. 增加远程开关、预算、丢弃统计、隐私审计和 SDK 自身性能监控。
 
-应用侧通过 `ActivityManager.getHistoricalProcessExitReasons()` 查询，该 API 底层调用 `ActivityManagerService.getHistoricalProcessExitReasons()`，后者从 `AppExitInfoTracker` 读取。
+每一步都应能单独关闭和回滚。没有 kill switch 的 hook、每帧监听或重文件采集，不适合直接进入大规模 Release。
 
-### ApplicationExitInfo 关键字段（API 30+）
+## 后续章节怎样分工
 
-| 方法 | 说明 | 版本 |
-|---|---|---|
-| `getReason()` | 返回值：`REASON_SIGNALED(2)` `REASON_LOW_MEMORY(3)` `REASON_CRASH(4)` `REASON_CRASH_NATIVE(5)` `REASON_ANR(6)` `REASON_USER_REQUESTED(10)` `REASON_OTHER(13)`；API 33+ 新增 `REASON_FREEZER(14)`；API 34+ 新增 `REASON_PACKAGE_STATE_CHANGE(15)` `REASON_PACKAGE_UPDATED(16)` | API 30 |
-| `getDescription()` | 人类可读退出描述字符串 | API 30 |
-| `getTimestamp()` | 退出时间戳（毫秒） | API 30 |
-| `getTraceInputStream()` | 获取 ANR/native crash 的 trace 流，仅 `REASON_ANR` / native crash 有效；`REASON_LOW_MEMORY` 无 trace | API 30 |
-| `getRss()` | 退出前最近采样 RSS（KB），采样值非精确时刻 | API 30 |
-| `getImportance()` | 退出时进程 importance 级别 | API 30 |
+- 19.2 Matrix、19.7 DoKit、19.8 ArgusAPM、19.9 Measure：看综合客户端框架的采集与工程边界；
+- 19.3 KOOM、19.5 LeakCanary：看 Java/native 内存和泄漏专项；
+- 19.4 btrace/RheaTrace：看方法级 trace 与在线采样；
+- 19.6 BlockCanary：理解 Looper 长消息方案及其盲区；
+- 19.11 JankStats、19.12 FrameMetrics、19.13 Tracing SDK：看官方帧信号与应用 trace；
+- 19.14 Benchmark、19.15 Baseline Profiles、19.16 ProfilingManager：看回归测量、编译优化和系统受控取证；
+- 19.17 Firebase、19.18 商业平台：看托管平台的指标、采样和服务端能力；
+- 19.19—19.22：看外部性能测试与设备 benchmark；
+- 19.23—19.27：看网络、crash/ANR、功耗、混合栈和大规模端侧架构。
 
-### 关键设计原则
+阅读某个工具前，先回答它处在“线上采集、系统信号、线下诊断、回归测量”中的哪一层。这样能避免用一款工具承担它没有数据权限或没有证据深度的问题。
 
-- circular buffer 持久化到磁盘，重启后可查询
-- 不支持 `USER_ALL` / `USER_CURRENT` 作为 userId 参数
-- `getTraceInputStream()` 对 `REASON_LOW_MEMORY` 返回 null（无 trace）
-- `REASON_CRASH` 对应 Java 未捕获异常；`REASON_CRASH_NATIVE` 对应 native crash（SIGSEGV/SIGABRT 等）；`REASON_ANR` 对应 Application Not Responding
+## 常见误判
 
----
+| 误判 | 修正 |
+|---|---|
+| 接入一个 SDK 就有完整 APM | SDK 只是采集端；还需要数据合同、缓存上传、符号化、聚合、查询、告警和验证 |
+| Android vitals 与自建 crash rate 应完全相等 | 人群、分母、去重、窗口和隐私阈值不同 |
+| JankStats 报 jank 就说明主线程慢 | 继续检查 CPU 调度、RenderThread、GPU、SurfaceFlinger 和刷新率 |
+| FrameMetrics 各 stage 之和等于 total | stage 可以并发，API 文档明确不保证相等 |
+| `REASON_LOW_MEMORY` 代表 Java heap OOM | 它表示系统内存压力 kill；先检查设备是否支持该 reason，再拆 PSS/RSS/heap/native |
+| `getTraceInputStream()` 对 ANR/native crash 必有数据 | 独立循环存储可能覆盖，ANR 恢复后也可能把 trace 带到其他 reason |
+| ProfilingManager 请求一定返回 | 请求受 rate limit 和系统策略控制，不保证执行 |
+| 样本数就是发生率 | 采样、进程死亡、磁盘、网络和服务端去重都会影响可见样本 |
+| 外部 benchmark 分数代表线上体验 | 分数只在相同版本、设备状态和测试条件下可比较 |
+| APM 没采到 scheduler/GPU 细节，就能用堆栈推断 | 缺系统证据时转向 Perfetto/AGI/OEM 工具，并明确未知项 |
 
-**调研来源**：
-- `services/core/java/com/android/server/am/AppExitInfoTracker.java` (AOSP android-16.0.0_r1) — 顶层类，进程退出记录管理与持久化
-- `services/core/java/com/android/server/am/ProcessList.java` (AOSP android-16.0.0_r1) — 持有 `mAppExitInfoTracker` 字段（L525）
-- `core/java/android/app/ApplicationExitInfo.java` (AOSP android-16.0.0_r1 / API 30+) — 应用层 API，reason 常量定义
-- `github.com/KwaiAppTeam/KOOM` — koom-java-leak 模块 fork dump HPROF 机制
+## 源码与文档入口
 
-
-## 延伸阅读
-
-- 字节跳动 Android 性能·功耗·稳定性全栈技术方案深度调研：系统梳理字节跳动开源性能工具链（btrace 3.0、ByteHook/ShadowHook、Raphael）与闭源 APM 平台（Slardar/MDAP/APMPlus）架构原理，覆盖流畅度防劣化体系、ANR 信号捕获、功耗模块化归因、端侧 AI 等核心方案
+- [Android vitals](https://developer.android.com/topic/performance/vitals)：核对 Play 数据范围、core vitals、分母差异和 Reporting API。
+- [JankStats guide](https://developer.android.com/topic/performance/jankstats) 与 [AndroidX Metrics release notes](https://developer.android.com/jetpack/androidx/releases/metrics)：核对 API 版本路径、listener 线程、FrameData 复用和 `1.0.0` 稳定版。
+- [`FrameMetrics`](https://developer.android.com/reference/android/view/FrameMetrics)：核对 API 24+ stage、API 31+ `DEADLINE`、单位和 total 语义。
+- [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo) 与 [`ActivityManager.getHistoricalProcessExitReasons()`](<https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,int,int)>)：核对 reason、status、PSS/RSS、trace 和访问范围。
+- Android 17 的 [`ApplicationExitInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java)、[`ActivityManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityManager.java)、[`ActivityManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)、[`ProcessList.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ProcessList.java) 与 [`AppExitInfoTracker.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java)：核对 Binder 查询、记录容量、持久化、lmkd/zygote 修正与 tombstone 合并。
+- [`ProfilingManager`](https://developer.android.com/reference/android/os/ProfilingManager)、[`ProfilingTrigger`](https://developer.android.com/reference/android/os/ProfilingTrigger) 与 Android 17 [`ProfilingManager.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java)：核对 API 35 请求、API 36 trigger、rate limit、结果交付与 redaction。
+- [Macrobenchmark](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview) 与 [Microbenchmark](https://developer.android.com/topic/performance/benchmarking/microbenchmark-overview)：核对端到端场景和局部代码 benchmark 的分工。
+- [Perfetto Android trace](https://perfetto.dev/docs/getting-started/system-tracing)：核对 scheduler、Binder、I/O、内存和图形等系统证据的采集边界。
+- kernel `android17-6.18-2026-06_r6` 的 [PSI 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/accounting/psi.rst) 与 [ftrace 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/trace/ftrace.rst)：核对内存压力和内核 trace 机制；普通应用权限边界仍由 Android 平台与设备策略决定。
