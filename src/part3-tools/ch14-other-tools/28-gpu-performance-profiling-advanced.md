@@ -1,19 +1,36 @@
 ---
 title: "GPU 性能分析进阶 — 跨厂商计数器标准化与工作负载剖析"
 chapter: "14.28"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [gpu, profiling, adreno, mali, powervr, vulkan, ray-tracing, npu]
 related_chapters: ["2.10", "2.14", "14.8"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-06"
 gap_source: "素材驱动/AOSP结构/官方文档"
+task6_state: pending
+task9_state: pending
+pipeline_stage: task6_pending
+last_draft_polish_at: "2026-07-27T19:35:27+08:00"
+last_draft_polish_run_id: "20260727-193527-draft-polish-30f4d38e"
+last_verified: "2026-07-27"
+confidence: medium
+sources:
+  - "AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/common/gpu_counter_descriptor.proto"
+  - "AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/trace/gpu/gpu_counter_event.proto"
+  - "AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/trace/gpu/gpu_mem_event.proto"
+  - "AOSP android-17.0.0_r1: external/perfetto/src/trace_processor/importers/proto/gpu_counter_sequence_state.h"
+  - "AOSP android-17.0.0_r1: external/perfetto/src/trace_processor/metrics/sql/android/gpu_counter_span_view.sql"
 ---
 
 # 14.28 GPU 性能分析进阶 — 跨厂商计数器标准化与工作负载剖析
 
+> Draft-polish 状态：本轮未新增外部材料，只把既有源码调研稿推进到 Task6 复查入口。正文可信范围限定为 Android 17 / `android-17.0.0_r1` 中 Perfetto GPU counter、GPU memory event 与 trace processor 相关结构；outline 中的工作负载阈值、Ray Tracing、NPU/ML 协同、远程调试等主题仍属于后续 source-apply/rework 候选，不作为本章已验证结论。
+
 <!-- outline-start -->
 ## 要点
+
+> 本 outline 仅保留选题结构。缺少一手材料支撑的段落不得在 Task6 前被当成正文结论引用；后续若要扩写，需补充 Android 17 基线下的 AOSP/官方文档或可复现实验材料。
 
 ### 🔹 跨厂商 GPU 计数器映射体系
 - Adreno (Qualcomm)、Mali (Arm)、PowerVR (Imagination) 三大 GPU 厂商的计数器命名与定义差异
@@ -21,34 +38,34 @@ gap_source: "素材驱动/AOSP结构/官方文档"
 - 计数器归一化策略：如何建立跨厂商可比的 GPU 性能基线
 
 ### 🔹 GPU 工作负载分类与性能基线
-- 按负载类型分类的 GPU 性能参考范围：UI 渲染、游戏、视频解码、计算摄影
-- 各负载下的关键指标阈值：GPU 利用率、显存带宽、Draw Call 数量、着色器翻转率
-- 正常/警告/异常值的判定标准与实战参考数据
+- 待补材料：按负载类型分类的 GPU 性能参考范围（UI 渲染、游戏、视频、计算摄影等）
+- 待补材料：各负载下的关键指标阈值（GPU 利用率、显存带宽、Draw Call 数量、着色器吞吐等）
+- 待补材料：正常/警告/异常值的判定标准与实战参考数据
 
 ### 🔹 Vulkan Ray Tracing 性能分析
-- Android 17 对 Vulkan Ray Tracing 的支持现状与扩展
-- Ray Tracing 管线（BLAS/Ray Query）性能开销分析方法
-- Ray Tracing 场景下的 GPU 利用率与功耗特征
+- 待补材料：Android 17 对 Vulkan Ray Tracing 相关扩展的支持边界
+- 待补材料：Ray Tracing 管线（BLAS/Ray Query）性能开销分析方法
+- 待补材料：Ray Tracing 场景下的 GPU 利用率与功耗特征
 
 ### 🔹 NPU/ML 加速器协同性能分析
-- Android 17 NNAPI/HWUI 与 GPU 协同调度模型
-- NPU 任务调度对 GPU 渲染管线的影响
-- 端侧 AI 推理理（LLM 推理）场景下 GPU+NPU 异构性能剖析
+- 待补材料：Android 17 中 NNAPI/厂商加速器与 GPU 渲染负载之间的可观测交互边界
+- 待补材料：NPU 任务调度对 GPU 渲染管线的影响
+- 待补材料：端侧 AI 推理场景下 GPU+NPU 异构性能剖析
 
 ### 🔹 GPU Profiling 隐私与安全
-- `profileable` manifest flag 对 GPU 计数器可见性的影响
-- Android 14-17 profileable 应用可用的 GPU 计数器类型差异
-- 生产环境 GPU 性能采集的安全合规框架
+- 待补材料：`profileable` manifest flag 对 GPU 计数器可见性的影响
+- 待补材料：Android 14-17 profileable 应用可用的 GPU 计数器类型差异
+- 待补材料：生产环境 GPU 性能采集的安全合规框架
 
 ### 🔹 AGI (Android GPU Inspector) 实战工作流
-- AGI 与 Perfetto 的 GPU 数据源协同分析
-- AGI Frame Capture + Layer Override 性能分析方法
-- 从 GAPID 到 AGI 的演进与迁移指南
+- 待补材料：AGI 与 Perfetto 的 GPU 数据源协同分析
+- 待补材料：AGI Frame Capture + Layer Override 性能分析方法
+- 待补材料：从 GAPID 到 AGI 的演进与迁移指南
 
 ### 🔹 Perfetto GPU Trace 分析进阶
-- GPU Render Stages track 的深度解读：Vertex Shader → Rasterization → Pixel Output
-- GPU 频率（DVFS）与渲染管线联合分析
-- SurfaceFlinger HWC Composer 与 GPU 负载的因果关系追踪
+- 本轮已覆盖：Perfetto GPU counter descriptor/event 与 trace processor SQL 视图的协议链路
+- 待补材料：GPU Render Stages track 的深度解读、GPU 频率（DVFS）与渲染管线联合分析
+- 待补材料：SurfaceFlinger HWC Composer 与 GPU 负载的因果关系追踪
 
 ## 扩展
 
@@ -82,7 +99,7 @@ gap_source: "素材驱动/AOSP结构/官方文档"
 
 ### 硬件 counter island 建模
 
-`GpuCounterBlock { block_id, block_capacity, name, counter_ids }` 字段直接对应 Adreno 的 shader island、Mali 的 shader core counter group 等**同时启用上限**的物理约束。Adreno 6xx 系列典型 block_capacity 为 8-12 个，OEM producer 在配置 `counter_ids` 超过 `block_capacity` 时会在 driver 层失败，因此 UI 选 counter 必须做 grouping-aware 选取。
+`GpuCounterBlock { block_id, block_capacity, name, counter_ids }` 字段用于描述一组计数器共享同一硬件 block 时的**同时启用上限**。因此 UI 或自动化采集脚本在配置 `counter_ids` 时不能只按名称平铺选择，而应按 `block_id`/`block_capacity` 做 grouping-aware 选取；否则可能在厂商 producer 或 driver 层被拒绝。
 
 ### 事件流：两种 emission 模式
 
@@ -144,7 +161,7 @@ WHERE name = '{{counter_name}}' AND gpu_id IS NOT NULL;
 - `"Fragment / Second"`（`PIXEL / SECOND`）
 - `"Triangle Acceleration"`（`TRIANGLE / (MILLISECOND·MILLISECOND)`）
 
-→ 跨厂商基准建立的关键就是让各 OEM producer **至少 emit 这些同名 counter**。
+→ 跨厂商基准建立时，应优先寻找这些同名或同单位语义的 counter；若 OEM producer 没有直接 emit 同名项，则需要在来源映射中显式说明替代关系，不能把不同语义的 counter 强行归一。
 
 ### GPU 内存事件的平台级标准化
 
@@ -163,7 +180,7 @@ message GpuMemTotalEvent {
 
 ### 性能影响（基于源码推断）
 
-1. **Trace 体积**：每个 `GpuCounter` 采样含 `counter_id + int_value` ≈ 12 bytes，启用 50 counter × 60s × 1kHz 采样 ≈ 3.5 MB 单独贡献（仅此 data source）。
+1. **Trace 体积**：若粗略按每个 `GpuCounter` 采样含 `counter_id + int_value` ≈ 12 bytes 估算，启用 50 counter × 60s × 1kHz 采样约为 36,000,000 bytes（约 34.3 MiB）单独贡献（仅此 data source，未计 packet/framing/interning 开销）。
 2. **Interned 模式**比直挂 descriptor 节省 (descriptor_size − 8) bytes/包，长 trace 下显著。
 3. **`block_capacity` 上限**是 UI 选取 counter 的硬约束，必须 grouping-aware。
 
@@ -188,5 +205,8 @@ message GpuMemTotalEvent {
 
 <!-- AIW-源码调研-2026-07-11 -->
 
+## Task6 复查入口
 
-> 本节内容待加工。
+- **已可复查**：`GpuCounterDescriptor`/`GpuCounterEvent`/`GpuMemTotalEvent` 的字段语义、descriptor intern 模式、trace processor track 建模与 SQL span 视图。
+- **复查重点**：确认上述路径在 `android-17.0.0_r1` 中与上游 Perfetto main 的同步边界，避免把后续 mainline 变化误写成本章结论。
+- **不得自动晋升的缺口**：工作负载阈值、Ray Tracing、NPU/ML 协同、profileable 权限差异、AGI 工作流仍缺一手材料，本轮只在 outline 标注“待补材料”。
