@@ -1,7 +1,7 @@
 ---
 title: "Compose Runtime Tracing — runtime-tracing 与 Perfetto 组合阶段追踪"
 chapter: "22.37"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 tags: [Compose, Tracing, Perfetto, Observability, Recomposition]
 related_chapters: ["22.28", "22.3", "13.21", "26.1"]
@@ -11,16 +11,16 @@ gap_source: "AOSP结构/官方文档"
 last_verified: "2026-07-27"
 confidence: medium
 task2b_state: fixed
-task6_state: fixed
-task9_state: rework-fixed
-pipeline_stage: ready-for-review
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: finalized
 last_body_apply_at: "2026-07-25T07:15:14+08:00"
 last_body_apply_run_id: "20260725-071514-c8dfcc93"
 last_body_apply_source: "source-index:100 / 2026-07-25-76336249-Android-App-最强APM来袭.md"
 reviewed_date: "2026-07-27"
 reviewed_by: "hermes-aiw-review-finalize-apply"
-last_review_finalize_at: "2026-07-27T08:23:36+08:00"
-last_review_finalize_run_id: "20260727-082309-5af88f00"
+last_review_finalize_at: "2026-07-27T14:05:40+08:00"
+last_review_finalize_run_id: "20260727-140540-bf9d2ac9"
 last_rework_at: "2026-07-27T09:35:33+08:00"
 last_rework_run_id: "20260727-093533-rework-2ce7e666"
 last_verified_against: "AndroidX Compose Runtime Tracing 官方文档、AndroidX tracing release 文档、AndroidX compose-runtime release 文档；结论边界止于 Android 17/API 37"

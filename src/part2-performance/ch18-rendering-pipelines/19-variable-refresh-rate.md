@@ -88,23 +88,31 @@ last_deepseek_cn_review_at: 2026-07-05
 
 误判通常出在第二步。刷新周期变长，不等于系统把一帧已经超时的工作补救回来。刷新率选择仍然要经过 App 投票、内容节奏判断、Scheduler 决策和设备能力约束。某一帧一旦错过自己的 `expected_frame_timeline_slice`，Perfetto 里依旧会落到 app jank 或 sf jank。ARR 改变的是目标节拍，不会消掉 deadline。
 
+分析时还要分开三种频率：
+
+- **内容帧率**：视频、游戏或动画每秒产生多少个不同内容帧，例如 24fps。
+- **应用 render rate**：Choreographer/producer 被允许或选择以多快的节奏生成帧。
+- **Display refresh rate**：面板每秒刷新多少次，例如 120Hz。
+
+24fps 内容可以在 120Hz Display 上每帧重复 5 次；60fps render rate 也可能运行在 120Hz 面板上。`setFrameRate(24)` 表达内容/渲染偏好，不保证面板一定切成 24Hz，更不是 producer 的限速器。
+
 ## VRR、多刷新率和 ARR 的边界
 
 | 名称 | 关注点 | 章节里怎么用 |
 |:---|:---|:---|
-| 多刷新率 | 设备在 60Hz、90Hz、120Hz 这类固定 mode 之间切换 | 这是 Android 11-14 的主要背景 |
-| ARR | 系统按内容节奏选择更合适的刷新率，减少高刷驻留和 mode switch 抖动 | 公开能力从 Android 15-QPR1+ 开始完整出现 |
-| VRR | 面板和显示栈支持动态变频的硬件能力 | 这是设备条件，是否可用以系统 API 和 HAL 支持为准 |
+| 多刷新率 | 设备在 60Hz、90Hz、120Hz 等固定 Display mode 之间选择 | Android 11–14 的公开帧率 API主要在这个背景下使用 |
+| VRR | 面板/Composer 能在能力范围内动态改变 VSync 周期，不必把每个 render rate 都表示成独立固定 mode | 硬件与 HAL 能力，不能只由“面板是 LTPO”推出 |
+| ARR | Android 根据 View/Surface vote、内容 cadence、touch/transition 等策略选择 render/refresh rate | 支持设备从 Android 15-QPR1+ 提供，Android 16 增加公开能力查询 |
 
-LTPO 面板经常和 ARR 一起出现，因为它更容易覆盖更宽的刷新率范围。但 LTPO 不是 ARR 的充分条件。设备需要公开相应的 HAL 能力，App 再通过公开 API 判断系统是否支持。
+LTPO 面板常和 ARR 同时出现，因为它更容易覆盖宽刷新率范围；它不是 ARR 的充分条件。官方要求设备运行 Android 15-QPR1+ 并实现指定 HAL API。应用到 API 36 才能通过 `Display.hasArrSupport()` 做公开查询。
 
 ## 系统如何决定刷新节奏
 
 刷新率选择可以拆成三层。
 
-- **App 投票层**：Android 11+ 的 `Surface.setFrameRate()`、Android 15（API 35）的 `View.setRequestedFrameRate()` / Compose `preferredFrameRate()`，以及滚动时的 `setFrameContentVelocity()` 都在表达内容需要多快更新。Android 16（API 36）的 `Display.hasArrSupport()` 只负责能力查询，不参与 API 35 设备上的投票调用。
-- **系统决策层**：SurfaceFlinger 收集可见 Layer 的更新节奏、事务状态和显示约束，再由 Scheduler 选当前更合适的刷新率。
-- **设备能力层**：面板能力和 device-specific HAL support 决定系统到底能不能用 ARR；不满足时只能回到多刷新率 mode switching。
+- **App 投票层**：Android 11+ 的 `Surface.setFrameRate()`、Android 15（API 35）的 `View.setRequestedFrameRate()`，以及滚动时的 `setFrameContentVelocity()` 表达内容更新需求。Compose 1.9 的 `preferredFrameRate()` 会汇总 composable 的偏好。
+- **系统策略层**：SurfaceFlinger 汇总可见 layer 的 vote/历史 cadence，并结合 focus、touch boost、window transition、idle、policy range 等信号给候选 render/physical rate 评分。
+- **设备能力层**：Display mode、seamless switch group、面板和 device-specific HAL support 约束最终能否使用 ARR；不满足 ARR 条件时仍可能做离散 mode switching。
 
 ```text
 App vote / content cadence
@@ -116,13 +124,13 @@ VSYNC-app / VSYNC-sf interval changes
 App draw → queueBuffer → SurfaceFlinger compose → present
 ```
 
-这里的边界有两层：Composer 版本和面板类型不能写成唯一前提；慢帧和刷新周期拉长也不是同一件事，否则会漏掉 Scheduler 决策和设备能力约束。
+这张图里的 vote 是提示，不是命令。当前可见的其他 App/SystemUI layer、触控状态和电源策略都可能改变结果；刷新周期已经变化，也不能反向证明某一个 View vote 被原样采纳。
 
 ## App 端 API
 
-### Android 11-14：`Surface.setFrameRate()` 是公开入口
+### Android 11+：`Surface.setFrameRate()` 表达 Surface 内容节奏
 
-Android 11 把 `Surface.setFrameRate()` 放进公开 API，App 可以直接告诉系统当前 Surface 更接近哪种内容节奏。视频播放和单 Surface 渲染场景最常用这一层。
+Android 11 把 `Surface.setFrameRate()` 放进公开 API。视频、游戏和独立 `SurfaceView` producer 常在这一层告诉系统当前 Surface 的目标节奏。
 
 ```java
 surface.setFrameRate(24f, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
@@ -130,11 +138,13 @@ surface.setFrameRate(60f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT);
 surface.setFrameRate(0f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT);
 ```
 
-这套能力主要服务多刷新率设备。系统会在支持的 mode 集合里做选择，分析时要把它和 Android 15-QPR1+ 的 ARR 分开写。
+`FRAME_RATE_COMPATIBILITY_FIXED_SOURCE` 适合视频等固定 cadence 内容，系统可以选择其整数倍刷新率。`DEFAULT` 更适合游戏/UI 等可随显示节奏运行的 producer。该 API 不会替应用 pacing：请求 60fps 后仍以 120fps 连续 queue buffer，依旧可能产生 buffer stuffing 和额外功耗。
+
+API 31+ 的三参数重载还允许选择 `CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS` 或 `CHANGE_FRAME_RATE_ALWAYS`。后者可能引起可见黑屏/闪烁，只适合长时间视频等“匹配内容收益大于切换成本”的场景。清除 vote 时用 frame rate 0；API 34+ 也可调用语义更清楚的 `clearFrameRate()`。不要让上一段视频的 24fps vote 污染后续 UI。
 
 ### Android 15：View / Compose 开始直接表达刷新率偏好
 
-`View.setRequestedFrameRate(float)` Added in API level 35 (Android 15)。它既能写具体 fps，也能写类别常量。普通 UI 组件在这一层给投票更自然，滚动场景还可以配合 `setFrameContentVelocity(float)` 告诉系统当前内容速度。
+`View.setRequestedFrameRate(float)` 在 API 35 加入。它既能写具体 fps，也能写类别常量。普通 UI 组件在这一层投票更自然，滚动场景还可以用 `setFrameContentVelocity(float)` 上报像素速度。
 
 ```java
 view.setRequestedFrameRate(View.REQUESTED_FRAME_RATE_CATEGORY_NORMAL);
@@ -143,13 +153,19 @@ staticPanel.setRequestedFrameRate(View.REQUESTED_FRAME_RATE_CATEGORY_LOW);
 list.setFrameContentVelocity(2400f);
 ```
 
-Compose 对应的是 `Modifier.preferredFrameRate(frameRate)` 和 `Modifier.preferredFrameRate(frameRateCategory)`。这一层表达的是偏好，系统会综合这些输入做刷新率选择。
+View vote 有三个容易漏掉的约束：
+
+- View 需要 redraw 时才投票；静止且不再 invalidated 的 View 不会永久占住高刷。
+- 在 `ViewGroup` 上调用不会自动传给 child View。
+- `setFrameContentVelocity()` 的单位是 pixels/second，值只对下一次 drawn frame 有效；自定义 fling 组件要在每个绘制帧更新，而不是手势开始时只写一次。
+
+Compose 1.9 对应 `Modifier.preferredFrameRate(frameRate)` 和 `Modifier.preferredFrameRate(frameRateCategory)`。同一帧里的 composable vote 会被收集、汇总，再作为偏好传到下层 layer；它不绕过 View/SurfaceFlinger 的策略。
 
 `Display.hasArrSupport()` 不属于 API 35。面向 Android 15 的代码要把刷新率投票和设备能力查询拆开：投票走 `View` / Compose，能力查询只在 API 36+ 调用。
 
 ### Android 16：`Display` 查询 API 用来读能力和建议值
 
-Android 16 (API 36) 补齐了查询入口。`Display.hasArrSupport()` 判断设备是否公开支持 ARR，`Display.getSuggestedFrameRate(int)` 读取系统建议值。支持档位仍可通过 `getSupportedRefreshRates()` 查看。
+Android 16（API 36）补齐查询入口。`Display.hasArrSupport()` 判断设备是否公开支持 ARR，`Display.getSuggestedFrameRate(int)` 读取系统为 NORMAL/HIGH 类别配置的建议值。`getSupportedRefreshRates()` 在 Android 16+ 返回 Display 支持的 render rates；调查旧平台或分辨率与刷新率组合时还要看 `getSupportedModes()`。
 
 ```java
 Display display = context.getDisplay();
@@ -162,7 +178,13 @@ if (display != null && display.hasArrSupport()) {
 
 `getSuggestedFrameRate(int)` 的入参是类别，不是任意 fps。它适合回答“系统建议普通动画跑多快”或“当前场景是否值得升到高刷”，不适合把 45fps、72fps 这类业务目标直接塞进去做映射。
 
-Android 15 QPR 设备可能已经有 ARR 调度逻辑，但没有 `Display.hasArrSupport()`。这类设备只能用机型白名单和 Perfetto 中 refresh-rate selection 片段辅助确认，不能把 API 36 查询失败直接判成不支持。
+Android 15-QPR1 设备可能有 ARR 调度逻辑，却没有 API 36 的公开查询。应用在 API 35 上可以安全提交 View/Surface hint，由系统按能力处理；不要读取私有属性或维护机型白名单。诊断时再结合设备文档、实际 VSync 周期和 SurfaceFlinger 的 refresh-rate selection 证据确认是否启用。
+
+### Android 15+：Window 级策略开关
+
+API 35 还提供 Window 级的 `setFrameRateBoostOnTouchEnabled()` 和 `setFrameRatePowerSavingsBalanced()`。默认 touch boost 会在触摸和释放后一段时间提高节奏，普通交互窗口不建议关闭。power-savings balance 允许系统按需降低刷新率；只有出现经过 trace 证实的体验问题时才考虑禁用，因为代价通常是更高功耗。
+
+这些开关是 Window policy，不是给某一帧指定 Hz。局部动画优先使用 View/Compose vote，视频/游戏 Surface 使用 `Surface.setFrameRate()`。
 
 ## 渲染过程里的 deadline 没有消失
 
