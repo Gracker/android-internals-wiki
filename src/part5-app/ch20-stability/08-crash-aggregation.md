@@ -60,317 +60,401 @@ task2b_verify_result: "stale-state-fixed: task6_state revisiting→reviewed (alr
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-20.6 节定义了崩溃率的计算口径（UV 崩溃率、PV 崩溃率、启动崩溃率、重复崩溃率）。指标有了，下一个问题就是：**每天几百到几千条崩溃报告，怎么归成几十个有意义的簇，找到该先修哪个**。本节讲崩溃聚合的算法、归因维度、分派机制和告警体系。
+20.6 节把 Crash 事件、受影响安装实例、会话和启动尝试分成了不同指标。本节处理服务端的下一步：怎样把海量 occurrence 归入可解释的问题簇，怎样判断它集中在哪些人群，以及怎样把证据交给合适的团队。
 
-## 堆栈聚合算法与去重策略
+平台锚点是 Android 17（API 37，`android-17.0.0_r1`）。聚合算法本身不属于 Android API，但输入数据受 `Throwable`、R8、debuggerd tombstone、`ApplicationExitInfo` 和构建产物约束。忽略这些约束，哈希做得再复杂也只会稳定地产生错误分组。
 
-### 为什么需要聚合
+## 先把四个对象分清
 
-一个百万 DAU 的线上应用，每天产生几百到几万条崩溃报告。如果每条单独看，两个问题会立刻出现：
+| 对象 | 含义 | 是否可变 |
+|---|---|---|
+| occurrence / event | 一次原始 Crash、ANR 或其他故障报告 | 原始内容不可改，只能补充解析结果 |
+| variant | 同一失败点下非常相似的一组调用路径 | 可随聚类算法拆分或合并 |
+| issue | 团队准备按一个根因跟踪和修复的问题 | 可人工合并、拆分、关闭或重开 |
+| issue family | 跨构建、跨版本的相似问题关系 | 是分析关系，不应覆盖 occurrence 的原归属 |
 
-1. **同一行代码引发的崩溃被分散成几十甚至几百条记录**——不同的用户、不同的机型、不同的调用路径，但根因是同一个 NPE。如果不聚合，你会看到"今天崩溃数暴涨"，但不知道都来自同一个地方。
-2. **崩溃排序失去意义**——没有聚合就没有"Top 10 崩溃"，只有一条一条的原始报告。无法做优先级排序，也无法度量某个崩溃修复后的效果。
+一个 `event_id` 负责消除上传重试；`variant_id` 和 `issue_id` 负责归类。不能用“同一安装实例五分钟内只计一次”删除 occurrence，那会隐藏重复崩溃和 crash loop。
 
-聚合的核心目标：**把同一根因的崩溃归入同一个簇（issue / fingerprint），让团队能看到每个簇的影响范围和趋势**。
+[Firebase Crashlytics 的公开说明](https://firebase.google.com/docs/crashlytics/troubleshooting)也采用 issue 与 variant 两层：issue 中的事件有共同失败点，variant 再表示相似堆栈。公开文档只能证明这种产品语义，不能据此推断其未公开算法。
 
-### 堆栈指纹（Stack Fingerprint）
+## 聚合流水线
 
-聚合的基础是堆栈指纹——从崩溃的调用栈中提取一段文本，做哈希后作为分簇的 key。
+下面的流程把符号化、确定性指纹和相似度聚类分开：
 
-Java 崩溃的原始堆栈格式（来自 Logcat / UncaughtExceptionHandler）：
-
-```text
-FATAL EXCEPTION: main
-Process: com.example.app, PID: 12345
-java.lang.NullPointerException
-    at com.example.app.user.ProfileActivity.onCreate(ProfileActivity.java:87)
-    at android.app.Activity.performCreate(Activity.java:8593)
-    at android.app.Activity.performCreate(Activity.java:8567)
-    at android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1409)
-    ...
+```mermaid
+flowchart LR
+  A["原始 occurrence"] --> B["格式校验与去重"]
+  B --> C{"事件族"}
+  C -->|"Java/Kotlin"| D["R8 Retrace"]
+  C -->|"Native"| E["按 Build ID 符号化"]
+  C -->|"ANR"| F["解析 ANR 类型与线程关系"]
+  C -->|"OOM/LMK"| G["解析内存故障类别"]
+  D --> H["构建内精确指纹"]
+  E --> H
+  F --> H
+  G --> H
+  H --> I["variant"]
+  I --> J["跨构建候选召回"]
+  J --> K["保守相似度判定"]
+  K --> L["issue / issue family"]
+  L --> M["归因、分派、告警"]
 ```
 
-Native 崩溃的堆栈来自 tombstone（由 debuggerd 生成），格式不同但处理逻辑类似：
+符号化失败的事件仍要保留，但进入 `unsymbolicated` 队列。不要先用不可读的混淆名或绝对地址建立长期 issue，再在符号到齐后静默改变含义。
+
+### 先按事件族隔离
+
+Java Crash、Native Crash、ANR 和 OOM/LMK 的证据结构不同，不能只因为“顶部堆栈相似”就放进同一簇。
+
+| 事件族 | 主证据 |
+|---|---|
+| Java/Kotlin fatal | exception/cause 链、崩溃线程帧、suppressed 摘要、构建 mapping |
+| Native fatal | signal、`si_code`、abort message、crash thread、模块 Build ID、相对 PC、内存错误报告 |
+| ANR | ANR 类型、组件、主线程阻塞点、锁持有者或 Binder 对端、时间窗口 |
+| Java heap OOME | ART OOME 文案类别、分配点、堆/GC 摘要、进程阶段 |
+| LMKD kill | `ApplicationExitInfo` reason、importance、内存压力与进程状态，不存在 Java 异常堆栈 |
+
+同一功能缺陷可能同时造成 ANR 与后续 Crash，可以在 issue family 或事故层关联，但原始事件族和各自指标必须保留。
+
+## 符号化是聚合前置条件
+
+### Java / Kotlin：mapping 必须绑定构建
+
+R8 混淆后的 `a.b.c` 只在对应构建中有意义。官方 [R8 retrace](https://developer.android.com/tools/retrace)使用该构建的 `mapping.txt` 恢复类、方法和行号；mapping 每次构建可能被覆盖，发布系统要按不可变 artifact ID 保存。
+
+artifact ID 至少包含：
+
+- application ID、version code、build ID；
+- product flavor、build type、动态功能模块版本；
+- mapping 文件的内容哈希；
+- 源码 commit 和依赖锁文件版本。
+
+[Crashlytics 的 Android 指南](https://firebase.google.com/docs/crashlytics/android/get-deobfuscated-reports)也要求上传与混淆变体对应的 mapping。mapping 缺失时，不要尝试删掉短混淆名中的数字后猜原方法，这会把无关代码合并。
+
+Kotlin inline、协程状态机和 R8 优化可能让一个混淆帧对应多个源位置。聚合器要保存 retrace 的歧义候选，不应只取第一个结果后丢弃其他可能性。
+
+### Native：Build ID 决定符号版本
+
+绝对 PC 会受到 ASLR 影响；不同构建的函数布局也会变化。Native 符号化至少使用 ABI、模块路径、ELF Build ID 与模块相对 PC。官方 [`ndk-stack` 文档](https://developer.android.com/ndk/guides/ndk-stack)要求提供对应 ABI 的未裁剪库，[Native debug symbols 指南](https://developer.android.com/build/include-native-symbols)说明了 `SYMBOL_TABLE` 和 `FULL` 的差别。
+
+发布流水线要验证：
+
+- 每个随包交付的 `.so` 都有 Build ID；
+- stripped 与 unstripped 文件的 Build ID 完全相同；
+- 符号包按 app build、ABI、模块 Build ID 可检索；
+- 动态模块和第三方 Native SDK 也有独立记录；
+- 上传成功有回读或抽样符号化验证，不能只看构建任务退出码。
+
+Android 12/API 31 起，应用可能从 `ApplicationExitInfo.getTraceInputStream()` 得到 Native tombstone protobuf。Android 17 的 [`tombstone.proto`](https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/debuggerd/proto/tombstone.proto)包含 `signal_info`、`abort_message`、`causes`、线程、帧、memory mappings 与 Build ID。聚合器应解析结构化字段，避免从人类可读文本中用脆弱正则猜字段。
+
+## 两层指纹：构建内精确，跨构建保守
+
+### 为什么不能把行号和偏移全部删除
+
+同一个方法里可以有多个独立 throw site；同一个 Native 函数里也可能有多个越界点。删除 Java 行号和 Native 相对偏移，可能把不同根因压进一个 issue。
+
+反过来，跨版本仍然保留精确行号，会因为插入一行日志就把同一问题拆开。解决办法是同时生成两类签名：
+
+- **exact fingerprint**：用于同一 artifact 内的 variant，保留 retrace 后的源位置或 Native 相对位置；
+- **family fingerprint**：用于跨 artifact 召回候选，保留稳定的异常类型、函数序列和失败语义，弱化行号与偏移。
+
+下面的伪代码展示签名的输入边界：
 
 ```text
-Build fingerprint: 'google/oriole/oriole:16/...',
-Revision: 'MP1.0'
-pid: 12345, tid: 12345, name: example.app  >>> com.example.app <<<
-signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0
-    #00 pc 0001a3b4  /data/app/...libnative.so (JNI_OnLoad+52)
-    #01 pc 00008c20  /data/app/...libnative.so (do_init+128)
-    ...
+if event.family == JAVA_FATAL:
+    exact = hash(
+        schema_version,
+        artifact_id,
+        exception_chain,
+        ordered_crash_thread_frames_with_source_line,
+        stable_message_code
+    )
+    family = hash(
+        schema_version,
+        outer_and_root_exception_types,
+        ordered_stable_frames_without_source_line,
+        stable_message_code
+    )
+
+if event.family == NATIVE_FATAL:
+    exact = hash(
+        schema_version,
+        module_build_id,
+        signal,
+        si_code,
+        ordered_frames_with_relative_pc,
+        normalized_abort_code
+    )
+    family = hash(
+        schema_version,
+        signal,
+        si_code,
+        ordered_module_and_function_frames,
+        normalized_abort_code
+    )
 ```
 
-### 指纹生成算法
+`schema_version` 不能省。规范化规则变化时，用新版本重算派生签名，并保留旧/new issue 映射和审计记录；不要在数据库里原地覆盖旧指纹。
 
-不同的 APM 平台（Bugly、Crashlytics、Sentry）的指纹算法有差异，但核心思路一致：
+### Java 指纹该保留什么
 
-**第一步：确定"关键帧"范围。**
+Android 17 的 [`Throwable.java`](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Throwable.java)同时保存 message、cause、stack trace 和 suppressed exceptions。聚合只取 root cause 会丢掉外层 API 语义，只取最外层又可能把相同底层失败拆散。
 
-不是整个堆栈都参与指纹计算。一般的策略是：
+更稳的 Java 特征包括：
 
-- 取**异常类型 + 消息**作为第一部分（如 NullPointerException / SIGSEGV）
-- 取堆栈中的**应用帧**（包名前缀匹配），跳过系统帧（android.app.*、java.lang.reflect.* 等）
-- 如果应用帧少于 3 个，回退到取顶部 N 帧（通常 N = 5-8）
+- 外层异常类型、root cause 类型和 cause 链类型序列；
+- 每一层第一个可归因帧，而非只看整条链的顶部；
+- 崩溃线程中有顺序的业务与关键库帧；
+- suppressed 异常的类型摘要，用于并发失败和资源关闭场景；
+- 经过 allowlist 规范化的稳定错误码。
 
-**第二步：规范化。**
+异常 message 默认不应整段进入指纹。文件路径、URL、账号、时间戳、对象地址和服务端文案都会制造高基数，还可能携带隐私数据。若 SDK 或业务拥有稳定 error code，优先用 code；需要 message 模板时，按异常类型维护显式 parser，并监控模板命中率。
 
-- 去除行号：ProfileActivity.java:87 → ProfileActivity.java。行号在不同版本间会变化，纳入指纹会导致同一函数的崩溃被拆成多个簇
-- 去除地址偏移：Native 堆栈中的 pc 0001a3b4 在每次编译后都会变，同样需要去掉
-- 统一异常消息中的动态部分：IllegalStateException 中的动态 authority 名称需要用通配符替换
+“系统帧一律删除”也过于粗糙。`Looper.loop()`、`ActivityThread.main()` 等公共尾帧几乎没有区分度，可以降权；`SQLiteConnection`、`WebView`、Binder proxy 或特定库帧可能正是失败语义的一部分，应保留在辅助特征中。
 
-**第三步：哈希。**
+### Native 指纹该保留什么
 
-把规范化后的文本做哈希（一般用 SHA-256 或 MurmurHash），得到指纹值。
+Native exact fingerprint 常用字段包括：
 
-```text
-指纹 = Hash(
-    "NullPointerException" +
-    "com.example.app.user.ProfileActivity.onCreate(ProfileActivity.java)" +
-    "com.example.app.user.ProfileActivity.initView(ProfileActivity.java)"
-)
+- signal 与 `si_code`；
+- crash thread 的模块、Build ID、函数和相对 PC；
+- `abort_message` 中经过规则提取的稳定 sanitizer/allocator 错误码；
+- MTE、GWP-ASan、HWASan 等 memory error 类型；
+- fault address 的类别，例如 near-null、tag mismatch 或不可访问映射。
+
+原始 fault address 不适合作为哈希键：ASLR、堆布局和隐私都会使它变化。near-null 也不能只看地址后直接定性为空指针，仍要结合 signal、mapping 与指令。
+
+所有线程可以帮助诊断死锁或并发关系，却不宜直接拼入 exact fingerprint；无关线程调度会造成同一 Crash 每次得到不同 ID。通常只把 crash thread 放进强签名，把其他线程作为相似度和人工分析证据。
+
+### ANR、OOM 与低信息事件单独设计签名
+
+ANR fingerprint 可以由 ANR 类型、组件、主线程阻塞帧、锁 owner/Binder peer 和版本化场景组成。Input、Broadcast、Service、Provider 等类型不能混在一个“main thread 卡住”大簇里。
+
+Java OOME 至少按 ART message 类别、分配点、进程阶段和堆摘要分桶。`Failed to allocate`、`pthread_create`、FD 耗尽、Bitmap/native-backed 分配和 LMKD kill 属于不同问题，详见 20.5。
+
+没有堆栈的事件进入带原因的 fallback bucket，例如 `java_oome:no_stack:startup`。fallback bucket 用于显示数据缺失和影响量，不应自动认定其中所有 occurrence 有同一根因。
+
+## 相似度聚类：只负责候选，不替代证据
+
+固定指纹会因为调用路径漂移产生重复 issue，相似度层用于寻找“可能属于同一问题”的候选。推荐流程是：
+
+1. 用事件族、异常/信号类型、关键模块、artifact 范围建立强分桶；
+2. 只在桶内召回少量候选 issue；
+3. 比较有顺序的帧序列、cause 结构、稳定 message code 和场景；
+4. 达到高置信规则才自动合并，中间区域进入人工确认；
+5. 保存支持与反对合并的证据。
+
+帧集合的 Jaccard 相似度会丢失顺序；单纯编辑距离又容易被公共长尾支配。可使用带位置衰减的 weighted LCS、按帧类型加权的编辑距离，或把应用/关键库/公共框架帧分别计分。
+
+阈值不能从文章复制。团队需要一批已经人工标注为“同根因/不同根因”的事件对，在自己代码和混淆配置上选择阈值。过度合并通常比重复拆簇更危险：它会把两个修复状态、责任团队和回归趋势混在一起。
+
+### 防止传递式误合并
+
+A 与 B 相似、B 与 C 相似，不代表 A 与 C 相似。若直接用单链聚类，公共中间样本会把两个问题连成大簇。自动合并应同时满足：
+
+- 与簇代表样本相似；
+- 与簇内关键约束一致，例如相同 root type 或 Native signal；
+- 簇内最大距离不超过上限；
+- 新样本不会显著增加簇内多样性。
+
+每个 issue 保留多个代表 variant，避免只用最早一条样本代表持续演化的问题。人工 split 后要写入不能再次自动合并的约束。
+
+### 聚类质量要可观测
+
+| 指标 | 含义 |
+|---|---|
+| pairwise precision | 判为同簇的事件对中，人工确认同根因的比例 |
+| pairwise recall | 人工确认同根因的事件对中，被算法放在同簇的比例 |
+| over-merge rate | 一个 issue 含多个根因的比例 |
+| duplicate-issue rate | 一个根因被拆成多个 issue 的比例 |
+| unsymbolicated rate | 无法进入可靠指纹的事件比例 |
+| manual split/merge rate | 人工纠正算法的频率 |
+
+只报一个“聚类准确率”没有解释力。数据集规模、版本跨度、事件族分布、标注规则和置信区间都要一并记录。
+
+## 崩溃归因：比较发生率，不比较裸计数
+
+聚合回答“哪些事件相似”，归因回答“问题在哪些暴露条件下更常发生”。任何归因表都需要分子和分母。
+
+| 维度 | 分子示例 | 分母示例 | 常见混杂因素 |
+|---|---|---|---|
+| App 构建/Play track | 该构建受影响安装实例日 | 该构建活跃安装实例日 | 灰度比例、发布时间、用户人群 |
+| Android API | 该 API 受影响实例日 | 该 API 活跃实例日 | 设备档位、厂商、版本采用率 |
+| 机型/SoC/GPU | 该设备分层受影响实例日 | 该设备分层活跃实例日 | 地区、内存、驱动版本 |
+| ABI/Native Build ID | 该 ABI/Build ID 事件或受影响实例 | 对应 ABI/Build ID 暴露量 | 动态模块安装率 |
+| 页面/功能开关 | 场景内受影响会话 | 进入该场景的有效会话 | 场景使用频次、实验分流 |
+| WebView/SDK 版本 | 该组件版本受影响实例 | 该组件版本活跃实例 | 系统更新与机型分布 |
+
+“某机型有 50 次 Crash”无法说明机型问题。如果该机型贡献了大部分活跃量，事件多很正常。应比较同时间窗内的 rate ratio 或 rate difference，并展示分母、置信区间和最小样本规则。
+
+### 首次观测不等于引入版本
+
+某 issue 第一次出现在 3.3.0，只能称为 first observed build。下面这些情况都会让旧问题看似新出现：
+
+- 旧版本没有采集或 mapping/符号缺失；
+- 聚类算法刚升级；
+- 新版本提高了某功能的曝光；
+- 旧版本样本量太小；
+- 服务端 message 或远程配置改变；
+- 同一根因在新构建中换了失败表现。
+
+判断 introduced build 需要结合版本暴露、旧构建上界、代码差异、功能开关和复现证据。`git bisect` 只适用于有稳定自动复现、明确 good/bad 边界且每个中间构建可运行的情况。没有复现条件时，commit range、代码所有权与发布变更只能提供候选。
+
+### 场景和 breadcrumb 要受控
+
+页面、路由、网络类型、前后台状态、实验组和最近操作能缩小范围，但采集要使用 allowlist 和枚举值。禁止把完整 URL、搜索词、聊天内容、Intent extras 或账号直接写入 breadcrumb。
+
+[Crashlytics 自定义报告文档](https://firebase.google.com/docs/crashlytics/android/customize-crash-reports)公开了其 key 数量、单 key 大小和日志总量限制，也警告不要在 exception message 中加入唯一值。自建 SDK 同样需要字段数量、单值长度、环形缓冲、采样、脱敏和删除周期。
+
+归因结果使用“相关”“集中”或“候选条件”描述，不能仅凭线上相关性认定厂商 ROM、某次 commit 或某个团队制造了故障。
+
+## 自动分派：派给团队，不自动归罪个人
+
+### 从符号化帧映射源码
+
+只有 retrace 或 Native symbolization 成功后，类名、源文件和函数才能可靠映射仓库。分派候选可以来自：
+
+- 模块注册表：artifact/module → owning team；
+- 源码路径 → [CODEOWNERS](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners)；
+- 构建依赖：第三方 SDK → 内部接入团队或供应商接口人；
+- feature flag / 页面 → 产品模块负责人；
+- 历史 issue：相同 family 的已确认责任团队。
+
+顶部第一个应用帧也不一定是根因。回调适配层、反射入口、序列化框架和公共基础库经常出现在顶部。路由器应从 cause 链、失败点、关键 frame 和模块依赖生成候选团队，并给出证据。
+
+`git blame` 只能说明某一行最近由谁修改，不能说明谁引入了故障，也不适合自动创建个人责任工单。它可以附在 triage 页面，工单默认派给团队队列；证据冲突或多团队命中时进入稳定性 triage。
+
+### 工单状态与幂等
+
+推荐的状态集合是：
+
+- `new`：新 issue，尚未确认；
+- `triaged`：事件族、影响面和候选 owner 已确认；
+- `in_progress`：修复或缓解进行中；
+- `fixed_pending_exposure`：修复构建已发布，暴露量不足；
+- `verified`：在约定暴露量和窗口下通过；
+- `regressed`：满足回归规则后重开；
+- `ignored_with_reason`：有到期时间和明确理由。
+
+工单创建使用 `issue_id + environment` 作为幂等键。同一个 issue 的新 variant、影响扩大和版本变化更新原工单，不要每次告警都新建一张。
+
+“某天没有事件”不能自动标记 verified。若修复版本有 `n` 个独立暴露单位且观察到 0 次，在简化的独立同分布假设下，95% 上界约为 `3/n`；线上会话并不完全独立，所以还要结合历史率、用户聚类、采集完整率和时间窗口解释。
+
+## 趋势分析与告警
+
+### 每个 issue 同时看影响面和频率
+
+| 指标 | 用途 |
+|---|---|
+| 受影响安装实例日 / 活跃安装实例日 | 衡量日活影响面 |
+| 受影响会话 / 有效会话 | 衡量使用过程风险 |
+| occurrence 数 | 发现重复 Crash 和采集压力 |
+| repeated-affected rate | 发现同一实例反复命中 |
+| crash-loop rate | 发现启动循环 |
+| first seen / last seen / build exposure | 判断版本关系 |
+| variant entropy 或 variant 数 | 发现 issue 内部是否正在变杂 |
+| symbolication completeness | 判断趋势变化是否来自符号缺失 |
+
+新增 issue、影响扩大、回归和 SLO burn 都可以触发告警，但规则必须带最小分母和持续时间。固定“环比两倍”在低基数下很容易误报，固定绝对人数又会漏掉小规模灰度中的严重问题。
+
+可组合四类信号：
+
+1. 修复版本相对同人群基线显著回归；
+2. 新 issue 命中启动、登录、支付等高风险路径；
+3. 某 issue 的 error-budget burn rate 在短、长窗口同时升高；
+4. 单机型、API、ABI 或功能开关分层出现有分母支持的集中异常。
+
+报告补传和处理延迟会让旧事件在短时间涌入。告警使用 event time 计算趋势，用 ingestion time 监控处理延迟；二者混用会把补传误判成线上突增。
+
+### 静默不等于停止评估
+
+issue 告警后可以对同级通知设置静默期，但系统仍要更新影响量。出现以下变化时应突破静默：
+
+- 严重级别上升；
+- 新版本或新轨道开始受影响；
+- 进入 crash loop；
+- 原 owner 拒绝或证据指向另一模块；
+- 修复后满足回归条件。
+
+MTTD、MTTA、缓解时间和验证时间都值得统计。目标值来自值班覆盖、发布能力和业务损失，不存在适用于所有团队的五分钟或二十四小时标准。
+
+## AI 辅助归类：输出候选和证据
+
+AI 适合处理确定性聚合之后的高成本环节：
+
+- 为新 issue 生成可读摘要；
+- 从历史 issue 中检索相似修复；
+- 给出候选 owner 和相关代码位置；
+- 解释两个 variant 可能同根因的依据与反证；
+- 从长 tombstone、ANR trace 中提取调查清单。
+
+AI 不应直接改变 occurrence 归属、关闭 issue、认定某位开发者负责，或在没有源码和构建证据时宣布 root cause。
+
+### 输入是不可信数据
+
+exception message、breadcrumb、服务端响应和日志都可能包含用户内容或攻击者控制的文本。把它们送进模型前要：
+
+- 脱敏并截断；
+- 区分代码、系统字段和自由文本；
+- 把日志中的指令视为数据，防止 prompt injection；
+- 按仓库与团队权限限制源码、工单和用户数据；
+- 记录模型版本、prompt 版本和检索证据 ID；
+- 对输出执行 schema 校验。
+
+模型输出可以强制为下面的证据结构：
+
+```json
+{
+  "candidate_issue_ids": ["ISSUE-123"],
+  "candidate_owner_teams": ["payments-runtime"],
+  "supporting_frames": ["PaymentStore.commit"],
+  "counter_evidence": ["different root exception type"],
+  "missing_evidence": ["mapping for build 42017"],
+  "confidence": 0.72
+}
 ```
 
-同一个指纹 = 同一个崩溃簇。
-
-### 相似度聚类的实现口径
-
-固定指纹适合处理“同一异常、同一应用帧”的崩溃。线上数据还会出现堆栈漂移：同一个空对象从不同入口触发、同一个 Native bug 在不同符号化质量下上报、同一段异步任务通过不同回调进入。此时不能只看哈希 key，需要在指纹之外做相似度合并。
-
-一个可执行的聚类流程如下：
-
-1. **先用强 key 分桶**：异常类型、崩溃线程、首个应用帧、App 版本区间、ABI 先进入粗分桶，避免把完全无关的报告放进同一次相似度比较。
-2. **再算帧级相似度**：每条堆栈保留前 8-12 个有效帧，应用帧权重大于系统帧；系统入口帧如 `Looper.loop()`、`ActivityThread.main()`、`ZygoteInit.main()`、`pthread_create` 只作为上下文，不参与主权重。
-3. **簇内确认**：候选报告与簇代表堆栈比较，应用帧 Jaccard 相似度、编辑距离、异常消息模板同时满足阈值才合并；只满足其中一项时进入待确认队列。
-
-复杂度上，不能对当天所有崩溃报告两两比较。若有 N 条报告，直接比较是 O(N²)，量级上来后不可用。工程实现通常先按强 key 分桶，单桶内再做相似度比较；每个簇保留 1-3 条代表堆栈，新增报告只和代表堆栈比。这样成本接近 O(N × K)，K 是单桶内候选代表数。
-
-### 去重的边界情况
-
-**混淆后的堆栈。** R8 / ProGuard 混淆后，方法名变成 a.b.c，类名变成 a.b。如果每次构建的混淆映射不同，同一个崩溃在不同构建中会产生不同的指纹。解决方案：
-
-1. **使用 Retrace 还原后再算指纹**——需要对应版本的 mapping.txt
-2. **在原始混淆堆栈上算指纹，但去掉混淆名中的顺序编号**——不推荐，混淆名每次构建都可能变
-
-正确做法是在服务端存储 mapping.txt，收到崩溃报告后先还原再聚合。
-
-**多线程 / 异步回调的堆栈漂移。** 同一个根因的崩溃，在不同调用路径下堆栈的顶部几帧可能不同。比如一个 NullPointerException 可以从 onCreate 触发，也可以从 onResume 触发，取决于空对象在哪个生命周期被访问。
-
-常见处理方式：
-
-- **加权帧策略**：靠近崩溃点的帧权重更高，但不要求完全一致。用 Jaccard 相似度或编辑距离比较两个堆栈，相似度超过阈值就归为同一簇
-- **稳定段匹配**：只匹配业务代码和库代码中的稳定段。`Looper`、`ActivityThread`、`ZygoteInit`、`pthread` 这类通用入口不能作为合并依据，否则不同页面、不同模块的崩溃会被过度聚合
-
-**Caused by 链。** Java 异常有 cause chain。指纹不能机械地只取 root cause。外层异常常带有 API 语义和业务入口，例如 `IllegalStateException` 包住底层 `IOException`，外层帧能说明是页面恢复、数据库迁移还是网络回调触发。更稳的做法是同时保留 outer exception、root cause 和两者的首个应用帧：强 key 用 root cause 防止重复，归因和分派保留外层语义。
-
-**OOM / StackOverflow 的低信息量堆栈。** StackOverflowError 可能产生上千帧；ART 的 `kMaxSavedFrames = 256` 是首轮栈帧缓存阈值，不是 Java 异常堆栈硬上限，超过该阈值时会重新 WalkStack 构建完整 trace。OOM 发生时堆栈抓取本身可能失败，只剩一行 OutOfMemoryError 没有堆栈。这种情况下指纹退化为只有异常类型，需要结合触发场景的上下文（Activity 名、最近操作）做二次聚合。
-
-## 崩溃归因维度：版本、机型、OS、场景
-
-聚合解决的是"哪些崩溃是同一个"，归因解决的是"这个崩溃在什么条件下出现"。一个崩溃簇不能只靠堆栈指纹判断，必须继续按多维度切分，才能定位根因。
-
-### 核心归因维度
-
-| 维度 | 作用 | 典型场景 |
-|------|------|----------|
-| **App 版本** | 定位崩溃首次引入的版本 | 新版本上线后某个簇从 0 涨到 500/天 |
-| **OS 版本** | 排查系统兼容性问题 | Android 16 行为变更导致 API 返回 null |
-| **机型 / SoC** | 排查厂商定制 ROM 或硬件相关问题 | 某品牌设备的 SurfaceFlinger 行为异常 |
-| **进程 / 组件** | 区分崩溃发生的位置 | 主进程 vs 子进程 vs :push 进程 |
-| **页面 / 场景** | 缩小排查范围 | 只在"设置-账号绑定"页面出现 |
-| **ABI** | 区分 Native 崩溃的平台 | 只在 arm64-v8a 上出现 |
-| **编译配置** | 区分构建差异 | debug 构建正常，release 构建崩溃 |
-
-### 版本归因：首现版本与引入者
-
-版本归因是最直接的维度。看一个崩溃簇在各版本的用户数分布：
-
-```text
-版本 3.2.1: 0 users affected
-版本 3.2.2: 0 users affected
-版本 3.3.0: 347 users affected  ← 首现版本
-版本 3.3.1: 289 users affected
-```
-
-首现版本 = 该崩溃簇第一次出现用户数 > 0 的版本。**找到首现版本后，用 Git bisect 定位引入该崩溃的 commit**。
-
-实际操作中的问题：
-
-1. **回归崩溃**——某个版本修过，后面又出现了。需要区分"新引入"和"回归"
-2. **灰度混淆**——版本 3.3.0 灰度期间和全量期间的崩溃率不同，归因时要把灰度样本和全量样本分开看
-
-### 机型归因：厂商 ROM 差异
-
-当某个崩溃簇在特定机型上集中出现，原因通常是：
-
-- 厂商定制 ROM 修改了 AOSP 的行为（比如修改了 Activity 生命周期、WebView 内核版本、SurfaceFlinger 合成策略）
-- 特定 SoC 的 GPU 驱动 bug（通常出现在 Native 崩溃中，堆栈指向 GPU 驱动库）
-- 低内存设备的 lmkd 更激进，后台进程被杀后状态恢复出错
-
-机型归因需要设备维度的统计显著性。不能因为某个崩溃在一台设备上出现就归因到该机型。通常要求某机型上该崩溃的发生率显著高于整体发生率（比如 2 倍以上），且样本量 ≥ 50。
-
-### 场景归因：用户操作路径
-
-堆栈只告诉你崩溃在哪里，不告诉你用户在做什么。场景归因需要额外的上下文采集：
-
-- **当前页面**（Activity / Fragment 类名）
-- **最近操作序列**（点击了哪个按钮、进入了哪个页面）
-- **网络状态**（WiFi / 4G / 离线）
-- **应用生命周期状态**（前台 / 后台 / 启动中）
-
-这些信息需要 SDK 在崩溃发生前持续记录（breadcrumb），崩溃时附加到报告里。Firebase Crashlytics 的 `log()` 和 `setCustomKey()` 就是做这件事。
-
-## 自动分派与责任人匹配
-
-### 从崩溃堆栈到代码责任人
-
-崩溃聚合的下游动作是修复。修复的第一步是找到负责人。
-
-**基于代码路径的分派。** 堆栈中的应用帧包含了类名和方法名。通过类名可以映射到代码仓库中的目录 / 模块：
-
-```text
-com.example.app.user.ProfileActivity → app/src/main/java/com/example/app/user/ → 用户中心团队
-com.example.app.network.ApiClient   → app/src/main/java/com/example/app/network/ → 网络库团队
-```
-
-自动分派的实现方式：
-
-1. **CODEOWNERS 文件**：在代码仓库根目录维护 CODEOWNERS，定义每个目录的所有者。崩溃报告解析出类名后，查 CODEOWNERS 找到负责团队
-2. **Git blame / 最近提交者**：对崩溃涉及的方法做 `git log -L :methodName:filePath`，找到最近修改过该方法的开发者
-3. **模块注册表**：应用内部维护一份模块到团队的映射表（通常在构建系统中维护）
-
-### 分派规则的设计
-
-自动分派不是简单的"堆栈里出现哪个类就派给谁"。实际工程中需要考虑：
-
-| 规则 | 说明 |
-|------|------|
-| **框架代码命中时不分派** | 堆栈顶部是 android.app.* / java.lang.* 时不直接分派，需要找第一个应用帧 |
-| **第三方库归入统一看板** | com.google.gson.* / okhttp3.* 等第三方库崩溃不派给具体团队，放入"第三方库"看板统一评估 |
-| **多团队命中时升级** | 堆栈涉及 2 个以上团队的代码时，自动升级到稳定性负责人 |
-| **已知问题关联** | 同一指纹的崩溃如果已有 Jira / IssueTracker 工单，自动关联回复，不创建新工单 |
-| **灰度期间特殊处理** | 灰度版本的崩溃优先派给提交者本人，缩短反馈环 |
-
-### 从分派到修复
-
-```text
-崩溃发生 → SDK 采集上报 → 服务端聚合分簇 → 自动分派 → 工单创建/关联
-    → 开发者收到通知 → 本地复现 / 线上分析 → 提交修复 → 新版本验证
-    → 崩溃簇状态标记为"已修复" → 持续监控回归
-```
-
-这条流程的关键指标：
-
-- **MTTD（Mean Time To Detect）**：崩溃发生到团队收到告警的时间。行业目标 < 5 分钟
-- **MTTA（Mean Time To Acknowledge）**：收到告警到开发者确认的时间。目标 < 30 分钟（工作时间）
-- **MTTR（Mean Time To Resolve）**：确认到修复上线的总时间。P0 崩溃目标 < 24 小时，P1 < 1 个版本周期
-
-## 崩溃趋势分析与异常告警
-
-### 趋势分析的核心指标
-
-每个崩溃簇需要追踪的趋势指标：
-
-| 指标 | 定义 | 用途 |
-|------|------|------|
-| **日影响用户数** | 当天该簇影响的去重用户数 | 衡量影响面 |
-| **日发生次数** | 当天该簇的崩溃总数 | 衡量频率 |
-| **发生率** | 发生次数 / 当天 DAU 或 Session 数 | 消除用户量波动的影响 |
-| **新增/回归标记** | 该簇是否在本版本首次出现或回归 | 区分是新问题还是旧病复发 |
-| **修复状态** | 未修复 / 已修复待验证 / 已验证 | 追踪修复进展 |
-
-### 同环比分析
-
-趋势分析至少需要两个对比维度：
-
-1. **日环比**：今天的崩溃数 vs 昨天。日环比异常放大（> 2 倍）通常意味着新问题或环境变化
-2. **版本环比**：当前版本的崩溃率 vs 上一版本。版本环比上升意味着新版本引入了退化
-
-版本崩溃率 = 该版本累计崩溃用户数 / 该版本累计活跃用户数。用累计值而不是单日值，因为新版本刚发布时用户量小，单日数据波动大。通常在版本发布 7 天后看累计值趋于稳定。
-
-### 告警规则设计
-
-告警的目标是在崩溃恶化到影响大量用户之前发出信号。告警规则需要在灵敏度（及时发现问题）和噪声（误报率）之间做取舍。
-
-**基础告警规则：**
-
-| 规则 | 条件 | 级别 | 示例 |
-|------|------|------|------|
-| 单簇突增 | 某簇日崩溃数环比增长 > 200% 且绝对值 > 50 | P1 | 昨天某 NPE 簇 30 次，今天 120 次 |
-| 新簇出现 | 首现簇日影响用户 > 100 | P2 | 新版本引入了一个此前从未出现的崩溃 |
-| 整体崩溃率突破 | UV 崩溃率 > 阈值（如 0.5%） | P0 | 全局崩溃率从 0.1% 跳到 0.8% |
-| 启动崩溃率突破 | 启动崩溃率 > 阈值（如 0.01%） | P0 | 用户打不开 App |
-| 重复崩溃率过高 | 某簇同一用户重复崩溃 > 3 次 | P2 | 崩溃恢复逻辑有问题 |
-| 回归崩溃 | 已标记"已修复"的簇重新出现 | P1 | 修复被新代码覆盖或回退 |
-
-**告警降噪：**
-
-- **持续时间过滤**：突增持续 2 个采样周期以上才告警，避免单次抖动触发
-- **灰度隔离**：灰度期间的告警单独发到灰度群，不和全量告警混在一起
-- **聚合窗口**：用滑动窗口（如 1 小时）而不是实时计算，减少瞬时尖峰的噪声
-- **静默期**：已告警过的簇在修复前不重复告警，避免刷屏
-
-### 告警通知渠道
-
-| **渠道** | **适用级别** | **特点** |
-|------|----------|------|
-| 语音 / 电话 | P0 | 24/7 触达，适合启动崩溃、整体崩溃率突破 |
-| 即时消息群 | P1 / P2 | 团队可见，附带崩溃详情链接 |
-| 邮件 / 周报 | P2 / 日常 | 每日汇总，适合趋势跟踪 |
-| 代码仓库集成 | 所有 | PR / commit 关联，在 MR 页面展示相关崩溃 |
-
-### 崩溃看板设计
-
-一个可用的崩溃看板至少包含以下区域：
-
-1. **全局概览**：当日 UV 崩溃率、PV 崩溃率、崩溃总数，和昨天/上周同比
-2. **Top 10 崩溃簇**：按影响用户数排序，展示簇 ID、堆栈摘要、状态、责任人
-3. **版本维度**：每个版本的崩溃率曲线（折线图，X 轴日期，Y 轴崩溃率）
-4. **新问题区**：最近 7 天首现的崩溃簇列表
-5. **待修复 / 待验证区**：已分派但未关闭的崩溃工单
-
-## 基于 AI 的崩溃智能归类
-
-传统的堆栈指纹聚合存在以下盲区：
-
-- **同一根因的不同异常类型**：一个 null 对象可能触发 NullPointerException，也可能触发 IllegalStateException（取决于谁先检查），指纹不同但根因相同
-- **不同调用路径的同类错误**：多个入口都能触发同一个 bug，堆栈的前几帧不同，尾部帧相同
-- **OOM / ANR 等低信息量崩溃**：堆栈只有异常类型，没有具体代码位置
-
-机器学习归类可以在指纹聚合的基础上做二次聚类，解决上述问题。
-
-### 特征提取
-
-每条崩溃报告提取以下特征用于聚类：
-
-| **特征** | **来源** | **说明** |
-|------|------|------|
-| 异常类型 | Throwable 类名 | NullPointerException / SIGSEGV 等 |
-| 异常消息 | Throwable.getMessage() | 去掉动态参数后的模板 |
-| 应用帧序列 | 堆栈中的应用代码帧 | 去掉行号和混淆名的顺序部分 |
-| 框架帧序列 | 系统帧 | 辅助判断调用场景 |
-| 页面 / 场景 | breadcrumb | 用户当时在哪个页面 |
-| 版本 / 机型 | 元数据 | 辅助分组 |
-
-### 聚类方法
-
-**DBSCAN（Density-Based Spatial Clustering）。** 把堆栈的编辑距离作为距离度量，密度达到阈值的样本归为一簇。优点：不需要预设簇数，能自动发现新簇。
-
-**Sentence Embedding + 余弦相似度** 把堆栈文本转成向量（用预训练模型或 TF-IDF），计算向量间的余弦相似度。阈值不能照搬固定数值：`0.85` 这类阈值只适合作为某个团队标注集上的起点，最终要按误合并率、漏合并率和人工确认成本调参。优点：对堆栈长度和帧顺序的变化有一定容忍度。
-
-### 实际效果与局限
-
-- **归类准确率**：只能在本团队标注数据集上比较。指标要同时给出数据集规模、时间窗口、基线算法、人工标注规则和 F1-score；没有这些条件时，不写“提升 10～20 个百分点”这类跨团队结论
-- **冷启动问题**：新类型的崩溃没有历史数据，仍然需要人工确认
-- **维护成本**：模型需要定期用人工标注数据重新训练，否则会随代码演进发生漂移
-- **适用场景**：崩溃量大（日活 > 1000 万）、崩溃类型多（> 500 个活跃簇）的团队收益最高。小型团队纯指纹聚合够用
-
-> 详见 26.2 节（Crash 上报体系搭建）关于 SDK 采集上报的实现，和 19.18 节（商业 APM 平台）中 Sentry / Bugly / APMPlus 各自的聚合与告警能力对比。
+`confidence` 只是该模型和标注集上的排序信号，不能当成客观概率。分派器还要检查 mapping、Build ID、事件族和权限，缺少关键证据时保持待确认。
+
+### 用标注集评估，不写想象中的提升
+
+AI/ML 上线前建立按时间切分的标注集，至少覆盖：
+
+- 常见与长尾 Java 异常；
+- Native signal、sanitizer 与无符号事件；
+- 不同 ANR 类型；
+- 同根因跨版本变体；
+- 很相似但根因不同的 hard negatives；
+- 多团队、第三方 SDK 和未知 owner。
+
+评估分别报告候选合并 precision/recall、owner top-k、摘要事实错误率、证据引用正确率和人工节省时间。测试集不能和检索库泄漏同一 issue 的近重复样本。
+
+代码、R8、NDK、SDK 和模型升级后都可能产生漂移。监控人工驳回率、split/merge 率和各事件族质量；质量下降时回退到确定性指纹与人工 triage。
+
+## 上线前检查
+
+1. occurrence 是否不可变，重传去重是否只依赖 `event_id`；
+2. Java mapping 与 Native symbols 是否按不可变构建/Build ID 保存并验证；
+3. exact fingerprint 与跨构建 family fingerprint 是否分开；
+4. Java 行号和 Native 相对 PC 是否只在适当层级弱化，而非一律删除；
+5. cause、suppressed、signal、`si_code`、ANR 类型和 OOM 类别是否分别建模；
+6. `fingerprint_schema_version` 是否入库，重聚类是否可审计和回滚；
+7. 相似度合并是否有强约束、人工区间和防传递误合并；
+8. 归因表是否展示分母、置信区间、暴露时间和采集完整率；
+9. first observed 是否被错误写成 introduced；
+10. CODEOWNERS、模块表和 `git blame` 是否只生成团队候选与证据；
+11. 告警是否区分 event time、ingestion time、灰度和补传；
+12. AI 输入是否脱敏、防注入、按权限检索，输出是否带反证和缺失证据。
+
+崩溃聚合的价值不在于把 issue 数量压得尽可能少。好的系统会保留每次 occurrence，谨慎合并有共同根因的事件，并让任何归因、分派和修复结论都能回到构建产物、堆栈与暴露数据复查。
 
 ## 参考资料
 
-### 崩溃聚合与归因分析中的 ML 应用
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-12-crash-aggregation-ml-analysis.md
-- 类型：DeepResearch 调研结果
-- 摘要：调研 Firebase Crashlytics analysis engine 的崩溃聚类机制（基于栈帧、异常消息、错误码等5维特征向量），以及 Sentry 的 ML-driven issue ranking。梳理了 Android NDK Native crash 处理基础设施（libunwind/debuggerd/aee）和 Breakpad 符号化流程，并探讨了 LLM 在 crash 分析中的理论应用潜力。
+- [Android 17 `Throwable.java`](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Throwable.java)
+- [Android 17 debuggerd `tombstone.proto`](https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/debuggerd/proto/tombstone.proto)
+- [R8 retrace](https://developer.android.com/tools/retrace)
+- [Android NDK `ndk-stack`](https://developer.android.com/ndk/guides/ndk-stack)
+- [在 Release 构建中包含 Native symbols](https://developer.android.com/build/include-native-symbols)
+- [Firebase Crashlytics：issue grouping 与 variants](https://firebase.google.com/docs/crashlytics/troubleshooting)
+- [Firebase Crashlytics：自定义 Crash 报告](https://firebase.google.com/docs/crashlytics/android/customize-crash-reports)
+- [GitHub CODEOWNERS](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners)
