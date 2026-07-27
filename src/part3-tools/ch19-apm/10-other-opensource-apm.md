@@ -65,218 +65,352 @@ last_deepseek_cn_review_at: 2026-07-13
 
 ## 这些项目适合看设计取舍
 
-AndroidGodEye、Collie、Rabbit 都是开源 Android APM 或研发监控工具。它们覆盖 CPU、内存、FPS、卡顿、启动、网络、Crash、线程、页面耗时、APK 分析等能力，但维护活跃度、构建链兼容性和现代 Android 适配差异很大。
+AndroidGodEye、Collie、Rabbit 都曾试图用较低的接入成本覆盖多种 Android 性能信号。它们留下了不少值得学习的设计：按模块启停采集、把主线程事件转交给后台线程、用 Activity 生命周期补页面上下文，以及把本地调试 UI 与数据采集分开。
 
-把它们放进今天的项目里，更合适的用法是两种：
+不过，“仓库里有这个功能”只说明作者实现过一条采集路径，不代表它在 Android 17、可变刷新率设备、现代 AGP 和生产流量下仍有可靠口径。评估旧 APM 项目时，应同时检查四个维度：
 
-- 当作设计样本，学习"轻量信号怎么采、怎么缓存、怎么上报"
-- 在存量项目里局部借用某个模块，补一段调试或诊断能力
+- **信号语义**：采到的是系统定义的指标，还是由 SDK 自己推断的近似值。
+- **运行开销**：是否在主线程做反射、抓栈、序列化、文件 I/O 或主动 GC。
+- **构建兼容性**：Gradle 插件是否使用已经删除的 Transform API 或 AGP 内部类。
+- **维护证据**：最近发布、固定 commit、`compileSdk`、`targetSdk` 与依赖仓库能否支撑当前工程。
 
-如果新项目要做长期线上治理，不能只看它们能采什么，还要看合规、配置中心、告警、会话归因、版本治理和退出成本。
+本章把源码固定在以下 commit。日期和构建版本不是用来给项目排资历，而是界定结论适用的代码：
 
-## AndroidGodEye:浏览器看板式调试平台
+| 项目 | 本章固定的源码 | 发布与构建基线 | 可以得出的结论 |
+|---|---|---|---|
+| AndroidGodEye | [`459f5cb5`](https://github.com/Kyson/AndroidGodEye/tree/459f5cb5a2a4d176ff63f27322644a8191df2af9) | 3.4.3；AGP 3.2.1；`compileSdk` / `targetSdk` 29；`minSdk` 16 | upstream 没有给出 Android 17 与现代 AGP 的验证证据 |
+| Collie | [`bfdc6782`](https://github.com/happylishang/Collie/tree/bfdc6782d568bfcefef01e846e81ccfd5a7e3470) | 1.1.8；AGP 7.2.1；`compileSdk` / `targetSdk` 30；`minSdk` 21 | 可阅读运行时实现，但指标口径和依赖要逐项替换或复测 |
+| Rabbit | [`d29f293a`](https://github.com/SusionSuc/rabbit-client/tree/d29f293a373167b03fc946e763d57e72157ab0e5) | README 标注 1.0.3；AGP 3.5.3；`compileSdk` / `targetSdk` 28；`minSdk` 19 | Gradle 插件不能直接进入 AGP 8.0+ 工程 |
+| Matrix | [`3b8293bd`](https://github.com/Tencent/matrix/tree/3b8293bd65d47eeea7caf1f32a3a5d4d5eab60e7) | 2.1.0；插件编译依赖 AGP 4.0.0；README 声明支持 AGP 3.5/4.0/4.1 | Trace Gradle 插件仍受 Transform API 删除影响 |
 
-AndroidGodEye 的 README 把它描述成类似 Android Studio Profiler 的性能监控工具，重点是端上采集加浏览器看板。它覆盖的模块很多：CPU、RAM、PSS、Heap、Battery、Traffic、FPS、卡顿、启动、页面加载、线程 dump、Crash、ANR、网络、方法耗时，以及基于 LeakCanary / Shark 的泄漏检测。
+这里的兼容性判断不等于“所有运行时模块在 Android 17 都会崩溃”。它只表示 upstream 没有提供 `targetSdk 37`、API 37 与当前 AGP 的完整验证，因此不能把旧版本 README 当成生产准入报告。
 
-这类方案适合内部调试平台：
+## AndroidGodEye：浏览器看板式调试平台
 
-- 数据面广，接上后能很快看到曲线和现场
-- 浏览器看板适合研发和测试现场联调
-- 模块化做法适合拿来学习最小采集框架怎么拆
+AndroidGodEye 把系统拆成 Core、Debug Monitor 和 Toolbox 三层。Core 生成性能数据，Debug Monitor 在浏览器展示，Toolbox 提供 LeakCanary、xCrash、OkHttp 等组合入口。其 README 列出的范围很广，包括 CPU、Battery、FPS、PSS、Heap、RAM、流量、卡顿、启动、线程 dump、页面耗时、Java/native Crash、ANR、方法耗时、APK 体积、图片与 View 检查。
 
-但能力越多，越要逐项验证开销、权限、ROM 差异和 Release 包边界。内部调试看板能接受的信息密度和线上稳定 schema 不是一回事。
+这套设计最值得借的是“采集能力与查看方式分离”：
 
-## Collie:轻量线上采样思路
+- 调试包可以保留高密度实时曲线、线程列表与网络正文。
+- 生产包只保留经过预算和脱敏的事件，不携带浏览器面板或调试入口。
+- 每个 monitor 单独声明采样周期、线程、权限、缓存上限和停用动作。
 
-Collie 的切入点是轻量线上监测。它主要依赖 Android 公开能力把几类核心信号拼出来：
+它不适合被当作 Android 17 新项目的二进制基线。固定版本仍使用 AGP 3.2.1，`compileSdk` 与 `targetSdk` 都是 29，发布脚本也保留了旧式 JCenter 流程。这些证据说明接入工作会包含构建迁移、依赖升级、manifest 审核和模块级回归，远不止改一个版本号。
 
-- FPS / 卡顿：Looper message logging
-- 流量：`TrafficStats`
-- 内存：`Debug` 与 Runtime heap
-- 泄漏：`WeakHashMap`
-- 启动：`ContentProvider`、window focus 等关键节点
+如果团队喜欢 AndroidGodEye 的浏览器看板，较稳妥的做法是复用信息架构：保留“模块列表—实时曲线—单次事件详情”的交互，再用自己的事件协议和采集器供数。这样不会把旧运行时依赖一起带入 Release 包。
 
-如果启动采集依赖 `ContentProvider`，要和 Jetpack App Startup 一起核对初始化顺序。两者都可能在 `Application.onCreate()` 前后插入初始化动作，轻量 APM 应把采集 Provider 的初始化时机、App Startup initializer 的依赖顺序、首帧节点记录放在同一张启动时序里核对，避免把框架初始化耗时算成业务启动阶段。
+## Collie：轻量实现里的口径陷阱
 
-这条路线的价值在于：接入成本低，概念简单，适合团队先把第一版线上看板跑起来。局限也很明显：数据深度有限，页面归因、多进程、远程开关、异常关联、后台补传、隐私过滤都要自己补。
+Collie 的代码量不大，很适合学习“一个轻量监控库如何拼出第一批信号”。也正因为实现直接，源码中几种常见误差很容易看清。
 
-## Rabbit:研发工具和 APM 混合形态
+### Looper 卡顿和 ANR 只是 SDK 启发式判断
 
-Rabbit 把慢函数、网络测速、内存、Crash、APK 分析、自定义 UI 和数据上报放进同一套工具里。对内部测试包来说，这种一体化设计很顺手：研发能直接看慢函数现场，也能顺手看包体与资源问题。
+`LooperMonitor` 调用 `Looper.setMessageLogging()` 安装 `Printer`，再以 `>` / `<` 日志标记一次 message dispatch 的开始和结束。它还会反射 `Looper.mLogging` 保存原有 Printer，并每 60 秒检查一次。这里有两个工程约束：
 
-Release 包接入时要把边界拆清：
+- 一个 Looper 只有一个 message logging Printer。多个监控 SDK 都想接管它时，安装顺序和恢复逻辑会影响数据，甚至导致某一方失去回调。
+- 一次主线程 message 很慢可以解释部分卡顿，却不等于一帧的完整 CPU/GPU 时长，也不等于系统已经判定 ANR。
 
-- 运行时诊断能力是否会增加包体、线程或 Hook 风险
-- APK 分析、大图检查、重复文件这类能力是否更适合放进 CI
-- 慢函数、网络拦截这类字节码插桩模块是否仍依赖 Transform API;AGP 8.0 起 Transform API 已移除，未迁到 `AsmClassVisitorFactory` / Instrumentation API 的插件会在现代构建环境中失败
+Collie 在 dispatch 开始时安排一个 5 秒延迟任务，dispatch 结束时把任务标记为失效。因此它报告的是“单次主线程 dispatch 超过 5 秒”的预警。系统 ANR 还有 input dispatch、BroadcastReceiver、Service、ContentProvider、无焦点窗口等多种类型，超时也不是统一的 5 秒常量。该信号可以用于提前抓 Java 栈，事件名应写成 `main_dispatch_stall`，不应直接写成 `system_anr`。
+
+### FPS 计算默认了 60 Hz
+
+`FpsTracker` 把一次 dispatch 的耗时按 16 ms 分桶，并用 `cost / 16 - 1` 推算掉帧数，平均 FPS 还被限制在 60。这个模型在 60 Hz 设备上已经是近似值，在 90/120 Hz 和动态刷新率设备上会出现系统性误差。
+
+源码还反射 `Choreographer.mLock`、`mCallbackQueues` 与 `addCallbackLocked()`，用于判断 dispatch 是否处于 input、animation 或 traversal 阶段；代码明确在 Android P 之后停用这条路径。因此，在本章覆盖的 Android 8 到 Android 17 范围内，同一个字段在不同系统版本上的含义并不一致。
+
+现代实现应优先使用 `JankStats`。API 24+ 时它以 `FrameMetrics` 为基础，低版本使用 `OnPreDrawListener`；业务侧补充页面和交互状态即可。必须自行接 `FrameMetrics` 时，要在回调内复制对象，并把后续聚合移到后台线程，因为系统会复用该对象，消费过慢还会丢回调。
+
+### 启动、流量和泄漏都需要重新命名
+
+Collie README 把启动方式写成 `ContentProvider+onwindforcus`，但固定 commit 的 library manifest 没有注册采集 Provider，源码也没有对应 `ContentProvider`。当前实现由应用手动调用 `Collie.init()`，随后结合进程启动时间、一个透明 View 的 `onDraw()` 与 window focus 估算启动或页面可见耗时。
+
+这三个时间点都能辅助调试，却不能直接命名为系统 TTID 或 TTFD：
+
+- View 的 `onDraw()` 只说明该 View 进入绘制，未证明这一帧已经提交并显示。
+- window focus 可能受启动窗口、权限弹窗、多窗口和焦点切换影响。
+- TTFD 需要应用在可交互时调用 `reportFullyDrawn()`；系统不会从 window focus 自动推导。
+
+如果另一个 SDK 采用 `ContentProvider` 提前初始化，需要记住 Provider 在 `Application.onCreate()` 之前创建。Jetpack App Startup 也通过 `InitializationProvider` 工作，它的价值是让多个 initializer 共用一个 Provider，并显式声明依赖顺序。采集代码本身仍会计入冷启动成本。
+
+流量模块只读取 `TrafficStats.getUidRxBytes(Process.myUid())`，没有读取 TX，也没有 URL、请求阶段或错误类型。UID 计数还可能覆盖同 UID 的多个进程。把生命周期区间内的 RX 增量归给某个 Activity，只能得到粗略的页面流量提示。
+
+泄漏模块在 Activity 销毁后把它放入 `WeakHashMap`，应用退到后台时两次分配约 4 MiB 数组，并主动请求 GC 和 finalization。GC 后仍存活的弱引用是“值得进一步检查”的对象，不是泄漏证明；主动分配和 GC 也会扰动被测应用。生产诊断应使用采样、堆转储或 LeakCanary 的可达性分析，不应靠持续制造内存压力来判定泄漏。
+
+Collie 还使用无界 `LinkedBlockingQueue` 转交部分事件。消费速度跟不上生产速度时，无界队列会把流量高峰转成内存增长。这个实现适合教学，不适合原样复制到生产 SDK。
+
+## Rabbit：运行时工具与构建期检查要拆开
+
+Rabbit 的 README 同时列出启动测速、FPS、敏感函数扫描、慢函数插桩、网络查看、内存、Java Crash、APK 分析、自定义 UI 和上报。对内部测试包来说，一套入口集中展示这些信息很方便；对 Release 包来说，它们属于三类不同生命周期：
+
+| 类别 | 典型能力 | 合适的运行位置 |
+|---|---|---|
+| 运行时低成本信号 | 页面、内存概览、经过脱敏的网络耗时 | Release 可采样开启 |
+| 现场诊断 | 网络正文、浮窗、调用栈、详细方法耗时 | Debug、dogfood 或定向灰度 |
+| 构建产物检查 | 大图、重复文件、APK 组成、SO 体积 | CI 或离线任务 |
+
+Rabbit 的 Gradle 插件直接调用 `registerTransform()`，并使用 `com.android.build.api.transform.*` 以及 `VariantScope` 等 AGP 内部结构。AGP 8.0 已删除 Transform API，所以插件不能在 AGP 8.0+ 下直接加载。
+
+迁移也不是把父类名称换成 `AsmClassVisitorFactory` 就结束了。逐类插桩适合 Instrumentation API；需要读取全工程 class 或修改整体产物时，应评估 `ScopedArtifacts`。迁移后还要验证：
+
+- 插桩范围是当前 module、整个 project，还是包含外部依赖。
+- 增量构建、configuration cache 和并行构建是否稳定。
+- R8 前后类名、方法签名与 mapping 的关联是否正确。
+- Kotlin、协程、Compose 生成代码及 desugaring 后的字节码是否符合假设。
+
+Rabbit 公共 README 对 Crash 的承诺是 Java 异常捕获。仓库里出现 native 或 JVMTI module，不应自动扩写成“已具备生产级 native crash 与线上 JVMTI 能力”；每个 module 仍要单独检查 ABI、API 下限、信号链、符号化和 Android 17 行为。
 
 ## 横向对比
 
-| 工具 | 更适合 | 主要风险 |
-|---|---|---|
-| AndroidGodEye | 内部调试看板、性能数据可视化、模块化采样参考 | 模块多，线上开销和现代系统适配要逐项验证 |
-| Collie | 学习轻量 APM 信号采集、快速自研最小方案 | 能力基础，页面归因、配置中心、合规和补传要自补 |
-| Rabbit | 研发工具集合、网络和慢函数现场、APK 分析 | Debug / Release 边界要拆清；AGP 8.0+ 下依赖 Transform API 的插桩插件不能直接接入 |
+| 工具 | 值得学习的部分 | 不应直接沿用的部分 | 适合的处理方式 |
+|---|---|---|---|
+| AndroidGodEye | Core / Monitor / Toolbox 分层，浏览器实时看板 | 旧构建链和未经 API 37 复测的全量模块 | 借鉴模块边界与调试 UI |
+| Collie | 少量代码组合 Looper、生命周期、内存与流量信号 | 60 Hz 假设、私有反射、主动 GC、无界队列、近似指标命名 | 阅读源码并重写采集器 |
+| Rabbit | 研发工具的统一入口，运行时与 APK 检查的组合方式 | Transform 插件、AGP 内部 API、Release 中的高风险诊断能力 | 把运行时、调试和 CI 模块分拆 |
+| Matrix | 多个 Canary 共享插件框架与上报接口 | Trace Gradle 插件对旧 Transform API 的依赖 | 模块级评估，现代 AGP 下先解决插件兼容性 |
 
-AGP 8.0 是旧 APM 插桩方案的分水岭。旧库若通过 `android.registerTransform` 接 ASM，升级到 AGP 8.0+ 后没有兼容层；工程需要迁到 `com.android.build.api.instrumentation.AsmClassVisitorFactory`，再重新验证 R8、增量构建、mapping 和多模块范围。对 AndroidGodEye、Collie、Rabbit 这类维护放缓的项目，更安全的复用方式是参考采集设计，不把 Gradle 插件直接接进新项目。
+这张表表达的是复用层级。复制概念的风险较低，复制源码需要测试，直接接旧二进制则必须有与当前构建链、目标系统和业务流量匹配的验证报告。
 
 ## Matrix、轻量方案、官方 SDK、商业平台的分工
 
-Matrix 的定位容易写歪。Matrix upstream README 的原话是 **plugin style、non-invasive APM system developed by WeChat**。这是一条官方定位，书稿里应该按这个口径引用。
+Matrix upstream README 将自身描述为微信使用的 **plugin style、non-invasive APM system**。在 Android 工程里，它更接近客户端专项采集框架：Trace Canary、Resource Canary、IO Canary、SQLiteLint、Battery Canary 等模块共享一套插件组织方式。
 
-落到工程使用层面，Matrix 承担的角色更接近**客户端采集框架**：Trace Canary、Resource Canary、IO Canary、SQLiteLint、Battery Canary 都挂在同一套插件体系下，方便统一接入、统一配置和统一上报。这是接入层面的角色判断，不是对 upstream 定位的改写。
+“non-invasive”是项目对接入形态的描述，不表示运行时没有 Hook、插桩或额外开销。每个 Canary 的采集原理和预算仍需单独审查。
 
-把四类方案放在一张表里看，分工会更清楚：
+Matrix 的 Trace Gradle 插件在固定 commit 中仍由 `MatrixTraceInjection` 调用 `AppExtension.registerTransform()`，并导入 `com.android.build.api.transform.*`。README 只声明 AGP 3.5.0、4.0.0 和 4.1.0；示例工程使用 AGP 7.2.2，只能说明 Transform 尚未被删除时仍有示例配置。AGP 8.0 删除该 API 后，插件没有可调用的兼容入口。
 
-| 方案 | 主要价值 | 短板 | 适合什么时候选 |
+不启用 Trace 插件时，Resource Canary 或 IO Canary 等运行时模块可以分别评估，但“绕开 Gradle 插件”也不能证明整个 Matrix 组合已兼容 Android 17。正确做法是按 artifact、初始化路径和设备组合出具测试结果。
+
+四类方案的职责边界如下：
+
+| 方案 | 主要价值 | 团队需要自建的部分 | 适用条件 |
 |---|---|---|---|
-| 轻量开源方案(Collie、局部自研) | 成本低，能快速起步 | 归因深度、治理能力、稳定 schema 较弱 | 团队先把启动、慢帧、主线程 block、网络耗时跑通 |
-| 客户端监控框架(Matrix、KOOM) | 端侧采集能力更全，专项模块更成熟 | 接入、调参与兼容性验证成本更高；Matrix Gradle Trace 插件仍依赖 Transform API，仅声明支持 AGP 3.5/4.0/4.1,AGP 8.0+ 工程不能直接接入 | 已经明确要做客户端专项治理 |
+| 轻量自研或参考 Collie | 代码少，能快速验证少数信号 | schema、采样、缓存、重试、归因、隐私、后台服务 | 指标少且有人长期维护 SDK |
+| Matrix、KOOM 等专项框架 | 内存、I/O、Trace 等专项经验较多 | 现代构建适配、服务端、发布验证 | 已明确要解决某类专项问题 |
+| 官方系统 API 与 Jetpack | 系统语义清晰，版本边界可查 | 聚合、看板、告警、低版本回退 | 希望先建立可持续的基础指标 |
+| Measure、Firebase、Sentry 等平台 | 会话、存储、查询、告警和协作能力完整 | 成本、数据控制、供应商迁移方案 | 团队已经需要平台服务 |
 
-> **Matrix Gradle 插件兼容性边界**：Matrix Android Gradle plugin（artifact `com.tencent.matrix:matrix-gradle-plugin`）当前仍通过 `appExtension.registerTransform` 注册字节码插桩，依赖 `com.android.build.api.transform.*`（AGP 8.0 已移除）。官方 README 仅声明 AGP 3.5.0/4.0.0/4.1.0。AGP 8.0+ 工程接入 Matrix 时，Gradle Trace 插件不能直接使用；如需在 AGP 8.0+ 环境中使用，迁移路径是将字节码插桩迁到 `com.android.build.api.instrumentation.AsmClassVisitorFactory` + Instrumentation API，但 upstream Matrix 尚未完成此迁移。建议只参考端侧采集设计、非 Gradle 模块（如 Resource Canary、IO Canary），或寻找已完成迁移的社区分支。
-| 官方 SDK / 系统能力(JankStats、FrameMetrics、ApplicationExitInfo、ProfilingManager) | 口径稳定，系统兼容性好，适合长期维护 | `ProfilingManager` 仅限 Android 15(API 35)+；功能面通常更窄，需要自己补治理流程 | 希望先建立稳定基础指标与诊断入口 |
-| 商业 / 平台型方案(Firebase Performance、Measure、Sentry、APMPlus、Bugly) | 会话、告警、看板、权限管理、协同流程完整 | 成本、数据所有权、私有化、迁移锁定要评估 | 团队已经需要跨端看板、告警治理和组织级协作 |
-
-决策时别只看"哪个工具功能多"。更关键的是：谁负责端侧采集，谁负责样本治理，谁负责看板与告警，谁负责数据合同。
-
-上面这张表解决的是"不同团队阶段怎么选"的问题。但选型还有另一个维度的约束：你手上的设备都跑什么 Android 版本。Android 每个大版本都会在 APM 可用的系统能力上做加法，版本分布直接决定了你能依赖哪些官方采集通道。
+选型时要明确谁负责采集、谁负责事件协议、谁负责本地存储、谁负责上传和谁负责数据删除。功能列表相似，不代表这些职责的成熟度相同。
 
 ## Android 版本与 APM 能力演进
 
-Android 版本迭代也意味着 APM 可用的系统级能力在逐步变化。下面这张版本-能力对照表比散落的"XX 版本支持 XX"更有用：
+本节的平台实现固定到 AOSP `android-17.0.0_r1`，公开契约以 API 37 reference 为准。版本表只记录与 APM 直接相关、能从公开 API 验证的变化。`ProcessLifecycleOwner`、`JankStats` 等 Jetpack 库按依赖版本发布，不应写成某个 Android 系统版本“新增”的平台 API。
 
-| Android 版本 | API Level | 新增 APM 相关能力 | 对 APM 选型的影响 |
-|---|---|---|---|
-| Android 9 | API 28 | `FrameMetrics`（`Window.OnFrameMetricsAvailableListener` API 24+ 稳定）、`Choreographer` 公开 | 慢帧采集不再只靠自定义 Looper logging |
-| Android 10 | API 29 | Scoped Storage、后台启动限制、`ProcessLifecycleOwner` | 数据存储与上报通道受限，APK 内日志和缓存策略需要重新设计 |
-| Android 11 | API 30 | `ApplicationExitInfo`（`ActivityManager.getHistoricalProcessExitReasons()`） | Crash/ANR 归因首次有了系统级退出原因，不用只靠自己的异常处理器猜 |
-| Android 12-13 | API 31-33 | `JankStats`（Jetpack）、Performance Class、Foreground Service 限制 | 慢帧采集有了 Jetpack 官方口径；后台采样窗口进一步受限 |
-| Android 14 | API 34 | 无 `ProfilingManager` 公共 API；仍依赖 `JankStats`、`FrameMetrics`、`ApplicationExitInfo`、Perfetto / profileable 等既有通道 | APM 侧不能在 Android 14 及以下调用 `requestProfiling()`，只能保留低版本抓取流程 |
-| Android 15 | API 35 | `ProfilingManager` 稳定，手动 profiling 可用 | APM SDK 可以把性能诊断能力接到系统 profiling 通道上 |
-| Android 16 | API 36 | `addProfilingTriggers()`、`APP_FULLY_DRAWN`、`ANR` 触发器 | system-triggered profiling 进入公开 API，冷启动和 ANR 不需要人工复现也能拿到 trace |
-| Android 16 ext 36.1 | extension 36.1 | `APP_REQUEST_RUNNING_TRACE`、`KILL_FORCE_STOP`、`KILL_RECENTS`、`KILL_TASK_MANAGER` | 触发器覆盖范围进一步扩大，但运行时需做 extension gating |
-| Android 17 | API 37 | `OOM`、`ANOMALY`、`KILL_EXCESSIVE_CPU_USAGE`、`COLD_START`、`APP_COMPAT` | 触发器不再只返回 running trace，产物类型开始分化（heap dump、stack sampling、artifact varies） |
+| Android 版本 | API Level | 公开能力 | 使用边界 |
+|---|---:|---|---|
+| Android 4.1 | 16 | `Choreographer` 与 `FrameCallback` | 能跟随 vsync 收回调，不能仅凭回调间隔还原完整渲染流水线 |
+| Android 7 | 24 | `FrameMetrics`、`Window.OnFrameMetricsAvailableListener` | 按 Window 提供帧时长；回调对象会复用，处理慢会丢报告 |
+| Android 11 | 30 | `ApplicationExitInfo`、`getHistoricalProcessExitReasons()` | 能补进程退出原因；ANR trace 是尽力提供，可能为 `null` |
+| Android 12 | 31 | `FrameMetrics.DEADLINE` 等更完整的帧时序可供上层使用 | `JankStats` 在 API 31+ 可给出 `frameOverrunNanos`，仍需业务状态辅助归因 |
+| Android 15 | 35 | `ProfilingManager.requestProfiling()`；`ApplicationStartInfo` | profiling 有频率限制且不保证执行；启动信息提供冷/温/热类型和系统时间点 |
+| Android 16 | 36 | `addProfilingTriggers()`；`APP_FULLY_DRAWN`、`ANR` | 两种触发器返回正在运行的 system trace 快照；`APP_FULLY_DRAWN` 在冷启动调用 `reportFullyDrawn()` 后触发，不是冷启动开始触发 |
+| Android 16 ext 36.1 | 36.1 | running trace 请求及 force-stop、recents、Task Manager kill 触发器 | 必须按 SDK extension 做运行时 gating |
+| Android 17 | 37 | `COLD_START`、`OOM`、`ANOMALY`、`APP_COMPAT`、excessive CPU kill；ANR warning 与 `ApplicationExitInfo.AnrInfo` | 产物按触发器变化，ANR warning 也是尽力回调，不能代替退出记录 |
 
-> **关键分水岭**：Android 15 的 `ProfilingManager` 是 APM 能力从"全靠 SDK 自己采"到"系统帮忙采"的转折点。Android 16 的 system-triggered profiling 进一步解决了"问题发生时没有开启 trace"的空档。Android 17 的 `ANOMALY` 则把采集条件从显式系统事件扩展到了异常行为检测。选型时要按设备版本分布决定能在多大版本上依赖这些能力，不要假设全量用户已经升到 API 37。
+Android 17 的细节需要分开记：
 
-版本能力的演进最终要落到团队当下的设备覆盖面上。如果你的 `minSdk` 还是 26，那 `ProfilingManager` 和 `ANOMALY` 触发器对你来说就是未来的事——现在的选型要按现有的系统能力来。下面这张表把前面讨论过的方案按团队现状做了重新归类，更适合直接拿来决策：
+- `COLD_START` 在系统确认 `ApplicationStartInfo.START_TYPE_COLD` 后尽早开始，返回新启动的 system trace 与 stack sampling；采集持续到 `reportFullyDrawn()`，未调用时默认最多 5 秒。
+- `OOM` 返回 Java heap dump，但应用自定义 `UncaughtExceptionHandler` 必须继续调用默认 handler，否则系统触发器不能完成这条路径。
+- `KILL_EXCESSIVE_CPU_USAGE` 返回正在运行的 system trace 快照。
+- `ANOMALY` 与 `APP_COMPAT` 的产物随异常类型变化，不能在客户端固定按 Perfetto 文件解析。
+- `ActivityManager.registerAnrWarningListener()` 在接近 ANR 超时前尽力回调，executor 不应使用主线程。`AnrWarningResult.anrId` 可与后续 `ApplicationExitInfo.getAnrInfo().getAnrId()` 关联，从“预警”追到“已发生的 ANR”。
+
+这些 API 给轻量 APM 增加了更可靠的系统信号，但没有取消低版本方案。`minSdk 26` 的应用仍要同时维护 API 26-29、30-34、35、36 和 37 的分层路径。
 
 ## 轻量方案和商业平台的切换点
 
-
-
-| 现状 | 更合适的方向 | 原因 |
+| 当前需求 | 更合适的方向 | 判断依据 |
 |---|---|---|
-| 只有少量研发同学要看本地现场 | AndroidGodEye / Rabbit / 内部 debug 面板 | 现场可视化比组织级治理更重要 |
-| 线上只缺启动、慢帧、主线程 block、Crash 基础指标 | Collie 类轻量方案 + 官方 SDK | 先把数据口径跑稳，避免一上来引入过重框架 |
-| 已经需要 session 视角、告警、版本回滚辅助、跨团队协同 | 平台型或商业方案 | 单纯端侧采集已经不够，问题在治理流程 |
-| 数据合规、私有化、退出成本是采购前提 | 先定内部 schema，再评估平台 | 没有数据合同，后面迁移成本会持续放大 |
+| 少量研发人员查看本地现场 | 内部 debug 面板，参考 AndroidGodEye / Rabbit 的 UI | 不需要建设组织级存储与告警 |
+| 只缺启动、慢帧、主线程 stall、Crash 基础指标 | 官方 API + 小型自研采集层 | 信号范围有限，团队能维护协议和服务端 |
+| 已经需要 session、跨信号关联、告警、权限和版本对比 | 平台型方案 | 工作重点从采集转向检索与协作 |
+| 需要深挖内存、I/O 或启动 trace | 专项框架或按需 profiling | 重样本需要独立预算和分析工具 |
+| 私有化、删除请求和迁移成本是硬条件 | 先定义内部事件协议，再评估平台 | 数据所有权比客户端功能数量更重要 |
+
+不要用 DAU 或团队人数作为唯一阈值。一天一万用户若每次会话产生数百个网络 span，数据量可能高于百万 DAU 的低采样 Crash 系统。切换点应由事件率、保留期、查询延迟、告警责任和合规要求共同决定。
 
 ## 使用建议
 
-存量项目接这类库之前，要先做四项检查：
+存量项目接入旧库前，至少完成以下检查：
 
-- 目标 AGP、targetSdk、64 位、多进程环境是否能稳定跑
-- 采集线程、上传线程、Hook 点会不会和现有 SDK 冲突
-- 数据格式能不能并入现有 APM 事件模型
-- 关闭开关、降采样、灰度回滚是不是现成可用
+- 在目标 AGP、Gradle、JDK、Kotlin、R8 与 configuration cache 组合上构建。
+- 在 Android 8、11、15、16、17 以及主要厂商 ROM 上运行核心用例。
+- 检查 library manifest 合并结果，包括权限、Provider、Receiver、Service 和 `exported` 属性。
+- 测量空闲、正常交互、异常高峰三种场景的 CPU、内存、线程、I/O、网络与包体增量。
+- 验证多进程去重、session 边界、离线缓存上限、失败重试和卸载后数据处理。
+- 对 URL、header、query、网络正文、文件路径、用户名、账号和设备标识做采集前脱敏。
+- 演练远程停用、配置回滚和 SDK 移除，确认关闭后不会留下线程、回调或磁盘任务。
 
-新项目更稳的路线通常是：基础指标先用官方 SDK 和公开系统能力补齐，再根据专项问题决定要不要引入 Matrix、KOOM 或平台型方案。
+旧项目没有现代验证报告时，默认动作应是阅读和移植需要的设计，不是把所有 artifact 一次接入。
 
 ## 从这些项目提炼最小 APM SDK
 
-AndroidGodEye、Collie、Rabbit 虽然形态不同，但它们共同说明了一件事：一个能上线的最小 APM SDK 不需要一开始就做得很重。
+一个能进入生产环境的最小 APM SDK，可以只覆盖少量信号，但每个信号都要有稳定语义：
 
-| 信号 | 采集方式 | 最小输出 |
-|---|---|---|
-| 冷启动耗时 | `ContentProvider` / `Application` / 首帧节点 | `startup_ms`、启动类型、页面 |
-| 慢帧 | `JankStats`(首选)/ `FrameMetrics`(API 24+)/ `Choreographer`(兜底) | 慢帧率、页面、交互状态 |
-| 主线程 block | Looper message logging + 抓栈 | block 耗时、堆栈签名 |
-| 内存 | `Debug.getMemoryInfo()` / Runtime heap | PSS、Java heap、native heap |
-| 网络 | OkHttp interceptor / 统一网络层 | URL pattern、阶段耗时、错误类型 |
-| Crash / ANR | 崩溃处理、`ApplicationExitInfo`、ANR 监控 | 堆栈、退出原因、版本 |
-| 页面 | Activity / Fragment lifecycle | 页面进入、退出、停留 |
+| 信号 | 推荐采集入口 | 最小输出 | 容易写错的地方 |
+|---|---|---|---|
+| 启动 | API 35+ `ApplicationStartInfo`；低版本自定义节点；应用调用 `reportFullyDrawn()` | start type、TTID/TTFD、自定义阶段 | 把 window focus 当成 TTFD |
+| 慢帧 | `JankStats`；必要时直接用 `FrameMetrics` | 帧时长、overrun、Window、UI state | 固定按 16 ms 和 60 Hz 计算 |
+| 主线程 stall | Looper dispatch 计时 + 限频抓栈 | dispatch 耗时、栈签名、页面 | 把 SDK 阈值事件命名为系统 ANR |
+| 内存 | `Debug.MemoryInfo`、Runtime / native heap、RSS | 单位明确的 PSS/RSS/heap 与进程名 | 混用 kB、KiB、MB，或主动 GC 扰动样本 |
+| 网络 | OkHttp interceptor 或统一网络层 | route pattern、方法、阶段耗时、状态与错误类 | 上传完整 URL、token、请求或响应正文 |
+| Crash / 退出 | Java handler、native crash 组件、API 30+ `ApplicationExitInfo` | 栈、signal / reason、进程、版本 | 只依赖 handler，遗漏 LMK、force-stop 和 native crash |
+| 重样本 | API 35+ `ProfilingManager` 或受控 Perfetto | artifact 类型、触发原因、tag、符号信息 | 假设请求必定执行，或在低版本调用新 API |
 
-> **API 路径**：`JankStats` — `androidx.metrics.performance.JankStats`（Jetpack Metrics 库）;`FrameMetrics` — `android.view.FrameMetrics` + `Window.OnFrameMetricsAvailableListener`（API 24+）;`ProfilingManager` — `android.os.ProfilingManager`（API 35+）;`ApplicationExitInfo` — `android.app.ApplicationExitInfo`（API 30+）。
+`ApplicationExitInfo` 是前一次进程死亡后的补充证据，不能替代崩溃发生时的同步持久化；`ProfilingManager` 也有系统限频和拒绝可能。生产采集要允许“只有事件、没有附件”的不完整样本。
 
-这套最小信号已经足够支撑第一版线上看板。指标稳定后，再决定是否补重样本、端侧专项或平台化能力。
+下面这张图展示最小 SDK 中各线程和存储层的职责：
+
+```mermaid
+flowchart LR
+    A["主线程回调<br/>帧 / Looper / 页面"] -->|轻量不可变事件| Q["有界内存队列"]
+    B["后台采样器<br/>CPU / 内存"] --> Q
+    C["网络拦截器"] -->|元数据，采集前脱敏| Q
+    Q --> N["后台标准化<br/>采样 / 聚合 / 限频"]
+    N --> S["本地持久化<br/>大小上限 / TTL / 校验"]
+    S --> U["调度上传<br/>退避 / 网络条件"]
+    X["Crash 紧急路径"] -->|小型预分配记录| S
+    R["远程配置快照"] --> A
+    R --> B
+    R --> C
+    R --> N
+```
+
+主线程路径只创建小对象并尝试写入有界队列；队列满时按模块策略丢弃或聚合，不能阻塞业务线程。Crash 紧急路径不要依赖普通异步队列全部排空，而应写入尺寸受控、可校验的最小记录。
+
+### 统一事件协议
+
+AndroidGodEye、Collie 与 Rabbit 没有可直接通用于现代平台的统一 report schema。迁移前应由团队定义自己的协议。下面是一个示意事件，字段值只用于说明边界：
+
+```json
+{
+  "schema_version": 3,
+  "event_id": "018f7d7e-6a39-7f42-a3d1-78d39f0e9c31",
+  "session_id": "s_7c2f",
+  "process": {
+    "name": "com.example.app",
+    "instance_id": "p_b641"
+  },
+  "app": {
+    "version_name": "8.4.0",
+    "version_code": 840012,
+    "build_id": "release-840012"
+  },
+  "device": {
+    "api_level": 37,
+    "abi": "arm64-v8a"
+  },
+  "signal": {
+    "type": "frame",
+    "duration_ns": 27800000,
+    "overrun_ns": 11100000,
+    "window": "HomeActivity",
+    "ui_state": "feed_scroll"
+  },
+  "time": {
+    "wall_ms": 1784973600123,
+    "elapsed_realtime_ns": 983402100000
+  },
+  "config_version": 42,
+  "sample_rate": 0.01
+}
+```
+
+事件用 monotonic clock 计算时长，用 wall clock 做跨设备检索；两者不能互相替代。URL、用户输入和账号等高风险字段不应出现在通用 attributes 中，必须经过字段级白名单。
 
 ## 轻量 APM 的线程模型
 
-自研或改造这些开源项目时，线程模型要先定清楚：
+轻量不等于“只开一个后台线程”。线程模型应规定生产速度、消费速度和进程退出时的行为：
 
-```mermaid
-flowchart TD
-    A["主线程采集点
-帧 / Looper / 页面"] --> B["内存队列
-轻量对象"]
-    C["后台采样
-CPU / 内存 / 网络聚合"] --> B
-    B --> D["批量序列化
-限频 + 压缩"]
-    D --> E["本地缓存
-大小上限 + TTL"]
-    E --> F["上传任务
-网络条件 + 采样"]
-```
+- 帧、Looper 和生命周期回调只写小型事件；回调里不做 JSON、压缩、DNS、文件写入或复杂栈处理。
+- 队列必须有上限，并为 Crash、ANR warning、普通性能样本设置不同优先级。
+- CPU 和内存采样使用固定节奏，但应用退到后台、进入省电状态或出现热限制时要降频。
+- 本地文件采用可恢复的分段或事务写入，单文件、总目录和保留时间都有上限。
+- 上传任务使用指数退避和随机抖动，避免大量设备在配置更新后同时请求。
+- 多进程各自生成 `process_instance_id`，由服务端按 session 和时间关联，不能只用 PID。
 
-主线程只允许写入轻量事件。JSON 序列化、文件写入、压缩、网络请求、复杂堆栈处理都要离开主线程。APM SDK 如果自己制造卡顿，后面的监控结果就不可信。
+Collie 的无界队列提醒我们：把工作移出主线程只解决了调用延迟，没有解决背压。队列上限、丢弃计数和配置版本也要作为 SDK 自身健康指标上报。
 
 ## 线上开关设计
 
-轻量 APM 至少要有三级开关：
+生产 APM 至少需要四层控制：
 
-- **总开关**:紧急关闭全部采集
-- **模块开关**:启动、帧、网络、内存、Crash、trace 分开控制
-- **采样开关**:按用户、设备、版本、页面、异常类型调节
+- **总开关**：紧急停止所有非必要采集和上传。
+- **模块开关**：启动、帧、网络、内存、Crash、ANR 与 profiling 分开控制。
+- **采样规则**：按稳定哈希选择用户或设备，再叠加版本、页面、异常类型和时间窗口。
+- **预算限制**：约束单位时间事件数、附件字节数、CPU 时间、磁盘占用和单次上传大小。
 
-配置要带版本号和生效时间。客户端收到配置后还要回传配置版本，不然平台无法判断样本是在什么采样条件下产生的。
+配置要有单调递增版本、签名或可信传输、过期时间和本地默认值。客户端事件必须携带生效的 `config_version` 与 `sample_rate`，否则服务端无法解释版本之间的数量变化。
+
+对 Crash 和 Android 17 的 ANR warning，不应在回调到来后再读取复杂远程配置。关键阈值和脱敏规则要提前形成内存快照，异常路径只读快照。
 
 ## AndroidGodEye、Collie、Rabbit 各自更适合借什么
 
-- **AndroidGodEye**:借它的可视化面板思路，把本地调试看板和线上上报 schema 分开
-- **Collie**:借它的轻量信号采集路线，快速搭一版启动、慢帧、主线程 block、内存、网络基础指标
-- **Rabbit**:借它的研发工具组合方式，但把运行时诊断和构建期检查分开
+- **AndroidGodEye**：借 Core、调试 Monitor 与 Toolbox 的分层，以及浏览器看板的信息组织。
+- **Collie**：借“用少量公开入口快速验证信号”的思路，同时把 60 Hz 假设、私有反射、主动 GC 和无界队列列为反例。
+- **Rabbit**：借研发工具统一入口，但把构建检查、Debug 诊断和 Release 采集拆成不同 artifact 与构建变体。
+- **Matrix**：借多个专项 Canary 的组织方式；对每个 module 单独做版本、开销与构建审计。
 
-大图、重复资源、APK 组成、SO 体积这类问题更适合放进 CI。让运行时 SDK 承担这些职责，通常只会增加维护负担。
+大图、重复资源、APK 组成、SO 体积和敏感 API 扫描属于构建产物分析。让运行时 SDK 重复承担这些任务，只会增加包体和维护成本。
 
 ## 从旧开源工具迁移到官方 SDK / 平台的 checklist
 
-迁移时，顺序要稳，不要直接一把切。
+迁移的核心是保持事件语义连续，而不是让两个 SDK 同时运行得越久越好：
 
-1. 先列出现有事件与字段：页面、用户、版本、设备、异常类型、trace id、session id
-2. 定内部 schema，保证字段名和枚举先稳定下来
-3. 把采集模块按能力拆开：启动、帧、block、网络、Crash、内存、重样本
-4. 用官方 SDK 或公开系统能力替掉最基础的一层
-5. 保留旧库与新流程一段时间双写，对比口径差异
-6. 看板和告警迁完，再逐步下线旧上报流程
-7. 观察一到两个发布周期，再移除旧 SDK
+1. 导出现有事件、枚举、单位、采样规则与看板查询。
+2. 定义内部 schema，并记录每个旧字段的来源和误差。
+3. 按启动、帧、stall、网络、Crash、内存、重样本拆分采集模块。
+4. 为每个模块选择官方 API、重写采集器或平台 SDK，并写明版本下限。
+5. 在小流量设备上双写，用同一 session 和时间窗口比较分布，不比较单个偶然样本。
+6. 迁移告警阈值、符号表、权限、删除流程和数据保留策略。
+7. 停用旧采集后观察至少一个完整发布周期，再移除依赖与 manifest 项。
 
-下面这张映射表可以直接拿来做迁移盘点：
+迁移映射可以从这张表开始：
 
-| 旧能力 | 优先迁移目标 | 说明 |
+| 旧能力 | 优先目标 | 验证重点 |
 |---|---|---|
-| 慢帧 / 卡顿 | `JankStats`、`FrameMetrics` | 先把系统口径稳定下来 |
-| 启动异常后的重样本 | Android 15(API 35)+ 使用 `ProfilingManager`；低版本用 Perfetto trace config / 内部抓取流程 | 指标发现问题后再取证，按设备版本选择入口 |
-| Crash / ANR | Crash SDK + `ApplicationExitInfo`(Android 11 / API 30+) | 退出原因和堆栈分别治理 |
-| Java 泄漏本地复盘 | `LeakCanary` | 研发自查比线上常驻更合适 |
-| 线上内存专项 | `KOOM` 或内部专项模块 | 不和轻量基础指标混在一起 |
-| 看板、告警、权限、跨团队协作 | 平台型 / 商业方案 | 这部分不是轻量库擅长的事 |
+| 固定 16 ms 的 FPS / 掉帧 | `JankStats`、`FrameMetrics` | 可变刷新率、Window 切换、回调丢失 |
+| window focus 启动耗时 | `ApplicationStartInfo`、TTID、`reportFullyDrawn()` | 冷/温/热分类，TTID 与 TTFD 分离 |
+| 5 秒 Looper “ANR” | `main_dispatch_stall` + `ApplicationExitInfo`；API 37 补 ANR warning | 区分预警、SDK stall 与系统 ANR |
+| UID RX 流量 | 网络层 interceptor | route 脱敏、TX/RX、重试、缓存命中 |
+| WeakHashMap 泄漏提示 | LeakCanary 或受控 heap dump | 只在合适环境抓重样本，避免主动 GC 常驻 |
+| 旧 Transform 插桩 | Instrumentation API / `ScopedArtifacts` | 插桩范围、增量构建、R8 与 mapping |
+| 手工 Perfetto 抓取 | API 35+ `ProfilingManager`，低版本保留受控 Perfetto | 请求可能被限频或拒绝，附件类型需显式记录 |
 
-`ProfilingManager` 不能写成 Android 8+ 的通用方案。它从 API 35 才可用；Android 14 及以下要走可控的 Perfetto trace config、profileable 构建或内部抓取通道。迁移文档要把版本下限写在命令旁边。
+`ProfilingManager` 从 API 35 才可用，触发器从 API 36 才可注册；Android 17 新增的触发类型还要用 API 37 gating。Android 14 及以下应继续使用可控的 Perfetto、profileable 构建或内部诊断流程。
 
-回过头来看，这一章讨论的四个开源工具——AndroidGodEye、Collie、Rabbit、Matrix——它们的共同困境不是功能不够，而是维护节奏跟不上 Android 版本迭代的速度。AGP 8.0 的 Transform API 移除是一个标志性事件：依赖旧构建链的 APM 插件如果不能完成迁移，就不是"好不好用"的问题，而是"能不能用"的问题。
-
-对新项目来说，更安全的路子是分两层走：基础指标用 `JankStats`、`FrameMetrics`、`ApplicationExitInfo`、`ProfilingManager` 这些官方 SDK 或系统能力兜底；专项问题（内存、I/O、启动 trace）再按需引入 Matrix、KOOM 或平台型方案。旧开源项目最大的价值在于设计思路——怎么采信号、怎么控制开销、怎么设计采样开关——而不是把它们的 Gradle 插件直接接进 AGP 8.0+ 工程。
+AndroidGodEye、Collie 和 Rabbit 的主要价值，是把早期移动端监控的工程取舍完整地留在源码里。到了 Android 17，系统已经提供更准确的帧、启动、退出、ANR 预警和 profiling 信号；旧项目中的模块化、限频和调试 UI 仍值得借鉴，依赖私有反射、固定帧率、主动 GC 和旧 Transform API 的实现则应替换。
 
 ## 参考资料
 
-- AndroidGodEye GitHub: https://github.com/Kyson/AndroidGodEye
-- Collie GitHub: https://github.com/happylishang/Collie
-- Rabbit GitHub: https://github.com/SusionSuc/rabbit-client
-- Matrix GitHub: https://github.com/Tencent/matrix
-- JankStats: https://developer.android.com/topic/performance/jankstats
-- FrameMetrics: https://developer.android.com/reference/android/view/Window.OnFrameMetricsAvailableListener
-- ApplicationExitInfo: https://developer.android.com/reference/android/app/ApplicationExitInfo
-- AGP API Updates: https://developer.android.com/build/releases/gradle-plugin-api-updates
-- ProfilingManager: https://developer.android.com/reference/android/os/ProfilingManager
+- AndroidGodEye README（固定 commit）：https://github.com/Kyson/AndroidGodEye/blob/459f5cb5a2a4d176ff63f27322644a8191df2af9/README.md
+- AndroidGodEye 构建基线：https://github.com/Kyson/AndroidGodEye/blob/459f5cb5a2a4d176ff63f27322644a8191df2af9/build.gradle
+- AndroidGodEye SDK 版本配置：https://github.com/Kyson/AndroidGodEye/blob/459f5cb5a2a4d176ff63f27322644a8191df2af9/gradle.properties
+- Collie README（固定 commit）：https://github.com/happylishang/Collie/blob/bfdc6782d568bfcefef01e846e81ccfd5a7e3470/README.md
+- Collie 构建基线：https://github.com/happylishang/Collie/blob/bfdc6782d568bfcefef01e846e81ccfd5a7e3470/build.gradle
+- Collie library manifest：https://github.com/happylishang/Collie/blob/bfdc6782d568bfcefef01e846e81ccfd5a7e3470/collie/src/main/AndroidManifest.xml
+- Collie LooperMonitor：https://github.com/happylishang/Collie/blob/bfdc6782d568bfcefef01e846e81ccfd5a7e3470/collie/src/main/java/com/snail/collie/core/LooperMonitor.kt
+- Collie FpsTracker：https://github.com/happylishang/Collie/blob/bfdc6782d568bfcefef01e846e81ccfd5a7e3470/collie/src/main/java/com/snail/collie/fps/FpsTracker.java
+- Collie LauncherTracker：https://github.com/happylishang/Collie/blob/bfdc6782d568bfcefef01e846e81ccfd5a7e3470/collie/src/main/java/com/snail/collie/startup/LauncherTracker.kt
+- Collie TrafficStatsTracker：https://github.com/happylishang/Collie/blob/bfdc6782d568bfcefef01e846e81ccfd5a7e3470/collie/src/main/java/com/snail/collie/trafficstats/TrafficStatsTracker.kt
+- Collie MemoryLeakTrack：https://github.com/happylishang/Collie/blob/bfdc6782d568bfcefef01e846e81ccfd5a7e3470/collie/src/main/java/com/snail/collie/mem/MemoryLeakTrack.kt
+- Rabbit README（固定 commit）：https://github.com/SusionSuc/rabbit-client/blob/d29f293a373167b03fc946e763d57e72157ab0e5/README.md
+- Rabbit BuildInfo：https://github.com/SusionSuc/rabbit-client/blob/d29f293a373167b03fc946e763d57e72157ab0e5/buildSrc/src/main/java/Dependencies.kt
+- Rabbit Gradle plugin：https://github.com/SusionSuc/rabbit-client/blob/d29f293a373167b03fc946e763d57e72157ab0e5/rabbit-gradle-transform/src/main/java/com/susion/rabbit/gradle/RabbitPlugin.kt
+- Rabbit VariantScope 适配层：https://github.com/SusionSuc/rabbit-client/blob/d29f293a373167b03fc946e763d57e72157ab0e5/rabbit-gradle-transform/src/main/java/com/susion/rabbit/gradle/core/context/VariantScope.kt
+- Matrix README（固定 commit）：https://github.com/Tencent/matrix/blob/3b8293bd65d47eeea7caf1f32a3a5d4d5eab60e7/README.md
+- Matrix Gradle plugin 构建依赖：https://github.com/Tencent/matrix/blob/3b8293bd65d47eeea7caf1f32a3a5d4d5eab60e7/matrix/matrix-android/matrix-gradle-plugin/build.gradle
+- Matrix Trace plugin 注册路径：https://github.com/Tencent/matrix/blob/3b8293bd65d47eeea7caf1f32a3a5d4d5eab60e7/matrix/matrix-android/matrix-gradle-plugin/src/main/kotlin/com/tencent/matrix/plugin/trace/MatrixTraceInjection.kt
+- AGP API updates：https://developer.android.com/build/releases/gradle-plugin-api-updates
+- JankStats：https://developer.android.com/topic/performance/jankstats
+- FrameMetrics listener：https://developer.android.com/reference/android/view/Window.OnFrameMetricsAvailableListener
+- App Startup：https://developer.android.com/topic/libraries/app-startup
+- ApplicationStartInfo：https://developer.android.com/reference/android/app/ApplicationStartInfo
+- ApplicationExitInfo：https://developer.android.com/reference/android/app/ApplicationExitInfo
+- ApplicationExitInfo.AnrInfo：https://developer.android.com/reference/android/app/ApplicationExitInfo.AnrInfo
+- ActivityManager ANR warning API：https://developer.android.com/reference/android/app/ActivityManager
+- ProfilingManager：https://developer.android.com/reference/android/os/ProfilingManager
+- ProfilingTrigger：https://developer.android.com/reference/android/os/ProfilingTrigger
+- AOSP `android-17.0.0_r1` ActivityManager：https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java
+- AOSP `android-17.0.0_r1` ApplicationExitInfo：https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java
+- AOSP `android-17.0.0_r1` ProfilingTrigger：https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java
+- Android 17 API diff：https://developer.android.com/sdk/api_diff/37/changes
