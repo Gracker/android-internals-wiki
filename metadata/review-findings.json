@@ -153,6 +153,23 @@
       "summary": "历史错误 outline 已隔离但缺少可审计独立正文",
       "type": "needs-body-apply",
       "updated_at": "2026-07-27T08:37:15.749050+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch18-connectivity/18-android17-nfc-performance-contactless-payment.md",
+      "created_at": "2026-07-27T12:44:22.282810+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260727-123527-deep-review-455b9e9f",
+      "details": "已删除无来源正文并回流 needs-rework；后续需补 AOSP android-17.0.0_r1 NFC 路径、公开 API 与可追溯性能数据。",
+      "id": "finding-c8aaa40d5450",
+      "log_path": "logs/deep-review/2026-07-27-20260727-123527-deep-review-455b9e9f-deep-review.md",
+      "severity": "P1",
+      "source_paths": [
+        "DeepResearch/2026-07-05-background-audio-hardening-power.md"
+      ],
+      "status": "open",
+      "summary": "NFC 支付章节缺少 NFC 相关一手材料，原稿误用音频硬化材料并包含未验证 API/性能数字",
+      "type": "source-boundary",
+      "updated_at": "2026-07-27T12:44:22.282810+08:00"
     }
   ],
   "schema_version": 1

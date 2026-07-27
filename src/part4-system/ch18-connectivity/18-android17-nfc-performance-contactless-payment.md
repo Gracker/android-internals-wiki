@@ -1,78 +1,69 @@
 ---
 title: "Android 17 NFC 性能优化与无接触支付"
 chapter: "18.2"
-status: ready-for-review
+status: needs-review
 applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
-tags: ["Android", "连接性", "功耗优化", "蓝牙", "NFC"]
+tags: ["Android", "连接性", "NFC"]
 related_chapters: ["ch05-cpu-power"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-07"
 gap_source: "daily-info"
+last_verified: "2026-07-27"
+last_verified_against: "source-boundary audit only; no NFC AOSP evidence routed in this run"
+confidence: low
+pipeline_stage: needs-rework
+task6_state: needs-rework
+task9_state: deep-review-returned
+last_deep_review_at: "2026-07-27T12:35:27+08:00"
+last_deep_review_run_id: "20260727-123527-deep-review-455b9e9f"
+sources:
+  - type: official-docs
+    ref: "Android Developers: NFC basics / advanced NFC"
+    url: "https://developer.android.com/develop/connectivity/nfc"
+    status: background-reference-only
+  - type: routed-material
+    ref: "DeepResearch/2026-07-05-background-audio-hardening-power.md"
+    status: rejected-unrelated-to-nfc-payment
 ---
 
 # Android 17 NFC 性能优化与无接触支付
 
-## 非接触式支付低延迟响应与安全机制
+## Deep-review 结论
 
-<!-- outline-start -->
-## 要点
+本轮 deep-review 没有把原稿推进为可发布正文。预运行只路由到一份“后台音频硬化与播放功耗治理”材料，内容聚焦 `AudioService`、`HardeningEnforcer`、`AudioFlinger` 与蓝牙音频豁免，不包含 NFC、HCE、支付路径、`NfcService`、Secure Element 或无接触支付延迟证据。因此该材料不能支撑本章原有的 NFC 支付性能结论。
 
-### 🔹 NFC 支付协议栈性能优化
-Android 17 对 NFC 支付协议栈进行了深度优化，重点优化了 NDEF 记录解析速度和支付应用启动时间。通过引入 `NfcAdapter.enableReaderMode()` 的新参数 `PRIORITY_HIGH`，将支付应用唤醒时间从 300ms 优化至 120ms 以内。同时优化了 NFC 状态机切换逻辑，在检测到支付场景时提前唤醒相关服务，减少延迟。
+为避免把未证实内容继续留在 AIW 正文中，本次已删除原稿中缺少来源支撑的 Android 17 NFC 支付新 API、延迟数字、动态安全策略、离线支付、跨设备支付协同和车载支付自动化等断言，并将章节回流为 `needs-review` / `needs-rework`。
 
-### 🔹 无接触支付低延迟技术
-针对无接触支付场景，Android 17 实现了多层次低延迟优化：硬件层面优化 NFC 天线驱动，减少 RF 切换时间；系统层面优化 `NfcService` 与支付应用的通信路径；应用层面优化支付 UI 响应。通过这些优化，支付响应时间从 Android 16 的 200ms 降低到 Android 17 的 80ms，达到银行卡 POS 机的响应水平。
+## 当前可保留的范围
 
-### 🔹 动态安全策略管理
-Android 17 引入了智能化的安全策略管理机制。系统能够根据支付场景、设备位置、网络状况动态调整安全策略。在高风险场景（如大额支付）下增强加密强度，在低风险场景（如小额支付）下优化响应速度。通过 `PaymentManager.setDynamicSecurityLevel()` 可配置动态安全策略，平衡安全性与响应速度。
+本章后续可以继续研究 Android 16 到 Android 17 范围内的 NFC 与无接触支付体验，但必须先补齐 NFC 相关一手材料。安全可研究的边界包括：
 
-### 🔹 多模态支付设备兼容
-为应对不同厂商的 NFC 支付设备，Android 17 实现了多模态支付设备兼容框架。系统自动检测并适配不同厂商的 NFC 控制器，包括 NXP、Qualcomm、Samsung 等主流方案。针对不同芯片组的特性差异，系统实现了自适应调整机制，确保在各种硬件环境下都能提供稳定的支付体验。
+- Android NFC 公开开发模型：Reader Mode、前台调度、NDEF、HCE 与常规 tag 读取路径。
+- AOSP `android-17.0.0_r1` 中 NFC 应用与 framework 代码的真实变化：例如 `packages/apps/Nfc/`、`frameworks/base/core/java/android/nfc/`、`frameworks/base/core/java/android/nfc/cardemulation/` 等路径。
+- 支付场景只能在有源码、官方文档或支付网络公开规范支撑时讨论；不能从“Android 17 优化”泛化推出具体支付成功率、POS 响应时延或硬件厂商自适应能力。
 
-### 🔹 支付状态监控与恢复
-Android 17 构建了完整的支付状态监控体系。通过实时监测 NFC 信号强度、交易状态、设备连接状态等指标，系统可提前识别潜在问题。当检测到支付异常时，系统会自动尝试恢复连接，或在必要时引导用户重新操作。系统还实现了支付日志的详细记录，便于问题追踪和分析。
+## 回流待补材料
 
-## 扩展
+下一轮 body-apply / source-review 需要补齐以下证据后再扩写：
 
-### 🔸 车载 NFC 支付优化
-在车载环境中，Android 17 特别优化了 NFC 支付体验。针对驾驶场景，系统实现了单手操作的支付界面，支持语音支付确认。通过车辆传感器检测到车辆停止状态时，自动启用支付功能；行驶状态下自动锁定支付功能。系统还优化了车载环境中的 NFC 读取距离，确保在车辆振动环境下仍能稳定读取支付卡信息。
+1. **AOSP 差异证据**：对比 Android 16 与 `android-17.0.0_r1` NFC 相关目录，列出真实 commit、类、方法或配置变化。
+2. **公开 API 证据**：确认是否存在新增 NFC API、flag 或常量；若不存在，不得保留“新增参数”类表述。
+3. **性能数据来源**：任何“80ms、120ms、99.9%”等数字必须来自可追溯 benchmark、AOSP 测试、厂商白皮书或官方文档。
+4. **支付安全边界**：HCE、Secure Element、HostApduService 与支付网络责任边界需要分开描述，避免把应用层支付策略写成 Android 平台 API。
 
-### 🔸 离线支付增强
-针对网络不稳定场景，Android 17 增强了离线支付能力。系统实现了交易信息的本地缓存和加密存储，支持在网络中断时完成支付交易。通过 `PaymentManager.enableOfflinePayment()` 可启用离线支付模式。系统还实现了交易状态的多设备同步，确保支付后设备间状态一致性。
+## 本轮删除的高风险断言
 
-### 🔸 跨平台支付协同
-Android 17 支持跨设备支付协同功能。当用户在手机上进行支付确认时，可自动同步到平板、手表等其他设备。通过 `CrossDevicePaymentManager` 实现设备间的支付状态同步和交易确认。系统还支持支付分摊功能，多人消费时可将账单自动分摊到各自设备。
-
-## 实际应用场景
-
-### 零售支付场景
-在零售支付场景中，Android 17 NFC 支付系统可实现：
-- 支付响应时间 <80ms，接近实体银行卡体验
-- 支持 10 万+ 并发支付请求，系统稳定运行
-- 支付成功率提升至 99.9%，较 Android 16 提升 15%
-
-### 交通支付场景
-在公共交通支付场景中：
-- 公交刷卡响应时间 <50ms，刷卡通过率 >99.5%
-- 支持多线路、多支付方式自动切换
-- 离线交易缓存支持 72 小时内的交易记录
-
-### 自动售货机支付
-在无人零售场景中：
-- 支持快速支付，取货时间缩短 60%
-- 动态安全策略自动调整小额免密支付限额
-- 支持远程支付确认和异常交易回滚
-
-<!-- outline-end -->
-
-> 本节内容已完成加工，结合了 Android 17 NFC 支付性能优化技术。[结构参考: Clippings/Android 性能优化.md]
+- `NfcAdapter.enableReaderMode()` 新增 `PRIORITY_HIGH` 参数。
+- Android 17 将支付应用唤醒时间优化到 120ms 以内、支付响应时间优化到 80ms。
+- `PaymentManager.setDynamicSecurityLevel()`、`PaymentManager.enableOfflinePayment()`、`CrossDevicePaymentManager` 等未验证 API。
+- 系统根据车辆传感器自动启停 NFC 支付、支持语音支付确认、离线交易缓存 72 小时、多设备账单分摊等产品化能力。
+- 零售/公交/售货机场景的成功率、并发量、取货时间缩短等量化指标。
 
 ---
 
 ## 参考资料
 
-1. [已验证: 官方文档, developer.android.com/guide/topics/connectivity/nfc.html]
-2. [来源: intake/research-feeds/2026-07-05-background-audio-hardening-power.md]
-3. [适用版本: Android 16 - Android 17]
-4. [待验证: AOSP android-17.0.0_r1, packages/apps/Nfc/]
-5. [待验证: AOSP android-17.0.0_r1, frameworks/opt/nfc/src/]
+1. [背景参考: Android Developers NFC 文档, developer.android.com/develop/connectivity/nfc]
+2. [不采纳: DeepResearch/2026-07-05-background-audio-hardening-power.md —— 音频硬化材料，与 NFC 支付主题不匹配]
+3. [待补: AOSP android-17.0.0_r1, packages/apps/Nfc/]
+4. [待补: AOSP android-17.0.0_r1, frameworks/base/core/java/android/nfc/]
