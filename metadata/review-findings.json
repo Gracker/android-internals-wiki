@@ -205,6 +205,24 @@
       "summary": "JVMTI Agent 章节只有 Android CLI 材料，缺少 ART/Framework JVMTI 一手源码与实测证据",
       "type": "source-boundary",
       "updated_at": "2026-07-27T18:06:34.032979+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch14-other-tools/28-gpu-performance-profiling-advanced.md",
+      "created_at": "2026-07-27T20:17:57.037061+08:00",
+      "created_by": "hermes-aiw-review-finalize-apply",
+      "created_run_id": "20260727-201343-4b671d13",
+      "details": "Task6 复核按 android-17.0.0_r1 核对 external/perfetto：gpu_mem_event 位于 protos/perfetto/trace/android/，GPU counter parser 位于 gpu_event_parser.h/.cc，GpuCounterSpec 不含 value_direction 字段。已修正文稿并降级 needs-rework；后续需补工作负载阈值、Ray Tracing、NPU/ML、profileable 权限差异、AGI 工作流的一手材料或收窄章节范围。",
+      "id": "finding-a29e53cc27ec",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "src/part3-tools/ch14-other-tools/28-gpu-performance-profiling-advanced.md",
+        "external/perfetto@android-17.0.0_r1"
+      ],
+      "status": "open",
+      "summary": "GPU profiling chapter cannot finalize: Android 17 Perfetto path/field boundary fixes applied but broad outline lacks source evidence",
+      "type": "source-boundary",
+      "updated_at": "2026-07-27T20:17:57.037061+08:00"
     }
   ],
   "schema_version": 1
