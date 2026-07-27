@@ -8,24 +8,30 @@ related_chapters: ["2.10", "2.14", "14.8"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-06"
 gap_source: "素材驱动/AOSP结构/官方文档"
-task6_state: pending
-task9_state: pending
-pipeline_stage: task6_pending
+task6_state: needs-rework
+task9_state: needs-rework
+pipeline_stage: task6_needs_rework
 last_draft_polish_at: "2026-07-27T19:35:27+08:00"
 last_draft_polish_run_id: "20260727-193527-draft-polish-30f4d38e"
 last_verified: "2026-07-27"
 confidence: medium
+reviewed_date: "2026-07-27"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+last_review_finalize_at: "2026-07-27T20:13:43+08:00"
+last_review_finalize_run_id: "20260727-201343-4b671d13"
+rework_reason: "Task6 复查发现章节标题/outline 覆盖跨厂商阈值、Ray Tracing、NPU、AGI 工作流等未取证主题；android-17.0.0_r1 中 gpu_mem_event 路径与 GPU counter parser 路径需修正，且 value_direction 字段不在该 tag 的 GpuCounterSpec 中。"
 sources:
   - "AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/common/gpu_counter_descriptor.proto"
   - "AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/trace/gpu/gpu_counter_event.proto"
-  - "AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/trace/gpu/gpu_mem_event.proto"
-  - "AOSP android-17.0.0_r1: external/perfetto/src/trace_processor/importers/proto/gpu_counter_sequence_state.h"
+  - "AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/trace/android/gpu_mem_event.proto"
+  - "AOSP android-17.0.0_r1: external/perfetto/src/trace_processor/importers/proto/gpu_event_parser.h"
+  - "AOSP android-17.0.0_r1: external/perfetto/src/trace_processor/importers/proto/gpu_event_parser.cc"
   - "AOSP android-17.0.0_r1: external/perfetto/src/trace_processor/metrics/sql/android/gpu_counter_span_view.sql"
 ---
 
 # 14.28 GPU 性能分析进阶 — 跨厂商计数器标准化与工作负载剖析
 
-> Draft-polish 状态：本轮未新增外部材料，只把既有源码调研稿推进到 Task6 复查入口。正文可信范围限定为 Android 17 / `android-17.0.0_r1` 中 Perfetto GPU counter、GPU memory event 与 trace processor 相关结构；outline 中的工作负载阈值、Ray Tracing、NPU/ML 协同、远程调试等主题仍属于后续 source-apply/rework 候选，不作为本章已验证结论。
+> Task6 复查状态：本轮按 Android 17 / `android-17.0.0_r1` 重新核对 Perfetto GPU counter、GPU memory event 与 trace processor 相关结构，并修正了路径与字段边界。正文仍只可作为**源码调研补丁**；outline 中的工作负载阈值、Ray Tracing、NPU/ML 协同、远程调试、AGI 工作流等主题仍属于后续 source-apply/rework 候选，不作为本章已验证结论，因此本章暂不 finalized。
 
 <!-- outline-start -->
 ## 要点
@@ -85,17 +91,17 @@ sources:
 
 ## 标准化协议：`GpuCounterDescriptor`（2026-07-11 源码调研补）
 
-> 本节补充内容来自 AOSP `android-17.0.0_r1` 中 `external/perfetto`（同步自上游 `google/perfetto` `main` 分支）的一手 proto 与 trace-processor 源码引用。
+> 本节补充内容来自 AOSP `android-17.0.0_r1` 中 `external/perfetto` 的一手 proto 与 trace-processor 源码引用；不得把上游 Perfetto `main` 的后续字段回写成本章 Android 17 结论。
 
 ### 协议层固定的语义骨架
 
 `protos/perfetto/common/gpu_counter_descriptor.proto` 给出三层结构：
 
-1. **8 类固定语义分组**（`GpuCounterGroup`）：
+1. **8 类语义分组枚举**（`GpuCounterGroup`）：
    `UNCLASSIFIED=0; SYSTEM=1; VERTICES=2; FRAGMENTS=3; PRIMITIVES=4; MEMORY=5; COMPUTE=6; RAY_TRACING=7`
-   ——这是协议层硬约束，所有 OEM producer 必须从此枚举取值。
+   ——`GpuCounterSpec.groups` 若被 producer 填写，只能从该枚举取值；若未填写，trace processor 会按 `UNCLASSIFIED` 入表。它不能单独证明某个厂商 counter 的跨设备等价性。
 2. **41 项度量单位**（`MeasureUnit`）：`next id: 41` 注释明确。覆盖 BIT/BYTE/HERTZ/SECOND/VERTEX/PIXEL/TRIANGLE/PRIMITIVE/FRAGMENT/MILLIWATT/WATT/JOULE/VOLT/AMPERE/CELSIUS/PERCENT/INSTRUCTION 等。**派生单位**用 `numerator_units` × `denominator_units` 表达，如 `PIXEL/SECOND` 即"每秒像素"。
-3. **`GpuCounterSpec`**：单条计数器声明，字段含 `counter_id, name, description, peak_value, numerator_units, denominator_units, select_by_default, groups, value_direction`。其中 `value_direction`（`BACKWARDS_LOOKING` vs `FORWARDS_LOOKING`，issue #5683）是近年新增的跨 producer 一致性关键字段——AGI/历史 producer 约定为 BACKWARDS（采样时刻之前的窗口），新规约倾向 FORWARDS（之后窗口）。两种约定下同一组数据在 UI 上的峰值会偏移一个采样周期。
+3. **`GpuCounterSpec`**：单条计数器声明，`android-17.0.0_r1` 字段含 `counter_id, name, description, peak_value, numerator_units, denominator_units, select_by_default, groups`。本 tag 的 `GpuCounterSpec` 中未发现 `value_direction` 字段；trace processor 的 `gpu_event_parser.cc` 仍在 parser 逻辑中把 GPU counters 作为 “backwards looking” 采样处理（先插入占位，再回填上一条 counter 行）。因此本章不能把上游后续 `value_direction` 设计写成 Android 17 已有协议字段。
 
 ### 硬件 counter island 建模
 
@@ -126,16 +132,21 @@ message GpuCounterEvent {
 
 ### Trace Processor 端的状态机
 
-`src/trace_processor/importers/proto/gpu_counter_sequence_state.h`：
+`src/trace_processor/importers/proto/gpu_event_parser.h/.cc`：
 
 ```cpp
-struct GpuCounterSequenceState : PacketSequenceStateGeneration::CustomState {
-  struct CounterTrackInfo { TrackId track_id; bool forwards_looking; };
-  // Key: counter_descriptor_iid. Value: per-descriptor map of counter_id -> track info.
+struct GpuCounterState {
+  TrackId track_id;
+  std::optional<tables::CounterTable::Id> last_id;
 };
+base::FlatHashMap<uint32_t, GpuCounterState> gpu_counter_state_;
+
+// Track-level last_id for the interned counter_descriptor_iid path.
+base::FlatHashMap<TrackId, std::optional<tables::CounterTable::Id>>
+    gpu_counter_last_id_;
 ```
 
-注释明确：**两个不同 producer 必然位于不同 packet sequence**（因此不同 IncrementalState），`iid` 即使冲突也不会相互污染。descriptor 在 tokenization 阶段就物化到 track（"the descriptors are parsed once at tokenization time (tracks interned, counter groups inserted)"），避免每次 GpuCounterEvent 都查表。
+`android-17.0.0_r1` 未包含早稿写到的 `gpu_counter_sequence_state.h`。本 tag 的实现位于 `gpu_event_parser`：legacy inline `counter_descriptor` 路径按全局 `counter_id` 维护 `GpuCounterState`；interned `counter_descriptor_iid` 路径通过 packet sequence 的 interned message 查到 `InternedGpuCounterDescriptor`，再按 track 维护 `last_id`。这能支撑“interned descriptor 适用于多 producer / 多 GPU”的协议边界，但不能沿用不存在文件中的 `forwards_looking` 字段描述。
 
 ### 上层 SQL 视图模板
 
@@ -165,7 +176,7 @@ WHERE name = '{{counter_name}}' AND gpu_id IS NOT NULL;
 
 ### GPU 内存事件的平台级标准化
 
-`protos/perfetto/trace/gpu/gpu_mem_event.proto`：
+`protos/perfetto/trace/android/gpu_mem_event.proto`：
 
 ```proto
 // Generated by Android's GpuService.
@@ -193,13 +204,14 @@ message GpuMemTotalEvent {
 
 ### 信息源
 
-所有引用均来自 `github.com/google/perfetto` `main` 分支（与 AOSP `android-17.0.0_r1` 中的 `external/perfetto` 同步）：
+所有引用均按 AOSP `android-17.0.0_r1` 中 `external/perfetto` 路径复核：
 - `protos/perfetto/common/gpu_counter_descriptor.proto`
 - `protos/perfetto/trace/gpu/gpu_counter_event.proto`
 - `protos/perfetto/config/gpu/gpu_counter_config.proto`
 - `protos/perfetto/config/data_source_config.proto`
-- `protos/perfetto/trace/gpu/gpu_mem_event.proto`
-- `src/trace_processor/importers/proto/gpu_counter_sequence_state.h`
+- `protos/perfetto/trace/android/gpu_mem_event.proto`
+- `src/trace_processor/importers/proto/gpu_event_parser.h`
+- `src/trace_processor/importers/proto/gpu_event_parser.cc`
 - `src/trace_processor/metrics/sql/android/gpu_counter_span_view.sql`
 - `test/trace_processor/diff_tests/parser/graphics/gpu_counter_specs.textproto`
 
@@ -207,6 +219,6 @@ message GpuMemTotalEvent {
 
 ## Task6 复查入口
 
-- **已可复查**：`GpuCounterDescriptor`/`GpuCounterEvent`/`GpuMemTotalEvent` 的字段语义、descriptor intern 模式、trace processor track 建模与 SQL span 视图。
-- **复查重点**：确认上述路径在 `android-17.0.0_r1` 中与上游 Perfetto main 的同步边界，避免把后续 mainline 变化误写成本章结论。
-- **不得自动晋升的缺口**：工作负载阈值、Ray Tracing、NPU/ML 协同、profileable 权限差异、AGI 工作流仍缺一手材料，本轮只在 outline 标注“待补材料”。
+- **本轮已复查并修正**：`GpuCounterDescriptor`/`GpuCounterEvent`/`GpuMemTotalEvent` 的 Android 17 路径、descriptor intern 模式、trace processor parser 建模与 SQL span 视图。
+- **保持 needs-rework 的原因**：章节题名与 outline 仍覆盖跨厂商计数器标准化、工作负载阈值、Ray Tracing、NPU/ML 协同、profileable 权限差异、AGI 工作流等大范围主题；当前一手证据只能支撑 Perfetto GPU counter/gpu memory 的协议与 trace processor 导入链路。
+- **不得自动晋升的缺口**：工作负载阈值、Ray Tracing、NPU/ML 协同、profileable 权限差异、AGI 工作流仍缺一手材料，本轮只在 outline 标注“待补材料”，后续需补 Android 17 基线下的 AOSP/官方文档或可复现实验材料后再申请 finalized。
