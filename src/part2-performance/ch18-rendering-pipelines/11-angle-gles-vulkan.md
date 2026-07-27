@@ -80,451 +80,463 @@ idle_audit_result: "pass-safe-metadata-and-source-marking-fix"
 
 <!-- outline-end -->
 
-## 为什么需要 ANGLE
+本文以 Android 平台 `android-17.0.0_r1` 和同 tag 的 AOSP `external/angle` 为源码锚点，讨论 Android 上最常见的 **OpenGL ES / EGL frontend + Vulkan backend**。ANGLE 项目还支持其他平台和 backend，但那些实现不用于解释本章的 Android 运行时路径。
 
-Android 的 GLES 兼容性长期受厂商驱动差异影响。同一个 `glDrawArrays` 调用或同一份 GLSL，在不同设备上可能遇到结果偏差、shader 编译差异，或者直接踩到驱动 Bug。
+从应用接口看，代码仍调用 GLES 和 EGL；从驱动接口看，ANGLE 维护 GLES 状态、翻译 shader、记录 Vulkan 命令并通过 Android Vulkan WSI 展示。它减少的是 GLES frontend 的厂商差异，厂商 Vulkan driver、GPU 和显示硬件仍在路径中。
 
-**ANGLE**（Almost Native Graphics Layer Engine）是 Google 维护的开源图形翻译层：App 侧继续调用 GLES API，ANGLE 在中间把 GLES 的状态和命令翻译成 Vulkan 指令，交给厂商 Vulkan driver 执行。ANGLE 统一的是 GLES frontend、状态管理和 shader 翻译流程，底层最终仍然跑在厂商的 Vulkan driver 和 GPU 上。
+## ANGLE 解决什么问题
 
-Android 10 起支持把 ANGLE 作为 GLES driver 选项。Android 15 之后，Google 继续扩大 ANGLE 的覆盖范围，官方口径是兼容性更好，部分场景性能更好。默认是否启用仍取决于设备配置、allowlist 和调试开关。
+Android 应用面对的 GLES 实现来自不同 GPU 厂商、驱动版本和 OEM 集成。即使应用遵守规范，也可能遇到 shader compiler 差异、扩展行为差异和驱动缺陷；若应用依赖未定义行为，切换设备后问题会更明显。
 
-## 核心架构
+ANGLE 提供由 Google 维护的 GLES / EGL 实现，把规范校验、状态跟踪、shader 翻译和大量兼容处理集中在一套 frontend 中。在 Android 的 Vulkan backend 下，厂商只需继续提供 Vulkan driver：
 
-ANGLE 的翻译流程可以概括为三个步骤：
-
-```mermaid
-graph TD
-    subgraph "App Layer"
-        App[App (GLES Calls)]
-    end
-    
-    subgraph "ANGLE Layer"
-        Translator[GLES → Vulkan Translator]
-        Shader[SPIR-V Compiler]
-        State[State Tracker]
-    end
-    
-    subgraph "System"
-        VK[Vendor Vulkan Driver]
-        GPU[GPU]
-    end
-    
-    App -->|glDrawArrays| Translator
-    Translator -->|vkCmdDraw| VK
-    Translator -->|Shader| Shader
-    Shader -->|SPIR-V| VK
-    VK -->|Execute| GPU
+```text
+App 的 GLES / EGL 调用
+        ↓
+ANGLE frontend、状态跟踪、shader translator
+        ↓
+ANGLE Vulkan backend
+        ↓
+Android Vulkan loader / vendor Vulkan driver
+        ↓
+GPU、BufferQueue、SurfaceFlinger、HWC
 ```
 
-1. **GLES API 拦截**：App 调用 `glDrawArrays`、`glUseProgram` 等 GLES 函数，被 ANGLE 的翻译层拦截。
-2. **状态跟踪**：ANGLE 维护一个 GLES 状态机的镜像，将隐式的 GLES 状态转换为 Vulkan 所需的显式状态。
-3. **Shader 翻译**：GLSL Shader 源码先编译为 SPIR-V，再由厂商 Vulkan driver 编译为 GPU Binary。
-4. **Vulkan 指令生成**：GLES 绘制调用被翻译为 Vulkan Command Buffer 操作，提交给 Vulkan 队列。
+这条路径带来两个直接边界：
 
-## 启用条件与运行时选路
+- ANGLE 可以绕开一部分 vendor GLES frontend 问题，但绕不开 vendor Vulkan compiler、内核 GPU driver 和硬件问题。
+- ANGLE 让 GLES 行为更一致，不承诺每个 workload 都更快。官方表述也是兼容性更好，部分场景性能更好。
 
-AOSP 里，`GraphicsEnvironment.queryAngleChoice()` 会先决定当前进程该走哪条 GLES driver 路径，顺序如下：
+使用 ANGLE 的应用仍是 GLES 应用。它不能直接使用 Vulkan descriptor、render pass 或 queue；这些对象由 ANGLE backend 管理。若新引擎需要完整控制 Vulkan 资源和同步，应使用原生 Vulkan API。
 
-1. `Settings.Global.ANGLE_GL_DRIVER_ALL_ANGLE`，ADB 对应键 `angle_gl_driver_all_angle`。值为 `1` 时，全局强制走 ANGLE。
-2. `angle_gl_driver_selection_pkgs` 和 `angle_gl_driver_selection_values`。两个设置按逗号分组，按包名给出 `angle`、`native` 或 `default`。
-3. 平台自带 allowlist，AOSP 资源里是 `config_angleAllowList`。
+## 翻译层架构
 
-如果结果是 `angle`，`GraphicsEnvironment.setupAngle()` 会先尝试 ANGLE APK，再回退到 system ANGLE。EGL loader 随后在 `frameworks/native/opengl/libs/EGL/Loader.cpp` 按当前选择加载 ANGLE 或 native GLES driver。ANGLE 路径的实际执行路径是 ANGLE frontend → vendor Vulkan driver → GPU。Vulkan driver 自身的行为差异仍然会透传到应用侧。
+### 四层职责
 
-Android 15 之后 ANGLE 还多了一层身份：可更新的系统图形层（Updatable Graphics Layer）。设备可以预装 `com.android.angle`，通过系统包或 Play Store 把 ANGLE 库带到新版本；`GraphicsEnvironment.setupAngle()` 会先查可用 ANGLE package，再决定是否回退到 system ANGLE。排查“为什么这台机型走 ANGLE”时，除了 Settings 键值，还要确认 `com.android.angle` 的版本、是否被禁用，以及进程实际加载的是哪套 EGL/GLES 库。
+下面的结构图把 API 语义、shader、Vulkan 命令和窗口展示分开。
 
-如果结果是 `native`，loader 会回到设备自带 GLES driver。调试时需要把设置值和运行时证据放在一起看，因为 ANGLE APK 缺失、库加载失败、system ANGLE 与 native driver 切换都会影响最终落点。
+```mermaid
+flowchart TD
+    App["App<br/>GLES / EGL"]
+    Front["ANGLE frontend<br/>validation + GLES state"]
+    Shader["Shader translator<br/>GLSL ES AST → SPIR-V"]
+    VkState["Vulkan backend<br/>dirty bits + pipeline state"]
+    Cmd["Vulkan command buffers<br/>render pass / barriers / draw"]
+    WSI["WindowSurfaceVkAndroid<br/>VkSurfaceKHR + swapchain"]
+    Driver["Android Vulkan loader<br/>vendor Vulkan driver"]
+    GPU["GPU"]
+    Display["BufferQueue → SurfaceFlinger → HWC"]
 
-## 渲染时序
+    App --> Front
+    Front --> Shader
+    Front --> VkState
+    Shader --> VkState
+    VkState --> Cmd
+    Cmd --> Driver
+    Front --> WSI
+    WSI --> Driver
+    Driver --> GPU
+    WSI --> Display
+```
 
-从 App 的视角，它仍然在调用 GLES API。底层执行路径已经变成 ANGLE frontend → vendor Vulkan driver → GPU，每一段都会引入自己的成本：
+ANGLE frontend 负责 GLES 对象、错误检查和状态机。Vulkan backend 的 `ContextVk::syncState()` 读取 GLES dirty bits，更新 viewport、blend、depth / stencil、program、texture、vertex array 等 Vulkan 状态；随后才准备 pipeline 和 draw。
+
+### 一个 GLES draw 不一定只对应一个 Vulkan draw
+
+`ContextVk::drawArrays()` 的普通分支会准备状态并记录 draw，但特殊 primitive 和兼容处理会改变命令形态。例如 `GL_LINE_LOOP` 分支会生成或复用索引数据，再记录 indexed draw。deferred clear、format conversion、framebuffer fetch emulation 和 render-pass 切换也可能在 draw 前后插入额外命令。
+
+因此，下面这种写法只适合做概念图：
+
+```text
+glDrawArrays()  →  ANGLE 状态同步与兼容处理  →  一组 Vulkan 命令
+```
+
+不能把每个 GLES 调用机械映射成同名、同数量的 `vkCmd*` 调用。做 frame capture 时应按 GLES draw、ANGLE event 和 Vulkan command buffer 三个层级关联。
+
+### GLSL ES 到 SPIR-V
+
+Android 17 tag 的 `CompilerVk::getTranslatorOutputType()` 返回 `SH_SPIRV_VULKAN_OUTPUT`。下面的源码片段说明 Vulkan backend 选择 SPIR-V translator 输出。
+
+```cpp
+ShShaderOutput CompilerVk::getTranslatorOutputType() const
+{
+    return SH_SPIRV_VULKAN_OUTPUT;
+}
+```
+
+`CodeGen.cpp` 随后为该 output type 创建 `TranslatorSPIRV`。translator 会处理 GLES 语义、注入 driver uniform、改写部分 AST，并输出 SPIR-V blob。厂商 Vulkan driver 仍要把 SPIR-V 和 pipeline state 编译为设备可执行形式。
+
+这段工作发生在 shader 编译、program link、cache 恢复或 pipeline 准备阶段，不是每次 `glDraw*` 都从 GLSL ES 文本重新开始。
+
+## Android 17 的运行时选路
+
+### 决策发生在应用进程启动阶段
+
+`GraphicsEnvironment.setup()` 在应用进程图形环境初始化时调用 `setupAngle()`。类注释明确说明：相关 Settings 改动只影响尚未完成 setup 的进程。因此每次修改选择项后都要停止并重启目标应用，仅重建 EGLContext 不足以重新执行 Java 侧选路。
+
+`queryAngleChoice()` 在 `android-17.0.0_r1` 中按以下顺序检查：
+
+| 优先级 | 来源 | 结果 |
+|:---:|:---|:---|
+| 1 | `angle_gl_driver_all_angle=1` | 对后续 Java runtime 应用进程请求 ANGLE |
+| 2 | 包名列表与取值列表 | 当前包可指定 `angle`、`native` 或继续默认 |
+| 3 | `config_angleAllowList` | 命中包请求 ANGLE |
+| 4 | flag 控制的 device / global / dynamic denylist | 命中包回到 native |
+| 5 | 同一 flag 分支下的 game 策略 | 可由调试属性或设备资源为 game 请求 ANGLE |
+| 6 | Android 17 manifest metadata | 条件允许时请求 ANGLE |
+| 7 | 无命中 | 返回 default |
+
+denylist 与 game 分支受 `enableAngleDenyList` 平台 flag 控制，不能只看源码中存在该分支就断言目标设备已启用。default 还会交给 `setupAngle()` 检查 `persist.graphics.egl` 和只读的 `ro.hardware.egl`；系统本身也可以把 ANGLE 配成 GL driver。
+
+### Android 17 manifest 偏好
+
+Android 17 允许应用在 manifest 中请求 ANGLE。下面是官方面向 game 的写法。
+
+```xml
+<application
+    android:appCategory="game">
+    <meta-data
+        android:name="com.android.graphics.driver.prefer_angle"
+        android:value="true" />
+</application>
+```
+
+这是偏好信号，不是强制开关。`GraphicsEnvironment` 在 essential-tier SoC、low-RAM 设备或 `ro.vendor.api_level < 202604` 时会跳过该请求；更高优先级的显式选择和 denylist 也会先决定结果。应用仍要在运行时确认实际 driver。
+
+### ANGLE APK、system ANGLE 与 vendor updatable driver
+
+当结果需要 ANGLE 时，`setupAngle()` 先调用 `setupAngleFromApk()`，失败后再调用 `setupAngleFromSystem()`：
+
+1. debuggable 应用或 debuggable 设备可通过 `angle_debug_package` 指定开发包；
+2. 否则按 `android.app.action.ANGLE_FOR_ANDROID` 查询唯一的 system app；
+3. Android 17 的 AOSP manifest 对应包名为 `com.android.angle`；
+4. APK 路径不可用时，loader 可以转向 system ANGLE library。
+
+ANGLE package 和 vendor updatable graphics driver 是两套机制。前者提供 GLES-over-Vulkan 实现；后者通过 `ro.gfx.driver.*`、独立 namespace 和厂商 driver package 更新 GLES / Vulkan driver。看到“driver from APK”时必须先确认是 ANGLE namespace 还是 updatable driver namespace。
+
+EGL loader 的 `attempt_to_load_angle()` 会装入 ANGLE 的 `libEGL`、`libGLESv1_CM` 和 `libGLESv2` 实现。源码注释中的“ANGLE doesn't ship with GLES library”指不提供旧式合并的 `libGLES.so`，不表示 ANGLE 不提供 GLES 1 / 2 / 3 入口。
+
+### 用 ADB 做包级 A/B
+
+下面的命令把一个包切到 ANGLE；设置后要停止进程再启动。
+
+```bash
+adb shell settings put global angle_gl_driver_selection_pkgs com.example.game
+adb shell settings put global angle_gl_driver_selection_values angle
+adb shell am force-stop com.example.game
+```
+
+测试完成后删除两个列表，避免把调试环境留给后续测量。
+
+```bash
+adb shell settings delete global angle_gl_driver_selection_pkgs
+adb shell settings delete global angle_gl_driver_selection_values
+adb shell am force-stop com.example.game
+```
+
+多个包共用列表时，`pkgs` 与 `values` 按逗号一一对应，长度不同会被 `GraphicsEnvironment` 忽略。量产设备还可能限制 Settings 写入或包级覆盖；命令成功不等于 ANGLE 已加载。
+
+## 一帧怎样从 GLES 走到显示
+
+### Draw 阶段
+
+应用的 render loop 仍调用 `glUseProgram()`、`glBind*()`、`glDraw*()`。ANGLE frontend 记录对象和状态，Vulkan backend 通过 dirty bits 延迟处理很多状态，等 draw、dispatch、clear 或其他需要执行的命令到来时再同步。
+
+这种延迟处理解释了一个常见现象：某个轻量的 `glDrawArrays()` 在 CPU trace 中很长，耗时未必来自 draw 编码本身，也可能包含此前积累的 texture、framebuffer、pipeline 或 shader 工作。
+
+### Swap 阶段
+
+Android 上的 `WindowSurfaceVkAndroid::createSurfaceVk()` 把 `ANativeWindow` 交给 `vkCreateAndroidSurfaceKHR()`。`eglSwapBuffers()` 进入 ANGLE 的 `WindowSurfaceVk`，随后可能执行：
+
+- 结束或提交当前 render pass；
+- 处理 present layout transition；
+- 等待或取得下一张 swapchain image；
+- 进行 CPU throttle 或 swap interval pacing；
+- 由 `Renderer::queuePresent()` 提交 Vulkan present。
+
+下面的时序图刻意保留了 ANGLE、Vulkan WSI 和 Android 显示端的边界。
 
 ```mermaid
 sequenceDiagram
-    participant App as App (GLES)
-    participant ANGLE as ANGLE Translator
-    participant VK as Vulkan Driver
-    participant BQ as ANativeWindow / BufferQueue
-    participant SF as SurfaceFlinger
-    participant RE as RenderEngine / GPU
-    participant HWC as HWC
-    participant DISP as Display pipeline
+    participant App as "App render thread"
+    participant Front as "ANGLE GLES frontend"
+    participant Vk as "ANGLE Vulkan backend"
+    participant Driver as "Android Vulkan loader / vendor driver"
+    participant BQ as "ANativeWindow / BufferQueue"
+    participant SF as "SurfaceFlinger"
+    participant HWC as "HWC / display"
 
-    Note over App: App 侧仍调用 GLES
-    App->>ANGLE: glDrawArrays()
-    ANGLE->>ANGLE: State validation
-    ANGLE->>ANGLE: Translate to Vulkan commands
-    ANGLE->>VK: vkCmdDraw()
-
-    App->>ANGLE: eglSwapBuffers()
-    ANGLE->>VK: vkQueuePresentKHR()
-    VK->>BQ: queueBuffer / present buffer
-    BQ->>SF: latch buffer
-    SF->>HWC: validateDisplay() / getChangedCompositionTypes()
-    alt CLIENT composition exists
-        SF->>RE: compose client target
-        RE->>HWC: setClientTarget()
-    else DEVICE composition only
-        SF->>HWC: accept device composition
-    end
-    SF->>HWC: presentDisplay()
-    HWC->>DISP: scanout through display controller
+    App->>Front: "glDraw*"
+    Front->>Vk: "validate + sync dirty state"
+    Vk->>Vk: "record render pass / barriers / draw"
+    App->>Front: "eglSwapBuffers"
+    Front->>Vk: "WindowSurfaceVk::swapImpl"
+    Vk->>Driver: "queue submit + vkQueuePresentKHR"
+    Driver->>BQ: "Android WSI queue buffer + acquire fence"
+    BQ->>SF: "buffer / transaction ready"
+    SF->>HWC: "validate + DEVICE / CLIENT composition"
+    HWC-->>BQ: "present / release fence"
 ```
 
-这张图把 ANGLE 的责任边界停在 Vulkan WSI 与 BufferQueue。SurfaceFlinger latch 之后会先和 HWC 协商每个 layer 的 composition type；只有 CLIENT layer 需要 RenderEngine / GPU 生成 client target，最终送显由 HWC 和显示控制器完成。
+`vkQueuePresentKHR()` 返回只说明 present 请求已被处理到 Vulkan WSI 规定的边界，不代表屏幕已经扫描出该帧。SurfaceFlinger 仍要选择可展示内容，与 HWC 协商 composition，并等待 display present。
 
-关键差异点：
+SurfaceFlinger 看见的是目标 Layer、buffer、dataspace、damage、几何、时间信息和 acquire fence。它不需要知道上游是 vendor GLES、ANGLE Vulkan 还是原生 Vulkan。
 
-| 操作 | 原生 GLES | ANGLE 翻译后 |
+## Shader、program 与 pipeline cache
+
+ANGLE Vulkan 路径至少有三层容易被统称为“shader cache”：
+
+| 层级 | 缓存对象 | 主要减少什么 |
 |:---|:---|:---|
-| `glDrawArrays` | 直接调用 GLES 驱动 | 翻译为 `vkCmdDraw` |
-| `glShaderSource` | GLSL → GPU Binary | GLSL → SPIR-V → GPU Binary |
-| `eglSwapBuffers` | GLES 驱动提交 buffer | ANGLE 走 Vulkan WSI / ANativeWindow 提交 buffer，后段由 SurfaceFlinger、HWC 和显示控制器处理 |
+| ANGLE program / blob cache | 编译、链接后的 program 数据 | 重复的 frontend 翻译与 program 恢复工作 |
+| ANGLE graphics pipeline cache | pipeline 描述到 Vulkan pipeline 的映射 | 同一进程内重复 pipeline 查找与创建 |
+| Vulkan pipeline cache data | vendor compiler 可复用的数据 | driver 侧 pipeline 编译成本，收益由 driver 决定 |
 
-## 性能特征
+`ProgramExecutableVk` 在 Android 17 tag 中包含 per-program pipeline cache、global cache 合并、warm-up 和序列化分支；具体策略由 ANGLE feature 和 driver 能力决定。不能只看到 `VkPipelineCache` 就假设每次启动都完整持久化，也不能假设命中后所有 CPU 翻译成本消失。
 
-ANGLE 带来的主要收益在兼容性和行为收敛。性能方向要按 workload 判断，Android 官方对它的表述也是“兼容性更好，部分场景性能更好”。
+cache 命中仍可能保留：
 
-| 维度 | 原生 GLES 路径 | ANGLE 路径 |
+- GLES 参数校验和对象查找；
+- dirty-state 同步；
+- descriptor / dynamic state 更新；
+- command buffer 记录；
+- render-pass 边界和资源 barrier；
+- WSI acquire、present 与 fence 等待。
+
+评估首帧和场景切换时要同时测 cold / warm：
+
+1. cold：清理应用可控 cache 或使用全新安装，记录 shader compile、program link 和 pipeline creation；
+2. warm：保持相同 app、ANGLE package、vendor driver 和资源版本再次运行；
+3. 比较相同场景的 CPU slice、GPU stage、present 间隔和 cache 命中，而非只比较平均 FPS。
+
+应用更新 shader、ANGLE 更新、vendor driver 更新、GPU 型号变化或 pipeline state 改变，都可能让旧 cache 不再适用。
+
+## Native fence 与 Vulkan 同步
+
+### server wait：把 sync fd 导入临时 semaphore
+
+`EGL_ANDROID_native_fence_sync` 让 EGL / GLES 与 Android native fence 互操作。Android 17 ANGLE 的 `SyncHelperNativeFence::serverWait()` 会为下一次 Vulkan submit 准备 binary semaphore，并导入一份 duplicated sync fd。
+
+下面的精简片段保留了 ownership 和 submit stage 两个要点。
+
+```cpp
+importFdInfo.flags =
+        VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR;
+importFdInfo.handleType =
+        VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR;
+importFdInfo.fd = dup(mExternalFence->getFenceFd());
+
+contextVk->addWaitSemaphore(
+        waitSemaphore.get().getHandle(),
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+contextVk->addGarbage(&waitSemaphore.get());
+```
+
+传给 Vulkan import 的 duplicated fd 由 Vulkan 同步导入规则接管；`mExternalFence` 持有的原 fd 继续由 ANGLE 管理。临时 import 表示 semaphore payload 在等待后恢复原有 payload 语义，不能把它写成持久共享 semaphore。
+
+### client wait：调用线程仍在等待
+
+`SyncHelperNativeFence::clientWait()` 先检查 signal 和 timeout，必要时把等待放进 `UnlockedTailCall`。tail call 会在 frontend 锁释放后、对应 EGL API 调用结束前执行。`SyncHelper::clientWait()` 对 GL sync 采用同类设计。它们减少持有 ANGLE 全局 / display 锁等待的时间，调用线程仍会等待结果；阻塞不会自动转移成异步 GPU 线程。
+
+该等待使用 `poll()`，将纳秒 timeout 转成毫秒；非零且小于 1 ms 的 timeout 会提升为 1 ms。这里描述的是 ANGLE 的用户态调用方式，fd 本身仍由内核 sync_file / dma-fence 机制支撑。内核源码统一参照 `android17-6.18-2026-06_r6` 的 `drivers/dma-buf/sync_file.c`。
+
+`serverWait()` 本身没有 `ANGLE_TRACE_EVENT`。Perfetto 中搜索函数名通常得不到 slice；要结合 Vulkan submit、调用栈采样和后续 GPU 执行确认。`clientWait` 与 `clientWait block (unlocked)` 在 Android 17 tag 中有 `gpu.angle` event。
+
+## 性能特征与 A/B 方法
+
+### 成本和收益分别量
+
+| 观察维度 | ANGLE 可能增加的工作 | ANGLE 可能带来的收益 |
 |:---|:---|:---|
-| Driver frontend | 厂商 GLES driver | ANGLE GLES frontend + 厂商 Vulkan driver |
-| Shader 路径 | GLSL → vendor compiler | GLSL → SPIR-V → vendor pipeline |
-| 状态管理 | 厂商维护 GLES 状态机 | ANGLE 做状态映射，再落到 Vulkan |
-| 调试可见性 | 厂商差异较大 | ANGLE 路径更容易和源码、设置项对应 |
+| CPU frontend | GLES validation、状态映射、命令编码 | 统一实现和一致的错误处理 |
+| Shader / pipeline | GLSL ES → SPIR-V、pipeline 准备 | cache、并行编译和持续维护的 workaround |
+| GPU | 兼容 pass、格式转换、额外 barrier | 更合适的 Vulkan driver 路径或 driver 优化 |
+| 同步 / WSI | acquire、throttle、native-fence 转换 | 较统一的 present 与 fence 实现 |
+| 兼容性 | 更严格暴露应用未定义行为 | 避开部分 vendor GLES 缺陷 |
 
-常见成本来自几处：
+ANGLE 变慢和变快都不能从架构图直接推出。一个 CPU-bound GLES 游戏可能受益于更成熟的 Vulkan driver，也可能被高频状态切换和 pipeline churn 拖慢；GPU-bound 场景可能几乎不受 frontend 影响，也可能因兼容 pass 或格式选择改变 GPU 工作。
 
-- **Shader 首次编译**：多了一层 GLSL → SPIR-V，再进入 Vulkan pipeline 建立
-- **State mapping**：GLES 的隐式状态要转换成 Vulkan 的显式状态
-- **命令翻译**：Draw call、render pass、同步对象都要经过一层映射
-- **Cache 冷启动**：pipeline cache 未命中时，首帧和场景切换更容易抬高 CPU / GPU 开销
+### 公平对比的固定项
 
-更容易受益的场景，通常是原生 GLES driver 质量不稳定、机型差异大，或者需要把问题稳定复现到一条更统一的图形路径上。更容易吃亏的场景，通常是 shader 首编很多、pipeline churn 明显，或者目标机型的原生 GLES driver 本来就足够成熟。同一份 workload 在两台设备上可能得出相反结论，发布前要在目标机型上对比 native 与 ANGLE 两条路径。
+native GLES 与 ANGLE A/B 至少固定：
+
+- 设备、系统 build、ANGLE package 和 vendor driver 版本；
+- 分辨率、刷新率、Game Mode、帧率上限和 thermal 状态；
+- 相同场景、相同 shader / texture cache 冷热状态；
+- 前台窗口、Surface 尺寸、色彩空间和 swap interval；
+- 运行时 backend 证据。
+
+指标要包含 CPU frame time 分布、GPU stage、present-to-present 间隔、1% low、输入延迟、内存和持续温度。只测几十秒平均 FPS 容易漏掉 pipeline warm-up 和热降频。
+
+### 常见优化顺序
+
+1. 修正 GLES 未定义行为、shader 编译错误和扩展依赖；
+2. 合并无意义的细碎状态切换，减少 program / FBO / texture 反复切换；
+3. 控制 shader variant 和 pipeline state 数量；
+4. 使用应用与 EGL 提供的 cache 能力，并验证恢复是否命中；
+5. 避免同步 readback、无界 `glFinish()` 和过长 client wait；
+6. 重新测量 swap、GPU 和 SurfaceFlinger 显示段，确认成本没有转移。
+
+ANGLE 对 GLSL ES 的拒绝不一定是“ANGLE 更严格导致 Bug”。先检查 shader 是否符合目标 GLES 版本规范、precision、layout、extension 和 link 约束；依赖 vendor 宽松行为的代码本来就不可移植。
+
+## 启用检测与调试
+
+### 三类证据要一致
+
+确认 ANGLE 时按“配置意图、进程加载、API 字符串”三类证据检查：
+
+| 证据 | 能说明什么 | 局限 |
+|:---|:---|:---|
+| Settings / manifest / platform resource | 系统为何请求某个 driver | 请求可能失败或被更高优先级覆盖 |
+| `/proc/<pid>/maps` 中 ANGLE library | 目标进程实际装入 ANGLE 实现 | 非 debuggable 进程可能无权读取 |
+| `GL_VENDOR` / `GL_RENDERER`、`EGL_VENDOR` | 当前 context / display 的实现标识 | 必须在正确的 context 与线程查询 |
+| `gpu.angle` trace event | ANGLE Vulkan backend 正在执行对应代码 | category 未启用时看不到 |
+
+下面的代码在 EGLContext current 后打印 API 字符串。
+
+```cpp
+const char* glVendor =
+        reinterpret_cast<const char*>(glGetString(GL_VENDOR));
+const char* glRenderer =
+        reinterpret_cast<const char*>(glGetString(GL_RENDERER));
+const char* eglVendor = eglQueryString(eglGetCurrentDisplay(), EGL_VENDOR);
+
+ALOGI("GL_VENDOR=%s", glVendor ? glVendor : "<null>");
+ALOGI("GL_RENDERER=%s", glRenderer ? glRenderer : "<null>");
+ALOGI("EGL_VENDOR=%s", eglVendor ? eglVendor : "<null>");
+```
+
+ANGLE renderer 字符串通常包含 `ANGLE`、vendor、GPU 和 Vulkan 版本信息；格式不是稳定 ABI，不要用固定逗号位置解析。用于遥测时保存原始字符串和系统 build。
+
+debuggable 应用可以用下面的命令检查映射。`run-as` 失败时不要通过放宽系统安全策略来做日常验证。
+
+```bash
+pid=$(adb shell pidof -s com.example.game)
+adb shell run-as com.example.game \
+    sh -c "cat /proc/$pid/maps | grep -E 'lib(EGL|GLES).*angle'"
+```
+
+`angle_debug_package` 只对可加载调试 package 的进程生效。修改后仍要重启目标进程，并核对 ABI、system app / debug app 身份和实际 maps。
+
+### 回归范围
+
+ANGLE 与 native GLES 都要覆盖：
+
+- GLES 版本和扩展查询；
+- external image、camera / video texture；
+- protected content 与 wide color / HDR；
+- context loss、后台恢复和 Surface 重建；
+- shader cache 升级与 driver 更新；
+- RenderDoc / AGI 等调试工具注入；
+- 32 / 64 位 ABI 和 Android 15+ 的 16 KB page-size 设备。
+
+厂商私有 `GL_*` 扩展不能假设 ANGLE 提供。应用应在运行时查询，并为缺失扩展准备规范内路径。
 
 ## 在 Perfetto 中识别 ANGLE
 
-单看 `vkQueueSubmit` 或 `vkCmdDraw` 不够。native Vulkan、Skia Vulkan、系统图形组件都可能产生 `vk*` slice。确认 ANGLE 时，要把 driver 选择、运行时标识和目标进程 trace 放在一起看。
+### 先证实 backend，再解释 slice
 
-建议至少打开这几类数据源：
+单独出现 `vkQueueSubmit` 或 Vulkan GPU stage 不能证明 GLES 正在走 ANGLE：原生 Vulkan、HWUI Vulkan 和其他库都可能产生 Vulkan 工作。Perfetto 结论应同时具备：
 
-- Graphics and display
-- SurfaceFlinger
-- GPU render stages / counters
-- 目标进程的 Vulkan 相关 slice 或 track_event 数据（设备支持时）
+1. 目标进程的 GL / EGL 字符串或已加载 library；
+2. `gpu.angle` category 中的 ANGLE event；
+3. 同一进程的 Vulkan submit / GPU stage；
+4. 对应 App Surface 的 BufferQueue、FrameTimeline 和 display present。
 
-### 1. 先确认 driver 选择
+Android 17 tag 中较有辨识度的 event 包括：
 
-```bash
-# 读取当前设置
-adb shell settings get global angle_gl_driver_all_angle
-adb shell settings get global angle_gl_driver_selection_pkgs
-adb shell settings get global angle_gl_driver_selection_values
+| Event | 说明 | 误读风险 |
+|:---|:---|:---|
+| `ContextVk::flushAndSubmitCommands` | ANGLE 准备提交 Vulkan 工作 | 不等于 GPU 已完成 |
+| `CommandQueue::submitCommands` / `queueSubmitLocked` | command queue 提交段 | 需要结合线程状态和 driver 调用 |
+| `WindowSurfaceVk::swapImpl` | EGL swap 的 Vulkan backend 实现 | 范围可能包含 acquire、submit 和 pacing |
+| `WindowSurfaceVk::present` | ANGLE 组织 present | 不等于 display 已上屏 |
+| `acquireNextSwapchainImage` | 取得下一张 swapchain image | 长等待可能是 backpressure / pacing |
+| `WindowSurfaceVk::throttleCPU` | ANGLE 主动限制 CPU 超前 | 不能直接标成无效卡顿 |
+| `SyncHelperNativeFence::clientWait block (unlocked)` | 调用线程在无 frontend 锁状态等待 | 不是异步 GPU worker |
+| `CreateMonolithicPipelineTask` / cache warm-up | pipeline 建立或预热 | 要区分 cold / warm |
 
-# 全局强制 ANGLE（调试后记得恢复）
-adb shell settings put global angle_gl_driver_all_angle 1
-adb shell settings put global angle_gl_driver_all_angle 0
+具体 event 取决于 build、ANGLE revision 和 trace category。找不到某个名字时回到调用栈、API marker 和 buffer 时间，不要把“没有 slice”写成“没有执行”。
 
-# 按包切到 ANGLE
-adb shell settings put global angle_gl_driver_selection_pkgs com.example.demo
-adb shell settings put global angle_gl_driver_selection_values angle
-```
+### 用 SQL 限定目标进程
 
-`angle_gl_driver_selection_pkgs` 和 `angle_gl_driver_selection_values` 按逗号拆分后一一对应，查多包配置时确认两个列表长度一致即可。
-
-### 2. 再看运行时标识
-
-- `glGetString(GL_RENDERER)` 返回值包含 `ANGLE`，例如 `ANGLE (Vendor, Vulkan 1.3.x, ...)`
-- debuggable 进程可以结合 `logcat | grep ANGLE` 或进程已加载库，确认 ANGLE 库已经进入目标进程
-
-### 3. 限定目标进程做 trace 归因
+下面的 Perfetto SQL 只列出目标进程中常见 ANGLE Vulkan event，适合确认耗时集中在哪一类操作。
 
 ```sql
-SELECT p.name AS process,
-       t.name AS thread,
-       s.name,
-       ROUND(s.dur / 1e6, 3) AS dur_ms
+SELECT
+  p.name AS process,
+  t.name AS thread,
+  s.name,
+  ROUND(s.dur / 1e6, 3) AS dur_ms
 FROM slice s
 JOIN thread_track tt ON s.track_id = tt.id
 JOIN thread t ON tt.utid = t.utid
 JOIN process p ON t.upid = p.upid
-WHERE p.name = 'com.example.demo'
-  AND (s.name GLOB 'vk*' OR s.name LIKE '%ANGLE%')
-ORDER BY s.ts DESC
-LIMIT 50;
+WHERE p.name = 'com.example.game'
+  AND (
+    s.name GLOB 'WindowSurfaceVk::*'
+    OR s.name GLOB 'ContextVk::*'
+    OR s.name GLOB 'CommandQueue::*'
+    OR s.name GLOB 'SyncHelper*'
+    OR s.name GLOB '*Pipeline*'
+  )
+ORDER BY s.ts;
 ```
 
-这条查询只能说明目标进程走过 Vulkan 路径。把它和 settings、`GL_RENDERER`、已加载库放在一起，才能把 `vk*` slice 归因到 ANGLE。需要更细的 command 级证据时，用 AGI 抓一帧会更稳。
+查询结果只能定位 CPU event。GPU 是否忙要看 GPU render stage / counter；buffer 是否上屏要看 SurfaceFlinger FrameTimeline 和 display present。
 
-## 开发者建议
+### 按等待位置归因
 
-1. **测试覆盖**：确保 App 在 ANGLE 和原生 GLES 下都测试过，特别是依赖厂商扩展（`GL_QCOM_*` 等）的代码
-2. **Shader 规范**：ANGLE 对 GLSL 语法要求更严格，不合规的 GLSL 会直接报错
-3. **新项目优先 Vulkan**：如果不需要兼容旧设备，直接用 Vulkan 比经过 ANGLE 翻译层更直接
-
-
-
-<!-- AIW-源码调研-2026-07-17 -->
-
-## ANGLE 选择机制三级优先级 + useQueryAngleChoice() 软开关（android-17.0.0_r1 源码级）
-
-### 选择入口 `GraphicsEnvironment.setupAngle()`
-
-`frameworks/base/core/java/android/os/GraphicsEnvironment.java:661-786` 把决策硬编进注释：
-
-```
-// 1. Settings choice for ANGLE
-// 2. Persist choice for EGL (persist.graphics.egl)
-// 3. Readonly choice for EGL (ro.hardware.egl)
-```
-
-android-17 起 `Flags.useQueryAngleChoice()` 默认 **True**（line 698），新代码路径按 Settings 决策分 ANGLE / NATIVE / DEFAULT 三分支；NATIVE 分支直接调用 `nativeSetAngleInfo("", true, packageName, null)`（line 712-714）让 Loader 维持 system driver，**不会走到 setupAngleFromApk**。
-
-| Settings choice | 处理 |
-|:---|:---|
-| `ANGLE_GL_DRIVER_CHOICE_ANGLE` | `setupANGLE = true`，进入 APK / system 双路径 |
-| `ANGLE_GL_DRIVER_CHOICE_NATIVE` | 只查 `ro.hardware.egl`；非 angle 时设 native，**不调用 `setupAngleFromApk`/`setupAngleFromSystem`** |
-| `ANGLE_GL_DRIVER_CHOICE_DEFAULT` | 先看 `persist.graphics.egl`，再退回 `ro.hardware.egl` |
-
-### APK → nativeLib → system 三层回退
-
-`setupAngleFromApk()` (line 789-857) 组装路径：
-```java
-final String paths = angleInfo.nativeLibraryDir
-        + File.pathSeparator
-        + angleInfo.sourceDir
-        + "!/lib/" + abi;
-nativeSetAngleInfo(paths, false, packageName, features);
-```
-namespace 通过 `GraphicsEnv::getAngleNamespace()` 在 native 侧构建（Loader.cpp:188-194）。排查 APK ANGLE 时不要只看包是否安装，还要确认 native library 路径、loader 日志和进程 maps；若 APK 路径不可用，实际落点可能回到 system ANGLE 或 native GLES。
-
-### Loader 状态机（Loader.cpp:160-225）
-
-`should_unload_system_driver()` 是真值表：
-
-| 已加载 driver | 应否 unload | 原因 |
-|:---|:---:|:---|
-| `cnx->systemDriverUnloaded == true` | 否 | 防止循环 unload |
-| `cnx->driverInUpdatableApkLoaded` | 否 | updatable driver 不可替换 |
-| ANGLE namespace != nullptr && !systemAngle | 是 | 走 ANGLE apk |
-| `shouldUseAngle() && !angleLoaded` | 是 | 切走原生 GLES 加载 ANGLE |
-| `shouldUseNativeDriver() && angleLoaded` | 是 | 切回原生 GLES |
-| updatable driver namespace != nullptr | 是 | 走 GPU driver apk |
-
-`attempt_to_load_angle()` (Loader.cpp:632-660) 顺序是 `EGL → GLESv1_CM → GLESv2`，**ANGLE 不提供 libGLES.so**，三件套缺一即失败（line 642-655）。
-
-### `EGL Android native fence → Vulkan semaphore`（SyncVk.cpp android-17.0.0_r1）
-
-`SyncHelperNativeFence::serverWait()`（line 508-538）：
-```cpp
-VkImportSemaphoreFdInfoKHR importFdInfo = {};
-importFdInfo.flags      = VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR;
-importFdInfo.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR;
-importFdInfo.fd         = dup(mExternalFence->getFenceFd());
-contextVk->addWaitSemaphore(waitSemaphore.get().getHandle(),
-                            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
-contextVk->addGarbage(&waitSemaphore.get());
-```
-
-| 关键点 | 取值 | 备注 |
+| 长段位置 | 优先核对 | 可能的根因 |
 |:---|:---|:---|
-| `flags` | `VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR` | fd 语义临时，Vulkan 不外持久化 |
-| `handleType` | `SYNC_FD_BIT_KHR` | 区别于 external_memory / external_sampler 的 fd |
-| `fd` | `dup(src)` | dup 出来的 secondary fd 由 `vkImportSemaphoreFdKHR` 接管；primary fd 仍由 ANGLE 管 |
+| shader link / pipeline task | cold / warm、variant、driver compiler | shader 或 pipeline churn |
+| `syncState` 附近 | 之前积累的 dirty state | 高频 state / FBO / resource 变化 |
+| `clientWait block (unlocked)` | 谁创建 fence、timeout、CPU thread state | 显式同步或 readback |
+| acquire / throttle | queue depth、release fence、swap interval | CPU 超前、display backpressure |
+| queue submit 后 GPU stage 长 | GPU counter、频率、thermal | shader、带宽、overdraw 或降频 |
+| ANGLE present 正常，FrameTimeline 晚 | SF latch、composition、HWC present | 显示端或 acquire fence |
 
-`SyncWaitFd()` 用 `poll()` 而非 `sync_wait()` ioctl（line 28-68）：用户态，timeout 精度 ms 级，对 100ns 以下 wait 会被强制压成 1ms。游戏引擎遇 single-digit-ms 同步时这里有 double-time 隐患。
+一帧的最小时间线是：App GLES call → ANGLE state / command → Vulkan submit → GPU completion fence → WSI queue → SurfaceFlinger latch → HWC / RenderEngine composition → display present。任何一段缺证据，都应保留为待验证边界。
 
-`SyncHelperNativeFence::clientWait()` 用 `egl::Display::GetCurrentThreadUnlockedTailCall()->add(clientWaitUnlocked)`（line 630）切到 GPU 线程，避免阻塞 EGL caller。
+## Android 10—17 的版本边界
 
-### Shader 翻译 GLSL → SPIR-V
+### Android 10—14
 
-`external/angle/src/compiler/translator/CodeGen.cpp:58-78` 工厂选择：
-```cpp
-if (IsOutputSPIRV(output))
-    return new TranslatorSPIRV(type, spec);
-```
-`CompilerVk::getTranslatorOutputType()`（`CompilerVk.cpp:23-25`）返回 `SH_SPIRV_VULKAN_OUTPUT`，所以 **ANGLE-Vulkan backend 所有 shader 统一走 TranslatorSPIRV**。
+早期 Android 已具备 ANGLE 集成和包级调试选择能力，但系统 image、ANGLE build、device policy 和 OEM 支持差异较大。看到平台源码有开关，不代表所有零售设备都把 ANGLE 作为受支持的常规 GLES driver。
 
-`TranslatorSPIRV::translate()`（line 1158-1182）三阶段：`translateImpl()` AST 转换 + DriverUniform 注入 → `OutputSPIRV()` 序列化为 SPIR-V blob；命中 shader / pipeline cache 的场景会减少重复翻译与编译成本。不要把单次 trace 中的 shader 编译耗时直接外推为通用结论，发布前应在目标设备和目标 workload 上对比 cold / warm 两组数据。
+### Android 15
 
-`ProgramVk.cpp:43-78` 用 `PackedSPIRVBlockEncoder` 处理 ANGLE 内部 SPIR-V block 编码，sampler / opaque type 不占 user-visible offset。应用侧若依赖 uniform block 或 vendor 扩展，仍应按 GLES 规范和目标设备实际反射结果核对 layout，避免把 ANGLE 内部编码细节误当成 App ABI。
+Android 官方把 ANGLE 描述为 Android 15+ 可选的 GLES-over-Vulkan 层，并提供开发者选项和包级 ADB 测试方式。这是当前做兼容性与性能 A/B 的公开基线；它仍不表示所有应用默认切换 ANGLE。
 
-### 引擎侧判断 ANGLE-Vulkan 是否启用
+### Android 16
 
-1. `cat /proc/<pid>/maps | grep libEGL_angle` —— 在则 ANGLE
-2. `glGetString(GL_RENDERER)` 返回 `"ANGLE"` 前缀
+`GraphicsEnvironment` 注释明确把 `config_angleAllowList` 作为 Android 16 起的平台包名单。Android 17 源码还包含 flag 控制的 denylist 与 game 默认策略；分析 Android 16 设备时应使用对应 tag，不要把 Android 17 分支倒推给旧 build。
 
-GPU 抖动排查：
-- `perfetto` 勾选 `gpu.angle` category，看 `SyncHelperNativeFence::clientWait`/`clientWait block (unlocked)` slice
-- `serverWait` 是函数名不是 slice，**不要 grep 搜它**，只能从调用栈 + submit/present 事件交叉
+### Android 17
 
-### 与游戏引擎渲染链路关系（来自 18.16 调研延伸）
+Android 17 增加 manifest `com.android.graphics.driver.prefer_angle` 请求。平台仍保留显式 Settings、platform resource、system property、ANGLE package 与 system ANGLE 多层选择，运行时字符串和 maps 仍是确认依据。
 
-| 阶段 | 链路组成（GLES 入口） |
-|:---|:---|
-| 1 | App 调用 `glDraw*` / `eglSwapBuffers` |
-| 2 | EGL Loader 把流程转给 ANGLE（Loader.cpp `attempt_to_load_angle`） |
-| 3 | ANGLE Frontend 解析 GLES 状态机 + GLSL 文本 |
-| 4 | TranslatorSPIRV 翻译为 SPIR-V，厂商 Vulkan driver 编译为 GPU binary |
-| 5 | ANGLE Vulkan Backend 包装 Vulkan command buffer，vkQueueSubmit → SurfaceFlinger |
-| 6 | SyncHelperNativeFence 处理 producer-consumer fence 同步 |
-| 7 | vkQueuePresentKHR → ANativeWindow / BufferQueue → SurfaceFlinger |
+本文平台行为固定到 `android-17.0.0_r1`，ANGLE 实现也固定到 AOSP `external/angle` 的同 tag。native fence 涉及的内核语义固定到 `android17-6.18-2026-06_r6`。厂商 Vulkan userspace 与 GPU kernel driver 不在 AOSP 通用源码中，设备结论还要记录 vendor build。
 
-翻译开销集中在 3+4 阶段，且 PipelineCache 命中后基本消失。如果 trace 上反复看到 `SyncHelperNativeFence::clientWait block (unlocked)` 长 slice，**优先级先查 SwapInterval / ACQUIRE fence 来源**，再查 ANGLE 等待路径。
+## Android 17 源码索引
 
-[已验证: frameworks/base/core/java/android/os/GraphicsEnvironment.java:661-857 (android-17.0.0_r1); frameworks/native/libs/graphicsenv/GraphicsEnv.cpp:599-619; frameworks/native/opengl/libs/EGL/Loader.cpp:160-225, 632-680; external/angle/src/libANGLE/renderer/vulkan/SyncVk.cpp (lines 28-68, 508-538, 587-660); external/angle/src/compiler/translator/CodeGen.cpp:58-78; external/angle/src/libANGLE/renderer/vulkan/CompilerVk.cpp (整文件).]
+- [Android 官方 Vulkan / ANGLE 说明](https://developer.android.com/games/develop/vulkan/overview)：Android 15+ 可选 ANGLE、包级 ADB 测试和 Android 17 manifest 请求。
+- [`GraphicsEnvironment.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/GraphicsEnvironment.java)：包级选择、platform resource、manifest 偏好与 APK / system 设置。
+- [`Loader.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/opengl/libs/EGL/Loader.cpp)：system driver、ANGLE namespace 和 updatable driver 的加载边界。
+- [`AndroidManifest.xml`](https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/android/AndroidManifest.xml)：AOSP ANGLE system package 和 intent action。
+- [`CompilerVk.cpp`](https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/CompilerVk.cpp) 与 [`TranslatorSPIRV.cpp`](https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/compiler/translator/spirv/TranslatorSPIRV.cpp)：Vulkan backend 的 SPIR-V 输出。
+- [`ContextVk.cpp`](https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/ContextVk.cpp)：dirty-state 同步、draw 和 command submit。
+- [`WindowSurfaceVkAndroid.cpp`](https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/android/WindowSurfaceVkAndroid.cpp) 与 [`SurfaceVk.cpp`](https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/SurfaceVk.cpp)：Android `VkSurfaceKHR`、swapchain acquire 和 present。
+- [`ProgramExecutableVk.cpp`](https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/ProgramExecutableVk.cpp)：pipeline cache 初始化、warm-up、合并与序列化。
+- [`SyncVk.cpp`](https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/SyncVk.cpp)：native fence、client wait 和 server wait。
+- kernel [`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：sync fd 对 dma-fence 的内核封装。
 
-<!-- /AIW-源码调研-2026-07-17 -->
+---
 
-
-## 与其他章节的关系
-
-- **2.14 图形 API 演进与选择策略**：ANGLE 在 Android 图形生态中的定位
-- **18.8 OpenGL ES 渲染路径**：原生 GLES 路径，与 ANGLE 形成对比
-- **18.9 Vulkan 原生渲染路径**：ANGLE 底层走的就是 Vulkan
-
-
-
-## Driver Selection 机制：按版本看入口
-
-ANGLE driver selection 集中在 `android.os.GraphicsEnvironment`（`frameworks/base/core/java/android/os/GraphicsEnvironment.java`），但 Android 14、15、16/17 的方法名和 allowlist 入口不同。源码阅读时先确认平台 tag，不能把 android-14.0.0_r1 的方法名直接套到 Android 15 之后的实现。
-
-| Android 版本 | 决策入口 | allowlist / 额外来源 | 排查边界 |
-|:---|:---|:---|:---|
-| Android 14 | `shouldUseAngleInternal()`，Game Mode 分支会走 `isAngleEnabledByGameMode()` | Settings、Game Mode、ANGLE APK 规则 | 这一版可以按旧方法名读源码 |
-| Android 15 | `queryAngleChoiceInternal()` | Settings 与包级配置 | 方法名已从 Android 14 口径变化 |
-| Android 16/17 | `queryAngleChoice()` | Settings 与 framework resource `config_angleAllowList` | 复核树中不再有 `shouldUseAngleInternal()` / `isAngleEnabledByGameMode()` 作为主路径 |
-
-Android 16/17 的常用排查顺序如下：
-
-1. `Settings.Global.ANGLE_GL_DRIVER_ALL_ANGLE`，ADB 对应键 `angle_gl_driver_all_angle`。值为 `1` 时，全局强制走 ANGLE。
-2. `angle_gl_driver_selection_pkgs` 和 `angle_gl_driver_selection_values`。两个设置按逗号分组，按包名给出 `angle`、`native` 或 `default`。
-3. `config_angleAllowList`。这是 Android 16/17 平台 allowlist 入口，适合核对系统为什么默认允许某个包走 ANGLE。
-
-分析 Android 15/16/17 时不要沿用 Android 14 的 `shouldUseAngleInternal()`，先按平台 tag 确认当前版本的方法名，再看 Settings 和 allowlist 命中情况。
-
-### ANGLE 包发现：Debug Package 与 System ANGLE
-
-`GraphicsEnvironment.setupAngle()` 负责找到可用的 ANGLE 库，有两条常见路径：
-
-**路径 A — Debug Package（用户通过 ADB 指定）**：
-
-```bash
-adb shell settings put global angle_debug_package org.chromium.angle
-```
-
-- 通过 `Settings.Global.ANGLE_DEBUG_PACKAGE` 读取
-- 仅对 debuggable 进程或 root 调试场景生效
-- 可加载开发者安装的 ANGLE APK，包名不要求等于系统 ANGLE 包名
-
-**路径 B — System ANGLE（预装系统应用）**：
-
-- AOSP android-17.0.0_r1 的 `external/angle/android/AndroidManifest.xml` 包名是 `com.android.angle`
-- `GraphicsEnvironment.getAnglePackageName()` 通过 `ACTION_ANGLE_FOR_ANDROID` 和 `PackageManager.MATCH_SYSTEM_ONLY` 查询系统 ANGLE 包
-- `org.chromium.angle` 只能作为历史包名或 debug package 示例，不能写成 Android 16/17 system package
-
-ANGLE 只能用于 Java 运行时启动的进程；SurfaceFlinger 和 native executable 不走这套 App 侧 driver selection。
-
-### A4A Rules JSON 的边界
-
-Chromium / 旧版 ANGLE APK 里包含 `a4a_rules.json`（如 `src/feature_support_util/a4a_rules.json`），用于描述 APK 自带的应用规则。Android 17 的平台 allowlist 入口是 framework resource `config_angleAllowList`。分析具体 ANGLE APK 时可以读 `a4a_rules.json`；分析 AOSP 17 平台决策时，应回到 `config_angleAllowList` 和 `GraphicsEnvironment.queryAngleChoice()`。
-
-### Debuggable / Dumpable 限制
-
-| 机制 | 限制条件 |
-|:---|:---|
-| `angle_debug_package` | debuggable 进程或 root 调试场景 |
-| Debug layer injection | debuggable 进程，或满足平台允许的 layer 注入条件 |
-| `angle_gl_driver_selection_*` 全局设置 | debuggable App 或 root 调试场景更容易验证；量产设备还受系统策略限制 |
-| Platform allowlist | 由系统资源和包名命中情况决定 |
-
-`isDebuggable()` 在 native 侧对应 `GraphicsEnv::getInstance().isDebuggable()`，常见实现会检查进程 dumpable 状态。调试 ANGLE 时，包是否 debuggable、进程是否重启、设置是否被系统策略接受，要和 `glGetString(GL_RENDERER)`、已加载库、logcat 放在一起核对。
-
-### EGL Loader 实际加载顺序
-
-`frameworks/native/opengl/libs/EGL/Loader.cpp` 接收 Java 层配置后的实际加载序列：
-
-1. ANGLE namespace 已设置时，加载 ANGLE 版本的 `libEGL.so`
-2. Updatable driver path 已设置时，从 APK 加载 vendor driver
-3. 读取 `ro.hardware.egl`，加载对应厂商 GLES driver
-4. 没有命中前面路径时，加载默认 driver
-
-ANGLE namespace 隔离保证 ANGLE 库不会污染 system 库命名空间，同一设备上不同 App 可以使用不同 GLES driver。确认“这台机型是否走 ANGLE”时，最终证据仍然是目标进程加载了哪套 EGL / GLES 库，以及 `GL_RENDERER` 是否包含 `ANGLE`。
-
-## 参考资料
-
-- Google ANGLE 项目：https://chromium.googlesource.com/angle/angle/
-- AOSP `frameworks/base/core/java/android/os/GraphicsEnvironment.java`
-- AOSP `frameworks/native/opengl/libs/EGL/Loader.cpp`
-- AOSP `external/angle/`
-
-
-## ANGLE 同步机制：EGL Native Fence → Vulkan Semaphore 转换路径 🔸
-
-当 App 通过 ANGLE 使用 Vulkan 而非原生 GLES 时，Android native fence（来自 `EGL_ANDROID_native_fence_sync` 扩展）需要转换为 Vulkan Semaphore 才能在 Vulkan 命令队列中正确等待。ANGLE 的转换实现在 `external/angle/src/libANGLE/renderer/vulkan/SyncVk.cpp` 中。
-
-### 核心转换路径
-
-ANGLE 在 `SyncHelperNativeFence::initializeWithFd()` 中接收来自 EGL 层的 Android native fence fd（通过 `EGL_ANDROID_native_fence_sync` 扩展），直接将 fd 传递给 `ExternalFence::init()`，不做额外复制（fd 所有权由 EGL 规范定义：接收方必须在其不再需要时关闭它）。
-
-**关键函数**：`SyncHelperNativeFence::serverWait()` — 当 Vulkan command buffer 需要等待 native fence 信号时执行：
-
-```cpp
-// external/angle/src/libANGLE/renderer/vulkan/SyncVk.cpp:508-538
-// AOSP android-17.0.0_r1
-angle::Result SyncHelperNativeFence::serverWait(ContextVk *contextVk)
-{
-    // 创建默认 Binary 类型 Vulkan Semaphore
-    DeviceScoped<Semaphore> waitSemaphore(device);
-    ANGLE_VK_TRY(contextVk, waitSemaphore.get().init(device));
-
-    // 将 Android sync fd 导入 Vulkan Semaphore
-    VkImportSemaphoreFdInfoKHR importFdInfo = {};
-    importFdInfo.sType       = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR;
-    importFdInfo.semaphore   = waitSemaphore.get().getHandle();
-    importFdInfo.flags       = VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR;  // 临时语义
-    importFdInfo.handleType  = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR;
-    importFdInfo.fd          = dup(mExternalFence->getFenceFd());  // 复制 fd
-    ANGLE_VK_TRY(contextVk, waitSemaphore.get().importFd(device, importFdInfo));
-
-    // 添加到下一次 vkQueueSubmit 的等待列表
-    contextVk->addWaitSemaphore(waitSemaphore.get().getHandle(),
-                                VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
-    contextVk->addGarbage(&waitSemaphore.get());  // 释放 handle 的生命周期交给 ANGLE 回收
-    return angle::Result::Continue;
-}
-```
-
-**关键设计决策**：
-- `VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR`：导入的 fd 语义是临时的，不需要在 Vulkan API 外持久化
-- `VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR`：明确指定 handle 类型为 Android native sync fd，确保跨进程语义正确
-- `dup()` 复制 fd：`serverWait()` 为 Vulkan semaphore 导入再 `dup()` 一份 fd。发生 ownership transfer 的是这份 duplicated fd——`vkImportSemaphoreFdKHR` 接管 dup 出来的 fd，Vulkan 端负责关闭它；`mExternalFence` 持有的原 fd 继续由 ANGLE 的 ExternalFence 管理，不受影响
-
-### Perfetto 中的识别
-
-ANGLE Vulkan 路径下，同步相关 trace event 需要按以下方式检索：
-
-可优先搜索 `gpu.angle` category 下的 `SyncHelperNativeFence::clientWait` / `SyncHelperNativeFence::clientWait block (unlocked)`——这两个是 `SyncVk.cpp` 中 `ANGLE_TRACE_EVENT0` 覆盖的 slice。
-
-`SyncHelperNativeFence::serverWait()` 是函数名但没有对应 trace event，需要依赖调用栈采样、Vulkan submit/present 事件或 AGI frame trace 辅助确认。不要把 `serverWait` 函数名当成 Perfetto slice 名称来搜索。
-
-原生 GLES 路径的同步事件为：
-- `eglClientWaitSyncKHR`
-- `BufferQueue releaseFence` 相关 slice
-
-### Linux sync 用户态等待
-
-ANGLE 使用 `poll()` 实现用户态等待，不依赖内核 ioctl：
-
-```cpp
-// SyncVk.cpp:28-68 SyncWaitFd()
-VkResult SyncWaitFd(int fd, uint64_t timeoutNs, VkResult timeoutResult = VK_TIMEOUT) {
-    struct pollfd fds;
-    fds.fd     = fd;
-    fds.events = POLLIN;
-    int ret = poll(&fds, 1, timeoutMs);
-    // ret > 0 → POLLIN set → fence signaled → VK_SUCCESS
-    // ret == 0 → timeout → timeoutResult (VK_TIMEOUT)
-}
-```
-
-`poll()` 比 `sync_wait()` ioctl 更轻量，timeout 精度为毫秒级。
+> **交叉引用**
+>
+> - 原生 GLES 与 EGL 路径详见 [18.8 OpenGL ES 渲染路径](08-opengl-es.md)
+> - Android Vulkan WSI 详见 [18.9 Vulkan 原生渲染路径](09-vulkan-native.md)
+> - SurfaceControl 与 fence 所有权详见 [18.10 SurfaceControl API](10-surface-control-api.md)
+> - 游戏 render loop 与 frame pacing 详见 [18.16 游戏引擎渲染路径](16-game-engine.md)
+> - 图形 API 选择详见 [2.14 图形 API 演进与选择策略](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)
