@@ -79,211 +79,342 @@ last_deepseek_cn_review_at: 2026-07-15
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## ArgusAPM 是早期开源的一体化方案
+## 结论先行：适合读源码，不适合新项目直接接入
 
-ArgusAPM 是 360 开源的 Android 性能监控平台，仓库 README 把它定义为移动端可视化性能监控平台。它覆盖交互分析、网络、内存、进程、文件、卡顿、ANR 等指标，并提供 Gradle Plugin 做接入和 AOP 织入。
+ArgusAPM 是 360 在 2018 年开源的 Android APM 客户端方案。它把编译期织入、运行时采集、SQLite 缓存、云控接口和批量上传放在一个仓库里，完整呈现了早期移动 APM 的工程形态。
 
-仓库 README 明确公告：由于公司业务调整及成本原因，ArgusAPM 已停止服务端免费新增接入，已接入产品不受影响。再往下看公开 sample，基线也停在较早期：`compileSdkVersion 27`、`targetSdkVersion 27`、`JavaVersion.VERSION_1_7`，示例里依赖的 OkHttp 还是 `3.10.0`。这个状态决定了它更适合作为架构参考或存量项目维护对象，不适合作为新项目默认选型。
+它也停在了那个时代。公开仓库末次提交是 2019-05-09 的 `75ead19ca98a8a1f776688e9df5b572f20c80b12`。截至 2026 年 7 月，仓库没有设置 archived，但七年没有代码提交；README 还写着服务端停止免费新增接入。仓库无 tag，README 的 3.0.1.1001 发布链接指向已经退出服务的 Bintray，预期坐标也不在 Maven Central。
 
-## 架构分成采集模块和 Gradle Plugin
+这几个事实给出清晰结论：
 
-ArgusAPM 的整体结构可以看成两部分：
+- 新项目不要把公开 ArgusAPM 作为生产依赖。
+- 存量项目应把它视为待迁出的旧采集器。
+- 它仍值得阅读，因为模块边界、事件模型、端侧缓存和可替换上传接口都具有参考意义。
 
-- **性能采集模块**：APM 采集能力、AOP 织入能力、OkHttp 网络采集等，最终以 aar 形式接入。
-- **Gradle Plugin**：管理依赖并在编译期织入部分性能采集代码。
+本节以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点。所有行为结论均基于末次公开提交的源码，不把 README 的产品说明当作 API 37 兼容证明。
 
-源码阅读时要把两条织入路径拆开：
+## 公开工程停在哪个版本
 
-| 路径 | 代表入口 | 适合的数据 | 代价 |
-|---|---|---|---|
-| AspectJ | `argus-apm/argus-apm-aop/src/main/java/com/argusapm/android/aop/TraceActivity.java`、`TraceNetTrafficMonitor.java`、`argus-apm-gradle/src/main/kotlin/com/argusapm/gradle/AspectJTransform.kt` | Activity 生命周期、网络流量切面等调用边界清楚、频率相对低的事件 | 接入简单，但编译慢、对 AspectJ 工具链依赖重 |
-| ASM | `argus-apm-gradle-asm/…/asm/ASMWeaver.kt`、`bytecode/func/FuncClassAdapter.kt`、`bytecode/okhttp3/OkHttp3ClassAdapter.kt`、`bytecode/webview/WebClassAdapter.kt` | 方法耗时、OkHttp3、WebView 等更高频或需要直接改字节码的场景 | 控制更细，但强依赖类名、方法签名和旧 Transform 流程 |
-
-读 `@Aspect` 入口时看 `argus-apm-aop` 和 `argus-apm-gradle`，不要只在 `argus-apm-main` 里找采集任务。
-
-早期 Android APM 常走这套组合：客户端 SDK 负责采集，Gradle 插件负责自动插入埋点或包装调用，服务端负责展示和分析。
-
-## 支持的监控方向
-
-README 中列出的监控模块覆盖面较广。把它们当架构样本看时，需要把“数据从哪来”和“产出什么”写清楚：
-
-| 方向 | 公开实现入口 / 数据来源 | 报告产物 |
+| 对象 | 末次公开状态 | 对现代工程的含义 |
 |---|---|---|
-| 交互分析 | Activity 生命周期回调或 AOP 织入生命周期方法 | 页面打开耗时、阶段耗时事件 |
-| 网络请求分析 | `argus-apm-okhttp` 这类网络采集模块，接在 OkHttp 调用链上 | 请求样本、错误码、耗时、流量 |
-| 内存分析 | 进程内存快照、阈值采样、GC / OOM 现场 | 周期性内存样本、异常快照 |
-| 进程监控 | 多进程启动、存活和退出事件 | 进程启动耗时、异常存活、退出记录 |
-| 文件监控 | 私有目录扫描、文件大小变化统计 | 文件增长样本、目录占用趋势 |
-| 卡顿分析 | 主线程 Looper 边界 + 抓栈样本 | block 样本、堆栈签名、页面上下文 |
-| ANR 分析 | ANR 现场抓取、主线程堆栈和进程状态快照 | ANR 现场样本、线程栈、版本聚类 |
+| Sample | `compileSdkVersion 27`、`targetSdkVersion 27`、Java 7、OkHttp 3.10.0 | 只能复原旧环境，不能证明 target 37 可运行 |
+| Sample 构建 | Gradle 2.14.1、AGP 2.1.3 | 与当前 Gradle、JDK、AGP 相隔多个代际 |
+| AspectJ 插件 | Kotlin 1.2.30、AGP 3.1.3、AspectJ 1.8.x，版本 2.0.1.1005/1006 | 依赖旧 Transform 和旧 Gradle 配置 |
+| ASM 插件 | Kotlin 1.2.30、AGP 3.1.3、ASM 7.0，版本 3.0.1.1001 | 同样使用旧 Transform，且按固定类名和字段改字节码 |
+| 客户端主模块 | minSdk 10、targetSdk 27、`org.apache.http.legacy` | 权限、隐私、存储、ANR 和隐藏 API 都要重写 |
+| 发布渠道 | JCenter / Bintray 脚本；Maven Central 无预期 group 目录 | 不能依赖 README 坐标从标准仓库恢复构建 |
 
-这些方向至今仍是移动 APM 的主干。变化主要发生在实现细节上：Android 版本提高、权限管控、AGP 插件 API 变化、隐私审查变严，都会影响旧方案直接复用。
+“仓库未归档”只是一项 GitHub 设置。判断维护状态要看提交时间、发布渠道、issue 处理和平台适配，不能只看 archived 标记。
 
-## 新项目使用要谨慎
+## 架构：采集与后端之间留了一层接口
 
-ArgusAPM 的主要风险来自维护状态和平台依赖。新项目直接采用会遇到几类风险：
-
-- 服务端新增接入状态不确定，平台能力无法直接依赖。
-- Gradle 插件和 AOP 织入可能不适配现代 AGP。
-- 旧监控模块对 Android 12+、14+、16KB page size、隐私策略的适配需要重新验证。
-- 文档和社区活跃度不足，遇到兼容问题时更多要靠自修。
-
-公开 sample 的工具链基线直接标出了迁移顺序：
-
-| 公开 sample 基线 | 对现代项目的风险 | 建议替换顺序 |
-|---|---|---|
-| `compileSdkVersion 27` / `targetSdkVersion 27` | 版本边界停在早期 Android 8.x 工具链 | 1：先收敛 Gradle 插件、字节码织入和构建脚本 |
-| `JavaVersion.VERSION_1_7` | 新版插件链、字节码工具和依赖兼容性差 | 1：和构建链一起升级 |
-| `okhttp:3.10.0` | TLS、API、网络埋点边界都偏旧 | 2：再替换网络采集模块 |
-| 历史服务端字段口径 | 迁移后看板和告警容易断档 | 3：再处理字段兼容和历史数据映射 |
-
-如果已有项目还在用，建议先把采集模块、服务端依赖和构建插件分开评估。能保留的保留，无法适配的逐步替换成 AndroidX、Matrix、KOOM、Sentry、Firebase 或自研模块。
-
-## 作为参考，它有学习价值
-
-ArgusAPM 展示了一个完整移动 APM 早期形态：客户端模块化采集、编译期织入、网络库适配、多进程处理、服务端看板。这些设计问题今天仍然存在，只是工具和系统环境变了。
-
-读这类老项目时，不要只看“现在能不能接”。更有用的是看它怎么划分采集模块、怎么处理多进程、怎么把网络和页面关联、怎么让 Debug 模式和线上采集共存。这些经验可以迁移到新的 APM 体系里。
-
-## 早期一体化 APM 的典型形态
-
-ArgusAPM 展示了早期 Android APM 的一条完整路线：
+下面的图按源码调用关系组织模块：
 
 ```mermaid
 flowchart LR
-    A["Gradle Plugin\n依赖管理 + AOP 织入"] --> B["客户端采集模块\nUI / 网络 / 内存 / 文件 / 卡顿 / ANR"]
-    B --> C["本地聚合\n进程 / 页面 / 阈值 / 采样"]
-    C --> D["服务端接收\n存储 / 聚合 / 查询"]
-    D --> E["可视化平台\n版本 / 机型 / 页面 / 告警"]
+    P["Gradle Plugin"] --> A["AspectJ / ASM 织入"]
+    A --> R["运行时采集任务"]
+    R --> C["ContentProvider"]
+    C --> D["SQLite + 15 秒 / 100 条缓存"]
+    D --> U["UploadManager"]
+    Q["IRuleRequest 云控接口"] --> R
+    U --> I["IUpload 宿主实现"]
+    I --> S["企业服务端 / 历史平台"]
+    D --> L["Debug 浮窗与本地分析"]
 ```
 
-这套结构今天依然适用，只是每一层的实现要跟上平台变化。Gradle Transform 要迁到现代 AGP API，进程和隐私限制要重审，服务端新增接入也不能再依赖原项目公告里已经停止的免费服务。
+图中 `IRuleRequest` 和 `IUpload` 是接口，开源客户端没有把上传域名写死在核心模块。原服务端停止新增接入后，存量团队仍可实现自己的云控和上传端；代价是服务端 schema、鉴权、重试、删除与看板都要自行维护。
 
-## AOP 织入适合哪些数据
+源码可以按以下顺序阅读：
 
-ArgusAPM 这类方案使用编译期织入，最适合处理有明确调用边界的数据。文中的 AOP 指 AspectJ 路径，主要覆盖 `TraceActivity`、`TraceNetTrafficMonitor` 这类切面。ASM 路径的匹配范围更窄——只织入 `Runnable.run()` 和 `BroadcastReceiver.onReceive()` 的入口/出口计时，以及 `OkHttpClient.Builder` 构建路径和 `WebViewClient.onPageFinished()` 等固定入口。不要把 ASM 路径理解成泛化的「任意方法耗时」采集。
+1. `ArgusAPMPlugin.kt`、`ArgusAPMTransform.kt`：插件注册与输入范围。
+2. `ASMWeaver.kt`、各 `ClassAdapter`：字节码改写点。
+3. `Client.java`、`Manager.java`、`TaskManager.java`：初始化、开关和任务注册。
+4. `ApmProvider.java`、`DbCache.java`、`DataHelper.java`：跨进程写入、批量缓存与清理。
+5. `UploadManager.java`、`IRuleRequest.java`、`IUpload.java`：云控与上传边界。
 
-- Activity 生命周期耗时。
-- OkHttp 请求开始、结束、失败。
-- 页面打开和关闭。
-- 业务埋点的自动包装。
-- 主线程风险 API 的静态扫描或插入。
+## 能力表：README 的名称要回到实现核对
 
-织入前后的等价逻辑，可以用 Activity 生命周期耗时来理解：
+| 方向 | 公开源码的数据来源 | 默认口径或产物 | Android 17 审阅结论 |
+|---|---|---|---|
+| 启动 | `attachBaseContext` 时间到首个 Activity decor view 的 `post()` 回调 | 一条 `appstart` 毫秒值 | 不是系统定义的 TTID / TTFD；受初始化时机和消息队列影响 |
+| 页面 | AspectJ 包围 `Activity.on**()`，或反射替换 `ActivityThread.mInstrumentation` | 生命周期耗时；首帧阈值默认 300 ms，生命周期阈值 100 ms | AOP 可迁；Instrumentation hook 依赖隐藏 API，应移除 |
+| FPS | `Choreographer.FrameCallback` 计帧，后台任务约每 1000 ms 计算 | 只持久化 `fps <= 30` 的窗口 | 能做低帧率线索，不能给 FrameTimeline 慢帧类型 |
+| 内存 | `Debug.getMemoryInfo()` | total / Dalvik / native / other PSS；默认启动 10 秒后、每 30 分钟采样 | 只能看进程 PSS 快照，不能定位对象泄漏 |
+| 网络 | OkHttp application interceptor，另有 HttpClient / URLConnection 改写 | URL、状态码、总耗时、请求与响应字节数 | 没有 DNS / connect / TLS 分段；失败请求不会落记录 |
+| 卡顿 | `Looper.setMessageLogging()` 配合延时任务 | 默认 4500 ms 后抓一次主线程栈 | 阈值很高，且占用 Looper 的单一 Printer 插槽 |
+| Watchdog | 后台线程向主线程 post，sleep 后检查 tick | 默认 4500 ms 阈值、5 秒检查间隔 | 可发现长时间无响应；单点堆栈不能说明阻塞起因 |
+| ANR | 周期枚举 `/data/anr/` 并解析 trace | 默认每 2 小时且只在 Wi-Fi 下扫描，命中后立即上传 | 普通 API 37 应用无权依赖该目录，模块失去核心数据源 |
+| 文件 | 遍历配置目录，默认 12 小时一次、深度 3、最小 50 KiB | 路径、大小、文件数、读写执行权限 | 应用私有目录仍可审计；外部存储根目录方案受分区存储限制 |
+| 进程 | 每个已初始化进程延时约 2～3 秒写一条记录 | 进程名与启动次数 | 只说明 SDK 看到了该进程，不等于进程存活率或退出原因 |
+| 函数耗时 | ASM 只包围 `Runnable.run()` 与 `BroadcastReceiver.onReceive()` | 超过 2000 ms 才记录 | 并非任意函数耗时；公开 `TaskManager` 未注册 `FuncTask` |
+| WebView | ASM 匹配 `onPageFinished(WebView, String)` 后注入 JS bridge | Navigation Timing 字段 | 公开 `TaskManager` 未注册 `WebTask`，且注入会改变 WebView 安全设置 |
+| Crash | 无对应 task、storage 或 uncaught-exception 采集器 | 无 | README 也未把 Crash 列为模块；应由独立稳定性 SDK 处理 |
+
+这张表里有几处容易误判的细节。
+
+FPS 的计算任务跑在后台执行器，帧时间与计数由主线程更新，字段没有明确同步；低 FPS 时保存的 `CommonUtils.getStack()` 又是在后台任务当前线程创建 `Throwable`，并不是当时的主线程栈。它可以提示某个窗口低帧，不能用附带堆栈定因。
+
+OkHttp interceptor 在 `chain.proceed()` 抛出 `IOException` 后直接重新抛出，没有调用 `DataRecordUtils.recordUrlRequest()`，所以 DNS 失败、连接失败和超时等重要错误样本不会进入原网络表。响应没有 `Content-Length` 时，代码还会 `source.request(Long.MAX_VALUE)`，可能把整个响应读入缓冲区，改变被测请求的内存与时序。
+
+Func 与 WebView 文件出现在末次提交中，但 `TaskManager.registerTask()` 只注册到 WatchDog，没有注册 `FuncTask` 和 `WebTask`。仅看到 class 文件不能宣布功能可用；至少要沿着“插件注入 → task 开关 → task 注册 → storage → upload”走完一次。
+
+## AOP / ASM 能看见什么
+
+### 适合织入的边界
+
+编译期织入适合有稳定 Java / Kotlin 调用点、需要附加业务上下文的事件，例如：
+
+- Activity 生命周期入口与出口。
+- 明确标注的业务函数耗时。
+- 点击回调或 route 变化。
+- OkHttp builder、interceptor 或调用封装。
+- `Runnable.run()`、`BroadcastReceiver.onReceive()` 这类固定签名。
+
+它能在事件里补上页面名、业务操作名、进程名和 trace id，这是单靠系统 trace 不容易自动获得的语义。
+
+### 不适合用织入推断的范围
+
+AOP 或 ASM 看不到 Java 方法边界之外的完整因果关系：
+
+- Binder 对端执行与 binder 线程池饥饿。
+- RenderThread、SurfaceFlinger、GPU 与合成。
+- native heap、信号处理和 C/C++ 锁。
+- Linux 调度、I/O wait、内存回收和设备频率。
+- 服务端排队与数据库耗时。
+
+这些问题要用 Perfetto、FrameTimeline、heap dump、native unwind、服务端 trace 或系统 API 补证据。织入事件适合作为 trace 上的业务标记，不适合作为系统瓶颈的单一结论。
+
+## 旧插件在现代构建链上为什么会断
+
+3.0.1.1001 的 `ArgusAPMPlugin` 取得旧版 `AppExtension`，调用 `android.registerTransform(ArgusAPMTransform(project))`，Transform 范围是 `SCOPE_FULL_PROJECT`。AGP 7.2 弃用 Transform API，AGP 8.0 删除该 API；target 37 工程常用的 AGP 8/9 无法直接加载这套插件。
+
+旧插件还有以下构建风险：
+
+- 依赖注入只寻找 `api` 或 `compile`，没有按 Debug / Release 变体隔离。
+- ASM 插件的 `enabled` 总开关没有被织入流程读取；`funcEnabled`、`netEnabled`、`okhttpEnabled`、`webviewEnabled` 默认都为 true。
+- OkHttp 改写按 `okhttp3/OkHttpClient$Builder` 和内部 `interceptors` 字段写死，网络库升级后容易出现校验或运行错误。
+- ASM 7.0、Kotlin 1.2.30 和旧 Gradle listener 没有现代 Kotlin / Java 字节码、configuration cache 或 project isolation 验证。
+- jar 改写捕获异常后不抛出，构建有机会留下难诊断的不完整输出。
+
+迁移插件不能只把 `registerTransform()` 改个名字。需要在 Android Components Instrumentation API 上重新设计：
+
+- 逐 variant 选择 Debug / internal / production。
+- 明确只处理项目 class，还是连依赖 class 一起处理。
+- 为每个 adapter 写输入字节码与输出行为测试。
+- 对 Kotlin suspend、lambda、desugaring、R8 前后顺序和增量构建做回归。
+- 插桩失败时让构建失败，不能吞掉异常继续出包。
+
+### R8 规则也是迁移阻断项
+
+`argus-apm-main.pro` 作为 consumer rules 发布，包含无参数的 `-dontwarn`、`-dontoptimize`，还保留所有 Activity、Application、Service、BroadcastReceiver、ContentProvider、View 以及完整 OkHttpClient / Builder。原样进入现代 App 会扩大保留范围、掩盖缺失类告警，并可能关闭优化。
+
+内部 fork 要从最小反射面重新写 consumer rules。对已迁走的模块删除 keep；对确需反射的类使用精确成员规则；CI 同时检查 R8 mapping、APK 大小、missing-class 告警和启动性能。
+
+## Android 17 运行时边界
+
+### Instrumentation hook 依赖非 SDK 接口
+
+`InstrumentationHooker` 反射 `ActivityThread.currentActivityThread()` 与 `ActivityThread.mInstrumentation`，把系统对象替换为 `ApmInstrumentation`。这些成员在 `android-17.0.0_r1` 中仍能找到，但不属于公开 SDK。Android 9 起的非 SDK 限制、OEM 修改、加固与测试框架都可能阻止或冲突这次替换。
+
+页面生命周期计时可以改用 `Application.ActivityLifecycleCallbacks`、Jetpack Startup、Macrobenchmark 和业务可控的埋点。不要为保留旧数据口径继续扩大 hidden API exemption。
+
+### ANR 不能再读取 `/data/anr/`
+
+`AnrLoopTask` 只在 Wi-Fi 下枚举 `/data/anr/`，寻找名字包含 `trace` 且两天内、大小不超过 50 MiB 的文件。普通应用在 Android 17 没有稳定权限读取系统 ANR 目录，因此“任务启动成功”不代表能采到 ANR。
+
+迁移时可组合：
+
+- `ActivityManager.getHistoricalProcessExitReasons()` 与 `ApplicationExitInfo.getTraceInputStream()` 获取 API 30+ 的历史退出及可用 ANR trace。
+- 轻量主线程 watchdog 提供 ANR 前的应用侧线索，但要控制采样开销和误报。
+- `ProfilingManager`、Perfetto 或平台允许的诊断机制采集系统级证据。
+- Google Play Android vitals 或目标稳定性平台提供聚类、版本趋势和设备维度。
+
+不要继续尝试绕过 `/data/anr/` 权限，也不要把 watchdog 事件直接命名为系统 ANR。
+
+### 动态广播、网络与设备标识都需要重写
+
+客户端用无 flags 的 `registerReceiver()` 注册网络、亮屏、解锁和自定义云控广播。Android 13 提供显式导出 flags，target 34+ 对接收非系统广播的动态 receiver 强制要求 `RECEIVER_EXPORTED` 或 `RECEIVER_NOT_EXPORTED`；旧注册代码可能失败，云控刷新也可能静默停止。
+
+网络判断依赖已弃用的 `NetworkInfo`。现代实现应使用 `ConnectivityManager` 与 `NetworkCapabilities`，并把“当前默认网络”“是否计费”“传输类型”分开记录。
+
+`CommonUtils` 会尝试读取 IMSI、IMEI、设备序列号和 `android_id`，dummy cloud manifest 还声明 `READ_PHONE_STATE`。Android 10 以后，普通应用不能把不可重置设备标识当通用采集字段。迁移时使用随机 installation id 或符合业务与合规要求的 App Set ID，并定义删除与重置语义。
+
+### 存储与 WebView 不能照搬
+
+Debug 路径会在外部存储根目录使用 `/360/Apm/`，文件任务也能从外部存储根目录拼路径。target 30+ 的分区存储不支持这套任意目录访问方式。配置与数据库应留在应用私有目录；需要用户导出时走 SAF。
+
+WebView adapter 在每个匹配的 `onPageFinished()` 开头执行这些动作：
+
+- 把 JavaScript 强制设为 enabled。
+- 添加名为 `android_apm` 的 JavaScript interface。
+- 用 `loadUrl("javascript:...")` 读取 `window.performance.timing`。
+
+这会改变原页面的安全策略，也把 bridge 暴露给当前加载内容。即使 bridge 只有采集方法，也可能被不可信页面调用来注入伪造数据或制造开销。API 37 项目不应保留这段全局自动织入；只在可信 origin、受控 WebView 和明确生命周期中注入最小接口，并在导航变化时移除。
+
+### 16 KB 页不是核心模块的直接阻断项
+
+末次公开树没有 `.so` 或 C/C++ 源码，ArgusAPM 核心本身不存在 ELF 页对齐问题。宿主提供的 uploader、其他 APM 或后续 fork 若加入 native 组件，仍要对最终 APK/AAB 做 16 KB ELF 与 ZIP 对齐检查。涉及 common kernel 源码时统一以 `android17-6.18-2026-06_r6` 为锚点，量产设备还要核对 vendor kernel。
+
+## 多进程：原设计可借鉴，默认开关不能照用
+
+ArgusAPM 的思路是让每个需要采集的进程各自初始化，通过 `${applicationId}.apm.storage` 的未导出 `ContentProvider` 把数据写进一个 SQLite 数据库。Sample 也示范了在非 UI 进程关闭清理、云控、上传、ANR 和文件扫描。
+
+`argus-apm-main` 自己的 manifest 没有声明这个 provider，Sample 是手工添加的。存量工程要核对最终合并 manifest，确保 authority 与 `StorageUtils.getAuthority(packageName)` 一致且 `exported=false`；缺少 provider 时，各 task 会在保存阶段失败。
+
+问题在于 `Config.localFlags` 默认接近全开。每个进程中的 static 单例彼此独立，如果忘记按进程关开关，就会重复注册 receiver、重复清理、重复请求云控或竞争上传。
+
+存量项目应把进程策略写成配置表：
+
+| 进程类型 | 建议保留 | 应关闭 |
+|---|---|---|
+| 主进程 | 页面、网络、必要的资源采样；唯一上传与清理者 | 无关模块和 Debug 浮窗 |
+| 常驻业务进程 | 该进程的网络、PSS、watchdog、关键业务事件 | 页面、文件扫描、云控、上传、清理 |
+| 短命工具进程 | 进程启动与必要错误线索，能不初始化就不初始化 | FPS、文件、周期采样、上传 |
+| WebView 宿主进程 | 受控 WebView 页面事件 | 全局 JS bridge 注入 |
+| WebView renderer | 不在应用进程内初始化 SDK | 全部 ArgusAPM 任务 |
+
+每条事件至少带：
+
+- `event_id`：全局唯一，服务端幂等键。
+- `session_id`：一次前台会话。
+- `trace_id`：一次用户操作或跨端请求。
+- `process_name`、`pid`、`process_start_id`：区分进程实例。
+- `elapsed_realtime_ns` 与 wall clock：排序用单调时钟，跨端关联用墙钟。
+- `schema_version`、`collector_version`：支持双写和回滚。
+
+ArgusAPM 原表里不少事件带 `processName`，但没有完整的 session、trace 和幂等协议。迁移时应在上报适配层补齐，避免直接修改每个旧 task 后造成多套格式。
+
+## 端侧缓存与上传：设计思路正确，实现有数据丢失边界
+
+`ApmProvider` 把跨进程写入收进一个进程，`DbCache` 每 15 秒或累计 100 条做一次 SQLite 事务。这种“采集线程只提交事件，存储线程批量写”的方向仍可采用。
+
+上传由宿主实现 `IUpload`，默认在 Wi-Fi 连接变化且距上次上传超过一小时后读取数据库；单批最多 1000 条，失败重试计数为 3。上传 JSON 还会附加机型、厂商、SDK、系统版本、App 版本、APM 版本和时间。
+
+`DataHelper.readAll(handler)` 有一个需要修复的数据安全问题：小于 1000 条的末批数据调用 `handler.onRead(dataMap)` 后，没有检查返回值，随后照常按计数删除。末批上传失败时仍可能被清掉。迁移前应为成功确认、重试、进程中断和重复上传补测试，协议采用至少一次投递与服务端幂等。
+
+下面的事件封装用于把旧表记录与新 collector 解耦：
 
 ```kotlin
-// 业务代码
-override fun onResume() {
-    super.onResume()
-    renderAboveTheFold()
+data class ApmEnvelope(
+    val eventId: String,
+    val schemaVersion: Int,
+    val collector: String,
+    val processName: String,
+    val sessionId: String?,
+    val traceId: String?,
+    val elapsedRealtimeNanos: Long,
+    val wallTimeMillis: Long,
+    val payload: ByteArray,
+)
+
+interface ApmSink {
+    fun enqueue(event: ApmEnvelope): Boolean
 }
 ```
 
-```kotlin
-// 字节码织入后的等价逻辑示意，省略 ArgusAPM 内部上报实现
-override fun onResume() {
-    val startNs = SystemClock.elapsedRealtimeNanos()
-    try {
-        super.onResume()
-        renderAboveTheFold()
-    } finally {
-        val costMs = (SystemClock.elapsedRealtimeNanos() - startNs) / 1_000_000
-        // 将 costMs、页面名、进程名写入采集模块
-    }
-}
-```
+旧 Argus storage adapter 和新 SDK 都写 `ApmSink`，上传器只认 `ApmEnvelope`。这样可以先稳定服务端字段，再逐项替换采集实现，也便于在回滚时区分 collector。
 
-不适合用 AOP 解决所有问题。系统调度、RenderThread、GPU、native heap、Binder 对端都不在 Java 方法入口出口里。AOP 能补业务上下文，不能替代系统 trace。
+## 网络采集的现代字段
 
-## 多进程采集要单独设计
+ArgusAPM 的 `costTime = now - start` 只能给出 interceptor 包围的总时间。现代网络事件至少应分出：
 
-README 提到 ArgusAPM 支持多进程采集。多进程 APM 的难点在三个地方：
+| 阶段 | 推荐来源 | 需要区分 |
+|---|---|---|
+| queue wait | Dispatcher / Call 调度埋点 | 排队、并发上限、取消 |
+| DNS | OkHttp `EventListener` | host、缓存、地址族、失败 |
+| connect | `EventListener` | route、proxy、连接复用 |
+| TLS | `secureConnectStart/End` | 协议、握手失败；不要上传证书敏感内容 |
+| request | headers/body start/end | 请求头耗时、Body 大小、单次发送 |
+| server wait | request end 到 response headers start | 服务端与网络往返的合并等待 |
+| response | headers/body start/end | 状态码、Body 大小、取消与读取失败 |
+| retry / follow-up | call / exchange 序号 | 重定向、鉴权、连接恢复、业务重试 |
 
-- 每个进程是否都要初始化 SDK。
-- 同一个用户会话如何跨进程关联。
-- 子进程上报失败时是否会丢关键样本。
+`EventListener` 负责网络阶段，interceptor 负责业务 code、稳定的 route pattern、页面与 trace id。不要上传完整 URL query、Authorization、Cookie、请求体或响应体；动态 path 参数要归一化。
 
-现代项目里常见进程包括主进程、推送进程、WebView renderer、播放器进程、插件进程、短命工具进程。采集策略应该分层：
+如果后端支持分布式追踪，客户端保留服务端返回或约定生成的 `traceparent` / request id。一次 OkHttp `Call` 可能有多次 exchange，服务端 trace id、call id 和 retry index 要分开，避免把重试误算成多个用户请求。
 
-| 进程类型 | 建议 |
-|---|---|
-| 主进程 | 完整采集页面、启动、卡顿、网络、内存 |
-| 常驻业务进程 | 采集稳定性、CPU、内存和关键业务事件 |
-| 短命进程 | 只采 Crash / ANR / exit，避免重模块初始化 |
-| WebView / renderer | 依赖系统和 WebView 侧指标，谨慎注入 |
+## 存量迁移：按风险顺序拆，不做一次性替换
 
-去重规则也要提前设计。常见做法是每个样本都带 `session_id`、`trace_id`、`process_name`、`pid` 和单调递增的 `msg_id`：
+### 建立现状清单
 
-- 主进程发起的用户操作生成 `trace_id`，子进程沿用它。
-- 端侧落盘以 `process_name + msg_id` 去重，避免重试上传时重复写入。
-- 服务端按 `session_id + trace_id + stage` 聚合同一条操作链，把主进程页面事件和子进程 Crash / ANR 关联起来。
+先记录每个旧 task 的开关、进程、采样率、数据库表、上传字段、看板、告警、日均量和数据负责人。还要导出一份 R8 rules、Gradle 插件配置、provider 声明与服务器 schema。
 
-多进程一刀切初始化，会增加启动成本，也会制造重复上报。
+### 先移除构建阻断
 
-## 网络监控的现代适配
+停用旧 AspectJ / ASM 插件，删除它自动注入的依赖。必须保留的少量业务埋点改成显式 API，或写一个只处理项目 class、按 variant 开启的现代 Instrumentation 插件。验收包括 clean / incremental / configuration cache、Kotlin、R8、测试、APK 内容和构建耗时。
 
-ArgusAPM 里有 `argus-apm-okhttp` 这类网络采集模块。现代网络监控除了总耗时，还要区分：
+### 稳定事件协议
 
-- DNS、connect、TLS、request body、server wait、response body。
-- HTTP code、业务 code、异常类型、重试次数。
-- 请求队列等待时间。
-- 缓存命中和离线缓存。
-- URL pattern 脱敏。
+在旧数据库与服务器之间增加 adapter，补 `event_id`、schema 版本、进程实例、单调时钟和隐私过滤。服务器先接受旧、新两种 collector，按 collector 分组对比，不急着改历史看板。
 
-只靠 `Interceptor` 拆不出 DNS / connect / TLS 这些阶段，阶段拆分要用 `EventListener`；`Interceptor` 更适合补请求 ID、业务 code 和页面上下文。
+### 按模块替换
 
-这段 `EventListener` 示例是迁移后的写法。OkHttp 的 `EventListener` 在 3.11 才成为稳定 API，ArgusAPM sample 用的是 `okhttp:3.10.0`，存量工程不能直接套用。正确的迁移顺序是先升级网络采集模块，再把旧 Interceptor 改成 `EventListener + Interceptor` 分工。
+| 旧模块 | 替代方向 | 双写验收 |
+|---|---|---|
+| Activity / 启动 | ActivityLifecycleCallbacks、Jetpack Startup、Macrobenchmark、目标 APM | 同设备同场景比较定义，不强求数值相等 |
+| FPS / 卡顿 | JankStats、FrameMetrics、Perfetto、Matrix | 页面 jank 率、trace 可定位性、探针开销 |
+| 内存 | 平台内存 API、Profiler、heap dump、KOOM 或目标 SDK | PSS 口径、OOM / 泄漏覆盖、采样成本 |
+| 网络 | 当前 OkHttp 的 EventListener + interceptor | 成功、失败、取消、重试、HTTP/2 复用与脱敏 |
+| ANR / Crash | ApplicationExitInfo、Play vitals、Sentry、Firebase 或企业平台 | 聚类、符号化、会话关联、漏报与误报 |
+| 文件 / 进程 | 按业务必要性重写；ApplicationExitInfo 补退出原因 | 分区存储、短命进程、升级与数据删除 |
 
-```kotlin
-class StageEventListener : EventListener() {
-    private var dnsStartNs = 0L
-    private var connectStartNs = 0L
+双写窗口内同时记录事件量、关键分位数、漏报、重复率、上传失败率、端侧 CPU / 内存 / 电量和包体积。旧数值与新数值定义不同，验收重点是新定义可解释、趋势稳定、问题可回查。
 
-    override fun dnsStart(call: Call, domainName: String) {
-        dnsStartNs = System.nanoTime()
-    }
+### 退出条件
 
-    override fun dnsEnd(call: Call, domainName: String, inetAddressList: List<InetAddress>) {
-        val dnsMs = (System.nanoTime() - dnsStartNs) / 1_000_000
-        // 记录 DNS 耗时
-    }
+旧 ArgusAPM 可以下线时，应满足：
 
-    override fun connectStart(call: Call, inetSocketAddress: InetSocketAddress, proxy: Proxy) {
-        connectStartNs = System.nanoTime()
-    }
+- 新 collector 连续覆盖至少两个发布周期。
+- 历史看板注明口径切换时间，必要字段可映射。
+- 旧 plugin、AAR、provider、权限、receiver、数据库和 ProGuard 规则均从最终包移除。
+- 服务器停止接收旧 schema 前已完成回滚窗口与数据保留确认。
+- Release APK/AAB 扫描不到 `com.argusapm` 类和 `apm.storage` provider。
 
-    override fun connectEnd(call: Call, inetSocketAddress: InetSocketAddress, proxy: Proxy, protocol: Protocol?) {
-        val connectMs = (System.nanoTime() - connectStartNs) / 1_000_000
-        // 记录 connect 耗时
-    }
-}
-```
+## 与其他方案的边界
 
-```kotlin
-class RequestContextInterceptor : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val requestId = UUID.randomUUID().toString()
-        val request = chain.request().newBuilder()
-            .header("X-Trace-Id", requestId)
-            .build()
-        val response = chain.proceed(request)
-        // 这里补 route、业务 code、response.code、requestId
-        return response
-    }
-}
-```
+| 方案 | 主要位置 | 适合承担 | 不应从 ArgusAPM 结论外推 |
+|---|---|---|---|
+| ArgusAPM | 历史客户端源码，服务端需自接 | 架构学习、存量迁移 | 新项目生产 APM |
+| Matrix | 模块化端侧性能与稳定性采集 | 卡顿、资源与 native 能力按模块选用 | 仍要审计版本、插件与 native 依赖 |
+| Measure | SDK + 后端 + 看板 | 自托管移动观测与会话回查 | 部署、存储、符号化和升级并非零成本 |
+| Firebase | Google 托管产品 | 快速接入官方生态中的性能与稳定性产品 | 数据托管、配额和地区要求需单独评估 |
+| Sentry | 错误、trace、profiling 与会话上下文平台 | 跨端错误追踪和性能关联 | 当前 SDK 能力与自托管成本需按版本核对 |
+| Android 官方工具 | Perfetto、JankStats、FrameMetrics、Macrobenchmark、ApplicationExitInfo | 系统证据、专项测量、退出原因 | 不自动提供完整企业看板与处置流程 |
 
-如果平台只记录“接口耗时 1200ms”，定位价值有限。书稿级 APM 应该把网络请求拆成阶段指标，并和页面、用户操作、服务端 trace id 关联。
+选型不能只比功能数量。要同时比较数据口径、端侧成本、隐私、构建侵入、服务端运维、告警处置和平台退出成本。
 
-## 存量项目迁移建议
+## 能从 ArgusAPM 学到什么
 
-已有 ArgusAPM 存量接入时，建议按模块拆迁，不要一次推倒：
+ArgusAPM 留下的几项设计仍有参考意义：
 
-1. 保留服务端能用的历史数据，避免趋势断档。
-2. 先替换构建链风险最高的 Gradle / AOP 插件。
-3. 再处理网络模块，把旧 OkHttp 依赖和阶段统计口径换成现代实现。
-4. 卡顿和帧指标迁到 JankStats / FrameMetrics 或 Matrix。
-5. Crash / ANR 迁到 Bugly、Sentry、APMPlus 或自建平台。
-6. 页面、版本、机型维度保持字段兼容，方便前后对比。
+- 按采集方向拆 task 与 storage，支持独立开关。
+- 用 `ContentProvider` 把多进程写入收进同一数据库。
+- 先在内存聚合，再批量事务写库。
+- 把云控与上传抽象为接口，让客户端不绑定固定后端。
+- Debug 现场分析与生产采集共用事件对象。
 
-旧 APM 最大的价值是历史口径。迁移时如果字段全变，平台会失去版本对比能力；如果字段不变、采集链先稳住，再逐个替换底层实现，迁移风险会小很多。
+它的限制也同样值得记录：构建 API 会淘汰，固定签名 hook 会漂移，私有系统接口会收紧，旧权限与设备标识会失效，端侧缓存必须面对失败确认和幂等。学习这套架构时，应保留模块化和协议分层，替换已经失去平台支持的实现。
+
+## 参考资料
+
+- [ArgusAPM 官方仓库](https://github.com/Qihoo360/ArgusAPM)
+- [末次公开提交 `75ead19`](https://github.com/Qihoo360/ArgusAPM/tree/75ead19ca98a8a1f776688e9df5b572f20c80b12)
+- [ASM 插件入口 `ArgusAPMPlugin.kt`](https://github.com/Qihoo360/ArgusAPM/blob/75ead19ca98a8a1f776688e9df5b572f20c80b12/argus-apm-gradle-asm/src/main/kotlin/com/argusapm/gradle/ArgusAPMPlugin.kt)
+- [ASM 织入入口 `ASMWeaver.kt`](https://github.com/Qihoo360/ArgusAPM/blob/75ead19ca98a8a1f776688e9df5b572f20c80b12/argus-apm-gradle-asm/src/main/kotlin/com/argusapm/gradle/internal/asm/ASMWeaver.kt)
+- [运行时任务注册 `TaskManager.java`](https://github.com/Qihoo360/ArgusAPM/blob/75ead19ca98a8a1f776688e9df5b572f20c80b12/argus-apm/argus-apm-main/src/main/java/com/argusapm/android/core/tasks/TaskManager.java)
+- [OkHttp 采集 `NetWorkInterceptor.java`](https://github.com/Qihoo360/ArgusAPM/blob/75ead19ca98a8a1f776688e9df5b572f20c80b12/argus-apm/argus-apm-okhttp/src/main/java/com/argusapm/android/okhttp3/NetWorkInterceptor.java)
+- [ANR 目录扫描 `AnrLoopTask.java`](https://github.com/Qihoo360/ArgusAPM/blob/75ead19ca98a8a1f776688e9df5b572f20c80b12/argus-apm/argus-apm-main/src/main/java/com/argusapm/android/core/job/anr/AnrLoopTask.java)
+- [端侧批量读取与清理 `DataHelper.java`](https://github.com/Qihoo360/ArgusAPM/blob/75ead19ca98a8a1f776688e9df5b572f20c80b12/argus-apm/argus-apm-main/src/main/java/com/argusapm/android/core/storage/DataHelper.java)
+- [WebView 字节码注入 `WebMethodAdapter.kt`](https://github.com/Qihoo360/ArgusAPM/blob/75ead19ca98a8a1f776688e9df5b572f20c80b12/argus-apm-gradle-asm/src/main/kotlin/com/argusapm/gradle/internal/asm/bytecode/webview/WebMethodAdapter.kt)
+- [Android Gradle Plugin API 更新](https://developer.android.com/build/releases/gradle-plugin-api-updates)
+- [JFrog：Bintray 服务退出说明](https://jfrog.com/blog/into-the-sunset-bintray-jcenter-gocenter-and-chartcenter/)
+- [Android 非 SDK 接口限制](https://developer.android.com/guide/app-compatibility/restrictions-non-sdk-interfaces)
+- [`ApplicationExitInfo` API](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+- [运行时注册广播接收器](https://developer.android.com/develop/background-work/background-tasks/broadcasts)
+- [Android 14：动态 receiver 导出标志要求](https://developer.android.com/about/versions/14/behavior-changes-14#runtime-receivers-exported)
+- [Android 10 不可重置设备标识限制](https://developer.android.com/about/versions/10/privacy/changes#non-resettable-device-ids)
+- [WebView native bridge 安全风险](https://developer.android.com/privacy-and-security/risks/insecure-webview-native-bridges)
+- [Android 16 KB 页支持指南](https://developer.android.com/guide/practices/page-sizes)
+- [`android-17.0.0_r1`：`ActivityThread.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [`android17-6.18-2026-06_r6` common kernel](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)
