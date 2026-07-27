@@ -29,418 +29,510 @@ gap_source: "素材驱动/参考书"
 
 # 20.18 Native 堆栈回溯与符号化机制
 
-Native Crash 分析的瓶颈不在「崩溃有没有上报」，而在「崩溃堆栈能不能还原到源码行号」。一段 `#00 pc 0x8a3c` 的原始地址，如果没有可靠的回溯和符号化管线，等于丢失了全部调试信息。20.3 节介绍了 Native Crash 的信号收集路径和 tombstone 读取方法；这一节拆解的是更底层的问题：堆栈地址是怎么从 CPU 寄存器和 ELF 文件里「拼」出来的，以及从原始地址到可读源码行号的完整链路里，每一步可能在哪里断掉。
+Native Crash 报告中的一行 `#00 pc 0000000000008a3c libfoo.so` 已经不是进程里的绝对地址。系统回溯器先找到了该 PC 所属的内存映射，再把它换算成 ELF 内的相对 PC；离线工具还要找到 Build ID 完全一致的未裁剪 ELF，才可能恢复函数、内联调用链与源码行。
+
+因此，“拿到地址”只完成了分析链的一小段。稳定的 Native 诊断系统至少包含五步：
+
+1. **采集**：保存信号、`siginfo_t`、寄存器、线程栈和内存映射。
+2. **回溯**：按 DWARF CFI、ARM EHABI 或其他可用信息恢复调用者寄存器。
+3. **地址归一化**：把运行时 PC 换算成对应 ELF 可以识别的地址。
+4. **符号化**：以匹配的符号产物解析函数、文件、行号和内联帧。
+5. **质量判定**：识别错符号、截断栈和缺失帧，不能把“工具输出了一串函数名”当成正确答案。
+
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点，重点说明这五步如何衔接，以及每一步的证据边界。
 
 ## 要点
 
-### 🔹 为什么 Native 堆栈回溯是稳定性基建
+### 🔹 先分清两个都叫 CFI 的概念
 
-线上 Native Crash 的排查效率，几乎完全取决于堆栈质量。一个只有 `#00 pc 0x8a3c /libfoo.so` 的崩溃报告，和一段带函数名、参数、源码行号的完整堆栈，排查时间可能差一个数量级。
+Native 诊断里经常出现两个缩写相同、含义无关的术语：
 
-堆栈质量由两个环节决定：
+| 缩写 | 全称 | 解决的问题 |
+|---|---|---|
+| CFI | Call Frame Information | 描述给定 PC 处如何恢复调用者的 SP、PC 和其他寄存器，用于异常处理与栈回溯 |
+| CFI | Control Flow Integrity | 检查间接调用或跳转的目标是否合法，用于控制流安全加固 |
 
-- **回溯（unwinding）**：从崩溃时刻的 CPU 寄存器状态出发，沿着函数调用链逐帧回溯，拿到每一帧的 PC 地址。回溯的可靠性取决于编译时记录的元数据格式（FP 链 / CFI 表 / .eh_frame 段）和运行时栈状态是否完整。
-- **符号化（symbolication）**：把回溯拿到的原始 PC 地址翻译成「so 名 + 函数名 + 源码行号」。符号化的准确性取决于 ELF 文件中保留了多少符号信息，以及是否有对应的 debug 信息或 .sym 文件。
+本章没有特殊说明时，CFI 指 **Call Frame Information**。Control Flow Integrity 的违规表现受编译参数、运行库和 trap 模式影响，不能统一写成某个固定信号，也不应拿它解释普通的回溯失败。
 
-两个环节缺一不可。回溯拿到准确的地址但无法符号化，等于有一串数字但不知道含义；符号化管线齐全但回溯漏帧，只能看到崩溃栈顶的两三层。
+### 🔹 Android 17 的系统 tombstone 路径
 
-### 🔹 FP 回溯（Frame Pointer Unwinding）
+#### 崩溃线程只提交现场，重活交给 `crash_dump`
 
-#### 原理
+Bionic 的 debuggerd 信号处理代码接收 `siginfo_t` 和 `ucontext_t`，把崩溃现场通过管道交给 `crash_dump`。`crash_dump` 对目标进程的线程执行 `PTRACE_SEIZE` / `PTRACE_INTERRUPT`，读取寄存器和线程信息。为了缩短原进程被冻结的时间，它还创建一个保留目标地址空间快照的 VM 进程，随后让原进程继续退出。
 
-ARM64 的函数调用约定（AAPCS64）规定，每个函数在 prologue 里把上一帧的 FP（X29 寄存器）和 LR（X30 寄存器）压栈，然后把当前栈帧的基址写入 X29。这样 X29 寄存器就把所有活跃的函数调用串联成一条链表：
+Android 17 源码中的关键对象是：
 
+- `crash_dump.cpp`：停止线程、读取崩溃现场、建立地址空间快照并连接 `tombstoned`。
+- `AndroidRemoteUnwinder`：解析快照进程的 maps，并通过 `libunwindstack` 回溯。
+- `engrave_tombstone()`：构建 protobuf tombstone，再生成文本表示。
+
+这段流程可以简化为：
+
+```text
+fatal signal
+  -> bionic debuggerd handler 保存 siginfo/ucontext
+  -> crash_dump ptrace 停止各线程并读取寄存器
+  -> VM snapshot 保留待分析的地址空间
+  -> AndroidRemoteUnwinder / libunwindstack 回溯
+  -> tombstoned 接收文本与 protobuf tombstone
+  -> ActivityManager 获得崩溃摘要
 ```
-当前 X29 → [saved FP][saved LR] → [saved FP][saved LR] → ... → 终点（NULL）
+
+这个模型解释了两个常见现象：tombstone 可以包含多个线程，而应用自己的信号处理器通常只天然掌握当前线程；系统回溯器可以读取目标地址空间和 ART 的 JIT/Dex 信息，而一个简单的 `_Unwind_Backtrace()` 调用没有同等能力。
+
+#### 当前主回溯器是 `libunwindstack`
+
+`crash_dump.cpp` 在 `android-17.0.0_r1` 中直接包含 `unwindstack/AndroidUnwinder.h`，并以快照进程 PID 创建 `AndroidRemoteUnwinder`。因此，本章不再把旧的 `libunwind`、`libbacktrace` 路径描述为当前 debuggerd 实现。
+
+`libunwindstack` 自 Android 9 / API 28 引入。其版本说明记录了这些 Android 相关能力：
+
+- DWARF 回溯信息，早期已支持到 DWARF 4，并逐步兼容部分 DWARF 5 数据。
+- 32 位 ARM 的 `.ARM.exidx`。
+- gdb JIT 接口，用于识别 ART JIT 代码。
+- ART 解释器通过特殊 CFI 标记暴露的 Dex PC 虚拟帧。
+- Android 10—12 对 load bias、分段 ELF 和 APK 内嵌 ELF 偏移的多轮修正。
+- Android 15 / API 35 起读取以 zlib 或 zstd 压缩的 `.debug_frame`。
+
+这些属于回溯器能力，不等于每个栈都能恢复。目标 ELF、栈内存、寄存器和映射只要缺少一项，调用链仍可能中断。
+
+### 🔹 回溯器怎样恢复上一帧
+
+#### DWARF Call Frame Information
+
+编译器通常把调用帧恢复规则写入 `.eh_frame`，也可能写入 `.debug_frame`。规则会针对给定 PC 描述以下信息：
+
+- 当前 PC 属于哪个 FDE（Frame Description Entry）。
+- CFA（Canonical Frame Address）如何计算。
+- 返回地址、栈指针和被调用者保存寄存器位于 CFA 的什么位置，或应由什么表达式求得。
+
+`libunwindstack` 的 Android 17 实现会初始化 `.eh_frame_hdr` / `.eh_frame` 与 `.debug_frame`。执行一步回溯时，它优先尝试信息更具体的 `.debug_frame`，再尝试 `.eh_frame`，之后还可尝试 `.gnu_debugdata`；32 位 ARM 由 `ElfInterfaceArm` 补充 `.ARM.exidx` 路径。
+
+`.eh_frame_hdr` 是 `.eh_frame` 的索引入口。缺少它不必然让回溯失效：Android 17 的实现会在存在 `.eh_frame` 时直接初始化该段，只是查找路径和成本可能不同。也不应给 `.eh_frame` 的体积写一个跨项目通用百分比；模板展开、异常处理、优化级别与链接器选项都会改变结果，应在自己的 Release ELF 上测量。
+
+CFI 的强项是能表达省略 FP、动态调整 SP、signal frame 等场景。它也有明确限制：
+
+- 栈或寄存器已被破坏时，恢复规则没有可信输入。
+- 当前 PC 找不到对应 FDE 时，规则无从执行。
+- 回溯器读取不到 ELF、maps 或目标内存时，会停止或进入有限的推测路径。
+- 手写汇编、运行时生成代码需要提供兼容的 unwind 信息。
+- 一帧的 CFI 能描述如何恢复直接调用者，但不能越过任意损坏的栈数据“自动修好”后续调用链。
+
+#### Frame Pointer 链
+
+在 arm64 代码保留 frame pointer 时，常见函数序言会保存上一帧的 X29 和返回地址 X30，并令 X29 指向当前 frame record。沿 X29 读取 frame record，便可快速取得一串返回地址。
+
+它适合高频采样或分配追踪，但需要整条路径遵守兼容的帧布局。任何一层省略 FP、破坏 frame record、切换到特殊栈或进入没有标准帧的生成代码，都可能截断后续结果。32 位 ARM 的帧布局和寄存器压力也使 FP 链远不如 arm64 稳定。
+
+Android 官方的 GWP-ASan 文档给出的工程边界很直接：arm64 默认保留 frame pointer，arm32 默认不保留；如果分配/释放栈缺失，应检查是否使用了 `-fomit-frame-pointer`。这比把行为绑定到某个 NDK 小版本更可靠，因为 CMake、第三方预编译库、LTO 和单目标编译参数都可能覆盖工具链默认值。
+
+需要稳定的 FP 采样时，可以在目标级别明确参数。下面的配置用于让 `native-lib` 保留 FP，并继续生成 unwind table：
+
+```cmake
+target_compile_options(native-lib PRIVATE
+    -fno-omit-frame-pointer
+    -funwind-tables
+)
 ```
 
-回溯时只需要沿着 X29 链表逐帧行走，每帧取出 saved LR 作为该帧的返回地址（即调用方的 PC），就能重建调用栈。整个过程中不需要任何额外的元数据——不需要 CFI 表，不需要 .eh_frame 段，不需要 debug 信息。
+配置只影响这个 target。静态库、预编译 `.so` 和其他 CMake target 仍需逐个审计，Release 构建的实际编译命令才是有效证据。
 
-每帧回溯的开销是两条内存读取（load FP、load LR），在 ARM64 上约 2-4 个时钟周期。
+平台内部还存在 `android_unsafe_frame_pointer_chase()`，其头文件明确说明它面向 sanitizer 等平台组件，不是 NDK 应用 API；遇到无 FP 的帧时，只保证此前帧可靠，并不保证继续回溯。应用不应通过私有头文件或 `dlsym` 把它当成线上兼容接口。
 
-#### NDK r23 起默认启用
+#### `_Unwind_Backtrace()` 的能力边界
 
-Android NDK r23（2022 年 1 月）将 ARM64 的 `-fomit-frame-pointer` 默认行为改为保留 Frame Pointer。此前的 NDK 版本默认省略 FP（为了多出一个通用寄存器），导致 FP 回溯在应用层 so 库上基本不可用。
+`_Unwind_Backtrace()` 可用于当前进程、当前线程的常规 native 调用链。它依赖目标代码提供兼容的 unwind table，并可能经过分配器、动态链接器或运行库内部状态；不能据此认定它适合在任意致命信号现场调用。
 
-NDK r23 的改动意味着：用 r23+ 编译的 ARM64 so 库，不需要额外编译选项就支持 FP 回溯。第三方监控 SDK（xCrash、Bugly 等）和系统 Simpleperf 采样都从中受益。
+下面的示例只用于普通诊断路径，不是信号处理器模板：
 
-对于 32 位 ARM（armeabi-v7a），FP 回溯仍然不可用——X86 架构的 FP（EBP）链同理不保证连续。
+```cpp
+#include <cstddef>
+#include <cstdint>
+#include <unwind.h>
 
-#### 可靠性边界
-
-FP 回溯依赖栈数据完整性。以下场景会导致 FP 链断裂：
-
-- **栈溢出**：写越界覆盖了 saved FP/LR 区域
-- **缓冲区溢出**：memcpy/strcpy 越界写坏了栈帧
-- **手动汇编函数**：没有遵循 AAPCS64 prologue 约定（如手写汇编的热点函数、一些 JIT 代码）
-- **优化后省略 prologue**：叶子函数（leaf function）在 `-fomit-frame-pointer` 下可能不保存 FP/LR
-- **signal handler 入口**：内核保存的 ucontext 里 FP 指向 signal frame，需要特殊处理
-
-FP 链一旦断裂，后续帧全部丢失——这是 FP 回溯的硬伤。CFI 回溯在这方面更健壮，因为 CFI 记录了每个 PC 位置的完整寄存器恢复规则，不依赖链表连续性。
-
-### 🔹 CFI 回溯（Compact Frame Information）
-
-#### .eh_frame 和 .eh_frame_hdr 段
-
-CFI（Call Frame Information）回溯依赖 ELF 文件中的 `.eh_frame` 和 `.eh_frame_hdr` 两个段。这两个段由编译器自动生成（GCC 和 Clang 都支持），描述了程序中每个 PC 位置对应的寄存器保存和恢复规则。
-
-`.eh_frame_hdr` 是 `.eh_frame` 的索引头，包含一个二分查找表（Search Table），让回溯器可以快速定位某个 PC 对应的 CFI 记录，而不需要线性扫描整个 `.eh_frame`。
-
-回溯过程：
-
-1. 从崩溃时刻的 PC 和 SP 出发
-2. 在 `.eh_frame_hdr` 的查找表中找到 PC 对应的 FDE（Frame Description Entry）
-3. 根据 FDE 中的 CFI 指令计算上一帧的 SP 和 PC（以及需要恢复的寄存器）
-4. 重复直到没有更多的 FDE 或到达栈顶
-
-与 FP 回溯不同，CFI 回溯不依赖链表——即使栈中间某一帧被破坏，只要该帧的 CFI 记录完整，回溯器仍然可以根据寄存器计算规则恢复调用链。
-
-#### libunwind 与 _Unwind_Backtrace
-
-Android 系统从 5.0 开始使用 `libunwind` 替代早期的 `libcorkscrew.so` 作为 Native 回溯的基础库。`libunwind` 实现了 `_Unwind_Backtrace` 接口，通过 CFI 记录进行回溯。
-
-`_Unwind_Backtrace` 接收一个回调函数和一个用户数据指针，对每一帧调用回调，回调中通过 `_Unwind_GetIP` 获取当前帧的 PC：
-
-```c
-// _Unwind_Backtrace 的典型用法
-struct backtrace_state {
-    void** current;
-    void** end;
+struct BacktraceState {
+  uintptr_t* cursor;
+  uintptr_t* end;
 };
 
-static _Unwind_Reason_Code unwind_callback(struct _Unwind_Context* ctx, void* data) {
-    struct backtrace_state* state = (struct backtrace_state*)data;
-    uintptr_t pc = _Unwind_GetIP(ctx);
-    if (pc) {
-        if (state->current >= state->end) {
-            return _URC_END_OF_STACK;
+static _Unwind_Reason_Code CollectFrame(
+    _Unwind_Context* context, void* arg) {
+  auto* state = static_cast<BacktraceState*>(arg);
+  if (state->cursor == state->end) return _URC_END_OF_STACK;
+
+  uintptr_t pc = _Unwind_GetIP(context);
+  if (pc != 0) *state->cursor++ = pc;
+  return _URC_NO_REASON;
+}
+
+size_t CaptureCurrentThread(uintptr_t* frames, size_t capacity) {
+  BacktraceState state{frames, frames + capacity};
+  _Unwind_Backtrace(CollectFrame, &state);
+  return static_cast<size_t>(state.cursor - frames);
+}
+```
+
+这段代码只收集 PC。`dladdr()` 最多依赖进程内可见的动态符号恢复模块和导出符号，不能替代带 DWARF 的离线符号化，也不会自动生成 `libunwindstack` 注入的 ART Dex 虚拟帧。
+
+#### 不要写死“哪种回溯快多少”
+
+FP 回溯通常比 DWARF 回溯更适合高频采样，但“每帧几纳秒”没有跨设备意义。缓存命中、栈是否在本进程、是否要读取远端内存、FDE 编码、ELF 缓存、线程数和最大深度都会改变成本。
+
+选型应基于同一台目标设备、同一份 Release 二进制测量这些指标：
+
+| 指标 | 说明 |
+|---|---|
+| 单次延迟分位数 | 关注 P50、P95、P99，不能只看平均值 |
+| 完整栈率 | 能否回到线程入口，或达到业务定义的最低有效深度 |
+| 应用帧命中率 | 是否至少得到一帧业务 `.so` |
+| 采样丢失率 | 采样缓冲、栈拷贝和回溯耗时是否导致丢样 |
+| CPU 与内存开销 | 在目标采样频率下测量，而非由单帧操作数估算 |
+
+崩溃采集偏向完整性和可诊断性，高频 profiler 偏向低扰动。两者不该共享一套未经测量的策略。
+
+### 🔹 地址归一化：最容易被忽略的一步
+
+#### ASLR 不是只减一个“so 基址”
+
+运行时绝对 PC 需要先落到某条 `/proc/<pid>/maps` 映射。Android 17 的 `Elf::GetRelPc()` 计算式是：
+
+```text
+rel_pc = runtime_pc - map_start + load_bias + elf_offset
+```
+
+这里的 `elf_offset` 与 `load_bias` 不能随意省略。现代 ELF 常有独立的只读映射和可执行映射；`.so` 还可能直接从 APK 中加载。`MapInfo` 会判断当前 map 的 offset 是完整 ELF 起点、可执行段起点，还是 APK 内嵌 ELF 起点，并尝试关联前一条只读 map。
+
+手工只算 `runtime_pc - map_start`，在这些布局上很容易稳定地错到另一个函数。Android 10—12 的 `libunwindstack` 版本记录专门列出了多次 load bias、rosegment 与 APK offset 修复，也说明这不是理论上的边角问题。
+
+#### Tombstone 的 `pc` 列通常已完成归一化
+
+`libunwindstack::Unwinder::FormatFrame()` 输出的是 `FrameData.rel_pc`。它还会对非栈顶的返回地址做架构相关 PC adjustment，避免把返回地址错误归到调用点之后。
+
+因此，看到下面的 tombstone 帧时：
+
+```text
+#02 pc 0000000000012340  /data/app/.../base.apk!libfoo.so
+    (offset 0x2a4000) (Foo::run()+84) (BuildId: 4d7c...)
+```
+
+交给 `ndk-stack` 或匹配 ELF 时，应把 `0000000000012340` 当作 tombstone 已给出的相对 PC。不要再减 ASLR 基址，也不要因为存在 `(offset 0x2a4000)` 就机械地再减一次；该 offset 描述 ELF 在容器文件中的位置。
+
+若采集系统上报的是运行时绝对 PC，而非标准 tombstone 文本，则服务端必须同时获得当时的 maps、架构和模块标识，才能重算相对地址。
+
+#### Build ID 是符号产物的主键
+
+版本号、ABI 和 `.so` 文件名不足以唯一定位二进制。同一版本可能有灰度包、热修复、不同链接顺序或不同渠道产物；地址仍可能落在一个“看起来合理”的错误符号中。
+
+建议使用 `.note.gnu.build-id` 作为符号库主键，并同时保存：
+
+- application ID、version code、variant、渠道和源码 revision；
+- ABI、模块名、Build ID；
+- NDK、Clang、链接器和构建参数；
+- 未裁剪 ELF或独立 debug 文件；
+- R8 `mapping.txt`，用于相邻的 Java 栈；
+- 符号上传校验和与保留期限。
+
+下面的命令用于从发布 ELF 读取 Build ID 和关键段：
+
+```bash
+NDK_BIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin"
+"$NDK_BIN/llvm-readelf" -nW libfoo.so
+"$NDK_BIN/llvm-readelf" -SW libfoo.so
+"$NDK_BIN/llvm-readelf" -lW libfoo.so
+```
+
+输出应检查 `.note.gnu.build-id`、`.eh_frame` / `.debug_frame`、符号与 debug 段，以及 `PT_LOAD` 的文件偏移和虚拟地址。Apple Silicon 上的预编译目录名随 NDK 发行版可能仍是 `darwin-x86_64`，脚本应从已安装 NDK 中发现目录，不要凭主机 CPU 名拼接。
+
+### 🔹 Release 符号产物怎样保存
+
+#### AGP 原生符号包
+
+Android Gradle Plugin 4.1+ 可以在 AAB 中生成 native debug symbols。下面的 Kotlin DSL 配置用于保留文件、行号和函数信息：
+
+```kotlin
+android {
+    buildTypes {
+        release {
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
         }
-        *state->current++ = (void*)pc;
     }
-    return _URC_NO_REASON;
-}
-
-size_t fill_backtrace(void** buffer, size_t max) {
-    struct backtrace_state state = { buffer, buffer + max };
-    _Unwind_Backtrace(unwind_callback, &state);
-    return state.current - buffer;
 }
 ```
 
-拿到 PC 数组后，通过 `dladdr()` 解析每个地址对应的 so 名和符号名。`dladdr()` 返回的 `Dl_info` 包含共享库路径（`dli_fname`）、加载基址（`dli_fbase`）、符号名（`dli_sname`）和符号地址（`dli_saddr`）。
+`SYMBOL_TABLE` 主要恢复函数名；`FULL` 还提供文件和行号。构建输出位于 `app/build/outputs/native-debug-symbols/<variant>/native-debug-symbols.zip`，可随 AAB 交给 Play Console，也应按团队的崩溃数据保留周期归档。
 
-CFI 回溯的一个优势是能解析 Java 层符号。通过 `_Unwind_Backtrace` 拿到的 PC 中，ART 虚拟机的 JIT 编译代码和 Interpreter 栈帧也能被识别——这是 FP 回溯做不到的，因为 ART 的执行栈不遵循标准的 FP 链约定。
+第三方依赖如果在进入构建前已经丢掉 debug 信息，AGP 无法凭空恢复。构建日志中的 “native debug metadata has already been stripped” 应当作为发布阻断项或明确的风险豁免。
 
-#### libbacktrace
+#### 自建符号服务
 
-`libbacktrace` 是 Android 系统内部对 `libunwind` 的封装，提供 `Backtrace::Create` → `Unwind` → `FormatFrameData` 的三步接口。系统代码（如 `CallStack::update`）和 debuggerd 都使用 libbacktrace。
-
-`libbacktrace` 没有作为公开 API 对应用开放。第三方应用想使用它，需要通过 `dlopen("/system/lib64/libbacktrace.so")` + `dlsym` 获取符号，但符号名在不同 Android 版本有变化（mangled name 不同），兼容性维护成本高。xUnwind 库对这条路径做了封装。
-
-#### 对包体积的影响
-
-`.eh_frame` + `.eh_frame_hdr` 段通常增加 so 体积 5-10%。对于体积敏感的模块（如 SDK 分发的 so），可以通过 `--no-eh-frame-hdr` 链接选项去掉 `.eh_frame_hdr`，但这会让回溯器无法使用二分查找，回溯速度下降。
-
-### 🔹 堆栈回溯的性能开销对比
-
-三种主流回溯方式的延迟和适用场景：
-
-| 回溯方式 | 单帧开销 | 30 帧总开销 | 依赖元数据 | 适用场景 |
-|----------|----------|-------------|-----------|----------|
-| FP | ~5ns（2 次 load） | ~150ns | 无 | 高频采样、Simpleperf、Perfetto |
-| CFI（libunwind） | ~1-5μs | ~30-150μs | .eh_frame/.eh_frame_hdr | Crash dump、低频诊断 |
-| libunwind-astack | ~0.5-2μs | ~15-60μs | .eh_frame | 采样 profiling（比标准 libunwind 快，跳过部分初始化） |
-
-FP 回溯快两个数量级，因为每帧只需要两次内存读取，不需要解析 CFI 表。Simpleperf 和 Perfetto 在 ARM64 上默认使用 FP 回溯做 on-CPU 采样，正是这个原因——采样频率高（通常 99Hz-999Hz），每秒可能采集数千次堆栈，CFI 回溯的开销不可接受。
-
-CFI 回溯慢但准确，适合崩溃时一次性采集（只跑一次，不在意延迟）。Crash dump 路径（debuggerd → crash_dump）使用 CFI 回溯。
-
-带 `-g` 符号信息的 so 不影响回溯性能——debug 信息只在符号化阶段使用，回溯本身只依赖 `.eh_frame`。
-
-### 🔹 符号化管线：从地址到源码行
-
-回溯拿到的是 PC 数组，形如 `0x7f8a3c0008a3c`。要把它翻译成 `foo.cpp:42`，需要符号化工具。
-
-#### addr2line
-
-GNU `addr2line` 是最基础的符号化工具，随 NDK 分发。输入 so 文件和偏移地址，输出函数名和源码行号：
+自建服务可以保留完整未裁剪 ELF，也可以提取独立 debug 文件。下面的命令为每个 `.so` 生成 debug 副本并裁剪交付文件：
 
 ```bash
-# -f 显示函数名，-C demangle，-e 指定 ELF 文件
-addr2line -fC -e libfoo.so 0x8a3c
-# 输出：
-# foo(int, char*)
-# /path/to/foo.cpp:42
+NDK_BIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin"
+
+"$NDK_BIN/llvm-objcopy" --only-keep-debug \
+  libfoo.so libfoo.so.debug
+"$NDK_BIN/llvm-strip" --strip-unneeded libfoo.so
+"$NDK_BIN/llvm-objcopy" \
+  --add-gnu-debuglink=libfoo.so.debug libfoo.so
 ```
 
-addr2line 的局限：
+这套做法仍需验证裁剪前后 Build ID 一致，并确认交付 ELF 保留运行时需要的 unwind 信息。符号服务的索引建议以 `Build ID + ABI` 为主，模块名只作为检索字段。
 
-- **内联函数**：默认只显示最外层函数。加 `-i` 参数才能展开内联调用链（`addr2line -ifC -e libfoo.so 0x8a3c`）
-- **优化后行号偏移**：`-O2` 及以上优化会让行号映射不精确，addr2line 可能指向下一个有效行而非实际执行行
-- **strip 后不可用**：so 被 strip 后 `.debug_info` 段丢失，addr2line 无法工作
+### 🔹 离线符号化工具
 
-#### llvm-symbolizer
+#### `ndk-stack`
 
-`llvm-symbolizer` 是 LLVM 工具链的符号化工具，相对 GNU addr2line 的优势：
-
-- **DWARF 5 支持**：更完整的 debug 信息解析
-- **内联展开**：默认输出完整内联链，不需要额外参数
-- **性能更好**：批量符号化时速度快 2-3 倍
-
-Android NDK 从 r22 起内置 `llvm-symbolizer`，推荐用它替代 `addr2line`。
+`ndk-stack` 适合处理 logcat 或 tombstone 文本，并能批量解析其中的多帧。下面的命令把 tombstone 与该 variant 的未裁剪库目录配对：
 
 ```bash
-# llvm-symbolizer 的典型用法
-llvm-symbolizer --obj=libfoo.so 0x8a3c
-# 输出包含内联展开：
-# foo_inline()
-# foo(int, char*)
-# /path/to/foo.cpp:42
+"$ANDROID_NDK_HOME/ndk-stack" \
+  -sym app/build/intermediates/cxx/Release/<hash>/obj/arm64-v8a \
+  -dump tombstone.txt
 ```
 
-#### strip 与 debug 信息包
+`-sym` 指向未裁剪 ELF 目录，不是 APK 中已经 strip 的 `.so`。如果输出仍只有模块加偏移，应检查 ABI、Build ID、输入 tombstone 的分隔头，以及第三方库是否已经丢失 debug 信息。
 
-发布版本的 so 通常做 strip 处理。`strip --strip-unneeded` 删除 `.symtab` 和 `.debug_*` 段，只保留 `.dynsym`（动态符号表）。strip 后 addr2line 无法工作。
+#### `llvm-symbolizer` 与 `llvm-addr2line`
 
-标准做法是保留未 strip 的 so（或单独的 `.sym` 文件）用于符号化：
+单地址排查优先使用 NDK LLVM 工具链。下面的命令展开内联调用并 demangle C++ 名称：
 
 ```bash
-# 编译时生成 debug 信息包
-# build.gradle 或 CMakeLists.txt 中：
-# -DCMAKE_BUILD_TYPE=Release
-# -DCMAKE_CXX_FLAGS_RELEASE="-g"  # Release 也保留 debug 信息
-
-# strip 时保留符号表备份
-cp libfoo.so libfoo.so.sym
-strip --strip-unneeded libfoo.so
+NDK_BIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin"
+"$NDK_BIN/llvm-symbolizer" \
+  --obj=libfoo.so.debug \
+  --inlines \
+  --demangle \
+  0x12340
 ```
 
-线上崩溃上报时，客户端只发送 PC 偏移地址（`offset 0x8a3c`），服务端用对应的 `.sym` 文件做离线符号化。
+输入 `0x12340` 必须是该 ELF 对应的归一化地址。输出多组函数和行号并不重复：优化后的一个机器指令可能同时属于若干层内联函数。
 
-### 🔹 ELF 文件结构与符号表
-
-#### .symtab vs .dynsym
-
-ELF 文件包含两个符号表：
-
-- **`.symtab`（Symbol Table）**：编译时生成的完整符号表，包含所有函数、变量、调试符号。strip 后被删除。
-- **`.dynsym`（Dynamic Symbol Table）**：运行时动态链接需要的符号表，只包含导出的函数和导入的外部符号。strip 后保留。
-
-回溯拿到的 PC 地址如果是内部函数（未导出），`.dynsym` 中找不到对应的符号名——这时 `dladdr()` 返回的 `dli_sname` 为 NULL 或指向最近的导出函数名（不准确）。只有 `.symtab` 存在时才能精确解析。
-
-#### 解析工具
+需要接近 `addr2line` 的输出格式时，可使用 NDK 自带的 LLVM 版本：
 
 ```bash
-# readelf：查看完整符号表（含 .symtab）
-readelf -sW libfoo.so
-
-# objdump：查看动态符号表（运行视图）
-objdump -T libfoo.so
-
-# nm：简洁的符号列表
-nm -D libfoo.so   # 只看 .dynsym
-nm libfoo.so       # 只看 .symtab（strip 后为空）
+"$NDK_BIN/llvm-addr2line" \
+  -e libfoo.so.debug \
+  -f -C -i \
+  0x12340
 ```
 
-`readelf -sW` 是排查 Native 符号问题最常用的命令。`-W` 参数让输出不被截断，对于 C++ mangled name（如 `_ZN7android8BpBinder8transactEjRKNS_6ParcelEPS1_j`）很重要。
+`-i` 展开内联帧，`-C` 反解 C++ 名称。不要把宿主机上的 GNU `addr2line` 与 NDK 目标架构、DWARF 版本混用后再比较结果。
 
-#### C++ name mangling
+### 🔹 怎样读 tombstone，而不是只看 `#00`
 
-C++ 函数经过 name mangling 后，符号名包含了命名空间、类名、参数类型等信息。用 `c++filt` 可以 demangle：
+下面是一段压缩过的示例，用于说明字段之间的关系：
 
-```bash
-echo "_ZN7android8BpBinder8transactEjRKNS_6ParcelEPS1_j" | c++filt
-# 输出：android::BpBinder::transact(unsigned int, android::Parcel const&, android::Parcel*, unsigned int)
-```
-
-符号化工具（addr2line、llvm-symbolizer）通常会自动 demangle，但理解 mangling 规则对排查 `dladdr()` 失败的场景有帮助。
-
-#### 从 AOSP 查找符号所属 so
-
-AOSP 源码中通过 `Android.bp` 文件可以找到源文件编译到哪个 so。例如 `BpBinder.cpp` 的 `Android.bp` 在 `frameworks/native/libs/binder/Android.bp` 中定义了 `cc_library { name: "libbinder", srcs: ["BpBinder.cpp", ...] }`，说明 `BpBinder.cpp` 编译进 `libbinder.so`。
-
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Android.bp 文件与符号表]
-
-### 🔹 Tombstone 格式与解析
-
-#### 生成路径
-
-Native Crash 发生时的完整路径：
-
-```
-信号触发（如 SIGSEGV）
-    ↓
-内核信号处理
-    ↓
-debuggerd_client 通知 debuggerd 守护进程
-    ↓
-debuggerd fork crash_dump 子进程
-    ↓
-crash_dump 使用 ptrace attach 到崩溃进程
-    ↓
-crash_dump 读取寄存器、回溯堆栈、dump 内存
-    ↓
-写入 /data/tombstones/tombstone_XX
-    ↓
-logcat 输出 crash 信息
-```
-
-Android 10+ 的 crash_dump 使用 CFI 回溯（通过 libunwind），同时输出 FP 回溯结果作为补充。如果两者不一致，以 CFI 为准。
-
-#### Tombstone 文件结构
-
-一个典型的 tombstone 文件包含以下段落：
-
-```
-*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
-Build fingerprint: 'samsung/e1qxxx/e1q:15/AQ3A.250305.001/...'
-Revision: '0'
+```text
 ABI: 'arm64'
-Timestamp: 2026-06-27 03:15:42.123456789+0800
-Process uptime: 45s
+Timestamp: 2026-07-25 10:18:32.123456789+0800
 Cmdline: com.example.app
-pid: 12345, tid: 12346, name: com.example.app  >>> com.example.app <<<
-
-signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0000000000000000
-Cause: null pointer dereference
+pid: 18421, tid: 18457, name: RenderThread
+signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x10
+    x0  0000000000000010  x1  0000007f...
+    lr  0000007a11223344  sp  0000007f...
+    pc  0000007a11224560
 
 backtrace:
-  #00 pc 0000000000008a3c  /data/app/.../libfoo.so (foo+44)
-  #01 pc 0000000000009120  /data/app/.../libfoo.so (bar+128)
-  #02 pc 0000000000005044  /data/app/.../base.apk!libapp.so (offset 0x47000)
-  #03 pc 0000000000123456  /apex/com.android.art/lib64/libart.so (art_quick_invoke_stub+548)
-
-stack:
-  0000007ffffffff000  0000007ffffffff001  [...]
-  ...
-
-memory near x0:
-  0000000000000000  0000000000000000 0000000000000000 [...]
+  #00 pc 0000000000014560  base.apk!libfoo.so
+      (Foo::Draw()+96) (BuildId: 4d7c...)
+  #01 pc 00000000000139a8  base.apk!libfoo.so
+      (Renderer::Run()+120) (BuildId: 4d7c...)
 ```
 
-关键字段：
+建议按以下证据顺序阅读：
 
-- **Build fingerprint**：设备固件版本，用于定位问题是否与特定 OEM 或系统版本相关
-- **ABI**：`arm64` / `arm` / `x86_64`，决定使用哪套符号文件
-- **signal + code**：信号类型和子类型。`SEGV_MAPERR`（地址未映射）vs `SEGV_ACCERR`（地址无权限）指向不同的问题方向
-- **fault addr**：触发崩溃的内存地址。0x0 是空指针，非零值可能是野指针或越界访问
-- **backtrace**：CFI 回溯的堆栈，`#NN pc OFFSET PATH (SYMBOL+OFFSET)` 格式
-- **stack**：崩溃线程的栈内存 dump，用于辅助分析栈损坏
-- **memory near Xn**：崩溃时各寄存器附近的内存内容
+1. **信号与 `si_code`**：`SIGSEGV` 只是类别；`SEGV_MAPERR`、`SEGV_ACCERR`、MTE 子类型等会改变排查方向。
+2. **fault address 与故障指令**：`0x10` 常见于空对象加字段偏移，但仍要反汇编 `#00`，确认哪条指令访问了哪个寄存器。
+3. **abort message**：`SIGABRT` 常是主动终止，断言、fdsan、Scudo、sanitizer 或运行库消息往往比栈顶更有信息。
+4. **寄存器与 maps**：确认 PC、LR、SP 和 fault address 是否落在合理映射，留意 tagged address。
+5. **完整调用链**：`#00` 可能是 `abort`、allocator 或信号 trampoline；业务触发点常在更深处。
+6. **其他线程和诊断区块**：锁等待、内存破坏、GWP-ASan、Scudo、MTE、fdsan 等附加信息可能给出分配栈或原因判断。
 
-#### 自动化归因
+“栈顶在系统库”不能直接推出系统缺陷。应用传入无效对象、违反 API 前置条件或破坏内存后，故障指令完全可能位于 `libc.so`、`libart.so` 或 `libbinder.so`。
 
-从 tombstone 做自动化归因，关键字段提取顺序：
+### 🔹 Java、JIT 与 native 混合调用链
 
-1. 提取 `signal` 和 `fault addr`，分类崩溃类型（空指针 / 越界 / abort / 栈溢出）
-2. 提取 `#00` 帧的 so 名和函数名，定位崩溃发生的模块
-3. 提取 `Cmdline` 和 `pid:tid`，区分主线程崩溃和子线程崩溃
-4. 提取 `Build fingerprint`，判断是否与特定设备/版本相关
+Android 17 的 `AndroidUnwinder::Initialize()` 会在 `libart.so` / `libartd.so` 中定位 JIT 和 Dex 支持数据。`Unwinder` 遇到 ART 标记的 Dex PC 时，可以插入一个代表解释器 Java 方法的虚拟帧；JIT ELF 则通过 gdb JIT 接口查找。
 
-如果 `#00` 帧的 so 是系统库（如 `libart.so`、`libbinder.so`），通常指向应用触发的系统层 bug 或 ABI 不兼容问题。如果 `#00` 帧在应用自己的 so 中，进一步用 `addr2line` 或 `.sym` 文件符号化到源码行号。
+这项能力属于 `libunwindstack` 与 ART 的协作，不能推广为“任意 native unwinder 都能回溯 Java”。应用侧的 `_Unwind_Backtrace()` 或 FP 链通常只看到 ART 的 native 桥接帧，无法独立还原完整 Java 调用链。
 
-### 🔹 线上 Native 堆栈采集方案
+线上混合栈应保留三组不同的数据：
 
-#### 信号处理器中安全回溯
+- tombstone / minidump 中的 native 寄存器、maps 和 PC；
+- Java 异常或采样系统得到的 Java 帧与 dex pc；
+- 对应版本的 native symbols 与 R8 `mapping.txt`。
 
-线上 Native Crash 监控的核心是：在信号处理器中安全地采集堆栈，不引入二次崩溃。信号处理器的可重入约束决定了哪些操作可以做、哪些不能做：
+服务端可按进程、线程、事件时间和桥接帧关联两类调用链，但不要把 Java dex pc 当作 ELF 地址交给 `llvm-symbolizer`。旧文中不存在公开依据的 `artDebuggable_getStackFrameAt` 不是可用方案。
 
-| 操作 | 可重入？ | 替代方案 |
-|------|----------|----------|
-| `malloc()`/`free()` | ❌ | 预分配静态缓冲区 |
-| `printf()`/`fopen()` | ❌ | `write()` 到 pipe 或 `__android_log_print()` |
-| `pthread_mutex_lock()` | ❌ | `spinlock` 或 atomic flag |
-| `_Unwind_Backtrace()` | ⚠️ 可用但需小心 | FP 回溯更安全 |
-| `dladdr()` | ⚠️ 可用 | 缓存结果 |
-| `read()`/`write()` | ✅ | 直接使用系统调用 |
+### 🔹 应用侧崩溃采集的安全边界
 
-[已验证: AOSP android-17.0.0_r1, bionic/libc/include/signal.h]
+#### 信号处理器里只做最小工作
 
-实际实现中，大型 APM SDK（xCrash、Bugly、Crashpad）在信号处理器里做的工作尽量精简：只回溯堆栈、保存寄存器上下文和关键内存区域，然后通过 `fork()` 子进程或 `signal_safe_write()` 到共享内存做后续处理。
+致命信号可能发生在 allocator、动态链接器或某把锁的临界区。此时调用 `malloc()`、C++ 容器、`dladdr()`、完整 DWARF unwinder、普通日志 API 或互斥锁，都可能死锁、递归崩溃或覆盖原现场。
 
-#### Breakpad / Crashpad 的 minidump 方案
+建议在进程正常阶段完成这些准备：
 
-Google Breakpad 和 Crashpad 不在信号处理器中做完整的堆栈回溯和符号化，而是生成 minidump 文件（包含原始寄存器状态、栈内存、内存映射信息），在服务端离线做回溯和符号化。
+- 通过 `sigaltstack()` 配置独立且带 guard 的备用信号栈；
+- 预分配固定大小的崩溃记录；
+- 预先打开文件描述符或建立与独立 handler 的 socket；
+- 记录模块清单更新机制，但不要在 handler 中解析 ELF；
+- 设计重入保护、超时与二次信号策略；
+- 明确如何保留系统 debuggerd 和先前 handler 的处理机会。
 
-优势：
+信号处理器内只复制 `siginfo_t`、`ucontext_t` 和有限的原始字节，再用经过审计的 async-signal-safe 操作通知外部处理者。POSIX 的 `write()` 可作为基础原语；“某函数在多数设备没出事”不等于它满足异步信号安全。
 
-- 信号处理器中只 dump 内存，不做回溯，减少二次崩溃风险
-- 服务端可以用任意版本的符号文件做符号化
-- minidump 格式跨平台，一套服务端处理 Android/iOS/Windows/Mac
+下面的伪代码只表达职责分界，不是一份可直接复制的完整 handler：
 
-劣势：
+```cpp
+static volatile sig_atomic_t handling_crash = 0;
+static int crash_fd = -1;  // 正常启动阶段预先打开
 
-- minidump 文件体积大（通常 10-100KB），需要压缩上传
-- 服务端需要维护每个版本的符号文件库
-- 如果栈内存损坏，回溯仍然会失败
+static void FatalSignalHandler(
+    int signo, siginfo_t* info, void* ucontext) {
+  if (handling_crash) _exit(128 + signo);
+  handling_crash = 1;
 
-#### Android 系统 debuggerd_client 的 fallback
+  RawCrashRecord record{};
+  record.signo = signo;
+  CopyFixedSize(&record.siginfo, info, sizeof(*info));
+  CopyFixedSize(&record.ucontext, ucontext, sizeof(ucontext_t));
+  WriteFullySignalSafe(crash_fd, &record, sizeof(record));
 
-应用可以通过 `debuggerd_client` 接口请求系统生成 tombstone，不需要自己实现信号捕获。但 `debuggerd_client` 是系统内部 API，在 Android 10+ 上不再对应用开放。
-
-实际线上方案通常是「自建信号捕获 + Breakpad/Crashpad 生成 minidump」的组合，系统 tombstone 作为 fallback。
-
-### 🔹 Android 15+ CFI 强制启用与兼容性
-
-#### Control Flow Integrity
-
-CFI（Control Flow Integrity）是一种编译时安全加固机制，在间接函数调用（虚函数、函数指针）时检查目标地址是否在合法的白名单内。检查失败触发 `SIGILL`（非法指令）而非 `SIGSEGV`。
-
-Android 15 起对 `system/` 下的模块强制启用 CFI。Android 17 将 CFI 覆盖范围扩展到更多 system 模块和 APEX 组件。
-
-第三方应用 so 库默认不受系统 CFI 约束，但如果 so 被 system 模块通过 dlopen 加载（如某些 SDK 注入系统进程的场景），也会受 CFI 检查影响。
-
-#### 对崩溃分析的影响
-
-CFI 检查失败导致的 `SIGILL` 在 tombstone 中表现为：
-
-```
-signal 4 (SIGILL), code 1 (ILL_ILLCANOPCODE), fault addr 0x...
-Abort message: 'CFI failure at ...'
+  RestoreOrChainPreviousHandler(signo);
+  ReraiseToCurrentThread(signo);
+}
 ```
 
-与常规 `SIGSEGV` 的区分：CFI 失败说明代码执行流被劫持（vtable 被篡改、函数指针越界等），排查方向不是内存访问越界，而是间接调用目标不合法。
+其中 `CopyFixedSize`、`WriteFullySignalSafe`、handler 链和重新触发信号都必须由实现方针对 Bionic、部分写入、`EINTR`、备用栈和线程定向信号逐项验证。代码中的抽象函数故意不冒充通用实现。
 
-`-fsanitize=cfi` 编译选项对包体积的影响约 3-5%，运行时性能开销取决于间接调用频率，通常 < 1%。
+#### 优先利用系统已提供的 tombstone
+
+普通应用无权直接遍历 `/data/tombstones`。Android 12 / API 31 起，应用可从 `ActivityManager.getHistoricalProcessExitReasons()` 查询自己的历史退出记录；当 reason 为 `REASON_CRASH_NATIVE` 时，`ApplicationExitInfo.getTraceInputStream()` 可以返回 protobuf tombstone。
+
+这条路径适合应用在下次启动后补采系统报告，也能减少在致命信号现场做复杂工作的必要。它有几个边界：
+
+- 返回值可能为空，调用方必须容错。
+- 它查询的是历史退出，不是让当前崩溃进程继续执行。
+- protobuf schema 和读取逻辑应随目标 Android 版本验证。
+- 数据仍需取得用户同意，并按隐私与保留策略上传。
+
+#### Crashpad / Breakpad 的位置
+
+Minidump 方案把寄存器、线程栈、模块清单和模块标识保存为紧凑快照，由服务端结合符号文件回溯和符号化。Crashpad 在 Linux/Android 上可让信号 handler 通知独立 handler；按连接方式，它还可能由崩溃进程派生 ptrace broker，代替 handler 读取进程。
+
+这类方案降低了在崩溃线程内解析 DWARF 和符号的需求，但没有消除工程风险：
+
+- handler 启动、SELinux / ptrace、进程模型和 OEM 差异需要实机验证；
+- minidump 必须包含足够的线程栈和模块标识；
+- 文件写入、磁盘配额、加密、上传与去重都要处理；
+- 栈已被破坏时，离线回溯同样可能截断；
+- 接入方必须确认所用 fork 的 Android 版本、维护状态和许可证。
+
+不要把系统私有 `debuggerd_client` 或 `libunwindstack` 符号作为普通应用的兼容 API。跨 Android 版本稳定的能力应来自 NDK 公共接口、`ApplicationExitInfo`，或由应用完整控制的采集库。
+
+### 🔹 PAC、BTI、MTE 与 16 KB 页
+
+#### PAC
+
+arm64 的返回地址可能包含 Pointer Authentication Code。Android 17 的 `RegsArm64` 在确认返回地址已签名时，会按 PAC mask 清除签名位；缺少 mask 时，Bionic 构建还可调用 `__bionic_clear_pac_bits()`。`crash_dump` 也会通过 ptrace 读取目标线程启用的 PAC key 状态。
+
+离线系统若自己解析原始 LR 而未清除 PAC 位，可能无法把地址匹配到 maps。使用标准 tombstone 的 `rel_pc` 时不应再次手工“去 PAC”，因为系统回溯器已处理架构细节。
+
+PAC 认证失败的外部表现受指令、内核和后续地址使用方式影响，不应固定写成 `SIGILL`。排查时应联合信号、`si_code`、fault address、PC/LR 和反汇编判断。
+
+#### BTI
+
+Branch Target Identification 约束间接分支的合法落点。它不改变 `runtime_pc -> rel_pc` 的换算公式，也不要求符号服务器给 PC 加减固定字节。若怀疑 BTI 违规，应查看 fault 指令、ELF GNU property 和编译参数，不能只依据栈里出现 `bti` 指令。
+
+#### MTE
+
+Android 17 的 `crash_dump` 同时保存可能带 tag 的 fault address 与去 tag 后的地址。MTE 同步、异步故障的定位能力不同；不要在上传前只保留一个被清洗过的地址。更完整的 MTE 诊断与治理见 20.11。
+
+#### 16 KB 页
+
+16 KB 页会影响 ELF segment 对齐与 APK 内嵌 `.so` 的打包要求，但不会把符号地址统一放大或缩小四倍。符号化仍以 maps、ELF program header、load bias 和 Build ID 为准。Native 库兼容性检查见 20.13。
+
+### 🔹 回溯失败时怎样定位是哪一层断了
+
+| 现象 | 优先检查 | 常见原因 |
+|---|---|---|
+| 只有 `#00` 或两三帧 | unwind 段、SP 所在 map、错误码 | 缺失 CFI、FP 链断、栈损坏、不可读 ELF |
+| 地址有模块但无函数名 | Build ID、`.symtab` / `.dynsym` | 使用了 strip 后 ELF、内部函数未导出、符号产物不匹配 |
+| 有函数名但无文件行号 | `.debug_info`、`debugSymbolLevel` | 只保留 `SYMBOL_TABLE`、第三方库已提前 strip |
+| 行号稳定地偏到别处 | PC 是否重复归一化、APK offset、load bias | 多减一次基址、符号文件版本错误 |
+| 内联函数缺失 | symbolizer 参数、DWARF | 未启用 inline 展开、只保留符号表 |
+| 某 ABI 正常、另一个 ABI 截断 | 编译参数与 unwind 格式 | arm32 FP 缺失、预编译库参数不同、`.ARM.exidx` 问题 |
+| Java 帧只剩 ART 桥接层 | 采集器能力 | 使用通用 native unwinder，未取得 ART JIT/Dex 信息 |
+| PAC 设备地址不在 maps | 原始 LR 处理 | 上报的是带 PAC 的地址，服务端未做架构处理 |
+
+诊断报告应保存回溯器错误码和警告，而不是只保留已生成的 frames。`libunwindstack` 可能报告 invalid map、memory invalid、unwind info 缺失等不同失败；这些信息能区分“符号文件没有上传”和“调用链在设备上已经丢失”。
+
+### 🔹 一套可执行的发布门禁
+
+每个包含 native 代码的 Release variant，至少验证以下项目：
+
+1. 所有自研与第三方 `.so` 都记录 `ABI + Build ID + 来源`。
+2. 交付 ELF 的 `.eh_frame` / `.ARM.exidx` 等运行时回溯信息符合预期。
+3. `FULL` 符号包或等价的未裁剪产物已生成、可读取并完成异地归档。
+4. 用该构建制造一次已知 native crash，`ndk-stack` 和 `llvm-symbolizer` 都能命中正确源码 revision。
+5. 覆盖普通函数、内联函数、LTO、异常处理、signal frame、栈溢出和第三方预编译库。
+6. 覆盖 `arm64-v8a` 以及仍支持的其他 ABI，不能用 arm64 结果替代 arm32 验证。
+7. 覆盖 APK 内直接加载、Split APK / 动态特性中的 `.so`。
+8. 在 PAC / MTE 设备和 16 KB 页设备上检查地址与 Build ID。
+9. 验证 `ApplicationExitInfo` 或 minidump 的补采、去重、加密、上传和过期删除。
+10. 监控符号化率、Build ID 匹配率、完整栈率、业务帧命中率和未知模块占比。
+
+当符号化率下降时，按 `Build ID 缺失 -> 产物不匹配 -> 地址归一化失败 -> 设备端回溯截断` 的顺序拆分指标。把所有失败归为“没符号”会掩盖采集器和构建链中的问题。
 
 ## 扩展
 
-### 🔸 Compose Native 交互层堆栈
+### 🔸 与 Simpleperf / Perfetto 采样栈的关系
 
-[待补充: Compose Runtime JNI 层（特别是 `ComposeScene` 和 `Applier` 的 native 调用路径）的堆栈回溯特殊处理。Compose Compiler 生成的 lambda 函数在 ARM64 上可能省略 FP 保存（因为被视为叶子函数），导致 FP 回溯在这些位置断链。需要结合 Simpleperf 的 CFI 采样模式做补充。]
+崩溃回溯拿到的是一次故障现场，性能采样会在短时间内采集大量现场。Simpleperf 的 DWARF 模式需要内核记录用户栈与寄存器，再由 `libunwindstack` 处理；FP 模式更轻，但要求被经过的帧保留兼容 frame pointer。
 
-### 🔸 混淆与 Native 混合堆栈
+因此，发布门禁里的 unwind 完整性测试也会影响 profiler、GWP-ASan 分配栈和其他诊断工具。仍需分别评估：崩溃栈完整不代表高频采样成本可接受，FP 火焰图完整也不代表 signal frame 与 ART 混合栈都能恢复。
 
-R8 混淆后的 Java 堆栈与 Native 堆栈拼接是线上排查的常见难点。一条崩溃栈可能同时包含：
+### 🔸 符号化结果为什么会“看起来对”
 
-```
-#02 pc 0x1234 libapp.so (JNI_function+44)
-#03 pc 0x5678 [anon:dalvik-classes.dex] (a.b.c+308)   ← R8 混淆后的 Java 帧
-```
+错误 ELF 也可能在相同偏移附近存在函数，输出一个可读且语法完整的函数名。仅用“是否输出函数名”做校验，会把错符号当成成功。
 
-Java 帧需要 `mapping.txt` 反混淆，Native 帧需要 `.sym` 文件符号化，两者的偏移计算方式不同（Java 帧是 dex pc，Native 帧是 so offset）。
+更可靠的服务端校验包含：
 
-拼接策略：
+- tombstone / minidump 的模块 Build ID 与符号文件完全匹配；
+- 地址位于 ELF 可执行 `PT_LOAD` 范围；
+- 返回的函数范围覆盖输入地址；
+- source revision 属于该发布产物；
+- 同一事件的所有同模块帧使用同一个 Build ID；
+- 不匹配时明确标记 `symbol artifact missing/mismatch`，不回退到同名最新版。
 
-- 先用 `_Unwind_Backtrace` 获取完整 PC 列表（包含 Java 帧和 Native 帧）
-- 对 PC 落在 `[anon:dalvik-*.dex]` 区间的帧，用 ART 的 `artDebuggable_getStackFrameAt` 或线上 mapping.txt 反混淆
-- 对 PC 落在 so 文件区间的帧，用 addr2line / .sym 文件符号化
-- 按 PC 顺序拼接两条符号化结果
+### 🔸 与相邻章节的分工
 
-详细方案参考 20.3 节的混合堆栈章节。
+- 20.3：Native Crash 信号类型、采集治理与线上处置。
+- 20.11：MTE 的同步/异步模式、诊断信息与灰度策略。
+- 20.13：16 KB 页下的 ELF、打包和第三方库兼容。
+- 14.2、14.13：ART/JNI 与 native 内存相关基础。
 
-### 🔸 ARM64 PAC 与 BTI 对堆栈的影响
+## 源码与官方资料
 
-ARM64 PAC（Pointer Authentication Code）和 BTI（Branch Target Identification）是 ARMv8.3-A 和 ARMv8.5-A 的安全特性。
+- [AOSP `crash_dump.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp)
+- [AOSP `debuggerd_handler.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)
+- [AOSP `tombstone.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/libdebuggerd/tombstone.cpp)
+- [AOSP `tombstone_proto.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/libdebuggerd/tombstone_proto.cpp)
+- [AOSP `AndroidUnwinder.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/system/unwinding/+/refs/tags/android-17.0.0_r1/libunwindstack/AndroidUnwinder.cpp)
+- [AOSP `Unwinder.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/system/unwinding/+/refs/tags/android-17.0.0_r1/libunwindstack/Unwinder.cpp)
+- [AOSP `Elf.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/system/unwinding/+/refs/tags/android-17.0.0_r1/libunwindstack/Elf.cpp)
+- [AOSP `ElfInterface.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/system/unwinding/+/refs/tags/android-17.0.0_r1/libunwindstack/ElfInterface.cpp)
+- [AOSP `RegsArm64.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/system/unwinding/+/refs/tags/android-17.0.0_r1/libunwindstack/RegsArm64.cpp)
+- [libunwindstack 各 Android 版本能力（android-17.0.0_r1）](https://android.googlesource.com/platform/system/unwinding/+/refs/tags/android-17.0.0_r1/libunwindstack/AndroidVersions.md)
+- [Bionic `android_unsafe_frame_pointer_chase.h`（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/platform/bionic/android_unsafe_frame_pointer_chase.h)
+- [Simpleperf：Debug DWARF unwinding（android-17.0.0_r1）](https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/simpleperf/doc/debug_dwarf_unwinding.md)
+- [Android NDK：ndk-stack](https://developer.android.com/ndk/guides/ndk-stack)
+- [Android NDK：调试 native crash 与 ApplicationExitInfo](https://developer.android.com/ndk/guides/debug)
+- [Android NDK：GWP-ASan](https://developer.android.com/ndk/guides/gwp-asan)
+- [Android Developers：为发布构建加入 native symbols](https://developer.android.com/build/include-native-symbols)
+- [AOSP：Diagnose native crashes](https://source.android.com/docs/core/tests/debug/native-crash)
+- [Crashpad overview design](https://chromium.googlesource.com/crashpad/crashpad/+/HEAD/doc/overview_design.md)
 
-**PAC** 对函数返回地址（LR）做签名，在 `RET` 时验证。如果 PAC 验证失败触发 `SIGILL`。对堆栈回溯的影响：回溯器拿到的 LR 值高位包含 PAC 签名位，需要用 XPACLRI 指令剥离签名位后才是真实地址。libunwind 从 Android 12 起已经处理了 PAC 去除。
-
-**BTI** 在间接跳转目标处放置 `bti` 指令作为合法着陆点。BTI 与 CFI 的关系：BTI 是硬件级的间接分支检查，CFI 是软件级的。两者互补但不冲突。
-
-Android 15+ 的系统 so 启用 PAC 和 BTI。应用 so 如果用 Clang 15+ 编译并开启 `-mbranch-protection=standard`，也会启用这两个特性。
-
-[适用版本: Android 15 - Android 17]
-
----
-
-> 本节已加工完成。详见 20.3 节对于 Native Crash 信号收集和 debuggerd 路径的完整分析。
+> 源码核查基线：AOSP `android-17.0.0_r1`。编译器、NDK 和 AGP 行为还应以项目锁定版本及 Release 构建产物为准。
