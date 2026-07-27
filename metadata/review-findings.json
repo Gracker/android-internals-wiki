@@ -118,6 +118,9 @@
     },
     {
       "chapter": "src/part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md",
+      "close_note": "Rework removed outline/pending markers and converted unsupported event/schema/recomposition claims into bounded analysis guidance; chapter returned to ready-for-review, with finalized still gated on same-version trace_processor evidence.",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20260727-093533-rework-2ce7e666",
       "created_at": "2026-07-27T08:24:30.750144+08:00",
       "created_by": "hermes-aiw-review-finalize-apply",
       "created_run_id": "20260727-082309-5af88f00",
@@ -129,10 +132,10 @@
         "src/part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md",
         "developer.android.com/develop/ui/compose/tooling/tracing"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "Compose Runtime Tracing 事件命名、重组统计与 Release 启用矩阵缺少官方/实测证据，暂不能 finalized",
       "type": "missing-source",
-      "updated_at": "2026-07-27T08:24:30.750144+08:00"
+      "updated_at": "2026-07-27T09:38:01.220864+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch08-startup/8.02-Android-17-系统启动优化与bootanalyze工具链.md",
