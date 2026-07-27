@@ -51,6 +51,12 @@ last_task2b_verifier_log: "logs/rework/2026-06-02-07-task2b-verifier.md"
 task6_reviewed_date: "2026-06-21"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-25
+last_idle_audit_at: "2026-07-27T14:35:45+08:00"
+last_idle_audit_run_id: "20260727-143545-idle-audit-0d80d330"
+last_verified: "2026-07-27"
+confidence: high
+idle_audit_result: pass-metadata-refresh
+idle_audit_notes: "2026-07-27 idle audit: 未发现未来版本越界、验证占位残留或需降级的问题；补齐 last_verified/confidence 与本轮抽检记录。"
 ---
 
 # WebView 渲染管线
@@ -442,7 +448,7 @@ adb shell dumpsys SurfaceFlinger --list
 - fullscreen callback 与运行时 View 类型；
 - Perfetto artifact、关键进程 / tid、slice、flow 或 frame token；
 - SurfaceFlinger layer 名称、parent、buffer 与 composition type；
-- 已排除的路径和仍待验证的假设。
+- 已排除的路径和尚未确认的假设。
 
 没有 artifact、版本和页面负载时，不要写固定帧耗、百分比或“某路径必然更快”。
 
