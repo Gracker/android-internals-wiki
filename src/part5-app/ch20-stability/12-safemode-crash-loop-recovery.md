@@ -77,499 +77,412 @@ last_deepseek_cn_review_at: 2026-06-22
 
 # 20.12 SafeMode 崩溃循环判定与启动补偿链路
 
-20.7 节已经给出异常处理架构里的 SafeMode 分层,本节补齐工程落点:怎样判断启动期崩溃循环,怎样用启动 marker 和 `ApplicationExitInfo` 补偿缺失现场,怎样把 WebView Renderer 退出从进程级崩溃里拆出来。
+20.7 节介绍了异常恢复架构中的保护模式。本节把范围收窄到一个问题：同一版本、同一进程、同一启动路径连续失败时，应用怎样在下一次启动中绕开可选的高风险模块，同时保留诊断证据和恢复入口。
 
-这里的 SafeMode 指 App 自己的保护模式,不是 Android 系统安全模式。它的目标很窄:当同一版本、同一进程、同一启动路径反复失败时,让下一次启动跳过高风险模块,保住基础页面和修复入口。
+这里的 SafeMode 是应用自建的降级启动模式，不是 Android 系统安全模式。它不负责“修好”崩溃，也不允许绕过数据库一致性、账号安全或支付校验。它只负责在证据足够时选择一份更保守的启动计划，让用户能够进入基础页面、升级应用或提交反馈。
 
-## 崩溃循环的状态机设计
+本文的平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。涉及低内存回收边界时，内核锚点是 `android17-6.18-2026-06_r6`。
 
-启动崩溃循环不能只靠"最近崩溃次数"判断。合理的状态机要把启动状态、退出原因、版本边界和恢复动作放在一起,否则很容易把用户强杀、系统低内存回收、后台进程退出误判成启动崩溃。
+## 先划清判定边界
 
-下面是一个可直接落地的状态机设计:
+启动 marker 停在“未完成”，只能说明上一次没有走到应用定义的成功点，不能单独证明发生了崩溃。下面这些情况都可能留下相同的文件状态：
 
-| 状态 | 写入时机 | 下次启动的解释 |
+- 用户在最近任务或系统设置中停止应用；
+- 系统在内存压力下回收后台进程；
+- 设备重启，`elapsedRealtime()` 的时间基准随之改变；
+- 应用升级或数据恢复后读到了旧版本 marker；
+- 多进程同时写同一个文件；
+- 进程还在运行，另一个进程却把它当成历史启动；
+- 文件写入成功，但成功状态还未来得及持久化。
+
+因此，SafeMode 需要区分三类数据：
+
+| 数据 | 解决的问题 | 保存边界 |
 | --- | --- | --- |
-| `idle` | 正常退出 SafeMode 判定后 | 没有待处理启动失败 |
-| `launching` | `Application.attachBaseContext()` 或主进程 `onCreate()` 开头 | 上一次启动没有走到成功标记,需要结合退出原因判断 |
-| `started` | 首个可交互页面 `onResume()` 后,或首页首帧完成后 | 上一次启动通过关键路径,不计入启动失败 |
-| `degraded` | 命中 SafeMode 规则并打开本地降级开关 | 本次启动应跳过高风险模块 |
-| `recovered` | 同一版本连续若干次冷启动成功 | 可退出保护模式,保留一段观察窗口 |
+| 启动租约 `LaunchLease` | 上一次启动走到了哪个阶段 | 按版本、进程和启动路径隔离 |
+| 失败样本 `FailureOccurrence` | 哪些退出证据能与某次启动关联 | 有数量与时间上限，去除隐私字段 |
+| 降级计划 `DegradationPlan` | 下一次启动具体跳过什么 | 按模块、页面、进程和版本限定 |
 
-判定入口读取的是"上一轮启动留下的 marker"。如果 marker 停在 `launching`,说明进程没有走到团队定义的启动成功点;这时再看退出证据:Java Crash、Native Crash、ANR、LMK、`SIGKILL`、WebView Renderer gone。只有 marker 和退出证据能对上,才把它计入崩溃循环。
+不要用一个 `crash_count` 同时承担这三项职责。只保存计数会丢失证据来源，也无法解释为什么某次启动被降级。
 
-推荐把计数维度限定到:`versionCode + processName + startupRoute + crashSignature`。`startupRoute` 可以是首页、登录页、支付回调、Push 拉起等枚举;`crashSignature` 对 Java 取异常类型和前几帧,对 Native 取 signal、so 名、符号化后的函数或 pc bucket,对 ANR 取主线程阻塞摘要。这样做的目的不是做服务端级聚类,而是避免"不同问题凑够次数"后错误进入 SafeMode。
+## 状态模型：租约不是结论
 
-阈值要同时有本地默认值和远程配置:
+一轮启动可以按以下里程碑推进：
 
-| 规则 | 示例值 | 适用场景 |
+| 状态 | 写入时机 | 含义 |
 | --- | --- | --- |
-| 连续启动失败 | 同一版本 3 次冷启动未完成 | 首页初始化、动态配置、数据库迁移失败 |
-| 短窗口重复失败 | 10 分钟内同一签名 2 次 | 灰度版本集中爆发 |
-| 单次高危失败 | Native crash / ANR 发生在启动 marker 未完成前 | 无法保证 handler 写完整样本的场景 |
-| 远程强制降级 | 服务端下发 feature kill switch | 已确认某模块线上故障 |
+| `LAUNCHING` | 读取旧租约之后、高风险初始化之前 | 新启动已经开始 |
+| `PROCESS_READY` | `Application.onCreate()` 及必要基础设施完成 | 进程级必需初始化通过 |
+| `INTERACTIVE` | 首个关键页面已绘制并能响应输入 | 用户已经获得基础可用能力 |
+| `PROBATION` | 降级启动进入观察期 | 暂不恢复被禁用模块 |
+| `HEALTHY` | 达到配置的成功条件 | 可以逐步撤销当前降级计划 |
 
-本地规则只用于保命,不能替代发布平台和 Crash 看板。20.6 节的启动崩溃率、重复崩溃率和灰度门禁仍然是团队层面的判断依据。
+进程退出后没有机会把状态推进到 `INTERACTIVE`，旧租约会停在较早阶段。下一次启动只能把它标记为“待核对”，再结合系统退出记录、本地崩溃信封和安装信息形成判断。
 
-实际工作中有两个典型盲区。
+这也是为什么启动入口的顺序很重要：
 
-第一个盲区：把用户强杀冷启动后的下一次正常启动误判成 SafeMode 触发。这一轮启动本身没有问题,但上一个 marker 停在 `launching`,退出原因是 `REASON_USER_REQUESTED`。解法是拿到退出原因后再对齐 marker 阶段——用户请求退出的不计入崩溃循环,只清理残留 marker。
+1. 读取上一轮租约与已经确认的失败样本；
+2. 校验版本、进程、启动路径和时间基准；
+3. 为本轮启动写入新租约；
+4. 依据已有的高置信证据选择普通或降级计划；
+5. 在可选 SDK、插件、WebView 预热等高风险步骤之前执行计划；
+6. 进入页面后推进里程碑；
+7. 在后台核对 `ApplicationExitInfo`，补记上一轮退出原因；
+8. 达到恢复条件后进入观察期，再逐步撤销降级。
 
-第二个盲区：默认阈值"同一版本 3 次冷启动失败"在新设备上过于激进。高端机 startup 通常 600ms 以内,很多 crash 发生在启动后半段;如果 marker 写得太晚,崩溃可能发生在 marker 之后,反而被漏掉。实际调到"5 次 + 10 分钟窗口"才比较稳。
+第 4 步不能等待耗时的 trace 读取，否则 SafeMode 自身会拖慢启动。系统退出元数据的查询与 trace 复制应分开处理。
 
+## 启动租约应记录什么
 
-## 启动 marker 的写入、完成与清理
+建议使用稳定枚举和内部 ID，不要保存 URL、搜索词、订单号、账号或用户输入。
 
-启动 marker 要在高风险 SDK 初始化之前写入。主进程建议放在 `Application.attachBaseContext()` 或 `onCreate()` 的第一段;多进程应用要按进程分别写,文件名里带 `processName` 或进程角色,避免推送进程、WebView 预加载进程和主进程互相覆盖。
-
-marker 字段只保留判定所需的信息:
-
-| 字段 | 用途 | 边界 |
+| 字段 | 用途 | 注意事项 |
 | --- | --- | --- |
-| `session_id` | 关联本次启动、本地 crash envelope 和后续补偿记录 | UUID 或递增号,不含用户标识 |
-| `version_code` / `version_name` | 版本升级后切断旧计数 | 版本升级可清理旧 SafeMode 状态 |
-| `process_name` / `pid` | 区分主进程与子进程 | pid 只能作为辅助,进程重启后会变化 |
-| `started_elapsed_ms` / `started_wall_time_ms` | 判断 marker 是否过期,并与 `ApplicationExitInfo.timestamp` 匹配 | `elapsedRealtime()` 用于本地过期判断,墙钟时间只用于系统记录匹配 |
-| `startup_route` | 区分不同拉起路径 | 只写枚举,不写 URL、订单号、搜索词 |
-| `stage` | `launching`、`started`、`degraded` 等状态 | 状态变化必须原子落盘 |
-| `safe_mode_level` | 本次是否降级启动 | 用于恢复后复盘 |
+| `schemaVersion` | 兼容持久化格式升级 | 未知版本按不可用处理 |
+| `versionCode` / `lastUpdateTime` | 区分安装版本与覆盖安装 | 版本变化不应删除旧诊断证据 |
+| `processName` / `processRole` | 区分主进程、推送、独立服务 | PID 只作辅助，不能跨启动关联 |
+| `launchId` | 关联租约、崩溃信封与进程摘要 | 使用随机 ID，不含用户信息 |
+| `route` | 区分首页、通知、深链等入口 | 只保存粗粒度枚举 |
+| `startedWallMs` | 与 `ApplicationExitInfo.timestamp` 对齐 | 墙钟可能被用户或网络校时修改 |
+| `startedElapsedMs` | 同一次开机内计算持续时间 | 设备重启后不能与旧值相减 |
+| `bootSequence` | 判断 `elapsedRealtime` 是否仍同源 | 可记录可读的系统启动次数；取不到时保持为空 |
+| `stage` | 表示启动里程碑 | 每次推进使用原子替换 |
+| `planId` | 说明本轮采用的降级计划 | 便于恢复与效果分析 |
 
-这段示例代码表达 marker 的原子写入方式,重点看 `startWrite()`、`finishWrite()` 和失败回滚三步。
+`ApplicationExitInfo.getTimestamp()` 使用墙钟时间。`SystemClock.elapsedRealtime()` 适合本次开机内的超时判断，两者不能混算。API 24 起可读取 `Settings.Global.BOOT_COUNT` 作为启动序号；读取失败时保持为空，不要改用隐藏接口。若启动序号变化、elapsed 值倒退或墙钟偏移异常，只能降低证据置信度，不能直接增加失败次数。
+
+还要先读旧租约，再写新租约。若入口一开始便覆盖文件，上一轮启动的 `launchId`、阶段和时间范围都会丢失。
+
+## 用 AtomicFile 保存租约
+
+`AtomicFile` 解决的是单个文件的“旧版本或新版本可读”问题，不提供线程锁或跨进程锁。Android 17 的实现要求调用方自己串行化访问；`finishWrite()` 会同步并提交新文件，`failWrite()` 会放弃本次新文件。
+
+下面的示例只展示单进程、单写者的提交协议。多进程应用应为每个进程使用独立文件，并由一个明确的 owner 汇总失败样本。
 
 ```kotlin
-// 示意代码:启动 marker 持久化。生产环境还要补进程锁、序列化异常处理和日志脱敏。
-class LaunchMarkerStore(private val file: File) {
+class LaunchLeaseStore(file: File) {
     private val atomicFile = AtomicFile(file)
+    private val lock = Any()
 
-    fun write(marker: LaunchMarker) {
-        var stream: FileOutputStream? = null
+    fun readOrNull(): LaunchLease? = synchronized(lock) {
         try {
-            stream = atomicFile.startWrite()
-            stream.write(marker.toJsonBytes())
-            atomicFile.finishWrite(stream)
-        } catch (t: Throwable) {
-            if (stream != null) {
-                atomicFile.failWrite(stream)
+            atomicFile.openRead().use { input ->
+                LaunchLeaseCodec.decode(input)
             }
-            throw t
+        } catch (_: FileNotFoundException) {
+            null
+        } catch (_: IOException) {
+            null
+        } catch (_: RuntimeException) {
+            null
+        }
+    }
+
+    @Throws(IOException::class)
+    fun write(lease: LaunchLease) = synchronized(lock) {
+        var output: FileOutputStream? = null
+        try {
+            output = atomicFile.startWrite()
+            LaunchLeaseCodec.encode(lease, output)
+            atomicFile.finishWrite(output)
+            output = null
+        } catch (e: IOException) {
+            output?.let(atomicFile::failWrite)
+            throw e
+        } catch (e: RuntimeException) {
+            output?.let(atomicFile::failWrite)
+            throw e
         }
     }
 }
 ```
 
-AOSP `AtomicFile` 的 `finishWrite()` 会对输出流做 sync,关闭后把 `.new` 文件 rename 到目标文件;`failWrite()` 会 sync、关闭并删除 `.new` 文件。应用侧如果不用 `AtomicFile`,也要遵守同一套协议:写临时文件、`fsync` 文件内容、关闭、rename 到正式文件,必要时再处理父目录持久化。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/util/AtomicFile.java]
+代码没有捕获 `Throwable`，因为 `OutOfMemoryError`、`ThreadDeath` 等错误不应被伪装成普通持久化失败。生产实现还需要格式版本、长度上限、校验和与损坏文件隔离；这些措施用于保证“读不到时安全退化”，不能把损坏文件当成一次崩溃。
 
-启动成功点不要放得太早。`Application.onCreate()` 结束只说明初始化函数返回了,不代表用户能进入页面。常见做法是设两个标记:
+若多个进程共享同一个 `AtomicFile`，各进程中的 `synchronized` 互相不可见，仍可能覆盖数据。更稳妥的结构是 `lease-main`、`lease-push`、`lease-web` 分文件写入，由主进程或后台任务单向汇总。
 
-- `process_started`:`Application.onCreate()` 完成后写入,说明基础初始化通过。
-- `interactive_started`:首个关键 Activity `onResume()` 后,或首页首帧 / 首屏数据达到可交互条件后写入,说明启动体验通过。
+## 两阶段证据核对
 
-SafeMode 判定应以 `interactive_started` 为主。只写 `process_started` 会漏掉首页容器、WebView 首屏、数据库迁移后的页面恢复等启动后半段问题。
+SafeMode 的入口决策分成快速路径和补偿路径。
 
-清理规则也要明确:同一版本连续成功 N 次后清理失败计数;版本升级、安装来源变化、ABI 变化后清理旧签名;用户清除数据后自然重置;远程配置命中新开关时只清理对应模块,不要把所有历史证据抹掉。
+### 快速路径：只使用已经确认的本地证据
 
-## Java / Native / ANR / LMK 的证据差异
+在可选初始化之前，读取上一轮已经持久化的高置信失败样本。满足以下条件时，才允许它参与本轮降级决策：
 
-SafeMode 的误判大多来自证据混用。Java Crash、Native Crash、ANR 和 LMK 都会让启动中断，但能拿到的证据、写入时机和可信度不同。
+- 样本与当前 `versionCode`、安装时间和进程角色一致；
+- 样本关联到明确的 `launchId` 或受控时间窗；
+- 上一轮租约尚未到达 `INTERACTIVE`；
+- 失败类型属于策略允许保护的类型；
+- 同一降级计划尚未超过尝试和冷却限制。
 
-| 退出类型 | 当场证据 | 下次启动补偿 | SafeMode 使用方式 |
-| --- | --- | --- | --- |
-| Java Crash | `UncaughtExceptionHandler` 可写异常类型、线程、栈摘要 | `ApplicationExitInfo.REASON_CRASH` | marker 未完成且栈签名稳定时计入 |
-| Native Crash | 信号处理器只能做极小动作;系统 tombstone 更可靠 | API 31+ 可通过 `getTraceInputStream()` 读取 tombstone protobuf | 用 signal、so、pc bucket 归因,业务上下文从 marker 补 |
-| ANR | 进程通常已经无法在主线程执行补救逻辑 | API 30+ `REASON_ANR`,trace 可能可读 | 只在启动 marker 未完成或前台关键路径阻塞时计入 |
-| LMK / 低内存 kill | App 内 handler 不会执行 | 支持设备返回 `REASON_LOW_MEMORY`;不支持时可能表现为 `REASON_SIGNALED` + `SIGKILL` | 只作为内存降级依据,通常不直接计入崩溃循环 |
-| 用户强杀 / 任务移除 | 没有 crash 现场 | `REASON_USER_REQUESTED`、`REASON_USER_STOPPED` 或相关 subreason | 排除,不触发 SafeMode |
+仅有一个残留 `LAUNCHING` 租约时，入口可以采用“低成本防御”，例如推迟非必要预热，但不应直接清数据库、禁用登录或永久进入保护模式。
 
-Java Crash 的系统默认路径在 `RuntimeInit` 中:`LoggingHandler` 记录 fatal exception,`KillApplicationHandler` 设置 `mCrashing` 防止重入,调用 `ActivityManager` 上报后执行 `killProcess()` 和 `System.exit(10)`。应用自定义 handler 要做的不是"救回"进程,而是在系统终止前写下足够小的 envelope。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/internal/os/RuntimeInit.java]
+### 补偿路径：启动后核对系统退出历史
 
-Native Crash 的证据重心在系统侧。参考书把 Native Crash 拆成信号监听和 backtrace 获取两段,这个拆法适合作为 APM 结构参考;生产环境里,信号处理器不应做复杂序列化、锁、分配内存或网络请求。SafeMode 只需要拿到最小摘要,完整 tombstone 和符号化交给 20.3、26.2 的链路处理。
+API 30 起，`ActivityManager.getHistoricalProcessExitReasons()` 返回系统保存的历史进程退出记录，顺序由新到旧。它是有容量上限的历史记录，不是永久审计日志，也不能保证每条记录都有 trace。
 
-ANR 和 LMK 更依赖下次启动补偿。Android Vitals 文档也把 `ApplicationExitInfo` 列为诊断 ANR 的可用工具;它能说明进程为何退出,但不能自动说明哪段业务逻辑导致失败。要把 `processStateSummary`、启动 marker、前台页面、最近阶段事件拼起来,才能形成 SafeMode 判定证据。[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
+核对时至少要比较：
 
-## ApplicationExitInfo 的补偿入口
+- `processName` 与进程角色；
+- `timestamp` 是否落在旧租约开始之后、下一轮启动之前的容差窗口；
+- `reason`、`status`、`importance` 与租约阶段是否相符；
+- 应用版本、`lastUpdateTime` 和安装边界；
+- 本地崩溃信封或进程状态摘要中的 `launchId`；
+- 该退出记录是否已经消费，避免重复计数。
 
-`ApplicationExitInfo` 从 Android 11(API 30)开始可用,适合在新进程启动早期读取上一进程的系统退出记录。`ActivityManager.getHistoricalProcessExitReasons(packageName, pid, maxNum)` 返回匹配记录,顺序是从近到远;系统保存的是环形缓冲,旧记录可能被覆盖。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ActivityManager.java]
+下面的伪代码强调“先筛元数据、后处理 trace”。`clockSkewMs` 只用于吸收正常的墙钟误差，应由遥测校准并设置上限。
 
-`ApplicationExitInfo` 里与 SafeMode 相关的字段主要有四类:
+```kotlin
+fun correlateExit(
+    exits: List<ApplicationExitInfo>,
+    previous: LaunchLease,
+    nextLaunchWallMs: Long,
+    clockSkewMs: Long
+): ApplicationExitInfo? {
+    val from = previous.startedWallMs - clockSkewMs
+    val until = nextLaunchWallMs + clockSkewMs
 
-| 字段 / API | 用途 | 边界 |
+    return exits.asSequence()
+        .filter { it.processName == previous.processName }
+        .filter { it.timestamp in from..until }
+        .filterNot { alreadyConsumed(it) }
+        .maxByOrNull { candidate ->
+            evidenceScore(candidate, previous)
+        }
+        ?.takeIf { evidenceScore(it, previous) >= REQUIRED_SCORE }
+}
+```
+
+这段代码没有把“时间接近”当成唯一条件。`evidenceScore()` 应把进程、版本、`launchId`、阶段和退出类型分开计分；没有唯一候选时保持未知，比选错一条记录更安全。
+
+不要在冷启动主线程里打开并解析 `getTraceInputStream()`。选定候选记录后，再交给受限后台任务：设置输入大小和执行时间上限，复制到私有目录，记录哈希与解析状态，然后关闭流。系统 trace 可能为空，也可能已被环形缓冲区覆盖；“没有 trace”不能反证“没有 ANR 或 native crash”。
+
+### processStateSummary 只保存关联摘要
+
+`ActivityManager.setProcessStateSummary()` 可以给系统退出记录附带最多 128 字节的应用摘要。Android 17 源码注释明确说明它用于运行状况分析，不适合恢复 UI 状态；调用过于频繁时系统还可能节流。
+
+摘要可以包含格式版本、`launchId` 的短哈希、进程角色、启动阶段和计划 ID。只在关键里程碑更新，不要每个生命周期回调都写，也不要加入账号、页面参数或业务内容。
+
+## 退出原因怎样进入 SafeMode
+
+`ApplicationExitInfo` 的 `reason` 是分类线索，不是对业务故障的完整归因。建议按置信度和用途处理：
+
+| 退出原因 | 默认归类 | SafeMode 用法 |
 | --- | --- | --- |
-| `reason` / `status` / `importance` | 判断 Java Crash、Native Crash、ANR、LMK、用户请求等退出类型 | reason 只能说明系统分类,不能替代业务归因 |
-| `timestamp` / `pid` / `processName` | 与启动 marker 匹配 | pid 复用风险低但仍要结合时间窗口 |
-| `getProcessStateSummary()` | 读取进程死亡前写入的 128 字节状态摘要 | 官方要求不要写 PII / SPII,只适合放枚举和短摘要 |
-| `getTraceInputStream()` | 读取 ANR trace;API 31+ Native tombstone protobuf | trace 保存在全局环形缓冲里,可能返回 null |
+| `REASON_CRASH` | Java 或运行时崩溃 | 与未完成租约、进程和签名匹配后计入 |
+| `REASON_CRASH_NATIVE` | native crash | 与 tombstone/本地最小信封匹配后计入 |
+| `REASON_ANR` | ANR | 只有发生在启动窗口并影响关键进程时才计入 |
+| `REASON_INITIALIZATION_FAILURE` | 进程初始化失败 | 高度相关，但仍需校验版本、进程与阶段 |
+| `REASON_DEPENDENCY_DIED` | 依赖进程死亡 | 选择依赖模块或进程级计划，不归并成主进程崩溃 |
+| `REASON_LOW_MEMORY` | 低内存回收 | 进入内存保护策略，默认不增加崩溃循环次数 |
+| `REASON_EXCESSIVE_RESOURCE_USAGE` | 资源使用过量 | 单独统计并选择资源降级 |
+| `REASON_USER_REQUESTED` / `REASON_USER_STOPPED` | 用户或系统设置触发 | 排除 |
+| `REASON_PACKAGE_STATE_CHANGE` / `REASON_PACKAGE_UPDATED` | 包状态变化 | 切断当前启动关联，不计失败 |
+| `REASON_PERMISSION_CHANGE` | 权限变更导致 | 排除崩溃循环，转入权限诊断 |
+| `REASON_EXIT_SELF` | 应用主动退出 | 单独排查 `System.exit()` 调用，不直接归为 crash |
+| `REASON_FREEZER` / `REASON_OTHER` | 系统管理行为 | 默认排除；说明字段只作为诊断补充 |
+| `REASON_SIGNALED` | 收到信号 | 结合 `status`、前后台状态和其他证据，不把 `SIGKILL` 自动当作 crash |
+| `REASON_UNKNOWN` | 证据不足 | 保持未知，不用来升级高风险降级 |
 
-AOSP 注释说明,`getTraceInputStream()` 通常在 `REASON_ANR` 时可用;从 API 31 开始,`REASON_CRASH_NATIVE` 可返回 tombstone protobuf;由于 trace 存在独立的全局环形缓冲里,可能被新的 crash 覆盖,因此调用方必须处理 null。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java][已验证: 官方文档, developer.android.com/ndk/guides/debug]
+低内存是否能被可靠报告取决于设备支持。`ActivityManager.isLowMemoryKillReportSupported()` 在 AOSP 中读取 LMKD 的 report-kills 能力；不支持的设备可能只能留下更弱的信号证据。应用不应从一个 `SIGKILL` 反推“必然是 LMK”，也不应从 LMK 记录反推代码崩溃。
 
-这段示例代码展示补偿读取的最小逻辑,重点看"只处理 marker 时间窗口内的退出记录"。
+API 37 的 `ApplicationExitInfo.getAnrInfo()` 可以为 `REASON_ANR` 提供结构化补充，但返回值允许为空。它适合丰富诊断，不改变“退出元数据、启动阶段、trace 三者都可能不完整”的边界。ANR 也不一定立即杀进程：应用可能恢复运行，之后又因别的原因退出，因此不能看到一份 ANR trace 就覆盖后续退出原因。
+
+## Java Crash：只做有界采集，不尝试续命
+
+AOSP `RuntimeInit` 在进程启动时安装预处理器 `LoggingHandler` 和默认的 `KillApplicationHandler`。默认处理器会用 `mCrashing` 防止重入，向 `ActivityManager` 报告崩溃，并在 `finally` 中调用 `Process.killProcess()` 与 `System.exit(10)`。
+
+应用安装自定义 `UncaughtExceptionHandler` 时，应保存并调用原处理器。它可以尽力写一份有长度上限的崩溃信封，但不能依赖网络、主线程、复杂 JSON、数据库事务或新的线程池，也不能把“handler 返回”当成恢复方案。
+
+这段示例表达最小职责：记录关联信息，然后把控制权交还原处理器。
 
 ```kotlin
-// 示意代码:下次启动补偿读取。生产环境要补采样、异常保护和上传队列。
-fun collectExitCompensation(
-    context: Context,
-    previousMarker: LaunchMarker,
-    maxRecords: Int = 8
-): List<ExitEvidence> {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return emptyList()
+class CrashEnvelopeHandler(
+    private val previous: Thread.UncaughtExceptionHandler,
+    private val recorder: CrashEnvelopeRecorder,
+    private val leaseProvider: () -> LaunchLease?
+) : Thread.UncaughtExceptionHandler {
 
-    val am = context.getSystemService(ActivityManager::class.java)
-    return am.getHistoricalProcessExitReasons(context.packageName, 0, maxRecords)
-        .asSequence()
-        .filter { info -> info.processName == previousMarker.processName }
-        .filter { info -> info.timestamp >= previousMarker.startedWallTimeMs }
-        .map { info ->
-            ExitEvidence(
-                reason = info.reason,
-                status = info.status,
-                importance = info.importance,
-                processStateSummary = info.processStateSummary,
-                hasTrace = try {
-                    info.traceInputStream?.use { true } ?: false
-                } catch (_: IOException) {
-                    false
-                }
+    override fun uncaughtException(thread: Thread, error: Throwable) {
+        try {
+            recorder.tryWriteBounded(
+                launchId = leaseProvider()?.launchId,
+                threadName = thread.name,
+                throwable = error
             )
+        } catch (_: IOException) {
+            // 下次启动还会用 ApplicationExitInfo 补偿。
+        } catch (_: RuntimeException) {
+            // 采集失败不能阻断系统默认崩溃处理。
+        } finally {
+            previous.uncaughtException(thread, error)
         }
-        .toList()
-}
-```
-
-补偿逻辑不要把"最近一条退出记录"直接绑定到"上一轮启动失败"。多进程 App、外部 service、后台进程、预加载进程都可能留下记录。稳妥做法是按 `processName`、marker 时间、`session_id` 摘要和启动阶段一起匹配;匹配不上就只上报,不触发 SafeMode。
-
-实际工作中踩过的坑:部分厂商 ROM(特别是 ColorOS 和 MIUI 旧版)可能把 `getHistoricalProcessExitReasons()` 返回的 `timestamp` 做成 `uptimeMillis` 口径,而 AOSP `ApplicationExitInfo.timestamp` 是 `@CurrentTimeMillisLong` 墙钟时间。marker 要同时写 `started_elapsed_ms` 和 `started_wall_time_ms`:AOSP 匹配走墙钟时间,本地过期判断走 `elapsedRealtime()`;如果厂商 ROM 上时间源不可信,宁可放宽时间窗到 ±120s,再用进程名和 session_id 摘要做交叉校验。
-
-LMK 还要判断设备是否支持低内存 kill 上报。AOSP `ActivityManager.isLowMemoryKillReportSupported()` 读取 `persist.sys.lmk.reportkills`;不支持时,内存压力下的 kill 可能退化为 `REASON_SIGNALED` 和 `SIGKILL`。这类样本可以推动内存预算和 WebView 降级,不能直接等同于代码崩溃。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ActivityManager.java]
-
-## WebView renderer 退出的单独处理
-
-WebView Renderer 退出要从 App 进程崩溃里拆出来。Renderer 属于 WebView 多进程模型的一部分,它退出时宿主进程可以继续运行;只有没有正确处理 `onRenderProcessGone()`,或者回调返回 `false`,宿主应用才会崩溃或被系统结束。
-
-AOSP `WebViewClient.onRenderProcessGone()` 的注释给出三个处理契约:多个 WebView 可能共用一个 Renderer,受影响的 WebView 会分别收到回调;回调参数里的 `view` 已不可继续使用;宿主要把它从 View 树移除并清理所有引用。默认实现返回 `false`。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/webkit/WebViewClient.java]
-
-这段示例代码把 Renderer 退出记录成页面级证据,而不是直接升级成进程级 SafeMode。
-
-```kotlin
-class RecoverableWebViewClient(
-    private val recorder: RendererGoneRecorder,
-    private val container: ViewGroup
-) : WebViewClient() {
-    override fun onRenderProcessGone(
-        view: WebView,
-        detail: RenderProcessGoneDetail
-    ): Boolean {
-        recorder.record(
-            didCrash = detail.didCrash(),
-            priorityAtExit = detail.rendererPriorityAtExit()
-        )
-        container.removeView(view)
-        view.destroy()
-        showFallbackPage()
-        return true
     }
 }
 ```
 
-SafeMode 的策略应分两层:
+`tryWriteBounded()` 应限制栈深、字符串长度、文件大小和耗时。即使这份信封没有写成，下一次启动仍可使用 `ApplicationExitInfo`；所以 SafeMode 不能把崩溃时落盘当作唯一证据。
 
-- 单个页面 Renderer gone:页面级兜底,重建 WebView 或展示轻量页,不影响整个 App。
-- 启动期反复 Renderer gone:只关闭 H5 首页、WebView 池、预加载、离线包注入或高风险 JS Bridge,不要把所有 Native / Java 功能一起关掉。
+## Native Crash：一个采集 owner，保留系统链路
 
-`WebViewRenderProcessClient` 提供 Renderer 无响应和恢复回调,最小无响应回调间隔为 5 秒;应用可以选择终止 Renderer,但必须同时处理所有相关 WebView 的 `onRenderProcessGone()`,否则会导致应用终止。这个 API 适合提前降载,不适合替代退出后的恢复路径。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/webkit/WebViewRenderProcessClient.java]
+native 信号上下文的可用操作非常有限。不要在 signal handler 中分配大块内存、格式化复杂字符串、获取 Java 栈、加普通互斥锁或执行网络请求。
 
-20.10 节已经展开 WebView Renderer OOM 与白屏恢复,本节只把它接入 SafeMode 证据链:Renderer gone 是页面 / 容器证据,只有当它让宿主进程退出,或启动 marker 多次停在同一 H5 路径上,才进入进程级保护。
+应用若必须写本地信封，只记录预分配结构中的 `launchId`、signal、tid、pc 和少量寄存器，并使用信号安全写入方式。进程内只保留一个 native crash 采集 owner，其他 SDK 通过统一接口订阅结果，避免多个 handler 互相覆盖。
 
+Android 的 debuggerd/tombstoned 链路仍应保留。API 31 起，部分 native crash 的 `ApplicationExitInfo.getTraceInputStream()` 可返回 tombstone protobuf；它比应用在致命信号现场做复杂回溯更适合下次启动分析。符号化、so 版本匹配和聚类在后台或服务端完成，启动路径只消费稳定的签名 ID。
 
-## SafeMode 降级动作与恢复条件
+## ANR：区分启动阻塞与后续退出
 
-SafeMode 的动作要按故障半径分级。降级过重会把可恢复的小问题变成"应用不可用";降级过轻又拦不住启动崩溃。
+ANR 发生时，主线程往往已经不能执行应用补救逻辑。把“写 SafeMode 状态”安排在 ANR callback 内没有可靠性保证。
 
-| 等级 | 触发条件 | 动作 | 恢复条件 |
-| --- | --- | --- | --- |
-| L1 模块降级 | 某 SDK / 实验 / 页面簇重复失败 | 关闭实验、延迟 SDK、禁用预加载 | 同一版本成功启动 3 次,或远程开关确认问题关闭 |
-| L2 启动路径降级 | 首页、登录页、H5 容器启动期失败 | 进入轻量首页、跳过复杂容器、关闭 WebView 池 | 成功进入轻量首页并完成修复配置拉取 |
-| L3 保护模式 | 同一版本连续启动失败,无法确认模块 | 只初始化账号、配置、修复、上报、基础 UI | 版本升级、补丁命中,或本地连续成功启动达到阈值 |
-| L4 停止自拉起 | 子进程 / 服务反复崩溃 | 暂停后台服务、指数退避重启 | 远程配置或下次版本恢复 |
+对启动期 ANR，核对应满足：
 
-**案例 1：三方 SDK 初始化连续失败的 L1 降级**
+- `REASON_ANR` 的记录与上一轮进程和时间窗相符；
+- 旧租约停在 `PROCESS_READY` 或更早阶段；
+- trace 或 `getAnrInfo()` 指向关键启动路径，或者本地阶段证据足够；
+- 后续没有更匹配的包更新、用户停止或其他退出记录。
 
-某个视频 SDK 在特定 ROM + Android 14 上连续两次冷启动在 `VideoSDK.init()` 处抛出 `UnsatisfiedLinkError`,导致 marker 停在 `launching`。由于 crash 签名稳定(同一 native lib、同一异常类型、同一进程),第三次启动时 SafeMode 判定为 L1 模块降级:跳过该 SDK 初始化,视频页改为 Web fallback。恢复条件是同一版本成功启动 3 次且远程开关确认 SDK 服务可用后才重新启用。这个案例的关键经验是:降级粒度必须能精确到单个 SDK——如果整页都关闭,用户连 fallback 都看不到。
+若 ANR 出现在应用已经 `INTERACTIVE` 之后，应进入常规 ANR 治理，不要污染启动崩溃计数。相关采集、归因和指标见 20.4 节。
 
-**案例 2：启动首页 H5 容器白屏的 L2 降级**
+## SafeMode 选择“计划”，不要选择“一键全关”
 
-某个版本的 WebView 在 Android 16 上预加载池中的 Renderer 反复 gone,首屏 H5 无法渲染;原生首页和账号模块完好。SafeMode 命中 L2 启动路径降级:关闭 WebView 预加载池和离线包注入,首屏切到原生降级页(展示核心功能入口 + 修复提示),保留账号和推送模块。恢复条件:进入降级页完成配置拉取、H5 容器水位恢复后重新打开。这个案例避开了"把 WebView 问题升级到整个 App 保护模式"的常见错误。
+合理的降级对象是可选且能被隔离的模块：
 
-降级开关必须本地可读。进入崩溃循环的设备可能离线,不能依赖服务端实时返回。远程配置只能收紧或放宽本地规则,不能成为唯一判定来源。
+| 失败范围 | 可选计划 | 不应做的事 |
+| --- | --- | --- |
+| 图片库或特定 native SDK 初始化 | 延迟加载、关闭硬件路径、替换为保守实现 | 禁用全部 native 能力 |
+| 非必要数据库预热 | 推迟预热、只读展示缓存 | 跳过必须完成的 schema 迁移 |
+| 动态插件或热修复模块 | 停用指定模块和版本 | 加载未校验的旧代码 |
+| WebView 预热或特定页面 | 取消预热、延迟创建、回退原生说明页 | 把 renderer 退出算成主进程 crash |
+| 推荐、动画、埋点增强项 | 延迟或采样关闭 | 关闭登录、安全、支付校验 |
+| 独立服务进程 | 禁用该进程对应的可选功能 | 把子进程计数写进主进程桶 |
 
-恢复条件要比进入条件更保守。一次成功启动只说明当前路径通过,不说明问题消失。推荐同时满足:同一版本连续成功启动 N 次、没有新的同签名失败、修复配置版本已更新、关键页面进入过一次。版本升级可以清理旧签名,但要保留"升级前进入过 SafeMode"的事件,方便灰度复盘。
+计划可以表示为 `moduleId + action + scope + reason + expiry`，并绑定适用的版本和进程。远程配置只是一种输入：应用必须缓存一份已校验的配置，并保留本地保守默认值。设备已经陷入启动循环时，不能假设网络请求还能完成。
 
-用户强杀、系统更新、权限变更、包状态变化、任务移除不应触发 SafeMode。Android 11(API 30)起已有 `REASON_USER_STOPPED`,Android 14 起新增 `REASON_PACKAGE_STATE_CHANGE`,并继续细化 reason / subreason;低版本或厂商 ROM 上拿不到完整分类时,宁可只上报,也不要按崩溃处理。[已验证: AOSP android-11.0.0_r1 / android-17.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
+严禁自动清除用户数据、删除数据库、重置账号状态或绕过强制迁移。若必需不变量本身失败，保护模式应展示明确的修复入口，例如升级、重新安装前的数据导出说明或联系客服，而不是偷偷跳过校验。
 
-SafeMode 事件本身也要进入 Crash 上报体系。建议至少包含:进入等级、触发规则、上一轮 marker、退出原因、关联 issue、被关闭模块、恢复条件、是否成功退出。26.2 节的 Crash 上报体系负责聚合和告警,20.8 节负责把重复样本归并成可处理 issue。
+## 阈值是策略参数，不是平台常量
 
-## 文件落盘协议:tmp、fsync、rename
+不存在适用于所有应用的“三次崩溃”或“十分钟窗口”。策略至少要描述：
 
-启动 marker 和 crash envelope 都属于"崩溃前关键写入",文件协议要按最坏情况设计:进程可能在写入中被 kill,磁盘可能只落了一半,另一个进程可能同时写。
+- 最小证据置信度；
+- 连续失败数与滑动时间窗；
+- 同一签名、模块或启动路径的聚合方式；
+- 单次高危故障是否只启用低风险计划；
+- 计划最长持续时间与最大尝试次数；
+- 退出保护模式所需的成功样本；
+- 观察期内复发时怎样回退；
+- 版本升级、回滚和覆盖安装时怎样分桶。
 
-推荐协议:
+这些数值应由灰度数据、误判成本、模块可逆性和业务风险决定。低风险的图片预热可以较早延迟；数据库迁移、身份认证等强不变量则不能靠放宽阈值绕过。
 
-1. 写入独立临时文件,例如 `marker.json.new`。
-2. 写完后对文件内容 `fsync`。
-3. 关闭文件描述符。
-4. rename 到正式文件名。
-5. 下次读取时忽略残留 `.new`,必要时保留 `.bak` 做恢复。
+还要设置迟滞：进入保护模式和退出保护模式使用不同条件，避免一次成功后立即恢复全部模块，下一次又因同一问题回到保护模式。恢复可按“基础页面稳定 → 单个模块试开 → 观察成功 → 扩大恢复”推进，并始终给用户一个受控的“尝试正常启动”入口。
 
-Android `AtomicFile` 已覆盖主要路径;多进程写 marker 时要加文件锁,或按进程拆文件后由主进程汇总。Crash handler 里不要争用全局锁;锁被崩溃线程持有时,handler 再尝试加锁会卡死。
+## 版本变化不能抹掉证据
 
-Native signal handler 的落盘边界更窄。安全做法是提前准备固定大小缓冲区和文件描述符,崩溃时只写最小二进制摘要;完整日志、符号化、压缩和上传都放到下次启动。
+升级到新 `versionCode` 后，旧版本失败样本不再直接触发新版本计划，但仍应保留在有界历史中，供回滚、同一 native 库版本或跨版本配置问题分析。
 
-## 版本升级与用户强杀的排除规则
+可采用以下命名空间：
 
-SafeMode 需要一组排除规则,否则会把正常生命周期当成故障:
-
-- 版本升级:`versionCode` 变化后,旧版本的启动失败不再累计到新版本;但升级前的失败事件要上报。
-- 用户强杀 / 从最近任务划掉:按用户行为处理,不进入保护模式。
-- 权限变更和包状态变化:系统可能重启进程,按环境变化处理。
-- 系统低内存:只在启动 marker 未完成且同一路径多次发生时触发内存降级;单次后台 LMK 不触发。
-- 外部 service / SDK sandbox 退出:只能影响对应依赖模块,不能直接关闭主进程功能。
-
-排除规则的落点仍然是 marker 匹配。没有 marker,只有退出原因,就上报观察;有 marker,但版本、进程、时间窗口对不上,也只上报观察。SafeMode 的判定应宁可少触发,也不要把用户带进错误的降级状态。
-
-## 文件持久化协议与系统退出状态机(概要)
-
-SafeMode 落盘的可靠性依赖文件持久化协议。Android 框架内有三套独立的 crash 文件持久化实现:
-
-- **`AtomicFile`**(Java 端):`finishWrite()` 先 fsync 文件,再 `rename(2)` 原子切换 `.new` → 正式文件。限制:不 fsync 父目录,跨文件系统 rename 不捕获 EXDEV。
-- **`DropBoxManagerService`**:写 `.tmp` 文件后通过 `EntryFile.renameTo()` 提交,不显式 fsync;重启时 `init()` 清理残留 `.tmp`(未提交信号)。依赖文件系统惰性刷盘。
-- **`tombstoned`**(Native 端):`O_TMPFILE` + `unlinkat` 清旧路径 + `linkat` 提交,不走 rename;同样不 fsync 文件和目录。
-
-三套实现的共性缺口是**不 fsync 父目录**——POSIX 语义下 `rename(2)` 修改了父目录的目录项,必须 fsync 父目录 fd 才能保证元数据在 power-cut 后可见。这是 AOSP 自身持久化边界的最大盲点。
-
-`AppExitInfoTracker`(system_server)维护 16 条/容器的 LRU 退出记录环形缓冲,按 `packageName + uid + pid` 定位,`lmkd > zygote > AM 自杀` 三级信号源优先级,写入 statsd 前做 15 秒去抖。作为 SafeMode 补偿读取的系统侧数据源,它的字段语义和边界在正文已展开。
-
-AtomicFile fsync 链路、DropBox 状态机、tombstoned linkat 协议、RecoverySystem BCB 写入、AppExitInfoTracker 多源聚合的完整源码级分析见下方「附录 A:Crash 文件持久化协议可靠性边界」和「附录 B:AOSP AppExitInfoTracker 状态机参考」。
-
-
-
-## 附录 A:Crash 文件持久化协议可靠性边界
-
-> 本节内容移至附录,保留完整源码分析供深度查阅。
-
-AOSP 自身没有"统一"的崩溃文件持久化协议,而是分散在三套独立实现里:1 `android.util.AtomicFile`(Java 端约定俗成的原子写)走"写 `.new` → fsync → `renameTo`";2 `DropBoxManagerService` 走"写 `drop<pid>.tmp` → `createEntry()` 内 `EntryFile` 执行 `temp.renameTo(final file)` → `enrollEntry`"但**不**对 tmp 做 fsync;`init()` 启动时清理未提交的残留 `.tmp`;3 `tombstoned`(Native 端)走 `O_TMPFILE` → `unlinkat` 清旧路径 → `linkat` 硬链接提交,**不**走 rename。文件系统层面 `rename(2)` 在同一文件系统内是原子的,但**不能**保证跨 power-cut 的元数据持久性--必须 `fsync(file)` + `fsync(parent dir)`。这三套实现都没有把目录 fsync 显式化,是 AOSP 自身 crash 文件持久化边界的最大盲点。锚定版本:AOSP android-17.0.0_r1;旧版本实现细节需按对应 tag 复核。
-
-### AOSP `AtomicFile` 的 fsync + rename 实现
-
-`frameworks/base/core/java/android/util/AtomicFile.java`(android-17.0.0_r1)。`finishWrite(FileOutputStream str)` 流程:
-
-```java
-public void finishWrite(FileOutputStream str) {
-    if (str == null) return;
-    if (!FileUtils.sync(str)) {              // 1 fsync(fd) - 数据+必要元数据
-        Log.e(LOG_TAG, "Failed to sync file output stream");
-    }
-    try { str.close(); } catch (IOException e) { ... }
-    rename(mNewName, mBaseName);             // 2 POSIX rename - 同 fs 内原子
-    if (mCommitEventLogger != null) mCommitEventLogger.onFinishWrite();
-}
+```text
+installationEpoch / versionCode / processRole / startupRoute / signature
 ```
 
-`FileUtils.sync()`(`core/java/android/os/FileUtils.java` line 273-282)走 `stream.getFD().sync()` → `libcore.io.IoBridge.fsync` → `os.fsync(fd)`,等价于 `fsync(2)`,对文件大小、mtime、内容都做同步。AtomicFile 的 `startWrite()`(line 138-162)会处理 `.bak` 旧协议残留,然后打开 `.new`;`failWrite()` 先 `FileUtils.sync(str)` 同步,再 `close()`,最后删除 `.new` 文件。关键限制:
+这条键结构把安装、版本、进程、入口和问题签名分开。版本升级时关闭旧桶的决策权，而不是删除旧桶；若新旧版本使用相同的故障模块或远程配置，可以通过经过审核的规则继承计划。
 
-1. **只 fsync 文件,不 fsync 父目录**。POSIX 语义下,`rename(2)` 修改了父目录的目录项,必须 `fsync(parent_dirfd)` 才能保证元数据落盘。AtomicFile 在这一层有缺口。
-2. **依赖同文件系统**。`rename(2)` 在跨 mount point 时返回 `EXDEV`,AtomicFile 不捕获这个 errno,rename 失败只打 log。
-3. **fchmod 不原子**。`startWrite` 在 mkdirs 后做了 `setPermissions(parent, 0775, -1, -1)`,权限与子文件创建存在时间差。
+## 多进程与并发启动
 
-### DropBoxManagerService 的 `.tmp` 状态机(无 fsync)
+多进程应用最容易出现“主进程替子进程背锅”。需要遵守三点：
 
-`frameworks/base/services/core/java/com/android/server/DropBoxManagerService.java`(android-17.0.0_r1)。`add()` 流程(line 511-568):
+- 每个进程独立持有启动租约，`processName` 与 `processRole` 都写入；
+- 只有明确的汇总 owner 能更新失败样本和降级计划；
+- 独立服务或推送进程的死亡，默认只影响它负责的功能。
 
-```java
-temp = new File(mDropBoxDir, "drop" + Thread.currentThread().getId() + ".tmp");
-try (FileOutputStream out = new FileOutputStream(temp)) {
-    entry.writeTo(out.getFD());             // 1 写 .tmp,无 fsync
-}                                            // 2 close 关闭 FileOutputStream,但不等于 fsync
-long time = createEntry(temp, tag, flags);  // 3 EntryFile(File temp, ...) 执行 temp.renameTo(final file) → enrollEntry
-temp = null;
-...
-} finally {
-    if (temp != null) temp.delete();        // 4 仅在异常时清
-}
-```
+如果主进程和子进程近乎同时启动，不能用单个“当前 session”字段。每个租约都有自己的 `launchId`，系统退出历史也按进程名查询；聚合时再根据业务依赖关系判断是否属于同一用户操作。
 
-`init()` 启动恢复(line 1074-1106):
+进程仍存活时，其他进程不要仅凭租约文件判定它已失败。可结合文件 owner、进程存活检查和租约年龄排除并发启动，但进程存活检查也有竞态，只能作为辅助证据。
 
-```java
-for (File file : files) {
-    if (file.getName().endsWith(".tmp")) {
-        Slog.i(TAG, "Cleaning temp file: " + file);
-        file.delete();                      // 启动时清残留
-        continue;
-    }
-    ...
-}
-```
+## WebView Renderer 退出属于页面级恢复
 
-DropBox 的实际状态机是:`.tmp` 写入完成后通过 `EntryFile.renameTo()` 提交到最终文件名,再 `enrollEntry` 注册到内存索引;启动期扫到的残留 `.tmp` 表示提交前中断,`init()` 删除(视作 partial/脏数据)。同时支持 IS_EMPTY tombstone(`enrollEntry(new EntryFile(mDropBoxDir, tag, t))` line 1236-1239)--空文件 tombstone 标记"数据被丢过"。关键限制:
+WebView renderer 通常运行在独立进程。`onRenderProcessGone()` 表示对应 renderer 已退出，不等于宿主应用发生 Java crash。处理顺序应是：
 
-1. **写 .tmp 时不 fsync**,写完后通过 renameTo 提交。完全依赖文件系统的惰性刷盘保证"写入即可见",在 power-cut 下可能丢失最近 1 个 entry。这与 AtomicFile 的显式 sync 形成区别。
-2. **重启时**残留 `.tmp` 是未提交信号--`init()` 删除。这恰好提供了"partial 状态机"语义:`.tmp` 存在 = 上次提交前中断,**不需要**额外的 `partial` 标记文件。
-3. **trim 策略**:ageSeconds(`Settings.Global.DROPBOX_AGE_SECONDS`)和 quotaPercent(`DROPBOX_QUOTA_PERCENT`)共同决定 `trimToFit()` 行为。
+1. 停止继续使用受影响的 `WebView`；
+2. 从视图树移除并销毁旧实例；
+3. 在新的调用栈或调度点重建，避免回调内重入；
+4. 使用受控状态恢复页面；
+5. 同一页面或模块反复失败时，再选择 WebView 级降级计划。
 
-### `tombstoned` 的 linkat 提交(Native 端)
+不要在清理旧实例之前调用可能依赖 renderer 的方法，也不要无条件重放包含敏感参数的 URL。完整实现和 Android 17 边界见 20.10 节。本章只负责说明：renderer gone 可以影响 WebView 模块计划，但不能直接增加宿主主进程的崩溃循环次数。
 
-`system/core/debuggerd/tombstoned/tombstoned.cpp`(android-17.0.0_r1)。临时文件创建(line 145-167):
+## 观测与隐私
 
-```cpp
-CrashArtifact create_temporary_file() const {
-    CrashArtifact result;
-    result.fd.reset(openat(dir_fd_, ".", O_WRONLY | O_APPEND | O_TMPFILE | O_CLOEXEC, 0660));
-    if (result.fd == -1) {
-        PLOG(FATAL) << "failed to create temporary tombstone in " << dir_path_;
-    }
-    ...
-    return result;
-}
-```
+至少记录以下聚合指标：
 
-commit 协议(line 409-429):
+- SafeMode 进入率，按版本、进程、启动路径和计划分组；
+- 候选失败转为确认失败的比例；
+- `ApplicationExitInfo` 匹配成功率、歧义率和 trace 可用率；
+- 普通启动与降级启动的 `PROCESS_READY`、`INTERACTIVE` 成功率；
+- 保护模式中的用户退出、手动重试和恢复成功率；
+- 各退出原因被排除或转入其他治理路径的数量；
+- 降级计划的误触发率和重复进入率。
 
-```cpp
-static bool rename_tombstone_fd(borrowed_fd fd, borrowed_fd dirfd, const std::string& path) {
-    int rc = unlinkat(dirfd.get(), path.c_str(), 0);  // 1 删旧
-    if (rc != 0 && errno != ENOENT) { ... return false; }
-    std::string fd_path = StringPrintf("/proc/self/fd/%d", fd.get());
-    rc = linkat(AT_FDCWD, fd_path.c_str(), dirfd.get(), path.c_str(), AT_SYMLINK_FOLLOW);
-    if (rc != 0) { ... return false; }                // 2 linkat 提交
-    return true;
-}
-```
+本地与服务端都只上传稳定枚举、版本、模块 ID、签名哈希和受限堆栈。不要上传原始 URL、Intent extras、搜索词、订单、账号、剪贴板或页面正文。`processStateSummary` 的 128 字节限制不是隐私保护机制，内容仍要主动脱敏。
 
-关键设计差异:1 **不用 rename,先 `unlinkat` 清旧路径,再 `linkat` 提交**--`O_TMPFILE` 模式下 fd 没有路径,无法 rename;只能 linkat 把 inode 接入目录树。2 **不 fsync 文件,也不 fsync 目录**--把"已提交"语义寄托在 linkat 的原子性上。3 **持久化后端** `/data/tombstones/` 位于设备数据分区,实际文件系统取决于设备;在没有 file / directory fsync 的情况下, power-cut 后最后 N 个 tombstone 仍可能丢失。
+## 测试范围
 
-### `RecoverySystem.installPackage` 的控制文件(无 fsync / 无 rename)
+单元测试应覆盖状态与证据的组合，而不是只测计数器：
 
-`frameworks/base/core/java/android/os/RecoverySystem.java`(android-17.0.0_r1)。关键文件(line 134-150):
+- 旧租约处于各阶段时，Java crash、native crash、ANR、LMK、用户停止分别怎样分类；
+- 墙钟前跳、后跳、设备重启和旧 elapsed 基准；
+- 应用升级、降级、覆盖安装与安装时间变化；
+- 同名进程的多条退出记录、记录重复消费和候选歧义；
+- 租约文件为空、截断、格式版本未知和校验失败；
+- 观察期成功、复发、计划过期和用户手动重试；
+- 多进程并发写入与 owner 异常退出。
 
-```java
-public static final File BLOCK_MAP_FILE       = new File(RECOVERY_DIR, "block.map");
-public static final File UNCRYPT_PACKAGE_FILE = new File(RECOVERY_DIR, "uncrypt_file");
-public static final File UNCRYPT_STATUS_FILE  = new File(RECOVERY_DIR, "uncrypt_status");
-public static final File LOG_FILE             = new File(RECOVERY_DIR, "log");
-```
+设备或集成测试还应注入以下故障：
 
-写入流程(line 619-660):
+| 故障 | 预期 |
+| --- | --- |
+| `Application.onCreate()` 的可选模块抛异常 | 下一次能选择对应模块计划 |
+| JNI 初始化触发 native crash | 系统 tombstone 保留，下一次按进程和租约关联 |
+| 主线程启动阶段阻塞 | ANR 证据进入补偿核对，不依赖当场写文件 |
+| 用户从设置中强行停止 | 不计入崩溃循环 |
+| 后台进程被内存压力回收 | 进入内存治理，不升级 crash 计划 |
+| marker 写入时进程被杀 | 旧版或新版文件仍可解析，损坏时安全退化 |
+| WebView renderer 反复退出 | 只触发页面或 WebView 模块计划 |
+| 远程配置不可达 | 使用缓存配置或本地保守策略 |
+| 降级启动连续成功 | 进入观察期，逐项恢复，不一次性全开 |
 
-```java
-LOG_FILE.delete();
-UNCRYPT_PACKAGE_FILE.delete();
-if (filename.startsWith("/data/")) {
-    if (processed) {
-        if (!BLOCK_MAP_FILE.exists()) throw new IOException("Failed to find block map file");
-    } else {
-        FileWriter uncryptFile = new FileWriter(UNCRYPT_PACKAGE_FILE);
-        try { uncryptFile.write(filename + "\n"); } finally { uncryptFile.close(); }
-        UNCRYPT_PACKAGE_FILE.setReadable(true, false);
-        UNCRYPT_PACKAGE_FILE.setWritable(true, false);
-        BLOCK_MAP_FILE.delete();
-    }
-    filename = "@/cache/recovery/block.map";
-}
-```
+测试时不要只断言“进入了 SafeMode”，还要断言被禁用的范围、证据 ID、排除原因和恢复路径，避免一个宽泛开关掩盖错误归因。
 
-**完全没有 fsync,也没有 rename 协议**--直接 `FileWriter.write` + `close`,依赖 Java IO 内部 flush。崩溃时 `uncrypt_file` 可能为空或不完整。RecoverySystem 的最终 commit 信号是 BCB;Java 层通过 Binder 调用 `RecoverySystemService.setupBcb()`,system_server 拉起 init 的 `setup-bcb` 服务,再通过 `/dev/socket/uncrypt` 发送 BCB command。`BLOCK_MAP_FILE` 的存在性即状态机:`exists()` = 已经预先处理;不存在 = 启动时需要 uncrypt。两态机但**没有** partial 状态,崩溃恢复依赖 BCB + recovery image。
+## 源码核对点
 
-### 应用层 `crash_envelope` 的推荐设计
+- [`ApplicationExitInfo.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java)：退出原因、时间戳、trace 与 API 37 ANR 信息的接口边界。
+- [`ActivityManager.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityManager.java)：历史退出记录、`setProcessStateSummary()` 的 128 字节限制和 LMK 报告能力。
+- [`Settings.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/provider/Settings.java)：`BOOT_COUNT` 的公开可读定义与版本边界。
+- [`AtomicFile.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/util/AtomicFile.java)：`startWrite()`、`finishWrite()`、`failWrite()` 及调用方串行化要求。
+- [`RuntimeInit.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java)：Java 未捕获异常的预处理、上报与终止流程。
+- [`ApplicationExitInfo` API 文档](https://developer.android.com/reference/android/app/ApplicationExitInfo)：公开 API 的版本边界与字段语义。
+- [`ActivityManager` API 文档](https://developer.android.com/reference/android/app/ActivityManager)：历史退出记录和进程状态摘要的公开契约。
+- [ANR 诊断文档](https://developer.android.com/topic/performance/vitals/anr)：ANR 类型、常见原因和诊断入口。
+- [Linux `vmscan.c`（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c)：内核内存回收背景；应用侧仍以 Android framework 暴露的退出原因作为契约。
 
-综合 AOSP 三套实现,应用层 SafeMode 的 crash_envelope 持久化协议应做四件事:1 **三态机**(`tmp`/`completed`/`partial`);2 **fsync 文件 + fsync 父目录**;3 **内容校验字段**(magic + version + size + sha256);4 **启动期扫描 partial → 决策层回收**。具体规范如下:
+## Review 清单
 
-**1. 三态机定义**:
+- [ ] 是否先读取旧租约，再写本轮租约？
+- [ ] 是否把残留 marker 当成候选证据，而不是崩溃结论？
+- [ ] 是否按版本、安装、进程、入口和 `launchId` 关联退出记录？
+- [ ] 是否区分墙钟、elapsed 时间和设备重启？
+- [ ] 是否把 trace 复制与解析移出冷启动主线程？
+- [ ] 是否排除用户停止、包更新、权限变化和无法归因的退出？
+- [ ] 是否把 LMK、资源限制和依赖进程死亡导向各自的降级计划？
+- [ ] 是否保留系统 Java crash 与 debuggerd/tombstoned 处理链路？
+- [ ] 是否由单一 owner 写失败样本，多进程各自保存租约？
+- [ ] 是否只关闭与故障相关的可选模块？
+- [ ] 是否禁止自动清数据、跳过安全校验和绕过强制迁移？
+- [ ] 是否设置观察期、迟滞、过期和手动重试？
+- [ ] 是否保留旧版本的有界诊断证据？
+- [ ] 是否对所有持久化、trace 和上报内容做限长与脱敏？
 
-| 状态 | 文件名约定 | 写入期 | 提交动作 | 启动期扫描 |
-|---|---|---|---|---|
-| `tmp` | `crash_<id>.tmp` | append + 周期 fsync(file) | rename(tmp → envelope) | 读到 `.tmp` → 转 partial |
-| `completed` | `crash_<id>.envelope` | 已 commit | fsync(parent dir) | 正常解析 |
-| `partial` | `crash_<id>.partial` | 上次崩溃留下的不完整 tmp | - | 决策层决定是否重传 |
-
-**2. envelope 头部字段**(最少 32 字节):
-
-```
-[0..4]   magic = "ENV1"
-[4..6]   version = 1
-[6..14]  size(u64 LE,正文长度)
-[14..22] reserved
-[22..30] reserved
-[30..32] reserved
-[32..N]  正文
-[N..N+32] sha256(正文) - 末尾校验
-```
-
-读时先校验 magic + size,再读正文 + 末尾 sha256,**校验失败走 partial 路径**。AOSP `AtomicFile` 不做内容校验(只靠 rename 原子性),tombstoned 同样不做--应用层应补上。
-
-**3. fsync 协议**(必须显式做):
-
-```java
-// 写 envelope
-FileDescriptor fd = raf.getFD();
-fd.sync();                              // fsync file
-File dir = new File(".../envelopes").getAbsoluteFile();
-FileDescriptor dirFd = Os.open(dir.getPath(), OsConstants.O_RDONLY, 0);
-Os.fsync(dirFd);                        // fsync parent dir - AOSP 自己漏掉了
-Os.close(dirFd);
-```
-
-`Os.fsync(FileDescriptor)` 是公开系统调用封装,无需版本限定。`FileUtils.sync()` 只对文件做 fsync,对父目录无效。
-
-**4. 跨进程并发**:多进程同时写 marker 时要加文件锁(`FileChannel.tryLock()`)或按进程拆文件后由主进程汇总。Crash handler 里不要争用全局锁--锁被崩溃线程持有时,handler 再尝试加锁会卡死。
-
-**5. Native signal handler 落盘边界更窄**:安全做法是提前准备固定大小缓冲区和文件描述符,崩溃时只写最小二进制摘要(magic + 时间戳 + crash type + backtrace pointer list);完整日志、符号化、压缩和上传都放到下次启动。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/util/AtomicFile.java、core/java/android/os/FileUtils.java、services/core/java/com/android/server/DropBoxManagerService.java、core/java/android/os/RecoverySystem.java、services/core/java/com/android/server/recoverysystem/RecoverySystemService.java、system/core/debuggerd/tombstoned/tombstoned.cpp;本节调研对应《2026-06-16-crash-file-persistence-protocol-reliability.md》]
-
-## 附录 B:AOSP AppExitInfoTracker 状态机参考
-
-> 本节内容移至附录,供工程实现参考。
-
-AOSP 自身在 `frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java` 维护一个进程退出状态机,可作为本节工程设计的参考实现。锚定版本:AOSP android-17.0.0_r1。
-
-### 状态机选型:环形缓冲 + LRU + 时间窗
-
-AOSP 把每个 package / uid 容器的退出记录限定在 16 条以内(`config_app_exit_info_history_list_size = 16`,`core/res/res/values/config.xml`),超出后按时间戳最小者淘汰。App 侧 SafeMode 实现也应限定在 8~16 条,超过按 LRU 驱逐;N 太小会冲掉灰度期集中爆发,N 太大调试难定位。
-
-### 字段五元组:定义一次进程死亡
-
-AOSP 查询时先按 `packageName + uid` 定位容器,再按 `pid` 过滤;`AppExitInfoContainer.getExitInfosLocked()` 把结果按 `timestamp` 倒序返回,`realUid` 主要用于孤立进程 / SDK sandbox 映射和 zygote、lmkd 外部信号匹配。App 侧建议把 marker 匹配维度限定到 `(versionCode, packageName, processName, startupRoute, startedWallTimeMs)`,再叠加 `ApplicationExitInfo.timestamp` 做时间窗校验,窗口 ±60s 内才计入崩溃循环。
-
-### 不可覆盖白名单:`preventExitInfoUpdate`
-
-AOSP 维护一份「AM 自杀不可覆盖」的 reason 白名单:`REASON_ANR`、`REASON_CRASH`、`REASON_CRASH_NATIVE` 一旦写入就不允许被后续 AM 自身的 kill 覆盖(`AppExitInfoTracker.preventExitInfoUpdate`)。`handleNoteAppKillLocked` 在覆盖前先 `if (info == null || preventExitInfoUpdate(info)) { addExitInfoLocked(raw); }`,未命中白名单才就地覆盖。App 侧 SafeMode 状态机应对应两条写入路径:
-
-- **不可被覆盖的高可信事件**:Native crash、Java crash、ANR 触发的 `fatal_exited` marker,跨次启动只增不减。
-- **可被覆盖的低可信事件**:`launching` 状态可被同一次启动的后续 `started` 覆盖;上次启动因 LMK / 用户划掉导致 marker 卡在 `launching`,本次启动应识别为新会话、重置计数。
-
-### 时间窗:防止 pid 复用污染
-
-AOSP 在更新已有记录前先做 `isFresh` 时间窗校验(`AppExitInfoTracker.updateExistingExitInfoRecordLocked` 注释明确「if the record is way outdated, don't update it then (because of potential pid reuse)」)。`getHistoricalProcessExitReasons(packageName, pid, maxNum)` 的 pid=0 语义是不过滤 pid,但调用方仍要在客户端结合 timestamp 做二次校验。App 侧做 marker + exit evidence 匹配时同样必须做时间窗,建议 marker 用 `System.currentTimeMillis()` 写入,与 `ApplicationExitInfo.timestamp` 配对。
-
-### 多源信号聚合:zygote + lmkd + AM + 15s 去抖
-
-AOSP 维护三个独立信号源(`mAppExitInfoSourceZygote`、`mAppExitInfoSourceLmkd`、AM 自身 `scheduleNoteAppKill`),优先级 **lmkd > zygote SIGCHLD > AM 自杀**。写入 statsd 之前先去抖 15 秒(`APP_EXIT_INFO_STATSD_LOG_DEBOUNCE`),让更准确信号先到达。App 侧「marker + 退出证据」可对应这套多源模型:
-
-- 信号源 A:App 自己的 CrashHandler / SignalHandler(最高优先级)
-- 信号源 B:`ApplicationExitInfo`(次优先级,跨进程重启后才有)
-- 信号源 C:用户行为日志 / 任务移除(最低优先级,只做排除)
-
-判定时按 A > B > C 取最可信的一类;冲突时以 A 为准,C 永远只做排除项。
-
-### 持久化与离线兜底
-
-AOSP 把退出记录写到 `/data/system/procexitstore/procexitinfo`(`AtomicFile` 包装,30 分钟刷盘一次),崩溃时只丢 30 分钟内的记录;`onSystemReady` 时异步加载(`loadExistingProcessExitInfo`)。App 侧 SafeMode 本地规则必须不依赖任何远程信号:启动时先读本地 marker,再读 `ApplicationExitInfo`;远程配置作为「放宽/收紧」的二次开关,不能作为唯一判定来源。断网、远程配置降级、首次冷启场景下,SafeMode 仍能基于本地历史做兜底。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java、core/java/android/app/ApplicationExitInfo.java、core/java/android/app/ActivityManager.java、services/core/java/com/android/server/am/ProcessList.java、core/res/res/values/config.xml;本节调研对照《2026-06-16-appsafemode-state-machine-and-launch-success-marker.md》]
-
-### 深度调研源
-
-- SafeMode launch marker 状态机 AOSP 源码核验 - 详细核验 ApplicationExitInfo 17 个 REASON_* 常量、AtomicFile.finishWrite() 持久化协议、AppExitInfoTracker 30分钟 debounce + 16条记录限制、Process.killProcess 三条路径
-
-## 小结
-
-SafeMode 能否拦住崩溃循环,取决于三件事:启动 marker 写得足够早,退出证据补得足够准,降级动作足够窄。Java Crash、Native Crash、ANR、LMK、WebView Renderer gone 都能打断启动,但它们不是同一种故障;统一进入"保护模式"之前,必须先按证据来源分层。
-
-工程上可以从最小路径开始:主进程 marker、Java Crash envelope、API 30+ `ApplicationExitInfo` 补偿、WebView `onRenderProcessGone()` 页面级记录、L1/L2 两档降级。等这条路径稳定后,再补 Native 最小摘要、多进程汇总、远程阈值和发布平台联动。
+SafeMode 的价值不只在于拦住一次崩溃，更在于证据不完整时仍能做可解释、可逆、范围受控的启动决策。租约描述进度，系统退出历史补充原因，降级计划限制影响面；三者分开，才能让保护机制本身保持可诊断。
