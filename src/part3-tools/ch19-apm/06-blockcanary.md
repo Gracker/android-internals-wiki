@@ -88,204 +88,315 @@ last_deepseek_cn_review_at: 2026-07-05
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## BlockCanary 更适合当原理样本
+## 结论：保留原理，不直接接入 1.5.0
 
-BlockCanary 是早期开源的 Android 主线程卡顿检测库，仓库名是 `AndroidPerformanceMonitor`。它的核心思路很直接：当主线程一次 `Message` 执行时间超过阈值时，抓取堆栈并生成报告。
+BlockCanary 是早期 Android 主线程长消息监控库，仓库名为 `AndroidPerformanceMonitor`。它用公开的 `Looper.setMessageLogging()` 取得每次 `Message` dispatch 的起止边界，再由后台线程采样主线程 Java 栈。这个模型至今仍适合解释“Looper 长消息监控怎样工作”。
 
-这套思路今天还有学习价值，但公开仓库的构建基线已经停在较早期工具链：顶层 `build.gradle` 仍是 AGP 2.2.2，公共配置是 `compileSdkVersion 23`、`targetSdkVersion 22`，README 里的依赖写法还是 `compile` / `debugCompile`。把它直接写成 Android 8-17 的现成方案会误导。更合理的定位是：历史 Looper block 方案样本，现代项目借它理解 `Printer` + 采样堆栈这条链，再按现有工具链重写。
+发布物已经不适合 Android 17 / API 37 工程直接依赖。截至 2026-07-25：
 
-## 它抓的是一次 Looper 消息
+- Maven Central 可用的最高版本是 `1.5.0`，元数据更新时间停在 2017-02。
+- 仓库 `master` HEAD 是 `ed688391cdf95742892ce61494736667cf5baf08`，最近一次代码提交日期为 2017-08-17。仓库没有设置 archived，但不能把“仍可打开”理解为“仍在维护”。
+- 上游仍使用 AGP 2.2.2、compileSdk 23、targetSdk 22、minSdk 9；README 依赖配置还是 `compile`、`debugCompile` 和 `releaseCompile`。
+- 1.5.0 的 Activity 带 intent-filter，却没有声明 `android:exported`；target 31+ 的现代工程会在 manifest 合并/构建阶段遇到问题。
+- 通知实现没有 NotificationChannel，`PendingIntent` 也没有 `FLAG_IMMUTABLE` / `FLAG_MUTABLE`。API 31+ 首次显示 block 通知时可能抛出 mutability 异常，API 26+ 的通知渠道同样缺失。
+- analyzer manifest 会合并 `READ_PHONE_STATE` 和 `WRITE_EXTERNAL_STORAGE`，代码还调用 `TelephonyManager.getDeviceId()` 采集 IMEI；这与现代权限、设备标识符和隐私要求不相容。
 
-Android 主线程大部分工作都通过 `Looper.loop()` 分发 `Message`。BlockCanary 利用 `Looper.setMessageLogging()` 设置 `Printer`，在每个 Message 开始和结束时记录时间。如果开始到结束超过阈值，就认为这次消息执行期间发生了 block。
+新项目应以 JankStats / FrameMetrics 建立帧指标，以 Perfetto 还原现场；若还需要“主线程单次 Message 超时 + 栈采样”，按本章后半部分重写轻量实现。已有项目若必须保留 BlockCanary，至少 fork 源码，不能用 1.5.0 AAR 修几个 Gradle 写法就宣布 API 37 兼容。
 
-这条路径的好处是接入轻、侵入小，不需要修改业务代码，也不需要系统权限。缺点也同样清楚：
+## 它测量的是 dispatch，不是整帧
 
-- 它只能看到 Message 粒度，无法自然区分 Input、Animation、Traversal、RenderThread 等阶段。
-- 采样线程抓到的是某几个时刻的主线程堆栈，不一定覆盖最慢的那一行代码。
-- 如果主线程被调度饿死，堆栈可能停在一个并不耗时的函数上。
+Android 17 的 `Looper.loopOnce()` 从 `MessageQueue.next()` 取出消息后，才调用 `Printer` 的 dispatch-start；`Handler.dispatchMessage()` 返回后，再调用 dispatch-finish。因此 BlockCanary 的时间窗口是：
 
-所以 BlockCanary 报告适合当“卡顿方向提示”，不能直接当最终结论。
-
-## 配置项决定误报率
-
-先把 upstream 基线和现代项目的差距摆清楚：
-
-| 公开基线 | upstream 现状 | 对现代项目的含义 |
-|---|---|---|
-| Gradle 插件 | AGP 2.2.2 | 不能直接套到现代 AGP |
-| SDK 目标 | `compileSdkVersion 23` / `targetSdkVersion 22` | 权限、前台服务、存储等行为口径都偏旧 |
-| 依赖写法 | `compile` / `debugCompile` | 说明 README 面向的还是旧版 Gradle model |
-
-再看配置。README 暴露的不只是阈值，还包括 `qualifier`、`networkType`、`path`、展示页 label 和白名单。它们都会影响报告能不能直接使用：
-
-| 配置 | 作用 | 配错后的后果 |
-|---|---|---|
-| `provideBlockThreshold()` | 定义多长才算 block | 过低会刷屏，过高会漏掉慢交互 |
-| `provideDumpInterval()` | 控制抓栈间隔 | 过密会反噬性能，过稀会错过关键栈 |
-| `provideQualifier()` | 区分版本、渠道、构建变体 | 不同版本日志混在一起，无法回归对比 |
-| `provideNetworkType()` | 记录弱网 / Wi‑Fi / 蜂窝环境 | 网络抖动引起的卡顿难以聚类 |
-| `providePath()` | 决定本地日志落盘路径 | 现代存储限制下容易遇到权限和清理问题 |
-| `display activity label` / 通知开关 | 决定调试态是否可见 | 样本生成了但现场人员看不到 |
-
-线上系统通常还要补页面路由、前后台状态、采样率和远程开关。早期 BlockCanary 示例更偏本地或小范围调试，新项目不能照搬默认值。
-
-## 和 JankStats、FrameMetrics 的差别
-
-JankStats 和 FrameMetrics 关心帧。BlockCanary 关心主线程 Message。
-
-这两个口径不会完全一致。一个 Message 可能跨多帧，导致连续慢帧；也可能某个 Message 很长，但窗口不在动画或用户交互期间，用户感知没那么明显。反过来，一次掉帧也可能来自 RenderThread、GPU、SurfaceFlinger 或调度问题，BlockCanary 只看主线程就会漏掉。
-
-工程上更稳的搭配是：
-
-- 用 JankStats / FrameMetrics 统计用户可感知的慢帧。
-- 用 Looper block 监控捕获主线程长消息。
-- 用 Perfetto 还原线程调度和渲染管线。
-
-## 使用建议
-
-如果维护老项目里已有 BlockCanary，可以保留它作为低成本主线程 block 信号，但要减少它的决策权。报告进入分析平台前，至少补上页面、前后台、线程状态、采样时间、版本和机型。
-
-如果是新项目，更建议直接用 JankStats、FrameMetrics、Matrix Trace Canary 或自研轻量 Looper 监控。BlockCanary 的代码和思想仍有学习价值，但它的维护状态和公开构建基线都不适合作为现代项目唯一方案。
-
-## Looper 监听的基本原理
-
-BlockCanary 的核心是 `Looper.setMessageLogging()`。主线程每次开始和结束处理 `Message` 时，Looper 会向 `Printer` 打印一行日志。BlockCanary 利用这两个边界计算一次 `Message` 的执行时间。
-
-简化后的逻辑如下：
-
-```java
-Looper.getMainLooper().setMessageLogging(new Printer() {
-    private long startTimeMillis;
-
-    @Override
-    public void println(String x) {
-        if (Debug.isDebuggerConnected()) {
-            return;
-        }
-        if (x.startsWith(">>>>> Dispatching")) {
-            startTimeMillis = SystemClock.uptimeMillis();
-            stackSampler.start();
-        } else if (x.startsWith("<<<<< Finished")) {
-            long cost = SystemClock.uptimeMillis() - startTimeMillis;
-            stackSampler.stop();
-            if (cost > blockThresholdMillis) {
-                reportBlock(cost, stackSampler.getSamples());
-            }
-        }
-    }
-});
+```text
+MessageQueue.next() 返回
+    ↓
+Printer: >>>>> Dispatching
+    ↓
+Handler.dispatchMessage(msg)
+    ↓
+Printer: <<<<< Finished
 ```
 
-这段代码说明了 BlockCanary 的本质：它不直接知道某一帧是否掉帧，也不直接知道渲染阶段。它只知道主线程某次 `Message` 从开始到结束花了多久。
+这段窗口不包含消息进入队列后等待前序消息的 delivery delay，也不等于一帧从输入、动画、布局、绘制、RenderThread 到 SurfaceFlinger 呈现的总时间。它只能说明“主线程执行这次 dispatch 的 wall time 超过自定义阈值”。
 
-这里还有一个工程边界不能漏：`setMessageLogging()` 是单槽位监听。应用、调试框架或别的 SDK 只要再次调用这个 API，前一个 `Printer` 就会被覆盖。Android 没有公开 API 读取当前已经设置的 `Printer`，所以项目里如果同时存在多个 Looper logger，做法通常不是“大家各调一次”，而是自己维护一个 hub：
+一次长 dispatch 可能跨过多个 Vsync，造成连续慢帧；它也可能发生在后台或静止页面，对用户没有直接帧影响。反方向也成立：25 ms 的 dispatch 在高刷新率滚动中可能造成慢帧，却远低于常见的 500～1000 ms block 阈值；RenderThread、GPU、SurfaceFlinger 或调度引起的 jank 也可能没有长主线程消息。
+
+所以报告中应分别保留：
+
+- `dispatch_wall_ms`：起止 wall/monotonic 时间差。
+- `dispatch_thread_cpu_ms`：主线程在这段窗口消耗的 CPU 时间。
+- 帧级指标：同一时间窗内的 jank frame、frame overrun 和 UI state。
+- 系统时间线：线程处于 Running、Runnable、Sleeping 还是阻塞等待。
+
+wall time 很长而 thread CPU time 很短，通常意味着等待或调度不足；两者都很长，才更像主线程持续执行计算。这个差值只能用于分流，不能单凭两项数值断言 Binder、锁、I/O 或 GC 中的哪一种。
+
+## BlockCanary 1.5.0 的真实采样顺序
+
+上游实现并不是从 dispatch 开始就每 300 ms 抓一次栈。源码顺序如下：
+
+1. `BlockCanary.start()` 把 `LooperMonitor` 写入主 Looper 的 message logger 槽位。
+2. `LooperMonitor.println()` 第一次回调记录 `System.currentTimeMillis()` 和 `SystemClock.currentThreadTimeMillis()`，再启动 stack/CPU sampler。
+3. sampler 的首个任务延迟为 `provideBlockThreshold() * 0.8`。只有 dispatch 已经接近阈值，采样才开始。
+4. 后续任务按 `provideDumpInterval()` 执行。传入 0 才回退到 sampler 内部的 300 ms；`BlockCanaryContext` 的默认 dump interval 与 block threshold 相同。
+5. 第二次 Printer 回调停止 sampler，并按 wall clock 判断是否超过阈值。
+6. 超阈值后，写日志线程从时间区间内取 stack/CPU 样本。若 stack 列表为空，`BlockInfo` 不会生成，整次超时事件直接丢失。
+
+下面的时序图标出阈值、采样和上报之间的关系：
+
+```mermaid
+sequenceDiagram
+    participant L as "Main Looper"
+    participant M as "LooperMonitor"
+    participant S as "Timer HandlerThread"
+    participant W as "Log HandlerThread"
+
+    L->>M: "dispatch start"
+    M->>M: "记录 wall / thread CPU 起点"
+    M->>S: "threshold × 0.8 后开始采样"
+    S->>L: "Thread.getStackTrace()"
+    S-->>S: "按 dump interval 重复"
+    L->>M: "dispatch finish"
+    M->>S: "停止采样"
+    alt "wall time > threshold 且有 stack"
+        M->>W: "组装 BlockInfo、落盘、回调"
+    else "未超阈值或没有 stack"
+        M-->>M: "不生成报告"
+    end
+```
+
+例如阈值为 1000 ms、dump interval 为 300 ms，一次 1200 ms dispatch 的计划采样点大致是 800 ms 和 1100 ms，不是 300/600/900/1200 ms。最慢代码若只在前 200 ms 执行，两个样本都会错过它。计时器线程繁忙时，Handler 的延迟任务还会进一步推迟。
+
+`StackSampler` 调用 `mainThread.getStackTrace()`，把完整 Java 栈拼成字符串，保存在一个最多 100 项的静态 `LinkedHashMap` 中；访问 map 时使用 `synchronized`。上游没有“最大栈深”配置，也没有针对相同栈的去重。高频抓栈、字符串拼接和保留多份完整栈都需要纳入开销测试。
+
+## `Printer` 是公开 API，但只有一个槽位
+
+Android 17 `android-17.0.0_r1` 仍公开 `Looper.setMessageLogging(Printer)`，Javadoc 还明确提示 message logging 有性能损耗。`Looper` 每个实例只保存一个 `mLogging`：
+
+- 后调用者会覆盖先调用者。
+- 没有公开 getter 可以取回并包装当前 Printer。
+- BlockCanary 的 `stop()` 直接 `setMessageLogging(null)`，会清空该 Looper 当时的 logger。
+- 只要 logger 非空，Android 17 每次 dispatch 前后都会构造日志字符串：start 行包含 Handler、callback 和 `what`，finish 行包含 Handler 与 callback。
+
+如果 App 自己控制所有 Looper 观察组件，可以只安装一个 hub，再把多个 delegate 放入 hub：
 
 ```java
 public final class MainLooperPrinterHub implements Printer {
-    private final List<Printer> delegates = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<Printer> delegates =
+            new CopyOnWriteArrayList<>();
 
-    public void add(Printer printer) {
-        delegates.add(printer);
+    public void add(Printer delegate) {
+        delegates.addIfAbsent(delegate);
+    }
+
+    public void remove(Printer delegate) {
+        delegates.remove(delegate);
     }
 
     @Override
-    public void println(String x) {
+    public void println(String line) {
         for (Printer delegate : delegates) {
-            delegate.println(x);
+            delegate.println(line);
         }
     }
 }
 ```
 
-把 hub 设置给 `Looper` 后，再把 BlockCanary、trace logger 或自定义统计器都挂进 `delegates`，才能避免互相覆盖。
+hub 只能协调愿意通过它注册的组件。某个 SDK 后续再次调用 `setMessageLogging()`，仍会覆盖 hub；因此 SDK 评审和启动日志要检查这一冲突，不能只靠代码中存在 hub 就认为多观察者安全。
 
-注册 `Printer` 后，开销还包括 AOSP 层面的固定分配。`Looper.loop()` 在每个 Message 分发前后会拼接日志字符串，例如 `">>>>> Dispatching to " + msg.target + " " + msg.callback + ": " + msg.what`。只要 `mLogging` 不为 `null`，这段字符串拼接和对象分配就会发生。滑动、动画、Vsync 密集场景下，小 Message 数量很大，额外分配会带来 Young GC 压力。线上全量开启 `Printer` 方案时，要把这笔固定成本算进监控开销。
+Android 17 还保留 `Looper.Observer`、`setObserver()`、slow dispatch/delivery threshold 和 `LooperDoctor`，但这些接口都标为 `@hide`，不属于应用 SDK。`sObserver` 还是 process-wide 静态单槽位。应用不应通过反射把 Observer 当作 Printer 的稳定替代品，也不能沿用“API 29 起存在”推导出“API 37 对普通 App 可用”。
 
-## 抓栈线程和主线程的关系
+## 一个可审计的最小实现
 
-BlockCanary 通常会启动一个后台采样线程，在主线程 `Message` 执行期间按固定间隔抓主线程堆栈。常见实现会在采样线程里调用 `Looper.getMainLooper().getThread().getStackTrace()`。`Thread.getStackTrace()` 会跨进 ART / VM 获取目标线程栈，调用成本高于普通 Java 方法；在目标线程已经发生 block 时，高频采样会继续放大 CPU 和暂停成本。采样间隔、栈深和采样窗口要作为线上配置，不应固定写死。
+下面的伪代码只展示 dispatch 边界、单调时钟和异步上报；生产实现还要补采样限流、生命周期与冲突管理：
 
-这个设计有三个直接后果：
+```kotlin
+class MainDispatchPrinter(
+    private val thresholdMs: Long,
+    private val sampler: MainThreadSampler,
+    private val reporter: BlockReporter
+) : Printer {
+    private var inDispatch = false
+    private var startUptimeMs = 0L
+    private var startCpuMs = 0L
+    private var dispatchLine = ""
 
-- 如果主线程正在执行 Java / Kotlin 代码，采样堆栈有机会抓到业务函数。
-- 如果主线程卡在 native、Binder、I/O、锁等待或调度等待，堆栈只能显示等待点，不能直接显示根因。
-- 抓栈本身也有成本。频率太高、栈太深，或者直接在采样线程里落盘，都可能让监控本身加重卡顿。
+    override fun println(line: String) {
+        when {
+            line.startsWith(">>>>> Dispatching") -> {
+                inDispatch = true
+                dispatchLine = line
+                startUptimeMs = SystemClock.uptimeMillis()
+                startCpuMs = SystemClock.currentThreadTimeMillis()
+                sampler.schedule(startUptimeMs, thresholdMs)
+            }
 
-例如一次 1200ms block，采样线程每 300ms 抓一次，最多只拿到 4 个堆栈。若最慢的函数只运行 80ms，采样可能完全错过它。另一个常见误判是 GC：主线程被 Stop-The-World 停住时，采样点拿到的栈往往没有业务函数，只有一段看上去很平淡的等待状态。此时要回看 GC 日志、Perfetto 里的 GC slice 或 `HeapTaskDaemon` 活动，不能只看这条栈。
+            line.startsWith("<<<<< Finished") && inDispatch -> {
+                val endUptimeMs = SystemClock.uptimeMillis()
+                val endCpuMs = SystemClock.currentThreadTimeMillis()
+                inDispatch = false
+                val samples = sampler.stopAndSnapshot()
 
-Binder 和 I/O 也是同一类误判源。主线程栈可能停在 `BinderProxy.transact()`、`nativePollOnce()` 或磁盘读写入口，真正耗时点却在系统服务、远端进程或存储层。BlockCanary 的报告要按概率证据看，不能按精确 trace 看。
-
-遇到 GC 形态的 block，可以把报告和 Perfetto 一起看：主线程常停在 `Sleeping` 或等待状态，`HeapTaskDaemon`、GC 相关 slice 或内存分配峰值会给出旁证。遇到 Binder 等待，则要看远端进程、Binder 线程池和调度状态，不能只截取主线程栈顶。
-
-## 典型报告应该怎样聚合
-
-BlockCanary 原始日志适合本地看，线上平台要做归一化。建议字段如下：
-
-| 字段 | 说明 |
-|---|---|
-| `message_cost_ms` | 本次 `Message` 总耗时 |
-| `block_threshold_ms` | 当前阈值，便于不同版本比较 |
-| `top_stack_signature` | 采样堆栈归一化签名 |
-| `sample_count` | 本次 block 抓到多少个堆栈 |
-| `page` | block 发生时的页面或路由 |
-| `qualifier` | 版本、渠道、构建变体 |
-| `network_type` | Wi‑Fi / 蜂窝 / 离线 |
-| `foreground` | 前台 / 后台状态 |
-| `cpu_state` | 可选，结合 CPU 采样判断系统忙闲 |
-
-归一化后的报告通常长这样：
-
-```json
-{
-  "message_cost_ms": 1287,
-  "block_threshold_ms": 800,
-  "page": "FeedActivity",
-  "qualifier": "release-8.3.1-arm64",
-  "network_type": "wifi",
-  "foreground": true,
-  "sample_count": 4,
-  "top_stack_signature": "FeedRepository#refresh > BinderProxy.transact",
-  "stack_top": "android.os.BinderProxy.transact",
-  "debugger_attached": false
+                if (endUptimeMs - startUptimeMs >= thresholdMs) {
+                    reporter.enqueue(
+                        dispatchLine = dispatchLine,
+                        wallMs = endUptimeMs - startUptimeMs,
+                        threadCpuMs = endCpuMs - startCpuMs,
+                        samples = samples
+                    )
+                }
+            }
+        }
+    }
 }
 ```
 
-只按堆栈聚合会丢页面信息，只按页面聚合又无法分配给代码负责人。两者都要有。
+这里用 `uptimeMillis()` 避免系统时间校准造成负数或异常长事件，保留 `currentThreadTimeMillis()` 区分 on-CPU 与 off-CPU。`println()` 运行在被监控的主线程，里面只能做常数级状态更新；签名、压缩、磁盘与网络必须移到有界队列的后台线程。
 
-## 和慢帧指标的错位
+Printer 收到的是格式化字符串，没有公开的 `Message` 对象。可以保留原始 dispatch line 或提取 Handler/callback/what 作为调试信息，但字符串格式没有独立的 SDK 稳定承诺。不要把解析结果当作跨版本唯一主键；稳定聚合仍以归一化栈、页面和构建版本为主。
 
-一次 80ms `Message` 在 60Hz 下可能造成 4-5 帧延迟，但如果它发生在页面静止、没有动画的时间窗口，用户未必感知明显。一次 25ms `Message` 低于很多 block 阈值，但在滚动过程中已经可能造成慢帧。
+## 阈值与配置不能照搬默认值
 
-所以 Looper block 监控和帧监控要分开建指标：
+BlockCanary 1.5.0 的默认配置与影响如下：
 
-| 工具 | 观察粒度 | 更适合回答的问题 | 典型盲区 |
+| 配置 | 上游默认 | 源码行为 | 现代实现建议 |
+|---|---:|---|---|
+| `provideBlockThreshold()` | 1000 ms | wall time 严格大于阈值才报告 | 按场景和设备层级配置；启动、点击、滚动不能共用一条阈值 |
+| `provideDumpInterval()` | 等于 block threshold | 首采样仍等到阈值的 80%，后续才用该间隔 | 单独设置采样间隔、最大样本数和总时长 |
+| `provideQualifier()` | `"unknown"` | `BlockInfo` 类初始化时缓存 | 使用 build ID/version/flavor，不依赖运行中动态变化 |
+| `provideNetworkType()` | `"unknown"` | 每次报告由 App 提供 | 只作上下文；主线程网络等待要由 stack/Binder/socket 证据确认 |
+| `providePath()` | `"/blockcanary/"` | 外部根目录可写则写外部，否则写 filesDir | 只用 app 私有 cache/noBackup 目录，并设置大小、保留期和失败清理 |
+| `displayNotification()` | `true` | 启用旧 DisplayActivity 和旧通知 | internal 包可做现代通知；线上默认关闭 |
+| `provideWhiteList()` | `org.chromium` | UI 过滤，可配置删除命中日志 | 白名单精确到已知 signature，并保留计数；不要按大包名静默删除 |
+| `stopWhenDebugging()` | `true` | debugger 连接时 Printer 回调直接返回 | Debug 现场可暂停采集，但要记录开关状态，避免测试误判 |
+
+阈值没有通用标准。60 Hz 一帧预算约 16.7 ms，120 Hz 约 8.3 ms，但 Looper block 监控的目标通常是抓“明显长任务”，不是把阈值设成一帧预算后记录每个 dispatch。可行做法是：
+
+- 帧体验交给 JankStats / FrameMetrics。
+- Looper 监控用较高阈值抓取少量长消息，并按页面、交互和设备等级分层。
+- internal/QA 可以降低阈值换取更多现场；生产使用远程开关、采样率、冷却时间和单会话上限。
+- 参数变更随报告上传，避免把 300 ms 与 1000 ms 阈值的事件直接比较次数。
+
+## 报告字段要能支持反证
+
+BlockCanary 原始 `BlockInfo` 已包含 wall time、thread CPU time、多个 stack、进程、版本、网络、CPU 采样和内存；它也包含 UID、IMEI 等不应继续采集的字段。现代 schema 建议保留以下内容：
+
+| 字段 | 用途 |
+|---|---|
+| `event_id` / `session_id` | 去重，并与 frame、ANR、启动事件关联 |
+| `process_name`、`pid`、`main_tid` | 区分主进程和远程进程 |
+| `app_version`、`build_id`、`git_sha`、`flavor` | 定位代码与配置 |
+| `api_level`、`device_model`、`refresh_rate` | 解释平台与帧预算差异 |
+| `scene`、`page`、`ui_state`、`foreground` | 判断用户是否处于交互窗口 |
+| `dispatch_line` | 提供 Handler/callback/what 候选，不作稳定标识 |
+| `dispatch_wall_ms`、`dispatch_thread_cpu_ms`、`threshold_ms` | 区分持续执行与等待/调度，并保留门槛 |
+| `sample_interval_ms`、`sample_count`、`stacks[]` | 评估采样覆盖率；每份栈带相对时间 |
+| `stack_signature` | 对类名、方法名、行号做稳定归一化后聚合 |
+| `debugger_attached`、`gc_overlap` | 排除调试暂停并标注 GC 旁证 |
+| `trace_id` | 跳转到受控 Perfetto / ANR / frame 样本 |
+
+下面的样例强调“观测值”和“推断”分开：
+
+```json
+{
+  "event_id": "b7e3...",
+  "process_name": "com.example.app",
+  "app_version": "8.3.1",
+  "api_level": 37,
+  "scene": "feed_scroll",
+  "foreground": true,
+  "dispatch_wall_ms": 1287,
+  "dispatch_thread_cpu_ms": 94,
+  "threshold_ms": 800,
+  "sample_interval_ms": 200,
+  "sample_count": 3,
+  "stack_signature": "BinderProxy.transact>FeedRepository.refresh",
+  "debugger_attached": false,
+  "gc_overlap": false,
+  "trace_id": "perfetto-session-42"
+}
+```
+
+wall 1287 ms、thread CPU 94 ms 说明主线程大部分时间没有执行 Java CPU 工作，但还不能据此写成“Binder 导致”。需要结合每份栈、线程状态、Binder 轨道、调度与远端进程确认。报告不要上传原始用户 ID、IMEI、URL 参数、输入内容或高基数 item ID。
+
+## 堆栈为什么经常指错方向
+
+采样栈只表示“采样瞬间主线程在哪里”，常见误读如下：
+
+| 栈/现象 | 可以提出的假设 | 仍需补的证据 |
+|---|---|---|
+| 多个样本稳定落在同一业务循环 | 主线程持续计算 | thread CPU、方法采样或局部 trace |
+| `BinderProxy.transact()` | 主线程同步等待远端 Binder | Binder transaction、远端线程和调度 |
+| 文件/SQLite/socket 入口 | 可能有同步 I/O | ftrace I/O、StrictMode、系统调用或数据库 trace |
+| monitor/futex/park | 锁或条件等待 | owner thread、锁争用、wakeup |
+| 普通业务栈且 thread CPU 很低 | 主线程可能 Runnable 但抢不到 CPU | sched_switch、CPU frequency、后台线程负载 |
+| 栈分散并与 GC 时间重叠 | GC 或分配压力可能参与 | ART GC slice、allocation、暂停时长 |
+| debugger attached | 人工暂停或单步 | 调试会话标记，样本不进入质量统计 |
+
+### 案例：主线程慢，CPU 却耗在后台
+
+现象是图片瀑布流进入页面后出现 1.2 秒 block。三个 Java 样本都停在轻量的 `FeedAdapter.bind()`，容易得出“bind 太慢”的结论；报告却显示主线程 thread CPU 只有 70 ms。
+
+Perfetto 中，主线程大部分时间处于 Runnable，四条图片解码线程和两条 JSON 线程持续占用大核。根因是后台并发过量造成调度饥饿，`bind()` 只是采样时的程序计数位置。修复应限制启动阶段并发、调整工作优先级或错开任务，再比较主线程 runnable latency、frame overrun 与 Looper wall/thread-CPU 差值。
+
+这个案例也说明 BlockCanary 自带的 `/proc/stat` CPU 百分比不够：它能提示系统忙，却没有逐线程调度和唤醒关系。
+
+## Looper block、慢帧与 ANR 的口径
+
+| 信号 / 工具 | 粒度 | 适合回答的问题 | 主要边界 |
 |---|---|---|---|
-| BlockCanary | 主线程 `Message` | 哪次主线程长消息拖住了交互 | 看不到 RenderThread / GPU / SF |
-| JankStats | 帧级结果 | 用户是否感知到 jank | 不直接给主线程调用链 |
-| FrameMetrics | 帧各阶段时长 | 布局 / 绘制 / 同步哪段偏慢 | 只在支持窗口回调的范围内可用 |
-| Perfetto | 全局时间线 | CPU 调度、渲染时间线、锁等待谁是根因 | 成本高，不适合常驻全量采集 |
-| ANR traces | 5s 级无响应现场 | 系统认定的真正无响应 | 太晚，抓不到大量亚秒级卡顿 |
+| BlockCanary / 自研 Printer | 单次 Looper dispatch | 主线程哪段消息窗口超过自定义阈值 | 无完整 Message 对象；看不到队列等待、RenderThread、GPU |
+| JankStats 1.0.0 | 每个 Window 的帧与 UI state | 哪些场景产生用户可感知 jank | 不直接给方法栈；回调要快速返回 |
+| FrameMetrics（API 24+） | Window 帧阶段计时 | CPU、layout/draw/sync 等帧时间怎样分布 | 只覆盖对应 Window，仍需系统 trace 找调度/跨进程原因 |
+| Perfetto / FrameTimeline | 跨进程全局时间线 | 调度、频率、Binder、GC、渲染管线如何相互影响 | 不适合无节制常驻抓全量长 trace |
+| ANR traces / ApplicationExitInfo | 系统已经判定无响应后的现场 | 发生了哪类 ANR，系统当时抓到了什么 | 阈值和触发条件由系统管理，亚秒级 block 通常不会成为 ANR |
 
-不要用 BlockCanary 的 block 次数直接替代慢帧率，也不要拿 500ms-1s 的自定义 block 阈值去等同 5s 的系统 ANR。它们的分母、窗口和感知口径都不同。
+Android 17 InputDispatcher 的未乘系数默认输入分发超时仍为 5000 ms，运行时还要乘 `ro.hw_timeout_multiplier`，并允许窗口提供 dispatch timeout。Service、Broadcast、ContentProvider 等 ANR 有各自的超时与状态机。一个 800 ms BlockCanary 事件可能严重影响交互，却不是系统 ANR；一个输入 ANR 也可能由队列堆积、无焦点窗口或跨进程等待造成，不能简写成“某个 Message 执行超过 5 秒”。
 
-## 自研轻量卡顿监控时的改进点
+## [自动发现] Android 17 的 Looper 可观测性
 
-如果团队要基于 BlockCanary 思路自研，建议补这些能力：
+在 `android-17.0.0_r1` 中，一次 dispatch 周围同时存在几条平台观测路径：
 
-1. 用 `Choreographer` 或 JankStats 记录交互期间慢帧。
-2. Looper block 只作为主线程长任务样本。
-3. 抓栈采样线程要有最大时长、最大栈深和频率限制。
-4. 上报前对堆栈做签名，避免原始堆栈爆量。
-5. 采样只在前台和目标页面开启。
-6. 与 ANR、启动、页面切换等事件共享 trace id 或 session id。
-7. 调试器连接、GC 高压、Binder 长等待这三类场景单独打标，避免它们直接冲进“业务卡顿”榜单。
-8. Android 10（API 29）起，`Looper` 内部存在 `@hide` 的 `Looper.Observer`，回调 `messageDispatchStarting()` / `messageDispatched(Object token, Message msg)` 不依赖字符串日志。AOSP `android-9.0.0_r1` 的 `Looper.java` 尚未定义 Observer；`android-10.0.0_r1` 才出现 `private static Observer sObserver`、`setObserver()` 和对应回调。
+- 公开 `setMessageLogging()` 仍打印 start/finish 字符串，BlockCanary 的核心入口没有消失。
+- `Looper.Observer` 仍在 dispatch 前后获得 token 和 `Message`，但它是 `@hide`、process-wide 单槽位。
+- `setSlowLogThresholdMs()` 可以区分 slow delivery 与 slow dispatch，但同样是隐藏平台接口；普通 App 不应依赖。
+- `LooperDoctor` 在 feature flag 开启时为 Message 启停 timer，也是隐藏实现。
+- 当 `perfettoSdkTracingV3()` 与 `PerfettoCategories.MQ_CATEGORY` 同时启用时，Looper 会为 `message_queue_receive` 和 dispatch 发出 Perfetto 事件/flow。它是条件路径，不能写成“API 37 所有设备 trace 一定都有 MQ 轨道”。
 
-> **Android 16 源码验证与 Android 17 边界** [已验证: AOSP `frameworks/base/core/java/android/os/Looper.java` android-16.0.0_r3]：截至公开 Android 16 源码，`Looper.Observer` 接口保持存在，`Observer#messageDispatchStarting()` 和 `Observer#messageDispatched()` 签名未变，仍为 `@hide`。`sObserver` 仍是 static 单槽位，不提供多观察者支持。`android-17.0.0_r1` tag 当前未公开，不能写成 Android 17 已源码验证；Android 17 仅保留为待 tag 公开后的复核边界。自研方案在处理 `Looper.Observer` 时仍要和 `Printer` / `setMessageLogging()` 走相同的冲突治理策略，不能假定 Observer 可以"多个组件各挂一个"。它受 Hidden API 限制（灰名单 / max-target-o），不能当成公开接口承诺；Android 9 及以下仍以 `Printer` / `setMessageLogging()` 为公开可用边界。
+这组源码给自研方案一个清晰边界：应用侧继续使用公开 Printer 做低频长消息信号；系统级现场优先看 Perfetto 中已存在的 MessageQueue、atrace、Binder、ART GC、FrameTimeline 和 sched 数据。不要反射 Observer 或 LooperDoctor 来减少字符串开销，因为换来的 hidden API 风险更大。
 
-> **结论性提醒**：
-> 1. 截至公开 Android 16 源码，BlockCanary 没有"必须切到 Observer 才能用"的版本门槛，它走的是公开 `setMessageLogging` 路径，不依赖 `@hide` API；Android 17 需等公开 tag 后复核。
-> 2. 如果团队基于 BlockCanary 思路自研且希望走 Observer 路径，**API 29 起所有 Android 版本都支持**（API 29-36 源码零变更），但要面对：单槽位冲突治理（`sObserver` 是 static，与 `setMessageLogging` 同样的多组件冲突）、`@hide` 黑名单（max-target-o）、token 三方法互斥协议。
-> 3. Android 16 起 Perfetto 已经接管 MessageQueue dispatch 端到端可观测性，**主线程卡顿诊断优先用 Perfetto `MQ_CATEGORY` + 5s ANR + FrameTimeline `JANK_TYPE`**；BlockCanary 类 Java 端工具的定位应聚焦"堆栈 dump + 签名聚合 + block 阈值告警"，trace 端不要再自己造轮子。
+线程调度证据最终来自目标设备内核和 userspace tracing 配置。知识库的内核源码锚点统一为 [`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/trace/ftrace.rst)；量产设备可能带厂商分支、不同 tracepoint 和权限策略。看不到 sched 轨道时先检查采集配置与设备能力，不要把“没有轨道”解释成“没有调度问题”。
 
-BlockCanary 的价值在于简单。现代线上体系要在简单之上补上下文、冲突治理和采样控制。
+## 迁移与自研检查表
+
+若老项目正在使用 1.5.0，迁移顺序建议如下：
+
+1. 先保留旧报告的阈值、版本、页面与 signature，建立可比基线。
+2. 接入 JankStats / FrameMetrics，把慢帧与 Looper 长消息拆成两套指标。
+3. 用自有 Printer 替换 1.5.0，并确认项目只有一个 message logger 安装入口。
+4. 使用单调时钟、首采样延迟、采样间隔、最大样本数、最大栈深和总采集时长配置。
+5. 上报队列有容量、丢弃策略、采样率、冷却时间和远程熔断；主线程只写内存状态。
+6. 用 app 私有目录短暂落盘，限制文件总量和保留期；上传前做字段 allowlist。
+7. 删除 IMEI、READ_PHONE_STATE、WRITE_EXTERNAL_STORAGE 和原始 UID 采集。
+8. internal 通知若保留，补 channel、POST_NOTIFICATIONS 策略、PendingIntent mutability 与 `android:exported`；生产包默认不带展示 Activity。
+9. 在低端机、60/90/120 Hz、GC 压力、Binder 等待、同步 I/O、CPU 竞争和 debugger 场景量化开销与误判。
+10. API 37 上验证 Printer 起止配对、SDK 覆盖冲突、异常 dispatch、前后台切换、多进程和进程重启。
+
+BlockCanary 1.5.0 没有 native `.so`，本身不存在 16 KB ELF 对齐问题。它的 API 37 阻塞项来自 manifest、通知、权限、存储、隐私和十年前的采样/上报设计；不要因为 16 KB 检查通过就忽略这些 Java/Android 行为差异。
+
+## 参考源码与文档
+
+- [AndroidPerformanceMonitor `master@ed688391`](https://github.com/markzhai/AndroidPerformanceMonitor/tree/ed688391cdf95742892ce61494736667cf5baf08)
+- [BlockCanary Maven Central 版本元数据](https://repo.maven.apache.org/maven2/com/github/markzhai/blockcanary-android/maven-metadata.xml)
+- [1.5.0 `LooperMonitor`](https://github.com/markzhai/AndroidPerformanceMonitor/blob/ed688391cdf95742892ce61494736667cf5baf08/blockcanary-analyzer/src/main/java/com/github/moduth/blockcanary/LooperMonitor.java)
+- [1.5.0 `AbstractSampler`](https://github.com/markzhai/AndroidPerformanceMonitor/blob/ed688391cdf95742892ce61494736667cf5baf08/blockcanary-analyzer/src/main/java/com/github/moduth/blockcanary/AbstractSampler.java)
+- [1.5.0 `StackSampler`](https://github.com/markzhai/AndroidPerformanceMonitor/blob/ed688391cdf95742892ce61494736667cf5baf08/blockcanary-analyzer/src/main/java/com/github/moduth/blockcanary/StackSampler.java)
+- [1.5.0 `BlockCanaryInternals`](https://github.com/markzhai/AndroidPerformanceMonitor/blob/ed688391cdf95742892ce61494736667cf5baf08/blockcanary-analyzer/src/main/java/com/github/moduth/blockcanary/BlockCanaryInternals.java)
+- [1.5.0 `BlockInfo`](https://github.com/markzhai/AndroidPerformanceMonitor/blob/ed688391cdf95742892ce61494736667cf5baf08/blockcanary-analyzer/src/main/java/com/github/moduth/blockcanary/internal/BlockInfo.java)
+- [1.5.0 旧通知实现](https://github.com/markzhai/AndroidPerformanceMonitor/blob/ed688391cdf95742892ce61494736667cf5baf08/blockcanary-android/src/main/java/com/github/moduth/blockcanary/DisplayService.java)
+- [Android 17 `Looper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Looper.java)
+- [Android 17 InputDispatcher 默认超时计算](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
+- [Android 17 `IInputConstants.aidl`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/android/os/IInputConstants.aidl)
+- [JankStats 官方指南](https://developer.android.com/topic/performance/jankstats)
+- [FrameMetrics API](https://developer.android.com/reference/android/view/FrameMetrics)
+- [Android 慢帧与冻结帧](https://developer.android.com/topic/performance/vitals/render)
+- [Android 17 GKI ftrace 文档锚点](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/trace/ftrace.rst)
