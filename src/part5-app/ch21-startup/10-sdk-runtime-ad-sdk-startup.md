@@ -47,175 +47,341 @@ source_refs:
 
 # 21.10 SDK Runtime 与广告 SDK 启动隔离性能
 
-SDK Runtime 把符合条件的第三方广告 SDK 放到独立运行环境中，启动优化的关注点随之改变：宿主 App 不再只管少初始化几个类，还要管理一次 sandbox 进程启动、一次 `loadSdk()` 异步加载，以及后续 Binder 通信的成本。
+SDK Runtime 在 Android 14 出现，又在 Android 17 退场。理解这段版本演进很重要，因为旧文章和 Privacy Sandbox 设计页仍会展示 `SdkSandboxManager.loadSdk()`、独立 sandbox 进程与 Binder 接口；面向 Android 17 的新代码却不能继续把它当作可采用的平台方案。
 
-内容聚焦启动路径里的接入策略和观测口径。App 启动全流程的系统侧细节详见 8.2 节，启动任务编排详见 21.1、21.2、21.6 节，线上指标设计详见 26.3 节。
+本节分成两部分：
 
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
-[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
-[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md]
-[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
+- Android 14–16 遗留 SDK Runtime 的行为与迁移边界；
+- Android 17 上普通嵌入式广告 SDK 的启动治理。
 
-## 要点
+启动任务编排见[启动任务编排框架](./02-startup-framework.md)，Provider 自动初始化见[ContentProvider 启动优化](./03-contentprovider-optimization.md)，懒初始化见[延迟与懒初始化](./06-lazy-initialization.md)，多进程成本见[多进程启动优化](./07-multiprocess-startup.md)，指标设计见[启动监控与度量](./08-startup-monitoring.md)。
 
-### 🔹 SDK Runtime 解决的工程问题
+## 1. Android 17 版本结论
 
-传统广告 SDK 接入方式把 SDK 代码放在宿主 App 进程内执行。启动阶段常见问题有三类：SDK 在 `Application.onCreate()` 里同步初始化；SDK 与宿主共享同一份进程内存、线程、`SharedPreferences` 和权限上下文；业务侧很难区分“首屏必须执行的初始化”和“广告请求前才需要的准备工作”。
+### 1.1 平台 API 已明确退场
 
-SDK Runtime 的平台定位是把 runtime-enabled SDK 放入独立的 SDK sandbox 进程。官方架构文档把它描述为 Android 14 引入的平台能力，目标是让第三方广告 SDK 与宿主 App 通过进程边界和受控 API 交互。[已验证: 官方文档, privacysandbox.google.com/private-advertising/sdk-runtime/architecture]
+Android 17 / API 37 的公开 API 文档对 `SdkSandboxManager`、`SandboxedSdkProvider` 和 `SandboxedSdk` 给出相同结论：这些类在 API 37 deprecated，SDK sandbox 不再受支持。
 
-从启动优化角度看，它带来的变化不是“广告 SDK 免费异步化”，而是把成本换了位置：宿主主进程少了一部分 SDK 代码加载、静态初始化和内存共享风险，同时多了 sandbox 进程创建、SDK 加载回调、跨进程调用和数据同步成本。优化目标从“禁止 SDK 抢主线程”变成“把 SDK Runtime 纳入启动 DAG”。
+Android 17 的 `packages/modules/AdServices` 源码与公开文档一致：
 
-判断一项广告 SDK 初始化是否适合迁移到 SDK Runtime，要看它是否满足三个条件：
+- `SdkSandboxManager` 类带有 `@Deprecated` 和 SDK sandbox API deprecation flag；
+- `SandboxedSdkProvider` 与 `SandboxedSdk` 同样 deprecated；
+- `sandbox_app_flags.aconfig` 定义 `sdk_sandbox_no_op_impl` 和 `sdk_sandbox_api_deprecation`；
+- `loadSdk()` 的 no-op 分支会在传入的 Executor 上回调 `LoadSdkException(LOAD_SDK_SDK_SANDBOX_DISABLED, ...)`。
 
-- 它不是首帧前的强依赖；首屏渲染不应该等待广告 SDK 完成 runtime 加载。
-- 它可以通过明确的接口传参；跨进程边界会放大隐式全局状态和大对象传递的代价。
-- 它的失败可以降级；sandbox 不可用、SDK 未安装、加载超时和低版本回退都不能阻断首页展示。
+这意味着 API 符号仍存在，不能据此推断能力可用。`SDK_INT >= 34` 也不能作为接入判断。Android 17 新项目不应围绕 `SdkSandboxManager`、runtime-enabled SDK bundle 或旧 sandbox 生命周期构建广告架构。
 
-### 🔹 `SdkSandboxManager.loadSdk()` 的加载路径
+### 1.2 版本表
 
-App 侧通过系统服务拿到 `SdkSandboxManager`，再调用 `loadSdk(String sdkName, Bundle params, Executor executor, OutcomeReceiver<SandboxedSdk, LoadSdkException> receiver)`。AOSP API 源码显示，`SdkSandboxManager.loadSdk()` 会把宿主包名、可选的 app process token、SDK 名称、调用时间和参数传给系统侧 `ISdkSandboxManager`，成功后通过 `OutcomeReceiver` 返回 `SandboxedSdk`。[已验证: AOSP android-34, platform/prebuilts/fullsdk/sources/android-34/android/app/sdksandbox/SdkSandboxManager.java]
+| 系统 / 工具 | 状态 | 工程决策 |
+| --- | --- | --- |
+| Android 14–16 / API 34–36 | 平台 SDK Runtime 的历史支持区间，设备状态与 Ad Services 扩展仍可能影响可用性 | 只维护已发布产品，必须做能力探测和失败降级 |
+| Android 17 / API 37 | 平台 API deprecated，官方说明 SDK sandbox 不再受支持 | 停止新接入；遗留代码在 API 37 明确关闭 |
+| AndroidX `privacysandbox-sdkruntime` | `1.0.0-alpha19` 已 deprecated，release note 说明不再更新 | 不作为 Android 17 替代方案；现有使用方制定移除计划 |
+| 普通嵌入式广告 SDK | 继续运行在宿主应用进程，除非 SDK 自己采用其他受支持的进程模型 | 按 Provider、Application、线程、I/O、内存和隐私契约治理 |
 
-`SandboxedSdk` 里携带 SDK 暴露给 App 的 `IBinder` 接口。AOSP 源码对它的定位是 `loadSdk()` 成功后的返回对象，App 通过 `getInterface()` 拿到 SDK 的 Binder 入口。[已验证: AOSP android-34, platform/prebuilts/fullsdk/sources/android-34/android/app/sdksandbox/SandboxedSdk.java]
+Privacy Sandbox 的 SDK Runtime architecture 与 developer guide 仍可用于理解 Android 14–16 的设计，但页面也标注设计提案可能变化。判断 Android 17 当前能力时，以 API 37 deprecation、AndroidX release note 和 `android-17.0.0_r1` 源码为准。
 
-SDK 侧需要实现 `SandboxedSdkProvider`。源码注释明确要求 `onLoadSdk()` 只做让 SDK 能处理后续请求的准备工作，不应执行长时间 I/O 或网络调用，也不应依赖其他 SDK 已加载完成。[已验证: AOSP android-34, platform/prebuilts/fullsdk/sources/android-34/android/app/sdksandbox/SandboxedSdkProvider.java]
+## 2. Android 14–16 的历史行为
 
-加载路径可以按下面的工程节点理解：
+这一节只服务于维护旧设备和迁移遗留代码。Android 17 不再走这条路径。
 
-```mermaid
-sequenceDiagram
-    participant App as App process
-    participant SSM as SdkSandboxManager
-    participant System as system_server / SDK sandbox service
-    participant Sandbox as SDK sandbox process
-    participant SDK as SandboxedSdkProvider
+### 2.1 `loadSdk()` 做了什么
 
-    App->>SSM: loadSdk(sdkName, params, executor, receiver)
-    SSM->>System: 请求加载 SDK
-    System->>Sandbox: 准备或复用 sandbox 进程
-    Sandbox->>SDK: attachContext() / onLoadSdk(params)
-    SDK-->>Sandbox: SandboxedSdk(IBinder)
-    Sandbox-->>System: 加载结果
-    System-->>SSM: onLoadSdkSuccess / onLoadSdkFailure
-    SSM-->>App: OutcomeReceiver 回调
+在历史实现中，应用调用：
+
+```text
+App process
+  -> SdkSandboxManager.loadSdk(name, params, executor, receiver)
+  -> system_server / SDK sandbox service
+  -> 为该 App 创建或复用 SDK sandbox process
+  -> SandboxedSdkProvider.onLoadSdk(params)
+  -> 返回 SandboxedSdk(IBinder)
+  -> App 通过 Binder 调用 SDK 接口
 ```
 
-这条路径里至少有两段异步边界：App 到系统服务，系统服务到 sandbox 进程。它适合放在首屏后、广告位曝光前、用户触达前预热这类阶段，不适合放在首帧前的同步栅栏里。
+这条链路包含进程创建、SDK 代码加载、Provider 准备和 Binder 回调。`loadSdk()` 是异步 API，不代表工作没有成本；调用方若在首帧前等待 receiver，仍会把 sandbox 冷启动带回主路径。
 
-### 🔹 启动耗时与首屏路径隔离
+历史 API 还有这些边界：
 
-SDK Runtime 对冷启动的收益取决于原来的广告 SDK 初始化是否占用了主进程启动关键路径。如果原先的 SDK 在 `Application.onCreate()` 同步读配置、建线程池、初始化网络栈、加载 so、访问磁盘，迁移后主进程可少做一部分工作；如果迁移后仍在 `Activity.onCreate()` 等 `loadSdk()` 回调，再马上发起广告请求，首屏仍会被 SDK Runtime 拖慢。
+- 第一个 SDK 触发该 App 的 sandbox 进程创建，后续 SDK 可以复用同一 sandbox；
+- `loadSdk()` 只允许前台调用，后台调用通过 receiver 返回失败；
+- `SandboxedSdkProvider.onLoadSdk()` 只应完成“能够处理后续请求”的准备，不应做长时间 I/O、网络或依赖其他 SDK 已加载的初始化；
+- sandbox 死亡后，已加载 SDK、Binder 与远程 UI 状态都会丢失，客户端需要监听死亡并重新建立状态；
+- `SandboxedSdk.getInterface()` 返回 Binder，事务仍要处理线程安全、死亡、超时和大 payload。
 
-更稳的做法是把广告 SDK 相关任务拆成三档：
+### 2.2 SharedPreferences 同步不是共享内存
 
-- 首帧前必须完成：只保留不会跨进程、不触发网络、不等待 SDK Runtime 的最小开关读取，例如本地 AB 配置和“广告位是否启用”的布尔判断。
-- 首帧后异步启动：调用 `loadSdk()`，记录开始时间、回调时间和失败码，不把回调绑定到 UI 首次绘制。
-- 用户触达前预热：在用户可能进入广告场景前完成 SDK 接口握手、轻量参数同步和必要的缓存读取。
+历史 `addSyncedSharedPreferencesKeys()` 只同步应用默认 `SharedPreferences` 中显式登记的 key。源码注明：
 
-这套拆法来自速度优化里的任务调度思路：核心场景减少指令数，非关键任务放到 CPU 相对空闲或业务低峰阶段执行。参考书提供的是结构方法，落到 SDK Runtime 时要补上进程边界和回调失败处理。[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
+- App 重启后需要重新登记同步 key；
+- 同一应用不能从多个进程共同使用这套同步管理；
+- 移除 key 后，已经同步到 sandbox 的对应值会被删除。
 
-线上指标不能只看 App 进程的 cold start。至少要把三段时间拆开：
+同步适合少量稳定标量，不适合复制整份业务配置。每个 key 都应有数据所有者、默认值、版本与隐私用途。高频状态通过粗粒度接口传递；大对象使用文件描述符或受支持的数据通道，避免在 Binder 与 `Bundle` 中反复复制。
 
-| 指标 | 采集位置 | 用途 |
-|------|----------|------|
-| `sdk_runtime_load_start` | App 调用 `loadSdk()` 前 | 判断 SDK Runtime 是否进入首屏关键路径 |
-| `sdk_runtime_load_callback` | `OutcomeReceiver` 成功或失败 | 统计加载耗时、超时率和失败码分布 |
-| `first_ad_request_after_load` | 首次广告请求前 | 判断加载完成到广告请求之间是否还有隐性同步工作 |
-| `first_frame_time` / `time_to_full_display` | 启动指标体系 | 观察 SDK Runtime 调度是否影响 TTID / TTFD |
+### 2.3 遗留能力探测
 
-如果 `loadSdk()` 大量出现在首帧前，先改任务编排；如果 `loadSdk()` 在首帧后但广告页打开仍慢，再拆 SDK 接口调用和广告请求耗时。两类问题的责任边界不同。
+维护 Android 14–16 时，能力判断需要同时约束系统版本和 sandbox 状态。下面的代码只用于现有迁移层，编译到 API 37 时会看到 deprecated，因此用局部 suppress 标明技术债：
 
-### 🔹 进程、Binder 与 SharedPreferences 同步成本
+```kotlin
+@Suppress("DEPRECATION")
+fun canUseLegacyPlatformSdkSandbox(): Boolean {
+    if (Build.VERSION.SDK_INT !in 34..36) {
+        return false
+    }
 
-SDK Runtime 的隔离也有成本。独立 sandbox 进程会引入额外 PSS，SDK 与 App 的方法调用要经过 Binder，参数通过 `Bundle` 或 SDK 自己定义的 AIDL / Binder 接口传递，频繁小调用会把调度成本摊到每一次业务请求上。
+    return SdkSandboxManager.getSdkSandboxState() ==
+        SdkSandboxManager.SDK_SANDBOX_STATE_ENABLED_PROCESS_ISOLATION
+}
+```
 
-AOSP API 文档显示，SDK sandbox 是运行在独立 UID 范围内的 Java 进程，每个 App 可以拥有自己的 SDK sandbox 进程。[已验证: 官方文档, developer.android.com/design-for-safety/privacy-sandbox/reference/sdksandbox/SdkSandboxManager]
+返回 `false` 只表示平台 sandbox 路径不可用，不等于可以在主线程同步加载旧广告 SDK。是否存在嵌入式版本、功能是否应关闭、能否延后加载，要由广告网关的显式策略决定。API 37 直接返回 `false`，不再尝试 deprecated `loadSdk()`。
 
-`SdkSandboxManager` 还提供 `addSyncedSharedPreferencesKeys(Set<String> keys)`、`removeSyncedSharedPreferencesKeys(Set<String> keys)` 和 `getSyncedSharedPreferencesKeys()`。源码注释说明，App 默认 `SharedPreferences` 中被登记的 key 会同步到 SDK sandbox；App 重启后需要重新调用 API 建立同步 key 集合；该类不支持跨多个进程使用。[已验证: AOSP android-34, platform/prebuilts/fullsdk/sources/android-34/android/app/sdksandbox/SdkSandboxManager.java]
+### 2.4 AndroidX compat 的历史语义
 
-工程上要把同步 key 当成一份显式契约：
+旧版 backcompat 方案通过 `SdkSandboxManagerCompat` 统一接口。在没有平台 Runtime 的设备上，构建工具把 SDK 放入应用 APK 变体，客户端库从 assets 提取 DEX，并用独立 ClassLoader 在应用进程加载。
 
-- 只同步 SDK 必需的稳定小字段，例如地区、年龄段标签、广告开关、实验分组，不同步整块业务配置。
-- 参数传递避免大 `Bundle` 和频繁往返，把一次广告请求需要的上下文收敛成固定结构。
-- Binder 接口按粗粒度设计，例如“准备广告位”“请求广告”“上报曝光”，不要把每个 getter 都做成跨进程调用。
-- sandbox 进程内存单独计入广告 SDK 成本，不能只看主进程 PSS 下降。
+这里的“兼容”不等于平台隔离：
 
-Perfetto 里可观察的信号包括 App 主线程的 `binder transaction`、SDK sandbox 进程线程状态、App 与 sandbox 的 CPU 时间分布，以及启动阶段是否出现磁盘 I/O。线上侧可记录 SDK Runtime 加载耗时、加载失败码、sandbox 进程死亡回调次数、跨进程调用频率和广告首请求耗时。
+- 代码仍在应用进程内执行；
+- 独立 ClassLoader 能减少类名冲突，不能提供独立 Linux 进程、UID 或内存空间；
+- 首次提取 DEX、类加载和资源处理会增加存储与启动成本；
+- Binder 形式的接口可以保持调用形状，却不一定发生跨进程事务；
+- AndroidX 该库已经 deprecated，不能承担面向 Android 17 的长期抽象。
 
-### 🔹 向低版本兼容的 Jetpack sdkruntime 路径
+现有产品若仍依赖 alpha19，应固定版本、保留兼容测试，并与 SDK/广告供应方确认替代交付。不要仅把 `SdkSandboxManagerCompat` 改名封装后继续扩展新功能。
 
-AndroidX `privacysandbox-sdkruntime` 提供 `sdkruntime-client`、`sdkruntime-core`、`sdkruntime-provider` 等组件，官方 release notes 将其定位为在旧 Android 平台上构建和加载 runtime-enabled SDK 的 Jetpack 库。[已验证: 官方文档, developer.android.com/jetpack/androidx/releases/privacysandbox-sdkruntime]
+## 3. Android 17 上的广告 SDK 启动模型
 
-兼容层的价值是把接入代码和 SDK provider 模型尽量统一，但它不等同于平台级 SDK Runtime。Android 14+ 的平台能力有系统服务、独立 UID 范围和 SDK sandbox 进程；低版本兼容层能降低调用侧差异，却不能把旧系统改造成同样的隔离模型。[待验证: AndroidX 兼容层在不同 API 级别的具体进程模型需要结合当前版本源码复核]
+SDK Runtime 退场后，广告 SDK 常见形态回到宿主进程中的 AAR、动态特性或 SDK 自有受支持组件。启动治理的起点是 merged manifest 和依赖产物，不是 `Application` 里能看到的几行初始化代码。
 
-接入时建议把能力判断写成四种状态，不要只写 `if (SDK_INT >= 34)`：
+### 3.1 建立 SDK 清单
 
-- 平台 SDK Runtime 可用：走系统 `SdkSandboxManager`，记录平台加载指标。
-- Jetpack 兼容路径可用：走 AndroidX compat API，指标名称保留 compat 标记。
-- 运行时 SDK 不可用：走已有非 runtime-enabled SDK，但不得回到首帧前同步初始化。
-- SDK 加载失败：触发功能降级，广告位显示占位、延迟加载或关闭，不阻塞页面可交互。
+每次 SDK 升级至少记录：
 
-这层抽象可以放在广告 SDK 网关里，业务页面只依赖“广告能力是否 ready”和“请求广告”两个接口。低版本和失败路径的差异留在网关内部处理。
+| 维度 | 检查项 |
+| --- | --- |
+| 依赖 | 直接/传递 AAR、版本、变体、native 库与方法数 |
+| manifest | Provider、Service、Receiver、Activity、metadata、进程名与 exported |
+| 自动初始化 | Provider、AndroidX App Startup initializer、ContentProvider authority |
+| 线程 | 启动线程、线程池大小、HandlerThread、定时任务 |
+| I/O | SharedPreferences、数据库、缓存目录、文件扫描与 native 库加载 |
+| 网络 | 首个请求触发点、DNS/TLS、配置与素材预取 |
+| 内存 | Java/native heap、Bitmap、WebView、线程栈与主/远程进程 PSS |
+| 生命周期 | 初始化幂等、Activity Context 引用、前后台切换、进程重建 |
+| 数据 | 读取字段、同意状态、上传时机、保留与删除策略 |
+| 控制 | owner、灰度开关、关闭广告位和回滚 SDK 的路径 |
 
-### 🔹 广告 SDK 接入的回退策略
+SDK 文档声称“异步初始化”也要在 trace 中验证。异步 API 可能在调用前同步做类加载、manifest 查询、Preferences 读取和线程创建；回调线程也可能是主线程。
 
-SDK Runtime 接入的高风险点在失败策略。官方 API 暴露了 `LoadSdkException` 和多类错误码，例如 SDK 不存在、SDK 已加载、SDK sandbox 被禁用、SDK sandbox 进程不可用等。App 必须把这些错误转成业务可接受的降级结果。[已验证: 官方文档, developer.android.com/design-for-safety/privacy-sandbox/reference/sdksandbox/SdkSandboxManager]
+### 3.2 把广告能力拆成阶段
 
-回退策略可以按场景定级：
+| 阶段 | 允许的工作 | 禁止依赖 |
+| --- | --- | --- |
+| 进程绑定 / Provider | 仅保留 SDK 强制且无法关闭的最小工作，并测量成本 | 网络、缓存扫描、大对象、广告素材 |
+| `Application.onCreate()` | 注册轻量网关、读取已验证的本地功能开关 | 等待广告 SDK ready、首次广告请求 |
+| 首帧前 | 页面是否保留广告容器的本地决策 | SDK 冷初始化、远程配置、广告返回 |
+| 首帧后 | 设备和产品允许时触发初始化 | 无上限并发、立即抢占主/渲染线程 |
+| 临近广告入口 | 初始化、请求、素材准备 | 阻塞页面主线程 |
+| 广告位可见 | 展示已 ready 内容，或按产品规则占位/跳过 | 同步 fallback 初始化 |
 
-| 场景 | 处理策略 | 启动约束 |
-|------|----------|----------|
-| sandbox 被禁用或不可用 | 标记本次会话 SDK Runtime 不可用，走兼容路径或关闭广告位 | 不重试阻塞首屏 |
-| SDK 未找到 | 上报配置错误，关闭对应广告源 | 不在用户路径内下载或修复 |
-| SDK 已加载 | 复用已有 `SandboxedSdk` 接口 | 避免重复加载 |
-| `onLoadSdk()` 超时或失败 | 记录失败码，延迟重试或切换广告源 | 重试放到首帧后 |
-| sandbox 进程死亡 | 清理 Binder 引用，等待下一次业务触发重建 | 不在主线程同步恢复 |
+“首帧后”仍可能影响 TTFD 和第一段交互。低端设备、首屏动画或 Compose 首次稳定期间，应延迟到明确空闲窗口或临近广告入口，并用实验确认首个广告可用率与启动体验的取舍。
 
-代码层面要避免两个反模式。其一，`loadSdk()` 失败后立刻在主线程回退到旧 SDK 同步初始化；这会把 SDK Runtime 的失败路径变成更重的启动阻塞。其二，把广告请求、配置拉取、归因注册都塞进 `onLoadSdk()`；AOSP 源码已经把 `onLoadSdk()` 定位成启动处理请求前的准备工作，长时间 I/O 应放到 SDK 自己的异步流程里。
+### 3.3 用状态机管理一次会话的初始化
 
-## 扩展
+页面不应各自调用 SDK init。广告网关持有应用级状态，合并并发请求，并把失败变成可观察结果。
 
-### 🔸 与启动框架任务编排的关系
+下面的示例把一次会话的初始化共享成同一个 `Deferred`。它不假设 SDK 可在后台线程初始化，具体 `initializer` 必须遵守供应方要求并切到正确线程：
 
-把 SDK Runtime 当成启动 DAG 的一个异步节点更合适。节点输入是平台能力、广告开关、最小请求参数；节点输出是 `SandboxedSdk` Binder 接口或失败结果。业务页面不直接等待该节点，广告容器根据 ready 状态决定展示占位、延迟请求或关闭广告位。
+```kotlin
+sealed interface AdSdkState {
+    data object Idle : AdSdkState
+    data object Initializing : AdSdkState
+    data class Ready(val client: AdClient) : AdSdkState
+    data class Failed(val cause: Throwable) : AdSdkState
+}
 
-一个可执行的拆法：
+class AdSdkGateway(
+    private val appScope: CoroutineScope,
+    private val initializer: suspend () -> AdClient,
+) {
+    private val mutex = Mutex()
+    private var inFlight: Deferred<Result<AdClient>>? = null
 
-1. `Application.onCreate()` 只注册广告网关，不加载 SDK。
-2. 首页首帧后触发 `loadSdk()`，设置超时和失败上报。
-3. 广告位进入可见区域前检查 SDK ready 状态。
-4. ready 时发起广告请求；未 ready 时显示占位或跳过本次曝光。
-5. sandbox 死亡或加载失败后进入会话级降级，不在同一页面内反复重试。
+    private val _state =
+        MutableStateFlow<AdSdkState>(AdSdkState.Idle)
+    val state: StateFlow<AdSdkState> = _state.asStateFlow()
 
-这套策略会牺牲部分“首个广告位立即可用”的概率，换来首页稳定的 TTID / TTFD。广告收入与启动体验之间的取舍需要用实验分组确认，不能只按技术偏好决定。
+    suspend fun start(): Deferred<Result<AdClient>> =
+        mutex.withLock {
+            inFlight?.let { return@withLock it }
 
-### 🔸 与隐私沙盒 Attribution Reporting / Topics 的边界
+            appScope.async {
+                _state.value = AdSdkState.Initializing
+                runCatching { initializer() }
+                    .also { result ->
+                        _state.value = result.fold(
+                            onSuccess = AdSdkState::Ready,
+                            onFailure = AdSdkState::Failed,
+                        )
+                    }
+            }.also { inFlight = it }
+        }
 
-SDK Runtime 是 SDK 执行环境隔离能力，不等同于 Attribution Reporting、Topics 或 Protected Audience API。后几类 API 解决广告归因、兴趣主题和受保护竞价等业务问题；SDK Runtime 解决的是第三方 SDK 运行位置、权限边界和数据访问方式。
+    suspend fun awaitReady(
+        timeoutMillis: Long,
+    ): Result<AdClient>? =
+        withTimeoutOrNull(timeoutMillis) {
+            start().await()
+        }
+}
+```
 
-工程接入时建议把它们拆成两层：
+`appScope` 应由应用生命周期管理，并使用 `SupervisorJob` 避免一次 SDK 失败取消无关任务。调用方等待超时后返回 `null`，共享初始化仍可继续；如果产品需要取消，SDK 必须提供可验证的取消协议。示例把失败保持为会话级状态，重试应由显式退避策略重置，不能由多个页面循环触发。
 
-- 运行层：SDK Runtime / AndroidX compat，负责加载 SDK、跨进程接口、生命周期和失败降级。
-- 广告能力层：Topics、Attribution Reporting、Protected Audience 或广告 SDK 自有能力，负责请求、归因、转化和实验策略。
+若供应方要求主线程调用 init，`initializer` 可以只在主线程提交轻量入口，重工作是否异步仍由 trace 验证。把整个 gateway 放到 `Dispatchers.IO` 不能强迫封闭 SDK 遵守线程约束。
 
-这样做的好处是启动指标能归因到“运行层加载慢”还是“广告能力层请求慢”。两者混在一起时，Perfetto 和线上日志都很难解释首个广告位为什么晚出现。
+## 4. 首屏广告怎样取舍
 
-### 🔸 Trace 与线上指标设计
+首屏广告、App Open 广告或首页首个广告位会把收入目标与启动体验放在同一路径上。技术方案需要产品先确定缺省行为：
 
-Trace 侧建议同时抓 App 进程、SDK sandbox 进程和系统服务相关线程。排查时按四个问题走：
+- SDK 未 ready 时跳过本次广告；
+- 展示固定尺寸占位，内容 ready 后再填充；
+- 等待一个很短的业务 deadline，超时立即进入页面；
+- 广告是业务入口本身时，使用独立的可取消 loading，并把等待计入 TTFD/业务 ready。
 
-- `loadSdk()` 是否发生在首帧前：如果是，先调整启动 DAG。
-- App 主线程是否在等待 Binder 回调：如果是，检查 UI 代码有没有同步等待 SDK ready。
-- sandbox 进程是否在加载期做 I/O 或网络：如果是，推动 SDK provider 拆分轻量加载与异步准备。
-- SharedPreferences 同步 key 是否过多：如果是，收敛同步字段或改成明确接口传参。
+不能使用无限 loading 等广告，也不能在新路径失败后立即回到主线程执行旧 SDK 同步 init。失败回退如果比主路径更重，会让少量错误样本成为 P99、ANR 和差评来源。
 
-线上指标按“加载、调用、降级、资源”四组采集：
+广告容器还要避免布局跳动。预留尺寸时使用产品确定的广告规格；跳过广告时及时移除占位。远程素材到达后触发布局与图片解码，应进入首屏 frame 和内存 guardrail。
 
-| 组别 | 指标 | 说明 |
-|------|------|------|
-| 加载 | 加载耗时 P50/P90/P99、失败码、超时率 | 评估 SDK Runtime 节点自身质量 |
-| 调用 | Binder 调用次数、首个广告请求耗时、广告 ready 延迟 | 评估跨进程接口设计 |
-| 降级 | sandbox 不可用率、兼容路径比例、会话级关闭比例 | 评估回退策略是否稳定 |
-| 资源 | App 主进程 PSS、sandbox 进程 PSS、线程数、CPU 时间 | 评估隔离后总资源是否变重 |
+## 5. Provider 与多进程边界
 
-指标口径要把平台 SDK Runtime 和 AndroidX compat 分开。否则一个版本低端机的兼容层问题，可能会被误判成 Android 14+ 平台隔离机制的问题。
+### 5.1 自动初始化发生在 `Application` 之前
+
+广告 SDK 通过 Provider 自动初始化时，`Application.onCreate()` 里的进程分支和延迟开关已经来不及阻止 Provider `onCreate()`。检查最终 merged manifest：
+
+- SDK 是否支持移除 Provider metadata 或切换手动初始化；
+- Provider 属于主进程还是指定远程进程；
+- authority 是否稳定且不冲突；
+- App Startup initializer 是否仍由依赖库合并回来；
+- 升级 SDK 后 manifest diff 是否新增组件。
+
+移除自动初始化必须按供应方支持方式操作，不能直接删 Provider 后假设 SDK 仍可用。修改后要覆盖冷启动、通知/deep link、配置变更、进程重建和所有广告入口。
+
+### 5.2 放进自有远程进程不等于 SDK Runtime
+
+把广告 Service 或宿主组件声明到 `android:process=":ads"`，得到的是应用私有远程进程：
+
+- 通常仍使用应用 UID 与权限；
+- SDK 能否在该进程工作取决于 SDK 自身实现与许可；
+- UI、Activity Context 和 WebView 可能要求主进程交互；
+- Binder、进程冷启动、独立堆和死亡恢复都由应用承担；
+- Provider 只在其所属进程安装，但 `Application` 会在该进程创建。
+
+这与历史 SDK sandbox 的独立 UID、受控 API 和 SDK package 模型不同。没有供应方明确支持和完整测试时，不要强行把封闭广告 SDK 移到远程进程。
+
+## 6. 失败与回退策略
+
+| 失败 | 会话策略 | 启动约束 |
+| --- | --- | --- |
+| Android 17 平台 sandbox 不受支持 | 不调用 deprecated load；使用受支持的嵌入式 SDK 或关闭能力 | 不尝试循环探测 |
+| Android 14–16 sandbox disabled | 标记遗留平台路径不可用 | 不在首帧前重试 |
+| 普通 SDK init 超时 | 页面占位、跳过或使用产品允许的其他广告源 | 等待方超时不等于 init 已取消 |
+| SDK init 抛错 | 会话级 Failed，按退避与错误类型决定重试 | 禁止主线程同步 fallback |
+| SDK 进程/Binder 死亡 | 清理代理，遗留路径按可见页面需求恢复 | 重连与业务请求分开计时 |
+| 配置或 SDK 缺失 | 关闭对应广告源并上报构建/配置错误 | 用户路径不负责下载修复 |
+| 同意状态未满足 | 不发起受限制的初始化或请求，按产品合规策略展示 | 不用旧缓存绕过状态 |
+
+业务页面只依赖 `Disabled / Idle / Initializing / Ready / Failed`，不直接认识某家 SDK 的错误码。网关保留原始错误码供诊断，再映射成稳定的业务分类。
+
+## 7. 观测与验收
+
+### 7.1 时间线
+
+至少记录这些单调时间戳：
+
+| 事件 | 解释 |
+| --- | --- |
+| `ad_gateway_trigger` | 哪个页面/策略决定开始初始化 |
+| `ad_sdk_init_call` | 进入供应方 API 前 |
+| `ad_sdk_init_callback` | 成功或失败回调 |
+| `ad_first_request_call` | 第一个广告请求 |
+| `ad_first_response` | 填充、无填充或错误 |
+| `ad_first_render_ready` | 素材达到可提交 UI 的状态 |
+| `ad_first_impression` | 按供应方定义产生曝光 |
+
+这些事件与 TTID、TTFD、首屏 frame、首个操作放在同一 session timeline。回调耗时、广告请求耗时和渲染耗时不能合并成一个 `ad_ready` 数字，否则无法判断瓶颈在 SDK init、网络还是 UI。
+
+### 7.2 资源与稳定性
+
+| 维度 | 指标 |
+| --- | --- |
+| 主线程 | init 调用同步耗时、首帧前 Binder/I/O、长 task |
+| CPU | App/远程进程 CPU 时间、Runnable 竞争、初始化线程数 |
+| 内存 | 主进程与远程进程 PSS、Java/native heap、WebView/Bitmap 峰值 |
+| 帧 | TTID 后首屏 slow/frozen frame、广告填充时布局和解码 |
+| 稳定性 | init 错误、超时、ANR、Crash、Binder death、重试次数 |
+| 业务 | 广告 ready、填充、展示、跳过、占位时长与首个广告可用率 |
+| 数据质量 | 采样率、回调缺失、会话终止、SDK/配置版本 |
+
+主进程 PSS 下降不能单独证明资源改善。若采用供应方支持的远程进程，应同时看进程合计 PSS；多个进程 RSS 直接相加会重复计算共享页。
+
+### 7.3 A/B 条件
+
+广告初始化实验至少固定：
+
+- 相同 App 与 SDK 版本；
+- 相同同意状态、广告位和服务端配置；
+- cold/warm/hot、安装状态与入口；
+- 设备档位、Android 版本和渠道；
+- 相同超时、占位和跳过策略。
+
+实验同时观察启动、稳定性和广告业务 guardrail。首帧变快但广告填充骤降，或收入改善但 ANR/P99 上升，都需要产品与技术共同决定，不由单一指标自动判定。
+
+## 8. 迁移清单
+
+### 从 Android 14–16 SDK Runtime 迁移到 Android 17
+
+- [ ] 搜索 `SdkSandboxManager`、`SandboxedSdkProvider`、`SandboxedSdk` 和 `*Compat` 使用点。
+- [ ] 记录 runtime-enabled SDK、ASB、manifest `<uses-sdk-library>` 与商店交付依赖。
+- [ ] API 37 明确关闭平台 sandbox 路径，不仅检查类是否存在。
+- [ ] 删除 `loadSdk()` 的首帧前等待和同步 fallback。
+- [ ] 与 SDK 供应方确认 Android 17 支持的嵌入式/替代版本。
+- [ ] 移除或冻结 deprecated AndroidX alpha19，验证构建产物不再携带无用 DEX/assets。
+- [ ] 把 Binder DTO 转换为当前 SDK 接口时，保留版本和错误映射。
+- [ ] 对比 merged manifest，确认替代 SDK 新增的 Provider 和组件。
+- [ ] 灰度观察 TTID、TTFD、frame、ANR/Crash、PSS 和广告 guardrail。
+- [ ] 为旧 Android 14–16 用户保留受控迁移窗口和可回滚版本。
+
+### Android 17 广告 SDK 启动 Review
+
+- [ ] merged manifest 与传递依赖已经纳入 review。
+- [ ] 自动初始化可以关闭时，使用供应方支持的手动路径。
+- [ ] `Application` 只注册轻量网关，不等待 SDK ready。
+- [ ] 页面并发 init 被合并成一个会话任务。
+- [ ] SDK 要求的调用线程已按当前版本文档验证。
+- [ ] 首帧后初始化经过低端设备 CPU/帧竞争验证。
+- [ ] timeout、取消、重试和会话级失败语义清楚。
+- [ ] 失败不会触发主线程同步旧 SDK fallback。
+- [ ] UI 占位、跳过和布局变化有产品规则。
+- [ ] 数据、同意状态和上传时机有显式契约。
+- [ ] 主进程与任何远程进程资源合并统计。
+- [ ] SDK 升级有版本、owner、灰度开关和回滚产物。
+
+## 小结
+
+Android 17 已终止 SDK sandbox 的平台支持，旧的 `loadSdk()` 启动隔离方案只能作为 Android 14–16 遗留知识维护。API 37 新代码应停止探测和调用 deprecated 平台路径，AndroidX backcompat 也不能接替长期维护职责。
+
+广告 SDK 的启动问题随之回到更基础的工程边界：看 merged manifest，控制 Provider 和 Application 工作，合并并发初始化，明确首帧/TTFD/广告 ready 的关系，处理失败与重试，并把主线程、帧、内存、稳定性和广告指标放在同一次实验中。隔离能力退场不影响这些原则，它只要求团队重新选择受支持的 SDK 交付和运行方式。
+
+## 参考资料
+
+- [Android 17 `SdkSandboxManager.java`](https://android.googlesource.com/platform/packages/modules/AdServices/+/refs/tags/android-17.0.0_r1/sdksandbox/framework/java/android/app/sdksandbox/SdkSandboxManager.java)：API 37 deprecation 与 no-op `loadSdk()` 路径。
+- [Android 17 `SandboxedSdkProvider.java`](https://android.googlesource.com/platform/packages/modules/AdServices/+/refs/tags/android-17.0.0_r1/sdksandbox/framework/java/android/app/sdksandbox/SandboxedSdkProvider.java)：Provider deprecation 与历史 `onLoadSdk()` 边界。
+- [Android 17 SDK sandbox flags](https://android.googlesource.com/platform/packages/modules/AdServices/+/refs/tags/android-17.0.0_r1/sdksandbox/flags/sandbox_app_flags.aconfig)：no-op 与 API deprecation flag。
+- [`SdkSandboxManager` API reference](https://developer.android.com/reference/android/app/sdksandbox/SdkSandboxManager)：API 37 deprecated 和“不再受支持”的公开说明。
+- [`SandboxedSdkProvider` API reference](https://developer.android.com/reference/android/app/sdksandbox/SandboxedSdkProvider)：历史加载约束与 API 37 deprecation。
+- [SDK Runtime overview](https://privacysandbox.google.com/private-advertising/sdk-runtime/architecture)：Android 14–16 设计目标、进程与通信模型。
+- [SDK Runtime backward compatibility](https://privacysandbox.google.com/private-advertising/sdk-runtime/backward-compatibility)：旧版 in-app ClassLoader 兼容模型。
+- [AndroidX Privacy Sandbox SDK Runtime releases](https://developer.android.com/jetpack/androidx/releases/privacysandbox-sdkruntime)：alpha19 deprecation 与停止更新说明。
