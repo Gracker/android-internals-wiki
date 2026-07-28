@@ -95,230 +95,264 @@ last_task9_autofix_at: "2026-07-10"
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么要了解动画性能优化
+动画掉帧可能出现在 UI 线程推进属性值时，也可能出现在 RenderThread 绘制、窗口 buffer 排队、SurfaceFlinger 合成或显示提交阶段。只观察 Animator 回调时长，会漏掉后半段问题。
 
-动画问题很少只属于动画库。一次掉帧可能来自主线程每帧执行属性 setter，也可能来自 `RenderThread` 的纹理上传、`RenderEffect` 的离屏渲染，或者转场期间触发整棵 View 树重新测量。
+本文的平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，kernel 观察基线固定为 `android17-6.18-2026-06_r6`。普通 View 动画走标准 HWUI App Window 路径：
 
-动画优化可以拆成四类决策：选哪种动画模型、哪些视觉效果会推高 GPU 成本、主线程每帧要做多少事、转场是否扩大了布局和绘制范围。具体的渲染管线原理详见 2.5 节；动画侧的排查重点是模型选择、GPU 成本、主线程工作量和转场范围。
+`vsync-app → Choreographer#doFrame → input / animation / insets animation / traversal / commit → HardwareRenderer.syncAndDrawFrame() → RenderThread → BLAST → SurfaceFlinger → HWC → present`
 
+动画 API 的状态推进主要位于 framework 和应用进程。kernel 基线用于解释线程调度、GPU 驱动、fence 与显示侧现象，不能拿 kernel tag 推导 Animator 的 Java 语义。完整显示路径可结合 [Android View 标准渲染路径](../../part2-performance/ch18-rendering-pipelines/02-android-view-standard.md) 阅读。
 
-## 属性动画 vs 帧动画的性能差异
+## 属性动画与帧动画：先看每帧改变什么
 
-属性动画和帧动画的差异，不在于“哪个 API 更高级”，而在于每一帧到底改了什么。
+选择动画方案时，应把“每帧输入”“是否触发布局”“绘制输入规模”分开评估。
 
-| 类型 | 每帧工作 | 适合场景 | 性能风险 |
-|------|----------|----------|----------|
-| `ViewPropertyAnimator` / 属性动画 | 修改 `translationX/Y`、`alpha`、`scale` 等 View 属性 | 位移、缩放、透明度、轻量交互反馈 | 动画属性如果触发布局或复杂重绘，主线程成本会上升 |
-| `ObjectAnimator` | 反射或属性对象调用目标 setter | 非 View 属性、业务状态驱动动画 | setter 里如果调用 `requestLayout()` 或分配对象，会把动画变成每帧业务执行 |
-| 帧动画 / 逐帧 Drawable | 每帧切换一张图或一段绘制资源 | 小尺寸、短时长、强设计稿还原的动效 | 图片解码、纹理上传、内存占用和包体积都会放大 |
-| 自绘动画 | 每帧 `invalidate()` 后进入 `onDraw()` | 波形、进度、粒子、业务图形 | `onDraw()` 分配对象或路径计算过重，容易形成稳定掉帧 |
+| 模型 | Android 17 中的每帧工作 | 合适场景 | 主要风险 |
+| --- | --- | --- | --- |
+| `ViewPropertyAnimator` | UI 线程上的一个 `ValueAnimator` 推进一组 View 属性，并合并相应 invalidation | `alpha`、`translation`、`scale`、`rotation` 等 View 属性组合 | update listener 做业务计算；目标内容频繁失效；误以为变换会改变布局语义 |
+| `ObjectAnimator` | `PropertyValuesHolder` 计算值，再经 `Property`、优化调用路径或已解析 setter 写入目标 | View 之外的对象属性、自定义属性 | setter 内分配对象、执行 I/O、调用 `requestLayout()` 或触发大范围重绘 |
+| 逐帧 Drawable | 到时切换 child Drawable，随后进入绘制 | 小面积、较短、逐帧美术效果 | 解码后像素内存、纹理上传、包体和资源切换 |
+| 自绘动画 | 更新进度并使 View 失效，UI 线程按需重录 DisplayList | 图表、波形、进度和业务图形 | 每帧重建几何、分配对象或提交过多绘制命令 |
+| Lottie | 推进 composition 中各节点的进度并绘制矢量、图片、mask 与 matte | 设计工具导出的矢量动效 | 节点遍历、路径计算、mask/matte、图片和渲染模式 |
 
-AOSP `ViewPropertyAnimator` 的类注释直接说明：同时动画多个 View 属性时，它会把多次属性变化合并到一次 invalidation，而不是让每个属性各自触发一次刷新。这个特性适合做 `alpha`、`translationX/Y`、`scaleX/Y`、`rotation` 这类不改变测量结果的动画。
+Android 17 的 `ViewPropertyAnimator.startAnimation()` 创建一个 `ValueAnimator`。它在 UI 线程的 update 回调中计算各属性值，直接更新 View 对应状态，再执行一次合并后的 invalidation。它没有把动画回调自动迁移到 RenderThread；RenderThread 消费更新后的 RenderNode / DisplayList 状态。`ViewPropertyAnimator` 的优势是专用 View 属性接口、组合写法和 invalidation 合并。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewPropertyAnimator.java]
-[已验证: 官方文档, developer.android.com/develop/ui/views/animations/prop-animation]
+`ObjectAnimator` 也不能统一描述为“每帧都用反射”。传入 `Property<T, V>` 时可以直接调用 `Property.set()`；传入属性名时，`PropertyValuesHolder` 会解析并缓存 getter/setter，随后经反射或针对部分数值属性的优化路径写值。性能判断仍要回到目标 setter 的副作用。
 
-属性动画的安全边界是：动画过程中只更新渲染属性，不更新布局约束。下面这类写法会让每一帧都进入 `requestLayout()`，再触发 measure/layout/draw，代价远高于只更新 RenderNode 变换属性。
+### 变换属性不会修改布局语义
+
+下面的反例在每个动画 tick 中修改宽度，因此持续发起 layout request。
 
 ```kotlin
-// 反例：每帧修改 layoutParams，动画成本扩散到整棵 View 树
-ValueAnimator.ofInt(0, targetWidth).apply {
-    duration = 240
+ValueAnimator.ofInt(startWidth, targetWidth).apply {
     addUpdateListener { animator ->
-        val width = animator.animatedValue as Int
-        view.layoutParams = view.layoutParams.apply { this.width = width }
-        view.requestLayout()
+        view.updateLayoutParams {
+            width = animator.animatedValue as Int
+        }
     }
 }.start()
 ```
 
-同样的视觉效果如果能用 `scaleX` 或裁剪区域表达，就不要每帧改宽高：
+`updateLayoutParams` 会把新参数重新设置给 View，并触发 `requestLayout()`。受影响范围取决于父容器、约束与 measure cache；不能把它简化成“只改当前 View 的宽度”。
+
+只需要视觉展开、且布局占位与触摸区域可以保持目标尺寸时，可以用变换属性表达同一段视觉过程。
 
 ```kotlin
-// 更低成本：只修改变换属性，不触发布局
-// 前提：View 当前处于 collapsed 状态（scaleX = 0f），展开到正常宽度
 view.pivotX = 0f
-view.scaleX = 0f // 确保初始状态为收起
+view.scaleX = 0f
 view.animate()
-    .scaleX(1.0f) // 展开到正常宽度
-    .setDuration(240)
-    .withLayer()
+    .scaleX(1f)
     .start()
 ```
 
-`withLayer()` 会在动画期间临时启用硬件 layer，动画结束后恢复原 layer type。适用对象是内容复杂但动画期间内容不变的 View，例如透明度和位移动画。对每帧内容都变化的 View 开 layer 会反复更新纹理，收益会被纹理重建抵消。
+`scaleX` 改变绘制变换，不会缩小 measured width、layout bounds、触摸命中区域或无障碍节点边界。产品要求周围内容随宽度移动、收起后不可点击或无障碍边界同步变化时，应更新布局和交互状态，并用 trace 控制参与重排的子树；不能用 `scaleX` 冒充几何变化。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewPropertyAnimator.java]
+### `withLayer()` 只用于内容稳定的短时合成
 
-帧动画的主要风险来自资源侧。30 张 1920×1080 RGBA_8888 图片解码后约 248.8 MB，按二进制单位约 237.3 MiB，计算口径是 `1920 × 1080 × 4 × 30`。压缩包体积、硬件位图、采样缩放和目标纹理格式会改变实际占用，但解码后内存与 GPU 纹理上传压力仍会集中到动画开始后的几帧。帧动画只建议用于小尺寸、短时长、不可用矢量或属性动画表达的视觉效果；长时长动效优先评估矢量、Lottie 或自绘方案。
+`withLayer()` 会在下一次动画开始前设置 `LAYER_TYPE_HARDWARE`，结束时恢复调用前的 layer type。它适合内容复杂、动画期间内容保持不变、外层只做 alpha 或 transform 的 View。View 内容每帧失效时，硬件 layer 仍需更新；大面积 layer 还会增加 GPU 内存和离屏渲染成本。默认 View 已有 RenderNode / DisplayList 复用能力，静态内容不需要长期强制 hardware layer。
 
-[已确认: 帧动画内存估算按 RGBA_8888 解码后内存计算，实际项目需结合图片尺寸、采样策略和纹理格式复核]
+### 逐帧图片按解码后像素估算
 
-## Lottie / RenderEffect 性能注意事项
+假设 30 张互不复用的 1920 × 1080 图片都以 RGBA_8888 常驻，像素容量上界为：
 
-Lottie 和 RenderEffect 都能把设计效果交给运行时渲染，但它们的性能瓶颈不同。Lottie 的瓶颈通常在矢量路径、mask、matte、图片资源和每帧求值；RenderEffect 的瓶颈通常在离屏 buffer、模糊半径、GPU 填充率和合成路径。
+`1920 × 1080 × 4 × 30 = 248,832,000 bytes ≈ 237.3 MiB`
 
-### Lottie：先判断动画复杂度，再判断渲染模式
+这个数字不能直接当成 `AnimationDrawable` 的固定内存占用。资源 density 缩放、采样、Bitmap 复用、硬件位图、Drawable 类型和缓存生命周期都会改变驻留位置与数量；GPU 纹理也可能按绘制时机上传。评审时要用目标资源的解码尺寸、内存记录和 GPU 轨迹验证。大尺寸长动画通常更适合视频、受控的矢量动画或按需自绘，选型还要比较视觉保真、功耗和启动成本。
 
-Lottie 官方源码中 `LottieAnimationView.setRenderMode()` 的注释说明，默认 `AUTOMATIC` 会在多数场景使用硬件加速；但 pre-Pie 设备上的 dash path、超过 4 个 mask/matte，以及多个大面积 mask/matte 场景可能走软件渲染或建议同时测试两种模式。源码也提供 `setPerformanceTrackingEnabled()` 和 `getPerformanceTracker()`，用于定位慢 layer。
+## Lottie：以 6.7.1 源码解释渲染模式
 
-[已验证: github.com/airbnb/lottie-android/lottie/src/main/java/com/airbnb/lottie/LottieAnimationView.java]
+本节对第三方库的事实固定到 Lottie `6.7.1`。库版本独立于 Android API level，项目升级 Lottie 后要重新核对 `RenderMode`、缓存和异步更新行为。
 
-实战里可以按下面的顺序处理：
+`RenderMode.AUTOMATIC` 在 Lottie 6.7.1 中按这些条件选择软件绘制：
 
-1. **设计稿约束**：控制 layer 数、mask/matte 数量、路径点数量，避免在一个首屏动画里放大面积半透明遮罩。
-2. **资源约束**：图片资源单独评估尺寸和复用；能用矢量表达的元素不要导出成多张大图。
-3. **运行时约束**：首屏或列表内 Lottie 禁止同步解析 JSON；composition 缓存打开后，再评估内存占用。
-4. **渲染模式验证**：同一动画在目标机型上对比 `AUTOMATIC`、`HARDWARE`、`SOFTWARE`。API 31+ 优先看 `FrameTimeline` jank，API 29-30 回退到 UI Thread、RenderThread `DrawFrame`、SurfaceFlinger/gfx 帧间隔和 CPU 使用率。
+- dash pattern 且系统低于 Android 9；
+- mask 与 matte 总数超过 4；
+- 系统不高于 Android 7.1。
 
-Lottie 不适合放在 RecyclerView 大量 item 中同时播放。列表里如果需要动效，只让可见且有交互焦点的 item 播放，其余 item 停在静态帧。这个策略能同时压住 CPU 求值、GPU 绘制和电量消耗。
+本文覆盖 Android 10—17，前后两个兼容分支不会命中，主要自动切换条件是 mask/matte 数量超过 4。源码注释说明这个阈值来自有限样本，要求开发者手动比较两种模式。它不能证明第 5 个 mask 一定更慢，也不能替代目标设备测量。软件模式会把内容绘制到 Lottie 管理的 Bitmap，复杂动画仍可能产生较高的 CPU 与内存成本。
 
-### RenderEffect：限制作用范围和模糊半径
+`LottieAnimationView` 的 `cacheComposition` 默认开启。常规 asset、raw resource 和 URL 加载通过 `LottieCompositionFactory` 返回的异步任务处理，编辑器预览分支存在同步解析。异步解析只能移走 composition 构建，播放期间的进度传播、动态属性回调和 Canvas 绘制仍要计入帧成本。
 
-`RenderEffect` 是作用在 `RenderNode` 上的中间渲染步骤。AOSP `RenderEffect.java` 注释说明，它可以配置到 `RenderNode`，也可以通过 `View.setRenderEffect()` 配置到 View 背后的 RenderNode；`View.setRenderEffect()` 内部调用 `mRenderNode.setRenderEffect()` 后触发 `invalidateViewProperty(true, true)`。
+Lottie 6.7.1 还提供 `setPerformanceTrackingEnabled()` 与 `getPerformanceTracker()` 观察各 layer 渲染时间。`AsyncUpdates` 在该版本被标为实验 API，`AUTOMATIC` 的注释写明当前按禁用处理；项目没有显式启用并验证时，不应宣称节点更新已经离开 UI 线程。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderEffect.java]
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/View.java]
+评审一份 Lottie 资源时，可以按四组输入记录结果：
 
-RenderEffect 的优化要点是缩小输入内容，而不是只盯着 API 调用本身。全屏 blur、列表背景 blur、滑动过程中不断变化的 blur 半径，都可能让 RenderThread 反复处理大面积纹理。更稳妥的做法是：
+| 输入 | 要核对的内容 | 验证方法 |
+| --- | --- | --- |
+| composition | layer、路径点、trim path、表达式或动态回调 | PerformanceTracker、CPU trace、设计稿简化前后对比 |
+| 合成效果 | mask、matte、透明叠加和大面积 clip | 检查导出 JSON，并比较 `AUTOMATIC`、`HARDWARE`、`SOFTWARE` |
+| 图片资源 | 解码尺寸、复用、色彩格式和首次上传 | 内存记录、RenderThread/GPU 轨迹、冷启动与热启动对比 |
+| 播放策略 | 同屏数量、循环、可见性和生命周期 | RecyclerView 滚动、页面切后台与长时间功耗测试 |
 
-- 对小区域卡片、浮层、局部背景使用 RenderEffect；全屏背景优先使用预模糊位图或静态截图。
-- 动画期间避免连续改变 blur radius；如果视觉允许，使用 2-3 个离散半径档位。
-- 对低端机或省电模式提供降级：关闭 blur、降低半径、改用半透明色块。
-- Perfetto 中同时看 UI Thread、RenderThread 和 GPU 相关 slice；如果 UI Thread 很短但 RenderThread `DrawFrame` 拉长，问题多半在 GPU 绘制或离屏合成。
+RecyclerView 中的动画应绑定 item 可见性和业务焦点。离屏 item 停止播放，回收时移除动态回调或引用；同屏数量多时，可以给非焦点 item 使用静态帧。首屏 composition 的预加载和缓存要与内存预算一起评估，避免每次 bind 重复发起加载。
 
-下面的封装把 RenderEffect 限制在 API 31+，并集中处理降级：
+## RenderEffect：控制输入面积、效果状态与降级
+
+`RenderEffect` 从 API 31 公开。Android 17 的 `View.setRenderEffect()` 把 effect 设置到 View 的 backing RenderNode；RenderNode 状态变化后，View 会触发属性 invalidation。blur、shader 或 effect chain 可能需要中间渲染目标，成本随输入 bounds、采样范围、像素格式、效果组合和更新频率变化。
+
+因此，RenderEffect 的评审单位应是“这一帧需要处理多少像素、处理几次、输入是否改变”。全屏 blur、滚动容器上的 blur、半径持续变化以及 effect 与复杂透明叠加同时出现，都需要单独测量。低性能档、省电模式和降级路径可以关闭 effect、缩小作用 View，或改用经过设计确认的静态背景与半透明色块。
+
+视觉只需要几个固定状态时，可以复用已经创建的 RenderEffect。下面的控制器由调用方长期持有，半径来自设计资源或设备分档测试，没有写入通用阈值。
 
 ```kotlin
-fun View.applyBlurIfSupported(radiusPx: Float, enabled: Boolean) {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
-    if (!enabled) {
-        setRenderEffect(null)
-        return
-    }
+@RequiresApi(Build.VERSION_CODES.S)
+class BlurController(
+    compactRadiusPx: Float,
+    expandedRadiusPx: Float,
+) {
+    enum class State { OFF, COMPACT, EXPANDED }
 
-    val radius = radiusPx.coerceIn(0f, 24f)
-    setRenderEffect(
-        RenderEffect.createBlurEffect(
-            radius,
-            radius,
-            Shader.TileMode.CLAMP
-        )
+    private val compact = RenderEffect.createBlurEffect(
+        compactRadiusPx,
+        compactRadiusPx,
+        Shader.TileMode.CLAMP,
     )
+    private val expanded = RenderEffect.createBlurEffect(
+        expandedRadiusPx,
+        expandedRadiusPx,
+        Shader.TileMode.CLAMP,
+    )
+
+    fun apply(view: View, state: State) {
+        view.setRenderEffect(
+            when (state) {
+                State.OFF -> null
+                State.COMPACT -> compact
+                State.EXPANDED -> expanded
+            },
+        )
+    }
 }
 ```
 
-这段代码的重点是半径上限和关闭路径。半径上限不是通用数值，正式接入前要用目标机型的 trace 校准；关闭路径保证低端设备、省电模式和业务降级能直接清掉 effect。
+这个示例避免在每帧重复创建相同 effect，并保留 `null` 清理路径。半径由视觉目标与实机数据决定，关闭状态直接传 `null`。动画必须连续改变半径时，缓存固定状态无法消除每帧输入变化，应缩小 View bounds，并比较关闭效果后的 FrameTimeline、RenderThread、GPU 和功耗差值。
 
-## 动画与主线程的关系
+`RenderThread DrawFrame` 变长也不能直接写成“GPU 慢”。这段时间可能包含 RenderThread 的 CPU 工作、runnable 等待、`dequeueBuffer` 等待、驱动调用或 GPU 同步。要继续看线程状态、调度延迟、dequeue/queue duration、GPU slice 和 fence。UI 与 RenderThread 都按时而 present 偏晚时，排查范围要移到 BLAST backlog、SurfaceFlinger latch/composition、HWC 和显示反馈。
 
-动画帧由 Choreographer 驱动。每个 VSync 周期里，主线程处理 input、animation、traversal 等阶段；RenderThread 再同步 RenderNode 状态并执行绘制。2.5 节已经展开主线程和 RenderThread 的协作；动画侧排查时，重点看每帧有多少工作留在 UI Thread，以及哪些绘制成本转移到了 RenderThread。
+## 动画与 UI 线程：按显示阶段归因
 
-[详见 2.5 节]
+`Choreographer` 在 Android 17 中依次执行 input、animation、insets animation、traversal 和 commit callback。`ValueAnimator`、`ViewPropertyAnimator` 的进度推进以及应用注册的 update listener 通常运行在创建它们的 Looper 线程；View 动画应在 UI 线程创建和操作。属性最终写入 RenderNode，不会免除 UI 线程上的插值、回调和状态更新。
 
-动画卡顿通常分三类：
+一帧动画应沿以下观察点逐段检查：
 
-| 表现 | 主要观察点 | 常见原因 | 处理方式 |
-|------|------------|----------|----------|
-| UI Thread `doFrame` 超时 | `Choreographer#doFrame`、`performTraversals`、业务 trace | 每帧执行计算、分配对象、触发布局 | 移出每帧计算，缓存结果，避免 `requestLayout()` |
-| RenderThread `DrawFrame` 超时 | `syncFrameState`、`DrawFrame`、纹理上传、GPU slice | DisplayList 太复杂、RenderEffect、图片纹理上传 | 减少绘制命令，预上传图片，缩小效果范围 |
-| 帧率稳定但功耗高 | CPU 频率、GPU 频率、后台播放状态 | 不可见动画仍在跑，Lottie 或粒子动效常驻 | 页面不可见时暂停，列表 item 离屏时停止 |
+| 阶段 | Perfetto 观察点 | 可以支持的结论 | 还不能推出的结论 |
+| --- | --- | --- | --- |
+| UI 线程 | `Choreographer#doFrame`、animation callback、`performTraversals`、自定义 trace | 回调计算、layout 或 DisplayList 重录是否超预算 | GPU 是否已经完成 |
+| RenderThread | `syncFrameState`、`DrawFrame`、线程状态、dequeue/queue duration | RenderNode 同步、绘制准备或 buffer 等待位于何处 | 整段 `DrawFrame` 都是 GPU 执行 |
+| GPU / producer | GPU slices、提交与 completion fence | GPU 工作是否跨过应用帧 deadline | buffer 是否已经上屏 |
+| BLAST / SurfaceFlinger | `BufferTX - <layerName>`、latch、composition、FrameTimeline | buffer 到达、合成和 display frame 是否按期 | panel 像素响应已经完成 |
+| HWC / display | composition type、present feedback、相关 fence | Android 显示栈观察到的 present 时刻 | 用户已经感知到像素变化 |
 
-属性动画的 update listener 里不要做重活。下面这种写法在功能上没问题，但它把路径计算放到每一帧：
+### 把不变计算移出 update listener
+
+下面的反例会在每个 tick 遍历数据并重建 Path。
 
 ```kotlin
 ValueAnimator.ofFloat(0f, 1f).apply {
     addUpdateListener { animator ->
-        val progress = animator.animatedFraction
         chartPath.reset()
-        rebuildPath(chartPath, data, progress) // 每帧遍历 data
+        rebuildPath(chartPath, data, animator.animatedFraction)
         chartView.invalidate()
     }
 }.start()
 ```
 
-如果 `data` 不变，路径采样表可以在动画开始前准备好，每帧只读当前位置：
+即使这段代码没有产生 Java 对象，路径计算、DisplayList 记录和几何处理仍可能超过帧预算。
+
+输入数据不变时，应先构建稳定采样结果，并只在每帧更新进度。
 
 ```kotlin
 val samples = buildPathSamples(data)
+chartView.setSamples(samples)
+
 ValueAnimator.ofFloat(0f, 1f).apply {
     addUpdateListener { animator ->
-        chartView.progress = animator.animatedFraction
-        chartView.samples = samples
-        chartView.invalidate()
+        chartView.setProgress(animator.animatedFraction)
     }
 }.start()
 ```
 
-自绘动画还要遵守 22.4 节的规则：`onDraw()` 零分配，`invalidate()` 只覆盖变化区域，不在 `onDraw()` 里递归触发下一帧。持续动画用 `ValueAnimator` 或 `postInvalidateOnAnimation()` 管住帧节奏。
+`setSamples()` 只在动画开始前复制数据并建立几何缓存；`setProgress()` 只更新可见区间并调用 `invalidate()`。API 21 起，应用传给 `invalidate(Rect)` 的 dirty rectangle 会被忽略，因此不能依赖局部 dirty rect 缩小 View 重录范围。需要隔离更新时，应拆分 View 或 RenderNode。`onDraw()` 的对象复用、刷新和 RenderNode 边界详见 [22.4 自定义 View 性能优化](04-custom-view-optimization.md)。
 
-[详见 22.4 节]
+### 动画要随可见性停止
 
-后台动画也要纳入功耗治理。页面 `onStop()` 后还在播放的属性动画、Lottie、定时器刷新，会在用户不可见时继续占用 CPU/GPU。页面不可见时暂停，回到前台再按业务状态恢复；这类问题适合通过生命周期钩子和页面级动画管理器统一兜底。
+页面 `onStop()`、View detach 或 RecyclerView item 回收后，Animator、Lottie、粒子系统和 `postOnAnimation()` 循环都应停止或暂停。恢复时要从业务状态计算进度，避免重复注册 callback。生命周期处理既影响帧性能，也影响后台功耗和对象引用。
 
-## 转场动画优化
+### Android 17 的 buffer stuffing recovery
 
-转场动画的问题在于范围容易失控。`TransitionManager.beginDelayedTransition(sceneRoot)` 会捕获 sceneRoot 下 View 层级在下一帧前后的变化，并为差异创建动画。sceneRoot 选得越大，状态捕获、布局变化和动画对象数量就越多。
+Android 17 源码包含 buffer stuffing recovery。窗口 buffer 排队过深时，`BBQBufferQueueProducer::waitForBufferRelease()` 的等待信息会经 `ViewRootImpl` / `ThreadedRenderer` 反馈给 `Choreographer`。满足条件后，`Choreographer` 可以主动延迟一帧，并在恢复期间调整 animation frame time，让 backlog 有机会下降。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/transition/TransitionManager.java]
-[已验证: 官方文档, developer.android.com/develop/ui/views/animations/transitions]
+Perfetto 中遇到动画帧间隔异常时，可搜索 `Buffer stuffing recovery`、`buffer stuffed` 和 `Negative offset`，再检查 `dequeueBuffer` wait、FrameTimeline 的 `Buffer Stuffing`、目标 layer 的 `BufferTX` 与后续 backlog。出现主动 delay 时，该帧不能直接归因为 Animator 计算或 CPU 算力不足。相关 aconfig flag 可变，设备行为要以当前 build 配置和 trace 为准。
 
-转场优化的第一条规则：sceneRoot 只包住变化区域。不要在 Activity 根布局上随手调用 `beginDelayedTransition()`，除非整个页面都要参与转场。
+## 转场动画：限制捕获范围和目标数量
+
+`TransitionManager.beginDelayedTransition(sceneRoot, transition)` 会立即捕获 start values，并安排在下一次 pre-draw 捕获 end values，然后为变化目标创建 Animator。`sceneRoot` 很大时，捕获遍历、布局影响和候选目标都会扩大；具体成本还取决于 Transition 类型与 target/exclude 配置。
+
+场景根节点应选能容纳目标变化的最小共同父容器，再显式限制 target。下面的例子让筛选面板和结果列表的外框参与转场，同时排除列表 item。
 
 ```kotlin
-// 只让筛选栏区域参与转场
-TransitionManager.beginDelayedTransition(filterContainer, AutoTransition().apply {
-    duration = 180
-    excludeChildren(recyclerView, true)
-})
-filterPanel.isVisible = !filterPanel.isVisible
+val transition = AutoTransition().apply {
+    addTarget(filterPanel)
+    addTarget(resultList)
+    excludeChildren(resultList, true)
+}
+
+TransitionManager.beginDelayedTransition(contentContainer, transition)
+filterPanel.isVisible = showFilters
 ```
 
-这段代码有两个约束：转场根节点是 `filterContainer`，列表被排除。这样展开筛选栏时，RecyclerView 不会因为父级转场捕获而创建大量 item 动画。
+`resultList` 自身可以随筛选面板展开而移动，RecyclerView 的 child 不会成为 transition target。`contentContainer` 必须同时包含两个目标；如果页面结构不满足这个前提，应调整 scene root 或拆成局部动画。
 
-常见转场风险和处理方式：
+常见转场问题可以按触发条件处理：
 
-| 风险 | 触发方式 | 处理方式 |
-|------|----------|----------|
-| 大范围布局重算 | 根布局转场、多个子树同时 `requestLayout()` | 缩小 sceneRoot，拆分局部转场 |
-| 列表 item 被卷入 | RecyclerView 位于 sceneRoot 内 | `excludeChildren(recyclerView, true)` 或转场根节点避开列表 |
-| 动画对象过多 | 多个 View 同时改变 bounds / alpha / translation | 合并状态变化，只保留关键视觉元素 |
-| 低端机转场不稳定 | bounds 动画叠加阴影、圆角、blur | 提供无 blur / 短时长 / 直接切换降级 |
+| 现象 | 检查内容 | 处理方向 |
+| --- | --- | --- |
+| start/end 捕获很长 | scene root 层级、target 数量、自定义 `capture*Values()` | 缩小根节点，使用 `addTarget()` / `excludeTarget()` |
+| traversal 连续变长 | bounds、约束、文本和 child 尺寸是否在变化 | 减少参与重排的子树，预先计算文本与几何 |
+| RecyclerView item 被创建大量 Animator | 列表是否落在 scene root，child 是否被排除 | 排除 child，或让列表避开该转场 |
+| UI 线程按时但画面仍晚 | 大面积 alpha、阴影、RenderEffect、buffer backlog 和 SF/display | 沿 RenderThread、GPU、BLAST、SF、HWC 继续定位 |
 
-转场结束后要清理临时状态，例如硬件 layer、禁用的点击态、临时 elevated shadow。状态没恢复会让后续页面一直带着额外合成成本。
+转场期间临时启用的 layer、点击禁用状态和视觉属性应在 cancel 与 end 两条路径恢复。复杂转场还要验证系统动画缩放、页面快速退出、旋转和多次触发，防止监听器遗漏导致状态残留。
 
-## 扩展
+## 扩展：MotionLayout 性能实践
 
-### 🔸 MotionLayout 性能实践
+MotionLayout 属于 AndroidX ConstraintLayout 库，其行为由依赖版本和 `MotionScene` 决定，Android 17 平台 tag 不能替代库版本记录。它适合一个 progress 同时驱动多个 View 的约束、位置、尺寸、透明度和关键帧。
 
-MotionLayout 适合复杂的多属性协同动画：一个进度值同时驱动位置、尺寸、透明度、约束和关键帧。它的优势是把动画关系声明在 `MotionScene` 中，减少业务代码里每帧手写 setter 的机会；代价是约束求解和布局变化可能被带到动画过程中。
+接入时检查三类输入：
 
-[已验证: 官方文档, developer.android.com/develop/ui/views/animations/motionlayout]
+1. 只包含 translation、scale、rotation 或 alpha 的简单动效，可以先比较属性动画；MotionLayout 更适合需要约束关系和关键帧协同的场景。
+2. 尺寸、约束、文本或 helper 状态随 progress 变化时，观察 `performTraversals`、measure/layout 次数和每帧参与计算的 View 数量。
+3. 复杂首屏或低性能设备要有简化 MotionScene、缩小参与范围或跳过动效的产品方案，并验证无障碍与减少动态效果设置。
 
-接入 MotionLayout 时按三步检查：
-
-1. **约束变化是否必要**：如果只是位移、透明度、缩放，优先使用 View 属性动画；MotionLayout 更适合多元素联动和复杂状态切换。
-2. **是否每帧触发布局**：动画中改变 `layout_width/height`、约束关系、文本内容，都会扩大主线程成本；能用 transform 表达的效果不要改约束。
-3. **是否容易降级**：复杂首屏动效要有简化版 MotionScene 或直接跳过动画的路径，尤其是低端机和省电模式。
-
-MotionLayout 的调试重点放在 trace 里每帧成本是否稳定；动画能跑只是最低要求。发现 `performTraversals` 跟着 MotionLayout 进度稳定拉长时，先减少参与动画的子 View 数量，再把尺寸变化改成 scale / translation；如果仍然超时，再拆成多个小的 MotionLayout。
+判断 MotionLayout 性能时，应固定 ConstraintLayout 版本、设备刷新率、动画输入和页面数据。若 UI 线程的 layout 时间随 progress 稳定升高，可以逐项移除尺寸/约束变化，确认哪一组目标造成成本；若 UI 线程按时，则继续检查 RenderThread 和显示后段。
 
 ## 上线前检查清单
 
-- 属性动画只修改渲染属性；涉及宽高、约束和文本变化的动画必须单独压测。
-- `ViewPropertyAnimator.withLayer()` 只用于内容稳定的 alpha / translation / scale 动画，结束后确认 layer 恢复。
-- Lottie 动画限制 layer、mask、matte 和图片资源数量，首屏和列表场景禁止同步解析。
-- RenderEffect 限制作用范围和 blur 半径，低端机、省电模式、后台状态有关闭路径。
-- 转场动画只包住变化区域，RecyclerView / ViewPager2 默认排除。
-- Perfetto 在 API 31+ 同时看 UI Thread、RenderThread、FrameTimeline 和 CPU/GPU 频率；API 29-30 用 UI Thread、RenderThread、SurfaceFlinger/gfx 帧间隔和调度信号推断卡顿。
+- 记录 Android 平台、Lottie / ConstraintLayout 等库版本、设备固件、刷新率和测试输入。
+- 区分 transform 与布局几何；同时验证触摸区域、无障碍边界和 sibling 排布。
+- 检查 Animator update listener、setter 和动态属性回调中是否存在重复计算、对象分配、I/O 或 `requestLayout()`。
+- 逐帧图片按解码尺寸估算内存，并用运行时记录确认驻留与纹理上传。
+- Lottie 对比目标资源的三种 RenderMode，记录 mask/matte、图片和同屏播放数量。
+- RenderEffect 限制输入 bounds，复用固定状态，提供 `null` 清理和设备降级。
+- 转场使用最小 scene root，并显式配置 target/exclude；验证 cancel、页面退出和重复触发。
+- API 31—37 优先检查 FrameTimeline；API 29—30 结合 UI/RenderThread、BufferQueue、SurfaceFlinger 和显示时序。
+- UI 与 RenderThread 按时仍不等于按期 present；继续检查 BLAST、SurfaceFlinger、HWC 和 fence。
 
 ## 参考资料
 
-- [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/ViewPropertyAnimator.java]
-- [已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderEffect.java]
-- [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/View.java]
-- [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/transition/TransitionManager.java]
-- [已验证: github.com/airbnb/lottie-android/lottie/src/main/java/com/airbnb/lottie/LottieAnimationView.java]
-- [引用: developer.android.com/develop/ui/views/animations/prop-animation]
-- [引用: developer.android.com/develop/ui/views/animations/transitions]
-- [引用: developer.android.com/develop/ui/views/animations/motionlayout]
+- [AOSP Android 17 `ViewPropertyAnimator.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewPropertyAnimator.java)
+- [AOSP Android 17 `PropertyValuesHolder.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/animation/PropertyValuesHolder.java)
+- [AOSP Android 17 `RenderEffect.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java)
+- [AOSP Android 17 `View.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java)
+- [AOSP Android 17 `TransitionManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/transition/TransitionManager.java)
+- [AOSP Android 17 `Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)
+- [AOSP Android 17 `ThreadedRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ThreadedRenderer.java)
+- [AOSP Android 17 `CanvasContext.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp)
+- [Lottie 6.7.1 `RenderMode.java`](https://github.com/airbnb/lottie-android/blob/v6.7.1/lottie/src/main/java/com/airbnb/lottie/RenderMode.java)
+- [Lottie 6.7.1 `LottieAnimationView.java`](https://github.com/airbnb/lottie-android/blob/v6.7.1/lottie/src/main/java/com/airbnb/lottie/LottieAnimationView.java)
+- [Lottie 6.7.1 `AsyncUpdates.java`](https://github.com/airbnb/lottie-android/blob/v6.7.1/lottie/src/main/java/com/airbnb/lottie/AsyncUpdates.java)
+- [Android 属性动画文档](https://developer.android.com/develop/ui/views/animations/prop-animation)
+- [Android Transition 文档](https://developer.android.com/develop/ui/views/animations/transitions)
+- [Android MotionLayout 文档](https://developer.android.com/develop/ui/views/animations/motionlayout)
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- [Android 17 kernel common `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)
