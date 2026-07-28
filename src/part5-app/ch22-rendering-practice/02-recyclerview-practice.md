@@ -107,8 +107,9 @@ last_deepseek_cn_review_at: 2026-07-16
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-RecyclerView 优化不该从“调几个参数”开始，而要从滑动路径里的成本来源开始：创建 ViewHolder、绑定数据、计算差异、预取下一屏、处理嵌套滑动。7.8 节已经展开 RecyclerView 内部布局、缓存和 GapWorker 机制；这里把机制转成应用侧写法、验收方法和取舍边界。
+RecyclerView 优化不该从“调几个参数”开始，要从滑动路径里的成本来源开始：创建 ViewHolder、绑定数据、计算差异、预取下一屏、处理嵌套滑动。7.8 节已经展开 RecyclerView 内部布局、缓存和 GapWorker 机制；这里把机制转成应用侧写法、验收方法和取舍边界。
 
+平台部分以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点，内核侧统一到 `android17-6.18-2026-06_r6`。RecyclerView 是独立发布的 AndroidX 库，本文代码固定到 `androidx.recyclerview:recyclerview:1.4.0` source jar，不能用 platform tag 替代它的版本。普通列表主体仍沿标准 HWUI App Window 出图：主线程完成输入、滚动、绑定与 Traversal，RenderThread 生成窗口 buffer，BLAST、SurfaceFlinger 和 HWC 再完成采纳、合成与 present。
 
 ## ViewHolder 复用与 ItemType 设计
 
@@ -122,7 +123,7 @@ ViewHolder 设计的目标是让滑动过程尽量走缓存命中，减少反复
 | 设计点 | 推荐写法 | 风险写法 | Trace 表现 |
 | --- | --- | --- | --- |
 | `viewType` | 按布局结构分组 | 按业务状态、颜色、角标拆类型 | `RV onCreateViewHolder type=...` 在滑动中频繁出现 |
-| `onCreateViewHolder()` | 只做 inflate、子 View 查找、一次性对象创建 | 发起请求、解码图片、读取磁盘 | create slice 超过单帧预算的一小半 |
+| `onCreateViewHolder()` | 只做 inflate、子 View 查找、一次性对象创建 | 发起请求、解码图片、读取磁盘 | create slice 在慢帧中持续占据较大比例 |
 | `onBindViewHolder()` | 只绑定当前数据，重活交给异步组件 | 每次 bind 都重建复杂对象、重复设置监听 | `RV onBindViewHolder type=...` 在慢帧里变长 |
 | Pool | 嵌套同构列表共享 `RecycledViewPool` | 每个子列表独立持有池 | 外层滑动时内层列表反复 create |
 
@@ -145,7 +146,7 @@ fun bindHorizontalList(holder: SectionHolder, items: List<Card>) {
 }
 ```
 
-这段代码把多个子列表的回收池合并到一个对象里。`TYPE_CARD` 的容量按“屏幕上可能同时出现的子列表数 × 每个子列表可见卡片数”估算，再用 Perfetto 验证滑动中 `RV onCreateViewHolder` 是否下降。容量过大会增加内存占用，不能只按峰值堆上去。
+这段代码把多个子列表的回收池合并到一个对象里。共享前要保证相同 `viewType` 在所有 Adapter 中创建兼容的 ViewHolder；不同 Adapter 恰好复用了同一个整数，却对应不同布局时，池命中会造成类型转换或错误绑定。`TYPE_CARD` 的容量可按“屏幕上可能同时出现的子列表数 × 每个子列表可见卡片数”估算，再用 Perfetto 验证滑动中 `RV onCreateViewHolder` 是否下降。`setMaxRecycledViews()` 只修改上限，不会预先创建 holder；容量过大会增加内存占用。
 
 
 `setHasStableIds(true)` 只适合 item 有稳定业务 ID 的列表。它能帮助 RecyclerView 在更新和动画期间识别同一个 item，但不能代替 DiffUtil，也不能修复错误的 `viewType` 设计。开启后必须保证 `getItemId(position)` 在同一条业务数据生命周期内不变，否则会出现复用错位、动画异常和状态串扰。
@@ -206,18 +207,22 @@ class CardAdapter : ListAdapter<Card, CardHolder>(CardDiff()) {
 
 这段写法的收益来自减少完整 bind 的次数，diff 计算本身不会因此变少。列表中只有标题、点赞数、关注状态这类小字段变化时，payload 能明显缩短主线程绑定时间；如果 item 布局会因为字段变化触发布局重新测量，还要回到 22.1 节检查布局成本。
 
+payload 只是一条优化路径，不能承载正确性。目标 ViewHolder 未 attach 时，payload 可能被丢弃；无 payload 的完整 bind 必须能从当前 item 恢复全部 UI 状态，包括清理旧图片、选中态、监听器和无障碍描述。
 
 大列表还有两个边界：
 
 - 数据源已经按时间排序且不支持拖拽移动时，可以关闭 move 检测，减少二次扫描开销。
 - `equals()` 不要带入无关字段。埋点时间戳、临时曝光状态、调试字段如果参与内容比较，会让 DiffUtil 误判内容变化。
+- 提交给 `ListAdapter` / `AsyncListDiffer` 的列表及其参与比较的字段在 diff 期间应视为不可变。`AsyncListDiffer` 对相同 List 实例会直接返回；原地修改旧列表再重复 `submitList()`，既破坏新旧快照，也可能不触发任何更新。应创建新的列表和不可变 item。
 
 ## 预取机制与配置
 
-RecyclerView 的预取由 GapWorker 驱动。AndroidX 源码中，滚动路径会调用 `mGapWorker.postFromTraversal()`，记录滚动方向和距离，再把 GapWorker 作为 Runnable 投到主线程队列。执行时，GapWorker 根据下一帧 deadline 尝试预取目标 position；创建和绑定前会分别经过 `willCreateInTime()`、`willBindInTime()` 预算判断。
+RecyclerView 的预取由 GapWorker 驱动。AndroidX 1.4.0 源码中，滚动路径会调用 `mGapWorker.postFromTraversal()`，记录滚动方向和距离，再通过 `recyclerView.post(this)` 把 GapWorker 投到主线程消息队列。它不是独立后台线程；预取 create / bind 也会消耗主线程时间。
+
+`GapWorker.run()` 根据最近一次 drawing time 加刷新周期估算 deadline，并按滚动向量、距离和是否为下帧所需排序任务。普通任务在创建和绑定前分别经过 `willCreateInTime()`、`willBindInTime()`，判断依据是共享 Pool 中按 `viewType` 记录的 create / bind 运行均值。标记为 `neededNextFrame` 的任务会传入 `FOREVER_NS` 强制执行，不走这两个 deadline 拒绝分支；因此不能假设所有预取都会因预算不足自动停止。
 
 
-`LinearLayoutManager#setInitialPrefetchItemCount()` 只影响嵌套 RecyclerView 首次出现时的 initial prefetch 数量。官方文档对它的定义是：当这个 LayoutManager 的 RecyclerView 嵌套在另一个 RecyclerView 中时，设置要预取的内部 item 数量。它不能当作“越大越流畅”的开关；item inflate 或 bind 很重时，GapWorker 会因为 deadline 不够而提前放弃。
+`LinearLayoutManager#setInitialPrefetchItemCount()` 只影响嵌套 RecyclerView 首次出现时的 initial prefetch 数量。官方文档对它的定义是：当这个 LayoutManager 的 RecyclerView 嵌套在另一个 RecyclerView 中时，设置要预取的内部 item 数量。它不能当作“越大越流畅”的开关；请求过多会占用主线程和缓存，非强制任务也可能因 deadline 不足而提前放弃。
 
 
 配置建议按这几步做：
@@ -225,7 +230,13 @@ RecyclerView 的预取由 GapWorker 驱动。AndroidX 源码中，滚动路径�
 1. 横向子列表首屏能露出 3 个半卡片，就把 initial prefetch 设为 4 或 5；不要直接设成整组数据长度。
 2. 子列表 item 结构相同，先共享 `RecycledViewPool`，再调 `setInitialPrefetchItemCount()`；没有共享池时，预取仍会被 create 成本拖慢。
 3. bind 中图片加载要交给图片库缓存和异步解码，Adapter 只提交 URL 和占位状态；不要在 bind 里同步解码 Bitmap。
-4. 用 Perfetto 看 `RV Prefetch`、`RV Nested Prefetch`、`RV onCreateViewHolder type=...`、`RV onBindViewHolder type=...` 的相对位置。预取 slice 出现但下一帧仍然 create，说明预算、缓存或 itemType 还有问题。
+4. 用 Perfetto 看 `RV Prefetch`、`RV Nested Prefetch`、带 `forced - needed next frame` 的预取切片，以及 `RV onCreateViewHolder type=...`、`RV onBindViewHolder type=...` 的相对位置。预取 slice 出现但下一帧仍然 create，说明目标 position、预算、缓存或 itemType 还要继续核对。
+
+GapWorker 预取 holder、create 和 bind，不会替下一帧完成 item 的 Measure / Layout。若 trace 中 prefetch 和 bind 都正常，下一帧 `RV OnLayout` 或 framework `measure` / `layout` 仍然很长，问题应转向 item 尺寸、布局结构和图片结果触发的 `requestLayout()`。
+
+共享 Pool 也共享按 `viewType` 统计的 create / bind 运行均值。多个 Adapter 共享同一 Pool 时，除了 ViewHolder 结构要兼容，构造和绑定成本也不宜差异悬殊，否则一个 Adapter 的历史均值会影响另一个 Adapter 的 deadline 判断。
+
+Android 17 对 `targetSdkVersion >= 37` 的应用启用新的 MessageQueue 实现。它可能减少 `recyclerView.post(this)` 入队相关的锁竞争，却没有改变 GapWorker 的 position 收集、排序、create / bind 预算或主线程执行属性。trace 没有 MessageQueue contention 时，不应把列表优化收益归因到这项平台变化。
 
 `setItemViewCacheSize()` 只适合少量、可复用、短距离往返滑动的列表。它会让刚滑出屏幕的 ViewHolder 保持绑定状态，减少 bind，但也会持有更多 View 和图片引用。Feed 流、瀑布流、长列表不要先调大这个缓存，先修 itemType、payload 和共享 Pool。
 
@@ -239,7 +250,7 @@ RecyclerView 的预取由 GapWorker 驱动。AndroidX 源码中，滚动路径�
 - **避免无界测量**：不要把 RecyclerView 放进纵向 `NestedScrollView` 后再让它展开全部 item。这样会破坏回收，列表会接近普通 `LinearLayout`。
 - **同向嵌套要收敛**：纵向 RecyclerView 里再放纵向 RecyclerView，触摸分发、NestedScrolling 和测量都会变复杂。能用单个 RecyclerView + 多 `viewType` / `ConcatAdapter` 表达的页面，优先合并。
 - **异向嵌套先共享 Pool**：纵向 Feed 里的横向卡片列表，给内层列表共享 `RecycledViewPool`，再设置 initial prefetch。
-- **固定尺寸就声明固定尺寸**：item 高度和 RecyclerView 尺寸稳定时使用 `setHasFixedSize(true)`，减少 Adapter 更新后触发的整体布局成本。尺寸会随内容变化的列表不要硬开。
+- **容器尺寸不受数据影响时声明 fixed size**：`setHasFixedSize(true)` 表示 Adapter 内容变化不会改变 RecyclerView 自身的测量宽高。它不要求每个 item 等高，也不会阻止 item 内部重新 Measure / Layout。RecyclerView 为固定高度或 `match_parent` 时常可使用；若 RecyclerView 自身为 `wrap_content`，增删 item 会改变容器尺寸，就不应开启。
 - **动画按收益打开**：频繁局部刷新、点赞态变化、倒计时列表中，`DefaultItemAnimator` 的 change animation 可能带来额外布局和闪烁。可以只关闭 change animation，保留其他有收益的动画。
 
 下面这段代码用于“外层纵向 Feed + 内层横向卡片”的基础配置。重点看三个动作：固定尺寸、共享池、按首屏卡片数设置 initial prefetch。
@@ -259,7 +270,7 @@ fun RecyclerView.configureHorizontalCards(
 }
 ```
 
-这段配置适用于内层 item 尺寸稳定、卡片类型数量有限的列表。如果内层卡片高度由远端内容决定，`setHasFixedSize(true)` 可能掩盖尺寸变化；如果 change animation 是产品体验的一部分，也不能直接关闭，要按慢帧和视觉结果取舍。
+这段配置假设内层 RecyclerView 的自身尺寸由外层卡片确定，Adapter 内容变化不会改变它的测量宽高。内层 item 可以有不同宽度或高度，`setHasFixedSize(true)` 也不会掩盖 child 的尺寸变化；它只改变 RecyclerView 处理 Adapter 更新时能否依赖容器尺寸不变。如果 change animation 是产品体验的一部分，也不能直接关闭，要按慢帧和视觉结果取舍。
 
 ## 变更动画与局部刷新要一起看
 
@@ -270,7 +281,7 @@ fun RecyclerView.configureHorizontalCards(
 
 ## RecyclerView vs LazyColumn 性能对比
 
-`LazyColumn` 和 RecyclerView 都只处理可见窗口附近的 item。官方 Compose 文档明确说明，Lazy 组件只组合和布局 viewport 中可见的元素；列表中有多种 item 时，`contentType` 可以让 Compose 在相同类型之间复用组合。这个方向和 RecyclerView 的 `viewType` / Pool 很像：类型划分越接近布局结构，复用效果越稳定。
+`LazyColumn` 和 RecyclerView 都围绕可见窗口按需准备 item，也都可能为预取或 beyond-bounds 操作准备窗口之外的内容。列表中有多种 item 时，`contentType` 可以帮助 Compose 在兼容类型之间复用组合。这个方向和 RecyclerView 的 `viewType` / Pool 很像：类型划分越接近可兼容的 UI 结构，复用效果越稳定。
 
 
 两者选型不要用固定结论：
@@ -284,15 +295,32 @@ fun RecyclerView.configureHorizontalCards(
 
 迁移判断要看同机数据。至少对比四组指标：慢帧率、P95 帧耗时、内存峰值、首屏可交互时间。Compose 写法中不要在 `LazyColumn` 的 `items` 里排序、过滤或创建大对象；官方性能文档也把这类操作列为列表重组中的常见开销。
 
+## RecyclerView 1.4 与 Android 刷新率协作
+
+RecyclerView 1.4.0 在 API 35 及以上的 fling 和 smooth scroll 路径中，通过 `View.setFrameContentVelocity()` 上报当前滚动速度。这是给平台刷新率策略的输入信号，RecyclerView 不查询面板能力，也不决定切换到哪个 Hz。Android 17 上若要判断效果，应同时核对 RecyclerView 版本、速度上报、Display 支持范围、系统刷新率决策和帧数据，不能把面板切换结果归因给单个 Adapter 参数。
+
 
 ## 验收清单
 
 RecyclerView 优化完成后，至少跑一次本地 trace 和一次线上指标回看：
 
-- Perfetto 中 `RV onCreateViewHolder type=...` 不应在稳定滑动阶段持续出现；如果出现，回看 Pool、`viewType` 和 initial prefetch。
-- `RV onBindViewHolder type=...` 单次耗时要落在页面帧预算内；如果 bind 稳定变长，回看 payload、图片加载、文本测量和同步 I/O。
-- `RV Prefetch` / `RV Nested Prefetch` 出现后，下一帧 create/bind 应该减少；如果没有减少，回看 deadline、item 重量和共享池。
+- Perfetto 中 `RV onCreateViewHolder type=...` 若在稳定滑动阶段持续出现，回看 Pool、`viewType`、新类型进入窗口和 initial prefetch。
+- `RV onBindViewHolder type=...` 应结合完整帧 deadline 与同一帧其他主线程工作判断；如果 bind 分位数持续变长，回看 payload、图片加载、文本处理和同步 I/O。
+- `RV Prefetch` / `RV Nested Prefetch` 及 forced 变体出现后，核对目标 position 的 create / bind 是否前移，并检查后续关键帧成本；不要只按切片是否存在判断命中。
 - 慢帧集中在 `RV OnLayout` 时，回到 22.1 节查 item 布局层级、`requestLayout()` 来源和 change animation。
+- UI 线程按时完成后仍有 jank，继续检查 RenderThread、`queueBuffer`、`BufferTX - <layerName>`、latch 与 FrameTimeline present；列表切片不能解释完整显示链。
 - 线上按页面、机型、刷新率、列表类型拆指标；只看全局平均值会把低端机和复杂页面的问题稀释掉。
 
 这套检查的目标是把 RecyclerView 问题拆成四类：复用没命中、增量更新没生效、预取没赶上、嵌套布局太重。分类清楚后，优化动作才不会互相抵消。
+
+## 源码与文档
+
+- [RecyclerView 1.4.0 source jar](https://dl.google.com/dl/android/maven2/androidx/recyclerview/recyclerview/1.4.0/recyclerview-1.4.0-sources.jar)：`RecyclerView`、`GapWorker`、`DiffUtil`、`AsyncListDiffer`、`ListAdapter` 与 `LinearLayoutManager` 的固定源码基线。
+- [RecyclerView 1.4.0 release notes](https://developer.android.com/jetpack/androidx/releases/recyclerview#recyclerview-1.4.0)：版本变化与 Adaptive Refresh Rate 支持边界。
+- [`RecyclerView.setHasFixedSize()`](https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView#setHasFixedSize(boolean))：RecyclerView 自身尺寸不受 Adapter 内容影响的契约。
+- [`DiffUtil`](https://developer.android.com/reference/androidx/recyclerview/widget/DiffUtil)：差异计算、move 检测与回调语义。
+- [`AsyncListDiffer`](https://developer.android.com/reference/androidx/recyclerview/widget/AsyncListDiffer)：后台 diff、列表提交与只读当前列表。
+- [`LinearLayoutManager.setInitialPrefetchItemCount()`](https://developer.android.com/reference/androidx/recyclerview/widget/LinearLayoutManager#setInitialPrefetchItemCount(int))：嵌套列表 initial prefetch 的范围。
+- [Compose lists](https://developer.android.com/develop/ui/compose/lists)：Lazy 列表、key 与 `contentType`。
+- [Android 17 `View.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java)：`setFrameContentVelocity()` 的平台入口。
+- [Android 17 MessageQueue behavior change](https://developer.android.com/about/versions/17/changes/messagequeue)：target SDK 37 的 MessageQueue 边界。
