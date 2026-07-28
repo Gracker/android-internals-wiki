@@ -52,535 +52,364 @@ last_deepseek_cn_review_at: 2026-06-26
 ---
 # Jetpack Compose 性能优化实战
 
-Compose 渲染管线的原理和机制在 §7.7 已经详细展开。本节聚焦工程实战：怎么写不卡顿的 Compose 代码、怎么用工具定位性能问题，以及 Compose 运行时在 2025 年底的几个关键变化如何改变了优化策略的优先级。
+Compose 性能优化要回答两个问题：哪一段工作错过了本帧 deadline，以及哪些状态或输入让这段工作重复发生。只统计重组次数，容易漏掉 Layout、Drawing、RenderThread 和显示系统；只看整帧耗时，又无法定位到具体 Composable。
 
-本节使用 **Compose BOM 2025.12.00（对应 Compose 1.10）** 作为版本基线。Pausable Composition、Strong Skipping 和 LazyLayoutCacheWindow 都取决于项目引入的 Compose / Kotlin 版本，不由 Android 17（API 37）平台本身决定。没有公开测试条件的滚动性能数据不作为本文结论，只作为阅读官方演讲资料时的背景。
+本文固定三组版本：
 
-## 重组控制：从手动优化到编译器自动跳过
+- Android 平台以 Android 17 / API 37 / `android-17.0.0_r1` 为源码锚点，kernel 以 `android17-6.18-2026-06_r6` 为锚点。
+- Compose 依赖以 BOM `2025.12.00` 为基线。该 BOM 把 Runtime、Foundation 和 UI 固定到 `1.10.0`。
+- Compose Compiler 随 Kotlin 2.2 Gradle plugin 使用。Strong Skipping 属于编译器行为，Lazy 预取属于 Foundation 行为，两者都不能从 Android platform tag 推断。
 
-### Compose 重组的触发条件与成本
+普通 `ComposeView` 不会单独创建 Surface。内容仍由当前 App Window 的 HWUI 路径输出：UI 线程完成 Composition、Layout、Drawing 记录，经 `HardwareRenderer.syncAndDrawFrame()` 交给 RenderThread，随后经过 BLAST、SurfaceFlinger、HWC 和 present。页面嵌入 `SurfaceView`、`TextureView`、WebView 或视频组件后，要按对应 Producer 和 layer 重新分类。完整管线可结合 [Compose 渲染管线架构](../../part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md) 阅读。
 
-Compose 的渲染管线包含三个阶段：Composition → Layout → Draw。重组（Recomposition）就是重新执行 Composition 阶段：重新调用 `@Composable` 函数，根据新的状态值生成新的 UI 树。
+## 从状态读取阶段控制工作范围
 
-重组的开销来自两个地方:
+Compose 把 UI 更新分成 Composition、Layout 和 Drawing 三个阶段。状态在哪个阶段被读取，运行时就在哪个阶段记录依赖；状态变化后，从对应 restart scope 开始执行必要工作。
 
-1. **被调用的 Composable 函数本身的执行时间**:函数里有复杂计算、对象分配或子树嵌套深,重组一次的 CPU 时间就高。
-2. **下游传播**:一个 Composable 重组后,如果它的子 Composable 参数也变了,子 Composable 也会跟着重组。
+| 读取位置 | 状态变化后的起点 | 适合的变化 |
+| --- | --- | --- |
+| Composable body 或参数构造 | Composition，结果变化时还会进入 Layout / Drawing | 节点增删、文本内容、布局结构 |
+| measure / placement lambda | Layout；placement 与 measurement 还有独立的 restart scope | 位置、约束内尺寸、对齐 |
+| draw lambda 或 layer property lambda | Drawing 或图层属性更新 | 颜色、透明度、绘制偏移、缩放 |
 
-控制重组的核心思路:**让状态变化只触发最小范围的 Composable 重新执行**。
+这张表描述失效起点，不代表后续阶段必然执行。Composition 的输出没有改变时，Layout 和 Drawing 仍可跳过。`LazyColumn`、`BoxWithConstraints` 和 `SubcomposeLayout` 会在布局过程中决定子内容，不能套用“Composition 总在 Layout 之前一次完成”的简化模型。
 
-Compose 运行时的跳过(skip)机制:如果一个 `@Composable` 函数的所有参数与上次调用相比都"相等"(通过 `equals()` 判断),运行时会跳过整个函数体的执行,直接复用上一次的结果。这就是 Stability 标记和 Strong Skipping Mode 要解决的问题。
+下面的示例把滚动偏移推迟到 placement lambda 中读取，并把透明度放进 `graphicsLayer` 的属性 lambda。两个高频值都不再由 Composable body 解包。
 
-### Strong Skipping Mode（Kotlin 2.0.20 起默认启用）
+```kotlin
+@Composable
+fun ParallaxHeader(
+    listState: LazyListState,
+    alpha: State<Float>,
+) {
+    Image(
+        painter = painterResource(R.drawable.header),
+        contentDescription = null,
+        modifier = Modifier
+            .offset {
+                IntOffset(
+                    x = 0,
+                    y = listState.firstVisibleItemScrollOffset / 2,
+                )
+            }
+            .graphicsLayer {
+                this.alpha = alpha.value
+            },
+    )
+}
+```
 
-Compose compiler 从 Kotlin 2.0.20 起默认启用 Strong Skipping Mode。Kotlin 2.0.0-2.0.10 需要在 `build.gradle.kts` 中显式开启：
+`offset { ... }` 的状态读取发生在 placement 阶段，`graphicsLayer { ... }` 的读取用于更新图层属性。若位置变化会改变兄弟节点的测量约束，仍应使用能表达该约束关系的布局；视觉平移不能冒充布局位置。
+
+状态影响节点数量、文本或语义属性时，Composition 无法省略。优化方向是缩小读取范围：把状态传成 lambda、把读取移到较低层的 Composable，或把一个过大的重组作用域拆成有清晰输入的子函数。
+
+## Strong Skipping 与 Stability
+
+### 跳过条件要分函数和参数
+
+Kotlin 2.0.20 起默认启用 Strong Skipping。本文使用 Kotlin 2.2，无需再设置 `enableStrongSkippingMode`。它改变两项编译结果：
+
+- 所有 restartable Composable 默认可标记为 skippable；non-restartable 函数仍不可跳过，`@NonSkippableComposable` 可以显式退出。
+- Composable 内部创建的 lambda 会自动 memoize。捕获值用作缓存 key；stable 捕获值按 `equals()` 比较，unstable 捕获值按 `===` 比较。`@DontMemoize` 可以让某个 lambda 退出自动缓存。
+
+进入重组时，skippable 函数还要比较本次与上次参数。Stable 参数使用 `equals()`，unstable 参数使用实例相等。参数相等只解决父级执行传播；函数内部读取的 Snapshot state 或动态 `CompositionLocal` 发生变化时，对应重组作用域仍会失效。
+
+Strong Skipping 没有让 Stability 失去作用。它决定参数采用哪种比较方式，也约束可变对象如何通知 Compose：
+
+- 普通 `List`、`Set`、`Map` 接口仍被编译器视为 unstable。同一个可变集合实例原地修改时，实例比较可能让调用被跳过，集合本身也不会发送 Snapshot 通知。
+- `SnapshotStateList`、`SnapshotStateMap` 能通知运行时；不可变 UI model 配合新集合实例，则能提供清晰的新旧快照。
+- `@Stable` 与 `@Immutable` 是开发者向编译器作出的契约。对象含有不可观察的可变字段时不能标注；错误契约可能让 UI 漏掉更新。
+- 手写 `remember` lambda 可能包含特定 key 或生命周期语义，不能只因升级 Kotlin 就批量删除。应对照编译器生成规则和调用方需求逐处确认。
+
+### 用编译器报告验证推断
+
+编译器报告适合回答“这个函数怎样被编译”和“哪个类型被判定为 unstable”，不能单独证明某次卡顿由 Stability 引起。下面的 Gradle 配置用于 Kotlin 2.x Compose Compiler plugin。
 
 ```kotlin
 composeCompiler {
-    enableStrongSkippingMode = true
+    reportsDestination = layout.buildDirectory.dir("compose_compiler")
+    metricsDestination = layout.buildDirectory.dir("compose_compiler")
 }
 ```
 
-这个变化会调整 Compose 性能优化的优先级。
+应在 release variant 上生成报告。`reportsDestination` 输出 `*-classes.txt`、`*-composables.txt` 和 `*-composables.csv`；`metricsDestination` 另行输出模块统计。Strong Skipping 开启后，`restartable` 函数通常也会显示 `skippable`，因此还要检查参数比较、状态读取位置和现场重组次数。追求“全模块全部 skippable”会增加错误标注和维护成本。
 
-**Strong Skipping 之前**:只有参数类型被标记为 `@Stable` 或 `@Immutable` 的 Composable 函数才会被跳过。Lambda 参数默认不被 memoize,每次父 Composable 重组时,lambda 参数都是新对象(引用不等),导致接收 lambda 的子 Composable 无法跳过。
+## `remember`、`derivedStateOf` 与副作用
 
-**Strong Skipping 之后**:
+### `remember` 缓存一次计算，不负责数据一致性
 
-- 所有 **restartable** Composable 函数都会被标记为 skippable,不再要求参数类型必须是 Stable。非 restartable 的 Composable(如内联函数体内的 Composable 调用)仍然不可跳过。
-- 对于 unstable 参数,跳过比较使用实例相等(`===`);stable 参数使用 `equals()`。
-- **所有 lambda 参数都会被自动 memoize**。Compose compiler 为每个 lambda 生成一个包装类,在参数列表的捕获值没变时复用同一个对象。
+`remember(keys...)` 在 key 保持相等时复用缓存值，key 变化时丢弃旧值并重新计算。它适合缓存排序结果、状态容器和创建成本较高的对象，但输入必须能表达一份稳定快照。
 
-运行时执行跳过时，编译器生成的调用会走到 `Composer.skipToGroupEnd()`。这个判断还受 `Composer.skipping` 约束；如果 Composable 读取了 non-static `CompositionLocal`，参数相等也不一定能跳过函数体。工程排查时不要只看参数类型，还要看调用点是否引入了 CompositionLocal、状态读取和副作用。
-
-```kotlin
-// Strong Skipping 之前:每次重组都创建新的 lambda → Clickable 无法跳过
-@Composable
-fun MyScreen(viewModel: ViewModel) {
-    // onClick 是新 lambda,ButtonItem 每次都重组
-    ButtonItem(onClick = { viewModel.doSomething() })
-}
-
-// Strong Skipping 之后:compiler 自动 memoize lambda → ButtonItem 可以跳过
-// 不需要手动 remember { { viewModel.doSomething() } }
-```
-
-**代价**:自动 memoize 会增加 `remember` 缓存的内存占用。在 lambda 数量极多(数百个)的 Composable 树中,这部分开销需要关注。但和减少的重组次数相比,绝大多数场景下是正收益。
-
-**对已有代码的影响**:很多以前必须手写的 `remember { }` 包裹 lambda 的优化代码,现在可以删掉了。如果项目已经升级到 Kotlin 2.0+,手动 `remember` lambda 的代码不会出错,但属于冗余操作。
-
-[适用版本: Kotlin 2.0.20+ 默认启用;Kotlin 2.0.0-2.0.10 需显式开启]
-
-### 协程作用域与副作用管理:rememberCoroutineScope 和 produceState
-
-Strong Skipping 解决了"什么时候可以跳过重组"，但没有解决"副作用应该在哪个作用域执行"。这两个 API 是 Compose 副作用管理的核心。
-
-**`rememberCoroutineScope` 的重组安全性：**
+下面的写法假定 `items` 是不可变列表，数据更新时会提交新实例。
 
 ```kotlin
 @Composable
-fun MyScreen() {
-    val scope = rememberCoroutineScope()
-    Button(onClick = {
-        scope.launch { doSomething() }  // 在 Composition 外启动，不触发重组
-    }) { Text("Click") }
-}
-```
-
-`rememberCoroutineScope()` 返回的 `CoroutineScope` 通过 `remember` 机制缓存在 Composition 中。重组时返回同一实例，不会创建新协程体。协程作用域的生命周期与 Composition 实例绑定——Composable 离开重组树时，作用域被 cancel（由 Compose 的取消语义保证）。
-
-**`produceState` 的协程生命周期：**
-
-```kotlin
-@Composable
-fun userProfile(userId: String): State<User?> {
-    return produceState<User?>(initialValue = null, userId) {
-        value = fetchUser(userId)
+fun SortedFeed(items: List<FeedItem>) {
+    val sortedItems = remember(items) {
+        items.sortedByDescending(FeedItem::timestamp)
     }
-}
-```
 
-`produceState` 内部持有 `remember { mutableStateOf(initialValue) }`，并在 `LaunchedEffect` 中启动 producer。`userId` 这类被 producer 使用、且变化后必须重新拉取的数据要作为 key 传入；key 变化时旧协程被 cancel，新 producer 启动。只有要跟随调用点生命周期、输入变化不重启的场景，才使用 `Unit` 或 `true` 这类常量 key。
-
-**性能边界：**
-- `produceState` 每次 `value = newValue` 都会触发一次 Snapshot 事务。在高频更新场景（如动画、传感器数据）下，这会带来显著的性能压力，可以换用 `snapshotFlow` + `collectAsState` 代替直接写入。
-- 在高频重组的 Composable 中通过 `rememberCoroutineScope` 调用 `launch {}` 时，要确保旧协程被正确 cancel，否则会积累大量并发协程。
-
-**非 restartable Composable 与 Strong Skipping：**
-
-Strong Skipping 只改变 restartable Composable 的 skippable 推断，non-restartable Composable 没有独立重启边界，不能作为跳过优化的目标。两者的区别要分清：`@NonRestartableComposable` 不提供重启边界（常见于副作用 API 内部），`@NonSkippableComposable` 仍然 restartable，但每次父级重组时都会执行函数体。
-
-`rememberCoroutineScope` 依赖 remember 机制，应放在能正常进入 Composition 的调用点。副作用管理应该通过 `LaunchedEffect` 或 `produceState` 完成，不要在 Composable body 里直接执行副作用。
-
-
-
-**produceState 的内部实现：**
-
-`produceState` 本质上是 `LaunchedEffect` 的语法糖。它的源码（`platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/ProduceState.kt`）清楚地展示了这个关系：
-
-```kotlin
-@Composable public fun <T> produceState<T>(
-    initialValue: T,
-    key1: Any?,
-    producer: suspend ProduceStateScope<T>.() -> Unit,
-): State<T> {
-    val result = remember { mutableStateOf(initialValue) }
-    LaunchedEffect(key1) { ProduceStateScopeImpl(result, coroutineContext).producer() }
-    return result
-}
-```
-
-每次调用的内存分配：
-
-| 操作 | 分配对象 | 触发时机 |
-|------|----------|----------|
-| `remember { mutableStateOf }` | `SnapshotMutableStateImpl`（约 48-64B） | Composable 进入时 |
-| `LaunchedEffect(key)` | `Job + Continuation` | Composable 进入时 |
-| `ProduceStateScopeImpl(result, coroutineContext)` | 接口包装对象 | Composable 进入时 |
-| `value = newValue` | **无堆分配**（in-place 写） | producer 执行时 |
-
-`value` 写入最终落到 `SnapshotMutableStateImpl.value` setter，通过 `next.withCurrent { ... next.overwritable(...) }` 写入 Snapshot state record。读取该 `State` 的重组作用域随后会失效，由 Recomposer 调度重组评估。producer 内每次 `value = it` 都可能触发后续重组，因此 `produceState` 不适合驱动 UI 动画——动画场景应使用 `animateFloatAsState` 等专用 API。
-
-### Stability 标记:什么时候还需要手动标注
-
-Strong Skipping 减少了 `@Stable` / `@Immutable` 注解的使用频次,但它们在两个场景下仍然有意义:
-
-**场景一:第三方 Composable 函数的跳过**。如果第三方库的 Composable 函数没有启用 Strong Skipping(较旧版本),它的跳过行为仍然依赖参数的 Stability。
-
-**场景二:`mutableStateOf` 之外的自定义状态容器**。`mutableStateOf` 返回的 `MutableState<T>` 已经被 Compose 运行时标记为 `@Stable`。自定义状态容器类需要手动标注:
-
-```kotlin
-// 自定义状态容器:需要手动标注 @Stable
-@Stable
-class ScrollState(
-    initialOffset: Float = 0f
-) {
-    var offset: Float by mutableStateOf(initialOffset)
-        private set
-
-    fun updateOffset(newOffset: Float) {
-        offset = newOffset
-    }
-}
-```
-
-`@Stable` 的契约要求:
-1. `equals()` 的结果在多次调用间必须稳定(同一个实例、同样的值,返回结果一致)。
-2. 当属性变化时,Compose 运行时能收到通知(通过 `mutableStateOf` 或 `mutableStateListOf` 等机制)。
-3. 所有公开属性的类型也是 Stable 的。
-
-`@Immutable` 比 `@Stable` 更严格:要求类的所有属性在构造后不可变。用于 data class 或 val-only 的类,是一个编译器承诺而非运行时检查--错误标注 `@Immutable`(例如对实际包含可变字段的类加注解)会让 Compose 运行时误判参数未变,跳过本应执行的重组,导致 UI 不更新(stale UI)。这类问题难以排查,因为运行时不会报错,只是 UI 状态不再响应用户操作或数据变化。
-
-反例:
-
-```kotlin
-// ❌ 错误:data class 有 var 字段,不应标注 @Immutable
-@Immutable
-data class UserProfile(
-    val id: String,
-    var displayName: String  // 可变字段违反 @Immutable 契约
-)
-
-// 当 displayName 变化时,Compose 可能跳过重组,UI 不会更新
-```
-
-## 状态读取阶段:性能差异的来源
-
-### Composition、Layout、Draw 三阶段的状态读取
-
-Compose 渲染管线的三个阶段各自有一个状态读取点。**一个状态值在哪个阶段被读取(调用 `.value`),决定了状态变化时会触发哪几个阶段的重新执行**。
-
-| 读取阶段 | 触发范围 | 典型位置 |
-|----------|---------|---------|
-| Composition | 重组整个 Composable 函数 | Composable 函数体内直接使用 `state.value` 作为参数 |
-| Layout | 只重新测量/布局,跳过 Composition | `Modifier.onSizeChanged { }`、`Modifier.layout { }` 内读取 |
-| Draw | 只重绘,跳过 Composition 和 Layout | `Modifier.drawBehind { }`、`Modifier.graphicsLayer { }` 内读取 |
-
-```kotlin
-@Composable
-fun AnimatedBox() {
-    // 场景 A:Composition 阶段读取 → 每帧重组
-    val color by animateColorAsState(Color.Red)
-    Box(modifier = Modifier.background(color))
-    // color 作为 Composable 参数传递,每帧触发 Composition
-
-    // 场景 B:Draw 阶段读取 → 跳过 Composition 和 Layout
-    val color2 by animateColorAsState(Color.Red)
-    Box(modifier = Modifier.drawBehind {
-        drawRect(color = color2)  // 只在 Draw scope 内解包
-    })
-    // 状态变化只触发 Draw,Composition 和 Layout 完全跳过
-}
-```
-
-场景 B 的差别主要体现在 CPU 侧工作量:一个 60fps 的颜色动画,如果走 Composition 阶段,每秒触发 60 次重组;如果走 Draw 阶段,每秒只触发 60 次绘制,避免反复执行 Composable 函数体。
-
-**实战判断规则**:
-- 如果状态变化只影响视觉效果(颜色、透明度、位移、缩放),用 `Modifier.graphicsLayer` 或 `Modifier.drawBehind` 在 Draw 阶段读取。
-- 如果状态变化影响布局尺寸或子元素数量,必须在 Composition 阶段读取,此时用 `derivedStateOf` 控制触发频率。
-
-[已验证: 官方文档 Jetpack Compose Performance - Defer reads as long as possible]
-
-
-### derivedStateOf 的使用条件和滥用陷阱
-
-`derivedStateOf` 的作用是把高频变化的状态映射成低频变化的结果,从而减少重组次数。
-
-**使用条件**(三个条件缺一不可):
-1. 输入状态变化频率高(如 `scrollState.value` 在滚动期间每帧都在变)。
-2. 派生结果变化频率低(如 `scrollState.value > 100` 只在阈值处变化一次)。
-3. 派生计算是纯函数--无副作用(不修改外部状态)，并尽量避免在 lambda 内创建新对象。`derivedStateOf` 只在结果变化频率低于输入变化频率时有收益；对象分配不会让依赖监听失准，但会增加派生计算本身的成本。
-
-```kotlin
-// 正确用法:滚动偏移量(高频变化)→ 是否超过阈值(低频变化)
-@Composable
-fun ScrollingList(scrollState: LazyListState) {
-    val showButton by remember {
-        derivedStateOf { scrollState.firstVisibleItemIndex > 5 }
-    }
-    if (showButton) {
-        ScrollToTopButton()
-    }
-}
-
-// 错误用法:输入和输出变化频率一样,derivedStateOf 白白增加开销
-@Composable
-fun BadUsage(scrollState: LazyListState) {
-    // scrollState.value * 2 和 scrollState.value 一样每帧变化
-    // derivedStateOf 的监听机制有额外开销,这里完全无收益
-    val doubledOffset by remember {
-        derivedStateOf { scrollState.firstVisibleItemScrollOffset * 2 }
-    }
-    Text("$doubledOffset")
-}
-```
-
-`derivedStateOf` 内部维护了一套依赖监听机制,有对象创建和订阅成本。滥用 `derivedStateOf` 的典型模式:把所有状态操作都包一层 `derivedStateOf`,以为能"自动优化"。实际效果是增加 `SnapshotStateObserver` 的订阅数量,却没有减少重组。
-
-[已验证: AndroidX androidx-compose-release, platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/DerivedState.kt]
-
-### remember 和 key 的使用场景
-
-**`remember`**:在 Composable 函数内缓存对象,避免每次重组都重新创建。最常用于缓存计算结果、Lambda 和状态容器。
-
-```kotlin
-@Composable
-fun ExpensiveView(data: List<Item>) {
-    // 重组时只在 data 变化时才重新排序
-    val sortedData = remember(data) {
-        data.sortedBy { it.timestamp }
-    }
     LazyColumn {
-        items(sortedData) { item -> ItemRow(item) }
+        items(
+            items = sortedItems,
+            key = FeedItem::id,
+            contentType = FeedItem::type,
+        ) { item ->
+            FeedRow(item)
+        }
     }
 }
 ```
 
-`remember` 的 key 参数:当 key 变化时,`remember` 会丢弃旧值并重新执行 lambda。不传 key 则只在首次组合时计算一次。
+如果调用方原地修改同一个普通列表，`remember(items)` 不会重新排序，Lazy 列表也拿不到可靠的新旧输入。修复点在数据所有权和可观察性，不在增加更多 `remember`。
 
-**`key`**:在 LazyColumn 等容器中为每个 item 提供稳定标识。Compose 运行时用 key 来追踪 Composable 实例在列表中的位置变化。
+### `derivedStateOf` 只处理输入、输出频率不匹配
+
+`derivedStateOf` 适合把高频输入收敛为低频结果，例如滚动位置持续变化，而按钮只在跨过阈值时切换可见性。它会建立派生状态和依赖跟踪，本身有成本。
+
+下面的示例只在“是否越过首项”改变时更新读取者。
+
+```kotlin
+@Composable
+fun FeedWithScrollToTop(items: List<FeedItem>) {
+    val listState = rememberLazyListState()
+    val showScrollToTop by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0
+        }
+    }
+
+    Box {
+        LazyColumn(state = listState) {
+            items(items, key = FeedItem::id) { item ->
+                FeedRow(item)
+            }
+        }
+        AnimatedVisibility(showScrollToTop) {
+            ScrollToTopButton()
+        }
+    }
+}
+```
+
+字符串拼接、数值乘法这类“输入每次变，输出也每次变”的表达式不需要 `derivedStateOf`。直接计算通常更清楚，运行时工作也更少。
+
+### `rememberCoroutineScope` 面向事件，`produceState` 面向外部数据
+
+`rememberCoroutineScope()` 返回与调用点 Composition 生命周期绑定的 scope，调用点离开 Composition 后 scope 会取消。它适合点击、拖动结束、Snackbar 等事件回调。不要在 Composable body 中直接 `launch`；每次函数执行都可能启动新任务。
+
+`produceState` 用协程把外部数据转成 Compose `State`。Compose Runtime 1.10.0 的带 key 重载使用 `remember { mutableStateOf(initialValue) }` 保存结果，并用 `LaunchedEffect(key)` 运行 producer。key 变化会取消旧 producer 并启动新 producer，离开 Composition 也会取消。返回的 `State` 会合并相等值；连续快速写入时，观察者可能只读到较新的值。
+
+下面的示例把用户 ID 和 repository 都作为 producer 的身份输入。
+
+```kotlin
+@Composable
+fun userProfile(
+    userId: String,
+    repository: UserRepository,
+): State<User?> {
+    return produceState(
+        initialValue = null,
+        userId,
+        repository,
+    ) {
+        value = repository.load(userId)
+    }
+}
+```
+
+缺少 key 会让 producer 继续使用旧输入；塞入每次重组都变化的 key 又会反复取消请求。非挂起订阅可在 producer 中注册，并用 `awaitDispose` 解除。高频且每次都不同的数据仍可能使读取者频繁失效，应在数据源侧采样、聚合，或把仅影响绘制的读取延迟到 Drawing。`snapshotFlow` 的方向是把 Compose Snapshot state 转成 Flow，它不能替代外部高频数据到 UI state 的节流。
+
+Strong Skipping 不管理 producer 协程。跳过规则作用于 Composable 调用，协程的启动、取消和异常处理仍由 Effect key 与 scope 生命周期决定。
+
+## Lazy 列表：身份、类型与预取
+
+### `key` 保持 item 身份，`contentType` 约束复用兼容性
+
+Lazy 列表未提供业务 key 时按位置维护身份；显式使用 index 基本等同于位置身份。列表头部插入或中间删除后，位置后的 item 会换身份，`remember` / `rememberSaveable` 状态和组合复用都可能受到影响。
+
+业务 key 应稳定且唯一。item 使用 `rememberSaveable` 时，key 还要满足 Android `Bundle` 可保存类型的要求。`contentType` 用于告诉 Lazy layout 哪些 item 的组合结构可以复用；广告、标题、普通卡片结构不同，就应使用不同类型。
+
+列表 body 中还要避免排序、过滤、日期格式化、同步图片解码和阻塞 I/O。把纯计算移到上游或以不可变输入为 key 缓存，把 I/O 放进 repository 和异步加载组件。
+
+### Pausable Composition 的边界
+
+Compose Runtime 1.10.0 提供 `PausableComposition`，Foundation 1.10.0 在 Lazy 预取中默认打开 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled`。源码路径可以拆成四步：
+
+1. Android 端 `AndroidPrefetchScheduler` 通过宿主 View 的 `post()` 在 UI 线程执行请求，并用 drawing time、`Choreographer` frame time 与刷新周期计算剩余时间。
+2. Lazy prefetch 为目标 index 安排预组合和预测量；普通请求参考同 `contentType` 的历史耗时，urgent 请求只要求本帧仍有剩余时间。
+3. flag 开启时，预组合调用 `PausedComposition.resume(shouldPause)`。暂停请求只在可暂停点生效，不保证每次回调返回 `true` 都立即停下。
+4. 组合完成后单独 `apply()`，再按约束执行 premeasure。Pausable Composition 只切分预组合，不能把 apply、measure 或已进入可见窗口的同步工作一并切开。
+
+Foundation `1.10.6` 的发布说明记录了一个后续变化：因稳定性问题，该 flag 默认关闭。使用 BOM `2025.12.00` 时是 Foundation `1.10.0` 的默认值；升级补丁版本后必须重新核对依赖解析结果和 flag，不能用“Compose 1.10”概括所有补丁版本。
+
+这项能力没有覆盖普通首帧 Composition、常规重组或非 Lazy 子树。拆分重组作用域、降低 item 组合成本、提供稳定 key 和控制状态读取范围仍然有效。
+
+### `LazyLayoutCacheWindow` 同时控制 ahead 与 behind
+
+Foundation 1.10.0 的 `LazyLayoutCacheWindow` 仍是实验 API。ahead window 用于准备滚动方向前方的 item，behind window 用于保留反方向窗口内已经准备好的 item。窗口增大会增加预组合、预测量和保留节点的成本，不能按“越大越顺”设置。
+
+下面的配置只用于展示 API 形态，比例需要在目标页面和目标设备上测量后确定。
+
+```kotlin
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun TunedFeed(items: List<FeedItem>) {
+    val listState = rememberLazyListState(
+        cacheWindow = LazyLayoutCacheWindow(
+            aheadFraction = 0.75f,
+            behindFraction = 0.25f,
+        ),
+    )
+
+    LazyColumn(state = listState) {
+        items(
+            items = items,
+            key = FeedItem::id,
+            contentType = FeedItem::type,
+        ) { item ->
+            FeedRow(item)
+        }
+    }
+}
+```
+
+调参时同时观察 `compose:lazy:prefetch:compose`、`compose:lazy:prefetch:apply`、`compose:lazy:prefetch:measure`、目标 item 首次可见帧成本和内存峰值。只有预取工作前移且后续关键帧变轻，才能说明窗口设置有收益。预取 slice 增加、关键帧不变或内存明显上升，通常说明窗口过大、命中不准或 item 工作仍在可见帧发生。
+
+## 工具：从重组证据走到屏幕 present
+
+### Layout Inspector、Composition Tracing 与 Macrobenchmark 分工
+
+- Layout Inspector 的重组与跳过计数适合确认失效范围。Debug 构建和 Inspector 本身会改变耗时，不能把它的时间数据当作线上帧基线。
+- Compose compiler report 适合核对 restartable、skippable 和 Stability 推断，不能显示运行时哪一帧发生了什么。
+- Composition Tracing 能把单个 Composable 记录进 system trace。系统 trace 默认没有这些细粒度 slice；项目要加入 `androidx.compose.runtime:runtime-tracing`，终端自定义 Perfetto 配置还要启用 `track_event`。
+- Macrobenchmark 应运行 profileable、non-debuggable 的 release-like 构建，覆盖冷启动、首屏、稳定滚动和主要交互。升级 Compose 后重新采集 Baseline Profile，并用相同设备状态、刷新率和数据集建立新基线。
+
+下面的依赖写法让 BOM 决定 runtime-tracing 的版本。
+
+```kotlin
+val composeBom = platform("androidx.compose:compose-bom:2025.12.00")
+implementation(composeBom)
+implementation("androidx.compose.runtime:runtime-tracing")
+```
+
+依赖加入后仍要确认被测 APK 保留 tracing 支持，并使用适合性能测量的构建。自定义 trace 没有 `track_event` data source 时，不能因为搜索不到 Composable 名就断言没有重组。
+
+### Perfetto 按四个关口收敛
+
+1. **Composition**：目标状态写入后，哪些 restart scope 被 invalidated；函数是否因参数或内部 state 重新执行；Lazy 预取是否把目标 item 的 compose / apply 前移。
+2. **Layout 与 Drawing**：Composition 正常时，检查 measure、placement、draw、图层更新和 `requestLayout()` / invalidation 的来源。Lazy item 在 precompose 后仍可能把 premeasure 或可见布局成本留给后续帧。
+3. **HWUI 与 buffer 提交**：UI 线程按时完成后，检查 `syncAndDrawFrame()`、RenderThread `DrawFrame`、dequeue、GPU 工作和 `queueBuffer()`。
+4. **显示出口**：用目标 App Window 的 FrameTimeline、`BufferTX - <layerName>`、latch、SurfaceFlinger actual timeline、HWC composition 与 present timing 判断 App 之后的延迟。
+
+刷新率决定单帧预算，不能把 `16.67 ms` 或任意一条固定毫秒线套到所有设备。Compose slice 变短也不等于屏幕更早显示；比较应闭合到同一帧的 actual present。
+
+## Compose 与 View 互操作
+
+### RecyclerView 中的 `ComposeView`
+
+Compose UI 1.10.0 的默认 `ViewCompositionStrategy` 是 `DisposeOnDetachedFromWindowOrReleasedFromPool`。不在 pooling container 中时，View detach 会销毁 Composition；位于 RecyclerView 等 pooling container 时，临时 detach 不会立即销毁，容器 detach 或 item 被池丢弃时才释放。
+
+ViewHolder 中应让 `setContent()` 只执行一次，再用可观察状态完成 bind。下面的 `key(model.id)` 用于把 item 身份切换显式告诉 Composition，避免 holder 复用时把 `remember` 状态带给另一条数据。
+
+```kotlin
+class ComposeItemHolder(
+    context: Context,
+) : RecyclerView.ViewHolder(ComposeView(context)) {
+    private val composeView = itemView as ComposeView
+    private var model by mutableStateOf<FeedItem?>(null)
+
+    init {
+        composeView.setContent {
+            model?.let { current ->
+                key(current.id) {
+                    FeedRow(current)
+                }
+            }
+        }
+    }
+
+    fun bind(value: FeedItem) {
+        model = value
+    }
+
+    fun clear() {
+        model = null
+    }
+}
+```
+
+`onViewRecycled()` 可以清空业务数据和外部资源，不应无条件调用 `disposeComposition()`；默认策略保留池内 Composition 是为了复用。Fragment XML 中的一对一 `ComposeView` 更适合 `DisposeOnViewTreeLifecycleDestroyed`，它绑定下一次 attach 所在 View tree 的 `LifecycleOwner`。
+
+### Lazy 列表中的 `AndroidView`
+
+`AndroidView.factory` 在 UI 线程创建 View，并且对当前实例只调用一次；`update` 会在 factory 后调用，也会随其中读取的 State 变化而再次运行。重操作不能塞进 `update`，但 View 属性修改仍应留在 UI 线程。
+
+Lazy 列表中要使用带非空 `onReset` 的重载才能启用兼容 View 实例复用。下面的例子在复用前清理瞬时状态，并在永久离开 Composition 时释放资源。
 
 ```kotlin
 LazyColumn {
     items(
-        count = list.size,
-        key = { index -> list[index].stableId }  // 用业务 ID 做 key
-    ) { index ->
-        ItemRow(item = list[index])
+        items = charts,
+        key = ChartModel::id,
+    ) { model ->
+        AndroidView(
+            factory = { context -> ChartView(context) },
+            update = { view -> view.render(model) },
+            onReset = { view -> view.resetForReuse() },
+            onRelease = { view -> view.release() },
+        )
     }
 }
 ```
 
-不用 `key` 或用 `index` 做 key 的后果:当列表发生插入/删除时,Compose 无法区分"位置 3 的 item 变了"和"item 移动了",会导致比实际需要更多的重组。用 `index` 做 key 在列表有插入/删除时比不用还差--因为 Compose 会认为 key=3 的 item 内容变了(因为原来 key=3 的 item 被移走了,新 item 占了位置 3)。
+`onReset` 可能先于下一次 `update`，也可能进入暂时停用后才被释放；清理逻辑应允许重复调用。若嵌入的是 `SurfaceView`、WebView、播放器或相机预览，图形分析还要跟随它自己的 BufferQueue 和 SurfaceFlinger layer，不能只看 Compose 宿主窗口。
 
-[已验证: AOSP Compose Runtime, ComposeNode.kt, key 追踪逻辑]
+## 升级与验收
 
-## Pausable Composition 与 LazyColumn 预取
+升级 Kotlin 或 Compose 时，先记录解析后的精确依赖。下面的命令用于确认 app 的 Runtime、Foundation 和 UI 版本，configuration 名按项目 variant 调整。
 
-### Pausable Composition(Compose 1.10+)
+```bash
+./gradlew :app:dependencyInsight \
+  --dependency androidx.compose.runtime:runtime \
+  --configuration releaseRuntimeClasspath
 
-Pausable Composition 是 Compose 1.10 引入的运行时改进。它主要作用在 LazyColumn/LazyRow 的预取路径中--运行时可将预取 item 的组合工作切分成可暂停的块,在帧预算不足时暂停并在下一帧继续。
+./gradlew :app:dependencyInsight \
+  --dependency androidx.compose.foundation:foundation \
+  --configuration releaseRuntimeClasspath
 
-**版本注意**:Pausable Composition 不依赖 Android 平台版本，只要 Compose Foundation 版本支持即可生效。Compose Foundation 1.10.0-alpha05 曾默认启用（通过 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled`），但 1.10.6 因稳定性问题已将其默认关闭。当前是否默认启用取决于具体 Foundation 版本，使用前需要检查目标版本的默认值或手动设置 flag。注意 Pausable Composition 只作用于 LazyColumn/LazyRow 预取路径——首帧 Composition 和普通（非 Lazy）Composable 仍然在单帧内同步完成。
-
-**之前的行为**:Composition 必须在单个帧内完成。如果 Composable 树很深或 LazyColumn 的可见 item 很多,组合阶段的 CPU 时间可能超过 16.67ms 帧预算,直接导致掉帧。
-
-**Pausable Composition 的行为**:Compose 运行时将组合工作切分成可暂停的块。在每一块执行完后,运行时通过 `shouldPause` 回调检查帧截止时间(FrameData deadline)是否临近。如果临近,暂停组合,让主线程处理当前帧的绘制任务;下一帧继续剩余的组合工作。
-
-```kotlin
-// 内部控制流(简化)
-// setPausableContent() → PausedComposition 对象
-// resume() → 执行分块组合
-//   内部通过 shouldPause lambda 检查帧 deadline
-//   shouldPause == true → 暂停,主线程去绘制当前帧
-// resume() 再次调用 → 继续下一块
-// isComplete == true → apply() 提交所有变更到 UI 树
+./gradlew :app:dependencyInsight \
+  --dependency androidx.compose.ui:ui \
+  --configuration releaseRuntimeClasspath
 ```
 
-`apply()` 是 Pausable Composition 的提交阶段:只有当所有组合工作完成后,变更才会被提交到 UI 树。未完成的 UI 子树不会被渲染。
+BOM 只约束它声明的 Compose artifacts，不会安装依赖，也不控制 Kotlin plugin。版本确认后再做同机对比，避免把 Kotlin 编译器、Foundation 预取、Baseline Profile 或业务代码的变化混成一个结果。
 
-运行时接口的核心逻辑可以归纳为三步：`resume(shouldPause)` 继续执行预组合，`shouldPause` 在帧截止时间临近时给出暂停信号，`apply()` 在组合完成后一次性提交结果。开发者通常不需要直接调用这些内部接口——能实际控制的是 Foundation 版本、预取窗口尺寸和列表 item 的组合成本。
+验收可以按下面的顺序执行：
 
-**对开发者的意义**:
-1. 在已启用的 LazyColumn/LazyRow 预取路径中,Pausable Composition 可以减少预取组合阻塞当前帧的概率;是否生效取决于具体 Foundation 版本和 flag 状态。
-2. 以前为了规避组合阻塞而做的各种拆分优化(手动将大 Composable 拆成小函数),在 Compose 1.10 上的效果减弱了--运行时层面已经做了时间切片。
-3. 但 `derivedStateOf`、key、stable 参数等优化仍然有效--Pausable Composition 解决的是单帧阻塞问题,不解决不必要的重组问题。
+1. 用 compiler report 确认目标 Composable 的 restartable / skippable 与参数 Stability，不为无性能问题的类型追加注解。
+2. 用 Layout Inspector 复现一次状态变化，确认重组和跳过范围符合预期。
+3. 用 Macrobenchmark 采集 release-like 构建，比较 FrameTiming、启动、内存和目标交互的分位数。
+4. 用 Composition Tracing 关联目标 Composable、Lazy prefetch、Layout、Drawing 与同一帧 `Choreographer#doFrame`。
+5. 沿 RenderThread、BLAST、SurfaceFlinger、HWC 到 actual present 闭合显示链，区分 App 生产慢与系统显示慢。
+6. 升级 Compose 后重新生成并验证应用 Baseline Profile；库自带 profile 不能覆盖业务 Composable 的完整热点路径。
 
-实际效果需要在项目内用 Perfetto 对比主线程 `composition` slice 的耗时分布，结合 Layout Inspector 的重组次数来判断当前帧阻塞是否真的减少了。不同设备和 Foundation 版本下的表现会有差异，官方 benchmark 数据可以作为参考，但要落到自己的项目基线里。
+| 现象 | 优先验证 | 常见误判 |
+| --- | --- | --- |
+| 小状态变化引发大范围重组 | 状态读取位置、restart scope、参数实例 | 只给所有 model 加 `@Stable` |
+| 动画期间 Composition 持续出现 | 状态是否可延迟到 placement / drawing | 把每次变化都包进 `derivedStateOf` |
+| Lazy 滚动进入新 item 时卡顿 | key、contentType、compose / apply / measure 预取 | 只把 cache window 调大 |
+| `ComposeView` 列表反复创建 | `setContent()` 次数、pool strategy、item 身份 | 每次回收都 dispose |
+| UI 线程正常仍有 jank | RenderThread、buffer、SF、HWC、present | 把所有慢帧归到重组 |
 
-### LazyColumn 预取策略
+## 源码与文档
 
-LazyColumn / LazyRow 的预取系统与 Pausable Composition 深度集成:
-
-1. 预取系统根据滚动速度预测即将进入可见区域的 item。
-2. 在主线程空闲时,调用 `PausedComposition.resume()` 执行增量组合,提前完成即将可见的 item 的 Composition 阶段。
-3. 预取工作也可以被暂停--如果帧 deadline 临近,预取让位给当前帧的绘制。
-
-Compose 1.9 引入的 `LazyLayoutCacheWindow` API 允许开发者精确控制预取窗口大小:
-
-```kotlin
-@OptIn(ExperimentalFoundationApi::class)
-val listState = rememberLazyListState(
-    // cacheWindow 定义预取窗口范围,单位为 viewport 外的 Dp 距离
-    cacheWindow = LazyLayoutCacheWindow(ahead = 150.dp, behind = 100.dp)
-    // 或使用 viewport fraction:
-    // cacheWindow = LazyLayoutCacheWindow(aheadFraction = 1f, behindFraction = 0.5f)
-)
-
-LazyColumn(state = listState) {
-    // ...
-}
-```
-
-预取窗口大小需要根据 item 的组合复杂度调整:简单的列表项(纯文本)不需要预取太多;复杂的列表项(图片 + 多行文本 + 操作按钮)适当增大预取窗口可以减少首次可见时的组合卡顿。`LazyLayoutCacheWindow` 的构造参数随 Foundation 版本演进，接入时以项目锁定版本的 IDE 签名和 release notes 为准。
-
-## Compose 编译器报告与性能诊断
-
-### 编译器报告的生成与解读
-
-Compose compiler 可以在编译时生成性能报告,帮助发现稳定性(Stability)和跳过(Skip)相关的问题。
-
-在 Gradle 中启用:
-
-```kotlin
-// Kotlin 2.0+ build.gradle.kts(推荐)
-composeCompiler {
-    reportsDestination = layout.buildDirectory.dir("compose_metrics")
-    metricsDestination = layout.buildDirectory.dir("compose_metrics")
-}
-
-// Kotlin 2.0 之前(兼容写法)
-// kotlinOptions {
-//     freeCompilerArgs += listOf(
-//         "-P", "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=${project.buildDir.absolutePath}/compose_metrics",
-//         "-P", "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=${project.buildDir.absolutePath}/compose_metrics"
-//     )
-// }
-```
-
-编译后会在 `build/compose_metrics/` 下生成三个文件:
-
-| 文件 | 内容 |
-|------|------|
-| `*_composables.txt` | 每个 @Composable 函数的分析结果:是否 restartable、是否 skippable、参数稳定性 |
-| `*_classes.txt` | 类级别的稳定性推断结果 |
-| `*_module.json` | 模块级别的组合指标(Kotlin 2.0+ 格式) |
-
-关注 `*_composables.txt` 中的这两个字段:
-
-```text
-restartable     - 函数可以被独立重启(不在内联 Composable 内部)
-skippable       - 函数可以被跳过(所有参数都是 Stable)
-```
-
-如果 `skippable = false`,说明有参数类型被推断为 Unstable。需要检查哪个参数导致了不稳定,然后决定是否标注 `@Stable` / `@Immutable`,或确认项目已使用 Kotlin 2.0+ 以利用 Strong Skipping 自动处理。Kotlin 2.0+ 的报告格式和旧 Compose Compiler 插件不同，脚本解析报告时要按项目实际插件版本适配字段。
-
-### Layout Inspector 和 Perfetto 中的 Compose 性能观测
-
-**Layout Inspector(Android Studio)**:
-- 显示 Composable 树的节点数量和每个节点的重组次数。
-- 重组次数高的节点是优化目标。
-- 支持 Live Edit 模式下实时查看重组情况。
-
-**Compose Profiler(Android Studio Ladybug 2024.2.1+ Feature Drop)**:
-- Android Studio 的 Profiler 工具窗口中新增 Compose 专项性能分析视图。
-- 入口:View → Tool Windows → Profiler,选择目标进程后,在 CPU 时间线视图中查看 Compose activity。
-- 显示每个 Composable 函数的重组次数、跳过次数和耗时,按重组频率排序后高亮不必要的重组。
-- 使用边界:需要连接真机或模拟器运行 Debug 构建体;Compose Profiler 依赖运行时注入的重组追踪代码,Release 构建体不包含追踪钩子,无法使用。
-
-**Perfetto**:
-- Compose 的组合工作在主线程上表现为 `composition` 相关的 slice。
-- Pausable Composition 可能表现为被切分的多个短 slice,中间穿插其他系统回调。
-- LazyColumn 预取的组合工作也在主线程上,但会被 `shouldPause` 中断。
-- 重组异常(如整个页面因一个按钮状态变化而重组)会在主线程上表现为超大的 `composition` slice,超过 16.67ms 即为掉帧。
-
-**Perfetto SQL 查询示例**:
-
-```sql
--- 查看主线程上 Compose 相关的耗时操作
-SELECT slice.name, slice.dur / 1e6 as dur_ms
-FROM slice
-JOIN thread_track ON slice.track_id = thread_track.id
-JOIN thread ON thread_track.utid = thread.utid
-WHERE thread.name = 'main'
-  AND (slice.name LIKE '%composition%'
-    OR slice.name LIKE '%layout%'
-    OR slice.name LIKE '%Choreographer%')
-  AND slice.dur > 8e6  -- 超过 8ms 的操作
-ORDER BY slice.dur DESC
-LIMIT 20;
-```
-
-这个查询用于定位主线程上 Compose 相关的性能瓶颈，先看超过 8ms 的 `composition`、`layout` 和 `Choreographer` slice。
-
-## Compose 与 View 互操作的性能开销
-
-### ComposeView 嵌入传统布局
-
-在 RecyclerView 等 View 系统容器中嵌入 ComposeView 时,性能瓶颈不在 Compose 的组合阶段,而在 ComposeView 的生命周期管理。
-
-**Composition 与 Recomposer 的共享关系**：每个 ComposeView 拥有自己的 Composition，但通常共享父级或窗口级 `Recomposer`——并非每个 ComposeView 都持有独立渲染上下文和独立 WindowRecomposer。`AbstractComposeView.resolveParentCompositionContext()` 优化了 Recomposer 的查找路径，优先复用父级已存在的 CompositionContext。
-
-`ViewCompositionStrategy` 决定了 ComposeView 内部的 Composition 何时被销毁和重建。
-
-**默认策略 `DisposeOnDetachedFromWindowOrReleasedFromPool`** 是为 RecyclerView 等 pooling container 设计的。当 ComposeView 从窗口 detach 或从缓存池中被丢弃时,Composition 被正确处理。注意"ReleasedFromPool"指的是缓存池满时丢弃最旧的 ViewHolder,而不是每次 item 滚出屏幕就销毁--item 被 RecyclerView 临时回收进缓存池时,Composition 保持存活。
-
-```kotlin
-// RecyclerView ViewHolder 中使用--默认策略已适配 pooling container
-val composeView = ComposeView(context).apply {
-    // 无需手动 setViewCompositionStrategy,默认策略即为 pooling container 设计
-    setContent {
-        MyComposableItem(data)
-    }
-}
-```
-
-**`DisposeOnViewTreeLifecycleDestroyed`** 适用于 Fragment View 场景:Composition 的生命周期绑定到 Activity/Fragment 的 LifecycleOwner,而不是 View 自身的 attach/detach。在 Fragment View 因配置变更被销毁但 Fragment 仍存活时,这个策略能确保 Composition 在正确的时机被清理。把这个策略用在 RecyclerView ViewHolder 上会把 Composition 生命周期绑定到 Activity/Fragment,导致 Composition 在整个 Activity 生命周期内不被释放,增加内存压力。
-
-```kotlin
-// Fragment 中嵌入 ComposeView 时适用
-val composeView = ComposeView(context).apply {
-    setViewCompositionStrategy(
-        ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
-    )
-    setContent {
-        MyComposableContent()
-    }
-}
-```
-
-如果需要在 ViewHolder 不再复用或确认存在内存泄漏时重置 Compose 状态,可以调用 `disposeComposition()` 手动销毁,但要承担重建 Composition 的完整开销。优先依赖默认 `DisposeOnDetachedFromWindowOrReleasedFromPool` 策略,让 Composition 随缓存池生命周期自然释放,不要在 `onViewRecycled()` 中盲目调用 `disposeComposition()`--回收进缓存池的 ViewHolder 还有可能被复用,提前销毁只会增加重建成本。实际项目要用滚动场景的重建次数和内存曲线验证策略选择，不要只看单个 ViewHolder 的生命周期回调。
-
-### AndroidView 在 Compose 中嵌入 View
-
-反过来,在 Compose 中嵌入传统 View 使用 `AndroidView`:
-
-```kotlin
-AndroidView(
-    factory = { context ->
-        // 只在首次创建时调用
-        TextView(context)
-    },
-    update = { textView ->
-        // 每次 Composable 重组时调用
-        // 控制这里的操作粒度
-        textView.text = data.title
-    }
-)
-```
-
-`update` lambda 在每次父 Composable 重组时都会执行。如果 `update` 里有耗时操作(如设置大图片、触发布局重算),会放大重组的性能影响。优化方式:把 `update` 里的操作限制在最小必要范围,耗时操作移到 `remember` 或 `LaunchedEffect` 中异步处理。
-
-[已验证: 官方文档 ViewCompositionStrategy API]
-
-## 版本迁移与优化策略变化
-
-从旧版本 Compose 升级到 Compose 1.10+（Kotlin 2.0+）时，性能优化策略的优先级发生了变化。以下是迁移检查要点：
-
-| 变化项 | 旧版本做法 | Kotlin 2.0+ 做法 |
-|--------|-----------|-----------------|
-| Lambda memoize | 手动 `remember { { ... } }` 包裹 | Kotlin 2.0.20+ Strong Skipping 自动 memoize,手动包裹变为冗余 |
-| `@Stable` / `@Immutable` 标注 | 大量手动标注以保证跳过 | Strong Skipping 下大部分场景不再需要,仅第三方库和自定义状态容器仍需标注 |
-| 长列表组合阻塞 | 手动拆分大 Composable 函数 | Pausable Composition 自动切分，但是否默认启用取决于 Foundation 版本；`derivedStateOf` / key 优化仍有效 |
-| 编译器报告 | 关注 `skippable` 字段 | Strong Skipping 下所有 restartable Composable 默认 skippable,关注点转向重组次数和状态读取阶段 |
-
-迁移步骤:
-1. 升级 Kotlin 到 2.0.20+(或 2.0.0-2.0.10 显式开启 `enableStrongSkippingMode`),确认 Compose compiler 插件版本匹配。
-2. 运行编译器报告，确认 restartable Composable 在 Strong Skipping 下可跳过；non-restartable Composable 仍可能显示为不可跳过，不作为异常处理。
-3. 清理冗余的手动 `remember { { lambda } }` 包裹代码。
-4. 在 Layout Inspector 中对比升级前后的重组次数,确认 Strong Skipping 生效。
-5. 重新采集 Baseline Profile，覆盖冷启动、首屏列表和主要交互路径。
-6. 更新 CI 中的性能基准测试,建立新版本的基线数据。
-
-## 实战检查清单
-
-| 场景 | 检查项 | 工具 |
-|------|--------|------|
-| 列表滚动卡顿 | LazyColumn item 是否提供 stable key | 编译器报告 + Layout Inspector |
-| 列表滚动卡顿 | 预取窗口是否匹配 item 复杂度 | Perfetto 主线程 slice |
-| 动画掉帧 | 动画状态是否延迟到 Draw 阶段读取 | Layout Inspector 重组计数 |
-| 全页重组 | `derivedStateOf` 是否只用于高频→低频映射 | 编译器报告 + 代码审查 |
-| Compose-View 混合 | ComposeView 的 ViewCompositionStrategy 是否正确 | 代码审查 |
-| Lambda 传递 | Kotlin 2.0 之前需要手动 remember 包裹 lambda;2.0+ Strong Skipping 自动 memoize | 编译器报告 skippable 字段 |
-| 冷启动偏慢 | Baseline Profile 是否覆盖 Compose 首屏路径 | Macrobenchmark + ProfileInstaller 状态 |
-
-Android 17（API 37）上的 ART 分代 GC 会改善短生命周期对象回收成本，但 Compose 性能优化的优先级仍然是减少不必要重组、延迟状态读取和控制列表预取成本。GC 调参不能替代 Composition 层面的代码优化。
-
-
-## 版本说明
-
-本节讨论的 Strong Skipping、Pausable Composition 和 LazyLayoutCacheWindow 不绑定 Android 平台版本——它们由项目锁定的 Kotlin、Compose Compiler、Compose Runtime 和 Compose Foundation 版本决定，与 Android 17（API 37）系统本身没有直接关系。正文中所有用法和结论都基于 Compose BOM 2025.12.00（Compose 1.10）以及能对应到具体版本号的 AndroidX 源码锚点。
-
-## 参考资料
-
-### Jetpack Compose 性能优化 — rememberCoroutineScope / produceState / Strong Skipping
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-31-android-compose-perf-remember-scopeproducestate.md
-- 类型：DeepResearch 调研结果
-- 摘要：无 key 重载的 `produceState` 使用 `LaunchedEffect(Unit)`，带 key 重载使用 `LaunchedEffect(key1/key2/keys)`，key 变化时 producer 协程会取消并重启。`rememberCoroutineScope` 通过 `remember` 存储 `CoroutineScope` 实例，重组时复用同一实例。Strong Skipping Mode 对 non-restartable Composable 有限制，`produceState` 的 producer lambda 执行的协程体不受 Strong Skipping 直接控制。
-- 注入时间：2026-06-06
-- 价值：从源码层面揭示了 Compose 副作用 API（produceState/rememberCoroutineScope）在 Strong Skipping 下的行为差异，对 Compose 性能优化实践有直接指导意义
-
-
-- DeepResearch: `2026-05-30-android-17-pausable-composition-compose-toolchain.md`。用于确认 Pausable Composition、LazyLayoutCacheWindow 与 Android 平台版本的边界。
-- DeepResearch: `2026-05-31-android-compose-baseline-profile-integration.md`。用于补充 Baseline Profile、ProfileInstaller 写入链路和 Compose 库内置 profile 的迁移检查项。
-- DeepResearch: `2026-05-27-android-17-art-generational-gc-compose-composition.md`。用于说明 Android 17 ART 分代 GC 与 Compose 短生命周期对象的关系；正文只保留优化优先级判断，不引用未闭合的源码行号。
+- [Compose BOM `2025.12.00` POM](https://dl.google.com/dl/android/maven2/androidx/compose/compose-bom/2025.12.00/compose-bom-2025.12.00.pom)：核对 Runtime、Foundation 与 UI 的 `1.10.0` 映射。
+- [Compose Runtime 1.10.0 source jar](https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.10.0/runtime-1.10.0-sources.jar)：`PausableComposition`、`ProduceState`、`DerivedState` 与 Snapshot state。
+- [Compose Foundation 1.10.0 source jar](https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation/1.10.0/foundation-1.10.0-sources.jar) 与 [Android source jar](https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation-android/1.10.0/foundation-android-1.10.0-sources.jar)：Lazy cache window、预取状态与 Android 调度器。
+- [Compose UI Android 1.10.0 source jar](https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.10.0/ui-android-1.10.0-sources.jar)：`ComposeView`、`ViewCompositionStrategy` 与 `AndroidView`。
+- [Strong Skipping](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)、[Compose phases](https://developer.android.com/develop/ui/compose/phases) 与 [Side-effects](https://developer.android.com/develop/ui/compose/side-effects)：编译器跳过、状态读取阶段和 Effect 契约。
+- [Diagnose stability issues](https://developer.android.com/develop/ui/compose/performance/stability/diagnose) 与 [Composition tracing](https://developer.android.com/develop/ui/compose/tooling/tracing)：编译器报告、重组计数与 system trace 配置。
+- [Compose Foundation release notes](https://developer.android.com/jetpack/androidx/releases/compose-foundation#1.10.6)：Pausable Composition flag 在 `1.10.6` 的默认值变化。
+- [Compose in Views](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views) 与 [Views in Compose](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose)：pooling container、Fragment 生命周期和 `AndroidView` 复用。
+- [Android 17 `Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java) 与 [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)：平台帧调度与 App Window traversal 基线。
