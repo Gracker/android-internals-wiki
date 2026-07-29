@@ -64,551 +64,617 @@ review_finalize_notes: "2026-07-20 Hermes finalize apply: repaired malformed dup
 
 # Android 性能优化研究方法论
 
-Android 性能优化的工作质量，取决于前面有没有把问题定义清楚、工具选对、数据采到位、根因追到底。没有这一层，后面的优化方案再漂亮也容易跑偏。
+性能优化的产物应是一条可复核的证据链：问题如何定义、样本怎样取得、观测说明什么、改动为什么能影响目标、收益能否重复、代价是否可接受。单独一段“更快”的代码不足以支撑结论。
 
-> **数据说明**：本章中出现的数值示例（如"冷启动 P50 1.8s，P99 4.2s"、"doFrame 超过 16ms"、"measure/layout 花了 11ms"等）为方法论教学中的假设性示例，用于展示分析框架和排查思路，不取自特定 App 或特定机型的实测数据。优化实践中应以自身 App 的基准数据为准。
+> [!NOTE]
+> 本章中的耗时、分位数和样本数量只用于解释研究步骤，不代表 Android 平台阈值或某款设备的测量结果。平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，涉及内核时采用 `android17-6.18-2026-06_r6`。具体项目应保存自己的设备、构建、场景和原始数据。
 
-本章把性能优化的完整流程拆成几个阶段——从问题分类、工具选择、数据采集与分析，到根因定位、方案设计与效果验证。每个阶段有对应的决策框架和常见陷阱。
+一轮研究可以压缩成六个动作：
 
-## 1. 性能问题分类与优先级管理
+1. 定义用户可感知的问题和业务场景；
+2. 选定指标、样本总体和对照基线；
+3. 采集能回答该问题的最小证据集；
+4. 从现象提出可证伪的机制假设；
+5. 只改变假设涉及的变量并复测；
+6. 记录收益、副作用、适用边界和回退条件。
 
-### 1.1 问题面前的第一件事：定优先级
+## 1. 从问题定义开始
 
-一个 App 同时面对的卡顿类问题可能有几十个——某机型下的滑动掉帧、特定页面的初始化慢、低端机 OOM。全部修不现实，但也不能靠直觉拍脑门。
+### 1.1 把投诉改写成可测问题
 
-用三个维度做量化排序：影响范围（受影响的用户百分比）、严重程度（问题的可感知程度，比如从 60fps 掉到 30fps 还是 40fps）、解决成本（需要的研发人天和测试资源）。三个维度落到坐标系里，得到一个优先级矩阵：
+“列表有点卡”无法直接指导采集。一个可测问题至少包含：
 
-- P0：高影响范围 + 高严重程度。启动慢、首页卡顿这类，立即投入。
-- P1：影响范围小但严重程度高。特定机型的 ANR，尽快安排。
-- P2：影响范围和严重程度都低。若干机型上偶发的微卡，排期解决。
+- **场景**：入口、操作序列、页面状态和持续时间；
+- **总体**：受影响版本、设备、地区、账号或网络 cohort；
+- **现象**：TTID、deadline miss、输入延迟、ANR、PSS 或能量等观测量；
+- **比较对象**：上一稳定版本、未修改构建或随机对照组；
+- **成功条件**：目标指标改善多少，哪些回归不能接受；
+- **停止条件**：证据不足、样本偏差、风险过高时何时撤回结论。
 
-排完之后，除非有新数据刷新，否则不要在修到一半时因为"这个看着也挺重要"临时换 target——P0 还没修完就去修 P1，等于两个都没修透。
+例如，可把“低端机首页卡”改写为：“Android 17、4–6 GiB RAM 设备上，从首页开始快速滑动 10 秒，应用窗口 `AppDeadlineMissed` 比例较上一稳定版本上升；实验需保持数据集、编译模式、刷新率与温度区间一致。”
 
-### 1.2 分类框架：让问题先归档再动手
+### 1.2 优先级由影响、风险和证据决定
 
-性能问题的分类框架是把排查路径标准化。拿到一个 issue 报告时，先归到这六类里：
+排序时可以给以下维度建立评分卡：
 
-- 启动性能：冷启动、温启动、热启动各自的时间组成
-- 流畅度：帧率抖动、掉帧、UI 响应延迟
-- 内存：峰值占用、泄漏、碎片、GC 频率
-- 网络：总耗时 vs 分段耗时、超时模式、重试行为
-- 电量：待机消耗、前台耗电模型、后台网络唤醒
-- 热稳定性：温控降频后的性能衰减曲线
+- 影响用户数和发生频率；
+- 用户后果：等待、操作失败、ANR、崩溃或电量损失；
+- 是否集中在增长中的设备或业务群体；
+- 证据置信度和复现稳定性；
+- 修复风险、测试成本和回滚难度；
+- 是否存在安全、隐私或兼容性约束。
 
-归完之后不要急着看代码。先确认同类问题在当前线上的分布——同一个卡顿 issue，是 80% 的用户都在某个 Activity 遇到，还是千分之一的低端机才有。这个数据决定后面投入的力度。分类之后的具体排查工具选型见 [§3 性能分析工具与选择策略](#3-性能分析工具与选择策略)；关于 Handler/MessageQueue 的调度机制在帧预算消耗中的角色见 §1.13。
+P0/P1/P2 只是团队约定的标签，不是 Android 标准。排序表要附数据时间窗、样本量和责任人；新证据出现时再调整，避免用固定等级遮住样本已经变化的事实。
 
-## 2. 优化方法体系：问题到验证的完整循环
+### 1.3 先归类，再选观测层级
 
-### 2.1 PDCA 的实际用法
+常见问题可按以下对象分流：
 
-PDCA（Plan-Do-Check-Act）在性能优化里对应具体的动作。
+| 类型 | 用户侧指标 | 诊断对象 |
+| --- | --- | --- |
+| 启动 | TTID、TTFD、业务 ready | 进程创建、Provider/Application/Activity、编译状态、首帧 |
+| 流畅度 | frame overrun、jank type、输入到呈现延迟 | MainThread、RenderThread、GPU、SurfaceFlinger、调度 |
+| 响应性 | 输入延迟、ANR、任务完成时间 | MessageQueue、Binder、锁、I/O、CPU runnable |
+| 内存 | RSS/PSS、Java/native heap、OOM | 对象图、allocation、映射页、memtrack、回收 |
+| 网络 | DNS/connect/TLS/TTFB/body 分布 | 客户端、服务端、链路、缓存和重试 |
+| 能耗与热 | 能量/工作量、温度、持续性能 | wakelock、网络、CPU/GPU/idle、Power HAL、thermal |
 
-- Plan：定义问题的量化指标（比如"冷启动从点击到首帧 < 1.5s"），选好对比基线（优化前同一机型同一版本的数据），确定采集工具。
-- Do：实施改动。每次只改一个变量——同时改启动框架 + 布局 + 网络策略，最后看数据变好了也不知道是哪个生效的。
-- Check：对比优化前后的相同指标。不能只看一次——至少跑三天，覆盖不同时段、网络、电量状态。单次 2s 降到 1.5s 不代表上线后一直是这样。
-- Act：效果达标就固化方案、更新基线；效果不达标就回退、分析为什么没生效，进入下一轮。
+分类的目的在于确定观测层级。PSS 不能回答 CPU cache miss，`Choreographer#doFrame` 不能覆盖 GPU 完成时间，heap dump 不能还原分配时间序列。工具选型应从问题反推，不应从手头已有工具反推结论。
 
-这个循环能转起来的前提是"做的改动有数据反馈"。如果采集不到变更前后的数据差异，"优化"之后说"感觉快了"只是在自我安慰。
+## 2. 证据怎样支持因果判断
 
-### 2.2 三类研究方法，各有各的着力点
+### 2.1 区分观测、推断和验证
 
-性能优化要解决的问题性质不同，用的方法也不同。
+性能报告中的句子应标明证据等级：
 
-定性分析对应"问题是什么"。5W2H 是简单好用的起点：What（什么指标异常）、Where（哪个页面/线程/机型）、When（版本发布时间点、是否有规律性）、Who（哪类用户）、Why（追因）、How（多严重）、How much（资源与时间成本）。很多排查跑偏是因为连 What 都没定清楚就开始翻代码。
+| 等级 | 示例 | 可以得出的结论 |
+| --- | --- | --- |
+| 观测 | 异常帧期间主线程有 12 ms Binder slice | 两个事件在时间上重叠 |
+| 机制 | 调用栈与源码表明该同步调用阻塞首帧路径 | 存在可解释的影响路径 |
+| 干预 | 移除该调用后，同条件 overrun 分布下降 | 改动与改善一致 |
+| 复现 | 多设备、多轮和灰度对照均得到同方向结果 | 结论可推广到已覆盖总体 |
 
-5W2H 完成后，问题归类（启动、流畅度、内存等）直接决定工具选择——不同问题类型对观测粒度和采集方式的要求不同。启动性能需要从 `am_proc_start` 到首帧 doFrame 的完整时间线，依赖 Perfetto 的 sched + gfx 数据源；内存泄漏需要 heapprofd 的分配栈追踪；帧率抖动需要 FrameTimeline 的 deadline miss 数据。工具选错时——比如用 CPU Profiler 的方法采样去查内存泄漏——采集到的数据无法回答真正的问题。
+时间重叠只产生线索。要写成因果结论，还要说明线程或资源依赖、替代解释、干预结果和适用范围。
 
-定量分析对应"问题有多大"。Perfetto 导出的 trace 里有精确到微秒的 slice 数据，trace_processor 跑 SQL 能把"某段线程阻塞了多少次、每次阻塞了多久"变成一张表。统计方法派上用场是在数据已经结构化之后——先有 clean 的 trace 数据或线上指标，再谈 3σ 异常检测或趋势分析。
+### 2.2 单变量修改是默认策略
 
-实验验证对应"这个解法是否改善了目标指标"。A/B 测试或灰度是最后的闸口，做完优化后象征性地对一下数字还不够。验证要回答三个问题：目标指标有改善（比如 frame deadline miss 减少）、副作用在可接受范围（比如电量没有明显上涨）、不同机型表现一致（不是高端机变快、低端机更慢）。
+一次提交同时改线程模型、缓存、布局和网络时，即使指标改善，也难以判断贡献来源。默认做法是每轮只改变一个机制变量；必须合并修改时，使用消融实验或阶段性开关分离贡献。
+
+验证计划应预先写明：
+
+- 主指标与守护指标；
+- 样本单位和独立性；
+- 预热、随机化与运行顺序；
+- 异常样本处理规则；
+- 期望效应大小与统计区间；
+- 失败时的回退路径。
+
+不要用固定“跑三天”“跑十次”替代样本设计。稳定本地 benchmark 可能很快得到窄区间；低频线上 ANR 或设备长尾往往需要更长窗口。停止采样的理由应由方差、覆盖面和业务周期决定。
 
 ## 3. 性能分析工具与选择策略
 
 ### 3.1 先看工具能回答什么问题，再看它叫什么名字
 
-工具表如果只列工具名和一句话描述，等于什么都没给。下面这张表把每个工具的观测能力对应到 Android 性能问题的实测对象上。
+每种工具只覆盖一部分系统状态。选型时同时写出数据来源、采样开销、缺失信息和目标构建限制。
 
 | 工具 | 观测能力 | 什么场景用它 | 典型输出 |
-|---|---|---|---|
-| Perfetto | 系统级 tracer：ftrace 事件、atrace 标签、heapprofd、java_hprof 等 30+ 数据源 | 渲染管线、Binder 调度、IO 路径、内存分配 | trace.perfetto-trace + SQL 查询结果 |
-| Android Studio Profiler | IDE 内置的 CPU/内存/网络实时采样 | 本地调试、快速复现问题时的第一站 | 方法火焰图、内存分配时间线 |
-| Battery Historian | 解析 bugreport 中的电量事件与唤醒锁 | 待机耗电、后台网络、WakeLock 持有 | 电量消耗时间线、UID 级别统计 |
-| LeakCanary | 检测 Activity/Fragment 引用泄漏 | 开发阶段的内存泄漏自动告警 | 泄漏链 + heap dump |
-| Network Profiler | HTTP/HTTPS 请求的时间线、状态码、字节数 | 单接口排查、请求瀑布流 | 请求甘特图 + 响应头/体 |
+| --- | --- | --- | --- |
+| Perfetto | ftrace、atrace/TrackEvent、FrameTimeline、进程统计、heap profile 等 | 跨线程、跨进程和渲染时序 | `.perfetto-trace`、SQL、metric |
+| Simpleperf | PMU 计数、采样栈、进程/线程 CPU profile | CPU 热点与微架构事件 | `perf.data`、report、火焰图 |
+| Android Studio Profiler | 应用 CPU、Java/native 内存与能量等 IDE 视图 | 可复现的应用侧调查 | sample/trace、heap dump、时间线 |
+| Network Inspector | 支持库可观测到的应用请求 | 请求分段、载荷和失败 | 请求时间线与内容 |
+| `dumpsys meminfo` / smaps | RSS、PSS、USS、SwapPss 和映射分类 | 进程驻留内存归因 | 文本快照 |
+| heapprofd / heap dump | native allocation 时间序列 / Java 对象图 | 分配热点或保留引用 | allocation trace / heap graph |
+| Battery Historian | bugreport 中的 Batterystats 事件 | wakelock、Job、网络与系统状态相关性 | 事件时间线 |
+| Power rails / 外部功率计 | 累计能量或物理功率 | 能量/工作量与持续负载 | rail 读数或测量序列 |
 
-工具选对的标准：拿这个工具采集到的数据，能不能直接回答"性能异常到底发生在哪个阶段"。
+采到数据不等于拿到答案。Battery Historian 不测量每个函数的焦耳数，PSS 不等于 Java heap，CPU sample 也无法解释线程长时间未被调度的原因。报告应把工具盲区写在结果旁边。
 
-### 3.2 版本兼容性：不是"能不能跑"，而是"能采到什么级别"
+### 3.2 版本兼容性：记录平台、工具和数据源
 
-Android 各版本的 tracing 能力不一样。下面按版本交代清楚每个阶段采得到什么、采不到什么。
+Android trace 的可用能力由平台版本、产品配置、构建类型、调用者权限和主机 Trace Processor 共同决定。
 
-**Android 8 (API 26)**：核心 tracing 工具是 Systrace。AOSP 此版本不含 Perfetto，必须用 Systrace 的 atrace 标签体系（`sched`、`gfx`、`view`、`wm`、`am`），搭配 Android Studio Profiler 的 CPU/内存采样。采集粒度到函数级（Traceview），但做不到 Perfetto 那种跨进程 timeline 和 SQL 查询。
+| 设备平台 | 建议入口 | 主要边界 |
+| --- | --- | --- |
+| Android 8 / API 26 | Systrace/atrace、Traceview、Profiler | 没有平台 Perfetto；可看跨进程 ftrace/atrace 时间线，但没有 PerfettoSQL |
+| Android 9 / API 28 | Systrace；部分产品提供早期 Perfetto | daemon 与 CLI 是否可用取决于产品构建 |
+| Android 10–11 / API 29–30 | Perfetto 为主，旧 trace 方式作兼容 | 没有 FrameTimeline 主表 |
+| Android 12–13 / API 31–33 | Perfetto + FrameTimeline | 数据源仍受权限和产品裁剪影响 |
+| Android 14 / API 34 | Perfetto、Macrobenchmark | 线上系统 trace 仍受权限、profileable 与产品策略限制 |
+| Android 15–17 / API 35–37 | Perfetto、ProfilingManager、Macrobenchmark | system-triggered profiling 从 API 36 起逐步增加 trigger |
+
+Android 17 的平台源码 `external/perfetto` 属于 v54.0 系列。主机可以采用更新的 Trace Processor 分析 Android 17 trace，但报告要同时记录设备组件版本和主机工具版本。
+
+Android 8 设备可以用 Systrace 收集短时系统时间线。下面的命令用于采集 10 秒 `sched/gfx/view/wm/am` 事件：
 
 ```bash
-# Android 8 标准 trace 采集
-python systrace.py -t 10 -o trace.html gfx view wm am sched
+python systrace.py --time=10 -o trace.html sched gfx view wm am
 ```
 
-**Android 9 (API 28)**：AOSP `external/perfetto/perfetto.rc` 已包含 `traced` / `traced_probes` service，默认 `disabled`。能否启用取决于设备厂商是否把 `persist.traced.enable` 设为 1。启用了就可以用 `perfetto` CLI 采集，不启用就退回到 Systrace。
+输出是 HTML trace。它可以展示多进程调度和 atrace slice；函数采样、对象图和 SQL 分析需要其他工具。
+
+在较新设备上，先做只读能力检查。下面的命令用于确认 CLI、服务和平台属性：
 
 ```bash
-# 确认 Perfetto service 状态
+adb shell which perfetto
+adb shell ps -A | grep -E 'traced|traced_probes'
 adb shell getprop persist.traced.enable
-# 如返回空或 0，尝试手动触发（需 root 或 debug build）
-adb shell setprop persist.traced.enable 1
+adb shell perfetto --query
 ```
 
-**Android 10-13 (API 29-33)**：Perfetto 成为系统 tracing 主入口，Systrace 逐步废弃。标准 AOSP 通过 `persist.traced.enable=1` 启动后台 service。`perfetto` CLI 支持 `-t`、`-b`、`-o` 以及 `sched/sched_switch` 等数据源名称。
+命令缺失、权限拒绝和空数据源列表都是环境结果。不要在未确认设备所有权与构建策略时修改持久属性。
+
+下面的命令用于采集一个 10 秒短 trace：
 
 ```bash
-# 10 秒 trace，32MB buffer
-adb shell perfetto -t 10s -b 32mb -o /data/misc/perfetto-traces/trace.pftrace sched/sched_switch gfx
+adb shell perfetto \
+  -t 10s \
+  -b 32mb \
+  -o /data/misc/perfetto-traces/quick.pftrace \
+  sched gfx view wm
 ```
 
-**Android 14-17 (API 34-37)**：Perfetto CLI + traced service 的组合完全替代 Systrace。长时采集常用两种方式：`perfetto -d`（`--background`）让命令行客户端 daemonize，立即返回并打印后台进程 PID；`perfetto --detach=<key>` 创建可按 key 重新 attach 的 detached session，后续通过 `--attach=<key> --stop` 回收。Android 17 的 `perfetto` CLI 明确把 `--detach` 和 `--background` 设为互斥选项，二者不是功能等价的别名；`--background-wait` 只属于 `--background` 路径，用于等待数据源启动确认。
+采集完成后应拉取文件，并在 Trace Processor/UI 中检查 trace stats、目标进程、FrameTimeline 和所需事件是否存在。文件非空不代表数据完整。
 
-`traced` 自身只接受服务端启动选项（`--background`、`--version`、`--set-socket-permissions`、`--enable-relay-endpoint`）。缓冲区大小由 `traced` 内部按 tracing session 配置管理——缓冲区参数在 `traced` 与 producer/consumer 的 socket 协议交互中协商（配置入口为 `protos/perfetto/config/trace_config.proto` 中的 `TraceConfig.buffers[].size_kb`），不在命令行层面透出。因此 `traced` 不接受客户端命令行传来的 `-b` 或 `--async`——这些是 `perfetto` CLI 的选项，由 CLI 填入 TraceConfig 后通过 socket 发给 traced。
+#### 后台与 detached session
+
+Android 17 的 `perfetto` CLI 中，`--background` 与 `--detach=<key>` 互斥：
+
+- `-d/--background` 让 CLI daemonize；`-D/--background-wait` 还会等待数据源启动结果；
+- `--detach=<key>` 把 session 留在 `traced`，后续用 `--attach=<key>` 重连；
+- detached session 在启动时传输出文件，需要配置 `write_into_file: true`；
+- `--attach=<key> --stop` 只适用于先前 detach 的 session。
+
+下面的命令用于演示两种独立模式：
 
 ```bash
-# 长时后台采集
-adb shell perfetto -d -t 30s -b 64mb -o /data/misc/perfetto-traces/long_trace.pftrace sched gfx view wm
+# 后台运行一个有固定时长的 trace。
+adb shell perfetto -D -t 30s -b 64mb \
+  -o /data/misc/perfetto-traces/background.pftrace \
+  sched gfx view wm
 
-# detached session（传入输出文件时 config 需设置 write_into_file: true）
-adb shell perfetto --detach=my_trace -c /data/misc/perfetto-configs/config.pbtxt --txt -o /data/misc/perfetto-traces/detached.pftrace
+# config.pbtxt 必须启用 write_into_file。
+adb shell perfetto --detach=startup-study \
+  -c /data/misc/perfetto-configs/config.pbtxt --txt \
+  -o /data/misc/perfetto-traces/detached.pftrace
 
-# detached session 回收时必须带 key
-adb shell perfetto --attach=my_trace --stop
+# 重新连接并停止 detached session。
+adb shell perfetto --attach=startup-study --stop
 ```
 
-**源码验证（基于 AOSP android-17.0.0_r1）**：
+这两种方式的生命周期不同。自动化脚本应保存 PID 或 detach key，处理 CLI 失败，并在结束后验证输出文件和 trace stats。
 
-`external/perfetto/perfetto.rc` 中 `traced`、`traced_relay`、`traced_probes` 三个 service 均为 `disabled`。标准 AOSP 通过 `persist.traced.enable=1` 的 init action 启动 `traced` / `traced_probes`，同时创建 `/data/misc/perfetto-traces` 和 `/data/misc/perfetto-configs` 目录。Pixel 或厂商镜像可通过 vendor init、DeviceConfig 或属性默认值覆盖启用边界。
+#### Android 17 daemon 启动边界
 
-`external/perfetto/src/perfetto_cmd/perfetto_cmd.cc` 中 `perfetto` CLI 接受的参数：`-c/--config`、`-o/--out`、`-t/--time`、`-b/--buffer`、`-d/--background`、`-D/--background-wait`、`--detach/--attach`。`external/perfetto/src/traced/service/service.cc` 中 `traced` 只处理服务端启动选项 `--background`、`--version`、`--set-socket-permissions`、`--enable-relay-endpoint`。缓冲区配置不经过 CLI 参数——`perfetto` CLI 通过 socket 将 `TraceConfig`（含 `buffers[].size_kb`）发送给 `traced`，`traced` 再根据配置内部分配和管理缓冲区。因此 `traced` 不接受客户端命令行传来的 `-b` 或 `--async`。
+`android-17.0.0_r1/external/perfetto/perfetto.rc` 把 `traced`、`traced_relay` 与 `traced_probes` 声明为 `disabled` service，再由属性 action 管理：
 
-**Android 17（API 37）Perfetto 启用方式的变化**：**Android 17（API 37，基于 android-17.0.0_r1）**的 Perfetto 控制机制在 `persist.traced.enable=1`（AOSP init rc 方式）基础上，通过 DeviceConfig 框架提供了更细粒度的运行时控制能力。`persist.device_config.global_settings.sys_traced` 可以在无需 root 的条件下控制 `traced`/`traced_probes` 的启停，适合在非 root 的 user build 设备上按需调整全局 tracing 服务。heapprofd 独立于 traced，由 `persist.heapprofd.enable=1` 或 `traced.lazy.heapprofd=1` 单独控制（受 SELinux 约束，见 §4.3）。
+- `persist.traced.enable=1` 启动 `traced` 和 `traced_probes`；
+- 值 `2` 进入 relay mode；
+- `persist.device_config.global_settings.sys_traced` 会被 init 转换为 `persist.traced.enable`；
+- heapprofd 由自己的 rc、socket 和属性按需启动。
 
-```bash
-# 查询当前 Perfetto traced 启用状态（兼容多版本）
-adb shell getprop persist.traced.enable
+这说明 init 支持相应属性，不代表普通应用或 shell 在所有 user build 上都有写权限。厂商还可修改默认属性、SELinux 和 daemon 配置。排查时以目标机的 init 文件、服务状态和命令返回为准。
 
-# Android 17 中通过 DeviceConfig 查询 Perfetto 相关配置
-adb shell device_config list perfetto
-```
+#### 缓冲区与长时采集
 
-注意：`device_config` 的具体 key 取决于设备厂商的配置覆盖，Pixel 设备与 AOSP 参考实现可能不一致。`persist.traced.enable=1` 在 Android 17 中仍然是 AOSP 默认推荐方式。
+Perfetto 采集至少经过三类缓冲：
 
-#### Perfetto 缓冲区架构与配置策略
+1. producer 与 tracing service 之间的共享内存；
+2. `TraceConfig.buffers[]` 定义的中央 trace buffer；
+3. `linux.ftrace` 使用的每 CPU kernel ring buffer。
 
-Perfetto 的 trace 数据流经三层缓冲区：
+共享内存降低 producer 写入成本，但不能保证永不丢包。producer 过快、central buffer 过小、ftrace drain 不及时或进程退出，都可能产生覆盖、丢弃或未提交 packet。分析前应检查 trace stats。
 
-1. **Producer 共享内存缓冲区（SMB）**：每个数据生产者进程与 `traced` 之间有一块 1:1 的共享内存。生产者的写入快速路径直接序列化 trace 数据到 SMB 的页中，实现零拷贝写入。SMB 的角色是解耦生产者的写入速度和 `traced` 的搬移速度——即使 `traced` 因调度延迟暂时被阻塞，生产者也能继续写入 SMB，不丢数据。
+`RING_BUFFER` 满时覆盖旧数据，适合保留最近窗口；`DISCARD` 满时拒绝新数据，适合保留早期窗口。多个 buffer 可以命名，data source 通过 `target_buffer_name` 或索引选择目标，避免高流量数据挤掉低流量事件。
 
-2. **中央 trace 缓冲区**：由 `TraceConfig.buffers[]` 定义，是 `traced` 内部管理的内存缓冲区。`traced` 从各生产者的 SMB 中搬移 trace packet 到对应名称的中央缓冲区中。每个 `buffers[]` 条目的关键配置：
-   - `size_kb`：缓冲区大小（KB）。缓冲区过小会导致 oldest 数据被覆盖（ring buffer 模式）或采集提前停止（discard 模式）。
-   - `fill_policy`：`RING_BUFFER`（默认，达到上限后覆盖旧数据）或 `DISCARD`（达到上限后拒绝新数据）。长时 trace 应使用 `RING_BUFFER` 配合 `write_into_file`。
+下面的 pbtxt 用于展示可运行的长时 trace 配置，其中 `file_write_period_ms` 控制周期写文件，`flush_period_ms` 的语义则是请求 producer flush，二者不能互换：
 
-3. **ftrace 每 CPU 环形缓冲区**：当开启 `linux.ftrace` 数据源时，内核为每个 CPU 维护独立的 ftrace 环形缓冲区。`traced_probes` 按 `drain_period_ms` 周期性读取这些缓冲区并转换为二进制 protobuf。ftrace 缓冲区需要足够大以容纳两次 drain 之间产生的内核 trace 事件。
-
-长时采集场景下的实用配置组合：
-
-```bash
-# 配置文件示例：30 分钟长时 trace，ring buffer + write_into_file
-# 将以下内容写入 config.pbtxt 后用 perfetto -c config.pbtxt --txt 启动
+```protobuf
 buffers {
-  size_kb: 65536    # 64MB 中央缓冲区
+  size_kb: 65536
   fill_policy: RING_BUFFER
+  name: "system"
 }
-duration_ms: 1800000  # 30 分钟
-write_into_file: true  # 周期性将中央缓冲区写入文件，避免 OOM
-flush_period_ms: 30000 # 每 30 秒刷新一次到磁盘
+data_sources {
+  config {
+    name: "linux.ftrace"
+    target_buffer_name: "system"
+    ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_waking"
+      drain_period_ms: 250
+    }
+  }
+}
+duration_ms: 1800000
+write_into_file: true
+file_write_period_ms: 5000
+max_file_size_bytes: 536870912
 ```
 
-`write_into_file` 配合 `flush_period_ms` 是长时 trace（> 10 分钟）的标准配置：不用把所有 trace 数据都放在内存里，而是周期性地写入磁盘文件，内存中只保留两次 flush 之间的增量。`flush_period_ms` 通常设为 10-30 秒，对应约 10-30 秒内的 trace 数据量。
-
-多数据源场景下的缓冲区隔离：Android 17 支持为不同的数据源指定不同的目标缓冲区（`target_buffer`），通过 `buffers[].name` 命名。例如 sched/gfx 数据写入大容量 ring buffer，heapprofd 的分配数据写入独立的 discard 缓冲区——堆分配数据量可能很大，如果和调度事件混在同一个 ring buffer 中，高频分配会迅速挤掉有价值的调度切片。
+这份配置只采集两个调度事件。生产配置还要按问题加入数据源，并根据事件速率、磁盘预算和性能扰动调整 buffer、写入周期与文件上限；配置值不能直接套到所有设备。
 
 ### 3.3 Android 14+ 隐私限制对性能分析的影响
 
-从 Android 14（API 34）开始，隐私限制逐步收紧，这对性能数据采集有直接影响：
+性能 trace 可能含进程名、线程名、组件名、文件路径、堆栈、类名和业务 marker。采集方案要同时处理调用权限与数据治理：
 
-**后台限制**：Android 14 强化了后台进程的冻结策略，非活跃应用的进程会被更积极地 `freeze`（Cgroup v2 freezer）。当应用进入 frozen 状态后，所有线程暂停执行——Perfetto trace 中会看到线程在 freeze/unfreeze 边界出现时间跳跃。分析 trace 时如果发现某段区间没有任何活动，先排查是否应用被冻结而非逻辑死锁。
+- 普通应用不能把 `DUMP`、tracefs 访问或 shell 能力当作可申请的运行时权限；
+- user build 上，heapprofd 通常只允许 profile `debuggable` 或声明 `profileable` 的目标；
+- ProfilingManager 返回到应用目录的文件仍需受应用自己的保留、加密、上传和同意策略约束；
+- 自定义 trace marker 不要写账号、URL、查询词、完整文件路径或用户输入；
+- 堆转储和 allocation stack 的敏感度通常高于聚合指标，应采用更低采样率和更严访问控制；
+- 采集失败、被限流或字段被裁剪时，应上报“不可用”，不能补成零值。
 
-**精确位置权限变化**：Android 14 将位置权限改为"仅在使用时允许"的默认推荐。如果性能分析依赖系统级 ftrace（需要 `android.permission.DUMP` 或 `PACKAGE_USAGE_STATS` 权限），这些权限在 user build 上需要用户在设置中手动授予，可能影响线上的数据采集覆盖率。
+应用冻结、后台限制和 thermal throttling 会改变被测行为，但它们不属于 ftrace 权限模型。trace 中出现长空白时，应结合进程状态、binder freezer、suspend 与数据丢失统计分别排查。
 
-**对于性能分析的替代方案**：
-- 线上采集受限时，将重点转移到灰度阶段的密集采集——灰度用户量小、可以要求更多权限
-- 用户级性能指标（启动时间、帧率）通过 `ActivityManager` 的 `getHistoricalProcessExitReasons()` 等方法获取，不依赖 ftrace
-- 开发阶段使用 `userdebug` 构建做深度分析，线上用轻量级 Metric 做趋势监控
+开发阶段可使用受控 userdebug/eng 环境做系统级调查；线上以公开 API、系统触发式 profiling 和低开销业务指标为主。灰度规模较小也不构成扩大权限或上传范围的理由。
 
 ### 3.4 跨厂商设备的 Perfetto 行为差异
 
-AOSP 的 Perfetto 实现提供了基础框架，但各厂商的定制 ROM 在实际行为上有明显差异，排查问题时需要考虑这些变量：
+AOSP 定义基础 daemon、协议和标准数据源，产品仍可能在以下方面不同：
 
-**traced 启用策略差异**：AOSP 通过 `persist.traced.enable=1` 启动 `traced` / `traced_probes`，但各厂商的 init rc 覆盖可能不同。部分厂商的 `user` 构建完全禁用 `traced_probes`，导致用户设备上无法采集 ftrace 数据——即使 adb 有权限。如果遇到 `perfetto -d` 命令不报错但 trace 文件为空的情况，先排查 `traced` 和 `traced_probes` 两个 service 是否都在运行。
+- daemon 默认状态、SELinux、tracefs mount 和 shell 权限；
+- kernel config、vendor hook 与可用 ftrace event；
+- GPU、DDR、thermal、camera 等厂商轨道的名称和单位；
+- symbol、build ID、clock snapshot 与进程隔离信息；
+- power rail、memtrack、FrameTimeline 和 statsd 数据覆盖范围；
+- trace guardrail、buffer 上限和系统触发采样策略。
 
-**数据源裁剪**：厂商可能关闭某些 ftrace 数据源——常见被裁剪的有 `sched/sched_switch`（调度器事件）、`binder` 相关事件，以及 `ion`/`dma` 等内存分配事件。trace 采集前用 `adb shell perfetto --query` 或 `adb shell ls /sys/kernel/tracing/events/` 确认目标数据源是否可用。
+采集脚本应先枚举能力，再生成配置。下面的命令用于检查服务、数据源与 scheduler event：
 
-**自定义计数器注入**：Samsung、高通平台提供额外的性能计数器（GPU busy%、DDR 带宽、温度传感器），这些计数器不在 AOSP 标准 ftrace 事件中。如果需要采集厂商特有指标，需要查阅对应厂商的开发者文档，确认是否暴露到 Perfetto 数据源中。
-
-**调试技巧**：
 ```bash
-# 确认 traced 和 traced_probes 是否都在运行
 adb shell ps -A | grep traced
-
-# 列出当前设备可用的 ftrace 事件
+adb shell perfetto --query
 adb shell ls /sys/kernel/tracing/events/sched/ | head -20
-
-# 用 perfetto 轻量命令测试采集能力
-adb shell perfetto -t 5s -b 4mb -o /data/misc/perfetto-traces/test.pftrace sched/sched_switch
-# 如果返回 "Connection to traced failed"，说明 traced service 未运行
 ```
 
-> 工具层面的问题理清之后，接下来是另一道坎：把采集到的原始数据变成能指导决策的结论。
+服务存在却没有某个数据源时，应降级采集方案并记录缺口。厂商自定义轨道只有在目标产品 trace 或公开文档中确认名称、单位与语义后，才能进入自动 SQL。
 
 ## 4. 数据采集与分析：从 raw data 到 actionable 结论
 
 ### 4.1 采样策略：不同问题用不同采法
 
-采样不是采得越多越好——采样策略取决于问题类型的自然发生频率和单个样本的价值。
+采样策略由事件频率、采集成本、诊断价值和隐私风险共同决定。低成本指标与高成本 trace 应采用不同采样率。
 
-- 启动性能：冷启动 100% 采样。冷启动次数天然少（用户一天也就几次），少一个样本就可能漏掉关键退化。每个冷启动都采集 trace、记录所有阶段耗时。
-- 流畅度：按设备档位分层采样。高端/中端/低端分开统计，framedrop 的触发模式在这三档差别很大——混在一起看平均值会掩盖低端机的真实体验。
-- 内存：按生命周期节点采样。启动完成、进入关键页面、退出后台、OOM 前的快照比连续采样更有意义。要把峰值前后的对象分配轨迹抓下来，而不是只看时刻点的 PSS。
-- 网络：按网络类型分层。WiFi、4G、5G 的 RTT 和吞吐量差了一个数量级，混在一起得到的"平均网络耗时"没有任何优化指导意义。
-- 电量：按电池状态和系统状态采集。电量 80% 以上 vs 20% 以下，充电中 vs 未充电，前台 vs 后台——同一个网络请求的功耗成本完全不同。
-- SoC 跨厂商分层：**必须按 SoC 厂商 + 芯片型号分层**，不同厂商的功率优化接口、AIDL 实现、cpufreq governor 路径都不同。
+| 问题 | 低成本连续指标 | 高成本诊断样本 | 常用分层 |
+| --- | --- | --- | --- |
+| 启动 | TTID/TTFD、start type、入口 | Macrobenchmark trace、冷启动 trigger | 版本、设备、编译模式、cold/warm/hot |
+| 流畅度 | frame overrun、jank count | FrameTimeline + sched + gfx trace | 刷新率、窗口模式、设备、场景 |
+| 内存 | RSS/PSS、GC、OOM/exit reason | heap dump、heapprofd | 进程、生命周期、RAM、页面 |
+| 网络 | 分段耗时、失败率、字节数 | 请求 trace、服务端 trace | 网络类型、地区、运营商、接口 |
+| 能耗 | Batterystats、power monitor、温度 | power rail、Perfetto、外部功率计 | SoC、build、亮度、网络、thermal |
 
-  Android 17（API 37，基于 android-17.0.0_r1）的 SoC 级电池优化分 5 层：① Framework `PowerManager.setMode()` → ② `PowerManagerService.java` 维护 `DIRTY_*` 位掩码 → ③ `IPower` AIDL 跨进到 vendor HAL（厂商必须提供 SO 库） → ④ vendor 服务调内核 cpufreq/devfreq 节点，或在 `setBoost` 路径上调用 CPU/GPU 驱动 → ⑤ 内核 `schedutil` 通过 `sugov_should_update_freq()` 守门 `rate_limit_us` 决定是否下发新频率。源：android-17.0.0_r1，`hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl`。
+“记录每次冷启动指标”与“为每次冷启动抓系统 trace”成本相差很大。前者在合理数据治理下可以采用高覆盖率；后者会带来存储、性能和隐私开销，通常只在基准测试、灰度抽样或系统 trigger 命中时执行。
 
-  跨厂商差异不在 AIDL 接口层（AOSP 强制统一，`@VintfStability` 跨版本固化），而在各厂的 HAL 库实现和驱动路径上：
+分层变量要在看结果前确定。看完数据再挑最有差异的设备、时间段或指标，会放大偶然性。cohort 太细则会使样本不足；合并前应检查设备能力、工作负载和采集口径是否可比。
 
-  | 厂商 | HAL 库 | 关键走法 | 内核 / 服务 |
-  |---|---|---|---|
-  | Qualcomm | `libqti-power-hal.so` | RPMh 发送数据 + PDC 控制 collapse | `qcom-cpufreq-hw`/`qcom-rpmh-regulators` |
-  | MediaTek | `libmtkpower-hal.so` | mtlp → hw_flower → dvfsrc | `mtk-cpufreq-hw`/`mediatek-cci-devfreq` |
-  | Samsung Exynos | `libexynos-power.so` | ASV + TMU + PMU | `exynos-cpufreq` |
+#### SoC 与电源策略怎样分层
 
-  内核侧统一由 `cpufreq_schedutil.c` 的 `sugov_should_update_freq()` 做频率守门，默认 10ms 节流闸。同一个 `setMode(GAME, true)` 请求：高通方案映射到 RPMh wakeup vote；联发科走 mtk-pmic 触发 Vcore boost；三星经 TMU 协调 CPU/GPU/CAMERA 三路供电——但最终都汇总到 schedutil 的同一个节流闸。要做精确的电池基线，**必须分 SoC 看，不能简单按设备档位聚合**。更多细节见 DeepResearch/2026-07-06-android17-soc-vendor-power-hal-schedutil-loop.md。
+能耗实验应至少记录 SoC/设备型号、kernel、active governor、CPUFreq policy、thermal 状态和 Power HAL 能力。品牌名不能替代运行配置。
 
-  在 AIDL 与 schedutil 之间，还有一层实时反馈：`HintManagerService` 的 `getCpuHeadroom` 和 `getGpuHeadroom` 返回当前 SoC 还有多少 CPU/GPU 算力可用。它内部维护缓存，通过限制同时跟踪的 TID 数量控制开销，查询窗口可配置在 50ms 到 10000ms 之间。这个接口的实际用途是：性能分析工具或游戏引擎可以在帧提交前先问一句"现在还有多少余量"，根据回答决定要不要降画质，而不是撞上 thermal throttle 才发现频率已经掉了。
+Android 17 冻结的 `android.hardware.power` AIDL v7 定义 19 个 `Mode`、6 个 `Boost`、Hint Session 与 headroom 查询。厂商可以把请求映射到 CPU、GPU、内存、idle 或固件约束，也可以忽略不支持的 hint。AOSP 没有规定 `IPower` 直达 `schedutil` 的固定路径。
 
-  `HintManagerService` 的另一条职责是通过 `SessionTag` 做应用类型与电池策略的映射：系统应用优先解析 Launcher 或 SYSUI 标签，普通应用按 `ApplicationInfo.category` 归类（GAME、APP 等），映射到对应的 session mode。例如游戏进程映射到 `SESSION_MODE_GRAPHICS_PIPELINE`，让 Power HAL 知道这个进程需要持续的 CPU/GPU 供给。
+`schedutil` 根据 scheduler utilization、capacity、uclamp 和 cpufreq policy 计算 CPU 频率请求。`rate_limit_us` 来自 policy/driver 条件，不是跨设备固定 10 ms。GPU/devfreq、memory bandwidth、cpuidle、thermal 和 firmware 各有独立控制面。
 
-  再往上看一层，`HintManagerService` 管的是"当前应该给多少电"，而 `BatteryStatsService` 负责"实际用了多少电、算在谁头上"。后者采用 `POWER_COMPONENT_CPU`、`POWER_COMPONENT_WIFI`、`POWER_COMPONENT_BT` 等统一电量组件模型做能耗归因。`EnergyConsumerPowerStatsCollector` 从 SoC 的能量消耗计数器中读取各组件功耗，按 UID 归因到具体应用——CPU 功耗归于前台应用、WIFI 功耗归于网络活跃的 UID。理解这一层才能说清楚"为什么后台 Service 的一次网络同步没有直接烧 CPU，但功耗账单上仍然扣了你的应用"。
+跨 SoC 报告应分列：
 
-### 4.2 基准线的三条腿
+- AIDL 能力与系统请求；
+- vendor HAL 的已知 vote 或执行动作；
+- kernel/firmware 约束和 active governor；
+- CPU/GPU/idle/thermal 的运行观测；
+- PowerStats、Batterystats 或外部仪器的能量结果。
 
-性能优化从有基线开始。三类基准不是取一个就行，是互相校准。
+只观察 `setMode()` 后频率变化，无法证明该请求造成变化；负载、thermal、其他 vote 和 driver 都可能同时影响频率。电池百分比或 Batterystats 模型归因也不能替代物理能量测量。
 
-绝对基准：应用自身的当前性能值。比如"冷启动 P50 1.8s，P99 4.2s"。没有这个，优化完只能说"好像快了点"。
+### 4.2 基线要与问题处在同一口径
 
-相对基准：同一个指标在上一版本的值。冷启动 P50 从 1.8s 变成 2.1s——这个变化比绝对值更能说明问题。相对基准的坑在于"上一版本"的采集条件必须和当前版本一致（同机型、同网络、同系统版本），否则对比没有意义。
+基线通常来自三类数据：
 
-行业基准：同类应用在同一个性能维度上的表现。Google Play Android Vitals 给出的 ANR 率、启动时间、帧率阈值可以作为参考锚点。行业基准当红绿灯用——知道自己相对于基准是高还是低——不要精确对标，因为用户群、机型分布和对方大概率不一样。
+- **当前基线**：目标版本在明确 cohort 中的分布；
+- **历史基线**：上一稳定版本或变更前构建；
+- **外部参考**：Android vitals 阈值、设备能力或公开 benchmark。
+
+比较前要确认指标定义、事件起止点、采样版本、设备群、编译模式和业务入口一致。冷启动 P50 从 1.8 秒变为 2.1 秒的教学示例，只有在样本总体与采集方式可比时才有意义。
+
+外部参考适合判断风险等级，不适合直接当作本项目的性能预算。其他应用的用户群、功能、设备分布和测量协议通常不可见；设备实验室结果也不能代表线上分布。
+
+基线数据应带版本：
+
+- metric schema 与 SDK 版本；
+- trace config 与 Trace Processor 版本；
+- build fingerprint、ABI、刷新率和 thermal 条件；
+- 数据清洗、分桶和异常规则；
+- 原始样本或可追溯的聚合查询。
 
 ### 4.3 Perfetto trace_processor 实战：用 SQL 把 trace 变成结论
 
-Perfetto 的 trace 文件要用 `trace_processor` 解析才有诊断价值。下面给几个实战 SQL，覆盖最常见的"帧为什么掉"和"线程在等谁"两类场景。
+SQL 结果只和输入 trace、Trace Processor 版本及查询本身一样可靠。运行分析前应检查目标进程、数据源、丢包统计、时钟和表结构。
 
-**查询卡顿帧的渲染流水线**
+下面的查询用于列出主线程 `Choreographer#doFrame` 候选，并同时显示进程与线程：
 
 ```sql
--- 找出耗时超过 16ms 的帧，按耗时降序排列
 SELECT
-  id AS frame_id,
+  s.id AS slice_id,
+  s.ts,
+  s.dur / 1e6 AS wall_ms,
+  p.name AS process_name,
+  th.name AS thread_name,
+  s.name
+FROM slice AS s
+JOIN thread_track AS tt
+  ON tt.id = s.track_id
+JOIN thread AS th
+  ON th.utid = tt.utid
+LEFT JOIN process AS p
+  ON p.upid = th.upid
+WHERE
+  th.tid = p.pid
+  AND s.name GLOB 'Choreographer#doFrame*'
+ORDER BY
+  s.dur DESC
+LIMIT 20;
+```
+
+`wall_ms` 是主线程回调的 wall time，不是屏幕 present latency。Android 12 及以上应先看 FrameTimeline 的 deadline 结果，再用 doFrame 回溯 CPU 侧阶段。
+
+得到一个 `slice_id` 后，下面的查询用于查看它的直接子 slice；示例中的 `12345` 要替换为前一条结果：
+
+```sql
+SELECT
+  id,
   ts,
-  ts + dur AS ts_end,
-  dur / 1000000 AS dur_ms,
+  dur / 1e6 AS wall_ms,
   name
 FROM slice
-WHERE name GLOB '*Choreographer#doFrame*'
-  AND dur > 16000000
-ORDER BY dur DESC
-LIMIT 20;
+WHERE parent_id = 12345
+ORDER BY ts;
 ```
 
-这个查询告诉"哪些帧慢了"，但不告诉"为什么慢"——Choreographer 的 doFrame 只是帧的入口计时器，慢的原因可能在它内部的任何一个子阶段。
+该查询只列第一层子节点。某些 View、Compose 或应用 marker 还会继续嵌套，必要时使用 slice hierarchy/ancestor 模块或在 Perfetto UI 中展开。子 slice 缺失也不表示对应阶段没有工作，插桩覆盖可能有限。
 
-**展开帧内各阶段耗时**
+Android 12 及以上 trace 可以加载 FrameTimeline 标准库。下面的查询用于列出未按时完成的帧，并用 display token 和 surface token 配对 Expected/Actual：
 
 ```sql
--- 展开一帧内部的各阶段：input、animation、traversal、draw
-WITH target_frame AS (
-  SELECT id
-  FROM slice
-  WHERE id = <frame_id>
-)
+INCLUDE PERFETTO MODULE android.frames.timeline;
+
 SELECT
-  child.name,
-  child.dur / 1000000 AS dur_ms
-FROM slice AS child
-JOIN target_frame AS frame ON child.parent_id = frame.id
-ORDER BY child.ts;
+  actual.ts,
+  actual.layer_name,
+  actual.display_frame_token,
+  actual.surface_frame_token,
+  actual.dur / 1e6 AS actual_ms,
+  expected.dur / 1e6 AS expected_ms,
+  actual.present_type,
+  actual.jank_type
+FROM actual_frame_timeline_slice AS actual
+JOIN expected_frame_timeline_slice AS expected
+  ON actual.display_frame_token = expected.display_frame_token
+ AND IFNULL(actual.surface_frame_token, -1)
+     = IFNULL(expected.surface_frame_token, -1)
+WHERE actual.on_time_finish = 0
+ORDER BY actual.ts;
 ```
 
-把 `<frame_id>` 换成上面第一句查出来的 `frame_id`，就能看到帧内 input 处理、animation、measure/layout、draw 各花了多少时间。如果绝大多数时间都耗在 draw 里，接下来就去查 RenderThread 的 GPU 提交。
+一枚 display token 可能关联多个 surface frame，聚合前要按目标 layer/process 过滤并检查重复行。`jank_type` 是归因入口；还要回到 UI/RenderThread、SurfaceFlinger、GPU fence 和 scheduler 时间窗验证。
 
-**主线程被 Binder 调用阻塞**
+heapprofd 数据中，allocation 的 `size` 与 `count` 可以为负，表示释放。下面的查询按进程和 callsite 分开计算正向分配流量与净变化：
 
 ```sql
--- 找主线程中对 Binder 的阻塞等待
 SELECT
-  s.name AS blocked_call,
-  s.dur / 1000000 AS blocked_ms,
-  s.ts
-FROM slice s
-JOIN thread_track t ON s.track_id = t.id
-JOIN thread ON t.utid = thread.utid
-LEFT JOIN process ON thread.upid = process.upid
-WHERE (thread.is_main_thread = 1 OR thread.tid = process.pid)
-  AND s.name GLOB '*binder*'
-  AND s.dur > 5000000
-ORDER BY s.dur DESC;
+  upid,
+  callsite_id,
+  SUM(CASE WHEN size > 0 THEN size ELSE 0 END) AS allocated_bytes,
+  SUM(size) AS net_bytes,
+  SUM(CASE WHEN count > 0 THEN count ELSE 0 END) AS allocation_count
+FROM heap_profile_allocation
+GROUP BY upid, callsite_id
+ORDER BY allocated_bytes DESC
+LIMIT 50;
 ```
 
-Binder 调用耗时超过 5ms 就会直接吃掉帧预算。这个查询把"哪些 Binder 调用拖慢了主线程"直接列出来。结合调用名就能判断是系统服务（SurfaceFlinger、AMS）慢了还是 App 自己的 Service 慢了。
+`allocated_bytes` 大表示分配流量高，`net_bytes` 表示采集窗口内净变化；两者都不是 Java heap dump 的 retained size。callsite 还要展开到完整调用链，并检查采样间隔、目标进程和符号化情况。
 
-**内存分配热点（需在 Perfetto config 中开启 heapprofd）**
+heapprofd 是独立 daemon。debug 构建可以覆盖较多目标；user build 通常只允许 profile `debuggable` 或声明 `<profileable android:shell="true"/>` 的应用。表为空时，应先检查数据源与目标资格，再讨论“没有分配”。
+
+下面的查询用于枚举当前 Trace Processor 已加载的表和视图：
 
 ```sql
--- 按函数统计分配次数和大小
-SELECT
-  f.name AS function_name,
-  SUM(a.count) AS alloc_count,
-  SUM(a.size) AS total_bytes
-FROM heap_profile_allocation a
-JOIN stack_profile_callsite c ON a.callsite_id = c.id
-JOIN stack_profile_frame f ON c.frame_id = f.id
-WHERE a.size > 0
-GROUP BY f.name
-ORDER BY total_bytes DESC
-LIMIT 20;
+SELECT name, type
+FROM sqlite_master
+WHERE type IN ('table', 'view')
+ORDER BY name;
 ```
 
-heapprofd 需要在 Perfetto config 中显式开启数据源。heapprofd 是独立的系统守护进程（`/system/bin/heapprofd`），有自己的 init.rc service 定义，不是 `traced_probes` 的一部分。其启停由系统属性 `persist.heapprofd.enable=1`（或 `traced.lazy.heapprofd=1`）控制，默认 `disabled`。
-
-heapprofd 的限制主要在目标进程资格和 SELinux 权限边界。AOSP `external/perfetto/heapprofd.rc` 中的 `DAC_READ_SEARCH` capability 在 `user` 构建会被 SELinux 拒绝，但这不等于 `user` 构建完全不能用 heapprofd。Perfetto 官方文档的边界是：debug Android 构建可以 profile 大多数应用和系统服务；`user` 构建只能 profile manifest 中带 `debuggable` 或 `<profileable android:shell="true"/>` 的应用。对不满足资格的目标进程，profile 会为空；要分析普通系统服务或非 profileable 应用，需要 userdebug/eng 构建或相应 SELinux 策略。
-
-开启后 trace 里会包含每个 malloc/free 的调用栈，上面这条 SQL 直接给出 Top 20 内存分配函数。结合分配次数和总字节数，能找到"频繁小分配"和"偶尔大分配"两类不同的内存问题模式。
-
-上述 SQL 查询基于 Perfetto trace_processor 的标准表结构（`slice`、`thread_track`、`heap_profile_allocation` 等），在 Android 10+ 的 Perfetto trace 中已验证可用。实际使用时，如果 trace 未包含对应的数据源（如未开启 heapprofd 则 `heap_profile_allocation` 表为空），查询会返回空结果而非报错——先用 `SELECT name FROM sqlite_master WHERE type='table'` 确认目标表存在。
+stdlib 模块需要先 `INCLUDE` 才会建立相应视图。自动分析脚本应固定 Trace Processor 版本，并在缺表、空表、丢包或 symbol 缺失时停止对应结论。
 
 ### 4.4 数据分析的三个实用原则
 
-先看分布，再看平均值。平均值掩盖离散度。启动 P50 1.5s 看起来不错，但如果 P99 是 8s，说明有长尾用户在糟糕的体验里——长尾通常是机型、网络或内存状态导致的。修长尾和修中位数是两套策略。
+**看分布与不确定性。** 平均值会隐藏长尾和多峰分布。至少报告样本数、P50/P90/P95/P99 中与业务有关的分位数、离散程度和置信区间。分位数越靠尾部，所需样本通常越多。
 
-切分维度后再看趋势。按机型、系统版本、网络类型、时段分开后看指标变化。如果总体启动变快了但不分维度——可能是某款新机型占比提升拉低了 P50，而老机型的体验在退化。
+**按预先定义的 cohort 切分。** 总体改善可能只是高性能设备占比上升。按版本、设备能力、系统、刷新率、网络与业务入口切分后，还要检查每组样本量，避免在小组上给出稳定结论。
 
-异常值不要自动丢弃。P99.9 的极端值往往是某个机型组合触发了一个边界条件——不是随机的网络中断。单次 OOM 的 trace 比一百次正常的 trace 更有诊断价值。
+**保留异常样本并分类。** trace 损坏、测试脚本失败和业务边界事件处理方式不同。异常值不能自动删除，也不能全部当作产品缺陷；应记录排除理由，并分别报告包含与不包含异常值时的结果。
 
-#### 自适应刷新率场景的帧数据分析
+#### 多刷新率与 FrameTimeline
 
-前面三条原则适用于固定刷新率场景。在多档刷新率设备上，帧预算本身会随窗口变化——Android 17 的帧率提示入口包括 `View.setRequestedFrameRate()`、`WindowManager.LayoutParams.preferredRefreshRate` 和 `SurfaceControl.Transaction.setFrameRate()`，SurfaceFlinger 内部再通过 `FrameRateOverrideMappings` 等机制生成窗口/UID 级 override。在支持多档刷新率的设备上，同一个应用的不同窗口可能以不同的帧预算运行——「帧超时」的定义不再固定为 16.6ms。这一能力的实现依赖 SurfaceFlinger 的 VSync 调度机制和 Choreographer 的帧回调管线（见 §2.3 和 §2.6）。
+60 Hz、90 Hz 和 120 Hz 的显示周期约为 16.7 ms、11.1 ms 和 8.3 ms。这些数字适合解释显示周期，不适合给所有 `doFrame` slice 设置统一 jank 阈值。
 
-这一变化对数据分析的三个关键影响：
+Android 17 中，应用与系统可通过 `View.setRequestedFrameRate()`、Window 属性、`SurfaceControl.Transaction.setFrameRate()` 和 layer vote 影响帧率选择。设备还可能有 frame-rate override、低刷新率内容、分屏、外接显示器或动态模式切换。
 
-**帧预算的动态性**：在自适应刷新率场景下，Perfetto trace 中每个 Choreographer doFrame 的超时阈值取决于该帧所在窗口的当前目标帧率。60Hz 对应的帧预算是 16.6ms，90Hz 是 11.1ms，120Hz 是 8.3ms。分析时必须先确认当前窗口的目标帧率，否则会把正常帧误判为卡顿。
+分析顺序应是：
 
-**FrameTimeline Expected Timeline 的校准作用**：FrameTimeline 记录了每帧的 Expected Presentation Time 和 Actual Presentation Time。Expected Timeline 已经反映了 FrameRateOverrides 的干预结果——它将目标帧率换算为预期的 VSync 序列。分析时优先看 Expected 和 Actual 之间的差值（即帧的 deadline miss），而不是直接用 16ms 做阈值。
+1. 在 `actual_frame_timeline_slice` 找目标 layer 的异常帧；
+2. 用 Expected Timeline 获取该帧的预算和 token；
+3. 检查 `on_time_finish`、`present_type` 与 `jank_type`；
+4. 沿 token 和时间窗回到 MainThread、RenderThread、GPU 与 SurfaceFlinger；
+5. 检查 display mode、layer frame-rate vote 与切换事件；
+6. 按稳定帧率区间统计，单列切换窗口。
 
-**FrameRateOverrides 与 WindowManager 的交互**：FrameRateOverrides 不是独立生效的。当应用或 WindowManager 通过 `WindowManager.LayoutParams.preferredRefreshRate`、`View.setRequestedFrameRate()` 或 `SurfaceControl.Transaction.setFrameRate()` 为窗口/Surface 指定帧率偏好后，SurfaceFlinger 会据此调整相关 Layer 的帧率选择。但最终的 VSync offset（即 App 收到 VSync 信号到 SurfaceFlinger 提交帧之间的时间窗口）由 SurfaceFlinger 综合所有可见窗口的帧率后统一计算——如果有多个窗口以不同帧率同时可见，offset 会照顾到最高帧率的窗口。因此在分屏或多窗口场景下，低帧率窗口的实际帧预算可能比其目标帧率对应的理论值更大。
+Expected/Actual Timeline 已携带系统对该帧的目标和结果，优先级高于固定 16 ms 规则。`actual.dur` 也不是物理上屏时间；它覆盖 App/SF 记录的完成区间，具体 present 语义还要结合 FrameTimeline 字段和 fence。
 
-**VSync 偏移动态调整**：在 Android 17 中，SurfaceFlinger 会根据当前帧率动态调整 VSync offset——帧率越低，offset 越大，给 App 的主线程留更多渲染时间。VSync 偏移计算涉及 SurfaceFlinger Scheduler 模块（`frameworks/native/services/surfaceflinger/Scheduler/`）中的三个协作组件：`VSyncTracker.h` 定义 VSync 预测接口，`VSyncPredictor.cpp` / `VSyncReactor.cpp` 维护预测模型；`VsyncModulator.cpp/h` 按 App/SF 两组 phase offset 调制偏移量；`VSyncDispatch.h` 与 `VSyncDispatchTimerQueue.cpp` 管理 VSync 信号的 dispatch 时序。三者协作完成 VSync 偏移的动态调整。帧率切换时三者协作重新计算 phase offset 并控制 VSync 信号发出的时机。帧率切换点附近的帧容易出现 deadline miss，因为 offset 调整有延迟——新帧率的 offset 在上一帧的渲染周期已确定，而上一帧的 offset 是基于旧帧率计算的，导致切换后的第一帧或前两帧使用了不匹配的 offset。
-
-Perfetto trace 中的可观测字段：
-
-```sql
--- 枚举 trace 中的帧率 / VSync / refresh 相关 counter，再按设备实际 track 名筛选
-SELECT
-  c.ts,
-  t.name AS track_name,
-  c.value
-FROM counter c
-JOIN counter_track t ON c.track_id = t.id
-WHERE t.name GLOB '*fps*'
-   OR t.name GLOB '*Vsync*'
-   OR t.name GLOB '*vsync*'
-   OR t.name GLOB '*refresh*'
-ORDER BY c.ts;
-```
-
-```sql
--- 查询 FrameTimeline Expected vs Actual 差异，按帧做 jank 判定
-WITH frames AS (
-  SELECT
-    e.surface_frame_token,
-    e.display_frame_token,
-    e.ts AS expected_start_ns,
-    e.ts + e.dur AS expected_end_ns,
-    a.ts AS actual_start_ns,
-    a.ts + a.dur AS actual_end_ns,
-    a.jank_type,
-    a.present_type,
-    a.on_time_finish,
-    a.layer_name
-  FROM expected_frame_timeline_slice e
-  JOIN actual_frame_timeline_slice a
-    ON a.surface_frame_token = e.surface_frame_token
-   AND a.display_frame_token = e.display_frame_token
-)
-SELECT
-  surface_frame_token,
-  display_frame_token,
-  layer_name,
-  jank_type,
-  present_type,
-  on_time_finish,
-  (actual_end_ns - expected_end_ns) / 1000000.0 AS miss_ms
-FROM frames
-WHERE actual_end_ns > expected_end_ns
-   OR on_time_finish = 0
-   OR jank_type != 'None'
-ORDER BY miss_ms DESC
-LIMIT 20;
-```
-
-实战建议：做帧率分析时，第一步确认 trace 期间窗口的目标帧率是否发生过变化（查 `SurfaceFlinger` 的 `display_connected_fps` counter 或 `vsync_source` 的 `rate` 字段）。如果目标帧率在变化，不要用固定的 16.6ms 当作合格线——改用 FrameTimeline 的 deadline miss 字段，或者按帧率分段统计。
+不要依赖某个产品上偶然出现的 counter 名来建立通用 SQL。可以先枚举 `counter_track`、SurfaceFlinger track 和 trace args，再把目标机确认过的名称写入产品分析脚本。
 
 
 ## 5. 性能问题根因分析
 
 ### 5.1 从现象到原因，中间缺的是可验证的步骤
 
-根因分析最常犯的错误：看到一个可疑的调用或者一个耗时的函数，就直接定性为"原因"。衡量标准——这个判断能不改代码就验证吗？
+看到可疑调用后，先写成假设：“在目标帧窗口内，主线程等待 X；移除或异步化 X 后，FrameTimeline overrun 应下降。”这句话同时给出了对象、机制、干预和预期结果。
 
-5 Whys 的实际用法，用卡顿排查演示：
+一条调查链可以这样展开：
 
-1. 为什么页面卡？→ 主线程 doFrame 超过 16ms
-2. 为什么 doFrame 超时？→ measure/layout 花了 11ms（正常情况下 3ms）
-3. 为什么 measure 突然变慢？→ 某个 View 的 onMeasure 被重复调用了 4 次
-4. 为什么重复调用？→ RecyclerView item 的动画触发了 parent 重新 measure，而 parent 的布局依赖链没有 cut
-5. 为什么动画会触发 parent 布局？→ item 动画改了 View 的 margin，margin 影响 parent 的测量尺寸
+1. FrameTimeline 标出目标 layer 的 `AppDeadlineMissed`；
+2. 同一 token 的主线程时间窗包含较长 traversal；
+3. slice/call stack 显示某个 View 多次进入 measure；
+4. 源码与布局日志显示动画持续修改影响父布局尺寸的属性；
+5. 固定属性或移除动画后，多次 measure 与 overrun 同时下降。
 
-到第五层才定位到 root cause——不是"measure 太慢"，而是一个动画改了不该改的属性，导致布局依赖链被重新触发。每一层"为什么"都对应一个可以独立验证的检查点——查 trace、看调用栈、改代码做对照——而不是在脑子里推导。排查卡顿时如果发现主线程被 Binder 调用阻塞，见 §4.3 的 Perfetto SQL 示例和 §1.13 的 Handler 消息调度机制。
+每一步都有独立证据，并允许替代解释进入调查。若异常帧还伴随 CPU runnable、GC 或 display mode 切换，就要通过调度时间和对照实验排除它们。
 
-Fishbone（鱼骨图）的用法是从大类到具体线索的穷举框架。排查时按这几个分支列 checklist：人员（改动者、review 流程）、流程（CI 性能回归检查是否跑了、基线是否更新）、代码（最近提交的 diff、重构影响的模块边界）、环境（设备档位、系统版本、网络条件）。每一条线索要么验证通过、要么排除，不能靠感觉选。
+### 5.2 管理替代假设
 
-### 5.2 两个高频排查手段
+一个现象常有多个解释。可建立“假设—预期观测—反证—状态”表：
 
-Call Stack / Flame Graph 分析：火焰图看宽度——宽的地方就是热点。Perfetto trace 导出到 Flame Graph 工具后，先看占比最高的 3-5 个调用链，再逐个做"这条路是否合理"的判断。不需要修每一个 hotspot——只处理那些调用次数多、单次耗时也高的。
+| 假设 | 预期观测 | 能推翻它的结果 |
+| --- | --- | --- |
+| 主线程 CPU bound | wall time 接近 on-CPU time，sample 集中在稳定调用链 | 大部分时间为 runnable/blocked |
+| 同步 Binder 阻塞 | UI 线程 transaction 与帧窗口重叠，对端工作可定位 | transaction 异步或不在目标线程 |
+| GPU bound | App CPU 按时，GPU completion/fence 超过预算 | GPU 完成及时，SF 或 display 侧超时 |
+| Java 泄漏 | 多次 dump 中对象数量/retained size 增长，生命周期已结束 | 对象在稳定点回落或属于有界缓存 |
 
-内存分析：heap dump 看两个指标——retained size（这个对象及其引用子树占了多少内存）和 alloc count（这个类型的对象被分配了多少次）。retained size 大 + alloc count 高 = 内存泄漏或缓存设计不当。单独 retained size 大但 alloc count 低，通常是某次大对象分配后没释放，这时候看 GC root path。
+### 5.3 火焰图与内存工具的解读边界
+
+CPU 火焰图的宽度通常表示采样命中或累计 on-CPU 时间，具体取决于输入。它不显示 blocked wall time，也不能仅凭宽度判断代码是否可删除。先限定场景和线程，再检查调用链、样本数、符号化和采样频率。
+
+Java heap dump 提供对象图、GC root、dominator 与 retained size；allocation profile 提供分配时间序列；heapprofd 面向 native allocation；PSS/RSS 面向驻留页。泄漏判断需要对象越过预期生命周期并呈增长趋势。单次 retained size 大只说明该对象图在采样时占用较多。
 
 ## 6. 优化方案设计
 
-### 6.1 20/80 法则在性能优化里的具体含义
+### 6.1 先移除无效工作，再缩短必要工作
 
-代码 profiling 出来的热点图中，常常是 20% 的函数占了 80% 的执行时间。这不等于"找到热点就改热点"——还要问两个问题：这个热点能不能从路径上去掉（而不仅仅是优化它），以及优化这个热点会不会把瓶颈转移到另一个地方。
+热点集中度要从 profile 测得，不能预设成 20/80。对每个热点依次检查：
 
-如果一个函数在主线程上耗时 12ms，直接把它拆到后台线程——这是去掉了路径上的热点。如果在原地用更快的算法把 12ms 优化成 6ms——瓶颈还在，只是变轻了。前者是结构性优化，后者是增量优化。优先前者。
+1. 这项工作是否属于当前用户路径；
+2. 结果是否已经缓存或可以复用；
+3. 是否能减少次数、数据量或对象数量；
+4. 是否能改变算法或数据布局；
+5. 是否能延迟到业务允许的时间点；
+6. 能否并行，以及调用方是否仍需同步等待；
+7. 改动会把成本转移到哪里。
 
-### 6.2 渐进式实施：三档分类法
+把 12 ms 工作提交到后台线程，只有在当前路径不等待结果、线程安全且没有制造 CPU 竞争时，才会缩短用户可见路径。否则只是改变执行线程，系统总工作量和完成时间可能不降。
 
-三层不能只用工作量划分，要按风险和对局部体验的改善程度分：
+### 6.2 按风险安排实施与回退
 
-| 层级 | 典型内容 | 风险 | 验证周期 |
-|---|---|---|---|
-| 快速修复 | 单函数算法优化、不合理的同步锁去掉、冗余 measure 剪枝 | 低 | 一天内跑完灰度 |
-| 中期优化 | 线程模型调整、启动框架重构、缓存策略重设计 | 中 | 至少一周，覆盖周末流量波动 |
-| 长期优化 | 架构级改动（模块化拆分、渲染管线重构） | 高 | 按版本迭代，每步有回退方案 |
+| 风险 | 典型改动 | 验证要求 |
+| --- | --- | --- |
+| 局部可逆 | 去除重复计算、缩小数据、修正明显锁范围 | 单元/基准、目标场景、守护指标 |
+| 跨模块 | 调整线程、缓存、Provider/SDK 初始化 | 多入口、生命周期、压力与灰度对照 |
+| 架构级 | 数据管线、渲染路径、模块边界重构 | 分阶段开关、容量测试、长期兼容与回滚 |
 
-快速修复不能攒一堆一起上线——看似"改很小"的三个改动放到同一次灰度里，出了问题无法定位是哪个。每次只推一个快速修复，验证通过再推下一个。中期和长期优化按版本节奏走，不用追求一次新版把所有优化都带上。
+验证窗口由事件频率、方差、流量周期和风险决定，不用“一天”“一周”作为统一标准。每个阶段应有独立开关或可识别版本，便于定位回归。
 
 ### 6.3 常见优化手段的适用边界
 
-启动优化：布局层级裁剪（减少 `ViewGroup` 嵌套）、延迟初始化（非首屏模块的 `ContentProvider` 改为懒加载）、闪屏策略（避免空白窗口）。关键不是在 `Application.onCreate` 里多线程——多线程初始化如果依赖关系没理清，结果是把单线程的 1.5s 变成了多线程的 1.5s（总耗时没变，只是分散了）。
-
-流畅度优化：减少过度绘制（开发者选项打开 GPU 过度绘制检测，确认红色区域）、硬件加速与软件绘制的边界处理（某些自定义 View 的 `onDraw` 在硬件加速关闭时走到不同路径）、RenderThread 的帧提交时机（VSync offset 配置不当会导致帧延迟一整拍）。
-
-内存优化：引用释放——匿名内部类持有外部 Activity 引用是最常见的泄漏源。数据结构选型——`HashMap` vs `SparseArray` 对 int key 场景的内存差异显著。缓存策略——LRU 的容量不是拍脑袋定，是按"应用在前台期间可能访问到的最大缓存集"反推出来的。更多内存优化手段（heapprofd 分配追踪、GC 暂停分析）见第四部分内存管理章节。
-
-网络优化：减少请求次数（聚合接口、GraphQL）、协议升级（HTTP/2 多路复用替代 HTTP/1.1 的六连接限制）、头部压缩（HPACK/QPACK）。但协议升级有迁移成本——换 HTTP/2 之前先确认接入层是否支持、客户端的证书链是否兼容。
+- **启动**：减少首屏前必要工作，显式管理 SDK/Provider 初始化依赖；延迟任务要定义最晚完成点、失败和进程重启行为。
+- **流畅度**：从 FrameTimeline 归因到 UI、RenderThread、GPU 或 SF 后再改；过度绘制颜色只能说明覆盖次数，不能直接量化 GPU 瓶颈。
+- **内存**：按对象、native allocation、映射页和设备内存分别处理；数据结构与缓存容量用目标 workload 测量，不预设 `SparseArray` 或对象池总会更省。
+- **网络**：先分解 DNS、connect、TLS、TTFB 和 body；聚合、缓存、压缩或协议升级都要检查错误语义、服务端支持与流量代价。
+- **能耗**：比较相同工作量下的能量、耗时和温度；降低瞬时功率但延长任务可能增加总能量。
 
 ## 7. 效果验证
 
-### 7.1 验证的铁三角
+### 7.1 三层验证
 
-量化验证、对照验证、回归验证，三者缺一条都不是完整的验证。
+**机制验证**检查预期的中间量是否变化。例如减少重复 measure 后，要看到 measure 次数或 traversal wall time 下降。
 
-量化验证：优化前后的指标在相同条件下的数据差异。不是看一次对比，是至少 3 天的数据窗口期——覆盖工作日/周末、白天/深夜的流量模式差异。只看发布后 2 小时的指标看不出真实的改善幅度。
+**结果验证**检查用户侧指标。实验组与对照组应采用相同入口、构建条件和样本规则；可随机化运行顺序或按同一设备配对，降低设备差异。
 
-对照验证：灰度发布时实验组和对照组的性能差异。对照的前提是分组随机（不能把新用户都放实验组、老用户都放对照组）且样本量够——P99 的差异需要比 P50 更大的样本量才有统计意义。
+**回归验证**检查正确性、Crash/ANR、能耗、温度、内存和其他场景。主指标改善但守护指标退化时，应按预设阈值停止发布或回滚。
 
-回归验证：优化目标以外的指标有没有变差。例如启动优化后首页帧率出现了退化，这个优化就是不完整的。下文数据为假设性示例，实际退化幅度取决于具体 App 的代码路径和机型分布。回归检查要自动化——每次性能改动后自动跑一遍所有性能用例，不是靠人工回忆"上次好像看过那个指标"。
+报告至少包含样本数、点估计、置信区间、分组方法和异常规则。P99 的稳定估计通常比 P50 需要更多样本；样本不足时直接标为不确定。
 
 ### 7.2 指标选择：不只看平均，要分场景看分布
 
-- 启动时间：P50 和 P99 一起看。P50 决定多数用户的体验，P99 暴露长尾问题。
-- 帧率：不只看平均帧率——60fps 下如果每 60 帧掉 1 帧，平均还是 59fps，但用户看到的就是一秒一卡。用 frame deadline miss rate 或 Janky frame count 替代平均帧率。
-- 内存：峰值 PSS 和 GC 暂停次数。GC 导致的 stop-the-world 暂停如果超过 10ms，UI 线程就会被明显感知到。
-- 网络：分段耗时（DNS、connect、TLS、TTFB、body read）的 P50/P90/P99，而不是只看总耗时。
+- **启动**：按 cold/warm/hot、入口和编译模式分别报告 TTID、TTFD 与业务 ready；
+- **帧**：使用 frame overrun、`on_time_finish`、jank type 和连续异常帧，平均 FPS 只作辅助；
+- **响应**：输入到反馈、输入到呈现、任务 wall/on-CPU time 与 ANR；
+- **内存**：RSS/PSS/USS、Java/native heap、GC pause、allocation 与进程退出原因分列；
+- **网络**：DNS、connect、TLS、TTFB、body、失败与重试分列；
+- **能耗**：能量/工作量、完成时间、温度与性能持续性一起报告。
+
+GC pause 是否影响 UI 取决于它与帧、输入或业务 deadline 的重叠。固定 10 ms 不能作为所有刷新率和场景的感知阈值。
 
 ## 8. 性能优化知识管理
 
-### 8.1 问题库的价值：下次不用从零排查
+### 8.1 每个结论都要能复现
 
-性能问题库的标准是：每次修完后把排查路径、证据链、根因和修复方式记录下来，而不是随手记一笔症状。一个条目至少包含：
+一个问题条目至少包含：
 
-- 症状描述：用户/监控看到什么现象
-- 复现条件：机型/系统版本/网络/操作步骤
-- 排查路径：从哪个工具开始、看了什么数据、按什么顺序排除
-- 根因：最终定位到的代码层面原因
-- 修复方式：改了什么、为什么这样改
-- 验证结果：修完后指标的变化
+- 症状、业务后果和发现渠道；
+- build、设备、系统、输入数据与操作步骤；
+- metric schema、trace config、工具版本和原始文件哈希；
+- 假设、替代解释与排除证据；
+- 源码 commit/tag、修改和开关；
+- 修复前后数据及统计查询；
+- 副作用、适用范围、回退条件与负责人。
 
-有这份记录，团队里其他人遇到相似症状时不需要从头排查。问题库按性能类型归档（启动/流畅度/内存/网络/电量/温控），每种类型再按根因分类（框架使用问题/业务逻辑问题/系统行为）。
+截图适合沟通，不适合单独保存为证据。应同时保存可重跑的查询、原始数据位置和版本；trace 含敏感信息时，保存受控引用、脱敏摘要和访问策略。
 
-### 8.2 文档与分享：知识资产化
+### 8.2 区分机制文档与操作手册
 
-技术文档和操作文档分开。技术文档回答"为什么这样设计"，操作文档回答"怎么用这个工具/跑这个 case"。两者混在一起会让排查流程的读者找不到入口——他需要的是"这条命令怎么跑"，中间夹了半页设计理由，读完就忘了命令。
+机制文档解释源码、数据语义和版本边界；操作手册给出环境、命令、预期输出、失败处理和清理步骤。两者互相链接，但各自可以独立更新。
 
-团队分享的节奏比形式重要。一个双周 20 分钟的案例复盘，比季度的 2 小时正式汇报更能积累实战经验。案例复盘的三要素：问题原貌、排查过程（保留走弯路的步骤，删掉就等于删了最有价值的部分）、最终结论和 check 清单。
+复盘应保留被证伪的假设，因为它们说明哪些迹象容易误导。摘要至少给出问题、证据、干预、结果和仍未知的部分；没有原始数据支持的数字要标成示例或删除。
 
 ## 9. 最佳实践：在开发流程中嵌入性能意识
 
 ### 9.1 开发阶段：不在收尾时才看性能
 
-性能问题改得越晚越贵。开发阶段的三个嵌入点：
+需求评审把性能目标写成指标、总体和场景。教学示例“搜索结果首屏 P50 小于 500 ms”还不够，必须补充起点、终点、设备组、缓存与网络条件。
 
-需求评审：把性能需求写成可验证的指标。"搜索结果页首屏渲染 < 500ms（P50），< 1.2s（P99）"——不是泛泛地说"页面要快"。指标精确到这个程度，研发和 QA 才能共同验证。
+方案评审检查主线程工作、线程/进程数量、内存峰值、I/O、网络、功率与失败路径。无法估算的高风险部分先做小型实验，并保存 profile。
 
-技术方案评审：新增模块的性能评估——引入的新线程数、内存峰值预估、网络请求的频次和时机。如果评估结果是"不确定"，就要求先做一次 prototype profiling 再进入正式开发。
+CI 只适合阻断稳定、可重复且归因清楚的指标。物理设备噪声、温度和共享 runner 会造成波动；门禁应使用固定环境、重复样本、统计区间和明确的重试规则。发生回归时保存 trace，而非只输出一个红灯。
 
-CI 性能回归：每次 MR 自动跑性能基准测试。启动耗时、核心页面帧率、内存峰值——这三个指标的回归检查是 CI 流水线的必过门禁。门禁的阈值不能设得太松（等于没门禁），也不能设得太紧（变成无意义的红灯）。SDM（Selective Dexopt Manager）等 Android 17 构建优化机制也可以在 CI 流水线中纳入编译耗时回归检查——SDM 的详细机制见 §16.9。
+不是每个提交都要运行全部长时功耗或尾部分位数测试。快速 benchmark 可在提交阶段运行，设备实验室、耐久测试和大样本统计按风险与发布阶段安排。
 
-### 9.2 发布阶段：灰度是验证，不是仪式
+### 9.2 发布阶段：用对照验证线上总体
 
-灰度发布的目的是验证真实用户在真实环境里的体验——不是在办公室 Wi-Fi 下的开发者设备上。灰度要回答：实验组的主要性能指标是否优于对照组、是否有新增的 ANR/Crash、长尾用户（低端机、弱网、低电量）的体验是否有退化。
+灰度需要稳定的实验分桶、曝光定义和守护指标。实验组与对照组应来自可比总体，避免把新用户、某地区或高端设备集中到一侧。
 
-灰度数据的回溯周期至少 48 小时。发版后 2 小时的指标波动大部分是下载和安装行为导致的，不是实际的用户使用数据。
+观察窗口应覆盖业务周期并获得足够曝光。下载、安装、升级后首启和缓存重建可以单独分组，不能统一解释成正常使用性能。发布前预设自动暂停与回滚条件，避免看到结果后再修改阈值。
 
 ### 9.3 运维阶段：监控比优化更需要维护
 
-线上性能监控的维护成本容易被低估。三个容易出问题的地方：
+线上监控同时监视业务指标和采集系统本身：
 
-阈值更新：App 版本迭代后，很多操作的耗时基准变了——上一个版本的"正常耗时"可能是这一版的"偏慢"。按版本更新性能基线，否则报警要么不响，要么天天响。
+- schema/version、事件量、采样率、缺失率和上报延迟；
+- cohort 占比与设备分布；
+- 指标突变是否来自埋点或分桶变化；
+- 告警是否指向可操作的版本、页面和入口；
+- 回滚、远程开关和证据采集是否仍可用。
 
-埋点稳定性：关键性能埋点的采样率不能悄悄掉下去。线上监控面板上"P99 耗时为 0"不是好消息——多半是埋点数据丢了。
-
-应急机制：性能严重退化时，除了报警之外要有回滚路径。对比度发布和 A/B 实验系统，保证问题版本可以在 30 分钟内切回对照组流量。
+面板出现零值时，应先区分没有事件、字段缺失和聚合故障。基线更新要保留旧口径与迁移说明，不能覆盖历史后继续做跨版本比较。
 
 ## 10. 案例复盘：三个典型场景的排查思路
 
-以下案例不标注具体数值——同一类问题的表现数字在不同 App、不同机型上差异很大。重点在呈现排查路径的走法，不是比较绝对值。
+以下案例是调查模板，不来自特定应用或设备。
 
 ### 10.1 启动慢：排查从哪个阶段切入
 
-症状：某版本发布后，用户反馈"打开 App 变慢了"。线上指标显示冷启动 P50 增加了约四成。
+症状：某版本发布后，冷启动 TTID 分布相对对照组变差。
 
 排查路径：
 
-1. 看线上分布——所有机型都变慢还是只有特定机型？如果是特定机型，先缩小到 SoC/系统版本/内存配置三个维度。
-2. 取受影响机型的 Perfetto trace，对照上一版本同机型的 trace，在 Choreographer 的 doFrame 之前找差距——差距在 `Application.onCreate`、`Activity.onCreate`、还是首帧绘制。
-3. 如果在 `Application.onCreate`，逐个看 `ContentProvider` 的初始化耗时——`ContentProvider.onCreate()` 在 `Application.onCreate()` 之前执行。新增的 SDK、新增的 `ContentProvider` 经常是启动变慢的来源。
-4. 定位到具体初始化项后，判断是否可以延迟——非首屏模块的初始化移到第一次使用时，或放到 IdleHandler 里。
+1. 用 `ApplicationStartInfo` 或实验协议确认 cold/warm/hot、入口与启动组件；
+2. 检查编译模式、Baseline Profile、安装/升级状态和数据集是否一致；
+3. 在目标 cohort 取得前后版本 trace，对齐 launch、fork、bind、Application、Activity、首帧和 fully drawn；
+4. 在变长区间内检查 Provider/SDK、主线程、Binder、I/O、GC、runnable 和渲染；
+5. 从调用栈和源码提出单一假设，并用开关或最小改动复测；
+6. 同时检查 TTID、TTFD、首交互、Crash/ANR 和业务内容正确性。
 
-常见陷阱：多线程初始化如果没理清依赖关系，启动时间不变但分散到了多个线程——冷启动统计到的"完成"时间没变，但用户看到首帧的时间可能反而变晚了，因为多个线程同时争 CPU。
+`ContentProvider.onCreate()` 通常早于 `Application.onCreate()`，但不能据此把所有 Provider 都列为根因。延迟初始化还要定义依赖、完成时限、进程重建和首次使用失败；`IdleHandler` 的执行时机不构成 deadline 保证。
 
 ### 10.2 卡顿：用 Perfetto 定位帧瓶颈
 
@@ -616,47 +682,56 @@ CI 性能回归：每次 MR 自动跑性能基准测试。启动耗时、核心�
 
 排查路径：
 
-1. 用 Perfetto 采集包含 `gfx`、`view`、`wm`、`sched` 数据源的 trace。
-2. 在 `trace_processor` 中查 Choreographer doFrame 耗时超过 16ms 的帧（见 4.3 节 SQL）。
-3. 对超时帧展开内部阶段：input → animation → traversal → draw。多数卡顿卡在 draw 阶段。
-4. 进入 draw 阶段后，看 RenderThread 的 GPU 提交时间线和主线程的 Canvas 绘制调用——RenderThread 在等 GPU fence 时主线程如果同时在准备下一帧的绘制数据，就会出现排队等待。
-5. 如果每次卡顿的触发点都是 RecyclerView 滑动到某个特定 item 时，重点查那个 item 的布局复杂度（嵌套层级、`onBindViewHolder` 的耗时、decode bitmap 的位置）。
+1. 采集 FrameTimeline、gfx/view/wm、sched、频率和目标业务 marker；
+2. 在目标 layer 的 Actual Timeline 找异常 token，查看 jank type 与 Expected Timeline；
+3. 若为 App 侧 deadline，检查 MainThread、RenderThread、Binder、锁、GC、I/O 和 runnable；
+4. 若为 SurfaceFlinger/GPU/display 侧，检查 buffer、GPU fence、composition、HWC 与 display mode；
+5. 把异常帧与具体 item、图片、动画或输入事件对齐；
+6. 修改后比较异常帧比例、连续性、输入延迟和正确性。
 
-常见陷阱：把"平均帧率正常"等同于"没有卡顿"。平均帧率不反映单帧抖动——每秒 60 帧里如果有 10 帧超过 16ms，剩下的 50 帧把平均拉上来了，但用户体验是每 100ms 一次微卡。
+平均 FPS 会掩盖短时停顿。分析应保留 frame overrun 分布、连续异常帧和刷新率切换区间。
 
-### 10.3 OOM：从分配轨迹反推泄漏源头
+### 10.3 内存上涨与 OOM
 
-症状：低端机用户频繁遇到 OOM 崩溃，崩溃前 PSS 持续上涨。
+症状：某设备群的进程内存上涨，并出现 OOM 或系统终止。
 
 排查路径：
 
-1. 开启 heapprofd 采集目标机型在典型使用路径下的内存分配 trace（见 4.3 节 SQL）。
-2. 按 retained size 排序，确认哪类对象占用最多。
-3. 对 retained size 最高的对象类型，看 GC root path——哪条引用链让它无法被回收。
-4. 常见场景：`Activity` 被 `Handler`（匿名内部类）持有、单例持有 `Context` 的引用传入后未清理、`Bitmap` 在 `ImageView` 不可见后未 `recycle`、`WebView` 的资源释放不彻底。
-5. 用 LeakCanary 做开发阶段的自动检测，CI 中集成 LeakCanary 的 leak 检测，阻止新的泄漏引入。
+1. 用 `ApplicationExitInfo`、异常类型和日志区分 Java OOM、native allocation failure、LMKD/MemoryLimiter 与其他 kill；
+2. 同时记录 RSS/PSS、Java heap、native heap、graphics/memtrack、SwapPss 和进程集合；
+3. Java heap 使用多份 heap dump 比较对象数量、retained size、GC root 与生命周期；
+4. native heap 使用 heapprofd 查看 allocation/free、callsite 和净变化；
+5. 文件映射或共享页上涨时检查 smaps 分类与映射关系；
+6. 复现场景结束后观察是否回落，并与正常样本和修复后样本对照。
 
-常见陷阱：PSS 高不等于泄漏。先区分"峰值正常但未及时释放"（说明某个生命周期的 onDestroy 后还有引用）和"持续上涨不回落"（经典泄漏模式），两类问题的定位路径不同。
+PSS 高或单次 retained size 大都不能单独证明泄漏。LeakCanary 可帮助开发阶段发现部分 Java 引用保留；它不能覆盖 native、graphics、mmap 或系统归因问题。
 
 ## 11. 参考资料
 
-### 官方文档
-- [Android Performance Vitals](https://developer.android.com/topic/performance/vitals) — Google 官方性能指标定义与最佳实践
-- [Android Profiler](https://developer.android.com/studio/profile/android-profiler) — Android Studio 内置性能分析工具
-- [Perfetto 文档](https://perfetto.dev/) — 系统级 tracing 工具完整文档，含 trace_processor SQL 参考
-- [Perfetto SQL 参考](https://perfetto.dev/docs/analysis/sql-tables) — trace_processor 所有 SQL 表结构和查询示例
-- [Battery Historian](https://developer.android.com/topic/performance/battery-historian) — 电池使用分析工具文档
+### Android 17 与 kernel
 
-### 开源工具
-- [LeakCanary](https://square.github.io/leakcanary/) — Square 开源的内存泄漏检测库
-- [Systrace](https://source.android.com/devices/tech/perf/systrace) — Android 8-9 的 tracing 工具
-- [Android GPU Inspector](https://developer.android.com/studio/profile/android-gpu-inspector) — GPU 性能分析工具
+- [Android 17 `external/perfetto`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/)
+- [Android 17 `perfetto.rc`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/perfetto.rc)
+- [Android 17 `TraceConfig`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/protos/perfetto/config/trace_config.proto)
+- [Android 17 Power HAL AIDL v7](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/aidl/)
+- [Android common kernel 6.18 `cpufreq_schedutil.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c)
 
-### 书籍
-- [《高性能 Android 应用开发》](https://book.douban.com/subject/27027548/)
-- [《Android 性能优化实战》](https://book.douban.com/subject/26740779/)
-- [《深入理解 Android 性能优化》](https://book.douban.com/subject/30264920/)
+### 工具与指标
 
-### 延伸阅读
-- [Android Performance Patterns (YouTube)](https://www.youtube.com/playlist?list=PLWz5rJ2EKKc8j2Bd8Bd9-2O9V1zr-hBFY) — Google 官方性能模式视频系列
-- [Android Vitals](https://developer.android.com/topic/performance/vitals) — Google Play 的 ANR/启动/帧率评分体系
+- [Android vitals](https://developer.android.com/topic/performance/vitals)
+- [Android Studio Profiler](https://developer.android.com/studio/profile/android-profiler)
+- [Macrobenchmark](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
+- [ProfilingManager 系统触发式 profiling](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture)
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- [PerfettoSQL 标准库](https://perfetto.dev/docs/analysis/stdlib-docs)
+- [Perfetto heapprofd](https://perfetto.dev/docs/data-sources/native-heap-profiler)
+- [Simpleperf](https://android.googlesource.com/platform/system/extras/+/android-17.0.0_r1/simpleperf/doc/README.md)
+- [Battery Historian](https://developer.android.com/topic/performance/power/battery-historian)
+- [LeakCanary](https://square.github.io/leakcanary/)
+
+### 库内专题
+
+- [Perfetto SQL 查询手册](./part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md)
+- [Android 17 Power HAL 与 schedutil 边界](./part1-fundamentals/ch05-cpu-power/5.22-android17-soc-vendor-power-hal-schedutil-loop.md)
+- [ApplicationStartInfo 启动观测](./ch12-startup/12.1-application-start-info-framework/12.1.--启动框架与任务编排--applicationstarti.md)
+- [Android View 标准渲染管线](./part2-performance/ch18-rendering-pipelines/02-android-view-standard.md)
