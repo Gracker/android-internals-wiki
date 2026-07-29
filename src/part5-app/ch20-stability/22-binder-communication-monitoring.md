@@ -83,7 +83,7 @@ Binder 监控最容易出现的误区，是把一次方法调用的总耗时直�
 | 自有 AIDL client wrapper | 是 | 逻辑接口、方法、调用线程、同步端到端耗时、客户端异常 | 不能拆分服务端排队和执行；`oneway` 不代表远端完成 |
 | 自有 AIDL server wrapper | 是 | 服务端入口、执行耗时、业务结果 | 没有请求 ID 时，跨进程样本难以可靠关联 |
 | 系统 API 调用点插桩 | 是 | 某个公开 manager API 的调用耗时与异常 | 看到的是 framework API，不一定能取得底层 transaction code |
-| `Debug.getBinderSentTransactions()` / `getBinderReceivedTransactions()` | 是 | 本进程累计发送、接收 transaction 数 | 没有接口名、目标、耗时和失败原因 |
+| `Debug.getBinderSentTransactions()` / `getBinderReceivedTransactions()` | 是 | 本进程累计发送、接收 transaction 数 | 读取失败返回 -1；没有接口名、目标、耗时和失败原因 |
 | `Binder.ProxyTransactListener` | 否，隐藏/System API | 当前进程 Java Binder proxy 的全局回调 | 不覆盖全部 native/Rust 路径；位于关键路径，且禁止在回调中再发 Binder |
 | `BinderInternal.Observer` | 否，平台内部接口 | Java Binder 服务端调用、异常、request/reply 大小 | 供 framework 进程使用；源码还标明不覆盖 C++/Rust |
 | Perfetto `android.binder` | 调试、实验和专项采集 | client/server slice、调度、接口与方法、阶段耗时 | 不是普通应用常驻采集接口；字段质量受 trace 配置和符号信息影响 |
@@ -275,13 +275,13 @@ Android 17 的 Binder 驱动定义了 `binder_transaction`、`binder_transaction
 
 内核 transaction debug ID 适合 trace 内关联，不应上传为长期业务主键。应用常驻指标也通常拿不到可信的目标 PID；使用稳定的逻辑 service/interface/method，专项 trace 再补进程与线程证据。
 
-## 10. 优先级继承对计时意味着什么
+## 10. 优先级继承怎样影响计时
 
 Binder 驱动会根据 transaction 和节点策略调整接收线程优先级，Android 17 锚点中可在 `binder_transaction_priority()` 及 `binder_set_priority` tracepoint 看到相关路径。它会影响服务端何时获得 CPU，因此也是端到端耗时的一部分。
 
 优先级继承不会让客户端的单调时钟计时失真，也不需要在应用 wrapper 中“扣除”。如果一个调用的 wall time 很长，trace 却显示服务端执行很短，应继续检查服务端线程被唤醒前的排队、调度和锁等待。不要把所有差值归因于“Binder 传输”。
 
-这些机制并非可以仅凭 Android 17 版本号解释的新特性。跨版本对比必须固定设备负载、接口、线程优先级和 trace 配置，再用源码差异说明行为变化。
+这些机制不能仅凭 Android 17 版本号解释为新特性。跨版本对比必须固定设备负载、接口、线程优先级和 trace 配置，再用源码差异说明行为变化。
 
 ## 11. Android 17 没有通用的 Binder 异步批处理接口
 
@@ -363,13 +363,15 @@ AOSP 对隐藏的 `ProxyTransactListener` 也明确要求回调快速、支持�
 
 ## 参考资料
 
-- [AOSP `Binder.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Binder.java)
-- [AOSP `BinderProxy.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/BinderProxy.java)
-- [AOSP `ServiceManager.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/ServiceManager.java)
-- [AOSP `StrictMode.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/StrictMode.java)
-- [AOSP `Debug.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Debug.java)
-- [AOSP Binder driver tracepoints（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/android/binder_trace.h)
-- [AOSP Binder driver（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/android/binder.c)
+- [AOSP `Binder.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Binder.java)
+- [AOSP `BinderProxy.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/BinderProxy.java)
+- [AOSP `IBinder.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/IBinder.java)
+- [AOSP `ServiceManager.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/ServiceManager.java)
+- [AOSP `StrictMode.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/StrictMode.java)
+- [AOSP `Debug.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Debug.java)
+- [AOSP libbinder `ProcessState.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/ProcessState.cpp)
+- [AOSP Binder driver tracepoints（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_trace.h)
+- [AOSP Binder driver（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)
 - [Android Developers：查找无响应线程](https://developer.android.com/topic/performance/anrs/find-unresponsive-thread)
 - [Android Developers：`TransactionTooLargeException`](https://developer.android.com/reference/android/os/TransactionTooLargeException)
 - [Android Developers：`Debug`](https://developer.android.com/reference/android/os/Debug)
