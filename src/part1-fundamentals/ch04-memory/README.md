@@ -1,56 +1,198 @@
 # 第 4 章：内存管理
 
-内存问题很容易被狭义理解成“会不会 OOM”，但在 Android 上，真正影响体验的内存问题远不止崩溃。
+Android 内存问题不只表现为 OOM。GC pause、page fault、direct reclaim、zram I/O、进程冻结与解冻、图形 buffer 占用、内存压力下的进程回收，都可能转化为启动变慢、交互卡顿、后台重建或整机抖动。
 
-页面切换越来越慢、后台回来像重启了一次、列表偶发卡一下、系统整体开始发飘，这些现象很多时候都和内存压力有关。  
-如果只在 OOM 时才想起看内存，通常已经太晚了。
+本章使用以下复核锚点：
 
-这一章会把 Android 内存问题拆成两个层次：  
-一个是系统到底怎样分配、回收和压缩内存；另一个是这些系统行为最后如何反映到 App 的卡顿、重启、GC、LMK 和图形内存问题上。
+- platform：Android 17 / API 37 / `android-17.0.0_r1`；
+- kernel：`android17-6.18-2026-06_r6`；
+- 历史演进允许保留旧版本行为，当前类名、配置和调用关系按固定 tag 核对；
+- 设备厂商可能修改 allocator、GPU/display 驱动、zram、LMKD 参数和冻结策略，设备级结论需要运行时证据。
 
+## 1. 先区分内存域
 
-Android 内存管理是一个跨层协作的系统。从 App 视角看，内存分配经过 Java Heap（ART 管理）和 Native Heap（scudo/mmap）；当内存紧张时，ART 触发 GC 回收 Java 对象，框架层通过 `ActivityThread.handleTrimMemory()` → `ComponentCallbacks2.onTrimMemory()` 通知 App 释放缓存；如果还不够，内核侧 kswapd 开始后台回收页面，把冷页面压缩写回 ZRAM swap 空间（`/proc/meminfo` 中 `SwapCached` + `SwapTotal` 可观测）；压力继续升级时，LMKD（`system/memory/lmkd/lmkd.cpp`，`mp_event_common` 主循环）按 oom_adj_score 逐级杀进程。整条链路中，App 能做的事情在第一环（主动释放）和最后一环（响应 `onTrimMemory`），中间的 kswapd、ZRAM、LMK 都是系统行为，App 只能观察不能控制。理解这条链路，能帮你在排查内存问题时判断：问题出在 App 自身分配过多，还是系统侧压力传导上来的。
+同一个进程的“内存”由多个来源组成：
 
-## 本章内容
+| 内存域 | 常见来源 | 管理者 | 主要观测 |
+|---|---|---|---|
+| ART managed heap | Java/Kotlin object、class metadata 的一部分 | ART allocator 与 GC | heap size、allocated bytes、GC cause/pause、object graph |
+| Native heap | malloc/new、JNI、native library | Scudo/malloc、应用或库 | native heap profile、allocation callsite、RSS/PSS |
+| Anonymous mapping | mmap、thread stack、JIT/运行时区域 | 进程与 kernel mm | smaps、RSS/PSS、page fault、swap |
+| File-backed mapping/page cache | dex/oat/so、资源、文件 I/O | kernel page cache | file RSS/PSS、major/minor fault、reclaim |
+| Graphic/shared buffer | GraphicBuffer、AHardwareBuffer、Camera/codec buffer | Gralloc、dma-buf、各 Producer/Consumer | dma-buf、gralloc、GPU/vendor counter、layer/buffer |
+| Kernel memory | slab、page table、driver allocation | kernel 与驱动 | slabinfo、vmstat、meminfo、vendor trace |
+| Compressed swap | zram 中的匿名页 | kernel reclaim、swap 与 zram | SwapTotal/SwapFree、zram mm_stat、swapin/swapout |
 
-- Android 内存模型全景
-- Linux 内核内存管理
-- ART 虚拟机内存管理
-- Low Memory Killer
-- App 内存优化
-- 内存相关的版本演进
+Java heap dump看不到 native、graphics、page cache 和 kernel allocation。进程 RSS 也会把共享页面完整计入每个进程。选择指标前，要先说明调查的是 object retention、进程 footprint、系统 pressure，还是跨进程共享 buffer。
 
-## 阅读建议
+## 2. 压力处理不是固定流水线
 
-- 如果你主要做 App 端内存优化，优先看 `4.1`、`4.3`、`4.4`、`4.5`。
-- 如果你经常遇到“回前台像冷启动”“低内存设备特别差”这类问题，建议把 `4.2`、`4.4` 和第 10 章一起看。
-- 如果你对 GPU/Graphics 内存、DMA-BUF、图形内存口径很关心，读本章时最好和渲染相关章节一起对照。
+内存压力下可能同时出现以下动作：
 
-## 参考资料
+- ART 根据分配与堆策略发起 GC；
+- 应用主动淘汰 cache，framework 也可能通过 trim 回调通知进程；
+- kernel `kswapd` 做后台 reclaim，分配线程也可能进入 direct reclaim；
+- compaction 为高阶连续页迁移可移动页面；
+- 匿名页可以换出到 zram；
+- cached app freezer 改变后台进程的可运行状态；
+- lmkd 依据 PSI、meminfo、zone/watermark、`oom_score_adj` 和设备配置选择进程。
 
-### Linux 6.10 引入内存碎片整理新机制
-- 来源：https://www.phoronix.com/news/Linux-6.10-Memory-Fragmentation
-- 类型：技术深度分析
-- 摘要：Linux 6.10 内核引入了创新的内存碎片整理机制，通过智能预分配和动态调整策略，大幅提升长期运行的系统稳定性。新机制采用分层管理策略，对频繁分配释放的热点...
-- 入库时间：2026-07-04
-- 评分：14/20
-### Android 17 ART LargeObjectSpace 512M 突破与 mSponge 技术
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-05-android17-art-largeobjectspace-msponge-512m-bypass.md
-- 类型：DeepResearch 调研结果
-- 摘要：基于 android-17.0.0_r1 源码定位 Heap::num_bytes_allocated_（Atomic<size_t>）与 LargeObjectMapSpace::Alloc 的双路计数汇总链路（LOS 自身 + Heap::AddBytesAllocated）。分析 mSponge 通过 ELF symtab 定位符号、mprotect 修改 bss 段、fetch_sub 扣减 LOS 字节以绕过 512M 软阻塞的技术可行性，以及 SELinux、ART 完整性检查、并发 GC 误触发等风险面。
-- 注入时间：2026-07-06
-- 价值：为内存优化实战提供 LOS 突破方案的源码级可行性边界与风险评估，是 ch23.6 大内存策略的重要参考
+它们没有一条对所有设备都成立的先后顺序。GC 只管理目标进程的 ART heap；reclaim/compaction 在 kernel 中处理页面；lmkd 是 userspace daemon，负责选择和终止进程。应用无法直接控制 kswapd 或 lmkd，但可以减少持有、响应当前仍会到达的 trim level，并通过生命周期保存可恢复状态。
 
-### Android 17 系统性能优化深度解析：调度器与内存管理革命
-- 来源：https://android-developers.googleblog.com/2026/07/android-17-performance-scheduler-memory-management
-- 类型：Android,performance,optimization,scheduler
-- 摘要：Android 17 带来了系统调度的革命性改进，通过基于机器学习的用户行为预测算法，实现了应用启动时间平均减少30%。新调度器能够动态识别不同应用类型，为前台...
-- 入库时间：2026-07-12
-- 评分：16/20
+`/proc/meminfo` 的 `SwapTotal` 是配置容量，`SwapFree` 是未使用容量，`SwapCached` 是已换回内存但仍保留 swap entry 的页。三者不能相加当作“zram 使用量”。zram 还要结合 `/sys/block/zram*/mm_stat`、swap I/O 和压缩率。
 
-### Linux 6.10 内核内存管理重大更新：BPF 集成与实时性优化
-- 来源：https://www.kernel.org/doc/html/latest/admin-guide/bpf-memory-management.html
-- 类型：Linux,kernel,memory,BPF,performance
-- 摘要：Linux 6.10 引入了革命性的内存管理改进，通过 BPF (Berkeley Packet Filter) 技术的深度集成，实现了更细粒度的内存控制。新系...
-- 入库时间：2026-07-12
-- 评分：16/20
+## 3. PSS、RSS、USS 与 swap
+
+| 指标 | 含义 | 适合回答的问题 | 局限 |
+|---|---|---|---|
+| RSS | 当前 resident page 总量，共享页在每个进程内完整计数 | 进程当前驻留规模、fault/reclaim 变化 | 多进程相加会重复计算共享页 |
+| PSS | 共享页按 map count 比例分摊 | 多进程 footprint 归因、Android 常用进程比较 | 是分摊值，不能表示某进程独占 |
+| USS/Private | 只归入该进程的 private pages | 杀掉进程后较可能直接释放多少用户页 | 不覆盖共享对象的系统总成本 |
+| SwapPss | swap 中共享页的比例分摊 | 进程换出贡献 | 受 kernel、smaps 与设备实现影响 |
+
+PSS 与 CPU cache locality 属于不同层级。cache line 描述 CPU cache 传输/一致性粒度，page 描述虚拟内存映射与记账粒度，ART card table 用于 GC remembered set。三者数值或现象接近时也不能互相替代。
+
+## 4. 本章地图
+
+### 4.1 基础模型
+
+- [4.1 Android 内存模型全景](01-memory-overview.md)：进程地址空间、ART/native、共享页、graphics 与系统压力。
+- [4.2 Linux 内核内存管理](02-linux-memory.md)：page、zone、LRU、reclaim、swap、compaction 与 OOM。
+- [4.3 ART 虚拟机内存管理](03-art-memory.md)：ART heap、space、allocator、GC 与 native accounting。
+- [4.4 Low Memory Killer](04-lmk.md)：lmkd、`oom_score_adj`、pressure signal 与 kill decision。
+- [4.5 App 内存优化](05-app-memory-optimization.md)：用 profile 和生命周期证据减少 retention、峰值与抖动。
+- [4.6 内存版本演进](06-memory-evolution.md)：按具体机制与 tag 对照版本变化。
+
+### 4.2 ART 分配、GC 与后台任务
+
+- [4.8 ART 分代 GC](08-art-generational-gc.md)：young/old collection、pause 与吞吐权衡。
+- [4.9 FinalizerDaemon 与 ReferenceQueue](09-finalizer-referencequeue.md)：finalization、reference processing 与队列积压。
+- [4.14 ART Region 碎片与 compaction](14-art-gc-region-fragmentation-compaction.md)：对象碎片、region space 与移动 GC。
+- [4.16 ART TLAB 与对象分配](16-art-tlab-object-allocation-performance.md)：thread-local allocation、refill 与 slow path。
+- [4.21 ART HeapTask 调度](21-art-heaptask-scheduling-pipeline.md)：HeapTask、TaskProcessor、GC/trim 任务与并发边界。
+- [4.21 ART HeapTask 补充稿](4.21-art-heaptask-scheduling-pipeline.md)：保留的同主题复核记录，阅读时以固定 tag 的类和子类为准。
+
+### 4.3 Kernel reclaim、compaction、zram 与 freezer
+
+- [4.10 内存规整与 direct reclaim](10-memory-compaction-direct-reclaim.md)：高阶分配、reclaim stall、compaction 与 latency。
+- [4.11 Cached App Freezer 与 GC](11-cached-app-freezer-gc-boundary.md)：冻结进程、GC 请求和解冻的责任边界。
+- [4.12 ZRAM 与应用重启延迟](12-zram-compressed-swap-relaunch.md)：压缩、swap I/O、fault 与 relaunch 成本。
+- [4.13 ANON_VMA_LAZY 事实核查](13-anon-vma-lazy-memory-optimization.md)：说明 Android 17/kernel 固定 tag 中没有该功能，避免把提案或错误材料当成现状。
+- [4.20 Compaction 与 Freezer 对监控的影响](04.20-android17-memory-compaction-freezer-performance-impact.md)：区分 kernel compaction、ART compaction 与 cached-app freezer。
+
+### 4.4 PSI、lmkd、trim 与 MemoryLimiter
+
+- [4.15 PSI/LowMemDetector 与 lmkd](15-psi-lowmemdetector-lmkd-architecture.md)：区分 legacy detector、PSI monitor 与当前 lmkd 逻辑。
+- [4.17 MemoryLimiter 与监控](17-android17-MemoryLimiter-与内存监控影响.md)：先确认设备是否启用对应 cgroup/BPF 路径，再解释统计影响。
+- [4.18 MemoryLimiter 深入](4.18-android-17-memorylimiter-深度解析.md)：cgroup memory、BPF map、memcg 与 PSS 口径的边界。
+- [4.18 onTrimMemory 与公平适配](04.18-android17-ontrimmemory-source-fair-adaptation.md)：framework trim dispatch、API 演进与应用 cache 策略。
+- [4.36 lmkd 批量优先级命令与 thrashing](4.36-android17-lmkd-procs-prio-batch.md)：控制 socket、批处理命令和 thrashing 衰减的源码入口。
+- [4.49 trimMemory API 演进](4.49-android17-trim-memory-api-evolution.md)：ComponentCallbacks2、ActivityThread 与 ART heap trim。
+- [4.50 lmkd v2/PSI 分层治理事实核查](4.50-lmkd-v2-psi-tiered-pressure-governance.md)：把 AOSP 已存在机制与材料中的版本化命名分开。
+
+`MemoryLimiter`、批量 lmkd command 或厂商 pressure policy 不应由 “Android 17” 四个字推导为全设备默认。文章中的 feature flag、build target、BPF program 与运行时状态必须逐项确认。
+
+### 4.5 Page size、MTE、cache locality 与观测
+
+- [4.7 16KB Page Size](07-16kb-page-size.md)：ABI、ELF alignment、mapping 与兼容性，不把 page size 当作固定性能增益。
+- [4.9 Android 17 ARM MTE](4.9-android17-memory-tagging-extension-mte.md)：tagging mode、同步/异步 fault、进程启用条件与开销。
+- [4.35 CPU cache locality 与 PSS](4.35-android17-cpu-cache-locality-pss-accounting.md)：区分 cache line、page、ART card 与 smaps 记账。
+- [4.36 高级内存诊断](4.36-android17-advanced-memory-optimization.md)：按 Java/native/graphics/kernel/pressure 选择观测工具。
+
+### 4.6 AppFlow 与 AI Agent 材料的边界稿
+
+这组内容涉及产品、厂商方案或尚无 Android 17 公共 AOSP 实现的命名。它们应作为兼容性设计或事实核查阅读，不能写成平台内置能力。
+
+- [4.04 AppFlow 与 Android 17 LMKD 兼容性](4.04-AppFlow与Android-17-LMKD兼容性方案.md)
+- [4.5 AppFlow 与 lmkd 兼容性复核](4.5-appflow-lmkd-compatibility.md)
+- [4.22 AI Agent 进程隔离与数据复用边界](4.22-android17-ai-agent-memory-sandboxed-data-reuse.md)
+
+跨应用共享数据要使用有权限和生命周期约束的 IPC、provider、service、shared memory 或持久化机制。Android 17 没有一个名为“AI Agent Memory Sandbox”的通用内存子系统。
+
+## 5. Deprecated、重复与来源不成立的稿件
+
+下面这些文件继续保留，以免破坏历史链接和 Hermes 状态机。正文已标明弃用、重定向或事实核查结论，不应作为 Android 17 实现依据。
+
+### 5.1 LMKD/AppFlow 重复稿
+
+- [LMK_PROCS_PRIO 批处理旧稿](04.1-07-04-android17-lmkd-procs-prio-batch-thrashing-ma.md)
+- [AppFlow/LMKDv2 旧稿](18-appflowlmkdv2.md)
+- [AppFlow/LMKD 联合调度旧稿](4-11-android17-appflow-与-lmkd-v2-内存联合调度协作机制.md)
+- [AppFlow/LMKD v2 collaboration 旧稿](4-12-appflow-lmkd-v2-collaboration.md)
+- [AppFlow 兼容性重复稿](4.10-AppFlow与Android-17-LMKD兼容性方案.md)
+- [LMKD “用户态迁移”旧稿](4.37-android17-lmkd-userspace-migration.md)
+- [LMKD mainline fork 旧稿](4.48-android17-lmkd-procs-prio-batch-thrashing-mainline-fork.md)
+
+lmkd 在早期 Android 版本中已经是 userspace daemon。“Android 17 从 kernel 迁移到 userspace”属于错误版本叙述。
+
+### 5.2 ART HeapTask 重复稿
+
+- [ART HeapTask System Deep Dive 旧稿](04.40-art-heaptask-system-deep-dive.md)
+- [ART HeapTask Advanced Scheduling 旧稿](04.42-art-heaptask-advanced-scheduling.md)
+- [HeapTask 七子类旧稿](4.34-android17-art-heaptask-system-7-subclasses.md)
+- [HeapTask/GC suppression 旧稿一](4.36-android17-art-heaptask-concurrent-gc-suppression.md)
+- [HeapTask/GC suppression 旧稿二](4.37-android17-art-heaptask-concurrent-gc-suppression.md)
+- [HeapTask 并发与 GC 抑制旧稿](4.38-android-17-art-heaptask-并发与-gc-抑制.md)
+
+HeapTask 的可用子类、队列和 suppression 语义要从 `android-17.0.0_r1` 的 `TaskProcessor`、`HeapTask` 与各实际 subclass 枚举，不能依赖固定“七类”或泛化的优先级继承说法。
+
+### 5.3 AI Agent Memory 重复稿
+
+- [AI Agent Memory Management 旧稿](04.40-ai-agent-memory-management.md)
+- [AI Agent Memory Sandboxing 旧稿](04.41-ai-agent-memory-sandboxing.md)
+- [AI Agent memory management 采集稿](04.5-07-04-ai-agent-memory-management.md)
+- [AI Agent sandbox reuse 采集稿](04.5-07-05-android17-ai-agent-memory-sandboxed-data-reu.md)
+- [AI Agent 内存沙箱旧稿](4.01-ai-agent内存沙箱化与跨应用数据复用.md)
+- [AI Agent Memory 4.23 旧稿](4.23-android17-ai-agent-memory.md)
+- [AI Agent Memory 4.33 旧稿](4.33-android17-ai-agent-memory-sandboxed-data-reuse.md)
+- [AI Agent sandbox reuse 4.35 旧稿](4.35-android17-ai-agent-memory-sandboxed-reuse.md)
+- [AI Agent sandbox reuse 4.36 旧稿](4.36-android17-ai-agent-memory-sandboxed-data-reuse.md)
+- [AI Agent memory management 4.37 旧稿](4.37-android17-ai-agent-memory-management.md)
+- [AI Agent sandbox reuse 4.37 旧稿](4.37-android17-ai-agent-memory-sandboxed-data-reuse.md)
+- [AI Agent 内存沙箱 4.38 旧稿](4.38-android-17-ai-agent-内存沙箱化.md)
+- [AI Agent memory 4.46 旧稿](4.46-android17-ai-agent-memory.md)
+- [AI Agent sandbox reuse 4.46 草稿](4.46-android17-ai-agent-memory-sandboxed-data-reuse.md)
+- [AI Agent Memory Management 4.47 草稿](4.47-ai-agent-memory-management.md)
+
+### 5.4 PSS、MTE、LOS 与 Linux 碎片材料
+
+- [CPU cache locality/PSS 1.1 旧稿](1.1-android-17-api-37-cpu-缓存局部性与-pss-内存核算源码机制.md)
+- [CPU cache locality/PSS 4.38 旧稿一](4.38-android-17-api-37-cpu-缓存局部性与-pss-内存核算源码机制.md)
+- [CPU cache locality/PSS 4.38 旧稿二](4.38-android-17-cpu-缓存局部性与-pss-内存核算.md)
+- [MTE 4.47 旧稿](4.47-android17-arm-mte.md)
+- [LargeObjectSpace `mSponge` 旧稿](4.38-android17-largeobjectspace-msponge.md)
+- [Phoronix Linux 6.10 采集稿](1.1-phoronix---linux-610-内核引入了创新的内存碎片整理机制通过智能预分配和动态调整策略大幅提升长期运.md)
+- [Linux 6.10 碎片整理旧稿一](4.38-linux-610-内核内存碎片整理机制.md)
+- [Linux 6.10 碎片整理采集稿](4.38-phoronix---linux-610-内核引入了创新的内存碎片整理机制通过智能预分配和动态调整策略大幅提升长期运.md)
+- [Linux 6.10 fragmentation 旧稿](4.39-linux-6.10-memory-fragmentation.md)
+- [Linux 6.10 fragmentation 4.45 旧稿](4.45-linux610-memory-fragmentation.md)
+
+`mSponge` 方案通过修改 ART 内部计数规避限制，会破坏堆记账、GC 触发条件与并发不变量，也依赖可写代码/数据与符号布局。它不属于可部署的 Android 内存优化。
+
+## 6. 按现象选择阅读顺序
+
+| 现象 | 阅读顺序 | 优先证据 |
+|---|---|---|
+| Java heap 持续增长 | 4.1 → 4.3 → 4.5 → 4.8/4.9 | allocation profile、heap dump、GC、reference/finalizer queue |
+| Native/PSS 增长 | 4.1 → 4.2 → 4.35 → 4.36 | smaps、native heap、mmap、shared mapping、callsite |
+| 分配时偶发长卡顿 | 4.8 → 4.10 → 4.14 → 4.16 | GC pause、direct reclaim、compaction、TLAB refill |
+| 后台恢复慢 | 4.11 → 4.12 → 4.15 → 4.4 | freezer、swapin fault、PSI、lmkd kill 与 process start |
+| 低内存设备频繁杀进程 | 4.4 → 4.15 → 4.36 lmkd → 4.50 | PSI、vmstat、lmkd decision、oom_score_adj、kill reason |
+| 图形内存偏高 | 4.1 → 第 2 章 DMA-BUF/Gralloc | dma-buf、gralloc、buffer 数、Producer/Consumer、GPU/vendor counter |
+| 16KB 兼容或 MTE fault | 4.7 / 4.9 MTE | ELF alignment、mapping、tagging mode、fault address 与 stack |
+
+内存问题采集时应记录 build、进程状态、前后台、总内存、swap/zram、PSI、刷新率/温度及复现场景。单张 `dumpsys meminfo` 快照只能说明采样时刻，趋势和因果关系要靠时间序列、allocation callsite 与系统 trace。
+
+## 7. 固定源码入口
+
+- [ART `gc/heap.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc)：heap accounting、GC/trim 与 collector 入口；
+- [lmkd `lmkd.cpp`](https://android.googlesource.com/platform/system/memory/lmkd/+/android-17.0.0_r1/lmkd.cpp)：pressure monitor、控制命令、进程选择与 kill；
+- [`ActivityThread.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java)、[`ComponentCallbacks2.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/ComponentCallbacks2.java)：trim dispatch 与公开 callback；
+- [`libmeminfo`](https://android.googlesource.com/platform/system/memory/libmeminfo/+/android-17.0.0_r1/)：smaps、PSS 与系统内存读取；
+- [bionic `heap_tagging.cpp`](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/libc/bionic/heap_tagging.cpp)：heap pointer tagging/MTE mode；
+- [kernel `mm/vmscan.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c)：LRU reclaim 与 direct/background reclaim；
+- [kernel `mm/compaction.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/compaction.c)：page compaction；
+- [kernel `zram_drv.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/block/zram/zram_drv.c)：zram block device 与统计；
+- [kernel `psi.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/psi.c)：pressure stall accounting。
+
+这些源码固定公共机制。内存性能结论还要结合目标设备的 kernel config、sysprop、lmkd 配置、zram 参数、cgroup 层级、GPU/allocator 实现与运行时采样。
