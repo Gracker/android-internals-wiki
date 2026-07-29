@@ -129,9 +129,9 @@
       ]
     }
   ],
-  "last_scan_date": "2026-07-28",
-  "total_knowledge_points": 694,
-  "total_suggestions": 213,
+  "last_scan_date": "2026-07-30",
+  "total_knowledge_points": 703,
+  "total_suggestions": 217,
   "total_gaps": 21,
   "skipped_files": [
     {
@@ -415,7 +415,27 @@
       "processed_at": "2026-07-28T06:30:59.258698+08:00",
       "chapter": "ch24",
       "points": 4
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 通过插件化来优化包体积（上）.md": {
+      "processed_at": "2026-07-30T06:30:33.668306+08:00",
+      "chapter": "ch26",
+      "points": 1
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/Android 性能优化 - 通过插件化来优化包体积（下）.md": {
+      "processed_at": "2026-07-30T06:30:33.668853+08:00",
+      "chapter": "ch26",
+      "points": 1
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md": {
+      "processed_at": "2026-07-30T06:30:33.670507+08:00",
+      "chapter": "ch24",
+      "points": 3
+    },
+    "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md": {
+      "processed_at": "2026-07-30T06:30:33.671624+08:00",
+      "chapter": "ch21",
+      "points": 4
     }
   },
-  "cursor": 44
+  "cursor": 48
 }

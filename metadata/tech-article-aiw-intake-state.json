@@ -1496,6 +1496,66 @@
       "status": "appended",
       "title": "掘金 Android 技术文章抓取 · 2026-07-28"
     },
+    "source/juejin-android/2026-07-30-76444766-Android嵌入式照片选择器.md": {
+      "chapter": "待分类",
+      "entry_id": "f7898ab6b68d95c2",
+      "last_appended": "2026-07-30T05:25:25.101753+08:00",
+      "last_seen": "2026-07-30T05:25:25.101753+08:00",
+      "mtime": 1785356155.5003576,
+      "score": 10,
+      "sha256": "1daaf07893b9fc54a8f6fbacfa36744f061bd5edb11db57eff1e356cdb2999d8",
+      "size": 13581,
+      "status": "appended",
+      "title": "学吧！Android 全新的嵌入式照片选择器AndroidX 推出了全新的嵌入式照片选择器（EmbeddedPhotoP"
+    },
+    "source/juejin-android/2026-07-30-76674594-R8让Kotlin协程提速2倍.md": {
+      "chapter": "ch08-responsiveness",
+      "entry_id": "1c90df3f01b8151c",
+      "last_appended": "2026-07-30T05:25:25.101753+08:00",
+      "last_seen": "2026-07-30T05:25:25.101753+08:00",
+      "mtime": 1785356155.499158,
+      "score": 22,
+      "sha256": "510bfbf6d366b9367db5c2c2c1b6fc4b027d4e548d9140dcc6363e92461e270e",
+      "size": 14074,
+      "status": "appended",
+      "title": "Android R8 为什么可以让 Kotlin 协程提速 2 倍？这个问题其实我们之前 《AGP 9.2 开始，And"
+    },
+    "source/juejin-android/2026-07-30-76675023-深入理解Compose副作用.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "af170b4264633329",
+      "last_appended": "2026-07-30T05:25:25.101753+08:00",
+      "last_seen": "2026-07-30T05:25:25.101753+08:00",
+      "mtime": 1785356155.4996023,
+      "score": 14,
+      "sha256": "61b784cba753cb25a1a2ec5afe926c443a08b0dd7f3fc20cc8afe8618aafd0ef",
+      "size": 35522,
+      "status": "appended",
+      "title": "深入理解 Compose 副作用各位 Compose 爱好者们，你们好。 如果你去打开任何一个 Compose 页面源码"
+    },
+    "source/juejin-android/2026-07-30-76675959-H5游戏多进程隔离与冻结.md": {
+      "chapter": "ch04-memory",
+      "entry_id": "776ffd088e785afe",
+      "last_appended": "2026-07-30T05:25:25.101753+08:00",
+      "last_seen": "2026-07-30T05:25:25.101753+08:00",
+      "mtime": 1785356155.4999728,
+      "score": 22,
+      "sha256": "acf4e4a9ca1b59442f83bd3f0b9d81105dfa30fa9a34848993e4896e074ed3c4",
+      "size": 12432,
+      "status": "appended",
+      "title": "H5游戏多进程隔离：如何解决Android内存激增与进程冻结问题前言 将WebView塞进独立子进程，或许是解决H5游戏"
+    },
+    "source/juejin-android/2026-07-30-juejin-android.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "bbab10c70df3192f",
+      "last_appended": "2026-07-30T05:25:25.101753+08:00",
+      "last_seen": "2026-07-30T05:25:25.101753+08:00",
+      "mtime": 1785356192.0444863,
+      "score": 25,
+      "sha256": "94a9b52dd61f51b36e302cecf434e5a10f11e11027d3193ea1e7ef51f5c2a6b3",
+      "size": 6926,
+      "status": "appended",
+      "title": "掘金 Android 技术文章抓取 · 2026-07-30"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -3303,24 +3363,24 @@
     }
   },
   "last_report": {
-    "appended": 7,
-    "considered": 7,
-    "cutoff": "2026-07-27T05:20:30.793854+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-28.md",
+    "appended": 5,
+    "considered": 5,
+    "cutoff": "2026-07-28T05:20:49.772483+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-07-30.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1722,
+    "scanned": 1727,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 28,
-      "unchanged": 284
+      "unchanged": 291
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-07-28T05:25:49.772483+08:00",
+  "last_run_at": "2026-07-30T05:25:25.101753+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
