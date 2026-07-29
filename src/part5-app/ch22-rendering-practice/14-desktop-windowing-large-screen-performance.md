@@ -88,176 +88,305 @@ sources:
 
 <!-- outline-end -->
 
-桌面窗口化把 Android 应用从“单个全屏画布”推到“可连续调整尺寸的窗口”。渲染性能的风险点也跟着移动：窗口拖拽时的配置变更、断点切换时的布局重算、多实例带来的状态复制、外接显示器上的输入延迟，都会压到同一帧预算里。系统侧的 window / layer / display 会话见 2.20 节，freeform resize 与 BLAST 同步见 18.18 节；本节只写应用侧该怎么做、怎么测、怎么把问题归因到主线程、RenderThread 或 SurfaceFlinger。
+桌面窗口化让一个 Activity 的可用区域在运行中连续变化。窗口拖拽会触发布局计算，跨显示器移动可能带来 density、Insets 与资源选择变化，多实例还会让同一份业务数据被多个 task 同时观察。分析这些现象时，需要同时保留应用线程、WindowManager、SurfaceFlinger 和目标 Display 四个视角。
 
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md] 参考书把速度问题拆成 CPU 指令、缓存命中和任务调度三类成本，本节沿用这条思路：大屏不是简单把 UI 放大，而是让同一帧里出现更多 measure / layout / draw、更多图片与资源分桶选择、更多输入和窗口管理回调。[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md][结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md] 参考书对线程池、闲时预加载和 IO 等待的拆法，也适合放到窗口 resize：能提前准备的资源放到空闲阶段，用户拖拽窗口时只做尺寸计算和轻量状态切换。
+本文的平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，kernel 调度与 fence 观察固定为 `android17-6.18-2026-06_r6`。版本沿革只用于解释兼容行为。系统侧窗口树与 Display 拓扑见 [2.20 多窗口与桌面模式渲染性能](../../part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md)，PiP/freeform 的 geometry 与 BLAST 同步见 [18.18 PiP 与自由窗口渲染](../../part2-performance/ch18-rendering-pipelines/18-pip-freeform.md)；本节集中讨论应用实现、测试与归因。
 
-## 桌面窗口化改变的是工作负载形态
+[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md] 大屏不会凭空产生一种新渲染管线。它会增加同一帧中的 `measure`、`layout`、`draw`、图片请求、输入回调和窗口状态变化，也会放大缓存失效与线程排队。优化时仍按执行成本、等待时间、缓存命中和提交时序逐项取证。
 
-Android 16 QPR3 的 connected display 让受支持手机或折叠屏连接外部显示器后启动桌面会话，应用可运行在 free-form 或 maximized window 中；受支持平板连接外屏时，桌面会话可跨两个显示器扩展，窗口、内容和光标能在显示器之间移动。[已验证: Android Developers Blog, android-developers.googleblog.com/2026/03/android-devices-extend-seamlessly-to.html]
+## 桌面窗口化改变了哪些工作负载
 
-这件事对 App 的压力集中在四个位置：
+[Android 16 QPR3 connected display](https://android-developers.googleblog.com/2026/03/android-devices-extend-seamlessly-to.html) 已进入正式可用阶段。受支持的手机或折叠屏连接外部显示器后，会在外屏启动桌面会话；支持桌面窗口化的平板可把会话扩展到两个显示器，窗口、内容和光标可跨屏移动。设备支持情况、厂商实现和显示器能力仍需实机确认。
 
-- **窗口尺寸不稳定**：用户拖动边缘时，`WindowMetrics`、`LocalConfiguration`、资源限定符和布局断点可能连续变化。每次变化都可能触发 `ViewRootImpl.performTraversals()` 或 Compose 重组。
-- **可见内容更多**：桌面宽度下常见两栏、三栏甚至四栏布局。列表、详情、辅助面板同时可见，图片解码、分页加载和动画对象数量都会增加。
-- **输入频率更高**：鼠标 hover、滚轮、键盘快捷键、拖拽手势进入已有输入队列。触屏时代被忽略的 pointer move 和 focus 变化，在桌面窗口里会变成稳定输入源。
-- **状态副本更多**：多实例让同一个业务页面可能在两个 task 中同时打开。单例缓存、内存态草稿、数据库事务和通知跳转都要重新审查。
+应用侧压力通常落在四处：
 
-系统负责窗口边框、taskbar、display 会话和 layer 合成；应用负责声明自己能否调整尺寸、在任意 viewport 下给出稳定布局、把主线程回调压在帧预算内。应用侧写错时，trace 通常会出现 `Choreographer#doFrame` 变长、`performTraversals` 密集、RenderThread `DrawFrame` 排队、FrameTimeline 标记 App Deadline Missed。系统侧压力过高时，SurfaceFlinger 或 HWC 会成为慢帧来源。二者不要混在同一个结论里。
+- **viewport 连续变化**：`WindowMetrics`、`LocalConfiguration`、Insets 和资源限定符会随窗口变化，View 可能重复进入 `performTraversals()`，Compose 可能重新组合、测量和绘制。
+- **同屏内容增加**：list-detail、supporting pane 或多列布局会扩大可见 item 数量，也会增加图片解码、文本布局、动画对象和内存占用。
+- **输入事件变密**：鼠标移动、hover、滚轮、右键、键盘焦点和拖拽进入现有输入链。若每个 pointer move 都触发查询或大范围状态更新，主线程会在下一次 VSync 前积压。
+- **状态并发增加**：两个 task 可以显示同一个文档、会话或数据库记录。进程级缓存、草稿、路由事件和写事务都要定义并发规则。
 
-## 可调整尺寸与配置变更：把 resize 当成常态输入
+系统绘制 caption、维护 task 与 display 会话，并把各窗口 layer 交给 SurfaceFlinger 合成。应用负责根据当前 window bounds 布局内容、正确处理 Insets 和配置变化，并控制主线程工作量。`Choreographer#doFrame` 变长、`performTraversals()` 密集或 RenderThread 排队指向应用侧压力；多个应用都按时交 buffer 而 DisplayFrame 迟到时，才把重点转向 Shell、SurfaceFlinger、HWC 或显示驱动。
 
-Android 16 起，targetSdk 为 36 的应用在 `smallestScreenWidth >= 600dp` 的显示环境中，方向、宽高比和 resizability 限制会被系统忽略；Android 17 对 targetSdk 37+ 继续推进这条大屏基线。[已验证: 官方文档, developer.android.com/about/versions/16/behavior-changes-16][已验证: 官方文档, developer.android.com/about/versions/17/changes/ff-restrictions-ignored] 旧项目依赖 `screenOrientation="portrait"`、固定 `minAspectRatio` 或 `resizeableActivity="false"` 保持页面形态，在大屏和外接显示器上会失效。
+## Android 16 与 Android 17 的适配边界
 
-应用要把窗口尺寸变化拆成三类处理：
+方向、宽高比与 resizability 规则要按 targetSdk 和显示环境分开记录：
 
-| 变化类型 | 典型触发 | 性能风险 | 应用侧处理 |
-|----------|----------|----------|------------|
-| 连续 resize | 用户拖动窗口边缘 | 高频 `measure/layout`、断点来回切换、图片重新取样 | 用稳定断点和轻量 viewport state；不要在每次像素变化时重建页面模型 |
-| 配置变更 | 方向、屏幕尺寸、密度、键盘可用性变化 | Activity 重建、状态恢复、资源重新选择 | 保存 UI state；把耗时恢复拆到异步任务；首帧只恢复骨架 |
-| display 切换 | 内屏、外屏、跨屏移动 | buffer 重新分配、资源分桶变化、输入焦点变化 | 按 display / window 维度缓存渲染参数；不要假设全局只有一个窗口尺寸 |
+| 平台与 targetSdk | 适用显示环境 | 固定方向、宽高比和不可调整尺寸声明 | 迁移含义 |
+|---|---|---|---|
+| Android 16 / target 36 | `smallestScreenWidth >= 600dp` | 默认忽略；可临时声明 `android.window.PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY` 退出新行为 | 该属性只用于过渡，不能当长期方案 |
+| Android 17 / target 37+ | 显示器 smallest width `> 600dp` | `screenOrientation`、固定方向的 `setRequestedOrientation()`、`resizeableActivity`、`minAspectRatio`、`maxAspectRatio` 等限制被忽略；Android 16 的临时 opt-out 已移除 | 页面必须填充可用窗口，不能依赖 pillarbox 保持旧比例 |
 
-`android:configChanges` 能减少 Activity 重建，但代价是应用自己处理资源、布局和状态更新。只为了“避免重建”把 `screenSize|smallestScreenSize|orientation` 全部接管，容易把重建成本改成一串不可控的手动刷新。更稳的做法是保留可恢复的状态模型，让 Activity 重建成本可预测；只有播放器、编辑器、复杂绘图页这类重建代价高的页面，再为特定配置项接管更新。
+Android 17 仍有例外：按 `android:appCategory` 识别的游戏、用户在设备宽高比设置中显式选择应用默认行为，以及 smallest width 小于 `sw600dp` 的屏幕，不受这项变更约束。`600dp` 边界在 Android 16 与 Android 17 两份文档中的表述并不相同，测试用例应覆盖 600dp 附近并以目标版本设备的行为为准。规则详情见 [Android 16 行为变更](https://developer.android.com/about/versions/16/behavior-changes-16) 与 [Android 17 大屏限制变更](https://developer.android.com/about/versions/17/changes/ff-restrictions-ignored)。
 
-窗口拖拽期间要避免三类同步工作：
+桌面窗口兼容模式还要单独看。当前 [desktop windowing 指南](https://developer.android.com/develop/adaptive-apps/guides/support-desktop-windowing) 说明：锁定方向的应用在桌面窗口中仍可自由调整到不同方向；声明 `resizeableActivity="false"` 的应用可能由系统保持原宽高比并整体缩放。这个缩放行为属于桌面窗口兼容处理，不能据此推断 target 37 在大屏全屏/多窗口模式下仍会使用 pillarbox。
 
-- 从主线程读取大文件、数据库或跨进程服务，尤其是根据新尺寸同步拉取内容。
-- 在每次尺寸回调里重新 decode bitmap、重新创建 `Paint` / shader / path 缓存。
-- 把断点变化直接绑定到网络分页、数据库查询或复杂排序。
+## 把 resize、configuration 与 display 切换分开处理
 
-[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md] 参考书从缓存命中率解释速度问题；桌面窗口里也一样，资源和布局参数要按使用频率分层。窗口连续变化时，热路径只读取当前断点、可见 pane 和轻量尺寸数据；图片、富文本、图表数据放到 resize 结束后或空闲阶段补齐。
+三类变化可能相邻发生，但成本和恢复责任不同：
 
-## Adaptive UI：控制断点切换成本
+| 变化 | 常见信号 | 风险 | 应用处理 |
+|---|---|---|---|
+| 连续 resize | window bounds、Insets、Compose configuration 连续更新 | 重复测量、断点抖动、图片请求尺寸反复变化 | 热路径只计算 viewport 与 layout mode；耗时数据准备移出尺寸回调 |
+| configuration change | orientation、screen size、density、keyboard 等字段变化 | Activity 重建或 `onConfigurationChanged()`；资源重新选择 | 状态可保存、恢复可重复；首帧不等待大对象重建 |
+| display 切换 | `displayId`、density、刷新率、color mode 或 window context 变化 | surface/buffer 重建、资源分桶和输入焦点变化 | 缓存按 window/display 能力建 key，禁止把首个显示器参数当进程常量 |
 
-Jetpack WindowManager 1.5.0 增加 Large 与 Extra-large 宽度窗口 size class：Large 覆盖 1200dp 到 1600dp，Extra-large 覆盖 1600dp 及以上。[已验证: Android Developers Blog, android-developers.googleblog.com/2026/03/android-devices-extend-seamlessly-to.html] Compose Material 3 Adaptive 的 `currentWindowAdaptiveInfo()` 支持通过 `supportLargeAndXLargeWidth = true` 纳入这两档断点。[已验证: 官方文档, developer.android.com/develop/ui/compose/layouts/adaptive/use-window-size-classes]
+是否重建 Activity 取决于配置变化以及 manifest 中接管的 `configChanges`。在连续 resize 中，系统可能多次发送新配置；应用若声明自己处理某个字段，就必须更新该字段影响的资源、布局与状态。把 `screenSize|smallestScreenSize|orientation` 全部接管，只是把框架重建工作改为应用自行维护，并不会消除布局成本。
 
-大屏布局的性能问题通常不在“用了几个 pane”，而在断点切换带来的副作用。比如从单栏切到 list-detail，再切到 supporting pane，如果每个 pane 都重新创建 view model、重新订阅流、重新拉取图片，resize 会被业务初始化成本拖住。
+窗口拖拽期间，主线程避免执行以下操作：
 
-Compose 场景建议按下面的边界写：
+- 同步读取文件、数据库或跨进程服务；
+- 为每次像素变化重新解码 bitmap，或重建 `Paint`、shader、path 和文本布局缓存；
+- 把断点变化直接绑定到分页、搜索、排序或网络请求；
+- 在 `onConfigurationChanged()` 中重建整个依赖图。
 
-- `WindowAdaptiveInfo` 和断点判断放在页面壳层，业务组件接收稳定的 layout mode，而不是直接读取窗口像素宽度。
-- list-detail / supporting pane 的 pane 可见性变化只改变布局结构，不重建数据源。列表滚动位置、选中项、草稿内容放进可保存状态。
-- `remember` / `derivedStateOf` 只包住会被频繁读取的轻量状态；图表、富文本解析、图片尺寸计算不要放在 composition 阶段。
-- Lazy 列表在大屏上会同时展示更多 item，要复核 `key`、`contentType`、图片请求尺寸和 placeholder。否则窗口放大时会把 item 复用失败、图片解码和布局重算叠在一起。
+[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md] resize 热路径只需要当前 bounds、Insets、断点和可见 pane。图片、富文本、图表等数据可按稳定业务 key 复用；目标尺寸变化时取消过期请求，并在后台生成新结果。若业务要求拖拽期间实时预览，可使用降采样或较低更新频率，同时用 trace 验证是否仍在帧预算内。
 
-View 场景的治理点更直接：减少无意义的层级嵌套，避免深层 `ConstraintLayout` 在连续 resize 中重复求解；隐藏 pane 不要继续参与测量；图片容器在断点变化后更新目标尺寸，但解码任务放到后台线程池。22.1 节已经覆盖布局层级、`ViewStub`、`merge`、异步 inflate 和 Compose / View 互操作，本节只补大屏差异：窗口尺寸变化会让这些成本重复发生。
+## Adaptive UI：断点只决定布局，不重建业务
 
-这段 Compose 代码展示一个低成本断点入口；重点是把窗口信息压成 `DesktopLayoutMode`，不要让每个子组件各自订阅窗口尺寸。
+截至本文复核时，Jetpack WindowManager 稳定版为 `1.5.1`；Large 与 Extra-large 断点在 `1.5.0` 加入。五档宽度定义如下：
+
+| 宽度类别 | 当前 window 宽度 |
+|---|---|
+| Compact | `< 600dp` |
+| Medium | `600dp ..< 840dp` |
+| Expanded | `840dp ..< 1200dp` |
+| Large | `1200dp ..< 1600dp` |
+| Extra-large | `>= 1600dp` |
+
+这些值描述应用当前可用窗口，不能替代设备类型判断。同一台平板会随分屏、自由窗口和旋转跨越多个 size class。Compose Material 3 Adaptive 可通过 `currentWindowAdaptiveInfo(supportLargeAndXLargeWidth = true)` 启用 Large 与 Extra-large；接口和断点见 [window size class 指南](https://developer.android.com/develop/ui/compose/layouts/adaptive/use-window-size-classes) 与 [WindowManager release notes](https://developer.android.com/jetpack/androidx/releases/window)。
+
+下面的示例把 size class 映射成页面级布局模式。常量使用 `WindowSizeClass` 命名空间，避免依赖不明确的顶层导入。
 
 ```kotlin
-enum class DesktopLayoutMode { SinglePane, ListDetail, SupportingPane, MultiPane }
+enum class DesktopLayoutMode {
+    SinglePane,
+    ListDetail,
+    SupportingPane,
+    MultiPane,
+}
 
 @Composable
-fun rememberDesktopLayoutMode(): DesktopLayoutMode {
-    val adaptiveInfo = currentWindowAdaptiveInfo(
-        supportLargeAndXLargeWidth = true
-    )
-    val widthClass = adaptiveInfo.windowSizeClass.windowWidthSizeClass
+fun desktopLayoutMode(): DesktopLayoutMode {
+    val widthClass = currentWindowAdaptiveInfo(
+        supportLargeAndXLargeWidth = true,
+    ).windowSizeClass
 
-    return remember(widthClass) {
-        when {
-            widthClass.isWidthAtLeastBreakpoint(WIDTH_DP_EXTRA_LARGE_LOWER_BOUND) -> DesktopLayoutMode.MultiPane
-            widthClass.isWidthAtLeastBreakpoint(WIDTH_DP_LARGE_LOWER_BOUND) -> DesktopLayoutMode.SupportingPane
-            widthClass.isWidthAtLeastBreakpoint(WIDTH_DP_EXPANDED_LOWER_BOUND) -> DesktopLayoutMode.ListDetail
-            else -> DesktopLayoutMode.SinglePane
-        }
+    return when {
+        widthClass.isWidthAtLeastBreakpoint(
+            WindowSizeClass.WIDTH_DP_EXTRA_LARGE_LOWER_BOUND
+        ) -> DesktopLayoutMode.MultiPane
+        widthClass.isWidthAtLeastBreakpoint(
+            WindowSizeClass.WIDTH_DP_LARGE_LOWER_BOUND
+        ) -> DesktopLayoutMode.SupportingPane
+        widthClass.isWidthAtLeastBreakpoint(
+            WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND
+        ) -> DesktopLayoutMode.ListDetail
+        else -> DesktopLayoutMode.SinglePane
     }
 }
 ```
 
-这段代码是示意写法，断点常量以实际引入的 WindowManager / Material 3 Adaptive 版本为准。工程里更要关注它后面的数据流：`DesktopLayoutMode` 变化不应该让 repository、database observer 或图片 pipeline 全量重建。[已验证: 官方文档, developer.android.com/develop/ui/compose/layouts/adaptive/use-window-size-classes]
+这个映射只是产品策略示例。Medium 是否使用双栏、Large 是否展示 supporting pane，要由信息密度、最小 pane 宽度和 compact height 共同决定。`DesktopLayoutMode` 变化应复用同一 repository、数据库观察流和页面状态；它只改变内容如何排布。
 
-## 多实例、拖拽与跨窗口数据流
+Compose 页面还要检查这些细节：
 
-桌面窗口化鼓励用户把同一个 App 当成桌面软件使用。官方 desktop windowing 文档描述了多实例、可调整窗口、header bar、drag-and-drop 等能力；系统 UI 可根据 manifest 中的多实例声明暴露 “New Window” 入口。[已验证: 官方文档, developer.android.com/develop/adaptive-apps/guides/support-desktop-windowing]
+- 页面壳层读取 `WindowAdaptiveInfo`，子组件接收稳定的 layout mode 和数据，避免每一层都读取原始宽度。
+- `remember` 只能保存计算结果，不能把过期窗口信息固定住；`derivedStateOf` 适合减少派生状态的无效通知，不负责把解析或 IO 移出主线程。
+- pane 切换时保留 list key、滚动位置、选中项和草稿；若隐藏内容仍留在 composition 中，要确认其测量、动画和订阅是否仍在运行。
+- Lazy 列表扩大可见范围后，检查稳定 `key`、`contentType`、图片请求尺寸与预取量，防止窗口放大时同时出现复用失败和解码峰值。
 
-多实例的性能风险来自共享状态：
+View 页面应减少深层重复测量。不可见 pane 若无需保留当前 View 状态，可从活动层级移除或使用 `GONE`；仅设置透明度不会阻止测量、布局或绘制相关工作。图片容器可以在布局稳定后提交目标尺寸，解码仍放后台线程。[22.1 布局优化](01-layout-optimization.md) 与 [22.3 Compose 性能优化](03-compose-performance.md) 继续覆盖通用布局和重组问题。
 
-- **全局单例缓存**：两个窗口同时编辑同一对象时，内存态缓存如果没有版本号或 owner，会互相覆盖。性能问题表现为重复刷新、重复 diff、重复数据库写入。
-- **图片和大对象传递**：跨窗口拖拽图片、文件或富文本时，不要把大 bitmap 放进主线程回调。回调里只接收 URI / ClipData / MIME 类型，解码、校验和缩略图生成放到后台。
-- **数据库事务**：两个窗口并行写入同一张表时，主线程 observer 可能收到密集 invalidation。需要把列表 diff、搜索索引更新、缩略图生成与 UI 帧分开。
-- **跨 task 导航**：通知、deep link、分享入口可能命中已有窗口，也可能打开新窗口。路由层要能识别目标实例，避免所有窗口都响应同一事件。
+`WindowEngagementInfo.EngagementMode.PRECISE_POINTER` 可用于识别精确指针参与，但截至复核时它属于 WindowManager `1.6.0-alpha05` 预览线。稳定版项目不应把该 API 当作 `1.5.1` 能力；可以继续用输入事件、`InputDevice` 和产品配置选择交互密度，并在升级预览依赖时单独隔离兼容代码。
 
-[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md] 参考书用 Bitmap 创建和回收说明图片内存治理；桌面窗口里的图片风险更常见，因为窗口变大后请求尺寸上升，多 pane 又会提高同屏图片数量。图片加载库要按实际显示尺寸请求，不要因为外屏分辨率高就加载原图。大图拖拽时，先展示低分辨率预览，后台完成解码和色彩空间处理。
+## 多实例、拖拽与共享状态
 
-多窗口生命周期也要改观念。Android 多窗口和 multi-resume 下，可见 Activity 不一定失去 `RESUMED` 状态；焦点变化与可见性变化要分开处理，`onTopResumedActivityChanged()` 用来判断当前 Activity 是否拥有最高优先级输入焦点。[已验证: 官方文档, developer.android.com/develop/ui/views/layout/support-multi-window-mode] 视频播放、相机预览、地图定位和实时协作页面，不能只靠 `onPause()` 停止昂贵任务。更稳的策略是用窗口可见性、top-resumed、业务订阅人数和电量状态共同决定更新频率。
+Android 15 起，应用可在 `<application>` 中声明 `android.window.PROPERTY_SUPPORTS_MULTI_INSTANCE_SYSTEM_UI=true`，让支持的系统 UI 提供 “New Window” 等入口。它表达的是系统 UI 可以发起多实例，并不自动解决 launch mode、task 路由、状态隔离或并发写入。桌面窗口中新 task 通常对应新窗口，任何主动创建多个 task 的路径都要重新走一遍用户流程。
 
-## Perfetto 观察：按输入、主线程、渲染提交、合成四段切开
+多实例状态建议分为三层：
 
-桌面窗口的慢帧不要只看 App 主线程。外接显示器、自由窗口和高分辨率 monitor 可能把压力推到 SurfaceFlinger / HWC；键鼠输入又可能让 InputDispatcher 先排队。Perfetto 里建议按四段排查：
+- **实例内 UI 状态**：滚动位置、临时选择、pane 展开状态归当前 task/Activity，使用稳定实例 key 保存。
+- **共享业务状态**：文档、会话和数据库记录由 repository 提供单一数据源，并使用版本号、事务或冲突策略处理并发写入。
+- **进程级资源**：图片缓存、连接池和线程池可以共享；缓存条目不能隐含“当前窗口”或“当前编辑者”。
 
-| 段落 | 观察对象 | 常见异常 | 判断方向 |
-|------|----------|----------|----------|
-| 输入 | InputDispatcher、InputReader、主线程 input callback | 鼠标移动、滚轮、拖拽事件密集；主线程消费慢 | 减少 pointer move 中的业务逻辑；节流 hover / drag 回调 |
-| 主线程 | `Choreographer#doFrame`、`ViewRootImpl.performTraversals`、Compose trace、Binder callback | resize 时连续 traversals；composition 或 measure 变长 | 缩小重组范围；避免同步 IO；拆分断点切换副作用 |
-| 渲染提交 | RenderThread `DrawFrame`、GPU completion、buffer dequeue / queue | 纹理上传、shader 编译、大图 draw 变长 | 预热 shader；限制图片尺寸；复用渲染对象 |
-| 合成 | SurfaceFlinger、FrameTimeline、HWC composition | 多窗口 layer 增多、外屏分辨率高、HWC 资源不足 | 回到 2.20 / 18.18 判断系统合成压力，避免把系统瓶颈归咎给 App |
+进程级 singleton 与数据库一致性属于两个问题。给内存对象加锁无法替代数据库事务；数据库串行写入也不会阻止两个窗口在 UI 层覆盖彼此的临时草稿。每个可编辑对象都要明确 owner、revision 和冲突提示。
 
-[来源: DeepResearch/2026-05-18-perfetto-jank-cuj-datagrid-scope-boundary.md] 本地调研确认，FrameTimeline 与 JankTracker 相关源码可从 `frameworks/base/libs/hwui/JankTracker.cpp`、`frameworks/base/core/java/android/view/ViewRootImpl.java`、`frameworks/native/libs/gui/include/gui/JankInfo.h` 和 Perfetto SQL 模块 `external/perfetto/src/trace_processor/metrics/sql/android/jank/cujs_boundaries.sql` 追踪。[已验证: AOSP/Perfetto source paths, local DeepResearch 2026-05-18]
+拖拽回调中只传递轻量描述：
 
-第三方 App 不要依赖系统 CUJ 表一定有数据。本地调研记录里，Perfetto 的 `android.cujs.base` 默认更偏系统 UI / Google 进程的 CUJ marker；第三方 App 可以用 AndroidX JankStats、自定义 `Trace.beginSection()`，或者直接 join FrameTimeline 表做窗口 resize 区间分析。[来源: DeepResearch/2026-05-18-perfetto-jank-cuj-datagrid-scope-boundary.md]
+- 文本和小型元数据使用 `ClipData`；
+- 图片、文件和富内容使用 URI，并按来源请求 drag-and-drop 权限；
+- bitmap 解码、MIME 校验、缩略图生成和导入事务放到后台；
+- 不把大对象序列化进 Intent 或跨 Binder 传递。
 
-下面的 SQL 用于从 FrameTimeline 看某个进程的实际帧与预期帧差值，字段名需按当前 Perfetto 版本校对。
+Android 15 的 `DRAG_FLAG_GLOBAL_SAME_APPLICATION` 允许同一应用的可见窗口参与跨窗口拖拽；`DRAG_FLAG_START_INTENT_SENDER_ON_UNHANDLED_DRAG` 可在空白区域未处理 drop 时通过 `IntentSender` 启动新实例。两者的适用条件和权限处理见 [desktop windowing 多实例指南](https://developer.android.com/develop/adaptive-apps/guides/support-desktop-windowing#multitasking-and-multi-instance-support)。
+
+[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md] 多 pane 会同时增加图片数量，外屏也可能提高单张图的目标尺寸。图片加载应按控件显示尺寸请求，并设置可解释的内存/磁盘缓存策略；高分辨率显示器不等于每张图都要解码为原图。
+
+## Multi-resume：可见、RESUMED、焦点与独占资源
+
+Android 10 / API 29 起，多窗口和多显示器支持 multi-resume，多个 Activity 可以同时处于 `RESUMED`。Activity 仍可能因透明窗口、不可聚焦状态或 PiP 等条件进入暂停；通知栏打开时也可能没有 Activity 获得焦点。
+
+`onTopResumedActivityChanged()` 表示 Activity 获得或失去 top-resumed 位置，适合协调相机、麦克风等独占资源。它不是通用的“窗口可见”回调，也不能保证 Activity 一定经历 `true` 状态；官方 API 允许 Activity 从 `onResume()` 直接进入 `onPause()`。生命周期细节见 [multi-window 与 multi-resume 指南](https://developer.android.com/develop/ui/views/layout/support-multi-window-mode) 和 [`Activity.onTopResumedActivityChanged()`](https://developer.android.com/reference/android/app/Activity#onTopResumedActivityChanged%28boolean%29)。
+
+视频、地图、协作光标和实时数据页面要分别定义：
+
+- 不可见时是否停止；
+- 可见但未 top-resumed 时是否降帧、静音或降低订阅频率；
+- 独占硬件被其他应用抢占时如何响应 availability callback；
+- 多个本应用窗口是否允许同时播放或采集。
+
+只在 `onPause()` 中停止所有工作，会遗漏 multi-resume 下仍需降载的可见窗口；只看 top-resumed 又可能错误停止可见内容。策略应由可见性、生命周期、top-resumed、资源可用性和业务意图共同决定。
+
+## 从 resize 输入到 Display present 的证据链
+
+多窗口慢帧按以下顺序观察：
+
+| 阶段 | 关键证据 | 可以回答的问题 |
+|---|---|---|
+| 输入 | InputReader/InputDispatcher、目标窗口、主线程 input callback | 事件是否送达正确窗口，主线程是否来不及消费 |
+| UI | `Choreographer#doFrame`、`performTraversals()`、Compose composition/layout/draw、Binder 调用 | 哪次状态变化触发了布局，CPU 时间花在哪里 |
+| RenderThread / buffer | `DrawFrame`、GPU submit/completion、`dequeueBuffer`、`queueBuffer`、`BufferTX - <layer>` | 应用何时画完并提交，是否等待 slot、fence 或 GPU |
+| WMS / Shell | configuration、relayout、WCT、transition leash、sync group、bounds/crop | task geometry 与应用内容何时更新 |
+| SF / Display | SurfaceFrame、DisplayFrame、layer latch、composition type、present fence | 本帧是否被采纳并在目标 Display 的合成周期中 present |
+
+这里有三个不能合并的概念：
+
+- **geometry**：Task/window bounds、leash position/crop 和 layer transform；
+- **buffer**：应用按某个尺寸绘制并通过 BLAST/BufferQueue 提交的内容；
+- **present**：SurfaceFlinger 针对目标 Display 完成该轮合成并交给显示栈的时间边界。
+
+resize 期间可以暂时出现“新 geometry + 旧 buffer”，系统会缩放旧内容或使用 snapshot 覆盖重绘间隙。`queueBuffer()` 返回只证明 Producer 完成 CPU 侧提交；GPU 可能仍在写，transaction 可能尚未被 SurfaceFlinger latch，该帧也可能错过目标 present。判断“用户已经看到”至少要继续核对 `BufferTX`、latch、FrameTimeline actual slice 和目标 Display 的 present timing。
+
+同一进程有多个窗口时，每个窗口拥有自己的 `ViewRootImpl` 和 buffer 周转，但主线程 Looper 与进程级 RenderThread 可能共享。窗口 B 的 `DrawFrame` 很短，也可能因排在窗口 A 后面而错过 deadline。跨进程时则先分别证明各应用 SurfaceFrame 是否按时，再检查它们汇入的 DisplayFrame。
+
+## FrameTimeline：按 token 关联，禁止按 name 猜
+
+[Perfetto FrameTimeline 文档](https://perfetto.dev/docs/data-sources/frametimeline) 提供 `expected_frame_timeline_slice` 与 `actual_frame_timeline_slice`。App SurfaceFrame 用 `surface_frame_token` 对齐预期和实际工作；SurfaceFlinger DisplayFrame 使用 `display_frame_token`。一个 DisplayFrame 可以包含多个进程的 SurfaceFrame，两种 token 承担的含义不同。
+
+下面的 SQL 只比较目标应用窗口的 actual SurfaceFrame 与 expected SurfaceFrame。`$layer_glob` 应包含目标 Activity/window 的稳定片段，例如 `*com.example/.MainActivity*`。
 
 ```sql
+WITH actual_app AS (
+  SELECT
+    upid,
+    surface_frame_token,
+    display_frame_token,
+    layer_name,
+    ts AS actual_start_ns,
+    ts + dur AS actual_end_ns,
+    jank_type,
+    present_type
+  FROM actual_frame_timeline_slice
+  WHERE upid = $target_upid
+    AND surface_frame_token != 0
+    AND layer_name GLOB $layer_glob
+),
+expected_app AS (
+  SELECT
+    upid,
+    surface_frame_token,
+    ts AS expected_start_ns,
+    ts + dur AS expected_end_ns
+  FROM expected_frame_timeline_slice
+  WHERE upid = $target_upid
+    AND surface_frame_token != 0
+)
 SELECT
-  a.name AS vsync,
-  a.ts AS actual_start,
-  a.ts + a.dur AS actual_end,
-  e.ts AS expected_start,
-  a.ts + a.dur - e.ts AS deadline_delta
-FROM actual_frame_timeline_slice a
-JOIN expected_frame_timeline_slice e
-  ON a.name = e.name AND a.upid = e.upid
-WHERE a.upid = $target_upid
-ORDER BY a.ts;
+  a.surface_frame_token,
+  a.display_frame_token,
+  a.layer_name,
+  e.expected_start_ns,
+  e.expected_end_ns,
+  a.actual_start_ns,
+  a.actual_end_ns,
+  a.actual_end_ns - e.expected_end_ns AS overrun_ns,
+  a.jank_type,
+  a.present_type
+FROM actual_app AS a
+JOIN expected_app AS e
+  USING (upid, surface_frame_token)
+ORDER BY a.actual_start_ns;
 ```
 
-窗口 resize 的 trace 建议同时记录 `wm`、`view`、`input`、`gfx`、`sched`、`freq`、`binder_driver`、`frame_timeline` 和 SurfaceFlinger 相关数据源。抓 trace 时要标记窗口尺寸变化的开始和结束，例如在测试代码中用 `Trace.beginSection("desktop_resize_start")` / `Trace.endSection()` 包住手动或自动 resize 步骤，后续 SQL 才能把帧数据限定到目标区间。
+`overrun_ns > 0` 只表示 actual end 晚于 expected end，原因仍要回到 `jank_type`、UI/RenderThread、GPU 和系统线程。若同一 token 出现多个 layer 记录，应进一步收紧 `layer_name` 或在聚合前去重。随后用 `display_frame_token` 查 SurfaceFlinger 行，确认该应用帧对应的 DisplayFrame 是否也迟到。原先按 `name + upid` 关联会把同名或相邻帧配错，不能用于 deadline 计算。
 
-## 工程治理清单
+第三方应用也不应假设系统 CUJ 表总有 marker。可以使用 AndroidX JankStats、自定义稳定 trace section，或直接按 FrameTimeline token 分析。自定义 section 名保持低基数，例如在自动化 resize 动作外层使用 `Trace.beginSection("desktop_resize")` 与 `Trace.endSection()`；尺寸、文档 ID 等高变化值放日志或测试参数，不拼进 section 名。
 
-桌面窗口化适配不要等到产品说“外屏体验不好”再查。上线前至少覆盖下面这组检查：
+采集配置要区分数据源：
 
-- **manifest 口径**：targetSdk 36/37 后，不再依赖方向、宽高比和不可调整尺寸声明维持页面形态；多实例只给能承受状态副本的 Activity 开启。
-- **断点覆盖表**：至少覆盖 Compact、Medium、Expanded、Large、Extra-large 五类宽度；每类记录首帧时间、resize 过程慢帧、图片峰值内存和列表滚动稳定性。
-- **状态恢复**：旋转、拖拽 resize、外接显示器插拔、多实例打开、进程被杀后恢复，都要验证选中项、滚动位置、草稿和正在播放内容。
-- **资源分桶**：大屏图片按实际显示尺寸请求；低频大资源延迟加载；多 dpi 资源去重和图片压缩沿用 25 章包体积治理策略。[结构参考: Clippings/Android 性能优化 - 资源文件的体积优化实战.md]
-- **输入设备**：鼠标 hover、右键、滚轮、键盘快捷键、Tab focus、拖拽文件和文本都要测；pointer move 回调不能直接触发业务查询。
-- **低端平板降级**：在 CPU / GPU / 内存弱的设备上限制同时可见 pane 数、降低图片并发、关闭非必要动画，避免把桌面布局当成高端设备专属场景。
-- **trace 基线**：每个关键页面保存全屏、分屏、freeform、外接显示器四组 trace。没有 trace 基线，后续回归只能靠主观感受。
+- `android.surfaceflinger.frametimeline` 记录 FrameTimeline；
+- ftrace 记录 `sched_switch`、wakeup、CPU frequency、binder driver 等内核事件；
+- atrace 类别按需要启用 `gfx`、`view`、`wm`、`input` 等；
+- SurfaceFlinger、WindowManager/Shell 与 GPU 数据源按设备和 Perfetto 版本选择。
 
-这组清单里，最容易被忽略的是“窗口尺寸压力测试”。移动端测试常停留在几组静态尺寸，但桌面窗口的风险来自连续变化。测试脚本要让窗口宽度在 600dp、840dp、1200dp、1600dp 附近来回穿过，观察断点抖动、布局重算和数据源重建。
+只写一串类别名并不能保证 trace 中有对应数据。抓取后先检查目标线程、FrameTimeline 表和 SurfaceFlinger 轨是否存在，再开始计算。
 
-## 扩展：ChromeOS、Android 平板桌面窗口与 connected display
+## Android 17 源码与 kernel 锚点
 
-ChromeOS 上的 Android App 运行在 ARC / Waydroid 类容器环境中，窗口管理、输入设备和文件系统体验长期按桌面习惯设计；Android tablet desktop windowing 更接近 Android 原生窗口栈；Android 16 connected display 则把手机 / 折叠屏外接显示器纳入桌面会话。三者都要求应用可调整尺寸，但验证重点不同：
+应用侧结论可沿以下 Android 17 源码入口核对：
 
-- ChromeOS 更关注键盘、鼠标、文件拖放、窗口最小尺寸和生命周期兼容。
-- Android tablet desktop windowing 更关注平板本体的 freeform、多窗口和任务栏交互。
-- Android 16 connected display 更关注内屏与外屏 session 关系、display 切换、外屏高分辨率和输入设备切换。[已验证: Android Developers Blog, android-developers.googleblog.com/2026/03/android-devices-extend-seamlessly-to.html]
+| 核查点 | 固定源码 | 关注内容 |
+|---|---|---|
+| traversal 与 relayout | [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java) | configuration、Insets、`performTraversals()`、relayout 条件和 draw |
+| task 与 Activity 状态 | [`Task.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/Task.java)、[`ActivityRecord.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityRecord.java) | bounds、windowing mode、configuration 与生命周期 |
+| WindowManager | [`WindowManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowManagerService.java)、[`BLASTSyncEngine.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java) | relayout、surface placement、参与同步的 WindowContainer |
+| buffer 提交 | [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp) | buffer transaction、frame timeline info 与回调 |
+| SF 帧归因 | [`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp) | SurfaceFrame、DisplayFrame、present/jank 分类 |
 
-工程上不要为三条线维护三套 UI。更稳的分法是统一用 adaptive layout model 表达窗口能力，再按平台差异补输入、文件、display 和生命周期测试。
+kernel 锚点只回答调度、频率和 fence 层问题：
 
-## 扩展：Predictive Back、键盘返回与窗口关闭
+- [`kernel/sched/core.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c) 与 [`drivers/cpufreq/cpufreq.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/cpufreq/cpufreq.c)：线程运行/等待和 CPU 频率事件；
+- [`drivers/dma-buf/dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)：GPU、显示和 buffer 同步所用 fence 基础。
 
-桌面窗口里，“返回”不只来自边缘手势。用户可能按 Esc、Alt + Left、系统返回键，也可能点击窗口关闭按钮。22.13 节已经覆盖 predictive back 的手势进度和动画成本；桌面窗口场景要补两条边界：
+公共 common kernel 无法说明某台设备的 DPU、HWC plane、GPU 驱动或外接显示链路。此类结论需要 vendor trace、设备驱动符号和实机对照。
 
-- 键盘快捷键通常没有连续 progress，不能复用依赖 `progress` 的手势动画路径。应走离散返回或关闭流程。
-- 窗口关闭要区分“关闭当前实例”和“回到上一页”。编辑器、表单、播放器这类页面要先确认未保存状态，再决定关闭窗口还是只 pop 当前页面。
+## 上线前的检查表
 
-返回处理的性能规则不变：progress 回调只做属性更新，提交阶段再做导航；键盘和关闭事件也不要在主线程做同步保存。需要保存草稿时，把轻量状态先落到内存模型，磁盘写入交给后台任务。
+- **平台规则**：target 36 和 target 37 分开测试；不要依赖固定方向、宽高比或不可调整尺寸维持布局。
+- **连续尺寸**：窗口宽度反复跨过 600dp、840dp、1200dp、1600dp，记录断点抖动、布局次数、慢帧和图片请求。
+- **极端 viewport**：桌面窗口最小尺寸、compact height、超宽窗口、caption/IME/cutout Insets 都要覆盖。
+- **状态恢复**：旋转、resize、跨显示器移动、进程重建、多实例打开后，验证滚动位置、选中项、草稿和播放状态。
+- **多实例一致性**：两个窗口并发编辑、删除、撤销和接收 deep link，确认 revision 与冲突策略。
+- **图片与内存**：按显示尺寸请求资源，限制并发解码；比较单窗与多 pane 的 Java/native/GPU 峰值。
+- **输入设备**：hover、右键、滚轮、Tab focus、快捷键、文件/文本拖拽和权限拒绝路径都要测。
+- **性能证据**：关键页面保存全屏、分屏、freeform 和外接显示器 trace，并记录 displayId、分辨率、刷新率、窗口 bounds 与设备版本。
+- **弱设备策略**：根据测量结果减少同时可见 pane、图片质量或装饰动画；不要仅凭设备名称决定。
 
-## 扩展：大屏性能自动化测试
+[结构参考: Clippings/Android 性能优化 - 资源文件的体积优化实战.md] 资源分桶仍按实际需求设计。外屏分辨率高不代表密度一定更高；选择 drawable、图片请求尺寸和缓存 key 时，应使用当前 window/display 的 density 与控件像素尺寸。
 
-大屏性能测试建议拆成三层：
+## ChromeOS、平板桌面窗口与 connected display
 
-- **Macrobenchmark**：覆盖页面启动、滚动、断点切换前后的关键交互。每轮输出 frame timing 和 trace，作为回归基线。
-- **UIAutomator / instrumentation**：覆盖拖拽、键盘快捷键、焦点移动、复制粘贴和多窗口入口。窗口尺寸变化可结合测试设备能力或平台脚本完成。
-- **Screenshot testing**：覆盖 Compact 到 Extra-large 的静态布局正确性，提前发现 pane 溢出、按钮不可达和空白区域过大。
+ChromeOS 的 Android 运行环境是 ARC。旧设备曾使用 ARC++ 容器，当前架构主要是 ARCVM：完整 Android 栈运行在基于 crosvm/KVM 的虚拟机中，并与 ChromeOS host 集成。Waydroid 不属于 ChromeOS 官方 Android App 运行架构。架构说明见 [ChromeOS.dev 的 ARCVM 介绍](https://chromeos.dev/en/posts/making-android-runtime-on-chromeos-more-secure-and-easier-to-upgrade-with-arcvm)。
 
-自动化不能替代手工外屏测试。外接显示器的刷新率、分辨率、线缆、厂商桌面实现和输入设备组合会改变 trace 形态。自动化负责守住回归，外屏手测负责发现系统和设备差异。
+三类环境可以共用一套 adaptive layout model，但验证重点不同：
+
+- **ChromeOS**：ARCVM/host 交互、x86 设备、自由窗口、文件系统、键盘鼠标与 ChromeOS 生命周期策略；
+- **Android 平板 desktop windowing**：本机 freeform、taskbar/caption、Insets、触控与指针混合输入；
+- **Android 16 QPR3 connected display**：内外屏会话关系、跨 display 移动、密度/刷新率变化和外屏输入。
+
+不要根据 “Chromebook”“tablet” 或 “external display” 直接选择页面结构。布局由当前 window size class 和 posture 决定；文件、输入与会话差异由能力检测和平台测试补充。若采用 `WindowEngagementInfo` 的精确指针模式，还要遵守前述预览依赖边界。
+
+## Predictive Back、键盘返回与关闭窗口
+
+桌面窗口中的离开动作可能来自边缘手势、系统返回键、Esc、Alt+Left、应用快捷键或 caption 的关闭按钮。它们不一定拥有相同语义：
+
+- Predictive Back 可带连续 progress，动画回调只做轻量属性更新，提交后再改变导航状态；
+- 键盘返回通常是离散事件，不应伪造 progress 驱动手势动画；
+- 关闭窗口针对当前 task/实例，未必等价于导航栈 `pop`；
+- 未保存内容的确认流程要归一，避免每种入口维护一份保存逻辑。
+
+磁盘保存和远端同步不应阻塞返回或关闭回调。先把轻量草稿写入内存状态或可靠队列，再异步持久化；若业务要求确认写入成功才能关闭，要给出明确等待状态和失败处理。[22.13 Predictive Back](13-predictive-back-performance.md) 继续说明回调顺序与动画预算。
+
+## 大屏性能自动化
+
+自动化建议分为三层：
+
+- **Macrobenchmark**：测启动、滚动、pane 切换等可重复交互，输出 frame timing 与 Perfetto trace。
+- **UIAutomator / instrumentation**：驱动窗口尺寸、焦点、键盘、拖拽和多实例入口；设备不开放某项窗口控制时，记录该限制并使用受支持的 shell/测试 API。
+- **Screenshot testing**：覆盖五档宽度、compact height、Insets 和字体缩放，发现溢出、遮挡、不可达控件与异常空白。
+
+静态截图不能发现连续 resize 的断点抖动，自动化 trace 也不能覆盖所有外屏链路。外接显示器的分辨率、刷新率、线缆、厂商桌面实现和输入设备会改变行为，应保留实机手测，并让失败报告携带完整环境信息。
 
 ## 小结
 
-桌面窗口化的应用侧优化，要把窗口尺寸当成高频输入，把多实例当成常见状态，把键鼠和外屏当成基础测试环境。布局断点、状态恢复、图片尺寸、数据流和 trace 基线都写清楚后，慢帧归因会简单很多：App 主线程慢，就回到 22.1 / 22.3 修布局和重组；freeform / display 合成慢，就回到 2.20 / 18.18 看窗口、layer 和 SurfaceFlinger。
+桌面窗口化的核心要求，是把 window bounds 当运行时输入，把实例状态与共享业务状态分开，并用 SurfaceFrame/DisplayFrame 证据判断慢帧发生在哪一层。应用线程迟到时回到布局、重组、资源和数据流；应用按时提交而目标 DisplayFrame 迟到时，再进入 WindowManager/Shell、SurfaceFlinger、HWC 和设备驱动。Android 17 扩大了应用必须适配自由尺寸的范围，但没有替换 BLAST、FrameTimeline 或 SurfaceFlinger 的主路径。
