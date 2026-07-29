@@ -166,7 +166,7 @@ SDK 评估容易出现“工具显示了数字，于是数字属于 SDK”的误
 
 ### 4.1 Provider 早于 `Application.onCreate`
 
-在 Android 17 的 [`ActivityThread`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java) 启动路径中，系统先调用 `installContentProviders(...)`，再经 instrumentation 调用 `Application.onCreate()`。这意味着 SDK 的自动 `ContentProvider` 初始化发生在应用自己的 `Application.onCreate()` 之前。
+在 Android 17 的 [`ActivityThread`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java) 启动路径中，系统先调用 `installContentProviders(...)`，再经 instrumentation 调用 `Application.onCreate()`。所以，SDK 的自动 `ContentProvider` 初始化发生在应用自己的 `Application.onCreate()` 之前。
 
 常见主线程成本包括：
 
@@ -182,7 +182,7 @@ SDK 评估容易出现“工具显示了数字，于是数字属于 SDK”的误
 
 [Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup) 将多个自动初始化 Provider 合并到一个 `InitializationProvider`，并通过 `Initializer.dependencies()` 显式声明依赖顺序。它适合统一入口和减少 Provider 数量，但不会自动把初始化移出主线程：自动发现的 `Initializer.create()` 仍在 Provider 启动阶段执行。
 
-如果某个初始化器并非首屏所需，可在 Manifest 中关闭其自动发现：
+如果某个初始化器与首屏无关，可在 Manifest 中关闭其自动发现：
 
 ```xml
 <provider
@@ -196,7 +196,7 @@ SDK 评估容易出现“工具显示了数字，于是数字属于 SDK”的误
 </provider>
 ```
 
-删除这条元数据后，应用可在用户同意或功能首用时调用 `AppInitializer.initializeComponent(...)`。还要核对初始化依赖图：关闭某个自动初始化器的发现也会影响经它自动发现的依赖，不能只看单个节点。
+删除这条元数据后，应用可在用户同意或功能首用时调用 `AppInitializer.initializeComponent(...)`。App Startup 的公开契约还规定：关闭某个 component 的自动初始化，也会关闭其 `dependencies()` 返回组件的自动初始化；随后手动初始化该 component 时，这些依赖会按图一并初始化。若某个依赖同时被其他自动发现的 `Initializer` 引用，它仍可能从另一条路径启动，因此必须检查完整依赖图。
 
 ### 4.3 按需、延迟与异步不是同义词
 
@@ -339,7 +339,7 @@ Android 17 的 [所有应用行为变更](https://developer.android.com/about/ve
 
 ### 6.4 功耗看场景，不看请求次数
 
-请求次数少不代表耗电低。频繁唤醒、差网络下重传、无线电尾部能耗、过密 Alarm、持续定位和音频资源都可能放大成本。应在固定场景中比较 CPU 时间、唤醒、调度、网络字节与电量指标；Perfetto power rails 或 Macrobenchmark `PowerMetric` 是否可用取决于设备支持，不能把缺失值当作零消耗。
+请求次数少不代表耗电低。频繁唤醒、差网络下重传、无线电尾部能耗、过密 Alarm、持续定位和音频资源都可能放大成本。应在固定场景中比较 CPU 时间、唤醒、调度、网络字节与电量指标。Macrobenchmark [`PowerMetric`](https://developer.android.com/reference/kotlin/androidx/benchmark/macro/PowerMetric) 仍是实验 API，高精度 power/energy 数据依赖设备支持，而且结果反映测量窗口内的系统总消耗，不是某个应用或 SDK 的独占消耗。Perfetto power rails 也有相同的设备与归因边界；缺失数据不能按零消耗处理。
 
 ### 6.5 Android 17 的相关兼容点
 
@@ -558,7 +558,7 @@ Android 17 AOSP 的 [`SdkSandboxManagerService`](https://android.googlesource.co
 
 评估时应报告宿主与 Runtime 进程的合计 PSS/RSS，并同时测量加载延迟、Binder 回调、远端 UI 帧时间、进程死亡率与恢复成功率。“内存共享机制”不是准确描述：两端没有共享堆。可信分发在某些商店和版本组合下可能减少重复下载或磁盘存储，但不能据此推断运行时 RAM 会下降。
 
-SDK Runtime 不支持的设备会走 [兼容模式](https://privacysandbox.google.com/private-advertising/sdk-runtime/backward-compatibility)：SDK 与资源随应用打包，在宿主侧模拟相应 API。准入需要分别覆盖 Runtime 路径和兼容路径，因为初始化、内存、调用延迟与故障边界并不相同。
+SDK Runtime 不支持的设备会走 [兼容模式](https://privacysandbox.google.com/private-advertising/sdk-runtime/backward-compatibility)：AGP 与 Bundletool 构建包含 SDK 的应用变体，client library 从应用 assets 提取 SDK DEX，再用独立于应用主 classloader 的 classloader 把代码加载到宿主进程，并模拟相应 API。这个 classloader 能降低类名冲突，却没有 SDK Runtime 的进程隔离。准入需要分别覆盖 Runtime 路径和兼容路径，因为初始化、内存、调用延迟与故障边界并不相同。
 
 Runtime/供应商/商店/设备的支持范围会变化，不应在技术文档中写死迁移日期。每个发布版本应记录运行路径和失败回退行为。
 
