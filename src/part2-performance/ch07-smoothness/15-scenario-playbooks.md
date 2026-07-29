@@ -76,472 +76,398 @@ last_deepseek_cn_review_at: 2026-06-23
 - 🔸 把作战手册转成团队内部 checklist / runbook
 <!-- outline-end -->
 
-## 版本边界:不同 Android 版本的可用观察入口
+## 适用范围与证据锚点
 
-本章引用的排障工具和指标,部分在 Android 12+ 才可用。在 Android 8-11 上排查时,需要回退到替代手段。
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点。涉及调度、CPU 频率、thermal 与 fence 时，以 `android17-6.18-2026-06_r6` 为内核锚点。Android 8—16 的入口用于说明版本差异，现场结论仍应匹配设备版本、厂商实现、应用构建和复现条件。
 
-### FrameTimeline:Android 12+
+排障手册解决的是入口选择问题。它不会用一张固定流程图替代证据：同一句“卡”，可能对应掉帧、输入反馈晚、数据未就绪、进程重建、ANR，或热限频后的系统性退化。工程师要先把用户语言改写为可测量的时间区间，再选择 trace、日志或堆栈。
 
-`FrameTimeline` 是 Android 12(API 31)引入的 Perfetto 数据源,能直接在 trace 中标注每帧的 jank type(`AppDeadlineMissed`、`BufferStuffing`、`SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed`、`DisplayHAL`、`PredictionError` 等)。Android 8-11 没有 `FrameTimeline`,排查流畅性问题需要回退到以下入口:
+以下平台能力决定了不同版本能看到什么：
 
-- **gfx/view trace tag**:`adb shell setprop debug.atrace.tags.enableflags 0xA` 开启 `gfx` (0x2) + `view` (0x8) tag(0x200 对应的是 ATRACE_TAG_VIDEO,不是 gfx+view),在 Perfetto 中观察 `Choreographer#doFrame` slice 的耗时和 RenderThread 的 `DrawFrame` 区间
-- **SurfaceFlinger slice**：按版本选择观察入口：Android 8-10 看 `handleMessageRefresh`；Android 11-12 看 `onMessageRefresh()`；Android 13+ 看 `SurfaceFlinger::commit()` 和 `SurfaceFlinger::composite()` 的 slice。`Output::composeSurfaces()` 仍可作为 CompositionEngine 侧的辅助锚点。如果 Perfetto 中找不到对应 slice，可通过 `SurfaceFlinger` 主线程的 sched 轨道结合 frame timeline 反推合成耗时
-- **sched 轨道**:主线程和 RenderThread 的调度状态(Runnable / Sleeping / Uninterruptible),排查调度延迟和 CPU 争抢
-- **FrameMetrics / JankStats**(Android 7.0+):通过 `Window.OnFrameMetricsAvailableListener` 或 `JankStats` 库在应用内采集帧耗时分布,作为 `FrameTimeline` 的应用侧替代
+| 能力 | 起始版本 | 能回答的问题 | 使用边界 |
+|---|---:|---|---|
+| `FrameMetrics` | API 24 | 应用 Window 的帧阶段耗时 | 只覆盖本应用 Window，不能直接归因系统合成 |
+| `JankStats` | API 16 | 帧耗时异常与应用 UI 状态 | API 16—23 主要依赖估算；API 24+ 可借助 `FrameMetrics` |
+| `ApplicationExitInfo` | API 30 | 进程退出原因、退出时的部分资源数据和可用 trace | PSS/RSS 是系统最近一次采样，可能为 0，也不代表退出瞬间 |
+| `FrameTimeline` | API 31 | Window 帧的期望时间、完成时间、呈现类型和 jank 分类 | 当前官方文档明确不支持 `SurfaceView` 内容帧 |
+| `ApplicationStartInfo` | API 35 | 冷/温/热启动、启动原因和单调时钟时间戳 | `FULLY_DRAWN` 依赖应用调用 `reportFullyDrawn()` |
+| `AppJankStats` | API 36 | 应用向系统报告 View 级卡顿统计 | 它是控件统计入口，不能代替 Perfetto 中的系统归因 |
+| `ApplicationExitInfo.AnrInfo` | API 37 | ANR 类型、超时、ID 和用户可感知性 | 只用于系统已记录的 ANR，不能描述尚未触发 ANR 的长停顿 |
 
-### ApplicationExitInfo:API 30+
+Android 8—11 没有 `FrameTimeline`。这几代系统可组合使用 `gfx`、`view`、`sched`、`freq`、`input` 等 trace 类别，观察 `Choreographer#doFrame`、RenderThread、SurfaceFlinger 主线程和线程调度；应用侧再补 `FrameMetrics` 或 `JankStats`。SurfaceFlinger 的 slice 名称受版本、构建和 tracing 配置影响，排查时应按线程、时间和相邻事件定位，不能把某个函数名当成跨版本协议。
 
-`ApplicationExitInfo` 在 Android 11(API 30)引入,能查询进程退出的原因、状态和堆栈。Android 8-10 需要回退到:
+## 现场先写一张问题卡
 
-- **traces.txt**:`adb pull /data/anr/traces.txt`,ANR 发生后系统写入的堆栈快照。注意这只记录 ANR 触发时刻的主线程栈,不含 ANR 前的时间线
-- **logcat / EventLog**:过滤 `ActivityManager` 和 `Process` 相关 tag,观察进程被杀的信号和原因(如 `Low Memory Killer`、`Background anr`)
-- **bugreport**:完整的系统状态转储,包含进程列表、内存分布、LMKD 记录。对内存压力导致的进程回收,bugreport 比单一 traces.txt 信息更全
+trace 之前缺少场景定义，trace 之后通常只会得到一幅很宽的时间轴。问题卡至少记录以下内容：
 
-### BufferStuffing 识别
+| 字段 | 记录要求 |
+|---|---|
+| 软件身份 | 应用版本、commit、构建类型、WebView/Flutter/播放器版本 |
+| 设备身份 | 机型、SoC、内存、Android 版本、Build fingerprint |
+| 显示条件 | 分辨率、刷新率、亮度、多窗口或画中画状态 |
+| 操作脚本 | 从哪个页面开始、输入动作、数据集、网络条件 |
+| 体验失效 | 哪个反馈晚了、哪个画面跳了、是否能继续操作 |
+| 时间窗口 | 触发点、异常开始、恢复或超时点 |
+| 复现率 | 次数、成功率、冷/温/热状态、是否集中在特定设备 |
+| 对照组 | 正常版本、正常设备或关闭某项功能后的结果 |
 
-`BufferStuffing` 作为 jank type 标注是 Android 12+ `FrameTimeline` 的能力。Android 8-11 没有 `BufferStuffing` 标签,但可以通过以下方式间接识别:
+“点击后大约 700 ms 才出现按压反馈”比“按钮卡”更适合分析。“120 Hz 设备连续滚动第 4 秒出现三次长间隔”也比“列表 FPS 低”提供了更多约束。
 
-- **帧间隔观察**：在 `Choreographer#doFrame` slice 中，如果连续帧的 Actual Present 持续落后 Expected Present 并呈递增趋势，管线积压（潜在的 BufferStuffing）是候选根因之一。需结合 BufferQueue slot 状态和 jank type 做交叉验证，不能仅凭帧间隔就下结论
-- **BufferQueue 状态**:`adb shell dumpsys SurfaceFlinger` 中查看对应 Layer 的 `BufferQueue` 槽位状态,如果多个 slot 处于 `QUEUED` 态,说明帧堆积
-- **Input → doFrame 延迟**:从 Input 事件时间戳到对应 `doFrame` 开始时间的差值异常增大,通常伴随输入延迟体感
+## 从投诉到责任路径的五步分流
 
-### 排障入口版本速查
+### 第一步：确认体验失效类型
 
-| 工具 / 指标 | 可用版本 | Android 8-11 替代 |
+把现场归入一个主类别，其他现象作为伴随信号：
+
+| 用户描述 | 主类别 | 起始观察点 |
 |---|---|---|
-| FrameTimeline | Android 12+ | gfx/view/sched trace + FrameMetrics |
-| ApplicationExitInfo | API 30+ | traces.txt + logcat + bugreport |
-| BufferStuffing 标签 | Android 12+ | 帧间隔观察 + BufferQueue dump |
-| JankStats | Android 7.0+ | 直接可用(但不如 FrameTimeline 信息丰富) |
-| Perfetto `actual_frame_timeline_slice` / `expected_frame_timeline_slice` 表 | Android 12+ | `slice` 表中过滤 `Choreographer` / `DrawFrame` |
+| 滑动、动画出现跳变 | 帧节奏异常 | `FrameTimeline`、主线程、RenderThread、SurfaceFlinger |
+| 点击后反馈晚 | 输入到反馈延迟 | 输入时间、主线程调度、锁、Binder、IO、首个反馈帧 |
+| 页面出现或可用得晚 | 启动/页面就绪慢 | TTID、TTFD、数据与资源就绪 |
+| 界面长时间无响应 | ANR 或 near-ANR | ANR 记录、主线程栈、超时前时间线 |
+| 回前台越来越慢 | 生命周期/内存压力 | 进程存活、重建、GC、page fault、LMKD |
+| 发热后越来越卡 | 功耗与热退化 | 温度、CPU/GPU 频率、调度、后台负载 |
 
----
+一个现场可以同时存在两类问题。例如页面切换动画按帧运行，内容却在 1.5 秒后出现；此时动画流畅度与内容就绪时间应分别测量。
 
-## 为什么单独写这一章
+### 第二步：固定时间窗口
 
-前面几章把原理、工具和分析方法拆得很细。这种写法适合系统学习,但到了真实现场,读者最先遇到的问题往往不是"Choreographer 是怎么工作的",而是"用户说卡,这次先从哪看起"。
+确定一个可重复的起点和终点。输入问题可从事件到达应用或业务埋点开始，到首个可见反馈帧结束；启动问题可从系统启动时间戳开始，到 TTID 或 TTFD 结束；ANR 要覆盖超时前的等待过程。只截取异常发生后的轨道，常会漏掉锁的持有者、Binder 发起方或频率下降的前因。
 
-这两种需求并不冲突。前面的章节负责把问题讲透,这一章负责把它们重新接回真实工作流。它更像一张地图,告诉读者从投诉到结论之间,第一步该往哪里走。
+### 第三步：识别输出类型
 
-如果只会看单点知识,不会把问题放回场景,排障就很容易出现两种极端:要么见到一个长 slice 就一路追下去,要么因为线索太多,到头来什么也没追出来。场景化手册的作用,就是先把问题压缩到一个足够小的范围里。
+渲染路径决定了该追哪条 Surface：
 
-## 排障前先分类,再深入细节
+- 普通 View/Compose 内容经过宿主 Window：`vsync-app → Choreographer#doFrame → INPUT/ANIMATION/INSETS_ANIMATION/TRAVERSAL/COMMIT → syncAndDrawFrame → RenderThread → BLAST BufferQueue → SurfaceFlinger → HWC → present`。
+- `SurfaceView` 内容由独立 Producer、Surface、BufferQueue 和 Layer 提交；宿主 Window 与内容层要分开分析。
+- `TextureView` 接收外部 Buffer 后，由宿主 RenderThread 采样进 App Window；宿主 Window 仍是提交给 SurfaceFlinger 的最终层。
+- WebView 常同时包含 Chromium renderer 与宿主 HWUI 路径；视频、受保护内容还可能增加独立层。
+- Flutter 要记录根渲染模式、平台视图和外部纹理。线程合并策略会随 Flutter 版本与配置变化，不能只靠固定线程名判断。
 
-现场排障最容易犯的错误是分类没做就一头扎进具体路径。
+这组路径来自 Android 17 源码和本地 `rendering_pipelines` 系列的交叉整理。它约束了一个常见判断：UI 线程退出 `doFrame` 只说明主线程阶段结束，RenderThread、BufferQueue、SurfaceFlinger、HWC 和显示设备仍可能延后该帧。
 
-用户的一句"卡",背后可能是:
+### 第四步：把帧连接到责任线程
 
-- 掉帧
-- 输入延迟
-- 启动慢
-- 前后台恢复慢
-- 内存压力
-- 接近 ANR
+对支持 `FrameTimeline` 的普通 Window，按 `DisplayFrame → SurfaceFrame → 进程/Layer → 主线程或 RenderThread` 逐层定位。若异常发生在 `SurfaceView`、相机或视频独立层，由 Layer、BufferQueue、生产者时间戳、fence、SurfaceFlinger 与 HWC 证据重建同一时间窗口。
 
-如果第一步就把它当成某一种问题,后面抓 trace、看线程、找责任路径都可能一路跑偏。
-所以排障要先做分类,再做深入分析。
+`SurfaceFrame` 和 `DisplayFrame` 使用各自的 token 命名空间。数值相同也不能直接相连；应使用 trace 表中的 `display_frame_token` 等显式关系。若现场没有生成目标帧，例如业务等待网络后才触发绘制，帧时间线也无法解释帧创建之前的空白，需要回到输入、业务任务和数据依赖。
 
-## 一个统一的四步框架
+### 第五步：写出可证伪假设
 
-不管现场是什么问题,先按下面四步走:
+每轮分析只保留一个主假设，并附上反证条件。例如：
 
-1. **先定类**
-   这是掉帧、响应慢、ANR、内存压力,还是混合问题?
+> 假设：主线程在列表滚动期间等待同步 Binder，导致三个 App SurfaceFrame 超过预算。若移除该调用后相同操作仍出现同一批 SurfaceFlinger deadline miss，当前假设不成立。
 
-2. **再定窗口**
-   问题发生在点击后的 300ms、首帧前 3 秒,还是前后台切换的某个阶段?
+这种写法要求结论同时包含时间、线程、等待对象、受影响帧和对照结果，避免从一条长 slice 直接跳到代码归因。
 
-3. **再定责任链**
-   MainThread、RenderThread、SurfaceFlinger、Binder、IO、调度,哪条路径最可疑?
+## FrameTimeline 应该怎样读
 
-4. **深入到具体代码和工具**
-   确定责任链后,再决定要不要继续上 SQL、heap dump、stack sampling 或 btrace。
+Android 12+ 的 `android.surfaceflinger.frametimeline` 数据源会生成 Expected 和 Actual 时间线。Expected 描述调度期望；Actual 描述应用或 SurfaceFlinger 完成与呈现的记录。
 
-这四步看起来普通,但它背后的约束非常强:每一步都在缩小问题空间。经验价值在于知道应该先砍掉哪些不相关方向。
+Perfetto UI 中的颜色承担不同含义：
 
-## 用户的"卡",先翻译成技术问题
+- 红色表示该进程造成了 jank。
+- App 轨道上的黄色表示该 SurfaceFrame 受到 SurfaceFlinger 侧 jank 影响。
+- 蓝色表示帧被丢弃。
+- 浅绿色表示 high latency state：帧率可能平稳，呈现却持续落后，输入到显示的延迟随之增加。
 
-用户不会说"这像是 AppDeadlineMissed",也不会说"这应该查 `ApplicationExitInfo`"。他只会说"卡""慢""像死掉了一样"。这时候工程师的第一职责,是把投诉翻译成可分析的问题。
+`Buffer Stuffing` 是 `actual_frame_timeline_slice.jank_type` 中的字段值。它描述应用在旧帧呈现前持续排入新帧，管线延迟逐渐堆积的状态；继续堆积时，Producer 还可能在 dequeue 阶段等待可用 slot。它不能简化为“一帧算得慢”，也不能由一条 `dequeueBuffer` 长 slice 单独确认。
 
-| 用户说法 | 第一判断 | 第一观察点 |
-|---|---|---|
-| "滑动一卡一卡的" | 狭义流畅性 / jank | `FrameTimeline`、`doFrame`、`RenderThread` |
-| "点了没反应" | 输入延迟 / 响应慢 | Input → MainThread → Binder / IO |
-| "打开页面要等很久" | 启动或页面可交互时间过长 | TTID / TTFD、首屏数据路径 |
-| "界面像死掉了一样" | ANR 或接近 ANR | 主线程栈、`ApplicationExitInfo`、`traces.txt` |
-| "越用越卡,回前台更慢" | 内存压力 / 进程回收 / page fault | PSS、GC、LMKD、冷 / 温 / 热启动切换 |
-| "耗电快 / 手机发烫，同时卡" | 功耗/发热伴随卡顿 | Battery Historian、Perfetto power rails、Thermal/CPU frequency 轨道 |
+下面的查询用于列出被 FrameTimeline 分类为 jank 的 Actual 帧，并保留进程、Layer、SurfaceFrame 与 DisplayFrame 的关联字段：
 
-这张表的价值在于逼着读者先问一句:**我现在看到的,到底是哪一类体验失效?**
+```sql
+SELECT
+  p.name AS process_name,
+  a.layer_name,
+  a.ts,
+  a.dur,
+  a.surface_frame_token,
+  a.display_frame_token,
+  a.jank_type,
+  a.on_time_finish,
+  a.present_type
+FROM actual_frame_timeline_slice AS a
+LEFT JOIN process AS p USING (upid)
+WHERE a.jank_type != 'None'
+ORDER BY a.ts;
+```
 
-**耗电/发热伴随卡顿**：这类问题经常是热限频和资源争抢叠加的结果。排查时先确认因果关系——是功耗导致的性能退化，还是性能问题触发了功耗异常。
+查询结果适合确定候选帧和责任层。`jank_type` 仍需与线程 slice、调度状态及上下游帧对应，不能单独充当代码根因。
 
-排障顺序：
-1. **先看温度与频率**：在 Perfetto 中打开 `thermal` 和 `cpufreq` 轨道。如果核心频率随温度上升持续下降，说明系统已进入热限频。Android 13+ 的 `android.thermal` 数据源可直接观察 thermal severity level。
-2. **看唤醒源**：打开 `wakelock` 轨道，确认是否有长时间持有的 partial wake lock 或 kernel wakelock 阻止了 CPU 进入深度休眠。Battery Historian 的 `Wakelocks` 图表对 24 小时尺度的唤醒摘要比 Perfetto 更直观。
-3. **看后台任务与网络**：`JobScheduler` slice 和 `Network` 轨道可以判断是否有高频的定时任务、周期性网络同步或 WorkManager 重试循环在后台持续消耗 CPU。
-4. **看渲染负载**：如果功耗异常集中在交互场景，回到 MainThread / RenderThread / GPU 轨道确认是否存在超预算渲染（如 120Hz 无法维持、过度绘制或大纹理频繁上传）。
-5. **Battery Historian 做全时段摘要**：单次 Perfetto trace 难以覆盖电池整体表现，用 `adb bugreport` 或 Battery Historian 看全天的耗电排行、唤醒频次和网络传输量，再指向具体可疑的 UID/时间段。
+下面的聚合用于找出 trace 中 `Buffer Stuffing` 集中的进程和 Layer：
 
-核心分流原则：温度持续上升（thermal throttling active）→ 找 CPU/GPU 负载源头；唤醒频率异常 → 看 wakelock + JobScheduler + 网络重试；耗电分布集中在某 UID → 排除后台异常任务或 SDK 轮询。
+```sql
+SELECT
+  p.name AS process_name,
+  a.layer_name,
+  COUNT(*) AS stuffed_frames,
+  SUM(a.dur) / 1e9 AS total_duration_s
+FROM actual_frame_timeline_slice AS a
+LEFT JOIN process AS p USING (upid)
+WHERE a.jank_type = 'Buffer Stuffing'
+GROUP BY p.name, a.layer_name
+ORDER BY stuffed_frames DESC;
+```
 
-> 本小节内容基于 AOSP Perfetto 文档和 Battery Historian 官方指南。所述排障路径为通用方法框架，具体阈值（如温度触发点、wakelock 合理时长）需结合设备 SoC 型号和系统配置判断。
+聚合高只能说明该 Layer 在采样窗口内多次进入积压状态。还要检查输入到反馈的延迟趋势、Producer 节奏、可用 slot 等待、消费者推进和显示节奏，才能定位积压从哪里开始。
 
-## 八类最常见的性能现场
+## 九类常见现场
 
 ### 1. 冷启动慢
 
-冷启动慢最常见的误判,是把"已经看到画面"误当成"启动结束"。
-很多应用的 TTID 并不难看,拖慢体感的是 TTFD。
+冷启动分析要先确认本次记录属于冷、温还是热启动。Android 15 / API 35 起，`ApplicationStartInfo` 可给出启动类型、原因、启动组件和一组单调时钟时间戳；其中包括 launch、fork、`bindApplication`、`Application.onCreate`、首帧、RenderThread 初始帧、SurfaceFlinger 合成完成，以及应用上报后的 `FULLY_DRAWN`。
 
-排这类问题时,先看四件事:
+排查顺序如下：
 
-- TTID
-- TTFD
-- `reportFullyDrawn()`
-- 首屏数据加载和骨架屏退出时机
+1. 分别统计冷、温、热启动，禁止把三类样本混成一个分位数。
+2. 对照 TTID 与 TTFD。TTID 晚，追进程创建、初始化、首帧绘制；TTID 正常而 TTFD 晚，追首屏数据、异步资源和可交互边界。
+3. trace 从启动动作前开始，覆盖首帧和 `reportFullyDrawn()`；启动末尾缺失会让 TTFD 分析失去终点。
+4. 检查 Application/ContentProvider 初始化、主线程 Binder/IO、类加载、资源加载和首屏布局，不用函数总耗时替代关键路径。
+5. Native 应用在 16 KB 页设备上要验证 ELF 与 APK ZIP 对齐。兼容模式只表示部分旧应用仍可运行，可靠性和性能影响应在目标设备测量。
 
-实际落手顺序可以很简单:
+下面两条命令分别确认设备页大小和 APK 的 16 KB ZIP 对齐：
 
-1. 先分清这次是冷、温还是热启动,不要混在一起看。
-2. 对照 TTID 和 TTFD,先分清"首帧慢"还是"可交互慢"。
-3. 抓一次完整冷启动 trace。
-4. 如果 TTID 正常但 TTFD 差,先查 Application 初始化、首屏数据和可交互边界。
-5. 如果应用以 4KB page-alignment 编译但运行在 16KB 页设备上,冷启动的 `mmap` + page fault 开销会额外增加。检查 APK 内 `.so` 文件的 ELF LOAD segment alignment 是否为 16KB(`readelf -l libxxx.so | grep LOAD`),非 16KB alignment 的库在 16KB 设备上会触发兼容模式拷贝,PSS 飙升且无法享受大页加速红利。
-
-这一类问题最容易掉进"感觉已经打开了,所以不算慢"的误区。对用户来说,画面出现只是第一步,能不能开始用才是第二步。
-对应章节:`8.1`、`8.2`、`8.3`、`15.6`。
-
-### 2. 列表滑动卡顿
-
-列表卡顿是最典型、也最容易被误判的一类问题。很多人第一反应是去看 `onBindViewHolder()`,这当然没错,但如果还没确认 jank 到底落在哪一层,这个动作还是太早。
-
-先看:
-
-- `FrameTimeline`
-- Janky Frame Rate
-- `RecyclerView` 的 bind / layout / prefetch 相关工作
-
-再抓:
-
-- 一段稳定滑动过程的 Perfetto
-- 必要时补 FrameMetrics / JankStats 线上样本
-
-再排:
-
-- MainThread 的 `doFrame`
-- RenderThread 的 `DrawFrame`
-- 图片解码
-- DiffUtil
-- 布局层级
-
-比较稳的顺序是:
-
-1. 先确认是持续性掉帧,还是偶发长帧。
-2. 先看 `FrameTimeline` 的 `Jank Type`,不要只看主线程颜色。
-3. 再分流到 MainThread、RenderThread、SurfaceFlinger。
-4. 再回到具体控件、图片、DiffUtil 和业务代码。
-
-这里最常见的误判,是见到滑动卡,就默认问题一定在 UI 线程。实际工程里,图片线程抢 CPU、RenderThread 超时、SurfaceFlinger 合成变慢都很常见。
-对应章节:`7.3`、`7.4`、`7.5`、`18.2`、`18.7`。
-
-### 3. 页面切换慢,或者切页动画不顺
-
-页面切换问题经常有两种长相:
-
-- 动画本身不顺
-- 动画顺,但内容来晚了
-
-这两类问题的责任链完全不同。前者更偏流畅性,后者更偏响应速度和数据就绪。
-
-排这类问题时,先做一个粗判断:
-点击之后,页面是不是很快切过去了,只是内容空着?如果是,先看内容加载路径,再看动画。
-
-比较稳的顺序是:
-
-1. 先确定慢的是动画,还是内容。
-2. 看点击事件后第一段空白时间花在哪里。
-3. 如果页面很快出现但内容迟到,回到响应速度和数据加载路径。
-4. 如果动画本身掉帧,再回到 MainThread / RenderThread / SurfaceFlinger。
-
-很多"切页卡"往往不是切页动画的问题,而是切页后数据、骨架屏、图片、路由初始化堆在一起,用户把它统称成"切页卡"。
-对应章节:`7.4`、`8.4`、`1.4`、`1.5`。
-
-### 4. 输入延迟高,但不一定掉帧
-
-这一类问题最容易被误判成普通慢帧。用户的感觉是"点了没反应",但等一会儿画面还是动了。问题往往不在渲染本身,而在输入到反馈之间的等待。
-
-先看:
-
-- Input 事件到 `doFrame` 的时差
-- 主线程是否长时间 Runnable
-- 是否出现 BufferStuffing 或 high latency state。Perfetto UI 的 FrameTimeline 轨道用浅绿色(Light Green)表示 high latency state:帧率看起来平滑,但帧整体晚呈现,输入延迟升高。Actual Present 稳定落后 Expected Present 只能作为 BufferStuffing 候选信号,需要结合 `jank_type`、BufferQueue slot 状态或 `dequeueBuffer()` 阻塞一起确认
-
-再排:
-
-- InputReader / InputDispatcher
-- MainThread 调度
-- 锁等待
-- Binder 等待
-
-一个可靠的做法是:
-
-1. 从触摸事件落点开始量输入到视觉反馈的窗口。
-2. 看主线程是不是长时间 Runnable。
-3. 看是否有 Binder reply wait 或锁等待。
-4. 再判断是 App 自己堵住了,还是系统没给到 CPU。
-
-这类问题的难点在于太容易看错成渲染问题。
-对应章节:`3.1`、`3.2`、`7.1`、`15.2`。
-
-### 5. 视频列表、SurfaceView、TextureView 场景卡
-
-只要界面里出现独立 Surface,排障路径就要立刻切换。因为这时候 UI 帧和视频帧很可能已经不是同一条路径了。
-
-先看:
-
-- 独立 Surface 数量
-- App UI 和视频渲染是否互相争抢
-- HWC overlay 是否命中
-
-再抓:
-
-- App 进程
-- SurfaceFlinger
-- GPU / composition 相关轨道
-
-再排:
-
-- SurfaceView / TextureView 选型
-- BufferQueue 堵塞
-- 合成路径切换
-
-实际顺序通常是:
-
-1. 先确认是 UI 卡,还是视频画面卡。
-2. 看独立 Surface、Layer 数量和合成路径。
-3. 看 App 线程和 SurfaceFlinger 谁在超时。
-4. 再回到容器选型和播放器实现。
-
-这类问题最典型的误判,就是把所有掉帧都归到 UI 线程。
-对应章节:`18.4`、`18.6`、`18.7`、`18.15`。
-
-
-
-### 5.1 BufferQueue 堵塞的 Perfetto 源码级特征
-
-在视频列表、SurfaceView 这类场景中，卡顿的根因经常落在 `BufferQueueProducer::dequeueBuffer()` 的锁等待上。通过 AOSP 源码(android14-release)可以精确定位以下四类 Perfetto 特征:
-
-#### 特征 1:dequeueBuffer 线程 slice 拉长
-
-`BufferQueueProducer::dequeueBuffer()` 在 Perfetto 中有对应的 `ATRACE_CALL()` 函数级 slice。正常情况下该 slice 应小于 1ms;超过 5ms 说明发生了锁等待。
-
-源码位置:`frameworks/native/libs/gui/BufferQueueProducer.cpp, 行 389-630`
-
-关键等待路径(行 452):
-```cpp
-status_t status = waitForFreeSlotThenRelock(FreeSlotCaller::Dequeue, lock, &found);
+```bash
+adb shell getconf PAGE_SIZE
+zipalign -c -P 16 -v 4 app-release.apk
 ```
 
-`waitForFreeSlotThenRelock()`(行 283-389)在 `mCore->mDequeueCondition` 上等待,默认为无限等待(`mDequeueTimeout = -1`),这是 SurfaceView 卡顿的根因之一。
+第一条返回 `16384` 时，设备使用 16 KB 页；第二条通过只说明 APK 内未压缩共享库的 ZIP 对齐满足检查，还应使用 NDK r28+ 或按官方指南验证 ELF LOAD segment。不要预设固定的 PSS、page fault 或启动损耗。
 
-#### 特征 2:mDequeueCondition 条件变量等待
+Android 17 还提供强制暴露兼容问题的调试开关。下面的命令用于测试环境，执行前应记录设备原值，测试后恢复：
 
-`mDequeueCondition.wait()`(行 381)是 pthread condition variable 等待。当 SurfaceFlinger 来不及 `acquireBuffer()` 消费队列时,Producer 线程会在此阻塞,状态变为 `Sleeping` 或 `Uninterruptible`。
+```bash
+adb shell setprop bionic.linker.16kb.app_compat.enabled fatal
+adb shell setprop pm.16kb.app_compat.disabled true
+```
 
-#### 特征 3:mQueue.size() > 1(队列积压)
+这两个属性会收紧兼容行为，适合让未正确适配的 Native 依赖尽早失败；它们不属于线上优化参数。
 
-`NATIVE_WINDOW_CONSUMER_RUNNING_BEHIND` 查询(行 1197)返回 `true` 时,`mQueue.size() > 1`,说明 Consumer 消费速度跟不上 Producer 生产速度。Perfetto 中搜索 `BufferQueueConsumer::acquireBuffer` 的 `PRESENT_LATER` 返回值频率可判断积压程度。
+导航：`8.1`、`8.2`、`8.3`、`15.6`。
 
-#### 特征 4:TIMED_OUT 返回值
+### 2. 列表滚动和连续动画掉帧
 
-当 `mDequeueTimeout >= 0`(应用设置过超时)时,`waitForFreeSlotThenRelock()` 在超时后返回 `TIMED_OUT`(行 376-378)。SurfaceView 默认无限等待,不会出现此返回值;但 Camera preview 等场景会设置超时。
+采样时使用固定数据集、固定手势和稳定刷新率，保留进入滚动前后的时间。分析按以下层次推进：
 
-**Perfetto 中的实际搜索关键词**:
-- `BufferQueueProducer::dequeueBuffer` - Producer 侧取 buffer 耗时 slice
-- `BufferQueueConsumer::acquireBuffer` - Consumer 侧取 buffer 耗时 slice
-- `PRESENT_LATER` - Consumer 主动推迟的 trace 事件
-- `NATIVE_WINDOW_CONSUMER_RUNNING_BEHIND` - 来自 `query()` 的状态值
-- `android.surfaceflinger.frametimeline` 数据源中的帧时间线(对应 `actual_frame_timeline_slice` / `expected_frame_timeline_slice` 表)
+1. 用 `FrameTimeline` 区分 App deadline、SurfaceFlinger deadline、丢帧和 high latency state。
+2. App 侧从 `Choreographer#doFrame` 展开 INPUT、ANIMATION、INSETS_ANIMATION、TRAVERSAL、COMMIT，再检查 `syncAndDrawFrame` 与 RenderThread。
+3. 主线程长时间 Running 表示正在执行；长时间 Runnable 表示可运行但未得到 CPU。两者对应代码开销与调度争抢两条方向。
+4. RenderThread 超预算时检查显示列表、纹理上传、shader、GPU fence 和资源争用，不能把主线程耗时直接视作整帧耗时。
+5. SurfaceFlinger 侧异常要检查同一 DisplayFrame 的其他 Layer、合成策略与 HWC，不要只盯当前应用。
 
-详情见调研报告:[2026-05-07-bufferqueue-blocking-perfetto-patterns.md](https://github.com/gracker/DeepResearch/blob/main/2026-05-07-bufferqueue-blocking-perfetto-patterns.md)
+线上可用 `JankStats` 记录页面、滚动状态等 UI 上下文。API 16—23 的时序较粗，API 24+ 借助 `FrameMetrics` 后更可靠；API 31+ 的平台帧信息更丰富。API 36 起还可通过 `View.reportAppJankStats()` 向系统报告控件级 `AppJankStats`。这两类统计适合发现“哪个场景常出问题”，系统级责任仍由 trace 还原。
 
+导航：`7.3`、`7.4`、`7.5`、`18.2`、`18.7`。
 
-### 6. WebView、Flutter、混合栈场景卡
+### 3. 页面切换慢或动画不稳
 
-这一类问题的难点在于:宿主和引擎经常不在同一条线程里。只看宿主主线程,结论经常不完整。
+页面切换要拆成三个时间点：输入被处理、目标容器首次可见、内容达到可交互状态。
 
-先看:
+- 目标容器出现前停顿：检查输入分发、路由、事务、主线程任务和首个目标帧。
+- 容器按时出现，动画跳变：检查该 Window 的 SurfaceFrame、RenderThread 和 SurfaceFlinger。
+- 动画稳定，内容迟到：检查网络、数据库、反序列化、图片和占位内容退出条件。
 
-- 宿主线程和引擎线程谁在超时
-- 是否存在双重合成
+业务 marker 应围住关键事件，例如“点击处理开始”“目标页面提交”“首屏数据就绪”，再与 FrameTimeline 对齐。不要从一个名为 `startActivity` 或 `navigate` 的宽泛 slice 推导整个页面已可交互。
 
-再抓:
+弱网复现要固定延迟、带宽、丢包率和缓存状态。网络改变的是数据到达时间；主线程在等待期间做轮询、同步 IO 或反复布局，则会额外产生渲染问题。
 
-- 带线程名的 Perfetto
-- Chromium / Flutter 相关线程
+导航：`1.4`、`1.5`、`7.4`、`8.4`。
 
-再排:
+### 4. 输入反馈晚与 Buffer Stuffing
 
-- 平台视图混合
-- 纹理采样与拷贝
-- JavaScript / 页面资源加载
-- 宿主侧布局
+输入延迟的终点应是用户能看到的反馈帧，不能停在事件回调结束处。建议同时记录：
 
-这类问题的经验是:不要默认"宿主应用的主线程 = 唯一瓶颈"。
-对应章节:`2.11`、`7.11`、`18.12`、`18.13`。
+- Input 事件或应用输入 marker；
+- 主线程何时处理事件；
+- 业务状态何时提交；
+- 哪个 SurfaceFrame 包含反馈；
+- 该 SurfaceFrame 对应哪个 DisplayFrame、何时呈现。
 
-### 7. 前后台切换后明显变慢
+主线程 Sleeping 可能在等锁、Binder reply、futex 或 IO；Runnable 可能受 CPU 争抢；Running 但长时间不返回则要看执行栈。帧率平稳也可能存在 high latency state，因此 FPS 无法单独回答“点了多久才看到反馈”。
 
-"回前台慢"最容易把人带到启动优化的路径里,但它经常是内存和进程生命周期问题。
+Android 17 的 `BufferQueueProducer::dequeueBuffer()` 会进入 `waitForFreeSlotThenRelock()`，必要时在 `mDequeueCondition` 上等待空闲 slot；配置 dequeue timeout 后也可能返回 `TIMED_OUT`。这些源码路径解释了 Producer 为何会停住，却没有给出跨设备通用的 1 ms 或 5 ms 阈值。
 
-先看:
+`NATIVE_WINDOW_CONSUMER_RUNNING_BEHIND` 是 `query()` 返回项，本身没有同名 trace 点。`PRESENT_LATER` 是消费者选择 Buffer 时的返回状态；Android 17 源码在该返回路径上写有 `ATRACE_NAME("PRESENT_LATER")`，启用 graphics atrace 且执行到这条路径时才会出现在 trace 中。它的缺席不能证明 Consumer 从未延后 acquire，命中也只说明本次选择被推迟。现场仍要与 FrameTimeline、线程状态、Layer 和 BufferQueue 推进共同验证。
 
-- 这次是热启动、温启动还是已经变成冷启动
-- 是否有 page fault、GC、LMKD 痕迹
+Android 8—11 缺少 `Buffer Stuffing` 分类时，可将“呈现持续落后、输入反馈延迟增长、Producer 等待可用 slot”视为候选组合。`dumpsys SurfaceFlinger` 的文本与字段会随版本和厂商变化，只适合作为同一时刻的辅助快照。
 
-再抓:
+导航：`3.1`、`3.2`、`7.1`、`15.2`。
 
-- 回前台前后 5-10 秒的 trace
+### 5. SurfaceView、TextureView、相机和视频
 
-再排:
+这类场景先回答“卡的是宿主 UI，还是独立内容层”。
 
-- 进程是否被杀
-- Activity 是否重建
-- 内存回收
-- 后台任务恢复
+`SurfaceView` 的内容 Producer 可绕过宿主 View 绘制，提交到独立 BufferQueue 和 Layer。当前 FrameTimeline 不覆盖 `SurfaceView` 内容帧，宿主 Window 的绿色帧不能证明视频或相机画面按时呈现。应连接生产者时间戳、queue/acquire、release/present fence、SurfaceFlinger 合成和显示节奏。
 
-比较稳的顺序是:
+`TextureView` 把外部 Buffer 当纹理交给宿主 RenderThread 采样。外部内容更新、纹理采样和宿主 Window 提交都可能延时；分析终点仍是宿主 App Window 的 SurfaceFrame。
 
-1. 先分清这次到底是热启动、温启动还是冷启动。
-2. 看进程有没有被系统杀掉。
-3. 看回前台前后有没有 page fault、GC、LMKD、进程重建。
-4. 再决定是启动问题还是内存问题。
+视频播放器调用 `MediaCodec.releaseOutputBuffer()` 只表示把输出 Buffer 按计划交给后续路径，不代表屏幕已经显示该帧。SurfaceFlinger 是否选择 HWC `DEVICE` composition，也取决于每帧的 Layer 数、格式、变换、混合、保护属性和硬件能力；同一场景可能在 `DEVICE` 与 `CLIENT` 间切换。
 
-麻烦的地方在于它"看起来很像启动慢"。
-对应章节:`4.4`、`8.1`、`10.4`、`15.2`。
+排查顺序可固定为：
 
-### 8. 用户说"卡死了"
+1. 分别标记宿主 UI 与内容层的异常时间。
+2. 识别每个 Layer 的 Producer、刷新率和 Buffer 时间戳。
+3. 检查 Producer 是否等 slot、消费者是否延后 acquire、fence 是否晚。
+4. 检查 SurfaceFlinger 与 HWC 合成，记录 composition type 的逐帧变化。
+5. 用移除覆盖层、降低视频规格、改用单一容器等对照试验验证假设。
 
-当用户用"卡死了"来描述问题时,第一反应不应该是"这一定是 ANR",而应该是先确认系统有没有把它当成 ANR。
+导航：`18.4`、`18.6`、`18.7`、`18.15`。
 
-先看:
+### 6. WebView、Flutter 与混合渲染
 
-- 是不是 ANR
-- 还是长时间无响应但尚未超时
+WebView 现场必须记录 provider 包名和版本。普通页面常包含 Chromium renderer、宿主进程中的 functor/HWUI 和 App Window；视频或受保护内容还可能出现独立 Surface。JavaScript 长任务、资源加载、renderer 调度、宿主布局和合成都能产生相似体感。
 
-再抓:
+Flutter 现场要记录 Flutter/Engine 版本、根渲染模式、Impeller/Skia 配置、平台视图和外部纹理。Flutter 3.29 起默认线程模型出现 UI 与 platform thread 合并等变化，厂商或应用配置也可能改变线程布局。分析时按进程、线程活动和 Surface 所有权识别角色，避免只搜索 `Flutter UI` 这类固定名字。
 
-- `ApplicationExitInfo`
-- `traces.txt`
-- 必要时抓 ANR 前后的 Perfetto
+若混合场景同时有宿主 Window 和独立内容层，给每条输出路径各画一条时间线，再在 SurfaceFlinger 的 DisplayFrame 汇合。只看宿主主线程会遗漏 renderer、Engine、MediaCodec 和独立 Producer。
 
-再排:
+导航：`2.11`、`7.11`、`18.12`、`18.13`。
 
-- 主线程栈
-- Binder reply wait
-- 锁竞争
-- 主线程 IO
-- 系统高负载
+### 7. 回前台慢与内存压力
 
-顺序通常是:
+回前台慢要先确认原进程是否存活：
 
-1. 先确认是不是系统认定的 ANR。
-2. 拉 `ApplicationExitInfo`、`traces.txt`、主线程堆栈。
-3. 还原 ANR 前 5 秒窗口。
-4. 再决定是 Binder、锁、IO、调度还是业务长任务。
+- 进程存活、Activity 未重建：检查主线程恢复工作、锁、Binder、资源重建和数据刷新。
+- 进程存活、Activity 重建：检查配置、状态恢复、资源加载和首帧。
+- 进程已退出：按冷启动分析，并查退出原因、LMKD 和后台限制。
 
-这一类问题最容易犯的错,是只看 ANR 对话框弹出后的堆栈,不去看 ANR 前面的时间线。
-对应章节:`9.1`、`9.2`、`9.3`、`15.5`。
+API 30+ 可通过 `ActivityManager.getHistoricalProcessExitReasons()` 读取 `ApplicationExitInfo`。`getReason()`、`getStatus()`、`getDescription()` 和可用的 `getTraceInputStream()`用于解释退出；`getPss()`、`getRss()`只是系统最近一次采样，采样时间可能早于退出，也可能返回 0。
 
-## 同一个现象,在不同设备上的第一怀疑点不同
+低内存退出在不同设备上的上报方式可能不同。调用 `ActivityManager.isLowMemoryKillReportSupported()` 确认平台是否支持可靠的 LMK 原因；缺少该能力时，还要结合 bugreport、LMKD 日志、进程重要性和系统内存压力。
 
-同样是"卡",在不同设备和场景里,第一怀疑点并不一样。
+GC、page fault 或 PSS 上升只提供现象。根因仍要回到分配来源、工作集变化、文件映射、对象保留和进程重建的时间关系。
 
-| 条件 | 先验怀疑 | 说明 |
+导航：`4.4`、`8.1`、`10.4`、`15.2`。
+
+### 8. ANR 与 near-ANR
+
+“卡死”要分成系统已记录的 ANR 和尚未达到超时的长停顿。前者有系统分类与 trace，后者依赖事前采样、应用 watchdog 或可重复 Perfetto。
+
+API 30+ 的 `ApplicationExitInfo.getTraceInputStream()` 可在系统保留 trace 时读取 ANR 信息。Android 17 / API 37 新增 `getAnrInfo()`，可获取 ANR ID、类型、超时时长和用户可感知性；类型包括 input dispatch、无焦点窗口、broadcast、service、provider、job 与应用启动等。类型决定该还原哪条超时协议，不能把所有 ANR 都归到主线程长任务。
+
+分析至少包含三份证据：
+
+1. 系统记录的 ANR 类型、时间与目标进程。
+2. ANR trace 中主线程及相关 Binder/锁持有线程的栈。
+3. 超时前的时间线，用来区分执行、等待、调度饥饿和系统负载。
+
+较旧系统常使用 `/data/anr/traces.txt`，较新系统通常在 `/data/anr/anr_*` 保存多份记录。直接拉取这些文件往往需要 root；普通量产设备应通过 bugreport、应用可访问的 `ApplicationExitInfo` 或 Play Console 获取。ANR 时刻的一份栈只代表采样瞬间，锁持有者和调用起点可能已经变化。
+
+常见分流包括主线程 IO/计算、同步 Binder、锁竞争/死锁、广播或服务超时，以及系统长时间不给进程调度。每个结论都要指出等待对象或执行区间，并用调用方、持有者或全局 CPU 轨道补全因果。
+
+导航：`9.1`、`9.2`、`9.3`、`15.5`。
+
+### 9. 耗电、发热与卡顿同时出现
+
+热问题需要时间顺序：温度上升、频率/可用 CPU 容量下降、Runnable 排队变长、帧或响应超时。只看到低频，无法区分 thermal 限制、调速器选择和低负载降频。
+
+Perfetto 没有可跨设备依赖的通用 `android.thermal` 数据源。设备支持时，可采集这些入口：
+
+- ftrace 的 `power/cpu_frequency`、`power/cpu_idle`、`power/suspend_resume`；
+- 内核启用时的 `thermal/thermal_temperature`、`thermal/cdev_update`；
+- `linux.sys_stats` 的 CPU 频率轮询；
+- `android.power` 的电池计数器和 power rails，前提是设备导出相应数据；
+- 应用、JobScheduler、WorkManager、网络和 wakelock 的时间线证据。
+
+Android 17 内核锚点 `android17-6.18-2026-06_r6` 用于核对 cpufreq、thermal、调度与 fence 语义。厂商 thermal zone、cooling device、rail 名称和阈值属于设备实现，runbook 应记录原始名字，不能套用另一台设备的温度阈值。
+
+短 Perfetto 适合回答某次卡顿前后发生了什么。Battery Historian 读取 Android 7+ bugreport，适合检查数小时尺度的 wakelock、Job、网络和电池状态。两者的时间尺度不同，结论应通过 UID 和时间窗口互相校验。
+
+排查时依次确认：
+
+1. 性能退化是否随温度和频率变化重复出现。
+2. CPU/GPU/显示负载来自前台渲染、后台任务、网络重试还是第三方 SDK。
+3. 频率下降前是否已经存在高负载，避免倒置因果。
+4. 降低刷新率、关闭特效、暂停后台任务或冷却设备后，异常是否按预测变化。
+
+导航：`13.3`、`15.2`、`15.5`。
+
+## 设备条件会改变排障优先级
+
+| 条件 | 优先检查 | 容易混淆的地方 |
 |---|---|---|
-| 低端机 / 小内存 | 调度、GC、page fault、图片解码 | 资源压力更容易放大 |
-| 高刷设备 | deadline 更紧、尾部延迟更显眼 | 120Hz 下 8.33ms 很容易超 |
-| 弱网 / 海外网络 | TTFD、页面切换、首屏骨架加载 | 先分离渲染问题和数据就绪问题 |
-| 多窗口 / 浮窗 / PIP | SurfaceFlinger、BufferQueue、合成路径 | 不要只盯 App 主线程 |
-| 游戏 / 视频场景 | GPU composition、独立 surface、thermal | UI 线程经常不是主瓶颈 |
+| 低端机、小内存 | Runnable 排队、GC、page fault、解码、LMKD | 业务代码未变，资源余量却使尾延迟放大 |
+| 90/120/144 Hz | 每帧 deadline、刷新率切换、CPU/GPU 尾延迟 | 固定使用 16.67 ms 会漏掉高刷超时 |
+| 弱网、高延迟 | TTFD、数据依赖、重试、缓存状态 | 内容迟到常被写成动画卡顿 |
+| 多窗口、浮窗、PIP | Window 可见性、Layer、刷新率、SF/HWC | 宿主主线程正常不代表所有窗口按时呈现 |
+| 相机、视频、游戏 | 独立 Surface、GPU、fence、thermal | App Window 的帧统计可能没有覆盖内容帧 |
+| 厂商系统 | tracing 可见性、调度/thermal 配置、HWC 能力 | AOSP 函数名和阈值不能直接套用 |
 
-这张表的意义是提醒一件事:排障顺序应该跟着设备现实走,不要死背模板。
+高刷场景要从 trace 中读取当时的显示周期。120 Hz 常见周期约为 8.33 ms，但可变刷新率、帧率投票和设备合成策略会改变 deadline，runbook 不应写死一个预算。
 
-## 抓 trace 时,先求回答问题,不求一次最全
+## trace 配置应服从问题
 
-抓 trace 最常见的坑是配置不对——事件类别没开全或者窗口太短。建议先保守一点：
+配置选择遵循“能回答当前假设”的原则：
 
-- **滑动 / 动画卡顿**:抓 5-10 秒,保留 `gfx`、`view`、`sched`、`input`、`wm`
-- **启动慢**:抓冷启动全过程,最好从拉起前开始
-- **疑似 ANR**:抓问题前后更长窗口,必要时结合 `ApplicationExitInfo`
-- **低概率线上问题**:先用指标缩小范围,再用异常触发补采 trace
+| 场景 | 建议窗口 | 主要数据 |
+|---|---|---|
+| 滚动/动画 | 操作前 1—2 秒至结束后 1—2 秒 | FrameTimeline、gfx/view、sched、freq、SurfaceFlinger |
+| 输入延迟 | 输入前短窗口至反馈帧后 | input、应用 marker、主线程、Binder/锁、FrameTimeline |
+| 冷启动 | 拉起前至 TTFD 后 | app startup、atrace、sched、binder、page fault、FrameTimeline |
+| ANR/near-ANR | 覆盖超时前数秒或更长 | sched、binder、lock/futex、主线程、系统负载、ANR 记录 |
+| 发热卡顿 | 包含升温和退化过程，可配周期快照 | thermal、cpufreq、idle、sched、android.power、应用负载 |
 
-抓 trace 的目标,是先保证这份数据能回答当前最关键的因果关系。抓太大、抓太久,分析反而容易散。
+长时间低概率问题可采用 Perfetto periodic trace snapshots，保持循环 buffer，在触发异常时保存快照。高频事件、调用栈和长窗口会增加开销；应先在目标设备验证 tracing 本身没有改变复现结果。
 
-## 先看哪条责任链
+## 常见误判与纠偏
 
-| 现象 | 第一责任链 |
+- **平均 FPS 掩盖尾延迟**：同时看帧间隔分布、连续坏帧和输入到呈现延迟。
+- **主线程长 slice 等同于 App 责任**：核对该 slice 是否落在受影响 SurfaceFrame 的关键路径，并检查调度、Binder 与锁。
+- **App 轨道黄色等同于 App 算慢**：FrameTimeline 中黄色 App slice 表示 SurfaceFlinger 侧 jank 影响了该帧。
+- **Buffer Stuffing 等同于普通慢帧**：关注持续积压和 latency state，再核对 Producer/Consumer 推进。
+- **Running 与 Runnable 混为一谈**：Running 追执行内容，Runnable 追 CPU 争抢、优先级和调度。
+- **`releaseOutputBuffer()` 等同于视频已显示**：补上 BufferQueue、fence、SurfaceFlinger、HWC 和 present。
+- **`dumpsys SurfaceFlinger` 某字段等同于稳定协议**：按设备版本保存原始输出，用 trace 和源码确认字段语义。
+- **低频等同于热限频**：检查温度、cooling device、负载和频率变化的先后关系。
+- **退出记录里的 PSS 等同于死亡瞬间内存**：把它标为最近采样，并注明是否为 0。
+- **某个函数超过固定毫秒数就算异常**：预算取决于刷新率、管线阶段和是否位于关键路径。
+
+## 团队 runbook 的交付格式
+
+一份可复用的现场记录应包含：
+
+1. **问题卡**：版本、设备、操作、网络、显示和复现率。
+2. **体验时间线**：触发点、异常区间、恢复/超时点。
+3. **输出路径**：App Window、SurfaceView、TextureView、WebView、Flutter 或多个 Layer。
+4. **候选责任链**：MainThread、RenderThread、SurfaceFlinger、Binder、IO、调度、内存或 thermal。
+5. **直接证据**：帧 token、线程 slice、调度状态、堆栈、日志与源码位置。
+6. **对照试验**：只改变一个变量，并记录预测与结果。
+7. **结论边界**：已证明什么、尚缺什么、适用哪些版本和设备。
+
+结论模板可写成：
+
+> 在设备 A、构建 B、120 Hz 和固定数据集下，输入后第一个反馈 SurfaceFrame 因主线程等待同步 Binder 42 ms 而错过 deadline；Binder 服务端同时在文件 IO。将调用移出输入路径后，同一脚本的反馈延迟 P95 从 X 降到 Y，FrameTimeline 中对应 App deadline miss 消失。当前证据只覆盖该设备与该构建。
+
+这个模板保留了现象、路径、因果证据、对照和适用边界。后续维护者可以复跑同一脚本，也能知道哪些推断还没有证据。
+
+## 现场导航
+
+| 问题 | 继续阅读 |
 |---|---|
-| 帧超时 | MainThread → RenderThread → SurfaceFlinger |
-| 点击后没反应 | Input → MainThread → Binder / Lock / IO |
-| 页面内容迟迟不出现 | 启动路径 / 数据加载 / TTFD |
-| 一切都慢 | 调度 / Thermal / 内存压力 / 系统负载 |
-| 只有特定渲染容器慢 | BufferQueue / Surface / GPU composition |
+| VSync、Choreographer、帧调度 | `7.1`、`7.3` |
+| RenderThread、GPU、SurfaceFlinger | `7.4`、`7.5`、`18.7` |
+| 输入分发和响应延迟 | `3.1`、`3.2`、`15.2` |
+| 启动 TTID/TTFD | `8.1`、`8.2`、`8.3`、`15.6` |
+| ANR | `9.1`、`9.2`、`9.3`、`15.5` |
+| 内存和进程回收 | `4.4`、`10.4` |
+| SurfaceView/TextureView/视频 | `18.4`、`18.6`、`18.15` |
+| WebView/Flutter | `2.11`、`7.11`、`18.12`、`18.13` |
+| 功耗与 thermal | `13.3`、`15.5` |
 
-这张表有一个重要前提:**同一个问题可以跨路径传导**。
-首屏慢,起点可能是启动任务过重,表现却是首帧晚;列表滑动卡,根因也可能是图片线程把 CPU 抢满了。
+## 源码与官方资料
 
-所以"第一责任链"不是最终结论,它只是排障的第一个锚点。
-
-## 最容易出现的误判
-
-- **把平均 FPS 当成全部真相**:平均值会掩盖尾部延迟。
-- **把 SurfaceFlinger 责任误判成 App jank**:黄帧不天然等于 App 有问题。
-- **把高输入延迟误判成普通掉帧**:BufferStuffing 场景尤其容易看错。
-- **把系统高负载当成业务代码慢**:先看 Runnable,再看全局 CPU。
-- **只看一段堆栈,不看时间线**:ANR 和流畅性问题都需要时序证据。
-- **把首帧出现误当成页面完成**:TTID 正常不代表 TTFD 正常。
-- **把"只有某些机型差"误当成偶现**:机型聚类往往说明这是结构性问题。
-- **把"线下复现不了"误当成无问题**:线上会话上下文常常比本地单次操作更重要。
-
-## 场景化 Perfetto SQL 快速筛选
-
-每个场景对应的关键 SQL 查询,可以配合 trace 数据做批量初筛:
-
-| 场景 | 关键 SQL | 说明 |
-|---|---|---|
-| 掉帧 / jank | `SELECT * FROM actual_frame_timeline_slice WHERE jank_type IS NOT NULL AND jank_type != 'None'` | 捞出所有 jank 帧,按 jank_type 分类 |
-| BufferStuffing | `SELECT * FROM actual_frame_timeline_slice WHERE jank_type = 'Buffer Stuffing'` | SQL 字段值为 `Buffer Stuffing`; Perfetto UI 中 FrameTimeline 轨道显示为浅绿色 |
-| 冷启动 | `SELECT name, ts, dur FROM slice WHERE name LIKE '%ActivityManager%' AND name LIKE '%start%'` | 定位 AMS 启动调度链 |
-| ANR | `SELECT * FROM slice WHERE name LIKE '%ANR%'` | 结合 `ApplicationExitInfo` 时间线 |
-| Input 延迟 | `SELECT (doFrame_ts - input_ts) AS latency FROM ...` | 输入事件到 `doFrame` 的时差 |
-| GC 暂停 | `SELECT * FROM slice WHERE name LIKE '%GC%' AND name LIKE '%pause%'` | GC 暂停对帧预算的侵占 |
-
-使用建议:先跑对应 SQL 做场景初筛,确认命中后,再回到 Perfetto UI 做逐帧时间线分析。10GB 量级的大 trace 用 SQL 比人工滚动轨道效率高一个数量级。
-
-## 这份手册怎么用
-
-它最适合三种场景:
-
-1. 线上问题刚到手时,快速决定先抓什么。
-2. 团队复盘时,把经验积累成固定排查路径。
-3. 给新人做训练时,用真实投诉倒推章节和工具。
-
-如果团队已经有值班和灰度治理机制,下一步就可以把这份手册继续拆成自己的 runbook:
-
-- 哪类问题先由客户端同学看
-- 哪类问题需要系统 / ROM 协作
-- 哪类问题必须补抓 trace 才能继续
-- 哪类问题可以直接回到指标平台做聚类
-
-做到这一步,性能排障才从个人经验变成团队资产。
-
-## 参考资料
-
-### HWC Overlay Plane Capability 与 SurfaceFlinger 合成降级实战验证
-- 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-hwc-overlay-plane-capability-sf-composition-downgrade.md
-- 类型:DeepResearch 调研结果
-- 摘要:梳理 HWC2/HWC2.4 Overlay Plane 能力查询机制、SurfaceFlinger 合成决策链(validateDisplay→getChangedCompositionTypes→acceptDisplayChanges)、DEVICE→CLIENT 降级触发条件(Layer 超出 Plane 数/像素格式/混合模式/旋转缩放),以及高通/联发科 HWC 实现差异。包含 Perfetto android.surfaceflinger.frametimeline 证据收集路径。
-- 注入时间:2026-05-23
-- 价值:源码级分析,包含 AOSP 路径交叉验证和版本边界澄清,可作为章节内容的补充参考材料
+- [AOSP Android 17 `Choreographer`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)
+- [AOSP Android 17 `BufferQueueProducer`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp)
+- [AOSP Android 17 `SurfaceFlinger`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)
+- [Android Common Kernel `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/)
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- [Perfetto CPU frequency and idle](https://perfetto.dev/docs/data-sources/cpu-freq)
+- [Perfetto periodic trace snapshots](https://perfetto.dev/docs/getting-started/periodic-trace-snapshots)
+- [Android 启动时间指南](https://developer.android.com/topic/performance/vitals/launch-time)
+- [`ApplicationStartInfo` API](https://developer.android.com/reference/android/app/ApplicationStartInfo)
+- [`ApplicationExitInfo` API](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+- [`ApplicationExitInfo.AnrInfo` API](https://developer.android.com/reference/android/app/ApplicationExitInfo.AnrInfo)
+- [Android ANR 诊断指南](https://developer.android.com/topic/performance/vitals/anr)
+- [JankStats 指南](https://developer.android.com/topic/performance/jankstats)
+- [Android 16 KB page size 指南](https://developer.android.com/guide/practices/page-sizes)
+- [Battery Historian 配置指南](https://developer.android.com/topic/performance/power/setup-battery-historian)
