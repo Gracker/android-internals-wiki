@@ -69,10 +69,10 @@ Android 17 的 `bionic/libc/bionic/gwp_asan_wrappers.cpp` 给出的内部默认�
 | `ProcessSampling` | `128` | `default`/系统模式约每 128 次进程启动选中一次 |
 | `SampleRate` | `2500` | 已选中进程中，平均约每 2500 次 allocation 尝试一次抽样 |
 | `MaxSimultaneousAllocations` | `32` | guarded pool 最多同时容纳 32 个活跃 allocation |
-| `Recoverable` | `true` | 默认内部选项支持恢复路径 |
+| `Recoverable` | `true` | Bionic 初始化选项的起始值；属性覆盖和平台模式共同决定最终行为 |
 | `InstallSignalHandlers` | `false` | Android 使用既有 debuggerd/Bionic 协作路径，不安装独立通用 handler |
 
-这些数值是当前源码实现，不属于 SDK 契约。设备配置、系统属性和平台构建可以覆盖它们；普通应用不应把 `libc.debug.gwp_asan.*` 属性或 `GWP_ASAN_*` 环境变量包装成线上配置接口。
+这些数值是当前源码实现，不属于 SDK 契约。设备配置、系统属性和平台构建可以覆盖它们；普通应用不应把 `libc.debug.gwp_asan.*` 属性或 `GWP_ASAN_*` 环境变量包装成线上配置接口。尤其不能从 `SetDefaultGwpAsanOptions()` 的 `Recoverable=true` 单独推导 manifest `always` 的行为：Android 对外规定 `always` 命中后终止进程，`default` 才进入 Recoverable 抽样路径。
 
 抽样也不是“每次 allocation 独立抛一次 1/2500 的硬币”。`GuardedPoolAllocator::shouldSample()` 使用线程局部倒计数，并在归零后随机生成下一段间隔，以较低分支成本逼近目标频率。
 
@@ -126,7 +126,7 @@ allocation 命中时，分配器随机选择靠左或靠右放置，再按 align
 - 未使用页面继续保持不可访问；
 - allocation 与 deallocation 元数据记录在独立映射中。
 
-这里是“随机选择左对齐或右对齐”，并非在 slot 内任意随机偏移。一次 sampled allocation 也不能保证所有越界都被发现：错误若朝未贴 guard 的方向发生、仍落在可访问页内，或属于对象内部越界，就可能没有 fault。
+这里是“随机选择左对齐或右对齐”，没有在 slot 内采用任意随机偏移。一次 sampled allocation 也不能保证所有越界都被发现：错误若朝未贴 guard 的方向发生、仍落在可访问页内，或属于对象内部越界，就可能没有 fault。
 
 ### 4.2 use-after-free 与 slot 复用
 
@@ -148,7 +148,7 @@ slot 不会“全部用完后批量重置”。源码策略是：
 - pointer 不是 allocation 起点，诊断为 invalid/wild free；
 - metadata 已标记释放，诊断为 double free。
 
-这两类错误由 allocator 内部发现。实现会写入 `FailureType`/`FailureAddress`，再访问池内专用的不可访问地址，让既有 crash 报告路径生成统一的 GWP-ASan 诊断。它并非简单调用 `abort()` 后丢失 allocation 元数据。
+这两类错误由 allocator 内部发现。实现会写入 `FailureType`/`FailureAddress`，再访问池内专用的不可访问地址，让既有 crash 报告路径生成统一的 GWP-ASan 诊断。该路径不会简单调用 `abort()` 并丢失 allocation 元数据。
 
 ### 4.4 page size 对 pool 的影响
 
@@ -399,13 +399,13 @@ Recoverable fault 不会进入应用 handler；allocator state 也是平台私�
 
 - [Android NDK：GWP-ASan](https://developer.android.com/ndk/guides/gwp-asan)
 - [Android Developers：`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)
-- [AOSP Bionic `gwp_asan_wrappers.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/libc/bionic/gwp_asan_wrappers.cpp)
-- [AOSP `GuardedPoolAllocator`（android-17.0.0_r1）](https://android.googlesource.com/platform/external/gwp_asan/+/android-17.0.0_r1/gwp_asan/guarded_pool_allocator.cpp)
-- [AOSP GWP-ASan crash diagnosis（android-17.0.0_r1）](https://android.googlesource.com/platform/external/gwp_asan/+/android-17.0.0_r1/gwp_asan/crash_handler.cpp)
-- [AOSP Zygote Java policy（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/os/Zygote.java)
-- [AOSP Zygote native initialization（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/com_android_internal_os_Zygote.cpp)
-- [AOSP debuggerd signal handling（android-17.0.0_r1）](https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)
-- [AOSP ActivityManager recoverable Native crash handling（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
+- [AOSP Bionic `gwp_asan_wrappers.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/gwp_asan_wrappers.cpp)
+- [AOSP `GuardedPoolAllocator`（android-17.0.0_r1）](https://android.googlesource.com/platform/external/gwp_asan/+/refs/tags/android-17.0.0_r1/gwp_asan/guarded_pool_allocator.cpp)
+- [AOSP GWP-ASan crash diagnosis（android-17.0.0_r1）](https://android.googlesource.com/platform/external/gwp_asan/+/refs/tags/android-17.0.0_r1/gwp_asan/crash_handler.cpp)
+- [AOSP Zygote Java policy（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/Zygote.java)
+- [AOSP Zygote native initialization（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/com_android_internal_os_Zygote.cpp)
+- [AOSP debuggerd signal handling（android-17.0.0_r1）](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)
+- [AOSP ActivityManager recoverable Native crash handling（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
 - [Android Open Source Project：Memory safety](https://source.android.com/docs/security/test/memory-safety)
 - [Android NDK：HWASan](https://developer.android.com/ndk/guides/hwasan)
 - [Android NDK：Arm MTE](https://developer.android.com/ndk/guides/arm-mte)
