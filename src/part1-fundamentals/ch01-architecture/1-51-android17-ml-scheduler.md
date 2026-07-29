@@ -70,5 +70,32 @@ gap_source: "AOSP结构"
 
 <!-- outline-end -->
 
-> 本节内容待加工。
-[结构参考: Clippings/Android性能优化.md]
+> 本页已废弃。上方历史提纲为流水线追踪而保留，其中列出的 LSTM 预测器、多因素 ML 打分、模型热更新和平台 A/B 切换框架没有 Android 17 AOSP 证据。请勿把提纲当作平台能力说明。
+
+## 核查结论
+
+基于平台 `android-17.0.0_r1`、内核 `android17-6.18-2026-06_r6` 和 Android 17 官方发布资料，AOSP 没有名为 “ML Scheduler” 的通用任务调度组件，也没有一套用 LSTM 同时调度 Activity、Service、Job、Binder 事务与 Linux runnable task 的公开协议。提纲中的模型结构、置信度、在线修正、设备模型选择和实验组切换均缺少类名、接口、源码路径或可重复实验，不能写成 Android 17 特性。
+
+Android 17 中能够核验的是多套职责分离的机制：
+
+| 调度对象 | 可核验机制 | 能说明什么 |
+| --- | --- | --- |
+| 应用后台工作 | JobScheduler controllers、quota、standby bucket、idle 与网络约束 | Job 在哪些条件下获得运行资格 |
+| 进程资源资格 | AMS、OomAdjuster、进程状态与 task profile | 进程重要性、回收顺序及资源分组 |
+| 可周期提示的线程 | ADPF `PerformanceHintManager` 与 Power HAL | 应用报告目标和实测工作时长后，设备策略如何响应 |
+| CPU runnable task | Linux fair scheduler / EEVDF、EAS、PELT、uclamp、schedutil | 线程进入可运行状态后如何选任务、选核与调频 |
+| 产品定制策略 | OEM 服务、vendor hook、私有模型 | 只对具体设备与源码版本成立，不能外推为 API 37 契约 |
+
+JobScheduler 的 prefetch 任务可能使用 UsageStats 提供的预计启动时间，但 AOSP 默认估计逻辑采用历史时间规则；它不会创建提纲所述的统一 LSTM 优先级。ADPF 接收应用显式上报的工作时长，也不预测用户接下来打开哪个应用。内核 EEVDF 根据虚拟运行时间、lag、eligibility 与 virtual deadline 选择 fair-class 任务，不接收 framework 生成的通用 ML 分数。
+
+低电量、温控、前后台状态和用户交互会经各自策略影响任务资格、CPU 约束与频率，但源码没有把这些输入合成提纲中的固定加权公式。若 OEM 宣称使用预测调度，需要补充服务名、模型文件或推理调用、策略输出到 task profile/uclamp/cpufreq 的路径，以及同设备对照实验。
+
+完整事实核查与源码阅读入口见 [1.59 Android 17「ML 驱动任务调度器」事实核查](./1.59-android17-ml-task-scheduler-comprehensive.md)。
+
+## 参考源码与文档
+
+- [Android 17 官方发布说明](https://android-developers.googleblog.com/2026/06/Android-17.html)
+- [AOSP `JobSchedulerService.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java)
+- [AOSP `PrefetchController.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/controllers/PrefetchController.java)
+- [Android common kernel `fair.c`（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/fair.c)
+- [Android 官方 Performance Hint API](https://source.android.com/docs/core/perf/performance-hint-api)
