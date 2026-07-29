@@ -7,7 +7,6 @@ tags: [smoothness, jank]
 repaired_date: 2026-05-23
 updated_by: openclaw-task2b
 updated_date: 2026-05-23
----
 title: 典型场景分析
 chapter: '7.4'
 section: '7.4'
@@ -71,7 +70,6 @@ auto_promoted: true
 last_task9_audit: "2026-05-23"
 last_task9_review_log: "logs/deep-review/2026-05-23-15-deep-review.md"
 ---
----
 
 # 典型场景分析
 
@@ -100,452 +98,352 @@ last_task9_review_log: "logs/deep-review/2026-05-23-15-deep-review.md"
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么要逐场景分析卡顿
+## 场景名只负责缩小范围
 
-前面几节我们把卡顿的定义、原因体系、分析方法都梳理了一遍。但在实际工作中，"卡顿"不是一个抽象概念——它总是出现在某个具体的场景里：用户在刷列表、在切页面、在下拉通知栏、在多任务间来回切换。不同场景下的卡顿，虽然底层都是"主线程没能在一个 VSync 周期内完成帧渲染"，但根因各不相同，分析手法也有差异。
+“列表卡”“转场卡”“通知栏卡”描述的是用户当时看到了什么，还没有说明哪条渲染链路迟到。同一个列表里可以同时出现普通 View、SurfaceView 视频和 TextureView 地图；同一个页面切换又可能包含应用窗口 buffer、Shell transition 的 leash 变换、壁纸、IME 与 SurfaceFlinger 合成。若从场景名直接跳到某个线程，证据很容易落错对象。
 
-这一节我们把最常见的几个卡顿场景逐个拆开，看看每个场景的"卡顿长什么样"、"为什么卡"、"在 Perfetto 中怎么定位"。掌握了这些典型场景的分析套路，以后遇到类似的卡顿，就能快速对号入座，不用每次都从零开始摸索。
+本章沿用渲染管线章节的定位顺序：
 
-[来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-2.md — 高爷对卡顿场景分类的实战经验]
+1. 记录发生卡顿的交互阶段、显示屏、刷新率和时间区间。
+2. 列出屏幕上的内容生产者，以及各自产出的 Surface、BufferQueue 和 SurfaceFlinger layer。
+3. 从 FrameTimeline 的异常 SurfaceFrame/DisplayFrame，或目标 layer 的异常 present 反查。
+4. 沿 token、frame number、transaction、buffer 与 fence 找到最早迟到的阶段。
+5. 回到责任线程，检查执行时间、Runnable 等待、锁、Binder、I/O、GC、GPU 和热状态。
 
----
+60 Hz 的名义刷新间隔约为 16.67 ms，120 Hz 约为 8.33 ms。它们不能直接充当任意线程的固定预算。Choreographer 回调相位、应用 deadline、BufferQueue 状态、SurfaceFlinger 调度和显示模式都会改变一帧的可用时间。诊断目标应写成“该帧相对 expected timeline 在哪里开始偏离”，不宜写成“整条管线必须在一个 VSync 间隔内全部结束”。
 
-## 一、列表滑动场景的 Jank 分析
+### 一张场景取证表
 
-列表滑动可能是用户感知最直接的卡顿场景。大量日常交互时间都花在刷各种 Feed、聊天列表、商品列表上。一旦出现掉帧，手指的滑动就会感觉到"一顿一顿的"，体验非常糟糕。
+每次复现都建议先填这张表。缺失的列就是当前结论的边界。
 
-### 1.1 滑动场景在 Perfetto 中的基本形态
-
-一个健康的列表滑动在 Perfetto 中有一个非常清晰的节奏：每个 VSync 周期内，主线程依次执行 Input → Traversal（measure/layout/draw），然后同步 DisplayList 给 RenderThread，RenderThread 完成绘制后提交 Buffer。如果这些步骤都能在一个 VSync 周期内完成（120Hz 设备是 8.33ms，60Hz 设备是 16.67ms），帧就是绿色的，滑动就是流畅的。（关于 VSync 周期和 Choreographer 的回调调度，详见 2.3 和 2.4 节。）
-
-[图：Perfetto 中正常的列表滑动帧序列，展示 Input → Traversal → RenderThread 的节奏]
-
-滑动过程中有两个阶段值得关注：
-
-**手指触摸阶段**：每一帧都有 Input 回调处理触摸事件，然后执行 Traversal 更新列表项的位置。这个阶段主线程的负载取决于 Input 事件处理和 View 体系的重绘开销。
-
-**惯性滑动（Fling）阶段**：手指抬起后，系统通过 Scroller/OverScroller 计算每一帧的滚动偏移量。这个阶段没有 Input 回调，取而代之的是 Animation 回调驱动滚动。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java — Animation 回调由 ValueAnimator 通过 Choreographer.postCallback 注册]
-
-[来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md — 高爷对滑动两阶段的 Perfetto 观察]
-
-### 1.2 RecyclerView 的性能瓶颈
-
-RecyclerView 是列表场景的核心组件。它的设计目标是"回收复用"，通过 ViewHolder 缓存机制避免每次都创建新的 View。但这个机制本身也有性能陷阱，主要集中在三个环节：
-
-**onBindViewHolder 耗时**
-
-`onBindViewHolder` 在列表滑动时被频繁调用——每滑出一个旧 item 从缓存中取出一个新 item 进入可见区域时，都需要调用一次 bind 来更新数据到 View 上。这个方法运行在主线程上，如果做了任何耗时操作，都会直接吃掉帧时间预算。
-
-常见的坑包括：
-- 在 bind 方法中做数据转换（日期格式化、JSON 解析、字符串拼接）
-- 在 bind 方法中触发磁盘或网络 I/O（哪怕是"看起来很快"的 SharedPreferences 读取）
-- 创建临时对象过多，导致频繁 GC（GC 暂停虽然只有几毫秒，但在 120Hz 设备上 8.33ms 的帧预算里就很致命了）
-- 对图片做了同步解码或裁剪
-
-[已验证: 官方文档, developer.android.com/reference/androidx/recyclerview/widget/RecyclerView.Adapter — onBindViewHolder 文档明确说明应保持轻量]
-
-在 Perfetto 中的表现：如果 bind 耗时过长，我们会在主线程的 Traversal 阶段看到 measure 或 layout 的 slice 明显变长。如果怀疑是 bind 问题，可以在 `onBindViewHolder` 中添加自定义 Trace event：
-
-```java
-// 在 Adapter.onBindViewHolder 中插桩
-@Override
-public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-    Trace.beginSection("bind:" + position);
-    try {
-        // bind 逻辑
-        holder.bind(items.get(position));
-    } finally {
-        Trace.endSection();
-    }
-}
-```
-
-插桩后重新抓 Trace，Perfetto 主线程 track 上每一帧的 Traversal 阶段中就能看到每个 item 的 bind 耗时。如果某个 position 的 bind slice 特别长，直接定位到对应的数据项排查即可。
-
-**ViewHolder 创建（onCreateViewHolder）耗时**
-
-RecyclerView 虽然设计为复用 ViewHolder，但在某些场景下仍需要创建新的：列表首次加载时缓存为空、列表项类型增多导致各类型缓存不足、或者快速滑动导致缓存耗尽。`onCreateViewHolder` 需要 inflate 布局 XML，这个过程涉及 XML 解析和 View 树的递归创建，开销远大于 bind。
-
-优化思路包括：
-- 简化 item 布局层级（用 ConstraintLayout 替代多层嵌套的 LinearLayout）
-- 增大 RecyclerView 的缓存池大小（`RecycledViewPool.setMaxRecycledViews`）
-- 对多类型列表，考虑使用 `ConcatAdapter` 来分离不同类型的缓存管理
-
-[已验证: 官方文档, developer.android.com/reference/androidx/recyclerview/widget/RecyclerView.RecycledViewPool — 缓存池机制说明]
-
-**图片加载引起的卡顿**
-
-图片是列表滑动中最常见的卡顿源之一。现代图片库（Glide、Coil、Fresco）会把下载和解码放到后台线程，但结果回调仍会更新主线程上的 `ImageView`。如果 `ImageView` 的测量尺寸依赖图片原始尺寸，图片结果写入后可能触发 `requestLayout()`，带着 item 甚至 RecyclerView 父层重新 measure/layout。快速滑动时，多个图片回调集中到同几个 VSync 周期，主线程 Traversal 就容易被拉长。
-
-在 Perfetto 中，这种问题的特征是主线程频繁出现 measure/layout 的长 slice，且时间与图片回调的时机吻合。修复方向是让列表图片在 bind 前就有稳定的测量边界：XML 里明确 `layout_width` / `layout_height`，使用固定比例容器，或在 Glide / Coil / Fresco 中通过 `override`、size resolver、自定义 Target 传入目标尺寸。Android View / ImageView 没有通用的 `setFixedDimension()` API，不能把它写成系统级方案。
-
-`RecyclerView.setHasFixedSize(true)` 只描述 RecyclerView 容器尺寸不随 adapter 内容变化而改变。它可以减少 RecyclerView 自身向父布局发起的 `requestLayout()`，但不会跳过 `onBindViewHolder()`，也不能阻止 item 内部 `ImageView` 因尺寸变化重新 layout。
-
-[已验证: 官方文档, developer.android.com/topic/performance/recycler-view；AndroidX RecyclerView `setHasFixedSize()` reference]
-
-### 1.3 系统层面的滑动卡顿
-
-不是所有滑动卡顿都是 App 的锅。在高爷分析的 MIUI 桌面滑动案例中，卡顿的根因是 RenderThread 被调度到了小核 CPU 上。小核虽然频率拉满了（1.8GHz），但性能不足以在 11.1ms（90Hz 设备）内完成渲染任务。
-
-[来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-2.md — 高爷对 MIUI 桌面滑动卡顿的完整分析]
-
-在 Perfetto 中，这类问题的特征是：
-- RenderThread 的 CPU 状态虽然是 Running（绿色），但耗时明显超出正常范围
-- 查看 CPU Info 区域，发现 RenderThread 跑在小核（cpu0-cpu3）而非大核上
-- 掉帧后下一帧，调度器将 RenderThread 迁移到大核，恢复正常
-
-这类问题的分析路径是：先确认 App 主线程不是瓶颈（主线程 slice 正常），然后看 RenderThread 的耗时，最后去 CPU 区域确认线程被调度到了哪个核。解决思路是系统层面的调度策略调整（如设置 RenderThread 的调度组偏好），而非 App 代码优化。
-
-[图：RenderThread 跑在小核导致掉帧的 Perfetto 截图，标注小核频率和帧耗时]
+| 维度 | 需要记录的内容 | 常用证据 |
+|---|---|---|
+| 交互 | 手指拖动、fling、点击、返回进度、窗口进入、通知更新 | input event、应用 marker、CUJ |
+| 显示 | display id、刷新率、分辨率、显示模式 | SurfaceFlinger/Winscope、Perfetto |
+| 窗口 | App Window、Dialog、Splash、IME、壁纸、transition leash | WindowManager、Shell Transitions |
+| 内容生产者 | UI/RenderThread、MediaCodec、GL/Vulkan、WebView renderer、地图引擎 | 线程、进程、SDK/provider 版本 |
+| 提交对象 | ViewRoot buffer、SurfaceView child layer、TextureView 输入、task snapshot | BufferQueue、Layer、transaction |
+| 帧结果 | expected/actual、present type、jank type、dropped/duplicated | FrameTimeline、FrameTracer、fence |
+| 责任边界 | 应用、SystemUI、Launcher、system_server、SF/HWC、内核/驱动 | sched、Binder、GPU/HWC、kernel trace |
 
 ---
 
-## 二、页面切换动画的 Jank 分析
+## 列表滑动：先区分拖动与 fling
 
-页面切换是用户在 App 内导航时最频繁的操作之一。无论是 Activity 跳转、Fragment 替换，还是 SharedElement 转场动画，背后都涉及复杂的渲染协调。一旦切换过程中的某一帧掉了，用户会感觉到"卡了一下"或"闪了一下"，体验很不连贯。
+列表滑动至少有两段不同的驱动方式。
 
-### 2.1 Activity Transition 的卡顿模式
+- 手指按住并拖动时，输入分发和应用消费决定滚动位置何时更新。检查 MotionEvent 到主线程处理的间隔、输入回调耗时，以及同一帧的 traversal。
+- 手指抬起进入 fling 后，滚动由动画时钟和 RecyclerView/ScrollView 的滚动计算继续推进。此时没有持续的触摸移动事件；要检查动画回调是否及时、每帧滚动工作是否稳定。
+- 两个阶段都可能受 RenderThread、GPU、BufferQueue 或显示合成影响。主线程短只排除了部分应用 CPU 工作。
 
-Activity 切换的渲染流程涉及两个进程（源 Activity 和目标 Activity）、两个 Window、以及 WindowManagerService 和 SurfaceFlinger 的协调。流程大致是这样的：
+FrameTimeline 可先圈定异常帧。随后把异常帧与正常帧放在一起比较，查看 UI Thread、RenderThread、对应 App Window buffer 和 DisplayFrame。只看某个长 slice，没有相邻正常帧作对照，常会把稳定存在的初始化或后台任务误判为根因。
 
-1. 用户触发跳转（点击按钮等），源 Activity 调用 `startActivity()`
-2. SystemServer 的 ActivityManagerService 创建目标 Activity 进程（如果是冷启动）或通知目标进程创建 Activity
-3. 目标 Activity 执行 `onCreate()` → `onStart()` → `onResume()`，其中 `onCreate()` 中的 `setContentView()` 触发布局 inflate
-4. 如果配置了转场动画，系统在源 Activity 和目标 Activity 之间建立动画通道
-5. 动画期间，两个 Activity 的 Window 都需要逐帧渲染
+### RecyclerView 的三组内建线索
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/ActivityStarter.java — Activity 启动流程]
+AndroidX RecyclerView 会在系统跟踪中留下有用的 slice。不同库版本的名称可能略有差别，官方慢帧文档常用以下三组：
 
-卡顿最容易发生在第 3 步和第 5 步的交叉区域。如果目标 Activity 的布局很复杂，`setContentView()` 在主线程上 inflate XML 可能需要几十毫秒甚至上百毫秒，这段时间内动画帧无法按时渲染。在 Perfetto 中的表现是：目标 Activity 进程启动后，主线程出现一大块 `inflate` 或 `setContentView` 的 slice，紧跟的几帧全部是红色或黄色。
+| 线索 | 代表的工作 | 常见原因 | 处理方向 |
+|---|---|---|---|
+| `RV OnBindView` | 把数据绑定到已有 ViewHolder | 格式化、同步读取、复杂 span、监听器反复创建 | 把纯数据准备移出 bind，缓存稳定结果 |
+| `RV CreateView` | inflate 并创建 ViewHolder | item 树过深、View 类型多、复用不足 | 简化热点 item，按 viewType 检查创建频率 |
+| `RV Prefetch` | GapWorker 预取 | 嵌套列表、预取量不合适、共享池边界错误 | 按真实滚动方向和嵌套关系调参 |
 
-**SharedElement 转场的额外负担**
+`onBindViewHolder()` 运行在主线程，但它不一定嵌在名为 measure 或 layout 的 slice 里。判断 bind 是否拖慢一帧，应直接看 RecyclerView slice 或应用自定义 marker，再观察它和 `Choreographer#doFrame`、traversal 的时间关系。
 
-SharedElement 转场（共享元素动画）让用户看起来一个 View 从源页面"飞"到了目标页面。实现上，系统需要：
-1. 在两个 Activity 之间捕获共享 View 的位置和大小信息
-2. 创建一个独立的 DecorView 层来播放动画
-3. 每帧更新共享 View 的 transform（位置、缩放、圆角等）
+`onCreateViewHolder()` 偶发出现是正常行为。只有它在可感知滚动区间反复出现，并与异常帧对齐，才说明创建或复用值得处理。盲目增大 `RecycledViewPool` 会增加常驻 View 数量，也可能把不同配置或语义的 ViewHolder 错误共享。缓存大小应由 viewType 分布、窗口尺寸、嵌套列表结构和内存实验共同决定。
 
-这个过程中任何一个环节出问题——比如目标 Activity 的布局还没完成导致无法确定 View 的最终位置——都会导致动画掉帧。
+布局容器没有固定的性能排名。ConstraintLayout 能减少某些嵌套，也可能因约束求解、helper 或频繁变化增加工作。优化依据应是目标 item 的 measure/layout 次数和耗时，而非容器名称。
 
-[已验证: 官方文档, developer.android.com/training/transitions — SharedElement 转场机制说明]
+### 图片完成后仍可能影响三条路径
 
-### 2.2 Fragment 切换的卡顿模式
+成熟图片库通常把网络和解码移到后台线程，显示阶段仍会回到可见链路：
 
-Fragment 切换比 Activity 切换轻量，因为都在同一个进程和同一个 Window 内完成。但 FragmentTransaction 的 `replace` 操作仍然会在主线程上触发完整的 View 生命周期：旧 Fragment 的 View 被 remove，新 Fragment 执行 `onCreateView()` → `onViewCreated()` → `onStart()` → `onResume()`。
+1. 结果回调在主线程更新 ImageView；
+2. 尺寸或 drawable 状态改变可能触发 invalidate 或 requestLayout；
+3. 首次使用纹理时，RenderThread/GPU 可能承担上传与采样成本。
 
-如果新 Fragment 的布局比较重，或者 `onViewCreated()` 中做了数据初始化（网络请求的本地缓存读取、数据库查询等），这些操作都会挤在同一个 VSync 周期内，导致帧超时。
+列表图片应在绑定前拥有稳定的目标尺寸或宽高比。复用 ViewHolder 时，要取消或替换旧请求，并校验回调仍属于当前绑定项。图片预取要结合缓存命中、解码尺寸和内存占用评估，不能只追求更早加载。
 
-在 Perfetto 中识别 Fragment 切换卡顿的方式：
-- 找到切换发生的时间点（可以在 `FragmentTransaction.commit()` 前后加自定义 Trace event）
-- 观察主线程在那几帧上的 slice 分布——如果看到 `inflate` + `measure` + `layout` 堆叠在一起，说明布局加载和初始化是瓶颈
-- 检查 RenderThread 的负载——如果布局中包含图片或复杂自定义 View 的 onDraw，RenderThread 也会成为瓶颈
+`RecyclerView.setHasFixedSize(true)` 表达的是 RecyclerView 自身尺寸不受 adapter 内容变化影响。它不会跳过 bind，也不会阻止 item 内部的 requestLayout。
 
-优化思路：
-- 将 Fragment 的布局拆分为多个阶段：先加载骨架布局，数据准备好后再填充内容
-- 将 Fragment 事务提交时机与动画帧解耦：如果 Fragment 切换发生在动画期间（如 SharedElement 转场），事务执行会触发 View 层级的重建、动画准备和 measure/layout，这些操作会挤占动画帧的渲染时间。可以把事务延迟到动画结束之后，或先暂停动画、执行事务、再恢复动画。
+### 小核、频率与调度结论
 
-[已验证: AndroidX Fragment 1.8.x, `androidx/fragment/app/FragmentManager.java`, `BackStackRecord.java`, `SpecialEffectsController.kt` — 现代应用、ViewPager2 和 Jetpack Navigation 主要走 AndroidX Fragment。`commit()` 将 `BackStackRecord` 入队，由 FragmentManager 通过宿主主线程 Handler 执行 pending actions；View 创建/移除与动画、transition 的可见性变更由 `SpecialEffectsController` 协调。平台 `android.app.Fragment` 已废弃，`frameworks/base/core/java/android/app/FragmentManager.java` 只适合解释旧系统 Fragment。]
-- 在非动画期间使用 AndroidX `commitNow()` 同步执行：`commitNow()` 会在调用时立即执行事务中的操作，不等后续异步执行点。这适合无动画、无 back stack 的局部初始化路径；它不能和 `addToBackStack()` 一起使用，也不适合放进仍在播放的转场动画中。[已验证: AndroidX FragmentTransaction `commitNow()` reference]
-- 预加载下一页 Fragment 的 View（`setMaxLifecycle` 配合 ViewPager2 的 `setOffscreenPageLimit`）
+RenderThread 在某一帧运行于低容量 CPU，只能说明“当时在哪里执行”。要确认调度因素，需要一起检查：
 
-### 2.3 页面切换动画在 Perfetto 中的表现
-<!-- AIW-源码调研-2026-05-08: FragmentTransaction commit 源码链路 -->
-<!-- AIW-回炉-2026-05-23: 修正 mTrack()/mHostHandler 等不存在方法名，改为 AndroidX Fragment 口径 -->
+- wakeup 到 Running 的等待时间；
+- 线程的调度策略、优先级、uclamp 与 task group；
+- CPU capacity、频率、idle 退出和迁核；
+- 同核更高优先级任务的抢占；
+- thermal throttling 与持续复现下的变化；
+- 相同工作量在正常帧和异常帧上的执行时间。
 
-**FragmentTransaction.commit() 源码链路深度分析**：
-
-`commit()` 不会立即执行事务，而是将 `BackStackRecord` 入队，等主线程 Looper 下一轮消息处理时才执行。
-
-**AndroidX Fragment 源码流程**（现代应用主要路径）：
-1. `BackStackRecord.commitInternal()` → 调用 `FragmentManager.enqueueAction(this, allowStateLoss)` 将事务入队
-2. `FragmentManager.scheduleCommit()` → 通过宿主主线程 Handler post `mExecCommit` Runnable
-3. `mExecCommit` → 调用 `execPendingActions()`，内部调用 `generateOps()` 生成操作序列
-4. `removeRedundantOperationsAndExecute()` → 去重后执行，最终走到 `moveToState()` 推进 fragment 状态
-
-**时序关键点**：
-- `commit()` → `enqueueAction()` → `scheduleCommit()` → Handler post `mExecCommit` → `execPendingActions()` → `moveToState()`
-- 普通 `commit()` 通过 Handler 异步排队执行，不按 VSync 对齐；它可能落在下一帧前，也可能与已排队的 traversal/animation 竞争。性能分析时用自定义 Trace 标出 commit、`execPendingActions` 附近工作和下一次 traversal/FrameTimeline
-- Fragment 状态推进与 View 树布局在不同消息周期，不会立即响应
-
-**性能影响**：
-- `commit()` 延迟设计确保主线程有序执行，避免竞争
-- pending actions 堆积过多可能导致首帧延迟
-- 无 Choreographer 绑定，fragment 操作不感知 VSync 周期
-
-**源码依据**（AndroidX Fragment 1.8.x / AOSP android-16.0.0_r1）：
-- `androidx/fragment/app/BackStackRecord.java` — `commitInternal()` / `enqueueAction()`
-- `androidx/fragment/app/FragmentManager.java` — `scheduleCommit()` / `execPendingActions()` / `generateOps()` / `removeRedundantOperationsAndExecute()`
-- 平台 `frameworks/base/core/java/android/app/FragmentManager.java` 为 legacy 实现，仅作旧系统源码参考
-
-
-[图：Activity 切换动画期间两个进程的 Perfetto 时序，标注源 Activity 退出动画和目标 Activity 进入动画]
-
-页面切换期间的 Perfetto Trace 有几组稳定的观察点，入口要按版本拆开。
-
-**Android 12+：先看 FrameTimeline。** `BufferStuffing` 表示 App 连续提交了多帧，但前一帧还没被 SurfaceFlinger 消费；`AppDeadlineMissed` 表示 App 侧渲染超时，动画帧没赶上预期 deadline。这一组信号适合先判断是 App 侧掉帧，还是后续合成链路继续放大了延迟。
-
-**Android 8-11：回到 App / RenderThread / BufferQueue 轨道。** 低版本没有完整的 FrameTimeline 诊断面板，优先看 `Choreographer#doFrame`、主线程与 RenderThread 的 `thread_state`、以及 BufferQueue / SurfaceFlinger 轨道上的 buffer 堆积和合成延迟。页面切换的常见模式仍然是目标页面 inflate 或绘制过慢，带着前 2-3 帧一起超时。
-
-**跨进程的动画协调**：Activity 切换涉及两个进程，两边的帧需要同步。如果源进程的退出动画和目标进程的进入动画在时间上不匹配，视觉上会感觉撕裂或顿挫。
-
-[已验证: Perfetto 官方文档, perfetto.dev/docs/analysis/trace-processor — FrameTimeline 适用于 Android 12+；低版本需回到线程与 BufferQueue 轨道]
+应用侧通常无法据此要求线程固定运行在某个大核。系统或厂商团队若要修改调度策略，还需在 `android17-6.18-2026-06_r6` 对应设备内核和 SoC 调度实现上验证；Android common kernel 不规定厂商拓扑、频点或 GPU/HWC tracepoint 的统一形态。
 
 ---
 
-## 三、窗口动画的 Jank
+## 页面切换：拆开内容准备、窗口事务与显示
 
-窗口动画和页面切换动画的区别在于，窗口动画通常涉及一个独立的 Window 层——比如 App 启动时的启动画面（Splash Screen）、Dialog 和 PopupWindow 的弹出动画、以及输入法的弹出/收起。
+### Activity transition
 
-### 3.1 App 启动窗口
+Activity 跳转可能发生在同一进程，也可能拉起已有进程或新进程。诊断前要区分热启动、温启动和冷启动，并记录目标页面的 TTID、TTFD 与第一帧。把所有跳转写成“两个应用进程协同”会漏掉同进程场景，也会掩盖冷启动中的进程创建与类加载。
 
-从 Android 12 开始，系统为所有 App 提供了默认的 Splash Screen（通过 `SplashScreen` API）。在 App 进程完成初始化之前，系统会显示一个带有 App 图标和主题色的启动窗口。这个窗口由 SystemServer 管理，App 进程就绪后系统执行从启动窗口到 App 主界面的过渡动画。（启动窗口与 App 启动流程的完整分析见 8.2 节。）
+Android 17 的现代窗口过渡需要同时观察三条线：
 
-Android 12+ 的过渡发生在 `SurfaceControl` 级别。WMS 通过 `StartingSurfaceController` 创建 starting surface，App 首帧 surface 准备好后，系统用 `SurfaceControl.Transaction` 协调 starting surface 的退出和 App surface 的显示；SplashScreen 的退出动画还会把 `SplashScreenView` 暴露给 App 侧回调控制退出时机。这样可以把启动窗口隐藏、App 窗口显示、alpha / crop / z-order 等 layer 操作放在同一批事务里，减少旧启动页先消失、App 首帧未显示造成的黑块或闪烁。
+- 应用侧：源/目标 Activity 生命周期、inflate、首个 traversal、RenderThread 和窗口 buffer；
+- 窗口侧：WindowManager Shell transition、参与者、sync、SurfaceControl leash 与几何事务；
+- 显示侧：目标 layers 的 buffer/transaction、SurfaceFlinger composition 和 display present。
 
-[图：SplashScreen 启动窗口到 App 主界面过渡动画的 Perfetto 截图，标注 SystemServer 动画线程和 App 进程的时间关系]
+源窗口和目标窗口的内容提交与 leash 动画可以来自不同线程、不同进程。应用首帧准备晚时，Shell 可能继续显示 starting window、snapshot 或旧 surface；应用两侧按时而整屏仍迟到时，应查看 SurfaceFlinger/HWC。Winscope 的 Shell Transitions、Window Manager、SurfaceFlinger Layers 和 Transactions 能复原窗口关系，Perfetto 更适合比较线程调度、buffer 与帧时间。
 
-启动窗口动画卡顿通常来自系统侧合成或调度：SurfaceFlinger 在合成启动窗口和其他层时耗时过长，或 SystemServer / Shell 动画相关线程没有及时拿到 CPU。如果 App 的 `onCreate()` 耗时过长导致首帧延后，过渡动画的起点也会被推迟。
+### Fragment transaction
 
-[已验证: 官方文档, developer.android.com/develop/ui/views/launch/splash-screen；AOSP `StartingSurfaceController.java`, `SplashScreenView.java`, `SurfaceControl.Transaction`]
+AndroidX Fragment 的 `commit()` 把事务加入 FragmentManager 队列，随后由宿主主线程执行 pending actions。它没有承诺与某个 VSync 对齐。一次切换可能把 Fragment 状态推进、View 创建/移除、SpecialEffectsController、measure/layout 与动画准备集中到相邻几帧。
 
-在 Perfetto 中分析启动窗口卡顿：
-- 关注 launching app 的首帧渲染时间、WindowManager 中 starting window 的创建与绘制、以及 SurfaceFlinger 对应 Layer 的合成情况。Android 12+ 的 SplashScreen 是系统管理的 starting window，由 StartingWindowController / StartingSurfaceController 负责，不存在独立的 SplashScreen 进程
-- 查看 SurfaceFlinger 在过渡动画期间的合成耗时
-- 检查 App 主进程的 `ActivityThread.handleBindApplication` → `Activity.onCreate` 调用路径是否过长
+几个 API 的边界需要分清：
 
-### 3.2 预测性返回动画（Predictive Back）
+- `commit()` 异步排队；返回时事务通常尚未执行。
+- `commitNow()` 在调用线程同步执行，要求主线程，且不能与 `addToBackStack()` 组合。它会把工作前移到当前调用点，不是通用的流畅度开关。
+- `executePendingTransactions()` 会执行当前待处理事务，影响范围可能超过某一次提交。
+- `setReorderingAllowed(true)` 允许 FragmentManager 优化同一批操作的状态变化，并改善 transition/lifecycle 语义。它不能消除布局、业务初始化或 GPU 工作。
+- `commitAllowingStateLoss()` 改变的是保存状态后的提交约束，用它规避卡顿会引入状态丢失风险。
 
-预测性返回动画（Predictive Back）的版本边界需要拆开看：
+取证时可分别标记“发起 commit”“pending actions 开始/结束”“目标 Fragment 首次可见”和“第一帧 present”。若卡点在 `onCreateView()`、`onViewCreated()` 或首个 layout，处理页面构建；若 App buffer 已按时，继续检查 transition transaction 和 display frame。更完整的源码链路见 [FragmentTransaction 提交时序与主线程卡顿](./17-fragmenttransaction-commit-jank.md)。
 
-- **Android 13/14**：需要在开发者选项中手动启用，且 App 需 opt-in（`android:enableOnBackInvokedCallback="true"`）
-- **Android 15**：开发者选项不再可用，系统预测性返回动画只对已 opt-in 的 App/Activity 显示
-- **Android 16（API 36 target + Android 16 设备）**：系统预测性返回动画默认启用，App 仍可通过 `android:enableOnBackInvokedCallback="false"` 临时 opt-out
+### Shared element
 
-用户在边缘滑动或长按返回键时，系统会在手势进行中实时预览「返回后」的目标画面——这不是 App 自己画的动画，而是 SystemUI 手势进度控制器与 App 的 `OnBackAnimationCallback` 协作完成的。`OnBackAnimationCallback` 继承自 `OnBackInvokedCallback`：父接口只有 `onBackInvoked()` 负责最终触发；子接口额外提供 `onBackStarted()`、`onBackProgressed(BackEvent)`、`onBackCancelled()` 回调用于进度动画。
+共享元素转场的成本取决于具体实现和元素类型。可能涉及源/目标 View 的名称匹配、布局坐标捕获、overlay/ghost、snapshot、图片资源准备、matrix/clip 更新，以及两个窗口的可见性协调。不能把所有共享元素都概括为“复制一张 bitmap”。
 
-这引入了一类新的卡顿场景：
+常见的断点包括：
 
-- **手势进度更新不及时**：App 的 `onBackProgressed(BackEvent)` 回调如果在主线程做了耗时操作（比如重新计算布局），手势预览就会出现卡顿。如需在 Perfetto 中观察进度回调频率，需要给 `onBackProgressed()` 添加自定义 Trace/counter；系统侧可结合 SystemUI/WM/SF 相关 trace 与动画帧耗时判断
-- **动画回调与帧渲染争抢主线程**：如果 `OnBackInvokedCallback` 的动画更新（alpha/scale/translation）与 App 正在进行的列表滑动、图片加载等操作在同一个 VSync 周期内竞争主线程，帧预算会被压缩
-- **SystemUI 侧合成压力**：手势预览涉及两层内容的叠加合成——当前 Activity 和目标 Activity 的缩略图。如果 SurfaceFlinger 合成路径走了 GPU，帧耗时会明显增加
+- 目标元素尚未完成布局，终点 bounds 不稳定；
+- 大图在转场开始后才解码或上传；
+- 元素层级在转场期间触发额外 layout；
+- 源窗口、目标窗口与 transition leash 的时序没有对齐；
+- alpha、圆角、模糊或遮罩改变了合成条件。
 
-Perfetto 分析要点：
-- 通过自定义 Trace 标出 `onBackProgressed(BackEvent)` 回调的耗时和间隔——间隔均匀说明 App 回调正常，跳跃或停滞指向回调阻塞
-- 检查 App 主线程在进度回调期间的 slice 耗时
-- 结合 SystemUI/WM/SF 相关 trace 与动画帧耗时判断系统侧合成是否正常
-
-[已验证: developer.android.com/guide/navigation/custom-back/predictive-back-gesture — Android 13/14 开发者选项 + opt-in, Android 15 opt-in only, Android 16 默认启用；developer.android.com/about/versions/16/behavior-changes-16 — targeting Android 16+ 默认启用系统预测性返回动画]
-
-### 3.3 Dialog / PopupWindow 弹出动画
-
-Dialog 的弹出过程涉及：
-1. 创建新的 Window（通过 WindowManager.addView）
-2. Window 的 Surface 创建和首次绘制
-3. 弹出动画（通常是 scale + alpha 的组合动画）
-
-如果 Dialog 的布局很复杂（比如包含大量表单、图片、嵌套 RecyclerView），首次 inflate 和 measure 的耗时会直接影响动画的前几帧。用户感知到的就是"弹窗出现的时候卡了一下"。
-
-PopupWindow 的情况类似。`showAsDropDown()` 会基于 anchor 构造 `WindowManager.LayoutParams`，复用宿主的 application window token，再通过 `WindowManager.addView()` 把内容视图挂到窗口层级里。它仍然是 WindowManager 管理的独立窗口，只是复用了宿主 token 和现成上下文，创建成本比 Activity 新开一个 window 更低。但如果 PopupWindow 的 anchor View 正在进行动画，两者仍可能争抢主线程时间。
-
-在 Perfetto 中的分析方法：
-- 在 Dialog 的 `show()` 方法前后添加 Trace event
-- 观察主线程在 `show()` 之后几帧的耗时——如果 `inflate` 和 `measure` 占据了大部分时间，说明 Dialog 的布局是瓶颈
-- 检查是否有 GC 暂停（Dialog 创建通常伴随大量对象分配，可能触发 GC）
+应同时记录元素准备回调、目标页首个 traversal、窗口 transition 和对应 layer present。只优化目标 Activity 的 XML，无法覆盖源窗口迟到或显示合成迟到。
 
 ---
 
-## 四、Notification 展开/折叠的 Jank
+## 窗口动画：Splash、返回手势与浮层
 
-前面三个场景（列表滑动、页面切换、窗口动画）都发生在 App 进程内部或 App 之间的协调中。接下来这个场景有点不同：通知栏的展开和折叠由 SystemUI 进程负责，普通 App 开发者通常不会直接碰到。但在系统性能优化场景下，尤其是 App 自定义了 Notification 的 RemoteViews 时，这个场景就需要关注——因为 App 的 Notification 布局最终是在 SystemUI 的主线程上渲染的。
+### SplashScreen 与 starting window
 
-### 4.1 通知栏展开的渲染管线
+Android 12（API 31）起，系统 SplashScreen API 为冷启动和温启动提供统一启动画面；热启动通常不会显示该启动画面。Splash screen 是独立窗口，它在应用可绘制前遮住目标窗口，并在应用第一帧就绪附近退出。
 
-通知栏下拉时，SystemUI 需要做几件事：
-1. 计算通知栏面板的展开高度（逐帧插值）
-2. 更新所有可见 Notification 的 RemoteViews（如果内容变了）
-3. 对通知面板执行 measure/layout/draw
-4. 处理 Quick Settings 面板的展开/折叠动画（如果拉到底）
-5. 如果有自定义了 `DecoratedCustomViewStyle` 的通知，还需要渲染 App 提供的自定义布局
+一次“启动时闪顿”可拆成四个时间点：
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/packages/SystemUI/src/com/android/systemui/shade/ — Shade 层级的通知面板实现]
+1. 启动请求进入 ActivityTaskManager；
+2. starting/splash window 可见；
+3. 应用目标窗口提交第一块可用 buffer；
+4. splash 退出动画结束，目标窗口在显示端 present。
 
-### 4.2 卡顿来源
+若第 2 到第 3 点很长，检查进程启动、Application/Activity 主线程、资源与首帧。若应用 buffer 已到而交接仍抖动，检查 splash exit listener、Shell/WMS transaction、目标 layer 和 SurfaceFlinger。自定义退出动画完成后还要移除 splash view；持续占有它会拖长交接窗口。
 
-通知栏展开卡顿的常见原因：
+### Predictive Back
 
-**RemoteViews 的 re-inflate**：如果 App 频繁更新 Notification（比如进度条更新、播放器进度），每次 updateNotification 都可能导致 RemoteViews 被 re-inflate。虽然系统对 RemoteViews 做了缓存优化，但布局复杂的自定义通知仍然会在 SystemUI 主线程上产生明显开销。
+Android 15 移除了预测性返回的开发者选项。应用完成 opt-in 后，系统可以提供返回桌面、跨 Activity 和跨任务的预测动画；具体效果仍受导航结构、回调类型和系统实现影响。AndroidX 应用通常通过 `OnBackPressedCallback` 接入，平台侧可使用 `OnBackInvokedCallback`；需要连续进度的自定义动画时，要使用支持 started/progressed/cancelled/invoked 生命周期的接口。
 
-**大量通知的布局计算**：通知栏展开时如果有 20+ 条通知，每一条都需要 measure 和 layout，叠加起来可能吃掉好几帧的时间。特别是有 GroupSummary 通知时，展开/折叠的动画期间需要同时渲染分组头和组内通知。
+诊断要同时检查三个问题：
 
-**SurfaceFlinger 合成负载**：通知栏展开时涉及多层叠加——状态栏层、通知面板层、背后的 App 层、导航栏层——SurfaceFlinger 需要在每个 VSync-sf 周期内完成所有层的合成。如果合成路径走了 GPU（而不是 HWC Overlay），开销会更大。
+- 手势进度回调是否短小、连续，取消路径能否恢复界面状态；
+- 当前回调是否消费了系统返回，导致系统预测动画无法运行；
+- 当前窗口、目标窗口或 home/task surface 的 leash 与 display frame 是否按时。
 
-在 Perfetto 中分析通知栏卡顿，需要同时观察 SystemUI 进程和 SurfaceFlinger 进程。如果 SystemUI 主线程的帧渲染时间正常但仍然掉帧，可能是 SurfaceFlinger 合成的问题。
+Android 16（API 36）起可用 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER` 观察系统导航而不消费返回，Android 17（API 37）继续保留这一能力。默认优先级或 overlay 优先级回调会参与消费决策，注册方式错误时，现象可能是“没有预测动画”，这和渲染掉帧属于两类问题。
 
-[待补充：通知栏展开卡顿的 Perfetto Trace 截图，标注 SystemUI 和 SurfaceFlinger 的对应帧]
+不要假设返回预览总是一张目标 Activity 缩略图。跨 Activity、跨任务和返回桌面的参与 surfaces 由导航状态与 Shell transition 决定，应从 Winscope 的参与者和 layer tree 确认。
 
----
+### Dialog 与 PopupWindow
 
-## 五、桌面滑动 / 多任务切换的 Jank
+Dialog 和 PopupWindow 都会给 WindowManager 增加窗口对象，并拥有各自的 ViewRoot 与 Surface；它们可以与宿主处于同一进程和同一 UI Looper。弹出时的成本可能来自：
 
-从 Notification 继续往外看，系统 Launcher 和 Recents 界面是用户操作频率最高的两个系统级 UI 场景。它们涉及 Launcher 进程（系统 Launcher 或第三方 Launcher）、SystemUI 进程、以及 SystemServer 进程的三方协调，分析复杂度比前几个场景更高。
+- 首次 inflate、measure/layout 和窗口首帧；
+- 同一主线程上宿主窗口与浮层窗口的 traversal 排队；
+- IME/Insets 变化；
+- dim、blur、圆角、阴影和动画；
+- 新 layer 加入后，HWC 的 DEVICE/CLIENT 分配变化；
+- GPU 带宽、client target 或 present fence 延迟。
 
-### 5.1 桌面滑动
-
-桌面滑动的分析和普通列表滑动类似（见第一节），但有几个特殊之处：
-
-**Workspace 的特殊性**：Launcher 的桌面不是标准的 RecyclerView，而是基于 `Workspace` / `CellLayout` 的自定义容器。每个"页面"可能包含复杂的 App Widget、快捷方式网格、文件夹等。滑动时需要渲染多个半页面（当前页 + 下一页的部分内容），GPU 负载比普通列表高。
-
-**App Widget 的更新**：如果桌面有 App Widget（如天气、时钟、日历），Widget 的 RemoteViews 更新会通过 BroadcastReceiver 在 Launcher 主线程上执行。如果 Widget 更新频率高或者布局复杂，会挤占滑动帧的时间。
-
-**壁纸的滚动**：桌面滑动时壁纸跟随偏移（Wallpaper offset），这涉及 SystemServer 的 WallpaperManagerService 和 SurfaceFlinger 的协调。如果壁纸分辨率过高或者 WallpaperService 的渲染线程卡住，也会导致桌面滑动掉帧。
-
-[来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-2.md — 高爷对 MIUI 桌面滑动卡顿的实战分析]
-
-在高爷分析的案例中，桌面滑动卡顿的根因是 RenderThread 被调度到了小核。这个发现过程体现了系统级卡顿分析的典型思路：
-
-1. 先看 App（这里是 Launcher）主线程，确认主线程是否正常
-2. 再看 RenderThread，发现耗时异常
-3. 最后去 CPU 区域，确认线程被调度到了哪个核
-4. 对比正常帧和异常帧的调度差异，锁定根因
-
-[图：桌面滑动场景中 RenderThread 被调度到小核导致掉帧的 Perfetto 截图，来自高爷 MIUI 桌面分析案例]
-
-### 5.2 多任务切换（Recents）
-
-多任务切换（也叫 Recent Apps、Overview）在 Android 12+ 中由 Launcher 进程负责（QuickStep 模式）。切换过程涉及一个复杂的多阶段动画：
-
-1. **当前 App 缩小动画**：将当前 App 的 Window 缩小到卡片大小
-2. **Recents 列表滑入**：从侧边滑入之前最近使用的 App 缩略图列表
-3. **用户滑动选择**：用户在卡片列表中左右滑动
-4. **目标 App 放大动画**：选中的 App 卡片放大回全屏
-
-[已验证: AOSP android-16.0.0_r1, packages/apps/Launcher3/quickstep/ — QuickStep 的多阶段动画主实现位于 Launcher3，SystemUI/shared 目录有辅助类]
-
-[图：多任务切换 QuickStep 动画的 Perfetto 时序，标注四个动画阶段和 Launcher/SurfaceFlinger 的对应帧]
-
-这个动画涉及 Launcher 进程和目标 App 进程之间的协调（通过 `ActivityTaskManager` 和 `InputConsumer`）。卡顿可能出现在：
-
-**动画启动阶段**：Launcher 需要在短时间内完成多个 TaskView 的布局计算。如果 Recents 列表中有大量 Task（比如用户很久没清理），布局开销会线性增长。
-
-**缩略图加载/采样**：每个 TaskView 需要显示对应 App 的缩略图（Thumbnail）。WMS 侧由 `TaskSnapshotController` 捕获 task snapshot，`android.window.TaskSnapshot` 携带 `HardwareBuffer` 和 `ColorSpace` 跨进程传给 Recents / Launcher；SystemUI shared 的 `ThumbnailData.fromSnapshot()` 通过 `Bitmap.wrapHardwareBuffer(buffer, colorSpace)` 包装成硬件 Bitmap。这条路径没有普通图片解码步骤，`HardwareBuffer` 也减少了 CPU 侧拷贝；真正要看的成本是硬件 buffer 生命周期、缩略图数量、GPU 采样和 SurfaceFlinger 合成负载。缩略图分辨率高、卡片数量多或背景层复杂时，GPU 带宽和合成时间仍会明显上升。
-
-[已验证: AOSP main, `frameworks/base/services/core/java/com/android/server/wm/TaskSnapshotController.java`, `android/window/TaskSnapshot.java`, `frameworks/base/packages/SystemUI/shared/src/com/android/systemui/shared/recents/model/ThumbnailData.kt`]
-
-**手势冲突**：多任务手势（从底部上滑并停顿）和 App 内的滑动手势容易冲突。如果手势识别耗时，会导致动画的起始帧延迟。
-
-在 Perfetto 中分析多任务切换卡顿的方法：
-- 找到 Launcher 进程的 `QuickStep` 相关 Trace event
-- 观察动画期间的帧序列，特别关注动画开始的前 2-3 帧（最容易卡）
-- 检查 `InputConsumer` 线程的手势识别是否有延迟
-- 同时查看 SurfaceFlinger 的合成路径——多任务期间活跃的 Layer 数量较多，容易触发 GPU 合成
+“出现额外 layer”不等同于“一定走 GPU client composition”。HWC 是否使用 overlay 要看整组 layers 的格式、变换、混合、保护属性、资源和厂商能力。可把弹出前后的 layer composition type、client target、GPU 时长与 present 结果放在一起比较。深入案例见 [HWC Overlay Plane 与合成降级排查](./18-hwc-overlay-composition-downgrade.md)。
 
 ---
 
-## 六、分析方法总结
+## Notification 展开与折叠：责任进程在 SystemUI
 
-到这里我们把五个典型卡顿场景都过了一遍。虽然每个场景的根因不同，但分析方法是相通的。我们总结一个通用的分析框架：
+通知面板的展开、折叠、分组和 Quick Settings 动画主要由 SystemUI 生成 UI 帧。普通应用在发布或更新通知时通过 Binder 提交 Notification；动画期间若通知内容没有更新，应用进程可以完全不在关键路径上。
 
-### 6.1 三步定位法
+需要分别检查：
 
-**第一步：确认是否真的掉帧。** 不要只看 App 主线程的帧颜色（绿/黄/红），要看 SurfaceFlinger 的 BufferQueue 和合成情况。帧颜色的含义和 Buffer 状态的判断方法在 7.1 节中有详细说明。黄帧不一定掉帧（Triple Buffer 可能吸收了延迟），绿帧也不一定没问题（如果帧是在 Buffer 充裕时产生的，实际延迟可能已经被掩盖了）。[来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md — 高爷对帧颜色与实际掉帧关系的分析]
+| 阶段 | 责任对象 | 典型证据 |
+|---|---|---|
+| 发布/更新通知 | 应用、system_server、SystemUI | Binder、NotificationManagerService、SystemUI pipeline |
+| 应用 RemoteViews/模板 | SystemUI 主线程 | inflate/reapply、图片/图标、measure/layout |
+| Shade 动画 | SystemUI UI Thread/RenderThread | FrameTimeline、CUJ、traversal、DrawFrame |
+| 整屏合成 | SurfaceFlinger/HWC | visible layers、composition type、present |
 
-**第二步：定位瓶颈在哪个线程。** 是主线程耗时（Traversal 阶段的 measure/layout/draw 过长）？还是 RenderThread 耗时（GPU 渲染超时）？还是线程本身没被及时调度（Runnable 状态时间长，等 CPU）？
+频繁更新进度、反复改变通知布局或提交大图片，会增加跨进程传输和 SystemUI 处理成本。RemoteViews 的一次更新可能复用已有 View，也可能需要重新应用布局；应以 trace 和通知差异为准，不能断言每次 `notify()` 都重新 inflate。
 
-**第三步：从线程瓶颈反推根因。** 主线程耗时 → 看 Traversal 各阶段的 slice 分布；RenderThread 耗时 → 看 drawing 阶段是 CPU 还是 GPU 瓶颈，去 CPU 区域确认调度情况；调度问题 → 看是否被跑到了小核、是否有更高优先级的任务抢占。
+以 Android 12（API 31）及更高版本为目标的应用，自定义通知会被系统套入标准模板，以保持图标、展开区域和操作的一致性。这个限制没有让自定义内容免费：复杂 RemoteViews、图片尺寸、更新频率和分组规模仍会影响 SystemUI。
 
-### 6.2 场景 → 典型根因速查
-
-| 场景 | 最常见的根因 | Perfetto 特征 |
-|------|------------|---------------|
-| 列表滑动 | onBind 耗时 / 图片加载触发 re-layout | 主线程 Traversal 阶段的 measure/layout 变长 |
-| 页面切换动画 | 目标页面布局 inflate 耗时 | 切换发生后的前 2-3 帧红帧 |
-| Dialog 弹出 | Dialog 布局 inflate + 首次 measure | show() 之后的帧超时 |
-| 通知栏展开 | RemoteViews re-inflate / 大量通知布局 | SystemUI 主线程耗时 + SurfaceFlinger 合成超时 |
-| 桌面滑动 | RenderThread 被调度到小核 | RenderThread running 但耗时异常，CPU 区域确认核分配 |
-| 多任务切换 | TaskView 布局 + 缩略图 HardwareBuffer 包装/采样 | Launcher 主线程 + RenderThread / SurfaceFlinger 双重负载 |
-
-> 注：上表是"最常见"的根因，实际分析时不要先入为主。很多看似是 App 问题的卡顿，最后发现是系统调度或 SurfaceFlinger 合成的问题。始终以 Trace 数据为准。
+如果 SystemUI 的 SurfaceFrame 按时而 DisplayFrame 迟到，再检查遮罩、壁纸、状态栏、导航栏、当前 App 和通知面板的合成。应用自己的 App FrameTimeline 不能代表通知面板。
 
 ---
 
-## 七、扩展：其他重渲染场景
+## 桌面滑动与多任务切换：以 OEM 现场为准
 
-### 7.1 视频播放场景的帧率稳定性 [待补充]
+### Launcher 桌面
 
-视频播放的卡顿分析相对独立，因为视频帧的渲染管线和 UI 帧不同。视频解码帧由 MediaCodec 直接输出到 Surface，不经过 App 主线程的 Traversal 流程。卡顿通常由解码性能不足（硬解/软解）、GPU 后处理（如 HDR→SDR 转换）、或 SurfaceFlinger 的 VSync 同步问题导致。
+AOSP Launcher3 提供 Workspace、CellLayout、Widget 与 Quickstep 的参考实现，量产设备可能替换 Launcher 或修改动画。桌面滑动常见的内容包括图标、文件夹、AppWidget、壁纸和搜索/推荐区域；其中 Widget 更新、动态壁纸和 Launcher 帧可能来自不同生产者。
 
-这个场景的完整分析需要结合 MediaCodec 的 Trace 输出和 SurfaceFlinger 的 Buffer 状态，留待后续补充。
+诊断顺序可按对象展开：
 
-[待补充：视频播放帧率分析的完整方法论]
+1. Launcher 主线程的输入、动画和 traversal；
+2. Launcher RenderThread/GPU；
+3. AppWidget 更新是否在同一时间进入 Launcher；
+4. 壁纸 layer 或 WallpaperService 是否更新；
+5. SurfaceFlinger 的可见 layers、composition 与 present；
+6. sched、CPU frequency、thermal 和 GPU 证据。
 
-### 7.2 地图 / WebView 等重渲染场景 [待补充]
+发现 RenderThread 位于小核时，继续验证唤醒等待、CPU capacity、频率与同帧工作量。单帧 CPU 编号不能单独支持“调度器导致卡顿”的结论。
 
-地图和 WebView 是两类特殊的"重渲染"场景：
+### Recents / Overview
 
-**地图场景**（如 Google Maps、高德地图）：地图的渲染由地图 SDK 内部的 GLSurfaceView 或 TextureView 完成，App 主线程只负责 UI 覆盖层（控件、POI 标注等）。卡顿通常出现在地图引擎的 GL 渲染线程上，可能由瓦片加载、矢量数据解析、或 GPU 着色器编译引起。
+AOSP Quickstep 由 Launcher3 实现，窗口组织和动画还依赖 WindowManager Shell、ActivityTaskManager、SurfaceControl transactions 与 SurfaceFlinger。OEM 可以更换参与者或动画实现，所以进程名和 slice 名应从目标设备采集。
 
-**WebView 场景**：WebView 的渲染由 Chromium 的渲染管线完成。Android WebView 是嵌入式的 Chromium 实例，其渲染涉及 Browser 进程（承载 AwContents）、Renderer 进程（Blink + V8）、Viz / GPU Service（合成与硬件加速）等路径协作。Perfetto 可通过两类数据源追踪 WebView：
+多任务手势可能操作以下对象：
 
-1. **ATrace 系统注解**：启用 `webview` 分类，捕获 Android Framework 层事件
-2. **Chromium TRACE_EVENT**：启用 `blink`（Blink 渲染引擎）、`cc`（Chromium Compositor）、`gpu`（GPU 进程）、`v8`（JS 执行）分类，捕获浏览器内部管线事件
+- 当前任务的 live surface 与 transition leash；
+- 其他任务的 snapshot；
+- Launcher 的 Recents UI；
+- 壁纸、系统栏和手势相关 surfaces；
+- 即将恢复的目标任务窗口。
 
-Perfetto 中 WebView 掉帧根因可按以下分类定位：
+Task snapshot 通过 `TaskSnapshot` 携带 HardwareBuffer、色彩空间、方向和裁剪等信息。Launcher 采样硬件 buffer 并不等同于执行普通图片文件解码；压力更多来自 snapshot 获取时机、卡片数量、纹理采样、显存/带宽与整屏合成。某些阶段会继续使用 live task surface，因此也不能把每张卡片都解释成静态截图。
 
-| 根因 | Perfetto 特征 Slice | 关联分类 |
-|------|-------------------|---------|
-| JS 执行过长 | `v8` slice 超过 16ms | `v8` |
-| Layout/Paint 过长 | `blink` measure/layout 嵌套 | `blink` |
-| 组合层数过多 | `cc` CommitLayers 数量激增 | `cc` |
-| GPU 栅格化过长 | `gpu.` raster 过长 | `gpu` |
-| BufferQueue 堵塞 | dequeue slot 等待 | ATrace `webview` |
-| SurfaceFlinger 合成 | `SurfaceFlinger` compose 超时 | ATrace |
-
-> **GPU 进程栅格化瓶颈**：现代 Chromium 采用 Out-of-Process Rasterization（OOP-R），栅格化任务在独立的 GPU 进程执行，而非 Renderer 进程。分析 WebView 卡顿时，不能只盯着 Renderer 进程的轨道——如果掉帧来自 GPU 进程的 `raster` 轨道过长（比如复杂 CSS 动画、大量 DOM 节点的重绘），根因在 GPU 进程而非 Renderer 进程。Perfetto 中需要同时检查 `gpu.` 前缀的轨道和 Renderer 进程的 `cc` 轨道。
-
-Renderer 进程崩溃或被 LMK 杀死时，应用侧入口是 `WebViewClient.onRenderProcessGone()` 和 `WebViewRenderProcessGoneDetail.didCrash()`。Perfetto / Chromium trace 中不要默认搜索 `render_process_gone`，除非应用自己用 `Trace.beginSection("render_process_gone")` 做了自定义 marker。系统 trace 更常见的证据是 Renderer 进程轨道结束、LMK / OOM 事件、Chromium 相关 slice 中断，以及应用回调附近的自定义 marker。
-
-> ⚠️ 旧说法「WebView 卡顿分析需要用 Chrome DevTools 而非 Perfetto」已过时。Perfetto UI 在 target=Android 时可同时采集 ATrace 和 Chromium TRACE_EVENT，二者组合覆盖系统层和浏览器内部管线。
-
-[AIW-源码调研-2026-04-27: 依据 chromium/src/android_webview/ + perfetto.dev/docs 验证]
+Winscope 中应检查 Shell transition 的参与者、WindowManager 状态、SurfaceFlinger layers 和 transactions；Perfetto 中再对齐 Launcher/SystemUI/system_server 的线程、输入、snapshot 相关 Binder、GPU 与 DisplayFrame。若动画卡片移动正常而内容停住，需辨别当前看到的是 snapshot、旧 buffer 还是 live surface。
 
 ---
 
-## 常见问题与误区
+## [自动发现] 视频：UI 帧与视频帧要分开
 
-**"我的列表滑动掉帧了，肯定是 RecyclerView 的锅"**
+视频常由 MediaCodec 或播放器渲染器向 Surface 输出 buffer。使用 SurfaceView 时，视频通常拥有独立 child layer；使用 TextureView 时，视频 buffer 先进入 SurfaceTexture，再由宿主 HWUI 在 App Window 中采样。两条路径的责任线程、buffer 数量和 FrameTimeline 覆盖范围不同。
 
-不一定。我们在 1.3 节中分析过一个案例：RenderThread 被调度到了小核 CPU，App 代码完全没问题。正确的做法是先在 Perfetto 中确认瓶颈在哪个线程——主线程、RenderThread、还是调度问题——再针对性优化。先看 Trace 再动手，而不是先改代码再看效果。
+视频“卡”的含义至少有三种：
 
-**"用了 Glide/Coil 加载图片，图片就不会导致卡顿了"**
+- 解码器没有按节奏产出可用 buffer；
+- buffer 已 queue，但 fence、latch、合成或显示时刻迟到；
+- 播放器主动丢帧或重复帧，以维持音视频同步。
 
-图片库解决的是"异步加载"问题，但加载完成后的回调仍然在主线程上执行。如果 `ImageView` 的测量尺寸依赖图片原始尺寸，图片结果写入后可能触发 `requestLayout()`，导致 item 甚至 RecyclerView 父层重新 measure/layout。解决方案是提前给图片 View 稳定的测量边界，例如固定宽高、固定比例容器，或在图片库请求中传入目标尺寸。如果 RecyclerView 自身尺寸不受 adapter 变化影响，可以额外调用 `setHasFixedSize(true)` 减少 RecyclerView 容器级别的重新测量；它不处理 item 内部的 layout 问题。
+应记录媒体 presentation timestamp、解码输入/输出、目标 Surface 的 frame number、queue/acquire/release、display present 和音频时钟。UI 的 App FrameTimeline 正常，不能证明独立视频 layer 连续更新；反过来，视频连续也不能证明控制栏动画流畅。
 
-**"黄帧就是掉帧"**
-
-不一定。黄帧表示这一帧的渲染时间超过了 VSync 周期但被 Triple Buffer 吸收了，用户未必能直接感知。Android 12+ 更直接的入口是 FrameTimeline 里的 `SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed` 和 `DisplayHAL`。它们分别对应 SurfaceFlinger CPU 合成、GPU 合成和 Display HAL 侧的超时。Android 8-11 没有这组统一 jank type 时，要回到 SurfaceFlinger 合成耗时、BufferQueue 状态和实际 present 延迟来判断。
-
-**"卡顿一定是主线程的问题"**
-
-RenderThread 卡顿同样会导致掉帧。在 GPU 密集型场景（复杂自定义 View 的 `onDraw`、大量图片渲染、App Widget 渲染）中，RenderThread 的 GPU 渲染耗时可能成为瓶颈。在 Perfetto 中，RenderThread 的 slice 如果出现了长时间 `drawFrames`，说明 GPU 渲染是瓶颈。此时优化主线程的 layout 不会有效果，需要减少 GPU 绘制指令或简化渲染路径。
-
-**"页面切换卡顿只要优化新页面的布局就行了"**
-
-Activity 转场动画涉及源 Activity 和目标 Activity 两个进程的帧同步。即使目标页面的布局优化得再好，如果源 Activity 的退出动画帧没按时渲染，动画仍然会掉帧。在分析时需要同时查看两个进程的帧序列，不能只看目标 Activity。
-
-**"SurfaceView 的列表滑动掉帧能在 FrameTimeline 的 App 轨道中看到"**
-
-不一定。SurfaceView 拥有独立的 Surface，其渲染管线不走主线程的 Traversal 流程。FrameTimeline 的 App 轨道可能无法正确反馈 SurfaceView 的掉帧——App 轨道显示正常帧，但 SurfaceView 对应的 BufferQueue 实际已堆积。遇到包含 SurfaceView 的列表场景（比如视频列表、地图列表），需要额外检查 SurfaceView 对应 BufferQueue 的 dequeue/acquire 状态。
+HWC overlay 能减少 GPU 合成压力，但它取决于格式、缩放、旋转、HDR、保护内容、其他 layers 与硬件资源。检查目标 layer 的实际 composition type，不要依据 SurfaceView 或 MediaCodec 名称推断 overlay。详见 [视频 Overlay 与 HWC](../ch18-rendering-pipelines/15-video-overlay-hwc.md) 和 [MediaCodec2、Tunneled Playback 与 Media3 ABR](../ch18-rendering-pipelines/23-media-codec2-tunneled-media3-abr.md)。
 
 ---
+
+## [自动发现] 地图与 WebView：先确认承载方式
+
+### 地图 SDK
+
+地图 SDK 可能使用 SurfaceView、TextureView、GLSurfaceView、自建 SurfaceControl，或把部分内容画进宿主窗口。瓦片下载、矢量解析、标注布局和 GL/Vulkan 提交也可能分属不同线程。没有 SDK 版本、实际 View 类型和 layer tree，就无法把“地图卡顿”归到固定的 GL 线程。
+
+排查时先确认：
+
+- 地图主体是独立 layer，还是作为纹理合入 App Window；
+- 相机移动由手势线程、主线程还是渲染线程驱动；
+- 瓦片 I/O/解码是否阻塞渲染依赖；
+- shader/pipeline 创建、纹理上传和 GPU 执行是否与异常帧对齐；
+- 独立 layer 与宿主控件的更新是否落在同一 display frame。
+
+SurfaceView 与 TextureView 的差别可分别参见 [SurfaceView 渲染管线](../ch18-rendering-pipelines/06-surfaceview.md) 和 [TextureView 渲染管线](../ch18-rendering-pipelines/07-textureview.md)。
+
+### WebView
+
+标准硬件加速 WebView 的网页主体通常经 Chromium renderer、compositor/GPU 服务和 WebView functor 合入宿主 App Window。视频、受保护内容、provider overlay 或定制内核可能增加独立 SurfaceControl layer。网页主体与媒体 overlay 需要分开追踪。
+
+WebView 是可更新组件。平台源码可以锚定 `android-17.0.0_r1`，Chromium 行为还必须记录设备上的 WebView provider 包名、版本与 revision。仅凭 Android 17 平台 tag 不能确认某个 Chromium slice 名或进程结构。
+
+| 现象 | 优先查看 |
+|---|---|
+| JS 长任务后页面不动 | renderer main thread、V8、DOM/layout 依赖 |
+| 页面 paint/raster 晚 | Blink paint、compositor、raster/GPU service |
+| 宿主控件和网页一起晚 | App UI Thread、HWUI functor、host RenderThread |
+| 视频晚而页面滚动正常 | 独立媒体 layer、codec、fence、HWC |
+| host buffer 已提交但屏幕晚 | SurfaceFlinger/HWC、DisplayFrame |
+
+Renderer 退出应结合进程生命周期、LMK/OOM 证据与 `WebViewClient.onRenderProcessGone()`。除非应用自行插桩，不要预设 trace 中存在名为 `render_process_gone` 的 slice。完整结构见 [WebView 渲染管线](../ch18-rendering-pipelines/13-webview-rendering.md) 和 [WebView 性能](./11-webview-performance.md)。
+
+---
+
+## 从症状到证据的速查表
+
+| 场景症状 | 第一组对象 | 继续验证 | 容易误判的结论 |
+|---|---|---|---|
+| 列表拖动立即跟手差 | input、UI Thread、RecyclerView | RenderThread、App Window、DisplayFrame | “一定是 onBind” |
+| fling 周期性顿挫 | animation、RV bind/create/prefetch | 图片回调、GC、sched、GPU | “每帧都必须少于刷新间隔” |
+| Activity 切换开头停顿 | 目标首帧、启动类型 | Shell transition、source/target layers | “总有两个进程” |
+| Fragment 切换卡 | pending actions、生命周期、layout | SpecialEffects、RenderThread | “改用 commitNow 就会快” |
+| Splash 退场抖动 | splash 与目标窗口交接 | exit listener、transaction、present | “只有 Application 启动慢” |
+| 返回动画缺失 | opt-in、callback 消费 | Shell 参与者 | “缺失就是掉帧” |
+| Dialog 出现后整屏变慢 | 新 ViewRoot/layer、dim/blur | HWC composition、GPU/present | “多一个 layer 必走 CLIENT” |
+| 通知栏卡 | SystemUI FrameTimeline | RemoteViews、SF/HWC | “发布通知的 App 在画 Shade” |
+| Recents 卡片内容停住 | snapshot/live surface | Quickstep/Shell、SF transaction | “所有卡片都是 bitmap 解码” |
+| 视频停顿、控件流畅 | codec producer、视频 layer | PTS、fence、HWC/present | “App FrameTimeline 正常就没掉视频帧” |
+| WebView 页面卡 | provider renderer/compositor | host HWUI、媒体 overlay、SF | “只查宿主主线程” |
+
+---
+
+## Android 17 与内核锚点
+
+本章的平台结论以 Android 17 / API 37、AOSP `android-17.0.0_r1` 为上界。RecyclerView、Fragment、WebView provider 和地图 SDK 属于可独立更新组件，复现报告还要记录它们的版本。厂商 Launcher、SystemUI、HWC、GPU 驱动与调度策略也可能偏离 AOSP 参考实现。
+
+内核侧以 `android17-6.18-2026-06_r6` 为锚点。通用证据包括 sched wakeup/switch、CPU frequency/idle、thermal、dma-buf 与 dma-fence；设备可见的 GPU、display、HWC 和厂商调度事件由 SoC 与构建配置决定。缺少某个厂商 tracepoint 时，应保留“不足以继续归因”的边界，不能用线程名或 CPU 编号补齐结论。
+
+---
+
+## 复盘模板
+
+一份可复核的场景结论至少回答以下问题：
+
+1. 哪次交互、哪块显示屏、哪个刷新率下复现？
+2. 用户感知对应哪个 SurfaceFrame、DisplayFrame 或目标 layer present？
+3. 画面由哪些 producer、Window、Surface 和 layer 构成？
+4. 最早偏离 expected timeline 的事件是什么？
+5. 迟到线程当时处于 Running、Runnable、Sleeping、Blocked 还是 fence wait？
+6. 应用 buffer、窗口几何 transaction 与 display present 分别何时完成？
+7. 修复改变了哪项可测量证据，相邻正常帧和异常帧是否收敛？
+8. 结论依赖的平台、AndroidX、WebView provider、OEM 和 kernel 版本是什么？
+
+场景归类的价值，是减少待检查对象；源码、trace 和对照实验负责完成归因。若证据无法跨过 Surface、进程或显示边界，结论就停在当前层级。
+
+---
+
+## 相关章节
+
+- [卡顿的定义与 FrameTimeline 语义](./01-jank-definition.md)
+- [卡顿原因分类](./02-jank-causes.md)
+- [可复现的卡顿分析方法](./03-jank-methodology.md)
+- [场景化性能排查手册](./15-scenario-playbooks.md)
+- [渲染管线总览](../ch18-rendering-pipelines/01-pipeline-overview.md)
+- [多窗口渲染](../ch18-rendering-pipelines/05-android-view-multi-window.md)
+- [渲染管线分析方法](../ch18-rendering-pipelines/20-pipeline-analysis-methodology.md)
 
 ## 参考资料
 
-- [Android Perfetto 系列 7 - MainThread 和 RenderThread 解读](https://androidperformance.com/2025/08/02/Android-Perfetto-07-MainThread-And-RenderThread/) — 高爷
-- [Android Perfetto 系列 5 - 基于 Choreographer 的渲染流程](https://androidperformance.com/2025/03/26/Android-Perfetto-05-Chorergrapher/) — 高爷
-- [Systrace 流畅性实战 2 - MIUI 桌面滑动卡顿分析](https://www.androidperformance.com/2021/04/24/android-systrace-smooth-in-action-2/) — 高爷
-- [Systrace 流畅性实战 3 - 卡顿分析过程中的一些疑问](https://www.androidperformance.com/2021/04/24/android-systrace-smooth-in-action-3/) — 高爷
-- [RecyclerView 性能优化](https://developer.android.com/topic/performance/recycler-view) — Android 官方文档
-- [Splash Screen API](https://developer.android.com/develop/ui/views/launch/splash-screen) — Android 官方文档
-- [Activity Transitions](https://developer.android.com/training/transitions) — Android 官方文档
-- [Perfetto FrameTimeline 分析](https://perfetto.dev/docs/analysis/trace-processor) — Perfetto 官方文档
-- [AOSP SystemUI Shade 实现](https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/packages/SystemUI/src/com/android/systemui/shade/) — AOSP 源码
+- [Slow rendering：RecyclerView trace labels 与常见处理](https://developer.android.com/topic/performance/vitals/render)
+- [AndroidX Fragment transactions](https://developer.android.com/guide/fragments/transactions)
+- [SplashScreen API](https://developer.android.com/develop/ui/views/launch/splash-screen)
+- [Predictive Back gesture](https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture)
+- [Create a custom notification layout](https://developer.android.com/develop/ui/views/notifications/custom-notification)
+- [Winscope overview](https://source.android.com/docs/core/graphics/winscope/overview)
+- [Winscope tables and Shell transitions](https://source.android.com/docs/core/graphics/winscope/analyze/search)
+- [Frame pacing](https://source.android.com/docs/core/graphics/frame-pacing)
+- [SurfaceFlinger and WindowManager](https://source.android.com/docs/core/graphics)
+- [Hardware Composer HAL](https://source.android.com/docs/core/graphics/implement-hwc)
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- [AOSP Android 17 Choreographer](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java)
+- [AOSP Android 17 FrameTimeline](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp)
+- [AOSP Android 17 Shell transitions](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/)
+- [AOSP Android 17 TaskSnapshotController](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/TaskSnapshotController.java)
+- [Android common kernel sched tracepoints](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h)
+- [Android common kernel dma-fence](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)
