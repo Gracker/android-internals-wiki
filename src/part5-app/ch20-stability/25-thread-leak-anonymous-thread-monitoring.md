@@ -86,7 +86,9 @@ gap_source: "素材驱动+章节深挖"
 
 这几类问题可以同时发生。例如某个 SDK 每次初始化都创建一个 pool，每个 worker 又持有 `ThreadLocal<Activity>`，同时每个任务打开 socket。此时 Linux task、Java heap 和 FD 会一起增长，但“每个线程固定占一个 FD”并不成立。
 
-标准 Java `Thread` 结束时，Android 17 的 `Thread.exit()` 会清空 `target`、`threadLocals`、`inheritableThreadLocals`、`blocker` 和未捕获异常处理器等引用。常见的 Java 内存滞留来自仍然存活的线程，或业务代码在线程子类、静态集合中保留的额外字段，不能把所有已结束的 `Thread` 对象都归入同一种泄漏。
+OpenJDK 的 `Thread.exit()` 会调用 `clearReferences()`，清空 `target`、`threadLocals`、`inheritableThreadLocals`、`blocker` 和未捕获异常处理器等引用；Android 17 不能套用这条结论。该 tag 的 `Thread.getThreadGroup()` 源码明确注明 ART 在线程退出时没有调用 `Thread.exit()`。ART 的 `Thread::Destroy()` 会执行未捕获异常分发、从 `ThreadGroup` 移除 peer、清除 native peer 并唤醒 joiner，但不会代替 Java `clearReferences()` 清空上述字段。
+
+因此要区分两类对象链：仍存活的线程会作为 GC root 保留栈和线程局部引用；已经终止的 `Thread` 不再对应 Linux task，但若业务静态集合、线程注册表或其他长生命周期对象仍强引用它，`target`、`ThreadLocalMap` 或线程子类字段仍可能继续保留对象。只要终止线程本身不再被引用，这些字段会随整个 `Thread` 对象一起回收。heap dominator 应确认是哪一条强引用链，不能从线程状态直接推断。
 
 ## “匿名线程”是归因缺失，不是线程状态
 
@@ -178,11 +180,13 @@ class TrackedThreadFactory(
     private val sequence = AtomicInteger()
 
     init {
-        require(sourceId.matches(Regex("[a-z0-9-]{1,10}")))
+        require(sourceId.matches(Regex("[a-z0-9-]{1,7}")))
     }
 
     override fun newThread(task: Runnable): Thread {
-        val name = "$sourceId-${sequence.incrementAndGet()}"
+        val ordinal = Integer.toUnsignedString(sequence.incrementAndGet(), 36)
+            .padStart(7, '0')
+        val name = "$sourceId-$ordinal"
         val wrapped = Runnable {
             val current = Thread.currentThread()
             val javaId = if (Build.VERSION.SDK_INT >= 36) {
@@ -212,7 +216,7 @@ class TrackedThreadFactory(
 }
 ```
 
-这里记录的是 worker 生命周期，不是每个提交任务的生命周期。若一个 pool 会长期复用 worker，还要单独包装任务，采集队列等待、执行时长、取消和异常。创建栈成本较高，可以在新 pool 出现、数量增长或诊断开关开启时采样；不应给每次任务提交都保存完整堆栈。
+这里用不超过 7 个 ASCII 字节的 `sourceId` 和固定 7 位 base-36 序号，把 Java 名称控制在 kernel `comm` 的 15 字节载荷内。注册表记录的是 worker 生命周期，不是每个提交任务的生命周期。若一个 pool 会长期复用 worker，还要单独包装任务，采集队列等待、执行时长、取消和异常。创建栈成本较高，可以在新 pool 出现、数量增长或诊断开关开启时采样；不应给每次任务提交都保存完整堆栈。
 
 第三方 SDK 无法接入 factory 时，可按风险从低到高采用：
 
@@ -423,7 +427,7 @@ Perfetto 不能自动给出 Java 创建调用点，也看不到已经退出但�
 
 ## Android 17 的虚拟线程边界
 
-API 36 的稳定 `Thread.isVirtual()` 文档说明 Android 上返回 `false`，该方法用于跨平台库兼容。`android-17.0.0_r1` 源码已经包含 `Thread.ofVirtual()`、`startVirtualThread()`、`Executors.newVirtualThreadPerTaskExecutor()` 以及 ART 实现工作，但这些入口带 `FlaggedApi`，实现也受 ART flag 控制。
+API 36 已公开稳定的 `Thread.isVirtual()`，但公开该查询方法不等于普通应用已经获得虚拟线程创建能力。`android-17.0.0_r1` 的 `isVirtual()` 实现会检查 `VirtualThreadContext`/`BaseVirtualThread`，不应再照搬同一文件中“Android 总返回 false”的旧注释。该 tag 同时包含 `Thread.ofVirtual()`、`startVirtualThread()`、`Executors.newVirtualThreadPerTaskExecutor()` 和 ART 实现工作，不过这些创建入口仍带 `FlaggedApi`，底层启动还受未导出的 `virtual_thread_impl_v1` ART flag 控制。
 
 因此，面向普通 Android 17 应用的设计不能假设 Project Loom 已作为稳定、默认可用能力。生产监控仍要把 Java platform thread/native pthread 映射到 Linux task；Kotlin coroutine 也不等于 Java virtual thread。若未来版本公开并启用虚拟线程，监控模型需要新增“虚拟线程数量与 carrier platform thread 数量”两个维度，不能沿用一线程一 task 的假设。
 
@@ -439,7 +443,8 @@ API 36 的稳定 `Thread.isVirtual()` 文档说明 Android 上返回 `false`，�
 | 创建 `newSingleThreadContext` 后不关闭 | dispatcher owner 与 task 数持续增加 |
 | raw joinable pthread 立即返回且不 join | 活 task 回落，但 pthread 事件差额和映射压力增长 |
 | raw detached pthread 立即返回 | task 和映射都能回收 |
-| live thread 持有 `ThreadLocal<Activity>` | heap dominator 指向活线程；退出后关键引用被清理 |
+| live thread 持有 `ThreadLocal<Activity>` | heap dominator 指向活线程；线程终止并释放外部 `Thread` 强引用后，整条对象链可回收 |
+| 已终止 `Thread` 仍被静态注册表保存 | `/proc` 已无 task，但 dominator 仍经该 `Thread` 指向 `target`、`ThreadLocalMap` 或子类字段 |
 | 线程与 socket 同时泄漏 | 两种资源都能归到同一 owner，而非按数量猜测 |
 | `/proc` 遍历时线程退出 | 快照容忍 TID 消失并标记缺测/跳过 |
 | 接近资源压力时触发摘要 | 不抓全栈，不创建新线程，摘要仍有界 |
@@ -452,6 +457,7 @@ API 36 的稳定 `Thread.isVirtual()` 文档说明 Android 上返回 `false`，�
 - [ ] 是否用生命周期和 owner 证明泄漏，而非看到 `WAITING` 或匿名名称就下结论？
 - [ ] 常态监控是否只采低成本计数，详细栈是否由增长触发？
 - [ ] 是否把 Java ID、Linux TID、pthread 事件 ID 分开保存并处理复用？
+- [ ] 是否区分仍存活的线程与被业务强引用的已终止 `Thread`，没有假定 ART 会调用 `Thread.exit()` 清字段？
 - [ ] `ThreadGroup.activeCount()` 是否只作为估计，不用于硬限流？
 - [ ] `/proc/self/task` 是否容忍并发退出，并与 Java 快照解释差额？
 - [ ] 自有 pool 是否有稳定 sourceId、容量、队列、拒绝和关闭协议？
@@ -467,10 +473,10 @@ API 36 的稳定 `Thread.isVirtual()` 文档说明 Android 上返回 `false`，�
 
 ## 源码与官方资料
 
-- [AOSP `Thread.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java)：默认命名、`getAllStackTraces()`、`exit()` 清理和虚拟线程 API 边界。
+- [AOSP `Thread.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java)：默认命名、`getAllStackTraces()`、Android 未调用 `exit()` 的兼容注释和虚拟线程 API 边界。
 - [AOSP libcore `current.txt`（android-17.0.0_r1）](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/api/current.txt)：虚拟线程相关入口的 `FlaggedApi` 标记。
 - [AOSP `ThreadGroup.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/ThreadGroup.java)：`activeCount()` 与 `enumerate()` 的估计和竞态语义。
-- [AOSP ART `thread.cc`（android-17.0.0_r1）](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc)：`FixStackSize()`、detached pthread 属性和 Java 线程创建失败路径。
+- [AOSP ART `thread.cc`（android-17.0.0_r1）](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc)：`Thread::Destroy()`、`FixStackSize()`、detached pthread 属性和 Java 线程创建失败路径。
 - [AOSP ART `art-flags.aconfig`（android-17.0.0_r1）](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/build/flags/art-flags.aconfig)：`virtual_thread_impl_v1` 实现 flag 的声明与导出边界。
 - [AOSP ART `java_lang_Thread.cc`（android-17.0.0_r1）](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/java_lang_Thread.cc)：Java `Thread` 到 ART 创建入口。
 - [AOSP bionic `pthread_create.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/pthread_create.cpp)：线程映射、TLS、guard、`MAP_NORESERVE`、clone 和默认 join 状态。
