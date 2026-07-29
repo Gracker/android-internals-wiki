@@ -104,7 +104,6 @@
 
   - [9.10 Android 17 ANR 预警回调与类型枚举](part2-performance/ch09-anr/10-android17-anr-warning-callback.md)
   - [14.24 Android 17 simpleperf 微架构级性能采样与工作流增强](part3-tools/ch14-other-tools/24-android17-simpleperf-microarch-profiling.md)
-  - [14.25 Android 17 eBPF 性能可观测性程序矩阵扩展](14.25-android17-ebpf-observability-enhancement.md)
   - [8.33 Android 17 Modular Startup Framework Dependency Graph](part1-fundamentals/ch08-startup/8.33-android17-modular-startup-framework-dependency-graph.md)
   - [8.37 Android 13+ PerformanceHintManager 实战：从 NDK hintUntilFrame 到 Java 集成](part1-fundamentals/ch08-startup/8.37-android17-performance-hint-manager.md)
   - [8.1 响应速度原理](part2-performance/ch08-responsiveness/01-responsiveness-principles.md)
