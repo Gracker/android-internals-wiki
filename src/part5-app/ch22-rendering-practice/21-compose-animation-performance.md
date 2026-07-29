@@ -24,145 +24,279 @@ drafted_date: "2026-06-05"
 
 # 22.21 Jetpack Compose 动画性能深度优化
 
-Compose 动画的三层管线（状态驱动 → 重组/重绘 → 帧信号同步）与 View 动画的区别不在 API 表面，而在每帧工作的触发路径。本节从源码层面拆解 `AnimatedVisibility`、`Transition`、`Animatable`、`produceState` 在动画场景中的性能行为，给出可观测的优化判断依据。Compose 渲染管线的机制背景见 2.11 节；Compose 重组控制和 Strong Skipping 基础见 22.3 节；View 属性动画和帧动画的对比见 22.5 节。
+Compose 动画每帧会做多少工作，取决于动画值在哪里被读取、哪些阶段因此失效、过渡期间保留了多少内容，以及 App 交帧后的显示链路。本章以 Compose 1.10.0 源码为库版本基线，以 Android 17 / API 37 的 `android-17.0.0_r1` 为平台基线。Compose 独立于 Android 平台发布，不能用 API 37 推导 Compose 行为。
 
-本节使用 **Compose BOM 2025.12.00（对应 Compose 1.10）** 作为版本基线。Strong Skipping、Pausable Composition、`derivedStateOf` 的 `readableHash` 优化都取决于项目引入的 Compose 版本，不由 Android 平台版本决定。
+普通 Compose 页面仍由宿主 App Window 的 HWUI 管线出图。状态计算和部分 Composition、Layout、Draw 工作发生在主线程，RenderThread、GPU、BLAST、SurfaceFlinger 与 HWC 继续承担后半程。完整边界见 [18.25 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md)。本章只讨论动画给这条路径增加的工作。
 
-## AnimatedVisibility：双重重绘与退出延迟
+## 1. 用“读取阶段”判断动画成本
 
-`AnimatedVisibility` 的入口是一个 `updateTransition(visible, label)` 调用。源码 `AnimatedVisibility.kt` 第 102 行把这个调用包装进一个 `Layout` Composable，measure policy 遍历所有子元素取最大宽高。[已验证: AndroidX androidx-main, androidx.compose.animation/AnimatedVisibility.kt]
+`Animatable.value`、`Transition.animate*` 和 `animate*AsState` 返回的动画值都受 Snapshot 观察。API 名称不会预先决定失效阶段；读取发生在哪一阶段，值变化时就会请求哪一阶段重跑。一个值若在多个阶段读取，也会建立多处观察关系。
 
-动画期间 Layout 的每一帧尺寸都在变化（从 0 到目标尺寸，或反过来）。如果父容器使用 `wrap_content`，每一帧尺寸变化都会触发父容器重测。这不是 AnimatedVisibility 的 bug，是 `Layout` 在动画期间动态尺寸与父容器布局协议的组合结果。修复方式是在外层加固定尺寸或 `clip`，限制尺寸传播范围。
+| 动画值的读取位置 | 值变化后的主要工作 | 常见写法 | 判断要点 |
+| --- | --- | --- | --- |
+| Composable 函数体 | Composition；后续是否 Layout、Draw 由输出变化决定 | `Box(Modifier.alpha(alpha))` 中先在函数体解引用 `alpha` | 高频值容易让当前重组作用域逐帧执行 |
+| 测量或放置 lambda | Layout 的相应子阶段，随后 Draw | `Modifier.offset { IntOffset(x, 0) }` | 可绕过 Composition，但位置或尺寸变化仍有布局成本 |
+| 绘制 lambda | Draw | `drawBehind { drawRect(color) }` | 适合颜色、路径参数和 Canvas 内容 |
+| `graphicsLayer {}` lambda | 图层属性更新与绘制提交 | `graphicsLayer { translationX = x }` | 不重组、不重新测量；仍会产生 RenderThread/GPU 工作 |
 
-退出动画是另一个性能陷阱。`AnimatedVisibility` 的退出语义是：exit 动画全部完成后，content 才从 Composition 中移除。即使 `visible=false` 已设置，只要有 exit 动画在播，content Composable 仍在树中保持活跃。两个后果：
+`drawWithCache` 也会观察其构建块读取的 State，并在依赖变化时重建缓存。Draw 阶段没有普遍关闭 Snapshot 读观察。把高频值延后到 draw lambda 或 layer lambda，才能让 Composition 避开这次更新。
 
-1. content 在退出期间仍然是重组参与者。如果 content 内有高频状态读取，退出动画期间的重组成本不会因为 `visible=false` 而消失。
-2. content 内的副作用和订阅在退出期间不会清理。`LaunchedEffect`、`rememberCoroutineScope` 启动的协程、`DisposableEffect` 的 onDispose 都要等到动画结束。
+下面的示例用于把透明度动画值延后到图层属性更新。
 
-快速 toggling `visible`（比如用户快速点一个展开/收起按钮）会加剧这个问题。每次 toggle 都会中断当前动画重启新动画，帧预算被动画重启消耗。处理方式是用 `MutableTransitionState` 替代 boolean `visible`，手动控制状态机，或在外层做 debounce。
+```kotlin
+@Composable
+fun FadingPanel(
+    visible: Boolean,
+    content: @Composable () -> Unit,
+) {
+    val alpha = remember { Animatable(if (visible) 1f else 0f) }
 
-## Transition 状态机与非重启式组合
+    LaunchedEffect(visible) {
+        alpha.animateTo(if (visible) 1f else 0f)
+    }
 
-`Transition` 是 `AnimatedVisibility` 的底层状态机。`updateTransition(targetState, label)` 的语义是：在同一 Composable 位置复用已有的 Transition 实例，而不是每次重组创建新实例。状态机的状态转换发生在 `MutableTransitionState`，通过 Snapshot 系统广播给订阅者。[已验证: AndroidX androidx-main, Compose Runtime]
+    Box(
+        Modifier.graphicsLayer {
+            this.alpha = alpha.value
+        }
+    ) {
+        content()
+    }
+}
+```
 
-这意味着 Transition 是**非重启式组合**。它不会因为参数变化而重新执行 Composable 函数体，而是通过 Snapshot 通知机制更新内部状态。这是 Transition 可以协调多个子动画的基础——所有子动画订阅同一个状态源，由 Transition 统一管理帧进度。
+这里的 `alpha.value` 只在 `graphicsLayer` 的 block 内读取，所以透明度变化不会要求 `FadingPanel` 逐帧重组或重新布局。透明度低于 1 时，图层可能需要中间合成；省下主线程工作不等于 GPU 成本为零。应在目标设备上同时观察 UI thread、RenderThread 和 FrameTimeline。
 
-动画时钟方面，Transition 内部的动画运行在 Compose 的 `AnimationClock` 上。这个时钟与 `Choreographer` 帧信号有关联但不是同一套。Transition 在一帧内可以协调多个子动画的进度计算，但进度到帧的映射取决于 `AnimationClock` 的 tick 频率。如果主线程被阻塞导致帧丢失，Transition 的动画进度仍然按时间推进，不会等帧信号。这对动画流畅性是好事（不会因为掉帧而暂停），但排查时要注意：Perfetto 里看到的帧间隔和动画进度曲线可能不完全同步。
+## 2. 动画时钟与 Android 17 帧时间
 
-## Animatable：不触发重组的动画驱动
+Compose 1.10.0 的 `AndroidUiFrameClock.withFrameNanos()` 注册 `Choreographer.FrameCallback`。`Transition` 的帧循环和 `Animatable` 的动画循环都通过 `withFrameNanos` 一类接口等待下一帧。Android 上不存在一套脱离 `Choreographer`、自行匀速 tick 的 Compose UI 时钟。
 
-`Animatable<T>` 是单值动画状态持有者。`animateTo(target)` 在协程中运行，每一帧更新内部值，但**不触发重组**——只触发重绘（Draw 阶段）。
+主线程及时收到回调时，动画按这次帧时间计算 play time。主线程被阻塞后，回调会延迟；下一次执行看到更大的时间差，动画值会向前跳。它不会补画所有错过的中间帧。用户看到的现象通常是停顿后跳变。
 
-这背后的机制是 `SnapshotStateObserver` 的三阶段失效。`Animatable` 的值变化通过 Drawing 阶段的 `Modifier.drawWithContent` 读取，Drawing 阶段使用 `withoutReadObservation()` 暂停读观察。状态读取不建立 Composition 阶段的订阅关系，变更只 invalidate 图形层，完全跳过 Composition 和 Layout。[已验证: AndroidX androidx-main, SnapshotStateObserver.kt]
+Android 17 的 `Choreographer.FrameData` 同时携带候选 FrameTimeline、preferred timeline、deadline 和 expected presentation time。性能判断应使用当前帧的 deadline 或 FrameTimeline expected/actual 结果，不能把 16.6 ms、11.1 ms、8.3 ms 固化成设备常量。可变刷新率、帧率投票和调度选择都会改变某一帧可用的时间。
 
-`Animatable` 与 `Transition` 的选型区别：
+`Choreographer#doFrame` slice 覆盖 App 主线程回调，不包含 App GPU 完成、buffer post 之后的 SurfaceFlinger 合成和显示 present。它变长能证明主线程帧回调变长，不能单独代表端到端帧耗时。
 
-| 维度 | Animatable | Transition / AnimatedVisibility |
-|------|-----------|-------------------------------|
-| 触发阶段 | Draw only | Composition + Layout + Draw |
-| 状态管理 | 单值，手动控制 | 状态机，自动管理 |
-| 适用场景 | 精密动画、手势跟随、Canvas 绘制 | 出现/消失、多属性协调动画 |
-| 重组风险 | 无 | 退出期间内容仍参与重组 |
+## 3. Animatable：互斥动画与手势跟随
 
-手势跟随动画优先用 `Animatable`。手势的每一帧都更新目标值，`animateTo` 的协程会在每帧 snap 到新目标，全程不触发重组。如果用手势驱动 `Transition`，状态机的 MutableTransitionState 每帧变化会触发 Composition 阶段的快照广播，重组范围可能扩大。
+`Animatable<T, V>` 内部持有 `AnimationState`，其 `value` 由 `mutableStateOf` 支撑。它提供数值连续性、边界约束、速度信息和互斥控制；它没有“天然只触发 Draw”的保证。
 
-## produceState 在动画场景中的陷阱
+同一个 `Animatable` 启动新的 `animateTo`、`animateDecay`、`snapTo` 或 `stop` 时，`MutatorMutex` 会取消正在运行的变更。新 `animateTo` 从当前值继续；spring 动画还会延续当前速度。调用方要允许 `CancellationException` 按结构化并发向外传播，清理资源时放在 `finally` 中。
 
-`produceState` 内部使用 `LaunchedEffect(Unit)` 启动协程，key 固定为 `Unit`。Composable 在同一位置重组时 producer 不会重启。但 producer 内每次 `state.value = newValue` 都触发 Snapshot 写事务，通知所有 State 观察者。[已验证: AndroidX androidx-main, androidx.compose.runtime/produceState.kt]
+手指位置直接跟随适合在拖动期间使用 `snapTo`，松手后再用 `animateDecay` 或 `animateTo` 收尾。每个 pointer sample 都调用 `animateTo` 会连续取消前一个动画，产生与输入滞后、动画规格和采样频率有关的追赶效果。若产品需要这种柔性跟随，可以保留；它不应被当成无成本的“每帧 snap”。
 
-在动画场景中，这个行为会放大：60fps 动画 + produceState 状态驱动 = 每帧一次 Snapshot 写事务 + 重组范围评估。如果动画元素在列表中，O(n) 的重组传播会导致帧超时。
+API 选择可以按控制语义划分：
 
-produceState 的设计意图是"异步数据源到 Compose State 的桥接"（网络请求、数据库查询、回调转 State），不是"驱动 UI 动画"。动画状态驱动应该用：
+- 单个或少量数值、协程中顺序控制、手势打断：`Animatable`。
+- 一个离散状态协调多项属性：`Transition`。
+- 单值随目标自动过渡，且无需等待完成或主动取消：`animate*AsState`。
+- 内容进入、退出或替换：`AnimatedVisibility`、`AnimatedContent`。
 
-- `animateFloatAsState` / `animateDpAsState` 等声明式动画 API，内部使用 `Animatable` 且优化了帧同步
-- `Animatable` + `LaunchedEffect` 手动控制动画进度
-- `snapshotFlow` 将高频动画状态转成 Flow，在 Flow 侧做 debounce/throttle 后再驱动 UI
+多个无关组件各自维护自己的状态机更容易限定生命周期。为了减少对象数而跨组件共享一个 `Transition`，会把状态、取消和完成条件耦合在一起，不能作为通用优化。
 
-produceState 在动画场景中的替代方案可以压成一个判断：如果状态更新频率接近或超过帧率，不用 produceState。
+## 4. Transition 会参与 Composition
 
-## AnimatedVisibility vs AnimatedContent
+`updateTransition(targetState)` 是 Composable。Compose 1.10.0 在当前位置 `remember` 一个 `Transition`，随后调用 `animateTo(targetState)`，并用 effect 管理离开 Composition 时的清理。参数或观察到的 State 变化仍可能让相关 Composable 重新执行；“非重启式组合”不是 `Transition` 的语义。
 
-这两个 API 处理内容切换的方式不同，对帧预算的影响也不同。
+`Transition` 的价值在于让多个子动画共享状态迁移和帧进度，并支持中途改目标。目标变化时，运行中的 transition 会调整 segment 和目标；有些 animation spec 能保持较好的连续性，有些视觉上会出现拐点。不能统一描述成“每次 toggle 都从头重启”。
 
-**AnimatedVisibility**：exit 动画全部完成后内容才从 Composition 移除。退出期间 content 仍参与重组，尺寸动画会传播到父/兄弟。
+快速点击是否要 debounce 属于交互约束：
 
-**AnimatedContent**：内容切换时立即替换 Composition 中的内容。旧的退出动画和新内容的进入动画同时进行，但旧内容不在 Composition 树中（由 `AnimatedContent` 内部管理独立的动画层）。重组风险低，因为活跃的 Composition 内容只有新内容。
+- 若每次输入都有效，保留 retarget，并检查中断后的连续性。
+- 若后端操作或导航只允许一次，按业务状态屏蔽重复输入。
+- 若需要观察进入、退出是否结束，使用 `MutableTransitionState.isIdle` 与 `currentState`。
 
-列表场景中的选型：`AnimatedContent` 更适合列表项的内容切换（如列表项展开/收起时内容整体替换）；`AnimatedVisibility` 适合浮层、菜单、tooltip 这类内容不变只是出现/消失的场景。如果 AnimatedVisibility 的 content 很复杂，考虑用 `animateEnterExit` 拆分动画单元，减少退出期间活跃内容对帧预算的占用。
+`MutableTransitionState` 增加可观察的状态机入口，本身不会减少每帧工作。
 
-## Strong Skipping 对动画代码的影响
+## 5. AnimatedVisibility：尺寸变化和退出保留
 
-Compose Compiler 1.10+ 的 Strong Skipping 改变了 Composable 的跳过判断逻辑。对于动画相关的 Composable，影响集中在两个地方。
+`AnimatedVisibility` 使用自定义 `Layout` 承载 content。measure policy 会测量子项，以最大宽高作为容器尺寸，并把子项放在左上角。默认 enter/exit 包含 expand/shrink，所以默认配置常会改变对父布局可见的尺寸；父容器和兄弟若依赖这个尺寸，可能随动画反复测量或放置。
 
-**Lambda 捕获的稳定性要求**。Strong Skipping 自动 memoize 所有 lambda 参数，但 memoize 的复用条件是"捕获值没变"。动画 Composable 中常见的模式是 lambda 捕获动画状态值（如 `offset`、`progress`），这些值每帧变化，导致 memoize 的 lambda 每帧都是新对象，下游 Composable 无法跳过。处理方式是把动画值作为 Composable 的正式参数传入，而不是通过 lambda 捕获。
+“所有 AnimatedVisibility 每帧都改尺寸”也不成立：
 
-**`rememberCoroutineScope` / `produceState` 在 Strong Skipping 下的行为**。Strong Skipping 触发 `skipToGroupEnd()` 时，group 内的 RememberObserverHolder 被标记为停用，协程被暂停。如果动画 Composable 的参数未变化但内部有活跃协程，Strong Skipping 的 skip 不会取消这些协程，只是跳过函数体执行。这是安全的（协程在 Composable 离开 Composition 时才会被 cancel），但要理解 skip 期间动画协程仍在运行——如果协程在更新 Compose 状态，状态更新会排队等下次 Composition 处理。
+- fade 和 scale 主要更新图层属性。
+- slide 改变子项的 placement offset，不缩小容器上报的尺寸，但仍有 LayoutModifier 的放置工作。
+- expand/shrink 会产生尺寸动画。
+- 子内容自身的尺寸变化、`animateContentSize` 或自定义 layout modifier 还可能增加布局工作。
 
-Strong Skipping 对动画代码的优化策略：把动画驱动的 Composable 标记为非 restartable（如果动画不需要被父级重启），让编译器使用 `startReplaceGroup` 而非 `startRestartGroup`，减少 group 管理开销。这需要在编译器插件层面配置，不是运行时 API。大多数场景下 Strong Skipping 的默认行为已经足够，只在极端场景（数百个动画 Composable 同时运行）才需要考虑 group 类型优化。
+如果父布局无须跟随内容伸缩，可以给外层稳定约束，并在内部使用 fade、scale 或 slide。`clip` 只裁剪绘制范围，不会阻止尺寸变化向父布局传播。
 
-## 动画帧预算与 Perfetto 观测
+退出时，content 会保留到内建 enter/exit 动画和 `AnimatedVisibilityScope.transition` 上注册的自定义动画完成。保留期间会出现这些生命周期结果：
 
-Compose 动画的帧预算和 View 动画相同：16.6ms（60Hz）或 8.3ms（120Hz）。区别在于 Compose 动画的帧工作分布在 Composition、Layout、Draw 三个阶段，需要分别看。
+- content 仍在 Composition，仍可能响应自己观察的 State。
+- `LaunchedEffect` 和 `rememberCoroutineScope` 启动的任务尚未因离开 Composition 而取消。
+- `DisposableEffect.onDispose` 尚未执行。
+- content 持有的图片、订阅和其他对象仍然存活。
 
-Perfetto 中识别 Compose 动画帧延迟的入口：
+独立创建的 `animate*AsState` 不属于 `AnimatedVisibilityScope.transition`，容器不知道它何时结束，因而可能先移除 content。需要与退出完成同步的自定义动画应挂到 scope 提供的 `transition` 上。
 
-1. **Compose Tracing（Android 12+）**：Perfetto 中的 `Compose` 轨道显示重组计数和跳过计数。动画运行期间如果重组计数每帧都在增长，说明动画触发了不必要的重组。
-2. **Choreographer 轨道**：`Choreographer#doFrame` slice 的持续时间就是帧总耗时。动画场景下如果 doFrame 超出帧预算，先看是 Composition、Layout 还是 Draw 占大头。
-3. **FrameMetrics**：`FrameMetrics.ANIMATION_DURATION` 可以区分动画帧和非动画帧的延迟。线上监控用 FrameMetrics 分位值判断动画卡顿范围。
+缩短退出时长只能缩短保留窗口，没有一个适用于所有产品的固定毫秒数。内容很重时，可把昂贵订阅移到更高层统一管理，或在退出开始后停止不再需要的数据更新；这属于业务生命周期设计，不能靠 `visible=false` 自动完成。
 
-定位动画导致的帧超时的排查顺序：
+## 6. AnimatedContent：过渡期间新旧内容共存
 
-1. 确认帧超时发生在哪个阶段（Composition / Layout / Draw）
-2. 如果 Composition 阶段超时：检查动画期间活跃的 Composable 是否过多（AnimatedVisibility 退出延迟是常见原因）
-3. 如果 Layout 阶段超时：检查动画是否触发了父容器重测（wrap_content + AnimatedVisibility 尺寸动画）
-4. 如果 Draw 阶段超时：检查动画的图形复杂度（路径、阴影、clip）是否超出 GPU 帧预算
+`AnimatedContent` 切换目标时会同时查找新状态和旧状态的 content。新内容执行 enter，旧内容执行 exit；旧内容在退出完成后才 dispose。默认 `SizeTransform` 还会为容器尺寸变化创建动画。快速连续切换时，尚未退出的 content 可能不止一份。
 
-## 优化实践清单
+因此，`AnimatedContent` 没有“只保留新内容”的性能特征。选它时要评估：
 
-### P0 级：必须避免的动画反模式
+- 新旧 content 同时 Composition、measure 和 draw 的成本。
+- 旧 content 在退出期间保留的 effect 与资源。
+- `SizeTransform` 是否让父布局持续变化。
+- target 变化频率是否高于用户能够辨认的切换频率。
 
-- **AnimatedVisibility content 内执行高频状态更新**。退出动画期间 content 仍在 Composition 中，高频更新会放大重组成本。
-- **快速 toggling visible 不做 debounce**。每次 toggle 中断当前动画重启新动画，帧预算被耗尽。
-- **produceState 驱动 UI 动画**。produceState 的 Snapshot 写事务频率接近帧率时，每帧一次重组范围评估。
-- **动画期间每帧改 layoutParams / 触发 requestLayout**。这个在 View 动画中也是反模式，Compose 中对应的是动画期间改变 `Modifier.layout` 的测量结果。
+content lambda 必须使用它收到的 `targetState` 参数构建对应内容。`contentKey` 用来定义哪些 target 属于同一内容身份；两个 target 映射到同一个 key 时不会触发内容切换动画。它适合过滤“状态对象变了但视觉身份没变”的更新，不能用来掩盖错误的状态建模。
 
-### P1 级：推荐优化实践
+`AnimatedVisibility` 适合一个内容节点的出现与消失，`AnimatedContent` 适合不同内容身份之间的替换。两者都可能保留退出内容，也都可能触发布局；应按语义和 trace 结果选择。
 
-- **手势跟随动画用 Animatable**。Animatable 只触发 Draw 阶段，不触发 Composition 和 Layout。
-- **AnimatedVisibility 配合固定尺寸容器或 clip**。限制尺寸动画的传播范围。
-- **用 MutableTransitionState 替代 boolean visible**。手动控制状态机，可以在需要时跳过动画直接切换。
-- **动画值作为 Composable 正式参数传入**。不要通过 lambda 捕获动画值，避免 Strong Skipping 的 memoize 失效。
-- **列表项内容切换用 AnimatedContent**。避免 AnimatedVisibility 退出期间活跃内容对帧预算的占用。
+## 7. produceState、snapshotFlow 与 derivedStateOf
 
-### P2 级：进阶优化
+`produceState` 用 `remember { mutableStateOf(initialValue) }` 保存结果，并由带 keys 的 `LaunchedEffect` 启动 producer。它有无 key、单 key 和多 key overload，不能概括为固定的 `LaunchedEffect(Unit)`。key 改变会取消旧 producer 并启动新 producer；离开 Composition 也会取消。对回调式数据源，可用 `awaitDispose` 注销回调。
 
-- **derivedStateOf 做动画值分箱**。`derivedStateOf { scrollOffset / itemHeight }` 把连续的滚动偏移离散化为整数索引，只在索引变化时通知下游。底层机制是 `readableHash` 比较，hash 不变则跳过重组。[已验证: AndroidX androidx-main, DerivedState.kt]
-- **Baseline Profile 覆盖常用动画路径**。Compose 动画的编译路径（Strong Skipping 生成的 `skipToGroupEnd`、`Animatable` 的协程调度）可以被 Baseline Profile 预热。
-- **Transition 复用**。多个同类型动画共享同一个 Transition 实例，减少状态机创建开销。
+返回的 State 会合并相等值。不同值若以帧率更新，下游仍会按其读取阶段失效。`produceState` 适合把外部异步或订阅式数据转成 Compose State；外部源恰好高频，并不会让这个 API 失效。要检查的是 UI 是否需要每个样本，以及读取位置是否合适。
 
-## Compose 动画与 View 动画的互操作
+`snapshotFlow` 把 Snapshot State 读取转成冷 Flow，适合驱动埋点、持久化等副作用。用 `distinctUntilChanged`、`sample` 或 `debounce` 会改变事件语义和时间语义，不宜拿来替代屏幕上的逐帧动画。
 
-`ComposeView` 内嵌 View 动画或 `AndroidView` 内嵌 Compose 动画时，帧预算是共享的。Choreographer 的 `doFrame` 回调会依次处理 View 树和 Compose 树的帧工作。如果 View 侧动画占用了大部分帧预算，Compose 侧的动画就会掉帧；反之亦然。
+`derivedStateOf` 适合输入变化频繁、输出变化较少的派生结果。例如滚动偏移不断变化，而 UI 只关心“是否越过阈值”。它根据派生结果的变更策略决定是否通知读取方，没有面向业务的 `readableHash` 快捷路径。若派生结果每帧都不同，`derivedStateOf` 还会增加观察与计算开销。
 
-排查混合栈动画卡顿时，Perfetto 中需要同时看 `Choreographer#doFrame`（View 侧）和 `Compose` 轨道（Compose 侧）的帧耗时占比。不要只看一侧就下结论。
+## 8. Strong Skipping 能解决什么
 
-[适用版本: Compose BOM 2025.12.00; Android 12+ 支持 Compose Tracing]
+启用 Strong Skipping 后，restartable composable 即使带不稳定参数也可以被标记为 skippable；参数比较规则仍区分稳定和不稳定类型。编译器还会对 composable 内的 lambda 做自动 memoization，并以捕获值作为 keys。
 
-## 大规模列表中的动画策略
+这些规则主要减少父级重组向下传播和 lambda 重新分配。它们不会改变下面的行为：
 
-`LazyColumn` 中 item 出现/消失动画的帧预算控制要分两层看：
+- Composable 函数体直接读取的动画 State 变化后，读取作用域仍会失效。
+- layout、draw 或 layer lambda 中的 State 读取仍由对应阶段观察。
+- 跳过一个 composable 不会暂停 `LaunchedEffect` 或 `rememberCoroutineScope` 的任务。
+- State 更新不会因为 group 被 skip 而排队到某次未来 Composition；对应观察者会按 Snapshot 机制收到失效。
 
-1. **Composition 层**：item 进入视口时创建 Composable，离开时销毁。如果使用 `AnimatedVisibility` 做出现/消失动画，离开视口的 item 在动画结束前不会被销毁，内存和 Composition 开销比无动画版本高。
-2. **Draw 层**：列表滚动期间每帧都要绘制可见 items。如果每个 item 都有活跃动画，Draw 阶段的工作量是 O(visible_items × active_animations)。
+常见的高效写法是捕获稳定的 State 持有者，在 layout、draw 或 `graphicsLayer` lambda 内解引用。若先在 Composable 函数体把 State 解引用成每帧变化的标量，再把标量捕获进 lambda，Composition 已经建立了高频读取关系。
 
-推荐策略：列表 item 的出现/消失动画用 `animateEnterExit` 限制动画范围，exit 动画时长控制在 200ms 以内。item 内容的持续动画（如进度条、脉动效果）用 `Animatable` + `InfiniteTransition` 驱动，确保只走 Draw 阶段。避免在 `LazyColumn` item 内使用 `AnimatedVisibility` 的完整退出动画——列表滚动时 item 离开视口的速度可能比退出动画完成的速度快，导致大量"正在退出但已经不可见"的 Composable 堆积在 Composition 中。
+不要为动画批量追求 non-restartable group。编译器注解或生成的 group 类型会改变重组入口与可跳过性，只有编译器报告、基准和明确热点共同支持时才值得调整。
 
-## 动画 Benchmark 方法
+## 9. Lazy 列表中的动画所有权
 
-Macrobenchmark 测量 Compose 动画帧率的方法：录制一段包含目标动画的操作（如展开/收起、页面切换），用 `@BenchmarkRule` 的 `measureRepeated` 循环执行。关注 `frameDurationCpuMs` 的 P50/P90/P99 分位值，以及 `jankFrameCount`。
+Lazy layout 决定哪些 item 进入、保留或离开 Composition，预取和保留策略也由它控制。item 内层的 `AnimatedVisibility` 只能管理自己仍在 Composition 时的内容退出；它不能要求 LazyColumn 在 item 离开布局管理范围后继续保留退出动画。
 
-Compose Animation Inspector（Android Studio 的 Layout Inspector 扩展）可以实时显示每个 Composable 的重组频率。动画运行时如果看到某个 Composable 的重组计数异常高，就是优化目标。但 Animation Inspector 只适用于开发调试，不能用于线上监控。
+列表数据的新增、删除和重排优先使用稳定 key 配合 `Modifier.animateItem()`。item 内部局部区域的显示隐藏再使用 `AnimatedVisibility`。这样能把“数据项身份变化”和“项内内容可见性”分开。
 
-线上监控用 `FrameMetrics` + 自定义 `OnFrameMetricsAvailableListener`，把动画场景的帧时间按 Activity/Fragment/Composable 路径分桶上报。配合 26.3 节的性能指标采集体系，可以建立动画帧率的分位值基线和回归告警。
+`rememberInfiniteTransition` 在其宿主仍处于 Composition 时持续请求动画帧。它返回的值读在 Composable 函数体会触发 Composition，读在 draw 或 layer lambda 才能把更新限定到后续阶段。离屏 item 是否仍在运行，取决于该 item 是否仍被 Lazy layout 保留；不能只根据像素是否可见推断。
 
-[待补充: Macrobenchmark 动画测试的具体 TraceConfig 配置和 Compose Animation Inspector 的使用截图]
+大量列表动画的检查项包括：
+
+- item 是否有稳定且唯一的 key。
+- 同屏活跃动画数量是否随滚动或数据更新持续增长。
+- 离屏后仍无产品价值的无限动画是否及时离开 Composition。
+- expand/shrink、`animateContentSize` 和 placement animation 是否叠加触发布局。
+- 图片、模糊、阴影和 alpha 图层是否把瓶颈移到 RenderThread 或 GPU。
+
+## 10. 从 Compose 阶段看到显示结果
+
+`graphicsLayer`、draw lambda 或跳过 Composition 只改变 App 前半程的工作量。标准 HWUI 页面仍要经过 RenderThread、GPU、App Window 的 buffer 提交、SurfaceFlinger 和 HWC。alpha、clip、blur、复杂 path 或较大的离屏层可能让主线程变轻，同时增加 GPU 或内存带宽成本。
+
+`ComposeView` 与 View 动画共用窗口和主线程帧回调；`AndroidView` 也不会得到独立帧预算。混合页面应在同一条 FrameTimeline 上分析 View traversal、Compose 工作、RenderThread 和系统合成，不能把某一侧的 trace slice 当成整帧。
+
+Android 17 的 kernel 基线是 `android17-6.18-2026-06_r6`。kernel scheduler、cpufreq、thermal 和 fence wait 会影响线程何时运行或等待，却不定义 `Animatable`、`Transition` 和 content disposal 的语义。遇到 runnable 延迟、频率受限或 fence wait 时再进入 kernel 证据；仅凭动画卡顿不能归因给调度器。
+
+## 11. Perfetto、Studio 与线上指标各看什么
+
+一轮可靠的排查可以按以下顺序进行：
+
+1. 在 release、profileable、non-debuggable 构建上复现固定交互。
+2. 用 FrameTimeline 对齐 expected 与 actual，确认哪些帧 late、App 是否按时完成。
+3. 查看主线程 `Choreographer#doFrame`、Compose composition tracing、Layout 和 Draw 相关 slice。
+4. 查看 RenderThread、GPU、App Window buffer post 和 SurfaceFlinger；避免把 GPU/present 时间塞进 `doFrame`。
+5. 将慢帧映射回动画状态、目标切换、活跃 content 数和读取阶段。
+
+工具的职责要分开：
+
+- **Composition tracing**：在系统 trace 中显示 composable 调用，适合定位重组代码和耗时。
+- **Layout Inspector**：显示运行中 composable 的 composition/skip 计数，适合验证重组范围；连接工具本身有开销。
+- **Animation Preview**：暂停、拖动时间轴并检查动画值，适合验证曲线与多动画协调；它不是运行时性能分析器。
+- **FrameTimeline**：把 App 和 SurfaceFlinger 的 expected/actual frame 及 jank 类型放在同一时间轴上。
+- **JankStats**：给线上帧数据附加页面或交互状态，便于按场景聚合。
+
+`FrameMetrics.ANIMATION_DURATION` 表示一帧中发出 animation callbacks 的耗时。它不能区分“动画帧”和“非动画帧”，也不覆盖整帧。Android 12 及以上更适合关注 FrameTimeline 派生的 overrun；线上需要结合当前 UI state，避免把整页的慢帧都归给某个动画。
+
+## 12. 用 Macrobenchmark 建立回归门槛
+
+动画基准要覆盖一次完整、可重复的状态迁移，并让测试知道动画何时结束。测试页面可以在 `MutableTransitionState.isIdle` 后暴露一个只供测试识别的 semantics/test tag。
+
+下面的骨架用于采集展开动画的 FrameTimingMetric。
+
+```kotlin
+@LargeTest
+@RunWith(AndroidJUnit4::class)
+class ExpandAnimationBenchmark {
+    @get:Rule
+    val benchmarkRule = MacrobenchmarkRule()
+
+    @Test
+    fun expand() = benchmarkRule.measureRepeated(
+        packageName = "com.example.app",
+        metrics = listOf(FrameTimingMetric()),
+        iterations = 10,
+        startupMode = StartupMode.WARM,
+        setupBlock = {
+            startActivityAndWait()
+            device.findObject(By.res("reset_collapsed")).click()
+            device.waitForIdle()
+        },
+    ) {
+        device.findObject(By.res("toggle_animation")).click()
+        check(
+            device.wait(
+                Until.hasObject(By.res("animation_idle_expanded")),
+                2_000,
+            )
+        )
+    }
+}
+```
+
+`toggle_animation`、`reset_collapsed` 和完成标记需要通过 `testTagAsResourceId` 或真实 resource id 暴露。完成标记应在目标状态达到且 transition idle 后出现，避免只测到动画起点。每轮 setup 都回到同一初始状态，测量块只包含目标交互。
+
+关注 `frameOverrunMs` 的 P50/P90/P95/P99，以及 `frameDurationCpuMs` 和 `frameCount`。`frameOverrunMs` 在 API 31 及以上能适应高刷和可变帧率；`frameDurationCpuMs` 只覆盖 UI thread 与 RenderThread 的 CPU 生产时间。`frameCount` 变化可能说明实现减少或增加了请求帧数量，不能只比较耗时分位值。Macrobenchmark 没有应当固定依赖的 `jankFrameCount` 结论。
+
+Baseline Profile 可以让 ART 提前编译被关键用户旅程覆盖的 App 与库代码，减少首次运行时的解释和 JIT 成本。它不能预编译 GPU shader、消除离屏合成，也不会改变 Snapshot 失效范围。用同一 Macrobenchmark 对比 profile 前后数据，才知道当前动画是否受编译状态影响。
+
+## 13. Review 清单
+
+- 动画值在哪个阶段读取？是否在更早阶段也被解引用？
+- 值变化后需要 Composition、measure、placement、Draw 还是 layer property update？
+- `AnimatedVisibility` 或 `AnimatedContent` 退出期间保留了哪些 content、effect 和资源？
+- 动画中途改目标时，是 retarget、取消后续跑，还是产品层屏蔽输入？
+- `produceState` 的 keys 是否完整，外部订阅是否在 `awaitDispose` 中注销？
+- `derivedStateOf` 的输出是否比输入低频？
+- Lazy item 的身份变化是否由稳定 key 和 `animateItem` 管理？
+- 帧预算是否来自本帧 FrameTimeline，是否同时核对 App、GPU 与 present？
+- Studio 工具、实验室基准和线上指标是否各自回答了合适的问题？
+- 优化是否在 release/profileable 构建和代表性设备上复测？
+
+## 14. 源码与资料索引
+
+本章的 Compose 行为按以下 1.10.0 source JAR 复核：
+
+- [`androidx.compose.animation:animation:1.10.0` 源码](https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation/1.10.0/animation-1.10.0-sources.jar)：`AnimatedVisibility.kt`、`AnimatedContent.kt`。
+- [`androidx.compose.animation:animation-core:1.10.0` 源码](https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation-core/1.10.0/animation-core-1.10.0-sources.jar)：`Animatable.kt`、`AnimationState.kt`、`Transition.kt`、`InfiniteTransition.kt`。
+- [`androidx.compose.ui:ui-android:1.10.0` 源码](https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.10.0/ui-android-1.10.0-sources.jar)：`AndroidUiFrameClock.android.kt`、`AndroidUiDispatcher.android.kt`、graphics layer 与 draw modifier 实现。
+
+平台和 kernel 边界按固定 tag 复核：
+
+- [Android 17 `Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java)。
+- [Android 17 `FrameMetrics.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java)。
+- [`android17-6.18-2026-06_r6` kernel tag](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)。
+
+API 用法、性能工具和测量口径参考：
+
+- [Compose 动画性能 quick guide](https://developer.android.com/develop/ui/compose/animation/quick-guide)。
+- [Compose phases](https://developer.android.com/develop/ui/compose/phases)。
+- [Graphics modifiers](https://developer.android.com/develop/ui/compose/graphics/draw/modifiers)。
+- [AnimatedVisibility 与 AnimatedContent](https://developer.android.com/develop/ui/compose/animation/composables-modifiers)。
+- [Strong Skipping](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)。
+- [Compose side effects 与 produceState](https://developer.android.com/develop/ui/compose/side-effects)。
+- [Lazy list item animations](https://developer.android.com/develop/ui/compose/lists)。
+- [Composition tracing](https://developer.android.com/develop/ui/compose/tooling/tracing)。
+- [Layout Inspector 调试 Compose](https://developer.android.com/develop/ui/compose/tooling/debug)。
+- [Animation Preview](https://developer.android.com/develop/ui/compose/tooling/animation-preview)。
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)。
+- [Macrobenchmark FrameTimingMetric](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)。
+- [Compose Baseline Profile](https://developer.android.com/develop/ui/compose/performance/baseline-profiles)。
