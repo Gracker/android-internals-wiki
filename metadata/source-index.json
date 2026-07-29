@@ -1510,6 +1510,166 @@
       "action": "indexed-only-chapter-freeze",
       "score": 15,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-30-76444766-Android嵌入式照片选择器.md",
+      "title": "[技术文章] 学吧！Android 全新的嵌入式照片选择器AndroidX 推出了全新的嵌入式照片选择器（EmbeddedPhotoP",
+      "summary": "> 发布时间: 2026-05-28T00:39:32.000Z > 原文链接: https://juejin.cn/post/7644476634998538249 2026-05-28 1,041 阅读5分钟 2022 年，Android 团队推出了照片选择器，让用户能更隐私地分享媒体文件。用户可以通过可浏览的界面按日期从新到旧查看媒体库，并且只授予应用访问所选文件的...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-30T06:20:32.337715+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-30-76674594-R8让Kotlin协程提速2倍.md",
+      "title": "[技术文章] Android R8 为什么可以让 Kotlin 协程提速 2 倍？这个问题其实我们之前 《AGP 9.2 开始，And",
+      "summary": "> 发布时间: 2026-07-29T01:54:41.000Z > 原文链接: https://juejin.cn/post/7667459437695778870 2026-07-29 230 阅读8分钟 这个问题其实我们之前 《AGP 9.2 开始，Android 上协程启动和取消速度提升两倍》就聊过了，因为 PR 终于被合并，所以现在从 Android Gradl...",
+      "chapter": "ch08",
+      "processed_at": "2026-07-30T06:20:32.337715+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-30-76675023-深入理解Compose副作用.md",
+      "title": "[技术文章] 深入理解 Compose 副作用各位 Compose 爱好者们，你们好。 如果你去打开任何一个 Compose 页面源码",
+      "summary": "> 发布时间: 2026-07-29T00:55:37.000Z > 原文链接: https://juejin.cn/post/7667502327419846702 2026-07-29 106 阅读23分钟 各位 Compose 爱好者们，你们好。 如果你去打开任何一个 Compose 页面源码，几乎总能看到各种 Effect API。 可能我们自己也会这样写代码：...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-30T06:20:32.337715+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-30-76675959-H5游戏多进程隔离与冻结.md",
+      "title": "[技术文章] H5游戏多进程隔离：如何解决Android内存激增与进程冻结问题前言 将WebView塞进独立子进程，或许是解决H5游戏",
+      "summary": "> 发布时间: 2026-07-29T03:46:01.000Z > 原文链接: https://juejin.cn/post/7667595929017958450 2026-07-29 99 阅读10分钟 将WebView塞进独立子进程，或许是解决H5游戏内存占用过大的终局方案。但随之而来的进程冻结、IPC回调丢失等问题，才是真正的技术深水区。 在移动应用生态中，H5...",
+      "chapter": "ch04",
+      "processed_at": "2026-07-30T06:20:32.337715+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-29-evening-BuildMode-Factory-CodexSecurity-研究材料/master-research.md",
+      "title": "[DeepResearch] Master Research · Build Mode x Software Factories x Codex Security",
+      "summary": "--- phase: master topic: 一句话上线之后的三道门禁 date: 2026-07-29 slot: evening --- # Master Research · Build Mode x Software Factories x Codex Security ## 执行摘要 - 合成判断：交付速度、长期可维护、安全验收是三条不同的轴；Build Mode 拉高第一轴，Software Factories 警告第二",
+      "chapter": "ch16",
+      "processed_at": "2026-07-30T06:20:32.337715+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-29-evening-BuildMode-Factory-CodexSecurity-研究材料/03-dump-codex-security.md",
+      "title": "[DeepResearch] Dump · Codex Security CLI / CI",
+      "summary": "--- phase: 1 sub_question: Codex Security CLI 如何嵌进 agent loop date: 2026-07-29 --- # Dump · Codex Security CLI / CI ## 结论（先写） 2026-07-29 OpenAI 官方确认开源 Codex Security CLI + TypeScript SDK（HN 先发现、官方后发）。它不是「更强的 code-review",
+      "chapter": "ch16",
+      "processed_at": "2026-07-30T06:20:32.337715+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-29-evening-BuildMode-Factory-CodexSecurity-研究材料/01-dump-build-mode.md",
+      "title": "[DeepResearch] Dump · Build Mode",
+      "summary": "--- phase: 1 sub_question: Grok Build Mode 交付路径与边界 date: 2026-07-29 --- # Dump · Build Mode ## 结论（先写） Build Mode 把 Agent 从「写代码助手」推到「会话内预览 + 一键发布」：官方 Early Beta 面向 SuperGrok Heavy，覆盖 web / iOS / Android，发布到 grok.me 或自定义域名",
+      "chapter": "ch16",
+      "processed_at": "2026-07-30T06:20:32.337715+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-29-evening-BuildMode-Factory-CodexSecurity-研究材料/references/06-software-factories-fail-p2.md",
+      "title": "[DeepResearch] untitled",
+      "summary": "--- source: archived-from-opencli fetched: 2026-07-29T09:10:10+0800 research_topic: morning-2026-07-29 --- # untitled > 发布时间: 2026-07-25T16:46:42.000Z > 原文链接: https://x.com/dexhorthy/status/2081058573556306030 --- [ ](ht",
+      "chapter": "ch16",
+      "processed_at": "2026-07-30T06:20:32.337715+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-29-evening-BuildMode-Factory-CodexSecurity-研究材料/references/05-software-factories-fail-p1.md",
+      "title": "[DeepResearch] untitled",
+      "summary": "--- source: archived-from-opencli fetched: 2026-07-29T09:10:10+0800 research_topic: morning-2026-07-29 --- # untitled > 发布时间: 2026-07-25T16:46:42.000Z > 原文链接: https://x.com/dexhorthy/article/2081058573556306030 --- [ ](h",
+      "chapter": "ch16",
+      "processed_at": "2026-07-30T06:20:32.337715+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-29-evening-BuildMode-Factory-CodexSecurity-研究材料/references/03-xai-introducing-build-mode.md",
+      "title": "[DeepResearch] Introducing Build Mode",
+      "summary": "--- source: archived-from-opencli fetched: 2026-07-29T09:10:10+0800 research_topic: morning-2026-07-29 --- # Introducing Build Mode > 原文链接: https://x.ai/news/grok-build-mode --- [Back to news](https://x.ai/news) Jul 28,",
+      "chapter": "ch16",
+      "processed_at": "2026-07-30T06:20:32.337715+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-29-morning-CodexSecurity-BuildMode-Factory-研究材料/references/06-software-factories-fail-p2.md",
+      "title": "[DeepResearch] untitled",
+      "summary": "--- source: archived-from-opencli fetched: 2026-07-29T09:10:10+0800 research_topic: morning-2026-07-29 --- # untitled > 发布时间: 2026-07-25T16:46:42.000Z > 原文链接: https://x.com/dexhorthy/status/2081058573556306030 --- [ ](ht",
+      "chapter": "ch16",
+      "processed_at": "2026-07-30T06:20:32.337715+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-29-morning-CodexSecurity-BuildMode-Factory-研究材料/references/05-software-factories-fail-p1.md",
+      "title": "[DeepResearch] untitled",
+      "summary": "--- source: archived-from-opencli fetched: 2026-07-29T09:10:10+0800 research_topic: morning-2026-07-29 --- # untitled > 发布时间: 2026-07-25T16:46:42.000Z > 原文链接: https://x.com/dexhorthy/article/2081058573556306030 --- [ ](h",
+      "chapter": "ch16",
+      "processed_at": "2026-07-30T06:20:32.337715+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-29-morning-CodexSecurity-BuildMode-Factory-研究材料/references/03-xai-introducing-build-mode.md",
+      "title": "[DeepResearch] Introducing Build Mode",
+      "summary": "--- source: archived-from-opencli fetched: 2026-07-29T09:10:10+0800 research_topic: morning-2026-07-29 --- # Introducing Build Mode > 原文链接: https://x.ai/news/grok-build-mode --- [Back to news](https://x.ai/news) Jul 28,",
+      "chapter": "ch16",
+      "processed_at": "2026-07-30T06:20:32.337715+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-28-morning-KimiK3-GraphAgent-OpenMinis-研究材料/03-dump-openminis-android-agent-sandbox.md",
+      "title": "[DeepResearch] Research Dump：OpenMinis Android Agent 沙箱",
+      "summary": "--- phase: 1 sub_question: OpenMinis 对 Android 移动端 Agent 架构有什么启发 tags: [android, ai-agent, mobile-ai] --- ## 执行摘要 - 本次产出文件：`/Users/chris/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07",
+      "chapter": "ch16",
+      "processed_at": "2026-07-30T06:20:32.337715+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-28-morning-KimiK3-GraphAgent-OpenMinis-研究材料/01-dump-kimi-k3-resource-gate.md",
+      "title": "[DeepResearch] Research Dump：Kimi K3 资源门槛",
+      "summary": "--- phase: 1 sub_question: Kimi K3 开放权重的资源门槛是什么 tags: [llm, ai-infra, inference] --- ## 执行摘要 - 本次产出文件：`/Users/chris/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-28-morning-KimiK3-Gr",
+      "chapter": "ch16",
+      "processed_at": "2026-07-30T06:20:32.337715+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-28-morning-KimiK3-GraphAgent-OpenMinis-研究材料/04-master-research.md",
+      "title": "[DeepResearch] Master Research",
+      "summary": "--- phase: master topic: Kimi K3、Graph Engineering、OpenMinis、移动端 Agent 自动验收 --- ## 执行摘要 - 本次产出文件：`/Users/chris/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-28-morning-KimiK3-GraphAg",
+      "chapter": "ch16",
+      "processed_at": "2026-07-30T06:20:32.337715+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ]
 }
