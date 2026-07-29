@@ -33,155 +33,150 @@ gap_source: "AOSP结构"
 
 # 2.11 Android 17 SurfaceFlinger GPU 帧追踪三段式架构
 
-> [已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/]
+## 复核范围
 
-Android 17 的 GPU 图形调试工具链在源码层面呈现**三段式调用链架构**：FrameTracer 负责逐 Layer 的帧事件追踪（写入 Perfetto），TimeStats 负责聚合统计（通过 statsd Pull Atom 上报），JankTracker 负责运行时 jank 通知（以 50 帧批量粒度推送给监听者）。三条通路**互补不重叠**，各自有独立的零开销保证机制。
+顶部 `applicable_versions` 中的“Android 15 (API 34)”是旧稿映射错误；正确对应为 Android 14 / API 34、Android 15 / API 35、Android 16 / API 36、Android 17 / API 37。该字段原文为 Hermes 兼容而保留，正文按正确映射解释。
 
-## FrameTracer：Layer→Perfetto 逐帧事件追踪
+FrameTracer、TimeStats 和 JankTracker 都位于 SurfaceFlinger，但服务于不同消费者：
 
-### 🔹 Layer.cpp 中的 6 个 trace 入口
+| 组件 | 输出 | 粒度 | 适合回答的问题 |
+|---|---|---|---|
+| FrameTracer | Perfetto `GraphicsFrameEvent` packet | layer/buffer event | 某个 buffer 在 queue、fence、latch、composition、present 等边界经历了什么 |
+| TimeStats | statsd pull atom 与 SurfaceFlinger time stats | global/per-layer 聚合 | 一段采样期内有多少帧、直方图和 jank 分类 |
+| JankTracker | `IJankListener` Binder callback | per-layer `JankData` batch | 已注册监听者怎样接收运行时 jank 数据 |
 
-FrameTracer 的所有 trace 调用源自 Layer 在 buffer 生命周期中的关键事件。`Layer.cpp` 在以下 6 个时机调用 `mFrameTracer->traceTimestamp` 或 `traceFence` [已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/Layer.cpp]：
+它们不是 GPU profiler，也不能替代 GPU queue、counter、frequency、fence 和 shader/frame capture。三者会描述相邻的 frame/jank 现象，不能写成“完全不重叠”；启用数据采集后也会产生 packet、锁、容器、后台任务或 Binder 开销。
 
-| 事件 | FrameEvent 枚举 | 触发时机 |
-|------|----------------|---------|
-| DEQUEUE | 1 | Buffer 从 BufferQueue 取出进入 Layer |
-| QUEUE | 2 | 生产者（App）提交绘制完成的 buffer |
-| ACQUIRE_FENCE | 4 | Acquire fence signal（buffer 可被读取） |
-| LATCH | 5 | SurfaceFlinger 选定该 buffer 用于合成 |
-| FALLBACK_COMPOSITION | 7 | RenderEngine（GPU）客户端合成完成 |
-| PRESENT_FENCE | 8 | Present fence signal（帧上屏） |
+GPU/显示工具的主入口已经整理到：
 
-对应 `graphics_frame_event.proto` 中的 `GraphicsFrameEvent.BufferEventType` 枚举 [已验证: AOSP android-17.0.0_r1, external/perfetto/protos/perfetto/trace/android/graphics_frame_event.proto]。该 proto 使用 **proto2 语法**，保留历史兼容性。
+- [2.15 Android 17 GPU 图形调试工具链](../ch02-rendering/2.15-android17-gpu-debug-tools.md)
+- [2.51 GPU Trace 数据源与 Trace Processor](../ch02-rendering/2.51-android17-gpu-debug-performance-tools.md)
+- [2.52 帧诊断工具边界](../ch02-rendering/2.52-android17-gpu-debug-performance-tools.md)
+- [18.20 渲染管线分析方法](../../part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md)
 
-### 🔹 Perfetto DataSource 注册
+本页只解释 Android 17 中三个 SurfaceFlinger 组件的源码边界。
 
-FrameTracer 通过 Perfetto 的 Custom DataSource 机制注册为 `"android.graphics.FrameLatency"` 数据源 [已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/FrameTracer/FrameTracer.cpp]：
+## 1. FrameTracer：layer/buffer 事件写入 Perfetto
 
-```cpp
-void FrameTracer::registerDataSource() {
-    perfetto::DataSourceDescriptor dsd;
-    dsd.set_name(kFrameTracerDataSource);  // "android.graphics.FrameLatency"
-    FrameTracerDataSource::Register(dsd);
-}
-```
+`FrameTracer` 注册自定义 Perfetto data source。SurfaceFlinger 在 layer 生命周期和 buffer 处理路径调用 `traceTimestamp()`/`traceFence()`，生成 `GraphicsFrameEvent`。
 
-关键设计：
-- **`std::call_once`** 保证多线程初始化幂等
-- **`kSystemBackend`** 而非 in-process backend——FrameTracer 跑在 SurfaceFlinger 进程，需要与 system-wide 数据源共享 perfetto daemon
-- **三层零开销短路**：`std::call_once` → DataSource 检查 → `mTraceTracker.find(layerId)` 未注册则跳过
+Android 17 的 proto 定义了这些 `BufferEventType`：
 
-### 🔹 tracePendingFencesLocked：Fence 异步批处理
+| 值 | 事件 |
+|---|---|
+| 1/2/3 | `DEQUEUE`、`QUEUE`、`POST` |
+| 4/5 | `ACQUIRE_FENCE`、`LATCH` |
+| 6/7 | `HWC_COMPOSITION_QUEUED`、`FALLBACK_COMPOSITION` |
+| 8/9 | `PRESENT_FENCE`、`RELEASE_FENCE` |
+| 10—13 | `MODIFY`、`DETACH`、`ATTACH`、`CANCEL` |
 
-GPU 渲染的核心异步性体现在 fence 上。`traceFence` 在 fence 未 signal 时不写入 trace，而是 push 到 `pendingFences` 列表，每轮遍历检查是否已 signal [已验证: AOSP android-17.0.0_r1]：
+proto 枚举表示 trace packet 能表达的事件集合，不表示每个 layer、每帧都会产生全部事件。实际事件取决于调用路径、data source 是否启用、layer 是否已登记、fence 状态和 trace 配置。
 
-- **`kFenceSignallingDeadline`**：fence signal 时间距当前 `systemTime()` 超过此阈值的事件直接丢弃，避免 stale event 污染 trace
-- **反向迭代删除**：`pendingFences.erase(pendingFences.begin() + i)` 配合 `--i` 避免迭代器失效
-- **性能影响**：120Hz × 8 Layer 场景下约 5760 trace calls/s，主线程 CPU 开销约 1-3%
+### Fence 事件
 
-## TimeStats：statsd Pull Atom 聚合统计通道
+`traceFence()` 读取 `FenceTime`：
 
-### 🔹 两个 Pull Atom 上报机制
+- fence 已 signal 时，可以按 signal time 写 span；
+- fence 仍 pending 时，记录进入对应 layer/buffer 的 pending list；
+- 后续事件触发 `tracePendingFencesLocked()` 时再次检查；
+- signal time 无效，或超过 `kFenceSignallingDeadline` 的旧 pending 项，不会按正常事件继续写入。
 
-TimeStats 通过 statsd 的两个 Pull Atom 上报帧统计数据，与 FrameTracer 的 Perfetto 通道互补 [已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/TimeStats/TimeStats.cpp]：
+因此，trace 中没有 fence span不能直接证明系统没有 fence。data source、pending 清理、layer 生命周期和 capture 时间窗都可能影响可见结果。
 
-- **Atom 10062**（SURFACEFLINGER_STATS_GLOBAL_INFO）：全局帧统计——总帧数、丢帧数、GPU 合成帧数、7 维 jank 分类
-- **Atom 10063**（SURFACEFLINGER_STATS_LAYER_INFO）：per-layer 直方图统计——7 种时间直方图（present2present、post2present、acquire2present 等）及 frame_rate_vote、game_mode
+### 成本边界
 
-### 🔹 Google 官方 7 维 Jank 分类法
+Perfetto data source 和 `mTraceTracker` 检查提供 disabled fast path；启用后仍会执行：
 
-全局 atom 的 jank 分类提供比传统"丢帧率"信息密度高一个数量级的归因 [已验证: AOSP android-17.0.0_r1]：
+- `FenceTime` 状态读取；
+- mutex 与 map/vector 操作；
+- trace packet 构造和 shared-memory 写入。
 
-| Jank 类别 | 含义 | 归因方 |
-|----------|------|-------|
-| totalSFLongCpu | SurfaceFlinger CPU 处理过长 | SF 合成线程 |
-| totalSFLongGpu | SurfaceFlinger GPU 合成过长 | GPU / RenderEngine |
-| totalSFUnattributed | SurfaceFlinger 侧无法归因 | SF 内部 |
-| totalAppUnattributed | App 侧无法归因 | App 渲染线程 |
-| totalSFScheduling | SurfaceFlinger 调度延迟 | VSync / 唤醒时机 |
-| totalSFPredictionError | 预测帧时与实际偏差 | VSYNC 预测器 |
-| totalAppBufferStuffing | App 提交过快/过慢 | App 生产节奏 |
+旧稿中的“120 Hz × 8 layer 固定 1%—3% CPU”没有设备、layer 行为、trace buffer 与实现版本，不能复用为通用开销。
 
-### 🔹 零开销保证
+## 2. TimeStats：statsd 聚合统计
 
-所有 TimeStats record 方法第一行为 `if (!mEnabled.load()) return;`——`mEnabled` 默认 false，仅在 statsd **首次 pull 完成后才 enable**。注释原文："Enable timestats now. The first full pull for a given build is expected to have empty or very little stats" [已验证: AOSP android-17.0.0_r1, TimeStats.cpp onPullAtom]。
+`TimeStats::onPullAtom()` 处理两个 atom id：
 
-## JankTracker：运行时 Jank 通知的批量分派
+- `10062`：`SURFACEFLINGER_STATS_GLOBAL_INFO`；
+- `10063`：`SURFACEFLINGER_STATS_LAYER_INFO`。
 
-### 🔹 三层零开销设计
+代码在第一次 global/layer pull 结束后调用 `enable()`。在此之前，多数 record 方法以 `if (!mEnabled.load()) return` 快速返回，所以首次完整 pull 可能为空或数据很少。
 
-JankTracker 提供**运行时通知**能力，区别于 TimeStats 的聚合上报 [已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/Jank/JankTracker.cpp]：
+启用后，TimeStats 记录 global frame 计数、composition strategy、refresh-rate switch、RenderEngine duration，以及 per-layer post/acquire/latch/present 等时间与直方图。一次 pull 会序列化并清理对应聚合数据。它适合统计采样期，不提供每个 CPU/GPU 命令的逐帧执行栈。
 
-1. **原子快速路径**：`sListenerCount` 为 `std::atomic<size_t>`，`onJankData` 首行检查，零监听者时整个管线不进入
-2. **低优先级后台线程**：`BackgroundExecutor::getLowPriorityInstance()` 提交任务，合成主线程不被阻塞
-3. **批量 IPC 控制**：`kJankDataBatchSize = 50`，每积累 50 帧 jank 数据才触发一次 IPC，避免高频 binder 调用
+“首行 atomic load”只能说明 disabled fast path 很短。启用状态下仍有 mutex、map、histogram 和 serialization 成本，因此不能称为零开销。
 
-JankTracker 自 Android 15 引入（头注释 Copyright 2024），Android 17 是其**第二个主版本**，稳定性已显著改善 [来源: DeepResearch/2026-07-07-android17-gpu-debug-tools-deep-dive.md]。
+## 3. JankTracker：监听者回调
 
-## GPU Counter 标准化困境：GpuCounterEvent 双模式
+Android 17 的 `JankTracker` 按 layer id 管理 `IJankListener`：
 
-### 🔹 两种 Proto 模式
+- `sListenerCount == 0` 时，`onJankData()` 直接返回；
+- 有监听者时，把处理提交给 low-priority `BackgroundExecutor`；
+- 对应 layer 没有监听者时，后台任务丢弃数据；
+- 单 layer 累积到 `kJankDataBatchSize = 50` 时自动 flush；
+- 调用方也可以显式 `flushJankData()`，所以每次回调不保证恰好 50 条；
+- listener 消失或 Binder 返回 null-pointer exception 时，tracker 会移除对应注册。
 
-Perfetto 的 `gpu_counter_event.proto` 定义了两种 GPU counter 描述模式 [已验证: AOSP android-17.0.0_r1, external/perfetto/protos/perfetto/trace/gpu/gpu_counter_event.proto]：
+这些行为减少 SurfaceFlinger 合成线程上的同步工作，但数据搬运、容器和 listener Binder IPC 仍然存在。Copyright 2024 只能说明文件版权起始年份，不能据此认定 Android 17 是“第二个主版本”或推导稳定性。
 
-- **Mode 1（`GpuCounterDescriptor`）**：OEM **必须**使用以满足 CDD/CTS。`counter_id` 全局唯一，单 producer 场景。问题：不同 OEM 的 counter 集合完全不同——Adreno 的 `shader_core_active` 在 Mali 上不存在，Mali 的 `fragment_jobs` 在 Xclipse 上无对应物
-- **Mode 2（`InternedGpuCounterDescriptor`）**：通过 `iid` 引用 `InternedData`，支持多 producer / 多 GPU 场景。trace 消费方需支持 iid 解析
+## 4. GPU counter 是另一条数据通路
 
-### 🔹 对跨设备 GPU 分析的影响
+`GpuCounterEvent` proto 支持两种 descriptor：
 
-这是 GPU 调试工具链**最被低估的标准化碎片** [来源: DeepResearch/2026-07-07]：
+1. `GpuCounterDescriptor` 使用 global counter id，Android GPU vendor 为满足相关 CDD/CTS 约束采用该模式；
+2. `InternedGpuCounterDescriptor` 通过 sequence-scoped iid 支持多 producer/multi-GPU 等复杂场景。
 
-- AGI System Profiler 在不同 OEM 设备上看到的 GPU counter 轨道**不可直接比较**
-- Sokatoa 多帧分析能做"同设备多帧对比"，但**难以做跨设备横向对比**
-- 跨设备基准测试必须将 counter 标准化到应用层（如"GPU 占用率 = shader_core 类 counter / cycle count"），不能依赖原始 counter 显示
+这个协议定义 counter 的传输与 descriptor，不会统一不同 GPU 的硬件 counter 语义。Adreno、Mali、PowerVR 或其他 GPU 可以暴露不同名字、单位、采样周期和权限条件。跨设备比较要选择可比指标并记录 driver/firmware，不能只按相似轨道名换算“GPU 利用率”。
 
-> [自动发现] 此问题直接影响 §14.28（GPU 性能分析进阶 — 跨厂商计数器标准化）中的"跨设备基准测试"方案可行性，建议在该节补充 mode 1/2 选择策略与 counter 映射层设计。
+FrameTracer 的 `GraphicsFrameEvent` 与 GPU counter 也不能互相替代：
 
-## SurfaceFlinger GPU 调试属性系统
+- FrameTracer 给出 layer/buffer 生命周期边界；
+- GPU counter 描述 producer 提供的硬件活动/计数；
+- GPU frequency 表示时钟状态；
+- GPU queue/fence 表示提交和完成关系；
+- AGI frame capture 用于单帧 API/shader/render-pass 分析。
 
-### 🔹 关键调试开关
+## 5. 使用顺序
 
-SurfaceFlinger 在初始化阶段加载 GPU 调试相关的系统属性 [已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp]：
+### 单帧晚显示
 
-| 属性 | 默认值 | 作用 |
-|------|-------|------|
-| `debug.sf.enable_gl_backpressure` | true | GPU 合成回压控制，防止 GPU 队列堆积 |
-| `debug.sf.luma_sampling` | 1 | 亮度采样控制 |
-| `debug.sf.disable_client_composition_cache` | 0 | 禁用客户端合成缓存 |
-| `debug.sf.predict_hwc_composition_strategy` | 1 | HWC 合成策略预测 |
+1. 用 FrameTimeline 或目标 present 找到异常帧；
+2. 确定 Producer、Surface、layer 和 display；
+3. 对齐 `queueBuffer`、acquire fence、latch、composition 与 present；
+4. 需要 GPU 归因时补 GPU queue、frequency/counter、fence 或 AGI；
+5. 用 CPU scheduler/thermal 轨道检查提交线程与 SurfaceFlinger 是否获得资源。
 
-`mBackpressureGpuComposition` 默认为 true，在 GPU 合成负载过高时通过回压机制限制新 buffer 提交，避免 GPU 队列无限增长导致内存压力。
+### 长期 jank 比例
 
-## 三段式架构对比总结
+1. 明确统计窗口、display mode、应用版本和场景；
+2. 使用 TimeStats/FrameTimeline 聚合统计；
+3. 按 app/SF、CPU/GPU、buffer stuffing、prediction/display 等分类分组；
+4. 回到代表帧 trace 验证聚合分类；
+5. 修改后以同一场景与窗口复测。
 
-| 维度 | FrameTracer | TimeStats | JankTracker |
-|------|------------|-----------|-------------|
-| **数据通道** | Perfetto Custom DataSource | statsd Pull Atom (10062/10063) | Binder IPC |
-| **粒度** | 每 Layer × 每 buffer 事件 | 全局聚合 / per-layer 直方图 | 50 帧 batch |
-| **用途** | 开发期 trace 分析 | 线上 metrics 采集 | 运行时实时监控 |
-| **零开销机制** | mTraceTracker.find 短路 | mEnabled atomic load | sListenerCount atomic |
-| **开销来源** | protobuf packet 构造 + shared memory 写入 | protobuf 序列化 + 排序 | 后台线程 + binder IPC |
+### 运行时 listener
 
-## 扩展
+1. 确认 API/权限和目标 layer；
+2. 记录注册、flush、remove 与进程生命周期；
+3. 不把 batch callback 时间当成单帧发生时间；
+4. 用 `frameVsyncId` 等标识与显示轨迹对齐。
 
-### 🔸 Perfetto SQL 查询三段式数据
+## 6. 原稿中需撤销的结论
 
-在 Perfetto UI 中查询 FrameTracer 数据时，使用 `graphics_frame_event` 表；查询 TimeStats 数据时，需通过 `android_surfaceflinger_stats` 或直接解析 atom protobuf。两种数据源的 SQL 表结构不同，分析时需注意区分。
+- FrameTracer、TimeStats、JankTracker 不是 Android 17 新增的统一 GPU 调试框架；
+- 三条通路没有“独立零开销”保证；
+- JankTracker 的 50 是自动 flush threshold，显式 flush 可发送更小 batch；
+- proto 注释不能证明所有 OEM 暴露同一 counter 集；
+- SurfaceFlinger property 的默认值与 vendor overlay/composition 行为要按目标 build 核对；
+- FrameTracer event、TimeStats atom 和 Jank callback 不应强行放进同一张逐帧 SQL 表。
 
-> [待补充] 具体的 Perfetto SQL 查询模板。
+## 7. 固定源码入口
 
-### 🔸 AGI Frame Profiler 与 GFXReconstruct 集成
+- [`FrameTracer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/FrameTracer/FrameTracer.cpp)
+- [`TimeStats.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/TimeStats/TimeStats.cpp)
+- [`JankTracker.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Jank/JankTracker.cpp)
+- [`Layer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Layer.cpp)
+- [`graphics_frame_event.proto`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/protos/perfetto/trace/android/graphics_frame_event.proto)
+- [`gpu_counter_event.proto`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/protos/perfetto/trace/gpu/gpu_counter_event.proto)
 
-AGI 的 Frame Profiler 通过 GFXReconstruct 实现 frame replay，但其跨设备能力受 GPU counter 双模式限制。具体集成细节未在 android-17.0.0_r1 的 AOSP 源码中验证。
-
-> [待验证: AGI 仓库 frame replay 引擎]
-
-### 🔸 Vulkan 层 GPU 调试接口
-
-Android 17 的 Vulkan validation layer 和 GPU debug marker 机制提供了额外的 GPU 调试能力，但具体接口在 AOSP android-17.0.0_r1 中未完整覆盖。
-
-> [待补充] Vulkan debug marker 与 FrameTracer 的协同机制。
-
-[适用版本: Android 15 (API 34) - Android 17 (API 37)]
-[来源: DeepResearch/2026-07-07-android17-gpu-debug-tools-deep-dive.md]
-[来源: DeepResearch/2026-07-06-android17-gpu-debug-performance-tools-source.md]
+本页结论固定到 `android-17.0.0_r1`。GPU counter、property、driver trace、AGI 能力和 permission 仍需按目标设备与工具版本确认。
