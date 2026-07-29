@@ -70,183 +70,243 @@ sources:
 
 <!-- outline-end -->
 
-RecyclerView 卡顿排查经常停在 `onBindViewHolder()`、布局层级和图片加载上。Android 17 以后还要补一个入口：主线程消息队列自身的等待成本。`GapWorker` 仍然按原来的方式预取，变化发生在 `recyclerView.post(this)` 到主线程开始执行之间。
+RecyclerView 的滑动卡顿可能来自 item 创建与绑定、measure/layout、图片回调、主线程消息积压、线程调度或显示链路。Android 17 又改变了其中一小段：对 `targetSdkVersion >= 37` 的应用，平台默认启用无锁 `MessageQueue` 实现 DeliQueue，旧队列核心消息路径上的单一 Java monitor 不再参与生产者入队与 Looper 取消息。[Android 17 MessageQueue 行为变更](https://developer.android.com/about/versions/17/changes/messagequeue)｜[DeliQueue 技术说明](https://developer.android.com/blog/posts/under-the-hood-android-17-lock-free-message-queue)
 
-这一节只处理应用侧问题：怎么识别队列锁竞争，怎么确认 DeliQueue 是否生效，怎么把 RecyclerView 预取、业务线程投递和灰度验证放到同一组实验里。DeliQueue 内部数据结构详见 1.13 节，本节不重复展开。
+本文固定三条源码与版本边界：
+
+| 层级 | 锚点 | 本文用途 |
+|---|---|---|
+| Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | `CombinedDeliMessageQueue`、兼容开关、Looper 与 FrameTimeline |
+| RecyclerView | `androidx.recyclerview:recyclerview:1.4.0` sources jar | `GapWorker`、预取 deadline、create/bind 预算和 trace section |
+| Android common kernel | `android17-6.18-2026-06_r6` | 线程 Runnable、抢占和 CPU 调度现象；内核不实现 DeliQueue 或 RecyclerView |
+
+RecyclerView 是独立发布的 AndroidX artifact，不能用 `android-17.0.0_r1` 代替它的版本。官方发布页在本次复核时仍把 1.4.0 列为稳定版，并已将 RecyclerView 标记为 maintenance mode。[RecyclerView release notes](https://developer.android.com/jetpack/androidx/releases/recyclerview)
+
+DeliQueue 机制见 [1.13 MessageQueue 与 DeliQueue](../../part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md)，RecyclerView 通用优化见 [7.8 RecyclerView 性能](../../part2-performance/ch07-smoothness/08-recyclerview-performance.md) 和 [22.2 RecyclerView 实战](02-recyclerview-practice.md)。本节只回答一个应用侧问题：DeliQueue 改变了列表预取时序中的哪一段，怎样用对照实验避免错误归因。
 
 ## 问题边界：列表卡顿里的 MessageQueue 锁竞争
 
-列表滑动慢通常落在四类位置：主线程布局和绑定太重，GapWorker 预取没有赶上，后台线程密集投递主线程回调，渲染提交或合成阶段超时。DeliQueue 只影响第三类的一部分，也就是多个线程围着同一个 `MessageQueue` 入队和出队时产生的等待。
+一帧列表工作可以按证据分成五段：
 
-旧 `MessageQueue` 使用一把 monitor 保护内部链表。后台线程通过 `Handler.post()` 把网络结果、数据库分页结果或图片加载完成回调投到主线程时，要进入同一段同步区域；主线程回到 `next()` 取下一条消息时，也会碰到这把锁。后台线程先拿到锁，主线程就可能在帧预算内多等几百微秒到几毫秒。列表里这种等待最容易和 `onBindViewHolder()`、`RV OnLayout` 混在一起。
+1. 后台线程通过 `Handler`、AsyncListDiffer、图片库或分页组件提交结果。
+2. 主 Looper 从 `MessageQueue` 取消息并进入 `dispatchMessage()`。
+3. RecyclerView 处理滚动、adapter update、create、bind 与 `GapWorker` 预取。
+4. ViewRoot/HWUI 完成 traversal、绘制和 App Window buffer 提交。
+5. SurfaceFlinger 采纳目标 buffer，完成合成与 present。
 
-排查时先把三段时间分开：
+DeliQueue 只改变前两段中的队列数据结构。它不能缩短 `onBindViewHolder()`、item measure/layout、图片解码、GC、RenderThread 或 SurfaceFlinger 的工作。
 
-- 队列口等待：Perfetto 里出现主线程被 `MessageQueue` 相关 monitor 阻塞，或者 `Handler.post()` 高峰和掉帧同一时间段出现。
-- 预取执行：`RV Prefetch` 后面是否跟着 `RV onCreateViewHolder type=...`、`RV onBindViewHolder type=...`，以及这些 slice 是否在 deadline 之前完成。
-- 帧提交：FrameTimeline 显示 App deadline、SurfaceFlinger deadline、Late Present 或 Buffer Stuffing 等类型时，继续按 7.2 和 13.14 的取证路径查渲染和合成。
+legacy `MessageQueue` 用一个 monitor 保护按 `when` 排序的链表。生产者插入消息、Looper 取消息和部分维护操作都会进入该临界区。低优先级后台线程持锁期间若被其他 Runnable 线程抢占，主线程可能等待它继续运行并释放锁，形成优先级反转。Android 17 的 DeliQueue 把生产者提交改成 `MessageStack` 上的 CAS push，再由 Looper 独占的同步/异步 `MessageHeap` 按 `when` 与插入序号排序。
 
-[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md] 这类资料的价值在于提醒排查时不要只看单个函数耗时，还要看任务优先级和等待关系。本节不采用其中的线程提权和绑核方案作为通用建议；普通应用盲目提高 UI 相关线程优先级，容易挤压系统服务、图片解码和 I/O 线程，收益也难复现。
+排查列表卡顿时，可以用下表先排除不受 DeliQueue 影响的路径：
+
+| 证据 | 说明 | 后续方向 |
+|---|---|---|
+| 主线程出现 `monitor contention with ...`，阻塞方法指向 legacy `MessageQueue` | 队列 monitor 可能占用了帧预算 | 查 owner 线程、持锁调用点，并做兼容开关 A/B |
+| `RV Prefetch` 很晚才开始，但没有 MessageQueue monitor contention | 可能是前序消息积压、长 callback 或主线程未获 CPU | 查 Looper 前序 slice、Runnable 状态与调度轨道 |
+| create/bind slice 很长 | item 创建、绑定或数据转换超时 | 回到 ViewHolder、payload、对象分配和图片请求 |
+| `RV OnLayout` 很长，prefetch create/bind 正常 | 预取没有覆盖 measure/layout | 优化 item 约束、尺寸稳定性与嵌套层级 |
+| App SurfaceFrame 按期，DisplayFrame 或目标 layer present 超时 | 问题位于应用交帧之后 | 转到 SurfaceFlinger、GPU、HWC、buffer 和 fence |
+
+线程优先级和绑核不适合作为列表卡顿的通用修复。随意提高图片、数据库或网络线程优先级，可能增加与主线程、RenderThread 和系统进程的 CPU 竞争。没有 scheduler trace、实验分组和功耗数据时，优先减少工作与投递量。
 
 ## Android 17 DeliQueue 的生效条件
 
-Android 17 的公开行为变更页面给出的边界很清楚：运行在 Android 17 上、并且 `targetSdkVersion >= 37` 的应用，会收到新的 lock-free `android.os.MessageQueue` 实现。[已验证: 官方文档, developer.android.com/about/versions/17/changes/messagequeue]
+Android 17 的默认启用条件包含运行平台与 target SDK：应用运行在 Android 17，且 `targetSdkVersion >= 37`。`android-17.0.0_r1` 的 [`CombinedDeliMessageQueue/MessageQueue.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java) 同时保留 DeliQueue 与 legacy 两条路径，`next()` 和 `enqueueMessage()` 根据进程启动时确定的选择进入对应实现。
 
-旧 target 应用仍按兼容路径运行。这个边界很适合做 A/B：同一台 Android 17 设备上，用 target 36 和 target 37 两个构建包对照同一组滑动场景，观察 `MessageQueue` contention、FrameTimeline、JankStats 和业务埋点的变化。
+兼容性 change id `USE_NEW_MESSAGEQUEUE` 的值是 `421623328L`，声明使用 `@EnabledAfter(targetSdkVersion = Build.VERSION_CODES.BAKLAVA)`。`BAKLAVA` 是 API 36，因此 “after” 对应 API 37。应用进程会在主 Looper 创建前收到并设置 DeliQueue 选择；切换兼容开关后必须重启进程。
 
-DeliQueue 对兼容性的影响集中在反射。官方文档说明，Android 17 为了二进制兼容仍保留 `MessageQueue.mMessages` 字段，但在新实现中这个字段始终为 null。依赖 `mMessages` 链表判断主线程 idle、读取待处理消息或实现测试同步的库，需要升级到公开 API 路径。[已验证: 官方文档, developer.android.com/about/versions/17/changes/messagequeue]
+DeliQueue 的兼容风险集中在私有实现依赖。Android 17 为二进制兼容保留 `MessageQueue.mMessages`，但 DeliQueue 路径中该字段始终为 `null`。反射它来判断 idle、遍历待处理消息或驱动测试同步的代码会得到错误结果。[MessageQueue 迁移说明](https://developer.android.com/about/versions/17/changes/messagequeue)
 
 灰度前至少查三类依赖：
 
-- UI 自动化测试：Espresso、Robolectric、公司内部 idle 检测库是否仍反射 `mMessages`。
+- UI 自动化测试：Espresso、Robolectric、内部 idle 检测库是否仍反射 `mMessages`。官方要求 Espresso 3.7.0+；Robolectric 应升级到 4.17+，并从 `@LooperMode(LEGACY)` 迁到 `@LooperMode(PAUSED)`。
 - 性能监控 SDK：是否通过反射遍历 `MessageQueue` 来推断 `doFrame` 前后消息。
 - 业务工具库：是否在 Debug 面板、慢消息检测或 ANR 辅助工具里读取私有字段。
 
-Android 17 还提供兼容开关，适合定位问题归因。遇到 target 37 后才出现的测试挂起或列表行为差异，可以用 `adb am compat disable USE_NEW_MESSAGEQUEUE <package>` 暂时退回旧实现，再复测同一条脚本。[已验证: 官方文档, developer.android.com/about/versions/17/changes/messagequeue]
-
-这条命令只用于验证 MessageQueue 归因，不能当成发布策略：
+下面的命令用于在可调试应用上切换实现并强制重启进程，以同一个 APK 做 A/B：
 
 ```bash
-adb am compat disable USE_NEW_MESSAGEQUEUE com.example.app
-adb am compat enable USE_NEW_MESSAGEQUEUE com.example.app
+adb shell am compat enable USE_NEW_MESSAGEQUEUE com.example.app
+adb shell am force-stop com.example.app
+
+adb shell am compat disable USE_NEW_MESSAGEQUEUE com.example.app
+adb shell am force-stop com.example.app
 ```
 
-如果关闭开关后问题消失，下一步应定位反射、idle 判断或主线程投递节奏里的具体依赖点；target 37 仍要按发布计划完成适配。
+每次切换后使用同一条脚本重新冷启动并采集多份 trace。这个实验只隔离 MessageQueue 实现；target 36 与 target 37 两个 APK 的比较还会叠加其他 target 行为变更，适合升级回归，不能单独证明 DeliQueue 收益。兼容开关用于开发验证和故障隔离，应用不应依赖它作为长期产品配置。
 
 ## GapWorker、postFromTraversal 与预取 deadline
 
-RecyclerView 的预取路径没有因为 DeliQueue 改成新的 API。滚动过程中，RecyclerView 会记录滚动方向和距离，并把 `GapWorker` 作为 Runnable 投递到主线程。通用机制见 22.2 和 7.8；本节只看它和消息队列等待的关系。
+本节用 `androidx.recyclerview:recyclerview:1.4.0` sources jar 核对 `GapWorker.java` 和 `RecyclerView.java`。该 source jar 的 SHA-256 为 `cad83357a7003b5903197be0494f6e8f6825fa1338ee6b09b06a8dea32a97cb8`，可从 [Google Maven](https://dl.google.com/dl/android/maven2/androidx/recyclerview/recyclerview/1.4.0/recyclerview-1.4.0-sources.jar) 复核。
 
-`GapWorker` 能不能帮上忙，取决于两个条件。请求要及时到达主线程，随后 create/bind 要在剩余预算内完成。DeliQueue 改善的是前者：减少后台线程投递消息时和主线程取消息时的锁等待。它不会让 `onBindViewHolder()` 变短，也不会改变 `willCreateInTime()` / `willBindInTime()` 的预算判断。
+`GapWorker.postFromTraversal()` 的行为包含两个细节：
 
-AndroidX 文档对 prefetch 的边界有两处能直接落到实战：`collectInitialPrefetchPositions()` 只在嵌套 RecyclerView 将要进入屏幕时调用，LayoutManager 通过 `LayoutPrefetchRegistry.addPosition()` 提交要提前准备的位置；`LinearLayoutManager.setInitialPrefetchItemCount()` 建议把数量设为内层列表首次可见时会展示的 item 数，设得超过可见数量会增加无意义的 bind 和 View 创建。[已验证: 官方文档, developer.android.com/reference/androidx/recyclerview/widget/RecyclerView.LayoutManager] [已验证: 官方文档, developer.android.com/reference/androidx/recyclerview/widget/LinearLayoutManager]
+- 第一次请求把 `GapWorker` 通过 `recyclerView.post(this)` 投到主线程队列，并用 `mPostTimeNs` 避免重复 post。
+- 后续滚动即使没有新增 Runnable，也会更新 prefetch vector；`run()` 读取的是较新的方向与距离。
 
-排查时不要把 `setInitialPrefetchItemCount()` 当成越大越好。它只是增加候选 position，最终能执行多少还要看 deadline。如果列表 item 复杂、图片占位创建重、payload 没做局部刷新，GapWorker 可能拿到更多候选，却在预算判断处提前停下。Android 17 降低队列等待后，这类问题会更暴露：队列口不再等了，剩下的慢点会集中落到 create/bind 和布局里。
+这次 `post()` 通常发生在主线程的滚动路径中。legacy 队列下，主线程入队也可能等待正持有 MessageQueue monitor 的后台生产者；DeliQueue 移除了这条核心 monitor 竞争。不过，从 `post()` 到 `GapWorker.run()` 的总延迟还包含当前 callback 剩余时间、前序消息积压、同步屏障规则和线程调度。DeliQueue 不提供“立即运行”保证。
 
-[自动发现] 对混合 Compose/View 列表，DeliQueue 只能改善主线程消息调度。`ComposeView` 的 composition、measure 和 state 更新仍要单独埋点。用同一个 RecyclerView trace 看不出 Compose 内部重组成本时，应在 item 内部加 `Trace.beginSection()`，或结合 Compose tooling 和 JankStats state 标记。
+`GapWorker.run()` 读取可见 RecyclerView 中最新的 `getDrawingTime()`，加 `mFrameIntervalNs` 估算下一帧 deadline，再按是否预计供下一帧使用、列表速度和 item 距离排序任务。预计供下一帧使用的 task 使用 `FOREVER_NS` 强制 create/bind，并可能出现 `RV Prefetch forced - needed next frame`；其他 task 才受估算 deadline 限制。
+
+进入 `tryGetViewHolderForPositionByDeadline()` 后，RecyclerView 使用 `RecycledViewPool` 中按 `viewType` 维护的 create/bind 运行均值判断 `willCreateInTime()` 与 `willBindInTime()`。这套预算只覆盖 ViewHolder 获取、create 和 bind，不覆盖下一帧的 item measure/layout。因此：
+
+- 只有 `RV Prefetch`，没有 create/bind：目标可能已经 attached、缓存命中，或普通 task 被预算拒绝。
+- 出现 `RV Prefetch forced - needed next frame`：任务即使预计超出 gap 也会执行，不能把这段长耗时理解为“deadline 保护失效”。
+- create/bind 很短而下一帧 `RV OnLayout` 很长：item 约束或测量仍是主因。
+
+`LinearLayoutManager.setInitialPrefetchItemCount()` 只控制嵌套 RecyclerView 初次进入视口前的 item 数。官方 API 文档建议设置为内层列表初次可见的 item 数；超过可见数量会增加 View 创建、bind 与活跃对象数量。[LinearLayoutManager API](https://developer.android.com/reference/androidx/recyclerview/widget/LinearLayoutManager#setInitialPrefetchItemCount%28int%29)
+
+混合 Compose/View item 还要单独观察 composition、layout、状态读取和 `ComposeView` 生命周期。`RV onBindViewHolder` 只覆盖 adapter bind 的外层 slice，无法完整表达之后发生的重组与 Compose measure。相关边界见 [22.15 Compose First 迁移](15-compose-first-view-migration-performance.md)。
 
 ## Perfetto 取证：从 monitor contention 到帧时间线
 
-DeliQueue 官方博客建议用 Perfetto 分析锁竞争，并给出了 `android.monitor_contention` 模块的方向。对 RecyclerView 场景，取证顺序可以压成四步。[已验证: 官方博客, developer.android.com/blog/posts/under-the-hood-android-17-lock-free-message-queue]
-
-一是确认主线程是否在队列口等待。下面这段 SQL 的用途是找主线程被 `MessageQueue` 相关 monitor 阻塞的总时长和次数，适合先在 target 36 包上跑一遍，再和 target 37 包对照：
+DeliQueue 官方文章给出了 `android.monitor_contention` 与 jank process 的 PerfettoSQL。下面的查询用于筛选“trace 中发生过 app jank 的进程”，并汇总这些进程里主线程的 MessageQueue monitor contention：
 
 ```sql
 INCLUDE PERFETTO MODULE android.monitor_contention;
+INCLUDE PERFETTO MODULE android.frames.jank_type;
 
 SELECT
   process_name,
-  SUM(dur) / 1000000.0 AS blocked_ms,
-  COUNT(*) AS blocked_count
+  SUM(dur) / 1000000 AS sum_dur_ms,
+  COUNT(*) AS count_contention
 FROM android_monitor_contention
 WHERE is_blocked_thread_main
   AND short_blocked_method LIKE '%MessageQueue%'
+  AND upid IN (
+    SELECT DISTINCT(upid)
+    FROM actual_frame_timeline_slice
+    WHERE android_is_app_jank_type(jank_type) = TRUE
+  )
 GROUP BY process_name
-ORDER BY blocked_ms DESC;
+ORDER BY SUM(dur) DESC;
 ```
 
-如果 target 37 后这组数据明显下降，但 jank 没有下降，说明瓶颈已经转移到队列之后。
+这段官方查询只按 `upid` 限定“进程在该 trace 中有 jank”，没有把每条 contention 与某一帧做时间区间关联。它适合批量初筛，不能据此宣称某次 contention 导致了某一帧超时。进入单条 trace 后，应按以下顺序对齐时间：
 
-二是定位 RecyclerView 自身切片。当前 AndroidX 常见 trace section 包括 `RV Prefetch`、`RV onCreateViewHolder type=...`、`RV onBindViewHolder type=...`、`RV FullInvalidate`、`RV PartialInvalidate`、`RV OnLayout`。缺少这些 slice 时，要检查是否打开了应用 trace、是否走到 RecyclerView 路径，以及列表 item 内部是否被 Compose、自定义 View 或图片库包住。
+1. 在 `android_monitor_contention` 读取 waiter、owner、阻塞方法、持锁方法和持续时间。
+2. 对齐 `RV Prefetch`、`RV Prefetch forced - needed next frame`、`RV onCreateViewHolder type=0x...`、`RV onBindViewHolder type=0x...`、`RV PartialInvalidate`、`RV FullInvalidate` 与 `RV OnLayout`。
+3. 检查主线程在目标区间是 Running、Runnable、Sleeping 还是被其他锁阻塞；Runnable 很久属于调度问题，不是 Java monitor 证据。
+4. 对齐 App `SurfaceFrame` 与 SurfaceFlinger `DisplayFrame`。`jank_type` 描述超期原因，`present_type` 描述显示时序；App 超期与目标 layer 未按期 present 需要分别验证。
+5. 用 JankStats state 或自定义 trace 标记页面、列表类型、数据规模、图片来源、Diff 批次和滚动动作。
 
-三是对齐 FrameTimeline。FrameTimeline 负责告诉这帧晚在哪里：App 端提交晚、SurfaceFlinger 端处理晚、Present 晚，还是 Buffer Stuffing。不要用不存在的字段做 SQL 条件；按 13.14 的字段口径查 `actual_frame_timeline_slice` 的 `jank_type`、`present_type`、`on_time_finish`、`layer_name` 等公开字段，再回到线程轨道查原因。
+FrameTimeline 与 CUJ 的字段用法见 [13.14 Perfetto DataGrid 与 Jank CUJ](../../part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md)，JankStats 场景标记见 [19.11 JankStats](../../part3-tools/ch19-apm/11-jankstats.md)。第三方应用不会自动获得完整的系统 CUJ 业务名称，需要自己维护 state。
 
-四是补业务状态。JankStats 适合把线上样本按页面、列表类型、网络状态、图片来源、DiffUtil 批量大小分组。第三方 App 不能假设系统 CUJ 标准库会自动给出业务列表场景名，state 需要应用自己维护。详见 19.11。
-
-如果要观察系统进程里的 MessageQueue tracing，官方博客给出的 Perfetto 配置使用 `track_event` 的 `mq` category。应用侧排查优先用 monitor contention、RecyclerView section 和自定义 trace，不要把 system_server 的配置当成普通 App SDK 能力。[已验证: 官方博客, developer.android.com/blog/posts/under-the-hood-android-17-lock-free-message-queue]
+官方博客还提供 `track_event` 的 `mq` category，用于观察 `system_server` 的 MessageQueue tracing。普通应用应以 monitor contention、Looper/RecyclerView slice、scheduler、FrameTimeline 与自定义 trace 为主，不能把 system_server 专用配置当作应用 SDK。
 
 ## 业务线程投递治理
 
-DeliQueue 减少队列锁等待，不等于后台线程可以无节制向主线程投递。投递量过大时，主线程仍要逐条分发消息，`dispatchMessage()` 之后的业务代码仍会占用帧预算。参考书里关于“减少等待”和“利用 CPU 空闲窗口”的思路，可以转成列表场景里的三条规则。[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
+DeliQueue 降低队列管理成本，不会替应用清理消息积压。每条消息进入 `dispatchMessage()` 后，业务 callback 仍占主线程时间。列表场景可以采用三条约束：
 
-- 合并同一帧内的 UI 回调：分页、图片状态、点赞状态、曝光上报不要各自 `post` 一次；用单个主线程 drain 把本帧变化合并成最小 adapter 更新集。
-- 限制低优先级刷新：弱网回包、推荐理由、非首屏装饰信息可以等滑动停止或进入 idle 后刷新；不要和快速 fling 期间的 `GapWorker` 抢主线程分发时间。
-- 把 diff 和预处理留在后台：`DiffUtil.calculateDiff()`、图片尺寸计算、富文本预解析应在后台完成，主线程只接收结果和最小 payload。
+- 合并可合并的 UI 结果：分页、图片状态和同一 item 的多次字段变化整理成一次最小 adapter update。
+- 延后低优先级装饰更新：快速 fling 期间减少非首屏标签、推荐理由、日志和曝光回调，滚动减速或停止后再处理。
+- 后台只做纯计算：diff、文本预处理和图片尺寸计算可放后台；View、adapter notification 和 Compose state 的写入仍要遵守各自线程规则。
 
-下面的示例展示一种合并投递方式。重点在于让多个后台来源共享一次主线程 drain，减少队列消息数量：
+下面的泛型骨架演示如何让多个生产者共享一次主线程 drain，并处理 `scheduled` 复位期间的新入队：
 
 ```kotlin
-class MainThreadBatcher(
+class MainThreadBatcher<T>(
     private val mainHandler: Handler,
-    private val apply: (List<ListMutation>) -> Unit,
+    private val maxBatchSize: Int = 128,
+    private val applyBatch: (List<T>) -> Unit,
 ) {
-    private val pending = ConcurrentLinkedQueue<ListMutation>()
+    private val pending = ConcurrentLinkedQueue<T>()
     private val scheduled = AtomicBoolean(false)
 
-    fun enqueue(mutation: ListMutation) {
-        pending.add(mutation)
+    init {
+        require(maxBatchSize > 0)
+    }
+
+    fun enqueue(value: T) {
+        pending.add(value)
+        schedule()
+    }
+
+    private fun schedule() {
         if (scheduled.compareAndSet(false, true)) {
-            mainHandler.post {
-                val batch = buildList {
-                    while (true) {
-                        val item = pending.poll() ?: break
-                        add(item)
-                    }
-                }
+            if (!mainHandler.post(::drain)) {
                 scheduled.set(false)
-                if (batch.isNotEmpty()) apply(batch)
             }
+        }
+    }
+
+    private fun drain() {
+        val batch = ArrayList<T>(maxBatchSize)
+        while (batch.size < maxBatchSize) {
+            val item = pending.poll() ?: break
+            batch += item
+        }
+
+        try {
+            if (batch.isNotEmpty()) applyBatch(batch)
+        } finally {
+            scheduled.set(false)
+            if (pending.isNotEmpty()) schedule()
         }
     }
 }
 ```
 
-这段代码把多个后台线程的结果合并成一个主线程消息。真实工程里还要补生命周期取消、最大批次大小、滑动中降级策略和线程安全测试。
+`finally` 先释放 scheduled 标志，再检查队列；若生产者在复位前入队，末尾检查会重新 post；若生产者在复位后入队，它会自行取得标志。`maxBatchSize` 防止一次 drain 吞掉过多帧预算。工程实现还要补 lifecycle 取消、相同 key 合并、失败策略和线程安全测试，不能直接把所有 adapter notification 放进一个无界批次。
 
-线程优先级治理要谨慎。`Process.setThreadPriority()` 可以让关键后台任务更快结束，但不要把图片解码、数据库和网络回调都提到显示线程等级。列表场景里更常见的有效动作，是降低非首屏预热、日志、埋点和低优先级刷新任务的竞争强度，把主线程消息数量压下来。
+`Process.setThreadPriority()` 只能在 trace 已证明调度延迟、任务又确有时限时评估。把图片、数据库和网络线程全部提升到接近显示线程的优先级，可能增加前台 CPU 竞争和功耗。对 `android17-6.18-2026-06_r6` 来说，`kernel/sched/core.c` 与 `kernel/sched/fair.c` 可以解释线程为何长时间 Runnable；它们不能说明哪条 RecyclerView 消息应被合并。
 
 ## Android 17 适配与灰度验证
 
-target 37 灰度不要只看总掉帧率。官方博客给出的收益数字来自 Google 的合成基准和内部 beta tester trace：高竞争插入忙队列最高提升 5000 倍，主线程锁竞争时间下降 15%，应用 missed frames 下降 4%，System UI 和 Launcher 交互 missed frames 下降 7.7%，首帧 P95 下降 9.1%。这些数字能作为预期方向，不能直接写进业务 OKR。[已验证: 官方博客, developer.android.com/blog/posts/under-the-hood-android-17-lock-free-message-queue]
+target 37 灰度不能只看总慢帧率。官方博客的数字来自合成 benchmark 和 Google 内部 beta tester trace：
+
+| 指标 | 官方结果 | 证据边界 |
+|---|---:|---|
+| 多线程向繁忙队列插入 | 最高 5,000× | 极端合成 benchmark，未公开完整设备、线程数和消息规模 |
+| App 主线程锁竞争时间 | -15% | 内部 beta tester Perfetto trace |
+| App missed frames | -4% | 同批测试设备和 workload |
+| System UI / Launcher missed frames | -7.7% | 同批测试设备和 workload |
+| 启动到首帧 P95 | -9.1% | 同批测试设备和 workload |
+
+这些数字用于说明优化方向，不能当成 RecyclerView 专项收益或业务 SLA。[DeliQueue impact](https://developer.android.com/blog/posts/under-the-hood-android-17-lock-free-message-queue)
 
 灰度实验建议按下面的表格跑：
 
 | 场景 | 对照组 | 观察指标 | 通过标准 |
 | --- | --- | --- | --- |
-| 大列表快速 fling | target 36 vs target 37 | `MessageQueue` contention、`RV Prefetch` 命中、JankStats 慢帧率 | contention 下降后，慢帧不因 bind/layout 反弹 |
+| 大列表快速 fling | 同一 APK，DeliQueue compat on/off | `MessageQueue` contention、各类 `RV Prefetch`、JankStats 慢帧率 | monitor 等待下降；bind/layout 回归单独记录 |
 | DiffUtil 批量更新 | 小批量 payload vs 整表刷新 | `RV PartialInvalidate` / `RV FullInvalidate`、主线程消息数 | target 37 只改善队列等待，不掩盖整表刷新问题 |
 | 图片加载完成回调 | 单图回调 vs 批量 drain | 主线程 post 数、`onBind` 后图片设置耗时 | 快速滑动期间低优先级图片状态不挤占帧预算 |
 | 数据库分页 | 弱网/慢查询回包 | 页面状态、adapter 更新批次、FrameTimeline | 回包集中到达时没有主线程消息风暴 |
 | 混合 Compose/View item | ComposeView item vs 纯 View item | 自定义 trace、JankStats state、`RV OnLayout` | DeliQueue 收益和 composition 成本分开统计 |
 
-上线前保留两组开关：一组控制 target 37 构建的兼容开关验证，另一组控制业务侧批量投递策略。前者验证平台变更归因，后者控制应用逻辑风险。两组开关分开，问题定位会更快。
+每轮记录设备、Android build、APK commit、target SDK、兼容开关、刷新率、thermal 状态、数据规模、操作脚本、trace 配置和样本数。业务批量投递开关应与平台 compat 开关分开，避免一次实验改变两个变量。
+
+target 37 的完整回归还应覆盖：
+
+- Espresso、Robolectric、内部 idle 工具和性能 SDK；
+- 快速 fling 中的 Diff 提交、图片完成回调和分页回包；
+- 同步屏障、异步 Handler、IdleHandler 与 delayed message；
+- 进程冷启动、后台恢复、Activity 重建与测试超时；
+- 分配率与 GC，避免只观察 monitor contention。
 
 ## 与相关章节的关系
 
-1.13 负责解释 MessageQueue、同步屏障、DeliQueue 数据结构和兼容风险。本节只引用生效条件、反射影响和 Perfetto 入口，避免重复写机制。
+本节与相邻章节的分工如下：
 
-22.2 负责 RecyclerView 通用实践：ViewHolder 复用、DiffUtil、payload、预取数量、共享 `RecycledViewPool`。本节的判断都建立在这些基础优化已经完成之后；如果 22.2 的清单没过，DeliQueue 很难救回列表体验。
-
-13.14 和 19.11 负责工具口径。Perfetto 用来定位一帧晚在哪里，JankStats 用来给线上帧附业务状态。第三方 App 做不到系统 CUJ 那种完整标注时，就用自定义 trace section 和 state 把列表场景补齐。
+- [1.13 MessageQueue 与 DeliQueue](../../part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md)：Treiber stack、双堆、同步屏障、tombstone、Message 回收与 compat 选择。
+- [7.8 RecyclerView 性能](../../part2-performance/ch07-smoothness/08-recyclerview-performance.md)：RecyclerView 1.4.0 的 GapWorker、缓存、DiffUtil、payload 与 trace。
+- [22.2 RecyclerView 实战](02-recyclerview-practice.md)：业务页面中的 ViewHolder 复用、列表更新、图片和 ARR。
+- [13.14 Perfetto DataGrid 与 Jank CUJ](../../part3-tools/ch13-perfetto/14-perfetto-data-explorer-jank-cuj.md)：FrameTimeline、jank 类型和 CUJ 查询。
+- [19.11 JankStats](../../part3-tools/ch19-apm/11-jankstats.md)：应用侧帧状态与线上分桶。
 
 ## 收束
 
-Android 17 DeliQueue 给 RecyclerView 带来的变化，是减少 `GapWorker` 和业务回调进入主线程前的队列等待；预取算法本身仍沿用 AndroidX 路径。排查时按队列口、RecyclerView create/bind/layout、FrameTimeline 三段拆开，target 37 的收益和应用自身的列表成本才不会混在一起。
+Android 17 DeliQueue 移除了 legacy MessageQueue 核心消息路径的单一 monitor，降低多生产者入队与 Looper 取消息之间的竞争。RecyclerView 1.4.0 的 `GapWorker` 调度、task 排序、create/bind 预算和 measure/layout 边界没有随之改变。
 
+列表排查应保持四条证据线独立：MessageQueue monitor、Looper 前序消息与调度、RecyclerView create/bind/layout、FrameTimeline 与目标 layer present。只有 compat on/off 的同 APK 对照和时间对齐都支持同一结论，才能把改善归给 DeliQueue。
 
-<!-- AIW-源码调研-2026-05-26 -->
-### DeliQueue 性能数字一手来源验证
+## Android 17 与 AndroidX 源码索引
 
-**来源**：每日源码调研（research-gaps 回退自选）—— §7.8 DeliQueue 性能数字无 AOSP commit 一手验证
-
-**核心发现**：
-- 4%/7.7%/9.1% 性能数字来源于 **Google Android Developers Blog (2026-02-17)** 官方 benchmark
-- Google Android Developers Blog 是 DeliQueue 架构（Treiber Stack + min-heap）和性能数字的一手官方来源
-- **targetSdk >= 37** 是 DeliQueue 生效的必要条件（developer.android.com 官方确认）
-- 建议在章节中标注来源为 "Google Android Developers Blog"，而非 "AOSP 源码验证"
-
-**可信度评估**：
-- 来源可信度：高（Google 官方 benchmark 正式发布）
-- 可复核性：低（AOSP commit 中未找到对应 benchmark 代码）
-- 适用性：作为方向性参考，而非业务 OKR 直接引用
-
-**建议引用格式**：
-```
-Android 17 targetSdk 37+ 环境下，Google 官方测试显示 MessageQueue 
-锁竞争消除后应用 missed frames 下降约 4%，System UI 和 Launcher 
-交互 missed frames 下降约 7.7%，首帧 P95 耗时下降约 9.1%。
-
-（数字来源：Google Android Developers Blog, 2026-02-17）
-```
-来源：DeepResearch 调研 2026-05-26
-<!-- end AIW-源码调研-2026-05-26 -->
+- [`CombinedDeliMessageQueue/MessageQueue.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java)：compat change、Deli/legacy 分派、`mMessages` 兼容字段与 `next()`。
+- [`MessageStack.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/MessageStack.java)：生产者 CAS push、Looper sweep 与并发遍历。
+- [`MessageHeap.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/MessageHeap.java)：Looper 独占的最小堆与消息排序。
+- [`Message.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Message.java)：插入序号、flags 与 DeliQueue 下的回收边界。
+- [RecyclerView 1.4.0 sources jar](https://dl.google.com/dl/android/maven2/androidx/recyclerview/recyclerview/1.4.0/recyclerview-1.4.0-sources.jar)：`GapWorker.java`、`RecyclerView.java` 与 `LinearLayoutManager.java`。
+- [`kernel/sched/core.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c) 与 [`kernel/sched/fair.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/fair.c)：Runnable、抢占与 CFS/EEVDF 调度观察边界。
