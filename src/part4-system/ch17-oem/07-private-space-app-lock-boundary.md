@@ -65,164 +65,238 @@ gap_source: "官方文档/每日信息/素材驱动"
 
 <!-- outline-end -->
 
-## 17.7.1 系统模型：Private Space 是 profile，不是单 App 开关
+## 17.7.1 先分清四类“锁”
 
-Android 15 引入的 Private Space 建在 Android 多用户模型上，profile 类型为 `android.os.usertype.profile.PRIVATE`。用户在 Private Space 里安装应用时，系统按新的 profile 安装一份独立实例，不会把主空间的应用数据复制过去；账号、下载内容和用户生成内容也按 profile 隔离。[已验证: 官方文档, source.android.com/docs/security/features/private-space]
+用户说“这个 App 被锁了”，背后的系统机制可能完全不同。排查前应先确认安全边界：
 
-锁定状态是这套机制的分界线。Private Space 锁定后，private profile 会进入 stopped 状态；解锁后，private profile 才会 start。Android Developers 对 App 侧影响的描述更直接：profile stopped 时，里面的应用不能执行前台或后台活动，也不能展示通知。[已验证: 官方文档, developer.android.com/about/versions/15/features]
-
-这带来两个工程判断：
-
-- 主空间和 Private Space 里的同包名应用是两个用户维度下的安装实例，启动耗时、登录态、缓存命中和崩溃记录不能只按 `packageName` 聚合。
-- 锁定状态下拿不到 Private Space 应用的可见入口，不能把“应用消失”“通知丢失”“媒体结果为空”直接归因到卸载、权限回收或服务端空数据。
-
-Private Space 可以与 work profile、clone profile 同时存在，但设备上只能有一个 private profile，并且只属于 main user。普通业务应用通常拿不到枚举 hidden profile 的能力；要处理 Private Space 的，是 Launcher、Settings、文件选择器、照片选择器、分享面板和少数系统级入口。[已验证: 官方文档, source.android.com/docs/security/features/private-space]
-
-## 17.7.2 Launcher 与系统入口的可见性边界
-
-Launcher 是最容易把 Private Space 写错的入口。AOSP 文档要求 Launcher 支持 lock、unlock、hidden 三类状态：锁定时提供解锁入口；hidden 时不展示入口；Settings 在锁定状态下不能暴露 Private Space 的存在。[已验证: 官方文档, source.android.com/docs/security/features/private-space]
-
-Android 15 的 Launcher 支持依赖两层条件：声明 `android.permission.ACCESS_HIDDEN_PROFILES`，并持有 `RoleManager.ROLE_HOME`。`LauncherApps#getProfiles()`、`getApplicationInfo()`、`resolveActivity()`、`getActivityList()` 等 API 面向 hidden private profile 时也遵守这个边界。第三方普通应用即使知道包名，也不能把 private profile 当成普通 user handle 查询。[已验证: 官方文档, developer.android.com/reference/android/content/pm/LauncherApps]
-
-Launcher 识别 private profile 的公开入口是 `LauncherApps#getLauncherUserInfo()` 和 `LauncherUserInfo#getUserType()`。`LauncherUserInfo` 在 API 35 加入，`LauncherUserInfo.PRIVATE_SPACE_ENTRYPOINT_HIDDEN` 和 `getUserConfig()` 在 API 36 加入，用于表达锁定时入口是否应隐藏。锁定状态可通过 `UserManager.isQuietModeEnabled()` 判断，锁定和解锁广播会携带 `EXTRA_USER` 指向 private profile user。[已验证: 官方文档, developer.android.com/reference/android/content/pm/LauncherUserInfo]
-
-与启动相关的失败要按入口拆开看：
-
-- Launcher 查询失败：没有 HOME 角色、没有 `ACCESS_HIDDEN_PROFILES`、ROM 没接入 Private Space UI，都会让 private profile 不出现在 Launcher 查询结果里。
-- 用户锁定 Private Space：profile stopped 后，`LauncherApps` 的部分操作会返回空结果，`pinShortcuts()` 这类操作还可能因 user locked/not running 抛出 `IllegalStateException`。
-- 隐藏入口：API 36 起需要读取 `LauncherUserInfo.getUserConfig()` 中的 `PRIVATE_SPACE_ENTRYPOINT_HIDDEN`，不能只用 quiet mode 判断 UI 是否展示。
-
-对启动性能章节的交叉引用只保留事实边界：应用冷启动、进程生命周期和首帧归因详见 1.3、8.2 和 21.1。本节只处理 profile 隔离导致的入口缺失、启动失败和指标归因问题。
-
-## 17.7.3 应用锁、Private Space 与 OEM 方案不要混写
-
-“应用锁”这个词在不同 ROM 上指向不同机制。写兼容性代码时，至少要拆成三类：AOSP Private Space、OEM 应用锁、待官方确认的 Android 17 原生应用锁。
-
-| 类型 | 技术边界 | App 侧常见现象 | 可信验证方式 |
+| 机制 | 保护对象 | 锁定后的系统行为 | 普通 App 能否识别 |
 | --- | --- | --- | --- |
-| AOSP Private Space | 独立 private profile，锁定时 user stopped，应用实例与数据按 profile 隔离 | Launcher 不可见、通知隐藏、分享/照片/文件入口跨空间受限 | AOSP/Android Developers 文档、`LauncherApps`/`LauncherUserInfo` API 行为 |
-| OEM 应用锁 | 厂商在启动、最近任务、通知、Settings 或安全中心上加拦截策略，未必创建独立 profile | 启动前弹认证页、通知内容隐藏、后台进程未必停止 | 机型实测、厂商文档、失败码和行为表 |
-| Android 17 原生应用锁 | 目前只有每日信息和社区文章线索，本轮未找到官方 Android Developers 或 AOSP 文档 | 不能写成已发布 API 或稳定行为 | [待验证: 等待 Android 17 官方 SDK、AOSP tag 或行为变更文档] |
+| AOSP Private Space | 一个独立 private profile 及其中的数据 | profile 停止，应用入口、最近任务和通知被隐藏 | 不能枚举主空间之外的 hidden profile |
+| App 自有鉴权 | App 内的敏感页面或操作 | 由 App 决定页面遮挡、会话超时和重新认证 | 可以，因为策略由 App 自己实现 |
+| OEM 手持设备应用锁 | 厂商选定的 App 或入口 | 可能在启动、最近任务、通知或设置页前插入认证 | 没有跨厂商公开 API |
+| Android Automotive App Lock | 车载次用户中的敏感 App | 由平台签名的特权 App 管理锁定清单和认证入口 | 仅适用于 AAOS 集成，不是手持设备 SDK |
 
-[来源: intake/daily-info/2026-05-25.md] 当日素材出现“Android 17 原生应用锁”线索，但当前公开官方资料只能确认 Android 15 Private Space 与 Android 16 QPR2 文件导入增强。文章、社媒或 beta 传闻只能作为待验证清单，不能进入 API 能力表。
+Android 17 / API 37 的手持设备 AOSP 没有通用的逐应用锁公开 API。`android-17.0.0_r1` 的 `PackageManager`、`LauncherApps`、通知和设备管理公开接口中也没有 `AppLockManager` 一类能力。Android 17 的 Advanced Protection Mode 面向整机安全策略，同样不负责给某个 App 增加启动口令。
 
-这一区分会影响排障结论。Private Space 锁定会停止 private profile；OEM 应用锁更常见的是在 Activity 启动或任务切换前做认证拦截，应用进程和后台任务是否停止取决于厂商实现。线上指标里如果只记 `is_locked=true` 这种粗字段，会把三类机制混成一个桶，后续看不出是 profile stopped、认证页取消、通知隐藏，还是媒体授权失效。
+Android Automotive 的 App Lock 容易造成名称误读。它是 Android 14 起可选的非捆绑、平台签名特权应用，服务于车载次用户；它和 private profile 的锁定状态相互独立。手持设备应用不能据此声明 Android 17 提供了通用 App Lock。
 
-## 17.7.4 启动、任务栈和生命周期的观察点
+因此，业务代码不能把 `Private Space locked`、`OEM authentication canceled` 和 `App session expired` 归为同一种状态。三者的生命周期、权限与恢复路径都不同。
 
-Private Space 对启动的影响集中在“入口存在但 profile 不可运行”和“入口被隐藏”两类。前者像一次系统级 gating，后者像查询结果缺失。二者在日志里要分开记录。
+## 17.7.2 Private Space 的系统模型
 
-建议用下表组织启动排查字段：
+Private Space 从 Android 15 / API 35 引入，建立在 Android 多用户框架上，profile 类型是 `android.os.usertype.profile.PRIVATE`。同一个包安装到主用户和 private profile 后，会形成两份用户域实例：
 
-| 场景 | 观察点 | 记录字段 |
+- Linux UID 不同；Android UID 包含 userId 与 appId 两部分。
+- `/data/user/<userId>/<package>` 等应用数据目录不同。
+- 账号、数据库、偏好、缓存和下载内容不自动复制。
+- 每个用户分别记录安装状态，因此可以只在一边安装；同包名的代码版本由设备级 PackageManager 管理，更新后各已安装用户实例通常共用新版本。
+
+所以，“主空间已经登录”不代表 Private Space 中也有登录态；服务端按账号与包名统计时，也可能把两个运行环境合在同一个指标桶里。
+
+Private Space 的主要状态如下：
+
+| 状态 | profile 生命周期 | Launcher | 通知与最近任务 | 跨空间选择 |
+| --- | --- | --- | --- | --- |
+| 已解锁 | user started | 展示容器和应用 | 可以显示 | 系统 Sharesheet、Photo Picker 可按策略提供内容 |
+| 已锁定、入口可见 | user stopped | 只展示 Private Space 解锁入口 | 私密应用及通知隐藏 | 私密应用和内容不可用 |
+| 已锁定、入口隐藏 | user stopped | 连 Private Space 入口也隐藏 | 私密应用及通知隐藏 | 私密应用和内容不可用 |
+
+锁定操作会停止 private profile。运行在该 profile 中的 Activity、Service、Job 和进程随用户停止而退出运行状态；这比在 Activity 前盖一个认证页的影响范围大得多。解锁会启动 profile，但 App 仍要按一次正常的进程创建和状态恢复来处理，不能依赖锁定前的内存对象。
+
+设备只能创建一个 Private Space，它属于主用户。它可以和工作资料、clone profile 共存。Settings 在锁定时也要遵守隐藏要求，不能通过应用列表侧漏私密空间中安装了什么。
+
+## 17.7.3 普通 App 所处的边界
+
+普通业务 App 只应处理“自己当前运行在哪个 Android 用户中”。它无法通过公开、可移植的方式枚举主用户的 Private Space，也不应把品牌、userId 范围或进程 UID 当作 Private Space 探针。
+
+一个包在 Private Space 内运行时，它看到的是自己的 Context、文件目录、权限和账号状态。开发者需要保证这些常规路径成立：
+
+- 进程冷启动后可以从持久状态恢复页面。
+- deep link、通知、分享和文件选择都经过同一套路由校验。
+- 账号缺失、数据库为空或文件不可读时给出可恢复的 UI。
+- 用户锁定空间造成任务中断时，重启后可以重试或明确终止。
+
+`UserManager.isQuietModeEnabled(UserHandle)` 是公开方法，但调用者先要拥有目标 `UserHandle`。普通 App 拿不到 hidden private profile 的句柄，因此这个方法不是通用 Private Space 检测接口。`requestQuietModeEnabled()` 的调用者还必须是前台默认 Launcher，或持有 `MANAGE_USERS` / `MODIFY_QUIET_MODE`；业务 App 不应调用它控制 Private Space。
+
+这种限制也是隐私设计的一部分。若任意 App 都能判断设备是否创建了 Private Space、其中是否正在运行或安装了哪些包，Private Space 的隐藏语义就会被削弱。
+
+## 17.7.4 Launcher 与系统组件如何接入
+
+默认 Launcher 的职责不同。Android 17 源码给 hidden profile 访问设置了两条权限路径：
+
+1. 声明 normal 级别的 `android.permission.ACCESS_HIDDEN_PROFILES`，同时持有 `RoleManager.ROLE_HOME`。
+2. 平台系统应用持有 signature/privileged 级别的 `ACCESS_HIDDEN_PROFILES_FULL`，无需 HOME 角色。
+
+只声明 normal 权限并不能让普通 App 枚举 Private Space。`LauncherApps#getProfiles()` 的 Android 17 源码注释明确写出了 HOME 角色条件；当调用进程本身位于 managed/private profile 时，该方法也只返回当前 profile。
+
+Launcher 可以用下列 API 形成状态模型：
+
+- `LauncherApps.getProfiles()`：取得调用者有权访问的 profile。
+- `LauncherApps.getLauncherUserInfo(user)`：取得 `LauncherUserInfo`。
+- `LauncherUserInfo.getUserType()`：与 `UserManager.USER_TYPE_PROFILE_PRIVATE` 比较。
+- `UserManager.isQuietModeEnabled(user)`：判断 profile 是否处于 quiet mode。
+- `LauncherUserInfo.getUserConfig()`：读取额外 Launcher 配置。
+- `LauncherUserInfo.PRIVATE_SPACE_ENTRYPOINT_HIDDEN`：API 36 起表示锁定时是否隐藏入口。
+
+下面的示例只适用于默认 Launcher 或具备相应特权的系统组件，目的在于把 profile 生命周期与入口展示拆成两个布尔量：
+
+```kotlin
+data class PrivateProfileUiState(
+    val user: UserHandle,
+    val locked: Boolean,
+    val hideEntrypointWhenLocked: Boolean,
+)
+
+fun readPrivateProfileStates(
+    launcherApps: LauncherApps,
+    userManager: UserManager,
+): List<PrivateProfileUiState> {
+    return launcherApps.profiles.mapNotNull { user ->
+        val info = launcherApps.getLauncherUserInfo(user) ?: return@mapNotNull null
+        if (info.userType != UserManager.USER_TYPE_PROFILE_PRIVATE) {
+            return@mapNotNull null
+        }
+
+        val hidden = if (Build.VERSION.SDK_INT >= 36) {
+            info.userConfig.getBoolean(
+                LauncherUserInfo.PRIVATE_SPACE_ENTRYPOINT_HIDDEN,
+                false,
+            )
+        } else {
+            false
+        }
+
+        PrivateProfileUiState(
+            user = user,
+            locked = userManager.isQuietModeEnabled(user),
+            hideEntrypointWhenLocked = hidden,
+        )
+    }
+}
+```
+
+`locked` 决定 private profile 当前能否运行，`hideEntrypointWhenLocked` 决定锁定时 Launcher 是否仍展示解锁入口。将两者压成一个 `isHidden` 会丢失“已锁定但入口可见”的状态。
+
+Launcher 还应监听 `Intent.ACTION_PROFILE_AVAILABLE` 与 `Intent.ACTION_PROFILE_UNAVAILABLE`，并从 `Intent.EXTRA_USER` 读取发生变化的 profile。广播表示 quiet mode 变化，收到广播后仍应重新查询当前状态，避免依赖过期缓存。`ACTION_MANAGED_PROFILE_AVAILABLE` 一类名称限定 managed profile，不适合作为 Private Space 的唯一监听入口。
+
+## 17.7.5 启动、最近任务与通知
+
+Private Space 锁定后，系统隐藏其中应用的 Launcher 图标、最近任务和通知。这里有三项容易写错：
+
+- 通知不可见不等于 `PendingIntent` 被系统删除。官方约束描述的是锁定状态下的可见性与 profile 停止；不能在没有源码或复现证据时把点击失败归因成 PendingIntent 失效。
+- 最近任务消失不等于业务 Activity 主动 `finish()`。Recents 是系统面向用户展示的任务视图，private profile 停止后由系统隐藏相关任务。
+- 解锁不保证恢复原进程。应用应按进程死亡后的任务恢复规则重建依赖，并校验目标页面仍可访问。
+
+入口路由宜集中处理。Launcher 启动、通知、App Link、分享目标和恢复的 task 都可能直接落到敏感页面；只在首页做一次认证检查会留下绕过路径。
+
+如果产品要求“每次进入支付页都认证”，这属于 App 自有鉴权。AndroidX `BiometricPrompt` 可以组合强生物识别与设备凭据，认证成功后再发放短时会话；它不会改变 user/profile 状态，也不会替代 Private Space 或 OEM 应用锁。
+
+下面的代码用于构建 App 自有认证提示，调用点应放在统一的敏感路由守卫中：
+
+```kotlin
+val authenticators =
+    BiometricManager.Authenticators.BIOMETRIC_STRONG or
+        BiometricManager.Authenticators.DEVICE_CREDENTIAL
+
+val promptInfo = BiometricPrompt.PromptInfo.Builder()
+    .setTitle("验证身份")
+    .setSubtitle("继续访问敏感内容")
+    .setAllowedAuthenticators(authenticators)
+    .build()
+```
+
+认证回调只代表这一次系统认证完成。App 仍需定义会话过期时间、进程死亡后的默认状态、后台停留阈值，以及认证取消时返回哪个安全页面。使用 `DEVICE_CREDENTIAL` 时不要再设置 negative button，二者在 `PromptInfo` 中互斥。
+
+`FLAG_SECURE` 也不是应用锁。它可限制窗口截图和在非安全显示器上的呈现，适合保护已打开的敏感内容；它不会认证用户，也不会阻止其他入口启动 Activity。
+
+## 17.7.6 Sharesheet、Photo Picker 与 URI 授权
+
+Private Space 解锁时，系统可以通过 Sharesheet 和 Photo Picker 提供受控的跨空间交互。锁定后，private profile 停止，其中的应用和内容会从这些系统入口中消失。
+
+分析 URI 问题时，应把两个条件分开：
+
+1. 调用方是否持有该 URI 的临时或持久授权。
+2. 提供 URI 的用户与 `ContentProvider` 当前是否可用。
+
+用户锁定 Private Space 后，来源 provider 所在用户可能停止运行。此时读取可抛出 `FileNotFoundException`、`SecurityException` 或 provider 相关异常，但这不能证明 URI grant 已被撤销。空间再次解锁后，如果授权仍在、来源对象仍存在，读取可能恢复。
+
+对于上传、转码、OCR 或索引等长任务，稳妥的边界是：
+
+- 在用户选择完成后立即检查 MIME、声明长度与可读性。
+- 任务需要脱离来源长期执行时，将内容复制到当前 App 用户域内的受控存储。
+- 记录复制是否完成，不把 `content://` 字符串当作文件系统路径。
+- 重新打开 URI 时处理来源被删除、provider 不可用和授权变化。
+- 日志不写原始 URI、文件名、媒体标题或私密空间包列表。
+
+Android 16 QPR2 增加了从主空间向 Private Space 移动或复制文件的可选能力。用户从 Private Space 的 Launcher 容器选择 Add files，通过系统文件选择器选取内容，再由 private profile 内的系统组件把文件写入 `Downloads`。AOSP 发布说明标注该功能由 OEM 选择是否集成，因此 App 不能假定所有 API 36 QPR2 或后续设备都有同一入口。
+
+媒体解码、转码与缓存的性能处理见 24.13；本节只界定 user/profile、provider 可用性与 URI grant 的关系。
+
+## 17.7.7 OEM App Lock 的兼容策略
+
+OEM 手持设备应用锁可能位于 Activity 启动、任务切换、通知展示或厂商安全中心中，也可能覆盖其中几项。它未必创建独立 profile，锁定时是否终止进程、暂停后台任务或隐藏通知都由固件实现决定。
+
+Android 17 没有供普通 App 查询“OEM 是否锁了我”的统一 API，也没有统一认证结果码。厂商名只能帮助测试分组，不能单独决定运行时分支。同一品牌不同地区固件、桌面版本或安全组件版本可能采用不同策略。
+
+兼容代码应围绕可观察结果设计：
+
+| 用户路径 | App 可观察信号 | 应对方式 |
 | --- | --- | --- |
-| Launcher 点击 Private Space 应用 | profile 是否 quiet、入口是否 hidden、`LauncherApps.resolveActivity()` 是否返回空 | `entry_source=launcher`、`profile_type=private`、`quiet_mode`、`entrypoint_hidden`、`resolve_result` |
-| 通知点击 | 通知是否在锁定状态被隐藏、点击时 private profile 是否 running | `entry_source=notification`、`notification_redacted`、`profile_running`、`pending_intent_result` |
-| 分享面板进入 | 目标是否来自 private profile、用户是否在选择期间锁定空间 | `entry_source=sharesheet`、`target_user_type`、`selection_cancel_reason` |
-| 文件/照片选择 | URI 来自主空间还是 private profile、授权是否跨 profile、读取时 profile 是否仍解锁 | `entry_source=picker`、`uri_authority`、`grant_flags`、`read_exception` |
-| 最近任务恢复 | locked 后任务是否从 Recents 隐藏、恢复时是否重新认证或重新启动 | `entry_source=recents`、`task_visible`、`cold_or_warm_start` |
+| 冷启动后没有到达目标页 | 生命周期、路由参数、进程创建时间 | 保存可重放的非敏感路由，避免把中断记成崩溃 |
+| 从后台回到前台 | `ProcessLifecycleOwner`、页面可见性、会话时间 | 重新校验 App 自有敏感会话 |
+| 通知进入失败 | 通知发出时间、目标路由是否消费 | 统计路由结果，不猜测 OEM 锁状态 |
+| Picker 返回后读取失败 | URI 授权标志、异常类型、复制阶段 | 给出重选入口，区分选择取消与读取失败 |
+| task 恢复到过期页面 | `savedInstanceState`、业务对象版本 | 回到安全的上一级页面并允许重试 |
 
-App 自身无法稳定、合规地探测所有 profile 状态。业务侧更可执行的办法是记录用户可观察入口和失败结果：从哪里进入、系统返回什么异常、是否能读 URI、是否发生认证取消、页面恢复用了多久。需要 profile 级信号时，优先放到 Launcher、系统应用、企业管理组件或测试工具里采集。
+系统认证页属于 App 进程外的 UI。测试脚本若只等待某个 Activity 出现，很容易把用户尚未认证判断成启动超时。自动化用例应把“出现厂商认证页”“用户取消”“认证成功后继续启动”分成不同结果。
 
-启动耗时指标也要改聚合键。至少把 `user_serial_number` 或匿名化 user/profile 维度纳入端侧诊断包，否则主空间的热启动和 Private Space 的冷启动会混在一起；如果合规要求不允许采集 user 维度，可以用匿名分桶记录“main/profile/unknown”，并在服务端只做聚合分析。
+## 17.7.8 观测与隐私
 
-## 17.7.5 通知、媒体访问和 URI 授权
+Private Space 的存在本身带有隐私含义。普通 App 的线上日志不应尝试推导或上传 `user_serial_number`、userId、私密空间应用列表。对 userId 做哈希仍可能产生稳定跨会话标识，不能自动解决隐私风险。
 
-官方文档给出的媒体边界很明确：Private Space 锁定时，里面的应用不会出现在 Settings、Sharesheet、Photo Picker 和 DocsUI；解锁后，这些入口才会让相关应用和内容可见。跨空间访问依赖系统 Sharesheet 和 Photo Picker，且只发生在 Private Space 解锁时。[已验证: 官方文档, source.android.com/docs/security/features/private-space]
+业务侧可以记录的字段包括：
 
-Android 16 QPR2 增加了从主空间向 Private Space 移动或复制文件的能力。流程由 Private Space Launcher 容器里的 Add files 入口发起，用户通过系统文件选择器选文件，再由新的系统组件在 private profile 内以前台服务完成传输，文件落到 Private Space 的 `Downloads` 目录。AOSP release notes 同时标明 OEM 采用该能力是可选项。[已验证: 官方文档, source.android.com/docs/whatsnew/android-16-release]
+- `entry_source`：`launcher`、`notification`、`app_link`、`share`、`picker`、`task_restore`。
+- `process_start_kind`：冷启动、已有进程、未知。
+- `route_result`：到达、认证取消、参数无效、来源不可读、状态已过期。
+- `content_read_result`：成功、授权错误、来源不存在、provider 不可用、用户取消。
+- `recovery_duration_bucket`：分桶后的恢复耗时。
 
-对 App 来说，这些规则会把很多“偶发 I/O 失败”伪装成业务问题：
+这些字段描述 App 自己看到的结果，不声称识别了 Private Space 或 OEM 应用锁。默认 Launcher、Settings、系统测试工具等受控组件可以在权限允许时记录 profile type、quiet mode 和入口隐藏配置，但也应优先保留在端侧诊断中，并经过隐私审查后再做聚合。
 
-- Photo Picker 返回的 URI 只表示用户当时授予了访问，不能推导后续 profile 状态不变。长任务读取前要处理 `SecurityException`、`FileNotFoundException` 和用户取消。
-- DocumentsUI 或文件导入从 Android 16 QPR2 起多了跨 profile 移动/复制路径，缓存目录、文件名和原始 URI 不能假设同属一个用户空间。
-- 通知点击失败不一定是 `PendingIntent` 丢失，也可能是锁定状态下通知被隐藏或目标 profile stopped。
-- 分享入口目标为空不一定是目标 App 未安装，还可能是 private profile locked 后被系统从 Sharesheet 中移除。
+测试范围至少覆盖：
 
-媒体处理和缓存策略详见 24.13，本节只给兼容性约束：跨 profile URI 要按一次性外部输入处理，落盘前校验 MIME、大小和可读性；长耗时处理要复制到本 App 可控存储后再进入转码、上传或索引队列；失败上报不要包含原始 URI、路径或文件名。
+- 主空间与 Private Space 分别全新安装，验证数据不会互相继承。
+- Private Space 解锁、锁定且入口可见、锁定且入口隐藏。
+- App 位于前台、后台、最近任务和进程已死亡四种起点。
+- Launcher、通知、App Link、分享、Photo Picker、DocumentsUI 六类入口。
+- 选择 URI 后立刻锁定空间，再执行同步读取与延迟读取。
+- OEM 应用锁开启与关闭，并分别执行认证成功、取消和超时。
 
-## 17.7.6 OEM 差异的探测方式
+测试报告要写明设备、Build fingerprint、API level、QPR 或厂商版本、Launcher 版本和复现入口。只写“Android 17 应用锁异常”无法判断问题来自 AOSP Private Space、AAOS App Lock、OEM 策略，还是 App 自有鉴权。
 
-OEM 应用锁最容易诱导业务写厂商硬编码。更稳的做法是按能力和结果建行为表：能否从 Launcher 正常启动、启动前是否出现认证页、通知内容是否隐藏、最近任务是否隐藏、后台任务是否被暂停、文件选择/照片选择是否返回可读 URI。
+## 17.7.9 Android 17 结论
 
-测试表建议按这几列记录：
+以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点，可确认以下边界：
 
-| 维度 | 示例取值 | 用途 |
-| --- | --- | --- |
-| 系统能力 | `private_space`、`oem_app_lock`、`unknown` | 区分 profile 隔离和启动拦截 |
-| 系统版本 | API level、QPR/厂商版本号 | 复现版本差异 |
-| 入口类型 | Launcher、通知、分享、Photo Picker、DocumentsUI | 定位失败发生在哪个系统入口 |
-| 认证结果 | 成功、取消、超时、失败码不可见 | 解释启动中断和页面恢复失败 |
-| profile 可见信号 | quiet mode、entrypoint hidden、running unknown | 只在有权限的系统组件中采集 |
-| 业务结果 | 启动成功、空数据、授权失败、读取异常、恢复超时 | 服务端聚合的稳定字段 |
-
-不要把厂商名写成逻辑分支的唯一条件。同一品牌在不同地区版本、桌面版本、安全中心版本上行为可能不同。品牌维度适合做统计分组，不适合直接决定代码路径。决定处理逻辑的是系统返回值、异常类型、入口来源和用户是否完成认证。
-
-## 17.7.7 线上指标与排查入口
-
-Private Space 和应用锁相关问题不应该只进 crash 或 ANR 指标。更有价值的是单独建一组兼容性指标，定位“系统隐私入口改变导致业务流程不可达”的比例。
-
-建议保留这些指标：
-
-- `private_space_entry_failure_rate`: Launcher、通知、分享、Picker 等入口进入失败占比，按入口拆分。
-- `profile_locked_read_failure_rate`: URI 或文件读取阶段出现权限/文件不存在异常的比例，按 MIME 和入口拆分，不记录原始 URI。
-- `notification_resume_loss_rate`: 通知点击后没有进入目标页面或需要重新认证的比例。
-- `picker_empty_or_cancel_rate`: Photo Picker / DocumentsUI 结果为空、取消、读取失败的比例。
-- `locked_state_recovery_duration_ms`: 用户完成系统认证后到业务页面可交互的耗时，按 P50/P90/P99 看分布。
-
-日志字段要能支持复盘，但不能泄露隐私状态。推荐字段为系统版本、厂商版本、入口类型、匿名 profile 分桶、错误类型、异常类名、耗时分位、是否发生用户取消。不要上传应用列表、私密空间中安装的包名、文件路径、媒体名称、账号信息或原始通知内容。性能指标采集与上报规范详见 26.3。
-
-## 17.7.8 Android 17 应用锁待验证清单
-
-本轮只找到每日信息中的 Android 17 应用锁线索，没有找到可引用的 Android Developers 行为变更、SDK API reference 或 AOSP tag 文档。因此本节不把 Android 17 应用锁写成已确认能力。
-
-后续资料出现后，需要按下面清单补证据：
-
-- API 面：是否存在新的 `PackageManager`、`LauncherApps`、`NotificationManager`、`ActivityTaskManager` 或 `DevicePolicyManager` API。
-- 权限面：是否新增普通权限、signature 权限、role 约束，或沿用 `ACCESS_HIDDEN_PROFILES` / HOME role 模型。
-- 启动面：被锁应用从 Launcher、通知、分享、deep link、最近任务进入时，系统返回认证页还是直接拦截。
-- 通知面：通知是否隐藏整条、只隐藏内容，还是按 channel/category 处理。
-- 生命周期面：被锁应用是否 stopped、进程是否保留、后台服务和 Job 是否继续运行。
-- 可观测面：是否有公开错误码、statsd atom、logcat tag 或 `ApplicationExitInfo` reason 可用于线上归因。
-
-只有这些点能被官方文档、AOSP tag 或可复现实机测试支撑时，才能把 Android 17 应用锁从 `[待验证]` 升级为正式能力表。
+- 手持设备 AOSP 没有通用逐应用锁的公开 SDK 或平台服务。
+- Private Space 仍是独立 private profile；锁定时 profile 停止。
+- hidden profile 的 Launcher 访问需要 HOME 角色与 `ACCESS_HIDDEN_PROFILES`，或系统特权权限 `ACCESS_HIDDEN_PROFILES_FULL`。
+- 普通 App 不能可靠识别 Private Space，应按当前用户中的常规生命周期和失败结果编程。
+- Android Automotive App Lock 是车载特权组件，不应外推到手持设备。
+- 需要保护 App 内敏感页面时，应实现统一路由鉴权与安全会话，并把它和系统 profile 锁分开测试。
 
 ## References
 
-- [已验证: 官方文档, Private space | Android Open Source Project](https://source.android.com/docs/security/features/private-space)
-- [已验证: 官方文档, Android 16 / QPR1 / QPR2 release notes](https://source.android.com/docs/whatsnew/android-16-release)
-- [已验证: 官方文档, Android 15 features and APIs overview](https://developer.android.com/about/versions/15/features)
-- [已验证: 官方文档, Android 15 behavior changes for all apps](https://developer.android.com/about/versions/15/behavior-changes-all)
-- [已验证: 官方文档, LauncherApps API reference](https://developer.android.com/reference/android/content/pm/LauncherApps)
-- [已验证: 官方文档, LauncherUserInfo API reference](https://developer.android.com/reference/android/content/pm/LauncherUserInfo)
-- [来源: intake/daily-info/2026-05-25.md]
-
-- [Android 17 原生应用锁：系统级通知隐藏与 OEM 对比，黄林晴，掘金，2026-02-10](https://juejin.cn/post/7604694326518104115) — Android 17 Canary 2601 代码中曝光 `app_locked_new_notification` 等字段，揭示原生应用锁的通知分类屏蔽策略；与小米 HyperOS 的对比参考有助于理解 OEM 差异化落点。
-
-<!-- AIW-源码调研-2026-06-06 -->
-
-### 17.7.8.1 AOSP源码验证结果（2026-06-06）
-
-基于AOSP main分支（等同于Android 17）源码级验证，确认以下事实：
-
-**✅ 已验证结论：**
-1. **不存在原生应用锁功能**：AOSP main分支中未发现任何AppLock、AppLockManager相关API或实现
-2. **Android 17官方安全特性为AAPM**：`AdvancedProtectionManager.java`提供设备级安全模式，非应用级锁定
-3. **功能差异明确**：AAPM包含网络限制、USB限制、安装源限制等，不提供应用锁定能力
-4. **官方文档无应用锁条目**：Android 17 behavior changes和features页面均未提及应用锁功能
-
-**🔍 源码搜索范围：**
-- `frameworks/base/core/java/android/security/advancedprotection/AdvancedProtectionManager.java`
-- `frameworks/base/services/core/java/com/android/server/am/`（无AppLock相关类）
-- `frameworks/base/core/java/android/app/`（仅有RemoteLockscreenValidationSession，为锁屏验证非应用锁）
-- `frameworks/base/core/java/android/content/pm/`（无应用锁API）
-- `frameworks/base/core/java/android/app/admin/`（无应用锁权限）
-- `frameworks/base/core/java/android/app/Notification.java`（无应用锁定通知字段）
-
-**⚠️ 与社区文章的差异：**
-- 网络文章声称"Android 17 Canary 2601 暴露 app_locked_new_notification"与官方发布版本不符
-- 该内容可能属于未发布的实验性代码或社区误传
-- 官方Android 17最终版本不包含此功能
-
-**📝 结论：**
-Android 17应用锁仍处于"待官方确认"状态，本轮AOSP源码验证未发现相关实现。后续需要等待官方SDK、AOSP tag或Android Developers文档更新才能确认具体API和能力边界。
+- [Private space | Android Open Source Project](https://source.android.com/docs/security/features/private-space)
+- [Android 17 feature summary](https://developer.android.com/about/versions/17/summary)
+- [Android 17 release notes | AOSP](https://source.android.com/docs/whatsnew/android-17-release)
+- [Android 16 / QPR1 / QPR2 release notes](https://source.android.com/docs/whatsnew/android-16-release)
+- [`LauncherApps.java` | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/LauncherApps.java)
+- [`LauncherUserInfo.java` | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/LauncherUserInfo.java)
+- [`UserManager.java` | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/UserManager.java)
+- [`ACCESS_HIDDEN_PROFILES` permission declarations | `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/res/AndroidManifest.xml)
+- [LauncherApps API reference](https://developer.android.com/reference/android/content/pm/LauncherApps)
+- [LauncherUserInfo API reference](https://developer.android.com/reference/android/content/pm/LauncherUserInfo)
+- [Show a biometric authentication dialog](https://developer.android.com/identity/sign-in/biometric-auth)
+- [App Lock | Android Automotive OS](https://source.android.com/docs/automotive/unbundled_apps/app-lock)
