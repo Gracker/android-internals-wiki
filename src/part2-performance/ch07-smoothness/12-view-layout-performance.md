@@ -77,699 +77,449 @@ last_deepseek_cn_review_at: 2026-06-06
 > 缺少真实 trace 或截图时，用 `[图：...]` 标注说明，不要编造现象。
 <!-- outline-end -->
 
-我们在前面的章节中分析了卡顿的定义、原因和分析方法论。这一节聚焦到 Android View 体系本身。每个 Activity 的界面都对应一棵 View 树，首帧创建和发生布局请求的那几帧，inflate、measure、layout 往往就是主线程最重的工作；如果这里只要多跑几轮，后面的 draw 和 GPU 渲染再快也补不回来。
+本章讨论 View UI 在创建、测量和摆放阶段的主线程成本。分析基线固定为 Android 17 / API 37 / `android-17.0.0_r1`；只有在继续追踪调度、CPU 频率、内存回收或 fence 等内核现象时，才采用 `android17-6.18-2026-06_r6`。View 的布局算法位于 framework，单凭内核 trace 无法解释某个容器为何反复测量。
 
-这一节从三个维度分析 View 体系的开销：布局层级深度对帧耗时的影响、`LayoutInflater.inflate()` 的完整流程与耗时来源、`measure/layout` 的递归遍历机制，以及 `requestLayout()` 和 `invalidate()` 的边界。每个部分都配有在 Perfetto 中的定位方法。
+页面层级值得审查，却不应成为唯一指标。同样数量的节点，简单 `FrameLayout` 与包含权重、文本换行、Drawable 解析、自定义测量逻辑的容器，成本可以相差很大。一次可靠的优化要回答三件事：
 
-## 为什么要关注 View 体系的性能
+- 哪段代码让 View 被创建或再次访问；
+- 当前 traversal 访问了哪些子树、访问了几轮；
+- 这些工作是否处在用户可感知帧或启动关键路径上。
 
-Android 的一次 traversal 可能包含 Measure、Layout、Draw 三个阶段，但只有在 `requestLayout()`、窗口尺寸变化或 insets 变化把 `mLayoutRequested` 置为 true 时，系统才会重新执行 Measure 和 Layout。树越深，节点越多，一旦这两个阶段被触发，主线程就要花更多时间递归整棵 View 树。更麻烦的是，某些 ViewGroup（比如 `RelativeLayout`，以及使用了 `layout_weight` 的 `LinearLayout`）会让重复 measure 次数继续上升。
+## 1. 用“节点、访问次数、单节点工作”理解成本
 
-Google 在 2017 年推广 ConstraintLayout 时做过一组基准测试 [已验证: Google Developers Blog, 2017-08-24]：一个以 `RelativeLayout` 嵌套 `LinearLayout` 为主的注册表单，在 20 秒 Systrace 窗口里出现了 80 次 expensive measure/layout alerts；换成更扁平的 `ConstraintLayout` 版本后，同一窗口里的 alerts 明显减少。这个数字说明嵌套层级和重复 measure 会把布局成本迅速放大，但它不是“单帧固定 80 次 pass”，也不能直接外推到今天的 AndroidX / 120Hz 设备。
+一次布局工作的近似成本可以写成：
 
-[图：Google 官方 benchmark 对比——RelativeLayout 嵌套 vs ConstraintLayout 的 Systrace 截图，标注 pass 数差异]
+> 总成本 ≈ 被访问节点数 × 每个节点的访问次数 × 单次访问成本
 
-理解 View 体系性能问题的根源后，优化才有明确落点：inflate 的创建成本、measure/layout 的遍历成本，以及工具和布局组件的选择边界。
+这三个乘数分别对应不同问题：
 
-## LayoutInflater.inflate() 的完整流程与耗时分析
+- **被访问节点数**：父容器包含多少可参与当前 pass 的子节点，布局请求传播到了多大的子树；
+- **访问次数**：容器是否为了依赖关系、`layout_weight`、最大子项或 layout 期间的新请求再次测量；
+- **单次访问成本**：`TextView` 是否重新排版，图片或字体资源是否首次解析，自定义 `onMeasure()` 是否分配对象、查数据库或遍历额外集合。
 
-当 Activity 调用 `setContentView()`，或者我们在代码里调用 `LayoutInflater.inflate()` 时，系统要完成的工作远比"解析 XML 创建 View"复杂。
+深层嵌套会增加父链传播、递归调用和容器处理机会，也会放大多 pass 容器的成本。它是一项风险信号，不能单独换算为毫秒，也不存在适用于所有页面的“超过几层就卡”阈值。节点总数、布局算法、更新频率和设备状态要放在同一条 trace 中判断。
 
-### inflate 的三个阶段
+60 Hz 的名义 VSync 周期约为 16.67 ms，120 Hz 约为 8.33 ms。这只是显示节拍，不是分给 App 主线程布局的独占 CPU 预算。输入、动画回调、业务代码、View traversal、RenderThread、SurfaceFlinger 和调度延迟共同消耗端到端 deadline。高刷新率下，相同的 4 ms layout 占比更高，但是否丢帧仍应由 FrameTimeline 的 expected/actual timeline 与显示结果确认。
 
-`LayoutInflater.inflate()` 的核心流程可以拆成三步：
+## 2. `LayoutInflater.inflate()` 的三阶段路径
 
-**第一步：XML 解析。** Android 的 layout XML 在 `aapt2` 的 compile / link 阶段会以 APK 内的 binary XML 形式保存，`resources.arsc` 保存的是资源表与索引，两者不是同一个产物。运行时 `XmlPullParser` 读取的是 binary XML 中的节点和属性信息，这部分成本比文本 XML 低，但仍然属于 inflate 的固定开销。
+布局 XML 经 AAPT2 编译后，以 binary XML 资源存入 APK；`resources.arsc` 保存资源表与索引，两者承担不同职责。运行时 inflate 仍需解析节点、解析属性、构造对象并组装 View 树，binary XML 没有消除这些工作。
 
-[已验证: AOSP frameworks/base/core/java/android/view/LayoutInflater.java, inflate() 方法]
+### 2.1 阶段一：读取 XML 与确定上下文
 
-**第二步：反射创建 View 对象。** 这是 inflate 耗时的主要来源。对于 XML 中的每个标签（如 `<TextView>`、`<com.example.MyView>`），`LayoutInflater` 需要通过反射找到对应的类并实例化。具体来说：
+`Resources.getLayout()` 返回解析器后，`LayoutInflater` 找到根标签并读取 `AttributeSet`。每个标签还可能处理：
 
-- **框架 View**（如 `TextView`、`ImageView`）：`LayoutInflater` 会尝试多个包前缀——`android.widget.`、`android.webkit.`、`android.app.`、`android.view.`——拼接成全限定名后用当前 `Context` 的 `ClassLoader` 加载类，再通过 `Constructor.newInstance()` 创建实例。
-- **自定义 View**：如果标签名包含点号（如 `com.example.MyView`），直接用全限定名加载。
+- `android:theme`，必要时创建 `ContextThemeWrapper`；
+- `<include>` 的 layout、theme、id、visibility 与根布局参数覆盖；
+- `<merge>`、`<requestFocus>`、`<tag>` 等特殊标签；
+- 父容器的 `generateLayoutParams()`。
+
+主题、style 和属性解析会继续访问资源表，View 构造函数还可能加载背景、字体、Drawable、ColorStateList 或兼容资源。把这一段统称为“XML 解析”会漏掉大量可变成本。
+
+### 2.2 阶段二：Factory 链与 View 构造
+
+Android 17 的 `createViewFromTag()` 会先处理主题，再调用 `tryCreateView()`。创建顺序是 `Factory2`、`Factory`、private factory；都返回 `null` 时才进入 inflater 自身的 `onCreateView()` 或全限定类名创建。
+
+下面的节选保留 Android 17 的两个关键分支，省略异常、filter 和 trace 处理：
 
 ```java
 // frameworks/base/core/java/android/view/LayoutInflater.java
-// @ AOSP main / android-16.0.0_r1，节选
-private static final HashMap<String, Constructor<? extends View>> sConstructorMap =
-        new HashMap<>();
-
-public final View createView(Context viewContext, String name,
-        String prefix, AttributeSet attrs) throws ClassNotFoundException {
-    Constructor<? extends View> constructor = sConstructorMap.get(name);
-    if (constructor != null && !verifyClassLoader(constructor)) {
-        constructor = null;
-        sConstructorMap.remove(name);
-    }
-
-    if (constructor == null) {
-        Class<? extends View> clazz = Class.forName(
-                prefix != null ? prefix + name : name,
-                false,
-                mContext.getClassLoader()).asSubclass(View.class);
-        constructor = clazz.getConstructor(mConstructorSignature);
-        constructor.setAccessible(true);
-        sConstructorMap.put(name, constructor);
-    }
-
-    Object[] args = mConstructorArgs;
-    args[0] = viewContext;
-    args[1] = attrs;
-    return constructor.newInstance(args);
-}
-```
-
-节省时间的关键在于 `sConstructorMap` 缓存了每个 View 类的 `Constructor` 对象。第一次遇到某个 View 类需要反射查找，后续遇到同类型 View 就直接用缓存。
-
-版本差异：AOSP android-14.0.0_r1、android-15.0.0_r1、android-16.0.0_r1 中 `sConstructorMap` 均为 `LayoutInflater` 的 `private static final HashMap`，进程内所有 `LayoutInflater` 实例共享同一份静态缓存。核心保护机制是 `verifyClassLoader()`——复用前校验缓存的 Constructor 是否来自当前 `Context` 可见的 ClassLoader，不匹配时移除并重新查找。动态特性模块、插件化或热更新场景要把 ClassLoader 生命周期纳入内存排查，避免旧 Constructor 被缓存延长存活时间。
-
-[已验证: AOSP `frameworks/base/core/java/android/view/LayoutInflater.java` android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 均声明 `private static final HashMap<String, Constructor<? extends View>> sConstructorMap`，`verifyClassLoader()` 复用校验逻辑一致]
-
-**第三步：递归 inflate 子 View 并设置属性。** 创建完父 View 后，`LayoutInflater` 遍历 XML 中的子标签，递归调用 `rInflateChildren()` 创建子 View，然后调用 `ViewGroup.addView()` 将子 View 添加到父容器中。每一层嵌套都会增加一轮递归。
-
-### LayoutInflater.Factory2 拦截机制
-
-在 `LayoutInflater` 走到反射创建 View 之前，它会先检查是否注册了 `Factory2`。`Factory2` 是一个拦截器，允许调用者自己决定如何创建 View。AppCompat 库就是利用这个机制，在 `AppCompatViewInflater` 中把 XML 里的 `<TextView>` 替换为 `AppCompatTextView`，以提供向下兼容的样式支持。
-
-```java
-// AppCompatViewInflater 的核心逻辑（简化）
-public View createView(View parent, String name, Context context, AttributeSet attrs) {
-    // 拦截框架 View 的创建，替换为 AppCompat 版本
-    switch (name) {
-        case "TextView":
-            return new AppCompatTextView(context, attrs);
-        case "Button":
-            return new AppCompatButton(context, attrs);
-        // ...
-    }
-    return null; // 返回 null 表示不拦截，走默认反射流程
-}
-```
-
-[已验证: AOSP frameworks/base/core/java/android/view/LayoutInflater.java, Factory2 分发逻辑]
-
-这个拦截机制本身的开销很小，但它提供了一个性能优化的思路：如果我们在 `Factory2` 中直接 `new` 出 View 对象，就能完全跳过反射。Jetpack Compose 的 `ComposeView` 就不走这套 XML inflate 流程，这也是 Compose 在创建 UI 时的一个性能优势。
-
-### setContentView 的耗时在 Perfetto 中的表现
-
-在 Perfetto 中，`setContentView` 的耗时体现为 `Choreographer#doFrame` 之前（如果是首帧）或 Activity 生命周期回调中的一段主线程忙碌区间：
-
-- `Activity.onCreate` → `performSetContentView` → `installDecor` → `inflate`：可以在 Main Thread 的 track 上看到这整个过程
-- 如果 inflate 耗时超过一帧预算，会在 `Choreographer#doFrame` 之前形成一个明显的"峡谷"，直接导致首帧延迟
-
-[图：Perfetto 中 `setContentView()` / inflate 耗时区间示意，标注主线程忙碌段与首帧延迟]
-
-在实际分析中，如果看到 Activity 冷启动时主线程有一个 30-80ms 的"平台"，大概率就是 `setContentView` 在 inflate 一个复杂的布局文件。我们可以在应用启动优化的章节（→ [8.3](../ch08-responsiveness/03-startup-optimization.md)）找到对应的优化策略。
-
-## 布局层级深度与渲染性能的因果关系
-
-### measure/layout 的递归遍历机制
-
-从 `ViewRootImpl` 的视角看，驱动 View 树遍历的是 `performTraversals()`。这一轮 traversal 不一定每次都完整执行 Measure、Layout、Draw 三个阶段。`requestLayout()`、窗口尺寸变化、insets 变化等条件会让 `mLayoutRequested` 为 true，这时 `performTraversals()` 会进入 `performMeasure()` 和 `performLayout()`；如果只是 `invalidate()`，很多帧会直接复用上一次布局结果，把主要成本留在 `performDraw()`。
-
-当系统确实需要重新布局时，Measure 和 Layout 都是自顶向下的递归过程：
-
-- **Measure 阶段**：从 `ViewRootImpl` 调用根 View 的 `measure()` 开始，父 `ViewGroup` 在 `onMeasure()` 中继续 measure 子 View。
-- **Layout 阶段**：从 `ViewRootImpl.performLayout()` 开始，递归调用每个 View 的 `layout()` → `onLayout()`。
-- **Draw 阶段**：从 `ViewRootImpl.performDraw()` 开始，递归调用 `draw()` → `onDraw()`。
-
-[图：View 树 traversal 示意图——标注 `mLayoutRequested=true` 时会进入 Measure/Layout，普通重绘帧可只走 Draw]
-
-[已验证: AOSP frameworks/base/core/java/android/view/ViewRootImpl.java, `performTraversals()` 对 `mLayoutRequested` 的判断]
-
-View 树的**每一层**都会增加一轮方法调用栈。如果一个布局有 10 层嵌套（不算少见），一旦进入 Measure 阶段，就要走过 10 层递归；如果其中某层有多个子 View，每一层还要遍历兄弟节点。假设一棵 View 树有 100 个节点、平均深度 8 层，一次 measure 的递归调用次数至少是 100 次，加上 ViewGroup 自身对子 View 的遍历逻辑，实际调用次数更多。
-
-### 量化关系：层级深度与帧耗时
-
-实际耗时和设备性能、字体与图片复杂度、约束关系、是否命中缓存都有关系，很难给出跨设备稳定的毫秒表。更稳妥的判断方法，是在同一台设备上观察 `performMeasure()` / `performLayout()` 的占比、重复 pass 次数，以及它们是否已经挤占了当前帧预算。
-
-- 3 层、20 个 View 左右的简单布局，通常还不至于单独成为瓶颈；更该警惕的是高频触发的重复布局
-- 8 层、80 个 View 左右的中等布局，如果夹杂 `wrap_content` 链、`layout_weight` 或嵌套 `RelativeLayout`，Perfetto 里就更容易看到连续的 measure/layout slice
-- 12 层、200 个 View 左右的复杂布局，一旦和列表滚动、动画或首帧 inflate 叠在一起，布局阶段就可能吞掉大部分帧预算
-
-在 120Hz 设备上，帧预算只有 8.33ms。布局层级本身不是唯一问题，重复 measure、深层嵌套和不必要的 `requestLayout()` 更容易把预算挤空。
-
-> ⚠️ [待验证] 本节曾描述 Android 15 引入"渲染意图感知"以减少 OverScroll 的额外 measure pass。经过 AOSP android-15.0.0_r1 / android-16.0.0_r1 源码搜索与 release note 交叉检索，未找到可核验的 commit、类/方法路径或 release note 支撑该说法。在获得一手依据之前，不能将此项作为已验证的版本差异发布。排查 OverScroll 场景的 measure 开销时，建议直接以 Perfetto trace 中的 `performMeasure()` / `performLayout()` slice 为准，不必预设 Android 15+ 有自动优化。
-
-### RelativeLayout 的二次 measure 问题
-
-`RelativeLayout` 的 `onMeasure()` 会对每个子 View 执行两轮 measure。原因是 `RelativeLayout` 允许子 View 之间相互约束（如 `layout_toRightOf`、`layout_below`），在第一轮 measure 时，某个子 View 的尺寸可能依赖另一个子 View 的尺寸，而后者尚未完成测量。所以 `RelativeLayout` 不得不再跑一轮。
-
-嵌套的 `RelativeLayout`（这在老项目中很常见）会让这个问题更难控制：外层每次重新 measure，内层 `RelativeLayout` 也可能各自再跑两轮 measure，累计 pass 数会上升得很快。这里更稳妥的表述是“重复 measure 开销被层层放大”，而不是把它写成严格的 `$2^n$` 数学公式。真实放大量取决于子树结构、`MeasureSpec` 组合以及是否提前复用已测结果。
-
-[已验证: AOSP frameworks/base/core/java/android/widget/RelativeLayout.java, onMeasure() 中的两次遍历]
-
-## measure/layout 的开销与 requestLayout
-
-### MeasureSpec 的传递规则
-
-`measure()` 的核心输入是 `MeasureSpec`——一个 32 位整数，高 2 位是模式（`EXACTLY`、`AT_MOST`、`UNSPECIFIED`），低 30 位是尺寸。
-
-- **EXACTLY**：父 View 已确定了子 View 的精确大小（对应 `match_parent` 或具体数值）
-- **AT_MOST**：子 View 不能超过某个上限（对应 `wrap_content`）
-- **UNSPECIFIED**：子 View 想多大就多大（少见，ScrollView 的子 View 可能收到这个）
-
-`MeasureSpec` 从 ViewRootImpl 开始向下传递，每一层父 View 根据自己的约束和子 View 的 `LayoutParams` 计算出子 View 的 `MeasureSpec`。
-
-### requestLayout() 触发的完整流程
-
-当我们调用 `View.requestLayout()` 时，发生了以下链式反应：
-
-1. `View.requestLayout()` 将自身的 `mPrivateFlags` 打上 `PFLAG_FORCE_LAYOUT` 标记
-2. 调用 `ViewParent.requestLayout()`，这会沿 View 树**向上传递**到 `ViewRootImpl`
-3. `ViewRootImpl.requestLayout()` 调用 `scheduleTraversals()`
-4. `scheduleTraversals()` 通过 `Choreographer.postCallback()` 注册一个 `TraversalRunnable`，在下一个 VSync-app 信号到来时执行
-5. VSync 到来后，`ViewRootImpl.performTraversals()` 被触发，依次执行 `performMeasure()` → `performLayout()` → `performDraw()`
-
-```java
-// frameworks/base/core/java/android/view/ViewRootImpl.java
-// @ AOSP android-16.0.0_r1
-void scheduleTraversals() {
-    if (!mTraversalScheduled) {
-        mTraversalScheduled = true;
-        mTraversalBarrier = mHandler.getLooper().getQueue().postSyncBarrier();
-        mChoreographer.postCallback(
-                Choreographer.CALLBACK_TRAVERSAL, mTraversalRunnable, null);
+// android-17.0.0_r1，createViewFromTag() 节选
+View view = tryCreateView(parent, name, context, attrs);
+if (view == null) {
+    if (-1 == name.indexOf('.')) {
+        view = onCreateView(context, parent, name, attrs);
+    } else {
+        view = createView(context, name, null, attrs);
     }
 }
+
+// android-17.0.0_r1，createView() 节选
+Constructor<? extends View> constructor = sConstructorMap.get(name);
+if (constructor == null) {
+    Class<? extends View> clazz = Class.forName(
+            prefix != null ? prefix + name : name,
+            false,
+            mContext.getClassLoader()).asSubclass(View.class);
+    constructor = clazz.getConstructor(mConstructorSignature);
+    constructor.setAccessible(true);
+    sConstructorMap.put(name, constructor);
+}
+Object[] args = mConstructorArgs;
+args[0] = viewContext;
+args[1] = attrs;
+View created = constructor.newInstance(args);
 ```
 
-[已验证: AOSP ViewRootImpl.java, scheduleTraversals()]
+`sConstructorMap` 是进程内静态缓存；命中前还会通过 `verifyClassLoader()` 检查构造器是否能被当前 Context 的 ClassLoader 使用。源码随后还会为 `ViewStub` 保存同 Context 的 inflater，并在 `finally` 中恢复共享的构造参数数组。缓存减少了重复查找构造器的成本，`Constructor.newInstance()`、View 构造、资源解析和初始化工作仍会发生。
 
-`requestLayout()` 会在消息队列中插入一个同步屏障（`sync barrier`）。`postSyncBarrier()` 会暂时挡住普通同步消息；`Choreographer` 发布的 traversal 回调是异步消息，可以越过屏障。这让下一轮 `TraversalRunnable`（即 `doFrame`）比队列中已有的普通 Handler 消息更早执行。屏障会在 traversal 执行后移除，只按 Handler 入队顺序看 trace 时，容易误判 `requestLayout()` 被普通消息拖住。
+短类名的包前缀由 inflater 类型决定。基础 `LayoutInflater.onCreateView()` 只尝试 `android.view.`；系统的 `PhoneLayoutInflater` 依次尝试 `android.widget.`、`android.webkit.`、`android.app.`，失败后回到基础实现。AppCompat 通过 `Factory2` 创建或替换控件，并处理 context wrapping、主题和 tint。其成本不能靠“多一次 switch”推断，复杂页面应直接测量。
 
-### requestLayout() vs invalidate()：性能差异的本质
+反射也不宜预设为 inflate 的主要耗时。第一次类加载、View 构造、样式解析、字体/Drawable、Factory 逻辑、父容器生成 LayoutParams，以及业务自定义 View 的初始化都可能占主导。采集冷、热两组 trace，才能区分类加载与稳定态成本。
 
-这两者的区别是 Android 面试的经典题，也是实际优化中必须搞清楚的问题：
+### 2.3 阶段三：递归组装与 `onFinishInflate()`
 
-**`invalidate()`** 会给当前 View 打上 dirty 标记，并把脏区域沿父容器向上传到 `ViewRootImpl`，随后在下一次 traversal 中进入 Draw 阶段。它通常不会重新 measure 和 layout。开启硬件加速时，系统还会结合 RenderNode 的 damage 信息缩小重绘范围。适合的场景：文字内容变了、颜色变了、Drawable 状态变了——凡是**不影响 View 尺寸和位置**的变化。
+创建根 View 后，`rInflateChildren()` 递归处理子标签。普通子节点会经历：
 
-**`requestLayout()`** 标记 View 需要重新测量和布局，触发 **Measure + Layout + Draw 全流程**。而且它是**向上传播**的：一个子 View 调用 `requestLayout()`，它的父 View、祖父 View……一直到 `ViewRootImpl`，整条传递路径上的所有 View 都需要重新 measure/layout。
+1. 创建子 View；
+2. 由父 `ViewGroup.generateLayoutParams()` 生成布局参数；
+3. 递归创建孙节点；
+4. `ViewGroup.addView()` 加入父容器；
+5. 子树完成后调用 `onFinishInflate()`。
 
-性能差异来自执行范围：
+`inflate(resource, root, false)` 中的 `root` 仍有价值：它为 XML 根节点生成正确的 `LayoutParams`。传 `null` 后再手工 `addView()`，常会丢失父容器专用参数，或者多做一次参数修正。
 
-| 维度 | invalidate() | requestLayout() |
-|------|-------------|-----------------|
-| 触发方式 | 标记 dirty，下一轮 traversal 主要进入 Draw | 标记 layout request，下一轮 traversal 进入 Measure + Layout + Draw |
-| 传播方向 | dirty 区域向上传到 ViewRootImpl；Draw 阶段再自顶向下执行 | layout request 向上传播至 ViewRootImpl |
-| 影响范围 | 以 dirty 区域和受影响的节点为主 | 常常从根节点重新走一轮 measure/layout，树越大代价越高 |
-| Perfetto 常见表现 | Draw 相关 slice 更显眼 | Measure/Layout 相关 slice 更显眼 |
+| 调用形态 | 返回值 | 是否已挂到 `root` | 根布局参数来源 |
+|---|---|---:|---|
+| `inflate(res, root, true)` | `root` | 是 | `root.generateLayoutParams()` |
+| `inflate(res, root, false)` | XML 根 View | 否 | `root.generateLayoutParams()` |
+| `inflate(res, null, false)` | XML 根 View | 否 | 无父容器上下文，根参数可能缺失 |
 
-一个常见的性能错误：在 `RecyclerView.Adapter.onBindViewHolder()` 中调用 `requestLayout()` 而不是 `invalidate()`。这会导致每个 item bind 时都触发一次完整的 View 树遍历，在滑动场景下直接造成卡顿。
+首帧分析时，在 Activity/Fragment 生命周期和 `setContentView` 周围找主线程 CPU 区间，再用方法 trace、app trace section 或 startup benchmark 确认归属。某段 30 ms 主线程忙碌不能仅凭形状认定为 inflate。
 
-[已验证: AOSP View.java, requestLayout() 和 invalidate() 的实现差异]
+## 3. traversal、MeasureSpec 与重复测量
 
-### 为什么一个 requestLayout() 可能导致整棵 View 树重测
+### 3.1 一轮 traversal 不保证三个阶段全部运行
 
-`requestLayout()` 的向上传播机制意味着：即使只有一个很小的 TextView 调用了 `requestLayout()`，它的所有祖先 View 都需要重新 measure。这是因为父 View 的尺寸可能依赖于子 View 的尺寸（比如 `wrap_content`），子 View 尺寸变了，父 View 的尺寸也可能变。
+`ViewRootImpl.scheduleTraversals()` 在尚未调度时设置 `mTraversalScheduled`，插入同步屏障，并向 `Choreographer.CALLBACK_TRAVERSAL` 注册 VSync callback。Android 17 使用 `postVsyncCallback()`；callback 到达后移除屏障并进入 `performTraversals()`。
 
-在实际项目中，这种"牵一发而动全身"的情况经常发生在列表项中：某个 item 内部的 View 调用了 `requestLayout()`，导致整个 RecyclerView 甚至 Activity 的 DecorView 都需要重测。如果这种调用发生在滑动过程中，每帧都触发一次，性能灾难就来了。
+Android 17 的一轮 `Choreographer#doFrame()` 按 `INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT` 分发 callback。measure/layout 位于 Traversal 内，前面的输入或动画已经迟到时，即使 layout 本身不长，窗口也可能错过 deadline。Traversal 尾部的 `performDraw()` 还会进入 `ThreadedRenderer.draw()` / `syncAndDrawFrame()`；UI 线程可能等待 RenderThread 完成本帧状态同步，不能把整个 Traversal 或 `doFrame` 时长都记到布局名下。
 
-优化思路：
+`performTraversals()` 会根据首帧、`mLayoutRequested`、窗口尺寸、insets、可见性、配置和 relayout 结果决定工作。布局被请求时通常会执行 measure 与 layout；只有绘制失效时可以复用已有尺寸和位置。这里仍有两个限制：
 
-- 如果只是视觉变化（颜色、文字、图标），用 `invalidate()` 或 `setText()` / `setImageDrawable()` 等方法，这些方法内部会自动调用 `invalidate()`
-- 如果只是想保留占位并减少重排，优先用 `INVISIBLE`、`alpha`、`translation` 或固定尺寸容器；`GONE/VISIBLE` 会改变子 View 是否参与布局，仍然会触发父容器向上的重新布局
-- 在自定义 View 中，`onDraw()` 内不应该调用 `requestLayout()`
+- 同一轮 traversal 中还可能有窗口 relayout、透明区域、insets、pre-draw 和 draw；
+- `invalidate()` 与 `requestLayout()` 会共用调度入口，当前窗口的其他状态仍可让 measure/layout 出现在这一轮。
 
-## ConstraintLayout 与传统布局的性能差异
+因此，“`invalidate()` 等于 Draw only”只适合作为入门记忆，不能作为 trace 结论。
 
-### ConstraintLayout 的设计目标：扁平化
+### 3.2 MeasureSpec 由父规格与子参数共同决定
 
-`ConstraintLayout` 的核心设计理念是**用约束关系替代嵌套层级**。在传统布局中，要实现"左边一个图标、右边两行文字"的排列，通常需要 `LinearLayout` 嵌套 `LinearLayout`，至少 2-3 层。用 `ConstraintLayout`，所有元素都是直接子 View，通过 `layout_constraintLeft_toRightOf` 等属性互相约束，整个布局只有 1 层。
+`MeasureSpec` 把 mode 与 size 编码在一个整数中：
 
-### 官方 benchmark 数据
+| mode | 含义 |
+|---|---|
+| `EXACTLY` | 父级要求得到指定尺寸 |
+| `AT_MOST` | 子 View 可自行决定，但不得超过上限 |
+| `UNSPECIFIED` | 父级不提供上限；常见于某些可滚动方向或离屏测量 |
 
-Google 在 2017 support ConstraintLayout 时代做过一组公开测试 [已验证: Google Developers Blog, "Understanding the performance benefits of ConstraintLayout", 2017-08-24]：
+`match_parent`、`wrap_content` 与固定尺寸不会独立决定 mode。`ViewGroup.getChildMeasureSpec()` 会把父 `MeasureSpec`、padding/margin 和子 `LayoutParams` 组合起来。例如父级为 `AT_MOST` 时，子级 `match_parent` 在 framework 通用算法里得到的仍是 `AT_MOST`；父级为 `EXACTLY` 时才得到对应的 `EXACTLY`。
 
-- **测试布局**：一个注册表单页面，包含图片、标题、多个输入框和按钮
-- **RelativeLayout 嵌套方案**：Systrace 在 20 秒抓取窗口里报告 80 次 expensive measure/layout alerts
-- **ConstraintLayout 方案**：把层级压平后，同一窗口里的 expensive alerts 明显减少
+### 3.3 `measure()` 被调用，不等于 `onMeasure()` 必然执行
 
-这组数据能证明两件事。第一，扁平层级通常更容易减少重复 measure/layout。第二，`RelativeLayout` 这类需要多轮测量的容器，在嵌套后会更容易把 traversal 成本放大。它不能直接说明“当前 AndroidX 项目每帧一定节省多少毫秒”，因为测试对象、support library 版本、设备刷新率和 trace 口径都与今天的项目环境不同。
+Android 17 的 `View.measure()` 会比较新旧 width/height spec、`PFLAG_FORCE_LAYOUT` 和已测尺寸。它还维护按两个 MeasureSpec 组合索引的 `mMeasureCache`。满足条件时可复用测量结果；是否允许 force-layout 路径使用缓存还受 platform flag 控制。
 
-`ConstraintLayout` 的内部实现也不该被简化成“一次遍历就能确定所有子 View 的位置”。它通过约束求解器和更扁平的层级，减少很多传统嵌套布局里的重复 `measure/layout`。收益大小还是要用当前设备上的 FrameMetrics 或 Perfetto 实测。
+这带来两个分析规则：
 
-[图：Google 官方 benchmark 的 Systrace 对比截图——80 passes vs 扁平化的 pass 数]
+- 统计 Java 方法调用次数时，要区分 `measure()` 与自定义 `onMeasure()`；
+- 父容器走了第二轮，不代表每个后代都完整重复计算，缓存、规格变化和 force-layout 标志会改变结果。
 
-### layout_optimizationLevel
+缓存不能弥补昂贵的布局算法。自定义 View 在输入未变时仍频繁 `requestLayout()`，会清空自己的测量缓存并给父链增加工作。
 
-`ConstraintLayout` 提供了 `app:layout_optimizationLevel` 属性来控制内部优化策略：
+### 3.4 多 pass 容器的边界
+
+Android 17 `RelativeLayout.onMeasure()` 先按水平依赖排序遍历可见子项，调用 `measureChildHorizontal()`；随后按垂直依赖排序，再调用完整的 `measureChild()`。多数可见子项会在同一次 `onMeasure()` 中收到两次 `measure()`，但第二次是否进入其 `onMeasure()` 还受规格和缓存影响。
+
+`LinearLayout` 的 `layout_weight`、`measureWithLargestChild`、baseline 对齐和交叉轴 `match_parent` 也可能触发重新测量。是否发生、涉及哪些子项，由方向、父规格、剩余空间和参数组合决定。不要把所有 `LinearLayout` 一律归为双 pass。
+
+官方把这类现象称为 double taxation。风险较高的组合包括：
+
+- 多 pass 容器位于页面根部，下面挂着大子树；
+- 列表中重复出现同一复杂 item；
+- 动画或文本更新持续改变测量输入；
+- 多个多 pass 容器嵌套；
+- 自定义 `onMeasure()` 在每次调用中分配对象或执行与尺寸无关的工作。
+
+### 3.5 层级优化要看语义
+
+布局变平可以减少中间 ViewGroup，但移除一个容器可能改变 clip、foreground、state propagation、accessibility、touch dispatch、transition name 或 layout semantics。评估时同时记录：
+
+- 节点数与最大深度；
+- measure/layout 总时长和 pass 次数；
+- TextView、图片、自定义 View 的单节点成本；
+- accessibility tree 与点击区域；
+- 修改前后的截图、交互和 Macrobenchmark 数据。
+
+一个节点较多但单 pass、更新范围小的页面，可能优于节点较少却反复求解的大子树。优化目标是缩短用户关键路径中的工作，不是追求层级数字。
+
+## 4. `requestLayout()` 与 `invalidate()` 的精确边界
+
+### 4.1 `requestLayout()` 怎样向上走
+
+Android 17 `View.requestLayout()` 会清空该 View 的测量缓存，处理 layout 期间请求，设置 `PFLAG_FORCE_LAYOUT` 与 `PFLAG_INVALIDATED`。父级尚未处于 layout-requested 状态时，请求沿 `ViewParent` 链上传。到达 `ViewRootImpl.requestLayout()` 后，framework 检查线程，设置 `mLayoutRequested = true` 并调度 traversal。
+
+父链传播会在遇到已经标记 layout requested 的父级时停止重复上传。同一 VSync 前的多次请求通常会被 `mTraversalScheduled` 合并为一个已调度 callback，但“合并一次 callback”不保证只有一次 measure/layout：
+
+- 第一次 layout 中出现仍有效的新请求时，`performLayout()` 可以在同一帧执行第二轮 measure/layout；
+- 第二轮期间再次请求，会被投递到下一帧，避免无限循环；
+- 不同窗口各自拥有 ViewRoot 与 traversal；
+- 窗口 relayout、insets 或配置变化还能增加额外测量。
+
+在 `onLayout()`、`OnGlobalLayoutListener` 或数据绑定回调里无条件调用 `requestLayout()`，很容易形成当前帧第二轮与下一帧连续布局。
+
+### 4.2 `invalidate()` 怎样传播绘制失效
+
+`View.invalidate()` 设置 invalidated/dirty 状态，通过父级把失效传到 `ViewRootImpl` 并安排 traversal。硬件加速下，脏矩形参数从 API 21 起不再按旧软件渲染语义使用；framework 与 RenderNode/HWUI 自行维护需要更新的内容。
+
+它表达的是“视觉内容需要更新”，不会主动把尺寸输入改掉。若同一窗口已经有 layout request，或这次属性修改还通过别的代码触发了 `requestLayout()`，同一轮仍会出现 measure/layout。反过来，调用 `requestLayout()` 也不表示每个 View 的 `onMeasure()` 都重算，前述缓存与规格判断仍有效。
+
+| 变化 | 常用信号 | 还要检查 |
+|---|---|---|
+| 颜色、选中态、自绘内容变化，边界不变 | `invalidate()` | Drawable 是否自行 invalidation；硬件 display list 是否更新 |
+| 文本可能换行、字号、padding、LayoutParams 变化 | `requestLayout()`，通常伴随绘制失效 | 新尺寸是否影响父级；TextView 是否已经代为请求 |
+| translation、alpha、scale 等属性动画 | 属性 setter / animator | 是否走 RenderNode 快速路径；是否伴随 clip 或布局变化 |
+| 添加、删除、显示或隐藏子 View | 由 ViewGroup/API 触发布局 | 影响范围、动画、列表复用 |
+| 自定义 View 内部数据变化 | 根据尺寸是否变化选择 | setter 不要无条件同时调用两者 |
+
+`RecyclerView.Adapter.onBindViewHolder()` 中出现 `requestLayout()` 也不能直接判错：内容长度变化可能确需重新测量。应检查同一 item 是否在尺寸不变时重复请求、是否破坏稳定尺寸假设，以及滚动 trace 中 layout 是否越过 deadline。RecyclerView 的专项策略见 [7.8 RecyclerView 性能](08-recyclerview-performance.md)。
+
+## 5. 布局组件的选择边界
+
+### 5.1 `ConstraintLayout`、`FrameLayout`、`LinearLayout`、`RelativeLayout`
+
+| 组件 | 合适场景 | 易放大的成本 |
+|---|---|---|
+| `FrameLayout` | 少量叠放、单子项容器 | 子项很多时仍要逐项处理；语义能力有限 |
+| 无权重 `LinearLayout` | 简单单轴排列 | 嵌套、weight、largest-child、baseline 组合 |
+| `ConstraintLayout` | 多方向关系可替代多层嵌套 | 求解器、helper、barrier、ratio、动态约束本身有成本 |
+| `RelativeLayout` | 维护既有简单布局 | 水平/垂直依赖排序与多次 child measure |
+| 自定义 `ViewGroup` | 规则稳定、可用一次线性遍历表达 | 正确处理 MeasureSpec、RTL、margin、baseline、accessibility 的维护成本 |
+
+Google 2017 年的 ConstraintLayout 博客用一个特定表单对比了嵌套 `RelativeLayout`/`LinearLayout` 与扁平 ConstraintLayout。它能说明该样本中的层级和重复 pass 问题，不能推导任意页面、任意 AndroidX 版本下的固定百分比，也不能证明简单布局都应迁移。当前官方文档仍建议复杂关系优先评估 ConstraintLayout，简单叠放可用 FrameLayout；最终选择应由当前依赖版本和同设备基准决定。
+
+优化 ConstraintLayout 时，先删除冗余 wrapper 和矛盾约束，再观察 solver/measure；不要为了“扁平”把一个清晰的简单容器改成大量动态 ConstraintSet。约束优化选项属于 AndroidX 版本实现，报告中要记录库版本，不能写成 Android 17 framework 行为。
+
+### 5.2 `ViewStub`：把初始成本延后
+
+`ViewStub` 初始状态为 `GONE`、尺寸为 0 且不绘制。调用 `inflate()`，或者把 stub 设为 `VISIBLE`/`INVISIBLE` 时，它同步 inflate 指定资源，从父容器移除自身，并在同一索引放入新 View，沿用 stub 的 LayoutParams。`OnInflateListener` 在新 View 已加入、下一轮 layout 前回调。
+
+下面的 XML 用于延迟创建低概率出现的错误详情：
 
 ```xml
-<androidx.constraintlayout.widget.ConstraintLayout
-    app:layout_optimizationLevel="direct|barrier|chain|dimensions" >
-```
-
-- `direct`：直接约束优化
-- `barrier`：Barrier 相关优化
-- `chain`：Chain 布局优化
-- `dimensions`：尺寸测量优化
-
-默认会按版本启用一组可用优化。收益大小取决于约束关系、子树规模和重复测量次数，最好用当前设备上的 Perfetto 或 FrameMetrics 验证。
-
-### ViewBinding 的初始化代价
-
-ViewBinding 常被理解为 `findViewById` 的语法糖。在初始化阶段，生成的 `bind()` 方法会遍历 View 树，对每个带 ID 的 View 调用 `findViewById`。在简单布局下这笔开销可以忽略，但在复杂 View 树（例如 200+ 节点、多层嵌套的列表项）中，`bind()` 的耗时可能和 `inflate` 本身处于同一量级。
-
-在 RecyclerView 列表这种高频 bind 场景中，可以考虑以下替代方案：
-
-- 手动缓存 `findViewById` 结果，只查找需要动态更新的 View
-- 通过 `LayoutInflater.Factory2` 直接实例化核心控件，跳过 XML 反射路径
-- 对特别复杂的列表项，用基准测试对比 ViewBinding bind 和手动 bind 的耗时占比
-
-### 什么时候不该用 ConstraintLayout
-
-`ConstraintLayout` 也有边界。在以下场景，传统布局反而更合适：
-
-- **2-3 个子 View 的简单布局**：`FrameLayout` 或 `LinearLayout` 就够了，`ConstraintLayout` 的约束求解器有自己的初始化开销
-- **纯线性排列**：几个 View 水平或垂直排列，用 `LinearLayout` 最直接
-- **需要 `layout_weight` 的场景**：虽然 `ConstraintLayout` 可以用 `MatchConstraint` 百分比实现类似效果，但如果就是简单的等分，`LinearLayout` 的代码更简洁
-
-判断原则：**布局嵌套超过 3 层时，考虑用 `ConstraintLayout` 扁平化；1-2 层的简单布局，不需要换。**
-
-## ViewStub、Merge、Include 的性能优化实践
-
-### ViewStub：延迟加载
-
-`ViewStub` 是一个轻量级的占位符 View，它**不可见、不参与 measure/layout/draw、几乎不占内存**。只有当你显式调用 `viewStub.inflate()` 或 `viewStub.setVisibility(VISIBLE)` 时，它才会被替换为实际的布局。
-
-```xml
-<!-- 定义 ViewStub -->
 <ViewStub
-    android:id="@+id/stub_error_panel"
-    android:layout="@layout/error_panel"
-    android:inflatedId="@+id/error_panel"
+    android:id="@+id/error_details_stub"
+    android:inflatedId="@+id/error_details"
+    android:layout="@layout/view_error_details"
     android:layout_width="match_parent"
     android:layout_height="wrap_content" />
 ```
 
-```java
-// 按需 inflate
-View errorPanel = ((ViewStub) findViewById(R.id.stub_error_panel)).inflate();
-```
+这会降低页面初次 inflate 的对象和资源成本，却把工作移到首次展示时。若用户点击后才在主线程 inflate 大子树，卡顿只会换到交互帧。可以在空闲窗口提前 inflate、用异步 inflater 验证兼容性，或重新设计为更小的子树。`ViewStub` 的 layout 需要能返回单个根 View；`<merge>` 根不能作为它的直接 inflate 结果。
 
-`ViewStub` 和 `View.setVisibility(GONE)` 的本质区别：
+### 5.3 `<merge>` 与 `<include>`
 
-| 维度 | ViewStub | View.GONE |
-|------|----------|-----------|
-| 初始 inflate | 不 inflate，零开销 | 已经 inflate，对象已创建 |
-| 内存占用 | 占位符约几十字节 | 完整 View 树，可能数 KB |
-| 切换耗时 | 首次需要 inflate，之后无 | 直接设 visibility，瞬时 |
-| 适用场景 | 大概率不显示的内容 | 可能频繁切换显示/隐藏 |
+`<include>` 复用 XML 定义，运行时仍会解析和创建被包含内容。被包含布局以 `<merge>` 为根时，子节点会直接加入 include 所在父容器，从而省去没有语义的 wrapper。
 
-典型使用场景：错误提示面板、空状态页、调试面板、用户协议弹窗。
-
-注意：`ViewStub` 只能 `inflate()` 一次。再次调用会抛 `IllegalStateException`。如果需要反复切换，应该在 inflate 后直接操作目标 View 的 visibility。
-
-### Merge 标签：减少顶层容器
-
-`<merge>` 标签的作用是告诉 `LayoutInflater`：这个布局被 include 到其他布局时，不要给它的根元素再包一层父容器。
-
-最常见的场景是自定义 View 的内部布局。假设我们有一个 `TitleBar` 自定义 View，它继承自 `RelativeLayout`。如果 `title_bar.xml` 的根元素是 `<RelativeLayout>`，inflate 后就会变成 `RelativeLayout（自定义 View）→ RelativeLayout（XML 根）→ 子 View`，两层 `RelativeLayout` 完全多余。把 XML 根改为 `<merge>`，inflate 后直接把子 View 添加到自定义 View 中，只有一层 `RelativeLayout`。
+下面的布局片段展示 `<merge>` 的典型用途：
 
 ```xml
-<!-- title_bar.xml：用 merge 避免多余的 RelativeLayout -->
+<!-- res/layout/view_profile_actions.xml -->
 <merge xmlns:android="http://schemas.android.com/apk/res/android">
-    <TextView android:id="@+id/title" ... />
-    <ImageButton android:id="@+id/back" ... />
+    <Button
+        android:id="@+id/follow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
 </merge>
 ```
 
-### Include 标签：布局复用
+这个资源只能在有有效 `ViewGroup root` 且 `attachToRoot=true` 的条件下直接 inflate；Android 17 在条件不满足时抛出 `InflateException`。`<merge>` 还意味着这些子项依赖使用方父容器的 LayoutParams 与布局语义，不适合需要独立背景、padding、clip、状态或 accessibility grouping 的根。
 
-`<include>` 仍然由 `LayoutInflater` 在运行时处理。inflate 走到 `<include>` 节点时，会进入 `parseInclude()` 解析被包含布局的资源 ID，再继续创建其中的根 View 或 `<merge>` 子树。它的价值在于复用布局定义，inflate 成本仍然存在。
+`<include>` 上的 LayoutParams 可以覆盖被包含根的值。官方资源文档要求要让其他 layout 属性覆盖生效时，同时声明 `android:layout_width` 与 `android:layout_height`。迁移 wrapper 前应检查 ID、transition、binding 生成结果和点击/无障碍分组。
 
-能减少层级的是让被 include 的布局以 `<merge>` 作为根，这样父容器在运行时不会再多包一层 ViewGroup。如果这块内容很大且大多数时候不显示，再考虑改用 `ViewStub` 做延迟 inflate。
+## 6. `AsyncLayoutInflater`：可回退的搬移工具
 
-## AsyncLayoutInflater 异步布局加载
+截至 2026-07，稳定版 `androidx.asynclayoutinflater` 为 1.1.0。它使用进程内共享的单个后台线程（线程名为 `AsyncLayoutInflator`）和容量为 10 的队列，把 `inflate(..., parent, false)` 尝试放到后台。View 树不会自动加入 parent。
 
-### 设计原理
+后台创建需要满足：
 
-`AsyncLayoutInflater`（来自 `androidx.asynclayoutinflater`）允许在后台线程执行 `inflate()`，完成后回调到主线程将 View 树 attach 到父容器。它的目的是把 inflate 的 XML 解析 + 反射创建 View 的开销从主线程移走。
+- parent 的 `generateLayoutParams(AttributeSet)` 可在该后台线程安全执行；
+- 所有 View 构造过程不创建依赖当前线程 Looper 的 `Handler`，也不调用需要 Looper 的逻辑；
+- 自定义 View、Drawable、字体或 SDK 初始化不触碰只能由主线程访问的状态；
+- 布局不包含 `<fragment>`；
+- AppCompat 页面使用 `asynclayoutinflater-appcompat` 的 `AsyncAppCompatFactory`，让兼容控件按对应 factory 创建。
 
-```java
-new AsyncLayoutInflater(context).inflate(
-    R.layout.complex_layout, parent, (view, resid, parent) -> {
-        // view 已在后台线程创建完毕，此时在主线程回调
-        parent.addView(view);
-    });
-```
+后台 inflate 抛出 `RuntimeException` 时，库会记录日志并在创建 inflater 的线程 Handler 上重新同步 inflate。功能看起来正常，也可能完全没有省下 UI 时间。队列满时，UI 线程调用 `inflate()` 还可能阻塞在 `put()`；它不适合短时间提交大量请求。
 
-[已验证: AndroidX AsyncLayoutInflater 源码]
-
-### 限制与注意事项
-
-`AsyncLayoutInflater` 能否把 inflate 留在后台线程，取决于几个前提：
-
-1. **parent 的 `generateLayoutParams(AttributeSet)` 必须线程安全**。如果父容器的这一步只能在主线程执行，后台 inflate 会失败并回退到 UI thread。
-2. **被创建的 View 不能在构造或初始化阶段创建 `Handler`，也不能依赖 `Looper.myLooper()`**。这类 View 在后台线程里构造时很容易抛异常。
-3. **`<fragment>` 标签会触发回退到主线程同步加载**。由于 `FragmentManager` 事务严格限制在 UI 线程，`<fragment>` 的解析是非线程安全的。在最新 AndroidX 源码中，`AsyncLayoutInflater` 在后台线程遇到 `<fragment>` 时会触发 `RuntimeException`，被捕获后回退到 UI 线程同步 inflate。功能上结果正确，但主线程完全承担了这次 inflate，异步优化的目的落空。
-
-    如果布局中包含 Fragment，必须改用 `FragmentContainerView` 作为占位容器，在主线程回调中通过 `FragmentTransaction` 动态挂载 Fragment，不能指望 `AsyncLayoutInflater` 异步处理。
-
-4. **默认 `BasicInflater` 不会复用 AppCompat 那套主线程 `Factory2` 链**。AndroidX `AsyncLayoutInflater 1.1.0` 增加了 `AsyncLayoutFactory` 构造入口；AppCompat 项目可以引入 `asynclayoutinflater-appcompat`，用 `AsyncAppCompatFactory` 让 AppCompatViewInflater 参与后台 inflate。
-5. **回退是常见结果，不是异常路径**。`AsyncLayoutInflater` 的后台线程只要抛 `RuntimeException`，就会记录日志并在 UI thread 重新 inflate。功能可能看起来正常，但主线程时间并没有省下来。
-
-AppCompat 场景的最小接入形态如下：
+下面的示例显式选择 AppCompat factory，并把完成回调放回主线程：
 
 ```kotlin
-val inflater = AsyncLayoutInflater(
-    context,
+val asyncInflater = AsyncLayoutInflater(
+    activity,
     AsyncAppCompatFactory()
 )
 
-inflater.inflate(R.layout.complex_layout, parent, mainExecutor) { view, _, target ->
-    target?.addView(view)
+asyncInflater.inflate(
+    R.layout.view_heavy_panel,
+    container,
+    ContextCompat.getMainExecutor(activity)
+) { view, _, parent ->
+    parent?.addView(view)
 }
 ```
 
-如果指定 `callbackExecutor`，最终 `addView()`、ViewBinding 绑定和状态写入仍要回到主线程执行。
+传入 callback executor 后，后台 inflate 成功时回调可直接在该 executor 执行；示例选择 main executor，因 `addView()` 必须发生在 View 所属线程。未传 executor 的重载会回到创建 inflater 的 Looper。布局附加、ViewBinding、状态恢复和后续 layout 仍可能占用主线程。
 
-[已验证: AndroidX `asynclayoutinflater 1.1.0` 新增 `AsyncLayoutFactory` 构造入口与 callback executor；`asynclayoutinflater-appcompat 1.1.0` 提供 `AsyncAppCompatFactory`]
+适用场景是内容稍后才展示、需求确定性较高、可以提前发起且构造器经过线程安全验证的子树。Activity 首屏若必须等待回调才能展示，异步排队和线程切换未必降低启动时延。用同一测试设备比较：
 
-实际使用中，`AsyncLayoutInflater` 更适合启动后延迟展示的复杂布局，或者弹窗/对话框里可以晚一点 attach 的内容视图。
+- 同步 inflate 的主线程耗时；
+- 后台任务排队与执行时长；
+- fallback 次数；
+- 回调后的 `addView + measure + layout`；
+- 首屏或交互 FrameTimeline。
 
-### 在 Perfetto 中的表现
+## 7. `ViewTreeObserver` 的布局回调边界
 
-使用 `AsyncLayoutInflater` 后，Perfetto 中能看到：
+`ViewTreeObserver` 提供全树级事件。Android 17 `ViewRootImpl.performTraversals()` 在本轮发生 layout，或者需要重新计算全局属性时，调用 `dispatchOnGlobalLayout()`。因此 `OnGlobalLayoutListener` 表示全局布局状态或可见性发生过相应处理，不表示回调由某个 `View.layout()` 直接触发，也不证明该帧已经提交到 SurfaceFlinger 或显示器。
 
-- 主线程在 `Activity.onCreate` 期间不再有 inflate 的耗时区间
-- 后台线程（通常是 `AsyncLayoutInflater` 的 `HandlerThread`）出现 inflate 活动
-- 主线程在回调 `onInflateComplete` 时有一个短暂的 `addView` 操作
+framework traversal 发起的 listener 在 ViewRoot 所在线程串行执行；应用若手动调用公开的 `dispatchOnGlobalLayout()`，回调则发生在调用线程。正常窗口路径中，监听者越多、工作越重，pre-draw/draw 前的主线程时间越长。常见约束包括：
 
-[图：AsyncLayoutInflater 使用前后主线程与后台线程 trace 对比，标注 inflate 与 addView 区间]
+- 只关心一个 View 的 frame 时，优先用 `View.OnLayoutChangeListener` 或 AndroidX `doOnLayout`；
+- 一次性 global listener 在满足条件后立即移除；
+- listener 内避免 I/O、遍历大树、同步 Binder 和无条件 `requestLayout()`；
+- `OnPreDrawListener.onPreDraw()` 返回 `false` 会取消当前 draw 并重新调度，条件若长期不满足会造成连续取消；
+- `OnGlobalLayoutListener` 结束点早于 draw、buffer queue 和 display present，首帧完成应使用 FrameTimeline、reportFullyDrawn 或与目标语义匹配的信号。
 
-## 在 Perfetto/工具中的表现
+`View.getViewTreeObserver()` 返回的对象不保证在 View 整个生命周期内保持有效。未 attach 的 View 使用 floating observer；attach 时 listener 会合并到窗口 observer，旧 floating observer 随后被 `kill()`。长时间保存 observer 引用时应检查 `isAlive()`，移除 listener 时重新获取当前 observer 更稳妥。普通 detach 本身不能概括为“observer 被置为 dead”。
 
-### Choreographer doFrame → traversal → performMeasure/performLayout/performDraw
+## 8. 用 Perfetto 与 Layout Inspector 建立证据
 
-在 Perfetto 中，View 体系的性能开销集中体现在 `Choreographer#doFrame` 这个 slice 中。展开后会显示三个子阶段：
+### 8.1 Android 17 可依赖的 framework slice
 
-```
-Choreographer#doFrame
-  ├── performMeasure  (Measure 阶段耗时)
-  ├── performLayout   (Layout 阶段耗时)
-  └── performDraw     (Draw 阶段耗时)
-```
+`android-17.0.0_r1` 的 `ViewRootImpl` 对根测量和布局使用固定 slice 名：
 
-如果 `performMeasure` 或 `performLayout` 占据了 doFrame 的绝大部分时间，说明瓶颈在布局层级而不是绘制。
+- `measure`：`performMeasure()` 包住根 View 的 `measure()`；
+- `layout`：`performLayout()` 包住根 View 的 `layout()`，同一 slice 内可能包含 layout 期间请求引起的第二轮；
+- `draw-<mTag>`：`performDraw()` 使用动态名称，完成窗口标签初始化后常见为 `draw-VRI[...]`。
 
-[图：Perfetto 中 doFrame 的三个子阶段，标注 measure 过长的情况]
+Choreographer callback、窗口 relayout、HWUI sync/draw 与 FrameTimeline 还会出现在相邻 track。不同 Android 版本、厂商实现和 tracing 配置可能增加或缺少 slice，采集后应以当前 trace 的名称与调用栈确认。默认 system trace 通常不会逐个列出每个业务 View 的 `onMeasure()`。
 
-### 定位具体 View 的耗时
+[图：Perfetto 中 UI thread 的 traversal 区间，标注 `measure`、`layout`、`draw-<mTag>`，并与 FrameTimeline 的 missed deadline 对齐]
 
-Perfetto 最稳的系统级入口还是 `Choreographer#doFrame`、`ViewRootImpl.performTraversals()`、`performMeasure()`、`performLayout()` 这些 slice。它默认不会把每个 View 实例的 `onMeasure()` / `onLayout()` 逐个展开给我们，所以不要把 `View.setTransitionVisibility()` 或 `Window.setFrameContent()` 当成通用定位入口。
+下面的 SQL 用于从 thread track 中找出较长的根 measure/layout；阈值只是筛选条件，不是平台判定标准：
 
-要把系统级耗时继续收敛到具体 View，常用的是三种可验证路径：
-
-- **手动 trace**：在自定义 View、复杂容器或 Adapter 绑定代码里加 `Trace.beginSection()` / `Trace.endSection()`
-- **结构检查**：用 Layout Inspector、ViewCapture 或 `gfxinfo` 看层级、节点数量和可疑容器
-- **业务埋点**：把可疑布局阶段的开始/结束时间记到日志，再和 Perfetto 中的长 traversal 放到同一时间段里比较
-
-```java
-// 在自定义 View 中添加 trace
-@Override
-protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-    Trace.beginSection("MyCustomView.onMeasure");
-    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-    Trace.endSection();
-}
-```
-
-在 Perfetto 中搜索对应的 trace tag，即可看到每次 `onMeasure()` 的精确耗时。这种办法虽然需要手工埋点，但结论可复现，也不会把不存在的 framework API 当成定位入口。
-
-### Layout Inspector
-
-Android Studio 的 Layout Inspector 可以在运行时查看 View 树的结构。它提供了一个"traffic light"指示器：
-
-- 🟢 绿色：Measure/Layout/Draw 各阶段 < 0.5ms
-- 🟡 黄色：0.5ms - 1ms
-- 🔴 红色：> 1ms
-
-这是一个快速发现"哪个 View 是性能瓶颈"的好工具，但它本身会影响 App 性能（通过 JDWP 调试协议通信），不要在正式性能测试时使用。
-
-## ViewDebug 与系统级 Layout Trace 机制
-
-### ViewDebug.java 的属性暴露体系
-
-**源码位置**：`frameworks/base/core/java/android/view/ViewDebug.java`
-
-`ViewDebug` 是 Android View 调试基础设施的核心类，通过注解体系将 View 内部状态暴露给调试工具：
-
-**@ViewDebug.ExportedProperty** — 标记 View 的字段或方法（非 void、无参数），使工具可以通过 ViewServer 或 Layout Inspector 捕获其值：
-
-```java
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD, ElementType.METHOD})
-public @interface ExportedProperty {
-    String category() default "";  // layout / measurement / drawing / padding / events / chrome
-    boolean deepExport() default false;
-    String[] flagMapping() default {};
-    String formatToHexString() default "";
-}
-```
-
-AOSP View 源码中的典型使用：
-```java
-// frameworks/base/core/java/android/view/View.java
-@ViewDebug.ExportedProperty(category = "measurement")
-public final int getMeasuredWidth() { return mMeasuredWidth & MEASURED_SIZE_MASK; }
-
-@ViewDebug.ExportedProperty(category = "layout")
-public int getBaseline() { return -1; }
-
-@ViewDebug.ExportedProperty(category = "drawing")
-public float getAlpha() { return mAlpha; }
-```
-
-**category 的作用**：为 Layout Inspector 等工具提供属性分类过滤，不同 category 的属性在工具侧可以分组查看。
-
-**@ViewDebug.CapturedViewProperty** — 用于视图捕获时需要包含的属性，语义与 ExportedProperty 不同之处在于捕获上下文。
-
-**ViewDebug.dumpCapturedView()** — 将 View 信息序列化，用于 id-based 仪表化测试生成和数据挖掘。
-
-**HierarchyTraceType（已废弃）** — 早期 `ViewDebug.trace()` API 使用的枚举（INVALIDATE / VIEW_VALIDATE / DRAW 等），内部调用在 API 16 前后被陆续移除。
-
-### debug.layout 系统属性与布局边界可视化
-
-**系统属性名**：`debug.layout`。截至 AOSP main / android-16.0.0_r1，`View.java` 未提供 `View.DEBUG_LAYOUT_PROPERTY` 常量；框架侧通过 `android.sysprop.DisplayProperties.debug_layout()` 读取该属性。
-
-启用方式：
-- 开发者选项 → "显示布局边界"（Show layout bounds）
-- ADB：`adb shell setprop debug.layout true`
-- 已存在窗口通常要触发系统属性变更回调或重启相关 UI 进程，才能重新读取属性值
-
-**属性读取路径**（[已验证: AOSP `frameworks/base/core/java/android/view/ViewRootImpl.java`, `loadSystemProperties()` / `MSG_INVALIDATE_WORLD` / `invalidateWorld()`]）：
-
-```
-debug.layout 系统属性
-    ↓ DisplayProperties.debug_layout().orElse(false)
-ViewRootImpl.loadSystemProperties()
-    ↓ 更新 AttachInfo.mDebugLayout
-WindowManagerGlobal.addSystemPropertyChangedCallback(...)
-    ↓ 属性变化时发送一次 MSG_INVALIDATE_WORLD（带延迟）
-ViewRootImpl.handleMessage(MSG_INVALIDATE_WORLD)
-    ↓ invalidateWorld(mView)
-下一轮 traversal 重绘布局边界
-```
-
-`MSG_INVALIDATE_WORLD` 用于刷新整棵 View 树的 dirty 状态，让布局边界开关变化反映到当前窗口。这个消息只在属性变化路径中触发一次带延迟的刷新；`ViewRootImpl.handleMessage()` 处理该消息时只调用 `invalidateWorld(mView)`。打开布局边界会增加调试绘制成本，性能测试前应关闭，避免描述成 Handler 每帧强制全树重绘。
-
-### performTraversals() 中的 Trace 埋点
-
-**关键常量**：`TRACE_TAG_VIEW = 1L << 3`（值为 8）
-
-**完整调用链**（[已验证: AOSP ViewRootImpl.java]）：
-
-```
-Choreographer.doFrame(vsyncId)
-    ↓
-ViewRootImpl.doTraversal()
-    ↓ Trace.traceBegin(TRACE_TAG_VIEW, "performTraversals")
-    ↓
-ViewRootImpl.performTraversals()
-    ├── Trace.traceBegin(TRACE_TAG_VIEW, "measure")
-    │   └── mView.measure() → measure hierarchy
-    ├── Trace.traceEnd(TRACE_TAG_VIEW)
-    ├── Trace.traceBegin(TRACE_TAG_VIEW, "layout")
-    │   └── host.layout() → layout hierarchy
-    ├── Trace.traceEnd(TRACE_TAG_VIEW)
-    ├── Trace.traceBegin(TRACE_TAG_VIEW, "draw")
-    │   └── mView.draw() → build/update DisplayList
-    └── Trace.traceEnd(TRACE_TAG_VIEW)
-    ↓ Trace.traceEnd(TRACE_TAG_VIEW)  ← finally 块保证结束
-```
-
-这些 Slice 在 Perfetto 中通过 `atrace` 数据源记录，呈现为 UI Thread 上的嵌套 slice，名称为 `"measure"`、`"layout"`、`"draw"`。
-
-### ViewHierarchyEncoder：高效的 View 层级序列化
-
-**源码位置**：`frameworks/base/core/java/android/view/ViewHierarchyEncoder.java`（API 21+）。`dumpv2()` 定义在 `ViewDebug`；`ViewHierarchyEncoder` 不提供这个静态入口。
-
-`ViewHierarchyEncoder` 负责把单个 View 对象的属性编码到输出流。典型调用过程由 `ViewDebug.dumpv2(View, OutputStream)` 发起：`ViewDebug` 遍历 View 树，调用每个 View 的 `encode(ViewHierarchyEncoder)`，编码器写入属性 ID、属性值和末尾的 ID → 属性名映射。
-
-```java
-// frameworks/base/core/java/android/view/ViewHierarchyEncoder.java
-// 编码器职责节选：保留方法签名，方法体省略。
-public final class ViewHierarchyEncoder {
-    public void beginObject(Object object) { /* Several lines omitted. */ }
-    public void addProperty(String name, boolean value) { /* Several lines omitted. */ }
-    public void addProperty(String name, int value) { /* Several lines omitted. */ }
-    public void addProperty(String name, float value) { /* Several lines omitted. */ }
-    public void endObject() { /* Several lines omitted. */ }
-    public void endStream() { /* Several lines omitted. */ }
-}
-
-// frameworks/base/core/java/android/view/ViewDebug.java
-// dumpv2() 位于 ViewDebug，内部使用 View.encode(encoder) 写出层级。
-public static void dumpv2(View root, OutputStream clientStream) throws IOException {
-    // Several lines omitted.
-}
-```
-
-Layout Inspector V2 通过 `View.encode()` 这条路径读取属性，减少早期反射式层级 dump 的开销。写工具或读源码时，要把 `ViewDebug` 的遍历入口和 `ViewHierarchyEncoder` 的编码职责分开。
-
-### debug_view_attributes 与 Layout Inspector
-
-Layout Inspector 的底层依赖：
-```bash
-adb shell settings put global debug_view_attributes 1
-```
-该设置让系统为所有 View 生成额外调试信息（View ID、资源名等），并触发当前前台 Activity 一次重启。Layout Inspector 连接时自动启用，断开时删除。
-
-### Perfetto 中的 View 系统追踪
-
-| Slice 名称 | 线程 | 含义 |
-|---|---|---|
-| `performTraversals` | UI Thread | 完整遍历（measure+layout+draw） |
-| `measure` | UI Thread | 递归 measure pass |
-| `layout` | UI Thread | 递归 layout pass |
-| `draw` | UI Thread | 绘制（构建 DisplayList） |
-| `Choreographer#doFrame` | UI Thread | VSync 驱动的帧处理 |
-
-Perfetto SQL 示例 — 查找 measure 阶段耗时超过 4ms 的帧：
 ```sql
-SELECT 
-  slice.name, slice.depth,
-  slice.dur / 1000 AS duration_us,
-  thread.name AS thread_name
-FROM slice
-JOIN thread USING (utid)
-WHERE slice.name = 'measure' AND slice.dur > 4000000
-ORDER BY slice.dur DESC;
+SELECT
+  s.ts,
+  s.dur / 1e6 AS dur_ms,
+  s.name AS slice_name,
+  t.name AS thread_name,
+  p.name AS process_name
+FROM slice AS s
+JOIN thread_track AS tt ON s.track_id = tt.id
+JOIN thread AS t ON tt.utid = t.utid
+LEFT JOIN process AS p ON t.upid = p.upid
+WHERE (s.name = 'measure' OR s.name = 'layout')
+  AND s.dur >= 2e6
+ORDER BY s.dur DESC;
 ```
 
+`slice` 没有可直接 `USING (utid)` 的通用关系，必须经 `thread_track` 关联线程。结果还要过滤目标进程/窗口，并回到时间线判断这些 slice 是否属于用户可感知帧。
 
+FrameTimeline 中 App `SurfaceFrame` 的 `surface_frame_token` 与 SF/Display 侧的 `display_frame_token` 承担不同关联语义。一帧 DisplayFrame 可以接纳多个进程或 layer 的 SurfaceFrame，不能把两种 token 拼成一个“端到端 frame id”。measure/layout 只能解释 App 主线程准备阶段，显示结果还要继续对齐 RenderThread、App Window buffer 提交和对应的 DisplayFrame。
 
+### 8.2 给可疑 View 加窄范围 trace
 
-## 常见问题与误区
+系统 slice 只能证明根阶段变长。定位自定义容器时，在可疑实现周围添加命名稳定的 app trace，保持 `try/finally` 对称：
 
-### 误区 1：布局越少越好
+```kotlin
+override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+    Trace.beginSection("MessageCard.onMeasure")
+    try {
+        measureMessageCard(widthMeasureSpec, heightMeasureSpec)
+    } finally {
+        Trace.endSection()
+    }
+}
+```
 
-减少 View 数量能降低 measure/layout 的开销，但"过度扁平化"也有代价。如果一个 View 的 `onDraw()` 逻辑过于复杂（比如用 Canvas 手动画了一个本来应该拆成多个 View 的复杂界面），draw 阶段的耗时反而可能超过省下来的 measure 时间。
+这段埋点会出现在调用线程的 trace 中，可与根 `measure` 嵌套关系、调用次数和帧 deadline 对齐。采样前确认 release-like 构建与 tracing 开销；对大量叶子 View 全面加 section 会扰动结果。
 
-正确做法：优先减少**层级深度**（嵌套层数），再看**View 总数**。一个 5 层 50 个 View 的布局，通常比 2 层 200 个 View 的布局更慢；但一个 1 层 500 个 View 的布局也未必比 3 层 100 个 View 的布局快。
+第三方控件无法改源码时，可以组合方法 sampling、布局结构、输入变化和二分替换。只看一张 Layout Inspector 树无法定位毫秒归属。
 
-### 误区 2：ConstraintLayout 总是比 LinearLayout 快
+### 8.3 Layout Inspector 的角色
 
-`ConstraintLayout` 的约束求解器有初始化开销。对于只有 2-3 个子 View、单向排列的简单场景，`LinearLayout` 的实现更轻量。根据 Google 的测试数据，在简单场景下 `ConstraintLayout` 和 `LinearLayout` 的 measure 时间差距在 5% 以内，可以忽略。
+Layout Inspector 适合检查运行时层级、父链、属性、隐藏 wrapper 和重复子树。它不提供可靠的逐 View measure/layout 性能数值，旧版 Hierarchy Viewer 的“交通灯耗时”也不应套到当前工具。
 
-### 误区 3：View.GONE 的 View 不参与 measure
+连接 inspector、live updates、debug view attributes、JDWP 或设备镜像都可能改变被测进程。结构检查与性能采集分开进行：
 
-这个说法不完全正确。`View.GONE` 的 View 本身不参与 measure（它的测量尺寸为 0），但它的**父容器仍然需要处理它**。某些 ViewGroup（如 `LinearLayout`）在测量时会遍历所有子 View 包括 GONE 的，只是跳过测量步骤。而且 GONE 的 View 变为 VISIBLE 时会触发父容器的 `requestLayout()`，导致整棵 View 树重测。
+1. 用 Layout Inspector 保存结构证据；
+2. 断开调试附加，使用相同页面状态采集 Perfetto/Macrobenchmark；
+3. 按 trace 锁定阶段；
+4. 对可疑容器加窄范围 trace 或做单变量 A/B；
+5. 同时验证截图、交互、accessibility 与内存。
 
-### 面试高频：requestLayout vs invalidate
+### 8.4 从长 layout 继续追问
 
-简单回答：
+| trace 现象 | 优先检查 |
+|---|---|
+| 单次 `measure` 很长 | 文本重排、复杂容器、多 pass、自定义 `onMeasure()`、首次资源 |
+| 多帧连续 `measure/layout` | 动画中的 LayoutParams、listener 回写、binding 重复赋值、insets/窗口变化 |
+| 同一 `layout` slice 内重复业务 trace | layout 期间 `requestLayout()`、第二轮 pass |
+| inflate 长，随后 layout 也长 | 对象/资源创建与大子树首次测量应分开优化 |
+| UI thread 处于 Runnable、等待 CPU | 调度竞争、thermal、频率；转到 `android17-6.18-2026-06_r6` 的 sched/freq 证据 |
+| UI thread 很短但帧仍迟到 | RenderThread、GPU、buffer/fence、SurfaceFlinger；参见 [7.1 卡顿定义](01-jank-definition.md) |
 
-- `invalidate()` → 重绘（Draw only）→ 用于外观变化
-- `requestLayout()` → 重测重排重绘（Measure + Layout + Draw）→ 用于尺寸/位置变化
+一个长 `measure` slice 只说明根测量区间长。若线程处于 Sleeping/Blocked，还要查锁、Binder、I/O 或等待；若处于 Runnable 却未运行，再看调度与 CPU 竞争。把 wall time 全部归因于布局算法会误导修复方向。
 
-进阶回答：
+## 9. 可执行的 Review 清单
 
-- `invalidate()` 会把 dirty 区域向上传到 `ViewRootImpl`，随后那一轮 Draw 再自顶向下遍历；`requestLayout()` 则把 layout request 向上传到 `ViewRootImpl`
-- `requestLayout()` 会触发 `scheduleTraversals()` 并通过 `Choreographer` 等待下一个 VSync 执行
-- `invalidate()` 也是异步的，它通过 `ViewRootImpl.scheduleTraversals()` 等待下一个 VSync
-- 在同一帧内多次调用 `invalidate()` 或 `requestLayout()`，只会在下一个 VSync 执行一次 doFrame
+### inflate
+
+- 冷、热两组数据是否分开；
+- 是否记录 Activity/Fragment、layout 资源和依赖版本；
+- Factory2、自定义 View 构造、主题、字体、Drawable 是否进入关键路径；
+- `inflate(res, parent, false)` 是否保留正确 LayoutParams；
+- `ViewStub` 或异步加载是否只是把卡顿推迟到用户点击；
+- AsyncLayoutInflater 是否统计 fallback、排队和 attach 后 layout。
+
+### measure/layout
+
+- 是否用 trace 证明 `measure` 或 `layout` 超过当前帧 deadline；
+- 是否区分节点数、深度、pass 次数和单节点成本；
+- 是否存在 weight、RelativeLayout、largest-child、baseline 或复杂约束；
+- 自定义 `onMeasure()` 是否分配、I/O、锁等待或重复遍历；
+- layout 期间是否产生第二轮请求；
+- 文本、insets、窗口尺寸和列表复用是否改变测量输入。
+
+### 工具与验证
+
+- Android 平台结论是否对应 `android-17.0.0_r1`；
+- 进入 sched/freq/fence 时是否对应 `android17-6.18-2026-06_r6`；
+- Perfetto SQL 是否经 `thread_track` 关联线程；
+- Layout Inspector 是否只用于结构证据；
+- 修改前后是否使用相同设备、刷新率、页面数据、温度和构建类型；
+- 性能收益是否与视觉、交互、accessibility 和内存回归一起验证。
 
 ## 参考资料
 
-### AOSP 源码路径
+### Android 17 源码
 
-- `frameworks/base/core/java/android/view/LayoutInflater.java` — inflate 流程、Factory2、Constructor 缓存
-- `frameworks/base/core/java/android/view/View.java` — requestLayout、invalidate、measure
-- `frameworks/base/core/java/android/view/ViewRootImpl.java` — performTraversals、scheduleTraversals
-- `frameworks/base/core/java/android/view/ViewGroup.java` — measureChildWithMargins、addView
-- `frameworks/base/core/java/android/widget/RelativeLayout.java` — 二次 measure 的实现
-- `frameworks/base/core/java/android/widget/LinearLayout.java` — layout_weight 的 measure 逻辑
-- `androidx/asynclayoutinflater/asynclayoutinflater/src/main/java/androidx/asynclayoutinflater/view/AsyncLayoutInflater.java` — 后台 inflate 条件与回退逻辑
+- [LayoutInflater.java：inflate、Factory 与构造器缓存](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/LayoutInflater.java)
+- [PhoneLayoutInflater.java：framework 短类名前缀](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/policy/PhoneLayoutInflater.java)
+- [View.java：measure、requestLayout 与 invalidate](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java)
+- [ViewGroup.java：child MeasureSpec 与层级操作](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java)
+- [Choreographer.java：VSync 与 callback 顺序](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)
+- [ViewRootImpl.java：traversal、第二轮布局与 trace](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)
+- [ThreadedRenderer.java：UI thread 到 RenderThread 的入口](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ThreadedRenderer.java)
+- [ViewTreeObserver.java：listener 分发与 observer 生命周期](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewTreeObserver.java)
+- [ViewStub.java：同步 inflate 与替换语义](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewStub.java)
+- [RelativeLayout.java：水平/垂直依赖测量](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/widget/RelativeLayout.java)
+- [LinearLayout.java：weight 与重新测量条件](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/widget/LinearLayout.java)
+- [Android 17 kernel 基线](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6)
 
-### 官方文档与博客
+### AndroidX 与官方指南
 
-- [Understanding the performance benefits of ConstraintLayout](https://android-developers.googleblog.com/2017/08/understanding-performance-benefits-of.html) — Google 官方 benchmark
-- [Optimizing View Hierarchies](https://developer.android.com/topic/performance/rendering/optimizing-view-hierarchies) — Android 官方文档
-- [Improving Layout Performance](https://developer.android.com/topic/performance/vitals/render) — Android Performance Patterns
-
-### 工具
-
-- Layout Inspector（Android Studio 内置）
-- Systrace / Perfetto — 布局 pass 的 trace 标签
-- Lint — 检测过度嵌套、无用 View、可用 ViewStub 替换的布局
-
-
----
-
-### 7.12.x ViewTreeObserver 与布局性能优化机制（Android 16 源码边界）
-
-**来源**：每日源码调研（cron:d78cfef0，id=6，关联 §6.1 View系统优化）
-**时间**：2026-06-03 | 源码级验证（AOSP android-16.0.0_r1；android-17.0.0_r1 tag 未发布，本附录不把 VTO 机制作为 Android 17 新增结论）
-
-#### ViewTreeObserver 核心机制
-
-ViewTreeObserver（VTO）是 View 框架中连接 View 树生命周期与外部监听者的核心机制。核心源码：
-
-- `frameworks/base/core/java/android/view/ViewTreeObserver.java`
-- `frameworks/base/core/java/android/view/ViewRootImpl.java` — performTraversals() 入口
-
-**关键成员**：
-
-```java
-private CopyOnWriteArray<OnGlobalLayoutListener> mOnGlobalLayoutListeners;
-private CopyOnWriteArray<OnScrollChangedListener> mOnScrollChangedListeners;
-private boolean mAlive = true;  // View 从窗口剥离后设为 false，丢弃所有待处理回调
-```
-
-**全局布局回调触发链**：
-
-```
-View.requestLayout()
-  -> ViewRootImpl.requestLayout()
-    -> ViewRootImpl.scheduleTraversals()
-      -> Choreographer.postCallback(Choreographer.CALLBACK_TRAVERSAL, mTraversalRunnable, null)
-        -> ViewRootImpl.doTraversal()
-          -> ViewRootImpl.performTraversals()
-            -> View.layout() -> View.onLayout()
-              -> onGlobalLayoutChanged()
-```
-
-#### requestLayout 传播机制
-
-**PFLAG_FORCE_LAYOUT 传播**（View.java，长期既有机制）：
-
-`requestLayout()` 在 View 上设置 `PFLAG_FORCE_LAYOUT` 标记并沿父链传播到 `ViewRootImpl`；`performTraversals()` 通过 `getValidLayoutRequesters()` 收集需要重新布局的 View 集合。这一机制从早期 Android 就已存在，并非 Android 17 新增优化。
-
-**ViewGroup layoutMode 用途**（ViewGroup.java）：
-
-`mLayoutMode` 用于 optical/clip bounds 布局模式继承和缓存，不影响 measure 阶段的跳过或执行。不存在基于 layoutMode 跳过 measure 的快速路径。
-
-#### 常见性能陷阱
-
-1. **OnGlobalLayoutListener 中 requestLayout**：每次布局变化都触发重新布局，O(n²) 复杂度。改用 addOnPreDrawListener。
-2. **未移除监听者导致内存泄漏**：View 从窗口剥离时 VTO 的 mAlive=false 会丢弃回调，但监听者本身仍持有 View 引用。必须在 Lifecycle onDestroy 中显式 removeOnGlobalLayoutListener。
-
-#### 参考源码文件
-
-- `frameworks/base/core/java/android/view/ViewTreeObserver.java`（AOSP android-16.0.0_r1）
-- `frameworks/base/core/java/android/view/ViewRootImpl.java`（AOSP android-16.0.0_r1）
-- `frameworks/base/core/java/android/view/View.java`（AOSP android-16.0.0_r1）
-- `frameworks/base/core/java/android/view/ViewGroup.java`（AOSP android-16.0.0_r1）
+- [AsyncLayoutInflater 1.1.0 release notes](https://developer.android.com/jetpack/androidx/releases/asynclayoutinflater)
+- [AsyncLayoutInflater 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-main/asynclayoutinflater/asynclayoutinflater/src/main/java/androidx/asynclayoutinflater/view/AsyncLayoutInflater.java)
+- [AsyncAppCompatFactory 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-main/asynclayoutinflater/asynclayoutinflater-appcompat/src/main/java/androidx/asynclayoutinflater/appcompat/AsyncAppCompatFactory.java)
+- [Performance and view hierarchies](https://developer.android.com/topic/performance/rendering/optimizing-view-hierarchies)
+- [Layout resource：include、merge 与 ViewStub](https://developer.android.com/guide/topics/resources/layout-resource)
+- [LayoutInflater API](https://developer.android.com/reference/android/view/LayoutInflater)
+- [OnPreDrawListener API](https://developer.android.com/reference/android/view/ViewTreeObserver.OnPreDrawListener)
+- [Layout Inspector](https://developer.android.com/studio/debug/layout-inspector)
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- [Understanding the performance benefits of ConstraintLayout（2017 case study）](https://android-developers.googleblog.com/2017/08/understanding-performance-benefits-of.html)
