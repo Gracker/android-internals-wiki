@@ -50,7 +50,7 @@ sources:
 
 ### 它逐线程抓取，不做一次全局 `SuspendAll`
 
-Android 17 的 [`Thread.getAllStackTraces()`](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java) 先取得活动线程数组，再循环调用每个线程的 `getStackTrace()`。下面的等价伪代码只保留影响一致性的部分：
+Android 17 的 [`Thread.getAllStackTraces()`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java) 先取得活动线程数组，再循环调用每个线程的 `getStackTrace()`。下面的等价伪代码只保留影响一致性的部分：
 
 ```java
 AllThreadsRecord record = getAllThreadsInternal();
@@ -61,7 +61,7 @@ for (int i = 0; i < record.count; i++) {
 }
 ```
 
-这段流程会分配线程数组、`HashMap`、各线程的栈数组和 `StackTraceElement`。线程列表与每条栈的采样时刻不同；遍历期间线程可以继续运行、创建或退出。公开 API 文档也明确说明，每条栈只是快照，并且可能在不同时间取得。
+这段流程会分配线程数组、`HashMap`、各线程的栈数组和 `StackTraceElement`。`getAllThreadsInternal()` 先用 `ThreadGroup.activeCount()` 估算数组大小，再调用 `enumerate()`；线程并发创建时，枚举结果本身也不承诺覆盖每条活动线程。线程列表与每条栈的采样时刻不同，遍历期间线程可以继续运行、创建或退出。公开 API 文档也明确说明，每条栈只是快照，并且可能在不同时间取得。
 
 因此，下面两种说法都不成立：
 
@@ -72,7 +72,7 @@ for (int i = 0; i < record.count; i++) {
 
 ### 当前线程与其他线程走不同路径
 
-`Thread.getStackTrace()` 进入 Android 私有的 `VMStack.getThreadStackTrace()`，Android 17 的 [`dalvik_system_VMStack.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/native/dalvik_system_VMStack.cc) 在 `GetThreadStack()` 中区分两种情况：
+`Thread.getStackTrace()` 进入 Android 私有的 `VMStack.getThreadStackTrace()`，Android 17 的 [`dalvik_system_VMStack.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/dalvik_system_VMStack.cc) 在 `GetThreadStack()` 中区分两种情况：
 
 1. 目标就是调用线程：直接调用 `Thread::CreateInternalStackTrace()`。
 2. 目标是另一条 Java 线程：调用线程先离开 runnable 状态，再用 `ThreadList::SuspendThreadByPeer()` 挂起这一条目标线程；栈对象生成后恢复目标线程。
@@ -96,11 +96,11 @@ handler 再调用 `thread.getStackTrace()` 得到的是更晚的采样，栈顶�
 
 ### SignalCatcher 在普通线程上下文中处理 SIGQUIT
 
-ART 会让相关线程屏蔽 `SIGQUIT`，再由专门的 SignalCatcher 线程通过 `sigwait()` 同步接收。Android 17 的 [`SignalCatcher::HandleSigQuit()`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/signal_catcher.cc) 调用 `Runtime::DumpForSigQuit()`，后者再进入 `ThreadList::DumpForSigQuit()` 等诊断模块。
+ART 会让相关线程屏蔽 `SIGQUIT`，再由专门的 SignalCatcher 线程通过 `sigwait()` 同步接收。Android 17 的 [`SignalCatcher::HandleSigQuit()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/signal_catcher.cc) 调用 `Runtime::DumpForSigQuit()`，后者再进入 `ThreadList::DumpForSigQuit()` 等诊断模块。
 
 这不是“给每条 Java 线程各发送一次 SIGQUIT”，也不是在任意业务线程的异步 signal handler 中直接遍历 Java 堆。SignalCatcher 是 ART 已知、已附着的线程，能使用运行时锁、C++ stream 和诊断对象；普通应用的 Native fatal handler 不具备这个前提。
 
-Android 17 的 [`ThreadList::Dump()`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/thread_list.cc) 创建 `DumpCheckpoint`，通过 `RunCheckpoint()` 请求各线程执行 dump checkpoint，再等待并按诊断价值排序输出。已经处于挂起状态的线程和运行中的线程由 ART 按各自状态处理。
+Android 17 的 [`ThreadList::Dump()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread_list.cc) 创建 `DumpCheckpoint`，通过 `RunCheckpoint()` 请求各线程执行 dump checkpoint，再等待并按诊断价值排序输出。已经处于挂起状态的线程和运行中的线程由 ART 按各自状态处理。
 
 这带来三个诊断边界：
 
@@ -110,7 +110,7 @@ Android 17 的 [`ThreadList::Dump()`](https://android.googlesource.com/platform/
 
 ### ART dump 可以附加 Java monitor 关系
 
-Android 17 的 [`StackDumpVisitor`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/thread.cc) 会把 monitor 信息写在相应 Java frame 附近：
+Android 17 的 [`StackDumpVisitor`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc) 会把 monitor 信息写在相应 Java frame 附近：
 
 - `waiting to lock ... held by thread N`：线程处于 `BLOCKED` 或锁膨胀等待，ART 找到了目标 monitor 及 owner。
 - `waiting on ...`：线程在 `Object.wait()` 一类等待中；它已经释放该对象 monitor，不能把该对象当前 owner 直接解释为唤醒责任方。
@@ -134,7 +134,7 @@ Android 17 的 [`StackDumpVisitor`](https://android.googlesource.com/platform/ar
 
 ### `AnnotatedStackTraceElement` 是隐藏的平台能力
 
-ART 的 `Thread::CreateAnnotatedStackTrace()` 能构造带 `blockedOn` 与 `heldLocks` 的对象数组。frameworks/base 中的 [`WatchdogDiagnostics`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/WatchdogDiagnostics.java) 会通过隐藏的 `VMStack.getAnnotatedThreadStackTrace()` 使用这项能力。
+ART 的 `Thread::CreateAnnotatedStackTrace()` 能构造带 `blockedOn` 与 `heldLocks` 的对象数组。frameworks/base 中的 [`WatchdogDiagnostics`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/WatchdogDiagnostics.java) 会通过隐藏的 `VMStack.getAnnotatedThreadStackTrace()` 使用这项能力。
 
 这里有两个常被忽略的限制：
 
@@ -229,7 +229,7 @@ Android 8 起，系统按需启动 `crash_dump32/64`，由 debuggerd/tombstoned 
 1. 在同一份 dump 内按 Java `tid` 关联 waiter 与 owner。
 2. 核对 waiter 等待的对象标识与 owner 的 `locked` 对象是否一致。
 3. 继续检查 owner 是否又 `waiting to lock` 另一把 monitor。
-4. 出现循环等待时，用第二份样本或 Perfetto 再确认，因为各线程快照并非严格同时。
+4. 出现循环等待时，用第二份样本或 Perfetto 再确认，因为各线程快照没有严格的同时性。
 5. 没有循环等待时，继续判断是长持锁、owner 未获 CPU、owner 在 I/O/Binder，还是 trace 已经抓晚。
 
 单次 dump 能证明“采样附近观察到了等待关系”，不能给出锁已经持有多久。对象标识也只适合同一份现场内关联，不应跨进程或跨多次 GC 后当作永久 lock ID。
@@ -238,7 +238,7 @@ Android 8 起，系统按需启动 `crash_dump32/64`，由 debuggerd/tombstoned 
 
 堆栈回答“采样时在哪里”，trace 才能回答“持续多久、期间怎样变化”。Android 17 上可按问题类型选择：
 
-- Java monitor：Perfetto 的 `android.monitor_contention`，查看 waiter、owner、双方方法和等待时长。
+- Java monitor：采集包含 ART monitor-contention slice 的 Perfetto trace，再用 PerfettoSQL `android.monitor_contention` 模块解析 waiter、owner、双方方法和等待时长。模块名称是查询入口，不是 trace 配置中的 data source 名。
 - 线程调度：`sched_switch` / thread state，确认 owner 是 Running、Runnable 还是睡眠。
 - Binder：关联 transaction 与 reply，继续进入服务端线程。
 - native 锁：结合 native callstack、futex wait 和应用/平台锁事件。
@@ -319,13 +319,14 @@ Perfetto 没记录到 contention 也不能证明没有竞争；trace 配置、�
 
 ## 源码与文档入口
 
-- Android 17 [`java.lang.Thread`](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java)：核对逐线程 `getAllStackTraces()` 与公开栈语义。
-- Android 17 [`dalvik_system_VMStack.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/native/dalvik_system_VMStack.cc)：核对当前线程直接取栈、其他线程 `SuspendThreadByPeer()` 路径。
-- Android 17 [`thread_list.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/thread_list.cc) 与 [`signal_catcher.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/signal_catcher.cc)：核对 SIGQUIT、checkpoint 与线程 dump。
-- Android 17 [`thread.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/thread.cc)、[`stack.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/stack.cc) 与 [`monitor.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/monitor.cc)：核对 StackVisitor、locked/waiting/blocked 输出和 monitor owner。
-- Android 17 [`WatchdogDiagnostics.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/WatchdogDiagnostics.java)：核对平台隐藏 annotated stack 的使用边界。
+- Android 17 [`java.lang.Thread`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java)：核对逐线程 `getAllStackTraces()` 与公开栈语义。
+- Android 17 [`dalvik_system_VMStack.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/dalvik_system_VMStack.cc)：核对当前线程直接取栈、其他线程 `SuspendThreadByPeer()` 路径。
+- Android 17 [`thread_list.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread_list.cc) 与 [`signal_catcher.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/signal_catcher.cc)：核对 SIGQUIT、checkpoint 与线程 dump。
+- Android 17 [`thread.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc)、[`stack.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/stack.cc) 与 [`monitor.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/monitor.cc)：核对 StackVisitor、locked/waiting/blocked 输出和 monitor owner。
+- Android 17 [`WatchdogDiagnostics.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/WatchdogDiagnostics.java)：核对平台隐藏 annotated stack 的使用边界。
 - [`Thread.getAllStackTraces()` API](<https://developer.android.com/reference/java/lang/Thread#getAllStackTraces()>)：核对非原子、多时刻快照的公开契约。
 - [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)：核对 ANR trace、API 31+ Native tombstone stream 与可能为空的循环存储。
 - [Android Native crash 与 tombstone](https://source.android.com/docs/core/tests/debug/native-crash)：核对 debuggerd 产物和全线程 backtrace。
 - [查找 ANR 无响应线程](https://developer.android.com/topic/performance/anrs/find-unresponsive-thread)：核对 monitor、Binder、I/O 和抓取过晚等诊断分支。
+- [Perfetto Android trace 分析示例](https://perfetto.dev/docs/analysis/common-queries#find-app-startups-blocked-on-monitor-contention)：核对 `android.monitor_contention` 模块及其 waiter/owner 解析字段。
 - kernel `android17-6.18-2026-06_r6` 的 [ftrace 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/trace/ftrace.rst)：核对调度与内核 trace 能力，不把内核等待状态误写成 Java monitor owner。
