@@ -38,156 +38,308 @@ source_candidates:
 
 # 17.6 Media Performance Class 与设备能力分级
 
-Media Performance Class（MPC）把设备能力从机型名、SoC 型号、内存大小这些松散信号里抽出来，变成一个可在运行时读取的能力等级。App 侧用它做功能分级：高等级设备打开更高规格的视频、相机、图像处理或复杂 UI，低等级设备走保守配置，避免把体验押在机型白名单上。
+Media Performance Class（MPC）是设备声明的一组媒体体验下限。它把 codec、相机、音频、显示、内存、存储和图形等要求绑定到一个整数，App 可在运行时读取该值并选择默认体验。
 
-MPC 不是通用跑分。它来自 Android CDD 中的兼容性要求，并由 CTS、Media CTS、Camera ITS 等测试验证，覆盖媒体、相机、图形、内存和存储等与体验强相关的能力。工程上要把它当成“能力分桶”，再结合运行时 API 和线上指标做最终决策。[已验证: 官方文档, developer.android.com/topic/performance/performance-class]
+MPC 不代表通用性能分数，也不能替代某项能力的运行时查询。一个设备可以满足很高的媒体等级，却在特定温度、后台压力或 OEM 策略下表现波动；另一个值为 0 的设备也可能支持某项高规格功能，只是没有可用的 MPC 声明。
 
-## 能力等级的读取边界
+本章的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`。Android 17 对 MPC 做了结构性调整，旧版本文章里常见的“等级只会等于 Android API level”已经不完整。
 
-Android 12 开始，系统通过 `Build.VERSION.MEDIA_PERFORMANCE_CLASS` 暴露设备声明的 MPC。AOSP `Build.java` 对这个字段的定义很直接：返回 0 表示没有声明；非 0 值对应 `Build.VERSION_CODES` 中的 Android 版本号，从 `R`（Android 11 / API 30）开始；设备启动后这个值不变，但厂商 OTA 后可能提高。[已验证: AOSP main, frameworks/base/core/java/android/os/Build.java]
+## Android 17 新增了四个等级
 
-这个字段有三个边界要写进业务判断：
+Android 17 CDD 的 2.2.7 节新增 MPC 1、10、20、37，并把每项阈值移到独立的 supplemental 文档。Android 17 定义的等级集合是：
 
-- `0` 是一个正常分桶：它表示系统没有可用的 MPC 信息，不等于设备不能运行高规格功能。低端机、未声明设备、Google Play services 不可用的环境都可能落到这一档。
-- MPC 与当前系统版本分离：一台 Android 14 设备可以继续报告 MPC 33，因为它满足 Android 13 的能力要求，但没有达到 MPC 34 的要求。[已验证: 官方文档, Performance class forward-compatible]
-- 同一 Android 版本下能力不同：版本号只能说明平台 API 集合，不能说明并发编解码、相机启动延迟、存储随机读写、HDR 显示等硬件能力。
+| 原始值 | 定位 | 版本来源 |
+|---:|---|---|
+| `0` | 未定义或没有可用声明 | 特殊值 |
+| `1` | Android 17 新增的基础等级 | CDD 17 |
+| `10` | Android 17 新增的入门媒体等级 | CDD 17 |
+| `20` | Android 17 新增的中间等级 | CDD 17 |
+| `30` | Android 11 的 MPC 30 | CDD 11 |
+| `31` | Android 12 的 MPC 31 | CDD 12 |
+| `33` | Android 13 的 MPC 33 | CDD 13 |
+| `34` | Android 14 的 MPC 34 | CDD 14 |
+| `35` | Android 15 的 MPC 35 | CDD 15 |
+| `37` | Android 17 的最高等级 | CDD 17 |
 
-官方现在推荐通过 Jetpack Core Performance 读取 MPC。`core-performance` 提供 `DevicePerformance` 接口，`core-performance-play-services` 提供 `PlayServicesDevicePerformance`；后者会先尝试从 Google Play services 获取基于认证结果更新的 MPC，取不到时回退到设备声明的 build 常量。[已验证: AOSP androidx, PlayServicesDevicePerformance.kt]
+MPC 32 和 36 没有定义。新等级 1、10、20 让厂商可以声明低于 MPC 30 的已验证能力集，减少“只有高端设备有 class，其余全部是 0”的信息缺口。MPC 37 则提高内存、I/O、音频与部分媒体、相机要求。
 
-下面的代码展示一种业务侧封装方式，重点是把 `0` 单独处理，并且不要在每个页面重复初始化 `DevicePerformance`。
+表中的“基础、入门、中间”只用于本章区分档位，不是 CDD 的正式等级名称。
+
+Android Developers 的概览页截至 2026 年 5 月仍只列到 MPC 35；Android 17 CDD 和 2026 年 6 月发布的 supplemental 文档已经包含上述新等级。实现与评审 Android 17 功能时，应以 CDD 17 和 supplemental 表为准。
+
+## 读取字段与声明语义
+
+Android 12 起，公开字段是 `Build.VERSION.MEDIA_PERFORMANCE_CLASS`。Android 17 的 `Build.java` 直接读取设备属性：
+
+```java
+public static final int MEDIA_PERFORMANCE_CLASS =
+        DeviceProperties.media_performance_class().orElse(0);
+```
+
+这段代码只返回一个整数。字段值在一次开机期间保持稳定，厂商 OTA 可以提高它。App 不应缓存到跨版本永久配置中；进程启动时重新读取即可。
+
+Android 17 的 `Build.java` 注释仍写着“非零值定义在 `Build.VERSION_CODES`，从 R 开始”。CDD 17 新增的 1、10、20 并不是 Android SDK 版本号，这条注释没有覆盖新规则。业务代码不能用“所有合法值都等于某个 `VERSION_CODES` 常量”作为校验条件。
+
+### 值为 0 时知道了什么
+
+`0` 只表示当前读取路径没有 MPC。常见原因包括：
+
+- 设备没有声明；
+- 旧系统没有公开 build 字段；
+- Jetpack 或 Play services 回退没有得到认证结果；
+- ROM、GMS 可用性或库版本让动态值不可用。
+
+它不能证明设备低端，也不能证明某个 codec、相机或 HDR 能力缺失。业务应给 `0` 安排保守默认值，再通过运行时 capability 打开确认可用的单项功能。
+
+### MPC 与当前 Android 版本分离
+
+设备 OTA 到更高平台后，可以继续报告原有 MPC。例如一台 Android 14 设备可保留 MPC 33，只要它没有满足 MPC 34 的全部要求。反过来，Android 17 设备也可能报告 1、10、20、30、31、33、34、35 或 37。
+
+因此：
+
+- `SDK_INT` 回答平台 API 和兼容行为；
+- MPC 回答声明等级对应的能力下限；
+- runtime capability 回答当前设备某项功能是否可用；
+- 实测数据回答当前负载下能否达到业务体验目标。
+
+这四类信号不能互相替换。
+
+## Jetpack Core Performance 在 Android 17 的兼容缝隙
+
+Android 官方建议通过 Jetpack Core Performance 的 `DevicePerformance` 读取 MPC。`PlayServicesDevicePerformance` 会从本地 DataStore 读取 Google Play services 的结果，与默认读取器取最大值，并异步请求新结果写回 DataStore。
+
+这个实现有两个容易忽略的细节：
+
+1. 当前对象的 `mediaPerformanceClass` 使用 lazy 值。若首次访问发生在异步 Play services 更新完成前，本次对象可能继续使用旧的持久化结果，适合在 `Application` 层初始化并在后续进程使用更新值。
+2. 截至本轮核对的 `androidx-main`，`DefaultDevicePerformance.isPerformanceClassValid()` 仍要求值至少为 `Build.VERSION_CODES.R`，即 30。它会把 `Build.VERSION.MEDIA_PERFORMANCE_CLASS` 返回的 1、10、20 当作无效值并回退到 0。
+
+第二点是 CDD 17 新等级与当前 Jetpack fallback 代码之间的兼容缝隙。它不影响 Play services 已写入 1、10、20 后的读取，因为 `PlayServicesDevicePerformance` 对持久化结果直接取 `max`；但只依赖 build property 的 fallback 会丢失新低阶值。
+
+接入前应对所用 Jetpack 版本做一次单元测试。在 API 31 及以上，业务若要完整识别 CDD 17 等级，可以同时保留 raw platform 值，并明确二者的取值优先级。
+
+下面的 Kotlin 代码展示一种只接受 Android 17 已定义等级的规范化方法。
 
 ```kotlin
-import android.app.Application
-import android.os.Build
-import androidx.core.performance.DevicePerformance
-import androidx.core.performance.play.services.PlayServicesDevicePerformance
+object MpcLevel {
+    const val UNDEFINED = 0
+    const val BASIC = 1
+    const val ENTRY = 10
+    const val MID = 20
+    const val LEVEL_30 = 30
+    const val LEVEL_31 = 31
+    const val LEVEL_33 = 33
+    const val LEVEL_34 = 34
+    const val LEVEL_35 = 35
+    const val LEVEL_37 = 37
 
-class App : Application() {
-    lateinit var devicePerformance: DevicePerformance
-        private set
-
-    override fun onCreate() {
-        super.onCreate()
-        devicePerformance = PlayServicesDevicePerformance(applicationContext)
-    }
+    val defined = setOf(
+        BASIC, ENTRY, MID,
+        LEVEL_30, LEVEL_31, LEVEL_33,
+        LEVEL_34, LEVEL_35, LEVEL_37
+    )
 }
 
 enum class MediaTier {
     Unknown,
-    Functional,
+    Basic,
+    Entry,
+    Mid,
+    Established,
     High,
     Premium,
 }
 
-fun DevicePerformance.toMediaTier(): MediaTier {
-    val mpc = mediaPerformanceClass
-    return when {
-        mpc == 0 -> MediaTier.Unknown
-        mpc >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> MediaTier.Premium // MPC 34+
-        mpc >= Build.VERSION_CODES.TIRAMISU -> MediaTier.High           // MPC 33
-        else -> MediaTier.Functional                                    // MPC 30/31
-    }
+fun normalizeMpc(raw: Int): MediaTier = when (raw) {
+    MpcLevel.BASIC -> MediaTier.Basic
+    MpcLevel.ENTRY -> MediaTier.Entry
+    MpcLevel.MID -> MediaTier.Mid
+    MpcLevel.LEVEL_30,
+    MpcLevel.LEVEL_31,
+    MpcLevel.LEVEL_33 ->
+        MediaTier.Established
+    MpcLevel.LEVEL_34,
+    MpcLevel.LEVEL_35 -> MediaTier.High
+    MpcLevel.LEVEL_37 -> MediaTier.Premium
+    else -> MediaTier.Unknown
 }
 ```
 
-这里没有把 `Unknown` 等同于“低端”。线上灰度时可以让 `Unknown` 进入保守默认值，也可以继续按内存、SoC、屏幕刷新率、运行时 capability 做二次分组。
+显式集合能避免把 MPC 1、10、20 当成旧版非法值，也不会把未定义的 32、36 或损坏数据静默归到某个等级。`MediaTier` 是产品分桶，不能反向解释为 CDD 的正式名称。
 
-## CDD 约束覆盖哪些硬件能力
+业务如果使用 `PlayServicesDevicePerformance`，建议同时上报 `raw_build_mpc` 与 `resolved_mpc`。两者不一致时，可以区分 OTA 声明、Play services 认证结果和库兼容问题。
 
-Performance Class 的定义放在每个 Android 版本对应的 CDD 中。Android Developers 文档按 MPC 31、33、34、35 展示能力范围；Android 16 CDD 的 2.2.7 节继续列出 Handheld Media Performance Class 要求，并把媒体、相机、硬件、性能、图形分开描述。[已验证: 官方文档, source.android.com/docs/compatibility/16/android-16-cdd#227_handheld_media_performance_class]
+## CDD 17 怎样组织要求
 
-| 覆盖类别 | CDD/官方文档中的约束方向 | App 侧可用来判断什么 |
-| --- | --- | --- |
-| 媒体编解码 | 并发硬件 decoder / encoder 数量、`CodecCapabilities.getMaxSupportedInstances()`、`VideoCapabilities.getSupportedPerformancePoints()`、帧丢失、HDR codec、编码质量 | 多路视频播放、拍摄后转码、短视频导出、直播推流的默认分辨率和码率 |
-| 相机 | 主摄分辨率、4K/1080p/720p 采集能力、Camera2 hardware level、timestamp source、启动延迟、JPEG capture latency、RAW、预览防抖、夜景扩展、JPEG_R | 拍摄规格、预览尺寸、滤镜开关、连拍/夜景入口、相机冷启动体验预期 |
-| 显示与图形 | 屏幕分辨率、密度、HDR display、硬件 overlay、EGL/Vulkan 扩展、受保护内容能力 | HDR 预览、透明层/叠加层、地图/视频 UI 特效、Surface 合成路径风险 |
-| 内存 | 物理内存与 kernel 可用内存下限 | 图像缓存、视频 buffer 数量、端侧模型大小、后台任务并发度 |
-| 存储与系统性能 | 顺序/随机读写、并行读写要求，CTS 文件系统测试 | 首次解压、素材导入、离线包写入、数据库批量迁移的默认策略 |
+Android 17 CDD 2.2.7 保留五类要求：
 
-这张表不能替代运行时 API。MPC 给的是一组被验证过的能力下限，具体设备在发热、低电量、后台压力、厂商调度策略下仍然会波动。涉及单项硬件能力时，仍要查询 `MediaCodecInfo`、`CameraCharacteristics`、`Display.Mode`、`ActivityManager.MemoryInfo` 等 API。[已验证: 官方文档, Google Maps Performance Class blog]
+1. Media
+2. Camera
+3. Hardware
+4. Performance
+5. Graphics
 
-## App 侧按能力分级做功能降级
+每一项 CDD 条款指向 supplemental 文档中的等级表。例如 video decoder concurrent session、camera startup latency、screen resolution、available memory、file-system I/O 都按 MPC 值列出阈值。
 
-MPC 最适合处理“高规格体验要不要默认打开”这类问题。它比机型白名单更适合新机发布，因为通过认证的新设备可以直接进入对应分桶；它也比单看内存更稳，因为 CDD 同时约束媒体、相机、图形和存储能力。
+“高值一定在每个单项指标上严格大于低值”并不成立。有些等级提高工作负载后允许的计数阈值相同或口径不同，例如 frame-drop 测试会同时改变分辨率、帧率和并发负载。需要判断某项能力时，应查看该 CDD 条款明确列出的适用等级和测试条件。
 
-常见策略可以按场景拆成几类：
+### Android 17 的选定阈值
 
-- 视频拍摄与导出：MPC 34+ 设备默认启用更高分辨率、更高码率或 HDR 入口；MPC 33 设备保留高质量但降低并发转码；MPC 30/31 或 `Unknown` 设备默认 720p/1080p、30 fps，并把 4K、HDR、实时美颜放到手动开关后面。
-- 相机预览：高等级设备可以优先尝试高分辨率预览、预览防抖、夜景扩展；低等级设备优先保证 preview frame 稳定、拍照成功率和首帧时间。相机规格仍要以 `CameraCharacteristics` 和 CameraX capability 查询为准，MPC 只决定默认候选集合。
-- 图片处理：高等级设备允许更大的 bitmap tile、更高阶滤镜和更多中间 buffer；低等级设备限制滤镜链长度，优先使用分块处理、降采样和后台队列。
-- WebView / Hybrid：Google Maps 的案例说明，透明层这类 UI 调整会增加渲染面积和延迟。可以先按 MPC 分桶观察 `seconds to UI item visibility`、首屏时间和掉帧，再决定从高等级设备向下扩灰。[已验证: 官方博客, Performance Class helps Google Maps]
-- 端侧 AI 推理：MPC 可作为初始分桶，决定模型大小、输入分辨率、线程数和是否启用实时预览推理；最终还要结合 NNAPI / GPU delegate 支持、可用内存、温度和实测耗时。
+下面的表只列对 App 分级较有解释力的项目，完整要求以 supplemental 文档为准：
 
-业务配置不要只写“`mpc >= 34` 打开功能”。更稳的做法是把 MPC 放进 feature flag 规则，再加运行时 capability 和灰度指标。某些功能只依赖单项能力，例如 AV1 解码、HDR display、RAW capture，直接查对应 API 更准确；MPC 更适合一组能力一起影响体验的场景。
+| 项目 | MPC 1 | MPC 10 | MPC 20 | MPC 30/31 | MPC 33 | MPC 34/35 | MPC 37 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 屏幕最低分辨率 | 320×240 | 1280×720 | 1920×1080 | 1920×1080 | 1920×1080 | 1920×1080 | 1920×1080 |
+| kernel 可用内存 | 1.37 GiB | 3.05 GiB | 5 GiB | 5 GiB | 6.64 GiB | 6.64 GiB | 8 GiB |
+| 顺序写最低值 | 35 MB/s | 50 MB/s | 100 MB/s | 100/125 MB/s | 125 MB/s | 150 MB/s | 250 MB/s |
+| 顺序读最低值 | 125 MB/s | 200 MB/s | 200 MB/s | 200/250 MB/s | 250 MB/s | 250 MB/s | 700 MB/s |
+| tap-to-tone native latency 上限 | 110 ms | 110 ms | 100 ms | 100 ms | 80 ms | 80 ms | 65 ms |
+| rear primary camera | 无该项要求 | 5 MP、720p30 | 5 MP、720p30 | 12 MP、4K30 | 12 MP、4K30 | 12 MP、4K30；MPC 35 还要求 1080p60/720p60 | 12 MP、4K30、1080p60、720p60 |
 
-## 线上指标要携带设备能力标签
+表中的 `30/31` 和 `34/35` 用斜线展示相近等级，不能据此认为阈值完全相同。比如 MPC 31 要求 rear RAW capability，MPC 30 不要求；MPC 35 增加 JPEG_R、Ultra HDR 原生相机输出和特定 HLG10 preview stabilization 组合。
 
-MPC 的工程价值在后台分析里更容易体现。没有能力标签时，同一个版本的性能波动容易被误判成代码回归；补上标签后，可以区分三类问题：功能本身变慢、低能力设备承压、厂商配置差异。
+### MPC 37 的新增重点
 
-建议至少上报这些维度：
+MPC 37 延续 MPC 35 的高规格相机、HDR、codec、DPU overlay、EGL 与 Vulkan要求，并在以下方向提高门槛：
 
-| 维度 | 用途 | 取值建议 |
-| --- | --- | --- |
-| `media_performance_class` | 按能力等级切性能指标、错误率和灰度结果 | 原始 int 值；`0` 单独成桶 |
-| `sdk_int` / `device_initial_sdk_int` | 区分当前系统版本和出厂版本 | `Build.VERSION.SDK_INT`；出厂版本只在内部工具或可用 API 中读取 |
-| SoC / ABI / CPU core 信息 | 分析厂商调度、架构差异和 native 性能 | 只上报规范化后的平台标签，避免高基数字段失控 |
-| 内存与低内存标记 | 区分缓存策略、OOM 和低端设备压力 | 总内存区间、`isLowRamDevice()`、进程可用内存区间 |
-| 存储与 I/O 指标 | 解释启动解压、数据库迁移、素材导入耗时 | 线上耗时分位数优先，设备静态标签只作辅助 |
-| 屏幕与刷新率 | 分析 UI 掉帧、功耗和合成成本 | 分辨率区间、刷新率区间、HDR capability |
+- available memory 提高到 8 GiB；
+- 顺序读提高到 700 MB/s，顺序写提高到 250 MB/s，随机读写也有更高阈值；
+- tap-to-tone 与 round-trip audio latency 上限降到 65 ms；
+- speaker path 必须支持 MMAP；
+- 音频 CPU workload 测试要求从 1 个 sine wave 切到 20 个时不发生 buffer underrun；
+- USB audio 至少支持 8 路输出和 4 路输入；
+- primary front camera 最低分辨率提高到 7.99 MP；
+- 继续要求 6 路混合硬件视频 decoder 场景，并限制掉帧。
 
-灰度平台可以把 MPC 作为实验维度。Google Developers Blog 的 Google Maps 案例就是先把关键指标按 MPC 分桶，发现无 MPC 设备延迟上升最大，再将高风险 UI 调整限制到有 MPC 的设备上发布。这个做法比一次性全量更容易定位问题，也能为后续向低等级设备扩灰提供数据。[已验证: 官方博客, Performance Class helps Google Maps]
+这些要求说明 MPC 37 仍是媒体体验等级。它不能证明 NPU 算力、通用 CPU 单核跑分、网络质量或整机持续满载性能。
 
-## OEM 差异与 CTS 证据链
+## MPC 与 runtime capability 怎样组合
 
-同一 SoC 不必然对应同一 MPC。厂商的 camera HAL、codec 配置、存储颗粒、散热策略、显示能力和 OTA 认证状态都会影响最终等级。AOSP 对 `MEDIA_PERFORMANCE_CLASS` 的注释也说明，设备启动后值不变，但 OTA 后可能提高。[已验证: AOSP main, Build.java]
+MPC 适合决定“默认尝试哪组体验”，单项能力仍应从对应 API 读取。
 
-排查设备能力差异时，证据优先级可以这样排：
+| 业务问题 | MPC 的作用 | 还要查询的运行时信息 |
+|---|---|---|
+| 多路视频播放 | 选默认路数、分辨率和码率档 | `getMaxSupportedInstances()`、performance points、profile/level、secure codec |
+| HDR 播放或编辑 | 选高规格候选设备 | codec color format、HDR type、display HDR capability、surface format |
+| 相机 4K/HDR/RAW | 选默认入口和推荐配置 | `CameraCharacteristics`、dynamic range profile、stream configuration、extension availability |
+| 实时滤镜 | 估算可用内存、I/O 与媒体能力下限 | GPU API、纹理格式、实测 GPU time、thermal |
+| 低延迟音频 | 选初始 buffer 与效果复杂度 | AAudio feature、actual stream path、burst size、xrun、round-trip measurement |
+| 离线包与素材导入 | 选并发数和批次大小 | 当前可用空间、文件系统耗时、温度与后台限制 |
 
-1. App 运行时读取的 `DevicePerformance.mediaPerformanceClass` 或 `Build.VERSION.MEDIA_PERFORMANCE_CLASS`。
-2. 对应 Android 版本 CDD 的 MPC 条款，确认这一等级承诺了哪些能力。
-3. CTS / Media CTS / Camera ITS 结果，确认厂商声明背后的测试依据。[已验证: 官方文档, source.android.com/docs/compatibility/cts/media-cts]
-4. `MediaCodecInfo`、`CameraCharacteristics`、`Display`、`ActivityManager` 等运行时 API，确认当前设备当前状态能用什么能力。
-5. 实机 Perfetto、APM 分位数、灰度指标，确认功能打开后的用户体验。
+推荐的决策顺序如下：
 
-这套顺序可以避免两个常见误判：把“设备没有 MPC”直接判成“设备差”，以及把“设备有高 MPC”直接判成“任何高规格功能都安全”。MPC 给的是认证时能力下限，业务体验仍要接受当前负载、温度、电量、后台状态和厂商策略的影响。
+1. 用 `SDK_INT` 判断 API 是否存在。
+2. 用规范化 MPC 选择保守、标准或高规格候选。
+3. 用 runtime capability 删除设备不支持的候选项。
+4. 用实测耗时、温度、内存压力和失败率调整默认值。
+5. 通过 feature flag 保留快速回退能力。
 
-## 与媒体、相机和渲染章节的引用关系
+这个顺序可以避免两类故障：高 MPC 设备因某项 capability 不满足而配置失败，以及值为 0 的设备被无条件关掉本来可用的功能。
 
-本节只处理设备能力分级和工程决策。媒体管线的 buffer、codec、Muxer、Extractor 和 AudioTrack 细节详见 8.8 节；Camera Trace 抓取和 SQL 分析详见 14.9 节；Camera 预览、SurfaceTexture、SurfaceView、TextureView 的渲染路径详见 18.14 节；WebView / Hybrid 的功耗取舍详见 25.10 节。
+## 业务分级不要直接照搬数字比较
 
-在 Part 5 的实战章节里，MPC 应该作为“默认策略怎么选”的输入，不重复展开 CDD 和 CTS 背景。遇到具体问题时，仍按对应章节的工具链回到 trace、runtime capability 和线上指标。
+旧代码经常这样写：`mpc >= 34` 就启用某个“高级模式”。对只覆盖旧等级的功能，这种写法能工作；Android 17 新增 1、10、20 后，粗略大小比较会掩盖等级集合和条款差异。
 
-## Android 17 媒体与相机新能力的分级接入
+更稳的做法是给每个 feature 维护明确要求：
 
-[自动发现] 截至本轮校验，Android Developers Performance Class 文档公开到 MPC 35（Android 15）。Android 16 CDD 仍通过 `MEDIA_PERFORMANCE_CLASS` 引用 Android 14 / Android 15 等既有等级要求；Android 17 相关媒体、相机和 AI 能力不应直接推导成新的 MPC 等级。[待验证: Android 17 CDD / MPC 37 公共定义尚未纳入本轮来源]
+- HDR display 候选：MPC 34、35、37，并继续查询显示 HDR capability；
+- rear RAW 候选：MPC 31、33、34、35、37，并继续查询 camera capability；
+- JPEG_R 候选：MPC 35、37，并继续查询输出格式与 stream configuration；
+- MPC 37 音频路径：只在值等于 37 时使用该等级承诺，再做 stream 实测；
+- 未定义或未识别值：进入 Unknown，不自动套用相邻等级。
 
-接入新能力时建议按三层判断：
+下面的代码用显式集合表达 feature gate，避免把产品 tier 和 CDD 条款混成一套规则。
 
-- 平台 API：新 API 是否存在，目标 SDK、权限和兼容行为是什么。
-- 设备声明：Camera、MediaCodec、Display、GPU、NNAPI 等 capability 是否返回支持。
-- 业务策略：MPC 是否足够高，线上指标是否允许默认打开，低等级设备是否有可接受的替代路径。
+```kotlin
+private val hdrDisplayMpc = setOf(34, 35, 37)
+private val rearRawMpc = setOf(31, 33, 34, 35, 37)
+private val jpegRMpc = setOf(35, 37)
 
-这样处理后，Android 17 的新能力不会被系统版本号绑死。高等级设备可以更早试点，低等级设备仍然能保留稳定体验。
+fun canOfferHdr(
+    mpc: Int,
+    displayReportsHdr: Boolean,
+    codecSupportsProfile: Boolean,
+): Boolean {
+    return mpc in hdrDisplayMpc &&
+        displayReportsHdr &&
+        codecSupportsProfile
+}
+```
 
-## 低等级设备的体验保护策略
+这段逻辑把 CDD 等级、显示声明和 codec profile 都设为必要条件。产品若希望在 MPC 0 设备上灰度 HDR，可以另建一条只依赖完整 runtime capability 与实测名单的实验规则，避免篡改正式 CDD gate。
 
-低等级和 `Unknown` 设备需要的是保守默认值，不是功能缺席。体验保护可以从这些位置开始：
+## 低等级与 Unknown 的体验设计
 
-- 帧率：默认 30 fps，只有在持续帧间隔稳定、温度正常、用户主动选择时才提高到 60 fps。
-- 分辨率：拍摄、预览、导出分开配置；预览优先稳定，导出可以后台慢一点。
-- 码率：按网络和存储一起限制，避免低端设备在编码和上传阶段同时承压。
-- 滤镜：限制实时滤镜链长度，把高成本效果放到拍后处理或离线导出。
-- 后台任务：限制并发转码、上传、预热和索引任务，避免与前台预览抢 CPU / GPU / I/O。
-- 缓存：降低图片 tile、视频 buffer、WebView 资源预取和端侧模型缓存上限。
+MPC 1、10、20 不是失败状态。它们提供了比 0 更多的下限信息，可以设计稳定的基础体验：
 
-这类策略要配合线上 P90 / P95 观察。P50 变快不能说明低等级设备安全，还要看失败率、温度相关降频、前后台切换和低电量场景。
+- MPC 1：侧重轻量媒体、低内存和低 I/O 环境，严格限制 buffer、bitmap、缓存与并发；
+- MPC 10：可把 720p30 和较低并发作为初始候选，再查 codec 与 camera；
+- MPC 20：具备更高内存、1080p 屏幕与更多 720p codec 并发下限，可采用中等缓存和任务并发；
+- MPC 30/31：进入旧版完整媒体 class 范围，但 RAW、codec 组合等差异仍要逐项判断；
+- MPC 33 及以上：逐步增加 AV1、secure codec、camera、HDR、图形和音频要求；
+- MPC 37：适合高规格默认候选，持续负载仍要看 thermal 与实测。
+
+值为 0 或未识别值时，可以使用以下保护策略：
+
+- 视频默认从单路 720p/1080p30 开始；
+- 相机 preview 与 capture 分开选尺寸，优先保证首帧与成功率；
+- 实时滤镜控制中间 buffer 数量，提供关闭入口；
+- 转码、上传、索引和模型任务限制并发；
+- 缓存预算结合 `isLowRamDevice()`、可用内存和进程 trim 信号；
+- 通过线上性能与失败率逐步开放，而非维护庞大的机型白名单。
+
+## 上报和灰度要保留原始值
+
+Android 17 新增非 API-level 数值后，原始 MPC 更值得保留。建议至少上报：
+
+| 字段 | 用途 |
+|---|---|
+| `raw_build_mpc` | 设备 build property 声明 |
+| `resolved_mpc` | Jetpack / Play services 对外提供值 |
+| `normalized_mpc_tier` | 产品分桶 |
+| `sdk_int` | 当前平台 API |
+| `device_initial_sdk_int` | 出厂平台，API 可用时记录 |
+| runtime capability bitset | codec、camera、display、GPU 等关键能力 |
+| memory / low-RAM bucket | 解释缓存、OOM 与进程回收 |
+| thermal state / sustained duration | 区分短时峰值与稳定表现 |
+
+不要只上报 tier。原始值能发现三类问题：新等级未被旧客户端识别、Jetpack fallback 与 build property 不一致、设备 OTA 后声明变化。
+
+灰度结果应按 MPC、capability 和 OEM/SoC 交叉观察，同时控制高基数字段。Google Maps 的公开案例采用 performance class 对关键指标分桶，发现无 MPC 设备在 UI 改动下延迟增长更明显，再限制高风险体验的发布范围。这个思路适合功能放量，不代表所有 MPC 0 设备都慢。
+
+## OEM 认证与测试证据
+
+同一个 SoC 可以出现在不同 MPC。camera HAL、codec 配置、存储、内存、音频路径、显示、散热与整机集成都会影响设备能否声明某一级。
+
+Android 17 的证据链包括：
+
+1. 设备通过 `Build.VERSION.MEDIA_PERFORMANCE_CLASS` 声明等级。
+2. CDD 17 2.2.7 定义条款，supplemental 文档给出每级阈值。
+3. `cts-media-performance-class` test plan 验证 media 与 camera MPC 条款；相关 camera CTS 与 Camera ITS 覆盖相机要求。
+4. 设备运行时 API报告具体能力。
+5. App 的 trace、耗时分布、温度、功耗和错误率确认业务体验。
+
+App 只能信任公开声明和运行时 API，不能访问 OEM 的完整认证报告。缺少 MPC 时，也不能自行跑少量 benchmark 后伪造一个“等价 MPC”；内部 benchmark 只适合作为产品自己的能力标签。
+
+## Android 17 的工程结论
+
+- Android 17 定义了 MPC 1、10、20、30、31、33、34、35、37；0 表示未定义。
+- MPC 1、10、20 打破了“所有非零值都等于 Android API level”的旧假设。
+- `Build.VERSION.MEDIA_PERFORMANCE_CLASS` 是 raw platform 声明，一次开机内稳定，OTA 后可能提高。
+- 当前 AndroidX 默认 fallback 仍过滤掉小于 30 的 build 值；使用 MPC 1、10、20 前要验证库版本或读取 raw platform 值。
+- CDD 17 把阈值放在 supplemental 文档，业务不能只读旧版 Android Developers 概览。
+- MPC 是组合能力下限。单项功能仍要查询 codec、camera、display、memory 等 runtime capability。
+- 功能 gate 应按 CDD 明确的等级集合表达，未识别值进入 Unknown。
+- 高 MPC 不能消除温度、后台负载、OEM 调度与驱动差异，发布决策仍需线上指标。
 
 ## 参考资料
 
-- [官方文档: Performance class | Android Developers](https://developer.android.com/topic/performance/performance-class)
-- [官方博客: Using performance class to optimize your user experience](https://android-developers.googleblog.com/2022/03/using-performance-class-to-optimize.html)
-- [官方博客: Performance Class helps Google Maps deliver premium experiences](https://android-developers.googleblog.com/2025/01/performance-class-helps-google-maps-deliver-premium-experiences.html)
-- [Android 16 CDD: Handheld Media Performance Class](https://source.android.com/docs/compatibility/16/android-16-cdd#227_handheld_media_performance_class)
-- [AOSP: Build.VERSION.MEDIA_PERFORMANCE_CLASS](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/os/Build.java)
-- [AOSP AndroidX: DevicePerformance](https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/core/core-performance/src/main/java/androidx/core/performance/DevicePerformance.kt)
-- [AOSP AndroidX: PlayServicesDevicePerformance](https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/core/core-performance-play-services/src/main/java/androidx/core/performance/play/services/PlayServicesDevicePerformance.kt)
+- [Android 17 CDD：Handheld Media Performance Class](https://source.android.com/docs/compatibility/17/android-17-cdd#227_handheld_media_performance_class)
+- [Android 17 MPC supplemental information](https://source.android.com/docs/compatibility/17/mpc)
+- [Android 17 `Build.VERSION.MEDIA_PERFORMANCE_CLASS`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Build.java)
+- [Android Developers：Performance class](https://developer.android.com/topic/performance/performance-class)
+- [AndroidX `DevicePerformance`](https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/core/core-performance/src/main/java/androidx/core/performance/DevicePerformance.kt)
+- [AndroidX `DefaultDevicePerformance`](https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/core/core-performance/src/main/java/androidx/core/performance/DefaultDevicePerformance.kt)
+- [AndroidX `PlayServicesDevicePerformance`](https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/core/core-performance-play-services/src/main/java/androidx/core/performance/play/services/PlayServicesDevicePerformance.kt)
+- [运行 Media Performance Class 测试](https://source.android.com/docs/compatibility/cts/media-cts)
+- [Google Maps 使用 Performance Class 的案例](https://android-developers.googleblog.com/2025/01/performance-class-helps-google-maps-deliver-premium-experiences.html)
+- [早期 Performance Class 应用案例](https://android-developers.googleblog.com/2022/03/using-performance-class-to-optimize.html)
