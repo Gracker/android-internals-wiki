@@ -90,7 +90,7 @@ Android 17 引入了 App Memory Limits。该变化对运行在 Android 17 上的
 
 源码里部分 Java 注释和日志仍称 `memory.swap.high`，但 JNI 写入的文件是 `memory.swap.max`。这是系统实现细节，应用侧不应依赖具体 cgroup 文件名。
 
-匿名内存与 swap 之和超过配置阈值后，系统可以触发 `TRIGGER_TYPE_ANOMALY` 剖析，并在 30 秒延迟后结束进程。历史退出记录表现为：
+`memory.stat` 中的 `anon + shmem` 再加 `memory.swap.current` 超过组合阈值后，系统可以触发 `TRIGGER_TYPE_ANOMALY` 剖析，并在 30 秒延迟后结束进程。历史退出记录表现为：
 
 - `ApplicationExitInfo.reason == REASON_OTHER`；
 - `ApplicationExitInfo.description` 包含 `MemoryLimiter:AnonSwap`。
@@ -118,12 +118,15 @@ fun findRecentMemoryLimiterExit(context: Context): ApplicationExitInfo? {
 ```shell
 adb shell am memory-limiter status
 adb shell am memory-limiter manual <pid> 512
-adb shell am memory-limiter manual <pid> none
 adb shell am memory-limiter ignore <uid>
 adb shell am memory-limiter ignore none
 ```
 
-`manual` 的数字单位是 MB；`none` 恢复系统策略，`max` 移除该进程限制。这些命令在未启用 MemoryLimiter 的设备上没有效果。测试目标应是确认监控数据能在退出前解释增长，以及重启后能关联退出原因，不要把压低阈值后的退出直接归类为泄漏。
+`android-17.0.0_r1` 的 shell help 把 `manual` 数字描述为总 RAM 的百分比，但执行路径调用 `MemoryLimiter.setManualLimit()` 后会把数字乘以 `1 MiB`；所以上例的实际限制值是 512 MiB，不是 512% 或 512 B。shell parser 不接受 `max`。
+
+同一 tag 还把 `manual <pid> none` 解析为 `-1`，随后先乘 `1 MiB` 再传给 native 层；这已不再是 native 层用于写入 `max` 的特殊值 `-1`，会落入“忽略本次更新”的分支。因而不能依赖 `none` 恢复该 PID 的系统策略。受控测试结束后，应重启目标进程，让新 PID 重新按进程状态取得平台限制；`ignore none` 只负责清除 UID ignore 状态。
+
+这些命令在未启用 MemoryLimiter 的设备上没有效果。测试目标应是确认监控数据能在退出前解释增长，以及重启后能关联退出原因，不要把压低阈值后的退出直接归类为泄漏。
 
 ## 2. 先给各类“内存”划清边界
 
@@ -206,7 +209,7 @@ bionic 通过 `MallocDispatch` 转发 `mallinfo`、`malloc_info` 和 `mallopt`�
 
 `malloc_info(int options, FILE* fp)` 在 bionic 中从 API 23 可用。Android 17 Scudo 输出的结构以 `<malloc version="scudo-1">` 开头，并按 size/count 列出当前分配；它与旧版 jemalloc 示例中的 arena、bin XML 结构不同。
 
-Scudo 实现还会分配临时尺寸数组、暂停 allocator 并遍历 chunks。由此可见，`malloc_info()` 不适合信号处理器，也不应作为高频心跳。更合适的用途是：低内存告警后在安全线程执行一次，保存原始文本，并让解析器按 allocator/version 分派。
+Scudo 实现还会分配临时尺寸数组、暂停 allocator 并遍历 chunks。这些动作决定了 `malloc_info()` 不适合信号处理器，也不应作为高频心跳。更合适的用途是：低内存告警后在安全线程执行一次，保存原始文本，并让解析器按 allocator/version 分派。
 
 若监控平台只需要稳定趋势，优先保存 `uordblks`、RSS/PSS 和 owner counters。XML 是诊断附件，不要把某个 XML 节点写成长期兼容的告警字段。
 
@@ -516,6 +519,7 @@ Android 8 以后，Bitmap pixel data 通常由 Native 内存承载，但 Java `B
 - [Scudo `wrappers_c.inc`](https://android.googlesource.com/platform/external/scudo/+/refs/tags/android-17.0.0_r1/standalone/wrappers_c.inc)：Scudo 的 `mallinfo`、`malloc_info` 和 purge 实现。
 - [frameworks/base `android_os_Debug.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Debug.cpp)：`Debug.getNativeHeap*()` 到 `mallinfo` 字段的映射。
 - [frameworks/base `MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java)：配置、进程状态、异常剖析、延迟结束与退出描述。
+- [frameworks/base `ActivityManagerShellCommand.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java)：`memory-limiter` 测试命令的参数解析与 help 文案差异。
 - [frameworks/base `MemoryLimiter.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp)：cgroup v2 文件、事件与限制写入。
 - [common kernel `cgroup-v2.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst)：`memory.high`、`memory.swap.max` 与内存控制器语义。
 
