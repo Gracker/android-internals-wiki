@@ -38,273 +38,236 @@ related_chapters: ["5.1", "5.2", "5.3", "14.10", "17.4", "17.5"]
 
 # 17.8 MUSCHED 调度实践：VIP 队列、场景标注与跨进程优先级传播
 
-本节分析荣耀在 Chinasys 2026 发表的 MUSCHED 调度器实践。MUSCHED 基于 Linux `sched_ext` 框架（见 17.4 节），在 RT 与 CFS 之间插入了一层 VIP 调度队列，并实现了场景感知的线程标注和跨进程优先级传播。截至 2026 年 5 月，MUSCHED 已在荣耀 2000 万+ 设备上部署。
+MUSCHED 是荣耀面向移动交互负载设计的语义感知调度框架。它把 Android 框架知道的场景、关键线程及依赖关系传给内核，在 RT 与普通公平调度之间提供有时间上限的 VIP 服务。项目从 2021 年开始研究，2024 年 1 月进入量产，2026 年 7 月以 OSDI ’26 论文发表。
 
-读者读完本节能带走三件事：VIP 调度类在 `sched_ext` 内部的工程实现方式、Binder 和锁路径上的优先级传播机制、以及哪些结论经过了上游源码验证、哪些来自论文数据尚未公开验证。
+本节使用三层证据：
 
-## 问题：120Hz 交互帧的调度压力
+- MUSCHED 架构、参数和实验结果以 OSDI ’26 论文为准。
+- 通用 sched_ext 与 Binder 行为以 Android 17 内核锚点 `android17-6.18-2026-06_r6` 为准。
+- 论文没有公开 MUSCHED 源码。凡是论文未说明的 struct_ops flags、私有 kfunc、引用计数和固件配置，都不从通用内核能力反推成产品事实。
 
-120Hz 屏幕每帧预算 8.3ms。触控事件到达后，Vsync deadline 之前要完成输入处理、布局计算、渲染指令提交、GPU 执行和合成显示。这条路径上任何一个环节的 runnable 等待超过一两毫秒，就可能错过 deadline 掉帧。
+## 17.8.1 为什么公平调度不足以表达交互紧迫性
 
-两个因素让这个问题在传统调度框架下难以解决。
+120 Hz 的显示周期约为 8.33 ms。一次触控可能唤醒主线程、RenderThread、窗口动画线程、Binder 服务线程及合成相关线程。每个线程只运行很短一段时间，端到端路径却跨越多个进程和同步点。
 
-**交互帧的工作负载是突发的。** 一次触控会在几毫秒内激活 UI 线程、RenderThread、动画线程、Binder 调用链。这些线程生命周期短、延迟敏感，但 Linux CFS/EEVDF 调度器不区分"渲染关键帧的 UI 线程"和"后台在做日志上传的 worker"——它们都是普通任务，按虚拟时间公平轮转。
+论文把矛盾概括为三项约束：
 
-**用 RT 解决会引入副作用。** 把 UI 线程和 RenderThread 设为 `SCHED_FIFO` 或 `SCHED_RR` 可以保证它们优先运行，但 Android 在异构 CPU 上做过实验：官方记录过 `sys.use_fifo_ui` 开启后约 30% 的应用启动性能下降，原因是 RT 线程在部分平台上缺乏 capacity awareness，会被调度到小核，反而拖慢前台。RT 级别的线程数量一多，系统锁死和功耗暴增的风险也大幅上升。
+1. 高性能核数量少，还受功耗和温度限制。
+2. 关键路径包含 Binder、futex、mutex、rwsem 等跨线程依赖。
+3. 交互任务突发且 deadline 紧，基于历史负载的 PELT/WALT 可能反应太慢。
 
-[已验证: Android 官方对 `sys.use_fifo_ui` 的实验记录和副作用说明；120Hz 帧预算 8.3ms 为计算值]
+直接把大量应用线程设为 `SCHED_FIFO` 或 `SCHED_RR` 风险很高。RT 线程能压制普通线程；优先级或 CPU 亲和性配置失误时，系统服务会饥饿，功耗与温度也会迅速上升。只调低 nice 值同样不够：调用方得到更高 CFS 权重后，锁持有者或远端 Binder 线程仍可能在别的 runqueue、cgroup 中等待。
 
-还有两条跨线程/跨进程的阻塞路径，传统调度器不处理：
+MUSCHED 选择了一条受限的中间路径：只在用户可见场景中给关键线程临时 VIP 身份，并沿阻塞依赖传播；时间片和累计预算耗尽后，线程回到普通公平调度。
 
-- **锁等待队列的 FIFO 唤醒。** Linux 互斥锁（mutex、rwsem）的等待队列按先进先出顺序唤醒。VIP 线程等锁时，如果前面排着几个非关键的后台线程，要等它们逐个唤醒并释放才能轮到。
-- **Binder IPC 同步调用中的服务侧优先级。** 应用前台线程发起同步 Binder 调用（比如向 SurfaceFlinger 提交 buffer），如果服务侧处理线程的调度优先级低，调用方就阻塞在等待回复上。上游 Binder 有优先级继承机制（见下文），但继承的是 Linux 原生的 policy/prio，不认识厂商自定义的调度语义标签。
+## 17.8.2 用户空间识别语义，内核执行调度
 
-[已验证: Linux mutex/rwsem FIFO 唤醒语义；AOSP Binder `binder_transaction_priority()` 的优先级继承机制]
+MUSCHED 采用拆分架构。
 
-## MUSCHED 架构：sched_ext 内部的分层队列
+用户空间负责：
 
-MUSCHED 基于 Linux 6.12 的 `sched_ext` 框架。17.4 节已覆盖 `sched_ext` 的基础机制（`struct sched_ext_ops` 回调表、DSQ 分发队列、BPF Map 状态管理），这里不再重复。本节只讲 MUSCHED 在这个框架上做了什么。
+- 识别启动、滑动、动画、窗口切换等场景。
+- 根据线程角色、离线 systrace 和 beta 用户 jank trace 生成标注策略。
+- 通过 BPF Map 更新每个应用、每种场景的 VIP 候选和生存时间。
+- 协调相互冲突的场景策略。
 
-### full-switch 模式下的内部层级
+内核侧负责：
 
-MUSCHED 大概率采用 full-switch 模式——即不设置 `SCX_OPS_SWITCH_PARTIAL`，让所有 `SCHED_NORMAL`/`SCHED_BATCH`/`SCHED_IDLE` 任务统一切入 `sched_ext`。在 `sched_ext` 内部，MUSCHED 再用自定义 DSQ 把任务分成两层：VIP 队列和普通队列。RT 调度类仍留在 Linux 原生的 RT/DL 调度器，不受 BPF 调度器管理。
+- 维护每 CPU 的 VIP 队列。
+- 在没有可运行 RT 任务时，先服务 VIP，再服务普通任务。
+- 处理 VIP 时间片、累计预算和跨 CPU 均衡。
+- 在锁与同步 Binder 依赖上临时传播 VIP 标签。
 
-从系统效果看，三层优先级关系是：RT > VIP > 普通。但这个"VIP"不是 upstream Linux 新增的 `sched_class`。它是 `sched_ext` full-switch 模式下，BPF 调度器自己维护的内部层级。在调度类序上，`sched_ext` class 的优先级低于 fair class（CFS/EEVDF），所以 partial-switch 模式下无法在 RT 和 CFS 之间插入一层。full-switch 模式下，所有普通任务都进了 `sched_ext`，BPF 调度器可以自由定义内部队列优先级，这才让"RT 之下、普通之上"的效果成立。
+论文把有效顺序写成 `RT > VIP > CFS`。这里的 VIP 是 MUSCHED 产品策略，不是 upstream Linux 新增的固定 `sched_class`。论文说明它建立在 sched_ext 之上，却没有公开 `struct sched_ext_ops`、`SCX_OPS_SWITCH_PARTIAL` 配置或内核补丁。读者应把“位于 RT 与 CFS 之间”理解为论文描述的运行效果，不能据此宣称 Linux 6.6 或 Android 17 自带 `SCHED_VIP`。
 
-[已验证: Linux sched_ext `SCX_OPS_SWITCH_PARTIAL` 语义；`sched_ext` class 优先级与 fair class 的关系；full-switch 模式下 BPF 调度器可自定义 DSQ 层级]
+## 17.8.3 对照 Android 17 的 sched_ext
 
-### 两种 BPF Map
+Android 17 内核锚点中的 sched_ext 提供 full-switch 与 partial-switch 两种范围：
 
-MUSCHED 用两类 BPF Map 维护调度器状态：
+| 模式 | Android 17 / 6.18 行为 |
+| --- | --- |
+| 未设置 `SCX_OPS_SWITCH_PARTIAL` | `SCHED_NORMAL`、`SCHED_BATCH`、`SCHED_IDLE`、`SCHED_EXT` 都交给 BPF 调度器 |
+| 设置 `SCX_OPS_SWITCH_PARTIAL` | 只有显式 `SCHED_EXT` 任务进入 BPF 调度器，其余任务留在 fair class |
 
-- **`cpu_contexts`**：`BPF_MAP_TYPE_PERCPU_ARRAY`，per-CPU 存储。内容包括该 CPU 的空闲时间、当前负载、已入队任务数量、挂起/休眠状态。每个 CPU 独立一份，eBPF 程序访问时隐式拿到当前 CPU 的那份值，不需要加锁。
-- **`task_contexts`**：`BPF_MAP_TYPE_TASK_STORAGE`，per-task 存储。内容包括任务权重、执行状态、计算负载、入队出队时间戳，以及 VIP 标签和 VIP 来源 refcount。任务退出时条目自动清理。
+MUSCHED 论文没有公布它选择哪一种。若用 full-switch，BPF 程序可把普通任务和 VIP 任务放进不同 DSQ；若用 partial-switch，厂商还需要可靠地把候选线程切到 `SCHED_EXT`，并处理它与 fair class 的相对关系。两条路径都需要产品源码才能确认。
 
-[已验证: `BPF_MAP_TYPE_PERCPU_ARRAY` 和 `BPF_MAP_TYPE_TASK_STORAGE` 是 Linux upstream 提供的 BPF Map 类型；适用场景与描述一致。具体字段名和含义来自论文数据，未直接从公开源码验证]
+Android 17 / 6.18 的 DSQ 语义可解释 MUSCHED 队列为何可行：
 
-### 每个 CPU 独立的 VIP DSQ
+- `scx_bpf_create_dsq()` 创建自定义 DSQ。
+- `scx_bpf_dsq_insert()` 按 FIFO 插入任务，并写入运行 slice。
+- CPU 只从 local DSQ 执行；`scx_bpf_dsq_move_to_local()` 可把自定义 DSQ 的任务移入当前 CPU。
+- `SCX_SLICE_DFL` 在该 tag 中仍为 20 ms。MUSCHED 的 3 ms 是论文给出的私有策略值。
+- BPF 调度器退出、触发错误或让 runnable 任务停滞过久时，sched_ext 会终止当前策略并把任务送回 fair class。
 
-MUSCHED 用 `scx_bpf_create_dsq()` 为每个 CPU 核心创建一个独立的 VIP 分发队列（DSQ）。任务被标记为 VIP 后，在 `ops.enqueue()` 中进入该 CPU 的 VIP DSQ；`ops.dispatch()` 总是先从 VIP DSQ 取任务发给 local DSQ，VIP DSQ 空了再从普通队列取。
+论文基于 Linux 6.6 的实现描述仍使用 `scx_bpf_dispatch()` 和 `scx_bpf_consume()`。到了 Android 17 / 6.18，对应接口已经演进为 `scx_bpf_dsq_insert()` 和 `scx_bpf_dsq_move_to_local()`。官方文档明确声明 sched_ext 的 ops、常量和 `scx_bpf_*` kfunc 不提供稳定 ABI；厂商升级内核时必须重新适配和回归，不能只迁移 BPF 对象。
 
-这个设计把 VIP 和普通任务的调度顺序在 DSQ 层面分开，不依赖 Linux 原生的 nice 值或调度策略。
+## 17.8.4 VIP 队列如何限制抢占范围
 
-[已验证: `scx_bpf_create_dsq()` 是 Linux sched_ext API；per-CPU DSQ 创建和 dispatch 优先级逻辑符合 sched_ext 设计]
+论文公开的 VIP 队列规则如下：
 
-## VIP 队列的约束机制
+- 每 CPU 维护 VIP 队列，队内按 FIFO 服务。
+- 单次时间片为 3 ms。
+- 时间片用完但累计预算仍有剩余时，任务回到 VIP 队尾。
+- 累计预算耗尽后，VIP 标签临时撤销，线程回到普通公平调度。
+- cgroup 的 `cpu.share` 默认沿用内核配置。
 
-VIP 队列有两个约束维度：时间片和限制时间。
+不同任务类型的累计预算来自代表性负载 profiling：
 
-**时间片：** 每个 VIP 任务每次最多运行 3ms。时间片耗尽但限制时间未用完时，任务被重新插到 VIP 队列末尾，等下一轮调度。
+| 类型 | 论文预算 | 设计说明 |
+| --- | ---: | --- |
+| Audio | 20 ms | 覆盖典型音频 buffer 处理窗口 |
+| Video | 10 ms | 覆盖一次解码与渲染周期 |
+| WebView | 120 ms | 页面布局与脚本执行可能跨多帧 |
+| Display | 20 ms | 覆盖合成关键工作 |
 
-**限制时间：** 按任务类型设置不同的累计运行上限：
+这些数值属于论文实现，不是 Android API，也不应复制为其他设备的默认配置。刷新率、CPU 拓扑、温控状态和业务场景都会改变合适的预算。论文对恢复条件分别用了 “next enqueue” 与 “next qualifying event” 两种表述，没有给出完整状态机；实现评审时需要核对标签重置事件、超时和任务退出路径。
 
-| 任务类型 | 限制时间 |
-|----------|----------|
-| WebView | 120ms |
-| 音频 | 20ms |
-| 显示 | 20ms |
-| 视频 | 10ms |
+时间片解决单次连续运行问题，累计预算限制一次场景能消耗多少 VIP CPU 时间。缺少后者时，一批不断重新入队的 VIP 线程仍可能长期压制普通任务。
 
-时间片和限制时间同时耗尽时，VIP 标签暂时移除，任务降级为普通优先级。下一次 `enqueue()` 时 VIP 标签恢复。这个机制的目的是防止 VIP 任务长期占据 CPU 资源饿死普通任务。
+## 17.8.5 场景标注从哪里来
 
-VIP 队列的调度顺序是 FIFO——先入队的先出队。和 CFS/EEVDF 的虚拟时间公平轮转不同，VIP 队列不关心任务的历史运行时间，只关心进入顺序和剩余额度。
+MUSCHED 用三类信息寻找交互关键线程：
 
-[待验证: 3ms 时间片、10/20/120ms 限制时间等具体参数来自 Chinasys 2026 论文分析文，未从公开源码或论文原文直接验证。参数值可能因固件版本和平台不同而有差异]
+1. Android 中跨应用较稳定的角色，例如主线程、UI 线程、RenderThread、MotionThread，以及处理用户可见请求的 Binder worker。
+2. 对启动、滑动和动画反复采集 systrace，分析唤醒关系、线程 CPU 负载和端到端依赖图。
+3. 从 beta 用户的 jank trace 中补充实验环境难以覆盖的线程。
 
-## 场景感知线程标注
+论文表 1 给出的示例包括：
 
-MUSCHED 的 VIP 标签不是静态的。它通过 Android 框架关键路径上的函数钩子（function hooks）动态识别和标注关键线程。
+| 类型 | 线程名示例 |
+| --- | --- |
+| Animator | `splashworker`、`wmshell.main`、`wmshell.anim` |
+| UI | Main thread、UI thread |
+| Render | Render thread |
+| WebView | `CrRendererMain`、`Chrome_InProcRe` |
 
-### 标注的目标线程类型
+运行时钩子位于 SystemUI、Launcher 动画切换、应用前后台切换、焦点变化和帧渲染回调附近。框架识别出用户交互场景后，给匹配线程加 VIP 标签。
 
-论文列出的关键任务类型：
+线程名适合辅助匹配，不适合单独充当安全的身份。应用版本、WebView 实现和线程池复用都会改变名称及职责。量产策略还应结合 UID、进程角色、场景窗口和 trace 依赖；撤销条件与打标条件同样需要测试。
 
-- **动画（Animator）**：属性动画、过渡动画等正在执行的线程
-- **UI 线程**：当前前台 Activity 的主线程
-- **渲染线程（RenderThread）**：HWUI 的 RenderThread
-- **WebView 加载**：WebView 页面加载期间的渲染和布局线程
+## 17.8.6 锁依赖上的优先级传播
 
-这些线程类型和 AOSP 已有的 UI-critical 线程识别逻辑一致。Android 官方在 `sys.use_fifo_ui` 实验中就把 UI 线程和 RenderThread 视为最影响交互体验的两个线程，MUSCHED 的 VIP 标注范围覆盖了这两个再加上动画和 WebView。
+只提升等待线程无法缩短锁持有者的 runnable 等待。MUSCHED 对 futex、mutex 和 rwsem 增加两类策略：
 
-[已验证: AOSP `sys.use_fifo_ui` 的 UI-critical 线程识别逻辑；RenderThread 和 UI 线程在渲染管线中的角色详见 5.3 节]
+- 等待队列中同时出现普通线程和 VIP 线程时，允许 VIP waiter 越过若干非关键 waiter，优先获得唤醒机会。
+- VIP waiter 被普通线程持锁阻塞时，把 VIP 标签临时传播给 owner；锁释放、依赖消失或 boost 超过有界生存时间后撤销。
 
-### 钩子安装位置
+论文描述的实现会在加锁与释放路径记录 owner tid，在 waiter 阻塞时检查依赖并传播。它也明确指出，仅仅持锁不会让普通线程自动成为 VIP。
 
-论文提到的框架钩子位置：
+这一段是 MUSCHED 的厂商实现，不代表 Android 17 的普通 mutex、rwsem 和 futex 已获得相同语义。上游的 rt_mutex/PI futex 有数值优先级继承机制；普通锁的唤醒与公平性规则又各不相同。把它们统一描述成“Linux 所有锁都严格 FIFO”会掩盖自旋、批量唤醒、读写模式和 PI 路径的差异。
 
-- SystemUI 渲染路径
-- 启动器（Launcher）动画回调
-- 前后台切换（ActivityManager 的进程切换回调）
-- 窗口焦点变化
-- 帧渲染提交（Choreographer Vsync 回调）
+工程评审需要覆盖多级锁链、递归依赖、owner 退出、超时、信号中断和一个 owner 同时接收多个 boost 来源。论文没有公开引用计数及环检测实现，因此不能断言它如何解决这些边界。
 
-前台进程切换时，钩子检测到 top-app 变化，立即给新 top-app 的 UI 线程和 RenderThread 打上 VIP 标签。标签写入 `task_contexts`（task storage map），BPF 调度器在后续的 `enqueue()` 和 `dispatch()` 中读取。
+## 17.8.7 Binder 已有优先级继承，VIP 仍需额外传播
 
-### 标签泛滥的防护
+Android 17 Binder 驱动已经处理同步事务的 Linux 调度优先级：
 
-论文原文的表达是："如果谁都是 VIP，就意味着谁都不是 VIP。"从工程上看，这个防护至少体现在三处：
+- 创建同步事务时，`t->priority` 记录调用线程的 `policy` 与 `prio`。
+- `binder_transaction_priority()` 将事务优先级与 Binder node 的 `min_priority` 比较。
+- node 未设置 `inherit_rt` 时，RT 调用方会降为 `SCHED_NORMAL`、nice 0，再用于服务线程。
+- 驱动把服务线程原值保存到 `saved_priority`，在回复、失败或线程重新等待工作时调用 `binder_restore_priority()`。
 
-- 限制时间耗尽后 VIP 标签暂时移除，防止长时间持有
-- 只有前台进程的关键线程才打标签，后台任务不进入 VIP 队列
-- VIP 队列的时间片（3ms）比普通队列的 `SCX_SLICE_DFL`（20ms）短，即使 VIP 任务密集，每个任务的连续运行时间也有限
+这套机制传播的是内核认识的 policy/prio。MUSCHED 的 VIP 标签保存在它自己的调度状态中，Binder 默认路径不会自动复制这个标签，也不会自动解除跨 cgroup 的 CPU 带宽限制。
 
-[待验证: 具体钩子安装位置和打标条件来自论文分析文，未从 AOSP 或荣耀公开代码直接验证]
+论文说明 MUSCHED 会监控同步 Binder transaction：VIP 调用方发起事务后，调度器定位远端 service thread，临时给它加 VIP 标签，处理结束后撤销。论文没有公开它使用 Binder vendor hook、tracepoint、kfunc 还是私有驱动改动。旧稿基于通用设施推测具体 sideband 路径，证据不足，应以“功能已由论文说明，挂点未公开”为准。
 
-## 锁等待与 Binder IPC 优先级传播
+异步 oneway 事务不等待远端回复，不能照搬同步传播策略。嵌套调用 `A → B → C`、服务线程池复用、事务失败和调用方死亡都需要成对管理 boost；否则会出现标签提前撤销或长时间残留。
 
-VIP 标签只解决本进程内调度优先级的问题。Android 交互帧的关键路径横跨多个进程——UI 线程发起 Binder 调用给 SurfaceFlinger，SurfaceFlinger 持有锁，如果这些阻塞路径上的线程优先级低，VIP 线程还是要等。MUSCHED 的优先级传播机制针对的就是这两条路径。
+## 17.8.8 选核、pull 与 push
 
-### 锁等待队列的 VIP 插队
+MUSCHED 尽量避免 RT 与 VIP、多条 VIP 同核竞争。论文给出的选择顺序是：
 
-Linux 互斥锁（mutex、rwsem）的默认唤醒顺序是 FIFO。当 VIP 线程和非 VIP 线程同时等同一个锁时，MUSCHED 修改了唤醒逻辑，让 VIP 线程跳过队列前面的非关键线程优先唤醒。
+1. 空闲且允许该任务运行的 CPU。
+2. 没有 RT/VIP 任务的 CPU。
+3. 没有 RT 任务、VIP 数量最少的 CPU。
 
-### 锁链优先级传播（Lock-chain Propagation）
+实现章节又说明 `sched_select_cpu` 会扫描 performance cores，优先空闲大核，再选负载较低的大核。两段描述的粒度不同：前者讲冲突规则，后者讲产品 CPU 集合。不能把“大核优先”外推到所有 SoC；CPU capacity、affinity、thermal pressure 和 idle state 都要参与决策。
 
-VIP 线程等锁时，锁持有者可能是一个普通优先级的后台线程。即使 VIP 线程能优先唤醒，它还是要等锁持有者释放锁。
+负载均衡包含两条路径：
 
-MUSCHED 的做法：VIP 线程阻塞在锁上时，把 VIP 标签传递给锁持有者。锁持有者临时获得 VIP 调度优先级，加快执行以尽快释放锁。释放后 VIP 标签清除，锁持有者恢复为普通任务。
+- CPU 进入 idle 后，从其他 runqueue 拉任务；优先处理 RT 与 VIP 共存的队列，否则选择 VIP 数量较多的队列。
+- tick 检查到当前 CPU 在跑 RT，且某个 VIP 已 runnable 超过 4 ms 时，把该 VIP 推到没有 RT、VIP 较少的可用 CPU。
 
-这条传播路径和 Android Common Kernel 已经公开的 vendor hook 模式高度一致。2023 年的一条 Android Common Kernel 提交在 rtmutex 路径上增加了 `android_vh_task_blocks_on_rtmutex`、`android_vh_rtmutex_waiter_prio` 和 `android_rvh_rtmutex_force_update` 等 vendor hook，目的就是让 OEM 调度器把 "user-aware property"（比如 RenderThread 这类重要 CFS 线程的语义标签）通过 rtmutex 锁链传播给锁持有者。MUSCHED 的锁链传播可以看作这条思路的产品级实现。
+4 ms 约等于 120 Hz 一帧预算的一半。论文称低于 2 ms 会因常见的 1–2 ms 短暂排队而触发过多迁移；旗舰机可用较低阈值，温度或续航敏感产品可提高阈值。这个参数是产品调优点，不是 sched_ext 常量。
 
-[已验证: Android Common Kernel 的 rtmutex vendor hook 提交（`android_vh_task_blocks_on_rtmutex` 等）；rtmutex PI 机制是 Linux upstream 标准功能。MUSCHED 具体是否复用这些 vendor hook 还是自行实现，未从公开代码验证]
+## 17.8.9 正确解读实验结果
 
-### Binder IPC 跨进程 VIP 传播
+实验室环境是荣耀 Magic7、Snapdragon 8 Elite、MagicOS 9、Android 15、Linux 6.6。10 个应用各测试 100 次，论文固定显示模式、温度状态、电池模式、CPU governor 和清缓存流程，并用实际后台业务与 `stress-ng` / `rt-app` 注入竞争。
 
-Binder 路径的传播需要先分清两层。
+| 实验室指标 | 论文结果 |
+| --- | ---: |
+| 10 个应用平均冷启动时间 | 下降 14.8% |
+| 冷启动时间标准差 | 下降 24.25% |
+| 全部 VIP 任务 sleep 时间 | 下降 71.8% |
+| 全部 VIP 任务 runnable 时间 | 下降 52.6% |
+| PiP 视频通话并发的四个前台场景 | 响应延迟下降 9.8%–22.8% |
 
-**第一层：上游 Binder 自带的优先级继承。** AOSP Binder 驱动在处理同步事务时，会自动让服务端线程继承调用方的 Linux 调度策略和优先级。核心逻辑在 `binder_transaction()` → `binder_transaction_priority()` 这条路径：
+运行开销测试中，短视频播放的平均 context-switch 延迟保持 5 μs，pick-next-task 从 2 μs 增至 3 μs。120 FPS 游戏的平均帧率从 119.76 变为 119.69，最差掉帧数从 4 变为 3，归一化电流从 726.62 mA 变为 718.16 mA。单组结果只能说明论文测试条件下没有观察到明显回退，不能证明所有设备和负载都无开销。
 
-- 同步事务创建时，`t->priority` 记录调用方当前的 `policy` 和 `prio`
-- 选中服务端 Binder 线程后，比较"调用方传来的优先级"和"Binder 节点的最小优先级"（`node->min_priority`），取更高的
-- 用 `sched_setscheduler_nocheck()` 或 `set_user_nice()` 提升服务端线程
-- 事务完成（回复返回或线程回到 wait-for-work）时，`binder_restore_priority()` 恢复服务端线程的原优先级
+量产数据覆盖 2024 年 1 月起的 2000 万台以上荣耀设备，包含旗舰和中端、MediaTek 与 Qualcomm 平台。论文以每千小时异常次数统计：
 
-这套机制继承的是 Linux 原生的 `sched_policy + prio`。它不认识任何厂商自定义的语义标签，包括 MUSCHED 的 VIP。
+| 场景 | 异常定义 | Baseline | MUSCHED | 改善 |
+| --- | --- | ---: | ---: | ---: |
+| Animation | 连续掉帧超过 50 ms | 27.2 | 20.4 | 25.0% |
+| Swipe | 连续掉帧超过 50 ms | 10.5 | 6.8 | 35.7% |
+| Startup | 冷启动超过 2 s | 94.5 | 65.5 | 30.7% |
 
-[已验证: AOSP Binder `binder_transaction_priority()` 的完整逻辑；`binder_restore_priority()` 的恢复路径；`flat_binder_object` 的 `sched_policy`/`min_priority`/`inherit_rt` 字段]
+正式论文没有“触控到显示延迟最高降低 31%”或“消除 92% 掉帧”的结论，不能继续引用旧二手材料中的这两项数字。量产表由系统作者提供，论文未公开设备分层、实验分桶与置信区间；阅读时应把它视为大规模产品证据，同时保留对实验设计透明度的限制说明。
 
-**第二层：MUSCHED 的 VIP 语义跨进程传播。** VIP 标签是 `sched_ext` 内部通过 task storage 维护的，Binder 驱动不知道它的存在。要让 VIP 语义跨进程传递到服务端线程，MUSCHED 必须有额外的 sideband 逻辑。从公开内核设施反推，有两条可行路径：
+## 17.8.10 量产实现暴露出的成本
 
-1. **纯 eBPF sideband。** Binder 驱动发出 `trace_binder_transaction`、`trace_binder_transaction_received` 等 trace 事件。MUSCHED 的 BPF 程序可以在这些 tracepoint 上挂载逻辑：观察到同步 Binder 事务从 VIP 调用线程发出时，在目标服务端线程的 task storage 里写入一个 `binder_vip_ref`。事务完成后清除。这种方式不修改 Binder 驱动本身。
+论文披露了几项容易被架构图隐藏的工作：
 
-2. **Vendor hook 扩展。** 在 Binder 驱动的 `binder_transaction_priority()` 路径上加厂商钩子，让 OEM 调度器在优先级继承的同时同步 VIP 语义。这条路径对 Binder 驱动有侵入性，但实现更直接。
+- Android 当时的 `bpfloader` 不支持 sched_ext 所需的 `BPF_MAP_TYPE_STRUCT_OPS`，团队扩展了启动加载流程。
+- struct_ops map 更新受限，MUSCHED 没有在运行中卸载 sched_ext program，而是用 `BPF_F_LINK` 驱动 `INIT`、`INUSE`、`TOBEFREE`、`READY` 状态切换。
+- eBPF verifier 不允许无界循环和动态内存分配，栈限制为 512 字节。复杂调度逻辑被封装进厂商 kfunc，eBPF 更接近轻量控制面。
+- 论文团队实现了类似 `memcpy` 的 BPF kfunc 来修改内核数据结构。这属于厂商信任边界，不能当作通用 BPF 程序应有的能力。
+- 高度优化的游戏收益有限；论文测试的大型 MOBA 中，帧率和帧时间波动没有显著改善，电流与机身温度还略有变差。
 
-无论走哪条路径，VIP 的跨进程传播都需要解决生命周期管理问题。嵌套 Binder 调用（A→B→C）和连续多次交互场景下，VIP boost 的施加和清除必须配对。如果清除不及时，服务端线程在交互结束后仍留在 VIP 层，就会出现 "boost 泄漏"——这比"加速不够"更容易出 bug。上游 Binder 用 `saved_priority` 和 `transaction_stack` 管理恢复语义点，MUSCHED 的 VIP 传播需要同等级别的生命周期追踪，用 refcount 或 reason 标记来聚合多个 VIP 来源（场景标注 + Binder 传播 + 锁链传播），只有全部归零时才真正退回普通队列。
+这些经验解释了“有 sched_ext”与“能量产移动调度器”之间的距离。内核 tag 升级还会遇到 sched_ext ABI 变化、BTF/kfunc 白名单、SELinux、启动加载、watchdog 回退和 SoC 拓扑适配。
 
-[待验证: MUSCHED 具体采用 eBPF sideband 还是 vendor hook 路径，以及 refcount 生命周期管理的具体实现，均未从公开代码验证。推断基于公开内核设施和工程可行性分析]
+## 17.8.11 与 ADPF、Game Mode 的关系
 
-## 负载均衡与 CPU 选核
+MUSCHED、ADPF 和 Game Mode 处在不同控制层：
 
-MUSCHED 的 VIP 任务在唤醒和迁移时遵循一套优先级驱动的选核和均衡策略。
+| 机制 | 输入 | 主要控制 |
+| --- | --- | --- |
+| MUSCHED | OEM 场景标注、线程依赖 | runqueue 顺序、选核、临时优先级传播 |
+| ADPF Performance Hint Session | App 报告的工作周期与目标时长 | 由设备策略调节 CPU 性能及相关资源 |
+| Game Mode / GameManager | 用户或游戏选择的模式 | OEM 定义的性能、续航及游戏策略 |
 
-### 唤醒时选核
+普通 App 没有 MUSCHED VIP SDK。应用应使用公开的 ADPF、Game Mode、线程与帧时间 API，并减少主线程阻塞。某台设备同时启用多种 OEM 策略时，它们对频率、亲和性、nice、uclamp 和 VIP 标签的合并顺序由固件决定；缺少实机 trace 时，不能声称 VIP 必定覆盖 Game Mode。
 
-VIP 任务被唤醒时，`ops.select_cpu()` 按以下优先级选择目标 CPU：
+OEM 调度团队则需要联合观察：
 
-1. 当前处于空闲状态的大核（性能核）
-2. 没有 RT 也没有 VIP 任务的大核
-3. VIP 任务数量最少的大核
+- `sched_switch`、`sched_wakeup`、CPU frequency、idle 与 thermal pressure。
+- 每个 VIP 的来源、预算、撤销原因和 runnable delay。
+- Binder transaction 与锁依赖传播的开始、结束、超时和嵌套深度。
+- sched_ext watchdog、fallback 次数及 BPF policy 版本。
+- 启动、动画和滑动端到端指标，以及功耗与温度。
 
-选核策略优先大核，因为 VIP 任务（UI 线程、RenderThread）的计算密集度通常需要大核的算力。如果 `select_cpu()` 找到了空闲大核，任务直接插入该 CPU 的 local DSQ，跳过 `enqueue()` 回调。
+每个 boost 都应回答三个问题：谁触发、为何仍然有效、何时撤销。只统计“VIP 命中率”无法发现标签残留、错误依赖传播和普通任务饥饿。
 
-### Pull：CPU 空闲时拉取
+## 17.8.12 Android 17 迁移检查表
 
-CPU 进入空闲状态后，调度器遍历其他非空闲 CPU 的队列，优先拉取同时包含 RT 和 VIP 任务的队列中的 VIP 任务。如果没有这样的队列，拉取 VIP 任务最多的队列。拉取通过 `scx_bpf_consume()` 完成。
+把 Linux 6.6 上的 MUSCHED 思路迁到 `android17-6.18-2026-06_r6` 时，至少要复查：
 
-### Push：Tick 检查时迁移
+- 旧 `scx_bpf_dispatch()` / `scx_bpf_consume()` 到 DSQ insert/move API 的改动。
+- full-switch 或 partial-switch 的任务覆盖范围与回退行为。
+- 每 CPU DSQ、CPU hotplug、cpuset、affinity 和隔离 CPU。
+- 3 ms slice 与 4 ms runnable 阈值在新 SoC、刷新率和 thermal pressure 下是否仍合适。
+- Binder 同步、嵌套、失败、oneway 与线程池复用的标签生命周期。
+- futex、mutex、rwsem 的 owner 追踪与内核版本差异。
+- BPF loader、struct_ops、BTF、kfunc、SELinux 与启动时加载限制。
+- watchdog 触发后回到 fair class 时，用户空间状态能否同步清理。
 
-每次 CPU Tick，调度器检查当前 CPU 上的 VIP 任务是否有等待超过 4ms 的。如果有，且当前 CPU 正在运行 RT 任务，就为该 VIP 任务寻找一个"没有 RT 任务且 VIP 最少"的目标 CPU，主动迁移过去。
-
-Push 机制的触发条件说明了设计意图：RT 和 VIP 不应长期共存在同一个 CPU 上。RT 的调度优先级高于 VIP，如果 RT 任务持续运行，同 CPU 的 VIP 任务会被饿死。Tick 检查 4ms 阈值是在"迁移开销"和"VIP 等待时间"之间取的工程平衡。
-
-### 跨核窃取
-
-CPU 本地 VIP 队列为空时，通过 `scx_bpf_consume()` 窃取相邻核心 VIP DSQ 中的任务。这是 `sched_ext` 标准的 DSQ 消费机制，MUSCHED 把窃取范围限定在 VIP DSQ。
-
-[待验证: 4ms push 阈值和具体选核优先级来自论文分析文。选核策略的工程逻辑符合 sched_ext `select_cpu()` 和 DSQ 分发的设计]
-
-## 冷启动场景实测
-
-论文用冷启动作为压力测试场景。冷启动过程中，系统从零创建进程、初始化运行时、构建第一个 Activity，会瞬间触发 300+ 线程创建、数百 MB 到数 GB 内存分配、密集 I/O。UI、渲染、动画、网络加载、图层合成和 Binder 线程同时激活，是 VIP 调度的典型压力场景。
-
-### 骁龙 8 Gen 4 + Android 15 平台
-
-论文报告的关键指标：
-
-- 触控到显示延迟（touch-to-display latency）最高降低 31%
-- 120Hz 模式下消除了 92% 的掉帧（frame drops）
-
-### 荣耀 Magic 7 冷启动对比
-
-在荣耀 Magic 7 上对 10 个常见 App 做了冷启动对比（有/无 MUSCHED），从三个维度观察：
-
-- 冷启动时间
-- D 状态（uninterruptible sleep）时长
-- Runnable 状态时长
-
-### 产品部署数据
-
-在 2000 万+ 设备的部署中，动画（Animation）、滑动（Swipe）、启动（Startup）场景的异常延迟都有下降。
-
-[待验证: 31% 延迟降低、92% 掉帧消除、具体 App 冷启动耗时对比数据来自 Chinasys 2026 论文。论文原文截至 2026-06-09 未公开 PDF，数据来自第三方分析文，等论文正式发表后需补充具体测试条件和方法论]
-
-## MUSCHED 的工程边界
-
-分析 MUSCHED 时需要守住几条边界，避免把厂商实验写成 Android 通用机制。
-
-### 不是新的 Linux 调度类
-
-VIP 是 `sched_ext` full-switch 模式下的内部分层，不是 Linux 内核新增的 `sched_class`。这个区分影响很大：如果 MUSCHED 的 BPF 调度器卸载或出错，系统回退到默认 CFS，VIP 层不存在了。`sched_ext` 的容错和自动回退路径正是它适合做量产实验的原因。
-
-### 优先级传播不是 AOSP 默认行为
-
-Binder 的 Linux policy/prio 继承是上游标准行为。但 VIP 语义的跨进程传播需要额外的 sideband 逻辑（eBPF tracepoint 或 vendor hook），这一层不在 AOSP 默认路径上。其他厂商即使也用 `sched_ext`，也不一定做了相同的事。
-
-### 数据的适用范围
-
-论文测试平台是骁龙 8 Gen 4 + Android 15 和荣耀 Magic 7。不同 SoC（天玑、Exynos）、不同调度器配置、不同 Android 版本上的效果可能不同。具体参数（3ms 时间片、4ms push 阈值等）是工程调优结果，不是通用最优值。
-
-### 与 17.4 节的关系
-
-17.4 节覆盖了 `sched_ext` 框架本身、`struct sched_ext_ops` 的回调机制、DSQ 分发模型和 OPPO `hmbird_sched` 的公开线索。本节（17.8）是 17.4 的下游应用案例，用荣耀 MUSCHED 展示了 OEM 在 `sched_ext` 上可以做到什么程度。两者的共同边界：都是 vendor kernel 层面的实现，AOSP 默认系统不加载任何 BPF 调度器。
-
-## 扩展
-
-### MUSCHED vs 通用 sched_ext 示例调度器
-
-Linux `tools/sched_ext/` 提供了 `scx_simple`、`scx_rusty` 等示例调度器。它们展示了 `sched_ext` API 的基本用法，但没有场景感知标注、VIP 队列约束、跨进程优先级传播这些产品化逻辑。MUSCHED 的 VIP 类是否可复用到其他 OEM 平台，取决于 VIP 标注逻辑（Android 框架钩子）能否跨厂商移植。sched_ext API 本身是通用的，但框架钩子的安装位置和打标策略需要针对各厂商的系统服务差异做适配。
-
-[待补充: sched_ext API 稳定性与内核版本依赖的详细分析]
-
-### MUSCHED 与 ADPF/Game Mode 的互补关系
-
-MUSCHED 的场景感知在内核层面识别关键线程并提升调度优先级。ADPF（Adaptive Performance Framework，见 5.9 节）在框架层面通过 Hint Session 告知系统 CPU/GPU 的性能需求。两者不冲突：MUSCHED 解决"关键线程在 CPU 调度层面的排队顺序"，ADPF 解决"CPU/GPU 频率是否足够"。Game Mode 的线程优先级设置（见 17.5 节）和 MUSCHED 的 VIP 标签是独立的两个机制——Game Mode 通过 Android framework 设置线程优先级，MUSCHED 在内核层面覆盖调度策略。当两者同时生效时，VIP 标签的调度优先级高于 Game Mode 设置的 nice 值。
-
-[待验证: MUSCHED 和 ADPF/Game Mode 同时生效时的优先级关系需要实机验证]
-
-### 其他 OEM sched_ext 实践对比
-
-OPPO `hmbird_sched`（见 17.4 节）是目前公开线索最多的另一个 OEM sched_ext 实践。它与 MUSCHED 的对比维度：
-
-| 维度 | MUSCHED | hmbird_sched |
-|------|---------|-------------|
-| VIP 层级 | VIP 队列 + 类型化限制时间 | 未公开完整策略 |
-| 场景感知 | Android 框架钩子动态标注 | procfs 运行时参数控制 |
-| 优先级传播 | Binder + 锁链传播 | 未公开 |
-| 跨核窃取 | VIP DSQ 级别窃取 | 未公开 |
-| 公开程度 | 论文描述了架构，无代码 | proc 控制面源码公开 |
-
-不同 SoC（骁龙/天玑/Exynos）的 CPU 拓扑和能效模型差异，会影响 VIP 选核策略中大核/小核的划分。MUSCHED 论文的测试平台是骁龙 8 Gen 4，在异构大小核布局上的选核逻辑可能需要针对天玑和 Exynos 的核心配置做调整。
-
-[待补充: 其他 OEM 的 sched_ext 部署策略对比，等更多公开材料]
+MUSCHED 的价值在于展示了一套完整的产品方法：框架提供交互语义，sched_ext 执行可更新策略，依赖传播缩短关键线程等待，时间预算与回退保护系统。它不是 Android 17 的默认能力，也没有公开代码可供逐行复现。阅读论文时应同时保留产品结果与证据边界。
 
 ## 参考资料
 
-- [结构参考: Chinasys2026 论文分析, Clippings/Chinasys2026：荣耀MUSCHED在移动设备中的调度优化.md]
-- [技术验证: 荣耀 MUSCHED VIP 与 Binder 优先级传递深度调研, DeepResearch/荣耀 MUSCHED 的 VIP 与 Binder 优先级传递深度调研.md]
-- [已验证: Linux sched_ext 官方文档, Documentation/scheduler/sched-ext.rst]
-- [已验证: Linux sched_ext API, kernel/sched/ext.c (torvalds/master + Android common 6.12)]
-- [已验证: AOSP Binder 优先级继承, drivers/android/binder.c]
-- [已验证: Android Common Kernel rtmutex vendor hooks (android_vh_task_blocks_on_rtmutex 等)]
-- [已验证: AOSP sys.use_fifo_ui 实验记录]
-- [待验证: MUSCHED 论文原文 PDF（截至 2026-06-09 未公开），具体参数和测试数据需等论文正式发表后补充]
+- [OSDI ’26 论文介绍：Surviving the Impossible Trinity](https://www.usenix.org/conference/osdi26/presentation/xiao)
+- [OSDI ’26 论文 PDF](https://www.usenix.org/system/files/osdi26-xiao.pdf)
+- [Android 17 / 6.18 sched_ext 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-ext.rst)
+- [Android 17 / 6.18 `kernel/sched/ext.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/ext.c)
+- [Android 17 / 6.18 `include/linux/sched/ext.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/sched/ext.h)
+- [Android 17 / 6.18 Binder driver](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)
