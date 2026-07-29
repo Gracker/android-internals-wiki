@@ -35,1259 +35,439 @@ last_research_source: "DeepResearch/2026-06-28-android17-bootanalyze-zsygotelazy
 
 # 16.7 Android 系统启动耗时优化与 bootanalyze
 
-系统启动耗时优化处理的是平台启动路径：bootloader 把控制权交给 kernel，kernel 拉起 `init`，`init` 按 rc 规则挂载分区、启动 native service、拉起 Zygote，Zygote 再启动 `system_server`，直到系统服务和桌面进入可用状态。它和 App cold launch 的目标不同：前者关心设备从上电到可用的基线，后者关心单个应用进程从被调度到首帧提交的耗时。混用这两个口径，容易把系统分区 I/O、Zygote 预加载、Launcher 首帧、三方应用自启动算进同一个指标里，最终得不到可回归的结论。
+系统启动优化研究的是设备从上电到系统可用的整条路径。它横跨 bootloader、kernel、`init`、APEX、Zygote、`system_server`、SystemUI 和 Launcher，和单个 App 的 cold launch 不是同一个实验。
 
-[已验证: 官方文档, source.android.com/docs/core/perf/boot-times]
+本章的平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`，kernel 锚点是 `android17-6.18-2026-06_r6`。历史版本只用于解释机制演进；没有设备实测支撑的收益数字不作为结论。
 
-## 系统启动耗时的分段口径
+## 先固定“启动完成”的含义
 
-平台侧 boot time 至少要拆成六段记录，单看总耗时只能回答“慢了多少”，回答不了“慢在哪里”。
+同一次启动可以有多个终点。终点选错，优化结果会在看板上变好，却没有改善用户等待。
 
-| 阶段 | 主要观察对象 | 常见指标 | 不能混入的内容 |
+| 终点 | 观察方式 | 能回答的问题 | 不能替代的指标 |
 |---|---|---|---|
-| Bootloader | UART log、kernel/ramdisk 加载、镜像解压 | bootloader duration、kernel entry time | Android userspace service |
-| Kernel | driver probe、模块加载、dm-verity、文件系统准备 | `init` 前 kernel uptime、driver probe time | Zygote / system_server |
-| First stage init | ramdisk、first stage mount、SELinux 初始策略 | 分区可挂载时间、早期 `init` action | `/data` 依赖的 service |
-| Second stage init | rc action、property trigger、service class | action 执行时间、service start time | App 冷启动 |
-| Zygote / system_server | class preload、system service 初始化、dexopt 状态 | Zygote ready、system_server ready | Launcher 自身业务初始化 |
-| Launcher ready | Launcher process、SystemUI、boot animation stop | `sys.boot_completed`、首屏可交互时间 | OTA 后首次编译成本的常态化归因 |
+| kernel entry | bootloader 日志、UART、硬件计时 | bootloader 已经把控制权交给 kernel | 上电到 kernel 的完整时间 |
+| second-stage `init` | dmesg、`init second stage started` | kernel 和 first-stage init 的基线 | `/data` 挂载、Zygote、桌面可用 |
+| Zygote start | `ro.boottime.event.zygote-start`、init 日志 | framework 进程模型何时开始建立 | `system_server` 是否 ready |
+| `sys.boot_completed=1` | property、bootstat | AMS 已进入 boot completion 收尾 | Launcher 是否已绘制且可操作 |
+| Launcher shown | Launcher 自有事件、Surface/Window trace | 首个桌面窗口是否显示 | 输入是否已被处理 |
+| first interactive | 自动化输入、画面检测、产品事件 | 用户何时能完成第一个关键动作 | 单纯的 property 时间 |
 
-这张表的作用是统一口径。ROM 团队看版本回归时，应该固定起点、终点和排除项：例如 “power key → `sys.boot_completed=1`” 是用户可感知指标，“kernel start → `boot_complete` bootstat event” 更适合平台内部看 userspace 基线。OTA 后首次启动、数据分区加密状态变化、首次 dexopt、A/B checkpoint 都要单独打标签，否则同一台设备也会出现不可比较的样本。
+Android 17 的 `ActivityManagerService.finishBooting()` 会设置 `sys.boot_completed`，随后继续处理用户级 boot complete、用户 profile 启动和广播。这个 property 是稳定的平台边界，但它不等于“桌面已显示”，也不等于“触摸已有响应”。
 
-## bootanalyze、bootio 与启动 trace 的观察入口
+实验报告应把起点和终点写进指标名。例如：
 
-AOSP 公开树里有三类入口：`bootanalyze` 拆 logcat / dmesg 中的阶段事件，`bootio` 记录启动期间进程 I/O，`io_analysis` 辅助检查文件读取、I/O trace 和 verity。当前 `system/extras/boottime_tools/` 目录没有名为 `boot_trace` 的固定工具；很多团队把“启动阶段采集 ftrace / Perfetto trace”的脚本简称为 boot trace，落到 AOSP 目录时要和 `bootio`、`io_analysis` 区分开。[已验证: AOSP main, system/extras/boottime_tools/]
+- `power_on_to_boot_completed_ms` 包含 bootloader，但需要 bootloader 或外部硬件提供上电起点。
+- `kernel_to_boot_completed_ms` 从 kernel 时钟起算，适合 userspace 回归。
+- `boot_completed_to_launcher_shown_ms` 反映 property 之后的桌面尾部。
+- `power_on_to_first_interaction_ms` 接近用户体验，但依赖可靠的外部输入和画面判定。
 
-`bootanalyze` 更适合回答“某个阶段从第几秒到第几秒”。它通过配置 `config.yaml` 里的 stop event 和事件匹配规则，从重启后的 logcat / dmesg 里抽取时间点。AOSP README 还保留了 userdebug、root、Linux、Python 和 bootchart 依赖的前置条件，因此它更像平台 bring-up 和实验室回归工具，不适合作为用户版本常驻采集方案。[已验证: AOSP main, system/extras/boottime_tools/bootanalyze/README.md]
+## 冷启动样本也要分类
 
-这段配置只表达一个用法：把启动过程里的业务相关 log message 变成统一事件名，再让 `bootanalyze` 多轮采集取分布。
+以下样本不能放进同一组分布：
+
+| 类型 | 额外工作 | 建议标签 |
+|---|---|---|
+| 普通 cold boot | 常规挂载、服务启动、桌面启动 | `normal` |
+| factory reset 后首启 | 包扫描、初始化、向导和可能的 dexopt | `first_boot` |
+| OTA 后首启 | checkpoint、APEX/分区切换、dexopt | `post_ota` |
+| Boot Classpath APEX 变化后首启 | ART boot dexopt | `post_bcp_apex` |
+| userspace reboot | 不经过完整 bootloader/kernel 路径 | `userspace_reboot` |
+| 加密状态或用户状态变化 | CE/DE 存储可用时点不同 | `storage_state_*` |
+
+Android 17 的 `DexOptHelper.performPackageDexOptUpgradeIfNeeded()` 只在 first boot、device upgrade 或 Boot Classpath APEX 发生变化时调用 `ArtManagerLocal.onBoot()`。源码注释明确说明这个调用会阻塞，耗时可能达到 30 秒以上；普通启动会直接返回。版本看板若不区分这些类型，P90 很容易被少量升级样本主导。
+
+## 一套实用的证据层级
+
+系统启动问题适合按“统计 → 分段 → trace → 源码”逐层缩小：
+
+1. bootstat 或产品指标确认回归是否稳定，观察 P50、P90 和离群点。
+2. bootanalyze 把 logcat/dmesg 中的稳定事件转成阶段时间。
+3. bootio 找启动窗口里的进程 I/O 体量。
+4. Perfetto/ftrace 把慢阶段拆到线程调度、CPU 频率、Binder、锁、page fault、block I/O 和 ext4。
+5. 回到 `init.rc`、driver probe、Zygote preload 或 SystemServer trace slice 核对依赖。
+
+单份 trace 适合解释一次慢启动，不能单独证明版本回归。阶段统计没有原始 trace 时只能提示方向，也不足以指导 rc、kernel 或 profile 修改。
+
+## bootanalyze：它读什么，输出什么
+
+Android 17 的工具位于：
+
+`system/extras/boottime_tools/bootanalyze/`
+
+目录中的角色如下：
+
+| 文件 | 作用 |
+|---|---|
+| `bootanalyze.py` | 采集并解析 logcat、dmesg、timing event 和 shutdown event |
+| `config.yaml` | 定义单点事件、带耗时事件、关机事件和时钟修正规则 |
+| `bootanalyze.sh` | 设置循环、重启方式、bootchart、Automotive 和登录流程 |
+| `README.md` | 快速说明，但有文档漂移 |
+
+### README 与 r1 脚本存在漂移
+
+`README.md` 仍写 Python 2.7，`bootanalyze.py` 的 shebang 已是 `#!/usr/bin/python3`。README 还展示了 `stop_event`，r1 脚本没有读取这个字段。脚本默认等待 `BootComplete` 和 `LauncherStart` 两个事件；启用额外选项时，还会等待 `FsStat`、CarWatchdog、`LoginEnd` 或 `LauncherShown`。
+
+这带来两个工程约束：
+
+- 产品定制 `config.yaml` 时，要保留脚本使用的事件键，或同步修改脚本里的停止事件列表。
+- Launcher 类名或日志格式发生变化时，默认 `LauncherStart` 正则可能一直匹配不到，采集会等到超时。
+
+### `events` 与 `timings` 的含义不同
+
+`events` 记录一个事件第一次出现的时间点。`timings` 从一条日志中提取子阶段名和耗时，正则必须提供 `name` 与 `time` 命名捕获组。
+
+下面的配置用于解析 SystemServer 的 `took to complete` 日志：
 
 ```yaml
-stop_event: "sys.boot_completed"
-events:
-  zygote_start: "Starting service 'zygote'"
-  system_server_start: "SystemServer: Entered the Android system server"
-  boot_complete: "boot_complete"
+timings:
+  system_server: 'SystemServerTiming(Async)?\s*:\s*(?P<name>\S+) took to complete:\s(?P<time>[0-9]+)ms'
 ```
 
-事件名要贴合产品自己的日志，不要套用别的设备输出。不同 Android 版本、不同 init rc、不同 Launcher 都可能改变 log message，配置落库前要和原始 logcat / dmesg 对一次。
+匹配后，工具会把 `StartPackageManagerService` 一类子阶段及其毫秒值分别记录。正则要先在目标版本的原始 logcat 上回放，避免日志 tag 变化后静默丢点。
 
-`bootio` 更适合回答“哪个进程在启动期间读写了多少”。AOSP README 要求 kernel 打开 `CONFIG_TASKSTATS`、`CONFIG_TASK_DELAY_ACCT`、`CONFIG_TASK_XACCT` 和 `CONFIG_TASK_IO_ACCOUNTING`，并通过 `/data/misc/bootio/start` 控制采样窗口和样本数；采集完成后用 `adb shell bootio -p` 查看记录。[已验证: AOSP main, system/extras/boottime_tools/bootio/README.md]
+### 多轮采集
 
-Perfetto 或 systrace 适合回答“某段等待发生在哪条线程、哪个 block/ext4 事件、哪个调度空洞”。AOSP 官方 boot time 文档仍以 systrace / ftrace 讲启动期分析，并给出 `trace_event=block,ext4` 的 kernel cmdline 方向；在现代分析工作流里，可以把相同的 ftrace 事件接入 Perfetto，再用 UI 或 `trace_processor` 查时序。[已验证: 官方文档, source.android.com/docs/core/perf/boot-times]
-
-工具选择可以按问题反推：
-
-- 阶段耗时漂移：用 `bootanalyze` 或产品内统一 boot event，从多轮样本看 P50 / P90。
-- 早期 I/O 变重：用 `bootio` 找进程维度，再用 ftrace / Perfetto 定位 block、ext4、page fault。
-- 某个 service 启动慢：从 init log、`init.svc.*` property、Perfetto 线程切片一起看，确认它是在执行、等待依赖，还是被 class / property trigger 推迟。
-- 回归指标落库：用 `bootstat` 记录命名事件，再按版本、设备、启动类型聚合。
-
-## init rc、service class 与并行启动约束
-
-`init` 的并行能力受 rc 语言模型限制。AOSP init README 明确把语言分成 Actions、Commands、Services、Options、Imports：Action 被 trigger 命中后进入队列；队列中的 action 依次出队，action 内 command 也按顺序执行；`init` 会在 command 之间处理设备创建、属性设置和进程重启等工作。[已验证: AOSP main, system/core/init/README.md]
-
-这个模型带来三个判断：
-
-- action 内的 `exec` 会阻塞后续 command，`exec_background` 不会阻塞；把长耗时检查放进 `exec`，会直接拉长 init 队列。
-- `class_start <serviceclass>` 启动同一 class 下尚未运行的 service，但 `disabled` service 不会随 class 自动启动，必须显式 `start`、`enable` 或由接口命令触发。
-- property trigger 只在条件满足时入队。类似 `on boot && property:x=y` 的组合里，如果 `boot` 事件已经过去，之后 property 才变成目标值，不会补执行这条 action。
-
-系统启动优化里，`init.rc` 常见瓶颈多半出在等待位置，单纯减少 service 数量解决不了。平台 service 如果必须在 `post-fs-data` 之后访问 `/data`，提前启动没有意义；只依赖 vendor 分区和设备节点的守护进程，放到过晚的 class 里会浪费并行窗口；调试或厂商统计 service 如果占住 `exec`，会把本可异步的准备工作变成串行等待。
-
-判断一条 rc 改动是否安全，要同时看依赖和失败后果：
-
-| 改动方向 | 可能收益 | 风险边界 |
-|---|---|---|
-| 拆分长 action | 缩短 init 队列被单个 command 占用的时间 | 拆错会改变 property 设置顺序 |
-| 把服务放入更早 class | 提前初始化硬件或 native daemon | 可能早于 SELinux、分区挂载、APEX 激活 |
-| 把阻塞检查改成后台执行 | 释放 init command 队列 | 后续服务可能读到未准备好的状态 |
-| 延后非首屏 service | 减少 boot completed 前资源竞争 | 可能影响 SystemUI、Launcher 或车机场景关键功能 |
-
-`updatable` service 还要单独看。AOSP README 描述了 APEX 场景：标记为 `updatable` 的服务如果在 APEX 激活完成前被启动，执行会被延迟到激活完成；未标记的服务不能被 APEX 覆盖。Android Q 之后主线模块增加，APEX 内 rc 和版本化 rc 文件会改变 service 出现的位置，boot time 回归分析不能只看 `/system/etc/init/hw/init.rc`。[已验证: AOSP main, system/core/init/README.md]
-
-## Zygote 与 system_server 的启动成本
-
-Zygote 和 `system_server` 的成本来自两类动作：一类是启动本身必须完成的初始化，另一类是为了后续 App 或系统服务运行更快而提前支付的成本。把这两类混到一起，会把“预加载导致 boot 变慢”和“预加载减少后续 App 成本”简单对立起来。
-
-ART 的 boot image profile 文档给出了更精确的入口。Android 11 之后，boot image profiles 会记录 boot classpath、Zygote 预加载类、system server 组件 profile 等信息，ART 用这些信息优化系统级 Java 代码；文档同时提醒，纳入过多方法或类会损害性能，需要基于关键用户旅程收集 profile 后筛选。[已验证: 官方文档, source.android.com/docs/core/runtime/boot-image-profiles]
-
-落到 boot time 分析，Zygote / `system_server` 不能只看“启动多久”。要分三项：
-
-- Zygote preload：预加载类和资源会增加启动阶段 CPU / I/O / page fault，但能减少后续进程重复初始化和内存占用。
-- system_server profile：`frameworks/base/services/art-profile` 影响 system server 方法编译、boot image 布局和执行效率。
-- dexopt / profile 状态：OTA 后首次启动、profile 缺失、system server jar 变化，都可能把编译或布局成本放到本次 boot 里。
-
-分析时应回连 1.2 节的进程模型和 16.1 节的源码阅读方法：如果 `system_server` 的某个服务初始化拖长，不要在本节重复讲服务机制，只记录它在 boot timeline 上的开始、结束、依赖和等待对象；服务内部原理放回对应机制章节。
-
-## I/O、page fault 与存储预热
-
-AOSP 官方 boot time 文档把 I/O efficiency 放在很高的位置，原因很直接：启动期间会读取大量系统、vendor、APEX、odex、资源和配置文件，任何无关读取都会和关键路径抢 flash 带宽、页缓存和 CPU 解压时间。文档中的 Pixel 示例提到，启动期读数据量可到 GB 级，filesystem tuning、dm-verity prefetch、read ahead、I/O scheduler 都可能改变启动表现。[已验证: 官方文档, source.android.com/docs/core/perf/boot-times]
-
-I/O 问题要分三层看：
-
-| 层级 | 现象 | 观察入口 | 处理方向 |
-|---|---|---|---|
-| 文件层 | 某些 apk、jar、apex、odex 被过早读取 | ftrace 文件访问、`bootio` 进程统计 | 延后读取、减少扫描、修正预加载清单 |
-| 块设备层 | block queue 等待、读放大、verity 校验成本 | `block` / `ext4` trace event | 调整 read ahead、verity prefetch、文件布局 |
-| 内存层 | major page fault、page cache 未命中、映射抖动 | Perfetto page fault / sched 关联 | 预热热点页、减少冷路径 mmap、检查 16 KB page size 差异 |
-
-早期存储优化不能只追求减少读取量。有些预热会让 boot completed 前的指标变差，但会减少 Launcher、SystemUI 或第一个关键应用的首屏等待；有些延后读取会让 boot 指标好看，却把成本转移到用户解锁后。平台指标要同时保留 “boot complete 前” 和 “first interactive path” 两个窗口。
-
-`fsync`、checkpoint 和 OTA 场景要单独标记。A/B OTA 后，metadata 更新、checkpoint 提交、dexopt 状态和 verity 校验都可能改变启动期 I/O；把 OTA 后首次启动样本混进普通冷启动，会让版本回归误判。`bootstat` 和产品内 metrics 至少要记录启动原因、是否 OTA 首启、是否 factory reset 后首启、是否加密状态变化。
-
-## bootstat 与指标落库
-
-`bootstat` 负责把 boot event 转成可聚合的指标。AOSP README 描述了四个常用能力：`-r` 记录命名事件的相对时间，`-p` 打印已经持久化的 boot event，`-l` 把事件写入 EventLog / Tron histogram，`--record_boot_reason` 记录启动原因。[已验证: AOSP main, system/core/bootstat/README.md]
-
-这段命令只展示最小工作流：记录事件，打印本机事件，再交给系统日志聚合。
+下面的命令使用 r1 wrapper 做十次回归采样：
 
 ```bash
-adb shell bootstat -r boot_complete
+ANDROID_BUILD_TOP="$PWD" \
+CONFIG_YMAL="$PWD/system/extras/boottime_tools/bootanalyze/config.yaml" \
+LOOPS=10 \
+RESULTS_DIR="$PWD/out/boot-analyze" \
+system/extras/boottime_tools/bootanalyze/bootanalyze.sh -a
+```
+
+`CONFIG_YMAL` 是源码里已经固化的拼写，不能改成 `CONFIG_YAML`。工具需要可执行 `su` 的测试设备，适合 userdebug/eng 和实验室环境。r1 wrapper 会无条件执行 `touch /data/bootchart/enabled`，`-b` 只控制后续 bootchart 处理；做低扰动基线时应评估这一行为，或直接调用 `bootanalyze.py` 并自行管理采集开关。
+
+### 时间修正
+
+启动早期的 logcat wall clock 可能被校时。默认配置通过 `time_correction_key: correction` 匹配 `Updating system time`，再修正校时点之前的 logcat 时间。dmesg 使用 kernel 时间，两类时钟不能直接相减；产品新增事件时，应确认它来自哪个时钟域。
+
+## bootio：先找 I/O 责任进程
+
+`bootio` 依赖以下 kernel 配置：
+
+- `CONFIG_TASKSTATS=y`
+- `CONFIG_TASK_DELAY_ACCT=y`
+- `CONFIG_TASK_XACCT=y`
+- `CONFIG_TASK_IO_ACCOUNTING=y`
+
+它记录进程维度的启动 I/O，适合回答“谁读写得多”，不提供文件级调用链。下面的命令设置 120 秒窗口、采五次并在结束后清理控制文件：
+
+```bash
+adb shell 'echo "120 5" > /data/misc/bootio/start'
+adb reboot
+adb shell bootio -p
+adb shell rm /data/misc/bootio/start
+```
+
+`/data/misc/bootio/start` 不会自动删除。若只看总字节数，仍无法区分顺序读、随机读、page cache 命中或 block queue 等待；定位文件和等待原因还要接 ftrace/Perfetto。
+
+## Perfetto：解释等待发生在哪里
+
+bootanalyze 给出阶段，Perfetto 负责解释阶段内部的并发和等待。启动 trace 至少应覆盖：
+
+- `sched_switch`、`sched_wakeup`、CPU frequency/idle；
+- `binder_driver` 和主要 framework atrace category；
+- block I/O、ext4、page fault；
+- `init`、Zygote、SystemServer 的 atrace slice；
+- 目标 HAL、SurfaceFlinger、SystemUI 和 Launcher 的自定义 slice。
+
+启动采集要在重启前安装 trace 配置，并确认 trace session 已经开始。普通的“设备起来后再执行 `perfetto`”会漏掉 kernel、first-stage init、APEX bootstrap 和 Zygote 前半段。采集配置、buffer 大小和 data source 也要作为实验元数据保存，因为丢事件和 trace 开销都会改变结论。
+
+Android 17 的 `SystemServer.run()` 显式调用 `Producer.init(..., 4 * 1024)`，源码注释把它定义为 4 MiB 的 Perfetto producer shared-memory buffer。它服务于 system_server producer，不是整份 trace 的全局 buffer，也不能换算成“追踪精度提升多少”或“固定增加多少 CPU 开销”。
+
+## `init` 的串行队列与进程并发
+
+`init` 的 Action 队列按 rc 文件解析顺序入队。队列中的 Action 依次执行，每个 Action 内的 command 也依次执行。Android 17 `init.cpp` 主循环每次调用一次 `ActionManager::ExecuteOneCommand()`，然后回到事件循环处理 property、子进程和控制消息。
+
+这不表示启动期间只能运行一个进程：
+
+- `start` 和 `class_start` 依次 fork/exec service，但启动后的 service 彼此可以并发运行。
+- `exec`、`exec_start` 会让 Action 队列等待进程结束。
+- `exec_background` 启动进程后不阻塞后续 command。
+- `wait`、`wait_for_prop` 和同步的文件检查会把等待留在 init 关键路径。
+
+下面的 rc 片段展示如何把独立工作放到 service 中，再用 property 表达依赖完成：
+
+```rc
+service vendor_prepare_cache /vendor/bin/prepare_cache
+    class main
+    user system
+    group system
+    disabled
+    oneshot
+
+on post-fs-data
+    start vendor_prepare_cache
+
+on property:vendor.prepare_cache.ready=1
+    start vendor_consumer
+```
+
+这种写法允许 `vendor_prepare_cache` 与其他 service 并发。安全性取决于 `vendor_consumer` 是否只在 ready property 之后启动，以及失败路径是否能超时、降级或阻止错误状态继续传播。
+
+### `class_start` 的边界
+
+Android 17 `do_class_start()` 遍历 `ServiceList`，对属于目标 class 的 service 调用 `StartIfNotDisabled()`。它有三点容易写错：
+
+- `disabled` service 不随 class 自动启动。
+- 单个 service 启动失败会记日志，遍历仍会继续。
+- class 只提供分组，不表达 service 之间的依赖图。
+
+把 service 移到更早 class 前，应核对分区挂载、SELinux domain、设备节点、APEX 激活、Binder service 和 HAL 依赖。仅凭“没有显式 wait”不能证明它可以提前。
+
+### event trigger 与 property trigger
+
+`on boot && property:x=y` 只在 `boot` event 发生时检查组合条件。如果 `boot` 已经过去，property 随后才变成 `y`，这条 Action 不会补跑。只依赖 property 的 `on property:x=y` 会在 property 变化时触发。
+
+持久化 property 还有额外顺序边界：当 `ro.property_service.async_persist_writes=true` 时，persistent setprop 与普通 setprop 的触发先后没有定义。修改 rc 时要用状态机或显式 property 表达依赖，不能依赖日志里一次偶然的顺序。
+
+### APEX rc 与 `updatable` service
+
+Android 17 会处理 `/apex/*/etc/*rc`，并按 SDK 后缀选择适用的版本化 rc。标记为 `updatable` 的 service 如果在 APEX 激活完成前收到启动请求，init 会把启动延后；没有 `updatable` 标记的 service 不能由 APEX 中的定义覆盖。
+
+启动回归不能只检查 `/system/etc/init/hw/init.rc`。vendor、odm、APEX 和硬件专用 rc 都可能新增 Action、service 或 property 等待。
+
+## kernel：以 android17-6.18-2026-06_r6 为准
+
+kernel 启动耗时通常集中在镜像加载/解压、module load、driver probe、firmware、存储和设备依赖。Android 官方 kernel boot-time 指南给出的优化方向在 6.18 锚点上仍要逐驱动验证。
+
+### 选择性异步 probe
+
+`android17-6.18-2026-06_r6` 的 `drivers/base/dd.c` 会根据 driver 的 `probe_type` 和 `driver_async_probe=` 选择同步或异步 attach。Android 模块还可以通过 `<module>.async_probe=1` 启用异步 probe。
+
+适合评估的对象通常有：
+
+- 慢速 I2C/SPI 总线设备；
+- probe 中加载 firmware 的设备；
+- 大量硬件初始化且不阻塞首屏的设备。
+
+异步 probe 不能全量开启。consumer 必须正确处理 supplier 未就绪并返回 `-EPROBE_DEFER`；显示、存储、clock、regulator、thermal 等依赖若表达错误，耗时会从 module load 转成更晚的同步等待或功能故障。
+
+官方文档给出的异步 probe 示例收益是 100–500 ms，移动非必要 module 到 second-stage init 的示例收益是 500–1000 ms。这些数字取决于硬件和 driver，只能用来说明量级，不能直接写进产品收益预期。
+
+### first-stage 与 second-stage module
+
+正常启动的 first stage 只应保留完成根文件系统和早期启动所需的 module。recovery/fastbootd 需要的 USB、显示等 module 可以保留在 ramdisk，却不必在 normal boot 的 first stage 全部加载。
+
+相关构建变量包括：
+
+- `BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD`
+- `BOARD_VENDOR_RAMDISK_RECOVERY_KERNEL_MODULES_LOAD`
+- `BOARD_VENDOR_KERNEL_MODULES_LOAD`
+
+移动 module 后，要同时验证 normal boot、recovery、fastbootd、OTA 和 crash recovery。second-stage 后台加载还要提供 ready property 或可靠的设备节点等待，不能让 HAL 在 driver 未就绪时无限阻塞。
+
+### CPUfreq/devfreq 的启动顺序
+
+CPUfreq、DRAM 和 interconnect devfreq 过晚上线，会让早期串行工作长期运行在 bootloader 留下的低频状态。提前 probe 前要确认 clock、regulator 和 thermal supplier 已就绪。频率上升带来的功耗和温升也要纳入回归，不能只保留 boot time。
+
+## Zygote：预加载成本放在哪个阶段
+
+Android 17 r1 的 primary 64-bit Zygote 由 `init.zygote64.rc` 启动，命令行没有 `--enable-lazy-preload`，因此在 fork `system_server` 前执行完整 preload。
+
+完整 preload 包括：
+
+- classes 与 non-boot classloader cache；
+- framework resources；
+- app-process HAL 和 graphics driver；
+- `android`、`jnigraphics` 等 shared library；
+- text/font cache 与 compatibility rules；
+- flag 开启时的 `HttpEngine.preload()`；
+- WebView Zygote 准备和 JCA provider warm-up。
+
+preload 会增加 boot 阶段的 CPU、I/O 和 page fault，同时让 fork 后进程复用更多已初始化状态。删减预加载项时要同时测系统 boot、首个 App、首个 WebView、PSS/共享页和连续启动。
+
+### lazy preload 不是 Android 17 新能力
+
+`--enable-lazy-preload` 在较早 Android 版本已经存在。Android 17 的 64/32 配置里，`init.zygote64_32.rc` 仍给 32-bit secondary Zygote 传这个参数；primary Zygote不传。
+
+lazy 模式跳过启动期 preload，收到首次 preload 请求时由 `ZygoteConnection` 调用 `ZygoteInit.lazyPreload()`，后者仍执行同一套完整 `preload()`。它改变的是支付时间，不会自动把 preload 拆成增量任务。
+
+回归时应分别记录：
+
+- primary Zygote 的 `ZygotePreload`；
+- secondary Zygote 的 `ZygoteInitTiming_lazy`；
+- 首个 32-bit 进程请求前后的延迟；
+- 双 Zygote 设备与纯 64-bit 设备的配置差异。
+
+## SystemServer：从 trace slice 看同步点
+
+Android 17 `SystemServer.run()` 的主线结构是：
+
+1. 初始化 SystemServer 进程环境和 Perfetto producer；
+2. 启动 `SystemServerInitThreadPool`；
+3. 把 `SystemConfig::getInstance` 尽早提交到线程池；
+4. 加载 `android_servers`；
+5. 创建 system context 和 `SystemServiceManager`；
+6. 依次进入 bootstrap、core、other、APEX service 分组；
+7. 进入各个 boot phase，直到 AMS 完成 boot。
+
+主线程上的 `startService()` 调用顺序仍然重要，但某些 service 会把工作提交到线程池。判断某个 slice 是否阻塞关键路径时，要同时看主线程是否等待 future、Binder reply、锁或 property，不能按 slice 宽度直接推断全部为 CPU 执行。
+
+### SystemConfig 早期并发
+
+r1 无条件调用 `startSystemConfigInit()`，方法把 `SystemConfig::getInstance` 提交给 `SystemServerInitThreadPool`。后续 consumer 第一次取 `SystemConfig` 时，如果后台工作尚未完成，仍可能在那里等待。
+
+优化方向应围绕“提交是否足够早、consumer 在哪里 join、配置扫描是否变重”展开。源码仅证明并发结构，不能推出固定的毫秒收益。
+
+### ART Mainline 的早期初始化
+
+`startBootstrapServices()` 很早就调用 `ArtModuleServiceInitializer.setArtModuleServiceManager(...)`。源码注释说明 `service-art.jar` 的 class linking 和 GC 互斥；把首次引用放在 PackageManager 大量分配之前，可避开后面的 GC 竞争。
+
+这段初始化和特殊启动中的 boot dexopt要分开：
+
+- `ArtModuleServiceInitializer` 是早期注册与 class-linking 时点。
+- `UpdatePackagesIfNeeded` 在 later `startOtherServices` 中运行。
+- first boot、OTA 或 Boot Classpath APEX 变化时，`ArtManagerLocal.onBoot()` 才执行阻塞式包 dexopt。
+- 普通 cold boot 不走这轮 boot dexopt。
+
+### APEX system service 必须位于分组末尾
+
+`startApexServices()` 遍历 `ApexManager.getApexSystemServices()`，启动 APEX 声明的 system service，然后调用 `SystemServiceManager.sealStartedServices()`。源码注释要求 APEX service 是启动 service 的末组，避免 platform service 反向依赖可独立更新的 APEX service。
+
+这是一条架构约束，不是“APEX 并行挂载带来固定收益”的证据。bootanalyze 默认配置只提供 `apexd_activated`、`apexd_bootstrapping_done` 和 `apexd_ready` 三个 apexd 日志事件；挂载 namespace、单个 APEX 校验和单个 service 初始化仍要靠更细的 trace 或自定义日志。
+
+### Boot phase 不是任务并行模型
+
+Android 17 的 SystemServer 会触发 `PHASE_WAIT_FOR_DEFAULT_DISPLAY`、`PHASE_WAIT_FOR_SENSOR_SERVICE`、`PHASE_SYSTEM_SERVICES_READY`、`PHASE_ACTIVITY_MANAGER_READY`、`PHASE_THIRD_PARTY_APPS_CAN_START` 等阶段。`SystemServiceManager.startBootPhase()` 按已启动 service 调用 `onBootPhase()`；阶段号表达生命周期边界，不保证 callback 自动并行。
+
+平台新增 service 时，应记录：
+
+- constructor/start 的 trace slice；
+- 各 boot phase callback；
+- 首次 Binder 发布和 ready 事件；
+- 失败时的降级路径；
+- 是否阻塞默认显示、PMS、AMS、SystemUI 或 Launcher。
+
+## `finishBooting()` 内还有哪些工作
+
+Android 17 的 AMS 只有在 boot animation 完成后才继续 `finishBooting()`；若动画尚未完成，会记录待处理状态并返回。进入收尾后，顺序包含：
+
+1. 通知 Zygote 与 VMRuntime boot completed；
+2. 提交存储 checkpoint，失败时请求重启；
+3. 触发 `PHASE_BOOT_COMPLETED`；
+4. 启动此前 hold 的进程；
+5. 设置 `sys.boot_completed=1` 和 `dev.bootcomplete=1`；
+6. 向 lmkd 发送 `LMK_START_MONITORING`；
+7. 进入用户级 boot completion，随后调度用户 profile 启动。
+
+因此，以下说法都不够严谨：
+
+- “boot animation 停止就是 `sys.boot_completed`”：两者有顺序关系，还要看 AMS 收尾。
+- “property 置 1 后没有启动工作”：用户回调、广播和应用进程仍可能继续占用 CPU/I/O。
+- “LMKD PSI 在 Android 17 全程关闭”：framework 只证明 boot complete 后显式发送 start-monitoring 命令，早期是否已经监控还受 lmkd 配置影响。
+
+## bootstat：适合版本看板的持久化事件
+
+`bootstat` 把事件名和相对时间持久化。Android 17 的 `bootstat.rc` 在第一次 `sys.boot_completed=1` 时执行：
+
+- `--record_boot_complete`
+- `--record_boot_reason`
+- `--record_time_since_factory_reset`
+- `-l`
+
+`RecordBootComplete()` 还会收集 `ro.boottime.init.*`、`ro.boottime.event.*` 和 `ro.boot.boottime` 中的 bootloader 分段。bootloader 没有提供 `ro.boot.boottime` 时，bootstat无法补出上电到 kernel 的缺失时间。
+
+下面的命令用于记录自定义事件并检查本机事件：
+
+```bash
+adb shell bootstat -r vendor_display_ready
 adb shell bootstat -p
 adb shell bootstat -l
 ```
 
-`bootstat` 记录的是系统 uptime 下的相对时间，和 wall clock 不同。这个设计避开了早期时间未校准的问题，也意味着事件之间必须使用同一台设备、同一次启动里的 uptime 做比较。跨设备聚合时，字段至少包含 build fingerprint、branch、boot reason、启动类型、是否 OTA 首启、是否 userdebug、是否打开 bootchart / trace，否则实验采集本身会影响结果。
+`-r` 记录执行命令时的系统 uptime。r1 的 `-l` 实现会把已支持的事件映射到 bootstats atoms；README 中“EventLog/Tron histogram”的描述已经落后于当前实现。自定义事件仍可持久化和打印，但没有 `kBootEventToAtomInfo` 映射时不会作为受支持 atom 写出。
 
-平台团队把单次 trace 变成版本指标时，可以用三层数据：
+## I/O、page fault 与文件布局
 
-- 标准事件：`boot_complete`、Zygote start、system_server ready、boot animation stop 等，适合版本看板。
-- 阶段分解：bootloader、kernel、init、Zygote、system_server、Launcher ready，适合定位回归段。
-- 证据 trace：Perfetto / ftrace / bootio / logcat 原始文件，适合回放一次具体慢启动。
+启动 I/O 要分三层：
 
-指标落库的目标是保证每个回归点能回到一份原始证据，字段数量服务于这个目标。没有原始 trace 的 P90 漂移只能提示有问题，不能支撑改 rc、改 profile 或改 kernel 参数。
-
-## 系统启动优化的安全边界
-
-系统启动优化不能用“越早启动越好”做原则。下列路径不能为了数字牺牲：
-
-- 安全策略：SELinux policy、keystore / keymint、gatekeeper、verified boot 相关状态必须在依赖它们的服务前完成。
-- 存储与加密：`/data` 解密、metadata、checkpoint、A/B OTA 状态改变 service 可用性，不能把依赖 `/data` 的服务提前到未挂载窗口。
-- 关键系统服务：ActivityManager、PackageManager、PowerManager、SurfaceFlinger、SystemUI、Launcher 之间有可用性顺序，延后任何一个都要看用户可交互路径。
-- 硬件初始化：display、touch、audio、radio、camera、sensor 的 probe 与 HAL 启动可能影响首屏或车机场景安全需求，不能只按手机桌面场景评估。
-- 可观测性：关闭日志、trace 或统计能减少耗时，但如果让后续回归无法定位，收益要重新评估。
-
-官方 kernel boot time 文档里的建议也带着边界：strip module symbol、使用 LZ4、减少 driver logging、选择性启用 asynchronous probing、尽早 probe CPUfreq，都要求结合具体硬件验证；异步 probe 不能全量打开，官方文档说明 fork 线程和 probe 本身成本接近时收益会消失，慢总线、固件加载和大量硬件初始化才是优先对象。[已验证: 官方文档, source.android.com/docs/core/architecture/kernel/boot-time-opt]
-
-## 扩展：Android 16/17 AutoFDO、16 KB page size 对 boot time 的间接影响
-
-16 KB page size 已经有官方公开数据。Android Developers 文档写到，16 KB page size 设备平均会带来更快 App launch、较低 App launch 功耗、更快 camera launch，并给出系统 boot time 平均提升 8%、约 950 ms 的测试结果；文档也说明实际设备结果会不同，应用侧需要检查 native library 的 ELF segment 对齐。[已验证: 官方文档, developer.android.com/guide/practices/page-sizes]
-
-对平台 boot time 来说，16 KB page size 影响的是基线，单点 service 解释不了这种变化。page size 改变会影响页表、mmap、page fault、文件映射和 native library 对齐要求，因此同一条 boot trace 不能直接跨 4 KB / 16 KB 设备比较。AOSP 还提供 16 KB developer option 的配置路径，包括 `PRODUCT_MAX_PAGE_SIZE_SUPPORTED := 16384`、`BOARD_KERNEL_PATH_16K`、`BOARD_KERNEL_MODULES_16K` 和 4 KB / 16 KB boot OTA 切换包；这个开关用于兼容性测试，不能代表量产 16 KB 设备的性能表现。[已验证: 官方文档, source.android.com/docs/core/architecture/16kb-page-size/16kb-developer-option]
-
-AutoFDO 对 Android 16/17 boot time 的公开官方材料，本轮没有找到可直接引用的 AOSP / Android Developers 数字。[待验证] 工程上可以把它归入“编译与布局优化改变 CPU 热路径”的观察项：如果 kernel、ART 或系统 native binary 引入新的 profile-guided 优化，回归看板应把 build 配置、profile 版本和设备分支一起记录，避免把编译策略变化误判成 rc 或 I/O 优化。
-
-## 扩展：OEM 定制启动阶段的可观测性缺口
-
-OEM 定制启动慢，常见缺口通常出在私有服务没有统一事件名，单纯增加 trace 也不够。厂商守护进程、预装应用、私有 HAL、region config、开机广告、合规检查、安全 SDK 都可能出现在 boot completed 前；如果只看 AOSP 标准事件，这些成本会被归到“init 慢”或“system_server 慢”。
-
-可观测性要提前约定三件事：
-
-- 每个私有 service 在 start、ready、failed 三个位置写稳定 log tag，并把事件名接入 bootanalyze / bootstat 或内部 metrics。
-- 预装应用和私有守护进程要标注是否影响首屏可交互；不影响首屏的任务延后到 boot completed 后，再用后台调度策略控资源。
-- 每次 boot time 回归保留原始 logcat、dmesg、Perfetto、bootio 输出和 build 配置，避免只留下汇总数字。
-
-系统启动优化要落到一条原则：用统一口径拆阶段，再用工具把阶段变成证据，只改能被证据支持的等待、读取和初始化路径。没有证据的“提前启动”和“延后启动”，都可能把问题从 boot time 转移到首屏、稳定性或安全边界。
-
-<!-- AIW-源码调研-2026-06-27 -->
-
-## Android 17 启动优化新特性源码级验证（新增）
-
-基于对 Android 17 (API 37, android-17.0.0_r1) AOSP 源码的深度分析，本节补充平台启动优化的最新实现细节：
-
-### Zygote 延迟预加载机制
-
-**源码路径**：`frameworks/base/core/java/com/android/internal/os/ZygoteInit.java`
-
-Android 17 引入了 `--enable-lazy-preload` 命令行参数，支持将类预加载延迟到首次 fork 前执行：
-
-```java
-// 延迟预加载控制逻辑（line 854-889）
-boolean enableLazyPreload = false;
-if (isLazyPreloadEnabled()) {
-    enableLazyPreload = true;
-    Zygote.nativeSetOption("dalvik.vm.enable_lazy_preload", "true");
-}
-
-if (!enableLazyPreload) {
-    beginPreload();
-} else {
-    // 延迟预加载模式下，跳过昂贵的预加载操作
-    Slog.i(TAG, "Lazy preload enabled, skipping expensive preloading");
-}
-```
-
-完整调用链分析显示，传统 Zygote 预加载包含 10 个步骤：`beginPreload()` → `preloadClasses()` → `cacheNonBootClasspathClassLoaders()` → `Resources.preloadResources()` → `nativePreloadAppProcessHALs()` → `maybePreloadGraphicsDriver()` → `preloadSharedLibraries()` → `preloadTextResources()` → `preloadCompatConfig()` → 条件性 `HttpEngine.preload()`。延迟预加载可减少启动时峰值内存占用 15-20%，但会增加首次应用启动延迟 5-10ms。
-
-### SystemServer Perfetto 性能追踪优化
-
-**源码路径**：`frameworks/base/services/core/java/com/android/server/SystemServer.java`
-
-Android 17 在 SystemServer 初始化时引入 4MB 专用 Perfetto 内存缓冲区（line 845-925）：
-
-```java
-// 初始化 4MB Perfetto 缓冲区（line 858-865）
-android.tracing.perfetto.Producer.init(new InitArguments(
-        InitArguments.PERFETTO_BACKEND_SYSTEM, 4 * 1024));
-
-// 启动事件记录（line 909）
-EventLog.writeEvent(EventLogTags.BOOT_PROGRESS_SYSTEM_RUN, uptimeMillis);
-```
-
-启动阶段控制采用分层 boot phase 机制，共 8 个关键阶段（line 1193-3535）：
-- `PHASE_WAIT_FOR_DEFAULT_DISPLAY`：等待默认显示
-- `PHASE_WAIT_FOR_SENSOR_SERVICE`：等待传感器服务
-- `PHASE_LOCK_SETTINGS_READY`：锁屏设置就绪
-- `PHASE_SYSTEM_SERVICES_READY`：系统服务就绪
-- `PHASE_DEVICE_SPECIFIC_SERVICES_READY`：设备特定服务就绪
-- `PHASE_ACTIVITY_MANAGER_READY`：ActivityManager 就绪
-- `PHASE_THIRD_PARTY_APPS_CAN_START`：第三方应用可启动
-
-### APEX 双命名空间挂载优化
-
-**源码路径**：`system/core/init/init.cpp` 和 `system/core/init/apex_init_util.cpp`
-
-Android 17 引入双 APEX 命名空间机制（line 890-920），支持 `/apex` 和 `/bootstrap-apex` 并行挂载：
-
-```cpp
-// APEX 挂载配置（init.cpp line 895-903）
-CHECKCALL(mount("tmpfs", "/apex", "tmpfs", MS_NOEXEC | MS_NOSUID | MS_NODEV,
-                "mode=0755,uid=0,gid=0"));
-
-if (NeedsTwoMountNamespaces()) {
-    CHECKCALL(mount("tmpfs", "/bootstrap-apex", "tmpfs", MS_NOEXEC | MS_NOSUID | MS_NODEV,
-                    "mode=0755,uid=0,gid=0"));
-}
-```
-
-`CanMountApexBeforeData()` 函数（apex_init_util.cpp line 147-194）实现了智能 APEX 挂载时机判断，考虑以下因素：
-- FIEMAP 支持状态（`apexd.config.use_fiemap` 属性）
-- GSI 设备排除（`gsi::IsGsiRunning()`）
-- 首次启动检测（`access(kMetadataApexDir, F_OK)`）
-- 压缩 APEX 存在检查（`apexd.config.compressed_apex` 属性）
-
-### 后台广播调度优化
-
-**源码路径**：`frameworks/base/services/core/java/com/android/server/am/BroadcastSkipPolicy.java`
-
-Android 17 增强了后台广播跳过策略，引入更精细的权限检查和超时控制：
-
-```java
-// 广播跳过策略检查（line 74-88）
-public @Nullable String shouldSkipMessage(@NonNull BroadcastRecord r, 
-                                         @NonNull Object target, 
-                                         boolean preflight) {
-    // 权限检查
-    int perm = checkComponentPermission(info.activityInfo.permission,
-            r.callingPid, r.callingUid, receiverUid, info.activityInfo.exported);
-    
-    // 应用操作检查
-    final String op = AppOpsManager.permissionToOp(info.activityInfo.permission);
-    if (op != null) {
-        final int mode = mService.getAppOpsManager().noteOpNoThrow(op,
-                r.callingUid, r.callerPackage, r.callerFeatureId,
-                "Broadcast delivered to " + info.activityInfo.name);
-        if (mode != AppOpsManager.MODE_ALLOWED) {
-            return "Appop Denial: broadcasting " + broadcastDescription(r, component);
-        }
-    }
-}
-```
-
-超时配置更新：
-- 前台广播超时：`BROADCAST_FG_TIMEOUT = 10 * 1000 * Build.HW_TIMEOUT_MULTIPLIER`
-- 后台广播超时：`BROADCAST_BG_TIMEOUT = 60 * 1000 * Build.HW_TIMEOUT_MULTIPLIER`
-
-### bootanalyze 工具依赖分析
-
-**工具状态**：`system/extras/boottime_tools/bootanalyze/README.md`
-
-Android 17 中的 bootanalyze 工具仍保持传统架构，依赖以下组件：
-- Python 2.7（存在兼容性风险）
-- PyYAML（配置解析）
-- pybootchartgui（可视化）
-
-工具功能定位：底层启动基准测量，依赖传统的 bootchart 数据采集，缺乏 AI 驱动的智能分析能力。
-
-### 性能影响总结
-
-Android 17 启动优化技术的综合性能影响：
-
-| 优化技术 | 启动阶段影响 | 内存影响 | CPU影响 | 适用场景 |
-|---|---|---|---|---|
-| Zygote 延迟预加载 | 首次应用启动 +5-10ms | 启动时 -15%~-20% | 预加载阶段 -30%，后续 +5% | 内存敏感设备 |
-| Perfetto 4MB 缓冲区 | 启动追踪精度 +20% | +4MB | 追踪开销 +3% | 性能分析场景 |
-| APEX 双命名空间 | 系统服务启动 +8% | 临时 +2MB | 挂载开销 +5% | 模块化系统 |
-| 后台广播优化 | 广播延迟 +15% | 内存 -5% | 跳过检查 +2% | 后台密集场景 |
-
-**验证结论**：Android 17 的启动优化技术整体提升了系统的模块化程度和可观测性，但在技术选型上仍保持保守策略，bootanalyze 工具缺乏现代化升级。
-
-
-
-<!-- AIW-源码调研-2026-06-28 -->
-
-## Android 17 启动优化源码级补强（2026-06-28 增量）
-
-本节基于 `android-17.0.0_r1` 标签下 AOSP 主线源码的逐行验证，对上节报告中的几处**未经验证**或**路径错误**内容进行补强。所有路径都已通过 `git ls-tree` 在 `https://android.googlesource.com/platform/system/{core,extras}/+/refs/tags/android-17.0.0_r1/` 上验证。
-
-### bootanalyze 工具链的真实源码路径
-
-**daily-topics.json id=35 给出的 `system/core/bootstat/bootanalyze.cpp` 在 android-17.0.0_r1 中并不存在**。`system/core/bootstat/` 目录下只有 `boot_event_record_store.{cpp,h}`、`bootstat.{cpp,h}`、`bootstat.rc`、`boot_event_record_store_test.cpp` 等文件，**没有任何 bootanalyze 源码**。
-
-bootanalyze 工具的真实位置是：
-
-| 文件 | 行数 | 角色 |
-|---|---|---|
-| `system/extras/boottime_tools/bootanalyze/bootanalyze.py` | 1382 | 主脚本（Python 3） |
-| `system/extras/boottime_tools/bootanalyze/bootanalyze.sh` | ~80 | bash 包装 |
-| `system/extras/boottime_tools/bootanalyze/config.yaml` | ~90 | 事件/时长正则 |
-| `system/extras/boottime_tools/bootanalyze/README.md` | ~30 | **文档漂移：仍写 "Python 2.7"，但脚本 shebang 是 `#!/usr/bin/python3`** |
-
-**已知文档漂移**：bootanalyze 的 README（android-17.0.0_r1）写"This only works on Linux with Python 2.7, PyYAML and pybootchartgui"，但 `bootanalyze.py` 第 1 行已经是 `#!/usr/bin/python3`。README 描述落后于代码至少一个主版本（Android 15+ 已经迁移）。
-
-### bootanalyze.py 的三类事件规则
-
-```python
-# bootanalyze.py line 117-127（android-17.0.0_r1）
-search_events_pattern = {
-    key: re.compile(pattern)
-    for key, pattern in cfg['events'].items()
-}
-timing_events_pattern = {
-    key: re.compile(pattern)
-    for key, pattern in cfg['timings'].items()
-}
-shutdown_events_pattern = {
-    key: re.compile(pattern)
-    for key, pattern in cfg['shutdown_events'].items()
-}
-```
-
-`cfg` 来自 config.yaml 的四个字段：`events`（单点）、`timings`（带命名捕获组 `(?P<name>...)` 的阶段耗时）、`shutdown_events`（关机事件）、`time_correction_key`（时钟漂移修正 key）。`timings` 与 `events` 的关键区别是**正则必须用 `(?P<name>...)` 抽取子阶段名**，例如：
-
-```yaml
-timings:
-  system_server: SystemServerTiming(Async)?\s*:\s*(?P<name>\S+) took to complete:\s(?P<time>[0-9]+)ms
-```
-
-这条规则匹配 `SystemServerTiming: StartActivityManager took to complete: 234ms`，自动抽取 `name=StartActivityManager`、`time=234`。
-
-### config.yaml 中的 APEX 启动追踪
-
-android-17.0.0_r1 的 `config.yaml` 包含 3 个 APEX 事件：
-
-```yaml
-events:
-  apexd_activated: apexd.*Marking APEXd as activated
-  apexd_bootstrapping_done: apexd.*Bootstrapping done
-  apexd_ready: apexd.*Marking APEXd as ready
-```
-
-**关键缺口**：config.yaml **没有**双命名空间挂载（`/apex` 与 `/bootstrap-apex`）的独立追踪事件。昨日报告提到的"APEX 双命名空间挂载优化"在 bootanalyze 工具链层面**没有现成观测点**，需要从 `apexd` 内部日志或自己加正则来抓。
-
-### bootstat.cpp 的完整 boot event 清单
-
-**源码位置**：`system/core/bootstat/bootstat.cpp` line 95-175（android-17.0.0_r1）
-
-`kBootEventToAtomInfo` 字典共登记 **25+ 个** boot event，分 4 类：
-
-| 类别 | 数量 | 代表事件 |
-|---|---|---|
-| ELAPSED_TIME | 10 | `boot_complete`、`boot_complete_no_encryption`、`factory_reset_boot_complete`、`ota_boot_complete`、`ro.boottime.event.zygote-start` 等 |
-| DURATION | 10 | `boottime.bootloader.1BLE/.1BLL/.KL/.2BLE/.2BLL/.SW/.splash/.total`（8 段 bootloader）、`absolute_boot_time`、`boottime.init.cold_boot_wait` |
-| UTC_TIME | 3 | `factory_reset`、`factory_reset_current_time`、`factory_reset_record_value` |
-| ERROR_CODE | 1 | `factory_reset_current_time_failure` |
-
-`--record_boot_complete` 命令会触发 `RecordBootComplete()`（line 1595），除写 `boot_complete` / `ota_boot_complete` 外，还会调用 `RecordInitBootTimeProp()` 14 次，自动捕获 init rc 阶段（early-init/init/late-init/early-fs/fs/post-fs/late-fs/post-fs-data/zygote-start/early-boot/boot 等）。
-
-**`boottime.bootloader.*` 8 段是 Pixel 等 OEM 必须填充的契约**：`GetBootLoaderTimings()` 从 `ro.boot.bootloader` property 读取 bootloader 端填入的 `bootloader.duration.<key>=<value>` 字符串。OEM 不填，bootstat 拿不到数据。
-
-### Zygote 延迟预加载的真实源码位置
-
-**`ZygoteInit.java` line 178-183（android-17.0.0_r1）**：
-
-```java
-static void lazyPreload() {
-    Preconditions.checkState(!sPreloadComplete);
-    Log.i(TAG, "Lazily preloading resources.");
-    preload(new TimingsTraceLog("ZygoteInitTiming_lazy", Trace.TRACE_TAG_DALVIK));
-}
-```
-
-**`ZygoteInit.java` line 854-898（命令行解析 + 启动期决策）**：
-
-```java
-boolean enableLazyPreload = false;
-for (int i = 1; i < argv.length; i++) {
-    if ("start-system-server".equals(argv[i])) {
-        startSystemServer = true;
-    } else if ("--enable-lazy-preload".equals(argv[i])) {
-        enableLazyPreload = true;
-    }
-    ...
-}
-// ...
-if (!enableLazyPreload) {
-    bootTimingsTraceLog.traceBegin("ZygotePreload");
-    EventLog.writeEvent(LOG_BOOT_PROGRESS_PRELOAD_START, SystemClock.uptimeMillis());
-    preload(bootTimingsTraceLog);
-    EventLog.writeEvent(LOG_BOOT_PROGRESS_PRELOAD_END, SystemClock.uptimeMillis());
-    bootTimingsTraceLog.traceEnd(); // ZygotePreload
-}
-```
-
-**关键澄清**：
-- `lazyPreload()` 仍然调用完整的 `preload()`，**不是把 9 个步骤拆开分阶段执行**，只是把"启动期 preload"延后到"首次 fork 前"。
-- Perfetto 抓 trace 时可通过 `ZygoteInitTiming_lazy` 这个独立 tag 区分正常 preload 与 lazy preload，便于回归对比。
-- `--enable-lazy-preload` 是 AOSP 主线 Zygote 命令行参数，由 init.rc 在启动 Zygote 时传入。**不是厂商私有扩展**。
-- `preload()` 第 154-156 行新增 `HttpEngine.preload()` 步骤（25Q2 ramp 的 flag `preloadHttpengineInZygote`），相关 bug 编号 b/206676167。这是 Android 17 的 preload 步骤增量。
-
-### SystemServer 4MB Perfetto 缓冲区的具体实现
-
-**`SystemServer.java` line 862-863（android-17.0.0_r1）**：
-
-```java
-// Explicitly initialize a 4 MB shmem buffer for Perfetto producers (b/382369925)
-android.tracing.perfetto.Producer.init(new InitArguments(
-        InitArguments.PERFETTO_BACKEND_SYSTEM, 4 * 1024));
-```
-
-- `4 * 1024` 即 4096 KB = 4 MiB，参数 `PERFETTO_BACKEND_SYSTEM` 表示使用 system backend。
-- bug 编号 b/382369925 是 Google 内部跟踪，公开树只能从这条注释推断原因（system_server 启动早期 Perfetto buffer 不足）。
-- 7 个 boot phase 触发点：`PHASE_WAIT_FOR_DEFAULT_DISPLAY` (line 1355)、`PHASE_WAIT_FOR_SENSOR_SERVICE` (line 1755)、`PHASE_LOCK_SETTINGS_READY` (line 3162)、`PHASE_SYSTEM_SERVICES_READY` (line 3205)、`PHASE_DEVICE_SPECIFIC_SERVICES_READY` (line 3318)、`PHASE_ACTIVITY_MANAGER_READY` (line 3397)、`PHASE_THIRD_PARTY_APPS_CAN_START` (line 3535)。
-
-### 上节报告需要修正的几处
-
-1. **bootanalyze 工具不是 "Python 2.7 + PyYAML + pybootchartgui"**：README 文档漂移，实际 `bootanalyze.py` 已是 Python 3；pybootchartgui 仅在 `bootanalyze.sh` 调用 `pybootchartgui` 时才需要。
-2. **"APEX 双命名空间挂载优化"在 bootanalyze config.yaml 中没有追踪事件**，意味着这条机制在 AOSP 主线可观测性工具中**没有现成观测点**，需要从 apexd 内部日志或自定义正则抓取。
-3. **bootanalyze.py 不仅分析 boot_complete**：原生支持 `_LAUNCHER_START`、`_LAUNCHER_SHOWN`、`_LOGIN_END`、`_CARWATCHDOG_BOOT_COMPLETE` 等多个停止事件，**也支持 `--fs_check`、`--prefetch_metrics`、`--trace_login` 等可选行为**。
-4. **HttpEngine.preload() 是 Android 17 新增的 preload 步骤**（25Q2 ramp），相关 aconfig flag 是 `preloadHttpengineInZygote`（在 `android.net.http.Flags` 中）。上游 Zygote 用 `try/catch NoSuchMethodError` 兼容老版本 Tethering 模块。
-
-## 信息源
-
-**一手（已读关键段）**：
-- `android.googlesource.com/.../system/extras/+/refs/tags/android-17.0.0_r1/boottime_tools/bootanalyze/bootanalyze.py`（line 1-700）
-- `android.googlesource.com/.../system/extras/+/refs/tags/android-17.0.0_r1/boottime_tools/bootanalyze/config.yaml`
-- `android.googlesource.com/.../system/extras/+/refs/tags/android-17.0.0_r1/boottime_tools/bootanalyze/bootanalyze.sh`
-- `android.googlesource.com/.../system/core/+/refs/tags/android-17.0.0_r1/bootstat/bootstat.cpp`（line 90-1648）
-- `android.googlesource.com/.../frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ZygoteInit.java`（line 100-925）
-- `android.googlesource.com/.../frameworks/base/+/refs/tags/android-17.0.0_r1/services/java/com/android/server/SystemServer.java`（line 855-880）
-
-**关联报告**：`DeepResearch/2026-06-28-android17-bootanalyze-zsygotelazy-sourcepath-correction.md`（今日增量报告）
-
-
-<!-- AIW-源码调研-2026-06-29 -->
-
-## Android 17 启动优化新源码验证（2026-06-29 增量）
-
-本节基于 `android-17.0.0_r1` 标签下 AOSP 主线源码的逐行 diff，对昨日（2026-06-28）报告中**未触及的** Android 17 演进点做补强。**主要聚焦 4 个新发现**：
-（1）SystemServer.startSystemConfigInit 已固化（flag 守卫移除）
-（2）ZygoteInit.preload 新增 preloadSharedLibraries + preloadCompatConfig
-（3）HttpEngine.preload 前向兼容 try/catch
-（4）am flags.aconfig 性能相关 6 个 flag 清单
-
-### 1. SystemServer.run()：startSystemConfigInit 早启标志已固化
-
-**源码位置**：`frameworks/base/services/java/com/android/server/SystemServer.java` line 960-973（android-17.0.0_r1）
-
-```java
-// Prepare the thread pool for init tasks that can be parallelized
-SystemServerInitThreadPool.start();
-mDumper.addDumpable(SystemServerInitThreadPool.getInstance());
-
-// SystemConfig init is expensive, so enqueue the work as early as possible to allow
-// concurrent execution before it's needed (typically by ActivityManagerService).
-// As native library loading is also expensive, this is a good place to start.
-startSystemConfigInit(t);
-```
-
-**对比 android-16.0.0_r1 line 901-913**：
-
-```java
-// Prepare the thread pool for init tasks that can be parallelized
-SystemServerInitThreadPool tp = SystemServerInitThreadPool.start();
-mDumper.addDumpable(tp);
-
-if (android.server.Flags.earlySystemConfigInit()) {
-    startSystemConfigInit(t);
-}
-```
-
-**关键差异**：
-- **android-16**：`startSystemConfigInit(t)` 受 `android.server.Flags.earlySystemConfigInit()` aconfig flag 守卫
-- **android-17**：守卫**直接删除**，无条件执行；`SystemServerInitThreadPool.start()` 的返回值也从 `tp` 改为丢弃（语义无差，但说明 API 简化）
-- `earlySystemConfigInit` 在 `flags.aconfig` 中**仍然存在但已无引用点**——可推断 Google 内部已观察足够多设备数据后决定全量 rollout
-
-**性能影响**：`startSystemConfigInit` 内部通过 `SystemServerInitThreadPool.submit(SystemConfig::getInstance, ...)` 异步加载 `/system/etc/system_fonts.xml` + permissions XML。典型设备耗时 80-200ms，移到 zygote 主流程前置后能与后续 `loadLibrary("android_servers")` / `initZygoteChildHeapProfiling()` 流水，减少 AMS init 同步等待，cold boot 减少 30-80ms（设备差异大）。
-
-### 2. ZygoteInit.preload()：新增 preloadSharedLibraries + preloadCompatConfig
-
-**源码位置**：`frameworks/base/core/java/com/android/internal/os/ZygoteInit.java` line 128-176（android-17.0.0_r1）
-
-android-17 中 `preload()` 主函数在 `PreloadGraphicsDriver` 之后**新增两步**：
-
-```java
-Trace.traceBegin(Trace.TRACE_TAG_DALVIK, "PreloadGraphicsDriver");
-maybePreloadGraphicsDriver();
-Trace.traceEnd(Trace.TRACE_TAG_DALVIK);
-preloadSharedLibraries();   // ← android-17 新增独立方法
-preloadTextResources();
-preloadCompatConfig();      // ← android-17 新增独立方法
-```
-
-**新增方法 1 - preloadSharedLibraries()（line 197-211）**：
-
-```java
-private static void preloadSharedLibraries() {
-    Log.i(TAG, "Preloading shared libraries...");
-    System.loadLibrary("android");
-    System.loadLibrary("jnigraphics");
-    if (android.os.Flags.perfettoSdkTracingV3()) {
-        System.loadLibrary("perfetto_framework_jni");
-    }
-    if (!SystemProperties.getBoolean("config.disable_renderscript", false)) {
-        System.loadLibrary("compiler_rt");
-    }
-}
-```
-
-**关键点**：
-- `perfetto_framework_jni` 加载是**条件性**的（依赖 `Flags.perfettoSdkTracingV3()` aconfig flag）——Perfetto SDK v3 默认关闭时不会预加载
-- `compiler_rt`（renderscript 依赖）已被 `config.disable_renderscript` system property 控制——Renderscript 自 Android 12 deprecate 后保留兼容路径
-- 把 `loadLibrary` 从 `preload()` 主函数抽出后，每个 `loadLibrary` 可在 perfetto trace 中看到独立 span，**可观测性提升**，性能本身不变
-
-**新增方法 2 - preloadCompatConfig()（line 234-237）**：
-
-```java
-private static void preloadCompatConfig() {
-    Log.i(TAG, "Preloading compat config...");
-    CompatibilityRules.loadSystemRules();
-}
-```
-
-调用 `CompatibilityRules.loadSystemRules()` 加载 `/system/etc/compat config` 规则到运行时缓存。**android-16 中完全不存在**——意味着 Android 17 把 compat config 的预加载从「应用首次访问时 lazy load」改为「zygote 启动时 eager load」。性能正收益：每个 forked app 启动时不再需要 lazy load 兼容规则，粗略估计每 app 节省 5-15ms。
-
-**`HttpEngine.preload()` 兼容性改造**（line 153-166）：
-
-```java
-if (preloadHttpengineInZygote()) {
-    try {
-        HttpEngine.preload();
-    } catch (NoSuchMethodError e) {
-        // The flag protecting this API is not an exported
-        // flag because ZygoteInit happens before the
-        // system service has initialized the flag which means
-        // that we can't query the real value of the flag
-        // from the tethering module. In order to avoid crashing
-        // in the case where we have (new zygote, old tethering).
-        // we catch the NoSuchMethodError and just log.
-        Log.d(TAG, "HttpEngine.preload() threw " + e);
-    }
-}
-```
-
-**注释直接透露 Google 内部 release 节奏**：「TODO: remove the try/catch and the flag read as soon as the flag is ramped and 25Q2 starts building from source」。25Q2 是 Google 内部对应该年度第二季度的内部 ramp 计划，意思是当 25Q2 的 mainline binary 普及后，try/catch 与 flag 检查都会移除。当前是过渡期：25Q2 之前的 mainline 仍可能以旧 binary 部署在 17 设备上，此时新 zygote 调用 `HttpEngine.preload()` 时会抛 `NoSuchMethodError`，需要 try/catch 兜底。
-
-### 3. bootanalyze.sh 入口：5 个开关的回归测试包装
-
-**源码位置**：`system/extras/boottime_tools/bootanalyze/bootanalyze.sh`（android-17.0.0_r1）
-
-**5 个 flag 对应行为**：
-
-| Flag | 行为 | 适用场景 |
-|---|---|---|
-| `-a` | 改用 `adb reboot` 而非 `svc power reboot` | 验证 adb 路径而非 root 路径 |
-| `-b` | 抓 bootchart 样本 | 需要 /data/bootchart 路径 |
-| `-w` | 抓 carwatchdog perf stats | Automotive 平台 |
-| `-s <serial>` | 指定 device serial | 多设备并发测试 |
-| `-l` | 执行 login 流程并采集 login 耗时 | 含 OOBE 的 user build |
-
-**3 个环境变量**：
-
-| 变量 | 作用 |
-|---|---|
-| `ANDROID_BUILD_TOP` | AOSP 源码根目录（必填） |
-| `CONFIG_YMAL` | 事件规则文件路径（默认 `SCRIPT_DIR/config.yaml`，**注意 README 写错位 `YMAL` 应为 `YAML`——历史拼写错误已固化到 README**） |
-| `RESULTS_DIR` | 结果输出目录（默认 `$PWD/bootAnalyzeResults`） |
-
-`LOOPS=3` 在 README 示例中标注，但脚本中**未实际读取该环境变量**——可能是 README 与脚本同步漂移，调用方实际通过 `-n`/`--iterate` 参数控制。
-
-### 4. APEX 启动时序：3 事件，bootanalyze config.yaml 唯一观测点
-
-**源码位置**：`system/extras/boottime_tools/bootanalyze/config.yaml` line 28-30
-
-```yaml
-apexd_activated: apexd.*Marking APEXd as activated
-apexd_bootstrapping_done: apexd.*Bootstrapping done
-apexd_ready: apexd.*Marking APEXd as ready
-```
-
-**3 个事件的语义边界**：
-
-| 事件 | 触发时机 | 时序意义 |
-|---|---|---|
-| `apexd_activated` | apexd 标记 active 状态 | 系统认为 APEX 已加载可用 |
-| `apexd_bootstrapping_done` | 内部 classpath / 资源 bootstrap 完成 | APEX 内容已挂载但服务尚未注册 |
-| `apexd_ready` | apexd 标记 ready | 所有 APEX 服务已就绪，可被 system_server 拉起 |
-
-**为何这 3 个事件对 Android 17 重要**：Android 17 APEX 数量比 Android 14 多 5-8 个（含 `com.android.ranging`、`com.android.devicelock`、`com.android.uprobestats` 等），且 25Q2 ramp 计划对更多包做主模块化。每个 APEX 加载耗时 30-80ms，3 个事件的差分能直接看到 apexd 的「overhead 不再随 APEX 数量线性增长」是否成立。
-
-**对启动影响**：APEX 启动相关的优化集中在 `system/apex/apexd/`（不在本轮读取范围），但这 3 个事件是**唯一**在 AOSP 公开树能观测 APEX 启动时序的非侵入式手段。
-
-### 5. am flags.aconfig：6 个与启动/性能强相关的 flag
-
-**源码位置**：`frameworks/base/services/core/java/com/android/server/am/flags.aconfig` + `performance_flags.aconfig`（android-17.0.0_r1）
-
-| Flag 名 | Namespace | Bug 编号 | 类别 | 作用 |
-|---|---|---|---|---|
-| `expedite_activity_launch_on_cold_start` | system_performance | 319519089 | BUGFIX | 冷启动时提前通知 ATM 启动流程 |
-| `defer_service_restart_when_frozen` | backstage_power | 478967958 | 新功能 | frozen 进程的所有 binding client 都被冻结时，**延迟服务重启**（**android-17 首次引入**） |
-| `memory_limiter_swap` | system_performance | 491137082 | 新功能 | memory limiter 配置 swap max（独立于 `memory_limiter_enable`） |
-| `use_memcg_for_compaction` | system_performance | - | 优化 | 改用 memcg 进行 compaction 决策 |
-| `encapsulate_cur_oom_adj` | - | - | 重构 | 封装当前 oom_adj 访问路径 |
-| `set_initial_oom_score_adj` | - | - | 启动优化 | 进程启动时直接设置 oom_score_adj，避免后续 recalculate |
-
-**expedite_activity_launch_on_cold_start** 是最直接的启动优化：bug 319519089 描述为 "Notify ActivityTaskManager of cold starts early to fix app launch behavior"，`PURPOSE_BUGFIX` 级别说明已经生产稳定。命中 `AMS.java:5520-5530, 5620` 两个 hook 点。
-
-**defer_service_restart_when_frozen** 是 Android 17 首创：bug 478967958，namespace `backstage_power`，逻辑：当某 service 的所有 binding client 都被冻结（frozen）时，**延后该 service 的重启时机**，避免在 frozen 状态下做无谓的 service 启动开销。对低 RAM 设备开机后的「冷启动 → 立即触发后台 service 调度」场景减少 service 启动 30-50%，对冷启动后首屏可交互时间（TTID）有 0-100ms 改善。
-
-**memory_limiter_swap** 是 `memory_limiter_enable` 的并行 flag（独立控制 swap 行为，不耦合 enable），可与 `id=41` MemoryLimiter 调研联动。
-
-### 6. BootReceiver：logBootEvents 的 IO 异步化
-
-**源码位置**：`frameworks/base/services/core/java/com/android/server/BootReceiver.java` line 155-178（android-17.0.0_r1）
-
-```java
-public void onReceive(final Context context, Intent intent) {
-    if (!Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
-        return;
-    }
-    // Log boot events in the background to avoid blocking the main thread with I/O
-    new Thread() {
-        @Override
-        public void run() {
-            try {
-                logBootEvents(context);
-            } catch (Exception e) {
-                Slog.e(TAG, "Can't log boot events", e);
-            }
-            try {
-                removeOldUpdatePackages(context);
-            } catch (Exception e) {
-                Slog.e(TAG, "Can't remove old update packages", e);
-            }
-        }
-    }.start();
-    ...
-}
-```
-
-**关键优化**：`logBootEvents` 调用从同步改为后台线程，**主线程不阻塞**。`logBootEvents` 内部会做：
-- 读取 last kmsg（pstore / proc/last_kmsg）
-- 写 dropbox entry
-- 调用 `addFsckErrorsToDropBoxAndLogFsStat()` 记录 fs_stat
-- 写 timestamps
-
-这些都是磁盘 IO 密集操作，挪到后台线程意味着 boot_completed broadcast 派发后不会因为 logBootEvents 阻塞主线程而延迟后续任务。
-
-**fs_stat 时序契约**：`logFsShutdownTime()` 注释明确写「log always available fs_stat last so that logcat collecting tools can wait until fs_stat to get all file system metrics」——意味着 bootanalyze 的 `--fs_check` 参数依赖 fs_stat 是 logcat 流中的**最后一个**可用 IO 事件。
-
-## 信息源
-
-**一手（已读关键段）**：
-- `android.googlesource.com/.../system/extras/+/refs/tags/android-17.0.0_r1/boottime_tools/bootanalyze/bootanalyze.sh`（5 flag + 3 env 全段）
-- `android.googlesource.com/.../system/extras/+/refs/tags/android-17.0.0_r1/boottime_tools/bootanalyze/Android.bp`（37 行全文，确认 `bootanalyze` 是 `python_binary_host`）
-- `android.googlesource.com/.../frameworks/base/+/refs/tags/android-17.0.0_r1/services/java/com/android/server/SystemServer.java`（line 850-1080 + 960-973 关键段）
-- `android.googlesource.com/.../frameworks/base/+/refs/tags/android-16.0.0_r1/services/java/com/android/server/SystemServer.java`（diff line 901-913）
-- `android.googlesource.com/.../frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ZygoteInit.java`（line 100-280，含 preloadSharedLibraries/preloadCompatConfig 全文）
-- `android.googlesource.com/.../frameworks/base/+/refs/tags/android-16.0.0_r1/core/java/com/android/internal/os/ZygoteInit.java`（diff line 100-280）
-- `android.googlesource.com/.../frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/BootReceiver.java`（line 155-340 关键段）
-- `android.googlesource.com/.../frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/flags.aconfig`（432 行，grep 全文）
-- `android.googlesource.com/.../frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/performance_flags.aconfig`（6 行全文）
-
-**关联报告**：`DeepResearch/2026-06-29-android17-boot-optimization-bootanalyze-v2.md`（今日增量报告）
-
-## 延伸阅读
-
-### Android 17 启动优化新特性源码验证：SystemConfig 早启 + Zygote preload 步骤增量 + am 性能 flag
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-29-android17-boot-optimization-bootanalyze-v2.md
-- 类型：DeepResearch 调研结果
-- 摘要：揭示 android-17 vs android-16 的 4 个真实差异点：① SystemServer.startSystemConfigInit 早启 flag 守卫已删除（从实验性 flag 升级为全量默认）；② ZygoteInit.preload 新增 preloadSharedLibraries() + preloadCompatConfig() 两个独立方法；③ HttpEngine.preload 增加 NoSuchMethodError try/catch（前向兼容 25Q2 ramp，注释直接透露内部 release 节奏）；④ am flags.aconfig 6 个性能/启动相关 flag 清单（expedite_activity_launch_on_cold_start / defer_service_restart_when_frozen / memory_limiter_swap / use_memcg_for_compaction / encapsulate_cur_oom_adj / set_initial_oom_score_adj），其中 defer_service_restart_when_frozen 与 memory_limiter_swap 是 android-17 首次引入。
-- 注入时间：2026-06-29
-- 价值：补强昨日报告中未触及的 android-17 vs android-16 diff、bootanalyze.sh 入口、APEX 启动时序 3 事件、BootReceiver IO 异步化，为启动优化章节提供演进时间线
-
-
-
-### Android 17 bootanalyze 工具链 5 flag 配置与 4MB Perfetto Buffer 源码验证
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-android17-bootanalyze-boot-time-optimization.md
-- 类型：DeepResearch 调研结果
-- 摘要：基于 android-17.0.0_r1 源码验证 bootanalyze 工具链的 5 个关键 flag（-a/-b/-w/-s/-l）配置与 4MB 独立 Perfetto buffer 机制（b/382369925）。揭示 SystemServer.java:861 显式初始化 4MB shmem buffer 解决 Android 16 的 trace 丢失问题；--enable-lazy-preload flag 在 init.zygote64.rc 中默认未启用，ZygoteInit.java:858 条件分支控制 9 步预加载链（preloadClasses → preloadResources → preloadSharedLibraries → preloadTextResources → preloadCompatConfig → HttpEngine.preload → WebViewFactory.prepare → endPreload → warmUpJcaProviders）；bootstat 25+ 事件双源时间校正算法；APEX 模块化导致启动事件序列重排序。
-- 注入时间：2026-07-01
-- 价值：补全 bootanalyze 5 flag 精确语义、4MB buffer 的 bug ID 与代码位置、lazy preload 完整调用链，为启动优化章节提供工具链实操指南
-
-### Android 17 bootanalyze 工具链 + Zygote 延迟预加载源码级验证
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-28-android17-bootanalyze-zsygotelazy-sourcepath-correction.md
-- 类型：DeepResearch 调研结果
-- 摘要：修正 bootanalyze.cpp 不存在路径为 bootanalyze.py（system/extras/boottime_tools/），揭示 bootanalyze 三类事件规则、双源时间校正算法、bootstat 25+ boot event 清单，以及 Zygote --enable-lazy-preload 的 9 步 preload 链和 SystemServer 4MB Perfetto buffer 真实实现（b/382369925）。
-- 注入时间：2026-06-28
-- 价值：提供 bootanalyze 工具链的一手源码路径修正和 Zygote lazy preload 完整调用链，填补启动优化工具章节的源码级空白
-
-
-<!-- AIW-源码调研-2026-07-01 -->
-
-## Android 17 启动优化新源码验证（2026-07-01 增量：APEX / PSI / StatsLog）
-
-本节基于 `android-17.0.0_r1` 标签下 AOSP 主线源码，补完今日（三次调研累计后）仍未触及的 3 块空白：**APEX 启动时序新机制**、**后台服务调度（PSI 监控延后 + SystemServerInitThreadPool 并行）**、**BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED StatsLog 启动时间基准事件集**。
-
-### 1. SystemServer.startApexServices：APEX 启动时序硬约束（sealStartedServices）
-
-**源码位置**：`frameworks/base/services/java/com/android/server/SystemServer.java` line 3685-3711（android-17.0.0_r1）
-
-```java
-private void startApexServices(@NonNull TimingsTraceAndSlog t) {
-    if (Build.IS_DEBUGGABLE
-            && SystemProperties.getBoolean("debug.crash_system", false)) {
-        throw new RuntimeException();
-    }
-    t.traceBegin("startApexServices");
-    List<ApexSystemServiceInfo> services = ApexManager.getInstance().getApexSystemServices();
-    for (ApexSystemServiceInfo info : services) {
-        String name = info.getName();
-        String jarPath = info.getJarPath();
-        t.traceBegin("starting " + name);
-        if (TextUtils.isEmpty(jarPath)) {
-            mSystemServiceManager.startService(name);
-        } else {
-            mSystemServiceManager.startServiceFromJar(name, jarPath);
-        }
-        t.traceEnd();
-    }
-    // make sure no other services are started after this point
-    mSystemServiceManager.sealStartedServices();
-    t.traceEnd(); // startApexServices
-}
-```
-
-**调用链（SystemServer.java:1043-1051）**：
-```
-startBootstrapServices(t) → startCoreServices(t) → startOtherServices(t) → startApexServices(t)
-```
-
-**关键约束（android-17 相对 android-16 的硬升级）**：
-- `sealStartedServices()` 调用后**禁止再 start 任何 service**（在 SystemServiceManager 中抛 IllegalStateException）
-- 所有 core/bootstrap/other services 必须在 APEX 阶段前注册
-- 新增的 mainline module 提供的 service 自动归入 APEX 阶段
-- RescuelyParty / OTA 升级后 APEX 重启系统时，APEX 服务 init 顺序可控
-
-**APEX 路径二选一**：
-- `jarPath` 为空 → `startService(name)` 走同进程 ServiceManager
-- `jarPath` 非空 → `startServiceFromJar(name, jarPath)` 走独立 classloader（典型如 com.android.permission、com.android.tzdata 等可热更新模块）
-
-**与 Android 16 对比**：android-16 中 startApexServices 已存在，但 `sealStartedServices()` 的硬约束**在 android-17 才完整生效**（参见 b/192880996 迁移注释）。
-
-### 2. PSI 监控延后到 boot 完成：ProcessList.startPsiMonitoringAfterBoot()
-
-**源码位置 A**：`frameworks/base/services/core/java/com/android/server/am/ProcessList.java` line 1657-1660（android-17.0.0_r1）
-
-```java
-public static void startPsiMonitoringAfterBoot() {
-    ByteBuffer buf = ByteBuffer.allocate(4);
-    buf.putInt(LMK_START_MONITORING);
-    writeLmkd(buf, null);
-}
-```
-
-**调用点 B**：`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` line 5991-5995
-
-```java
-SystemProperties.set("sys.boot_completed", "1");
-SystemProperties.set("dev.bootcomplete", "1");
-
-// Start PSI monitoring in LMKD if it was skipped earlier.
-ProcessList.startPsiMonitoringAfterBoot();
-```
-
-**机制**：
-- LMK_START_MONITORING 是 lmkd 二进制 cmd（参见 lmkd.h 与 lmkd.cpp，2026-07-01 LMKD v2 报告已覆盖）
-- 启动阶段 lmkd 不开 PSI 监控（默认 PSI_MONITOR_PERIOD_MS=0 / 关闭），避免 boot 早期 memcg event 高频触发干扰
-- boot 完成后由 AMS **显式触发**开启，恢复正常的 PSI SOME/FULL 阈值采样
-- 这是典型的"冷启动性能 vs 运行期内存压力感知"trade-off：boot 阶段可损失少量内存压力感知精度，换取几十 ms 启动速度
-
-**配合 SystemServerInitThreadPool 的并行化**：SystemServer.java:967-985 在 SystemServerInitThreadPool 启动后**并行**执行 `startSystemConfigInit(t)`（异步加载 `/system/etc/system_fonts.xml` + permissions）+ `System.loadLibrary("android_servers")` + `initZygoteChildHeapProfiling()`。SystemServerInitThreadPool 自身是独立线程池（SystemServer.java:960），并行任务包括 SystemConfig::getInstance()、Looper 准备、ContentService 注册等。
-
-### 3. BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED 启动时间基准（6 个事件点）
-
-android-17 在 ZygoteInit / SystemServer / AMS 三个层共埋 **6 个** BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED 事件（StatsLog 持久化跨重启）：
-
-| 事件 | 埋点位置 |
-|---|---|
-| `ZYGOTE_INIT_START` | ZygoteInit.java:872-879（isPrimaryZygote） |
-| `SECONDARY_ZYGOTE_INIT_START` | ZygoteInit.java:880-883 |
-| `SYSTEM_SERVER_INIT_START` | SystemServer.java:910-914 |
-| `SYSTEM_SERVER_READY` | SystemServer.java:1067-1069 |
-| `PACKAGE_MANAGER_INIT_START` | SystemServer.java:1360-1362 |
-| `PACKAGE_MANAGER_INIT_READY` | SystemServer.java:1394-1396 |
-
-**关键代码（SystemServer.java:1063-1075）**：
-```java
-StrictMode.initVmDefaults(null);
-
-if (!mRuntimeRestart && !isFirstBootOrUpgrade()) {
-    final long uptimeMillis = SystemClock.elapsedRealtime();
-    FrameworkStatsLog.write(FrameworkStatsLog.BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED,
-            FrameworkStatsLog.BOOT_TIME_EVENT_ELAPSED_TIME__EVENT__SYSTEM_SERVER_READY,
-            uptimeMillis);
-    final long maxUptimeMillis = 60 * 1000;
-    if (uptimeMillis > maxUptimeMillis) {
-        Slog.wtf(SYSTEM_SERVER_TIMING_TAG,
-                "SystemServer init took too long. uptimeMillis=" + uptimeMillis);
-    }
-```
-
-**两个守门条件**：
-1. `!mRuntimeRestart`（非 runtime restart）—— OTA / Zygote 重新 fork 时不重置基准
-2. `!isFirstBootOrUpgrade()`（非首次启动或升级后首次启动）—— 升级后第一次启动耗时本身异常，不参与基准告警
-
-**60s 硬阈值告警**：若 SYSTEM_SERVER_READY > 60_000ms，触发 `Slog.wtf(SYSTEM_SERVER_TIMING_TAG, ...)`。
-
-**StatsLog vs bootstat event log 对比**：
-
-| 维度 | BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED | bootstat event log |
-|---|---|---|
-| 持久化 | StatsLog（持久化跨重启） | event log（仅本启动周期） |
-| 观测接口 | `dumpsys statsd` / `tracer` metrics | `bootstat -p` |
-| 时钟源 | `SystemClock.elapsedRealtime()` | `SystemClock.uptimeMillis()` |
-| 适用场景 | 跨版本回归、metrics dashboard | 单次启动分段报告 |
-
-### 4. AMS.finishBooting 收尾序列（11 步）
-
-**源码位置**：`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` line 5910-6015（android-17.0.0_r1）
-
-1. `t.traceBegin("FinishBooting")`
-2. `synchronized (mGlobalLock)` 检查 mBootAnimationComplete
-3. `ZYGOTE_PROCESS.bootCompleted()` → 通知 zygote
-4. `VMRuntime.bootCompleted()` → ART 收尾
-5. 注册 `ACTION_QUERY_PACKAGE_RESTART` 接收器
-6. `storageManager.commitChanges()` → checkpoint commit
-7. `mSystemServiceManager.startBootPhase(t, PHASE_BOOT_COMPLETED)`
-8. 启动 mProcessesOnHold 队列
-9. `SystemProperties.set("sys.boot_completed", "1")` + `"dev.bootcomplete", "1"`
-10. **`ProcessList.startPsiMonitoringAfterBoot()`** → LMKD PSI 开启
-11. `mUserController.onBootComplete(...)` → 用户级完成
-12. **`mBootCompletedTimestamp = SystemClock.uptimeMillis()`**
-13. **全量 PSS 推迟 60s**（android-17 比 android-16 的 30s 更激进）
-
-### 5. Zygote 启动命令：init.zygote64.rc 关键参数
-
-**源码位置**：`system/core/rootdir/init.zygote64.rc`（android-17.0.0_r1 全文）
-
-```
-service zygote /system/bin/app_process64 -Xzygote /system/bin --zygote --start-system-server --socket-name=zygote
-    class main
-    priority -20
-    user root
-    group root readproc reserved_disk
-    socket zygote stream 660 root system
-    socket usap_pool_primary stream 660 root system
-    onrestart exec_background - system system -- /system/bin/vdc volume abort_fuse
-    onrestart write /sys/power/state on
-    onrestart write /sys/power/wake_lock zygote_kwl
-    onrestart restart audioserver
-    onrestart restart cameraserver
-    onrestart restart media
-    onrestart restart --only-if-running media.tuner
-    onrestart restart netd
-    onrestart restart wificond
-    task_profiles ProcessCapacityHigh MaxPerformance
-    critical window=${zygote.critical_window.minute:-off} target=zygote-fatal
-```
-
-**关键确认**：
-- `--enable-lazy-preload` 标志**AOSP 默认不开启**（与 2026-07-01 早间报告一致），仅当实验性 property `persist.device_config.runtime_native_boot.profilesystemserver` 等开启时才进入 lazy preload 分支
-- `priority -20` 是 Linux 最高优先级，配合 `task_profiles ProcessCapacityHigh MaxPerformance`（cpuset 大核 + 高频）
-- `critical window=${zygote.critical_window.minute:-off} target=zygote-fatal`：respawn 窗口（默认 off，可由 device config 设置 minute 数）
-- `usap_pool_primary` socket：USAP（Unspecialized App Process）池，与 64-bit primary zygote 关联
-
-### 关联报告
-
-`DeepResearch/2026-07-01-android17-boot-optimization-apex-psi-statslog.md`（今日增量报告）
-
-**与今日前 3 次调研的差异化**：
-- 2026-06-28：bootanalyze 工具链 + Zygote --enable-lazy-preload 源码修正
-- 2026-06-29：SystemServer startSystemConfigInit 固化 + preloadSharedLibraries 新增 + am flags 清单
-- 2026-07-01 早：4MB Perfetto buffer + bootanalyze 5 flag + bootstat 25+ 事件
-- **2026-07-01 晚（本节）**：APEX 硬约束 + PSI 延后 + StatsLog 6 事件 + finishBooting 13 步序列
-
-
-<!-- AIW-源码调研-2026-07-01 -->
-
-## Android 17 启动优化新源码验证（2026-07-01 增量：APEX / PSI / StatsLog）
-
-本节基于 `android-17.0.0_r1` 标签下 AOSP 主线源码，补完今日调研聚焦的 4 块关键演进：**APEX 启动时序硬约束**、**PSI 监控延后到 boot 完成**、**BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED StatsLog 启动时间基准事件集**、**finishBooting 收尾序列优化**。
-
-### 1. SystemServer.startApexServices：APEX 启动时序硬约束（sealStartedServices）
-
-**源码位置**：`frameworks/base/services/java/com/android/server/SystemServer.java` line 3685-3711（android-17.0.0_r1）
-
-```java
-private void startApexServices(@NonNull TimingsTraceAndSlog t) {
-    // For debugging RescueParty
-    if (Build.IS_DEBUGGABLE
-            && SystemProperties.getBoolean("debug.crash_system", false)) {
-        throw new RuntimeException();
-    }
-
-    t.traceBegin("startApexServices");
-    List<ApexSystemServiceInfo> services = ApexManager.getInstance().getApexSystemServices();
-    for (ApexSystemServiceInfo info : services) {
-        String name = info.getName();
-        String jarPath = info.getJarPath();
-        t.traceBegin("starting " + name);
-        if (TextUtils.isEmpty(jarPath)) {
-            mSystemServiceManager.startService(name);
-        } else {
-            mSystemServiceManager.startServiceFromJar(name, jarPath);
-        }
-        t.traceEnd();
-    }
-    // make sure no other services are started after this point
-    mSystemServiceManager.sealStartedServices();
-    t.traceEnd(); // startApexServices
-}
-```
-
-**调用链**：
-SystemServer.main (line 1043-1051) → startBootstrapServices → startCoreServices → startOtherServices → startApexServices
-
-**关键约束（android-17 相对 android-16 的硬升级）**：
-- `sealStartedServices()` 调用后**禁止再 start 任何 service**
-- 所有 core/bootstrap/other services 必须在 APEX 阶段前注册
-- 新增的 mainline module 提供的 service 自动归入 APEX 阶段
-
-### 2. PSI 监控延后到 boot 完成：ProcessList.startPsiMonitoringAfterBoot()
-
-**源码位置**：`frameworks/base/services/core/java/com/android/server/am/ProcessList.java` line 1657-1660
-
-```java
-public static void startPsiMonitoringAfterBoot() {
-    ByteBuffer buf = ByteBuffer.allocate(4);
-    buf.putInt(LMK_START_MONITORING);
-    writeLkmdbuf, null);
-}
-```
-
-**调用点**：`ActivityManagerService.finishBooting()` line 5991-5995（在 `sys.boot_completed=1` 后）
-
-**机制**：
-- 启动阶段 lmkd 不开 PSI 监控（默认 PSI_MONITOR_PERIOD_MS=0）
-- boot 完成后由 AMS **显式触发**开启 PSI 监控
-- 典型的"冷启动性能 vs 运行期内存压力感知"trade-off
-
-### 3. BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED 启动时间基准（6 个事件点）
-
-android-17 在 ZygoteInit/SystemServer/AMS 三个层共埋 **6 个** BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED 事件（StatsLog 持久化跨重启）：
-
-| 事件 | 埋点位置 |
-|---|---|
-| `ZYGOTE_INIT_START` | ZygoteInit.java:872-879 |
-| `SECONDARY_ZYGOTE_INIT_START` | ZygoteInit.java:880-883 |
-| `SYSTEM_SERVER_INIT_START` | SystemServer.java:910-914 |
-| `SYSTEM_SERVER_READY` | SystemServer.java:1067-1069 |
-| `PACKAGE_MANAGER_INIT_START` | SystemServer.java:1360-1362 |
-| `PACKAGE_MANAGER_INIT_READY` | SystemServer.java:1394-1396 |
-
-**60s 硬阈值告警**：若 SYSTEM_SERVER_READY > 60_000ms，触发 Slog.wtf。
-
-**StatsLog vs bootstat event log 对比**：
-
-| 维度 | BOOT_TIME_EVENT_ELAPSED_TIME_REPORTED | bootstat event log |
-|---|---|---|
-| 持久化 | StatsLog（跨重启） | event log（仅本启动周期） |
-| 观测接口 | `dumpsys statsd` / `tracer` metrics | `bootstat -p` |
-
-### 4. AMS.finishBooting 收尾序列（13 步）
-
-调用链：
-1. `t.traceBegin("FinishBooting")`
-2. `synchronized (mGlobalLock)` 检查 mBootAnimationComplete
-3. `ZYGOTE_PROCESS.bootCompleted()` → 通知 zygote
-4. `VMRuntime.bootCompleted()` → ART 收尾
-5. 注册 `ACTION_QUERY_PACKAGE_RESTART` 接收器
-6. `storageManager.commitChanges()` → checkpoint commit
-7. `mSystemServiceManager.startBootPhase(t, PHASE_BOOT_COMPLETED)`
-8. 启动 mProcessesOnHold 队列
-9. `SystemProperties.set("sys.boot_completed", "1")` + `"dev.bootcomplete", "1"`
-10. **`ProcessList.startPsiMonitoringAfterBoot()`** → LMKD PSI 开启
-11. `mUserController.onBootComplete(...)` → 用户级完成
-12. `mBootCompletedTimestamp = SystemClock.uptimeMillis()`
-13. **全量 PSS 推迟 60s**（android-17 比 android-16 的 30s 更激进）
-
-### 5. Zygote 启动命令：init.zygote64.rc
-
-**源码位置**：`system/core/rootdir/init.zygote64.rc`（android-17.0.0_r1 全文）
-
-```
-service zygote /system/bin/app_process64 -Xzygote /system/bin --zygote --start-system-server --socket-name=zygote
-    class main
-    priority -20
-    user root
-    group root readproc reserved_disk
-    socket zygote stream 660 root system
-    socket usap_pool_primary stream 660 root system
-    onrestart exec_background - system system -- /system/bin/vdc volume abort_fuse
-    onrestart write /sys/power/state on
-    onrestart write /sys/power/wake_lock zygote_kwl
-    onrestart restart audioserver
-    onrestart restart cameraserver
-    onrestart restart media
-    onrestart restart --only-if-running media.tuner
-    onrestart restart netd
-    onrestart restart wificond
-    task_profiles ProcessCapacityHigh MaxPerformance
-    critical window=${zygote.critical_window.minute:-off} target=zygote-fatal
-```
-
-**关键确认**：
-- `--enable-lazy-preload` 标志**AOSP 默认不开启**（实验性 feature）
-- `priority -20` 是 Linux 最高优先级
-- `critical window=${zygote.critical_window.minute:-off} target=zygote-fatal`：respawn 窗口控制
-
-### 关联报告
-
-`DeepResearch/2026-07-01-android17-boot-optimization-new-mechanisms.md`（今日增量报告）
-
-<!-- AIW-源码调研-2026-07-02 -->
-
-## Android 17 启动执行模型源码级补强：init层级结构与Service Class启动机制
-
-本节基于 `android-17.0.0_r1` AOSP 源码的深度分析，补强前述章节中关于**init.rc文件层级结构**、**service class启动顺序**、以及**并行执行模型**的源码级验证。
-
-### 1. init.rc 文件层级结构与导入机制
-
-**源码位置**：`system/core/rootdir/init.rc`（android-17.0.0_r1）
-
-```bash
-# 核心导入链（按优先级）
-import /init.environ.rc          # 环境变量配置
-import /system/etc/init/hw/init.usb.rc      # USB配置
-import /init.${ro.hardware}.rc             # 硬件特定配置  
-import /vendor/etc/init/hw/init.${ro.hardware}.rc    # Vendor硬件配置
-import /system/etc/init/hw/init.usb.configfs.rc    # USB configfs
-import /system/etc/init/hw/init.${ro.zygote}.rc     # Zygote配置
-
-# 关键执行序列（启动阶段）
-on early-init                              # 早期初始化
-    bootchart start                        # 启动性能追踪
-    # SELinux、sysrq、modprobe等初始化
-
-on init                                    # init阶段
-    # 属性设置、SELinux等
-
-on late-init                               # 晚期初始化
-    trigger early-fs                        # 早期文件系统
-    trigger fs                             # 早期挂载
-    trigger post-fs                        # post文件系统
-    trigger late-fs                        # 晚期挂载
-    trigger post-fs-data                   # 数据分区
-    trigger zygote-start                   # Zygote启动
-    trigger early-boot                     # 早期启动
-    trigger boot                           # 系统启动完成
-
-on post-fs-data                           # 数据分区挂载后
-    # 数据分区服务启动、keystore初始化
-```
-
-**关键发现**：
-1. **优先级导入**：init.rc 严格按顺序导入配置，后导入的配置可以覆盖前导入的同名配置
-2. **动态硬件配置**：`/init.${ro.hardware}.rc` 和 `/vendor/etc/init/hw/init.${ro.hardware}.rc` 支持硬件差异化配置
-3. **阶段触发机制**：通过 `trigger` 关键字实现阶段化执行，避免所有动作堆积在 `on init` 阶段
-
-### 2. Service Class 启动顺序机制
-
-**源码位置**：`init/builtins.cpp:167`
-
-```cpp
-static Result<void> do_class_start(const BuiltinArguments& args) {
-    // 检查是否禁用该class
-    if (android::base::GetBoolProperty("persist.init.dont_start_class." + args[1], false))
-        return {};
-    
-    // 遍历属于该class的所有service并启动
-    for (const auto& service : ServiceList::GetInstance()) {
-        if (service->classnames().count(args[1])) {
-            if (auto result = service->StartIfNotDisabled(); !result.ok()) {
-                LOG(ERROR) << "Could not start service '" << service->name()
-                          << "' as part of class '" << args[1] << "': " << result.error();
-            }
-        }
-    }
-    return {};
-}
-```
-
-**启动顺序（按class定义的优先级）**：
-
-| Service Class | 启动时机 | 代表服务 | 功能描述 |
+| 层级 | 典型现象 | 证据 | 调整方向 |
 |---|---|---|---|
-| `class main` | late-init 阶段 | zygote, servicemanager | 核心系统服务 |
-| `class core` | early-init 阶段 | ueventd, vold | 基础系统服务 |
-| `class early_hal` | late-fs 阶段 | audio, display | 早期硬件抽象层 |
-| `class late_hal` | post-fs-data 阶段 | camera, sensor | 晚期硬件抽象层 |
+| 文件 | APK/JAR/APEX/配置被过早扫描 | file access、bootio、page cache | 延迟非关键读取、减少重复扫描 |
+| block/fs | queue 等待、读放大、verity、fsck | block/ext4/f2fs trace | I/O scheduler、read ahead、文件布局 |
+| memory mapping | major fault、mmap 抖动、解压 | page fault + sched + file map | 热点布局、预加载清单、压缩策略 |
 
-**关键发现**：
-1. **类名顺序启动**：`class_start <classname>` 按定义顺序依次启动，无并行机制
-2. **禁用状态保护**：`disabled` 服务不会随 class 自动启动，必须显式调用 `start` 或 `enable`
-3. **错误处理**：单个服务启动失败不影响同 class 其他服务，但会记录错误日志
+“减少读取字节”也可能把成本推到 Launcher 显示之后。评估时至少保留两个窗口：
 
-### 3. Android 17 动作队列执行模型（非并行）
+- kernel entry 到 `sys.boot_completed`；
+- `sys.boot_completed` 到 first interactive。
 
-**源码位置**：`init/init.cpp:1295-1347`
+OTA 后 checkpoint、pre-reboot dexopt artifact 提交、APEX 切换和首次包扫描要单独标记。它们属于升级成本，不能用普通 cold boot 的目标去裁剪。
 
-```cpp
-while (true) {
-    // 处理关机命令
-    auto shutdown_command = shutdown_state.CheckShutdown();
-    if (shutdown_command) {
-        HandlePowerctlMessage(*shutdown_command);
-    }
+## 16 KB page size 是设备级基线变化
 
-    // 核心执行逻辑：每次只执行一个命令
-    if (!(prop_waiter_state.MightBeWaiting() || Service::is_exec_service_running())) {
-        am.ExecuteOneCommand();  // 每次只执行一个命令
-        // 如果还有更多工作，立即唤醒
-        if (am.HasMoreCommands()) {
-            next_action_time = boot_clock::now();
-        }
-    }
-    
-    // 处理服务状态和进程检查...
-    auto next_process_action_time = HandleProcessActions();
-    if (next_process_action_time) {
-        next_action_time = std::min(next_action_time, *next_process_action_time);
-    }
-}
-```
+Android Developers 的 16 KB page size 文档给出一组初始测试：system boot time 平均改善 8%，约 950 ms，同时说明不同设备结果会变化。这个数字是官方测试样本，不是 Android 17 所有设备的保证。
 
-**关键发现**：
-1. **单线程执行**：`ExecuteOneCommand()` 确保每次只执行一个命令，**无并行执行机制**
-2. **非阻塞命令支持**：`exec_background` 不会阻塞后续 command，但 `exec` 会阻塞
-3. **智能唤醒机制**：如果还有待执行命令，立即唤醒主循环
+比较 4 KB 与 16 KB 时，page table、mmap、page fault、ELF 对齐、文件系统和设备内存都发生了变化。应把 page size 写入样本维度，并使用同一硬件、同一 build 配置和同一启动类型做 A/B。不能把跨设备差异归到某个 SystemServer service。
 
-### 4. Android 16 vs Android 17 启动队列关键差异
+## 从慢阶段回到处理动作
 
-**源码位置对比**：`init/init.cpp` main queue builtin actions
+| 慢阶段 | 优先确认 | 常见处理 |
+|---|---|---|
+| bootloader | 镜像读取、解压、UART、boot reason | 减少日志、选择合适压缩、拆分硬件阶段 |
+| kernel / coldboot | module load、probe、firmware、supplier | 移动非必要 module、选择性 async probe |
+| first-stage init | 存储、dm-verity、first-stage module | 缩小 ramdisk 关键集合 |
+| second-stage init | `exec`、property wait、service class | 后台 service、显式 ready、修正依赖 |
+| Zygote | classes/resources/library preload | 调整清单并回归首个 App 与共享内存 |
+| PMS / ART | 包扫描、first boot/OTA dexopt | 分类启动类型、检查 compiler filter 与 artifact |
+| SystemServer | service start、boot phase、Binder/锁 | trace 到具体 callback 和等待对象 |
+| SystemUI / Launcher | 进程创建、首帧、资源竞争 | 单独测 shown 与 first interactive |
 
-**Android 16 启动队列**：
-```cpp
-am.QueueBuiltinAction(SetupCgroupsAction, "SetupCgroups");
-am.QueueBuiltinAction(SetKptrRestrictAction, "SetKptrRestrict");        // 移除
-am.QueueBuiltinAction(TestPerfEventSelinuxAction, "TestPerfEventSelinux"); // 移除
-am.QueueEventTrigger("early-init");
-am.QueueBuiltinAction(ConnectEarlyStageSnapuserdAction, "ConnectEarlyStageSnapuserd");
-am.QueueBuiltinAction(wait_for_coldboot_done_action, "wait_for_coldboot_done");
-am.QueueBuiltinAction(CheckTradeInModeStatus, "CheckTradeInModeStatus");
-am.QueueBuiltinAction(SetMmapRndBitsAction, "SetMmapRndBits");
-```
+每次改动只回答一个假设。例如，“I2C touch probe 阻塞 module load”要用 probe 时间证明；改成 async 后再验证触摸在 Launcher 首帧前 ready、recovery 可用、没有 defer storm。把多项 kernel、rc 和 framework 调整合在一个版本里，会让收益与回归都无法归因。
 
-**Android 17 启动队列**：
-```cpp
-am.QueueBuiltinAction(SetupCgroupsAction, "SetupCgroups");
-am.QueueEventTrigger("early-init");                                     // 顺序调整
-am.QueueBuiltinAction(ConnectEarlyStageSnapuserdAction, "ConnectEarlyStageSnapuserd");
-am.QueueBuiltinAction(wait_for_coldboot_done_action, "wait_for_coldboot_done");
-if (!IsMicrodroid()) {
-    am.QueueBuiltinAction(CheckTradeInModeStatus, "CheckTradeInModeStatus"); // 条件执行
-}
-am.QueueBuiltinAction(SetMmapRndBitsAction, "SetMmapRndBits");
-am.QueueBuiltinAction(SetCopyRollbackLogsAction, "CopyRollbackLogs");   // 新增
-```
+## 实验与回归门禁
 
-**关键差异**：
-1. **移除组件**：`SetKptrRestrictAction` 和 `TestPerfEventSelinuxAction` 被移除
-2. **新增组件**：`SetCopyRollbackLogsAction` 新增用于日志复制
-3. **顺序调整**：`SetupCgroupsAction` 后直接 `early-init`，减少不必要的动作
-4. **条件执行**：`CheckTradeInModeStatus` 在 Microdroid 场景下跳过
+一组可复现的 boot 实验至少记录：
 
-### 5. Zygote 启动机制源码验证
+- build fingerprint、AOSP tag、kernel tag、vendor image；
+- page size、文件系统、存储型号和加密状态；
+- normal/first boot/post-OTA/userspace reboot；
+- 电池、充电、温度和关机静置时间；
+- bootchart、Perfetto、UART 等采集开关；
+- `sys.boot_completed`、Launcher shown、first interactive；
+- P50、P90、样本数和剔除规则。
 
-**源码位置**：`rootdir/init.zygote64.rc`（android-17.0.0_r1）
+安全与稳定性门禁包含：
 
-```bash
-service zygote /system/bin/app_process64 -Xzygote /system/bin --zygote --start-system-server --socket-name=zygote
-    class main
-    priority -20
-    user root
-    group root readproc reserved_disk
-    socket zygote stream 660 root system
-    socket usap_pool_primary stream 660 root system
-    onrestart exec_background - system system -- /system/bin/vdc volume abort_fuse
-    onrestart write /sys/power/state on
-    onrestart write /sys/power/wake_lock zygote_kwl
-    onrestart restart audioserver
-    onrestart restart cameraserver
-    onrestart restart media
-    onrestart restart --only-if-running media.tuner
-    onrestart restart netd
-    onrestart restart wificond
-    task_profiles ProcessCapacityHigh MaxPerformance
-    critical window=${zygote.critical_window.minute:-off} target=zygote-fatal
-```
+- verified boot、SELinux、KeyMint/Gatekeeper 和 checkpoint 顺序不变；
+- recovery、fastbootd、OTA、加密解锁都能完成；
+- display、touch、radio、audio 等产品关键硬件按场景 ready；
+- service 失败有超时和降级，不制造无限 property wait；
+- boot 变快后，首屏 jank、首个 App、功耗和内存没有回归。
 
-**关键特性**：
-1. **启动参数**：`--start-system-server` 指示 zygote 启动 system_server
-2. **优先级设置**：`priority -20` 为 Linux 最高优先级
-3. **关键监控**：`critical window` 允许在 zygote 进程失败时快速恢复
-4. **资源限制**：`task_profiles ProcessCapacityHigh MaxPerformance` 确保获得大核资源
+关闭日志和 trace 可以减少测试机上的开销，但量产配置与可观测性要分别评估。没有可回放证据的优化，一旦在后续版本回归，定位成本通常高于省下的少量启动时间。
 
-### 6. 启动性能影响分析
+## 与其他章节的边界
 
-基于源码分析，Android 17 启动模型的主要性能影响：
+- 完整启动流程与进程关系见 [[02-boot-process|1.2 系统启动全流程]]。
+- Zygote fork、USAP 和 preload 机制见 [[11-zygote-startup|1.11 Zygote 机制与启动性能优化]]。
+- ART compiler filter 与 dex2oat 见 [[07-art-compilation|1.7 ART 编译管线与 dex2oat 优化]]。
+- Perfetto 配置与采集见 [[02-trace-capture|13.2 Trace 采集]]。
+- 16 KB kernel/用户态边界见 [[07-16kb-page-size|4.7 16 KB Page Size]]。
 
-| 约束类型 | 影响范围 | 性能影响 | 优化方向 |
-|---|---|---|---|
-| **单线程动作队列** | 整个启动序列 | 串行执行限制并行度 | 拆分长 action，优化命令顺序 |
-| **Service Class 顺序启动** | 服务生命周期 | 按类名顺序启动，无法跨类并行 | 重新组织服务分类，减少依赖 |
-| **PSI 监控延后** | 内存管理 | boot 完成后才开启 PSI 监控 | 减少启动期内存压力感知开销 |
-| **APEX 硬约束** | 服务注册 | APEX 服务必须在其他服务前注册 | 优化服务注册顺序 |
+## 参考资料
 
-### 7. 启动优化实践建议
-
-基于源码分析，提出以下启动优化建议：
-
-1. **动作队列优化**：
-   - 拆分长 action，避免单个 command 占用时间过长
-   - 使用 `exec_background` 替代 `exec` 进行非阻塞操作
-   - 合理使用 `trigger` 机制实现阶段化执行
-
-2. **Service Class 优化**：
-   - 将依赖 `/data` 的服务放入 `post-fs-data` 后的 class
-   - 将无依赖的基础服务放入 `early-init` 或 `class core`
-   - 避免 class 间循环依赖
-
-3. **并行化考虑**：
-   - 由于无真正的并行执行，需要优化命令执行顺序
-   - 将不相关的 command 排列在同一个 action 中
-   - 使用 property trigger 实现条件化执行
-
-### 关联报告
-
-`DeepResearch/2026-07-02-android-17-boot-execution-model.md`（今日完整报告）
-
-**核心发现总结**：Android 17 系统启动采用**单线程动作队列模型**，核心机制包括：
-- init.rc 层级化导入与阶段触发
-- Service Class 顺序启动机制（无并行）
-- Android 16→17 的启动队列精简（移除 2 个动作，新增 1 个）
-- Zygote 高优先级启动与 fail-fast 机制
-
-本补强内容填补了前述章节在源码级实现细节的空白，为启动性能优化提供了可操作的技术路径。
-
-
-## 延伸阅读
-
-### Android 17 SystemServer 启动与 ART Mainline Cloud Profiles 协同机制
-- 来源：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-cloud-profiles-systemserver-onboot.md`
-- 类型：DeepResearch 调研结果
-- 摘要：基于 android-17.0.0_r1 源码，拆解 ART Mainline APEX 升级驱动的 SystemServer 启动期间两条串行操作：(1) DexOptHelper.performPackageDexOptUpgradeIfNeeded → ArtManagerLocal.onBoot 触发首启/OTA/BCP APEX 更新后的整包 dexopt；(2) ArtModuleServiceInitializer 在 startBootstrapServices 第一行完成 ART Service 注册以避免 GC 与 Class Linker 死锁（b/263486535）。详解 Cloud Profile 在源码层体现为 ProfilePath (ref/cur/prebuilt/dm) + MergeProfileOptions.forBootImage + services/art-profile 4711 行 HSPL/HPL 条目。
-- 注入时间：2026-07-18
-- 价值：为 §16.07 启动优化章节补充 ART Mainline 与 Cloud Profiles 的精确协同机制，填补 dexopt 触发条件与 BCP APEX 变更检测的源码级空白
+- [AOSP：Optimize boot times](https://source.android.com/docs/core/perf/boot-times)
+- [AOSP：Kernel boot time optimization](https://source.android.com/docs/core/architecture/kernel/boot-time-opt)
+- [AOSP：Boot image profiles](https://source.android.com/docs/core/runtime/boot-image-profiles)
+- [Android Developers：Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
+- [Perfetto：Record system traces](https://perfetto.dev/docs/getting-started/system-tracing)
+- [AOSP r1：bootanalyze.py](https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/boottime_tools/bootanalyze/bootanalyze.py)
+- [AOSP r1：bootanalyze.sh](https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/boottime_tools/bootanalyze/bootanalyze.sh)
+- [AOSP r1：bootanalyze config.yaml](https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/boottime_tools/bootanalyze/config.yaml)
+- [AOSP r1：bootio README](https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/boottime_tools/bootio/README.md)
+- [AOSP r1：init README](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/init/README.md)
+- [AOSP r1：init.cpp](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/init/init.cpp)
+- [AOSP r1：init.zygote64_32.rc](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/rootdir/init.zygote64_32.rc)
+- [AOSP r1：bootstat.cpp](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/bootstat/bootstat.cpp)
+- [AOSP r1：bootstat.rc](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/bootstat/bootstat.rc)
+- [AOSP r1：ZygoteInit.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ZygoteInit.java)
+- [AOSP r1：SystemServer.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/java/com/android/server/SystemServer.java)
+- [AOSP r1：ActivityManagerService.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
+- [AOSP r1：ProcessList.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ProcessList.java)
+- [AOSP r1：DexOptHelper.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/pm/DexOptHelper.java)
+- [AOSP r1：ArtManagerLocal.java](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtManagerLocal.java)
+- [AOSP kernel：android17-6.18-2026-06_r6 driver core](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/base/dd.c)
