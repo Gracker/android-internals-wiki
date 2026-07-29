@@ -78,7 +78,7 @@ last_task6_at: "2026-07-08T01:15:53+08:00"
 last_task6_review_log: "logs/review/2026-07-08-01-review.md"
 review_type: "task6-writing-quality-review"
 task9_state: "reviewed"
-task6_review_notes: "2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;案例结构与表达通过。既有 Task9 P1 队列仍 pending:案例六 HWC Overlay Plane 证据边界需由 Task2B 修复。 | 2026-05-27 06:09 Task6：L1/L2 小修 5 处；案例六 HWC Overlay Plane 证据边界与文末源码调研原始块仍属 L3 风险，已写入 queue.json（priority 90）交 Task2B/Task9。 | 2026-05-27 07:11 Task6：pass-light-edit。案例六 HWC Overlay Plane 证据边界已收敛为条件判断；将 AnimatedVectorDrawable 源码补充从参考资料后移回案例四附近；无新增 L3/L4 回炉项。Task9 仍为 needs-rework/pending，送 Task9 复审。 | 2026-07-08 01 Task6 revisiting-review: pass-light-edit；L1 小修 1 处（禁用词"链路"→"调用链"）；outline 锚点全覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。"
+task6_review_notes: '2026-05-25 Task6 复审:未发现新增 L1/L2 文风问题;案例结构与表达通过。既有 Task9 P1 队列仍 pending:案例六 HWC Overlay Plane 证据边界需由 Task2B 修复。 | 2026-05-27 06:09 Task6：L1/L2 小修 5 处；案例六 HWC Overlay Plane 证据边界与文末源码调研原始块仍属 L3 风险，已写入 queue.json（priority 90）交 Task2B/Task9。 | 2026-05-27 07:11 Task6：pass-light-edit。案例六 HWC Overlay Plane 证据边界已收敛为条件判断；将 AnimatedVectorDrawable 源码补充从参考资料后移回案例四附近；无新增 L3/L4 回炉项。Task9 仍为 needs-rework/pending，送 Task9 复审。 | 2026-07-08 01 Task6 revisiting-review: pass-light-edit；L1 小修 1 处（禁用词"链路"→"调用链"）；outline 锚点全覆盖；无 L3/L4 回炉项。Task9 result 为 auto-fixed，送 Task9 复核。'
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-08
 last_task9_audit: "2026-07-07"
@@ -111,723 +111,341 @@ updated_date: "2026-07-08"
 > **扩展**视素材丰富程度选择性深入。
 <!-- outline-end -->
 
-## 为什么要用案例来学分析
+## 案例证据怎样使用
 
-前面四章已经把卡顿的定义、原因体系、分析方法和典型场景拆开讲过了。难的是把这些知识放回真实问题里,判断哪一层先出手,哪一层只是结果。一个看似简单的列表滑动卡顿,根因可能是主线程里的 Binder 调用碰上系统服务繁忙;一个偶发掉帧,也可能一路追到内存压力带来的 GC 暂停。
+本章保留五个已经公开的工程案例，覆盖主线程、GC/内存、调度、SurfaceFlinger 合成和温控。案例来源分成两类：
 
-这一节用七个真实案例把这套分析过程走一遍。每个案例都从用户感知到的现象出发,沿着"抓取 Trace → 定位异常 → 逐层分析 → 找到根因 → 验证修复"的顺序推进。读这些案例时,先盯分析过程。下次再遇到类似 Trace,能直接复用同一套排查顺序。
+- 腾讯音乐技术团队的 WeSing 复盘给出了设备、测试动作、版本差异和若干 trace 数据；
+- AndroidPerformance 的系统案例给出了 Systrace 截图和对照数据，但仓库没有原始 trace 文件；
+- 温控案例采用 Android Developers 发布的 Netmarble ADPF 案例，保留官方披露的效果数字。
 
-七个案例的难度递进排列:案例一和案例二是 App 端最常见的两类卡顿(布局与数据绑定);案例三引入时间维度,展示"随使用劣化"的内存问题;案例四切换到渲染管线视角,看 RenderThread 如何反过来拖住主线程;案例五放大到系统级,分析低内存如何让所有 App 同时卡顿;案例六和案例七是系统侧的高频场景——SurfaceFlinger 合成降级和温控降频,这两个场景在 App 侧 Trace 里看不出问题,需要站到 SF 和系统调度层才能定位。建议按顺序阅读,因为后面的案例会引用前面讲过的分析方法。
+截图可以证明作者当时观察到的形态，无法替代可查询的原始 trace。下面每个案例都把“公开材料中的事实”“Android 17 下的解释”和“仍缺少的证据”分开写。历史数据不冒充 `android-17.0.0_r1` 的实测结果；Android 17 源码只用于校正机制和工具入口。
 
-### 本节 Trace 与数据口径
+### 统一复盘格式
 
-这些案例来自历史问题复盘和公开资料归纳,原始 trace 与截图尚未随章节归档。文中的耗时区间、Jank 率和内存数值只作为案例化示例,用来说明判断过程;正式用于项目复盘前,需要补齐 trace 文件名、设备型号、Android 版本、刷新率、采样窗口、样本次数和统计口径。缺少这些字段时,不把数值当作可复核结论。
-
----
-
-## 案例一:主线程 Measure/Layout 超时导致滑动卡顿
-
-### 问题现象
-
-用户在某个社交 App 的联系人列表中快速滑动时,能感受到明显的"一顿一顿"的卡顿。以 60Hz 设备的示例复盘口径描述,滑动体验评分(JankStats)约 12%,用于说明问题量级;正式引用前需要补齐原始 trace 与测试条件。
-
-### 分析思路
-
-列表滑动卡顿的排查优先级:先看主线程每一帧的耗时分布,确认瓶颈在哪个阶段(Input → Animation → Traversal)。如果是 Traversal 阶段,再区分是 measure/layout 还是 draw。
-
-### 抓取与定位
-
-使用 Perfetto 抓取滑动场景的 Trace,关注主线程(`ui_thread`)的时间线。
-
-[待验证:Trace 证据待归档 - 主线程 measure/layout 超时的 Perfetto 视图;需补 trace 文件名、设备型号、Android 版本、刷新率、采样窗口、样本次数与统计口径。当前耗时/Jank 数值只作为案例化示例。]
-
-示例 trace 中,主线程在部分帧的 traversal 阶段超过一帧预算。展开这些帧的 slice 详情,measure 阶段反复执行,单次耗时落在 8-12ms 这一类风险区间。[待验证:需补原始 trace 后才能作为实测结论]
-
-### 逐步分析
-
-**第一步:确认是 View 树的 measure 问题。** Perfetto 中主线程的橙色条(对应 Choreographer#doFrame → Traversal → performTraversals)持续超过一帧。对比正常帧和异常帧,异常帧的 measure 步骤占比更高。
-
-**第二步:看 View 层级。** 通过 `adb shell dumpsys activity top` 获取当前 Activity 的 View 树。发现联系人列表的 item 布局嵌套了 6 层:`LinearLayout → RelativeLayout → FrameLayout → LinearLayout → TextView + ImageView`。
-
-**第三步:确认 measure 被重复触发。** `RelativeLayout` 的特性决定了它需要两遍 measure:第一遍确定子 View 之间的依赖关系,第二遍根据约束确定最终尺寸。再加上 `LinearLayout` 使用了 `layout_weight`(也需要两遍 measure),整个 item 的 measure 被执行了 3-4 次。
-
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md - Measure/Layout 超时是 App 端最常见的卡顿原因之一]
-
-### 根因
-
-列表 item 布局嵌套过深(6 层),且使用了需要多次 measure 的 ViewGroup(`RelativeLayout` + `LinearLayout` with `layout_weight`)。滑动时每个 item 被频繁 inflate 和 measure,放大了布局开销。
-
-### 修复方案
-
-1. **用 ConstraintLayout 替代多层嵌套**:将 6 层压缩到 2 层(ConstraintLayout + 直接子 View)
-2. **移除 `layout_weight`**:用 ConstraintLayout 的 `match_constraint` 替代
-3. **优化 item 布局**:减少不必要的 wrapper ViewGroup
-
-[已验证: Google Developers Blog, ConstraintLayout 性能基准测试 - 在复杂布局场景下比 RelativeLayout 快约 40%]
-
-### 效果对比
-
-修复后在 Perfetto 中的 measure 阶段从 8-12ms 区间降到 2-3ms 区间,滑动 Jank 率从约 12% 降到约 3%。[待验证:正式落盘时需补同一设备、同一脚本、同一刷新率下的前后 trace]
-
-### 举一反三
-
-这类问题的通用特征:
-- Perfetto 中主线程的 traversal 阶段持续超时
-- `dumpsys activity top` 显示 View 层级过深
-- 多个需要两遍 measure 的 ViewGroup 叠加使用
-
-遇到列表滑动卡顿,先看 item 布局的层级和复杂度,再决定要不要继续往渲染管线或系统调度方向深挖。
-
-> **排查工具补充**:如果卡顿场景涉及动态添加/移除 View(比如列表 item 中动态插入子视图),**Winscope (ViewCapture)** 是比 Perfetto 更直观的工具。它能逐帧记录 View 树的结构变化,直接看到哪一帧新增了哪个 View、层级深度如何变化。对于「动态添加 View 导致卡顿」这类问题,Winscope 比 Perfetto 的线程轨道更容易定位根因。
+| 字段 | 要回答的问题 |
+|---|---|
+| 现场 | 哪台设备、哪个 build、什么动作、持续多久 |
+| 用户结果 | 哪一帧、哪个 CUJ 或哪段启动变差 |
+| 关键证据 | 线程状态、slice、counter、heap、layer、fence、thermal |
+| 排除项 | 哪些相似原因已经排除 |
+| 根因 | 哪条因果关系有对照实验支持 |
+| 修复 | 改了哪一段工作或资源配置 |
+| 效果 | 同条件下哪些指标发生变化 |
+| 证据缺口 | 缺少原始 trace、样本量、设备覆盖或统计定义中的哪一项 |
 
 ---
 
-## 案例二:onBindViewHolder 中的 Binder 调用导致列表卡顿
+## 案例一：WeSing 歌房进房的一条主线程消息过重
 
-案例一解决了布局层面的瓶颈,但列表滑动卡顿不只有布局一个来源。这个案例展示了另一种常见模式:业务逻辑本身很轻量,却在数据绑定阶段引入了不可控的延迟。
+### 现场与公开数据
 
-### 问题现象
+腾讯音乐技术团队在 WeSing 歌房进房场景做过两轮优化。公开测试条件是 OnePlus 10 Pro、Android 12、进程冷启动，点击进房后等待 8 秒让 UI 稳定。原文报告 5.65 与 5.70 两轮优化后，PerfDog 卡顿率改善接近 50%。
 
-一个内容类 App 的首页 Feed 流在加载更多数据后,滑动时出现密集卡顿。测试发现该问题在系统负载高时(后台多任务)尤为明显,空闲时不易复现。
+其中一条主线程消息集中创建微服务并派发 Activity、Fragment 和音视频生命周期。trace 截图给出的服务实例创建时间为 312 ms；同一复盘还记录了 40 ms 的生命周期分发、115 ms 的音视频 SDK 初始化、103 ms 的 bitmap 模糊和 18 ms 的日志参数拼接。
 
-### 分析思路
+![WeSing 进房服务创建 trace](https://image.cubox.pro/cardImg/2023121920204054940/61512.jpg?imageMogr2/quality/90/ignore-error/1)
 
-滑动场景卡顿,但布局层级已经优化过,measure/layout 耗时正常。问题可能出在数据绑定阶段。RecyclerView 在滚动、布局和预取时触发 `onBindViewHolder()`——这个回调位于列表滑动的关键路径上,如果绑定时执行了耗时操作,会直接吃掉帧预算。
+这些数字属于该团队的设备、版本和 PerfDog 口径，不能换算成 Android vitals 或其他应用的收益。
 
-### 抓取与定位
+### 从现象到根因
 
-[待验证:Trace 证据待归档 - onBindViewHolder 中出现 Binder 调用的 Perfetto 视图;需补 trace 文件名、设备型号、Android 版本、刷新率、滑动脚本、采样窗口与样本次数。当前耗时/Jank 数值只作为案例化示例。]
+分析没有停在“主线程有一个 312 ms 长任务”。团队继续拆开这条消息里的工作：
 
-示例 trace 中,主线程在部分帧的执行过程中出现 Binder 调用(Binder:XXX 事件),单次耗时落在 5-20ms 这一类风险区间。这些 Binder 调用出现在 `onBindViewHolder` 的调用栈中。[待验证:需补原始 trace 后才能作为实测结论]
+1. 微服务框架允许 lazy 初始化，但业务不断把服务标成进房预加载；
+2. 多个单项成本集中在同一条 Looper message，首批 UI 更新只能排在它们之后；
+3. 部分工作有严格的 UI 或生命周期顺序，不能全部丢到线程池；
+4. bitmap 处理、配置 JSON 和部分 SDK 初始化可以脱离主线程；
+5. 日志方法即使最终不输出，调用前的字符串拼接和序列化已经发生。
 
-### 逐步分析
+根因由“单个方法很慢”扩展为“进房依赖没有分层，必须完成、可延后、可预热和可异步的工作混在同一条消息中”。
 
-**第一步:定位 Binder 调用来源。** 展开主线程的调用栈,发现 `onBindViewHolder()` → `loadUserInfo()` → `ContentResolver.query()`。每次绑定 item 都查询 ContentProvider 获取用户头像和昵称。
+### 修复
 
-**第二步:确认 ContentResolver.query 的本质。** `ContentResolver.query()` 如果目标是其他进程的 ContentProvider,就是一次跨进程 Binder 调用。经验上,系统空闲时可能接近亚毫秒到 1ms 级别,繁忙时会拉长到 10ms 级甚至更高;具体数值必须以目标设备 trace 为准。同进程 Provider 虽然不走 Binder,但在主线程执行数据库查询仍然会阻塞帧处理。
+公开复盘采用了五组动作：
 
-**第三步:量化影响。** 滑动时每个新可见的 item 触发一次 `onBindViewHolder`,滑动速度越快触发越频繁。一帧中如果有 2-3 个 item 需要绑定,仅 Binder 调用就可能吃掉一帧预算;示例区间可写成 10-60ms,但正式结论必须绑定具体 trace 与采样窗口。
+- 删除无必要的预加载，把服务默认改为 lazy；
+- 将无 UI 依赖的解析、bitmap 处理等移到工作线程；
+- 对进房后立即使用且类加载昂贵的组件做有条件预热；
+- 把必须在主线程执行的生命周期工作拆成小段，并保持业务顺序；
+- 避免关闭日志后仍构造昂贵参数。
 
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md - 主线程 Binder 调用在系统繁忙时可能导致卡顿]
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md - WeSing 发现 onBindViewHolder 中的日志字符串拼接耗时 18ms]
+原案例为了消息顺序使用过 `postAtFrontOfQueue()`。这个 API 会插队，可能延迟输入、traversal 和其他消息。迁移到新项目时，应把依赖写成显式状态机或阶段队列，并给每段工作设置预算和取消条件；不能复制“插到队头”这一实现细节。
 
-### 根因
+### 效果与证据边界
 
-`onBindViewHolder()` 中执行了数据库查询(ContentResolver.query)。如果目标是远程 Provider,这是一次跨进程 Binder 调用,延迟不可预测——系统空闲时很快,但后台繁忙时可能阻塞主线程数十毫秒;即使是同进程 Provider,主线程上的数据库 I/O 同样会吃掉帧预算。将这类操作放在滑动路径上是严重的架构错误。
+原文披露两项结果：整体 PerfDog 卡顿率接近减半；有条件预热让线上进房平均耗时减少 250 ms。它没有公开完整样本量、分位数和全部前后 trace，因此这两项数据只描述 WeSing 当时的发布结果。
 
-### 修复方案
+在 Android 17 上复验同类修改，应对齐：
 
-1. **数据预加载**:在数据拉取阶段就把用户信息查好,存入内存缓存
-2. **onBindViewHolder 只做轻量绑定**:只赋值,不做任何 IO、Binder、数据库查询
-3. **异步加载**:头像等异步加载(Glide/Coil),onBindViewHolder 只触发请求
+- 目标 CUJ 的 FrameTimeline 与进房 marker；
+- 每条主线程 message 的 wall time、Running 与 Runnable 时间；
+- 冷启动类加载/JIT、后台预热 CPU 和内存；
+- 第一帧、内容稳定时刻与用户可交互时刻；
+- 拆分后是否出现时序错误或首次点击延迟。
 
-```kotlin
-// 错误:在 onBindViewHolder 中查询数据
-override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-    val user = contentResolver.query(...)  // Binder 调用
-    holder.name.text = user?.name
-}
-
-// 正确:数据预先加载到内存
-override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-    val user = userList[position]  // 内存缓存
-    holder.name.text = user.name
-}
-```
-
-[已验证: 官方文档, developer.android.com/topic/performance/recycler-view - onBindViewHolder 应仅执行轻量级绑定操作]
-
-### 效果对比
-
-修复后 `onBindViewHolder` 的单次耗时从 5-20ms 区间降到 0.5ms 以内(纯赋值),滑动 Jank 率在系统高负载场景下从约 15% 降到约 2%。[待验证:正式落盘时需补同一负载条件下的前后 trace]
-
-### 举一反三
-
-**判断标准:`onBindViewHolder()` 里不要放任何可能阻塞的操作。** 这些调用一旦出现在它的调用栈里,就要继续往下查:
-
-- `ContentResolver.query()` / `ContentResolver.insert()` 等
-- `PackageManager.getPackageInfo()` 等系统服务查询
-- 文件 I/O(`FileInputStream`、`SharedPreferences.getString()`)
-- JSON 解析(`JSONObject`、`Gson.fromJson()`)
-- 正则表达式匹配
-- 复杂的对象创建(`new Paint()`、`new Typeface()`)
+来源：[Android 深入卡顿分析与实践（QQ 音乐技术团队）](https://cloud.tencent.com/developer/article/2372774)。
 
 ---
 
-## 案例三:内存压力下 GC 频繁暂停主线程
+## 案例二：反复进退房后的内存增长与 GC
 
-前两个案例的问题在打开 App 后就能复现——它们是"一直在那里"的卡顿。但有一类卡顿更隐蔽:刚打开 App 时完全正常,使用一段时间后越来越卡。这种"随时间劣化"的模式,根因往往指向内存管理。
+### 现场与公开数据
 
-### 问题现象
+同一 WeSing 复盘记录了“开始流畅，反复进退歌房后越来越卡”的问题。Profiler 显示房间退出后仍有对象存活，其中一个根因是弹窗关闭后动画没有停止，引用链继续保留页面对象。原文还记录了内存紧张时进房更容易触发频繁 GC。
 
-一个音乐 App 在连续使用 30 分钟后,滑动体验逐渐劣化。示例复盘口径中,初始 Jank 率约 3%,使用 30 分钟后上升到 15%+;杀掉 App 重新打开后恢复正常。[待验证:需补设备、版本、采样脚本和 30 分钟内的内存曲线]
+![反复进退房后的内存增长](https://image.cubox.pro/cardImg/2023121920204870875/18152.jpg?imageMogr2/quality/90/ignore-error/1)
 
-### 分析思路
+公开材料没有给出该泄漏修复前后的 GC pause 分位值或 JankStats 对照。因而本案例保留“引用链与生命周期修复”结论，不沿用旧稿中自造的堆大小、GC 次数和卡顿率。
 
-"随时间劣化"且"重启恢复"是典型的内存泄漏或内存压力模式。优先排查内存使用趋势和 GC 频率。
+### 从现象到根因
 
-### 抓取与定位
+“使用一段时间后变慢，重启恢复”可以由多种因素造成：Java/native 泄漏、图片/GPU 缓存、线程增长、热限制、系统内存压力或存储 I/O。确认 GC 因果关系需要三组证据同时出现：
 
-[待验证:Trace 证据待归档 - GC 暂停主线程的 Perfetto 视图;需补 trace 文件名、设备型号、Android/ART 版本、刷新率、使用时长、采样窗口与样本次数。当前内存/Jank 数值只作为案例化示例。]
+1. 相同操作循环下，Java/native/graphics 内存或存活对象持续增长；
+2. ART GC 的 pause 或 allocation stall 更频繁，并与异常帧相交；
+3. Heap dump、heapprofd 或引用分析指向无法释放的对象；
+4. 修掉引用或限制缓存后，内存曲线、GC 事件和帧长尾同步改善。
 
-使用 Perfetto 同时开启 Java Heap 和 Scheduling 跟踪。示例观察如下,正式结论需要绑定原始 trace:
-1. App 的 Java Heap 从初始的 80MB 持续增长到 200MB+
-2. GC 事件频率从初始的每 5 秒一次增加到每秒 2-3 次
-3. 主线程在 GC 期间出现大量 "GC For Alloc" 暂停,单次 5-15ms
+ART 的并发 GC 仍包含暂停阶段，但不能把整个 Concurrent GC slice 都算作主线程 Stop-The-World 时间。应查看 trace 中明确的 pause、线程状态和分配等待。不同 Android/ART 版本的事件名称会变化，固定搜索 `GC For Alloc` 不够稳。
 
-### 逐步分析
+原案例中“弹窗关闭后动画仍持有页面”的引用链能解释对象为何存活。修复动作是结束动画、移除回调/监听并释放与页面生命周期绑定的对象。缓存问题还要分别按 Java heap、native allocation、GraphicBuffer/dma-buf 和 GPU 资源计量。
 
-**第一步:确认是 GC 导致主线程暂停。** 在 Perfetto 中搜索 "GC" 事件,发现主线程频繁出现 `GC For Alloc`(因内存分配触发)和 `Concurrent GC`(后台并发回收)。其中 `GC For Alloc` 会暂停所有线程(包括主线程),暂停时间与堆大小成正比。
+### 低内存对照：不要把系统压力误判成应用泄漏
 
-**第二步:定位内存增长来源。** 通过 Android Studio Profiler 抓取 Heap Dump,发现大量 `Bitmap` 对象没有被回收。追踪引用链,找到是自定义的图片缓存 `LruCache<String, Bitmap>` 没有正确设置容量上限,导致缓存无限制增长。
+AndroidPerformance 还公开过一组整机低内存冷启动对照：
 
-**第三步:确认因果关系。** 缓存增长 → 堆压力增大 → GC 频率升高 → `GC For Alloc` 暂停主线程 → 帧超时 → 卡顿。这个链条在低内存设备上会被放大,因为系统整体内存紧张时 lmkd 会杀后台进程,进一步增加内存分配压力。
+| 条件 | bindApplication 到第一帧 | Block I/O 与 Uninterruptible Sleep/WakeKill | Running |
+|---|---:|---:|---:|
+| 低内存 | 约 2.0 s | 约 750 ms | 约 600–682 ms |
+| 正常内存 | 约 1.22 s | 约 130 ms | 约 624 ms |
 
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-Low-Memory.md - 低内存下 kswapd 和 lmkd 活跃,GC 压力增大导致主线程卡顿]
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md - GC 暂停主线程时,doFrame 被延迟执行]
+![低内存冷启动 trace](https://www.androidperformance.com/images/15688227815756.jpg)
 
-### 根因
+![正常内存冷启动 trace](https://www.androidperformance.com/images/15688228638217.jpg)
 
-自定义图片缓存未设置容量上限,Bitmap 对象不断累积在堆中。堆使用率升高后,ART 虚拟机频繁触发 GC,其中 `GC For Alloc` 会 Stop-The-World 暂停主线程 5-15ms,直接导致帧超时。
+这组数据表明，两次启动的 Running 时间接近，差异主要落在 I/O/不可中断等待及系统内存活动。它不能证明所有低内存卡顿都由 I/O 导致，但足以排除“应用 CPU 计算增加”作为该次对照的主解释。
 
-### 修复方案
+Android 17 / `android17-6.18-2026-06_r6` 下应查看 PSI memory、direct reclaim、kswapd、swap/zram I/O、major fault、lmkd 事件和前台线程状态。现代 lmkd 主要依据 PSI 与进程优先级工作，旧内核里的 lowmemorykiller 日志和固定 minfree 配方不应直接搬过来。
 
-1. **限制 LruCache 大小**:根据设备可用内存设置合理的缓存上限(如可用内存的 1/8)
-2. **使用 `inSampleSize` 降采样**:不需要原图的场合降低 Bitmap 分辨率
-3. **直接使用 Glide/Coil**:成熟的图片库内置了内存缓存管理、生命周期感知和降采样,不需要自己手写 LruCache
+### 修复与效果
 
-```kotlin
-// 错误:无限制缓存
-val imageCache = LruCache<String, Bitmap>(Int.MAX_VALUE)
+应用泄漏路径的修复目标是让房间退出后对象可回收，并限制可重建缓存。整机低内存路径则需要减少前后台常驻、避免前台直接回收/I/O，并由系统团队在目标设备上调校 lmkd、zram、回收和存储策略。
 
-// 正确:限制缓存大小(覆写 sizeOf 按字节计量)
-val cacheSizeKb = (Runtime.getRuntime().maxMemory() / 1024 / 8).toInt()
-val imageCache = object : LruCache<String, Bitmap>(cacheSizeKb) {
-    override fun sizeOf(key: String, value: Bitmap): Int {
-        return value.byteCount / 1024  // 以 KB 为单位
-    }
-}
-// 或直接使用 Glide/Coil 等成熟图片库,它们内置了内存缓存管理和生命周期感知
-```
+Android 14 起，应用不再收到部分旧的 `TRIM_MEMORY_RUNNING_*` 回调；对应常量在 API 35 被弃用。应用仍可用 `TRIM_MEMORY_UI_HIDDEN`、后台状态和自身预算释放可重建资源，不能等待旧式“运行中低内存”通知再处理。
 
-[已验证: 官方文档, developer.android.com/topic/performance/graphics/cache-bitmap - Bitmap 缓存应基于可用内存动态设置]
+验收至少包含重复进退房 heap 曲线、GC pause、FrameTimeline、native/graphics 内存、PSI 和热状态。只看到 Java heap 下降，还不足以证明 GPU buffer 或整机压力改善。
 
-### 效果对比
-
-修复后 Heap 使用稳定在 100MB 以内,GC 频率回到每 5-10 秒一次的区间,滑动 Jank 率从约 15% 降到约 4%,且不再随时间劣化。[待验证:正式落盘时需补同一使用脚本下的前后 trace 与 heap 曲线]
-
-### 举一反三
-
-GC 导致卡顿的 Perfetto 特征:
-- 主线程出现非业务代码的长时间 slice(调用栈包含 `art::gc::` 前缀)
-- Heap 使用量呈持续上升趋势
-- `Concurrent GC` 和 `GC For Alloc` 频率异常高
-
-排查入口:**随时间劣化的卡顿,先看 Heap 趋势线,再看 GC 频率。**
+来源：[WeSing 复盘](https://cloud.tencent.com/developer/article/2372774)、[Android 低内存案例](https://www.androidperformance.com/2019/09/18/Android-Jank-Due-To-Low-Memory/)、[ComponentCallbacks2](https://developer.android.com/reference/android/content/ComponentCallbacks2)。
 
 ---
 
-## 案例四:RenderThread sync 阻塞主线程
+## 案例三：SDK 升级增加线程后，主线程获得 CPU 变慢
 
-前面三个案例的根因都落在主线程自身的代码上——布局太深、Binder 调用、GC 暂停。但 Perfetto 里有一种卡顿经常让人困惑:主线程的调用栈中看不到任何业务代码耗时,帧却还是超时了。这种情况需要把视线从主线程挪开,看看 RenderThread 在干什么。
+### 现场与关键数据
 
-### 问题现象
+WeSing 5.68 的版本对比发现：
 
-一个社交 App 在发送带多个动画表情的消息后,聊天界面出现明显掉帧。问题只在有动画表情时出现,纯文字消息时正常。
+- 相比上个版本，进程增加近 30 个线程；
+- file descriptor 增加约 250 个；
+- 团队使用的卡顿率从 15% 上升到 20%；
+- 增量线程在退出歌房后仍未减少；
+- APK/版本二分把变化定位到 TRTC SDK 升级；
+- Perfetto SQL 统计显示升级后的 DefaultDispatch 线程 CPU 时间超过 UI Thread 和 RenderThread。
 
-### 分析思路
+![SDK 升级前后线程 CPU 对比](https://image.cubox.pro/cardImg/2023121920205064063/74508.jpg?imageMogr2/quality/90/ignore-error/1)
 
-有动画时卡顿、无动画时正常——问题一定跟动画渲染有关。在 Android 的渲染管线中,动画渲染涉及主线程(measure/layout/draw)和 RenderThread(GPU 指令提交)的协作(参见 [2.5 MainThread 与 RenderThread 协作](../../part1-fundamentals/ch02-rendering/05-main-render-thread.md))。
+### 从相关性到根因
 
-### 抓取与定位
+线程数增加本身不能证明调度卡顿。这个案例有价值，是因为团队做了版本二分、线程来源定位和 CPU 时间聚合，并由 SDK 方移除与业务无关的功能后恢复指标。
 
-[待验证:Trace 证据待归档 - RenderThread sync 阻塞主线程的 Perfetto 视图;需补 trace 文件名、设备型号、Android 版本、刷新率、动画资源规模、采样窗口与样本次数。当前耗时/Jank 数值只作为案例化示例。]
+在 Android 17 上，还应补两项证据：
 
-Perfetto 中同时观察主线程和 RenderThread。示例 trace 的现象是:
-- 主线程在部分帧的 draw 结束后,会在 `syncAndDrawFrame` 停 8-15ms,然后才进入下一个 VSync 的等待
-- RenderThread 在同一时间段正在进行 `DrawFrame` 操作
+- 异常帧里 UI Thread/RenderThread 是否长时间处于 Runnable，wakeup 到 Running 的等待是否上升；
+- 新线程在同一时间是否 Running，占用了哪些 CPU，是否带来频率、迁核、thermal、内存或 GC 变化。
 
-[待验证:需补原始 trace 后才能作为实测结论]
+如果新增线程多数处于 Sleeping，调度影响可能很小；如果一个新增 CPU worker 长时间 Running，即使线程总数不高，也能挤压交互线程。file descriptor 增长是资源回归信号，不能直接解释 CPU 调度。
 
-### 逐步分析
+### 修复
 
-**第一步:理解 sync 机制。** 主线程在 `performDraw()` 中通过 `ThreadedRenderer.syncAndDrawFrame()` 将本帧的绘制命令同步给 RenderThread。native 层对应 `DrawFrameTask::syncFrameState()`,它会等待 RenderThread 完成上一帧的渲染工作后,再把新的 DisplayList 数据交给 RenderThread。
+团队把问题提交给 SDK 方，去掉升级时引入但当前业务不需要的功能。通用处理包括：
 
-**第二步:先判断 RenderThread 积压。** 多个 AnimatedVectorDrawable 同时播放时,向量路径、裁剪、alpha 或变换会让 DisplayList 更频繁地重录制,RenderThread 需要重新执行绘制指令并提交给 GPU。如果 RenderThread 还在处理上一帧的向量栅格化、tessellation 或 overdraw,主线程会在 `syncFrameState()` 阶段等待。AVD 是向量动画,不能把这个现象直接写成 GPU 纹理反复上传;只有 trace 中出现 `UploadTexture`、`glTexImage2D` 或同类证据时,才能单独讨论纹理上传。
+- 为 SDK 和业务线程提供稳定、可聚合的名字；
+- 对线程池设置有界并发、队列和取消；
+- 页面退出时停止会话与 worker；
+- 用版本开关或依赖回退完成 A/B；
+- 分开统计线程数、CPU time、Runnable latency、RSS/PSS 和 FD。
 
-**第三步:单独判断 AVD UI fallback。** API 25+ 的 AVD 可以走 `VectorDrawableAnimatorRT`。在 AOSP android-17.0.0_r1 中,`fallbackOntoUI()` 的主要触发条件是 Software Canvas 下仍有 pending animation action,或代码主动走 `forceAnimationOnUI()`。RT 不支持的属性通常在 RT animator 构建阶段跳过或抛错,不能描述成运行中自动退回 UI 线程。
+手动把 UI Thread 或 RenderThread 固定到某个“大核”会把 SoC 拓扑、热状态和厂商调度差异写死，不能替代移除无效工作。
 
-**第四步:把两类问题分开归因。** 主线程动画推进、`invalidateSelf()` 频繁出现,更像 UI fallback;RenderThread 的 `DrawFrame` 拉长、主线程停在 `syncAndDrawFrame`,更像 RT 积压。两者可能叠加,但修复手段不同,trace 里要分开标注。
+### 效果与证据边界
 
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md - RenderThread 自身耗时导致主线程 sync 被阻塞]
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md - 微信对话框有多个动态表情时出现 buildDrawingCache 耗时]
-[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java - `fallbackOntoUI()` 负责 AVD 退化到 UI 线程]
+原文只写“修复后各项指标正常”，没有披露修复后的卡顿率、线程数和 FD 数。因此可复核结论到这里为止：SDK 升级稳定复现资源与卡顿回归，二分和 CPU 统计指向新增 worker，SDK 修复消除了回归。不能自行补成“20% 回到某个百分比”。
 
-### 根因
-
-多个动画表情同时播放,每帧触发 DisplayList 重录制,向量路径和变换会增加 RenderThread 的绘制、栅格化和 GPU 提交工作。RenderThread 处理变慢后,主线程在 `syncFrameState()` 阶段等待时间从正常的 <1ms 增加到 8-15ms 这一类风险区间,直接导致帧超时。若同时命中 AVD UI fallback,主线程还会负责动画推进,帧预算会被进一步压缩;两类原因需要通过 trace 分开确认。
-
-### 修复方案
-
-1. **限制同时播放的动画表情数量**:只对可见区域内的表情启用动画
-2. **使用 Hardware Layer 缓存静态部分**:对非动画内容使用 `LAYER_TYPE_HARDWARE` 避免重绘
-3. **降低向量动画复杂度**:减少 path 节点、变形范围和同屏播放数量;如果改成序列帧或 WebP,需要单独验证纹理上传和内存占用
-4. **避免触发 AVD UI fallback**:确认承载视图在硬件加速 Canvas 上绘制;不要主动调用 `forceAnimationOnUI()`;RT 不支持的属性要在资源构建阶段排除,不能指望运行期自动退化
-
-```kotlin
-// 只对可见的表情播放动画
-fun onViewHolderAttached(holder: EmojiViewHolder) {
-    holder.animatedEmoji.start()
-}
-
-fun onViewHolderDetached(holder: EmojiViewHolder) {
-    holder.animatedEmoji.stop()  // 离开屏幕停止动画
-}
-```
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/View.java - LAYER_TYPE_HARDWARE 在硬件加速开启时将 View 缓存为 GPU 纹理]
-
-### 效果对比
-
-修复后（限制同时播放的动画数量(最多 3 个)后），RenderThread 的 sync 等待时间从 8-15ms 区间降到 2-3ms 区间,聊天界面 Jank 率从约 20% 降到约 5%。[待验证:正式落盘时需补同一聊天数据、同一动画资源和同一设备下的前后 trace]
-
-### 举一反三
-
-RenderThread 相关卡顿的 Perfetto 特征:
-- 主线程出现 `syncAndDrawFrame` 耗时(调用栈包含 `DrawFrameTask::syncFrameState`)
-- RenderThread 的 `DrawFrame` slice 明显延长
-- 向量动画场景下 DisplayList 重录制操作频繁
-
-**判断入口:** 如果主线程卡顿,但业务代码本身不耗时,就先看 RenderThread 是否成了瓶颈。主线程很多时候是在等它。
-
-#### Lottie 与 AVD 的 Perfetto 特征对比
-
-案例四讨论的是 AVD 的积压问题。生产环境中的 Lottie 动画库也很常见，它的卡顿特征与 AVD 完全不同，排查思路也要区分：
-
-| 特征 | AVD | Lottie(复杂 JSON) |
-|------|-----|-------------------|
-| Composition 构建 | 系统资源预编译,构建成本低 | 主线程 JSON 解析 + `LottieComposition` 构建;复杂 JSON 可达数十毫秒 |
-| 每帧更新 | 属性动画驱动 VectorDrawable 状态 | `LottieDrawable.invalidateSelf()` → Canvas draw;路径取决于 RenderMode |
-| RenderMode 路径 | - | AUTOMATIC: 按内容自动选择;SOFTWARE: 内部位图渲染;HARDWARE: GPU 路径(mask/matte/merge path 可能触发纹理上传) |
-| Perfetto 特征 | RenderThread `DrawFrame` 拉长;主线程 `syncAndDrawFrame` 等待 | 首次加载:主线程 parse/inflate slice;播放中:主线程 `LottieDrawable.draw` 或 RenderThread textureUpload(hardware path) |
-| GPU 参与 | 高(向量路径实时栅格化) | 取决于 RenderMode 和内容:mask/matte/merge path 的 hardware path 需要额外 GPU 纹理;software path 几乎不碰 GPU |
-| RT 加速 | API 25+ 可走 VectorDrawableAnimatorRT | 无 RT 加速路径 |
-| 典型卡顿场景 | 同屏多个 AVD 同时播放 | 首次播放复杂 JSON / dynamic property 切换 / hardware path 下多层 mask 叠加 |
-
-排查 Lottie 卡顿的入口:先用 Perfetto 确认瓶颈在主线程还是 RenderThread。如果是主线程 JSON 解析耗时长,考虑预加载(后台线程解析后缓存 `LottieComposition`)、简化 JSON 或改用序列帧。如果是渲染侧,检查 Lottie 的 RenderMode:SOFTWARE 路径走内部位图渲染,绘制由主线程完成;HARDWARE 路径走 GPU,mask/matte/merge path 会增加纹理上传和 GPU 工作量。切换 RenderMode 前后用 Perfetto 对比 `draw` slice 和 GPU `textureUpload` 来确认瓶颈归属。
-
-### AnimatedVectorDrawable 线程退化机制（源码级）
-
-本节案例四涉及 AnimatedVectorDrawable 的线程模型，以下从 AOSP 源码角度分析其退化机制。
-
-#### AVD 线程模型双轨架构
-
-在 `frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java` 中,AVD 同时实例化两个 Animator:
-
-```java
-// 构造函数中同时实例化两个版本
-private AnimatedVectorDrawable(AnimatedVectorDrawableState state, Resources res) {
-    mAnimatedVectorState = new AnimatedVectorDrawableState(state, mCallback, res);
-    mAnimatorSet = new VectorDrawableAnimatorRT(this);  // RenderThread 版本
-}
-```
-
-关键字段 `mAnimatorSet`(类型 `VectorDrawableAnimator` 接口)运行时可能是:
-- `VectorDrawableAnimatorRT` - RenderThread 加速(API 25+)
-- 纯 UI 线程版本 - 软件退化模式
-
-#### 线程退化触发条件
-
-```java
-// draw() 方法中的退化逻辑
-@Override
-public void draw(Canvas canvas) {
-    if (!canvas.isHardwareAccelerated() && mAnimatorSet instanceof VectorDrawableAnimatorRT) {
-        if (!mAnimatorSet.isRunning() &&
-                ((VectorDrawableAnimatorRT) mAnimatorSet).mPendingAnimationActions.size() > 0) {
-            fallbackOntoUI();  // 退化到 UI 线程
-        }
-    }
-    mAnimatorSet.onDraw(canvas);
-    mAnimatedVectorState.mVectorDrawable.draw(canvas);
-}
-```
-
-`fallbackOntoUI()` 这一路径需要同时满足三项条件:
-1. `!canvas.isHardwareAccelerated()` - 当前是 Software Canvas
-2. `mAnimatorSet instanceof VectorDrawableAnimatorRT` - 当前使用 RT 版本
-3. `!isRunning() && mPendingAnimationActions.size() > 0` - 仍有待提交的动画动作
-
-另外,代码主动调用 `forceAnimationOnUI()` 会直接切到 UI 线程。RT 不支持的属性一般在 RT animator 构建阶段跳过或抛出异常,不能写成播放过程中自动 fallback。
-
-#### 版本演进
-
-| 版本 | 动画执行线程 | 退化机制 |
-|------|-------------|---------|
-| API 21-24 | UI Thread(AnimatorSet) | 无 RenderThread 版本 |
-| API 25+ | RenderThread(VectorDrawableAnimatorRT) | Software Canvas 时退化 |
-
-#### 实战影响
-
-当 AVD 退化到 UI 线程运行时,动画推进和 View invalidation 都会回到主线程;没有 fallback 但同屏向量动画过多时,RenderThread 仍可能在 `DrawFrame` 中积压。Perfetto 里要分开看:主线程动画 slice / Choreographer 动画回调增多,指向 UI fallback;RenderThread `DrawFrame` 拉长且主线程停在 `syncAndDrawFrame`,指向 RT 积压。
-
-**源码文件**:`frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java`(AOSP android-17.0.0_r1)
+来源：[Android 深入卡顿分析与实践](https://cloud.tencent.com/developer/article/2372774)。
 
 ---
 
-## 案例五:系统低内存导致全局性卡顿
+## 案例四：SurfaceFlinger GPU 合成帧迟到
 
-前四个案例都是单个 App 的性能问题——换了别的 App,同样的分析方法依然适用。但还有一类卡顿超出了单个 App 的范畴:设备整体变慢,所有 App 同时卡顿,连桌面滑动都不流畅。遇到这种情况,逐个排查 App 已经没有意义,需要站到系统层面来看。
+### 公开 trace 观察
 
-### 问题现象
+AndroidPerformance 的系统案例展示过 App 侧未出现对应长任务，而 SurfaceFlinger 的 GPU 合成区间拉长并伴随掉帧。原始 Systrace 图片仍可访问：
 
-一款 4GB 内存的设备上,打开多个 App 后回到桌面,系统整体出现明显卡顿:桌面滑动掉帧、App 切换慢、通知栏下拉不流畅。重启后恢复正常,但使用一段时间后问题再次出现。
+![SurfaceFlinger GPU 合成案例一](https://www.androidperformance.com/images/15683644397329.jpg)
 
-### 分析思路
+![SurfaceFlinger GPU 合成案例二](https://www.androidperformance.com/images/15683644447973.jpg)
 
-全局性卡顿 + 重启恢复,怀疑系统级问题而非单个 App 问题。优先检查系统内存状态、lmkd 事件、kswapd 活动和 PSI(Pressure Stall Information)压力。
+这是一份旧版 Systrace 现场，早于现代 FrameTimeline。图片支持“该现场的 SF GPU 合成很慢”，不包含 Android 17 的 jank type、完整 layer 属性或 HWC validate 结果。
 
-### 抓取与定位
+### Android 17 下怎样重建证据
 
-[待验证:Trace 证据待归档 - kswapd 活跃 + lmkd 杀进程的系统级 Trace;需补 trace 文件名、设备型号、Android 版本、内存规格、采样窗口、后台 App 组合与统计口径。当前内存/Jank 数值只作为案例化示例。]
+现代设备上应从目标 DisplayFrame 反查：
 
-通过 `adb shell dumpsys meminfo` 查看系统内存状态。示例输出如下,正式结论需要补设备型号、系统版本和采样时间:
+1. App SurfaceFrame 是否按时提交；
+2. SurfaceFlinger 的 `SurfaceFlingerCpuDeadlineMissed` 或 `SurfaceFlingerGpuDeadlineMissed` 是否与用户看到的帧对应；
+3. HWC validate 后哪些 layers 是 DEVICE，哪些进入 CLIENT composition；
+4. CLIENT 帧中 `CompositionEngine` / `RenderEngine::drawLayers()` 和 GPU fence 是否拉长；
+5. 同一时刻的可见 layer 集、格式、alpha、transform、crop、dataspace、保护属性、刷新率和 display mode；
+6. present fence 何时 signal。
 
-```text
-Total RAM: 3,842,060K (status moderate)
- Free RAM:   350,200K
- Used RAM: 3,718,091K
-     ZRAM:   802,608K physical used for 2,301,256K in swap
-```
+CLIENT composition 只表示 SurfaceFlinger 需要把相关 layers 渲染进 client target。它本身是受支持的正常路径。只有 CLIENT 变化、RenderEngine/GPU 时长和 missed DisplayFrame 在时间上对应，才能把这次卡顿归到合成降级或 GPU 合成压力。
 
-关键信号:Free RAM 极低(350MB / 3.8GB),ZRAM 使用率极高。
+不能按“屏幕上有五层、硬件只有四个 plane”推断根因。AOSP 没有为普通应用提供固定 overlay plane 数量查询；HWC 决策还受格式、缩放、旋转、混合、带宽和厂商策略影响。
 
-### 逐步分析
+### 修复
 
-**第一步:确认是内存压力导致的级联效应。** 系统内存紧张时发生以下连锁反应:
+公开旧案例没有披露对应产品的代码改动和前后数据。本章不补造修复结果。针对同类现场，可验证的候选动作包括：
 
-1. **kswapd 被频繁唤醒**:内核的后台内存回收线程开始工作,它在回收页面时需要获取各种内核锁(如 `pgdat->lru_lock`),这些锁的竞争会导致应用进程的内存分配变慢
-2. **lmkd 开始杀进程**:现代 Android 主线设备主要由 userspace `lmkd` 根据压力、adj 和水位策略杀后台进程。杀进程会带来页表回收、缓存失效和后续冷启动成本
-3. **所有 App 的 GC 压力增大**:系统内存紧张,lmkd 杀 App,App 被杀后缓存丢失,存活的 App 缺少共享缓存,更多缺页中断,更多 IO,更卡
+- 减少不必要的独立 Surface/Window；
+- 避免让可合成 layer 带上无收益的 alpha、复杂 transform 或大面积 blur；
+- 对视频/相机检查 SurfaceView、TextureView 和 overlay 选择；
+- 系统侧检查 HWC capability、validate/present、client target 和驱动 fence；
+- 固定亮度、分辨率、刷新率与 layer 集后做前后 trace。
 
-**第二步:在 Trace 中验证。** Perfetto 系统级视图中可以观察到:
-- `kswapd0` 线程持续活跃(正常情况下大部分时间在 sleep)
-- 多个 App 进程被 lmkd 杀掉(进程消失)
-- 所有前台 App 的主线程出现更多 involuntary context switch(被调度器切出)
-- 前台 App 的 `GC` 事件频率升高
+成功标准是目标设备上 CLIENT/DEVICE 分配或 GPU 工作发生预期变化，SF jank type 和 present 长尾同时改善。App 主线程变短与这一结论无直接等价关系。
 
-**第三步:量化影响。** 在示例内存压力场景下,一帧的执行时间分布可能变为:
-- GC 暂停:5-20ms(正常 <5ms)
-- involuntary context switch:3-10ms(正常 <1ms)
-- 页面缺页:2-8ms(正常 <1ms)
-- 实际业务逻辑:3-5ms(正常)
+Android 17 源码锚点是 `SurfaceFlinger.cpp`、CompositionEngine 的 `Output.cpp`、`RenderEngine` 和 `HWComposer.cpp`。详细步骤见 [HWC Overlay Plane 与合成降级排查](./18-hwc-overlay-composition-downgrade.md)。
 
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-Low-Memory.md - 低内存导致 kswapd 和 lmkd 活跃,进而影响所有前台 App 的渲染性能]
-
-### 根因
-
-系统内存不足(Free RAM < 400MB),触发 kswapd 频繁回收和 lmkd 杀进程。这导致全局性的性能下降:GC 压力增大、调度延迟增加、缺页中断增多,所有前台 App 都受到影响。
-
-### 修复方案(App 开发者视角)
-
-App 开发者无法直接解决系统内存不足的问题,但可以减少自身对系统内存的压力:
-
-1. **减少自身内存占用**:优化 Bitmap 大小、使用内存缓存策略、避免内存泄漏
-2. **响应 `onTrimMemory`**:在系统回调时主动释放非必要资源
-
-Android 14+ 的缓存进程冻结会影响 `onTrimMemory` 的执行窗口。App 进入 cached 状态后,主线行为是在约 10 秒后冻结进程；厂商实现可能通过配置调整窗口。冻结期间 Java/Kotlin 代码不会继续执行,排队的异步清理任务也会拖到解冻后才跑。因此:
-
-- **核心清理逻辑必须同步且极简**:在 `onTrimMemory` 回调内只做轻量释放(清空缓存引用、释放 Bitmap pool),耗时操作不能依赖这个窗口
-- **关键资源前移到 `onStop`**:`onStop()` 是前台转后台后最可靠的执行窗口,图片缓存、可重建的 UI 资源、临时大对象要在 `onStop()` 中同步释放,不要等 `onTrimMemory`
-- **`TRIM_MEMORY_UI_HIDDEN` 是补充信号**:它表示 UI 不可见,适合释放显示相关资源,但不能作为唯一的内存回收时机
-
-```kotlin
-override fun onTrimMemory(level: Int) {
-    when (level) {
-        // TRIM_MEMORY_UI_HIDDEN: UI 不可见时,同步释放可重建的显示资源
-        ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> imageCache.evictAll()
-        // Android 14 (API 34)+ 可能很快冻结 cached 进程。
-        // 低内存诊断以 Perfetto / logcat / statsd / 冷启动证据为主,
-        // 不要依赖 running_* trim level 作为运行时缓存回收的主要手段。
-    }
-}
-```
-
-[已验证: 官方文档, developer.android.com/reference/android/content/ComponentCallbacks2 - onTrimMemory 回调级别和处理建议]
-
-### 修复方案(系统开发者视角)
-
-系统开发者可以从以下几个方向优化:
-1. **调整 lmkd 水位线**:根据设备内存总量合理配置 minfree 和 adj 水位
-2. **优化 kswapd 策略**:避免过度积极的页面回收
-3. **预加载优化**:减少系统预装 App 的内存占用
-4. **ZRAM 压缩比调优**:平衡压缩率和 CPU 开销
-
-### 效果对比
-
-修复后，App 端优化(响应 onTrimMemory + 减少自身内存占用 30%),在同样的低内存场景下 Jank 率从约 25% 降到约 12%。系统端优化后(调整 lmkd 参数),全局 Jank 率进一步降到约 8%。[待验证:正式落盘时需补同一后台 App 组合、同一内存水位和同一滑动脚本下的前后 trace]
-
-### 举一反三
-
-低内存导致全局卡顿的识别信号:
-- `adb shell dumpsys meminfo` 显示 Free RAM 极低
-- 现代设备优先看 `adb logcat -b events -b system | grep -i lmkd`、Perfetto 中的 lmkd/进程生命周期事件、statsd 低内存事件和 `/proc/pressure/memory`;`adb shell dmesg | grep lowmemorykiller` 只作为旧内核或厂商内核的补充入口
-- Perfetto 中 `kswapd0` 线程持续活跃
-- 多个 App 同时出现性能下降(不是单一 App 的问题)
-
-**判断入口:** 当发现前台 App 性能差但代码层面找不到问题时,先看看是不是系统内存不足在拖全局后腿。
+来源：[Android 系统平台性能案例](https://www.androidperformance.com/2019/09/05/Android-Jank-Due-To-System/)、[Hardware Composer HAL](https://source.android.com/docs/core/graphics/implement-hwc)。
 
 ---
 
-## 案例六:SurfaceFlinger HWC 合成降级导致掉帧
+## 案例五：Netmarble 用热反馈换取持续帧率
 
-前五个案例的根因都能在 App 进程的 Trace 里找到。但有一类掉帧,App 侧的主线程、RenderThread、甚至 GC 都没有异常,帧还是错过了 VSync 截止线。这时候需要把视线从 App 进程挪到 SurfaceFlinger 进程。
+### 现场与公开结果
 
-### 问题现象
+Android Developers 的 Netmarble 案例介绍了《Game of Thrones: Kingsroad》在长时间高负载后出现热限制和帧率波动。团队对画质项逐项测量，发现动态分辨率比阴影、纹理等选项更适合承担主要降载；随后根据 ADPF Thermal API 同时调整分辨率和目标帧率。
 
-一个视频通话 App 在高端设备(120Hz)上运行流畅,但在中端设备(90Hz)上,本地预览窗口出现规律性掉帧。App 侧 Trace 显示主线程和 RenderThread 都在帧预算内,FrameTimeline 却报告持续 jank。
+官方案例披露的结果为：
 
-### 分析思路
+- 平均 thermal headroom 从 1.04 降到 0.92，降幅 11%；
+- 未接入该策略时，热限制区间的帧率会在约 40–56 FPS 波动；
+- 接入后，持续帧率通常保持在约 50–60 FPS；
+- 动态目标帧率最低可降到 30 FPS，以避免不可持续的高负载。
 
-App 侧线程都在预算内、但帧仍然超时——瓶颈在 App 进程下游。渲染管线下游是 SurfaceFlinger(SF)的合成阶段和 HWC(Hardware Composer)的输出阶段。分析重点从 App 进程转向 SF 进程的 Trace 轨道。
+这些数值来自官方开发者故事，但页面没有完整列出设备覆盖、环境温度和样本分布，不能作为其他游戏的 SLA。
 
-[待验证:Trace 证据待归档 - SF 合成降级的 Perfetto 视图;需补 trace 文件名、设备型号、HWC 版本、刷新率、叠加层数量与采样窗口。当前描述基于公开 HWC 行为文档和 SF Trace 典型特征归纳。]
+### 从现象到根因
 
-### 抓取与定位
+温度升高和频率下降同时出现，仍不足以单独确认 thermal 是首因。可信证据应包含：
 
-使用 Perfetto 时额外启用 `gfx` 分类(`SurfaceFlinger` 轨道)。需要关注的 Track:
+- 相同内容和输入下，frame time 随会话时间变差；
+- thermal status/headroom 或 cooling state 同期变化；
+- CPU/GPU 可用容量或频率上限收紧；
+- 内存泄漏、后台负载、亮度和充电条件已记录；
+- 冷却或降低工作量后，持续 frame time 恢复。
 
-- `surfaceflinger` 进程的主线程（`SurfaceFlinger::composite()` → `CompositionEngine::present()` → `Output::present()` → `Output::composeSurfaces()` → `RenderEngine::drawLayers()`）
-- 每个 Layer 的合成类型(`DEVICE` = HWC Overlay,`CLIENT` = GPU 渲染)
-- `FrameTimeline` 中 SF 的帧预测误差
+Netmarble 案例先测不同画质项对热负载的影响，再选择动态分辨率，这一步把“收到热信号”连接到了“哪项工作可以减少”。
 
-### 逐步分析
+### 修复
 
-**第一步:确认 App 侧干净。** 主线程 < 6ms,RenderThread < 4ms,`syncAndDrawFrame` 无异常等待。App 侧没有问题。
+Thermal API 提供 thermal status 与 headroom。应用需要自行决定降载动作，例如 render scale、阴影、后处理、粒子、视距、模拟频率或 target FPS。调整策略应加入滞回和最短保持时间，防止阈值附近反复重建资源。
 
-**第二步:看 SF 的帧耗时。** 在 Perfetto 中展开 `surfaceflinger` 进程，找到主线程的合成入口 slice。Android 13+ 看 `SurfaceFlinger::composite()` → `CompositionEngine::present()` → `Output::present()` → `Output::composeSurfaces()` → `RenderEngine::drawLayers()`；Android 11/12 看 `onMessageRefresh()`；Android 8-10 看 `handleMessageRefresh`。示例观察:部分帧的 CLIENT 合成阶段（`composeSurfaces()` → `RenderEngine::drawLayers()`）耗时明显拉长(从正常的 1-3ms 拉到 6-10ms),超过了 SF 的 VSync 周期预算。[待验证:需补原始 trace]
+ADPF Performance Hint Session 可报告周期工作的一组线程、target duration 和 actual duration。它是给系统的提示，不保证锁频、升频或绑定某个 CPU。热保护可以覆盖性能请求。
 
-**第三步:查合成类型。** HWC 通过 `validateDisplay()` 向 SF 报告每个 Layer 应走哪条合成路径。HWC 的决策会同时评估 Layer 数量、像素格式、transform、dataspace、alpha 混合、受保护内容、缩放比例、带宽和 plane capability。当设备侧证据显示某些 Layer 不满足 Overlay 条件时，HWC 会将它们标记为 `CLIENT` 合成类型;SF 必须用 `RenderEngine::drawLayers()` 把这些 Layer 渲染到一个中间 Buffer，再交给 HWC 输出。
+官方最佳实践建议长时间运行测试；当前页面提出至少覆盖 15 分钟，以观察热稳定点。测试还要固定亮度、充电状态、环境温度、网络和游戏内容。
 
-Overlay Plane 数量因 SoC、显示控制器、屏幕配置和厂商 HWC 实现而异，Android 不提供应用侧 public API 查询固定数量。这里不能只按“几层 UI”反推出根因，必须同时拿到设备型号、HWC 版本、Layer 属性和每帧 composition type。
+### 效果与 Android 17 边界
 
-视频通话场景的 Layer 堆叠可能是:远端视频 SurfaceView + 本地预览 SurfaceView + App UI overlay + 系统状态栏 + 导航栏。这个结构只说明 Layer 输入变复杂，不能直接推出“5 层超过 4 个 Overlay Plane”。可成立的证据链是:Layer trace 或 `dumpsys SurfaceFlinger` 显示目标设备在该窗口组合下存在 `CLIENT` composition，且 `CLIENT` 帧与 `RenderEngine::drawLayers()` 耗时拉长、FrameTimeline SF missed 帧在时间上对应。
+这个案例的收益来自“提前降低不可持续负载”，画质和目标帧率本身也发生了变化。比较时要同时报告画质档位、实际 render scale、目标/显示/提交帧率、功耗和 thermal headroom，不能只比较平均 FPS。
 
-**第四步:确认 FrameTimeline 证据。** `FrameTimeline` 轨道中,SF 的帧从 `predicted` 变成 `missed`,预测误差与 `composeSurfaces()` 拉长的帧一一对应。
+Android 17 / API 37 继续提供 Thermal API、ADPF 与 CPU/GPU headroom 相关能力。设备支持和厂商映射仍有差异；`getThermalHeadroom()` 返回 NaN 时，要考虑调用间隔或设备不支持。热状态的同一个等级也不能换算成统一的 CPU/GPU 频率。
 
-[已验证: AOSP android-17.0.0_r1, `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` - `SurfaceFlinger::composite()` 经由 `CompositionEngine` 调用链: `Output::present()` → `composeSurfaces()` → `RenderEngine::drawLayers()` 对 CLIENT 类型 Layer 执行 GPU 渲染]
-
-### 根因
-
-在具体设备证据显示 plane capacity、format、alpha、transform、crop、dataspace、受保护内容或带宽约束触发 `CLIENT` composition 时，视频通话场景的部分 Layer 会被 HWC 退回给 SF 做 GPU 合成。SF 的 `composeSurfaces()` 会进入 `RenderEngine::drawLayers()` 路径；如果这段 GPU 合成耗时从正常的 1-3ms 拉到 6-10ms，并与 SF missed 帧对应，才能把根因收敛到 HWC 合成降级。
-
-高端设备是否受影响更小，取决于该设备的 HWC 能力和当前 Layer 属性组合。不能用“高端 SoC plane 更多”作默认解释；同一组 UI 在不同厂商 HWC 上可能出现不同的 DEVICE/CLIENT 分配。
-
-### 修复方案
-
-1. **减少 Layer 数量**:把 App UI overlay 合并到主 Surface,避免额外的 Layer。用 `SurfaceView` 的 Z-order 排列降低 HWC validateDisplay() 的输入复杂度
-2. **控制 Layer 叠放顺序**:使用 `SurfaceView.setZOrderMediaOverlay(true)` 或 `setZOrderOnTop(true)` 等 public API 调整 Surface 的 Z-order 关系，让 HWC 在 validateDisplay() 时拿到不同的 layer 属性输入。Z-order 变化可能影响 HWC 的 DEVICE/CLIENT 合成决策，但 App 侧不能强制指定或保证 plane 分配——plane 分配由 HWC 基于 layer 属性、带宽、格式、alpha、transform 和 device-specific plane capability 决定。优化方向仍是减少 Layer 数量、降低 alpha/transform/crop 复杂度，并用 Perfetto Layer trace 或 `dumpsys SurfaceFlinger` 验证实际 composition 类型。注意 `SurfaceControl.Transaction.setRelativeLayer()` 是 `@hide` API,仅系统/特权组件可用，普通应用无法调用
-3. **用 Perfetto/dumpsys 确认 HWC 合成类型**:Android 应用侧没有稳定的 public API 查询 HWC overlay plane 数量。可通过 Perfetto 的 SurfaceFlinger/Layer trace、`dumpsys SurfaceFlinger` 输出或 Winscope 观察 Layer 合成类型（`DEVICE`/`CLIENT`），据此决定是否降低 UI 复杂度
-
-```kotlin
-// 视频通话场景:合并 UI overlay 到主 Surface,减少 Layer 数量
-// 只保留远端视频 + 本地预览 + 系统 UI,降低 Layer 数量和叠放复杂度
-surfaceView.setZOrderMediaOverlay(true)  // 调整预览窗口 Z-order，可能影响 HWC 合成决策
-```
-
-[已验证: developer.android.com - SurfaceView Z-order 控制会改变 Surface 叠放关系；实际 HWC 合成类型必须用 Layer trace、Winscope 或 `dumpsys SurfaceFlinger` 复核]
-
-### 效果对比
-
-修复后，如果同一设备、同一 HWC 版本、同一刷新率下的前后 trace 显示 Layer 简化后 `CLIENT` composition 消失或减少，且 SF 的 `RenderEngine::drawLayers()` 耗时从 6-10ms 区间降回 1-3ms，FrameTimeline 不再出现对应的 SF missed 帧，才能确认优化有效。[待验证:正式落盘时需补同一设备、同一 HWC 版本下的前后 trace]
-
-### 举一反三
-
-SF 合成降级的 Perfetto 特征:
-- App 侧主线程、RenderThread 都在预算内,但 FrameTimeline 报告 jank
-- `surfaceflinger` 进程的 `composeSurfaces()` / CLIENT 合成耗时异常
-- 部分 Layer 的合成类型是 `CLIENT`(GPU fallback)
-- 问题在多 Layer 场景出现(视频通话、PiP、多窗口、游戏 overlay)
-
-**判断入口:** 当 App 侧 Trace 找不到瓶颈、但帧仍然超时,切换到 `surfaceflinger` 进程看 CLIENT 合成耗时和 Layer 合成类型。
+来源：[Netmarble ADPF 案例](https://developer.android.com/stories/games/netmarble-got-adpf)、[ADPF Thermal API](https://developer.android.com/games/optimize/adpf/thermal)、[ADPF 最佳实践](https://developer.android.com/games/optimize/adpf/best-practices-adpf)。
 
 ---
 
-## 案例七:温控降频导致渲染性能渐进劣化
+## 五个案例放在一张责任表里
 
-案例六解决的是 SF 合成侧的瓶颈,但还有一类性能劣化的根因在硬件调度层:SoC 温度过高触发热管理,CPU/GPU 频率被强制降低,同样的渲染负载在低频下无法在帧预算内完成。
+| 案例 | 用户侧结果 | 最早异常证据 | 责任边界 | 修复类型 |
+|---|---|---|---|---|
+| WeSing 进房 | 进入阶段多次长停顿 | 一条 UI message 聚集 312 ms 创建及其他任务 | 应用主线程与初始化架构 | lazy、异步、预热、拆分依赖 |
+| 进退房内存 | 使用时间越长越卡 | 对象无法释放、GC/分配压力 | 应用生命周期；另查整机内存 | 断引用、停动画、限制缓存 |
+| SDK 线程回归 | 新版本卡顿率上升 | +30 线程、+250 FD、worker CPU 上升 | SDK 并发与调度竞争 | 移除无关功能、有界线程池 |
+| SF GPU 合成 | App 侧短，显示仍迟到 | SF/RenderEngine GPU 合成区间 | SurfaceFlinger/HWC/GPU | 简化 layer 条件或修 HWC/驱动 |
+| Netmarble 热限制 | 长会话帧率波动 | thermal headroom 与持续性能 | 应用负载、Power/Thermal HAL、SoC | 动态分辨率与目标帧率 |
 
-### 问题现象
-
-一个带实时滤镜的相机 App,启动后前 5-8 分钟帧率稳定在 60fps。之后帧率开始波动,从 60fps 渐进下降到 45-50fps。杀掉 App 重新打开后恢复 60fps,但几分钟后问题再次出现。
-
-### 分析思路
-
-"随时间渐进劣化 + 重启恢复"这个模式在案例三(内存泄漏)里见过。但内存监控显示 Heap 稳定、GC 正常——不是内存问题。第二个怀疑对象是温控:SoC 持续高负载导致温度上升,热管理系统降低 CPU/GPU 频率。
-
-### 抓取与定位
-
-Perfetto 中启用以下 Track:
-- CPU Frequency(默认开启):观察大核频率随时间的变化
-- `power` 分类:获取热状态(thermal status)变化事件
-- GPU 频率 Counter(如果设备支持)
-- ADPF Hint Session 相关 slice(`perfetto` 分类)
-
-### 逐步分析
-
-**第一步:画 CPU 频率时间线。** Perfetto 的 CPU Frequency Track 显示:大核频率从初始的 2.8-3.0GHz 阶梯式下降,5 分钟后降到 2.0GHz,8 分钟后降到 1.5-1.8GHz 并在此区间波动。[待验证:具体频率阶梯因 SoC 和设备而异,此处为示例复盘口径]
-
-**第二步:查热状态。** `power/thermal` 轨道显示热状态从 `NOMINAL` 经过 `MODERATE` 上升到 `SEVERE`。每一次状态跳变都对应一次 CPU 频率的阶梯下降。
-
-**第三步:关联帧耗时。** 把帧耗时曲线和 CPU 频率曲线叠在一起看:帧耗时的增长与频率下降同步。不是 App 代码变慢了,是同样的指令在更低频率下执行需要更多时间。
-
-**第四步:排除其他因素。** Heap 稳定(无内存泄漏),GC 频率正常(无 GC 压力),`kswapd` 不活跃(无系统内存压力)。问题只与频率和温度相关。
-
-[已验证: AOSP PowerHAL + EAS 架构 - 热管理通过 `IThermal` HAL 上报状态,`libthermalcallback` 通知调度器调整频率上限]
-
-### 根因
-
-相机实时滤镜的持续高负载(CPU 做图像处理 + GPU 做滤镜渲染)推高 SoC 温度。热管理系统通过 PowerHAL + EAS 调度器逐步降低 CPU/GPU 频率上限。频率降低后,原本能在帧预算内完成的渲染工作开始超时。
-
-这个问题在旗舰设备上不那么明显——旗舰 SoC 的散热设计和频率余量更大。但在中端设备上,温控降频的幅度和速度都更激进,性能劣化更快。
-
-### 修复方案
-
-1. **质量动态降级**:监测热状态变化,在 `MODERATE` 时降低滤镜分辨率或简化算法,在 `SEVERE` 时关闭非核心效果
-2. **帧预算留余量**:正常状态下只用到帧预算的 70-80%,为温控降频预留 20-30% 的性能余量
-3. **ADPF 集成**:通过 `PerformanceHintManager` 向系统报告实际工作负载,让调度器做出更精确的频率决策
-
-```kotlin
-// 监听热状态变化,动态调整渲染质量
-// 热状态 API 在 PowerManager 上，不是独立的 ThermalManager 类
-val powerManager = getSystemService(PowerManager::class.java)
-powerManager?.addThermalStatusListener(object : PowerManager.OnThermalStatusChangedListener {
-    override fun onThermalStatusChanged(status: Int) {
-        when (status) {
-            PowerManager.THERMAL_STATUS_MODERATE -> {
-                // 降低滤镜复杂度
-                filterResolution = FilterResolution.MEDIUM
-            }
-            PowerManager.THERMAL_STATUS_SEVERE -> {
-                // 关闭非核心滤镜
-                filterResolution = FilterResolution.LOW
-            }
-        }
-    }
-})
-```
-
-[已验证: AOSP android-17.0.0_r1, `frameworks/base/core/java/android/os/PowerManager.java` — `addThermalStatusListener()` / `OnThermalStatusChangedListener` / `THERMAL_STATUS_*` 常量均定义在 PowerManager 中，PowerManager 通过 `IThermalService` 获取热状态]
-[已验证: developer.android.com — 应用侧热状态 API 入口是 `PowerManager.addThermalStatusListener()`]
-
-### 效果对比
-
-修复后（动态降级策略实施后），在温控降频场景下,帧率从 45-50fps 区间回升到 55-58fps(代价是滤镜分辨率在热状态 SEVERE 时降低一档)。用户体验上,"画面稍微糊一点但流畅"比"画面清晰但一顿一顿"的感知好得多。[待验证:正式落盘时需补同一设备、同一环境温度、同一滤镜负载下的前后 trace]
-
-### 举一反三
-
-温控降频导致卡顿的 Perfetto 特征:
-- CPU 频率 Counter 随时间呈阶梯下降趋势
-- 热状态从 `NOMINAL` 升至 `MODERATE` / `SEVERE`
-- 帧耗时增长与频率下降同步,但 App 代码本身没有变化
-- 问题在持续高负载场景出现(相机滤镜、游戏、视频编解码)
-
-**判断入口:** 当帧耗时随时间渐增、重启恢复但 Heap 无异常时,先画 CPU 频率时间线,再看热状态曲线。
+这张表的“责任边界”不是团队归属。应用 layer 属性可能触发显示侧成本，系统内存压力也会放大应用 I/O。它表示下一步需要哪类证据和修改权限。
 
 ---
 
-## 厂商级流畅性优化案例
+## Android 17 复现实验清单
 
-以上七个案例覆盖了从 App 端到系统侧的主要卡顿模式。案例一到案例五站在 App 开发者视角——拿到卡顿问题,在 App 进程或系统资源层面分析根因;案例六和案例七站到了 SF 和热管理层——这两类问题在 App 侧 Trace 里可能看起来"一切正常",必须切到系统进程轨道才能找到瓶颈。
+### App 主线程、GC 与调度
 
-但 Android 生态中还有一群人从完全不同的角度优化流畅性:设备厂商。他们在系统框架层和硬件协同层做的优化,往往能带来 App 层无法企及的提升。本节提供一个厂商视角的流畅性优化概览。详细的厂商级优化方法参见 [17.1 OEM 性能优化的通用思路](../../part4-system/ch17-oem/01-oem-overview.md)。
+- FrameTimeline、目标 CUJ 和应用 marker；
+- UI Thread、RenderThread、Binder、sched wakeup/switch；
+- ART GC pause、allocation、HeapTaskDaemon；
+- Java/native/graphics memory、heapprofd、PSI；
+- 线程 CPU time、Runnable latency、FD 与任务队列。
 
-### OPPO ColorOS 极光引擎:并行绘制架构
+### SurfaceFlinger 与 HWC
 
-OPPO 在 ColorOS 中引入了"极光引擎",核心思路是将渲染管线从串行改为并行。传统模式下,App 的 draw 和 SurfaceFlinger 的 compose 是串行关系——App 画完一帧,SF 才能拿去合成。极光引擎通过双 Buffer 交替机制,让 App 的 draw 和 SF 的 compose（`Output::present()` → `composeSurfaces()`）可以并行执行,减少了一帧的总延迟。
+- SurfaceFlinger FrameTimeline、layers、transactions；
+- target layer 的 buffer/frame number 与 acquire fence；
+- DEVICE/CLIENT composition、client target；
+- RenderEngine/GPU 与 present fence；
+- display id、刷新率、亮度和分辨率。
 
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-06_wechat_OPPO_ColorOS_极光引擎_并行绘制架构.md]
+### Thermal
 
-[待验证: 极光引擎在 Android 17 上是否仍是独立实现,还是已部分融入 AOSP]
+- thermal status/headroom、CPU/GPU headroom；
+- CPU/GPU frequency、idle、调度与 ADPF session；
+- 实际画质、render scale、target FPS 与提交节奏；
+- 环境温度、充电、亮度和至少覆盖热稳定点的测试时长。
 
-### vivo X200 系列:多维度性能优化
-
-vivo 在 X200 系列中采用了从 SoC 调度到应用层的多层优化策略,包括:
-- 智能刷新率调度:根据内容类型动态调整屏幕刷新率
-- 游戏场景的 CPU/GPU 协同调频
-- 基于 AI 的帧率预测和提前渲染
-
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-06_wechat_vivo_X200系列手机做了哪些性能优化.md]
-
-[待验证: 以上优化方案的具体技术实现细节]
-
----
-
-## 特殊硬件条件下的 Jank 案例
-
-前面的分析默认了一个前提:60Hz 屏幕、中等配置设备。现实中的 Android 设备差异很大,从 90Hz / 120Hz 高刷屏到 4 核 4GB 的入门机,硬件条件本身就会制造独特的卡顿模式。了解这些模式,有助于在分析时更快排除或确认硬件因素。
-
-### 高刷新率屏幕的"帧预算压缩"问题
-
-90Hz/120Hz 屏幕上,每帧预算从 60Hz 的 16.6ms 分别压缩到 11.1ms 和 8.3ms。许多在 60Hz 上"刚刚好"的代码(每帧耗时 12-15ms),在高刷屏上就变成了掉帧。
-
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md - 部分 App 在 90Hz 设备上帧率跟不上]
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Perfetto-06-Why-120Hz.md - 120Hz 对 App 性能的严格要求]
-
-**排查建议:** 高刷设备上的卡顿,先用 Perfetto 测量每帧耗时,如果稳定在 10-16ms 之间,说明 App 性能满足 60Hz 但不满足高刷——需要优化到 <8ms(120Hz)或 <11ms(90Hz)。
-
-### 低端机的"调度惩罚"问题
-
-在低端设备(如 4 核 CPU、4GB 以下内存)上,CPU 调度延迟会直接挤压前台 App 的帧预算。主线程可能在 `Runnable` 状态等待 CPU 调度 3-5ms,再加上 GC 和 IO 延迟,留给业务逻辑的时间几乎为零。
-
-[已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-Low-Memory.md - 低端机内存紧张场景下的性能表现]
-
-[待补充:低端机 Perfetto Trace 示例 - 主线程等待调度]
+平台源码以 `android-17.0.0_r1` 为上界，内核以 `android17-6.18-2026-06_r6` 为锚点。ART、AndroidX、WebView、游戏引擎、GPU/HWC 与 OEM 策略还要记录各自版本。旧 Systrace 案例可用于认识形态，当前结论必须由目标 build 的 Perfetto/Winscope/厂商数据重建。
 
 ---
 
-## 分析案例的通用方法论
+## 相关章节
 
-从上面七个案例中,可以提炼出一个通用的分析框架:
-
-**第一步:确认问题域。** 是单个 App 还是全局性?是持续性的还是偶发的?是否与特定操作相关?
-
-**第二步:看 Perfetto 的关键 Track。**
-- 主线程(ui_thread)→ 业务代码耗时
-- RenderThread → 渲染管线瓶颈
-- SurfaceFlinger → 合成问题
-- kswapd/lmkd → 系统内存压力
-- CPU 频率和调度 → 调度和温控问题
-
-**第三步:根据耗时分布定位阶段。** 一帧 16ms 的预算中,每个阶段都有"正常"和"异常"的参考值:
-
-| 阶段 | 正常耗时 | 异常信号 |
-|------|---------|---------|
-| Input | <2ms | Binder 调用超时 |
-| Animation | <2ms | 复杂动画计算 |
-| Measure/Layout | <5ms | View 层级过深 |
-| Draw | <5ms | 复杂绘制、Bitmap 操作 |
-| sync | <2ms | RenderThread 积压 |
-| GPU | <8ms | 大量纹理上传 |
-
-**第四步：验证假设。** 定位到可疑原因后，用代码修改或配置调整验证（如降低布局层级、移除 Binder 调用、限制缓存大小等），对比修改前后的 Trace 和指标。
-
-如果 App 侧 Trace 看不出问题（主线程、RenderThread、GC 都正常），按案例六和案例七的思路切换到 SF 进程轨道和系统级 Counter（CPU 频率、热状态）继续排查。
-
-[待验证: 这一节的方法论综合自高爷多篇博客与 Perfetto 系列，后续可补逐条出处]
-
----
+- [卡顿原因](./02-jank-causes.md)
+- [分析方法](./03-jank-methodology.md)
+- [典型场景](./04-typical-scenarios.md)
+- [优化策略](./05-optimization.md)
+- [功耗与温控卡顿手册](./16-power-thermal-jank-playbook.md)
+- [LMKD、PSI 与低内存检测](../../part1-fundamentals/ch04-memory/15-psi-lowmemdetector-lmkd-architecture.md)
+- [Android Thermal](../../part1-fundamentals/ch05-cpu-power/05-thermal.md)
+- [ADPF](../../part1-fundamentals/ch05-cpu-power/09-adpf.md)
+- [视频 Overlay 与 HWC](../ch18-rendering-pipelines/15-video-overlay-hwc.md)
 
 ## 参考资料
 
-- [Android 卡顿丢帧原因概述 - 应用篇](https://www.androidperformance.com/2019/09/05/Android-Jank-Due-To-App/)(高爷原创)
-- [Android 卡顿丢帧原因概述 - 系统篇](https://www.androidperformance.com/2019/09/05/Android-Jank-Due-To-System/)(高爷原创)
-- [Android 卡顿丢帧原因概述 - 低内存篇](https://www.androidperformance.com/2019/09/18/Android-Jank-Due-To-Low-Memory/)(高爷原创)
-- [Android 深入卡顿分析与实践](https://mp.weixin.qq.com/s?__biz=MzI1NjEwMTM4OA==&mid=2651236641)(腾讯 WeSing)
-- [Perfetto 系列 - MainThread 与 RenderThread](https://www.androidperformance.com/2021/04/24/android-perfetto-7/)(高爷原创)
-- [Perfetto 系列 - 为什么 120Hz 很重要](https://www.androidperformance.com/2024/01/18/Android-Perfetto-06-Why-120Hz/)(高爷原创)
-- [ConstraintLayout 性能基准测试](https://android-developers.googleblog.com/constraintlayout-performance)
-- [RecyclerView 官方性能指南](https://developer.android.com/topic/performance/recycler-view)
-- [Bitmap 缓存管理](https://developer.android.com/topic/performance/graphics/cache-bitmap)
-- [onTrimMemory 回调](https://developer.android.com/reference/android/content/ComponentCallbacks2)
-- [Hardware Layer 详解](https://www.androidperformance.com/2019/07/27/Android-Hardware-Layer/)(高爷原创)
+- [Android 深入卡顿分析与实践](https://cloud.tencent.com/developer/article/2372774)
+- [Android App 自身导致的卡顿案例](https://www.androidperformance.com/2019/09/05/Android-Jank-Due-To-App/)
+- [Android 系统平台导致的卡顿案例](https://www.androidperformance.com/2019/09/05/Android-Jank-Due-To-System/)
+- [Android 低内存案例](https://www.androidperformance.com/2019/09/18/Android-Jank-Due-To-Low-Memory/)
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- [Hardware Composer HAL](https://source.android.com/docs/core/graphics/implement-hwc)
+- [ComponentCallbacks2](https://developer.android.com/reference/android/content/ComponentCallbacks2)
+- [Netmarble ADPF 案例](https://developer.android.com/stories/games/netmarble-got-adpf)
+- [ADPF Thermal API](https://developer.android.com/games/optimize/adpf/thermal)
+- [ADPF 最佳实践](https://developer.android.com/games/optimize/adpf/best-practices-adpf)
+- [AOSP Android 17 SurfaceFlinger](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)
+- [AOSP Android 17 CompositionEngine Output](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp)
+- [AOSP Android 17 HWComposer](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)
+- [AOSP Android 17 PowerManager](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java)
+- [Android common kernel PSI](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/psi.c)
+- [Android common kernel reclaim](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c)
