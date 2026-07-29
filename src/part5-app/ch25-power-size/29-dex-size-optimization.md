@@ -172,7 +172,7 @@ flowchart LR
     ART --> OUT
 ```
 
-启用 shrinking 的 release 构建由 R8完成整程序分析、代码改写、重命名和 DEX 生成。未启用 shrinking 的构建、增量中间产物和部分 dex merge 路径使用 D8。把发布流程简化成“R8 输出 class，再由 D8 固定做一次转换”不符合当前工具实现。
+启用 shrinking 的 release 构建由 R8 完成整程序分析、代码改写、重命名和 DEX 生成。未启用 shrinking 的构建、增量中间产物和部分 dex merge 路径使用 D8。把发布流程简化成“R8 输出 class，再由 D8 固定做一次转换”不符合当前工具实现。
 
 AGP 负责编排 desugaring、依赖输入、默认规则、资源处理、profile 改写和打包。应用项目通常不应绕开 AGP 直接调用 D8/R8；独立命令更适合复现实验和工具开发。
 
@@ -317,7 +317,7 @@ DEX 版本也不应被写成“037 比 038 小”这种固定关系：
 - DEX 037 增加默认接口方法支持；
 - DEX 038/039 增加新的字节码和 method handle/type 能力；
 - DEX 040 扩展 SimpleName 规则；
-- DEX 041引入可容纳多个逻辑 DEX、共享后续数据的 container 格式。
+- DEX 041 引入可容纳多个逻辑 DEX、共享后续数据的 container 格式。
 
 具体输出由 D8/R8、`minSdk`、启用特性和工具支持共同选择。改 magic、强制私有试验开关或对 DEX 做二次拼接都不属于应用体积优化方案。
 
@@ -489,7 +489,7 @@ apkanalyzer apk compare \
   app-release.apk
 ```
 
-`dex packages` 的 byte size 适合定位增长包；加载同一次构建的 `mapping.txt` 后可以看到原始符号。`apk compare` 展示文件级增量。命令输出应连同工具版本保存，避免未来格式变化影响解析器。
+`dex packages` 的 byte size 适合定位增长包；加载同一次构建的 `mapping.txt` 后可还原原始符号。`apk compare` 展示文件级增量。命令输出应连同工具版本保存，避免未来格式变化影响解析器。
 
 下面的命令用于分别读取 APK 文件大小和估算下载大小：
 
@@ -612,7 +612,7 @@ on-demand feature 能减少首次交付，用户安装该功能后仍会获得�
 | Android 8（API 26） | DEX 038 增加 method handle/type 等格式能力 |
 | Android 9（API 28） | DEX 039 增加相关字节码并用于平台能力 |
 | Android 10（API 29） | DEX 040 reader 支持扩展 SimpleName；应用输出仍由工具选择 |
-| AGP 8.0 | R8 Full Mode 成为默认；Baseline Profile Gradle plugin进入推荐工具链 |
+| AGP 8.0 | R8 Full Mode 成为默认；Baseline Profile Gradle plugin 进入推荐工具链 |
 | AGP 8.3 | DEX layout optimization 默认启用，Startup Profile 可驱动主 DEX 布局 |
 | AGP 8.6 | R8 release 的文件名与行号 retrace 能力覆盖全部 `minSdk` |
 | AGP 8.8 | AAB 内 `r8.json` 可用于检查 Startup Profile DEX 标记 |
