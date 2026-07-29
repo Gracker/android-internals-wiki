@@ -25,358 +25,287 @@ sources:
 
 # 22.20 Jetpack Compose 性能优化盲区：rememberCoroutineScope、produceState 与 Strong Skipping
 
-Compose 重组控制的基础机制（Stability 推断、Strong Skipping Mode、derivedStateOf）在 §22.3 已详细说明。本节聚焦三个容易在工程中被误用的 API：`rememberCoroutineScope`、`produceState`，以及它们与 Strong Skipping 的交互。这些 API 的行为受 Compose Runtime 版本约束（不由 Android 平台版本决定），版本升级后可能出现静默性能退化。
+`rememberCoroutineScope`、`produceState` 和 Strong Skipping 分属三个层次：Composition 生命周期、Runtime effect、Compose Compiler。把它们放进同一条“减少重组”规则，容易得到错误的取消、key 和性能结论。
 
-本节使用 **Compose BOM 2025.12.00（Compose 1.10）** 作为版本基线。Strong Skipping Mode 在 Kotlin 2.0.20 起默认启用（详见 §22.3），但 `rememberCoroutineScope` 和 `produceState` 的协程生命周期管理与编译器 skipping 行为是两套独立机制，本节拆开讲。
+本文使用三组固定锚点：
 
-## rememberCoroutineScope 的生命周期与泄漏边界
+- Android 平台：Android 17 / API 37 / `android-17.0.0_r1`；
+- kernel：`android17-6.18-2026-06_r6`；
+- UI 工具链：Compose BOM `2025.12.00`、Compose Runtime `1.10.0`、Kotlin `2.2`。
 
-`rememberCoroutineScope` 返回一个绑定当前 Composition 生命周期的 `CoroutineScope`。Composition 离开树时，scope 被取消。
+Compose Runtime 是随应用发布的 AndroidX 库，Android platform tag 不包含对应代码。Android 17 提供 Looper、Choreographer、HWUI、FrameTimeline 等宿主能力；Runtime 和 Compiler 行为要按项目解析出的依赖版本核查。重组、稳定性和阶段性读取的通用方法见 [22.3 Compose 性能优化](03-compose-performance.md)，显示路径见 [18.25 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md)。
 
-### 作用域绑定与取消时序
+## `rememberCoroutineScope`：用于事件，不用于启动副作用
 
-`rememberCoroutineScope` 内部通过 `remember` + `ReusableComposition` 的 `RememberObserver` 回调管理 scope 的创建和取消。当 Composable 离开 Composition：
+Compose Runtime 1.10.0 的 `rememberCoroutineScope()` 通过 `remember` 保存同一个 `RememberedCoroutineScope`。该对象自己实现 `RememberObserver`：
 
-1. `onRemembered` 的逆操作触发 → scope 的 `SupervisorJob` 被 cancel
-2. scope 内所有子协程收到 `CancellationException`
-3. 协程的 `finally` 块执行
+- 第一次访问 `coroutineContext` 时，才创建 `Job(parentContext[Job])`；
+- 默认 dispatcher 来自当前 Composition 的 applying dispatcher；
+- 调用点被遗忘或放弃时，`onForgotten()` / `onAbandoned()` 调用 `cancelIfCreated()`；
+- `getContext` 返回值不能包含 `Job`。传入 `Job` 时，API 不在组合期间抛异常，而会返回带失败 Job 的 scope。
 
-这个取消是异步的——`onForgotten` 回调在 Composition 完成移除后才触发，协程的取消信号不会阻塞帧的渲染。如果在协程的 `finally` 块里做了重计算，这个开销会出现在下一帧。
+这里创建的是普通 child `Job`，源码没有使用 `SupervisorJob`。一个事件任务抛出未处理异常时，不要假定同一 scope 中的其他任务一定保持独立；业务可预期的失败应在任务边界处理。
 
-### 常见泄漏模式
-
-`rememberCoroutineScope` 本身不会泄漏——scope 随 Composition 取消。泄漏发生在协程内部持有的外部引用上：
+下面的按钮只在点击回调中启动任务，scope 的 owner 与按钮所在的 Composition 位置一致。
 
 ```kotlin
-// 泄漏：协程持有 ViewModel 引用，Composable 已移除但协程还在执行
 @Composable
-fun LeakExample(viewModel: MyViewModel) {
+fun SaveButton(
+    enabled: Boolean,
+    onSave: suspend () -> Unit,
+) {
     val scope = rememberCoroutineScope()
-    // Composable 进入时启动
-    LaunchedEffect(Unit) {
-        scope.launch {
-            // viewModel 实例的生命周期 > Composition
-            // 如果协程是长时间运行（如 while(true) 轮询），
-            // viewModel 被 scope 的 job 间接持有
-            viewModel.pollData() // Composable 移除后，scope cancel → 协程 cancel → 无泄漏
-        }
-    }
-    
-    // 但如果协程捕获了非 Compose 管理的资源：
-    DisposableEffect(Unit) {
-        val bitmap = decodeLargeBitmap() // 非 Compose 管理的资源
-        scope.launch {
-            processBitmap(bitmap) // 协程持有 bitmap 引用
-        }
-        onDispose {
-            // scope cancel 会取消协程，但 bitmap 的释放取决于协程是否还在使用
-            // 如果 processBitmap 是挂起函数且协程被 cancel 时恰好在 await，
-            // bitmap 引用在 finally 之前不会被释放
-        }
+
+    Button(
+        enabled = enabled,
+        onClick = {
+            scope.launch {
+                onSave()
+            }
+        },
+    ) {
+        Text("保存")
     }
 }
 ```
 
-**Perfetto 观察方式**：协程泄漏在 Perfetto 中表现为 `kotlinx.coroutines` 线程池中活跃协程数持续增长。用 `DebugProbes`（kotlinx-coroutines-debug）注入后，可以在 trace 中看到 `CoroutineTracker` slice 的数量。如果在离开 Composable 页面后协程数没有下降，排查 `rememberCoroutineScope` 启动的协程是否持有外部引用。
+Composable 重组不会重复启动这项工作。按钮离开 Composition 后，scope 会收到取消；`onSave()` 仍需遵守结构化并发和可取消约定。连续点击应由 UI 状态、互斥、任务去重或“取消上一项”策略明确处理，scope 本身不会替业务选择并发策略。
 
-### 与 LaunchedEffect 的选择
-
-| 维度 | `LaunchedEffect` | `rememberCoroutineScope` |
-|------|------------------|--------------------------|
-| 生命周期 | Composition 进入/退出 + key 变化时自动重启 | Composition 退出时取消 |
-| 触发时机 | Composable 进入 Composition 时自动执行 | 需要手动 `scope.launch` |
-| Key 感知 | key 变化 → 取消旧协程 + 启动新协程 | 无 key 机制 |
-| 典型场景 | 事件驱动的副作用（网络请求、动画） | 用户交互触发的异步操作（点击、滚动） |
-
-选择原则：需要随参数变化自动重启用 `LaunchedEffect`；用户交互触发的、不依赖 Composition 参数的操作用 `rememberCoroutineScope`。
-
-## produceState 的数据流与 recomposition 开销
-
-`produceState` 将非 Compose 数据源（Flow、LiveData、callback）转换为 `State<T>`，让 Composable 可以通过 `value` 属性读取。它的内部实现是一个绑定 Composition 生命周期的协程。
-
-### 内部机制
-
-```kotlin
-// produceState 的简化签名
-@Composable
-fun <T> produceState(
-    initialValue: T,
-    key1: Any?, // key 变化时 producer 重启
-    producer: suspend ProduceStateScope<T>.() -> Unit
-): State<T>
-```
-
-`ProduceStateScope` 继承自 `MutableState<T>` 和 `CoroutineScope`。producer 协程在 Composition 进入时启动，退出时取消。`awaitDispose` 是一个挂起函数，协程在这行暂停直到 Composition 退出。
+需要随 key 进入、变化和退出自动管理的持续工作，应直接放在 `LaunchedEffect`。下面的 producer 随 `userId` 或 repository 变化而重启，`rememberUpdatedState` 只负责让长任务读取最新回调。
 
 ```kotlin
 @Composable
-fun <T> observeFlow(flow: Flow<T>): State<T?> {
-    return produceState<T?>(initialValue = null) {
-        flow.collect { value = it }
-        // collect 是挂起函数，协程在这里持续运行
-        // 如果 Flow 是 cold flow，collect 不会返回
-        // awaitDispose 在 collect 下方，永远不会执行
-    }
-}
-```
+fun ObserveUserEvents(
+    userId: String,
+    repository: UserRepository,
+    onEvent: (UserEvent) -> Unit,
+) {
+    val currentOnEvent by rememberUpdatedState(onEvent)
 
-这个写法有两个问题：
-
-1. **`awaitDispose` 不可达**：如果 `collect` 是无限流（如 `callbackFlow`、`channelFlow`），`awaitDispose` 永远不会执行，资源清理逻辑无法运行
-2. **Key 未指定时每次 recomposition 都不会重启 producer**——但如果上游 Flow 的创建依赖 Composable 参数，参数变化后 producer 读取的是旧参数
-
-### 正确用法：指定 key + awaitDispose
-
-```kotlin
-@Composable
-fun <T> observeFlow(flow: Flow<T>): State<T?> {
-    return produceState<T?>(initialValue = null, key1 = flow) {
-        // flow 作为 key：flow 实例变化时 producer 重启
-        flow.collect { value = it }
-        awaitDispose { /* 清理逻辑 */ }
-    }
-}
-```
-
-或者用 `launchIn` + `awaitDispose` 分离收集和清理：
-
-```kotlin
-@Composable
-fun observeLocation(provider: LocationProvider): State<Location?> {
-    return produceState<Location?>(initialValue = null, key1 = provider) {
-        provider.locationFlow()
-            .onEach { value = it }
-            .launchIn(this)
-        awaitDispose { /* provider 的资源释放 */ }
-    }
-}
-```
-
-### 与 collectAsState 的性能对比
-
-| 维度 | `produceState` | `collectAsState` |
-|------|----------------|------------------|
-| 适用场景 | 需要自定义 producer 逻辑（多源合并、条件过滤） | 直接收集 Flow 到 State |
-| Key 重启 | 显式 key 参数控制 | Flow 实例变化自动重启 |
-| 资源清理 | `awaitDispose` 手动管理 | 自动（协程随 Composition 取消） |
-| 内存开销 | `ProduceStateScope` 额外分配 | 更轻量，只有 State + Job |
-
-选择原则：单 Flow → State 的场景优先 `collectAsState`（或 `collectAsStateWithLifecycle`）；需要合并多个数据源或执行初始化逻辑时用 `produceState`。
-
-## Strong Skipping 与稳定性推断对协程 API 的影响
-
-Strong Skipping Mode 的行为在 §22.3 有完整说明。这里只讨论它对 `rememberCoroutineScope` 和 `produceState` 的具体影响。
-
-### Strong Skipping 开启后 rememberCoroutineScope 的变化
-
-Strong Skipping Mode 开启后，编译器对所有 `@Composable` 函数启用 skipping，包括那些接收 `CoroutineScope` 参数的函数。
-
-```kotlin
-// Strong Skipping 前：每次父 Composable 重组，lambda 参数是新对象 → 子 Composable 不跳过
-@Composable
-fun Parent(viewModel: MyViewModel) {
-    val scope = rememberCoroutineScope()
-    // scope 每次重组都是同一个对象（remember 缓存）
-    // 但 onClick lambda 每次都是新对象
-    Child(onClick = { scope.launch { viewModel.doWork() } })
-}
-
-// Strong Skipping 后：lambda 被 compiler 自动 memoize
-// onClick 参数的引用稳定性由 compiler 保证 → Child 可以跳过
-```
-
-**注意**：`rememberCoroutineScope` 返回的 scope 对象在 Composition 生命周期内是稳定的（同一个引用）。Strong Skipping 不改变 scope 本身的行为，但改变了**接收 scope 相关 lambda 的子 Composable 的 skipping 行为**。
-
-### @Stable 注解误用对 produceState 的影响
-
-`produceState` 返回的 `State<T>` 对象在 Composition 生命周期内是稳定的。但如果 `T` 是可变类型且被标记为 `@Stable`，Compose runtime 会基于错误的稳定性推断做出错误的 skipping 决策：
-
-```kotlin
-// 错误：MutableUiState 是可变类，不应标记 @Stable
-@Stable
-data class MutableUiState(var isLoading: Boolean, var data: List<Item>)
-
-@Composable
-fun MyScreen(): State<MutableUiState> {
-    return produceState(MutableUiState(false, emptyList())) {
-        // 每次 value = newState 都会触发 recomposition
-        // 但因为 MutableUiState 标记了 @Stable，
-        // 下游 Composable 可能错误地跳过重组
-        // 导致 UI 显示旧数据
-    }
-}
-```
-
-判断标准：如果 `equals()` 不能准确反映"内容是否变化"，就不要标记 `@Stable`。`data class` 的 `equals()` 基于所有属性值，如果属性是 `var` 且被外部修改，`equals()` 可能返回 `true`（因为引用没变）但内容已变。
-
-## rememberCoroutineScope + produceState 的组合陷阱
-
-### 作用域叠加与取消时序
-
-在 `produceState` 内部使用 `rememberCoroutineScope` 获取的 scope 会导致双重作用域叠加：
-
-```kotlin
-@Composable
-fun BuggyExample(repository: Repository): State<Data> {
-    val outerScope = rememberCoroutineScope() // 绑定 Composition 生命周期
-    return produceState(Data.Empty, repository) {
-        // produceState 自身的 CoroutineScope 绑定 Composition 生命周期
-        // outerScope 和 producer scope 是两个独立的 scope
-        
-        // 如果在 producer 里用 outerScope 启动子协程：
-        outerScope.launch {
-            // 这个协程的生命周期由 outerScope 控制
-            // produceState 的 producer 取消时，这个协程不会自动取消
-            // 只有 Composition 退出时才取消
-        }
-        
-        // 正确做法：直接在 producer scope 里启动
-        launch {
-            // 这个协程跟随 producer 的生命周期
-            // producer 取消 → 协程取消
+    LaunchedEffect(userId, repository) {
+        repository.events(userId).collect { event ->
+            currentOnEvent(event)
         }
     }
 }
 ```
 
-`produceState` 的 producer 在 key 变化时会重启（取消旧的 → 启动新的）。如果在 producer 内用 `rememberCoroutineScope` 的 scope 启动协程，这些协程不受 producer 重启影响，可能读取过期数据。
+这里不再套一层 `rememberCoroutineScope().launch`。`LaunchedEffect` 的 key 变化会取消旧 collector，并把新 collector 纳入新的 effect 生命周期。若把收集任务发到外层 remembered scope，effect key 只取消启动者，外层任务可能继续处理旧用户的数据。
 
-### 多个 produceState 的数据竞争
+## 取消发生了，不代表清理已经完成
+
+Composition 应用移除操作时会调用 `onForgotten()`，`Job.cancel()` 随即把取消状态传播给子任务。协程何时结束，取决于 dispatcher、挂起点以及代码是否配合取消。以下情况会延长对象引用和资源占用：
+
+- 长时间 CPU 循环不检查 `isActive`，也不调用可取消挂起函数；
+- 阻塞 I/O 忽略线程中断或没有取消接口；
+- `NonCancellable` cleanup 执行耗时操作；
+- 工作被转交给 `GlobalScope`、ViewModel scope、repository scope 或自建 executor；
+- callback 注册在外部对象上，却没有与 owner 对应的反注册。
+
+因此，页面退出后短时间仍能观察到任务或对象引用，不能直接判定为 scope 泄漏；要确认取消是否到达、任务是否完成、外部注册是否解除。ViewModel 的生命周期长于某个 Composable 也属于正常所有权关系。问题通常出在工作越过了预期 owner，或取消后仍长期不退出。
+
+清理代码没有固定的“下一帧执行”保证。`finally` 可能在当前调度轮次运行，也可能等待目标 dispatcher；阻塞 cleanup 还会占用对应线程。主线程 cleanup 应保持短小，大文件关闭、编码收尾或数据库提交需要单独设计线程与超时。
+
+## `produceState` 的实现：remembered State 加 keyed effect
+
+Compose Runtime 1.10.0 的每个 `produceState` 重载都由两部分组成：
+
+1. `remember { mutableStateOf(initialValue) }` 保存结果；
+2. `LaunchedEffect(keys...)` 创建 `ProduceStateScopeImpl` 并运行 producer。
+
+这带来四个直接后果：
+
+- 无 key 重载使用固定的 `Unit`，重组不会重启 producer；
+- key 变化会取消旧 producer，再启动新 producer；
+- 返回的 State 在 key 变化时仍是同一个 remembered 对象；
+- `initialValue` 只参与第一次 State 创建，key 变化不会自动把值重置为新的 initial value。
+
+加载场景若希望切换 key 后立即回到 Loading，需要由 producer 明确写入。下面的示例同时把 `userId` 和 repository 作为任务身份，并避免吞掉协程取消异常。
 
 ```kotlin
 @Composable
-fun MultiSourceScreen(viewModel: ViewModel) {
-    val sourceA by produceState(Result.Loading, viewModel) {
-        value = viewModel.fetchA()
-    }
-    val sourceB by produceState(Result.Loading, viewModel) {
-        value = viewModel.fetchB()
-    }
-    
-    // 两个 producer 独立运行，完成顺序不确定
-    // 如果 UI 需要两个结果都完成后才渲染：
-    if (sourceA is Result.Success && sourceB is Result.Success) {
-        // 在两个 producer 都完成之前，每次任一 producer 更新 value 都会触发重组
-        // 重组次数 = sourceA 更新次数 + sourceB 更新次数
+fun rememberUserProfile(
+    userId: String,
+    repository: UserRepository,
+): State<ProfileResult> {
+    return produceState<ProfileResult>(
+        initialValue = ProfileResult.Loading,
+        key1 = userId,
+        key2 = repository,
+    ) {
+        value = ProfileResult.Loading
+        value = try {
+            ProfileResult.Success(repository.load(userId))
+        } catch (error: IOException) {
+            ProfileResult.Error(error)
+        }
     }
 }
 ```
 
-合并策略：用 `combine` 或 `zip` 在 Flow 层合并多个数据源，只产生一个 `produceState`：
+`IOException` 是该 repository 声明的业务失败边界；代码没有捕获 `Throwable`，因此 key 变化或离开 Composition 产生的 `CancellationException` 可以继续传播。项目若有领域错误模型，应在 repository 或 use case 层完成映射。
+
+key 选择表达的是 producer 身份：
+
+- producer 读取 `userId` 和 repository，这两个值就应进入 key；
+- 每次重组都新建且不相等的 key 会反复取消工作；
+- 可变对象原地修改且 identity/equals 不变，会让 producer 保留旧任务；
+- key 适合放稳定 ID、不可变配置或明确代表数据源实例的对象。
+
+Strong Skipping 不替 `produceState` 补 key。Compiler 负责决定某个 Composable 调用能否跳过；`LaunchedEffect(keys)` 负责 producer 的取消和重启。
+
+## `awaitDispose` 只服务订阅式数据源
+
+`ProduceStateScope.awaitDispose()` 通过可取消挂起等待 owner 退出，并在 `finally` 中执行回调。它返回 `Nothing`，适合“注册 callback 后一直等待取消”的数据源。
+
+下面的适配器注册一次监听，并保证 source 变化或调用点离开时解除注册。
 
 ```kotlin
 @Composable
-fun CombinedSourceScreen(viewModel: ViewModel) {
-    val combined by produceState(Pair(Result.Loading, Result.Loading), viewModel) {
-        combine(viewModel.flowA, viewModel.flowB) { a, b -> a to b }
-            .collect { value = it }
+fun rememberConnectivity(
+    monitor: ConnectivityMonitor,
+): State<Boolean> {
+    return produceState(
+        initialValue = monitor.currentValue,
+        key1 = monitor,
+    ) {
+        val listener = ConnectivityListener { connected ->
+            value = connected
+        }
+
+        monitor.addListener(listener)
+        awaitDispose {
+            monitor.removeListener(listener)
+        }
     }
-    // 只有一个 State，每次上游更新只触发一次重组
 }
 ```
 
-## Compose 编译器版本与性能行为变化
+`currentValue` 应是便宜的内存读取。注册函数如果可能部分成功后抛异常，需要由 adapter 自己维护可释放句柄，避免 `awaitDispose` 尚未到达时遗留 callback。
 
-`rememberCoroutineScope` 和 `produceState` 的行为在不同 Compose 版本间基本稳定，但 Compose Runtime 的整体性能行为有几次关键变化：
+对无限 Flow 调用 `collect` 时，不要把 `awaitDispose` 写在 `collect` 后面。正常收集期间那一行不可达；取消时 `collect` 会退出并执行 Flow 自己的 `finally` / `callbackFlow.awaitClose`。额外资源可用 `try/finally` 包围 `collect`，或把 callback 生命周期封装进 Flow。
 
-### 版本矩阵
-
-| Compose 版本 | 协程相关变化 | 对本章内容的影响 |
-|---|---|---|
-| 1.7 (2024 Q3) | Strong Skipping Mode 实验性引入 | Lambda 参数被自动 memoize，减少了手动 `remember { }` 的需要 |
-| 1.9 (2025 Q3) | LazyLayout 预取改进 + 后台文本预取 | `produceState` 在 LazyColumn item 中使用时，预取可能在 Composition 外触发 |
-| 1.10 (2025 Q4) | Pausable Composition 成为默认 | 长时间运行的 `produceState` producer 可能在帧边界被暂停，不影响功能但改变了时序假设 |
-| Kotlin 2.2 | Strong Skipping 默认启用 | 所有 `@Composable` 函数自动 skippable，不再需要 `enableStrongSkippingMode` 配置 |
-
-### Pausable Composition 对 produceState 的影响
-
-Pausable Composition（Compose 1.10 默认，详见 §22.3）的暂停机制作用在 Composition 阶段。`produceState` 的 producer 协程运行在 Composition 之外（挂起函数在协程调度器上运行），不受 Pausable Composition 的暂停影响。
-
-受影响的是**读取 `produceState` 返回值的 Composable**：如果 Composition 在帧边界被暂停，State 值的更新可能在下一帧才被读取。这不改变数据正确性，但改变了状态更新的可见时序。
-
-### 版本升级导致的静默性能退化案例
-
-**案例：Kotlin 2.0 → 2.2 升级后 LazyColumn 重组增加**
-
-Kotlin 2.2 默认启用 Strong Skipping 后，所有 lambda 被自动 memoize。但在 LazyColumn 中，如果 item 的 `key` 使用了不稳定的对象（如 `data class` 实例），key 的 `equals()` 在每次比较时可能返回不同的结果，导致 LazyColumn 认为列表项发生了变化，触发不必要的重组。
+Android 界面直接收集 Flow 时，优先使用 lifecycle-aware API。下面的调用只在 Lifecycle 达到配置的 active state 时保留这条 UI collector；上游 hot flow 是否继续运行，由 `stateIn` / `shareIn` 的 sharing policy 和 owner 决定。
 
 ```kotlin
-// 问题：key 用了 data class 实例，每次父 Composable 重组时可能是新对象
-LazyColumn {
-    items(items = list, key = { it /* 如果 it 是 data class 且属性变了，key 变了 */ }) {
-        ItemComposable(it)
-    }
-}
-
-// 修复：使用稳定的 key（如数据库 ID）
-LazyColumn {
-    items(items = list, key = { it.id /* Long 或 String，值稳定 */ }) {
-        ItemComposable(it)
-    }
-}
+val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 ```
 
-这个退化是静默的——没有编译错误或运行时异常，只在 Perfetto 中表现为重组计数增加。
+`collectAsState()` 适合不依赖 Android Lifecycle 的公共代码。Compose Runtime 1.10.0 的 `collectAsState()` 本身也通过 `produceState(initial, flow, context)` 实现，因此两者的选择依据是生命周期和语义，不能用“少一个 ProduceStateScope 分配”解释。
 
-## Perfetto 中诊断 Compose 性能盲区
+## State conflation 不等于上游节流
 
-Perfetto 中诊断 Compose 性能问题的通用方法在 §22.3 和 §13.10 已有详细说明。本节只补充 `rememberCoroutineScope` 和 `produceState` 相关的诊断 SQL。
+`produceState` 的文档明确说明返回值会 conflated。默认 `mutableStateOf` 使用结构相等策略：
 
-### 识别 rememberCoroutineScope 泄漏
+- 新值与旧值 `equals()` 相等时，不通知读取者；
+- 多个值在 Composition 消费前快速写入时，读取者可能只观察到较新的值；
+- producer 里的网络、解析、映射和每次赋值仍然执行，conflation 不会减少上游工作。
 
-```sql
--- 查找活跃协程数异常增长的时段
-SELECT
-    ts,
-    name,
-    value AS active_coroutines
-FROM counter
-JOIN track ON counter.track_id = track.id
-WHERE track.name LIKE '%coroutine%'
-AND value > 50
-ORDER BY ts
-LIMIT 100;
-```
+高频传感器、滚动或媒体进度要按交互需求选择 `sample`、`conflate`、`distinctUntilChanged` 或领域聚合。`debounce` 会引入等待，不适合所有实时 UI。只影响像素位置或透明度的高频值，还可以把读取推迟到 Layout、Drawing 或 layer property，减少 Composition 工作。
 
-协程泄漏的特征：页面退出后（对应的 Composition slice 结束），活跃协程数没有回落。结合 `NavigationController` 的页面切换 slice，对比切换前后的协程数变化。
+可变对象尤其危险。若 `value` 指向某个对象，代码原地修改字段后又把同一引用赋回，结构相等策略看不到变化。手工添加 `@Stable` 只会向 Compiler 作出更强承诺，无法让普通 `var` 发送 Snapshot 通知。
 
-### 识别 produceState 的无效更新
+可靠的 UI model 通常采用以下一种形式：
 
-```sql
--- 查找频繁的 State 更新 slice
-SELECT
-    slice.name,
-    COUNT(*) AS update_count,
-    AVG(slice.dur) AS avg_duration_ns
-FROM slice
-WHERE slice.name LIKE '%Compose%'
-AND slice.name LIKE '%state%'
-GROUP BY slice.name
-HAVING update_count > 100
-ORDER BY update_count DESC;
-```
+- 所有字段为 `val`，更新时创建新实例；
+- 可变字段使用 `MutableState`、`SnapshotStateList` 等 Snapshot 容器；
+- 外部可变模型在进入 UI 层前转换为不可变快照。
 
-`produceState` 的每次 `value = newValue` 都会触发一次 State 写入，如果上游 Flow 发射频率很高（如传感器数据每 16ms 一次），State 写入会驱动下游 Composable 频繁重组。用 `distinctUntilChanged()` 或 `debounce()` 在 Flow 层过滤无效更新。
+`@Stable` / `@Immutable` 属于契约。字段变化无法被 Compose 观察时，不应添加这些注解来追求 compiler report 变绿。
 
-### 重组热力图定位
+## Strong Skipping 只改变调用与 lambda
 
-Compose Tracing（Android 12+，`compose.tracing` trace config）在 Perfetto 中生成重组计数的 counter track。结合 Perfetto SQL 可以定位哪些 Composable 被频繁重组：
+Kotlin 2.0.20 起默认启用 Strong Skipping，本章的 Kotlin 2.2 基线已经包含该行为。[Strong Skipping 官方说明](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)
 
-```sql
--- 重组次数最多的 Composable
-SELECT
-    slice.name AS composable_name,
-    COUNT(*) AS recomposition_count
-FROM slice
-WHERE slice.name LIKE 'CC:%'
-GROUP BY slice.name
-ORDER BY recomposition_count DESC
-LIMIT 20;
-```
+它对本章相关代码有两项影响：
 
-`CC:` 前缀的 slice 对应 Compose Compiler 插入的重组计数标记。重组次数与页面停留时间之比高于阈值的 Composable 是优化目标。判断阈值需要结合帧时间——如果重组没有导致帧超时（16.67ms / 8.33ms），优化优先级可以降低。
+- restartable Composable 即使带 unstable 参数，也能在参数满足比较规则时跳过；
+- Composable 内创建的 lambda 会自动 memoize，捕获值成为 key。Stable 捕获值按 `equals()` 比较，unstable 捕获值按实例比较。
 
-> [结构参考: 研究素材 2026-04-01 Compose 性能里程碑 + 2026-04-10 Pausable Composition 机制]
-> [已验证: Compose Runtime 1.10 Pausable Composition 为默认行为, BOM 2025.12.00]
-> [已验证: Strong Skipping Mode Kotlin 2.0.20 起默认启用]
-> [待验证: Perfetto 中 Compose Tracing 的 slice 命名前缀在不同 Compose 版本中的差异]
+`rememberCoroutineScope` 在 Composition 生命周期内返回同一个对象，这来自 `remember`，与 Strong Skipping 无关。Strong Skipping 可以减少 `onClick` lambda 的重复创建，并让接收该 lambda 的子 Composable 更容易跳过；它不会改变 scope 的 Job、dispatcher、取消时机或异常传播。
+
+`produceState` 返回的 `State<T>` 也由 `remember` 保持身份。State 写入会失效读取它的 restart scope；父调用能否跳过，无法阻止这个依赖触发。性能评审要分清三个问题：
+
+| 问题 | 对应机制 |
+| --- | --- |
+| producer 何时启动或重启 | `LaunchedEffect` keys |
+| 新值是否通知读取者 | Snapshot state mutation policy |
+| 父级传播到子 Composable 时能否跳过 | Compiler stability + Strong Skipping |
+
+把 unstable model 原地修改，会同时破坏 State 变更检测和参数比较。这个问题应从数据所有权修复，不能依赖 Strong Skipping 掩盖。
+
+## 多数据源：独立失效与一致快照之间取舍
+
+两个 `produceState` 独立运行时，完成顺序没有保证。Compose 可能把同一调度窗口里的多次 Snapshot 变更合并进一次 Composition，所以“两个 State 必然产生两次重组”不成立。
+
+选择方式取决于 UI 消费关系：
+
+- 两块互不相关的 UI 分别读取两个 State，独立 producer 可以缩小失效范围；
+- 同一块 UI 必须同时看到 A/B 的一致组合，应在 ViewModel 或 repository 生成一个不可变 `UiState`；
+- `combine` 会在任一上游变化时发射，不能自动减少发射次数；
+- `zip` 按配对语义等待两侧，不适合替代所有 combine 场景。
+
+Flow 的组合、重试和缓存一般放在 ViewModel，再通过 `stateIn` 暴露稳定的 `StateFlow`。Composable 每次执行时临时创建一条新 Flow，会让 `collectAsState*` 把它视作新数据源并重启收集。
+
+## Pausable Composition 不会暂停已启动的 producer
+
+Compose Runtime 的 Pausable Composition 切分的是 Composition 工作。`produceState` 要等对应 change 被应用、`LaunchedEffect` 被 remembered 后才启动；尚未 apply 的暂停内容不会提前启动 producer。
+
+producer 已启动后，它按协程 dispatcher 和挂起点运行。Pausable Composition 没有一条通用机制去暂停已运行的网络请求、Flow collector 或 callback。State 写入何时被下一次 Composition 消费，又受 Recomposer 调度、Snapshot 通知和帧 deadline 影响，不能承诺固定延后一帧。
+
+Foundation 的 Lazy 预取是否使用 Pausable Composition，还受具体 Foundation 补丁版本和 flag 影响。它与 `produceState` 的协程取消协议是两个问题；列表预取边界见 [22.3 Compose 性能优化](03-compose-performance.md)。
+
+## 诊断：用可验证的事件替代猜测
+
+Perfetto 默认没有名为 `CoroutineTracker` 的标准 Compose 轨道，也没有保证存在 `CC:` 前缀的重组 slice。`kotlinx-coroutines-debug` 的 `DebugProbes` 适合调试或测试中的 coroutine dump，不会自动生成可跨设备依赖的 Perfetto counter。
+
+诊断时按问题选择证据：
+
+| 目标 | 建议证据 |
+| --- | --- |
+| scope 是否在 owner 退出后取消 | 测试 Job 状态、任务 `finally` 计数、外部订阅计数 |
+| producer 是否因 key 抖动重启 | 应用自定义 start/cancel/complete 事件与 key 日志 |
+| State 写入是否过频 | 上游 emission、写入、相等值丢弃和读取者执行次数 |
+| 哪些 Composable 执行 | `runtime-tracing` + profileable、non-debuggable 构建 |
+| 参数为何不能稳定跳过 | Compose Compiler metrics/reports |
+| 是否造成用户可见卡顿 | Macrobenchmark、FrameTimeline、UI/RenderThread/GPU 对齐 |
+| 对象为何未释放 | heap dump、引用链、callback/executor owner |
+
+Composition tracing 需要显式加入 `androidx.compose.runtime:runtime-tracing`；官方前提包含 API 30+、Compose UI/Compiler 1.3.0+ 和受支持的 Android Studio。本章覆盖的 Android 14—17 满足设备 API 前提，但仍要确认依赖已加入。抓 trace 后应先查看文件中存在的 slice 名称，再编写 SQL，避免用不存在的通用名称查询。[Composition tracing](https://developer.android.com/develop/ui/compose/tooling/tracing)
+
+FrameTimeline 负责标记 App frame 和 display frame 的 deadline/jank。它无法直接告诉你某个 `produceState` 写入造成了哪次重组；要用 timestamp、线程、应用事件和 Compose slice 对齐。标准 App Window 的 App SurfaceFrame、DisplayFrame 与 present 边界见 [Android 17 FrameTimeline 数据结构](../../part1-fundamentals/ch02-rendering/2.32-android-17-frametimeline-数据结构.md)。
+
+## Android 17 与 kernel 的责任边界
+
+`rememberCoroutineScope`、`produceState`、Snapshot 和 Strong Skipping 都不在 Android 17 platform 或 Linux kernel 中实现。平台负责主线程消息、Choreographer 回调、View/HWUI 帧提交和 FrameTimeline；kernel 负责线程调度、定时、futex 与设备驱动等待。
+
+CPU 调度延迟或主线程 runnable 堆积可能推迟 Recomposer/producer continuation，仍不能从 scheduler slice 反推 effect key 是否正确。应用层先验证 owner、key、取消和 State 写入，再沿 Android 17 的 Choreographer/FrameTimeline 证据检查是否错过 deadline。kernel 分析固定在 `android17-6.18-2026-06_r6`，只解释调度与等待，不解释 Compose Runtime 语义。
+
+## 评审清单
+
+- `rememberCoroutineScope` 只从事件回调启动任务，没有在 Composable body 或 `LaunchedEffect` 中再套 launch；
+- 长任务使用 `LaunchedEffect(keys)`，需要最新 callback 时使用 `rememberUpdatedState`；
+- scope 没有被保存到 ViewModel、单例或其他长生命周期 owner；
+- producer 读取的身份输入全部进入 key，key 本身不会无故变化；
+- key 变化后的 Loading reset 已在代码中处理；
+- callback 数据源使用 `awaitDispose` 对称反注册，Flow 不在无限 `collect` 后追加它；
+- UI state 使用不可变新实例或 Snapshot 容器；
+- 高频上游先控制 emission 和语义，再看重组次数；
+- Strong Skipping 只用于解释调用跳过和 lambda memoization；
+- trace 查询基于当前文件存在的事件名，帧性能由 Macrobenchmark/FrameTimeline 验收。
+
+## 小结
+
+`rememberCoroutineScope` 管理事件任务，`produceState` 用 keyed `LaunchedEffect` 把外部数据写入 remembered State，Strong Skipping 管理 Composable 调用与 lambda memoization。三者互相影响性能，却没有共享一套生命周期规则。
+
+稳定实现依赖四个明确选择：scope owner、producer key、State 变更语义、上游 emission 频率。取消只代表信号已经发出，清理完成仍要靠协作；conflation 只控制观察结果，上游工作仍需单独治理；Compiler 跳过也不会修复错误的 key 或可变数据模型。
+
+## 源码与官方资料
+
+- [Compose Runtime 1.10.0 source jar](https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.10.0/runtime-1.10.0-sources.jar)：`Effects.kt`、`ProduceState.kt`、`SnapshotFlow.kt` 的精确版本输入。
+- [`rememberCoroutineScope` / `produceState` 官方指南](https://developer.android.com/develop/ui/compose/side-effects)：事件 scope、effect 生命周期与 callback adapter。
+- [Compose State 官方指南](https://developer.android.com/develop/ui/compose/state)：Android 上的 `collectAsStateWithLifecycle()` 与平台无关的 `collectAsState()`。
+- [Strong Skipping 官方说明](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)：参数比较、restartable/skippable 与 lambda memoization。
+- [Composition tracing](https://developer.android.com/develop/ui/compose/tooling/tracing)：`runtime-tracing` 依赖、profileable 构建与 Perfetto 采集前提。
+- [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java) 与 [`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp)：Android 17 帧调度与系统显示时间线。
+- [`core.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c) 与 [`waitwake.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/futex/waitwake.c)：kernel 侧线程调度与 futex 等待边界。
