@@ -1,38 +1,44 @@
 ---
-title: "\"Camera 渲染管线\""
-chapter: "\"18.14\""
-section: "\"18.14\""
+title: "Camera 渲染管线"
+chapter: "18.14"
+section: "18.14"
 status: "finalized"
 pipeline_stage: ready-to-publish
-applicable_versions: "\"Android 5.0 (API 21) - Android 17 (API 37)\""
+applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 tags: ["Camera", "Camera2", "HAL3", "ZSL", "多流并发", "SurfaceView", "ImageReader", "渲染管线"]
 reviewed_by: "openclaw-task6"
-path: "\"hardware/interfaces/camera/device/aidl/android/hardware/camera/device/ICameraDeviceSession.aidl\""
-related_chapters: "[\"2.13\", \"2.15\", \"14.9\", \"18.6\"]"
-created_by: "\"rendering-pipelines-merge\""
-created_date: "\"2026-04-09\""
+path: "hardware/interfaces/camera/device/aidl/android/hardware/camera/device/ICameraDeviceSession.aidl"
+related_chapters: ["2.13", "2.15", "14.9", "18.6"]
+created_by: "rendering-pipelines-merge"
+created_date: "2026-04-09"
 task6_state: reviewed
 task9_state: reviewed
 task9_result: "auto-fixed"
 task2b_state: fixed
 task6_result: "pass-light-edit"
-reviewed_date: "'2026-06-23'"
-last_task6_at: "'2026-06-23T22:20:10+08:00'"
+reviewed_date: "2026-06-23"
+last_task6_at: "2026-06-23T22:20:10+08:00"
 task2b_result: fixed
 task9_reviewed_date: "2026-06-04"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "\"2026-06-04T21:20:00+08:00\""
-last_task2b_at: "2026-06-23T14:57:24+08:00"
+last_task9_at: "2026-06-04T21:20:00+08:00"
+last_task2b_at: 2026-06-23T14:57:24+08:00
 repaired_date: "2026-06-23"
 repaired_by: "openclaw-task2b"
-last_task9_audit: "\"2026-05-20\""
-last_task9_audit_log: "\"logs/deep-review/2026-05-20-21-audit.md\""
+last_task9_audit: "2026-05-20"
+last_task9_audit_log: "logs/deep-review/2026-05-20-21-audit.md"
 last_task6_audit: "2026-07-09"
 last_task6_audit_result: "l1-light-pass"
 last_task6_audit_log: "logs/review/2026-07-09-19-audit.md"
 last_task9_autofix_at: "2026-06-04"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-23
+last_verified: 2026-07-29
+last_verified_against: "android-17.0.0_r1"
+confidence: high
+last_idle_audit_at: "2026-07-29T18:36:00+08:00"
+last_idle_audit_run_id: "20260729-183600-idle-audit-25e2b504"
+last_idle_audit_result: "frontmatter-fix-pass"
 ---
 
 <!-- outline-start -->

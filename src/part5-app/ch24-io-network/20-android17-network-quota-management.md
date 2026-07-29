@@ -4,22 +4,22 @@ chapter: "24.20"
 status: "draft"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [network, io, http]
-last_draft_polish_at: "2026-07-27T23:38:48+08:00"
-last_draft_polish_run_id: "20260727-233848-draft-polish-43dea43a"
+last_draft_polish_at: "2026-07-29T14:02:42+08:00"
+last_draft_polish_run_id: "20260729-140242-draft-polish-43dea43a"
 task6_state: "blocked-source-material-required"
 task9_state: "pending"
 pipeline_stage: "draft_needs_body_apply"
-last_verified: "2026-07-27"
-last_verified_against: "Android baseline android-17.0.0_r1; consecutive draft-polish runs (2026-07-26, 2026-07-27) with empty materials; no routed source slices"
+last_verified: "2026-07-29"
+last_verified_against: "Android baseline android-17.0.0_r1; consecutive draft-polish runs (2026-07-26, 2026-07-27, 2026-07-29) with empty materials; no routed source slices"
 confidence: low
 sources:
   - type: source-material-required
-    note: "Pre-run materials array was empty for consecutive runs (2026-07-26, 2026-07-27); body is intentionally constrained to review scaffolding and source requests until AOSP/official material is routed."
+    note: "Pre-run materials array was empty for three consecutive runs (2026-07-26, 2026-07-27, 2026-07-29); body is intentionally constrained to review scaffolding and source requests until AOSP/official material is routed."
 ---
 
 # Android 17 NetworkStatsService 与 NetworkPolicyManagerService 移动数据 quota 限速源码路径
 
-> **Draft-polish 结论（2026-07-27，连续第二轮）**：本轮继续没有路由到 AOSP 源码切片、官方文档、设备 trace、代码搜索结果或前序 body-apply 材料。这是连续第二个 draft-polish 周期（2026-07-26、2026-07-27）出现空 `materials`，因此本章仍保持 `draft`，不做无来源扩写。章节骨架（版本边界、待验证问题、原稿风险记录、补材料清单、临时读者指引）已在 2026-07-26 收敛完成，本轮仅刷新 run 元数据并再次确认阻塞原因。原稿的未验证伪代码、类名与 API 断言仍不能在 `android-17.0.0_r1` 基线上作为已验证源码结论保留。等待 body-apply/source-material 路由真实 AOSP/官方材料后，再进入 `ready-for-review`。
+> **Draft-polish 结论（2026-07-29，连续第三轮）**：本轮继续没有路由到 AOSP 源码切片、官方文档、设备 trace、代码搜索结果或前序 body-apply 材料。这是连续第三个 draft-polish 周期（2026-07-26、2026-07-27、2026-07-29）出现空 `materials`，因此本章仍保持 `draft`，不做无来源扩写。章节骨架（版本边界、待验证问题、原稿风险记录、补材料清单、临时读者指引）已在 2026-07-26 收敛完成，本轮仅刷新 run 元数据并再次确认阻塞原因。原稿的未验证伪代码、类名与 API 断言仍不能在 `android-17.0.0_r1` 基线上作为已验证源码结论保留。等待 body-apply/source-material 路由真实 AOSP/官方材料后，再进入 `ready-for-review`。
 
 ## 1. 版本与范围边界
 
