@@ -31,11 +31,11 @@ last_rework_by: openclaw-task2b
 last_rework_reason: P95 Task9回炉(第四轮)：P0 inBitmap返回对象语义修正（reinitBitmap→return javaBitmap，返回值即inBitmap同一对象）
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-07-03
-task6_review_notes: 2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。 | 2026-05-05 task6 revisiting review 07:30: pass-light-edit。清理重复 frontmatter、未标语言代码块、高频填充词和第一人称；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理编辑痕迹、虚假引导语和中英文格式；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 09:07: pass-light-edit。移除未支撑的 upload/WebP/AVIF 量化口径，清理发布稿编辑痕迹和夸张标题；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 10:10: pass-light-edit。清理 frontmatter 禁用词、口语化表达、绝对化措辞和结构性引导语；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。
+task6_review_notes: '2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。 | 2026-05-05 task6 revisiting review 07:30: pass-light-edit。清理重复 frontmatter、未标语言代码块、高频填充词和第一人称；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理编辑痕迹、虚假引导语和中英文格式；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 09:07: pass-light-edit。移除未支撑的 upload/WebP/AVIF 量化口径，清理发布稿编辑痕迹和夸张标题；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 10:10: pass-light-edit。清理 frontmatter 禁用词、口语化表达、绝对化措辞和结构性引导语；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。'
 last_task9_at: 2026-07-03T12:32:56+08:00
 last_task9_audit: 2026-07-03
 last_task9_audit_log: logs/deep-review/2026-07-03-11-audit.md
-task9_review_notes: 2026-05-06 08:30 task9 deep-review: needs-rework。P0 1：inBitmap 复用示例把返回对象语义写错；P1 1：AVIF/AV1 硬件能力边界过度外推；P2 2：Hardware Bitmap upload 与 WebP 压缩率缺少数据支撑。 | 2026-05-06 08:45 task2b rework(第三轮): P0 inBitmap像素转移语义修正；P1 AVIF硬件加速边界收窄 | 2026-05-06 09:20 task9 回归审计: needs-rework。P0 1 / P1 0 / P2 1；inBitmap 复用对象语义仍未解决。 | 2026-05-06 12:42 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；AVIF fallback 实现名与 Perfetto 调用栈采集条件写入 suggestions；无 active queue pending，自动晋升 finalized。 | 2026-07-03 12 Task9 deep-review: pass-tech-review。Task6 复审后复核 BitmapFactory.cpp、Bitmap.java、Choreographer.java、DrawFrameTask.cpp、RecordingCanvas.java、SkiaGpuPipeline.cpp 的 Android 17 锚点；P0 0 / P1 0 / P2 0；queue 中 WebView 时效性条目 section 误写为 7.10，已改为 7.11，自动晋升 finalized。
+task9_review_notes: '2026-05-06 08:30 task9 deep-review: needs-rework。P0 1：inBitmap 复用示例把返回对象语义写错；P1 1：AVIF/AV1 硬件能力边界过度外推；P2 2：Hardware Bitmap upload 与 WebP 压缩率缺少数据支撑。 | 2026-05-06 08:45 task2b rework(第三轮): P0 inBitmap像素转移语义修正；P1 AVIF硬件加速边界收窄 | 2026-05-06 09:20 task9 回归审计: needs-rework。P0 1 / P1 0 / P2 1；inBitmap 复用对象语义仍未解决。 | 2026-05-06 12:42 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；AVIF fallback 实现名与 Perfetto 调用栈采集条件写入 suggestions；无 active queue pending，自动晋升 finalized。 | 2026-07-03 12 Task9 deep-review: pass-tech-review。Task6 复审后复核 BitmapFactory.cpp、Bitmap.java、Choreographer.java、DrawFrameTask.cpp、RecordingCanvas.java、SkiaGpuPipeline.cpp 的 Android 17 锚点；P0 0 / P1 0 / P2 0；queue 中 WebView 时效性条目 section 误写为 7.10，已改为 7.11，自动晋升 finalized。'
 last_task6_at: 2026-07-03T12:13:55+08:00
 last_task6_audit: 2026-06-28
 last_task6_review_log: logs/review/2026-05-06-10-review.md
@@ -78,484 +78,438 @@ p2: 0
 > 量化数据、GPU 内存与解码器行为如果没有官方或实测证据，保留 `[待验证]`，不要写成确定结论。
 <!-- outline-end -->
 
-打开一份 Perfetto trace，发现主线程有一帧花了 200ms。展开调用栈，主要耗时来自 `BitmapFactory.decodeResource`——一张 4000×3000 的照片被原尺寸解码到内存，吃掉了 48MB，GC 被触发，界面就卡了。
+图片性能问题很少只由“解码慢”解释。一次图片请求至少包含数据获取、格式解析、像素解码、尺寸变换、缓存交接、纹理准备和窗口绘制。任一阶段都可能消耗 CPU、内存带宽、native/graphics 内存或文件描述符；多个请求并发时，还会与主线程和 RenderThread 争用资源。
 
-图片解码是 Android 上资源开销很高的常规操作之一。一张手机拍的照片，磁盘上可能只有 5MB，但解码后在内存中占用的空间是 `宽 × 高 × 4` 字节（ARGB_8888 格式），很容易超过 20MB。列表滑动场景中，如果在主线程连续解码十几张这样的图，GC 频繁触发，就很容易掉帧。
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点。涉及旧版本的段落只用于说明像素内存位置、`inBitmap` 约束等兼容差异。这里不把图片库的默认策略当作系统契约：Glide、Coil 的行为必须结合项目所用版本、请求参数和目标设备验证。
 
-本节说明图片加载和 Bitmap 管理的完整过程：从 BitmapFactory 的内部机制到 Hardware Bitmap 的 GPU 内存模型，从 Glide/Coil 的管线架构到如何在 Perfetto 中定位图片解码导致的卡顿。读完后，读者能独立分析图片相关的性能问题，并给出针对性的优化方案。
+## 1. 先把请求拆成七段
 
-## BitmapFactory 与 ImageDecoder：解码的两代方案
+排查图片卡顿前，先按下面的阶段记录时间和内存：
 
-### BitmapFactory 的解码流程
+| 阶段 | 典型工作 | 常见资源压力 | 优先证据 |
+|---|---|---|---|
+| Fetch | 网络、磁盘、ContentProvider 读取编码数据 | I/O、网络、线程等待 | 请求监听器、网络事件、文件 I/O slice |
+| Header | 识别格式、尺寸、色彩空间、动画信息 | 少量 CPU 与 I/O | `outWidth/outHeight`、`ImageInfo` |
+| Decode | 压缩数据展开为像素 | CPU、native 内存、内存带宽 | 自定义 trace、CPU sample、分配曲线 |
+| Resize | codec 采样或解码后的缩放 | CPU、临时像素缓冲 | 目标尺寸、采样尺寸、native 调用栈 |
+| Transform | 裁剪、圆角、模糊、调色 | CPU 或 GPU、额外 Bitmap | 图片库事件、变换前后尺寸 |
+| Texture preparation | software bitmap 变成 GPU 可采样资源 | RenderThread、GPU、内存带宽 | `Bitmap#prepareToDraw`、RenderThread slice |
+| Window rendering | 图片绘入应用窗口 buffer，交给 SurfaceFlinger | GPU、BufferQueue、合成 | FrameTimeline、RenderThread、SurfaceFlinger |
 
-BitmapFactory 是 Android 最早的图片解码 API，提供了 `decodeResource`、`decodeFile`、`decodeStream`、`decodeByteArray` 四个入口。不管用哪个入口，内部的解码流程是一样的：
+这张表能避免两类误判：网络等待被算成解码耗时，或 software bitmap 的首绘纹理准备被算成 SurfaceFlinger 合成耗时。帧级分析方法可配合[卡顿分析方法论](./03-jank-methodology.md)，列表生命周期可配合[RecyclerView 性能章节](./08-recyclerview-performance.md)。
 
-1. **读取数据源**：从文件、资源、流或字节数组中获取原始图片数据。
-2. **解析头部**：读取图片的格式信息（JPEG/PNG/WebP 等）、宽高、色彩空间，不分配像素内存。
-3. **分配内存**：根据目标配置（Bitmap.Config）和缩放参数，在 Native 堆（Android 8.0+）或 Java 堆（8.0 之前）分配像素数据所需的连续内存。
-4. **解码像素**：将压缩的图片数据解码为原始像素点阵。
+## 2. BitmapFactory：理解公共契约，再读实现
 
-这个过程有几个关键的参数，都在 `BitmapFactory.Options` 中：
+`BitmapFactory` 提供资源、文件、流和字节数组等入口。各入口会构造数据源并进入 native 解码路径，但资源 density、流是否可回退读取、NinePatch 和异常处理仍有差别，所以“所有入口完全相同”并不严谨。
 
-**inJustDecodeBounds**——设为 `true` 时，只执行第 2 步（解析头部），不分配内存也不解码像素。这是预加载的标准操作：先用它拿到原始宽高，计算采样率，再正式解码。
+### 2.1 `inJustDecodeBounds` 解决什么问题
 
-**inSampleSize**——采样率。设为 2 时，解码结果的宽高各缩小一半，像素数变为原来的 1/4，内存占用也降为 1/4。
+`inJustDecodeBounds = true` 会让解码 API 返回 `null`，同时填写 `outWidth`、`outHeight`、`outMimeType`、`outConfig` 和 `outColorSpace` 等可用信息。它适合在正式分配输出像素前确定尺寸和配置。
 
-官方 API 文档仍建议将 `inSampleSize` 设为 2 的幂（1、2、4、8...），这是跨格式、跨设备的兼容安全口径。但现代 AOSP 的 native 解码路径已经不再强制这一约束：`libs/hwui/jni/BitmapFactory.cpp` 的 `doDecode()` 将 `inSampleSize` 传给 `SkAndroidCodec::getSampledDimensions(sampleSize)`，由 SkCodec 按具体格式能力决定采样方案，必要时做 fine scale。也就是说，传 3 在多数设备上能得到约 1/3 尺寸的结果，但行为因格式和 codec 实现而异，生产代码仍推荐 2 幂。
+把它称为“只读文件头”容易产生误解。不同容器和 codec 为得到边界信息所需读取的数据量不同；应用能够依赖的是“没有输出 Bitmap 像素分配”，不能依赖固定读取字节数。
 
-如果需要非 2 幂的精确降采样（比如原图 4000×3000 只需要 1200×900），`ImageDecoder.setTargetSize()` 是更合适的 API——它直接指定目标尺寸，解码器内部完成缩放，不受 2 幂限制。[已验证：AOSP `libs/hwui/jni/BitmapFactory.cpp` doDecode() + `SkAndroidCodec::getSampledDimensions()` + Android API 文档 `BitmapFactory.Options.inSampleSize`]
+### 2.2 `inSampleSize` 仍按 2 的幂理解
 
-**inPreferredConfig**——目标色彩格式。默认 `ARGB_8888`（每像素 4 字节）。如果图片不需要透明通道，用 `RGB_565`（每像素 2 字节）可以节省一半内存。
+Android 17 的 `BitmapFactory.Options` 文档仍规定：大于 1 的值请求子采样，非 2 的幂会向下取到最接近的 2 的幂。`BitmapFactory.cpp` 会把 sample size 交给 `SkAndroidCodec`，但 native 实现细节没有扩大 Java API 的保证范围。
 
-**inBitmap**——Android 4.4（API 19）之后的核心优化参数。传入一个已有的 Bitmap，解码时复用它的像素内存，不再分配新的。这个机制是 Glide 等图片库减少 GC 压力的基石，后文展开。
+因此，业务代码应使用 1、2、4、8 等值，并根据返回的 `Bitmap.width`、`height` 复核结果。若目标尺寸要求更精确，可让图片库做 downsample，或在 API 28 及以上使用 `ImageDecoder.setTargetSize()`。不要根据某个 codec 在某台设备上接受 3，就把 3 当成跨格式约定。
 
-**inDensity / inTargetDensity**——从资源文件（`decodeResource`）加载图片时，这两个参数决定了缩放比例。`inDensity` 是资源所在目录的 dpi（如 `drawable-xxhdpi` 对应 480），`inTargetDensity` 是设备的屏幕 dpi。解码后的实际尺寸 = 原始尺寸 × `inTargetDensity / inDensity`。这就是为什么同一张图放在不同 drawable 目录下，加载后的内存占用可能差好几倍。
+下面这段代码展示“先读边界，再按 2 的幂计算采样”的最小做法：
 
 ```java
-// 示意代码：BitmapFactory Options 中采样与 density 缩放的逻辑（伪代码，非 AOSP 源码原文）
-// 实际实现见 libs/hwui/jni/BitmapFactory.cpp doDecode()
-if (options.inSampleSize != 1) {
-    width = width / options.inSampleSize;
-    height = height / options.inSampleSize;
+private static int powerOfTwoSample(
+        int sourceWidth,
+        int sourceHeight,
+        int targetWidth,
+        int targetHeight
+) {
+    int sample = 1;
+    while (sourceWidth / (sample * 2) >= targetWidth
+            && sourceHeight / (sample * 2) >= targetHeight) {
+        sample *= 2;
+    }
+    return sample;
 }
-// 从资源加载时的额外缩放
-if (options.inTargetDensity != 0 && options.inDensity != 0) {
-    width = (width * options.inTargetDensity + options.inDensity / 2) 
-            / options.inDensity;
-    height = (height * options.inTargetDensity + options.inDensity / 2) 
-             / options.inDensity;
+
+BitmapFactory.Options bounds = new BitmapFactory.Options();
+bounds.inJustDecodeBounds = true;
+BitmapFactory.decodeFile(fileName, bounds);
+
+if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+    throw new IllegalArgumentException("Unsupported or damaged image");
 }
+
+BitmapFactory.Options decode = new BitmapFactory.Options();
+decode.inSampleSize = powerOfTwoSample(
+        bounds.outWidth,
+        bounds.outHeight,
+        targetWidth,
+        targetHeight
+);
+Bitmap bitmap = BitmapFactory.decodeFile(fileName, decode);
 ```
 
-这段代码说明两件事：`inSampleSize` 的缩放是整数除法，不是浮点缩放；资源文件的 dpi 匹配直接影响内存占用——把一张 1080p 的图放在 `drawable-mdpi` 目录，在 xxhdpi 设备上加载后实际像素是 3240×5760，内存从 8MB 暴涨到 72MB。[已验证：来源见 万字长文 Android Bitmap 相关的一切 中关于 density 缩放的计算说明]
+返回尺寸可能仍大于控件尺寸，也可能受 EXIF、density 或 codec 取整影响。生产代码还要处理空返回、超大尺寸、取消请求、并发上限和方向信息；图片库通常已经覆盖其中大部分边界。
 
-### ImageDecoder：API 28+ 的现代替代
+### 2.3 `inPreferredConfig` 是偏好值
 
-Android 9（API 28）引入了 `ImageDecoder`，官方推荐在新项目优先使用。相比 BitmapFactory，它有几个实质性改进：
+`inPreferredConfig` 请求目标配置，decoder 可以因源格式或能力限制忽略它。`ARGB_8888` 适合常规 UI 和照片；`RGB_565` 只保存 16 位颜色，没有 alpha，渐变和暗部容易出现色带。它只能在内容不透明、画质验收通过且内存收益明确时启用。
 
-**自动处理 EXIF 旋转**。用 BitmapFactory 加载一张手机拍的 JPEG，如果照片有旋转标记（Exif ORIENTATION_ROTATE_90），通常要手动读取 EXIF 信息并做旋转变换。ImageDecoder 在解码时自动处理了这件事。
+用“照片没有透明通道，所以统一改成 RGB_565”会把色彩损失带进所有设备。更稳妥的决策顺序是：控制尺寸与并发，确认缓存持有量，测量峰值，再评估是否接受降色深。
 
-**统一的数据源 API**。不再需要区分 `decodeResource`、`decodeFile`、`decodeStream`——`ImageDecoder.decodeDrawable` / `decodeBitmap` 接受 `Source` 对象，通过 `ImageDecoder.createSource` 从任意来源创建。
+### 2.4 resource density 会改变输出像素
 
-**原生支持动画**。解码 GIF 或 WebP 动图时，返回 `AnimatedImageDrawable`，自带播放控制。用 BitmapFactory 完全做不到这一点。
+`decodeResource()` 会根据资源 density 与目标 density 做缩放。`drawable-nodpi` 不参与 density 缩放；`drawable-mdpi`、`drawable-xxhdpi` 等目录带有密度语义。输出像素由源尺寸、采样结果和 density 缩放共同决定，内存评估应读取解码后的宽高、`rowBytes` 与 `allocationByteCount`。
 
-**setTargetSize 替代 inSampleSize**。不需要手动计算 2 的幂采样率，直接设定期望尺寸，解码器内部处理缩放。`ImageDecoder` 在单次解码流水线中完成采样和缩放，避免 `BitmapFactory` 常见的「先按 2 幂采样再二次缩放」路径中产生的大图缓冲区峰值。对大图场景（如 4000×3000 原图解码到 1080p），这个差异能降低解码过程中的内存峰值（Memory Spike），减少 OOM 风险。
+Android 17 的 `BitmapFactory.cpp` 在 density scale 不为 1 时会先解码采样尺寸，再分配目标 Bitmap 做缩放。输出 Bitmap 之外还可能存在临时软件缓冲。只用“目标宽 × 目标高 × 4”评估解码峰值会低估风险。
 
-这两个边界要分清：`setTargetSize` 必须在 `OnHeaderDecodedListener` 回调内设置；最终走 sample 还是 scale 由 codec 能力决定，不能无条件写成所有格式都避免大缓冲。`setTargetSampleSize()` 可以让解码器按可高效执行的方向取整。
+## 3. ImageDecoder：API 28 以上的尺寸与分配控制
+
+`ImageDecoder` 将 Source、header callback、尺寸、裁剪、色彩空间、allocator 和动画解码放进一套 API。`decodeBitmap` 返回静态 Bitmap，`decodeDrawable` 可返回 `AnimatedImageDrawable`。EXIF 方向也由解码流程处理。
+
+### 3.1 `setTargetSize` 与 `setTargetSampleSize`
+
+两者都必须在 `OnHeaderDecodedListener` 中设置，且二者只有末次调用生效：
+
+- `setTargetSize(width, height)` 请求任意输出尺寸，可放大或缩小。codec 可以采样，也可以增加内部缩放步骤。
+- `setTargetSampleSize(sampleSize)` 按采样率计算目标尺寸，并允许 decoder 向更高效的方向取整。
+- 任一方法都不能保证“完全没有中间缓冲”。格式、裁剪、色彩转换、allocator 和 codec 能力都会影响峰值。
+
+下面的例子按容器上限等比缩小，并让默认 allocator 自行选择兼容的 backing：
 
 ```java
-// ImageDecoder 的典型用法
-ImageDecoder.Source source = ImageDecoder.createSource(getResources(), R.drawable.photo);
-Drawable drawable = ImageDecoder.decodeDrawable(source, (decoder, info, s) -> {
-    // 设置目标尺寸（替代 inSampleSize）
-    decoder.setTargetSize(1080, 1920);
-    // 如果需要，可以选择硬件位图配置
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        decoder.setAllocator(ImageDecoder.ALLOCATOR_HARDWARE);
-    }
+Bitmap bitmap = ImageDecoder.decodeBitmap(source, (decoder, info, ignored) -> {
+    Size sourceSize = info.getSize();
+    float scale = Math.min(
+            (float) maxWidth / sourceSize.getWidth(),
+            (float) maxHeight / sourceSize.getHeight()
+    );
+    scale = Math.min(scale, 1.0f);
+
+    int width = Math.max(1, Math.round(sourceSize.getWidth() * scale));
+    int height = Math.max(1, Math.round(sourceSize.getHeight() * scale));
+    decoder.setTargetSize(width, height);
+    decoder.setAllocator(ImageDecoder.ALLOCATOR_DEFAULT);
 });
 ```
 
-实际项目中，BitmapFactory 和 ImageDecoder 的选择往往被图片加载库封装了。以 Glide 4.x 为例，Bitmap 请求默认仍走 `Downsampler` / `BitmapFactory`。只有应用显式调用 `GlideBuilder.setImageDecoderEnabledForBitmaps(true)`，并且设备是 Android 10（API 29）及以上时，Glide 才会把 Bitmap 解码切到 `ImageDecoder`。排查同一张图在不同设备上的解码差异时，先确认库版本和这个开关。[已验证：Glide `GlideBuilder#setImageDecoderEnabledForBitmaps`]
+`ALLOCATOR_DEFAULT` 通常倾向 Hardware Bitmap，小图或不兼容选项可得到 software bitmap。调用方若必须读写像素，应明确选择 `ALLOCATOR_SOFTWARE`。
 
-### Bitmap 像素内存分配的版本差异
+### 3.2 Hardware allocator 的异常边界
 
-Bitmap 的 Java 对象一直在 Java 堆里，但像素数据放在哪里，Android 历史演进分成三段：
+`ALLOCATOR_HARDWARE` 表示强制 Hardware Bitmap。它与 `setMutableRequired(true)` 或 `setDecodeAsAlphaMaskEnabled(true)` 组合时，Android 17 会在解码前抛出 `IllegalStateException`。这与 `ALLOCATOR_DEFAULT` 的兼容性回退语义不同。
 
-**Android 2.3.3（API 10）及以下**：像素数据在 Native memory，Java 堆里只有 Bitmap 壳对象。旧版本里像素内存释放和 Dalvik GC 不完全同步，所以经常要配合 `recycle()` 尽快回收。[已验证：官方文档 `Managing Bitmap Memory`]
+动画 drawable 会忽略 allocator。后处理、未预乘 alpha、裁剪和色彩空间还会改变解码路径；调用方不应只凭 allocator 常量推算内存或时延。
 
-**Android 3.0（API 11）到 Android 7.1（API 25）**：像素数据改放到 Dalvik / ART managed heap，Bitmap 对象和像素一起受 GC 管理。`inBitmap` 这类复用策略在这个阶段也更容易观察和调试。[已验证：官方文档 `Managing Bitmap Memory`]
+## 4. Bitmap 像素内存的版本变化
 
-**Android 8.0（API 26）及之后**：像素数据再次回到 Native heap。Java 堆压力会下降，但这些像素页仍然计入进程 PSS，所以图片解码过多，进程一样会因为总体内存压力被 `lmkd` 回收。[已验证：官方文档 `Managing Bitmap Memory` + AOSP `frameworks/base/libs/hwui/jni/Bitmap.cpp`]
+Bitmap 的 Java 对象一直由 managed heap 持有，像素 backing 的位置经历过三段变化：
 
-这套模型能成立，靠的不是“GC 直接扫描 Native heap”，而是 `Bitmap.java` 通过 `NativeAllocationRegistry` 把底层像素内存登记给 ART。Bitmap 的 Java 壳对象仍留在 Java 堆；当这个 Java 对象不可达时，registry 会调用注册好的 native free 函数释放底层像素内存。同时，ART 会把这部分 registered native size 纳入内存压力判断，所以大批量图片解码仍然可能把并发 GC 提前拉起来。也正因为这层绑定，绝大多数常规场景不需要手动调用 `recycle()`。
+| 版本 | 像素数据位置 | 工程含义 |
+|---|---|---|
+| Android 2.3.3 / API 10 及以下 | native memory | 像素释放曾需更谨慎地配合 `recycle()` |
+| Android 3.0–7.1 / API 11–25 | managed heap | 像素直接增加 Java 堆占用 |
+| Android 8.0–17 / API 26–37 | native memory | Java 堆下降不代表进程图片内存下降 |
 
-### 各 Bitmap.Config 的内存开销对比
+Android 17 的 `Bitmap.java` 使用两个 `NativeAllocationRegistry` 登记 native 对象和像素大小：一个注册释放函数，另一个用 no-op free function 更新像素分配的内存压力。ART 不会扫描 native 像素内容；Java Bitmap 的可达性、registry 登记和 native 引用共同决定生命周期。
 
-| Config | 每像素字节 | 透明通道 | 色彩质量 | 适用场景 |
-|--------|-----------|---------|---------|---------|
-| ARGB_8888 | 4 | ✅ | 1677 万色 + 256 级透明 | 默认选择，照片、UI 元素 |
-| RGB_565 | 2 | ❌ | 65536 色 | 不需要透明的大图、缩略图 |
-| HARDWARE | 4（GPU 侧） | ✅ | 等同 ARGB_8888 | 只显示不修改的图片（详见下节） |
-| ALPHA_8 | 1 | ✅（仅透明度） | 无 | 遮罩、透明度模板 |
-| RGBA_F16 | 8 | ✅ | 广色域（HDR） | HDR 照片编辑、Wide Color Gamut |
+观察内存时至少区分 Java Heap、Native Heap、Graphics、共享页和进程 PSS。`Runtime.maxMemory()` 不能描述 HardwareBuffer 或 graphics 驱动侧占用，`dumpsys meminfo <package>`、Perfetto memory counters、heapprofd 与 GPU 厂商节点各自只覆盖一部分。
 
-一张 1080×1920 的图片在不同配置下的内存占用：ARGB_8888 = 7.9MB，RGB_565 = 3.9MB，HARDWARE ≈ 0MB（Java 堆侧）。这个对比很直观：列表场景如果把不需要透明通道的图切到 RGB_565，内存立刻省一半。
+### 4.1 软件配置的估算与实测
 
-### Ultra HDR / Gainmap 内存模型
+| Config | 名义字节/像素 | alpha | 使用边界 |
+|---|---:|---|---|
+| `ALPHA_8` | 1 | 只保存 alpha | mask |
+| `RGB_565` | 2 | 无 | 可接受色带的完全不透明内容 |
+| `ARGB_8888` | 4 | 有 | 常规 UI 与照片 |
+| `RGBA_F16` | 8 | 有 | 宽色域或高精度处理 |
+| `HARDWARE` | 不用固定 B/px 推算 | 取决于内部格式 | GPU 可采样、不可变的展示资源 |
 
-Android 14+ 默认支持 Ultra HDR（Gainmap）。解码含 Gainmap 的 JPEG 时，GPU 需要同时维护基础层（base bitmap）和 Gainmap 掩码层（gainmap bitmap + metadata）。AOSP `Bitmap.java` 提供了 `hasGainmap()` / `getGainmap()` / `setGainmap(null)` API；`BitmapFactory.cpp` 通过 `getGainmapAndroidCodec()` / `decodeGainmap()` 完成解码。
+软件 Bitmap 的 `rowBytes × height` 比 `width × height × 名义 B/px` 更接近像素存储量；`getAllocationByteCount()` 反映底层分配容量，复用后可能大于当前内容的 `getByteCount()`。对 Hardware Bitmap，内部像素格式、stride、压缩和驱动分配方式都可能变化，应用层的 `Config.HARDWARE` 无法给出统一字节数。
 
-内存估算不能只用 `宽 × 高 × 4`（ARGB_8888）。含 Gainmap 的 JPEG 在 GPU 显存中的真实开销高于 SDR 计算值，因为 base bitmap 和 gainmap bitmap 各占一份像素空间，加上 metadata。具体倍率取决于 gainmap 的分辨率和格式配置，不能按固定系数估算。在长列表场景中，这份额外开销会让显存水位（VRAM Usage）更早触顶。[待验证：1.25x 倍率缺乏一手实测支撑，实际倍率需按设备 GPU 和 gainmap 参数实测确认]
+## 5. Ultra HDR 与 Gainmap
 
-观测上，PSS / NativeAllocationRegistry 只登记 base bitmap 的 native 大小；Gainmap 部分的 GPU 显存通常不出现在 Java 堆统计里，需要结合 `dumpsys meminfo` 的 Graphics 类别和 `procfs` GPU memory 节点一起看。
+Android 14 起的 Ultra HDR 图片可以在 SDR base image 之外携带 gainmap。Android 17 的 `BitmapFactory.cpp` 会通过 codec 取得 gainmap，解码成独立 Bitmap 并附到 base Bitmap；Hardware Bitmap 路径还会为 gainmap 创建对应的 hardware backing。`Gainmap.java` 保存 gainmap contents Bitmap 与显示参数。
 
-工程建议：如果业务不需要 HDR 显示，可以在低端设备上解码后调用 `bitmap.setGainmap(null)` 移除 Gainmap 层，去掉这部分额外开销。[已验证：AOSP `Bitmap.java` hasGainmap()/getGainmap()/setGainmap() + `BitmapFactory.cpp` decodeGainmap()]
+因此，Ultra HDR 的持有成本至少要考虑：
 
-## Hardware Bitmap：像素存在 GPU 里
+- base Bitmap 的分辨率、配置和 stride；
+- gainmap Bitmap 的分辨率、配置和 stride；
+- 解码与缩放期间的临时缓冲；
+- software 或 hardware backing；
+- 图片库、Drawable 与 UI 对两层对象的引用时间。
 
-Android 8.0（API 26）引入了 `Bitmap.Config.HARDWARE`，它的像素数据不存储在 CPU 侧的 Native 堆，而是直接存在 GPU 内存（通过 `AHardwareBuffer` / `GraphicBuffer`）。
+不存在可靠的固定 1.25 倍或 2 倍公式。`Bitmap.getAllocationByteCount()` 只描述当前 Bitmap 的 backing，不能自动代表附着 gainmap 及所有 graphics 分配。应在目标设备上同时记录 base/gainmap 属性与进程 Graphics、Native Heap、PSS 的变化。
 
-### 为什么能省内存
+`bitmap.setGainmap(null)` 会把 gainmap 从 base Bitmap 上移除。只有其他 Java/native 引用也结束后，对应资源才具备释放条件。是否移除还涉及 HDR 产品效果、显示能力和色彩一致性，不能作为低端机的无条件开关。
 
-一张普通 Bitmap 的渲染路径是：CPU 侧 Native 堆存像素 → 上传到 GPU 纹理 → GPU 渲染。上传这一步需要把像素数据从 CPU 内存拷贝到 GPU 内存，既占带宽又占时间。列表快速滑动时，如果每帧都有新图片需要上传纹理，这个拷贝就会成为瓶颈。
+## 6. Hardware Bitmap 的收益与边界
 
-Hardware Bitmap 跳过的是“software bitmap 首次绘制前的 GPU 纹理上传”。普通 software bitmap 解码完成后，像素还在 CPU 可访问内存里，第一次参与绘制时，RenderThread 仍要把它上传到 GPU。`Bitmap.prepareToDraw()` 的作用，就是尽量把这次上传提前到正常 draw path 之外。AOSP 注释写明，从 Android 7.0 起，这个调用会在 RenderThread 上异步触发 upload。如果图片已经是 `Bitmap.Config.HARDWARE`，渲染阶段就不再走这一步。[已验证：AOSP `Bitmap.prepareToDraw()` 注释]
+`Bitmap.Config.HARDWARE` 在 API 26 引入。它以 HardwareBuffer/GraphicBuffer 一类 GPU 可访问 backing 保存像素，Bitmap 保持不可变。把它说成“像素只在独立显存里”不适用于统一内存架构，也会漏掉句柄、页表、导入对象和驱动记账。
 
-### 文件描述符的隐性成本
+### 6.1 它省掉哪段工作
 
-每个 Hardware Bitmap 底层对应一个 `AHardwareBuffer`，而这个 buffer 会消耗文件描述符。进程 fd 上限由内核和设备配置决定，图片多的长列表、瀑布流和图库场景要特别留意这项开销。
+software bitmap 解码后保留 CPU 可访问像素。HWUI 首次把它当作纹理使用时，需要创建或更新 GPU 资源。Android 17 的 `SkiaGpuPipeline::prepareToDraw()` 只对 `!bitmap->isHardware()` 调用 `PinAsTexture`、`UnpinTexture` 和 `flushAndSubmit`；Hardware Bitmap 跳过这条 software texture preparation 路径。
 
-在实际项目中，如果一个 `RecyclerView` 同屏保留大量 Hardware Bitmap，fd 数量会跟着增长。再叠加网络连接、数据库、日志文件等其他 fd 消耗者，进程就可能逼近上限。Glide 的 `HardwareConfigState` 之所以定期检查 `/proc/self/fd`，就是为了避免 hardware bitmap 把 fd 用光。[已验证：Glide `HardwareConfigState`]
+这项收益不等于“图片绕过 RenderThread”。应用仍在 DisplayList 中记录 drawBitmap，RenderThread 仍把图片采样并绘入应用窗口 buffer，随后通过 BufferQueue 交给 SurfaceFlinger。普通 ImageView 中的一张 Bitmap 通常不会成为独立 SurfaceFlinger layer。
 
-### 限制
+Hardware Bitmap 参与绘制时仍有 HardwareBuffer 导入、同步、GPU 采样和窗口提交成本。收益大小要看图片是否重复显示、software 纹理是否已缓存、上传时机、GPU 驱动和内存带宽。
 
-Hardware Bitmap 的限制，不是“系统会自动降级成普通 Bitmap”，而是很多 CPU 侧操作不可用，或者代价很高：
+### 6.2 CPU 访问与可变性
 
-- `getPixel()`、`getPixels()`、`copyPixelsToBuffer()` 这类直接读像素的 API，会抛 `IllegalStateException`，因为 `Config.HARDWARE` 不支持 CPU 读写像素。[已验证：AOSP `Bitmap.java`]
-- `sameAs()`、`copy(Config, ...)` 这类需要比较或复制整张图的路径，会触发 `StrictMode.noteSlowCall()`，因为框架可能要把 GPU 侧像素拉回 CPU 再处理。[已验证：AOSP `Bitmap.java`]
+Hardware Bitmap 不支持 `getPixel()`、`getPixels()`、`copyPixelsToBuffer()` 等直接像素访问，也不能作为可变 Bitmap 使用。复制、序列化或某些比较路径可能触发 GPU readback，`Bitmap.java` 会对部分操作调用 `StrictMode.noteSlowCall()`。
 
-对图片库来说，要确认的是请求有没有软件 Canvas、像素读取、Palette、共享元素过渡或复杂 Transformation。遇到这些场景，就应该显式回退到 software bitmap。Glide 4.x 用 `disallowHardwareConfig()`，Coil 用 `allowHardware(false)`。如果请求只是把图直接画到屏幕上，才适合保留 `Bitmap.Config.HARDWARE`。
+以下需求应选择 software bitmap：
 
-### 使用建议
+- 软件 Canvas 需要把它作为绘制目标；
+- Palette、像素采样、JNI 像素处理或自定义滤镜需要 CPU 访问；
+- 变换实现要求可变输出；
+- 目标 View 或渲染路径未启用硬件加速；
+- 测试发现设备/驱动的 HardwareBuffer 成本更高。
 
-- 纯展示、无像素访问：可以保留 Hardware Bitmap
-- 需要圆角、模糊、Palette、共享元素或软件 Canvas：直接用 `ARGB_8888`
-- 图片很多的 feed：同时观察 `/proc/self/fd` 或图片库的 hardware bitmap 限额
+圆角、裁剪和共享元素过渡本身不足以判定配置。图片库可能用 GPU、生成新的 software bitmap，或因请求条件禁用 Hardware Bitmap；要检查所用 transformation 与 target 的实现。
 
+### 6.3 fd 成本要按设备测量
 
+HardwareBuffer 及其跨进程/驱动句柄可能占用文件描述符。Glide 会检查进程 fd 数量并在接近内部阈值时停止使用 Hardware Bitmap，但阈值与策略属于库实现，不属于 Android API 契约。
 
-## Hardware Bitmap 与 RenderThread/SurfaceFlinger 合成管线
+图库、瀑布流或大缓存场景可采集 `/proc/self/fd` 数量、`RLIMIT_NOFILE`、图片缓存条目数和 Hardware Bitmap 数量。fd 上升若与图片释放不同步，再检查 Drawable、Target、缓存和转场是否延长了资源生命周期。
 
-Hardware Bitmap 仍要经过 RenderThread 和 GPU 合成管线，不会直接作为独立图层交给 SurfaceFlinger。它省掉的是 software bitmap 首次绘制前的同步 upload 成本，不是整条渲染管线。
+### 6.4 `prepareToDraw()` 的准确含义
 
-### 源码级证据
+`Bitmap.prepareToDraw()` 会把 software bitmap 的更新/上传工作移到常规 draw path 之外。Android 17 的 Ganesh 路径在 RenderThread 取得图像、pin 为纹理并 `flushAndSubmit()`；对 Hardware Bitmap 是空操作。
 
-`SkiaGpuPipeline::prepareToDraw()`（`frameworks/base/libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp:137-151`）中：
+它能提前提交纹理准备，但不承诺调用返回时 GPU 已完成全部工作，也不保证首帧没有同步等待。若图片库已负责预绘制，业务层重复调用可能没有收益。应以 RenderThread trace 和首帧时延验证。
 
-```cpp
-void SkiaGpuPipeline::prepareToDraw(const RenderThread& thread, Bitmap* bitmap) {
-    GrDirectContext* context = thread.getGrContext();
-    if (context && !bitmap->isHardware()) {
-        // 仅对 NON-hardware Bitmap 执行 upload
-        ATRACE_FORMAT("Bitmap#prepareToDraw %dx%d", ...);
-        auto image = bitmap->makeImage();
-        skgpu::ganesh::PinAsTexture(context, image.get());
-        skgpu::ganesh::UnpinTexture(context, image.get());
-        context->flushAndSubmit();
-    }
-    // Hardware Bitmap 此处为空操作
-}
-```
+## 7. `inBitmap` 与 BitmapPool
 
-`!bitmap->isHardware()` 分支明确表明 Hardware Bitmap 跳过 prepareToDraw 阶段的 upload 逻辑。但 RenderThread 本身依然参与（执行 draw 命令、GPU 渲染、Buffer 提交）。
+### 7.1 Android 17 的复用条件与对象语义
 
-### 完整的渲染管线
+API 19 及以上，`BitmapFactory` 可以尝试复用一个可变 Bitmap，只要新解码结果所需字节数不超过旧 Bitmap 的 `getAllocationByteCount()`。Hardware Bitmap 始终不可变，不能作为 `inBitmap`。API 19 之前还要求 JPEG/PNG、相同尺寸且 `inSampleSize = 1`。
 
-```text
-App 主线程                      RenderThread                  SurfaceFlinger
-   |                                  |                              |
-View.onDraw(RecordingCanvas)         |                              |
-       |                              |                              |
-RenderNode.record()                   |                              |
-       |                              |                              |
-DisplayList 记录 drawBitmap 命令       |                              |
-       |                              |                              |
-                         syncFrameState()                              |
-                                    |                                 |
-                         DrawFrameTask.run()                          |
-                                    |                                 |
-                         SkiaCanvas::drawBitmap()                     |
-                                    |                                 |
-                         SkCanvas->drawImage(image from AHB)          |
-                                    |                                 |
-                         GPU 渲染命令执行 + context->flushAndSubmit()  |
-                                             BufferQueue/dequeueBuffer
-                                                                    |
-                                                                    HWC composition
-```
+Android 17 native 流程在复用成功时调用 `bitmap::reinitBitmap()` 更新同一个 Java Bitmap 的宽高和配置，然后返回传入的 `javaBitmap`。调用方仍应只使用 decode 返回值，因为公共文档要求不能假设每次都复用成功；无效复用可能以 `IllegalArgumentException` 结束。
 
-Hardware Bitmap 的优化点：**省去 software bitmap 首次绘制前的同步 upload 成本**，但无法绕过渲染管线直接交给 SurfaceFlinger。
-
-## inBitmap 复用机制与 BitmapPool
-
-### 为什么需要复用
-
-Bitmap 的创建和销毁是内存抖动的主要来源之一。一次 `BitmapFactory.decodeResource` 会分配几十 KB 到几十 MB 不等的 Native 内存。当这个 Bitmap 不再使用被 GC 回收时，Native 内存释放。如果在列表滑动中反复执行这个过程——分配 → 使用 → 回收 → 分配 → 使用 → 回收——内存分配曲线会呈锯齿状，GC 被频繁触发。
-
-单次 GC 未必很长，但 GC 期间会暂停所有线程（在 ART 的部分 GC 模式下）。如果 GC 频率达到每秒几十次，累积的暂停时间就足以导致掉帧。
-
-### inBitmap 的工作原理
-
-`inBitmap` 的核心思想是：不释放旧 Bitmap 的内存，而是把这块内存拿去解码新图片。
+下面的代码展示了复用时必须遵守的引用规则：
 
 ```java
 BitmapFactory.Options options = new BitmapFactory.Options();
-options.inBitmap = reusableBitmap;  // 复用这个 Bitmap 的像素内存
-options.inSampleSize = 2;
-Bitmap resultBitmap = BitmapFactory.decodeResource(res, resId, options);
-// decodeResource 返回值通常与 options.inBitmap 指向同一个 Bitmap 对象，
-// 底层像素缓冲被重新配置并复用；调用方应使用返回值作为后续引用，
-// 不要继续按旧尺寸/旧内容使用 reusableBitmap。
-// [已验证：AOSP android-17.0.0_r1 BitmapFactory.cpp doDecode() —
-//  javaBitmap != null 时执行 bitmap::reinitBitmap() 后 return javaBitmap]
+options.inMutable = true;
+options.inBitmap = candidate;
+
+Bitmap decoded;
+try {
+    decoded = BitmapFactory.decodeStream(input, null, options);
+} catch (IllegalArgumentException reuseFailed) {
+    options.inBitmap = null;
+    decoded = BitmapFactory.decodeStream(reopenedInput, null, options);
+}
+
+if (decoded == null) {
+    throw new IOException("Image decode failed");
+}
+candidate = decoded;
 ```
 
-关键细节：`decodeResource` 返回的 Bitmap 就是 `options.inBitmap` 传入的那个 Java 对象（不是新建对象）。底层像素缓冲被重新配置以容纳新解码的图片数据。调用方必须使用返回值作为后续引用——`reusableBitmap` 变量在解码后仍指向同一个对象，但其尺寸和内容已经改变，不应再按旧参数使用。[已验证：AOSP `BitmapFactory.cpp` `doDecode()` 中 `javaBitmap != nullptr` 分支执行 `bitmap::reinitBitmap()` 后 `return javaBitmap`]
+输入流通常不能直接重放，复用失败后的重试需要重新打开数据源。成功后 `candidate` 的旧尺寸和旧内容都已失效，持有旧语义的其他引用会产生数据错误。
 
-### Glide 的 BitmapPool 实现
+### 7.2 BitmapPool 是复用池，不是内容缓存
 
-Glide 4.x 使用 `LruBitmapPool` 管理 Bitmap 复用池。当 Bitmap 不再使用时，不调用 `recycle()`，而是放回 BitmapPool。下次解码新图片时，Glide 从池中找一个大小足够的 Bitmap，通过 `inBitmap` 复用它的内存。
+BitmapPool 保存可供下一次解码或变换覆盖的空闲像素 backing；内存缓存保存仍能按 key 返回给 UI 的图片资源。二者目的和生命周期不同：
 
-BitmapPool 的大小由 `MemorySizeCalculator` 根据设备配置自动计算（通常与内存缓存共享同一个内存预算）。当池满时，用 LRU 策略淘汰最早放入的 Bitmap。
+- 内容缓存命中可以省掉 fetch、decode 和 transformation；
+- BitmapPool 命中主要减少新像素分配和碎片；
+- 池过大会挤压内容缓存与业务内存；
+- 资源仍在显示或被引用时，不能放回池中覆盖。
 
-Glide 的内存缓存体系分成三层：
+Glide 4 使用 `LruBitmapPool` 配合 `inBitmap`。使用 Glide 管理的 Bitmap 时，应用不能手动 `recycle()`，也不能在请求 clear 或资源释放后继续持有底层 Bitmap。否则池可能把同一 backing 分配给另一请求。
 
-1. **Active Resources**：正在被使用的图片，用弱引用持有。ImageView 还在显示这张图时，它会留在这里。
-2. **LruResourceCache**：LRU 内存缓存。图片不再被 Active 持有时进入这里。
-3. **LruBitmapPool**：Bitmap 复用池。解码新图片时优先从这里取可复用的 Bitmap。
+Coil 从 2.x 移除了 BitmapPool，Coil 3 延续该设计。使用 Coil 时应把精力放在目标尺寸、请求去重、内存/磁盘缓存和并发量，避免照搬 Glide 的池参数。
 
-这三层协同工作：当系统内存紧张时，Glide 收到 `ComponentCallbacks2.onTrimMemory` 回调，会按源码顺序清理：先通知所有 `RequestManager`（`level >= TRIM_MEMORY_MODERATE` 时暂停并移除未完成请求，更低 level 不做处理），再清理 `MemoryCache`（即 `LruResourceCache`），然后清理 `BitmapPool`，再清理 `ArrayPool`。`ActiveResources` 不是 `onTrimMemory` 的主动清理目标——它用弱引用持有正在使用的资源，引用计数归零时自然移入 `LruResourceCache`。[已验证：Glide 4.16.0 `Glide.trimMemory()` + `RequestManager.onTrimMemory()` 源码调用链]
+## 8. Glide 与 Coil：先确认请求生命周期
 
-## 图片格式解码性能
+### 8.1 Glide 的缓存查找顺序
 
-不同图片格式的解码速度差异很大，理解这些差异有助于在业务中选择合适的格式。
+Glide 官方文档把一次请求的查找路径描述为：
 
-### 各格式解码成本对比
+1. Active Resources；
+2. Memory Cache；
+3. Resource Disk Cache；
+4. Data Disk Cache；
+5. 原始数据源。
 
-这组比较只讨论“同一设备、同一分辨率、使用系统默认解码器”时的常见趋势，不是 benchmark 结果。做格式选型，还是要在目标机型上实测。
+Resource Disk Cache 保存已解码、变换后的资源，Data Disk Cache 保存原始或转换后的编码数据。BitmapPool 不在这条内容缓存链中。排查“为什么又解码”时，要同时记录 model、signature、尺寸、transformation、options、resource class 和缓存策略；任一 key 维度变化都可能导致未命中。
 
-| 格式 | 文件体积趋势 | 解码成本 | 适合场景 | 备注 |
-|------|-------------|---------|---------|------|
-| JPEG | 小 | 低 | 照片、封面 | 通用性最好 |
-| PNG | 大 | 高 | 图标、透明 UI 资源 | 无损，照片类内容不划算 |
-| WebP（有损） | 更小 | 低到中 | 照片、信息流图片 | 常见做法是用它替代 JPEG |
-| WebP（无损） | 中到大 | 中到高 | 需要无损压缩的 UI 资源 | 解码通常比有损 WebP 更重 |
-| AVIF | 很小 | 差异很大 | 带宽敏感的图片 | 软件解码偏慢，硬件能力要按设备确认 |
-| GIF（单帧） | 中 | 中 | 兼容旧动画资源 | 色彩位数有限 |
+`into(imageView)` 会替换该 target 上旧的 Glide 请求。View 明确结束使用时可调用 `clear()`；在 RecyclerView 中，重新 bind 同一 ImageView 通常会替换旧请求，复杂 target 或预加载仍要按生命周期清理。资源交还 Glide 后不得继续保留或手工 recycle。
 
-[待验证：如果要给出具体毫秒数，需要固定设备、分辨率、图片样本、解码器实现，再用 Macrobenchmark 或自建基准实测]
+Glide 根据 Target 尺寸参与 downsample，但不能承诺输出“刚好等于控件像素”。ScaleType、override、transformation、codec 采样和磁盘缓存资源都会影响结果。定位内存异常时应记录请求尺寸与最终 Bitmap 尺寸。
 
-### AVIF：更高压缩率与解码代价
+### 8.2 Coil 3 的共享 ImageLoader
 
-Android 12（API 31）引入了对 AVIF 的基础支持。Android 14 对部分新设备要求支持 AV1 硬件解码，但 AVIF 的硬件加速取决于 SoC 的 AV1 解码器是否支持 still image 子集（SUBPEL 精度和 single tile 限制）；不满足条件的设备退回软件解码（libdav1d）。
+Coil 3 的 `ImageLoader` 持有内存缓存、磁盘缓存、网络客户端和组件注册表。应用通常应共享一个配置好的实例；每个页面创建 ImageLoader 会复制缓存和连接资源。
 
-AVIF 基于 AV1 视频编码的帧内压缩，相比 JPEG 在同等画质下通常能用更小文件换取相近画质；具体比例取决于图片内容、编码参数和解码器。对于带宽敏感的场景（图片 CDN、社交信息流），它能减少网络流量和 CDN 成本。抖音的技术团队通过将 JPEG 转为 HEIC（类似思路的格式），带宽成本降低超过 80%。
+Coil 3 的网络功能位于独立 artifact，例如 `coil-network-okhttp`。`allowHardware(false)` 用于请求 CPU 可访问的 Bitmap；在 Android 上，HARDWARE 请求被禁用或不兼容时会选择 software 配置。Coil 2/3 没有 BitmapPool，看到“池命中率”指标时应先确认它来自业务层还是其他组件。
 
-但 AVIF 的软件解码比较慢，在低端设备上可能成为瓶颈。如果应用的 minSdk 低于 31，还需要考虑软件解码兜底。常见工程做法是把 `libavif` 一类 JNI 解码库随 App 打包，在 Android 12 以下走软件解码，再按系统版本和 ABI 做能力分流。代价是包体、CPU 开销和 Native 维护成本都会上升。
+Glide 与 Coil 的选择不应只看 API 风格。已有缓存 key 体系、自定义 fetcher/decoder、Compose 集成、动画格式、监控接口、包体和升级成本都要纳入评估。性能结论应来自相同图片集、相同尺寸和相同缓存冷热状态的对照测试。
 
-### 大图解码的 OOM 风险
+## 9. 格式选择：编码体积与解码成本分开测
 
-一张 4000×3000 的照片用 ARGB_8888 解码，内存占用 = 4000 × 3000 × 4 = 48MB。如果在列表中同时持有多个这样的 Bitmap，很快就会触发 OOM 或导致系统杀进程。
+编码文件大小无法推导 Bitmap 分配。4000×3000 的 JPEG、WebP 或 AVIF 即使文件体积差很多，解码到相同尺寸和软件配置后，输出像素量仍接近；差异主要出现在下载、解析、codec CPU、临时缓冲、色彩转换和动画帧管理。
 
-`inSampleSize` 是应对大图的标准手段。计算方法：
+| 格式 | 主要特性 | 评估重点 |
+|---|---|---|
+| JPEG | 照片常用、有损、无 alpha | 质量、体积、EXIF、渐进式支持 |
+| PNG | 无损、支持 alpha | 内容类型、体积、解码 CPU；UI 图与照片分开测 |
+| WebP | 有损/无损/alpha/动画 | 系统版本、编码参数、画质与解码时延 |
+| AVIF | 高压缩潜力、HDR/alpha 能力 | 设备覆盖、codec 路径、CPU、功耗、兼容回退 |
+| HEIF/HEIC | 高压缩潜力、容器能力 | 平台支持、专利/服务端链路、解码路径 |
+| GIF | 兼容广、颜色和压缩受限 | 帧数、帧尺寸、disposal、动画内存 |
+
+Android 12 / API 31 加入 AVIF 支持。Android 17 的 `ImageDecoder.isMimeTypeSupported("image/avif")` 会检查平台能力，但 AV1 视频硬件能力不能直接证明静态 AVIF 的某次解码走硬件。应用若关心硬件或软件路径，需要在目标 SoC、系统镜像和输入样本上采集 codec、CPU 与功耗证据。
+
+格式对照测试至少固定以下变量：源图片集、输出像素尺寸、色彩空间、质量目标、冷/热缓存、线程数、设备温度和系统版本。记录编码体积、P50/P95 解码时间、峰值 PSS/native/graphics、能耗以及视觉质量。不要用单张图给所有资源定格式规则。
+
+## 10. 大图与 OOM：看峰值和并发
+
+`width × height × 4` 只适合估算紧凑 `ARGB_8888` 输出。更完整的预算包含：
+
+`峰值 ≈ 输出 backing + codec 临时缓冲 + resize/transform 输出 + gainmap + 同时在途请求 + 缓存新增量`
+
+一张 4000×3000 的紧凑 ARGB_8888 输出约 48,000,000 字节，约 45.8 MiB；row stride、色彩配置和附加层还会改变数值。若列表同时解码四张，风险来自并发峰值，单张图成功不能证明方案安全。
+
+工程控制项包括：
+
+- 在拿到目标 View/Compose constraints 后再确定请求尺寸；
+- 对预取与解码设置并发上限，低内存设备单独测量；
+- 变换链尽量复用输出，避免连续保留多个全尺寸中间 Bitmap；
+- 超大图缩放查看时使用区域解码或分块方案；
+- 页面退出、target 替换与请求取消要结束 fetch/decode 和引用；
+- 缓存预算与页面业务对象共享同一进程内存，而非独立额度；
+- 用 `onTrimMemory` 调整缓存，但不要依赖它挽救已经过高的瞬时分配。
+
+OOM 排查要保留输入尺寸、目标尺寸、配置、并发数、缓存状态、gainmap、有无 transformation 和失败前内存快照。只记录“加载某 URL 时 OOM”不足以复现。
+
+## 11. 用 Perfetto 区分 decode、upload 与 present
+
+### 11.1 建立可关联的业务 slice
+
+框架不会为每个图片库请求自动生成可读的 URL/业务名 slice。可在自有解码边界或图片库 listener 中加入短、稳定且不含隐私的 trace 名称。
+
+下面的包装保证异常时也会闭合 trace：
 
 ```java
-public static int calculateInSampleSize(BitmapFactory.Options options, 
-                                         int reqWidth, int reqHeight) {
-    final int height = options.outHeight;
-    final int width = options.outWidth;
-    int inSampleSize = 1;
-    if (height > reqHeight || width > reqWidth) {
-        final int halfHeight = height / 2;
-        final int halfWidth = width / 2;
-        while ((halfHeight / inSampleSize) >= reqHeight
-                && (halfWidth / inSampleSize) >= reqWidth) {
-            inSampleSize *= 2;
-        }
-    }
-    return inSampleSize;
+Trace.beginSection("ImageDecode:feed_thumbnail");
+try {
+    return BitmapFactory.decodeStream(input, null, options);
+} finally {
+    Trace.endSection();
 }
 ```
 
-关键原则：解码尺寸应该尽量匹配显示尺寸。如果 ImageView 只有 360×640 像素，解码一张 4000×3000 的原图就是浪费。设置 `inSampleSize = 4` 后解码为 1000×750（4.7MB），再由 GPU 缩放到 360×270 显示，内存省了 90%。
+这段 slice 只覆盖被包装的同步调用。网络、排队、异步回调、图片库内部变换和纹理准备应分别标记，避免用一个长 slice 混合多类等待。
 
-## Glide 管线架构与性能调优
+### 11.2 一帧一帧对齐证据
 
-Glide 是目前 Android 生态中使用最广泛的图片加载库。理解它的内部架构，才能在遇到性能问题时知道从哪里下手。
+定位某个 jank frame 时，按时间轴检查：
 
-### 请求生命周期
+1. FrameTimeline 中 app frame 的 deadline、present type 与 jank tag；
+2. 主线程是否在 decode、资源读取、Bitmap 变换或回调中消耗 CPU；
+3. 图片库 worker 是否出现长 decode，同时与主线程争用大核或内存带宽；
+4. RenderThread 是否在图片首次绘制附近出现 `Bitmap#prepareToDraw`、纹理创建、upload 或长 `DrawFrame`；
+5. 应用 buffer 是否按时 queue，SurfaceFlinger/HWC 是否另有合成延迟；
+6. 同一时段是否有 GC、native 内存增长、页错误或 thermal/cpufreq 变化。
 
-一次完整的 Glide 加载请求经过以下阶段：
+CPU sampling 或 heapprofd 需要在 trace 配置中显式启用。普通 system trace slice 不能自动提供完整 native 调用栈。采样率也会影响短解码函数是否被捕获。
 
-```text
-Glide.with(context)
-  .load(url)
-  .into(imageView)
+### 11.3 查询自定义 slice
 
-→ RequestBuilder 构建 Request
-→ Engine 检查缓存
-  → Active Resources（弱引用）→ 命中？返回
-  → LruResourceCache（内存缓存）→ 命中？返回
-  → DiskLruCacheWrapper（磁盘缓存）→ 命中？DecodeJob 解码 → 返回
-  → 原始数据源（网络/文件）→ DataFetcher 获取 → DecodeJob 解码 → 返回
-```
-
-`Engine` 是整个管线的调度中心。它为每个请求创建一个 `EngineJob`（管理线程和回调），一个 `DecodeJob`（负责实际解码）。`DecodeJob` 从数据源获取原始数据后，用 `ResourceDecoder` 解码为 Bitmap，中间可以插入 `Transformation`（圆角、裁剪等），最终通过 `ResourceTranscoder` 转换为目标类型。
-
-### 内存缓存策略
-
-Glide 的内存缓存分为两层：
-
-**Active Resources（活跃资源）**：用弱引用 `ResourceWeakReference` 持有当前正在使用的图片。当一个 `Resource` 的引用计数归零时，它从 Active Resources 移到 LruResourceCache。
-
-**LruResourceCache**：LRU 策略的内存缓存。大小由 `MemorySizeCalculator` 自动计算，计算逻辑以屏幕像素数为基础：`memoryCacheScreens` 默认 2 屏 ARGB_8888 像素，`bitmapPoolScreens` 在 Android 8.0 以下为 4、8.0+ 为 1、低内存 8.0+ 可降至 0；二者总和受 `maxSizeMultiplier=0.4`（低内存时 `lowMemoryMaxSizeMultiplier=0.33`）的 `maxMemory` 百分比上限约束。生产设备上的实际值通常在 maxMemory 的 1/8 到 1/3 之间，取决于屏幕分辨率和内存等级。开发者可以在 `AppGlideModule` 中通过 `MemorySizeCalculator.Builder` 自定义这些参数。[已验证：Glide 4.16.0 `MemorySizeCalculator` 源码]
-
-### Glide 的自动降采样
-
-Glide 在解码时会自动根据 `ImageView` 的尺寸计算采样率。流程是：
-
-1. 读取图片的原始尺寸（`inJustDecodeBounds = true`）
-2. 获取 `ImageView` 的实际尺寸（`getWidth()` / `getHeight()`）
-3. 计算 `inSampleSize`，使解码后的尺寸 ≥ `ImageView` 尺寸且最接近
-
-自动降采样是 Glide 最有用的特性之一：开发者不需要手动计算采样率，Glide 保证解码后的图片刚好够用，不浪费内存。
-
-### 常见配置误区
-
-**误区 1：禁用缓存**。`DiskCacheStrategy.NONE` 看似减少磁盘占用，但每次加载都需要重新从网络或磁盘读取原始数据并解码。对于频繁显示的图片（列表中的头像、封面），这会增加 CPU 负担和耗电。
-
-**误区 2：错误的线程池大小**。Glide 默认的 `ExecutorService` 大小根据 CPU 核心数自动计算。手动设置过大的线程池会导致过多的并发解码，争抢 CPU 和内存带宽，反而降低帧率。
-
-**误区 3：在 RecyclerView 中不做生命周期管理**。`Glide.with(itemView)` 会自动绑定包含该 View 的 Fragment/Activity 的生命周期，在 `onStop` 时暂停请求、`onDestroy` 时清理资源。但 RecyclerView item 回收不是 Activity/Fragment 的生命周期事件——item 出屏回收入池时，Glide 不会自动取消对应请求。正确的做法是在 `onViewRecycled(holder)` 中调用 `Glide.with(itemView).clear(imageView)` 显式释放，或者在 `onBindViewHolder` 中对同一个 `ImageView` 重新调用 `into()` 时，Glide 会替换旧请求。如果传了 `ApplicationContext`，宿主生命周期绑定也会失效，请求只能等自然完成或手动取消。[已验证：Glide `RequestManagerRetriever.get(View)` 查找宿主 Fragment/Activity；RecyclerView 回收不触发宿主生命周期回调]
-
-## Coil 管线架构
-
-Coil 的 API 设计以 Kotlin Coroutine 为中心，和 Compose 的结合也更自然。请求取消、超时和生命周期联动都更直接，但底层获取和解码仍然落在 Dispatcher 对应的工作线程上，不是“完全没有线程”。
-
-### 基于 Coroutine 的请求模型
-
-```kotlin
-// Coil 的典型用法
-imageView.load("https://example.com/photo.jpg") {
-    crossfade(true)
-    transformations(CircleCropTransformation())
-    size(1080, 1920)  // 目标尺寸
-}
-```
-
-一次 Coil 请求大致会经历：请求构建 → Memory Cache 查找 → Disk Cache / Fetcher 读取数据 → Decoder 解码 → Transformation（如有）→ Target 显示。
-
-### 缓存与 Bitmap 管理要按版本看
-
-Coil 2.x 开始移除了 `BitmapPool` 和相关 API，不再走“把旧 Bitmap 放回池里，再用 `inBitmap` 复用”的路线。主要原因有两个：一是支持 Immutable Bitmap——`inBitmap` 复用会修改 Bitmap 的内部状态，Coil 3.x 的跨平台架构（Kotlin Multiplatform）要求 Bitmap 在解码后保持不可变；二是简化内存模型，把优化重心放在尺寸控制和缓存命中上，而非运行时 Bitmap 池管理。Coil 3.x 延续了这个策略，没有把 BitmapPool 加回来。[已验证：Coil `upgrading_to_coil2.md`]
-
-除了 BitmapPool，Coil 的磁盘缓存策略在不同版本间也有变化：
-
-1. **Coil 1.x**：主要依赖 OkHttp `Cache`
-2. **Coil 2.x**：切到自带 `DiskCache`，官方明确不建议再把 OkHttp `Cache` 当成图片磁盘缓存
-3. **Coil 3.x**：继续使用自带 `DiskCache`，但缓存格式和 2.x 不兼容；升级时通常要准备清缓存。同时，3.x 把网络加载拆成独立模块，只有引入 `coil-network-okhttp` 等网络 artifact，才具备网络图片加载能力。[已验证：Coil `upgrading_to_coil2.md` / `upgrading_to_coil3.md`]
-
-Hardware Bitmap 也不能只写成“默认开启”。Coil Android 侧的 `allowHardware` 默认值是 `true`，但如果目标 View 不是硬件加速，或者请求配置与硬件位图不兼容，Coil 会把 `Bitmap.Config.HARDWARE` 回退成 `ARGB_8888`。[已验证：Coil `imageRequests.android.kt` / `RequestService.android.kt`]
-
-### Coil vs Glide 的选择
-
-| 维度 | Glide 4.x | Coil 2.x / 3.x |
-|------|-----------|----------------|
-| 语言与 API 风格 | Java + Kotlin，历史兼容性好 | Kotlin-first，Coroutine / Compose 友好 |
-| Compose 支持 | 需要额外库 | `AsyncImage` 等 API 更直接 |
-| Bitmap 复用 | `LruBitmapPool` + `inBitmap` | 不提供 BitmapPool |
-| 磁盘缓存 | `DiskLruCacheWrapper` | 自带 `DiskCache`，3.x 网络模块单独引入 |
-| Hardware Bitmap | 按请求条件决定，必要时 `disallowHardwareConfig()` | `allowHardware(true)` 默认允许，不兼容请求会回退 |
-| 适合场景 | 历史 Java 项目、定制化 `ModelLoader`、成熟插件生态 | 纯 Kotlin / Compose 项目，希望 API 更轻 |
-
-如果项目是纯 Kotlin、使用 Compose，Coil 的接入成本更低。如果项目历史较长、有大量 Java 代码，或者已经深度依赖 Glide 的扩展点，继续用 Glide 更稳妥。
-
-除了 Glide 和 Coil，国内大型 App 也有基于其他图片库深度定制的实践。抖音的 BDFresco 框架在 Fresco 基础上做了多层优化，包括动静图缓存拆分、HEIF 软解码、按需缩放等。抖音的实验数据表明：动静图缓存拆分后，OOM 数量下降，大盘帧率上升；将不携带透明通道的图片从 ARGB_8888 降级为 RGB_565，内存占用减少近一半。这些是大型 App 在图片优化上的工程实践，思路值得借鉴。
-
-## 在 Perfetto 中定位图片解码卡顿
-
-### 两类耗时要分开看
-
-图片相关 jank 常见有两段：
-
-1. **解码阶段**：`BitmapFactory` / `ImageDecoder` 把压缩数据展开成像素
-2. **首帧上传阶段**：software bitmap 第一次参与绘制时，RenderThread 把像素上传成 GPU 纹理
-
-如果只盯主线程，容易漏掉第二段；如果只盯 RenderThread，又会把“上传慢”误判成“解码慢”。
-
-### 主线程解码怎么找
-
-图片解码不会自动出现在 Perfetto 里，除非 App 或图片库自己打了 trace。定位方法通常有两种：
-
-**方法 1：自定义 Trace。** 在业务的解码包装层加 `Trace.beginSection("Bitmap.decode")` / `Trace.endSection()`，这样 `slice` 表里就会有可查询的名字。
-
-```java
-Trace.beginSection("Bitmap.decode");
-Bitmap bitmap = BitmapFactory.decodeResource(res, resId, options);
-Trace.endSection();
-```
-
-**方法 2：看调用栈。** 如果某一帧的主线程 CPU slice 很长，展开调用栈后看到 `BitmapFactory.nativeDecodeAsset`、`BitmapFactory.nativeDecodeStream` 或 `ImageDecoder` 相关栈帧，通常就是解码跑上主线程了。
-
-[图：Perfetto 主线程片段。FrameTimeline 中某一帧超过预算；同一时间 MainThread 上出现 `Bitmap.decode` slice，持续 20ms 以上。标出该帧开始时间、slice 持续时间、对应的 `Choreographer#doFrame` 区间。]
-
-### software bitmap 首帧为什么会卡
-
-software bitmap 解码完成后，像素还在 CPU 可访问内存里。第一次绘制到屏幕时，RenderThread 还要把它上传成 GPU 纹理。AOSP 对 `Bitmap.prepareToDraw()` 的注释写得很明确，从 Android 7.0 起，这个调用会在 RenderThread 上异步触发 upload，尽量把成本挪到正常 draw path 之外。[已验证：AOSP `Bitmap.java`]
-
-对应到分析过程，可以按这个顺序看：
-
-`decode 完成` → `Bitmap.prepareToDraw()` 预上传，或者首帧 draw 时同步上传 → RenderThread 出现 upload / draw 开销 → FrameTimeline 出现 jank frame
-
-Hardware Bitmap 的价值就在这里。像素本来就在 GPU 可访问内存中，渲染阶段不用再做 software bitmap 的首帧上传。
-
-`Bitmap.prepareToDraw()` 从 Android 7.0 起就在 RenderThread 上异步触发纹理上传，公开 API 行为在 Android 17 / API 37 基准下仍成立。工程实践上，在解码完成后的工作线程或图片即将显示前调用 `prepareToDraw()` 即可预上传；不需要额外配合 `Choreographer` 的 `CALLBACK_COMMIT` 阶段——`Choreographer.postFrameCallback()` 投递的是 `CALLBACK_ANIMATION` 类型，不等于 `CALLBACK_COMMIT`。[已验证：AOSP android-17.0.0_r1 `Bitmap.java` prepareToDraw() 注释与 `Choreographer.java` 回调类型]
-
-源码路径上，Hardware Bitmap 不能绕过 RenderNode 直接提交给 SurfaceFlinger。Hardware Bitmap 仍需经过 Display List 录制 → `syncFrameState` 同步 → `DrawFrame` 执行的完整 RenderNode 流程。优化点在于 **upload 时机的转移**：普通 Bitmap 在首帧 `syncFrameState` 期间同步 upload 纹理，而 Hardware Bitmap 在创建时已完成 GPU 内存分配，首帧无需 upload。`Bitmap.prepareToDraw()` 对 `Config.HARDWARE` 是 no-op（因为 upload 已完成）。SurfaceFlinger 的 HWC 合成决策（DEVICE Overlay vs CLIENT Composition）不受 Hardware Bitmap 影响，仍按标准 BufferQueue → validate → compose 流程执行。[已验证：AOSP android-17.0.0_r1 `Bitmap.java`、`DrawFrameTask.cpp`、`RecordingCanvas.cpp`、`SkiaGpuPipeline.cpp`]
-
-[图：Perfetto RenderThread 片段。`Bitmap.prepareToDraw` 或首帧 `DrawFrame` 前后出现长 slice，并且能看到同一帧的 jank frame。旁边补一张使用 Hardware Bitmap 的正常帧，说明少掉了首帧 texture upload。]
-
-### 用 Perfetto SQL 查自定义解码 slice
-
-如果代码里已经打了 `Bitmap.decode` 这类自定义 trace，可以直接查 `slice` 表：
+下面的 SQL 用于列出业务已经打标的图片阶段，并按耗时排序：
 
 ```sql
 SELECT
-  name,
-  track_id,
-  dur / 1000000.0 AS dur_ms,
-  ts
-FROM slice
-WHERE name LIKE 'Bitmap.decode%'
-ORDER BY dur DESC
+  s.name,
+  s.ts,
+  s.dur / 1e6 AS dur_ms,
+  t.name AS thread_name
+FROM slice AS s
+JOIN thread_track AS tt ON s.track_id = tt.id
+JOIN thread AS t ON tt.utid = t.utid
+WHERE s.name GLOB 'ImageDecode:*'
+ORDER BY s.dur DESC
 LIMIT 50;
 ```
 
-这个查询只覆盖手工标过的 slice，它不会自动识别所有 `BitmapFactory.decode*` 调用。
+查询结果只能证明对应 slice 的墙钟持续时间。若要区分 CPU 运行、锁等待和 I/O，需要继续关联 thread state、sched 与采样调用栈。
 
-### StrictMode 能做什么
+### 11.4 StrictMode 的作用有限
 
-`StrictMode` 只能观测显式标记的慢调用。调试构建里，如果线程策略开启 `detectCustomSlowCalls()`，业务代码又在解码包装层调用了 `StrictMode.noteSlowCall("Bitmap decode on main thread")`，日志里就会出现对应告警。[已验证：AOSP `StrictMode.java`] 它不会自动把所有 `BitmapFactory.decode*` 抓出来，所以排查主线程解码，还是要靠自定义 Trace、调用栈或 benchmark。
+`detectCustomSlowCalls()` 只会报告应用主动调用 `StrictMode.noteSlowCall()` 的位置。它不会自动拦截全部 `BitmapFactory.decode*`。它适合在 debug 构建中防止自有同步解码回到主线程，不能替代 Perfetto、benchmark 或图片库监控。
 
-## 优化实践总结
+## 12. 可执行检查清单
 
-把这一节的内容整合成一份可执行的检查清单：
+### 尺寸与解码
 
-### 解码阶段
+- [ ] 记录编码尺寸、EXIF 方向、目标像素尺寸与最终 Bitmap 尺寸。
+- [ ] `BitmapFactory` 的 `inSampleSize` 使用 2 的幂，并检查返回尺寸。
+- [ ] `ImageDecoder` 的 target 设置在 header callback 内；区分 DEFAULT 与强制 HARDWARE。
+- [ ] resource 图片确认 density 目录，避免意外放大。
+- [ ] 统计 decode、resize、transform 各自耗时和临时内存。
+- [ ] 对异常尺寸、损坏文件、取消请求和复用失败有明确处理。
 
-1. **匹配 ImageView 尺寸**：解码前计算 `inSampleSize`，不加载比显示尺寸大的图。Glide/Coil 自动做了这件事。
-2. **选择合适的 Bitmap.Config**：不需要透明通道的图片用 `RGB_565`，省一半内存。
-3. **优先用 ImageDecoder**（API 28+）：系统 API 会自动处理 EXIF 旋转。若使用 Glide 4.x 加载 Bitmap，还要先确认有没有显式打开 `setImageDecoderEnabledForBitmaps(true)`。
-4. **使用 Hardware Bitmap**：只展示不修改的图片用 `Bitmap.Config.HARDWARE`，Java 堆几乎零占用。
+### 内存与生命周期
 
-### 内存管理
+- [ ] 使用 `rowBytes`、`allocationByteCount` 和最终配置核算 software bitmap。
+- [ ] Ultra HDR 同时核算 base、gainmap 和解码临时缓冲。
+- [ ] 记录在途请求数、缓存新增量和页面退出后的资源下降。
+- [ ] Glide 资源交还后不再持有，不手动 recycle。
+- [ ] Coil 共享 ImageLoader，确认 memory/disk cache 配置。
+- [ ] 低内存回调与缓存缩减策略经过设备测试。
 
-5. **利用内存复用**：减少内存分配/释放频率，降低 GC 压力。Glide 4.x 已封装 `BitmapPool` / `inBitmap`；Coil 2.x / 3.x 不再提供 BitmapPool，优化重心应放在尺寸控制、缓存命中和请求配置上。
-6. **监控 fd 数量**：Hardware Bitmap 消耗 fd，大量图片场景需要关注 `/proc/<pid>/fd` 的数量。
-7. **响应 onTrimMemory**：在系统内存紧张时释放图片缓存。Glide 自动做了。
+### Hardware Bitmap
 
-### 格式选择
+- [ ] 只有 CPU 像素访问、软件 Canvas 或可变输出需求明确时才禁用。
+- [ ] 观察 graphics/native/PSS 与 fd，避免只看 Java Heap。
+- [ ] 验证首绘 RenderThread 成本，确认 Hardware Bitmap 或 `prepareToDraw()` 有可测收益。
+- [ ] 检查目标 View 硬件加速、transformation 和图片库版本的兼容行为。
+- [ ] Hardware Bitmap 不被描述为独立 SurfaceFlinger layer 或固定 4 B/px。
 
-8. **WebP 有损替代 JPEG**：同等画质下通常能减小文件体积，但要用业务图片集确认画质、体积和解码成本。
-9. **AVIF 前瞻**：带宽收益要和解码成本一起评估，硬件能力要按设备确认；minSdk 31 以下要准备软件解码兜底。
-10. **避免 PNG 大图**：PNG 无损压缩，文件大、解码慢。照片类内容通常不要用 PNG。
+### 格式与基准
 
-### 工具链
+- [ ] JPEG、PNG、WebP、AVIF 使用同一业务图片集对照。
+- [ ] 固定输出尺寸、画质目标、缓存状态、线程数和温度。
+- [ ] 同时记录体积、P50/P95 decode、峰值内存、功耗和视觉质量。
+- [ ] AVIF 硬件路径按设备与输入验证，不从 AV1 视频能力推断。
+- [ ] 动图记录帧数、帧尺寸、缓存帧策略与页面可见性。
 
-11. **用 StrictMode 标记自定义慢调用**：开启 `detectCustomSlowCalls()`，并在自有解码包装层手动调用 `noteSlowCall()`；它不会自动捕获 `BitmapFactory.decode*`。
-12. **自定义 Trace 标记解码**：在 `BitmapFactory.decode*` 调用前后加 `Trace.beginSection / endSection`，Perfetto 中直接可见。
+### Perfetto
 
----
+- [ ] fetch、decode、transform、texture preparation 使用不同 trace 名称。
+- [ ] FrameTimeline 与 Main、worker、RenderThread、SurfaceFlinger 同时对齐。
+- [ ] 需要调用栈时启用 CPU sampling；需要 native 分配时配置 heapprofd。
+- [ ] 用 thread state 区分运行、I/O、锁等待和调度延迟。
+- [ ] 结论附带 trace 时间段、设备、构建、输入和请求配置。
 
-> 参考资料（非 AOSP 来源）：万字长文 Android Bitmap 相关的一切（鸿洋/杨充，2023）；深入探索 Android Bitmap：从原理到实战（顾林海，2025）；抖音 Android 端图片优化实践（字节跳动技术团队，2024）；Bitmap 内存优化（2026）；Android Developers: Managing Bitmap Memory / Bitmap.Config.HARDWARE；Glide 官方文档
+## 13. Android 17 源码锚点
+
+以下路径均以 `android-17.0.0_r1` 为准：
+
+- [`BitmapFactory.Options` 公共契约与 `inBitmap` 约束](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/BitmapFactory.java)
+- [`BitmapFactory.cpp` 解码、density scale、复用、Hardware Bitmap 与 gainmap](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/BitmapFactory.cpp)
+- [`Bitmap.java` native allocation、像素访问、Gainmap 与 `prepareToDraw`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java)
+- [`ImageDecoder.java` target size、allocator 与兼容性检查](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java)
+- [`Gainmap.java` contents Bitmap 与参数对象](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Gainmap.java)
+- [`SkiaGpuPipeline.cpp` 的 software texture preparation](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp)
+- [`RecordingCanvas.cpp` 的 Bitmap/Gainmap 绘制入口](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/RecordingCanvas.cpp)
+
+配套官方资料：
+
+- [Android Developers：Managing bitmap memory](https://developer.android.com/topic/performance/graphics/manage-memory)
+- [Android Developers：Loading large bitmaps efficiently](https://developer.android.com/topic/performance/graphics/load-bitmap)
+- [Android Developers：ImageDecoder API](https://developer.android.com/reference/android/graphics/ImageDecoder)
+- [Glide：Caching](https://bumptech.github.io/glide/doc/caching.html)
+- [Glide：Resource reuse](https://bumptech.github.io/glide/doc/resourcereuse.html)
+- [Glide：Hardware Bitmaps](https://bumptech.github.io/glide/doc/hardwarebitmaps.html)
+- [Glide：Targets](https://bumptech.github.io/glide/doc/targets.html)
+- [Coil：ImageLoaders](https://coil-kt.github.io/coil/image_loaders/)
+- [Coil：Network images](https://coil-kt.github.io/coil/network/)
+- [Coil：Upgrading to Coil 2](https://coil-kt.github.io/coil/upgrading_to_coil2/)
+- [Coil：`allowHardware`](https://coil-kt.github.io/coil/api/coil-core/coil3.request/allow-hardware.html)
