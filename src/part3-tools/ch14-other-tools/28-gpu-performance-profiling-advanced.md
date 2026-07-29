@@ -42,9 +42,9 @@ sources:
 
 1. `GpuCounterDescriptor` 提供 counter 的协议级元数据：语义分组、度量单位、counter spec 与硬件 counter block 容量约束。
 2. `GpuCounterEvent` 有 descriptor 直挂与 interned descriptor 两种事件发射模式；Android OEM 合规路径依赖直挂 descriptor，多 producer / 多 GPU 场景可用 interned descriptor 降低重复描述开销。
-3. Trace Processor 在 `gpu_event_parser.h/.cc` 中维护 GPU counter track 与上一条 counter row 状态；`android-17.0.0_r1` 没有早稿曾引用的 `gpu_counter_sequence_state.h`。
+3. Trace Processor 在 `gpu_event_parser.h/.cc` 中维护 GPU counter track 与上一条 counter row 状态，并把回看式采样值写回上一行；`android-17.0.0_r1` 没有早稿曾引用的 `gpu_counter_sequence_state.h`。
 4. `gpu_counter_span_view.sql` 用 `LEAD() OVER (PARTITION BY track_id ORDER BY ts)` 将 counter 采样点转为 span，适合按 GPU track 计算区间持续时间。
-5. `GpuMemTotalEvent` 位于 `protos/perfetto/trace/android/gpu_mem_event.proto`，由 Android `GpuService` 生成，提供 `gpu_id + pid + size` 的平台级 GPU 内存占用事件。
+5. `GpuMemTotalEvent` 位于 `protos/perfetto/trace/android/gpu_mem_event.proto`，由 Android `GpuService` 生成；`pid=0` 表示全局总量，其他 pid 表示进程归属。
 
 ## `GpuCounterDescriptor`：协议层的标准化骨架
 
@@ -69,7 +69,7 @@ RAY_TRACING  = 7
 
 ### 度量单位
 
-`MeasureUnit` 的 `next id: 41` 注释表明该 tag 中已有 41 项单位枚举，覆盖 `BIT`、`BYTE`、`HERTZ`、`SECOND`、`VERTEX`、`PIXEL`、`TRIANGLE`、`PRIMITIVE`、`FRAGMENT`、`MILLIWATT`、`WATT`、`JOULE`、`VOLT`、`AMPERE`、`CELSIUS`、`PERCENT`、`INSTRUCTION` 等。派生单位通过 `numerator_units` × `denominator_units` 表达，例如 `PIXEL / SECOND` 表示每秒像素。
+`MeasureUnit` 的 wire value 从 `NONE = 0` 延伸到 `INSTRUCTION = 40`，覆盖 `BIT`、`BYTE`、`HERTZ`、`SECOND`、`VERTEX`、`PIXEL`、`TRIANGLE`、`PRIMITIVE`、`FRAGMENT`、`MILLIWATT`、`WATT`、`JOULE`、`VOLT`、`AMPERE`、`CELSIUS`、`PERCENT`、`INSTRUCTION` 等。`next id: 41` 是维护枚举编号的注释，不是协议字段。派生单位由 `numerator_units` 和 `denominator_units` 的重复项组合，例如 `PIXEL / SECOND` 表示每秒像素。
 
 ### Counter spec 字段边界
 
@@ -86,11 +86,11 @@ select_by_default
 groups
 ```
 
-本 tag 的 `GpuCounterSpec` 不含 `value_direction` 字段。因此，不能把 Perfetto 上游后续设计或其他分支字段写成 Android 17 已有协议字段。Trace Processor 的 `gpu_event_parser.cc` 仍在 parser 逻辑中把 GPU counters 按回看式采样处理：先插入当前采样行，再用当前 timestamp 回填上一条 counter row 的 duration。
+本 tag 的 `GpuCounterSpec` 不含 `value_direction` 字段。因此，不能把 Perfetto 上游后续设计或其他分支字段写成 Android 17 已有协议字段。Trace Processor 的 `gpu_event_parser.cc` 把 GPU counter 视为回看式采样：收到时间戳 `t(n)` 的事件时，先在 `t(n)` 插入值为 0 的占位行，再把事件携带的 value 写入上一条 counter row。区间 duration 不在这一步回填，而由后面的 SQL span 视图计算。
 
 ### Counter block 容量约束
 
-`GpuCounterBlock { block_id, block_capacity, name, counter_ids }` 用于描述一组 counter 共享同一硬件 block 时的同时启用上限。采集配置不能只按 counter 名称平铺选择；自动化脚本或 UI 应按 `block_id` / `block_capacity` 做 grouping-aware 选取，否则可能在 producer 或驱动层被拒绝。
+`GpuCounterBlock { block_id, block_capacity, name, description, counter_ids }` 用于描述一组 counter 共享同一硬件 block 时的同时启用上限；`block_capacity` 未设置时表示不设上限。采集配置不能只按 counter 名称平铺选择，自动化脚本或 UI 应按 `block_id` / `block_capacity` 预先校验。proto 没有规定超限后的处理方式，不能统一断言 producer 会拒绝、轮转采样或静默裁剪。
 
 ## `GpuCounterEvent`：descriptor 直挂与 interned descriptor
 
@@ -127,7 +127,12 @@ message GpuCounterEvent {
 optional GpuCounterConfig gpu_counter_config = 108 [lazy = true];
 ```
 
-`[lazy = true]` 表示该字段只在 GPU counter data source 启动时解析，而不是对所有 data source 常驻解析。
+该字段对应的数据源名是 `gpu.counters`。`[lazy = true]` 是 protobuf 的延迟解码选项，不能据此推导 GPU data source 的启动时机或常驻状态。采集行为由 `GpuCounterConfig` 的以下字段表达：
+
+- `counter_period_ns`：期望采样周期，还要落在 descriptor 声明的 `min_sampling_period_ns` 与 `max_sampling_period_ns` 范围内；
+- `counter_ids`：要采集的 counter id，含义以本次 producer descriptor 为准；
+- `instrumented_sampling`：请求通过 command buffer instrumentation 采样，使用前应检查 descriptor 的 `supports_instrumented_sampling`；
+- `fix_gpu_clock`：请求在 trace 期间固定 GPU 时钟，会改变动态调频条件，不能与日常运行数据混为同一基线。
 
 ## Trace Processor 导入状态机
 
@@ -152,6 +157,8 @@ base::FlatHashMap<TrackId, std::optional<tables::CounterTable::Id>>
 
 `android-17.0.0_r1` 未包含早稿曾引用的 `gpu_counter_sequence_state.h`；相关描述必须回到 `gpu_event_parser.h/.cc`。
 
+`PushGpuCounterValue()` 的顺序还会影响 trace 边界解释。第一条事件只建立占位行，要等下一条事件到达后，前一个时间点的值才被写入；trace 结束前的末行可能仍是值为 0 的占位行。分析短 trace 或低频采样时，应检查首尾样本，不要把这个 0 自动解释为 GPU 空闲。
+
 ## SQL span 视图：从采样点到区间
 
 `src/trace_processor/metrics/sql/android/gpu_counter_span_view.sql` 的模板如下：
@@ -174,14 +181,16 @@ WHERE name = '{{counter_name}}' AND gpu_id IS NOT NULL;
 - `LEAD(ts, 1, trace_end()) OVER (PARTITION BY track_id ORDER BY ts)` 用下一条采样点时间减当前时间，得到当前 counter 值对应的持续区间。
 - `gpu_id IS NOT NULL` 过滤掉非 GPU counter track。
 
-`test/trace_processor/diff_tests/parser/graphics/gpu_counter_specs.textproto` 展示了测试中使用的标准 counter 名与单位组合，例如：
+这个模板只生成区间，不改变 parser 已写入的 value。末行会延伸到 `trace_end()`，因此它若仍是 parser 的 0 占位值，聚合前应按采样语义决定是否剔除。
+
+`test/trace_processor/diff_tests/parser/graphics/gpu_counter_specs.textproto` 展示了测试使用的 counter 名与单位组合，例如：
 
 - `GPU Frequency`：`denominator_units: SECOND`，即频率类 counter。
 - `Fragments / vertex`：`FRAGMENT / VERTEX`。
 - `Fragment / Second`：`PIXEL / SECOND`。
 - `Triangle Acceleration`：`TRIANGLE / (MILLISECOND · MILLISECOND)`。
 
-这些测试样例可以作为解析链路和 UI 期望名称的证据，但不能直接外推为所有 Android 17 设备都必须暴露的跨厂商性能基准。
+这些是 parser 的合成测试输入，可以验证名称、单位和 group 的导入结果；它们不构成设备 counter 清单，也不能外推为所有 Android 17 设备都必须暴露的跨厂商性能基准。
 
 ## GPU memory event：Android 平台 producer
 
@@ -196,7 +205,9 @@ message GpuMemTotalEvent {
 }
 ```
 
-注释明确该事件由 Android `GpuService` 生成。它与厂商 GPU counter producer 平行，提供进程级 GPU 内存占用报告。`gpu_id + pid + size` 可以用于观察某进程在某个 GPU 上的内存占用，但不能替代厂商 GPU counter，也不能自动推出带宽、shader throughput 或功耗阈值。
+注释明确该事件由 Android `GpuService` 生成。Trace Processor 的 `ParseGpuMemTotalEvent()` 按 `gpu_id` 建立 GPU 维度：`pid == 0` 时写入 global GPU memory counter，其他 pid 则关联进程并写入 process GPU memory counter。`size` 是该时间点的总量值，不是一次 allocation 的增量。
+
+这条平台事件可以观察全局或进程归属的 GPU 内存总量，但不能替代厂商 GPU counter，也不能自动推出带宽、shader throughput、缓存命中率或功耗阈值。pid 归属还不等同于物理页的唯一持有者；跨进程共享 buffer、驱动保留和显示系统引用需要结合 GpuService、dma-buf 与厂商工具解释。
 
 ## 采集与分析建议
 
@@ -204,7 +215,7 @@ message GpuMemTotalEvent {
 2. **尊重 block capacity**：批量启用 counter 时，应按 `GpuCounterBlock.block_capacity` 检查是否超出同一硬件 block 的同时采样能力。
 3. **区分平台事件与厂商 counter**：`GpuMemTotalEvent` 是 Android 平台 GPU memory 事件；GPU 频率、fragment、triangle 等 counter 仍依赖 GPU counter producer 暴露。
 4. **避免跨厂商强归一**：仅凭同属 `MEMORY`、`FRAGMENTS` 或 `COMPUTE` 分组不足以证明 counter 可比。若要建立跨设备基准，必须记录厂商 producer、counter 名称、单位、采样频率与替代映射依据。
-5. **控制 trace 体积**：若粗略按每个 `GpuCounter` 采样含 `counter_id + int_value` 约 12 bytes 估算，50 个 counter、60 秒、1 kHz 采样会产生约 36,000,000 bytes（约 34.3 MiB）的 counter payload；实际 trace 还会叠加 packet、framing 与 interning 开销。
+5. **控制 trace 体积**：样本数量近似为 `counter 数 × 采样频率 × 时长`，但 protobuf 的 `int_value` 是变长编码，`double_value`、嵌套 message、packet framing、descriptor 与 interning 也有额外成本。不要用固定的“每项 12 bytes”推算容量；先做短时采集，测量生成 trace 的 bytes/s，再为目标时长设置 buffer 和采样周期。
 
 ## 不在本章结论范围内的主题
 
@@ -221,14 +232,14 @@ message GpuMemTotalEvent {
 
 所有源码引用均按 AOSP `android-17.0.0_r1` 中 `external/perfetto` 路径复核：
 
-- `protos/perfetto/common/gpu_counter_descriptor.proto`
-- `protos/perfetto/trace/gpu/gpu_counter_event.proto`
-- `protos/perfetto/config/gpu/gpu_counter_config.proto`
-- `protos/perfetto/config/data_source_config.proto`
-- `protos/perfetto/trace/android/gpu_mem_event.proto`
-- `src/trace_processor/importers/proto/gpu_event_parser.h`
-- `src/trace_processor/importers/proto/gpu_event_parser.cc`
-- `src/trace_processor/metrics/sql/android/gpu_counter_span_view.sql`
-- `test/trace_processor/diff_tests/parser/graphics/gpu_counter_specs.textproto`
+- [`protos/perfetto/common/gpu_counter_descriptor.proto`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/protos/perfetto/common/gpu_counter_descriptor.proto)
+- [`protos/perfetto/trace/gpu/gpu_counter_event.proto`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/protos/perfetto/trace/gpu/gpu_counter_event.proto)
+- [`protos/perfetto/config/gpu/gpu_counter_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/protos/perfetto/config/gpu/gpu_counter_config.proto)
+- [`protos/perfetto/config/data_source_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/protos/perfetto/config/data_source_config.proto)
+- [`protos/perfetto/trace/android/gpu_mem_event.proto`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/protos/perfetto/trace/android/gpu_mem_event.proto)
+- [`src/trace_processor/importers/proto/gpu_event_parser.h`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/importers/proto/gpu_event_parser.h)
+- [`src/trace_processor/importers/proto/gpu_event_parser.cc`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/importers/proto/gpu_event_parser.cc)
+- [`src/trace_processor/metrics/sql/android/gpu_counter_span_view.sql`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/metrics/sql/android/gpu_counter_span_view.sql)
+- [`test/trace_processor/diff_tests/parser/graphics/gpu_counter_specs.textproto`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/test/trace_processor/diff_tests/parser/graphics/gpu_counter_specs.textproto)
 
 <!-- AIW-rework-verified-2026-07-27 -->
