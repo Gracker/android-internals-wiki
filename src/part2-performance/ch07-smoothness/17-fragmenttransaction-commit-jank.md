@@ -36,182 +36,295 @@ gap_score: 17
 
 # 7.17 FragmentTransaction 提交时序与主线程卡顿
 
-`FragmentTransaction.commit()` 只是把事务交给 `FragmentManager` 排队，卡顿通常发生在队列被主线程执行之后。排查 Fragment 切换长帧时，要把提交 API、主线程消息调度、Fragment view 创建、布局绘制、列表首屏绑定分开看。
+## 版本锚点与分析对象
 
-[已验证: 官方文档, developer.android.com/guide/fragments/transactions] Android 官方文档对 `commit()` 的描述很直接：事务不会立刻执行，而是安排到主 UI 线程；需要同步执行时才使用 `commitNow()`。这条边界决定了 Fragment 卡顿不能只看调用 `commit()` 的那一行，必须跟到后续 `execPendingActions()` 和 view 创建阶段。[来源: OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-05-fragmenttransaction-commit-source-chain.md]
+本章的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，用于解释主线程 Looper、Choreographer、ViewRootImpl 和 FrameTimeline。Fragment 属于独立发布的 AndroidX 库，不能用 Android 平台版本代替库版本。
 
-## 提交入口：commit、commitNow 与 allowStateLoss 的性能语义
+截至 2026 年 7 月，AndroidX Fragment 稳定版为 1.8.9。本章的库源码锚点是该发行区间末端 commit `f39ca3510efb2347ebfef231e25a3e804922450d`。官方已将 Fragment 标为维护模式，但存量 View/Fragment 项目的切换性能仍需按库源码分析。平台 `android.app.Fragment` 自 API 28 起废弃，只用于理解历史项目。
 
-AndroidX Fragment 的常用提交入口有四类，它们解决的问题不同：
+一次 Fragment 页面切换至少有四个不同时间点：
 
-| API | 执行方式 | 状态保存边界 | 性能风险 |
-| --- | --- | --- | --- |
-| `commit()` | 调用 `BackStackRecord.commitInternal(false, true)`，把事务加入 pending actions | 宿主已经保存状态后会抛异常 | 调用点不一定卡；后续执行事务时可能卡 |
-| `commitAllowingStateLoss()` | 同样入队，但允许状态保存后提交 | 事务可能在进程恢复时丢失 | 性能语义与 `commit()` 接近，风险主要是状态一致性 |
-| `commitNow()` | 调用 `execSingleAction()` 同步执行当前事务 | 不允许 `addToBackStack()` | 调用点会承担 Fragment 生命周期推进和 view 创建成本 |
-| `executePendingTransactions()` | 同步执行已经排队的 pending transactions | 可与 back stack 共存 | 会执行队列里所有待处理事务，容易把别处提交的成本带进当前调用点 |
+1. 业务调用 `commit()`；
+2. `FragmentManager` 在宿主线程执行事务；
+3. 目标 View 完成创建、生命周期推进和特殊效果调度；
+4. App Window 经过 traversal、RenderThread、BufferQueue、SurfaceFlinger 与 HWC 后呈现在屏幕上。
 
-[已验证: AndroidX androidx-main, BackStackRecord.java] `commit()` 和 `commitAllowingStateLoss()` 的差异落在 `allowStateLoss` 参数，二者都会在 `commitAction=true` 时调用 `FragmentManager.enqueueAction()`。`commitNow()` 走 `execSingleAction()`，并在执行前调用 `disallowAddToBackStack()`。[已验证: AndroidX androidx-main, FragmentTransaction.java] 官方注释也明确写出：`commitNow()` 会在返回前完成新增 Fragment 初始化、移除 Fragment 销毁和 view attach，并且比 `commit()` 后接 `executePendingTransactions()` 更可控，因为后者会扫掉所有 pending 事务。
+`commit()` 耗时短，只能说明入队快。`commitNow()` 返回，也只能说明同步事务推进结束；它没有等待目标像素显示，也没有等待异步动画播放完毕。
 
-`allowStateLoss` 不应该被当作性能优化开关。它改变的是 Activity 状态保存之后还能不能提交，以及进程恢复时 UI 状态是否可能丢失；它不会减少 `onCreateView()`、`onViewCreated()`、布局、动画和首屏数据绑定成本。
+## 提交 API 的时序语义
 
-## 待执行队列：从 BackStackRecord 到 pending actions
+| API | 源码路径 | 同步范围 | 约束与风险 |
+|---|---|---|---|
+| `commit()` | `commitInternal(false, true) → enqueueAction()` | 调用点主要完成状态检查与入队 | 宿主保存状态后抛出异常；重成本在后续执行 |
+| `commitAllowingStateLoss()` | `commitInternal(true, true) → enqueueAction()` | 与 `commit()` 同样异步 | 允许丢失已保存状态后的 UI 变更；Manager 已脱离或销毁时可能直接丢弃事务 |
+| `commitNow()` | `disallowAddToBackStack() → execSingleAction()` | 在调用返回前执行该事务、推进 Fragment 状态并创建/attach View | 必须在宿主主线程；不能 `addToBackStack()`；保存状态后抛出异常 |
+| `commitNowAllowingStateLoss()` | `disallowAddToBackStack() → execSingleAction(..., true)` | 与 `commitNow()` 同步 | 允许状态丢失；Manager 已脱离或销毁时可能丢弃；仍不能进 back stack |
+| `executePendingTransactions()` | `execPendingActions(true)`，随后 `forcePostponedTransactions()` | 执行当前 Manager 的全部 pending transactions | 会带入其他提交者的成本，还会强制启动 postponed transactions |
 
-现代项目应该以 AndroidX `androidx.fragment.app` 为分析对象。平台 `android.app.Fragment` 已废弃，平台源码只适合做历史对照。
+`allowStateLoss` 处理状态保存与恢复语义，不会减少 inflate、依赖注入、生命周期回调、列表绑定、布局或 transition 的工作量。为了“更快”而改用它，会引入恢复后 UI 丢失或不一致的风险。
 
-AndroidX 事务入队路径可以压成一条线：
+`commitNow()` 适合需要明确同步顺序、且事务不进 back stack 的少数场景。它不能作为通用卡顿修复：若调用发生在输入回调、滚动、当前帧动画或启动关键区间，Fragment 创建成本会直接占用该主线程区间。
 
-```mermaid
-graph TD
-    A[FragmentTransaction.commit] --> B[BackStackRecord.commitInternal]
-    B --> C[FragmentManager.enqueueAction]
-    C --> D[mPendingActions.add]
-    D --> E[FragmentManager.scheduleCommit]
-    E --> F[mHost.getHandler.post mExecCommit]
-    F --> G[FragmentManager.execPendingActions]
-    G --> H[generateOpsForPendingActions]
-    H --> I[removeRedundantOperationsAndExecute]
-    I --> J[executeOpsTogether / executeOps]
-    J --> K[moveToState + view attach/detach]
+## AndroidX Fragment 1.8.9 的异步执行路径
+
+稳定版源码中的主要调用关系如下：
+
+```text
+BackStackRecord.commit()
+  → commitInternal(false, true)
+  → FragmentManager.enqueueAction()
+      → mPendingActions.add()
+      → scheduleCommit()
+          → host Handler.post(mExecCommit)
+
+mExecCommit.run()
+  → execPendingActions(true)
+  → generateOpsForPendingActions()
+  → removeRedundantOperationsAndExecute()
+  → executeOpsTogether()
+      → executeOps()
+      → FragmentStateManager.moveToExpectedState()
+      → SpecialEffectsController.executePendingOperations()
+      → runOnCommitRunnables()
 ```
 
-[已验证: AndroidX androidx-main, FragmentManager.java] `scheduleCommit()` 只在 `mPendingActions.size() == 1` 时 post `mExecCommit`。这能解释一个常见现象：同一轮主线程消息里连续提交多笔事务时，第一笔事务负责把 `mExecCommit` 放进队列，后续事务只是追加到 `mPendingActions`，等 `mExecCommit` 被分派时一起生成 `BackStackRecord` 并执行。
+这条路径说明三个时序特征。
 
-`removeRedundantOperationsAndExecute()` 会参考 `setReorderingAllowed(boolean)` 对相邻事务做合并执行。官方 Fragment 文档建议每个 `FragmentTransaction` 使用 `setReorderingAllowed(true)`，原因是它允许 FragmentManager 优化状态变更，也能让动画和 transition 的顺序更符合预期。[已验证: 官方文档, developer.android.com/guide/fragments/transactions]
+### 一次 Handler post 可以执行多笔事务
 
-## 主线程时序：Handler.post、Looper 与 Choreographer 的相对位置
+`scheduleCommit()` 只在 `mPendingActions.size() == 1` 时移除旧 callback 并 post `mExecCommit`。同一执行窗口里追加的其他 action 会留在 pending list；`execPendingActions()` 生成 records 时可能一并处理。因此，一个很长的 `mExecCommit` 不一定由 trace 中最近那次 `commit()` 独自造成。
 
-`commit()` 的调度系统是主线程 `Handler` 和 `Looper`，不是 `Choreographer`。`FragmentManager` 把 `mExecCommit` post 到宿主 `Handler` 后，事务什么时候执行取决于主线程消息队列；VSync 只决定 UI 线程什么时候处理输入、动画、traversal 等帧回调。
+分析时要记录事务 ID、路由来源、目标 Fragment 和提交时间。Navigation、DialogFragment、子 FragmentManager、返回栈 pop 也可能向同一主线程窗口增加工作。
 
-一次典型的 Fragment 切换可以按时间拆开：
+### reordering 会改变中间状态与分组
 
-```mermaid
-sequenceDiagram
-    participant App as App code
-    participant FM as FragmentManager
-    participant MQ as Main Looper queue
-    participant Frag as Fragment lifecycle
-    participant View as ViewRoot/Choreographer
+`removeRedundantOperationsAndExecute()` 按 `mReorderingAllowed` 对相邻 records 分组。官方文档要求每笔事务调用 `setReorderingAllowed(true)`，这样多笔事务一起执行时，中间 Fragment 可跳过无意义的生命周期和动画。
 
-    App->>FM: commit()
-    FM->>MQ: Handler.post(mExecCommit)
-    MQ->>FM: mExecCommit.run()
-    FM->>Frag: execPendingActions() / moveToState()
-    Frag->>Frag: onCreateView() / onViewCreated()
-    Frag->>View: attach view / requestLayout / invalidate
-    View->>View: next doFrame traversal
+它不是固定比例的提速开关。单笔简单事务可能看不到耗时变化；多笔 add/replace/pop、transition 或 back stack 场景更容易受益。启用后仍需验证回调顺序、共享元素和业务假设。
+
+### 特殊效果可能跨越事务返回点
+
+`executeOpsTogether()` 在状态推进后调用 `SpecialEffectsController.executePendingOperations()`，启动 add/remove/show/hide 对应的动画或 transition。`runOnCommit()` 的 runnable 在同一事务执行流程稍后运行，但它不能与 `addToBackStack()` 共用，也不表示动画完成或屏幕已 present。
+
+这一区分对埋点很有用：`runOnCommit` 可以标记“事务操作已经执行”，首个目标 SurfaceFrame 则标记“Window 已提交该画面”，DisplayFrame/present 才接近用户看到的时刻。
+
+## Handler、Choreographer 与 traversal 的相对顺序
+
+`FragmentManager` 使用宿主 `Handler` 调度 `mExecCommit`。Android 17 的 View 帧调度由 Choreographer 驱动，按 INPUT、ANIMATION、INSETS_ANIMATION、TRAVERSAL、COMMIT 等阶段推进。两套调度共享主 Looper，但没有“`commit()` 后必定在下一个 VSync 前执行”的契约。
+
+主 MessageQueue 的现有消息、同步屏障、异步 Choreographer 消息、提交发生时刻都会改变顺序：
+
+- 事务若在普通主线程消息中入队，`mExecCommit` 可能在后续 VSync 前执行；
+- 事务若在当前 `doFrame` 的输入或动画回调中入队，异步提交通常要等当前回调返回；
+- `commitNow()` 会在当前调用栈同步推进 Fragment，可能把创建和状态变更压进当前帧；
+- View attach、`requestLayout()` 和 `invalidate()` 只建立后续 traversal 的条件，不代表当场完成绘制。
+
+trace 中应直接观察 Looper message、`doFrame`、Fragment marker 和 traversal 的位置，不要按 API 名推测执行帧。
+
+Android 17 的普通 Fragment View 仍走 App Window 渲染路径：
+
+```text
+Fragment 状态推进与 View attach
+  → requestLayout / invalidate
+  → Choreographer traversal
+  → ViewRootImpl.performTraversals()
+  → ThreadedRenderer / RenderThread
+  → BLAST BufferQueue
+  → SurfaceFlinger / HWC
+  → present
 ```
 
-这条时间线对 trace 分析有两个含义：
+UI 线程完成 traversal 后，RenderThread、GPU、BufferQueue 和系统合成仍可能延后结果。Fragment 分析应以用户看到的目标帧为终点。
 
-- `commit()` 调用点短，不代表 Fragment 切换便宜；重成本可能出现在稍后的 `mExecCommit` 主线程 message 里。
-- Fragment view attach 后触发的 `requestLayout()` 和 `invalidate()` 会影响后续帧；长帧可能横跨生命周期回调、布局遍历和首屏列表绑定。
+## 长帧成本从哪里来
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/render] Android Vitals 文档建议用 Perfetto FrameTimeline 跟踪 slow / frozen frames。Fragment 切换场景里，FrameTimeline 只能告诉哪一帧超时；要归因还得回到主线程 message、Fragment 生命周期、View traversal 和应用自定义 trace section。
+FragmentManager 的队列和状态机只是一部分。常见成本可按阶段拆开：
 
-## 卡顿归因：事务执行、视图膨胀和生命周期副作用分开看
+| 阶段 | 典型工作 | 常见风险 |
+|---|---|---|
+| action 生成与事务分组 | pending actions、back stack、op expand/collapse、reordering | 同一窗口提交过多、复杂 pop/replace、predictive back 中断 |
+| Fragment 实例与状态恢复 | FragmentFactory、SavedState、ViewModel、依赖注入 | 主线程创建大对象、读取磁盘、恢复数据过大 |
+| View 创建 | `onCreateView()`、XML inflate、自定义 View 构造 | 复杂层级、资源解析、同步初始化 |
+| View 初始化 | `onViewCreated()`、listener/adapter、状态绑定 | 数据库/文件 IO、同步 Binder、SDK 初始化 |
+| 生命周期推进 | `onStart()`、`onResume()`、observer 变为 active | observer 同步分发、重复注册、批量业务工作 |
+| 首次 traversal | measure/layout/draw、Insets、ComposeView 首次 composition | 多轮 layout、昂贵测量、图片或纹理准备 |
+| 列表首屏 | adapter 初始化、首批 bind、Diff、预取 | 大量 bind、主线程 Diff、同步解码 |
+| special effects | Animator、Transition、共享元素、postpone | 等待条件不稳定、额外布局、多个 transition 互相取消 |
 
-Fragment 切换的长帧常被笼统归到 FragmentManager。更稳的拆法是按成本来源分组：
+若 `mExecCommit` 区间很短，而目标帧的 traversal 或 RenderThread 很长，责任不应写成“FragmentManager 慢”。反过来，若 records 数量、状态推进或 SpecialEffectsController 已占据主要主线程时间，再检查事务组织、返回栈和动画配置。
 
-- 事务调度成本：`generateOpsForPendingActions()`、`removeRedundantOperationsAndExecute()`、`executeOpsTogether()` 处理 pending actions、back stack、重排和 transition。
-- view 创建成本：`onCreateView()` 中 inflate 复杂布局、同步创建大对象、反射加载自定义 View、解析大量资源。
-- 生命周期副作用：`onViewCreated()` / `onStart()` / `onResume()` 里启动同步 IO、读取数据库、阻塞等待接口回调或初始化 SDK。
-- 首屏绑定成本：RecyclerView adapter 首批 `onBindViewHolder()`、Diff 计算、图片解码、ComposeView 首次 composition。
-- 动画和 transition 成本：Fragment transition、共享元素、postponed enter transition、窗口 inset 分发和布局重算。
-- 队列放大成本：同一轮消息里多次 `commit()`、Navigation 连续 `navigate()`、DialogFragment `show()` 叠加，让一次 `mExecCommit` 执行多笔事务。
+## Perfetto 诊断步骤
 
-这里的判断方式很简单：如果 trace 中 `FragmentManager` 自身切片短，但 `onCreateView()`、layout、bind、image decode、database query 很长，问题就不在事务队列；如果 `removeRedundantOperationsAndExecute()` 或 transition 处理本身占用明显，再回头检查事务合并、back stack 和动画配置。
+### 1. 定义用户可见的终点
 
-## 可观测性：Perfetto、trace section 与 FrameTimeline 对齐
+页面切换至少记录三个 marker：
 
-Fragment 切换最好在代码里主动埋 `Trace.beginSection()`，否则 Perfetto 只能看到一串普通 Java/Kotlin 调用和 View traversal，定位成本会被稀释。
+- 输入或路由开始；
+- 事务入队与执行完成；
+- 目标页面首个可见内容或可交互状态。
 
-建议至少埋四类 section：
+首个容器背景、首个完整内容和可交互状态可能落在不同帧。团队要为具体页面选定终点，避免只优化一个很早出现的空壳帧。
+
+### 2. 从 DisplayFrame 回到 App Window
+
+Android 12+ 在 FrameTimeline 中选择异常 DisplayFrame，再定位对应 App SurfaceFrame。确认 jank 来自 App 侧还是 SurfaceFlinger 侧，然后检查 UI Thread 和 RenderThread。Android 8—11 可回退到 `doFrame`、View/graphics atrace、FrameMetrics 和 sched。
+
+Fragment View 通常属于宿主 App Window，因此 FrameTimeline 能覆盖它的 Window 提交。页面内若还包含 `SurfaceView` 视频、相机或地图独立层，要把宿主 UI 与内容 Layer 分开。
+
+### 3. 找到执行事务的 Looper message
+
+从异常帧向前查看主线程：
+
+- `commit()` marker 位于哪个消息；
+- `mExecCommit` 或生命周期 marker 位于哪个消息；
+- 期间是否有输入、Binder、锁、GC、IO 或其他业务任务；
+- View traversal 与事务执行处于同一帧还是相邻帧。
+
+仅有采样调用栈时，短小 FragmentManager 方法可能漏采。自定义 trace section 能提供更稳定的时间边界。
+
+### 4. 拆开生命周期与首屏业务
+
+下面的 helper 用于给短小同步区间增加系统 trace section：
 
 ```kotlin
-Trace.beginSection("FragmentRoute:HomeToDetail")
-supportFragmentManager.commit {
-    setReorderingAllowed(true)
-    replace(R.id.container, DetailFragment())
-    addToBackStack("detail")
+inline fun <T> tracedSection(name: String, block: () -> T): T {
+    Trace.beginSection(name)
+    return try {
+        block()
+    } finally {
+        Trace.endSection()
+    }
 }
-Trace.endSection()
 ```
 
-这段只标记提交调用范围，不代表事务执行范围。为了覆盖事务执行后的重成本，应该在目标 Fragment 内补充更细的 section：
+这里的 `Trace` 是 `android.os.Trace`。section 名应短且稳定，禁止拼入用户数据；`finally` 保证异常路径也能正确结束 section。
+
+下面的示例分别标记事务入队、View 创建和首屏同步绑定：
 
 ```kotlin
-class DetailFragment : Fragment(R.layout.detail) {
+tracedSection("Route.enqueue.Home.Detail") {
+    supportFragmentManager.commit {
+        setReorderingAllowed(true)
+        replace<DetailFragment>(R.id.container)
+        addToBackStack("detail")
+    }
+}
+
+class DetailFragment : Fragment() {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View = tracedSection("Detail.createView") {
+        inflater.inflate(R.layout.detail, container, false)
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        Trace.beginSection("DetailFragment:onViewCreated")
-        try {
-            setupRecyclerView()
-            bindInitialState()
-        } finally {
-            Trace.endSection()
+        tracedSection("Detail.bindInitialUi") {
+            setupRecyclerView(view)
+            bindCachedState()
         }
     }
 }
 ```
 
-看 trace 时按这几步走：
+`Route.enqueue` 只测 `commit()` 调用与入队；它不会覆盖 `mExecCommit`。两个 Fragment section 能说明同步回调成本，目标 SurfaceFrame 继续承担 traversal 到 Window 提交的证据。网络、图片和异步流应有各自 marker。
 
-1. 在 FrameTimeline 里选中 jank 帧，确认 Actual Duration、UI Thread 和 RenderThread 是否一起超时。SQL 细节详见 13.10 节，DataGrid / Jank CUJ 用法详见 13.14 节。
-2. 回到主线程轨道，找 jank 帧前后的 Looper message 边界，确认 `mExecCommit`、生命周期回调和 View traversal 的相对位置。Perfetto 视图操作详见 13.3 节。
-3. 对照自定义 trace section，把 `commit()` 调用、`onCreateView()`、`onViewCreated()`、列表首屏绑定和图片加载切开。
-4. 如果首屏列表贡献了主要耗时，再转到 RecyclerView 实战章节检查预取、缓存、Diff 和图片加载策略，详见 22.2 节。
+### 5. 核对系统负载
 
-`FragmentManager.enableDebugLogging(true)` 可以帮助确认事务顺序，但它会增加日志开销，不适合在性能压测时长期打开。更安全的做法是保留自定义 trace section，并用 debug 构建或临时开关打开 FragmentManager 日志。
+主线程 Runnable 而未运行时，检查同核线程、后台线程池、Binder 和 cgroup；主线程 Running 时，检查具体 section 与调用栈。Fragment 页面切换恰好遇到系统 CPU 争抢时，不能把调度等待归入 inflate。
 
-## 优化策略：延迟、拆分、预加载与事务合并的边界
+## 常见误判
 
-Fragment 切换优化不能只追求“让 commit 更快”。提交本身通常已经很短，要优化的是事务执行后的主线程工作量。
+- **`commit()` 快等于页面切换快**：它主要测入队，事务执行与目标帧在后面。
+- **`commitNow()` 返回等于用户已看到页面**：View attach 后仍有 traversal、RenderThread 和系统合成。
+- **`onViewCreated()` 完成等于首屏完成**：列表 bind、Compose composition、图片和异步数据可能继续工作。
+- **`runOnCommit()` 等于 transition 完成**：该 runnable 位于事务执行流程，special effect 可跨帧运行。
+- **一次 `mExecCommit` 只属于最近事务**：pending list 可以包含多个 action。
+- **FrameTimeline 红帧等于 FragmentManager 计算慢**：要区分事务、生命周期、traversal、RenderThread 和系统侧。
+- **`setReorderingAllowed(true)` 会自动修复所有卡顿**：它优化事务状态变化，不会消除业务 IO、inflate 或图片成本。
+- **`allowStateLoss` 是性能选项**：它改变状态一致性和丢弃行为。
+- **打开 Fragment debug log 后的数据可直接当基线**：详细日志会增加开销，应在单独诊断轮次使用。
+- **FragmentScenario 的耗时等于生产页面切换**：测试宿主、数据、Window 与动画环境可能不同。
 
-- 合并同一语义下的多笔事务：同一轮 UI 切换里连续 `replace()`、`hide()`、`show()` 容易让 pending actions 堆积。能在一个 transaction 内表达的变更就放进同一笔事务，并启用 `setReorderingAllowed(true)`。
-- 避免用 `executePendingTransactions()` 当同步等待工具：它会执行所有 pending transactions，容易把无关事务的生命周期成本带到当前调用点。只需要当前事务同步完成时，评估 `commitNow()` 是否满足“不进 back stack”的约束。
-- 把重初始化移出生命周期热路径：数据库打开、网络请求、SDK 初始化、大图解码不要放进 `onCreateView()` / `onViewCreated()` 的同步路径。UI 首帧只绑定必要状态，重数据通过异步流或分页加载补齐。
-- 给首屏列表留预算：Fragment 切换后第一帧常被列表首批 bind 吃掉。稳定 ID、分页、图片占位、预取策略和 Diff 线程化，比反复调整 FragmentTransaction 更有效。
-- 谨慎使用共享元素和 postponed transition：共享元素动画会推迟进入动画开始时机，且对布局稳定性敏感。trace 中如果看到 transition 等待或多轮 layout，先缩小共享元素范围，再评估是否需要 postponement。
-- DialogFragment 选择 `show()` 还是 `showNow()` 要看调用场景：`show()` 走异步事务，`showNow()` 同步显示并承担当前调用点成本。启动流程、输入响应路径和列表滚动中不宜随手使用同步版本。
+## 优化策略与边界
 
-这些策略的取舍应该放回帧预算里判断：目标不是让每个 Fragment 事务都同步完成，而是让用户可感知的首帧和后续动画帧稳定落在预算内。卡顿分析的完整流程详见 7.3 节，页面切换场景的归因模板详见 7.4 节。
+### 事务组织
 
-## 版本边界：平台 Fragment、AndroidX Fragment 与 Jetpack 差异
+- 每笔事务启用 `setReorderingAllowed(true)`，并回归生命周期、动画和 back stack。
+- 同一个用户动作产生的 add/remove/show/hide 尽量在一笔 transaction 表达。
+- 防止一次点击重复 navigate，但要保留无障碍和快速返回等有效交互。
+- 避免用 `executePendingTransactions()` 等待某个 View；它会扫当前 Manager 的全部 pending work。
+- `commitNow()` 只用于需要同步顺序且不进 back stack 的场景，并测量调用点是否占用帧预算。
 
-平台 `android.app.Fragment` 在 API 28 后已废弃。新项目应以 AndroidX Fragment、Fragment KTX、Navigation 和 FragmentStrictMode 的行为为准，旧平台源码只能作为“为什么会这样设计”的背景材料。
+### 主线程工作
 
-版本边界可以这样记：
+- `onCreateView()` 只创建 View；数据库、文件、网络、模型解析和 SDK 初始化移出同步路径。
+- `onViewCreated()` 绑定首帧必需状态，非首屏内容按异步数据和分页补充。
+- 检查 DI graph、SavedState、ViewModel 初始化和 observer 激活是否重复执行。
+- RecyclerView 的 Diff 放在合适的后台执行器，图片解码与变换交给图片管线；首批 bind 数量按目标设备测量。
+- ComposeView 的 composition、measure 和资源准备要单独标记，不能归在 `onViewCreated()` 名下。
 
-| 范围 | 可依赖的判断 | 不宜外推的判断 |
-| --- | --- | --- |
-| 平台 Fragment（API 11-28，已废弃） | `commit()` 异步安排到主线程、`executePendingTransactions()` 同步扫 pending | 旧 `FragmentManagerImpl` 的具体字段名和行号不应套到 AndroidX |
-| AndroidX Fragment 1.0+ | `BackStackRecord`、`enqueueAction()`、`scheduleCommit()`、`mExecCommit`、`execPendingActions()` 是现代分析入口 | release note 中未写明的行为变更不要写成版本特性 |
-| AndroidX Fragment 1.4+ / 1.5+ | release note 对 back stack 保存、`setReorderingAllowed(true)`、`@MainThread` 标注、FragmentStrictMode 有持续补强 | 不要把某个 alpha / beta 的实现细节当作长期契约 |
-| Navigation 组件 | `navigate()` 最终仍会落到 FragmentManager 事务，但多了目的地解析、back stack 管理和 lifecycle 协调 | 不要只看手写 `commit()` 的 trace 就断言 Navigation 的全部成本 |
+### View 与内存取舍
 
-[已验证: 官方文档, developer.android.com/jetpack/androidx/releases/fragment] AndroidX Fragment release notes 多次提到 `setReorderingAllowed(true)`、`commitNow()` / `executePendingTransactions()` 主线程标注、FragmentStrictMode 等变化。写性能结论时应引用具体 AndroidX 版本，不要只写“Android 某版本”。
+`replace()` 可能在返回时重建旧页面 View；`add()/hide()/show()` 可以保留 View 与状态，却增加常驻内存、observer、资源和恢复复杂度。选择依据应包含切换频率、View 重建成本、内存压力和后台生命周期，不能只比较一轮切换帧时间。
 
-## 扩展：Navigation、共享元素动画与验证模板
+预创建 Fragment 或预 inflate 也会移动成本，并可能增加启动耗时与内存。只有目标页面命中率高、收益在低端设备上稳定、生命周期没有副作用时，才适合保留。
 
-### FragmentTransaction 与 Navigation 组件的时序差异
+### 动画与共享元素
 
-手写事务的 trace 通常从业务代码里的 `commit {}` 开始。Navigation 的 `navigate()` 还会经过目的地匹配、argument 处理、Navigator 调度和 back stack 维护，随后才进入 FragmentManager 事务。排查 Navigation 切换时，建议把 `NavController.navigate()` 外层、目标 Fragment `onCreateView()`、目标页面首屏 bind 分别打点；只看 FragmentManager 切片会漏掉导航层成本。
+- 共享元素依赖源/目标 View 的稳定尺寸与名称，目标图片或数据未就绪时可能推迟 transition。
+- `postponeEnterTransition()` 要有明确的完成条件和超时，并覆盖取消、返回和进程恢复。
+- 连续 navigate、pop 和 predictive back 手势会让 transition 状态更复杂；Fragment 1.8.x 对这类场景有多次修复，应用应记录精确库版本。
+- 缩小共享元素数量、减少多轮 layout 或改用更简单的过渡后，需要用相同手势与数据集复测。
 
-DialogFragment 也有类似差异：`show()` 内部创建事务并调用 `commit()`，`showNow()` 走同步提交。弹窗如果出现在点击事件或滑动过程中，同步版本可能把 view 创建和窗口 attach 成本放进输入处理 message。
+## Navigation 与 DialogFragment
 
-### Fragment 切换与共享元素动画的帧预算
+Navigation 的 `navigate()` 在进入 FragmentManager 前还要处理 route、arguments、Navigator 和 back stack。分析时至少放置 `navigate` 外层 marker、Fragment 事务/生命周期 marker 和目标帧。只看 FragmentManager 区间会漏掉导航层或参数构建成本。
 
-共享元素动画的成本不只在动画插值。它还依赖源页面和目标页面都有稳定的 view 层级、尺寸和位置；目标 Fragment 首帧 inflate 或图片加载慢，会让 transition 推迟或触发额外布局。使用 postponed enter transition 时，要给等待条件设置兜底超时，避免图片或数据回调异常导致页面卡在过渡状态。[待验证: 需要结合具体项目 transition 配置和实机 trace]
+DialogFragment 的 `show()` 使用异步提交，`showNow()` 同步执行。弹窗若由点击、滚动或当前帧动画触发，`showNow()` 会把 Dialog Fragment 创建与 Window 相关工作放进调用区间；是否可接受应由输入到首个弹窗帧的测量决定。
 
-### FragmentScenario / Macrobenchmark 验证模板
+Android 17 的 predictive back 可能让 pop transition 跨多个手势帧。FragmentManager 1.8.x 源码维护 in-flight transitioning operation，并在新 action 到来时处理取消或重新提交。复现脚本要区分手势完成、取消和快速重复返回。
 
-同一页面可以做四组对比：
+## 性能验证
 
-| 组别 | 事务策略 | 观测指标 |
-| --- | --- | --- |
-| A | `commit()` + 默认 view 创建 | 首帧 Actual Duration、jank 帧数、`onCreateView()` 耗时 |
-| B | `commit()` + `setReorderingAllowed(true)` + 合并事务 | pending actions 数量、生命周期回调次数、transition 是否稳定 |
-| C | `commitNow()`，不进 back stack | 调用点耗时、首帧耗时、输入事件是否被阻塞 |
-| D | 保持 `commit()`，把重初始化移出 `onViewCreated()` | 首帧 P50 / P90、列表首批 bind 耗时、图片解码耗时 |
+FragmentScenario 适合验证 Fragment 生命周期、状态恢复和回调顺序。用户可见帧性能应使用真实 Activity/Navigation 宿主，配合 Macrobenchmark、Perfetto 或可重复的端到端测试。
 
-验证环境必须写清楚设备、系统版本、AndroidX Fragment 版本、是否启用 Navigation、页面数据量、动画配置和采样次数。没有这些条件，`commitNow()` 更快或更慢都只是局部观察，不能写成通用结论。
+建议至少比较这些指标：
+
+| 指标 | 起点与终点 |
+|---|---|
+| 输入到容器变化 | 点击事件到目标容器首次可见 |
+| 输入到完整首屏 | 点击事件到定义好的完整内容帧 |
+| 输入到可交互 | 点击事件到目标页面能响应关键操作 |
+| App frame duration | 对应 SurfaceFrame 的 Actual duration 与 jank type |
+| 主线程分段 | enqueue、事务执行、createView、bind、traversal |
+| RenderThread/GPU | 目标 Window 的绘制与完成时间 |
+| 稳定性 | P50/P95/P99、连续坏帧、低端机与高刷设备 |
+
+对照实验一次只改变一个因素，例如事务合并、移除同步 IO、关闭共享元素或调整列表首批绑定。`commit()` 与 `commitNow()` 的 back stack 语义不同，不能只凭耗时把二者当成等价方案。
+
+## 章节导航
+
+| 继续排查 | 章节 |
+|---|---|
+| 帧调度、FrameTimeline 与 App/SF 归因 | `7.3`、`7.4` |
+| 页面切换场景手册 | `7.15` |
+| 启动与首帧 | `8.1` |
+| Perfetto 采集与 SQL | `13.3`、`13.10`、`13.14` |
+| RecyclerView 首屏绑定 | `22.2` |
+
+## 源码与官方资料
+
+- [AndroidX Fragment 1.8.9 release notes](https://developer.android.com/jetpack/androidx/releases/fragment#1.8.9)
+- [Fragment transactions 官方指南](https://developer.android.com/guide/fragments/transactions)
+- [AndroidX 1.8.9 `BackStackRecord`](https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/BackStackRecord.java)
+- [AndroidX 1.8.9 `FragmentManager`](https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java)
+- [AndroidX 1.8.9 `FragmentTransaction`](https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentTransaction.java)
+- [AndroidX 1.8.9 `FragmentStateManager`](https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentStateManager.java)
+- [AOSP Android 17 `Choreographer`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)
+- [AOSP Android 17 `ViewRootImpl`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- [Android slow rendering](https://developer.android.com/topic/performance/vitals/render)
+- [Macrobenchmark `FrameTimingMetric`](https://developer.android.com/reference/androidx/benchmark/macro/FrameTimingMetric)
+- [Fragment testing](https://developer.android.com/guide/fragments/test)
