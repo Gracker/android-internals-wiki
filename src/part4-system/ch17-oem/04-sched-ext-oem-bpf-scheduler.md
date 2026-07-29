@@ -121,396 +121,359 @@ last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度
 
 <!-- outline-end -->
 
-## sched_ext 解决的不是 App 线程池问题
+## 阅读这一章前要分开的三件事
 
-`sched_ext` 是 Linux 6.12 合入的 BPF extensible scheduler class。它让内核可以加载一组 BPF 程序来实现调度策略，入口是 `struct sched_ext_ops`。Android 性能分析里要把它放在系统调度层看：它影响的是 runnable task 如何选 CPU、入队、出队、分发，不是 App 侧线程池、协程调度器或 WorkManager 的替代品。
+Android 17 的 arm64 GKI 配置含有 `CONFIG_SCHED_CLASS_EXT=y`。这项配置只说明内核编译了 sched_ext 调度类，无法证明设备当前加载了 BPF 调度器，也无法证明某个线程正由该调度器管理。
 
-对 Android 工程师来说，`sched_ext` 的价值不在于“自己写一个调度器”。大多数 App 无法也不该直接控制它。更现实的场景是：某台 OEM 设备开启了自定义 BPF 调度器，Perfetto 里同一类线程的 CPU 迁移、频率响应、binder 等待时间和其它设备不一样。读懂这些差异，才能判断问题来自 App 任务组织、系统调度策略，还是厂商内核实验。
+排查设备时要依次确认三个层次：
 
-[已验证: Linux Documentation/scheduler/sched-ext.rst；Linux 文档明确说明 `sched_ext` 由 BPF scheduler 定义行为，可动态开启和关闭，异常时回退到 fair-class scheduler]
+1. **编译能力**：内核配置中有没有 `CONFIG_SCHED_CLASS_EXT=y`。
+2. **运行状态**：`/sys/kernel/sched_ext/state` 是否为 `enabled`，`root/ops` 显示哪个调度器。
+3. **任务范围**：当前调度器采用 full 还是 partial 模式，目标线程是否属于可接管的策略集合。
 
-## sched_ext 在 Android 调度体系里的位置
+这三个层次不能互相代替。设备可能编入 sched_ext 却从未加载 BPF 程序；也可能本次开机加载过又退出；还可能处于 partial 模式，只处理显式使用 `SCHED_EXT` 的少量线程。
 
-Android 的 CPU 调度通常要同时看三层：Linux scheduler class 决定任务如何进入 CPU，EAS / sugov / cpufreq 决定频率与能效策略，Android framework 和 vendor 服务通过 hint、uclamp、cpuset、task profile 等机制影响任务属性。`sched_ext` 位于第一层，它改变的是普通任务在 scheduler class 内部的排队与分发方式。
+本章的平台源码统一锚定 Android 17 / API 37，内核锚定 `android17-6.18-2026-06_r6`。Linux 6.12 只作为 sched_ext 进入主线的历史背景。
 
-和 §5.1、§5.2 的关系可以这样划分：
+## sched_ext 在 Android CPU 调度栈中的位置
 
-- **CFS / EEVDF**：Linux fair-class 的默认策略，负责普通任务的公平性和虚拟时间排序。Android 设备没有加载 BPF scheduler 时，普通 App 线程仍按 fair-class 运行。
-- **EAS**：在异构 CPU 上用能耗模型参与 CPU 选择，重点是“任务放到哪个 CPU 更省电或更合适”。详见 5.2 节。
-- **sched_ext**：提供一套 BPF 回调接口。BPF scheduler 可以自己维护队列、选择 CPU、决定何时把任务交给内核的 dispatch queue。
-- **OEM vendor kernel**：厂商可以在 GKI 之外加入 proc 节点、系统服务、BPF 程序和策略参数。这里的行为不能直接外推到 AOSP 默认系统。
+App 创建的 Java 线程、Native 线程和 Binder 线程到达内核后，都以 `task_struct` 参与调度。线程池、协程调度器和 WorkManager 决定工作怎样映射到线程；sched_ext 处理已经 runnable 的普通任务怎样选 CPU、排队和获得运行机会。两者处在不同层级。
 
-这张图把边界放清楚：
+Android 上还要同时观察以下机制：
+
+- **调度类**：stop、deadline、real-time、sched_ext、fair、idle 等调度类按内核定义的顺序参与选取。sched_ext 面向普通任务，不接管 RT、DL 和 stop class。
+- **任务约束**：affinity、cpuset 与 task profile 限定任务可去的 CPU；uclamp 给利用率提供上下界。
+- **CPU 选择**：未启用 sched_ext 时，普通任务由 fair class 的 EEVDF、公平性逻辑与 EAS 等路径处理。启用后，BPF 调度器可以接管普通任务的选核和排队。
+- **频率与容量**：schedutil、CPUFreq driver、uclamp、thermal pressure 和硬件限制共同决定可用性能。sched_ext 可以提供 CPU performance target，却无权绕过温控或驱动上限。
+
+下面的图用于定位 sched_ext 与 Android 其他调度组件之间的关系。
 
 ```mermaid
 flowchart TD
-    App[App threads: main / RenderThread / binder / worker] --> Attr[task policy / affinity / uclamp / cpuset]
-    Attr --> Core[Linux scheduler core]
-    Core --> Fair[fair-class: CFS / EEVDF]
-    Core --> SCX[sched_ext class]
-    SCX --> Ops[BPF scheduler: struct sched_ext_ops]
-    Ops --> DSQ[dispatch queues: local / global / custom DSQ]
-    DSQ --> CPU[CPU runqueue]
-    CPU --> Freq[cpufreq / sugov / vendor governor]
-    Vendor[OEM service / procfs / BPF loader] --> Ops
-    Vendor --> Freq
+    Work["App work: main / RenderThread / Binder / worker"] --> Thread["Linux task"]
+    Profile["task profile / cpuset / affinity / uclamp"] --> Thread
+    Thread --> Class{"scheduler class"}
+    Class --> RT["stop / DL / RT"]
+    Class --> Fair["fair class: EEVDF + EAS"]
+    Class --> SCX["sched_ext class"]
+    Loader["BPF struct_ops loader"] --> SCX
+    SCX --> DSQ["local / global / custom DSQ"]
+    Fair --> Run["CPU executes task"]
+    DSQ --> Run
+    RT --> Run
+    SCX --> Target["SCX CPU performance target"]
+    Target --> Gov["schedutil / CPUFreq driver"]
+    Clamp["uclamp / thermal / policy limits"] --> Gov
 ```
 
-图里容易误判的是 `sched_ext` 和频率治理的关系。`sched_ext` 直接处理任务调度，cpufreq 仍由 governor 和 util 信号驱动；同时，Android common `android16-6.12` 已包含一条 Linux sched_ext 通用 CPU performance target 路径：BPF scheduler 可通过 `scx_bpf_cpuperf_set()` 设置 CPU performance target，`cpufreq_schedutil.c` 中的 `sugov_get_util()` 读取 `scx_cpuperf_target(cpu)` 并参与 schedutil 的 util 计算。厂商的 `scx_gov_ctrl`、`cpuctrl_high/low` 属于额外控制面，不能反过来否定这条通用路径。
+图中有两条相互关联的输出：任务何时在哪个 CPU 上运行，以及该 CPU 请求多高的性能。分析卡顿时，调度 trace 和频率、idle、thermal 数据需要放在同一时间轴上。
 
-[已验证: Linux Documentation/scheduler/sched-ext.rst；Android common android16-6.12 `kernel/sched/ext.c`、`include/linux/sched/ext.h`、`kernel/sched/cpufreq_schedutil.c`；详见 5.1 节、5.2 节、14.10 节]
+## 从 GKI 编译能力到运行时启用
 
-## BPF 调度器入口：`struct sched_ext_ops`
+Android 17 的 `arch/arm64/configs/gki_defconfig` 明确设置 `CONFIG_SCHED_CLASS_EXT=y`。`init/Kconfig` 中的 `EXT_GROUP_SCHED` 依赖 `SCHED_CLASS_EXT && CGROUP_SCHED`，默认值为 `y`。这让 GKI 具备 sched_ext 及其 cgroup 相关接口。
 
-`sched_ext` 的主入口是 `struct sched_ext_ops`。BPF scheduler 通过这张回调表告诉内核：任务 wakeup 时怎么选 CPU，任务 runnable 后怎么入队，CPU 空闲或本地队列空时怎么分发任务，任务开始运行、停止运行、退出时怎么更新调度器内部状态。
+BPF 调度器仍需由用户态 loader 通过 BPF `struct_ops` 挂载。启用成功后，内核保存 `ops.name`，切换符合条件的任务，并增加 `enable_seq`。退出 loader、触发 `SysRq-S`、检测到内部错误或 runnable task stall 时，sched_ext 会中止当前 BPF 调度器，把任务交还给 fair class。
 
-常见回调可以按调度周期分组：
+当前调度器不支持原地更新 `struct_ops`。`bpf_scx_update()` 返回 `-EOPNOTSUPP`；升级策略需要解除挂载后重新加载。这个过程可能短暂经历 fair class，性能实验应把切换窗口排除在稳定样本之外。
 
-| 回调 | 调用时机 | 分析价值 |
-|------|----------|----------|
-| `select_cpu()` | 任务 wakeup、fork 或 exec 后准备选择 CPU | 影响线程醒来后更可能跑在哪个 CPU；返回值是优化提示，不是最终绑定 |
-| `enqueue()` | 任务进入 runnable 状态且未被 `select_cpu()` 直接放入 DSQ | 判断任务被直接放进内置 DSQ，还是进入 BPF scheduler 自己维护的队列 |
-| `dispatch()` | 某个 CPU 的 local DSQ 没任务可跑 | 决定从 custom DSQ 或 BPF 内部队列取哪些任务交给 CPU |
-| `running()` / `stopping()` | 任务开始运行或停止运行 | 常用于更新虚拟时间、运行时统计和权重消耗 |
-| `init_task()` / `exit_task()` | 任务加入或离开 BPF scheduler 管理范围 | 用来建立或清理 per-task 状态 |
-| `cpu_acquire()` / `cpu_release()` | CPU 被 sched_ext 接管或让出 | 能解释 RT/DL/stop class 抢占后调度器状态变化 |
+### sysfs 的目录层级和字段含义
 
-`select_cpu()` 这一点容易被写重。Linux 文档说得很明确：它返回的 CPU 是优化提示，内核可以在后续调度阶段把任务放到其它允许的 CPU 上。如果 BPF 程序在 `select_cpu()` 中把任务直接插入 `SCX_DSQ_LOCAL`，`enqueue()` 会被跳过；如果没有直接插入，任务会继续走 `enqueue()`。
+Android 17 6.18 中，`/sys/kernel/sched_ext/` 的全局属性与当前调度器属性分处两层：
 
-`tools/sched_ext/scx_simple.bpf.c` 是理解这套接口的参考实现。它在 `select_cpu()` 中调用 `scx_bpf_select_cpu_dfl()`，如果拿到空闲 CPU，就把任务插入 `SCX_DSQ_LOCAL`；否则在 `enqueue()` 中把任务放入共享 DSQ，并在 `dispatch()` 中把共享 DSQ 的任务移动到 CPU local DSQ。这个例子足够解释大多数 Perfetto 现象：线程换 CPU，通常发生在 wakeup、入队、分发几个阶段的重新放置过程中。
+| 路径 | 含义 | 容易误读的地方 |
+|---|---|---|
+| `state` | `disabled`、`enabling`、`enabled` 或 `disabling` | 只有 `enabled` 表示此刻有调度器运行 |
+| `switch_all` | 当前调度器是否接管全部符合条件的普通策略任务 | `1` 对应 full；调度器未运行时不要单独解释该值 |
+| `nr_rejected` | 显式请求 `SCHED_EXT` 却被拒绝的累计次数 | 它不是调度器加载失败次数 |
+| `hotplug_seq` | CPU hotplug 序列号 | 它不是 CPU 上下线数量 |
+| `enable_seq` | 本次开机成功启用调度器的累计序列 | 大于零只能证明曾经启用过 |
+| `root/ops` | 当前 BPF 调度器的 `ops.name` | 正确路径含 `root/` |
+| `root/events` | 当前调度器的 SCX 事件计数 | 这是一个文本文件，不是事件目录 |
 
-[已验证: Linux kernel/sched/ext.c（torvalds/master + Android common android16-6.12）；Linux tools/sched_ext/scx_simple.bpf.c]
+`root` kobject 只在当前调度器对象存在时建立。因此 `root/ops` 读不到，可能源自 scheduler 未启用、权限受限或 sysfs 未挂载；单凭读取失败无法区分原因。
 
-## DSQ 决定任务从 BPF 调度器回到 CPU 的方式
+## full 与 partial 决定接管范围
 
-DSQ 是 dispatch queue 的缩写。`sched_ext` 用 DSQ 衔接内核调度器和 BPF scheduler：BPF scheduler 可以把任务插入内置 DSQ，也可以创建自定义 DSQ，再在 `dispatch()` 中移动任务。
+Android 17 的 sched_ext 文档对接管范围给出了明确规则：
 
-内置 DSQ 和时间片常量按版本拆开写。
+- BPF 调度器处于运行状态，并且没有设置 `SCX_OPS_SWITCH_PARTIAL` 时，`SCHED_NORMAL`、`SCHED_BATCH`、`SCHED_IDLE` 和 `SCHED_EXT` 任务由 sched_ext 处理。
+- 设置 `SCX_OPS_SWITCH_PARTIAL` 后，只有显式采用 `SCHED_EXT` 的任务由 sched_ext 处理；其余普通策略任务留在 fair class。
+- 没有 BPF 调度器运行时，显式设置为 `SCHED_EXT` 的任务按 fair class 处理，行为接近 `SCHED_NORMAL`。
 
-**Android common kernel `android16-6.12` 可用的内置 DSQ：**
+full 模式下，普通 App 线程的调度策略字段仍可能显示 `SCHED_NORMAL`。因此，`/proc/<pid>/sched` 中搜索字符串 `ext` 无法可靠判断该线程是否正在被 sched_ext 接管。应把 `state`、`switch_all`、调度器名称和目标线程策略放在一起判断。
 
-- `SCX_DSQ_LOCAL`：每个 CPU 的本地队列。任务进入这里后，目标 CPU 可以直接运行它。
-- `SCX_DSQ_GLOBAL`：内置全局 FIFO 队列。本地队列空时，CPU 可以从这里取任务。
-- `SCX_DSQ_LOCAL_ON | cpu`：把任务放到指定 CPU 的 local DSQ。
+partial 模式也不能由某个 OEM 节点的名字直接推断。厂商节点 `partial_ctrl` 与 `SCX_OPS_SWITCH_PARTIAL` 是否存在一一对应关系，需要 vendor kernel 或运行时切换证据支持。
 
-时间片常量：`SCX_SLICE_DFL = 20ms`（默认补 slice）。
+## `struct sched_ext_ops`：回调有默认行为
 
-**upstream mainline（torvalds/master）新增：**
+BPF 调度器通过 `struct sched_ext_ops` 提供策略。Android 17 6.18 支持选核、入队、分发、运行状态、任务生命周期、CPU 热插拔、cgroup 和调试转储等多类回调。接口还会随内核演进，不宜用固定回调数量描述 ABI。
 
-- `SCX_DSQ_BYPASS`：异常、回退或前进保障场景下使用的绕过队列。
-- `SCX_SLICE_BYPASS = 5ms`：bypass 模式下使用的时间片。
+常用回调可以这样理解：
 
-这两组常量在 Android common 6.12 分支中不存在。如果正文面向 Android 16 GKI 6.12，不要把 `SCX_DSQ_BYPASS` 和 `SCX_SLICE_BYPASS` 写成当前可用能力。它们属于后续 upstream 差异，待 Android 分支合入后再更新。
+| 回调 | 发生阶段 | 未实现时的边界 |
+|---|---|---|
+| `select_cpu()` | wakeup、fork 或 exec 后的早期 CPU 选择 | 内核提供默认选择行为；返回值只是优化提示 |
+| `enqueue()` | runnable 任务需要进入调度队列 | 默认送入 global DSQ |
+| `dispatch()` | local 与 global DSQ 都没有可运行任务 | 只用内置 DSQ且在入队阶段直接插入时可以省略 |
+| `running()` / `stopping()` | 任务开始或停止占用 CPU | 供策略维护虚拟时间和运行统计 |
+| `set_weight()` / `set_cpumask()` | 权重或允许 CPU 集合变化 | 策略可同步自己的 per-task 状态 |
+| `init_task()` / `exit_task()` | 任务进入或离开调度器生命周期 | 适合分配和释放 per-task 状态 |
+| `cpu_online()` / `cpu_offline()` | CPU hotplug | 适合维护 per-CPU 队列或容量信息 |
+| `dump*()` | 错误转储 | 供异常退出时输出策略状态 |
 
-`SCX_SLICE_DFL = 20ms` 不是 Android 帧预算，也不是前台线程固定运行时间。它只是 sched_ext 在默认补 slice 模式下使用的时间片常量。把它直接换算成"120Hz 一帧 8.33ms 所以 20ms 一定卡顿"是不成立的，调度器还会被 wakeup、抢占、阻塞、频率变化和 RT 任务打断。
+`select_cpu()` 属于可选回调。官方示例明确说明，示例中的实现与默认 `select_cpu` 行为相同，删除该实现也能工作。`enqueue()` 同样有默认的 global DSQ 行为。内核的 `validate_ops()` 主要检查不兼容的 flag 组合和已废弃配置，没有要求每个调度器实现 `select_cpu()`。
 
-[已验证: Android common kernel android16-6.12 include/linux/sched/ext.h；torvalds/linux master 同文件]
+### 一个 wakeup 怎样走到 CPU
 
-## OEM 公开线索：OPPO / OnePlus `hmbird_sched`
+下面的流程展示普通任务在 sched_ext 中最常见的调度周期。
 
-公开材料中，OPPO / OnePlus 的 `hmbird_sched` 是目前最容易追到的 Android OEM 线索。`Wuzikh1/sched_ext` 仓库中的 `hmbird_sched_proc_main.c` 暴露了 `/proc/hmbird_sched` 目录和一批运行时参数，例如 `scx_enable`、`partial_ctrl`、`cpuctrl_high`、`cpuctrl_low`、`scx_shadow_tick_enable`、`heartbeat_enable`、`watchdog_enable`、`isolate_ctrl`、`parctrl_high_ratio`、`isoctrl_high_ratio` 等。
-
-这些节点能说明三件事：
-
-- **有运行时开关**：`scx_enable` 和 `partial_ctrl` 说明策略可以按设备状态或场景切换，不一定整机常开。
-- **调度和频率治理可能协同**：`cpuctrl_high/low`、`slim_freq_gov/scx_gov_ctrl` 暗示 vendor 策略会同时调度任务和调整 governor 参数。
-- **帧率场景被纳入参数体系**：`slim_walt/frame_per_sec` 对应 `sched_ravg_window_frame_per_sec = 125`，说明厂商策略至少考虑了 frame rate 相关窗口。
-
-### partial enable 与接管范围
-
-Linux sched_ext 加载 BPF scheduler 后，默认接管 `SCHED_OTHER`、`SCHED_BATCH`、`SCHED_IDLE` 和 `SCHED_EXT` 等 policy 的普通任务。如果 BPF scheduler 设置了 `SCX_OPS_SWITCH_PARTIAL` 标志，只接管显式切换到 `SCHED_EXT` policy 的任务，其余仍留在 fair class（CFS/EEVDF）。
-
-这个分支直接决定"普通 App 线程是否受 sched_ext 影响"：
-
-- **默认模式（non-partial）**：所有普通线程进入 BPF scheduler 管理。前台 App 的 main 线程、RenderThread、binder 线程都会被 `select_cpu()`、`enqueue()`、`dispatch()` 处理。
-- **partial 模式**：只有显式 `sched_setscheduler(pid, SCHED_EXT, ...)` 的任务进入 BPF scheduler。未切换的 App 线程仍走 fair class。
-
-OPPO/OnePlus 的 `partial_ctrl` proc 节点与 `SCX_OPS_SWITCH_PARTIAL` 的对应关系需要从 vendor kernel 源码或 tracepoint 确认——它可能是控制 partial 模式开关的厂商接口，也可能只是命名相近但逻辑不同的控制面。验证方式：
-
-- `cat /proc/<pid>/sched | grep ext`：查看目标线程是否在 ext class
-- `tracepoint:sched:sched_switch` 或 Perfetto sched slice：对比 partial 开关前后，目标线程的调度行为变化
-- vendor kernel 源码中 `scx_enable` 和 `partial_ctrl` 的读写逻辑
-
-这份公开源码没有给出 BPF 调度策略主体。它展示的是 procfs 控制面，不等于完整的 scheduler policy。文档或文章如果只看到这些节点，就推断“所有 OnePlus 设备都用某个 BPF 算法调度前台线程”，证据不够。
-
-高通和联发科平台也不能凭 SoC 厂商名下结论。sm8750 设备出现 `hmbird_sched`，只能说明某个 OEM 在某条产品线上使用了这套机制；其它高通设备、联发科设备、Google Pixel 或三星设备是否启用，需要回到内核配置、procfs/sysfs 节点和 Perfetto 证据。
-
-[已验证: OPPO public hmbird_sched_proc_main.c；待验证: BPF 调度策略主体未在公开仓库中出现]
-
-## 对前台交互性能的影响
-
-`sched_ext` 影响前台交互性能的路径主要有三类。
-
-**CPU 选择改变 wakeup 延迟。** `RenderThread`、主线程、binder 线程和解码/布局 worker 线程经常在短时间内反复 sleep 和 wakeup。`select_cpu()` 如果稳定把这些线程放到空闲且合适的 CPU 上，wakeup 后的 runnable 等待时间会下降；如果 CPU 选择和任务 affinity、cpuset、热限制冲突，线程会在 runnable 状态等待更久。
-
-**队列策略改变线程之间的相对顺序。** BPF scheduler 可以把任务放入自定义 DSQ，再按自定义规则移动到 local DSQ。厂商可能给前台进程、游戏线程、SurfaceFlinger 相关线程或 binder reply 更高权重。收益是交互路径更快；代价是后台任务、IO worker 或低优先级 binder 请求被推迟。
-
-**频率策略可能和调度策略一起变化。** 先区分两条路径：Linux sched_ext 通用路径可以通过 `scx_bpf_cpuperf_set()` 影响 schedutil 读取到的 CPU performance target；vendor 路径可能再叠加 `scx_gov_ctrl`、`cpuctrl_high/low` 这类私有参数。Perfetto 中如果出现“线程迁移变少 + 频率响应更快”的组合，分析时不能只盯 `sched` 表，也要看 `cpufreq`、CPU idle、thermal、binder transaction 和 frame timeline。
-
-误配通常表现为一组信号同时出现：前台线程 runnable 时间变长、binder reply 延迟上升、CPU 频率长期维持高位、温度触发降频、后台任务 tail latency 变差。遇到这类设备差异，先确认是否存在 `sched_ext` 或 vendor proc 节点，再把 trace 和同 SoC 不同 ROM、同 ROM 不同开关状态做对比。
-
-[已验证: Linux sched_ext scheduling cycle；OPPO hmbird_sched proc 参数；性能影响部分需结合实机 trace 验证]
-
-## 可观测与验证方法
-
-验证 `sched_ext` 不要从结论开始，要从设备证据开始。下面这些检查按侵入性从低到高排列。
-
-命令行检查用于确认内核能力、当前状态和 vendor 节点：
-
-```bash
-adb shell 'zcat /proc/config.gz 2>/dev/null | grep CONFIG_SCHED_CLASS_EXT'
-adb shell 'cat /sys/kernel/sched_ext/state 2>/dev/null'
-adb shell 'cat /sys/kernel/sched_ext/root/ops 2>/dev/null'
-adb shell 'cat /sys/kernel/sched_ext/enable_seq 2>/dev/null'
-adb shell 'cat /sys/kernel/sched_ext/switch_all 2>/dev/null'
-adb shell 'cat /sys/kernel/sched_ext/nr_rejected 2>/dev/null'
-adb shell 'cat /sys/kernel/sched_ext/hotplug_seq 2>/dev/null'
-adb shell 'grep ext /proc/self/sched 2>/dev/null'
-adb shell 'ls -la /proc/hmbird_sched 2>/dev/null'
+```mermaid
+sequenceDiagram
+    participant T as Waking task
+    participant S as SCX core
+    participant B as BPF scheduler
+    participant D as DSQ
+    participant C as Target CPU
+    T->>S: becomes runnable
+    S->>B: select_cpu optional
+    alt inserted into local DSQ
+        B->>D: scx_bpf_dsq_insert
+    else not inserted yet
+        S->>B: enqueue optional
+        B->>D: insert into built-in or custom DSQ
+    end
+    C->>D: consume local DSQ
+    alt local and global are empty
+        S->>B: dispatch optional
+        B->>D: insert or move task to local DSQ
+    end
+    D->>C: run task
 ```
 
-这组命令分别回答：内核是否编进 `CONFIG_SCHED_CLASS_EXT`，当前是否有 BPF scheduler 运行，运行的 ops 名称是什么，本次 boot 是否曾加载过 scheduler，是否发生过全局切换、拒绝加载或热插拔序列变化，当前 task 是否在 ext class 上，以及设备是否暴露 OPPO/OnePlus 风格的 vendor 控制节点。user build 可能因为 SELinux、内核配置隐藏或 `/proc/config.gz` 关闭而读不到结果，读不到不等于未启用。
+`select_cpu()` 选出的 CPU 只是提示。结果超出任务的 allowed cpumask 时，内核会忽略它；即使结果合法，任务也可能在后续阶段运行到另一颗允许的 CPU。若 `select_cpu()` 已把任务直接插入 local DSQ，`enqueue()` 会被跳过。
 
-Perfetto 里可以先看迁移和 runnable 时间。下面的 SQL 用 `sched` 表统计目标线程的 CPU 迁移次数，适合比较开关前后或不同设备的差异：
+## DSQ、slice 与前进保障
 
-```sql
-WITH target AS (
-  SELECT utid
-  FROM thread
-  WHERE name IN ('main', 'RenderThread', 'Binder:')
-), sched_points AS (
-  SELECT
-    s.utid,
-    s.ts,
-    s.cpu,
-    LAG(s.cpu) OVER (PARTITION BY s.utid ORDER BY s.ts) AS prev_cpu
-  FROM sched s
-  JOIN target t USING (utid)
-)
-SELECT
-  thread.name,
-  COUNT(*) FILTER (WHERE prev_cpu IS NOT NULL AND cpu != prev_cpu) AS migrations,
-  COUNT(*) AS sched_slices
-FROM sched_points
-JOIN thread USING (utid)
-GROUP BY thread.name
-ORDER BY migrations DESC;
-```
+CPU 只执行自己 local DSQ 中的任务。local DSQ 为空时，sched_ext core 会尝试从 global DSQ 取任务；仍然为空时才调用 `dispatch()`，让 BPF 策略从自定义队列或其他位置补充任务。
 
-这条 SQL 只说明线程被调度到不同 CPU 的次数，不能单独证明迁移好坏。要继续看同一时间窗口里的 `thread_state` runnable 时长、`cpufreq` 频率变化、binder 等待、frame timeline missed frame。对调度策略来说，迁移次数下降但 runnable 时间上升，通常比迁移次数高更值得警惕。
+Android 17 6.18 对外公开的内置 DSQ ID 包括：
 
-[已验证: Perfetto `sched` 表常规分析方式；详见 13.6 节、13.10 节、14.10 节]
+- `SCX_DSQ_GLOBAL`
+- `SCX_DSQ_LOCAL`
+- `SCX_DSQ_LOCAL_ON | cpu`
 
-## sched_ext 与 uclamp、cpuset 的关系
+自定义 DSQ 可以采用 FIFO，也可以用 `scx_bpf_dsq_insert_vtime()` 维护虚拟时间顺序。内置 DSQ 采用 FIFO。文档中的 `scx_bpf_dsq_insert()` 和 `scx_bpf_move_to_local()` 是该版本调度周期里的核心 helper。
 
-`uclamp` 和 `cpuset` 是 Android 调度路径里经常和 `sched_ext` 混在一起的两个机制。区分它们能减少很多误判。
+`SCX_SLICE_DFL` 在该 tag 中为 20 ms。它是调度器没有提供其他 slice 时使用的默认值，不是 Android 帧预算，也不保证任务连续运行 20 ms。更高优先级调度类、阻塞、抢占和策略自身的重新入队都可能提前结束本次运行。
 
-`cpuset` 限制任务能在哪些 CPU 上运行。`sched_ext` 的 `select_cpu()` 返回值不是最终绑定，内核仍会检查任务允许的 CPU mask。一个后台任务如果被放在受限 cpuset 中，BPF scheduler 不能随意把它发到不允许的高性能核心上。
+`root/events` 里能看到 `BYPASS_DURATION`、`BYPASS_DISPATCH` 与 `BYPASS_ACTIVATE` 等内部事件计数。这些名字描述内核的 bypass 处理过程，不能据此虚构一个面向 BPF 程序公开的 `SCX_DSQ_BYPASS` 常量；Android 17 6.18 的公开内置 DSQ 列表没有这个 ID。
 
-`uclamp` 给任务的 util 加上下界或上界，常用于前台 boost、游戏模式、相机等场景。它更接近频率和容量选择的输入，而不是 BPF scheduler 的队列语义。厂商 BPF scheduler 可以读取或间接受到这类属性影响，但是否尊重 `uclamp.min`、是否把某类任务放进特殊 DSQ，是 vendor 策略问题。
+sched_ext 还有前进保障与自动回退：可运行任务长时间得不到调度、BPF 程序触发错误或调度器异常退出时，内核会终止该策略并回到 fair class。对于用户体验，这比让失效的策略永久占住系统更安全，但切换本身仍可能造成短时延迟波动。
 
-所以分析顺序应该是：确认 task profile / cpuset / uclamp，再判断 scheduler class 和 BPF ops。只看 `sched_ext` 开关，不看任务属性，容易把 Android framework 层的性能 hint 误写成内核 BPF 调度器效果。
+## Android 17 中 sched_ext 与 schedutil 的关系
 
-[已验证: Linux sched_ext 文档对 CPU 选择约束的描述；Android task profile/uclamp 行为详见 5.2、5.4、5.9 节]
-
-## Android 17 之后会默认启用吗
-
-Android 16 / Android 17 进入 kernel 6.12 之后，`sched_ext` 基础设施出现在 Android common kernel 分支并不意外。问题不在“源码里有没有”，而在“产品构建是否启用配置、是否加载 BPF scheduler、是否把普通任务切到 ext class”。
-
-当前能写进正文的判断只有三个：
-
-- Linux upstream 已提供 `CONFIG_SCHED_CLASS_EXT`、`/sys/kernel/sched_ext/*` 状态接口和 `tools/sched_ext` 示例调度器。
-- Android common kernel `android16-6.12` 分支公开存在，搜索结果中也能看到 OPPO 相关 scx tracepoint / symbol list 线索。
-- AOSP 默认用户态没有公开资料表明普通 App 线程会统一切到某个 BPF scheduler；量产行为仍由设备厂商、内核配置和系统服务决定。
-
-因此，本书不能把 `sched_ext` 写成 Android 17 默认调度机制。更稳的说法是：Kernel 6.12 之后，Android OEM 有了更标准的 BPF 调度扩展入口；某些厂商可以把它用于游戏、前台交互或功耗策略，但是否启用必须逐设备验证。
-
-[待验证: Android 17 正式发布后 GKI defconfig、CDD/VTS 约束、Pixel 与主流 OEM user build 的默认状态]
-
-## 厂商游戏模式与 BPF 调度器验证清单
-
-游戏模式、帧率稳定和前台交互是 OEM 最可能接入自定义调度策略的场景。验证时不要只看游戏帧率，要同时确认调度、频率、温度和后台代价。
-
-建议按这个清单记录证据：
-
-| 维度 | 要采集的证据 | 判断边界 |
-|------|--------------|----------|
-| 内核能力 | `CONFIG_SCHED_CLASS_EXT`、`/sys/kernel/sched_ext/state`、`enable_seq` | 只能说明能力和状态，不能说明具体策略 |
-| vendor 控制面 | `/proc/hmbird_sched/*` 或同类 vendor 节点 | 节点存在不等于 BPF scheduler 已加载 |
-| 前台线程 | main / RenderThread / UnityMain / UE RenderThread 的 runnable 时间和 CPU 迁移 | 需要和 frame timeline 对齐 |
-| binder 路径 | binder reply 等待、system_server 相关线程 runnable 时间 | 前台 boost 可能挤压系统线程，反而造成等待 |
-| 频率与温度 | `cpufreq`、thermal throttling、CPU idle | 调度收益可能被热降频抵消 |
-| 对照实验 | 同设备开关前后、同 SoC 不同 ROM、同 App 不同场景 | 没有对照就不要写成因果结论 |
-
-如果只拿到一条 `/proc/hmbird_sched/scx_enable=1`，只能写“该设备暴露并开启了 vendor scx 开关”。要写“它改善了游戏帧率稳定性”，还需要帧时间分布、runnable 延迟、频率和温度的对照数据。
-
-[已验证: OPPO hmbird_sched proc 节点；待验证: 具体游戏策略需要实机 Perfetto + 温度/频率数据]
-
-## 工程使用边界
-
-`sched_ext` 适合作为 OEM 调度策略分析入口，不适合作为 App 性能优化的直接操作项。App 团队能做的是减少不必要的 runnable 竞争、控制线程数量、合理使用 coroutine dispatcher / executor、避免在关键帧窗口里堆后台任务。设备侧是否用 BPF scheduler，通常不是 App 能决定的。
-
-写作和排查时守住三条边界：
-
-- **AOSP 与 OEM 分开写**：Linux / Android common kernel 提供能力，OPPO/OnePlus `hmbird_sched` 是厂商实现线索，两者不能混成一个默认机制。
-- **公开源码与固件策略分开写**：procfs 控制面能说明有哪些开关，不能还原 BPF scheduler 的完整算法。
-- **现象与因果分开写**：Perfetto 中看到 CPU 迁移减少、频率更高、帧率更稳，只能作为相关性证据；要写因果，需要开关前后对照或源码级策略证明。
-
-这套边界也适用于其它 vendor 调度功能。性能文章里要避免把单一厂商、单一固件版本的行为写成 Android 通用规律；承认未知反而更稳。
-
-<!-- AIW-源码调研-2026-07-15 -->
-
-## Android 17 Kernel 6.18 (android17-6.18-2026-06_r6) 增量事实
-
-[已验证: 全部结论锚定 `android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6`，对应 `kernel/sched/ext.c` 7007 行、`kernel/sched/ext.h` 95 行、`kernel/sched/ext_internal.h` 1080 行、`kernel/sched/cpufreq_schedutil.c` 944 行、`init/Kconfig` 行 1159-1165、`include/trace/hooks/sched.h` 行 379-422、`arch/arm64/configs/gki_defconfig`；OPPO 公开仓库 `github.com/Wuzikh1/sched_ext/hmbird_sched_proc_main.c`]
-
-### 一、GKI 默认启用与编译单元
-
-- `arch/arm64/configs/gki_defconfig` 含 `CONFIG_SCHED_CLASS_EXT=y`，且 `init/Kconfig:1165` 把 `CONFIG_EXT_GROUP_SCHED` 默认 `y`，`depends on SCHED_CLASS_EXT && CGROUP_SCHED`。即在 arm64 GKI 构建里，BPF 调度类 + cgroup v2 集成路径默认就位。
-- `kernel/sched/build_policy.c` 把 `ext_idle.c` 与 `ext.c` 用 `#ifdef CONFIG_SCHED_CLASS_EXT` 包住；启用了 `CONFIG_SCHED_CLASS_EXT` 即直接编译 ext.c 7007 行。
-
-### 二、sched_ext_ops 操作表（BPF scheduler ABI）
-
-`kernel/sched/ext_internal.h:267-840` 定义 `struct sched_ext_ops` 共 **31 个回调**，按分组：
-
-- 任务放置：`select_cpu` / `enqueue` / `dequeue` / `dispatch` / `dispatch_max_batch`
-- 生命周期：`tick` / `runnable` / `running` / `stopping` / `quiescent` / `yield`
-- core-sched：`core_sched_before`
-- 属性变更：`set_weight` / `set_cpumask` / `update_idle` / `cpu_acquire` / `cpu_release`
-- 进程初始化：`init_task` / `exit_task` / `enable` / `disable`
-- 错误转储：`dump` / `dump_cpu` / `dump_task`
-- cgroup（CONFIG_EXT_GROUP_SCHED 下）：`cgroup_init` / `cgroup_exit` / `cgroup_prep_move` / `cgroup_move` / `cgroup_cancel_move` / `cgroup_set_weight` / `cgroup_set_bandwidth`
-- CPU 热插拔：`cpu_online` / `cpu_offline`
-- 调度器级：`init` / `exit` / `flags` / `timeout_ms` / `exit_dump_len` / `hotplug_seq` / `name` / `priv`
-
-`bpf_scx_check_member()`（ext.c:5076-5097）限定 `init_task` / `init` / `cgroup_init` / `cgroup_prep_move` 这五个回调允许 `prog->sleepable`，其它 BPF ops 在 verifier 阶段被拒收 sleepable 程序。
-
-`sched_ext_ops__select_cpu` 默认实现返回 `-EINVAL`（ext.c:5141）；`sched_ext_ops__init` 默认实现返回 `-EINVAL`。意味着 BPF scheduler 必须实现 `select_cpu` 与 `init` 才能正常加载；`validate_ops()`（ext.c:4632-4655）做静态校验。
-
-### 三、加载入口与启用约束
-
-`scx_enable()`（ext.c:4946-4973）流程：
-
-1. **拒绝条件**：`housekeeping_cpumask(HK_TYPE_DOMAIN) != cpu_possible_mask` → 直接返回 `-EINVAL`，强制要求「`isolcpus=` 域隔离」与 sched_ext 不可共存（行 4949-4950）。OEM 若启用 sched_ext，必须放弃 CPU 域隔离，反之亦然。
-2. **Helper kthread**：`kthread_run_worker(0, "scx_enable_helper")`，并 `sched_set_fifo(helper->task)`（行 4953-4960），把 helper 钉在 SCHED_FIFO，避免 enable 流程被普通 CFS 任务抢占。
-3. **BPF skeleton 注册**：`bpf_struct_ops bpf_sched_ext_ops = { ... .name = "sched_ext_ops", ... }`（ext.c:5270-5279），调度器实际以 BPF skeleton + libbpf `bpf_map__attach_struct_ops()` 加载，BPF 程序名固定为 `sched_ext_ops`。
-
-`bpf_scx_update()`（ext.c:5144-5153）返回 `-EOPNOTSUPP`：sched_ext **不支持 hot-update**，运行时只能 `scx_disable` 后重新 load。
-
-### 四、cpufreq 闭环（Android 17 6.18 关键变更）
-
-`kernel/sched/ext.h:32-37` 暴露 `scx_cpuperf_target(cpu)`：
+Android 17 6.18 把 sched_ext 的 CPU performance target 接入 schedutil。下面的精简源码用于说明 full 与 partial 模式的差别，代码来自该 tag 的 `kernel/sched/cpufreq_schedutil.c`。
 
 ```c
-static inline u32 scx_cpuperf_target(s32 cpu)
+static void sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost)
 {
-    if (scx_enabled())
-        return cpu_rq(cpu)->scx.cpuperf_target;
-    else
-        return 0;
+    unsigned long min, max, util = scx_cpuperf_target(sg_cpu->cpu);
+
+    if (!scx_switched_all())
+        util += cpu_util_cfs_boost(sg_cpu->cpu);
+    util = effective_cpu_util(sg_cpu->cpu, util, &min, &max);
+    util = max(util, boost);
+    sg_cpu->util = sugov_effective_cpu_perf(
+        sg_cpu->cpu, util, min, max);
 }
 ```
 
-`kernel/sched/cpufreq_schedutil.c:235` 的 `sugov_get_util()` 注释（行 369-372）直接说明：
+full 模式中，`scx_switched_all()` 为真，schedutil 从 sched_ext 的 CPU performance target 起算，不再叠加 fair-class 的 `cpu_util_cfs_boost()`。partial 模式仍有 fair 任务，代码会把 fair util 加进来。两种模式随后都经过 `effective_cpu_util()`、boost、uclamp 与策略上下界等处理。
 
-> "The heuristics in this function is for the fair class. For SCX, the performance target comes directly from the BPF scheduler. Let's just follow it."
+同文件的 `sugov_hold_freq()` 在 full 模式直接返回 `false`，理由是 fair class 的保频启发式不适合 SCX，频率目标应跟随 BPF 调度器。由此可以得到两个工程结论：
 
-即 `util = scx_cpuperf_target(sg_cpu->cpu)` 在 SCX 路径下覆盖 schedutil 的 fair-class 启发式，BPF scheduler 调 `scx_bpf_cpuperf_set()` 后立即反映到下一次 `sugov_should_update_freq`。`SCX_OPS_SWITCH_PARTIAL=0` 时 `scx_switched_all()` 走 fast path，频率决策完全交给 BPF scheduler。
+- BPF 策略若接管全部普通任务，需要同步提供合理的 CPU performance target；只改 DSQ 排序可能让频率响应与调度意图脱节。
+- sched_ext 提供的 target 仍受 uclamp、CPUFreq policy、driver、thermal pressure 和硬件频点限制。高 target 不等于 CPU 必然运行在最高频点。
 
-BTF kfunc 列表（ext.c BTF_ID_FLAGS 区）共 80+ 条，包括 `scx_bpf_dsq_insert` / `scx_bpf_dsq_move` / `scx_bpf_select_cpu_dfl` / `scx_bpf_cpuperf_set` / `scx_bpf_task_cpu` 等；BPF scheduler 通过 libbpf 直接调用，无需任何 vendor ioctl。
+## Android vendor hook 与 OEM 策略边界
 
-### 五、Android 专属 Vendor Hook（OEM 适配路径）
+Android common 在 sched_ext core 中放置了一组 `android_vh_*` vendor hook。Android 17 tag 能看到的触发点涵盖：
 
-`grep "trace_android_vh_scx\|trace_android_vh_switching_to_scx" kernel/sched/ext.c` 命中 **13 个 hook**（`include/trace/hooks/sched.h` 行 379-422），对应 OEM kernel fork 的标准扩展点：
+- sched_ext 启用状态变化；
+- 任务切入或切出 SCX class；
+- 选核后的 CPU 可运行性和 `cpus_allowed` 变化；
+- enqueue、迁移与 slice 修正；
+- tick 处理与异常退出通知。
 
-| Hook | ext.c 触发点 | 用途 |
-|------|---------------|------|
-| `android_vh_scx_enabled` | 4060, 4852 | ext class 整体启/停（static_branch + 通知 vendor） |
-| `android_vh_scx_ops_enable_state` | 4011, 4112, 4706 | 状态机：`SCX_DISABLING → SCX_DISABLED → SCX_ENABLING` |
-| `android_vh_scx_enq_to_priq` | 988 | vtime-ordered DSQ 入队 |
-| `android_vh_scx_set_cpus_allowed` | 2599 | 任务 cpus_allowed 变更拦截 |
-| `android_vh_scx_task_can_run_on` | 1866 | 任务 CPU 允许性检查 |
-| `android_vh_scx_task_switch_finish` | 4035, 4884 | 任务切换完成点 |
-| `android_vh_scx_switch_repeat_skip` | 4023, 4873 | 反复切换时 vendor 提前 skip |
-| `android_vh_scx_restore_flags` | （sched.h:379） | ext flags 还原 |
-| `android_vh_scx_ops_consider_migration` | 1402, 1502 | enqueue/dequeue 路径考虑迁移 |
-| `android_vh_scx_fix_prev_slice` | 2435 | 上一个 task 的 slice 修正 |
-| `android_vh_scx_exit_on_abnormal` | 4470 | BPF scheduler 异常退出 |
-| `android_vh_switching_to_scx` | 3074 | task 切到 SCX class 时 |
-| `android_vh_task_tick_scx` | 2757 | tick 中对 ext class 任务的处理点 |
+这些 hook 允许 vendor module 在稳定触发点补充产品策略。它们可以影响某些决定或状态流转，所以分析 Android 设备时不能假定同一个 BPF 程序在所有 OEM kernel 上表现相同。hook 的数量和含义会随 tag 变化，正文不把某个统计值当成稳定 ABI。
 
-这些 hook **在 upstream Linux `kernel/sched/ext.c` 中不存在**；是 Android common kernel 在 6.12→6.18 之间为 OEM 适配统一提供的标准扩展点。典型用法：
+vendor hook 也没有自动给出厂商策略。要确认 hook 上注册了什么实现，仍需 vendor module 源码、符号信息、trace 或设备实验。
 
-- `android_vh_scx_set_cpus_allowed` 拦截 BPF scheduler 调 `scx_bpf_set_cpus_allowed` 后，OEM vendor task group / VIP 调度可覆盖 BPF 选择。
-- `android_vh_scx_switch_repeat_skip` 在 task 反复被切进切出 ext class 时给 vendor 一次否决权，避免特定 task 在两个 class 之间抖动。
-- `android_vh_scx_exit_on_abnormal` 做 graceful fallback：BPF scheduler 异常退出时自动把对应 vendor task group 切回 SCHED_NORMAL。
+### 怎样看待 `hmbird_sched` 公开线索
 
-vendor hook 不修改 BPF scheduler 的算法逻辑，仅在关键决策点提供「否决 / 补充 / 通知」语义，这是 Android 17 GKI 设计哲学——把 vendor 适配点收敛在固定 13 个 hook，避免 OEM 修改 ext.c 本身破坏 GKI 锁定。
+GitHub 上的 `Wuzikh1/sched_ext` 仓库包含 `hmbird_sched_proc_main.c`，代码创建了 `/proc/hmbird_sched` 及 `scx_enable`、`partial_ctrl`、`cpuctrl_*`、`slim_*` 等节点。这个仓库不属于 OPPO 官方组织，也没有提供可验证的发布声明，因此只能作为第三方公开线索。
 
-### 六、可观测与回退
+文件名和 proc 节点能支持的结论很有限：
 
-`/sys/kernel/sched_ext/`（ext.c:3506-3611）：
+- 某套代码定义过这些 vendor 控制入口；
+- 节点可能与调度器启停、任务分组、频率控制或调试有关；
+- 设备若暴露相同节点，可以继续做源码和行为比对。
 
-| 文件 | 内容 |
-|------|------|
-| `state` | `enabled` / `enabling` / `disabling` / `disabled` |
-| `switch_all` | `0` = partial（仅 SCX class 任务走 BPF），`1` = 全部 CFS 任务走 BPF |
-| `nr_rejected` | 累积被拒次数（policy SCHED_EXT 但 BPF scheduler 设置了 disallow） |
-| `hotplug_seq` | CPU 热插拔序列号；BPF scheduler 用 `ops.hotplug_seq` 校验 |
-| `enable_seq` | 启动序列号；本次 boot 是否曾加载过 BPF scheduler |
-| `ops` | 当前 BPF scheduler 的 `name[SCX_OPS_NAME_LEN]` |
-| `events` | `SCX_EV_*` 计数器（`SELECT_CPU_FALLBACK` / `DISPATCH_LOCAL_DSQ_OFFLINE` / `DISPATCH_KEEP_LAST` / `ENQ_SKIP_EXITING` / `ENQ_SKIP_MIGRATION_DISABLED` / `REFILL_SLICE_DFL` / `BYPASS_DURATION` / `BYPASS_DISPATCH` / `BYPASS_ACTIVATE`） |
+以下推断没有足够证据：
 
-回退：SysRq-S「reset-sched-ext(S)」（ext.c:5284-5290）调 `scx_disable(SCX_EXIT_SYSRQ)`，所有任务立即回 SCHED_NORMAL/CFS；`hotplug_seq` 检测到 BPF scheduler 加载期间发生 CPU 热插拔时主动拒绝 enable。
+- `partial_ctrl` 一定直接修改 `SCX_OPS_SWITCH_PARTIAL`；
+- `cpuctrl_high_ratio` 一定映射到 `scx_bpf_cpuperf_set()`；
+- 某个 frame 参数的数值代表固定刷新率策略；
+- 使用特定 SoC 的设备都启用同一套调度算法；
+- 控制面文件等同于完整 BPF `struct sched_ext_ops` 实现。
 
-### 七、OEM 实操：OPPO hmbird_sched 控制面
+高通、联发科或某个手机品牌的名称也不能替代设备证据。量产状态要按内核 tag、固件版本和具体型号记录。
 
-公开仓库（`hmbird_sched_proc_main.c`）在 `/proc/hmbird_sched/` 暴露：
+## 它怎样影响前台交互
 
+sched_ext 对体验的影响沿着四条路径传播。
+
+### wakeup 与 CPU 选择
+
+主线程、RenderThread、Binder 线程和短任务 worker 会频繁睡眠与唤醒。合理的 CPU 提示可以减少唤醒后的 runnable 等待，错误提示则可能带来额外迁移、idle 唤醒或在容量不足的 CPU 上排队。allowed cpumask 仍是硬约束。
+
+### DSQ 中的相对顺序
+
+自定义 DSQ 可以按任务组、虚拟时间或场景规则排序。前台任务提前获得 CPU 时，后台工作和系统服务可能等待更久。只看 App 的平均帧率，容易漏掉 Binder reply、system_server 或 SurfaceFlinger 一侧的尾延迟。
+
+### CPU performance target
+
+调度器可以让 schedutil 更快请求容量，也可能因 target 过高造成能耗和温升。温控开始压频后，前段时间获得的延迟收益可能反转。实验至少要覆盖冷机、稳定温度和热限制三个阶段。
+
+### 调度类边界
+
+RT、DL 与 stop class 不属于 sched_ext 接管的普通任务范围。Android 的 RenderThread、音频线程或系统关键线程可能被 framework/vendor 设成不同策略，也可能带有 affinity、uclamp 或 task profile。线程名相同并不保证调度属性相同。
+
+迁移次数也没有固定的好坏方向。减少跨 cluster 迁移可能降低 cache 失效与功耗，但把任务留在拥塞或降频的 CPU 上会拉长 runnable latency。需要用等待时间、运行位置、频率和帧时间一起解释。
+
+## 在设备上做只读核查
+
+下面的命令只读取内核能力、当前 sched_ext 状态和常见 vendor 节点，适合先建立设备事实表。
+
+```bash
+adb shell uname -r
+adb shell 'zcat /proc/config.gz 2>/dev/null | grep -E "CONFIG_SCHED_CLASS_EXT|CONFIG_EXT_GROUP_SCHED"'
+adb shell 'for f in state switch_all nr_rejected hotplug_seq enable_seq; do
+  printf "%s=" "$f"
+  cat "/sys/kernel/sched_ext/$f" 2>/dev/null || echo inaccessible
+done'
+adb shell 'for f in ops events; do
+  echo "[$f]"
+  cat "/sys/kernel/sched_ext/root/$f" 2>/dev/null || echo inaccessible
+done'
+adb shell 'ls -la /proc/hmbird_sched 2>/dev/null'
 ```
-scx_enable   partial_ctrl   cpuctrl_high_ratio   cpuctrl_low_ratio
-slim_stats   hmbirdcore_debug   slim_for_app   misfit_ds
-scx_shadow_tick_enable   highres_tick_ctrl_dbg   cpu7_tl
-cpu_cluster_masks   save_gov   ...
+
+输出的解释要保守：配置文件读不到可能是 `/proc/config.gz` 没开放；sysfs 读不到可能是调度器未运行、权限不足或路径未挂载；vendor 目录存在也不能证明其中的主开关处于启用状态。若要读取节点内容，先确认操作为只读，并记录固件 build fingerprint。
+
+建议为每台设备保存以下字段：
+
+| 字段 | 示例 | 用途 |
+|---|---|---|
+| build fingerprint | 完整字符串 | 固定固件版本 |
+| kernel release | `uname -r` 输出 | 区分 GKI 与 vendor 构建 |
+| `state` / `switch_all` | `enabled` / `1` | 区分当前状态和模式 |
+| `root/ops` | 调度器名称 | 识别已挂载策略 |
+| `enable_seq` | 数值 | 判断本次开机是否发生过成功启用 |
+| `root/events` | 全量快照 | 比较实验前后的异常与 fallback 事件 |
+| target thread policy | policy、affinity、cpuset、uclamp | 确认任务边界 |
+
+## 用 Perfetto 验证影响
+
+一次有效的 trace 应覆盖 CPU scheduling、CPU frequency、CPU idle、Binder、FrameTimeline 与 thermal 相关数据。若设备 tracefs 暴露 `sched_ext/sched_ext_event` 或 `sched_ext/sched_ext_dump`，可以一并采集；是否可用取决于内核和权限。
+
+`sched_switch` 只记录线程切换，不能直接告诉你“这次决策来自哪个 BPF 回调”。因此，采集 trace 前后要同时保存 sched_ext sysfs 快照。设备支持 vendor tracepoint 时，再用它补充策略原因。
+
+下面的 SQL 用进程关系筛选主线程、RenderThread 和 Binder 线程，并统计相邻运行片落在不同 CPU 的次数。
+
+```sql
+WITH target_threads AS (
+  SELECT t.utid, t.name, t.tid, p.pid
+  FROM thread t
+  JOIN process p USING (upid)
+  WHERE p.name = 'com.example.game'
+    AND (
+      t.tid = p.pid
+      OR t.name = 'RenderThread'
+      OR t.name GLOB 'Binder:*'
+    )
+),
+ordered_runs AS (
+  SELECT
+    s.utid,
+    s.cpu,
+    LAG(s.cpu) OVER (PARTITION BY s.utid ORDER BY s.ts) AS prev_cpu
+  FROM sched s
+  JOIN target_threads t USING (utid)
+)
+SELECT
+  t.tid,
+  t.name,
+  COUNT(*) AS running_slices,
+  SUM(CASE
+        WHEN r.prev_cpu IS NOT NULL AND r.cpu != r.prev_cpu THEN 1
+        ELSE 0
+      END) AS adjacent_cpu_changes
+FROM ordered_runs r
+JOIN target_threads t USING (utid)
+GROUP BY t.tid, t.name
+ORDER BY adjacent_cpu_changes DESC;
 ```
 
-- `scx_enable`：主开关，对应 BPF scheduler 是否加载。
-- `partial_ctrl`：对应上游 `SCX_OPS_SWITCH_PARTIAL` flag（ext.c:4850 `WRITE_ONCE(scx_switching_all, !(ops->flags & SCX_OPS_SWITCH_PARTIAL))`）。
-- `cpuctrl_high/low_ratio`：与 `scx_cpuperf_target` 配合调整 schedutil 频率阈值。
-- `slim_for_app` / `misfit_ds`：应用层与「不匹配任务」的迁移策略。
+这条查询统计相邻 running slice 的 CPU 变化，不等同于内核迁移事件，也没有计算迁移成本。它适合定位需要深挖的线程。因果判断还要补充 `thread_state` 中的 runnable 时长、wakeup 到运行的延迟、cluster 分布、频率、idle、Binder 等待和 FrameTimeline。
 
-**重要边界**：OPPO hmbird_sched 只公开了控制面代码，**BPF scheduler 算法本身（`struct sched_ext_ops` 各回调实现）未在公开仓库披露**。要还原 OEM 策略需借助 `SCX_EV_*` 计数器与 `/proc/hmbird_sched/*` 行为反推。
+## 对照实验怎样设计
 
-### 八、与 android16-6.12 的版本差异
+能控制 vendor 开关时，一轮实验至少满足以下条件：
 
-| 维度 | android16-6.12 | android17-6.18 |
-|------|----------------|----------------|
-| `kernel/sched/ext.c` 行数 | ~6000+ | **7007** |
-| `CONFIG_SCHED_CLASS_EXT=y` | GKI 默认 y | GKI 默认 y（已验证） |
-| Android vendor hook 数量 | ~10 | **13**（追加 `android_vh_scx_fix_prev_slice` / `android_vh_scx_exit_on_abnormal` 等） |
-| `scx_cpuperf_target` 与 `sugov_get_util` 闭环 | 未完整闭环 | 已完成闭环（cpufreq_schedutil.c:235 直接读取） |
-| `SCX_OPS_HAS_CGROUP_WEIGHT` | active | deprecated + noop（ext.c:4653-4654） |
+1. 固定设备、固件、App 版本、场景脚本、屏幕刷新率和网络条件。
+2. 记录开关前后的 `state`、`switch_all`、`root/ops`、`enable_seq` 与 `root/events`。
+3. 冷机预热后再采样，分别记录稳定温度阶段和热限制阶段。
+4. 每个条件重复多轮，报告中位数、P90/P95/P99 与异常样本。
+5. 同时评估帧时间、runnable latency、Binder 等待、CPU 时间、频率驻留、功耗和温度。
+6. 检查 system_server、SurfaceFlinger、后台任务与音频等邻接工作负载，避免局部收益掩盖系统退化。
 
-### 九、对章节「Android 17 之后会默认启用吗」的纠偏
+只能拿到只读设备时，可以比较同一场景下不同固件或同 SoC 不同 ROM，但结论应写成相关性。单次 trace、单个 proc 值或调度器名称无法支持性能因果。
 
-原章节（基于 android16-6.12）写「不能把 `sched_ext` 写成 Android 17 默认调度机制」，本轮源码验证后修正为更精确的事实：
+## 与 cpuset、affinity 和 uclamp 一起分析
 
-- **编译侧默认**：arm64 GKI 6.18 defconfig `CONFIG_SCHED_CLASS_EXT=y`（已验证），意味着 BPF 调度类在编译产物中默认就位。
-- **运行侧默认**：GKI 默认开启不代表 user build 自动加载 BPF scheduler；需 init.rc / vendor init 服务主动 `bpf_map__attach_struct_ops()` 才会出现 `/sys/kernel/sched_ext/ops` 内容。AOSP main 在 Android 17 是否加入 init 路径**待验证**。
-- **Pixel user build 默认状态**未在本轮验证，需后续读取 `system/core/init/` 或 vendor init 服务源码。
+cpuset 和 affinity 决定任务允许在哪些 CPU 上运行。BPF `select_cpu()` 的返回值超出 allowed mask 时会被内核忽略。若任务被限制在小核，单独调整 DSQ 顺序无法把它送到不允许的大核。
 
-新事实校正：原章节「待验证: Android 17 正式发布后 GKI defconfig、CDD/VTS 约束、Pixel 与主流 OEM user build 的默认状态」中「GKI defconfig」一项本轮已确认（`CONFIG_SCHED_CLASS_EXT=y`）；Pixel user build 与 CDD/VTS 约束仍是开放问题。
+uclamp 影响 `effective_cpu_util()` 计算和容量请求。full 模式中的 SCX target 也会经过这条约束路径。观察到频率被压住时，应检查 `uclamp.max`、thermal pressure、CPUFreq policy 与 vendor driver，不能把责任直接归给 BPF 调度器。
 
-[已验证: android17-6.18-2026-06_r6 源码；未进入 Android 18 / API 38；Android 16 6.12 数据仅作版本演进对比]
+task profile 可能同时改变 cpuset、uclamp 和其他 cgroup 属性。排查顺序建议固定为：
 
+1. 记录线程 policy、affinity、cpuset 与 uclamp。
+2. 确认 sched_ext 的运行状态和 full/partial 模式。
+3. 查看 DSQ、wakeup、runnable latency 与 CPU 分布。
+4. 对齐 schedutil、频率、idle、thermal 与帧时间。
+
+这样能够区分“任务没有资格去某颗 CPU”“调度器没有把任务及时送过去”和“任务到了 CPU 但容量请求受限”三类问题。
+
+## Android 17 的工程结论
+
+- Android 17 arm64 GKI 默认编译 sched_ext 能力；AOSP 或量产设备是否加载 BPF 调度器仍需运行时证据。
+- full 模式会接管普通策略任务；partial 模式只接管显式 `SCHED_EXT` 任务。进程的 policy 字段不足以证明 full 模式下的归属。
+- `select_cpu()`、`enqueue()` 和 `dispatch()` 都有可省略的场景。分析 BPF 程序时，应按调度器所用 DSQ 和 helper 判断缺失回调是否合理。
+- Android 17 的 schedutil 已消费 sched_ext CPU performance target，并在 full 与 partial 模式采用不同的 fair-util组合逻辑。
+- Android vendor hook 可能改变调度细节；同一套 upstream 机制在不同设备上可能表现不同。
+- 第三方 `hmbird_sched` 文件只能证明一套公开控制面线索，不能替代 OEM 官方源码、量产固件状态或 BPF 策略实现。
+- App 团队通常无法控制 sched_ext。可执行的工作是减少关键窗口的 runnable 竞争、记录完整线程属性，并用多信号 trace 识别设备侧差异。
 
 ## 参考资料
 
-
-- [已验证: Linux sched_ext 官方文档, `Documentation/scheduler/sched-ext.rst`](https://raw.githubusercontent.com/torvalds/linux/master/Documentation/scheduler/sched-ext.rst)
-- [已验证: Linux `struct sched_ext_ops`, `kernel/sched/ext.c`（torvalds/master + Android common 6.12）](https://raw.githubusercontent.com/torvalds/linux/master/kernel/sched/ext.c)
-- [已验证: Linux DSQ 与 sched_ext entity, `include/linux/sched/ext.h`](https://raw.githubusercontent.com/torvalds/linux/master/include/linux/sched/ext.h)
-- [已验证: Linux 示例 BPF scheduler, `tools/sched_ext/scx_simple.bpf.c`](https://raw.githubusercontent.com/torvalds/linux/master/tools/sched_ext/scx_simple.bpf.c)
-- [已验证: OPPO/OnePlus `hmbird_sched` proc 控制面, `hmbird_sched_proc_main.c`](https://raw.githubusercontent.com/Wuzikh1/sched_ext/main/hmbird_sched_proc_main.c)
-- [来源: AIW AutoResearchClaw 调研报告, `2026-05-04-sched-ext-oplus-impl.md`]
-- [待验证: Android common kernel `android16-6.12` 分支与各 OEM user build 默认启用状态]
+- [Android 17 6.18 sched_ext 官方文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-ext.rst)
+- [Android 17 6.18 sched_ext core](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/ext.c)
+- [Android 17 6.18 sched_ext internal interface](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/ext_internal.h)
+- [Android 17 6.18 public sched_ext constants and DSQ definitions](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/sched/ext.h)
+- [Android 17 6.18 schedutil implementation](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c)
+- [Android 17 arm64 GKI defconfig](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig)
+- [Android 17 scheduler vendor hooks](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/hooks/sched.h)
+- [Perfetto CPU scheduling data source](https://perfetto.dev/docs/data-sources/cpu-scheduling)
+- [PerfettoSQL 入门](https://perfetto.dev/docs/analysis/perfetto-sql-getting-started)
+- [第三方 `hmbird_sched` proc 控制面线索](https://github.com/Wuzikh1/sched_ext/blob/main/hmbird_sched_proc_main.c)
