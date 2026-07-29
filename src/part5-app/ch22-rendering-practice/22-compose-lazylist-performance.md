@@ -39,386 +39,364 @@ sources:
 
 # 22.22 Compose LazyList/LazyGrid 滑动性能深度优化
 
-Compose 重组控制的基础机制（Stability、Strong Skipping Mode、derivedStateOf）在 §22.3 已详细说明。本节聚焦 LazyColumn / LazyRow / LazyGrid 在滑动场景下的性能行为：key 和 contentType 对 item 复用的影响、item 内部重组范围控制、预取机制源码行为、嵌套滚动、Paging 3 集成、以及 Perfetto 诊断 SQL 模板。
+Lazy layout 把数据集总量与同时 Composition 的 item 数量分开，但它不会自动消除慢 item、错误身份、重复测量、同步 I/O 或 GPU 过载。本章以 Compose Foundation 1.10.0 源码为库基线，以 Android 17 / API 37 的 `android-17.0.0_r1` 为平台基线。Compose Foundation 独立发布，`targetSdk=37` 不会改变 LazyList 的 key、复用或预取语义。
 
-本节使用 **Compose BOM 2025.12.00（Compose 1.10）** 作为版本基线。LazyList 的内部实现（预取、item pool、Pausable Composition）取决于 Compose Foundation 版本，不由 Android 平台版本决定。[已验证: AndroidX androidx-main, Compose Foundation 1.10]
+普通 LazyColumn、LazyGrid 仍通过宿主 App Window 的标准 HWUI 路径出图。主线程上的 Composition、measure、placement 和 DisplayList 更新只是前半程，后面还有 RenderThread、GPU、buffer 提交、SurfaceFlinger、HWC 与 present。显示边界见 [18.25 Compose 渲染管线](../../part2-performance/ch18-rendering-pipelines/25-compose-rendering-pipeline.md)，重组基础见 [22.3 Compose 性能](03-compose-performance.md)，列表动画的阶段判断见 [22.21 Compose 动画性能](21-compose-animation-performance.md)。
 
-## LazyList 滑动卡顿的分类与归因
+## 1. LazyLayout 每次滚动会做什么
 
-LazyList 滑动时的帧超时可以归入四类瓶颈，排查时按顺序排除：
+`LazyColumn`、`LazyRow`、普通 Grid 和 Staggered Grid 都建立在 LazyLayout/SubcomposeLayout 一类机制上。DSL 描述整个数据集，measure policy 只为当前需要的索引请求 content。这里的“需要”通常包括可见 item，也可能包含预取、复用缓存、焦点或无障碍 beyond-bounds、sticky item 和动画保留的 item。
 
-**1. 重组开销**：item Composable 的重组范围过大或参数不稳定，导致滑动时每个可见 item 都被重新组合。在 Perfetto 中表现为 Composition 阶段的 CPU slice 持续占据主线程。Strong Skipping（§22.3）减少了 lambda 参数导致的无效重组，但如果 item 内部读取了高频变化的 `State`，重组仍然无法跳过。
+滚动增量不会必然触发一次完整重测。Compose 1.10.0 的 `LazyListState.onScroll()` 会尝试 `copyWithScrollDeltaWithoutRemeasure()`：
 
-**2. 布局计算开销**：嵌套 LazyList（水平列表嵌在垂直列表 item 内）、自定义 `Layout` 的 measure policy 中存在 O(n²) 遍历、或者 `SubcomposeLayout` 在 item 内部使用。Perfetto 中 Layout 阶段的 slice 占比异常。
+- 可见 item 集合不变、增量没有跨过边界、没有 sticky 等特殊 item 时，可以直接更新位置并只请求 placement。
+- 新 item 进入、旧 item 离开、首项变化、约束变化或特殊布局条件出现时，会进入 remeasure。
+- remeasure 中，`LazyListMeasuredItemProvider` 按索引取得 key、`contentType` 和 placeables；已有兼容 composition 可以复用，缺失或失效的 content 才需要执行相应 Composition。
 
-**3. 数据加载耗时**：item 绑定数据时触发同步 IO（图片解码、数据库查询、SharedPreferences 读取）。Perfetto 中能看到主线程上的 IO wait slice。
+因此，trace 中出现 Layout slice 不能直接推导“所有可见 item 都重新 Composition”。要分清 Composition、measure 和 placement，并核对本帧是否跨过 item 边界。
 
-**4. GC / 内存抖动**：item 创建大量临时对象（lambda、Pair、data class 实例），高频滑动时 GC 暂停累积。Perfetto 中通过 `android.java.heap_stats` 数据源可以看到 GC pause 与帧 timeline 的叠加。
+## 2. key 管的是业务身份
 
-归因路径：先用 Perfetto 的帧 timeline 定位掉帧位置 → 检查对应帧的 Composition / Layout / Draw 阶段耗时 → 如果 Composition 占比高，检查 item 是否有不稳定参数 → 如果 Layout 占比高，检查嵌套 LazyList 或自定义 Layout → 如果帧内有 IO slice 或 GC pause，走第 3/4 类排查。具体 SQL 模板见本节后半部分。
+没有提供自定义 key 时，LazyLayout 使用位置生成默认 key。显式写 `key = { index -> index }` 与默认位置身份没有本质差别。列表头插入数据后，数字 key `0、1、2...` 仍然存在；变化的是这些位置现在对应了不同业务对象。常见后果包括：
 
-## key 与 contentType 的性能影响
+- `remember` 状态可能跟着位置留给另一条数据。
+- 内层 LazyRow 的滚动位置、输入状态或动画身份可能错配。
+- 原本只移动位置的 item 需要按新参数更新。
+- `animateItem()` 无法按业务实体识别新增、删除和移动。
 
-### key：item 身份追踪与复用
+这与“所有 index key 都变了，所以所有 item 一律销毁”是两种描述。前者符合位置 key 的行为，后者会误导排查。
 
-`key {}` 的作用是为 LazyList 中的每个 item 提供稳定的身份标识。Compose Runtime 用 key 追踪 Composable 实例在列表中的位置变化——当列表数据发生增删或移动时，相同 key 的 item 会被复用而不是重新创建。[已验证: AndroidX androidx-main, LazyListItemProvider.kt]
+自定义 key 必须稳定、唯一，并且在 Android 上可由 `Bundle` 保存，才能支持 item 内 `rememberSaveable` 的恢复。数据库主键、稳定的 `Long`/`String` ID 或可保存的复合 ID 都可以。`hashCode()` 可能碰撞，也可能随对象实现变化，不能替代唯一身份。
 
-```kotlin
-LazyColumn {
-    items(
-        count = list.size,
-        key = { index -> list[index].stableId }
-    ) { index ->
-        ItemContent(list[index])
-    }
-}
-```
-
-**错误用例——用 index 做 key**：
-
-```kotlin
-// key = index → 列表头部插入新 item 时，所有 item 的 key 都变了
-// Runtime 认为每个位置的 item 都是"新的"，触发全部重组
-items(
-    count = list.size,
-    key = { index -> index }  // 错误：index 不稳定
-) { index -> ... }
-```
-
-当列表头部插入一条数据时，index-based key 导致所有 item 的身份重排。Runtime 执行的是"销毁旧 item → 创建新 item"而非"移动已有 item"，重组范围覆盖整个可见区域。如果 item 有复杂的子树（图片 + 多行文本 + 动画），这个开销在 Perfetto 中表现为连续多帧的 Composition 峰值。
-
-**正确做法**：使用业务唯一标识（数据库主键、UUID、组合键）作为 key。如果数据源没有天然唯一标识，用 `hashCode()` 或 `Objects.hash(field1, field2)` 作为备选。
-
-**对列表更新动画的影响**：key 的稳定性直接影响 `LazyLayoutItemAnimator` 的动画效果。stable key + 数据移动 = 位移动画；index key + 数据移动 = 淡入淡出动画（因为 Runtime 认为旧位置 item 被删除、新位置 item 被创建）。
-
-### contentType：item pool 分池回收
-
-`contentType` 是 Compose 1.4 引入的 LazyList API，作用是按类型标记 item，让 LazyList 内部的 item pool 按类型分池回收。[已验证: AndroidX androidx-main, LazyListIntervalContent.kt]
+下面的列表同时声明业务身份和结构类型。
 
 ```kotlin
 LazyColumn {
     items(
-        count = list.size,
-        key = { index -> list[index].stableId },
-        contentType = { index -> if (list[index].isAd) "ad" else "content" }
-    ) { index ->
-        if (list[index].isAd) AdItem(list[index]) else ContentItem(list[index])
-    }
-}
-```
-
-没有 contentType 时，LazyList 的 item pool 是一个统一池——滚出屏幕的 ad item 会被复用来显示 content item，触发完全的子树重组（因为 Composable 结构不同）。加上 contentType 后，pool 按 type 分区：ad item 只复用给 ad，content item 只复用给 content，减少子树结构的差异。
-
-**适用场景**：列表中有两种以上结构性不同的 item 类型（如内容 + 广告 + 分隔线 + 加载指示器）。单一 item 类型的列表不需要 contentType。
-
-**与 RecyclerView 的对应关系**：RecyclerView 的 `getItemViewType()` + `RecycledViewPool` 做的事情和 Compose 的 contentType 是同一件事。RecyclerView 默认按 viewType 分池，每个类型默认缓存 5 个 ViewHolder；Compose LazyList 的 contentType 机制在 Foundation 层自动管理池大小，开发者不需要手动调参。
-
-## 重组范围控制：LazyList item 内部的状态管理
-
-§22.3 介绍了 Compose 重组控制的基础机制。本节补充 LazyList item 内部的状态管理对滑动性能的影响。
-
-### 不稳定 lambda 导致的整列表重组
-
-LazyList item 接收的 lambda 参数如果不稳定（每次父重组都创建新实例），会导致所有可见 item 被重新组合。Strong Skipping（Kotlin 2.0.20+）自动 memoize lambda，但在以下场景仍然会失效：
-
-```kotlin
-@Composable
-fun MyList(viewModel: MyViewModel) {
-    val items by viewModel.items.collectAsState()
-    LazyColumn {
-        items(count = items.size, key = { items[it].id }) { index ->
-            val item = items[index]
-            // 每次父重组都创建新的 onClick lambda
-            // Strong Skipping 会 memoize，但如果 lambda 捕获了变化的值，
-            // memoize 的结果仍然是新实例（因为捕获值变了）
-            ItemRow(
-                item = item,
-                onClick = { viewModel.handleClick(item.id) }  // 捕获 item.id
-            )
+        items = rows,
+        key = { row -> row.id },
+        contentType = { row -> row.kind },
+    ) { row ->
+        when (row) {
+            is FeedRow.Article -> ArticleRow(row)
+            is FeedRow.Ad -> AdRow(row)
+            is FeedRow.Divider -> DividerRow(row)
         }
     }
 }
 ```
 
-当 `viewModel.items` 更新时，整个 `MyList` 重组。如果 `ItemRow` 的 `onClick` lambda 捕获了 `item.id`（这个值在 items 变化时可能没变），Strong Skipping 的 memoize 机制会比较捕获值：如果 `item.id` 没变，lambda 复用旧实例，`ItemRow` 跳过重组。
+`id` 要在同一列表中唯一，`kind` 要反映 Composable 结构。数据移动时，LazyLayout 可以用 key 查找新索引、维持首个可见 item 的业务身份，并让保存状态跟着 item 移动。
 
-但如果 item 数据本身是 `val items by viewModel.items.collectAsState()`，State 读取在 LazyColumn 外层建立了订阅。items 的任何变化（包括单条更新）都会触发 `MyList` 重组。解决方案是缩小 State 读取范围——把 `collectAsState()` 的读取放到 item 内部，或者用 `derivedStateOf` 派生出 item 粒度的状态。[详见 §22.3 derivedStateOf 模式]
+## 3. contentType 管的是复用兼容性
 
-### remember 在 item 内部的使用模式
+`contentType` 不承担业务身份。它告诉 LazyLayout 哪些 item composition 结构兼容，可以在旧 slot 滚出后复用给新 item。默认值 `null` 也是有效类型；未提供时，所有 item 都被视为同一兼容类型。
 
-LazyList item 内部使用 `remember` 时需要注意：item 滚出屏幕再滚回来时，如果 key 没变，`remember` 的缓存仍然有效；如果 key 变了，`remember` 重新初始化。
+Compose Foundation 1.10.0 的 `LazyLayoutItemReusePolicy` 用 `contentType` 相等判断 slot 是否兼容，并为每种类型最多保留 7 个可复用 slot。这个数量属于内部实现，不是开发者可依赖的 API 合同。
+
+类型划分应遵循两条约束：
+
+- 文章卡、广告、分隔线、加载行等结构差异明显的 item 使用不同类型。
+- 同一结构、只有文本或数据不同的 item 共用一个类型。
+
+把每个业务 ID 当作 `contentType` 会阻断跨 item 复用；把所有差异很大的结构都留为 `null`，会让 runtime 尝试在不相似的 content 之间复用。复用仍可能执行重组来写入新数据，它不等同于复制旧画面。
+
+RecyclerView 的 `viewType` 与 Compose 的 `contentType` 都表达兼容分组，但容器、状态和复用实现不同。不能由这个对应关系推导两者内存或帧率相同。
+
+## 4. item 状态：remember、rememberSaveable 与数据状态
+
+普通 `remember` 只在对应 composition 存活时保留。item 滚出后可能暂时处在复用或 behind cache 中，也可能被 dispose；一旦 dispose，普通 `remember` 值会结束生命周期。稳定 key 不会让普通 `remember` 永久留在内存。
+
+LazyLayout 用 `SaveableStateHolder` 包装 item。key 可保存时，`rememberSaveable` 可以在 item 滚出又回来时恢复，也能参与 Activity 重建恢复。需要跨滚动长期保存的少量 UI 状态可使用它；业务数据和大对象应放在 ViewModel、repository 或专用缓存中。
+
+这也解释了嵌套 LazyRow 的状态要求：外层 item 使用稳定 key，内层用 `rememberLazyListState()`。该状态本身通过 `rememberSaveable` 保存，外层业务身份移动后仍能恢复到对应行。若外层只用位置身份，内层滚动位置可能跟错行。
+
+### 列表数据更新时缩小无效工作
+
+在页面层收集一份列表 State 是常见且合理的结构。列表引用更新会让读取它的作用域失效，但 LazyLayout 只为当前需要的 item 执行 content；Strong Skipping 还能跳过参数未变且满足比较条件的行。把同一 Flow 分散到每个 item 里收集，可能建立大量 collector，并不构成通用优化。
+
+更可靠的做法包括：
+
+- 行模型使用不可变数据，未变化的行尽量复用实例。
+- Composable 参数表达当前行需要的数据，避免把整个 screen state 传进每一行。
+- 回调捕获稳定 ID；让 compiler report 和 Layout Inspector 证明哪些行可跳过。
+- 排序、分组、日期格式化等工作放在数据层，或按输入用 `remember` 缓存。
+- item content 中禁止同步数据库、文件读取和图片解码。
+
+`remember(item.createdAt) { formatter.format(item.createdAt) }` 能避免同一 composition 的重复计算，但 item dispose 后仍会重算。线程安全也取决于 formatter 实现，不能只从 `remember` 判断安全。
+
+## 5. 高频滚动状态放在合适的观察位置
+
+`LazyListState.layoutInfo` 会在每次 scroll 或 remeasure 后更新。`firstVisibleItemScrollOffset` 可随滚动频繁变化，`firstVisibleItemIndex` 只在首个可见 item 跨界时变化。把这些值直接读在大范围 Composable 中，会扩大重组作用域。
+
+`derivedStateOf` 适合把高频输入压成低频布尔或离散结果；`snapshotFlow` 适合把滚动变化送给埋点等副作用。两者职责不同。
+
+下面的示例让按钮只在阈值变化时重组，并把首次离开顶部作为一次副作用事件。
 
 ```kotlin
 @Composable
-fun ItemRow(item: ItemData) {
-    // 如果 item 的 key 没变，这个 remember 的值会被复用
-    val formattedDate = remember(item.createdAt) {
-        dateFormat.format(item.createdAt)
+fun ScrollSignals(
+    listState: LazyListState,
+    onLeftTop: () -> Unit,
+) {
+    val showScrollToTop by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 }
     }
-    Text(formattedDate)
+    val currentOnLeftTop by rememberUpdatedState(onLeftTop)
+
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex > 0 }
+            .filter { it }
+            .collect { currentOnLeftTop() }
+    }
+
+    AnimatedVisibility(showScrollToTop) {
+        ScrollToTopButton()
+    }
 }
 ```
 
-`remember(item.createdAt)` 的 key 是 `createdAt`——只要 key（由 LazyList 的 `key {}` 提供）和 `createdAt` 都没变，`formattedDate` 不会重新计算。这比在 `Text()` 参数里直接调用 `dateFormat.format()` 更高效，因为后者在每次重组时都执行。
+`derivedStateOf` 的输出只有跨过列表顶部时才改变；`snapshotFlow` 不参与绘制，只驱动回调。若 UI 需要连续视差，可在 `Modifier.offset { ... }`、draw lambda 或 `graphicsLayer` lambda 中读取 offset，把更新延后到 Layout 或 Draw 阶段。
 
-### derivedStateOf 在 LazyList 中的典型模式
+## 6. item 边界和尺寸比“总条数”更影响首屏
 
-`derivedStateOf` 在 LazyList 中最常见的用法是过滤高频状态变化，只让"越过阈值"的事件触发重组：
+LazyLayout 的虚拟化单位是 DSL 中的一个 `item`。一个 item block 同时发出多个大组件时，只要其中一部分需要显示，整块都要 Composition 和 measure；`scrollToItem()` 也只能定位到这个共同索引。分隔线很轻时可与相邻内容放在同一 item，大片内容应各有索引。
+
+零尺寸或严重低估尺寸的 placeholder 会让容器判断一个 viewport 能容纳很多 item，从而在首轮请求更多 content。异步加载后尺寸突变，又会改变可见范围和滚动位置。图片流建议尽早给出宽高比或稳定高度；Paging placeholder 应接近加载后尺寸。
+
+item 尺寸不必全部相同。需要关注的是尺寸计算是否稳定：
+
+- 文本、图片比例和约束是否在加载前后大幅跳变。
+- `animateContentSize`、expand/shrink 与 placement animation 是否叠加。
+- item 内的 SubcomposeLayout、自定义 intrinsic 测量或多次 measure 是否出现在慢帧。
+- 同一帧新进入的复杂 item 数是否过多。
+
+列表长度达到十万条也不必然增加同屏 Composition 成本。数据容器、Paging 内存、key-index 查找、图片缓存和一次更新的差异规模仍需单独测量。
+
+## 7. 预取运行在主线程的剩余时间里
+
+Compose 1.10.0 默认 `LazyListPrefetchStrategy` 会根据滚动方向请求相邻的下一个 item，执行预组合和预测量；方向改变或目标失效时会取消旧请求。接近进入 viewport 时，请求可标为 urgent。
+
+嵌套场景中，父 LazyLayout 预取到包含子 LazyList 的 item 后，会解析子预取状态。默认内层策略从当前首项开始预组合 2 个子 item，并可依据历史结果调整数量。这个过程是 best effort，数据或子树在解析后变化时不保证重新覆盖全部情况。
+
+Android 的 `AndroidPrefetchScheduler` 通过 `View.post` 和 `Choreographer.FrameCallback` 调度请求。它估算当前帧剩余时间，并把未完成工作留到后续帧。Composition 与 measure 仍在 UI 线程；“预取”不代表后台线程构建 UI。
+
+Compose Foundation 1.10.0 中 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled` 默认是 `true`。打开时，一个复杂 item 的 precomposition 可以 resume、pause，再在后续机会继续，完成后才 apply 和 premeasure。它降低单次抢占风险，仍会消耗主线程时间和内存。该 flag 是临时实验开关，项目应以锁定版本源码和回归数据为准。
+
+### LazyLayoutCacheWindow 的边界
+
+1.10.0 提供实验性的 `LazyLayoutCacheWindow`：
+
+- ahead window 预先准备滚动方向前方的 item。
+- behind window 保留反方向已经离开 viewport 的 item，减少快速回滚时的重建。
+
+下面的示例展示 Dp 窗口的接入方式。
 
 ```kotlin
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ScrollToTopButton(listState: LazyListState) {
-    // listState.firstVisibleItemIndex 每帧都可能变
-    // derivedStateOf 只在 isCollapsed 的值变化时触发重组
-    val isCollapsed by remember {
-        derivedStateOf { listState.firstVisibleItemIndex > 5 }
-    }
-    AnimatedVisibility(visible = isCollapsed) {
-        IconButton(onClick = {
-            // 使用 rememberCoroutineScope 启动滚动
-        }) { Icon(Icons.Default.ArrowUpward, "scroll to top") }
+fun CachedFeed(rows: List<FeedRow>) {
+    val state = rememberLazyListState(
+        cacheWindow = LazyLayoutCacheWindow(
+            ahead = 200.dp,
+            behind = 100.dp,
+        )
+    )
+
+    LazyColumn(state = state) {
+        items(rows, key = { it.id }) { row ->
+            FeedRowContent(row)
+        }
     }
 }
 ```
 
-如果不加 `derivedStateOf`，`listState.firstVisibleItemIndex` 的每一帧变化都会触发 `ScrollToTopButton` 重组。加上后，只有 `index > 5` 的结果从 false 变成 true（或反过来）时才重组。
+`200.dp/100.dp` 只用于说明 API，不是推荐参数。窗口越大，越可能把 Composition/measure 提前完成，也会保留更多 composition、图片请求和状态。应以目标设备上的滚动速度、item 成本、内存峰值和 `frameOverrunMs` 决定是否采用。
 
+## 8. 嵌套滚动先处理约束和轴向
 
-<!-- AIW-源码调研-2026-06-24 -->
-## SlotTable 与 RecomposeScope：LazyList 性能行为的运行时底座
+垂直 LazyColumn 内放水平 LazyRow 是官方支持的常见结构。两个方向的手势、预取和状态仍需分别分析。自定义 `NestedScrollConnection` 要按 pre/post scroll 与 pre/post fling 协议报告 consumed 值；错误消费可能造成位移丢失、父子同时响应或速度突变。
 
-§22.22 上文讨论的 key / contentType / derivedStateOf 都只是 Compose Runtime 提供的"用户层杠杆"。要理解为什么这些杠杆有效，需要直接看 androidx-main 的 `SlotTable` 数据结构。本节从源码角度补充 LazyList 滚动时 SlotTable 实际发生的事。
+同方向可滚动容器在子项没有有限尺寸时会遇到无限约束，典型例子是 `verticalScroll` 的 Column 内直接放无固定高度 LazyColumn。此结构会抛出 `IllegalStateException`。可选设计有：
 
-### SlotTable 的双 IntArray + gap buffer 结构
+- 合并为一个 LazyColumn，用 `item`、`items`、`stickyHeader` 表达页面段落。
+- 子列表确有独立滚动语义时，给它有限高度。
+- 父子使用不同滚动方向。
 
-`compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SlotTable.kt` 中 `internal class SlotTable`（line 82）持有两个核心数组：
+把 LazyRow 换成 `Row.horizontalScroll()` 会一次 Composition 全部子项，适合数据量明确且总内容小的情况。是否“小”取决于 item 成本和设备，不能用固定 20 项作为边界。
 
-- `groups: IntArray` —— 存储 group fields，每个 group 占用 `Group_Fields_Size` 个连续 int（key / nodeCount / groupSize / parentAnchor / dataAnchor + flags）
-- `slots: Array<Any?>` —— 存储 Composable 实际状态值（`remember` 结果、CompositionLocal 等）
+## 9. Paging 3：数据预取和 UI 预取分开理解
 
-源码注释（`SlotTable.kt:31-77` 的 `Nomenclature` 段落）明确定义了 Anchor 的语义：
+Paging 的 `prefetchDistance` 控制访问列表位置时何时请求更多数据；LazyLayout prefetch/cache window 控制哪些 UI item 提前 Composition、measure 或保留。两者单位与触发条件不同，参数数值无需相等。
 
-> Anchor — an encoding of Index that allows it to not need to be updated when groups or slots are inserted or deleted. An anchor is positive if the Index it is tracking is before the gap and negative if it is after the gap.
-
-这一设计是 Compose 滚动不移动状态引用、RecomposeScope 命中稳定的根本原因。LazyList 滚出 item 时，对应 group 被删除（gap 移动到该位置）；RecomposeScope 通过 Anchor 仍能命中 gap 之后的真实位置。
-
-### LazyList 的 subcomposition 路径
-
-源码 `compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/LazyListMeasuredItemProvider.kt:46`：
+下面的接入方式同时提供 Paging 的业务 key 和 content type。
 
 ```kotlin
-fun getAndMeasure(index: Int): LazyListMeasuredItem {
-    val key = itemProvider.getKey(index)
-    val contentType = itemProvider.getContentType(index)
-    val placeables = measureScope.measure(index, childConstraints)
-    return createItem(index, key, contentType, placeables)
+val lazyPagingItems = pager.flow.collectAsLazyPagingItems()
+
+LazyColumn {
+    items(
+        count = lazyPagingItems.itemCount,
+        key = lazyPagingItems.itemKey { message -> message.id },
+        contentType = lazyPagingItems.itemContentType { "message" },
+    ) { index ->
+        val message = lazyPagingItems[index]
+        if (message == null) {
+            MessagePlaceholder(Modifier.height(72.dp))
+        } else {
+            MessageRow(message)
+        }
+    }
 }
 ```
 
-调用链：`measureLazyList`（`LazyListMeasure.kt:43`）→ 对每个可见 item 调 `getAndMeasure` → `LazyLayoutMeasureScope.measure(index, ...)` → `SubcomposeLayout.subcompose(slotId, content)` → `Composer` 在 SlotTable 上开 `SlotWriter` 写新 group。每次 `subcompose` 都会触碰 `anchors: ArrayList<Anchor>`（`SlotTable.kt:133`）并走 `ArrayList.search` 二分查找（`SlotTable.kt:3370`）。
+`itemKey` 让已加载实体保持身份，`itemContentType` 也为 placeholder 提供 Paging 定义的兼容处理。`72.dp` 必须换成接近产品 item 的尺寸；过小 placeholder 可能让 RemoteMediator 连续加载多页，直到 viewport 被填满。
 
-### 对性能排查的具体含义
+`refresh()` 会启动新的 PagingData generation。它不等于让十万条未 Composition 的 item 都执行重组。UI 成本取决于新 snapshot、当前需要的 item、key/contentType 兼容性和 load state 结构。
 
-1. **滚动卡顿如果是 Composition 阶段占比高**：怀疑 item 内部 `State` 写入频繁 → RecomposeScope 频繁 invalid → 多次重写 SlotTable。`derivedStateOf` 把高频 state 转成低频派生是最直接的修复。
-2. **如果是 Layout 阶段占比高**：检查是否有嵌套 LazyList 或 `SubcomposeLayout` 在 item 内被调用 —— 因为 `SubcomposeLayout` 会在每次 measure 时强制重走 SlotWriter 路径。
-3. **如果是 GC 暂停叠加**：检查 `key {}` 是否稳定。`key = index` 会让 list 头部插入新 item 时所有 group 被销毁重建，groups 数组触发扩容。
-4. **预取的内存代价**：`LazyLayoutPrefetchState.schedulePrefetch(index, ...)`（`LazyLayoutPrefetchState.kt:30`）会让 prefetcher 提前对远端 item 调 `measureScope.measure`，这些 item 也会进入 SlotTable。默认 prefetch 策略较保守；自定义时要权衡"少 subcomposition 延迟"和"多 SlotTable 内存占用"。
+Paging 路径还要检查：
 
-### 与已有 best practices 的对应关系
+- `map`、`insertSeparators` 等转换放在 PagingData 流上，避免在 item body 同步做重活。
+- loading/error 行有独立 key 和结构类型，动画数量受控。
+- placeholder 与真实内容的尺寸接近。
+- 数据加载线程、数据库查询和网络耗时与主线程 UI trace 分开归因。
 
-| §22.22 上层建议 | SlotTable 底层机制 |
-|----------------|------------------|
-| `key {}` 必须稳定 | 避免 Anchor 失效 → 避免 group 树频繁插入 / 删除 → 避免 `IntArray` 扩容 |
-| `contentType` 分池 | 相同 contentType 的 item 复用 group 节点，slots 数组增量更新 |
-| `derivedStateOf` | 减少 RecomposeScope.invalidate 调用次数 → 减少 `Composer.invalidations` 队列长度 |
-| `remember(calculation) { ... }` | 让结果进入 `slots: Array<Any?>` 一次，多次 recomposition 命中已有 slot 而非重新计算 |
+## 10. Grid 与 Staggered Grid
 
-[源码锚点: androidx-compose-integration-release / SlotTable.kt (3480行) / LazyListMeasure.kt (580行) / LazyListState.kt (509行) / LazyLayoutPrefetchState.kt (61行) / LazyListMeasuredItemProvider.kt (64行)]
+Compose Foundation 1.10.0 已包含 `LazyVerticalStaggeredGrid` 和 `LazyHorizontalStaggeredGrid`。普通 Grid 按 line 组织 item，Staggered Grid 按 lane 安排不同主轴尺寸的 item；不能把交错布局描述成只能依赖第三方库。
 
-## LazyList 预取、子项合成与嵌套滚动
+普通 Grid 的 span 会影响 line 划分和每个 item 的 constraints。列数、可用宽度或 span 变化后，相关可见 line 需要重新测量。复用兼容性仍由 `contentType` 判断，内部没有公开的 `(contentType, spanSize)` 复用分组合同。
 
-### 预取机制源码行为
+Grid 页面重点检查：
 
-LazyList 的预取在 `LazyLayoutPrefetchState` 中实现。当用户滑动时，LazyList 根据滑动方向和速度，提前组合（precompose）即将进入视口的 item。[已验证: AndroidX androidx-main, LazyLayoutPrefetchState.kt]
+- `GridCells.Adaptive` 在窗口或折叠状态变化后是否改变列数。
+- 自定义 span lambda 是否轻量，full-span header 是否过多。
+- 同一 line 中高度差异是否造成额外空白或频繁尺寸变化。
+- Staggered Grid 图片是否提前提供宽高比，避免加载后 lane 大幅调整。
+- item placement animation 是否与列数变化同时运行。
 
-预取的触发点在 `LazyLayout` 的 measure 阶段结束后。`LazyLayoutPrefetchState` 通过 `schedulePrecomposition(index)` 或 `schedulePrecompositionAndPremeasure(index, constraints)` 调度预取任务。前者只做 Composition，后者同时做 Composition + Measure。
+大屏、多窗口和桌面模式下，cross-axis constraints 可能频繁变化。Android 17 平台决定窗口、VSync、FrameTimeline 和 HWUI 行为，Grid 的 line/span 算法仍由所用 Compose Foundation 版本决定。
 
-**预取与 Pausable Composition 的关系**：Compose 1.10 引入的 Pausable Composition（§22.3）允许预取的 Composition 工作被切分成可暂停的块。当帧预算不足时，预取的 Composition 被暂停，下一帧继续。这避免了预取阻塞当前帧的渲染。但 Pausable Composition 在 Compose Foundation 1.10.6 中因稳定性问题被默认禁用，使用前需确认目标 Foundation 版本的默认 flag 状态。[已验证: Compose Foundation 1.10 release notes]
+## 11. 内存边界
 
-**预取窗口控制**：`LazyLayoutCacheWindow` API（Compose 1.9）允许自定义预取窗口：
+LazyLayout 同时持有的内容可能来自多处：
 
-```kotlin
-val listState = rememberLazyListState(
-    firstVisibleItemIndex = 0,
-    firstVisibleItemScrollOffset = 0,
-    cacheWindow = LazyLayoutCacheWindow(ahead = 150.dp, behind = 100.dp)
-)
-```
+- 当前 measure 需要的可见 item。
+- 按 `contentType` 保留的可复用 slot。
+- 尚未消费或取消的预取。
+- cache window 的 ahead/behind item。
+- 当前被 sticky、焦点、无障碍、动画或 beyond-bounds 操作固定的 item。
+- `SaveableStateHolder` 保存的少量 item UI 状态。
 
-`ahead` 控制滑动方向前方的预取距离，`behind` 控制反方向的缓存距离。简单 item（纯文本）不需要大的预取窗口；复杂 item（图片 + 多行文本）适当增大 `ahead` 可以减少首次可见时的组合卡顿。
+sticky header 只在对应候选成为当前 pinned header 等需要时参与布局，不会让历史上的每个 header 永久留在 Composition。普通 `remember` 大对象在 item dispose 后可释放；图片加载库、业务缓存或 ViewModel 中的引用可能继续持有对象，需要在各自缓存中检查。
 
-### 嵌套 LazyList 的子项复用
+内存评估应记录稳定的用户旅程：冷启动进入列表、连续滚动、反向滚动、刷新和离开页面。比较 Java/Kotlin heap、native graphics、图片缓存和 GC pause；单次 `Debug.getMemoryInfo()` 快照无法说明对象由谁持有。
 
-嵌套 LazyList（水平 LazyRow 作为垂直 LazyColumn 的 item）的预取行为分两层：
+## 12. 用 Perfetto 和 Macrobenchmark 归因
 
-1. 外层 LazyColumn 预取即将可见的 item（包括内部的 LazyRow）
-2. LazyRow 自身通过 `onNestedPrefetch` 回调递归预取自己的子 item
+测量使用 release、R8 优化、profileable 且 non-debuggable 的构建。Debug 版本的解释执行、调试检查和工具连接会放大 Lazy layout 成本。
 
-`LazyLayoutPrefetchState` 的构造参数 `onNestedPrefetch` 用于这种嵌套场景。当外层预取触发到内层 LazyRow 的 Composition 时，LazyRow 可以利用这个时机预先组合自己的第一个 item。[已验证: AndroidX androidx-main, LazyLayoutPrefetchState.kt]
+推荐的证据顺序如下：
 
-**嵌套 LazyList 的性能陷阱**：外层 LazyColumn 每次滚动时，滚出屏幕的 LazyRow 整个子树被 dispose，滚回来时重新创建。如果 LazyRow 有很多 item，重新组合的开销会集中在单帧内。解决方案：
+1. Macrobenchmark 用 UI Automator 重复同一 fling 或 drag，采集 `FrameTimingMetric`。
+2. API 31 及以上查看 `frameOverrunMs`、`frameDurationCpuMs` 和 `frameCount`。
+3. 在 Perfetto 的 App FrameTimeline 对齐 expected/actual，确定 late frame 和 App on-time-finish。
+4. 查看主线程 Composition、measure、placement、I/O 和 ART/GC slice。
+5. 查看 RenderThread、GPU、buffer post 与 SurfaceFlinger，排除图片、阴影、alpha、blur 或 buffer backpressure。
+6. 用 Composition tracing 或 Layout Inspector 验证具体 item 的 composition/skip 范围。
 
-- 给 LazyRow 设置固定的 `userScrollEnabled = false` 并改用 `Row` + `Modifier.horizontalScroll`，如果数据量不大（< 20 项）
-- 使用 `rememberLazyListState()` 在外层 item key 不变时复用 LazyRow 的状态
-- 将 LazyRow 的数据缓存到 `remember` 中，避免在外层重组时重新计算
+`Choreographer#doFrame` 只覆盖 App 主线程帧回调，不能代表 GPU 完成和 present。Composition tracing 需要 runtime tracing 支持和 `track_event` 数据源；不存在通用的 `compose-recomposition` atrace 开关。`slice` 表也没有可直接求和的通用 `skipped` 列，原始 trace 的名字和版本必须先确认。
 
-### nestedScroll 与滑动连贯性
-
-Compose 的 `nestedScroll` 连接通过 `NestedScrollConnection` 和 `NestedScrollDispatcher` 实现。LazyList 内部已经集成了 `nestedScroll` 机制，当嵌套使用时（如 LazyColumn 内嵌水平 LazyRow），fling 手势的剩余速度会从内层传递到外层。
-
-与 RecyclerView 的 `nestedScrolling` 机制相比，Compose 的实现在 API 层面更统一（都是 `Modifier.nestedScroll`），但在边界情况下行为不同：
-
-- RecyclerView 的 `NestedScrollingChild3` 有明确的"消费了多长距离"的回调
-- Compose 的 `NestedScrollConnection` 使用 `consume` / `available` 语义，dispatch 和 consume 分两步
-- 如果自定义 `NestedScrollConnection` 拦截了消费但没有正确报告 consumed 值，外层 LazyList 会认为滚动还没被消费，出现"双重滚动"
-
-## Perfetto 诊断 LazyList 卡顿的 SQL 模板
-
-以下 SQL 可直接用于 Perfetto trace_processor。抓取 trace 时需要启用 `compose-recomposition` 数据源：
-
-```
-atrace --app=com.example.yourapp compose --compose-recomposition
-```
-
-### 查询 LazyList 重组次数最多的 Composable
+下面的 PerfettoSQL 用于列出指定交互窗口中的 App jank frame。
 
 ```sql
 SELECT
-    name,
-    COUNT(*) as recomposition_count,
-    SUM(CASE WHEN skipped THEN 1 ELSE 0 END) as skipped_count,
-    SUM(CASE WHEN NOT skipped THEN 1 ELSE 0 END) as actual_recomp
-FROM slice
-WHERE name LIKE '%recompose%'
-    AND name NOT LIKE '%skipped%'
-GROUP BY name
-ORDER BY actual_recomp DESC
-LIMIT 20;
+    a.ts / 1e6 AS ts_ms,
+    a.dur / 1e6 AS actual_dur_ms,
+    a.jank_type,
+    a.on_time_finish,
+    a.present_type,
+    a.layer_name
+FROM actual_frame_timeline_slice AS a
+JOIN process AS p USING (upid)
+WHERE p.name = 'com.example.app'
+  AND a.ts BETWEEN $start_ts AND $end_ts
+  AND a.jank_type != 'None'
+ORDER BY a.ts;
 ```
 
-`skipped_count` 高说明 Strong Skipping 生效，是正常行为。`actual_recomp` 高的 Composable 需要检查参数稳定性。
+`$start_ts/$end_ts` 使用 trace 的纳秒时间基准。`actual_dur_ms` 是 App actual timeline slice 时长，结束点覆盖 App 的 GPU completion 与 buffer post 中较晚者；它不等同于主线程 CPU 时间。
 
-### 关联帧 timeline 与 LazyList 滑动帧
+下面的查询用于列出同一窗口内主线程最长的 slices。
 
 ```sql
 SELECT
-    jank.id,
-    jank.ts,
-    jank.dur / 1e6 as dur_ms,
-    jank.type
-FROM actual_frame_timeline_slice jank
-WHERE jank.type = 'Janky'
-    AND jank.ts BETWEEN ({start_ts}) AND ({end_ts})
-ORDER BY jank.dur DESC;
+    s.ts / 1e6 AS ts_ms,
+    s.dur / 1e6 AS dur_ms,
+    s.name
+FROM slice AS s
+JOIN thread_track AS tt ON s.track_id = tt.id
+JOIN thread AS t ON tt.utid = t.utid
+JOIN process AS p ON t.upid = p.upid
+WHERE p.name = 'com.example.app'
+  AND t.tid = p.pid
+  AND s.ts BETWEEN $start_ts AND $end_ts
+ORDER BY s.dur DESC
+LIMIT 100;
 ```
 
-把掉帧帧与同一时间段的 Compose 重组 slice 做 `SPAN_JOIN`，可以定位是哪个 Composable 的重组导致了帧超时。
+先从结果识别 Compose、measure、图片、业务 trace 或 GC 相关名称，再回到时间轴核对线程状态。slice 名称会随库版本和是否开启 Composition tracing 变化，不要用固定字符串冒充跨版本指标。
 
-### GC 暂停与 LazyList 滑动的时序关联
+如果怀疑 allocation churn，使用 allocation recording 或合适的 heap profiler 找分配栈；heap size counter 只能显示存量变化，不能给出每次分配的类型与调用点。GC 与 jank 同时出现也只说明时序相关，还要找到导致回收压力的对象来源。
 
-```sql
-SELECT
-    gc.ts,
-    gc.dur / 1e6 as gc_ms,
-    reason
-FROM slice gc
-WHERE gc.name GLOB '*GC*'
-    AND gc.ts BETWEEN ({start_ts}) AND ({end_ts})
-ORDER BY gc.dur DESC;
-```
+## 13. Android 17 与 kernel 边界
 
-GC 暂停 > 5ms 且与掉帧时间重叠时，排查 item 内部是否有大量临时对象分配。
+Android 17 平台锚点是 `android-17.0.0_r1`。它提供 `Choreographer`、FrameTimeline、HWUI、窗口和系统合成路径。Compose 1.10.0 的 LazyLayout 算法打包在 App 内；升级 targetSdk 不能单独开启 Pausable Composition、cache window 或新的 item reuse policy。
 
-### 内存分配热点
+kernel 锚点是 `android17-6.18-2026-06_r6`。scheduler、cpufreq、thermal、memory reclaim 和 fence wait 会改变主线程、RenderThread 或 GPU 驱动任务何时运行，但不决定 key/contentType、item disposal 和 Paging generation。只有 trace 显示 runnable delay、频率/热限制、reclaim 或 fence wait 时，才进入 kernel 证据。
 
-```sql
-SELECT
-    heap.allocations,
-    heap.size,
-    heap.type_name
-FROM android_java_heap_stats heap
-WHERE heap.ts BETWEEN ({start_ts}) AND ({end_ts})
-ORDER BY heap.size DESC;
-```
+## 14. LazyList 与 RecyclerView 的选型
 
-LazyList 滑动时如果 `java_heap_stats` 显示持续增长，检查 item 的 lambda 和 data class 是否在每次重组时创建新实例。
+没有脱离页面的固定胜者。Compose LazyLayout 与 RecyclerView 都支持按需创建和复用，但状态模型、布局、预取、动画和工具链不同。公开资料不能替代当前 App 的 release benchmark。
 
-## 大列表优化策略：分页、占位与虚拟化边界
+- 新 Compose 页面可优先使用 LazyLayout，并建立 key/contentType、Paging 和 Macrobenchmark 基线。
+- 已稳定运行的 RecyclerView 页面无需为统一技术栈而迁移；迁移收益要覆盖 interop、功能回归和性能验证成本。
+- RecyclerView item 内大量 `ComposeView` 会增加 composition 生命周期管理；LazyColumn 中大量 `AndroidView` 也会增加 View 创建、复用和桥接成本。
+- 同一页面的两种实现要在相同数据、图片缓存、编译模式、设备温度和交互脚本下比较。
 
-### Paging 3 + LazyList 集成
+## 15. Review 清单
 
-Paging 3 通过 `LazyPagingItems` 与 LazyList 集成。核心性能要点：
+- key 是否稳定、唯一、Bundle-saveable，并代表业务实体？
+- contentType 是否代表结构兼容性，是否过粗或过细？
+- item 内普通 `remember` 被 dispose 后是否允许丢失？需要恢复的状态是否适合 `rememberSaveable`？
+- 高频 `layoutInfo`/offset 读取发生在 Composition、Layout 还是 Draw？
+- 一个 DSL item 是否塞入了过多独立内容？
+- placeholder 与真实 item 的尺寸是否接近？
+- 默认预取、nested prefetch 或 cache window 是否增加主线程和内存压力？
+- 同方向嵌套滚动是否有有限约束？
+- Paging 数据预取与 LazyLayout UI 预取是否分别测量？
+- Grid 的列数、span、lane 和图片比例变化是否造成 remeasure？
+- 慢帧是否由 FrameTimeline、主线程、RenderThread/GPU 和系统合成共同证明？
 
-**刷新范围控制**：`LazyPagingItems` 的 `refresh()` 会触发整个列表的 invalidate。如果列表有 1000+ item 且其中 900+ 已经在屏幕外（不在可见范围），Compose Runtime 仍然会为所有已组合的 item 发送失效通知。`insertSeparators()` / `filter()` 等中间操作会增加这个开销。解决方案是在 Paging `RemoteMediator` 层做增量刷新，避免全量 invalidate。
+## 16. 源码与资料索引
 
-**加载状态占位符的渲染开销**：Paging 3 的 `LoadState.Error` / `LoadState.Loading` 占位符在列表末端显示。如果占位符的 Composable 结构复杂（带动画、带骨架屏 shimmer），它在组合和布局阶段的成本可能比普通 item 还高。保持加载状态占位符的结构简单。
+Compose 行为按精确版本复核：
 
-**预加载窗口**：Paging 3 的 `PagingConfig(prefetchDistance)` 控制"距离列表末端多远时触发加载下一页"。这个值需要与 LazyList 的 `LazyLayoutCacheWindow` 配合——如果 `prefetchDistance` 远大于 `cacheWindow.ahead`，Paging 数据已经在后台加载完成，但 LazyList 还没有预取到需要显示新数据的 item，造成"数据等 UI"的空窗。反过来，如果 `prefetchDistance` 远小于 `cacheWindow.ahead`，LazyList 预取到的 item 可能还是加载中状态。
+- [`androidx.compose.foundation:foundation:1.10.0` 源码](https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation/1.10.0/foundation-1.10.0-sources.jar)：`LazyListState.kt`、`LazyListMeasure.kt`、`LazyListPrefetchStrategy.kt`、`LazyLayout.kt`、`LazyLayoutItemContentFactory.kt`、`LazyLayoutPrefetchState.kt`、Grid 与 Staggered Grid 实现。
+- [`androidx.compose.foundation:foundation-android:1.10.0` 源码](https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation-android/1.10.0/foundation-android-1.10.0-sources.jar)：`PrefetchScheduler.android.kt`。
+- [`androidx.compose.runtime:runtime:1.10.0` 源码](https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.10.0/runtime-1.10.0-sources.jar)：Snapshot、Composition 与 saveable state 的运行时边界。
 
-### 超长列表的内存边界
+平台与 kernel 固定锚点：
 
-LazyList 的虚拟化（只组合可见 item）限制了同时存在的 Composable 数量，但以下场景会打破这个限制：
+- [Android 17 `Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java)。
+- [`android17-6.18-2026-06_r6` kernel tag](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)。
 
-- `beyondBoundsItemCount` 设得过大（默认 1-2 个，某些场景下开发者改到 10+），导致屏幕外有大量 item 保持组合状态
-- `stickyHeader` 的 header 不会被 dispose，如果列表有多个不同 key 的 stickyHeader，它们会一直保留在 Composition 中
-- `remember` 在 item 内部缓存大对象（Bitmap、大字符串），滚出屏幕后缓存不会释放
+API、测量和诊断资料：
 
-10 万+项的列表只要做好虚拟化（合理的 `cacheWindow` + 适当的 `beyondBoundsItemCount`），LazyList 本身的内存占用是可控的。瓶颈通常在数据层（Paging 的内存缓存）和图片层（图片加载库的内存缓存）。
-
-## Android 17 LazyList 行为变化与适配
-
-Android 17（API 37）平台本身不包含 Compose 工具链。LazyList 的行为变化来自 Compose Foundation 版本升级，不由 `targetSdk` 决定。以下列出与 Android 17 时间线对齐的 Compose 变更。[已验证: Compose BOM 2025.12.00 release notes]
-
-**Compose Foundation 1.10 变更**（对应 BOM 2025.12.00）：
-
-- **Pausable Composition**：在预取路径中可将 Composition 工作暂停到下一帧。1.10.0-alpha05 曾默认启用，1.10.6 因稳定性问题默认禁用。接入前检查目标 Foundation 版本的 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled` 默认值。
-- **LazyLayoutCacheWindow**：API 签名在 1.9-1.10 间有调整（`ahead`/`behind` 参数从 px 改为 Dp），跨版本升级时需要检查构造参数。
-- **Item Animator 改进**：`LazyLayoutItemAnimator` 在 1.10 中优化了 move 动画的插值算法，对 `key` 稳定的列表有更流畅的移动动画。
-
-**targetSdk 36 → 37 的回归测试清单**：
-
-1. 滑动帧率：用 Macrobenchmark 测量 LazyColumn 滑动 P90 帧时间，对比 targetSdk 36 和 37 的结果。Android 17 的后台执行限制变更（Excessive CPU Kill，§25.12）可能影响 Paging 的后台加载行为。
-2. 内存占用：`Debug.getMemoryInfo()` 检查滑动 1000 项后的 Java Heap 增长。Android 17 的 `App Memory Limits`（§23.9）可能影响大列表的内存预算。
-3. 嵌套滚动：如果列表使用了自定义 `NestedScrollConnection`，验证 fling 行为是否与 targetSdk 36 一致。Android 17 的 InputDispatcher 变更（§3.8）不直接影响 Compose 的 nestedScroll，但如果 App 同时使用了 View 体系的嵌套滚动，需要测试混合场景。
-4. 预取行为：如果项目升级了 Compose Foundation 版本，检查 Pausable Composition 的 flag 状态是否与预期一致。
-
-## LazyVerticalGrid / LazyHorizontalGrid 的特殊考量
-
-LazyGrid 与 LazyList 共享 `LazyLayout` 的核心测量和预取机制，但有以下差异：
-
-**span size 对 item pool 的影响**：Grid 的 `GridItemSpan` 允许一个 item 占多列。当 span 发生变化时（如列表从 2 列变 3 列），item pool 中的缓存 item 尺寸不匹配，需要重新 measure。Grid 的 pool 按 `(contentType, spanSize)` 组合分组，比 LazyList 的单一 contentType 分组更细。
-
-**交错布局（Staggered）**：Compose Foundation 截至目前（BOM 2025.12.00）没有内置的 StaggeredGrid 实现。第三方库（如 `com.nlab.reminder:staggered-grid-compose`）通过自定义 `LazyLayout` 实现，需要自行验证 item pool 和预取行为。
-
-**Grid 的 crossAxis 测量成本**：Grid 的每一行需要测量所有 crossAxis 上的 item 才能确定行高。如果 Grid 列数多（4+ 列）且 item 高度不一致，measure 阶段的遍历成本比同 item 数量的 LazyList 更高。
-
-## 与 RecyclerView 性能对比选型
-
-从四个维度对比（数据基于公开基准测试和社区反馈，非本文独立测试）：
-
-| 维度 | Compose LazyList | RecyclerView |
-|------|-----------------|--------------|
-| **滑动帧率** | Compose 1.10+ 下接近 RecyclerView；复杂 item 差距更小 | 成熟优化，稳定帧率 |
-| **内存占用** | item 组合对象比 ViewHolder 更重（Composable 子树 vs 单个 View） | ViewHolder 实例更轻量 |
-| **首屏加载** | 首次组合比 inflate 慢（Composition 阶段额外开销）；Pausable Composition 部分缓解 | inflate 链路成熟，预加载可控 |
-| **动态更新** | Strong Skipping + key 复用，性能接近 RecyclerView DiffUtil | DiffUtil + ItemAnimator 精确控制 |
-
-**选型建议**：
-
-- 新项目 / 新页面：用 Compose LazyList。Compose 1.10+ 的性能已经足够，长期维护成本更低。
-- 已有 RecyclerView 的页面：不需要迁移。RecyclerView 在 Android 17 上仍然是被积极维护的 API。
-- 混合场景：RecyclerView 嵌套 Compose item 或反过来，都有 interop 层的开销（`ComposeView` / `AbstractComposeView`）。如果列表性能是核心指标，保持单一实现（纯 Compose 或纯 View）。
-
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md]
-
-[适用版本: Compose BOM 2025.12.00 / Kotlin 2.2 / Android 12 (API 31) - Android 17 (API 37)]
+- [Lazy lists、grids、staggered grids、key、contentType 与 Paging](https://developer.android.com/develop/ui/compose/lists)。
+- [Compose 性能实践](https://developer.android.com/develop/ui/compose/performance/bestpractices)。
+- [Compose phases 与延后 State 读取](https://developer.android.com/develop/ui/compose/phases)。
+- [Paging `LazyPagingItems` API](https://developer.android.com/reference/kotlin/androidx/paging/compose/LazyPagingItems)。
+- [Composition tracing](https://developer.android.com/develop/ui/compose/tooling/tracing)。
+- [Macrobenchmark FrameTimingMetric](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)。
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)。
