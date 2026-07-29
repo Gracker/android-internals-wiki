@@ -64,244 +64,367 @@ task9_review_notes: "2026-07-09 Task9 idle-audit: auto-fixed。修正 cgroup fre
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么要了解 OEM 的优化思路
+## OEM 优化分析要回答什么
 
-如果你做 Android 性能优化的时间够长，一定遇到过这种情况：你的 App 在 Pixel 上跑得好好的，到了某家厂商的机器上就莫名其妙卡顿、通知收不到、甚至后台直接被杀。打开 Perfetto 一看，CPU 调度策略变了、后台进程凭空消失、主线程的 Binder 调用比 AOSP 多出一倍。
+同一个 APK 在两台设备上出现不同的启动、掉帧或后台行为，原因可能来自应用代码、硬件能力、AOSP 配置、厂商实现、用户设置，也可能来自测试条件。把差异直接归因给“ROM 优化”没有诊断价值。
 
-这不是你的 App 有问题——是厂商在 AOSP 基础上做了一整套自己的性能优化，而这些优化的策略和力度，每家都不一样。
+OEM 性能分析要回答三个可验证的问题：
 
-了解 OEM 的优化思路，目的是在分析 Trace 时能区分「这是我的代码问题」还是「这是厂商策略导致的现象」，而非逐个适配厂商的 ROM。这种判断能力在定位线上问题时尤其关键——当你看到 Perfetto 里某段调度行为异常，脑子里要有这根弦：可能是厂商在干预。
+1. 当前设备相对 AOSP 基线改了什么；
+2. 改动通过哪一层影响了目标进程；
+3. 这项改动改善了哪个指标，又把成本转移到了哪里。
 
-OEM 的优化方向背后是一类系统性思维：在资源受限的移动设备上，如何通过全栈手段让用户体验变好。这对 App 层优化同样有启发——很多在 App 层难以解决的问题，从系统角度往往有更优雅的解法。
+本章的平台参照为 `android-17.0.0_r1`，内核参照为 `android17-6.18-2026-06_r6`。它们用于定义源码基线，不代表任意 Android 17 商品设备都运行相同提交。设备的 `ro.build.fingerprint`、APEX 版本、vendor 分区、内核配置、设备树、固件和产品 overlay 都可能改变运行结果。
 
-## OEM 优化的五大方向
+因此，Pixel Trace 适合作为一组对照数据，无法充当所有设备的“标准答案”。可靠的归因应同时具备源码位置、设备配置和运行证据；缺少其中一项时，结论要保留边界。
 
-厂商做系统优化，核心围绕用户体验的五个维度展开。这五个维度不是平起平坐的：稳定性和功耗在最底层，决定了手机能不能正常用；温控在最顶层，划定了性能发挥的上限；夹在中间的是流畅性和启动速度——这才是 OEM 竞争真正拉开差距的地方。
+## 五类目标与互相牵制的预算
 
-**启动速度**是用户对手机的第一印象。冷启动从按下图标到第一帧渲染，中间涉及 Zygote fork、ClassLoader 加载、Application 初始化、Activity 创建到渲染——整段启动路径上的每个环节都是优化点。厂商会在系统层面做预加载（让 Zygote 提前初始化常用类）、dex2oat 编译策略调整，甚至直接在 init 阶段预创建进程。我们在 §8.3 中详细讲过 App 层的启动优化思路，厂商的做法是把同样的思路往系统层推。
+OEM 优化通常覆盖启动、流畅性、内存、功耗和温控。五类目标共享 CPU、GPU、内存带宽、存储带宽、电池功率与散热能力，局部收益经常伴随另一项成本。
 
-**流畅性**是用户日常感知最强的指标。厂商会从渲染管线的每个环节入手：调整 VSync offset 让 App 和 SurfaceFlinger 的配合更紧凑、优化 GPU 调度策略减少渲染延迟、在 SurfaceFlinger 中做图层合成的特殊优化。我们前面在 §2.3～§2.6 中展开了渲染管线的每个环节，厂商的优化就是在这些环节上做调整。
+| 方向 | 常用观测量 | 系统侧可调位置 | 容易遗漏的代价 |
+|---|---|---|---|
+| 启动 | TTID、TTFD、进程创建、I/O、类加载、首帧 | Zygote、ART 编译策略、存储预取、启动阶段调度 | 预热内存、后台 CPU、系统启动时长 |
+| 流畅性 | 帧时间、deadline miss、输入到显示延迟 | 调度、DVFS、RenderThread、SurfaceFlinger、HWC | 峰值功耗、温升、后台吞吐 |
+| 内存 | RSS/PSS、swap、PSI、回收和重启次数 | `lmkd`、压缩、ZRAM、cached freezer、缓存上限 | 解冻延迟、换入抖动、冷启动 |
+| 功耗 | CPU/GPU residency、唤醒、网络与传感器活动 | EAS、schedutil、cpuidle、Power HAL、任务批处理 | 响应延迟、吞吐下降、通知延后 |
+| 温控 | Thermal HAL severity、频率上限、机身温度、长稳帧率 | Thermal HAL、冷却设备、功率预算、场景策略 | 峰值性能受限，短跑分与长稳态分离 |
 
-**内存管理**在 Android 上永远是稀缺资源的争夺战。厂商的策略核心是「保证前台、压缩后台」：调整 LMK 的阈值参数（我们在 §4.4 中讲过 AOSP 的默认实现）、在内存紧张时更激进地回收后台进程、对系统进程做内存上限控制。国内厂商因为要应对更复杂的 App 生态（特别是各类保活方案），通常会比 AOSP 默认策略更激进。
+### 启动：先分清进程状态
 
-**功耗**直接决定用户要不要充电。厂商的优化覆盖了从 CPU 调度到网络管理的完整路径：基于 EAS 的调度器调优（§5.2）、DVFS 策略的精细化（§5.4）、后台网络请求的批量合并、GPS 等传感器的使用限制，以及 Doze 模式的增强。功耗优化的目标是「不该花的 CPU 周期一个都不花」，而厂商在系统层有完整的控制力来实现这个目标。
+一次 Activity 启动可能落在热启动、温启动或冷启动。系统若保留了进程，或者提前完成了 dexopt、文件页预取、USAP fork，Trace 形态都会变化。分析时要分别记录：
 
-**温控**是性能的天花板。当 SoC 温度达到阈值，Thermal 机制会强制降频（我们在 §5.5 中分析过），这时候前面所有的性能优化都会打折扣。厂商的温控策略差异很大：有的激进，温度稍高就降频换取更低功耗；有的保守，宁可温度高一点也要维持性能。这种策略差异直接反映在游戏场景的长帧率稳定性上。
+- 目标进程在点击前是否存在；
+- Zygote 或 USAP 是否参与进程创建；
+- APK、DEX、资源与动态库的页面是否已经进入 page cache；
+- 编译产物和 profile 是否发生变化；
+- 首帧前线程获得了多少 CPU，是否遭遇 I/O 或 Binder 等待。
 
+只用一次 TTID 比较两台设备，会把进程状态和缓存状态误算成厂商能力。更完整的应用启动方法见[启动优化](../../part2-performance/ch08-responsiveness/03-launch-optimization.md)。
 
-## 技术手段的全栈分层
+### 流畅性：从 deadline 反推瓶颈
 
-厂商的优化覆盖从 Kernel 到 App 层的整个技术栈。理解这个分层结构，有助于我们在 Trace 中快速判断某个优化行为的来源。
+一帧横跨输入、应用主线程、RenderThread、GPU、SurfaceFlinger、HWC 和显示扫描。OEM 可以调整 Power HAL 提示、线程分组、刷新率策略、合成选择和驱动行为。某个线程跑上大核只能证明调度结果，无法单独证明存在“游戏加速”或应用白名单。
 
-**Kernel 层**是厂商最深的优化战场。这里的手段包括 CPU 调度器调优（修改 CFS/EEVDF 的参数、定制 EAS 的能效模型）、内存管理的参数调整（watermark、min_free_kbytes 等）、I/O 调度策略（为不同场景配置不同的 I/O 优先级和调度器）、以及 cgroup 的精细化配置。在高通平台上，厂商可以直接修改 Snapdragon 的 governor 参数；在联发科平台上，则有 MTK 定制的调度策略。这些改动在 Perfetto 中表现为 CPU 频率变化、调度迁移行为、以及内存回收事件。
+分析掉帧时，应围绕 deadline 回看 runnable delay、运行时长、Binder 依赖、GPU fence、合成类型和频率变化。渲染各阶段的职责可结合[渲染管线总览](../../part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md)阅读。
 
-**Native 层的优化集中在 SurfaceFlinger 和 Binder 这两个关键服务上。** SurfaceFlinger 是渲染合成的核心，厂商会针对自家的显示硬件做合成策略调优——比如调整 HWC 的使用策略、优化 Layer 的合成路径、甚至为特定 App（如游戏）做合成 bypass。Binder 层面，厂商可能会优化 Binder 线程池大小、调整 Binder 事务的优先级继承策略，以减少主线程在 Binder 调用上的等待时间。在 Perfetto 中，这些优化表现为 SurfaceFlinger 的合成耗时变化和 Binder 调用的延迟分布。
+### 内存：保留、压缩、冻结与回收是四种动作
 
-**Framework 层是厂商最容易做差异化创新的地方。** ActivityManagerService（AMS）控制着进程的生命周期和优先级——厂商会调整 OOM Adj 的计算逻辑，让前台 App 获得更高的优先级保护。WindowManagerService（WMS）控制着窗口和 Surface 的管理——厂商可能会对动画系统做加速或对多窗口场景做特殊优化。PackageManagerService（PMS）影响启动速度——厂商可以定制 dex2oat 的编译策略，让常用 App 提前完成 AOT 编译。
+内存治理不等同于调大 `lmkd` 阈值。系统可以保留 cached 进程、压缩其匿名页、把页面换到 ZRAM、冻结进程，也可以在压力升高时终止它。每种动作影响不同：
 
-**App 层的优化更多是厂商与头部 App 的协同。** 厂商会提供专用 API 给合作的 App，让它们能根据运行场景动态调整 CPU 频率（CPU Boost）、使用更大的堆内存配额、或者在启动时获得更高的调度优先级。这就是为什么你在 Perfetto 中经常看到某些国民级 App（微信、支付宝）的调度行为跟普通 App 不一样——它们享受了厂商的白名单待遇。
+- 保留进程减少重建成本，但继续占用物理页和内核对象；
+- 压缩或换出释放 DRAM，切回时需要解压或换入；
+- 冻结停止 CPU 执行，内存仍可被回收或交换；
+- 终止进程释放范围最广，下一次进入要重新创建进程和应用状态。
 
+`oom_score_adj` 主要帮助 `lmkd` 选择对象，PSI、thrashing、watermark 和可用文件页等信号参与判断回收时机。相关主线见[`lmkd` 与低内存回收](../../part1-fundamentals/ch04-memory/04-lmk.md)。
 
-## 应用冻结技术
+### 功耗与温控：短时加速不能替代稳态测试
 
-后台进程的管理是 OEM 优化中最核心也最容易引发争议的领域。冻结技术是「不杀进程但让它不消耗资源」的折中方案，它的演进过程本身就是 Android 系统设计哲学变迁的一个缩影。
+Android 17 内核参照中的 EAS 会在 `kernel/sched/fair.c` 通过 `find_energy_efficient_cpu()` 比较候选 CPU，并由 `compute_energy()` 使用 Energy Model 估算能耗。`schedutil` 再根据调度器提供的利用率选择频率。设备的 CPU 拓扑、capacity、Energy Model、uclamp、cpuset 和驱动响应都会改变结果；旧资料中的 `sched_energy_cost` 不是这套内核的通用调参入口。
 
-### 从杀进程到冻结
+这些机制只能在当前功率和温度边界内工作。Android Thermal HAL 报告的 severity 会影响系统服务、任务调度和冷却动作。测试游戏或相机时，需同时给出冷机阶段、升温过程和稳态窗口。只截取开局几十秒，得到的是 boost 能力，无法说明持续性能。
 
-早期的 Android（4.x ~ 6.x 时代），手机内存普遍只有 2GB-3GB，厂商最常用的后台管理手段就是简单粗暴地杀进程。定时清理、内存阈值触发清理、甚至灭屏就清理。这带来了两个问题：一是 App 频繁被杀导致冷启动变多，用户体验下降；二是杀进程本身有开销，重新创建进程比唤醒一个冻结的进程慢得多。
+调度、调频和温控的基础可继续阅读[Linux 调度](../../part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md)、[DVFS](../../part1-fundamentals/ch05-cpu-power/04-dvfs.md)与[温控机制](../../part1-fundamentals/ch05-cpu-power/05-thermal.md)。
 
-iOS 的做法给了业界启发。在 iOS 中，App 进入后台约 3 分钟后会被挂起（类似 SIGSTOP），进程状态被完整保留在内存中，但不再获得 CPU 时间。当用户切回这个 App 时，恢复几乎是瞬时的。这种方式兼顾了后台资源控制（不耗 CPU）和前台切换速度（不需要冷启动）。
+## 从 Kernel 到应用的改动位置
 
-Android 厂商开始跟进类似的思路，但实现方式经历了几次迭代。
+OEM 性能能力很少集中在单个服务中。把现象放回分层路径，能缩小排查范围。
 
-### SIGSTOP 方案及其局限
+### Kernel：执行与资源控制
 
-最直接的实现方式是给后台进程发送 SIGSTOP 信号。SIGSTOP 是 Unix 信号机制的一部分，被 SIGSTOP 的进程会被内核挂起，不再参与调度，直到收到 SIGCONT 信号恢复执行。
+这一层包括：
 
-这个方案的风险在于，SIGSTOP 对应用是可观测的。虽然 App 无法捕获或忽略 SIGSTOP，但进程被挂起后，它持有的所有资源（锁、网络连接、Binder 引用）都会保持在挂起时的状态。这可能导致一些微妙的问题：比如一个 App 在持有 wake lock 的时候被 SIGSTOP，系统就无法进入休眠；或者在 Binder 调用中途被 SIGSTOP，调用方会一直阻塞。
+- EEVDF/CFS 公平类调度、EAS、uclamp、cpuset 和 CPU affinity；
+- schedutil、cpufreq、cpuidle 与 SoC 驱动；
+- cgroup v2 的 CPU、memory、I/O 和 freezer 控制；
+- PSI、内存回收、ZRAM、块 I/O 与文件系统；
+- GPU、显示、相机、网络等设备驱动。
 
+OEM 可能通过内核补丁、Kconfig、设备树、内核模块或 sysfs 参数改变行为。看到一个非标准 tracepoint 或 sysfs 节点时，应先确定它属于 GKI、vendor module 还是产品私有实现，再讨论语义。
 
-### cgroup freezer：AOSP 的标准方案
+### Native：跨进程通信与硬件合成
 
-Android 11 QPR3 引入了基于 cgroup v2 freezer 的 cached apps freezer 机制，这是 AOSP 官方认可的后台冻结方案。
+常见位置包括 Binder 驱动及用户态库、SurfaceFlinger、RenderEngine、HWC、AudioFlinger、媒体服务和硬件 HAL。显示路径的差异往往来自 HWC 能力、buffer 格式、合成策略或驱动 fence。Binder 延迟则要分解为客户端 runnable delay、事务排队、服务端执行和回复，不能看到等待时间就推断厂商改了线程池。
 
-cgroup freezer 的工作方式是将目标进程迁移到冻结的 cgroup 中。与 SIGSTOP 的关键区别在于，cgroup freezer 是从 cgroup 层面统一控制一组进程的状态——它不是逐个进程发送信号，而是通过向 cgroup 的 `cgroup.freeze` 文件写入 `1` 来冻结整个组。这样一来，一个 App 的所有进程（主进程、子进程、Content Provider 进程等）可以被原子性地冻结或恢复。
+### Framework：策略决策
 
-在 AOSP Android 17 中，这个机制由 ActivityManagerService 内部的 `CachedAppOptimizer` 统筹：`enableFreezer()` 管理开关和临时 override，真正冻结/解冻时通过 `Freezer.setProcessFrozen()` 包装 `android.os.Process.setProcessFrozen(pid, uid, frozen)`，并先用 Binder freezer 处理同步事务。设备可以通过 `device_config put activity_manager_native_boot use_freezer true` 启用，也可以在开发者选项中通过「Suspend execution for cached apps」开关控制。
+AMS/ATMS 决定进程状态和组件生命周期，WMS 管理窗口与过渡，`CachedAppOptimizer` 处理 cached 进程压缩和冻结，JobScheduler、AlarmManager、DeviceIdleController、App Standby 与 PowerManager 管理后台和功耗。产品资源 overlay、DeviceConfig、Settings、task profile 及厂商服务均可能在这一层改变策略。
 
-我们可以在 Perfetto 中观察到冻结行为——当后台 App 被冻结后，它的所有线程会从 CPU 调度队列中消失，在 CPU Track 上表现为进程的线程完全没有任何 CPU 活动。验证冻结是否生效的方法是通过 adb：
+### App 与系统应用：公开契约和产品能力
 
-```bash
-# 查看当前被冻结的进程数量
-adb shell dumpsys activity | grep "Apps frozen:"
+应用侧能稳定依赖的是 SDK 行为，例如 WorkManager、JobScheduler、foreground service、`PerformanceHintManager`、Game Mode 或厂商公开 SDK。cached freezer 没有面向三方应用的公开控制 API。某个产品若提供“预启动”“内存扩展”“性能引擎”等名称，需要分别查清它控制的是编译、缓存、进程、调度、存储还是 UI 展示；营销名称本身不构成技术证据。
 
-# 检查 cgroup freeze 文件是否存在
-adb shell ls /sys/fs/cgroup/uid_*/cgroup.freeze
+## Cached Apps Freezer：Android 17 的源码边界
+
+### Frozen Process 指什么
+
+Android 文档里的 frozen process 通常指仍有 Linux 进程和内存状态、但线程暂停执行的 cached 进程。它没有 CPU 时间，仍可能持有内存、文件描述符和部分内核资源。内存压力到来时，`lmkd` 仍可终止它。
+
+Android 14 及以后，当一个应用的全部进程进入 frozen 状态，系统还会终止其活动 TCP socket。冻结不能作为后台网络保活手段。
+
+### SIGSTOP 能暂停进程，但缺少 Android 协调
+
+`SIGSTOP` 无法被应用捕获或忽略。向一个进程发送该信号会暂停它的线程组，`SIGCONT` 可恢复执行。其他独立子进程不会因为主进程收到信号而自动同步暂停。
+
+这条方案缺少 Android 进程状态、Binder 和组件生命周期的配合。进程若在持锁或 IPC 临界区停住，依赖方可能长时间等待。SIGSTOP 适合调试和受控实验，不应被三方应用当作后台治理接口。
+
+### cgroup v2 freezer 的语义
+
+内核的 `cgroup.freeze` 接收 `1` 或 `0`。冻结请求可能需要一段时间完成，完成状态从 `cgroup.events` 的 `frozen` 字段读取。冻结一个 cgroup 会暂停其中的 tasks；进程迁入 frozen cgroup 后也会停下，迁出后可以运行。由此可知，“写入以后瞬间、原子地冻结整个应用”属于过度描述。
+
+在 Android 17 r1 中，Framework 按 `ProcessRecord` 发起冻结。`android.os.Process.setProcessFrozen(pid, uid, true)` 的 JNI 实现给目标 pid 应用 `Frozen` task profile；该 profile 把目标 pid cgroup 的 `FreezerState` 写为 `1`。同一 UID 的多个进程会分别进入冻结流程，只有全部进程都被冻结后，`UidRecord` 才标记为 frozen。
+
+下面的源码摘录用于确认 Binder 与 cgroup 的调用顺序，省略了错误处理和统计代码。
+
+```java
+// CachedAppOptimizer.java @ android-17.0.0_r1
+if (mFreezer.freezeBinder(pid, true, FREEZE_BINDER_TIMEOUT_MS) != 0) {
+    handleBinderFreezerFailure(proc, "outstanding txns");
+    return;
+}
+mFreezer.setProcessFrozen(pid, proc.uid, true);
+
+// Freezer.java @ android-17.0.0_r1
+public void setProcessFrozen(int pid, int uid, boolean frozen) {
+    Process.setProcessFrozen(pid, uid, frozen);
+}
 ```
 
-[已验证: 官方文档, source.android.com/docs/core/perf/cached-apps-freezer]
+Framework 先冻结 Binder 接口并冲刷待处理事务，再应用进程 freezer。解冻时先查询 Binder frozen 信息；若冻结期间收到同步事务，AOSP 会终止目标进程，避免调用方无限等待。随后 Framework 解冻 Binder，再撤销进程 freezer。这个顺序是 AOSP cached freezer 与简单 SIGSTOP 的主要工程差别。
 
-### 厂商在冻结策略上的差异
+### 默认值、覆盖项与豁免
 
-各家厂商在 AOSP freezer 基础上的策略差异主要体现在两个维度：**冻结时机**和**冻结对象**。
+`android-17.0.0_r1` 的基线如下：
 
-冻结时机方面，AOSP 的默认策略是当 App 进入 cached 状态一段时间后触发冻结。而厂商的定制策略可能更激进——有的在 App 退到后台几秒内就冻结，有的根据内存压力动态调整冻结速度，有的甚至对白名单以外的 App 立即冻结。
+- `CachedAppOptimizer.DEFAULT_USE_FREEZER = true`；
+- `config_defaultFreezerDebounceTimeout = 10000` 毫秒；
+- `Settings.Global.CACHED_APPS_FREEZER_ENABLED` 可写入 `enabled` 或 `disabled` 覆盖策略；
+- `activity_manager_native_boot/use_freezer` 与 `freezer_debounce_timeout` 可通过 DeviceConfig 调整；
+- 设备还要通过 `Freezer.isFreezerSupported()` 的内核能力检查。
 
-冻结对象方面，AOSP 只冻结 cached 进程。但厂商可能会扩大范围——把某些 service 进程、甚至广播接收者进程也纳入冻结范围。这就是为什么同样的 App 在不同厂商设备上表现完全不同：在你的设备上后台音乐播放正常，在另一台设备上可能几秒就被冻结了。
+这组默认值仍允许产品 overlay 和运行配置调整。Android 官方文档还列出文件锁、`BIND_WAIVE_PRIORITY` 绑定等豁免。应用进入 cached bucket 后是否在十秒左右冻结，要以目标 build 的 dumpsys 和事件记录确认。
 
+### 如何确认设备发生了冻结
 
-## 预加载与预测启动
+下面的只读命令用于核对开关、AOSP 统计和事件日志。
 
-### 系统级预加载：从 Zygote 到定制化
+```bash
+# DeviceConfig 中未设置时，AOSP 会回到源码默认值
+adb shell device_config get activity_manager_native_boot use_freezer
 
-Android 的应用进程都是从 Zygote fork 出来的。Zygote 在系统启动时预加载了大量 Java 类和资源（源码列表位于 `frameworks/base/config/preloaded-classes`，运行时路径是 `/system/etc/preloaded-classes`），这样每个新进程 fork 后不需要重新加载这些类，直接就能用。这个机制是 Android 启动速度的基石，我们在 §8.3 中也讨论过它对启动优化的影响。
+# 开发者选项使用的全局覆盖值：enabled、disabled 或 null
+adb shell settings get global cached_apps_freezer
 
-厂商在此基础上做了进一步定制。常见做法包括：
+# CachedAppOptimizer 会打印 use_freezer、debounce timeout 和 Apps frozen
+adb shell dumpsys activity | sed -n '/Freezer settings/,+20p'
 
-第一，**扩展预加载列表**。把常用 App 依赖的核心类加入预加载列表，让更多类在 Zygote 阶段就加载完毕。代价是 Zygote 进程本身的内存占用更大，以及系统启动时间变长（因为要加载更多的类）。这是一道经典的工程权衡题：用系统启动时间换 App 启动时间。
+# AOSP EventLogTags 中的冻结与解冻事件
+adb logcat -b events -s am_freeze am_unfreeze
+```
 
-第二，**预创建进程**。在系统启动阶段直接预创建若干应用进程（已经 fork 了 Zygote，但还没加载 App 代码），当用户点击图标启动 App 时，直接从预创建的进程中选一个，省掉 fork 的开销。这种方法在 Perfetto 中表现为启动 Trace 里没有 Zygote fork 阶段，`StartActivity` 直接进入 `bindApplication`。
+`device_config get` 返回 `null` 不表示功能关闭；源码默认值仍可能生效。`Apps frozen` 来自 `CachedAppOptimizer.mFrozenProcesses`，比“线程一段时间没跑”更有判别力。
 
-上面是厂商的定制做法。AOSP 也提供了标准化的预热方案——USAP（Unspecialized App Process）Pool。Zygote 在空闲时预先 fork 一批「空白进程」放入池中（`ZygoteServer.fillUsapPool()`），当 AMS 需要启动新进程时，优先从池中取用而非重新 fork。关键配置属性是 `usap_pool_enabled`（android-17.0.0_r1 中 `ZygoteConfig.USAP_POOL_ENABLED_DEFAULT` 仍为 `false`）和 `usap_pool_size_max`（池容量上限）。厂商可以基于这套机制做自己的预热策略——比如根据用户习惯提前填充池、增大池容量、或者在内存紧张时清空池释放资源。
+在 userdebug/root 设备上，还可以检查 Android 17 r1 的 pid 级 cgroup 文件。下面的 uid 和 pid 仅作路径示例。
 
-在 Perfetto 中验证 USAP Pool 是否生效的方法：结合 `Zygote` 进程里的 `Zygote:FillUsapPool` / `PostFork` slice 和启动路径判断。Android 17 源码中可稳定锚定的是 `ZygoteServer.fillUsapPool()`、`Zygote.forkUsap()` 与 `Zygote.specializeAppProcess()`，不要把 UI 中偶发的展示名当成源码 API。USAP Pool 有一个限制：目前不支持 App Zygote（Child Zygote）和 `android:useAppZygote` 场景，这类多进程架构的 App 仍走标准 fork 路径。
+```bash
+adb shell su 0 cat /sys/fs/cgroup/apps/uid_10123/pid_23456/cgroup.freeze
+adb shell su 0 cat /sys/fs/cgroup/apps/uid_10123/pid_23456/cgroup.events
+```
 
+量产 user build 通常不允许 shell 读取这些节点，厂商也可能通过 task profile overlay 改变布局。读不到节点只能说明权限或路径不匹配，不能据此判定 freezer 关闭。
 
-第三，**预编译优化**。调整 dex2oat 的编译策略，让常用 App 在系统空闲时提前完成 AOT 编译，或者使用基于用户使用习惯的 Profile-Guided Optimization（PGO）策略，只编译用户经常用到的代码路径。三星的 App Booster 就是这个思路——它手动对已安装的 App 执行 profile-guided 编译，让代码针对实际使用模式优化。
+Perfetto 中可结合 `Freezer` atrace track、进程调度 slice、`am_freeze`/`am_unfreeze` 事件以及 Android 17 的 freezer TrackEvent 判断。线程长期没有 slice 也可能处于正常睡眠，必须与显式状态证据互证。
 
+## 预加载、USAP 与预测启动
 
-### AI 预测启动
+### Zygote 预加载
 
-更进阶的做法是基于用户行为预测来预加载 App。如果一个用户每天早上 8 点打开微信，那系统可以在 7:58 就开始预热微信的进程，等用户实际点击时，启动过程几乎瞬时完成。
+Zygote 在系统启动时读取 `/system/etc/preloaded-classes`，并预加载 Framework 类、资源和部分 native 库。fork 后的应用进程通过写时复制共享未修改页面。扩大预加载集合可能减少应用启动期类加载，也会增加 Zygote 启动工作、常驻共享页和脏页风险。某个应用的业务类通常不在系统 Zygote 的通用预加载集合里。
 
-ColorOS 的 Trinity Engine 就是这种思路的典型代表——它通过 AI 学习用户的使用习惯，预测用户下一步可能打开的 App，并提前做资源分配和进程预热。据 OPPO 公开的数据，Trinity Engine 可以将 App 启动速度提升 28%，加载时间缩短 21%。这种预测能力在 Perfetto 中很难直接观察到（因为预热过程发生在后台），但可以通过对比有无预测时 App 的冷启动 Trace 来间接验证。
+修改 `frameworks/base/config/preloaded-classes` 前，应在干净开机与多应用场景中同时衡量：
 
-当然，预测启动也有风险。如果预测不准，预加载的 App 白白消耗了内存和 CPU 资源。所以厂商通常采用保守策略——只对高频使用的 App 做预测，预测置信度低于阈值的不触发。数据显示，一个用户常用的 App 一般不超过 10 个，这为预测模型提供了天然的精简范围。
+- Zygote preload 时长；
+- system_server ready 时间；
+- Zygote PSS、共享页和应用私有脏页；
+- 多个代表应用的 TTID/TTFD；
+- 低内存设备上的重启与 swap。
 
+只优化一个头部应用，可能把成本分摊给每次开机和每个应用进程。
 
-## 后台管理策略：保活与杀后台的博弈
+### USAP Pool 预先完成的是 fork
 
-### 中国 Android 生态的特殊性
+USAP 是已经从主 Zygote 或次 Zygote fork、尚未专门化为某个应用的进程。进程启动请求满足条件时，`ZygoteProcess` 连接 USAP socket，把 uid、gid、SELinux、数据目录和运行参数交给池成员；池成员通过 `Zygote.specializeAppProcess()` 完成专门化。
 
-理解厂商的后台管理策略，必须先理解中国 Android 生态的一个根本特殊性：**没有 Google Play Services**。
+下面的 r1 判断代码说明 USAP 需要同时满足支持、启用、策略和命令参数四项条件。
 
-因为没有统一的推送服务（FCM），App 为了确保能及时收到消息通知，不得不自己维持后台进程的活跃状态。于是各种保活方案层出不穷：双进程守护、JobScheduler 定时唤醒、AccountSync 同步触发、1 像素 Activity 保活、甚至静默播放音频文件来防止进程被杀。多个 App 之间还会相互唤醒——你打开了 App A，它通过 ContentProvider 或广播把同公司的 App B 也拉起来。这就是「全家桶」现象。
+```java
+// ZygoteProcess.java @ android-17.0.0_r1
+private boolean shouldAttemptUsapLaunch(
+        int zygotePolicyFlags, ArrayList<String> args) {
+    return mUsapPoolSupported
+            && mUsapPoolEnabled
+            && policySpecifiesUsapPoolLaunch(zygotePolicyFlags)
+            && commandSupportedByUsap(args);
+}
+```
 
-这种生态导致了一个恶性循环：App 越来越激进的保活 → 系统越来越卡、越来越耗电 → 厂商越来越激进的杀后台 → App 为了存活更加激进地保活。这个循环的结果是，国内 Android 手机的后台管理策略远比 AOSP 默认策略更激进。
+主/次 Zygote 支持 USAP，child Zygote 不支持。策略只把 latency-sensitive、非 system process 的合格请求送入 USAP；需要 wrapper、启动 child Zygote、预加载包等参数会退回普通 Zygote 路径。`ZygoteConfig.USAP_POOL_ENABLED_DEFAULT` 在 Android 17 r1 中仍为 `false`，池容量基线为最少 1、最多 3，产品可以通过 runtime_native DeviceConfig 或 `dalvik.vm.*` 属性覆盖。
 
-### 厂商的策略光谱
+可以用以下属性读取区分“源码支持”和“当前 build 已启用”。
 
-面对这个生态，厂商的后台管理策略可以分为两极：
+```bash
+adb shell getprop dalvik.vm.usap_pool_enabled
+adb shell device_config get runtime_native usap_pool_enabled
+```
 
-一端是**宽松策略**——尽量保留后台进程，通过冻结而非杀进程来控制资源消耗。好处是 App 切换快、通知及时，代价是内存占用大、功耗高。AOSP 的默认策略偏向这一端。
+两处都为空时，Android 17 r1 回到 `false` 默认值。Trace 中的 `Zygote:FillUsapPool` 可以证明填池动作；某次启动缺少普通 Zygote fork 仍需结合 pid 出生时间和 USAP 专门化路径确认，不能直接标记成厂商预测启动。
 
-另一端是**激进策略**——快速杀掉非白名单的后台进程，甚至对白名单的 App 也严格限制后台活动。好处是省电、省内存，代价是用户体验差：通知延迟、App 切换需要冷启动、后台音乐或导航可能中断。
+### 预测启动要拆成动作验证
 
-国内厂商的策略普遍偏向激进端，但程度不一：
+“智能预测下一应用”描述的是决策输入，不说明执行动作。产品可能基于时间、位置、前一应用、使用频率或桌面交互做预测，命中后可以选择：
 
-小米（MIUI/HyperOS）的后台管理相对激进，有完整的自启动控制和相互唤醒拦截机制。微信等头部 App 通常在白名单中，享受更宽松的后台策略——这就是为什么普通开发者会发现「微信能自启动但我的 App 不行」。
+- 提前完成 ART 编译或 profile 维护；
+- 预取文件页或资源；
+- 保留已有 cached 进程；
+- 填充通用 USAP 池；
+- 创建产品私有的预热进程；
+- 调整短时调度或 I/O 优先级。
 
-华为（EMUI/HarmonyOS）同样激进，但提供了更细粒度的后台管控设置。用户可以手动为特定 App 设置「不受限制」的后台策略，但这通常需要深入设置菜单好几层才能找到。
+这些动作的成本差异很大。提前创建目标应用进程还涉及组件生命周期、权限、存储解锁、隐私和内存压力，不能仅凭“点击后很快”推断存在。
 
-OPPO/vivo（ColorOS/OriginOS）的策略相对平衡，近年来通过 AI 学习用户习惯来动态调整后台策略，对用户常用的 App 放宽限制。
+验证预测策略时，应设计命中组和未命中组，固定网络、温度、编译状态与 page cache 条件，并记录预测发生前后的进程、I/O、CPU 和内存。只有产品文档、系统日志或逆向到的调用链能给出策略身份；Trace 主要负责证明动作及效果。
 
-荣耀（MagicOS）的后台优化以省电为导向，有用户反馈其「激进电池优化器」会影响第三方 App 的通知接收和后台功能。
+## 后台治理：在系统契约内选择工作类型
 
+后台治理要在三个目标之间取舍：用户可感知功能的连续性、延迟任务的完成率、整机功耗与内存。AOSP 已经提供 Doze、App Standby buckets、后台执行限制、JobScheduler、AlarmManager、foreground service 和 cached freezer。OEM 可以在兼容性约束内配置产品策略，也可能因实现缺陷造成额外延迟或进程终止。
 
-### 对开发者的影响
+品牌和地区无法替代设备证据。同一品牌的不同系统版本、机型、内存档位、用户省电设置和应用使用频率都可能触发不同结果。用“某厂商一定杀后台”指导代码，会把排障变成长期维护的例外集合。
 
-这种厂商策略的差异对开发者最直接的影响体现在两个方面：**通知可靠性**和**后台任务执行**。
+### App 应该怎样选 API
 
-通知可靠性方面，在国内环境下，开发者通常需要接入厂商自己的推送通道（小米推送、华为推送、OPPO 推送等）来保证通知送达率。开发者这么做，是因为不接入厂商推送通道，通知就会被后台管理策略吞掉。
+| 工作 | 推荐入口 | 约束 |
+|---|---|---|
+| 离开页面即可取消的进程内任务 | coroutine / executor | 进程终止后任务消失 |
+| 需要跨进程重启继续的可延期任务 | WorkManager | 受约束、配额与系统调度影响，不承诺精确时刻 |
+| 平台级任务调度控制 | JobScheduler | 需要正确声明网络、充电、idle 等条件 |
+| 用户指定时刻的提醒 | AlarmManager | 精确闹钟受权限和政策约束 |
+| 用户持续可感知的工作 | foreground service | 类型、权限、后台启动和超时均受版本限制 |
+| 消息送达 | 平台可用的推送通道 | 推送唤醒后仍要遵守后台启动规则 |
 
-后台任务方面，WorkManager 和 JobScheduler 的行为在不同厂商设备上可能不一致。一个在 Pixel 上正常执行的后台同步任务，在某厂商设备上可能被延迟数小时甚至完全跳过。开发者能做的最可靠的方案是使用 Foreground Service，但这会显示一个常驻通知栏——又是一个用户体验的权衡。
+Foreground service 只适合用户能持续感知的工作。Android 12 起限制后台启动 FGS，Android 14 起进一步校验类型与 while-in-use 权限。它不能作为“所有后台任务最稳”的替代品。持久、可延期任务优先使用 WorkManager；要求精确用户提醒时再评估 AlarmManager。
 
+厂商推送通道属于产品集成选项。是否需要接入要按目标市场、系统服务可用性、送达率与隐私要求决策。普通应用也不应依赖互拉进程、静音音频、透明 Activity 或周期性自唤醒绕过系统策略。
 
-## 与其他机制的关系
+### 区分正常约束和产品偏差
 
-OEM 的性能优化不是一个独立模块，它嵌入在全书讨论过的各个系统机制中。理解这些关联，能帮我们在 Trace 中更快判断一个现象的来源。
+下面的命令用于收集后台状态。包名要替换为待测应用。
 
-**与 CPU 调度的关系（§5.1～§5.4）**：厂商在 Kernel 层的调度器调优直接影响 EAS 的行为。如果你在 Perfetto 中看到 CPU 迁移策略跟 AOSP 默认行为不同，很可能是厂商修改了 sched_energy_cost 或者 CPU capacity 的配置。DVFS 的 governor 选择和参数调优（§5.4）同样因厂商而异。
+```bash
+adb shell am get-standby-bucket com.example.app
+adb shell dumpsys jobscheduler com.example.app
+adb shell dumpsys deviceidle
+adb shell cmd appops get com.example.app RUN_ANY_IN_BACKGROUND
+adb shell dumpsys package com.example.app
+```
 
-**与内存管理的关系（§4.1～§4.4）**：厂商调整 LMK 的阈值参数是最常见的内存优化手段。当你在 Perfetto 中观察到后台进程被杀的时机跟 §4.4 描述的 AOSP 默认行为不一致时，应该想到这是厂商策略干预的结果。
+这组输出分别覆盖 standby bucket、JobScheduler、Doze、后台运行 AppOp 和包配置。它们要与 `ApplicationExitInfo`、logcat、Perfetto 和服务端请求日志按时间对齐。任务延迟可能来自约束未满足、配额、Doze、网络、进程退出或应用异常，不能只看“预定时间没执行”就归因给 OEM。
 
-**与渲染管线的关系（§2.1～§2.6）**：SurfaceFlinger 的合成策略、VSync offset 的配置、GPU 调度策略都可能被厂商定制。这些定制会影响帧渲染的时序，导致你在 Trace 中看到的帧渲染模式跟 Pixel 设备不同。
+若设备行为偏离公开 SDK 契约，建议准备最小复现、系统 build 信息、完整 bugreport、Trace 和同版本对照机结果。此类材料比要求用户手动加入白名单更容易定位问题，也能区分产品设计与系统缺陷。
 
-**与启动优化（§8.3）的关系**：厂商的预加载和预测启动策略直接改变了启动 Trace 的形态。如果启动 Trace 中缺少 Zygote fork 阶段，或者某些类的加载耗时异常短，这通常是厂商预加载的结果。
+## 一套可复用的 OEM 归因流程
 
-## 版本演进
+### 1. 固定实验条件
 
-OEM 优化策略随 Android 版本的演进经历了几个关键转折点：
+记录机型、内存档位、`ro.build.fingerprint`、安全补丁、目标 SDK、安装来源、温度、刷新率、电量、网络和省电模式。启动实验还要固定编译状态、进程状态和缓存状态。
 
-**Android 5.0（2014）**：ART 替代 Dalvik，AOT 编译为厂商提供了预编译优化的基础。JobScheduler API 引入，为后台任务管理提供了标准接口。
+### 2. 建立 AOSP 17 基线
 
-**Android 6.0（2015）**：Doze 模式和 App Standby 引入，这是 Google 第一次系统性地从 AOSP 层面限制后台行为。厂商在此基础上做了大量增强。
+从 `android-17.0.0_r1` 找到负责决策的 Framework/Native 入口；涉及内核时再对 `android17-6.18-2026-06_r6`。记录基线默认值、可覆盖项和事件输出，避免用旧版本属性解释 Android 17。
 
-**Android 8.0（2017）**：后台执行限制大幅趋严——隐式广播被大量禁用、后台服务受限。这迫使 App 改用更规范的后台方案，也为厂商的优化提供了更干净的基础。
+### 3. 读取目标设备配置
 
-**Android 9.0（2018）**：Adaptive Battery 引入，基于机器学习预测用户使用习惯来分配后台资源。厂商纷纷在此基础上训练自己的模型。
+优先查 Settings、DeviceConfig、resource overlay、task profiles、系统属性、HAL 服务和内核配置。user build 无法读取的内容应标成未知，不用猜测填补。
 
-**Android 11（2020）**：cached apps freezer 正式引入（QPR3），基于 cgroup v2 的进程冻结成为 AOSP 标准方案。厂商从自己的 SIGSTOP/cgroup 方案逐步迁移到 AOSP 标准。
+### 4. 让 Trace 证明动作
 
-**Android 12（2021）**：前台服务启动限制更加严格，Exact Alarm 需要特殊权限。进一步限制了 App 的后台行为空间。
+围绕问题定义时间窗口和因果链：
 
-**Android 14（2023）**：前台服务类型强制声明，每种类型有明确的使用场景限制。与 Samsung 合作改进了后台 App 管理 API，提升了跨设备一致性。
+- 启动：输入事件 → Activity 启动 → 进程创建/专门化 → `bindApplication` → 首帧；
+- 掉帧：应用 deadline → runnable/运行 → GPU fence → SF/HWC → present；
+- 后台：组件退入后台 → procstate/adj → freezer 或 kill → 下一次唤醒；
+- 功耗：工作负载 → 调度/频率 → idle residency → Thermal severity → 性能变化。
 
+### 5. 做层级消融
 
-## 常见问题与误区
+能控制的情况下，逐项切换刷新率、省电模式、游戏模式、开发者 freezer 选项或应用后台设置。每次只改一个变量，并恢复到同一热状态。一次切换多个开关，无法确认收益归属。
 
-**误区一：「手机卡一定是 App 写得烂。」**
+### 6. 给结论标注证据等级
 
-不完全对。如果你在一家厂商的设备上卡顿但其他设备正常，第一反应应该是检查厂商的后台管理策略和调度策略。某些厂商在灭屏后会限制所有非前台进程的 CPU 使用，这会导致 App 正在执行的后台同步变慢，进而影响下次打开的速度。在 Perfetto 中对比不同设备上同一 App 的 Trace，往往能发现差异来源不是 App 代码，而是系统策略。
+- **L1：源码与运行证据一致。** 可以描述调用链和目标 build 的行为。
+- **L2：官方文档或产品配置，加上运行证据。** 可以描述可观察策略，内部实现仍需保留。
+- **L3：仅有 Trace 现象或用户反馈。** 只记录现象与候选原因，不命名私有机制。
 
-**误区二：「厂商的优化一定比 AOSP 好。」**
+## 常见误判
 
-不一定。厂商的优化往往是针对特定使用场景和硬件配置做的，在某些场景下可能比 AOSP 好很多（比如游戏场景、常用 App 启动场景），但在另一些场景下可能更差（比如多任务切换、长时间运行后台任务）。特别是杀后台过于激进的厂商，用户的多任务体验往往更差。
+### “进程还在，所以应用可以继续工作”
 
-**误区三：「白名单是解决一切问题的办法。」**
+cached 进程可能已被冻结，也可能没有调度机会；它还可能在内存压力下被终止。后台工作要依赖组件状态和公开调度 API，不能依赖进程恰好存活。
 
-让 App 进入厂商的白名单能解决大部分后台限制问题，但这是一个短视的方案。白名单是厂商和头部 App 之间的博弈结果，普通 App 很难进入。正确的做法是使用 Android 标准的后台 API（Foreground Service、WorkManager），并在必要时接入厂商的推送通道。
+### “启动 Trace 没看到 fork，所以系统预启动了应用”
 
-**误区四：「冻结等于杀进程。」**
+目标进程可能早已存在，也可能来自 USAP、App Zygote，或者 Trace 窗口漏掉了进程创建。应核对 pid 的创建时间、父进程、`bindApplication` 和 USAP 状态。
 
-不等。冻结（cgroup freezer）是将进程挂起但保留其在内存中的状态，恢复时不需要冷启动。杀进程是完全销毁进程，下次启动需要从 Zygote fork 开始。在 Perfetto 中，被冻结的进程的线程会从 CPU Track 上消失但进程条仍然存在；被杀的进程则完全消失，下次出现时伴随完整的启动 Trace。
+### “CPU 上了大核，所以应用命中了白名单”
 
-**误区五：「厂商之间的差异只在 UI 层。」**
+EAS、uclamp、top-app cpuset、任务利用率、idle 状态、IRQ 和热限制都能影响 CPU 选择。需要额外配置或厂商调用链，才足以命名白名单策略。
 
-远远不止。从 Kernel 的调度器参数到 Framework 的 AMS/WMS 逻辑，厂商几乎在每个层面都做了定制。如果你只分析过 Pixel 设备的 Trace，迁移到厂商设备分析时需要重新建立对「正常行为」的认知基线。
+### “冻结能省内存”
 
-## 参考资料
+freezer 的直接作用是停止执行。匿名页是否被压缩、换出或回收，取决于后续 compaction、ZRAM 和内存压力。冻结保留的进程也会继续占用页表、内核对象和未回收页面。
 
-### Android 17 性能优化：新调度器减少 30% 启动时间
-- 来源：https://android-developers.googleblog.com/2026/06/android-17-performance-optimization
-- 类型：技术文章
-- 入库时间：2026-06-21
-- 评分：18/20
+### “加入电池白名单能修复所有后台问题”
 
+白名单只改变特定电源限制，无法修复错误的 WorkManager 约束、FGS 类型、权限、服务端推送、网络失败或应用崩溃。不同设备对用户设置的名称和影响范围也可能不同。
 
-### AOSP 源码路径
-- `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java` — cgroup freezer 管理
-- `frameworks/base/services/core/java/com/android/server/am/Freezer.java` — freezer 包装层与 Binder freezer 入口
-- `frameworks/base/core/java/android/os/Process.java` — `setProcessFrozen(pid, uid, frozen)` native 入口
-- `frameworks/base/core/java/com/android/internal/os/ZygoteInit.java` — Zygote 预加载逻辑
-- `frameworks/base/core/java/com/android/internal/os/ZygoteConfig.java` — USAP Pool 配置默认值
-- `frameworks/base/core/java/com/android/internal/os/ZygoteServer.java` — `fillUsapPool()` 预热池维护
-- `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — 进程优先级和 OOM Adj 管理
-- `system/core/init/init.cpp` — 系统启动流程
-- `kernel/sched/` — CPU 调度器实现
+## 版本演进到 Android 17
 
-### 官方文档
-- [Cached Apps Freezer](https://source.android.com/docs/core/perf/cached-apps-freezer) — AOSP 官方冻结机制说明
-- [Background Optimization](https://developer.android.com/topic/performance/background-optimization) — 后台优化指南
-- [Foreground Services](https://developer.android.com/guide/components/foreground-services) — 前台服务使用指南
-- [Power Management](https://source.android.com/docs/core/power) — 电源管理
+| 版本 | 对 OEM 性能策略的影响 |
+|---|---|
+| Android 5.0 / 6.0 | ART、JobScheduler、Doze 和 App Standby 逐步建立编译与后台任务基线 |
+| Android 8.0 | 后台服务和隐式广播限制收紧，应用需要迁移到受调度的后台工作 |
+| Android 9 | App Standby buckets 与 Adaptive Battery 让使用频率进入资源分配 |
+| Android 11 | AOSP 支持 cached apps freezer，cgroup v2 freezer 成为系统冻结基础 |
+| Android 12 | 后台启动 foreground service 受到明确限制 |
+| Android 14 | cached 进程通常在进入 cached 状态十秒后冻结；动态注册广播可排队到解冻后，FGS 类型和权限约束继续细化 |
+| Android 17 / API 37 | r1 基线中 freezer 默认开启且带 Binder 协调，默认 debounce 为十秒；USAP 代码保留但默认关闭，产品差异仍需读取配置确认 |
 
-### 深入阅读
-- [OS 设计之性能设计系列](https://www.androidperformance.com/2023/08/21/the-performance-design-of-os/) — Yingyun 大佬关于 OS 性能设计的深度思考
-- [Android 系统优化的那 10 年](https://mp.weixin.qq.com/s/606a7fadda223d94dff5194079ae78b7) — 系统优化历史回顾
+版本演进可以保留历史语境，排查当前设备时仍要回到 Android 17 的源码和目标 build。旧版属性名、私有 sysfs 节点和早期厂商方案不能直接套用到 API 37。
 
----
+## 源码与官方资料
 
-> **验证状态**：L2 验证通过 8 处（AOSP 源码路径、官方文档、Linux man page），待验证 4 处（厂商具体策略参数）。信心等级：medium。
->
-> **素材来源**：obsidian/Personal-Knowlodge/source/2026-03-08_wechat_Android系统优化的那10年.md、obsidian/Personal-Knowlodge/source/the-performance-design-of-os.md、source.android.com、developer.android.com
+### Android 17 / API 37 源码
+
+- [`CachedAppOptimizer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java)：开关、延迟、Binder 协调、冻结与解冻状态机。
+- [`Freezer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/Freezer.java)：Framework freezer 包装层。
+- [`Process.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Process.java) 与 [`android_util_Process.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_util_Process.cpp)：pid 级 Frozen/Unfrozen profile 入口。
+- [`config.xml`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/res/values/config.xml)：freezer debounce 的 AOSP 基础资源值。
+- [`task_profiles.json`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libprocessgroup/profiles/task_profiles.json)：`FreezerState` 与 Frozen/Unfrozen profile。
+- [`ZygoteInit.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ZygoteInit.java) 与 [`preloaded-classes`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/config/preloaded-classes)：Zygote 预加载入口和类清单。
+- [`ZygoteConfig.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ZygoteConfig.java)、[`ZygoteServer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ZygoteServer.java) 与 [`ZygoteProcess.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/ZygoteProcess.java)：USAP 默认值、填池、启动资格和 child Zygote 边界。
+
+### Android 17 kernel 6.18 源码
+
+- [`kernel/sched/fair.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/fair.c)：EAS 的候选 CPU 与能耗估算。
+- [`kernel/sched/cpufreq_schedutil.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c)：schedutil governor。
+- [`Documentation/scheduler/sched-energy.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-energy.rst)：Energy Model 与 EAS 的约束。
+- [`Documentation/admin-guide/cgroup-v2.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst)：`cgroup.freeze` 与 `cgroup.events` 语义。
+
+### 官方行为文档
+
+- [Cached apps freezer](https://source.android.com/docs/core/perf/cached-apps-freezer)
+- [Background work](https://developer.android.com/develop/background-work)
+- [Task scheduling / WorkManager](https://developer.android.com/develop/background-work/background-tasks/persistent)
+- [Foreground services](https://developer.android.com/develop/background-work/services/fgs)
+- [Thermal mitigation](https://source.android.com/docs/core/power/thermal-mitigation)
+- [Power and performance management](https://source.android.com/docs/core/power/performance)
