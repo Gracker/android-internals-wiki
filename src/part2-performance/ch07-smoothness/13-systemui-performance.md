@@ -114,11 +114,9 @@ last_deepseek_cn_review_at: 2026-06-07
 
 # 7.13 SystemUI 性能分析
 
-前面几节讨论的重点是普通 App 进程里的卡顿。到了 SystemUI，问题会换一种形态。状态栏、通知抽屉、导航栏这些界面几乎天天出现在用户眼前，一旦掉帧，体感远比单个 App 的局部卡顿刺眼。
+普通 App 卡住时，受影响的画面往往局限在一个任务内。SystemUI 的状态栏、通知抽屉、锁屏和导航区域覆盖面更大，同一段阻塞还可能与 Launcher、WM Shell、目标 App 的动画重叠。只盯 `com.android.systemui` 的主线程，很容易把窗口归属、线程归属和最终呈现混在一起。
 
-本节只讨论 Android 12-17 的现行实现。Android 15+ 的 Compose 化重构（Flexiglass / SceneContainer）改变了 SystemUI 内部的 UI 组织方式，是分析性能前必须了解的架构背景，因此放在第一节交代。之后回到组件边界和窗口拓扑，一步步拆出 Perfetto 的观察点。这个范围里，StatusBar、Notification Shade、NavigationBar 仍在 `com.android.systemui` 进程，Recents / Overview 已经放在 Launcher3 Quickstep。把 Overview 继续算进 SystemUI，会把进程边界、窗口归属和 Perfetto 观察点一起带偏。
-
-[图：Perfetto 进程视图概览。上半部分标出 `com.android.systemui` 的 MainThread、RenderThread、`NotificationShadeWindowView#onMeasure`；下半部分标出 `com.android.launcher3` 的 MainThread、RenderThread 和 Overview 相关 slice。用于区分 SystemUI 与 Launcher3 Quickstep 的职责边界。]
+本章保留 Android 12—16 的演进背景，现行结论统一以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点。涉及输入、调度和显示栅栏时，以 `android17-6.18-2026-06_r6` 为 kernel 锚点。Android 17 同时保留 legacy shade 与 SceneContainer 路径，并加入状态栏、通知抽屉、返回手势专用 UI 线程等开关。分析前需要记录目标构建的 flag、窗口和线程，不能只凭系统版本推断执行路径。
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -138,360 +136,356 @@ last_deepseek_cn_review_at: 2026-06-07
 - 🔸 **OEM 定制变量**：状态栏层级、主题动画、插件体系会放大 AOSP 基线之外的开销。
 <!-- outline-end -->
 
-## Android 15+ SceneContainer (Flexiglass)：通知栏架构的 Compose 化重构
+## 先把版本、flag、窗口和线程记下来
 
-> ⚠️ **状态**：此部分描述的 Flexiglass / Scene Framework 截至 Android 15/16 开发阶段仍为**实验性功能**，默认关闭。不同分支可能通过 aconfig、device_config override 或工程编译开关打开；验证时以目标构建上的 flag dump 和对应 AOSP 分支为准，不要只按一个 `device_config.get_boolean(...)` 判断。以下内容已按 AOSP android-16.0.0_r1 源码核对，适用于已启用该框架的 Android 15/16 设备；Android 17 需要按目标分支重新核对 flag 和路径。
+Android 17 的 SystemUI 不能用一张固定架构图概括。`scene_container`、`dual_shade`、`status_bar_for_desktop`、`status_bar_root_modernization`、`status_bar_system_status_icons_in_compose`、`status_bar_ui_thread`、`notification_shade_ui_thread` 与 `edge_back_gesture_handler_thread` 都会改变观察入口。AOSP tag 证明代码存在，目标产品是否执行该分支仍由构建配置和运行时 flag 决定。
 
-### 核心变化：从重叠 View 层级到 Scene Graph
+下面的只读命令用于保存设备身份、相关 aconfig 状态、线程名和窗口名：
 
-传统 SystemUI 的通知栏基于 `NotificationShadeWindowView`（一个超大 `FrameLayout`），锁屏、通知列表、Quick Settings 都通过 `setVisibility()` 在同一个 View Tree 中切换。这种架构的问题在于：状态逻辑分散、动画与 UI 声明耦合、OEM 定制困难。
-
-Flexiglass（内部代号，亦称 Scene Framework）将通知栏、锁屏、Bouncer、Quick Settings 各自封装为独立的 **Scene**，通过 **SceneTransitionLayout** 统一管理场景切换和过渡动画。
-
-**核心概念对照：**
-
-| 传统架构 | Flexiglass |
-|----------|------------|
-| `NotificationShadeWindowView`（单一重叠 ViewTree） | `SceneContainer`（Scene Graph 根节点） |
-| `setVisibility()` 控制显隐 | `SceneKey` 切换当前活跃 Scene |
-| 动画逻辑散落在 `PanelView.onTouchEvent()` 等各处 | `SceneContainerTransitions` 集中声明过渡动画 |
-| View 层级直接对应 UI 结构 | Scene 是独立 Composable，互不直接引用 |
-| `ScrimController` 控制 Scrim 透明度 | SceneTransitionLayout 内置 Element 动画系统 |
-
-### 源码文件索引
-
-| 文件路径（AOSP android-16.0.0_r1） | 职责 |
-|---------------------------|------|
-| `packages/SystemUI/compose/features/src/com/android/systemui/scene/ui/composable/SceneContainer.kt` | Scene Graph 根 Composable，接收 scene / overlay / transition / data source 等配置 |
-| `packages/SystemUI/src/com/android/systemui/scene/shared/flag/SceneContainerFlag.kt` | 框架总开关，封装 aconfig 主开关与 secondary flags 依赖 |
-| `packages/SystemUI/src/com/android/systemui/scene/ui/viewmodel/SceneContainerViewModel.kt` | 控制场景的 `isVisible` 状态 |
-| `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/SceneTransitionLayout.kt` | 底层 Compose 过渡组件，封装 Scene Graph 和 Transition |
-| `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/SceneTransitionLayoutState.kt` | 管理当前 Scene（`currentScene: SceneKey`）、`transitions`、`transitionState` |
-| `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/SceneTransitions.kt` | 集中声明每对 Scene 之间的过渡动画（如 `lockscreenToShadeTransition`） |
-| `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/reveal/ContainerReveal.kt` | AOSP android-16.0.0_r1 可核对的 reveal 相关实现入口，用于容器揭示类过渡效果 |
-| `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/transformation/` | 现有基础变换集合，例如 anchored、translate、fade、scale 等；不要把不存在的 `PunchHole.kt` 写成 android-16.0.0_r1 锚点 |
-
-### 源码入口与开关依赖
-
-`SceneContainer` 是 Scene Graph 的 Compose 根节点。AOSP android-16.0.0_r1 的参数级签名仍在变化，正文只保留可核对的入参分组，避免把某个开发分支的签名写成稳定 API：
-
-| 入参分组 | 用途 |
-| --- | --- |
-| `sceneByKey: Map<SceneKey, Scene>` | 注册可切换的 Scene 实例 |
-| `overlayByKey: Map<OverlayKey, Overlay>` | 注册浮层与临时覆盖层 |
-| `initialSceneKey` | 指定初始活跃 Scene |
-| `sceneTransitions` | 声明 Scene 之间的过渡规则 |
-| `dataSourceDelegator` / `qsSceneAdapter` | 连接 SystemUI 现有状态源与 QS 适配层 |
-| `modifier` 等 Compose 参数 | 控制布局、绘制和外部修饰 |
-
-`SceneContainerFlag.kt` 不直接读取单个 `device_config.get_boolean("systemui", "com.android.systemui.scene_container", false)`。AOSP android-16.0.0_r1 使用 aconfig 生成的 `Flags.sceneContainer()` 作为主开关，并要求一组 secondary flags 同时满足，例如 Keyguard bottom area refactor、Keyguard WM state refactor、migrate clocks to blueprint、notification throttle HUN、predictive back SystemUI flag。读源码时应把它看成“主开关 + 依赖开关”的组合；单个布尔值不足以判断该框架生效。
-
-引用这个开关的组件包括 Scrim、QS、Keyguard、Overview latency tracking、锁屏滚动手势等分支。定位 Flexiglass 是否生效时，先核对这些依赖开关，再看对应组件是否切到了 SceneContainer 路径。
-
-### 过渡动画机制
-
-每个 Scene 切换的动画在 `SceneTransitions` 中声明，而非写在 Composable 函数体内：
-
-```kotlin
-// 示意（SceneContainerTransitions.kt）
-val lockscreenToShadeTransition = transitionBuilder(
-    fromScene = SceneKey.Lockscreen,
-    toScene = SceneKey.Shade,
-) {
-    // tween 插值，300ms，FastOutSlowIn
-    // 标签为 ElementKey 的元素同步位移
-    element(elementKey) { translateY(it) }
-}
+```bash
+adb shell getprop ro.build.fingerprint
+adb shell aflags list | grep -E 'com\.android\.systemui\.(scene_container|dual_shade|status_bar_for_desktop|status_bar_root_modernization|status_bar_system_status_icons_in_compose|status_bar_ui_thread|notification_shade_ui_thread|edge_back_gesture_handler_thread)'
+adb shell ps -A -T | grep -E 'systemui|launcher|ShellMain|ShellAnimation|Splashscreen|BackPanelUiThread|NotifInflation|RenderThread'
+adb shell dumpsys window windows | grep -E 'NotificationShade|StatusBar|NavigationBar'
 ```
 
-AOSP android-16.0.0_r1 当前可核对的相邻实现是 `scene/reveal/ContainerReveal.kt` 和 `transformation/` 目录下的 anchored、translate、fade、scale 等基础变换。正文不能再把 `PunchHole.kt` 或 `SceneTransitions.kt` 里的 punchHole 符号写成 android-16.0.0_r1 已验证路径；如果目标厂商分支或历史分支存在类似 punch-hole 效果，需要在引用处标出具体分支或 commit。
+这组输出应与 Perfetto trace 一起归档。`aflags list` 只说明 flag 值；窗口列表和线程列表才能证明对应实现已经创建。量产设备还可能隐藏部分调试信息，此时需要借助 userdebug 构建或厂商内部符号补齐证据。
 
-### Flexiglass 对性能分析的影响
+### 组件边界
 
-1. **Trace 观测变化**：`NotificationShadeWindowView#onMeasure` 在 Flexiglass 启用后权重下降。此时更该看 `SceneTransitionLayout` 相关的 Compose recomposition、layout / draw 记录和 animation slice。
+| 画面或工作 | Android 17 的主要实现 | 分析时要确认的归属 |
+| --- | --- | --- |
+| 状态栏窗口 | `StatusBarWindowControllerImpl`、状态栏 View/Compose root、通知与系统图标绑定 | `StatusBar` 或 `StatusBar(displayId=N)` 窗口；主线程或专用 UI 线程 |
+| 通知抽屉与锁屏主窗口 | legacy `NotificationShadeWindowView`，或 `SceneWindowRootView` 承载的混合树 | `NotificationShade` 窗口；主线程或专用 UI 线程 |
+| 通知列表 | `SharedNotificationContainer` 与 `NotificationStackScrollLayout` | Scene 与 legacy 两条路径都可能出现 NSSL |
+| 三按钮导航 | `NavigationBar`、`NavigationBarView` | `NavigationBarN` 窗口及其 ViewRoot |
+| 边缘返回 | `EdgeBackGestureHandler`、`DisplayBackGestureHandlerImpl`、Back Panel | `edge-swipe` input monitor；`BackPanelUiThread` 或主线程 |
+| Overview / Recents | Launcher3 Quickstep 的 `RecentsView` 等组件 | 设备当前 Launcher 进程，包名不必然是 `com.android.launcher3` |
+| 窗口转场与起始窗口 | WM Shell `Transitions`、`StartingWindowController` | Shell main/animation/splashscreen executor 所在线程及宿主进程 |
+| 最终合成与显示 | SurfaceFlinger、HWC、显示驱动 | SurfaceFlinger、FrameTimeline、fence 与显示时序 |
 
-2. **UI thread 与 RenderThread 分工**：`SceneTransitionLayout` 是 Compose 组件。Scene 切换会在 UI thread 上触发状态读取、recomposition、layout / draw 记录；进入 RenderNode / GPU 的属性动画和合成阶段才更多落到 RenderThread / GPU。没有 trace 证据时，不应把整段过渡写成“不会阻塞 UI thread”。
+WM Shell 是组件边界，不能直接当成进程边界。目标产品可以把 Shell 组件装入 SystemUI 宿主，也可以改变宿主方式。Perfetto 中应按进程的 `cmdline` 和线程名定位，避免虚构一个固定的 “WM Shell 进程”。
 
-3. **OEM 定制影响**：Scene 独立性使 OEM 更容易替换或移除单个场景，但同时要理解 SceneGraph 的根节点结构和过渡声明方式才能正确定制。
+## Android 17 的窗口拓扑
 
-4. **Perfetto 追踪重点**：启用 Flexiglass 后，分析 Shade 展开要同时看 `com.android.systemui` UI thread 上的 Compose recomposition、layout / draw slice，RenderThread 上的动画提交，以及 SurfaceFlinger Layers。`NotificationShadeWindowView#onMeasure` 只是入口之一；兼容层、旧 View 容器和 OEM 插件仍可能参与 traversal。
+大纲里关于 `super_notification_shade.xml` 的前半句与源码一致：它的根节点是 `NotificationShadeWindowView`，并通过 `<include>` 引入 `status_bar_expanded`。后半句“NavigationBar 才是稳定独立窗口”不适用于 Android 17。`status_bar_expanded` 是展开面板的布局名，不代表屏幕顶部那条状态栏窗口。
 
-5. **窗口层边界**：Flexiglass 改的是 SystemUI 内部 UI 组织方式，SurfaceFlinger 侧通常仍落在 `NotificationShade` 对应的大窗口上。做窗口数量、Layer 顺序或 fence 分析时，先定位 `NotificationShade` surface，再回到 SystemUI 主线程关联 Compose / Scene 相关 slice。
+Android 17 的三个窗口入口可以直接从 `WindowManager.LayoutParams` 对上：
 
+| 窗口 | 类型 | AOSP 标题 | 源码入口 |
+| --- | --- | --- | --- |
+| 顶部状态栏 | `TYPE_STATUS_BAR` | 默认屏为 `StatusBar`，辅助屏为 `StatusBar(displayId=N)` | `StatusBarWindowControllerImpl.getBarLayoutParamsForRotation()` |
+| 通知抽屉/锁屏主窗口 | `TYPE_NOTIFICATION_SHADE` | `NotificationShade` | `ShadeWindowLayoutParams.create()` |
+| 三按钮导航栏 | `TYPE_NAVIGATION_BAR` | `NavigationBarN` | `NavigationBar.getBarLayoutParams()` |
 
+三者都有各自的 `WindowManager.addView()` 路径。一个窗口也可能在 SurfaceFlinger 中派生多个 Layer，窗口名与 Layer 数量没有一一对应关系。窗口归属应由 `dumpsys window` 确认，合成侧再用 SurfaceFlinger Layers 对齐。
 
-## 先分清谁负责什么
+### Legacy shade 的树
 
-SystemUI 不是“所有系统 UI 的总包”。在 Android 12-17 里，SystemUI 更接近一组常驻窗口和控制器：状态栏、通知抽屉、锁屏相关视图、导航栏，以及围绕这些窗口的动画、输入、通知绑定过程。Overview / Recents 已经在 Launcher3 Quickstep 侧实现，本章分析 App 启动或最近任务切换时，至少要同时观察 `com.android.systemui`、`com.android.launcher3`、目标 App、SurfaceFlinger，有时还要把 WM Shell 单独拎出来看。
+`ShadeViewProviderModule` 在 `SceneContainerFlag.isEnabled == false` 时直接 inflate `super_notification_shade.xml`。这个根树包含：
 
-这个边界直接决定排查顺序。通知抽屉掉帧，优先看 SystemUI。最近任务切换掉帧，Launcher3 Quickstep 和 WM Shell 往往比 SystemUI 更接近问题根源。把所有问题都归到 SystemUI，后面的 Trace 会很难读。
+- 背景、通知区和前景 Scrim；
+- `status_bar_expanded`；
+- `KeyguardRootView`；
+- `SharedNotificationContainer`；
+- bouncer、light reveal 等兼容内容。
 
-### Android 16 桌面模式与 Foldable 多 Display：SystemUI 的双重角色
+`NotificationShadeWindowView` 为 `onMeasure()` 写入了 `NotificationShadeWindowView#onMeasure` slice，并在 `requestLayout()` 写入 instant event。它的类注释也限定了语义：该 View 可以担任主 SystemUI 窗口根，但调用者不能假定它始终是根。
 
-Android 16 引入了原生桌面窗口管理（Desktop Windowing）。在此模式下，SystemUI 不再只负责手机端单一的状态栏和通知——它需要同时渲染外部显示器的任务栏（Taskbar）、多桌面视图以及通用光标（Universal Cursor）。
+### Scene shade 是 Compose 与 View 的混合树
 
-WM Shell 的 desktop mode 组件（当前可核对锚点为 `DesktopTasksController.kt`、`DesktopDisplayEventHandler.kt`、`DesktopRepository.kt`、`DesktopMode.java`）与 SystemUI 频繁交互。连接外部显示器时，SystemUI 进程可能出现 CPU 和显存增长——具体幅度取决于设备、分辨率和同时渲染的桌面节点数量，缺少 Perfetto trace 或设备基线时不写成固定阶跃数据。在做性能基线和 Trace 分析时，需要区分两个场景：
+Scene flag 开启时，`ShadeViewProviderModule` inflate `scene_window_root.xml`。该 XML 以 `SceneWindowRootView` 为根，内部仍 include 完整的 `super_notification_shade.xml`。随后 `SceneWindowRootViewBinder` 完成三件与性能分析直接相关的事：
 
-- **手机单屏模式**：SystemUI 的角色与传统 Android 一致，承担状态栏、通知、导航栏
-- **桌面模式**：SystemUI 额外承担 Taskbar 渲染、桌面切换动画、光标绘制，与 WM Shell 的交互频率大幅上升
+1. 创建承载 `SceneContainer` 的 `ComposeView`。
+2. 将 `legacy_window_root` 设为不可见。
+3. 把包含 NSSL 的 `SharedNotificationContainer` 从旧父节点移出，放到 Scene ComposeView 之后，作为同一窗口中的兄弟 View。
 
-排查 SystemUI 性能问题时，如果设备处于桌面模式，Perfetto 中 SystemUI 进程的 CPU 和内存基线应单独建基，不能直接与单屏模式的数据对比。桌面模式下 CPU 和显存的增长量属于待验证范围——目前没有公开的 Perfetto trace 或设备基线能支撑具体数值，建议在目标设备上单独采集后再写入结论。
+因此，Scene 开启后不能删掉 NSSL 相关观察点。锁屏、Shade、QS 等场景切换进入 Compose，但通知行仍可走 View 体系。一次展开可能同时包含 Compose 的 recomposition/layout/draw、NSSL 的 View 测量与状态计算、RenderThread 录制/提交，以及 SurfaceFlinger 合成。
 
-**Foldable 多 Display 的叠加影响**：桌面模式接入外部显示器时，多个物理 Display 会同时存活。此时 SystemUI 的多 Display 渲染模型与桌面模式的 Taskbar/任务管理逻辑叠加。几个要点影响 Perfetto 的解读方式：
+## SceneContainer：按 Android 17 源码理解
 
-- **NavigationBar 多实例**：`NavigationBarController` 使用 `SparseArray<NavigationBar>` 按 `displayId` 维护独立实例。每增加一个 Display，SystemUI 都要管理该 Display 上的导航栏 View、Surface 和状态对象。外接一块 4K 屏和一整排桌面节点时，导航栏相关的实例数和 traversal 次数会同步增加。
-- **StatusBar 无多实例**：通知侧（StatusBar / Notification Shade）仅存在于主 Display，外接显示器上不会出现第二套通知系统。通知洪峰的压力不会因为多 Display 而翻倍——反过来，主 Display 上任何 SystemUI 阻塞也会影响所有 Display 的用户感知。
-- **`DisplayContent.isSystemDecorationsSupported()` 的版本敏感性**：Android 16 desktop windowing 在 `DisplayContent` 中引入了 force desktop 和 trusted display 分支。版本升级后，系统装饰（NavigationBar / StatusBar 容器）在辅助 Display 上的行为可能与 Android 10-14 的口径不同，不能直接用"仅支持 NavigationBar/Wallpaper"概括。
-- **Wallpaper 可见性已按 Display 分控**：`TaskbarDelegate.updateWallpaperVisibility(visible, displayId)` 是当前可核对的 displayId 感知入口，`CentralSurfacesImpl` 中未命中带 displayId 的 `onWallpaperVisibilityChanged`。排查 wallpaper 相关绘制问题时，以 `TaskbarDelegate` 为入口比搜索泛化的 `onWallpaperVisibilityChanged` 更准确。
-- **双 Display 亮屏场景**：功耗需单独计入两个显示电源轨和合成负载，不能只用单屏基线外推。
+`SceneContainerFlag.isEnabled` 在 `android-17.0.0_r1` 中等于 `Flags.sceneContainer() && isEnabledOnVariant`。旧版文章所写的“一组 secondary flags 同时满足”已经过时。Automotive 等 SystemUI variant 可以通过 `isEnabledOnVariant` 强制关闭；普通产品仍要以目标构建的 aconfig 值为准。
 
-（详细的源码路径和 Perfetto 观测点见末尾 §参考附录：Foldable 多 Display 源码索引。）
+`SceneContainerFrameworkModule` 注册的场景包括 `Gone`、`Communal`、`Dream`、`Occluded`、`Lockscreen`、`QuickSettings` 和 `Shade`，overlay 包括通知 Shade、QS Shade、Quick Actions 与 Bouncer。Dual Shade 生效后，某些大屏配置会省去 Shade/QS scene，改用两类 overlay。这个差异会改变 Compose 节点数量、过渡路径和 trace 名称。
 
-## 窗口拓扑不要先入为主
+### 性能观察点
 
-旧资料常把 StatusBar、NavigationBar、Notification Shade 写成三个彼此独立的 Surface。这种写法放到 Android 12-17 已经不准确。`super_notification_shade.xml` 里，`status_bar_expanded` 就在 `NotificationShadeWindowView` 下面，状态栏展开态和 Shade 本来就在同一个大窗口里；稳定独立的窗口主要是 NavigationBar。
+- `SceneWindowRootViewBinder` 的绑定 trace 名为 `SceneWindowRootViewBinder`，适合确认 Scene 根是否建立，不宜当成每次过渡耗时。
+- `SceneJankMonitor` 将特定 scene transition 映射到 `InteractionJankMonitor` 的 CUJ。
+- `SceneTransitionLatencyMonitor` 记录 scene transition 的延迟边界。
+- `SceneTransitionBlurViewModel.requestWindowBackgroundBlur()` 根据 transition state 和进度请求窗口背景模糊；`WindowBackgroundBlur` log buffer 会记录请求值和支持状态。
+- `status_bar_root_modernization` 与 `status_bar_system_status_icons_in_compose` 是状态栏自身的迁移开关，不能从 `scene_container` 的值推导。
 
-因此，Perfetto 里更可靠的理解框架是两层：
+模糊成本需要从目标设备的 RenderThread、GPU 和 SurfaceFlinger 数据判断。旧文中的 `debug.hwui.disable_blur_visual_feedback` 没有在 Android 17 锚点源码中形成可靠的 SystemUI 诊断契约，本章不再推荐该属性。工程验证可在可控分支中关闭具体 blur flag 或注入零半径实验，同时保留同一设备、同一场景、同一热状态的对照 trace。
 
-- `NotificationShadeWindowView` 负责状态栏展开态、通知抽屉、锁屏相关容器。
-- NavigationBar 作为单独窗口存在，三按钮模式和手势模式共用一套窗口框架，但输入处理过程不同。
+Compose 路径的 PSS 也不能套固定增幅。Scene 数量、always-compose 策略、状态对象、缓存和 OEM 内容都会影响基线。正确做法是按 flag 组合建立冷启动后、稳定待机、展开 Shade、通知洪峰后的多组基线，再检查对象与 native/GPU 内存归属。
 
-读 Layers Track 时，不要先假设一定能看到三个名字固定的 layer。更稳妥的做法是先从 WindowManager / SurfaceFlinger 中找到 `NotificationShade` 和 `NavigationBar` 相关窗口，再回头检查 `com.android.systemui` 主线程上的 `NotificationShadeWindowView#onMeasure`、`NotificationStackScrollLayout#onMeasure` 这些 slice。
+## 通知从入库到显示的 Android 17 路径
 
-## StatusBar 与通知更新，源码入口要按版本分代看
+通知列表性能至少包含“集合变化、行内容绑定、列表状态计算、窗口绘制”四段工作。Android 17 的主要调用关系如下：
 
-### 左侧通知图标：Android 12-14 和 Android 15+ 不是同一套入口
+1. `NotifInflaterImpl.inflateViews()` 或 `rebindViews()` 把 entry 交给 `NotificationRowBinderImpl`。
+2. `NotificationRowBinderImpl` 创建或复用 `ExpandableNotificationRow`，更新图标，并通过 `RowContentBindStage` 请求需要的 contracted、expanded、public、single-line 等内容。
+3. `NotificationRowContentBinderImpl` 创建 `AsyncInflationTask`，在 `@NotifInflation Executor` 上构建通知内容、加载所需图片并等待预加载任务。
+4. `RemoteViews` 新建视图时走 `applyAsync()`，复用现有视图时走 `reapplyAsync()`。
+5. 异步 apply 失败时，`OnViewAppliedListener.onError()` 会在 UI 回调路径尝试同步 `apply()` 或 `reapply()`，用来区分异步框架异常与通知本身不可 inflate。
+6. 所需内容全部完成后，row 更新进入 View 树，引起后续测量、布局、动画和绘制。
 
-这一段最容易被 Android 15+/16 的新路径带偏。`statusbar/notification/icon/ui/` 目录下的 `NotificationIconContainerStatusBarViewModel` 和 `NotificationIconContainerStatusBarViewBinder` 只适合 Android 15+ / 16 当前主线。Android 12-14 读源码时，更稳的入口仍是 `StatusBarNotificationPresenter` 这一代控制链，再沿着状态栏图标更新逻辑继续查。
+Android 17 已没有旧路径中的 `NotificationContentInflater.java`。实现类迁移为 Kotlin 的 `NotificationRowContentBinderImpl.kt`，但 `doInBackground()` 仍保留历史 trace 名 `NotificationContentInflater.AsyncInflationTask#doInBackground`。搜索 trace 时要区分“slice 名兼容”与“源码类仍存在”。
 
-- Android 12-14：先看 `StatusBarNotificationPresenter`，再结合 `StatusBarIconControllerImpl` 和状态栏容器遍历判断通知图标更新是否把主线程拖长。
-- Android 15+ / 16：看 `NotificationIconContainerStatusBarViewModel.icons`、`NotificationIconContainerStatusBarViewBinder.bindWhileAttached()` 和 `StatusBarNotificationIconViewStore`，重点放在图标集合变化后的重绑、重测量、重布局。
-- 两代实现的共同观察点没有变：图标批量增删之后，状态栏容器有没有反复 traversal。
+### 异步绑定没有消除 UI 线程成本
 
-这样分开写，Android 12-14 读者不会去找 15+ 才出现的 ViewModel/Binder，Android 15+ 读者也不会被旧版 presenter/controller 路径拖回去。
+`AsyncInflationTask` 把 Builder 恢复、模板生成、部分图片工作和 RemoteViews inflate 移到 `NotifInflation` 线程。UI 线程仍要处理完成回调、View 挂接、wrapper 更新、`requestLayout()`、动画状态和窗口 traversal。通知洪峰中常见的时序是：
 
-### 右侧系统图标：仍由 `StatusBarIconControllerImpl` 一类控制器管理
+- `NotifInflation` 队列持续工作；
+- 多个异步结果在相近时刻完成；
+- UI 线程集中挂接 row；
+- NSSL 与状态栏图标容器在随后几帧反复更新；
+- RenderThread 或 SurfaceFlinger 在同一时间段承接更大的绘制与合成负载。
 
-右侧信号、电池、时钟这组系统图标仍有 `StatusBarIconControllerImpl` 这类控制器。它们和左侧通知图标不是一回事。把两边混在一起，会把“通知洪峰导致的重绑开销”和“系统状态变化导致的图标刷新”写成同一类问题。
+同步 fallback 也要单独标记。若 trace 或日志显示 `applyAsync()` 失败后频繁回退，耗时位置会从 worker 转移到 UI 回调；此时优化通知更新频率只能缓解表象，还应查清自定义 `RemoteViews`、资源、URI 权限或厂商控件为何导致异步 apply 失败。
 
-工程上更常见的情况是两种压力叠加：左侧在做通知图标增删，右侧还有网络指示器、热点、蓝牙等状态跳动，结果都压到同一个状态栏容器的遍历里。OEM 再叠几层自定义 View，主线程时间就不够用了。
+### NSSL 的测量成本与“屏幕上可见几条”不同
 
-## 通知内容绑定，主路径已经是异步 apply / reapply
+`NotificationStackScrollLayout#onMeasure` 在 Android 17 中遍历全部 child，并明确测量 `GONE` child，因为算法需要这些高度来估算可容纳数量。通知行被视觉隐藏，不等于测量成本归零。以下条件都会改变一帧中的工作量：
 
-把通知内容绑定写成 `NotificationEntryManager + NotificationInflater + 主线程 RemoteViews.apply()`，会把现在的 SystemUI 讲回旧时代。Android 16 当前实现更接近下面这个过程：
+- entry 与 row 总数；
+- 分组展开/折叠和 heads-up 状态；
+- public、contracted、expanded、single-line 等内容变体是否已绑定；
+- OEM 增加的包装层和装饰 View；
+- 配置变化、字体缩放、屏幕形态切换触发的重新测量。
 
-- `NotifInflaterImpl.inflateViews()` 负责把一次内容绑定交给 row binder。
-- `NotificationRowBinderImpl` 把 entry、row 和绑定参数组织起来。
-- `NotificationContentInflater` 创建 `AsyncInflationTask`，并在常规路径上通过 executor 执行。
-- 真正应用 `RemoteViews` 时，优先走 `applyAsync()` / `reapplyAsync()`；只有 `inflateSynchronously` 测试路径或异步失败后的兜底才会回到同步 apply。
+NSSL 在 legacy 路径通过 pre-draw listener 调用 `updateChildren()`；Scene 路径会在绘制前的 `onJustBeforeDraw()` 处理待更新状态。两条路径都保留 `NSSL#updateChildren` slice。这个方法运行 stack algorithm、应用当前状态或启动状态动画，并处理通知重叠。
 
-Android 14+ / 16 当前主线里，`NotificationContentInflater` 通过构造函数接收 `@NotifInflation Executor`，`AsyncInflationTask` 统一走这个 executor，避免每条通知各自开散乱线程。通知洪峰到来时，并发 inflate 会被集中调度；这能避免 I/O、图片预加载和 RemoteViews 解析同时把 CPU 撑满。
+### 普通模板、自定义 RemoteViews 与大图
 
-这段差异决定了 Perfetto 的观察方式。排查通知更新卡顿时，不要只盯主线程是否直接卡在 `RemoteViews.apply()`；更常见的情况是异步绑定已经启动，但主线程仍要承担 View 树重新挂接、测量、布局、动画回调，结果首帧或展开帧超出预算。可观察的 slice 包括 `NotificationContentInflater.AsyncInflationTask#doInBackground`、主线程 `applyAsync` 回调以及后续 traversal。
+| 负载 | 主要风险 | 证据入口 |
+| --- | --- | --- |
+| 标准模板高频更新 | entry 反复 rebind、图标变化、多个完成回调聚集 | `NotifInflation` 队列、row bind 日志、NSSL requestLayout |
+| 自定义 `RemoteViews` | 层级复杂、资源异常、异步 apply fallback、内存校验失败 | `applyAsync/reapplyAsync`、`onError`、`CustomViewMemorySizeExceededException` |
+| 大图通知 | 解码与缩放、像素常驻、异步预加载等待、纹理上传 | worker CPU、bitmap/native 内存、RenderThread 与 GPU |
+| 分组通知 | summary/child 变体、展开状态与动画、更多 row 参与测量 | group 状态变化、NSSL measure/updateChildren |
 
-大图通知也别写成固定数字。`BigPictureStyle` 的图片解码、像素拷贝、上传 GPU 是否会拖慢一帧，取决于图片尺寸、压缩格式、Hardware Bitmap 策略、热路径还是冷路径。这里给定值很容易误导，工程上应该把它写成条件化结论。
+`BigPictureIconManager` 对部分 URI/resource 类型支持延迟加载；bitmap、adaptive bitmap 和 data 类型会跳过这套延迟策略，因为像素仍会常驻内存。`NotificationRowContentBinderImpl` 的 worker 最多等待图片预加载 1000 ms。这个超时发生在异步任务中，不应写成 UI 线程必卡一秒；队列延迟、完成回调聚集和后续纹理上传仍可能影响可见帧。
 
-## 导航输入要拆成两条路径
+App 侧的改进通常更直接：合并高频进度更新，稳定通知 ID 与模板，减少无内容变化的 `notify()`，避免秒级替换大图，控制自定义 RemoteViews 层级，并用通知分组语义减少无意义的结构抖动。SystemUI 侧则要保留异步路径，修复 fallback 原因，限制同帧状态更新量，并用设备数据验证任何缓存策略。
+
+## 状态栏图标：通知图标与系统状态图标分开看
+
+Android 12—14 的资料常从 presenter/controller 追踪左侧通知图标。Android 17 的直接入口是 `statusbar/notification/icon/ui`：
+
+- `NotificationIconContainerStatusBarViewModel.icons` 从 `iconsInteractor.statusBarNotifs` 生成 `NotificationIconsViewData`，并在后台 context 上执行 map，随后 `conflate()` 与 `distinctUntilChanged()`。
+- `NotificationIconContainerStatusBarViewBinder.bindWhileAttached()` 按 `displayId` 选择图标 View store，再绑定到 `NotificationIconContainer`。
+- 默认屏复用通知 pipeline 保存的 status bar icon；辅助屏使用 `ConnectedDisplaysStatusBarNotificationIconViewStore`，按通知 key 缓存为目标 display context 创建的 `StatusBarIconView`。
+
+`NICStatusBar#bindWhileAttached` 只覆盖绑定建立过程。每次通知变化的帧耗时仍要回到 Flow 更新、View 容器变化、ViewRoot traversal 与 FrameTimeline 观察。
+
+右侧网络、电池、时钟和其他系统状态图标仍由 status icon pipeline 与 `StatusBarIconControllerImpl` 等组件管理。Android 17 还有 `status_bar_system_status_icons_in_compose` 开关，目标产品可能把部分区域迁到 Compose。通知洪峰排查时应把两类输入分开：
+
+- 左侧压力来自通知集合和图标 View 增删；
+- 右侧压力来自网络、电话、热点、隐私指示、OEM 扩展等状态变化；
+- 两者可在同一状态栏窗口帧内叠加，但根因和限流位置不同。
+
+## 导航输入的两条路径
 
 ### 三按钮导航
 
-三按钮模式更接近传统 View 输入。`NavigationBarView` 自己实现了 `onInterceptTouchEvent()` 和 `onTouchEvent()`，内部把事件交给 `mTouchHandler`，再分发给 back/home/recents 这些按钮。排查这一路时，关注点是：事件有没有及时进入导航栏窗口，按钮点击后的主线程处理有没有被其他 UI 工作压住。
+`NavigationBarView.onInterceptTouchEvent()` 和 `onTouchEvent()` 把事件交给 `mTouchHandler`，按钮再触发 back、home、recents 等行为。定位三按钮延迟时，时间线应包含：
 
-### 手势导航
+`InputDispatcher` 投递 → `NavigationBarN` 窗口 UI 线程 → 按钮回调 → WM/Launcher 或目标 App 状态变化 → 导航栏反馈帧。
 
-手势返回不是把同样的事件再走一遍 `NavigationBarView`。当前实现里，`EdgeBackGestureHandler` 会创建 `InputMonitorCompat("edge-swipe")`，再通过 `getInputReceiver(..., this::onInputEvent)` 接收边缘手势输入。它还会向 WindowManager 注册 system gesture exclusion listener，用来处理应用的手势排除区域。
+如果 Input 已送达而按钮 pressed/动画迟到，检查该窗口的 UI 线程和 ViewRoot。若按钮反馈及时、窗口切换迟到，则继续看 WM Shell、Launcher 或目标 App，不能把整段延迟记到 `NavigationBarView`。
 
-所以，手势延迟和三按钮延迟的排查入口不同：
+### 边缘返回手势
 
-- 三按钮导航，先看导航栏窗口和 `NavigationBarView` 的触摸处理。
-- 手势返回，先看 `edge-swipe` 这条 input monitor、`EdgeBackGestureHandler`、back animation 相关 slice，再看 SystemUI 主线程是否被别的工作拖慢。
+Android 17 把 per-display 资源拆到 `DisplayBackGestureHandlerImpl`。它为每个 display 创建 `InputMonitorCompat("edge-swipe", displayId)`，用 `UiThreadContext` 的 looper 与 Choreographer 建立 input receiver，并注册 system gesture exclusion listener。`EdgeBackGestureHandler` 保存多个 `DisplayBackGestureHandler`，处理跨 display 的共享状态和回调。
 
-当前证据只够支持“手势路径独立于三按钮按钮点击路径”，不够支持更大的版本结论。
+`edge_back_gesture_handler_thread` 开启时，`SysUIConcurrencyModule` 创建优先级为 display 的 `BackPanelUiThread`；关闭时，同一个 `UiThreadContext` 回到 SystemUI 主线程。由此得到两个诊断分支：
 
-[图：同一份 Perfetto 中并排标出两条输入路径。左侧是三按钮导航，标注 `NavigationBarView` 所在窗口与主线程 slice；右侧是手势返回，标注 `edge-swipe` input monitor、`EdgeBackGestureHandler`、back animation 相关 slice。]
+- trace 有 `BackPanelUiThread`：检查 input receiver、手势判定、Back Panel 绘制与该线程 Choreographer；
+- trace 没有该线程：检查 aconfig 值，并在 SystemUI 主线程寻找同一路径；
+- 手势进入 back animation 后：继续看 WM Shell back transition、目标窗口与 SurfaceFlinger。
 
-## App 启动转场，要把 Launcher3、WM Shell、StartingWindow 放到一张图里
+三按钮路径和边缘返回共享部分窗口管理结果，却不共享输入入口。只搜索 `NavigationBarView` 会漏掉 gesture mode 的 input monitor 和 Back Panel。
 
-SystemUI 和 Launcher3 在启动动画里确实要协作，但中间不能跳过 WM Shell。Android 12-17 的实际流程是：
+## 多显示、折叠屏与桌面窗口模式
 
-1. Launcher3 Quickstep 接收点击或手势，发起启动请求。
-2. WM Shell `Transitions` 接管窗口转场，安排过渡动画。
-3. `StartingWindowController` 决定起始窗口 / SplashScreen 何时出现、何时让位给目标 App 第一帧。
-4. 目标 App 画出首帧。
-5. SurfaceFlinger 合成 Launcher、StartingWindow、目标 App，以及仍然悬在顶部的系统栏。
+Android 17 已具备 per-display status bar 基础设施。`StatusBarWindowControllerImpl` 持有 `mDisplayId`，辅助屏窗口标题带 display id；`MultiDisplayStatusBarWindowControllerStore` 按 display 提供 controller；通知图标 binder 也接受 `displayId`。旧文“StatusBar 无多实例”的判断需要废止。
 
-这个过程里，SystemUI 不该被写成“system_server 通知一下就结束”。它在系统栏层级、通知头部状态、锁屏切换场景里仍会参与画面组织；但转场的调度中枢已经明显偏向 Quickstep + WM Shell。
+这不代表每个 display 都必然创建状态栏。`DisplayContent.isSystemDecorationsSupported()` 会排除 VR 2D display 和不可信 display，再检查 display window settings、`FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS`，以及旧 display-content-mode 管理路径下的强制桌面条件。产品 flag、display 类型、信任属性和策略共同决定结果。
 
-Overview 侧的源码锚点可以先看 `RecentsView.applyLoadPlan()`。它不等于一个稳定的 Trace tag，但足够告诉我们：最近任务切换时，Launcher3 自己也在做任务列表加载和视图更新，不能把所有掉帧都算到 SystemUI 头上。
+其他三个边界也要保持清楚：
 
-[图：Launcher3 Quickstep、WM Shell `Transitions`、`StartingWindowController`、目标 App 首帧、SurfaceFlinger Layers 的联合 Trace。标出 StartingWindow 出现、App 首帧提交、Launcher layer 退出的先后关系。]
+- `NavigationBarControllerImpl` 用 `SparseArray<NavigationBar>` 按 display 管理导航栏，并通过 WMS 查询该 display 是否有 navigation bar/taskbar。连接屏的 Taskbar 可能由 Launcher 侧管理，SystemUI 的 `TaskbarDelegate` 承担状态与回调协调。
+- AOSP Shade 是 display-aware 的单例主窗口，可以在 display 之间移动或在 display 移除时重新挂到默认屏。不能从 per-display StatusBar 推出“每块屏都有一套 NotificationShade”。
+- 桌面任务布局、窗口装饰与转场主要属于 WM Shell desktop mode；桌面任务 View 和光标不能统称为 SystemUI 渲染内容。
 
-## Perfetto 里先看哪些 Track
+多显示性能基线至少分开记录：单屏折叠态、单屏展开态、外屏连接但休眠、双屏点亮、桌面窗口模式、导航栏与 Taskbar 两种形态。分辨率、刷新率、Layer 数、状态栏实例数和通知 Shade 所在 display 都要进入实验记录。CPU、GPU、显存或 PSS 增幅只能来自同设备对照数据。
 
-把“关键 Trace 点”写成一串未经核对的 event 名很危险。更稳妥的写法是“先看哪条 Track，再用哪个源码锚点核对”。下面这张表只保留已经能在当前 AOSP 源码里对上的项。
+## App 启动与 Overview 的责任链
 
-| 场景 | Perfetto 先看哪里 | 源码锚点 | 正常表现 | 异常表现 |
-| --- | --- | --- | --- | --- |
-| Shade 展开 / 收起 | `com.android.systemui` MainThread、RenderThread、SurfaceFlinger Layers | `NotificationShadeWindowView#onMeasure`、`NotificationStackScrollLayout#onMeasure`、`NSSL#updateChildren` | 主线程 slice 跟手指移动同步，Layers 变化连续 | `onMeasure` 或 `NSSL#updateChildren` 长时间占用，SurfaceFlinger 合成出现空洞 |
-| 通知内容绑定 | `com.android.systemui` MainThread + 绑定相关异步任务 | `NotifInflaterImpl`、`NotificationContentInflater.AsyncInflationTask`、`applyAsync()` / `reapplyAsync()` | 异步绑定启动后，主线程只承担有限的挂接和布局工作 | 异步任务堆积，或异步完成后主线程再被批量 requestLayout 压住 |
-| 状态栏通知图标更新 | `com.android.systemui` MainThread、ViewRootImpl traversal | `Android 12-14: StatusBarNotificationPresenter`；`Android 15+: NotificationIconContainerStatusBarViewModel.icons`、`NotificationIconContainerStatusBarViewBinder.bindWhileAttached()` | 版本对应的源码入口清楚，图标增删量小，状态栏遍历时间稳定 | 读错版本入口，或图标批量变更后状态栏容器反复测量、布局 |
-| 三按钮导航点击 | `com.android.systemui` MainThread、Input 轨道 | `NavigationBarView.onInterceptTouchEvent()`、`onTouchEvent()` | 触摸到按钮反馈间隔稳定 | Input 到达后，主线程被别的窗口工作阻塞 |
-| 手势返回 | Input 轨道、`com.android.systemui` MainThread | `EdgeBackGestureHandler`、`InputMonitorCompat("edge-swipe")` | 边缘滑动、back animation、窗口切换时间靠得很紧 | input receiver 已收到事件，但手势判定或动画回调滞后 |
-| Overview / 最近任务 | `com.android.launcher3` MainThread、RenderThread、SurfaceFlinger Layers | `RecentsView.applyLoadPlan()` | Launcher 与 SurfaceFlinger 时间分布平稳 | Launcher 自己的视图更新过重，和系统栏动画一起争 CPU |
+一次从桌面或 Overview 启动 App，至少跨越以下参与者：
 
-## 常见卡顿形态与排查办法
+1. Launcher/Quickstep 接收点击或手势，更新 workspace、任务卡片或 Overview 状态。
+2. system_server 的窗口管理核心创建并推进 transition。
+3. WM Shell `Transitions` 接收 request/ready 回调，选择 transition handler，在 Shell main/animation executor 上推进动画。
+4. `StartingWindowController` 调用 `StartingWindowTypeAlgorithm` 选择 snapshot、solid-color splash、SplashScreen 或无起始窗口，并在 splashscreen executor 上创建/移除起始 Surface。
+5. 目标 App 提交首批 buffer。
+6. SystemUI 更新状态栏、导航栏、锁屏或 Shade 的相关状态。
+7. SurfaceFlinger 合成 Launcher、starting window、目标 App 与系统栏，并交给 HWC/显示链路呈现。
 
-### Notification Shade 展开不顺
+`Transitions.java` 在 Android 17 中保留 `dispatchRequest: <type>`、`playTransition: <type>` 与 `<Handler>#startAnimation animated <type>` 等 WM trace。`StartingWindowController` 同时使用 Shell main executor 和 splashscreen executor，不能把起始窗口工作全部记到 Shell main。Overview 的 `RecentsView.applyLoadPlan()` 会增删、复用并绑定任务卡片，但该方法名本身不是稳定 trace slice；源码锚点与 trace 证据应分开表述。
 
-这类问题先检查 `NotificationShadeWindowView#onMeasure` 和 `NotificationStackScrollLayout#onMeasure`。如果这两段 slice 在展开阶段持续拉长，根因通常在通知数量、分组样式、OEM 附加层级，或者展开动画里混入了别的状态更新。再往下一层看 RenderThread 和 Layers Track，确认是主线程布局过重，还是大窗口变化把合成也拖慢了。
+Launcher 的包名和进程名受产品实现影响。AOSP 锚点是 Launcher3 Quickstep，Pixel 或 OEM 构建可能使用不同包名。用默认 HOME activity、进程 `cmdline` 和窗口 owner 找到当前宿主，比搜索固定的 `com.android.launcher3` 更可靠。
 
-### 通知洪峰把状态栏和抽屉一起拖慢
+## 把 SystemUI 放回标准渲染管线
 
-用户经常只感知到“通知一来，整个上半屏都变钝了”。排查时要把图标更新和内容绑定分开。图标更新偏状态栏容器遍历，内容绑定偏 `RemoteViews` 异步应用后的挂接与重排。两者如果在同一时间片叠到一起，体感会非常像“SystemUI 主线程突然卡死了一下”。
+SystemUI 的特殊之处在窗口数量、状态源和线程开关，HWUI 主路径仍遵循 Android 17 的标准时序：
 
-### Launcher3 与 SystemUI 同时忙
+`VSync` → Choreographer 的 `INPUT`、`ANIMATION`、`INSETS_ANIMATION`、`TRAVERSAL`、`COMMIT` 回调 → View/Compose 状态处理与 traversal → RenderThread/HWUI → BLAST buffer queue → SurfaceFlinger → HWC/present。
 
-App 启动、Overview 切换、返回桌面都可能碰到这个形态。Launcher3 正在做任务视图更新，SystemUI 还在处理通知、状态栏或导航栏动画，WM Shell 又在安排转场，结果多个进程一起抢 CPU。此时单看某一个进程通常得不出结论，要把 Launcher3、SystemUI、目标 App、SurfaceFlinger 摆在同一段时间轴上读。
+这条路径带来几条诊断约束：
 
-### 输入已经到了，反馈还是慢
+- `doFrame` 很长只能说明 UI 线程这一帧工作多，不能直接等同于 layout 慢。
+- `Traversal` 包含 measure/layout、绘制记录和向 RenderThread 同步等工作。其尾部的 `syncAndDrawFrame()` 可能等待 RenderThread 状态同步，长 traversal 也可能由下游反压造成。
+- Compose 的 recomposition、layout 和 draw 记录仍在对应窗口 UI 线程；GPU 属性与 display 合成要到 RenderThread、SurfaceFlinger 和 HWC 继续确认。
+- `requestLayout` instant event 只说明请求发生，不能代表当场完成一次 layout。
+- App `SurfaceFrame` 使用 `surface_frame_token`，Display `DisplayFrame` 使用 `display_frame_token`。二者是不同命名空间，不能拿相同数值直接做关联。
 
-这类问题常见于导航手势。Input 轨道已经把事件送到 SystemUI，`EdgeBackGestureHandler` 也收到了输入，但主线程后面跟着一串通知更新、布局遍历或动画回调，反馈还是晚了。三按钮导航也会遇到类似情况，不过入口更接近 `NavigationBarView` 自己的触摸处理。
+### Perfetto 中的观察顺序
 
-## 优化动作要和观察信号一一对应
+| 步骤 | 要回答的问题 | 主要轨道或证据 |
+| --- | --- | --- |
+| 确认呈现异常 | 哪个 display frame missed，deadline 还是 present 异常 | FrameTimeline `DisplayFrame`、VSYNC、HWC |
+| 找到受影响 Surface | 是 NotificationShade、StatusBar、NavigationBar、Launcher 还是目标 App | `SurfaceFrame`、SurfaceFlinger Layers、窗口 owner |
+| 确认生产者线程 | 哪个进程和 ViewRoot 产生该 buffer | 目标进程 UI 线程、RenderThread、BLAST |
+| 细分上游工作 | 输入、动画、绑定、measure/layout、绘制记录中哪段变长 | slice、sched、binder、CPU frequency |
+| 检查下游反压 | UI 是否等 RenderThread，RenderThread 是否等 GPU/buffer，SF 是否错过合成 | `syncAndDrawFrame`、dequeue/queue、fence、SF/HWC |
+| 回到源码 | trace 名对应哪个 Android 17 方法，目标 flag 是否选择该实现 | `android-17.0.0_r1` 源码、aflags、产品差异 |
 
-### 看到 `NotificationShadeWindowView#onMeasure` / `NotificationStackScrollLayout#onMeasure` 过长
+下面的 Trace Processor SQL 用于列出 SystemUI 中三个已核对的通知列表 slice：
 
-优先收缩通知抽屉里的层级和工作量。减少一次展开需要同时参与布局的通知数量，检查分组样式、锁屏插件、OEM 装饰 View。优化目标：减少单帧里要测量和摆放的节点数。
-
-### 看到通知内容绑定频繁重做
-
-先查 App 侧通知更新策略。高频 `notify()`、频繁更换自定义 `RemoteViews`、大图通知反复刷新，都会把 SystemUI 推进无效重绑。App 侧能做的动作包括降低更新频率、复用通知模板、避免把大图刷新做成秒级任务。SystemUI 侧则要确认异步 apply / reapply 没被同步兜底和失败回退拖回主线程。
-
-### 看到状态栏图标容器反复遍历
-
-把左侧通知图标和右侧系统图标分开限流。通知图标的变化频率高，优先从通知筛选和容器重绑下手；系统图标的变化频率通常低，重点在 OEM 定制是否额外引入了网速指示、运营商文本、动态装饰图标之类的附加负担。
-
-### 看到 Launcher3、WM Shell、SystemUI 在同一时间片一起抬头
-
-这里别急着在某一边做局部微调。先确定谁占了最长时间，再决定是减 Launcher3 的视图工作、减 SystemUI 的通知/系统栏压力，还是优化转场动画本身。启动与 Overview 场景里，错把协作问题当成单进程问题，往往会反复返工。
-
-### 看到手势事件到了但回馈慢
-
-把输入路径和 UI 路径拆开。Input monitor 已经收到了事件，问题多半不在“手势没识别到”，而在识别后的主线程处理、back animation 回调、窗口转场调度。这个时候继续盯 `NavigationBarView` 反而会浪费时间。
-
-### 模糊与弹簧动画特效过载
-
-如果目标构建在 Flexiglass / SceneContainer 路径上启用了实时模糊、弹簧动画等视觉效果，120Hz 下的大面积模糊可能把 RenderThread 的 `DrawFrame` 拉长；折叠屏展开态因绘制面积更大，需要用目标设备 trace 验证，不能直接写成默认瓶颈。
-
-排查方法：
-
-```bash
-# 临时禁用模糊视觉反馈，验证是否是模糊导致的瓶颈
-adb shell setprop debug.hwui.disable_blur_visual_feedback 1
+```sql
+SELECT
+  p.name AS process_name,
+  t.name AS thread_name,
+  s.ts,
+  s.dur,
+  s.name
+FROM slice AS s
+JOIN thread_track AS tt ON s.track_id = tt.id
+JOIN thread AS t USING (utid)
+JOIN process AS p USING (upid)
+WHERE p.name GLOB '*systemui*'
+  AND s.name IN (
+    'NotificationShadeWindowView#onMeasure',
+    'NotificationStackScrollLayout#onMeasure',
+    'NSSL#updateChildren'
+  )
+ORDER BY s.ts;
 ```
 
-如果在禁用模糊后掉帧消失或明显减少，实时模糊就是候选瓶颈。优化方向包括：缩小模糊区域、降低模糊半径、用预渲染的静态模糊图替代实时计算。
+查询结果只给出 slice 的线程耗时。还要把同一时间窗中的 `SurfaceFrame`、`DisplayFrame`、RenderThread、SurfaceFlinger 与调度状态放在一起，才能判断这段 CPU 工作是否造成用户可见的 missed frame。
 
-### Compose 化后的内存基线偏移
+## 四类常见现场
 
-启用 Compose / Flexiglass 路径后，SystemUI 的内存基线可能相对传统 View 路径上移。做内存分析时需要注意：这不一定是泄露，也可能来自 SlotTable、Recomposition 记录、Compose Node 树和 SceneContainer 状态管理。当前章节没有公开 trace / PSS 基线支撑固定百分比，不能写成固定增幅。
+### Shade 展开掉帧
 
-排查 SystemUI 内存问题时，先确认设备版本和 Flexiglass 是否启用，再建立对应版本的基线。直接用 Android 14 及以下的 SystemUI PSS 数据作为对比基线，会把架构差异误判为泄露。
+先在 FrameTimeline 选中 missed display frame，再定位 `NotificationShade` SurfaceFrame。向上检查当前窗口 UI 线程：
+
+- legacy 路径关注 `NotificationShadeWindowView#onMeasure`、NSSL measure、`NSSL#updateChildren`；
+- Scene 路径还要加入 Compose recomposition/layout/draw、scene transition/CUJ、blur 请求；
+- 两条路径都要检查 NSSL，因为 Android 17 Scene 仍保留 View 通知容器；
+- UI 线程没有超预算时，继续看 RenderThread、buffer queue、SurfaceFlinger 和 GPU。
+
+若 NSSL measure 随通知总数增长，优化目标是降低参与测量的 row/变体和层级。若 `NSSL#updateChildren` 变长，检查分组、heads-up、动画状态与同帧更新次数。若 UI 与 RenderThread 都平稳，display frame 仍 miss，则把注意力转到 SF/HWC、其他高层 Surface 或显示模式切换。
+
+### 通知洪峰
+
+把时间线拆成三组信号：`NotifInflation` worker、SystemUI 窗口 UI 线程、状态栏/NotificationShade 的 FrameTimeline。常见根因包括 worker 排队、图片预加载、异步 apply fallback、完成回调聚集、row 批量挂接、图标批量变更和 NSSL 连续重算。
+
+“主线程没有 `RemoteViews.apply()`”不能排除通知绑定。异步主路径本来就在 worker；可见卡顿往往发生在完成后的 View 树更新。反过来，worker 队列变长但没有影响可见帧，也不应直接判为 jank 根因。
+
+### 返回手势反馈迟缓
+
+以 input event 到达 `edge-swipe` receiver 为起点，以 Back Panel 首帧或目标窗口 transition 为终点。若 `BackPanelUiThread` 存在，主线程上的通知工作不一定直接阻塞箭头绘制；两条线程仍会通过共享状态、WM 调用和合成资源相互影响。若 input receiver 很快、Back Panel 也按时出帧，窗口切换阶段才变慢，就转查 WM Shell 和目标 App。
+
+### 启动动画不连贯
+
+同屏摆放 Launcher、Shell、starting window、目标 App、SystemUI 和 SurfaceFlinger。需要区分：
+
+- Launcher 任务卡或 workspace 自身掉帧；
+- Shell handler 选择或动画执行延迟；
+- starting window 创建慢或移除时机不合适；
+- 目标 App 首 buffer 晚；
+- StatusBar/NavigationBar 同期更新超预算；
+- SurfaceFlinger/HWC 合成或 present 延迟。
+
+单看 SystemUI CPU 峰值无法决定责任。只有当受影响系统栏 SurfaceFrame 与其 UI/RenderThread 工作在时间上对齐，才能把该帧归到 SystemUI。
+
+## OEM 差异的处理方式
+
+厂商经常改动状态栏层级、QS、锁屏、通知模板、插件、模糊、动画和线程开关。AOSP 方法可以提供稳定的定位坐标，具体类名与 trace slice 仍可能变化。审查厂商实现时应保留三层证据：
+
+- AOSP Android 17 的基准源码与 flag；
+- 产品分支相对 AOSP 的 diff；
+- 目标设备的窗口、线程、Layer、Perfetto 和日志。
+
+文档结论也应带上适用条件。例如“Scene path 的 NSSL 仍参与通知行布局”由 AOSP Android 17 直接支持；“某机型 120 Hz 展开时 blur 是瓶颈”需要该机型的对照 trace；“连接显示器后会创建第二个 StatusBar”还需要 display policy 与运行时窗口列表。
+
+## 实战检查清单
+
+采集前：
+
+- 记录 build fingerprint、刷新率、分辨率、导航模式、折叠状态和外接屏状态。
+- 保存相关 aconfig 值。
+- 保存 `dumpsys window` 中三个系统栏窗口及 display id。
+- 保存 SystemUI、Launcher、Shell 相关线程和进程归属。
+- 固定通知集合、分组、图片和更新频率，控制温度与电源状态。
+
+读 trace 时：
+
+- 从 missed `DisplayFrame` 开始，找到对应 Surface 和 owner。
+- 区分 MainThread、专用窗口 UI 线程、`NotifInflation`、RenderThread、Shell executor。
+- 将 `requestLayout` 当成触发信号，将 measure/layout/draw 与 `syncAndDrawFrame` 分开。
+- 对照 legacy/Scene、View/Compose、三按钮/手势、单屏/多屏分支。
+- 检查 CPU 调度、频率、binder、GPU、buffer queue、SF/HWC，避免只凭一条 slice 定责。
+
+形成结论时：
+
+- 写明 Android 17 tag、产品分支、flag 和 display 条件。
+- 给出 FrameTimeline 与线程 slice 的时间关系。
+- 标明直接源码事实、trace 观察和工程推断。
+- 优化后复测同一场景，并报告分位数、missed frame 类型和热状态。
 
 ## 与其他章节的关系
 
-- **§2.5 MainThread 与 RenderThread 协作**：SystemUI 的主线程与 RenderThread 分工和普通 App 一样，但窗口更多，动画协作也更复杂。
-- **§7.1 卡顿的定义与分类**：本节的掉帧形态仍然可以落回主线程、RenderThread、SurfaceFlinger 三类基本框架。
-- **§7.4 典型卡顿场景**：通知栏展开、启动转场、导航手势在那一节是现象层，本节补的是 SystemUI / Launcher / WM Shell 的责任边界。
-- **§13.3 Perfetto View 解读**：本节的方法默认读者已经能熟练切进程、切线程、切 Layers Track。
+- **§2.5 MainThread 与 RenderThread 协作**：本章沿用标准 HWUI、BLAST 与 SurfaceFlinger 分工，并补充 SystemUI 的专用 UI 线程。
+- **§7.1 卡顿的定义与分类**：SystemUI 仍需从 FrameTimeline 的用户可见帧开始定责。
+- **§7.4 典型卡顿场景**：Shade、导航、启动和 Overview 的现象，可用本章的窗口与组件边界进一步拆解。
+- **§13.3 Perfetto View 解读**：线程、FrameTimeline、Layer 和 SQL 操作可参考该章。
 
-## 参考资料
+## Android 17 源码与官方资料
 
-- AOSP：`packages/SystemUI/res/layout/super_notification_shade.xml`
-- AOSP：`packages/SystemUI/src/com/android/systemui/shade/NotificationShadeWindowView.java`
-- AOSP：`packages/SystemUI/src/com/android/systemui/statusbar/notification/stack/NotificationStackScrollLayout.java`
-- AOSP：`packages/SystemUI/src/com/android/systemui/statusbar/notification/collection/NotifInflaterImpl.java`
-- AOSP：`packages/SystemUI/src/com/android/systemui/statusbar/notification/row/NotificationContentInflater.java`
-- AOSP：`packages/SystemUI/src/com/android/systemui/statusbar/phone/StatusBarNotificationPresenter.java`
-- AOSP：`packages/SystemUI/src/com/android/systemui/navigationbar/views/NavigationBarView.java`
-- AOSP：`packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java`
-- AOSP：`libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingWindowController.java`
-- AOSP：`libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java`
-- AOSP：`packages/apps/Launcher3/quickstep/src/com/android/quickstep/views/RecentsView.java`
-- Android Developers：Notification 设计与性能相关文档 `https://developer.android.com/develop/ui/views/notifications`
-- Android Developers：Splash Screen API `https://developer.android.com/guide/topics/ui/splash-screen`
-
-## 参考附录：Foldable 多 Display 源码索引
-
-> 本节保留详细的源码路径、方法签名、版本演进表和 Perfetto 观测点，供实战中使用 Perfetto 或阅读 AOSP 源码时逐项核对。核心结论已在上文 §Android 16 桌面模式与 Foldable 多 Display 段中交代，此处不再复述。
-
-### 架构概述
-
-Foldable 设备上的 SystemUI 多 Display 渲染模型建立在 `DisplayId` 分片管理 + `NavigationBarController` 双映射架构之上。StatusBar（通知侧）在 Foldable 场景下无多实例实现，仅 NavigationBar 和 Wallpaper 可在 Secondary Display 上显示。
-
-### 核心源码架构
-
-#### 1. NavigationBarController - 多 Display 导航栏实例管理
-
-- **源码位置**：`packages/SystemUI/src/com/android/systemui/navigationbar/NavigationBarController.java`
-- **关键方法**：`getNavigationBarView(int displayId)`
-- **数据结构**：`NavigationBarControllerImpl` 使用 `SparseArray<NavigationBar> mNavigationBars`
-
-`NavigationBarControllerImpl` 维护一个 `SparseArray<NavigationBar>`，键为 `displayId`，值为该 Display 上的 `NavigationBar` 实例。`getNavigationBarView(displayId)` 是多 Display 路由的核心方法，可实现不同物理 Display 的独立导航栏管理。
-
-调用链：
-```
-WindowManagerService → DisplayContent → StatusBar/NavigationBar → 
-NavigationBarController.getNavigationBarView(displayId) → NavigationBarView
-```
-
-#### 2. NavigationBarControllerImpl - Foldable 形态标志
-
-- **源码位置**：`packages/SystemUI/src/com/android/systemui/navigationbar/NavigationBarControllerImpl.java`
-- **关键字段**：
-  - `mIsLargeScreen: Boolean` — 包含 Foldable 展开态的大屏判定
-  - `mIsPhone: Boolean` — 区分标准手机与其他形态
-- **数据结构**：`SparseArray<NavigationBar> mNavigationBars`
-
-`NavigationBarControllerImpl` 在构造时根据 Display 属性初始化这两个标志，共同决定导航栏的布局策略。
-
-#### 3. DisplayContent - WindowManager 中的 Display 层级
-
-- **源码位置**：`services/core/java/com/android/server/wm/DisplayContent.java`
-- **关键方法**：`isSystemDecorationsSupported()`
-- **配置读取**：`DisplayWindowSettings.shouldShowSystemDecorsLocked(DisplayContent)`
-
-`DisplayContent` 是代表 Display 的核心类，`isSystemDecorationsSupported()` 判断系统装饰支持。Android 16 desktop windowing 引入了 force desktop 和 trusted display 分支，仅在满足条件时才返回 true；单一口径"Android 10+ 仅支持 NavigationBar/Wallpaper"不覆盖 Android 12-16 的 desktop mode 分支。
-
-#### 4. TaskbarDelegate - Foldable 设备的 Wallpaper 可见性
-
-- **源码位置**：`packages/SystemUI/src/com/android/systemui/navigationbar/TaskbarDelegate.java`
-- **关键方法**：`updateWallpaperVisibility(boolean visible, int displayId)`
-
-`TaskbarDelegate` 在 Foldable / 多 Display 场景下根据 displayId 更新 wallpaper 的可见性状态。`CentralSurfacesImpl` 中未命中带 `displayId` 的 `onWallpaperVisibilityChanged`；当前可核对的 displayId 感知 wallpaper visibility 入口是 `TaskbarDelegate`。
-
-#### 5. 多 Display 限制的版本演进
-
-- **Android 10-11**：Secondary Display 不支持 StatusBar（通知侧），仅支持 NavigationBar 和 Wallpaper
-- **Android 12-14**：NavigationBar 和 Wallpaper 在 Secondary Display 上的支持延续，但仍无通知侧多实例
-- **Android 15-16**：Desktop Windowing (Android 16) 引入了 `isSystemDecorationsSupported()` 的 force desktop / trusted display 分支，在多 Display 场景下的系统装饰策略比 Android 10-11 的口径更复杂，不能只按"仅 NavigationBar/Wallpaper"概括
-
-#### 6. Android 15+ 增强特性
-
-- **Edge-to-Edge**：StatusBar 默认透明，应用默认在系统栏下方绘制
-- **Taskbar**：Pixel Fold 首发的功能合入 AOSP，支持 Foldable 展开态下固定/取消固定任务栏
-- **FoldingFeature**：通过 Jetpack WindowManager 向应用层发布折叠状态信息
-
-### 性能影响与观测点
-
-1. **多 NavigationBarView / Taskbar 实例内存占用**：每增加一个 Display，都会增加对应 View、Surface 和状态管理对象，实际幅度取决于分辨率、导航模式和 OEM 定制，需要用 `dumpsys meminfo` 或 Perfetto 建基线
-2. **Display 切换时 View 重建**：Foldable 展开/折叠切换时，触发 `onMeasure`/`onLayout`
-3. **双 Display 同时亮屏**：功耗需要单独计入两个显示电源轨和合成负载，不能只按单屏基线外推
-
-### Perfetto 观测点
-
-- `WindowInsets` 变化信号
-- `performTraversals`（多 Display 各自触发）
-- PowerManager 的 `setDisplayPowerState` 调用链
-- `NavigationBarView` 的实例创建与销毁
-
+- AOSP [`systemui.aconfig`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/aconfig/systemui.aconfig)
+- AOSP [`super_notification_shade.xml`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/res/layout/super_notification_shade.xml)
+- AOSP [`scene_window_root.xml`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/res/layout/scene_window_root.xml)
+- AOSP [`ShadeViewProviderModule.kt`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/shade/ShadeViewProviderModule.kt)
+- AOSP [`ShadeWindowLayoutParams.kt`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/shade/ShadeWindowLayoutParams.kt)
+- AOSP [`NotificationShadeWindowView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/shade/NotificationShadeWindowView.java)
+- AOSP [`SceneContainerFlag.kt`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/scene/shared/flag/SceneContainerFlag.kt)
+- AOSP [`SceneContainerFrameworkModule.kt`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/scene/SceneContainerFrameworkModule.kt)
+- AOSP [`SceneWindowRootViewBinder.kt`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/scene/ui/view/SceneWindowRootViewBinder.kt)
+- AOSP [`NotificationStackScrollLayout.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/statusbar/notification/stack/NotificationStackScrollLayout.java)
+- AOSP [`NotificationRowContentBinderImpl.kt`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/statusbar/notification/row/NotificationRowContentBinderImpl.kt)
+- AOSP [`NotificationIconContainerStatusBarViewBinder.kt`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/statusbar/notification/icon/ui/viewbinder/NotificationIconContainerStatusBarViewBinder.kt)
+- AOSP [`StatusBarWindowControllerImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/statusbar/window/StatusBarWindowControllerImpl.java)
+- AOSP [`NavigationBarControllerImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/navigationbar/NavigationBarControllerImpl.java)
+- AOSP [`DisplayBackGestureHandler.kt`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/DisplayBackGestureHandler.kt)
+- AOSP [`DisplayContent.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/DisplayContent.java)
+- AOSP [`Transitions.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java)
+- AOSP [`StartingWindowController.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingWindowController.java)
+- AOSP Launcher3 [`RecentsView.java`](https://android.googlesource.com/platform/packages/apps/Launcher3/+/android-17.0.0_r1/quickstep/src/com/android/quickstep/views/RecentsView.java)
+- Android Open Source Project：[读取和修改 aconfig flag](https://source.android.com/docs/setup/build/feature-flagging/flip-a-flag)
+- Android Developers：[通知概览](https://developer.android.com/develop/ui/views/notifications)
+- Android Developers：[SplashScreen API](https://developer.android.com/develop/ui/views/launch/splash-screen)
