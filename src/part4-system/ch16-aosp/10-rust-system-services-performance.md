@@ -28,320 +28,414 @@ sources:
     path: "Android Developers Blog — Rust in Android系列"
 ---
 
-# 16.10 Rust 化系统服务性能边界与 FFI 开销分析
+# 16.10 Android 17 平台 Rust 性能边界：Binder、CXX 与 Soong
 
-## 要点
+## 本章结论
 
-### 🔹 Android Rust 化路线图与当前进展
+Rust 进入 Android 平台的主要目标是减少新 native 代码中的内存安全缺陷。语言迁移本身没有固定的性能方向：同进程 C ABI 调用可能只是一条普通函数调用，Binder 服务则由 Parcel、内核事务、线程调度和业务 I/O 主导；字符串复制、所有权转换、锁竞争、分配器与代码体积又会把结果推向不同方向。
 
-Google 自 Android 12（API 31）起正式将 Rust 引入 AOSP 构建系统，作为新系统代码的首选语言。这一决策的核心驱动力是**内存安全**：Android 蜱虫报告（Android Security Year in Review）历年数据显示，约 70% 的高严重性安全漏洞属于内存安全问题（use-after-free、buffer overflow、out-of-bounds read 等），而 Rust 的所有权系统和借用检查器在编译期消除了这些漏洞类别。
+AOSP `android-17.0.0_r1` 给出的工程边界很清楚：
 
-到 Android 17（API 37, `android-17.0.0_r1`），AOSP 中已形成多层次的 Rust 代码生态：
+- Keystore2 与 VirtualizationService 是 Rust Binder 服务，直接使用 Rust AIDL backend 和 `libbinder_rs`，没有固定的 C++ AIDL 中转层。
+- DnsResolver 仍是 C++ 与 Rust 混合模块，Rust 以 `libresolvrs_ffi` 静态 FFI 库参与 DoH/HTTP3、DNS proxy 等部分，不能把整个 resolver 标成 Rust 服务。
+- UWB 包含 Rust UCI core、packet 与 HAL adapter；Bluetooth 在 `system/rust` 下提供 `libbluetooth_rs`，并通过 CXX bridge 接入现有 C++ 代码。它们都体现渐进式替换。
+- 设备端 Rust 全局启用 `panic=abort`、整数溢出检查、强栈保护与 unwind table；ThinLTO 默认开启。这些配置比通用 Rust 项目的经验数字更适合解释 Android 17。
+- Rust 默认分配走 libc `malloc/free` 时，会进入设备配置的 native allocator。常规 Android 设备使用 Scudo，低内存产品仍可能采用其他实现。Rust 不会免除分配器的安全成本。
 
-- **系统服务层**：Keystore 2.0、DNS Resolver、UWB、Virtualization Framework 等核心服务以 Rust 实现主体逻辑
-- **网络栈层**：Bluetooth Gabeldorsche 栈的部分组件、HTTP engine（packages/modules/Connectivity 中新增的 Rust HTTP 客户端）
-- **安全子系统**：bpfloader 的部分重写、newfs_msdos 的 Rust 替代
-- **框架胶水层**：Android 16+ 新增的 Sysprop API 自动生成 Rust 接口（与 Java/C++ 接口并列）
+文中不提供 “FFI 固定几十纳秒”“Rust 比 C++ 快或慢 5%”“二进制必然大 20%” 一类数字。这些值取决于 CPU、工具链、优化级别、参数形态、调用频率、进程边界和负载，脱离可复现实验没有工程意义。
 
-[已验证: 官方文档, source.android.com/docs/security/features/rust-in-android — Rust in Android 政策确认新代码优先使用 Rust]
+## 1. Android 平台怎样采用 Rust
 
-Rust 化的性能维度需要关注三个层面：
+### 1.1 版本目标
 
-1. **FFI 开销**：Rust 与 C/C++/Java 之间的跨语言调用边界
-2. **运行时特征**：分配器、panic 机制、代码体积对 icache 的影响
-3. **构建链路**：Soong 对 Rust 的编译优化（LTO、dylib）成熟度
+Android 12 开始在 AOSP 平台构建中正式支持 Rust，并同时引入 Rust AIDL backend。Google 在 2021 年发布 Rust 支持时提到，内存不安全问题长期约占 Android 高严重性安全漏洞的 70%；这是当时漏洞结构的历史数据，不能直接当作 Android 17 的现状统计。
 
-### 🔹 已完成 Rust 重写的系统服务清单
+迁移策略侧重新增 native 代码与适合独立替换的组件。大规模逐行重写成熟 C/C++ 模块会引入功能回归、兼容性和验证成本，AOSP 因而长期保留混合语言结构。FFI、Binder 与生成代码是这种演进方式的组成部分。
 
-基于 `android-17.0.0_r1` 源码标签的统计：
+Rust 的安全保证也包含运行时工作。所有权、生命周期与大部分借用规则在编译期检查；数组边界、整数溢出以及某些状态约束可能在运行期检查。Android 17 Soong 对设备端 Rust 显式开启 `-C overflow-checks=on`，所以“安全检查全部在编译期完成”不符合 r1 构建配置。
 
-| 服务 | AOSP 路径 | 语言 | 引入版本 | FFI 边界 |
-|------|-----------|------|----------|----------|
-| Keystore 2.0 | `system/security/keystore2` | Rust 主体 + C/C++ HAL | Android 12 | JNI（Java↔C↔Rust）、HIDL/AIDL（C++↔Rust） |
-| DNS Resolver | `packages/modules/DnsResolver` | Rust 主体 | Android 12 | C ABI（netd↔Rust） |
-| UWB | `system/uwb` | Rust 主体 | Android 13 | JNI + AIDL |
-| Virtualization Framework | `packages/modules/Virtualization` | Rust 主体 | Android 13 | AIDL + C ABI |
-| Bluetooth Gabeldorsche | `system/bt/gd/rust` | Rust 模块 | Android 13 | C ABI + JNI |
-| bpfloader (部分) | `frameworks/libs/net/netd/bpfloader` | C++ 主体 + Rust 工具 | Android 14 | C ABI |
-| Rust HTTP engine | `packages/modules/Connectivity` | Rust | Android 15 | Java↔Rust (JNI) |
+### 1.2 r1 中可核对的代表组件
 
-[已验证: AOSP android-17.0.0_r1 — 上述路径均存在于源码树中]
+| 组件 | r1 形态 | 主要跨语言或跨进程边界 |
+|---|---|---|
+| Keystore2 | `system/security/keystore2` 下的 `rust_binary` | Java/Native 客户端经 Binder 到 Rust AIDL 服务；Rust 再经 Binder 调 KeyMint 等 HAL |
+| VirtualizationService | `packages/modules/Virtualization/android/virtualizationservice` 下的 `rust_binary` | Java/native 管理端经 Binder 到 Rust AIDL 服务，服务再管理 crosvm、VM 与内核接口 |
+| DnsResolver | C++ resolver + `rust_ffi_static` 的 `libresolvrs_ffi` | CXX bridge 连接 C++ resolver 与 Rust DoH/HTTP3、DNS proxy 代码 |
+| UWB | `packages/modules/Uwb/libuwb-uci` 中的 Rust packet、core 与 HAL adapter | Rust AIDL、Binder、JNI 与厂商 UCI HAL |
+| Bluetooth | `packages/modules/Bluetooth/system/rust` 中的 `rust_ffi_static` | CXX bridge 连接 Rust LE Audio/协议模块与既有 C++ stack |
 
-**Keystore 2.0** 是最典型的 Rust 系统服务案例。其架构为：Java Framework API → `android.security.keystore` JNI → `libkeystore-aidl.so`（C++ AIDL 桥）→ `keystore2` Rust 二进制（通过 `binder_rpc` 与 AIDL 交互）。这种多层桥接使得 Keystore 的调用路径比纯 C++ 实现多出 2 个 FFI 边界。
+这张表描述源码形态，不代表整项功能已经由 Rust 独占。比如 DnsResolver 根目录仍有 `DnsResolverService.cpp`、`ResolverController.cpp`、`res_send.cpp` 等大量 C++；Bluetooth 的 Rust 库也作为现有 stack 的静态 FFI 组件构建。
 
-**DNS Resolver**（`packages/modules/DnsResolver`）使用 Rust 实现了 DNS 解析、缓存、DNS-over-TLS/HTTPS 等核心逻辑，通过 C ABI 与 `netd` 守护进程交互。这是 AOSP 中 Rust 代码量最大的单一服务模块之一。
+现稿曾列出 `system/uwb`、`system/bt/gd/rust`、Rust 主体的 DnsResolver、Rust HTTP engine 与 Rust bpfloader。r1 的 UWB 仓库位于 `packages/modules/Uwb`，Bluetooth Rust 代码位于 `packages/modules/Bluetooth/system/rust`；其余描述无法由所列路径支撑，本文不再把它们计入“已完成重写”。
 
-### 🔹 Rust ↔ C/C++ FFI 性能开销分析
+### 1.3 Keystore2 没有额外的 C++ AIDL 跳板
 
-Rust 与 C/C++ 之间的 FFI 调用在 ABI 层面是**零成本**的——`extern "C"` 函数直接编译为标准 C ABI 调用，无需运行时桥接。但实际性能开销来自以下几个维度：
-
-**1. 编译器优化屏障**
-
-跨 FFI 边界时，编译器无法进行跨模块内联和常量传播。即使两个模块在同一进程中，Rust 编译器（rustc）和 Clang 各自独立编译，无法跨越语言边界做 LTO。
-
-- **影响**：FFI 边界两侧的函数调用不会被内联，热点路径上的频繁 FFI 调用可能丢失 5-15% 的优化空间
-- **缓解**：ThinLTO 可以在 Rust 内部模块间做有限跨模块优化，但不会穿透 `extern "C"` 边界
-- **建议**：将 FFI 调用粒度设计为"批量操作"而非"逐次调用"，减少边界穿越次数
-
-**2. 数据布局转换（Marshalling）**
-
-Rust 的 `String`/`&str` 与 C 的 `const char*` 之间需要通过 `CString`/`CStr` 转换，涉及堆分配和拷贝：
+Keystore2 的 `Android.bp` 依赖 `libbinder_rs`，`KeystoreService` 在 Rust 中实现 `IKeystoreService`，进程启动后直接注册 native Binder 对象。下面两行展示服务创建和注册位置：
 
 ```rust
-// 典型 FFI 数据转换开销
-let c_string = CString::new(rust_string.as_bytes()).unwrap();
-// CString 内部会 clone 数据 → malloc + memcpy
+let ks_service = KeystoreService::new_native_binder(id_rotation_state)?;
+binder::add_service(KS2_SERVICE_NAME, ks_service.as_binder())?;
 ```
 
-- **简单类型**（int32_t, float, 指针）：零成本
-- **字符串/字节序列**：需要一次 `malloc + memcpy`，典型开销 30-80ns（取决于长度）
-- **复杂数据结构**：需要逐字段转换，开销线性增长
+代码省略了源码中的错误包装，只保留结构。Java framework 侧使用 Java AIDL proxy 发出一笔 Binder transaction，服务端由 Rust AIDL stub 接收。`libbinder_rs` 基于 `libbinder_ndk`，内部会经过 Rust/C ABI，但不会增加第二笔 Binder IPC，也不要求业务层先进入 C++ stub。
 
-**3. panic 跨边界安全**
+Keystore 操作常见的耗时来源包括 Binder 排队、数据库事务、SELinux 权限检查、KeyMint HAL、TEE/StrongBox 与远程密钥供应。只测一个空 FFI 函数的纳秒值，无法解释生成密钥或签名请求的端到端时延。
 
-Rust 的 `panic` 若穿越 FFI 边界进入 C 代码，属于**未定义行为**（UB）。因此跨 FFI 调用的 Rust 函数必须使用 `catch_unwind` 捕获 panic 或配置 `panic = abort`。
+## 2. 三类边界要分开分析
 
-- `catch_unwind` 开销：首次设置 landing pad ~100-200ns，后续调用 ~10-20ns
-- `panic = abort`：零运行时开销，但进程直接终止（Android 系统服务的默认配置）
+### 2.1 Rust AIDL 与 Binder
 
-[待验证: 具体 nanosecond 级别数据缺少 ARM64 micro-benchmark 交叉验证]
+Rust AIDL backend 生成 Rust proxy/stub crate，并通过 `libbinder_rs` 使用稳定的 NDK Binder API。典型调用路径如下：
 
-### 🔹 Rust ↔ Java JNI 调用链路性能
+Java 或 native client → 语言对应的 AIDL proxy → Binder driver → Rust AIDL stub → Rust service
 
-Android 系统服务通常需要暴露 Java API（通过 AIDL 或直接 JNI）。Rust 服务与 Java 层交互的典型链路：
+其中的主要成本通常来自：
 
-```
-Java Framework API
-  ↓ JNI
-C/C++ Wrapper (libfoo_aidl.so)
-  ↓ extern "C"
-Rust Service (libfoo.rlib / foo_binary)
-```
+- Parcel 编码、对象与文件描述符处理；
+- 用户态与内核态切换；
+- 目标 Binder 线程被唤醒和排队；
+- 大参数复制或共享内存映射；
+- 服务端锁、数据库、文件系统或硬件调用；
+- 回包与调用方重新调度。
 
-相比 C++ 直接 JNI（一步），Rust 多出 **一层 FFI 边界**。实测影响：
+Rust backend 的价值是让服务端保持 Rust 类型和所有权模型，同时遵守 AIDL wire format。它没有给 Binder transaction 增加新的进程跳转。性能分析应先测 transaction 的排队与执行，再判断生成代码和对象转换是否成为热点。
 
-**Keystore 2.0 调用链路分析**：
+### 2.2 Rust 与 C/C++ 的同进程 FFI
 
-Keystore 2.0 的 JNI 路径为 `IKeyStoreService.aidl` → C++ AIDL stub → Rust `keystore2` 服务。每次 Java 发起的密钥操作需要经过：
+`extern "C"` 使用 C ABI，标量参数和 ABI 兼容结构体可按普通 native call 传递。成本风险来自边界两侧的工作：
 
-1. Java → JNI 调用（~50-100ns，标准 JNI 开销）
-2. C++ AIDL stub 序列化参数 → binder parcel（~200-500ns）
-3. binder IPC 传输到 keystore2 进程（~5-20μs，进程间通信主导）
-4. Rust 服务反序列化 + 处理（业务逻辑耗时）
+- Rust 与 C/C++ 编译单元之间通常无法内联；
+- 所有权、生命周期与异常约束需要人工设计；
+- 字符串、容器、trait object 和 C++ 对象需要表示转换；
+- 生成桥接代码可能做分支、长度校验、分配或析构；
+- 回调频率过高会放大每次固定成本。
 
-在 Keystore 场景中，FFI 开销（步骤 2-4 中的 marshalling）相对于 binder IPC 开销（步骤 3）可以忽略。但对于**同进程内**的 Rust-Java 交互（如某些通过 dlopen 加载的 Rust 库），FFI 开销占比会更显著。
+Soong `compiler.go` 对 `lto` 属性的注释明确写着：它控制最终 Rust 链接的 LTO，不影响 cross-language LTO。因此 r1 默认 ThinLTO 能优化 Rust crate 图，却不能据此宣称 Rust/C++ 边界会被跨语言内联。
 
-**设计建议**：
-- 批量化 JNI 调用：将多次细粒度操作合并为一次粗粒度调用
-- 使用 Direct ByteBuffer 共享内存而非 JNI 参数传递大数据
-- 考虑使用 `jni-rs` crate（Android 内部使用）简化 JNI 绑定
+数据是否复制取决于接口形态。下面的 CXX bridge 例子用借用 slice 传递指针和长度：
 
-[已验证: AOSP android-17.0.0_r1, system/security/keystore2 — Keystore 2.0 架构确认多层桥接设计]
-
-### 🔹 Rust 内存安全对性能的影响
-
-Rust 的所有权系统和借用检查器在**编译期**完成所有内存安全检查，理论上不需要运行时开销（零成本抽象）。但实际运行时影响需要区分：
-
-**正面影响（性能增益）**：
-
-1. **更激进的编译器优化**：Rust 的别名规则（aliasing rules，`&T` 和 `&mut T` 不能同时存在）允许 LLVM 做更激进的别名分析，生成更高效的机器码。C++ 的 `restrict` 关键字需要手动标注，而 Rust 默认保证
-2. **消除 bounds checking 的热路径开销**：Rust 的数组访问默认带 bounds checking，但编译器可通过范围证明（range proof）消除循环内的冗余检查
-3. **无 GC 暂停**：Rust 的确定性内存管理意味着没有 STW（Stop-The-World）暂停，对延迟敏感的系统服务（如音频、渲染管线）更友好
-
-**负面影响（运行时成本）**：
-
-1. **`Arc<Mutex<T>>` 开销**：Rust 系统服务中多线程共享状态通常使用 `Arc<Mutex<T>>`，每次访问需要 atomic refcount increment + mutex lock/unlock。相比 C++ 的 `std::shared_ptr` + `std::mutex`，开销相当（~20-40ns per operation）
-2. **`RefCell<T>` 运行时借用检查**：单线程内部可变借用使用 `RefCell`，每次 `borrow()`/`borrow_mut()` 有 ~5ns 的运行时检查开销
-3. **Iterator 适配器链**：Rust 函数式风格的多层 `map/filter/collect` 链，如果不开启优化可能导致中间分配。但 rustc 的 MIR 优化通常能消除这些
-
-**总体结论**：Rust 系统服务性能与等效 C++ 实现持平（±5%），在内存安全密集型场景（如解析不可信输入）中可能优于 C++（因为 C++ 需要额外的 sanitizer 运行时或手动安全检查）。
-
-[待验证: ±5% 性能持平声明缺少公开 micro-benchmark 数据]
-
-### 🔹 Rust 分配器与 Scudo 交互
-
-Android 上所有 native 代码（包括 Rust）默认使用 Bionic 的 Scudo 分配器。Scudo 是一个安全增强的分配器，提供：
-
-- **内存隔离**：不同 size class 的分配使用独立 region
-- **释放后写入模式检测**：freed memory 填充随机 pattern
-- **分配校验**：每块分配前后添加 guard page
-
-**Rust 的分配路径**：
-
-```
-Rust std::alloc::alloc()
-  → #[global_allocator]（默认为 System）
-  → libc::malloc() / libc::free()
-  → Scudo allocator (bionic/libc/bionic/scudo.cpp)
-```
-
-Rust 的 `std::alloc` 模块默认使用 `System` allocator，它直接调用 `malloc/free`。在 Android 上，这意味着所有 Rust 分配都经过 Scudo。
-
-**关键影响**：
-
-1. **分配性能一致性**：Rust 服务与 C++ 服务共享同一分配器，分配/释放延迟特征一致。Scudo 的 size-class 分离设计使得小对象分配（< 64KB）通常在 ~50-100ns
-2. **安全开销共享**：Scudo 的随机化填充和 guard page 机制对 Rust 和 C++ 一视同仁。Rust 的内存安全保证不减少 Scudo 开销——但 Rust 代码理论上不会触发 Scudo 的检测逻辑（因为没有 UAF/overflow），所以安全开销是"纯保险"
-3. **`#[global_allocator]` 替换风险**：在 Android 系统服务中**不推荐**使用 `#[global_allocator]` 替换为 Rust 原生分配器（如 `jemalloc` 或 `mimalloc`），因为这会绕过 Scudo 的安全保护，且可能与系统的 `malloc` 统计工具（如 `showmap`、Perfetto heap profiler）不兼容
-
-[已验证: AOSP android-17.0.0_r1 — Scudo 为 Bionic 默认分配器，Rust std::alloc 走 malloc 路径]
-
-### 🔹 Rust panic/unwind 机制与 C++ 异常对比
-
-**ARM64 上的 unwind 机制**：
-
-Rust 的 `panic` 和 C++ 的 `throw` 在 ARM64 上共享相同的基础设施——`libunwind`（基于 DWARF .eh_frame 段的栈展开）。但两者的语义和使用模式差异显著：
-
-| 维度 | Rust panic | C++ exception |
-|------|-----------|---------------|
-| 语义 | 不可恢复的程序错误 | 常规错误处理机制 |
-| 使用频率 | 极少（非正常路径） | 视代码风格而定 |
-| 编译器假设 | cold path，优化激进 | 需要保留 unwind info |
-| 错误处理习惯 | `Result<T, E>` 显式处理 | try/catch 或返回码 |
-| Android 配置 | `panic = abort`（系统服务） | `-fno-exceptions`（部分模块） |
-
-**Android 系统服务的 panic 配置**：
-
-Android 的 Soong 构建系统为 Rust 系统服务默认配置 `panic = "abort"`：
-
-```bp
-// Soong rust_binary 默认配置
-rust_binary {
-    name: "keystore2",
-    ...
-    // panic = "abort" 是 Android 系统服务的隐含默认值
+```rust
+#[cxx::bridge]
+mod ffi {
+    extern "Rust" {
+        fn checksum(data: &[u8]) -> u64;
+    }
 }
 ```
 
-这意味着：
-- **二进制体积减小**：不需要为每个函数生成 unwind 表和 landing pad
-- **FFI 安全性**：panic 直接 `abort()` 进程，不会产生跨 FFI 边界的 UB
-- **可调试性降低**：无法用 `catch_unwind` 在 Rust 侧捕获 panic 做优雅恢复
-- **与 C++ 异常不兼容**：如果 C++ 侧 `throw` 异常穿越 Rust FFI 边界，行为未定义（Rust 的 `abort` 配置不影响 C++ 侧，但跨边界 unwind 在实践中不可靠）
+这种接口可以避免为 payload 建立第二份字节数组，但调用期间 Rust 借用的内存必须保持有效。若接口改成拥有所有权的 `String`、`Vec`、C++ `std::vector`，或要求 NUL 结尾的 `CString`，分配与复制策略会变化。
 
-**实际影响**：Android 的 Rust 系统服务不会使用 panic 做错误处理（而是使用 `Result` 类型），所以 `panic = abort` 的配置几乎不影响正常路径性能。仅在真正的 bug 触发 panic 时，进程直接终止而非 unwind——这对系统服务的稳定性意味着进程重启而非状态恢复。
+| 参数形态 | 常见实现 | 主要风险 |
+|---|---|---|
+| 整数、浮点、指针 | 直接按 ABI 传递 | 对齐、空指针与有效期 |
+| `&[u8]` / `rust::Slice` | 指针 + 长度，通常可借用 | 生命周期与调用期并发修改 |
+| `&str` / 字符串 view | 指针 + 长度 | UTF-8 与所有权约束 |
+| `CString` / `const char *` | 检查内部 NUL，按构造方式决定是否分配 | 隐藏扫描、复制与释放方不一致 |
+| Rust/C++ 容器 | bridge wrapper、逐项转换或转移所有权 | 循环调用、重复分配和异常语义 |
+| opaque object | `Box`、`UniquePtr` 或 handle | 析构方、线程安全与 use-after-free |
 
-[已验证: AOSP android-17.0.0_r1, build/soong — Soong rust 模块默认 panic 策略确认]
-[待验证: 具体二进制体积减小幅度缺少量化数据]
+“字符串一定执行一次 malloc + memcpy”同样过度绝对。借用已有 `CStr` 可以不复制，`CString::new` 对拥有的数据则要检查内部 NUL，并可能产生新的分配。
 
-### 🔹 Rust 二进制体积与 monomorphization 代码膨胀
+### 2.3 Rust 与 Java 的 JNI
 
-Rust 的泛型采用 **monomorphization（单态化）**：为每个具体类型实例化生成独立的代码副本。这与 C++ 的模板机制类似，但 Rust 的 trait 约束和零成本抽象理念可能导致更激进的代码生成。
+JNI 适合把同进程 Rust library 暴露给 Java/Kotlin。Soong 用 `rust_ffi_shared` 生成可加载的 `cdylib`，Rust 可以借助 `jni` crate 直接导出 JNI symbol；C++ wrapper 只在既有接口或库依赖要求时出现。
 
-**代码膨胀来源**：
+JNI 成本应拆成：
 
-1. **泛型函数单态化**：`HashMap<String, Vec<u8>>` 和 `HashMap<String, Vec<u32>>` 各生成一份完整的 HashMap 实现
-2. **async/await 状态机**：每个 `async fn` 编译为一个 `Future` 状态机 struct，状态数等于 `.await` 点数量
-3. **derive 宏展开**：`#[derive(Debug, Clone, PartialEq)]` 为每个类型生成独立的 trait 实现
+- managed/native transition；
+- local/global reference 管理；
+- Java 字符串、数组与 Rust 类型的转换；
+- native thread attach/detach；
+- exception 查询与转换；
+- Rust 函数自身的工作。
 
-**实测影响**：
+大 payload 可以评估 direct `ByteBuffer`、共享内存、文件描述符或批量接口。批量大小要同时考虑对象生存期、Binder transaction 上限、延迟尖峰和取消语义。
 
-- Rust 系统服务二进制通常比等效 C++ 大 **20-50%**（含调试符号）
-- 去除调试符号后（stripped），差距约 **10-25%**
-- 最大的体积贡献者通常是 `std` 库的静态链接
+Keystore2 不是“Rust JNI 服务”的例子。它的公开系统服务入口是 Binder。把所有 Java→Rust 交互都画成 JNI，会把 IPC 成本和语言转换成本混为一项。
 
-**Android 的缓解策略**：
+## 3. panic、错误与资源所有权
 
-| 策略 | 机制 | 效果 |
-|------|------|------|
-| Rust dylib（动态链接 stdlib） | `rust_dylib` 模块类型，多个 Rust 服务共享一份 `libstd.so` | 减少 ~2-4MB per binary |
-| ThinLTO | Soong 配置 `lto: "thin"`，跨模块内联+去重 | 减少 5-15% 体积 + 性能提升 |
-| panic = abort | 消除 unwind 表 | 减少 5-10% 体积 |
-| strip | 发布构建去除调试符号 | 减少 40-60% 体积 |
+### 3.1 Android 17 设备端使用 `panic=abort`
 
-**Android 17 Soong 的 Rust 优化支持**：
+`build/soong/rust/config/global.go` 为 device Rust 添加 `-C panic=abort`。panic 触发时进程终止，不会沿 C/C++ frame 展开。`catch_unwind` 不能为这类设备构建提供进程内恢复策略。
 
-```bp
-rust_binary {
-    name: "my_service",
-    crate_name: "my_service",
-    srcs: ["src/main.rs"],
-    lto: "thin",          // ThinLTO 跨模块优化
-    prefer_rlib: false,   // 使用 dylib 链接 stdlib
-    strip: {
-        none: false,      // 发布构建 strip 符号
-    },
-}
+FFI API 应把可预期失败编码为 `Result`、错误码、AIDL `Status` 或明确的 nullable/optional 返回值。panic 只保留给违反内部不变量等不可恢复错误。C++ exception 也不应穿过未声明可 unwind 的 Rust ABI 边界。
+
+`panic=abort` 没有让 r1 去掉所有 unwind metadata。Soong 同时设置 `-C force-unwind-tables=yes`，用于栈回溯、采样和诊断。因而不能根据 panic 策略直接推算二进制缩小比例。
+
+### 3.2 谁分配，谁释放
+
+跨 FFI 传递拥有所有权的内存时，应明确：
+
+- 分配使用哪个 allocator；
+- 由哪一侧调用析构或 free；
+- 对象能否跨线程；
+- callback 结束后引用是否失效；
+- panic、early return 或进程退出时怎样清理。
+
+即便 Rust 与 C++ 最终都走同一份 Scudo，`Vec`、`String`、`std::vector` 和 C++ class 的析构规则仍不同。常见做法是让创建对象的一侧导出配套 destroy 函数，或使用 CXX 的 `Box`/`UniquePtr` 约束所有权。
+
+### 3.3 `unsafe` 是审核边界
+
+Rust 无法证明裸指针、C ABI、设备寄存器与外部库满足安全条件。每个 `unsafe` block 或 `unsafe impl Send/Sync` 都应写明：
+
+- 指针非空、对齐和长度的来源；
+- 别名规则；
+- 对象有效期；
+- 调用线程要求；
+- 回调重入条件；
+- 外部函数可能修改哪些内存。
+
+边界设计良好时，少量 `unsafe` 被封装在窄接口中，其余业务代码继续使用 safe Rust。把大段逻辑放入 `unsafe` 会减弱迁移带来的安全收益，也会增加性能回归定位难度。
+
+## 4. 运行时成本
+
+### 4.1 分配器与 Scudo
+
+使用标准库默认 `System` allocator 的 Android Rust 代码通过 libc `malloc/free` 分配。Android 官方 Scudo 文档说明，Android 11 起常规设备的 native 分配由 Scudo 提供，低内存设备仍可能使用 jemalloc；Android 17 的具体产品配置应以进程映射和设备构建为准。
+
+Scudo 提供 chunk metadata 校验、隔离、quarantine 等抗利用措施，发现可疑 heap 状态时可以终止进程。它是 hardened allocator，不是完整的 ASan，也不会为每个小对象配置独立 guard page。现稿关于“每块分配前后都有 guard page”和“释放后统一填随机 pattern”的描述不适合作为通用成本模型。
+
+Rust 和 C++ 共用 native allocator 时，malloc 热点可以用 heapprofd 统一观察。以下情况需要单独处理：
+
+- crate 使用自定义 `#[global_allocator]`；
+- `no_std` 组件使用静态 arena 或专用 allocator；
+- 对象来自共享内存、mmap 或硬件 buffer；
+- 编译器优化消除了短命分配；
+- 采样率太低，漏掉小而频繁的对象。
+
+选择自定义 allocator 前要核对安全策略、APEX/进程边界、malloc 调试工具、heap profiler 与所有权协议。单纯为了减少一次 benchmark 中的 malloc 时延而替换系统 allocator，风险通常高于收益。
+
+### 4.2 边界检查与溢出检查
+
+Rust slice 索引可能生成 bounds check，Android device build 还开启整数 overflow check。LLVM 能在循环范围清楚时消除部分检查，但结果依赖代码形态。优化方向包括：
+
+- 使用 iterator 或一次验证后的 slice 分段；
+- 避免循环体内重复计算长度；
+- 对确需 wrapping/saturating 语义的运算显式调用对应 API；
+- 用 benchmark 和反汇编确认检查是否留在热点；
+- 不用 unchecked 访问替代尚未量化的检查成本。
+
+`get_unchecked` 可以移除 bounds check，也把越界责任交给调用者。只有 profiler 和反汇编都证明检查位于高占比热点、且不变量能被测试与审核覆盖时，才有评估价值。
+
+### 4.3 锁、原子与 async
+
+`Arc<Mutex<T>>` 的成本没有统一纳秒值。未竞争锁、跨核竞争、优先级反转和持锁 I/O 是完全不同的问题；`std::sync::Mutex`、Tokio mutex 与 Binder thread pool 的调度语义也不同。
+
+分析系统服务时应关注：
+
+- 锁等待时间和持锁区间；
+- Binder thread pool 是否耗尽；
+- async executor 是否在阻塞 syscall 上卡住；
+- callback 是否回到持锁对象；
+- atomic refcount 是否在跨核热点中产生 cache-line 抖动；
+- channel 是否积压并造成内存增长。
+
+Rust 类型可以阻止数据 race，无法自动消除业务层死锁、队头阻塞和优先级反转。
+
+### 4.4 代码体积与 i-cache
+
+泛型单态化、内联、async state machine、格式化与错误上下文都可能扩大 `.text`。动态链接可以共享代码页，静态 rlib 又能让 ThinLTO 删除未使用代码并跨 crate 优化。两种策略的文件体积、PSS、启动 relocation 和 i-cache 行为需要分别测量。
+
+Android 17 r1 的 Soong 默认开启 Rust ThinLTO。Keystore2 又显式设置 `prefer_rlib: true`，源码注释给出的理由是：当时 `/system` 上使用动态 Rust 的进程数量不足，动态共享未产生预期收益。这是按组件计算的取舍，不能推广成所有 Rust 服务都应静态或动态链接。
+
+r1 的几个全局编译选项可从 `build/soong/rust/config/global.go` 直接核对：
+
+```text
+-C opt-level=3
+-C overflow-checks=on
+-C force-unwind-tables=yes
+-C panic=abort
 ```
 
-[已验证: AOSP android-17.0.0_r1, build/soong/rust — Soong rust 模块支持 lto/prefer_rlib 配置]
-[待验证: 二进制体积增幅 20-50% 数据基于通用 Rust 项目经验，AOSP 具体项目的实测数据未公开]
+前三项中的优化、检查与回溯信息会同时影响性能和体积。发布设备模块默认 strip 大部分符号并保留 mini debuginfo；分析产物大小时要区分 unstripped、stripped、磁盘文件页与运行时私有页。
 
-**对 icache 压力的影响**：
+## 5. Soong 中容易写错的部分
 
-代码膨胀直接影响 instruction cache（icache）命中率。ARM64 的 L1 icache 通常为 32-64KB，如果 Rust 服务的热点代码段（.text）超过 L1 icache 容量，可能导致更高的 icache miss rate。实际影响取决于：
-- 热点代码集中度（如果 90% 时间运行在 10KB 代码上，icache 影响可忽略）
-- 系统服务的调用模式（长尾调用 vs 集中调用）
+### 5.1 模块类型
 
-## 扩展
+| 模块 | 产物与用途 |
+|---|---|
+| `rust_binary` | Rust 可执行文件 |
+| `rust_library` | 同时提供 rlib 与 dylib variant，供 Rust 模块依赖 |
+| `rust_ffi` | 供 C/C++ 使用的 static/shared C-compatible library variant |
+| `rust_ffi_shared` | 只构建 shared C-compatible library，适合 JNI cdylib 等场景 |
+| `rust_bindgen` | 从 C header 生成 Rust binding crate |
+| `rust_proc_macro` | 过程宏 |
+| `aidl_interface` 的 Rust backend | 生成 Rust AIDL crate，供 `rustlibs` 引用 |
 
-### 🔸 Rust 系统服务调试与性能分析
+现稿列出的 `rust_dylib` 不是 r1 中推荐的通用模块名。Soong 提供 `rust_library_dylib` 这类限定 variant，也推荐依赖方优先使用 `rustlibs`，让构建系统选择相容 linkage。
 
-**符号 demangle**：
+### 5.2 ThinLTO 语法与默认值
 
-Rust 使用 `rust-demangler` 工具（而非 `c++filt`）对符号名进行还原。Rust 的 name mangling 方案（v0 scheme, RFC 2603）与 C++ 不兼容：
+`lto` 是一个属性组，合法形式是 `lto: { thin: true }` 或 `false`。r1 默认值已经是 `true`，常规生产模块无须重复声明。现稿中的 `lto: "thin"` 与该 tag 的属性类型不符。
 
-```
-# Rust mangled symbol
-_RNvNtCs1234_5keystore27KeystoreServiceNtB2_7KeyEntry
+Soong 注释指出 ThinLTO 对 Rust code size 收益很大，生产构建若要关闭需要清楚理由。sanitizer、fuzz、构建时间或工具兼容性可能要求例外；应通过最终 rustc command 和产物指标确认，而非只读一段 Blueprint。
 
-# Demangled
-keystore2::KeystoreService<KeyEntry>
-```
+### 5.3 第三方 crate 管理
 
-Android 17 的 Perfetto 和 Simpleperf 已支持 Rust v0 mangling scheme 的自动 demangle。在 trace 和 profile 输出中，Rust 函数名会正确显示为 `crate_name::module::function`。
+Android 17 的 crates.io 导入由 `external/rust/android-crates-io` 管理，各 crate 源码对应 `external/rust/crates/<name>` 仓库。`crate_tool`、`cargo_embargo.json` 与 `cargo_embargo` 负责可重复导入和生成 `Android.bp`。
 
-**Perfetto heap profiler**：
+这套流程不同于现稿的 `external/upstream` 与 `development/tools/regex_gen_cargo2android.py`。平台开发不能把 `cargo build` 的依赖解析结果直接带入系统镜像；crate 版本、license、patch、Soong rule、APEX 可用性和测试都要进入 AOSP 管理。
 
-Perfetto 的 heap profiler 通过 `malloc`/`free` 拦截工作，因此能直接分析 Rust 服务的内存分配（因为 Rust 走 `malloc` → Scudo）。无需 Rust 特定的配置。
+## 6. 怎样测 Rust 边界
 
-**Simpleperf 支持**：
+### 6.1 先定义要回答的问题
 
-Simpleperf 从 Android 14 起完整支持 Rust 符号的解析和 flamegraph 生成。使用方法：
+一个有效实验只回答一个主要问题，例如：
+
+- 一次 CXX bridge 的固定成本是多少？
+- 1 KiB、64 KiB、1 MiB payload 的转换是否复制？
+- Java→Rust Binder 与 Java→C++ Binder 在等价空服务中的差异是多少？
+- Rust 服务的 CPU 时间花在 bridge、锁、allocator、Binder 或业务代码中的哪一项？
+- static Rust std 与 dynamic linkage 对文件体积、PSS 和启动 relocation 有什么影响？
+
+“Rust 服务快不快”缺少可操作边界。先固定业务语义、输入、线程数、CPU 亲和性、编译配置和设备温度，再决定工具。
+
+### 6.2 同进程 FFI microbenchmark
+
+为 C++→Rust 与纯 C++/纯 Rust 各写语义相同的 benchmark，至少覆盖：
+
+- 标量空调用；
+- 借用 slice；
+- owned string/vector；
+- Rust→C++ callback；
+- 错误返回；
+- 单线程与并发；
+- 多种 payload 大小。
+
+统计每次调用的 cycles、instructions、branch miss、allocation count 与复制字节。空调用用于估计固定项，业务 payload 用于判断它在总耗时中的占比。编译产物要确认相同优化级别，避免一侧带断言或日志、另一侧没有。
+
+### 6.3 Binder 端到端
+
+Perfetto 中建议同时抓：
+
+- `sched_switch` / thread state；
+- Binder transaction 与目标 thread；
+- CPU frequency、idle 与 thermal；
+- process/thread runtime；
+- 服务内部自定义 trace slice；
+- 文件系统或硬件调用。
+
+Binder 测试要记录 client 发起、driver 排队、server runnable、server 执行和 reply 五段时间。只在服务函数入口计时会漏掉调用方阻塞与调度延迟。
+
+### 6.4 CPU 采样
+
+在 userdebug/eng 或具备相应 profiling 权限的设备上，可用下面的命令观察 Keystore2 的事件计数与调用栈：
 
 ```bash
-# 记录 Rust 进程的 CPU profile
-simpleperf record -p $(pidof keystore2) --duration 10
-# 生成报告（自动 demangle Rust 符号）
-simpleperf report
+keystore_pid=$(adb shell pidof keystore2)
+adb shell simpleperf stat -p "$keystore_pid" \
+  --duration 10 -e task-clock,cpu-cycles,instructions,branch-instructions,branch-misses
+adb shell simpleperf record -p "$keystore_pid" \
+  --duration 10 --call-graph fp -o /data/local/tmp/keystore2.data
 ```
 
-[已验证: AOSP android-17.0.0_r1 — Perfetto 和 Simpleperf 均支持 Rust v0 mangling]
+`keystore_pid` 保存在主机 shell 中，再作为 `simpleperf` 参数传入设备。系统服务的 attach 权限受 build type、SELinux 与 simpleperf 策略限制，user build 上失败不能据此判断服务没有 CPU 热点。
 
-### 🔸 Soong 构建系统与 Rust crate 管理
+Soong 使用 Rust v0 symbol mangling，并保留 unwind table。Simpleperf/Perfetto 报告仍要核对是否成功加载对应符号；看见大量十六进制地址时，应先修正 symbol path 和 build ID，不能把采样归到“unknown”后继续比较语言。
 
-**Soong Rust 模块类型**：
+### 6.5 文件体积、链接与 PSS
 
-| 模块类型 | 用途 | 对应 cargo 概念 |
-|---------|------|----------------|
-| `rust_binary` | 可执行文件 | binary crate |
-| `rust_library` / `rust_dylib` | 静态/动态库 | lib crate |
-| `rust_ffi` | C ABI 兼容的共享库 | `#[no_mangle] extern "C"` |
-| `rust_proc_macro` | 过程宏 | proc-macro crate |
-| `rust_test` | 测试 | test target |
-
-**crate 管理策略**：
-
-AOSP 的第三方 Rust crate 位于 `external/` 目录下，每个 crate 有独立的 Soong blueprint（`Android.bp`）。Android 17 中通过 `external/upstream` 目录集中管理 cargo 生态的 crate，使用自动化工具将 crates.io 的 crate 转换为 Soong 模块：
+下面的主机和设备命令分别检查 ELF section、动态依赖与进程映射：
 
 ```bash
-# Android 17 的 cargo-to-soong 工具（开发工具，非稳定 API）
-development/tools/regex_gen_cargo2android.py
+llvm-size -A out/target/product/<product>/system/bin/keystore2
+llvm-readelf -d out/target/product/<product>/system/bin/keystore2
+keystore_pid=$(adb shell pidof keystore2)
+adb shell showmap "$keystore_pid"
 ```
 
-这一机制确保：
-1. 所有第三方 Rust crate 经过 Google 安全审查后才进入 AOSP
-2. crate 版本锁定在特定 commit，避免 supply chain 风险
-3. 构建系统集成：crate 依赖图由 Soong 解析，不需要 `cargo build`
+`llvm-size` 反映 section 大小，`llvm-readelf` 可确认 Rust std 与其他库采用何种 linkage，`showmap` 反映运行时映射。三者不能互相替代：磁盘文件更大不等同于私有 RSS 更大，动态库页也可能在多个进程间共享。读取系统服务的映射同样可能需要 userdebug/eng、root 或额外调试权限。
 
-[已验证: AOSP android-17.0.0_r1, external/upstream/ — 存在大量预审 Rust crate 的 Soong 模块]
-[待验证: cargo2android 工具的具体路径和接口可能在 Android 17 周期内有变动]
+### 6.6 native heap
 
----
+heapprofd 能观察经过 malloc/free 的 Rust 分配。配置采样时要记录 interval、持续时间、进程启动阶段和符号版本，并确认目标没有使用自定义 allocator。对高频小对象可同时加入源码计数器或 allocator benchmark，避免采样误差掩盖短命分配。
 
-## 交叉引用
+## 7. 优化顺序
 
-- **1.4 Binder IPC 机制**：Rust 系统服务通过 binder_rpc crate 参与 IPC，详见 1.4 节 Binder 架构
-- **1.32 Android 17 系统服务总览**：Rust 化服务在系统服务整体中的占比，详见 1.32 节
-- **3.8 Bionic 与动态链接**：Scudo 分配器的详细实现，详见 3.8 节
-- **14.21 Simpleperf**：Rust 符号的 profiling 方法，详见 14.21 节
-- **20.16 内存安全与稳定性**：Rust 消除内存安全漏洞对稳定性的量化影响，详见 20.16 节
+### 7.1 先处理架构级成本
+
+优先级通常如下：
+
+1. 减少不必要的 Binder transaction 与 callback 往返。
+2. 缩短持锁区，移出数据库、文件和硬件 I/O。
+3. 避免 payload 的重复编码与复制。
+4. 控制 executor、Binder pool 和 channel 背压。
+5. 减少热点分配和跨核原子写。
+6. 在证据充分时调整 bridge 表示、linkage 或 compiler 配置。
+
+语言边界的一条普通 call instruction 很少能胜过 Binder 排队或硬件操作的数量级。若 profiler 已显示 bridge 消耗占比高，再做批量、借用数据或 ownership transfer；否则应从占比更高的部分开始。
+
+### 7.2 接口设计
+
+- 用稳定的 C ABI、AIDL 或 CXX 明确边界，不暴露 Rust 私有布局。
+- 对 buffer 使用 pointer+length 或受支持的 slice wrapper，并写清生命周期。
+- 让创建对象的一侧负责销毁，导出显式 destroy API。
+- 批量 API 要设置大小上限、取消和背压。
+- callback 中避免持有外层锁。
+- 预期错误使用 `Result`/Status，panic 留给内部不变量破坏。
+- 为所有 `unsafe` 前置条件写测试、fuzz case 与注释。
+
+### 7.3 构建与观测
+
+- 保留 Soong 默认 ThinLTO，除非构建或测量证明需要关闭。
+- 用 `rustlibs` 让 Soong 选择 linkage；`prefer_rlib` 应带组件级体积/PSS 依据。
+- 保留 build ID 和对应符号文件，验证 Rust v0 demangle。
+- 将二进制体积、PSS、启动时延、CPU、allocator 与 Binder 指标分开。
+- 对版本升级重新测量，rustc、LLVM、Scudo 与 crate 更新都会改变结果。
+
+## 8. 常见误判
+
+| 说法 | r1 证据下的修正 |
+|---|---|
+| Rust FFI 是零成本 | C ABI 调用可很轻，跨语言内联、转换、析构和 callback 仍有成本 |
+| Keystore2 每次调用经过 JNI→C++ AIDL→Rust | Java AIDL proxy 经一笔 Binder IPC 到 Rust AIDL 服务；业务层没有固定 C++ stub |
+| DnsResolver 已由 Rust 完整重写 | r1 是 C++ resolver 与 `libresolvrs_ffi` 混合 |
+| 所有字符串跨 FFI 都 malloc + memcpy | 借用 view 可以零复制，owned/NUL-terminated 转换按接口决定 |
+| panic 可以在 FFI 入口用 `catch_unwind` 恢复 | device Rust 全局 `panic=abort`，panic 会终止进程 |
+| `panic=abort` 会删除 unwind table | r1 同时强制生成 unwind table |
+| Rust 分配不会承担 Scudo 成本 | 默认 System allocator 经 libc malloc，仍由设备 native allocator 服务 |
+| Scudo 给每个对象放 guard page | Scudo 使用多种 hardened heap 机制，不等于逐对象 guard page |
+| ThinLTO 需要写 `lto: "thin"` 才开启 | r1 默认开启，属性结构为 `lto: { thin: ... }` |
+| Rust 服务性能可用固定百分比概括 | 需要按 IPC、FFI、分配、锁、代码体积和业务 I/O 分项测量 |
+
+## 9. 版本边界
+
+| Android 版本 | 与平台 Rust 相关的节点 |
+|---|---|
+| Android 12 / API 31 | AOSP 正式支持平台 Rust；Rust AIDL backend 引入；Keystore2 成为代表组件 |
+| Android 13 / API 33 | 官方披露 Rust 新增 native 代码占比与 Keystore2、UWB、DNS-over-HTTP3、AVF 等案例 |
+| Android 14～16 / API 34～36 | Rust 在 Mainline、虚拟化、连接与底层组件中继续扩展，混合语言边界长期存在 |
+| Android 17 / API 37 | `android-17.0.0_r1` 中可核对 Rust Binder 服务、CXX 混合模块、默认 ThinLTO、panic/overflow/unwind 配置与新 Bluetooth Rust 组件 |
+
+本文没有涉及内核 Rust 配置或驱动，因此不从平台用户态模块推导 `android17-6.18-2026-06_r6` 的内核能力。若分析 Rust for Linux，需要单独核对该 kernel tag 的 Kconfig、toolchain、bindings 与具体驱动。
+
+## 源码与官方资料
+
+- [Keystore2 Android.bp：Rust binary、libbinder_rs、prefer_rlib 与 AFDO](https://android.googlesource.com/platform/system/security/+/android-17.0.0_r1/keystore2/Android.bp)
+- [Keystore2 main：Rust Binder 服务注册](https://android.googlesource.com/platform/system/security/+/android-17.0.0_r1/keystore2/src/keystore2_main.rs)
+- [Keystore2 service：Rust 实现 IKeystoreService](https://android.googlesource.com/platform/system/security/+/android-17.0.0_r1/keystore2/src/service.rs)
+- [DnsResolver root Android.bp：C++ resolver 使用 Rust FFI defaults](https://android.googlesource.com/platform/packages/modules/DnsResolver/+/android-17.0.0_r1/Android.bp)
+- [DnsResolver rust Android.bp：libresolvrs_ffi 与 CXX bridge](https://android.googlesource.com/platform/packages/modules/DnsResolver/+/android-17.0.0_r1/rust/Android.bp)
+- [UWB Rust core 与 HAL adapter](https://android.googlesource.com/platform/packages/modules/Uwb/+/android-17.0.0_r1/libuwb-uci/src/Android.bp)
+- [Bluetooth Rust library 与 FFI module](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/android-17.0.0_r1/system/rust/Android.bp)
+- [VirtualizationService Rust binary](https://android.googlesource.com/platform/packages/modules/Virtualization/+/android-17.0.0_r1/android/virtualizationservice/Android.bp)
+- [Soong Rust global flags](https://android.googlesource.com/platform/build/soong/+/android-17.0.0_r1/rust/config/global.go)
+- [Soong Rust LTO 属性与默认值](https://android.googlesource.com/platform/build/soong/+/android-17.0.0_r1/rust/compiler.go)
+- [Android Rust introduction](https://source.android.com/docs/setup/build/rust/building-rust-modules/overview)
+- [Android Rust modules](https://source.android.com/docs/setup/build/rust/building-rust-modules/android-rust-modules)
+- [AIDL backends](https://source.android.com/docs/core/architecture/aidl/aidl-backends)
+- [Scudo](https://source.android.com/docs/security/test/scudo)
+- [Rust in the Android platform](https://security.googleblog.com/2021/04/rust-in-android-platform.html)
+- [Memory Safe Languages in Android 13](https://security.googleblog.com/2022/12/memory-safe-languages-in-android-13.html)
+- [android-crates-io 与 crate_tool](https://android.googlesource.com/platform/external/rust/android-crates-io/+/android-17.0.0_r1)
+
+## 相关章节
+
+- [1.4 Binder IPC 机制与性能影响](../../part1-fundamentals/ch01-architecture/04-binder.md)：补充 Binder transaction、线程池与 Parcel 成本。
+- [1.32 Android 17 AVF 架构与 pKVM 隔离性能边界](../../part1-fundamentals/ch01-architecture/32-virtualization-framework-pkvm-performance.md)：补充 VirtualizationService 与内核虚拟化边界。
+- [3.8 InputFlinger Rust 组件与自适应刷新率协同](../../part1-fundamentals/ch03-input/08-inputflinger-rust-arr.md)：另一个渐进式 Rust 组件案例。
+- [1.40 Bionic libc 性能演进与系统级影响](../../part1-fundamentals/ch01-architecture/40-bionic-libc-performance.md)：补充 libc malloc、动态链接与 Scudo 接口。
+- [14.2 Simpleperf](../../part3-tools/ch14-other-tools/02-simpleperf.md)：补充 native CPU 采样和 PMU 事件。
+- [20.16 Android 17 Keystore 配额与登录故障治理](../../part5-app/ch20-stability/16-keystore-quota-login-stability.md)：补充 Keystore2 业务与稳定性诊断。
