@@ -216,6 +216,90 @@ if (is_fair_policy(policy))
 
 <!-- outline-end -->
 
-> 本节内容基于 AOSP android-17.0.0_r1 源码分析，深入解析了 Binder IPC 的优先级继承与批处理机制。
+> 审校说明：上方区域是受流水线保护的历史提纲，原样保留不代表其中每项结论仍然有效。本节正文以平台 `android-17.0.0_r1` 和内核 `android17-6.18-2026-06_r6` 重新核对实现。旧提纲中的“三层调度”“内核事务批处理”“128 条 BR 命令”“固定 1 MB 单事务上限”均需按下文修正。
 
-> 本节内容基于 AOSP android-17.0.0_r1 源码分析，深入解析了 Binder IPC 的优先级继承与批处理机制。
+## 一次同步调用如何继承优先级
+
+Binder 优先级继承解决的是服务端 Binder 线程以过低优先级执行同步请求的问题。同步调用方会等待回复，服务端处理速度直接影响调用方延迟。Android 官方文档把机制分为事务优先级继承、节点最低优先级和实时优先级继承三类；这里的“三类”描述优先级来源与约束，不是三个事务队列。
+
+Android 17 内核中的决策顺序如下：
+
+1. `binder_transaction()` 创建非 oneway 事务时，若调用线程采用驱动支持的 `SCHED_NORMAL`、`SCHED_BATCH`、`SCHED_FIFO` 或 `SCHED_RR`，便把调用线程的 policy 和 priority 写入 `t->priority`。oneway 事务及不支持的调度策略改用目标进程的 `default_priority`。
+2. Binder 节点的 `min_priority`、`sched_policy` 与 `inherit_rt` 来自节点对象。Native Binder 可在对象首次被 Parcel 化之前调用 `BBinder::setMinSchedulerPolicy()` 和 `BBinder::setInheritRt()`；`Parcel::flattenBinder()` 把这些配置编码到 `flat_binder_object.flags`。
+3. 事务已经匹配到目标线程时，`binder_transaction_priority()` 选择本次执行优先级。若事务要求实时调度而节点没有启用 `inherit_rt`，驱动将期望值降为 `SCHED_NORMAL`、nice 0；随后再比较事务期望值与节点最低优先级，采用优先级更高的一方。同一数值下，节点指定的 `SCHED_FIFO` 优先于 `SCHED_RR`。
+4. `binder_do_set_priority(..., verify=true)` 依据 `CAP_SYS_NICE`、`RLIMIT_RTPRIO` 与 `RLIMIT_NICE` 裁剪请求，设置服务线程的 scheduler policy 或 nice。配置一个高优先级节点并不等于调用一定能越过进程的调度权限。
+5. 服务端回复后，驱动用事务保存的 `saved_priority` 恢复该 Binder 线程。嵌套同步调用可能在恢复期间又投递新事务，`BINDER_PRIO_SET`、`BINDER_PRIO_PENDING` 和 `BINDER_PRIO_ABORT` 只负责协调这段优先级恢复竞争。
+
+这条路径也解释了两个常见现象。同步事务可继承调用方优先级，oneway 不继承调用方优先级；若异步工作也有明确的时延要求，服务端应通过节点最低优先级配置表达。实时优先级继承默认关闭，必须对具体 Binder 节点启用。
+
+旧提纲把上述机制描述为 Android 17 相对 Android 12 的协议替换，但没有给出对应版本提交。Android 17 Binder UAPI 中也没有提纲所称的 `BC_SET_PRIORITY` 命令，因此不能把该说法用作版本演进结论。
+
+## 工作投递位置不是调度层级
+
+`binder_proc_transaction()` 的工作是把事务交给可执行它的线程或待办链表。它的主要分支可以这样读：
+
+- 已经指定或选中目标线程时，工作进入 `thread->todo`，驱动同时设置该线程本次事务的优先级。
+- 没有可用目标线程，而且当前事务不是同一节点上排队的后续 oneway 时，工作进入 `proc->todo`，等待进程中的 Binder 线程领取。
+- 同一节点已有 oneway 正在执行时，后续 oneway 进入 `node->async_todo`。前一笔处理结束后，驱动再推进下一笔，从而维持同一节点的异步事务顺序。
+
+这些链表没有全局优先级排序。`binder_select_thread_ilocked()` 从 `proc->waiting_threads` 的链表头取线程，事务优先级在选中目标线程后交给 Linux 调度器生效。把 `thread->todo`、`proc->todo`、`node->async_todo` 称为三层优先级架构，会把“放到哪里等待”与“线程获得多少 CPU 调度优先级”混在一起。
+
+oneway 的串行队列也不构成通用批处理。每次调用仍有独立的事务对象、缓冲区和完成通知。`TF_UPDATE_TXN` 是一个范围很窄的替换协议：目标进程需要处于 frozen 状态，旧事务和新事务都要同时带有 `TF_ONE_WAY | TF_UPDATE_TXN`，并且目标进程、事务码、完整 flags、发送者 PID、节点指针与 cookie 都要匹配。普通运行态下的重复 oneway 不会因此自动去重。
+
+## `BINDER_WRITE_READ` 能合并协议往返，但没有 128 条保证
+
+`IPCThreadState::talkWithDriver()` 把待写的 `mOut` 和可读的 `mIn` 一起放进 `binder_write_read`，再执行一次 `BINDER_WRITE_READ` ioctl。一个缓冲区可以容纳多条 BC 或 BR 命令，所以减少 ioctl 次数是这套流式协议的自然结果。
+
+命令数量由缓冲区字节数和每条命令的结构大小共同决定。Android 17 的 `IPCThreadState` 构造函数将 `mIn` 与 `mOut` 初始容量设为 256 字节，源码没有“单次最多返回 128 条 BR 命令”的固定常量。读缓冲区装满后，剩余返回命令由后续 ioctl 读取；当前 Native libbinder 则要求驱动消费本轮完整的写缓冲区，部分消费会触发致命检查。`Parcel` 负责单笔事务的数据与对象序列化，它不会自动把多笔业务调用合成一笔事务。
+
+分析 trace 时可以把同一次 ioctl 中出现多条协议命令称为“命令流合并”，但不宜据此推导业务事务被批量执行或去重。
+
+## 缓冲区限制应按进程共享区分析
+
+Android 17 的 `ProcessState.cpp` 把 Binder 映射大小定义为 `1 MiB - 2 × page size`。这块区域由目标进程的并发入站事务共同使用，不能当作每笔 Parcel 的可用载荷上限。驱动分配时还要考虑：
+
+- 事务数据、offset 数组与额外对象缓冲区的对齐后总量；
+- 当前仍由用户态持有的 Binder 缓冲区；
+- 空闲区碎片能否提供足够大的连续区间；
+- oneway 的异步空间配额。`binder_alloc_mmap_handler()` 把初始 `free_async_space` 设为映射区的一半，异步分配会单独扣减该配额；
+- 安全上下文、Binder 对象和文件描述符复制期间出现的校验或资源错误。
+
+因此，小于 1 MB 的调用也可能失败，超过某个业务自定阈值也不等于驱动一定失败。旧提纲中的 256 KB 预警值不是 Android 17 平台契约。应用可以设置更保守的工程阈值，但应把它标成自身约束，并通过并发压力测试验证。
+
+`BR_FAILED_REPLY` 同样不能直接翻译成“事务过大”。`binder_transaction()` 的无效句柄、SELinux 权限拒绝、错误对象布局、缓冲区分配失败、用户内存复制失败和事务栈协议错误等路径都可能返回它。Native libbinder 将该命令映射为 `FAILED_TRANSACTION`；Java 层可能再以 `TransactionTooLargeException` 报告，异常名称仍不足以单独证明根因。
+
+## 同步事务护栏保护的是协议约束
+
+驱动会拒绝以下组合：线程准备发起新的同步事务，同时该线程 `todo` 链表的队首已经是 `BINDER_WORK_TRANSACTION`。返回结果为 `BR_FAILED_REPLY`，扩展错误为 `-EPROTO`。源码注释把检查依据写得很具体：`binder_select_thread_ilocked()` 从 `waiting_threads` 选择线程，在等待链表期间不会再向该线程的 `todo` 链表追加其他工作，因此检查队首即可确认违规状态。
+
+该逻辑不检查应用互斥锁，也不会遍历跨进程等待图。A 持锁调用 B、B 回调 A 后等待同一把锁之类的问题仍需在应用和系统服务设计中消除。Binder 对合法的嵌套同步回调另有处理：驱动沿调用线程的 `transaction_stack` 查找目标进程中的原调用线程，让回调回到合适的线程上下文。
+
+排查疑似 Binder 死锁时，应同时检查调用栈、锁依赖、Binder 线程池占用和 trace 中的同步等待区间。仅看到 `BR_FAILED_REPLY` 不能下死锁结论。
+
+## 死亡通知是命令与工作项协作
+
+客户端用 `BC_REQUEST_DEATH_NOTIFICATION` 注册死亡接收者。目标节点死亡后，驱动通过 `BINDER_WORK_DEAD_BINDER` 或相关工作类型向用户态发送 `BR_DEAD_BINDER`；用户态处理后以 `BC_DEAD_BINDER_DONE` 确认。主动解除监听时，清理路径可能以 `BR_CLEAR_DEATH_NOTIFICATION_DONE` 结束。
+
+这些名称描述工作类型和协议阶段，不是驱动公开的一套“四态机”接口。注册、节点死亡、用户确认和主动清理可能交错，`BINDER_WORK_DEAD_BINDER_AND_CLEAR` 也用于组合处理相应生命周期。客户端仍需保证死亡回调幂等，并处理“服务已经死亡后再注册”与“解除监听同时死亡”等竞争。
+
+## 调优与验证清单
+
+1. 对同步长尾，确认调用线程与服务线程的 scheduler policy、nice、节点最低优先级和 `inherit_rt`，不要只看调用方优先级。
+2. 对 oneway 积压，按 Binder 节点分析队列。单个慢处理会阻塞同一节点的后续异步事务，但不会要求其他节点一起串行。
+3. 对 `FAILED_TRANSACTION`，记录数据字节数、offset 数量、Binder 对象、文件描述符与并发事务数量，并结合扩展错误或驱动日志定位失败分支。
+4. 对 ioctl 频率，区分协议命令流与业务事务。减少往返次数不等于减少事务数量。
+5. 对实时优先级，验证 `CAP_SYS_NICE`、`RLIMIT_RTPRIO`、`RLIMIT_NICE` 与节点配置。实时线程还需要评估 CPU 占用和对普通任务的饥饿风险。
+6. 对嵌套调用，画出同步等待与持锁关系；`BINDER_PRIO_*` 只维护优先级恢复，不提供业务锁死锁保护。
+
+更完整的协议总览见 [Binder IPC 机制与性能影响](./04-binder.md)，oneway 与 frozen 事务替换见 [Binder 异步机制与批处理流水线](./01.25-binder-ipc-async-pipeline.md)。
+
+## 源码与官方说明
+
+- [Android 官方 Binder 优先级继承说明](https://source.android.com/docs/core/architecture/ipc/priority-inheritance)
+- [AOSP `Parcel.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/Parcel.cpp)
+- [AOSP `Binder.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/Binder.cpp)
+- [AOSP `IPCThreadState.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/IPCThreadState.cpp)
+- [AOSP `ProcessState.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/binder/ProcessState.cpp)
+- [Android common kernel `binder.c`（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)
+- [Android common kernel `binder_alloc.c`（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_alloc.c)
+- [Android common kernel `binder_internal.h`（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_internal.h)
