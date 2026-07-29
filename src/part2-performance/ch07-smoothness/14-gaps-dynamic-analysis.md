@@ -74,164 +74,278 @@ last_deepseek_cn_review_at: 2026-07-12
 - 🔸 局限性：哪些场景会掉精度
 <!-- outline-end -->
 
-## 为什么要了解 GAPS
+## 先确认本文的版本边界
 
-GAPS 处理的是一个很具体的问题：给定一个目标方法，怎样在 Android 应用里尽量稳定地把它跑到。纯 GUI tester 往往只能盲扫界面，静态分析又容易在全程序 call graph 上付出很高代价。GAPS 把两条路线接起来，先从目标方法反向重建可行路径，再把路径翻成运行期可以执行的入口和界面操作。
+GAPS 解决一个方法级问题：给定 APK/DEX 与目标方法，能否找出从 Android 入口到该方法的路径，并自动执行对应交互。它不负责衡量一帧是否卡顿，也不替代 Perfetto、simpleperf 或应用埋点。
 
-这篇论文和仓库的定位是"目标方法可达性工具链"，不是现成的 Perfetto 性能分析框架。论文验证的是路径重建和方法触达率，性能 trace 只是后续可以外接的观测手段。
+本文依据 2026 年 7 月 17 日发布的论文 v3 与论文公开的复现快照 README。v3 已更名为 *GAPS: Targeted Execution of Android Apps via Static Path Reconstruction*，并更新了作者、实验环境、动态基线、运行时间和 PHIL agent 数据。旧版文章中的 57.44%、Guardian 17.12%、静态分析 4.27 秒及 Android 13 模拟器均不再代表 v3。
 
-## 要点
+平台集成部分以 Android 17 / API 37 / `android-17.0.0_r1` 为知识库锚点。论文自身的动态实验使用 Android 16 x86-64 模拟器；需要 ARM 时使用 Pixel 2 / Android 11。论文没有报告 Android 17 实验，因此本文会明确区分“论文测得的数据”和“Android 17 上建议验证的工程流程”。
 
-### 🔹 目标可达性问题：静态与动态要分开看
+## 方法可达性有两个判定阶段
 
-- **静态路径重建**：GAPS 在 AndroTest 上能为 **88.24%** 的目标方法生成至少一条路径。这里的对比基线是 **FlowDroid 58.81%**、**DroidReach 9.48%**。这组数据衡量的是"能不能从静态分析阶段找出可行路径"。
-- **动态方法触达**：GAPS 在同一基准上的动态触达率是 **57.44%**。这一组的对比对象是 GUI tester，分别是 **Guardian 17.12%**、**APE 12.82%**、**GoalExplorer 9.69%**。这组数据衡量的是"运行期有没有真的把目标方法跑到"。
-- **实验口径**：AndroTest 为 56 个开源应用随机挑选每个应用 50 个目标方法，动态实验统一给 5 分钟超时。把静态 88.24% 和 APE 的 12.82% 放在同一句里，会把两组不同实验维度混在一起。
+“静态找到路径”和“设备上执行到目标方法”是两个不同事件：
 
-### 🔹 GAPS 的主链：目标方法 → 路径 → 指令 → 动态执行
+| 阶段 | 成功条件 | 不能推出的结论 |
+| --- | --- | --- |
+| 静态路径重建 | 至少生成一条包含目标方法的路径 | 路径在当前账号、权限和 UI 状态下一定可执行 |
+| 动态目标触达 | AndroLog 或 Frida 观察到目标方法调用 | 该方法造成卡顿、ANR、耗电或安全影响 |
 
-GAPS 的论文主线可以按下面这条链理解：
+论文在 AndroTest 的 56 个开源应用中，每个应用固定随机选择 50 个目标方法，并让各工具使用同一组目标。只有 34.39% 的目标位于 `Activity` 中，多数目标无法通过浅层页面遍历直接命中。
 
-1. **从目标方法反向遍历调用关系**
-   GAPS 不先构建全程序 call graph，而是从目标方法做 backward traversal，只保留和该目标相关的局部调用图。论文把这条路径写成 target-oriented、context-sensitive 的 partial call graph。
+v3 报告的结果如下：
 
-2. **补齐入口、条件和 GUI 触发点**
-   在局部调用图里，GAPS 会继续做 points-to analysis 和 constant propagation，处理三类关键信息：
-   - 这个目标方法能从哪个 entry point 进入
-   - 哪些条件分支必须先满足
-   - 哪个 `Activity` 里的哪个 GUI 元素会触发后续调用
+### 静态路径重建
 
-   **入口与隐式调用边的建模**是这一步的核心难点。Android 应用的调用图不像普通 Java 程序那样可以从 `main()` 出发。GAPS 在这一步要处理三类隐式边：
+| 工具 | 生成至少一条路径的目标占比 | 平均分析时间/应用 |
+| --- | ---: | ---: |
+| DroidReach | 9.48% | 23.46 秒 |
+| FlowDroid | 58.81% | 35.06 秒 |
+| GAPS | 88.24% | 12.67 秒 |
 
-   - **生命周期回调**：`Activity.onCreate()`、`Fragment.onResume()` 等入口由系统框架调用，不会出现在显式 call graph 里。GAPS 通过 AndroidManifest 解析和 Soot 框架的虚拟边(virtual edges)把它们接进调用图。
-   - **UI 回调**：`View.OnClickListener.onClick()`、`AdapterView.OnItemSelectedListener.onItemSelected()` 等通过 `setOnClickListener()` 注册的回调。GAPS 使用 EdgeMiner 的回调映射规则，把 `setOnClickListener(this)` 里的 `this` 绑定到对应的 `onClick()` 实现。
-   - **ICC(Inter-Component Communication)**：`startActivity(intent)`、`startService(intent)` 等。GAPS 在 smali 层分析 Intent 构造参数，结合 AndroidManifest 中的 intent-filter 声明推断目标 Component。对于隐式 Intent，需要匹配 action、category、data URI；对于显式 Intent，直接从 `setClassName()` 或 `setComponent()` 读取目标。
+这里的 88.24% 是路径生成率，不是路径精确率，也不能解释成 88.24% 的目标已经在设备上执行。
 
-   这三类隐式边解决的是同一个问题：从静态分析角度看，Android 应用的“入口”不是一个点，而是一组由系统框架和用户交互驱动的分散入口。GAPS 的静态阶段要把目标方法反向追溯到这些入口中的某一个，再把入口翻成运行期可执行的 `adb am start` 命令或 UI 操作指令。
+### 动态目标触达
 
-3. **把结果落成 JSON 指令**
-   静态阶段的输出会直接落成可以执行的高层指令。指令里会带上 entry point、Activity 名称、resource ID 和对应的调用序列。
+| 工具 | 动态触达率 | 论文表中的平均运行时间 |
+| --- | ---: | ---: |
+| GoalExplorer | 4.75% | 30 分钟超时 |
+| APE | 11.12% | 30 分钟超时 |
+| Guardian | 34% | 30 分钟超时 |
+| GAPS（关闭 PHIL） | 23.24% | 2 分 26 秒 |
+| GAPS（启用 PHIL） | 56.93% | 3 分 15 秒 |
 
-4. **运行期按指令驱动应用**
-   论文 6.3 的实现使用 AndroidViewClient 通过 `findViewById()` / `touch()` 去点击静态阶段找到的控件，按路径推进界面状态。Frida 是可选组件，用来在目标方法上挂 hook，确认方法是否真的被执行。
+动态基线均运行三轮，每轮上限 30 分钟。GAPS 在这些实验中没有超过 5 分钟，表中的 3 分 15 秒是平均运行时间，不能写成“所有工具统一使用 5 分钟超时”。PHIL 从 23.24% 提升到 56.93% 的消融结果也说明，v3 的完整动态结果包含 agent fallback，不能再把 LLM 描述成论文实验之外的仓库附加功能。
 
-5. **找不到控件时再交给 Guardian 兜底**
-   论文写得很明确，Guardian 是 fallback，不是默认主链。只有当 GAPS 预期的 Activity 或 widget 没出现在当前界面时，才把交互暂时交给 Guardian，等界面回到预期路径后再继续按静态指令执行。
+## GAPS 的处理链
 
-公开仓库的 `run` 模式后来加入了 built-in LLM agent，会先读取界面层级，再给出点击、输入、返回等动作。这属于仓库后续演进。引用实验设定时，应以论文 6.3 和对应实现边界为准，不把它写成 Android Instrumentation 或 Perfetto 验证链。
+GAPS 把一次查询分成静态分析与动态执行：
 
-### 🔹 UI 资源 ID 逆向与 GUI 操作序列生成
+`目标方法` → `目标导向的反向调用图` → `入口、条件和 GUI 触发点` → `JSON 交互指令` → `设备执行` → `运行时触达证据`
 
-GAPS 的静态阶段会把 GUI 事件解析成运行期可用的操作线索，主要有三步：
+### 1. 从 APK/DEX 建立分析表示
 
-- **用 Androguard 读 APK/DEX**：拿到方法分析结果和 smali 指令。
-- **用 Apktool 还原资源 ID**：把 `findViewById()` 里的整型资源值，通过 `public.xml` 还原成字面量 ID。
-- **把路径翻成高层交互指令**：输出 `Activity + resource ID + action` 这类 JSON 指令，供动态阶段直接使用。
+静态阶段使用 Androguard 的 `AnalyzeAPK`/`AnalyzeDex` 读取方法、基本块和 smali 指令，并用 NetworkX 表示局部调用图。Apktool 负责恢复资源表，后续可把 smali 中的整型资源值映射为 `public.xml` 里的字面量 ID。
 
-这一步决定了静态结果能否落到运行期操作。
+这条路线直接分析编译产物，不要求应用源码。代价是信息上限受 DEX、资源表、混淆和框架建模能力约束；源码中的类型语义、生成过程和运行期状态不会自动恢复。
 
-### 🔹 Perfetto 是衍生观测手段，不是论文核心组件
+### 2. 识别 Android 入口与 ICC
 
-原始论文的可达性验证主链里没有把 Perfetto 当成核心组件。
+Android 应用没有单一 `main()` 入口。GAPS 会检查 manifest 中导出的组件和 intent filter，也会分析动态注册的 receiver 及相关注册路径。ICC 映射保存组件类名、action 或关联路径，供反向遍历在合法入口处停止。
 
-- **AndroTest 基准**：论文使用 AndroLogs 对应用做 instrumentation，通过日志判断目标方法是否被执行。
-- **真实应用实验**：论文在 Google Play Top 50 场景里改用 Frida hook 目标方法，因为 AndroLogs 无法稳定重打包真实应用。
-- **Perfetto 的位置**：如果后续要把 GAPS 接进性能分析工作流，Perfetto 可以作为额外观测面，用来关联某次路径触发后的主线程、FrameTimeline、调度或 I/O 行为。但这已经超出论文原始验证链。
+论文也限定了这一步的能力：带权限的入口、系统拥有的广播，以及要求额外 data 参数的 Intent，可能有静态路径却无法自动构造出可执行输入。文章不应把 action、category、URI 和 extras 的完整求解能力写成既成实现。
 
-更稳的用法是：先用 GAPS 把场景稳定驱到目标方法附近，再用 Perfetto、simpleperf、Frida 或应用自定义 trace marker 做二次观测。不要把 Perfetto 写成 GAPS 论文里的默认 reachability validator。
+### 3. 按目标反向生成局部调用图
 
-### 🔹 与 FlowDroid、DroidReach 和 GUI tester 的区别
+GAPS 从目标方法向调用者反向扩展，按需构建 Class Hierarchy Analysis 图来保守解析虚调用，并在遇到已识别入口时停止该分支。它不预先构建整应用的完整 call graph。
 
-- **FlowDroid**：擅长全程序数据流/污点分析，代价是 call graph 构建重，论文实验里静态路径生成率为 **58.81%**，平均 **35.06 秒/应用**。
-- **DroidReach**：同样做静态路径重建，但依赖完整 call graph，论文实验里路径生成率只有 **9.48%**，平均 **23.46 秒/应用**。
-- **APE / Guardian / GoalExplorer**：属于运行期 GUI 探索工具，优势是能直接操作界面，短板是对"指定目标方法"缺少静态路径引导。
-- **GAPS**：用静态路径约束运行期搜索范围，静态阶段 **88.24%**、平均 **4.27 秒/应用**，动态阶段 **57.44%**，比纯 GUI tester 更容易收敛到目标方法。
+遍历结束后，GAPS 用深度优先搜索提取入口到目标的候选路径。论文把该过程描述为 target-oriented、demand-driven、inter-procedural 和 context-sensitive。EdgeMiner 与 Soot virtual edges 提供回调映射，但未跟踪的隐式流仍会造成 call graph 不完备。
 
-### 🔹 放到性能分析工作流里时，边界要先写清楚
+### 4. 补足条件路径
 
-GAPS 对性能工程有潜在价值，但这部分要按“衍生场景”来写：
+候选路径中的条件会进入 points-to analysis 与 constant propagation。v3 明确覆盖三类操作数：
 
-- 可以用来**稳定重放某个可疑方法的触发路径**，减少手工点点点。
-- 可以用来**把 trace 抓取点前置到目标方法附近**，让 Perfetto 或 simpleperf 更容易卡住问题窗口。
-- 如果目标是 **jank / ANR / 回归测试**，还需要额外设计 trace marker、hook、统计口径和失败回退策略。论文没有直接给出这部分实验结果。
+- `int`、`String`、`float` 等变量和基本类型；
+- 与 `null` 比较的对象；
+- 方法返回值。
 
-## 扩展
+分析器回溯左右操作数的来源，传播候选常量，再合并能满足条件的赋值路径。这里得到的是静态可满足路径；账号态、网络返回、随机数、服务端配置等运行期输入仍可能让设备执行停住。
 
-### 🔸 Android 动态分析工具全景
+### 5. 找到 GUI 事件和资源 ID
 
-- **APE**：偏模型驱动和大范围 GUI 探索。
-- **Guardian**：偏 LLM 驱动的语义化界面探索。
-- **GoalExplorer**：先建 Screen Transition Graph，再引导 Stoat 做动态探索。
-- **GAPS**：把目标方法可达性当成第一目标，静态路径重建先于动态交互。
+GAPS 识别 `onClick()`、`onItemSelected()` 等 handler，沿 listener 注册和对象来源回溯到 `findViewById()`，再解析其资源参数。生成的 JSON 指令包含：
 
-### 🔸 GAPS 与 LLM 驱动测试的对比
+- 可执行入口；
+- `Activity` 名称；
+- 需要交互的图形元素 ID 序列；
+- 对应 call sequence。
 
-2026 年 1 月的专项对比论文将 GAPS 与 Guardian（LLM 驱动的 GUI 测试工具）做了对比：
+XML View 体系能提供稳定资源 ID，正好适合这套分析。Jetpack Compose 通过 Kotlin lambda 挂接事件，节点还会随 recomposition 改变；v3 的 Limitations 明确说明当前不支持 Compose。
 
-- GAPS 的动态触达率（57.44%）约为 Guardian（17.12%）的 3.4 倍。
-- LLM Agent 在复杂 Activity 状态转换中容易“迷路”：重复点击已访问的界面、跳过需要特定前置条件的入口、在深层嵌套的 Fragment 导航中失去方向。
-- GAPS 的静态路径重建提供的是精确的导航：每一步都有明确的 Activity、控件 ID 和操作类型。这种确定性在方法级触达场景中比 LLM 的语义化探索更有效。
+## 动态执行：确定性指令加受限 PHIL
 
-GAPS 仓库的 `run` 模式集成了 LLM Agent，但定位是 fallback：当静态阶段预期的控件不存在时，LLM 尝试替代性操作。论文基线实验不依赖 LLM 组件。
+动态阶段安装应用，并用 AndroidViewClient 的 `findViewById()` 与 `touch()` 执行静态指令。每条候选路径开始前会重启应用，执行器持续轮询 runtime monitor。方法被观察到后返回 `REACHED`；当前路径无法继续时，转试下一条候选路径。
 
-这组对比的结论：在“指定目标方法并稳定触达”这个任务上，基于程序分析的路径重建仍然比大模型的界面探索更可靠。LLM 的优势在于适应性：面对 GAPS 无法建模的 Compose 界面或动态布局，LLM 有机会通过视觉理解绕过静态分析的限制。
+确定性操作遇到权限弹窗、广告或动态布局时，v3 会调用 PHIL（Predictive Handler for Interface Limitations）。它接收经过筛选的当前 GUI 层级、目标方法和静态路径，并输出 `click`、`type` 等结构化动作。论文实现使用 GPT-5.4、temperature 0.7，但 PHIL 是可关闭、可替换模型的组件，这个模型配置不属于 GAPS 的稳定接口。
 
-### 🔸 用 Frida hook 实现目标触达即抓 Trace
+PHIL 的调用受到两层约束：
 
-GAPS 的 Frida hook 除了用于确认方法是否被执行，还可以扩展为“触达即抓 Trace”的触发器：
+- 每条路径中的同一个 `Activity` 最多介入一次；
+- 障碍仍未清除，或该 `Activity` 已用过 PHIL 时，当前路径会终止。
 
-1. 在目标方法上挂 Frida hook。
-2. Hook 触发时，通过 Frida `Java.use("android.os.Trace").beginSection("gaps_target")` / `endSection()` 注入自定义 trace marker。或者使用 native 层的 `ATrace_beginSection()` / `ATrace_endSection()`（需要 Frida 的 `Module.getExportByName()` 调用 `libandroid.so` 中的导出符号）。
-3. Trace 抓取有两种路径：
-   - **轻量级（推荐）**：预先通过 `adb shell perfetto` 启动环形缓冲区 trace 录制，Frida hook 触发时只注入 marker，后续在 Perfetto UI 中用 marker 时间点定位目标方法执行窗口。
-   - **集成 Perfetto SDK**：在 App 或注入的 native 库中嵌入 Perfetto SDK 的 Producer/DataSource，通过 `perfetto::Tracing::Initialize()` 初始化后，可以在 hook 触发时启动一段自定义 DataSource 的短窗口 trace。这种方式需要提前完成 SDK 集成，不能从 Frida 脚本直接假定系统已提供该 C++ 接口。
+这种约束避免 agent 无限探索，也保留了静态路径的主导地位。PHIL 仍带有非确定性，论文通过每个应用三轮运行并报告平均值来吸收部分波动。
 
-这样做的好处是避免"抓 Trace 太晚"。全量 trace 在长时段录制中容易遗漏首帧信息，而 GAPS 的路径触达 + Frida 触发可以把 trace 窗口精确压缩到目标方法执行前后。marker 注入方案无需 App 侧代码修改，是最小侵入的实现路径。
+### 当前仓库命令的含义
 
-### 🔸 论文验证环境与仓库边界
+下面的命令展示公开复现快照中的两阶段入口，实际使用时应保存源码快照、版本标识与 `uv.lock`：
 
-- **静态分析环境**：CloudLab Ubuntu 22.04，64GB RAM。
-- **动态分析环境**：Android 13 x86-64 emulator；需要 ARM 时使用 Pixel 2 Android 11。
-- **超时设置**：动态实验统一 5 分钟。
-- **仓库边界**：README 说明 `run` 模式默认可用 built-in LLM agent；论文正文则以 AndroidViewClient + optional Guardian + optional Frida 描述实验链。引用实现时要说明"论文基线"还是"当前仓库版本"。
+```bash
+uv sync
 
-### 🔸 局限性：哪些场景会掉精度
+uv run gaps static \
+  -i app-under-test.apk \
+  -sig 'Lcom/example/Target;->work(Ljava/lang/String;)V' \
+  -cond \
+  -o gaps-output
 
-- **Jetpack Compose**：论文明确写了当前不支持 Compose。
-- **Flutter / React Native**：逻辑不完全落在传统 Dalvik 调用链里，静态路径重建会受限。
-- **混淆、复杂 App state**：真实应用里的 path explosion、账号态、支付流、系统权限广播都会降低动态触达率。
-- **性能分析扩展**：若要把它用于 jank / ANR 排查，还要自己补 Trace 与统计口径。
+uv run gaps run \
+  -i app-under-test.apk \
+  -instr gaps-output/path-to-instructions.json \
+  -frida
+```
 
+`static` 生成路径和高层指令，`run` 才会操作设备。`-frida` 需要运行 frida-server 的 rooted 设备或模拟器；PHIL 所用模型若要求 API 凭据，还要按快照对应的 provider 配置注入环境变量。自动化环境不应只记录“使用最新版”。
 
+## Runtime monitor 只回答“是否触达”
 
-### 论文外推边界：反射与编译期生成
+论文使用了两种目标方法证据：
 
-GAPS 论文的 Limitations 节只支撑几类边界：Flutter / React Native、混淆导致的 path explosion、库中的 dead code、未建模的 implicit flows、Jetpack Compose、复杂交互状态，以及 intent-filter 权限或 data 参数。反射、Dagger/Hilt、动态代理和 JNI 属于 Android 静态分析的通用风险；论文没有给出 GAPS 对这些场景的分项实验或穿透率，不能写成论文结论。
+- AndroTest 应用可重打包，使用 AndroLog 给方法加入日志；
+- 真实应用无法稳定通过 AndroLog 重打包时，使用 GAPS 的 Frida integration hook 目标方法。
 
-- **反射 / 动态代理**：目标调用可能在运行时由字符串、代理类或 `InvocationHandler` 拼接出来，静态 call graph 不一定能追踪到真实实现。用于 GAPS 结果解读时，只能标成待验证风险。
-- **Dagger/Hilt 等编译期代码生成**：生成类存在于编译产物中，GAPS 是否能复原依赖注入关系取决于字节码形态和回调建模，论文未给出专项结果。
-- **JNI / Native 调用链**：目标方法进入 native 库后，传统 Dalvik 字节码路径重建无法继续展开。论文没有对 JNI 场景给出单独实验，不能从整体 88.24% / 57.44% 推导 native 触达率。
+这两种证据都比“页面已经打开”严格，因为页面完成不保证特定方法执行。它们仍不提供性能因果关系：一次 hook 命中没有说明方法耗时，也没有说明其调用发生在 missed frame、ANR 前兆或功耗尖峰内。
 
-将 GAPS 用于性能排障时，若目标方法落在这些外推场景里，应先通过 Frida hook、trace marker 或手工验证确认触达，再把 Perfetto / simpleperf 观测结果接到后续分析。
+Frida hook 本身会改变执行时间。短方法、锁竞争、JIT/AOT 边界和高频调用尤其容易被探针开销污染。性能实验应把“无 hook 的基线 trace”和“带 hook 的定位 trace”分开，必要时改用应用源码中的 `Trace.beginSection()` 或 Perfetto SDK 埋点做低扰动复测。
+
+## Perfetto 是 Android 17 工程扩展
+
+GAPS 论文没有把 Perfetto 纳入路径生成、动态执行或 reachability 判定。把二者组合时，职责应保持分离：
+
+| 工具 | 在组合流程中的问题 |
+| --- | --- |
+| GAPS 静态阶段 | 怎样从入口走到目标方法 |
+| GAPS 动态阶段 | 这套交互能否执行并命中方法 |
+| Frida/AndroLog/应用 marker | 目标方法在什么时间被观察到 |
+| Perfetto | 同一时间窗内哪些线程、帧、调度、I/O 或 fence 出现异常 |
+| simpleperf | CPU 样本主要落在哪些调用栈 |
+
+### 一套可复现的接入顺序
+
+1. 记录 APK SHA-256、包名、versionCode、完整 smali 方法签名与 GAPS commit。
+2. 运行静态阶段，人工检查 entry point、条件和 GUI ID 是否符合目标应用。
+3. 准备独立测试账号、权限、网络响应与初始数据库；记录哪些状态无法由 GAPS 生成。
+4. 在交互前启动 Perfetto，配置足够长的 ring buffer，并包含目标应用的 atrace、FrameTimeline、调度、频率及场景所需数据源。
+5. 安装 runtime monitor，再运行 GAPS 动态阶段。每轮同时记录 `REACHED`/`FAILED`、采用的候选路径、PHIL 是否介入和 marker 时间。
+6. 只在 `REACHED` 样本内对齐目标 marker 与性能异常；`FAILED` 样本用于分析自动化可靠性，不能混入性能分位数。
+7. 移除 Frida hook 后复测可疑场景，确认异常不由探针、重打包或调试环境引入。
+
+GAPS 每试一条路径都会重启应用，这会改变进程冷热、JIT、页面缓存、数据库连接和图片缓存。若待测问题只在长会话、后台恢复或热缓存条件下出现，需要修改执行器或使用 `--manual-setup` 准备状态，不能直接沿用论文的 clean-state 策略。
+
+### 用 Frida 注入时间锚点
+
+下面的示例用于测试设备：它在目标 Java 方法的同一线程上包一层 `android.os.Trace` section，Perfetto 必须在 GAPS 执行前启动并采集该应用的 atrace。
+
+```javascript
+Java.perform(() => {
+  const Trace = Java.use("android.os.Trace");
+  const Target = Java.use("com.example.Target");
+  const work = Target.work.overload("java.lang.String");
+
+  work.implementation = function (arg) {
+    Trace.beginSection("gaps_target:Target.work");
+    try {
+      return work.call(this, arg);
+    } finally {
+      Trace.endSection();
+    }
+  };
+});
+```
+
+这个 section 包围 hook 调用期间的方法执行，可在应用线程轨道上提供时间锚点。它不负责启动或停止 Perfetto，也不能替代 FrameTimeline。目标方法若被内联、位于 native 库、存在多个 overload，或进程在 hook 安装前已执行该方法，需要调整探针并单独验证。
+
+### jank、ANR 与功耗各看什么
+
+- **jank**：从 missed `DisplayFrame` 与对应 `SurfaceFrame` 出发，检查 marker 是否落在相关帧的生产区间；只在时间重叠且调用链合理时继续归因。
+- **ANR**：确认目标方法与主线程、binder、锁等待或 input timeout 的时序。方法命中早于 ANR 数十秒，通常还缺中间证据。
+- **功耗/发热**：按同设备、同热状态、同网络条件做多轮对照；单次目标触达无法区分方法成本、PHIL 网络请求、Frida 或屏幕操作开销。
+- **native 热点**：GAPS 的 DEX 路径可触达 Java/Kotlin 包装层，native 内部成本仍需 simpleperf、Perfetto native heap/CPU 数据或库内 marker。
+
+## v3 的真实应用实验
+
+论文还在 2026 年 6 月收集的 Google Play 下载量前 50 应用上，以 SPECK 报告的潜在安全问题方法为目标。只有 5.55% 的目标位于 `Activity` 中，场景比 AndroTest 更偏向深层代码。
+
+| 指标 | v3 结果 |
+| --- | ---: |
+| 静态路径生成率 | 62.03% |
+| 平均静态分析时间/应用 | 278.9 秒 |
+| 生成的 call sequence | 219 条 |
+| call sequence 长度 | 1—41，均值 12.42，中位数 4 |
+| 三轮动态触达率均值 | 54.80% |
+| 动态执行平均时间 | 4 分 48 秒 |
+
+真实应用实验用 Frida 作为触达证据。62.03% 与 54.80% 的差值不能直接叫“静态误报率”：有些静态路径成立，但运行期需要登录、支付、特定文本、动态内容、权限或 Intent 参数，执行器没有构造出对应状态。
+
+这些数字也不应外推为 Android 17 应用的成功率。样本、目标选择、应用版本、设备、模型和时间预算都会改变结果；Compose 在现代应用中的占比还会进一步影响 GUI ID 提取。
+
+## 与相关工具的边界
+
+| 工具 | 主要目标 | 输出/执行方式 | 与 GAPS 的差别 |
+| --- | --- | --- | --- |
+| FlowDroid | Android 污点与数据流分析 | 全程序抽象、dummy main、数据流结果 | 不生成面向目标方法的可执行 GUI 指令 |
+| DroidReach | 静态路径重建 | 基于完整 call graph 输出路径 | 没有 GAPS 的动态执行、条件解析和 GUI trigger 链 |
+| APE | 覆盖率导向 GUI 探索 | 模型驱动事件生成 | 不掌握目标方法的静态路径 |
+| Guardian | 用户任务导向 LLM 交互 | 根据界面语义规划动作 | v3 中作为独立动态基线；不是 GAPS 内部 fallback |
+| GoalExplorer | screen/activity 导向探索 | Screen Transition Graph + 动态探索 | 引导单位偏页面和 Activity，不以方法级 backward slice 为起点 |
+| PHIL | GAPS 内部受限 agent | 只在确定性步骤失败时处理 UI 障碍 | 它是 GAPS v3 的 fallback，不是 Guardian 的别名 |
+
+比较百分比时还要核对预算和分母。FlowDroid/DroidReach 的百分比属于静态路径生成，APE/Guardian/GoalExplorer/GAPS Dynamic 属于动态方法触达；把两列按高低排在一起没有统计意义。
+
+## 已验证的限制与工程外推
+
+论文 v3 直接列出的限制包括：
+
+- Flutter/React Native 的主要逻辑不在传统 Dalvik 代码中；
+- 混淆会引发 path explosion 并增加分析时间；
+- 库中的 dead code 会拖累路径重建；
+- callback mapping 未覆盖的 implicit flow 会造成 call graph unsoundness；
+- 当前不支持 Jetpack Compose；
+- 游戏胜利、账号、支付等复杂状态可能阻断动态执行；
+- intent filter 入口可能要求权限、系统身份或额外 data；
+- 动态布局和 WebView 会干扰静态 GUI 提取；
+- PHIL 引入非确定性。
+
+反射、动态代理、Dagger/Hilt、JNI 是 Android 程序分析中常见的额外风险，但论文没有提供这些类别的 GAPS 分项命中率。工程报告可以把它们列为待验证条件，不能从 88.24% 或 56.93% 推导专项能力。
+
+Android 17 上还要额外核对：
+
+- 目标应用是否主要采用 Compose；
+- entry component 是否可从测试环境启动，权限和导出属性是否允许；
+- Frida 所需 root、SELinux 与进程架构条件是否满足；
+- split APK、动态特性模块和运行期代码加载是否都进入分析输入；
+- 目标方法签名是否因 R8、版本更新或多 dex 布局改变。
+
+## 复现实验检查清单
+
+静态阶段：
+
+- 固定论文版本、GAPS commit、Python/uv lock、Androguard 与 Apktool 版本。
+- 固定 APK hash、目标签名、path limit、`-cond` 与其他 CLI 参数。
+- 保存生成的 JSON、call sequence、分析时长和失败原因。
+
+动态阶段：
+
+- 记录设备型号、Android 版本、ABI、root/Frida 版本、分辨率和导航模式。
+- 固定应用初始状态、账号、权限、locale、网络响应和广告策略。
+- 保存每轮候选路径、PHIL 调用、动作序列、runtime monitor 与执行时间。
+- 至少重复三轮，分开报告确定性路径与 PHIL 路径。
+
+性能扩展：
+
+- Android 17 测试写明 API 37 与具体 build fingerprint。
+- trace 在自动交互前启动，避免丢失入口和首帧。
+- reachability 结果与性能指标使用不同字段。
+- hook、重打包和 release 原包分别建基线。
+- 结论同时给出目标 marker、线程/帧证据和无探针复测。
 
 ## 参考资料
 
-### 论文与仓库
-
-- arXiv: Mind the GAPS: Bridging the GAPS between Targeted Dynamic Analysis and Static Path Reconstruction in Android Apps
-  https://arxiv.org/abs/2511.23213
-- samudoria/GAPS
-  https://github.com/samudoria/GAPS
-
-### 论文里直接提到的实现与依赖
-
-- AndroidViewClient
-  https://github.com/dtmilano/AndroidViewClient
-- Frida
-  https://frida.re/
-- Apktool
-  https://apktool.org/
-- Androguard
-  https://github.com/androguard/androguard
-- AndroLog: Android Instrumentation and Code Coverage Analysis
-  https://arxiv.org/abs/2404.11223
+- GAPS 论文 v3：[GAPS: Targeted Execution of Android Apps via Static Path Reconstruction](https://arxiv.org/abs/2511.23213v3)
+- GAPS 公开复现快照：[GAPS README](https://anonymous.4open.science/r/GAPS/README.md)
+- 动态交互库：[AndroidViewClient](https://github.com/dtmilano/AndroidViewClient)
+- 动态插桩：[Frida](https://frida.re/)
+- 资源反编译：[Apktool](https://apktool.org/)
+- DEX 静态分析：[Androguard](https://github.com/androguard/androguard)
+- 方法日志插桩：[AndroLog](https://arxiv.org/abs/2404.11223)
+- Android trace API：[`android.os.Trace`](https://developer.android.com/reference/android/os/Trace)
+- Perfetto Android tracing：[Android tracing quickstart](https://perfetto.dev/docs/quickstart/android-tracing)
