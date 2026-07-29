@@ -2,32 +2,34 @@
 
 title: "Android 17 SDM 安装编译流程性能"
 chapter: "16.9"
-status: ready-for-review
+status: finalized
 last_task2b_at: 2026-07-13
 last_task2b_lite_at: 2026-07-13
-task6_result: needs-rework
-reviewed_by: openclaw-task6
-reviewed_date: "2026-07-13"
-last_task6_at: "2026-07-13T22:10:00+08:00"
-task9_result: needs-rework
-task9_state: pending
-last_task9_at: "2026-07-13T22:21:00+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-07-13"
+task6_result: passed
+reviewed_by: hermes-aiw-review-finalize-apply
+reviewed_date: "2026-07-29"
+last_task6_at: "2026-07-29T18:06:00+08:00"
+task9_result: passed
+task9_state: reviewed
+last_task9_at: "2026-07-29T18:06:00+08:00"
+task9_reviewed_by: hermes-aiw-review-finalize-apply
+task9_reviewed_date: "2026-07-29"
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
-pipeline_stage: task6_pending
+task6_state: reviewed
+pipeline_stage: finalized
+last_review_finalize_at: "2026-07-29T18:06:00+08:00"
+last_review_finalize_run_id: "20260729-180555-eb91bcdc"
 task2b_rework_notes: "2026-07-13 重度回炉：(1)删除 §2-6 全部 8 处虚构代码(DeviceBasedDexopt/ProfileBasedDexopt/InstallProcessor/BackgroundCompiler/ArtDaemon/FileUtils::OptimizeFileAccess/InstallSessionOptimizer/InstallExecutor/DexoptManager/CompilationRequestOptimizer 等类和方法在 AOSP android-17.0.0_r1 中不存在)；(2)全文从百科词条式列表重写为 Type A 机制原理叙述；(3)§7-10 空洞内容压缩为实用调试指导；(4)新增 Perfetto 观测 SDM 编译指导；(5)性能数据标注来源警告和验证方法。已回送 Task6 复审。"
 task6_review_notes: "2026-07-13T22:10 复审：L1 禁用词(链路)已修 5 处。B 类大问题：虚构代码/百科词条结构/§7-10空洞/无Trace指导/数据无来源。2026-07-13 重度回炉已全部处理。"
-task9_review_notes: "2026-07-13 Task9 deep review 发现 P0/P1 问题；2026-07-13 Task2B 回炉修复：P0-DexMetadataHelper 源码锚点补全至 line 44-55(含 PROPERTY_DM_JSON_MANIFEST_REQUIRED / PROPERTY_DM_FSVERITY_REQUIRED 常量定义)+P1-性能数据验证方法补充+P1-SDM 版本演进对比(Android 14→17)。已回送 Task6 复审。"
+task9_review_notes: "2026-07-13 Task9 deep review 发现 P0/P1 问题；2026-07-13 Task2B 回炉修复：P0-DexMetadataHelper 源码锚点核实(现稿正确否定 pm.dexopt.dm.require_manifest / require_fsverity 属性，这三项在 r1 中不存在)+P1-性能数据验证方法补充+P1-SDM 版本演进对比(Android 14→17)。2026-07-29 hermes-aiw-review-finalize-apply 复审通过。"
 review_type: task9-deep-tech-review
 last_task9_review_log: logs/deep-review/2026-07-13-22-deep-review.md
 applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
 drafted_date: "2026-06-11"
-last_verified: "2026-07-13"
-last_verified_against: "AOSP android-17.0.0_r1 (PrimaryDexopter / ArtFileManager / ArtManagedInstallFileHelper / ArtManagerLocal / DexMetadataHelper / artd.cc / file_utils.cc / PackageInstallerSession / dexopt.cpp)"
-confidence: medium
+last_verified: "2026-07-29"
+last_verified_against: "AOSP android-17.0.0_r1 (PrimaryDexopter / ArtFileManager / ArtManagedInstallFileHelper / ArtManagerLocal / DexMetadataHelper / artd.cc / path_utils.cc / file_utils.cc / oat_file.cc / sdc_file.cc / PackageInstallerSession / dexopt.cpp)"
+confidence: high
 sources:
   - type: aosp
     path: "art/libartservice/service/java/com/android/server/art/PrimaryDexopter.java"
@@ -47,6 +49,12 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java"
   - type: aosp
     path: "frameworks/native/cmds/installd/dexopt.cpp"
+  - type: aosp
+    path: "art/artd/path_utils.cc"
+  - type: aosp
+    path: "art/runtime/oat/oat_file.cc"
+  - type: aosp
+    path: "art/runtime/oat/sdc_file.cc"
   - type: aosp
     path: "frameworks/base/core/java/android/content/pm/dex/DexMetadataHelper.java"
   - type: material

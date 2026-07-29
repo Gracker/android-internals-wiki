@@ -8,12 +8,12 @@ related_chapters: ["22.3", "22.10", "2.10", "14.8"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-05"
 gap_source: "研究素材/章节深挖"
-last_draft_polish_at: "2026-07-25T23:35:27+08:00"
-last_draft_polish_run_id: "20260725-233527-draft-polish-1de00e19"
+last_draft_polish_at: "2026-07-29T19:35:08+08:00"
+last_draft_polish_run_id: "20260729-193508-draft-polish-1de00e19"
 task6_state: "blocked-source-material-required"
 task9_state: pending
 pipeline_stage: "draft_needs_body_apply"
-last_verified: "2026-07-07"
+last_verified: "2026-07-29"
 confidence: low
 sources:
   - "AOSP android-17.0.0_r1 negative scan note embedded in this draft: Impeller is not part of Android platform source tree"
@@ -21,7 +21,9 @@ sources:
 
 # 22.30 Impeller Shader 编译性能与 Flutter 渲染稳定性
 
-> **Draft polish 状态（2026-07-25）**：本章目前只有待展开提纲和一段已写入的 Android 17.0.0_r1 勘误说明；本轮没有收到可路由的 Flutter Engine、Impeller、Perfetto 或设备实测材料。因此不将本章推进为 `ready-for-review`，仅修复元数据、版本边界和待验证标记。后续需要 body-apply/source material 后再展开正文。
+> **Draft polish 状态（2026-07-29，run 20260729-193508-draft-polish-1de00e19）**：本章目前只有待展开提纲和一段已写入的 Android 17.0.0_r1 勘误说明；本轮再次未收到可路由的 Flutter Engine、Impeller、Perfetto 或设备实测材料。因此**不**将本章推进为 `ready-for-review`，仅刷新元数据（last_draft_polish_at / run_id / last_verified），保留 draft 与 `blocked-source-material-required` 状态，明确等待 body-apply / source material 后再展开正文。
+
+> **Draft polish 历史（2026-07-25，run 20260725-233527）**：首轮 polish 已修复 Android 17.0.0_r1 版本边界、Impeller 非 AOSP 平台模块的勘误，并将提纲与勘误区段化隔离开，避免将提纲写成结论。结论与 2026-07-29 一致：正文必须等待 Flutter Engine/Impeller 官方文档、Perfetto trace、设备实测等来源到位后再展开。
 
 <!-- outline-start -->
 ## 待补来源后展开的要点

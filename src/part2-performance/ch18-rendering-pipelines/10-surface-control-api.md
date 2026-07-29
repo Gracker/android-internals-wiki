@@ -44,6 +44,12 @@ last_deepseek_cn_review_at: 2026-07-16
 last_task2b_verifier_at: "2026-07-08T03:31:42+08:00"
 task2b_verifier_result: "status-corrected-ready-for-task6"
 task2b_verifier_notes: "2026-07-08 Task2B Verifier: status finalized→ready-for-review; auto-fixed by Task9, pipeline=task6_pending, queue clear. Ready for Task6 re-review."
+last_verified: "2026-07-29"
+last_verified_against: "android-17.0.0_r1"
+confidence: "high"
+last_idle_audit_at: "2026-07-29T14:35:28+08:00"
+last_idle_audit_run_id: "20260729-143528-idle-audit-fb6d5268"
+last_idle_audit_result: "pass-minor-fix"
 ---
 
 # 18.10 SurfaceControl API 深入
@@ -570,7 +576,7 @@ SurfaceControl 适合把更新节奏不同的少量内容分开：主画面每�
 | 字幕 | UI raster worker | `setBuffer()` | `subtitle` / container | subtitle generation | CPU ready / previous release | 可选 |
 | 视频 | codec | `queueBuffer()` 或独立 bridge | `video` / host | codec PTS + frame number | codec → consumer | media timing |
 
-这张表能发现“同名 Layer 已重建”“拿宿主 FrameTimeline解释独立视频”“把 release fence 归到错误 buffer”等问题。
+这张表能发现“同名 Layer 已重建”“拿宿主 FrameTimeline 解释独立视频”“把 release fence 归到错误 buffer”等问题。
 
 ### 不依赖固定 slice 名称
 

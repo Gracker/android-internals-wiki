@@ -42,6 +42,11 @@ task9_review_notes: "2026-05-20 Task9 深度复审：needs-rework。P0 1 / P1 1 
 task6_review_notes: "2026-05-25 20:12 Task6：Task2B 修复后写作复审；小修 10 处（否定纠正式、直接称呼、图/代码说明、Buffer 等待措辞）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-05
+last_verified: 2026-07-29
+last_verified_against: android-17.0.0_r1 / android17-6.18-2026-06_r6
+confidence: medium-high
+last_idle_audit_at: 2026-07-29
+last_idle_audit_run_id: 20260729-103556-idle-audit-caf6b94a
 ---
 
 <!-- outline-start -->
