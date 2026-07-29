@@ -36,564 +36,376 @@ sources:
 
 # 26.24 heapprofd 生产级部署与权限模型
 
-> 本节聚焦 heapprofd 在 **生产环境** 中的部署实践、权限管理、泄漏诊断工作流及替代方案对比。heapprofd 的工具架构与配置参数详见 §14.1，启动阶段部署的特殊挑战详见 §8.39，Scudo 分配器原理详见 §23.11。本节聚焦「怎么做」：如何在真实生产环境中安全、高效地使用 heapprofd 持续监控 Native 内存。
+本章讨论 Android 17 user build 上的 native heap 采集：哪些进程允许采、谁能发起会话、配置怎样限制开销，以及怎样解释采样结果。平台源码锚定 `android-17.0.0_r1`。本章不涉及内核接口，因此没有引用 kernel tag。
 
-## 要点
+heapprofd 随 Android 10 引入。Android 12 增加了 named heap、`all_heaps` 和 installer 过滤等配置能力；Android 17 延续这套架构。`<profileable>` 元素从 API 29 可用，`android:enabled` 属性从 API 30 可用。版本时间线应按这些可核验事实描述，不能把 Android 12 写成 heapprofd 的起点。
 
-### 🔹 heapprofd 架构与工作原理回顾
+## 26.24.1 heapprofd 记录什么
 
-heapprofd 是 Android 12（API 31）引入的用户态堆分析守护进程，运行于 Perfetto 框架内。其核心定位是：**在不 root 设备的前提下，对指定应用进程进行 native 堆采样分析**。
+heapprofd 观察目标进程在采集窗口内经过受支持 allocator 的分配与释放，并把采样大小、调用栈和映射信息写入 Perfetto trace。默认 heap 是 `libc.malloc`，覆盖 bionic 的 `malloc`、`free`、`calloc`、`realloc`、`new` 和 `delete` 等分配路径。
 
-#### 核心架构
+它不扫描一份完整的进程堆快照，也不保存对象内容。下面这些对象需要其他数据源：
 
-heapprofd 采用 **客户端-守护进程** 模型：
-
-- **heapprofd 守护进程**（`/system/bin/heapprofd`）：以 `nobody` 用户运行，注册为 Perfetto data source producer，负责接收采样配置、发送采样信号、收集堆分配数据
-- **客户端库**（注入目标进程）：通过 POSIX 信号（`SIGRTMIN+4` 为 native heap，`SIGRTMIN+6` 为 Java heap）接收采样触发，在目标进程内部走 `malloc` hook 收集调用栈
-
-[已验证: AOSP android-17.0.0_r1, `external/perfetto/src/profiling/memory/heapprofd.cc`]
-
-采样流程简述：
-
-1. Perfetto `traced` 通过 IPC 向 heapprofd 下发 trace 配置（包含目标 PID/包名、采样间隔）
-2. heapprofd 向目标进程发送信号（`SIGRTMIN+4`）
-3. 目标进程的 signal handler 安装 `malloc`/`free` hook（通过 `__libc_globals` dispatch table 替换）
-4. 每次 `malloc` 调用按配置的 `sampling_interval_bytes` 间隔采样，记录调用栈 + 分配大小
-5. 采样数据通过共享内存 buffer 回传 heapprofd，最终写入 Perfetto trace
-
-[已验证: AOSP android-17.0.0_r1, `external/perfetto/src/profiling/memory/heapprofd.cc`]
-
-#### 采样 vs 全量模式
-
-| 模式 | 配置 | 开销 | 适用场景 |
-|------|------|------|----------|
-| **采样式**（sampling） | `sampling_interval_bytes: N` | 与 1/N 成正比 | 生产环境持续监控 |
-| **全量式**（all-allocations） | `sampling_interval_bytes: 1` | 极高（每次 malloc 都 hook） | 仅调试/灰度，不可用于生产 |
-
-生产环境的采样间隔推荐值：
-- **常规监控**：4096 字节（4KB）—— 平衡精度与开销
-- **精确定位**：1024 字节（1KB）—— 短时间窗口抓取，<5 分钟
-- **低开销长跑**：65536 字节（64KB）—— 24h+ 持续监控
-
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native 内存泄漏监控：寻找 Native 中不可达内存.md]
-
-> ⚠️ heapprofd 的完整架构图、双 Producer 并行模型、信号处理链路详见 §14.1。
-
-### 🔹 Android 17 权限模型变更
-
-#### 版本演进时间线
-
-| Android 版本 | heapprofd 状态 | 关键权限变化 |
+| 对象 | heapprofd 可见性 | 补充数据源 |
 |---|---|---|
-| 11 (API 30) 及以下 | 不存在 | N/A（需 root + 手动编译 Perfetto） |
-| 12 (API 31) | 引入 | `profileable` flag 引入；user 构建首次可用 |
-| 13 (API 33) | 增强 | `scan_pids_only_on_start` 默认改 false；通配符支持 |
-| 14 (API 34) | 稳定 | Guardrails 完善；`profileable_from_shell` 细化 |
-| 15-16 (API 35-36) | 优化 | SELinux 策略放宽；企业部署支持改善 |
-| 17 (API 37) | 成熟 | 三层权限模型定型；TRUSTED_SYSTEM 绕过机制 |
+| 会话期间的 `malloc` / `free` | 可采样并归因到调用栈 | Perfetto heap flamegraph |
+| 会话开始前已存在的 allocation | 没有历史分配事件，不能还原来源 | 更早启动采集或做基线对照 |
+| 直接 `mmap` / `munmap` | 默认不经过 `libc.malloc` heap | `linux.perf` syscall events、`/proc/<pid>/maps` |
+| DMA-BUF、图形 buffer | 没有 allocator 调用栈语义 | memtrack、`dmabuf_dump`、GpuMem |
+| Java 对象引用关系 | native heap profile 不提供 | Java heap dump、Android Studio profiler |
+| allocator 内部缓存 | 能看到应用层 free，不能直接解释 RSS 是否归还 | `dumpsys meminfo`、smaps、allocator 指标 |
 
-[已验证: AOSP android-17.0.0_r1, `external/perfetto/src/profiling/common/producer_support.cc`]
+因此，heapprofd 适合回答“采集窗口内哪些调用栈产生了仍存活的 native allocation”。它单独回答不了“进程 PSS 为何增长”或“哪一个 Java 引用保住了 native 对象”。
 
-#### `profileable` Manifest Flag
+## 26.24.2 Android 17 的工作链路
 
-Android 12 引入的 `<profileable>` 标志是 heapprofd 生产部署的核心开关：
+Android 17 中，`heapprofd` 是 Perfetto producer。一次对已运行进程的采集会经过以下环节：
+
+1. `traced` 把 `android.heapprofd` data source 配置交给 heapprofd；
+2. heapprofd 规范化进程名，扫描 `/proc` 找出目标 PID；
+3. producer 向目标发送 `__SIGRTMIN + 4`，`si_value` 为 heapprofd 定义的值；
+4. bionic 的 heapprofd 入口在专用线程中加载 `heapprofd_client.so`，安装 malloc dispatch；
+5. 目标进程把采样事件写入共享 ring buffer；
+6. heapprofd 的 unwinder 读取事件、展开调用栈并维护存活 allocation 账目；
+7. 停止会话或到达连续 dump 时间点时，producer 写出 `ProfilePacket`。
+
+信号处理函数只负责启动安装流程。动态加载、连接 daemon 和 hook 初始化不会全部压在 signal handler 上执行。bionic 还会处理与 GWP-ASan、malloc debug 等 dispatch 的兼容关系；存在不兼容 malloc hook 时，heapprofd 可能拒绝安装。
+
+启动期目标使用另一条入口。heapprofd 在会话开始时设置按进程名匹配的系统属性，之后由 bionic 在新进程初始化期间接入客户端。配置中的 `no_startup` 会关闭这条路径，`no_running` 会跳过已经运行的进程。
+
+## 26.24.3 user build 的权限判定
+
+Android 17 的 `CanProfileAndroid()` 会先看 build type。`userdebug` 和 `eng` 直接通过这一层；`user` build 继续检查 UID、会话发起者和 `/data/system/packages.list`。
+
+### 普通应用与两类发起者
+
+对普通 App UID 和 SDK sandbox UID，Android 17 的判定可概括为下表：
+
+| 会话发起者 | user build 所需属性 |
+|---|---|
+| shell / `SESSION_INITIATOR_UNSPECIFIED` | `profileable_from_shell` 或 `debuggable` |
+| `SESSION_INITIATOR_TRUSTED_SYSTEM` | `profileable` 或 `debuggable` |
+
+`profileable_from_shell` 对应 Manifest 中的 `android:shell="true"`。`profileable` 对应 profileable element 处于 enabled 状态。trusted-system 允许系统服务采集没有向 shell 开放的应用，但目标仍要声明 profileable 或 debuggable。
+
+`SESSION_INITIATOR_TRUSTED_SYSTEM` 是 traced 赋予受信系统会话的身份。普通 App 不能在自己的 textproto 中写一个字段就获得该身份。
+
+### 其他 UID
+
+平台 UID、isolated UID 和普通应用的处理不同：
+
+- 平台 UID 小于 `AID_APP_START` 时，user build 只允许 trusted-system 发起者；
+- SDK sandbox UID 会映射回所属 App UID，再读取该包的 profileable 属性；
+- isolated UID 无法直接映射到来源包。Android 17 只在 trusted-system 会话且 `packages.list` 中所有包都可被 trusted initiator profile 时放行；
+- 其余 UID 范围在 user build 上拒绝。
+
+isolated process 的限制很保守。目标应用即使声明了 `<profileable>`，它的 isolated service 也可能得不到 profile；排查时应查看 trace 中的拒绝信息和 heapprofd 日志，不能只看主进程 Manifest。
+
+### installer 过滤
+
+`target_installed_by` 是 `HeapprofdConfig` 的可选过滤项，支持普通 installer 包名以及 `@system`、`@product`、`@null`。配置没有填写该字段时，`CanProfileAndroid()` 不检查 installer。
+
+installer 过滤只会缩小候选集合，不会授予 profile 权限。例如，下面的约束要求目标来自 system 或 product 分区，但目标仍须通过相应的 profileable 判定：
+
+```textproto
+target_installed_by: "@system"
+target_installed_by: "@product"
+```
+
+这两行适合由平台采集策略用来限制目标来源。把它们加入 shell 配置不会让未开放 shell profiling 的应用变得可采。
+
+## 26.24.4 Manifest 应怎样声明
+
+面向本地 shell 工具采集 release 构建时，最小声明如下：
 
 ```xml
-<!-- AndroidManifest.xml -->
-<application>
-    <profileable
-        android:shell="true"
-        android:enabled="true" />
+<application
+    ...>
+    <profileable android:shell="true" />
 </application>
 ```
 
-- `android:shell="true"`：允许 `adb shell` 直接触发 heapprofd（无需 root）
-- `android:enabled="true"`：允许系统级 Perfetto 配置捕获该应用
+`android:enabled` 默认是 `true`，通常不用重复写。设为 `false` 会禁止系统服务和 shell profiler。`android:shell="true"` 允许 shell 工具读取 profiling 所需的调用栈信息，不会把任意堆字节开放给第三方 App。
 
-**生产环境注意事项**：
-- `profileable` 使应用的 `/proc/<pid>` 目录对 heapprofd 可读，但 **不** 允许任意第三方读取
-- `profileable` 不影响应用正常运行，不改变 ART 行为
-- Google Play 对 `profileable` 标志无限制，可安全发布
+发布策略要根据产品威胁模型决定。调用栈、模块路径、Build ID、线程名和进程名仍可能暴露实现信息。应用若不接受终端用户通过本地调试工具采集 release 版本，应保留 `android:shell="false"`，由受信系统组件承担线上采集；没有这类系统组件时，就不具备通用的远程 heapprofd 采集入口。
 
-[已验证: 官方文档, developer.android.com/guide/topics/manifest/profileable-element]
+可通过包管理器输出核对最终 APK 的合并结果。下面的命令查看设备侧 package 信息：
 
-#### SELinux/sepolicy 约束
-
-heapprofd 在不同构建类型下的 SELinux 权限差异：
-
-- **userdebug/eng 构建**：heapprofd 具有 `DAC_READ_SEARCH` capability，可直接读取 `/proc/<pid>/maps` 和 `/proc/<pid>/mem`
-- **user 构建（生产）**：heapprofd 无 `DAC_READ_SEARCH`，仅可通过 signal handler + 共享内存采集数据，不直接读取进程内存
-
-heapprofd 的 `heapprofd.rc` 配置明确体现了这一差异：
-
-```ini
-service heapprofd /system/bin/heapprofd
-    class late_start
-    disabled
-    user nobody
-    group nobody readproc
-    capabilities KILL DAC_READ_SEARCH    # 仅 userdebug/eng 生效
+```bash
+adb shell dumpsys package com.example.app |
+  rg -i 'profileable|debuggable'
 ```
 
-[已验证: AOSP android-17.0.0_r1, `external/perfetto/heapprofd.rc`]
+输出字段会随系统版本和 OEM 改动而变化。是否可采还要用一次短会话验证，不能把单个 dumpsys 字段当作完整权限判定。
 
-#### 三层权限校验模型
+## 26.24.5 daemon、SELinux 与能力边界
 
-Android 17 中 `ProducerSupport::CanProfile()` 实现了三层校验：
+Android 17 的 `heapprofd.rc` 把服务定义为 disabled，由 `traced.lazy.heapprofd=1` 或持久属性按需启动。服务以 `nobody` 用户运行，加入 `nobody` 和 `readproc` 组，并声明 `KILL`、`DAC_READ_SEARCH` capability。
 
-```
-┌─────────────────────────────────────────┐
-│ 1. UID 范围检查                          │
-│    AID_APP(10000) ≤ uid ≤ AID_ISOLATED  │
-│    → 拒绝 system/phone 等系统进程        │
-├─────────────────────────────────────────┤
-│ 2. 安装者过滤                             │
-│    installed_by ∈ {@system, @product,   │
-│                    @null}               │
-│    → 拒绝第三方商店安装的应用              │
-├─────────────────────────────────────────┤
-│ 3. TRUSTED_SYSTEM 绕过                   │
-│    SESSION_INITIATOR_TRUSTED_SYSTEM     │
-│    → 系统发起的会话直接通过               │
-└─────────────────────────────────────────┘
-```
+同一份 rc 文件明确说明：SELinux 在 user build 上拒绝 `DAC_READ_SEARCH` 对应权限，userdebug/eng 才允许这部分访问。因此，rc 中出现 capability 不能推出生产设备可任意读取 `/proc/<pid>/mem`。
 
-[已验证: AOSP android-17.0.0_r1, `external/perfetto/src/profiling/common/producer_support.cc:CanProfile()`]
+`/dev/socket/heapprofd` 的 socket mode 也不是授权结论。连接建立后，producer 会读取 peer UID、目标 UID 和 packages.list，再执行 `CanProfile()`。文件 mode、Linux capability、SELinux 和 Perfetto 会话身份共同构成边界。
 
-**packages.list 校验**：heapprofd 解析 `/data/system/packages.list` 获取应用安全属性。关键字段包括 `profileable`（`PRIVATE_FLAG_EXT_PROFILEABLE`）、`profileable_from_shell`（`PRIVATE_FLAG_PROFILEABLE_BY_SHELL`）、`installed_by` 等。
+## 26.24.6 进程名匹配没有 native 通配符
 
-[已验证: AOSP android-17.0.0_r1, `external/perfetto/src/traced/probes/packages_list/packages_list_parser.cc`]
+`HeapprofdConfig.process_cmdline` 在 Android 17 的 native producer 中做规范化后精确匹配。规范化规则包括：
 
-### 🔹 生产环境部署策略
+- 路径只保留末尾 `/` 后面的程序名；
+- 第一个 `@` 后的版本后缀被去掉；
+- 比较对象是 `/proc/<pid>/cmdline` 的第一个参数。
 
-#### 部署模式选型
+`com.example.app*` 不会匹配 `com.example.app:remote`。Java HPROF producer 使用 glob-aware matcher，但那是 `android.java_hprof` 的实现，不能据此推导 native heapprofd 支持 glob。
 
-生产环境的 heapprofd 部署可分为三种模式，按侵入性从低到高排列：
+多进程 App 要逐个填写完整进程名。下面的片段同时选择主进程和 remote 进程：
 
-**模式一：事件触发式（推荐首选）**
-
-仅在检测到内存异常时触发 heapprofd 采样，最大程度降低常态开销。
-
-```
-内存监控线程持续运行（轻量级）
-    ↓ PSS 持续上涨 > 阈值
-    ↓ 或 onTrimMemory(TRIM_MEMORY_COMPLETE) 触发
-    ↓
-触发 Perfetto trace（含 heapprofd data source）
-    ↓ 采样 60s
-    ↓
-Trace 文件上传 / 本地分析
+```textproto
+process_cmdline: "com.example.app"
+process_cmdline: "com.example.app:remote"
 ```
 
-触发条件建议：
-- PSS 在 5 分钟内增长 > 20%
-- `onTrimMemory()` 回调级别 ≥ `TRIM_MEMORY_MODERATE` 且 PSS > 历史均值 1.5 倍
-- Native Heap 增长（`Debug.getNativeHeapAllocatedSize()` 差值）> 50MB / 10min
+heapprofd 会分别为匹配到的 PID 建立状态。分析时还要按 `upid` 区分进程，不能把两个进程的 allocation 直接相加后归到主进程。
 
-**模式二：定时采样式**
+## 26.24.7 两种可执行的采集方式
 
-按固定间隔短时间启用 heapprofd（如每 4 小时采样 2 分钟），构建内存分配基线趋势。
+### 使用官方 `tools/heap_profile`
 
-```json
-{
-  "duration_ms": 120000,
-  "data_sources": [{
-    "config": {
-      "name": "android.heapprofd",
-      "heapprofd_config": {
-        "process_cmdline": ["com.example.app"],
-        "sampling_interval_bytes": 4096
-      }
-    }}
-  ]
+本地开发、QA 和问题复现优先使用与目标平台接近版本的 Perfetto 工具。下面的命令采集 120 秒，每 30 秒形成一个 dump，采样间隔为 4 KiB：
+
+```bash
+python3 tools/heap_profile android \
+  -n com.example.app \
+  -i 4096 \
+  -d 120000 \
+  -c 30000
+```
+
+Android 17 tag 中脚本的默认采样间隔是 4096 bytes，共享内存默认 8 MiB。命令结束后会生成 raw trace 和可选的 pprof 产物；raw trace 可直接在 Perfetto UI 中打开。
+
+生产体验敏感的测试应考虑加 `--no-block-client`。官方脚本默认在共享 buffer 满时阻塞客户端等待空间，能保留更多数据，也可能拉长目标进程的 allocation 延迟。禁用阻塞后，buffer overrun 会提前结束该进程的 profile，分析时必须检查错误标志。
+
+### 手写 Perfetto textproto
+
+需要与调度、进程内存或业务 marker 同时采集时，可以直接配置 `android.heapprofd`。下面是一份偏保守的两分钟示例：
+
+```textproto
+buffers {
+  size_kb: 63488
+  fill_policy: RING_BUFFER
 }
-```
 
-适用场景：新版本灰度期间，需要持续监控 native 堆变化趋势。
-
-**模式三：长时持续式**
-
-持续运行 heapprofd，使用大采样间隔（64KB+）降低开销。仅适用于已确认存在 native 泄漏但无法稳定复现的场景。
-
-> 无论哪种模式，都应启用 Guardrails（资源守护），防止 heapprofd 自身耗尽系统资源。Guardrails 详见 §8.39 扩展部分。
-
-[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型]
-
-#### 内存与 CPU 开销评估
-
-heapprofd 运行时开销主要来自三个维度：
-
-| 维度 | 典型开销 | 影响因素 | 缓解策略 |
-|------|----------|----------|----------|
-| 目标进程 CPU | 1-3%（采样式） | 采样间隔越小越高 | ≥ 4KB 采样间隔 |
-| heapprofd RSS | 50-150MB | 监控进程数 × 调用栈深度 | `max_heapprofd_memory_kb` 限制 |
-| 共享内存 buffer | 8-32MB/进程 | `shared_memory_buffer_size_kb` | 适当减小 buffer size |
-
-[已验证: AOSP android-17.0.0_r1, `external/perfetto/src/profiling/common/profiler_guardrails.cc`]
-
-实测数据参考（Pixel 8, Android 17, 单进程监控）：
-- 4KB 采样：目标进程 CPU +1.2%，heapprofd RSS ≈ 80MB
-- 1KB 采样：目标进程 CPU +4.8%，heapprofd RSS ≈ 120MB
-- 64KB 采样：目标进程 CPU +0.3%，heapprofd RSS ≈ 45MB
-
-#### 与 `android:processName` 的协同
-
-多进程应用需注意：heapprofd 的 `process_cmdline` 匹配的是 **进程名**（即 `android:process` 声明的值），而非包名。若应用声明了自定义进程名（如 `com.example.app:remote`），需在配置中精确指定或使用通配符（Android 13+）：
-
-```protobuf
-// Android 13+ 通配符
-process_cmdline: "com.example.app*"
-// 匹配 com.example.app、com.example.app:remote、com.example.app:gpu 等
-```
-
-[已验证: AOSP android-17.0.0_r1, `external/perfetto/src/profiling/memory/java_hprof_producer.cc`]
-
-### 🔹 heapprofd + Perfetto 联合采集流水线
-
-#### Perfetto 配置中的 heapprofd 数据源
-
-完整的生产级 heapprofd Perfetto 配置模板：
-
-```json
-{
-  "buffers": [
-    { "size_kb": 262144, "fill_policy": "discard" }
-  ],
-  "data_sources": [
-    {
-      "config": {
-        "name": "android.heapprofd",
-        "target_buffer": 0,
-        "heapprofd_config": {
-          "process_cmdline": ["com.example.app"],
-          "sampling_interval_bytes": 4096,
-          "shared_memory_buffer_size_kb": 8192,
-          "idle_allocations": true,
-          "all_heaps": false
-        }
-      }
-    },
-    {
-      "config": {
-        "name": "linux.process_stats",
-        "target_buffer": 0,
-        "process_stats_config": {
-          "scan_period_ms": 5000,
-          "record_thread_names": true
-        }
+data_sources {
+  config {
+    name: "android.heapprofd"
+    target_buffer: 0
+    heapprofd_config {
+      process_cmdline: "com.example.app"
+      sampling_interval_bytes: 4096
+      shmem_size_bytes: 8388608
+      max_heapprofd_memory_kb: 131072
+      max_heapprofd_cpu_secs: 30
+      continuous_dump_config {
+        dump_phase_ms: 30000
+        dump_interval_ms: 30000
       }
     }
-  ],
-  "duration_ms": 120000,
-  "flush_period_ms": 30000
+  }
 }
-```
 
-关键参数说明：
-- `idle_allocations: true`：记录空闲分配（已分配但未释放），用于泄漏分析
-- `all_heaps: false`：仅监控默认 malloc heap，不包含自定义 heap
-- `fill_policy: "discard"`：buffer 满后丢弃新数据（环形覆盖可选 `"ring_buffer"`）
-- `flush_period_ms: 30000`：30 秒 flush 一次，平衡数据完整性与内存占用
-
-#### heapprofd 采样数据与 Java Heap Dump 交叉关联
-
-Android 14+ 支持在同一个 Perfetto trace 中同时采集 native heap profile 和 Java heap dump：
-
-```json
-{
-  "data_sources": [
-    {
-      "config": {
-        "name": "android.heapprofd",
-        "heapprofd_config": {
-          "process_cmdline": ["com.example.app"],
-          "sampling_interval_bytes": 4096
-        }
-      }
-    },
-    {
-      "config": {
-        "name": "android.java_hprof",
-        "java_hprof_config": {
-          "process_cmdline": ["com.example.app"]
-        }
-      }
+data_sources {
+  config {
+    name: "linux.process_stats"
+    target_buffer: 0
+    process_stats_config {
+      scan_all_processes_on_start: true
+      proc_stats_poll_ms: 5000
     }
-  ]
+  }
 }
+
+duration_ms: 120000
+write_into_file: true
+flush_timeout_ms: 30000
 ```
 
-交叉分析场景：
-1. **JNI 泄漏定位**：Java 层持有 Native 对象引用但未释放 → Java heap dump 中的 `GlobalRef` 表 + heapprofd 中的 native 分配栈交叉比对
-2. **Bitmap 双重计量**：Java Bitmap 对象（Java heap）+ Native 像素数据（native heap）→ 联合分析实际内存占用
-3. **第三方 SDK 内存全景**：SDK 内部 Java/Native 混合分配的完整画像
+这份配置用周期 dump 观察存活 allocation 的变化，并用 process stats 提供 RSS 侧背景。`max_heapprofd_memory_kb` 和 `max_heapprofd_cpu_secs` 是示例阈值，部署前应按目标设备、进程数和场景基线调整。
 
-#### Trace 中的 `heap_profile` slice 解读
+下面的命令把配置送入设备侧 Perfetto，并拉回 trace：
 
-Perfetto UI 中 heapprofd 数据呈现为 `heap_profile.` 系列表格：
+```bash
+adb push heapprofd.pbtxt /data/local/tmp/heapprofd.pbtxt
+adb shell perfetto --txt \
+  -c /data/local/tmp/heapprofd.pbtxt \
+  -o /data/misc/perfetto-traces/heapprofd.pftrace
+adb pull /data/misc/perfetto-traces/heapprofd.pftrace
+```
 
-- `heap_profile_allocation`：每次采样到的分配记录（ts, callsite_id, size, count）
-- `heap_profile_class`：分配类型名称（如 "malloc", "calloc"）
-- `heap_profile_frame` / `heap_profile_callsite`：调用栈信息
+`perfetto` 会运行到 `duration_ms` 结束。若目标不满足 profileable 条件，trace 可能仍生成，但没有该进程的 heap profile；此时应同步检查 heapprofd 日志与 trace 中的 profile 错误。
 
-常用 SQL 查询（详见 §13.22）：
+## 26.24.8 参数怎样影响开销和证据质量
+
+Android 17 的 `HeapprofdConfig` 已经把资源控制项写进 proto，部署时应理解每个阈值保护的对象：
+
+| 参数 | Android 17 语义 | 调整方向 |
+|---|---|---|
+| `sampling_interval_bytes` | 平均每 N bytes 采一个样本；1 表示完整记录 | 数值增大可降开销，也更易漏掉小 allocation |
+| `shmem_size_bytes` | 目标进程与 daemon 之间的 buffer；默认 8 MiB，最大 500 MiB | 突发 allocation 多时可增大 |
+| `block_client` | buffer 满时是否阻塞目标进程 | 线上测量通常关闭，复现实验可按数据完整性决定 |
+| `max_heapprofd_memory_kb` | heapprofd 的 `RssAnon + VmSwap` 上限 | 防止 daemon 自身占用失控 |
+| `max_heapprofd_cpu_secs` | 当前 data source 启动后 daemon 累计 CPU 秒上限 | 限制 unwinding 消耗 |
+| `continuous_dump_config` | 第一次 dump 延迟与后续 dump 周期 | 用于比较存活 allocation 趋势 |
+| `min_anonymous_memory_kb` | 过滤匿名 RSS 与 swap 低于阈值的进程 | 全局或多目标采集时减少噪声 |
+| `no_running` / `no_startup` | 只采新进程或只采已运行进程 | 按启动问题或运行期问题选择 |
+
+memory 和 CPU guardrail 每 30 秒检查一次。阈值触发后，producer 关闭对应 data source；它们不会把 sampling interval 自动调大。需要自适应采样时，应使用 `adaptive_sampling_shmem_threshold` 和 `adaptive_sampling_max_sampling_interval_bytes`。
+
+不要引用固定的“CPU 增加 1%”或“daemon RSS 80 MB”作为跨设备结论。开销会受 allocation 速率、采样间隔、调用栈深度、ABI、符号信息、目标进程数和 CPU 性能影响。可靠做法是在相同 workload 下分别测量无采集、目标采样间隔和更大间隔三组数据。
+
+## 26.24.9 生产部署的三种权限位置
+
+### QA 在 user build 上采 release APK
+
+这是第三方应用最容易复现的路径：
+
+1. release APK 声明 `android:shell="true"`；
+2. 测试设备保持 user build；
+3. QA 通过 adb、Perfetto UI 或 `tools/heap_profile` 发起会话；
+4. trace 离开设备前按内部数据策略处理。
+
+这条路径验证了 release 优化和 user-build 权限，适合灰度前问题复现。它仍依赖本地调试通道，不能等同于 App 在用户手机上自行启动采集。
+
+### 平台拥有受信采集组件
+
+OEM 或系统产品可以让受信系统服务按设备健康信号发起 Perfetto 会话。目标 App 只需 enabled profileable，是否向 shell 开放由产品策略决定。采集服务还应负责：
+
+- 目标包和 installer allowlist；
+- 采样窗口、次数与资源预算；
+- 充电、温度、前后台和低内存条件；
+- trace 存储、上传、访问审计与过期删除；
+- Build ID、版本号和符号文件映射。
+
+受信发起者身份来自系统集成，不能由普通 APK 模拟。设备管理权限或远程配置本身也不自动获得该身份。
+
+### 只有普通 App 权限
+
+普通 App 没有公开 API 可以把自己声明为 trusted-system 会话，也通常不能管理 `/data/misc/perfetto-traces`。若产品必须在终端用户设备上由 App 自主触发，应选择应用内 allocator instrumentation、SDK 自带 native hook、GWP-ASan 或轻量内存指标，并单独评估兼容性、性能和隐私。
+
+把 `onTrimMemory()`、PSS 阈值或 `ApplicationExitInfo` 接到“启动 heapprofd”之前，要先确认执行采集的系统主体存在。事件信号只能决定何时采，不能创造 Perfetto 系统权限。
+
+## 26.24.10 如何判断 native heap 是否持续增长
+
+单个 dump 展示该时间点上采样账目中的存活 allocation。泄漏判断至少需要两个连续 dump、可重复 workload 和场景结束后的稳定窗口。
+
+推荐记录这些关联信息：
+
+- 包名、PID、`upid`、进程启动时间与版本号；
+- 采样间隔、dump 周期、是否命中 guardrail；
+- 业务动作的起止 marker 和重复次数；
+- 每个 dump 的存活 sampled bytes；
+- 同期 RSS、PSS、anon RSS、swap 和 mmap 变化；
+- trace 是否出现 buffer overrun、unwinding error 或 rejected process。
+
+`heap_profile_allocation` 中正数表示分配，负数表示已经释放的样本。下面的 SQL 按 dump、进程、heap 和 callsite 汇总净存活量：
 
 ```sql
--- 当前仍在内存中的分配 Top-20 调用栈（按累计大小）
-WITH alive AS (
-  SELECT callsite_id, SUM(size) AS total_size, SUM(count) AS total_count
-  FROM heap_profile_allocation
-  GROUP BY callsite_id
-)
 SELECT
-  group_concat(DISTINCT f.name) AS functions,
-  m.mapping_name AS library,
-  a.total_size,
-  a.total_count
-FROM alive a
-JOIN stack_profile_callsite cs ON a.callsite_id = cs.id
-JOIN stack_profile_frame f ON cs.frame_id = f.id
-JOIN stack_profile_mapping m ON f.mapping_id = m.id
-GROUP BY library, a.total_size
-ORDER BY a.total_size DESC
-LIMIT 20;
+  ts,
+  upid,
+  heap_name,
+  callsite_id,
+  SUM(size) AS net_live_bytes,
+  SUM(count) AS net_live_count
+FROM heap_profile_allocation
+GROUP BY ts, upid, heap_name, callsite_id
+HAVING SUM(size) > 0
+ORDER BY ts, net_live_bytes DESC;
 ```
 
-[已验证: AOSP android-17.0.0_r1, Perfetto Trace Processor SQL schema]
+查询结果仍是采样估计。相同调用栈跨 dump 增长、场景退出后不回落，并且多轮复现一致，才构成较强的泄漏线索。调用栈展开与符号化可交给 Perfetto UI flamegraph 或 `traceconv`，避免用只连接 leaf frame 的 SQL 误当成完整栈。
 
-### 🔹 生产环境中的内存泄漏诊断工作流
+### 三类常见误判
 
-#### 端到端泄漏定位流程
+1. **attach 之前的存量缺失**：运行期才启动会话时，旧 allocation 没有分配事件，第一次 dump 不能代表完整 native heap；
+2. **allocator cache 保留页**：应用已经 free，allocator 仍保留 arena 或 page，heap live bytes 回落而 RSS 不回落；
+3. **增长来自 mmap 或图形内存**：PSS 上升但 heapprofd 平稳时，应转查 anonymous mapping、文件 mapping、DMA-BUF 与 GPU 内存。
 
-```
-Step 1: 异常发现
-├── 内存监控告警（PSS 持续上涨 / OOM 率上升）
-├── ApplicationExitInfo 显示 low_memory 或 OOM 崩溃
-└──用户反馈卡顿/闪退
-        ↓
-Step 2: heapprofd 触发
-├── 条件触发：检测到 PSS 异常后自动启动 heapprofd trace
-├── 手动触发：通过 adb / 远程配置下发
-└── 采样窗口：60-300s（视场景而定）
-        ↓
-Step 3: 数据分析
-├── Perfetto UI 查看火焰图（heap_profile.flamegraph）
-├── SQL 查询：Top-N 分配调用栈
-├── 对比分析：与基线 trace 比较，找出增长项
-└── 交叉关联：关联 Java heap dump / process_stats
-        ↓
-Step 4: 根因定位
-├── 识别泄漏调用栈（持续增长且不释放的分配）
-├── 确认泄漏类型：malloc 未 free / mmap 未 munmap / so 库内部泄漏
-└── 关联源码：定位到具体 .so 库和函数
-        ↓
-Step 5: 修复与验证
-├── 代码修复
-├── 回归测试：再次 heapprofd 采样验证
-└── 持续监控：部署事件触发式监控
-```
+heapprofd 证据与 PSS 证据应并排解释。两者趋势一致时，可把调用栈作为主要线索；趋势分离时，应先确定增长所在的内存类别。
 
-#### 与 LeakCanary2 / Matrix / KOOM 的对比与互补
+## 26.24.11 失败场景排查
 
-| 维度 | heapprofd | LeakCanary2 | Matrix (微信) | KOOM (快手) |
-|------|-----------|-------------|---------------|-------------|
-| **监控对象** | Native heap（malloc/free） | Java 对象泄漏 | Java + 部分 Native | Java + Native |
-| **实现原理** | Perfetto signal + malloc hook | WeakReference + RefWatcher | Hook ART GC + native hook | libmemunreachable + hook |
-| **生产可用** | ✅ Android 12+ user 构建 | ❌ 仅 debug（开发期） | ✅ 灰度/生产 | ✅ 生产 |
-| **性能开销** | 低-中（采样式 1-3% CPU） | 低（开发期可忽略） | 中（GC hook 有 STW） | 中-高（ptrace 暂停进程） |
-| **调用栈质量** | 高（完整 native backtrace） | N/A（Java 引用链） | 中（Java + 混淆映射） | 高（native backtrace） |
-| **无需 root** | ✅ | ✅ | ✅ | ✅ |
-| **适用阶段** | 生产持续监控 / 灰度排查 | 开发期 Java 泄漏 | 生产 Java 泄漏监控 | 生产 Native 泄漏深入排查 |
+### 没有生成 profile
 
-**互补策略建议**：
-- **开发期**：LeakCanary2 快速发现 Java 泄漏
-- **灰度期**：heapprofd 定时采样建立 native heap 基线
-- **生产期**：事件触发式 heapprofd + LeakCanary2（release 模式）
-- **疑难排查**：heapprofd + KOOM/libmemunreachable 组合使用
+按以下顺序检查：
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native 内存泄漏监控：寻找 Native 中不可达内存.md]
+1. 设备是否为 Android 10 或更新版本；
+2. 最终 APK 是否 debuggable，或 `<profileable android:shell="true">` 是否生效；
+3. `process_cmdline` 是否与 `adb shell ps -A` 的 NAME 精确一致；
+4. 目标是普通 App、SDK sandbox、isolated process 还是平台 UID；
+5. 配置是否误用了 `no_running` 或 `no_startup`；
+6. `sampling_interval_bytes` 是否为非零值；
+7. heapprofd 和 traced 日志是否报告 not profileable、signal 失败或 client 连接失败。
 
-#### 典型场景：间歇性 OOM
+### profile 提前结束
 
-间歇性 OOM 是 heapprofd 最有价值的应用场景之一。这类问题通常表现为：
-- 大多数时候正常，偶发 OOM 崩溃
-- 常规内存监控数据显示 PSS 在正常范围
-- 崩溃堆栈不一致（取决于哪个线程先触发分配失败）
+共享 buffer 跟不上 allocation 速率时，client 会出现 buffer overrun。可增大 sampling interval 或 `shmem_size_bytes`，也可在可控实验中启用 `block_client`。线上场景不要为了保住 trace 而无条件阻塞高频 allocation 线程。
 
-heapprofd 诊断策略：
+memory 或 CPU guardrail 命中也会关闭 data source。检查阈值时要区分 daemon 总开销和目标进程开销；`max_heapprofd_memory_kb` 不限制目标 App 的 native heap。
 
-1. **部署事件触发式监控**：在 `onTrimMemory(TRIM_MEMORY_COMPLETE)` 回调中触发 heapprofd
-2. **采样窗口设置**：触发前 60s 的数据（需配合 `pre_capture` 或提前启动）
-3. **对比基线**：将崩溃前的 heapprofd 数据与正常运行的基线对比
-4. **关注点**：查找在崩溃前持续增长但从未释放的分配调用栈
+### 栈缺帧或符号缺失
 
-#### 典型场景：Native 泄漏
+常见原因包括缺少 Build ID 对应符号、栈展开信息被裁剪、JIT/AOT frame 缺少可用元数据、相同代码折叠，以及 trace 与符号包版本不一致。符号服务应以 APK version、ABI、Build ID 和系统 build fingerprint 定位文件，不能只按 so 文件名匹配。
 
-Native 泄漏（malloc 后未 free）是 heapprofd 的核心适用场景。与 `libmemunreachable`（§23.11）的区别在于：
-- `libmemunreachable` 是 **快照式** 的：某一时刻扫描不可达内存
-- heapprofd 是 **持续式** 的：跟踪整个时间线的分配/释放模式
+## 26.24.12 与其他工具的职责分工
 
-heapprofd 的优势在于可以看到 **泄漏的增长速率** —— 不是一个静态的「泄漏了多少」，而是「每小时泄漏多少」。
+| 工具 | 主要证据 | 适用问题 | 主要限制 |
+|---|---|---|---|
+| heapprofd | 采样的分配/释放调用栈 | native heap 增长来源 | 不覆盖全部 mmap、图形内存和会话前存量 |
+| Perfetto process stats / meminfo | RSS、PSS、内存类别 | 进程总量和类别变化 | 没有 malloc callsite |
+| GWP-ASan | 被采样 allocation 的 UAF、double free、越界 | native 内存安全错误 | 不负责统计泄漏增长 |
+| `libmemunreachable` | 某时刻的不可达 native allocation | 平台调试中的 reachability 快照 | 平台内部接口、暂停与权限成本 |
+| malloc debug | allocator 检查、回溯与泄漏信息 | 可控 debug 环境 | 开销高，发布环境受限 |
+| 应用内 native hook | App 自己定义的事件和调用栈 | 无系统采集权限的长期监控 | 兼容 allocator、递归、信号安全和版本维护成本高 |
 
-#### 典型场景：虚拟内存增长
+`libmemunreachable` 不是稳定 NDK API。通过 `dlopen` 私有系统库和硬编码 C++ 符号调用会受 linker namespace、符号变化和 SELinux 限制，不应作为通用的生产方案。
 
-32 位应用虚拟内存耗尽可能导致 `mmap` 失败。64 位应用虽然虚拟地址空间大，但大量碎片化映射仍会导致问题。heapprofd 可以配合 `/proc/<pid>/maps` 分析：
+Scudo 的 error callback 用于处理 allocator 检出的错误，不是通用 allocation 事件回调。需要记录自定义 heap 时，Perfetto 提供 `AHeapProfile_registerHeap` 一类接口，使用前仍要确认目标平台提供的头文件、ABI 和集成方式。
 
-```sql
--- heapprofd 分配按映射区间统计
-SELECT
-  m.mapping_name,
-  COUNT(*) AS alloc_count,
-  SUM(a.size) AS total_bytes
-FROM heap_profile_allocation a
-JOIN stack_profile_callsite cs ON a.callsite_id = cs.id
-JOIN stack_profile_frame f ON cs.frame_id = f.id
-JOIN stack_profile_mapping m ON f.mapping_id = m.id
-WHERE m.mapping_name LIKE '%.so'  -- 聚合到 so 库粒度
-GROUP BY m.mapping_name
-ORDER BY total_bytes DESC
-LIMIT 20;
-```
+## 26.24.13 数据安全与归档
 
-### 🔹 heapprofd 替代方案与演进
+heapprofd 不复制任意 heap payload，但 trace 仍可能包含：
 
-#### Scudo Allocator Hook
+- 进程名、线程名与 UID 关联；
+- 映射路径、模块名、Build ID 和地址；
+- native 与可展开的 Java 调用栈；
+- trace 中同时开启的其他 data source 数据。
 
-Android 11+ 默认使用 Scudo 分配器，其内部提供了 callback 钩子机制。开发者可通过 Scudo 的 `__scudo_set_error_callback` 或自定义 allocator dispatch 来实现轻量级的 native heap 监控，无需 heapprofd 的信号机制。
+线上采集策略应把完整 trace 当作诊断数据管理。建议保留最少 data source、限制目标包和时长、设备侧加密存储、上传链路鉴权、服务端按角色授权，并设置明确的删除期限。
 
-优势：
-- 无需 Perfetto 基础设施
-- 可在应用进程内部自主控制
-- 开销更低（无 signal handler 开销）
+符号化宜在受控环境中按 Build ID 完成。只上传 `heap_profile_allocation` 表会丢失完整调用栈、错误标志和会话上下文，不能当作默认的“脱敏等价物”。若要做裁剪，应定义可复现的 trace-to-report 转换格式，并保留采样参数、版本和错误元数据。
 
-劣势：
-- 仅适用于 Scudo 分配路径，不覆盖 `mmap` 直接映射
-- 需要应用自身实现采样逻辑
-- 无标准化的调用栈收集机制
+## 26.24.14 发布前检查表
 
-详见 §23.11 Scudo 分配器与 Native Heap 性能边界。
+- [ ] 源码与配置以 `android-17.0.0_r1` 为基准；
+- [ ] release APK 的 profileable 合并结果已在 user build 验证；
+- [ ] shell 会话和 trusted-system 会话的权限主体没有混写；
+- [ ] 所有 native 进程名均为精确值，没有使用 `*`；
+- [ ] sampling interval、shmem、dump 周期和 guardrail 有设备基线；
+- [ ] 线上配置不会因 `block_client` 放大业务延迟；
+- [ ] trace 中检查了 rejected、buffer overrun、unwinding 和 guardrail 状态；
+- [ ] 泄漏判断使用连续 dump、稳定窗口和重复 workload；
+- [ ] heapprofd 与 PSS、mmap、DMA-BUF 等口径分开解释；
+- [ ] 原始 trace、符号文件和分析结果有访问与删除策略。
 
-#### libmemunreachable（系统工具）
+## 参考材料
 
-Android 7+ 内置的 `libmemunreachable` 通过 fork 子进程扫描不可达内存，是 Google 官方的 Native 泄漏检测工具。
-
-```
-// 通过 dlsym 调用系统库函数（Clippings 参考用法）
-void *handle = dlopen("libmemunreachable.so", RTLD_NOW);
-auto func = (std::string(*)(bool, size_t))
-    dlsym(handle, "_ZN7android26GetUnreachableMemoryStringEbm");
-std::string result = func(false, 1024);
-```
-
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native 内存泄漏监控：寻找 Native 中不可达内存.md]
-
-优势：
-- 系统内置，无需额外部署
-- 直接给出「不可达内存」结论（而非原始分配列表）
-- 可通过 `dlsym` 在应用中调用
-
-劣势：
-- **快照式**：仅反映调用时刻的状态，无法跟踪时间趋势
-- **ptrace 暂停**：分析期间进程被 ptrace 暂停（数百毫秒），不适合频繁调用
-- **生产限制**：需 `prctl(PR_SET_DUMPABLE, 1)` 临时开启，有安全风险
-
-[已验证: AOSP android-17.0.0_r1, `system/memory/libmemunreachable/MemUnreachable.cpp`]
-
-#### GWP-ASan（采样式调试）
-
-Android 11+ 内置的 GWP-ASan（每进程默认 5000 次分配中采样 1 次）可检测 use-after-free 和 buffer-overflow。与 heapprofd 互补：
-- GWP-ASan 检测 **安全漏洞**（UAF、溢出）
-- heapprofd 检测 **内存泄漏**（未释放）
-
-#### 方案选择决策树
-
-```
-需要 Native 内存监控？
-├── 仅开发期 → Android Studio Memory Profiler（最简单）
-├── 需要 Java 泄漏 → LeakCanary2（开发）+ Matrix（生产）
-├── 需要 Native 泄漏
-│   ├── 稳定复现 → heapprofd（精确分析）
-│   ├── 间歇出现 → heapprofd 事件触发式（生产监控）
-│   └── 需确认「不可达」 → libmemunreachable（快照确认）
-├── 需要 UAF/溢出检测 → GWP-ASan
-└── 需要全链路方案 → heapprofd + LeakCanary2 + GWP-ASan 组合
-```
-
-## 扩展
-
-### 🔸 heapprofd 采样数据与 Crash 发生时间的关联分析
-
-#### 崩溃前后自动触发策略
-
-生产环境中，最有价值的 heapprofd 数据往往来自崩溃前后的采样。实现崩溃关联采集的策略：
-
-**策略一：ApplicationExitInfo 回溯**
-
-Android 10+ 的 `ApplicationExitInfo` API 提供了进程退出原因和时机。可在应用重启后读取上一次崩溃信息，结合本地缓存的 heapprofd trace 文件（崩溃前写入的最后一帧），实现事后分析。
-
-```kotlin
-val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-val exitInfos = activityManager.getHistoricalProcessExitReasons(packageName, 0, 5)
-exitInfos.forEach { info ->
-    if (info.reason == ApplicationExitInfo.REASON_LOW_MEMORY ||
-        info.reason == ApplicationExitInfo.REASON_CRASH_NATIVE) {
-        // 检查本地是否有崩溃时间窗口内的 heapprofd trace
-        checkLocalHeapTrace(info.timestamp)
-    }
-}
-```
-
-**策略二：前台保活采样**
-
-在关键业务场景（如直播、游戏）中，维持低开销的 heapprofd 采样（64KB 间隔），trace 数据滚动写入本地文件（保留最近 10 分钟）。崩溃时文件自然落盘，重启后上传。
-
-[待补充: 崩溃时刻 heapprofd trace 完整性保证机制——signal handler 是否干扰 crash dump 写入]
-
-### 🔸 低端设备的 heapprofd 性能约束
-
-#### 低 RAM 设备（≤4GB）可行性边界
-
-在低 RAM 设备上，heapprofd 自身的 RSS（45-150MB）可能占设备可用内存的显著比例。实测数据（Android 17, 4GB RAM 设备）：
-
-| 采样间隔 | heapprofd RSS | 目标进程 CPU 增量 | 可行性评估 |
-|----------|---------------|-------------------|------------|
-| 64KB | ~45MB | +0.3% | ✅ 可长时间运行 |
-| 4KB | ~80MB | +1.2% | ⚠️ 建议短时（<5min） |
-| 1KB | ~120MB | +4.8% | ❌ 不推荐 |
-
-降级策略：
-- **优先使用 64KB+ 采样间隔**：牺牲精度换取可行性
-- **限制监控进程数**：每次仅监控 1 个进程
-- **缩短采样窗口**：从 120s 缩减至 30-60s
-- **配合 Guardrails**：设置 `max_heapprofd_memory_kb: 65536`（64MB），超限自动停止
-
-### 🔸 合规与隐私
-
-#### 生产环境堆数据的匿名化处理
-
-heapprofd 采样数据中可能包含的 PII（个人身份信息）风险：
-
-| 数据类型 | PII 风险 | 脱敏策略 |
-|----------|----------|----------|
-| 调用栈地址 | 低（代码地址，非数据） | 符号化前上传（仅地址 + so 偏移） |
-| 分配大小 | 低 | 可直接上传 |
-| 字符串内容（堆中） | **高** | heapprofd 默认不记录堆内容 |
-| so 库路径 | 中（可能包含用户名） | 统一为包名 + so 基名 |
-| 线程名 | 中（可能包含用户信息） | 替换为线程 ID |
-
-heapprofd 的隐私优势：
-- **默认不记录堆内容**：仅记录调用栈和大小，不 dump 堆中实际数据
-- **符号化在离线完成**：上传的 trace 中是地址而非符号名
-- **进程隔离**：仅可采集配置中指定的进程，不影响其他应用
-
-生产环境推荐的隐私保护流程：
-
-1. **采集阶段**：使用原始地址（不符号化）
-2. **上传阶段**：仅上传 heap_profile.* 表格数据，不上传完整 trace
-3. **分析阶段**：在服务端使用 version-specific symbol table 符号化
-4. **归档阶段**：符号化结果脱敏后入库，原始 trace 定期删除
-
----
-
-> 版本基准：本节所有源码引用均基于 `android-17.0.0_r1`（Android 17 / API 37），Perfetto v50.1。
-> heapprofd 工具架构与配置详见 §14.1；启动场景部署详见 §8.39；Scudo 分配器原理详见 §23.11；Perfetto SQL 分析详见 §13.22。
+- [AOSP android-17.0.0_r1：heapprofd producer](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/profiling/memory/heapprofd_producer.cc)
+- [AOSP android-17.0.0_r1：bionic heapprofd hook 安装](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/malloc_heapprofd.cpp)
+- [AOSP android-17.0.0_r1：user build profile 权限判定](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/profiling/common/producer_support.cc)
+- [AOSP android-17.0.0_r1：packages.list parser](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traced/probes/packages_list/packages_list_parser.cc)
+- [AOSP android-17.0.0_r1：HeapprofdConfig proto](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/heapprofd_config.proto)
+- [AOSP android-17.0.0_r1：heapprofd init service](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/heapprofd.rc)
+- [AOSP android-17.0.0_r1：profiler guardrails](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/profiling/common/profiler_guardrails.cc)
+- [AOSP android-17.0.0_r1：官方 heap_profile 脚本](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/tools/heap_profile)
+- [Perfetto：Native heap profiler](https://perfetto.dev/docs/data-sources/native-heap-profiler)
+- [Perfetto：Memory profiling guide](https://perfetto.dev/docs/getting-started/memory-profiling)
+- [PerfettoSQL：heap_profile_allocation](https://perfetto.dev/docs/analysis/sql-tables#heap_profile_allocation)
+- [Android Developers：`<profileable>` element](https://developer.android.com/guide/topics/manifest/profileable-element)
