@@ -123,9 +123,9 @@ task6_promotion_notes: "2026-07-12 20H Task6 revisiting review (post-task9-idle-
 
 <!-- outline-end -->
 
-RenderEffect 适合把 View 或 RenderNode 的绘制结果交给 GPU 做后处理：模糊、颜色滤镜、混合、偏移，以及 Android 13（API 33）开始支持的 AGSL 自定义像素处理。它不是“免费特效”。一旦效果需要把节点内容先画进中间层，再读取这块纹理做处理，成本就会落到 RenderThread、GPU 填充率、纹理带宽和 GPU 内存上。
+RenderEffect 适合把 View 或 RenderNode 的绘制结果交给 GPU 做后处理：模糊、颜色滤镜、混合、偏移，以及 Android 13（API 33）开始支持的 AGSL 自定义像素处理。它不是“免费特效”。效果需要把节点内容先画进中间层，再读取这块纹理做处理时，成本会落到 RenderThread、GPU 像素处理、纹理带宽和图形内存上。
 
-应用侧要回答三个问题：哪些效果值得实时做，什么时候降级，以及怎样用 Trace 和 GPU 工具验证。关于渲染管线的基础知识——RenderNode、Hardware Layer、标准 View 渲染路径和 GPU 瓶颈分类——可见 2.7、18.2 和 2.10 节。
+应用侧要回答三个问题：哪些效果值得实时做，什么时候降级，以及怎样用 trace 和 GPU 工具验证。本文的平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。标准 View 或 Compose 内容仍沿 UI 线程 → RenderThread → BLAST / BufferQueue → SurfaceFlinger → HWC / RenderEngine → present 前进；RenderEffect 改变 HWUI 绘制工作，不会改变这条公共显示路径。关于 RenderNode、Hardware Layer 和 GPU 瓶颈分类，可见 2.7、18.2 和 2.10 节。
 
 ## RenderEffect 的适用场景
 
@@ -135,15 +135,18 @@ RenderEffect 适合把 View 或 RenderNode 的绘制结果交给 GPU 做后处�
 
 | 场景 | 可用 API | 适合程度 | 判断口径 |
 |---|---|---|---|
-| 局部卡片模糊、弹窗背板、头像遮罩 | `createBlurEffect()` / `createColorFilterEffect()` | 高 | 作用区域小，帧内内容变化少，可以接受一次离屏处理 |
-| 页面级毛玻璃背景 | `View.setRenderEffect()` / backdrop effect（隐藏 API 不面向普通应用） | 中 | 只适合静态或低频变化背景；全屏实时 blur 容易推高 GPU 时间 |
+| 局部卡片自身内容模糊、头像遮罩 | `createBlurEffect()` / `createColorFilterEffect()` | 高 | 作用区域小，帧内内容变化少，可以接受离屏处理 |
+| 浮动 Window 的跨窗口毛玻璃 | `Window.setBackgroundBlurRadius()` | 取决于设备 | 需要透明浮动 Window，并处理系统运行时关闭 cross-window blur |
+| 同一 Window 内的毛玻璃背板 | 明确提供背景图层或快照，再对该内容使用 `RenderEffect` | 中 | `RenderEffect` 只处理目标 RenderNode 内容，不会读取背后的兄弟 View |
 | 列表 item 每帧动态模糊 | `createBlurEffect()` | 低 | item 数量多、区域反复进入离开，纹理分配和采样成本会叠加 |
 | 颜色统一处理、灰度、tint | `createColorFilterEffect()` | 中到高 | 简单颜色处理比 blur 轻，但仍需在目标机型上验证 |
 | 自定义像素效果 | `RuntimeShader` + `createRuntimeShaderEffect()` | 中 | Android 13+，适合小范围、可降级、可缓存的动态效果 |
 
 与传统 Bitmap 预处理相比，`RenderEffect` 的优势是少一次 CPU 侧像素拷贝，能直接在 HWUI 管线里处理 View 的当前绘制结果。代价是每次内容变动都可能让 GPU 重新处理这块区域。静态背景、固定遮罩、品牌氛围图这类效果优先预生成或缓存；手势跟随、转场、局部反馈这类短时动态效果再考虑 `RenderEffect`。
 
-版本封装的要点是：API 31 之前直接返回，不碰 `View.setRenderEffect()`，因为它在 Android 11 及以下根本不存在。
+`RenderEffect` blur 与 Window blur 是两套接口。前者处理同一 RenderNode 的输出；后者由系统对窗口后方内容做跨窗口模糊。Window blur 可能因 GPU 能力、省电模式、视频 multimedia tunneling 或系统配置被动态关闭，应用要监听 `WindowManager.addCrossWindowBlurEnabledListener()`，并准备不透明度更高的无 blur 背景。不要调用隐藏 backdrop API。
+
+版本封装的要点是：API 31 之前直接返回，不调用 `View.setRenderEffect()`，因为 Android 11 及以下没有这个方法。
 
 ```kotlin
 fun View.applyBlurEffectIfSupported(
@@ -171,7 +174,7 @@ fun View.applyBlurEffectIfSupported(
 
 ## HWUI 管线中的成本来源
 
-`RenderEffect` 的成本不只来自 API 调用本身。对 blur 这类效果，AOSP 注释已经给出运行路径：先把目标 RenderNode 的内容绘制到独立 layer，再对这个 layer 做处理。换句话说，就是多了一块中间纹理，加上对这块纹理的读写开销。
+`RenderEffect` 的成本不只来自 API 调用本身。对 blur 这类效果，AOSP 注释已经给出运行路径：先把目标 RenderNode 的内容绘制到独立 layer，再对这个 layer 做处理。这会增加中间纹理以及对应的读写开销。
 
 一块 1080 × 2400、RGBA_8888 格式的全屏中间纹理，理论像素数据约 9.9 MB。实际 GPU 内存还会受到 stride、内存对齐、tile buffer、驱动池化和格式影响，所以这个数字只能当下限估算。做图形内存分析时，可以把 Graphics / GL / EGL mtrack 拆开看：不要只看 Java heap，要同时看 Graphics、GL mtrack、EGL mtrack 和 GPU memory track。
 
@@ -236,7 +239,7 @@ class HighlightEffect {
 
 这段示例只做一次输入采样，并把动态参数限制在 `size` 和 `progress` 两个 uniform 上。`View.setRenderEffect()` 在 RenderNode 属性变化时会触发属性失效；同一个 `RenderEffect` 已经安装后，后续只改 `RuntimeShader` uniform 不会自动请求下一帧，所以动画场景要显式调用 `postInvalidateOnAnimation()`，或交给动画框架驱动重绘。进入工程后，还要补三个保护：API 33 以下走静态效果或无效果；页面不可见时清空效果；低端机或省电模式下关闭动态 shader。
 
-Shader 编译和缓存策略不要写成“加载页面时立刻创建所有 shader”。更稳的做法是按场景懒创建、对象级缓存、页面销毁时释放引用。需要预热时，只预热会在首屏短时间内出现的效果，避免把启动阶段变成 GPU shader 初始化阶段。
+`RuntimeShader(shaderSource)` 构造时会编译 AGSL，源码或 uniform 声明不合法时会抛出 `IllegalArgumentException`。不要在动画回调或 composable 热路径里构造它，也不要在页面加载时创建所有 shader。更稳的做法是按场景懒创建、按效果实例复用，并在功能灰度前用目标设备覆盖编译失败与驱动差异。需要预热时，只预热首屏短时间内会使用的效果，避免把启动阶段变成 shader 初始化阶段。
 
 ## 常见 UI 效果的选型
 
@@ -244,7 +247,8 @@ RenderEffect 的选型可以按“动态性”和“面积”拆开：越动态�
 
 | UI 效果 | 推荐方案 | 不推荐方案 | 验证指标 |
 |---|---|---|---|
-| 小弹窗背后的局部毛玻璃 | 把 blur 限制在弹窗背板区域，背景变化低频时用 `RenderEffect` | 对整页根 View 做全屏 blur | FrameTimeline jank、RenderThread `DrawFrame`、GPU memory |
+| 浮动弹窗背后的毛玻璃 | 设备支持时使用 Window background blur；无支持时提高背景不透明度 | 在空白背板 View 上设置 `RenderEffect` 并期待它读取后方窗口 | FrameTimeline jank、cross-window blur 状态、GPU memory |
+| 同一窗口局部背景模糊 | 把明确的背景图层/快照限制在背板区域，再应用 `RenderEffect` | 对整页根 View 做全屏 blur | `frameOverrunMs`、RenderThread `DrawFrame`、GPU memory |
 | 首页大背景氛围图 | 预模糊 Bitmap / WebP / 远端下发素材 | 每次进入页面实时生成大半径 blur | 首帧耗时、纹理上传、Graphics 内存 |
 | 列表 item 圆角 + 阴影 + 蒙版 | 尽量用图片解码裁剪、Outline、静态阴影资源；只对焦点 item 使用动态效果 | 每个 item 同时启用 blur、mask、alpha 和 RuntimeShader | 滑动 P90 / P99、GPU busy、过度绘制 |
 | 转场中的背景淡化 | alpha / scale / color filter 优先；必要时短时间局部 blur | 转场全程改变 blur 半径并覆盖全屏 | 转场期间 actual timeline、GPU completion |
@@ -254,28 +258,28 @@ RenderEffect 的选型可以按“动态性”和“面积”拆开：越动态�
 
 ## Perfetto 与 GPU 工具观测
 
-RenderEffect 问题在 Trace 里常见的模式是：UI Thread 很短，RenderThread 或 GPU 时间变长，FrameTimeline 的 actual timeline 超过 expected timeline。Perfetto 的 FrameTimeline 文档说明，actual timeline 包含应用完成帧的实际时间，其中包括 GPU work，以及把帧发送给 SurfaceFlinger 合成的时间。
+RenderEffect 问题在 trace 里常见的模式是：UI Thread 很短，RenderThread 或 GPU 时间变长，FrameTimeline 的 actual timeline 超过 expected timeline。标准 App Window 中，App actual slice 可以覆盖 GPU work 与 buffer post，但 `queueBuffer()` 或 App slice 结束仍不证明 SurfaceFlinger 已 latch 或 display 已 present。要用同一帧的 SurfaceFrame、DisplayFrame 与 jank type 继续核对系统侧结果。
 
 排查时按四步走：
 
-1. **先看 FrameTimeline**：找开启效果前后同一交互的 jank 数、actual duration、present 延迟。不要只看平均帧耗时，P90 / P99 更能暴露 blur 和 shader 尖峰。
+1. **先看 deadline 与 FrameTimeline**：API 31+ 用 Macrobenchmark `frameOverrunMs` 或 FrameMetrics overrun 找超期帧，再对齐 expected / actual timeline。不要只看平均帧耗时。
 2. **再看 UI Thread 与 RenderThread**：UI Thread 短而 RenderThread `DrawFrame` 拉长，通常指向绘制、纹理上传或 GPU 提交；UI Thread 自身很长，则先回到布局、绘制命令和主线程任务排查。
 3. **接着看 GPU 轨道和 counter**：先枚举设备 producer 暴露的 counter name/id；若存在 `gpu_busy` 或类似的利用率 counter 则纳入对照。Android 16 CDD 7.1.4.6 要求支持 GPU profiling 的设备输出符合 Perfetto GPU counters / RenderStage 规范的数据，但 `gpu_busy` 不在该规范的标准命名里，不同设备的 GPU 利用率精度也不对齐。旧版本按设备厂商查可用 counter。counter 不可用或不稳定时，退回 AGI 或厂商工具拆分 fragment、texture、bandwidth。
 4. **做开关对照**：同一设备、同一页面、同一脚本分别跑“无效果 / 小半径 / 大半径 / 静态预渲染”，确认变化来自效果本身，而不是网络、数据加载或动画时序。
 
-AGI 适合在开发和预发布阶段做帧级 GPU 分析。官方 AGI 文档把它定位为 Android 图形性能分析工具，支持 OpenGL ES 和 Vulkan，能查看帧分析、GPU 使用和 draw call。线上问题仍应先靠 Perfetto、`dumpsys gfxinfo`、应用埋点和灰度开关定位，复现后再用 AGI 深查。
+AGI 适合在开发和预发布阶段做 GPU 分析。Frame Profiler 直接追踪 Vulkan；OpenGL ES 模式会通过 AGI 提供的 ANGLE 转成 Vulkan 后再捕获，因此结果可能包含图形后端变化，不能当作原厂 GLES 驱动的无扰动测量。System Profiler 的 counter、GPU slice 和支持程度随设备变化。官方目前把 Android Performance Analyzer beta 作为系统 profiling 的新推荐工具；项目切换工具时仍要保留 Perfetto trace 与同一对照脚本。
 
 ## 优化清单
 
 上线前把 RenderEffect 作为可降级的 GPU 功能处理，不要把它当普通 View 属性。
 
 - **限制区域**：优先给最小子 View 设置效果，不要把根 View、整页容器、RecyclerView 作为默认作用对象。
-- **限制半径**：blur 半径做成配置项，按设备档位和刷新率分级；120Hz 下的帧预算只有 8.33ms，原本 60Hz 勉强可接受的效果可能直接掉帧。
+- **限制半径**：blur 半径做成配置项，按设备档位和运行时 overrun 分级。可变刷新率设备不使用固定 16 ms 或 8.33 ms 阈值，API 31+ 直接看该帧 deadline。
 - **限制时长**：转场结束后清空 `setRenderEffect(null)`；页面不可见、进入后台、列表 item 离屏时释放效果引用。
 - **减少输入变化**：内容每帧变化时，优先拆成两层：静态背景层做效果，动态内容层直接绘制。
 - **避免链式叠加**：blur、color filter、RuntimeShader、alpha、clip 同时叠加时，每加一层都要重新跑一轮 Trace 对照。
 - **缓存静态结果**：大背景、固定蒙版、品牌氛围图优先用预渲染资源；资源策略也要按图片压缩、格式选择和使用频率拆开考虑。
-- **建立降级开关**：Android 16+ 设备若支持 `SystemHealthManager.getGpuHeadroom()`，可把 GPU Headroom 作为运行时质量降级信号之一；调用侧要处理 `UnsupportedOperationException`，并遵守平台定义的最小采样间隔。旧版本或不支持该能力的设备，继续用设备档位、温控状态、帧耗时和灰度开关兜底。
+- **建立降级开关**：Android 16 / API 36+ 设备若支持 `SystemHealthManager.getGpuHeadroom()`，可把 GPU Headroom 作为质量调节信号之一。有效结果范围是 0—100，也可能暂时返回 `Float.NaN`；一次有效调用至少包含一笔同步 Binder transaction，可能超过 1 ms，不能在 UI/RenderThread 或逐帧回调中查询。调用侧要处理 `UnsupportedOperationException`、`IllegalArgumentException`，并遵守 `getGpuHeadroomMinIntervalMillis()`。旧版本或不支持该能力的设备，继续使用设备档位、温控、帧 overrun 和灰度开关。
 - **写清版本边界**：`RenderEffect` 需要 API 31+，`RuntimeShader` / `createRuntimeShaderEffect()` 需要 API 33+。API guard 要包住所有调用点，包括清空效果。
 
 ## 扩展
@@ -294,23 +298,26 @@ Compose 与 View 在 RenderThread 之后共用标准管线，详见 18.2 节。�
 
 ### 厂商 GPU 对模糊效果的差异
 
-不同 GPU 对 blur 和 RuntimeShader 的表现差异很大。Adreno、Mali、PowerVR 的驱动、tile buffer、纹理缓存、shader 编译和 GPU counter 命名都不一致；同一段 AGSL 在旗舰设备上可能只增加 1-2ms，在低端机或温控状态下可能跨过整帧预算。
+不同 GPU 对 blur 和 RuntimeShader 的表现差异很大。Adreno、Mali、PowerVR 的驱动、tile buffer、纹理缓存、shader 编译和 GPU counter 命名都不一致；同一段 AGSL 在不同设备、驱动和温控状态下可能落在不同的 deadline 位置，不能从单机结果推导固定增量。
 
-上线策略不要只用一台 Pixel 或一台旗舰机判断。至少覆盖三类设备：低端机、主力中端机、高刷新率旗舰机；每类设备都跑“冷启动后首次进入页面”和“连续滑动/连续转场 30 秒”两组场景。指标记录 P50、P90、P99、jank 数、GPU busy、Graphics / GL mtrack，以及温度和刷新率状态。
+上线策略不要只用一台 Pixel 或一台旗舰机判断。测试设备至少覆盖项目用户量占比高的低端、中端与高刷新率机型；每类设备都跑“冷启动后首次进入页面”和“持续滑动/转场”的受控场景。指标记录 `frameOverrunMs` 分布、jank 数、frame count、设备实际暴露的 GPU counter、图形内存，以及温度和 display mode。
 
 ## 参考资料
 
 **AOSP 源码（android-17.0.0_r1）：**
-- `frameworks/base/graphics/java/android/graphics/RenderEffect.java`
-- `frameworks/base/graphics/java/android/graphics/RuntimeShader.java`
-- `frameworks/base/core/java/android/view/View.java`
-- `frameworks/base/graphics/java/android/graphics/RenderNode.java`
+- [`RenderEffect.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java)
+- [`RuntimeShader.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeShader.java)
+- [`View.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java)
+- [`RenderNode.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java)
 
 **官方文档：**
 - [RenderEffect API](https://developer.android.com/reference/android/graphics/RenderEffect)
 - [RuntimeShader API](https://developer.android.com/reference/android/graphics/RuntimeShader)
 - [AGSL 使用指南](https://developer.android.com/develop/ui/views/graphics/agsl/using-agsl)
+- [Window blur 指南](https://source.android.com/docs/core/display/window-blurs)
+- [SystemHealthManager API](https://developer.android.com/reference/android/os/health/SystemHealthManager)
 - [FrameTimeline 数据源](https://perfetto.dev/docs/data-sources/frametimeline)
+- [AGI Frame Profiler](https://developer.android.com/agi/frame-trace/frame-profiler)
 
 **结构参考素材：**
 - Clippings/Android 性能优化 — 总结 / 内存模型 / 速度优化 / 资源体积优化
