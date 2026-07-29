@@ -75,674 +75,307 @@ gap_source: "研究素材 + 论文精读 + 官方/外部搜索"
 
 <!-- outline-end -->
 
-## 本节定位
+## 本节的证据边界
 
-AppFlow 是一篇面向 GB 级应用冷启动的系统研究，不是 Android 15、16 或 17 的平台默认能力。论文把问题放在系统内存调度层：大型游戏、端侧 LLM、车载多媒体应用在多任务场景下会持续占用文件页、匿名页和后台进程缓存；当内存压力升高，系统会回收页缓存、压缩或换出匿名页，并通过 `lmkd` 杀掉低优先级进程。一次启动慢，往往不是应用初始化单点过重，而是文件 I/O、页回收、进程杀灭互相放大。[引用: https://arxiv.org/abs/2603.17259]
+AppFlow 是 MobiCom 2026 论文提出的研究原型。论文于 2026 年 3 月公开，实验系统以 Android 15 为基础，部署在 Pixel 7、Pixel 8 和 Raspberry Pi 4B 车载试验台上。它没有进入 Android 17 / API 37 的 AOSP 主线。本节用两个独立锚点讨论它：
 
-这里把 AppFlow 当成研究原型分析。AOSP 主线事实仍以 `system/memory/lmkd/`、`frameworks/base/services/core/java/com/android/server/am/`、Linux `mm/` 子系统和官方性能文档为边界；凡是 AppFlow 论文中的 128KB、100MB、57%、67.9% 等数字，都按实验设置理解，不写成 Android 平台参数。[已验证: 官方文档, source.android.com/docs/core/perf/lmkd]
+- 原型的设计与实验数字，以 [AppFlow 论文](https://arxiv.org/html/2603.17259v1) 为准；
+- 平台已有能力，以 `android-17.0.0_r1` 与 kernel `android17-6.18-2026-06_r6` 为准。
 
-## 大型应用冷启动的系统侧瓶颈
+128KB 文件分界、100MB 预加载预算、每 100ms 统计 12,800 个分配页等值来自论文参数搜索。66.5%、67.9%、95% 等结果也只描述论文设备、应用集合和测试方式。它们不代表 Android 17 的配置或性能承诺。
 
-GB 级应用的冷启动比普通应用更容易被系统侧成本主导。应用进程创建后，运行时会连续触发 dex、so、资源包、模型权重、贴图、数据库等文件访问；文件不在页缓存里时，主线程或工作线程会等待 major fault、block I/O、文件系统读取和校验。设备如果正处在多任务状态，页缓存已经被其它应用占用，新的启动路径会和后台进程缓存争内存。
+## 冷启动为什么会变成系统问题
 
-Android 的冷启动、温启动、热启动口径在 8.2 节已经定义。这里关注一个更窄的现象：原本可以温启动或热启动的应用，因为后台进程被杀，下一次打开退回冷启动。`lmkd` 的目标是让系统在内存压力下保持可用，它按 Android 进程优先级、`oom_score_adj`、PSI 或 vmpressure 信号选择牺牲对象。对单次启动来说，杀掉后台进程释放了内存；对后续用户路径来说，这个进程下次打开又会重新 fork、加载文件、初始化运行时。
+Android 官方把 cold start 定义为从头创建应用进程并完成应用与首个 Activity 初始化。系统杀掉后台进程后再次打开应用，也会进入 cold start。TTID 衡量首帧出现时间，TTFD 衡量内容达到可交互状态的时间。大型应用常在这两个时刻之外继续加载模型、贴图或媒体素材，因此还要记录业务可用时刻。
 
-这类问题不能只按 “Application.onCreate 里做了什么” 排查。应用侧初始化当然要优化，但系统侧还有三类成本：
+一次大型应用冷启动可以粗略拆成三段成本：
 
-| 成本 | Perfetto / 系统观察点 | 对冷启动的影响 |
+| 成本 | 形成方式 | 常见证据 |
 |---|---|---|
-| 文件 I/O | block、ext4/f2fs、major fault、线程 D 状态 | 文件页未命中会把启动线程挂在存储等待上 |
-| 页回收 | `kswapd`、direct reclaim、zRAM 写入、内存 PSI | 回收本身占 CPU / I/O，错误驱逐会让刚预热的数据再次读取 |
-| 进程杀灭 | `lmkd` 日志、`ApplicationExitInfo`、后台进程存活率 | 后台保活下降会把后续打开转成冷启动 |
+| CPU 与调度 | 进程创建、类加载、初始化、编译代码执行、线程竞争 | `sched`、主线程 slice、ART 与 Binder trace |
+| 文件 I/O | APK、DEX、SO、资源、模型、贴图或数据库页不在页缓存 | major fault、block I/O、线程 D 状态、文件系统 trace |
+| 内存分配与回收 | 新分配触发 kswapd、direct reclaim、压缩或 swap | PSI、`pgscan_*`、`allocstall`、zRAM、workingset refault |
 
-AppFlow 的出发点正是这三类成本应放在同一轮决策里评估。预加载文件会增加内存占用；页回收如果不识别这些预加载页，会撤销预加载收益；进程杀灭如果只看当前优先级，可能释放了内存，却把下一次交互变成高成本冷启动。[引用: AppFlow 精读笔记]
+多任务把三段成本耦合起来。预读会占用页缓存；内存回收可能在使用前驱逐刚读入的页；匿名页换出会与预读竞争存储带宽；`lmkd` 杀掉后台应用后，用户返回该应用又会支付进程重建和文件加载成本。只分析 `Application.onCreate()` 会漏掉这些系统等待。
 
-## AppFlow 的三段式调度模型
+论文用 `T_cold = T_I/O + T_cpu + T_alloc` 表示问题，并把系统可调部分放在 I/O 与分配等待上。这是分析模型，三段在设备上可能并行或互相阻塞，不能直接把 trace 中的 wall time 按公式相加。
 
-论文把 AppFlow 设计成一个跨 Android Framework 与 Linux 内核的系统调度器，包含三个配合工作的组件：
+## 论文给出的四个观察
 
-| 组件 | 输入 | 动作 | 系统接入位置 |
+AppFlow 的设计来自论文样本中的四组测量。引用这些数据时，应同时保留样本语境。
+
+| 论文观察 | 论文报告的数据 | 能支持的判断 |
+|---|---|---|
+| 启动访问具有重复性 | 24 个应用中，97.2% 的 cold-launch I/O wait 涉及可预测静态数据 | 稳定资源存在预读机会 |
+| 切换期 I/O 有空闲 | 论文测得 79% 的 DRAM I/O bandwidth 未使用 | 预读可尝试使用空闲窗口 |
+| 小文件数量多、体积小 | 图 5 汇总为数量约 4.7 倍、内存占比 2.2%；TikTok 个例为 1,002 个、数量 7.47 倍、23MB、约 4% | 小文件适合在有限预算内提前读 |
+| 预读和回收会互相抵消 | 低内存下，预读页被回收后启动 I/O 延迟增至 6.4 倍 | 只加 prefetch 可能增加压力与重复读取 |
+
+论文正文在汇总值与 TikTok 个例之间使用了不同数字。写工程结论时要注明取自图表汇总还是单个应用，不能把 7.47 倍和 3% 写成所有应用共有的常数。
+
+论文还引用既有研究中的“30 分钟内再次访问 92.5%”，并报告 Android 基线杀掉其中 62% 的高概率应用。前一项不是 AppFlow 自己的 100 天数据，后一项依赖论文的 workload 与判定方式。产品预测器需要用自身用户群、场景和隐私约束重新训练与验证。
+
+## Selective File Preloader
+
+预加载器处理“何时读、读哪些内容、每次读多大”三个问题。
+
+### 启动前：频次优先
+
+系统从历史 launch trace 提取稳定访问的文件和区间，在应用启动前读入小文件以及大文件中的热点区间。小文件会制造较多离散请求，但总字节数较小，适合在严格预算下换取更少的同步等待。
+
+论文为每个应用选择文件大小分界 `s_i`，并把候选值限制在 4KB、8KB 等 2 的幂。每个候选值都对应预计预读体积 `P(s_i)` 和启动期 I/O 吞吐 `V(s_i)`，然后用 multiple-choice knapsack 在总预算内为每个应用选一个分界。论文把启动前总预算设为 100MB，求解 60 个应用的配置耗时低于 0.1ms。
+
+128KB 只是论文观察和搜索空间中的代表值，具体应用仍有自己的 `s_i`。把“所有小于 128KB 的文件都预读”写进产品规则，会忽略压缩包内部偏移、资源版本、F2FS/ext4 布局、UFS queue、16KB page size 和应用更新造成的访问变化。
+
+### 启动中：吞吐优先
+
+应用开始启动后，预加载器用较大块读取余下的大文件。论文把它放在独立低优先级进程中，目标是让预读落后时让位给前台读取。低调度优先级只能减少 CPU 竞争，不能自动保证 block 层或文件系统的前台请求总是先完成；产品实现还要观测 I/O priority、queue depth 和读放大。
+
+### 画像何时失效
+
+文件路径相同不等于内容和访问区间稳定。以下变化应使画像降权或失效：
+
+- APK、APEX、资源包、模型或动态特性更新；
+- 用户登录态、语言、主题、AB 实验改变启动路径；
+- 低内存模式、车载用户切换或屏幕形态改变资源选择；
+- 加密状态、文件系统、page size 或存储固件发生变化；
+- 画像命中后仍出现较高 refault 或前台 I/O 延迟。
+
+画像键至少包含包版本、build fingerprint、ABI、page size 与资源版本。回滚时应能立即停用预测与预读，不能依赖清空用户数据恢复。
+
+## Adaptive Memory Reclaimer
+
+预读成功只说明数据进入页缓存；启动线程使用它之前，数据仍可能被回收。AppFlow 为此改动 Linux 内核回收路径。
+
+### 论文原型的两种控制
+
+论文每 100ms 读取一次可用内存和页分配计数。当可用内存低于设备阈值、最近窗口分配量高于 `N_alloc` 时，原型进入 file-first 阶段；论文参数搜索得到的 `N_alloc` 是 12,800 页。压力缓和后再回收匿名页，并回到常规比例。
+
+对预加载页，原型按两个窗口处理：
+
+- 启动前读入的少量页每 10 秒轻触一次，应用活跃后停止；
+- 启动中读入的文件通过 `/proc` 发布清单，修改 `shrink_page_list()`，扫描到相关页时跳过并标为 active，启动完成后清除清单。
+
+这是一项 kernel patch，不是 `readahead()`、`madvise()` 或普通 page-cache 访问自然提供的保证。论文报告该轻触扫描约耗时 10ms、开销约 0.1%；这个开销仍需在目标 SoC、文件集合和电源状态上复测。
+
+### Android 17 kernel 6.18 的现状
+
+`android17-6.18-2026-06_r6/mm/vmscan.c` 没有 AppFlow 的预加载文件清单或启动窗口。经典 LRU 路径中的 `get_scan_count()` 会根据 swap 能力、swappiness、reclaim priority、file LRU 大小、refault 成本和 cache-trim 状态选择 `SCAN_FILE`、`SCAN_ANON`、`SCAN_EQUAL` 或比例扫描；启用 MGLRU 时走另一套代际老化与逐出路径。
+
+因此，论文对其 Android 15 基线“文件页与匿名页交替回收”的概括不能直接套到 Android 17 kernel 6.18。Android 17 已经按运行状态调整扫描比例，但仍不理解“某个文件页将在本次应用启动中使用”的语义。AppFlow 增加的是这一层短时语义。
+
+file-backed 页也不总是零成本。干净文件页可以丢弃，脏文件页需要回写；被丢弃的页若很快 refault，会产生存储读取和 stall。匿名页可能在 zRAM 中压缩，代价由压缩算法、CPU、swap 空间与后续 swap-in 共同决定。回收策略不能只按 file/anon 二分。
+
+## Context-Aware Process Killer
+
+当页回收不能及时释放足够内存时，AppFlow 再选择后台进程。论文使用两类上下文：
+
+- 近期使用过的应用具有较高返回概率，延后终止；
+- 长时间运行且内存相对刚启动基线增长 30%～50% 的应用，重启后缓存和临时分配会回到较低水平。
+
+论文用 `ΔM = M_current - M_relaunch` 估算一次终止带来的长期净释放量，并优先选择 `ΔM` 较大的候选。这个量需要历史 relaunch 画像，当前 RSS/PSS 大并不能推导出重启后的基线。共享页、GPU 内存、memcg charge、isolated process 和服务进程也会使“应用占用”难以由单一 PSS 表示。
+
+候选集合仍要尊重 Android 进程重要性。导航、通话、音频、可感知前台服务、设备管理、车载安全界面和系统持久进程不能因为预测分数低就进入普通缓存进程的牺牲集合。预测只能在系统已经允许终止的候选中排序，并且要有饥饿、公平性和最大延迟约束。
+
+## Android 17 r1 的 LMKD 基线
+
+Android 17 r1 使用一个 userspace `lmkd` 守护进程。源码中有 PSI 新策略、legacy minfree 路径和检测旧 in-kernel 接口的兼容分支，这些是同一守护进程的运行路径。AOSP 没有名为“LMKD v2”的正式组件或独立守护进程。
+
+### 压力检测
+
+r1 默认使用 PSI，设备可以通过属性覆盖。源码默认值如下：
+
+| 参数 | 常规设备 | low-RAM 设备 | 含义 |
+|---|---:|---:|---|
+| `psi_partial_stall_ms` | 70ms | 200ms | 1,000ms 窗口内的 partial stall 门槛 |
+| `psi_complete_stall_ms` | 700ms | 700ms | 1,000ms 窗口内的 complete stall 门槛 |
+| `thrashing_limit` | 100% | 30% | workingset refault 相对 file page cache 的门槛 |
+| `thrashing_limit_decay` | 10% | 50% | 杀进程后压力未恢复时的门槛衰减比例 |
+
+这些是 r1 源码默认值，产品属性可以覆盖。旧注入材料中的“LOW 70 / MEDIUM 100 / CRITICAL 70”不对应 r1 的 `init_psi_monitors()` 配置，不能继续使用。
+
+`lmkd` 收到压力事件后还会检查 zone watermark、swap、thrashing、direct reclaim 等状态。PSI 负责唤醒与严重度信号，不会单独决定牺牲哪个进程。
+
+### 候选进程和 `oom_score_adj`
+
+AMS 根据进程状态、组件关系和用户可感知性计算 adj。`ProcessList.setOomAdj()` 或 `batchSetOomAdj()` 把这个结果发给 `lmkd`。`lmkd` 从较高 adj 桶向较低 adj 桶查找候选；`kill_heaviest_task=false` 时通常取该桶队尾，配置为 true 时取该桶内占用较大的进程。源码还规定，当搜索进入 `PERCEPTIBLE_APP_ADJ` 或更重要的范围时，选择逻辑会强制改为 heaviest，尽量减少牺牲数量。
+
+adj 表达 Android 组件的当前重要性。把“预计稍后会打开”伪装成 perceptible 或 visible，会改变 AMS、LMKD、cached process 管理与资源公平性的共同约定。它也可能让真实的可感知进程承担更大压力。
+
+### `LMK_PROCS_PRIO` 的准确含义
+
+Android 17 r1 的 `LMK_PROCS_PRIO` 是 framework 到 `lmkd` 控制 socket 的内部批量协议：
+
+- `include/lmkd.h` 把单包记录上限定为 3；
+- `ProcessList.batchSetOomAdj()` 读取每个 `ProcessRecordInternal.getCurAdj()`，每 3 个进程发送一包；
+- `lmkd.cpp::cmd_procs_prio()` 在收包线程内循环调用 `apply_proc_prio()`；
+- r1 `lmkd.cpp` 没有 io_uring 处理器，也没有 32 条记录的主线协议。
+
+这项批处理减少控制消息次数，不提供“保护将启动应用”的策略接口。它不能改变文件页回收，也不能接收 AppFlow 的 `ΔM`、访问概率或预加载清单。把 AOSPA 等 fork 的 io_uring 扩展写成 AOSP 17 能力，会直接误导移植工作。
+
+### 全局 LMKD 属性不能代替预测器
+
+`ro.lmk.lowmem_min_oom_score`、`ro.lmk.kill_heaviest_task`、thrashing 门槛等属性影响整台设备。调高最低可杀 adj 可能使 `lmkd` 在严重压力下找不到足够候选，增加 direct reclaim、系统 stall 或 kernel OOM 风险；调低值则扩大可牺牲集合。它们不具备按应用、按启动窗口变化的语义。
+
+`am set-isolated-process-uid-list` 管理 isolated process UID 范围，也和后台应用保护、页预读或 LMKD 候选排序无关。
+
+## CachedAppOptimizer 能做什么
+
+`CachedAppOptimizer` 在 Android 17 r1 中负责 cached app compaction 与 freezer 相关工作。它可以按进程状态和配置执行 SOME/FULL 等压缩，冻结 cached 进程及其 Binder 接口，并在进程恢复时解冻。它处理的是 cached 进程 CPU 活动与匿名内存整理，不记录启动文件热集，也不在 `vmscan` 中保护文件页。
+
+把 AppFlow 的 killer 分数接到 `CachedAppOptimizer` 仍需修改 AMS 的进程策略，并证明 compaction、freezer、adj 更新和 LMKD 选择之间没有竞态。类名相邻不代表已有可复用的 AppFlow hook。
+
+## 原型组件与 Android 17 能力映射
+
+| AppFlow 组件 | Android 17 已有基础 | 主线缺失部分 | 需要的权限或改动 |
 |---|---|---|---|
-| Selective File Preloader | 应用启动文件画像、文件大小、访问频率、启动预测 | 在启动前或启动中预读候选文件页，按预算控制占用 | Android Framework 侧收集应用使用序列，内核侧执行文件预读 |
-| Adaptive Memory Reclaimer | 当前内存压力、预加载文件列表、文件页 / 匿名页状态 | 回收时保护本轮启动所需文件页，降低预加载页被提前驱逐的概率 | Linux `mm/vmscan` 一类页回收路径 |
-| Context-Aware Process Killer | 后台应用运行时长、内存膨胀比例、再次访问概率、释放收益 | 在可牺牲进程里选择释放收益高、用户代价低的对象 | Android Framework 进程状态 + `lmkd` 杀进程边界 |
+| Selective File Preloader | 应用启动事件、文件 I/O、page cache、UsageStats | 跨应用文件画像、两阶段预算器、启动预测服务 | 平台服务、文件访问权限、预读执行器 |
+| Adaptive Memory Reclaimer | classic LRU/MGLRU、zRAM、memcg、PSI、`vmscan` | 启动窗口、预加载文件标记、逐出跳过规则 | kernel core mm patch 与接口 |
+| Context-Aware Process Killer | AMS adj、`lmkd`、cached LRU、PSS/RSS 采样 | relaunch 基线、返回概率、净释放排序 | Framework 与 `lmkd` 策略改动 |
+| 验证与回滚 | Perfetto、statsd、`ApplicationExitInfo`、系统属性 | AppFlow 专用原因码、命中率和页保护统计 | 埋点、实验开关、版本化画像 |
 
-三段调度各自处理不同问题。Preloader 解决“启动要读什么”；Reclaimer 解决“读进来的页会不会马上被回收”；Killer 解决“内存压力必须杀进程时，杀谁的收益更高”。这和 AOSP 主线的职责划分不同：主线 `lmkd` 负责响应内存压力并杀低优先级进程，页回收在内核内存管理路径处理，文件预读更多依赖文件系统、应用访问模式和平台策略，三者没有 AppFlow 论文描述的统一收益函数。
+`UsageStatsManager.queryEvents()` 需要 `PACKAGE_USAGE_STATS`，声明权限后还需用户在设置中授予 usage access；只查询本包事件的接口不需要该权限。论文的后台采集应用不代表普通三方应用可以无提示收集全设备使用序列。系统镜像内的预测服务也要遵守多用户、工作资料、访客与数据保留边界。
 
-```mermaid
-flowchart LR
-  U[Usage history / launch trace] --> P[Selective File Preloader]
-  P --> F[Preloaded file pages]
-  F --> R[Adaptive Memory Reclaimer]
-  M[Memory pressure / PSI] --> R
-  R --> K[Context-Aware Process Killer]
-  A[AMS process status / oom_score_adj] --> K
-  K --> O[Kill decision + launch latency target]
-```
+## 三种实施权限下的可做范围
 
-这张图只表达论文结构，不代表 AOSP 主线已有这些模块。[引用: arXiv 2603.17259; 已验证: AOSP 主线存在 `system/memory/lmkd/`，未见 AppFlow 模块]
+### 普通应用
 
-## 文件访问预测与预加载预算
+应用可以优化自己的初始化、生成 Baseline Profile、记录 TTID/TTFD、采样自己的文件访问和控制自己的资源读取。它还可以在 `TRIM_MEMORY_UI_HIDDEN` 等有效回调中释放可重建缓存，并用 `ApplicationExitInfo` 了解此前退出原因。
 
-AppFlow 的文件预加载不是把应用目录整包读进内存。论文把启动访问文件按大小和热度分层：小文件数量多、单个读取成本低，但容易造成频繁 stall；大文件数量少、体积大，更适合用较大的 I/O 块走顺序吞吐。精读材料记录的实验口径是：小文件阈值取 128KB；小文件只占启动读取字节的约 3%，但数量约为大文件的 7.47 倍，并贡献大量 I/O 等待；预加载预算取 100MB。[引用: AppFlow 精读笔记; 引用: https://arxiv.org/abs/2603.17259]
+普通应用不能访问 `lmkd` 控制 socket、写其它进程的 `oom_score_adj`、修改 `vmscan`、保护 page cache 中的指定文件，也不能默认读取其它应用的使用历史。应用内预读可能有收益，但它不等同于 AppFlow。
 
-这几个数字只适用于论文实验设备和应用集合。迁移到真实产品时，要按应用包结构、资源更新方式、文件系统、UFS 性能、内存容量重新建模。一个游戏的 pak / obb 文件、一个端侧 LLM 的权重文件、一个图片编辑器的素材缓存，文件大小分布完全不同，不能照搬 128KB 阈值。
+### 特权 Framework 原型
 
-更稳的工程做法是把预加载拆成三步：
+系统厂商可以在 platform service 中采集经过授权的应用切换序列，维护版本化文件画像，并在 launch observer 周围调度预读。此阶段能验证预测准确率、I/O 干扰、100MB 级预算是否适合目标设备，以及 killer 画像有没有稳定信号。
 
-1. 从启动 trace 里记录文件访问序列，区分首帧前、首帧后、交互后访问。
-2. 统计文件大小、访问频次、major fault 等待时间和读取时刻，筛出稳定出现在冷启动路径上的文件。
-3. 在固定内存预算下评估收益：小文件优先降低等待次数，大文件优先提升顺序吞吐，动态资源和低命中资源排除在外。
+若 kernel 未改，预读页随时可能被正常回收。实验报告要把“预读命中”与“页存活到使用时刻”分开，避免把偶然 page-cache 命中当作回收保护效果。此阶段也不应通过随意降低 adj 模拟存活收益。
 
-这套做法和 8.7 节的 Baseline Profile 不冲突。Baseline Profile 缩短的是代码路径解释、JIT 和编译布局成本；AppFlow 类策略处理的是文件页是否已在内存里。一个启动慢样本里，两类成本可能同时存在，Perfetto 上要分别看 CPU 执行、page fault 和 block I/O。
+### 产品级 OS 与 kernel 原型
 
-## 预加载感知的页回收策略
+要复现论文完整设计，需要 Framework 和 kernel 同时修改：建立启动会话 ID，传递文件或 inode/offset 标识，在 classic LRU 与 MGLRU 都定义短时处理，处理文件截断、更新、卸载、memcg 迁移与多用户隔离，再把 killer 排序放入 AMS/LMKD 的合法候选集合。
 
-普通预加载在内存压力下很脆弱。文件页读进页缓存后，内核回收路径并不知道这些页属于下一次启动的高收益数据；如果 `kswapd` 或 direct reclaim 把它们当作普通文件页回收，启动线程稍后仍要重新读，预加载成本被浪费。匿名页也有自己的代价：换出到 zRAM 或 flash-backed swap 会引入压缩、写入和后续 swap-in 成本。
+GKI 允许 vendor module 和受控 hook 扩展部分功能，但模块不能直接替换 core `mm/vmscan.c` 语义。修改 core mm 意味着维护产品 kernel 分支、ABI 与安全更新合并。实现还需覆盖 CTS、VTS、GTS、SELinux、OTA、suspend/resume、low-RAM 和 kernel OOM 回归。
 
-AppFlow 的 Adaptive Memory Reclaimer 给页回收路径增加“预加载文件页”信息。论文描述的方式是由预加载组件通过 `/proc` 发布预加载文件列表，并在启动结束后清除；内核回收扫描到这些文件页时跳过并标记为 active，降低它们在启动窗口内被驱逐的概率。[引用: arXiv 2603.17259]
+## 如何设计一轮可信实验
 
-这和 AOSP 主线的 LMKD、zRAM 不是同一层能力：
+### 固定启动口径
 
-| 能力 | 主线 Android 侧重点 | AppFlow 原型增加的判断 |
+测试脚本应记录目标应用在每轮前的进程状态和 page-cache 条件。cold、warm、hot 必须分组，不能仅用 `am start -W` 输出推断。Android 官方的 TTID/TTFD、Macrobenchmark 启动模式和 Perfetto launch slice 可以互相校验。
+
+清空全局 page cache 适合受控实验室镜像，会影响所有进程与文件系统状态；线上设备不能用这种方式制造 cold 样本。更稳妥的线上分析是观察自然冷启动，并按上次退出、包版本、设备 uptime 和内存压力分层。
+
+### 建立负载组合
+
+每个设备至少覆盖：
+
+- 空闲、常规多任务、内存紧张和 swap 接近上限；
+- 4KB/16KB page size、不同 DRAM 档位和存储型号；
+- 首次安装、普通版本、应用更新后、系统 OTA 后；
+- 屏幕亮灭、充电/电池、温度和 thermal throttling；
+- 前台导航、音频、通话、端侧模型推理等不可随意中断的并发任务。
+
+每个格子报告样本数、P50/P90/P95/P99、置信区间和异常值规则。平均数只能作为补充。
+
+### 同时观察四组证据
+
+| 目标 | 指标 | 反例信号 |
 |---|---|---|
-| `lmkd` | 通过 PSI / vmpressure 等信号感知系统内存压力，选择低优先级进程释放内存 | 杀进程时纳入应用运行时长、内存膨胀和再次访问代价 |
-| zRAM / swap | 缓解匿名页压力，避免过早杀进程 | 避免把启动窗口要用的文件页提前回收 |
-| 页缓存回收 | 在文件页与匿名页之间按内核策略回收 | 对预加载文件页做短时保护 |
+| 启动变快 | TTID、TTFD、业务可用时刻、cold relaunch 比例 | 首帧快但可交互更晚 |
+| 预读有效 | 预读字节、使用字节、major fault、block wait、refault | 读放大、命中低、前台 I/O 被拖慢 |
+| 内存更稳 | memory PSI、`pgscan_direct`、allocstall、zRAM、swap-in/out | stall 下降但 swap 或功耗大增 |
+| 多任务可接受 | LMK 次数、后台存活、短时间 relaunch、用户可感知 LMK | 保护目标应用后其它任务更早死亡 |
 
-这个设计的代价也在这里：它要求内核回收路径识别应用启动语义。Android GKI、vendor kernel、文件系统和 CTS/VTS 都会把这类改动变成高成本维护项。产品如果只在应用侧做预热，拿不到同等保护；如果在系统侧改内核，又要证明不会让其它应用的文件页长期占住内存。
+`ApplicationExitInfo.REASON_LOW_MEMORY` 可用于应用侧回看，但设备不一定支持该原因。`ActivityManager.isLowMemoryKillReportSupported()` 返回 false 时，低内存终止可能只表现为 `REASON_SIGNALED` 和 `SIGKILL`。它也不包含完整的 LMKD 候选评分，平台实验仍需 `lmkd` 日志、statsd 和 trace。
 
-## Context-Aware Kill 与 LMKD 策略边界
+### 分离三个组件的贡献
 
-AOSP 主线 `lmkd` 的公开定位是：监控系统内存状态，在高内存压力下杀掉较不必要的进程，让系统保持可接受性能。现代 Android 版本会使用 PSI monitors 或 vmpressure 等内核信号，并结合进程重要性信息做决策。[已验证: 官方文档, source.android.com/docs/core/perf/lmkd]
+至少保留四组：
 
-AppFlow 的 Context-Aware Process Killer 增加了另一组信号：后台应用是否长时间运行、内存是否从基线膨胀、杀掉后释放内存是否足以抵消下一次重启代价。精读材料记录的观察是，一些长期运行的社交和多媒体应用会比基线状态多占 30% 到 50% 内存，重启后回到较低占用；论文把这种“膨胀后重置”的周期纳入杀进程收益评估。[引用: AppFlow 精读笔记]
+1. Android 17 原生基线；
+2. 只有 Selective File Preloader；
+3. Preloader 加 Adaptive Memory Reclaimer；
+4. 三个组件全部开启。
 
-这不等于“按内存大就杀”。一个后台导航、音频、通话、车载关键界面或近期高概率返回的应用，即使占用较高，杀掉也可能带来更差的用户路径。Context-Aware Kill 的价值在于把收益和代价放在一起：释放多少内存、下次打开多久、用户多久会回来、是否有前台可感知任务。
+AppFlow 论文的 ablation 已显示只开 SFP 时启动变快，但 cold relaunch 数增加 30%。这个结果说明预读带来的内存压力会抵消一部分收益。组件分组能区分“读取更早”“页活得更久”和“后台进程选择变化”各自造成的影响。
 
-线上验证时，`ApplicationExitInfo` 是应用侧入口。Android Developers 文档建议用它读取上次进程退出原因；低内存场景可关注 `REASON_LOW_MEMORY`，同时检查设备是否支持低内存杀进程报告。[已验证: developer.android.com/topic/performance/vitals/lmk; 已验证: developer.android.com/reference/android/app/ApplicationExitInfo]
+## 论文实验结果该怎样阅读
 
-## Perfetto 与线上指标如何验证
+论文在 Android 15 原型上修改约 1,672 行 Framework 和 1,107 行 Linux kernel 代码。Pixel 设备通过修改 `arm64_memblock_init()` 限制可见内存为 6GB 或 8GB，Raspberry Pi 4B 车载试验台为 4GB。测试包含 60 多个应用、模拟多任务负载和一条 100 天使用 trace。
 
-验证 AppFlow 类策略，不能只看平均启动耗时。平均值容易掩盖尾部样本：策略可能让常规启动变快，却在高内存压力或多任务切换时制造更长尾延迟。指标至少分成四组：
-
-| 指标组 | 观察内容 | 判断口径 |
+| 场景 | 论文报告结果 | 限定条件 |
 |---|---|---|
-| 启动时间 | TTID、TTFD、P90 / P95 / P99、冷 / 温 / 热启动占比 | 是否减少尾部冷启动，而不只降低平均值 |
-| I/O | major fault、block read size、I/O 等待、文件读取序列 | 预加载是否命中启动必需文件，是否制造额外读放大 |
-| 内存压力 | PSI、`kswapd`、direct reclaim、zRAM activity、可用内存 | 预加载是否把系统推入更高压力区间 |
-| 进程存活 | `lmkd` kill、`ApplicationExitInfo`、后台保活数、短时间 relaunch | 是否减少“刚杀完又打开”的重复冷启动 |
+| 论文摘要 | cold-launch latency 最多下降 66.5%，示例 2s 到 690ms；100 天中 95% 启动小于 1s | 作者原型与工作负载 |
+| Pixel 8 cold launch | 相对 Android 平均下降 33.7%～43.6%；6GB 高负载个例最多下降 57% | 8 个 GB 级应用，三档负载 |
+| 17 应用多任务 | 保留后台应用从 7/17 增到 13/17，平均 relaunch 时间下降 37.6% | Pixel 7，6GB/8GB，高负载 |
+| 高压力机制指标 | direct reclaim 次数下降 67.9%，LMK 事件下降 33.7% | Pixel 8 6GB 高负载 |
+| 100 天 case study | 平均 cold-launch latency 下降 23%，GB 级 cold relaunch 次数下降 31.6% | 一条 60+ 应用 trace |
+| 车载 case study | 4.3s 降到 2.0s，下降 53.4% | BYD Seal 供电、Pi 4B 计算、5 个应用 |
+| 端侧生成式负载 | 后台 kill 从 8～9 个降到 0～3 个，survivability 从 66.6% 到 100% | Pixel 8 8GB 的论文场景 |
 
-Perfetto 侧可以把 `sched`、block/ext4/f2fs、memory counters、lmkd 相关日志和应用自定义 trace 放在同一份采样配置里。Perfetto 文档也说明，旧内核 LMK 曾通过 `lowmemorykiller/lowmemory_kill` ftrace event 暴露事件，Android 9 之后 userspace `lmkd` 接管杀进程职责，分析时要按设备版本选择入口。[已验证: Perfetto memory counters docs; 已验证: AOSP external/perfetto docs]
+这些结果展示了原型潜力，也留下复现约束：公开论文没有提供完整 Android/kernel patch、每个参数的产品配置、全部原始 trace 与功耗数据；`am start -W`、清文件缓存和人为限制内存也与自然线上启动不同。选型时应把论文当作假设来源，用目标产品重新测量。
 
-一次有效的实验至少保留三类对照：原生系统基线、只做文件预加载、预加载加页回收保护加进程选择。只比较完整 AppFlow 与系统基线，无法判断收益来自预加载、回收保护还是杀进程策略。
+## 与 Baseline Profile、Cloud Profile 的关系
 
-## 工程化接入风险
+Profile 与 AppFlow 处理不同成本：
 
-AppFlow 的论文实现改动很深：精读材料记录为 1,107 行 Linux 内核代码和 1,672 行 Android Framework 代码。这样的方案适合系统厂商、车机平台或自研 ROM 评估，不适合作为普通应用开发者的实施方案。[引用: AppFlow 精读笔记]
+| 技术 | 主要对象 | 主要收益证据 | 无法解决的部分 |
+|---|---|---|---|
+| Baseline/Startup Profile | 热方法、类、DEX 布局与预编译 | CPU running 时间、JIT/解释执行、class load | 模型和资源文件不在页缓存 |
+| Cloud Profile | 用户群聚合后的 ART profile 与 dexopt | 编译 artifact、启动 CPU 和代码布局 | 当前设备的内存压力与后台存活 |
+| AppFlow | 启动文件页、回收窗口、后台进程选择 | major fault、I/O wait、refault、LMK、relaunch | 应用自身重初始化与低效业务逻辑 |
 
-主要风险有五类：
+同一启动可以同时受 CPU 和 I/O 限制。A/B 时要固定 dexopt 状态与 profile 版本，再比较预读；评估 profile 时也要记录 page-cache 与后台进程状态。缺少这些控制变量，收益会在两类机制之间错配。
 
-- **兼容性风险**：修改 `mm/vmscan`、`lmkd` 或 AMS 决策路径，可能影响 CTS/VTS、GKI 合规和 vendor kernel 升级。
-- **公平性风险**：被预测为“即将启动”的大应用会占住页缓存，其它后台应用可能更早被回收或杀掉。
-- **功耗风险**：预读文件会增加存储访问和 DRAM 占用。命中率不足时，成本会变成纯额外功耗。
-- **隐私与策略风险**：启动预测依赖应用使用历史。车载、企业设备和多用户场景要处理数据留存和权限边界。
-- **维护风险**：文件系统、zRAM、LMKD、AMS、UsageStats 任一模块变化，都可能让联合策略失效。
+## 车载、端侧模型和大型游戏
 
-因此，产品化时更合理的顺序是先在实验室用 trace 回放验证收益，再做小流量系统镜像实验，再讨论内核与 Framework 的合入。没有稳定收益前，不应该把论文中的阈值和收益写入平台默认配置。
+车载系统有导航、媒体、语音、仪表、多屏和多用户并发，后台进程的重要性不能仅按最近使用时间推断。冷启动优化需要服从驾驶安全和音视频连续性，预测失误的代价高于手机社交应用。
 
-## 与 Baseline Profile / 云端 Profile 的关系
+端侧模型的权重常通过 mmap 形成大规模 file-backed 映射，推理中间张量和运行时堆又会增加匿名页。页面类型与映射方式取决于具体 runtime，不能写成“模型权重都属于匿名页”。大型游戏同样混合 APK/asset pack、native heap、图形驱动和 GPU 分配，单看进程 RSS 会漏掉关键资源。
 
-Baseline Profile、Cloud Profile、ART profile 和 AppFlow 处理的是不同层次的启动成本。Profile 让代码更早以优化形态执行，减少解释执行、JIT 和热点方法布局问题；AppFlow 让启动所需文件页更早进入 DRAM，并保护这些页在启动窗口内不被回收。前者偏 CPU 和编译布局，后者偏 I/O、页缓存和内存压力。
+这三类负载适合验证 AppFlow 提出的联合问题，但 killer 规则需要按角色设置硬约束：导航、通话、正在播放音频和安全相关服务不得由预测模型降级；模型或游戏的预读预算也要服从 thermal、battery 和前台 I/O 门禁。
 
-排查启动慢时，可以用这组判断拆分：
+## 产品化风险与退出条件
 
-| 现象 | 更像 Profile 问题 | 更像 AppFlow 类问题 |
+| 风险 | 典型后果 | 门禁 |
 |---|---|---|
-| 主线程长期 Running，CPU 占用高 | 是 | 否 |
-| 大量 major fault、block read、D 状态等待 | 否 | 是 |
-| 同一版本首次安装慢，二次打开明显改善 | 可能是 | 可能是 |
-| 多任务后重新打开从温启动退回冷启动 | 否 | 是 |
-| 升级 profile 后 TTID 下降但尾部冷启动仍长 | Profile 已解决一部分 | 继续看 I/O 与 LMK |
+| 预测错误 | 读入未使用数据，增加 I/O 与 DRAM 占用 | 命中率、读放大、版本化画像、快速停用 |
+| 页保护过强 | 其它工作集 refault、direct reclaim 或 OOM | 最大保护字节、最大时长、压力强制退出 |
+| killer 偏置 | 某些后台应用长期成为牺牲对象 | 角色白名单、每应用 kill 频率、公平性 |
+| 隐私越界 | 跨应用使用序列泄露用户行为 | 本地最小化、多用户隔离、保留期限、审计 |
+| kernel 分叉 | 安全补丁合并困难、MGLRU/classic LRU 行为分裂 | 小 patch、双路径测试、持续 rebase |
+| 功耗与温度 | 空闲预读唤醒存储，竞争前台任务 | 电源/thermal 门禁、能耗 A/B、queue 监控 |
 
-写性能报告时要避免把二者收益混在一起。Profile 命中率、dexopt 状态、文件页命中率、后台保活率应分开记录。
+任一压力档位出现 kernel OOM、SystemUI/Launcher 被杀、导航或音频中断、P99 回归、I/O 读放大失控时，策略应自动退出并恢复 Android 原生行为。退出路径必须经过同样规模的压力测试。
 
-## 与车载系统和端侧 LLM 应用的关系
+## 源码核对入口
 
-车载系统和端侧 LLM 更容易暴露 AppFlow 这类问题。车载设备常有多屏、多用户、导航、媒体、语音、仪表等并发负载，后台任务不能像手机应用一样随意牺牲；端侧 LLM 和大型 3D 应用又会带来大模型权重、贴图、shader 缓存、资源包等 GB 级文件访问。内存和 I/O 一旦被同时压满，冷启动尾部延迟会比普通移动应用更明显。
+- `android-17.0.0_r1/system/memory/lmkd/lmkd.cpp`：PSI、thrashing、候选选择和 `cmd_procs_prio()`。
+- `android-17.0.0_r1/system/memory/lmkd/include/lmkd.h`：控制协议与 3 条记录上限。
+- `android-17.0.0_r1/frameworks/base/.../ProcessList.java`：adj 发送与 `batchSetOomAdj()`。
+- `android-17.0.0_r1/frameworks/base/.../CachedAppOptimizer.java`：cached app compaction 与 freezer。
+- `android-17.0.0_r1/frameworks/base/.../UsageStatsManager.java`：使用历史接口与权限说明。
+- `android-17.0.0_r1/frameworks/base/.../ApplicationExitInfo.java`：低内存退出原因及设备支持差异。
+- `android17-6.18-2026-06_r6/mm/vmscan.c`：classic LRU、MGLRU 和回收扫描选择。
 
-这类场景的评估口径也应更严格。手机应用可以只看单应用 TTID / TTFD，车载和端侧 AI 场景还要看：关键界面是否被挤出内存、语音或导航是否被杀、模型权重预读是否影响媒体播放、热切换窗口是否稳定。AppFlow 的意义在于提供一个研究方向：把启动性能、后台保活和内存压力放在同一张账本里算，而不是把它们分给三个团队各自调参。
+## 与其他章节的边界
 
-## AOSP 可验证锚点
-
-后续复审时，建议按下面路径核对事实边界：
-
-| 主题 | AOSP / 官方锚点 | 用途 |
-|---|---|---|
-| `lmkd` 行为 | `system/memory/lmkd/`，source.android.com/docs/core/perf/lmkd | 确认 PSI / vmpressure、kill 策略、属性配置 |
-| 进程优先级 | `frameworks/base/services/core/java/com/android/server/am/ProcessList.java` | 对照 `oom_score_adj` 与进程状态映射 |
-| AMS 进程状态 | `ActivityManagerService.java`、`ProcessRecord` 相关路径 | 对照后台进程、缓存进程和进程生命周期 |
-| 使用历史 | `frameworks/base/core/java/android/app/usage/UsageStatsManager.java` | 对照 AppFlow 使用序列采集的系统侧接口 |
-| 退出原因 | `frameworks/base/core/java/android/app/ApplicationExitInfo.java`、developer.android.com reference | 线上归因低内存杀进程 |
-| 页回收 | Linux `mm/vmscan.c`、zRAM / swap 路径 | 判断预加载页保护是否属于内核改动 |
-| I/O 与预读 | 文件系统 readahead、block 层 ftrace、Perfetto block proto | 判断预加载命中与读放大 |
-
-复审时要保留一个边界：AppFlow 是论文原型；AOSP 主线可以验证 LMKD、UsageStats、ApplicationExitInfo、页回收和 I/O 观察入口，但不能据此推断 Android 已合入 AppFlow。
-
-
-### AppFlow 与 Android 17 LMKD 兼容性源码级事实核查
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-27-appflow-lmkd-android17-compatibility.md
-- 类型：DeepResearch 调研结果
-- 摘要：基于 android-17.0.0_r1 的 lmkd.cpp（4218行）、ProcessList.java（6193行）实测确认：AppFlow（MobiCom'26）的三段式调度模型在 AOSP 17 中完全不存在。LMKD 真实能力为 PSI 三级阈值 + oom_score_adj kill 链，memcg v1 已标记 deprecated。这是区分学术提案与生产实现的关键参考。
-- 注入时间：2026-06-28
-- 价值：明确区分学术论文（AppFlow）与 AOSP 生产实现的真实边界，避免将未合入的研究原型误认为 Android 17 能力
+- Android 进程优先级、PSI 与 LMKD 机制见 [[04-lmk|4.4 低内存管理与 LMKD]]。
+- 冷、温、热启动和 TTID/TTFD 见 [[02-app-launch|8.2 应用启动分析]]。
+- Baseline Profile 的采集与验证见 [[07-baseline-profiles|8.7 Baseline Profiles]]。
+- 系统启动及 I/O 分阶段分析见 [[07-system-boot-time-optimization|16.7 Android 系统启动耗时分析]]。
+- 应用启动诊断流程见 [[01-startup-analysis|21.1 应用启动分析]]。
 
 ## 参考资料
 
-- AppFlow: Memory Scheduling for Cold Launch of Large Apps on Mobile and Vehicle Systems, arXiv:2603.17259
-- `/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/论文/Android-2026-05-23-AppFlow-ColdLaunch/03-精读.md`
-- `intake/research-feeds/2026-04-02-15-ch05-appflow-cold-launch-scheduler.md`（其中旧 arXiv 号按本节核对结果更正为 2603.17259）
-- Android Open Source Project: Low memory killer daemon
-- Android Developers: App startup time, Low memory killers, ApplicationExitInfo
-
-<!-- AIW-源码调研-2026-06-27 -->
-
-## Android 17 源码验证结论（2026-06-27 调研补充）
-
-依据 `AOSP android-17.0.0_r1` 实测源码（`system/memory/lmkd/lmkd.cpp` 4218 行 / `include/lmkd.h` 179+ 行 / `frameworks/base/services/core/java/com/android/server/am/ProcessList.java` 6193 行 / `CachedAppOptimizer.java` 3092 行 / `ActivityManagerService.java` 21242 行 / `am/psc/Constants.java` 130 行 / `services/core/java/com/android/server/am/flags.aconfig` 175 行），本节对"AppFlow 与 Android 17 LMKD 新机制兼容性"命题补充以下事实校正与边界界定。
-
-### 1. AppFlow 三段式组件在 AOSP 17 主线的存在性核查
-
-| AppFlow 论文组件 | 论文声明 | AOSP 17 grep 结果 |
-|---|---|---|
-| Selective File Preloader | 启动前/中按 128KB 分大小文件、100MB 预算 | **不存在**——`AMS.java` / `ProcessList.java` / `lmkd.cpp` / `CachedAppOptimizer.java` 全文件 `grep -n "AppFlow\|appFlow\|APP_FLOW\|app_flow"` 0 命中 |
-| Adaptive Memory Reclaimer | Linux mm/vmscan 1,107 行新增 + 100ms 轮询 n_alloc > 12800 高压检测 | **不存在**——AOSP 走 PSI 三级阈值（70ms/100ms/70ms，`lmkd.cpp:231-235`），不修改内核 vmscan 路径 |
-| Context-Aware Process Killer | 引入 ΔM = Mcurr − Mrelaunch 净释放收益与 30%-50% 内存膨胀周期 | **不存在**——AOSP 杀进程顺序仅依赖 oom_score_adj（900-999 cached）+ cached idle 时长，不感知重启代价 |
-
-AppFlow 是研究原型（西北工大/西北大学/哈工程，arXiv 2603.17259，2026-03-18，MobiCom '26 录用），代码量 1,107 行内核 + 1,672 行 Framework，实验平台 Pixel 7/8 + Raspberry Pi 4B + Android 15，**未在 Android 17 验证**。
-
-### 2. AOSP 17 与 AppFlow 的真实能力边界
-
-- **LMKD 控制命令集饱和**：`lmkd.h:29-42` 已定义 12 个命令（LMK_TARGET/LMK_PROCPRIO/LMK_PROCREMOVE/LMK_PROCPURGE/LMK_GETKILLCNT/LMK_SUBSCRIBE/LMK_PROCKILL/LMK_UPDATE_PROPS/LMK_STAT_KILL_OCCURRED/LMK_START_MONITORING/LMK_BOOT_COMPLETED/LMK_PROCS_PRIO），无 `reclaim_priority`、`context_aware`、`appflow` 等命令。Java 端在 `ProcessList.java:297-308` 通过字节常量严格镜像。
-- **cached 进程调度阈值**：`ProcessList.java:243-249` 用 `MIN_CACHED_APPS=2`/`TRIM_CRITICAL_THRESHOLD=3`/`TRIM_LOW_THRESHOLD=5` 做"内存临界"近似判断，不是页面分配率 n_alloc 也不是 ΔM——这是与 AppFlow 的策略分叉点。
-- **oom_score_adj 阶梯**：`Constants.java:76-77` 定义 `CACHED_APP_MAX_ADJ=999`、`CACHED_APP_MIN_ADJ=900`、`CACHED_APP_LMK_FIRST_ADJ=950`，是 LMK 杀进程的唯一优先级输入。
-- **唯一冷启动相关 flag**：Android 17 主线仅 `flags.aconfig:152` 定义 `expedite_activity_launch_on_cold_start`（namespace `system_performance`，bug 319519089），在 `AMS.java:5526` 与 `AMS.java:5620` 各一个 hook——「提前通知 ActivityTaskManager 冷启动以修正应用启动行为」，**仅与 AppFlow 的 Context-Aware Kill 间接相关，与文件预加载/页回收保护无关**。
-
-### 3. 与 AOSP 17 §4.4「公平运行内存」的接续点
-
-`CachedAppOptimizer.java` 已有 file/anon 分通道压缩能力（`CompactProfile` 枚举 NONE/SOME/ANON/FULL，行 394-398），由 `swapFreePercent < COMPACT_DOWNGRADE_FREE_SWAP_THRESHOLD` 触发（行 1731-1742）；`performMemcgCompaction` 走 cgroup 路径（行 2739-2744）+ `performNativeCompaction` 走 madvise(MADV_PAGEOUT) 路径（行 2767-2771）。这是 AOSP 17 的"事后回收"路径：
-
-- **AppFlow 提案"启动期主动保护文件页"** → AOSP 17 当前的"冻结后压缩"是事后行为，不存在启动期主动保护机制。
-- **`onProcessFrozen` 回调**（行 1706-1716）：冻结进程后做 FULL 压缩，触发条件是 oom_score_adj ≥ CACHED_APP_MIN_ADJ=900；与 AppFlow 的"启动前识别即将启动"路径正交。
-
-### 4. 兼容性矩阵总结（节选三段式）
-
-| 维度 | AppFlow 提案 | AOSP 17 等价物 | 评估 |
-|---|---|---|---|
-| 文件预读调度 | framework 显式控制 | VFS readahead + fadvise | **AOSP 不感知** |
-| 高压检测 | n_alloc > 12800/100ms | PSI 三级阈值 | **算法不兼容，但都是滞后指标** |
-| 杀进程收益评估 | ΔM = Mcurr − Mrelaunch | oom_score_adj + cached idle | **AOSP 缺能力**，最有差异化价值的部分 |
-| 内核接入位置 | mm/vmscan 1,107 行 | GKI 6.12（Android 17 内核基线）不修改 | **GKI 阻塞**，vendor kernel 升级成本高 |
-
-### 5. 边界声明
-
-- AppFlow 论文公开仓库作者未提供；论文仅描述算法（Algorithm 1 in §4.2）与代码量声明（1,107+1,672 行）。
-- 本节"AppFlow × Android 17 兼容性"结论**仅适用于 android-17.0.0_r1**，与论文实验平台 Android 15 不构成跨版本兼容证据。
-- AOSP 17 实际**没有 MemoryManagerPolicy.java、没有 LMKD v2**——LMKD 仍是 `system/memory/lmkd/lmkd.cpp` 渐进演进，memcg v1 已 `[[deprecated("memcg v1 is not supported after Dec. 2026")]]`（行 3206），use_new_strategy 推广，PROCS_PRIO 批量命令新增。
-- 详细调研报告见 `DeepResearch/2026-06-27-appflow-lmkd-android17-compatibility.md`。
-
-
-### AppFlow × Android 17 集成实施方案（2026-06-30 调研补充）
-
-在 2026-06-27 完成"AppFlow × Android 17 LMKD 兼容性源码级事实核查"的基础上，本节进一步给出**不破坏 GKI 的三阶段接入方案**，覆盖三段式组件与 AOSP 17 真实能力的职责映射、Memory Reclaim Priority 的实际实现、Adaptive Background Activity Manager 的拆解、以及分阶段、可回滚的实施路径。
-
-#### 1. 三段式组件与 AOSP 17 真实能力的职责映射
-
-基于 `system/memory/lmkd/lmkd.cpp:2539 find_and_kill_process` 与 `lmkd.cpp:1142 apply_proc_prio` 的源码实测，AppFlow 三段式在 AOSP 17 内的真实协作面如下：
-
-| AppFlow 论文组件 | AOSP 17 等价物 | 源码锚点 | 缺口 |
-|---|---|---|---|
-| Selective File Preloader | VFS readahead + 应用 fadvise | (kernel side, 不在采样范围内) | AOSP 不感知"启动窗口" |
-| Adaptive Memory Reclaimer | CachedAppOptimizer CompactProfile.FULL | `CachedAppOptimizer.java:1679 onProcessFrozen` | 是事后回收，无启动期保护 |
-| Context-Aware Process Killer | find_and_kill_process + heaviest 切换 | `lmkd.cpp:2539-2572` | 缺 ΔM 与重启代价信号 |
-
-#### 2. Memory Reclaim Priority 的真实实现（不是独立 API）
-
-AOSP 17 没有名为 "Memory Reclaim Priority" 的独立类。优先级机制由三部分协同：
-
-- **oom_score_adj 阶梯**（`ProcessList.java:206-212`）：CACHED_APP_MAX_ADJ=999 / LMK_FIRST_ADJ=950 / MIN_ADJ=900，约 18 个档位
-- **per_app_memcg soft_limit_mult 映射**（`lmkd.cpp:1142-1176`）：oomadj 0-900 区间 soft_limit_mult 从 64 降至 0
-- **PSI 三级阈值**（`lmkd.cpp:262-264`）：partial 70ms/100ms、complete 70ms
-
-**关键发现**：`LMK_PROCS_PRIO`（`lmkd.h:41`，id=11，批量版本）是 AOSP 17 新增的协议能力，AppFlow 可直接挂载此接口做"即将启动应用的批量 oom_score_adj 调整"。
-
-#### 3. Adaptive Background Activity Manager 的拆解
-
-AOSP 17 没有名为 "Adaptive Background Activity Manager" 的统一类。背景应用调度由三套独立机制协同：
-
-- **CachedAppOptimizer**：`CompactProfile` 枚举 NONE/SOME/ANON/FULL（`CachedAppOptimizer.java:308-313`），进程 frozen 后自动走 FULL 压缩
-- **ProcessList 阈值**：`MIN_CACHED_APPS=2` / `TRIM_CRITICAL_THRESHOLD=3` / `TRIM_LOW_THRESHOLD=5`（`ProcessList.java:314-320`），基于进程数
-- **BackgroundStartPrivileges**：`AMS.java:17318 isBackgroundActivityStartsEnabled`，控制后台启动（与内存管理正交）
-
-#### 4. 三阶段实施路线（不破坏 GKI）
-
-**阶段 1：应用 + 平台层接入**
-- 应用侧：`UsageStatsManager.queryEvents` 推断启动序列 + `posix_fadvise(FADV_WILLNEED)` 预热
-- 平台侧：`LMK_PROCPRIO` / `LMK_PROCS_PRIO` 把"已知即将启动应用" oom_score_adj 调到 CACHED_APP_LMK_FIRST_ADJ=950 以下的安全区
-- 验证：Perfetto + ApplicationExitInfo 双指标对照
-
-**阶段 2：CachedAppOptimizer 协同**
-- 对频繁切换的 GB 级应用，**主动接受 frozen 状态**让 framework 走 FULL 压缩
-- 用 `am set-isolated-process-uid-list`（API 33+）保护导航/通话/语音等车机关键进程
-
-**阶段 3：vendor kernel / 自研 ROM 评估（破坏 GKI）**
-- 仅对有 vendor kernel 维护能力的厂商：在 `mm/vmscan.c` 增加"启动期保护"逻辑，配合 `/proc/preload_list`
-- 必须重新过 CTS/VTS、PSI 路径兼容、memcg v2 启用下的基准——**不得直接套用论文 1,107 行改动**
-
-#### 5. 风险与不可行项（明确边界）
-
-- **"启动期文件页保护"在 AOSP 17 主线无法实现**——GKI 6.12 的 vmscan 不可改，只能通过 cached 区间保留 + readahead 概率命中近似
-- **ΔM 净释放信号无直接来源**——只能用历史 `ApplicationExitInfo` 推断
-- **AppFlow 论文中的 128KB 阈值 / 100MB 预算不可作平台默认**——必须按设备/应用集重新建模
-- **论文实验平台 Android 15 vs AOSP 17**：cgroup v2 普及、psi_thresholds 默认值调整、CompactProfile.FULL 降级路径都是论文后出现的新约束
-
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-appflow-lmkd-android17-integration-scheme.md
-- 类型：DeepResearch 调研结果
-- 摘要：在 2026-06-27 存在性核查基础上，量化 AOSP 17 与 AppFlow 三段式的职责映射、给出三阶段不破坏 GKI 的接入路线（应用+平台层 → CachedAppOptimizer 协同 → vendor kernel 评估）。明确指出"启动期文件页保护"在主线不可行、ΔM 信号缺失、128KB/100MB 阈值不可默认。LMK_PROCS_PRIO (id=11) 是 AOSP 17 新增的批量协议能力，可作为 AppFlow 接入的最优协议点。
-- 注入时间：2026-06-30
-- 价值：从"是否存在"推进到"如何接入"；明确"LMKD v2"不是 AOSP 17 概念，Memory Reclaim Priority 是 oom_score_adj+PSI+per_app_memcg 协同而非独立 API；给出可执行的工程边界，避免读者把研究原型误认为平台默认能力
-
-
-### LMKD v2 协作机制源码级锚点（2026-07-03 调研补充）
-
-基于 AOSPA/android_system_memory_lmkd vauxite 分支（android-17.0.0_r1，5158 行）的深度源码分析，AppFlow 三段式调度模型与 Android 17 LMKD 存在精确的协议接入点：
-
-#### 1. LMK_PROCS_PRIO io_uring 批量处理机制
-
-Android 17 新增 `LMK_PROCS_PRIO`（id=11）命令，通过 io_uring 实现批量异步处理，这是 AppFlow 接入的核心技术锚点：
-
-```cpp
-// 系统常量定义
-#define PROCS_PRIO_MAX_RECORD_COUNT 32
-
-// 批量处理函数：先读取 /proc/{pid}/status，再写入 /proc/{pid}/oom_score_adj
-static void handle_io_uring_procs_prio(const struct lmk_procs_prio& params, const int procs_count,
-                                       struct ucred* cred) {
-    // 异步读取进程状态
-    for (int i = 0; i < procs_count; i++) {
-        sqe = io_uring_get_sqe(&lmk_io_uring_ring);
-        io_uring_prep_read(sqe, fds[i], &buffers[i], 256, 0);
-        sqe->user_data = i;  // 读写分离标识
-    }
-    
-    // 异步写入 oom_score_adj
-    for (int i = 0; i < procs_count; i++) {
-        sqe = io_uring_get_sqe(&lmk_io_uring_ring);
-        io_uring_prep_write(sqe, fds[i], val, strlen(val), 0);
-        sqe->user_data = i + procs_count;  // 避免读写冲突
-    }
-}
-```
-
-**关键发现**：
-- PROCS_PRIO_MAX_RECORD_COUNT = 32，单次最多批量调整32个进程优先级
-- 采用读写分离设计，避免并发冲突
-- 无 io_uring 环境时降级为同步循环调用 `apply_proc_prio`
-
-#### 2. thrashing_limit 动态调整与启动保护机制
-
-Android 17 LMKD 的 thrashing 检测采用动态阈值策略，为 AppFlow 类系统提供灵活的启动保护窗口：
-
-```cpp
-// 动态调整逻辑
-static int thrashing_limit = thrashing_limit_pct;
-bool cut_thrashing_limit = false;
-
-// 在内存压力决策路径中
-if (wmark <= WMARK_HIGH && thrashing > thrashing_limit) {
-    kill_reason = LOW_MEM_AND_THRASHING;
-    cut_thrashing_limit = true;  // 触发阈值衰减标志
-    min_score_adj = VISIBLE_APP_ADJ;
-} else if (reclaim == DIRECT_RECLAIM && thrashing > thrashing_limit) {
-    kill_reason = DIRECT_RECL_AND_THRASHING;
-    cut_thrashing_limit = true;
-    min_score_adj = PERCEPTIBLE_APP_ADJ + 1;
-}
-```
-
-**AppFlow 接入价值**：
-- `cut_thrashing_limit` 机制允许在启动窗口内临时降低回收阈值
-- 动态衰减避免保护机制过度影响整体内存策略
-- 与 DIRECT_RECLAIM 路径协同，针对直接回收场景提供差异化保护
-
-#### 3. MGLRU 状态机集成与内存压力决策
-
-Android 17 LMKD 对 MGLRU（Multi-Generation LRU）的支持通过独立状态机实现：
-
-```cpp
-// MGLRU 状态获取
-static int32_t MGLRU_status = 0;
-int32_t get_MGLRU_status() {
-    static struct reread_data file_data = {
-        .filename = LRUGEN_STATUS_PATH,
-        .fd = -1,
-    };
-    char *buf;
-    if ((buf = reread_file(&file_data)) == NULL) {
-        return MGLRU_status;
-    }
-    buf[16] = '\0';  // 限制读取长度
-    MGLRU_status = (int32_t)strtol(buf, NULL, 16);
-    return MGLRU_status;
-}
-
-// 在内存压力决策中的使用
-if (MGLRU_status > 0) {
-    /* When MGLRU is enabled, don't set the pgskip delta for Normal zone */
-    // 跳过 Normal zone 的 pgskip 设置，避免无效操作
-} else {
-    // 传统 LRU 处理逻辑
-}
-```
-
-#### 4. Adaptive Background Activity Manager 框架拆解
-
-AOSP 17 中不存在统一类，背景应用调度通过三套独立机制协同：
-
-```cpp
-// 1. CachedAppOptimizer - 压缩策略
-enum CompactProfile { NONE, SOME, ANON, FULL };  // 压缩等级
-
-// 2. ProcessList - 缓存进程阈值控制
-static int MIN_CACHED_APPS = 2;              // 最小缓存进程数
-static int TRIM_CRITICAL_THRESHOLD = 3;     // 临界 trimming 阈值
-
-// 3. BackgroundStartPrivileges - 后台启动控制
-static bool isBackgroundActivityStartsEnabled() {
-    return property_get_bool("ro.config.allow_background_activity_start", true);
-}
-```
-
-**AppFlow 整合方案**：
-- 针对频繁切换的 GB 级应用，主动接受 frozen 状态触发 FULL 压缩
-- 使用 `am set-isolated-process-uid-list`（API 33+）保护关键进程
-- 通过 MIN_CACHED_APPS 调整预留启动资源空间
-
-<!-- AIW-源码调研-2026-07-03 -->
-
-
-<!-- AIW-源码调研-2026-07-01 -->
-
-## Android 17 LMKD v2 源码级机制与 AppFlow 接入点（2026-07-01 调研补充）
-
-在 2026-06-27 / 2026-06-30 两轮源码级事实核查基础上，本节基于 `android-17.0.0_r1` 重新核读 `system/memory/lmkd/lmkd.cpp`（4218 行，行号以下列为准），深入 LMKD v2 PSI 驱动路径，给出 AppFlow 三段式可以"以最小内核改动"挂载的精确锚点。
-
-### 1. LMKD v2 运行模式选择
-
-LMKD 启动时按内核模块可用性二选一（`lmkd.cpp:3801-3816`）：
-
-```cpp
-has_inkernel_module = !access(INKERNEL_MINFREE_PATH, W_OK);
-use_inkernel_interface = has_inkernel_module;
-
-if (use_inkernel_interface) {
-    ALOGI("Using in-kernel low memory killer interface");
-    // 写 sys.lmk.reportkills=1，由内核 LMK 选择 victim 并通过 kpoll_fd 通知
-} else {
-    // 用户态 PSI 监控
-}
-```
-
-结论：**LMKD 自身是单一 daemon**，并不存在所谓"LMKD v2 守护进程"与"LMKD v1 守护进程"的版本分歧；在 Android 17 当内核有低内存节点时是「内核选 victim + LMKD 汇报 kills」，无内核节点时是「LMKD 读 PSI 选 victim」。**2026-06-30 调研中「LMK_PROCS_PRIO (id=11)」是 userspace 接口，两条路径都适用。**
-
-### 2. PSI 三级阈值与 AppFlow 高压检测的算法对位
-
-`lmkd.cpp:231-235`（与 06-30 调研相同的 psi_thresholds 表）：
-
-```cpp
-static struct psi_threshold psi_thresholds[VMPRESS_LEVEL_COUNT] = {
-    { PSI_SOME,  70  },   // partial stall 70ms in 1000ms → LOW
-    { PSI_SOME,  100 },   // partial stall 100ms in 1000ms → MEDIUM
-    { PSI_FULL,  70  },   // complete stall 70ms in 1000ms → CRITICAL
-};
-```
-
-注意 LOW/MEDIUM 同属 PSI_SOME（部分任务阻塞），CRITICAL 走 PSI_FULL（全部任务阻塞）。AppFlow 论文的高压检测"n_alloc > 12800 / 100ms"也属于「部分任务等内存」维度，与 PSI_SOME 同语义，**可作为 PSI 替代信号但不宜替代 PSI**。建议接入路径：通过 `LMK_TARGET` 包覆一个"虚拟压力事件"或在 PSI 不可用设备上保留 n_alloc 路径。
-
-### 3. PSI 路径下的回收来源区分 —— AppFlow 文件页保护接入点
-
-`lmkd.cpp:2900-2925` 处的 `__mp_event_psi` 通过两个独立路径区分回收来源：
-
-```cpp
-if (memevent_listener) {
-    // BPF memevents 提供精确时间戳
-    in_direct_reclaim = direct_reclaim_start_tm.tv_sec != 0 ||
-                        direct_reclaim_start_tm.tv_nsec != 0;
-    in_kswapd_reclaim = kswapd_start_tm.tv_sec != 0 ||
-                        kswapd_start_tm.tv_nsec != 0;
-} else {
-    // 无 BPF 时改用 /proc/vmstat 字段 diff
-    in_direct_reclaim = vs.field.pgscan_direct != init_pgscan_direct;
-    in_kswapd_reclaim = (vs.field.pgscan_kswapd != init_pgscan_kswapd) ||
-                        (vs.field.pgrefill != init_pgrefill);
-}
-if (in_direct_reclaim) reclaim = DIRECT_RECLAIM;
-else if (in_kswapd_reclaim) reclaim = KSWAPD_RECLAIM;
-```
-
-**AppFlow 接入点**：在 `DIRECT_RECLAIM` 进入分支后调用 `LMK_GETKILLCNT` 加 `LMK_PROCS_PRIO` 命令（`lmkd.h:35, id=6` + `lmkd.h:41, id=11`），用 06-30 调研指出的批量协议把"即将启动"应用的 oom_score_adj 降级保护。这是 **vmscan 路径之外**的可行补偿。
-
-### 4. kill_heaviest_task 与 per_app_memcg —— AppFlow 三段式 Killer 与 Reclaimer 共用入口
-
-- **`find_and_kill_process()`（`lmkd.cpp:2602-2633`）**：
-
-```cpp
-bool choose_heaviest_task = kill_heaviest_task;
-
-for (i = OOM_SCORE_ADJ_MAX; i >= min_score_adj; i--) {
-    if (!choose_heaviest_task && i <= PERCEPTIBLE_APP_ADJ) {
-        // 进入可感知应用层时强制切到 heaviest 模式
-        choose_heaviest_task = true;
-    }
-    while (true) {
-        procp = choose_heaviest_task ?
-                proc_get_heaviest(i) : proc_adj_tail(i);
-        ...
-    }
-}
-```
-
-**说明**：`kill_heaviest_task` 在 `i <= 200 (PERCEPTIBLE_APP_ADJ)` 时被强制打开——这是为了避免"在生产/前台邻接 adj 选到一个空槽位"造成的无意义 round-trip。**AppFlow 想做的"按收益评估杀谁"绕不开这个强制切换**：当最优 victim 在 PERCEPTIBLE 区间时，论文的 ΔM 评估机会丢失，被强制替换为「最重的」选择。
-
-- **`register_oom_adj_proc()`（`lmkd.cpp:1149-1185`）的 soft_limit_mult 阶梯**：
-
-```cpp
-if (proc.ptype == PROC_TYPE_APP && per_app_memcg) {
-    if      (proc.oomadj >= 600) { oom_adj_score = 200; soft_limit_mult = 1; }  // LAUNCHER
-    else if (proc.oomadj >= 300) soft_limit_mult = 1;                            // PERCEPTIBLE
-    else if (proc.oomadj >= 200) soft_limit_mult = 8;                            // VISIBLE
-    else if (proc.oomadj >= 100) soft_limit_mult = 10;                           // PERCEPTIBLE_REPL
-    else if (proc.oomadj >= 0)   soft_limit_mult = 20;                           // FOREGROUND
-    // 负分（persistent）：64 → 512MB 软上限
-    snprintf(val, sizeof(val), "%d", soft_limit_mult * EIGHT_MEGA);
-    CgroupGetAttributePathForTask("MemSoftLimit", proc.pid, &soft_limit_path);
-    ...
-}
-```
-
-**AppFlow 接入点**：把这套 multiplier 通过 `LMK_PROCS_PRIO` 与 `MemSoftLimit` cgroup 属性双重表达。**注意**：当前 `per_app_memcg` 守护进程仅写 `MemSoftLimit`，**未写 `MemHardLimit`**——AppFlow 想做的"启动期硬保护"不能仅靠 mult 调整，要同时考虑 `kill_heaviest_task` 模式。
-
-### 5. lowmem_min_oom_score 触碰 PREVIOUS_APP 边界
-
-`lmkd.cpp:4119`（与 06-30 调研一致）：`lowmem_min_oom_score` 默认 `PREVIOUS_APP_ADJ + 1 = 701`。这正是 AppFlow 想划在「上一 Activity」外的边界——**LMKD 默认会杀到 700**。AppFlow 想要保护 PREVIOUS 应用就需要把此属性收紧到 `>= 800`。
-
-### 6. 端侧 LLM / 车机场景的可观测信号
-
-`__mp_event_psi` 中已经有 `swap_free_low_percentage` 与 `swap_util_max` 两个 swap 维度信号（`lmkd.cpp:2888-2910`）：
-
-```cpp
-if (swap_free_low_percentage) {
-    swap_low_threshold = mi.field.total_swap * swap_free_low_percentage / 100;
-    swap_is_low = get_free_swap(&mi) < swap_low_threshold;
-}
-```
-
-**端侧 LLM 推理对 8GB 内存的影响**：模型权重大半走 mmap、匿名页，swap 频繁时 `swap_is_low` 会抬高 kill 紧急程度。AppFlow 在该场景下实测应在 `LMK_TARGET` 包一层"swap is low + LMK min_oom >= 800"的复合延迟，避免 LLM 推理被中断杀进程。
-
-### 7. 版本边界
-
-- 本节源码引用全部基于 `android-17.0.0_r1/system/memory/lmkd/lmkd.cpp`，未涉及 Android 18/19
-- **`use_inkernel_interface` 的默认依赖内核 GKI 6.12 lmk 模块**：与 AOSP 17 内核基线绑定，不在 Android 18/19 内核基线上声明结论
-- **`memevents BPF listener`**（`lmkd.cpp:3531 init_memevent_listener_monitoring`）依赖 `bpf/MemEventListener` 在 vendor kernel 中可用
-- AppFlow 论文实验平台为 Android 15，与 AOSP 17 在 PSI 默认阈值、psi_window_size_ms 上有差
-
-### 8. 与前两轮调研的边界说明
-
-- **06-27 调研**确认 AppFlow 三段式在 AOSP 17 主线不存在——本节不反驳
-- **06-30 调研**给出三阶段接入路线（应用+平台 → CachedAppOptimizer → vendor kernel）——本节精确化"平台层"路径，给出具体的 PSI / kill_heaviest_task / per_app_memcg 接入代码锚点
-- **本节仅在前两节边界内补全**：不修改 06-27 / 06-30 的可执行边界，不为 AppFlow 论文添加额外可信度
-
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-01-android17-lmkd-v2-appflow-collaboration.md
-- 类型：DeepResearch 调研结果
-- 摘要：基于 android-17.0.0_r1 的 lmkd.cpp（4218 行）逐段核读，给出 PSI 三级阈值在 LOW/MEDIUM 同属 PSI_SOME/CRITICAL 走 PSI_FULL 的精确语义；DMA_RECLAIM 与 KSWAPD_RECLAIM 区分路径；kill_heaviest_task 在 PERCEPTIBLE_APP_ADJ 强制切换的细节；per_app_memcg soft_limit_mult 阶梯（oomadj 0-900 区间从 64 降至 0，以 8MB 为基数）；lowmem_min_oom_score 默认 PREVIOUS_APP_ADJ+1=701。明确 LMKD 是单一 daemon，根据内核模块可用性二选一，不存在 v1/v2 双守护进程；2026-06-30 中的 "LMK_PROCS_PRIO (id=11)" 在两条路径都适用。
-- 注入时间：2026-07-01
-- 价值：精确化 AppFlow 三段式与 AOSP 17 LMKD 的接入代码锚点；指出 kill_heaviest_task 在 PERCEPTIBLE_APP_ADJ 强制切换会"吃掉"AppFlow ΔM 评估机会；明确 LMKD v2/v1 不是独立 daemon 版本而是运行模式选择，避免读者误读术语
-
-
-<!-- AIW-源码调研-2026-07-04 -->
-
-## LMK_PROCS_PRIO 批量协议与 thrashing 衰减——主线与 fork 的事实边界（2026-07-04 调研补充）
-
-基于 `android-17.0.0_r1` 主线 `system/memory/lmkd/lmkd.cpp`（4218 行）/ `include/lmkd.h`（385 行）/ `frameworks/base/services/core/java/com/android/server/am/ProcessList.java`（6193 行）/ `CachedAppOptimizer.java`（3092 行）的源码实测，本节对前几轮调研中的 fork 特定声明做事实校正。
-
-### 1. LMK_PROCS_PRIO 在主线的真实形态（≠ io_uring）
-
-**主线无 io_uring**——`io_uring` 关键字在 lmkd.cpp 中出现 0 次。2026-07-03 调研中的 `handle_io_uring_procs_prio`、`PROCS_PRIO_MAX_RECORD_COUNT = 32`、`lmk_io_uring_ring` 是 AOSPA fork（vauxite 分支 5158 行）扩展，**不在 AOSP 主线**。
-
-**主线批量上限 = 3**（`lmkd.h:49` `MAX_PROCS_PRIO_RECORD_COUNT = 3` + `ProcessList.java:1554` `MAX_PROCS_PRIO_PACKET_SIZE = 3`），Java 端 `ProcessList.java:1554-1592 batchSetOomAdj` 按每批 3 个进程切包。
-
-**主线 cmd_procs_prio 是同步串行**（`lmkd.cpp:1512-1524`）：
-
-```cpp
-static void cmd_procs_prio(LMKD_CTRL_PACKET packet, const int field_count, struct ucred* cred) {
-    struct lmk_procs_prio params;
-    const int procs_count = lmkd_pack_get_procs_prio(packet, &params, field_count);
-    if (procs_count < 0) {
-        ALOGE("LMK_PROCS_PRIO received invalid packet format");
-        return;
-    }
-    for (int i = 0; i < procs_count; i++) {
-        apply_proc_prio(params.procs[i], cred);
-    }
-}
-```
-
-每个进程单独打开 `/proc/{pid}/oom_score_adj` 写——不存在异步队列。
-
-**包络矩阵**（主线 vs fork vs 2026-07-03 调研声明）：
-
-| 协议特性 | 主线 AOSP 17 | AOSPA fork（vauxite） | 2026-07-03 调研声明 |
-|---|---|---|---|
-| LMK_PROCS_PRIO id | 11（`lmkd.h:41`） | 11 | ✅ 一致 |
-| 单包最大记录数 | 3 | 32（fork 扩展） | 32（fork 数值） |
-| 异步 IO | 同步串行 | io_uring | "io_uring"（fork 能力） |
-| Java 端镜像常量 | `MAX_PROCS_PRIO_PACKET_SIZE = 3`（`ProcessList.java:1554`） | fork 可能已改 | fork 视角 |
-
-### 2. Memory Reclaim Priority 的协同实现（主线事实）
-
-主线**没有**名为 "Memory Reclaim Priority" 的独立 API。优先级由三部分协同：
-
-**2.1 oom_score_adj 阶梯**（`ProcessList.java:69-71` 引用 `Constants.CACHED_APP_*` + `ProcessList.java:1144/1724/5130-5131`）：MAX_ADJ=999 / LMK_FIRST_ADJ=950 / MIN_ADJ=900。
-
-**2.2 per-app memcg soft_limit_mult 阶梯**（`lmkd.cpp:1149-1186`）：
-
-| oomadj 区间 | mult | 实际软上限 (×8MB) | 备注 |
-|---|---|---|---|
-| ≥ 900 (cached) | 0 | 0 | 完全受 LMK 接管 |
-| ≥ 800 | 0 | 0 | |
-| ≥ 700 | 0 | 0 | |
-| ≥ 600 (LAUNCHER) | 1 | 8MB | `oom_adj_score` 强制重设到 200 |
-| ≥ 500 | 0 | 0 | |
-| ≥ 400 | 0 | 0 | |
-| ≥ 300 (PERCEPTIBLE) | 1 | 8MB | |
-| ≥ 200 (VISIBLE) | 8 | 64MB | |
-| ≥ 100 (PERCEPTIBLE_REPL) | 10 | 80MB | |
-| ≥ 0 (FOREGROUND) | 20 | 160MB | |
-| 负数 (persistent) | 64 | 512MB | |
-
-**2.3 PSI 三级阈值**（`lmkd.cpp:231-235`）：LOW=PSI_SOME/70ms, MEDIUM=PSI_SOME/100ms, CRITICAL=PSI_FULL/70ms。
-
-**AppFlow 接入点**：通过 `LMK_PROCS_PRIO`（单批 3 个进程限制，主线确认）把"即将启动"应用从 cached（>=900）降到 PERCEPTIBLE/VISIBLE（<=300），同步更新 memcg.MemSoftLimit。这是主线在不破坏 GKI 前提下最可行的"启动期保护"路径。
-
-### 3. Adaptive Background Activity Manager 的拆解（主线事实）
-
-主线**没有**统一类。背景应用调度由三套独立机制协同：
-
-**3.1 CachedAppOptimizer + CompactProfile**（`CachedAppOptimizer.java:393-398`）：枚举 `NONE/SOME/ANON/FULL`。`onProcessFrozen` 回调（`CachedAppOptimizer.java:1705-1713`）对 adj ≥ `mCompactThrottleMinOomAdj` 的 cached 进程触发 `CompactProfile.FULL`。`resolveCompactionProfile`（`CachedAppOptimizer.java:1728-1746`）在 `swapFreePercent < 0.2` 时把 FULL 降级为 SOME。
-
-**3.2 ProcessList 阈值**（`ProcessList.java:243-249`）：`MIN_CACHED_APPS = 2` / `TRIM_CRITICAL_THRESHOLD = 3` / `TRIM_LOW_THRESHOLD = 5` —— 基于 cached 进程数，不是 PSI 或 ΔM。
-
-**3.3 BackgroundStartPrivileges**：通过 `AMS.isBackgroundActivityStartsEnabled` + `ro.config.allow_background_activity_start` 控制，**与内存管理正交**。
-
-### 4. thrashing 衰减机制（主线完整实现，与前几轮一致）
-
-**触发**（`lmkd.cpp:3075-3095`）：`wmark < WMARK_HIGH && thrashing > thrashing_limit` 或 `reclaim == DIRECT_RECLAIM && thrashing > thrashing_limit` 时 `cut_thrashing_limit = true`。
-
-**衰减**（`lmkd.cpp:3153-3158`）：
-
-```cpp
-if (pages_freed > 0) {
-    killing = true;
-    max_thrashing = 0;
-    if (cut_thrashing_limit) {
-        thrashing_limit = (thrashing_limit * (100 - thrashing_limit_decay_pct)) / 100;
-    }
-}
-```
-
-**重置**（`lmkd.cpp:2953, 2971`）：达到 `THRASHING_RESET_INTERVAL_MS` 或 thrashing 下降后 `thrashing_limit = thrashing_limit_pct`。
-
-**AppFlow 接入边界**：thrashing 衰减机制本身**不感知启动窗口**。截至 AOSP 17 主线，**没有公开属性可以在进程级覆盖 `thrashing_limit`**——只能通过 `ro.lmk.thrashing_limit` sysprop 全局配置。这进一步印证"启动期文件页保护"在主线不可行的边界。
-
-### 5. 与前几轮调研的边界声明
-
-- **06-27 调研**：AppFlow 三段式在 AOSP 17 主线不存在 —— **本节不反驳**
-- **06-30 调研**：三阶段接入路线（应用+平台 → CachedAppOptimizer → vendor kernel）—— **本节精确化"平台层"路径**
-- **07-01 调研**：PSI 三级阈值、kill_heaviest_task、per_app_memcg 接入锚点 —— **本节与之对齐，无冲突**
-- **07-03 调研**：基于 AOSPA fork 5158 行的 io_uring 实现 —— **本节做事实校正**：该 fork 能力不进入 AOSP 主线，主线仍是同步串行 + 单批 3 上限
-
-**对 07-03 调研保留**：`thrashing 触发条件 / 衰减公式`、`CompactProfile 降级阈值`、`LAUNCHER 多重映射`、`PSI 三级阈值语义`、`kill_heaviest_task 在 PERCEPTIBLE_APP_ADJ 强制切换`、`per_app_memcg soft_limit_mult 阶梯` —— 这些主线声明与 07-03 调研一致。
-
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-04-android17-lmkd-procs-prio-batch-thrashing-mainline-fork.md
-- 类型：DeepResearch 调研结果
-- 摘要：基于 android-17.0.0_r1 主线源码实测（lmkd.cpp 4218 行/lmkd.h/ProcessList.java 6193 行/CachedAppOptimizer.java 3092 行），对 2026-07-03 调研中的 AOSPA fork 特定声明做事实校正：LMK_PROCS_PRIO 主线单批上限是 3 不是 32，主线无 io_uring 关键字，cmd_procs_prio 是同步串行。同时明确"Memory Reclaim Priority"和"Adaptive Background Activity Manager"在主线没有统一类，而是由 oom_score_adj+PSI+per_app_memcg / CachedAppOptimizer+ProcessList+BackgroundStartPrivileges 三套机制协同实现。包络矩阵表（主线 vs fork vs 调研声明）作为事实边界参考。
-- 注入时间：2026-07-04
-- 价值：明确 LMK_PROCS_PRIO 在 AOSP 17 主线的真实形态（不是 io_uring 异步），避免读者把 AOSPA fork 能力误认为平台默认；给出 soft_limit_mult 阶梯的完整表（含 LAUNCHER 的 oom_adj_score 强制重设到 200 这条容易被忽略的事实）；确认"启动期文件页保护"在主线不可行的边界（thrashing_limit 没有进程级覆盖属性）
-<!-- AIW-源码调研-2026-07-07 -->
-### 6. LMKD 用户态迁移 + PSI 协同机制（新增 2026-07-07）
-
-**6.1 代码库迁移**（`system/core/lmkd/` → `system/memory/lmkd/`）：Android 17 中，LMKD 从 `system/core/lmkd/` 迁移至 `system/memory/lmkd/`，标志着 memory management 作为独立模块的地位提升。`system/core/init/lmkd_service.cpp` 仍保留，作为 init 客户端与 LMKD 通信。
-
-**6.2 PSI 监听完整实现**（`lmkd.cpp:3561-3650`）：`init_psi_monitors()` → `init_mp_psi()` → `init_psi_monitor()` 三级初始化链路，基于 epoll 事件驱动模型。`psi_thresholds[VMPRESS_LEVEL_MEDIUM].threshold_ms = psi_partial_stall_ms`（默认 70ms low-ram, 100ms 其他），`psi_complete_stall_ms`（默认 700ms）。PSI 监听间隔分为 `PSI_POLL_PERIOD_SHORT_MS=10`（高压力）和 `PSI_POLL_PERIOD_LONG_MS=100`（低压力），远优于传统轮询。
-
-**6.3 Memevents BPF Ring Buffer**（`lmkd.cpp:3540-3694`）：Android 17 全面采用 BPF ring buffer 替代传统轮询。`init_memevent_listener_monitoring()` 注册五类事件：`MEM_EVENT_DIRECT_RECLAIM_BEGIN/END`（直接回收）、`MEM_EVENT_KSWAPD_WAKE/SLEEP`（kswapd 状态）、`MEM_EVENT_VENDOR_LMK_KILL`（厂商扩展）。通过 `memevent_listener->getMemEvents(mem_events)` 批量拉取事件，显著降低延迟。
-
-**6.4 三维决策模型**（`__mp_event_psi:2713+`）：PSI 事件处理融合 `zone_watermarks`（基于 `/proc/zoneinfo`）、`thrashing`（workingset refault）、`swap_utilization`（换出率）三个维度。新增逻辑：`if (mem_pressure > downgrade_pressure && get_free_swap(&mi) >= mi.field.total_swap * swap_free_low_percentage / 100)` 内存充足时忽略压力。
-
-**6.5 pidfd 等待机制**：`is_waiting_for_kill()`（`lmkd.cpp:2330`）通过 `last_kill_pid_or_fd != -1` 判断 kill 状态，`kill_timeout_ms`（默认 100ms）控制超时，取代传统信号量机制。`kill_done_handler` 和 `kill_fail_handler` 通过 reaper_comm_fd 通信管道异步处理 kill 结果。
-
-**6.6 Kill 策略增强**：`update_props()`（`lmkd.cpp:4088+`）新增 `kill_heaviest_task` 属性（默认 false），支持选择最大 RSS 任务而非 adj 最小进程。`find_and_kill_process()` 中 `bool choose_heaviest_task = kill_heaviest_task` 控制策略切换。
-
-**6.7 主循环架构**（`mainloop:3980+`）：epoll 事件驱动支持四类监听源：
-- 控制套接字：AMS/init 注册进程（LMK_PROCPRIO 协议）
-- PSI 监听器：内存压力事件
-- Memevents：BPF ring buffer 事件
-- Kill 通知：pidfd kill 确认
-
-**对 AppFlow 的边界声明**：PSI 协同机制在主线完整实现，但 AppFlow 的"启动期文件页保护"诉求与现有 `thrashing_limit`（无进程级覆盖）存在底层冲突。LMKD 的 `PSI_POLL_PERIOD_SHORT_MS=10ms` 提供了比传统轮询更低的响应延迟，但 AppFlow 的 128KB 文件页保护语义仍需厂商 kernel 层扩展。
-
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-07-android17-lmkd-userspace-migration-psi.md
-- 类型：DeepResearch 调研结果  
-- 摘要：基于 android-17.0.0_r1 主线源码实测（lmkd.cpp 4218 行），确认 LMKD 从 system/core/ 迁移至 system/memory/，PSI 监听替代 vmpressure，memevents BPF ring buffer 成为主流事件源，pidfd 取代 kill 信号量，新增 kill_heaviest_task 策略。主循环采用 epoll 事件驱动，支持 PSI + memevents + 控制套接字 + kill 通知四类监听源。为 AppFlow 提供了低延迟响应基础（10ms PSI 间隔），但"启动期文件页保护"仍与现有 thrashing_limit 机制存在底层冲突。
-- 注入时间：2026-07-07
-- 价值：明确 LMKD 在 Android 17 中的完整技术栈演进，为理解内存管理底层机制提供源码级细节
+- [AppFlow 论文 HTML](https://arxiv.org/html/2603.17259v1)
+- [AppFlow 论文摘要与版本信息](https://arxiv.org/abs/2603.17259)
+- [AOSP：Low memory killer daemon](https://source.android.com/docs/core/perf/lmkd)
+- [Android Developers：App startup time](https://developer.android.com/topic/performance/vitals/launch-time)
+- [Android Developers：Low memory killers](https://developer.android.com/topic/performance/vitals/lmk)
+- [AOSP r1：lmkd.cpp](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp)
+- [AOSP r1：lmkd.h](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/include/lmkd.h)
+- [AOSP r1：ProcessList.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ProcessList.java)
+- [AOSP r1：CachedAppOptimizer.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java)
+- [AOSP r1：UsageStatsManager.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/usage/UsageStatsManager.java)
+- [AOSP r1：ApplicationExitInfo.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java)
+- [Android kernel：android17-6.18-2026-06_r6 vmscan.c](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c)
