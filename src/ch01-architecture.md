@@ -79,95 +79,146 @@ Android 17 在系统架构上进行了多项重要优化，主要体现在：
 
 <!-- outline-end -->
 
+> [!CAUTION]
+> 上面的 outline 是 Hermes/OpenClaw 依赖的历史内容，本轮保持原字节。它遗漏 HAL 层，并把多项既有机制或带条件的改动概括成 Android 17 通用能力。以下正文以 Android 17 / API 37 / `android-17.0.0_r1` 与 ACK `android17-6.18-2026-06_r6` 为准。
 
-## 参考资料
+## 五个观察层次
 
-### 什么 AI 写 Android 最好用？官方做了一个基准测试排名
-- 来源：https://juejin.cn/post/7614897667961143347
-- 类型：技术文章
-- 摘要：谷歌发布 Android Bench（基于 SWE-bench 思路），专门衡量 LLM 在 Android 开发场景下的表现，结果 Gemini-3.1 Pro 遥遥领先。评测采用两阶段架构（推理 + 评估），Docker+KVM 沙箱隔离，100 个任务、每个模型跑 10 次取均值；通过 fail_to_pass + pass_to_pass 双维度验证、看结果不看过程，AI 修 Bug 后跑测试套件得分。Android Bench 弥补了小红书 SWE-Bench Mobile 只测 iOS 的局限，覆盖 Compose/Coroutines/Room/Hilt/Gradle 等生态热点，结论对小屏机型适配与端侧 AI 选型有直接参考意义。
-- **推荐映射章节**：ch17
-- **内容类型**：技术文章
-- **相关标签**：#AI编程 #Android开发
-- 入库时间：2026-06-26
-- 评分：14/20
+Android 官方架构图用于说明职责，不代表所有调用都沿一条同步栈逐层下行。主线可以按五个层次阅读：
 
-<!-- AIW-源码调研-2026-07-08 -->
-### 🔹 Android 17 低内存管理 (LMK) 架构迁移
+| 层次 | 代表组件 | 性能分析时关注什么 |
+|---|---|---|
+| 应用 | system app、普通 app、isolated process | 业务调用、线程、组件生命周期、内存与帧 |
+| Java API Framework 与系统服务 | `ActivityThread`、AMS、WMS、PMS、InputManagerService | Binder 边界、锁、消息队列、进程状态与权限检查 |
+| ART 与 native 库/守护进程 | ART、Bionic、libbinder、libhwui、SurfaceFlinger、lmkd | 编译/GC、native 分配、IPC、渲染、媒体和回收策略 |
+| HAL | AIDL HAL、vendor service、HWC、Power/Thermal/Camera HAL | 跨 system/vendor 接口、硬件能力、队列与厂商策略 |
+| Linux 内核 | Binder、调度、cgroup、内存、文件系统、网络与驱动 | Runnable 等待、IRQ、reclaim、I/O、fence 和硬件事件 |
 
-**内核态 → 用户态迁移**：Android 17 完全移除了内核 lowmemorykiller 模块，lmkd 守护进程在 userspace 实现完整的内存压力监控和进程 killing 机制。主要改进包括：
+下面的图表示常见责任边界。
 
-**PSI (Pressure Stall Information) 监控**：替代传统内存阈值监控，支持细粒度压力分级：
-- 三压力级：VMPRESS_LEVEL_LOW/MEDIUM/CRITICAL
-- 监控窗口：DEFAULT_PSI_WINDOW_SIZE_MS = 1000ms  
-- 轮询策略：压力高时 10ms，压力低时 100ms
+```mermaid
+flowchart TB
+    APP["应用与 system app"]
+    FW["Java API Framework / system_server"]
+    NATIVE["ART、native 库与系统守护进程"]
+    HAL["AIDL HAL / vendor service"]
+    KERNEL["ACK 6.18 内核与驱动"]
 
-**事件驱动架构**：epoll 多路复用替代内核轮询：
-- EPOLLIN：控制 socket 连接事件
-- PSI 压力事件
-- vendor kill 事件
-
-**内存回收状态机**：DIRECT_RECLAIM/KSWAPD_RECLAIM/NO_RECLAIM 三态管理，支持精确的回收类型识别。
-
-**性能提升**：响应延迟从 200-500ms 降至 50-100ms，CPU 开销降低 30%，空闲 CPU 占用降低 40%。
-<!-- AIW-源码调研-2026-07-08 -->
-
-<!-- AIW-源码调研-2026-07-14 -->
-### 🔹 Android 17 Binder优先级继承实战优化
-
-**核心机制下沉到内核驱动**：Android 17 Binder优先级继承机制完全在内核层实现，用户态IPCThreadState.cpp仅处理辅助功能。核心逻辑位于drivers/android/binder.c的android17-6.18分支，通过flat_binder_object携带FLAT_BINDER_FLAG_INHERIT_RT标志传递继承请求。
-
-**优先级继承流程**：
-```
-Java Binder.setInheritRt() → 
-  Parcel.flattenBinder() → 
-    flat_binder_object.flags |= FLAT_BINDER_FLAG_INHERIT_RT → 
-      binder_transaction() → 
-        binder_transaction_priority() → 
-          binder_set_priority() → 
-            binder_do_set_priority() → 
-              sched_setscheduler_nocheck()
+    APP <-->|"Binder、消息、共享内存"| FW
+    FW <-->|"JNI、Binder、socket"| NATIVE
+    NATIVE <-->|"AIDL HAL、FMQ、buffer/fence"| HAL
+    FW <-->|"syscall、Binder driver"| KERNEL
+    NATIVE <-->|"syscall、ioctl、mmap"| KERNEL
+    HAL <-->|"ioctl、mmap、IRQ"| KERNEL
 ```
 
-**内核关键实现**：
-- **binder_init_node_ilocked()**：设置node->inherit_rt标志，继承请求落地为节点属性
-- **binder_transaction_priority()**：检查node->inherit_rt，非RT节点强制SCHED_NORMAL，避免优先级反转
-- **BINDER_PRIO_*状态机**：处理BINDER_PRIO_SET/PENDING/ABORT三态，支持嵌套事务的优先级继承
+同一层内也可能跨进程，例如应用调用独立服务；相邻层之间也可能被绕过，例如 native 进程直接访问允许使用的内核接口。分析时应根据 trace 和源码还原目标路径。
 
-**用户态接口桥接**：
-- **Java层**：Binder.java提供setInheritRt()和setGlobalInheritRt()接口，在Binder对象创建时设置优先级策略
-- **JNI层**：android_util_Binder.cpp实现native方法调用
-- **C++层**：BBinder::setInheritRt()维护mInheritRt状态，Parcel.cpp flattenBinder()时注入继承标志
+## 组件职责要按边界理解
 
-**安全边界**：
-- CAP_SYS_NICE权限检查防止恶意应用滥用RT权限
-- 继承失败时使用默认SCHED_NORMAL策略
-- 优先级恢复机制确保线程状态安全
+### ActivityManager、WindowManager 与 PackageManager
 
-**性能影响**：
-- 正面：RT事务立即获得CPU资源，避免优先级反转导致的延迟
-- 负面：实时调度增加上下文切换开销，需合理控制优先级继承粒度
-- 优化：Android 17改进的BINDER_PRIO_*状态机减少不必要的状态转换开销
-<!-- AIW-源码调研-2026-07-14 -->
+- AMS 及相关 ActivityManager 组件维护进程、组件、任务、OOM 调整等状态。内存压力下的最终进程选择还涉及 OomAdjuster、lmkd 和内核信号。
+- WMS 管理窗口层级、布局、焦点、输入窗口和 display area 等策略。SurfaceFlinger 消费图层事务并完成合成与呈现，两者职责不能合成一个“窗口渲染服务”。
+- PackageManagerService 维护包、权限、组件和安装状态；PackageInstaller 提供安装会话与公开接口。APK 解析、验证、dexopt、staged session 和回滚由多个组件共同完成。
 
-### UseCase 越多，项目越烂 — Clean Architecture 落地的反直觉规律
-- 来源：https://juejin.cn/post/7623242804392247305
-- 类型：技术博客 / 深度分析
-- 摘要：直击 Clean Architecture 落地痛点：大量 UseCase 只做一行转发无业务价值；给出 UseCase 存在的三个充分条件（多数据源聚合、业务规则校验、测试隔离）；Repository 应提供缓存降级的数据契约；ViewModel 超过 200 行说明某层职责溢出；延伸到 KMP 下 Domain 层保持纯净。
-- 入库时间：2026-07-15
-- 评分：13/20
+### SurfaceFlinger 与显示链路
 
-### 现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch
-- 来源：https://juejin.cn/post/7650074080125599790
-- 类型：技术博客 / 深度分析
-- 摘要：系统阐述 Repository 暴露 suspend fun/Flow 的架构语义：suspend 表达能力，launch 表达任务归属；Repository 内部 launch 会导致生命周期失控、异常传播断裂、取消语义模糊；区分 withContext（切线程）与 launch（新建任务）；给出四条代码评审判断规则。
-- 入库时间：2026-07-15
-- 评分：13/20
+应用通过 View/HWUI、Surface 或媒体组件生产 buffer。BufferQueue 传递 buffer 与 fence，SurfaceFlinger 根据图层状态选择 HWC 或 GPU 合成，再把结果提交到显示设备。SurfaceFlinger 的长 slice 只表示合成侧耗时，不能单独证明应用绘制、GPU 或 HWC 中哪一方负责。
 
-### Android Room 3.0 破坏性变化与迁移路径
-- 来源：https://juejin.cn/post/7617108607432736778
-- 类型：技术博客 / 版本变更分析
-- 摘要：Room 3.0 四大破坏性变化：全新包名 androidx.room3、砍 Java 代码生成、仅支持 KSP、禁止同步 DAO（必须 suspend 或 Flow）；底层从 SupportSQLite 切到 androidx.sqlite 支持 KMP；提供 2.7.0→2.8.0 桥接层→3.0 三步迁移路径；2.x 进入维护模式。
-- 入库时间：2026-07-15
-- 评分：14/20
+渲染细节见 [2.1 渲染系统概览](part1-fundamentals/ch02-rendering/01-rendering-overview.md)。
 
+### Binder 传输与服务执行
+
+Binder 驱动负责 transaction 传递、对象引用、线程唤醒和部分优先级处理。AIDL stub、服务线程池、服务端锁与业务代码仍在用户空间执行。
+
+一次同步调用的延迟至少要拆成：
+
+1. 客户端序列化与进入驱动；
+2. transaction 进入目标进程；
+3. 服务端线程排队；
+4. 服务端代码、锁、I/O 或下游调用；
+5. reply 传回与客户端重新获得 CPU。
+
+`FLAT_BINDER_FLAG_INHERIT_RT` 由 Binder node 配置控制，不能把 RT 继承写成所有 transaction 的默认行为。权限、调度策略和恢复路径还受 Binder 驱动及内核调度约束。
+
+细节见 [1.4 Binder IPC](part1-fundamentals/ch01-architecture/04-binder.md)。
+
+## 三处版本勘误
+
+### MessageQueue：Android 17 引入 DeliQueue 兼容路径
+
+Android 17 保留 `Handler`、`Looper`、同步屏障、IdleHandler 和 native poll 的外部语义。面向 `targetSdkVersion >= 37` 的应用，compat change 默认选择 `CombinedDeliMessageQueue`：生产者把消息压入无锁栈，Looper 再把消息整理到自己使用的 heap。
+
+这项改动针对入队/出队竞争。`dispatchMessage()` 中的 layout、I/O、Binder 或业务计算仍需单独优化。旧 outline 中“异步消息处理整体提速”的范围过宽。
+
+细节见 [1.13 MessageQueue 与 DeliQueue](part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md)。
+
+### lmkd：userspace 与 PSI 路径早于 Android 17
+
+旧的内核 lowmemorykiller 驱动在更早版本已经退出 Android 公共主线，lmkd 也早已运行在用户空间。Android 17 的 `lmkd.cpp` 可使用 PSI trigger、epoll、meminfo/vmstat/zoneinfo、thrashing、swap 和进程状态做决策。
+
+`PSI_POLL_PERIOD_SHORT_MS = 10` 与 `PSI_POLL_PERIOD_LONG_MS = 100` 是压力事件后的状态轮询间隔，PSI trigger window 由另一项配置控制。把它们称为两档 PSI 监控窗口会误读源码。原文中的“200–500 ms 降到 50–100 ms”“CPU 开销降低 30%/40%”没有设备、workload 和复现步骤，本章不采用。
+
+细节见 [4.15 PSI、LowMemDetector 与 lmkd](part1-fundamentals/ch04-memory/15-psi-lowmemdetector-lmkd-architecture.md)。
+
+### 模块化：Mainline 不能概括为 Android 12 开始
+
+Project Mainline 在 Android 10 已引入，后来持续增加可更新模块。APEX、APK、system/vendor 分区和稳定 AIDL 解决的是不同问题：
+
+- Mainline 允许部分系统组件通过 Google Play system update 或 OEM 更新通道独立更新；
+- Treble 通过稳定 vendor interface 分离 system 与 vendor；
+- APEX 适合在启动早期或 native 环境使用的模块；
+- 模块可更新不表示任意系统服务都能脱离整机版本单独升级。
+
+阅读版本差异时，应检查目标 tag 的模块清单、接口稳定性和设备产品配置。
+
+## 用一条性能证据穿过各层
+
+以“点击后 300 ms 才显示新页面”为例，可以按下面顺序取证：
+
+| 证据 | 可以回答的问题 | 还不能回答什么 |
+|---|---|---|
+| 应用 TrackEvent 与主线程 slice | 点击处理、业务代码、首次 traversal 花了多久 | 系统服务或 GPU 内部为何等待 |
+| Binder transaction/reply | 是否跨进程，远端服务用了多久 | 服务端长 slice 内的锁或 I/O |
+| sched/thread_state | 线程在运行、Runnable 还是等待 | 某段业务代码的语义 |
+| FrameTimeline 与 SurfaceFlinger | App deadline、合成 deadline、present 是否迟到 | 业务请求为何晚到 |
+| frequency、thermal、Power HAL 事件 | 可用算力是否变化 | 工作量本身是否增加 |
+| 内核 I/O、reclaim、fence | 是否被存储、内存回收或设备同步阻塞 | 上层为何触发该操作 |
+
+源码用于解释观测到的事件生产者、状态机和边界。目标设备是否走过某条分支，要由 trace、日志、dump 或实验支持。
+
+## 源码阅读与实验记录
+
+每次跨层分析应记录：
+
+- build fingerprint、API level、AOSP/厂商版本和内核；
+- 进程、线程、UID、场景与时间窗口；
+- Java、native、HAL、kernel 的路径和方法/函数；
+- Binder、socket、共享内存、BufferQueue 或 ioctl 等边界；
+- 线程状态、CPU/频率、内存、I/O、GPU 与 thermal 证据；
+- 单变量修改及复测分布。
+
+Android 17 的公共源码用于建立可定位的基线。厂商改动可能位于 vendor service、HAL、内核模块、overlay 或性能服务中，分析商用设备时还要补充厂商符号、配置和日志。
+
+## 正式章节入口
+
+本文件保留旧链接兼容，系统架构的持续维护入口是：
+
+- [1.1 Android 分层架构](part1-fundamentals/ch01-architecture/01-layered-architecture.md)
+- [1.4 Binder IPC](part1-fundamentals/ch01-architecture/04-binder.md)
+- [1.13 MessageQueue 与 DeliQueue](part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md)
+- [2.1 渲染系统概览](part1-fundamentals/ch02-rendering/01-rendering-overview.md)
+- [4.15 PSI、LowMemDetector 与 lmkd](part1-fundamentals/ch04-memory/15-psi-lowmemdetector-lmkd-architecture.md)
+
+## 一手资料
+
+- [AOSP Android 17 tag](https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/)
+- [Android platform architecture](https://source.android.com/docs/core/architecture)
+- [Android 17 `frameworks/base`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/)
+- [Android 17 `frameworks/native`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/)
+- [Android 17 HAL interfaces](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/)
+- [Android 17 lmkd](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/)
+- [ACK `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)
+
+架构图的作用是帮助定位责任边界。遇到性能问题时，应把用户现象转成时间窗口，再沿应用、服务、native/HAL 与内核证据逐段缩小范围。
