@@ -19,877 +19,270 @@ sources:
 related_chapters: ["1.4", "2.4"]
 ---
 
-# 1.25 Compose Pausable Composition与Choreographer FrameData协作
+# 1.25 Compose Pausable Composition 与 Choreographer FrameData
 
-在 Android 性能优化的世界中，Jetpack Compose 作为声明式 UI 框架，其性能表现直接影响用户体验。传统的 Compose 必须在单个帧内完成所有组合工作，这在处理复杂 UI 时常常导致 jank。Compose Pausable Composition 的引入彻底改变了这一约束，与 Choreographer FrameData 协作，实现了智能的性能调度。
+Pausable Composition、Lazy Layout 预取调度器和 `Choreographer.FrameData` 都与帧时间有关，但它们属于三个不同层级。Compose Runtime 提供可暂停子组合；Compose Foundation 决定何时推进 Lazy item 预取；Android 平台通过 Choreographer 提供 VSync 与候选 FrameTimeline。AndroidX 1.11.4 的 Android 预取调度器没有直接读取 `FrameData` 的 deadline。
 
-## 内存管理基础
+这一区分会影响优化方案。把三者写成一条公开 API 调用链，会引出不存在的 `rememberFrameData()`、`PausableContent`、`compositionOf()` 等接口，也会让开发者误判卡顿原因。
 
-### PausableComposition 控制流架构
+本文以 Compose Runtime、Foundation、UI 1.11.4 和 AOSP `android-17.0.0_r1` 为审阅基线。Compose 独立于 Android 平台发布，同一个 Android 17 设备可以运行不同 Compose 版本。
 
-Compose Pausable Composition 通过控制流实现了异步的组合工作模式，将原本必须同步完成的 UI 组合分解为多个可中断的步骤。
+## 1. 三个层级各自负责什么
 
-```
-setPausableContent() → PausedComposition 控制器 → resume() + shouldPause 回调 → apply() 提交
-```
+| 层级 | 主要对象 | 职责 | 不负责的工作 |
+|---|---|---|---|
+| Compose Runtime | `PausableComposition`、`PausedComposition` | 分段推进尚未投入使用的子组合，完成后应用记录的节点操作 | 选择 Lazy item、计算帧预算、控制 SurfaceFlinger |
+| Compose Foundation / UI | Lazy 预取请求、`PausedPrecomposition`、Android prefetch scheduler | 选择待预取 item，估算剩余时间，驱动 compose、apply、measure | 提供平台 FrameTimeline，拆分任意业务重组 |
+| Android 平台 | `Choreographer`、`FrameData`、`FrameTimeline` | 分发 VSync，描述候选 timeline、deadline 与 VSync ID | 自动驱动 Compose 的暂停子组合 |
 
-这一流程的核心在于：
+“协作”在这里表示它们共同影响一帧内的主线程工作安排，不表示 Runtime 与 `FrameData` 之间存在公开的直接连接。
 
-1. **控制器模式**：`setPausableContent()` 不立即组合 UI，而是返回 `PausedComposition` 控制器对象。这种设计允许 Compose runtime 在合适的时机执行组合工作。
+## 2. 版本边界
 
-2. **预取系统**：预取系统（如 LazyColumn）反复调用 `resume()` 执行分块的组合工作，避免一次性处理大量 UI 元素。
+Pausable Composition 来自 AndroidX，不能按 Android API Level 推断是否启用。
 
-3. **中断机制**：每次 `resume()` 内部，Compose runtime 通过 `shouldPause` lambda 频繁检查帧截止时间，当帧时间临近时主动暂停。
+| 版本 | 变化 | 工程含义 |
+|---|---|---|
+| Runtime 1.7.x | 没有公开的 `PausableComposition` API | 旧项目不能照搬后续对象模型 |
+| Runtime 1.8.0-alpha02 | 加入 `PausableComposition` | API 起点 |
+| Runtime 1.8.0 | 1.8 稳定线包含该机制 | 仍需让 Runtime、Foundation、UI 保持兼容版本 |
+| Foundation 1.10.0-alpha05 | Lazy 预取开关默认启用 | Foundation 开始默认采用暂停式预取 |
+| Foundation 1.10.6 | 因稳定性问题默认关闭该开关 | 不能只看 API 是否存在 |
+| Runtime / Foundation 1.11.4 | 本文 AndroidX 基线；1.11.4 Foundation 源码中的开关为 `true` | 升级后仍要做列表滚动回归 |
+
+Runtime 1.8.0-alpha02 的引入记录见 [Compose Runtime 发布说明](https://developer.android.com/jetpack/androidx/releases/compose-runtime)，Foundation 的开关变化见 [Compose Foundation 发布说明](https://developer.android.com/jetpack/androidx/releases/compose-foundation)。版本解析结果比 BOM 名称更可靠，排查时应记录 Gradle 最终选中的 Runtime、Foundation 和 UI artifact。
+
+`FrameData` 与 `FrameTimeline` 则是 Android 13 / API 33 加入的公开平台 API。它们在 Android 17 / API 37 中继续存在。应用能读取这些对象，不代表所用 Compose 版本会读取它们。
+
+## 3. Runtime 的暂停对象模型
+
+`PausableComposition` 是面向 Compose 基础设施的低层接口。它需要 `Applier` 和父 `CompositionContext`，普通页面通常不会自行创建。Runtime 1.11.4 的关键接口可概括为以下声明。
 
 ```kotlin
-// PausableComposition 基本使用
-val pausableContent = remember {
-    CompositionLocalProvider(LocalDensity provides LocalDensity.current) {
-        compositionOf {
-            LazyColumn {
-                items(largeList) { item ->
-                    Text(text = item.title)
-                }
-            }
+public sealed interface PausableComposition : ReusableComposition {
+    public fun setPausableContent(
+        content: @Composable () -> Unit
+    ): PausedComposition
+
+    public fun setPausableContentWithReuse(
+        content: @Composable () -> Unit
+    ): PausedComposition
+}
+
+public sealed interface PausedComposition {
+    public val isComplete: Boolean
+    public val isApplied: Boolean
+    public val isCancelled: Boolean
+
+    public fun resume(shouldPause: ShouldPauseCallback): Boolean
+    public fun apply()
+    public fun cancel()
+}
+```
+
+这段接口给出了完整的控制边界：`setPausableContent*()` 创建一次暂停任务，调用方反复 `resume()`，完成后调用一次 `apply()`。请求失效时可以 `cancel()`，取消后的对象不能继续使用。
+
+`ShouldPauseCallback` 是协作式检查。返回 `true` 只表示请求 Runtime 在可暂停位置交还控制权，正在执行的任意 Kotlin 函数不会因此被抢占。回调会频繁执行，里面不应进行 I/O、复杂状态计算或大量分配。
+
+### 3.1 完成组合不等于结果可用
+
+暂停子组合的结果先由 `RecordingApplier` 记录。`isComplete == true` 表示组合阶段已结束，节点操作还没有回放到目标 `Applier`。调用 `apply()` 后，结果才能交给后续布局流程。
+
+一次预取的大致状态顺序如下：
+
+```text
+setPausableContent()
+    → resume(shouldPause)
+    → 仍未完成：等待下一次预算
+    → resume(shouldPause)
+    → isComplete
+    → apply()
+    → premeasure
+    → item 进入可复用的预取结果
+```
+
+这条顺序也解释了为何 trace 中 compose 结束后仍可能看到 apply 和 measure。只统计 compose slice 会漏掉预取请求的后续成本。
+
+暂停期间读取的 Snapshot 状态可能变化。Runtime 会让已完成的对象重新回到待重组状态，因此调用方要在 `apply()` 前再次检查 `isComplete`。Foundation 已封装这套生命周期，业务层自行驱动时很容易遗漏取消、状态失效和宿主销毁。
+
+### 3.2 它能暂停哪些工作
+
+Pausable Composition 针对可暂停的子组合执行路径。以下工作不在它的暂停契约内：
+
+- 已经开始的网络请求、数据库查询或 `Flow` 收集；
+- `LaunchedEffect` 中正在运行的协程；
+- Composable body 内的一次长时间同步调用；
+- apply、measure、layout、draw；
+- RenderThread、GPU、SurfaceFlinger 的工作；
+- 普通页面的任意重组。
+
+因此，Bitmap 解码、大集合排序、JSON 解析或同步文件访问放在 item 的组合路径中，依然会形成长主线程 slice。运行时只能在编译器与 Runtime 支持的位置响应暂停请求。
+
+## 4. Lazy 预取如何使用暂停组合
+
+Foundation 的 Lazy 预取是应用最容易遇到的接入点。滚动策略选出可能进入视口的 item 后，`SubcomposeLayout` 创建 `PausedPrecomposition`。调度器在预算允许时逐步推进：
+
+1. 校验 index、稳定 key 与 `contentType`。
+2. 创建或继续 paused precomposition。
+3. 组合完成后执行 apply。
+4. 解析嵌套 Lazy 容器的预取。
+5. 对生成的 placeable 做 premeasure。
+
+Foundation 1.11.4 按 `contentType` 保存 compose、resume、pause response、apply、measure 等阶段的历史耗时。稳定 key 用于确认 index 背后的数据项是否仍相同。业务层更有效的控制点是提供稳定 key、合理的 `contentType`，并让 item 的同步组合路径保持轻量。
+
+下面的示例只演示应用层应提供的信息，不直接创建 `PausableComposition`。
+
+```kotlin
+@Composable
+fun Feed(items: List<FeedItem>) {
+    LazyColumn {
+        items(
+            items = items,
+            key = { item -> item.id },
+            contentType = { item -> item.layoutType },
+        ) { item ->
+            FeedRow(item)
         }
     }
 }
-
-// 分块执行组合工作
-var isComplete by remember { mutableStateOf(false) }
-LaunchedEffect(Unit) {
-    do {
-        val (completed, shouldPause) = pausableContent.resume()
-        isComplete = completed
-        if (shouldPause) {
-            // 帧截止时间临近，暂停执行
-            delay(1)
-        }
-    } while (!isComplete)
-    
-    // 完成后提交 UI 变更
-    pausableContent.apply()
-}
 ```
 
-### FrameData Deadline 判定机制
+这里的 `key` 应在插入、删除和排序后仍能识别同一数据项；`contentType` 应按布局与组合成本的大类划分。把位置当 key，或把每个 id 都当作独立 `contentType`，都会削弱预取复用与耗时估算。
 
-Choreographer.FrameData 为 Compose 提供了精确的时间信息，这使得 PausableComposition 能够智能地调度工作：
+## 5. Android 预取预算没有直接使用 FrameData deadline
+
+Foundation 1.11.4 的 `PrefetchScheduler.android.kt` 使用 `View`、`Choreographer.FrameCallback` 和显示刷新率估算时间。其思路可以压缩为：
+
+```text
+frameIntervalNs = 1_000_000_000 / displayRefreshRate
+
+nextFrameTimeNs =
+    max(lastDoFrameTimeNs, viewDrawingTimeNs) + frameIntervalNs
+
+availableTimeNanos =
+    max(0, nextFrameTimeNs - System.nanoTime())
+```
+
+这段公式描述源码中的预算模型。`lastDoFrameTimeNs` 来自调度器收到的上一轮 `doFrame()` 时间，`viewDrawingTimeNs` 来自 `View.drawingTime` 的单位转换。View 已超过两个帧间隔没有绘制时，调度器可把当前时段视为 idle，放宽预取预算。
+
+该实现没有调用：
+
+```text
+FrameData.getPreferredFrameTimeline().getDeadlineNanos()
+```
+
+上面的调用链是平台允许应用读取首选 timeline deadline 的方式，不是 Foundation 1.11.4 预取调度器的预算来源。可变刷新率、多显示器切换和高刷设备会放大“估算下一帧”与“平台当前 timeline”之间的差异，所以需要用目标设备 trace 验证。
+
+## 6. FrameData 的公开数据模型
+
+Android 17 的 [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java) 中，`VsyncCallback` 接收一个 `FrameData`。公开 API 可读取：
+
+- `FrameData.getFrameTimeNanos()`；
+- `FrameData.getFrameTimelines()`；
+- `FrameData.getPreferredFrameTimeline()`；
+- `FrameTimeline.getVsyncId()`；
+- `FrameTimeline.getExpectedPresentationTimeNanos()`；
+- `FrameTimeline.getDeadlineNanos()`。
+
+`FrameData` 没有公开的 `intervalNanos`、`lastFrameTimeNanos` 或 `refreshRate` 字段。`FrameTimeline` 的 deadline 和 expected presentation time 使用 `System.nanoTime()` 时间基准。
+
+下面的示例展示如何在 API 33 及以上复制首选 timeline 的基础值。
 
 ```kotlin
-data class FrameData(
-    val frameTimeNanos: Long,        // 当前帧开始时间
-    val lastFrameTimeNanos: Long,    // 上一帧开始时间  
-    val intervalNanos: Long,         // 帧间隔时间
-    val deadlineNanos: Long          // 帧截止时间
+data class PreferredTimelineSnapshot(
+    val frameTimeNanos: Long,
+    val vsyncId: Long,
+    val expectedPresentationTimeNanos: Long,
+    val deadlineNanos: Long,
 )
 
-// shouldPause 回调实现
-val shouldPause = remember { mutableStateOf(false) }
-
-pausableContent.resume { frameData ->
-    // 计算剩余时间
-    val remainingTime = frameData.deadlineNanos - System.nanoTime()
-    val frameBudget = frameData.intervalNanos // 通常 16.67ms (60fps)
-    
-    // 当剩余时间小于帧预算的 25% 时暂停
-    shouldPause.value = remainingTime < frameBudget * 0.25
-    shouldPause.value
-}
-```
-
-### 与传统 Composition 的对比
-
-在 Compose 1.7 之前，Composition 必须在单个帧内完成所有工作，这导致了严重的性能问题：
-
-**传统 Composition（1.7 之前）**：
-- 单帧内必须完成全部 UI 组合
-- 复杂 UI（长 LazyColumn）组合时间可能超过 16.67ms
-- 直接导致帧超时和 jank
-- 无法利用帧之间的空闲时间
-
-**PausableComposition（1.7+）**：
-- 将组合工作分解为可中断的块
-- 利用帧间空闲时间进行预组合
-- 在帧截止时间临近时主动暂停
-- 显著减少主线程阻塞时间
-
-## Android 17 新特性
-
-### API 33+ FrameTimeline 增强支持
-
-Android 17 进一步增强了 FrameTimeline API，提供了更精确的帧调度信息：
-
-```kotlin
-// Android 17 中的增强 API
-val choreographer = Choreographer.getInstance()
-
-val preferredTimeline = choreographer.getPreferredFrameTimeline()
-val allTimelines = choreographer.getFrameTimelines()
-
-// 获取精确的帧时间信息
-frameData.run {
-    val deadlineToFrameStart = deadlineNanos - frameTimeNanos
-    val budgetPercentage = (deadlineToFrameStart * 100) / intervalNanos
-    
-    Log.d("Compose", "Frame budget: ${budgetPercentage}% used")
-}
-```
-
-### Perfetto 可视化增强
-
-Android 17 在 Perfetto 中提供了更丰富的可视化数据：
-
-```
-Expected Timeline（绿色）：系统为应用分配的帧时间窗口
-Actual Timeline（红色）：应用实际渲染耗时  
-Choreographer#doFrame（蓝色）：应用主线程执行时间
-```
-
-通过 Perfetto 的 Timeline 对比，开发者可以直观地看到：
-- 绿色：帧在预期时间内完成，无 jank
-- 红色：应用导致 jank - 超出预期时间边界
-- 黄色：SurfaceFlinger 合成延迟导致的 jank（非应用责任）
-
-### PausableComposition 默认行为
-
-Jetpack Compose 1.10（2025年12月稳定版）将 PausableComposition 设为默认行为：
-
-> Jetpack Compose 1.10，which became stable in December 2025，marked a significant milestone by introducing pausable composition as a default behavior. Applications utilizing Compose 1.10 or newer automatically benefit from this performance enhancement without requiring any explicit code changes.
-
-这意味着在 Android 17 上使用 Compose 1.10+ 的应用自动获得性能提升，无需手动配置。
-
-## 协作机制实现
-
-### LazyColumn 预取集成
-
-PausableComposition 与 LazyColumn/LazyRow 的预取系统深度集成，显著提升滚动性能：
-
-```kotlin
-@Composable
-fun OptimizedLazyList(items: List<String>) {
-    val listState = rememberLazyListState()
-    val pausableContent = remember { 
-        mutableStateOf<PausableContent?>(null) 
-    }
-    
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize()
-    ) {
-        items(items.size) { index ->
-            val item = items[index]
-            
-            // 使用 PausableComposition 优化每个列表项
-            ComposePausableItem(
-                content = {
-                    ListItem(
-                        text = item,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    )
-                },
-                onCompositionComplete = { pausableContent.value = null }
-            )
-        }
-    }
-}
-
-@Composable
-fun ComposePausableItem(
-    content: @Composable () -> Unit,
-    onCompositionComplete: () -> Unit
+@RequiresApi(33)
+fun requestTimelineSnapshot(
+    choreographer: Choreographer,
+    consume: (PreferredTimelineSnapshot) -> Unit,
 ) {
-    val frameData = rememberFrameData()
-    var isCompleted by remember { mutableStateOf(false) }
-    
-    LaunchedEffect(Unit) {
-        while (!isCompleted) {
-            val shouldPause = frameData.shouldPause()
-            if (shouldPause) {
-                delay(1) // 让出主线程
-            } else {
-                // 继续组合工作
-                isCompleted = true
-            }
-        }
-        onCompositionComplete()
-    }
-    
-    content()
-}
-```
-
-### CacheWindow API 协作
-
-Compose 1.9 引入的 CacheWindow API 进一步与 PausableComposition 协作：
-
-```kotlin
-object ComposeCacheWindow {
-    private val cachedItems = mutableStateMapOf<String, Composable>()
-    
-    fun getCachedItem(key: String, factory: () -> Composable): Composable {
-        return cachedItems.getOrPut(key) { factory() }
-    }
-    
-    fun invalidateCache(key: String) {
-        cachedItems.remove(key)
-    }
-    
-    fun clearCache() {
-        cachedItems.clear()
-    }
-}
-
-// 使用缓存的预组合组件
-@Composable
-fun CachedListItem(item: String, isComposed: Boolean) {
-    val cachedContent = remember(item, isComposed) {
-        if (isComposed) {
-            ComposeCacheWindow.getCachedItem(item) {
-                ListItem(text = item)
-            }
-        } else {
-            null
-        }
-    }
-    
-    if (cachedContent != null) {
-        cachedContent()
-    } else {
-        // 延迟组合直到有空闲时间
-        LaunchedEffect(Unit) {
-            delay(100) // 等待空闲时段
-            ComposeCacheWindow.getCachedItem(item) {
-                ListItem(text = item)
-            }
-        }
-    }
-}
-```
-
-### apply() 提交机制详解
-
-当 `resume()` 返回 `isComplete=true` 时，调用 `apply()` 将所有计算出的 UI 变更提交到实际 UI 树：
-
-```kotlin
-private fun applyChanges(composedChanges: List<ComposableChange>) {
-    // 1. 回放缓冲命令
-    composedChanges.forEach { change ->
-        change.execute()
-    }
-    
-    // 2. 分发生命周期回调
-    composedChanges.forEach { change ->
-        change.onRemembered?.invoke()
-    }
-    
-    // 3. 运行 SideEffect
-    composedChanges.filter { it is SideEffectChange }
-        .forEach { (it as SideEffectChange).execute() }
-    
-    // 4. 更新 UI 树状态
-    updateUIState(composedChanges)
-}
-```
-
-这种分阶段提交机制确保了 UI 的原子性更新，避免了中间状态的不一致。
-
-## 性能优化策略
-
-### 分块组合大小优化
-
-根据 UI 复杂度动态调整组合块的大小：
-
-```kotlin
-class CompositionBlockOptimizer {
-    private val blockSizes = mutableListOf<Int>()
-    private var lastFrameTime = 0L
-    
-    fun getOptimalBlockSize(complexity: Int): Int {
-        val baseSize = when (complexity) {
-            in 1..10 -> 5    // 简单 UI，小块组合
-            in 11..50 -> 10   // 中等 UI，中块组合
-            else -> 20       // 复杂 UI，大块组合
-        }
-        
-        // 根据上一帧性能调整
-        val adjustment = if (lastFrameTime > 16_000_000) {
-            -2 // 上一帧超时，减小块大小
-        } else if (lastFrameTime < 10_000_000) {
-            +2 // 上一帧完成较早，增大块大小
-        } else {
-            0
-        }
-        
-        return maxOf(1, baseSize + adjustment)
-    }
-    
-    fun updateFrameTime(frameTimeNanos: Long) {
-        lastFrameTime = frameTimeNanos
-    }
-}
-```
-
-### 动态暂停策略
-
-基于当前负载和帧时间采用不同的暂停策略：
-
-```kotlin
-enum class PauseStrategy {
-    AGGRESSIVE,    // 积极暂停，优先保证帧率
-    BALANCED,      // 平衡策略，默认选择
-    CONSERVATIVE   // 保守暂停，优先完成工作
-}
-
-class DynamicPauseManager {
-    private var currentStrategy = PauseStrategy.BALANCED
-    
-    fun shouldPause(
-        frameData: Choreographer.FrameData,
-        currentWork: Long,
-        complexity: Int
-    ): Boolean {
-        val remainingTime = frameData.deadlineNanos - System.nanoTime()
-        val frameBudget = frameData.intervalNanos
-        
-        return when (currentStrategy) {
-            PauseStrategy.AGGRESSIVE -> {
-                remainingTime < frameBudget * 0.3 || currentWork > frameBudget * 0.6
-            }
-            PauseStrategy.BALANCED -> {
-                remainingTime < frameBudget * 0.25 || currentWork > frameBudget * 0.7
-            }
-            PauseStrategy.CONSERVATIVE -> {
-                remainingTime < frameBudget * 0.15 || currentWork > frameBudget * 0.8
-            }
-        }
-    }
-    
-    fun updateStrategy(performance: Float) {
-        // 根据性能分数调整策略
-        currentStrategy = when {
-            performance > 0.8 -> PauseStrategy.CONSERVATIVE
-            performance < 0.6 -> PauseStrategy.AGGRESSIVE
-            else -> PauseStrategy.BALANCED
-        }
-    }
-}
-```
-
-### 内存监控与回收
-
-监控组合过程中的内存使用，及时回收不再需要的资源：
-
-```kotlin
-class CompositionMemoryMonitor {
-    private val allocatedMemory = mutableStateOf(0L)
-    private val memoryThreshold = 50 * 1024 * 1024 // 50MB
-    
-    fun allocateMemory(size: Long) {
-        allocatedMemory.value += size
-        checkMemoryUsage()
-    }
-    
-    fun releaseMemory(size: Long) {
-        allocatedMemory.value = maxOf(0, allocatedMemory.value - size)
-    }
-    
-    private fun checkMemoryUsage() {
-        if (allocatedMemory.value > memoryThreshold) {
-            // 触发内存回收
-            triggerMemoryReclaim()
-        }
-    }
-    
-    private fun triggerMemoryReclaim() {
-        // 回收缓存
-        ComposeCacheWindow.clearCache()
-        
-        // 压缩已完成的组合
-        completedCompositions.forEach { it.compress() }
-        
-        // 强制 GC
-        System.gc()
-    }
-}
-```
-
-## 大应用冷启动优化
-
-### GB级应用的启动优化方案
-
-对于大型应用的冷启动，PausableComposition 提供了独特的优势：
-
-```kotlin
-class ColdStartOptimizer {
-    private val precomposedScreens = mutableStateMapOf<String, Composable>()
-    
-    // 预组合关键屏幕
-    fun precomposeCriticalScreens() {
-        val screensToPrecompose = listOf(
-            "LoginScreen",
-            "HomeScreen", 
-            "MainNavigation"
+    choreographer.postVsyncCallback { frameData ->
+        val timeline = frameData.preferredFrameTimeline
+        consume(
+            PreferredTimelineSnapshot(
+                frameTimeNanos = frameData.frameTimeNanos,
+                vsyncId = timeline.vsyncId,
+                expectedPresentationTimeNanos =
+                    timeline.expectedPresentationTimeNanos,
+                deadlineNanos = timeline.deadlineNanos,
+            )
         )
-        
-        screensToPrecompose.forEach { screenName ->
-            CoroutineScope(Dispatchers.IO).launch {
-                precomposeScreen(screenName)
-            }
-        }
-    }
-    
-    private suspend fun precomposeScreen(screenName: String) {
-        // 在后台线程中执行预组合
-        withContext(Dispatchers.Default) {
-            val screen = createScreen(screenName)
-            precomposedScreens[screenName] = screen
-        }
-    }
-    
-    // 分阶段加载非关键组件
-    fun loadNonCriticalComponents() {
-        val nonCriticalComponents = listOf(
-            "UserProfile",
-            "Settings",
-            "About"
-        )
-        
-        nonCriticalComponents.forEach { component ->
-            // 使用 PausableComposition 延迟加载
-            pausableContent {
-                component()
-            }
-        }
     }
 }
 ```
 
-### 启动性能监控
+这段代码只复制 `Long` 值。`FrameData` 及其 `FrameTimeline` 对象只在 `onVsync()` 回调期间有效，异步代码不能保存对象引用后再读取。API 契约可在 [`FrameData`](https://developer.android.com/reference/android/view/Choreographer.FrameData) 与 [`FrameTimeline`](https://developer.android.com/reference/android/view/Choreographer.FrameTimeline) 文档中核对。
 
-实时监控启动过程中的性能指标：
+应用读取 timeline 可用于自研动画或渲染调度、日志关联和实验测量。它不会自动改变 Compose Foundation 的预取预算，也不能作为业务代码控制 `PausedComposition` 的隐藏入口。
 
-```kotlin
-@Composable
-fun StartupPerformanceMonitor() {
-    val startupMetrics = remember { mutableStateOf<StartupMetrics?>(null) }
-    val frameData = rememberFrameData()
-    
-    SideEffect {
-        val metrics = StartupMetrics(
-            compositionTime = frameData.getCompositionTime(),
-            frameRate = frameData.getFrameRate(),
-            memoryUsage = frameData.getMemoryUsage()
-        )
-        startupMetrics.value = metrics
-        
-        // 如果性能低于阈值，触发优化
-        if (metrics.frameRate < 50) {
-            triggerOptimization()
-        }
-    }
-    
-    if (startupMetrics.value != null) {
-        PerformanceDisplay(metrics = startupMetrics.value!!)
-    }
-}
+## 7. 怎样用 Perfetto 验证收益
 
-data class StartupMetrics(
-    val compositionTime: Long,
-    val frameRate: Float,
-    val memoryUsage: Long,
-    val jankCount: Int = 0
-)
-```
+观察 Pausable Composition 时，应把预取与可见帧放在同一时间轴上。Foundation 1.11.4 的 Lazy 预取路径包含以下 trace 名称：
 
-## 内存回收策略
+- `compose:lazy:schedule_prefetch:index`；
+- `compose:lazy:prefetch:available_time_nanos`；
+- `compose:lazy:prefetch:execute:item`；
+- `compose:lazy:prefetch:compose`；
+- `compose:lazy:prefetch:apply`；
+- `compose:lazy:prefetch:resolve-nested`；
+- `compose:lazy:prefetch:measure`；
+- `compose:lazy:prefetch:idle_frame`。
 
-### 智能内存回收
+排查顺序可以按四个问题展开：
 
-基于应用状态和系统负载的智能内存回收：
+1. 预取 compose 是否被拆成多段，单次 resume 是否仍然过长？
+2. apply、nested prefetch 或 measure 是否占用了可见帧？
+3. 重型 item 是否集中在某个 `contentType`，key 是否频繁变化？
+4. 滚动方向改变后，是否出现大量被取消或释放的预取结果？
 
-```kotlin
-class AdaptiveMemoryReclaimer {
-    private var systemMemoryPressure = MemoryPressure.NORMAL
-    private var appMemoryUsage = 0L
-    
-    fun updateMemoryState(pressure: MemoryPressure, usage: Long) {
-        systemMemoryPressure = pressure
-        appMemoryUsage = usage
-        executeReclaimStrategy()
-    }
-    
-    private fun executeReclaimStrategy() {
-        when (systemMemoryPressure) {
-            MemoryPressure.LOW -> reclaimAggressive()
-            MemoryPressure.NORMAL -> reclaimBalanced()
-            MemoryPressure.HIGH -> reclaimConservative()
-        }
-    }
-    
-    private fun reclaimAggressive() {
-        // 主动释放预组合内容
-        precomposedContent.clear()
-        cacheManager.evictAll()
-    }
-    
-    private fun reclaimBalanced() {
-        // 按优先级释放缓存
-        cacheManager.evictLowPriorityItems()
-    }
-    
-    private fun reclaimConservative() {
-        // 仅释放内存密集型内容
-        heavyContentManager.releaseHeavyItems()
-    }
-}
+还要同时查看 `Choreographer#doFrame`、主线程调度、RenderThread、FrameTimeline 和系统内存事件。Pausable Composition 可能降低某次预取连续占用主线程的时长，同时增加提前组合的 CPU 与内存成本。结论应来自 Macrobenchmark、帧时间分布和内存曲线，不能套用固定百分比。
 
-enum class MemoryPressure {
-    LOW, NORMAL, HIGH
-}
-```
+## 8. 常见错误判断
 
-### 预加载机制
+### 8.1 “Android 17 默认让所有 Compose 组合跨帧”
 
-利用空闲时间预加载下一阶段需要的资源：
+是否具备该机制由 AndroidX 版本决定，是否使用则由具体接入路径与开关决定。普通 `setContent` 和常规重组不会自动变成暂停子组合。
 
-```kotlin
-class PreloadManager {
-    private val preloadQueue = mutableStateListOf<PreloadTask>()
-    private val isIdle = mutableStateOf(true)
-    
-    fun addPreloadTask(task: PreloadTask) {
-        preloadQueue.add(task)
-        if (isIdle.value) {
-            executePreload()
-        }
-    }
-    
-    private fun executePreload() {
-        while (preloadQueue.isNotEmpty() && isIdle.value) {
-            val task = preloadQueue.removeAt(0)
-            task.execute()
-            
-            // 检查是否还有空闲时间
-            val frameData = getCurrentFrameData()
-            if (frameData.remainingTime < frameData.budget * 0.3) {
-                isIdle.value = false
-            }
-        }
-    }
-    
-    fun markIdle() {
-        isIdle.value = true
-        executePreload()
-    }
-}
+### 8.2 “`shouldPause()` 返回 true 后能立刻中断”
 
-data class PreloadTask(
-    val priority: Int,
-    val content: () -> Unit,
-    val estimatedTime: Long
-)
-```
+暂停是协作式行为。长时间同步调用内部没有可用暂停点时，Runtime 要等调用返回后才能交还控制权。
 
-## 实战案例分析
+### 8.3 “FrameData 提供固定刷新间隔”
 
-### 案例一：电商应用的商品列表
+公开 `FrameData` 描述本次 VSync 和候选 timeline，不提供 `refreshRate` 或 `intervalNanos`。帧间隔还会受刷新率切换、应用 cadence 与系统调度影响。
 
-**场景**：电商应用的商品列表包含大量图片、价格信息和按钮，滚动时出现卡顿。
+### 8.4 “组合完成后可以直接拿去 measure”
 
-**问题分析**：
-- 单帧内组合所有商品项导致主线程阻塞
-- 图片加载与 UI 组合串行执行
-- 复杂的布局计算占用过多时间
+暂停组合完成后还要 apply。Lazy 预取随后可能继续做嵌套预取解析和 premeasure。
 
-**解决方案**：
+### 8.5 “开关打开就一定更流畅”
 
-```kotlin
-@Composable
-fun OptimizedProductList(products: List<Product>) {
-    val listState = rememberLazyListState()
-    val imageLoader = remember { ImageLoader() }
-    val compositionCache = remember { CompositionCache() }
-    
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize()
-    ) {
-        items(products, key = { it.id }) { product ->
-            PausableProductItem(
-                product = product,
-                imageLoader = imageLoader,
-                cache = compositionCache
-            )
-        }
-    }
-}
+暂停式预取会提前消耗 CPU 和内存，也受 item 结构、滚动速度、设备刷新率和版本缺陷影响。Foundation 1.10.6 曾因稳定性问题默认关闭该路径，版本升级必须带着滚动、状态更新、item 删除和嵌套列表场景回归。
 
-@Composable
-fun PausableProductItem(
-    product: Product,
-    imageLoader: ImageLoader,
-    cache: CompositionCache
-) {
-    val frameData = rememberFrameData()
-    var isComposed by remember { mutableStateOf(false) }
-    
-    // 使用 PausableComposition 进行组合
-    val pausableContent = remember(product) {
-        PausableContent {
-            ProductItem(
-                product = product,
-                imageLoader = imageLoader
-            )
-        }
-    }
-    
-    LaunchedEffect(Unit) {
-        while (!isComposed) {
-            val shouldPause = frameData.shouldPause()
-            if (shouldPause) {
-                delay(1) // 让出主线程
-            } else {
-                isComposed = true
-                pausableContent.apply()
-            }
-        }
-    }
-    
-    if (isComposed) {
-        pausableContent.Content()
-    }
-}
-```
+## 9. 工程检查清单
 
-**优化效果**：
-- 帧率从 45fps 提升到 60fps
-- 滚动流畅度提升 65%
-- 内存使用优化 40%
+- 锁定并记录 Compose Runtime、Foundation、UI 的解析版本。
+- 查看对应版本发布说明和源码默认开关，不从 Android API Level 推断。
+- 为 Lazy item 提供稳定 key 与有意义的 `contentType`。
+- 移出 Composable body 中的同步 I/O、解码和大规模数据计算。
+- 在 60 Hz、高刷和可变刷新率设备上采集滚动 trace。
+- 分开统计 compose、apply、measure 与被取消的预取工作。
+- 读取 `FrameData` 时只在回调内访问对象，需要留存时复制基础值。
+- 发现回归时先用 Foundation 的实验性回退开关做对照，再决定是否长期调整。
 
-### 案例二：社交应用的动态内容
+更完整的 Runtime 状态机、`RecordingApplier` 和 Lazy 预取源码分析见 [2.28 Compose Pausable Composition 深度分析](../ch02-rendering/2.28-Compose-Pausable-Composition-深度分析.md)，应用侧配置与排查步骤见 [2.29 Compose Pausable Composition 工程指南](../ch02-rendering/2.29-compose-pausable-composition-guide.md)。
 
-**场景**：社交应用动态信息流包含视频、图片、文本等多种内容类型。
+## 参考资料
 
-**问题分析**：
-- 动态内容类型多样，组合时间不稳定
-- 视频预加载与 UI 渲染冲突
-- 内存管理不当导致卡顿
-
-**解决方案**：
-
-```kotlin
-@Composable
-fun DynamicFeedItem(
-    content: FeedContent,
-    onInteraction: (FeedContent) -> Unit
-) {
-    val frameData = rememberFrameData()
-    val contentRenderer = remember { ContentRenderer() }
-    
-    // 根据内容类型选择渲染策略
-    when (content.type) {
-        ContentType.IMAGE -> {
-            PausableImageContent(
-                content = content,
-                frameData = frameData,
-                renderer = contentRenderer
-            )
-        }
-        ContentType.VIDEO -> {
-            PausableVideoContent(
-                content = content,
-                frameData = frameData,
-                renderer = contentRenderer
-            )
-        }
-        ContentType.TEXT -> {
-            PausableTextContent(
-                content = content,
-                frameData = frameData,
-                renderer = contentRenderer
-            )
-        }
-    }
-    
-    // 交互层使用非阻塞方式处理
-    LaunchedEffect(Unit) {
-        delay(100) // 延迟交互处理
-        onInteraction(content)
-    }
-}
-```
-
-**优化效果**：
-- 动态加载时间减少 70%
-- 内存峰值降低 50%
-- 用户体验评分提升 25%
-
-### 案例三：游戏应用的实时数据展示
-
-**场景**：游戏应用需要在实时渲染的同时显示复杂的数据面板。
-
-**问题分析**：
-- UI 组合与游戏渲染争夺主线程资源
-- 数据面板频繁更新导致重绘
-- 性能敏感场景下的卡顿
-
-**解决方案**：
-
-```kotlin
-@Composable
-fun GameDashboard(
-    gameState: GameState,
-    performanceMetrics: PerformanceMetrics
-) {
-    val frameData = rememberFrameData()
-    val uiDispatcher = rememberCoroutineScope()
-    
-    // 分离静态和动态内容
-    Column {
-        // 静态内容预组合
-        PausableStaticContent()
-        
-        // 动态内容根据帧时间处理
-        LaunchedEffect(frameData) {
-            val shouldProcessDynamic = frameData.remainingTime > frameData.budget * 0.4
-            
-            if (shouldProcessDynamic) {
-                // 有空闲时间处理动态内容
-                DynamicContent(gameState, performanceMetrics)
-            } else {
-                // 帧时间紧张，延迟处理
-                delay(16) // 等待下一帧
-                DynamicContent(gameState, performanceMetrics)
-            }
-        }
-    }
-}
-```
-
-**优化效果**：
-- 游戏帧率保持稳定 60fps
-- UI 响应延迟减少 80%
-- 系统资源占用优化 30%
-
-## 性能监控与调试
-
-### 实时性能监控
-
-```kotlin
-@Composable
-fun PerformanceMonitor() {
-    val performanceMetrics = remember { mutableStateOf<PerformanceMetrics?>(null) }
-    val frameData = rememberFrameData()
-    
-    LaunchedEffect(Unit) {
-        while (true) {
-            val metrics = PerformanceMetrics(
-                frameRate = frameData.getFrameRate(),
-                compositionTime = frameData.getCompositionTime(),
-                memoryUsage = frameData.getMemoryUsage(),
-                jankCount = frameData.getJankCount()
-            )
-            performanceMetrics.value = metrics
-            
-            delay(1000) // 每秒更新一次
-        }
-    }
-    
-    if (performanceMetrics.value != null) {
-        PerformanceDashboard(metrics = performanceMetrics.value!!)
-    }
-}
-
-data class PerformanceMetrics(
-    val frameRate: Float,
-    val compositionTime: Long,
-    val memoryUsage: Long,
-    val jankCount: Int,
-    val lastUpdateTime: Long = System.currentTimeMillis()
-)
-```
-
-### 调试工具集成
-
-```kotlin
-object CompositionDebugger {
-    private val logs = mutableListOf<CompositionLog>()
-    
-    fun logComposision(event: CompositionEvent) {
-        logs.add(CompositionLog(
-            timestamp = System.currentTimeMillis(),
-            event = event,
-            frameData = getCurrentFrameData()
-        ))
-        
-        // 限制日志数量
-        if (logs.size > 1000) {
-            logs.removeAt(0)
-        }
-    }
-    
-    fun exportLogs(): String {
-        return logs.joinToString("\n") { 
-            "[${it.timestamp}] ${it.event}: ${it.frameData}" 
-        }
-    }
-}
-
-enum class CompositionEvent {
-    STARTED, PAUSED, RESUMED, COMPLETED, FAILED
-}
-```
-
-## 最佳实践总结
-
-### 核心原则
-
-1. **分块组合**：将大型组合工作分解为小的、可中断的块
-2. **智能暂停**：在帧截止时间临近时主动暂停，避免 jank
-3. **预取优化**：利用帧间空闲时间预加载和预组合内容
-4. **内存管理**：及时释放不再需要的资源，避免内存泄漏
-
-### 配置参数建议
-
-```kotlin
-// 优化配置
-object ComposeOptimizationConfig {
-    // 组合块大小（毫秒）
-    val COMPOSITION_BLOCK_SIZE_MS = 8L
-    
-    // 暂停阈值（帧预算的百分比）
-    val PAUSE_THRESHOLD_RATIO = 0.25f
-    
-    // 预取提前量（毫秒）
-    val PRELOAD_ADVANCE_MS = 100L
-    
-    // 内存回收阈值（MB）
-    val MEMORY_RECLAIM_THRESHOLD = 50L
-}
-```
-
-### 检查清单
-
-- [ ] UI 复杂度评估是否准确
-- [ ] 组合块大小是否合适
-- [ ] 暂停策略是否针对应用特性调优
-- [ ] 内存监控是否完善
-- [ ] 性能指标是否达到预期
-- [ ] 调试工具是否可用
-
-通过以上策略和案例，Compose Pausable Composition 与 Choreographer FrameData 的协作为 Android 应用提供了强大的性能优化工具。在实际应用中，需要根据具体场景和需求选择合适的优化策略，以达到最佳的性能表现。
-
----
-
-## 扩展点
-
-🔸 **与选择器交互的性能**：TextSelectionManager 在 Android 17 中的优化与 PausableComposition 的集成协作
-
-🔸 **国际化文本性能**：多语言文本处理与 PausableComposition 的缓存策略优化
-
-🔸 **游戏引擎与 Compose 集成**：Unity/Unreal 引擎与 Compose 的性能协作机制
-
-> 本节内容基于研究素材加工完成。
+- [Compose Runtime 发布说明](https://developer.android.com/jetpack/androidx/releases/compose-runtime)
+- [Compose Foundation 发布说明](https://developer.android.com/jetpack/androidx/releases/compose-foundation)
+- [`PausableComposition` API](https://developer.android.com/reference/kotlin/androidx/compose/runtime/PausableComposition)
+- [`PausedComposition` API](https://developer.android.com/reference/kotlin/androidx/compose/runtime/PausedComposition)
+- [`Choreographer.FrameData` API](https://developer.android.com/reference/android/view/Choreographer.FrameData)
+- [`Choreographer.FrameTimeline` API](https://developer.android.com/reference/android/view/Choreographer.FrameTimeline)
+- [AOSP Android 17 `Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)
