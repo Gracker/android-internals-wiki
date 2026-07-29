@@ -82,95 +82,162 @@ sources:
 
 <!-- outline-end -->
 
-## 本节定位
+## 适用范围与排障目标
 
-本节处理一类混合投诉：用户同时说“滑动卡”“手机烫”“掉电快”。这类问题不能只按流畅性分析，也不能只按功耗分析。帧时间、CPU / GPU 频率、热状态、WakeLock、后台任务和网络重试要放进同一个时间窗口里看。
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点，内核事件以 `android17-6.18-2026-06_r6` 为准。厂商的温度阈值、传感器名称、功率预算、GPU 计数器和 power rail 属于设备实现，不能从 AOSP tag 推导某款量产机的具体数值。
 
-前文已经分别讲过热管理、后台调度、功耗诊断和场景化卡顿排障。本节只提供分流入口和证据组织方式：先判断问题属于前台高负载、热限制、后台耗电，还是多因素叠加；再把对应章节接上。
+“滑动卡、手机烫、掉电快”包含三种时间尺度：
 
-[来源: intake/research-gaps.md#2026-05-17-7.15]
+- 帧或输入反馈通常以毫秒到秒衡量；
+- 温升与 thermal mitigation 通常需要数十秒到数分钟；
+- 后台耗电、WakeLock 和网络重试通常需要分钟到小时。
 
-## 投诉入口拆分：掉帧、发热、掉电分别代表什么
+分析要把三种时间尺度放进同一份场景记录，又要分别选择合适的测量工具。短时 trace 适合还原一次帧超时；Batterystats 适合累计 UID 行为；稳定功耗比较还需要固定设备状态、环境和对照版本。
 
-线上反馈里的三个词对应的系统信号不同。掉帧是用户看到的呈现节奏异常，发热是设备热平衡被持续负载推高，掉电快是较长窗口内电量消耗过快。三者可能同时发生，也可能互相独立。
+## 把用户反馈改写成可测量信号
 
-| 用户反馈 | 优先确认的事实 | 主要观察入口 | 常见下一步 |
-|----------|----------------|--------------|------------|
-| “滑动卡、动画卡” | 哪些帧超过 Expected Timeline，超时发生在 App、RenderThread、GPU 还是 SurfaceFlinger | FrameTimeline、主线程、RenderThread、SurfaceFlinger、sched | 进入 §7.3、§7.15 或 §22.x 的渲染排障 |
-| “越用越烫，然后开始卡” | 温度上升后 CPU / GPU 频率上限是否下降，线程是否仍在高负载运行 | thermal status、thermal zone、CPU frequency、GPU counter、sched | 进入 §5.5 热管理与 §5.4 DVFS 判断 |
-| “不操作也掉电” | 灭屏或后台窗口内是否有 WakeLock、Job、网络、定位、前台服务 | Battery Historian、`dumpsys batterystats`、`dumpsys power`、JobScheduler | 进入 §25.1、§25.2、§5.10 |
-| “页面一打开又卡又耗电” | 前台渲染、网络加载、解码、WebView / 地图 / 视频是否在同一窗口叠加 | FrameTimeline、network、CPU / GPU freq、power rails | 先切分前台工作，再按 CPU / GPU / 网络拆 |
+| 用户反馈 | 要确认的信号 | 起始工具 | 不能直接得出的结论 |
+|---|---|---|---|
+| “滑动或动画卡” | 哪些 SurfaceFrame/DisplayFrame 超时，哪条线程或合成路径位于关键区间 | FrameTimeline、主线程、RenderThread、SurfaceFlinger、sched | 一帧红色不能解释长时间掉电 |
+| “越用越烫，后来变卡” | 负载是否持续；thermal severity、cooling state 或频率限制是否在卡顿前变化 | `ThermalManagerService.status`、thermal/cpufreq 轨道、FrameTimeline | 低频本身不能证明 thermal throttling |
+| “不操作也掉电” | 灭屏期间 UID 是否持有 WakeLock、运行 Job、定位或反复联网 | Batterystats、bugreport、Battery Historian、业务日志 | 电量百分比下降不能定位线程或请求 |
+| “页面一开就卡又耗电” | 渲染、网络、解码、数据库和第三方组件是否在同一窗口争用资源 | Perfetto、应用 marker、power rails、网络日志 | rail 上升不能直接归到一个 Java 方法 |
+| “只在某些机型出现” | 设备能力、thermal 策略、HWC、刷新率和后台环境是否不同 | 设备样本表与同场景对照 | 单台设备的阈值不能推广到其他 SoC |
 
-分流时不要从“卡顿根因”直接跳到代码。更稳的顺序是：先确认时间窗口，再确认用户可见帧是否异常，然后看该窗口里有没有持续高频、热限制、后台唤醒或网络脉冲。单帧慢只能解释一次卡顿，解释不了一小时掉电；一小时耗电异常也不能直接证明某一帧为什么红。
+问题卡至少要记录：应用 commit、设备 fingerprint、内核版本、环境温度、电量与充电状态、亮度、刷新率、网络类型、场景脚本、起止时间和复现率。缺少这些条件，两次“相同测试”可能处于完全不同的功率和温控状态。
 
-[已验证: 官方文档, perfetto.dev/docs/data-sources/frametimeline]
-[已验证: 官方文档, developer.android.com/topic/performance/power/battery-historian]
+## 先区分控制平面与报告平面
 
-## Perfetto 联合采集模板
+thermal 现场常同时出现两条路径。
 
-短时前台场景用 Perfetto；长时后台耗电用 Battery Historian / `batterystats`；两者要用同一段场景脚本和同一组时间戳对齐。Perfetto 负责回答“这一分钟线程、频率、帧和 power rail 怎么重叠”，BatteryStats 负责回答“这个 UID 在更长时间里累计消耗了什么”。
+控制平面负责限制发热源，位置可能在硬件、固件、Linux thermal core 或 vendor 服务：
 
-下面这份配置用于抓前台卡顿伴随温升的 30-120 秒窗口。重点是 FrameTimeline、调度事件、CPU 频率、thermal 采样和 Android power 数据源。
+```text
+传感器/估算模型
+  → thermal zone 或厂商策略
+  → cooling device、功率预算、频率/容量上限
+  → CPU、GPU、显示、充电或无线子系统减载
+```
+
+这条路径可以在 Framework 收到通知前开始动作。`thermal engine` 进程名、配置文件位置和控制算法没有跨厂商统一约定。
+
+报告平面把热压力交给 Android Framework 和应用：
+
+```text
+传感器与设备策略
+  → Thermal HAL
+  → ThermalManagerService
+  → PowerManager thermal status/headroom
+  → 系统组件与应用按状态减载
+```
+
+Android 17 的 `ThermalManagerService` 位于 `frameworks/base/services/core/java/com/android/server/power/thermal/`。AOSP 源码会从缓存的 SKIN 类型温度中取最高 throttling severity，更新整体 status，并通过 `TRACE_TAG_POWER` 写入名为 `ThermalManagerService.status` 的 counter。启用 `power` atrace 类别后，这条 counter 是 Framework 热状态与 Perfetto 对齐的重要入口。
+
+整体 status 表达面向用户体验的 thermal severity。它不等于 CPU 温度，也不承诺映射到固定 GHz、固定 GPU 档位或某个 cooling device state。详细传感器数据由 Thermal HAL 面向可信系统组件提供；普通应用使用公开的 `PowerManager` 状态和 headroom API。
+
+## Android 10—17 的公开 thermal 入口
+
+| API | 起始版本 | 含义与边界 |
+|---|---:|---|
+| `getCurrentThermalStatus()` | API 29 | 当前整体 thermal severity，范围为 `NONE` 到 `SHUTDOWN` |
+| `addThermalStatusListener()` | API 29 | severity 变化回调；回调时间不等于硬件开始限功率的时间 |
+| `getThermalHeadroom(seconds)` | API 30 | 慢变化传感器距离 `SEVERE` 阈值的预测；参数范围 0—60 秒 |
+| `getThermalHeadroomThresholds()` | API 35 | status 到 headroom threshold 的设备映射；可能不含全部 status |
+| `addThermalHeadroomListener()` | API 36 | headroom 或 thresholds 变化回调 |
+
+`getThermalHeadroom()` 返回非负值，`1.0` 对应 `SEVERE` threshold；大于 `1.0` 没有统一的更高 severity 映射。不支持、服务未准备好或调用过密时可能得到 `NaN`。官方 API 文档说明这类慢变化传感器没有必要以高于约每秒一次的频率轮询。
+
+API 35 的 thresholds 来自设备配置。API 36 起 thresholds 可发生变化，可通过 headroom listener 获知。应用应保存 status、headroom、thresholds、时间戳和设备身份，不要把自定的 `0.8` 之类阈值写成平台常量。
+
+## Perfetto 联合采集
+
+### 采集前检查设备能提供什么
+
+在正式场景前抓一份 10 秒探测 trace，检查以下轨道是否存在：
+
+- `ThermalManagerService.status`；
+- thermal zone 温度、trip 和 cooling-device 更新；
+- CPU frequency、frequency limits 与 idle；
+- GPU frequency/devfreq；
+- battery counters；
+- power rails、energy consumer breakdown、entity state residency；
+- FrameTimeline；
+- kernel wakeup source。
+
+轨道缺失可能由 HAL 未实现、硬件不支持、内核 tracepoint 未启用、SELinux/权限、厂商裁剪或采集配置造成。缺轨时先标记能力缺口，再选择替代证据。
+
+### Android 17 配置模板
+
+下面的 textproto 用于 120 秒前台“高负载 → 温升 → 卡顿”场景。字段均可在 Android 17 对应的 Perfetto config proto 中找到；包名需要换成目标应用：
 
 ```protobuf
-buffers: {
-  size_kb: 65536
+buffers {
+  size_kb: 131072
   fill_policy: RING_BUFFER
 }
-duration_ms: 60000
+duration_ms: 120000
 
-# App / SurfaceFlinger 帧时间线，Android 12+ 可用。
-data_sources: {
+data_sources {
   config {
     name: "android.surfaceflinger.frametimeline"
   }
 }
 
-# 线程调度、CPU 频率、thermal 事件。
-data_sources: {
+data_sources {
   config {
     name: "linux.ftrace"
     ftrace_config {
       ftrace_events: "sched/sched_switch"
-      ftrace_events: "sched/sched_wakeup"
+      ftrace_events: "sched/sched_waking"
       ftrace_events: "power/cpu_frequency"
+      ftrace_events: "power/cpu_frequency_limits"
       ftrace_events: "power/cpu_idle"
       ftrace_events: "power/suspend_resume"
+      ftrace_events: "power/wakeup_source_activate"
+      ftrace_events: "power/wakeup_source_deactivate"
       ftrace_events: "thermal/thermal_temperature"
       ftrace_events: "thermal/thermal_zone_trip"
+      ftrace_events: "thermal/cdev_update"
       atrace_categories: "gfx"
       atrace_categories: "view"
       atrace_categories: "freq"
       atrace_categories: "power"
+      atrace_categories: "wm"
       atrace_apps: "com.example.app"
     }
   }
 }
 
-# 频率和温度轮询，弥补事件型记录在 trace 开头缺初始值的问题。
-data_sources: {
+data_sources {
   config {
     name: "linux.sys_stats"
     sys_stats_config {
       cpufreq_period_ms: 500
+      gpufreq_period_ms: 500
+      devfreq_period_ms: 500
       thermal_period_ms: 1000
     }
   }
 }
 
-# Android 电池与 power rail；rail 读数取决于设备是否暴露 ODPM / PowerStats HAL。
-data_sources: {
+data_sources {
   config {
     name: "android.power"
     android_power_config {
       battery_poll_ms: 1000
+      battery_counters: BATTERY_COUNTER_CAPACITY_PERCENT
+      battery_counters: BATTERY_COUNTER_CHARGE
+      battery_counters: BATTERY_COUNTER_CURRENT
+      battery_counters: BATTERY_COUNTER_CURRENT_AVG
+      battery_counters: BATTERY_COUNTER_VOLTAGE
       collect_power_rails: true
+      collect_energy_estimation_breakdown: true
+      collect_entity_state_residency: true
     }
   }
 }
 
-# 进程和线程名映射，方便把 tid 对回业务线程。
-data_sources: {
+data_sources {
   config {
     name: "linux.process_stats"
     process_stats_config {
@@ -178,134 +245,208 @@ data_sources: {
     }
   }
 }
+
+data_sources {
+  config {
+    name: "linux.system_info"
+  }
+}
 ```
 
-这份模板不能保证每台设备都有 rail、GPU counter 或网络包级数据。Perfetto 的 power rail counter 依赖设备厂商暴露的硬件计量能力，平台侧通过 Android `IPowerStats` HAL 读取；Perfetto 官方文档也明确 rail 的存在性和精度取决于设备厂商。缺 rail 时，用 `android.power` 的电池计数器、`dumpsys batterystats`、Power Profiler 或外接功耗仪补证据。网络包级轨道在不同内核和设备上可见性不稳定，App 侧应补业务请求 marker、`TrafficStats` tag 或代理层日志做时间对照。 [已验证: 官方文档, perfetto.dev/docs/data-sources/battery-counters] [已验证: AOSP, hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl]
+`power/cpu_frequency` 记录变化事件，`cpufreq_period_ms` 补 trace 开始处的当前值；两者一起使用可减少误读。`gpufreq_period_ms`、`devfreq_period_ms`、thermal tracepoint 和 wakeup-source 轨道仍依赖设备。`collect_power_rails` 需要 ODPM/PowerStats HAL 的 energy-meter channel；另外两个开关分别请求 EnergyConsumer breakdown 与 PowerEntity state residency。
 
-CPU 频率建议同时采 `power/cpu_frequency` 和 `linux.sys_stats.cpufreq_period_ms`。Perfetto 官方说明事件型频率记录只在频率变化时出现，trace 开头可能为空；轮询能补初始快照。 [已验证: 官方文档, perfetto.dev/docs/data-sources/cpu-freq]
+模板使用 128 MiB ring buffer，是为了容纳高频 sched 事件。若目标设备的 Perfetto guardrail 拒绝该大小，或采集本身改变了温控曲线，应缩短窗口、分开采集高频与低频数据，或改用 periodic snapshot；分析前还要在 trace `stats` 表检查 packet loss 和 buffer overwrite。
 
-长时间后台场景不要用超长 Perfetto trace 硬扛。更合适的采集方式是重置 BatteryStats，执行 30 分钟到数小时的场景，再导出 bugreport。
+配置本身不包含通用的网络包归因。不同内核的网络 tracepoint 开销和权限差异很大，应用应给请求、重试、DNS 和响应增加 marker，并保留 OkHttp/Chromium/播放器等组件的事件日志；长窗口再用 Batterystats 的 UID 网络统计验证。
+
+FrameTimeline 当前不覆盖 `SurfaceView` 内容帧。视频、相机和游戏若通过独立 Surface 输出，要补 Producer、BufferQueue、fence、SurfaceFlinger 与 HWC 证据，不能用宿主 App Window 的绿色帧代表内容层按时呈现。
+
+## 怎样证明 thermal throttling 影响了卡顿
+
+一条可信的因果序列应包含以下阶段：
+
+1. 场景开始后，目标进程或相关系统组件形成持续负载。
+2. SKIN severity、thermal headroom、thermal zone、trip 或 cooling state 出现变化。
+3. CPU/GPU 可用容量、policy 上限或请求频率受到约束。
+4. 工作量和场景输入保持稳定时，线程运行时间、Runnable 等待、GPU completion 或帧时间变差。
+5. 冷却设备、降低负载或恢复策略后，限制和性能退化按预测回落。
+
+缺少第 2、3 项时，只能写“热场景下相关”。缺少稳定工作量或对照组时，频率下降也可能来自普通 DVFS。缺少回落过程时，还应排查电池电流限制、Power Saver、刷新率切换、后台争用和厂商 boost 策略。
+
+### CPU 侧判读
+
+| 轨道组合 | 候选解释 | 下一项证据 |
+|---|---|---|
+| 线程持续 Running，频率高，status 不变 | 工作量本身超预算 | 热点栈、业务 marker、帧关键路径 |
+| 线程持续 Running，`cpu_frequency_limits` 上限下降，status/trip 同期上升 | thermal 或设备功率约束介入 | cooling state、设备策略、冷却对照 |
+| 主线程持续 Runnable，频率和上限正常 | CPU 争抢或优先级问题 | 同核运行者、cgroup、线程池、Binder |
+| 频率下降，CPU idle 增加 | 负载减少后的正常 DVFS | 业务工作量、唤醒频率 |
+| 频率低但任务迁移到另一 cluster | 调度迁移或共享 policy | per-CPU 轨道、cluster policy、capacity |
+
+频率只描述时钟。CPU capacity 还会受架构、idle、在线 CPU、调度约束和功率预算影响。不能用“利用率高 + 频率低”单独认定 thermal throttling。
+
+### GPU 与显示侧判读
+
+GPU 轨道在量产设备上的差异更大。可按证据强度分三层：
+
+- 有 GPU frequency/busy、GPU completion、rail：检查负载、频率限制、完成时间和能量是否同窗变化。
+- 有 RenderThread、fence、SurfaceFlinger，缺 GPU counter：结论写到“GPU/合成路径候选”，再做降分辨率、去特效或改变 Layer 的对照。
+- 只有帧超时：保留 App、RenderThread、SurfaceFlinger 三路候选，不写 GPU 根因。
+
+power rail 是设备级累计能量。其他应用、SurfaceFlinger、媒体和显示都可能贡献同一 rail；它适合做受控 A/B，不适合直接归因某个 shader 或方法。
+
+## 渲染负载、刷新率与显示功耗
+
+高刷新率同时缩短帧预算并增加显示更新机会。60 Hz 常见周期约 16.67 ms，120 Hz 约 8.33 ms；可变刷新率和 Android 15 引入的 Adaptive Refresh Rate 会改变运行时节奏，分析时应读取 trace 中的 Expected Timeline、VSync 与显示模式。
+
+ARR 只在实现相应 HWC HAL 能力的 Android 15 QPR1+ 设备上可用。API 36 提供 `hasArrSupport()` 等公开能力查询。ARR 面板可在同一显示模式内按离散 VSync 步进调整刷新节奏，因此“当前模式是 120 Hz”不代表内容持续以 120 fps 产生或显示。
+
+对普通 View/Compose Window，可沿 `Choreographer → RenderThread → BLAST BufferQueue → SurfaceFlinger → HWC → present` 对齐帧与功耗。`SurfaceView`、`TextureView`、WebView 和视频要按输出路径分流：
+
+| 输出类型 | 帧证据 | 功耗排查重点 |
+|---|---|---|
+| 普通 View/Compose | App SurfaceFrame、DisplayFrame、主线程、RenderThread | 布局/绘制、纹理上传、GPU、显示 |
+| `SurfaceView` | 独立 Layer、Producer、BufferQueue、fence、SF/HWC | 解码/渲染 Producer、overlay/client composition、显示 |
+| `TextureView` | 外部 Buffer 更新 + 宿主 Window SurfaceFrame | 外部 Producer、宿主纹理采样、GPU 合成 |
+| WebView | renderer 进程 + 宿主 functor/HWUI；媒体可能另有 Layer | JS/layout、图片、网络、renderer、宿主合成 |
+| Flutter | Engine/应用线程、根渲染模式、平台视图、外部纹理 | raster/Engine、平台视图合成、GPU、线程模型 |
+
+HWC 的 `DEVICE` composition 也不等于“没有功耗”；overlay plane、显示控制器和面板仍在工作。`CLIENT` composition 增加 GPU 合成的可能性，但能量差异必须在同设备、同画面、同亮度和同刷新率下测量。
+
+## Wakelock、Job、前台服务与网络重试
+
+亮屏高负载与灭屏后台要分开测试。亮屏窗口常由显示、CPU/GPU、解码、网络和定位共同贡献；灭屏窗口优先检查 CPU 是否进入 suspend、谁持有 Partial WakeLock、哪些 Job/Alarm/网络请求反复唤醒设备。
+
+| 信号 | 长窗口入口 | 短窗口入口 | 常见代码方向 |
+|---|---|---|---|
+| Partial WakeLock 持有过久 | Batterystats、Battery Historian Userspace Wakelock | `dumpsys power`、power/wakeup-source trace | tag、释放路径、超时、组件生命周期 |
+| Job/Work 反复运行 | JobScheduler/Sync 记录、UID CPU time | `dumpsys jobscheduler`、业务 marker | unique work、约束、退避、失败分类 |
+| 前台服务常驻 | 进程/FGS 历史、通知与 UID 统计 | `dumpsys activity services` | 服务类型、用户可见任务、停止条件 |
+| 网络短脉冲密集 | UID 网络字节、radio active | 请求 marker、重试日志、TrafficStats tag | 指数退避、批量、缓存、连接复用 |
+| 定位/传感器持续 | GPS/Sensor 活跃时间 | Location/Sensor marker | 精度、频率、批处理、后台条件 |
+
+应用没有直接调用 `PowerManager.newWakeLock()`，也可能因 WorkManager、JobScheduler、定位、音频或其他系统组件产生归因到该 UID 的 WakeLock 活动。要从 tag 和执行时间回到具体任务，不应只搜索直接 API 调用。
+
+弱网重试要同时记录次数、间隔、传输量和 radio active。相同字节数下，密集短连接与批量传输的能量特征可能不同；请求是否位于交互路径，也决定它属于响应卡顿还是后台功耗。
+
+## 长窗口 Batterystats 采集
+
+Battery Historian 已不再活跃维护。官方建议优先考虑 System Trace、Macrobenchmark `PowerMetric` 或 Power Profiler；它仍可用于读取长窗口 bugreport 和历史项目。Power Profiler 官方支持范围以具有 ODPM 的设备为准，文档列出的常见入口是 Pixel 6 及后续 Pixel。
+
+下面的命令用于建立一次干净的电池统计窗口。`--reset` 会清空现有 Batterystats 历史，执行前要确认旧数据不再需要：
 
 ```bash
 adb shell dumpsys batterystats --reset
 adb shell dumpsys batterystats --enable full-wake-history
 
-# 断开 USB，执行固定场景：息屏播放、后台同步、弱网重试、地图导航等。
-# 场景结束后重新连接设备。
+# 断开 USB，执行固定时长的亮屏或灭屏场景；结束后重新连接。
 adb bugreport bugreport-power.zip
 adb shell dumpsys batterystats --charged > batterystats-charged.txt
 adb shell dumpsys power > dumpsys-power.txt
 adb shell dumpsys jobscheduler > dumpsys-jobscheduler.txt
 ```
 
-`full-wake-history` 会让 WakeLock 事件更容易出现在 bugreport 中，但历史缓冲区容量有限，长时间测试要控制窗口。Battery Historian 已不再活跃维护；它仍适合离线查看旧格式 bugreport，新的短时分析优先用 System Trace、Power Profiler 或 Macrobenchmark PowerMetric。 [已验证: 官方文档, developer.android.com/topic/performance/power/battery-historian]
+USB 连接会改变充电状态，还可能让内核 USB 驱动持有 WakeLock，测试阶段应断开。`full-wake-history` 会增加历史记录量，长时间采样可能更快覆盖旧事件；只在需要逐事件查看 WakeLock 时开启。文本重定向发生在开发机上，输出文件要和 bugreport、场景日志使用同一命名规则。
 
-## CPU/GPU 持续负载与热限制判读
+长窗口报告要按 UID 解读 CPU time、WakeLock、network、GPS/sensor、Job、Sync 和 Alarm。Battery Historian 时间条表示组件何时活跃，不直接表示该组件消耗了多少能量；BatteryUsageStats 中的 mAh 也可能由 measured energy 或 power profile 模型生成，报告应注明 `power_model`。
 
-热限制造成的卡顿有一个典型形态：负载仍高，频率却持续下探，随后帧时间变长。普通 DVFS 降频通常发生在负载变低之后；热限制是温度把频率上限压下来，即使 top-app 线程还在忙，CPU / GPU 也拿不到之前的频点。
+## Power rail、EnergyConsumer 与 BatteryUsageStats
 
-| Trace 形态 | 更可能的解释 | 证据要求 |
-|------------|--------------|----------|
-| 单帧 App Actual 超过 Expected，前后频率和温度稳定 | 代码路径或调度偶发慢 | 对齐主线程、RenderThread、sched，找锁、IO、GC、Binder 或绘制负载 |
-| 多帧连续超时，CPU 频率维持高位，thermal status 无变化 | 前台持续负载超预算 | 看业务线程是否持续 Running，GPU / RenderThread 是否排队 |
-| 多帧连续超时，CPU utilization 高但频率逐步下降，thermal zone 或 status 同步上升 | 热限制介入 | 看 `thermal_zone_trip`、thermal status、CPU freq 上限、FrameTimeline 同一窗口 |
-| 主线程长时间 Runnable 但不 Running，频率不低 | 调度抢占或后台线程争用 | 看 top-app 线程优先级、后台线程池、Binder 线程和 CPU 迁移 |
-| App 帧正常，SurfaceFlinger 或 Display frame 超时 | 合成、显示或 HWC 侧压力 | 回到 SurfaceFlinger、HWC composition type、Display/VSYNC 轨道 |
+Android 17 的 AIDL `IPowerStats` 提供三组不同语义：
 
-判断时把四条线放到一屏：FrameTimeline 红帧、top-app 主线程 / RenderThread / 业务线程、CPU / GPU 频率、thermal status 或 thermal zone。只要其中一条缺失，结论就要降级。例如只有“机身热 + 红帧”，只能说热场景相关；要写“热限制导致卡顿”，还要看到频率上限被压低或 thermal trip / status 变化。
+| PowerStats AIDL 对象 | 读取方法 | 数据语义 |
+|---|---|---|
+| Energy-meter `Channel` | `getEnergyMeterInfo()` / `readEnergyMeter()` | channel 自启动以来的累计能量、时间戳和累计时长；名称与 subsystem 对 Framework 不透明 |
+| `EnergyConsumer` | `getEnergyConsumerInfo()` / `getEnergyConsumed()` | 逻辑消费者自启动以来的累计能量，可选 UID attribution |
+| `PowerEntity` | `getPowerEntityInfo()` / `getStateResidency()` | 子系统各状态的驻留时间、进入次数与最近进入时间 |
 
-GPU 侧更容易遇到设备能力缺口。部分设备不暴露稳定的 GPU frequency、GPU busy 或 GPU power rail；这种情况下可以把 RenderThread、GPU completion、SurfaceFlinger 合成和显示 rail 作为旁证，但不要写成 GPU 根因。游戏或视频场景如果使用 SurfaceView，FrameTimeline 对 App 帧的覆盖边界也要单独标注，详见 §7.3 和 §13.2。 [已验证: 官方文档, perfetto.dev/docs/data-sources/frametimeline]
+Perfetto 的 `collect_power_rails` 对应可用的 energy-meter channels。`collect_energy_estimation_breakdown` 请求 EnergyConsumer 数据，`collect_entity_state_residency` 请求 PowerEntity 状态驻留。HAL 可以不提供某类数据，单次请求也不保证每个 entity 都有返回值。
 
-## Wakelock、JobScheduler/WorkManager 与网络重试
+`BatteryUsageStats` 位于 Framework 归因层，会组合设备测量、控制器活动、内核/UID 统计和 `power_profile.xml` 模型。它适合回答“哪个 UID 或组件在统计窗口内消耗较多”，不能代替毫秒级 rail 时间线。
 
-掉电快和卡顿同现时，先分亮屏和灭屏。亮屏掉电常见于显示、GPU、CPU、网络和定位叠加；灭屏掉电更常见于 WakeLock、Job、Alarm、前台服务、定位和网络重试。Battery Historian / `batterystats` 的价值在于按 UID 统计长时间窗口，Perfetto 的价值在于追某一次唤醒或某一段前台尖峰。
+三类常见误读需要避开：
 
-| 异常信号 | BatteryStats / Historian 入口 | Perfetto 或命令补证 | 处理方向 |
-|----------|-------------------------------|---------------------|----------|
-| Partial WakeLock 长时间覆盖灭屏窗口 | Userspace Wakelock、`dumpsys batterystats --charged` | `dumpsys power` 看当前活跃锁 | 检查 tag、释放路径、超时、异步任务生命周期；详见 §25.3 |
-| WorkManager / JobScheduler 反复执行 | Job / Sync 记录、UID CPU time | `dumpsys jobscheduler`、业务日志 | 合并 unique work、补约束、修失败重试；详见 §5.10、§25.2 |
-| 弱网下掉电与发热 | network 行密集短脉冲、radio active 时间 | 请求 marker、OkHttp event、TrafficStats tag | 降低重试频率、批量请求、离线缓存；详见 §24.4、§24.5 |
-| 前台服务常驻 | App 处于 foreground service，WakeLock 或 network 持续 | `dumpsys activity services`、通知与业务状态 | 校验 FGS 类型、用户可见性、停止条件；详见 §25.2 |
+- rail、consumer、entity 的 ID 和名称只在当前设备实现内解释；
+- 累计能量要取区间差值，不能把启动以来的绝对值当作本次场景；
+- ODPM/rail 是设备级测量，UID 归因需要额外模型或 attribution，二者不能直接画等号。
 
-Android Developers 的 WakeLock 文档明确把 AlarmManager、SensorManager、WorkManager 等系统 API 和库产生的锁纳入排查范围。App 没有直接调用 `PowerManager.newWakeLock()`，也可能因为 WorkManager / JobScheduler 正在执行、定位或音频播放而被系统归因到 WakeLock。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls]
+## 设备能力与证据等级
 
-网络重试要看“次数”和“形态”。一次 2 MB 的批量同步不一定比 100 次 20 KB 的短连接更耗电；后者会反复拉起 radio / Wi-Fi 活跃状态，还会让 CPU 在短窗口里频繁醒来。若同一段时间 FrameTimeline 也红，要先确认这些请求是否发生在 UI 交互路径上；若只在灭屏后发生，按后台功耗治理处理，不要把它混进前台渲染根因。
+| 等级 | 已取得的证据 | 允许写出的判断 |
+|---|---|---|
+| A | 帧/响应时间线 + 线程调度 + CPU/GPU 约束 + thermal status/trip/cooling + rail/consumer + 对照 | 描述该设备、该构建、该窗口内的负载、热限制、性能与能量关系 |
+| B | 帧/响应时间线 + sched + CPU frequency limits + thermal status/zone，缺能量轨道 | 判断 thermal/功率约束是否影响性能；不拆硬件域能量 |
+| C | Batterystats + bugreport + 业务日志，缺短时 trace | 判断长窗口 UID 的 WakeLock、Job、网络、定位是否异常；不解释单帧 |
+| D | 用户反馈、电量百分比或机身触感 | 作为复现线索；不写线程、thermal 或能量根因 |
 
-## 渲染负载、刷新率与显示功耗
+每条结论都要带设备型号、fingerprint、内核、应用 commit、亮度、刷新率、电量、充电状态、网络、环境温度、场景时长和后台状态。跨设备比较 rail 绝对值时，还要确认采样点、单位、覆盖子系统和硬件采样率一致。
 
-高刷新率把帧预算缩短，也会提高显示和 GPU 的工作频率。120Hz 下每帧预算约 8.33 ms；如果页面还有复杂动画、透明叠加、视频解码、地图瓦片加载或 WebView JS 执行，CPU、GPU、Display 和网络可能在同一时间窗口拉高。排障时要把“帧是否超时”和“设备是否正在持续高功耗”分开记录，再看两者是否同窗发生。
+## 热状态驱动的可逆降载
 
-Android 15-QPR1+ 的 Adaptive Refresh Rate 会让 Expected Timeline 随显示节奏变化。分析 FrameTimeline 时，不要套固定 16.67 ms 或 8.33 ms 阈值；以 Expected Slice 宽度为准，再结合 VSYNC / Display mode 轨道。Expected 变宽且 Actual 在窗口内完成，通常是刷新率策略变化；Expected 很窄而 Actual 溢出，才按掉帧继续追。动态刷新率规则见 §2.18，标准卡顿定位流程见 §7.3。
+降载策略分为“状态已升高后的响应”和“headroom 接近 threshold 的预备动作”。
 
-几个场景的第一判断点：
+| 触发信号 | 适合的动作 | 恢复条件 |
+|---|---|---|
+| `THERMAL_STATUS_LIGHT` | 停止无用户价值的预取、遥测和装饰动效 | status 回落并保持一段迟滞时间 |
+| `MODERATE` | 降低非必要刷新、后台并发、网络重试频率 | status/headroom 恢复且场景仍活跃 |
+| `SEVERE` 及以上 | 降帧率、分辨率、编码/推理复杂度，暂停可延后任务 | 逐级恢复，禁止一次跳回最高负载 |
+| headroom 接近设备 threshold | 预加载低质量资源、准备切档，避免立即震荡 | listener 或轮询显示余量恢复 |
 
-- 游戏：看引擎线程、RenderThread / GPU completion、Swappy 或自研帧统计、CPU / GPU freq 和 thermal status。没有 GPU counter 时，结论只写到“渲染负载相关”。
-- 地图：看瓦片加载、定位、网络、主线程 marker 和 RenderThread。平移时 CPU / GPU / 网络同时升高，要区分首屏加载和持续手势。
-- 视频：看解码线程、SurfaceView / TextureView 路径、显示刷新率、音频和网络缓冲。tunneled playback、Codec2 和渲染原理见 §8.8。
-- WebView：看 JS、布局、图片解码、网络重试、Renderer 进程和页面驻留时长。功耗取舍见 §25.10。
+动作要满足四个条件：
 
-这一节不重复渲染机制。要写进缺陷报告的结论应保持可复核：哪段场景、哪几帧、哪个线程、哪个频率或 power rail、哪条网络请求。缺其中一项，就把判断改成证据不足。
+1. 用户可理解，不能悄悄破坏录制、导航或通信等任务语义。
+2. 可逆，并有迟滞，避免在阈值附近反复切换。
+3. 按设备 API 能力降级；`NaN`、异常或空 thresholds 不能被当成安全余量。
+4. 有线上指标，至少记录触发原因、档位、持续时间、退出原因和体验指标。
 
-## 设备能力差异与证据等级
+刷新率、画质、码率和网络并发应分别受控，便于通过 A/B 判断哪项动作改善了帧时间或能量。一次同时改变多个变量，只能证明组合有效，无法确认贡献来源。
 
-功耗与热问题的证据强度高度依赖设备能力。Pixel / AOSP 参考设备通常更容易拿到 power rail、thermal HAL 和 Perfetto 轨道；厂商设备可能隐藏 rail 命名、裁剪 GPU counter，或把温控策略放在 vendor thermal engine；低端机还可能缺少稳定的 ODPM / GPU 读数。
+## 四类场景入口
 
-| 证据等级 | 可用证据 | 可写结论 | 风险 |
-|----------|----------|----------|------|
-| A | FrameTimeline + sched + CPU/GPU freq + thermal status/trip + power rail + BatteryStats | 某窗口内负载、热限制、帧超时和能耗同窗发生 | 仍需标注设备型号、系统版本、亮度、刷新率、温度起点 |
-| B | FrameTimeline + sched + CPU freq + thermal zone / status，缺 rail | 可以判断热限制或持续负载是否影响帧时间 | 不能给硬件域能耗拆分结论 |
-| C | BatteryStats / Historian + 业务日志，缺 Perfetto | 可以判断长时间 WakeLock、Job、网络、定位是否异常 | 不能解释单帧卡顿 |
-| D | 用户反馈 + 电量百分比，缺系统证据 | 只能作为待复现线索 | 不能写技术根因 |
+| 场景 | 采集重点 | 第一个分流问题 | 常见误判 |
+|---|---|---|---|
+| 游戏 | Engine/应用线程、GPU completion、CPU/GPU freq、thermal、rail、帧统计 | 引擎主动调帧，还是系统容量下降后被迫掉帧 | 只用 App Window FrameTimeline 代表 SurfaceView 游戏内容 |
+| 地图 | 手势 marker、瓦片网络、定位、主线程、RenderThread、GPU、thermal | 首屏加载尖峰，还是持续交互负载 | 把网络迟到写成渲染超时 |
+| 视频 | MediaCodec、SurfaceView/TextureView、BufferQueue、fence、SF/HWC、network、display rail | 解码、缓冲、合成、刷新节奏哪一段晚 | 把 `releaseOutputBuffer()` 当成屏幕已显示 |
+| WebView | provider 版本、renderer、JS/layout、图片、网络、宿主 HWUI、媒体 Layer | renderer、宿主还是独立媒体层形成负载 | 只看宿主主线程和单一进程 |
 
-对比不同设备时，必须记录设备型号、系统版本、内核版本、电量区间、亮度、刷新率、网络类型、温度起点、场景时长和后台 App 状态。同一段代码在两台设备上表现不同，可能来自散热、power profile、thermal engine、HWC 能力或刷新率策略差异，不一定是 App 代码差异。
+案例缺少实机 trace 时，只保留复现脚本与待验证假设，不填写固定收益或跨设备阈值。后续补证据时应保存 trace 时间区间、线程/Layer、counter 名称、Batterystats UID 字段和对照结果。
 
-[已验证: 官方文档, source.android.com/docs/core/power/thermal-mitigation]
-[已验证: 官方文档, source.android.com/docs/core/power/power-stats-hal]
+## 现场结论模板
 
-## Power rail 命名与 EnergyConsumer 对照
+一条可复核的结论应包含现象、时序、约束、性能结果、能量证据和边界：
 
-Power rail、EnergyConsumer 和 BatteryUsageStats 是三套口径。rail / channel 更接近硬件测量，名字通常来自厂商 PMIC 或 SoC 电源域；EnergyConsumer 是 PowerStats HAL 对外暴露的能量消费者抽象；BatteryUsageStats 是 Framework 将 CPU、网络、传感器、WakeLock 等统计换算到 UID 或组件后的估算结果。
+> Pixel X、Android 17 构建 Y、120 Hz、固定亮度和数据集下，连续地图手势 95 秒后 SKIN overall status 从 NONE 升到 MODERATE；同一窗口 CPU cluster policy 上限下降，渲染线程工作量保持稳定而完成时间增长，随后出现连续 App deadline miss。冷却设备并重复同脚本后，上限与帧时间恢复。ODPM 缺少 GPU rail，因此当前证据支持 thermal/CPU 容量约束参与卡顿，不支持 GPU 能量归因。
 
-| 口径 | 适合回答的问题 | 不适合回答的问题 |
-|------|----------------|------------------|
-| Power rail / channel | 某段 trace 里 CPU、display、modem 等硬件域能量是否上升 | 某个 Java 方法消耗了多少电 |
-| EnergyConsumer | 设备 HAL 暴露了哪些能量消费者，是否能按类型读取 | 不同厂商 rail 名的语义对齐 |
-| BatteryUsageStats / BatteryStats | 某 UID 在长窗口内 CPU、网络、WakeLock 等统计 | 短时帧级功耗、GPU 子阶段拆分 |
+若只有“温度高、频率低、帧红”，结论应停在相关性，并列出缺少的 frequency limit、cooling state、工作量稳定性或冷却对照。
 
-Perfetto 里的 rail 名不要跨设备直接比较。`S4M_VDD_CPUCL0`、`VSYS_GPU`、`display` 这类名字只能在同一设备或同一平台系列内解释；不同厂商即使名字相近，采样点和换算口径也可能不同。跨设备报告更适合写“设备 A 的 CPU cluster rail 在测试窗口上升”，不要写“所有 Android 设备的 CPU 功耗上升同样幅度”。 [已验证: 官方文档, perfetto.dev/docs/data-sources/battery-counters]
+## 章节导航
 
-## 热状态驱动的线上降级策略
+| 继续排查 | 章节 |
+|---|---|
+| Thermal HAL、Linux thermal core、headroom | `5.5` |
+| DVFS、调度与 CPU capacity | `5.4`、`5.10` |
+| 场景化流畅性入口 | `7.15` |
+| Perfetto power/thermal 轨道 | `13.2`、`14.11` |
+| Batterystats、BatteryUsageStats 与应用功耗 | `25.1`、`25.2` |
+| SurfaceView、TextureView、视频和 HWC | `18.4`、`18.6`、`18.15` |
 
-线上降级策略的目标是把负载从热墙前移走，而不是等系统把频率压下来。Android 10+ 提供 thermal status 回调，App 可以在状态升高时降低非必要负载；`getThermalHeadroom()` 可用于持续高负载场景的预判，但报告里必须写明 API 版本、设备型号、系统版本和实机观测窗口，不把单一设备的 headroom 返回稳定性泛化成跨厂商结论。 [已验证: 官方文档, source.android.com/docs/core/power/thermal-mitigation]
+## 源码与官方资料
 
-可执行的降级动作按场景分：
-
-- 动画和列表：降低动画密度、暂停非必要动效、减少预取窗口，避免在热状态升高后继续制造 RenderThread 和 GPU 压力。
-- 地图和视频：降低瓦片刷新、码率、解码分辨率或 UI 覆盖层复杂度，同时记录用户可见质量变化。
-- 网络重试：热状态升高时拉长退避间隔，弱网下合并请求，避免 CPU、radio 和屏幕同时持续活跃。
-- 后台任务：延后普通 WorkManager / JobScheduler 任务；用户不可见任务优先等充电、网络稳定或设备冷却后执行。
-- 高刷新率：业务侧能控帧率时，在温度升高后降低目标帧率；系统刷新率策略和 SurfaceFlinger 行为仍以 §2.18 为准。
-
-降级策略必须有退出条件。thermal status 回落、用户退出高负载页面、网络恢复或任务完成后，应恢复默认策略或停止临时降级。否则一次热状态变化可能把体验长期锁在低质量档位。
-
-## 游戏、地图、视频、WebView 四类场景案例
-
-当前章节没有本地实机 trace，案例只给排障路径，不写固定收益数字。后续补案例时，每个场景至少要带设备型号、Android 版本、刷新率、温度起点、测试时长、采集配置、FrameTimeline 截图或 SQL、BatteryStats / rail 证据。
-
-| 场景 | 采集配置 | 第一判断点 | 常见误判 |
-|------|----------|------------|----------|
-| 游戏 | FrameTimeline / Swappy stats、sched、CPU/GPU freq、thermal、power rails | 热状态升高后是否出现频率上限下降和帧时间拉长 | 把引擎主动降帧误判成系统掉帧 |
-| 地图 | FrameTimeline、network、location、sched、CPU/GPU freq | 手势期间瓦片、定位、渲染是否叠加 | 只看主线程，漏掉网络重试和 GPU 绘制 |
-| 视频 | 解码线程、SurfaceView / TextureView、Display rail、network、audio | 掉帧是否来自解码、合成、网络缓冲或刷新率策略 | 把缓冲卡顿写成渲染卡顿 |
-| WebView | Renderer 进程、JS / layout marker、network、FrameTimeline、BatteryStats | JS、图片解码、网络和 Renderer 内存是否同窗异常 | 只按原生 / Web 二分，不看页面质量和缓存策略 |
-
-这些案例适合与 §7.15 合并成场景手册索引。真实报告里，每个结论后面都要跟证据位置：trace 时间戳、线程名、slice 名、rail / BatteryStats 字段和业务 marker。没有证据的案例只能保留为待补充。
-
-## 参考资料
-
-- [Perfetto: Power data sources](https://perfetto.dev/docs/data-sources/battery-counters)
-- [Perfetto: CPU frequency and idle states](https://perfetto.dev/docs/data-sources/cpu-freq)
-- [Perfetto: Android Jank detection with FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
-- [AOSP: Thermal mitigation](https://source.android.com/docs/core/power/thermal-mitigation)
-- [Android Developers: Analyze power use with Battery Historian](https://developer.android.com/topic/performance/power/battery-historian)
-- [Android Developers: Identify and optimize wake lock use cases](https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls)
+- [AOSP Android 17 `ThermalManagerService`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java)
+- [AOSP Android 17 `PowerManager`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/PowerManager.java)
+- [AOSP Android 17 Thermal HAL AIDL](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/)
+- [AOSP Android 17 `IPowerStats.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl)
+- [Android 17 Perfetto `AndroidPowerConfig`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/protos/perfetto/config/power/android_power_config.proto)
+- [Android 17 内核 thermal tracepoints](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/thermal/thermal_trace.h)
+- [Android 17 内核 power tracepoints](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/include/trace/events/power.h)
+- [AOSP Thermal mitigation](https://source.android.com/docs/core/power/thermal-mitigation)
+- [AOSP Power Stats HAL](https://source.android.com/docs/core/power/power-stats-hal)
+- [Perfetto power data sources](https://perfetto.dev/docs/data-sources/battery-counters)
+- [Perfetto CPU frequency and idle](https://perfetto.dev/docs/data-sources/cpu-freq)
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- [PowerManager API](https://developer.android.com/reference/android/os/PowerManager)
+- [Android Studio Power Profiler](https://developer.android.com/studio/profile/power-profiler)
+- [Battery Historian](https://developer.android.com/topic/performance/power/battery-historian)
+- [WakeLock 识别指南](https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls)
+- [Adaptive Refresh Rate](https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate)
