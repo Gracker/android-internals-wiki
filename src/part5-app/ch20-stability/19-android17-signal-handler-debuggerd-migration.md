@@ -30,6 +30,8 @@ sources:
 
 这一章的题名容易让人产生误解：`debuggerd` 的核心实现没有在 Android 17 搬进 Bionic linker。Android 17 仍由 `system/core/debuggerd/` 维护 handler、`crash_dump`、tombstone 编码和 `tombstoned`；linker 只负责在进程早期安装 handler、提供 libc 共享状态，并把可恢复信号入口暴露给 ART 的 signal chain。
 
+平台实现锚定 `android-17.0.0_r1`。涉及 signal UAPI 与 arm64 MTE fault address 的内核结论锚定 `android17-6.18-2026-06_r6`；Android 14 至 Android 16 只用于说明已有机制的演进。
+
 对 Android 14、15、16、17 的 AOSP 首个发布标签逐项比较后，可以得到一个更可靠的结论：
 
 | 机制 | Android 14 | Android 15 | Android 16 | Android 17 |
@@ -250,6 +252,7 @@ Android 17 debuggerd action 请求 `SA_EXPOSE_TAGBITS`，目的是让支持该�
 
 它的边界需要说清：
 
+- `android17-6.18-2026-06_r6` 的通用 UAPI 把 `SA_EXPOSE_TAGBITS` 定义为 `0x00000800`，承诺范围是 `siginfo.si_addr` 中由架构定义的一组 tag bits。
 - 该标志在 Android 14 源码中已经存在。
 - Linux 语义重点是 fault address 的 tag bits，不能把它扩写为“保证所有 ucontext 寄存器和返回地址自动保留或清洗”。
 - `libsigchain` 会探测内核是否支持该 flag。
@@ -346,7 +349,7 @@ SDK handler 建议只做以下工作：
 | handler 链 | 采集后按 `SA_SIGINFO`、`SIG_DFL`、`SIG_IGN` 等语义转交 | 吞掉 debuggerd，系统无 tombstone |
 | 重入 | 二次 signal 有固定退出或降级路径 | handler 递归直到栈耗尽 |
 | signal 安全 | 无分配、无普通锁、无动态链接解析 | allocator/loader 锁中二次死锁 |
-| altstack | SDK 自有线程逐线程配置并带 guard | 只配置主线程，误以为覆盖全进程 |
+| altstack | SDK 自有线程逐线程配置并带 guard | 只配置主线程，错误地认为覆盖全进程 |
 | 系统私有 API | 不使用 reserved signal、debuggerd client、sigchain special API | 系统升级后符号缺失或协议冲突 |
 | Recoverable GWP-ASan | 通过系统报告采集，不期待自定义 `SIGSEGV` handler 被调用 | 线上漏报或重复生成伪 crash |
 | MTE | 区分 SYNC/ASYNC，保留系统 tombstone | 把异步 fault 错归到当前 PC |
@@ -392,6 +395,8 @@ SDK handler 建议只做以下工作：
 - [ART `sigchain.cc`（android-17.0.0_r1）](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/sigchainlib/sigchain.cc)
 - [ART `fault_handler.cc`（android-17.0.0_r1）](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/fault_handler.cc)
 - [Bionic reserved signals（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/platform/bionic/reserved_signals.h)
+- [Android common kernel `SA_EXPOSE_TAGBITS` UAPI（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/uapi/asm-generic/signal-defs.h)
+- [Android common kernel arm64 MTE fault path（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/mm/fault.c)
 - [Android 14 debuggerd handler：版本对照](https://android.googlesource.com/platform/system/core/+/refs/tags/android-14.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)
 - [Android 15 debuggerd handler：版本对照](https://android.googlesource.com/platform/system/core/+/refs/tags/android-15.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)
 - [Android NDK：GWP-ASan](https://developer.android.com/ndk/guides/gwp-asan)
