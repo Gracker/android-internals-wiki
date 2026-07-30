@@ -40,567 +40,649 @@ sources:
 
 # 8.20 JNI 调用开销与 Native 互操作性能边界
 
-§1.15 讲了 JNI/NDK 的通用优化原则——缓存 ID、减少调用次数、`@FastNative`/`@CriticalNative` 的适用边界。这一节不重复那些内容，而是从**开销拆解**的角度切入：一次 JNI 调用的纳秒到底花在哪里，ART 内部的 trampoline 做了什么，JNI critical region 怎样阻塞 GC，引用表泄漏怎样拖垮性能，以及 Android 17 上哪些变化影响了 JNI 热路径。
+JNI 性能问题很少由某一条指令单独决定。一次跨边界调用会叠加入口桩、线程状态、引用管理、参数转换、数据复制、native 算法和线程生命周期等成本。调用频率达到每帧数百次后，原本很小的边界成本也会进入帧预算；单次 native 工作持续数毫秒时，算法和锁竞争通常占据主要时间。
 
-如果你在做音视频编解码、端侧 AI 推理、游戏引擎桥接，或者任何"每帧调几千次 native"的场景，这些细节决定了"够不够快"和"会不会突然卡"之间的分界线。
+§1.15 已介绍 JNI 的通用用法。本章沿 Android 17 的 ART 实现向下追踪调用路径，回答以下问题：
 
-[已验证: AOSP android-17.0.0_r1, art/runtime/ + frameworks/base/core/java/]
+- 普通 JNI、`@FastNative` 与 `@CriticalNative` 分别省掉了哪些步骤；
+- `RegisterNatives` 改变的是哪一段成本；
+- Android 17 上数组 Elements、Region 与 Critical API 的复制行为；
+- Local/Global Reference、线程挂载和 native 线程创建如何进入性能账单；
+- 怎样用 trace、采样和 Microbenchmark 分开测量边界与业务代码。
 
-## JNI 调用开销拆解
+本章的平台锚点是 AOSP `android-17.0.0_r1`，内核锚点是 `android17-6.18-2026-06_r6`。不同厂商构建、编译模式、CPU 微架构和温控状态都会改变绝对耗时，因此本文不把某组设备上的纳秒数当作平台常量。
 
-### 从 Java 方法到 native 函数的三段路径
+## 1. 先建立可计算的成本模型
 
-当 Java/Kotlin 代码调用一个 `native` 方法时，控制流并不直接跳到开发者写的 C/C++ 函数上。中间至少经历三段：
+一批 JNI 工作的总耗时可以近似拆成：
 
-**第一段：JNI Trampoline 入口**
+`总耗时 = 调用次数 × 单次边界成本 + 数据转换与复制 + native 工作 + 等待与调度`
 
-ART 为每个 native 方法准备了一个"跳板"函数（trampoline）。它的职责是完成从托管代码执行环境到 native 执行环境的过渡。对于解释执行模式，ART 使用通用的 `art_quick_generic_jni_trampoline`；对于 AOT/JIT 编译模式，编译器会根据参数类型生成特定的 "compiler JNI trampoline"。
+这个公式能直接指导排查顺序。
 
-通用 trampoline 的问题在于它必须考虑最极端情况。ART 源码中有一段注释直接写明了预留空间：
-
-```c
-// art/runtime/arch/arch_jni_frame.h (android-17.0.0_r1 仍保留该结构)
-// Reserved area on stack for art_quick_generic_jni_trampoline:
-// 4 local state ref
-// 4 padding
-// 4096 4k scratch space, enough for 2x 256 8-byte parameters
-// 8*(32+32) max 32 GPRs and 32 FPRs on each architecture, 8 bytes each
-// + 4 padding for 16-bytes alignment
-// -----------
-// 4616
-// Round up to 5k, total 5120
-```
-
-也就是说，即使是只传一个 `int` 参数的 native 方法，解释器走通用 trampoline 也会在栈上预留 5120 字节。JVM 规范限制 Java 方法最多 255 个参数（含 `this`），通用 trampoline 要为这个理论上限做准备。
-
-[已验证: AOSP android-17.0.0_r1, art/runtime/arch/ 通用 JNI 栈帧定义]
-
-**第二段：线程状态切换**
-
-Java 线程有两种与 JNI 相关的状态：
-
-- **Runnable**：线程运行在 Java 世界，随时可能访问托管堆。GC 可以在安全点（safepoint）暂停它。
-- **Native**：线程运行在 C/C++ 世界。在 GC 眼中，Native 状态的线程是"暂停"的——不是真的停了，而是 GC 假定它不碰 Java 堆。
-
-普通 JNI 调用发生时，trampoline 必须把线程从 Runnable 切换到 Native。这个切换涉及：
-1. 将线程状态写入 `Thread::state_and_flags`（一个原子操作，使用 `stlxr`/`ldaxr` 指令在 ARM64 上实现）
-2. 更新 `JNIEnv` 内部的 `locals_cookie`（用于 local reference table 管理）
-3. 保存 `frame_base` 和 `top_quick_frame_method`
-
-调用返回时，再把状态切回 Runnable，并检查是否需要触发挂起（`pTestSuspend`）。
-
-[已验证: AOSP android-17.0.0_r1, art/runtime/thread.h — Thread 状态机定义]
-
-**第三段：参数 marshal 与引用表更新**
-
-Java 引用类型的参数（`String`、`Object`、数组）需要被注册为 GC Root，否则 GC 可能漏掉仍在 native 侧持有的对象。这个注册动作发生在 Local Reference Table 中。trampoline 要：
-
-1. 为每个引用参数在 Local Reference Table 中分配 slot
-2. 处理 `jclass`（对静态方法）和 `JNIEnv*` 的传递
-3. 对 `@CriticalNative` 方法，完全跳过这一段
-
-### 汇编视角的开销对比
-
-从 `oatdump` 的输出可以看到不同 JNI 路径生成的代码量差异（以下基于 ARM64）：
-
-| JNI 路径 | 典型汇编行数 | 关键差异 |
+| 观察 | 优先检查 | 常见改法 |
 | --- | --- | --- |
-| 解释器通用 trampoline | ~120+ 行（含函数调用） | 栈预留 5120B，处理所有参数类型 |
-| AOT/JIT compiler trampoline（普通） | ~75 行 | 参数类型已知，栈帧 176B；完整状态切换含 `stlxr`/`ldaxr` 原子操作 |
-| AOT/JIT trampoline（`@FastNative`） | ~61 行 | 省去线程状态切换的原子操作序列 |
-| `@CriticalNative` | ~4 行 | 仅参数搬运 + 间接跳转 |
+| 空 native 方法已占据可见 CPU 时间 | 调用次数、入口类型、编译状态 | 批量接口，减少逐元素调用 |
+| native 方法本身很长 | 算法、锁、I/O、CPU 采样栈 | 优化 native 主体，避免先改 JNI 注解 |
+| 数组越大越慢 | Elements/Region、复制方向、临时分配 | 明确所有权，按访问模式选择 API |
+| GC 暂停与 Critical 区间重叠 | `GetPrimitiveArrayCritical`、Fast/Critical 长调用 | 缩短临界区，不在其中等待 |
+| 运行一段时间后引用表或内存增长 | Local/Global Reference 生命周期 | 分批弹出 Local Frame，配对删除 Global Ref |
+| native 线程频繁创建和退出 | `pthread_create`、Attach/Detach、线程池粒度 | 复用少量物理线程 |
 
-[结构参考: Cubox/ART 虚拟机 - JNI 优化简史-2023-06-27.md]
+边界优化最常见的收益来自“少调用几次”。把一万个 `nativeProcessOne(value)` 合成一次 `nativeProcessBatch(values)`，会同时减少入口桩、线程状态处理、引用帧和 Java/native 调度开销。注解优化只减少其中若干步骤，无法抵消不合适的接口粒度。
 
-`@CriticalNative` 为什么只有 4 行？因为它的 ABI 里没有 `JNIEnv*` 和 `jclass`，不需要引用表操作，不需要线程状态切换，不需要异常检查。编译器只需要把参数从 Java 调用约定搬到 native 调用约定，然后 `br x16`（间接分支）跳到目标函数。
+## 2. Android 17 的 JNI 入口路径
 
-但这 4 行并不是免费的——它带来的约束（不能访问托管堆、不能长时间运行、GC 无法暂停执行线程）才是真正的成本。
+### 2.1 通用 JNI 跳板的 5120 字节是什么
 
-### RegisterNatives vs 动态查找（dlsym）性能差异
+尚未走专用编译桩的 native 方法可以进入 generic JNI trampoline。Android 17 的 `entrypoint_asm_constants.h` 定义 `GENERIC_JNI_TRAMPOLINE_RESERVED_AREA` 为 5120，ARM64 汇编入口会从栈指针减去这段空间，再调用 `artQuickGenericJniTrampoline` 计算参数布局。
 
-JNI 方法注册有两种方式：
+这 5120 字节有三个边界：
 
-1. **动态查找**（name-based lookup）：运行时根据方法名和签名，用 `dlsym` 在已加载的 `.so` 中查找符号。符号命名规则为 `Java_包名_类名_方法名`。
-2. **RegisterNatives**（显式注册）：在 `JNI_OnLoad` 中通过 `env->RegisterNatives()` 显式建立 Java 方法与 native 函数的映射。
+- 它是 generic quick trampoline 的栈预留空间；
+- 它不是一次 5120 字节的堆分配；
+- 它也不是所有 JNI 调用都会承担的固定成本。
 
-性能差异体现在两个层面：
+栈指针调整本身不能直接换算成耗时。通用桩还会根据 shorty 描述处理整数、浮点和引用参数，准备 `JNIEnv*` 与接收者，并在返回阶段恢复引用和线程状态。AOT/JIT 编译出的 JNI stub 已知方法签名，可以按目标 ISA 的调用约定生成更紧凑的路径。
 
-**首次查找成本**：动态查找需要字符串拼接（构造完整符号名）+ `dlsym` 调用（遍历动态符号表），RegisterNatives 在 `JNI_OnLoad` 时一次性完成，后续调用直接走已建立的映射。
+源码入口：
 
-**AOT/JIT 可见性**：RegisterNatives 注册的方法在编译时就能被 ART 识别为 native 方法，可以生成特定的 compiler trampoline。动态查找的方法在首次调用时走解释器通用 trampoline，直到 JIT 热点检测触发编译后才升级。
+- [`GENERIC_JNI_TRAMPOLINE_RESERVED_AREA`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/entrypoints/entrypoint_asm_constants.h)
+- [ARM64 generic JNI 汇编入口](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/arch/arm64/quick_entrypoints_arm64.S)
+- [`artQuickGenericJniTrampoline`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/entrypoints/quick/quick_trampoline_entrypoints.cc)
 
-[已验证: 官方文档, https://developer.android.com/training/articles/perf-jni — "RegisterNatives 的优势在于预先检查符号是否存在，且生成更小更快的共享库"]
+### 2.2 普通 JNI 会切到 Native 状态
 
-**实践建议**：对启动路径上的 native 方法，优先使用 RegisterNatives。对只在运行时按需加载的功能模块，动态查找可以接受，但要注意首次调用的额外开销。
+普通 JNI 入口通过 `artJniMethodStart` 把线程从 Runnable 切换到 `kNative`。返回时，`artJniMethodEnd` 将线程切回 Runnable，并处理挂起请求。转换的目的包括释放 mutator lock 的共享持有状态，让 GC 可以在当前线程执行 native 代码时推进。
 
-### 16KB page size 对 native 库加载与 JNI 的影响
+这带来一个容易写反的结论：
 
-16KB page size 变更主要影响 native 库的可加载性（详见 §8.11），但对 JNI 热路径也有间接影响：
+> 普通 JNI 方法在纯 native 代码里长时间计算，不会仅因“仍在 native 方法中”就挡住 GC。ART 把 `kNative` 线程视为已经挂起。它通过 JNI API 再次访问托管对象时，运行时会执行相应的访问检查和状态协调。
 
-1. **TLB 命中率提升**：16KB 页减少了 TLB 条目数量，降低 page table walk 开销。对 JNI 代码中频繁访问 native 内存（如音视频 buffer）的场景，数据面访存会有边际改善。Google 官方数据表明，在内存压力下 app 启动速度可达 30% 提升，但这种全局收益不单独归属 JNI。
+会拖延 GC 的路径另有来源，例如长时间保持 Primitive Critical 区间，或者让 Fast/Critical Native 方法长时间运行。二者都绕开了普通 JNI 的完整状态转换。
 
-2. **代码段对齐变化**：16KB 对齐意味着 `.so` 的 code segment 和 data segment 的 mmap 边界变了。对 JNI trampoline 这类极短函数密集的代码，instruction cache 的利用率取决于函数在虚拟地址空间中的布局。这种影响通常可忽略，但在极端微优化场景中值得知晓。
+Android 17 的对应实现位于：
 
-3. **兼容性阻断**：未做 16KB 对齐的第三方 `.so` 在 16KB 设备上直接 crash，谈不上 JNI 性能——连 `JNI_OnLoad` 都跑不到。AGP 8.5.1+ 和 NDK r28+ 默认启用对齐。
+- [`artJniMethodStart` / `artJniMethodEnd`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/entrypoints/quick/quick_jni_entrypoints.cc)
+- [JNI trampoline 的起止处理](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/entrypoints/quick/quick_trampoline_entrypoints.cc)
 
-[已验证: 官方文档, https://developer.android.com/guide/practices/page-sizes]
+### 2.3 引用参数为什么比纯标量更重
 
-## Get\<Type\>ArrayElements vs Get\<Type\>ArrayRegion
+普通 native 实例方法的 ABI 包含 `JNIEnv*` 和 `jobject`；静态方法包含 `JNIEnv*` 和 `jclass`。其他对象参数也要以 GC 可追踪的形式进入引用表或栈根。入口与出口需要处理：
 
-这是 JNI 数组访问中最高频的性能决策点之一。
+1. JNI Local Reference Table 的调用段；
+2. `jobject`、`jclass`、数组和字符串等引用参数；
+3. 引用类型返回值的解码；
+4. 待处理异常和 CheckJNI 检查。
 
-### 两种 API 的语义差异
+纯 primitive 参数省去了对象引用管理，但普通 JNI 仍保留线程状态转换和 `JNIEnv*`/接收者 ABI。由此可知，`int`、`long` 参数的小函数更容易让边界成本占据高比例。
 
-```c
-// 方式 A：Get<Type>ArrayElements + Release
-jbyte* data = env->GetByteArrayElements(array, NULL);
-if (data != NULL) {
-    memcpy(buffer, data, len);
-    env->ReleaseByteArrayElements(array, data, JNI_ABORT);
-}
+### 2.4 编译桩可以复用，但条件比“签名相同”更细
 
-// 方式 B：Get<Type>ArrayRegion
-env->GetByteArrayRegion(array, 0, len, buffer);
-```
+Android 17 的 `JniStubKey` 会考虑 static、synchronized、Fast、Critical 等访问标志、shorty 和目标 ISA。ART 还会把调用约定上等价的参数布局归并，使若干方法复用同一份编译 JNI stub。
 
-方式 A 调用了两次 JNI 函数（Get + Release），方式 B 只调用了一次。方式 A 可能返回指向 Java 堆内部的真实指针（零拷贝），也可能返回一份 native 堆上的拷贝——这个行为由运行时决定，调用方通过 `isCopy` 出参获知。
+所以“每个 native 方法都有完全独立的一套桩”和“签名相同就一定共用桩”都不够准确。复用由 ART 按 ABI 等价关系判定，应用不能依赖具体代码地址。源码可查阅 [`jni_stub_hash_map.h`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/oat/jni_stub_hash_map.h) 与对应的 [编译器测试](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/compiler/oat/jni_stub_hash_map_test.cc)。
 
-方式 B 始终做一次拷贝（从 Java 数组到调用方提供的 buffer），但不涉及 pin 或 release 语义，也不会持有对 Java 堆内部指针的引用。
+## 3. 普通、Fast 与 Critical Native 的边界
 
-### 性能对比的关键结论
+三条路径省略的工作不同。
 
-| 维度 | Get\<Type\>ArrayElements | Get\<Type\>ArrayRegion |
-| --- | --- | --- |
-| JNI 调用次数 | 2（Get + Release） | 1 |
-| 是否可能零拷贝 | 是（返回内部指针） | 否（始终拷贝到调用方 buffer） |
-| 是否 pin 数组 | 是（Release 之前数组被固定） | 否 |
-| 对 GC 的影响 | pin 期间阻止压缩式 GC 移动该数组 | 无持续影响 |
-| 代码出错风险 | 忘记 Release / 模式选错 | 低（无配对调用） |
-| 适用场景 | 需要在 native 侧长时间读写整个数组 | 只需拷贝一段数据到/从 native buffer |
+| 路径 | 线程状态转换 | `JNIEnv*` | 对象参数 | Local Reference 调用段 | 适合的工作 |
+| --- | --- | --- | --- | --- | --- |
+| 普通 JNI | Runnable ↔ Native | 有 | 支持 | 有 | 通用调用、可能较长的 native 工作 |
+| `@FastNative` | 保持 Runnable | 有 | 支持 | 有 | 很短、无阻塞、仍需 JNI API 的方法 |
+| `@CriticalNative` | 保持 Runnable | 无 | 不支持 | 无 | static、纯 primitive、极短的叶子函数 |
 
-**Region 调用通常更安全且足够快**。官方 JNI 文档明确推荐：如果目的只是复制数据，优先使用 `Get<Type>ArrayRegion` / `Set<Type>ArrayRegion`。
+`@FastNative` 和 `@CriticalNative` 执行期间，线程仍处于 Runnable。GC 发出挂起请求后，Fast 路径通常要等方法返回并执行 `CheckSuspend()`；Critical 路径也没有普通 JNI 的挂起转换。因此两种方法都不能承载锁等待、文件或网络 I/O、睡眠、不可控循环及长算法。
 
-[已验证: 官方文档, https://developer.android.com/training/articles/perf-jni]
+`@CriticalNative` 还改变了 native ABI：没有 `JNIEnv*`，也没有 `jclass`。它只能用于 static native 方法，参数和返回值只能是 primitive。下面的声明用于展示这组约束：
 
-### GetPrimitiveArrayCritical 的特殊性
+```java
+import dalvik.annotation.optimization.CriticalNative;
+import dalvik.annotation.optimization.FastNative;
 
-`GetPrimitiveArrayCritical()` 试图返回指向 Java 数组真实内存的指针，同时通知运行时"不要打扰我"。它和 `GetStringCritical()` 一样，要求调用方在释放前不得执行任何其他 JNI 调用。
+final class NativeMath {
+    private NativeMath() {}
 
-关键风险：在 critical region 内，ART **无法移动**被持有的数组，也无法做某些 GC 操作。如果 native 侧在 critical region 内执行耗时操作（磁盘 I/O、网络等待、长时间计算），GC 会被阻塞，表现为整个进程的堆无法被整理。
+    @CriticalNative
+    static native long add(long left, long right);
 
-Android 8+ 的 moving GC（concurrent copying GC, CC）使得 `GetPrimitiveArrayCritical()` 更可能返回拷贝而非内部指针——因为 CC 收集器需要能够移动对象，直接暴露内部指针的风险太大。
-
-[已验证: 官方文档, https://developer.android.com/training/articles/perf-jni — "启用扩展 JNI 检查时，运行时会检测 critical 区域内的违规调用"]
-
-## JNI Critical Region 与 ART GC 阻塞
-
-### GC 暂停（Pause）的工作机制
-
-ART 的 GC 需要一个"stop-the-world"窗口来执行某些关键阶段（mark root、flip、forward）。在这个窗口内，所有 Runnable 状态的线程必须在 safepoint 暂停。
-
-线程在以下位置检查 safepoint：
-- 方法入口/出口（compiled code 中插入的 suspend check）
-- 回边（back-edge，循环跳回时）
-- JNI 调用的状态切换点
-
-当线程状态为 Native 时，GC 将其视为"已经暂停"——因为假定它不会访问 Java 堆。这带来一个推论：**JNI 调用执行时间越长，GC 等待该线程返回 Runnable 状态的时间就越久**。
-
-### @FastNative / @CriticalNative 的 GC 阻塞风险
-
-`@FastNative` 和 `@CriticalNative` 省去了线程状态切换，意味着线程在执行这些方法时**保持 Runnable 状态**。这对 GC 的影响是：
-
-1. GC 在 safepoint 请求暂停后，必须等到线程到达下一个 safepoint 检查点
-2. 处于 `@FastNative`/`@CriticalNative` 执行中的线程不会主动检查 safepoint（因为没经过标准的状态切换路径）
-3. 如果方法执行时间很长，GC 会被阻塞，其他线程的分配请求也会被阻塞
-
-ART 内部通过 `Thread::state_and_flags` 的原子读写来实现状态切换。普通 JNI trampoline 使用 `stlxr`/`ldaxr` 指令（ARM64 排他存储/加载）来原子地更新线程状态，并在返回时检查 `is_gc_marking` flag。`@FastNative` trampoline 跳过了这个原子序列，但在返回时仍会检查 `state_and_flags` 以确认是否有挂起请求。
-
-[已验证: AOSP android-17.0.0_r1, art/runtime/thread.h — `state_and_flags` 字段定义及 safepoint 机制]
-
-### PNR（Pause Not Responding）风险
-
-当 GC 暂停超时（通常 > 5s），系统会触发 PNR 告警，表现为 ANR 类似的用户体验。一个常见场景：
-
-1. 音频回调线程每 10ms 通过 JNI 调用一次 native 解码函数
-2. 某次解码因锁竞争变慢，耗时 8s
-3. GC 请求暂停，但音频线程处于 Native 状态（或标注了 `@FastNative`），GC 等不到 safepoint
-4. 其他线程因 GC 未完成而无法分配内存，大面积卡住
-5. 系统 ANR/PNR 触发
-
-这解释了为什么官方文档反复强调：**`@FastNative`/`@CriticalNative` 只适合很短、很确定、不会阻塞的 native 路径**。文档没有给出阈值（不说"50μs 以下可以用"），因为正确的判断标准是"方法内部是否会等锁、等 I/O、执行不可预期时间的系统调用"。
-
-[已验证: 官方文档, https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative — "These annotations should not be used for long-running methods"]
-
-## Local Reference / Global Reference 管理与泄漏
-
-### 三种引用类型
-
-| 类型 | 创建方式 | 生命周期 | 自动释放 |
-| --- | --- | --- | --- |
-| Local Reference | JNI 函数返回的对象、`NewLocalRef` | 当前 native 方法调用期间 | 方法返回时由运行时释放 |
-| Global Reference | `NewGlobalRef` | 直到 `DeleteGlobalRef` | 否 |
-| Weak Global Reference | `NewWeakGlobalRef` | 直到 `DeleteWeakGlobalRef` 或对象被 GC 回收 | 否 |
-
-### Local Reference Table 溢出
-
-JNI 规范只要求实现至少保留 **16 个** local reference slot。Android 8.0+ 放宽了这个限制（支持"无限"local reference），但仍然需要管理。
-
-典型的溢出场景：
-
-```c
-// 危险：循环内创建 local reference 但不释放
-for (int i = 0; i < 10000; i++) {
-    jstring str = env->NewStringUTF(items[i]);
-    env->CallVoidMethod(callback, onItem, str);
-    // str 在这里已经没用了，但 local reference 不会被自动释放
-    // 因为方法还没返回
+    @FastNative
+    static native int checksum(byte[] data);
 }
 ```
 
-正确做法：
+`add` 不能接收数组、字符串或对象，也不能抛出 Java 异常；`checksum` 仍有常规 JNI 参数和引用能力。注解没有替开发者证明函数足够短，是否会阻塞仍要由代码审阅和 trace 验证。
 
-```c
-for (int i = 0; i < 10000; i++) {
-    jstring str = env->NewStringUTF(items[i]);
-    env->CallVoidMethod(callback, onItem, str);
-    env->DeleteLocalRef(str);  // 显式释放
+下面的 native 声明对应动态符号查找时的两种 ABI：
+
+```cpp
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_example_NativeMath_add(jlong left, jlong right) {
+  return left + right;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_example_NativeMath_checksum(
+    JNIEnv* env, jclass, jbyteArray data) {
+  // 省略数组读取和校验。
+  return 0;
 }
 ```
 
-或者使用 `PushLocalFrame()` / `PopLocalFrame()` 批量管理：
+Critical 方法没有 `JNIEnv*` 和 `jclass`；Fast 方法的 C++ 签名与普通 static JNI 一致。若改用 `RegisterNatives`，函数指针仍须匹配各自 ABI，签名错配会造成未定义行为。
 
-```c
-if (env->PushLocalFrame(256) == 0) {
-    for (int i = 0; i < 10000; i++) {
-        jstring str = env->NewStringUTF(items[i]);
-        env->CallVoidMethod(callback, onItem, str);
-    }
-    env->PopLocalFrame(NULL);  // 一次性释放所有 local reference
-}
-```
+### 3.1 版本兼容边界
 
-[已验证: 官方文档, https://developer.android.com/training/articles/perf-jni]
+| Android 版本 | Fast/Critical 的应用侧边界 |
+| --- | --- |
+| Android 8～11 | Critical Native 需要显式 `RegisterNatives`；依赖动态符号发现可能失败 |
+| Android 12～13 | 运行时支持 Critical Native 的动态符号发现；低版本兼容仍需单独设计 |
+| Android 14～17 | 两个注解进入公开 API 并受 CTS 约束；运行时限制保持 |
 
-### Attached 线程的特殊风险
+官方文档建议，若 APK 还要兼容 Android 13 及更低版本，应谨慎使用公开注解，或准备按版本隔离的实现。本文知识库的最低范围是 Android 8，因此不能只在 Android 17 设备上验证一次就宣称兼容全范围。
 
-通过 `AttachCurrentThread()` 挂入 JVM 的 native 线程有一个关键差异：**local reference 不会在方法返回时自动释放**，因为"方法返回"的概念不适用于 attached 线程——它没有 Java 调用栈帧。
+ARM64 编译器中，Critical stub 可在没有栈参数、没有返回值扩展等条件满足时使用 tail call；条件不满足时仍会生成参数搬运和返回处理。固定的“4 条指令”无法覆盖不同签名、ISA、编译状态和插桩配置。可复核 [Android 17 ARM64 JNI calling convention](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/compiler/jni/quick/arm64/calling_convention_arm64.cc)。
 
-这意味着，attached 线程中创建的所有 local reference 会一直存在，直到线程调用 `DetachCurrentThread()`。
+## 4. `RegisterNatives` 优化的是绑定，不会改变 native 属性
 
-正确模式（推荐使用 `pthread_key_create` 自动清理）：
+没有显式注册时，首次调用要构造短名和长名，并在与声明类 ClassLoader 关联的 JNI 库中查找符号。ART 找到地址后会注册到对应 `ArtMethod`，后续调用通常直接使用已缓存的入口。
 
-```c
-static pthread_key_t jni_env_key;
+`RegisterNatives` 的主要价值包括：
 
-void jni_env_destructor(void* data) {
-    JavaVM* vm = (JavaVM*) data;
-    vm->DetachCurrentThread();
-}
+- 在 `JNI_OnLoad` 阶段集中验证类名、方法名和签名；
+- 提前建立 `ArtMethod` 到函数指针的映射，避开首次调用的 `dlsym` 查找；
+- 动态符号表只需导出 `JNI_OnLoad`，减少可见符号；
+- Critical Native 在 Android 8～11 上可获得明确的绑定路径。
 
-void native_thread_init(JavaVM* vm) {
-    pthread_key_create(&jni_env_key, jni_env_destructor);
-    // ...
-}
+Java 方法是否为 native 已经写在方法访问标志中。显式注册不会让编译器到注册时才“发现它是 native”，也不能自动把普通 JNI 变成 Fast 或 Critical。
 
-void native_thread_entry(JavaVM* vm) {
-    JNIEnv* env;
-    vm->AttachCurrentThread(&env, NULL);
-    pthread_setspecific(jni_env_key, vm);
-    // 线程退出时 destructor 会自动调用 DetachCurrentThread
-    // 从而释放所有 local reference
-}
-```
+下面的注册代码演示了失败检查与 Local Reference 清理：
 
-[已验证: 官方文档, https://developer.android.com/training/articles/perf-jni — "在已附加的线程上调用 AttachCurrentThread() 属于空操作"]
+```cpp
+#include <jni.h>
 
-### Global Reference 泄漏的线上检测
+namespace {
 
-Global Reference 泄漏比 local reference 隐蔽——不会 crash，但会持续占用内存并阻止 GC 回收对象。Android Studio 的 Memory Profiler 提供 JNI heap 视图，可以查看所有 global reference 及其创建位置。
-
-对线上监控，可以通过反射读取 `Debug.getGlobalAllocCount()` 和 `Debug.getGlobalFreedCount()` 的差值来判断 global reference 是否在持续增长。差值持续上升且不回落，几乎一定是某处忘记 `DeleteGlobalRef`。
-
-[已验证: 官方文档, https://developer.android.com/studio/profile/memory-profiler#jni-references]
-
-## JNI 线程 attach / detach 开销与 ThreadLocal 管理
-
-### attach 的成本
-
-`AttachCurrentThread()` 不是零成本。它需要：
-
-1. 创建 `Thread` 对象并注册到运行时的线程列表
-2. 分配 `JNIEnvExt` 结构体（包含 local reference table、monitor table 等）
-3. 设置 thread-local storage
-4. 将线程加入 `ThreadGroup`（使调试器可见）
-
-对于频繁创建/销毁的 native 线程，每次 attach/detach 的成本会累积。更严重的是，attached 线程创建的 `Thread` 对象本身也是 GC Root，如果线程没有正确 detach，这个 `Thread` 对象和它的 `JNIEnvExt` 都会泄漏。
-
-### 推荐的线程管理模式
-
-**模式 A：长期存活的工作线程**
-
-```c
-// 线程启动时 attach，线程退出时 detach
-void worker_thread_entry(JavaVM* vm) {
-    JNIEnv* env;
-    vm->AttachCurrentThread(&env, "worker-thread");
-    // ... 长期工作 ...
-    vm->DetachCurrentThread();
-}
-```
-
-**模式 B：线程池 + 复用**
-
-线程池中的工作线程长期存活，只在首次获取任务时 attach，线程被回收前 detach。任务之间复用同一个 `JNIEnv`。注意：任务间创建的 local reference 需要手动清理，因为不会自动释放。
-
-**反模式：每个任务 attach/detach**
-
-```c
-// 危险：每个任务都 attach/detach
-void process_task(JavaVM* vm, Task* task) {
-    JNIEnv* env;
-    vm->AttachCurrentThread(&env, NULL);
-    // 处理任务
-    vm->DetachCurrentThread();
-}
-```
-
-如果任务粒度很小（比如每个音频帧一次），attach/detach 的开销可能超过任务本身。正确做法是把线程生命周期和 attach/detach 绑定，而不是和任务绑定。
-
-[已验证: 官方文档, https://developer.android.com/training/articles/perf-jni — "尽可能减少需要接触 JNI 或被 JNI 接触的线程数"]
-
-### Java 层创建线程 vs Native 层创建线程
-
-从 Java 层 `Thread.start()` 创建的线程：
-- 由 ART 管理，自动有 `JNIEnv`
-- 堆栈大小由 `Thread` 构造参数控制
-- 属于正确的 `ThreadGroup`
-- 使用与创建者相同的 `ClassLoader`
-
-从 Native 层 `pthread_create()` 创建的线程：
-- 需要手动 `AttachCurrentThread()`
-- 堆栈大小由 `pthread_create` 参数决定
-- `FindClass()` 可能因 class loader 问题失败（详见 §1.15）
-- 线程名需要通过 `pthread_setname_np()` 单独设置
-
-对需要在 native 回调 Java 的场景，优先从 Java 层创建线程，除非有明确的 native 栈大小或优先级控制需求。
-
-## Android 17 ART JNI 内联优化与 16KB page size 影响
-
-### Android 17 的 JNI 相关变化
-
-基于 `android-17.0.0_r1` 源码核查，ART 在 JNI 路径上的核心机制（trampoline 结构、`@FastNative`/`@CriticalNative` 语义、线程状态机）与 Android 14-16 保持一致。没有引入新的 JNI 注解类型，也没有改变 `GetPrimitiveArrayCritical` 的约束模型。
-
-需要注意的变化集中在两个方向：
-
-1. **ART Module 独立更新**：自 Android 12 起，ART 作为 Mainline Module 可以独立于系统版本更新。这意味着同一 `android-17.0.0_r1` tag 上的 ART 行为，可能因设备厂商推送的 ART Module 更新而不同。对 JNI 性能测试，应确认设备的 ART Module 版本（`adb shell cmd package list apks | grep com.google.android.art`）。
-
-2. **16KB page size 强制执行**：Android 15 引入 16KB 支持，2025 年 11 月起 Google Play 对 targeting Android 15+ 的 64 位提交强制要求。Android 17 设备普遍启用 16KB page size。对 JNI 的影响：
-   - native 库必须 16KB 对齐（否则加载失败）
-   - `mmap` 的页边界从 4KB 变为 16KB，影响 native 内存映射的粒度
-   - TLB 命中率改善的收益主要在数据面（如 JNI 传引用的大 buffer），不在 JNI transition 本身
-
-[已验证: AOSP android-17.0.0_r1, art/runtime/ — JNI 核心机制未变]
-[已验证: 官方文档, https://developer.android.com/guide/practices/page-sizes — 16KB 合规要求时间线]
-
-### ART AOT/JIT 与 JNI trampoline 的协同
-
-`@FastNative`/`@CriticalNative` 的加速效果依赖编译模式：
-
-| 执行模式 | 普通 JNI trampoline | @FastNative trampoline | @CriticalNative |
-| --- | --- | --- | --- |
-| 解释执行 | 通用 trampoline（~5120B 栈预留） | 通用 trampoline（注解被解释器部分利用） | 通用 trampoline（注解被解释器部分利用） |
-| JIT 编译 | compiler trampoline（~176B 栈帧） | 精简 trampoline（省状态切换） | 极简 trampoline（~4 行汇编） |
-| AOT 编译 | 同 JIT | 同 JIT | 同 JIT |
-
-关键推论：`@CriticalNative` 的最大收益在 AOT/JIT 编译模式下。解释执行时，注解的效果有限。这意味着：
-- 冷启动阶段（大量方法未编译）的 JNI 调用仍走解释器，收益不明显
-- 将包含 `@CriticalNative` 调用的代码路径加入 Baseline Profile，能确保 AOT 编译，最大化注解收益
-
-[结构参考: Cubox/ART 虚拟机 - JNI 优化简史-2023-06-27.md — "相同参数类型的不同方法共用一个 trampoline"]
-[已验证: 官方文档, https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative — 建议调用方加入 Baseline Profile]
-
-### Compiler Trampoline 的共享机制
-
-一个重要但容易被忽略的细节：compiler trampoline 是按参数类型共享的，不是按方法共享的。两个参数类型相同的 native 方法（如都是 `(String, int)`），即使业务含义完全不同，在 AOT 产物（`.oat` 文件）中共用同一个 trampoline 二进制代码。
-
-通过 `oatdump` 可以验证：不同方法指向同一个 `code_offset`。这意味着：
-- 将更多 native 方法加入 Baseline Profile 的 code size 增量很小
-- 但每个方法仍需各自的方法入口（`OatMethodOffsets`）
-- 这个共享机制从 Android 8 持续到 Android 17 未变
-
-[结构参考: Cubox/ART 虚拟机 - JNI 优化简史-2023-06-27.md — oatdump 输出验证]
-
-## JNI 性能分析：Perfetto JNI trace 与 systrace 插桩
-
-Perfetto 不会自动为每次 JNI 调用生成命名的 slice。要看 JNI 热路径，需要配合手工插桩和采样。详见 §1.15 中关于"Perfetto 中的 JNI 可观测性有三条路"的完整说明，这里只补充 §1.15 未覆盖的实战要点。
-
-### JNI 调用计数的工程化方法
-
-在不知道 JNI 调用频率是否过高时，先量化次数而不是单次开销：
-
-1. **Build 期插桩**：在 debug build 中，用 ASM 或 Jacoco 在每个 `native` 方法调用前后插入计数器。适用于初次摸底，不适合线上。
-
-2. **Perfetto callstack 采样**：以 1000Hz 采样频率抓取 callstack，统计 `art_jni_trampoline`、`Java_` 前缀符号出现的频率。能定位热点方法，但不能给出精确调用次数。
-
-3. **simpleperf stat 模式**：`simpleperf stat -e raw-faults,cpu-cycles -p <pid>` 收集运行时硬件计数器，间接反映 native 执行时间占比。
-
-### JNI 热路径的 Trace 插桩模式
-
-对已确认的热路径，推荐的插桩方式：
-
-```c
-// NDK 侧
-#include <android/trace.h>
-
-void process_audio_frame(JNIEnv* env, jbyteArray data) {
-    ATrace_beginSection("jni:process_audio_frame");
-    
-    jbyte* buffer = env->GetByteArrayElements(data, NULL);
-    // ... 处理 ...
-    env->ReleaseByteArrayElements(data, buffer, 0);
-    
-    ATrace_endSection();
-}
-```
-
-```kotlin
-// Java/Kotlin 侧
-fun processFrame(data: ByteArray) {
-    android.os.Trace.beginSection("jni:processFrame")
-    nativeProcessFrame(data)
-    android.os.Trace.endSection()
-}
-```
-
-两侧同时插桩，可以在 Perfetto 的同一个线程轨上看到 Java 侧和 native 侧的 slice 拼接。如果 native slice 远大于 Java 侧的 transition 时间，说明开销在算法而非 JNI 边界；反之则需要优化接口设计。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/native/include/android/trace.h — `ATrace_beginSection`/`ATrace_endSection` 公开 API]
-
-### systrace 和 Perfetto 的 JNI 证据链
-
-历史上 `systrace.py` 工具已被官方标记为 deprecated（Android 10 之后），替换为 Perfetto。如果还在用 systrace 抓 JNI 数据，应该迁移到 Perfetto 的 `record_android_trace` 或直接用 `adb shell perfetto`。
-
-Perfetto 的 SQL 查询（详见 §13.22 Perfetto SQL 查询手册）可以统计 JNI 相关 slice 的聚合数据：
-
-```sql
--- 统计自定义 JNI section 的总耗时和调用次数
-SELECT
-  name,
-  COUNT(*) as call_count,
-  SUM(dur) / 1e6 as total_ms,
-  AVG(dur) / 1e3 as avg_us
-FROM slice
-WHERE name LIKE 'jni:%'
-GROUP BY name
-ORDER BY total_ms DESC;
-```
-
-## JNI 批量化调用模式设计
-
-减少 JNI 调用次数是最有效的优化手段，但接口设计往往受限于业务模型。几种常见的批量化模式：
-
-**模式 A：数据批量传递**
-
-```c
-// 反模式：每个元素一次 JNI
-for (int i = 0; i < count; i++) {
-    env->CallVoidMethod(callback, onSample, samples[i]);
+jlong NativeSum(JNIEnv*, jclass, jlong left, jlong right) {
+  return left + right;
 }
 
-// 批量化：一次传递整个数组
-env->CallVoidMethod(callback, onSamples, samplesArray, count);
-```
-
-**模式 B：命令缓冲区**
-
-将多个 JNI 操作打包成一个"命令列表"，一次 JNI 调用提交执行：
-
-```c
-struct NativeCommand {
-    int type;     // 操作类型
-    int arg1;
-    long arg2;
+const JNINativeMethod kMethods[] = {
+    {
+        "nativeSum",
+        "(JJ)J",
+        reinterpret_cast<void*>(NativeSum),
+    },
 };
 
-void flush_commands(JNIEnv* env, jobject dispatcher, 
-                    NativeCommand* cmds, int count) {
-    // 一次 JNI 调用处理 count 个命令
-    // ...
+}  // namespace
+
+JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void*) {
+  JNIEnv* env = nullptr;
+  if (vm->GetEnv(
+          reinterpret_cast<void**>(&env),
+          JNI_VERSION_1_6) != JNI_OK) {
+    return JNI_ERR;
+  }
+
+  jclass clazz = env->FindClass("com/example/NativeBridge");
+  if (clazz == nullptr) {
+    return JNI_ERR;
+  }
+
+  const jint result = env->RegisterNatives(
+      clazz,
+      kMethods,
+      sizeof(kMethods) / sizeof(kMethods[0]));
+  env->DeleteLocalRef(clazz);
+  return result == JNI_OK ? JNI_VERSION_1_6 : JNI_ERR;
 }
 ```
 
-这种模式在游戏引擎（Unity/Unreal 的 Java bridge）中很常见，适合高频、小粒度的操作。
+`FindClass` 或 `RegisterNatives` 失败时返回 `JNI_ERR`，系统不会继续加载一份绑定不完整的库。生产代码还应让类名和签名由测试覆盖；混淆配置也要保证声明类与方法符合注册表预期。
 
-**模式 C：DirectByteBuffer 共享内存**
+Android 17 的查找与注册路径可从 [`jni_entrypoints.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/entrypoints/jni/jni_entrypoints.cc)、[`java_vm_ext.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/jni/java_vm_ext.cc) 和 [`jni_internal.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/jni/jni_internal.cc) 交叉核对。
 
-对大块数据的双向传输，用 `ByteBuffer.allocateDirect()` 在 native 堆分配内存，Java 和 native 共享同一块缓冲区，完全绕过 JNI 的数组拷贝路径：
+## 5. Android 17 的 primitive 数组访问
+
+JNI 规范允许 VM 对 Elements API 选择直接指针或副本。具体到 Android 17，ART 的实现给出了更明确的行为。
+
+| API | Android 17 中的主要行为 | 持有期间的约束 |
+| --- | --- | --- |
+| `Get<Type>ArrayRegion` | 边界检查后，把指定区间复制到调用方缓冲区 | 调用结束后无持续约束 |
+| `Set<Type>ArrayRegion` | 边界检查后，从调用方缓冲区复制回数组 | 调用结束后无持续约束 |
+| `Get<Type>ArrayElements` | 可移动数组分配 native 副本并复制；不可移动数组可返回直接地址 | 必须配对 Release；副本可能增加分配与带宽 |
+| `GetPrimitiveArrayCritical` | Android 17 对可移动数组暂停 moving GC 或 thread flip，重新解码后返回直接数据地址，`isCopy=false` | 区间内不能阻塞，也不能调用大多数 JNI API |
+
+旧经验常把 Elements 描述成“固定数组并返回堆内指针”。这不符合 Android 17 对可移动数组的普通路径：ART 会分配副本并执行 `memcpy`。相反，Android 17 的 Primitive Critical 实现会提供直接地址，并以限制移动 GC 为代价。
+
+这只是当前平台实现，不能把 `isCopy=false` 写进跨 VM 的程序假设。可移植代码仍应遵守 JNI 规范：检查返回指针、配对 Release、正确选择 mode，并把 Critical 区间压到足够短。
+
+### 5.1 Region 适合一次明确的复制
+
+读取固定长度头部时，Region API 可以省去 Get/Release 配对和临时 Elements 副本。下面的函数只复制需要的字节：
+
+```cpp
+#include <array>
+#include <cstdint>
+#include <cstring>
+
+struct PacketHeader {
+  std::uint32_t type;
+  std::uint32_t payload_size;
+};
+
+bool ReadHeader(
+    JNIEnv* env,
+    jbyteArray source,
+    PacketHeader* output) {
+  if (source == nullptr || output == nullptr) {
+    return false;
+  }
+
+  constexpr jsize kHeaderSize = sizeof(PacketHeader);
+  if (env->GetArrayLength(source) < kHeaderSize) {
+    return false;
+  }
+
+  std::array<jbyte, kHeaderSize> bytes{};
+  env->GetByteArrayRegion(
+      source,
+      0,
+      kHeaderSize,
+      bytes.data());
+  if (env->ExceptionCheck()) {
+    return false;
+  }
+
+  std::memcpy(output, bytes.data(), kHeaderSize);
+  return true;
+}
+```
+
+这段代码有一次显式区间复制，生命周期很清楚。协议字段还应按约定字节序解码；示例只聚焦 JNI 数组边界。
+
+### 5.2 Elements 适合需要连续访问并明确回写的代码
+
+下面的示例展示读写数组时 Release mode 的选择：
+
+```cpp
+bool ClampSamples(JNIEnv* env, jshortArray samples) {
+  if (samples == nullptr) {
+    return false;
+  }
+
+  jboolean is_copy = JNI_FALSE;
+  jshort* values =
+      env->GetShortArrayElements(samples, &is_copy);
+  if (values == nullptr) {
+    return false;
+  }
+
+  const jsize count = env->GetArrayLength(samples);
+  for (jsize i = 0; i < count; ++i) {
+    if (values[i] < -30000) values[i] = -30000;
+    if (values[i] > 30000) values[i] = 30000;
+  }
+
+  env->ReleaseShortArrayElements(samples, values, 0);
+  return !env->ExceptionCheck();
+}
+```
+
+mode `0` 表示复制修改并释放缓冲区；只读场景可用 `JNI_ABORT` 避免回写；`JNI_COMMIT` 会提交修改但保留 Elements 缓冲区，后面仍要再 Release。`is_copy` 可用于诊断，业务正确性不能依赖它的取值。
+
+### 5.3 Primitive Critical 要按 GC 临界区审阅
+
+`GetPrimitiveArrayCritical` 与 `ReleasePrimitiveArrayCritical` 之间只做短、有限、无阻塞的内存访问：
+
+- 不等待 mutex、condition variable 或 future；
+- 不执行文件、Binder、socket 和设备 I/O；
+- 不回调 Java；
+- 不调用可能阻塞或触发复杂运行时工作的 JNI API；
+- 所有退出路径都执行 Release。
+
+数组较大并不能自动证明 Critical 更快。普通 Elements 可能承担副本成本，Critical 则把压力转移到 GC 协调。应在目标设备上同时观察 CPU、复制量、GC pause 和尾延迟。
+
+Android 17 的数组实现位于 [`jni_internal.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/jni/jni_internal.cc)。
+
+## 6. Local Reference 与 Global Reference
+
+### 6.1 Android 8 移除固定小上限，不代表资源无限
+
+旧版 Dalvik/ART 曾有较小的 Local Reference 固定容量。Android 8 移除了这项版本相关限制，官方 JNI 文档常用“unlimited local references”描述行为变化。Android 17 的实现仍受进程资源与表大小约束：
+
+- Local Reference Table 的初始存储为 512 字节；
+- 容量不足时动态扩展；
+- 实现中的硬上限为 128 MiB；
+- CheckJNI 会为检测信息使用更多 entry；
+- 表项是 GC root，过多引用会增加 GC root 扫描和内存开销。
+
+所以“不再有旧固定上限”只表示表会增长。长循环若一直保存 Local Reference，仍可能因内存耗尽失败。
+
+### 6.2 `PushLocalFrame` 要在循环中周期性弹出
+
+在 10000 次循环外只 Push 一次 frame，并不会控制 frame 内部峰值。下面的写法每批处理 32 个对象：
+
+```cpp
+bool VisitItems(
+    JNIEnv* env,
+    jobject source,
+    jmethodID item_at,
+    jsize item_count) {
+  constexpr jsize kBatchSize = 32;
+
+  for (jsize base = 0; base < item_count;
+       base += kBatchSize) {
+    if (env->PushLocalFrame(kBatchSize) != JNI_OK) {
+      return false;
+    }
+
+    bool batch_ok = true;
+    const jsize end =
+        std::min(item_count, base + kBatchSize);
+    for (jsize i = base; i < end; ++i) {
+      jobject item =
+          env->CallObjectMethod(source, item_at, i);
+      if (env->ExceptionCheck() || item == nullptr) {
+        batch_ok = false;
+        break;
+      }
+      ConsumeItem(env, item);
+      if (env->ExceptionCheck()) {
+        batch_ok = false;
+        break;
+      }
+    }
+
+    env->PopLocalFrame(nullptr);
+    if (!batch_ok) {
+      return false;
+    }
+  }
+  return true;
+}
+```
+
+每次 `PopLocalFrame` 会批量丢弃这一批的 Local Reference，即使循环提前结束也能恢复 frame。示例假定 `ConsumeItem` 和 `<algorithm>` 已在工程中定义；异常应由上层按接口约定传播或清除。
+
+附着自 native 创建的线程时，Local Reference 不会像 Java 方法帧那样由某个托管返回点自动整理。线程仍要主动删除循环内引用，并在退出前 Detach。
+
+Android 17 的结构与扩容逻辑可查阅 [`local_reference_table.h`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/jni/local_reference_table.h) 和 [`local_reference_table.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/jni/local_reference_table.cc)。
+
+### 6.3 Global Reference 泄漏怎样定位
+
+Global Reference 与 Weak Global Reference 都必须由代码明确释放。Java heap 对象可能因 Global Reference 一直存活，即使 Java 侧已经没有普通引用。
+
+可用三层证据定位：
+
+1. Android Studio Profiler 的 **JNI heap** 视图查看 Global Reference 及其 native 分配/释放调用栈；
+2. `adb shell dumpsys meminfo -d <package>` 观察 `.IndirectRef` 内存趋势；
+3. 在 `NewGlobalRef`/`DeleteGlobalRef` 的封装层记录带类型、调用点和对象用途的计数。
+
+`.IndirectRef` 是 ART 间接引用表占用的内存，混合了 local/global 等信息，不能当成 Global Reference 的精确对象数。`Debug.getGlobalAllocCount()` 一类 Java API 也不提供 JNI Global Reference 的可靠计数。
+
+## 7. native 线程的 Attach/Detach 边界
+
+`JNIEnv*` 属于线程，不能缓存后交给另一条线程。`JavaVM*` 可以跨线程保存，用它查询或挂载当前线程。
+
+Android 17 中，`AttachCurrentThread` 在首次挂载时会创建 ART `Thread`、初始化 `JNIEnvExt` 和 Local Reference Table、加入线程列表，并建立 Java `Thread` peer、线程组与名称等运行时状态。已经挂载的线程再次调用会返回当前 `JNIEnv*`，但频繁查询和错误的生命周期设计仍会增加复杂度。
+
+下面的 RAII 对象只在本作用域完成首次挂载时负责 Detach：
+
+```cpp
+class ScopedJniEnv {
+ public:
+  explicit ScopedJniEnv(JavaVM* vm) : vm_(vm) {
+    const jint status = vm_->GetEnv(
+        reinterpret_cast<void**>(&env_),
+        JNI_VERSION_1_6);
+    if (status == JNI_EDETACHED) {
+      attached_here_ =
+          vm_->AttachCurrentThread(&env_, nullptr) == JNI_OK;
+      if (!attached_here_) {
+        env_ = nullptr;
+      }
+    } else if (status != JNI_OK) {
+      env_ = nullptr;
+    }
+  }
+
+  ~ScopedJniEnv() {
+    if (attached_here_) {
+      vm_->DetachCurrentThread();
+    }
+  }
+
+  JNIEnv* get() const { return env_; }
+
+  ScopedJniEnv(const ScopedJniEnv&) = delete;
+  ScopedJniEnv& operator=(const ScopedJniEnv&) = delete;
+
+ private:
+  JavaVM* vm_;
+  JNIEnv* env_ = nullptr;
+  bool attached_here_ = false;
+};
+
+void* WorkerMain(void* argument) {
+  auto* vm = static_cast<JavaVM*>(argument);
+  ScopedJniEnv scoped_env(vm);
+  if (scoped_env.get() == nullptr) {
+    return nullptr;
+  }
+
+  RunWorkerLoop(scoped_env.get());
+  return nullptr;
+}
+```
+
+RAII 生命周期覆盖整条物理工作线程，而非线程池中的单个小任务。已有 Java/Kotlin 线程进入 native 时，`GetEnv` 返回现成环境，析构不会错误地 Detach 它。长期运行的第三方线程池也可以用 `pthread_key_create` 的析构回调把 Detach 绑定到线程退出。
+
+线程退出时忘记 Detach 会留下运行时状态。Android 17 的 TLS 析构路径会记录错误，并在无法安全恢复时终止进程，因此不能把 Detach 当成可省略的清理动作。实现细节见 [`java_vm_ext.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/jni/java_vm_ext.cc) 与 [`thread.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc)。
+
+## 8. `pthread_create` 的成本从哪里来
+
+“创建一个 native 线程需要多少微秒”没有跨设备答案。Android 17 的 bionic 和 6.18 内核源码提供了更稳定的成本分解。
+
+### 8.1 bionic 用户空间
+
+Android 17 的 `pthread_create.cpp` 会：
+
+1. 为 guard、stack、static TLS、TCB、libgen 缓冲区和顶部 guard 计算一段映射；
+2. 使用 `mmap(MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE)` 建立虚拟地址空间；
+3. 用 `mprotect` 开放可写区域并初始化 TLS、stack guard 等状态；
+4. 通过 `clone` 创建共享地址空间的内核 task；
+5. 在子线程完成启动握手、信号栈、shadow call stack、信号掩码等设置后进入用户函数。
+
+bionic 默认栈配置以约 1 MiB 为基准，再扣除备用信号栈空间。`MAP_NORESERVE` 让这段大小主要表现为虚拟地址预留，物理页按访问逐步进入 RSS。因此“每个 pthread 一创建就常驻 1 MiB 物理内存”也不准确。
+
+源码可核对 [Android 17 `pthread_create.cpp`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/pthread_create.cpp) 与 [`pthread_internal.h`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/pthread_internal.h)。
+
+### 8.2 Linux 6.18 内核
+
+`clone` 进入 `copy_process` 后，内核要分配 task 结构、执行调度器初始化，并按 clone flags 复制或共享 files、fs、sighand、signal、mm 等资源。`CLONE_VM`、`CLONE_FILES`、`CLONE_THREAD` 等标志使 pthread 与进程内其他线程共享主要进程资源，但 task、内核栈、调度实体和线程 ID 仍是独立对象。
+
+这条路径解释了频繁创建线程为何会出现：
+
+- 用户空间映射和 TLS 初始化；
+- 内核对象分配与调度器工作；
+- ART Attach 的额外运行时对象；
+- 首次触碰栈页带来的缺页；
+- CPU 唤醒、迁移和缓存冷启动。
+
+内核锚点可查阅 [`android17-6.18-2026-06_r6/kernel/fork.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/fork.c)。
+
+工程上应复用有上限的线程池，把 Attach 生命周期绑定到物理线程，并根据栈深度设置经过测量的 stack size。把每个数据块交给新 pthread，通常会让生命周期成本淹没 native 计算。
+
+## 9. 数据所有权比“零拷贝”更重要
+
+跨 JNI 传递数据时，可选方案各自交换了复制、生命周期和 GC 约束。
+
+| 方案 | 复制特征 | 生命周期风险 | 适用场景 |
+| --- | --- | --- | --- |
+| primitive Region | 一次明确复制 | 低 | 小区间、固定头部、单次处理 |
+| primitive Elements | 可移动数组通常产生副本 | Release mode 与临时内存 | 连续读写、代码已有数组接口 |
+| Primitive Critical | Android 17 直接地址 | 限制 GC，API 使用受限 | 极短的连续内存操作 |
+| Direct `ByteBuffer` | Java/native 可共享 native 内存 | buffer、指针和容量必须共同存活 | 大块数据、多次复用 |
+| native handle | Java 保存 `long` 标识 | 释放、并发、重复关闭 | 长寿命 native 对象 |
+
+Direct `ByteBuffer` 的地址只在底层 native 内存仍有效时可用。native 侧若跨调用保存 `GetDirectBufferAddress` 的结果，必须同时建立可证明的 owner 生命周期；常见办法是让 Java owner 持有 buffer，并由一个显式 close 协议释放 native 资源。只缓存裸指针却放弃 buffer/owner 的强引用，会把“零拷贝”变成悬空指针风险。
+
+更完整的缓存 ID、异常、字符串、Direct Buffer 和 native handle 规则见 [§1.15 JNI/NDK 互操作性能](../../part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md)。
+
+## 10. 怎样测出边界开销
+
+### 10.1 trace 只能测被标记的区间
+
+Perfetto 不会默认把每一次 JNI transition 标成独立 slice。若在 Java 调用外层放一个 `Trace.beginSection`，再在 native 函数入口放一个 `ATrace_beginSection`，内层 slice 测到的是 native 函数主体；两层之间的差值还混有 trace 调用、Java 包装、参数准备和调度噪声。
+
+适合 trace 的做法是：
+
+- 用外层 slice 表示一次业务请求；
+- 用内层 slice 分出 native 算法阶段；
+- 在一帧内另行记录 JNI 调用计数与数据字节数；
+- 对高频小调用做采样或批量标记，避免 trace 本身改变被测路径。
+
+下面的 RAII 标记保证异常式 C++ 退出路径也能结束 native slice：
+
+```cpp
+#include <android/trace.h>
+
+class ScopedTrace {
+ public:
+  explicit ScopedTrace(const char* name) {
+    ATrace_beginSection(name);
+  }
+
+  ~ScopedTrace() {
+    ATrace_endSection();
+  }
+
+  ScopedTrace(const ScopedTrace&) = delete;
+  ScopedTrace& operator=(const ScopedTrace&) = delete;
+};
+
+void DecodeBatch(const std::uint8_t* data, std::size_t size) {
+  ScopedTrace trace("native/DecodeBatch");
+  DecodePackets(data, size);
+}
+```
+
+这个 slice 包围的是 `DecodePackets` 主体，不能单独给出 JNI 入口耗时。若它已经占据大部分外层请求时间，应先采样 `DecodePackets`；若外层明显更长，再用 Microbenchmark 缩小到边界测试。
+
+### 10.2 CPU sampling 用来回答“时间花在哪个 native 符号”
+
+Perfetto callstack sampling、Android Studio CPU Profiler 或 simpleperf 都可以查看 native 符号栈。采样适合持续时间足够长的算法、锁竞争和批处理；几十纳秒级空调用很难在采样结果中稳定出现。
+
+采样前要准备带 build ID 的未裁剪符号文件，并核对 APK 中 `.so` 与本地符号是否来自同一次构建。调用频率、总字节量和线程名也应进入观测数据，否则“某函数占 5% samples”很难转换成接口改造方向。
+
+### 10.3 Microbenchmark 用来比较边界变体
+
+AndroidX Benchmark 会处理预热、重复测量和部分设备状态检查。下面的基准把输入数组放在测量循环外，避免把 Kotlin 分配算进 JNI 测试：
 
 ```kotlin
-// Java 侧
-val buffer = ByteBuffer.allocateDirect(4096)
-nativeSetBuffer(buffer)  // 一次 JNI 调用建立映射
+@RunWith(AndroidJUnit4::class)
+class JniBoundaryBenchmark {
+    @get:Rule
+    val benchmarkRule = BenchmarkRule()
 
-// 之后 native 侧直接读写 buffer，不需要再过 JNI
-```
+    private val input = ByteArray(4096) { index ->
+        (index and 0xff).toByte()
+    }
 
-```c
-// Native 侧
-static uint8_t* shared_buffer;
-
-JNIEXPORT void JNICALL nativeSetBuffer(JNIEnv* env, jobject thiz, jobject buf) {
-    shared_buffer = (uint8_t*) env->GetDirectBufferAddress(buf);
+    @Test
+    fun checksumRegion() {
+        benchmarkRule.measureRepeated {
+            BlackHole.consume(
+                NativeBridge.checksumRegion(input)
+            )
+        }
+    }
 }
 ```
 
-DirectByteBuffer 的代价是分配/回收成本高（涉及 native 内存分配），适合池化复用。详见 §1.15 中关于 DirectByteBuffer 的讨论。
+每个候选方案要放进独立测试，例如 empty regular、empty Fast、primitive Critical、Region 和 Elements。返回值被消费可避免编译器删除无可见效果的工作。基准应在 release-like、可复现的构建上运行，并报告设备、ABI、Android build、样本分布和多轮波动。
 
-[已验证: 官方文档, https://developer.android.com/training/articles/perf-jni — "尽量减少跨 Java 层与 native 调用次数"]
+空方法基准能比较入口路径，不能代替业务基准。批处理接口还要用真实数据规模检查 cache、复制、GC 和尾延迟。
 
-## Native 线程创建开销（pthread_create 成本拆解）
+AndroidX 官方资料：
 
-[待补充: 本节扩展点涉及 native 线程创建的 CPU/内存开销量化分析（stack 分配、TLS 初始化、kernel clone 系统调用等），当前轮次素材不足，留待后续补充。]
+- [Microbenchmark 概览](https://developer.android.com/topic/performance/benchmarking/microbenchmark-overview)
+- [编写 Microbenchmark](https://developer.android.com/topic/performance/benchmarking/microbenchmark-write)
+- [`BlackHole`](https://developer.android.com/reference/androidx/benchmark/BlackHole)
 
-## AOSP JNI 性能 benchmark 参考
+### 10.4 AOSP 的 `jni-perf` 是实验模板
 
-[待补充: 本节扩展点涉及 AOSP 源码树中的 JNI benchmark（`art/runtime/jni/jni_benchmark.cc` 等）的运行方法和基线数据，当前轮次素材不足，留待后续补充。]
+Android 17 源码包含 `benchmark/jni-perf`。它比较空 JNI 调用以及 ART 内部 `ScopedObjectAccess` 路径，构建到 `libartbenchmark`。这套代码依赖平台内部头文件与构建环境，适合作为实验设计和回归对照，不适合直接复制到普通 APK，也没有可跨设备复用的固定数字。
 
-## 版本演进
+源码入口：
 
-| Android 版本 | JNI 相关变化 |
+- [`JniPerfBenchmark.java`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/benchmark/jni-perf/src/JniPerfBenchmark.java)
+- [`perf_jni.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/benchmark/jni-perf/perf_jni.cc)
+- [`benchmark/Android.bp`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/benchmark/Android.bp)
+
+## 11. 16KB page size 与 JNI 的关系
+
+Android 17 设备可能采用 4KB 或 16KB page size。page size 会影响 ELF segment 对齐、`mmap` 粒度、guard page、缺页和 native 库可加载性，但不会自动缩短 ART 的 JNI 状态转换。
+
+对本章主题，16KB 需要检查的是：
+
+- APK 中所有 native 库能否在 16KB 设备加载；
+- 自定义 allocator、共享内存、文件映射是否写死 4096；
+- pthread stack/guard、自定义 signal stack 的计算是否使用运行时 page size；
+- 性能结论是否同时覆盖目标设备的 page-size 配置。
+
+不要把整机启动或内存指标的变化直接归因到 JNI。ELF 对齐、打包工具链与动态链接器验证见 [§8.11 Native 库加载与动态链接器](11-native-library-loading-dynamic-linker.md)。
+
+## 12. 一套可执行的审阅顺序
+
+面对 JNI 热点时，按下面的顺序收集证据：
+
+1. 统计每帧、每请求或每秒的 native 调用数，并记录传输字节量；
+2. 用 Perfetto 外层/内层 slice 分开业务请求与 native 主体；
+3. 对长 native 主体做 CPU sampling，检查算法、锁和 I/O；
+4. 对短高频调用写 Microbenchmark，分别测 regular、Fast、Critical 和批处理；
+5. 检查对象参数、字符串、数组 API、Release mode 与临时分配；
+6. 将 Critical 区间与 GC pause、帧尾延迟对齐；
+7. 用 JNI heap、`.IndirectRef` 趋势和代码计数审计引用生命周期；
+8. 检查 pthread 创建率、Attach/Detach 次数、线程上限与栈配置；
+9. 优先改接口粒度，再评估注解或局部汇编差异；
+10. 在 Android 8～17 的实际支持范围做兼容与回归验证。
+
+结果记录至少包含设备型号、SoC、ABI、Android build、ART 编译状态、温控状态、构建类型、线程策略、输入规模和统计分布。缺少这些条件的单个纳秒数字只能视为一次设备样本。
+
+## 13. 版本演进与 Android 17 结论
+
+| 版本阶段 | 对本章的影响 |
 | --- | --- |
-| Android 8 (API 26) | `@FastNative`/`@CriticalNative` 在系统内部引入；Local Reference 上限取消（Android 8.0+） |
-| Android 9 (API 28) | ART concurrent copying GC 正式启用，`GetPrimitiveArrayCritical` 更可能返回拷贝 |
-| Android 12 (API 31) | 内建 dynamic JNI linking 对 `@FastNative`/`@CriticalNative` 完整支持 |
-| Android 14 (API 34) | `@FastNative`/`@CriticalNative` 成为 CTS-tested public API |
-| Android 15 (API 35) | 16KB page size 支持，Google Play 强制要求 targeting Android 15+ 的 64 位提交 |
-| Android 16 (API 36) | 未发现新的公开 JNI annotation 语义变化 |
-| Android 17 (API 37) | JNI 核心机制未变；ART Module 独立更新可能带来设备差异；16KB page size 在新设备上普遍启用 |
+| Android 8 | Local Reference 移除旧固定小容量限制；Critical Native 在应用侧需要显式注册 |
+| Android 12 | Critical Native 支持运行时动态符号发现，常规应用接入更简单 |
+| Android 14 | `@FastNative` 与 `@CriticalNative` 成为公开 API，并纳入 CTS 兼容约束 |
+| Android 15～17 | 16KB page-size 兼容进入 native 工具链和设备验证范围；JNI 的 GC、引用与 ABI 约束仍需按当前 ART 源码审阅 |
 
-## 与其他章节的关系
+Android 17 上可以保留四条稳定结论：
 
-- **§1.15 JNI/NDK 性能优化**：本节的总纲，涵盖 `@FastNative`/`@CriticalNative` 通用准则、字符串/数组/DirectByteBuffer 选型、16KB page size 对 NDK 的影响
-- **§8.11 Native 库加载与动态链接性能**：Bionic linker 加载 `.so` 的流程、Linker Namespace、16KB 对齐检查
-- **§8.19 端到端触控延迟优化实战**：输入事件管线中的 native 调用路径
-- **§13.22 Perfetto SQL 查询手册**：JNI 相关 slice 的聚合查询方法
+- 普通 JNI 会进入 `kNative`，长纯 native 计算不会仅凭调用时长阻塞 GC；
+- Fast/Critical 省去状态转换后必须保持极短、无阻塞；
+- 普通 Elements 对可移动 primitive 数组通常复制，Primitive Critical 以限制 moving GC 换取直接地址；
+- 批量接口、明确数据所有权和物理线程复用，通常比追逐固定指令数更可靠。
 
 ## 参考资料
 
-- 官方文档
-  - `https://developer.android.com/training/articles/perf-jni` — JNI 性能提示
-  - `https://developer.android.com/reference/dalvik/annotation/optimization/FastNative` — @FastNative 参考
-  - `https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative` — @CriticalNative 参考
-  - `https://developer.android.com/guide/practices/page-sizes` — 16KB page size 指南
-  - `https://developer.android.com/studio/profile/memory-profiler#jni-references` — JNI 引用监控
-- AOSP 源码路径（android-17.0.0_r1）
-  - `art/runtime/native_entry_points.h` — ART native 方法入口点定义
-  - `art/runtime/jni/jni_env_ext.h` — JNIEnv 扩展结构
-  - `art/runtime/thread.h` — Thread 状态机和 `state_and_flags` 字段
-  - `art/runtime/arch/arch_jni_frame.h` — JNI 栈帧布局
-  - `frameworks/base/core/java/android/os/Parcel.java` — @FastNative 使用示例
-  - `frameworks/base/core/java/android/os/Binder.java` — @CriticalNative 使用示例
-  - `frameworks/native/include/android/trace.h` — ATrace_beginSection / ATrace_endSection
-- 研究素材
-  - `intake/research-feeds/2026-04-07-19-art-fastnative-criticalnative-jni-optimization.md`
-  - `intake/research-feeds/2026-04-07-11-android-16kb-page-size-jni-native-library-quantification.md`
-  - `[结构参考: Cubox/ART 虚拟机 - JNI 优化简史-2023-06-27.md]`
-  - `[结构参考: Cubox/Android C++系列：JNI开发准则 - 掘金-2022-04-21.md]`
+- [JNI Tips](https://developer.android.com/ndk/guides/jni-tips)
+- [`@FastNative`](https://developer.android.com/reference/dalvik/annotation/optimization/FastNative)
+- [`@CriticalNative`](https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative)
+- [Android 16KB page-size 支持](https://developer.android.com/guide/practices/page-sizes)
+- [Android Studio JNI heap](https://developer.android.com/studio/profile/record-java-kotlin-allocations)
+- [`dumpsys meminfo`](https://developer.android.com/tools/dumpsys)
+- [AOSP ART `android-17.0.0_r1`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/)
+- [AOSP bionic `android-17.0.0_r1`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/)
+- [Android common kernel `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)
+
+## 交叉引用
+
+- [§1.15 JNI/NDK 互操作性能：ID 缓存、异常、字符串与 Direct Buffer](../../part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md)
+- [§8.11 Native 库加载与动态链接器：16KB、ELF 与命名空间](11-native-library-loading-dynamic-linker.md)
+- [§8.19 Android 线程模型与 Dispatcher：线程池与调度边界](19-thread-model-dispatcher-selection.md)
