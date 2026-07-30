@@ -5,9 +5,9 @@ section: "16.6"
 status: finalized
 drafted_date: "2026-05-15"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
-last_verified: "2026-07-01"
+last_verified: "2026-07-30"
 last_verified_against: "AOSP android-17.0.0_r1 ArtFileManager.java / ArtManagerLocal.java / DexMetadataHelper.java / ArtManagedInstallFileHelper.java; source.android.com ART Service configuration; Android Developers Baseline Profiles docs"
-confidence: medium
+confidence: high
 tags: ["android-16", "art", "dexopt", "baseline-profile", "cloud-profile", "package-manager"]
 related_chapters: ["1.7", "1.9", "8.7", "16.5", "21.4"]
 created_by: "task2a-knowledge-gap"
@@ -20,14 +20,16 @@ sources:
     path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
   - type: official
     path: "https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles"
+  - type: official
+    path: "https://developer.android.com/topic/performance/baselineprofiles/confirm-startup-profiles"
   - type: aosp
-    path: "art/libartservice/service/java/com/android/server/art/ArtFileManager.java"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtFileManager.java"
   - type: aosp
-    path: "art/libartservice/service/java/com/android/server/art/DexMetadataHelper.java"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/DexMetadataHelper.java"
   - type: aosp
-    path: "art/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/content/pm/DexMetadataHelper.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/pm/dex/DexMetadataHelper.java"
   - type: material
     path: "intake/research-feeds/2026-04-07-11-android16-cloud-compilation-baseline-startup-profiles.md"
   - type: blog
@@ -94,11 +96,11 @@ Cloud Profile、Baseline Profile 和 Startup Profile 都会影响发布包的代
 
 | 类型 | 生产者 | 分发位置 | 主要作用 | 开发者控制度 |
 |------|--------|----------|----------|--------------|
-| Baseline Profile | 应用或库开发者，通常由 Macrobenchmark / Gradle 生成 | APK / AAB 内的 `baseline.prof`、`baseline.profm`，或转换后的 `.dm` | 让新用户和每次更新后的关键路径更早被 AOT 编译 | 高：CI 可生成、检查、回归验证 |
+| Baseline Profile | 应用或库开发者，通常由 Macrobenchmark / Gradle 生成 | APK / AAB 内的 `baseline.prof`、`baseline.profm`；安装渠道还可转换成 `.dm` | 让新用户和每次更新后的关键路径更早被 AOT 编译 | 高：CI 可生成、检查、回归验证 |
 | Startup Profile | 应用构建流程，AGP / R8 消费 | 构建期输入，不等同于运行期 profile 文件 | 指导 DEX layout，把启动路径相关代码放到更友好的布局里 | 中：依赖 AGP、R8 和规则覆盖 |
 | Cloud Profile | Google Play 侧基于真实用户数据生成 | Play 分发路径，设备端由 ART Service 尝试消费 | 补齐单设备本地 profile 不可用或样本不足的场景 | 低：开发者只能间接影响覆盖路径 |
 
-Baseline Profile 面向 Day-0：应用还没有在这台设备上跑过，也能把启动、登录、首页、列表滚动这类关键路径提前交给 ART。Startup Profile 面向布局：它影响 DEX 中代码排列，减少启动阶段跨 DEX、跨页面读取带来的 I/O 成本。Cloud Profile 面向分发规模：当 Play 已经有足够样本时，它能给新安装设备提供更接近真实热路径的 profile 输入。
+Baseline Profile 面向 Day-0：应用还没有在这台设备上跑过，也能把启动、登录、首页、列表滚动这类关键路径提前交给 ART。Startup Profile 面向布局：它影响 DEX 中代码排列，减少启动阶段跨 DEX、跨页面读取带来的 I/O 成本。Cloud Profile 面向分发规模：当 Play 已经有足够样本时，它能给新安装设备提供更接近真实热路径的 profile 输入。官方资料给出的限制是 Android 9 / API 28 以上、应用需要足够大的用户样本，而且一次更新后的 Cloud Profile 通常要经过数小时到数天才逐步可用。因此，Baseline Profile 仍是开发团队能够为首批安装主动准备的输入。
 
 ## `.dm` 是 Profile 进入安装路径的外壳
 
@@ -107,6 +109,7 @@ Dex Metadata 文件使用 `.dm` 后缀，和目标 APK 按文件名配对。AOSP
 Android 17 的校验边界分两层：
 
 - `ArtManagedInstallFileHelper.validateDmFile()` 检查同目录下能否找到对应 APK。
+- 独立 profile sidecar 使用 `<apk-path>.prof` 命名，所以 `base.apk` 对应 `base.apk.prof`；这条规则与 `base.dm` 不同。
 - framework 侧 `validateDexMetadataFile()` 用 `StrictJarFile` 打开归档。源码注释提到 `manifest.json`、package name 和 version code，但 r1 方法体没有解析或比对这些字段。
 
 ART Service 侧还会继续解析 `.dm` 的内容。`art/libartservice/service/java/com/android/server/art/DexMetadataHelper.java` 会读取 `config.pb`，并根据 ZIP 里的 profile entry、VDEX entry 判断类型：只有 profile、只有 VDEX，或 profile + VDEX。这个设计解释了为什么 `.dm` 不能简单理解成“Baseline Profile 文件”：它是一个容器，profile 只是其中一种可携带内容。
@@ -122,7 +125,7 @@ adb shell pm compile -m speed-profile -f -v com.example.app
 adb shell pm art dump com.example.app
 ```
 
-`pm art clear-app-profiles` 清理 current/reference 等本地 profile，保留 cloud profile、embedded profile 等外部 profile。`pm compile -m speed-profile -f -v` 会在 verbose result 中输出 `actualCompilerFilter`。值为 `speed-profile` 说明 ART 找到了可用 profile；值为 `verify` 时，应检查文件名、格式和 DEX checksum。`pm art dump` 是 Android 17 ART Service 的直接状态入口，`dumpsys package dexopt` 可作为兼容旧工具的补充。
+`pm art clear-app-profiles` 清理 current/reference 等本地 profile，不删除 Cloud Profile 这类外部 profile。`pm compile -m speed-profile -f -v` 会在 verbose result 中输出 `actualCompilerFilter`。值为 `speed-profile` 说明 ART 找到了可用 profile；值为 `verify` 时，应检查文件名、格式和 DEX checksum。`pm art dump` 是 Android 17 ART Service 的直接状态入口，`dumpsys package dexopt` 可作为兼容旧工具的补充。
 
 ## ART Service 接管了 Android 14 之后的 dexopt 控制面
 
@@ -137,10 +140,9 @@ pm.dexopt.boot-after-mainline-update=verify
 pm.dexopt.bg-dexopt=speed-profile
 pm.dexopt.inactive=verify
 pm.dexopt.cmdline=verify
-pm.dexopt.shared=speed
 ```
 
-这组默认值反映了 Android 编译策略的取舍：开机和 OTA 后优先保证系统可用，后台空闲阶段再补 profile-guided 编译。`pm.dexopt.shared` 是一个特殊兜底项，面向被其他应用通过 `<uses-library>` 或 `Context#createPackageContext(..., CONTEXT_INCLUDE_CODE)` 使用的包。官方文档说明，这类包出于隐私原因不能使用本地 profile；如果请求 profile-guided 编译，ART Service 会先尝试使用 Cloud Profile，找不到 Cloud Profile 时再退回 `pm.dexopt.shared` 指定的 filter。
+这组值是标准 dexopt reason 的默认配置：开机和 OTA 后优先保证系统可用，后台空闲阶段再补 profile-guided 编译。`pm.dexopt.shared=speed` 是另一个特殊兜底项，面向被其他应用通过 `<uses-library>` 或 `Context#createPackageContext(..., CONTEXT_INCLUDE_CODE)` 使用的包。官方文档说明，这类包出于隐私原因不能使用本地 profile；如果请求 profile-guided 编译，ART Service 会先尝试使用 Cloud Profile，找不到 Cloud Profile 时再退回 `pm.dexopt.shared` 指定的 filter。
 
 Android 17 exact tag 由 `BackgroundDexoptJob` 构造任务并执行工作，`BackgroundDexoptJobService` 作为 JobService 入口；旧资料里的 `BackgroundDexOptService` 类名不适用于这个 tag。常规后台任务的 job ID 为 `27873780`，周期为一天，要求 device idle、charging、battery-not-low。用户安装后马上启动时，后台 dexopt 可能尚未运行。线下验证启动收益时，除了检查包内 `baseline.prof`，还要读取当前设备的 dexopt 状态。
 
@@ -150,7 +152,7 @@ Android 16 引入 SDM 格式，Android 17 r1 保留完整的设备端管理路�
 
 AOSP android-17.0.0_r1 的 `ArtFileManager` 仍然把 SDM 纳入可写与可用产物列表。源码里 `getWritableArtifacts()` 会为 primary dex 构造 `SecureDexMetadataWithCompanionPaths`；`getUsableArtifacts()` 也会识别 `ArtifactsLocation.SDM_DALVIK_CACHE` 和 `ArtifactsLocation.SDM_NEXT_TO_DEX`。这说明 ART Service 的产物管理已经知道“SDM 位置上的编译产物”这一类对象。
 
-`ArtManagerLocal.deleteDexoptArtifacts(snapshot, packageName)` 在注释里把 cloud dexopt artifacts 单列出来，删除范围包括 VDEX、ODEX、ART、SDM、SDC。`PrimaryDexopter` 还会创建 SDC，并在本地 dexopt 成功后删除不再需要的 SDM/SDC。设备端能够管理这些文件，并不说明某次 Play 安装一定携带了它们。
+`ArtManagerLocal.deleteDexoptArtifacts(snapshot, packageName)` 在注释里把 cloud dexopt artifacts 单列出来，删除范围包括 VDEX、ODEX、ART、SDM、SDC。Android 17 r1 的 `PrimaryDexopter` 会在 Baklava 及以上版本为各 ABI 尝试创建 SDC；当结果为 `DEXOPT_PERFORMED` 且当前流程不是 pre-reboot dexopt 时，再删除已消费的 SDM/SDC。设备端能够管理这些文件，并不说明某次 Play 安装一定携带了它们。
 
 外部报道把 Android 16 Cloud Compilation 描述为：分发侧运行编译，再把预生成产物放进 SDM 随 APK 下发。AOSP r1 只覆盖设备端半程：识别 SDM artifact location、校验 ISA 与签名、把 SDM 交给 ART 工具、清理相关文件。它没有公开 Google Play 的样本门槛、ABI 选择、生成服务或灰度策略。
 
@@ -173,14 +175,20 @@ AOSP android-17.0.0_r1 的 `ArtFileManager` 仍然把 SDM 纳入可写与可用�
 
 应用侧能稳定控制三件事：生成 profile、确保产物进包、用同一台设备复核编译状态。
 
-CI 中应把 Baseline Profile 当成 release 产物的一部分检查。官方当前给出的稳定检查点是 APK 内的 `/assets/dexopt/baseline.prof`，以及 AAB 内的 `/BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`。Startup Profile 是构建期 DEX layout 输入，包内没有独立 `startup.prof` 可供安装时检查；AGP 8.8 及以上可结合 AAB 中的 `r8.json` 查看 startup DEX 标记。
+CI 中应把 Baseline Profile 当成 release 产物的一部分检查。官方当前给出的稳定检查点是 APK 内的 `/assets/dexopt/baseline.prof`，以及 AAB 内的 `/BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`。供 ART 使用的二进制 Baseline Profile 必须小于 1.5 MB。Startup Profile 是构建期 DEX layout 输入，包内没有独立 `startup.prof` 可供安装时检查；AGP 8.8 及以上可读取 AAB 中的 `BUNDLE-METADATA/com.android.tools/r8.json`，检查 `dexFiles` 里是否至少有一项 `"startup": true`。
+
+下面的命令分别检查 Baseline Profile 是否进包，以及 AGP 8.8 以上的 Startup Profile 是否改变了 DEX 布局元数据：
 
 ```bash
 unzip -l app-release.apk | grep 'assets/dexopt/baseline.prof'
 unzip -l app-release.aab | grep 'BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof'
+unzip -j -o app-release.aab 'BUNDLE-METADATA/com.android.tools/r8.json'
+jq '.dexFiles' r8.json
 ```
 
-这些命令只证明构建产物包含 Baseline Profile。非 Play 本地安装还要确认 AGP/ProfileInstaller 的安装路径，或显式使用配对的 `.dm`。设备端状态可用以下命令检查：
+前两条只能证明构建产物包含 Baseline Profile；后两条检查 Startup Profile 的构建期应用结果，不能证明设备已经完成 profile-guided 编译。非 Play 本地安装还要确认 AGP/ProfileInstaller 的安装路径，或显式使用配对的 `.dm`。设备端状态可用以下命令检查：
+
+下面的命令安装 release APK，强制执行一次 profile-guided 编译，再读取 ART Service 记录的状态：
 
 ```bash
 adb install -r app-release.apk
@@ -188,14 +196,16 @@ adb shell pm compile -m speed-profile -f -v com.example.app
 adb shell pm art dump com.example.app
 ```
 
-如果输出仍停在 `verify`，应查文件名、DEX checksum、安装来源和 AGP/ProfileInstaller 行为。不要直接归因到云端编译。`actualCompilerFilter=speed-profile` 也只证明存在可用 profile，不能区分 Baseline、Cloud 或本地采集来源。启动收益还要用 Macrobenchmark 在同一包、同一设备、同一脚本下对比 `CompilationMode.None()` 与 `CompilationMode.Partial()`，指标至少包含 TTID、TTFD 和启动阶段 jank。
+如果输出仍停在 `verify`，应查文件名、DEX checksum、安装来源和 AGP/ProfileInstaller 行为。不要直接归因到云端编译。Google Play 安装、Package Manager 安装、Android Studio/Gradle 安装和 ProfileInstaller 路径的编译时机可能不同；判断安装时或后台编译，应同时查看 `reason=install-dm`、`reason=bg-dexopt` 等状态。`actualCompilerFilter=speed-profile` 也只证明存在可用 profile，不能区分 Baseline、Cloud 或本地采集来源。
+
+启动收益还要用 Macrobenchmark 在同一包、同一设备、同一脚本下对比 `CompilationMode.None()` 与 `CompilationMode.Partial(baselineProfileMode = BaselineProfileMode.Require)`。`Require` 能在 Baseline Profile 或 ProfileInstaller 缺失时直接暴露配置错误，避免把未使用 profile 的结果计入优化组。指标至少包含 TTID、TTFD 和启动阶段 jank。
 
 ## 安装耗时和启动收益不是同一个指标
 
 Profile 体系经常同时影响安装、首次启动和后续启动，但三个指标不能互相替代。
 
 - 安装耗时：看 session 提交、APK 复制、签名校验、包扫描、metadata 校验、dexopt 或 SDM 产物接收。可用 cloud dexopt artifact 可能减少设备端重复编译工作，但还会增加产物下载、校验和写盘。
-- 首次启动：看启动路径是否已经有可用 OAT / VDEX / ART 产物，是否减少解释执行、JIT 热身和 page fault。Baseline Profile 的收益主要体现在这里。
+- 首次启动：看启动路径是否已经有可用 OAT / VDEX / ART 产物，是否减少解释执行、JIT 热身和 page fault。Baseline Profile 通常在首次启动最容易观察到差异，也可以覆盖滚动、页面跳转等其他关键交互。
 - 后续启动：看本地 JIT profile、后台 `bg-dexopt`、Cloud Profile 是否继续补齐热点路径。这个阶段的收益会随用户行为收敛。
 
 设备性能、存储速度、包体、DEX 数量和网络都会改变收益分布。评价方案时要把安装 wall time、设备端 dex2oat CPU time、下载字节、TTID、TTFD、编译状态分开记录。
@@ -214,6 +224,8 @@ Profile 体系经常同时影响安装、首次启动和后续启动，但三个
 - [Baseline Profiles overview](https://developer.android.com/topic/performance/baselineprofiles/overview)
 - [Debug Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles)
 - [Create Startup Profiles](https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations)
+- [Confirm Startup Profiles optimization](https://developer.android.com/topic/performance/baselineprofiles/confirm-startup-profiles)
+- [Difference between Baseline Profiles and Startup Profiles](https://developer.android.com/topic/performance/baselineprofiles/difference-baseline-startup)
 - [AOSP r1：ArtManagerLocal.java](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtManagerLocal.java)
 - [AOSP r1：ArtFileManager.java](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtFileManager.java)
 - [AOSP r1：ArtManagedInstallFileHelper.java](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java)
