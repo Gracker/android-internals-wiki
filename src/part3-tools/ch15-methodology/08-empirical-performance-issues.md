@@ -6,20 +6,36 @@ status: finalized
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)（章节方法适用范围；实证数据为跨版本综合观察）"
-last_verified: "2026-04-18"
-last_verified_against: "arXiv 2407.05090 / Android View docs / Perfetto FrameTimeline docs"
-confidence: medium
+last_verified: "2026-07-30"
+last_verified_against: "arXiv:2407.05090v3（2025-10-11）；Android 17 / API 37 / AOSP android-17.0.0_r1；kernel android17-6.18-2026-06_r6"
+confidence: medium-high
 sources:
   - type: paper
-    path: "https://arxiv.org/abs/2407.05090"
+    path: "https://arxiv.org/pdf/2407.05090v3"
+  - type: artifact
+    path: "https://github.com/Dianshu-Liao/Android-Performance-Analysis"
+  - type: official
+    path: "https://perfetto.dev/docs/data-sources/frametimeline"
+  - type: official
+    path: "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+  - type: official
+    path: "https://developer.android.com/topic/performance/performance-measurement-examples"
   - type: official
     path: "https://developer.android.com/reference/android/view/View#invalidate()"
   - type: official
     path: "https://developer.android.com/reference/android/view/View#requestLayout()"
   - type: official
-    path: "https://perfetto.dev/docs/data-sources/frametimeline"
+    path: "https://developer.android.com/reference/android/content/SharedPreferences"
   - type: official
-    path: "https://developer.android.com/topic/performance"
+    path: "https://source.android.com/docs/core/perf/cached-apps-freezer"
+  - type: source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java"
+  - type: source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java"
+  - type: source
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/IPCThreadState.cpp"
+  - type: source
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6"
 tags:
   - android
   - research
@@ -50,12 +66,11 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-05
 ---
 
-
 # 15.8 Android 性能问题实证：真实世界的分类与代码模式
 
-前面 15.3 讲的是怎么度量性能，15.5 讲的是怎么发现性能问题。本节换一个角度，看真实世界里的 Android 性能问题到底集中在哪些地方，用户、开发者和研究者各自在盯什么。
+性能团队很容易被手边的工具塑造优先级：有 heap dump，就多查泄漏；有功耗实验室，就多查能耗；有帧时间面板，就多查卡顿。实证研究能提供另一组参照：用户报告什么、开发者讨论和修复什么、论文研究什么。
 
-只靠直觉排优先级，时间很容易花在次要问题上。实证数据更适合拿来做校准。
+这类研究适合校准问题覆盖面，不能直接代替本产品的线上数据。样本来源、过滤方法、最终样本量和 Android 版本都会限制结论的外推范围。
 
 <!-- outline-start -->
 
@@ -70,243 +85,385 @@ last_deepseek_cn_review_at: 2026-07-05
 
 <!-- outline-end -->
 
-## 用户、开发者、研究者：三个完全不同的关注点
+## 固定论文版本与统计口径
 
-这是本节最有冲击力的数据。2024 年发表在 arXiv 上的一项大规模实证研究 [引用: arxiv.org/abs/2407.05090] 收集了四个独立的数据源：
+本章引用 [arXiv:2407.05090v3](https://arxiv.org/pdf/2407.05090v3)，revision 日期为 2025-10-11。论文的复现资料位于 [Android-Performance-Analysis](https://github.com/Dianshu-Liao/Android-Performance-Analysis)。
 
-- Google Play **60,684 条**用户负面评论，经关键词过滤后保留 114 条有效样本
-- Stack Overflow **749,067 条**问题帖子，经关键词过滤后保留 1,484 条
-- GitHub **16,977 个 issue + 344,922 个 commit**，经人工审核后保留 69 个 issue 和 222 个 commit
-- 同期发表的 **85 篇** Android 性能相关学术论文
+版本号必须写进引用。当前 arXiv 摘要页、v3 PDF 和复现仓库 README 存在摘要数字不同步：
 
-论文的统计口径是 raw crawl → keyword filter → manual checking。四组数据分别是 60,684 → 165 → 114，749,067 → 2,158 → 1,484，16,977 → 149 → 69，344,922 → 558 → 222。表里的百分比都以后一步人工核查后的有效样本为分母。
+- v3 PDF 使用 85 篇论文、14 个公开工具、12 个公开数据集；
+- v3 PDF 给出的未覆盖比例是：研究 57.14%、工具 63.41%、数据集 70.73%；
+- arXiv 摘要页截至 2026-07-30 显示“工具未覆盖 76.39%、数据集未覆盖 66.67%”，与 v3 PDF 的 63.41% 和 70.73% 冲突；
+- 复现仓库 README 对汇总表仍写“66 篇论文”，与 v3 PDF 纳入 85 篇冲突。
 
-四组数据放在一起，呈现了一个值得关注的差异：
+本章的分子、分母和比例全部以 v3 PDF 正文、表格及结论为准。引用“论文发现”时也要带 revision，避免将不同修订版的数字放在一张表里。
 
-| 视角 | 最关注的问题 | 占比 |
-|------|------------|------|
-| **用户**（Google Play 负面评论） | 响应性（ANR、卡顿、启动慢） | 62.3% |
-| **开发者**（Stack Overflow） | 内存消耗（OOM、内存泄漏） | 66.1% |
-| **开发者**（GitHub Commits） | 内存消耗（OOM、内存泄漏） | 80.6% |
-| **研究者**（85 篇论文） | 能耗（电池消耗、WakeLock） | 81.18% |
+## 数据从哪里来
 
-[已验证: arxiv.org/abs/2407.05090, 大规模实证研究]
+研究的现实世界部分采用“原始采集 → 87 个性能关键词过滤标题 → 两名作者人工核查”的流程。最终用于分类的样本远小于原始采集量：
 
-具体来看，用户投诉中响应性占 62.3%（ANR、卡顿、启动慢），Stack Overflow 上内存类问题占 66.1%，GitHub commit 中内存类问题更高达 80.6%；而学术论文的 81.18% 集中在能耗问题上。三者几乎不重叠。
+| 数据源 | 原始数据 | 关键词过滤后 | 人工核查后 | 代表的视角 |
+|---|---:|---:|---:|---|
+| Google Play 负面评论 | 60,684 | 165 | 114 | 用户 |
+| Stack Overflow Android 问题 | 749,067 | 2,158 | 1,484 | 开发者 |
+| GitHub Issues | 16,977 | 149 | 69 | 开发者 |
+| GitHub Commits | 344,922 | 558 | 222 | 开发者 |
 
-更具体的数字：**57.14% 的真实根因（63 项中的 27 项）从未被学术研究涉及**；**63.41% 的综合因素（82 项中的 52 项）没有对应的检测工具**。也就是说，大量真实性能问题既没有被系统研究过，也没有现成的工具能自动发现。
+Google Play 的 60,684 条负面评论来自 909,430 条评论的情感模型筛选。GitHub 数据来自 1,643 个同时出现在 F-Droid 与 Google Play 的开源应用。人工核查的一致性以 Cohen's kappa 评估，四组结果为 0.868 至 0.944。
 
-这组数据告诉我们一件事：**如果你的性能优化策略只来自学术文献或工具推荐，你可能遗漏了用户最关心的问题。**
+论文部分从五个数字图书馆检索，经 venue 过滤、人工排除和前后向 snowballing，纳入 85 篇 2012—2024 年的研究。论文、工具与数据集可同时覆盖多个性能类别，所以“69/85 篇研究能耗”不是互斥饼图。
 
-## 七类性能后果，与 63 个真实世界因素、82 个综合 taxonomy 因素
+### 这些比例能回答什么
 
-论文先在 Google Play、Stack Overflow、GitHub Issues、GitHub Commits 这四组真实世界样本里归纳出 63 个影响因素（contributing factors），再和 85 篇文献的结果合并，形成 7 类性能后果（performance consequences）、82 个影响因素的分类体系（taxonomy）。63 说的是真实世界里真正出现过的因素，82 还包含了文献里讨论但真实世界样本里没有出现的 19 个因素。
+它们描述的是这项研究最终样本中的分布，可以用于：
 
-| 一级类目 | 论文里的含义 | 本书里的常见观测入口 |
-|------|------|------|
-| Responsiveness | 点击无反馈、ANR、启动和交互延迟 | 主线程、输入分发、`Choreographer#doFrame`、启动路径 |
-| Memory Consumption | 内存泄漏、OOM、频繁 GC、缓存失控 | Memory Profiler、heap dump、Perfetto GC |
-| Energy Consumption | 后台唤醒、WakeLock、定位和网络持续活跃 | `batterystats`、Battery Historian、Perfetto 功耗轨道 |
-| Storage Consumption | 缓存、日志、数据库或临时文件膨胀 | 文件 I/O、SQLite、磁盘占用统计 |
-| CPU Usage | 主线程或后台线程长期高占用 | `simpleperf`、`top`、Perfetto scheduling |
-| GPU Usage | 渲染指令过重、过度绘制、GPU 合成成本高 | RenderThread、Profile GPU Rendering、GPU counter |
-| Internet Data Usage | 重复下载、过量同步、数据传输浪费 | Network Profiler、抓包、客户端和服务端日志 |
+- 检查团队是否只覆盖某一类性能后果；
+- 比较用户可感知问题、开发者修复记录与研究投入的差异；
+- 寻找静态工具较难覆盖的运行时因素；
+- 设计 Code Review 和动态验证的互补范围。
 
-本书里常单独展开的启动、流畅性、I/O，并不都在论文里作为一级类目出现。启动慢和很多交互卡顿通常落在 Responsiveness；主线程 I/O、复杂布局、Bitmap 解码更接近 contributing factors。把后果和根因分开看，论文 taxonomy 和日常排查就能对上号。
+它们无法直接回答：
 
-### 观测入口与版本边界
+- 某个产品的 ANR、OOM 或耗电应占多少资源；
+- 2026 年全部 Android 应用的总体问题分布；
+- Android 17 新机制带来的增量风险；
+- 某段可疑代码是否已经造成用户影响。
 
-Android 12 及以上可以直接看 Perfetto 的 Frame Timeline。Expected Timeline 和 Actual Timeline 能直接反映一帧的预算和实际完成时间。Android 8-11 没有这组轨道，回退入口是 `adb shell dumpsys gfxinfo <package> framestats`、`gfxinfo` 聚合统计，或者 trace 里的 `Choreographer#doFrame`、主线程 traversal 和 RenderThread。
+关键词只匹配标题，可能漏掉没有性能词的记录；最终用户评论只有 114 条，GitHub issue 只有 69 条；开源应用与商业闭源应用也可能不同。论文在 threats to validity 中明确列出了情感模型、抓取完整性、人工标注和样本代表性限制。
 
-ANR 也不能写成统一 5 秒。输入分发超时常见的默认量级约为 5 秒，广播、服务、ContentProvider 等路径各有自己的超时条件。本节把它们统一归到响应性问题，具体阈值看 §9.1。
+## 用户、开发者与研究者的关注点
 
-## 六类论文代码模式与一类现代工程补充
+### 同一张表中的分母不同
 
-除了分类体系，研究者还从 GitHub commit 中归纳出了六类导致性能问题的代码模式。这些模式来自开发者在真实项目里反复踩过的坑。本节在论文分类之外补一类现代 Android 工程里高频出现的响应性风险：主线程同步 Binder 调用。
+| 视角与数据源 | 最常见类别 | 比例 | 分母含义 |
+|---|---|---:|---|
+| 用户：Google Play | Responsiveness | 62.3% | 114 条核查后评论 |
+| 开发者：Stack Overflow | Memory Consumption | 66.1% | 1,484 个核查后问题 |
+| 开发者：GitHub Issues | Memory Consumption | 60.0% | 69 个核查后 issue |
+| 开发者：GitHub Commits | Memory Consumption | 80.6% | 222 个核查后 commit |
+| 研究者：论文 | Energy Consumption | 81.18% | 69/85 篇论文，类别可重叠 |
 
-### 模式一：API 误用（API Misuse）
+用户最容易直接描述无响应、界面卡住、操作慢等结果。开发者的问答与修复提交更容易留下 OOM、泄漏、缓存和对象生命周期证据。85 篇论文中有 69 篇涉及能耗，研究投入明显偏向 Energy Consumption。
 
-最常见的性能代码模式。API 本身没有问题，问题出在调用方式上。几个典型例子：
+这些来源仍有交集。用户评论里也有能耗、存储和网络流量，开发者也修复响应性问题，研究也覆盖内存与响应性。研究支持的判断是“各来源的主导类别不同”，不能表述成“各方关注完全分离”。
 
-**在主线程执行耗时操作**——在 onClick() 里直接调用网络请求、数据库查询、大文件读取。Android 的主线程负责所有 UI 渲染和事件处理，在上面做 I/O 或计算密集操作，直接后果就是卡顿或 ANR。
+### 57.14%、63.41%、70.73% 的正确分子
 
-Java 版本可以用后台 `Executor` 执行网络请求，再通过主线程 `Handler` 回到 UI 线程。下面是示意代码，省略了线程池释放和错误展示的业务实现。
+论文先从现实世界样本归纳 63 个 contributing factors，再与文献中出现的 19 个额外因素合并，形成 82 个因素的 taxonomy。
 
-```java
-// 错误：主线程网络请求
-button.setOnClickListener(v -> {
-    String result = httpClient.execute(request); // 主线程阻塞
-    textView.setText(result);
-});
+| 覆盖对象 | 已覆盖 | 未覆盖 | 未覆盖比例 |
+|---|---:|---:|---:|
+| 学术研究对 63 个现实因素的覆盖 | 27/63 | 36/63 | 57.14% |
+| 公开工具对 82 个综合因素的覆盖 | 30/82 | 52/82 | 63.41% |
+| 公开数据集对 82 个综合因素的覆盖 | 24/82 | 58/82 | 70.73% |
 
-// Java：网络请求放到后台线程，UI 更新回到主线程
-ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
-Handler mainHandler = new Handler(Looper.getMainLooper());
+旧文案把“未研究 57.14%”写成“63 项中的 27 项未研究”，方向倒置。27/63 是已研究的 42.86%，未研究数是 36。14 个公开工具覆盖 30 个因素，12 个公开数据集覆盖 24 个因素；覆盖是 taxonomy 层面的标注，不等于工具对这些因素拥有稳定的工业检测率。
 
-button.setOnClickListener(v -> {
-    ioExecutor.execute(() -> {
-        try {
-            String result = httpClient.execute(request);
-            mainHandler.post(() -> textView.setText(result));
-        } catch (Exception e) {
-            mainHandler.post(() -> textView.setText("request failed"));
-        }
-    });
-});
+## 七类性能后果与 63/82 因素
+
+论文刻意分开 consequence 与 contributing factor：
+
+- **后果**描述用户或工程系统观察到什么；
+- **因素**描述哪些行为、资源或代码条件可能促成后果；
+- 一个因素可以影响多个后果，一个后果也可能由多个因素共同产生。
+
+例如，“主线程做图片解码”是因素；它可能引发响应性、内存与 CPU 后果。将“卡顿”“复杂布局”“主线程 I/O”写在同一层，会让告警、根因和修复措施混在一起。
+
+| 论文后果类别 | Android 工程里的表现 | Android 17 常用证据 |
+|---|---|---|
+| Responsiveness | ANR、输入延迟、启动慢、帧延迟 | Play Vitals、ANR trace、Perfetto sched/Binder/FrameTimeline、Macrobenchmark |
+| Memory Consumption | OOM、泄漏、频繁 GC、缓存增长 | heap dump、Memory Profiler、heapprofd、PSS/RSS、GC 与 kill 记录 |
+| Energy Consumption | 后台 CPU、WakeLock、传感器/定位/网络活跃 | batterystats、Perfetto power/CPU、Job 与 alarm 记录、设备功耗计 |
+| Storage Consumption | 数据库、缓存、日志、下载内容增长 | 应用目录分项、SQLite 大小与 WAL、文件 I/O、磁盘统计 |
+| CPU Usage | 长时间 Running/Runnable、热点函数、线程竞争 | Perfetto sched、simpleperf、CPU time、线程池队列 |
+| GPU Usage | GPU 工作过重、纹理/带宽压力、合成成本 | FrameTimeline、RenderThread、GPU counter（设备支持时）、SurfaceFlinger/HWC |
+| Internet Data Usage | 重复下载、失控重试、后台传输 | Network Inspector、TrafficStats、抓包、请求与服务端日志 |
+
+表里的工具是观测入口，不能与论文中的“自动检测工具覆盖率”混为同一指标。Perfetto 能展示调度、帧和 Binder 证据，但不会自动识别全部 82 个因素。
+
+### 版本边界
+
+| 平台范围 | 响应性与帧证据 |
+|---|---|
+| Android 8—9 | `dumpsys gfxinfo ... framestats`、atrace/systrace、主线程与 RenderThread、ANR trace |
+| Android 10—11 | 可使用 Perfetto system trace；FrameTimeline 尚不可用 |
+| Android 12—17 | 可采集 FrameTimeline，并结合 sched、Binder、frequency、memory 与自定义 trace |
+
+FrameTimeline 要求 Android 12 及以上。Expected Timeline 表示调度器给帧分配的时间窗；Actual Timeline 从 app 的 `Choreographer#doFrame` 或 native choreographer 回调开始，结束时间取 GPU 完成与 buffer post 中较晚者。它能帮助区分 app 与 SurfaceFlinger 侧 jank，还要继续查看子 slice、线程状态、flow 与 `jank_type`。
+
+下面的 Trace Processor SQL 用于列出 trace 中的 Actual Timeline 证据：
+
+```sql
+SELECT
+  process.name AS process_name,
+  ts / 1e6 AS ts_ms,
+  dur / 1e6 AS dur_ms,
+  jank_type,
+  present_type,
+  on_time_finish,
+  layer_name
+FROM actual_frame_timeline_slice
+LEFT JOIN process USING (upid)
+ORDER BY ts
+LIMIT 200;
 ```
 
-Kotlin 版本可以用 `lifecycleScope` 绑定页面生命周期，并把阻塞 I/O 收进 `Dispatchers.IO`。`withContext(Dispatchers.IO)` 只包住网络请求，后面的 UI 更新会回到 `lifecycleScope` 所在的 Main dispatcher。
+查询结果给出帧归属、时长、present 与 jank 分类。它还没有定位 app 内部方法；需要用 token/flow 对齐 `Choreographer#doFrame`、RenderThread、SurfaceFlinger，并检查相关线程的 Running、Runnable、Sleeping 与锁等待。
+
+## 六类现实代码模式
+
+论文从 Stack Overflow、GitHub issues 和 commits 的人工编码中归纳出六个宽泛类别。它们是经验分组，不是 Android API 规范，也不是看到一次就能判定为 bug 的静态规则。论文附带的个别代码片段同样要回到对应 Android 版本和运行证据复核。
+
+### 1. API Misuse
+
+论文定义包含调用错误、调用顺序错误和参数错误。Android 工程中还可以把以下候选纳入审查：
+
+- 主线程网络、文件、数据库或重计算；
+- 主线程连续同步 Binder 调用；
+- 生命周期结束后仍更新旧 UI；
+- 对 API 的线程、顺序、资源释放或参数约束理解错误；
+- 把异步 API 当作“没有 CPU、锁或磁盘成本”；
+- 协程 scope 与工作生命周期不匹配。
+
+`GlobalScope` 不会自动产生泄漏。它缺少结构化父任务，工作可能长于 Activity/Fragment；闭包若捕获页面、View 或回调，就可能延长引用生命周期。页面工作通常使用 `lifecycleScope`，跨配置页面状态使用 `viewModelScope`，进程级长期任务需要明确 owner、取消规则和持久化语义。取消 coroutine 也不会自动终止不支持取消的阻塞调用。
+
+#### `requestLayout()` 与 `invalidate()` 不能互换
+
+Android 17 的 `View.requestLayout()` 会清理 measure cache，设置 `PFLAG_FORCE_LAYOUT` 与 `PFLAG_INVALIDATED`，并在父节点尚未请求 layout 时向上传递。到 `ViewRootImpl.requestLayout()` 后，根节点设置 `mLayoutRequested` 并调度 traversal。当前帧是否重测整棵树，仍受父容器、measure spec、缓存、可见性和 traversal 状态影响。
+
+`View.invalidate()` 标记绘制内容或区域失效，向父节点传播 damage，必要时也会让 `ViewRootImpl` 调度 traversal。它通常不要求重新计算尺寸，但同一轮 traversal 可能因为其他状态执行 measure、layout、relayout 或 draw。几何尺寸与位置发生变化时用 `requestLayout()`；内容变化且边界不变时用 `invalidate()`；只改 transform、alpha 等渲染属性时还可能走 RenderThread 友好的属性动画路径。
+
+“`requestLayout()` 必然完整 measure + layout + draw”与“`invalidate()` 只执行 draw”都过度简化了 Android 17 的实现。
+
+### 2. Unreleased References
+
+这一类关注长生命周期 owner 持有短生命周期对象：
+
+- singleton、静态字段或进程级缓存持有 Activity、Fragment、View 或它们的 Context；
+- listener、observer、callback、receiver 注册在长生命周期对象上，没有按协议解除；
+- Fragment 的 ViewBinding 在 `onDestroyView()` 后仍被 Fragment 字段持有；
+- Handler、Runnable、线程、coroutine 或 native callback 捕获已销毁页面；
+- 无界缓存、集合或 map 保留旧 key/value。
+
+匿名内部类和 lambda 不会一律捕获整个外部对象，应检查它们实际捕获的字段。注册与注销也应按 API 约定和 owner 生命周期判断，不能机械要求所有 listener 都在 `onDestroy()` 注销。
+
+验证顺序是：观察 retained count 或 heap 增长，获取 heap dump，查看 dominator 与到 GC root 的引用路径，再确认对象已经越过预期生命周期。LeakCanary 适合开发和自动化场景，Memory Profiler 与 heapprofd 适合进一步分析；单次 heap 大不等于泄漏。
+
+### 3. Redundant Objects
+
+论文把重复创建等价对象、互相递归创建对象和无意义重复实例化归到这一类。现代 ART 使用分代 GC，小对象分配成本已经显著下降；高频分配仍可能增加 GC、CPU 和内存压力，影响要通过 allocation trace、GC 频率和帧证据验证。
+
+下面的 View 代码展示可安全复用的绘制状态：
 
 ```kotlin
-button.setOnClickListener {
-    lifecycleScope.launch {
-        val result = withContext(Dispatchers.IO) {
-            httpClient.execute(request)
-        }
-        textView.text = result
+class StatusLineView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+) : View(context, attrs) {
+    private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.RED
+        strokeWidth = 2f
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        val y = height / 2f
+        canvas.drawLine(0f, y, width.toFloat(), y, linePaint)
     }
 }
 ```
 
-**GlobalScope 协程**——协程在 GlobalScope 中启动，生命周期脱离 Activity/Fragment，即使界面销毁了仍在执行（同时持有外部引用，造成内存泄漏）。正确做法是使用 `lifecycleScope` 或 `viewModelScope`。
+`Paint` 与 View 具有相同生命周期，并且只在 UI 线程使用，复用不会引入跨线程状态冲突。对象池不适合当作通用修复：池本身有生命周期、容量、清理和并发成本。优先移除已经证实的热点分配，修改后比较 allocation rate、GC 与帧指标。
 
-**requestLayout() 的成本**——调用 requestLayout() 会把测量/布局任务沿视图树向上传播到 ViewRootImpl，触发完整的 measure + layout + draw 路径。频繁调用（如在动画每一帧触发）会让整棵视图树反复重新布局。相比之下，invalidate() 只标记重绘，只走 draw 路径，不触发 measure/layout；两者代价不同（参见 7.12 节"View 体系性能优化"）。
+Android Lint 的 `DrawAllocation` 可以发现一部分 draw/layout 内分配；Lint 告警是候选信号，运行时证据决定优先级。
 
-### 模式二：未释放引用（Unreleased Reference）
+### 4. Large-Scale Data
 
-即内存泄漏的经典模式。对象不再使用但仍然被引用，GC 无法回收。
+论文中的大数据模式包括一次性读取大文件、加载大图、上传大文件和处理超出设备资源的 payload。常见修复方向包括流式处理、分页、分块、限流、背压、缓存和尺寸约束。
 
-最常见的场景：
+一张 4000 × 3000、每像素 4 byte 的 ARGB_8888 bitmap，像素数据为 48,000,000 byte，约 45.8 MiB；实际占用还受 row bytes、额外副本、纹理与解码流程影响。不能只按压缩图片文件大小估算内存。
 
-- **静态变量持有 Activity Context**：单例或 companion object 保存了 Activity 的引用，Activity 销毁后无法释放
-- **非静态内部类**：匿名内部类（如 Handler、AsyncTask、Runnable）隐式持有外部类引用。如果内部类对象的生命周期超过外部类（比如一个还在执行的 AsyncTask），外部 Activity 就泄漏了
-- **未注销的监听器**：在 onCreate() 中注册了 BroadcastReceiver 或 Listener，但在 onDestroy() 中没有注销
+审查大数据路径时记录：
 
-检测工具方面，LeakCanary 是开发阶段最常用的工具，Android Studio Memory Profiler 可以做更深入的分析（参见 10.2 节"内存泄漏"）。
+- 输入上限和异常 payload；
+- 是否把完整文件或响应读入单个数组/String；
+- 解码目标尺寸与原图尺寸；
+- 是否在主线程解析、拷贝或解码；
+- 临时副本数与峰值内存；
+- 取消、超时、重试和部分失败行为；
+- 低内存设备与后台状态。
 
-### 模式三：冗余对象（Redundant Object）
+`InputStream.available()` 不是文件总大小，也不适合用来决定“读取完整文件”的 buffer。流式固定大小 buffer 或受控库通常更安全。
 
-在循环或高频调用路径中创建大量临时对象，导致频繁 GC，引发"内存抖动"（Memory Churn）。
+### 5. UI Operations
 
-典型场景：
+论文把 draw 循环、重复 UI 工作等归入 UI Operations。Android View 与 Compose 的审查方式不同，但都需要回答“哪些状态变化触发了多少工作”。
 
-```java
-// 在 onDraw() 中创建对象——每次绘制都会分配新对象
-@Override
-protected void onDraw(Canvas canvas) {
-    Paint paint = new Paint(); // 每帧创建一个 Paint！
-    paint.setColor(Color.RED);
-    canvas.drawRect(rect, paint);
-}
+View 体系关注：
 
-// 正确：复用 Paint 对象
-private final Paint paint = new Paint(); // 初始化一次
+- 同一帧内重复 `requestLayout()` / `invalidate()`；
+- 自定义 View 的 measure、layout、draw 与对象分配；
+- RecyclerView 绑定、预取、复用与 payload 更新；
+- 图片尺寸、阴影、模糊、clip、离屏渲染；
+- 过深或多次测量的布局路径。
 
-@Override
-protected void onDraw(Canvas canvas) {
-    paint.setColor(Color.RED);
-    canvas.drawRect(rect, paint);
-}
-```
+不存在通用的“超过 5 层一定慢”或“ConstraintLayout 一定更快”。约束求解、子节点数量、measure spec、权重、嵌套滚动和设备都会改变成本。用 Perfetto 的 `measure`、`layout`、`draw`、FrameTimeline 与 Macrobenchmark 量化。
 
-在 Perfetto 中，内存抖动表现为频繁的短时间 GC 事件（参见 10.6 节"内存抖动与频繁 GC"）。在 120Hz 屏幕上，一帧只有 8.33ms，如果 GC 暂停 5ms，那这一帧几乎注定超时。
+Compose 关注 state 读取范围、recomposition/remeasure/redraw、稳定性、Lazy 列表 key、昂贵计算和 snapshot 写入。View 层级规则不能直接套到 Compose。
 
-### 模式四：大规模数据处理（Large-Scale Data）
+### 6. Other Patterns
 
-在 UI 线程上处理大量数据——解析大型 JSON、遍历大列表、在主线程做图片解码。
+论文举出的其他模式包括一次投递大量 Runnable、主线程访问 `CookieManager` 等。工程中还常见：
 
-Bitmap 解码是最常见的场景。一张 4000×3000 的照片，ARGB_8888 格式下占用 48MB 内存。如果直接在主线程 decode，不仅阻塞 UI，还可能直接 OOM。正确做法是先用 `BitmapFactory.Options.inSampleSize` 做降采样，或者使用 Glide/Coil 等图片加载库（参见 7.10 节"图片加载与 Bitmap 性能优化"）。
+- 主线程锁竞争；
+- 线程池无界排队或并发过高；
+- 反射、序列化或 JNI 往返出现在高频路径；
+- 重试没有上限或退避；
+- 小 Binder 调用在循环中累积；
+- observer、flow 或 callback 扇出造成重复工作。
 
-### 模式五：UI 操作模式（UI Operation）
+单次调用快，循环后也可能超预算；单次调用慢，若在后台且不影响目标指标，也可能无需修改。Code Review 负责发现候选，benchmark、trace 和线上指标负责判定影响。
 
-在 onDraw() 中重复绘制相同内容、布局配置不当。
+## 现代补充：主线程同步 Binder
 
-例如，onDraw() 中的循环每次调用都重绘相同内容，即使 UI 状态没变（参见 7.12 节"View 体系性能优化"）；或者视图层级过深导致 measure/layout 成本叠加。ConstraintLayout 在大部分场景下可以把布局层级压到 2-3 层，减少 measure/layout 的遍历次数（参见 7.5 节"优化策略"）。
+主线程同步 Binder 把远端执行时间、服务端排队、锁、I/O 与 CPU 调度传给客户端。Android 官方 ANR 指南把 slow binder call 和 many consecutive binder calls 列为输入分发 ANR 的常见原因。
 
-### 模式六：其他模式
+在经典 kernel Binder 路径中，Android 17 的 `IPCThreadState::talkWithDriver()` 会通过 `BINDER_WRITE_READ` ioctl 与 binder driver 交换命令。Java Manager、ContentProvider 或第三方 SDK 的一行调用，可能跨到 system_server、另一个 app、SurfaceFlinger 或 vendor service。
 
-包括不恰当的同步策略（在主线程等待锁）、过度使用反射、过密的 JNI 边界转换等。这类问题需要结合具体场景分析。
+### Perfetto 确认顺序
 
-### 现代补充：主线程同步 Binder 调用（Synchronous Binder Call）
+1. 在 app 主线程定位宽的 `binder transaction` 或等待区间。
+2. 沿 Binder flow 到 reply/server 线程；缺少 flow 时用时间、pid/tid 与 transaction 上下文辅助。
+3. 检查客户端等待期间的线程状态。Sleeping 可能是在等待 reply；Runnable 表示还在等 CPU；D 状态通常需要继续看不可中断 I/O。
+4. 检查服务端 Binder 线程是否 Running、Runnable、锁等待、磁盘 I/O，或继续发起下游 Binder。
+5. 检查 Binder 线程池是否耗尽，以及同一主线程是否连续发出大量小调用。
+6. 对照 ANR trace、Perfetto 时间窗和源码服务入口。
 
-主线程上的同步 Binder 调用会把远端进程的调度、锁竞争和队列堆积传回 App。常见入口包括 `PackageManager`、`ActivityManager`、`ContentResolver` 查询，以及三方 SDK 通过 Provider 或系统服务发起的同步调用。调用本身可能只是一行 API，但主线程会等待 Binder reply；如果服务端 Binder 线程正在排队、抢 CPU、等待锁，App 侧表现就是输入无响应、首帧延迟或 ANR。
+`ioctl(BINDER_WRITE_READ)` 只有在 trace 采集了相关 syscall/ftrace 信息时才会直接显示。Binder transaction slice 与 flow 通常更适合作为入口。
 
-Perfetto 里可以按两步确认：App 主线程是否停在 `ioctl(BINDER_WRITE_READ)`、`binder transaction` 或 `binder reply` 附近；再沿 transaction 跳到服务端 Binder 线程，看它处于 Running、Runnable、Sleeping 还是 D 状态。服务端线程如果长期 Runnable，问题偏向 CPU 竞争；如果卡在锁或磁盘 I/O，修复方向就从 App 侧代码改成减少主线程同步等待、缓存系统服务结果、延后到首帧之后执行，或给三方 SDK 接入异步初始化。
+### 修复要按所有权选择
 
-源码阅读入口可以从三处开始：
+- 调用对首帧或输入不必要：延后、批量或移出主线程；
+- 调用必须同步且团队拥有服务端：缩短服务逻辑、减少锁和 I/O；
+- 多次查询结果允许短期复用：在明确一致性和失效策略后缓存；
+- API 要求主线程：减少调用次数和输入规模，不要强行跨线程；
+- 厂商/system_server 高负载：保留系统侧证据，避免把责任写成 app 单函数耗时；
+- 第三方 SDK：限制初始化时机、审计 Provider/Manager 调用，并用版本对照验证。
 
-- `frameworks/native/libs/binder/IPCThreadState.cpp`：`IPCThreadState::talkWithDriver()` 对应 `BINDER_WRITE_READ` ioctl，是 App 侧等待 Binder reply 的 Native 入口。
-- `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` 与 `frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java`：system_server 常见服务端入口，用来反查 Binder 线程是在执行服务逻辑、等待锁，还是继续发起下游调用。
-- `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java`：cached app freeze / unfreeze 策略入口，和 OOM adj、进程状态切换一起看。
+缓存系统查询可能引入权限、包状态或配置过期，异步化也可能改变时序。性能修改要同时通过正确性测试。
 
-### 现代版本补充：cached-app freezer 与解冻毛刺
+## Android 17 cached-app freezer
 
-在启用 cached-app freezer 的设备上，后台缓存进程可能被暂停执行。用户切回 App、前台组件拉起后台进程，或系统服务向被冻结进程投递任务时，进程会先解冻，再处理堆积的消息、Binder reply、广播和 I/O。这个阶段容易出现短时间 CPU 抢占和主线程消息积压，用户感知可能是“切回慢”或“首次点击没反应”。
+Cached apps freezer 从 Android 11 开始受到平台支持。Android 14 及以上的官方行为说明包括：受支持设备上的 cached 进程通常在进入 cached 状态一段时间后被冻结；生命周期事件会让进程解冻；context-registered broadcast 可排队到解冻后交付。
 
-这属于 Android 版本和设备策略带来的归因维度，不属于论文原始分类体系。分析这类现场时，Perfetto 里同时看进程状态变化、主线程 runnable gap、Binder 事件和首帧时间，避免把解冻后的毛刺误判成单个函数耗时。
+Android 17 的超时来自资源 `config_defaultFreezerDebounceTimeout`，并可由 DeviceConfig 的 `freeze_debounce_timeout` 调整，厂商配置也会影响行为。不要把“10 秒”当作所有 Android 17 设备不可变的常量。
+
+进程冻结后，所有线程停止执行，不能做 GC，也不能处理 trim 回调。Android 14 及以上会在进入 cached 状态时配合预冻结 GC、compaction、ZRAM 和广播策略。系统恢复 Activity 等生命周期时会先解除冻结，后续线程调度、page fault、GC、消息与业务工作才会继续。
+
+### 冻结进程收到 Binder 的边界
+
+官方 freezer 文档明确说明：客户端向被冻结的 app 进程发出同步 Binder transaction 时，系统会立即终止被冻结的服务端进程，避免客户端无限等待。异步 transaction 的 buffer 也受到监控，空间耗尽可导致被冻结进程被终止。
+
+因此，不能把“向 frozen 进程发同步 Binder”描述成“系统解冻后处理积压请求”。正常生命周期提升可以触发解冻；错误 IPC 可能走 kill 路径。退出原因可结合 `ApplicationExitInfo.REASON_FREEZER` 和系统日志调查。
+
+### 怎样判断解冻是否参与毛刺
+
+Android 17 的 `CachedAppOptimizer.traceAppFreeze()` 在 `Freezer` track 记录 `Freeze` / `Unfreeze` instant，附带进程名、pid 和 reason。分析切回慢或恢复后首个交互时，按同一时间窗查看：
+
+- `Freezer` track 的 Unfreeze；
+- app 主线程从停止到 Runnable/Running 的变化；
+- page fault、I/O、GC、compaction 与 CPU frequency；
+- Binder flow 与 system_server 工作；
+- FrameTimeline、首帧与输入事件；
+- 进程是否被 kill 后冷启动。
+
+Unfreeze 与慢帧相邻只说明时间相关。只有在调度、page fault、GC、Binder 或业务工作上找到耗时，才能进一步归因。短时 CPU 竞争也要通过 Runnable 时间和同核竞争线程验证。
+
+Framework 源码锚点是 `android-17.0.0_r1` 的 `CachedAppOptimizer.java`。cgroup freezer、binder driver 与调度器的内核结论固定到 `android17-6.18-2026-06_r6`；厂商内核与 AOSP common tag 不一致时，以设备 kernel build 和对应源码复核。
 
 ## 从数据看排查优先级
 
-这组数据更适合拿来校准排查顺序。
+### 用户面：响应性应有稳定入口
 
-**用户面，先看响应性。** Google Play 负面评论里 62.3% 指向响应性，直接对应 ANR、启动慢、交互无反馈和明显卡顿。
+62.3% 的核查后用户评论归到 Responsiveness。团队至少需要覆盖 ANR、启动、帧、输入和明显交互延迟，并将用户动作、版本、机型和时间窗关联到 trace 或线上诊断数据。
 
-**工程面，内存仍是主战场。** 内存消耗在 Stack Overflow、GitHub Issues、GitHub Commits 里分别是 66.1%、60.0%、80.6%。这类问题常以 GC 抖动、OOM、泄漏和缓存失控的形式进入修复记录。
+### 工程面：内存要覆盖泄漏、峰值和系统回收
 
-**研究面，能耗投入最多。** 85 篇纳入论文里有 69 篇讨论能耗，占 81.18%。同一篇研究同时指出，真实世界 63 个因素里只有 27 个在文献中出现过，82 个综合因素里现有工具只覆盖了 30 个。Code Review、trace 和业务日志仍然要一起用。
+Stack Overflow、GitHub issue 与 commit 的主导类别都是 Memory Consumption。只查 Java 泄漏不够，还要区分：
 
-## 构建 Code Review 性能检查清单
+- Java/Kotlin heap retained object；
+- native heap、graphics、mmap 与共享内存；
+- 峰值分配与 OOM；
+- PSS/RSS 增长；
+- GC 频率与 CPU 影响；
+- LMKD kill、后台存活与 cached-app 行为。
 
-基于上面的论文模式和现代工程补充，可以整理一份实用的 Code Review 性能检查清单。这份清单不是"什么都要检查"的泛泛之谈，而是针对实证数据中最高频的问题模式：
+### 研究面：能耗工具多，现实因素仍有空白
 
-**API 误用检查：**
-- 主线程是否有网络请求、数据库查询、文件 I/O？
-- 主线程是否有同步 Binder 调用，例如 `PackageManager`、`ActivityManager`、`ContentResolver` 查询，或三方 SDK Provider 调用？
-- 协程是否使用了正确的 Scope（lifecycleScope / viewModelScope 而非 GlobalScope）？
-- 是否频繁调用 `requestLayout()`，或把 `invalidate()` 和布局变更混在一起？
+69/85 篇论文涉及能耗，但 v3 仍报告大面积因素、工具与数据集空白。能耗研究投入高，不代表任何产品都应把能耗排在响应性之前。业务场景、用户影响、发生频率、严重度、可恢复性和证据置信度共同决定顺序。
 
-**引用释放检查：**
-- 静态变量 / 单例是否持有 Activity / Fragment / View 的引用？
-- 匿名内部类 / Lambda 是否可能比外部类活得更久？
-- 监听器 / BroadcastReceiver 是否在对应生命周期方法中注销？
-- ViewBinding 是否在 Fragment 的 `onDestroyView()` 中释放？
+### 更合适的使用方式
 
-**冗余对象检查：**
-- `onDraw()` / `onMeasure()` / `onLayout()` 中是否有对象创建？
-- 循环体内是否有不必要的临时对象分配？
-- 是否可以用对象池（ObjectPool / SparseArray）替代频繁创建？
+把论文用于“覆盖审计”：
 
-**布局与 UI 检查：**
-- 布局层级是否超过 5 层？能否用 ConstraintLayout 扁平化？
-- 是否存在不必要的嵌套（如 LinearLayout 内只有一个子 View）？
-- RecyclerView 的 ViewHolder 是否正确复用？
+1. 用自家线上数据形成问题排序；
+2. 将问题映射到七类后果；
+3. 检查是否持续忽略用户可感知类别；
+4. 对工具未覆盖因素安排 Code Review、实验和专项 trace；
+5. 修复后用原指标与同场景基线验证。
 
-**数据与 I/O 检查：**
-- 大数据操作是否在后台线程执行？
-- SharedPreferences 是否使用 `apply()` 而非 `commit()`？
-- Bitmap 解码是否做了降采样？
-- 数据库查询是否有合适的索引？
+论文比例不能直接变成团队人力比例或发布门禁阈值。
 
-**交叉验证：** 发现上述模式后，在 Perfetto Trace 中确认是否真的产生了性能问题。Code Review 中的"可疑代码"不一定导致卡顿或 ANR。主线程同步 Binder 要沿 transaction 找到服务端线程；cached-app freezer 相关毛刺要同时看进程状态、主线程 runnable gap 和首帧时间（参见 7.3 节"卡顿分析方法论"）。
+## Code Review 性能检查清单
+
+清单按“静态线索 → 运行证据”使用。命中线索时记录场景和验证方法，不要仅凭模式要求改代码。
+
+| 审查问题 | 静态线索 | 运行时确认 |
+|---|---|---|
+| 主线程是否做阻塞工作 | 文件、网络、数据库、锁、同步等待 | StrictMode、ANR trace、Perfetto thread state/I/O |
+| 是否连续同步 Binder | Manager/Provider 调用位于循环或启动关键路径 | Binder flow、服务端线程、调用次数与累计时间 |
+| 异步工作的 owner 是否明确 | `GlobalScope`、裸 Thread、无取消 callback | 页面销毁后任务与引用、重复回调、线程队列 |
+| 是否保留短生命周期对象 | singleton/static/cache/listener 捕获页面 | heap dominator、GC root、retained count |
+| 高频路径是否重复分配 | draw/layout/bind/loop 内建大对象 | allocation trace、GC、CPU 与帧对照 |
+| 大数据是否一次性进入内存 | `readBytes`、完整 JSON、原尺寸 bitmap、大数组 | 峰值 heap/RSS、I/O、解码和 OOM 设备 |
+| UI 变化是否触发过量工作 | 高频 `requestLayout`、全量刷新、昂贵 draw | measure/layout/draw、FrameTimeline、Macrobenchmark |
+| 数据库路径是否随数据量恶化 | 无界查询、N+1、缺索引、大事务 | query plan、真实规模 benchmark、磁盘与锁 |
+| 偏好设置是否阻塞生命周期 | 主线程读写、密集 `apply()`、同步 `commit()` | StrictMode、lifecycle pause、磁盘 trace |
+| 后台资源是否按生命周期释放 | WakeLock、sensor、location、socket、Job | batterystats、后台 trace、超时与退出路径 |
+| 重试和同步是否放大网络/CPU | 无上限重试、短周期轮询、重复下载 | 请求日志、TrafficStats、CPU/energy 时间窗 |
+| freezer 是否改变恢复路径 | cached 多进程 IPC、恢复时大量工作 | Freezer track、exit reason、Unfreeze 后线程证据 |
+
+### SharedPreferences 不能只检查 `apply()` 与 `commit()`
+
+`commit()` 同步写盘，不应在主线程执行。`apply()` 立即更新进程内数据并异步写盘，但 Framework 会在组件生命周期切换时等待未完成写入；密集 `apply()` 仍可能引发主线程阻塞和 ANR。官方当前文档不建议新存储需求继续采用 SharedPreferences。
+
+审查时还要看读取是否触发磁盘、写入频率、durability、一致性、多进程需求和迁移方案。将 `commit()` 机械替换成 `apply()` 只能消除调用点的同步写盘，不能解决所有生命周期 I/O。
 
 ## 对本书读者的实践指导
 
-这节内容更适合当作优先级校准器。
+读完本章应能做三件事：
 
-- 用户反馈集中在卡顿、ANR、启动慢时，先查 Responsiveness 相关路径。
-- issue 和修复 commit 集中在 OOM、泄漏、频繁 GC 时，先把内存治理做成日常工程。
-- 工具没有直接报码时，把 Code Review、Perfetto、`gfxinfo` 和线上日志放在同一张时间线上做交叉验证。
+- 引用研究数字时同时写分子、分母、revision 和样本来源；
+- 把性能后果、促成因素、代码模式与观测证据分层；
+- 将静态审查结果送入可复现的 benchmark、trace 或线上指标验证。
 
-这组实证结果来自跨版本综合观察，适合帮助我们判断哪类问题更常见。它不替代某个 Android 版本、某类机型、或某条业务路径的专项基线。
+遇到一条用户“卡”的反馈，可以从 Responsiveness 进入，再判断它对应帧延迟、输入等待、启动、Binder、I/O、锁、调度还是 freezer 恢复。遇到内存修复提交，可以区分 retained reference、allocation churn、峰值数据、native/graphics 占用和系统回收。遇到研究工具没有规则覆盖的因素，则补充场景化测试与运行时观测。
+
+本章的研究样本跨多个 Android 版本。Android 17 相关机制以 `android-17.0.0_r1` 为平台锚点；涉及 binder driver、cgroup freezer 和调度器时，以 `android17-6.18-2026-06_r6` 为内核锚点。旧版本演进可以保留，当前结论的最高版本不超过 Android 17。
 
 ## 参考资料
 
-- [arxiv.org/abs/2407.05090] A Comparative Study of Android Performance Issues in Real-world Applications and Literature（Google Play 60,684 → 114，Stack Overflow 749,067 → 1,484，GitHub Issues 16,977 → 69，GitHub Commits 344,922 → 222；七类问题；63 个真实世界因素；82 个综合 taxonomy 因素）
-- [developer.android.com/reference/android/view/View#invalidate()] Android View `invalidate()` 文档
-- [developer.android.com/reference/android/view/View#requestLayout()] Android View `requestLayout()` 文档
-- [perfetto.dev/docs/data-sources/frametimeline] Perfetto Frame Timeline 文档（Android 12+）
-- [developer.android.com/topic/performance] Android 官方性能优化文档
-- AOSP `frameworks/native/libs/binder/IPCThreadState.cpp` / `IPCThreadState::talkWithDriver()`（Binder wait Native 入口）
-- AOSP `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`、`frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java`（system_server 服务端 Binder 入口）
-- AOSP `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java`（cached app freezer 机制入口）
-- 本书 §7.12（View 体系性能优化）、§9.1（ANR 设计思想）、§10.1（App 内存分析）、§14.4（dumpsys gfxinfo）、§15.3（性能指标体系）
+- [Liao et al., *A Comparative Study of Android Performance Issues in Real-world Applications and Literature*, arXiv:2407.05090v3](https://arxiv.org/pdf/2407.05090v3)
+- [论文复现资料：Android-Performance-Analysis](https://github.com/Dianshu-Liao/Android-Performance-Analysis)
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- [Android 官方：Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
+- [Android 官方：Performance measurement examples](https://developer.android.com/topic/performance/performance-measurement-examples)
+- [Android 官方：Memory management overview](https://developer.android.com/topic/performance/memory-overview)
+- [Android 官方：SharedPreferences](https://developer.android.com/reference/android/content/SharedPreferences)
+- [AOSP cached apps freezer](https://source.android.com/docs/core/perf/cached-apps-freezer)
+- [Android 17 `View.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java)
+- [Android 17 `ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)
+- [Android 17 `IPCThreadState.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/IPCThreadState.cpp)
+- [Android 17 `CachedAppOptimizer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java)
+- [Android common kernel `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6)
+- 本书 §7.12（View 体系性能优化）、§9.1（ANR 设计思想）、§10.1（App 内存分析）、§14.4（`dumpsys gfxinfo`）、§15.3（性能指标体系）
