@@ -31,396 +31,365 @@ gap_score: 18
 
 # 9.12 Android 17 ANR 输入事件超时检测双层预警机制
 
-> **版本边界**：本节内容基于 Android 17 (API 37) 源码验证 [已验证: AOSP android-17.0.0_r1]
-> **前置阅读**：9.1 ANR 设计思想（InputDispatcher → AMS → AnrHelper 完整链路）、9.10 ANR 预警回调与类型枚举
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 为源码锚点。标题里的“双层”需要先收窄：
 
----
+- Android 17 的 InputDispatcher pre-ANR 目前只覆盖 **no focused window**；
+- 已有窗口迟迟不确认输入事件的 **window unresponsive** 路径没有对应的 InputDispatcher pre-ANR producer；
+- pre-ANR 受 feature flag 控制，是到期前的 best-effort warning；
+- 正式 ANR 仍由原 deadline、WMS 归因和 AMS/AnrHelper 管线决定。
 
-## 背景：从单层超时判定到双层预警
+所以，“输入 ANR 都会在 50% 处收到预警”“收到预警的进程一定成为 ANR 责任方”都不成立。
 
-9.1 节详细分析了 ANR 的基本检测链路：InputDispatcher 在事件派发超时（默认 5 秒）后触发 `processAnrsLocked()` → `onAnrLocked()` → 最终由 AnrHelper 执行 SIGQUIT dump。这是一个**单层、事后判定**的机制——只有在超时已经发生后，系统才开始 ANR 处理流程。
+## 1. 两类输入 ANR 要分开
 
-Android 17 在此基础上引入了**双层预警机制**，专门针对输入事件派发超时场景：
+InputDispatcher 处理的两类超时共享“输入没有按期完成”这个表象，计时对象却不同。
 
-| 层级 | 机制 | 触发时机 | 目的 |
-|------|------|----------|------|
-| **第一层：Pre-ANR 预警** | `processPreAnrsLocked()` | 超时窗口的 ~50% 处 | 在正式 ANR 前通知系统，提前采集诊断数据 |
-| **第二层：正式 ANR 判定** | `processAnrsLocked()` | 超时窗口满 5s（默认） | 触发标准 ANR 流程（SIGQUIT → trace dump → 弹窗/杀进程）|
+| 路径 | 开始条件 | 计时状态 | 到期对象 | Android 17 pre-ANR |
+|---|---|---|---|---|
+| no focused window | 有 focused application，没有 focused window，并出现需要焦点目标的事件 | `mNoFocusedWindowAnrState` | `InputApplicationHandle` | 有，flag 开启时生效 |
+| window unresponsive | 事件已发给窗口或 input monitor，连接 wait queue 长时间没有完成 | `mAnrTracker` + `Connection.waitQueue` | window/input monitor connection | 当前实现没有 |
 
-这两层机制在 InputDispatcher 的主循环中**同一帧内顺序执行**，pre-ANR 优先于正式 ANR 检查。
+### 1.1 no focused window
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp:1002-1018]
+`findFocusedWindowTargetLocked()` 只有在事件需要焦点目标时才启动这次倒计时。源码注释以 KeyEvent 为例。若 focused application 和 focused window 都为空，事件直接失败；若窗口已存在，则走正常派发。
 
----
+状态首次建立时保存：
 
-## 🔹 第一层：Native InputDispatcher Pre-ANR 通知
+- 输入事件的 `eventTime` 与 `eventId`；
+- 当前 focused application；
+- `timeoutEndTime`；
+- 本次实际 `timeoutDuration`；
+- `notifiedPreAnr = false`。
 
-### 主循环中的双层检查
+实际 timeout 来自 `focusedApplicationHandle->getDispatchingTimeout(DEFAULT_INPUT_DISPATCHING_TIMEOUT)`，所以不能假设每次都是 5 秒。应用焦点改变、窗口出现或其他重置条件发生时，InputDispatcher 会清除这次等待。
 
-InputDispatcher 的主调度循环 `dispatchOnce()` 在每次迭代中计算下一次唤醒时间，其中 pre-ANR 检查**优先于**正式 ANR 检查：
+### 1.2 window unresponsive
+
+窗口已有 connection 后，InputDispatcher 把等待确认的 `DispatchEntry` 放进 wait queue，并用 `mAnrTracker` 快速找到最近 deadline。到期后，它取 connection wait queue 的最老事件来构造诊断 reason。
+
+源码特意说明：最老事件未必就是最早达到 deadline 的事件，因为窗口 timeout 可能变化；但应用通常按顺序处理输入，用最老事件解释现场更有诊断价值。因此 reason 中的 event 与精确触发 deadline 的 entry 不一定相同。
+
+## 2. `dispatchOnce()` 里的两次检查
+
+Android 17 在每次 dispatcher loop 末尾计算下一次唤醒时刻。相关源码结构如下：
 
 ```cpp
-// InputDispatcher.cpp:1002-1018
-nextWakeupTime = std::min({nextWakeupTime,
-                           // 第一层：pre-ANR 通知（提前预警）
-                           processPreAnrsLocked(),
-                           // 第二层：正式 ANR 事件处理
-                           processAnrsLocked()});
+nextWakeupTime = std::min({
+        nextWakeupTime,
+        processPreAnrsLocked(),
+        processAnrsLocked()
+});
 ```
 
-这意味着在每次 dispatch 循环中，系统先检查是否应该发出 pre-ANR 通知，再检查是否已经达到正式 ANR 超时。`std::min` 确保唤醒时间取最早的触发点。
+这不是 UI frame 概念。两个函数在一次 `dispatchOnce()` 迭代中、持有 dispatcher lock 时执行，返回值用于决定 `pollOnce()` 何时醒来。
 
-[已验证: AOSP android-17.0.0_r1, InputDispatcher.cpp]
-
-### Pre-ANR 时间窗口计算
-
-Pre-ANR 通知的触发时间采用**取最大值**策略，确保不会过早触发误报：
+`processPreAnrsLocked()` 当前只有一个具体分支：
 
 ```cpp
-// InputDispatcher.cpp:1058-1083
-nsecs_t InputDispatcher::processNoFocusedWindowPreAnrLocked() {
-    // 已触发过 pre-ANR，不重复通知
-    if (!mNoFocusedWindowAnrState || mNoFocusedWindowAnrState->notifiedPreAnr) {
+nsecs_t InputDispatcher::processPreAnrsLocked() {
+    if (!mAnrWarningCallbackInputDispatcherEnabled) {
         return LLONG_MAX;
     }
-
-    // 预 ANR 时间窗口：超时周期的 50% 或默认预 ANR 窗口，取较大值
-    const std::chrono::nanoseconds preAnrTimeout =
-            std::max(mNoFocusedWindowAnrState->timeoutDuration / 2,
-                     DEFAULT_PRE_ANR_TIMEOUT_WINDOW);
-    const nsecs_t preAnrTime =
-            mNoFocusedWindowAnrState->timeoutEndTime - preAnrTimeout.count();
-    // ...
+    return std::min(
+            nsecs_t{LLONG_MAX},
+            processNoFocusedWindowPreAnrLocked());
 }
 ```
 
-以默认 5 秒派发超时为例：
+这段实现提供未来增加其他 pre-ANR 类型的入口，但 `android-17.0.0_r1` 没有 window-unresponsive pre-ANR helper。`mAnrWarningCallbackInputDispatcherEnabled` 的初始值来自 `enable_anr_warning_callback_input_dispatcher` flag。
 
-| 参数 | 值 | 说明 |
-|------|-----|------|
-| `timeoutDuration` | 5000ms | 默认派发超时（IInputConstants） |
-| `timeoutDuration / 2` | 2500ms | 超时窗口的 50% |
-| `DEFAULT_PRE_ANR_TIMEOUT_WINDOW` | 由 `IInputConstants.UNMULTIPLIED_DEFAULT_PRE_ANR_TIMEOUT_WINDOW_MILLIS × HwTimeoutMultiplier()` 计算 | 平台默认 pre-ANR 窗口 |
-| **Pre-ANR 触发时间** | `timeoutEndTime - max(2500ms, DEFAULT_PRE_ANR_TIMEOUT_WINDOW)` | 超时结束前 preAnrTimeout 处 |
+## 3. pre-ANR 时间公式
 
-关键设计决策：
-- **取 max 而非 min**：避免在高端设备（HwTimeoutMultiplier 较小）上过早触发 pre-ANR，导致不必要的性能开销
-- **防重复通知**：`notifiedPreAnr` 标志确保同一超时周期内只通知一次
-- **立即触发**：若计算出的 preAnrTime 已过期，返回 `LLONG_MIN` 立即唤醒 dispatcher 执行
+no-focused-window 的 warning 时刻由下面的公式决定：
 
-[已验证: AOSP android-17.0.0_r1, InputDispatcher.cpp:1058-1083]
-
-### 硬件超时乘数
-
-`HwTimeoutMultiplier()` 是系统属性 `ro.hw_timeout_multiplier` 的读取函数，默认值为 1。低端设备可配置更高的乘数来放宽超时阈值：
-
-```cpp
-// InputDispatcher.cpp:128-133
-const std::chrono::milliseconds DEFAULT_PRE_ANR_TIMEOUT_WINDOW = std::chrono::milliseconds(
-        android::os::IInputConstants::UNMULTIPLIED_DEFAULT_PRE_ANR_TIMEOUT_WINDOW_MILLIS *
-        HwTimeoutMultiplier());
+```text
+pre_window = max(actual_timeout / 2, 2000 ms × HwTimeoutMultiplier)
+warning_at = timeout_end - pre_window
+consumed   = actual_timeout - (timeout_end - now)
 ```
 
-该乘数同时作用于 pre-ANR 窗口和正式派发超时（见 9.1 节 `DEFAULT_INPUT_DISPATCHING_TIMEOUT`），保证两者的比例关系在不同设备上一致。
+`IInputConstants.aidl` 把未乘硬件系数的最小 pre-ANR window 定为 **2000 ms**。默认 dispatch timeout 是 **5000 ms**。两项 fallback 常量都乘 `HwTimeoutMultiplier()`，该值来自产品配置的 `ro.hw_timeout_multiplier`。
 
-[已验证: AOSP android-17.0.0_r1, InputDispatcher.cpp:128-142]
+`max` 选出更长的“deadline 前剩余窗口”，因此 warning 会更早。它保证默认情况下留出的诊断时间不少于 2 秒，并不用于推迟 warning。
 
----
+以 `HwTimeoutMultiplier = 1` 为例：
 
-## 🔹 第二层：正式 ANR 超时判定
+| 实际 timeout | `timeout / 2` | 最小 pre window | warning 已消耗时间 |
+|---:|---:|---:|---:|
+| 5000 ms | 2500 ms | 2000 ms | 2500 ms |
+| 3000 ms | 1500 ms | 2000 ms | 1000 ms |
+| 1000 ms | 500 ms | 2000 ms | 首次检查时立即满足 |
 
-### 两类输入 ANR 触发路径
+默认 5 秒路径恰好在一半附近发 warning。自定义 timeout 较短时，warning 比 50% 更早；计算出的 `warning_at` 已经过期时，InputDispatcher 会立即排队通知。
 
-当 pre-ANR 通知发出后，如果超时继续到达完整周期，正式 ANR 判定启动。InputDispatcher 中存在两条独立的输入 ANR 路径：
+`notifiedPreAnr` 保证同一 `mNoFocusedWindowAnrState` 只排队一次。状态被重置后，新事件可以开始新的预警周期。
 
-#### 路径一：无焦点窗口 ANR
+## 4. pre-ANR 会直接到达公开 warning API
 
-应用已获得焦点（`focusedApplicationHandle != nullptr`）但无焦点窗口（`focusedWindowHandle == nullptr`）时启动倒计时：
+旧资料常把 Native pre-ANR 和 `ActivityManager.registerAnrWarningListener()` 写成两套无关机制。Android 17 源码给出了直接调用关系。
 
-```cpp
-// InputDispatcher.cpp:1035-1062
-void InputDispatcher::processNoFocusedWindowAnrLocked() {
-    std::shared_ptr<InputApplicationHandle> focusedApplication =
-            getValueByKey(mFocusedApplicationHandlesByDisplay, mAwaitedApplicationDisplayId);
+```mermaid
+flowchart TD
+    Dispatcher["InputDispatcher<br/>processNoFocusedWindowPreAnrLocked"]
+    Policy["InputDispatcherPolicyInterface<br/>notifyPreNoFocusedWindowAnr"]
+    JNI["NativeInputManager JNI"]
+    IMS["InputManagerService<br/>notifyPreNoFocusedWindowAnr"]
+    IMC["InputManagerCallback"]
+    WMS["WMS AnrController<br/>notifyPreAppUnresponsive"]
+    Trace["可选 LongMethodTracer<br/>3 秒窗口"]
+    AMS["ActivityManagerInternal<br/>inputDispatchingTimedOutWarning"]
+    Controller["AMS notifyAnrWarning<br/>AnrWarningController"]
+    App["同 UID 已注册进程<br/>AnrWarningResult"]
 
-    const sp<WindowInfoHandle>& focusedWindowHandle =
-            getFocusedWindowHandleLocked(mAwaitedApplicationDisplayId);
-    if (focusedWindowHandle != nullptr) {
-        return; // 已有焦点窗口，取消 ANR
-    }
-
-    onAnrLocked(mNoFocusedWindowAnrState->applicationHandle);
-}
+    Dispatcher --> Policy --> JNI --> IMS --> IMC --> WMS
+    WMS --> Trace
+    WMS --> AMS --> Controller --> App
 ```
 
-**典型场景**：Activity 启动后但窗口尚未添加到 WMS，或窗口被移除但 Activity 仍为焦点状态。
+`AnrController.notifyPreAppUnresponsive()` 先解析 `InputApplicationHandle` 对应的 Activity。Activity 不存在、已 stopped 或没有进程时，部分动作会被跳过。存在进程时，AMS warning 使用：
 
-#### 路径二：窗口无响应 ANR
+- UID：候选 Activity 的 UID；
+- `anrId`：Native 输入事件 id；
+- type：`ANR_TYPE_INPUT_DISPATCH_NO_FOCUSED_WINDOW`；
+- consumed time：InputDispatcher 计算的已消耗时间；
+- timeout：本次实际 timeout；
+- description：Android 17 该调用点传空字符串。
 
-窗口已存在但事件长时间未被消费，由 `mAnrTracker.firstTimeout()` 检测命中：
+`AnrWarningController` 再向该 UID 下已经注册 listener 的进程投递。warning payload 没有 PID 或 Activity token；多进程 App 应按 `(type, id, boot/session)` 去重。
 
-```cpp
-// InputDispatcher::onAnrLocked(connection) @ line 6546
-// mAnrTracker.firstTimeout() 命中
-// → 组装 reason: "Waited Xms for <event>"
-// → updateLastAnrStateLocked()
-// → processConnectionUnresponsiveLocked()
-// → sendWindowUnresponsiveCommandLocked()  // 跨 binder 给 Java 侧
-```
+公开 API、11 个类型和载荷字段见 [9.10 Android 17 ANR 预警回调](10-android17-anr-warning-callback.md)。
 
-**典型场景**：主线程被耗时操作（数据库查询、复杂计算、Binder 调用阻塞）占用，无法及时处理输入事件。
+## 5. warning 时可选的 Long Method Trace
 
-[已验证: AOSP android-17.0.0_r1, InputDispatcher.cpp:6546-6581]
+WMS 的 `enableInputDispatcherLongMethodTracing` flag 开启时，pre-ANR 还会尝试调用 `LongMethodTracer.trigger(pid, 3000)`。`LongMethodTracer` 自身又受 `com.android.server.utils` 的 `longMethodTrace` flag 控制，所以这是双重条件下的 best-effort 诊断。
 
-### mAnrTracker 与 mLastAnrState 诊断快照
+目标 PID 的选择有两种：
 
-`mAnrTracker` 是 InputDispatcher 内部的超时追踪器，管理所有进行中的派发事件的超时计时。一旦某个事件的超时计时器命中 `firstTimeout()`，dispatcher 会：
+1. 当前 focus holder 已持有焦点至少一个 dispatch timeout 时，WMS 可把它视为阻碍焦点切换的候选目标；
+2. 没有这样的 focus target 时，使用缺少 focused window 的 Activity 进程。
 
-1. 调用 `updateLastAnrStateLocked()`（line 6605）保存完整的 dispatcher 状态到 `mLastAnrState`
-2. 这个快照包含事件 ID、目标窗口、连接状态等信息，便于 `dumpsys input` 复盘
-3. 然后执行 `processConnectionUnresponsiveLocked` → `sendWindowUnresponsiveCommandLocked`
+`LongMethodTracer` 通过 native signal-based mechanism 请求固定时长的方法追踪。类注释写明，若目标进程在 tracing window 内或之后发生 ANR，采集信息会进入 ANR report。触发返回 `false`、进程退出或 flag 关闭都可能让产物缺失。
 
-`mLastAnrState` 从 Android 11 起引入，在 Android 17 中继续承担诊断快照的角色。
+warning callback 与 Long Method Trace 是并列动作。应用收到 callback 不表示追踪已经成功，追踪成功也不保证 App listener 存在。
 
-[已验证: AOSP android-17.0.0_r1, InputDispatcher.cpp:6605]
+## 6. 到期路径仍有两条
 
----
+### 6.1 no focused window 到期
 
-## 🔹 Java 层路由：从 Native 回调到 AnrHelper
+`processAnrsLocked()` 发现当前时间达到 `mNoFocusedWindowAnrState.timeoutEndTime` 后，会重新检查：
 
-### InputManagerService 回调入口
+- 当前 focused application 是否仍为等待中的 application；
+- focused window 是否仍为空。
 
-Native 层通过 JNI 回调到 `InputManagerService.java`，分为两个回调方法：
+条件仍成立才调用 `onAnrLocked(application)`。随后 Native policy 回调携带 `eventId`、原事件 `eventTime` 和配置 timeout 进入 Java。
+
+### 6.2 window unresponsive 到期
+
+`mAnrTracker.firstTimeout()` 到期后，InputDispatcher：
+
+1. 取得对应 connection；
+2. 标记 `connection->responsive = false`；
+3. 从 tracker 移除 token，避免继续为它唤醒；
+4. 在 `onAnrLocked(connection)` 中确认 wait queue 仍不为空；
+5. 保存 `mLastAnrState`；
+6. 通知 policy，并取消该 connection 的 ANR 事件。
+
+这一路没有经过 `processNoFocusedWindowPreAnrLocked()`，所以不能期待 API 37 input warning。
+
+## 7. 正式回调如何进入 AMS
+
+两条到期路径都经过 NativeInputManager JNI 回到 `InputManagerService`：
+
+| Java 入口 | `TimeoutRecord` kind | 附带对象 |
+|---|---|---|
+| `notifyNoFocusedWindowAnr()` | `INPUT_DISPATCH_NO_FOCUSED_WINDOW` | application handle |
+| `notifyWindowUnresponsive()` | `INPUT_DISPATCH_WINDOW_UNRESPONSIVE` | input token、可选 PID、reason |
+
+`InputManagerService.timeoutMessage()` 还会用 `SurfaceControl.getStalledTransactionInfo(pid)` 检查关联 surface 是否因 unsignaled fence 卡住。命中时，reason 会补充 layer、buffer id 和 frame number，提示可能存在 GPU hang。这仍是诊断上下文，WMS/AMS 要继续完成责任进程解析。
+
+## 8. `TimeoutRecord` 与 `ExpiredTimer` 的准确关系
+
+Android 17 在 `includeAnrInfo` flag 开启时，对两条正式输入 ANR路径执行：
 
 ```java
-// InputManagerService.java:2654-2688 (android-17.0.0_r1)
-
-// 无焦点窗口 ANR 回调
-private void notifyNoFocusedWindowAnr(
-        InputApplicationHandle inputApplicationHandle,
-        int eventId, long eventTimeNs, long timeoutDurationMs) {
-    TimeoutRecord timeoutRecord = TimeoutRecord.forInputDispatchNoFocusedWindow(
-            timeoutMessage(OptionalInt.empty(),
-                "Application does not have a focused window"));
-
-    // Android 17 新增：结构化 ANR 信息收集
-    if (android.app.Flags.includeAnrInfo()) {
-        setAnrInfoInTimeoutRecord(timeoutRecord, eventId, eventTimeNs, timeoutDurationMs);
-    }
-
-    mWindowManagerCallbacks.notifyNoFocusedWindowAnr(inputApplicationHandle, timeoutRecord);
-}
-
-// 窗口无响应 ANR 回调
-private void notifyWindowUnresponsive(
-        IBinder token, int pid, boolean isPidValid, String reason,
-        int eventId, long eventTimeNs, long timeoutDurationMs) {
-    TimeoutRecord timeoutRecord = TimeoutRecord.forInputDispatchWindowUnresponsive(
-            timeoutMessage(optionalPid, reason));
-
-    if (android.app.Flags.includeAnrInfo()) {
-        setAnrInfoInTimeoutRecord(timeoutRecord, eventId, eventTimeNs, timeoutDurationMs);
-    }
-
-    mWindowManagerCallbacks.notifyWindowUnresponsive(token, optionalPid, timeoutRecord);
-}
+AnrTimer.ExpiredTimer expiredTimer =
+        new AnrTimer.ExpiredTimer(
+                eventId,
+                eventTimeNs / 1_000_000,
+                timeoutDurationMs);
+timeoutRecord.setExpiredTimer(expiredTimer);
 ```
 
-**Android 17 关键增强**：
-- `TimeoutRecord` 封装超时上下文（reason + 可选 PID），取代裸字符串
-- `includeAnrInfo()` Feature Flag 控制结构化信息收集，支持渐进式 rollout
-- `setAnrInfoInTimeoutRecord()` 将 Native 侧的事件 ID、时间戳、持续时长注入 Java 层
+这里复用了 `AnrTimer.ExpiredTimer` 作为三字段数据载体：
 
-[已验证: AOSP android-17.0.0_r1, InputManagerService.java:2654-2706]
+- `mTimerId`：输入 event id；
+- `mStartMs`：输入 event time 转为毫秒；
+- `mDurationMs`：本次传入的 timeout duration。
 
-### AnrTimer.ExpiredTimer 结构化数据
+输入 deadline 仍由 InputDispatcher 的 `mNoFocusedWindowAnrState` 或 `mAnrTracker` 驱动，不是由 Java `AnrTimer` 启动的 native timer。
 
-`setAnrInfoInTimeoutRecord` 内部创建 `AnrTimer.ExpiredTimer` 对象：
+两条路径的 duration 口径也不同：
 
-```java
-// InputManagerService.java:4688-4706
-private void setAnrInfoInTimeoutRecord(
-        TimeoutRecord timeoutRecord, int anrId, long eventTimeNs, long timeoutDurationMs) {
-    AnrTimer.ExpiredTimer expiredTimer =
-            new AnrTimer.ExpiredTimer(anrId, eventTimeNs / 1_000_000, timeoutDurationMs);
-    timeoutRecord.setExpiredTimer(expiredTimer);
-}
+- no focused window 传配置的 timeout threshold；
+- window unresponsive 传 wait queue 最老 entry 截止 `onAnrLocked()` 的实际等待时长。
+
+后续 `ProcessErrorStateRecord.createAnrInfo()` 读取这个对象，生成 API 37 `ApplicationExitInfo.AnrInfo`。`includeAnrInfo` 关闭时不影响 ANR 检测，只会失去这份结构化关联数据。
+
+## 9. WMS 归因可能改变责任进程
+
+no-focused-window warning 先投给候选 Activity UID。到期后，`AnrController.notifyAppUnresponsive()` 还会查看当前 input focus。
+
+若当前 focus target 的 focus request age 已达到其 dispatch timeout，WMS 会尝试把正式 window-unresponsive 责任交给该 focus target；否则沿原 Activity 处理。pre-ANR 的可选 long method trace 也使用相同方向挑选候选 PID。
+
+这带来一个平台关联边界：
+
+- warning 的 `(type, id)` 属于原 Activity UID；
+- 正式 ANR 可能归到另一个 PID/UID；
+- 同 UID 内可用 `ApplicationExitInfo.AnrInfo` 关联；
+- 跨 UID 改归因时，普通 App 端无法读取另一方退出历史。
+
+系统/OEM 平台应保留 event id、原 application token、focus target 和归因决策。普通 App APM 只能把未匹配 warning 标成 recovered、unmatched 或 possible-reattribution，不能强制配给本进程。
+
+## 10. AMS 与 AnrHelper
+
+WMS 解析出 Activity 或 PID 后，调用 `ActivityManagerInternal.inputDispatchingTimedOut()`。AMS：
+
+- 要求调用方具有 `FILTER_EVENTS`；
+- 按 PID 查 `ProcessRecord`；
+- 调试中的进程不进入标准 ANR；
+- active instrumentation 会收到取消结果；
+- 其他有效进程交给 `mAnrHelper.appNotResponding()`。
+
+普通 persistent process 没有“天然跳过输入 ANR”的通用分支。是否显示 UI、是否静默杀进程、栈转储范围和 DropBox 处理在更后面的 `ProcessErrorStateRecord` 中决定。
+
+这部分完整时序见 [9.1 ANR 设计思想](01-anr-design.md)；线程转储与报告入口见 [9.3 ANR 分析](03-anr-analysis.md)。
+
+## 11. 一条正确的时序
+
+默认 timeout 5 秒、硬件乘数 1、feature flag 全部开启时，no-focused-window 的理想时序是：
+
+```text
+T0       发现 focused application 存在，但 focused window 为空
+T0+2.5s  InputDispatcher 排队 pre-ANR
+          ├─ WMS 可选触发 3s Long Method Trace
+          └─ AMS 向已注册 UID 投递 AnrWarningResult
+T0+5.0s  InputDispatcher 重新检查 application 与 window
+          └─ 条件仍成立才进入正式 ANR 归因
+T0+5.0s+ WMS / AMS / AnrHelper 处理栈、报告、UI 或 kill
 ```
 
-`ExpiredTimer` 包含三个字段：
-- `anrId`：ANR 事件唯一标识（可用于跨子系统关联）
-- `eventTimeMs`：触发超时的事件时间戳（纳秒→毫秒转换）
-- `timeoutDurationMs`：超时配置时长
+这条时间线有四个误差来源：
 
-这使得下游消费者（AnrController、AnrHelper、ProcessErrorStateRecord）可以统一访问结构化超时信息，而非解析 reason 字符串。
+- dispatcher 或 system_server 调度延迟；
+- JNI、WMS global lock 和 Binder 回调耗时；
+- App listener executor 排队；
+- timeout 自定义值和硬件乘数。
 
-[已验证: AOSP android-17.0.0_r1, InputManagerService.java:4688-4706]
+若系统在 warning_at 之后才得到运行机会，pre warning 与正式 ANR 可以非常接近。公开回调没有“至少剩余 N 毫秒”的 SLA。
 
-### AnrController 的焦点归因逻辑
+## 12. `2s / 5s / 10s` 不是三级 ANR
 
-回调进入 `AnrController` 后，Android 14-17 共有的关键逻辑是 **`blamePendingFocusRequest`**：
+Android 17 源码附近还有两个常量：
 
-当 input 焦点在 5s dispatch timeout 内发生切换时，系统归咎焦点目标窗口而非原 ANR 应用。这避免了用户快速切换 app 时，新 app 的 ANR 被误标到旧 app 上。
+- `SLOW_EVENT_PROCESSING_WARNING_TIMEOUT = 2s`；
+- `STALE_EVENT_TIMEOUT = 10s × HwTimeoutMultiplier()`。
 
-该逻辑在 `android-14.0.0_r1` 到 `android-17.0.0_r1` 的 `AnrController.java` 中均可见。
+它们不能和 5 秒 dispatch timeout 排成“2 秒预警、5 秒 ANR、10 秒丢弃”的统一状态机：
 
-[已验证: AOSP android-14.0.0_r1 ~ android-17.0.0_r1, AnrController.java:104-122]
+- slow-event warning 用于记录事件处理过慢的日志；
+- pre-ANR 的 2 秒指 deadline 前最小剩余 window；
+- stale-event timeout 判断进入 dispatcher 的事件是否已经太旧；
+- 正式 dispatch timeout 可来自 window/application 配置，不固定为 5 秒。
 
----
+名称相近不代表同一计时对象。
 
-## 🔹 完整调用链：从用户触控到 ANR 弹窗
+## 13. Trace 与日志如何对齐
 
-```
-[Native 层]
-InputDispatcher::dispatchOnce()
-  → processPreAnrsLocked()                    ← 第一层：Pre-ANR
-    → processNoFocusedWindowPreAnrLocked()
-      → onPreAnrLocked()
-  → processAnrsLocked()                        ← 第二层：正式 ANR
-    → processNoFocusedWindowAnrLocked()        // 无焦点窗口路径
-      → onAnrLocked(application)
-        → mPolicy.notifyNoFocusedWindowAnr(app)
-    → mAnrTracker.firstTimeout() 命中           // 窗口无响应路径
-      → onAnrLocked(connection)
-        → updateLastAnrStateLocked()
-        → processConnectionUnresponsiveLocked()
-          → sendWindowUnresponsiveCommandLocked()
+Android 17 在这些位置留下系统 trace 标记：
 
-[Java 层 — InputManagerService]
-notifyNoFocusedWindowAnr() / notifyWindowUnresponsive()
-  → TimeoutRecord 构造
-  → setAnrInfoInTimeoutRecord() [Android 17 新增]
-  → mWindowManagerCallbacks.notifyXxx()
+- Native policy JNI 回调使用 `ATRACE_CALL()`；
+- WMS pre 路径使用 `notifyPreAppUnresponsive()` trace section；
+- `LongMethodTracer.trigger()` 使用 ActivityManager trace tag；
+- AMS 正式路径使用 `inputDispatchingTimedOut()`；
+- 有目标 callback 时，`AnrWarningController` 还会发出带 id 的 Perfetto instant。
 
-[Java 层 — AnrController]
-notifyAppUnresponsive() / notifyWindowUnresponsive()
-  → blamePendingFocusRequest 焦点归因检查
-  → activity.inputDispatchingTimedOut()
-    或 mAmInternal.inputDispatchingTimedOut()
+分析时按以下顺序对齐：
 
-[Java 层 — ActivityManagerService]
-inputDispatchingTimedOut(pid, aboveSystem, timeoutRecord)
-  → 进程查询 (mPidsSelfLocked)
-  → proc.getInputDispatchingTimeoutMillis()
-  → inputDispatchingTimedOut(proc, ...)
-    → isPersistent() → 不 ANR
-    → mAnrHelper.appNotResponding()
+1. 找 warning 的 `(anrType, anrId)` 与 callback uptime；
+2. 找 WMS `notifyPreAppUnresponsive()` 和可选 long-method trace；
+3. 检查 T0 到 deadline 期间 focused application/window 的变化；
+4. 找 `inputDispatchingTimedOut()` 与 ANR report 的 ErrorId；
+5. 用 main thread、Binder、fence、CPU 和 I/O 时间轴判断为何窗口没有出现。
 
-[Java 层 — AnrHelper]
-mAnrRecords.add(AnrRecord)
-  → AnrConsumerThread 单消费者
-  → r.appNotResponding(onlyDumpSelf)
-    → ProcessErrorStateRecord.appNotResponding()
-      → appEarlyNotResponding (early kill)
-      → addErrorToDropBox("anr", ...)
-      → isSilentAnr → killLocked("bg anr")
-      → mUiHandler → SHOW_NOT_RESPONDING_UI_MSG
-```
+Perfetto 没有固定的 `/data/anr` 自动产物。需要预配置持续 trace、triggered trace 或 Profiling trigger，详见 [9.8 ANR 与 Kernel Trace 联合诊断](08-anr-kernel-trace-joint-diagnosis.md)。
 
-**与 9.1 节对比**：9.1 节已覆盖 AnrHelper 和 ProcessErrorStateRecord 的详细逻辑，本节聚焦于 InputDispatcher 层新增的 pre-ANR 机制和 Android 17 的 `TimeoutRecord` / `AnrTimer.ExpiredTimer` 结构化数据传递。
+## 14. 工程接入建议
 
-[已验证: AOSP android-17.0.0_r1, 完整调用链已在 9.1 节源码级验证]
+### 普通 App
 
----
+- 用 API 37 SDK 编译，并用 `SDK_INT >= 37` 保护 warning listener；
+- listener 使用独立 executor，只复制小型内存快照；
+- 用 `(type, id, boot/session)` 去重多进程回调；
+- 记录 callback 到达时间，不能把它当作 Native warning 精确时刻；
+- 下次启动读取 `ApplicationExitInfo.AnrInfo`，允许 warning 无 exit、exit 无 warning；
+- 保留 Activity/页面/启动阶段 breadcrumbs，帮助解释 no-focused-window。
 
-## 🔹 Pre-ANR 的工程价值
+### 系统与 OEM
 
-### 与 9.10 节 IAnrWarningCallback 的关系
+- 分别验证 input warning、long method tracing 和 `includeAnrInfo` 三组 flag；
+- 在事件日志中保存 original activity、focus target、最终 blamed target；
+- 记录 warning 生成、AMS 投递、listener 接收的三段延迟；
+- 测试自定义 dispatch timeout、硬件乘数和锁拥塞；
+- 对 trace 失败、PID 已退出和跨 UID 改归因保留明确状态。
 
-9.10 节介绍了 Android 17 的 ANR 预警回调系统（`IAnrWarningCallback`）。需要区分：
+### 测试用例
 
-| 机制 | 层级 | 触发位置 | 目标受众 |
-|------|------|----------|----------|
-| **Pre-ANR（本节）** | Native InputDispatcher 内部 | 超时窗口 ~50% 处 | 系统内部，用于提前准备诊断 |
-| **IAnrWarningCallback（9.10）** | Java AMS 层 | 超时判定后、dump 前 | 应用侧 / APM SDK |
+至少覆盖：
 
-两者互补但不同：Pre-ANR 是系统内部的**内部预警机制**，为系统自身提供早期信号；`IAnrWarningCallback` 是面向应用的**外部通知通道**。Pre-ANR 通知的具体消费方式（是否直接驱动 IAnrWarningCallback 触发）需要进一步源码确认。
+- Activity 已成为 focused application，但延迟添加窗口；
+- 窗口在 warning 后、deadline 前出现；
+- focused application 在倒计时期间切换；
+- 当前 focus holder 长时间阻碍新 focus；
+- 已有窗口不确认输入事件，确认不会收到 no-focus warning；
+- warning listener 多进程重复；
+- flag 分别关闭；
+- deadline 前 system_server 被 CPU 或锁延迟；
+- `ApplicationExitInfo.AnrInfo` 存在与缺失两条分支。
 
-[待验证: Pre-ANR 通知与 IAnrWarningCallback 之间是否存在直接因果关系]
+## 15. 版本边界
 
-### 辅助时间线分析
+| 平台 | 已核对结论 |
+|---|---|
+| Android 14—16 | 不能从对应 release tag 找到本章这套 `processPreAnrsLocked()` / no-focus warning 实现 |
+| Android 17 / API 37 | 增加 InputDispatcher no-focus pre-ANR、公开 warning 投递、可选 long method tracing 与 input `AnrInfo` 载荷 |
 
-Pre-ANR 机制为 ANR 诊断提供了**时间锚点**：
+输入 timeout、WMS 归因和 ANR 主路径在更早版本已经存在，但 Android 17 的 pre-warning 行为不能倒推到 Android 14—16。
 
-```
-T0: 用户触控事件生成
-T0+ε: InputReader 读取事件
-T1: InputDispatcher 派发事件到目标窗口
-T2: 派发超时窗口开启（5s 倒计时开始）
-─── Pre-ANR 触发点（约 T2 + 2.5s）───
-T3: Pre-ANR 通知发出 → 系统内部记录
-─── 正式 ANR 触发点（T2 + 5s）───
-T4: processAnrsLocked 命中
-T5: InputManagerService 回调 → AnrController
-T6: AMS.inputDispatchingTimedOut → AnrHelper
-T7: SIGQUIT → trace dump
-T8: 弹窗/杀进程决策
-```
+## 16. 结论
 
-在 Perfetto trace 中，Pre-ANR 和正式 ANR 的触发点可以通过 `android.input` track 的 `dispatch_latency` 和 `handling_latency` 字段定位（详见 3.4 节输入延迟分析方法）。
+Android 17 给 no-focused-window 输入 ANR 增加了一次 deadline 前机会：
 
----
+1. InputDispatcher 根据实际 timeout 计算 warning_at；
+2. warning 经 JNI 和 WMS 直接进入 AMS 公开 warning 管线；
+3. WMS 可按 flag 触发 3 秒 Long Method Trace；
+4. deadline 到期后重新检查焦点状态，再决定正式 ANR；
+5. `TimeoutRecord` 携带 input event id，支持后续 `ApplicationExitInfo.AnrInfo` 关联。
 
-## 🔸 扩展：超时常量体系
+这套机制没有覆盖 window-unresponsive pre-warning，也不保证 callback 领先 deadline 固定时长。诊断系统应把 warning、可选 trace、正式归因和退出记录看作四份可缺失证据。
 
-### IInputConstants.aidl 统一管理
+## 参考资料
 
-Android 17 将输入相关的超时常量统一到 `IInputConstants.aidl`：
+- [AOSP `InputDispatcher.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
+- [AOSP `InputDispatcher.h`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.h)
+- [AOSP `InputDispatcherPolicyInterface.h`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/include/InputDispatcherPolicyInterface.h)
+- [AOSP `IInputConstants.aidl`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/input/android/os/IInputConstants.aidl)
+- [AOSP NativeInputManager JNI（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_input_InputManagerService.cpp)
+- [AOSP `InputManagerService.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/input/InputManagerService.java)
+- [AOSP WMS `InputManagerCallback.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/InputManagerCallback.java)
+- [AOSP WMS `AnrController.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/AnrController.java)
+- [AOSP `ActivityManagerService.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
+- [AOSP `TimeoutRecord.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/TimeoutRecord.java)
+- [AOSP `LongMethodTracer.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/utils/LongMethodTracer.java)
+- [Android Developers：`ActivityManager.registerAnrWarningListener()`](<https://developer.android.com/reference/android/app/ActivityManager#registerAnrWarningListener(java.util.concurrent.Executor,java.util.function.Consumer)>)
 
-| 常量 | 值 | 含义 |
-|------|-----|------|
-| `UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS` | 5000 | 默认派发超时（5s） |
-| `UNMULTIPLIED_DEFAULT_PRE_ANR_TIMEOUT_WINDOW_MILLIS` | [待验证] | 默认 pre-ANR 窗口 |
-
-所有常量通过 `HwTimeoutMultiplier()` 乘以硬件系数，确保不同性能设备上的超时阈值成比例缩放。
-
-### 三级超时阈值
-
-| 超时 | 值 | 行为 |
-|------|-----|------|
-| `SLOW_EVENT_PROCESSING_WARNING_TIMEOUT` | 2s | 仅 logcat warning，不触发 ANR |
-| `DEFAULT_INPUT_DISPATCHING_TIMEOUT` | 5s × HwTimeoutMultiplier | 正式 ANR |
-| `STALE_EVENT_TIMEOUT` | 10s | 事件过期，丢弃并标记 |
-
-这三级阈值构成了输入事件的分层检测体系：2s 预警 → 5s ANR → 10s 丢弃。
-
-[已验证: AOSP android-17.0.0_r1, IInputConstants.aidl + InputDispatcher.cpp:128-142]
-
----
-
-## 🔸 扩展：与其他 ANR 检测路径的对比
-
-| ANR 类型 | 检测组件 | 超时（默认） | Pre-ANR 机制 | 相关章节 |
-|----------|----------|-------------|-------------|----------|
-| 输入派发超时 | InputDispatcher | 5s | ✅ Android 17 新增 | 本节 (9.12) |
-| 广播超时 | BroadcastQueueImpl + AnrTimer | 前台 10s / 后台 60s | ❌ | 9.2 |
-| Service 超时 | ActiveServices + AnrTimer | 前台 20s / 后台 200s | ❌ | 9.2 |
-| ContentProvider 超时 | AMS | 10s | ❌ | 9.9 |
-| FGS 超时 | ShortFgsTimeoutController | 短 3min / dataSync 6h | ❌ | 9.2 |
-| Watchdog | Watchdog | 60s（system_server）| 15s pre-dump | 9.1 |
-
-**关键差异**：输入派发超时是唯一拥有 Pre-ANR 双层预警机制的 ANR 路径。广播和 Service 超时依赖 `AnrTimer`（Android 16+），但不具备 pre-ANR 通知能力。Watchdog 有类似的 `PRE_WATCHDOG_TIMEOUT_RATIO` 半程检查（15s/60s），但仅用于 system_server 自身的看门狗。
-
----
-
-## 版本演进
-
-| 版本 | 输入 ANR 检测演进 |
-|------|-----------------|
-| Android 8.0 (API 26) | `IInputConstants.UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS = 5000` 已有 |
-| Android 11 (API 30) | `AnrHelper` 统一应用 ANR 入口；`mLastAnrState` 引入 |
-| Android 14 (API 34) | `AnrController` 的 `blamePendingFocusRequest` 焦点归因逻辑 |
-| Android 16 (API 36) | `AnrTimer` 接入广播超时；`BroadcastQueueImpl` 替代 `BroadcastQueueModernImpl` |
-| **Android 17 (API 37)** | **`processPreAnrsLocked()` Pre-ANR 双层预警；`TimeoutRecord` + `AnrTimer.ExpiredTimer` 结构化超时信息；`includeAnrInfo()` Feature Flag** |
-
----
-
-## 本章小结
-
-Android 17 的输入事件超时检测机制从传统的"超时即 ANR"单层判定，演进为 **Pre-ANR 预警 + 正式 ANR 判定** 的双层架构。核心变化：
-
-1. **`processPreAnrsLocked()` 优先于 `processAnrsLocked()` 执行**：在超时窗口的 ~50% 处提前发出系统内部预警
-2. **`TimeoutRecord` + `AnrTimer.ExpiredTimer`**：取代裸 reason 字符串，全链路结构化传递超时上下文（事件 ID、时间戳、持续时长）
-3. **`includeAnrInfo()` Feature Flag**：支持渐进式 rollout，保证兼容性
-
-这一机制的工程价值在于：为系统内部提供了输入 ANR 的早期信号，使下游组件（AnrController、AnrHelper、9.10 节的 IAnrWarningCallback）有机会在正式 ANR dump 前完成数据采集和诊断准备。对于线上 APM SDK 而言，Pre-ANR 触发时间点提供了更精确的 Perfetto trace 时间锚点，有助于定位输入超时的根因。
+[已验证: AOSP android-17.0.0_r1]
