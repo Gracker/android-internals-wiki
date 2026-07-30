@@ -65,8 +65,13 @@ last_deepseek_cn_review_at: 2026-07-11
 last_task9_audit: "2026-07-11"
 last_task2b_verifier_at: "2026-07-11T11:34:06+08:00"
 task2b_verifier_notes: "Task9 idle-audit auto-fix on 2026-07-11 set task6_state: revisiting + pipeline_stage: task6_pending, but status remained finalized. Corrected to ready-for-review for Task6 re-review."
-auto_promoted_by: openclaw-task9
+auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-07-11"
+last_idle_audit_at: "2026-07-30"
+last_idle_audit_run_id: "20260730-223534-idle-audit-4ec8c98d"
+last_idle_audit_result: "pass-with-1-safe-fix"
+updated_by: "aiw-polish-idle-audit"
+updated_date: "2026-07-30"
 ---
 # 13.14 Perfetto DataGrid 与 Jank CUJ 标准库
 
@@ -126,7 +131,7 @@ v54 Trace Processor 支持 Collapsed Stack 和 Firefox Profiler 预处理 JSON �
    - `android_jank_cuj_boundary`：整体 CUJ 边界（app process 级别）
 
 4. **第三方 App 扩展路径**
-   - **AndroidX JankStats**（API 16+ 可用；API 24+ 计时数据更可靠，API 31+ 精度更高）：`androidx.performance:performance-jankstats` → `JankStats.createJankStats()`
+   - **AndroidX JankStats**（API 16+ 可用；API 24+ 计时数据更可靠，API 31+ 精度更高）：`androidx.performance:performance-jankstats` → `JankStats.createAndTrack(window)`
    - **自定义 atrace marker**：使用 `Trace.beginSection()` 标记 CUJ，配合 Perfetto SQL 扩展 `_is_jank_slice`
    - **FrameTimeline direct join**：直接 join `actual_frame_timeline_slice` 和 `expected_frame_timeline_slice` 计算自定义帧耗时
 
