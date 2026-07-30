@@ -28,244 +28,312 @@ gap_source: "官方文档/章节深挖"
 
 # 8.14 推送通知管线性能：FCM 投递延迟与 NotificationManagerService 渲染
 
-推送通知是用户感知最直接的后台触达方式。一条推送从服务器发出到屏幕上亮起，会穿过 FCM 投递链路、系统服务调度、UI 渲染三个阶段，每个阶段都有各自的延迟来源和性能边界。
-
-## 推送投递全景：从服务器到屏幕的三段链路
-
-一条 FCM 推送的消息流经历三个阶段：
-
-1. **云端到设备**：FCM 云端通过持久连接把消息推到设备上的 Play Services FCM 接收器
-2. **系统分发**：Play Services 通过 Broadcast/Service 启动 App 进程（如需），App 调用 `NotificationManager.notify()` 进入 NMS
-3. **通知渲染**：NMS 排序后分发给 SystemUI，SystemUI inflate 布局并绘制通知卡片
-
-三段的延迟特征不同。第一段取决于网络、设备休眠状态和 FCM 消息优先级，延迟从几百毫秒到数分钟不等。第二段在进程启动时引入冷启动开销。第三段由 SystemUI 的主线程渲染能力决定。
-
-## FCM 消息投递链路与唤醒延迟
-
-### 消息类型与投递路径
-
-FCM 消息分两种类型，投递路径有差异：
-
-- **Notification messages**：由 FCM SDK 自动处理，当 App 在前台时通过 `onMessageReceived()` 回调；在后台时由系统托盘直接展示，不需要 App 代码执行。这条路径延迟最低，因为省去了 App 进程参与。
-- **Data messages**：始终通过 `onMessageReceived()` 回调，无论 App 在前台还是后台。后台投递时需要先唤醒或启动 App 进程，引入额外延迟。
-
-[适用版本: Android 12 - Android 17]
-
-### 高优先级消息与 Doze 交互
-
-FCM 支持设置消息优先级为 `high` 或 `normal`。高优先级消息能够突破 Doze 模式的网络限制，立即投递。但系统会对滥用高优先级消息的 App 进行降级——如果 App 发送大量高优先级消息但用户不互动，后续高优先级消息会被降级为普通优先级。
-
-这个降级是设备端行为，App 无法感知。线上排查推送延迟时，需要确认当前 App 是否已被系统降级。通过 `dumpsys deviceidle` 可以查看 Doze 白名单和延迟统计。
-
-Android 12+ 对后台启动 Service 有严格限制（详见 §25.4）。FCM data message 回调中如果直接 `startForegroundService()`，在后台启动限制下可能被系统拦截。正确做法是在 `onMessageReceived()` 中直接完成轻量工作，或通过 WorkManager 调度延迟任务。
-
-### Play Services FCM 接收器的唤醒机制
-
-设备端的 FCM 接收器运行在 Google Play Services 进程中（`com.google.android.gms`），维护一条到 FCM 云端的长连接。这条连接由系统的高优先级网络和唤醒机制保障：
-
-- 屏幕熄灭后，Play Services 通过高优先级 FCM 通道保持心跳
-- 收到消息后，Play Services 通过 IPC 唤醒目标 App 进程
-- 如果 App 进程不存在，系统先创建进程，再投递消息
-
-进程创建引入的延迟取决于冷启动耗时（详见 §8.2）。对于推送场景，App 的 `Application.onCreate()` 执行时间直接决定消息处理延迟。如果 `onCreate()` 中有 SDK 初始化、数据库操作等同步任务，推送延迟会线性增加。
-
-## NMS 通知入队处理
-
-### notify() 的同步开销
-
-`NotificationManager.notify()` 的入口是一次同步 Binder 调用（详见 §9.6 锚点 2）。调用线程至少要等 NMS 的入口校验和入队返回。入口校验包括权限检查、Notification 对象完整性检查、NotificationChannel 匹配等。
-
-App 侧的性能关注点：
-
-- **避免在主线程构造大型 Notification 对象**。`Notification.Builder.build()` 会执行布局创建、RemoteViews 序列化等工作，耗时与通知复杂度成正比
-- **避免高频调用 notify()**。NMS 在包级有速率限制，频繁更新会被静默丢弃（详见 §9.6）
-- **避免在 BroadcastReceiver.onReceive() 中调用 notify()**。广播接收器的执行时间窗口有限，如果 NMS 入口排队，可能导致 ANR
-
-### RemoteViews 与通知模板的性能差异
-
-通知的 UI 内容通过 `RemoteViews` 跨进程传递到 SystemUI 进程进行渲染。`RemoteViews` 的本质是一组序列化的 View 操作指令，SystemUI 在自己的进程中 inflate 并执行这些指令。
-
-通知模板的渲染开销排序（从低到高）：
-
-1. **系统标准模板**（`NotificationCompat.Builder` 默认样式）：使用预 inflate 的模板，开销最小
-2. **ProgressStyle / MetricStyle**（Android 16+）：走系统模板渲染路径，不需要自定义 RemoteViews
-3. **MediaStyle**：需要绑定 MediaSession，模板 inflate 开销中等
-4. **自定义 RemoteViews**：需要完整的 inflate 流程，开销最大
-
-自定义 RemoteViews 的性能成本来自两方面：
-
-- **inflate 开销**：SystemUI 需要加载 App 提供的布局资源，跨进程资源加载比同进程慢
-- **更新开销**：每次 `notify()` 更新通知内容时，整个 RemoteViews 需要重新序列化和传递
-
-Android 16 引入的 `Notification.ProgressStyle` 和 Android 17 的 `Notification.MetricStyle` 的设计意图就是把进度/指标类通知收敛到系统模板，减少自定义 RemoteViews 的使用。详见 §9.6 的版本演进表。
-
-## NMS 速率限制与通知更新策略
-
-### 包级速率限制
-
-Android 12+ 的 NMS 在包级有通知更新速率限制。当 App 短时间内频繁调用 `notify()` 更新同一条通知时，超出频率限制的更新会被静默丢弃——不抛异常，不回调通知 App。
-
-速率限制的阈值由系统动态调整，具体值不在公开 API 中。实测数据表明，同一通知在 1 秒内更新超过约 10 次时，部分更新会丢失。OEM 设备上阈值可能更低。
-
-对进度型通知的影响：
-
-- 做文件下载进度展示时，不要在每次 `onProgressUpdated()` 回调中都调 `notify()`
-- 推荐用节流策略：最快每 500ms-1s 更新一次，或按进度百分比变化阈值更新
-- Android 16+ 使用 `Notification.ProgressStyle` 可以把进度更新交给系统管理，App 只需设置 progress 值
-
-### postTimeout 与通知取消
-
-`Notification` 可以设置 `timeoutAfter` 属性（Android 8+），到时间后由系统自动取消通知。这个机制的性能影响：
-
-- `timeoutAfter` 的计时由 NMS 的 Handler 调度，不引入额外 CPU 开销
-- 超时取消走标准 `cancelNotification()` 路径，会触发 listener 回调
-- 如果 App 在超时前主动取消了通知，系统会取消计时器
-
-通知栏的高频更新（如直播弹幕、实时数据流）在弱设备上的累积开销可能拖慢 SystemUI 主线程。Perfetto trace 中表现为 SystemUI 主线程的 `inflate` 和 `onMeasure/onLayout` slice 密集出现。
-
-## NotificationChannel 重要性级别与系统调度
-
-### 重要性级别对投递的影响
-
-`NotificationChannel` 的 importance 级别（`IMPORTANCE_HIGH` / `IMPORTANCE_DEFAULT` / `IMPORTANCE_LOW` / `IMPORTANCE_MIN`）影响通知的展示方式和系统调度优先级：
-
-- `IMPORTANCE_HIGH`：触发 heads-up 通知，在屏幕顶部弹出悬浮卡片。heads-up 通知的渲染开销显著高于状态栏通知，因为涉及额外的动画和窗口管理
-- `IMPORTANCE_DEFAULT`：显示在通知栏，不弹出 heads-up
-- `IMPORTANCE_LOW` / `IMPORTANCE_MIN`：显示在通知栏的折叠区域
-
-从性能角度看，`IMPORTANCE_HIGH` 的成本来自 heads-up 窗口的生命周期管理：
-
-- heads-up 窗口需要独立 `WindowManager` 加入和移除
-- 弹出和消失动画占用 SystemUI RenderThread
-- 如果在短时间内多个通知触发 heads-up，SystemUI 需要排队展示，每个通知至少占用约 3-4 秒的 heads-up 时长
-
-### heads-up 通知的渲染开销
-
-heads-up 通知弹出的瞬间，SystemUI 需要执行以下操作：
-
-1. 创建 `ExpandableNotificationRow` 视图（如未缓存）
-2. 执行 inflate、measure、layout
-3. 通过 `WindowManager` 添加窗口
-4. 执行弹出动画（约 300ms）
-
-在 Perfetto trace 中，heads-up 弹出表现为 SystemUI 主线程上的一段连续 `inflate` → `measure` → `draw` slice，配合 RenderThread 上的 `drawDisplayList` 操作。如果通知使用自定义 RemoteViews，inflate 段会明显拉长。
-
-### 通知分组的批量优化
-
-使用 `setGroup()` 把多条同类通知合并为分组通知，可以减少 SystemUI 同时渲染的通知卡片数量。分组通知在通知栏中折叠为一行，展开后才显示子通知。对性能的好处：
-
-- 减少 `ExpandableNotificationRow` 的实例数量
-- 减少同时可见的 RemoteViews 数量
-- NMS 可以批量处理同组通知的 ranking 更新
-
-消息类 App 在群聊消息爆发场景下，不使用分组会导致通知栏瞬间出现几十条通知，SystemUI 的 inflate + measure + layout 开销急剧上升。
-
-## data message 与后台任务调度性能
-
-### FCM data message 的唤醒链路
-
-FCM data message 到达后，如果 App 需要执行后台任务（如同步数据、处理消息内容），链路为：
-
-1. Play Services FCM 接收器收到消息
-2. 通过 IPC 唤醒 App 的 `FirebaseMessagingService.onMessageReceived()`
-3. App 在回调中处理消息或调度后台任务
-
-步骤 2 的延迟取决于 App 进程状态：
-
-- **前台/缓存进程**：IPC 直接路由到已有进程，延迟约 10-50ms
-- **缓存冻结进程**：系统需要先解冻进程（详见 §4.11），延迟增加 100-500ms
-- **已死进程**：系统需要重新创建进程，延迟等于冷启动耗时，通常 1-5 秒
-
-缓存冻结状态下的 FCM 投递是推送延迟的高发场景。Android 12+ 的 Cached App Freezer 会在 App 进入缓存状态后一段时间冻结其进程。Play Services 的 FCM 回调需要等待解冻才能执行，这段时间对用户不可见但会被计入端到端推送延迟。
-
-### FCM + WorkManager 的唤醒开销
-
-如果 `onMessageReceived()` 中选择通过 WorkManager 调度后台任务，链路进一步延长：
-
-- `WorkManager.enqueue()` 本身有数据库写入开销
-- WorkManager 调度受系统后台执行限制约束（详见 §25.4 和 §25.13）
-- 高优先级 FCM 消息可以让系统临时放宽后台限制，但这个放宽有时间窗口（通常约 10 秒）
-
-在这个窗口内执行同步网络请求或数据库事务是安全的。如果任务执行时间超过窗口，WorkManager 的任务可能被推迟到下一个后台执行窗口。
-
-## Perfetto 观测要点
-
-推送通知管线的 Perfetto 观测需要关注三条线程线：
-
-| 观测对象 | Track 名称 | 关键 slice / counter |
-|---------|-----------|---------------------|
-| App 进程消息处理 | App 主线程 | `FirebaseMessagingService.onMessageReceived`, `NotificationManager.notify` |
-| NMS 调度 | system_server 主线程 | `NotificationManagerService`, `enqueueToastNotification`, `rankerSort` |
-| SystemUI 渲染 | SystemUI 主线程 + RenderThread | `inflate`, `onMeasure`, `onLayout`, `drawDisplayList`, `NotificationStackScrollLayout` |
-
-通过 Perfetto SQL 可以关联 FCM 到达时间和通知渲染完成时间：
-
-```sql
--- 关联 FCM 回调入口与 SystemUI 通知渲染
-SELECT
-  fcm.name AS fcm_event,
-  fcm.ts AS fcm_ts,
-  render.name AS render_event,
-  render.ts AS render_ts,
-  (render.ts - fcm.ts) / 1e6 AS latency_ms
-FROM slice AS fcm
-JOIN thread AS fcm_t ON fcm.thread_id = fcm_t.id
-JOIN slice AS render ON render.name LIKE 'inflate%'
-JOIN thread AS render_t ON render.thread_id = render_t.id
-WHERE fcm.name LIKE '%FirebaseMessaging%' OR fcm.name LIKE '%onMessageReceived%'
-  AND fcm_t.name = 'main'
-  AND render_t.name LIKE '%systemui%'
-LIMIT 20
+“推送慢”至少可能指五件事：服务端请求晚、FCM 传输晚、设备回调晚、应用发布通知晚、SystemUI 显示晚。它们跨越云端、Google Play services、应用进程、`system_server` 与 SystemUI，没有一个公开 API 能给出全部阶段的同一时钟。
+
+本文以 Android 17（API 37）的 `android-17.0.0_r1` 为平台源码基线，以 `android17-6.18-2026-06_r6` 为内核基线。FCM 的设备端实现含有闭源组件，相关结论只采用 Firebase 公开契约；Android 平台部分使用固定标签下的 NMS、`RemoteViews` 和 SystemUI 源码验证。
+
+## 先定义“到达”和“显示”
+
+服务端拿到 FCM 成功响应，只说明消息被 FCM 接受。设备 SDK 收到消息，也不等于通知已经进入 NMS。`NotificationManager.notify()` 返回时，SystemUI 仍可能尚未创建通知视图。用户看到通知还会受权限、channel、锁屏、勿扰模式和 SystemUI 状态影响。
+
+```mermaid
+flowchart LR
+    A["业务服务端"] --> B["FCM 接受与传输"]
+    B --> C{"消息形态与 App 状态"}
+    C -->|"data 或前台消息"| D["FirebaseMessagingService 回调"]
+    D --> E["应用构造 Notification"]
+    E --> F["App NotificationManager.notify"]
+    C -->|"后台 notification message"| G["FCM 自动展示路径"]
+    F --> H["NotificationManagerService"]
+    G --> H
+    H --> I["ranking / listener 分发"]
+    I --> J["SystemUI 异步创建或复用视图"]
+    J --> K["通知抽屉 / 锁屏 / heads-up"]
 ```
 
-这段 SQL 的用途是定位推送管线的瓶颈段。`latency_ms` 列如果集中在 100-300ms 区间，瓶颈在 inflate/measure/layout；如果超过 1 秒，需要检查进程创建或解冻延迟。
+图中的“FCM 自动展示路径”是公开行为边界，不代表所有设备都跳过应用进程。高优先级 notification message 还可能由 Google Play services 代理展示。不要用进程是否存在去反推消息类型。
 
-## 优化建议
+工程指标应使用不同名称：
 
-按延迟来源分层处理：
+| 时间点 | 含义 | 是否等于用户可见 |
+|---|---|---|
+| `fcm_accepted_at` | 服务端请求被 FCM 接受 | 否 |
+| `sdk_callback_at` | 应用进入 `onMessageReceived()` | 否 |
+| `notify_start/end` | 应用进入和离开同步 `notify()` 调用 | 否 |
+| `nms_posted` | 平台已接受并分发 notification record | 否；普通应用没有直接回调 |
+| `systemui_applied` | SystemUI 已 apply / reapply 通知内容 | 接近显示准备完成，仍受界面状态影响 |
+| `impression` | Firebase 或产品定义的展示观测 | 取决于消息形态和采集能力 |
 
-**投递延迟（云端到设备）**：
-- 使用高优先级 FCM 消息，但监控投递成功率避免降级
-- 对时效性要求高的推送，在 payload 中只放最小必要数据，减少传输延迟
+## FCM 消息形态决定应用是否参与
 
-**进程唤醒延迟**：
-- `Application.onCreate()` 中的同步初始化尽量推迟到首次使用时
-- 使用 App Startup 库或 Startup Profile 减少 dex2oat 开销（详见 §21.6 和 §21.12）
+当前 [FCM Android 接收文档](https://firebase.google.com/docs/cloud-messaging/android/receive-messages) 给出的行为如下：
 
-**通知构造延迟**：
-- 在后台线程构建 Notification 对象，主线程只负责 `notify()` 调用
-- 优先使用系统标准模板，减少自定义 RemoteViews
-- 进度型通知使用 Android 16+ 的 `Notification.ProgressStyle`
+| payload 与 App 状态 | 到达时的公开行为 | 应用能控制什么 |
+|---|---|---|
+| notification message，前台 | 调用 `onMessageReceived()` | 解析消息并决定是否发布通知 |
+| notification message，后台 | FCM SDK 处理展示，不调用业务 `onMessageReceived()` | 用户点击后处理启动 Intent |
+| data message，前台或后台 | 调用 `onMessageReceived()` | 构造通知、更新数据或安排后续工作 |
+| notification + data，后台 | FCM SDK 处理 notification，data 放入启动 Activity 的 Intent extras | 用户点击后读取 data |
+| notification + data，前台 | 两部分都交给 `onMessageReceived()` | 由应用决定 UI 和数据处理 |
 
-**渲染延迟**：
-- 避免短时间内大量 heads-up 通知，使用 `setGroup()` 分组
-- 通知更新频率控制在每秒 1-2 次以内
-- 图片通知使用小尺寸缩略图，RemoteViews 的 ImageView 尺寸不超过 72dp
+“后台 notification message 更快”不能写成固定结论。它避开了应用自己的业务 callback，但展示仍要经过 FCM 设备端组件、NMS 和 SystemUI；代理展示、权限和设备状态也会改变路径。data message 给应用更多控制，同时把进程启动、`Application.onCreate()` 和通知构造成本带入用户等待。
 
-## 版本演进要点
+如果应用进程不存在，Android 在创建 `FirebaseMessagingService` 前会建立进程并执行 `Application.onCreate()`。缓存进程可能由系统解冻后继续工作。Android 没有为这些状态提供固定延迟，线上不能使用“缓存固定增加 100 ms”一类常量；同一设备组的进程状态与回调时间分布更有参考价值。
 
-| Android 版本 | 变化 | 性能影响 |
-|-------------|------|---------|
-| Android 12 (API 31) | NMS 包级速率限制收紧；后台 Service 启动限制加强 | 高频通知更新更容易被丢弃；data message 中直接启动 Service 被限制 |
-| Android 13 (API 33) | 通知运行时权限（`POST_NOTIFICATIONS`） | 首次通知需要用户授权，未授权时通知不展示但不报错 |
-| Android 14 (API 34) | FGS 类型声明强制化 | FCM 回调中启动 FGS 需要声明正确类型，否则触发 `MissingForegroundServiceTypeException` |
-| Android 15 (API 35) | FGS 超时机制（详见 §25.13） | 由 FCM 触发的 FGS 受 6 小时配额限制 |
-| Android 16 (API 36) | `Notification.ProgressStyle`；后台 NLS 限频 | 进度通知走系统模板；NotificationListenerService 在后台被限频 |
-| Android 17 (API 37) | `Notification.MetricStyle`；Live Update 扩展 | 指标型通知走系统模板；高频更新仍受 NMS 速率限制 |
+## high priority 是传输提示，不是交付承诺
+
+FCM 的 Android 下行优先级分为 normal 和 high。normal 消息在设备进入 Doze 后可能延迟；high 消息会尝试尽快交付，必要时唤醒休眠设备，并提供有限的处理时间。网络离线、TTL、设备限制和服务状态仍可能造成等待或丢弃。
+
+[FCM priority 文档](https://firebase.google.com/docs/cloud-messaging/android-message-priority) 对高优先级还有一组可验证规则：
+
+- high 应用于时间敏感、面向用户的通知；
+- FCM 按每个 App 实例最近 7 天的行为决定是否降为 normal 或交给 Google Play services 代理；
+- 单条消息可比较 `RemoteMessage.getOriginalPriority()` 与 `getPriority()`；
+- 项目级趋势可从 FCM Aggregate Delivery Data API 读取 deprioritized 与 proxy 相关比例；
+- 通知权限被关闭后，高优先级消息无法形成用户可见通知，也会增加降级风险。
+
+`dumpsys deviceidle` 可以确认设备是否在 idle、白名单和临时豁免状态，不能显示 FCM 对该 App 实例的优先级判定。排查高优先级降级时，应读取消息自身的原始/交付优先级，并结合 FCM Data API。
+
+下列因素要分开统计：
+
+| 因素 | 影响 | 可用证据 |
+|---|---|---|
+| 设备离线 | 消息留在 FCM，受 TTL 约束 | FCM Data API 的 delayed / dropped 原因 |
+| normal + Doze | 可能等到维护窗口或退出 Doze | 发送优先级、设备 idle 状态、聚合交付数据 |
+| collapse key | 多条可折叠消息只保留代表项 | 服务端 payload 与 BigQuery 导出 |
+| TTL 到期 | 过期消息不再投递 | 服务端 TTL 与 FCM 交付结果 |
+| high 被降级 | 交付行为按 normal 处理 | original priority 与 delivered priority |
+| Play services 代理 | notification 可由代理路径显示 | Proxy Notification Insights；普通 GA 指标可能缺口 |
+| 权限或 channel 被阻止 | 消息到设备但通知不可见 | `areNotificationsEnabled()`、channel importance、权限状态 |
+
+## `onMessageReceived()` 的时间预算
+
+Firebase 文档明确说明，`onMessageReceived()` 在独立工作线程调用，并且只有几秒的处理窗口；high 比 normal 略多，但没有面向应用的固定秒数合同。回调内适合校验轻量字段、构造通知并立即发布。额外网络请求、图片下载或长事务会让进程离开有效生命周期后仍有工作未完成，结果可能是延迟或漏通知。
+
+后续工作按交付优先级安排：
+
+- high 且需要附加工作：在 callback 后立即安排 expedited WorkManager job；FCM 为这种紧邻 high callback 的 expedited job 提供短暂配额豁免。
+- normal：安排普通 `WorkRequest`，接受系统调度。
+- 只为补充 App 内数据：可以先发布 payload 中已有的通知内容，再在后台同步。
+- 必须运行长时间、且工作本身符合 FGS 使用场景：评估 foreground service 类型、权限和后台启动豁免。
+
+Android 12（API 31）起，高优先级 FCM 是后台启动 FGS 的豁免之一。该豁免很短，而且只有交付优先级仍为 high 时成立。启动前要检查 `RemoteMessage.getPriority()`；消息已经降级时调用 `startForegroundService()` 可能抛出 `ForegroundServiceStartNotAllowedException`。当前边界见 [后台启动 FGS 限制](https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start)。
+
+这段 data message 骨架只记录应用拥有的时间点，并把通知显示放在短回调内：
+
+```kotlin
+override fun onMessageReceived(message: RemoteMessage) {
+    val callbackStartNs = SystemClock.elapsedRealtimeNanos()
+    var outcome = "success"
+    Trace.beginSection("Push:onMessageReceived")
+    try {
+        val notification = trace("Push:build") {
+            buildNotificationFromPayload(message.data)
+        }
+        trace("Push:notify") {
+            notificationManager.notify(stableNotificationId(message), notification)
+        }
+    } catch (error: Exception) {
+        outcome = failureFamily(error)
+        throw error
+    } finally {
+        val callbackCostMs =
+            (SystemClock.elapsedRealtimeNanos() - callbackStartNs) / 1_000_000
+        Trace.endSection()
+        PushMetrics.recordCallback(
+            originalPriority = message.originalPriority,
+            deliveredPriority = message.priority,
+            outcome = outcome,
+            callbackCostMs = callbackCostMs
+        )
+    }
+}
+```
+
+`trace()` 指 AndroidX Tracing 的同名函数。`buildNotificationFromPayload()` 不应隐藏网络或磁盘大图解码，`failureFamily()` 应把异常映射到有限集合。`message.originalPriority` 与 `message.priority` 能识别单条 high 消息是否降级；三个 trace section 则用于 Perfetto 中拆分 callback、构造和同步 Binder 调用。
+
+## `notify()` 返回前后分别发生什么
+
+Android 17 的 [`NotificationManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/NotificationManager.java) 在 `notifyAsUser()` 中先执行 `fixNotification()`，再同步调用 `INotificationManager.enqueueNotificationWithTag()`。应用侧同步工作包括补充 context 字段、校验 small icon、`reduceImageSizes()` 和裁剪可省略的传输内容。
+
+`system_server` 中的 [`NotificationManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/notification/NotificationManagerService.java) 在 Binder 入口继续执行：
+
+1. 校验调用 UID、包名、user 与 allowlist token；
+2. 处理 FGS / UIJ policy 并修正 notification；
+3. 查询 channel，创建 `NotificationRecord`；
+4. 检查权限、数量、更新速率等拒绝条件；
+5. 把 `EnqueueNotificationRunnable` 投递到 NMS Handler。
+
+第五步完成后 Binder 才返回应用。后续排序、listener 分发和 SystemUI 内容创建不在 `notify()` 的同步等待范围内。因此：
+
+- `notify_call_ms` 能覆盖对象传输、Binder 等待和 NMS 入队前检查；
+- `notify()` 很快返回不能证明通知已经显示；
+- `notify()` 变慢时，应检查调用线程、Parcel 内容、Binder wait 与 `system_server`；
+- SystemUI 卡顿时，应用调用常常早已返回。
+
+在 `BroadcastReceiver.onReceive()` 中发布一个已经构造好的通知是常见用法，无需一律禁止。接收器仍受执行预算约束，图片读取、数据库迁移或网络请求应移出同步 callback。FCM 的 callback 本身位于工作线程，也不代表可以无限延长处理。
+
+## NMS 限速：5.0 是源码默认值，不是“每秒五次”合同
+
+`android-17.0.0_r1` 的 NMS 定义 `DEFAULT_MAX_NOTIFICATION_ENQUEUE_RATE = 5f`，并允许 `Settings.Global.MAX_NOTIFICATION_ENQUEUE_RATE` 覆盖。判断使用 [`RateEstimator.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/service/notification/RateEstimator.java) 的指数加权到达率，不是对一秒窗口做简单计数。
+
+限速条件也比“所有 notify 都会被丢”更窄。`checkDisqualifyingFeatures()` 只在已有同 key 通知、前后 `progressState` 相同且不属于自动分组时检查 enqueue rate。进度从 ongoing 变为 complete 等状态切换不会命中这一条 rate check。超过阈值时 NMS 记录 over-rate 并返回 false，调用方没有 posted callback，也不会收到异常。
+
+同一源码还限制普通 App 的未清理通知数量，默认最多 50 条；FGS、UIJ 和部分聚合通知有单独规则。这两个限制分别解决高频更新和通知堆积，不要混成一个指标。
+
+进度或指标通知可采用以下发布策略：
+
+- 使用稳定的 tag / id 更新同一条通知；
+- 按有意义的进度变化与最长等待时间合并更新；
+- 对中间值使用 `setOnlyAlertOnce(true)`，避免每次更新都打扰用户；
+- 完成、失败、暂停等状态变化立即发布；
+- 记录 attempted update 和业务状态，不把 `notify()` 返回当成“已显示确认”。
+
+固定 500 ms 或 1 s 只能作为经过设备测试后的产品节奏。平台采用 EWMA，OEM 也能改变阈值；业务还要为同包的其他通知留出余量。
+
+### `timeoutAfter` 走 AlarmManager
+
+Android 17 的 [`TimeToLiveHelper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/notification/TimeToLiveHelper.java) 按 elapsed realtime 保存超时项，并用 `AlarmManager.setExactAndAllowWhileIdle()` 安排最早到期通知。更新同 key 通知会重排超时，主动取消会移除对应项。
+
+`setTimeoutAfter()` 适合“过时后没有展示价值”的通知，不能替代 FCM TTL。FCM TTL 控制消息在传输层保留多久；notification timeout 控制已经进入 NMS 的通知保留多久。两者要分别记录。
+
+## RemoteViews 与 SystemUI 的真实成本
+
+标准 notification style 也会生成 `RemoteViews`，并不存在“系统模板完全不走 RemoteViews”的通用捷径。Android 17 的 [`RemoteViews.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/widget/RemoteViews.java) 保存 `ArrayList<Action> mActions`，跨进程时 parcelize；应用到 View 树时执行 inflate 与 action。
+
+SystemUI 的 [`NotificationRowContentBinderImpl.kt`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/statusbar/notification/row/NotificationRowContentBinderImpl.kt) 使用异步 inflation executor 创建和应用内容。新旧 `RemoteViews` 的 package 与 layout ID 相同，且旧视图没有禁止复用标记时，SystemUI 可走 `reapplyAsync()`；否则走 `applyAsync()` 创建新 View。
+
+性能成本主要来自这些内容特征：
+
+| 特征 | App / Binder 侧 | SystemUI 侧 |
+|---|---|---|
+| 大 bitmap 或多个图片 | 缩放、复制、Parcel 体积 | preload、解码、内存与绘制 |
+| 深层自定义布局 | action 与资源描述更多 | inflate、measure、layout 成本更高 |
+| 高频更新 | 多次同步 Binder 与 NMS 检查 | 反复 apply / reapply、排序和界面刷新 |
+| 稳定系统模板 | 结构和 action 受平台控制 | 更容易保持稳定 layout ID 并尝试 reapply |
+| style 或 layout 改变 | 传输完整的新描述 | 更可能重新 inflate |
+
+不能给 `MediaStyle`、自定义 `RemoteViews`、`ProgressStyle` 排一个适用于所有通知的固定耗时顺序。内容大小、图片、action 数量、复用命中和 SystemUI 状态都会改变结果。实验时应固定 payload 和设备，分别比较 `Push:build`、`Push:notify` 与 SystemUI inflation。
+
+### ProgressStyle、MetricStyle 与 Live Update
+
+Android 16（API 36）的 `Notification.ProgressStyle` 和 Android 17（API 37）的 [`Notification.MetricStyle`](https://developer.android.com/develop/ui/views/notifications/metric-style) 都是系统模板。`MetricStyle` 最多展示三个 metric，适合健身、计时和出行；模板只负责表达与渲染，应用仍需调用 `notify()` 更新值，NMS 限速继续适用。
+
+Live Update 是展示资格，不等同于 style。当前 [Live Update 文档](https://developer.android.com/develop/ui/views/notifications/live-update) 要求通知使用标准 style、`BigTextStyle`、`CallStyle`、`ProgressStyle` 或 `MetricStyle`，声明 `POST_PROMOTED_NOTIFICATIONS`，请求 promoted ongoing，并满足 ongoing、content title、channel 等通用条件。自定义 `customContentView`、group summary 和 `IMPORTANCE_MIN` 不符合资格；用户和 OEM 还可以降级或增加条件。
+
+`MetricStyle` 文档另有 promoted 状态下的 title fallback 说明，与通用清单的文字并不完全一致。API 37 应同时调用 `Notification.hasPromotableCharacteristics()` 与 `NotificationManager.canPostPromotedNotifications()`，以运行时结果判断资格，不能只根据 style 猜测。
+
+Android 17 的 Semantic Coloring API 给安全、警示、危险和中性信息提供系统语义色。它解决的是跨系统表面的表达一致性，不能替代更新节流或图片治理。
+
+## channel importance 只控制打扰程度
+
+`NotificationChannel` importance 控制声音、震动、状态栏和 heads-up 等展示行为，不改变 FCM 传输优先级，也不会把 App 的 NMS Binder 请求放到更高调度优先级。Android 8（API 26）起 channel 创建后，应用不能修改其打扰行为，用户可以随时调整。
+
+heads-up 通常需要 high importance，且还受设备是否解锁、勿扰模式、用户设置和 OEM policy 影响。不要假设固定动画时长或固定驻留秒数。高 importance 应由业务紧急程度决定，不能作为缩短 FCM 延迟的手段。
+
+Android 13（API 33）起，普通通知需要 `POST_NOTIFICATIONS` 运行时权限。用户拒绝后，非豁免通知不会出现在 notification drawer；FGS 仍要提供通知，但相关提示可能只在 Task Manager 中出现。发送端若继续大量发送 high 消息，却无法形成用户可见通知，还可能触发 FCM 降级。
+
+通知分组同样是信息结构和打扰控制能力。`setGroup()` 不保证减少 SystemUI 创建的 child row，也不让 NMS 批量跳过 ranking。消息类场景可以使用 `MessagingStyle`、稳定 ID、group summary 和 `setGroupAlertBehavior(GROUP_ALERT_SUMMARY)` 控制通知数量与重复提示；每个 child 仍应能独立表达其内容。
+
+## 端到端观测：每段使用自己的时钟
+
+建议把服务端、FCM 聚合数据和设备事件放在同一个 `message_trace_id` 下，但不要上传 registration token、完整 payload 或用户消息正文。
+
+| 阶段 | 推荐字段 | 时钟说明 |
+|---|---|---|
+| 服务端发送 | `fcm_request_start/end`、priority、TTL、collapse key、analytics label | 服务端单调时钟用于请求耗时，墙钟用于跨系统关联 |
+| FCM 传输 | accepted、delivered、pending、dropped、delay reason、proxy / deprioritized ratio | 使用 FCM Data API 或 BigQuery export |
+| SDK callback | `RemoteMessage.sentTime`、original / delivered priority、callback wall time | 只覆盖会进入 callback 的消息 |
+| App 发布 | build、notify duration、process state bucket、permission / channel state | 设备内阶段使用 `elapsedRealtime` |
+| SystemUI | apply / reapply、row inflation、主线程和 inflation executor 状态 | 需要 Perfetto、平台日志或 userdebug 能力 |
+| 用户行为 | impression、tap、dismiss | 必须说明事件来源和适用消息形态 |
+
+FCM BigQuery 的 `MESSAGE_DELIVERED` 表示消息交给设备上的 FCM SDK，不代表通知已经显示。Aggregate Delivery Data 是抽样、聚合且延迟提供的数据，也不能替代单设备 trace。代理 notification 在普通 FCM / GA 指标中可能形成缺口，应读取 Proxy Notification Insights。
+
+后台 notification message 不进入业务 `onMessageReceived()`，因此应用无法在到达时写自定义 callback 埋点。若产品必须获得应用侧处理与自定义展示证据，应选择 data message，并承担进程与后台执行约束；这项选择同时影响可靠性、功耗和用户体验。
+
+## Perfetto：只关联有共同键或共同时间窗的证据
+
+应用自定义 trace section 可以用下列 SQL 取出。它不会声称已经找到 SystemUI 显示完成：
+
+```sql
+SELECT
+  p.name AS process_name,
+  t.name AS thread_name,
+  s.name,
+  s.ts / 1e6 AS ts_ms,
+  s.dur / 1e6 AS dur_ms
+FROM slice AS s
+JOIN thread_track AS tt ON s.track_id = tt.id
+JOIN thread AS t ON tt.utid = t.utid
+LEFT JOIN process AS p ON t.upid = p.upid
+WHERE s.name IN (
+  'Push:onMessageReceived',
+  'Push:build',
+  'Push:notify'
+)
+ORDER BY s.ts;
+```
+
+这条查询使用正确的 `slice -> thread_track -> thread -> process` 关系。旧式做法若把所有 FCM slice 与所有 SystemUI `inflate` slice 直接 join，会产生笛卡尔积，所得延迟没有事件对应关系。
+
+Android 17 AOSP 的 SystemUI 有 `NotificationContentInflater.AsyncInflationTask#doInBackground` trace section，也有 apply / reapply 路径。OEM 可改变类名、线程名和打桩。实验室排查时按时间窗观察：
+
+1. App 的 `Push:notify` 是否处于 Binder wait；
+2. `system_server` 是否在 NMS 入口或 Handler 队列等待；
+3. SystemUI inflation executor、主线程和 RenderThread 是否繁忙；
+4. 同一时窗是否伴随大量通知、图片解码、锁屏动画或 panel 更新。
+
+没有 notification key 或平台日志时，只能把这些证据写成相关性，不能宣称完成了单条通知的因果关联。
+
+## Android 17 平台与内核锚点
+
+| 层级 | 固定入口 | 能验证的边界 |
+|---|---|---|
+| App API | [`NotificationManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/NotificationManager.java) | `fixNotification()` 与同步 Binder 调用 |
+| Notification 数据 | [`Notification.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/Notification.java) | timeout、style、progress state 与 MetricStyle |
+| NMS | [`NotificationManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/notification/NotificationManagerService.java) | 校验、channel、限速、数量上限和异步入队 |
+| 更新速率 | [`RateEstimator.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/service/notification/RateEstimator.java) | EWMA 到达率计算 |
+| 通知超时 | [`TimeToLiveHelper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/notification/TimeToLiveHelper.java) | elapsed realtime 与 AlarmManager |
+| RemoteViews | [`RemoteViews.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/widget/RemoteViews.java) | action、Parcel、apply / reapply |
+| SystemUI | [`NotificationRowContentBinderImpl.kt`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/statusbar/notification/row/NotificationRowContentBinderImpl.kt) | 异步内容创建、缓存与复用 |
+| GKI Binder | [`drivers/android/binder.c`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/android/binder.c) | `BC_TRANSACTION` 到 `binder_transaction()` 的 IPC 传输 |
+
+common kernel 的 Binder 代码只能解释 App、NMS 与 SystemUI 之间的 IPC 等待。FCM 云端接受、Google Play services 的优先级判断和通知代理不属于 AOSP common kernel；不能从 `binder.c` 推断云端投递时延。
+
+## 版本边界
+
+| Android 版本 | 本章相关变化 |
+|---|---|
+| Android 12 / API 31 | 后台启动 FGS 受限；交付后仍为 high 的 FCM 消息是短暂豁免之一 |
+| Android 13 / API 33 | `POST_NOTIFICATIONS` 运行时权限影响普通通知可见性 |
+| Android 14 / API 34 | target 34+ 的 FGS 需要声明适用类型和对应权限 |
+| Android 16 / API 36 | `Notification.ProgressStyle` 与 promoted ongoing / Live Update 能力 |
+| Android 17 / API 37 | `Notification.MetricStyle`、Live Update Semantic Coloring；平台源码基线 `android-17.0.0_r1` |
+
+FCM SDK、Google Play services 和 Android 平台版本要分别记录。Android 17 设备仍可能运行不同版本的 Firebase Messaging SDK 与 Play services，三者不能只用 `api_level` 代表。
 
 ## 交叉引用
 
-- **§9.6 Notification 性能与 ANR**：NMS 内部机制、通知 ANR 路径、NotificationListenerService 性能影响
-- **§8.2 App 启动全流程**：冷启动耗时对推送延迟的影响
-- **§25.4 WorkManager 实战与后台任务调度**：后台任务调度策略与配额管理
-- **§25.13 Foreground Service 超时与 JobScheduler 配额治理**：FGS 超时机制对推送链路的影响
-- **§4.11 Cached App Freezer 与 GC 触发边界**：缓存冻结对 FCM 消息投递延迟的影响
-- **§11.5 Bluetooth 扫描与连接功耗分析**：后台保活链路的功耗对比
+- [§9.6 Notification 性能与 ANR](../ch09-anr/06-notification-performance-anr.md)：`notify()` 同步边界、NLS 回调和通知 ANR。
+- [§8.2 App 启动流程](02-app-launch.md)：进程创建与 `Application.onCreate()`。
+- [§25.4 WorkManager 实战](../../part5-app/ch25-power-size/04-workmanager-practice.md)：regular / expedited work 与后台调度。
+- [§25.13 FGS 超时与 JobScheduler 配额](../../part5-app/ch25-power-size/13-fgs-timeout-jobscheduler-quota.md)：FGS 类型、超时与恢复。
+- [§4.11 Cached App Freezer](../../part1-fundamentals/ch04-memory/11-cached-app-freezer-gc-boundary.md)：缓存冻结与解冻边界。
+- [§1.4 Binder IPC](../../part1-fundamentals/ch01-architecture/04-binder.md)：同步 Binder 与线程等待。
 
 ## 参考资料
 
-- [NotificationManagerService — AOSP android-16.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/services/core/java/com/android/server/notification/NotificationManagerService.java)
-- [Notifications overview — Android Developers](https://developer.android.com/develop/ui/views/notifications)
-- [Firebase Cloud Messaging — Firebase Documentation](https://firebase.google.com/docs/cloud-messaging)
-- [Progress-centric notifications — Android 16](https://developer.android.com/about/versions/16/features/progress-centric-notifications)
-- [Foreground service launch restrictions — Android Developers](https://developer.android.com/develop/background-work/services/fgs/troubleshooting)
+- [FCM Android 消息接收](https://firebase.google.com/docs/cloud-messaging/android/receive-messages)
+- [FCM Android 消息优先级与降级](https://firebase.google.com/docs/cloud-messaging/android-message-priority)
+- [FCM 交付数据口径](https://firebase.google.com/docs/cloud-messaging/understand-delivery)
+- [Android 通知 channel](https://developer.android.com/develop/ui/views/notifications/channels)
+- [Android 通知运行时权限](https://developer.android.com/develop/ui/views/notifications/notification-permission)
+- [Android 17 MetricStyle](https://developer.android.com/develop/ui/views/notifications/metric-style)
+- [Live Update 通知](https://developer.android.com/develop/ui/views/notifications/live-update)
+
+## 小结
+
+推送性能只能按责任边界分析。FCM 负责云端接受与设备传输，应用在 data / 前台路径中处理 callback，NMS 同步完成校验与入队前工作，SystemUI 再异步创建或复用通知内容。`notify()` 返回、FCM `MESSAGE_DELIVERED` 和用户看到通知是三个不同事件。
+
+Android 17 的 NMS 采用可配置的 EWMA 更新限速，SystemUI 支持 `RemoteViews` 异步 apply / reapply，`MetricStyle` 与 Live Update 又增加了系统模板和展示资格。稳定方案依赖可见内容、合理 priority、短 callback、合并更新和分阶段证据，不能依赖固定毫秒数或未公开的 Play services 内部实现。
