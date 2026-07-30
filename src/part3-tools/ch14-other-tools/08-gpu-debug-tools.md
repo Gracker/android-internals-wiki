@@ -81,602 +81,322 @@ last_task9_review_log: "logs/deep-review/2026-07-07-12-deep-review.md"
 - 🔸 **Release 包与调试包的工具权限差异**:`profileable`、`debuggable` 与帧捕获能力的关系
 <!-- outline-end -->
 
-## 为什么要用专门的 GPU 分析工具
+## 分析对象是一条显示时间线
 
-在 Perfetto 中看到一帧渲染时间超标，通常先看 CPU 侧：主线程有没有被阻塞，RenderThread 的 draw 操作是不是太重。如果 CPU 侧一切正常，主线程空闲、RenderThread 也没有长时间阻塞，但帧时间还是超了 16.6ms，这时候瓶颈大概率在 GPU。
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点，内核侧以 `android17-6.18-2026-06_r6` 为边界。GPU producer、用户态驱动和内核 GPU 驱动大多由厂商提供；同为 API 37 的两台设备，能采集的数据源、counter 和驱动事件仍可能不同。
 
-Perfetto 能告诉我们"GPU 在忙"，但看不到 GPU 内部在忙什么——是在等显存带宽，还是 Shader 太复杂打满了 ALU，还是 Draw Call 太多导致驱动开销成了瓶颈。这些问题的答案，CPU profiling 工具看不到。
+一次 draw API 返回，只说明 CPU 已执行到某个提交点。GPU 可能仍在队列里运行，buffer 也可能继续等待 SurfaceFlinger latch、HWC 合成或 display present。判断 GPU 瓶颈时，要把以下节点放进同一帧：
 
-这就是 GPU 专用分析工具的工作范围：深入 GPU 内部，定位每一帧的 GPU 时间花在哪个 Draw Call、哪个 Shader，显存带宽是不是被 Overdraw 吃光了。
+1. 应用何时开始逻辑与录制命令；
+2. CPU 何时 submit GPU 工作；
+3. GPU 工作何时开始和完成；
+4. producer 何时向 BufferQueue 提交 buffer，acquire fence 何时 signal；
+5. SurfaceFlinger 何时 latch，是否进入 RenderEngine client composition；
+6. HWC 和显示端何时 present。
 
-CPU 和 GPU 分析工具是互补的：先用 Perfetto 确认"问题在 GPU"，再用 GPU 工具定位"GPU 的哪个环节慢"，两步走才能完成一次完整的渲染性能分析。
+这套顺序来自渲染管线系列的公共主线。标准 HWUI 窗口通常从主线程和 `RenderThread` 开始；SurfaceView、游戏、Camera、视频和自有 Vulkan render loop 应先找主体 Surface 与 producer 线程。只看宿主 Activity 的 FrameTimeline，可能漏掉独立 Surface 的主体画面。
 
-不同场景的需求也不一样：游戏开发要用逐 Draw Call 的帧分析，UI 渲染优化关注带宽和 Overdraw，视频解码关注 GPU 编解码单元的利用率。本章介绍的工具覆盖了这些场景。
+## 工具按证据深度分层
 
-## GPU 分析工具全景
+| 层级 | 适合回答的问题 | 工具 | 主要限制 |
+|---|---|---|---|
+| 系统时间线 | 哪一帧晚，CPU、GPU、SurfaceFlinger、HWC 谁先偏离预算 | Perfetto、Android Performance Analyzer（APA） | 设备未暴露 GPU producer 时，GPU 轨道可能为空 |
+| 系统级 GPU | GPU 频率、render stage、计数器与 CPU 调度如何关联 | APA、AGI System Profiler、厂商 system profiler | counter 名称与语义依赖 GPU 和驱动 |
+| 单帧捕获 | 哪个 render pass、draw、pipeline、shader 或资源有问题 | AGI Frame Profiler、RenderDoc、Arm Frame Advisor | 捕获与回放会改变时序，不能拿来测正常帧率 |
+| 多帧捕获 | 间歇性 pipeline/state 变化、连续帧资源与 shader 差异 | Sokatoa | 面向 Vulkan，要求 Android 13+，注入 layer 需要 debuggable APK 或 root |
+| 微架构分析 | ALU、纹理、tile、cache、带宽、occupancy 受限在哪里 | Arm Streamline、Snapdragon Profiler、厂商工具 | 结论只能绑定对应 GPU 架构与 counter 文档 |
 
-Android 平台上的 GPU 分析工具大致分三层，对应的定位也不同：
+推荐的工作顺序是“系统 Trace 定位时间窗 → 单变量实验缩小资源类型 → 帧捕获或厂商 counter 解释原因”。跳过系统时间线直接抓一帧，容易抓到正常帧，也容易把 SurfaceFlinger 或 BufferQueue 等待归给应用 shader。
 
-**系统级追踪工具**：不分析单帧的 Draw Call 细节，而是看 GPU 在时间轴上的整体行为。适合回答"GPU 是不是瓶颈"、"GPU 利用率如何"、"显存带宽够不够"这类问题。
+## Perfetto：Android 17 的 GPU 数据源
 
-- **Perfetto GPU counter track**：Perfetto 自带的 GPU 计数器，无需额外安装，抓 Trace 时顺便就能采集。精度有限但最方便。
-- **APA System Profiler**:Android Performance Analyzer 的系统级模式,2026 年 5 月发布,是当前官方推荐的 system profiling 工具。覆盖 CPU/GPU/Memory/power,基于 Perfetto,Android 12+ 提供最佳体验。后续 frame profiling/debugging 由 GFXReconstruct 支撑。
-- **AGI System Profiler**：Android GPU Inspector 的系统级模式，数据比 Perfetto 更详细，支持 Adreno/Mali/PowerVR 三大移动 GPU。APA 发版后被官方建议向 APA 迁移，但仍有设备兼容和功能覆盖价值。
-- **PerfDog**:腾讯出品的跨平台性能监控工具,不深入 GPU 内部,但可以实时显示 GPU 利用率、帧率、温度等宏观指标。
+Perfetto 的 GPU 能力由多个数据源组成，它们回答的问题互不替代。
 
-**帧级分析工具**：捕获一帧的所有 GPU 命令，逐 Draw Call 分析。适合"已经确定 GPU 是瓶颈，需要知道具体哪个渲染 Pass 或 Shader 拖慢了这一帧"。
+| 数据源 | Android 17 中的用途 | 不能直接推出的结论 |
+|---|---|---|
+| `linux.ftrace` 的 `power/gpu_frequency` | GPU 频率变化 | GPU 利用率、shader 耗时 |
+| `linux.ftrace` 的 `gpu_mem/gpu_mem_total` | GPU 内存总量事件 | 带宽、完整对象归属或泄漏 |
+| `gpu.counters` | 周期采样设备 producer 暴露的硬件计数器 | 跨厂商统一阈值 |
+| `gpu.renderstages` | graphics/compute submission 的 GPU 活动时间线 | 每个 draw 的完整 pipeline state |
+| `vulkan.memory_tracker` | Vulkan allocation 与 bind 事件 | GLES 和驱动私有内存的完整视图 |
+| `gpu.log` | GPU producer 提供的调试消息 | 所有厂商的 hang、fault 与 reset |
 
-- **AGI Frame Profiler**:Google 官方工具,支持 Vulkan 和 OpenGL ES 的帧捕获和分析。
-- **RenderDoc**:开源图形调试器,功能最全面的单帧分析工具。Arm、Samsung、Meta 都维护了自己的 fork。
-- **Sokatoa**:Samsung 2026 年发布的多帧 GPU profiler,基于 GFXReconstruct,计划 2026 年底开源,是唯一支持多帧分析的工具。
+下面的 TraceConfig 展示 Android 17 tag 中 GPU frequency、GPU memory 和 render stages 的请求方式。设备也可能只注册带厂商后缀的名字，例如 `gpu.renderstages.mali`；录制前应查询 data-source descriptor。
 
-**厂商专用工具**：针对特定 GPU 提供更深度的分析。
+```textproto
+buffers {
+  size_kb: 32768
+  fill_policy: RING_BUFFER
+}
 
-- **ARM Streamline Performance Analyzer**:Mali GPU 的官方分析工具,集成 CPU/GPU/内存的联合分析。
-- **Snapdragon Profiler**:高通 Adreno GPU 的专用分析工具,提供 Adreno 微架构级别的深度性能计数器和实时性能监控,与 AGI 互补。
+data_sources {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      ftrace_events: "power/gpu_frequency"
+      ftrace_events: "gpu_mem/gpu_mem_total"
+    }
+  }
+}
 
-### 工具选择决策
-
-选哪个工具?取决于我们要回答什么问题:
-
-1. **GPU 是不是瓶颈?** → Perfetto GPU counter、AGI System Profiler 或 APA System Profiler
-2. **GPU 哪个环节慢?** → AGI Frame Profiler 或 RenderDoc
-3. **偶发性 GPU 卡顿(间歇性掉帧)?** → Sokatoa 多帧分析
-4. **Mali GPU 深度分析?** → ARM Streamline
-5. **游戏实时性能监控?** → PerfDog
-
-## Android GPU Inspector (AGI)
-
-AGI 是 Google 官方的 Android GPU 分析工具,前身是 GAPID(Graphics API Debugger)。2020 年更名为 AGI 后,重心从"图形 API 调试"转向"GPU 性能分析"。AGI 同时支持 Vulkan 和 OpenGL ES 应用。对 GLES 应用,AGI 通过自定义的 ANGLE 构建将 GLES 命令翻译为 Vulkan 再做追踪。
-
-### AGI 的两种模式
-
-AGI 提供两种分析模式,覆盖不同的分析需求:
-
-**System Profiler** 是系统级分析模式。在一段时间内追踪 GPU 的整体行为,包括 GPU 利用率、GPU 频率、显存使用量和各进程的 GPU 时间。它不深入单个 Draw Call,但能快速判断 GPU 是不是瓶颈,以及 GPU 时间花在了哪个进程。在 Perfetto 中看到的 GPU 信息只是 System Profiler 的子集,AGI 提供的 GPU 硬件计数器更丰富。
-
-**Frame Profiler** 帧级分析。捕获一个应用的单帧,记录所有 GPU 命令(Vulkan 或 GLES),然后逐 Draw Call 分析 GPU 时间。它会显示每个 Draw Call 占了多少 GPU 时间、绑定了什么 Shader、使用了什么纹理、产生了多少 Overdraw。
-
-### System Profiler 的使用
-
-System Profiler 的使用比较直观:
-
-1. 用 USB 连接设备,确保 adb 可用
-2. 打开 AGI,选择 System Profiler 模式
-3. 选择要追踪的应用(或选择全系统追踪)
-4. 配置追踪时长和 GPU 计数器
-5. 开始追踪
-
-追踪完成后,AGI 展示一个时间轴视图,上面有 GPU 利用率曲线、GPU 频率曲线、各进程的 GPU 时间切片。如果某个时间段 GPU 利用率接近 100% 但帧率还是上不去,说明瓶颈在 GPU 侧。
-
-AGI 支持的 GPU 计数器因 GPU 厂商而异:
-
-- **Qualcomm Adreno**:ALU 利用率、纹理读取带宽、L2 缓存命中率
-- **ARM Mali**:Fragment 线程活跃数、Vertex 线程活跃数、内存带宽
-- **PowerVR**:Tiler 利用率、Renderer 利用率、Shader 处理量
-
-### Frame Profiler 的使用
-
-Frame Profiler 更强大也更复杂。
-
-#### 使用 Frame Profiler 的前置条件
-
-在开始帧捕获之前,需要确认以下条件:
-
-1. **应用必须是 debuggable 的**。Frame Profiler 需要注入 Vulkan/GLES 拦截层来捕获 GPU 命令,这要求 `android:debuggable="true"`(或在 AndroidManifest 中声明)。Release 包无法使用 Frame Profiler,需要临时切换到 debuggable 构建。
-
-2. **AGI Frame Profiler 完整功能要求 Android 12+ (API 31)**。Frame Profiler 的 GLES over Vulkan 完整分析路径需要 Android 12+。Android 11 (API 30) 仅支持部分 GPU 分析功能，无法走完整的 GLES→Vulkan 翻译路径。AGI System Profiler 从 Android 11 开始支持。Android 10 及以下只能使用部分功能。
-
-3. **Vulkan 应用无需额外配置**。AGI 通过 Vulkan Layer 拦截 API 调用,Vulkan 应用开箱即用。
-
-4. **GLES 应用会通过 ANGLE 翻译为 Vulkan**。AGI 使用自定义 ANGLE 构建处理 GLES 命令。在 Android 17+ 上(ANGLE denylist 生效后),这条路径更接近系统默认值;更早版本要先确认应用是不是已经被切到 ANGLE。开发阶段常见的固定方法是先把目标包锁到 ANGLE:
-
-```bash
-adb shell settings put global angle_gl_driver_selection_pkgs <pkg>
-adb shell settings put global angle_gl_driver_selection_values angle
+data_sources {
+  config {
+    name: "gpu.renderstages"
+    gpu_renderstages_config {
+      low_overhead: true
+    }
+  }
+}
 ```
 
-部分新系统镜像还会把同样的动作封成 `adb shell cmd gpu set-graphics-driver --package <pkg> --driver angle`。该命令依赖 userdebug/eng 构建的 `cmd gpu` 服务,Android 17 user 构建上不一定可用;命令缺失时,改从 Settings / Graphics Driver Preferences 进入,或直接用前面的 `settings put global` 写入。
+这段配置不能保证每台设备都有数据。内核 tracepoint、GPU producer、数据源名字、应用 Graphics API、权限和驱动支持任一项不满足，都可能产生空轨道。`low_overhead` 会合并 render stages，降低捕获细节以减少 GPU 扰动；需要更细的 load/store stage 时再对短窗口关闭它。
 
-5. **Vulkan 应用需要注入 AGI 的捕获 Layer 完成帧捕获**。AGI Frame Profiler 通过 Vulkan Layer 机制拦截 GPU 命令;若应用未自行加载 AGI 的捕获 Layer,需要通过 `adb shell settings put global enable_gpu_debug_layers 1` 和 `adb shell settings put global gpu_debug_layers <agi_layer_name>` 注入 AGI APK 中的捕获 Layer。这里注入的是 AGI 自带的帧捕获 Layer,不是 Khronos 标准 Vulkan Validation Layer(VK_LAYER_KHRONOS_validation),两者功能不同。AGI Frame Profiler 的定位是 Draw Call / Shader / Render Target 分析,不用于测量真实帧率。
+### `gpu.counters` 的正确配置
 
-使用步骤:
+Android 17 的 `GpuCounterConfig` 包含 `counter_period_ns`、`counter_ids`、`instrumented_sampling` 和 `fix_gpu_clock`。常规周期采样只要前两个字段。`counter_ids` 是 repeated 字段，TextProto 中逐项重复书写。
 
-1. 在 AGI 中选择 Frame Profiler 模式
-2. 选择目标应用
-3. AGI 会自动捕获一帧的 GPU 命令流
-4. 捕获完成后,在 AGI 中打开分析
-
-Frame Profiler 的核心视图:
-
-**命令列表**:按时间顺序列出所有 GPU 命令(vkCmdDraw、vkCmdDrawIndexed 等),每个命令旁边显示 GPU 执行时间。通过排序 GPU 时间列,可以快速找到最耗时的 Draw Call。
-
-**管线状态(Pipeline State)**:选中一个 Draw Call 后,会展开完整的渲染管线状态,包括 Vertex Shader、Fragment Shader、Blend State、Rasterizer State 等。如果某个 Draw Call 特别慢,先看它的 Shader 复杂度和纹理分辨率,通常最容易找到突破口。
-
-**资源查看器**:查看每个 Draw Call 的输入纹理和输出 render target。如果一个 4096×4096 的纹理被一个只画 100×100 像素的 Draw Call 采样,这就是一个明显的优化点,缩小纹理通常就能减少带宽消耗。
-
-### AGI 的近期演进与 APA 的出现
-
-AGI 围绕 System Profiler 和 Frame Profiler 两条线各自完善：System Profiler 负责长时间 trace、GPU counter 和进程级 GPU 时间；Frame Profiler 负责单帧命令、shader 和 render target 的深入分析。
-
-2026 年 5 月，Google 发布了 **Android Performance Analyzer (APA)**——基于 Perfetto 的新一代 system profiling 工具，覆盖 CPU、GPU、Memory 和 power。APA System Profiler 已进入 open beta，AGI 官方文档建议开发者向 APA 迁移。
-
-APA 发版后，工具分工更明确：
-
-- **system profiling**(GPU counter、进程级 GPU 时间、长时间 trace)：首选 **APA System Profiler**；AGI System Profiler 仍作为兼容路径保留；Perfetto GPU counter 适合快速入口
-- **frame profiling**(单帧 GPU 命令、Draw Call、Shader / Render Pass 定位)：用 **AGI Frame Profiler** 或 RenderDoc
-- **frame profiling / debugging 后续方向**：APA 官方博客提到 upcoming 阶段的 frame profiling/debugging 由 **GFXReconstruct** 支撑，尚未进入公开 beta
-- **多帧 GPU 分析**：优先看 **Sokatoa**，基于 GFXReconstruct 且有公开实现路径
-
-### APA System Profiler 的版本覆盖与演进
-
-APA 基于 Perfetto 构建，不同 Android 版本上的能力差异主要由 Perfetto 底层版本演进决定（详见本章"版本演进"章节 profileable 增强路径）：
-
-- **Android 12-13**：APA 基准支持线。核心的 CPU tracing 和 GPU counter 可用，但 GPU counter 采集通常需要 `debuggable` 应用或 root 权限，`profileable` 包能拿到的 GPU 数据有限。
-- **Android 14+**：关键分水岭。`profileable` 应用的 Perfetto GPU counter 采集能力大幅增强——profileable Release 包即可获取 GPU 频率、利用率和带宽，不再强制 debuggable 或 root。
-- **Android 15-16**：Perfetto 内核数据源持续丰富，APA 覆盖更细的内存分配追踪和功耗细分指标，长时间 trace 的稳定性和数据压缩能力也更好。
-- **Android 17**：APA 与 denylist ANGLE 策略配合工作。系统默认通过 ANGLE → Vulkan 运行时，APA 的 GPU counter 数据反映 Vulkan 驱动层的实际执行情况，解读时需与原生 GLES 设备数据对照。
-
-**选型建议**：目标设备跑 Android 14+ 时，APA 可以在 profileable Release 包上完成完整的 GPU system profiling，作为首选。Android 12-13 设备上 APA 仍能做 CPU profiling，但 GPU 深度分析需 debuggable 包或搭配 AGI System Profiler。
-
-#### AGI System Profiler 与 APA System Profiler 对比
-
-| 维度 | AGI System Profiler | APA System Profiler |
-|------|-------------------|-------------------|
-| 基础框架 | 自研 trace 引擎 | Perfetto |
-| 最低支持版本 | Android 11 | Android 12 |
-| 开发状态 | 维护模式（官方推荐迁移） | 活跃开发（open beta） |
-| GPU 厂商专属计数器 | Adreno/Mali/PowerVR 深度暴露 | 继承 Perfetto 数据源，依赖厂商驱动暴露 |
-| Release 包 GPU 采集 | ❌ 需 debuggable | ✅ Android 14+ profileable 可采 |
-| 性能覆盖范围 | GPU 为主，CPU/Memory 基础 | CPU + GPU + Memory + Power 四维 |
-| 运行时开销 | 中等（< 5%） | 低（Perfetto 原生开销） |
-| Frame Profiling | ✅ AGI Frame Profiler | ⏳ roadmap（GFXReconstruct） |
-| 工具链集成 | 独立 GUI | 与 Android Studio / Perfetto UI 集成 |
-
-**迁移建议**：
-
-- **日常 system profiling**：优先 APA。Android 14+ profileable 包即可采集 GPU counter，准入门槛更低。
-- **Mali/Adreno 深度 GPU 计数**：厂商专属计数器在 AGI 上暴露更完整。APA 定位到瓶颈后，切换到 AGI 或厂商专用工具做细粒度 counter 分析。
-- **Android 11 设备**：APA 不可用，AGI System Profiler 是唯一的官方 system profiling 选项。
-- **帧级分析**：APA 当前不提供帧级 GPU 命令分析。单帧调试仍用 AGI Frame Profiler 或 RenderDoc。
-
-### AGI 对 GLES 应用的分析路径
-
-Android 15 开始,ANGLE 已经有了更明确的系统开关和每应用切换入口。到 Android 16 的新设备,ANGLE 覆盖范围继续扩大;Android 17 的新设备再转到 denylist 策略,默认大多数应用经由 ANGLE,兼容性例外回退到原生 GLES 驱动。AGI 的帧分析沿着这条迁移线工作:它会用自定义 ANGLE 构建把 GLES 命令翻译为 Vulkan 再做追踪。
-
-排查时先确认设备当前走的是哪条 driver 路径,再决定怎么解读 Draw Call 和 Shader 时间。开发阶段常用的固定方法有两类:用前面的 `settings put global angle_gl_driver_selection_*`,或在带 gpu shell 封装的系统镜像上用 `adb shell cmd gpu set-graphics-driver --package <pkg> --driver angle`。命令缺失时,改从 Settings / Graphics Driver Preferences 进入。
-
-**Android 17 denylist 下的确认流程**。denylist 的语义：绝大多数 GLES 应用默认走 ANGLE，只有 denylist 上的例外回退原生 GLES。排查前先确认设备实际走的 driver 路径：
-
-```bash
-# 1. 确认系统是否已启用 denylist 模式
-adb shell settings get global angle_gl_driver_enabled
-# Android 17 新设备默认返回 1（denylist 已生效）；旧设备升级可能返回 null
-
-# 2. 确认当前 app 是否在 denylist 中（被排除使用 ANGLE）
-adb shell settings get global angle_gl_driver_selection_pkgs
-# 包名在列表中且 selection_values 为 "native" → 该 app 走原生 GLES
-# 走 ANGLE→Vulkan 和原生 GLES 的 Shader/Draw Call 时间特征不同，解读要区别对待
-
-# 3. 在 denylist 设备上强制拉回原生 GLES（对比调试用）
-adb shell settings put global angle_gl_driver_selection_pkgs <pkg>
-adb shell settings put global angle_gl_driver_selection_values native
-```
-
-**allowlist 与 denylist 的语义反转**。Android 15-16 新设备使用 allowlist（允许列表）：`angle_gl_driver_selection_pkgs` 列出走 ANGLE 的应用，其余走原生 GLES。Android 17 新设备反转为 denylist（拒绝列表）：列表中的应用反而是被排除在 ANGLE 之外的例外，走原生 GLES；不在列表中的应用默认通过 ANGLE 运行。同一条 `settings put` 指令在两种模式下含义相反——allowlist 上是"把我加进去走 ANGLE"，denylist 上是"把我排除掉走原生 GLES"。必须先通过 `angle_gl_driver_enabled` 确认模式，否则可能误判 driver 路径。
-
-## Perfetto 中的 GPU 分析能力
-
-Perfetto 本身也提供了一些 GPU 分析能力,虽然不如 AGI 全面,但胜在不需要额外工具。抓 Perfetto trace 时多加几个配置,就能同时采集 GPU 数据。
-
-### GPU Counter Track 的启用
-
-在 Perfetto 的 trace config 中,需要启用 `gpu.counters` 数据源来采集 GPU 计数器:
+下面的 counter ID 只是结构示例，必须替换为目标设备 descriptor 中的值。
 
 ```textproto
 data_sources {
   config {
     name: "gpu.counters"
     gpu_counter_config {
-      counter_ids: [1, 2, 3, ...]   # 先用设备暴露的 counter 列表确认具体 ID（android-17.0.0_r1 字段名；proto3 repeated 字段方括号语法）
-      counter_period_ns: 1000000    # 1 ms 采样间隔
+      counter_period_ns: 1000000
+      counter_ids: 1
+      counter_ids: 3
     }
   }
 }
 ```
 
-`gpu_counter_config` 的字段定义在 AOSP android-17.0.0_r1 `external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto`。`counter_ids` 是 `gpu_counter_config` 的 `repeated uint32` 字段（field number 2），对应设备 producer 返回的 `GpuCounterSpec`；注意这里的 `counter_ids` 是 `gpu_counter_config` 消息内的字段，与 Perfetto 数据源名 `gpu.counters` 不同。自己手写 Trace Config 时，先用 Perfetto UI 的 Trace Config 页面把设备支持的 counter 列出，再回填这些 ID；不同 GPU 的编号和含义都不通用。
+`android-17.0.0_r1` 的 `GpuCounterEvent` 支持两类 descriptor。Android OEM producer 按 CDD/CTS 要求使用全局 counter ID 的 `GpuCounterDescriptor`；sequence-scoped 的 `InternedGpuCounterDescriptor` 面向多 producer、多 GPU 等复杂用途。这个双模式解决 descriptor 传输与作用域问题，没有把各家 counter 的名称、单位和计算方法改成同一标准。
 
-### 关键 GPU 指标
+### 频率、利用率和带宽怎么读
 
-在 Perfetto 的 GPU counter track 中,以下几个指标最有分析价值:
+GPU frequency 是 DVFS 状态。高频可能来自持续负载、响应性策略或固定性能模式；低频可能来自轻载、热限制、功耗限制或 governor 选择。单看频率无法判断 GPU 是否占满。
 
-**GPU Frequency(`gpu.frequency`)**:GPU 当前运行频率。GPU 频率会根据负载动态调节(DVFS)。如果 GPU 频率在高负载时没有升到最高档,可能是 Thermal Throttling 在限频。这种情况要从散热和功耗角度处理,不是单纯优化 GPU 代码。
+“GPU utilization”“shader core active”“ALU busy”“external memory read”这类 counter 的分母、采样窗口和包含的等待状态由厂商定义。分析时应：
 
-**GPU Utilization**:GPU 计算单元的利用率。100% 意味着 GPU 在满负荷运行,是瓶颈的直接证据。但低利用率不一定说明 GPU 不是瓶颈,GPU 也可能在等内存数据,也就是带宽瓶颈,ALU 空闲但内存控制器已经打满。
+1. 找到目标帧对应的 GPU stage；
+2. 读取同一时间窗内的 counter；
+3. 以同一设备、同一画质和相近热状态的基线比较；
+4. 每轮只改变分辨率、pass、shader、纹理或 draw 组织中的一个变量；
+5. 用该 GPU 的 counter 文档解释变化。
 
-**GPU Memory Bandwidth**:显存读写带宽。Overdraw 严重的场景带宽会打满,GPU 虽然不是在"计算"而是在等数据。
+没有通用的“ALU 超过 80%”或“单帧超过多少 draw”阈值。draw 数量增加可能拖慢 CPU driver submission，也可能让 GPU 工作量上升；只有调用栈、GPU stage 和硬件 counter 能区分两条路径。
 
-### GPU Activity Slice
+## 从 Trace 判断瓶颈方向
 
-Perfetto 中还有 `gpu.renderstages` 数据源,可以显示 Vulkan 或 GLES 提交在 GPU 上的执行时间。在 Perfetto UI 中,这些数据显示为 GPU activity slice,一条水平条就表示 GPU 正在执行某个渲染任务。
+| 观察到的证据 | 候选方向 | 下一步 |
+|---|---|---|
+| CPU 录制或 submit 已晚，GPU stage 随后正常完成 | CPU、锁、调度、资源加载、driver CPU 开销 | 看 sched、调用栈、锁、Binder 与命令录制 |
+| CPU submit 按时，应用 GPU completion fence 越过 deadline | 应用 GPU workload | 降分辨率或关闭一个 pass，再进入帧 profiler |
+| producer 长时间卡在 acquire、dequeue 或 swap，GPU stage 不长 | BufferQueue backpressure、release fence、frame pacing | 看队列深度、release fence、present 间隔 |
+| 应用 buffer 按时，SurfaceFlinger 的 client composition 或 present 晚 | RenderEngine、HWC、显示端 | 看 composition type、RenderEngine、HWC 与 present fence |
+| GPU track 空白 | 数据源或设备支持缺失，也可能没有覆盖该 API | 查 descriptor、trace config、驱动与权限 |
+| GPU frequency 高，frame 正常 | 当前 DVFS 状态 | 不单独作为性能缺陷 |
 
-通过对比 CPU 侧的 RenderThread 提交时间和 GPU 侧的执行时间,我们可以判断渲染管线是在等 GPU(GPU bound)还是在等 CPU(CPU bound):
+FrameTimeline 的 `GPU Composition` 描述 SurfaceFlinger 是否使用 GPU/client composition。它不描述应用内容是否由 GPU 生成。游戏 Surface 可由应用 GPU 渲染，随后由 HWC 直接扫描输出；此时应用仍可能 GPU bound，而 DisplayFrame 没有 client composition 标记。
 
-- CPU 提交很快完成,GPU 执行时间长 → GPU bound
-- CPU 提交耗时长(比如在等 dequeueBuffer),GPU 执行很快 → CPU/buffer bound
+Perfetto 官方仍说明 SurfaceView 主体没有标准 App Window 那样完整的 App FrameTimeline。遇到游戏、Camera、视频或独立 native Surface，应补齐 layer name、buffer frame number、`android.surfaceflinger.frame`、acquire/release fence、HWC 和 display present。
 
-### Perfetto GPU 分析的局限
+## Android Performance Analyzer（APA）
 
-Perfetto 的 GPU 分析能力有两个主要局限:
+截至 2026 年 7 月，APA System Profiler 处于公开 beta。它以 Perfetto 为系统追踪基础，覆盖 CPU、GPU、内存和功耗，并支持自定义 TraceConfig。官方说明 Android 12+ 设备能提供较好的 system-wide performance、GPU counter 和 render stage 体验。
 
-1. **计数器粒度太粗**。只能看到整体利用率、频率、带宽这些宏观指标,无法定位到具体的 Draw Call 或 Shader。
-2. **不同 GPU 厂商的计数器 ID 不同**。Adreno、Mali、PowerVR 各有自己的计数器定义,跨设备对比时需要特别注意。
+APA 与 Perfetto 的区别主要在入口和分析体验：
 
-当 Perfetto 的 GPU 数据显示 GPU 是瓶颈但无法定位具体原因时,就需要切换到 AGI 或 RenderDoc 进行帧级分析。
+- APA 提供独立桌面应用、项目管理、截图、轨道整理、标注和 GPU counter 浏览；
+- Perfetto CLI 与 Trace Processor 适合固定配置、批量采集、SQL 回归和自动化；
+- 两者都受目标设备 GPU producer 与驱动数据限制。
 
-## RenderDoc 在 Android 上的使用
+官方在 AGI quickstart 中推荐 system profiling 优先评估 APA。AGI System Profiler 仍可使用，尤其在已有 AGI 设备验证和 counter 工作流时。APA 当前公开的是 System Profiler；官方公布的 frame profiling/debugging 仍属于后续能力，不能按已发布功能写入接入方案。
 
-RenderDoc 是开源图形调试器里最全面的单帧分析工具之一。它最初面向 PC 图形开发,但通过远程调试模式也支持 Android 设备。对 Android 开发者来说,它提供了很深的单帧分析能力。
+## Android GPU Inspector（AGI）
 
-### Android 远程调试配置
+AGI 运行在 Android 11+ 的受支持实体设备上，并在设备或 GPU 驱动变化后执行兼容性验证。官方列出的 System Profiler GPU 包括 Qualcomm Adreno、Arm Mali 和 Imagination PowerVR。设备验证失败或 counter 缺失，只能说明当前组合没有通过工具要求。
 
-在 Android 上使用 RenderDoc 需要:
+AGI 有两种主要模式：
 
-1. 在 PC 上安装 RenderDoc(1.x 版本)
-2. USB 连接 Android 设备,启用 ADB 调试
-3. 目标应用需要是 debuggable 的(或者使用 `android:debuggable="true"`)
-4. 在 RenderDoc 中配置 Android 远程连接
+| 模式 | 数据 | 使用位置 |
+|---|---|---|
+| System Profiler | CPU/GPU/内存/电池、GPU counter、系统时间线 | 找到长时间运行中的异常窗口 |
+| Frame Profiler | Vulkan API call、framebuffer、mesh draw、内存、pipeline、state、shader、texture | 检查单帧命令与资源 |
 
-Arm 维护了一个专门的 fork,"RenderDoc for Arm GPUs",增强了对 Mali GPU 的支持。Samsung 也向 RenderDoc 主线贡献了不少 Android 相关代码。
+AGI quickstart 要求目标应用 `android:debuggable="true"`。Vulkan 应用还要通过 validation layer 检查，修复已有 validation error，再采集 profile。AGI 会负责自身的捕获流程；手工配置全局 Vulkan layer 时，应严格使用当前 AGI 文档给出的包名、ABI 和清理命令，不能把 validation layer 与捕获 layer 混写。
 
-### 核心功能
+### OpenGL ES on ANGLE
 
-RenderDoc 的核心价值在于对单帧的全方位检查:
+AGI Frame Profiler 的类型选择是 `Vulkan` 或 `OpenGL on ANGLE`。GLES 应用经 AGI 的 ANGLE 路径捕获后，看到的是翻译产生的 Vulkan command、pipeline 和 shader。若问题只在设备原生 GLES driver 出现，这份 capture 已改变 backend，必须保留原路径的 Perfetto、日志和厂商证据。
 
-**Frame Capture**:捕获一帧的所有 GPU 命令。捕获后可以逐步回放每个 Draw Call,观察渲染管线的中间状态。
+Android 15+ 提供按包测试 ANGLE 的入口。Android 17 又允许 game 在 manifest 中表达“优先使用 ANGLE”的请求：
 
-**Texture Viewer**:查看每个 Draw Call 的输入纹理和输出 render target。这在排查渲染错误时特别有用。如果最终画面颜色不对,可以逐 Draw Call 检查每一步的输出,找到颜色开始出错的那一步。
-
-**Pipeline State**:查看完整的渲染管线状态。Vertex Shader、Fragment Shader、Blend Mode、Depth/Stencil State,所有状态一览无余。很多渲染 Bug 的根因就是某个 State 被错误设置(比如忘记关闭 Depth Write)。
-
-**Shader Debugger**:单步调试 Shader 代码。可以在 Shader 的任意一行设断点,查看变量值,甚至编辑 Shader 代码后在设备上即时生效,不需要重新编译应用。这个功能在优化 Shader 性能时非常有用。
-
-### RenderDoc 的性能分析价值
-
-RenderDoc 最初是调试工具,不是性能分析工具。但它的一些功能对性能分析有帮助:
-
-1. **Draw Call 时间**:虽然不如 AGI 的硬件级计时精确,但 RenderDoc 可以给出每个 Draw Call 的粗略执行时间
-2. **Overdraw 可视化**:RenderDoc 可以用热力图显示屏幕上每个像素被绘制了几次。红色区域(Overdraw > 4 次)通常是性能热点
-3. **资源统计**:统计一帧使用的纹理总内存、Buffer 总量、Draw Call 数量等
-
-### 与 AGI 的对比
-
-RenderDoc 和 AGI 的 Frame Profiler 功能有重叠但定位不同:
-
-- **AGI** 更适合性能分析:GPU 计数器更丰富,对移动 GPU 的优化更到位
-- **RenderDoc** 更适合图形调试:Shader 调试、State 检查、资源查看功能更成熟
-- 两者不是竞争关系:AGI 侧重移动 GPU 性能,RenderDoc 侧重通用图形状态调试,实际工作中结合使用
-
-### Arm 和 Samsung 的 Fork
-
-RenderDoc 有几个重要的厂商 fork:
-
-- **RenderDoc for Arm GPUs**(Arm Performance Studio 的一部分):增强对 Mali GPU 的支持,包括 Vulkan Ray Tracing 调试、Ray Query Shader 调试、自动配置 Vulkan Layer 等
-- **Samsung 贡献**:Samsung 向主线贡献了大量 Android Vulkan/GLES 支持代码
-- **Meta Fork**:针对 Quest XR 设备的 fork,支持 Snapdragon 835/XR2/XR2+ 的底层 GPU 数据
-
-## Sokatoa:多帧 GPU 分析的新范式
-
-2026 年 3 月,Samsung 发布了 Sokatoa,这是一个面向 Android 的多帧 GPU 性能分析器,基于 LunarG GFXReconstruct 引擎构建,计划 2026 年底开源。它的核心创新是多帧分析能力,和 AGI / RenderDoc 的单帧分析正好互补。
-
-### 为什么需要多帧分析
-
-AGI 和 RenderDoc 都是捕获一帧来分析。这在问题稳定复现时够用,但有一种场景单帧分析很难搞:**间歇性 GPU 卡顿**。每隔几十帧突然掉一帧,但大部分帧的 GPU 时间正常。
-
-这种间歇性卡顿的常见原因:
-
-- **Shader 编译尖刺**:运行时遇到新的 Shader 变体,驱动需要即时编译,这一帧的 GPU 时间就暴涨
-- **GPU 缓存 Thrash**:某些帧的工作集超出 GPU 缓存容量,导致频繁的显存访问
-- **渲染状态变化**:每隔一段时间切换到一个使用不同渲染路径的场景
-
-单帧捕获很可能正好捕获到正常帧,错过了异常帧。Sokatoa 的多帧分析可以同时查看连续数十帧的 GPU 行为,精确定位哪个帧异常、异常帧有什么共同特征。
-
-### 技术架构
-
-Sokatoa 基于 LunarG 的 GFXReconstruct 引擎构建。GFXReconstruct 的工作方式是拦截应用的 Vulkan API 调用,记录所有命令和参数,然后在离线回放时精确重演。因为记录的是 API 级别的调用,而不是硬件状态,所以回放结果在不同 GPU 架构上仍然确定,在 Adreno 上捕获的 trace 也可以在 Mali 上回放。
-
-Sokatoa 支持 Exynos/Xclipse(基于 AMD RDNA 架构)、Qualcomm Adreno、ARM Mali 和 PowerVR。它原生只支持 Vulkan 应用,对于 GLES 应用,需要先通过 ANGLE 转换为 Vulkan。目标设备要求 Android 13 及以上,且需要 debuggable APK 或 rooted device 才能注入 GFXReconstruct/Sokatoa Vulkan layers。
-
-### 开源计划
-
-Sokatoa 当前可免费下载使用,Samsung 计划在 2026 年底开源(GitHub: sarc-acl/sokatoa)。开源后将成为继 RenderDoc 之后第二个主流的开源移动 GPU profiler,也是第一个开源的多帧 GPU profiler。
-
-## GPU 性能分析的核心指标
-
-不管是用哪个工具,GPU 性能分析的核心思路是一样的:通过几个关键指标判断 GPU 瓶颈在哪个环节。
-
-### GPU 时间 vs CPU 时间
-
-这是最基本的判断。在 Perfetto 中,对比 `RenderThread` 的 CPU 执行时间和 GPU activity slice 的 GPU 执行时间:
-
-- **GPU 时间 > CPU 时间**:GPU bound,需要优化 GPU 工作负载(减少 Draw Call、简化 Shader、降低纹理分辨率)
-- **CPU 时间 > GPU 时间**:CPU bound,问题在 CPU 侧(主线程阻塞、RenderThread draw 调用太多等)
-- **两者都不是瓶颈但帧率还是低**:可能是 BufferQueue 管理问题(§2.13),GPU 和 CPU 都在等 buffer
-
-### Draw Call 数量
-
-Draw Call 是 CPU 向 GPU 提交的一次绘制命令。每个 Draw Call 都有 CPU 侧的开销(驱动需要验证状态、准备命令缓冲区)。当 Draw Call 数量过多时,即使每个 Draw Call 的 GPU 执行时间很短,总时间也会超过帧预算。
-
-在移动设备上,单帧 Draw Call 数量的参考阈值:
-
-- UI 渲染:通常 < 100 个 Draw Call
-- 2D 游戏:< 500 个 Draw Call 通常没问题
-- 3D 游戏:> 2000 个 Draw Call 需要考虑合批优化
-
-### Overdraw 与带宽
-
-Overdraw 是同一个像素被绘制了多次。每多绘制一次,就多消耗一次 Fragment Shader 的执行时间和相应的显存带宽。在移动 GPU 上,带宽往往比 ALU 更容易先成为瓶颈,因为移动 GPU 的显存和系统内存共享,带宽预算本来就有限。
-
-AGI 和 RenderDoc 都提供 Overdraw 可视化。典型的优化手段:
-
-- **移除不必要的透明背景 View**:Android 的布局经常导致大面积 Overdraw
-- **使用 `android:background="@null"` 清除默认背景**:很多 View 的默认背景在 Theme 中设置,子 View 又画了自己的背景
-- **Canvas.clipRect()**:手动裁剪绘制区域,避免 GPU 处理被遮挡的像素
-- **尽早做 Depth Test**:对于 3D 场景,按从近到远的顺序绘制,让 GPU 通过 Early-Z 剔除被遮挡的片元
-
-### Shader 复杂度与 ALU 利用率
-
-Shader 太复杂会吃满 GPU 的 ALU(算术逻辑单元)。判断 Shader 是不是瓶颈:
-
-- 在 AGI 的 Frame Profiler 中,看 Fragment Shader 的执行时间占比
-- GPU 计数器中,ALU 利用率 > 80% 说明 Shader 复杂度是瓶颈
-- 解决方向:简化 Shader 逻辑、减少纹理采样次数、使用 LOD(Level of Detail)让远处的物体用更简单的 Shader
-
-## 实战案例
-
-### 案例 1:UI 渲染中的 GPU 带宽瓶颈
-
-**现象**:一个社交 App 的消息列表页,在快速滑动时帧率从 120fps 掉到 80fps。Perfetto 中 CPU 侧没有明显阻塞。
-
-**分析过程**:
-
-1. 打开 Perfetto GPU counter track,发现滑动时 GPU Memory Bandwidth 达到设备峰值
-2. 在 AGI Frame Profiler 中捕获一帧,发现 Overdraw 热力图中列表项区域显示深红色(Overdraw > 4x)
-3. 检查布局层级:每个列表项有 3 层重叠的半透明背景(卡片背景 + 圆角裁剪 + 图片遮罩)
-4. 每个像素被 Fragment Shader 处理了 4 次以上
-
-**优化方案**:
-
-- 移除中间层的半透明背景,改为不透明色
-- 使用 `clipRect()` 裁剪不可见区域
-- 将圆角裁剪从 Canvas 操作改为 Shape Drawable
-
-**结果**:Overdraw 从 4x 降到 1.5x,GPU 带宽使用量降低 60%,滑动帧率恢复到 115fps。
-
-### 案例 2:Shader 编译导致的间歇性卡顿
-
-**现象**:3D 游戏在运行过程中,每隔 30-60 秒出现一次 2-3 帧的掉帧。Perfetto 中显示掉帧期间 GPU 时间从正常的 8ms 飙升到 40ms。
-
-**分析过程**:
-
-1. 用 Sokatoa 进行多帧捕获,覆盖 60 秒的连续渲染
-2. 在多帧视图中发现,异常帧总是伴随着新的 Shader Variant 被使用
-3. 检查 Vulkan Pipeline Cache,发现游戏没有在启动时预热所有可能用到的 Pipeline
-4. 新 Shader Variant 触发了即时编译,编译期间 GPU 空闲等待
-
-**优化方案**:
-
-- 在加载画面期间,用所有可能用到的 Shader Variant 做一次"预热渲染"
-- 启用 Vulkan Pipeline Cache 并在本地持久化
-
-**结果**:间歇性卡顿消失,帧时间方差从 3.2ms 降到 0.8ms。
-
-### 案例 3:Perfetto GPU counter 定位功耗热点
-
-**现象**:一款导航 App 在导航模式下功耗异常高,GPU 占总功耗的 45%。
-
-**分析过程**:
-
-1. Perfetto trace 中发现 GPU 频率持续保持在最高档(800MHz),但 GPU Utilization 只有 30%
-2. GPU 频率高 → 功耗高,但利用率低 → GPU 并不是真的在忙,只是频率没有降下来
-3. 检查应用的帧率需求:导航地图使用 `setFrameRate()` 设置了 60fps,但大部分帧在 16ms 内完成,GPU 有大量空闲时间
-4. DVFS 调度策略在高频场景下倾向于保守(不降频),导致 GPU 频率降不下来
-
-**优化方案**:
-
-- 降低地图渲染的帧率需求(导航场景 30fps 已经足够流畅)
-- 在不需要频繁更新的场景使用 Choreographer.postFrameCallback 的节流机制
-
-**结果**:GPU 平均频率从 800MHz 降到 400MHz,GPU 功耗降低约 40%。
-
-## 与其他章节的关系
-
-GPU 分析工具的使用建立在几个前置章节的知识上:
-
-- **§2.10 GPU 渲染深入**:理解 GPU 渲染管线是使用 GPU 分析工具的前提。不知道 Vertex Shader → Rasterizer → Fragment Shader 的流程,就看不懂 AGI Frame Profiler 的输出
-- **§2.14 图形 API 演进与选择策略**:Android 17 的 ANGLE denylist 意味着 GLES 应用实际通过 Vulkan 运行,这影响 GPU 分析工具的选择和结果解读
-- **§13.3 Perfetto View 解读**:Perfetto GPU counter track 是 GPU 分析的起点,在深入帧级分析之前先用 Perfetto 确认瓶颈
-- **§14.1 Android Studio Profiler**:AS Profiler 也有 GPU 分析能力(虽然不如 AGI 专业),适合快速检查
-
-## 常见问题与误区
-
-### 误区 1:"GPU 利用率高 = GPU 是瓶颈"
-
-GPU 利用率高只是 GPU 繁忙的必要条件,不是充分条件。GPU 也可能在执行很多低效操作,比如大量 Overdraw 导致带宽浪费。优化的目标是减少 GPU 的工作量,而不是单纯降低利用率。如果优化后 GPU 利用率没变,但帧时间缩短了,说明去掉了无效工作。
-
-### 误区 2:"AGI 和 RenderDoc 功能一样,随便选一个"
-
-AGI 专为移动 GPU 优化,支持移动端特有的 GPU 计数器和渲染路径(如 Tile-Based Rendering)。RenderDoc 更偏向 PC 图形开发。对于 Android GPU 性能分析,AGI 的数据质量通常更高。但 RenderDoc 的 Shader 调试功能目前更成熟。
-
-### 误区 3:"GPU 分析需要 root 权限"
-
-大部分 GPU 分析工具只需要 adb 权限和 debuggable 应用。AGI 从 Android 11 开始支持非 root 设备。但 Perfetto 的 GPU counter 采集在某些设备上可能需要特定权限或厂商支持。
-
-### 误区 4:"profileable 和 debuggable 对 GPU 工具没有影响"
-
-`<profileable>` 和 `debuggable` 决定的是"哪些工具能在什么包上工作"。`<profileable>` 是 `<application>` 下的子标签(不是属性),Android 10 引入,能让 Perfetto、simpleperf 这类 shell/system profiling 工具采集 release 包的 CPU 和 GPU counter 数据。但 AGI Frame Profiler 和 RenderDoc 的帧捕获入口仍然要求 `android:debuggable="true"`,`profileable` 不够。
-
-### 误区 5:"GPU 分析工具本身不会影响性能"
-
-帧捕获工具(AGI Frame Profiler、RenderDoc)会显著影响被分析帧的渲染性能,因为它们需要拦截并记录所有 GPU 命令。System Profiler 的开销小得多。所以不要用帧捕获工具测量帧率。宏观性能测量用 Perfetto 或 PerfDog,只有在需要深入分析时才做帧捕获。
-
-## 不同 GPU 厂商的专用工具
-
-移动 GPU 市场有三家主要厂商,每家都有自己的专用分析工具:
-
-### ARM Mali:Streamline Performance Analyzer
-
-ARM Streamline 集成在 ARM Development Studio 中,可以同时分析 CPU、GPU、内存子系统。对 Mali GPU,它提供很细的计数器,包括 Shader Core 的各类利用率、Tile Buffer 的命中率和 L2 Cache 的行为。
-
-Streamline 的独特价值在于 CPU-GPU 联合分析。它可以在同一个时间轴上显示 CPU 调度、GPU 执行和内存访问模式,帮助定位 CPU 和 GPU 之间的数据依赖问题。
-
-### Qualcomm Adreno:Snapdragon Profiler
-
-Snapdragon Profiler 是高通的 GPU 分析工具,专为 Adreno GPU 设计。Snapdragon Profiler 仍在活跃维护,它和 AGI 的定位是互补的。AGI 擅长通用的 GPU 性能分析(跨 GPU 厂商),Snapdragon Profiler 擅长 Adreno 微架构级别的深度分析——比如 Adreno 专属的性能计数器、实时 GPU 频率/电压监控、Shader 编译器优化建议。在 Adreno 设备上做 GPU 深度优化时,两个工具配合使用效果最好。
-
-### MediaTek
-
-MediaTek 没有独立的 GPU 分析工具,但 AGI 对 Mali GPU(MediaTek SoC 通常使用 Mali)提供支持。MediaTek 开发者通常使用 AGI + Perfetto 的组合。
-
-### 工具数据对比
-
-| 工具 | 最低版本 | 系统级 | 帧级分析 | Release 包 | GPU 厂商 |
-|------|---------|--------|---------|-----------|----------|
-| Perfetto GPU | Android 8+ | ✅ | ❌ | ✅ (profileable) | 通用 |
-| APA | Android 12+ | ✅ | ⏳ (roadmap) | ✅ (profileable) | 通用 |
-| AGI | Android 11+ | ✅ | ✅ | ⚠️ 需 debuggable | Adreno/Mali/PowerVR |
-| RenderDoc | Android 8+ | ❌ | ✅ | ❌ 需 debuggable | 通用 |
-| Sokatoa | Android 13+ | ❌ | ✅ 多帧 | ❌ 需 debuggable/rooted | Adreno/Mali/Xclipse/PowerVR |
-| Snapdragon Profiler | Android 7+ | ✅ | ✅ | ⚠️ 需 debuggable | Adreno 专用 |
-| ARM Streamline | Android 8+ | ✅ | ❌ | ✅ (部分功能) | Mali 专用 |
-| PerfDog | Android 5+ | ✅ | ❌ | ✅ | 通用 |
-
-按分析场景选型:
-
-| 场景 | 首选工具 | 备选 |
-|------|---------|------|
-| GPU 是否瓶颈 | APA System Profiler | Perfetto GPU / AGI System Profiler |
-| 哪个 Draw Call 慢 | AGI Frame Profiler | RenderDoc |
-| Shader 为什么慢 | RenderDoc | AGI Frame Profiler |
-| 间歇性 GPU 卡顿 | Sokatoa | Perfetto 长时间采集 |
-| Adreno 深度分析 | Snapdragon Profiler + AGI | - |
-| Mali 深度分析 | ARM Streamline + AGI | - |
-
-## GPU 分析的注意事项
-
-### GPU Profiling 的性能开销
-
-帧捕获工具的性能开销很大。AGI Frame Profiler 捕获一帧可能需要几秒甚至几十秒(取决于帧的复杂度),捕获期间应用是暂停的。因此要注意:
-
-- 不能用帧捕获来测量真实帧率
-- 捕获的帧的 GPU 时间数据可能因为工具注入的拦截代码而不完全准确
-- System Profiler 的开销小得多(通常 < 5%),适合长时间采集
-- GPU counter 采样频率拉得很高时,System Profiler 也会引入可观测扰动;某些 Mali 驱动上会看到额外的 CPU 中断或 kworker 活动。长时间录制先用默认采样率,只在短窗口提高采样频率
-
-### profileable vs debuggable
-
-- **debuggable**:AGI 帧捕获、RenderDoc 都需要。但 debuggable 应用会有性能损失(JIT 不做某些优化、运行时检查更多)
-- **`<profileable>`**:从 Android 10 (API 29) 引入。Perfetto 可以采集(包括 GPU counter),但 AGI 帧捕获不可用。Android 14 增强了 GPU counter 采集能力。性能损失比 debuggable 小得多
-- 建议:日常性能测试用 profileable 包 + Perfetto,深入 GPU 分析时临时切换到 debuggable
-
-### GPU 工具在不同 Android 版本上的可用性
-
-- Android 11+:AGI 完整支持
-- Android 10+ (API 29):`<profileable android:shell="true" />` 进入 Manifest,支持基本 Perfetto 采集
-- Android 14+:profileable 应用的 Perfetto GPU counter 采集能力增强
-- Android 17+:ANGLE denylist 可能影响 GLES 应用的帧分析路径
-
-### 不同设备的 GPU 计数器差异
-
-同一个"GPU Utilization"计数器,在 Adreno 和 Mali 上的含义不完全一样。Adreno 的 Utilization 可能只计算 ALU 活跃时间,而 Mali 的 Utilization 可能包含等待内存的时间。跨设备对比 GPU 计数器数据时,需要查阅对应 GPU 厂商的计数器文档。
-
-## 版本演进
-
-GPU 分析工具在 Android 生态中的几次大变化,直接影响我们今天的工具选择和结果解读。
-
-### GAPID → AGI(2020 年)
-
-GAPID(Graphics API Debugger)是 Google 早期的图形调试工具,定位偏向图形 API 的调试(捕获和回放 GLES/Vulkan 调用)。2020 年,Google 将 GAPID 更名为 AGI(Android GPU Inspector),重心从"API 调试"转向"GPU 性能分析"。这次更名也伴随着功能的扩展:System Profiler 模式和硬件级 GPU 计数器支持是 GAPID 时代没有的。
-
-### profileable 的版本增强
-
-- **Android 10 (API 29)**:引入 `<profileable>` 子标签,允许非 debuggable 应用被 Perfetto 采集 CPU 性能数据
-- **Android 11 (API 30)**:给 `<profileable>` 补 `android:enabled` 字段,AGI 从此版本开始完整支持
-- **Android 14**:增强 profileable 应用的 Perfetto GPU counter 采集能力,不再需要 debuggable 即可获取 GPU 计数器数据
-- **实际影响**:Android 14 之前,采集 GPU counter 通常需要 debuggable 应用或 root 权限;Android 14 之后,profileable 应用配合 Perfetto 就能采集 GPU 计数器,降低了 Release 包 GPU 分析的门槛
-
-### ANGLE 对 GLES 帧分析的影响
-
-Android 15 开始,ANGLE 已经从"可选实验路径"走到"系统内可显式切换的兼容层"。Android 16 的新设备继续扩大默认覆盖,Android 17 的新设备转到 denylist 策略,默认大多数 GLES 应用经由 ANGLE。
-
-**允许列表与拒绝列表的策略差异**。这是理解整套 ANGLE 行为的关键转折点:
-
-| 维度 | allowlist(Android 15-16 新设备) | denylist(Android 17 新设备) |
-|------|-------------------------------|---------------------------|
-| 默认路径 | 原生 GLES 驱动 | ANGLE → Vulkan |
-| `angle_gl_driver_selection_pkgs` 含义 | 列表内走 ANGLE | 列表内被排除、走原生 GLES |
-| 配置动机 | "我要为哪些 app 开启 ANGLE?" | "哪些 app 例外不走 ANGLE?" |
-| 对 GPU 帧分析的影响 | 大部分 GLES app 不走 ANGLE,帧捕获走原生 GLES 路径 | 大部分 GLES app 默认走 ANGLE,帧分析变成 GLES → ANGLE → Vulkan 两层翻译 |
-
-**Android 17 denylist 开发者确认命令**:
-
-```bash
-# 确认 denylist 模式是否已生效
-adb shell settings get global angle_gl_driver_enabled
-# 返回 1 → denylist 模式;返回 null → 非 denylist(旧设备或旧版本)
-
-# 查看当前 denylist 中的包名(即被排除不走 ANGLE 的 app)
-adb shell settings get global angle_gl_driver_selection_pkgs
-
-# 将 app 加入 denylist(强制走原生 GLES)
-adb shell settings put global angle_gl_driver_selection_pkgs <pkg>
-adb shell settings put global angle_gl_driver_selection_values native
+```xml
+<application android:appCategory="game">
+    <meta-data
+        android:name="com.android.graphics.driver.prefer_angle"
+        android:value="true" />
+</application>
 ```
 
-**AGI / RenderDoc 的帧分析路线受到影响**。在 denylist 设备上,不在排除列表中的 GLES 应用实际执行路径为 `GLES app → ANGLE → Vulkan driver`。AGI Frame Profiler 捕获的 GPU 命令流是 Vulkan 命令(而不是原始 GLES 命令),Draw Call 数量、Shader 绑定方式和 CPU-GPU 时间对应关系都与原生 GLES 路径不同。对比 allowlist 设备上同一 GLES app 的帧分析数据时,这些差异需要纳入解读框架。
+这项 metadata 是请求信号，不保证系统选择 ANGLE。设备配置、graphics driver 包、应用兼容性和厂商策略仍会参与选择。Android 17 也不能推导出所有 GLES 应用都默认运行在 ANGLE 上。
 
-**开发者迁移指引**:
+做 native GLES 与 ANGLE 对照时，可用官方测试命令设置 `angle_gl_driver_selection_pkgs` 和 `angle_gl_driver_selection_values=angle`，重启目标进程后再验证 EGL vendor/renderer、进程加载的 library、Graphics Driver 日志和 `gpu.angle` trace event。测试结束后删除这两个 global setting，防止影响后续基线。
 
-- **确认版本前提**:`adb shell getprop ro.build.version.sdk` 确认设备 API Level(≥37 为 Android 17);旧设备升级到 Android 17 不受 denylist 强制约束,`angle_gl_driver_enabled` 返回 null 时按 allowlist 逻辑处理
-- **帧分析工作流调整**:Android 17 新设备上优先用 `angle_gl_driver_enabled` 确认模式,再决定 AGI 的抓帧策略;如果 app 不在 denylist 中,AGI 帧分析看到的是 ANGLE 翻译后的 Vulkan 命令
-- **对比测试建议**:同一 GLES app 在 Android 16(allowlist)和 Android 17(denylist)上分别做 GPU 帧分析,确认 ANGLE 翻译是否引入了额外的性能差异
+## RenderDoc：图形状态与资源调试
 
-**这对 GPU 帧分析的版本级影响总结**:
+RenderDoc 的优势是帧捕获、API event、pipeline state、texture、buffer、framebuffer 和 shader 调试。它适合定位渲染错误、资源绑定错误和状态配置问题。通用 RenderDoc capture 不一定包含目标移动 GPU 的全部微架构 counter，API replay 的耗时也不能直接当作正常运行时帧耗时。
 
-- **Android 15**:开发者已经可以在系统设置或 adb 中强制指定应用走 ANGLE,排查时要先确认真实 driver 选择
-- **Android 16 新设备**:ANGLE 覆盖范围继续扩大,很多新机型上的 GLES 工作负载已经更接近 GLES-over-Vulkan;仍为 allowlist 模式
-- **Android 17 新设备**:默认大多数应用走 ANGLE,通过 `angle_gl_driver_enabled` 启用 denylist;名单上的例外回退到原生 GLES
-- **旧设备升级场景**:系统版本升上去,不等于所有旧设备都立刻切到同一条 ANGLE 策略,结论仍要和设备实测一致
+Android 捕获通常要求 debuggable 应用、ADB 连接和受支持的 Vulkan driver。具体 API 与 extension 能力要以所用 RenderDoc 版本为准。Arm Performance Studio 提供 RenderDoc for Arm GPUs，补充部分 Arm/Android 特性、设备兼容处理、Vulkan ray tracing 与 ray query 调试；这些扩展不应外推到 upstream RenderDoc 的所有版本。
 
-### APA 发布(2026 年 5 月)
+如果目的为性能归因，可先用 AGI/厂商 profiler 找到慢 render pass，再用 RenderDoc 检查该 pass 的 attachment、pipeline、descriptor、texture 和 shader。若目的为画面错误，RenderDoc 可以直接从错误帧逐 event 检查 framebuffer 变化。
 
-2026 年 5 月 19 日,Google 发布了 Android Performance Analyzer。APA System Profiler 在 open beta 阶段覆盖 CPU/GPU/Memory/power 分析,基于 Perfetto,Android 12+ 设备上体验最佳。官方在 AGI 文档中推荐开发者向 APA 迁移。APA 的 frame profiling/debugging 路线图指向 GFXReconstruct,目前尚未进入公开 beta。
+## Sokatoa：Vulkan 多帧视角
 
-对工具选型的影响:system profiling 从"AGI System Profiler 为主"变成"APA 为首选,AGI 保留为兼容路径"。
+Sokatoa 由 Samsung Austin Research Center 发起，并与 Google、LunarG 协作。项目面向 Android Vulkan 应用，提供 system 与 frame 视角的多帧捕获、Vulkan API/pipeline/shader 分析和设备端 replay。
 
-### AGI 2025-2026 演进
+项目当前文档给出的边界是：
 
-APA 发版后,AGI System Profiler 的重心逐步转向兼容维护,但 Frame Profiler 仍然是官方唯一的单帧分析工具。
+- Android 13 或更高；
+- 注入 GFXR 与 Sokatoa Vulkan layer 时需要 debuggable APK 或 rooted device；
+- performance view 支持 Xclipse、Mali、Adreno 和 PowerVR；
+- 当前可免费下载，README 表示计划在 2026 年底开放源码。
+
+多帧捕获适合查间歇性 pipeline 创建、状态变化、资源生命周期和某个异常帧前后的差异。capture replay 仍受 API feature、extension、格式、driver 和 GPU 能力约束；不能因为记录了 Vulkan API 就宣称任意 GPU 之间能等价回放。
+
+## 厂商工具的边界
+
+| GPU | 工具 | 适合的数据 | 使用时的限制 |
+|---|---|---|---|
+| Arm Mali / Immortalis | Arm Performance Studio：Streamline、Frame Advisor、Mali Offline Compiler、RenderDoc for Arm GPUs | CPU/GPU 联合 timeline、Mali counter、单帧几何与 API、shader 静态分析 | 支持范围按 GPU 世代、driver 和工具版本确认 |
+| Qualcomm Adreno | Snapdragon Profiler，配合 APA/AGI | Adreno counter、GPU driver instrumentation、系统资源、frame snapshot | 设备与功能覆盖按 Qualcomm 文档确认 |
+| Samsung Xclipse | Sokatoa，配合 APA/Perfetto 与 Samsung 扩展 | 多帧 Vulkan、Xclipse performance view、系统时间线 | 扩展与设备支持仍在演进，报告要记录版本 |
+| Imagination PowerVR | AGI、Sokatoa 与 Imagination 工具 | PowerVR counter、系统与帧分析 | counter 名称和可用性依设备 producer |
+
+Arm Streamline 能在未 root 的受支持 Android 设备上采集 CPU、GPU、内存、调度和硬件 counter。Frame Advisor 面向问题帧的 API 与几何分析；RenderDoc for Arm GPUs 偏调试；Mali Offline Compiler 估算 shader 在不同 Arm GPU 上的指令、寄存器和周期成本。它们属于不同工具，不能只写成“Arm profiler”后混用结论。
+
+厂商 counter 应保留原名称、单位、采样方式、GPU 型号、driver 和文档版本。把 Adreno 的 busy、Mali 的 shader core active 与 Xclipse 的相似名称放进一张跨机型排行榜，数值很容易失去可比性。
+
+## `profileable`、`debuggable` 与 root
+
+`<profileable>` 从 API 29 引入，是 `<application>` 的子元素；`android:enabled` 在 API 30 加入。设置 `android:shell="true"` 后，shell profiling 工具可在 release 构建上访问受限的 CPU、memory 和 trace 能力，时序扰动通常小于 debuggable 构建。
+
+它不保证 `gpu.counters`、`gpu.renderstages` 或厂商内核事件出现。GPU 数据源由系统 producer、驱动、设备配置和调用权限决定。一个 profileable 包得到空 GPU 轨道时，排查方向应包含 data-source descriptor 与厂商支持。
+
+帧捕获通常需要在进程中注入 Vulkan layer 或替换 graphics backend：
+
+- AGI quickstart 要求 debuggable 应用；
+- RenderDoc Android capture 通常要求 debuggable 应用；
+- Sokatoa 要求 debuggable APK 或 rooted device；
+- 厂商工具各有设备、包类型和权限条件。
+
+debuggable 会改变运行时优化与安全检查，捕获 layer 还会记录命令、资源和内存。用 profileable/release 包完成低扰动基线，用 debuggable 包做短窗口深挖；两类结果不能直接比较绝对帧时间。
+
+## 不设固定阈值，改做对照实验
+
+### 怀疑 fragment、overdraw 或带宽
+
+在同一设备上降低渲染分辨率或停用一个全屏 pass。如果 GPU stage 与外部内存相关 counter 同步下降，再检查 overdraw、blend、render-target format、attachment load/store、texture sampling 和 SurfaceFlinger client composition。
+
+Android View 的开发者选项 overdraw overlay 适合找 UI 重复覆盖，游戏和 native renderer 则应回到帧 capture 与厂商 counter。Tile-based GPU 还能在 tile memory 内消化部分中间结果；“画了 N 次”不能直接换算为 N 倍外部内存带宽。
+
+### 怀疑 shader ALU 或纹理
+
+固定画面、分辨率与 pipeline state，只替换一个 shader 变体或关闭一个纹理采样分支。结合 shader duration、instruction、occupancy、texture/cache 与 external memory counter 判断变化。某个 counter 很高只能描述该架构上的活动状态，优化方向还要由 A/B 结果证明。
+
+### 怀疑 draw call 或 driver CPU 开销
+
+检查 render/RHI 线程调用栈、`vkQueueSubmit()` 前的命令录制、pipeline/descriptor churn 和 driver ioctl。合批后若 CPU submit 提前而 GPU stage 基本不变，收益位于 CPU/driver；若 GPU stage 也缩短，才说明 GPU 工作组织同时改善。
+
+### 怀疑 queue-stuffing
+
+持续尽快 present 可能把 BufferQueue 填满，随后 render thread 在 acquire、dequeue、swap 或 present 路径等待。此时 CPU 与 GPU 都可能出现空洞，输入却排在较早的 in-flight frame 中。应检查队列深度、release fence、present 间隔、输入采样点和 frame pacing，不能把等待函数本身当成 shader 变慢。
+
+### 怀疑热限制
+
+把 thermal status/headroom、CPU/GPU frequency、帧时间、画质和持续运行时间放到同一记录中。固定性能模式适合隔离 DVFS 变量，不能代表用户环境。优化验证应在相近初始温度下重复多轮，并比较稳定态。
+
+## 捕获扰动与报告要求
+
+system trace、counter sampling、frame capture 和 replay 都会产生扰动，程度取决于采样频率、数据量、driver 与工具。报告里至少记录：
+
+- 工具与版本、TraceConfig、设备 build、GPU 和 driver；
+- 应用包类型、Graphics API、ANGLE/native driver 选择；
+- 分辨率、刷新率、目标帧率、画质与场景；
+- 温度、供电、持续运行时间和固定性能模式；
+- 捕获是否注入 layer、替换 backend 或启用 validation；
+- 原始 Trace/capture，以及每次 A/B 只改变的变量。
+
+帧 capture 用来检查命令、状态与资源，不用于给产品帧率定标。性能数字应来自未注入 capture layer 的低扰动运行，再用帧 capture 解释慢帧结构。
+
+## 常见误判
+
+### RenderThread 很短，所以 GPU 很慢
+
+RenderThread 可能只是异步提交。GPU stage、completion fence、FrameTimeline 和单变量实验都指向 GPU 后，才进入 GPU-bound 结论。
+
+### GPU utilization 高，所以 shader 复杂
+
+GPU busy 可能来自 fragment、纹理、带宽、compute、copy、driver queue 或 SurfaceFlinger client composition。需要分 stage 与 counter 解释。
+
+### `gpu.counters` 是 Android 17 统一指标
+
+Android 17 统一了 Perfetto 的传输结构和 Android OEM descriptor 要求，没有统一每家 GPU 的微架构指标。
+
+### Android 17 默认把所有 GLES 转成 ANGLE
+
+Android 17 提供 manifest 请求信号，ANGLE 选择仍受设备与系统策略控制。AGI 的 OpenGL on ANGLE capture 也只说明捕获时走了 ANGLE。
+
+### `profileable` 足以使用所有帧工具
+
+AGI、RenderDoc、Sokatoa 等帧捕获会注入 graphics layer，通常要求 debuggable 或 root。`profileable` 主要服务低扰动 profiling。
+
+### GPU 时间短，所以显示没有问题
+
+GPU 工作完成后还有 acquire fence、SurfaceFlinger latch、composition、HWC 与 present。最终用户可见时间必须追到显示端。
+
+## 执行清单
+
+1. 记录设备、GPU/driver、build、分辨率、刷新率、画质、温度与包类型。
+2. 确认主体 Surface 和 producer 线程，不把宿主窗口当作独立 Surface 的主体。
+3. 用 APA/Perfetto 找到目标帧和 CPU submit、GPU completion、queue、latch、composition、present。
+4. 查询设备 data-source descriptor，确认 GPU producer 名字、counter ID 和单位。
+5. 用分辨率、pass、shader、HWC/client composition 或 frame pacing 做单变量实验。
+6. 依据问题选择 AGI、RenderDoc、Sokatoa 或厂商 profiler。
+7. 分开保存低扰动性能基线与注入 layer 后的调试 capture。
+8. 优化后在相近热状态重复多轮，保留原始数据和工具版本。
+9. 报告按“证据、推断、对照结果”书写，设备特有结论不要扩展成 Android 通用规则。
 
 ## 参考资料
 
-### 官方文档
-- AGI 官方文档:https://developer.android.com/agi
-- Perfetto GPU 数据源:https://perfetto.dev/docs/data-sources/gpu
-- Sokatoa GitHub:https://github.com/sarc-acl/sokatoa
-- RenderDoc 官方文档:https://renderdoc.org/docs/
+- [Android Performance Analyzer](https://developer.android.com/android-performance-analyzer)
+- [Introducing Android Performance Analyzer](https://developer.android.com/blog/posts/introducing-android-performance-analyzer-the-next-evolution-in-profiling-for-android)
+- [Android GPU Inspector](https://developer.android.com/agi)
+- [AGI quickstart](https://developer.android.com/agi/start)
+- [AGI Frame profiling overview](https://developer.android.com/agi/frame-trace/frame-profiler)
+- [Perfetto GPU data sources](https://perfetto.dev/docs/data-sources/gpu)
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- [Android 17 `gpu_counter_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/gpu/gpu_counter_config.proto)
+- [Android 17 `gpu_renderstages_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/gpu/gpu_renderstages_config.proto)
+- [Android 17 `gpu_counter_event.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/trace/gpu/gpu_counter_event.proto)
+- [Android 17 `FrameTracer`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrameTracer/)
+- [Android Vulkan and ANGLE overview](https://developer.android.com/games/develop/vulkan/overview)
+- [`<profileable>` manifest element](https://developer.android.com/guide/topics/manifest/profileable-element)
+- [Sokatoa project and current requirements](https://github.com/sarc-acl/sokatoa)
+- [Arm Performance Studio](https://developer.arm.com/Tools%20and%20Software/Arm%20Performance%20Studio)
+- [Arm Streamline](https://developer.arm.com/tools-and-software/streamline-performance-analyzer)
+- [RenderDoc for Arm GPUs](https://developer.arm.com/tools-and-software/renderdoc-for-arm-gpus)
+- [Snapdragon Profiler](https://developer.qualcomm.com/software/snapdragon-profiler)
+- [Android 17 common kernel devfreq](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/devfreq/)
+- [Android 17 common kernel dma-fence](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)
 
-### 厂商工具
-- ARM Streamline:https://developer.arm.com/Tools%20and%20Software/Streamline%20Performance%20Analyzer
-- Snapdragon Profiler:https://developer.qualcomm.com/software/snapdragon-profiler
+## 相关章节
 
-### 研究素材
-- AGI 2025-2026 路线图(本地素材:intake/research-feeds/2026-04-05-11-agi-2026-roadmap-system-frame-profiler.md)
-- Samsung Sokatoa 发布分析(本地素材:intake/research-feeds/2026-04-05-11-samsung-sokatoa-gpu-profiler.md)
-- Android 17 ANGLE/Vulkan 强制路线(本地素材:intake/research-feeds/2026-04-05-11-android17-angle-vulkan14-gles-deprecation.md)
-- Android 17 GPU计数器跨设备标准化问题研究(本地素材:DeepResearch/2026-07-08-android17-gpu-counter-cross-device-standardization.md): Android 17通过Perfetto框架实现GPU计数器跨设备标准化，采用GpuCounterDescriptor与InternedGpuCounterDescriptor双模式设计，支持高通Adreno/联发科Mali/三星Exynos等不同GPU厂商的命名、单位、计算方式差异分析与性能指标映射
-
-### 进阶阅读
-- 移动平台 GPU 性能分析(知乎):https://zhuanlan.zhihu.com/p/560738175
-- 基于 GPU Counters 数据的性能优化(Cubox 收藏)：GPU 工具链方法论参考
+- [2.10 GPU 渲染深入](../../part1-fundamentals/ch02-rendering/10-gpu-rendering.md)：GPU pipeline、tile、带宽与 shader
+- [2.14 图形 API 演进与选择](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)：GLES、Vulkan 与 ANGLE 的版本边界
+- [13.3 Perfetto View 解读](../ch13-perfetto/03-perfetto-view.md)：Trace UI 与时间线操作
+- [14.1 Android Studio Profiler](01-as-profiler.md)：profileable/debuggable 与低扰动 profiling
+- [18.1 渲染管线总览](../../part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md)：Surface、BufferQueue、SurfaceFlinger、HWC 与 display present
+- [18.8 OpenGL ES](../../part2-performance/ch18-rendering-pipelines/08-opengl-es.md)：EGL/GLES 提交与 native/ANGLE backend
+- [18.9 Vulkan Native](../../part2-performance/ch18-rendering-pipelines/09-vulkan-native.md)：swapchain、submit、present 与 frame pacing
