@@ -1,13 +1,26 @@
 ---
 title: "Perfetto SQL 查询手册与性能分析实战查询库"
 chapter: "13.22"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: ['perfetto', 'sql', 'trace-analysis', 'performance-query']
-related_chapters: ['13.20', '13.21', '14.32']
+related_chapters: ['13.10', '13.11', '13.14', '13.20', '13.21', '14.32']
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "章节深挖"
+task6_state: "pending"
+task9_state: "pending"
+pipeline_stage: "task6_pending"
+last_verified: "2026-07-30"
+last_verified_against: "AOSP android-17.0.0_r1 Perfetto stdlib + Perfetto v57.2 host toolchain"
+last_draft_polish_at: "2026-07-30T19:35:11+08:00"
+last_draft_polish_run_id: "20260730-193511-draft-polish-61cb8abd"
+confidence: "medium"
+sources:
+  - "AOSP android-17.0.0_r1 Perfetto stdlib (android.frames.timeline, android.cujs.sysui_cujs, sched.latency, android.binder, android.memory.dmabuf)"
+  - "Perfetto v57.2 host Trace Processor release"
+  - "PerfettoSQL official documentation (perfetto.dev)"
+  - "android17-6.18-2026-06_r6 kernel baseline"
 ---
 
 # 13.22 Perfetto SQL 查询手册与性能分析实战查询库
@@ -108,6 +121,8 @@ ORDER BY cid;
 
 Android 17 固定源码已经包含 `android.frames.timeline`。该模块把 `Choreographer#doFrame`、`DrawFrame`、Expected FrameTimeline 与 Actual FrameTimeline 对齐为 `android_frames`，并保留每帧匹配到的记录数量。
 
+> 源码参照: `android.frames.timeline` 标准库 — `android-17.0.0_r1` `src/trace_processor/perfetto_sql/stdlib/android/frames/timeline.sql`。该模块由 Perfetto stdlib 维护，表/列 schema 随分析端版本演进，查询前应用 `pragma_table_info()` 确认。
+
 下面的查询统计目标进程帧时长分位数，同时检查缺少 Actual/Expected 记录的帧：
 
 ```sql
@@ -139,6 +154,8 @@ GROUP BY process_name;
 ### 3.2 Jank CUJ 只覆盖有 CUJ marker 的场景
 
 Android 17 的 `android.cujs.sysui_cujs` 模块面向 Framework `InteractionJankMonitor` 产生的 Jank CUJ marker，常见数据来自 SystemUI 和系统组件。普通第三方应用没有 marker 时，该表为空。
+
+> 源码参照: `android.cujs.sysui_cujs` 标准库 — `android-17.0.0_r1` `src/trace_processor/perfetto_sql/stdlib/android/cujs/sysui_cujs.sql`。CUJ marker 由 `InteractionJankMonitor`（frameworks/base）写入 trace，该模块负责解析和对齐。
 
 下面的查询用于比较已完成 CUJ 的墙钟时长分布：
 
@@ -198,6 +215,8 @@ ORDER BY running_ms DESC;
 ### 4.2 `sched.latency` 给出 Running 前的 Runnable 时长
 
 Android 17 固定源码中的 `sched.latency` 会把每个 Running interval 连接到同线程紧邻的 Runnable 状态。下面的查询用于发现调度排队较重的线程：
+
+> 源码参照: `sched.latency` 标准库 — `android-17.0.0_r1` `src/trace_processor/perfetto_sql/stdlib/sched/latency.sql`。该模块依赖 `thread_state` 表中的 Runnable/Running 状态配对，未配对成功的 interval 不会出现在结果中。
 
 ```sql
 INCLUDE PERFETTO MODULE sched.latency;
@@ -333,6 +352,8 @@ ORDER BY pct.name;
 
 `android.memory.dmabuf` 读取 `dmabuf_allocs` ftrace 事件，并尝试沿 gralloc Binder 事务把 buffer 归还给请求进程。下面的查询给出目标进程的峰值和 trace 结束前末次观测值：
 
+> 源码参照: `android.memory.dmabuf` 标准库 — `android-17.0.0_r1` `src/trace_processor/perfetto_sql/stdlib/android/memory/dmabuf.sql`。该模块依赖 `dmabuf_allocs` 内核 ftrace 事件（需要启用），释放记录为负值。
+
 ```sql
 INCLUDE PERFETTO MODULE android.memory.dmabuf;
 
@@ -354,6 +375,8 @@ GROUP BY upid, process_name;
 ## 6. Binder：客户端墙钟与服务端执行不能混写
 
 `android.binder` 标准库依据 Binder slice 和 flow 关系，配对同步、异步事务，并补充 AIDL endpoint、客户端、服务端、OOM score 等信息。Android 17 固定源码已包含该模块。
+
+> 源码参照: `android.binder` 标准库 — `android-17.0.0_r1` `src/trace_processor/perfetto_sql/stdlib/android/binder.sql`。配对逻辑依赖 Binder slice 的 flow 关系，缺少 `binder_transaction` ftrace 或 flow 关联时 `aidl_name` 可能为空。
 
 下面的查询统计目标进程发起的同步 Binder 事务，分别报告客户端等待和服务端处理分位数：
 
@@ -388,6 +411,8 @@ LIMIT 50;
 ## 7. Data Explorer v54 的正确定位
 
 Perfetto v54 发布公告把 Data Explorer 作为可视化查询构建器推出。`android-17.0.0_r1` 不是纯净的 v54.0 release：该固定 tag 已使用 `dev.perfetto.DataExplorer` plugin id，并包含查询图、DataGrid、图导入/导出和 dashboard 目录。用户可以从表、slice、时间范围等数据源开始，通过 filter、aggregate、join、interval intersect、sort 等节点构造查询图。
+
+> 源码参照: Data Explorer plugin — `android-17.0.0_r1` `ui/src/plugins/dev.perfetto.DataExplorer/index.ts`。plugin id 为 `dev.perfetto.DataExplorer`，属分析端 UI，不改变设备端 `traced` / `traced_probes` / `perfetto` 二进制。
 
 它适合两类工作：
 
