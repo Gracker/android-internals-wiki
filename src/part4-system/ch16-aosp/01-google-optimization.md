@@ -8,9 +8,9 @@ drafted_by: "openclaw-task2a"
 reviewed_date: 2026-07-02
 reviewed_by: openclaw-task6
 applicable_versions: "Android 4.1 (API 16) - Android 17 (API 37)"
-last_verified: "2026-07-01"
-last_verified_against: "AOSP android-17.0.0_r1 (MessageQueue/Looper/Binder/BLAST/WMS) + Android 17 release notes/behavior changes + Mainline docs"
-confidence: medium
+last_verified: "2026-07-30"
+last_verified_against: "AOSP android-17.0.0_r1（ART/MessageQueue/Binder/BLAST/WMS）+ android17-6.18-2026-06_r6（Binder driver）+ Android 17 官方文档"
+confidence: high
 tags:
   - android
   - performance
@@ -39,6 +39,10 @@ task6_review_notes: "2026-07-13 Task6 re-review (revisiting after Task9 deep rev
 last_task2b_lite_at: "2026-07-13"
 sources:
   - type: official
+    path: "https://developer.android.com/about/versions/jelly-bean"
+  - type: official
+    path: "https://developer.android.com/about/versions/kitkat"
+  - type: official
     path: "https://developer.android.com/about/versions/17/release-notes"
   - type: official
     path: "https://developer.android.com/about/versions/17/behavior-changes-17"
@@ -49,18 +53,37 @@ sources:
   - type: official
     path: "https://source.android.com/docs/core/architecture/hidl/binder-ipc"
   - type: official
+    path: "https://source.android.com/docs/core/architecture/kernel/android-common"
+  - type: official
+    path: "https://source.android.com/docs/core/architecture/kernel/gki-android17-6_18-release-builds"
+  - type: official
+    path: "https://source.android.com/docs/core/architecture/16kb-page-size/16kb"
+  - type: official
+    path: "https://source.android.com/docs/core/runtime/configure"
+  - type: official
+    path: "https://source.android.com/docs/core/runtime"
+  - type: official
+    path: "https://source.android.com/docs/core/architecture/partitions"
+  - type: official
     path: "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html"
   - type: official
-    path: "https://android-developers.googleblog.com/2026/03/BoostingAndroidPerformanceIntroducingAutoFDO.html"
+    path: "https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html"
   - type: aosp
     path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/LegacyMessageQueue/MessageQueue.java"
   - type: aosp
-  - type: aosp
     path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/java/com/android/server/SystemServer.java"
   - type: aosp
     path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/ProcessState.cpp"
   - type: aosp
     path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-13
 ---
@@ -81,216 +104,227 @@ last_deepseek_cn_review_at: 2026-07-13
 <!-- outline-end -->
 
 ## 为什么要了解 Google 的性能优化思路
-我们这本书前面花了很多篇幅讲 Android 内部的具体机制,VSync、Binder、内存管理、调度器、BufferQueue。再往后退一步,这些机制改动背后有一条主线:Google 持续提高整个平台的性能上限,同时让优化尽快到达真实用户。
+VSync、Binder、ART、内存回收和 BufferQueue 分属不同子系统，性能改动却经常遵循同一条工程路径：确定用户能感知的场景，找到跨层等待或资源浪费，修改平台机制，再用基准测试与线上数据检查副作用。
 
-理解这条主线有三个直接价值。第一,我们能判断某个问题究竟应该优先在系统层找答案,还是应该回到 App 自己的初始化、线程模型和渲染路径上。第二,Google 官方提供的工具,Baseline Profiles、Macrobenchmark、Android Vitals、Perfetto,都是围绕这套思路设计的,不理解设计目标就容易把工具用成"测个数"的仪表盘。第三,Google 每个版本的性能特性都有清晰延续关系,从 Project Butter 到 Mainline,再到 Android 17 的 lock-free MessageQueue,这条线是连贯的。顺着这条线看版本演进,我们更容易预判下一轮优化会动到哪一层。
+掌握这条路径有三项用途：
+
+- 分清平台瓶颈与 App 自身问题，避免把主线程 I/O 归咎于系统调度，也避免用 App 侧规避方案掩盖 framework 回归。
+- 理解工具的测量对象。Macrobenchmark 测关键用户旅程，Perfetto 解释跨进程时序，Android Vitals 观察线上结果，Baseline Profiles 改变代码编译状态。
+- 正确阅读版本变化。Project Butter、ART、Treble、Mainline 和 Android 17 DeliQueue 作用在不同层，不能都概括成“系统更快”。
 
 ## 核心理念:两层性能观
-Google 对性能的判断,基本可以拆成两层。
+“Systemic Performance”和“User-Perceived Performance”适合作为阅读框架，不是 AOSP 中两个固定模块。前者讨论平台提供的能力与成本，后者讨论启动、响应、帧、内存和功耗怎样影响用户。
 
 ### 系统层（Systemic Performance）
 
-第一层是系统本身的能力上限：内核、运行时、驱动、合成管线、线程调度、系统服务这些底层设施。Google 在这里的目标很简单——让平台默认更快，App 不改业务代码也能吃到收益。
+系统层包括内核、ART、Binder、图形合成、I/O、系统服务与构建工具链。一次平台优化可能让大量 App 受益，也可能只覆盖特定 SoC、构建配置或 targetSdk。
 
-AutoFDO 就是典型例子。它优化的是内核和系统 native binary 的机器码布局与分支预测,不要求 App 配合,但会影响冷启动、Binder 调用、系统服务执行这些底层热点路径。这个方向的细节可以继续看 §1.12《AutoFDO 反馈导向编译优化》和本章的 §16.4《Android 17 + Kernel 6.12 系统级性能优化》。Google 在系统层做的其他长期工作也属于这一类,比如 ART 编译与 GC 的持续演进、Binder 调度与线程池模型的调整、SurfaceFlinger 合成与 Buffer 管线重构。
+AutoFDO 能说明这个边界。官方 2026 年 3 月文章分别讨论了两类产物：
+
+- Android userspace 的 native executable 和 library 已使用 AutoFDO；
+- GKI 的 AutoFDO 当时部署到 `android15-6.6` 与 `android16-6.12`，并计划扩展到 `android17-6.18`。
+
+这不支持“Android 17 所有系统 native binary 和所有内核模块都自动带 profile”的说法。内核文章明确把当前范围限定在主内核映像 `vmlinux`，GKI module 和 vendor module 仍列为后续方向。判断设备是否启用时，应检查对应构建配置、profile 产物和 boot image，不能只看 Android 版本号。
 
 ### 用户感知层（User-Perceived Performance）
 
-第二层是用户直接感知到的性能。Google 一直把启动拖不拖、滑动卡不卡、点击迟不迟、ANR 出没出放在指标的最前面。CPU 利用率和函数耗时只是参考，最终要回到用户动作本身。
+用户感知层关心冷启动多久出现可用内容、输入多久得到反馈、动画是否按显示周期提交、前台进程是否发生 ANR 或低内存终止。CPU 利用率、锁等待和函数耗时用于解释这些现象，单独拿出来不能代表体验。
 
-这层思路决定了 Google 的工具形态。Android Vitals 追踪 ANR 率、崩溃率、卡顿率这类用户感知指标,而非只看某个线程的平均 CPU 占用。Macrobenchmark 的目标是复现冷启动、滚动、页面切换这些用户动作,然后确认优化前后用户能否感到差别。
-
-两层必须一起看。系统层决定平台天花板，用户感知层决定 App 有没有把这层天花板用出来。系统把渲染、调度、编译流程做得再快，如果 App 还在主线程做同步 I/O、启动时塞满阻塞初始化、滚动里频繁分配对象，用户该觉着慢还是慢。
+Android Vitals 以用户感知 ANR 等线上指标观察结果，Macrobenchmark 在可控环境复现启动、滚动和页面切换，Perfetto 再解释每个阶段的等待。系统优化提高公共路径的效率，App 仍需控制主线程 I/O、同步 Binder、初始化顺序和每帧分配。
 
 ## 版本旗舰特性:一条清晰的演进线
-Google 从 Android 4.1 开始,几乎每个关键版本都有一轮很鲜明的性能主线。把这些主线串起来看,比单独背技术名词更有用。
+下面的时间线包含运行时优化、低内存适配和系统模块化。Treble 与 Mainline 主要改变接口和交付方式，本身不等同于一次运行时提速。
 
 ### Project Butter(Android 4.1,2012)
-Project Butter 是 Android 性能口碑的一个分水岭。它解决的是整条 UI 渲染时序的一致性。
-
-它做的三件事今天看仍然是主线。第一,把渲染正式绑到 VSync 节奏上,让 Choreographer 在 VSync 到来时统一调度 Input、Animation、Traversal。第二,引入三缓冲,把 CPU、GPU、SurfaceFlinger 的工作时序拉开,减少双缓冲里常见的"上一帧没放开,下一帧没法开始"这种等待。第三,围绕输入响应做延迟控制,尽量缩短从手指动作到屏幕变化之间的间隔。
-
-这套思路的价值不止于"4.1 比以前顺"这层体验变化——它建立了按帧理解性能的思维模型。后面 RenderThread、FrameMetrics、Frame Timeline、Frame Pacing Library 这整串工具和机制，全是从这个模型里长出来的。相关机制可以回看 §2.3《VSync 机制》和 §2.4《Choreographer 与渲染流水线》。
+Project Butter 把 UI 工作组织到显示节奏上：VSync 驱动 `Choreographer` 安排 input、animation 和 traversal，图形管线通过多缓冲降低 CPU、GPU 与合成阶段互相等待的概率。它确立了按帧预算分析流畅度的方式。后续的 RenderThread、FrameMetrics、Frame Timeline 与 Frame Pacing 都沿用这种观察尺度。
 
 ### Project Svelte(Android 4.4,2013)
-如果说 Project Butter 解决的是"顺不顺",Project Svelte 解决的是"资源很差时还能不能跑"。
-
-Android 4.4 的目标是让系统在 512MB RAM 设备上也能工作。这个目标很简单,它把 Google 的另一条性能哲学固定下来。性能工程必须覆盖低端机上的稳定运行。为了做到这一点,Google 去压系统服务内存、减少预装软件的常驻开销、强化低内存回调和行为约束,还给开发者补上了 ProcStats 这类观测工具。
-
-后来的 Android Go Edition 是这条思路的延伸,低资源设备是性能设计必须覆盖的基线场景。
+Project Svelte 面向 512 MB RAM 设备，重点是系统与预装应用的内存占用、后台进程成本和低内存可观测性。Android Go Edition 延续了低资源设备基线，但 App 仍需按自己的进程、资源和后台任务验证，不能把 Go 设备视为统一硬件型号。
 
 ### ART 替代 Dalvik(Android 5.0,2014)
-Dalvik 到 ART 的切换,是 Android 运行时层面最重要的一次重写。Dalvik 时代更依赖解释执行和 JIT,热路径第一次执行一定更慢,GC 也更容易把前台线程直接停住。ART 把 AOT 编译引进来,让安装阶段就能把 DEX 转成机器码,运行时性能的基线一下子稳定了很多。
-
-但纯 AOT 很快又暴露出安装慢、产物大、全量编译不划算这些问题,所以从 Android 7.0 开始,ART 逐步走向 JIT、AOT、Profile-Guided 混合编译。系统先解释和采样,再根据真实热路径做更有针对性的编译。这条线最终演变成了 Baseline Profiles、Cloud Profiles、Startup Profiles 这些今天仍然在用的工具链。
+Android 5.0 默认使用 ART，并在安装阶段执行 AOT 编译。全量 AOT 会增加安装时间和磁盘占用，Android 7.0 起改为 interpretation、JIT 与 profile-guided AOT 的混合模式。Cloud Profiles、Baseline Profiles 和 Startup Profiles 分别介入 profile 分发、关键方法预编译和 DEX 布局，三者不能互换。
 
 ### Project Treble(Android 8.0,2017)
-Project Treble 表面上讲的是架构解耦,真实情况是它解决了另一个性能大问题,Google 修好的系统优化到底能不能及时送到用户手里。
-
-Treble 之前,Framework 和厂商 HAL 绑得很紧。Google 即使修好了框架层的性能 bug,也得等 SoC 厂商和 OEM 一层层适配,很多设备等不到更新。Treble 通过稳定接口把 Framework 和 HAL 拆开,把"平台层改进"和"厂商适配"之间的耦合降下来,这才给后面的 Mainline、Stable AIDL、模块化更新创造了前提。
+Treble 通过稳定的 framework/vendor 接口降低系统框架升级对 vendor implementation 的耦合。它改善的是升级边界，不能据此推导某个 API 调用或渲染阶段会变快。性能改动能否到达某台设备，仍取决于模块归属、厂商集成和 OTA。
 
 ### Project Mainline（Android 10，2019）：拆分系统能力与交付路径
 
-Mainline 的核心动作是把"系统能力更新怎么送到设备"做成独立问题。官方 Mainline 文档写得很清楚：Android 10 引入 Mainline 后，终端可以通过 Google Play system update 或合作方 OTA 获取模块更新；模块本身可能是 APEX，也可能是 APK。ART 模块 `com.android.art` 从 Android 12 开始以 APEX 形式交付。
+Android 10 引入 Mainline 后，部分系统组件可以通过 Google Play system update 或合作方 OTA 以 APEX/APK 模块更新。ART 从 Android 12 起属于可更新模块。分析某项优化的覆盖范围时，要分开三条交付路径：
 
-理解 Mainline 时，一个常见的混淆是把"性能特性本身"和"特性通过什么路径交付"当成一回事。至少有三条独立的路径：
+- Mainline 模块更新覆盖 ART、DNS Resolver 等被模块化的系统组件；
+- GKI 与 vendor kernel 通过内核或整机 OTA 交付；
+- Baseline Profile 随 APK/AAB 发布，Cloud Profile 由 Google Play 在安装或后台编译阶段提供。
 
-- Mainline / APEX / APK 模块更新。这是 ART、DNS Resolver、Permission Controller 这类系统模块的交付方式。像 ART 运行时的能力演进,才可能走这条路。
-- GKI kernel 分支与设备 OTA。AutoFDO 属于内核与系统 native binary 的构建优化,落在 `android15-6.6`、`android16-6.12` 这类内核分支和对应构建产物里,最终通过厂商 kernel OTA 或完整 OTA 到达设备,不属于 ART Mainline。
-- Google Play 安装期编译。Baseline Profiles 由 App 自己随 APK/AAB 打包,Cloud Profiles 由 Google Play 聚合用户行为后参与安装或后台编译。这条流程作用在 App 的安装与编译阶段,归属 Play 编译路径。
-
-沿着这三条路径回头看 Android 17 的运行时变化，很多表述会自然变得准确。比如 generational GC，它是 Android 17 release notes 里明确写出的运行时能力变化，但不等于"Mainline 推送的特性"——是否回推到旧设备，取决于对应 ART 模块版本、设备集成和 Google Play system update 的实际覆盖。Cloud Profiles 同理：它服务于 Play 安装期编译，不属于 ART Mainline 本身。
+Android 17 的 generational CMC 属于 ART 版本能力。它能否回到旧平台，需要查设备上的 ART module release 和兼容策略；“ART 可更新”不能直接推出“所有旧设备会获得 Android 17 GC”。
 
 ### Android 16 → Android 17：关键性能跃迁
 
-Android 16（API 36）到 Android 17（API 37）不是常规年度迭代——这是一次系统性能基础设施的大版本升级。关键差异如下，不做泛泛概括。
+| 层 | 可验证的版本变化 | 阅读边界 |
+|---|---|---|
+| ART | Android 17 release notes 公布 generational CMC；`mark_compact.cc` 提供 `YoungMarkCompact`，`ShouldUseGenerationalGC()` 的系统属性默认值为 `true` | ART flag、DeviceConfig 和设备模块版本仍会影响启用状态 |
+| MessageQueue | Android 17 上，targetSdk 37+ App 按兼容性变更使用 DeliQueue；官方行为变更页面提示反射私有字段的兼容风险 | 系统进程和实验 flag 还有独立选择路径 |
+| GKI | Android 16 的新 GKI 基线是 `android16-6.12`；Android 17 的新基线是 `android17-6.18` | Android 平台向后兼容多条受支持 GKI，不能把平台版本与唯一内核版本画等号 |
+| 16 KB page size | AOSP 从 Android 15 起支持 16 KB page size 与 16 KB ELF alignment；Android 16 增加 prebuilt alignment 检查选项 | Android 17 不是该能力的首次正式版本 |
 
-**运行时层面**：Android 16 的 ART 仍以 Concurrent Copying GC 为主，generational 模式处于实验标记位（`kEnableGenerationalCC` 默认关闭）。Android 17 正式将 Concurrent Mark-Compact（CMC）与 generational GC 合并，young generation 回收改为高频低开销模式，old generation 触发频率相应降低。ART 模块版本 `com.android.art` 随 Android 17 一起交付，代码锚点为 `art/runtime/gc/collector/mark_compact.cc` 中的 `YoungMarkCompact` 类（android-17.0.0_r1）。
+本书的 Android 17 内核新基线固定到 `android17-6.18-2026-06_r6`。该 tag 在 2026 年 6 月 release build 系列中可追溯；同一 Android 17 平台仍可能搭配官方兼容表中的旧 GKI 分支。涉及 framework 行为时看 `android-17.0.0_r1`，涉及 Binder driver、调度或内存回收时再看指定 kernel tag。
 
-**内核与构建链**：Android 16 使用 Kernel 6.6（`android15-6.6` 分支），Android 17 切换到 Kernel 6.12（`android17-6.12` 分支），带来了 EEVDF 调度器、multi-generational LRU page reclaim、以及 MGLRU 默认开启。同时 AutoFDO 从 Android 16 的 opt-in 构建选项变为 Android 17 的系统二进制默认构建参数，所有系统 native binary 在构建期自动注入性能剖面数据。
-
-**Framework 线程模型**：Android 16 所有 App 统一走 legacy `MessageQueue`（单锁链表），无论 targetSdk 是多少。Android 17 在 `core/java/android/os/` 下拆分出 `LegacyMessageQueue/` 和 `CombinedDeliMessageQueue/` 两条实现路径，targetSdk 37+ 的应用通过 `@EnabledAfter(targetSdkVersion = VERSION_CODES.BAKLAVA)` 自动走 lock-free 队列。低于 targetSdk 37 的应用维持 legacy 路径不变。
-
-**内存页与兼容性**：Android 16 的 16KB 页面支持处于开发者预览阶段（Developer Preview 中新增 `DeviceConfig.FLAG_DEVICE_SUPPORTS_16KB_PAGE_SIZE` 标志位），Android 17 将其推向正式交付，ELF segment 对齐要求从 4KB 切换到 16KB 成为 NDK 构建的默认行为。
-
-**Rust 系统服务**：Android 16 的 Rust 系统服务以 virtio 虚拟化服务（`packages/services/Virtualization`）和 keystore2 为主，Android 17 扩大到 binder 相关的 `servicemanager` 修复和新的 `native_bridge` 组件，标志着 Rust 在系统关键路径上不再只做隔离区的辅助逻辑。
-
-把这段差异看完，一个直接的推论是：App 端做性能分析时，不能只看设备上跑的是 Android 16 还是 17。同一台 Android 17 设备上，targetSdk 36 的 App 和 targetSdk 37 的 App 走的是完全不同的 MessageQueue 实现——这比看 Build.VERSION.SDK_INT 更关键。
+对 App 性能分析而言，`SDK_INT`、targetSdk、ART module、kernel release 和设备配置都是独立变量。Android 17 设备上的 targetSdk 36 App 按公开行为合同保留 legacy MessageQueue，targetSdk 37+ App 才进入新兼容路径。
 
 ## ART 的持续优化方向
-ART 这些年的优化可以沿着三条线来看：编译策略、GC、构建期工具链。
+ART 的性能改动可以沿编译状态、垃圾回收和 DEX 组织三条线阅读。
 
 ### 编译策略:从 AOT 走向 Profile-Guided
-纯 AOT 的问题很明确。安装成本高、产物大,许多冷门方法提前编译收益很低。Android 7.0 之后,ART 把解释执行、JIT 和后台 AOT 编译揉到一起,先靠运行时收集热路径,再决定哪些方法值得编译。
+官方 ART 配置文档给出的 Pixel 流程是：安装时若带 Cloud Profile，ART 对 profile 中的方法做 AOT；其余方法先解释执行，热点方法再 JIT；设备空闲充电时，后台编译服务根据本地 profile 与 cloud profile 重新编译。
 
-这条路继续往前走,就有了 Google Play 参与的 Cloud Profiles 和开发者可控的 Baseline Profiles。官方 Baseline Profiles 文档给出的表述很清楚,Baseline Profiles 可以让关键代码路径从第一次启动开始就避免解释执行和 JIT,很多应用测得的执行速度提升大约在 30% 左右。官方同时强调,发布 Baseline Profile 之后,优化生效会明显快于"只依赖 Cloud Profiles"的情况。它对应前面三条交付方式里的第三条:Play 安装期编译流程,而非 Mainline。
+Baseline Profile 让开发者把关键代码路径随应用发布，减少首轮使用等待动态 profile 成熟的时间。官方文档中的“约 30%”是一些应用常见的代码执行速度改善，不是冷启动总时长的固定收益。I/O、Binder、资源加载或网络占主导时，profile 无法消除这些等待。
 
 ### GC：从 Concurrent Copying 到 Generational CMC
 
-Dalvik 时代 GC 的问题很集中：STW 时间长、碎片化重、前台线程容易被直接停住。ART 后续通过 Concurrent Copying、并发标记和对象搬移，一直在往"少打断前台"这个方向迭代。
+Android 17 release notes 将 generational garbage collection 列为性能变化：Concurrent Mark-Compact 优先执行频繁、成本较低的 young collection。`android-17.0.0_r1` 的 `mark_compact.cc` 可以核对三处实现边界：
 
-Android 16 及之前版本的 ART 主要使用 Concurrent Copying（CC）GC，`art/runtime/gc/collector/concurrent_copying.cc` 对全堆做一遍并发标记和搬移。generational 模式在 Android 16 的源码中已经存在——`art/runtime/gc/collector/young_cc.cc` 和 `kEnableGenerationalCC` 标记位，但默认关闭，属于实验特性。
+- `YoungMarkCompact::RunPhases()` 让主 collector 进入 young-generation 路径；
+- `ShouldUseGenerationalGC()` 读取 ART flag 与 `persist.device_config.runtime_native_boot.use_generational_gc`；
+- 该属性的代码默认值是 `true`，虚拟设备和配置开关仍可改变行为。
 
-Android 17 的关键变化有两层。第一，generational GC 正式从实验标记位升级为默认开启的运行时行为。Concurrent Mark-Compact（CMC）collector 接管了 generational 回收通道，young generation 的回收变成高频低开销操作，old generation 的 full GC 触发频率相应降低。第二，CMC 本身在设计上也和 CC 不同——CMC 在标记完成后做对象搬移时更侧重 compact，而不是 CC 的简单 copy。Android 17 release notes 对这套机制的描述口径是"frequent, low-cost" young collection，没有给出放之四海而皆准的暂停时间数字。所以在性能分析时只保留机制层判断，实际暂停时间必须在具体设备和 workload 上实测。更细的 GC 演进可以继续看 §4.8《ART 分代垃圾回收与 GC 暂停优化》。
+因此，“Android 17 默认具备 generational CMC”可以作为平台锚点；某次 trace 使用了哪类 GC，还要检查 ART event、进程配置和设备 module build。暂停时长、回收频率与内存收益必须在目标 workload 上测量，官方 release notes 没有给出适用于所有设备的固定数字。
 
 ### 工具链：R8、D8 与 Startup Profiles
 
-除了运行时本身，Google 还在持续优化代码到达运行时之前的形态。R8 负责 shrink、optimize、inline、merge，目标是让 DEX 更小、更整齐。DEX 体积小了，冷启动时 fault 进来的页面就少，dex2oat 和加载阶段的负担也会跟着变轻。
+R8 执行 shrink、optimization 和 class/member rewriting，D8/R8 生成 DEX。体积减小不保证冷启动等比例变快，因为收益还受类加载顺序、压缩、存储、page cache 和编译状态影响。
 
-Startup Profiles 负责编译期的进一步收束。和 Baseline Profiles 配合时，一个管安装期编译关键代码路径，一个管 DEX 布局阶段把启动热点排到更容易被顺序读取的位置。两者放一起，才是今天 Android 启动优化工具链的完整图景。
+Baseline Profile 指定应提前编译的关键路径；Startup Profile 的重点是 DEX layout，让启动期类和方法在文件中靠近，减少启动阶段的 major page fault。构建后应检查 APK/AAB 中的 profile、安装后的编译状态，再用 Macrobenchmark 与 Perfetto 确认效果。
 
 ## Framework 层的性能优化实践
-Google 在 Framework 层的很多工作没有单独冠上 Project 名字,但卡顿、启动、切换速度这些体验,往往会受这些改动影响。
+Framework 改动经常改变 App、system_server 和 native service 之间的等待关系。阅读时要同时看公开行为合同、同一 tag 的实现和 trace 证据。
 
 ### View 系统:持续减主线程负担
-View 系统历史太久,Google 这些年一直在做两件事,减少不必要的 measure/layout/invalidate 传播,以及把更重的绘制工作继续往 RenderThread 挪。
+View 绘制不能只看 UI thread。主线程处理 input、animation、measure、layout 和 display-list recording；RenderThread 消费渲染节点并驱动 GPU 工作；SurfaceFlinger 负责系统合成。RenderThread 减少了一部分主线程绘制工作，却没有移走 View 树遍历、业务代码和同步点。
 
-从 Android 5.0 引入 RenderThread 之后，主线程更多在做 DisplayList 记录，OpenGL 或 Vulkan 指令提交不再堵在 UI 线程上。这个变化对性能分析的意义很大：主线程慢只说明一部分问题，RenderThread 和合成侧能不能赶上 VSync，才真正决定用户会不会看见掉帧。
+诊断掉帧时应按 Frame Timeline 区分 App deadline 与 SurfaceFlinger deadline，再查看 UI thread、RenderThread、GPU fence 和合成阶段。只优化 `onDraw()` 或只看主线程 CPU 都可能漏掉瓶颈。
 
 ### Handler / MessageQueue：legacy 队列和 Android 17 新队列的区别
-MessageQueue 的性能问题,在于"很多生产者在并发入队"和"Looper 必须按消息到期时间有序取出"这两件事被塞进了同一套队列结构里。
+Legacy MessageQueue 用一把 monitor 保护按 `when` 排序的单链表。生产者插入的最坏复杂度是 O(N)，Looper 取队首是 O(1)；生产者和消费者访问同一状态时可能发生锁竞争。
 
-在 legacy locked queue 里,这个问题通常表现为单锁竞争。Looper 在 `next()` 里遍历并取出到期消息,生产者在 `enqueueMessage()` 里按 `when` 插入单链表,两边都会碰到同一份队列状态。分析旧实现时,可以说它围绕一把锁序列化访问;源码引用应指向 `core/java/android/os/MessageQueue.java`（android-17.0.0_r1）,不能只引用 `Handler.java`。`Handler` 只是暴露 `sendMessage()`、`post()` 这些 API 的封装层,队列实现应该看同版本下的 `core/java/android/os/Looper.java`（驱动 `next()` 取消息）和 `core/java/android/os/MessageQueue.java`（管理消息入队与链表维护）。
+Android 17 的 DeliQueue 将并发入队与单线程排序分开：
 
-到了 Android 17，这个前提就不能再直接套用了。Android 17 release notes 和 behavior changes 都明确写到，targetSdk 37 及以上应用会收到新的 lock-free `android.os.MessageQueue`，官方 DeliQueue 博客也确认了 lock-free 设计方向与性能收益。android-17.0.0_r1 的 `core/java/android/os/` 目录下有两条实现路径：`LegacyMessageQueue/` 和 `CombinedDeliMessageQueue/`。`CombinedDeliMessageQueue` 上的 `@EnabledAfter(targetSdkVersion = android.os.Build.VERSION_CODES.BAKLAVA)` 对应 targetSdk 37+ 的兼容门槛——低于这个 targetSdk 的应用仍然走 legacy 路径。`CombinedDeliMessageQueue` 是 DeliQueue 无锁设计的落地实现。
+- 生产者用 CAS 向 Treiber stack 入队，调用线程的入队复杂度为 O(1)；
+- Looper 将新消息整理进自己独占的 min-heap，处理成本按官方说明摊销为 O(log N)；
+- 跨线程移除先写 tombstone，再由 Looper 清理结构；
+- idle handler 与 file-descriptor listener 等辅助状态仍使用各自的锁，因此“lock-free MessageQueue”不代表类中没有任何 `synchronized`。
 
-Google 在 DeliQueue 技术博客里给出的主线也和这个拆分一致,生产者尽量走无锁入队,Looper 再在自己的视角里整理待执行消息。对我们做性能分析来说,这个变化的意义是,不能再看到 `Handler.post()` 就默认假定为"老式单锁链表"。必须先分清设备系统版本和 App 的 targetSdk,再决定该看 legacy locked queue 还是新的 concurrent queue。更细的实现与兼容边界,可以继续看 §1.13《MessageQueue 机制与 DeliQueue 无锁优化》。
+在 `android-17.0.0_r1` 中，源码由构建变体提供两条路径：
+
+- `LegacyMessageQueue/MessageQueue.java` 是兼容实现；
+- `CombinedDeliMessageQueue/MessageQueue.java` 同时含 legacy 与 DeliQueue 代码，`USE_NEW_MESSAGEQUEUE` 标注 `@EnabledAfter(targetSdkVersion = BAKLAVA)`，`computeUseDeliQueue()` 还会读取 compat change 与实验 flag。
+
+公开行为合同是 Android 17 上 targetSdk 37+ App 使用新实现。system_server 会在创建 main Looper 前调用 `MessageQueue.setUseDeliQueue(true)`，App 进程则由启动参数决定传入值；测试或 flag 还可能改变选择。`getImplName()` 是 `@hide` 诊断接口，普通 SDK App 不应依赖它。分析 `Handler.post()` 时，至少记录系统 build 与 targetSdk，并用 MessageQueue dump 或 Perfetto contention 证据确认实现。
 
 ### Binder：线程池与优先级继承的时间线
-Binder 线程池和优先级继承的版本演进，社区里一直有简化说法，比如"Android 8 动态扩展线程池，Android 10 才有优先级继承"。实际情况要更细致一些。
+`ProcessState.cpp` 将 `DEFAULT_MAX_BINDER_THREADS` 设为 15，并用 `BINDER_SET_MAX_THREADS` 配置 driver。调用 `startThreadPool()` 还会主动创建一条 main pooled thread；`getThreadPoolMaxTotalThreadCount()` 的基础计算正是 `1 + mMaxThreads`。工程里常说的“默认 16 条”由此而来。
 
-先看线程池。AOSP `frameworks/native/libs/binder/ProcessState.cpp`（android-17.0.0_r1 稳定锚点）很早就把默认 worker 上限定义成 `DEFAULT_MAX_BINDER_THREADS = 15`，并通过 `BINDER_SET_MAX_THREADS` 把这个上限交给 driver。也就是说,Binder 线程池从早期就是"driver 按需唤醒或拉起 worker,userspace 负责设置上限"的模型。工程里常说的"16 线程"，大多是把发起调用的线程也口语化算进去了；driver 默认 worker 上限仍是 15；加上发起调用的线程本身，同一时刻最多有 16 条并发路径参与同一次 Binder 事务 round-trip。
+这 16 条属于目标进程的 Binder thread pool 容量，不包含某个客户端发起事务的线程，也不表示一次事务会并行使用 16 条线程。进程还可能直接调用 `IPCThreadState::joinThreadPool()`；源码说明这种额外 join 无法由 `mKernelStartedThreads` 完整统计。排查线程池饥饿时，应从目标进程实际 thread state、Binder transaction 排队和 runnable 延迟取证。
 
-再看优先级继承。官方 binder IPC 文档写得很明确,binder driver 一直支持 nice priority inheritance。Android 8 借 Treble 引入 `/dev/hwbinder` 域,同时把 real-time priority inheritance 加进 binder driver;到了 Android 10,Stable AIDL 又让满足稳定性要求的 HAL 可以回到 `/dev/binder`。准确的演进线是:早期已有 nice priority inheritance,Android 8 加入 RT inheritance 与 hwbinder 域,Android 10 通过 Stable AIDL 重新整理 binder domain 边界。
+在 `android17-6.18-2026-06_r6` 的 `drivers/android/binder.c` 中，优先级处理有几项限制：
 
-优先级继承在 binder driver 里的具体工作方式：发起端线程通过 `ioctl(BINDER_WRITE_READ)` 写入事务时，driver 在 `binder_transaction` 结构里记录下发起端线程的调度策略与优先级（`sender_priority` / `sender_policy`）。当 driver 选中目标端线程处理该事务时，先把目标线程的调度优先级临时提升到发起端的水平，再唤醒它执行。事务处理完毕后目标线程恢复原来的调度参数。优先级继承的粒度和有效期绑定在一次 binder 事务上——前一个事务的高优先级不会泄露到后一个无关事务里。在 Perfetto trace 中观察 binder 事务时，如果看到目标端线程长时间以高优先级的 nice 值运行，可以回头检查该线程是否在处理来自高优先级客户端的重事务。
+- 只有同步事务且调用线程使用 driver 支持的调度策略时，事务才记录调用线程的 policy 与 priority；oneway 事务使用目标进程默认优先级；
+- `binder_transaction_priority()` 还会合并 Binder node 的 minimum priority；
+- RT policy 只有 node 设置 `inherit_rt` 时才保留，否则回退到 `SCHED_NORMAL`；
+- driver 在处理事务时保存目标线程原优先级，并在 reply、错误或回到等待路径时恢复。
 
-把这条时间线理清楚之后，再看 Perfetto 里的 Binder track，就不会把线程池耗尽、调度延迟和优先级反转搅在一起了。Binder 的具体机制还可以回看 §1.4《Binder IPC 机制与性能影响》。
+Perfetto 中的高 nice/RT server slice 要结合 transaction 类型和 Binder node 配置解释。长事务、线程池满载、CPU 调度延迟与优先级继承是四类不同问题。
 
 ### 窗口管理:BLASTBufferQueue 优化 buffer 与 transaction 的同帧提交
-BLASTBufferQueue 常被简化成"App 直接把 buffer 发给 SurfaceFlinger"。源码里的路径更具体（android-17.0.0_r1 可稳定验证）：`BLASTBufferQueue` 仍然会创建内部的 `BufferQueueCore`、producer 和 consumer，BufferQueue 基础设施还在。它把 buffer acquire 与 `SurfaceControl.Transaction` 的提交时机绑到同一个 frame number 上。`BLASTBufferQueue.cpp` 里能直接看到这条主线：`syncNextTransaction()` → `mergeWithNextTransaction()` → `applyPendingTransactions()` 的完整调用链。`SurfaceControl.java` 里也有 `onMergeWithNextTransaction()` 这条 Java 侧钩子。
+BLASTBufferQueue 没有删除 BufferQueue。`BLASTBufferQueue.cpp` 仍创建 `BufferQueueCore`、producer 与 consumer；它增加的是 buffer acquire 与 `SurfaceControl::Transaction` 按 frame number 协调的机制。
 
-跨进程同步场景还要把 WMS 放进来。窗口尺寸、裁剪、层级变化通常由 SystemServer 侧的 WMS 管理,App 侧 buffer 与窗口状态相关的 transaction 需要经由 `SurfaceControl.Transaction` / `WindowContainerTransaction` 参与 WMS 的统一调度。WMS 侧的 `BLASTSyncEngine` 会收集参与同一次 sync 的窗口 transaction,合并后再提交给 SurfaceFlinger。这样,内容 buffer、窗口几何变化和层级 transaction 更容易落在同一帧,减少 buffer latch 与 transaction apply 之间的错位和额外等待。窗口事务这条线如果要继续往下追,可以接着看 §2.12《Window Manager Service 与窗口管理》。
+同一文件中的 `syncNextTransaction()`、`mergeWithNextTransaction()` 和 `applyPendingTransactions()` 分别展示等待下一 buffer transaction、按 frame number 保存待合并 transaction、取得并应用 pending transaction。它们共同说明机制，不能写成每次提交都严格按这三个函数直接顺序调用。
+
+跨窗口同步还要看 WMS 的 `BLASTSyncEngine`。它收集参与 sync group 的窗口 transaction，在 ready 后合并并提交。由此减少内容 buffer 与窗口几何/层级状态跨帧错位的概率；能否同帧呈现仍受生产者出帧、fence、GPU 和 SurfaceFlinger deadline 影响。
 
 ## Google 官方的 Performance 工具与文档体系
-Google 的性能思路最终都会落到工具和文档上。我们真要把这套思路用在工程里,入口基本就这几类。
+工具应按问题阶段选择，不能用同一份 profiler 数据同时代替基准、归因和线上监控。
 
 ### 文档入口
-官方文档入口里最常用的还是三个。
-
-第一是 `developer.android.com/topic/performance`,这是总入口,启动、渲染、内存、网络、电池这些主题都从这里发散。第二是 Baseline Profiles 与 Macrobenchmark 相关文档,它们对应的是 Google 当前最主推的 App 侧性能工作流。第三是 Android 各版本的 release notes 与 behavior changes,这两类页面负责回答"这一版系统新增了什么"和"targetSdk 提上去之后什么行为会变"。Android 17 的 lock-free MessageQueue 就是典型例子,release notes 讲能力变化,behavior changes 讲适用边界。
+`developer.android.com/topic/performance` 是 App 性能总入口。版本 release notes 说明平台能力，behavior changes 说明运行版本与 targetSdk 门槛，`source.android.com` 说明系统架构与设备集成，AOSP tag 则用于验证实现。DeliQueue 就需要把四层资料放在一起读。
 
 ### 度量、分析、优化三类工具
-Google 的性能工具大致可以分成三类。
 
-度量工具回答"有没有问题"。Jetpack Benchmark 负责稳定地测代码段，Macrobenchmark 负责复现冷启动、滚动、页面切换这些用户动作，Android Vitals 负责反馈真实用户到底有没有在现场感知到问题。
+- **度量**：Microbenchmark 测进程内代码路径，Macrobenchmark 测启动、滚动和切换等应用场景，Android Vitals 观察生产环境分布。
+- **分析**：Perfetto 观察跨线程、跨进程时序，simpleperf 分析 native CPU sample，Android Studio Profiler 用于交互式检查单个进程。
+- **优化与交付**：Baseline/Startup Profiles 改善编译与 DEX layout，R8 缩减和优化代码，App Startup 管理初始化依赖。
 
-分析工具回答"问题在哪"。Android Studio Profiler 适合开发阶段的单进程定位，Perfetto 适合看跨线程、跨进程、跨系统服务的完整时序，simpleperf 更适合 native 代码热点和调用栈分析。Perfetto 的方法论在第 13 章有完整展开。
+### 一轮可审计的优化
 
-优化工具回答"怎么修"。Baseline Profiles 和 Startup Profiles 负责把关键代码路径尽早变成机器码，R8 负责把 DEX 组织得更小更紧凑，App Startup Library 负责把初始化依赖理清楚，避免所有工作都挤进 `Application.onCreate()`。
-
-### 反复回到五件事
-
-Google 在 I/O、Codelab 和官方文档里反复强调的原则并不花哨，常见的就五件。
-
-第一，不要在主线程做阻塞操作。第二，初始化按用户实际的使用顺序来排，不要在启动时全量摊开。第三，优先优化关键路径，别把精力平均铺到每一行代码上。第四，一定要在资源更紧的设备上测——旗舰机上的"没感觉"往往说明不了什么。第五，优化前后都要量化，没有基线就谈不上收益。
-
-这些原则看起来像常识，但它们恰好解释了为什么 Google 会同时推动系统层优化和开发者工具链优化：系统层提高平台默认能力，开发者工具要求 App 把这些能力用到位。
+1. 用用户动作定义 Critical User Journey，并写清起点、终点与成功条件。
+2. 建立 release/profileable 构建基线，记录设备、温度、刷新率、编译状态和样本分布。
+3. 用 trace 或 sample 将长尾归因到线程、进程、锁、I/O、GC、GPU 或系统服务。
+4. 每次修改一个主要变量，并同时检查目标指标、资源成本和稳定性指标。
+5. 把同一指标放进 CI 与生产监控，发现回归时保留版本、设备和 trace 证据。
 
 ## 不同设备类型的优化策略差异
 
-前面的章节主要围绕平台机制和工具链展开，这些方法在不同硬件上的效果差异很大。同一个结论换到中端机或低端机上常常失效。按设备层级拆开看，每一层的主约束和优化重心都不一样。
+“旗舰、中端、低端”缺少稳定的技术定义，RAM 数量也不能代表 CPU、存储和散热能力。更可靠的测试样本按瓶颈维度选设备：
 
-**旗舰机（8-16 GB RAM，旗舰 SoC）**：CPU 和 GPU 算力通常不是主约束，真正限制体验的往往是调度延迟和渲染管线时序。优化重点应放在主线程阻塞分析、Binder 调用链压缩、RenderThread 负载检查这些方向。Macrobenchmark 冷启动在旗舰机上跑出来的数字可能很漂亮，但要警惕"旗舰机数据掩盖了真实问题"——同一组 benchmark 必须在中端机上复现一遍才算数。
+| 维度 | 需要记录 | 容易暴露的问题 |
+|---|---|---|
+| CPU | 核心拓扑、频率、调度与 thermal state | 主线程 runnable delay、JIT/编译、锁竞争 |
+| 内存 | 物理内存、swap/zram、memory pressure | GC、LMK、后台重启、大对象峰值 |
+| 存储 | 文件系统、顺序/随机读取、page cache 状态 | 冷启动 fault、数据库与资源加载 |
+| 图形 | GPU、驱动、分辨率、刷新率 | RenderThread、GPU fence、合成 deadline |
+| 系统 | build、ART module、kernel、targetSdk | 行为门槛和平台差异 |
 
-**中端机（4-6 GB RAM，中端 SoC）**：内存压力和 CPU 频率波动是中端机最常见的约束。GC 频率和 big cluster 调度延迟对帧率的影响比旗舰机大一个数量级。中端机的优化重心应从"渲染管线精调"转向"内存分配收敛"——检查是否在主线程频繁分配临时对象、是否在启动阶段一次性初始化了大量不急需的 SDK、DEX 布局是否导致冷启动时大量 page fault。Baseline Profiles 在中端机上的收益通常比旗舰机更明显，因为 JIT 在低频核心上运行的解释执行开销更大。
-
-**低端机 / Android Go Edition（≤2 GB RAM）**：低端机的主约束是常驻内存和后台工作的总量。Android Go Edition 对系统服务做了裁剪、对预装软件常驻做了硬约束，但这些系统层优化不会自动解决 App 侧的问题。应用端在低端机上的优化策略可以概括为三条：冷启动只加载首页必需的类和方法（借助 Startup Profiles 排 DEX 布局）；后台线程池大小和优先级必须显式控制，不能依赖系统默认值；大对象分配（Bitmap、大 JSON 解析）必须能做就做、能放后台就放后台，避免在前台触发 GC 同时引发掉帧。
-
-这条线的意义在于提醒一个事实：旗舰机上跑出来的"优化收益不明显"，换到中端和低端机上可能就是"肉眼可见的卡顿消失"。反过来，只对着低端机做极限优化、不验证旗舰机上的调度时序，也可能导致"内存降了但渲染卡了"的结果。
+Android Go 设备应纳入低资源样本，但不能代替整个长尾。高刷新率高分辨率设备也可能比低价设备更容易暴露 GPU 与帧预算问题。每个优化结论至少要说明在哪些维度上验证过。
 
 ## Google 内部的性能测试基础设施
-公开信息里能看到的 Google 内部性能基础设施主要分三类。
+公开资料能确认的范围有限：
 
-第一类是 AOSP 与平台测试仓库里的基准测试,用来守住启动时间、渲染耗时、系统服务行为这些基础指标。第二类是持续回归监控,每次平台代码变更之后都要确认关键性能指标没有被悄悄拉坏。第三类是覆盖不同 SoC、不同内存规模、不同分辨率配置的设备池,避免性能结论只在单一测试机上成立。
+- DeliQueue 团队用 BigTrace 在大量 Perfetto trace 上查询 MessageQueue contention，并在模拟器和真实硬件上运行 stress test；
+- 内核 AutoFDO 团队在受控实验室用 simpleperf、ARM ETE/TRBE 和代表性 App workload 采集 profile，再比较 profile、binary、benchmark 与稳定性；
+- AOSP 仓库提供 unit test、integration test、benchmark 与兼容性测试基础设施。
 
-这部分公开细节不算多,这里只保留工程上能确定的结论,不去硬写内部平台名称和实现细节。
+这些信息支持“数据发现—受控修改—持续验证”的流程，不足以描述 Google 内部全部设备池、门禁阈值或发布系统。没有公开来源的内部平台名称和规模不应写入正文。
 
 ## 常见问题与误区
 ### "系统已经越来越快了,App 端不用太管"
-系统层优化会抬高默认上限,但它不会替我们删掉主线程阻塞 I/O,也不会自动把启动阶段那些不该同步做的初始化搬走。Google 的系统优化更像乘数,前提还是 App 自己的结构别太差。
+系统优化可以缩短公共路径，无法替应用移除主线程 I/O、同步 Binder 和过早初始化。平台升级后仍要重新测量原来的 Critical User Journey，因为编译状态、targetSdk 行为和设备配置也可能变化。
 
 ### "Baseline Profiles 能包治启动慢"
-Baseline Profiles 解决的是"关键代码路径尽早编译成机器码",但启动优化不等于只做编译。如果启动慢的根因是主线程 I/O、同步 Binder、数据库初始化、第三方 SDK 常驻初始化,那它只能缓解一部分,不可能替代架构和线程模型层面的整理。
+Baseline Profiles 让关键路径更早获得合适的编译状态。主线程 I/O、数据库锁、同步 Binder、资源解码和网络等待仍需分别处理。检查 profile 是否安装成功后，还要用 trace 比较编译 CPU time 与启动总时长。
 
 ### "升级 Android 版本，性能自然会整体变好"
-大方向没错，但具体场景仍然要实测。新系统会带上更好的运行时、调度和系统工具，也可能同时引入新的行为限制、安全检查或 targetSdk 适配成本。Google 每一版都在优化平台，也每一版都在改平台规则——这两件事是一起发生的。
+新系统可能改进 ART、MessageQueue 或图形管线，也可能增加安全检查、行为限制和迁移成本。结论必须绑定 App targetSdk、设备 build、ART module、kernel、编译状态与测试场景。
 
 ## 参考资料
 - AOSP / 官方源码路径
-  - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java`(VSync 驱动的帧调度入口)
-  - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Looper.java`(Looper 驱动 MessageQueue)
-  - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/LegacyMessageQueue/MessageQueue.java`(legacy MessageQueue 实现)
-  - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java`(Android 17 DeliQueue 实现)
-  - `https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/ProcessState.cpp`(`DEFAULT_MAX_BINDER_THREADS` / `BINDER_SET_MAX_THREADS`)
-  - `https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp`(完整调用链：`syncNextTransaction()` → `mergeWithNextTransaction()` → `applyPendingTransactions()`)
-  - `https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/include/gui/BLASTBufferQueue.h`(BLAST 的同步接口定义)
-  - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java`(`mergeWithNextTransaction` Java 侧钩子)
-  - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java`(WMS 侧 BLAST sync 收集与提交)
-  - `https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/WindowContainerTransaction.java`(窗口事务跨进程传递对象)
+  - [Choreographer（VSync 驱动的帧调度入口）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java)
+  - [Legacy MessageQueue](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/LegacyMessageQueue/MessageQueue.java)
+  - [Combined DeliQueue MessageQueue](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java)
+  - [ActivityThread 的 DeliQueue 启动参数](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+  - [SystemServer 启用 DeliQueue](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/java/com/android/server/SystemServer.java)
+  - [ART MarkCompact / YoungMarkCompact](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc)
+  - [ProcessState Binder thread pool](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/ProcessState.cpp)
+  - [BLASTBufferQueue](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)
+  - [WMS BLASTSyncEngine](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java)
+  - [Binder driver（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)
 - 官方文档
-  - `https://developer.android.com/topic/performance`
-  - `https://developer.android.com/topic/performance/baselineprofiles/overview`
-  - `https://developer.android.com/about/versions/17/release-notes`
-  - `https://developer.android.com/about/versions/17/behavior-changes-17`
-  - `https://source.android.com/docs/core/ota/modular-system`
-  - `https://source.android.com/docs/core/architecture/treble`
-  - `https://source.android.com/docs/core/architecture/hidl/binder-ipc`
+  - [Jelly Bean：VSync、triple buffering 与 touch latency](https://developer.android.com/about/versions/jelly-bean)
+  - [KitKat：512 MB 设备与低内存优化](https://developer.android.com/about/versions/kitkat)
+  - [App performance guide](https://developer.android.com/topic/performance/overview)
+  - [Baseline Profiles overview](https://developer.android.com/topic/performance/baselineprofiles/overview)
+  - [Android 17 release notes](https://developer.android.com/about/versions/17/release-notes)
+  - [Android 17 behavior changes](https://developer.android.com/about/versions/17/behavior-changes-17)
+  - [Android runtime and Dalvik](https://source.android.com/docs/core/runtime)
+  - [Configure ART](https://source.android.com/docs/core/runtime/configure)
+  - [Partitions 与 Treble 的 system/vendor 边界](https://source.android.com/docs/core/architecture/partitions)
+  - [Mainline modules](https://source.android.com/docs/core/ota/modular-system)
+  - [Android common kernels](https://source.android.com/docs/core/architecture/kernel/android-common)
+  - [Android 17 GKI 6.18 release builds](https://source.android.com/docs/core/architecture/kernel/gki-android17-6_18-release-builds)
+  - [16 KB page size](https://source.android.com/docs/core/architecture/16kb-page-size/16kb)
+  - [Binder IPC](https://source.android.com/docs/core/architecture/hidl/binder-ipc)
 - 官方博客
-  - `https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html`
-  - `https://android-developers.googleblog.com/2026/03/BoostingAndroidPerformanceIntroducingAutoFDO.html`
+  - [Android 17 lock-free MessageQueue](https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html)
+  - [AutoFDO for the Android kernel](https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html)
 - 交叉阅读
   - §1.12《AutoFDO 反馈导向编译优化》
   - §1.13《MessageQueue 机制与 DeliQueue 无锁优化》
   - §2.12《Window Manager Service 与窗口管理》
-  - §16.4《Android 17 + Kernel 6.12 系统级性能优化》
+  - §16.4《Android 17 + Kernel 6.18 系统级性能优化》
