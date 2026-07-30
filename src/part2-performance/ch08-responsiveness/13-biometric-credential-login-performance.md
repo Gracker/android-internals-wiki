@@ -71,168 +71,320 @@ gap_source: "AOSP结构/官方文档/素材驱动"
 
 <!-- outline-end -->
 
-登录慢经常被归成“生物识别慢”或“passkey 慢”，但一次登录通常经过凭据发现、系统 UI、用户动作、传感器、Keystore/KeyMint、网络校验和页面跳转。每一段的责任方不同，能优化的动作也不同。本文把 `BiometricPrompt` 和 Credential Manager 放到同一条登录流程里，目标是把用户等待拆成可观测、可回退、可复盘的阶段。
+登录页只记录一个 `login_cost_ms`，排查时几乎没有方向。一次凭据登录可能包含 provider 查询、系统选择器、用户停留、传感器认证、passkey assertion、服务端验证和会话初始化；一次会话内重新授权又可能只经过 `BiometricPrompt`、Keystore 与业务操作。两个流程都会出现系统认证界面，调用者、数据边界和可观测信号却不同。
 
-Android Developers 已把初次登录推荐入口转向 Credential Manager；Biometric Prompt 更适合后续重新授权，或者需要自定义认证 UI 文案和加密对象的场景。[已验证: 官方文档, developer.android.com/identity/credential-manager][已验证: 官方文档, developer.android.com/identity/sign-in/biometric-auth]
+本文以 Android 17（API 37）的平台源码标签 `android-17.0.0_r1` 为基线，内核侧以 `android17-6.18-2026-06_r6` 为基线。应用初次登录优先使用 Credential Manager；会话内的敏感操作确认可以使用 Credential Manager 或 AndroidX `BiometricPrompt`。这一分工来自当前 [Android 生物认证指南](https://developer.android.com/identity/sign-in/biometric-auth)，也能避免应用自行拼装账号选择与认证界面。
 
-## 登录流程按阶段归因
+## 两条流程，两个责任边界
 
-面向性能排查时，不要把一次点击后的所有时间合成 `login_cost_ms`。这个总耗时只能说明用户等了多久，不能说明慢在哪里。
+登录与重新授权可以共享同一个 `flow_id` 体系，但不要共享同一组阶段名称。下图中的实线是 Credential Manager 登录，虚线是会话内重新授权：
 
-| 阶段 | 典型入口 | 责任边界 | 观测口径 |
+```mermaid
+flowchart LR
+    A["用户触发操作"] --> B["AndroidX Credential Manager"]
+    B --> C["CredentialManagerService"]
+    C --> D["Credential Provider"]
+    D --> E["系统选择或认证 UI"]
+    E --> F["Credential 返回应用"]
+    F --> G["服务端验证"]
+    G --> H["写入会话并进入业务页"]
+
+    A -. "会话内重新授权" .-> I["AndroidX BiometricPrompt"]
+    I --> J["BiometricService / AuthSession"]
+    J --> K["SystemUI 与传感器服务"]
+    K --> L["认证回调"]
+    L --> M["可选 Keystore / KeyMint 操作"]
+    M --> G
+```
+
+Credential Manager 返回的 `Credential` 仍需由应用和服务端完成业务验证。`BiometricPrompt` 的成功回调只说明平台接受了本次认证；它不会替应用建立账号会话，也不会替服务端验证 passkey assertion。
+
+性能拆分建议使用下列口径：
+
+| 阶段 | 应用入口或完成点 | 应用能直接观测什么 | 不应从该阶段推断什么 |
 |---|---|---|---|
-| 凭据发现 | `CredentialManager.getCredential()` / `prepareGetCredential()` | App 发起请求，系统服务选择 provider，provider 查询可用凭据 | App trace、provider 类型、候选数量、异常类型 |
-| 系统认证 UI | `BiometricPrompt.authenticate()` 或 Credential Manager selector 内嵌认证 | SystemUI 展示 prompt，BiometricService 仲裁 sensor 与 device credential | prompt show、dismiss、error code、取消来源 |
-| 用户动作与传感器 | 指纹、面部、PIN / pattern / password | 用户交互、传感器 HAL、锁定策略、环境光和屏幕状态 | `onAuthenticationSucceeded()` / `onAuthenticationError()` 时间、错误码分布 |
-| 加密操作 | `CryptoObject`、`Cipher`、`Signature`、passkey assertion | Keystore / KeyMint、TEE / StrongBox、provider 实现 | init/sign/doFinal 耗时、安全级别、payload、失败码 |
-| 服务端校验 | token / assertion / challenge verify | 网络、后端、风控、账号状态 | 请求耗时、HTTP 状态、风控拒绝原因 |
-| 会话建立与跳转 | 写入本地会话、拉取用户态、进入首页 | App 业务代码、数据库、缓存、首屏渲染 | session write、首页首帧、业务错误 |
+| 凭据请求 | `getCredential()` 开始到返回或抛出异常 | 请求类型、总等待、结果类型、异常类 | provider 查询时长、候选数量、系统 UI 出现时间 |
+| 生物认证请求 | `authenticate()` 开始到成功或终态错误 | 请求时间、认证类型、错误码、调用方取消原因 | 对话框精确出现时间、具体指纹或人脸传感器 |
+| 加密操作 | `Cipher.init`、`Signature.initSign`、`doFinal`、`sign` | 每次调用耗时、异常家族、密钥策略 | 用户停留时间、服务端耗时 |
+| 凭据验证 | Credential 返回到服务端响应 | 网络耗时、HTTP 类别、验证或风控结果 | SystemUI 或传感器性能 |
+| 会话就绪 | 服务端通过到目标页面首帧 | 本地写入、数据加载、首帧时间 | 前面认证阶段的耗时 |
 
-这张表决定埋点切法。`CredentialManager` 返回慢，不一定是 provider 慢；可能是用户在系统 UI 上停留。`BiometricPrompt` 成功回调慢，也不一定是传感器慢；如果 App 在回调里串行做 KeyMint 签名、网络校验和 JSON 解析，用户看到的是同一个等待窗口。
+`CredentialManager.getCredential()` 的等待包含用户在系统 UI 上的操作。`BiometricPrompt` 的请求到回调也包含用户停留。没有平台专用观测能力时，应用只能把它们命名为“请求到结果”，不能命名为“provider 查询耗时”或“传感器识别耗时”。
 
-8.12 节已经展开 Keystore/KeyMint 的调用路径。这里沿用它的分段方式：登录章节只关心认证 UI、凭据入口和阶段归因，不重复解释 `keystore2`、KeyMint HAL 和 StrongBox 的细节。
+## BiometricPrompt：从应用调用到系统回调
 
-## BiometricPrompt 的启动、取消与回调线程
+AndroidX `BiometricPrompt` 是应用侧推荐封装。Android 9（API 28）及以上使用系统认证界面；AndroidX 还处理兼容版本与生命周期接续。平台 `BiometricPrompt.authenticate()` 的文档说明，该调用会准备生物识别硬件、显示系统对话框并开始扫描；“调用返回”不表示界面已经可见。
 
-平台 `BiometricPrompt.authenticate(CryptoObject, CancellationSignal, Executor, AuthenticationCallback)` 文档写明，这个调用会预热生物识别硬件、展示系统对话框并开始扫描。调用结束点包括认证成功、认证错误、用户关闭系统对话框或调用方取消；使用 `CryptoObject` 时，对话框关闭后该对象会失效。[已验证: 官方文档, developer.android.com/reference/android/hardware/biometrics/BiometricPrompt]
+Android 17 源码把这段工作分到多个进程和对象：
 
-这条 API 对性能有三个直接影响。
+1. Framework 的 [`BiometricPrompt.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/biometrics/BiometricPrompt.java) 在 `authenticateInternal()` 中调用 `IBiometricService.authenticate()`，并把 `CancellationSignal` 连接到返回的请求 ID。
+2. `system_server` 中的 [`BiometricService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/biometrics/BiometricService.java) 接收 Binder 请求后，将 `handleAuthenticate()` 投递到服务 Handler。请求会经过权限、前台状态、认证器可用性和注册状态检查。
+3. [`AuthSession.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/biometrics/AuthSession.java) 保存一次认证会话的状态，并通过状态栏服务请求 SystemUI 显示认证界面。
+4. SystemUI 的 [`AuthController.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/biometrics/AuthController.java) 实现 `showAuthenticationDialog()`，处理界面展示、消失和结果回传。
+5. 每个生物传感器有自己的 [`BiometricScheduler.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/biometrics/sensors/BiometricScheduler.java) 实例。它维护当前操作与待处理操作队列，再由具体 sensor service 与 HAL 交互。
 
-| 行为 | 平台口径 | 工程影响 |
+这条调用路径包含应用进程、`system_server`、SystemUI、传感器服务和厂商 HAL。单看应用主线程 trace 无法区分其中每一段。
+
+### 应用没有公开的 prompt-onShown 回调
+
+AndroidX 的公开回调只有成功、不可恢复错误和未识别三类认证结果，没有“对话框已显示”回调。埋点名称应反映这个限制：
+
+- `biometric_request_start`：调用 `authenticate()` 前；
+- `biometric_rejected`：收到 `onAuthenticationFailed()`；
+- `biometric_terminal`：收到 `onAuthenticationSucceeded()` 或 `onAuthenticationError()`；
+- `biometric_client_cancel`：应用调用 `cancelAuthentication()` 前记录自身原因。
+
+`request_to_terminal_ms` 是可靠的应用口径。`prompt_show_ms` 只有在测试环境通过录屏、UI 自动化、Perfetto 或平台内部日志得到界面时间点后才成立。线上直接把 `authenticate()` 时间当作 prompt 出现时间，会把 Binder 调度、预检查和 SystemUI 调度都算错。
+
+### 配置变更不会要求重启认证
+
+当前 [AndroidX `BiometricPrompt` API 参考](https://developer.android.com/reference/androidx/biometric/BiometricPrompt) 明确说明：认证界面默认跨配置变更保留。Activity 或 Fragment 重建时，应在 `onCreate()` 早期重新构造 `BiometricPrompt`，让新实例的 callback 接收正在进行的会话；此时不要再次调用 `authenticate()`，也不要调用 `cancelAuthentication()`。
+
+同一个 Activity 或 Fragment 创建多个 `BiometricPrompt` 时，只有最近创建实例的 callback 会被保存。登录页应维持一个 prompt 实例，并用业务状态阻止重复点击。应用离开前台后，系统出于安全原因会关闭 prompt；这类关闭要和旋转重建分开统计。
+
+以下骨架演示单会话约束和回调终态。`LoginViewModel` 与 `LoginMetrics` 代表业务自己的状态与埋点接口：
+
+```kotlin
+class LoginActivity : FragmentActivity() {
+    private val loginViewModel: LoginViewModel by viewModels()
+    private lateinit var biometricPrompt: BiometricPrompt
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        biometricPrompt = BiometricPrompt(
+            this,
+            ContextCompat.getMainExecutor(this),
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationFailed() {
+                    LoginMetrics.rejected(loginViewModel.requireAttemptId())
+                }
+
+                override fun onAuthenticationError(
+                    errorCode: Int,
+                    errString: CharSequence
+                ) {
+                    loginViewModel.finishWithError(errorCode)
+                }
+
+                override fun onAuthenticationSucceeded(
+                    result: BiometricPrompt.AuthenticationResult
+                ) {
+                    loginViewModel.finishWithSuccess(result.authenticationType)
+                }
+            }
+        )
+    }
+
+    fun requestReauthentication(promptInfo: BiometricPrompt.PromptInfo) {
+        if (!loginViewModel.beginAttempt()) return
+        LoginMetrics.requestStarted(loginViewModel.requireAttemptId())
+        biometricPrompt.authenticate(promptInfo)
+    }
+}
+```
+
+重建后的 Activity 会注册新的 callback，正在显示的认证会话继续运行。`beginAttempt()` 负责拒绝双击；`onAuthenticationFailed()` 只记录一次未识别，不结束业务状态。
+
+### 三种回调的状态含义
+
+| 回调 | 会话状态 | 处理方式 |
 |---|---|---|
-| 硬件预热和系统 UI 展示 | `authenticate()` 进入后由系统展示 prompt 并开始扫描 | 从点击到 prompt 可见要单独打点，不能算进传感器识别耗时 |
-| 重复发起认证 | 新认证会停止前一次认证，前一次收到 canceled 类错误 | 配置变更、重复点击、页面重建会制造无效取消和额外等待 |
-| 回调 executor | 认证回调通过调用方传入的 `Executor` 分发 | 回调里不能串行做网络、解密、数据库写入和页面构建 |
+| `onAuthenticationFailed()` | 非终态；本次生物样本未识别 | 记录一次 reject，可继续等待系统重试 |
+| `onAuthenticationSucceeded()` | 终态；当前会话不会再有事件 | 读取 `authenticationType`，进入加密操作或业务验证 |
+| `onAuthenticationError()` | 终态；当前会话不会再有事件 | 按 error code 分类，释放一次性业务状态 |
 
-配置变更是最容易制造假慢的场景。屏幕旋转、深色模式切换、Activity 重建、导航返回再进入，都可能让旧 prompt 被取消再重新展示。平台文档也建议不要快速 cancel 再 start；跨配置变更应保留 prompt 所属的组件，避免用户感知到同一次认证被拆成两次。[已验证: 官方文档, developer.android.com/reference/android/hardware/biometrics/BiometricPrompt]
+`ERROR_USER_CANCELED` 表示用户关闭操作；`ERROR_NEGATIVE_BUTTON` 表示自定义负按钮；`ERROR_CANCELED` 多用于用户切换、设备锁定、传感器不可用或另一个请求阻塞等系统取消。三者不能合成一个“用户取消”。`ERROR_LOCKOUT`、`ERROR_LOCKOUT_PERMANENT`、`ERROR_HW_UNAVAILABLE` 和 `ERROR_SECURITY_UPDATE_REQUIRED` 也需要独立家族。厂商错误文本不适合作为稳定聚合键，线上按标准错误码、vendor code 是否存在和设备分组聚合即可。
 
-AOSP 的 `BiometricService` 会在 `handleAuthenticate()` 中做预认证检查，确认可用 modality、credential fallback 和 enrollment 状态；通过后创建 `AuthSession`，再和 SystemUI 的 `AuthController.showAuthenticationDialog()` 协作展示对话框。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/biometrics/BiometricService.java][已验证: AOSP android-16.0.0_r1, frameworks/base/packages/SystemUI/src/com/android/systemui/biometrics/AuthController.java]
+### 认证类型不等于传感器形态
 
-`BiometricScheduler` 负责每个 sensor 的 HAL operation 队列。源码注释说明它维护 `BaseClientMonitor` operation 队列，并要求每个 biometric sensor 拥有自己的 scheduler 实例。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/biometrics/sensors/BiometricScheduler.java] 这解释了一个设备差异：同样是 `authenticate()`，屏下指纹、人脸和侧边指纹的排队、锁定和失败重试表现可能不同。App 侧只能按设备、sensor 类型和错误码间接归因，不应写死一个统一阈值。
+`AuthenticationResult.getAuthenticationType()` 能区分 biometric、device credential 和部分旧版本上的 unknown。它不公开本次使用了指纹、人脸、虹膜或哪一个传感器。普通应用也没有可靠 API 读取本次生物认证 modality。
 
-## Credential Manager 与 passkey 单击登录
+实验室设备清单可以标注 UDFPS、侧边指纹、后置指纹、2D face 或 3D face，用于解释设备组差异；线上事件不要声称记录了本次 sensor 类型。拥有多种 modality 的设备会让这种推断失真。
 
-Credential Manager 是 Android 推荐的凭据交换入口，覆盖 passkey、密码、联合登录、数字凭证和跨设备恢复。[已验证: 官方文档, developer.android.com/identity/credential-manager] 从用户视角看，它把“选择账号”和“完成认证”放进统一系统体验；从性能视角看，它增加了 provider 选择、候选凭据查询和系统 UI 协调三类耗时。
+调用前应把 `PromptInfo` 使用的认证器组合原样传给 `BiometricManager.canAuthenticate()`。这个结果只是调用时的能力快照，不能替代终态错误处理。`PromptInfo` 一旦允许 `DEVICE_CREDENTIAL`，就不能再设置 `setNegativeButtonText()`；设备凭据入口由系统管理。
 
-AOSP `CredentialManagerService` 是系统侧入口。`executeGetCredential()` 会创建一次 `GetRequestSession`，读取启用的 provider，准备 provider sessions，然后调用各 provider session；`executePrepareGetCredential()` 则用于预取候选结果，减少后续 UI 阶段的等待。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/credentials/java/com/android/server/credentials/CredentialManagerService.java]
+## Credential Manager：应用方和 provider 方要分开
 
-Android 15 起，Credential Manager 支持把 passkey 创建和登录的认证信息直接嵌入 biometric prompt。官方 single tap 文档给出三条边界：登录流程只支持单账号场景；provider 要通过 `BiometricPromptData` 明确 `allowedAuthenticator`，未设置时默认值会落到弱设备级认证；如果设备策略要求 `DEVICE_CREDENTIALS`，系统会走标准 Credential Manager 流程，而不是 single tap。[已验证: 官方文档, developer.android.com/identity/sign-in/single-tap-biometric]
+Credential Manager 这个名称覆盖了 Jetpack API、平台服务、系统 UI 与凭据提供方。它们的发布节奏和权限不同：
 
-这会带来一张版本和形态决策表。
+| 角色 | 典型 API 或组件 | 能掌握的数据 |
+|---|---|---|
+| 依赖方应用 | `androidx.credentials.CredentialManager` | 自己提交的 option、返回的 credential 类型、异常与总等待 |
+| Jetpack 适配层 | AndroidX Credentials | 按平台版本和 provider 能力选择实现 |
+| Android 14+ 平台服务 | `CredentialManagerService` | 启用的 provider、request session、provider session 与取消信号 |
+| Credential Provider | `CredentialProviderService`、entry、`PendingIntent` | 自己查询到的凭据、自己生成的 entry、provider 内部耗时 |
+| 服务端 | WebAuthn / 密码 / 联合身份验证 | challenge、assertion、账号和风控结果 |
 
-| 场景 | UI 形态 | 性能收益 | 回退边界 |
+业务 App 通常是依赖方。它调用 `getCredential()`，不能直接读取系统选择器中的候选总数，也不能知道每个 provider 的查询耗时。凭据提供方可以统计自己的候选和内部时延，但不能把自己的计数当作系统全部候选。
+
+Android 17 的 [`CredentialManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/credentials/java/com/android/server/credentials/CredentialManagerService.java) 展示了平台侧结构：`executeGetCredential()` 创建请求级 `GetRequestSession`，准备 provider sessions 并启动查询；`executePrepareGetCredential()` 创建 `PrepareGetRequestSession`，同样准备 provider sessions，并返回后续请求所需的 handle。一次 API 调用中存在多个 provider session，应用侧只有最终 response 或 exception。
+
+### `prepareGetCredential()` 的适用边界
+
+AndroidX [`prepareGetCredential()`](https://developer.android.com/reference/kotlin/androidx/credentials/CredentialManager#prepareGetCredential%28androidx.credentials.GetCredentialRequest%29) 需要 Android 14（API 34）及以上。它只做准备工作，不显示 UI；返回的 `PendingGetCredentialHandle` 要传给另一个 `getCredential()` 才能完成选择、授权和凭据返回。
+
+预取能把部分 provider 准备工作移到用户点击前，但要同时满足三个条件：
+
+- 请求内容已经确定，包含的 passkey challenge 仍在服务端有效期内；
+- 页面退出、账号切换或请求失效时能够取消或丢弃旧 handle；
+- 完成阶段使用 Activity context，让系统 UI 位于当前任务栈。
+
+Kotlin 挂起版 `getCredential()` 会随 coroutine scope 取消。需要跨旋转保留请求时，可使用 `viewModelScope` 等覆盖配置变更的 scope；页面已结束或账号已切换时，应主动让请求失效。回调版则通过 `CancellationSignal` 传递取消。
+
+预取事件可以记录 `prepare_start`、`prepare_result`、`resume_start` 和 `get_result`。它仍不能给依赖方应用提供 prompt 出现时间或各 provider 的独立查询时间。
+
+## Android 15 single tap：这是 provider 集成能力
+
+Android 15（API 35）加入 Credential Manager single tap：单账号场景下，凭据信息可以直接显示在 Biometric Prompt 中，并保留“更多选项”入口。一个账号拥有 passkey 和密码等多种凭据时仍可满足单账号条件；多个账号会回到标准选择流程。版本到 Android 17（API 37）时，这个边界没有改变，详见 [single tap 官方指南](https://developer.android.com/identity/sign-in/single-tap-biometric)。
+
+`BiometricPromptData` 是 AndroidX Credentials 1.5.0 增加的 provider 侧 API。凭据提供方把它放入 `CreateEntry` 或 `PublicKeyCredentialEntry`，系统才有用于内嵌认证的信息。普通依赖方应用不构造这个对象，也拿不到 provider 的 `biometricPromptResult`。
+
+provider 集成时有四条硬约束：
+
+1. 显式设置 `allowedAuthenticators`。当前 single tap 指南的创建段与 [`BiometricPromptData` API 参考](https://developer.android.com/reference/androidx/credentials/provider/BiometricPromptData) 对默认值的文字不一致，代码不应依赖默认值。
+2. `cryptoObject` 非空时，`allowedAuthenticators` 必须精确设置为 `BIOMETRIC_STRONG`；组合值会触发 `IllegalArgumentException`。
+3. 设备配置要求使用 PIN、图案或密码时，系统采用标准 Credential Manager 流程，provider 收到的 `biometricPromptResult` 为 `null`。
+4. provider 必须处理 result 为成功、错误和 `null` 三种情况；`null` 不能记成生物认证失败。
+
+因此，依赖方应用的指标只能记录“本次返回了什么 credential、耗时多久、出现了什么 exception”。`single_tap_used` 只有在平台或 provider 提供可信信号时才能上报；仅凭总耗时较短进行猜测会污染数据。
+
+## CryptoObject：相似名字下有两套约束
+
+旧实现常把“允许 device credential 时不能传 `CryptoObject`”写成通用规则。当前 API 需要按密钥类型、Android 版本和调用方角色判断：
+
+| 形态 | 认证器配置 | `CryptoObject` 用法 | 版本或角色边界 |
 |---|---|---|---|
-| Android 15+ 单账号 passkey | 候选凭据和认证合在同一个 biometric prompt | 少一次 selector 跳转，交互步数更短 | 多账号或 provider 未配置时回到标准选择流程 |
-| 多账号 / 多 provider | Credential Manager selector 后再认证 | 用户可选账号和登录方式，归因字段更完整 | 交互更长，候选查询和 provider UI 要拆分计时 |
-| 密码 / 联合登录回退 | Credential Manager 或业务登录页 | 提供可用性兜底 | 不与 passkey assertion 混成同一成功率 |
-| 设备凭据强制策略 | PIN / pattern / password | 符合设备策略 | single tap provider 可能拿不到 biometric result |
+| AndroidX `BiometricPrompt`，只确认用户 | `BIOMETRIC_STRONG`、`BIOMETRIC_WEAK`、`DEVICE_CREDENTIAL` 或支持的组合 | 不传 | 调用前用同一组合执行 `canAuthenticate()` |
+| AndroidX `BiometricPrompt`，auth-per-use key | `BIOMETRIC_STRONG`，Android 11+ 也可按密钥策略允许 `DEVICE_CREDENTIAL` | 初始化操作后，把同一个对象传给 `authenticate()` | Android 10 及以下不支持 crypto 与 device credential 的组合 |
+| time-based key | 密钥设置认证有效期，可允许 strong biometric 或 device credential | prompt 不带对象；认证后在有效期内新建加密操作 | 超出有效期时会遇到 `UserNotAuthenticatedException` |
+| provider single tap 的 `BiometricPromptData` | 有对象时必须精确为 `BIOMETRIC_STRONG` | provider 把对象放入 entry metadata | AndroidX Credentials provider API，不能套用普通 App 的组合规则 |
 
-`BiometricPromptData` 的 API 参考页补充了一个约束：它让 provider 把 metadata 和 biometric / device credential 认证放到单一对话框中；如果设置了 `cryptoObject`，`allowedAuthenticators` 必须是 `BIOMETRIC_STRONG`，否则会抛 `IllegalArgumentException`。[已验证: 官方文档, developer.android.com/reference/androidx/credentials/provider/BiometricPromptData]
+当前 [Android 生物认证指南的 auth-per-use 章节](https://developer.android.com/identity/sign-in/biometric-auth#auth-per-use-keys) 给出的密钥策略允许 `AUTH_BIOMETRIC_STRONG | AUTH_DEVICE_CREDENTIAL`；AndroidX `BiometricPrompt.authenticate(info, crypto)` 的参考文档补充了 Android 11 之前的兼容限制。指南中“不带 `CryptoObject`”的说明位于 time-based key 流程，不能外推到 Android 11+ 的 auth-per-use key。
 
-[自动发现] single tap 的性能收益不能只看“少点一次”。provider 如果没有把账号数量、候选数量、是否命中 active credential、是否进入 standard flow 写入日志，线上只能看到成功率和总耗时变化，无法判断收益来自 UI 减少、provider 查询更快，还是用户群变了。
+密钥授权还要与 prompt 策略一致。密钥只允许 strong biometric 时，prompt 允许 device credential 并不能让 PIN 解锁这把密钥。密钥允许两种认证器时，调用方仍需处理 key 失效、认证 token 不匹配和安全级别差异。完整的初始化顺序、KeyMint operation 与异常分类见 [§8.12 Keystore/KeyMint 调用链延迟](12-keystore-keymint-latency.md)。
 
-## Keystore、CryptoObject 与强生物认证边界
+性能埋点至少拆成这些时间段：
 
-`CryptoObject` 把 `Cipher`、`Signature`、`Mac`、`KeyAgreement` 等加密操作交给 `BiometricPrompt`。平台文档把密钥分成两类：auth-per-use key 通过带 `CryptoObject` 的 `authenticate()` 解锁；time-based key 在指定时间窗口内可复用最近一次认证。[已验证: 官方文档, developer.android.com/reference/android/hardware/biometrics/BiometricPrompt.CryptoObject]
-
-使用 `CryptoObject` 时，平台还有强度要求。`BiometricPrompt` 文档说明，只有满足 Android CDD Strong 要求的生物识别认证器才允许和 Keystore 加密操作集成；如果显式允许的生物识别强度不是 `BIOMETRIC_STRONG`，带 `CryptoObject` 的调用会报错。[已验证: 官方文档, developer.android.com/reference/android/hardware/biometrics/BiometricPrompt]
-
-登录埋点要把这些状态拆开。
-
-| 字段 | 示例 | 解释 |
+| 字段 | 起止点 | 解释 |
 |---|---|---|
-| `authenticator_policy` | `BIOMETRIC_STRONG`、`BIOMETRIC_STRONG|DEVICE_CREDENTIAL`、`BIOMETRIC_WEAK` | 决定是否能绑定 Keystore 加密操作 |
-| `crypto_mode` | `none`、`auth_per_use_crypto_object`、`time_based_key` | 区分只做身份确认还是解锁 key |
-| `crypto_init_ms` | `Cipher.init` / `Signature.initSign` 耗时 | 这一步可能已经进入 Keystore / KeyMint |
-| `prompt_wait_ms` | prompt 展示到认证成功或失败 | 主要覆盖用户动作、SystemUI、传感器和锁定策略 |
-| `crypto_finish_ms` | `doFinal` / `sign` / `verify` 耗时 | 主要覆盖 KeyMint 操作和 provider 实现 |
-| `server_verify_ms` | passkey assertion 或 token 校验 | 属于网络和后端，不应归到系统认证 |
+| `crypto_init_ms` | `Cipher.init` / `Signature.initSign` 调用 | 可能已经进入 Keystore、`keystore2` 与 KeyMint |
+| `auth_request_to_terminal_ms` | `authenticate()` 到成功或终态错误 | 包含系统调度、UI、用户停留与 sensor 工作 |
+| `crypto_finish_ms` | `doFinal` / `sign` 调用 | 反映授权后的 KeyMint 操作，不含网络 |
+| `credential_request_ms` | `getCredential()` 到 response / exception | 包含 provider、系统 UI 与用户操作 |
+| `server_verify_ms` | 发出验证请求到服务端响应 | 反映网络、后端验证与风控 |
 
-如果用户选择 device credential fallback，是否还能使用 `CryptoObject` 取决于密钥配置和 API 形态。官方 biometric guide 对“biometric 或 lock screen credential”这种 time-based key 给出限制：允许 device credential fallback 时，不能把 `CryptoObject` 传给 `authenticate()`。[已验证: 官方文档, developer.android.com/identity/sign-in/biometric-auth] 因此，登录方案要把“本次只确认用户在场”和“本次要解锁 auth-per-use key”分成两个产品路径。
+`onAuthenticationSucceeded()` 的时间和 `sign()` 返回时间要分别记录。把两者合为“指纹耗时”会让 StrongBox、TEE 或 KeyMint 队列延迟看起来像传感器问题。
 
-## 系统服务与源码验证点
+## 取消、失败与回退
 
-排查登录认证慢时，源码入口要按职责查，不要只搜一个类名。
+回退策略应由终态驱动，不能在每一次 `onAuthenticationFailed()` 后再弹一个 prompt。一个稳定的状态流包括：
 
-| 模块 | 源码路径 | 用途 |
+```mermaid
+stateDiagram-v2
+    [*] --> Preflight
+    Preflight --> Prompting: canAuthenticate 通过
+    Preflight --> Alternative: 不可用或未注册
+    Prompting --> Prompting: onAuthenticationFailed
+    Prompting --> Verifying: onAuthenticationSucceeded
+    Prompting --> Alternative: 可回退的终态错误
+    Prompting --> Stopped: 用户或页面取消
+    Verifying --> SignedIn: 服务端通过
+    Verifying --> Recovery: Key 或服务端拒绝
+    Alternative --> SignedIn: 其他凭据通过
+    SignedIn --> [*]
+    Stopped --> [*]
+    Recovery --> [*]
+```
+
+这张状态图把未识别、终态错误和业务失败放在不同状态，避免重复弹窗与错误归因。
+
+| 信号 | 含义 | 合适的动作 |
 |---|---|---|
-| Framework API | `core/java/android/hardware/biometrics/BiometricPrompt.java` | API 语义、异常、取消和 executor 边界 |
-| 生物认证仲裁 | `services/core/java/com/android/server/biometrics/BiometricService.java` | `BiometricPrompt` 请求预认证、创建 `AuthSession`、处理成功/失败/取消 |
-| Sensor 调度 | `services/core/java/com/android/server/biometrics/sensors/BiometricScheduler.java` | sensor operation 队列、当前 operation、近期 operation 记录 |
-| SystemUI Prompt | `packages/SystemUI/src/com/android/systemui/biometrics/AuthController.java` | 展示认证对话框、处理 owner 前后台、回传 dismiss 和 error |
-| Credential Manager | `services/credentials/java/com/android/server/credentials/CredentialManagerService.java` | provider session、get/create/prepare 请求、取消 token |
-| Keystore / KeyMint | 详见 8.12 节 | `CryptoObject` 后续的 key operation、StrongBox、TEE 和 operation slot |
+| `onAuthenticationFailed()` | 当前样本未识别，会话仍在运行 | 留在系统 prompt，记录 reject 次数分桶 |
+| `ERROR_USER_CANCELED` / negative button | 用户选择离开当前认证方式 | 回到当前页面，展示密码或其他凭据入口 |
+| `ERROR_LOCKOUT` | 临时锁定 | 告知等待时间，允许 device credential 或其他登录方式 |
+| `ERROR_LOCKOUT_PERMANENT` | 需要设备凭据解除 | 引导设备凭据，不自动循环生物认证 |
+| `GetCredentialCancellationException` | 用户退出 Credential Manager | 保持登录页可操作，不转成“无凭据” |
+| `NoCredentialException` | 请求范围内没有可用凭据 | 提供注册、密码或联合身份入口 |
+| key invalid / auth required | 密钥状态或授权不满足 | 进入 key 恢复流程，参见 §20.16 |
+| assertion 或风控拒绝 | 服务端不接受本次凭据 | 进入账号安全流程，不归到平台认证性能 |
 
-AOSP authentication 文档说明，Android 使用 user authenticator 解锁设备并 gate cryptographic keys；Gatekeeper、Fingerprint / biometric 组件通过认证状态和 keystore 服务协作，HAL service 在系统进程接收 Binder 请求，可信应用在安全环境执行安全操作。[已验证: AOSP 文档, source.android.com/docs/security/features/authentication]
+应用主动取消时，要在调用取消 API 之前记录 `cancel_source`，例如页面关闭、账号切换、请求过期或业务替换。系统返回的 error code 无法复原应用自身的产品原因。
 
-这也给 Perfetto 排查一个方向：App 线程只能看到请求发起和回调，系统侧要看 Binder、SystemUI、`system_server` 中 biometric / credential 相关 slice，以及设备厂商是否有可用 sensor HAL 日志。普通线上 SDK 不具备整机 trace 权限，版本化诊断入口详见 26.12 节。
+## 一套不越权的线上事件
 
-## 线上观测与回退治理
+建议以一次用户意图生成 `flow_id`，重试产生新的 `attempt_id`。事件只写应用拥有的时间点：
 
-登录观测要服务于两个动作：定位慢在哪一段，决定走哪个回退路径。字段过少会失去定位能力，字段过多又容易碰到隐私和安全边界。
-
-建议的最小事件模型如下。
-
-| 事件 | 触发点 | 关键字段 |
+| 事件 | 时间点 | 推荐字段 |
 |---|---|---|
-| `login_credential_request_start` | 调用 Credential Manager 或业务登录入口 | `flow_id`、`scene`、`api_level`、`credential_types`、`single_tap_expected` |
-| `login_credential_candidates` | provider 候选返回或失败 | `candidate_count_bucket`、`provider_kind`、`has_passkey`、`has_password`、`error_type` |
-| `login_prompt_shown` | SystemUI prompt 可见或 App 收到等价信号 | `authenticators`、`crypto_mode`、`is_single_tap`、`device_model` |
-| `login_auth_result` | 认证成功、失败、取消、锁定 | `result`、`error_code`、`dismiss_reason`、`cancel_source`、`prompt_wait_ms` |
-| `login_crypto_result` | 加密操作完成 | `operation`、`security_level`、`duration_ms`、`error_family` |
-| `login_server_verify` | 服务端校验完成 | `duration_ms`、`network_type`、`http_family`、`risk_decision` |
-| `login_finish` | 进入登录态或回退 | `final_method`、`fallback_reason`、`total_ms`、`conversion_result` |
+| `credential_request_start` | 调用 Credential Manager 前 | `flow_id`、`attempt_id`、`api_level`、`option_types`、`prepared` |
+| `credential_request_end` | response 或 exception | `credential_type`、`exception_family`、`duration_ms` |
+| `biometric_request_start` | 调用 `authenticate()` 前 | `authenticator_policy`、`crypto_mode`、`can_authenticate_result` |
+| `biometric_rejected` | `onAuthenticationFailed()` | `reject_count_bucket` |
+| `biometric_terminal` | success 或 error | `result`、`authentication_type`、`error_code`、`duration_ms` |
+| `crypto_operation` | init 或 finish 返回 | `operation_phase`、`security_level`、`duration_ms`、`error_family` |
+| `server_verify_end` | 服务端响应 | `duration_ms`、`network_class`、`http_family`、`decision_family` |
+| `login_ready` | 目标页面首帧 | `final_method`、`fallback_reason`、`total_ms` |
 
-隐私边界要提前写进 SDK 协议。不要上传指纹、人脸、PIN、明文账号、passkey 原始 assertion、credential ID 全量值、AAGUID 原值或服务端 challenge。需要做 join 时，用服务端生成的 `flow_id`、账号分桶、credential 类型、provider 类型和错误家族就够。AAGUID、credential ID、rpId 这类字段如果业务必须使用，应在端侧做不可逆摘要，并经过安全评审。
+依赖方应用不应上报 `candidate_count`、`provider_query_ms`、`prompt_shown_ms` 或 biometric modality，除非它拥有对应的直接信号。设备型号可以在合规前提下转换成受控设备分组，避免自由文本制造高基数字段。
 
-回退策略也要分级。
+认证数据的采集边界更严格。不要上传生物样本、PIN、图案、密码、passkey assertion 原文、challenge、credential ID、AAGUID 原值、RP ID 与明文账号。关联排查使用短期 `flow_id`、凭据类型、错误家族和账号匿名分桶。任何可稳定识别账号或凭据的摘要都需要安全与隐私评审，哈希不自动等于匿名。
 
-| 失败类型 | 典型信号 | 回退动作 |
+## OEM 差异如何验证
+
+SystemUI 和 Framework API 提供一致的应用接口，sensor HAL、显示协作、锁定行为与错误分布仍会因设备而变。UDFPS 涉及屏幕高亮、触控与 sensor 协作；被动人脸还受光线、摄像头启动和确认策略影响。平台允许 `setConfirmationRequired(false)` 作为提示，系统可以依据设备设置忽略它。
+
+实验室测试至少覆盖：
+
+- Android 版本、厂商系统版本和升级路径；
+- strong / weak biometric 与 device credential 策略；
+- 冷启动后的首次请求、会话内再次授权、刚解锁设备、熄屏恢复；
+- 旋转重建、切到后台、锁屏、用户切换和重复点击；
+- 正常识别、连续 reject、临时锁定、永久锁定、硬件不可用；
+- 单账号、多账号、多 provider、无凭据和 passkey challenge 过期。
+
+实验室可以按设备硬件清单解释 UDFPS 或 face 的差异；线上只按设备组和公开 error code 建立 P50、P90、P99。固定的“超过 800 ms 即 sensor 异常”会把用户停留和系统 UI 调度混入 sensor 判断，分位数基线也应与回退转化率一起观察。
+
+## Android 17 源码与内核锚点
+
+源码排查按责任范围进入：
+
+| 层级 | Android 17 固定入口 | 能回答的问题 |
 |---|---|---|
-| 用户取消 | dismiss、negative button、返回键、页面离开 | 保留当前页面，不弹连续 prompt；给账号密码或稍后再试入口 |
-| 传感器失败 | timeout、lockout、unable to process | 降低重试频率，提示换手指 / 光线 / 姿态；达到阈值后转 device credential |
-| Credential Manager 无凭据 | no credential、provider 空结果 | 展示注册、密码登录或联合登录，不把它记成认证失败 |
-| KeyMint / Keystore 失败 | key invalid、auth required、too many keys、StrongBox unavailable | 进入 20.16 的 key 生命周期治理和异常分类，不无限重试 |
-| 服务端拒绝 | assertion 校验失败、风控拒绝、账号冻结 | 回到账号安全流程，不归因到系统认证慢 |
+| Framework API | [`BiometricPrompt.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/biometrics/BiometricPrompt.java) | 参数校验、Binder 请求、取消和 callback 分发 |
+| 生物认证仲裁 | [`BiometricService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/biometrics/BiometricService.java) | 预检查、请求 ID、Handler 调度和会话生命周期 |
+| 认证会话 | [`AuthSession.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/biometrics/AuthSession.java) | SystemUI 显示请求、sensor 状态、成功与错误转换 |
+| Sensor 调度 | [`BiometricScheduler.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/biometrics/sensors/BiometricScheduler.java) | 每个 sensor 的当前操作与待处理队列 |
+| SystemUI | [`AuthController.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/biometrics/AuthController.java) | 认证对话框显示、关闭和前台状态 |
+| Credential 平台服务 | [`CredentialManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/credentials/java/com/android/server/credentials/CredentialManagerService.java) | get / prepare session、provider session 与取消传递 |
+| GKI Binder | [`drivers/android/binder.c`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/android/binder.c) | `BC_TRANSACTION` 到 `binder_transaction()` 的跨进程传输 |
 
-Android Vitals 不会给出“登录生物识别慢”这个专门指标，但登录卡死、ANR、崩溃、慢启动、LMK 或电池问题可能在 26.15 的质量指标里反映出来。登录页埋点应能回连 `versionCode`、设备型号、API level、页面、账号态和回退方式，方便把 Play Console 里的外部质量变化接回内部证据。
+内核锚点只覆盖 Binder IPC。生物传感器驱动和厂商实现通常位于设备或 vendor 代码，认证策略与会话状态位于 Framework、系统服务和 HAL。不能依据 common kernel 的 `binder.c` 推断指纹采集耗时；它能帮助验证跨进程等待和 Binder 调度是否异常。
 
-## OEM 生物识别实现差异
+普通线上进程没有权限读取完整系统 trace。实验室可以结合 Perfetto、SystemUI 日志、`system_server` 轨迹和厂商 HAL 日志定位；线上证据能力与权限分级见 [§26.12 版本化诊断](../../part5-app/ch26-observability/12-versioned-diagnostics.md)。
 
-生物识别性能天然带厂商差异。屏下指纹需要屏幕亮度、触控、动画和 sensor 协作；人脸认证受光线、摄像头、活体检测和是否需要确认影响；侧边指纹和后置指纹又有不同的唤醒路径。平台 API 给的是统一回调，不保证每类传感器的 P90/P99 一样。
+## 版本边界
 
-设备矩阵建议至少按下面几个维度切样本：
+| 版本 | 与本文相关的变化或限制 |
+|---|---|
+| Android 9 / API 28 | 平台 `BiometricPrompt` 引入；AndroidX 在该版本使用系统认证界面 |
+| Android 10 / API 29 及以下 | `DEVICE_CREDENTIAL` 与 `BIOMETRIC_STRONG \| DEVICE_CREDENTIAL` 的部分组合不受支持；crypto 与 device credential 组合也受限 |
+| Android 11 / API 30 | AndroidX crypto-based authentication 可按密钥策略使用 device credential；仍需 strong biometric 才能让生物认证参与 Keystore 操作 |
+| Android 14 / API 34 | 平台 Credential Manager 服务与 `prepareGetCredential()` handle 流程可用 |
+| Android 15 / API 35 | provider 可接入 passkey single tap，登录限定为单账号场景 |
+| Android 17 / API 37 | 本文平台源码基线为 `android-17.0.0_r1`，上述职责边界继续适用 |
 
-- 传感器形态：UDFPS、侧边指纹、后置指纹、2D face、3D face、多模态。
-- 系统版本：API level、厂商 ROM 版本、是否升级包、是否 beta。
-- 认证策略：`BIOMETRIC_STRONG`、`BIOMETRIC_WEAK`、`DEVICE_CREDENTIAL`、组合策略。
-- 场景状态：冷启动后首次认证、页面内二次授权、锁屏刚解锁、前后台切换后、横竖屏切换后。
-- 失败类型：timeout、lockout、cancel、sensor privacy、no space、unable to process、user canceled。
+Jetpack 库版本和平台 API level 要分别记录。`BiometricPromptData` 来自 AndroidX Credentials 1.5.0；设备运行 Android 15 并不保证 provider 已采用该 API。
 
-没有设备矩阵时，不建议把“认证超过 800ms 就异常”这类阈值写进线上规则。更稳的做法是每个设备族建立 P50 / P90 / P99 基线，再看版本变化和回退转化率。
+## 与稳定性和观测章节的分工
 
-## 与 20.16 和 26.x 的分工
+[§20.16 Keystore 配额与登录稳定性](../../part5-app/ch20-stability/16-keystore-quota-login-stability.md) 负责 key 生命周期、配额、失效与恢复。本文只把这些结果作为登录阶段的一类终态。
 
-20.16 负责 Keystore 配额、key 生命周期、异常分类和登录故障恢复；8.13 只使用其中的异常家族做阶段归因。遇到 `ERROR_TOO_MANY_KEYS`、key 失效、StrongBox 不可用或账号退出后 key 残留，应转到 20.16 的治理动作。
-
-26.12 负责版本化线上诊断能力。登录认证问题如果需要系统 trace、`ApplicationExitInfo`、`ProfilingManager` 或系统触发 profiling，不在本文展开 API 细节，只在证据包里保留能关联到 26.12 的 `flow_id`、进程、时间戳和版本信息。
-
-26.15 负责 Play Console 和 Android Vitals 的外部质量口径。登录页引入 passkey single tap 或 biometric fallback 后，内部成功率提高不代表平台质量没有风险；ANR、Crash、LMK、慢启动和功耗指标仍要跟版本放量一起看。
-
-## Passkey 管理与用户体验
-
-passkey 的体验问题不只发生在认证弹窗。账号恢复、跨设备迁移、provider 切换、同一个账号多凭据、密码和联合登录共存，都会影响 Credential Manager 的候选数量和选择路径。性能指标要记录交互形态，不要只记录认证结果。
-
-建议把 passkey 管理拆成三组指标：
-
-| 指标组 | 字段 | 用途 |
-|---|---|---|
-| 候选凭据 | `candidate_count_bucket`、`has_password`、`has_passkey`、`provider_kind` | 判断用户是否被多账号、多凭据拖慢 |
-| single tap 命中 | `single_tap_expected`、`single_tap_used`、`standard_flow_reason` | 判断 Android 15+ 新流程是否按预期生效 |
-| 账号恢复 | `restore_source`、`new_device`、`credential_recreated` | 判断换机和重装后的登录路径是否变长 |
-
-AAGUID、attestation、WebAuthn 协议细节属于身份认证专题。本文只把它们当成性能维度：是否改变 provider 返回、服务端校验和回退路径。涉及账号安全策略的结论必须由安全团队确认，不能为了减少一步 UI 交互而降低认证强度。
+[§26.12 版本化诊断](../../part5-app/ch26-observability/12-versioned-diagnostics.md) 负责系统 trace、`ApplicationExitInfo`、`ProfilingManager` 与诊断权限。[§26.15 Android Vitals 与 Play Console](../../part5-app/ch26-observability/15-android-vitals-play-console-quality.md) 负责 ANR、Crash、LMK、启动和功耗等外部质量口径。Vitals 没有“生物识别登录慢”专用指标，内部 `flow_id`、版本与页面信息要能和发布批次对应。
 
 ## 小结
 
-BiometricPrompt 和 Credential Manager 的性能排查入口，是把登录流程拆成凭据发现、系统认证 UI、用户动作、传感器、加密操作、服务端校验和会话建立。App 能优化的是请求时机、重复发起、回调线程、加密操作位置、回退策略和证据字段；传感器 HAL、SystemUI、Credential Provider 和 KeyMint 的差异要通过分阶段指标和设备矩阵回收证据。登录认证既是性能问题，也是安全问题，任何降级都要留下策略来源和服务端判断。
+Credential Manager 登录和 `BiometricPrompt` 重新授权是两条不同的调用路径。依赖方应用只能稳定观测请求、回调、异常、加密操作、服务端响应和页面就绪；prompt 出现时间、provider 查询时间、候选总数与具体 biometric modality 都需要额外权限或 provider 侧信号。
+
+Android 17 源码把生物认证请求分配给 `BiometricService`、`AuthSession`、SystemUI 和每个 sensor 的 `BiometricScheduler`，Credential Manager 则以 request session 协调多个 provider。性能治理应沿这些边界命名指标。遇到 device credential 与 `CryptoObject` 时，还要区分普通 AndroidX prompt、time-based key、auth-per-use key 和 provider `BiometricPromptData`，避免把某一种 API 的限制套到所有登录流程。
