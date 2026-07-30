@@ -344,13 +344,13 @@ AndroidJankCujMetric proto  (android/android_jank_cuj.sql)
 
 <!-- outline-end -->
 
-Perfetto v54 让 Android 性能分析里的三类证据开始使用同一套工作流：UI 里的 DataGrid / pivot table 让 SQL 结果可以交互式探索，Jank CUJ 相关模块把交互场景变成结构化对象，weighted jank counter 让“掉了几帧”继续追到“这次卡顿有多重”。
+Perfetto v54 同时改进了三处互相配合的能力：UI 的 DataGrid 增加 pivot 和筛选功能，SQL 标准库补充 relevant threads jank CUJ 模块，CUJ metric 增加基于 counter 的 weighted jank。DataGrid 用来探索结果，标准库用来组织交互场景，weighted counter 用来区分同样掉帧数下的严重程度。
 
-这类能力最适合处理一种常见问题：一段滑动、展开、返回或者 Launcher 动画看上去只是“偶尔卡一下”，单看 FrameTimeline 能定位异常帧，但还不能判断异常来自 App、SurfaceFlinger、GPU completion、HWC release，还是调度等待。CUJ 把这段交互切成窗口，DataGrid 把结果筛出来，SQL 把判断口径固定下来。
+一段滑动、展开、返回或者 Launcher 动画看上去只是“偶尔卡一下”，单看 FrameTimeline 能定位异常帧，却无法直接判断异常来自 App、SurfaceFlinger、GPU completion、HWC release，还是调度等待。CUJ 把交互切成窗口，DataGrid 负责筛选结果，SQL 固定判断口径。
 
 ## DataGrid 适合做什么
 
-Perfetto v54 release notes 在 UI 部分写到的是 DataGrid table viewer 的改进：pivot table、glob / contains / not-contains filters、distinct value picker，以及 snap-to-boundaries。DataGrid 是 SQL 结果表的交互层；分析口径仍由 SQL 和标准库决定。**节点式数据流（node-based query builder）在 v54.0 已存在**，Android 17 范围内只按 `dev.perfetto.ExplorePage` 和基础节点能力讨论；后续版本的重命名与扩展节点不进入本节结论。详见本节末「节点式数据流补注」。
+Perfetto v54 release notes 为 DataGrid table viewer 列出的改进包括 pivot table、glob / contains / not-contains filters 和 distinct value picker。同一版新增的 snap-to-boundaries 属于时间范围选择能力：拖动选择边界时会吸附临近 slice，按住 Alt 可暂时关闭。它不属于 DataGrid 的过滤功能。DataGrid 是 SQL 结果表的交互层；分析口径仍由 SQL 和标准库决定。**节点式数据流（node-based query builder）在 v54.0 已存在**，Android 17 范围内只按 `dev.perfetto.ExplorePage` 和基础节点能力讨论；后续版本的重命名与扩展节点不进入本节结论。详见本节末「节点式数据流补注」。
 
 DataGrid 的价值在三类场景里最明显：
 
@@ -388,6 +388,8 @@ LIMIT 20;
 ```
 
 这张表适合作为 DataGrid 的入口。`missed_frames` 回答“掉了多少帧”，`weighted_missed_app_frames_total` 和 `weighted_missed_sf_frames_total` 回答 counter 口径下 App / SF 两侧各自多重，`missed_app_frames` 和 `missed_sf_frames` 则把责任先粗分到 App 侧和 SurfaceFlinger 侧。后续再展开单帧和线程状态，不要在这一步直接下根因结论。
+
+两个 `*_total` 字段是查询临时计算的别名，不是 v54.0 表字段。表内的 `weighted_missed_app_frames` / `weighted_missed_sf_frames` 已由整数 counter 除以 1000，单位按源码注释为 jank/s；再乘 `anim_duration_ms / 1000` 才得到本次 CUJ 观测窗口内的 weighted missed frames。
 
 ## Jank CUJ 标准库模块怎样组织线程
 
@@ -488,6 +490,8 @@ ORDER BY graph_sample_ts;
 
 这类数据适合接到图片、视频、Camera、SurfaceView 或 Compose 大图场景。Java heap 没涨但 `dmabuf_rss_size` 涨，排查方向应转向图形 buffer、解码缓存、Surface 生命周期和跨进程持有；Java heap 与 DMA-BUF 同时涨，才考虑对象持有和图形资源释放两个方向一起查。
 
+`android_heap_graph_stats` 只有在 trace 含 ART heap graph 时才有行。模块为 OOM adj、RSS/swap 和 DMA-BUF 查找同进程、同一时间跨度内的值；找不到时还允许取 heap dump 之后 500 ms 内最近的一条记录。查询结果可能为 `NULL`，时间偏移也要保留在分析说明中，不能把三个数据源当成同一时刻的原子快照。
+
 ## Collapsed Stack / Firefox Profiler 格式导入
 
 v54 Trace Processor 支持 Collapsed Stack 格式和 Firefox Profiler 预处理 JSON。Collapsed Stack 是 `main;foo;bar 100` 这类火焰图输入，适合把 Brendan Gregg FlameGraph 生态里的历史数据导入 Perfetto；Firefox Profiler JSON 适合跨工具查看已有 profile。
@@ -526,16 +530,16 @@ v54.0 已有 `index.ts`、`explore_page.ts`、`query_builder/`、`node_registry.
 - **自动执行路径**：`NodeExplorer.updateQuery()` → `service.processNode({ manual: false })` → `createSummarizer()` / `updateSummarizerSpec()` 同步 `PerfettoSqlStructuredQuery` 图，再通过 `querySummarizer()` 取回 `sql`、`textproto`、`standaloneSql`、物化表名、行数和列信息。
 - **DataGrid 展示路径**：`Builder` 使用 Trace Processor 返回的物化表名创建 `SQLDataSource`，由 DataGrid 做 server-side 分页、过滤和排序；调试时应以返回的 `tableName` 为准，不把物化表命名规则当稳定接口。
 
-这个模型说明节点图编辑器不是新的分析口径，而是把 PerfettoSQL 查询拆成可视化节点、结构化查询和可检查的中间表。技术结论仍应落回 SQL、标准库和 trace 数据。
+这个模型没有增加新的分析口径。节点图编辑器把 PerfettoSQL 查询拆成可视化节点、结构化查询和可检查的中间表；技术结论仍应落回 SQL、标准库和 trace 数据。
 
 ### 3. 与 DataGrid / 手写 SQL 的关系
 
-`dev.perfetto.ExplorePage` 不是 DataGrid 的替代品，而是把「写 PerfettoSQL 文本 + 单次 query」拆成「节点连边 + 自动生成 SQL + 物化中间结果」：
+`dev.perfetto.ExplorePage` 在 DataGrid 之上组织节点关系，把「写 PerfettoSQL 文本 + 单次 query」改成「节点连边 + 自动生成 SQL + 物化中间结果」：
 
 | 维度 | 手写 SQL | DataGrid | ExplorePage 节点图 |
 |---|---|---|---|
-| 适用对象 | 熟悉 PerfettoSQL 的工程师 | 任意人 | 任意人 |
-| 中间结果可见性 | 一次 query 一个结果 | 一个 SQL 一个 DataGrid | 节点图每个节点一个物化表 |
+| 适用对象 | 熟悉 PerfettoSQL 的工程师 | 能理解结果列和单位的工程师 | 能理解 trace schema 与节点关系的工程师 |
+| 中间结果可见性 | 一次 query 一个结果 | 一个 SQL 一个 DataGrid | 已执行节点可得到物化表 |
 | 可视化程度 | 纯文本 | 表格 + pivot | 节点图 + 表格 |
 | 跨会话复用 | 保存 SQL 文件 | 保存 permalink | 保存 permalink + 节点图 JSON |
 
@@ -544,6 +548,17 @@ v54.0 已有 `index.ts`、`explore_page.ts`、`query_builder/`、`node_registry.
 ---
 
 ## 参考资料
+
+### 官方与源码锚点
+
+- [Perfetto v54.0 release notes](https://github.com/google/perfetto/releases/tag/v54.0)
+- [Perfetto v54.0 FrameTimeline 文档](https://github.com/google/perfetto/blob/v54.0/docs/data-sources/frametimeline.md)
+- [v54.0 Jank CUJ counter metric](https://github.com/google/perfetto/blob/v54.0/src/trace_processor/metrics/sql/android/jank/internal/counters.sql)
+- [v54.0 `android_jank_cuj` metric 输出](https://github.com/google/perfetto/blob/v54.0/src/trace_processor/metrics/sql/android/android_jank_cuj.sql)
+- [v54.0 CUJ 进程过滤](https://github.com/google/perfetto/blob/v54.0/src/trace_processor/perfetto_sql/stdlib/android/cujs/base.sql)
+- [v54.0 relevant threads 模块](https://github.com/google/perfetto/blob/v54.0/src/trace_processor/perfetto_sql/stdlib/android/cujs/threads.sql)
+- [v54.0 heap graph stats 模块](https://github.com/google/perfetto/blob/v54.0/src/trace_processor/perfetto_sql/stdlib/android/memory/heap_graph/heap_graph_stats.sql)
+- [v54.0 ExplorePage 执行服务](https://github.com/google/perfetto/blob/v54.0/ui/src/plugins/dev.perfetto.ExplorePage/query_builder/query_execution_service.ts)
 
 ### Perfetto DataGrid 与 Jank CUJ 标准库第三方 App 适用性验证
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-perfetto-cujs-third-party-app-scope.md
