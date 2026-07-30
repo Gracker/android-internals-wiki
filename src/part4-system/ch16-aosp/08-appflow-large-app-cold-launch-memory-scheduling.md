@@ -1,13 +1,14 @@
 ---
 title: "AppFlow：GB 级应用冷启动内存联合调度"
 chapter: "16.8"
+section: "16.8"
 status: finalized
 drafted_date: "2026-05-23"
 applicable_versions: "Android 15 - Android 17（研究原型，非 AOSP 主线）"
-last_verified: "2026-05-23"
+last_verified: "2026-07-30"
 last_task9_audit: "2026-07-11"
-last_verified_against: "AppFlow arXiv 2603.17259; AOSP main/system/memory/lmkd; frameworks/base ActivityManager/UsageStats/ApplicationExitInfo; source.android.com lmkd; developer.android.com launch-time/LMK"
-confidence: medium
+last_verified_against: "AppFlow arXiv 2603.17259v1; AOSP android-17.0.0_r1 lmkd/ProcessList/CachedAppOptimizer/UsageStatsManager/ApplicationExitInfo; Android Common Kernel android17-6.18-2026-06_r6 mm/vmscan.c"
+confidence: high
 sources:
   - type: paper
     path: "https://arxiv.org/abs/2603.17259"
@@ -22,13 +23,17 @@ sources:
   - type: official
     path: "https://developer.android.com/topic/performance/vitals/lmk"
   - type: aosp
-    path: "system/memory/lmkd/"
+    path: "https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ProcessList.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/app/usage/UsageStatsManager.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/app/ApplicationExitInfo.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/usage/UsageStatsManager.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c"
 tags: [aosp-performance, cold-start, memory-scheduling, lmkd, file-preload]
 related_chapters: ["4.4", "6.3", "8.2", "16.7", "21.1"]
 created_by: "task2a-knowledge-gap"
@@ -77,7 +82,7 @@ gap_source: "研究素材 + 论文精读 + 官方/外部搜索"
 
 ## 本节的证据边界
 
-AppFlow 是 MobiCom 2026 论文提出的研究原型。论文于 2026 年 3 月公开，实验系统以 Android 15 为基础，部署在 Pixel 7、Pixel 8 和 Raspberry Pi 4B 车载试验台上。它没有进入 Android 17 / API 37 的 AOSP 主线。本节用两个独立锚点讨论它：
+AppFlow 是 MobiCom 2026 论文提出的研究原型。当前可公开核查的是 2026 年 3 月发布的 arXiv v1；实验系统以 Android 15 为基础，部署在 Pixel 7、Pixel 8 和 Raspberry Pi 4B 车载试验台上，完整 Framework/kernel patch 没有随论文公开。它没有进入 Android 17 / API 37 的 AOSP 主线。本节用两个独立锚点讨论它：
 
 - 原型的设计与实验数字，以 [AppFlow 论文](https://arxiv.org/html/2603.17259v1) 为准；
 - 平台已有能力，以 `android-17.0.0_r1` 与 kernel `android17-6.18-2026-06_r6` 为准。
@@ -111,7 +116,7 @@ AppFlow 的设计来自论文样本中的四组测量。引用这些数据时，
 | 小文件数量多、体积小 | 图 5 汇总为数量约 4.7 倍、内存占比 2.2%；TikTok 个例为 1,002 个、数量 7.47 倍、23MB、约 4% | 小文件适合在有限预算内提前读 |
 | 预读和回收会互相抵消 | 低内存下，预读页被回收后启动 I/O 延迟增至 6.4 倍 | 只加 prefetch 可能增加压力与重复读取 |
 
-论文正文在汇总值与 TikTok 个例之间使用了不同数字。写工程结论时要注明取自图表汇总还是单个应用，不能把 7.47 倍和 3% 写成所有应用共有的常数。
+论文正文在汇总值与 TikTok 个例之间使用了不同数字。Figure 5 的汇总值是 4.7 倍和 2.2%；TikTok 个例是 7.47 倍、23MB、约 4%。工程文档应注明数字来自图表汇总还是单个应用，不能交叉拼接后再当成所有应用共有的常数。
 
 论文还引用既有研究中的“30 分钟内再次访问 92.5%”，并报告 Android 基线杀掉其中 62% 的高概率应用。前一项不是 AppFlow 自己的 100 天数据，后一项依赖论文的 workload 与判定方式。产品预测器需要用自身用户群、场景和隐私约束重新训练与验证。
 
@@ -149,7 +154,7 @@ AppFlow 的设计来自论文样本中的四组测量。引用这些数据时，
 
 ### 论文原型的两种控制
 
-论文每 100ms 读取一次可用内存和页分配计数。当可用内存低于设备阈值、最近窗口分配量高于 `N_alloc` 时，原型进入 file-first 阶段；论文参数搜索得到的 `N_alloc` 是 12,800 页。压力缓和后再回收匿名页，并回到常规比例。
+论文每 100ms 读取一次可用内存和页分配计数。当可用内存低于设备阈值、最近窗口分配量高于 `N_alloc` 时，原型进入 file-first 阶段；论文参数搜索得到的 `N_alloc` 是 12,800 页。file-backed 页扫描完成后，原型再进入 anonymous rebalance；压力窗口结束后恢复常规回收策略。这个顺序比“高压期间永远只扫描文件页”更接近论文的算法描述，也避免匿名页长期堆积。
 
 对预加载页，原型按两个窗口处理：
 
@@ -200,7 +205,7 @@ r1 默认使用 PSI，设备可以通过属性覆盖。源码默认值如下：
 
 AMS 根据进程状态、组件关系和用户可感知性计算 adj。`ProcessList.setOomAdj()` 或 `batchSetOomAdj()` 把这个结果发给 `lmkd`。`lmkd` 从较高 adj 桶向较低 adj 桶查找候选；`kill_heaviest_task=false` 时通常取该桶队尾，配置为 true 时取该桶内占用较大的进程。源码还规定，当搜索进入 `PERCEPTIBLE_APP_ADJ` 或更重要的范围时，选择逻辑会强制改为 heaviest，尽量减少牺牲数量。
 
-adj 表达 Android 组件的当前重要性。把“预计稍后会打开”伪装成 perceptible 或 visible，会改变 AMS、LMKD、cached process 管理与资源公平性的共同约定。它也可能让真实的可感知进程承担更大压力。
+adj 表达 Android 组件的当前重要性。把“预计稍后会打开”伪装成 perceptible 或 visible，会改变 AMS、LMKD、cached process 管理与资源公平性的共同约定，也可能把更多内存压力转移给真实的可感知进程。
 
 ### `LMK_PROCS_PRIO` 的准确含义
 
