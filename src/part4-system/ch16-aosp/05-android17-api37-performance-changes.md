@@ -1,19 +1,53 @@
 ---
-
-
 title: "Android 17 (API 37) 性能行为变更与适配方法"
 chapter: 16.5
 section: 16.5
 status: finalized
 drafted_date: 2026-04-08
 applicable_versions: "Android 17 (API 37)"
-last_verified: 2026-07-12
-last_verified_against: "AOSP android-17.0.0_r1 frameworks/base + art + packages/modules/Profiling + build/soong; Android Developers behavior/features references"
-confidence: medium
+last_verified: 2026-07-30
+last_verified_against: "AOSP android-17.0.0_r1 frameworks/base + art + packages/modules/Profiling; Android Developers Android 17 behavior/features/API references"
+confidence: high
 reviewed_at: "2026-07-12T17:09:59+08:00"
 sources:
-- type: official
-path: https://juejin.cn/post/7610233341305389099
+  - type: official
+    path: "https://developer.android.com/about/versions/17/behavior-changes-17"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/behavior-changes-all"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/changes/messagequeue"
+  - type: official
+    path: "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/features"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/job/JobScheduler"
+  - type: official
+    path: "https://developer.android.com/guide/topics/resources/runtime-changes"
+  - type: official
+    path: "https://developer.android.com/privacy-and-security/security-config"
+  - type: official
+    path: "https://developer.android.com/privacy-and-security/local-network-permission"
+  - type: official
+    path: "https://developer.android.com/guide/practices/page-sizes"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/changes/bg-audio"
+  - type: source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedMessageQueue/MessageQueue.java"
+  - type: source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/res/values/attrs_manifest.xml"
+  - type: source
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/runtime.cc"
+  - type: source
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc"
+  - type: source
+    path: "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java"
+  - type: source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java"
+  - type: source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java"
 tags: "[android17, api37, behavior-changes, performance, deliqueue, generational-gc, profiling-manager, cloud-compilation]"
 related_chapters: '["1.6", "1.13", "4.8", "5.7", "8.2", "19", "16.2", "16.4"]'
 created_by: task2a-knowledge-gap
@@ -84,8 +118,8 @@ task6_promotion_notes: '2026-07-12 20H Task6 revisiting review #3 (post-task9-id
 
 | 类别 | 触发条件 | 本章涉及的项目 |
 |:---|:---|:---|
-| target SDK 行为 | Android 17 上运行且 `targetSdkVersion >= 37` | 新 `MessageQueue`、`static final` 写保护、ECH、CT、原生动态加载、大屏约束 |
-| 所有应用行为 | 运行在 Android 17，和 target SDK 无关 | 部分设备的 app memory limits、后台音频基础限制 |
+| target SDK 行为 | Android 17 上运行且 `targetSdkVersion >= 37` | 新 `MessageQueue`、`static final` 写保护、ECH、CT、原生动态加载、局域网权限、大屏约束 |
+| Android 17 平台行为 | 运行在 Android 17；文档未声明 target SDK 门槛 | 部分设备的 app memory limits、后台音频基础限制、特定配置变化不再重建 Activity |
 | API 与运行时能力 | API 37 或 Android 17 的系统组件提供能力 | `ProfilingTrigger`、`JobScheduler.getPendingJobReasonStats()`、ART 分代 CMC |
 | 延续性兼容要求 | 早于 Android 17 已出现，升级时仍需满足 | 16KB 页面大小 |
 
@@ -310,7 +344,7 @@ Android 17 上运行且 target SDK 37 及以上的应用，不能再修改 `stat
 
 这项约束允许 ART 更积极地依赖常量语义做优化，但不能据此推导某段业务代码一定获得可测加速。迁移目标是移除未受规范保证的写入行为。
 
-### 大屏方向、尺寸与配置变化
+### 大屏方向、尺寸与 Activity 配置变化
 
 target SDK 37 应用运行在 smallest width 至少 600dp 的大屏上时，平台会忽略固定方向、不可调整大小和宽高比限制，包括相关 manifest 属性与 `setRequestedOrientation()` 值。以 `android:appCategory` 识别的游戏、较小屏幕以及用户在设备设置中的显式选择属于文档列出的例外。
 
@@ -321,18 +355,17 @@ target SDK 37 应用运行在 smallest width 至少 600dp 的大屏上时，平�
 - 检查相机预览、Surface、地图和 `AndroidView` 等嵌入组件在尺寸连续变化时的重建成本。
 - 用 Perfetto 观察配置变化附近的 lifecycle、`performTraversals`、buffer queue 和 missed frame。
 
-Android 17 还改变了几类配置事件的默认 Activity 行为。keyboard、keyboardHidden、navigation、touchscreen、colorMode，以及进出 desk UI mode 时，系统默认不再销毁重建 Activity，而是让活动实例继续运行并收到配置更新。
+大屏约束由 target SDK 37 触发，下面的 Activity 重建优化则是另一类 Android 17 平台默认规则。官方运行时配置指南没有为它声明 target SDK 门槛：keyboard、keyboardHidden、navigation、touchscreen、colorMode，以及进出 desk UI mode 时，系统默认不再销毁重建 Activity，而是保留实例并调用 `onConfigurationChanged()`。
 
-如果旧代码依赖销毁重建来刷新这些资源，可在 manifest 中显式声明 `android:recreateOnConfigChanges`。下面的示例只为确有重建依赖的事件恢复旧行为。
+`android-17.0.0_r1` 的 `attrs_manifest.xml` 允许 `android:recreateOnConfigChanges` 使用 touchscreen、keyboard、keyboardHidden、navigation、colorMode，以及 Android 8 已有的 mcc、mnc；同一个标志不能再放入 `android:configChanges`。该属性没有 `uiMode` 取值，因此 desk UI mode 变化要由应用更新资源和组件。下面的示例只为确有重建依赖的五类 Android 17 事件恢复旧行为。
 
 ```xml
 <activity
     android:name=".ReaderActivity"
-    android:recreateOnConfigChanges=
-        "keyboard|keyboardHidden|navigation|colorMode|touchscreen" />
+    android:recreateOnConfigChanges="keyboard|keyboardHidden|navigation|colorMode|touchscreen" />
 ```
 
-这个属性会执行完整 stop、destroy、recreate 周期。没有重建依赖时应更新资源与嵌入组件，避免用重建掩盖状态管理问题。
+这五类事件发生时，该属性会让 Activity 执行完整的 stop、destroy、recreate 周期。没有重建依赖时，应在 `onConfigurationChanged()` 中更新非 Compose 状态与嵌入组件；Compose 中读取 `LocalConfiguration.current` 的部分会重组，`AndroidView`、`AndroidFragment` 等嵌入对象仍需应用自行刷新。
 
 ### Network Security Configuration、ECH 与 CT
 
@@ -340,7 +373,7 @@ Android 17 计划在未来版本弃用 manifest 级 `usesCleartextTraffic`，当
 
 对 target SDK 37 应用，Android 17 为 TLS 连接启用 Encrypted Client Hello（ECH）。生效还要求应用所用网络库已经接入 ECH，服务端也支持协商；无法协商时客户端发送 ECH GREASE。Network Security Configuration 新增 `<domainEncryption>`，可在 `<base-config>` 或 `<domain-config>` 中按全局或域名设置 `enabled`、`disabled` 等模式。
 
-下面的配置显式要求 `example.com` 使用 ECH 策略。
+下面的配置为 `example.com` 显式选择 `enabled` 模式。
 
 ```xml
 <network-security-config>
@@ -351,9 +384,15 @@ Android 17 计划在未来版本弃用 manifest 级 `usesCleartextTraffic`，当
 </network-security-config>
 ```
 
-平台支持、客户端库接入、DNS/HTTPS 记录和服务端部署缺一都会影响协商。排障要记录网络库版本、DNS 结果和 TLS handshake，不要给 ECH 写固定时延收益。
+`enabled` 表示客户端拿到 ECH 配置时启用 ECH，拿不到时发送 ECH GREASE；它不是“服务端不支持 ECH 就拒绝连接”的 fail-closed 开关。平台支持、客户端库接入、DNS HTTPS 记录和服务端部署都会影响协商。排障要记录网络库版本、DNS 结果和 TLS handshake，不要给 ECH 写固定时延收益。
 
-target SDK 37 应用还会默认启用 Certificate Transparency（CT）。证书链或 SCT 不满足平台策略时，TLS 连接会失败。CT 校验通常使用证书或握手携带的 SCT，不能概括成“每次连接都会访问 CT log”。升级前应覆盖生产域名、备用域名、CDN 切换与证书轮换。
+target SDK 37 应用还会默认启用 Certificate Transparency（CT）。网络栈按 Network Security Configuration 执行 CT 时，证书链或 SCT 不满足策略会使 TLS 连接失败。若某个 `domain-config` 使用用户证书库或内嵌证书作为 trust anchor，CT 默认会关闭；需要时可用 `<certificateTransparency enabled="true"/>` 再显式开启。CT 校验通常使用证书或握手携带的 SCT，不能概括成“每次连接都会访问 CT log”。升级前应覆盖生产域名、备用域名、CDN 切换、证书轮换以及自定义 trust anchor。
+
+### 局域网访问权限
+
+target SDK 37 应用在 Android 17 上访问局域网时，需要声明并在运行时申请 `ACCESS_LOCAL_NETWORK`。该权限属于 `NEARBY_DEVICES` 权限组；用户已授予组内其他权限时，系统不会再次弹出授权框。设备发现、投屏、智能家居、调试桥接和本地 HTTP 服务都要覆盖“未授权、拒绝、之后授权”三条路径。
+
+Google Cast Output Switcher 和带 `DiscoveryRequest.FLAG_SHOW_PICKER` 的 `NsdManager` 可由系统完成发现与选择，让对应场景无需直接获得整个局域网访问权。迁移时应按产品能力选择 picker 或运行时权限，不能用连接超时替代权限状态判断。缺少权限时，TCP 常表现为超时，UDP 通常返回 `EPERM`；native 网络栈可用 `android_getnetworkblockedreason()` 区分 Local Network Protection 拦截。性能测试若包含局域网服务，必须记录授权状态，避免把权限拒绝误判为 DNS、TCP 或服务端性能问题。
 
 ### 16KB 页面是延续性发布要求
 
@@ -375,9 +414,10 @@ AGP 8.5.1 及以上配合 NDK r28 及以上时，官方工具默认处理 16KB Z
 bundletool dump config --bundle app-release.aab
 zipalign -c -P 16 -v 4 app-release.apk
 llvm-readelf -lW lib/arm64-v8a/libexample.so
+adb shell getconf PAGE_SIZE
 ```
 
-bundle 配置应显示 `PAGE_ALIGNMENT_16K`，`zipalign` 应通过，`readelf` 中各 `LOAD` segment 的 Align 要满足 16KB 设备要求。工具通过后还要在 16KB emulator 或设备上覆盖启动、动态加载、数据库、媒体与 mmap 场景。原理和排查步骤参阅 [[07-16kb-page-size|4.7 16KB Page Size 与 Android 性能]]。
+bundle 配置应显示 `PAGE_ALIGNMENT_16K`，`zipalign` 应通过，`readelf` 中每个 `LOAD` segment 的 Align 不得低于 `2**14`，设备命令应返回 `16384`。工具通过后还要在 16KB emulator 或设备上覆盖启动、动态加载、数据库、媒体与 mmap 场景。Android 17 还能把 16KB backcompat 设为 `fatal`，用于让不兼容二进制立即终止；它适合测试，不是发布兼容方案。原理和排查步骤参阅 [[07-16kb-page-size|4.7 16KB Page Size 与 Android 性能]]。
 
 ## 运行在 Android 17 时还要检查的项目
 
@@ -397,7 +437,7 @@ target SDK 37 应用在后台还有一层要求：foreground service 需具备 w
 
 target SDK 37 后，Android 14 对 DEX/JAR 的 Safer Dynamic Code Loading 保护扩展到 native library。经 `System.load()` 加载的 native 文件必须为只读，否则抛出 `UnsatisfiedLinkError`。
 
-优先移除网络下载并执行 native code 的设计。确有动态加载需求时，文件应位于应用私有目录，完成来源与完整性校验，并在 `System.load()` 前设置只读；更新文件要写入新临时文件，校验后原子替换，避免边写边执行。
+优先移除网络下载并执行 native code 的设计。确有动态加载需求时，文件应位于应用私有目录，完成来源与签名或散列校验，并在 `System.load()` 前设置只读。更新时写入独立临时文件，关闭写句柄并校验，设置只读后再原子替换；不要在已加载路径上边写边执行。只读标志满足平台加载检查，签名或散列才用于确认文件来源和内容。
 
 ## Choreographer Buffer Stuffing Recovery
 
@@ -422,7 +462,8 @@ DeliQueue 处理 Java 消息投递争用，Buffer Stuffing Recovery 处理图形
 - [ ] 搜索 `MessageQueue` 私有字段、hidden API、JNI 与自制 idle 检测。
 - [ ] 升级到 Espresso 3.7.0+、Robolectric 4.17+，移除 `@LooperMode(LEGACY)`。
 - [ ] 搜索反射和 JNI 对 `static final` 的写入。
-- [ ] 盘点 HTTP 域名、ECH/CT 兼容、证书与 CDN 切换。
+- [ ] 盘点 HTTP 域名、ECH/CT 兼容、证书、CDN 切换与自定义 trust anchor。
+- [ ] 盘点局域网发现和连接入口，覆盖 `ACCESS_LOCAL_NETWORK` 的授权状态。
 - [ ] 检查动态 native library 的来源、写权限与加载流程。
 - [ ] 在 sw600dp、折叠、多窗口、桌面窗口和方向变化中验证 UI 状态。
 - [ ] 审核所有直接和间接 native 依赖的 16KB 对齐。
@@ -456,9 +497,12 @@ DeliQueue 处理 Java 消息投递争用，Buffer Stuffing Recovery 处理图形
 - [ProfilingTrigger API reference](https://developer.android.com/reference/android/os/ProfilingTrigger)
 - [JobScheduler API reference](https://developer.android.com/reference/android/app/job/JobScheduler)
 - [Handle configuration changes](https://developer.android.com/guide/topics/resources/runtime-changes)
+- [Network Security Configuration](https://developer.android.com/privacy-and-security/security-config)
+- [Local network permission](https://developer.android.com/privacy-and-security/local-network-permission)
 - [Background audio hardening](https://developer.android.com/about/versions/17/changes/bg-audio)
 - [Support 16KB page sizes](https://developer.android.com/guide/practices/page-sizes)
 - [AOSP r1：CombinedMessageQueue/MessageQueue.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedMessageQueue/MessageQueue.java)
+- [AOSP r1：attrs_manifest.xml](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/res/values/attrs_manifest.xml)
 - [AOSP r1：ART runtime.cc](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/runtime.cc)
 - [AOSP r1：ART mark_compact.cc](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc)
 - [AOSP r1：ProfilingTrigger.java](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java)
