@@ -11,25 +11,46 @@ polish_count: 1
 polish_date: '2026-04-10'
 polish_by: task2b-polish
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-04-24'
-last_verified_against: AGP 8.8 DSL deprecation docs + AGP 8.12.0 release notes + Android
-  App Bundle docs
-confidence: medium
+last_verified: '2026-07-31'
+last_verified_against: 'AOSP android-17.0.0_r1；Android 17 / API 37 SDK；AGP 9.3.0、R8、bundletool、Play Feature Delivery 与 16KB page-size 官方文档（2026-07）'
+confidence: high
 sources:
 - type: official
   path: https://developer.android.com/topic/performance/reduce-apk-size
 - type: official
-  path: https://developer.android.com/build/shrink-code
+  path: https://developer.android.com/guide/app-bundle/test
 - type: official
-  path: https://developer.android.com/build/app-bundle
+  path: https://developer.android.com/tools/bundletool
 - type: official
-  path: https://developer.android.com/reference/tools/gradle-api/8.8/com/android/build/api/dsl/ApplicationBaseFlavor#resourceConfigurations
+  path: https://developer.android.com/topic/performance/app-optimization/enable-app-optimization
 - type: official
-  path: https://developer.android.com/reference/tools/gradle-api/8.8/com/android/build/api/dsl/ApplicationAndroidResources#localeFilters
+  path: https://developer.android.com/build/releases/agp-9-3-0-release-notes
+- type: official
+  path: https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/dsl/ApplicationAndroidResources
+- type: official
+  path: https://developer.android.com/guide/playcore
 - type: official
   path: https://developer.android.com/guide/playcore/feature-delivery
-- type: blog
-  path: 得物技术《包体积：Layout 二进制文件裁剪优化》2023-09
+- type: official
+  path: https://developer.android.com/guide/playcore/feature-delivery/on-demand
+- type: official
+  path: https://developer.android.com/topic/performance/baselineprofiles/overview
+- type: official
+  path: https://developer.android.com/topic/performance/baselineprofiles/configure-baselineprofiles
+- type: official
+  path: https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations
+- type: official
+  path: https://developer.android.com/guide/practices/page-sizes
+- type: official
+  path: https://developer.android.com/tools/zipalign
+- type: official
+  path: https://developer.android.com/build/include-native-symbols
+- type: aosp
+  path: frameworks/base/libs/androidfw/ResourceTypes.cpp
+- type: aosp
+  path: art/libdexfile/dex/dex_file_loader.cc
+- type: aosp
+  path: bionic/linker/linker.cpp
 tags:
 - apk
 - r8
@@ -79,455 +100,392 @@ last_deepseek_cn_review_at: 2026-06-18
 
 # APK 体积优化
 
-## 为什么要关注 APK 体积
+“安装包有多大”没有单一答案。团队若只盯着 `app-release.aab` 的文件大小，很容易优化错对象。一次 Android 发布至少会出现四组体积：
 
-试想一个场景：用户在地铁上用 4G 搜到一个 App，Google Play 显示「下载大小 156 MB」——这个数字很可能直接让他划走了。Google 在 2018 年的一项内部研究中发现，APK 体积每增加 6 MB，安装转化率就下降约 1%。在国内应用市场，这个数字可能更敏感——很多用户还在按流量计费，或者手机存储已经捉襟见肘。
+- **上传体积**：发布系统接收的 AAB，或某个渠道接收的 APK。
+- **下载体积**：商店为特定设备生成制品后，经传输压缩得到的字节数。
+- **安装制品体积**：设备保存的 base APK、configuration APK 与 feature APK 总量。
+- **安装后占用**：安装制品、提取文件、ART 编译产物、应用数据和缓存共同占用的存储空间。
 
-体积问题不仅仅是下载体验。APK 安装后，dex 文件需要被解压、验证、编译（AOT/JIT）；resources.arsc 会被加载到内存；native libraries 被解压到磁盘。体积越大，安装时间越长，运行时的内存占用也越高。包体积和启动速度、内存占用之间存在一条因果链，在 MTK、高通等平台的性能优化工作中会产生影响。
+这些数字服务于不同问题。下载体积影响网络等待，安装制品影响设备存储，ART 产物属于运行时编译结果。包体变小可能缩短下载或安装时间，却不能据此推导堆内存、启动耗时或常驻内存必然同比下降。性能结论仍需用对应指标测量。
 
-本章不罗列优化技巧清单——那种清单任何博客上都能找到。本章只回答三件事：**一个 APK 里面到底装了什么，哪些东西占了多少空间，我们用什么工具能看清楚，以及从工程实践的角度，哪些优化手段投入产出比最高。**
+本章以 Android 17 / API 37、AOSP `android-17.0.0_r1` 和 AGP 9.3.0 为基准，讨论 release 制品的分析、缩减、分发与验证。
 
-## APK 里面到底装了什么
+## 建立可比较的体积口径
 
+### AAB、APK 与设备交付集
 
-一个标准的 release APK 就是一个 ZIP 压缩包。解压之后，我们通常会看到以下几类文件：
+AAB 是发布用的容器，不能直接安装。Google Play 会依据设备的 ABI、屏幕密度、语言和 feature 状态生成一组 APK。相同 AAB 在两台设备上的下载量与安装制品总量可能不同。
 
-**Dex 文件（classes.dex, classes2.dex, ...）** 是编译后的 Dalvik 字节码。所有 Kotlin/Java 代码——包括业务代码、AndroidX 库、第三方 SDK——最终都会编译进 dex 文件。一个中等规模的 App，dex 通常占总大小的 30%-50%。当方法数超过 65536（即一个 dex 文件的理论上限）时，Gradle 会自动进行多 dex 分包，产生 classes2.dex、classes3.dex 等文件。
+直接分发 APK 的渠道没有这层按设备生成能力，单 APK 往往需要覆盖更多 ABI 和资源配置。`bundletool` 可以从 AAB 生成 APK set，也可以生成 universal APK；universal APK 合并了广泛的设备配置，因此会失去大部分按设备裁剪收益。非 Play 渠道是否接收 AAB、是否支持拆分安装，由该渠道的发布规范决定。
 
-**resources.arsc** 是资源索引表。把它看成一张总目录更接近实际实现。文件里至少有三层和体积密切相关的字符串池：全局字符串池、每个 `ResTable_package` 下的 Type String Pool（`string`、`layout`、`drawable` 这类资源类型名），以及 Key String Pool（`app_name`、`main_title` 这类 entry 名称）。系统根据资源 ID 定位 package、type、entry 后，再回到这些池和对应的类型块取元数据。AndResGuard 这类工具压缩 `resources.arsc` 时，主要就是缩短 Type String Pool 和 Key String Pool 里的字符串条目，资源表本身和内存映射开销也会跟着下降。
+### 固定测量输入
 
-**res/ 目录**包含编译后的二进制资源文件——布局 XML 的二进制编译版、图片资源、颜色值等。Android 构建工具会把 XML 布局文件编译成二进制格式（AXML），这不是普通的文本 XML。得物技术团队曾经通过裁剪二进制 XML 中的冗余字段（如 Namespace 声明、重复的属性名）实现了单个 Layout 文件体积缩减约 40%。
+可复现的比较需要固定这些条件：
 
-**assets/ 目录**存放原始文件——字体、WebView 加载的 HTML、配置文件等。这些文件不会被编译，原样打包进 APK。如果 App 内置了字体文件或大型 JSON 配置，assets 可能成为体积大户。
+- 同一 build variant、签名方式与构建工具版本；
+- 同一 `bundletool` 版本和同一 device spec；
+- 相同的压缩口径，例如 min、max 或某个固定设备的下载估算；
+- 相同的符号、mapping、Baseline Profile 与动态模块配置；
+- release 制品对 release 制品，避免拿 debug APK 做基线。
 
-**lib/ 目录**是 native libraries（.so 文件）的存放位置。这个目录按 ABI（Application Binary Interface）分子目录——`arm64-v8a/`、`armeabi-v7a/`、`x86/`、`x86_64/`。每一个 ABI 子目录下都是一份完整的 so 库副本。所以如果 Gradle 里没有配置 `ndk.abiFilters`，APK 里可能同时包含了 4 个架构的 native 库——arm64 设备只需要其中 1 份，另外 3 份全是浪费。
+下面的命令用于生成设备交付集，并查询指定设备的压缩下载范围：
 
-**META-INF/ 目录**包含签名信息。这个目录下的文件（CERT.SF、CERT.RSA、MANIFEST.MF）在 APK 安装时用于验证完整性，体积通常不大。
+```bash
+bundletool build-apks \
+  --bundle=app-release.aab \
+  --output=app-release.apks \
+  --overwrite
 
-`AndroidManifest.xml` 是编译后的二进制清单文件，描述了 App 的组件、权限、SDK 版本等信息。
+bundletool get-size total \
+  --apks=app-release.apks \
+  --device-spec=ci/device-spec.json
 
-理解这个结构是优化体积的前提。不同类型的文件需要完全不同的优化策略：dex 靠代码缩减和混淆，res 靠资源压缩和格式替换，lib 靠 ABI 过滤和动态下发。APK 本身是 ZIP 容器，`classes.dex` 和 ELF `.so` 只是被放进容器里的内容，它们是否压缩取决于 packaging 策略，不取决于文件格式本身。
+apkanalyzer apk file-size app-release.apk
+```
 
-对 dex 来说，APK 里常见的是 ZIP entry 的压缩结果，安装后还会继续进入 dexopt、vdex / odex 这些流程。对 native 库来说，Android 6.0+ 已支持直接从 APK 加载未压缩且 page-aligned 的 `.so`。AGP 4.2+ 更常用 `jniLibs.useLegacyPackaging` 控制这条路径，旧的 `android:extractNativeLibs` 清单属性只是同一问题的旧入口。`useLegacyPackaging=false` 时，`.so` 会保持未压缩以支持 direct loading；`true` 时才会走压缩并提取到文件系统的路径。
+`bundletool get-size total` 分析 APK set，`apkanalyzer` 返回 APK 文件自身的字节数。发布门禁应使用流水线生成的签名制品；本地临时签名只适合方向性分析。Google Play Console 的下载数据更接近线上交付结果，不能用 AAB 的 ZIP 大小替代。
 
-## APK Analyzer：先测量，再优化
+Android Studio 的 APK Analyzer 适合查看目录贡献、DEX 包级贡献、资源和两个制品之间的差异。它显示的 Raw Size 与 Download Size 是不同口径，后者属于工具估算。报告中应注明工具和版本，避免把估算值写成商店观测值。
 
+## APK 内部有哪些内容
 
-盲目优化是工程上的大忌。在动手之前，我们需要知道 APK 里到底什么最占空间。Android Studio 自带的 **APK Analyzer** 是做这件事的第一选择。
+APK 是带有 Android 约束的 ZIP 文件。常见条目可分为以下几类：
 
-在 Android Studio 中选择 **Build → Analyze APK...**，然后选中 release APK 文件。APK Analyzer 会展示一个树状结构，列出每个文件和目录的大小，包括 **Raw Size**（未压缩原始大小）和 **Download Size**（估算的下载大小，考虑了 Google Play 的进一步压缩）。
+- `classes.dex`、`classes2.dex` 等保存 DEX 字节码。单个 DEX 的 `method_ids` 表最多容纳 65,536 个**方法引用**，它不是“应用最多只能有 65,536 个方法”。D8 会结合 `minSdk`、主 DEX 规则与依赖生成一个或多个 DEX；API 21 起平台原生支持从 APK 加载多个 DEX。
+- `resources.arsc` 保存编译后的资源表，`res/` 保存编译资源及图片等文件。AOSP `androidfw` 依照 package、type、entry 与 configuration 解析资源表；可从 [`ResourceTypes.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/androidfw/ResourceTypes.cpp) 核对数据结构和边界检查。
+- `assets/` 保存应用按原始文件接口读取的内容，例如字体、模型、网页资源或配置。构建系统不会分析业务语义，未使用的 asset 需要工程侧识别。
+- `lib/<abi>/` 保存 ELF 共享库。同一个库为多个 ABI 编译后会形成多份机器码。
+- `AndroidManifest.xml` 是编译后的清单。
+- Java resource、服务声明和许可证文件通常位于各自 ZIP 路径或 `META-INF/`。
 
-在 APK Analyzer 的顶部，有几个关键信息：
+签名信息需要按 APK Signature Scheme 区分。V1/JAR 签名会在 `META-INF/` 生成 `MANIFEST.MF`、`.SF` 与签名块文件；V2/V3 签名位于 APK Signing Block；V4 安装流程还可能使用独立的 `.idsig`。看到 `META-INF/` 不能推断制品只采用哪一种签名方案。
 
-**Total Size** 给出了整个 APK 的大小概览。如果这个数字和预期差距很大，说明构建配置可能有问题（比如 debug 构建没开混淆，或者意外包含了一个大型 SDK）。
+ZIP 条目是否压缩也会改变观察结果。DEX、资源和 native library 可能因打包策略采用压缩或未压缩存储。未压缩条目的 APK 文件会更大，却可支持直接映射或减少安装时提取。体积评审应同时记录 ZIP 压缩大小、原始大小和设备侧形态。
 
-**Dex 文件分析**：点击 classes.dex，APK Analyzer 会展示一个类列表，按包名组织。这里能看到每个包（也就是每个库或模块）贡献了多少方法和多少字节。这一步通常能立即暴露问题——比如某个只用了其中一个工具方法的工具库，却带着 20000 个方法和 5 MB 的 dex 代码。
+## 用贡献者排序代替猜测
 
-**资源对比**：APK Analyzer 的另一个实用功能是**对比两个 APK**。把优化前后的两个 APK 拖进去，它会把差异高亮出来，确认优化是否生效、有没有意外引入新的资源。
+一轮体积分析可以按四个贡献域展开：
 
-在命令行环境下，可以使用 Google 提供的 `bundletool`（App Bundle 的配套工具）或 `aapt dump badging` 来获取 APK 结构信息，适合集成到 CI/CD 流水线中做体积门禁检查。
+1. **代码**：应用模块、传递依赖、生成代码、反射保留规则。
+2. **资源**：图片、翻译、资源表、重复资源和无法被静态分析的动态引用。
+3. **native**：ABI、副本、符号、第三方预编译库和页对齐。
+4. **asset 与交付模块**：字体、媒体、模型、Web 内容、install-time feature。
 
-## 代码瘦身：让 R8 帮你砍掉不需要的代码
+报告至少保留“优化前、优化后、差值、归属文件、目标设备口径”五列。总量变化只能说明结果，文件或包级 diff 才能解释来源。百分比应由项目制品计算，不能套用行业案例的固定收益。
 
+## 代码与资源：以 R8 输出为准
 
-### R8 是什么，为什么它比 ProGuard 更好
+### AGP 9.3.0 的优化入口
 
-R8 是 Android 构建工具链中的代码优化器，从 Android Gradle Plugin（AGP）3.4.0 开始取代 ProGuard 成为默认工具。它做四件事：
-
-**代码缩减（Code Shrinking / Tree Shaking）**——通过分析代码的入口点（Activity、Service、ContentProvider 等在 AndroidManifest 中声明的组件），R8 追踪所有可达的代码路径，不可达的类和方法会被移除。这对第三方库尤其有效——我们可能只用了 Guava 的 `Strings.isNullOrEmpty()`，但 Guava 的完整 jar 包含几千个方法，R8 会把没用到的那部分全部删掉。
-
-**资源缩减（Resource Shrinking）**——与代码缩减联动，一旦某个代码被移除，该代码中引用的资源文件（如仅在已删除 Activity 中使用的布局文件）也会被移除。
-
-**代码混淆（Obfuscation）**——把 `com.example.androidperformance.MainActivity` 重命名为 `a.b.c`。这不仅能保护代码，更直接的效果是大幅缩减 dex 文件中的字符串常量池。一个有上千个类名的项目，混淆后 dex 可以减小 10%-20%。
-
-**代码优化（Optimization）**——R8 Full Mode（AGP 8.0+ 默认开启）会执行方法内联、类合并、无用接口移除等更激进的优化。比如如果一个方法只被调用一次，R8 可能会把方法体内联到调用点，消除方法调用的开销。
-
-### 怎么开启 R8
-
-在模块级 `build.gradle`（或 `build.gradle.kts`）中：
+AGP 9.3.0 支持的最高 API 级别是 37，并引入了新的 `optimization` DSL。release 构建可这样开启代码优化和优化后的资源缩减：
 
 ```kotlin
 android {
+    compileSdk = 37
+
     buildTypes {
         release {
-            isMinifyEnabled = true      // 开启代码缩减 + 混淆 + 优化
-            isShrinkResources = true    // 开启资源缩减（依赖 isMinifyEnabled）
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            optimization {
+                enable = true
+            }
         }
     }
 }
 ```
 
-两个开关都要打开。`isMinifyEnabled` 控制 R8 的代码缩减和混淆，`isShrinkResources` 控制资源缩减。资源缩减必须依赖代码缩减先运行，因为它需要知道哪些代码还在使用——只有代码层面确认无用的资源，才会被移除。
+在 AGP 9.3 中，这个开关同时启用代码与资源优化，并带有等价于 `proguard-android-optimize.txt` 的平台默认规则。旧的 `isMinifyEnabled`、`isShrinkResources` 和 `proguardFiles` DSL 仍受支持，已有项目无需为了改写语法进行一次无收益迁移。
 
-注意 `proguard-android-optimize.txt` 这个文件名。Android 提供两个默认规则文件：`proguard-android.txt` 是保守配置，`proguard-android-optimize.txt` 包含更多优化选项。对于新项目，用 optimize 版本即可。
+新 DSL 的自定义 keep 文件放在 `src/<variant>/keepRules/`，扩展名为 `.keep`，例如 `src/main/keepRules/reflection.keep`。库作者应提供精确的 consumer keep rules，让应用在完整程序图上做优化。`@Keep` 会保留被标注元素，适用于少量稳定入口；它无法替代对反射、JNI、序列化与动态代理边界的分析。
 
-### Keep 规则：告诉 R8 别删错了
+AGP 8.12 引入优化后的资源缩减，AGP 9.0 起在启用资源缩减时自动使用。第三方工具若在 R8 之后重写 DEX、资源表或资源名，可能破坏 DEX 布局、Baseline Profile、mapping 和资源引用一致性。此类工具需要独立兼容清单、崩溃验证与制品 diff。
 
-R8 的静态分析有一个盲区：**通过反射调用的代码，R8 看不到调用链**。如果用 `Class.forName("com.example.MyClass")` 或者 Gson 反序列化 JSON 到某个类，R8 可能会把那个类当作无用代码删掉。
+AGP 9.3.0 还提供独立的 R8 配置分析任务，下面的命令可以在完整打包前生成报告：
 
-解决方法是在 `proguard-rules.pro` 中添加 keep 规则：
-
-```proguard
--keep class com.example.MyModelClass { *; }
+```bash
+./gradlew :app:analyzeReleaseR8Config
 ```
 
-keep 规则常见的工程陷阱是：**规则写得越宽，R8 能优化的空间就越小**。一条 `-keep class com.example.** { *; }` 就可能让整个包名下的所有类逃过优化。Android 官方推荐的做法是尽量使用 `@Keep` 注解，精确标注需要保留的类和成员：
+报告可定位覆盖范围过宽的 keep 规则。处理方式是缩小类、成员、注解或调用边界，再运行 release 测试与 retrace 验证；不能以删除全部 keep 规则换取体积数字。
 
-```kotlin
-@Keep
-data class ApiResponse(
-    val status: String,
-    val data: List<Item>
-)
-```
+### 依赖治理
 
-这样 R8 知道只保留 `ApiResponse` 及其字段，而不会波及包内其他类。
+依赖体积需要查看 release 结果，因为源码行数、AAR 大小和进入 DEX 的大小没有固定换算关系。R8 可移除不可达代码，但以下内容常会留下：
 
-在 APK Analyzer 中，如果发现某个库的代码几乎完整保留（混淆后的包名还在），很可能就是这个库缺少精确的 keep 规则，或者它的构建产物自带了过宽的 consumer ProGuard rules。检查 `.aar` 文件中的 `proguard.txt`，看看是不是它把整个库都 keep 住了。
+- 由 Manifest 合并引入的 component、provider 或 metadata；
+- 反射与序列化规则保留的类和成员；
+- AAR 中的资源、asset、JNI 库与 consumer rules；
+- 多个 SDK 自带的重复 native 库或模型；
+- `ServiceLoader` 配置、JNI 注册入口和运行时按名称查找的实现。
 
-### R8 Full Mode 和新版资源缩减
+替换依赖前要对比 API 覆盖、行为、稳定性、许可、初始化成本和发布制品贡献。只使用库中一个很小的功能时，局部实现可能更轻；密码学、媒体编解码、数据库等领域不适合为了数百 KB复制高风险实现。
 
-AGP 8.0 开始，R8 Full Mode 成为默认行为。Full Mode 比 compatibility mode 更激进——它会改变类的可见性（把 public 改为 package-private）、内联短方法、合并只有单一实现的接口。如果项目是从很早的 AGP 版本迁移过来的，检查 `gradle.properties` 里有没有 `android.enableR8.fullMode=false`，如果有就删掉这一行。
+## 资源：裁剪配置，保留语义
 
-本章前面的 `isMinifyEnabled` / `isShrinkResources` 配置以 AGP 8.7 为基线。升级到 AGP 8.12.0+ 后，还可以打开**优化的资源缩减**（Optimized Resource Shrinking），把资源缩减逻辑并入 R8 的引用图分析。启用方式：
+### 语言资源
 
-```properties
-# gradle.properties
-android.r8.optimizedResourceShrinking=true
-```
-
-[适用版本: AGP 8.12/8.13 手动 opt-in；AGP 9.0.0+ 在 `isShrinkResources=true` 时默认使用 Optimized Resource Shrinking，不再需要设置该属性]
-
-AGP 8.12/8.13 需要手动开启这个开关。AGP 9.0.0 起只要 `isShrinkResources=true` 就自动使用优化版资源缩减。低版本仍然使用传统的资源缩减流程。
-
-> **⚠️ 动态资源引用的安全边界**：开启 `android.r8.optimizedResourceShrinking` 后，R8 的引用图分析会接管资源缩减逻辑。如果项目中有通过 `Resources.getIdentifier()` 动态获取资源的写法（常见于插件化框架、主题引擎、WebView 混合应用），R8 无法在编译期追踪这类动态引用，可能导致资源被误缩减。启用前的检查清单：
-> 1. 扫描代码中所有 `Resources.getIdentifier()` 调用点
-> 2. 检查反射式资源名拼接（如 `getIdentifier("icon_" + suffix, "drawable", packageName)`）
-> 3. 确认 `res/raw/keep.xml` 中用 `tools:keep` 声明了所有动态引用的资源匹配模式
-> 4. 构建后检查 `build/outputs/mapping/*/resources.txt`，确认没有误删
-> 5. 跑一轮资源路径回归测试，覆盖动态加载场景
-
-## 资源瘦身：图片、布局和字符串的优化
-
-### 图片格式替换：PNG → WebP
-
-图片通常是 `res/` 目录下体积最大的贡献者。把 PNG 替换为 WebP 是投入产出比最高的优化之一：在同等视觉质量下，WebP 比 PNG 小 25%-35%；如果允许有损压缩（对于照片类图片完全可以），压缩率可达 60%-70%。
-
-Android Studio 提供了批量转换功能：右键点击 `res/drawable` 目录，选择 **Convert to WebP...**，可以选择无损或有损模式，还能设置质量参数。对于 4.x 及以上设备（如今基本上是所有设备），WebP 的兼容性已经不是问题。
-
-对于简单的矢量图形（图标、简单形状），使用 **VectorDrawable**（SVG 格式）更好。矢量图不依赖屏幕密度，一个文件适配所有分辨率，而且体积通常比同等效果的 PNG 小得多。不过矢量图也有边界——复杂的矢量图在运行时渲染的开销可能比加载一张位图更大，所以不适合用于照片或复杂插图。
-
-### 资源混淆：AndResGuard
-
-资源混淆工具（如腾讯的 AndResGuard、字节跳动的 ResShrinker）通过缩短资源路径和文件名来减小 APK 体积。把 `res/drawable-hdpi/icon_background_launch_screen.png` 重命名为 `r/d/a.png`，看似只省了几个字符，但当 App 有上千个资源文件时，这种优化累积起来可以节省数百 KB 到数 MB。
-
-资源混淆的核心操作包括：将资源文件路径缩短为 `r/a/a.png` 这样的短路径，将 `resources.arsc` 中的字符串条目缩短为无意义的短字符串，合并重复的资源文件（同名同内容的资源只保留一份）。
-
-配置方法（以 AndResGuard 为例）：
-
-```groovy
-andResGuard {
-    mappingFile = null
-    use7zip = true
-    useSign = true
-    keepRoot = false
-    whiteList = [
-        "R.drawable.app_icon",  // 不能混淆启动图标
-        "R.string.app_name",
-    ]
-    compressedFileFilter = [
-        "*.png", "*.jpg", "*.jpeg", "*.webp"
-    ]
-}
-```
-
-`whiteList` 是关键——有些资源不能混淆，比如桌面启动图标（launcher 会通过固定资源名查找）、Notification 的小图标等。
-
-### 语言过滤和密度过滤要分开写
-
-AGP 8.8 的 DSL 文档已经把 `resourceConfigurations` / `resConfigs` 标成 deprecated。语言资源如果还需要在构建期裁剪，新项目直接用 `androidResources.localeFilters`：
+AGP 9.3 的应用资源 DSL 使用 `localeFilters`。若产品只声明有限语言，可用下面的配置过滤依赖带入的其他翻译：
 
 ```kotlin
 android {
     androidResources {
-        localeFilters += listOf("zh", "en")
+        localeFilters += listOf("en", "zh-rCN")
     }
 }
 ```
 
-这条配置解决的是“项目实际支持哪些 locale”。它对非 Play 分发、CI 产物和本地 universal 包更直接，因为三方库经常顺手带进几十种语言资源。构建期先把不用的 locale 删掉，`resources.arsc` 和 split 之前的基线包都会更干净。
+过滤后，未列出的 locale 资源不会进入该构建。配置值必须覆盖产品支持的语言、脚本和地区变体；应用内语言选择器、服务端下发语言或渠道差异也要纳入测试。AAB 的 language split 可以减少每台设备的初始下载，但应用若需要在运行时切换到未安装语言，还要采用 Play 的附加语言资源交付接口。
 
-密度资源要单独看。Google Play 上架 AAB 之后，density / ABI split 由 App Bundle 分发机制处理，用户下载的并不是把所有密度和 ABI 都塞进去的 universal APK。所以在 2026 这个基线下，`resConfigs("xhdpi", "xxhdpi")` 已经不该写成默认方案。
+### 图片、XML 与资源表
 
-手动过滤 density 只适合几类受控场景：
+位图优化应依据视觉质量、解码支持、透明度、动画和目标设备选择格式。WebP、PNG、JPEG、AVIF 的收益由素材内容与编码参数决定，没有通用缩减百分比。图标和简单几何图形可评估 VectorDrawable；VectorDrawable 是 Android XML 矢量资源，不能把任意 SVG 文件原样放入 `res/drawable/` 期待平台解析。
 
-- 仍然产出单 APK 的 sideload / 企业内部分发
-- 设备范围固定的 OEM 预装包或行业设备
-- 明确知道目标屏幕密度集合，且没有走 Google Play 动态分发
+资源命名缩短、二进制 XML 重写和资源表改写属于构建工具变换。AAPT2、R8、资源访问方式、split、签名与增量发布都会影响安全边界。若项目采用这类方案，至少要验证：
 
-如果项目还在维护旧 DSL，`resConfigs` 更适合当作兼容存量工程的过渡配置，不再是通用推荐路径。尤其不要把“语言过滤”和“密度过滤”写成同一条默认建议：前者在非 Play 构建里仍有现实价值，后者在 AAB 发布流程里通常已经由 split 覆盖。
+- `Resources#getIdentifier()`、反射式资源访问和 WebView 路径；
+- 动态 feature 与 asset pack 的资源引用；
+- 所有密度、locale、夜间模式和产品 flavor；
+- 资源 ID 稳定性要求以及增量补丁系统；
+- 签名校验、Baseline Profile 和崩溃符号化。
 
-```kotlin
-android {
-    defaultConfig {
-        // 旧 DSL，只建议用于受控单 APK / 非 Play 分发场景
-        resConfigs("zh", "en", "xxhdpi", "xxxhdpi")
-    }
-}
-```
+### asset
 
-如果项目已经切到 App Bundle，语言裁剪看 `localeFilters`，ABI / density 交给 Play split，剩下再回到图片、资源表和 native 库本身。
+Asset 不会因为业务代码不可达而自动消失。可以从 APK Analyzer 的 `assets/` 排序开始，逐项确认所有者、加载入口和更新策略。大模型、视频、离线地图或大字体集合需要评估 Play Asset Delivery、按需下载或服务端内容；自行下载可执行代码和 `.so` 还涉及完整性、加载安全与渠道政策，不能只按体积决策。
 
-## Native 库瘦身：ABI 过滤与动态下发
+## native library：ABI、符号与 16KB 页
 
-### ABI 过滤
+### ABI 裁剪要服从分发模型
 
-Native libraries（.so 文件）经常是 APK 体积的最大贡献者，尤其是包含音视频处理、机器学习等 native 代码的 App。问题在于默认构建会把所有 ABI 架构的 so 都打包进去。
-
-现实情况是：2024 年以后，Google Play 已经强制要求提交的 App 支持 64 位架构（arm64-v8a）。绝大多数现代 Android 手机都是 arm64。`x86` 和 `x86_64` 架构主要用于模拟器（和极少数 Chrome OS 设备），`armeabi-v7a`（32 位 ARM）覆盖率也在快速萎缩。
-
-最直接的优化：只保留目标设备实际需要的架构。
+Google Play 从 AAB 为设备生成 ABI configuration APK，arm64 设备不会收到 x86 库。直接发布单 APK 时，`abiFilters` 才会直接决定 APK 包含哪些 ABI。下面的配置只适用于产品已经明确停止支持其他 ABI 的场景：
 
 ```kotlin
 android {
     defaultConfig {
         ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            abiFilters += setOf("arm64-v8a")
         }
     }
 }
 ```
 
-对于 Google Play 分发的 App，更好的方案是使用 App Bundle（下一节讨论）——Play 会根据用户设备的 ABI 自动生成只包含对应架构的 APK，不需要手动过滤。
+这一设置会让其他 ABI 设备无法安装或无法加载 native 功能。变更前应从渠道设备分布、最低系统版本、模拟器与合作方设备确认支持范围。一个项目也可能只产出某些 ABI，因为源码构建和第三方 AAR 本来就没有提供其余库；“未配置过滤便一定打入四种 ABI”不成立。
 
-ABI 过滤只解决“带了几份库”。`.so` 是否压缩是另一条轴：在支持 direct loading 的设备上，`useLegacyPackaging=false` 会让库保持未压缩并满足 page alignment，安装后不必再额外抽取一份；`true` 时才会更接近旧式 `extractNativeLibs=true` 的行为。分析下载体积和安装后磁盘占用时，这两条设置要分开看。
+### 发布符号和 APK 内符号是两件事
 
-### 16KB Page Size 兼容不是体积优化项
+`ndk.debugSymbolLevel` 生成供 Play Console 做 native 崩溃符号化的独立符号归档，发布 APK 内的 `.so` 仍会按 release 规则 strip。`packaging.jniLibs.keepDebugSymbols` 会让匹配的 `.so` 跳过 strip，通常会显著增加交付体积。需要线上符号化时，应上传独立符号文件和 mapping，避免把调试符号留在用户制品中。
 
-Android 15+ 要求部分设备支持 16KB page size，这对 native library 产生了硬约束——不是“优化可选项”，而是“不满足就加载失败”。
+### 16KB 是兼容要求
 
-关键要求：
+Android 15 开始支持采用 16KB page size 的设备。它会影响 ELF `LOAD` segment 对齐、APK 内未压缩 `.so` 的 ZIP 对齐，以及 native 代码对页大小的假设。AGP 8.5.1 及以上配合 NDK r28 及以上时，工具链会按 16KB 要求打包并链接自研库；预编译 SDK 仍需逐个核对。AGP 9.3.0 的默认 NDK 是 28.2。
 
-- **AGP 8.5.1+**：使用未压缩 shared libraries（`useLegacyPackaging=false`），确保 `.so` 的 ZIP entry 按 16KB 边界排列
-- **NDK r28+**：默认生成 16KB ELF alignment（`max-page-size=16384`）；NDK r27 及以下需在链接器 flags 中添加 `-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384`
-- **Prebuilt .so**：用 `readelf -l <lib>.so | grep LOAD` 检查所有 LOAD 段的 `Align` 是否 ≥ 2\*\*14（16384）
-- **APK alignment 验证**：`zipalign -P 16 4 <input.apk> <output.apk>` 或 `bundletool` 验证 ZIP entry 是否按 16KB 边界排列
-
-常见踩坑：为了追求更小的 APK 数值，手动压缩 `.so` 或用第三方工具重打包，会破坏 ELF LOAD 段的 `p_align` 和 ZIP entry 边界布局。16KB 设备上 `dlopen` 会因 alignment 不匹配而失败。
-
-
-### Strip 符号表与符号管理
-
-AGP 在 release 构建中默认 strip native libraries，移除调试符号表。不需要手动配置 CMake `LINK_FLAGS` 或 `ANDROID_STRIP_DEBUG_SYMBOLS`。AGP 8.x 的标准 DSL 口径分两层：
-
-**符号上传（Play Console 线上符号化）**
-
-在 `build.gradle.kts` 中控制保留多少符号信息用于 crash 崩溃栈还原：
-
-```kotlin
-android {
-    buildTypes {
-        release {
-            // SYMBOL_TABLE: 仅保留函数级符号，体积最小
-            // FULL: 保留完整调试符号，支持源码行号还原
-            ndk.debugSymbolLevel = "SYMBOL_TABLE"
-        }
-    }
-}
-```
-
-Play Console 的 Native Crash Reporting 需要 `SYMBOL_TABLE` 或 `FULL` 才能还原 so 崩溃栈。如果不上传符号，线上 crash 只能看到十六进制地址。
-
-**选择性保留指定 so 的调试符号**
-
-当只需要保留部分 so 的调试符号时：
-
-```kotlin
-android {
-    packaging {
-        jniLibs {
-            keepDebugSymbols += listOf(
-                "**/libcore-engine.so",
-                "**/libFaceDetect.so"
-            )
-        }
-    }
-}
-```
-
-`keepDebugSymbols` 接受 glob 模式。只有匹配到的 so 会跳过 strip，其余 so 仍然走 release 默认 strip。
-
-### 动态下发 so
-
-对于某些大型 native 库（如人脸识别 SDK、地图引擎），最激进的优化方案是**不在 APK 中打包**，而是在用户首次使用相关功能时从服务器下载。这种方式需要自己管理下载、校验、加载的完整流程，实现复杂度较高，但收益明确：主包体积可以减少数十 MB，提升安装转化率。
-
-一个折中方案是使用 Play Feature Delivery Library 的 **on-demand delivery**：将大型 so 库放在 Dynamic Feature Module 中（下一节讨论），用户安装基础 APK 时不包含这些库，只有当用户导航到需要该库的功能页面时才触发下载。
-
-## App Bundle 与 Dynamic Feature Module
-
-
-### App Bundle 解决了什么问题
-
-传统 APK 分发模式要求**一个 APK 适配所有设备**。结果是，同一个 APK 里同时装着 hdpi 和 xxxhdpi 的图片、arm64 和 x86 的 so 库、中文和斯瓦希里语的字符串。用户在 arm64 设备上下载了这个 APK，其中 70% 的资源对他毫无用处——但他不得不下载。
-
-Android App Bundle（AAB）是 Google 在 2018 年推出的发布格式，它改变了这个模型。开发者上传一个 AAB 到 Google Play，Play 的服务器会根据每个用户的设备配置（屏幕密度、CPU 架构、语言）自动生成一个**最小化的 APK**（称为 Split APK）。结果是：用户只下载他设备实际需要的那部分资源。
-
-从 APK 切换到 AAB，通常能把下载大小减小 **15%-40%**，不需要改一行业务代码。这也是 Google Play 自 2021 年 8 月起强制要求新 App 使用 AAB 发布的原因。
-
-### Dynamic Feature Module：按需加载功能
-
-App Bundle 的进阶用法是 **Dynamic Feature Module**（动态功能模块）。它的理念是把 App 拆分为一个 base module 和多个 feature module：
-
-- **Install-time delivery**：模块随 base 一起安装，但可以在用户使用后卸载（适合新手引导模块）
-- **On-demand delivery**：模块仅在用户访问对应功能时才下载（适合支付模块、滤镜编辑器等非核心功能）
-- **Conditional delivery**：模块根据设备条件自动决定是否安装（如只在有 VR 功能的设备上安装 VR 模块）
-
-配置一个 on-demand 的 Dynamic Feature Module，至少要同时改 base app module 和 feature module。
-
-base app module（通常是 `:app`）负责声明它有哪些动态模块：
-
-```kotlin
-plugins {
-    id("com.android.application")
-    kotlin("android")
-}
-
-android {
-    namespace = "com.example.app"
-    compileSdk = 36
-    defaultConfig {
-        applicationId = "com.example.app"
-        minSdk = 21
-    }
-    dynamicFeatures += setOf(":feature:payment")
-}
-```
-
-feature module 自己要应用 `com.android.dynamic-feature` plugin，并依赖 base module：
-
-```kotlin
-plugins {
-    id("com.android.dynamic-feature")
-    kotlin("android")
-}
-
-android {
-    namespace = "com.example.app.feature.payment"
-    compileSdk = 36
-    defaultConfig {
-        minSdk = 21
-    }
-}
-
-dependencies {
-    implementation(project(":app"))
-}
-```
-
-`settings.gradle(.kts)` 里也要包含这两个模块。然后再在 feature module 的 `AndroidManifest.xml` 中声明分发策略：
-
-```xml
-<dist:module
-    dist:instant="false"
-    dist:title="@string/title_payment">
-    <dist:delivery>
-        <dist:on-demand />
-    </dist:delivery>
-    <dist:fusing dist:include="true" />
-</dist:module>
-```
-
-在运行时使用 Play Feature Delivery Library 请求加载：
-
-```kotlin
-val splitInstallManager = SplitInstallManagerFactory.create(context)
-val request = SplitInstallRequest.newBuilder()
-    .addModule("payment")
-    .build()
-
-splitInstallManager.startInstall(request)
-    .addOnSuccessListener {
-        // 模块已下载，可以导航到支付页面
-    }
-    .addOnFailureListener { e ->
-        // 下载失败处理
-    }
-```
-
-[适用版本: Play Feature Delivery Library 2.1.0+ / Android 5.0 (API 21)+；target Android 14 (API 34)+ 的工程必须使用 2.1.0 或更高版本，旧 monolithic Play Core Library 不再适合作为现代基线]
-
-使用 Dynamic Feature Module 时，有几个工程上的注意点。第一，模块之间的代码依赖需要仔细规划——feature module 可以依赖 base module，但两个 feature module 之间不能直接依赖。第二，导航需要特殊处理——因为目标 Activity 在下载前还不存在于设备上，标准的 `startActivity()` 会崩溃。Android Navigation Component 提供了 Dynamic Feature Module 的原生支持来处理这个问题。
-
-### bundletool：在本地验证 AAB 的效果
-
-上传到 Google Play 之前，可以用 `bundletool` 命令行工具在本地模拟生成 Split APK，验证不同设备配置下的实际下载大小：
+下面的命令分别验证运行环境、APK ZIP 对齐和 ELF segment 对齐：
 
 ```bash
-# 从 AAB 生成 Split APK
-bundletool build-apks --bundle=app-release.aab --output=app.apks
-
-# 查看特定设备配置的 APK 大小
-bundletool get-size total --apks=app.apks \
-    --device-spec=device-spec.json
+adb shell getconf PAGE_SIZE
+zipalign -c -P 16 -v 4 app-release.apk
+bundletool dump config --bundle=app-release.aab | grep alignment
+llvm-objdump -p lib/arm64-v8a/libexample.so | grep LOAD
 ```
 
-这个工具可以验证：切换到 AAB 之后，用户在 arm64 + xxxhdpi 设备上的实际下载大小是多少。
+16KB 设备的 `getconf` 应返回 `16384`，`zipalign -c` 只做校验，不会修改已签名 APK。AAB 配置应报告 `PAGE_ALIGNMENT_16K`。ELF 检查中每个 `LOAD` segment 的 alignment 要达到 `2**14`。应用需要覆盖所有自研和第三方 `.so`，不能只检查主库。
 
-## 常见问题与误区
+Native 代码不应把 `4096` 或 `PAGE_SIZE` 当作设备页大小。需要页大小时，可用下面的系统接口：
 
-**「开启 minifyEnabled 就够了」**——这是最常见的误区。R8 的代码缩减只能删掉静态不可达的代码。如果项目里有大量通过反射调用的代码、插件化框架、或者 Gson/Jackson 反序列化的 Model 类，没有配置正确的 keep 规则，R8 要么删错（运行时 ClassNotFoundException），要么不敢删（keep 范围过大）。正确的做法是：开启 R8 后跑一遍完整的回归测试，结合 APK Analyzer 检查每个库的保留比例，逐步收窄 keep 规则。
+```cpp
+#include <unistd.h>
 
-**「应该支持所有屏幕密度」**——Android 的资源缩放机制可以在缺失某一密度资源时自动从最近的高密度资源缩放。AAB / Google Play 分发时，density split 应交给 App Bundle；只有 sideload、企业包、OEM 固定设备等受控单 APK 场景，才考虑用 `resConfigs` 过滤密度资源。
+long pageSize = sysconf(_SC_PAGESIZE);
+```
 
-**「WebP 不如 PNG 清晰」**——这是过时的观念。对于照片类图片，WebP 有损压缩在 80% 质量以上时，人眼几乎无法察觉与 PNG 的差异；对于图标类图片，WebP 无损模式的压缩率也优于 PNG。alpha 通道需要单独看——某些带半透明效果的复杂图标，WebP 有损可能产生 artifact，这种情况用 WebP 无损即可。
+返回值用于运行时的映射、对齐和缓冲区计算。还应审计 `mmap`、`mprotect`、共享内存、文件偏移与自定义分配器中的常量假设。
 
-**「App Bundle 是强制性的，国内市场没法用」**——国内应用市场不支持 AAB 格式。但 App Bundle 的技术价值不限于 Google Play。可以在本地用 `bundletool` 生成针对特定 ABI 和密度的 APK，然后分渠道上传。这比「一个 APK 适配所有设备」高效得多。此外，Dynamic Feature Module 的按需加载思想，也可以通过自研的插件化框架在非 Google Play 渠道实现。
+Android 17 可以关闭 16KB backcompat，并让不兼容二进制立即中止。测试设备可设置以下属性：
 
-## 构建期体积治理：从测量到持续跟踪
+```bash
+adb shell setprop bionic.linker.16kb.app_compat.enabled fatal
+adb shell setprop pm.16kb.app_compat.disabled true
+```
 
-知道 APK 大了，但不知道是哪个依赖膨胀了——这是工程实践中最常见的排查难点。目前经过官方验证的工具链按场景分三层：
+这些属性用于测试，不应写入应用发布流程。设置后要重新启动目标进程，并覆盖冷启动、JNI 注册、延迟加载、动态 feature 和每条 native 功能路径。Google Play 自 2025 年 11 月 1 日起要求面向 Android 15 及以上设备的新应用和更新支持 16KB page size。
 
-**APK Analyzer**（手动排查）：上一节已介绍。适合定位体积大户、检查单个库的保留比例。
+## AAB 与 Play Feature Delivery
 
-**bundletool + CI 门禁**（自动化基线）：在 CI 流水线中用 `bundletool get-size total` 对比每次构建的下载大小，超出阈值自动告警。这是体积治理从"发布前突击检查"变成"每次构建持续跟踪"的基础设施层。
+### Base module 仍是重点
 
-**APK Analyzer / Ruler / Play Console App Size**（依赖审计）：如果需要分析传递依赖对 dex / res / native 体积的贡献，可以使用 Slack 开源的 [Ruler](https://github.com/slackhq/ruler) 或 Play Console 的 App Size 报告。Ruler 在编译期按模块和包名归集体积数据，适合大型多模块项目。
+App Bundle 会按 ABI、密度和语言生成 configuration APK，但 base module 中的通用代码和资源仍会交付给每位用户。动态 feature 适合边界清楚、使用率有限、可容忍下载等待的功能。把高频首屏代码拆成 on-demand module 会增加状态管理、失败处理和用户等待。
 
-> **关于 AGP 8.12 体积分析**：截至 2026-05，AGP 8.12.0 的 release notes 中与体积依赖分析相关的入口仍是 `bundletool` 和 APK Analyzer。Build Analyzer 主要面向构建耗时。如果后续 Android Studio Feature Drop 提供了更细粒度的体积分析面板，以官方文档为准。
+Play Core 已按功能拆成独立库。Play Feature Delivery 的当前官方依赖为 `2.1.0`，配置如下：
 
-## 与其他章节的关系
+```kotlin
+dependencies {
+    implementation("com.google.android.play:feature-delivery:2.1.0")
+    implementation("com.google.android.play:feature-delivery-ktx:2.1.0")
+}
+```
 
-APK 体积优化不是孤立的主题。代码瘦身（R8）不仅减小 dex 体积，还能通过方法内联和类合并提升运行时性能——这与 §8.3 中讨论的启动优化密切相关。Native 库的大小和加载方式影响着冷启动时的 `dlopen` 耗时，可以在 Perfetto 的主线程 track 中观察到。资源优化则和 §4.1 内存管理有关——加载一张 oversized 的图片不仅浪费存储，还浪费运行时内存。
+旧的单体 Play Core 依赖应迁移到按功能划分的库。依赖版本还需进入常规升级与安全审计，不能把本章版本视作永久锁定值。
 
-工具层面，APK Analyzer 的使用技能与 §14.1 中的 Android Studio Profiler 互补。持续集成中的体积门禁，则是 §15.6 自动化监控理念的具体实践。
+On-demand feature 的清单需要声明交付模式，下面是模块清单的最小结构：
 
-## 扩展：Baseline Profile 对体积的影响
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:dist="http://schemas.android.com/apk/distribution">
+    <dist:module
+        dist:instant="false"
+        dist:title="@string/feature_title">
+        <dist:delivery>
+            <dist:on-demand />
+        </dist:delivery>
+        <dist:fusing dist:include="true" />
+    </dist:module>
+</manifest>
+```
 
-Baseline Profile（基线配置文件）是 Android 从 7.0 开始引入的 AOT 编译优化机制。它在 APK 中嵌入一个列表，告诉 ART 运行时「这些代码路径很重要，请在安装时就预编译它们」，从而避免运行时 JIT 编译的卡顿。
+`dist:on-demand` 让模块在安装时保持可选；`dist:fusing` 影响面向旧设备或 universal APK 的融合行为。模块的活动入口在调用前要确认模块已安装，外部应用也不应依赖一个尚未下载的 exported component。
 
-从下载体积看，Baseline Profile 文件本身很小，通常只有几十 KB，对 APK 或 AAB 的下载大小影响很弱。安装后的磁盘占用要单独看。Profile 会让 ART 在安装或后台编译阶段生成更多 AOT 产物，这些机器码会落到 `.odex` / `.vdex`。常见业务包里，这部分新增磁盘占用往往会比对应的 dex 字节码再大 10%-30%。Profile 范围写得过宽，冷启动也许会更快，但 `/data` 分区占用、安装后的编译时间和更新成本都会上升。如果使用 Cloud Profile，还要确保 Profile 中的类和方法在混淆后仍能正确映射。AGP 会在构建时处理这层映射；手动管理 Profile 时，需要额外检查。
+按需安装是异步状态机。下面的示例区分“请求被接收”和“模块已经安装”：
 
+```kotlin
+val manager = SplitInstallManagerFactory.create(context)
+var trackedSessionId = 0
 
+lateinit var listener: SplitInstallStateUpdatedListener
+listener = SplitInstallStateUpdatedListener { state ->
+    if (state.sessionId() != trackedSessionId) return@SplitInstallStateUpdatedListener
 
-## 扩展：大厂包体积优化实践参考
+    when (state.status()) {
+        SplitInstallSessionStatus.REQUIRES_USER_CONFIRMATION -> {
+            manager.startConfirmationDialogForResult(state, activity, 1001)
+        }
+        SplitInstallSessionStatus.INSTALLED -> {
+            openInstalledFeature()
+            manager.unregisterListener(listener)
+        }
+        SplitInstallSessionStatus.FAILED,
+        SplitInstallSessionStatus.CANCELED -> {
+            showFeatureInstallError(state.errorCode())
+            manager.unregisterListener(listener)
+        }
+    }
+}
 
-以下是公开可查的大厂优化实践数据，供参考：
+manager.registerListener(listener)
+val request = SplitInstallRequest.newBuilder()
+    .addModule("advanced_editor")
+    .build()
 
-- **微信**：通过 AndResGuard 资源混淆 + 动态插件化，将主包体积控制在 200MB 以内（含大量 native 库）
-- **得物 App**：通过 Layout 二进制 XML 裁剪优化（裁剪 Namespace、属性名、修正偏移量），在资源层面实现了额外 10%-15% 的缩减
-- **抖音**：通过 so 动态下发 + 按需加载，将核心 native 库从 APK 中分离，主包仅保留启动必需的 so
+manager.startInstall(request)
+    .addOnSuccessListener { sessionId -> trackedSessionId = sessionId }
+    .addOnFailureListener { error ->
+        manager.unregisterListener(listener)
+        showRequestError(error)
+    }
+```
 
+`addOnSuccessListener` 返回 session ID，只说明 Play 接收了请求。业务入口要等到 `SplitInstallSessionStatus.INSTALLED`。生产代码还要处理进程重启、已有 session、存储不足、网络失败、用户确认、模块已安装和 Play Store 不可用。
 
+## Baseline Profile 与 Startup Profile
+
+体积评审容易把两类 profile 混为一谈：
+
+- **Baseline Profile** 向 ART 提供常用代码路径，安装期间或后续由 ART 对这些方法做 AOT 编译。
+- **Startup Profile** 供 D8/R8 调整 DEX 布局，并帮助启动路径进入 primary DEX。
+
+它们可能增加制品中的 profile 数据，也可能增加设备侧编译产物；对应收益是运行时性能，不应仅以 APK 字节数否决。R8 会根据重命名后的程序重写 profile，因此在 R8 之后修改 DEX 的工具可能使 profile 失配。
+
+下面的路径用于检查 release 制品是否包含编译后的 Baseline Profile：
+
+```text
+APK: assets/dexopt/baseline.prof
+AAB: BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof
+```
+
+官方要求编译后的 Baseline Profile 小于 1.5MB。源码中的文本 profile 与制品内二进制大小不同。安装后空间增长由 ART 编译策略、设备版本、ABI 和 profile 覆盖共同决定，应以目标设备的 Macrobenchmark 与磁盘观测评估，不能套用固定比例。
+
+## 把体积检查放进发布流水线
+
+一次稳定的门禁可以包含这些步骤：
+
+1. 构建签名 release AAB，以及需要直接分发的 release APK。
+2. 固定 `bundletool`，为主力设备、低存储设备和各 ABI 保存 versioned device spec。
+3. 记录 AAB 上传体积、设备下载估算、安装 APK 集大小和主要目录贡献。
+4. 对 DEX 包、resource、asset 和 `.so` 做版本差异分析。
+5. 校验 R8 mapping、Baseline Profile、native symbol archive 与 16KB 对齐。
+6. 当预算超限时，输出新增文件与依赖归属，由模块所有者确认。
+
+预算应按产品与渠道建立。通用的“DEX 占比”“图片可压缩比例”或“每次发布最多增长多少 MB”不能替代项目基线。可操作的规则通常包含绝对上限、相对增量和少量高风险文件：
+
+- 某固定 device spec 的压缩下载估算不得超过产品上限；
+- 单次提交增长超过阈值时必须提供贡献者 diff；
+- 新增 `.so`、字体、模型、视频和 install-time feature 必须列出所有者；
+- ABI、locale、density 与 16KB 校验失败直接阻断对应渠道制品；
+- mapping、native symbols 或 profile 缺失时阻断 release。
+
+## Android 8 到 Android 17 的边界
+
+| 版本或工具 | 与体积相关的边界 |
+|---|---|
+| Android 8 / API 26 | 本章支持范围下界；ART、split 与 profile 行为仍需按设备版本验证 |
+| Android 9 / API 28 | Google Play 交付 Baseline Profile 的设备侧支持范围从 Android 9 起较完整；ProfileInstaller 可覆盖更低版本 |
+| Android 15 / API 35 | 平台开始支持 16KB page-size 设备，native 制品要同时满足 ELF 与 ZIP 对齐 |
+| AGP 8.12 | 引入优化后的资源缩减，需要在 8.12/8.13 显式启用 |
+| AGP 9.0 | 启用资源缩减时自动采用优化后的资源缩减 |
+| Android 17 / API 37 | 本章平台锚点；提供 16KB backcompat fatal 测试模式 |
+| AGP 9.3.0 | 本章构建锚点；最高支持 API 37，提供 `optimization {}` DSL 和独立 R8 配置分析任务 |
+
+历史项目采用旧 DSL、单 APK 或旧 NDK 时，可以保留现有发布方式，但要分别验证其交付体积、设备覆盖和 16KB 兼容性。升级构建工具后应重新生成基线，旧版本测得的百分比不能直接沿用。
+
+## 排查清单
+
+### 测量
+
+- [ ] 比较的是签名 release 制品
+- [ ] AAB、下载估算、安装 APK 集和安装后占用已分开记录
+- [ ] `bundletool` 版本与 device spec 已固定
+- [ ] 增量已定位到 DEX 包、资源、asset 或 `.so`
+
+### 代码与资源
+
+- [ ] AGP 9.3 release 已启用 `optimization { enable = true }`
+- [ ] keep rules 有明确的反射、JNI 或序列化依据
+- [ ] `analyzeReleaseR8Config` 未发现无意的宽范围保留
+- [ ] locale、图片格式与动态资源访问经过全配置测试
+- [ ] R8 输出之后没有未经验证的 DEX 或资源重写
+
+### Native
+
+- [ ] ABI 集合与每个发布渠道的设备范围一致
+- [ ] APK 中的 `.so` 已 strip，独立 native symbols 可用于线上回溯
+- [ ] 所有 ELF `LOAD` segment 满足 16KB 对齐
+- [ ] `zipalign -c -P 16 -v 4` 校验通过
+- [ ] 16KB 设备与 Android 17 fatal 模式覆盖了 JNI 和延迟加载路径
+- [ ] native 代码没有固定 4KB 页大小的假设
+
+### 交付与 profile
+
+- [ ] Base module 只保留所有用户安装时需要的代码和资源
+- [ ] On-demand 模块处理了完整安装状态与错误
+- [ ] 非 Play 渠道的 AAB、split 或 universal APK 能力已单独确认
+- [ ] Baseline Profile 与 Startup Profile 的用途和体积分别记录
+- [ ] mapping、native symbols、profile 与发布制品来自同一次构建
 
 ## 参考资料
 
-- [Reduce your app size | Android Developers](https://developer.android.com/topic/performance/reduce-apk-size)
-- [Shrink, obfuscate, and optimize your app | Android Developers](https://developer.android.com/build/shrink-code)
-- [Android App Bundle | Android Developers](https://developer.android.com/build/app-bundle)
-- [Play Feature Delivery | Android Developers](https://developer.android.com/guide/playcore/feature-delivery)
-- [bundletool 命令行工具 | GitHub](https://github.com/google/bundletool)
-- 得物技术：《包体积：Layout 二进制文件裁剪优化》
+- [Reduce your app size](https://developer.android.com/topic/performance/reduce-apk-size)
+- [About Android App Bundles](https://developer.android.com/guide/app-bundle)
+- [Build an Android App Bundle](https://developer.android.com/build/app-bundle)
+- [Enable app optimization with R8](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization)
+- [Android Gradle plugin 9.3.0 release notes](https://developer.android.com/build/releases/agp-9-3-0-release-notes)
+- [AGP 9.3 `localeFilters` API](https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/dsl/ApplicationAndroidResources)
+- [Overview of Play Core libraries](https://developer.android.com/guide/playcore)
+- [Play Feature Delivery](https://developer.android.com/guide/playcore/feature-delivery)
+- [Configure on-demand delivery](https://developer.android.com/guide/playcore/feature-delivery/on-demand)
+- [Baseline Profiles overview](https://developer.android.com/topic/performance/baselineprofiles/overview)
+- [Configure Baseline Profile generation](https://developer.android.com/topic/performance/baselineprofiles/configure-baselineprofiles)
+- [DEX layout optimizations and Startup Profiles](https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations)
+- [Support 16KB page sizes](https://developer.android.com/guide/practices/page-sizes)
+- [`zipalign`](https://developer.android.com/tools/zipalign)
+- [Include native symbols in a release build](https://developer.android.com/build/include-native-symbols)
+- [AOSP `android-17.0.0_r1`: `ResourceTypes.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/androidfw/ResourceTypes.cpp)
+- [AOSP `android-17.0.0_r1`: DEX loader](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/libdexfile/dex/dex_file_loader.cc)
+- [AOSP `android-17.0.0_r1`: bionic linker](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker.cpp)
