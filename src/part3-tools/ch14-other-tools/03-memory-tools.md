@@ -55,6 +55,7 @@ review_type: "task6-writing-quality-review"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-20
 ---
+
 # 内存分析工具
 
 <!-- outline-start -->
@@ -82,601 +83,595 @@ last_deepseek_cn_review_at: 2026-06-20
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么需要这么多种内存分析工具
+## 先确定要测哪一种内存
 
-做过 Android 内存优化的工程师大概都有一个感受：内存问题排查路径特别长，而且每种问题的"入口"不一样。用户反馈"应用越用越卡"，打开 Perfetto 一看 GC 事件密得像心电图——这可能是 Java 堆泄漏。Crashlytics 报了一堆 Native crash，信号是 SIGSEGV——这可能是 Native 内存越界。系统日志里 LMK 频繁杀后台，但不知道是哪个进程吃掉了内存。
+“应用内存上涨”只描述了现象。Java 对象、C/C++ allocator、匿名 `mmap`、文件映射、线程栈、Graphic Buffer 和 zRAM 中的换出页，采集接口与归因方式都不同。选错工具时，报告可能很完整，结论却指向另一个内存域。
 
-没有哪一个工具能覆盖所有场景。`LeakCanary` 擅长自动发现 Activity/Fragment 级别的 Java 泄漏，但它对 Native 堆和系统级内存占用无能为力。`MAT` 可以深入分析 hprof 文件中的引用链，找出"谁持有了不该持有的引用"，但它需要你先抓到堆转储，而且是离线分析。`heapprofd` 能实时采样 Native 堆的分配行为，但它给出的不是"谁泄漏了"，而是"谁在分配"。`dumpsys meminfo` 则是全局视角的入口——告诉你这个进程总共占了多少内存、各分多少，但它不会告诉你为什么。
+本文按四类证据组织工具：
 
-所以我们把这几类工具放在一起讲，目的是帮读者建立一条从"发现内存异常"到"定位根因"的完整排查路径。
+| 证据 | 能回答的问题 | 主要工具 |
+| --- | --- | --- |
+| Java 对象保留图 | 哪个 GC Root 仍能到达应销毁对象 | LeakCanary、Android Studio Heap Dump、MAT |
+| 分配调用栈 | 哪条代码路径分配最多、当前仍保留多少采样分配 | heapprofd、ART allocation profiling |
+| 进程与 VMA 记账 | PSS/RSS/USS 如何变化，内存落在哪类映射 | `dumpsys meminfo`、`showmap`、`procrank`、libmeminfo |
+| 非法内存访问 | 哪里发生越界、use-after-free 或错误释放 | malloc debug、HWASan、MTE |
 
-## LeakCanary：Java 内存泄漏的自动哨兵
+下面的决策图用于从症状选择第一件工具。
 
-### LeakCanary 解决什么问题
+```mermaid
+flowchart TD
+    A["发现内存上涨、OOM 或 native crash"] --> B{"现象属于哪一类？"}
+    B -->|"Java 对象未释放"| C["LeakCanary 快速发现"]
+    C --> D["Heap Dump + MAT 验证持有路径"]
+    B -->|"Native Heap 增长"| E["dumpsys meminfo 确认类别"]
+    E --> F["heapprofd 采样分配调用栈"]
+    B -->|"Graphics 或 dma-buf 增长"| G["memtrack、dmabuf_dump、SurfaceFlinger"]
+    B -->|"越界或 use-after-free"| H["HWASan、MTE 或 malloc debug"]
+    B -->|"整机内存压力"| I["procrank + LMKD/PSI 证据"]
+```
 
-在所有内存分析工具中，LeakCanary 的定位最明确：它是一个开发阶段的自动泄漏检测器。我们不需要手动抓堆转储、不需要打开 MAT 分析引用链——LeakCanary 会在 Activity、Fragment、ViewModel、Service 等组件被销毁后，自动检查它们是否还被 GC 回收。如果没有被回收，它会抓取堆转储、分析引用链，并通过系统通知把泄漏路径展示给开发者。
+同一问题常要经过两层证据：记账工具确认“涨在哪里”，归因工具解释“由谁产生”。单次快照通常只能提出假设。
 
-这个工具的核心定位是"泄漏的早期发现"。很多内存泄漏在开发阶段通常不会触发 OOM——设备内存够大，测试时间不够长。但 LeakCanary 能在泄漏还很小的时候就抓住它，让开发者在代码提交前就修复问题，而不是等到线上用户反馈"应用卡死了"才去排查。
+本文的平台实现锚定 `android-17.0.0_r1`，涉及内核 `/proc`、dma-buf 与 MTE 的说明锚定 `android17-6.18-2026-06_r6`。较早版本只保留兼容边界。
 
-### 工作原理
+## LeakCanary：发现应被回收的 Java 对象
 
-LeakCanary 的检测流程可以概括为四个步骤。
+### 它观察的对象
 
-第一步，**监听生命周期**。LeakCanary 通过注册 `ActivityLifecycleCallbacks` 和 `FragmentLifecycleCallbacks` 来监听 Activity 和 Fragment 的创建与销毁。对于 ViewModel，它利用了 `ViewModel.onCleared()` 回调。当组件被销毁时，LeakCanary 把它包装成一个 `KeyedWeakReference`，并把引用关联到一个 `ReferenceQueue`。
+LeakCanary 适合开发与测试阶段。默认 watcher 会观察已经销毁的 `Activity`、`Fragment`、Fragment View，以及已经执行 `onCleared()` 的 `ViewModel`。业务对象不在默认清单时，可在生命周期结束处交给 `ObjectWatcher`。
 
-第二步，**触发 GC 后检查可达性**。组件销毁后，LeakCanary 不会立即判断泄漏。它会等待一段时间（默认 5 秒），然后调用 `Runtime.gc()` 尝试触发垃圾回收。之后检查 `ReferenceQueue`——如果 `WeakReference` 被回收了，它应该出现在队列中。如果没出现，说明这个对象仍然被强引用持有，也就是疑似泄漏。
+它判断的是“对象在等待期和 GC 后仍被保留”，不是“对象已经被证明永远无法释放”。异步任务、动画、消息队列和测试操作尚未结束，都可能让对象暂时存活。
 
-第三步，**堆转储与引用链分析**。确认疑似泄漏后，LeakCanary 调用 `Debug.dumpHprofData()` 抓取 Java 堆转储，然后使用自研的 Shark 库（不是 MAT）解析 hprof 文件，找出从 GC Root 到泄漏对象的最短引用链。
+LeakCanary 2.14 的基础依赖应只进入 debug 变体。下面的配置用于避免把堆转储与分析代码带进 release APK。
 
-第四步，**通知与展示**。分析完成后，LeakCanary 发送系统通知，点击后会展示完整的泄漏路径。每条泄漏路径会生成一个"泄漏签名"（leak signature），相同签名的泄漏会被归类，避免重复报告。
-
-### 集成与配置
-
-LeakCanary 2.x 的集成非常简单，在 `build.gradle` 中添加一行依赖即可：
-
-```groovy
+```kotlin
 dependencies {
-    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.14'
+    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
 }
 ```
 
-只需要加在 `debugImplementation` 中——LeakCanary 是纯开发工具，绝不应该打包到 release 版本中。添加依赖后不需要任何初始化代码，LeakCanary 会通过 `ContentProvider` 自动完成初始化。
+依赖中的 manifest initializer 会在主进程安装默认 watcher，无需在 `Application` 手工初始化。构建产物仍应通过依赖分析确认 release 变体不含 LeakCanary。
 
-如果需要自定义配置，需要区分两个配置入口：
+### 从弱引用到 leak trace
 
-**堆转储与分析策略**（`LeakCanary.config`）：
+LeakCanary 的处理过程分为四段：
+
+1. 生命周期 watcher 把应结束生命周期的对象交给 `ObjectWatcher`，后者只保留弱引用。
+2. 默认等待五秒并触发 GC；弱引用仍未清除时，对象进入 retained 集合。
+3. retained 数量达到当前阈值后，LeakCanary 调用 Android heap dump 接口。
+4. Shark 解析 HPROF，从 GC Root 搜索到 retained object 的引用路径，并按 leak signature 聚类。
+
+GC Root 到目标对象的路径才是修复依据。通知里的红色可疑引用表示 Shark 认为该边不符合生命周期预期；路径中出现一个熟悉的类名，不能直接证明那个类创建了泄漏。
+
+业务对象可在确定不再使用的位置显式观察。下面的例子用于检查页面销毁后 `CheckoutPresenter` 是否还能被回收。
 
 ```kotlin
-LeakCanary.config = LeakCanary.config.copy(
-    dumpHeap = true,                    // 是否自动 dump hprof
-    objectInspectors = ObjectInspectors.appDefaults  // 引用链分析策略
+AppWatcher.objectWatcher.expectWeaklyReachable(
+    presenter,
+    "CheckoutPresenter should be released after CheckoutActivity.onDestroy"
 )
 ```
 
-**观察等待时间**（`AppWatcher.manualInstall`）：
+这段代码只登记观察目标。描述应写清对象何时失效，报告才便于回到对应生命周期核对。
 
-`retainedDelayMillis`（组件销毁后等待多久再检查可达性）不在 `LeakCanary.Config` 上，需要通过 `AppWatcher` 的手动安装路径配置。使用前先关闭自动安装，官方入口是覆盖 `leak_canary_watcher_auto_install` 资源；也可以直接依赖 `leakcanary-android-core`，避开带自动安装器的 artifact。
+### 配置等待时间与触发阈值
+
+多数项目保留默认自动安装即可。需要自定义 watcher 或 `retainedDelayMillis` 时，应先覆盖自动安装资源。下面的资源关闭默认安装。
 
 ```xml
-<!-- res/values/leak_canary.xml -->
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <bool name="leak_canary_watcher_auto_install">false</bool>
 </resources>
 ```
 
+关闭后必须在主进程安装 watcher。下面的代码把保留等待时间设为八秒，适合确有长动画或异步清理的测试场景。
+
 ```kotlin
-// Application.onCreate(): 手动安装并自定义等待时间
-AppWatcher.manualInstall(
-    application = this,
-    retainedDelayMillis = 5000  // 默认 5000ms，可按需调整
+class DemoApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        AppWatcher.manualInstall(
+            application = this,
+            retainedDelayMillis = 8_000
+        )
+    }
+}
+```
+
+等待时间越长，临时保留造成的噪声越少，反馈也越慢。不要用延长等待时间掩盖稳定复现的引用路径。
+
+堆转储策略属于 `LeakCanary.config`。下面的配置把可见进程触发阈值设为三个 retained objects。
+
+```kotlin
+LeakCanary.config = LeakCanary.config.copy(
+    dumpHeap = true,
+    retainedVisibleThreshold = 3
 )
 ```
 
-如果不需要修改 `retainedDelayMillis`，保持默认自动安装即可，不需要写任何配置代码。
+阈值控制何时 dump，不改变对象是否被判定 retained。自动化测试若只想收集 retained 计数而不暂停进程，可在测试配置中关闭 `dumpHeap`。
 
-LeakCanary 2.x 还增强了对 Kotlin Coroutines 和 Jetpack Compose 的支持。对于 Coroutines，如果协程泄漏持有了 Activity 引用，LeakCanary 可以在引用链中标注出协程的挂起点。对于 Compose，它能够检测 Composable 函数中意外持有的长生命周期引用。
+### 如何读一条报告
 
-### 在 Perfetto 中的关联表现
+按以下顺序读 leak trace：
 
-虽然 LeakCanary 本身不依赖 Perfetto，但当 LeakCanary 在检测泄漏过程中调用 `Debug.dumpHprofData()` 时，这一动作在 Perfetto Trace 中会留下明显的痕迹：主线程会出现一个耗时较长的 slice（通常几百毫秒到数秒），标注为 `dumpHprof`。如果在 Trace 中看到周期性的 `dumpHprof` slice，说明 LeakCanary 正在频繁检测到泄漏并抓取堆转储——这时候就应该去看看 LeakCanary 的通知了。
+1. 确认目标对象的生命周期已经结束，复现步骤也已经完成。
+2. 从 GC Root 往下看，区分静态字段、线程、JNI global reference 和 framework 缓存。
+3. 找到第一条生命周期不合理的强引用，核对它的写入和清理位置。
+4. 修复后重复相同操作，等待 retained object 消失，并确认没有换成另一条签名。
 
-[已验证: 官方文档, https://square.github.io/leakcanary/]
-[来源: obsidian/性能优化日报/2026-03-15-LeakCanary-内存泄漏检测.md]
+LeakCanary 不会自动覆盖所有单例、缓存和业务容器。自定义对象应显式观察；只表现为“大量仍然合法存活对象”的内存膨胀，应转到 heap dump 的 Histogram 与 Dominator Tree。
 
-## MAT：Java 堆的深度剖析
+## MAT：离线分析 Java 堆对象图
 
-### MAT 解决什么问题
+### HPROF 包含什么
 
-MAT（Memory Analyzer Tool）解决的是更深入一层的问题：你已经知道内存有问题了——可能是 LeakCanary 报了泄漏，可能是 `dumpsys meminfo` 看到 Java Heap 持续增长，也可能应用刚发生了 OOM——现在需要搞清楚"谁在占内存、为什么没释放"。
+HPROF 是某一时刻的 managed heap 快照，包含类、对象、字段、数组、线程与 GC Root 等信息。它适合回答“对象为何仍可达”和“谁支配了大量 Java 对象”。它不记录历史分配时序，也不覆盖 malloc heap、未映射 dma-buf 或 GPU 驱动私有内存。
 
-如果说 LeakCanary 是自动化的哨兵，那 MAT 就是手动的解剖刀。它不自动运行，不给你发通知，但把一个 hprof 文件交给它时，它能精确地展示堆中每个对象的持有关系、占用大小、引用路径。
+Android Studio 的 Heap Dump 页面能直接采集与浏览 Android HPROF。MAT 的 Dominator Tree、Path to GC Roots、OQL 和大堆处理更适合复杂离线分析。
 
-### 抓取 hprof 文件
+### 采集与转换
 
-MAT 分析的输入是 Java 堆转储文件（.hprof）。在 Android 上有几种方式获取这个文件。
-
-最直接的方式是通过 Android Studio。在 Memory Profiler 中，点击 "Dump Java Heap" 按钮（内存面板左上角的下载图标），即可抓取当前应用的 Java 堆。抓取后，Android Studio 会自动将 Dalvik 格式的 hprof 转换为标准 Java hprof 格式。
-
-> **推荐操作**：在抓取堆转储之前，先点击 Memory Profiler 中的"Initiate GC"按钮手动触发一次 GC。这样抓到的 hprof 文件中就不包含 Unreachable 对象——那些已经可以被 GC 回收但还没有被回收的对象。如果不先触发 GC，Unreachable 对象会干扰分析，让你在大量"将被回收"的对象中寻找泄漏对象。
-
-也可以通过命令行抓取：
+Android 17 的 `am dumpheap` 支持进程名或 PID；`-g` 会在 dump 前请求一次 GC。下面的命令用于采集 managed heap 并拉到主机。
 
 ```bash
-# 请求系统在 dump 前先做一次 GC（可选）
-adb shell am dumpheap -g --user 0 <pid> /data/local/tmp/heap.hprof
-
-# 不带 -g 时直接抓取当前 Java 堆
-adb shell am dumpheap --user 0 <pid> /data/local/tmp/heap.hprof
+adb shell am dumpheap -g "${APP_PID}" /data/local/tmp/app.hprof
+adb pull /data/local/tmp/app.hprof ./app-android.hprof
 ```
 
-如果要在应用代码里控制抓取时机，可以调用 `Runtime.getRuntime().gc()` 或 `Debug.dumpHprofData()`。这里的 GC 只是 hint，不能把它当成“先回收完再 dump”的严格保证。
+`-g` 能减少已经不可达却尚未回收的对象，但 GC 时机与堆状态仍会受运行时影响。采集过程会暂停应用并增加临时内存，不能把它当成无扰动观测。
 
-抓取后需要转换格式：
+Android HPROF 若无法被 MAT 直接打开，可用 SDK Platform-Tools 的 `hprof-conv` 转为 Java SE HPROF。下面的命令只转换文件格式，不补充缺失的 native 数据。
 
 ```bash
-hprof-conv /data/local/tmp/heap.hprof heap-std.hprof
+"${ANDROID_SDK_ROOT}/platform-tools/hprof-conv" \
+    app-android.hprof \
+    app-mat.hprof
 ```
 
-### MAT 的核心分析视图
+转换后的 `app-mat.hprof` 可交给 MAT。Android Studio 从 Past Recordings 导出的文件是否仍需转换，以 MAT 的解析结果为准。
 
-打开 hprof 文件后，MAT 会自动生成一个概览报告（Leak Suspects Report），列出它怀疑有泄漏的对象。但通常我们需要更细致的手动分析。MAT 中最常用的视图有三个。
+### 四个概念
 
-**Histogram（直方图视图）**：按类名分组统计对象数量和占用内存。这个视图最适合用来回答"哪种类型的对象最多"这个问题。在排查内存泄漏时，我们可以对比两次 hprof（操作前和操作后）的 Histogram，找到数量异常增长的对象类型。
+- **Shallow size**：对象本身在 Java heap 中占用的字节，不包含它引用的对象。
+- **Retained size**：支配关系下，移除该对象后可一并变为不可达的对象大小估计。
+- **Dominator**：从任意 GC Root 到目标对象的所有路径都经过的对象。
+- **Path to GC Roots**：目标对象到 GC Root 的引用路径；分析泄漏时通常排除 weak、soft 和 phantom references。
 
-**Dominator Tree（支配者树）**：按对象实例的 retained size（保留大小）排序。Retained size 的含义是"如果这个对象被 GC 回收，总共能释放多少内存"。Dominator Tree 能直接回答"哪个对象占的内存最多"。一个对象支配另一个对象，意味着所有到被支配对象的引用路径都必须经过支配者——所以释放支配者就能释放它支配的所有对象。
+Retained size 很大说明该对象控制着大块对象图，不等于该对象自身分配了这些字节。Histogram 中数量最多的类也不必然是泄漏源；缓存、预加载和池化对象可能有合法生命周期。
 
-**Thread Overview（线程概览）**：展示每个线程的栈帧和持有的对象引用。这个视图在排查"某个内部类或 Handler 持有 Activity 引用"这类泄漏时特别有用，因为你可以直接看到哪个线程持有了泄漏对象。
+### 一套可复现的 MAT 流程
 
-### 实战分析方法
+1. 固定应用版本、设备、测试账号和操作脚本，预热到稳定状态。
+2. 执行基线操作并采集 HPROF A。
+3. 重复进入和退出目标场景，等待异步清理完成，再采集 HPROF B。
+4. 比较 Histogram，找出实例数与 shallow size 持续增加的类。
+5. 在 B 中按 retained size 查看 Dominator Tree。
+6. 对目标实例执行 Path to GC Roots，排除弱引用，找到第一条异常强引用。
+7. 回到源码验证写入、移除和生命周期，修复后以同一脚本复测。
 
-一个典型的 MAT 分析流程如下。
+单个 HPROF 适合判断持有关系，两份或多份同条件 HPROF 才适合判断增长。对象数量上涨一次也可能来自懒加载，需要用重复轮次确认是否达到平台期。
 
-在 Histogram 视图中，使用正则表达式过滤出我们关心的类。比如我们在 LeakCanary 中看到了某个 Activity 泄漏，就在 Histogram 中搜索这个 Activity 类名。找到后，右键选择 "List objects → with incoming references"（列出持有该对象引用的其他对象）。
+### Bitmap 的版本边界
 
-然后，沿着引用链逐层展开。MAT 会在引用路径上标记 "Shallow Heap"（对象自身大小）和 "Retained Heap"（该对象被回收后可释放的总大小）。如果某个中间节点的 Retained Heap 异常大，它很可能就是泄漏的关键持有者。
+Android 8.0 起，Bitmap 像素数据由 native heap 管理，Java `Bitmap` 对象主要保存 native 指针和元数据。MAT 能看到 Java wrapper 与引用关系，不能依靠标准 HPROF 还原完整像素内存。
 
-引用链的最末端是 GC Root。GC Root 是 JVM 垃圾回收的起点，通常是静态变量、活跃线程的局部变量、JNI Global Reference 等。如果引用链从一个 GC Root 连到了一个本该被销毁的 Activity，那这条链上的某个引用就是泄漏点。
+Android Studio Heap Dump 会为部分 framework 类型提供 Native Size 和 Bitmap 预览，这属于 Android Studio 的增强信息。`dumpsys meminfo` 的 `Graphics`、`Native Heap` 与 Bitmap 预览应一起看；图像数据落在 Graphic Buffer 时，还要转到 dma-buf 工具。
 
-对于 Bitmap 相关的问题，要先看 Android 版本边界。Android 7.x 及以下，Bitmap 像素数据还在 Java 堆里，MAT 能直接看到 `mBuffer` 一类字段；Android 8.0+ 把像素数据移到了 Native Heap，Java 对象里通常只剩 `mNativePtr`。这时标准 hprof 里拿不到像素内容，MAT 也不能再把 Bitmap 直接还原成图片。现代设备上如果要确认“是哪张图在占内存”，优先用 Android Studio Memory Profiler 看 Bitmap 预览，再结合 `dumpsys meminfo` 的 `Graphics` / `Native Heap`、heapprofd 和图形内存排查路径定位。
+## heapprofd：按调用栈采样堆分配
 
-### MAT 与 Android Studio Profiler 的关系
+### Native 模式的模型
 
-Android Studio 自带的 Memory Profiler 也能分析 hprof 文件，提供了可视化的堆浏览和引用链追踪功能。对于大多数日常的内存分析场景，Memory Profiler 已经足够。但 MAT 的优势在于更强大的 OQL（Object Query Language）查询能力和更成熟的引用链分析算法。如果 Memory Profiler 的分析结果不够清晰，或者需要批量查询某个模式的对象，MAT 仍然是更好的选择。
+heapprofd 从 Android 10 起作为 Perfetto 数据源提供。默认模式 hook `malloc/free`、`new/delete` 等 allocator 调用，对分配按字节概率采样，并把寄存器、栈和分配/释放记录送给独立的 heapprofd 进程展开与聚合。
 
-[已验证: 官方文档, https://developer.android.com/studio/profile/memory-profiler]
-[来源: obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT.md]
-[来源: obsidian/Personal-Knowlodge/source/AndroidMemory-Usage-Of-MAT-Pro.md]
-[来源: obsidian/Personal-Knowlodge/source/AndroidMemory-Open-Bitmap-Object-In-MAT.md]
+采样间隔为 `n` 字节时，每个字节约有 `1/n` 的概率命中，工具再用统计权重估算总体。Android 17 的默认间隔是 4096 字节。把间隔设为 1 可提高准确度，也会显著放大记录量和被测进程开销。
 
-## heapprofd：Native 堆的实时采样分析
+heapprofd 统计的是 allocator 请求与释放。allocator arena、页粒度、碎片、zRAM 和 mmap 区域会让 heapprofd 的 live bytes、`malloc_info()` 与 Native Heap RSS 出现差异。三者不应强行对齐。
 
-### heapprofd 解决什么问题
+### 权限与目标
 
-前面两个工具（LeakCanary 和 MAT）处理的是 Java/Kotlin 堆的内存问题。但 Android 应用的内存不止 Java 堆——Native 堆（通过 `malloc`/`new` 分配的 C/C++ 内存）、Graphic Buffer、共享库的 mmap 区域等，都可能成为内存问题的来源。特别是使用 JNI、游戏引擎、音视频库的应用，Native 堆的占比往往超过 Java 堆。
+user 构建只允许采样 manifest 标记为 `debuggable` 或 `profileable` 的 Java 应用。release 性能包可使用下面的声明开放本地 shell profiling。
 
-heapprofd 是 Perfetto 内置的 Native 堆采样分析器。它通过在运行过程中持续采样内存分配行为来工作，不需要抓取完整的堆转储。这种方式的开销很低（通常不超过 2%），适合在真实场景中长时间采集。
+```xml
+<application ...>
+    <profileable android:shell="true" />
+</application>
+```
 
-### 工作机制
+该声明只开放受限 profiling 数据，不会让应用进入 debug 运行模式。userdebug/eng 对普通应用和多数系统进程更宽松，但 SELinux 仍会禁止一小组关键服务。
 
-heapprofd 的基本思路是"采样分配调用栈"。当被监控的进程调用 `malloc` 时，heapprofd 按照可配置的采样间隔（默认 4096 字节）选择性地记录这次分配。对于被选中的分配，它会捕获完整的调用栈，并记录分配的地址和大小。当这块内存被 `free` 时，heapprofd 也会记录释放事件。
+### 推荐命令
 
-这样在采集结束后，heapprofd 就能告诉你：哪些调用栈路径分配了最多内存、哪些分配没有被释放（可能是泄漏）、内存分配的时间趋势是什么。
-
-heapprofd 盯的是 `malloc` / `free` 一类分配；Graphic Buffer、`dma-buf`、Surface buffer 这类图形内存通常不走这条路，所以它看不到。
-
-heapprofd 支持 Native 分配和 Java 分配两种模式。Native 分配模式从 Android 10 开始支持，监控 `malloc`/`free` 调用。Java 分配模式从 Android 12 开始支持，监控 ART 虚拟机的对象分配。但需要注意，Java 模式展示的是分配的调用栈，而不是对象之间的引用关系——它无法替代 MAT 的引用链分析。
-
-### 使用方法
-
-**方式一：通过 Perfetto UI 配置**
-
-打开 ui.perfetto.dev，在 Trace Config 中勾选 "Heap profiling" 选项，填入目标进程名（如 `com.example.myapp`），然后点击 "Start Recording" 开始采集。这种方式适合有 USB 连接的开发场景。
-
-**方式二：通过命令行**
-
-Perfetto 官方推荐使用 `heap_profile` 脚本（位于 Perfetto 仓库 `tools/` 目录）启动 native heap profiling：
+Perfetto 的 `tools/heap_profile` 会构造配置、启动会话、拉取 raw trace 并生成 pprof 文件。下面的命令按进程名采集三十秒，每五秒生成一个 snapshot。
 
 ```bash
-# 使用 Perfetto 的 heap_profile 工具启动采样
-# 脚本会自动配置 heapprofd 数据源并拉取结果
-tools/heap_profile -n com.example.myapp
+tools/heap_profile android \
+    -n com.example.app \
+    -d 30000 \
+    -i 4096 \
+    -c 5000
 ```
 
-`heap_profile` 封装了 heapprofd daemon 的启停和 trace 结果拉取。`heapprofd` 本身是系统级 daemon / Perfetto 数据源，不是面向开发者的稳定 adb shell 入口，不建议直接调用。
+结果目录中的 `raw-trace` 可直接交给 Perfetto UI。按进程名采集还能覆盖会话开始后新启动的匹配进程；按 PID 采集只跟踪当前实例。
 
-**方式三：通过 Perfetto 配置文件**
-
-创建一个 Perfetto 配置文件，指定 heap profiling 数据源：
+需要把堆数据与调度、Binder 或自定义 trace 放入同一会话时，可手写 TraceConfig。下面的 Android 17 配置采样 native malloc heap，并每五秒输出一个 snapshot。
 
 ```protobuf
-buffers: {
-    size_kb: 65536
+duration_ms: 30000
+
+buffers {
+  size_kb: 65536
+  fill_policy: DISCARD
 }
-data_sources: {
-    config {
-        name: "android.heapprofd"
-        heapprofd_config {
-            process_cmdline: "com.example.myapp"
-            sampling_interval_bytes: 4096
-            continuous_dump_config {
-                dump_interval_ms: 10000    // 每10秒自动 dump 一次快照
-            }
-        }
+
+data_sources {
+  config {
+    name: "android.heapprofd"
+    heapprofd_config {
+      process_cmdline: "com.example.app"
+      sampling_interval_bytes: 4096
+      continuous_dump_config {
+        dump_interval_ms: 5000
+      }
     }
+  }
 }
 ```
 
-然后用 `adb shell perfetto --txt -c config.pbtx -o /data/misc/perfetto-traces/trace` 启动采集。注意 `--txt` 参数是必需的——Perfetto CLI 默认按二进制 TraceConfig 解析配置文件，文本格式的 `.pbtxt` 必须显式声明。
+`process_cmdline` 可覆盖已运行及后续启动的匹配进程。配置字段以 Android 17 的 [`heapprofd_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/heapprofd_config.proto) 为准；文本配置交给 Perfetto CLI 时要使用 `--txt`。
 
-### 分析结果
+### ART allocation profiling
 
-采集完成后，在 Perfetto UI 中打开 trace 文件。在左侧的 Track 列表中会看到 "Heap profiles" 相关的 Track，展开后会出现时间轴上的一系列堆快照（每个快照对应一个时间点的内存分配状态）。
+Android 12 起，heapprofd 还可选择 ART 注册的 `com.android.art` heap。它记录 Java 对象的分配调用栈、类型、累计字节和次数，用于分析 allocation churn。
 
-点击某个快照，Perfetto 会展示火焰图（Flamegraph）形式的分配调用栈。火焰图中每个色块的宽度代表该调用栈路径分配的内存大小。最宽的色块就是分配最多的调用路径。
-
-在火焰图的上方，有一个过滤器可以选择查看模式：
-
-- **Total allocations（累计分配）**：展示从采集开始到该时间点的所有分配，包括已释放的。适合查看"哪里在频繁分配"。
-- **Allocated at snapshot（当前存活）**：只展示到该时间点仍未被释放的分配。适合查找泄漏——如果某个调用栈的"当前存活"持续增长，大概率是泄漏。
-
-### 前置条件与限制
-
-- 目标设备需要运行 Android 10+。
-- 在 userdebug/eng 版本上可以直接使用。在 user 版本上，目标应用需要在 Manifest 中声明 `android:debuggable="true"`，或在 `<application>` 下加入 `<profileable android:shell="true" />`。
-- `profileable` 元素从 Android 10 开始可用，允许 shell、Perfetto、simpleperf 在不开启 debug 模式的前提下采集数据。做 release 版本性能分析时，通常优先选 `<profileable android:shell="true" />`。
-- 采样模式意味着 heapprofd 不会记录每一次分配。对于小对象的泄漏，可能因为采样间隔而没有被捕获。
-
-[已验证: 官方文档, https://perfetto.dev/docs/data-sources/native-heap-profiler]
-[已验证: 官方文档, https://developer.android.com/topic/performance/memory]
-
-## dumpsys meminfo：内存的全局快照
-
-### dumpsys meminfo 解决什么问题
-
-`dumpsys meminfo` 不分析引用链，不抓取堆转储，也不展示调用栈。它做的事情更简单也更基础：给我们一个进程的内存使用概览，告诉你这个进程总共占了多少内存，分别花在了哪里。
-
-这个命令在性能优化的日常工作中有两个主要用途。第一，快速判断"内存是否正常"。如果某个应用的 PSS（Proportional Set Size）明显高于同类型应用，或者 Java Heap 接近了 `dalvik.vm.heapsize` 上限，那内存可能有问题。第二，周期性地执行这个命令，可以观察到内存的长期趋势——如果 PSS 持续增长且不回落，几乎可以确定存在泄漏。
-
-### 输出结构详解
-
-执行 `adb shell dumpsys meminfo <package_name>` 后，输出分为几个主要区域。
-
-**内存分类汇总表**是输出的核心部分。它按照内存类型（Java Heap、Native Heap、Code、Stack、Graphics 等）和内存属性（Private Dirty、Private Clean、Shared Dirty、Shared Clean、Swap）两个维度交叉展示。下面是关键字段的含义。
-
-**PSS（Proportional Set Size）**：这是最核心的指标。PSS 将共享内存按引用进程数均分——如果一个 4KB 的内存页被两个进程映射，那每个进程的 PSS 只算 2KB。PSS 的好处是可以把所有进程的 PSS 加起来，得到系统实际使用的物理内存总量。`dumpsys meminfo` 输出末尾的 `TOTAL PSS` 就是这个进程对系统内存的"真实贡献"。
-
-**USS（Unique Set Size）**：只属于这个进程的私有内存。如果一个进程被杀掉，USS 会被完全释放。USS 是判断"杀掉这个进程能回收多少内存"的直接指标。
-
-**Private Dirty**：被进程修改过的私有内存页。这部分内存不能被系统直接回收（因为内容是脏的），只有杀掉进程才能释放。Private Dirty 通常是 Java Heap 和 Native Heap 的活跃部分，是内存优化中最需要关注的指标。
-
-**Private Clean**：未被修改的私有内存页，通常是代码段（mmap 的 .so、.dex 文件）。这些内存可以在内存紧张时被回收，因为内容可以从文件重新加载。
-
-在分类项中，`Java Heap` 对应 ART 虚拟机管理的 Java/Kotlin 对象堆，`Native Heap` 对应 C/C++ 通过 `malloc` 分配的内存，`Code` 包含 dex 代码和 so 库的内存映射，`Graphics` 主要是 GPU 相关的 Graphic Buffer。`Graphics` 占比异常高时，优先检查 Bitmap、Surface、WebView、视频 buffer 的生命周期；这类问题通常要配合 `showmap`、SurfaceFlinger 和 Perfetto 看，不要直接按 heapprofd 的 Native Heap 路线处理。
-
-**App Summary 区域**在分类汇总表之后，用更简洁的方式总结了几个关键数字：
-
-```text
-App Summary
-                       Pss(KB)        Rss(KB)
-           ----        ------        ------
-       Java Heap:     34520         34520
-     Native Heap:     12800         12800
-            Code:     18920         24600
-           Stack:       504           504
-        Graphics:     65536         65536
-   Private Other:      2400          2400
-          System:      8760         10240
-           TOTAL:    143440        151064    TOTAL SWAP (KB):        0
-```
-
-其中 `TOTAL` 就是这个进程的 PSS 总量。在性能分析中，我们通常关注这个总量的变化趋势，以及 Java Heap + Native Heap 的占比是否合理。
-
-### 实用技巧
-
-**对比前后快照**：在执行某个操作前后各跑一次 `dumpsys meminfo`，然后对比关键指标的变化。比如进入一个页面再退出，如果 PSS 增长了但没有回落，说明这个页面可能有泄漏或内存未释放。
-
-**关注 TOTAL PSS 和 Private Dirty**：PSS 是最全面的指标，Private Dirty 是最"顽固"的指标。如果 Private Dirty 持续增长，问题通常比较严重。
-
-**用 `-d` 参数获取更详细的信息**：`adb shell dumpsys meminfo -d <package>` 会额外输出 Dalvik/ART 的详细内存统计，包括线性分配器（LinearAlloc）和代码缓存的占用情况。
-
-**内存分级与 LMK 的关系**：`dumpsys meminfo` 的 PSS 能评估应用对系统内存压力的贡献，但不要把它理解成 LMKD 的唯一选杀输入。现代 userspace `lmkd` 先根据 PSI / vmpressure、swap 利用率、thrashing 等信号判断是否需要杀进程，再按 `oom_score_adj` 和设备策略选择候选；启用 `ro.lmk.kill_heaviest_task` 时才会倾向选择符合条件的重内存进程。了解应用的 PSS 水平可以评估低内存风险，但归因时还要回到 `oom_score_adj`、LMKD 日志、PSI 和进程 RSS / swap 线索。
-
-[已验证: 官方文档, https://developer.android.com/studio/command-line/dumpsys#meminfo]
-[适用版本: Android 8 (API 26) - Android 17 (API 37)]
-
-## showmap / procrank / libmeminfo：命令行内存查看工具集
-
-### 为什么还需要这些工具
-
-`dumpsys meminfo` 提供了应用级别的内存概览，但有时候我们需要更底层的信息。比如，"这个进程的虚拟地址空间是怎么布局的"，"系统上所有进程的内存占用排名是怎样的"，"某个共享库在各进程中的映射情况如何"。这些需求就轮到 `showmap`、`procrank` 和 `libmeminfo` 出场了。
-
-### showmap：进程地址空间的逐行展示
-
-`showmap` 的作用是把 `/proc/<pid>/smaps` 的信息以一种更可读的方式展示出来。它列出了进程中每一个内存映射区域的详细信息：起始地址、大小、PSS、RSS、共享/私有、干净/脏页等。
+下面的命令用于采集 ART 分配样本。
 
 ```bash
-adb shell showmap <pid>
+tools/heap_profile android \
+    -n com.example.app \
+    -d 30000 \
+    --heaps com.android.art
 ```
 
-输出按内存区域分组，每一行对应一个 VMA（Virtual Memory Area）。常见的区域包括：
+ART 模式不跟踪对象何时删除或被 GC，也不生成对象引用图。它能定位“谁频繁创建对象”，泄漏持有路径仍要由 HPROF、LeakCanary 或 MAT 给出。
 
-- `[anon:libc_malloc]`：Native 堆，通过 malloc 分配的匿名内存。如果这个区域异常大，说明 Native 代码在大量分配内存。
-- `*.art` / `*.oat`：ART 运行时的 boot image 和编译后的代码。这部分在所有应用进程中共享（通过 Zygote fork），PSS 较低。
-- `*.so`（如 `/system/lib64/libc.so`）：共享库的代码段和数据段。代码段通常是 Shared Clean（可以回收），数据段如果有修改就是 Shared Dirty。
-- `*.dex` / `*.apk`：应用代码和资源的 mmap 映射。
-- `/dev/` 开头的设备映射：通常包括 GPU 的 Graphic Buffer（`/dev/dmabuf` 相关）和其他硬件设备的内存映射。
+### 读火焰图
 
-showmap 最常用的场景是确认"某类内存到底有多大"。当 `dumpsys meminfo` 显示 Native Heap 过大时，可以用 showmap 进一步确认是 `[anon:libc_malloc]` 区域过大还是其他匿名映射（如 mmap 的临时文件）导致的。
+Native snapshot 常见的两个视角是：
 
-`showmap` 需要 root 权限才能查看其他进程的信息。
+- 累计分配：时间窗内该调用栈分配过多少估算字节或次数，包含已经释放的分配。
+- snapshot 时仍存活：到该 snapshot 尚未收到 free 的采样分配，适合寻找持续增长的 native 路径。
 
-### procrank：全系统进程内存排名
+“仍存活”也不自动等于泄漏。长生命周期缓存、allocator 延迟释放和会话尚未覆盖释放动作都会保留数据。连续 snapshots 中同一调用栈稳定增长，且业务生命周期已经结束时，证据更强。
 
-`procrank` 会列出系统上所有进程的 VSS、RSS、PSS、USS，并按 PSS 排序，适合快速判断"谁在吃内存"。
+### 空报告与异常栈
+
+- 结果为空：检查包是否 `debuggable/profileable`、目标进程名是否匹配、是否存在并发 heapprofd 会话。
+- 启动阶段缺样本：runtime attach 会有延迟；按进程名启动会话通常比进程启动后按 PID 连接覆盖更早。
+- buffer overrun：短暂峰值可增大 `--shmem-size`；持续过载应增大 `--interval`，接受较低精度。
+- native 符号缺失：提供与二进制 build id 匹配的未剥离符号，再执行 Perfetto symbolization。
+- Java 帧出现 `[DEDUPED]`：ART 的 identical code folding 让多个方法共享代码，显示名不一定是执行的那个方法。
+
+不要写死“heapprofd 开销低于某个百分比”。分配率、采样间隔、栈深、线程数和缓冲策略都会改变扰动，应在目标设备上对比开启前后的业务指标。
+
+## `dumpsys meminfo`：进程内存记账快照
+
+### 采集方式
+
+下面的命令分别输出完整分类、ART 细项、摘要，以及一个包加载到的全部进程。
 
 ```bash
-adb shell procrank
+adb shell dumpsys meminfo com.example.app
+adb shell dumpsys meminfo -d com.example.app
+adb shell dumpsys meminfo -s com.example.app
+adb shell dumpsys meminfo --package com.example.app
 ```
 
-输出示例：
+`-d` 增加 Dalvik/ART 子项；`-s` 只保留 App Summary；`--package` 适合含 `:remote`、WebView 或其他辅助进程的应用。Android 17 的选项解析可在 [`ActivityManagerService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java#13030) 中核对。
 
-```text
-  PID      Vss      Rss      Pss      Uss  cmdline
- 1234  2048576  185432   43210   38760  com.example.myapp
- 5678  1536000  120432   38900   34560  com.android.systemui
-  ...
-```
+### PSS、RSS、USS 与 swap
 
-procrank 在排查系统级内存压力时特别有用。当我们需要评估"低内存场景下系统会先杀谁"，或者"多个应用同时运行时内存是否够用"，procrank 提供的跨进程对比视角是 `dumpsys meminfo`（单进程视角）无法替代的。
+| 指标 | 含义 | 适合回答的问题 |
+| --- | --- | --- |
+| RSS | 当前驻留的共享页与私有页总和，共享页在每个进程重复计算 | 单进程驻留集如何变化 |
+| PSS | 私有页加共享页按映射进程数分摊后的份额 | 进程对系统内存压力的近似贡献 |
+| USS | Private Clean 与 Private Dirty 之和 | 该进程独占的驻留页有多少 |
+| Swap / SwapPss | 已换出页，SwapPss 对共享换出页按比例分摊 | zRAM/swap 是否承担了部分工作集 |
 
-procrank 的可用性取决于设备。有些厂商的 ROM 没有预装 procrank，需要自己编译推入设备。它的底层依赖 `libpagemap.so`，通过读取 `/proc/<pid>/pagemap` 来获取精确的页面级统计。
+PSS 可以避免共享页在进程间重复记账，但把所有进程 PSS 相加也不等于整机全部物理内存：内核自身、未映射页、设备内存和统计时刻变化仍在进程口径之外。
 
-### libmeminfo：内存信息的底层库
+Android 17 的 `Debug.MemoryInfo.getTotalPss()` 会在内核提供 SwapPss 时把 proportional swapped-out pages 加入 total。解析脚本应保存原始列名和系统版本，避免把 `TOTAL PSS` 与单独显示的 swap 列重复相加。
 
-`libmeminfo` 不是一个直接面向用户的命令行工具，而是 Android 系统内部用于收集内存信息的 C++ 库。它的源码位于 `system/memory/libmeminfo/`（Android 11-17；更早版本在 `system/core/libmeminfo/`）。Android 17 的 `android-17.0.0_r1` tag 仍在该路径，接口细节以对应 tag 为准。
+Private Dirty 不表示“只有杀进程才能回收”。匿名 dirty 页可换入 zRAM，文件支持的 dirty 页也可能回写；它表示页面是进程私有且内容已改变。Private Clean 多为可重新从文件加载的私有页，内存压力下更容易丢弃。
 
-libmeminfo 提供了以下能力：
+### 分类行与 App Summary
 
-- 读取 `/proc/<pid>/smaps` 并解析为结构化的内存区域信息
-- 读取 `/proc/<pid>/pagemap` 获取页面级别的映射详情
-- 通过 `/proc/<pid>/clear_refs` 重置进程的工作集（Working Set），用于测量一段时间内的内存增量
+- `Java Heap`：ART managed heap 的私有部分以及归入 Java heap 的 ART 映射。
+- `Native Heap`：默认 native allocator 对应的私有 dirty malloc 空间。
+- `Code`：`.so`、`.jar`、`.apk`、`.dex`、`.oat` 等代码与静态资源的私有部分。
+- `Stack`：Java 与 native 线程栈的 private dirty。
+- `Graphics`：Gfx、EGL、GL 的 private 统计，部分数据来自 memtrack。
+- `Private Other`：尚未归入前述类别的 private clean/dirty。
+- `System`：摘要中归入系统的共享内存份额。
 
-`dumpsys meminfo` 和 `procrank` 底层都调用了 libmeminfo 的接口。Java 层的 `android.os.Debug.MemoryInfo` 和 `ActivityManager.MemoryInfo` 也通过 JNI 调用 libmeminfo 获取数据。
+App Summary 不是上方每一行 PSS 的简单求和。Android 17 的 [`Debug.MemoryInfo`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Debug.java#720) 会把 private 与 shared 部分重新归组。`Graphics` 还受 graphics driver 的 memtrack 报告质量影响，源码也明确保留了误报警告。
 
-了解 libmeminfo 的意义在于：当你需要自定义内存采集逻辑（比如定期采集特定进程的内存分布），可以参考 libmeminfo 的实现来编写采集工具，而不是反复调用 `dumpsys` 再解析文本输出。
+### 如何判断“持续增长”
 
-[已验证: AOSP android-17.0.0_r1, system/memory/libmeminfo；旧版路径 system/core/libmeminfo 已弃用]
-**Android 17 支持：** libmeminfo 接口在 Android 17 中保持稳定，可通过 AOSP android-17.0.0_r1 源码确认具体实现细节。
-[已验证: 官方文档, https://source.android.com/docs/core/debug/eval-performance]
-[待验证: procrank 在 Android 14+ 设备上的可用性]
+一轮可靠的趋势测试应固定进程状态和业务动作：
 
-## Graphics / dma-buf 内存怎么查
+1. 冷启动或预热到约定状态，记录 PID、构建号和第一次快照。
+2. 重复同一操作若干轮，每轮等待异步任务与动画结束。
+3. 同时保存 `TOTAL PSS`、RSS、SwapPss、Java Heap、Native Heap、Graphics 和进程列表。
+4. 观察是否达到稳定平台，并在必要时抓 HPROF、heapprofd 或 dma-buf 明细。
 
-当 `dumpsys meminfo` 里的 `Graphics` 持续上涨，或者 `showmap` 里出现大块 `/dev/dmabuf` 映射时，应该优先走图形内存排查路径。Bitmap 像素、SurfaceView / TextureView buffer、WebView 渲染缓存、视频解码输出，很多都落在 Graphic Buffer / dma-buf 上，heapprofd 看不到。
+PSS 一次不回落不能证明泄漏。Java heap 会保留已提交空间，native allocator 会保留 arena，图片与代码会进入缓存，线程池也可能延迟销毁。趋势、生命周期和归因调用栈要互相印证。
 
-### 一条够用的排查顺序
+## `showmap`、`procrank` 与 libmeminfo
 
-1. **看 `dumpsys meminfo`**：把 `Graphics`、`Native Heap` 和 `TOTAL PSS` 放在一起看。`Native Heap` 涨而 `Graphics` 平稳，优先走 heapprofd / malloc debug；`Graphics` 涨得快，优先走图形内存路径；两者一起涨时，再同时看 JNI 分配和 buffer 生命周期。
-2. **看 `showmap` / `smaps`**：用 `adb shell showmap <pid>` 或 `/proc/<pid>/smaps` 确认是否有大的 `/dev/dmabuf`、图形映射或匿名图像缓存。这里能回答“涨的是 native heap 还是图形映射”。
-3. **对照 SurfaceFlinger**：图片、视频、WebView、SurfaceView、Camera 预览这类场景，再看 `adb shell dumpsys SurfaceFlinger`，确认对应 layer、buffer 尺寸、数量和 composition type。buffer 比显示区域大、surface 数量异常、旧 layer 没及时释放，往往比 Java 堆更接近根因。
-4. **回到 Perfetto 对时间线**：把内存上涨的时间点和 `SurfaceFlinger`、`BufferQueue`、`gpu.renderstages`、解码线程 / RenderThread 活动放到同一时间窗里看，分清是 bitmap 解码峰值、视频帧缓存堆积，还是几何变化引起的 buffer 重建。
+### `showmap`：逐个 VMA 查看
 
-这一组工具和 §2.15 [DMA-BUF 与 Gralloc](../../part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md) 是配套的。这里解决“怎么查”，那一节解释这些 buffer 为什么会占内存、为什么会跨进程共享。
-
-## malloc debug 与 malloc hooks：Native 内存调试的利器
-
-### 解决的问题
-
-前面提到的 heapprofd 适合"看趋势"——它告诉你谁在分配、分配了多少。但如果我们需要更精确的调试信息（比如"这次 `free` 对应的 `malloc` 是在哪里调的"、"有没有 double free"、"有没有 use-after-free"），就需要 malloc debug 或 malloc hooks 了。
-
-### malloc debug
-
-malloc debug 是 Android 系统自带的 Native 内存调试工具，从 API 24 开始提供。它通过一个 shim 层拦截进程的所有 `malloc`/`free` 调用，在每次分配和释放时记录额外的调试信息。
-
-启用方式：
+Android 17 的 `showmap` 读取 `/proc/<pid>/smaps`，按 VMA 输出 VSS、RSS、PSS、private/shared clean/dirty、swap 等字段。下面的命令显示地址并避免合并同名 VMA。
 
 ```bash
-# 方式一：通过系统属性
-adb shell setprop libc.debug.malloc.program com.example.myapp
-adb shell setprop libc.debug.malloc.options "backtrace_enable_on_signal leak_track"
-# 重启应用后生效
-
-# 方式二：通过 wrap 属性（推荐）
-# 设置 wrap 属性，应用冷启动时会加载环境变量
-adb shell setprop wrap.com.example.myapp '"LIBC_DEBUG_MALLOC_OPTIONS=backtrace_enable_on_signal logwrapper"'
-# force-stop 后冷启动应用
-adb shell am force-stop com.example.myapp
-adb shell am start -n com.example.myapp/.MainActivity
+adb shell showmap -a -v "${APP_PID}"
 ```
 
-`backtrace_enable_on_signal` 模式下，应用启动时默认不采集分配栈，收到实时信号后才切换状态。按 bionic `malloc_debug` README，这个开关信号是 `SIGRTMAX-19`（Android 上通常是 45）：
+`[anon:libc_malloc]` 变大通常指向 allocator heap；大型匿名 `mmap` 不一定属于 malloc；`.so/.dex/.apk` 是文件映射。命令能否读取目标 `/proc/<pid>/smaps` 由 user build、SELinux 和 procfs 权限决定，不能假定所有商用设备都允许 shell 查看任意进程。
+
+`showmap` 只能报告已经映射进该进程地址空间的页。只持有 dma-buf fd、仅由 GPU/内核引用或映射在其他进程的 buffer，可能不会在目标 VMA 中呈现。
+
+### `procrank`：跨进程排序
+
+下面的命令分别按 PSS、USS、RSS 和 swap 排序全系统进程。
 
 ```bash
-# 切换 backtrace 采集开关
-adb shell kill -45 <pid>
+adb shell procrank -p
+adb shell procrank -u
+adb shell procrank -r
+adb shell procrank -s
 ```
 
-如果同时启用了 `backtrace` 选项，Android 9+ 还可以用 `SIGRTMAX-17` 把当前堆分配信息写到文件，默认路径通常是 `/data/local/tmp/backtrace_heap.<pid>.txt`：
+Android 17 的默认排序已经是 PSS，显式参数便于保存实验脚本。`procrank` 是否被产品镜像打包、shell 能读取多少进程，都由设备构建决定；缺少命令时可在 AOSP 构建中生成对应 binary。
+
+`procrank` 适合找出大进程，不能预测 LMKD 的唯一候选。LMKD 还会结合 PSI、thrashing、swap、`oom_score_adj` 和产品策略；`procrank -o` 展示 oom score 维度时也只是一张当前快照。
+
+### libmeminfo 的源码分工
+
+libmeminfo 是平台内部 C++ 库，不是应用 SDK API。Android 17 的实现位于独立仓库 `platform/system/memory/libmeminfo`：
+
+| 模块 | 职责 |
+| --- | --- |
+| [`procmeminfo.cpp`](https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/procmeminfo.cpp) | 解析 `smaps`/`smaps_rollup`、`pagemap`，管理 working set |
+| [`androidprocheaps.cpp`](https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/androidprocheaps.cpp) | 把 VMA 归类到 Android heap categories |
+| [`libsmapinfo/smapinfo.cpp`](https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/libsmapinfo/smapinfo.cpp) | 为 `showmap`、`procrank`、`librank` 提供统计与输出 |
+| [`libdmabufinfo`](https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/libdmabufinfo/) | 读取 dma-buf 引用、映射和 per-buffer 统计 |
+
+`ProcMemInfo::ResetWorkingSet()` 会向 `/proc/<pid>/clear_refs` 写入 `1`。这类接口需要特权并会改变 working-set 统计状态，常规应用采集不应直接照搬。
+
+内核 PSS/smaps 生成逻辑可从 [`fs/proc/task_mmu.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/task_mmu.c) 核对。libmeminfo 是读者与分类器，页表和映射状态仍由内核提供。
+
+## Graphics 与 dma-buf：从 memtrack 转向 buffer 归因
+
+`dumpsys meminfo` 的 `Graphics` 不等同于 `showmap` 中所有 `/dev` 映射。Android 17 的 [`android_os_Debug.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Debug.cpp#130) 会通过 libmemtrack 获取 smaps 未覆盖的 graphics、GL 和 other PSS，再合入 `Debug.MemoryInfo`。
+
+图形内存上涨时可按以下顺序收集：
+
+1. 用 `dumpsys meminfo` 区分 Java Heap、Native Heap、Graphics 与 System。
+2. 用 `showmap` 查找目标进程已映射的匿名区、图像映射和 allocator heap。
+3. 设备包含工具且权限允许时，用 `dmabuf_dump` 查看 fd/map 引用、inode、exporter 和跨进程共享。
+4. 用 `dumpsys SurfaceFlinger` 核对 layer、BufferQueue 与 surface 生命周期。
+5. 用 Perfetto 把上涨时刻与应用、RenderThread、SurfaceFlinger、Camera/Codec 活动放在同一时间轴。
+
+下面的命令用于查看一个进程引用或映射的 dma-buf；`-b` 则请求 per-buffer、exporter 与 device 统计。
 
 ```bash
-adb shell kill -47 <pid>
-adb shell ls /data/local/tmp/backtrace_heap.<pid>.txt
+adb shell dmabuf_dump "${APP_PID}"
+adb shell dmabuf_dump -b
 ```
 
-Android 14 新增 `SIGRTMAX-16`（信号值 48），用于触发 `libmemunreachable` 扫描并报告内存泄漏。这对 Native 内存泄漏的在线/离线快速诊断非常有价值：
+`dmabuf_dump` 的可用性和可见范围取决于产品镜像、debugfs/procfs 与 SELinux。per-process total 还会在共享 buffer 上重复显示，系统唯一总量要按 inode 去重。实现依据见 Android 17 的 [`dmabuf_dump.cpp`](https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/libdmabufinfo/tools/dmabuf_dump.cpp)。
+
+dma-buf 的内核对象、file descriptor 与 attachment 生命周期见 [`drivers/dma-buf/dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)。图形 buffer 的分配与跨进程共享原理参见 §2.15 [DMA-BUF 与 Gralloc](../../part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md)。
+
+## malloc debug：给分配器增加检查与记录
+
+malloc debug 从 API 24 起提供。它在正常 allocator 前加入 shim，可为 `malloc/free/calloc/realloc` 等调用增加 guard、填充值、pointer 校验、free quarantine 和 backtrace。
+
+它适合可控测试，不适合性能基准或生产常开。`backtrace` 会让分配显著变慢，`free_track` 会延迟释放，`guard` 会增加每次分配大小；这些选项都会改变被测进程。
+
+### debuggable 应用的 `wrap.sh`
+
+非 root 应用应按 NDK `wrap.sh` 方式为 debuggable APK 设置环境。下面的脚本让 backtrace 初始关闭，并等待信号开启，同时输出详细启用日志。
+
+```sh
+#!/system/bin/sh
+export LIBC_DEBUG_MALLOC_OPTIONS="backtrace_enable_on_signal verbose"
+exec "$@"
+```
+
+脚本应按 ABI 打包到 APK 的 `lib/<abi>/wrap.sh`，并保证应用是 debuggable。直接写 `wrap.<package>` 属性更适合 rooted 平台调试，Android 12 还存在官方 README 记录的 zygote fork-loop 兼容问题。
+
+### 选择选项
+
+| 目标 | 选项 |
+| --- | --- |
+| 记录分配栈 | `backtrace` 或 `backtrace_enable_on_signal` |
+| 检测前后越界写 | `guard`、`front_guard`、`rear_guard` |
+| 增加 use-after-free 命中机会 | `free_track` |
+| 验证传给 `free/realloc/malloc_usable_size` 的指针 | `verify_pointers` |
+| 只记录特定大小范围 | `backtrace_min_size`、`backtrace_max_size`、`backtrace_size` |
+| 收集仍可达性之外的 native 泄漏候选 | `check_unreachable_on_signal` |
+
+Android 17 仍使用实时信号控制这些动作。下面的命令依次切换 backtrace、写出 backtrace heap，以及触发 API 34 起的 unreachable scan。
 
 ```bash
-# Android 14+: 触发 libmemunreachable 泄漏扫描
-adb shell kill -48 <pid>
-# 扫描结果写入 logcat，搜索 "LEAK" 关键字
-adb logcat -s libmemunreachable
+adb shell kill -45 "${APP_PID}"  # SIGRTMAX-19：切换 backtrace
+adb shell kill -47 "${APP_PID}"  # SIGRTMAX-17：请求 backtrace heap dump
+adb shell kill -48 "${APP_PID}"  # SIGRTMAX-16：请求 unreachable scan
 ```
 
-[已验证: AOSP android-17.0.0_r1, bionic/libc/memory/malloc_debug/README.md；Android 14-17 signal table]
-**Android 17 支持：** malloc_debug 功能在 Android 17 中保持稳定，信号机制与 Android 14-16 一致。
+heap dump 与 unreachable scan 会等到下一次 allocator 调用再执行。`-47` 需要已启用 backtrace；`-48` 需要配置 `check_unreachable_on_signal`。受保护进程还可能因权限失败，不能把无输出解释为无泄漏。
 
-### malloc hooks
+另一条入口是 `dumpsys meminfo --unreachable <process>`。下面的命令请求 libmemunreachable 扫描当前进程。
 
-malloc hooks 是更底层的 API，从 API 28 开始提供。它允许你注册自定义的回调函数，在每次 `malloc`/`free` 被调用时都会触发。这为构建自定义的内存分析工具提供了基础。
+```bash
+adb shell dumpsys meminfo --unreachable "${APP_PID}"
+```
 
-bionic 的 malloc hooks 通过函数指针实现。需要在进程启动时（通常在 `.init_array` 或 `android_device_setup` 中）设置这些指针：
+没有 allocation backtrace 时，结果可能只能说明存在不可达 native allocation，无法给出有用的分配点。Android 17 的完整选项和信号语义以 [`malloc_debug/README.md`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/memory/malloc_debug/README.md) 为准。
 
-```c
+## malloc hooks：自定义 allocator 回调
+
+API 28 起，bionic 在显式启用 hooks 时公开 `__malloc_hook`、`__realloc_hook`、`__free_hook` 和 `__memalign_hook`。它们不是 glibc 的运行时兼容承诺；这里讨论的是 Android bionic 自己的接口。
+
+下面的 C++ 片段只演示拦截 `malloc` 后转调原 allocator。
+
+```cpp
 #include <malloc.h>
-#include <unistd.h>
 
-// 保存原始函数指针
-static void* (*orig_malloc_hook)(size_t, const void*) = nullptr;
-static void  (*orig_free_hook)(void*, const void*)   = nullptr;
+using MallocHook = void* (*)(size_t, const void*);
+static MallocHook g_original_malloc = nullptr;
 
-// 自定义 hook 函数
-static void* my_malloc_hook(size_t size, const void* caller) {
-    // ⚠️ 注意：避免在 hook 中调用 malloc，会递归触发
-    void* ptr = orig_malloc_hook ? orig_malloc_hook(size, caller) : malloc(size);
-    return ptr;
+static void* tracking_malloc(size_t bytes, const void* caller) {
+    // 此处只能写入不会分配内存、不会递归进入 malloc 的记录结构。
+    return g_original_malloc(bytes, caller);
 }
 
-static void my_free_hook(void* ptr, const void* caller) {
-    if (orig_free_hook) {
-        orig_free_hook(ptr, caller);
-    } else {
-        free(ptr);
-    }
-}
-
-// 初始化：保存旧值并注册新 hook
 __attribute__((constructor))
-static void install_hooks() {
-    orig_malloc_hook = __malloc_hook;
-    orig_free_hook   = __free_hook;
-    __malloc_hook    = my_malloc_hook;
-    __free_hook      = my_free_hook;
+static void install_malloc_hook() {
+    if (__malloc_hook != nullptr) {
+        g_original_malloc = __malloc_hook;
+        __malloc_hook = tracking_malloc;
+    }
 }
 ```
 
-关键注意事项：
+只有在 `LIBC_HOOKS_ENABLE=1` 或平台属性启用 hook shim 后，初始 hook 才指向默认 allocator。回调内使用 `std::string`、日志格式化、锁的懒初始化等操作都可能再次分配并造成递归。
 
-- **线程安全**：bionic 的 `__malloc_hook`/`__free_hook` 不是原子操作，多线程并发设置时存在竞态条件，应在启动早期（单线程阶段）完成注册
-- **递归风险**：hook 函数内部如果调用 `printf`、`std::string` 等会触发 `malloc` 的函数，会导致无限递归崩溃
-- **启用方式**：API 28+ 需要通过属性 `adb shell setprop libc.debug.hooks.enable 1` 或环境变量 `LIBC_HOOKS_ENABLE=1` 启用。注意 `libc.debug.malloc.options` 属于 malloc debug 的开关，不是 hooks 的启用入口
-- **API 可见性**：`__malloc_hook`/`__free_hook`/`__realloc_hook`/`__memalign_hook` 在 bionic `malloc.h` 中声明（`__INTRODUCED_IN(28)`，API 28+ 可用）。使用前需通过属性 `libc.debug.hooks.enable` 或环境变量 `LIBC_HOOKS_ENABLE` 启用，且 hook 指针设置无线程安全保证
+debuggable 应用可通过 `wrap.sh` 设置环境变量。下面的脚本开启 bionic malloc hooks。
 
-malloc hooks 的典型应用场景包括：构建轻量级的内存分配追踪器、实现自定义的内存统计面板、集成到自动化测试中检测特定操作引入的内存分配。
+```sh
+#!/system/bin/sh
+export LIBC_HOOKS_ENABLE=1
+exec "$@"
+```
 
-malloc hooks 会拦截所有 native 分配调用，对性能有显著影响（通常 2-5 倍的分配延迟），不适合在 release 版本中启用。
+hook 指针更新没有线程安全保证，应在进程启动早期完成。自定义实现还必须正确覆盖 realloc、free、memalign 语义；遗漏转调会破坏 `malloc_usable_size` 等调用。接口细节见 Android 17 的 [`malloc_hooks/README.md`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/memory/malloc_hooks/README.md)。
 
-[已验证: AOSP android-17.0.0_r1, bionic/libc/memory/malloc_hooks/README.md 与 bionic/libc/include/malloc.h (API 28-17)]
-**Android 17 支持：** malloc_hooks 接口在 Android 17 中保持稳定，API 28+ 可用。
-[适用版本: malloc debug API 24+, malloc hooks API 28+]
+多数项目应优先使用 heapprofd。malloc hooks 更适合编写专用测试器，维护成本和测量扰动都更高。
 
-## HWASAN 与 MTE：硬件辅助的内存安全检测
+## HWASan 与 MTE：定位 native 内存安全错误
 
-### HWASAN：硬件辅助的 AddressSanitizer
+### 两套标记机制
 
-HWASAN（Hardware-assisted AddressSanitizer）是 Android 上用于检测 Native 内存安全错误的工具。它能检测的问题包括：堆缓冲区溢出、栈缓冲区溢出、use-after-free、double free 等。
+| 工具 | 标记与检查位置 | 设备/构建要求 | 更适合的场景 |
+| --- | --- | --- | --- |
+| HWASan | 编译器插桩、指针 tag 与 shadow memory | ARM64；NDK r21+；Android 10+；目标 native 代码重编译 | 测试阶段获取完整错误、分配与释放栈 |
+| MTE | CPU 检查 pointer tag 与每 16 字节 allocation tag | MTE SoC、内核与系统支持；进程显式 opt-in | 低开销持续检测，或 SYNC 测试 |
 
-与传统的 ASan（AddressSanitizer）相比，HWASAN 的内存开销更低（ASan 通常需要 3-5 倍的内存，HWASAN 只需要约 1.5 倍），这使得它可以在更大的测试范围里使用。HWASAN 主要面向 AArch64 的 userdebug/eng 或专门的 HWASAN 系统镜像，是否可用取决于设备和系统构建，不是所有 Android 10+ 商用机都能直接开启。
+HWASan 名字中含 Hardware-assisted，但 Android 应用模式仍依赖编译器插桩与 HWASan runtime。它利用 AArch64 tagged address 能力，不要求 CPU 实现 MTE。
 
-HWASAN 的原理是利用 ARM 的 Top Byte Ignore（TBI）特性：在 64 位地址空间中，顶部 8 位（高字节）通常不用于地址翻译。HWASAN 用这 8 位给每个分配的内存块打上标签，在每次内存访问时检查标签是否匹配。如果标签不匹配，说明这次访问越界或访问了已释放的内存。
+### HWASan
 
-启用 HWASAN 需要重新编译 Native 代码，在编译选项中添加 `-fsanitize=hwaddress`。
+下面的 CMake 配置用于编译一个 HWASan native target。
 
-### MTE：Memory Tagging Extension
+```cmake
+target_compile_options(native-lib PUBLIC
+    -fsanitize=hwaddress
+    -fno-omit-frame-pointer)
+target_link_options(native-lib PUBLIC
+    -fsanitize=hwaddress)
+```
 
-MTE（Memory Tagging Extension）是 Armv8.5-A 架构引入的硬件级内存安全特性（部分文档和营销材料将其归入 ARM v9，但技术规范上从 Armv8.5-A 起可选）。它依赖硬件、内核和系统一起支持，近几代高端 SoC 与部分 Pixel 设备开始提供这项能力。
+应用应使用 shared libc++，并只在 sanitizer 测试变体启用这些参数。Android 14 至 Android 17 的 debuggable 应用可在 APK 中加入下面的 ARM64 `wrap.sh`。
 
-MTE 与 HWASAN 的目标相同——检测内存安全错误——但实现方式完全不同。MTE 在硬件层面为每个内存块（通常是 16 字节粒度）分配一个标签（tag），同时在指针中嵌入相同的标签。CPU 在每次内存访问时自动检查标签是否匹配。如果不匹配，触发异常。
+```sh
+#!/system/bin/sh
+LD_HWASAN=1 exec "$@"
+```
 
-MTE 与 HWASAN 的适用场景不同：
+该路径与 `android:useAppZygote` 不兼容。命中错误时进程会中止，并在 logcat/tombstone 中给出 tag mismatch、访问栈以及可用的 allocation/free 栈。
 
-- **MTE**：性能开销较低，适合低开销检测和生产环境抽样。ASYNC 不是“只记录日志不崩溃”：tag mismatch 会在最近的内核入口以 `SIGSEGV` 终止进程，只是错误地址和访问类型不如 SYNC 精确。检测粒度受 16 字节 tag 限制，对同一 tag 块内的越界访问可能漏报。
-- **HWASAN**：依赖编译器插桩，需要重新编译目标代码。性能开销较高（10-20%），但诊断信息更完整，能提供精确的分配/释放调用栈，适合测试阶段的深度排查。
+### MTE
 
-Android 已在部分系统组件和设备上逐步引入 MTE 支持。对于应用开发者来说，在支持 MTE 的设备上可以通过 `android:memtagMode="async"` 或开发者选项启用异步 MTE 模式；它适合测试和灰度采样，但命中 tag mismatch 后仍应按进程崩溃处理。
+应用通过 `android:memtagMode` 请求 heap MTE。下面的 debug manifest overlay 为测试变体启用同步模式。
 
-[已验证: 官方文档, https://developer.android.com/ndk/guides/sanitizers]
-[已验证: 官方文档, https://source.android.com/docs/security/test/memory-safety]
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
+    <application
+        android:memtagMode="sync"
+        tools:replace="android:memtagMode" />
+</manifest>
+```
 
-### MTE 三种模式与 Asymmetric（ASYMM）升级机制
+SYNC 在出错指令处触发 `SIGSEGV/SEGV_MTESERR`，诊断精度高。ASYNC 延迟到后续内核入口触发 `SIGSEGV/SEGV_MTEAERR`，故障地址和访问类型不精确。
 
-MTE 除了常见的 sync 和 async 两种模式，实际硬件（Arm v8.7-A+）还支持第三种——**Asymmetric（ASYMM）模式**，Android 系统对 App 透明使用：
+Armv8.7-A 的 ASYMM 对读使用同步检查、对写使用异步检查。应用 manifest 没有 `asymm` 值；应用请求 `async` 后，设备可用 per-CPU `mte_tcf_preferred` 把执行模式升级为 ASYMM。这个选择属于设备配置，应用不能假定所有 MTE 设备都会升级。
 
-| 模式 | 读取检查 | 写入检查 | 性能 | 生产可用性 |
-|------|---------|---------|------|---------|
-| SYNC | 立即 SIGSEGV | 立即 SIGSEGV | 高开销 | 仅测试 |
-| ASYNC | 延迟 SIGSEGV | 延迟 SIGSEGV | **1-2%** | ✅ 可用 |
-| ASYMM | 立即 SIGSEGV | 延迟 SIGSEGV | 接近 ASYNC | **✅ 推荐** |
+MTE 默认不对所有第三方应用开启。堆 MTE 只覆盖参与 tagged allocation 的 native heap；检测 native stack 还要使用 `-fsanitize=memtag` 编译器插桩，Android 14 QPR3 起平台支持 MTE stack tagging。
 
-**ASYMM 的优势**：读取越界（use-after-free read）提供精确错误位置，写入越界保持低开销。在 SPEC INT 2006 实测中，SYNC 最高可达 6.64x 减速，ASYMM 保持在 1-2% 区间（Pixel 8/9，来源：arxiv:2405.02735）。
+Android 17 的内核接口与 tag fault 处理可从 [`memory-tagging-extension.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/arch/arm64/memory-tagging-extension.rst) 和 [`arch/arm64/include/asm/mte.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/include/asm/mte.h) 核对。
 
-**Android 系统行为**：App 通过 `android:memtagMode="async"` 请求 MTE 时，如果硬件支持 ASYMM，OS 自动静默升级到 ASYMM，无需 App 感知。系统组件（蓝牙 / NFC / 网络 daemon）以 ASYNC 模式运行，实际也受益于 ASYMM 硬件。
+## 工具组合示例
 
-**检测 ASYMM 支持**：`cat /proc/cpuinfo` 中显示 `mte mte3` 表示 ASYMM 可用；仅有 `mte` 表示仅支持 SYNC/ASYNC（Arm v8.5-A）。
+### Java Heap 持续增长
 
-**sysfs 控制**：`/sys/devices/system/cpu/cpu<N>/mte_tcf_preferred`（root）可设置 per-CPU preferred 模式为 `async` / `sync` / `asymm`。
+1. 用 `dumpsys meminfo --package` 确认增长位于哪个进程和类别。
+2. 用 LeakCanary 检查销毁组件与显式观察的业务对象。
+3. 采集两份同条件 HPROF，用 MAT 比较 Histogram、Dominator Tree 与 Path to GC Roots。
+4. 若对象数量主要体现短命分配，改用 Android Studio allocation recording 或 heapprofd ART 模式看 churn。
 
-**默认状态边界**：第三方 App 未声明 `android:memtagMode` 时默认关闭；Compatibility Framework 中的 `NATIVE_MEMTAG_ASYNC` 和 `NATIVE_MEMTAG_SYNC` 默认也不对所有 App 强制打开。系统组件和 OEM 组件可以通过产品配置启用 MTE，不能把“App 默认关闭”推广成“整个系统默认关闭”。
+### Native Heap 持续增长
 
-**Scudo 协作**：Android 默认堆分配器 Scudo（Android 11+）通过 `IRG`（生成随机 tag）和 `STG`（存储 tag）指令与 MTE 协作。仅 Primary 分配（< 0x10000 字节）应用 MTE tag。
+1. 用 `dumpsys meminfo` 看 Native Heap PSS/RSS 与 SwapPss。
+2. 用 `showmap` 判断增长来自 `[anon:libc_malloc]` 还是独立匿名/file mapping。
+3. 用 heapprofd 的连续 snapshots 找持续增加的 live allocation callstack。
+4. heapprofd live bytes 与 RSS 差距很大时，检查 allocator arena、碎片和独立 `mmap`。
 
-[已验证: Android MTE 官方文档 / MTE configuration，ASYNC 触发延迟 SIGSEGV，App 默认需显式启用]
-[来源: arxiv:2405.02735 - ARM MTE Performance in Practice]
-[来源: AOSP frameworks/base/core/java/com/android/internal/os/Zygote.java]
+### Graphics 持续增长
 
+1. 同时记录 Graphics、Native Heap、System 和进程列表。
+2. 用 `dmabuf_dump`、SurfaceFlinger 与图形 trace 核对 buffer 数量、尺寸和跨进程引用。
+3. 回到 Bitmap、Surface、Camera、Codec 或 WebView 的创建/释放生命周期。
 
-## 工具选择指南
+### Native crash
 
-在实际工作中，选择哪个工具取决于你要解决的问题类型。下面这张对照表可以帮助你快速定位。
+1. 先保存 tombstone、build id、ABI 和复现输入。
+2. 可稳定复现时使用 HWASan 或 MTE SYNC 测试变体。
+3. 只能在 allocator 边界捕获时，选择 malloc debug 的 guard、free_track 或 pointer verification。
+4. 通过原始错误地址和匹配符号确认修复，不用单个采样热点代替崩溃证据。
 
-**场景：Java 堆内存持续增长，怀疑泄漏**
+## 结果复核清单
 
-- 第一步：用 `dumpsys meminfo` 确认 Java Heap 是否持续增长
-- 第二步：用 LeakCanary 自动检测 Activity/Fragment 级别的泄漏
-- 第三步：如果 LeakCanary 没有检出，用 MAT 分析 hprof 文件中的引用链
-
-**场景：Native 堆内存异常**
-
-- 第一步：用 `dumpsys meminfo` 确认 Native Heap 的大小和趋势
-- 第二步：用 `showmap` 查看 `[anon:libc_malloc]` 区域的详细大小
-- 第三步：用 heapprofd 采样 Native 分配，找到分配最多的调用栈
-
-**场景：应用被 LMK 频繁杀掉**
-
-- 第一步：用 `procrank` 查看全系统的内存占用排名
-- 第二步：用 `dumpsys meminfo` 确认自己应用的 PSS 是否过大
-- 第三步：根据 PSS 构成（Java Heap vs Native Heap vs Graphics）选择对应的优化路径
-
-**场景：Native 内存越界访问或 use-after-free**
-
-- 开发阶段：启用 HWASAN 或 MTE 异步模式检测内存安全错误
-- 测试阶段：使用 malloc debug 的 backtrace 功能捕获具体的错误调用栈
-
-[图：内存分析工具选择决策流程图]
-
-## 与其他章节的关系
-
-本章介绍的工具分别对应了不同章节中讨论的内存问题。
-
-- 第 10.1 节（App 内存分析）中讨论的内存分析方法论，就是用本节工具来执行的
-- 第 10.2 节（内存泄漏）中的 Java 泄漏检测，直接依赖 LeakCanary 和 MAT
-- 第 10.3 节（内存持续增长）中的排查流程，第一步就是 `dumpsys meminfo` 趋势对比
-- 第 14.1 节（Android Studio Profiler）中的 Memory Profiler，是 MAT 之外的另一种 hprof 分析方式
-- 第 4.2 节（Linux 内核内存管理）和第 4.3 节（ART 虚拟机内存管理）中讨论的内存管理机制，是理解这些工具输出数据的基础
-
-## 常见问题与误区
-
-**误区一："有了 LeakCanary 就不需要学 MAT 了"**
-
-LeakCanary 只能检测它预设的组件类型（Activity、Fragment、ViewModel、Service）的泄漏。如果你有一个自定义的长生命周期对象（比如单例管理器）持有了一个本该释放的大对象，LeakCanary 不会报警。这种情况只能通过 MAT 手动分析 hprof 文件来发现。
-
-**误区二："dumpsys meminfo 的 TOTAL 就等于应用实际占用的内存"**
-
-`dumpsys meminfo` 报告的是 PSS，其中包含了按比例分摊的共享内存。TOTAL PSS 反映的是"这个进程对系统内存压力的贡献"，不是"杀掉这个进程能释放多少内存"。后者应该看 USS（Unique Set Size）。
-
-**误区三："heapprofd 能直接告诉我哪里泄漏了"**
-
-heapprofd 告诉你的是"哪里在分配内存"和"哪些分配没有被释放"。它不会自动判断泄漏——因为"分配了但没释放"不一定等于泄漏，可能只是对象生命周期还没结束。你需要结合业务逻辑来判断 heapprofd 发现的"未释放分配"是否真的是泄漏。
-
-**误区四："MAT 分析 hprof 文件可以在线上用"**
-
-`Debug.dumpHprofData()` 会导致应用暂停（stop-the-world），暂停时间与 Java 堆大小成正比，通常几百毫秒到数秒。在线上环境抓取 hprof 会严重影响用户体验。线上场景应该使用 Android Studio Profiler 的实时监控或 heapprofd 的采样模式。
-
-**误区五："Native 内存问题只发生在使用 JNI 的应用中"**
-
-即使你的应用没有直接写 JNI 代码，Android 图形栈也会占用大量非 Java 内存。Bitmap 像素、Surface buffer、WebView 渲染缓存可能出现在 `Native Heap`、`Graphics` 或 `/dev/dmabuf`。看到内存上涨后，先分清是 `malloc` native heap 还是 Graphic Buffer / dma-buf，再决定用 heapprofd 还是图形内存那组工具。
+- 采集的是 Java heap、native allocator、VMA、graphics 还是整机压力？
+- 数据来自同一进程吗？包是否含多个进程？
+- PSS、RSS、USS、SwapPss 和 allocator live bytes 是否被混成一个口径？
+- 快照前后的业务状态、预热、GC、温度和后台负载是否一致？
+- HPROF 是否只覆盖 managed heap？native size 是否来自工具增强信息？
+- heapprofd 使用 native heap 还是 `com.android.art`？采样间隔是多少？
+- 报告是否有 buffer overrun、缺符号、`[DEDUPED]` 或 driver 误报？
+- `showmap` 是否只看到了已映射 VMA，而遗漏 fd/内核持有的 dma-buf？
+- sanitizer、malloc debug 或 hooks 是否改变了时序和内存行为？
+- 修复后能否用相同脚本重复验证，并由另一类证据支持？
 
 ## 参考资料
 
-- LeakCanary 官方文档：https://square.github.io/leakcanary/
-- MAT 下载与文档：https://eclipse.org/mat/
-- 高爷 MAT 三部曲（入门）：https://www.androidperformance.com/2015/04/11/AndroidMemory-Usage-Of-MAT/
-- 高爷 MAT 三部曲（进阶）：https://www.androidperformance.com/2015/04/11/AndroidMemory-Usage-Of-MAT-Pro/
-- 高爷 MAT 三部曲（Bitmap）：https://www.androidperformance.com/2015/04/11/AndroidMemory-Open-Bitmap-Object-In-MAT/
-- heapprofd 官方文档：https://perfetto.dev/docs/data-sources/native-heap-profiler
-- dumpsys meminfo 官方文档：https://developer.android.com/studio/command-line/dumpsys#meminfo
-- Android 内存调试工具总览：https://developer.android.com/ndk/guides/sanitizers
-- AOSP libmeminfo 源码（Android 17）：https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/
-- AOSP malloc_debug 源码（Android 17）：https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/memory/malloc_debug/README.md
-- AOSP malloc_hooks 源码（Android 17）：https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/memory/malloc_hooks/README.md
-- Android 调查内存使用：https://developer.android.com/topic/performance/memory
-- **Android 14→17 内存分析工具栈源码全景** — heapprofd、dumpsys meminfo、procstats 等工具的底层实现细节，详见 DeepResearch: `2026-06-15-memory-analysis-tools-source-code-stack.md`
+- [LeakCanary 工作原理](https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/)
+- [LeakCanary 手动安装 API](https://square.github.io/leakcanary/api/leakcanary/-app-watcher/manual-install/)
+- [Eclipse Memory Analyzer](https://eclipse.dev/mat/)
+- [Android Studio Heap Dump](https://developer.android.com/studio/profile/capture-heap-dump)
+- [Perfetto heapprofd](https://perfetto.dev/docs/data-sources/native-heap-profiler)
+- [Perfetto `heap_profile` 命令](https://perfetto.dev/docs/reference/heap_profile-cli)
+- [Android 进程内存指标](https://developer.android.com/topic/performance/memory-management)
+- [Android `dumpsys meminfo`](https://developer.android.com/studio/command-line/dumpsys#meminfo)
+- [libmeminfo（AOSP `android-17.0.0_r1`）](https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/)
+- [bionic malloc debug（AOSP `android-17.0.0_r1`）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/memory/malloc_debug/README.md)
+- [bionic malloc hooks（AOSP `android-17.0.0_r1`）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/memory/malloc_hooks/README.md)
+- [Android NDK HWASan](https://developer.android.com/ndk/guides/hwasan)
+- [Android NDK MTE](https://developer.android.com/ndk/guides/arm-mte)
+- [AOSP MTE 工作模式](https://source.android.com/docs/security/test/memory-safety/arm-mte)
+- [内核 smaps/PSS（`android17-6.18-2026-06_r6`）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/task_mmu.c)
+- [内核 dma-buf（`android17-6.18-2026-06_r6`）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/driver-api/dma-buf.rst)
