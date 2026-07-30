@@ -43,6 +43,8 @@ sources:
     path: "https://developer.android.com/studio/profile"
   - type: official
     path: "https://developer.android.com/topic/performance/power/battery-historian"
+  - type: obsidian
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S13_game_type.md"
   - type: internal
     path: "src/part3-tools/ch13-perfetto/01-perfetto-intro.md"
   - type: internal
@@ -223,7 +225,7 @@ ORDER BY ts.dur DESC;
 - 一帧可能包含多次 Vulkan submission，应使用 Vulkan Events 与 `submission_id` 关联同一帧的 GPU 工作；
 - Actual Timeline 的 jank slice、SurfaceFlinger On Display 和 expected/actual present 用来确认用户是否晚看到这一帧。
 
-CPU 和 GPU 都很忙不代表两者构成同一帧的临界路径。要沿 submission、buffer、fence 或 FrameTimeline 关系核对。
+CPU submit 返回、GPU producer completion fence、SurfaceFlinger latch、display present fence 和 layer release fence 是不同的时序边界。APA 中 `vkQueuePresentKHR` 或 GPU queue slice 结束都不能单独证明一帧已经显示；应沿 submission ID、buffer/layer、fence 与 FrameTimeline 对齐。队列中存在多帧时，FPS 稳定也可能伴随较高的输入到显示延迟。[已核对: Writer/rendering_pipelines/S13_game_type.md]
 
 ### 8.2 GPU 内存效率与带宽
 
@@ -284,7 +286,7 @@ APA 安装包不属于 `android-17.0.0_r1` framework 源码。平台 tag 中找�
 1. 固定设备、build fingerprint、GPU/driver、刷新率、亮度、电量和温度；
 2. 固定 App APK、代码提交、构建类型、`debuggable` 与引擎配置；
 3. 固定 APA 版本与 Project；
-4. 从默认录制界面导出并保存本次 `TraceConfig`；
+4. 切换到 Use custom trace configuration，复制并保存界面生成的 `TraceConfig`；
 5. 固定 launch mode、trigger、duration、测试数据和操作脚本；
 6. 录制基线 trace，标记异常帧和时间窗；
 7. 用 track、flow、详情面板与 SQL 形成一个可证伪的原因假设；
