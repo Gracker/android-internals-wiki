@@ -74,214 +74,248 @@ last_deepseek_cn_review_at: 2026-07-16
 
 # 13.15 BufferQueue 阻塞的 Perfetto 识别
 
+Perfetto 中的 `Buffer Stuffing` 描述队列积压状态。App 仍在提交新帧，前一批 buffer 尚未按时 present，输入到上屏的延迟可能逐帧增加。这个标签本身不能证明 App 绘制代码超时，也不能直接定位到某个 Surface。
 
-Perfetto 里出现 `Buffer Stuffing` 时,不能直接下结论说 App 绘制超时。这个标签描述的是队列状态:App 仍在提交新帧,但前一批 buffer 还没有按时 present,BufferQueue 内部已经产生积压。结果可能是帧率看起来还平稳,触摸到上屏的延迟却越来越长。
+可靠诊断需要把 FrameTimeline、目标 Layer、RenderThread、BLASTBufferQueue counter、SurfaceFlinger 帧以及 release 时刻放进同一时间窗。BufferQueue 的 slot 和 fence 机制可回到 2.13、2.16 节；跨渲染路径的选择见 18.20 节。
 
-现场识别的重点是从 FrameTimeline、RenderThread、BLASTBufferQueue 轨道和 SurfaceFlinger 时间线确认 BufferQueue 背压。BufferQueue 的 slot、fence 和 BLAST 机制可回到 2.13、2.16;跨渲染路径的场景选择见 18.20。
+## 从 FrameTimeline 找到目标 Surface
 
-## 从 FrameTimeline 定位 Buffer Stuffing
+Android 12 起，FrameTimeline 在 App 和 SurfaceFlinger 两侧提供 Expected / Actual Timeline。App `Actual Timeline` slice 从 `Choreographer#doFrame` 或 `AChoreographer_vsyncCallback` 开始，结束点取 GPU 完成与 post 到 SurfaceFlinger 两者中较晚的时刻。Perfetto 对 `Buffer Stuffing` 的定义是：App 在前一帧尚未 present 时继续提交新帧，BufferQueue 中待显示的 buffer 逐渐积压。
 
-Android 12 之后,FrameTimeline 会在 App 和 SurfaceFlinger 两侧各生成 Expected / Actual Timeline。App 侧 `Actual Timeline` slice 的起点对应 `Choreographer#doFrame` 或 `AChoreographer_vsyncCallback` 开始执行,终点取 GPU 完成时间与 post 到 SurfaceFlinger 时间的较晚者。Perfetto 文档把 `Buffer Stuffing` 定义为:App 在前一帧尚未 present 前继续向 SurfaceFlinger 发送新帧,内部 BufferQueue 被尚待显示的 buffer 填满,由此增加输入延迟。
+排查时先读取四组字段：
 
-现场判读时,先看四个字段:
-
-| 字段 | 读法 | 用途 |
+| 字段 | 含义 | 用途 |
 |---|---|---|
-| `surface_frame_token` | App 帧 token | 与 App `doFrame`、RenderThread slice 对应 |
-| `display_frame_token` | SurfaceFlinger display frame token | 与 SF `Actual Timeline` 以及 flow event 对应 |
-| `jank_type` | Perfetto UI 可能显示 `Buffer Stuffing`,SQL 结果也可能按版本呈现为无空格枚举名 | 识别队列积压状态 |
-| `layer_name` | 产生该帧的 Layer / Surface 名称 | 在多 Surface 场景中区分主窗口、视频、Camera、WebView |
+| `surface_frame_token` | App 帧 token | 关联 App `doFrame`、RenderThread slice |
+| `display_frame_token` | SurfaceFlinger display frame token | 关联 SF `Actual Timeline` 和 flow |
+| `jank_type` | 帧分类字符串 | 筛选 `Buffer Stuffing` |
+| `layer_name` | 该帧对应的 Layer / Surface | 区分主窗口、视频、Camera、SurfaceView 等独立 Surface |
 
-这里的诊断顺序是:先找 `jank_type`,再按 `layer_name` 缩小到具体 Surface,再用 token 追 App 帧和 SF display frame 的对应关系。只看红色或黄色 slice 容易误判,因为 `Buffer Stuffing` 也可能表现为高延迟状态;Perfetto 文档把浅绿色定义为帧率平稳但延迟增加的状态。
+先按 `jank_type` 找候选帧，再按 `layer_name` 收窄 Surface，随后用两个 token 追 App 帧和 display frame。UI 颜色会随版本与主题调整，不能作为稳定查询接口；报告中应保存 `jank_type` 原始字符串。
 
-## RenderThread 上的 dequeueBuffer 阻塞特征
+## `dequeueBuffer` 为什么会等
 
-`Buffer Stuffing` 是结果标签,RenderThread 上的 `dequeueBuffer` 等待才是 App 侧可观察的背压入口。`BufferQueueProducer::dequeueBuffer()` 会进入 `waitForFreeSlotThenRelock()` 查找可用 slot;没有空闲 slot,或内部队列超过 `maxBufferCount` 时,producer 会等待 buffer release。android-17.0.0_r1 已复核到 `waitForBufferRelease()` / `notifyBufferReleased()` 路径,底层仍通过 `mDequeueCondition.wait()` / `wait_for()` 等待和 `notify_all()` 唤醒;Android 16 的 `BUFFER_RELEASE_CHANNEL` 是 release-notify 路径的中间 flag 形态,不写成 Android 14/15 设备通用机制。
+`android-17.0.0_r1` 的 `BufferQueueProducer::dequeueBuffer()` 会调用 `waitForFreeSlotThenRelock()`。源码中有两类等待条件：
 
-Trace 中可以按组合证据判断,而不是只盯一个 slice 名称:
+1. 找不到可复用的 free buffer 或 free slot；
+2. 快速断开重连等场景造成 `mQueue.size() > getMaxBufferCountLocked()`。
 
-- `RenderThread` 或原生渲染线程里出现变长的 `dequeueBuffer` / `DequeueBufferDuration` slice,持续时间接近一帧或多帧预算。
-- 同一时间窗内,线程状态从 Running 进入 Sleeping,常见原因是 futex 或条件变量等待;如果开启调用栈采样,栈上可见 `BufferQueueProducer::waitForFreeSlotThenRelock()`、`dequeueBuffer()`、EGL swap 或 HWUI 提交流程。
-- App 侧 `Actual Timeline` 的 `on_time_finish` 仍可能为 true,但 `present_type` 是 late;这说明 App 本轮 CPU 工作并不一定超时,晚 present 来自队列积压。
-- SurfaceFlinger 侧对应 display frame 没有明显 CPU deadline missed 时,问题更像 producer / consumer 节奏不匹配;若 SF 主线程或 HWC 阶段也长,则要继续追合成侧。
+阻塞模式下，producer 进入 `waitForBufferRelease()`，在 `mDequeueCondition` 上执行 `wait()` 或带超时的 `wait_for()`。非阻塞或 async 模式满足源码条件时会返回 `WOULD_BLOCK`。producer 已经 dequeue 到上限时则返回 `INVALID_OPERATION`，这和等待空闲 slot 是两条不同分支。
 
-这组证据能把 BufferQueue 背压和普通 `AppDeadlineMissed` 分开。`AppDeadlineMissed` 往往是主线程、RenderThread 或 GPU 工作本身超过预算;BufferQueue 背压的重点是 App 已经走到提交或取 buffer 阶段,但可复用 buffer 没回来。
+Trace 中应组合检查这些信号：
 
-## BLASTBufferQueue 与 QueuedBuffer 轨道
+- `RenderThread` 或原生渲染线程出现较长的 `dequeueBuffer`、EGL swap 或 HWUI 提交 slice；
+- 同一窗口的 `thread_state` 进入 `S`（可中断睡眠）或 `D`（不可中断睡眠），并与 dequeue 窗口重叠；
+- App Actual Timeline 出现 `Buffer Stuffing`，目标 Layer 的 BLAST counter 同期升高；
+- SurfaceFlinger 侧的 acquire、latch、composition、present 或 release 能解释 buffer 何时返回；
+- App/SF deadline 字段与 `present_type` 能排除单纯的 App CPU 超时。
 
-Android 12 之后,主窗口和不少独立 Surface 会通过 BLASTBufferQueue 把 buffer 更新与 `SurfaceControl.Transaction` 绑定到同一帧。分析时不要把它当成传统 BufferQueue 的替代物;它更像 App 侧提交路径上的适配层,底下仍有 buffer acquire、present、release 的节奏约束。机制细节见 2.13 节。
+CPU 采样主要覆盖线程正在运行的时段，通常无法给睡眠区间提供完整用户态调用栈。它适合观察进入等待前的执行路径；等待点本身应依赖明确的 slice、`thread_state`、内核 blocked reason 或可符号化的调试 trace。
 
-Perfetto 中常见的 `QueuedBuffer - <layer>` 轨道可以用来判断 App 侧是否持续压入待处理 buffer:
+`AppDeadlineMissed` 常见于主线程、RenderThread 或 GPU 工作超过预算。BufferQueue 背压的观察点更靠近 buffer 获取、提交和回收，但两者可以同时出现：下游合成变慢会把压力传回 producer，producer 等待又会扩大 App 帧时长。
 
-- 计数上升:App 已经提交新 buffer,等待 SF latch 或后续 release。
-- 计数长期高位:consumer 消费速度落后,或者 release callback 没有及时回到 App 侧。
-- 计数快速上升后伴随 `dequeueBuffer` 变长:队列积压已经反向压到 producer。
-- 计数下降但 `dequeueBuffer` 仍长:要转向 release fence 或 slot 复用路径,详见 2.16 节。
+## `QueuedBuffer - <layer>` 不是原始队列长度
 
-这条轨道最适合和 `layer_name` 一起看。视频、Camera、SurfaceView、WebView 都可能有独立 Surface;同一个进程内多个 Layer 同时更新时,主窗口的 `Buffer Stuffing` 不能自动归因给视频 Surface,必须用 Layer 名称和 token 匹配。
+Android 17 的 `BLASTBufferQueue.cpp` 为每个实例建立 `QueuedBuffer - <name>BLAST#<id>` counter。源码写入的值是：
 
-## Producer / Consumer 两端的因果链
+`mNumFrameAvailable + mNumAcquired - mPendingRelease.size()`
 
-一次 BufferQueue 背压可以拆成一条可验证时间线:
+这个 counter 反映 BLAST 侧尚未消化的压力，不等同于 `BufferQueueCore::mQueue.size()`。结合源码公式判读：
+
+- counter 上升：frame available 或 acquired 数量增加，释放进度没有同步抵消；
+- counter 长时间高位：BLAST/SF 处理或 release callback 可能落后；
+- counter 上升后 `dequeueBuffer` 变长：下游积压已经向 producer 传导；
+- counter 已回落而渲染仍停顿：检查 release fence、GPU/driver 等待、线程调度和应用锁。
+
+多个 Surface 同时更新时，应把 counter 名、`layer_name` 和 frame token 配对。主窗口的 `Buffer Stuffing` 不能自动归因给同进程的视频 Layer。
+
+## Producer 到 display 的证据时间线
+
+下面的时序图用于标出每一段应寻找的 trace 证据：
 
 ```text
 App / RenderThread
- dequeueBuffer -> 绘制或提交 GPU 命令 -> queueBuffer
-  ↓
+  dequeueBuffer → 绘制或提交 GPU 命令 → queueBuffer
+      ↓
 BLASTBufferQueue / BufferQueue
- queued buffer 等待 SF latch
-  ↓
+  queued buffer 等待 acquire / latch
+      ↓
 SurfaceFlinger
- acquireBuffer -> latch -> composition -> present
-  ↓
+  acquireBuffer → latch → composition → present
+      ↓
 HWC / Display
- present fence signal
-  ↓
+  present fence signal
+      ↓
 SurfaceFlinger / Consumer
- releaseBuffer,slot 回到 free 列表
-  ↓
+  releaseBuffer → slot 回到 free buffers
+      ↓
 App / Producer
- 下一次 dequeueBuffer 解除等待
+  下一次 dequeueBuffer 重新检查可用 slot
 ```
 
-这条线可以给每个判断找到对应证据:App 侧看 `queueBuffer` 和 `dequeueBuffer`;SF 侧看 latch、composition、present;显示侧看 present fence;回到 App 侧看 release 后下一次 dequeue 是否恢复。AOSP `BufferQueueConsumer::releaseBuffer()` 会把 slot 状态释放,并通过条件变量或 release 通知唤醒等待 producer;`BufferQueueCore` 维护 `mFreeSlots`、`mFreeBuffers`、`mActiveBuffers`、`mQueue` 这些状态集合。
+`BufferQueueConsumer::releaseBuffer()` 会把非 shared slot 从 `mActiveBuffers` 移到 `mFreeBuffers`，随后调用 `notifyBufferReleased()`。`BufferQueueCore` 维护 `mFreeSlots`、`mFreeBuffers`、`mActiveBuffers` 和 `mQueue`。producer 被唤醒后仍要持锁重新检查条件，唤醒并不保证当前线程立刻拿到 slot。
 
-排查时可以按时间窗做反证:如果 `dequeueBuffer` 长,但 SF 对应帧很快 present 且 release 及时,原因可能不是 BufferQueue 积压,而是 release fence 未 signal、线程调度延迟或应用层锁等待。如果 `queueBuffer` 之后很久才被 SF latch,且 `QueuedBuffer` 高位,才更接近 BufferQueue 背压。
+release fence 还要单独理解。slot 回到 producer 后可能携带尚未 signal 的 fence；图形栈在复写 buffer 前必须等待该 fence。条件变量等待解决“有没有可复用 slot”，fence 等待解决“这个 buffer 是否已经安全可写”，两种等待在 trace 中不能混为一类。
 
-## 视频列表与 SurfaceView 的场景化判断
+如果 SF 对应帧及时 present、consumer 很快 release，`dequeueBuffer` 长窗口就需要继续查 fence、调度或应用同步。如果 `queueBuffer` 后很久才被 acquire/latch，同时 BLAST counter 高位，BufferQueue 背压的证据更完整。
 
-视频列表、Camera 预览和混合渲染页面最容易把问题看串。它们通常由多个 Surface 同时参与合成,不能按单一窗口 buffer 判断。
+## 多 Surface 场景
 
-| 场景 | 典型 trace 形态 | 判断重点 |
+视频列表、Camera 预览和混合渲染页面往往有多个 Surface 参与合成。分析前先列出主窗口、视频 Surface、Camera preview、WebView/GL Surface 对应的 Layer。
+
+| 场景 | 常见 trace 形态 | 检查重点 |
 |---|---|---|
-| RecyclerView 中嵌入播放器 | 主窗口有滚动帧,视频 Surface 有独立 Layer;`layer_name` 可能同时出现 Activity 和播放器 Surface | 先确认 `Buffer Stuffing` 属于哪个 Layer,再看是否由列表滚动触发播放器 Surface 重建或尺寸变化 |
-| SurfaceView 视频播放 | 视频走独立 Surface,App 主窗口只负责控制层和 UI | 主窗口 jank 与视频 Layer jank 分开归因;FrameTimeline 文档也提示 SurfaceView 支持边界需按版本核对 |
-| TextureView 视频播放 | 视频内容采样进 App 渲染路径,RenderThread / GPU 压力更容易和主窗口混在一起 | `dequeueBuffer` 长时要同时看 GPU busy、`updateTexImage` 和主窗口 BLAST 轨道 |
-| CameraX 预览 | camera producer、预览 Surface、App UI 可能分属不同线程和进程 | 用 Layer 名称、camera 进程轨道和 preview Surface 的 buffer 计数对应 |
+| RecyclerView 内嵌播放器 | 主窗口产生滚动帧，视频有独立 Layer | 确认 `Buffer Stuffing` 属于哪个 Layer，再检查 Surface 重建、尺寸变化和滚动时序 |
+| SurfaceView 视频 | 视频与 App 主窗口分属不同 Surface | 分开归因主窗口 jank 和视频 Layer jank |
+| TextureView 视频 | 视频纹理进入 App 渲染路径 | 联合查看 `updateTexImage`、RenderThread、GPU busy 和主窗口 BLAST counter |
+| CameraX 预览 | camera producer、preview Surface、App UI 可能跨线程或跨进程 | 用 Layer 名、进程轨道和 preview counter 建立对应关系 |
 
-这类现场的可操作做法是先把 Surface 列表列出来:主窗口、视频 Surface、Camera preview、WebView / GL Surface 各自对应哪个 Layer。之后只在同一个 Layer 内讨论 token、QueuedBuffer 和 `dequeueBuffer`,避免把主窗口的 `doFrame` 慢归因到播放器,或把播放器 Surface 的 release 延迟归因到主线程布局。
+只有完成 Layer 对应后，token、counter 和 `dequeueBuffer` 才能进入同一条证据时间线。跨 Layer 拼接事件会把相关性误写成因果关系。
 
-## 误判边界与排查顺序
+## 容易混淆的四类等待
 
-BufferQueue 背压和另外四类问题很像,排查时按下面顺序剥离:
+1. **App 执行超时**：`doFrame`、`performTraversals`、RecyclerView bind 或 Binder 回调超过预算，dequeue 窗口没有明显等待。
+2. **GPU 或 fence 等待**：GPU 写入、SF/HWC 读取或 release fence 尚未完成，证据落在 fence、GPU timeline 和 driver wait。
+3. **SF/HWC 合成慢**：SF Actual Timeline 变长，jank type 指向 `SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed` 或 `DisplayHAL`。producer 等待可能是下游变慢的反馈。
+4. **应用同步或 Binder 等待**：渲染相关线程卡在应用锁、Binder transaction 或资源加载，时间窗与 BufferQueue release 对不上。
 
-1. **主线程布局或业务耗时**:`doFrame`、`performTraversals`、RecyclerView bind 或 Binder 回调本身超过预算,`dequeueBuffer` 没有明显等待。这类问题归到 App 帧执行耗时,不归到 BufferQueue。
-2. **GPU fence 等待**:App 已提交 buffer,但 GPU 写入或 SF / HWC 读取还没完成。证据是 `fence wait`、GPU busy 或 present fence 延迟,判读方式见 2.16 节。
-3. **SurfaceFlinger / HWC 合成慢**:SF `Actual Timeline` 变长,jank type 指向 `SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed` 或 DisplayHAL。此时 App 侧 `dequeueBuffer` 变长可能是下游变慢后的传导结果。
-4. **Binder 或锁等待**:RenderThread 或业务线程卡在 Binder transaction、应用锁、资源加载,而不是 `dequeueBuffer`。需要用 thread_state、sched 和调用栈采样排除。
-5. **BufferQueue 背压**:同一 Layer 上出现 `Buffer Stuffing`、QueuedBuffer 高位、`dequeueBuffer` 等待和 release 延迟,且这些事件在时间上闭合。
+BufferQueue 背压需要同一 Layer 上的成组证据：`Buffer Stuffing`、BLAST counter 高位、producer 等待以及可解释的 acquire/present/release 延迟。报告可写成：
 
-最终结论要写成带证据的句子,例如:"`TX - playerSurface#0` 连续 6 帧标记为 `Buffer Stuffing`,`QueuedBuffer - playerSurface` 在 3 个 VSync 内保持高位,RenderThread 的 `dequeueBuffer` 等待覆盖 18.4 ms;该窗口内主线程没有长 slice,SF 对应帧 present 晚一帧。" 这种写法比"视频导致卡顿"更容易交给团队复现和修复。
+> `playerSurface` 连续 6 帧被标为 `Buffer Stuffing`；对应 BLAST counter 在 3 个 VSync 内保持高位；同进程 RenderThread 的 dequeue slice 与窗口重叠 18.4 ms；SF display frame 晚一个 VSync present，consumer release 发生在等待结束前。
 
-## Android 16/17 release notify 路径边界
+其中每个数值都应能回到 SQL 行、时间选择区间或截图。
 
-`dequeueBuffer` 的等待唤醒机制在不同 Android 版本上存在两个实现路径：
+## Android 15、16、17 的源码边界
 
-- **Android 14/15**：`BufferQueueProducer.cpp` 采用传统的 `mDequeueCondition.wait()` / `wait_for()` 等待，再由 `notify_all()` 全量唤醒 [已验证: android-15.0.0_r1]。
-- **Android 16/17**：引入了 `BUFFER_RELEASE_CHANNEL` 标记，通过 `waitForBufferRelease()` / `notifyBufferReleased()` 做定向唤醒 [已验证: android-16.0.0_r1 + android-17.0.0_r1]。`BufferQueueCore::notifyBufferReleased()` 最终仍调用 `mDequeueCondition.notify_all()`。
+这三个标签使用同一个条件变量，差异主要是封装和 flag 的生命周期：
 
-`BUFFER_RELEASE_CHANNEL` 本身是 Android 16 引入的 flag 形态，不是 Android 17 的稳定接口名。
+| 平台标签 | 等待路径 | 唤醒路径 |
+|---|---|---|
+| `android-15.0.0_r1` | `waitForFreeSlotThenRelock()` 直接调用 `mDequeueCondition.wait()` / `wait_for()` | 多个释放点直接调用 `mDequeueCondition.notify_all()` |
+| `android-16.0.0_r1` | `BUFFER_RELEASE_CHANNEL` flag 打开时调用 `waitForBufferRelease()`；函数内部仍等待 `mDequeueCondition` | flag 打开时调用 `notifyBufferReleased()`；函数内部仍执行 `notify_all()` |
+| `android-17.0.0_r1` | `waitForBufferRelease()` 已成为无条件路径；内部仍等待 `mDequeueCondition` | `notifyBufferReleased()` 已成为无条件路径；内部仍执行 `mDequeueCondition.notify_all()` |
 
-对 Perfetto 判读的影响：
+因此，`BUFFER_RELEASE_CHANNEL` 在 Android 16 表示迁移开关；Android 17 源码已去掉这些调用点外的 flag 分支。两个包装函数没有在上述标签中实现按 slot 或按 waiter 的定向 channel。只凭函数改名无法推出锁竞争下降，也无法推出 BufferQueue 阻塞已经被系统版本修复。
 
-- Android 14/15 设备上,`dequeueBuffer` 长等待可能伴随 futex sleep 和全量唤醒后的锁竞争。
-- Android 16/17 设备上,等待解除更依赖具体 buffer release 通知;Trace 上仍应回到 `dequeueBuffer` 时长、release 时刻和 Layer 的对应关系,不要将同步机制的内部差异直接解释为用户可感知的行为变化。
-- 性能收益不能脱离设备分支和 trace 证据评估,不能仅凭 release notify 路径存在就断言"BufferQueue 阻塞已修复"。
+Perfetto 判读在三个版本上保持一致：观察等待时长、目标 Layer、consumer release 和下游帧时序。内部函数名只用于源码定位。
 
-## Perfetto SQL 模板
+## PerfettoSQL：先找候选帧
 
-SQL 的用途是把 UI 里的红黄绿 slice 变成可复查的证据表。下面的查询先抓 FrameTimeline 里的 Buffer Stuffing,再用 token 和 Layer 名称作为后续人工比对入口。
+下面的查询从 App Actual Timeline 中筛出 Buffer Stuffing，并保留进程、Layer 与两个 token：
 
 ```sql
 SELECT
- afts.ts,
- afts.dur,
- afts.surface_frame_token AS app_token,
- afts.display_frame_token AS sf_token,
- afts.jank_type,
- afts.on_time_finish,
- afts.present_type,
- afts.layer_name,
- process.name AS process_name
+  afts.ts,
+  afts.dur,
+  afts.upid,
+  afts.surface_frame_token AS app_token,
+  afts.display_frame_token AS sf_token,
+  afts.jank_type,
+  afts.on_time_finish,
+  afts.present_type,
+  afts.layer_name,
+  process.name AS process_name
 FROM actual_frame_timeline_slice AS afts
 LEFT JOIN process USING (upid)
-WHERE afts.jank_type IN ('Buffer Stuffing', 'BufferStuffing')
- OR afts.jank_type LIKE '%Buffer%Stuff%'
+WHERE LOWER(afts.jank_type) GLOB '*buffer*stuff*'
 ORDER BY afts.ts;
 ```
 
-查询结果用于回答三件事:哪个进程、哪个 Layer、哪些 token 进入了 Buffer Stuffing。`jank_type` 写了三种匹配方式,是为了兼容 Perfetto UI 文案、SQL 枚举字符串和不同版本导出的差异;正式报告里应保留实际查到的原始字符串。
+查询结果回答哪个进程、哪个 Layer、哪些 token 进入候选集合。`jank_type` 仍要原样保留，便于核对分析器版本和 UI 展示。
 
-下一步把 App 帧 token 和线程 slice 关联,找 RenderThread 是否在同一时间窗等待 `dequeueBuffer`。
+## PerfettoSQL：关联同进程的 dequeue slice
+
+下面的查询把 dequeue 候选限制到同一 `upid`，并用区间重叠判断代替“slice 起点落入窗口”。前后各留 30 ms 只用于初筛，报告时应根据刷新率和帧边界收紧：
 
 ```sql
 WITH stuffing AS (
- SELECT
- ts,
- dur,
- surface_frame_token AS app_token,
- display_frame_token AS sf_token,
- layer_name,
- upid
- FROM actual_frame_timeline_slice
- WHERE jank_type IN ('Buffer Stuffing', 'BufferStuffing')
-  OR jank_type LIKE '%Buffer%Stuff%'
-), rt_slice AS (
- SELECT
- slice.ts,
- slice.dur,
- slice.name,
- thread.name AS thread_name,
- process.name AS process_name
- FROM slice
- JOIN thread_track ON slice.track_id = thread_track.id
- JOIN thread USING (utid)
- LEFT JOIN process USING (upid)
- WHERE slice.name GLOB '*dequeueBuffer*'
-  OR slice.name GLOB '*DequeueBuffer*'
+  SELECT
+    ts,
+    dur,
+    surface_frame_token AS app_token,
+    display_frame_token AS sf_token,
+    layer_name,
+    upid
+  FROM actual_frame_timeline_slice
+  WHERE LOWER(jank_type) GLOB '*buffer*stuff*'
+),
+dequeue_slice AS (
+  SELECT
+    slice.ts,
+    slice.dur,
+    slice.name,
+    thread.name AS thread_name,
+    process.name AS process_name,
+    process.upid
+  FROM slice
+  JOIN thread_track ON slice.track_id = thread_track.id
+  JOIN thread USING (utid)
+  JOIN process USING (upid)
+  WHERE LOWER(slice.name) GLOB '*dequeuebuffer*'
+    AND slice.dur > 0
 )
 SELECT
- stuffing.layer_name,
- stuffing.app_token,
- stuffing.sf_token,
- rt_slice.process_name,
- rt_slice.thread_name,
- rt_slice.name AS blocking_slice,
- rt_slice.dur / 1000000.0 AS dur_ms
+  stuffing.ts AS stuffing_ts,
+  stuffing.layer_name,
+  stuffing.app_token,
+  stuffing.sf_token,
+  dequeue_slice.process_name,
+  dequeue_slice.thread_name,
+  dequeue_slice.name AS dequeue_slice,
+  dequeue_slice.dur / 1e6 AS dequeue_ms
 FROM stuffing
-JOIN rt_slice
- ON rt_slice.ts BETWEEN stuffing.ts - 30000000 AND stuffing.ts + stuffing.dur + 30000000
-ORDER BY stuffing.ts, rt_slice.dur DESC;
+JOIN dequeue_slice
+  ON dequeue_slice.upid = stuffing.upid
+ AND dequeue_slice.ts < stuffing.ts + stuffing.dur + 30000000
+ AND dequeue_slice.ts + dequeue_slice.dur > stuffing.ts - 30000000
+ORDER BY stuffing.ts, dequeue_slice.dur DESC;
 ```
 
-这段查询只给候选证据。不同 ROM 的 slice 命名可能不一致,`dequeueBuffer` 也可能被包在 EGL swap 或 HWUI 提交 slice 里。查不到结果时,不代表没有 BufferQueue 背压;需要回到线程状态、调用栈采样和 `QueuedBuffer` 轨道继续确认。
+原查询若只比较 slice 起点，会漏掉从窗口前开始、持续到窗口内的等待；若不约束 `upid`，还会误关联其他进程的同名 slice。修正后的结果仍是候选集，因为厂商和渲染后端可能使用不同的 slice 名称。
 
-如果 trace 包含线程状态表,可以用下面的查询找同一窗口内的 sleep / futex 证据。
+## PerfettoSQL：核对线程状态
+
+下面的模板默认检查整段 trace。把 `target_process`、`window_start` 和 `window_end` 替换成上一条查询得到的进程及绝对纳秒时间：
 
 ```sql
+WITH params AS (
+  SELECT
+    'com.example.app' AS target_process,
+    trace_start() AS window_start,
+    trace_end() AS window_end
+)
 SELECT
- thread.name AS thread_name,
- process.name AS process_name,
- thread_state.ts,
- thread_state.dur / 1000000.0 AS dur_ms,
- thread_state.state,
- thread_state.io_wait,
- thread_state.blocked_function
+  thread.name AS thread_name,
+  process.name AS process_name,
+  thread_state.ts,
+  thread_state.dur / 1e6 AS dur_ms,
+  thread_state.state,
+  thread_state.io_wait,
+  thread_state.blocked_function
 FROM thread_state
 JOIN thread USING (utid)
-LEFT JOIN process USING (upid)
-WHERE thread.name IN ('RenderThread', 'hwuiTask1', 'hwuiTask2')
- AND thread_state.dur > 5000000
+JOIN process USING (upid)
+CROSS JOIN params
+WHERE process.name = params.target_process
+  AND thread.name = 'RenderThread'
+  AND thread_state.dur > 0
+  AND thread_state.ts < params.window_end
+  AND thread_state.ts + thread_state.dur > params.window_start
 ORDER BY thread_state.ts;
 ```
 
-`blocked_function` 并不总有值,采样频率也会影响可见性。报告里应把 SQL 结果、Perfetto 截图和人工观察写在一起,不用单条 SQL 结果替代完整判断。
+`Running` 表示正在 CPU 上执行，`R` 表示 runnable 等待 CPU，`S` 表示可中断睡眠，`D` 表示不可中断睡眠。`blocked_function` 来自可用的调度 blocked-reason 数据，可能因为事件未采集或符号不可见而为 `NULL`；它不是周期采样字段。线程状态只能说明调度层发生了什么，仍需和 dequeue slice 及 release 时刻相互印证。
 
 ## 小结
 
-BufferQueue 阻塞的判据不是某个 slice 名字，而是一组时间上闭合的证据：FrameTimeline 标记队列积压，Layer 名称定位 Surface，RenderThread 出现 `dequeueBuffer` 等待，BLAST / BufferQueue 轨道显示积压，SF / HWC / release 时间线能解释 buffer 为什么没回来。缺任何一环，都应降级为"疑似 BufferQueue 背压"，继续补 trace 或源码证据。
+BufferQueue 背压需要一组时间上闭合的证据：FrameTimeline 提供队列状态，Layer 名锁定 Surface，RenderThread 暴露 producer 等待，BLAST counter 反映积压压力，SF/HWC/release 时间线解释 buffer 返回过程。证据缺口应明确标为“疑似 BufferQueue 背压”，再补录制配置、符号或源码定位。
 
-## 参考资料与延伸阅读
+## 源码与官方资料
 
-- **Android Triple Buffer 机制与 BufferQueue 缓冲区管理**：源码调研，详细分析 Triple Buffer 的 producer-consumer 流水线机制、MIN_UNDEQUEUED_BUFFERS=2 的阻塞条件、dequeueBuffer/acquireBuffer/releaseBuffer 完整流程
- - 完整机制分析：`Android Triple Buffer 机制与 BufferQueue 缓冲区管理`（内部调研文档）
+- [Perfetto FrameTimeline 文档](https://perfetto.dev/docs/data-sources/frametimeline)
+- [Android 17 BufferQueueProducer](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp)
+- [Android 17 BufferQueueConsumer](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp)
+- [Android 17 BufferQueueCore](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueCore.cpp)
+- [Android 17 BLASTBufferQueue](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)
+- [Android 16 BufferQueueProducer](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/libs/gui/BufferQueueProducer.cpp)
+- [Android 15 BufferQueueProducer](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-15.0.0_r1/libs/gui/BufferQueueProducer.cpp)
