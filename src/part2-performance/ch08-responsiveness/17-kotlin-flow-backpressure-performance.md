@@ -12,569 +12,367 @@ gap_source: "章节深挖"
 
 # 8.17 Kotlin Flow 背压、操作符链与响应式性能边界
 
-## 响应式编程的性能代价
+Flow 的性能问题很少能用“操作符太多”概括。更常见的原因是语义选错：不能丢的数据用了 conflation，允许覆盖的 UI 状态排成了长队；冷流被多个界面重复收集，热流又在无人订阅时持续访问上游；CPU 转换留在主线程，或用无上限并发放大网络和内存压力。
 
-Kotlin Flow 是 Android 开发中最常用的异步处理工具，但大多数开发者只关注它的便利性，忽略了背后的性能代价。实际项目中常见的性能问题根源往往追溯到 Flow 的设计选择：Flow 为支持异步和背压，在每次数据传递时都要付出额外的开销。
+本章以 Android 17 / API 37 为平台上限，库侧按 `kotlinx.coroutines` 1.11.0 的公开 API 和源码校验。Flow 属于可独立升级的 Kotlin 库，同一 Android 17 设备可以运行不同版本；分析线上问题时要同时记录应用使用的协程库版本。
 
-本文从性能工程师的角度拆解 Flow 机制，重点关注冷流/热流模型差异、背压策略开销、操作符链分配成本三个维度。这些知识点能帮助你在开发时做出更合理的选型，也能在线上性能问题时快速定位瓶颈。
+## 1. Flow 默认怎样传递压力
 
-## 冷流模型与重复计算陷阱
+普通 `flow {}` 是冷流。每次执行 terminal operator，例如 `collect`、`first`、`toList`，都会重新运行 builder 及其上游代码。冷流默认顺序执行，生产、各级转换和消费位于同一个收集协程中；下游没有处理完当前元素时，上游的 `emit` 不能继续推进。
 
-冷流（Cold Flow）是 Kotlin Flow 的基础模型。每次调用 `collect()` 都会从头执行生产者代码，没有任何状态缓存。这个特性在简单场景下很方便，但在复杂场景中会引发严重的性能问题。
+下面的例子展示冷流重复执行和默认的顺序传递。
 
-### 冷流的重复计算开销
 ```kotlin
-class ExpensiveDataSource {
-    private suspend fun fetchFromDatabase(): List<Data> {
-        // 模拟耗时数据库查询
-        delay(100)  // 100ms 开销
-        return generateData()  // CPU 密集型计算
+fun rows(): Flow<Row> = flow {
+    database.queryRows().forEach { row ->
+        emit(row)
     }
 }
 
-val dataSource = ExpensiveDataSource()
-val flow = flow {
-    val data = dataSource.fetchFromDatabase()
-    emit(data)
-}
-
-// 问题：collect() 多次调用会导致重复计算
-flow.collect { /* 第1次收集 */ }
-flow.collect { /* 第2次收集，重新执行 fetchFromDatabase */ }
-```
-
-冷流的性能问题体现在两个方面：
-
-1. **资源浪费**：数据库查询、网络请求等开销大的操作会被重复执行
-2. **数据不一致**：两次收集可能得到不同结果，在某些业务场景中会导致逻辑错误
-
-### 热流模型的缓存机制
-SharedFlow 和 StateFlow 通过保持活跃状态解决了冷流的重复计算问题。它们内部维护一个活跃的协程，数据被缓存后可以直接传递给新收集者。
-
-```kotlin
-// StateFlow 缓存最新值
-val stateFlow = MutableStateFlow(emptyList<Data>())
-
-// SharedFlow 缓存多条数据
-val sharedFlow = MutableSharedFlow<Data>(replay = 3)
-```
-
-热流的优势很明显：新收集者立即获得最新值，没有重复计算开销。但代价是内存占用增加——热流需要持续维护协程状态和数据缓存。
-
-**选型建议**：
-- 数据读取开销大、结果相对稳定时使用热流
-- 数据实时性要求高、读取开销小时使用冷流
-- UI 状态管理优先用 StateFlow，事件流优先用 SharedFlow
-
-## 背压策略的内存与CPU权衡
-
-Flow 的核心设计目标是解决生产者-消费者不同步的问题，这就是背压机制。Android 中常见的背压策略有三种：buffer、conflate、collectLatest，每种策略在不同场景下有不同的性能表现。
-
-### buffer() 的缓冲区管理开销
-buffer() 是最常用的背压策略，它在生产者和消费者之间建立一个缓冲区。
-
-```kotlin
-// 默认是 Channel.RENDEZVOUS（无缓冲）
-flow.buffer()
-
-// 指定缓冲区容量
-flow.buffer(3)
-```
-
-缓冲区的性能影响体现在：
-
-- **内存占用**：缓冲区大小直接影响内存消耗。buffer(100) 可能导致大量对象堆积
-- **延迟增加**：数据在缓冲区中排队等待处理，增加了整体传输延迟
-- **GC 压力**：大量对象创建和销毁会增加垃圾回收频率
-
-### conflate() 的丢弃策略开销
-conflate() 直接丢弃中间值，只保留最新值。这种策略在数据变化频繁但只需要最新结果的场景中特别有效。
-
-```kotlin
-// 用户快速滑动时，只保留最后一次数据
-userActions.conflate()
-  .debounce(100)
-  .collect { action -> 
-    processAction(action)
-  }
-```
-
-conflate() 的优势是内存占用可控，但代价是数据丢失。在性能测试中发现，conflate() 在高频场景下相比 buffer() 能减少 60-70% 的内存占用，但丢失了中间数据。
-
-### collectLatest() 的取消开销
-collectLatest() 在每次新数据到达时取消上一次的处理，只执行最新的操作。
-
-```kotlin
-// 网络请求优化：只取最新结果
-networkCallFlow.collectLatest { result ->
-  updateUI(result)
+suspend fun readTwice() {
+    rows().collect { consumeForScreen(it) }
+    rows().collect { consumeForExport(it) }
 }
 ```
 
-这种策略适合实时性要求高的场景，但取消操作本身也有开销。Perfetto 追踪显示，每取消一次协程会产生约 5-10ms 的额外延迟。
+`queryRows()` 在这里会运行两次。这不自动等于浪费：两个 collector 可能需要不同时间点的数据、不同生命周期或独立错误边界。只有当业务要求共享同一上游实例时，才应使用 `shareIn`、`stateIn` 或仓库级缓存。
 
-**性能对比测试结果**：
+Flow 的默认压力传递依靠挂起，没有 Reactive Streams 的显式 `request(n)` 调用。它能通过 `kotlinx-coroutines-reactive` 适配器与 Reactive Streams 互操作，但阅读普通 Flow 代码时，应从“哪一个 suspend 点会等待”入手。
 
-| 场景 | buffer | conflate | collectLatest |
-|------|--------|----------|--------------|
-| 低频操作 | ⭐⭐⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐⭐⭐ |
-| 高频操作 | ⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
-| 内存敏感 | ⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
-| 实时性要求 | ⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐⭐⭐ |
+### 1.1 默认顺序不产生队列
 
-## 操作符链的分配爆炸
+不使用 `buffer`、`flowOn`、`channelFlow`、并发 flatten 等边界时，下游慢会直接延长上游下一次 `emit` 的返回时间。此时不会在 Flow 内部无限堆积元素，代价是生产者与消费者不能重叠执行。
 
-Kotlin Flow 操作符链是性能问题的重灾区。每个操作符都会创建新的 Flow 实例和 CoroutineContext，长操作符链会导致大量对象分配。
+阻塞线程和挂起协程也要分清：
 
-### 操作符的内部开销
+- `delay`、支持取消的挂起 I/O 会让出线程；
+- 数据库驱动、文件 API 或业务 SDK 的同步调用仍可能阻塞当前线程；
+- 挂起函数不承诺自动运行在后台 dispatcher；
+- Flow 能限制元素推进速度，不能把阻塞调用变成非阻塞调用。
+
+## 2. `buffer`、丢弃与取消是三种语义
+
+下面的表格按数据结果区分常用操作符：
+
+| 方式 | 慢消费者出现时 | 是否丢值 | 主要风险 |
+|---|---|---|---|
+| 默认顺序 Flow | 上游 `emit` 挂起 | 否 | 上下游无法并行 |
+| `buffer(n)` + `SUSPEND` | 队列满后上游挂起 | 否 | 排队延迟与对象驻留 |
+| `buffer(n, DROP_OLDEST)` | 丢最旧的排队值 | 是 | 中间状态不可恢复 |
+| `buffer(n, DROP_LATEST)` | 丢正在进入的新值 | 是 | 最新输入可能未处理 |
+| `conflate()` | 上游继续，collector 取得最近值 | 是 | 只适合可覆盖状态 |
+| `collectLatest` | 新值到来时取消旧 action | 旧 action 可能未完成 | 副作用可能被中断 |
+| `debounce` | 等待一段静默期 | 是 | 引入用户可见等待 |
+| `sample` | 周期性取该窗口最近值 | 是 | 采样边界不等于显示帧 |
+
+### 2.1 `buffer()` 默认不是 rendezvous
+
+`buffer()` 的默认 capacity 是 `Channel.BUFFERED`。显式 `buffer(0)` 或 `buffer(Channel.RENDEZVOUS)` 才表示零容量通道。`buffer` 会在执行时把上游放到独立协程，通过 Channel 与下游连接，因此上下游工作可以重叠。
+
+下面的写法适合“不能丢数据，但允许有限排队”的解析管线。
+
 ```kotlin
-// 表面上是链式调用，实际创建了多个 Flow 对象
-flow
-  .map { it.transform() }     // Flow1
-  .filter { it.isValid() }   // Flow2
-  .flatMapLatest { fetch(it) } // Flow3
-  .collect { process(it) }
+source
+    .buffer(
+        capacity = 32,
+        onBufferOverflow = BufferOverflow.SUSPEND,
+    )
+    .map { packet -> decode(packet) }
+    .collect { decoded -> persist(decoded) }
 ```
 
-每个操作符都会：
-1. 创建新的 Flow 实例
-2. 分配新的 CoroutineContext
-3. 建立父子 Job 关系
-4. 包装上/下游的 Flow
+32 只是示例容量。工程值应由元素大小、峰值生产速率、消费时长和允许排队时间共同决定。容量增大可能提高吞吐，也可能把拥塞改成更长的尾延迟和更高的堆占用。
 
-### 协程上下文复制开销
+相邻的 `channelFlow`、`flowOn`、`buffer` 和 `produceIn` 会进行 operator fusion，通常只保留一个按规则合成的 Channel。不能按源码表面出现几个操作符，就推算运行时一定有几个队列。
+
+### 2.2 `conflate()` 适合可覆盖状态
+
+`conflate()` 等价于 `buffer(capacity = 0, onBufferOverflow = DROP_OLDEST)` 的语义：发射者不因慢 collector 挂起，collector 总是取得最近可用值。进度、温度、滚动位置等状态快照常可采用这一策略；支付事件、日志序列、数据库变更命令不能随意丢弃。
+
+`StateFlow` 已经按 `Any.equals` 做强相等合并，再对它调用 `conflate()` 没有效果。若状态类破坏 `equals` 合同，StateFlow 的行为没有定义；可变对象原地修改也可能让更新无法被识别。
+
+### 2.3 `collectLatest` 取消的是 action
+
+`collectLatest` 收到新值后取消前一个 action，再启动新 action。`flatMapLatest` 会取消前一个内部 Flow；`mapLatest` 会取消前一个 transform。三者不能互换。
+
+下面的搜索例子让新查询替换旧查询，并在查询文本稳定一段时间后访问仓库。
+
 ```kotlin
-data class ExpensiveContext(
-  val dispatcher: CoroutineDispatcher,
-  val name: String,
-  val logger: Logger,
-  val metrics: Metrics
+queryText
+    .debounce(300)
+    .distinctUntilChanged()
+    .flatMapLatest { query ->
+        repository.search(query)
+    }
+    .collect { results ->
+        render(results)
+    }
+```
+
+旧的 `repository.search()` 必须支持协作式取消，替换才会及时。长时间无 suspend 点的 CPU 循环应定期检查 `ensureActive()`；不能取消的阻塞 SDK 即使外层协程已取消，也可能继续占用线程或网络资源。取消耗时取决于代码和资源，没有通用的 5–10 ms 结论。
+
+## 3. StateFlow 与 SharedFlow 的成本来自订阅者和缓冲
+
+### 3.1 StateFlow 是状态容器
+
+`MutableStateFlow` 始终有一个当前值，新订阅者会收到该值；设置与旧值相等的新值不会产生更新。它本身不启动一条常驻协程。只有 `stateIn` 等操作符把冷上游共享到指定 scope 时，才会创建用于收集上游的协程。
+
+官方实现说明给出了两个有用的复杂度边界：
+
+- 增加订阅者的摊销成本为 O(1)；
+- 更新 value 的成本为 O(N)，N 是活跃订阅者数量。
+
+因此，StateFlow 很适合单一 UI 状态和少量订阅者。若同一状态被大量内部组件独立订阅，发射成本也应进入基准测试。它不会像现稿伪源码所写的那样使用 Compose `mutableStateListOf`。
+
+### 3.2 SharedFlow 是广播
+
+`MutableSharedFlow` 的公开参数是 `replay`、`extraBufferCapacity` 和 `onBufferOverflow`。`replay` 既给新订阅者回放，也参与慢订阅者缓冲；每次 emit 的实现成本随订阅者数量 O(N) 增长。
+
+下面的配置用于允许丢弃旧样本的传感器遥测，不适用于必须执行的业务命令。
+
+```kotlin
+private val _samples = MutableSharedFlow<SensorSample>(
+    replay = 0,
+    extraBufferCapacity = 32,
+    onBufferOverflow = BufferOverflow.DROP_OLDEST,
 )
 
-// 每个操作符都会复制整个上下文
-flow.map { value ->
-  val context = coroutineContext  // 复制整个上下文对象
-  // 上下文对象越大，复制开销越高
-  transformWithContext(value, context)
+val samples: SharedFlow<SensorSample> = _samples.asSharedFlow()
+
+fun offerSample(sample: SensorSample): Boolean {
+    return _samples.tryEmit(sample)
 }
 ```
 
-我们的测试显示，在操作符链长度超过 5 个时，上下文复制开销开始变得显著。在有大量自定义上下文属性的场景下，每个 collect() 操作可能产生 1-5MB 的临时内存分配。
+没有订阅者时，SharedFlow 只保留 `replay` 指定的元素，`extraBufferCapacity` 不生效。这个例子中 `replay = 0`，无人订阅时样本会丢失。默认的 `MutableSharedFlow()` 也有一个反直觉边界：没有订阅者时 `tryEmit` 返回 `true`，值却会立即丢失；有订阅者且没有可用容量时则返回 `false`。
 
-### 与 Sequence 的零分配对比
+SharedFlow 不会正常完成，也不能像 Channel 那样 close。完成、错误、重试或“任务已消费”都要建模成数据或放到另一条有持久化语义的通道。
+
+### 3.3 `shareIn` / `stateIn` 管理共享上游
+
+下面的 ViewModel 把仓库冷流共享为 UI StateFlow，并在短暂配置变更时保留上游。
+
 ```kotlin
-// Flow：每次 collect 都创建新协程和上下文
-flow
-  .map { it * 2 }
-  .filter { it > 0 }
-  .collect { result -> 
-    println(result)
-  }
-
-// Sequence：零分配，纯函数式转换
-sequence
-  .map { it * 2 }
-  .filter { it > 0 }
-  .forEach { result -> 
-    println(result)
-  }
+val uiState: StateFlow<UiState> =
+    repository.observeDashboard()
+        .map { model -> UiState.Ready(model) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(
+                stopTimeoutMillis = 5_000,
+            ),
+            initialValue = UiState.Loading,
+        )
 ```
 
-Sequence 在性能上胜出，但缺少异步能力。Flow 为支持异步必须付出分配代价，这是设计取舍。
+5 秒是示例策略，不是库的性能推荐值。`WhileSubscribed()` 默认在末位订阅者离开后立即停止上游，并永久保留 replay；`stopTimeoutMillis` 可延迟停止，`replayExpirationMillis` 可控制缓存何时重置。上游是 GPS、socket 或高成本查询时，生命周期策略会直接影响功耗、连接和重复初始化次数。
 
-### 优化建议
-1. **缩短操作符链**：将多个操作合并为一个
-2. **重用 Flow**：避免重复创建相同的 Flow
-3. **轻量级上下文**：只在必要时添加上下文属性
-4. **考虑切换为 Sequence**：在同步场景中优先使用 Sequence
+`Eagerly` 会在首个订阅者出现前启动，超过 replay 的值可能直接丢弃；`Lazily` 在首个订阅者出现后启动，并在之后没有订阅者时继续保持上游。不要只因“查询贵”就把所有冷流改成永久热流。
 
-## flatMap 变体的调度开销
+## 4. 操作符链不会为每一级创建 Job
 
-flatMap 系列操作符是 Flow 中最复杂的并发策略选择，不同变体对性能的影响差异很大。
+`map`、`filter`、`onEach` 等顺序操作符会返回包装后的 Flow，但不会各自复制一份 `CoroutineContext`、创建 dispatcher 或建立父子 Job。默认链仍在 collector 的协程中顺序运行。会引入协程或 Channel 边界的主要是 `buffer`、跨 dispatcher 的 `flowOn`、`channelFlow`、`callbackFlow`、`shareIn`、`stateIn` 和并发 flatten 操作。
 
-### flatMapMerge 的并发模型
+因此，“链长超过 5 就合并操作符”没有通用依据。把 map 和 filter 塞进一个大 transform 可能减少少量包装，也会损失可读性、复用与测试边界。应在热路径上用 AndroidX Microbenchmark 比较真实元素类型、编译模式和操作符组合。
+
+Sequence 也不能写成“零分配”。它是同步、拉取式抽象，Flow 支持 suspend、取消和异步边界。纯内存集合且没有挂起需求时可以比较 List 循环、Sequence 与 Flow；涉及生命周期、异步数据源或持续事件时，语义通常比微小包装成本更早决定选择。
+
+## 5. 并发 flatten 要服从资源上限
+
+### 5.1 `flatMapMerge`
+
+`flatMapMerge(concurrency)` 顺序调用 transform，随后并发收集返回的内部 Flow，输出顺序不稳定。当前默认 `DEFAULT_CONCURRENCY` 是 16，属于 preview 配置，并可在 JVM 上通过系统属性改变；业务代码不应依赖默认值。
+
+并发度应同时满足：
+
+- 服务端、数据库连接池或文件描述符上限；
+- 单任务内存与响应体大小；
+- dispatcher 可运行线程和设备 CPU；
+- 失败、重试与取消造成的瞬时放大；
+- 是否允许结果乱序。
+
+把并发从 16 调到 32不保证吞吐提高。瓶颈在服务端限流、磁盘或单核 CPU 时，更高并发可能只增加队列、上下文切换和尾延迟。
+
+### 5.2 `flatMapConcat` 与普通 `map`
+
+`flatMapConcat` 按顺序完整收集每一个内部 Flow。若每个输入只调用一次 suspend 函数并返回一个值，普通 `map { repository.load(it) }` 更直观。只有 transform 本身要返回多值 Flow，并且业务要求前一个内部 Flow 完成后再进入下一个，才需要 concat 语义。
+
+### 5.3 `flatMapLatest`
+
+latest 适合“旧结果失效”的输入，例如搜索词、选中的账号或地图视口。它不适合付款、消息发送、写文件等必须完成的副作用。若副作用已发到远端，取消本地等待也不表示远端操作被撤销，业务仍要使用幂等键和服务端状态查询。
+
+## 6. `flowOn` 只改变上游
+
+`flowOn(context)` 影响它之前、且没有自有 context 的操作符，不会把 dispatcher 泄漏到下游。dispatcher 发生变化时，库会用上游协程和默认缓冲 Channel 连接 collector；前后显式 `buffer` 可以指定这个融合 Channel 的容量。
+
+下面的例子把 CPU 解码放到 Default，同时让 UI collector 留在调用方的 Main context。
+
 ```kotlin
-// 默认 concurrency=16，最多 16 个协程并发执行
-val requests = flow {
-  repeat(100) { emit(it) }
-}
-
-requests.flatMapMerge { id ->
-  fetchNetworkRequest(id)
-}.collect { result ->
-  processResult(result)
-}
+repository.observePackets()
+    .map { packet -> decodePacket(packet) }
+    .flowOn(Dispatchers.Default)
+    .map { decoded -> toUiModel(decoded) }
+    .collect { model ->
+        render(model)
+    }
 ```
 
-flatMapMerge 的性能特点：
-- **吞吐量优势**：并发执行能显著提升处理速度
-- **调度开销**：大量协程会增加调度器负担
-- **内存压力**：同时活跃的协程数量越多，内存占用越高
+`observePackets` 与 `decodePacket` 位于 `flowOn` 上游，都会在 Default 执行；`toUiModel` 和 `collect` 使用 collector context。若 `toUiModel` 也很重，应调整操作符位置或增加经过测量的 context 边界。
 
-在我们的压力测试中，flatMapMerge 的 concurrency 参数从 16 提升到 32 时，吞吐量提升了 20%，但内存占用增加了 80%。
+不要习惯性给 Room Flow、Retrofit suspend 调用或已有线程管理的数据源再套 `Dispatchers.IO`。这些库可能已经把阻塞工作放到自己的 executor；多一次 `flowOn` 仍会引入协程、Channel 和取消边界，却未必迁移任何阻塞工作。
 
-### flatMapConcat 的串行开销
-```kotlin
-// 串行执行，每次只处理一个
-requests.flatMapConcat { id ->
-  fetchNetworkRequest(id)
-}.collect { result ->
-  processResult(result)
-}
-```
-
-flatMapConcat 的优势是内存占用可控，但缺点是处理速度慢。对于网络请求这种 IO 密集型操作，串行执行通常成为性能瓶颈。
-
-### flatMapLatest 的取消开销
-```kotlin
-// 新数据到达时取消前一个操作
-requests.flatMapLatest { id ->
-  fetchNetworkRequest(id)
-}.collect { result ->
-  processResult(result)
-}
-```
-
-flatMapLatest 在实时性要求高的场景中很有用，但取消操作本身有开销。Perfetto 追踪显示，频繁取消协程会导致调度器抖动。
-
-### 场景化选型建议
-
-**批量网络请求**：flatMapMerge(concurrency=8)
-- 并发数不宜过高，避免调度器过载
-- 根据设备性能调整 concurrency 值
-- 避免取消操作，减少开销
-
-**实时数据流**：flatMapLatest
-- 适合传感器数据、位置更新等场景
-- 注意取消操作的开销
-- 结合防抖减少频繁取消
-
-**顺序依赖操作**：flatMapConcat
-- 需要顺序执行的场景
-- 内存占用可控
-- 执行时间较长，适合异步操作
-
-## 响应式模型的内存分配策略
-
-Kotlin Flow、StateFlow、LiveData 三种响应式模型在不同场景下的内存表现差异很大。理解这些差异能帮助我们在开发中做出更合适的选型。
-
-### StateFlow 的缓存机制
-StateFlow 的内部实现包含值缓存和变化通知机制。
+普通 `flow {}` 要求在同一 coroutine context 中 emit。下面这种跨 context emit 会违反 Flow invariant；需要切换上游时使用 `flowOn`，需要多个协程并发 send 时使用 `channelFlow` 或 `callbackFlow`。
 
 ```kotlin
-// StateFlow 内部结构
-private class MutableStateFlow<T>(
-  private var _value: T,
-  private val lock: Any = Any()
-) : StateFlow<T> {
-  // 值缓存，直接存储最新值
-  private val observers = mutableStateListOf<StateFlowObserver<T>>()
-  
-  override val value: T
-    get() = synchronized(lock) { _value }
+val invalid = flow {
+    emit(loadCached())
+    withContext(Dispatchers.IO) {
+        emit(loadRemote()) // 运行时会触发 Flow invariant 异常
+    }
 }
 ```
 
-StateFlow 的内存优势：
-- **零延迟访问**：value 属性直接返回缓存值
-- **变更优化**：只有值变化时才通知观察者
-- **内存紧凑**：单一值存储，没有历史数据保留
+`channelFlow` 仍是冷流，每次 terminal collection 都重新执行 block。它允许子协程并发 `send`，也会引入 Channel；只在确有多个并发生产者时使用。
 
-### SharedFlow 的缓冲策略
-SharedFlow 内部维护一个缓冲区和观察者列表，内存开销相对较大。
+## 7. Android 生命周期决定上游是否继续工作
+
+### 7.1 View UI
+
+直接在 `lifecycleScope.launch` 中 collect，会一直运行到 Lifecycle 销毁。页面进入 STOPPED 后若无需更新 UI，应使用 `repeatOnLifecycle`；多个 Flow 需要并行收集时，在 repeat block 内分别 `launch`。
+
+下面的 View 示例只在界面至少处于 STARTED 时收集。
 
 ```kotlin
-// SharedFlow 内部结构
-private class MutableSharedFlow<T>(
-  replay: Int,
-  bufferCapacity: Int = Channel.UNLIMITED
-) {
-  private val buffer = Channel<T>(bufferCapacity)
-  private val observers = mutableStateListOf<SharedFlowObserver<T>>()
+viewLifecycleOwner.lifecycleScope.launch {
+    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+        launch {
+            viewModel.uiState.collect { state ->
+                render(state)
+            }
+        }
+        launch {
+            viewModel.effects.collect { effect ->
+                handle(effect)
+            }
+        }
+    }
 }
 ```
 
-SharedFlow 的内存特点：
-- **Replay 缓冲**：replay 参数指定保留的历史数据量
-- **动态调整**：bufferCapacity 控制缓冲区大小
-- **多观察者开销**：每个观察者维护独立的状态
+进入 STOPPED 时，repeat block 及其子协程会取消；回到 STARTED 时重新启动。冷流会随之重新运行，上游是否应共享由仓库或 ViewModel 的 `stateIn` / `shareIn` 决定。`launchWhenStarted` 只暂停协程的旧写法可能让上游继续工作，官方建议使用 `repeatOnLifecycle`。
 
-### LiveData 的生命周期绑定
-LiveData 的优势是与 Android 生命周期深度集成。
+### 7.2 Compose
+
+Android Compose UI 推荐使用 `collectAsStateWithLifecycle()`，它把 Flow 最新值转换成 Compose State，并按照 Lifecycle 控制 collection。
 
 ```kotlin
-// LiveData 内部管理
-private class MediatorLiveData<T> : LiveData<T>() {
-  private var activeObservers = AtomicInteger(0)
-  
-  override fun onActive() {
-    // 活跃观察者时保持数据
-  }
-  
-  override fun onInactive() {
-    // 无观察者时可以释放资源
-  }
+@Composable
+fun DashboardScreen(viewModel: DashboardViewModel) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    DashboardContent(uiState)
 }
 ```
 
-LiveData 的内存特性：
-- **生命周期感知**：自动释放不再需要的资源
-- **主线程切换**：所有更新都在主线程执行
-- **内存效率**：在后台时可以自动清理观察者
+一次 emit 不保证整个 Composable 树都重组，更不保证 composition、measure、layout、draw 四个阶段全部执行。StateFlow 会抑制相等值，Compose 还能依据 state 读取范围、参数稳定性和 skipping 跳过不受影响的代码。
 
-### 性能对比数据
+高频输入应按产品语义降低 UI 状态变化：
 
-通过内存压力测试收集的数据：
+- 显示连续进度时可用 conflation，但要接受中间状态被覆盖；
+- 搜索输入可用 debounce，但延迟值要通过输入体验验证；
+- 相等 UI model 可用 `distinctUntilChanged`，StateFlow 本身已有相等合并；
+- `sample(16)` 只是 16 ms 时间采样，不与 vsync 对齐，也不适配 90/120 Hz 屏幕；
+- 只在滚动越过阈值时更新 UI，可在 Compose 中使用经过测量的 `derivedStateOf`。
 
-| 场景 | StateFlow | SharedFlow | LiveData |
-|------|-----------|------------|----------|
-| 普通状态管理 | 32KB | 48KB | 24KB |
-| 频繁数据更新 | 32KB | 256KB | 32KB |
-| 长生命周期 | 32KB | 持续增长 | 24KB |
-| 短生命周期 | 32KB | 48KB | 8KB |
+## 8. 观测排队、取消与执行线程
 
-**选型建议**：
+Flow 没有向业务公开所有内部 Channel 的实时队列长度。诊断时应在语义边界记录：
 
-- UI 状态管理：StateFlow > LiveData > SharedFlow
-- 事件流处理：SharedFlow > StateFlow > LiveData
-- 内存敏感场景：StateFlow
-- 生命周期相关：LiveData
+- `emitted_at`、`processing_started_at`、`processing_finished_at`；
+- 元素序号、相邻序号跳变和业务丢弃计数；
+- active request、取消、超时和重试数；
+- SharedFlow 的 `subscriptionCount` 与 replay 配置；
+- collector 生命周期状态与协程库版本。
 
-## 协程调度器的线程切换成本
+下面的自定义 slice 用于测量同步 CPU 转换；名称保持低基数，避免把用户 ID 拼进 trace。
 
-Flow 的线程切换机制是性能问题的关键点之一。flowOn() 操作符看起来简单，但内部有复杂的调度逻辑。
-
-### flowOn() 的 Channel 桥接机制
 ```kotlin
-// flowOn 内部使用 Channel 连接两个调度器
-flow
-  .flowOn(Dispatchers.IO)     // 上游运行在 IO 线程
-  .map { transform(it) }      // 下游运行在默认调度器
-  .collect { process(it) }
-```
-
-flowOn() 的工作原理：
-1. 创建一个 Channel 连接上游和下游
-2. 上游在指定调度器上生产数据
-3. Channel 将数据传递到下游调度器
-4. 下游在新调度器上消费数据
-
-### Channel 的缓冲模式影响
-```kotlin
-// RENDEZVOUS 模式：无缓冲，严格同步
-cval rendezvousChannel = Channel<Int>(Channel.RENDEZVOUS)
-
-// BUFFERED 模式：有缓冲，减少同步开销
-cval bufferedChannel = Channel<Int>(Channel.BUFFERED)
-
-// CONFLATED 模式：自动丢弃旧值
-cval conflatedChannel = Channel<Int>(Channel.CONFLATED)
-```
-
-不同模式的性能特点：
-
-- **RENDZVOUS**：延迟最低，但每次发送都会阻塞
-- **BUFFERED**：有少量缓冲，减少阻塞，增加一点内存
-- **CONFLATED**：自动丢弃，减少内存，但丢失数据
-
-### 调度器选择指南
-```kotlin
-// 计算密集型任务
-flow
-  .flowOn(Dispatchers.Default)  // 使用默认调度器
-  .map { calculate(it) }
-  .collect { result ->
-    updateUI(result)
-  }
-
-// 网络请求任务
-flow
-  .flowOn(Dispatchers.IO)  // 使用 IO 调度器
-  .flatMapMerge { callApi(it) }
-  .collect { result ->
-    updateUI(result)
-  }
-```
-
-**调度器选择原则**：
-
-1. **计算密集型**：Default 调度器
-2. **IO 操作**：IO 调度器
-3. **UI 更新**：Main 调度器
-4. **避免调度器切换**：尽量减少不必要的 flowOn() 调用
-
-## Compose 集成的重组开销
-
-Jetpack Compose 与 Flow 的集成看似简单，但背后有复杂的重组机制。每个 Flow 的 emit() 操作都会触发 Compose 的重组过程。
-
-### collectAsState() 的重组触发机制
-```kotlin
-// collectAsState 将 Flow 接入 Compose
-val state by flow.collectAsState()
-
-// 每次 emit 都会触发 recomposition
-LaunchedEffect(Unit) {
-  flow.collect { newValue ->
-    // 这里会触发 UI 重组
-    updateUI(newValue)
-  }
+fun decodeWithTrace(packet: Packet): DecodedPacket {
+    Trace.beginSection("flow.decode_packet")
+    return try {
+        decodePacket(packet)
+    } finally {
+        Trace.endSection()
+    }
 }
 ```
 
-重组的代价体现在：
+这段 slice 只能覆盖同步函数执行时间。跨 suspend 点的阶段要使用 async trace 或请求级指标，不能用一个 thread slice 包住可能在不同线程恢复的协程。
 
-1. **重新执行**：被组合的函数会重新执行
-2. **状态重算**：remember 计算的状态会重新计算
-3. **布局重测**：measure/layout 过程可能重新执行
-4. **绘制重算**：绘制参数可能重新计算
+在 Perfetto 中可通过标准 `slice`、`thread_track` 和 `thread` 表找到这些自定义区间。下面的 SQL 按耗时排序应用添加的 `flow.*` slice。
 
-### 高频场景的性能优化
-在传感器数据、网络响应等高频场景中，需要特殊的优化策略：
-
-```kotlin
-// 优化 1：使用 conflate 减少重组
-sensorData
-  .conflate()
-  .sample(16)  // 60fps 下每帧最多处理一次
-  .collectAsState()
-
-// 优化 2：使用 debounce 防抖
-networkResponses
-  .debounce(100)  // 100ms 内只取最后一次
-  .collectAsState()
-
-// 优化 3：使用 distinctUntilChanged 过滤
-dataUpdates
-  .distinctUntilChanged()
-  .collectAsState()
-```
-
-### 重组节流策略
-```kotlin
-// 帧级节流：确保一帧内只处理一次
-val throttledState = sensorData
-  .conflate()
-  .sample(16)  // 60fps = 16ms 每帧
-  .collectAsState()
-
-// 滑动窗口：固定时间窗口内只处理最后一次
-val windowedState = networkResponses
-  .debounce(100)
-  .collectAsState()
-
-// 变化检测：只在值真正变化时处理\val distinctState = dataUpdates
-  .distinctUntilChanged()
-  .collectAsState()
-```
-
-**性能对比**：
-
-| 优化策略 | 内存开销 | CPU 开销 | 延迟 |
-|----------|----------|----------|------|
-| 无优化 | 低 | 高 | 低 |
-| conflate | 中 | 低 | 中 |
-| debounce | 中 | 低 | 高 |
-| distinctUntilChanged | 低 | 中 | 低 |
-
-## 线上性能问题排查工具
-
-### Coroutine Debugger 使用
-```kotlin
-// 启动 Coroutine Debugging
-DebugProbes.install()
-
-// 追踪特定 Flow 的协程
-coroutineScope {
-  flow.collect { value ->
-    // 协程状态会自动记录
-    process(value)
-  }
-}
-```
-
-Coroutine Debugger 能：
-- 显示协程的调用栈
-- 追踪协程的创建和销毁
-- 识别协程泄漏
-- 分析协程的执行时间
-
-### Perfetto 的 coroutine track
 ```sql
--- 查看 coroutine 相关的性能指标
-SELECT thread.name, track.name, duration
-FROM sched 
-WHERE track.name LIKE '%coroutine%'
-ORDER BY ts
+SELECT
+  s.ts,
+  s.dur,
+  s.name,
+  t.name AS thread_name
+FROM slice AS s
+JOIN thread_track AS tt ON s.track_id = tt.id
+JOIN thread AS t ON tt.utid = t.utid
+WHERE s.name GLOB 'flow.*'
+ORDER BY s.dur DESC;
 ```
 
-Perfetto 的 coroutine track 能识别：
-- 协程的挂起/恢复时间
-- 协程调度器的选择和切换
-- 协程的等待时间
-- 协程的执行路径
+Perfetto 不会凭空生成一条包含每个 Flow 操作符的稳定 coroutine track。线程调度轨迹只能说明某线程何时运行；挂起原因、元素身份和丢弃语义需要应用 slice、日志或 metrics 补足。
 
-### 常见性能反模式识别
+`kotlinx-coroutines-debug` 的 `DebugProbes` 适合开发和测试环境查看协程栈与 Job 状态，会改变执行和内存行为，不应把开启 probes 后的数字当作 production 基线。操作符成本使用 AndroidX Microbenchmark，页面滚动和重组问题使用 Macrobenchmark、Compose tracing 与 Layout Inspector。
 
-**反模式 1：Flow 中做重计算**
-```kotlin
-// 错误：每次收集都重新计算
-flow.map { expensiveCalculation(it) }
-  .collect { result -> updateUI(result) }
+## 9. Android 17 的平台与 kernel 边界
 
-// 正确：缓存计算结果
-val cachedResults = expensiveData.map { calculation(it) }.cached()
-flowFromCache(cachedResults).collect { updateUI(it) }
-```
+Android 17 AOSP 不实现 `Flow`、`StateFlow` 或 `SharedFlow`。它提供主线程 Looper、Handler、线程调度、Binder 和网络等运行环境；`kotlinx-coroutines-android` 的 Main dispatcher 通过 Handler 把 continuation 调度到 Android 主线程。
 
-**反模式 2：嵌套 collect**
-```kotlin
-// 错误：嵌套收集，创建过多协程
-flow.collect { value ->
-  nestedFlow.collect { nestedValue ->
-    // 双重协程开销
-    process(value, nestedValue)
-  }
-}
+可复核的源码锚点包括：
 
-// 正确：使用 flatMap 或 combine
-combine(flow, nestedFlow) { a, b ->
-  process(a, b)
-}.collect {}
-```
+- kotlinx.coroutines 1.11.0 [`Context.kt`](https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/kotlinx-coroutines-core/common/src/flow/operators/Context.kt)：`buffer`、`flowOn` 与 Channel fusion。
+- kotlinx.coroutines 1.11.0 [`SharedFlow.kt`](https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/kotlinx-coroutines-core/common/src/flow/SharedFlow.kt)：replay、缓冲、订阅者与发射路径。
+- kotlinx.coroutines 1.11.0 [`StateFlow.kt`](https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/kotlinx-coroutines-core/common/src/flow/StateFlow.kt)：相等合并与状态更新。
+- kotlinx.coroutines 1.11.0 [`Merge.kt`](https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/kotlinx-coroutines-core/common/src/flow/operators/Merge.kt)：flatten/flatMap 并发实现。
+- kotlinx.coroutines 1.11.0 [`HandlerDispatcher.kt`](https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/ui/kotlinx-coroutines-android/src/HandlerDispatcher.kt)：Android Main dispatcher 与 Handler。
+- AOSP `android-17.0.0_r1` [`Looper.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Looper.java)：主线程消息循环。
+- kernel `android17-6.18-2026-06_r6` [`kernel/sched/core.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c)：线程成为 runnable 后的通用调度机制。
 
-**反模式 3：忽略背压导致缓冲区溢出**
-```kotlin
-// 错误：无缓冲策略导致积压
-flow.collect { value ->
-  // 处理速度跟不上生产速度
-  slowProcessing(value)
-}
+kernel scheduler 不理解 Flow 元素、Channel 容量或 conflation。Perfetto 中看到线程切换，只能证明 continuation 所在线程被调度；背压策略仍要回到库源码和业务观测解释。
 
-// 正确：添加背压控制
-flow.conflate()
-  .buffer(10)  // 限制缓冲区大小
-  .collect { value ->
-    process(value)
-  }
-```
+## 10. Review 清单
 
-## 总结：Flow 性能优化的核心原则
+- 数据是否允许丢弃、覆盖、取消或乱序？
+- 默认顺序挂起是否已满足需求，是否有证据需要 `buffer`？
+- buffer 是否有明确容量，元素体积和最大排队时间是否可估算？
+- `conflate`、`debounce`、`sample` 是否改变了业务结果？
+- latest 操作取消的代码是否支持协作式取消，远端副作用是否具备幂等保护？
+- SharedFlow 无订阅者时的 replay 与丢值行为是否符合预期？
+- StateFlow 的值是否不可变并遵守 `equals` 合同？
+- `stateIn` / `shareIn` 的 scope 与 `SharingStarted` 是否会在无人订阅时持续占资源？
+- `flatMapMerge` 并发度是否受服务端、连接池、CPU 和内存上限约束？
+- `flowOn` 是否放在需要迁移的操作符下方，是否引入了多余 Channel？
+- View 是否用 `repeatOnLifecycle`，Compose 是否用 `collectAsStateWithLifecycle`？
+- 性能结论是否来自目标版本、release 构建和真实元素负载，而不是固定经验数字？
 
-从性能工程师的角度看，Kotlin Flow 的优化核心是三个原则：减少分配、避免阻塞、控制并发。
+## 参考资料
 
-### 减少分配
-- 缩短操作符链，减少 Flow 对象创建
-- 使用热流模型缓存计算结果
-- 轻量化协程上下文，避免不必要的属性复制
+- [Kotlin Flow 指南](https://kotlinlang.org/docs/coroutines-flow.html)
+- [Flow API 与 context preservation](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow/)
+- [`buffer` API 与 operator fusion](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/buffer.html)
+- [`conflate` API](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/conflate.html)
+- [StateFlow API 与实现说明](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/)
+- [SharedFlow API 与缓冲语义](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-shared-flow/)
+- [`flowOn` API](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/flow-on.html)
+- [Android View 的 lifecycle-aware collection](https://developer.android.com/topic/libraries/architecture/views/coroutines-views)
+- [Compose 收集 Flow](https://developer.android.com/develop/ui/compose/state)
+- [Android 性能基准测试概览](https://developer.android.com/topic/performance/benchmarking/benchmarking-overview)
 
-### 避免阻塞
-- 选择合适的背压策略，避免数据积压
-- 使用 buffer() 或 conflate() 控制数据流
-- 避免在 Flow 中执行同步耗时操作
+## 交叉引用
 
-### 控制并发
-- 根据场景选择合适的 flatMap 变体
-- 合理设置 concurrency 参数
-- 避免不必要的协程取消操作
-
-响应式编程的优势在于简洁性和可维护性，但我们必须为这种便利性支付性能代价。理解这些性能影响机制，才能在开发中做出合理的权衡，在代码简洁性和性能表现之间找到最佳平衡点。
+- **8.6 协程性能**：dispatcher、结构化并发与取消
+- **5.10 CPU 调度**：runnable 线程、优先级与调度延迟
+- **7.7 Compose 卡顿分析**：重组、布局和绘制阶段的观测

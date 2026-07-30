@@ -1,7 +1,7 @@
 ---
 title: 04-typical-scenarios
 chapter: "7.4"
-status: "ready-for-review"
+status: "finalized"
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags: [smoothness, jank]
 repaired_date: 2026-05-23
@@ -10,13 +10,13 @@ updated_date: 2026-05-23
 title: 典型场景分析
 chapter: '7.4'
 section: '7.4'
-status: "ready-for-review"
+status: "finalized"
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
 drafted_date: '2026-04-01'
-reviewed_date: "2026-04-27"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-07-30"
+reviewed_by: "hermes-aiw-review-finalize-apply"
 rework_date: '2026-04-04'
 rework_by: openclaw-task2b
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
@@ -53,8 +53,8 @@ related_chapters:
 - '7.3'
 - '2.4'
 - '2.5'
-pipeline_stage: "deep-review-passed"
-task6_state: "revisiting"
+pipeline_stage: "finalized"
+task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed"
@@ -71,6 +71,8 @@ task9_review_notes: "2026-07-30 deep-review (run 20260730-083551-deep-review-0a1
 auto_promoted: true
 last_task9_audit: "2026-07-30"
 last_task9_review_log: "logs/deep-review/2026-07-30-20260730-083551-deep-review-0a16d729-deep-review.md"
+last_review_finalize_at: "2026-07-30T10:05:03+08:00"
+last_review_finalize_run_id: "20260730-100503-40fd0f28"
 ---
 
 # 典型场景分析
