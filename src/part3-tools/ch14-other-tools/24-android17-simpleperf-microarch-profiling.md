@@ -8,413 +8,308 @@ related_chapters: ["14.2", "14.10", "14.21"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-02"
 drafted_date: "2026-07-02"
-last_verified: "2026-07-02"
-last_verified_against: "AOSP android-17.0.0_r1 system/extras/simpleperf"
-confidence: medium
+last_verified: "2026-07-30"
+last_verified_against: "AOSP android-17.0.0_r1 + android17-6.18-2026-06_r6"
+confidence: high
 sources:
   - type: aosp
     path: "system/extras/simpleperf/SPERecorder.cpp"
   - type: aosp
     path: "system/extras/simpleperf/SPEDecoder.cpp"
   - type: aosp
+    path: "system/extras/simpleperf/event_selection_set.cpp"
+  - type: aosp
+    path: "system/extras/simpleperf/ETMRecorder.cpp"
+  - type: aosp
     path: "system/extras/simpleperf/cmd_record.cpp"
   - type: aosp
     path: "system/extras/simpleperf/cmd_stat.cpp"
   - type: aosp
     path: "system/extras/simpleperf/cmd_inject.cpp"
-  - type: aosp
-    path: "system/extras/simpleperf/TMRecorder.cpp"
+  - type: kernel
+    path: "drivers/perf/arm_spe_pmu.c"
+  - type: kernel
+    path: "drivers/hwtracing/coresight/coresight-trbe.c"
   - type: blog
     path: "Obsidian/技术文章/Android/Android-17系统层面新特性/20-simpleperf-ARM-SPE-硬件采样.md"
   - type: blog
     path: "Obsidian/技术文章/Android/Android-17系统层面新特性/21-simpleperf-TRBE-Trace-Buffer-Extension.md"
+android17_review_notes: "按 android-17.0.0_r1 与 android17-6.18-2026-06_r6 重写；区分硬件能力、内核驱动和 Simpleperf 解码能力，并核对 Android 16 到 Android 17 的版本差异"
 ---
 
 # 14.24 Android 17 simpleperf 微架构级性能采样与工作流增强
 
-> §14.2 介绍了 Simpleperf 的核心架构和基本用法。本节聚焦 Android 17 对 Simpleperf 的六项关键增强，涵盖硬件级微架构采样（ARM SPE）、CoreSight trace 缓冲（TRBE）、以及多项工作流改进。这些增强使 Simpleperf 在 Android 17 上具备了从"函数级 CPU 热点"下探到"微架构级 cache miss 归因"的能力。
+§14.2 讲解了 Simpleperf 的常规 PMU 采样。Android 17 在这套基础上增加了 SPE 采集与解码，并补齐了一批长时采集、应用进程跟踪和 ETM profile 转换能力。本章只讨论已经进入 `android-17.0.0_r1` 的行为；设备能否使用 SPE、ETE、TRBE 或特定 PMU 事件，仍由 SoC、内核配置和权限共同决定。
 
-## 14.24.1 ARM SPE 硬件采样支持
+Android 16 与 Android 17 的差异需要分开看：
 
-### 背景与动机
+| 能力 | Android 16 | Android 17 |
+|---|---|---|
+| Arm SPE | Simpleperf 尚无 `SPERecorder` / `SPEDecoder` | 新增 SPE 发现、采集和 `report` 解码 |
+| CoreSight TRBE | `ETMRecorder` 已能识别 ETR 与 TRBE | 支持多个 ETR 名称、记录 TRBE 支持的 CPU，并明确优先选择可用的 TRBE |
+| `record --background` | 无此选项 | 新增单次 `fork()` 的后台模式 |
+| `--app` | `record`、`stat` 已支持 | `stat --monitor-new-thread` 可继续发现同一包名的新进程 |
+| devfreq / `pmu_lib` | 无对应自动保护流程 | `stat --use-devfreq-counters` 增加恢复保护和 `pmu_lib` 后备路径 |
+| 内核模块 ETM AutoFDO | `.ko` 地址映射不完整 | `inject` 可从模块 `.text` 建立可执行映射并生成 AutoFDO profile |
 
-传统 Simpleperf 采样基于 PMU（Performance Monitoring Unit）中断：配置一个计数器（如 `L1-dcache-loads`），当计数器溢出时触发中断，在中断处理中记录当前 PC 和调用栈。这种方式存在两个固有局限：
+## 14.24.1 先分清 PMU、SPE 和 ETM
 
-1. **中断开销**：每次 PMU 中断需要数百到上千个 CPU 周期（保存/恢复寄存器、查找调用栈），高频采样时开销可达 5%-15%
-2. **信息粒度有限**：中断采样只能获得"某一时刻的 PC 值"，无法得知该内存访问的完整延迟链路（是从 L1 命中还是从 DDR 取回？是否发生了 TLB miss？）
+三种机制都可以由 Simpleperf 驱动，但它们回答的问题不同。
 
-ARM SPE（Statistical Profiling Extension）从根本上了改变这一范式。它是 ARMv9-A 架构引入的硬件统计采样机制，由 CPU 核心内部硬件自动执行，不依赖中断。
+| 机制 | 输入数据 | 适合回答的问题 | 主要代价 |
+|---|---|---|---|
+| PMU 计数与溢出采样 | cycles、instructions、cache miss 等事件 | 哪些函数消耗 CPU，事件率是否异常 | 计数器数量有限；采样依赖溢出中断 |
+| SPE 统计采样 | CPU 生成的 SPE packet | 哪些指令与访存、TLB、分支事件相关 | 依赖可选硬件和 AUX 缓冲；当前解码器只使用部分字段 |
+| ETM/ETE 指令 trace | 控制流 trace | 执行过哪些分支路径，如何生成 AutoFDO profile | 数据量大，容易因 sink 与缓冲压力丢失 trace |
 
-### ARM SPE 工作原理
+SPE 是 Armv8.2-A 开始提供的可选统计分析扩展，运行在 AArch64 环境；它不以 ARMv9 为前提。ETM/ETE 负责生成指令 trace，TRBE 和 ETR 负责保存 trace。TRBE 自身不生成微架构采样数据。
 
-ARM SPE 的核心思路是**硬件自动采样 + 紧凑记录输出**：
+## 14.24.2 Android 17 的 SPE 采集链路
 
-1. **采样滤波**：CPU 核心内的 SPE 硬件按可配置的采样间隔（如每 4096 次 LOAD/STORE 操作），自动选取一条内存操作作为采样目标
-2. **全链路追踪**：硬件自动追踪该操作从发射到完成的完整生命周期，记录：
-   - 数据虚拟地址（Data VA）
-   - 访问来源（LOAD/STORE）
-   - **Cache 延迟层级**：L1 命中 / L2 命中 / LLC 命中 / 远端 DDR
-   - **TLB 信息**：是否触发 TLB walk、walk 深度
-   - **分支信息**：是否为误预测分支
-   - 总执行延迟（issue → complete 的周期数）
-3. **紧凑记录**：所有信息被打包为一个 16-32 字节的 SPE record，DMA 写入内存中的环形缓冲区
+### 从 sysfs 事件到 AUX 数据
 
-整个过程**零中断、零内核介入**，开销仅取决于采样间隔。
+Android 17 的 Simpleperf 会扫描 `/sys/bus/event_source/devices/arm_spe*`。事件发现逻辑读取 PMU 的 `type`、`format/*` 和可用配置，并把 `arm_spe` 作为默认设备 `arm_spe_0` 的别名。`SPERecorder` 还会读取：
 
-### Simpleperf 中的 SPE 实现
+- `caps/min_interval`：硬件允许的最小采样间隔；读取失败时使用 4096。
+- 每个 CPU 的 MIDR：解码时据此判断 SPE 版本和 CPU 型号。
+- PMU `type`：交给 `perf_event_open()` 创建 AUX 事件。
 
-Android 17 Simpleperf 新增了两个核心源文件来支持 ARM SPE：
+一次 `record` 命令只能选择一个 SPE 设备。带配置的事件名采用 sysfs 暴露的字段，例如 `arm_spe_0/<field>=<value>/`；字段名称不应从其他芯片照搬。
 
-- **`SPERecorder.cpp/h`**：负责 SPE 硬件的配置和缓冲管理。初始化时通过 `/sys/bus/event_source/devices/arm_spe_*/` 发现 SPE 设备，配置采样间隔、滤波条件（如只采样 LOAD 操作），然后通过 `perf_event_open()` 以 SPE 事件类型开启采集
-- **`SPEDecoder.cpp/h`**：负责解码 SPE 原始二进制记录。SPE record 采用紧凑的 variable-length 编码（类似 ARM 的事件包格式），SPEDecoder 将其解析为结构化的事件记录，供 `simpleperf report` 展示
-
-[已验证: AOSP android-17.0.0_r1, system/extras/simpleperf/SPERecorder.cpp, SPEDecoder.cpp — 新增文件]
-
-### 使用方法
-
-```bash
-# 采集 ARM SPE 数据（需要 ARMv9-A 设备，如 Tensor G4 / Snapdragon X Elite）
-simpleperf record -e arm_spe_0// -- taskset 0-3 ./my_benchmark
-
-# 使用 report 解码查看
-simpleperf report -i perf.data --spe-cache-miss
-```
-
-SPE 采样可以回答传统 PMU 无法回答的问题：
-
-| 分析场景 | 传统 PMU | ARM SPE |
-|----------|---------|---------|
-| 函数 `decode_frame()` 的 cache miss 率 | 只能靠 `cache-misses` 计数器估算 | 精确到每条 LOAD 操作的 cache 层级 |
-| TLB miss 导致的延迟占比 | 需要组合 `dTLB-load-misses` + `cycles` | 直接从 record 的 TLB 字段读取 |
-| 分支误预测热点 | `branch-misses` 计数器，无具体指令 | 每条采样 record 包含分支预测结果 |
-
-> 详见 §14.2 关于 Simpleperf 基本事件类型的介绍。SPE 是对传统 PMU 事件的补充而非替代。
-
-## 14.24.2 TRBE Trace Buffer Extension 支持
-
-### CoreSight Trace 架构回顾
-
-Android 设备的 CPU trace 采集依赖 ARM CoreSight 架构。CoreSight trace 链路包含三个层次：
-
-```
-CPU Core (ETE)  →  Trace Buffer  →  Trace Sink (内存)
-                   ↑
-                   这里是 TRBE 引入的变化点
-```
-
-- **ETE（Embedded Trace Extension）**：ARMv9-A CPU 核心内的 trace 生成单元，负责记录指令执行路径
-- **Trace Buffer**：存储 trace 数据的缓冲区
-- **Trace Sink**：最终将 trace 数据写出到内存供软件消费
-
-### ETR vs TRBE
-
-Android 17 之前，Simpleperf 的 `TMRecorder`（Trace Marker Recorder）主要通过 **ETR（Embedded Trace Router）** 采集 trace：
-
-- ETR 是**集中式**路由器：所有 CPU 核心的 trace 数据通过共享总线汇聚到一个 ETR，再 DMA 写入内存
-- 多核高吞吐场景下，ETR 总线带宽成为瓶颈，可能发生 trace 数据丢包
-
-**TRBE（Trace Buffer Extension）** 是 ARMv9-A 引入的 per-CPU 本地 trace buffer：
-
-| 特性 | ETR | TRBE |
-|------|-----|------|
-| 部署方式 | 全局共享 | 每个 CPU 核心一个 |
-| 带宽 | 共享总线带宽 | 独立带宽，无竞争 |
-| 延迟 | 多核竞争时增大 | 固定低延迟 |
-| 缓冲区大小 | 通常 1-8 MB 全局 | 通常 64-256 KB per CPU |
-
-[结构参考: Clippings 技术文章 #21 — TRBE 是 per-CPU 内置 trace buffer，此前主要支持 ETR]
-
-### Simpleperf TMRecorder 的 TRBE 支持
-
-Android 17 Simpleperf 的 `TMRecorder` 新增了对 TRBE 的自动检测和使用：
-
-1. **能力探测**：启动时读取 `/sys/bus/coresight/devices/trbe*` 判断设备是否支持 TRBE
-2. **优先级策略**：如果 TRBE 可用且 trace 带宽需求高（多核并行 trace），优先使用 TRBE；否则回退到 ETR
-3. **缓冲管理**：为每个 CPU 核心分配独立的 trace buffer，采集完成后统一合并
-
-[已验证: AOSP android-17.0.0_r1, system/extras/simpleperf/TMRecorder.cpp — 新增 TRBE 检测与使用逻辑]
-
-> 详见 §14.2.5 关于 Simpleperf ETM trace 采集的介绍。
-
-## 14.24.3 --background 后台采集模式
-
-### 设计动机
-
-Simpleperf 传统的 `record` 命令是前台阻塞式的：命令执行期间终端被占用，直到 Ctrl-C 或 `--duration` 超时才结束。这在以下场景中不够灵活：
-
-- 对后台服务做 24 小时持续性能采集
-- 在 CI/CD 流水线中启动采集后继续执行其他步骤
-- 从脚本中批量启动多个采集任务
-
-### 实现原理
-
-Android 17 `cmd_record` 新增 `--background` 参数，底层通过 `ForkBackgroundProcess()` 实现经典的 Unix 双 fork 守护进程化：
-
-```cpp
-// cmd_record.cpp — ForkBackgroundProcess() 核心逻辑（简化）
-pid_t ForkBackgroundProcess() {
-    pid_t pid = fork();
-    if (pid > 0) {
-        // 父进程：等待子进程输出 PID 后立即退出
-        return pid;
-    }
-    // 第一次 fork 的子进程
-    setsid();        // 创建新会话，脱离控制终端
-    pid = fork();    // 第二次 fork
-    if (pid > 0) {
-        _exit(0);    // 中间进程退出，孙子进程被 init 收养
-    }
-    // 孙子进程：实际的 simpleperf 采集进程
-    // 重定向 stdin/stdout/stderr 到 /dev/null
-    freopen("/dev/null", "r", stdin);
-    freopen("/dev/null", "w", stdout);
-    freopen("/dev/null", "w", stderr);
-    return getpid();
-}
-```
-
-[已验证: AOSP android-17.0.0_r1, system/extras/simpleperf/cmd_record.cpp — ForkBackgroundProcess()]
-
-双 fork 的目的是确保采集进程完全脱离终端会话组，即使启动它的 shell 退出也不会收到 SIGHUP。
-
-### 使用方法
+开始采集前，可以用下面的命令核对目标设备实际暴露的事件。它的用途是阻止脚本把“不支持 SPE”和“权限不足”混为一类错误：
 
 ```bash
-# 启动后台采集，立即返回 PID
-$ simpleperf record --background -p 12345 -o /data/local/tmp/perf.data --duration 3600
-Simpleperf started in background with PID 54321
-
-# 之后可以随时检查采集进程状态
-$ ps -p 54321
-# 采集结束后 perf.data 自动生成
+adb shell su root simpleperf list | grep arm_spe
+adb shell 'ls -d /sys/bus/event_source/devices/arm_spe* 2>/dev/null'
 ```
 
-[结构参考: Clippings 技术文章 #22 — 命令启动后打印 PID 并立即返回]
+两条命令都没有输出时，当前内核没有向 perf 子系统注册 SPE PMU。sysfs 存在而 `record` 失败时，再检查 root、SELinux、perf 权限和事件配置。
 
-## 14.24.4 --app 按包名自动发现进程
-
-### 设计动机
-
-传统 Simpleperf 要监控一个应用，需要先用 `pidof` 或 `ps` 查到目标 PID，再传给 `-p <pid>`。这在应用启动阶段分析时尤其困难：
-
-- 冷启动时，进程尚未创建，`pidof` 返回空
-- 多进程应用（如 Chrome 的 render/gpu/sandbox 进程）有多个 PID，需要手动逐个添加
-- 从 adb shell 到 `am start` 再到进程创建之间有时间差，容易错过启动阶段的前几百毫秒
-
-### 实现原理
-
-Android 17 `cmd_stat` 新增 `--app <package_name>` 参数：
-
-1. **包名解析**：通过 `PackageManager` 获取该包名对应的所有进程
-2. **动态发现**：持续轮询 `/proc/` 目录，一旦发现新进程的 cmdline 匹配目标包名，立即将其加入监控
-3. **多进程覆盖**：自动包含主进程和所有 `:remote` / `:gpu` 等子进程
-
-```cpp
-// cmd_stat.cpp（简化逻辑）
-void MonitorApp(const std::string& package_name) {
-    while (monitoring_) {
-        auto pids = DiscoverProcessesByPackageName(package_name);
-        for (pid_t pid : pids) {
-            if (monitored_pids_.find(pid) == monitored_pids_.end()) {
-                AddMonitoredTarget(pid);
-                monitored_pids_.insert(pid);
-            }
-        }
-        sleep(1);  // 每秒轮询一次
-    }
-}
-```
-
-[已验证: AOSP android-17.0.0_r1, system/extras/simpleperf/cmd_stat.cpp — --app 参数处理]
-
-### 使用场景
+目标设备支持通用 `arm_spe` 事件后，可以用以下流程采集一个已经运行的应用进程：
 
 ```bash
-# 监控 Chrome 所有进程的 CPU 统计
-simpleperf stat --app com.android.chrome --duration 30
-
-# 配合 am start 做冷启动分析
-simpleperf stat --app com.example.app --duration 10 &
-am start -n com.example.app/.MainActivity
-wait
-# simpleperf 会自动发现新创建的进程并开始统计
+target_pid=$(adb shell pidof -s com.example.app)
+adb shell su root simpleperf record \
+  -e arm_spe -p "$target_pid" --duration 10 \
+  -o /data/local/tmp/spe.data
+adb shell su root simpleperf report \
+  -i /data/local/tmp/spe.data
 ```
 
-[结构参考: Clippings 技术文章 #23 — 自动发现属于该包名的所有进程]
+`record` 把原始 SPE packet 写入 perf AUX 数据，`report` 再调用 `SPEDecoder` 生成可聚合的 sample。示例使用 root，是因为量产设备通常不允许 shell 任意分析其他进程；可调试应用还可以按 §14.2 的 `run-as` 流程操作。
 
-## 14.24.5 Qualcomm pmu_lib 计数器冲突处理
+### 当前解码器能给出什么
 
-### 问题背景
+`SPEDecoder` 会从 packet 中提取采样指令虚拟地址、数据虚拟地址、上下文线程 ID 和事件位。Android 17 能据此生成的事件包括：
 
-Qualcomm Snapdragon 平台搭载了一个名为 `pmu_lib` 的内核驱动，用于自家传感器/功耗监控 HAL 的数据采集。pmu_lib 会**独占 PMU 硬件计数器**，导致 Simpleperf 的 `perf_event_open()` 调用失败或返回全零数据。
+- architecturally retired；
+- L1 data cache access / refill；
+- TLB access / walk；
+- branch condition not taken / branch mispredicted；
+- LLC access / miss；
+- remote access、misalignment；
+- SPE 新版本提供的 L2 access / miss 等事件。
 
-这一问题在 Snapdragon 8 Gen 1/2/3 设备上尤其常见，是 Simpleperf 在高通设备上"偶尔不工作"的主要原因之一。
+这些名称来自 decoder 的事件表，实际可用集合还受 CPU 实现的 SPE 版本约束。报告中的地址能帮助定位关联指令或数据访问，但“被采样到”仍属于统计结果，不能解释为对每一次 load/store 的完整追踪。
 
-### 解决方案
+Android 17 的 decoder 没有把以下 packet 信息转换成 perf sample 字段：
 
-Android 17 `cmd_stat` 新增了 pmu_lib 冲突的自动检测和临时禁用逻辑：
+| 尚未输出的字段 | 对分析结论的限制 |
+|---|---|
+| `PERF_SAMPLE_DATA_SRC` | 无法直接给出 L1、L2、LLC、内存构成的逐级访问来源 |
+| operation type | 不能仅凭报告稳定区分 load、store 或其他操作 |
+| branch target / previous branch | 不能从 SPE 报告还原完整分支路径 |
+| physical address | 报告只使用虚拟地址 |
+| latency counter / `PERF_SAMPLE_WEIGHT` | 不能报告 issue 到完成的周期数 |
+| timestamp | 当前生成的 sample 时间为 0，不能用它与其他 trace 做逐样本时间对齐 |
 
-```
-采集前流程：
-  1. 读取 /sys/devices/system/cpu/pmu_lib/enable_counters
-  2. 如果文件存在且值为 1（pmu_lib 正在使用 PMU）：
-     a. 写入 "DEADBEEF" → 临时禁用 pmu_lib
-     b. 确认写入成功
-  3. 执行正常的 stat 采集
+因此，`simpleperf report --spe-cache-miss` 不是 Android 17 的有效命令，固定的“缓存延迟链”和“TLB walk 深度”也不是当前报告能够提供的数据。需要这些字段时，应先检查后续平台版本的 decoder 是否已经实现，再决定分析方案。
 
-采集后流程：
-  4. 写入 "BEEFDEAD" → 恢复 pmu_lib
-```
+### 采样事件不能简单相加
 
-`DEADBEEF` 和 `BEEFDEAD` 是 Qualcomm pmu_lib 驱动约定的 magic value，分别表示"禁用"和"恢复"。
+一条 SPE record 可以同时携带多个事件位。Android 17 的 `report` 会为这些事件分别建立视图，同一条 record 可能同时计入 L1 refill、TLB walk 和 remote access。各类 sample 数量适合分别排序热点，不适合相加后当作互斥事件总数。
 
-[已验证: AOSP android-17.0.0_r1, system/extras/simpleperf/cmd_stat.cpp — pmu_lib 检测与 DEADBEEF/BEEFDEAD 逻辑]
+SPE 的 packet 由硬件写入 profiling buffer，不要求每个样本触发一次 PMU 溢出中断。不过，Linux SPE 驱动仍要处理 AUX 缓冲区装填、截断、冲突和 IRQ。采样间隔过小或缓冲消费不及时会产生丢失记录。开销与丢失率必须在目标设备和目标负载上测量，不能套用固定百分比。
 
-### 影响范围
+## 14.24.3 TRBE 是 CoreSight sink
 
-| 场景 | Android 16 行为 | Android 17 行为 |
-|------|----------------|----------------|
-| 高通设备 stat 采集 | 可能失败，需手动禁用 pmu_lib | 自动检测并临时禁用 |
-| pmu_lib 恢复 | 无自动恢复 | 采集后自动恢复 BEEFDEAD |
-| 非 Qualcomm 设备 | 不受影响 | 不受影响（文件不存在则跳过） |
+CoreSight 链路可以概括为：
 
-> ⚠️ 该处理仅适用于 Qualcomm 设备。MediaTek 和 Samsung Exynos 平台不受 pmu_lib 影响。
+> CPU 上的 ETM/ETE 生成控制流 trace → CoreSight 选择 sink → ETR 或每 CPU 的 TRBE 把 trace 保存到内存
 
-## 14.24.6 内核模块 .ko ETM AutoFDO 支持
+TRBE 是每 CPU 的 trace sink，对应 CPU 的 ETE 可以把 trace 写入该 CPU 的内存缓冲。缓冲到达边界时，内核驱动通过 maintenance IRQ 更新 AUX 状态；wrap、碰撞、截断和硬件 erratum 都可能造成 trace gap。由此不能推出“独立带宽必然无丢包”或“固定低延迟”。
 
-### AutoFDO 背景回顾
+### Android 17 的选择逻辑
 
-AutoFDO（Auto Feedback Directed Optimization）是一种基于采样 profile 的二进制优化技术：
+Android 16 的 `ETMRecorder::FindSinkConfig()` 已能识别 ETR 和 TRBE。Android 17 的变化集中在 `ETMRecorder` 的 sink 建模：
 
-1. 用 Simpleperf 采集代表性工作负载的 CPU profile（`perf.data`）
-2. 用 `simpleperf inject` 将 profile 转换为 AutoFDO 格式
-3. 编译器（Clang/LLVM）利用 profile 信息进行分支权重、内联、布局优化
+- `CheckSinkSupport()` 收集所有可用 ETR 配置，并保存支持 TRBE 的 CPU ID。
+- 事件列表除通用 `cs-etm` 外，还可以列出 `cs-etm/@tmc_etr0/` 这类显式 ETR 事件。
+- 通用 `cs-etm` 在存在可用 TRBE 时令 `config2` 为 0，交给内核按 CPU 选择 TRBE；没有 TRBE 时选择可用的 ETR。
+- 显式 ETR 事件把对应 sink 配置写入 `config2`。
+- `IsUsingTRBE()` 同时检查 `config2` 和目标 CPU 是否支持 TRBE。
 
-Android 17 之前，AutoFDO 优化覆盖了系统服务和应用二进制，但**内核模块（.ko 文件）被排除在外**。
-
-### 内核模块 AutoFDO 扩展
-
-Android 17 扩展了 `cmd_inject` 命令，使其能处理内核模块的 ETM trace 数据：
-
-1. **ELF 解析扩展**：`cmd_inject` 现在可以解析内核模块 ELF 文件的 `.text` section，将其作为可执行段注册到地址映射表
-2. **地址范围匹配**：当 ETM trace 中的 PC 地址落入某个 `.ko` 模块的地址范围时，能正确归属到该模块的函数
-3. **测试数据**：新增 `perf_inject_kernel_module_zram*.data` 测试文件，验证对 zram 模块的 inject 流程
+目标设备的 sink 名称由内核提供，下面的命令用于查看 Simpleperf 已经识别出的实际事件：
 
 ```bash
-# 采集内核模块的 ETM 数据（需要 root + ETE/TRBE 硬件支持）
-simpleperf record -e cs-etm/--kernel-only/ -a --duration 60
-
-# inject 处理，自动识别内核模块
-simpleperf inject -i perf.data -o injected.data --kernel-module-dir /lib/modules/
-
-# 使用 inject 后的 profile 重新编译内核模块
-# （编译流程见 collect_autofdo_profile_for_app.md 文档）
+adb shell su root simpleperf list | grep cs-etm
 ```
 
-[已验证: AOSP android-17.0.0_r1, system/extras/simpleperf/cmd_inject.cpp — 内核模块 ELF .text section 解析]
-[结构参考: Clippings 技术文章 #25 — collect_autofdo_profile_for_app.md 和 collect_etm_data_for_autofdo.md 文档扩充]
+只有列表中出现显式 ETR 事件时，才能指定它与默认 `cs-etm` 做对照。默认事件是否使用 TRBE还取决于采集 CPU 的支持集合，不能只根据产品宣传材料判断。
 
-### 实际价值
-
-这对 Android 内核性能优化有直接意义。zram 是 Android 设备上最活跃的内核模块之一（负责压缩 swap），其性能直接影响后台应用保活率和内存压力场景下的用户体验。通过 AutoFDO 优化 zram 的热点函数（如 `zram_write_page()`、`zs_compress()`），可获得 3%-8% 的压缩吞吐提升。
-
-## 扩展
-
-### 🔸 ARM SPE 与传统 PMU 采样的精度与开销对比
-
-ARM SPE 和传统 PMU 中断采样在精度和开销上有本质差异：
-
-| 维度 | PMU 中断采样 | ARM SPE |
-|------|------------|---------|
-| 触发方式 | 计数器溢出 → 中断 | 硬件自动统计采样 |
-| 开销 | 高（每次中断 500-2000 周期） | 极低（硬件自动，零中断） |
-| 采样间隔 | 通常 100K-1M cycles | 可配置，低至 4096 次操作 |
-| Cache miss 归因 | 只能统计次数 | 精确到每次访问的延迟层级 |
-| 硬件要求 | 所有 ARMv8-A | ARMv9-A（可选） |
-| 适用场景 | 函数级热点 | 微架构瓶颈分析 |
-
-[待补充: 在实际 Pixel/Tensor 设备上对比两种方式的 cache miss 分析精度差异的具体基准测试数据]
-
-### 🔸 TRBE vs ETR trace 带宽与延迟
-
-TRBE 的 per-CPU 设计在多核并行 trace 场景下有显著优势：
-
-- **带宽**：8 核 CPU 全速 trace 时，ETR 共享带宽可能成为瓶颈（典型 ETR 带宽 ~2 GB/s，8 核全速 trace 需求可达 8×256 MB/s ≈ 2 GB/s，接近饱和）。TRBE 每核独享带宽，无竞争。
-- **延迟**：ETR 在多核竞争时 trace 写入延迟增大，可能导致 CoreSight FIFO 溢出和 trace 丢包。TRBE 固定低延迟。
-- **缓冲利用率**：ETR 的全局缓冲区利用率更高（空闲核的带宽可被繁忙核使用），TRBE 的 per-CPU 缓冲存在浪费。
-
-[待补充: 在 8 核全速 trace 场景下对比 ETR 和 TRBE 的丢包率基准测试]
-
-### 🔸 Simpleperf 与 Perfetto 的协同采样工作流
-
-Android 17 的一个趋势是 Simpleperf 和 Perfetto 的协同使用：
-
-- **Perfetto**：提供系统级 trace（调度、Binder、SurfaceFlinger、ftrace），宏观定位性能瓶颈时段
-- **Simpleperf ARM SPE**：在瓶颈时段做微架构级 cache miss 分析，定位具体函数的内存访问瓶颈
-- **Simpleperf ETM**：提供指令级 trace，用于分析分支预测和流水线气泡
-
-典型协同流程：
+下面的命令用于做一次短时的系统级内核指令 trace，以便先检查权限、sink 和数据丢失情况：
 
 ```bash
-# 1. 先用 Perfetto 做系统级 trace，发现性能瓶颈时段
-adb shell perfetto -o /data/misc/perfetto-traces/trace.pb -t 30s sched freq
-
-# 2. 分析 trace 发现某一时段 CPU 利用率异常高
-
-# 3. 针对该场景用 Simpleperf ARM SPE 做 cache miss 分析
-adb shell simpleperf record -e arm_spe_0// -p <pid> --duration 30
-
-# 4. 用 Simpleperf ETM 做指令级 trace 验证分支预测问题
-adb shell simpleperf record -e cs-etm/ -p <pid> --duration 10
+adb shell su root simpleperf record \
+  -a -e cs-etm:k --duration 5 \
+  -o /data/local/tmp/kernel-etm.data
 ```
 
-[待验证: Android 17 中 Simpleperf ARM SPE 数据是否能直接导入 Perfetto UI 展示 — 目前 Perfetto 对 SPE 数据的原生支持仍在开发中]
+`:k` 将事件限制在内核态。系统级 ETM 通常要求 root；Simpleperf 也会阻止普通 profileable 应用 UID 采集内核 ETM，以免泄露受 KASLR 保护的地址。
 
+## 14.24.4 `record --background` 的进程语义
 
-<!-- AIW-源码调研-2026-07-02 -->
+Android 17 新增的 `--background` 适合脚本启动有限时长的采集。实现使用一次 `fork()`：
 
-### 🔸 源码级验证与修正
+1. 父进程打印子进程 PID，然后成功返回。
+2. 子进程忽略 `SIGHUP`，调用 `setsid()` 创建新会话。
+3. 子进程把标准输入、标准输出和标准错误重定向到 `/dev/null`，随后执行采集。
 
-通过对比 Android 16 vs Android 17 源码，发现以下重要修正：
+这里没有第二次 `fork()`。命令行解析发生在分叉前，但输出文件准备和正式采集发生在子进程中。分叉后的报错不会出现在当前终端，所以后台采集应使用绝对输出路径，并在长任务前做一次短时前台预检。
 
-#### 1. SPE 支持确为 Android 17 全新特性 ✅
-- **Android 16：** 不存在 SPERecorder.cpp、SPEDecoder.cpp 文件
-- **Android 17：** 新增完整 SPE 支持体系，包含单例模式的 SPERecorder 类和 SPE 数据解析器
-- **源码位置：** `/android-17.0.0_r1/system/extras/simpleperf/SPERecorder.cpp:161行`
+下面的脚本在设备端定位目标进程、启动 60 秒采集，并在主机端保存 Simpleperf 返回的后台 PID：
 
-#### 2. --background 为 Android 17 新增，--app 已在 Android 16 存在 ❌章节需修正
-- **--background：** Android 17 新增 (`cmd_record.cpp:1071`)，Android 16 无此选项
-- **--app：** Android 16 已存在 (`cmd_record.cpp:160`)，Android 17 继承
-- **修正：** 章节中 "--app 是 Android 17 新增" 的描述需更正
+```bash
+background_pid=$(adb shell '
+  target_pid=$(pidof -s com.example.app) &&
+  simpleperf record --background \
+    -p "$target_pid" --duration 60 \
+    -o /data/local/tmp/app-perf.data
+')
+printf 'simpleperf background pid: %s\n' "$background_pid"
+```
 
-#### 3. TRBE 支持重构而非新增 ❌章节需修正  
-- **Android 16：** 简单的 `FindSinkConfig()` 单一布尔检测
-- **Android 17：** 重构为 `CheckSinkSupport()` 多sink支持，新增 `has_trbe_sink` 和 `trbe_supported_cpus_`
-- **优先策略：** Android 17 开始明确 "Prefer using TRBE if available"
-- **文件名修正：** 章节中的 "TMRecorder" 应为 "ETMRecorder"
+父进程输出的是纯 PID，便于脚本保存。若 `background_pid` 为空，应立即检查包进程、权限和前台预检结果，不要等待输出文件凭空出现。
 
-#### 4. pmu_lib 处理机制真实存在 ✅
-- **源码位置：** `cmd_stat.cpp:372-374`
-- **死亡魔法值：** `DEADBEEF`（禁用）、`BEEFDEAD`（启用）
-- **自动化处理：** 启动时自动检测，采集后自动恢复
+需要提前结束采集时，向这个 PID 发送 `SIGINT`，让 Simpleperf 关闭事件并写完 `perf.data`：
 
-#### 5. 内核模块 ETM AutoFDO 支持 ✅
-- **新增类型：** `DSO_KERNEL_MODULE` 常量 (`dso.h:110`)
-- **处理逻辑：** `cmd_inject.cpp:656-661` 专门处理内核模块 ELF 解析
-- **关键方法：** `KernelModuleDso` 类处理内存映射和首符号信息
+```bash
+adb shell kill -INT "$background_pid"
+adb shell ls -l /data/local/tmp/app-perf.data
+```
 
----
+`SIGKILL` 不给进程执行清理的机会，可能留下不完整数据；它不适合作为常规停止方式。后台模式也不等同于无人值守的全天采集，文件增长、设备温度、丢样和静默失败仍需外部监控。
 
-**📋 源码验证基准：** Android 17.0.0_r1 (system/extras/simpleperf/)  
-**🔄 对比版本：** Android 16.0.0_r1  
-**📁 源文件数量：** 5个核心源码文件（总计≈500行）  
-**✅ 验证通过：** 4/6 项技术点（2项需章节修正）
+## 14.24.5 `--app` 与新进程跟踪
 
-## 延伸阅读
+`--app <package>` 在 Android 16 已经存在。它让 Simpleperf等待包对应的初始进程；非 root 场景依赖 `run-as`，目标 APK 必须允许调试。Android 17 的增量能力出现在 `stat` 的 `NewThreadMonitor`：
 
-### Android 17 Simpleperf SPE + TRBE + pmu_lib 新增特性源码验证
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-simpleperf-spe-trbe-source-verification.md
-- 类型：DeepResearch 调研结果
-- 摘要：源码级对比 A16 vs A17：SPE 为 A17 全新特性（SPERecorder/SPEDecoder），--background 为 A17 新增而 --app 已存在于 A16（章节勘误），TRBE 从单模式重构为 per-cpu 多 sink，pmu_lib BEEFDEAD 冲突处理机制确认存在。
-- 注入时间：2026-07-03
-- 价值：勘误章节中 --app 版本归属 + TMRecorder→ETMRecorder 命名修正 + SPE/TRBE 演进验证
+- 只有启用 `--monitor-new-thread` 时才持续扫描新进程与线程。
+- 扫描器读取进程对应的应用包名，把新出现且包名匹配的进程加入监控。
+- 新进程加入后，它的现有线程和随后创建的线程都可以成为统计目标。
+- 帮助文本要求把该选项与 `--per-thread --no-inherit` 配合使用。
+
+下面的命令用于观察应用冷启动期间出现的同包名进程和线程。先停止旧进程，再让第一条 adb 在主机后台等待，随后启动应用：
+
+```bash
+adb shell am force-stop com.example.app
+
+adb shell simpleperf stat \
+  --app com.example.app \
+  --per-thread --no-inherit --monitor-new-thread \
+  --duration 10 &
+stat_adb_pid=$!
+
+adb shell am start -n com.example.app/.MainActivity
+wait "$stat_adb_pid"
+```
+
+这里的 `stat_adb_pid` 是主机端 adb 进程，不是设备上的 Simpleperf PID。`--app` 单独使用时，不应宣称它会持续纳入全部后续子进程；动态纳入依赖 `--monitor-new-thread`。
+
+## 14.24.6 `--use-devfreq-counters` 与 `pmu_lib`
+
+`pmu_lib` 处理不作用于每次 `simpleperf stat`。它位于 `DevfreqCounters::Use()`，只在显式传入 `--use-devfreq-counters` 时运行，而且要求 root。
+
+处理顺序如下：
+
+1. 扫描 `/sys/class/devfreq/*/governor`。
+2. 找到名称含 `mem_latency` 的 devfreq 节点时，记住原 governor，并临时写入 `performance`。
+3. 只有未找到这类节点时，才检查 `/sys/devices/system/cpu/pmu_lib/enable_counters`。
+4. 文件当前值为 `1` 时写入 `DEADBEEF`，对象析构时写入 `BEEFDEAD`。
+
+这两个 magic value 来自供应商驱动约定，不能推广为通用 PMU 控制接口。路径不存在时，Simpleperf 跳过该后备路径。
+
+下面的命令只适合受控、已 root 的实验设备，用于在需要 devfreq 计数器的统计任务中触发这套流程：
+
+```bash
+adb shell su root simpleperf stat \
+  --use-devfreq-counters \
+  -e cpu-cycles,instructions \
+  --duration 10 -a
+```
+
+该选项会改变内存延迟相关 governor 或暂时停用供应商计数器，测量结果也会受到状态切换影响。正常退出时析构逻辑负责恢复；进程被 `SIGKILL`、崩溃或设备异常重启时，恢复逻辑可能没有机会运行。实验脚本应在运行前后记录 governor 和 `enable_counters`，发现状态未恢复时按设备内核文档处理。
+
+## 14.24.7 从内核模块 ETM trace 生成 AutoFDO profile
+
+内核模块 `.ko` 往往没有可供常规 DSO 逻辑使用的 ELF program header。Android 17 的 `cmd_inject` 新增 `KernelModuleDso`：
+
+- 从 `.text` section 构造一个用于地址换算的可执行伪 segment。
+- 根据运行时模块地址范围和首个符号，把 trace 中的内存地址映射到模块文件地址。
+- 支持从 ETM `perf.data` 直接生成 AutoFDO，也支持先转成 branch-list 再生成。
+
+源码测试以 zram 模块数据覆盖这两条转换路径。测试证明的是地址映射和格式转换能力，不代表 zram 或其他模块会自动获得固定比例的性能提升。
+
+采集阶段可以使用前文的内核 ETM 命令。把数据拉到构建主机后，先把 `module_symdir` 设为匹配设备构建产物中存放未裁剪模块的目录。下面的命令会拒绝未设置的变量，并把输出限定到 zram 模块：
+
+```bash
+adb pull /data/local/tmp/kernel-etm.data ./kernel-etm.data
+
+: "${module_symdir:?set module_symdir to the matching unstripped module directory}"
+simpleperf inject \
+  -i kernel-etm.data \
+  --symdir "$module_symdir" \
+  --binary 'zram\.ko$' \
+  --output autofdo \
+  -o zram.afdo
+```
+
+`--symdir` 会递归查找调试二进制和模块，Android 17 没有 `--kernel-module-dir` 选项。输入数据需要包含可解析的模块 map 或 kallsyms 信息，主机上的 `.ko` 还要与设备运行版本和 build ID 对应。若一个 AutoFDO 文件包含多个二进制，Simpleperf 会提示拆分；`--binary` 可在转换时把范围收窄到单个模块。
+
+生成 `zram.afdo` 只完成 profile 制备。能否用于内核模块构建、编译器接受哪种 profile，以及优化后是否改善目标负载，都要由对应 Android 17 内核构建规则和基准测试确认。
+
+## 14.24.8 选择分析手段
+
+| 现象 | 优先工具 | 原因 |
+|---|---|---|
+| 不清楚 CPU 时间消耗在哪些函数 | PMU `cpu-cycles` 采样 | 覆盖面广，调用栈和符号工作流成熟 |
+| 怀疑访存、TLB 或分支事件集中在少量指令 | SPE | 可按采样 IP、数据地址和事件位聚合 |
+| 需要完整控制流或生成 AutoFDO profile | ETM/ETE | 提供可解码的分支路径 |
+| 需要调度、Binder、频率和帧时序上下文 | Perfetto | 提供系统时间线；SPE 报告当前不能逐样本时间对齐 |
+
+一个稳妥的调查顺序是：用 Perfetto 或常规 PMU 缩小问题范围，再按问题类型选择 SPE 或 ETM。SPE 和 ETM 都可能增加数据量与系统负载，短时预检、目标设备基线以及丢失记录检查缺一不可。
+
+## 14.24.9 核验清单
+
+- `simpleperf list` 中确认目标 SPE 或 `cs-etm` 事件存在。
+- 从 sysfs 核对 SPE 配置字段，不复制其他 SoC 的事件字符串。
+- SPE 报告不宣称 Android 17 decoder 尚未输出的 latency、`data_src`、物理地址或时间戳。
+- 多个 SPE 事件视图不相加为互斥总数。
+- TRBE 按 sink 理解，并检查 CPU 支持集合与 trace 丢失。
+- 后台采集先做前台预检，保存 PID，使用绝对路径和有限 `--duration`。
+- 应用动态进程统计显式启用 `--per-thread --no-inherit --monitor-new-thread`。
+- `--use-devfreq-counters` 只在 root 实验设备使用，并核对状态恢复。
+- 内核模块 AutoFDO 使用匹配设备的未裁剪 `.ko` 和 build ID，并用 `--binary` 限定单个模块。
+- 所有性能收益都由目标工作负载的 A/B 测量给出，不引用与当前设备无关的固定比例。
+
+## 源码索引
+
+- [SPERecorder.cpp：SPE PMU 发现、配置与 AUX 元数据](https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/simpleperf/SPERecorder.cpp)
+- [SPEDecoder.cpp：packet 解码、事件映射与当前未实现字段](https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/simpleperf/SPEDecoder.cpp)
+- [event_selection_set.cpp：SPE min_interval 与 AUX 缓冲配置](https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/simpleperf/event_selection_set.cpp)
+- [ETMRecorder.cpp：TRBE / ETR sink 发现与选择](https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/simpleperf/ETMRecorder.cpp)
+- [cmd_record.cpp：`--background` 进程模型](https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/simpleperf/cmd_record.cpp)
+- [cmd_stat.cpp：应用新线程监控与 devfreq / pmu_lib 保护](https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/simpleperf/cmd_stat.cpp)
+- [cmd_inject.cpp：内核模块 DSO 地址映射与 AutoFDO 输出](https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/simpleperf/cmd_inject.cpp)
+- [arm_spe_pmu.c：Android 17 内核 SPE AUX 缓冲与 IRQ 处理](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/perf/arm_spe_pmu.c)
+- [coresight-trbe.c：Android 17 内核 TRBE per-CPU sink 驱动](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/hwtracing/coresight/coresight-trbe.c)
