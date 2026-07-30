@@ -1,5 +1,5 @@
 ---
-title: "Android 17 + Kernel 6.12 系统级性能优化"
+title: "Android 17 + Kernel 6.18 系统级性能优化"
 section: "16.4"
 chapter: "16.4"
 status: finalized
@@ -37,15 +37,15 @@ tags:
   - research
 sources:
   - type: blog
-    path: "Android Developers Blog: Boosting Android Performance - AutoFDO for GKI Kernel"
+    path: "https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html"
   - type: docs
-    path: "Android GKI Kernel 架构文档"
+    path: "https://source.android.com/docs/core/architecture/kernel/gki-android17-6_18-release-builds"
   - type: kernel
-    path: "AOSP kernel/common android15-6.6"
+    path: "https://android.googlesource.com/kernel/common/+/refs/heads/android15-6.6"
   - type: kernel
-    path: "AOSP kernel/common android16-6.12"
+    path: "https://android.googlesource.com/kernel/common/+/refs/heads/android16-6.12"
   - type: kernel
-    path: "AOSP kernel/common android17-6.18"
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6"
 review_notes: "2026-04-27 Task2B:修正 EEVDF 版本分界,拆开 Android 17/API37 与 android16-6.12 GKI branch,补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论;2026-04-28 task9 deep-review: needs-rework。P1 1(AutoFDO 量化数据需回源限定)。;2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号;AutoFDO 量化数据仍需回源限定。;2026-05-04 task2b: 修正 sched_ext 源码锚点(ext_internal.h→ext.c)、SCX_OPSS_*→SCX_TASK_*、scx_bpf_dsq_insert→scx_bpf_dispatch、AutoFDO 精确数据降级为官方可核验口径;2026-05-04 Task6 revisiting: needs-rework。L1/L2 小修:修正禁用词、表格格式、边界措辞;B 类问题:sched_ext DSQ enum/version 边界与 MGLRU 数据来源/默认启用口径需 Task9/Task2B 复核。 | 2026-05-06 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 0;sched_ext 路径/符号/sysfs 与 android16-6.12 不匹配,MGLRU 量化数据仍需回源。 | 2026-05-07 Task9 00:20:needs-rework。P0 2 / P1 1 / P2 0;DSQ enum 摘录、F2FS checkpoint_merge/fsync 口径、MGLRU 与 LMKD 协同需回炉。 | 2026-05-07 Task9 02:20:pass-tech-review。P0 0 / P1 0 / P2 1;DSQ/F2FS/MGLRU 已处理,Perfetto dm-verity 观察口径写入 suggestions;Task6 已通过且 queue 无 pending,自动晋升 finalized。 | 2026-05-26 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2;sched_ext dsq_insert 版本边界残留说明与 AutoFDO 官方链接写入 suggestions;Task6 已通过且 queue 无 pending,自动晋升 finalized。"
 
 deepseek_cn_review_state: done
@@ -60,7 +60,7 @@ last_idle_audit_at: "2026-07-27T10:35:11+08:00"
 last_idle_audit_run_id: "20260727-103511-idle-audit-5f410a75"
 last_idle_audit_result: pass-metadata-source-boundary-fix
 last_idle_audit_log: "logs/audit/2026-07-27-20260727-103511-idle-audit-5f410a75-idle-audit.md"
-last_verified: "2026-07-27"
+last_verified: "2026-07-30"
 confidence: high
 task2b_verification_note: "2026-06-16 验证 android17-6.18 gki/aarch64/afdo/README.md 原文，正文 AutoFDO benchmark 数据准确。清除版本演进表的待确认标注，补充 Binder benchmark 多次运行最佳结果取值限定。"
 ---
@@ -78,7 +78,7 @@ task2b_verification_note: "2026-06-16 验证 android17-6.18 gki/aarch64/afdo/REA
 - 🔹 AutoFDO for GKI Kernel 的限定收益口径
 - 🔹 ART 运行时优化与 DeliQueue lock-free MessageQueue
 - 🔹 MGLRU 与 LMK 的协同边界
-- 🔹 Perfetto 中验证 Kernel 6.12 优化的观察点
+- 🔹 Perfetto 中验证 Kernel 6.18 优化的观察点
 - 🔹 Android 平台版本与 GKI 分支的版本边界
 - 🔹 常见误区与排查结论
 
@@ -91,7 +91,7 @@ task2b_verification_note: "2026-06-16 验证 android17-6.18 gki/aarch64/afdo/REA
 - Android 平台：Android 17 / API 37 / `android-17.0.0_r1`；
 - Android common kernel：`android17-6.18-2026-06_r6`，其 `Makefile` 版本为 6.18.21。
 
-`android15-6.6` 与 `android16-6.12` 只用于解释 EEVDF、sched_ext 和 AutoFDO 的演进，不承担 Android 17 当前实现结论。平台行为也不应从内核分支名推导：Android 17 的 generational CMC 与 lock-free `MessageQueue` 位于 ART 和 `frameworks/base`，它们不属于 Linux 6.18 的调度或存储改动。
+`android15-6.6` 与 `android16-6.12` 只用于解释 EEVDF、sched_ext 和 AutoFDO 的演进，不作为 Android 17 当前实现结论。平台行为也不应从内核分支名推导：Android 17 的 generational CMC 与 lock-free `MessageQueue` 位于 ART 和 `frameworks/base`，它们不属于 Linux 6.18 的调度或存储改动。
 
 GKI（Generic Kernel Image）把通用内核与板级 vendor modules 分开，并以 KMI 约束模块接口。设备采用 `android17-6.18-2026-06_r6` release build，还需要相容的 vendor modules、产品配置和启动参数。源码 tag 中存在某个功能，无法单独证明设备已经启用它。
 
@@ -104,7 +104,7 @@ GKI（Generic Kernel Image）把通用内核与板级 vendor modules 分开，�
 | EEVDF | `kernel/sched/fair.c` 与 `Documentation/scheduler/sched-eevdf.rst` | fair class 的选取模型；不能直接承诺 UI 延迟下降 |
 | sched_ext | GKI 配置含 `CONFIG_SCHED_CLASS_EXT=y` | BPF scheduler 加载并运行后才会接管相应任务 |
 | F2FS checkpoint merge | `checkpoint_merge` 挂载选项与 checkpoint kthread | 需要设备使用 F2FS 且挂载时启用 |
-| dm-verity multi-buffer hashing | `verity_hash_mb()` 调用 `crypto_shash_finup_mb()` | 依赖 hash driver 支持；补丁数据只覆盖 cold-cache read 测试 |
+| dm-verity multi-buffer hashing | r6 的 `dm-verity-target.c` 没有 `verity_hash_mb()` 或 `crypto_shash_finup_mb()` | 外部补丁数据不能记为 r6 收益 |
 | io_uring | 6.18 源码含完整实现 | 内核能力不等于 Android 公共 API，也不等于框架采用 |
 | AutoFDO | GKI 配置含 `CONFIG_AUTOFDO_CLANG=y`，tag 内含 `kernel.afdo` | README 数据是 Pixel 8 preliminary benchmark |
 | MGLRU | GKI 配置含 `CONFIG_LRU_GEN=y` 与 `CONFIG_LRU_GEN_ENABLED=y` | 页回收策略；不能直接换算为 lmkd kill 降幅 |
@@ -154,15 +154,15 @@ adb shell 'cat /sys/kernel/sched_ext/enable_seq 2>/dev/null'
 
 `state` 表示当前启停状态，`root/ops` 给出当前调度器名称，单调递增的 `enable_seq` 大于零表示本次启动后曾经加载过 BPF scheduler。节点不存在时，只能说明当前设备没有暴露这组 ABI，还需结合内核配置和厂商实现核查。
 
-## 存储栈三项优化
+## 存储栈三项核查
 
-F2FS、dm-verity 和 io_uring 位于不同层级。它们在 6.18 tag 中存在，不代表 Android 17 设备或应用都走到了相应路径。
+F2FS、dm-verity 和 io_uring 位于不同层级。三个子系统都存在于 6.18 tag，但某项上游补丁存在，不代表 r6 已经合入，也不代表 Android 17 设备或应用走到了相应路径。
 
 ### F2FS checkpoint merge：先确认挂载选项
 
 F2FS 的一次 `fsync()` 不必然触发完整 checkpoint。需要 checkpoint 时，`checkpoint_merge` 可把并发请求交给 `issue_checkpoint_thread` 处理，减少各调用进程重复发起 checkpoint，并避免请求受调用进程 cgroup I/O budget 和 CPU shares 长时间拖延。
 
-6.18 r6 的 `fs/f2fs/super.c` 解析 `checkpoint_merge` / `nocheckpoint_merge`，只有挂载选项生效时才启动 checkpoint kthread。`fs/f2fs/checkpoint.c` 中的 `f2fs_issue_checkpoint()`、`issue_list`、`queued_ckpt` 与 `ckpt_wait_queue` 构成请求与等待路径。
+6.18 r6 的 `fs/f2fs/super.c` 解析 `checkpoint_merge` / `nocheckpoint_merge`，默认挂载选项会设置 `MERGE_CHECKPOINT`。可写挂载且没有禁用 checkpoint 时，checkpoint kthread 才会启动；`nocheckpoint_merge` 会停止这条路径。`fs/f2fs/checkpoint.c` 中的 `f2fs_issue_checkpoint()`、`issue_list`、`queued_ckpt` 与 `ckpt_wait_queue` 构成请求与等待路径。
 
 检查设备时应读取 `/proc/mounts` 或 `/proc/self/mountinfo`，确认 data 分区的文件系统和挂载参数。SQLite WAL commit 会调用同步写入，但一次 commit 是否进入 F2FS checkpoint 路径，取决于文件系统状态和 `f2fs_do_sync_file()` 的判定。不能从“应用调用了 fsync”直接推出 checkpoint merge 收益。
 
@@ -172,18 +172,18 @@ F2FS 的一次 `fsync()` 不必然触发完整 checkpoint。需要 checkpoint �
 
 AOSP 的 `external/liburing` 提供 native 静态库构建规则，但这不能证明 SQLite、Cronet、OkHttp 或 Java I/O 在 Android 17 默认使用 io_uring。普通应用还受 syscall 可用性、seccomp、SELinux、NDK API 与设备内核配置约束。缺少调用栈或 syscall 证据时，本节不把 io_uring 计入应用收益。
 
-### dm-verity multi-buffer hashing：保留补丁测试口径
+### dm-verity multi-buffer hashing：r6 未合入
 
-6.18 r6 的 `drivers/md/dm-verity-target.c` 含有 `verity_hash_mb()`。当 shash driver 提供 multi-buffer 支持时，该路径调用 `crypto_shash_finup_mb()`；ahash 或不支持的组合继续走相应 fallback。
+逐行核对 r6 的 `drivers/md/dm-verity-target.c`，当前实现是 `verity_hash()` 配合 `crypto_shash_finup()` 等单请求接口。该文件没有 `verity_hash_mb()`，r6 源码树也没有这条路径使用的 `crypto_shash_finup_mb()`。
 
-补丁作者在 ARM64 与 x86_64 上观察到 cold-cache dm-verity read 吞吐约提升 35%，同时明确说明该指标波动较大。这个数字属于补丁测试环境，不能改写为 Android 17 安装、冷启动或 OTA 固定提升。测试还只处理 data blocks 的并行 hash，Merkle tree blocks 不在该补丁优化范围内。
+2025 年发布到邮件列表的 v8 补丁曾报告 ARM64 与 x86_64 cold-cache dm-verity read 吞吐约提升 35%，作者也说明指标波动较大。它是补丁环境的测试结果，不能写入 `android17-6.18-2026-06_r6` 的收益表，更不能改写为 Android 17 安装、冷启动或 OTA 固定提升。
 
 ### 存储路径如何测
 
 三项机制应分别测量：
 
 - F2FS：`f2fs_sync_file_enter/exit`、checkpoint 数量、checkpoint 时长、块写入量与挂载参数；
-- dm-verity：cold/warm cache 分开，记录 hash driver、数据块大小、CPU time 与块设备吞吐；
+- dm-verity：cold/warm cache 分开，记录当前 hash driver、数据块大小、CPU time 与块设备吞吐；评估 multi-buffer 补丁必须使用明确包含补丁的自定义内核；
 - io_uring：确认 `io_uring_setup`、`io_uring_enter`、opcode 和 fallback，再比较每次业务操作的提交数与延迟。
 
 Perfetto 可采集 `block_rq_issue` / `block_rq_complete` 和 F2FS tracepoints。dm-verity 没有一个可通用于所有 Android 设备的“dm-verity track”；需要把 block I/O、CPU sampling 和 `verity_*` 调用栈放在同一业务区间内分析。
@@ -290,7 +290,7 @@ Perfetto 展示运行结果，不会仅凭一条 track 告诉你“EEVDF、MGLRU
 | EEVDF | `sched_waking`、`sched_switch`、线程优先级、CPU frequency、uclamp | 线程何时 runnable、等待多久、在哪个 CPU 运行 |
 | sched_ext | sched tracks、`sched_ext_dump`、sysfs 状态、BPF scheduler 自有 trace | 自定义调度器是否启用、是否报错回退 |
 | F2FS | `f2fs_sync_file_enter/exit`、checkpoint 事件、block request | 同步写与 checkpoint 分别耗时多久 |
-| dm-verity | block request、CPU sampling、`verity_*` 栈 | cold read 是否卡在 I/O 或 hashing |
+| dm-verity | block request、CPU sampling、`verity_*` 栈 | r6 当前 cold read 卡在 I/O 或 hashing 的比例 |
 | MGLRU | `mm_vmscan_*`、PSI、page fault、swap、lmkd 事件 | reclaim stall、refault 与 kill 如何变化 |
 | ART GC | ART GC slices、heap counters、线程调度 | young/full GC 的频率、时长与线程干扰 |
 | DeliQueue | monitor contention、FrameTimeline、startup、`mq` track events | 旧队列锁竞争与消息积压是否影响帧或启动 |
@@ -314,11 +314,11 @@ Android 17 的 DeliQueue 博客给出 `mq` track-event category，可用于 `sys
 | 维度 | 锚点 | 本节结论 |
 |---|---|---|
 | Android 15 相关 GKI | `android15-6.6` | fair scheduler 已有 EEVDF 路径；AutoFDO 后续投放到该 LTS 分支 |
-| Android 16 相关 GKI | `android16-6.12` | sched_ext 进入 mainline 后可在该分支使用；旧示例使用 `scx_bpf_dispatch*()` 命名 |
+| Android 16 相关 GKI | `android16-6.12` | sched_ext 进入 mainline 后可在该分支使用；早期 6.12 示例可能使用 `scx_bpf_dispatch*()` 命名 |
 | Android 17 当前内核 | `android17-6.18-2026-06_r6`，Linux 6.18.21 | 使用 `scx_bpf_dsq_insert*()`；GKI 配置开启 sched_ext、AutoFDO 与 MGLRU；tag 含 6.18.21 AFDO profile |
 | Android 17 平台 | `android-17.0.0_r1` / API 37 | generational CMC 位于 ART；lock-free `MessageQueue` 对 targetSdk 37+ 应用启用 |
 
-F2FS checkpoint merge、MGLRU、dm-verity multi-buffer hashing 与 io_uring 都有跨分支历史。它们出现在 Android 17 内核中，不代表都由 Android 17 首次引入。
+F2FS checkpoint merge、MGLRU 与 io_uring 都有跨分支历史。dm-verity multi-buffer hashing 仍是 r6 之外的补丁证据，不能列入该 tag 的功能集合。
 
 ## 常见问题与误区
 
@@ -338,9 +338,9 @@ EEVDF 使用 lag、slice 与 virtual deadline，不读取 Android UI 语义。UI
 
 lmkd 仍按 Android 的压力与进程优先级策略决策。MGLRU 位于页面回收层，只能经 reclaim、PSI、refault 和可用内存间接影响 kill 条件。
 
-**“AFDO、DeliQueue 和 dm-verity 的百分比可以相加。”**
+**“AFDO、DeliQueue 和 dm-verity 补丁的百分比可以相加。”**
 
-三组数字来自不同设备、benchmark、统计方式和执行层。相加既没有统计意义，也无法预测某个应用。
+三组数字来自不同设备、benchmark、统计方式和执行层，其中 dm-verity 补丁还未进入 r6。相加没有统计意义，也无法预测某个应用。
 
 ## 参考资料
 
@@ -356,7 +356,7 @@ lmkd 仍按 Android 的压力与进程优先级策略决策。MGLRU 位于页面
 - [r6 F2FS checkpoint 实现](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/checkpoint.c)
 - [r6 io_uring 源码目录](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/io_uring/)
 - [dm-verity r6 实现](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/md/dm-verity-target.c)
-- [dm-verity multi-buffer hashing v8 patch 与测试口径](https://lists.infradead.org/pipermail/linux-arm-kernel/2025-February/1000047.html)
+- [dm-verity multi-buffer hashing v8 patch 与测试口径（未合入 r6）](https://lists.infradead.org/pipermail/linux-arm-kernel/2025-February/1000047.html)
 - [MGLRU 内核文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/multigen_lru.rst)
 - [r6 AutoFDO profile README](https://android.googlesource.com/kernel/common/+show/refs/tags/android17-6.18-2026-06_r6/gki/aarch64/afdo/README.md)
 - [Android Developers Blog：Kernel AutoFDO 投放与采集流程](https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html)

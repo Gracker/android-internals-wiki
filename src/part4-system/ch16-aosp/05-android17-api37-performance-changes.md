@@ -444,7 +444,7 @@ DeliQueue 处理 Java 消息投递争用，Buffer Stuffing Recovery 处理图形
 - [ ] 将 Java 消息争用、GC、Activity 重建、buffer stuffing 和网络握手放到各自证据轨道。
 - [ ] 回归正确性、功耗、峰值 RSS 与崩溃，避免只看平均帧时间。
 
-系统与内核边界参阅 [[04-android17-kernel612-performance|16.4 Android 17 系统与内核性能优化]]。该章的内核锚点为 `android17-6.18-2026-06_r6`；本章的 API 行为不能由 kernel tag 单独推导。
+系统与内核边界参阅 [[04-android17-kernel618-performance|16.4 Android 17 系统与内核性能优化]]。该章的内核锚点为 `android17-6.18-2026-06_r6`；本章的 API 行为不能由 kernel tag 单独推导。
 
 ## 参考资料
 
