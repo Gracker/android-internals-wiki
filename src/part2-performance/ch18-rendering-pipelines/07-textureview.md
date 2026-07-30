@@ -46,6 +46,12 @@ last_task2b_verifier_at: "2026-06-03T07:31:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-03-07-task2b-verifier.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-25
+last_verified: 2026-07-30
+last_verified_against: "android-17.0.0_r1 (TextureView.java, SurfaceTexture.java, TextureLayer.java, DeferredLayerUpdater.cpp, DrawFrameTask.cpp, BufferQueueProducer.cpp, BufferQueueConsumer.cpp, BLASTBufferQueue.cpp, HWComposer.cpp, sync_file.c, dma-fence.c)"
+confidence: high
+last_idle_audit_at: "2026-07-30T18:35:00+08:00"
+last_idle_audit_run_id: "20260730-183504-idle-audit-4a0df448"
+last_idle_audit_result: "pass-frontmatter-fix"
 ---
 
 <!-- outline-start -->

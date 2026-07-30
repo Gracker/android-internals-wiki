@@ -59,7 +59,8 @@ last_task9_autofix_at: "2026-06-30"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-01
 last_task6_audit: "2026-07-06"
-last_task6_audit_result: "l1-minor-fixes-closed-loop-action-verb"---
+last_task6_audit_result: "l1-minor-fixes-closed-loop-action-verb"
+---
 
 # 14.7 ProfilingManager
 
