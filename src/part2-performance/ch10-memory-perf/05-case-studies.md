@@ -4,8 +4,8 @@ chapter: "10.5"
 section: "10.5"
 drafted_date: "2026-04-02"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-07-09"
-last_verified_against: "AOSP android-17.0.0_r1（ComponentCallbacks2.java、RenderProperties.h、RenderNode.cpp、packages/modules/Profiling/ProfilingTrigger.java、lmkd.cpp）; Android Developers ProfilingManager/ProfilingTrigger API reference"
+last_verified: "2026-07-31"
+last_verified_against: "AOSP android-17.0.0_r1（ComponentCallbacks2.java、RenderProperties.h、RenderNode.cpp、ProfilingTrigger.java、lmkd.cpp）; Android Common Kernel android17-6.18-2026-06_r6（mm/vmscan.c、include/trace/events/vmscan.h）; Android Developers ProfilingManager/ProfilingTrigger 与 heapprofd 文档"
 confidence: medium
 sources:
   - type: blog
@@ -29,7 +29,15 @@ sources:
   - type: aosp
     path: "frameworks/base/libs/hwui/RenderProperties.h"
   - type: aosp
+    path: "frameworks/base/libs/hwui/RenderNode.cpp"
+  - type: aosp
     path: "packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java"
+  - type: aosp
+    path: "system/memory/lmkd/lmkd.cpp"
+  - type: kernel
+    path: "mm/vmscan.c@android17-6.18-2026-06_r6"
+  - type: kernel
+    path: "include/trace/events/vmscan.h@android17-6.18-2026-06_r6"
 tags: ['case-study', 'memory-leak', 'native-memory', 'low-memory', 'oom', 'cache', 'gc']
 polish_count: 1
 polish_date: "2026-04-09"
@@ -101,280 +109,221 @@ auto_promoted_date: "2026-07-10"
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-前面的章节已经分别讨论了内存分析的方法论（10.1）、内存泄漏的识别与修复（10.2）、内存持续增长的排查思路（10.3），以及低内存对系统性能的整体影响（10.4）。这一节把这些知识放到真实场景里，通过四个来自实际产品和线上环境的案例，完整走一遍从"发现问题"到"定位根因"再到"验证修复"的全过程。
+这一节复核四个公开案例。每个数字都来自原文所述环境，用于还原取证过程，不宜直接写进其他产品的阈值或收益目标。Android 平台机制以 `android-17.0.0_r1` 为当前锚点；回收内核以 `android17-6.18-2026-06_r6` 为当前锚点。旧设备案例保留原系统、ABI 和驱动条件。
 
-每个案例的侧重点不同：有 Java 堆泄漏、有 Native 内存异常、有低内存引发的整机性能退化、还有内存突增导致的 OOM 崩溃。读完之后，面对自己的内存问题时，应该能带走一套可复用的分析框架。
+| 案例 | 主要内存域 | 决定性证据 | 原文公布的结果 |
+| --- | --- | --- | --- |
+| 低内存导致冷启动退化 | 系统回收、文件页、I/O | 主线程 D 状态时长、`kswapd0`、进程杀起记录 | 原文未公布参数调整后的 A/B 数据 |
+| 线上 Hprof 归因 Java OOM | Java 堆 | 支配树、Retained Size、GC Root 路径 | Helo 与美篇均有双月数据，口径见案例二 |
+| PowerVR `renderD128` 映射增长 | GPU 用户态驱动、虚拟地址空间 | `syscall(__NR_mmap2)`、`KEGLGetPoolBuffers`、buffer pool 阈值 | 受影响机型实验的 OOM 崩溃率下降近 50% |
+| MemoryThrashing 差分采样 | 原案例为 iOS Objective-C 对象 | 连续样本间的 alloc/dealloc 与存活实例差值 | 发布时处于测试环境监控，未公布线上 OOM 降幅 |
 
-## 案例一：低内存引发整机卡顿与冷启动退化
+## 案例一：低内存把冷启动拖进 Block I/O
 
+### 现象与数据边界
 
-### 问题现象
+历史文章对比了低内存与正常内存下的冷启动 trace。低内存样本的 Running 时间为 682 ms，正常样本为 624 ms；两者的 CPU 执行时间接近。差距集中在主线程不可中断睡眠：低内存样本的 `Uninterruptible Sleep | WakeKill - Block I/O` 与普通 Uninterruptible Sleep 合计约 750 ms，正常样本约 130 ms。正常样本从启动到首帧约 1.22 s。
 
-这是一台 6GB 内存的设备，用户反馈整机使用体验变差：启动应用比平时慢很多，列表滑动明显掉帧，后台应用经常需要重新加载。测试同学抓取了一个低内存状态下的应用冷启动 Trace，从 bindApplication 到第一帧显示的总耗时达到了 **2 秒**。
+这些数字只描述该次 trace。单看总启动耗时，很容易把问题归到主线程代码；线程状态已经给出另一条线索：额外时间主要花在等待内核和存储路径。
 
-而在正常内存状态下，同样的操作只需要 **1.22 秒**——差异超过 60%。更关键的是，Running 时间几乎没有变化（低内存 682ms vs 正常 624ms），说明 CPU 计算本身不是瓶颈，额外的时间消耗来自其他地方。
+### 证据如何闭合
 
-### 分析思路
+诊断需要把四类时间对齐：
 
-面对这种 CPU 计算时间没有明显增加、但总耗时被拉长的情况，第一步是看主线程的调度状态。在 Perfetto 中，Uninterruptible Sleep（D 状态）是最常见的线索——主线程在这个状态意味着它在等待某个内核操作完成，通常是 I/O。
+1. 在 Perfetto 中圈出启动区间，比较主线程 Running、Runnable、Sleeping 与 D 状态。
+2. 展开 D 状态对应的内核调用栈，确认是否等待文件页、块设备或文件系统锁。
+3. 同时间窗检查 `kswapd0`、内存回收 tracepoint、`meminfo`、`vmstat`、swap/ZRAM 和 PSI。
+4. 检查 `lmkd` 与 ActivityManager 事件，确认是否存在同一进程短时间内反复被杀、又被业务或系统拉起。
 
-果然，在低内存的 Trace 中，主线程的 **Uninterruptible Sleep | WakeKill - Block I/O** 加上普通 Uninterruptible Sleep 总共占了约 **750ms**。而正常情况下只有 **130ms**。这 620ms 的差距，几乎完美解释了冷启动从 1.22s 退化到 2s 的原因。
+`mm/vmscan.c` 中的回收路径解释了 `kswapd` 与直接回收的执行位置，`include/trace/events/vmscan.h` 提供回收 tracepoint 定义。Android 17 的 `lmkd.cpp` 使用 PSI 监视器感知 stall，并结合进程重要性和内存状态选择牺牲进程。两部分要放在同一时间轴上观察：回收忙碌、前台线程 D 状态和杀进程记录同时出现，才足以支持“系统内存压力拖慢前台”的判断。
 
-### 根因定位
+### 根因判断
 
-低内存状态下，系统中有几个关键机制同时出问题：
+该案例的证据支持三段因果关系：
 
-**kswapd0 频繁被唤醒**。这是 Linux 内核的内存回收守护线程，当系统可用内存低于水位线时触发。低内存 Trace 显示，kswapd0 占满了某个大核 CPU（比如 CPU7），以满频运行。如果前台应用的主线程恰好被调度到同一个核心，就会遭遇 CPU 竞争导致调度延迟。
+- 内存水位偏低时，后台回收更活跃，文件页更容易被回收。
+- 启动读取 odex、资源或配置时发生缺页，主线程等待存储 I/O，D 状态时长增加。
+- 缓存进程反复杀起会继续消耗 CPU、I/O 与内存，使压力时间窗延长。
 
-[图：Perfetto 中 kswapd0 占满 CPU7 的 Trace 片段]
+主线程与 `kswapd0` 同核运行可能增加竞争，但一次 trace 中的同核现象还不足以证明调度策略存在缺陷。分析报告应分别列出“trace 直接观察到的事实”和“基于内核机制的解释”。
 
-**主线程的 Block I/O 增加**。Linux 的 page cache 在低内存时会被频繁回收。当主线程需要读取某个文件（比如 odex 文件、配置文件、布局资源）时，如果对应的 page 已经被回收，就必须重新从磁盘读入。这个过程中，线程会阻塞在 `wait_on_page_bit_killable()` 内核函数中，等待 I/O 完成。在 Perfetto 中表现为大段的 Uninterruptible Sleep - Block I/O。
+### 修复与验证
 
-[图：低内存 vs 正常内存下主线程的 Block I/O 对比]
+原文给出了调高 `extra_free_kbytes` 等历史建议。它们不能直接迁移到 Android 17 产品：内核回收参数、ZRAM、存储延迟、PSI 阈值和 `lmkd` 策略互相影响，单项调大也可能带来更多后台回收或更高的进程重启率。
 
-**进程被频繁查杀和重启**。在 Android 8+ 的主线实现里，低内存查杀主要由 userspace `lmkd` 负责；Android 10+ 在内核具备支持时，`lmkd` 会优先使用 PSI monitors 判断是否进入真实内存压力，`vmpressure` 更多是兼容旧内核的回退路径。SystemServer 日志会记录某些进程（比如 QQ）在短时间内被反复杀死又拉起，形成"杀 → 起 → 杀 → 起"的死循环。每次杀进程和拉起进程都会消耗 CPU、I/O 和内存资源，进一步恶化整机性能。
+系统侧修复应以同场景 A/B 为准：
 
-```logcat
-07-23 14:32:16.932  am_proc_start: com.tencent.mobileqq, restart
-07-23 14:32:16.969  am_proc_bound: com.tencent.mobileqq
-07-23 14:32:16.979  am_kill: com.tencent.mobileqq, adj 901, empty #3
-07-23 14:32:16.996  am_proc_died: com.tencent.mobileqq
-07-23 14:32:17.028  am_proc_start: com.tencent.mobileqq, restart
-07-23 14:32:17.054  am_proc_bound: com.tencent.mobileqq
-07-23 14:32:17.064  am_kill: com.tencent.mobileqq, adj 901, empty #3
-...（循环重复数十次）
-```
+- 对比压力前后的 PSI `some/full`、direct reclaim、`kswapd` CPU、major fault 和块 I/O 延迟。
+- 核对 `lmkd` 每次选择的进程、释放量及后续重启，消除无收益的杀起循环。
+- 分设备内存档位校准回收、ZRAM 与杀进程策略，并用前台帧时间、启动耗时和后台存活率共同验收。
 
-[已验证: 官方文档, source.android.com/docs/core/perf/lmkd — userspace lmkd、PSI / vmpressure 机制确认]
+App 侧可在 `TRIM_MEMORY_UI_HIDDEN` 或 `TRIM_MEMORY_BACKGROUND` 到来时释放可重建缓存。Android 14（API 34）起，`TRIM_MEMORY_RUNNING_*`、`MODERATE`、`COMPLETE` 不再投递；Android 15（API 35）又将相关常量标为 deprecated。App 无法依靠旧 trim level 推断实时系统压力，也不应在每次回调中同步执行大规模清理。
 
-### 修复方案与效果
+原文没有给出参数调整后的量化结果。复用这个案例时，可引用 trace 前后的 750 ms 与 130 ms，不能补写不存在的修复收益。
 
-这个问题的根因不在单个 App，而在整机内存水位管理。系统层面的优化方向包括：
+## 案例二：用线上 Hprof 找到 Java OOM 的持有者
 
-**提高 extra_free_kbytes 值**。这个内核参数控制了 kswapd0 提前回收内存的触发阈值。适当提高这个值，可以让系统更早开始内存回收，避免进入紧急回收状态时对前台应用造成冲击。
+### 现象
 
-**优化 `lmkd` 的杀进程策略**。避免对"可快速重启"的缓存进程进行无意义的反复杀起。可以通过调整 minfree / adj 阈值和厂商侧回收策略，让一次回收释放足够的内存，而不是杀一个进程发现不够又杀一个。
+Java OOM 常落在 Bitmap 分配、字符串构造或数组扩容等位置。该位置只表示本次分配失败，无法回答“此前的堆被谁长期占用”。字节跳动 Client Infra 的公开案例采用线上 Hprof 快照，将崩溃点归因转为对象持有关系归因。
 
-**限制后台进程的 I/O**。使用 cgroup 的 blkio 控制器限制后台进程的磁盘读写带宽，确保前台应用的 I/O 请求能优先得到处理。
+### 采集与分析
 
-**App 端的配合**。App 可以通过 `onTrimMemory()` 回调感知系统内存压力，主动释放非必要的缓存（如图片缓存、预加载的数据等）。
+公开方案由客户端采集、服务端恢复与自动分析组成：
 
-`onTrimMemory` 的可用级别在不同 Android 版本上有显著差异：
+- 客户端可在 OOM 或可配置的高水位采集 Hprof，使用子进程减轻 dump 对交互线程的影响。
+- Tailor 在 native 层裁剪字符串内容、Bitmap 像素等分析无需保留的数据。原文公布的头条样本平均文件大小从 355 MB 降至 44 MB。
+- 服务端重建引用图和支配树，计算 Shallow Size、Retained Size 与 GC Root 路径，再按泄漏类、持有业务代码或大对象类聚合。
+- 混淆后的类名和引用路径经 Retrace 还原，问题才能分派给代码所有者。
 
-- **API 33 及以下**：系统会投递从 `TRIM_MEMORY_RUNNING_MODERATE`（5）到 `TRIM_MEMORY_COMPLETE`（80）的各级别回调，App 可以根据级别梯度释放资源
-- **API 34（Android 14）起**：`RUNNING_*`、`MODERATE`、`COMPLETE` 等旧级别不再投递给 App，系统改为通过 PSI（Pressure Stall Information）和 `lmkd` 在内核层面做内存压力判断
-- **API 35（Android 15）起**：`RUNNING_*` 相关常量标记为 `@Deprecated`
+线上 Hprof 可能包含账号、文本和业务对象。采集前要有用户授权与合规评审，上传链路需要加密、限流、访问审计和过期删除。裁掉字符串内容并不能自动覆盖所有敏感字段。
 
-API 34+ 的 App 可靠回调级别主要是 `TRIM_MEMORY_UI_HIDDEN`（20）和 `TRIM_MEMORY_BACKGROUND`（40）。系统级内存压力判断应回到 `meminfo` 轨道、`lmkd` 指标和 PSI 信号，而非依赖已废弃的 trim level。
+### 根因证据
 
-[已验证: AOSP android-17.0.0_r1 frameworks/base/core/java/android/content/ComponentCallbacks2.java; API 34+ ComponentCallbacks2 变更]
+原文展示的类大对象样本中，`ArticleCell` 有 364 个实例，总 Retained Size 为 51.29 MB，其中 280 个由 `MainActivity` 持有。该数据把排查点从 OOM 栈移到 `MainActivity` 的引用所有权。
 
-### 举一反三
+修复动作要服从引用语义：
 
-这个案例的核心规律是：**低内存会引发系统性连锁反应**。内存不足 → kswapd 频繁回收 → page cache 被清空 → I/O 增加 → 进程被杀又拉起 → CPU 和 I/O 竞争加剧 → 前台应用卡顿。
+- 页面退出后仍被任务、监听器或容器持有时，取消任务、解除注册并清理页面所有者。
+- 数量符合业务需求但 Retained Size 过大时，减少单对象负载或限制集合容量。
+- 缓存需要保留时，明确容量、失效条件与低内存行为；`WeakHashMap` 只弱持有 key，无法代替缓存策略。
+- Android 8.0（API 26）起 Bitmap 像素位于 native heap。生命周期正常的 Bitmap 通常交给 GC 与 `NativeAllocationRegistry` 管理；不要把批量调用 `Bitmap.recycle()` 写成通用修复。显式提前回收还可能让仍在绘制的调用方访问已释放像素。
 
-在 Perfetto 中看到主线程有大量 Uninterruptible Sleep - Block I/O 时，不要只关注 I/O 本身——往上看一眼系统内存水位（Perfetto 中的 `meminfo` track），往往能找到上游原因。
+修复后应重放同一场景并再次 dump，验证实例数量、GC Root 路径与 Retained Size 同时下降。只看 Java heap 的峰值下降，无法区分引用修复、采样时机变化和 GC 调度差异。
 
----
+### 原文结果与 Android 17 增量
 
-## 案例二：Java 堆泄漏导致的 OOM 崩溃率治理
+原文公布了两组产品数据：
 
+- Helo 在一个双月内处理了 80% 以上的 Java OOM 问题，次日留存增长 2% 以上。
+- 美篇在一个双月内 Java OOM 降低 80%，用户卡顿率也下降 80%。
 
-### 问题现象
+这些是来源文章中的平台客户数据，不能推导出任意 App 接入 Hprof 后会获得同等收益。文章没有披露完整实验设计，也没有把收益分摊到某个缓存改动。
 
-某内容型 App 的线上 Java OOM 崩溃率持续偏高。从 APM（应用性能监控）平台的数据来看，OOM 崩溃堆栈非常分散，分布在各种看似不相关的代码路径中——有的崩溃在 Bitmap 分配，有的在字符串拼接，有的在 JSON 解析。这些堆栈看起来毫无规律，因为它们都是"压死骆驼的最后一根稻草"——根因不在崩溃点本身，而在于 Java 堆已经被某个大户占满了。
+Android 17（API 37）的 `ProfilingTrigger.TRIGGER_TYPE_OOM` 可在 OOM 时请求 Java heap dump。App 安装自定义 `UncaughtExceptionHandler` 后，仍须调用默认 handler，否则 OOM trigger 不会生效。`TRIGGER_TYPE_ANOMALY` 可由系统异常检测触发相应 artifact。两类触发均受系统限流，结果也可能为空；它们补充采集入口，引用图、隐私处理、聚合和修复验证仍由诊断系统完成。
 
-### 分析思路
+## 案例三：PowerVR buffer pool 长期保留 `renderD128` 映射
 
-治理 OOM 的第一步是搞清楚**内存被谁占着**。这个案例中，团队采用了基于 Hprof 内存快照的线上归因方案：在 OOM 发生时（或接近发生时），抓取一份 Java 堆的 Hprof 快照，然后在服务端分析各对象的引用链。
+### 环境与复现
 
-分析 Hprof 快照时，最关键的是找到 **Dominator Tree**（支配者树）中的大节点。所谓"支配者"，就是某个对象如果被 GC 回收，它直接或间接持有的所有对象都会被回收。找到几个最大的 Dominator，通常就能定位到内存泄漏的源头。
+原案例集中在华为 Android 10、联发科芯片、PowerVR GPU 与 32 位 `armeabi-v7a` 进程，少量样本覆盖 Android 8.1、9、11 和 12。OOM 发生时，`/dev/dri/renderD128` 映射接近 1 GB，32 位进程的虚拟地址空间被大量占用。
 
-[已验证: 官方文档, developer.android.com/studio/profile/memory-profiler — Hprof 分析方法确认]
+团队在华为畅享 10e（Android 10）做了对照实验：新增 10 个普通背景 View 时映射无明显变化；给新增 View 设置 `alpha=0.5` 后，每个 View 对应的 `renderD128` 映射约增加 25 MB。这是特定设备、驱动和复现工程的数据，不能外推到其他 GPU。
 
-### 根因定位
+### 从缺失的 Hook 记录找到映射入口
 
-通过对线上快照的批量分析，团队发现了几个主要问题：
+常见 `mmap`、`mmap64`、`mremap`、`__mmap2` 代理没有记录到这批映射，`ioctl` 记录也无法解释增长。继续反汇编 vendor 库后，团队发现 `libsrv_um.so` 直接调用 `syscall`，系统调用号对应 32 位 ARM 的 `mmap2`。
 
-**静态集合持有过期对象**。App 中有一个全局的 `HashMap` 用于缓存用户数据，键是用户 ID，值是完整的用户信息对象。随着用户不断滑动浏览内容，这个 Map 持续增长——即使这些用户已经退出详情页，对应的对象也不会被释放。在某些极端场景下，这个 Map 持有数万个条目，占用数百 MB 的 Java 堆空间。
+随后只代理 `libsrv_um.so` 与 `gralloc.mt6765.so` 对 `syscall` 的调用，映射记录出现。这个证据修正了“映射完全发生在内核驱动内部”的早期猜测：PowerVR 用户态库绕过了 libc 的 `mmap` 符号，直接进入系统调用。
 
-**Bitmap 未及时回收**。在某些页面退出的代码路径中，缺少对 Bitmap 的 `recycle()` 调用（这在 Android 8.0 以下尤为重要，因为 Bitmap 的像素数据存储在 Java 堆中）。Android 8.0+ 虽然将像素数据移到了 Native 堆，但如果 Bitmap 对象本身（包括对 Native 内存的引用）被泄漏，对应的 Native 内存同样无法释放。
+调用栈继续指向 `libIMGegl.so` 的 `KEGLGetPoolBuffers`。一次增长会连续调用五次 `PVRSRVAcquireCPUMapping`，五类 buffer 合计约 25 MB，与 View 实验的增量吻合。绘制结束时 `KEGLReleasePoolBuffers` 只把 buffer 标为空闲，没有对应调用 `PVRSRVReleaseCPUMapping`。这些映射可在 EGL surface 或 `CanvasContext` 销毁路径释放，因此文章将其定性为 buffer pool 长期保留，不是“任何时候都无法释放”的永久泄漏。
 
-**匿名内部类 / Lambda 隐式持有外部引用**。一些异步回调通过匿名内部类或 Lambda 的方式引用了 Activity 或 Fragment 的实例。即使页面已经关闭，只要回调还没执行完（或者被某个长生命周期的对象间接持有），整个 Activity 及其 View 树就无法被 GC 回收。
+### 根因与历史修复
 
-[已验证: 官方文档, developer.android.com/reference/android/graphics/Bitmap — Android 8.0 NativeAllocationRegistry 变更确认]
+反汇编显示 pool 为每类 buffer 设置 `buffer_limits`。测试设备原值为 50，映射峰值约 1.25～1.3 GB；调为 20 时峰值约 530 MB，调为 10 时约 269 MB。团队针对已识别的 vendor 版本修改该阈值。来源文章公布的受影响机型实验中，OOM 崩溃率下降近 50%，观察期间未再发生由 `renderD128` 引起的发版熔断。
 
-### 修复方案与效果
+这是针对封闭 vendor 实现的历史干预，不能作为通用 App 方案。其他厂商、驱动版本或进程位数可能使用完全不同的 pool 数据结构；错误 Hook 私有函数也可能破坏正在使用的 GPU 资源。
 
-**方案一：改成容量可控的缓存和显式失效**。不要把 `WeakHashMap` 当作全局 `HashMap` 缓存的通用替代。`WeakHashMap` 只有 key 是弱引用，value 仍由 map 强持有；如果 key 是 `String`、userId 这类长生命周期对象，回收时机并不受缓存策略控制。更稳妥的做法是，对容量型缓存使用 `LruCache`，对页面级或会话级数据做显式失效；只有在 value 可以独立失效、业务也能接受 GC 抖动时，再考虑用 `WeakReference` 包装 value。
+产品侧更稳妥的处理顺序是：
 
-**方案二：生命周期感知的资源清理**。在 Activity/Fragment 的 `onDestroy()` 中，主动释放大对象（Bitmap、大数组等），并清空与该页面相关的静态引用。对于异步回调，使用 WeakReference 包装，或者在页面销毁时取消未完成的异步任务。
+- 先按设备型号、SoC、GPU、OS、驱动与 ABI 聚类，确认问题只落在窄设备组。
+- 监控 `/proc/self/maps` 或 smaps 中 `renderD128` 映射，区分虚拟地址耗尽与物理驻留增长。
+- 在受影响设备上减少可稳定触发增长的渲染组合，必要时对动画或复杂效果做定向降级。
+- 推进 64 位进程可缓解 32 位地址空间耗尽，但不会减少 buffer 的物理内存成本。
+- 将复现工程、映射增长曲线和 vendor 调用栈交给 SoC、GPU 或 ROM 厂商修复。
 
-**方案三：线上 Hprof 归因持续监控**。将 Hprof 快照的自动化分析持续集成到 APM 平台中，监控线上内存分配的大户。当某个版本的内存分布发生异常变化时，自动告警。
+### Android 17 源码边界
 
-**效果**：上线优化后，该 App 的 Java OOM 崩溃率在两个版本周期内下降了约 **80%**。其中收益最大的改动是 LruCache 替换 HashMap，贡献了约 60% 的降幅。
+Android 17 HWUI 的 `RenderProperties::promotedToLayer()` 会在 alpha 位于 `(0, 1)` 且节点报告 overlapping rendering 时把节点提升为 layer；`RenderNode::pushLayerUpdate()` 负责创建或更新对应 layer。该源码能解释 alpha 组合为何可能进入额外的 layer 路径，不能证明 Android 10 的 PowerVR pool 行为仍存在于 Android 17。
 
+`hasOverlappingRendering()` 返回 `false` 只适合内容没有重叠混合的自定义 View。错误返回可能改变视觉结果。`LAYER_TYPE_NONE` 也不是关闭 alpha 自动提升的开关。渲染优化应以 Frame Timeline、GPU 内存和画面对比共同验收。
 
-### 可复用的经验
+## 案例四：保留 MemoryThrashing 的差分思路与平台边界
 
-Java 堆泄漏有一个典型特征：**崩溃堆栈分散，但根因集中**。当 OOM 崩溃堆栈分散在看似随机的代码路径中时，不应该在崩溃点逐个排查——先看 Java 堆的整体分布，找到那个"看不见的大象"。线上 Hprof 抓取方案虽然有一定的性能开销，但对于定位这类问题几乎是不可替代的。
+### 原案例运行在 iOS
 
-另一个需要注意的点是：Android 8.0+ 的 Bitmap 像素数据虽然不在 Java 堆了，但 Bitmap 泄漏仍然是问题。Bitmap 的 Java 对象仍然占空间，而且它持有的 Native 内存引用会阻止对应 Native 内存的释放。在分析泄漏时，需要同时关注 Java 堆和 Native 堆。
+MemoryThrashing 原文来自抖音直播 iOS 团队。实现通过 Objective-C Runtime Hook `alloc`、`dealloc`，统计各 Class 的分配、释放和存活实例数；它没有使用 Android 的 `Runtime.totalMemory()`、Java heap 或 ART 分配接口。
 
----
+工具按多个时间点采样，对相邻样本做对象数量差分，定位两类异常：
 
-## 案例三：GPU 驱动导致的 Native 内存异常膨胀
+- **驻留堆积**：原文样本在两个采样周期之间新增 234,024 个对象，样本末仍有 238,800 个 `LivexxxBigDataRead` 实例，占用 10.9 MB。
+- **临时对象洪峰**：开播特效识别人脸后频繁创建轮廓模型；小于 5 秒的采样周期内，临时对象增量峰值约 60,000，累计分配超过百万次。
 
+第二类对象可能很快释放，却会抬高 CPU 与 allocator 压力；第一类需要继续查询引用关系，区分业务保留、缓存超限和泄漏。对象数量差分只能告诉工程师“哪类对象增长”，不能独立回答“谁在持有”。
 
-### 问题现象
+原文明确列出限制：只覆盖 Objective-C 对象、不能分析多个内存区、没有完整引用图，Hook 还会影响方法缓存。文章发布时工具已部署到测试环境，线上部署仍在规划中，因此没有可引用的线上 OOM 降幅或定位耗时改善数据。
 
-抖音长期存在一个诡异的虚拟内存 OOM 问题：在某些特定机型上（主要是华为 Android 10 设备，搭载联发科芯片和 PowerVR GPU），`/dev/dri/renderD128` 类型的内存占用会异常膨胀到 **1GB 左右**，直接导致 32 位进程的虚拟地址空间耗尽，触发 OOM 崩溃。
+### Android 上如何复用
 
-这个问题有几个特征：堆栈非常分散（都是系统堆栈），崩溃集中在特定机型和 ABI（armeabi-v7a），而且多次导致发版熔断。更麻烦的是，过去只能通过二分法定位引发问题的 MR（代码修改）来紧急回滚——但那些代码本身并没有 bug，只是"恰好"触发了系统 API 的异常行为。
+Android 侧可保留“连续样本差分 + 异常时加深采集”的设计，采集器必须按内存域选择：
 
-### 分析思路
+| 内存域 | 轻量信号 | 深入证据 |
+| --- | --- | --- |
+| Java/Kotlin 对象 | heap 使用量、GC 次数与停顿、受控场景的对象分配样本 | Java heap dump、实例数差分、GC Root 路径 |
+| Native malloc | RSS/PSS 分区、`anon:libc_malloc`、分配速率 | heapprofd 调用栈与分配生命周期 |
+| 图形缓冲区 | dmabuf、GPU 驱动映射、Surface 数量 | `dmabuf_dump`、smaps、Perfetto graphics 轨道、厂商工具 |
+| 文件映射与线程栈 | maps 分类、线程数、地址空间余量 | smaps、线程创建栈、映射调用栈 |
 
-这是一个典型的"问题在 App 侧，根因在系统侧"的案例。团队的分析路径可以复用到其他“App 侧问题、系统侧根因”的场景：
+业务探针只采集总 PSS 时，Java 临时对象、native buffer 与 GPU 映射会混在一条曲线上。更可靠的报警条件由“场景 + 内存域 + 增长速率 + 回落情况”组成，阈值从设备档位和同场景分位数得到，不写死来源不明的时间与容量数值。
 
-**第一步：稳定复现**。通过对历史触发 MR 的分析，团队找到了一种可稳定复现的方法：给 View 设置透明度（`setAlpha(0.5)`）。测试发现，**每增加一个设置了 alpha 的 View，renderD128 内存增加约 25MB**。不设 alpha 的对照组则没有变化。这立刻将排查范围缩小到了"硬件加速渲染管线中与 alpha 合成相关的路径"。
+Android 15（API 35）提供 app-driven `ProfilingManager.requestProfiling()`。Android 16（API 36）加入触发器注册。Android 17（API 37）增加 OOM、anomaly 和 cold-start 等 trigger。OOM trigger 发生在 OOM 时，用于申请 Java heap dump，无法替代 OOM 前的突增探针。采集结果受限流和系统策略约束，线上设计仍要允许“触发后没有 artifact”。
 
-需要说明的是，`setAlpha()` 是否触发 offscreen buffer 创建取决于渲染条件：在硬件加速下，只有当 `hasOverlappingRendering()` 返回 `true`（即 View 存在重叠绘制）时，渲染管线才会为该 View 创建独立的离屏缓冲区来完成 alpha 合成。如果确认 View 不会与子 View 或兄弟 View 重叠，可以通过 `hasOverlappingRendering() → false` 来避免缓冲区分配，同时保留 alpha 效果。本案例中触发的机型和 GPU 驱动组合，在 `hasOverlappingRendering` 为 true 的默认行为下表现出了缓冲区不释放的异常。
+当差分指出某一类实例异常增长时，再采集 heap dump 或 allocation profile；当增长落在 native 或 graphics 域时，切换到 heapprofd、smaps 或图形工具。这样既保留 MemoryThrashing 的低成本发现能力，也避免把 iOS Runtime 实现误写成 Android 方案。
 
-**第二步：Hook 关键接口**。团队尝试 Hook mmap/mmap64/mremap/ioctl 等系统调用，试图捕获 renderD128 内存的分配路径。但令人意外的是，mmap 相关的 Hook 完全监控不到 renderD128 的内存分配，ioctl 的 Hook 也只捕获到了一个不影响内存的命令。
+## 四个案例共同说明什么
 
-**第三步：从内核源码寻找线索**。由于用户空间的 Hook 无法捕获分配，团队转向了内核源码。他们找到了华为畅享 10e 的内核源码，阅读了 DRM（Direct Rendering Manager）驱动的代码，发现 ioctl 命令只是把参数传给驱动，内存分配发生在 GPU 驱动内部。
+### OOM 栈回答不了历史占用
 
-**第四步：锁定关键 so 库**。通过 ioctl 调用的堆栈，团队锁定了三个"嫌疑人"：`libdrm.so`、`libsrv_um.so`（PowerVR 的用户空间服务库）、`gralloc.mt6765.so`（联发科的内存分配库）。其中 `libsrv_um.so` 是最可疑的，因为它是 PowerVR GPU 的闭源驱动库。
+OOM 栈记录失败的分配点。Java Hprof 的 Retained Size、native 分配调用栈、GPU 映射来源和进程地址空间分布，才能说明此前的内存去了哪里。
 
-[图：ioctl 堆栈指向 libsrv_um.so 和 gralloc.mt6765.so]
+### 同一条“内存上涨”曲线可能属于不同机制
 
-### 根因定位
+Java 引用泄漏、短命对象洪峰、malloc 堆积、GPU pool、文件映射和系统回收压力需要不同证据。排查入口应从 `dumpsys meminfo`、smaps 和 Perfetto 建立内存域分类，再进入专用工具。
 
-通过深入分析，团队最终确认了问题的根因：
+### 发布数字要保留实验上下文
 
-当 View 被设置了 alpha 值且存在重叠绘制时，Android 的硬件加速渲染管线会创建一个额外的 **离屏缓冲区（offscreen buffer）** 来完成 alpha 合成（条件判断在 `RenderProperties::promotedToLayer()`：alpha 在 (0,1) 且 `hasOverlappingRendering()` 为 true 时，`effectiveLayerType()` 变为 RenderLayer；`RenderNode::pushLayerUpdate()` 负责创建或更新 layer）。这个缓冲区的分配和释放由 GPU 驱动管理。在特定的 GPU 驱动版本（PowerVR 的某些旧版本）上，这些离屏缓冲区在绘制完成后不会被正确释放——它们被 GPU 驱动内部的缓存机制"持有"了。
+80%、近 50%、355 MB 到 44 MB 都是来源文章在特定产品、周期或设备上的数据。文章复用这些数字时，应同时写明产品、周期、设备或指标口径。缺少结果数据的案例保持空白结论，比补一个“明显改善”更可靠。
 
-具体来说，问题出在 PowerVR GPU 驱动的 buffer pool 管理策略：驱动维护了一个缓冲区池来复用 GPU 内存，但当 alpha 合成产生的中间缓冲区尺寸超出池中现有缓冲区的尺寸时，驱动会分配新的缓冲区。由于旧的较小缓冲区没有被及时释放，缓冲区池不断膨胀。
+### 驱动与 ROM 问题先做设备聚类
 
-每个需要 offscreen buffer 的 alpha View → GPU 驱动缓存不释放 → renderD128 内存持续增长。25MB/个的速度非常惊人——10 个 View 就是 250MB，对于 32 位进程来说（用户空间约 3GB），这足以在短时间内耗尽虚拟地址空间。
+当问题集中在一个 SoC、GPU、OS 与 ABI 组合时，聚类本身就是证据。通用代码修改可能扩大回归面；窄设备复现、定向规避和厂商修复更适合此类故障。
 
-> **16KB Page Size 的潜在影响** [待验证]：本案例发生环境为 Android 10 / 32 位 / PowerVR GPU，不涉及 16KB 页。在 Android 15+ 的 16KB 页环境中，Gralloc 分配的图形缓冲区需要 16KB 物理页对齐。公开资料中的 9% 额外内存开销是系统平均口径（`ceil(buffer_size / 16384) * 16384`），不能直接等同为单个 offscreen buffer 的增量——实际开销取决于宽高、像素格式、stride 和 allocator 对齐策略。如果怀疑 16KB 页加剧了 GPU buffer 膨胀，建议用 `dmabuf_dump -b` 按 buffer 尺寸归因物理开销，并与同设备 4KB 模式做对照。
+## 复盘清单
 
-[待验证: PowerVR GPU 驱动的 buffer pool 管理策略细节，闭源驱动无法直接验证]
-
-### 修复方案与效果
-
-**短期方案：避免不必要的 alpha 设置和减少重叠绘制**。在业务代码中审查所有 `setAlpha()` 调用，将可以通过其他方式实现的效果（如用半透明颜色替代 alpha）改掉。对于必须使用 alpha 的场景：
-
-- 如果 View 确认没有重叠绘制，覆写 `hasOverlappingRendering()` 返回 `false`，这样渲染管线不会为该 View 创建 offscreen buffer，同时 alpha 效果仍然生效
-- 避免使用 `setLayerType(LAYER_TYPE_HARDWARE)` 配合 alpha，因为硬件层本身就会强制创建 FBO（Framebuffer Object），这和 alpha 触发的 offscreen buffer 是两套独立的缓冲区机制
-- `LAYER_TYPE_NONE` 是 View 的默认层类型，把它作为"规避手段"是错误的——它并不会阻止 alpha 触发的 offscreen buffer 创建
-- 有效的优化方向是减少 View 层级重叠、避免 group alpha/saveLayer，以及在不需要动画时及时清除 alpha 值
-
-**长期方案：与 GPU 厂商合作修复驱动**。将问题反馈给联发科和 PowerVR（ImgTec），推动他们在驱动层面修复缓冲区池的释放策略。同时，对于 64 位进程，3GB 的虚拟地址空间限制不再存在，所以推动 64 位化也是一个间接的解决方案。
-
-**监控方案**。在线上监控 `/proc/self/maps` 中 renderD128 相关映射区域的大小变化，当检测到异常增长时触发告警，避免问题再次发生时来不及反应。
-
-**效果**：修复后，renderD128 相关的 OOM 崩溃率下降至基线水平（[待补充：具体降幅百分比]），发版熔断事件未再发生。
-
-> **源码参考**：alpha 合成的自动建层条件在 `RenderProperties::promotedToLayer()`：alpha ∈ (0,1) 且 `hasOverlappingRendering()` 为 true 时触发；`RenderNode::pushLayerUpdate()` / `CanvasContext::createOrUpdateLayer()` 负责实际的 layer 创建与更新。`computeOrderingImpl` 处理子节点排序和投影，不是该条件判断的入口。自动 alpha 建层与显式硬件层（LAYER_TYPE_HARDWARE）的 FBO 机制是两条入口：前者由 `promotedToLayer()` 在满足 alpha 和重叠绘制条件时临时创建 RenderLayer / 离屏缓冲区，后者由 `setLayerType(LAYER_TYPE_HARDWARE)` 显式要求缓存层；两者都可能落到缓冲区隔离，不能把 `LAYER_TYPE_NONE` 当作规避 alpha 离屏缓冲的手段。
-
-
-### 可复用的经验
-
-这个案例给出三条可复用的排查经验：
-
-第一，**不是所有内存问题都能通过常规手段（如 LeakCanary、MAT）发现**。LeakCanary 只能检测 Java 堆的泄漏，对于 GPU 驱动内部管理的内存完全无能为力。当线上出现大量"虚拟内存 OOM"但 Java 堆远未满时，需要把排查视线转向 Native 内存和设备内存映射。
-
-第二，**二分法定位虽然原始，但有时是唯一可靠的方法**。在无法 Hook 到分配路径的情况下，通过回滚 MR 来缩小问题范围，虽然耗时但有效。有效的前提是找到"能稳定复现的操作"，这比盲目猜测高效得多。
-
-第三，**闭源 GPU 驱动是 Android 性能分析的盲区**。厂商定制的 GPU 驱动行为差异很大，同一段代码在不同机型上可能表现出完全不同的内存行为。如果线上数据显示问题集中在特定机型/SoC，一定要先看看是不是驱动层面的问题。
-
----
-
-## 案例四：直播场景的内存突增与 OOM
-
-
-### 问题现象
-
-抖音直播的 OOM 问题有一个特点：内存不是慢慢泄漏的，而是**突然跳升**。比如内存从 600MB 在几秒内跳到 800MB，然后在下一个瞬间 OOM 崩溃。传统的"定时采样内存"方案很难捕获到这种突变的瞬间——因为无法预判该在什么时刻抓取快照。
-
-另一个难点在于，现有的 MemoryGraph 工具虽然能分析 OOM 成因，但性能开销很大，只能低采样率运行，不容易触达问题。而且生成的快照可能不是内存高位（比如设备 4GB 内存时快照只有 1GB），导致分析结果偏离真实的 OOM 现场。
-
-### 分析思路
-
-团队提出了一个叫做 **MemoryThrashing** 的方案。核心思路是：**在内存突变时主动捕获现场**。
-
-所谓"thrashing"（抖动），在这里指的是内存在短时间内大幅波动——比如 200MB 的突然增长。团队定义了一个阈值：当内存增长超过某个值（比如 X 秒内增长超过 Y MB）时，判定为一次"抖动"事件，立即触发一次轻量级的内存分析。
-
-这个方案的关键创新在于"轻量"。它不需要抓取完整的 Hprof 快照（那个太重了），而是通过周期性采样 `Runtime.totalMemory()` 和 `Runtime.freeMemory()` 来检测 Java 堆的变化趋势。当检测到突增时，快速扫描当前线程栈和关键数据结构的大小，记录下"谁在分配内存"。
-
-> **Android 15+ 替代采集后端**：Android 15（API 35）引入 `ProfilingManager.requestProfiling(...)`，App 可主动请求 system trace、Java heap dump、heap profile 或 stack sampling。Android 16（API 36）开始提供 `ProfilingTrigger` / `ProfilingManager.addProfilingTriggers(...)`：API 36 包含 `TRIGGER_TYPE_APP_FULLY_DRAWN` 和 `TRIGGER_TYPE_ANR`；36.1 增加 request-running-trace 与 kill 类触发器；API 37 增加 `TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_COLD_START` 等。这里的 OOM trigger 是 OOM 发生后的 Java heap dump，不是"内存突增阈值"预警。因此 MemoryThrashing / 业务探针仍负责发现内存阈值，`ProfilingManager` 更适合作为触发后的采集后端。
-
-### 根因定位
-
-通过 MemoryThrashing 捕获的数据，团队发现了直播场景中几个主要的内存突增来源：
-
-**弹幕和礼物动画的对象风暴**。直播间在热门时段，弹幕消息和礼物动画的创建频率极高。每条弹幕是一个对象（包含文本、样式、位置信息），每个礼物动画需要创建 Bitmap 和动画状态对象。当大量消息同时涌入时，短时间内创建数万个对象，Java 堆迅速膨胀。虽然这些对象的生命周期很短（弹幕滑出屏幕就可以回收），但 GC 来不及跟上创建速度，导致堆内存先到达上限触发 OOM。
-
-**视频解码器的缓冲区累积**。直播流的视频解码需要一组解码缓冲区（通常是 5-8 个，每个大小等于一帧的像素数据）。在分辨率切换（比如从 720p 切到 1080p）时，旧的缓冲区可能还没释放，新的更大尺寸的缓冲区已经分配了。在低端设备上，这种"旧未释放、新已分配"的过渡状态可能消耗大量内存。
-
-**图片加载库的缓存膨胀**。直播间的各种图片（头像、商品图、背景）通过图片加载库（如 Glide/Coil）缓存。默认的缓存策略通常基于可用内存的百分比，但在直播场景下，用户可能在一个直播间停留很长时间，不断加载新的图片。缓存在不知不觉中膨胀到几百 MB。
-
-
-### 修复方案与效果
-
-**针对弹幕对象风暴**：引入对象池（Object Pool）复用弹幕对象。弹幕滑出屏幕后，不丢弃对象，而是放回池中供下一条弹幕复用。这样避免了频繁的对象创建和 GC 压力。同时在极端情况下（弹幕速度超过某个阈值），进行消息合并和降频显示。
-
-**针对解码器缓冲区**：在分辨率切换时，先释放旧缓冲区再分配新缓冲区，而不是同时持有两套。虽然这可能导致短暂的画面闪烁，但比 OOM 崩溃好得多。
-
-**针对图片缓存**：根据当前场景动态调整缓存策略。直播场景下使用更激进的缓存淘汰策略（比如限制缓存条目数而非百分比），并在内存压力大时（通过 `onTrimMemory` 回调感知）主动清空缓存。
-
-**效果**：MemoryThrashing 方案上线后，直播场景的 OOM 崩溃率明显下降（[待补充：具体降幅百分比]）。这个工具还让团队第一次能够在线上"看到"内存突增的现场，将 OOM 问题的平均定位时间从天级缩短到小时级。对于 Android 15+ 设备，`ProfilingManager` 可作为触发后的采集后端降低运行时开销。
-
-
-### 可复用的经验
-
-**内存问题至少要区分两类：泄漏，以及短时间内的过度分配。**
-
-泄漏的特征是内存只增不减，曲线呈单调上升。而"对象风暴"的特征是内存曲线呈锯齿状——快速上升然后被 GC 回收一部分，但下一个高峰可能就突破了上限。两种问题的治理策略完全不同：泄漏需要找到那条"不该存在的引用链"，而对象风暴需要减少分配频率或复用对象。
-
-在 Perfetto 中，通过 **Java Heap Timeline** 和 **GC Event Track** 可以区分这两种模式。如果 GC 事件频繁触发但每次回收的量不大，同时堆内存呈上升趋势，通常是泄漏。如果 GC 回收了大量内存但很快又被分配满，呈现锯齿形，那更可能是对象风暴。
-
----
-
-## 这四个案例串起来看
-
-四个案例指向同一组内存诊断原则：
-
-**第一，崩溃堆栈通常不是问题所在**。无论是 Java OOM 还是 Native OOM，崩溃发生的那个内存分配点往往只是"最后一步"。根因通常是某个一直在默默占用内存的大户。先看整体内存分布，再看具体分配点。
-
-**第二，内存问题经常是系统性的连锁反应**。低内存 → kswapd 频繁回收 → I/O 增加 → 进程被杀重启 → 前台卡顿。解决时不能只盯着某一环，需要从源头（内存水位管理）入手。
-
-**第三，不同类型的内存问题需要不同的工具**。Java 堆泄漏用 MAT/LeakCanary，Native 泄漏用 heapprofd/ASAN，GPU 相关的内存异常需要看 `/proc/self/maps` 和厂商工具。没有一把万能钥匙。
-
-**第四，线上监控和线下分析要配合**。很多内存问题（尤其是对象风暴、驱动异常）只在线上特定场景出现，线下很难复现。需要在线上建立足够的监控（内存水位、突变检测、关键数据结构大小追踪），为线下分析提供入口。
-
-**第五，机型差异不容忽视**。同样一段代码，在 64 位设备上可能完全正常，在 32 位设备上却频繁 OOM。不同 SoC 平台的 GPU 驱动行为差异巨大。分析内存问题时，一定要关注"这个现象是否集中在特定机型/ABI/SoC"。
+- 现象对应 Java heap、native heap、graphics、mmap、线程栈还是整机压力？
+- 效果数字来自本项目实验、公开案例，还是尚未验证的预期？
+- 低内存 trace 是否同时包含线程状态、回收、PSI、I/O 与 `lmkd` 事件？
+- Hprof 是否记录 Retained Size、GC Root 路径、版本和场景？
+- 32 位 OOM 是否先检查地址空间余量，而不是只看 RSS？
+- vendor 故障是否按设备、SoC、GPU、驱动、OS 和 ABI 聚类？
+- 突增探针是否按内存域采样，并为缺失 artifact 设计回退路径？
+- 修复后是否重放同一场景，比较同口径的峰值、回落速度、帧时间和崩溃率？
 
 ## 相关章节
 
-- **10.1 App 内存分析**：本案例集使用的大部分工具和方法论，在 10.1 中有详细介绍。
-- **10.2 内存泄漏**：案例二中的 Java 堆泄漏分析，可以直接对照 10.2 中的泄漏模式分类。
-- **10.3 内存持续增长**：案例四中的"缓存膨胀"问题，属于 10.3 讨论的持续增长模式之一。
-- **10.4 低内存对系统性能的影响**：案例一完整展示了 10.4 中描述的低内存连锁反应机制。
-- **10.6 内存抖动与频繁 GC**：案例四中的"对象风暴"是 10.6 要深入讨论的核心话题。
-- **4.4 Low Memory Killer**：案例一中进程被频繁查杀的 userspace `lmkd` 路径，在 4.4 中有系统层面的详解。
-- **7.4 典型场景分析**：从卡顿分析的角度，低内存引发的卡顿也属于 7.4 讨论的典型场景。
+- **10.1 App 内存分析**：内存域分类、`dumpsys meminfo`、smaps、Perfetto 与 heapprofd。
+- **10.2 内存泄漏**：引用所有权、GC Root 与生命周期修复。
+- **10.3 内存持续增长**：泄漏、缓存、pool 和地址空间增长的区分。
+- **10.4 低内存对系统性能的影响**：回收、PSI、`lmkd`、ZRAM 与前台性能。
+- **10.6 内存抖动与频繁 GC**：分配速率、GC 停顿和短命对象。
+- **10.8 GPU 内存追踪**：dmabuf、GPU 映射与图形缓冲区。
+- **4.4 Low Memory Killer**：Android 17 userspace `lmkd` 路径。
+- **7.4 典型场景分析**：从线程状态和关键路径解释卡顿。
 
 ## 参考资料
 
-- [Android 中的卡顿丢帧原因概述 - 低内存篇 — androidperformance.com](https://www.androidperformance.com/2019/09/18/Android-Jank-Due-To-Low-Memory/)
-- [谁动了我的内存，揭秘 OOM 崩溃下降 90% 的秘密 — ByteCode 公众号](https://mp.weixin.qq.com/s?__biz=MzAwNDgwMzU4Mw==&mid=2247486738)
-- [抖音 renderD128 系统级疑难 OOM 分析与解决 — 字节跳动技术团队](https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247514363)
-- [MemoryThrashing：抖音直播解决内存抖动实践 — 字节跳动技术团队](https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247496677)
-- [AOSP frameworks/base/core/java/android/content/ComponentCallbacks2.java — onTrimMemory 级别常量定义](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/content/ComponentCallbacks2.java)
-- [Android Developers ProfilingManager API reference](https://developer.android.com/reference/android/os/ProfilingManager)
-- [Android Developers ProfilingTrigger API reference](https://developer.android.com/reference/android/os/ProfilingTrigger)
-- [AOSP packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java — Android 17 触发器常量](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java)
-- [AOSP frameworks/base/libs/hwui/RenderProperties.h — promotedToLayer 与 alpha 自动建层条件](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/libs/hwui/RenderProperties.h)
+- [Android 中的卡顿丢帧原因概述——低内存篇](https://www.androidperformance.com/2019/09/18/Android-Jank-Due-To-Low-Memory/)
+- [字节跳动应用性能监控帮助客户 Java OOM 崩溃率下降 80%](https://mp.weixin.qq.com/s?__biz=Mzg2NTYyMjYxNg==&mid=2247486007&idx=1)
+- [抖音 renderD128 系统级疑难 OOM 分析与解决](https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247514363&idx=1)
+- [MemoryThrashing：抖音直播解决内存抖动实践](https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&mid=2247496677)
+- [Android Developers：内存管理概览](https://developer.android.com/topic/performance/memory-overview)
+- [Android Developers：ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager)
+- [Android Developers：ProfilingTrigger](https://developer.android.com/reference/android/os/ProfilingTrigger)
+- [Perfetto：heapprofd](https://perfetto.dev/docs/data-sources/native-heap-profiler)
+- [AOSP `ComponentCallbacks2.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ComponentCallbacks2.java)
+- [AOSP `RenderProperties.h`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/RenderProperties.h)
+- [AOSP `RenderNode.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/RenderNode.cpp)
+- [AOSP `ProfilingTrigger.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java)
+- [AOSP `lmkd.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp)
+- [Android Common Kernel `mm/vmscan.c`（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c)
+- [Android Common Kernel `vmscan.h` tracepoints（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/vmscan.h)
