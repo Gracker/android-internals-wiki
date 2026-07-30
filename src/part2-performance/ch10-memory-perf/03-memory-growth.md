@@ -7,14 +7,14 @@ status: finalized
 drafted_date: '2026-04-02'
 drafted_by: openclaw-task2a
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-04-02'
-last_verified_against: AOSP android-16.0.0_r1
+last_verified: '2026-07-31'
+last_verified_against: AOSP android-17.0.0_r1; Android common kernel android17-6.18-2026-06_r6
 reviewed_date: "2026-05-27"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: '2026-04-08'
 polish_by: task2b-polish
-confidence: medium
+confidence: high
 word_count: ~8000
 sources:
 - type: blog
@@ -23,10 +23,26 @@ sources:
   path: RTC 性能自动化工具在内存优化场景下的实践
 - type: blog
   path: Hummer引擎优化系列 - 内存稳定性研究与优化
+- type: aosp
+  path: platform/frameworks/base/core/java/android/util/LruCache.java@android-17.0.0_r1
+- type: aosp
+  path: platform/frameworks/base/core/java/android/os/Debug.java@android-17.0.0_r1
+- type: aosp
+  path: platform/frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java@android-17.0.0_r1
+- type: kernel
+  path: kernel/common/mm/page_alloc.c@android17-6.18-2026-06_r6
+- type: kernel
+  path: kernel/common/mm/compaction.c@android17-6.18-2026-06_r6
 - type: official
   path: https://developer.android.com/reference/android/util/LruCache
 - type: official
-  path: https://perfetto.dev/docs/data-sources/native-heap-profiling
+  path: https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits
+- type: official
+  path: https://developer.android.com/topic/performance/memory-management
+- type: official
+  path: https://developer.android.com/topic/performance/graphics/manage-memory
+- type: official
+  path: https://perfetto.dev/docs/data-sources/native-heap-profiler
 tags:
 - memory
 - pss
@@ -67,447 +83,356 @@ last_deepseek_cn_review_at: 2026-06-13
 
 # 内存持续增长
 
-<!-- outline-start -->
-## 本节要点大纲
+> 适用范围：Android 8.0（API 26）至 Android 17（API 37）。平台源码以 `android-17.0.0_r1` 为锚点；涉及物理页分配与规整时，以 `android17-6.18-2026-06_r6` 为内核锚点。
 
-### 锚点（必须覆盖）
+内存持续增长是一种观测现象，不对应单一故障。无上限缓存、对象泄漏、allocator 保留、直接 `mmap`、图形缓冲区、线程栈、WebView 预热和文件页进入驻留状态，都可能让 RSS 或 PSS 抬升。治理前需要回答两个问题：增长来自哪一类内存，业务生命周期结束后能回收多少。
 
-- 🔹 内存持续增长（非泄漏）的常见原因：缓存无上限、Bitmap 累积、Native 碎片化
-- 🔹 与内存泄漏的区分方法
-- 🔹 LRU Cache 策略的正确实现
-- 🔹 内存增长的监控指标：PSS / RSS 趋势、Java Heap 使用率趋势
-- 🔹 内存碎片化的检测与应对
+## 1. 增长曲线能说明什么
 
-### 扩展（可选深入）
+常见来源可以按“谁持有、怎样释放”划分：
 
-- 🔸 WebView 内存增长问题与多进程 WebView
-- 🔸 长时间运行 App（如音乐播放器）的内存管理策略
+| 来源 | 典型表现 | 需要补充的证据 |
+| --- | --- | --- |
+| 业务 live set 增长 | Java used、对象数或 Native live allocations 随数据量增加 | 容量上限、对象类型、owner、清理后的差分 |
+| 泄漏 | 已结束生命周期的对象或分配持续保留 | GC Root 路径、JNI owner、未释放调用栈 |
+| allocator retention / 页内空洞 | Native allocated 下降，Native RSS/PSS 回落较少 | allocator 统计、smaps、heapprofd 前后快照 |
+| 直接 `mmap` / 文件页 | RSS 的 anon、file 或 shmem 分类增长 | `/proc/<pid>/smaps`、映射路径和创建栈 |
+| Graphics / DMA-BUF | Graphics、memtrack 或相关进程增长 | Buffer、Surface、ImageReader、Codec 生命周期 |
+| 线程与栈 | Threads、Stack、RssAnon 同步上升 | 线程创建栈、线程池上限、退出条件 |
+| 运行时与组件预热 | 类、JIT code、WebView renderer 或共享库在首次使用后抬升 | 稳态基线、进程列表、Code/File 页分类 |
 
-### OpenClaw 加工指引
+锯齿波谷逐步升高也不能直接判定泄漏。ART 可能扩大 heap，malloc allocator 可能保留已释放页，文件页和图形资源也有独立回收时机。曲线负责发现异常窗口，heap dump、allocation profile 和映射明细负责归因。
 
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
-<!-- outline-end -->
+## 2. 建立可复现的增长实验
 
-## 为什么要了解内存持续增长
+实验应固定 App 版本、设备、系统版本、ABI、page size、账号数据、网络响应和进程状态。采样点可以设置为：
 
-上一章（§10.2）讨论的是内存泄漏——对象被无意识地持有引用，导致 GC 无法回收。但现实中还有一类更隐蔽的问题：内存并没有泄漏，GC 也在正常工作，应用的内存占用却一直在涨。
+1. 进程启动并完成必要预热后的基线。
+2. 执行一组固定业务操作后的峰值。
+3. 页面退出、任务取消、资源关闭后的状态。
+4. 缓存主动收缩后的状态。
+5. 再次执行同一操作后的状态。
 
-这种场景在 Perfetto 中表现为 Java Heap 或 Native Heap 的曲线呈阶梯式或锯齿式上升，每个锯齿的波谷都比上一个高。用 `dumpsys meminfo` 观察会发现 PSS 在用户使用过程中逐步攀升，即使退回主界面也没有明显回落。
+下面的命令用于保存进程摘要、页大小、RSS 分类和线程数：
 
-这种情况和内存泄漏的区别在于：增长的对象有明确的业务用途——可能是图片缓存、可能是预加载的数据、可能是 Native 层的内存池——但它们的总量没有被有效控制。问题集中在容量上限缺失。
+```bash
+adb shell dumpsys meminfo -d com.example.app
+adb shell getconf PAGE_SIZE
+adb shell 'pid=$(pidof com.example.app); grep -E "VmRSS|RssAnon|RssFile|RssShmem|VmSwap|Threads" /proc/$pid/status'
+```
 
-理解内存持续增长的成因和治理方法，对于长生命周期应用（新闻客户端、社交 App、音乐播放器、电商应用）尤为重要。这类应用通常运行数小时不重启，如果内存以每小时几十 MB 的速度增长，最终可能先撞到 Java Heap 上限、Native / 虚拟地址分配失败，或在系统内存压力下提高被 lmkd 回收的概率。
+三个采样动作应尽量靠近，但它们仍不是原子快照。报告中要保留时间、前后台状态和原始输出，避免把采样时差解释成业务增长。
 
-## 内存持续增长的常见原因
+### 2.1 不用一次 GC 给问题分类
 
-### 缓存没有上限
+点击 Memory Profiler 的 GC 按钮，只能请求一次垃圾回收。对象仍被缓存或泄漏路径持有时都会保持可达；Native、Graphics 和 `mmap` 也不受 Java GC 直接控制。因此：
 
-这是最常见的非泄漏性内存增长原因。开发者为了提升用户体验，会使用各种缓存：图片缓存、接口数据缓存、列表项缓存。这些缓存的初衷是好的——避免重复加载、减少网络请求、加快页面渲染。但问题在于，如果缓存没有合理的容量限制，随着用户不断浏览新内容，缓存中的条目只会越来越多。
+- GC 后不回落，无法区分缓存与泄漏。
+- GC 后回落，只能说明部分 Java 对象已经不可达。
+- 清空缓存后回落，说明该缓存贡献了占用；缓存外仍可能同时存在泄漏。
+- 稳定状态下的 heap dump 和 GC Root 路径，才能确认 Java 生命周期错误。
 
-一个典型的场景是图片加载框架的内存缓存。如果直接使用 HashMap 或 ArrayList 来缓存 Bitmap，没有任何淘汰策略，那么用户每加载一张新图片，Bitmap 对象及缓存索引会留在 Java Heap 中；对本章覆盖的 API 26+，像素数据主要留在 Native Heap、RSS 和 PSS 中。对于资讯类应用，用户可能在一个会话中浏览数百张图片，即使很多图片对应的页面已经关闭，它们依然占据着内存。
+10.2 节给出了 retained object 的证据链。本节关注有意保留的数据如何设预算，以及释放后 resident memory 为何可能滞后。
 
-这种情况在 `dumpsys meminfo` 中的表现是 Java Heap 的 Alloc、Native Heap、RSS 或 PSS 随缓存规模增长，而且 GC 后回落不明显——因为被缓存引用的 Bitmap 属于可达对象，GC 不会回收它们。
+## 3. 缓存必须有可执行的预算
 
-另一个常见变体是"无限追加的列表"。有些应用在首页信息流中持续加载新数据，把所有已加载的数据都保存在内存中的列表里。用户下拉加载越多，列表越长，内存占用越大。虽然每个数据对象本身不大，但数千条数据加上其中的嵌套对象（图片 URL、富文本、嵌套 JSON）会逐步抬高 Java Heap 和 PSS。
+缓存容量应由可再生性、命中收益、前后台状态和设备档位共同决定。`ActivityManager.getMemoryClass()` 描述 ART heap 的近似上限，不能当作整个进程的 PSS 预算。Graphics、Native、Code、Stack 和多进程占用都在这个数值之外。
 
-### Bitmap 累积
+一个可执行的缓存预算至少包含：
 
-Bitmap 累积可以看作是缓存无上限的一个特例，但它值得单独讨论，因为 Bitmap 的内存影响远大于普通 Java 对象。
+- hard limit：任何输入规模下都不能越过。
+- shrink target：页面隐藏或进程进入后台状态时的收缩目标。
+- 计量单位：字节、像素、条目或成本权重。
+- owner：谁创建、谁收缩、谁销毁。
+- 观测值：size、hit、miss、eviction 和重建耗时。
 
-一张 1080×1920 的 ARGB_8888 图片，解码后占用的内存是 1080 × 1920 × 4 = 约 7.9 MB。如果应用内同时持有 20 张这样的图片，仅图片像素数据就占了近 160 MB。Bitmap 像素数据的存放位置有明确版本边界：Android 2.3.3（API 10）及以下在 Native 内存，Android 3.0 到 7.1（API 11-25）在 Dalvik Heap，Android 8.0（API 26）及以上在 Native Heap。对本章覆盖的 API 26+，Bitmap 累积主要抬高 Native Heap、RSS 和 PSS；它不会直接吃掉 Java Heap 上限，但会增加 Native 分配失败风险，并在系统内存压力下提高被 lmkd 选择的概率。
+### 3.1 Android 17 的 `LruCache`
 
-[已验证: 官方文档, developer.android.com/topic/performance/graphics/manage-memory]
+`android.util.LruCache` 在 `android-17.0.0_r1` 中仍使用 `LinkedHashMap(..., accessOrder=true)` 维护访问顺序。`put()`、`resize()` 和 `trimToSize()` 会按最近最少使用顺序淘汰；`sizeOf()` 决定预算单位。
 
-Bitmap 累积的典型路径有两条：一是前面说的缓存无淘汰，图片加载后一直留在 ImageCache 中；二是"隐藏引用"——某个看似已经不用的对象（比如一个被回收的 RecyclerView Item）内部的 Bitmap 引用没有被正确清理，但由于数据结构层面还有间接引用链（比如一个全局的 resourceId 到 Bitmap 的映射），导致这些 Bitmap 无法被 GC。
+下面的缓存按 Bitmap 已分配字节计量，预算由调用方根据产品基线传入：
 
-在 Perfetto 的 heapprofd 分析中，如果看到 Native Heap 中大量分配来自 `Bitmap.allocateNative` 调用栈，且分配总量随时间线性增长，基本可以确认是 Bitmap 累积问题。
+```kotlin
+class BitmapMemoryCache(
+    maxBytes: Int,
+) : LruCache<String, Bitmap>(maxBytes) {
 
-### Native 碎片化
+    override fun sizeOf(key: String, value: Bitmap): Int {
+        return value.allocationByteCount.coerceAtLeast(1)
+    }
+}
+```
 
-内存碎片化是指可用内存被分割成许多不连续的小块，虽然总量上还有足够的空闲内存，但无法满足连续内存的分配请求。
+`maxBytes` 与 `sizeOf()` 使用相同单位。缓存中的 value 若会改变计量大小，应移除后重新放入，避免 `LruCache` 内部 size 与对象状态失配。Bitmap 的单项字节数仍受 config、复用分配和硬件位图路径影响；图片框架已有内存缓存时，不要再叠一层无协调的进程级缓存。
 
-在 Android 上，Native 碎片化主要发生在 Native Heap 层面。应用使用的 C/C++ 库（音视频解码器、图形引擎、JNI 调用的 Native 代码）通过 malloc/free 或 new/delete 管理内存。当频繁分配和释放不同大小的内存块时，空闲内存会被切割成不连续的片段。所以有时 Native Heap 的 Alloc 值看起来不大，PSS 却居高不下：碎片化的内存已被释放回 malloc 的空闲链表，但由于不连续，无法归还给操作系统。
+`LruCache` 的 `size()` 只统计仍在 map 中的条目。条目被淘汰后，如果 Adapter、View、任务或其他集合仍保存引用，对象不会回收。排查缓存失控时要同时看缓存计数与 heap 中的 owner。
 
-[已验证: 来源见 Cubox/OPPO内存反碎片优化原理-2022-10-26.md]
+### 3.2 `entryRemoved()` 不是 Bitmap 回收开关
 
-碎片化问题在长时间运行的应用中尤为明显。比如音乐播放器 App 使用音频解码的 Native 库，每首歌解码时分配和释放不同大小的 PCM 缓冲区，运行几小时后 Native Heap 就会出现严重的碎片化。在 `dumpsys meminfo` 中表现为 Native Heap 的 Pss 和 Private Dirty 值远高于 Alloc 值。
+`entryRemoved()` 适合关闭条目独占的 `Closeable`、句柄或自定义资源。对 Android 8.0 及以上的普通 Bitmap，缓存淘汰时直接调用 `recycle()` 可能破坏仍在显示或被其他 owner 使用的图片。引用关系结束后由运行时释放关联像素数据更安全；主动 `recycle()` 只用于能够证明没有其他使用者的专门所有权协议。
 
-在 Perfetto 中，可以通过 heapprofd 对 Native 层进行连续采样（continuous dump），观察分配和释放的模式。如果发现大量小尺寸的分配和释放交替出现，且每次分配的尺寸不一致，这就是碎片化的典型信号。
+### 3.3 响应 `onTrimMemory()`
 
-[已验证: 官方文档, perfetto.dev/docs/data-sources/native-heap-profiling]
+Android 17 的 `ComponentCallbacks2` 仍提供 `TRIM_MEMORY_UI_HIDDEN` 和 `TRIM_MEMORY_BACKGROUND`。`TRIM_MEMORY_RUNNING_*`、`MODERATE`、`COMPLETE` 自 API 34 起不再投递给 App，并在 API 35 标为 deprecated，不能继续设计细粒度压力阶梯。
 
-### 匿名内存页（Anonymous Pages）累积
+下面的回调将 UI 隐藏与进入后台 LRU 区域映射到两个缓存目标：
 
-除了上述三个主要原因外，还有一种容易被忽视的增长来源：匿名内存页（anon RSS / Private Anonymous）。这部分内存不在 Java Heap 也不在 Native Heap 的常规统计中，通常来自：
-
-- **mmap 的匿名映射**：某些 Native 库使用 mmap 分配大块内存作为内部缓冲区
-- **线程栈**：每个线程会保留一段栈虚拟地址空间，实际 RSS / PSS 取决于被触碰的栈页；大量线程或深调用栈会抬高匿名页占用
-- **GPU 内存映射**：通过 GPU 驱动映射到进程地址空间的图形资源
-
-在 `dumpsys meminfo` 中，这部分通常体现在 "Private Other" 或 "Unnamed" 行中。如果发现这部分持续增长但 Heap 区域没有对应变化，需要检查是否有线程泄漏或 Native 层的 mmap 操作。
-
-16KB 页面设备上的 `meminfo` 粒度更粗，匿名映射尾页的浪费也更容易抬高 `Private Other` 一类条目。跨设备比对这类指标前，先确认页大小。
-
-增长源确认后，下一步定位具体来源。排查 Unnamed / Private Other 增长时，先用 `dmabuf_dump -b` 覆盖 DMA-BUF 这一类来源——它按 buffer 尺寸和进程归属列出当前系统中所有 DMA-BUF 的物理占用，可以确认匿名页增长是否来自图形 buffer。操作步骤：
-
-1. `adb shell dmabuf_dump -b` 获取全系统 DMA-BUF 快照
-2. 按进程名过滤目标 App，看其名下的 buffer 尺寸分布
-3. 如果发现大量 GPU 纹理 buffer（通常来自 `gralloc` 分配），结合 GPU 内存分析定位具体的纹理泄漏来源
-4. 如果发现大量 ion/cma buffer，检查是否有 Native 库的 mmap 未释放
-
-## 与内存泄漏的区分方法
-
-内存持续增长和内存泄漏在 Perfetto 或 `dumpsys meminfo` 中的表现非常相似——都是 PSS 持续增长。但区分它们是选择正确治理策略的前提。
-
-### GC 行为是关键判据
-
-内存泄漏的核心特征是：即使触发 GC，增长的那部分内存也不会被回收。因为泄漏的对象仍然有可达引用链，GC 认为它们是"活的"。
-
-而非泄漏性增长的情况是：如果手动清除缓存（比如调用 `cache.evictAll()`）或释放相关资源，内存会立刻回落。简单说，这些对象在技术上可以被 GC 回收，只是业务逻辑一直没有触发回收条件。
-
-在 Android Studio Memory Profiler 中，可以通过以下方式验证：触发一次 GC（点击垃圾桶图标），观察 Heap 的大小变化。如果 GC 后 Heap 明显缩小但随后又快速增长回来，大概率是非泄漏性的缓存增长；如果 GC 后 Heap 几乎不变，更可能是泄漏。
-
-### dumpsys meminfo 的对比分析
-
-`dumpsys meminfo <package_name>` 的输出可以提供更细致的判断线索：
-
-| 指标 | 内存泄漏 | 非泄漏性增长 |
-|------|---------|------------|
-| Java Heap Alloc 持续增长 | ✓（可达对象无法回收） | ✓（缓存不断追加） |
-| GC 后 Heap 回落幅度 | 很小或无 | 有回落但不彻底 |
-| Native Heap Pss 增长 | 可能（Native 泄漏） | 常见（碎片化/Bitmap） |
-| Views/Activities 计数 | 可能异常偏高 | 通常正常 |
-| 手动清理缓存后回落 | 不明显 | 明显回落 |
-
-[已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
-
-### 用 LeakCanary 排除泄漏
-
-如果不确定是泄漏还是非泄漏性增长，可以先用 LeakCanary 排除 Activity、Fragment、Fragment View、ViewModel 这类生命周期对象的泄漏。没有报告只能说明这些自动监控对象没有明显 retained path，不能排除普通 Java 对象、单例缓存、线程、JNI 全局引用或 Native 层泄漏。若 PSS 仍在增长，需要继续看 Heap Dump 的 dominant retainers、对象数量趋势和 heapprofd。
-
-## LRU Cache 策略的正确实现
-
-非泄漏性内存增长通常源于缓存没有上限，治理时要给缓存设定预算并执行淘汰。Android 提供的 `LruCache` 类就是为此设计的。
-
-### LruCache 的基本原理
-
-`LruCache` 内部使用 `LinkedHashMap` 维护一个按访问顺序排列的键值对集合。每次 `get` 或 `put` 操作都会将被访问的条目移动到链表尾部。当插入新条目导致缓存总大小超过设定的 `maxSize` 时，`LruCache` 会自动从链表头部（即最久未被访问的条目）开始淘汰。
-
-```java
-// frameworks/base/core/java/android/util/LruCache.java
-// @ AOSP android-16.0.0_r1
-public class LruCache<K, V> {
-    private final LinkedHashMap<K, V> map;
-    private int size;       // 当前缓存大小
-    private int maxSize;    // 最大允许大小
-    private int putCount;   // put 操作计数
-    private int evictionCount; // 淘汰计数
-
-    public LruCache(int maxSize) {
-        if (maxSize <= 0) {
-            throw new IllegalArgumentException("maxSize <= 0");
+```kotlin
+override fun onTrimMemory(level: Int) {
+    when {
+        level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND -> {
+            imageCache.evictAll()
         }
-        this.maxSize = maxSize;
-        // accessOrder=true 表示按访问顺序排列，最近访问的在尾部
-        this.map = new LinkedHashMap<K, V>(0, 0.75f, true);
+        level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> {
+            imageCache.trimToSize(backgroundImageBudgetBytes)
+        }
     }
 }
 ```
 
-这段代码的关键在于 `LinkedHashMap` 构造函数的第三个参数 `accessOrder=true`。它使得 `get()` 操作也会触发条目重排——被访问的条目会移到链表尾部。这就是 LRU（Least Recently Used）语义的实现基础：链表头部永远是"最久未被访问"的条目，淘汰时优先移除它们。
+比较使用 `>=`，以兼容可能增加的中间等级。回调属于状态提示，不能代替应用自己的 hard limit；App 也不需要在这里主动调用 `System.gc()`。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/util/LruCache.java]
+## 4. Bitmap 与图片管线
 
-### 正确设置 maxSize
+ARGB_8888 的逻辑像素成本通常按 `width × height × 4` 估算。例如 1080 × 1920 的未压缩像素约为 7.9 MiB。压缩文件大小不能代表解码后成本，row stride、config、复用分配、硬件位图和 GPU 上传还会改变运行时占用。
 
-`LruCache` 的 `maxSize` 参数不一定是字节数，它的单位取决于你如何重写 `sizeOf()` 方法。默认情况下 `sizeOf()` 返回 1，意味着 `maxSize` 表示最大条目数。但对于图片缓存这种场景，每张图片的大小差异可能很大（缩略图 vs 高清大图），用条目数做限制会失真。
+Android 8.0（API 26）及以上，Bitmap 像素数据位于 Native heap。Java heap 中的 `Bitmap` 对象仍是生命周期入口，所以一张图片可能同时影响：
 
-正确的做法是重写 `sizeOf()` 返回每个条目的实际内存占用（通常以 KB 为单位），然后将 `maxSize` 设为应用可用内存的一个合理比例：
+- Java heap：Bitmap wrapper、Drawable、缓存索引和业务对象。
+- Native heap：像素 backing storage。
+- Graphics：纹理、硬件缓冲区或 renderer 侧副本。
 
-```java
-// 获取应用最大可用内存（以 KB 为单位）
-final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
-// 取 1/8 作为图片缓存的预算
-final int cacheSize = maxMemory / 8;
+图片增长的治理顺序：
 
-LruCache<String, Bitmap> imageCache = new LruCache<String, Bitmap>(cacheSize) {
-    @Override
-    protected int sizeOf(String key, Bitmap value) {
-        // 返回 Bitmap 的实际内存占用（KB）
-        // Android 3.0+ 可以使用 getByteCount()
-        return value.getByteCount() / 1024;
-    }
-};
+1. 按显示尺寸解码，避免让缩略图 View 持有原图像素。
+2. 让一个图片库统一管理内存缓存、Bitmap 复用和请求生命周期。
+3. 为预取设置窗口，列表向前滚动时淘汰窗口外请求和数据。
+4. 区分 encoded bytes、decoded pixels 与 GPU 资源，三者不能只记一次 Java 对象大小。
+5. 对相同 URL 的不同尺寸和变换建立可解释的 cache key，避免重复驻留。
+
+heapprofd 采到 Bitmap 相关 Native 分配栈时，只能确认分配来源。是否超预算还要结合缓存条目、图片规格和释放后的 live allocation 差分。
+
+## 5. Native allocator 保留与碎片
+
+Native 内存分析要分开三组数：
+
+```text
+live allocations
+  业务仍持有、allocator 仍视为已分配的内存
+
+allocator footprint
+  live allocations + arena/cache/metadata/空闲块
+
+resident footprint
+  当前驻留的匿名页、共享页与相关映射
 ```
 
-1/8 这个比例并非银弹，它来自 Android 官方文档的示例。实际的合理比例取决于应用的类型：图片密集型应用（如 Instagram）可能需要更大的比例，而以文字为主的应用可以更小。要先给缓存设定明确预算，不能"能放多少放多少"。
+`Debug.getNativeHeapAllocatedSize()` 返回 allocator 计为已分配的字节；`getNativeHeapSize()` 与 `getNativeHeapFreeSize()` 反映 allocator heap 的规模与空闲量。Native PSS/RSS 还受页驻留、共享、swap、直接 `mmap` 和统计时刻影响。`Native PSS - allocated bytes` 不能直接命名为碎片。
 
-[已验证: 官方文档, developer.android.com/reference/android/util/LruCache]
+### 5.1 用 heapprofd 看操作差分
 
-### 响应系统内存压力
+heapprofd 对 `malloc/free` 和 `new/delete` 采样。下面的命令每隔一段时间保存 continuous dump，便于比较业务操作前后的 live allocation：
 
-`LruCache` 的淘汰只在缓存满时触发，但系统压力往往更早出现。缓存收缩策略要按版本段理解：
-
-- API 33 及以下，`onTrimMemory()` 还会投递 `TRIM_MEMORY_RUNNING_*`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 这类更细的等级。
-- API 34 起，这些等级不再投递给 App；API 35 又把相关常量标成 deprecated。现代版本里，App 侧最稳定的信号主要是 `TRIM_MEMORY_UI_HIDDEN` 和 `TRIM_MEMORY_BACKGROUND`，更细的系统压力判断要回到 RSS、PSS、Perfetto、logcat 和冷启动证据。
-
-```java
-@Override
-public void onTrimMemory(int level) {
-    if (level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
-        // 进程进入 LRU 区域，尽快收缩后台缓存
-        imageCache.evictAll();
-        return;
-    }
-    if (level == ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
-        // UI 不可见，先释放 UI 相关缓存
-        imageCache.trimToSize(imageCache.size() / 2);
-    }
-}
+```bash
+tools/heap_profile android -n com.example.app -c 5000
 ```
 
-`trimToSize()` 仍然按 LRU 顺序淘汰条目，适合做温和收缩；`evictAll()` 适合在进程退到后台队列后直接清空可再生缓存。如果项目还需要连续的系统余量信号，应该接 RSS 趋势、Perfetto 或系统 health / headroom 能力，不要继续把缓存策略绑定在已经不再投递的 trim 常量上。
+`-c 5000` 表示 5000 ms 的快照间隔。默认 sampling interval 是 4096 bytes，含义是平均每分配相应字节量产生一次样本；它不是单次分配大小过滤条件。结果还受采集开始时刻、buffer overrun、符号化和直接 `mmap` 影响。
 
-[已验证: 官方文档, developer.android.com/reference/android/content/ComponentCallbacks2]
+若 live allocations 在清理后下降而 Native RSS/PSS 保持较高，可以继续检查 allocator 保留、页内仍有其他活对象、直接映射和图形资源。若 live allocations 也按同一调用栈增长，应回到分配 owner 和释放路径。
 
-### entryRemoved 的资源释放
+### 5.2 降低 allocator 压力
 
-当条目从 `LruCache` 中被淘汰时，`entryRemoved()` 方法会被回调。它适合释放缓存条目持有的明确资源，但普通 Bitmap 缓存不要默认在这里调用 `recycle()`：
+- 固定尺寸、高频复用的音视频或网络 buffer 可以使用有上限的池。
+- 同一阶段创建并一起销毁的对象可使用 arena/region，但 arena 自身也要设 hard limit。
+- 每帧或每个音频包创建不同尺寸临时块，会增加 allocator 工作量；稳定的环形缓冲区通常更容易控制。
+- 池化只适合复用收益高、释放点清楚的对象。池没有容量限制时，它会成为另一种缓存增长。
 
-```java
-@Override
-protected void entryRemoved(boolean evicted, String key,
-        Bitmap oldValue, Bitmap newValue) {
-    // LruCache 淘汰只移除缓存这一条强引用。
-    // 如果 value 持有 Closeable / 硬件句柄，在这里 release / close；
-    // 普通 Bitmap 让最后一个强引用消失后交给 GC 回收。
-}
+## 6. 进程碎片与物理页碎片是两层问题
+
+应用常见的 malloc 碎片发生在虚拟地址空间和 allocator 管理的页面内。普通匿名内存可以由不连续的物理页映射成连续虚拟地址，物理页不连续不会直接让普通小块 `malloc` 失败。
+
+物理页碎片影响的是高阶连续物理页需求、部分 DMA/CMA 分配、大页等路径。`android17-6.18-2026-06_r6` 中：
+
+- `mm/page_alloc.c` 的 buddy allocator 按 order 管理空闲页块，并在相邻 buddy 都空闲时合并。
+- `mm/compaction.c` 隔离可迁移页和空闲页，通过迁移形成更高 order 的空闲块。
+
+因此，App 侧看到一次 Native 分配失败时，要区分：
+
+| 场景 | 可能约束 |
+| --- | --- |
+| 64 位普通 `malloc` | allocator live set、地址空间、提交失败、进程或系统限制 |
+| 32 位大块映射 | 连续虚拟地址范围 |
+| Camera / Codec / GPU buffer | DMA-BUF、CMA、驱动与物理页条件 |
+| 大页或高阶内核分配 | buddy 空闲 order、迁移类型、compaction 成本 |
+
+应用无法用清缓存直接命令内核完成物理页规整。更有效的工作是缩小和稳定 buffer 规格、及时关闭 Surface/Image/Codec、限制并发数量，并让系统/OEM 侧用 page allocation 与 compaction tracepoint 检查高阶页路径。
+
+源码锚点：
+
+- [`mm/page_alloc.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/page_alloc.c)
+- [`mm/compaction.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/compaction.c)
+
+## 7. `mmap`、Graphics 与线程栈
+
+### 7.1 匿名映射和文件映射
+
+`RssAnon` 增长可能来自 malloc arena、直接匿名 `mmap`、线程栈或运行时 heap；`RssFile` 增长可能来自代码、共享库和被触碰的文件页；`RssShmem` 涉及共享内存。查看 `/proc/<pid>/smaps` 的 mapping name、Pss、Private Dirty 和 VmFlags，才能把页归到创建者。
+
+文件页在需要时可由内核回收，当前驻留不等于业务持有同等数量的脏内存。比较两次 RSS 时，要记录系统压力和进程状态。
+
+### 7.2 Graphics 与 DMA-BUF
+
+`Debug.MemoryInfo` 的 Graphics 摘要依赖 memtrack HAL 和设备实现。Android 17 的 AIDL `IMemtrack` 负责报告 smaps 难以覆盖的 DMA-BUF PSS 与 GPU private allocation，但设备支持度和驱动归属精度仍有差异。
+
+排查 Graphics 增长时，优先核对 SurfaceView、TextureView、ImageReader、MediaCodec、Camera、Vulkan image 和 WebView renderer 的生命周期。平台调试环境可结合 bugreport、memtrack、SurfaceFlinger 和可用的 DMA-BUF 统计；普通 App 不应假设 `dmabuf_dump` 或特定 sysfs 节点在所有 user build 都开放。
+
+### 7.3 线程栈
+
+线程创建会预留虚拟地址空间，被触碰的栈页会进入 RSS。线程池没有上限、每个会话创建专用线程、Native 库线程未退出，都可能造成阶梯增长。把 `Threads`、Stack summary 和线程名称与业务操作次数放在同一时间轴上，能很快识别这类问题。
+
+## 8. 监控指标怎样组合
+
+Android 17 的 `Debug.java` 提供 `getRss()`、`getPss()`、`getNativeHeapAllocatedSize()` 等接口。`getRss()` 自 API 35 公开，读取成本低于需要共享页分摊的 PSS；PSS 适合低频校准，不适合高频 timer。
+
+推荐组合如下：
+
+| 指标 | 用途 | 不能独自回答的问题 |
+| --- | --- | --- |
+| Java used / max | ART heap 使用量与预算 | 对象由谁持有 |
+| Native allocated | allocator live allocation 规模 | Native RSS 与碎片量 |
+| RSS、RssAnon、RssFile、RssShmem | 驻留趋势和大类变化 | 共享页应分给谁 |
+| PSS / SwapPss | 跨共享映射的 footprint 校准 | LMKD 或 Memory Limiter 的唯一决策 |
+| Graphics / memtrack | smaps 外的图形与设备内存 | 每台设备都完整记账 |
+| Threads / Stack | 线程与已触碰栈页趋势 | 线程为何创建 |
+| cache size / eviction / hit rate | 预算是否执行、收益是否存在 | 缓存外 owner 是否仍持有对象 |
+
+线上采样应绑定业务状态变更，例如页面退出、前后台切换、长任务完成和异常阈值越过。固定秒级 PSS 轮询会增加成本，也容易得到系统缓存值。
+
+### 8.1 4 KB 与 16 KB page size
+
+Android 15 起，AOSP 支持 16 KB page size 设备。更大的页会改变映射对齐、尾页浪费、页表行为和 RSS/PSS 的最小变化粒度。跨设备基线应按 page size 分组，并用下面的命令记录：
+
+```bash
+adb shell getconf PAGE_SIZE
 ```
 
-对本章覆盖的 Android 8.0（API 26）及以上，Bitmap 像素数据在 Native Heap 中，Bitmap 对象不可达后由 GC 触发释放。`recycle()` 不是缓存淘汰的通用动作；只有确定没有任何显示引用或缓存引用时才可以主动调用，且官方推荐主要针对 Android 2.3.3（API 10）及以下的历史内存管理方式。
+同一业务在 16 KB 设备上的 footprint 方向不能只靠页大小推导；二进制对齐、mapping 数量、分配形态和设备实现都会参与结果。
 
-[已验证: 官方文档, developer.android.com/topic/performance/graphics/manage-memory]
+## 9. Android 17 App Memory Limiter
 
-## 内存增长的监控指标
+Android 17（API 37）在部分设备上启用基于设备总 RAM 档位的 App memory limits，且行为变更对运行在 Android 17 上的 App 生效，不以 `targetSdkVersion` 为前提。平台没有给应用提供一个可当作通用预算的固定 MB 数。
 
-知道问题存在和能系统性地发现问题，是两件不同的事。生产环境需要一套指标体系来持续监控内存增长趋势。
+`android-17.0.0_r1` 的 `services/core/java/com/android/server/am/MemoryLimiter.java` 显示：
 
-### PSS 趋势
+- visible 与 not-visible proc state 可以配置不同限制。
+- Native 层对 cgroup `memory.high` 和 `memory.swap.high` 应用限制。
+- 越限后系统可采集诊断数据，并根据配置终止进程。
+- 功能是否启用、是否执行终止以及具体限制由设备配置和 feature flag 决定。
 
-PSS（Proportional Set Size）仍然是理解进程真实物理内存占用的重要口径，但更适合做低频校准，不适合做秒级时序指标。
+若进程受此机制影响，`ApplicationExitInfo` 的 reason 为 `REASON_OTHER`，description 包含 `MemoryLimiter:AnonSwap`。这条证据要与三种机制分开：
 
-一方面，PSS 查询本身成本高。Android 16 的 `Debug.getPss()` 路径会通过 `ProcMemInfo.SmapsOrRollup()` 聚合 `smaps_rollup` / `smaps`，并叠加 memtrack 与 swapPss；它适合低频校准，不适合高频轮询。Android 14+ 系统侧更快的 PSS 采集路径可能被节流，App 内同进程 `Debug.getPss()` 不应被写成通用秒级指标。把 PSS 放在 30 秒、1 分钟或页面切换点上做校准更稳妥，连续趋势更适合交给 RSS、Java Heap 和 Native Heap 指标。
+- ART heap limit：Java/Kotlin 分配可能抛出 `OutOfMemoryError`。
+- LMKD：系统压力下按进程重要性与回收收益选择目标。
+- Memory Limiter：针对单个 App 进程的 cgroup 内存与 swap 阈值。
 
-Android 15 的 16KB Page Size 还会改变这组指标的解释方式。页变大以后，TLB miss 和页表开销会下降，但小块分配的内部碎片会变多。同样一段业务路径，在 16KB 设备上看到的 RSS / PSS 往往会比 4KB 设备更高。跨设备比对内存曲线前，先用 `adb shell getconf PAGE_SIZE` 确认页大小，再判断增长是不是异常。
+下面的 Android 17 shell 命令用于查看支持状态，并在测试设备上施加受控限制：
 
-在实际工程里，更稳妥的组合是三层指标一起看：
-
-- **RSS**：Android 15/16 在编译 SDK 与 flagged API 可用时可用 `Debug.getRss()`；Android 8-14 用 `/proc/self/status` 的 `VmRSS`、`/proc/self/statm` 或低频 `dumpsys meminfo` 看驻留页变化
-- **Java Heap**：用 `Runtime.getRuntime()` 看托管堆预算和回落幅度
-- **Native Heap**：用 `Debug.getNativeHeapAllocatedSize()` 看 Native 分配是否持续抬高
-
-PSS 保留给低频校准和回归比对。如果线上需要在异常发生时补抓现场，Android 15+ 的 `ProfilingManager` 更适合触发 system trace / heap profile，而不是靠高频轮询 PSS。
-
-[已验证: 官方文档, developer.android.com/reference/android/os/Debug#getPss()；另见 src/part3-tools/ch14-other-tools/07-profiling-manager.md（ProfilingManager）]
-
-### Java Heap 使用率趋势
-
-除了 PSS，Java Heap 的使用率趋势也是关键指标。可以通过 `Runtime.getRuntime()` 获取：
-
-```java
-Runtime runtime = Runtime.getRuntime();
-long maxMemory = runtime.maxMemory();     // 应用最大可用 Heap
-long totalMemory = runtime.totalMemory(); // 当前已分配的 Heap
-long freeMemory = runtime.freeMemory();   // 当前已分配 Heap 中的空闲部分
-long usedMemory = totalMemory - freeMemory; // 实际使用的 Heap
-float heapUsageRatio = (float) usedMemory / maxMemory; // Heap 使用率
+```bash
+adb shell am memory-limiter status
+adb shell am memory-limiter manual <pid> <limit-in-mb>
+adb shell am memory-limiter manual <pid> none
 ```
 
-Java Heap 使用率趋势的分析方法和 PSS 类似：如果在使用过程中持续上升且回落幅度越来越小，说明有持续增长问题。特别要注意的是，即使 Heap 使用率没有到 100%，如果持续在 75% 以上，GC 的频率会显著增加（因为 ART 在 Heap 快满时会更频繁地触发 GC），导致应用出现卡顿。这就是 §10.6 会详细讨论的"内存抖动"问题。
+这些命令在未启用该机制的设备上没有效果。`manual` 适合验证降级、状态保存和重启恢复，不能用极低限制产生的数据代替正常设备基线。
 
-### Native Heap 与 Graphics 内存
+Android 17 的 `ProfilingTrigger.TRIGGER_TYPE_OOM` 可请求 OOM 时的 Java heap dump；自定义 `UncaughtExceptionHandler` 必须继续调用默认 handler，否则该 trigger 无法生效。`TRIGGER_TYPE_ANOMALY` 可在系统识别异常行为时返回与异常类型对应的 artifact。触发式采集有系统限流，也可能没有 artifact，结果文件还需要应用自行管理。它们补充线上证据，不负责判断缓存上限和引用所有权。
 
-对于使用 Native 库较多的应用（音视频、游戏引擎、Flutter），Native Heap 和 Graphics 内存的监控同样重要。`Debug.MemoryInfo` 提供了 `getTotalPrivateDirty()` 和 `getTotalPss()` 方法来获取更细粒度的数据。
+## 10. WebView 的进程级增长
 
-Graphics 内存（GPU 纹理、Buffer）的监控可以通过 `dumpsys gpu` 或 `memtrack` HAL 来实现。如果应用大量使用图片、视频或 3D 渲染，Graphics 内存的持续增长是一个常见但容易被忽视的问题。
+WebView 初始化会带来 Chromium、V8、Blink、代码页、缓存和 renderer 进程成本。Android O 及以上 WebView 可使用独立 sandboxed renderer；同一应用进程中的多个 WebView 可能共享 renderer，所以单个 WebView 销毁后 renderer footprint 未必同步消失。
 
-[待补充: Perfetto 中 Java Heap / Native Heap / Graphics Track 的 Trace 截图]
+治理时注意：
 
-### 监控数据的可视化
+- WebView 从 View hierarchy 移除且不再使用后，在创建它的线程调用 `destroy()`；调用后不能再使用该实例。
+- 用 `WebViewClient.onRenderProcessGone()` 处理 renderer 退出，不能假设 renderer 永远存在。
+- 多个应用进程都使用 WebView 时，要在初始化前配置各自的数据目录 suffix；多数应用更适合只允许一个进程使用 WebView，并在其他长寿命进程调用 `WebView.disableWebView()`。
+- `WebSettings` 的 cache mode、DOM storage 等开关影响页面行为和存储语义，无法提供精确的进程内存上限。
+- 把 WebView 放进独立应用进程可以隔离故障和整进程回收，但会增加 IPC、冷启动、登录态同步和状态恢复成本，应作为架构决策评估。
 
-采集到 PSS 和 Heap 数据后，需要将它们可视化才能发现趋势。可以按三个层次观察：
+WebView 基线要同时记录 App 进程、renderer 进程和 GPU/Graphics 分类。只看主进程 PSS 会漏掉一部分成本。
 
-1. **按会话聚合**：将一次完整使用过程（从打开应用到退出）的所有采样点连成一条曲线
-2. **多会话对比**：将多次使用过程的曲线叠在一起，观察是否有会话级别的增长趋势
-3. **分位数监控**：关注 P95 和 P99 的 PSS 值，而不仅仅是平均值。极端值往往是最需要关注的问题
+## 11. 长时间运行 App 的预算策略
 
-## 内存碎片化的检测与应对
+音乐、导航、运动追踪、IM 和 RTC 场景需要把“运行时间”作为基线维度：
 
-### 碎片化的本质
+- 数据流使用有上限的 ring buffer 或分页窗口，历史数据及时持久化。
+- 图片、地图瓦片、波形、字幕和模型缓存分别设 hard limit。
+- 前台、不可见、后台服务三个状态使用不同预算。
+- 音视频 codec、Surface、Image 和 Native session 由会话 owner 成对关闭。
+- 周期任务复用线程与 buffer，监控每轮结束后的 live set。
+- 发生 Memory Limiter、LMK、OOM 或 renderer exit 后验证状态恢复，而不只验证进程存活。
 
-理解碎片化需要区分两个层面：
+预算值应来自目标设备分层和固定场景的分位数数据，并保留足够系统余量。不能复制其他产品的固定 MB 数，也不能把单台旗舰机的峰值当成全量设备安全线。
 
-**物理内存碎片化**是指空闲的物理页面在页帧号（PFN）上不连续，导致无法合并成高阶页面（order > 0 的连续物理块）。这会影响内核的伙伴分配器——当需要分配连续物理内存（如相机 buffer、GPU buffer）时，即使总空闲内存充足，也可能因为碎片化而分配失败或分配变慢。
+## 12. 排查路径
 
-**虚拟内存碎片化**是指进程的虚拟地址空间被大量小尺寸的映射分割，导致没有足够大的连续虚拟地址范围来满足新的 mmap 请求。对于 32 位进程（虚拟地址空间只有 4 GB），这个问题尤其严重。
+| 观察 | 下一份证据 | 常见治理方向 |
+| --- | --- | --- |
+| Java used 与对象数同增 | heap dump、dominator、GC Root | 生命周期、缓存 hard limit、分页 |
+| Native allocated 同调用栈增长 | heapprofd continuous dump | 释放路径、buffer 复用、池上限 |
+| Native allocated 回落，RssAnon 不回落 | smaps、allocator 规模、直接 mmap | arena、页内活对象、映射释放 |
+| Graphics 增长 | memtrack、Surface/Buffer 生命周期 | Image/Surface/Codec 关闭、并发限制 |
+| Threads 与 Stack 增长 | 线程列表、创建栈 | 线程池上限、退出条件 |
+| 主进程稳定，总 PSS 增长 | 子进程与 renderer 列表 | 多进程预算、进程生命周期 |
+| Android 17 被系统终止 | `ApplicationExitInfo` description | Memory Limiter 诊断、状态恢复、预算压缩 |
 
-[已验证: 来源见 Cubox/OPPO内存反碎片优化原理-2022-10-26.md]
+## 版本边界
 
-### Native Heap 碎片化的检测
+- Android 8.0（API 26）起，Bitmap pixel data 位于 Native heap。
+- Android 10 起，heapprofd 提供 Native allocation sampling。
+- Android 14（API 34）起，App 不再收到 `TRIM_MEMORY_RUNNING_*`、`MODERATE`、`COMPLETE`；`UI_HIDDEN` 与 `BACKGROUND` 仍可使用。
+- Android 15（API 35）起，AOSP 支持 16 KB page size 设备，`Debug.getRss()` 成为公开 API，`ProfilingManager` 提供 App 请求式采集。
+- Android 17（API 37）在部分设备启用 App Memory Limiter，并增加 OOM 与 anomaly profiling trigger。
 
-Native Heap 的碎片化在应用层面很难直接量化，但可以通过以下间接指标判断：
+## 检查清单
 
-1. **PSS 与 Alloc 的差距**：通过 `dumpsys meminfo` 观察 Native Heap 的 Pss 和 Alloc 值。如果 Pss 远大于 Alloc，说明有大量已释放但无法归还给操作系统的内存（即碎片化空洞）。
+- 增长来自 Java、Native allocator、mmap、Graphics、线程还是其他进程？
+- 基线是否排除了初始化和预热阶段？
+- 业务操作、清理和采样点是否固定？
+- 缓存是否有 hard limit、收缩目标和统一计量单位？
+- `LruCache` 淘汰后是否还有其他 owner 保存对象？
+- Native live allocation 与 resident footprint 是否分开解释？
+- 普通 malloc 碎片与内核高阶物理页碎片是否分开？
+- page size、ABI、进程名和设备档位是否进入基线维度？
+- Android 17 退出记录是否检查 `MemoryLimiter:AnonSwap`？
+- Profiling artifact 是否有访问控制、保留期限和失败兜底？
 
-2. **分配失败日志**：当 Native 层的 `malloc` 或 `mmap` 因为碎片化而失败时，logcat 中可能出现类似 `failed due to fragmentation (required contiguous free X bytes, largest contiguous free Y bytes)` 的日志。
+## 与其他章节的关系
 
-3. **heapprofd 连续采样**：通过 heapprofd 对 Native 层进行 continuous dump，对比不同时间点的分配快照。如果分配总量变化不大但 PSS 在增长，说明碎片化在加剧。
-
-[已验证: 官方文档, perfetto.dev/docs/data-sources/native-heap-profiling]
-
-### 碎片化的应对策略
-
-**应用层面：**
-
-- **使用内存池**：对于频繁分配/释放的固定大小对象，使用预分配的内存池（Object Pool）替代 malloc/free。内存池一次性分配一大块内存，内部自行管理分配和回收，避免了碎片化。
-- **减少小尺寸分配**：尽量合并小的内存请求为大的批量请求。比如音频解码时，与其每帧分配一个 PCM buffer，不如预分配一个足够大的环形 buffer。
-- **使用 Arena/Region 分配器**：将同一生命周期的对象分配在同一个 Arena 中，释放时一次性释放整个 Arena，不会产生碎片。这在游戏引擎和数据库系统中很常见。
-
-**系统层面：**
-
-一些厂商会在内核里做反碎片处理，例如按页迁移类型整理空闲页、把小块虚拟映射整理到更集中的地址范围，目标都是减少高阶页分配失败和大块虚拟地址被零散映射打碎。
-
-这些优化属于 OEM / 系统层面的工作，公开资料里的命名并不完全统一。对 App 开发者来说，更有用的结论是：相同总内存下，分配形态越稳定、对象生命周期越集中，系统越容易把空闲页合并回来，连续物理页和连续虚拟地址也越容易保住。
-
-[已验证: 来源见 Cubox/OPPO内存反碎片优化原理-2022-10-26.md]
-
-## WebView 内存增长问题与多进程 WebView
-
-前面讨论的增长类型主要发生在应用自身的代码中。但有一类组件，它带来的内存增长往往超出开发者的预期——WebView。Chromium 渲染引擎本身的内存开销很高。在多进程 WebView 中，WebView 会关联到 renderer 进程，但多个 WebView 可能共享同一个 renderer；一个 renderer 的终止也可能影响多个 WebView。V8 JavaScript 引擎的堆、Blink 渲染引擎的 DOM 树、GPU 纹理缓存等进程级开销都要纳入预算。
-
-在一个典型的混合应用中（原生 + WebView），如果用户在 WebView 中连续浏览多个页面，WebView 内部的缓存（HTTP 缓存、图片缓存、JS Heap）会持续增长。还要看 WebView 进程级数据结构（如 Visited Links 表、Service Worker 缓存）的生命周期：它们与 WebView 进程绑定，即使销毁 WebView 实例也可能无法完全释放。
-
-[来源: Cubox/WebView 经历的各种干货方案分享-2024-11-28.md]
-
-针对 WebView 的内存增长，有几种有效的策略：
-
-**及时销毁 WebView 实例**：在 Activity/Fragment 销毁时，必须显式调用 `webView.destroy()`，否则 WebView 关联的 Native 资源无法释放。
-
-**使用多进程 WebView**：对于 WebView 使用量大的应用（如小程序框架），可以将 WebView 运行在独立的进程中。当 WebView 进程的内存增长到一定程度时，直接杀掉整个进程重建，释放 WebView 进程持有的内存。微信的小程序框架就是这么做的——每个小程序运行在独立的 WebView 进程中，进程退出后相关内存被回收。
-
-**限制 WebView 缓存**：通过 `WebSettings` 控制 WebView 的缓存行为，比如禁用 DOM Storage、限制数据库大小等。
-
-## 长时间运行 App 的内存管理策略
-
-前面讨论的治理手段适用于大多数应用的日常使用场景。但某些类型的应用天然需要长时间运行：音乐播放器、导航应用、运动追踪器、IM 应用。这类应用的内存管理需要一套不同于普通应用的策略。
-
-**设定全局内存预算**：根据目标设备的典型内存配置，为应用设定一个总的内存预算（比如 200 MB），然后将预算分配到各个模块：图片缓存 50 MB、音视频缓冲区 40 MB、数据缓存 30 MB、其他 80 MB。每个模块需要在预算内自行管理分配和释放。
-
-**定期自检与收缩**：在应用后台运行时，定期检查内存占用。如果超过预算阈值，主动释放非关键资源。比如音乐播放器在后台播放时，可以释放专辑封面缓存、歌词缓存等非必要数据。
-
-**按版本处理 trim 回调**：API 33 及以下还能根据 `TRIM_MEMORY_RUNNING_*` 等级细分策略；API 34+ 只能把 `TRIM_MEMORY_UI_HIDDEN` 和 `TRIM_MEMORY_BACKGROUND` 当作粗粒度信号。长生命周期应用的缓存治理要建立在预算、自检和后台收缩上，不能继续依赖已经不再投递的 trim 常量。
-
-**避免在后台持续累积数据**：长生命周期应用的一个常见错误是在后台持续接收数据并缓存在内存中。比如 IM 应用在后台持续接收消息，如果把所有未读消息都保存在内存中，运行一整天后内存占用可能翻倍。正确的做法是在进入后台后限制内存缓存条目数，超过限制的数据持久化到数据库。
-
-[待验证: 音乐播放器类应用在 Android 16 上的典型内存预算参考值]
-
-## 与其他机制的关系
-
-内存持续增长问题横跨了多个系统层面的知识：
-
-- **与 §10.1（App 内存分析）的关系**：本章讨论的增长类型判定（泄漏 vs 非泄漏）和监控指标（PSS/Heap 趋势）都依赖于 §10.1 介绍的分析工具
-- **与 §10.2（内存泄漏）的关系**：本章和 §10.2 是一对互补章节——§10.2 处理"忘了释放"的问题，本章处理"没限制上限"的问题
-- **与 §4.3（ART 虚拟机内存管理）的关系**：理解 ART 的 GC 机制和 Heap 结构，有助于判断增长是 Java 层还是 Native 层的
-- **与 §10.6（内存抖动与频繁 GC）的关系**：持续增长会导致 Heap 使用率居高不下，进而触发频繁 GC，形成"增长→GC 压力→卡顿"的恶性循环
-
-## 常见问题与误区
-
-### "内存没泄漏就不会 OOM"
-
-这类问题要拆成三条路径看：
-
-- **Java Heap OOM**：应用达到设备给当前进程的托管堆上限后继续分配 Java / Kotlin 对象，ART 抛出 `OutOfMemoryError`。
-- **Native / 虚拟地址分配失败**：Native Heap、`mmap`、线程栈、图形映射等持续增长，可能导致 `malloc` / `mmap` 失败；32 位进程还要看连续虚拟地址空间。
-- **LMK / lmkd 回收**：系统出现内存压力时，`lmkd` 结合 PSI / vmpressure、`oom_adj_score`、进程重要性和内存收益选择目标进程。PSS / RSS 是风险指标，不是“PSS 到某个进程上限就触发 OOM”的单一条件。
-
-### "`LruCache` 用上就能控制内存"
-
-`LruCache` 只解决了"有限容量"的问题，但如果 `maxSize` 设置不合理（比如设得太大），缓存依然会占用过多内存。另外，`LruCache` 只管理 `put` 和 `get` 操作涉及的条目，如果你的代码在 `LruCache` 之外还持有对这些条目的引用（比如在某个全局列表中同时缓存了 Bitmap 引用），那么 `LruCache` 淘汰这些条目后，它们不会被 GC 回收，等于缓存限制失效了。
-
-### "Native 碎片化只能靠系统解决"
-
-虽然物理内存碎片化属于系统层面的问题，但 App 开发者可以通过优化自身的内存分配模式来减轻碎片化。使用内存池、避免频繁的小尺寸分配和释放、合理管理 Native 对象的生命周期，都能显著降低碎片化的程度。
-
-### "把所有东西都放到 LRU Cache 里就好"
-
-`LruCache` 适合管理可以被重新加载或计算的数据。对于那些重新获取成本很高或无法重新获取的数据（比如实时传感器数据、唯一的状态快照），不应该用 `LruCache` 管理，而应该有专门的持久化和加载策略。
+- [§10.1 App 内存分析](01-app-memory-analysis.md)：指标口径、采集工具和基线方法。
+- [§10.2 内存泄漏](02-memory-leak.md)：retained object、GC Root 与 Native 未释放路径。
+- [§10.6 内存抖动与频繁 GC](06-memory-churn.md)：高分配率与 GC/帧时间关联。
+- [§10.8 GPU 内存追踪](08-gpu-memory-tracking.md)：Graphics、DMA-BUF、Surface 与 GPU 资源归因。
+- [§4.5 App 内存优化](../../part1-fundamentals/ch04-memory/05-app-memory-optimization.md)：进程级内存预算与系统压力。
 
 ## 参考资料
 
-- AOSP 源码路径：`frameworks/base/core/java/android/util/LruCache.java`
-- Android 官方文档：[Manage your app's memory](https://developer.android.com/topic/performance/memory)
-- Android 官方文档：[LruCache Reference](https://developer.android.com/reference/android/util/LruCache)
-- Android 官方文档：[Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
-- Android 官方文档：[ProfilingManager Reference](https://developer.android.com/reference/android/os/ProfilingManager)
-- Perfetto heapprofd：[Native Heap Profiling](https://perfetto.dev/docs/data-sources/native-heap-profiling)
-- OPPO 内存反碎片优化（素材来源：Cubox/OPPO内存反碎片优化原理-2022-10-26.md）
-- Hummer 引擎内存稳定性研究（素材来源：Personal-Knowlodge/source/2026-03-08）
+- [AOSP `LruCache.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/util/LruCache.java)
+- [AOSP `Debug.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Debug.java)
+- [AOSP `ComponentCallbacks2.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ComponentCallbacks2.java)
+- [AOSP `MemoryLimiter.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java)
+- [AOSP `ProfilingTrigger.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java)
+- [Android 17：App memory limits](https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits)
+- [Android Developers：Memory allocation among processes](https://developer.android.com/topic/performance/memory-management)
+- [Android Developers：Managing Bitmap Memory](https://developer.android.com/topic/performance/graphics/manage-memory)
+- [Android Developers：`LruCache`](https://developer.android.com/reference/android/util/LruCache)
+- [Android Developers：`ComponentCallbacks2`](https://developer.android.com/reference/android/content/ComponentCallbacks2)
+- [Android Developers：WebView](https://developer.android.com/reference/android/webkit/WebView)
+- [Android Developers：Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
+- [Perfetto：Native heap profiler](https://perfetto.dev/docs/data-sources/native-heap-profiler)
+- [素材：OPPO内存反碎片优化原理]
+- [素材：RTC 性能自动化工具在内存优化场景下的实践]
+- [素材：Hummer引擎优化系列 - 内存稳定性研究与优化]
 
 <!-- AIW-源码调研-2026-06-21 -->
-
-### 源码级内存监控机制
-
-基于 AOSP 源码分析，Android 内存监控存在三层采样路径和多重优化机制：
-
-#### libmeminfo 三层采样路径
-
-`system/core/libmeminfo/procmeminfo.cpp` 实现核心采样逻辑：
-
-```cpp
-bool ProcMemInfo::SmapsOrRollup(MemUsage* stats) const {
-    std::string path = ::android::base::StringPrintf(
-            "/proc/%d/%s", pid_, IsSmapsRollupSupported(pid_) ? "smaps_rollup" : "smaps");
-    return SmapsOrRollupFromFile(path, stats);
-}
-```
-
-三层路径：1) 主路径 SmapsOrRollup() → /proc/<pid>/smaps_rollup（优先）→ 回退到 smaps；2) 轻量级路径 SmapsOrRollupPss() → 仅提取 PSS；3) 重置路径 ResetWorkingSet() → /proc/<pid>/clear_refs。关键机制是 IsSmapsRollupSupported() 检查 smaps_rollup 文件存在性，API 16 开始引入此优化，相比传统 smaps 解析时间减少 60-70%。
-
-#### RateLimitingCache 新机制
-
-API 33+ 引入采样频率控制机制：
-
-```java
-private static final RateLimitingCache<MemoryInfo> mMemoryInfoCache =
-    new RateLimitingCache<>(10);
-
-if (Flags.rateLimitGetMemoryInfo()) {
-    // 使用缓存机制，避免重复采样
-    cachedInfo = mMemoryInfoCache.getIfPresent(pid);
-    if (cachedInfo != null) {
-        return cachedInfo;
-    }
-}
-```
-
-通过 Flags.rateLimitGetMemoryInfo() 控制开关，显著减少高频采样的 CPU 和 I/O 压力。
-
-#### PSS/RSS 双轨设计
-
-存在传统 PSS 路径和轻量级 RSS 路径：
-
-```java
-// 传统 PSS 路径：Debug.getPss() → libmeminfo → smaps_rollup
-long pss = Debug.getPss(pid, tmp, null);
-
-// 新 RSS 路径：Debug.getRss() → /proc/<pid>/status → VmRSS  
-long rss = Debug.getRssPid(env, clazz, pid, outMemtrack);
-
-// 通过 FLAG_REMOVE_APP_PROFILER_PSS_CONTROL 控制迁移
-```
-
-RSS 路径性能约 10x 提升，但精度略低。这种双轨设计为不同场景提供了灵活选择。
