@@ -110,13 +110,17 @@ last_deepseek_cn_review_at: 2026-07-11
 
 <!-- outline-end -->
 
-Agent 辅助 Perfetto 分析的核心目标是让 trace 调查可复查。人工看 Perfetto UI 很快，但结论常散在截图、口头判断和临时 SQL 里；换一台设备、换一个 trace、换一个人，很难复现同一条推理路径。本节把 `android/skills/profilers` 的分析思路整理为 AIW 的工作协议：输入要收齐，SQL 要先查 schema，scratchpad 只写事实，报告要说明证据、边界和补采项。
+Agent 辅助 Perfetto 分析的目标是让 trace 调查可复查。人工看 Perfetto UI 很快，但结论常散在截图、口头判断和临时 SQL 里；换一台设备、换一个 trace、换一个人，很难复现同一条推理路径。本节把 `android/skills/profilers` 固定 commit 中的分析约束整理为 AIW 协议，并吸收 Perfetto v57.1 官方 AI skill 的主机侧工具边界：输入要收齐，SQL 先查 schema，scratchpad 只写事实，报告说明证据、版本、边界和补采项。
 
 在 13.2 节 Trace 抓取、13.10 节 Perfetto SQL 常用模板、13.15 节 BufferQueue 阻塞案例的基础上，本节聚焦 Agent 调查流程：怎样提问、怎样取证、怎样避免过早下结论。
 
+本章的平台基线仍是 Android 17 / API 37 / `android-17.0.0_r1`。Perfetto v57.1 AI skill 安装在开发机，携带自己的 Trace Processor wrapper，不会把 Android 17 设备内的 Perfetto v54 平台快照升级到 v57.1。
+
 ## 协议定位：Perfetto 教程之外的调查规范
 
-`android/skills/profilers` 目录包含两个能力包：`perfetto-sql` 负责把自然语言取数意图转换成可执行的 Perfetto SQL；`perfetto-trace-analysis` 面向开放式 trace 调查，要求 Agent 建立 scratchpad、读取 CPU / Graphics / I/O / IPC / Memory / Power 六类提示，并在结论前完成依赖追踪和全局复核。[已验证: android/skills profilers, commit 4328beaf36f00265db107eb316f9add6b8764144]
+`android/skills/profilers` 在 commit `4328beaf36f00265db107eb316f9add6b8764144` 下包含两个能力包：`perfetto-sql` 把取数意图转换成可执行的 PerfettoSQL；`perfetto-trace-analysis` 面向开放式 trace 调查，要求 Agent 建立 scratchpad、读取 CPU / Graphics / I/O / IPC / Memory / Power 六类提示，并在结论前完成依赖追踪和全局复核。
+
+Perfetto v57.1 又发布了官方 Agent Skills-compatible skill。它教 Agent 调用 `trace_processor`、编写 PerfettoSQL、录制 Android trace，并提供 Android 内存与 GPU 引导流程；每种安装方式都携带 wrapper。两套 skill 的目录结构和具体指令不同，本章只把可复查原则提炼成项目协议，不把某个 skill 的内部文件名写成永久 API。
 
 这套协议和普通 Perfetto 教程的差异在这里：教程关注概念、UI 操作和案例解释；协议关注 Agent 行为约束。一次合格的 Agent 调查至少要留下四类材料：输入条件、查询语句、查询结果、排除过的方向。没有这些材料，报告里的“主线程卡在 Binder”“GPU 阻塞”“I/O 竞争”都只是口头判断。
 
@@ -134,15 +138,17 @@ Agent 开始分析 trace 之前要收齐最低限度的输入。输入越含糊�
 | Android 版本、设备、ROM | 必填 | 判断 FrameTimeline、Binder、dmabuf、power rail 等轨道可用性 | 报告降低可信度 |
 | 复现场景与时间窗 | 建议必填 | 缩小 slice / counter 查询范围 | 先查全局最长 slice 和异常帧定位窗口 |
 | 采集配置 | 建议必填 | 判断缺哪些 data source / atrace category | 把缺失字段写入补采建议 |
+| trace 散列值 | 建议必填 | 确认多人分析的是同一份输入 | 报告无法可靠复现 |
+| skill / Trace Processor 版本 | 必填 | 固定 schema、stdlib 和工具行为 | SQL 结果只能按未知工具版本解释 |
 | 期望回答的问题 | 必填 | 决定报告输出是定位、归因还是优化建议 | 先改写成可验证问题 |
 
-一个可分析的问题应该写成：“这份 trace 来自 Pixel 8 / Android 15，包名 `com.example.app`，复现冷启动首屏慢，采集包含 `sched`、`freq`、`am`、`wm`、`gfx`、`view`、`binder_driver`，希望确认慢在 App 主线程、系统服务、I/O 还是渲染提交。”这比“帮我看一下为什么慢”少很多歧义。
+一个可分析的问题应该写成：“这份 trace 来自 Android 17 / API 37 测试设备，包名 `com.example.app`，复现冷启动首屏慢，采集包含 `sched`、`freq`、`am`、`wm`、`gfx`、`view`、`binder_driver`，希望确认慢在 App 主线程、系统服务、I/O 还是渲染提交。”这比“帮我看一下为什么慢”少很多歧义。
 
 输入约束还应该反向检查采集质量。缺少 `sched` 时无法分离 wall time 和 CPU time；缺少 FrameTimeline 时 jank 只能退回到 `Choreographer#doFrame`、RenderThread 和 SurfaceFlinger 轨道；缺少 Binder 事件或 flow 时，跨进程等待可能断在客户端。采集规划可回到 13.2 节，线上证据包可回到 26.5 节。
 
 ## Scratchpad 证据链：事实和假设分开
 
-`perfetto-trace-analysis` 要求在 trace 同目录创建 scratchpad，文件名来自 trace 文件名加 `_analysis.md`。这个文件不能写“可能是”“看起来像”这类判断，只记录已经验证的事实：时间窗、线程、进程、slice、counter、SQL、结果、排除项。
+固定 commit 中的 `perfetto-trace-analysis` 要求在 trace 同目录创建 scratchpad，文件名来自 trace 文件名加 `_analysis.md`。在团队协议里，写入位置还要服从文件权限和数据处理规则：trace 目录只读或由外部系统管理时，把 scratchpad 放入获准的工作目录，并在报告中记录 trace 绝对路径与散列值。scratchpad 不写“可能是”“看起来像”这类判断，只记录已经验证的事实：时间窗、线程、进程、slice、counter、SQL、结果、排除项。
 
 下面的模板用于约束 scratchpad 内容。排版只是附带要求，每条记录都要能回到一次查询或一次 UI 观察。
 
@@ -152,13 +158,13 @@ Agent 开始分析 trace 之前要收齐最低限度的输入。输入越含糊�
 ## 输入
 - trace: /path/to/trace.perfetto-trace
 - package: com.example.app
-- device: Pixel 8, Android 15
+- device: test-device, Android 17 / API 37
 - question: 冷启动首屏慢，定位主耗时窗口和阻塞方
 
 ## 已验证事实
 | 时间窗(ns) | 对象 | 证据 | 结果 | 来源 |
 |---|---|---|---|---|
-| 1200000000-2200000000 | main thread | SQL-01 thread_state overlap | Running 180ms, Runnable 420ms, Sleeping 390ms | trace_processor CSV |
+| 1200000000-2200000000 | main thread | SQL-01 thread_state overlap | Running 190ms, Runnable 420ms, Sleeping 390ms | trace_processor CSV |
 | 1530000000-1620000000 | system_server binder thread | SQL-04 binder server slice | `PackageManager` 查询 86ms | trace_processor CSV |
 
 ## 排除项
@@ -176,7 +182,7 @@ Perfetto SQL 的风险不在 SQL 语法本身，而在表、字段、模块和�
 
 | 规则 | 操作要求 | 防止的问题 |
 |---|---|---|
-| 固定入口 | 使用项目根目录的 `./trace_processor`，必要时下载官方 wrapper | 查询只停在生成文本，或工具路径不稳定 |
+| 固定入口 | 官方 v57.1 skill 优先使用随 skill 安装的 wrapper；独立脚本固定 `trace_processor` 版本与校验值 | 工具在运行时漂移，或查询只停在生成文本 |
 | schema 检索 | 用 Perfetto stdlib / SQL table 文档确认表名、列名、模块名 | 编造字段、混用旧版本字段 |
 | stdlib 优先 | 优先查 `android.startup.startups`、`android.frames.timeline`、`android.frames.per_frame_metrics`、`sched.with_context`、`linux.cpu.utilization.process` 等具体模块；CPU 频率时间区间先 include `linux.cpu.frequency` 并查询 `cpu_frequency_counters`，进程/线程聚合频率再用 `linux.cpu.utilization.*`，`cpu_freq` 只表示 CPU/freq 维度，不是时间区间表；`android.frames` 是 package 名，不是可直接 include 的模块名 | 手写复杂 join 时漏掉边界，或把原始表名误写成 stdlib 模块 |
 | `utid/upid` | 线程和进程 join 使用 trace 内唯一 ID | `tid/pid` 复用导致错配 |
@@ -188,7 +194,12 @@ Perfetto SQL 的风险不在 SQL 语法本身，而在表、字段、模块和�
 这段 SQL 模板用于把目标进程主线程上的长 slice 与 `thread_state` 相交，回答“这段 wall time 里线程到底在运行还是等待”。执行前要把包名、slice 名和时间窗替换成当前 trace 的值。
 
 ```sql
-WITH target_process AS (
+WITH params AS (
+  SELECT
+    1200000000 AS window_start,
+    2200000000 AS window_end
+),
+target_process AS (
   SELECT process.upid, process.pid, process.name
   FROM process
   WHERE process.name = 'com.example.app'
@@ -200,11 +211,22 @@ target_thread AS (
   WHERE thread.tid = target_process.pid
 ),
 target_slice AS (
-  SELECT slice.id, slice.ts, IIF(slice.dur = -1, trace_end() - slice.ts, slice.dur) AS dur, slice.name
+  SELECT
+    slice.id,
+    MAX(slice.ts, params.window_start) AS ts,
+    MIN(
+      slice.ts + IIF(slice.dur = -1, trace_end() - slice.ts, slice.dur),
+      params.window_end
+    ) - MAX(slice.ts, params.window_start) AS dur,
+    slice.name
   FROM slice
   JOIN thread_track ON thread_track.id = slice.track_id
   JOIN target_thread ON target_thread.utid = thread_track.utid
+  CROSS JOIN params
   WHERE slice.name GLOB '*bindApplication*'
+    AND slice.ts < params.window_end
+    AND params.window_start <
+      slice.ts + IIF(slice.dur = -1, trace_end() - slice.ts, slice.dur)
   ORDER BY dur DESC
   LIMIT 1
 ),
@@ -216,7 +238,7 @@ overlap_state AS (
         target_slice.ts + target_slice.dur) - MAX(thread_state.ts, target_slice.ts) AS overlap_dur
   FROM thread_state
   JOIN target_thread ON target_thread.utid = thread_state.utid
-  JOIN target_slice
+  CROSS JOIN target_slice
   WHERE thread_state.ts < target_slice.ts + target_slice.dur
     AND target_slice.ts < thread_state.ts + IIF(thread_state.dur = -1, trace_end() - thread_state.ts, thread_state.dur)
 )
@@ -236,7 +258,7 @@ GROUP BY state_label
 ORDER BY dur_ms DESC;
 ```
 
-这条查询只回答状态分布，不直接给根因。Perfetto raw state 常见为 `Running`、`R/R+`、`S`、`D`，上面的 `state_label` 把它们映射成人类可读标签。`Running` 占比高，后续转向 CPU 采样、子 slice、频率和大核/小核分布；`Runnable` 占比高，转向调度竞争和同 CPU 其他线程；`Sleeping` 或 `Uninterruptible Sleep` 占比高，继续追 Binder、锁、I/O、futex 或内核等待。
+`target_slice` 先裁剪到问题窗口，状态时长之和才与报告中的目标 wall time 使用同一口径。这条查询只回答状态分布，不直接给根因。Perfetto raw state 常见为 `Running`、`R/R+`、`S`、`D`，上面的 `state_label` 把它们映射成人类可读标签。`Running` 占比高，后续转向 CPU 采样、子 slice、频率和大核/小核分布；`Runnable` 占比高，转向调度竞争和同 CPU 其他线程；`Sleeping` 或 `Uninterruptible Sleep` 占比高，继续追 Binder、锁、I/O、futex 或内核等待。
 
 ## 六类调查域：把开放问题拆成可执行动作
 
@@ -283,27 +305,43 @@ ORDER BY dur_ms DESC;
 这段查询用于复核目标窗口内的全局长 slice。它不负责归因，只负责提醒 Agent 是否漏掉更大的候选对象。
 
 ```sql
-WITH window AS (
+WITH params AS (
   SELECT 1200000000 AS start_ts, 2200000000 AS end_ts
+),
+candidate AS (
+  SELECT
+    process.name AS process_name,
+    thread.name AS thread_name,
+    slice.name AS slice_name,
+    slice.ts,
+    IIF(slice.dur = -1, trace_end() - slice.ts, slice.dur) AS dur,
+    params.start_ts,
+    params.end_ts
+  FROM slice
+  JOIN thread_track ON thread_track.id = slice.track_id
+  JOIN thread ON thread.utid = thread_track.utid
+  LEFT JOIN process ON process.upid = thread.upid
+  CROSS JOIN params
+  WHERE slice.ts < params.end_ts
+    AND params.start_ts <
+      slice.ts + IIF(slice.dur = -1, trace_end() - slice.ts, slice.dur)
 )
 SELECT
-  process.name AS process_name,
-  thread.name AS thread_name,
-  slice.name AS slice_name,
-  slice.ts,
-  IIF(slice.dur = -1, trace_end() - slice.ts, slice.dur) / 1000000.0 AS dur_ms
-FROM slice
-JOIN thread_track ON thread_track.id = slice.track_id
-JOIN thread ON thread.utid = thread_track.utid
-LEFT JOIN process ON process.upid = thread.upid
-JOIN window
-WHERE slice.ts < window.end_ts
-  AND window.start_ts < slice.ts + IIF(slice.dur = -1, trace_end() - slice.ts, slice.dur)
-ORDER BY dur_ms DESC
+  candidate.process_name,
+  candidate.thread_name,
+  candidate.slice_name,
+  candidate.ts,
+  candidate.dur / 1e6 AS slice_dur_ms,
+  (
+    MIN(candidate.ts + candidate.dur, candidate.end_ts) -
+    MAX(candidate.ts, candidate.start_ts)
+  ) / 1e6 AS overlap_ms
+FROM candidate
+ORDER BY overlap_ms DESC
 LIMIT 20;
 ```
 
-如果这条查询返回的前几项都来自同一进程、同一问题窗口，原来的假设可信度会上升；如果出现 `system_server`、SurfaceFlinger、kworker 或其他 App 的更长停顿，报告必须解释它们为何相关或为何被排除。
+`slice_dur_ms` 是完整 slice 时长，`overlap_ms` 才是它落入问题窗口的部分。排行使用 `overlap_ms`，避免一个跨越窗口的长 slice 按完整时长挤到首位。如果结果中出现 `system_server`、SurfaceFlinger、kworker 或其他 App 的长停顿，报告必须解释它们为何相关或为何被排除。
 
 ## 输出模板：证据表、阻塞方、边界与补采建议
 
@@ -326,24 +364,28 @@ Agent 的最终报告应该是一次工程调查记录，而不是 Perfetto UI �
 ## Trace 调查报告
 
 - trace: trace.perfetto-trace
+- trace_sha256: <sha256>
 - package: com.example.app
+- device: test-device, Android 17 / API 37
+- skill_source: android/skills@4328beaf36f00265db107eb316f9add6b8764144
+- trace_processor: v57.1
 - window: 1200ms - 2200ms
 - question: 冷启动首屏慢
 
 ### 结论
-1. 主线程目标窗口 wall time 1000ms，其中 Sleeping 390ms、Runnable 420ms、Running 180ms。
+1. 主线程目标窗口 wall time 1000ms，其中 Sleeping 390ms、Runnable 420ms、Running 190ms。
 2. 最大等待集中在 Binder 返回前，服务端 `system_server` 中 `PackageManager` 查询 slice 为 86ms。
 3. 当前 trace 未采集调用栈，无法把服务端耗时继续归到具体 Java 方法。
 
 ### 证据
 | 编号 | 证据 | 结果 |
 |---|---|---|
-| SQL-01 | 主线程 thread_state overlap | Running 180ms / Runnable 420ms / Sleeping 390ms |
+| SQL-01 | 主线程 thread_state overlap | Running 190ms / Runnable 420ms / Sleeping 390ms |
 | SQL-04 | Binder 服务端窗口 | `system_server` binder thread 86ms |
 | SQL-06 | 全局 D-state 排行 | 目标窗口未见超过 20ms 的 D-state |
 
 ### 补采
-- 增加 Binder 相关 data source / atrace category。
+- 启用 `binder_driver` ftrace 事件和与目标服务相关的 atrace category。
 - 增加 Java / native 调用栈采样，采样窗口覆盖 1100ms - 2300ms。
 ```
 
@@ -387,7 +429,7 @@ Perfetto SQL 模板一旦进入团队工作流，就要像代码一样测试。�
 - **边界 test**：覆盖空结果、未闭合 slice、跨窗口 overlap、无 FrameTimeline 等情况。
 - **语义 test**：用小 trace 或固定样例验证输出字段含义，例如状态占比之和是否等于目标窗口 overlap。
 
-Perfetto 官方文档说明 Trace Processor 本身大量依赖 diff test：输入 trace、查询或 metric，输出和 golden 文件比较。 AIW 的 SQL 模板不需要一开始就做到同样规模，但至少要把常用启动、帧、Binder、I/O、功耗模板纳入 smoke test。
+Perfetto 的 diff test 会把输入 trace、查询或 metric 的输出与 golden 文件比较。AIW 的 SQL 模板无需照搬整个上游测试体系，但至少要把常用启动、帧、Binder、I/O、功耗模板纳入 smoke test。
 
 ## 源码与 trace 关联
 
@@ -401,6 +443,16 @@ Perfetto 能告诉我们“哪段时间发生了什么”，但优化动作通�
 - **FrameTimeline / SurfaceFlinger → 图形栈章节**：队列、fence、BufferQueue、HWC 等机制回到 2.13、2.16、13.15，不在报告里重复写原理。
 
 源码关联要克制。trace 证据能证明“这个窗口里哪个对象慢或在等谁”，源码只能解释“为什么可能走到这里”以及“哪里可能改”。没有调用栈、没有符号、没有业务 marker 时，不要把 trace 现象硬写成代码根因。
+
+## 官方资料与固定版本
+
+- [`android/skills` Perfetto profilers，commit 4328beaf](https://github.com/android/skills/tree/4328beaf36f00265db107eb316f9add6b8764144/profilers)
+- [Perfetto v57.1 release notes](https://github.com/google/perfetto/releases/tag/v57.1)
+- [Using AI with Perfetto](https://perfetto.dev/docs/getting-started/using-ai)
+- [Trace Processor](https://perfetto.dev/docs/analysis/trace-processor)
+- [PerfettoSQL standard library](https://perfetto.dev/docs/analysis/stdlib-docs)
+- [SQL tables](https://perfetto.dev/docs/analysis/sql-tables)
+- [Trace Processor diff tests](https://perfetto.dev/docs/contributing/testing)
 
 ## 小结
 
