@@ -27,36 +27,46 @@ review_type: task9-deep-tech-review
 last_task9_review_log: logs/deep-review/2026-07-13-22-deep-review.md
 applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
 drafted_date: "2026-06-11"
-last_verified: "2026-07-29"
-last_verified_against: "AOSP android-17.0.0_r1 (PrimaryDexopter / ArtFileManager / ArtManagedInstallFileHelper / ArtManagerLocal / DexMetadataHelper / artd.cc / path_utils.cc / file_utils.cc / oat_file.cc / sdc_file.cc / PackageInstallerSession / dexopt.cpp)"
+last_verified: "2026-07-30"
+last_verified_against: "AOSP android-17.0.0_r1 (PackageInstallerSession / PackageManagerShellCommand / DexOptHelper / PrimaryDexopter / Dexopter / DexoptStatus / ReasonMapping / ArtFileManager / ArtManagedInstallFileHelper / DexMetadataHelper / artd / oat_file / sdc_file / path_utils); Configure ART"
 confidence: high
 sources:
   - type: aosp
-    path: "art/libartservice/service/java/com/android/server/art/PrimaryDexopter.java"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/PrimaryDexopter.java"
   - type: aosp
-    path: "art/libartservice/service/java/com/android/server/art/ArtFileManager.java"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java"
   - type: aosp
-    path: "art/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/model/DexoptStatus.java"
   - type: aosp
-    path: "art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ReasonMapping.java"
   - type: aosp
-    path: "art/libartservice/service/java/com/android/server/art/DexMetadataHelper.java"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtFileManager.java"
   - type: aosp
-    path: "art/artd/artd.cc"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java"
   - type: aosp
-    path: "art/libartbase/base/file_utils.cc"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtManagerLocal.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/DexMetadataHelper.java"
   - type: aosp
-    path: "frameworks/native/cmds/installd/dexopt.cpp"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/artd/artd.cc"
   - type: aosp
-    path: "art/artd/path_utils.cc"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/artd/path_utils.cc"
   - type: aosp
-    path: "art/runtime/oat/oat_file.cc"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/oat/oat_file.cc"
   - type: aosp
-    path: "art/runtime/oat/sdc_file.cc"
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/oat/sdc_file.cc"
   - type: aosp
-    path: "frameworks/base/core/java/android/content/pm/dex/DexMetadataHelper.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageInstallerSession.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageManagerShellCommand.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/pm/DexOptHelper.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/pm/dex/DexMetadataHelper.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/installd/dexopt.cpp"
+  - type: official
+    path: "https://source.android.com/docs/core/runtime/configure"
   - type: material
     path: "DeepResearch/2026-06-09-android17-cloud-compilation-sdm-dm-ondevice-flow.md"
   - type: material
@@ -101,7 +111,7 @@ SDM 只覆盖 base APK 与 split APK 内的 **primary dex**。动态生成或由
 
 ART Service 的 `DexMetadataHelper.getType()` 检查 ZIP 中的 `primary.prof` 与 `primary.vdex`，并把结果分成 `PROFILE`、`VDEX`、`PROFILE_AND_VDEX`、`NONE` 或 `ERROR`。`config.pb` 可以附带配置；缺少它时，ART Service 使用默认配置。
 
-这两个有效负载承担不同工作：
+这两个有效负载用途不同：
 
 - `primary.prof` 列出适合 `speed-profile` 的方法和类，可作为本机 dexopt 输入。
 - `primary.vdex` 保存验证相关数据。SDM 路径打开 AOT 代码时，运行时会从配套 DM 读取它。
@@ -184,7 +194,7 @@ Android 14 起，应用 dexopt 的调度入口已经迁到 ART Service。Android
 | `dex2oat` | 需要本机编译时生成 VDEX、ODEX 与可选 ART image |
 | ART runtime | 应用启动或加载 dex 时选择并映射兼容产物 |
 
-`installd` 仍承担安装系统中的其他受特权文件操作，但 `frameworks/native/cmds/installd/dexopt.cpp` 已不适合作为 Android 17 应用 dexopt 的中心流程图。把 DM Profile 合并和 SDM 调度都归给 `installd` 会掩盖 ART Service 与 `artd` 的现有边界。
+`installd` 仍处理安装系统中的其他受特权文件操作，但 `frameworks/native/cmds/installd/dexopt.cpp` 已不适合作为 Android 17 应用 dexopt 的中心流程图。把 DM Profile 合并和 SDM 调度都归给 `installd` 会掩盖 ART Service 与 `artd` 的现有边界。
 
 ### 2.3 ART 如何决定跳过本机编译
 
@@ -409,16 +419,19 @@ Baseline Profile 与 cloud profile 的覆盖来源不同。前者随应用构建
 
 ## 源码索引
 
-- [ArtManagedInstallFileHelper.java：DM/SDM 文件名与 signer 验证](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java)
-- [PrimaryDexopter.java：建立 SDC 与本机 dexopt 后清理](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/libartservice/service/java/com/android/server/art/PrimaryDexopter.java)
-- [ArtFileManager.java：SDM 只覆盖 primary dex](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtFileManager.java)
-- [DexMetadataHelper.java：DM 内容分类](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/libartservice/service/java/com/android/server/art/DexMetadataHelper.java)
-- [artd.cc：SDC 创建、路径校验与 dexopt 执行](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/artd/artd.cc)
-- [path_utils.cc：SDM/SDC 路径构造](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/artd/path_utils.cc)
-- [oat_file.cc：从 SDM 打开 ODEX、从 DM 打开 VDEX](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/oat/oat_file.cc)
-- [sdc_file.cc：SDC 的两个字段](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/oat/sdc_file.cc)
-- [PackageInstallerSession.java：安装会话验证结果处理](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageInstallerSession.java)
-- [DexMetadataHelper.java：平台侧 DM 归档验证](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/dex/DexMetadataHelper.java)
+- [ArtManagedInstallFileHelper.java：DM/SDM 文件名与 signer 验证](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtManagedInstallFileHelper.java)
+- [PrimaryDexopter.java：建立 SDC 与本机 dexopt 后清理](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/PrimaryDexopter.java)
+- [ArtFileManager.java：SDM 只覆盖 primary dex](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtFileManager.java)
+- [Dexopter.java：DM reason 与 dexopt 决策](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java)
+- [DexoptStatus.java：compiler filter、reason 与 location](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/model/DexoptStatus.java)
+- [DexMetadataHelper.java：DM 内容分类](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/DexMetadataHelper.java)
+- [artd.cc：SDC 创建、路径校验与 dexopt 执行](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/artd/artd.cc)
+- [path_utils.cc：SDM/SDC 路径构造](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/artd/path_utils.cc)
+- [oat_file.cc：从 SDM 打开 ODEX、从 DM 打开 VDEX](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/oat/oat_file.cc)
+- [sdc_file.cc：SDC 的两个字段](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/oat/sdc_file.cc)
+- [PackageInstallerSession.java：安装会话验证结果处理](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageInstallerSession.java)
+- [PackageManagerShellCommand.java：安装命令如何提交伴随文件](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageManagerShellCommand.java)
+- [DexMetadataHelper.java：平台侧 DM 归档验证](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/pm/dex/DexMetadataHelper.java)
 - [Configure ART：cloud profile、编译产物与 compiler filter](https://source.android.com/docs/core/runtime/configure)
 
 ## 相关章节
