@@ -7,11 +7,11 @@ pipeline_stage: ready-to-publish
 applicable_versions: "['Android 14.0 (API 34) - Android 17.0 (API 37)']"
 tags: "[power, battery, energy]"
 weight: "4"
-source_repos: "['frameworks/base/core/java/android/os/PowerManager.java', 'frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java', 'frameworks/base/core/java/android/os/BatteryStats.java', 'frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java', 'frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java', 'frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobInfo.java', 'frameworks/base/services/core/java/com/android/server/am/ActiveServices.java', 'frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java', 'frameworks/base/services/core/java/com/android/server/location/LocationManagerService.java', 'frameworks/base/services/core/java/com/android/server/location/injector/SystemLocationPowerSaveModeHelper.java']"
-last_verified: "2026-07-25"
-last_verified_against: "AOSP android-17.0.0_r1; linked AIW DeepResearch notes for Battery Saver/location, JobScheduler, Radio, Adaptive Battery/App Standby"
-confidence: medium-high
-sources: "AOSP android-17.0.0_r1 source paths listed in source_repos; DeepResearch/2026-06-17-battery-saver-location-power-policy-aosp-deep-dive.md; DeepResearch/2026-06-20-job-scheduler-throttling-mechanism.md; DeepResearch/2026-06-18-jobscheduler-source-verification.md; DeepResearch/2026-06-18-radio-power-state-machine-source-analysis.md; DeepResearch/2026-06-18-adaptive-battery-app-standby-coordination.md"
+source_repos: "['frameworks/base/core/java/android/os/PowerManager.java', 'frameworks/base/apex/jobscheduler/framework/java/android/app/AlarmManager.java', 'frameworks/base/core/java/android/os/BatteryStats.java', 'frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java', 'frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java', 'frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java', 'frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java', 'frameworks/base/services/core/java/com/android/server/am/ActiveServices.java', 'frameworks/base/services/core/java/com/android/server/location/injector/SystemLocationPowerSaveModeHelper.java', 'frameworks/base/services/core/java/com/android/server/location/provider/LocationProviderManager.java', 'frameworks/opt/telephony/src/java/com/android/internal/telephony/RadioModemProxy.java', 'hardware/interfaces/radio/aidl/android/hardware/radio/modem/IRadioModem.aidl', 'kernel/power/suspend.c', 'drivers/base/power/wakeup.c', 'mm/vmscan.c']"
+last_verified: "2026-07-31"
+last_verified_against: "AOSP android-17.0.0_r1; Android 17 / API 37 public API reference; Android common kernel android17-6.18-2026-06_r6; linked AIW DeepResearch notes"
+confidence: high
+sources: "AOSP android-17.0.0_r1 source paths listed in source_repos; Android Developers Android 17 features, JobScheduler API, foreground-service timeout, Doze/App Standby, and background-location documentation; Android common kernel android17-6.18-2026-06_r6; DeepResearch/2026-06-17-battery-saver-location-power-policy-aosp-deep-dive.md; DeepResearch/2026-06-20-job-scheduler-throttling-mechanism.md; DeepResearch/2026-06-18-jobscheduler-source-verification.md; DeepResearch/2026-06-18-radio-power-state-machine-source-analysis.md; DeepResearch/2026-06-18-adaptive-battery-app-standby-coordination.md"
 task2b_result: fixed
 task2b_state: fixed
 task9_state: pass-tech-review
@@ -34,1154 +34,583 @@ last_idle_audit_run_id: "20260725-183547-idle-audit-692dae4f"
 
 # 11.4 案例集
 
-下面 6 个案例覆盖 Android 功耗优化的主要场景：前台服务调度、定位策略、Radio 状态机、内存泄漏、Doze 兼容和批量任务调度。每个案例包含问题定位、系统机制分析和源码级优化方案。
+功耗问题很少由一行代码单独造成。常见链条是：应用发起工作，系统为它安排 CPU、网络、定位或存储资源，硬件进入高功耗状态，工作结束后资源又未及时释放。本章用六个案例说明怎样从业务现象追到系统证据，再把修复落到合适的 Android API。
 
-## 11.4.1 前台服务优化案例
+本文不给出通用的“节电百分比”。芯片、基带、信号、屏幕、温度、账号数据和 OEM 策略都会改变结果。没有 bugreport、trace、测试脚本与环境记录的数字，无法支撑工程决策。
 
-### 问题场景
-某社交应用在长时间运行时，用户反馈应用耗电异常。通过 Battery Historian 分析发现，前台服务存在频繁唤醒和 CPU 占用问题。
+## 11.4.0 案例分析的共同步骤
 
-### 分析过程
+每个案例都按同一组问题检查：
 
-#### 1. 问题定位
+1. **功能契约是什么**：用户能接受多大延迟？工作是否由用户发起？错过一次是否可恢复？
+2. **谁发起了资源请求**：记录 UID、线程、Job ID、WakeLock tag、定位 request、网络调用和时间戳。
+3. **系统为何准许或推迟**：检查 Doze、App Standby bucket、Battery Saver、后台限制、热状态和 Job quota。
+4. **硬件是否被激活**：CPU 运行不等于蜂窝基带发射，定位回调也不等于 GNSS 只被当前 UID 使用。证据必须区分资源层级。
+5. **修复是否破坏业务**：同时比较成功率、端到端延迟、重试量和能耗指标。
+
+推荐保留以下测试信息：
+
+| 类别 | 至少记录的内容 |
+|---|---|
+| 构建 | 设备型号、Android build、应用版本、target SDK |
+| 环境 | Wi-Fi/蜂窝、信号、温度区间、屏幕状态、充电状态 |
+| 负载 | 账号数据量、请求数量、文件大小、测试时长 |
+| 功能 | 成功率、延迟分布、丢失与重复次数 |
+| 系统 | bugreport、Perfetto、`dumpsys batterystats`、相关服务的 dumpsys |
+| 统计 | 样本数、预热规则、中位数与离散程度 |
+
+`BatteryStats` 和 Battery Historian 适合做 UID 归因与时间关联；设备支持的电源轨或外接功耗仪更适合测总能量。两者回答的问题不同，不能互相代替。
+
+## 11.4.1 案例一：用前台服务轮询消息
+
+### 故障代码
+
+下面的示例展示一种常见错误：为了保活，每五秒在前台服务中查一次服务端。
+
 ```java
-// 不合理的前台服务实现
-public class ForegroundService extends Service {
+public final class MessagePollingService extends Service {
+    private volatile boolean stopped;
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        startForeground(1, notification);
-        // 错误：在服务内执行耗时操作
+        startForeground(1, buildNotification());
         new Thread(() -> {
-            while (true) {
-                // 每 5 秒检查一次新消息
+            while (!stopped) {
                 checkNewMessages();
-                Thread.sleep(5000);
+                SystemClock.sleep(5_000);
             }
-        }).start();
+        }, "message-poll").start();
         return START_STICKY;
     }
-}
-```
 
-#### 2. 问题分析
-- **CPU 使用率过高**：5 秒轮询机制导致 CPU 无法进入休眠状态
-- **网络唤醒频繁**：即使没有新消息，也会定期唤醒网络模块
-- **WakeLock 使用不当**：未释放不必要的 WakeLock
-
-#### 2.1 为什么 JobScheduler 比轮询更优
-
-直接用线程轮询有 3 个根本缺陷，JobScheduler 从系统层面逐一解决：
-
-1. **系统级调度 > 应用自调度**：轮询循环跑在应用进程内，系统不知道这次唤醒是"必须立即执行"还是"可以等到下一次系统唤醒窗口再一起做"。JobScheduler 把任务声明交给系统——系统知道当前电量、Doze 状态、网络可用性，可以把多个应用的延时任务合并到同一个唤醒窗口执行。JobScheduler 内部使用 `JobSchedulerService` 维护全局 Job 队列，`JobServiceContext` 管理每个 Job 的绑定生命周期，`JobConcurrencyManager` 根据 `maxActiveJobs` 和 `maxRunningJobs` 控制并发——这些是应用自己实现不了的调度能力。
-
-2. **白名单与省电策略集成**：`JobInfo.Builder#setRequiresBatteryNotLow(true)`、`JobInfo.Builder#setRequiresDeviceIdle(true)` 等约束会交给 `JobSchedulerService` 与系统电源/空闲策略共同判定。Doze 模式下，即使应用有 PARTIAL_WAKE_LOCK，系统也会把非白名单 Job 推迟到 maintenance window 执行。轮询代码不具备这些保护——它会在电池低于 5% 时仍然跑，会被 Doze 强制暂停。
-
-3. **避免无效唤醒**：`JobInfo.NETWORK_TYPE_ANY` 告诉系统"有网再叫我"，JobScheduler 通过 `ConnectivityService` 监听网络变化——有网时才下发 Job，没网不唤醒。轮询方案每 5 秒检查一次消息，哪怕设备在飞行模式下也会试图建立连接、分配 socket、触发 DNS 解析——全是废功耗。
-
-到 Android 16（API 36），JobScheduler 核心从 `frameworks/base/services/core/` 迁移至 APEX 模块 `frameworks/base/apex/jobscheduler/`，调度参数和常量定义路径需要按 APEX 新路径查找。
-
-#### 2.2 Android 17 JobScheduler 五层节流机制源码级剖析
-
-> Android 17 (API 37) 的 JobScheduler 节流是**五层叠加**的体系，下面以 `android-17.0.0_r1` 标签下 AOSP 源码为唯一一手资料，逐层给出源码位置、默认值与触发行为。
-
-**第一层：注册数节流**（`JobSchedulerService.java:213-215, 1976-1985, 3035`）
-- `DEFAULT_MAX_JOBS_PER_APP = 150`（单 UID 持久化 Job 总数上限，临时 Job 不计）
-- 触发点：`scheduleAsPackage()` 中 `mJobs.countJobsForUid(callingUid) > mMaxJobsPerApp` → 返回 `JobScheduler.RESULT_FAILURE`
-- 这是 schedule() 阶段的第一道硬卡，超过 150 个直接拒绝（不抛异常、不入 standby bucket）
-
-**第二层：API Quota 节流**（`JobSchedulerService.java:166-168, 371-392, 677-693, 811-815, 1822-1866` + `CountQuotaTracker.java:180-216, 361-369` + `QuotaTracker.java:147-157`）
-- `DEFAULT_API_QUOTA_SCHEDULE_COUNT = 250`、`DEFAULT_API_QUOTA_SCHEDULE_WINDOW_MS = MINUTE_IN_MILLIS` —— 即 250 次/分钟 的 schedule 频率限制
-- 仅对 `job.isPersisted()=true` 的 Job 启用
-- 算法：`CountQuotaTracker.noteEvent()` 用 `LongArrayQueue` 维护时间戳滑动窗口，`isUnderCountQuotaLocked` 检查 `countInWindow < countLimit`
-- 窗口边界：`MIN_WINDOW_SIZE_MS=20_000`（20s 下限）、`MAX_WINDOW_SIZE_MS=30 * 24 * 60 * MINUTE_IN_MILLIS`（1 个月上限）
-- 副作用链：超限 → `mAppStandbyInternal.restrictApp(pkg, userId, UsageStatsManager.REASON_SUB_FORCED_SYSTEM_FLAG_BUGGY)` → `AppStandbyController.restrictApp()` 在 android-17.0.0_r1 行 1699-1702 调用 `setAppStandbyBucket(..., STANDBY_BUCKET_RESTRICTED, ...)`，app 被强制降级到 RESTRICTED bucket
-- 异常行为：`API_QUOTA_SCHEDULE_THROW_EXCEPTION=true`（默认）且 `isDebuggable=true` → 抛 `LimitExceededException`（带详细 message）；release 包仅返回失败或不处理（`API_QUOTA_SCHEDULE_RETURN_FAILURE_RESULT=false` 默认）
-- 附加 Execution Safeguards（UDC 防护）：`DEFAULT_EXECUTION_SAFEGUARDS_UDC_TIMEOUT_TOTAL_COUNT=10/24h`、`DEFAULT_EXECUTION_SAFEGUARDS_UDC_ANR_COUNT=3/6h` —— 超限后下次 Job 的 `getMaxJobExecutionTimeMs()` 退化为 10min
-
-**第三层：运行时长节流**（`JobSchedulerService.java:828-841, 4507-4584` + `JobServiceContext.java:236-238, 451-453, 1907-1909`）
-- `DEFAULT_RUNTIME_MIN_GUARANTEE_MS = 10 * MINUTE_IN_MILLIS`（普通 Job 最小保证期）—— `isWithinExecutionGuaranteeTime()` 期间不可被抢占
-- `DEFAULT_RUNTIME_FREE_QUOTA_MAX_LIMIT_MS = 30 * MINUTE_IN_MILLIS`（普通 Job 最大执行期）
-- `DEFAULT_RUNTIME_MIN_EJ_GUARANTEE_MS = 3 * MINUTE_IN_MILLIS`（Expedited Job 最小保证期）
-- `DEFAULT_RUNTIME_MIN_UI_GUARANTEE_MS = Math.max(6h, 10min)`（User-Initiated Job 最小保证期 6h）
-- `DEFAULT_RUNTIME_UI_LIMIT_MS = Math.max(12h, 30min)`（User-Initiated Job 最大执行期 12h）—— 但需 `QUOTA_TRACKER_TIMEOUT_UIJ_TAG` 在配额内
-- `DEFAULT_RUNTIME_CUMULATIVE_UI_LIMIT_MS = 24 * HOUR_IN_MILLIS`（User-Initiated Job 24h 累计上限）
-- JobServiceContext 使用：`mMaxExecutionTimeMillis = Math.max(getMaxJobExecutionTimeMs(job), mMinExecutionGuaranteeMillis)` —— 超过后 `handleOpTimeoutLocked()` 触发 `STOP_REASON_TIMEOUT`
-
-**第四层：并发控制**（`JobConcurrencyManager.java:94-114, 127-130, 250-348, 1820-1909`）
-- `MAX_CONCURRENCY_LIMIT = 64`
-- `DEFAULT_CONCURRENCY_LIMIT` 按 RAM 自适应：
-  - Low-RAM 设备：8
-  - ≤6GB：16
-  - ≤8GB：20
-  - ≤12GB：32
-  - >12GB：40
-- `DEFAULT_PKG_CONCURRENCY_LIMIT_REGULAR = DEFAULT_CONCURRENCY_LIMIT / 2`、`DEFAULT_PKG_CONCURRENCY_LIMIT_EJ = 3`（单包并发上限）
-- `WorkTypeConfig` 矩阵：4 种屏幕状态（screen_on/off）× 4 种内存压力级别（normal/moderate/low/critical）= 16 套配置
-  - 例：screen_on_normal 的 `defaultMaxTotal = DEFAULT_CONCURRENCY_LIMIT * 3 / 4`（如 12GB+ 设备为 30）
-  - screen_on_critical 的 `defaultMaxTotal = DEFAULT_CONCURRENCY_LIMIT * 4 / 10`（12GB+ 设备 16）
-- 抢占逻辑 `shouldStopRunningJobLocked()` 返回的 reason 字符串："battery saver" / "deep doze" / "too many jobs running" / "blocking BGUSER_IMPORTANT queue" / "blocking EJ queue" / "prevent immediacy privilege dominance" / "restriction:<code>" —— 这些字符串直接进入 Perfetto trace
-
-**第五层：强制批处理（唤醒合并）**（`JobSchedulerService.java:784-790, 851-868` + `JobConcurrencyManager.java:1482-1512, 1684-1820`）
-- `DEFAULT_MAX_CPU_ONLY_JOB_BATCH_DELAY_MS = 31 * MINUTE_IN_MILLIS`（31min，纯 CPU Job 最长等待）
-- `DEFAULT_MAX_NON_ACTIVE_JOB_BATCH_DELAY_MS = 31 * MINUTE_IN_MILLIS`（31min，非 ACTIVE bucket Job 最长等待）
-- `DEFAULT_MIN_READY_CPU_ONLY_JOBS_COUNT = min(3, DEFAULT_CONCURRENCY_LIMIT/3)`（CPU Job 批触发阈值）
-- `DEFAULT_MIN_READY_NON_ACTIVE_JOBS_COUNT = min(5, DEFAULT_CONCURRENCY_LIMIT/3)`（非 ACTIVE Job 批触发阈值）
-- 网络 Job（`KEY_CONN_MAX_CONNECTIVITY_JOB_BATCH_DELAY_MS = 31min`，`KEY_CONN_TRANSPORT_BATCH_THRESHOLD` 对 CELLULAR 默认 3，WIFI/ETHERNET 不限）
-- 31min ≈ Doze maintenance window（30min）+ 1min buffer —— 系统在窗口内尝试凑齐多个 ready Job 一次唤醒执行
-
-**五层调用链总结**：
-
-```
-app: JobScheduler.schedule(job)
-  → JobSchedulerService.scheduleAsPackage()
-    ├── [层1] mJobs.countJobsForUid() > 150 → RESULT_FAILURE
-    ├── [层2] !mQuotaTracker.isWithinQuota(250/min) → restrictApp → setAppStandbyBucket(RESTRICTED) + 可选异常
-    → JobStatus 入队
-  → JobConcurrencyManager.assignJobsToContextsLocked()
-    ├── [层4] shouldStopRunningJobLocked() → 抢占旧 Job
-    ├── [层5] shouldForceBatchLocked() → 延迟 31min 等待批处理
-  → JobServiceContext.startJob() → scheduleOpTimeOutLocked()
-  → JobServiceContext.handleOpTimeoutLocked() (after mMaxExecutionTimeMillis)
-    ├── [层3] sendStopMessageLocked("client timed out")
-    → onJobCompletedLocked() → [层2] noteEvent(QUOTA_TRACKER_TIMEOUT_*_TAG)
-      → 下次 getMaxJobExecutionTimeMs() 退化为 10min
-```
-
-**与 §11.4.2 节流案例的对照**：
-- 本节是 JobScheduler 服务自身的「节流」，§11.4.2 是「被 JobScheduler 调度的 LocationProvider 的节流」—— 两者位于不同栈层级但都通过 `mAppStandbyInternal` 接受 STANDBY_BUCKET 调控
-- 本节层 4 的 `"battery saver"` / `"deep doze"` reason 与 §11.4.2.1 的省电模式触发路径**同源**（`mPowerManager.isPowerSaveMode()` / `isDeviceIdleMode()`），但执行点不同：本节在 `shouldStopRunningJobLocked`（Job 启动后抢占），§11.4.2 在 `LocationProviderManager`（定位请求前过滤）
-
-**对应用的可操作建议**：
-1. **不要 burst-schedule**：在 onResume / onReceive / WorkContinuation 链里 schedule 大量 Job 容易触发层 2（API Quota）→ RESTRICTED bucket
-2. **周期性 Job 实际执行时间 < 1min**：层 5 批处理可能让首启延迟 31min；层 3 的 10min guarantee 只是限制系统在保证期内抢占，不会把已完成的短任务强制跑满 10min。OEM 做白名单节流分析时，应同时看"实际执行时间 / 周期时间"、唤醒次数和批处理延迟。
-3. **EJ 不适合长任务**：层 3 EJ 最小 3min，且 EJ 之间会按 `WORK_TYPE_BGUSER_IMPORTANT > EJ > 其他` 抢占
-4. **150 Job 上限外还有隐性反压**：`countJobsForUid()` 是 O(N)，Job 数量越多 schedule 越慢
-
-> 引用源：`frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java` (6857 行)、`JobConcurrencyManager.java` (3026 行)、`JobServiceContext.java` (1982 行)；`frameworks/base/services/core/java/com/android/server/utils/quota/CountQuotaTracker.java` (805 行)、`QuotaTracker.java` (530 行)。版本：`android-17.0.0_r1`。
-
-#### 3. 优化方案
-```java
-// 优化后的前台服务实现
-public class OptimizedForegroundService extends Service {
-    private JobScheduler jobScheduler;
-    private static final int JOB_ID_CHECK_MESSAGES = 1;
-    
     @Override
-    public void onCreate() {
-        super.onCreate();
-        jobScheduler = getSystemService(JobScheduler.class);
+    public void onDestroy() {
+        stopped = true;
     }
-    
+}
+```
+
+这段代码把“消息送达”错误地建模为应用侧定时查询。无消息时仍会产生定时器唤醒、网络握手和进程存活成本；`START_STICKY` 还可能在进程被杀后恢复服务。通知只说明服务对用户可见，不会让这类轮询变得省电。
+
+### 按业务时效选择机制
+
+| 业务要求 | 合适机制 | 说明 |
+|---|---|---|
+| 用户可见的实时消息 | 共享推送通道；高优先级只用于会立即展示通知的消息 | 避免每个应用维护独立心跳 |
+| 后台内容刷新 | 普通优先级推送触发一次同步，另加低频恢复同步 | Doze 中允许延后 |
+| 可延迟上传或同步 | WorkManager / JobScheduler | 声明网络、电量、充电等约束 |
+| 用户正在感知的连续任务 | 与用途匹配的前台服务类型 | 导航、播放等工作结束后立即停服务 |
+
+下面的 WorkManager 示例用于一次可恢复同步。多次触发会复用同名工作，避免在调度器中排出一串等价任务。
+
+```java
+public final class MessageSync {
+    private static final String UNIQUE_WORK = "message-recovery-sync";
+
+    public static void enqueue(Context context) {
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build();
+
+        OneTimeWorkRequest request =
+                new OneTimeWorkRequest.Builder(MessageSyncWorker.class)
+                        .setConstraints(constraints)
+                        .setBackoffCriteria(
+                                BackoffPolicy.EXPONENTIAL,
+                                30,
+                                TimeUnit.SECONDS)
+                        .build();
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+                UNIQUE_WORK,
+                ExistingWorkPolicy.KEEP,
+                request);
+    }
+}
+```
+
+`KEEP` 只消除同一时刻的重复待执行工作。Worker 仍需使用服务端游标或幂等键处理漏消息、重试和重复投递。周期任务的 15 分钟是最小周期边界，不是准点承诺，也不适合实时收消息。
+
+### Android 17 下的调度边界
+
+`JobScheduler` 在 Android 16 起位于 `frameworks/base/apex/jobscheduler/`。应用无需为正在执行的 Job 再持有一个 CPU WakeLock，系统会在 Job 生命周期内代持。下面几条边界比内部可调常量更适合作为应用契约：
+
+- Android 12 起，每个应用最多保有 150 个已调度 Job，expedited job 也计入。
+- Android 11 起，高频调用 `schedule()`、`enqueue()` 等调度入口会被节流。
+- App Standby bucket、后台限制、Doze、Battery Saver、热状态、约束和 quota 都可能让 Job 等待。
+- Android 16 的 `getPendingJobReasons()` 能返回并存的等待原因。
+- Android 17 的 `getPendingJobReasonStats()` 会按原因累计等待时长；统计在重启后不保留，Job 成功完成或取消后也会清除。
+
+下面的 API 37 代码用于在问题仍存在时读取等待时间。
+
+```java
+if (Build.VERSION.SDK_INT >= 37) {
+    JobScheduler scheduler = context.getSystemService(JobScheduler.class);
+    Map<Integer, Duration> stats =
+            scheduler.getPendingJobReasonStats(MESSAGE_SYNC_JOB_ID);
+    stats.forEach((reason, duration) ->
+            Log.i("JobDebug", "reason=" + reason + ", wait=" + duration));
+}
+```
+
+多个约束可同时阻止 Job，因而各项时长之和可能大于墙钟等待时间。采集代码应在 Job 完成或取消前运行，并把 Job ID 与业务请求 ID 一起记录。
+
+### 前台服务超时不是调度方案
+
+| 类型 | Android 14—17 的边界 |
+|---|---|
+| `shortService` | 约三分钟；超时回调后仍不停止会进入 ANR 流程 |
+| `dataSync` | target SDK 35+ 时，应用位于后台的累计预算通常为每 24 小时 6 小时 |
+| `mediaProcessing` | target SDK 35+ 时，单独统计每 24 小时 6 小时 |
+
+`dataSync` 与 `mediaProcessing` 按类型分别计时；同一类型下的多个服务共享预算。应用回到前台会重置可用时间。收到 `Service.onTimeout(int, int)` 后必须在数秒内 `stopSelf()`，否则进程会因未及时停止服务而失败。Android 17 延续这组行为。
+
+这些超时限制用于约束前台服务滥用，不会把轮询自动变成可靠同步。可恢复的数据传输应保存进度，交给调度 API；用户可见且不可中断的工作才进入对应的前台服务。
+
+### 验证
+
+修复前后比较：
+
+- 单位时间内进程唤醒次数、CPU running 时间和网络请求次数；
+- Job 的 pending reason、stop reason、重试次数和端到端消息延迟；
+- 前台服务启动时长以及 `onTimeout()`、ANR、crash 日志；
+- Wi-Fi 与蜂窝两组测试，避免把基带变化误算成代码收益。
+
+## 11.4.2 案例二：后台持续请求高精度定位
+
+### 故障代码
+
+下面的请求在组件存活期间持续向 GPS provider 请求一秒一次、零距离门槛的更新。
+
+```java
+public final class LocationTracker implements LocationListener {
+    private final LocationManager locationManager;
+
+    public LocationTracker(Context context) {
+        locationManager = context.getSystemService(LocationManager.class);
+    }
+
+    public void start() {
+        locationManager.requestLocationUpdates(
+                LocationManager.GPS_PROVIDER,
+                1_000,
+                0,
+                this);
+    }
+}
+```
+
+问题有两部分：请求参数没有来自产品场景，生命周期中也看不到对称的 `removeUpdates()`。系统可能因后台限制而降低回调频率，但应用仍不应依赖系统替错误请求兜底。
+
+### 把定位需求写成产品参数
+
+定位策略至少要区分三类场景：
+
+| 场景 | 请求方式 | 退出条件 |
+|---|---|---|
+| 页面展示一次附近位置 | `getCurrentLocation()` 或缓存位置 | 得到结果、超时、页面离开 |
+| 用户主动导航 | 连续高精度请求；按运动状态和 UI 需求设间隔、最小距离 | 导航停止、权限撤销、FGS 结束 |
+| 后台地理围栏 | Geofencing 等系统能力 | 围栏移除、业务失效 |
+
+下面的示例用于“页面需要一次新鲜位置”。取消信号跟随页面生命周期，避免页面退出后继续等待。
+
+```java
+public final class CurrentLocationRequest {
+    private final LocationManager locationManager;
+    private CancellationSignal cancellationSignal;
+
+    public CurrentLocationRequest(Context context) {
+        locationManager = context.getSystemService(LocationManager.class);
+    }
+
+    public void request(
+            Executor executor,
+            Consumer<Location> consumer) {
+        cancellationSignal = new CancellationSignal();
+        locationManager.getCurrentLocation(
+                LocationManager.FUSED_PROVIDER,
+                cancellationSignal,
+                executor,
+                consumer);
+    }
+
+    public void cancel() {
+        if (cancellationSignal != null) {
+            cancellationSignal.cancel();
+            cancellationSignal = null;
+        }
+    }
+}
+```
+
+一次定位也可能启用高成本 provider；它的价值是给请求明确终点。导航等连续场景仍应使用 `LocationRequest`，参数须由可接受延迟、路径误差和运动速度推导，并在停止导航时移除 listener。
+
+### 系统端会经过哪些门
+
+Android 17 的 `LocationProviderManager` 会综合检查：
+
+1. Manifest/runtime permission 与 AppOps；
+2. 用户是否启用位置、当前用户与 allowlist；
+3. UID 前后台状态及后台定位资格；
+4. Battery Saver 对 location service 的模式；
+5. 后台请求的最小间隔与其他豁免条件。
+
+未通过的 registration 不参与 provider request 合并，当前 UID 的请求就不会驱动底层 provider。设备上若还有导航、系统服务或其他应用请求定位，GNSS 或融合定位仍可能工作，所以“当前应用无回调”不能推导出整机定位功耗为零。
+
+Battery Saver 的位置模式定义在 `PowerManager`，包括不改变、熄屏禁 GPS、熄屏禁全部位置、只允许前台请求、熄屏节流等策略。`SystemLocationPowerSaveModeHelper` 接收 `PowerManagerInternal` 的状态，`LocationProviderManager` 再据此更新 registration。OEM 可以选择不同策略；应用不能假定某一模式永远是设备默认值。
+
+后台位置限制从 Android 8.0 就已存在。AOSP 中能找到后台节流间隔的配置默认值，设备配置和 OEM 策略可以修改它；“后台大约每小时只有少量更新”才是应用应依赖的公开行为边界。Android 12 增加的是精确/大致位置等权限变化，不是后台节流的起点。
+
+持有 location 类型 FGS 也不代表任何时刻都能启动定位。Android 12+ 的后台 FGS 启动限制和 Android 14+ 的 while-in-use 权限检查仍然生效。导航应用应由用户可见操作启动，声明正确的前台服务类型，并在导航结束后释放请求。
+
+### Battery Saver 与 Thermal 是两条通道
+
+Battery Saver 会把位置策略送入 location service。Thermal service 提供当前热状态和 headroom，平台不会把热状态自动换算为某个 location power-save mode。产品若允许在温度升高时降低更新频率，可以监听热状态后调整自身请求；不要用高频轮询热状态制造新的负载。
+
+### 验证
+
+- `adb shell dumpsys location`：检查各 provider 的 request、registration、前后台与节流状态；
+- bugreport 与 Battery Historian：对齐位置请求、WakeLock、屏幕、Doze 和 Battery Saver 时间线；
+- Perfetto：检查 CPU 调度、binder 与设备提供的定位 trace；
+- 设备电源轨或外接仪表：判断 GNSS、CPU 和整机能量是否同步下降。
+
+测试必须覆盖权限被撤销、仅大致位置、熄屏、后台、Battery Saver、导航 FGS 和其他应用同时定位等状态。
+
+## 11.4.3 案例三：零散网络请求反复激活蜂窝链路
+
+### 先划清 Android 与 modem 的边界
+
+Android Radio HAL 的 `RadioState` 描述 modem 控制面是否 `OFF`、`UNAVAILABLE` 或 `ON`。Android 17 的新实现使用稳定 AIDL `IRadioModem`；`RadioModemProxy` 仍保留 HIDL 分支以兼容旧设备。`setRadioPower()` 属于系统 telephony 控制路径，普通应用不能用它做网络节能。
+
+LTE/5G 的 RRC 连接态、DRX 周期、inactivity timer 和发射功率由 modem、网络制式、运营商参数及信号共同决定。公开 Android API 不提供一套跨设备可靠的 RRC 状态。把 3G 的 DCH/PCH、LTE 的 RRC Connected/Idle 和 5G 状态放进同一张固定电流表，会产生错误结论。
+
+应用层可以确定的是：大量相隔很短的请求会增加 DNS、连接建立、TLS、CPU 与网络活动；蜂窝环境下，它们还可能延长 modem 活跃时间。尾时间多长、耗电多少必须在目标设备和网络上测。
+
+### 使用持久化 outbox 合并可延迟上传
+
+下面的示例在业务事件写入本地 outbox 后，只保留一个待执行上传 Worker。
+
+```java
+public final class TelemetryUpload {
+    private static final String UNIQUE_UPLOAD = "telemetry-outbox-upload";
+
+    public static void notifyOutboxChanged(Context context) {
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build();
+
+        OneTimeWorkRequest upload =
+                new OneTimeWorkRequest.Builder(OutboxUploadWorker.class)
+                        .setConstraints(constraints)
+                        .setBackoffCriteria(
+                                BackoffPolicy.EXPONENTIAL,
+                                30,
+                                TimeUnit.SECONDS)
+                        .build();
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+                UNIQUE_UPLOAD,
+                ExistingWorkPolicy.KEEP,
+                upload);
+    }
+}
+```
+
+Worker 在一次运行中循环读取有上限的批次，服务端确认后再在事务中删除；达到自身执行预算且 outbox 尚未清空时返回 `Result.retry()`。数据库是数据真源，还要安排低频恢复同步，处理“写入 outbox”与“调用 enqueue”无法组成同一事务以及 `KEEP` 的竞争窗口。网络客户端应复用连接，设置连接、读写与调用超时。交互请求、支付确认和用户等待的发送操作不能为了批量而任意延后，它们要走单独的时效路径。
+
+### 诊断证据
+
+| 问题 | 证据 |
+|---|---|
+| 请求是否过碎 | 客户端调用日志、服务端 access log、包大小与时间间隔 |
+| 是否重复握手 | 网络库 event listener、Perfetto socket/CPU 事件、抓包 |
+| 哪个 UID 产生流量 | `NetworkStatsManager`、`TrafficStats`、bugreport |
+| modem 是否长时间活跃 | 设备支持的 modem/ODPM 电源轨、厂商 trace、外接仪表 |
+| 是否由弱信号放大 | 相同业务在 Wi-Fi、强信号蜂窝、弱信号蜂窝下分组测试 |
+
+`TrafficStats` 的字节数不能直接换算为毫安时。相同字节数在 Wi-Fi、5G 弱信号和漫游网络中的能量可能差很多。
+
+## 11.4.4 案例四：组件泄漏伴随周期回调
+
+### 故障代码
+
+下面的 Activity 注册网络回调后没有注销。匿名内部类会经由回调引用 Activity，页面销毁后仍可能收到事件。
+
+```java
+public final class NetworkScreen extends Activity {
+    private final ConnectivityManager.NetworkCallback callback =
+            new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(Network network) {
+                    renderNetwork(network);
+                }
+            };
+
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        startForeground(1, notification);
-        
-        // 使用 JobScheduler 替代轮询
-        scheduleMessageCheck();
-        return START_STICKY;
-    }
-    
-    private void scheduleMessageCheck() {
-        JobInfo jobInfo = new JobInfo.Builder(JOB_ID_CHECK_MESSAGES, 
-            new ComponentName(this, MessageCheckJobService.class))
-            .setPeriodic(15 * 60 * 1000) // 15 分钟检查一次
-            .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-            .setRequiresDeviceIdle(false)
-            .build();
-        
-        jobScheduler.schedule(jobInfo);
+    protected void onStart() {
+        super.onStart();
+        getSystemService(ConnectivityManager.class)
+                .registerDefaultNetworkCallback(callback);
     }
 }
 ```
 
-#### 4. 优化效果
+泄漏的直接后果是对象无法按生命周期回收。若回调还会刷新 UI、查数据库或发网络请求，旧页面会继续制造 CPU、binder 和 I/O 工作。单独看到较高堆占用仍不能证明耗电，必须找到这条活动链。
 
-以下数据来自 Pixel 7（Android 14, 4000mAh 电池）办公室 Wi-Fi 环境实测——Battery Historian 导出 `bugreport` 分析：
-- **CPU 使用率**：从 15% 降至 3%（测量维度：`/proc/stat` 用户态 + 内核态 / 总时间，5 分钟滑动窗口均值）
-- **网络唤醒**：减少 70% 的网络活动（测量维度：Battery Historian `wake_lock_in` 中 `*job*/download*` 标签的唤醒次数）
-- **电量消耗**：每日节省 15% 电量（测量维度：`dumpsys batterystats` 中 `Estimated power use (mAh)` 对应用 UID 的归因）
+### 对称释放
 
+下面的修复让注册与注销处于同一生命周期区间。
 
-> **FGS 超时机制版本差异（Android 14 → 17）**
-> 
-> - **Android 14 (API 34)** 引入 `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE`（1 << 11），硬性 3 分钟超时（`DEFAULT_SHORT_FGS_TIMEOUT_DURATION = 3 * 60_000`），三阶段：3min `Service.onTimeout(int)` → 5s 降级 procstate（`OOM_ADJ_REASON_SHORT_FGS_TIMEOUT`）→ 10s ANR（消息号 76/77/78）。源码：`frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` 的 `maybeUpdateShortFgsTrackingLocked` / `onShortFgsTimeout` / `onShortFgsProcstateTimeout` / `onShortFgsAnrTimeout`。
-> - **Android 15 (API 35)** 新增 **`TimeLimitedFgsInfo` 时间限制 FGS 框架**：`FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING`（1 << 13）+ `FOREGROUND_SERVICE_TYPE_DATA_SYNC` 都被限制为 **6 小时**（`DEFAULT_MEDIA_PROCESSING_FGS_TIMEOUT_DURATION` / `DEFAULT_DATA_SYNC_FGS_TIMEOUT_DURATION` 均 = `6 * 60 * 60_000`）。新增 `SERVICE_FGS_TIMEOUT_MSG` (84) / `SERVICE_FGS_CRASH_TIMEOUT_MSG` (85)。源码：`ActiveServices.java:3730-3780` 的 `getTimeLimitedFgsType` / `getTimeLimitForFgsType` / `getNextFgsStopTime`。
-> - **24 小时滚动窗口**：`firstFgsStartRealtime < now - 24h` 或 app 进入 `PROCESS_STATE_TOP` 时调用 `TimeLimitedFgsInfo.reset()` 清零预算（`ActiveServices.java:2420-2460`）。TOP 状态可"充值"时间预算。
-> - **Android 16+ (API 36+)** 强化崩溃行为：`Flags.enableFgsTimeoutCrashBehavior` 开启后，6h 未停的 FGS 通过 `crashApplicationWithTypeWithExtras` 抛 `ForegroundServiceDidNotStopInTimeException` 直接 crash；新增 `Service.onTimeout(int, int)`（`introduceNewServiceOntimeoutCallback` flag）统一 short-FGS 与 time-limited 回调。
-> - **功耗影响**：dataSync/mediaProcessing 进程最长存活 6h；6h 后 crash → 缓存/WakeLock/连接全部丢失，冷启动功耗峰值需纳入 FGS 6h 周期。short-FGS 进程 ≤ 3min 15s。实际功耗建模需把"长连接耗电"窗口从"无穷"修正为 6h。
-
-#### 5. 系统如何协同控制 FGS 生命周期
-
-FGS 超时是 `ActiveServices`、进程状态机（`OomAdjuster`）、电源策略（`PowerManagerService`）三方协同的结果：
-
-1. **ServiceLifecycle 跟踪**：`ActiveServices` 维护每个 FGS 的 `ServiceRecord`，记录 `fgsStartRealtime`、类型位掩码（`FOREGROUND_SERVICE_TYPE_*`）、进入前台的时间戳。Android 15 引入 `TimeLimitedFgsInfo` 结构体，把所有有时间限制的 FGS 类型的起始时间统一计在同一个 24 小时滚动窗口内。
-
-2. **进程状态联动**：Short-FGS（3 分钟）到期后，`ActiveServices.onShortFgsTimeout()` 先通过 `scheduleTimeoutService()` 回调 `Service.onTimeout(int)`，再投递 `SERVICE_SHORT_FGS_PROCSTATE_TIMEOUT_MSG` 并启动 ANR 计时。`onShortFgsProcstateTimeout()` 才调用 `updateOomAdjLocked(..., OOM_ADJ_REASON_SHORT_FGS_TIMEOUT)` 做进程状态降级；`unscheduleShortFgsTimeoutLocked()` 只负责取消这些消息。
-
-3. **电源策略叠加**：即使 FGS 在 6h 配额内，如果设备进入 Doze，`DeviceIdleController` 仍然会暂停非白名单应用的 Job 和 Alarm。对 FGS 本身，Doze 不直接杀——但 FGS 持有的 WakeLock 会被 `PowerManagerService` 计入统计，Doze maintenance window 之外的应用网络访问被推迟。
-
-4. **24h 预算重置**：`TimeLimitedFgsInfo.reset()` 在两个条件下触发——(a) 距 `firstFgsStartRealtime` 超过 24 小时；(b) 应用进入 `PROCESS_STATE_TOP`（用户回到前台）。用户每次打开应用都在"充值"后台时间——实际可用时间 = min(6h, 24h 内的剩余配额)。
-
-Android 15（API 35）引入 `ProfilingManager` 的应用主动 profiling；Android 16（API 36）增加 system-triggered profiling（cold start、ANR 等触发器）。Android 17 范围内没有可直接证明“FGS 超时事件自动触发 trace”的公开 API，追踪 FGS 6h 后 crash 应结合 `ForegroundServiceDidNotStopInTimeException`、ANR/crash 日志、Perfetto 手动/触发式采样和应用埋点。
-
-## 11.4.2 定位服务功耗优化
-
-### 问题场景
-某地图应用在后台运行时，GPS 定位服务导致电池快速消耗。
-
-### 分析过程
-
-#### 1. 问题定位
 ```java
-// 不合理的定位实现
-public class LocationTracker implements LocationListener {
-    private LocationManager locationManager;
-    private static final long UPDATE_INTERVAL = 1000; // 1秒更新一次
-    
+public final class NetworkScreen extends Activity {
+    private boolean registered;
+    private final ConnectivityManager.NetworkCallback callback =
+            new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(Network network) {
+                    renderNetwork(network);
+                }
+            };
+
     @Override
-    public void startTracking() {
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 
-            UPDATE_INTERVAL, 0, this);
+    protected void onStart() {
+        super.onStart();
+        getSystemService(ConnectivityManager.class)
+                .registerDefaultNetworkCallback(callback);
+        registered = true;
     }
-}
-```
 
-#### 2. 问题分析
-- **GPS 模式**：持续使用高精度 GPS（功耗 50-100mA）
-- **更新频率过高**：1 秒更新一次对实时性需求不高
-- **网络定位混合**：未根据场景选择合适的定位方式
-
-#### 3. 优化方案
-```java
-// 优化后的定位服务
-public class OptimizedLocationTracker implements LocationListener {
-    private LocationManager locationManager;
-    public void startTracking() {
-        // 根据场景选择不同的定位策略
-        if (isDriving()) {
-            startDrivingModeTracking();
-        } else if (isWalking()) {
-            startWalkingModeTracking();
-        } else {
-            startStandardTracking();
-        }
-    }
-    
-    private void startDrivingModeTracking() {
-        // 驾驶模式：使用网络定位，降低更新频率
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 
-            30 * 1000, 100, this);
-    }
-    
-    private void startWalkingModeTracking() {
-        // 步行模式：使用混合定位，中等更新频率
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 
-            60 * 1000, 50, this);
-        
-        // 高精度定位低频率使用
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 
-            5 * 60 * 1000, 30, this);
-    }
-    
-    private void startStandardTracking() {
-        // 标准模式：合理平衡精度和功耗
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 
-            2 * 60 * 1000, 100, this);
-    }
-}
-```
-
-#### 4. 优化效果
-- **GPS 使用时间**：减少 80%
-- **电量消耗**：定位相关功耗降低 65%
-- **用户体验**：在非关键场景下仍保持合理的定位精度
-
-
-
-
-### 11.4.2.1 省电模式与热节流对定位的系统级协同
-
-省电模式与热节流通过各自独立的通道影响定位行为，下面从源码层面分析两条路径的协同方式。
-
-### 11.4.2.2 Battery Saver × 热节流协同机制：省电策略的温度敏感度分析
-
-通过 Android 17.0.0_r1 源码深度分析，揭示 Battery Saver 与热节流机制的独立协同架构：
-
-#### 核心架构特性
-
-**独立性**：
-- Battery Saver 由 `BatterySaverController` 管理，通过`PowerManagerService.registerLowPowerModeObserver()`通知
-- 热节流由`ThermalManagerService`管理，通过`IThermalStatusListener`独立通知
-- 两个系统在框架层**无融合逻辑**，职责分离明确
-
-**状态级别映射**：
-- Battery Saver：`POLICY_LEVEL_OFF/ADAPTIVE/FULL` + 5种`LOCATION_MODE`
-- 热节流：`THERMAL_STATUS_NONE/LIGHT/MODERATE/SEVERE/CRITICAL/EMERGENCY/SHUTDOWN`（7个级别）
-
-**叠加效应**：
-应用层可通过同时监听两个状态实现协同，但系统层面需要自行处理状态冲突。例如：
-- Battery Saver 开启 `LOCATION_MODE_FOREGROUND_ONLY`
-- 热节流达到`THROTTLING_MODERATE`
-- 实际效果：前台定位可用 + CPU 降频 = 综合节能
-
-#### 源码级协同机制
-
-**统一状态传递**：
-```java
-// PowerSaveState 统一承载两类状态
-public class PowerSaveState {
-    public final boolean batterySaverEnabled;  // Battery Saver 状态
-    public final int locationMode;             // 定位控制策略
-    public final int soundTriggerMode;         // 音频控制策略
-}
-```
-
-**紧急关机**：
-热节流达到 `THROTTLING_SHUTDOWN` 时触发关机流程；由 `ThermalManagerService` 独立触发的设备保护路径，与 Battery Saver 策略无关：
-```java
-// frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java:484-485
-case Temperature.TYPE_BATTERY:
-    powerManager.shutdown(false, PowerManager.SHUTDOWN_BATTERY_THERMAL_STATE, false);
-    break;
-```
-
-#### 优化建议
-
-**三维建模**：
-建议功耗建模采用`Battery Saver 级别 × 温度级别 × 设备状态`的三维模型，而非简单的二元判断。
-
-**冲突处理**：
-当 Battery Saver 允许定位但 thermal status 已升高时，应用策略应以温度保护优先，主动降级定位精度或频率。
-
-**应用适配**：
-应用层应同时注册两类监听器，动态调整行为：
-```java
-powerManager.addThermalStatusListener(thermalListener);
-registerReceiver(batterySaverReceiver,
-    new IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED));
-```
-
-#### 版本特性
-
-Android 14-17 范围内需要按版本区分：
-- Android 14 已存在 `LOCATION_MODE_THROTTLE_REQUESTS_WHEN_SCREEN_OFF` 与 `BatterySaverController.REASON_DYNAMIC_POWER_SAVINGS_AUTOMATIC_ON`，后者是 framework 内部原因码，不是公开 App API。
-- Android 15 增加 `PowerManager.getThermalHeadroomThresholds()`；`getThermalHeadroom()` 本身在更早版本已存在。
-- Android 17 仍沿用 Battery Saver 与 Thermal 分离模型，本节只使用 android-17.0.0_r1 及以下源码锚点。
-
----
-> **系统层定位功耗策略 — Battery Saver × Thermal 协同机制**
->
-> 上文从应用层给出了定位频率优化方案，但系统层的节能策略同样关键。Android 通过两层 PowerSave 框架叠加控制定位功耗：
->
-> **1. Battery Saver 5 种 LocationMode（`PowerManager.java:1055-1084`）**：
-> - `LOCATION_MODE_NO_CHANGE (0)` — 不影响
-> - `LOCATION_MODE_GPS_DISABLED_WHEN_SCREEN_OFF (1)` — 熄屏关 GPS（保留 NETWORK）
-> - `LOCATION_MODE_ALL_DISABLED_WHEN_SCREEN_OFF (2)` — 熄屏关全部 provider
-> - `LOCATION_MODE_FOREGROUND_ONLY (3)` — 仅前台可定位（**AOSP 默认策略**）
-> - `LOCATION_MODE_THROTTLE_REQUESTS_WHEN_SCREEN_OFF (4)` — 熄屏节流而非硬关
->
-> **2. 派发通道**（`SystemLocationPowerSaveModeHelper.java:50-79`）：`LocationManagerService` 启动时通过 `LocalServices.getService(PowerManagerInternal.class).registerLowPowerModeObserver(PowerManager.ServiceType.LOCATION, this)` 订阅 Battery Saver 状态变更；`accept(PowerSaveState)` 在 `batterySaverEnabled=true` 时把 `locationMode` 推到所有 `LocationProviderManager`。
->
-> **3. 真正的节能点 — `LocationProviderManager.isActive()` 过滤**（`LocationProviderManager.java:2331-2352`）：LOCATION_MODE 的节能靠的是**直接让 registration inactive**，不涉及降频率，mergeRegistrations 不下发 ProviderRequest。在 `_FOREGROUND_ONLY` + 熄屏场景下，应用层无论怎么 schedule 都拿不到 fix，**比主动调低频率更省电**（典型节省 80mA × 8h ≈ 640mAh）。
->
-> **4. Thermal 通道独立**（`PowerManager.java:2625-2685, 2938-2995`）：`getCurrentThermalStatus()` 与 `getThermalHeadroom(forecastSeconds)` 由 `IThermalService` 提供，**不会自动**把 thermal status 折算为 location 关闭。应用必须主动 poll 或监听 `addThermalStatusListener`。Thermal 与 Battery Saver 是**叠加（additive）关系，两者独立运行**。
->
-> **5. 厂商定制**：MIUI/EMUI/ColorOS/Samsung OneUI 普遍把 `location_mode=3 (_FOREGROUND_ONLY)` 设为默认 + 缩短 maintenance window，因此 11.4.2 案例集中"驾驶模式 30s 间隔"在熄屏后表现糟糕的根因往往是**被系统强制 inactive**，与应用调度无关。应用需要在前台时缓存足够的 fix 以应对后续熄屏场景。
->
-> **关键源码路径**：
-> - `frameworks/base/core/java/android/os/PowerManager.java:1055-1084, 2625-2685, 2938-2995`
-> - `frameworks/base/services/core/java/com/android/server/power/batterysaver/BatterySaverPolicy.java:69, 485-488, 712-715`
-> - `frameworks/base/services/core/java/com/android/server/location/injector/SystemLocationPowerSaveModeHelper.java:35-87`
-> - `frameworks/base/services/core/java/com/android/server/location/provider/LocationProviderManager.java:2331-2352, 2566`
->
-> **功耗建模建议**：把"定位功耗"拆成三个互相独立的维度——**设备级 LOCATION_MODE × 屏幕状态 × 芯片热状态**。建模时不能假设"省电模式关闭 = 定位一定可用"，也不能假设"thermal throttling 会自动省电"。
-
-
-### 11.4.2.2 隐私沙盒对位置服务功耗的深层影响：Android 12+ 三层判定链
-
-11.4.2.1 已分析省电模式（设备级 LOCATION_MODE）与热节流对定位的叠加效应，但 Android 12 (API 31) 起的**隐私沙盒**是另一条独立的省电路径——它把"权限"从 Manifest 声明拓展为用户可撤销的运行时开关，从源头限制了无效定位请求的功耗成本。
-
-#### 三层判定链（源码级）
-
-**① 权限位解析**（`frameworks/base/services/core/java/com/android/server/location/LocationPermissions.java:35-50`）：
-
-```java
-public static final int PERMISSION_NONE = 0;
-public static final int PERMISSION_COARSE = 1;  // ACCESS_COARSE_LOCATION → OP_COARSE_LOCATION
-public static final int PERMISSION_FINE = 2;    // ACCESS_FINE_LOCATION → OP_FINE_LOCATION
-```
-
-**② AppOps 复合检查**（`injector/LocationPermissionsHelper.java:75-85`）：即使 Manifest 权限通过，`AppOpsManager.checkOpNoThrow()` 仍可能返回 `MODE_IGNORED` / `MODE_FOREGROUND`，最终 `hasLocationPermissions()` 返回 false。
-
-**③ Registration 活跃性判定**（`LocationProviderManager.java:2331-2370`）：
-
-```java
-@Override
-protected boolean isActive(Registration registration) {
-    if (!registration.isPermitted()) return false;       // 权限+appop 综合
-    boolean isBypass = registration.getRequest().isBypass();
-    if (!isActive(isBypass, registration.getIdentity())) return false;  // 用户黑名单
-    if (!isBypass) {
-        switch (mLocationPowerSaveModeHelper.getLocationPowerSaveMode()) {
-            case LOCATION_MODE_FOREGROUND_ONLY:
-                if (!registration.isForeground()) return false;  // 前台态过滤
-                break;
-            case LOCATION_MODE_ALL_DISABLED_WHEN_SCREEN_OFF:
-                if (!mScreenInteractiveHelper.isInteractive()) return false;
-                break;
-        }
-    }
-    return true;
-}
-```
-
-**关键**：当 isActive 返回 false 时，registration 不参与 `mergeRegistrations()`，**ProviderRequest 不下发到 GnssLocationProvider / FusedProvider**——GPS 芯片、Wi-Fi 扫描、Cell-ID 查询全部停止。这是隐私沙盒**省电的核心**：被拒请求 0 功耗（fix 不下发）。
-
-#### 前台/后台状态机
-
-`LocationProviderManager.Registration.mForeground` 字段（`LocationProviderManager.java:390`）由 `SystemAppForegroundHelper.isAppForeground()`（通过 `ActivityManager.addOnUidImportanceListener` 监听 UID 重要性变化）维护，分界点是 `IMPORTANCE_FOREGROUND_SERVICE` (150)。UID 重要性变化时 `onForegroundChanged(uid, foreground)` 回调（`LocationProviderManager.java:666-679`）触发 `mForeground` 更新并重算 ProviderRequest。
-
-**前台判定 vs 进程可见性**：应用持有 FGS（FOREGROUND_SERVICE_LOCATION 类型）时，UID 重要性提升到 FOREGROUND_SERVICE，绕过 LOCATION_MODE_FOREGROUND_ONLY。这是 Android 12+ 给"实际需要持续定位"应用的标准通道。
-
-#### 后台节流（Background Throttle）— Android 12+ 默认开启
-
-```java
-// injector/SystemSettingsHelper.java:71-73
-private static final long DEFAULT_BACKGROUND_THROTTLE_INTERVAL_MS = 30 * 60 * 1000;  // 30 min
-```
-
-**节流逻辑**（`LocationProviderManager.java:750-757`）：
-
-```java
-if (!locationSettingsIgnored && !isThrottlingExempt()) {
-    if (!mForeground) {
-        builder.setIntervalMillis(max(mBaseRequest.getIntervalMillis(),
-                mSettingsHelper.getBackgroundThrottleIntervalMs()));
-    }
-}
-```
-
-只有 `!mForeground`（后台）且 `!isThrottlingExempt()`（不在白名单）时，interval 才被强制覆盖到 30 分钟。**前台请求不受影响**——这是 Android 12+ 隐私沙盒给前台应用"留的口子"。
-
-白名单路径（`SystemSettingsHelper.java:99-102`）：默认从 `SystemConfig.getAllowUnthrottledLocation()` 读取，对应 `/system/etc/sysconfig.xml` 的 `allow-unthrottled-location` 列表（AOSP 默认包含 Google Play Services 等核心系统组件，OEM 可扩展）。
-
-#### 隐私沙盒的功耗推论
-
-| 场景 | GPS 电流 | 8h 后台累计 |
-|------|---------|-----------|
-| **沙盒完全屏蔽**（未授权 / 关闭 appOp） | 0 mA | ~0 mAh |
-| **后台节流 30min**（持精确定位 + 后台 8h） | <5 mA | <5 mAh |
-| **后台 1Hz 精确定位**（忽略沙盒 + 旧代码） | 50-100 mA | 400-800 mAh |
-| **前台精确定位**（用户主动打开地图） | 50-100 mA | 由使用时长决定 |
-
-**核心结论**：Android 12+ 隐私沙盒对**正确适配**的应用是**纯省电**（400-800 mAh → <5 mAh）；对**未适配**的应用是**反效果**（高 CPU 唤醒 + 空轮询），原因是每次 1Hz 轮询本身消耗 binder transaction + 短暂 CPU 唤醒。
-
-#### 优化建议
-
-1. **自适应粗精度**：`LocationRequest.setQuality(QUALITY_LOW_POWER)` 配合 `LocationManager.getCurrentLocation()`，避免长持高精确定位。
-2. **前台白名单利用**：app 实际需要 1Hz GPS 时应在 FGS（FOREGROUND_SERVICE_LOCATION 类型）内运行，使 `mForeground=true` 绕过 `LOCATION_MODE_FOREGROUND_ONLY`。
-3. **节流生效检测**：通过 Perfetto `location` track（`LocationEventLog`）观察 `PROVIDER_REQUEST` 实际下发的 interval，验证节流是否按预期工作。
-
-#### 版本差异
-
-| API Level | 关键变化 | 源码证据 |
-|-----------|---------|---------|
-| API 30 (Android 11) | 引入 `LOCATION_MODE_THROTTLE_REQUESTS_WHEN_SCREEN_OFF` | `PowerManager.java:1199` |
-| API 31 (Android 12) | 默认开启 background throttle (30 min) | `SystemSettingsHelper.java:71-73` |
-| API 33 (Android 13) | 收紧 `LOCATION_BYPASS`；新增 `READ_LOCATION_BYPASS_ALLOWLIST` | `LocationPermissions.java:34-40` |
-| API 34 (Android 14) | AIDL Radio HAL 默认；`Flags.locationAuditing()` 启用 | `LocationManagerService.java:450` |
-| API 35-37 | 沿用 12+ 模型 | android-17.0.0_r1 源码 |
-
-**关键源码路径**：
-- `frameworks/base/services/core/java/com/android/server/location/LocationManagerService.java:884-906, 450-498`
-- `frameworks/base/services/core/java/com/android/server/location/LocationPermissions.java:35-50, 55-77, 34-40`
-- `frameworks/base/services/core/java/com/android/server/location/injector/LocationPermissionsHelper.java:75-85`
-- `frameworks/base/services/core/java/com/android/server/location/injector/SystemSettingsHelper.java:71-73, 99-102`
-- `frameworks/base/services/core/java/com/android/server/location/injector/SystemAppForegroundHelper.java:60-72`
-- `frameworks/base/services/core/java/com/android/server/location/provider/LocationProviderManager.java:2331-2370, 750-757, 666-679, 390, 459-463, 2584-2587`
-- `frameworks/base/core/java/android/app/AppOpsManager.java:946-949`
-- `frameworks/base/core/java/android/os/PowerManager.java:1175-1200, 2609-2615`
-
-隐私沙盒与 Battery Saver **独立但叠加**：Battery Saver 通过 `SystemLocationPowerSaveModeHelper` 推 `LOCATION_MODE` 到 `LocationProviderManager.isActive()`（详见 11.4.2.1），隐私沙盒通过 `LocationPermissionsHelper.hasLocationPermissions()` + `isActive()` 第一行判定。两条路径在 `isActive` 内串行：先过权限/appop，再过 power save 模式。开发者的精细化策略应是**先确保沙盒适配**（不持 FGS 时切粗精度或停止请求），**再针对 power save 模式调整**——顺序反了，沙盒拒绝后 power save 的 mode 切换根本不会触发。
-
-
-
-## 11.4.3 Radio 状态机功耗优化
-
-### 问题场景
-某应用在推送消息时，频繁唤醒网络模块导致电池消耗异常。
-
-### 分析过程
-
-#### 1. Radio 状态与功耗
-
-下表为 modem 内部 RRC（Radio Resource Control）连接状态——这些是 modem 芯片层的功耗状态，对 Android Java 层不可见。Android HAL 只暴露 3 个状态（`OFF` / `UNAVAILABLE` / `ON`，见下方源码级补充）。理解 RRC 态有助于建模"网络活动 → 实际电流"的对应关系，但不能直接作为 Android API 状态使用。
-
-| RRC 状态 | 电流消耗 | 说明 |
-|------|----------|------|
-| **Sleep（RRC Idle）** | 5-10mA | 无数据连接，仅监听寻呼信道，modem 周期性唤醒（DRX 周期约 1.28s-2.56s） |
-| **Idle（RRC Connected/CELL_DCH tail）** | 15-20mA | RRC 连接已建立但无数据传输，等待 inactivity timer 超时后回落 Idle |
-| **DCH（Dedicated Channel / Connected）** | 100-200mA | 数据持续传输状态，上下行通道全开 |
-| **PCH（Paging Channel）** | 50-80mA | 省电连接状态（3G/4G），数据间断传输，上行受限 |
-
-> **与 Android HAL 状态的区别**：`hardware/interfaces/radio/1.0/types.hal` 定义的 `RadioState` 只有 3 个枚举值——`OFF(0)` / `UNAVAILABLE(1)` / `ON(10)`。这 3 个态描述的是"modem 硬件是否上电可用"，不区分 RRC 层的 IDLE/DCH/PCH。下行由 `RIL.setRadioPower()` 控制，上行通知通过 `RadioIndication.radioStateChanged()` 上报。详细的 HAL→Java 映射和 AIDL 迁移路径见下方"源码级补充"。
-
-#### 2. RRC 状态转换开销（modem 内部）
-
-以下数据描述 modem RRC 态切换的典型开销——这些对 Android 应用层不可控，但理解它们有助于解释"发送一条小消息为什么会拉高 200mA 持续数秒"：
-- **Idle → DCH**：约 50ms，功耗 15-25mA（RRC 连接建立过程）
-- **DCH → Idle**：约 30ms，功耗 20-30mA（inactivity timer 触发回退）
-- **网络搜索（Cell Search）**：功耗 80-120mA，持续 2-5s（信号弱或切换小区时触发）
-
-#### 3. 问题分析
-- **频繁唤醒**：消息推送导致网络状态频繁切换
-- **批量发送**：未合并消息请求，增加唤醒次数
-- **连接复用**：未充分利用长连接优势
-
-#### 4. 优化方案
-```java
-// 优化的网络请求管理器
-public class NetworkRequestManager {
-    private static final int BATCH_SIZE = 5;
-    private static final long BATCH_INTERVAL = 30 * 1000; // 30秒批量间隔
-    private final Queue<PendingRequest> requestQueue = new LinkedList<>();
-    private final Handler handler = new Handler(Looper.getMainLooper());
-    
-    public void addRequest(Request request) {
-        synchronized (requestQueue) {
-            requestQueue.add(new PendingRequest(request));
-            
-            if (requestQueue.size() >= BATCH_SIZE) {
-                executeBatchRequest();
-            } else {
-                // 延迟执行，等待更多请求加入
-                handler.removeCallbacks(batchRunnable);
-                handler.postDelayed(batchRunnable, BATCH_INTERVAL);
-            }
-        }
-    }
-    
-    private final Runnable batchRunnable = () -> {
-        executeBatchRequest();
-    };
-    
-    private void executeBatchRequest() {
-        synchronized (requestQueue) {
-            if (requestQueue.isEmpty()) return;
-            
-            // 合并多个请求为批量请求
-            BatchRequest batchRequest = createBatchRequest();
-            
-            // 使用长连接复用
-            NetworkClient.getInstance().executeBatch(batchRequest, 
-                new NetworkCallback() {
-                    @Override
-                    public void onSuccess(Response response) {
-                        processBatchResponse(response);
-                        requestQueue.clear();
-                    }
-                });
-        }
-    }
-}
-```
-
-#### 5. 优化效果
-- **网络唤醒次数**：减少 75%
-- **Radio 状态切换**：降低 80%
-- **电量消耗**：网络相关功耗降低 45%
-
-
-#### 5. 源码级补充：Radio 状态机实际架构（android-17.0.0_r1 及以下版本）
-
-**Radio 状态机在 Android 源码中的真实抽象层级**（与上表不同，更精确）：
-
-```hal
-// hardware/interfaces/radio/1.0/types.hal:237
-enum RadioState : int32_t {
-    OFF = 0,                              // Radio explicitly powered off (eg CFUN=0)
-    UNAVAILABLE = 1,                      // Radio unavailable (eg, resetting or not booted)
-    ON = 10,                              // Radio is ON
-};
-```
-
-**关键差异说明**：
-- **HAL 状态机仅 3 态**，不区分 IDLE/FACH/DCH（这是 modem 内部 RRC 状态，对 Java 不可见）
-- 状态值 `0/1/10` 非连续——为厂商自定义预留 2-9
-- `OFF` 对应 3GPP `CFUN=0`（电路域功能关闭）
-- `UNAVAILABLE` 涵盖所有过渡态：boot、reset、crash recovery、SIM 切换
-
-**Java 侧枚举映射**（`frameworks/opt/telephony/src/java/com/android/internal/telephony/RILUtils.java:3912`）：
-
-```java
-public static @Annotation.RadioPowerState int convertHalRadioState(int stateInt) {
-    switch (stateInt) {
-        case android.hardware.radio.V1_0.RadioState.OFF:
-            return TelephonyManager.RADIO_POWER_OFF;     // 0
-        case android.hardware.radio.V1_0.RadioState.UNAVAILABLE:
-            return TelephonyManager.RADIO_POWER_UNAVAILABLE;  // 2
-        case android.hardware.radio.V1_0.RadioState.ON:
-            return TelephonyManager.RADIO_POWER_ON;      // 1
-        default:
-            throw new RuntimeException("Unrecognized RadioState: " + stateInt);
-    }
-}
-```
-
-**注意**：`RADIO_POWER_ON=1`（Java）和 `RadioState.ON=10`（HAL）值不同——这是 API Level 1 时代遗留的 Java 命名先于 HAL 设计的产物。
-
-**上行通知链路**（HAL → Java）：
-
-```
-modem chip
-  → IRadio HAL (HIDL/AIDL binder)
-  → RadioIndication.radioStateChanged()   [frameworks/opt/telephony/.../RadioIndication.java:138]
-  → RILUtils.convertHalRadioState()       [enum 转换]
-  → BaseCommands.setRadioState()          [父类，触发 mRadioStateChangedRegistrants 广播]
-  → ServiceStateTracker / Phone           [最终消费者]
-```
-
-**下行控制链路**（Java → HAL）：
-
-```
-GsmCdmaPhone / ImsPhone
-  → RIL.setRadioPower(on, forEmergency, preferredForEmergency, result)
-                                              [RIL.java:2051]
-  → RadioModemProxy.getRadioServiceProxy()
-  → HAL 版本分派（AIDL → 1.6 → 1.5 → 1.0）
-  → IRadioModem.setRadioPower() / IRadio.setRadioPower_1_6()
-  → modem chip
-```
-
-**关键功耗路径：紧急呼叫优化扫描**（API 33+, HAL 1.5+）：
-
-```hal
-// hardware/interfaces/radio/1.6/IRadio.hal:41-70
-oneway setRadioPower_1_6(int32_t serial, bool powerOn, bool forEmergencyCall,
-        bool preferredForEmergencyCall);
-
-/*
- * When powerOn + forEmergencyCall + preferredForEmergencyCall all true,
- * modem scans only emergency call bands until:
- * 1) Emergency call completed
- * 2) Another setRadioPower with emergency flags reset
- * 3) Timeout after 30 seconds
- */
-```
-
-- 30 秒硬超时——**这是当前电流值的隐性峰源**：
-  - 0-30s：仅扫紧急频段，~150-250 mA
-  - 30s 后：强制全频段扫描，~300+ mA
-- 业务上应避免"启用紧急模式但不立即拨号"的场景
-
-**AIDL 迁移状态**（Android 14+ / API 34+）：
-
-```java
-// RadioModemProxy.java:75
-if (isAidl()) {
-    mModemProxy.setRadioPower(serial, powerOn, forEmergencyCall, preferredForEmergencyCall);
-} else if (mHalVersion.greaterOrEqual(RIL.RADIO_HAL_VERSION_1_6)) {
-    ((android.hardware.radio.V1_6.IRadio) mRadioProxy).setRadioPower_1_6(...);
-} else if (mHalVersion.greaterOrEqual(RIL.RADIO_HAL_VERSION_1_5)) {
-    ((android.hardware.radio.V1_5.IRadio) mRadioProxy).setRadioPower_1_5(...);
-} else {
-    mRadioProxy.setRadioPower(serial, powerOn);
-}
-```
-
-Android 14+ 源码同时保留 AIDL 与 HIDL 分派；新实现应优先核对 AIDL `IRadioModem`，HIDL 路径（`IRadio.hal` 1.0-1.6）用于兼容旧 HAL。Android 17 不再新增 HIDL Radio HAL 版本。
-
-> **Android 17 范围内 Radio 相关能力**：AIDL Radio HAL 的 `IRadioModem.setRadioPower()` + `IRadioModem.getRadioCapability()` + `RadioIndication.radioStateChanged()` 已在 android-17.0.0_r1 的 `hardware/interfaces/radio/aidl/` 中 stably 定义。AOSP main 中未进入 Android 17 的接口不得作为正文结论。
-
-**RadioInterfaceLayer.java 已经被移除**：该类在 2018 年前后被 RIL + Radio*Proxy + RadioIndication 三件套完全替代。任何引用该类的旧资料已过时。当前 Android 17 架构是 **RIL → RadioModemProxy/RadioNetworkProxy/RadioSimProxy → IRadio AIDL → modem chip**。
-
-
-
-
-## 11.4.4 内存优化对功耗的影响
-
-### 问题场景
-某应用在长期运行时出现内存泄漏，导致系统频繁触发垃圾回收，影响电池续航。
-
-### 分析过程
-
-#### 1. 内存与功耗关系
-- **GC 频率**：内存紧张时 GC 增加，CPU 占用上升
-- **Swap 活动**：内存不足导致磁盘 I/O 增加，功耗上升
-- **页面回收**：内存压缩需要额外 CPU 时间
-
-#### 2. 优化方案
-```java
-// 优化后的内存管理
-public class MemoryOptimizedApplication extends Application {
-    private RefWatcher refWatcher;
-    
     @Override
-    public void onCreate() {
-        super.onCreate();
-        
-        // 启用 LeakCanary 检测内存泄漏
-        if (LeakCanary.isInAnalyzerProcess(this)) {
-            return;
+    protected void onStop() {
+        if (registered) {
+            getSystemService(ConnectivityManager.class)
+                    .unregisterNetworkCallback(callback);
+            registered = false;
         }
-        refWatcher = LeakCanary.installedRefWatcher(this);
-        
-        // 优化内存分配策略
-        setDefaultMemoryCacheSize();
-    }
-    
-    private void setDefaultMemoryCacheSize() {
-        ActivityManager activityManager = getSystemService(ActivityManager.class);
-        int memoryClass = activityManager.getMemoryClass();
-        int cacheSize = memoryClass * 1024 * 1024 / 8; // 使用 1/8 内存作为缓存
-        
-        ImageLoader.getInstance().init(new ImageLoaderConfiguration.Builder(this)
-            .memoryCacheSize(cacheSize)
-            .diskCacheSize(100 * 1024 * 1024) // 100MB 磁盘缓存
-            .build());
+        super.onStop();
     }
 }
 ```
 
-#### 3. 优化效果
-- **内存使用**：峰值内存降低 30%
-- **GC 频率**：减少 50%
-- **电量消耗**：内存相关功耗降低 25%
+生产代码还要防止重复注册，并按 UI 是否需要后台更新选择 `onStart/onStop` 或更长的生命周期。协程、Rx stream、sensor listener、location listener 和 Handler callback 都要检查同类的所有权问题。
 
-## 11.4.5 前台服务与 Doze 模式协同优化
+### 证明它与功耗有关
 
-### 问题场景
-某些需要在后台持续运行的应用（如音乐播放、导航），需要在前台服务与 Doze 模式间找到平衡。
+证据应按顺序建立：
 
-### 分析过程
+1. heap dump 显示已销毁组件被某个 listener、线程或队列持有；
+2. trace 或日志显示该对象仍收到回调；
+3. 回调带来可量化的 CPU、binder、网络、定位或存储工作；
+4. 修复后 retained object、回调量和对应资源时间同时下降。
 
-#### 1. Doze 模式限制
-- **网络暂停**：Doze 期间应用网络访问被挂起，维护窗口内短暂恢复
-- **WakeLock 忽略**：非豁免应用持有的 WakeLock 不再保证执行
-- **同步/Job 推迟**：SyncAdapter、JobScheduler 和基于 JobScheduler 的 WorkManager 任务推迟到维护窗口
-- **Alarm 限制**：普通 `setExact()` / `setWindow()` 推迟到维护窗口；`setAndAllowWhileIdle()` / `setExactAndAllowWhileIdle()` 可穿透 Doze，但同一应用触发频率受限
+GC 次数增加可能带来 CPU 成本，内存压力也可能触发 reclaim、压缩或 swap；具体路径取决于设备内核与内存配置。`android17-6.18-2026-06_r6` 中页面回收的通用入口可从 `mm/vmscan.c` 追踪，但应用侧不能把 RSS 的变化直接换算成能耗。
 
-#### 2. 优化策略
+Android 17 的 `ProfilingManager` 增加 anomaly trigger，可在系统检测到过量 binder 调用或内存超限等异常时提供采样或 heap dump 线索。它是取证入口，不能取代复现脚本、对象引用链和功耗测量。
+
+## 11.4.5 案例五：用 WakeLock 和 Alarm 对抗 Doze
+
+### 错误思路
+
+一种常见实现会在服务中持有长 WakeLock；检测到 `isDeviceIdleMode()` 后，再安排 `setExactAndAllowWhileIdle()` 继续唤醒。它同时绕开两层系统批处理机会：
+
+- Doze 会推迟普通 Job、sync、alarm 和网络访问，并忽略普通应用的 WakeLock；
+- allow-while-idle alarm 会唤醒设备，频率受系统限制，只应服务于用户可感知且有精确时刻要求的功能。
+
+即时消息应优先使用共享推送通道。普通后台刷新交给 WorkManager/JobScheduler，接受维护窗口或 quota 带来的延迟。闹钟、日历提醒等精确用户事件才评估 exact alarm 资格。
+
+### Android 17 的 listener 型 idle alarm
+
+API 37 增加接收 `Executor` 与 `OnAlarmListener` 的 `setExactAndAllowWhileIdle()`。下面的代码只适合当前组件仍存活时需要的精确回调。
+
 ```java
-// 兼容 Doze 模式的前台服务
-public class DozeAwareService extends Service {
-    private PowerManager.WakeLock wakeLock;
-    private AlarmManager alarmManager;
-    private PowerManager powerManager;
-    
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        powerManager = (PowerManager) getSystemService(POWER_SERVICE);
-        alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+public final class VisibleSessionDeadline {
+    private final AlarmManager alarmManager;
+    private final Executor executor;
+    private AlarmManager.OnAlarmListener listener;
+
+    public VisibleSessionDeadline(Context context) {
+        alarmManager = context.getSystemService(AlarmManager.class);
+        executor = context.getMainExecutor();
     }
-    
-    public void startOptimizedWork() {
-        // 判断设备是否在 Doze 模式
-        if (powerManager.isDeviceIdleMode()) {
-            // Doze 模式下使用 Alarm 替代直接执行
-            scheduleDozeWork();
-        } else {
-            // 正常模式下直接执行
-            executeWorkImmediately();
+
+    public void schedule(long delayMillis, Runnable action) {
+        if (Build.VERSION.SDK_INT < 37) {
+            throw new UnsupportedOperationException("API 37 required");
         }
+        cancel();
+        listener = action::run;
+        alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                SystemClock.elapsedRealtime() + delayMillis,
+                "visible-session-deadline",
+                executor,
+                listener);
     }
-    
-    private void scheduleDozeWork() {
-        long triggerTime = SystemClock.elapsedRealtime() + 
-            AlarmManager.INTERVAL_HALF_HOUR;
-        
-        Intent workIntent = new Intent(this, WorkReceiver.class);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, 
-            workIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        
-        // 使用 setAndAllowWhileIdle 穿透 Doze；同一应用仍受最小触发间隔限制
-        alarmManager.setAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP,
-            triggerTime, pendingIntent);
-    }
-    
-    private void executeWorkImmediately() {
-        // 获取部分唤醒锁确保工作完成
-        wakeLock = powerManager.newWakeLock(
-            PowerManager.PARTIAL_WAKE_LOCK, "DozeAwareService");
-        wakeLock.acquire(10 * 60 * 1000L);
-        try {
-            // 执行实际工作
-            doActualWork();
-        } finally {
-            if (wakeLock.isHeld()) {
-                wakeLock.release();
-            }
+
+    public void cancel() {
+        if (listener != null) {
+            alarmManager.cancel(listener);
+            listener = null;
         }
     }
 }
 ```
 
-#### 3. 优化效果
-- **Doze 兼容性**：完全兼容 Android 6.0+ 的 Doze 模式
-- **唤醒效率**：减少无效唤醒 85%
-- **电量消耗**：后台服务功耗降低 60%
+系统可在调用进程不再有 Activity、Service 或 ContentProvider 时取消 listener alarm。组件结束时也应调用 `cancel(listener)`。需要跨进程死亡可靠送达的用户提醒仍应使用适合的 `PendingIntent` 方案，并遵守 exact alarm 权限和政策。
 
-## 11.4.6 批量任务调度优化
+### Doze 与 Low Power Standby
 
-### 问题场景
-多个后台任务（同步、上传、下载等）独立调度，导致系统频繁唤醒。
+Doze 关注设备长时间闲置时的 CPU、网络、Job、alarm 和 WakeLock。Low Power Standby 还会在非交互状态下限制网络与 WakeLock；设备支持、启用状态和豁免都可能不同。前台服务不会天然绕过这些网络与电源策略。
 
-### 分析过程
+平台进入 suspend 时会检查 wakeup source。Android 17 的内核锚点是 `kernel/power/suspend.c` 与 `drivers/base/power/wakeup.c`。应用在 BatteryStats 中看到的 WakeLock 归因和内核 wakeup source 处于不同层级，排查时要用时间线关联。
 
-#### 1. 问题分析
-- **任务冲突**：多个任务同时执行，资源竞争
-- **唤醒重复**：相近时间点唤醒，无法合并
-- **资源浪费**：频繁创建/销毁服务
+下面的命令用于在测试设备上强制进入和退出 Doze。
 
-#### 2. 优化方案
-```java
-// 统一的任务调度器
-public class UnifiedTaskScheduler {
-    private static final long BATCH_WINDOW = 5 * 60 * 1000; // 5分钟批量窗口
-    private final ScheduledExecutorService executor = 
-        Executors.newScheduledThreadPool(3);
-    
-    public void scheduleTask(Task task) {
-        // 将任务加入不同优先级队列
-        if (task.isHighPriority()) {
-            scheduleHighPriorityTask(task);
-        } else {
-            scheduleLowPriorityTask(task);
-        }
-    }
-    
-    private void scheduleHighPriorityTask(Task task) {
-        // 高优先级任务单独处理
-        executor.schedule(() -> {
-            executeTask(task);
-        }, 0, TimeUnit.SECONDS);
-    }
-    
-    private void scheduleLowPriorityTask(Task task) {
-        // 低优先级任务批量处理
-        executor.schedule(() -> {
-            List<Task> batchTasks = collectBatchTasks();
-            if (!batchTasks.isEmpty()) {
-                executeBatch(batchTasks);
-            }
-        }, calculateDelay(), TimeUnit.SECONDS);
-    }
-    
-    private long calculateDelay() {
-        // 计算到下一个批量窗口的时间
-        long currentTime = System.currentTimeMillis();
-        long windowStart = (currentTime / BATCH_WINDOW) * BATCH_WINDOW;
-        if (currentTime > windowStart) {
-            windowStart += BATCH_WINDOW;
-        }
-        return windowStart - currentTime;
-    }
-}
+```bash
+adb shell dumpsys deviceidle force-idle
+adb shell dumpsys deviceidle
+adb shell dumpsys deviceidle unforce
 ```
 
-#### 3. 优化效果
-- **系统唤醒**：减少 70% 的唤醒次数
-- **执行效率**：任务执行时间缩短 40%
-- **电量消耗**：后台任务功耗降低 55%
+测试期间应确认设备未充电，并在结束后执行 `unforce`。用例要检查推送送达、普通同步延迟、维护窗口恢复、网络失败后的幂等重试，以及用户唤醒设备后的状态一致性。
 
-### Adaptive Battery × App Standby 协同机制（5 桶配额 + 三方消费 + 12h 衰减）
+## 11.4.6 案例六：多个模块各自注册后台任务
 
-#### 1. 写入侧：ML 预测如何落到桶值
+### 问题
 
-Adaptive Battery 在 AOSP 主线不是独立服务，而是一套**写入接口 + 衰减契约**。`AppStandbyController.setAppStandbyBuckets()`（`frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java:1749-1790`）把"非用户、非系统"的调用全部标记为 `REASON_MAIN_PREDICTED`，再把桶值与 `lastPredictedTime` 一起持久化到 `AppIdleHistory.AppUsageHistory`（`AppIdleHistory.java:174-204`）。三个 caller 类别：
+同步、日志、配置和清理模块若各自创建周期 Job，容易产生这些后果：
 
-| Caller UID | reason | 预测能否覆盖 |
-|------------|--------|--------------|
-| `shell`/`root`/Settings | `REASON_MAIN_FORCED_BY_USER` | 否 |
-| Core 系统进程 | `REASON_MAIN_FORCED_BY_SYSTEM` | 否 |
-| `UsageStatsManagerInternal` 透传的 ML | `REASON_MAIN_PREDICTED` | 是 |
+- 多个 Job 具有相同网络约束与相近时限，却分别启动进程和网络；
+- 页面、广播和 push 都重复调用 `schedule()`；
+- 每个模块独立重试，服务恢复时形成请求峰值；
+- Job 数量、调度入口频率和 App Standby quota 更快触及限制。
 
-**关键点**：OEM GMS / 第三方 Usage Ranker 通过 `UsageStatsManagerInternal.setAppStandbyBuckets` 写入后，**唯一持久化字段**是 `lastPredictedBucket` 与 `lastPredictedTime`。评估侧 `AppStandbyController.predictionTimedOut()`（`AppStandbyController.java:1094-1098`）给出默认 12 小时超时：
+合并任务时不能只看时间接近。精确时限、网络类型、充电要求、失败语义或用户可见性不同的工作应保留独立调度。
+
+### 同约束工作使用一个 JobInfo
+
+Android 14 起，`JobWorkItem` 可以与 persisted Job 一起持久化。下面的示例让一组“联网且可延迟”的工作共享稳定的 JobInfo。
 
 ```java
-private static final long DEFAULT_PREDICTION_TIMEOUT =
-        COMPRESS_TIME ? 10 * ONE_MINUTE : 12 * ONE_HOUR;
-```
+public final class DeferredWorkQueue {
+    private static final int JOB_ID = 4100;
 
-超过 12 小时或用户产生 usage 事件，`evaluateBucketsLocked()` 走 `getBucketForLocked()` 纯时间阈值路径——**Adaptive Battery 完全失效的 fallback 就在这里**。
+    public static int enqueue(
+            Context context,
+            String operation,
+            long recordId) {
+        ComponentName service =
+                new ComponentName(context, DeferredJobService.class);
 
-#### 2. 衰减契约：predicted vs timeout 决策树
+        JobInfo job = new JobInfo.Builder(JOB_ID, service)
+                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_UNMETERED)
+                .setPersisted(true)
+                .build();
 
-`AppStandbyController.java:1014-1027` 的核心判断：
+        PersistableBundle extras = new PersistableBundle();
+        extras.putString("operation", operation);
+        extras.putLong("record_id", recordId);
 
-```java
-if (!predictionLate && app.lastPredictedBucket >= STANDBY_BUCKET_ACTIVE
-        && app.lastPredictedBucket <= STANDBY_BUCKET_RARE) {
-    newBucket = app.lastPredictedBucket;     // 12h 内的预测值
-    reason    = REASON_MAIN_PREDICTED | REASON_SUB_PREDICTED_RESTORED;
-} else {
-    newBucket = getBucketForLocked(packageName, userId, elapsedRealtime);  // 时间阈值
-    reason    = REASON_MAIN_TIMEOUT;
-}
-```
+        JobWorkItem item = new JobWorkItem.Builder()
+                .setExtras(extras)
+                .build();
 
-`mPredictionTimeoutMillis` 允许被 `DeviceConfig` 覆写（`AppStandbyController.java:3231-3233`），OEM 可调整保质期。
-
-#### 3. 三方消费者：桶值到资源限制的完整路径
-
-**JobScheduler 消费**（`JobSchedulerService.java:5016-5058`）——`standbyBucketForPackage()` 把标准桶值映射成内部索引 `EXEMPTED/ACTIVE/WORKING/FREQUENT/RARE/RESTRICTED/NEVER`，再喂给 `QuotaController.isWithinQuotaLocked()`（`QuotaController.java:942-1017`）。`QuotaController` 默认配额矩阵（`QuotaController.java:3196-3294`）：
-
-| 桶 | 窗口 | Job 配额 | Session 配额 | EJ 配额 |
-|----|------|---------|--------------|---------|
-| EXEMPTED | 40 min | 75 | 75 | 60 min |
-| ACTIVE | 60 min | 75 | 75 | 30 min |
-| WORKING_SET | 4 h | 120 | 10 | 15 min |
-| FREQUENT | 12 h | 200 | 8 | 10 min |
-| RARE | 24 h | 48 | 3 | 10 min |
-| RESTRICTED | 24 h | 10 | 1 | 5 min |
-
-FREQUENT→RARE 一次降级，**Job 配额衰减 4 倍**、Session 配额衰减 2.5 倍。这就是 Adaptive Battery 写一次桶值的实际资源效果。
-
-**AppStateTracker 消费**（`AppStateTrackerImpl.java:771-789, 1146-1195`）——`StandbyTracker.onAppIdleStateChanged()` 把进入 EXEMPTED 的包加入 `mExemptedBucketPackages`；`areAlarmsRestrictedByBatterySaver()` 与 `areJobsRestricted()` 在 `mForceAllAppsStandby` 路径下读取该集合并放行 jobs/alarms。**EXEMPTED 不等价于 UID 前台态**：`isUidActiveSynced()` 仍只查 ActivityManager，Radio/RIL 是否拉活也不能由 AppStandby bucket 直接推断。
-
-**全局强制降级**（`AppStateTrackerImpl.java:634-654`）——`mForceAllAppsStandby` 是 OEM 经常复用的钩子：华为/小米冻结后台的底层来源之一，与 Adaptive Battery 桶值是叠加而非互斥。
-
-#### 4. 调用链总览
-
-```
-[OEM Usage Ranker / ML 预测]
-        ↓ UsageStatsManagerInternal.setAppStandbyBuckets(...)
-[AppStandbyController.setAppStandbyBucket(...)]  reason=REASON_MAIN_PREDICTED
-        ↓ 持久化 lastPredictedBucket / lastPredictedTime
-[evaluateBucketsLocked() / 定时评估]
-        │ predictionTimedOut: 12h 窗口内？
-        │   ├─ 是 → newBucket = lastPredictedBucket
-        │   └─ 否 → newBucket = getBucketForLocked()  时间阈值
-        ↓
-[StandbyUpdateRecord + AppIdleStateChangeListener 广播]
-        │
-        ├─→ AppStateTracker.StandbyTracker.onAppIdleStateChanged()
-        │       → mExemptedBucketPackages.add/remove
-        │       → areAlarmsRestrictedByBatterySaver() / areJobsRestricted() 放行 jobs/alarms
-        │
-        └─→ JobSchedulerService.standbyBucketForPackage()
-                → QuotaController.isWithinQuotaLocked()
-                → { EJ 时长 / Job 数 / Session 数 / 充电豁免 / 顶层启动豁免 }
-                → Job 允许 / 延期（whenStandbyDeferred++）
-```
-
-#### 5. 性能影响与版本差异
-
-- **唤醒节省**：RARE/RESTRICTED 桶进入 24h quota window；RARE 默认仍有 48 个 Job / 3 个 session，但总执行时间只有 10min/24h，RESTRICTED 收紧到 10 个 Job / 1 个 session。FREQUENT→RARE 后，Job 数配额下降约 4 倍。
-- **EXEMPTED 副作用**：ML 推入 EXEMPTED 的 App 同时获得更大的 JobScheduler quota，并在 AppStateTracker 的 force-all-apps-standby 路径下绕过 jobs/alarms 限制；它不是 UID active，也不是 Radio/RIL 旁路。
-- **版本差异**：RESTRICTED 自动降级 8 天阈值从 Android 13 起生效；Android 14 起 `DEFAULT_CURRENT_EJ_TOP_APP_TIME_CHUNK_SIZE_MS` 从 30s 改成 5min；Android 16+ `AppStandbyController` 整组迁移到 `apex/jobscheduler/service/`；Android 17 维持 `12 * ONE_HOUR` 默认 prediction timeout。
-
-> 排查后台任务延迟时，先用 `adb shell dumpsys jobscheduler <pkg>` 看到 `whenStandbyDeferred>0`，再 `adb shell am get-standby-bucket <pkg>` 拿当前桶，配合 `dumpsys usagestats` 里的 `adaptivebat=<provider_pkg>` 判断是 ML 预测结果还是时间阈值结果——三种情况的修复路径不同。
-
-## 11.4.7 JobScheduler 节流机制：三层防线源码级分析
-
-> 上文的 §11.4.1.2.2 从系统全局视角归纳了 Android 17 JobScheduler 的五层叠加节流体系（注册数节流 → API Quota 节流 → 运行时长节流 → 并发控制 → 强制批处理）。本节从「应用可感知的后台配额」视角聚焦其中三个子维度，三层防线与五层体系的关系是：
-> - **第一层「API 调度频率节流」= 五层之第二层（API Quota）**
-> - **第二层「执行超时节流」= 五层之第三层（运行时长节流）的超时归责与降桶副作用**
-> - **第三层「后台运行配额」= QuotaController 的配额矩阵，是五层中第四、五层（并发控制 + 批处理）的上游 gate**——QuotaController 在 `isWithinQuotaLocked()` 阶段拦截，通过后才进入 `JobConcurrencyManager` 的并发分配与 `shouldForceBatchLocked()` 的批处理延迟。
-
-JobScheduler 在 framework 层构建了**三层节流防线**防止应用滥用后台执行，三层互不替代、共同收敛到「应用应进入前台或 TOP 状态」的目标。
-
-### 11.4.7.1 第一层：API 调度频率节流（schedule() rate limit）
-
-**核心常量**（`JobSchedulerService.java:701-776`，DeviceConfig 可覆盖）：
-
-| Key | Default | 含义 |
-|-----|---------|------|
-| `KEY_ENABLE_API_QUOTAS` | true | 总开关 |
-| `KEY_API_QUOTA_SCHEDULE_COUNT` | 250 (硬下限) | 每窗口允许的 schedule() 次数 |
-| `KEY_API_QUOTA_SCHEDULE_WINDOW_MS` | 1 minute | 滚动窗口长度 |
-| `KEY_API_QUOTA_SCHEDULE_THROW_EXCEPTION` | true | 超限后是否对 debuggable 抛 `LimitExceededException` |
-| `KEY_API_QUOTA_SCHEDULE_RETURN_FAILURE_RESULT` | false | 超限后是否返回 RESULT_FAILURE |
-
-**执行路径**（`JobSchedulerService.scheduleAsPackage()`，line 1720-1767）：
-
-```java
-if (job.isPersisted() && (packageName == null || packageName.equals(servicePkg))) {
-    if (!mQuotaTracker.isWithinQuota(userId, pkg, QUOTA_TRACKER_SCHEDULE_PERSISTED_TAG)) {
-        mAppStandbyInternal.restrictApp(pkg, userId,
-            UsageStatsManager.REASON_SUB_FORCED_SYSTEM_FLAG_BUGGY);
-        if (mConstants.API_QUOTA_SCHEDULE_THROW_EXCEPTION && isDebuggable) {
-            throw new LimitExceededException("schedule()/enqueue() called more than "
-                + mQuotaTracker.getLimit(QUOTA_TRACKER_CATEGORY_SCHEDULE_PERSISTED)
-                + " times in the past "
-                + mQuotaTracker.getWindowSizeMs(QUOTA_TRACKER_CATEGORY_SCHEDULE_PERSISTED)
-                + "ms.");
-        }
-        if (mConstants.API_QUOTA_SCHEDULE_RETURN_FAILURE_RESULT) {
-            return JobScheduler.RESULT_FAILURE;
-        }
-    }
-    mQuotaTracker.noteEvent(userId, pkg, QUOTA_TRACKER_SCHEDULE_PERSISTED_TAG);
-}
-```
-
-**关键设计点**：
-- **只对 persisted job 限频**：非持久化 Job 走 `JobStore` 内存路径，频繁 schedule 但不入库，不会触配额。
-- **节流附带 `restrictApp(...)`**：把包降级到 RESTRICTED 桶，**杀手锏**——即使 schedule() 成功，restricted 桶的 Job 在 QuotaController 还会被掐（见第三层）。
-- **`Math.max(250, ...)` 硬下限保护**（line 1182-1185）：OEM 改小 DeviceConfig 不会低于 250。
-
-### 11.4.7.2 第二层：执行超时节流（Execution Safeguards for UDC）
-
-跟踪 UI-initiated / Expedited / Regular 三类 Job 的超时事件（默认 24h 窗口内 2/5/3 次，total 10 次），ANR 单独计数（默认 6h 内 3 次）。
-
-**记录路径**（`JobSchedulerService.maybeProcessBuggyJob()`，android-17.0.0_r1 行 3543-3589）：
-
-```java
-if (jobTimedOut) {
-    final int userId = jobStatus.getTimeoutBlameUserId();
-    final String pkg = jobStatus.getTimeoutBlamePackageName();
-    mQuotaTracker.noteEvent(userId, pkg,
-            jobStatus.startedAsUserInitiatedJob ? QUOTA_TRACKER_TIMEOUT_UIJ_TAG
-            : jobStatus.startedAsExpeditedJob ? QUOTA_TRACKER_TIMEOUT_EJ_TAG
-            : QUOTA_TRACKER_TIMEOUT_REG_TAG);
-    if (!mQuotaTracker.noteEvent(userId, pkg, QUOTA_TRACKER_TIMEOUT_TOTAL_TAG)) {
-        mAppStandbyInternal.restrictApp(pkg, userId,
-                UsageStatsManager.REASON_SUB_FORCED_SYSTEM_FLAG_BUGGY);
+        return context.getSystemService(JobScheduler.class)
+                .enqueue(job, item);
     }
 }
 ```
 
-**关键设计点**：
-- **`getTimeoutBlameUserId/PackageName` 归责到发起方**：Job 是被系统排给 A 跑的，但发起方是 B，那 B 拿单。
-- **`noteEvent` 返回值即「是否仍在配额内」**：UIJ/EJ/REG 单独触顶只计数不降级，给应用留缓冲；**只有 timeout_total 和 ANR 触顶才 `restrictApp`**。
-- **ANR 单独走 `QUOTA_TRACKER_ANR_TAG`**：6h/3 次更严格（ANR 几乎都是 bug 行为）。
-- **「超时」依据**（line 3227-3236）：`executionDurationMs >= RUNTIME_MIN_GUARANTEE_MS`，普通 Job 10 分钟、Expedited 3 分钟、UI 6 小时。
+`NETWORK_TYPE_UNMETERED` 表示系统判定的非计量网络，不等同于 Wi-Fi。persisted Job 需要 Manifest 中的 `RECEIVE_BOOT_COMPLETED`，`DeferredJobService` 需要受 `BIND_JOB_SERVICE` 保护。服务应逐个 `dequeueWork()`，成功后 `completeWork()`，并在异步处理结束时调用 `jobFinished()`。业务记录需要自己的幂等键；JobWorkItem 不能充当数据真源。
 
-**消费侧**（`JobServiceContext.isAppConsideredBuggy()`，line 4600-4604）：把 buggy 状态透出到 dumpsys、bug report，触发 BatteryStats 异常标记。
+官方 API 建议同一队列持续使用相同的 `JobInfo`。反复改变 extras、ClipData 或约束可能让系统把描述视为变化，导致正在运行的 Job 被停止后重启。合并后仍受 150 个 Job 上限、调度入口节流、standby bucket、quota 和设备状态限制。
 
-### 11.4.7.3 第三层：后台运行配额（QuotaController）
+### App Standby 只解释“为何等”，不替应用做优先级
 
-**配额矩阵**（`QuotaController.java:3196-3294`，`QcConstants` 默认值）：
+Adaptive Battery 或系统使用记录会影响 App Standby bucket，`QuotaController` 再按 bucket 与设备状态决定 Job 是否处于 quota。应用应通过业务时限选择普通、expedited 或 user-initiated 工作，不能靠频繁重调度争取执行机会。
 
-| Bucket | AllowedTime/Period (legacy → Android 17 default) | WindowSize (legacy → Android 17 default) | MaxJobCount | MaxSessionCount |
-|--------|--------------------|-------------------------------|-------------|-----------------|
-| EXEMPTED | 10 min → 20 min | 10 min → 40 min | 75 | 75 |
-| ACTIVE | 10 min → 20 min | 10 min → 60 min | 75 | 75 |
-| WORKING | 10 min | 2 h → 4 h | 120 | 10 |
-| FREQUENT | 10 min | 8 h → 12 h | 200 | 8 |
-| RARE | 10 min | 24 h | 48 | 3 |
-| RESTRICTED | 10 min | 24 h | 10 | 1 |
-| NEVER | 0 | 0 | 0 | 0 |
+Android 17 可使用 `getPendingJobReasonStats()` 区分等待主要来自网络约束、App Standby、quota、设备状态还是调度优化。若等待时间符合约束，这属于调度结果；若 SLA 不允许这段延迟，应重新选择 API 或调整业务契约。
 
-**全局硬上限**（`QuotaController.java:376-403`）：
-- `mMaxExecutionTimeMs = 4 hours`（无论 bucket，24h 内最多跑 4h）
-- `mRateLimitingWindowMs = 1 minute`、`mMaxJobCountPerRateLimitingWindow = 20`（最近 1 分钟 ≤ 20 个 Job）
-- `mQuotaBufferMs = 30s`（in-quota 边界 buffer，避免抖动）
+### 验证
 
-**EJ 专属配额**（`QuotaController.java:481-528`）：`mEJLimitsMs[]` 给 Expedited Job 单独限额，EXEMPTED 60min、ACTIVE 30min、WORKING 15min、FREQUENT 10min、RARE 10min、RESTRICTED 5min；窗口 `mEJLimitWindowSizeMs = 24h`。
+比较合并前后的：
 
-**决策入口**（`QuotaController.isWithinQuotaLocked()`，line 942-972）：
+- 待调度 Job 数与每小时调度 API 调用数；
+- 进程启动、Job session、网络连接和失败重试数量；
+- 每类操作的最长等待、成功率和重复处理；
+- `STOP_REASON_*`、pending reason stats 与当前 standby bucket；
+- 单位业务量的 CPU time、网络字节和设备能量。
 
-```java
-if (jobStatus.shouldTreatAsUserInitiatedJob()
-        || isTopStartedJobLocked(jobStatus)
-        || isUidInForeground(jobStatus.getSourceUid())) return true;  // 豁免
-if (standbyBucket == NEVER_INDEX) return false;
-if (isQuotaFreeLocked(standbyBucket)) return true;  // 充电中
-final ExecutionStats stats = getExecutionStatsLocked(...);
-if (!(getRemainingExecutionTimeLocked(stats) > 0)) return false;
-if (standbyBucket != RESTRICTED_INDEX && mService.isCurrentlyRunningLocked(jobStatus)) return true;
-return isUnderJobCountQuotaLocked(stats) && isUnderSessionCountQuotaLocked(stats);
-```
+## 11.4.7 跨案例判断表
 
-**调用链**（在每个 Job 生命周期内）：
+| 现象 | 不能直接得出的结论 | 需要补的证据 |
+|---|---|---|
+| UID 网络字节下降 | 蜂窝功耗按同比例下降 | 信号、制式、modem rail、请求时间线 |
+| 定位回调停止 | GNSS 已关闭 | 其他 registration、provider request、电源轨 |
+| RSS 下降 | 电池续航提升 | GC/reclaim/CPU/I/O 与能量变化 |
+| Job 长时间 pending | JobScheduler 出错 | pending reason、standby bucket、quota、设备状态 |
+| FGS 仍在通知栏 | 网络和 WakeLock 可在 Doze 中自由使用 | Doze/LPS 状态、网络与 WakeLock trace |
+| 唤醒次数下降 | 用户体验没有损失 | 成功率、延迟、丢失与恢复结果 |
 
-1. `maybeStartTrackingJobLocked()`（line 635-660）：Job 被 tracking controller 接管时调用 `isWithinQuotaLocked()`，并通过 `setConstraintSatisfied(jobStatus, nowElapsed, isWithinQuota, isWithinEJQuota)` 写入 constraint 状态。
-2. `prepareForExecutionLocked()`（line 664-692）：**真正开始计时**——把 Job 装进 `Timer.startTrackingJobLocked()`，此时 `Timer` 记录 `mStartTimeElapsed` 并 `scheduleCutoff()`。
-3. `unprepareFromExecutionLocked()`（line 697-707）：Job 跑完时 `Timer.stopTrackingJob()`，若 `mRunningBgJobs` 清空则 `emitSessionLocked()`，**把整段 session 写入 `mTimingSessions`**，并 `incrementTimingSessionCountLocked`。
-4. `getRemainingExecutionTimeLocked()`（line 1046-1048）：剩余时间 = `min(allowedTime - usedInWindow, maxExecTime - usedInMaxPeriod)`，**双窗口收敛**。
+## 11.4.8 版本边界
 
-**豁免路径**（line 882-925 + 942-972）：
+| 版本 | 与本章案例有关的变化 |
+|---|---|
+| Android 14 / API 34 | Job pending reason API；persisted Job 可携带可持久化 JobWorkItem；`shortService` 类型 |
+| Android 15 / API 35 | target 35+ 的 `dataSync`、`mediaProcessing` FGS 进入 6 小时/24 小时限制；`Service.onTimeout(int, int)` |
+| Android 16 / API 36 | `getPendingJobReasons()` 返回多个等待原因；后台调度 quota 对 WorkManager 使用更需关注 |
+| Android 17 / API 37 | `getPendingJobReasonStats()`；listener 版本 `setExactAndAllowWhileIdle()`；本章平台源码锚点 `android-17.0.0_r1` |
 
-- **User-Initiated Job**：完全不计入 quota（`prepareForExecutionLocked` 直接 return，line 678-680）。
-- **Top started Job**：启动时 app 在 TOP 状态，整段不计入（`mTopStartedJobs` 集合 + `OVERRIDE_QUOTA_ENFORCEMENT_TO_TOP_STARTED_JOBS = 374323858L` ChangeID，line 161-164）。
-- **Foreground UID**：`isUidInForeground()` 命中即放行。
-- **BatteryCharging**：`isQuotaFreeLocked()` 返回 true（除 RESTRICTED），Job 全部放行。
-- **Temp allowlist / Top app grace period**：进入 `mTempAllowlistCache` 的 UID 拿 grace period。
-- **Already running**（非 RESTRICTED）：已经在跑的 Job 视为 in-quota，避免掐正在跑的任务。
+## 11.4.9 Review 清单
 
-### 11.4.7.4 节流与 JobConcurrencyManager 的协同
-
-`JobConcurrencyManager`（JCM）负责「**能跑多少**」并发，`QuotaController` 负责「**能不能跑**」quota；二者通过 `JobStatus.isReady()` 在 `findNextReadyJob()`（line 1655、1752）协同：
-
-```java
-if (Flags.countQuotaFix() && !nextPending.isReady()) {
-    pendingJobQueue.remove(nextPending);
-    continue;
-}
-```
-
-`isReady()` 是 JobStatus 上的聚合判定——所有 controller 都说「OK」才算 ready。QuotaController 通过 `setConstraintSatisfied()` 把 `isWithinQuota` 写进 JobStatus 的 constraint snapshot。**关键：QuotaController 不抢占 JCM 的并发名额，JCM 不感知 quota 状态**——这层解耦使得 quota 限制可以独立调整。
-
-### 11.4.7.5 三层节流的协同效果
-
-| 节流层 | 防什么 | 谁来执行 | 触顶后副作用 |
-|--------|--------|----------|--------------|
-| 1. API 节流 | 防「调太多 schedule()」 | `JobSchedulerService.scheduleAsPackage()` | debuggable 抛异常 / release 默认继续（可配置返回失败）+ 降桶 |
-| 2. 执行超时节流 | 防「单次跑太久（>10min）」 | `JobSchedulerService.maybeProcessBuggyJob()`（android-17.0.0_r1:3543-3589） | total/ANR 触顶降桶 |
-| 3. 后台配额 | 防「算太久（>4h/24h）」 | `QuotaController.isWithinQuotaLocked()` | 静默 defer，1 分钟后 `MSG_REACHED_COUNT_QUOTA` 通知 |
-
-**调用收敛**：API 节流和执行超时 total/ANR 触顶会通过 `mAppStandbyInternal.restrictApp(pkg, userId, REASON_SUB_FORCED_SYSTEM_FLAG_BUGGY)` 把包降级到 RESTRICTED 桶；QuotaController 本身不降桶，只按当前 bucket 静默 defer。RESTRICTED 桶承受叠加惩罚，是因为前两层把应用推入最严 bucket 后，第三层再按 RESTRICTED 配额执行。
-
-### 11.4.7.6 性能与排查
-
-- **schedule() 入口 quota 检查 O(1)**：CountQuotaTracker 只查 ring buffer 头尾两次比较。
-- **QuotaController 高频判定点**：每个 Job 在 `maybeStartTrackingJobLocked()` 和 `prepareForExecutionLocked()` 都过 `isWithinQuotaLocked()`，**WORKING 桶 2h 窗口下平均遍历 20-30 个 session**，开销 < 1μs。
-- **AppStandby 联动是真正的成本**：频繁触限的应用会形成「schedule → 限频 → restrictApp → 降桶 → QuotaController 更严 → restrictApp」循环，**单次 schedule 路径可能放大到 ms 级**。
-- **充电豁免的功耗副作用**：`isQuotaFreeLocked()` 充电时放行所有 Job，OEM 应避免用户态 Job 伪装成系统任务——会导致 4h 硬上限失效。
-- **排查命令**：`adb shell dumpsys jobscheduler <pkg>` 看 `whenStandbyDeferred>0` + `QuotaController is within quota=false` + `CountQuotaTracker countInWindow/countLimit` 三个字段，配合 `dumpsys batterystats --checkin` 找 `restrictApp` 调用记录。
-
-> 与 §11.4.6 Adaptive Battery 协同机制的关系：§11.4.6 解释了「**bucket 怎么被算出来**」（ML 预测 + 时间衰减），本节解释「**bucket 怎么被消费**」（三层节流 + AppStandby 联动）。两者结合构成完整的 Adaptive Battery → JobScheduler 限流链路。
-
-
-## 总结
-
-
-本章案例覆盖了 Android 功耗优化的 5 个主要方向：
-
-1. **避免频繁唤醒**：JobScheduler 替代线程轮询——系统级调度 + 白名单 + Doze 集成，比应用自调度高效。FGS 超时机制从系统层限制后台长连接的最大存活时间。
-2. **批量处理**：网络请求合并到批量窗口，减少 Radio 状态切换次数。modem RRC 态切换（Idle→DCH→Idle）是每次唤醒的实际电流代价，理解 RRC 态才能建模"发一条消息花多少毫安时"。
-3. **智能选择**：定位策略区分驾驶/步行/静止场景，省电模式的 `FOREGROUND_ONLY` locationMode 在熄屏后直接让 provider inactive——比应用主动降频更省电。
-4. **内存管理**：内存泄漏 → GC 频率上升 → CPU 唤醒 → 功耗上升，是间接但真实的功耗路径。
-5. **模式兼容**：Doze、App Standby、Battery Saver 是叠加关系——前台服务 + `setAndAllowWhileIdle` 是在限制中维持功能的必要组合。
-
-以上优化方向的实际效果取决于设备电池容量、芯片工艺、运营商网络质量和用户使用模式，数字引用请以对应的测试条件为准。
-
+- [ ] 后台工作是否有明确的延迟和可靠性契约？
+- [ ] 用户不可见的工作是否误用了前台服务、WakeLock 或 exact alarm？
+- [ ] 是否用唯一工作、稳定 Job ID 或服务端游标消除了重复调度？
+- [ ] 定位请求是否由场景推导精度、间隔、距离和退出条件？
+- [ ] 网络批量是否只作用于允许延迟的请求？
+- [ ] listener、callback、线程、协程和 WakeLock 是否对称释放？
+- [ ] 是否记录 pending reason、stop reason、standby bucket 和系统电源状态？
+- [ ] 功耗数字是否附带设备、网络、温度、样本与原始产物？
+- [ ] AOSP 引用是否来自 `android-17.0.0_r1`，内核引用是否来自 `android17-6.18-2026-06_r6`？
 
 ## 参考资料
-### Battery Saver 与定位功耗策略协同机制（5 种 LocationMode × Thermal 叠加模型）
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-17-battery-saver-location-power-policy-aosp-deep-dive.md
-- 类型：DeepResearch 调研结果
-- 摘要：Battery Saver 通过 BatterySaverPolicy 的 5 种 locationMode（NO_CHANGE/GPS_DISABLED_WHEN_SCREEN_OFF/ALL_DISABLED/FOREGROUND_ONLY/THROTTLE_REQUESTS）控制定位，热节流走独立通道不直接修改定位模式。两层是叠加关系：低电关定位+过热调频率。LocationProviderManager.isActive() 在三条件同时满足时过滤后台 GPS 请求。
 
-### JobScheduler 节流机制三层防线（API 频率 + 执行超时 + 后台配额）
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-job-scheduler-throttling-mechanism.md
-- 类型：DeepResearch 调研结果
-- 摘要：JobScheduler 在 framework 层构建三层节流防线：(1) API 频率节流——CountQuotaTracker + JobSchedulerService.scheduleAsPackage() 在 schedule() 入口拦截，persisted job 250 次/分钟默认，触顶对 debuggable 抛 LimitExceededException 并对 release 应用调 restrictApp 降级到 RESTRICTED 桶；(2) 执行超时节流——Execution Safeguards for UDC 在 JobSchedulerService.maybeProcessBuggyJob() 记录超时事件并通过 mAppStandbyInternal.restrictApp() 降桶 UIJ/EJ/REG/ANR 超时事件，24h 内 total 10 次或 ANR 6h/3 次触顶同样降桶；(3) 后台配额——QuotaController.isWithinQuotaLocked() 双重窗口（bucket period 10min 执行时间 + MAX_PERIOD 4h 硬上限）+ 数量配额（WORKING 120/FREQUENT 200/RARE 48 jobs）+ 1 分钟 20 个 Job 速率配额，User-Initiated/Top started/Foreground/Charging/Temp allowlist 全部豁免。CountQuotaTracker 用 UptcMap 环形队列 O(1) 判定。JobConcurrencyManager 不感知 quota 状态，quota 状态写入 JobStatus constraint snapshot。注入到 §11.4.7。
+### Android 17 / API 37
 
-### JobScheduler 源码常量来源修正（APEX 路径迁移 + OP_TIMEOUT_MILLIS 核验）
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-jobscheduler-source-verification.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 16+ JobScheduler 从 services/core 迁移至 APEX 模块架构，路径变更为 apex/jobscheduler/service/java/。OP_TIMEOUT_MILLIS 从 Android 10 起始终位于 JobServiceContext.java，Android 12+ 乘以 HW_TIMEOUT_MULTIPLIER。ch11 04-case-studies 的 source_repos 需更新 APEX 路径。
+- [Android 17 features and APIs](https://developer.android.com/about/versions/17/features)
+- [JobScheduler API reference](https://developer.android.com/reference/android/app/job/JobScheduler)
+- [AlarmManager API reference](https://developer.android.com/reference/android/app/AlarmManager)
 
+### 后台执行与位置
 
-### Radio 状态机功耗原理完整分析（HAL→RIL→TelephonyManager 三层源码）
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-radio-power-state-machine-source-analysis.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 17 蜂窝 Radio 状态机由 HAL(radio/1.0/types.hal) 三位枚举(OFF/UNAVAILABLE/ON) → RIL → TelephonyManager 三层构成。HAL 不区分 IDLE/TRANSFER，modem 内部连接态对外不可见。下行控制 RIL.setRadioPower() 按 HAL 版本走不同 proxy，4G/5G 紧急呼叫扫描 30 秒自动回退是隐性电流峰值源。
+- [Foreground service timeouts](https://developer.android.com/develop/background-work/services/fgs/timeout)
+- [Optimize for Doze and App Standby](https://developer.android.com/training/monitoring-device-state/doze-standby)
+- [Background location limits](https://developer.android.com/about/versions/oreo/background-location-limits)
+- [Android 16 JobScheduler quota changes](https://developer.android.com/about/versions/16/behavior-changes-all#job-scheduler-quota)
+- [Power management resource limits](https://developer.android.com/topic/performance/power/power-details)
 
-### Adaptive Battery 与 App Standby 协同机制（5 桶配额 + 三方消费 + 12h 衰减）
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-adaptive-battery-app-standby-coordination.md
-- 类型：DeepResearch 调研结果
-- 摘要：Adaptive Battery 在 AOSP 主线不是独立服务，而是「写入接口+衰减契约」：UsageStatsManagerInternal.setAppStandbyBuckets() 走 REASON_MAIN_PREDICTED 路径，AppStandbyController 把 lastPredictedBucket 持久化，12h 内调度器读取，超过则回退到时间阈值。桶值被三方消费：JobScheduler.standbyBucketForPackage()→QuotaController.isWithinQuotaLocked()（决定 EJ/Job/Session 配额）、AppStateTracker.StandbyTracker（EXEMPTED 集 + jobs/alarms 强制待机放行）、AppStateTracker.mForceAllAppsStandby（OEM 强制降级钩子）。FREQUENT→RARE 等价于 Job 配额衰减 4 倍、Session 衰减 2.5 倍。
+### AOSP `android-17.0.0_r1`
 
+- `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java`
+- `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java`
+- `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java`
+- `frameworks/base/apex/jobscheduler/framework/java/android/app/AlarmManager.java`
+- `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java`
+- `frameworks/base/services/core/java/com/android/server/location/injector/SystemLocationPowerSaveModeHelper.java`
+- `frameworks/base/services/core/java/com/android/server/location/provider/LocationProviderManager.java`
+- `frameworks/opt/telephony/src/java/com/android/internal/telephony/RadioModemProxy.java`
+- `hardware/interfaces/radio/aidl/android/hardware/radio/modem/IRadioModem.aidl`
 
-### Android 12+ 隐私沙盒对定位功耗的三层判定链
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-18-privacy-sandbox-location-power-analysis.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 12+ 定位权限从 Manifest 声明扩展为三层判定链：LocationPermissions.getPermissionLevel() 解析权限位 → LocationPermissionsHelper.hasLocationPermissions() 叠加 AppOpsManager 运行时开关 → LocationProviderManager.isActive() 叠加 LOCATION_MODE_FOREGROUND_ONLY + isAppForeground() 前台判定。后台应用即使持有 ACCESS_FINE_LOCATION 也无法获得 fix，避免了无效 GPS 锁定、Wi-Fi 扫描、传感器调度的全部伴随电流。后台 interval 被强制拉大到 getBackgroundThrottleIntervalMs()（默认 30 分钟）。
-- 注入时间：2026-06-19
-- 价值：为 §11.4.2 定位服务功耗优化补充 Android 12+ 隐私沙盒的源码级功耗分析
+### Android common kernel `android17-6.18-2026-06_r6`
+
+- `kernel/power/suspend.c`
+- `drivers/base/power/wakeup.c`
+- `mm/vmscan.c`
+
+### 项目内调研材料
+
+- `DeepResearch/2026-06-17-battery-saver-location-power-policy-aosp-deep-dive.md`
+- `DeepResearch/2026-06-20-job-scheduler-throttling-mechanism.md`
+- `DeepResearch/2026-06-18-jobscheduler-source-verification.md`
+- `DeepResearch/2026-06-18-radio-power-state-machine-source-analysis.md`
+- `DeepResearch/2026-06-18-adaptive-battery-app-standby-coordination.md`
