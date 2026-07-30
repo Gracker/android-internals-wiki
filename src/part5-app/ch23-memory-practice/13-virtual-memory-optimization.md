@@ -24,7 +24,7 @@ sources:
   - type: blog
     path: "[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md]"
   - type: blog
-    path: "[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（下）：一些"黑科技"优化手段.md]"
+    path: '[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（下）：一些"黑科技"优化手段.md]'
   - type: blog
     path: "[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]"
 tags: [virtual-memory, VSS, thread-stack, maps-analysis, oom-prevention, memory-optimization, webview-reservation]
@@ -38,685 +38,342 @@ material_count: 4
 
 # 23.13 应用虚拟内存优化实战
 
-## 概述
+虚拟内存问题经常和 Java heap OOM、native heap、线程上限混在一起。处理这类问题时，第一步是确认失败来自地址空间、物理内存、VMA 数量还是线程资源。只盯着一个很大的 VSS 数字，容易把正常的地址预留当成泄漏。
 
-虚拟内存（Virtual Memory）是 Android 应用稳定性的隐形天花板。虽然 64 位设备理论上拥有 256TB 的虚拟地址空间，几乎不会耗尽，但在 32 位进程（3GB user space）以及系统对单进程虚拟内存总量的隐性限制下，VSS（Virtual Set Size）不足仍然会导致 `mmap` 失败、线程创建失败、甚至 native OOM 崩溃。
+本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点；涉及内核 `/proc` 与 VMA 语义时，以 `android17-6.18-2026-06_r6` 为内核锚点。Android 10—16 的历史行为只用于解释存量设备，不高于 Android 17。
 
-本节聚焦应用层的虚拟内存优化实践，覆盖六个核心方向：VSS 构成分析、线程栈治理、多进程隔离、maps 文件解析、WebView 预留释放、ART GC 后台空间管理。这些手段在中大型应用（尤其 32 位包）中可直接降低 OOM 率。
+## 1. VSS 先看语义，再看数值
 
-> **与 Part 1 的关系**：Part 1 ch04 讲述了 ART 内存管理和 LMK 的底层机制（详见 4.3、4.4），本节关注的是「应用开发者能做什么」。
+### 1.1 四个指标回答不同问题
 
----
+| 指标 | 常见来源 | 回答的问题 | 不能单独证明什么 |
+|---|---|---|---|
+| VSS / `VmSize` | `/proc/<pid>/status` | 进程建立了多少虚拟地址映射 | 已消耗多少 RAM、是否正在泄漏 |
+| RSS / `VmRSS` | `/proc/<pid>/status`、`smaps_rollup` | 当前驻留在 RAM 的页有多少 | 共享页应全部归属于该进程 |
+| PSS | `dumpsys meminfo`、`smaps` | 按共享比例分摊后的物理内存 | 地址空间是否碎片化 |
+| Private Dirty / Private Clean | `dumpsys meminfo`、`smaps` | 进程独占页的组成 | 单次快照中的增长原因 |
 
-## 🔹 虚拟内存基础与 Android 应用 VSS 构成
+`PROT_NONE` reservation、文件映射和未触达的匿名页都会计入 VSS，其中一部分没有对应的物理页。64 位进程出现数 GB VSS 很常见；只有结合 ABI、地址空间空洞、线程数、VMA 数量和失败现场，VSS 才能成为诊断证据。
 
-### 32 位 vs 64 位进程的地址空间
+### 1.2 32 位与 64 位的风险差异
 
-| 架构 | 用户态虚拟地址空间 | 实际可用（含系统保留） | VSS 耗尽风险 |
-|------|-------------------|----------------------|-------------|
-| 32 位 ARM | 3GB（1GB 内核） | ~2.5GB | ⚠️ 高 |
-| 64 位 ARM (AArch64) | 256TB | 实际受 per-process limit 限制（通常 128GB~256GB） | ✅ 极低 |
+32 位进程的用户态地址空间小于 4 GiB，具体布局受内核、ABI、ASLR、链接器和厂商配置影响。不能把所有设备统一写成“3 GiB 用户态 + 1 GiB 内核态”。连续空洞不足时，即使剩余 VSS 看起来还有空间，大块 `mmap()` 仍可能返回 `ENOMEM`。
 
-从 Android 14 开始，新设备必须使用 64 位 CPU，且新提交的应用必须提供 64 位包。但在 Android 17（API 37）的时间节点，大量存量 32 位包仍然活跃在旧设备上，虚拟内存优化对它们依然至关重要。
+64 位进程的可用用户态地址范围由架构和内核配置决定。工程上无需把它固定成 128 GiB、256 GiB 或 256 TiB；应从目标设备的 maps 边界和内核配置取证。64 位地址耗尽很少见，VMA 数量、物理内存、commit charge、资源限制和错误的超大 reservation 仍可能让映射失败。
 
-[适用版本: Android 10 (32 位包) - Android 17 (64 位包)]
+常见故障信号如下：
 
-### Android 应用 VSS 主要消耗者
+| 信号 | 优先检查 |
+|---|---|
+| `pthread_create (... stack) failed` | 线程数、每线程栈、native 内存、进程资源限制、VMA 数量 |
+| `mmap failed: ENOMEM` | ABI、请求长度、最大连续空洞、VMA 数量、`RLIMIT_AS`、系统内存压力 |
+| `std::bad_alloc` / native OOM | native allocator、RSS/PSS、碎片、申请尺寸；VSS 只作辅助 |
+| Java `OutOfMemoryError` | ART heap 上限、对象保活与 GC；同时确认错误消息是否指向线程创建 |
+| LMKD 杀进程 | PSS/RSS、进程状态和系统压力；VSS 不是 LMKD 的直接排序指标 |
 
-通过 `/proc/self/maps` 分析一个典型中型 Android 应用，VSS 的主要消耗来源如下：
+## 2. 建立可复现的地址空间快照
 
-| 消耗来源 | 典型大小（64 位） | 典型大小（32 位） | 说明 |
-|----------|------------------|------------------|------|
-| ART MainSpace (RegionSpace) | 512MB | 512MB | 主 Java 堆，Zygote fork 时预分配 |
-| ART LargeObjectSpace | 512MB | 512MB | 大对象分配区 |
-| 线程栈（每线程 ~1MB） | N × 1MB | N × 1MB | 100 线程 ≈ 100MB |
-| so 库映射（.text + .data + .bss） | 50~150MB | 30~80MB | 系统 so + 三方 so |
-| WebView 预留 (libwebview reservation) | 1GB | 130MB | Zygote 预申请 |
-| mmap 匿名映射 | 变化大 | 变化大 | Native 内存、JIT cache 等 |
-| Dalvik 其他空间 (LinearAlloc, JIT 等) | 10~30MB | 5~15MB | ART 内部数据结构 |
+### 2.1 设备侧基础采集
 
-在 32 位进程上，仅 MainSpace + LargeObjectSpace + WebView 预留就消耗 ~1.15GB，几乎占掉 3GB user space 的 38%。
+下面的命令用于在同一时间点采集 ABI、页大小、VSS、RSS、线程数和 maps：
 
-### /proc/self/maps 结构与解析
+```bash
+package=com.example.app
+pid=$(adb shell pidof -s "$package" | tr -d '\r')
 
-`/proc/self/maps`（或 `/proc/{pid}/maps`）是 Linux 内核维护的进程虚拟内存映射表，每一行代表一段连续的虚拟地址区域：
-
-```
-address           perms offset  dev   inode    pathname
-12c00000-32c00000 rw-p  00000000 00:00 0        [anon:dalvik-main space (region space)]
-```
-
-| 字段 | 含义 |
-|------|------|
-| address | 起始-结束虚拟地址（十六进制） |
-| perms | r=读 w=写 x=执行 p=私有 s=共享 |
-| offset | 文件映射偏移量 |
-| dev | 设备号（major:minor） |
-| inode | 文件 inode 号 |
-| pathname | 映射来源（文件路径或 `[anon:...]` 标签） |
-
-Android 系统通过 `android_os_Debug.cpp` 的 `load_maps()` 函数解析此文件并分类统计各类内存占用（详见 23.3 节对 Native 内存分析的讨论）。`load_maps()` 的核心逻辑是根据 pathname 前缀将每段映射分类到 `HEAP_DALVIK`、`HEAP_NATIVE`、`HEAP_SO`、`HEAP_STACK` 等类别。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/jni/android_os_Debug.cpp]
-
-### Android 17 对 VSS 的影响
-
-Android 17 在内存管理方面有几项与 VSS 相关的变化：
-
-1. **16KB page size 对齐**：部分新设备采用 16KB 内存页（而非传统 4KB），maps 文件中映射地址按 16KB 对齐，单页粒度更大。这对 mmap 粒度有直接影响——小粒度内存申请仍可通过 sub-page 分配，但 VSS 统计上每个映射单元最小 16KB。
-
-2. **Generational CC（分代并发拷贝 GC）**：ART 的 GC 策略进一步优化，RegionSpace 的后台压缩行为有调整，对「释放备用 Space」类优化方案的可行性有影响（后文详述）。
-
-3. **64 位 only 设备成为主流**：新出厂设备几乎全部 64 位，32 位包的 VSS 瓶颈在新设备上不再是问题，但存量长尾设备仍需关注。
-
-[待验证: Android 17 Generational CC 对 PerformHomogeneousSpaceCompact 的具体影响，需对照 android-17.0.0_r1 的 heap.cc 源码确认]
-
-[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
-
----
-
-## 🔹 线程栈虚拟内存治理
-
-### 线程创建与 FixStackSize
-
-每个 Java 线程默认占用约 1MB 虚拟内存作为栈空间。这一行为的根源在 ART 源码中：
-
-**调用链**：`Thread.start()` → `Thread.nativeCreate()` → `Thread::CreateNativeThread()` → `FixStackSize()` → `pthread_create()` → `clone()`
-
-在 `art/runtime/thread.cc` 中，`FixStackSize` 的核心逻辑：
-
-```cpp
-static size_t FixStackSize(size_t stack_size) {
-    if (stack_size == 0) {
-        stack_size = Runtime::Current()->GetDefaultStackSize();
-    }
-    stack_size += 1 * MB;  // 默认在传入值基础上 +1MB
-    // ... page alignment ...
-    return stack_size;
-}
+adb shell getconf PAGE_SIZE
+adb shell cat "/proc/$pid/status" \
+  | grep -E '^(Name|VmPeak|VmSize|VmRSS|RssAnon|RssFile|VmSwap|Threads):'
+adb shell "ls /proc/$pid/task | wc -l"
+adb shell "wc -l /proc/$pid/maps"
+adb shell cat "/proc/$pid/maps" > maps.txt
+adb shell dumpsys meminfo "$package" > meminfo.txt
 ```
 
-当 `Thread` 构造函数将 `stackSize` 设为 0 时（默认行为），`FixStackSize` 会在其基础上增加 1MB。因此即使不在 Java 层显式设置 stackSize，每个线程依然占用 ~1MB 虚拟内存。
+`VmSize` 与 maps 总跨度接近，`Threads` 应与 `/proc/<pid>/task` 数量一致。`dumpsys meminfo` 补充 PSS、RSS 和 heap 分类。部分量产设备会限制 `showmap` 或 `smaps`，权限失败要记录为观测缺口。
 
-`pthread_create` 最终调用 Linux 内核的 `clone()` 系统调用，通过 `mmap` 分配指定大小的虚拟地址空间作为线程栈。在 `/proc/self/maps` 中表现为 `[anon:stack_and_tls:tid]` 条目。
+采集点至少覆盖：
 
-[已验证: AOSP android-17.0.0_r1, art/runtime/thread.cc]
+- 冷启动完成；
+- 进入目标业务前；
+- 业务稳定运行；
+- 业务退出并等待缓存回收；
+- 异常前后。
 
-### 线程数与 VSS 的线性关系
+只有一张峰值快照时，无法区分一次性预留、可复用缓存和持续泄漏。
 
-| 线程数 | 栈空间 VSS（默认 1MB/线程） |
-|--------|--------------------------|
-| 50 | ~50MB |
-| 100 | ~100MB |
-| 200 | ~200MB |
+### 2.2 `/proc/<pid>/maps` 怎样读
 
-在 32 位进程中，200 个线程的栈空间就消耗了 3GB user space 的 ~6.5%，这还不包括线程运行时分配的其他内存。
+下面这一行用于说明 maps 的字段布局：
 
-### 优化手段一：线程池化
+```text
+70000000-78000000 ---p 00000000 00:00 0  [anon:libwebview reservation]
+```
 
-**核心策略**：将应用中分散的 `new Thread()` 和 `newFixedThreadPool()` 统一收敛到公共线程池。
+地址范围给出 VMA 起止位置；`rwx` 是访问权限；第四个字符 `p` 或 `s` 表示 private 或 shared；后面是文件偏移、设备号、inode 与可选名称。`---p` 说明当前没有读写执行权限，仍不能据此认定该区域可由应用释放。
 
-**线程池分类设计**：
+Android 17 的 [`android_os_Debug.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Debug.cpp) 通过 `meminfo` 解析器读取进程映射并按 heap 类型汇总。应用自建分类器不应假设标签在所有厂商版本上都完全一致。
 
-| 线程池类型 | 核心线程数 | 最大线程数 | 适用场景 |
-|-----------|-----------|-----------|---------|
-| CPU 线程池 | `Runtime.availableProcessors()` | 同核心线程数 | 计算、逻辑处理 |
-| IO 线程池 | 0~3 | 64~128 | 网络请求、文件读写 |
+下面的离线脚本用于按 pathname 汇总 VSS，并统计无 pathname 的匿名 VMA：
 
-CPU 线程池核心线程数设为 CPU 核数，理想状态下每核运行一个线程，减少调度损耗。IO 线程池核心线程数设为 0（或少量），因为 IO 任务不需要即时响应，常驻线程越少越好。
+```python
+from collections import defaultdict
+from pathlib import Path
 
-**野线程收敛**：
+groups = defaultdict(lambda: {"bytes": 0, "vmas": 0})
 
-- **简单场景**：全局搜索 `new Thread()` 和 `Executors.newFixedThreadPool()`，手动替换为公共线程池调用。
-- **复杂场景（三方库）**：使用字节码织入（如 Lancet）hook `Executors.newFixedThreadPool`，将返回值替换为公共线程池实例：
+for line in Path("maps.txt").read_text().splitlines():
+    fields = line.split(maxsplit=5)
+    if len(fields) < 5:
+        continue
+    start, end = (int(value, 16) for value in fields[0].split("-", 1))
+    name = fields[5] if len(fields) == 6 else "[anonymous]"
+    key = name if name.startswith("[") else Path(name).name
+    groups[key]["bytes"] += end - start
+    groups[key]["vmas"] += 1
+
+for name, stat in sorted(
+        groups.items(), key=lambda item: item[1]["bytes"], reverse=True):
+    mib = stat["bytes"] / 1024 / 1024
+    print(f"{mib:10.1f} MiB  {stat['vmas']:6d} VMAs  {name}")
+```
+
+汇总结果适合找大 reservation、线程栈、重复 so 和 VMA 数量异常。路径相同的多个 segment 可能分别承载代码、只读数据和可写数据，不能把汇总值直接当成私有物理内存。
+
+### 2.3 16 KiB 页设备
+
+`getconf PAGE_SIZE` 返回 `16384` 时，VMA 边界、guard page 和 ART 对齐都以 16 KiB 页大小计算。小对象仍可由 allocator 在页内切分；maps 只展示页级映射。
+
+自研 native 组件需要遵守运行时页大小，禁止写死 `4096`、`0x1000` 或 4 KiB 对齐。解析 `start/end` 的十六进制差值不受页大小影响，但任何 `mmap`、`mprotect`、`munmap` 参数都要按设备页大小对齐。
+
+## 3. 线程栈：先治理线程数量
+
+### 3.1 Android 17 的 Java 线程栈计算
+
+[`Thread::FixStackSize()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc) 的顺序很明确：
+
+1. 传入 `0` 时改用 ART default stack size；
+2. 增加 1 MiB，以兼容依赖 Dalvik 较大 native stack 的应用；
+3. 增加 stack overflow protected/reserved 区；
+4. 向运行时页大小取整；
+5. 把结果交给 `pthread_attr_setstacksize()` 和 `pthread_create()`。
+
+所以“每个 Java 线程固定占 1 MiB”只是粗略说法。最终 reservation 还包含 ART default、guard/reserved 区、页对齐和构建配置。应从 maps 中的 `[anon:stack_and_tls:<tid>]` 或线程 dump 读取目标设备结果。
+
+线程栈通常按需触页，VSS 增长会早于 RSS 增长。32 位进程中，大量线程会同时增加地址空间占用、VMA 数量、调度开销、TLS 和 native bookkeeping。
+
+### 3.2 有界线程池
+
+下面的 Java 示例用于展示有界队列、有界线程数和命名，参数需要按任务时延与设备档位压测：
 
 ```java
-@TargetClass("java.util.concurrent.Executors")
-@Proxy(value = "newFixedThreadPool")
-public static ExecutorService newFixedThreadPool(int nThreads) {
-    return GlobalThreadPool.getInstance().getIOExecutor();
-}
-```
+int cpuCount = Runtime.getRuntime().availableProcessors();
+int workerCount = Math.max(2, Math.min(cpuCount, 8));
 
-[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md]
-
-### 优化手段二：减小线程栈大小
-
-**方案 A — Java 层修改 stackSize**：
-
-`FixStackSize` 的逻辑为 `stack_size += 1 * MB`。如果传入 `-512KB`（即 `0xFFFFFFFFFFF80000` 作为 `size_t`），结果为 `1MB - 512KB = 512KB`。
-
-在公共线程池的自定义 `ThreadFactory` 中设置：
-
-```java
-ThreadFactory customFactory = new ThreadFactory() {
-    @Override
-    public Thread newThread(Runnable r) {
-        // stackSize = -512KB → FixStackSize 后实际栈大小为 512KB
-        Thread t = new Thread(threadGroup, r, threadName, -512 * 1024L);
-        t.setPriority(Thread.NORM_PRIORITY);
-        return t;
-    }
+AtomicInteger sequence = new AtomicInteger();
+ThreadFactory factory = runnable -> {
+    Thread thread = new Thread(runnable);
+    thread.setName("image-worker-" + sequence.incrementAndGet());
+    return thread;
 };
+
+ThreadPoolExecutor executor = new ThreadPoolExecutor(
+        workerCount,
+        workerCount,
+        30L,
+        TimeUnit.SECONDS,
+        new ArrayBlockingQueue<>(128),
+        factory,
+        new ThreadPoolExecutor.CallerRunsPolicy());
 ```
 
-**方案 B — PLT Hook pthread_create**：
+固定上限可以阻止突发任务无限扩张线程。队列容量和拒绝策略属于业务语义：`CallerRunsPolicy` 会把背压传给提交方，如果提交方可能是主线程，就要改成丢弃、合并或异步重试。
 
-Hook `libc.so` 的 `pthread_create`，在回调中修改 `pthread_attr_t` 的 stack size：
+重点检查这些来源：
 
-```c
-static int (*orig_pthread_create)(pthread_t*, const pthread_attr_t*,
-                                   void*(*)(void*), void*);
+- `Executors.newCachedThreadPool()` 的无限最大线程数；
+- 每个 SDK 各建一套线程池；
+- 定时任务每次创建新线程；
+- coroutine/RxJava dispatcher 误配；
+- native SDK 内部的 `pthread_create()`；
+- 线程退出后仍被 ThreadLocal、HandlerThread 或 executor 保活。
 
-static int hooked_pthread_create(pthread_t* thread, const pthread_attr_t* attr,
-                                  void*(*start_routine)(void*), void* arg) {
-    pthread_attr_t modified_attr;
-    pthread_attr_init(&modified_attr);
-    if (attr != nullptr) {
-        pthread_attr_copy(&modified_attr, attr);  // Android 16+
-    }
-    pthread_attr_setstacksize(&modified_attr, 512 * 1024);  // 512KB
-    int ret = orig_pthread_create(thread, &modified_attr, start_routine, arg);
-    pthread_attr_destroy(&modified_attr);
-    return ret;
-}
-```
+CPU 密集任务的并发度可从 CPU 核数起步，IO 任务没有通用的“64—128 线程”答案。应根据服务端并发限制、文件描述符、尾延迟和内存预算决定。
 
-**方案对比**：
+### 3.3 栈大小与 hook 的边界
 
-| 方案 | 实现难度 | 覆盖范围 | 兼容性风险 |
-|------|---------|---------|-----------|
-| Java 层 stackSize | ⭐ 低 | 仅公共线程池创建的线程 | 低（需收集栈溢出 case） |
-| PLT Hook pthread_create | ⭐⭐⭐ 高 | 所有线程（含三方库） | 中（需处理 attr 为 nullptr 的情况） |
+`Thread(ThreadGroup, Runnable, String, long)` 把 stack size 定义为平台相关的建议值。Android 17 ART 还会在正数建议值上增加 1 MiB 和保护区。初稿中的“传负数让无符号加法回绕成 512 KiB”依赖 Java/JNI/C++ 转换细节，属于未公开契约，构建变化后可能得到超大栈、`pthread_attr_setstacksize()` 失败或进程异常，不进入生产方案。
 
-**实践建议**：优先使用 Java 层方案，对公共线程池统一设置。个别栈深度大的线程（如递归调用链长的任务）不缩减栈，通过线上监控收集 StackOverflowError 后调整。
+对 `pthread_create()` 做 PLT hook 也不能覆盖所有线程来源，并会改变系统库与三方库的栈假设。若只为诊断，可在可调试构建中记录调用栈和 attr；若要修改 stack size，必须按 ABI、4/16 KiB 页、递归深度、JNI 框架大小和极端调用链做压力测试。默认生产策略仍是减少线程数量。
 
-[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md]
+### 3.4 Android 17 的虚拟线程
 
-### 优化手段三：Android 17 Thread.Builder
+`android-17.0.0_r1` 的 libcore 已包含 `Thread.ofVirtual()`、`startVirtualThread()` 和 `VirtualThread` 实现，但 [`api/current.txt`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/api/current.txt) 给创建入口标记了 `com.android.libcore.virtual_thread_api_v1` `FlaggedApi`。实现还检查 continuation 与 ART 侧发布开关；不支持 continuation 时存在 bound virtual thread 路径，它仍绑定平台线程。
 
-Android 13（API 33）引入了 `Thread.ofPlatform()` 和 `Thread.ofVirtual()` Builder API。在 Android 17 上，这些 API 更成熟：
+因此不能把“Android 17 虚拟线程一定不创建 pthread、每个任务都省下 1 MiB”当成通用结论。产品采用前需要确认目标镜像开放 API、运行时 flag、pinning 行为、调试工具和关键库兼容性。当前稳定方案仍以协程、有界 executor 和结构化取消为主。
 
-```java
-Thread.Builder builder = Thread.ofPlatform()
-    .name("worker-", 0)
-    .daemon(true)
-    .unstarted(runnable);
+更完整的线程泄漏边界参阅 [20.25 线程泄漏与匿名线程监控](../ch20-stability/25-thread-leak-anonymous-thread-monitoring.md)。
 
-// 虚拟线程（协程）不占用固定 1MB 栈空间
-Thread virtualThread = Thread.ofVirtual()
-    .name("vt-", 0)
-    .start(runnable);
-```
+## 4. WebView reservation：可观测，不手动解除
 
-虚拟线程（Virtual Thread / Project Loom）在 ART 上的实现方式与传统平台线程不同，不通过 `pthread_create` 创建，而是由 ART 运行时调度在少量载体线程（carrier thread）上运行，栈空间按需分配/释放，不预分配 1MB。
+### 4.1 固定标签中的预留
 
-[适用版本: Android 13 (API 33) - Android 17 (API 37)]
-[待验证: Android 17 ART 虚拟线程的 VSS 实际占用测量数据]
+Android 17 的 [`WebViewLibraryLoader.reserveAddressSpaceInZygote()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/webkit/WebViewLibraryLoader.java) 选择以下地址空间大小：
 
----
+| 进程 ABI | reservation |
+|---|---:|
+| 64 位 | 1 GiB |
+| 32 位 ARM | 130 MiB |
+| 其他 32 位 ABI | 190 MiB |
 
-## 🔹 多进程架构的虚拟内存优化
+[`loader.cpp::DoReserveAddressSpace()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/native/webview/loader/loader.cpp) 使用 `mmap(PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS)` 创建 reservation，并把全局 `gReservedAddress`、`gReservedSize` 指向该区域。maps 中的名称是 `[anon:libwebview reservation]`。
 
-### 原理
+这块 reservation 会增加 VSS，未触页的 `PROT_NONE` 地址不会按 reservation 大小消耗 RSS。64 位进程看到 1 GiB VSS 增量时，不能写成“WebView 已消耗 1 GiB RAM”。
 
-将大内存模块隔离到独立进程中，子进程拥有独立的虚拟地址空间。主进程的 VSS 因此显著降低，同时大内存模块的崩溃也不会波及主进程。
+### 4.2 为什么不能 `munmap`
 
-### 适合放入子进程的业务
+WebView loader 后续把 `gReservedAddress` 和 `gReservedSize` 交给 `android_dlopen_ext()`，以固定 reservation 加载 provider native library 和共享 RELRO。应用私自 `munmap()` 后，loader 的全局状态没有同步清零；地址也可能被其他映射占用。稍后任何 WebView 初始化都可能加载失败或破坏进程地址空间。
 
-| 业务类型 | VSS 消耗特征 | 子进程收益 |
-|----------|-------------|-----------|
-| WebView / H5 容器 | 1GB 预留 + 渲染内存 | 主进程释放 1GB 预留 |
-| 地图 SDK（高德/百度） | 100~300MB | 主进程 VSS 降低 100MB+ |
-| 视频编解码 / 直播 SDK | 50~200MB | 减少编解码缓冲 VSS |
-| 音频处理 / 语音 SDK | 50~100MB | 隔离音频缓冲 |
-| SDK 初始化密集型 | 各 SDK 各自 50~100MB | 减少初始化堆积 |
+通过 hook `android_dlopen_ext()` 窃取地址、反射隐藏 `nativeLoadWithRelroFile()` 或按 maps 标签解除映射，都依赖隐藏实现。即使当前进程暂时不用 WebView，广告、登录、支付、帮助页、SDK 和系统组件也可能在后续触发 provider。
 
-### 实施方式
+安全策略只有两类：
 
-**AndroidManifest 配置**：
+- 业务不需要 WebView 时，避免初始化 provider 和相关 SDK，接受 Zygote reservation 仍计入 VSS；
+- 需要隔离 WebView时，按产品架构放入受控进程，管理该进程生命周期，并测量总 PSS、启动时延和 Binder 代价。
+
+把 WebView Activity 放到子进程不会自动移除主进程继承的 reservation；它的收益主要来自已提交页、WebView 对象与故障边界的隔离。
+
+## 5. ART heap：应用不能释放运行时拥有的 Space
+
+### 5.1 Homogeneous Space Compact 的适用条件
+
+Android 17 的 [`Heap::SupportHomogeneousSpaceCompactAndCollectorTransitions()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc) 要求同时存在 `main_space_backup_`、`main_space_`，且前台 collector 为 CMS。`PerformHomogeneousSpaceCompact()` 还会在 moving GC 已禁用、collector 已是 moving collector 或 main space 不能移动对象时拒绝执行。
+
+这段兼容代码不能推出“每个 Android 17 应用都有两块固定 512 MiB MainSpace”。ART 会按 collector、heap growth limit、设备配置和进程类型建立不同 space；RegionSpace、zygote space、large object space、image space 和 JIT 也各有生命周期。
+
+### 5.2 JNI critical section 必须成对释放
+
+[Android JNI tips](https://developer.android.com/training/articles/perf-jni) 对 `GetPrimitiveArrayCritical()` 的约束是：VM 可以返回直接指针或副本。调用期间，native 代码不能长时间阻塞，也不能任意调用 JNI；完成访问后必须执行 `ReleasePrimitiveArrayCritical()`。
+
+永久保留 critical pointer 会让 ART 的 moving GC 受到抑制，并可能造成 GC、分配与线程停顿问题。随后 `munmap()` 任一 `dalvik-*` 区域会破坏 ART 的 allocator、card table、bitmap 与对象引用。初稿中的“禁用 moving GC 后释放备用 Space”从工程建议中删除。
+
+应用侧能控制的是对象生命周期和分配形态：
+
+- 取消不再需要的任务与回调；
+- 对缓存设置容量和生命周期；
+- 释放 Bitmap、媒体 buffer、DirectByteBuffer 与 native peer；
+- 用 heap dump、Perfetto、heapprofd 和 allocation profile 找到 owner；
+- 避免在内存压力回调中同步制造大量临时对象。
+
+## 6. 多进程：改变故障边界，也增加固定成本
+
+每个 Android 进程都有独立的虚拟地址空间、ART runtime、Binder 状态和 native allocator。把模块移入子进程会降低主进程中的已提交页与对象数量，但整个应用的总 PSS 可能上升。
+
+下面的 manifest 片段用于说明私有进程声明：
 
 ```xml
 <activity
-    android:name=".WebViewActivity"
-    android:process=":webview" />
+    android:name=".WebContainerActivity"
+    android:process=":web" />
 
 <service
-    android:name=".MapService"
-    android:process=":map" />
+    android:name=".CodecService"
+    android:process=":codec"
+    android:exported="false" />
 ```
 
-冒号前缀（`:webview`）表示私有进程，其他应用无法访问。
+冒号前缀创建应用私有进程。是否值得拆分，要同时测主进程 PSS、子进程 PSS、启动时延、Binder 流量、冷启动次数和低内存下的恢复体验。
 
-**多进程通信**：子进程与主进程通过 Binder/AIDL 通信。需注意：
+适合评估隔离的模块通常具备这些特征：
 
-- 序列化开销：大数据传递考虑 SharedMemory 或 MemoryFile
-- 启动延迟：子进程首次创建需 ~200~500ms，可通过预启动（提前触发空 Activity）优化
+- 生命周期清晰，结束后允许整个进程退出；
+- native 崩溃风险较高，需要限制影响范围；
+- 已提交内存大，主进程长期不需要保留；
+- IPC 接口小，避免高频传大对象；
+- 被 LMKD 回收后可以恢复。
 
-### 与 LMKD 的协作
+大 payload 可考虑 `SharedMemory`、文件描述符或流式传输；仍要定义所有权、校验长度并及时关闭 FD。多进程不能用来规避应用整体内存预算。
 
-详见 4.4 节对 Low Memory Killer 的分析。多进程架构下，LMKD 根据 oom_adj 分数决定杀进程顺序：
+## 7. 建立面向原因的监控
 
-- 主进程（前台）oom_adj 低，优先级高
-- 子进程（后台 WebView 进程）oom_adj 高，优先被杀
+### 7.1 采样字段
 
-这意味着在内存紧张时，系统会自动回收子进程释放物理内存，但虚拟内存层面的进程地址空间也会随之释放。
+一条可解释的虚拟内存快照至少包含：
 
-> **交叉引用**：多进程策略的整体设计与 `largeHeap`、内存预算管理详见 23.6 节。
+- 时间、业务场景、进程名、PID、ABI 和页大小；
+- `VmSize`、`VmPeak`、`VmRSS`、`RssAnon`、`RssFile`、`VmSwap`；
+- 线程数、VMA 数量和 FD 数量；
+- Java heap、native heap、graphics、code 与 stack 的 PSS；
+- 前五个 VSS 分类及其 VMA 数量；
+- 最近一次 `mmap`、`pthread_create` 或 allocator 失败信息。
 
-[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md]
+采样频率按风险控制。`/proc/self/status` 成本较低，可在场景边界采样；读取并解析 `maps`、`smaps` 或抓 heap dump 应由异常触发，避免高频磁盘读取和主线程阻塞。
 
----
+### 7.2 阈值按设备分组
 
-## 🔹 /proc/self/maps 分析方法论
+“五分钟增长 100 MiB”或“接近 2 GiB 就报警”缺少 ABI、业务和基线条件。更稳妥的方式是按以下维度建立分位数：
 
-### maps 文件格式详解
+- 32/64 位 ABI；
+- Android 版本与页大小；
+- 设备内存档位；
+- 进程角色；
+- 冷启动、稳定态、退出后；
+- 线程数与 VMA 数量。
 
-每行格式如下：
+告警应组合 `VmSize` 增量、RSS/PSS 增量、线程/VMA 增量和错误信号。VSS 上升后 RSS 不变、业务退出后保持稳定，通常只是 reservation 或可复用映射；VSS、RSS、线程数一起持续上升时，调查优先级更高。
 
-```
-722d0a6000-722d0b7000 rw-p 00000000 00:00 0    [anon:libwebview reservation]
-```
+## 8. 常见现场怎样收敛
 
-解析规则：
-- 地址范围由空格分隔为起始和结束（十六进制）
-- perms 四字符：`r/w/x/-` + `p/s`（私有/共享）
-- pathname 为 `[anon:...]` 表示匿名映射的命名标签，通过 `prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, ...)` 设置
+### 8.1 `pthread_create` 失败
 
-### 按类型分类统计 VSS
+1. 保存 ART 错误中的 requested stack size 和 errno；
+2. 记录 `/proc/<pid>/status` 的 `Threads`、`VmSize` 和 `VmRSS`；
+3. 按 thread name、创建栈和 owner 聚合；
+4. 检查 cached pool、HandlerThread、SDK 与 native 线程；
+5. 先减少线程，再评估受控线程的 stack size。
 
-编写解析脚本，将每行按 pathname 分类，累加 `end - start` 得到各类型 VSS：
+### 8.2 32 位进程 `mmap` 失败
 
-```python
-import re
-from collections import defaultdict
+1. 记录申请长度、flags、errno 和调用栈；
+2. 保存完整 maps；
+3. 计算最大连续空洞，不能只用地址总范围减 VSS；
+4. 检查大 reservation、重复库、线程栈和 VMA 数量；
+5. 优先提供 64 位 ABI 并减少映射 owner。
 
-def analyze_maps(maps_path="/proc/self/maps"):
-    categories = defaultdict(int)
-    with open(maps_path) as f:
-        for line in f:
-            parts = line.split(None, 5)
-            if len(parts) < 5:
-                continue
-            addr_range = parts[0]
-            start, end = [int(x, 16) for x in addr_range.split("-")]
-            size_mb = (end - start) / (1024 * 1024)
-            pathname = parts[5].strip() if len(parts) > 5 else "[anonymous]"
+### 8.3 VSS 很大但设备没有内存压力
 
-            if "[anon:dalvik-main space" in pathname:
-                categories["ART MainSpace"] += size_mb
-            elif "[anon:dalvik-large object space" in pathname:
-                categories["ART LargeObjectSpace"] += size_mb
-            elif "[anon:stack_and_tls" in pathname:
-                categories["Thread Stack"] += size_mb
-            elif "[anon:libwebview reservation" in pathname:
-                categories["WebView Reservation"] += size_mb
-            elif pathname.endswith(".so"):
-                categories["SO Library"] += size_mb
-            elif pathname == "[heap]" or "[anon:libc_malloc" in pathname:
-                categories["Native Heap"] += size_mb
-            elif not pathname or pathname == "[anonymous]":
-                categories["Anonymous mmap"] += size_mb
-            else:
-                categories["Other"] += size_mb
+检查大区域是否为 `PROT_NONE`、文件映射、ART reserve 或 WebView reservation，再看 RSS/PSS 与 page fault。没有失败信号时，不为缩小面板数字去解除系统映射。
 
-    for cat, size in sorted(categories.items(), key=lambda x: -x[1]):
-        print(f"{cat:30s} {size:10.1f} MB")
-```
+### 8.4 多进程后主进程变小、整机更卡
 
-### 识别可释放的虚拟内存区域
+把所有进程的 PSS 相加，并检查进程反复冷启、Binder payload、共享页分摊和 LMKD 回收。主进程单项下降无法证明方案节省了整机内存。
 
-判定标准：
-1. **大小 > 10MB**：小区域不值得释放风险
-2. **perms 包含 `-p`（私有且无权限）**：说明是预留但未使用的保留区
-3. **可识别来源且确认不需要**：如 `libwebview reservation`（应用不使用系统 WebView）
+## 9. 优化顺序
 
-### 16KB page size 对 maps 的影响
+| 顺序 | 动作 | 风险 |
+|---|---|---|
+| P0 | 记录 ABI、页大小、VSS/RSS/PSS、线程和 VMA 的同点快照 | 低 |
+| P0 | 收敛线程 owner，使用有界 executor，清理失控的 HandlerThread/SDK 线程 | 低 |
+| P0 | 修复对象、native buffer、Bitmap、DirectByteBuffer 和映射生命周期 | 低 |
+| P1 | 评估 64 位 ABI 覆盖，针对 32 位碎片做专项测试 | 中 |
+| P1 | 按总 PSS 和生命周期评估进程隔离 | 中 |
+| P2 | 在可调试构建中 hook `mmap`/`pthread_create` 做取证 | 中 |
+| 禁止 | `munmap` WebView reservation 或 ART heap space | 高 |
+| 禁止 | 永久持有 JNI critical pointer 来阻止 moving GC | 高 |
+| 禁止 | 用负数 stack size 依赖无符号回绕 | 高 |
 
-在 Android 17 的 16KB page 设备上，maps 中的地址对齐从 4KB（`0x1000`）变为 16KB（`0x4000`）。解析脚本中的地址计算不受影响（都是十六进制减法），但每个映射的最小粒度从 4KB 变为 16KB。
+虚拟内存优化的目标是让地址空间与资源生命周期可解释。32 位进程重点看连续空洞、线程栈和 VMA；64 位进程重点区分 reservation 与物理页，并把 PSS/RSS、线程和失败信号放在同一份报告中。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/jni/android_os_Debug.cpp (load_maps 分类逻辑)]
-
----
-
-## 🔹 WebView 预留虚拟内存释放
-
-### WebView 预留机制
-
-Zygote 进程在启动时加载 `libwebviewchromium_loader.so`，通过 `DoReserveAddressSpace()` 函数调用 `mmap` 预留一块虚拟内存：
-
-| 架构 | 预留大小 | 来源 |
-|------|---------|------|
-| 64 位 ARM | ~1GB | `WebViewLibraryLoader.java` |
-| 32 位 ARM | ~130MB | 同上 |
-| 其他（x86 等） | ~190MB | 同上 |
-
-所有应用进程由 Zygote fork 而来，继承这块预留区域。预留地址和大小存储在 `loader.cpp` 的全局变量 `gReservedAddress` 和 `gReservedSize` 中。
-
-从 Android 10 开始，系统通过 `prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, ...)` 将此区域命名为 `[anon:libwebview reservation]`，在 maps 文件中可见。Android 9 及以下该区域为匿名，无法通过名称定位。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/webkit/WebViewLibraryLoader.java + frameworks/base/native/webview/loader/loader.cpp]
-
-### 释放方案
-
-#### 方案一：解析 maps（Android 10+）
-
-适用于 maps 中能看到 `[anon:libwebview reservation]` 标签的系统版本：
-
-```c
-// 1. 扫描 /proc/self/maps 找到 libwebview reservation 区域
-void* reserved_start = nullptr;
-size_t reserved_size = 0;
-
-FILE* fp = fopen("/proc/self/maps", "r");
-char line[512];
-while (fgets(line, sizeof(line), fp)) {
-    uintptr_t start, end;
-    char perms[5];
-    char pathname[256];
-    if (sscanf(line, "%lx-%lx %4s %*x %*x:%*x %*d %255[^\n]",
-               &start, &end, perms, pathname) == 4) {
-        if (strcmp(pathname, "[anon:libwebview reservation]") == 0) {
-            reserved_start = (void*)start;
-            reserved_size = end - start;
-            break;
-        }
-    }
-}
-fclose(fp);
-
-// 2. 释放
-if (reserved_start && reserved_size > 0) {
-    munmap(reserved_start, reserved_size);
-}
-```
-
-#### 方案二：PLT Hook android_dlopen_ext（全版本兼容）
-
-对于 Android 9 及以下无法通过 maps 名称定位的设备，通过 PLT Hook 拦截 `libwebviewchromium_loader.so` 对 `android_dlopen_ext` 的调用，从 `android_dlextinfo` 结构体中提取 `reserved_addr` 和 `reserved_size`：
-
-```c
-typedef struct {
-    uint64_t flags;
-    void* reserved_addr;    // 即 gReservedAddress
-    size_t reserved_size;   // 即 gReservedSize
-    int relro_fd;
-    int library_fd;
-    off64_t library_fd_offset;
-    struct android_namespace_t* library_namespace;
-} android_dlextinfo;
-
-static void* (*orig_dlopen_ext)(const char*, int, const void*);
-
-static void* hooked_dlopen_ext(const char* filename, int flags,
-                                const void* extinfo) {
-    if (extinfo) {
-        auto info = (const android_dlextinfo*)extinfo;
-        if (info->reserved_addr && info->reserved_size > 0) {
-            sReservedAddr = info->reserved_addr;
-            sReservedSize = info->reserved_size;
-        }
-    }
-    return orig_dlopen_ext(filename, flags, extinfo);
-}
-
-// 通过 bytehook / bhook 注册
-bytehook_hook_single(
-    nullptr,
-    "libwebviewchromium_loader.so",
-    "android_dlopen_ext",
-    (void*)hooked_dlopen_ext,
-    nullptr, nullptr);
-```
+## 参考源码与内核文档
 
-**触发 android_dlopen_ext 调用**：`gReservedAddress` 仅在 `DoCreateRelroFile()` 或 `DoLoadWithRelroFile()` 执行时被使用。应用如果未启动 WebView，这两个函数不会被自动调用。需要在 Native 层主动触发 `WebViewLibraryLoader.nativeLoadWithRelroFile()` 来促使框架调用 `android_dlopen_ext`：
-
-```c
-// JNI 层主动调用 WebViewLibraryLoader 的 native 方法
-JNIEnv* env = ...
-jclass clazz = env->FindClass("android/webkit/WebViewLibraryLoader");
-// 不同 Android 版本参数签名不同，需遍历尝试
-jmethodID method = env->GetStaticMethodID(clazz,
-    "nativeLoadWithRelroFile",
-    "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/ClassLoader;)I");
-```
-
-> **注意**：系统会自动为 native 方法添加包名前缀，直接反射调用可能失败。需要通过 Native 层的 JNI 接口绕过此限制。
-
-### 适用场景与风险评估
-
-| 场景 | 是否建议释放 | 风险 |
-|------|------------|------|
-| 应用不使用任何 WebView | ✅ 强烈建议 | 极低 |
-| WebView 已隔离到子进程 | ✅ 主进程释放 | 低 |
-| 应用主进程直接使用 WebView | ❌ 不建议 | 高（WebView 崩溃） |
-
-[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（下）：一些"黑科技"优化手段.md]
-
----
-
-## 🔹 ART GC 后台空间释放
-
-### 背景：拷贝回收与备用 Space
-
-在 Android 5~7 的 ART 运行时中，Java 堆使用两块 MainSpace（main space + main space 1），每块 512MB，共 1GB 虚拟内存。这是为 **Homogeneous Space Compact（同构空间压缩）** GC 算法预留的备用空间。
-
-当应用进入后台或 Java 堆内存不足时，ART 执行拷贝回收：将存活对象从当前 Space 复制到另一块干净的 Space，然后释放原 Space。这需要两块等大的 Space 交替使用。
-
-### 禁用拷贝回收的方案
-
-通过 `GetPrimitiveArrayCritical()` / `GetStringCritical()` 可以将 ART 内部的 `disable_moving_gc_count_` 计数器加 1，阻止拷贝回收执行：
-
-```c
-// 在 JNI 层执行，禁用 moving GC
-jbyteArray arr = env->NewByteArray(1);
-void* ptr = env->GetPrimitiveArrayCritical(arr, nullptr);
-// 不调用 ReleasePrimitiveArrayCritical → disable_moving_gc_count_ 保持为 1
-// 拷贝回收被永久禁用
-```
-
-在 `heap.cc` 的 `PerformHomogeneousSpaceCompact()` 中：
-
-```cpp
-if (disable_moving_gc_count_ != 0 || IsMovingGc(collector_type_) ||
-    !main_space_->CanMoveObjects()) {
-    return kErrorReject;  // ← 中断拷贝回收
-}
-```
-
-禁用后，可以安全释放备用 MainSpace 的虚拟内存。
-
-### 释放备用 Space
-
-```c
-// 通过 GetPrimitiveArrayCritical 返回的指针判断当前使用哪块 Space
-uintptr_t arrAddr = (uintptr_t)ptr;
-if (arrAddr >= space1Start && arrAddr < space1End) {
-    // 当前使用 Space1，释放 Space2
-    munmap((void*)space2Start, space2Size);
-} else {
-    // 当前使用 Space2，释放 Space1
-    munmap((void*)space1Start, space1Size);
-}
-```
-
-实际落地时应通过解析 `/proc/self/maps` 获取 `dalvik-main space` 和 `dalvik-main space 1` 的确切地址，不硬编码。
-
-### Android 8+ 的变化
-
-从 Android 8 开始，ART 默认使用 RegionSpace 替代传统的双 MainSpace 设计。RegionSpace 将堆划分为多个 Region，GC 时在 Region 级别进行压缩，不再需要整块备用 Space。
-
-因此在 Android 8+ 设备上，此优化方案的适用性降低。**该方案主要针对 Android 5~7 的存量设备**，这些设备在 2026 年的时间节点占比已很低。
-
-[待验证: Android 17 Generational CC 下，RegionSpace 的后台压缩是否仍有可释放的预留区域，需对照 android-17.0.0_r1 的 art/runtime/gc/heap.cc 和 space_region.cc 确认]
-
-### 风险评估
-
-禁用拷贝回收会增加内存碎片（无法通过拷贝整理碎片），可能导致可用堆内存减少。但实际线上验证（字节跳动抖音团队大规模 A/B 测试）表明：
-
-- Java 堆 OOM 率未显著提升
-- 虚拟内存不足导致的 native OOM 率有明显下降
-- 原因：应用进程不是常驻的，用一段时间后会被系统或用户杀死，碎片累积有限
-
-> **交叉引用**：OOM 的完整治理策略（FD 泄漏、线程数超限、native OOM 等）详见 20.5 节。
-
-[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（下）：一些"黑科技"优化手段.md]
-
----
-
-## 🔸 虚拟内存监控与告警体系
-
-### VSS 定期采样方案
-
-在应用运行期间，定期读取 `/proc/self/maps` 或使用 `Debug.getMemoryInfo()` 采集 VSS 数据。但 `load_maps` 解析开销较大，Android 10+ 对此加了 5 分钟频控。
-
-**轻量级替代方案**：
-
-```java
-// 通过 ActivityManager 获取总 PSS（不含 VSS 明细，但开销小）
-ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-am.getMemoryInfo(mi);
-// mi.totalMem - 可用内存，但不直接反映进程 VSS
-
-// 更精确：读取 /proc/self/status 中的 VmSize（单文件读取，开销极小）
-// VmSize 即进程总虚拟内存大小
-```
-
-```c
-// Native 层读取 VmSize
-long get_vss_kb() {
-    FILE* fp = fopen("/proc/self/status", "r");
-    char line[256];
-    long vss = 0;
-    while (fgets(line, sizeof(line), fp)) {
-        if (sscanf(line, "VmSize: %ld kB", &vss) == 1) {
-            break;
-        }
-    }
-    fclose(fp);
-    return vss;
-}
-```
-
-### VSS 增长趋势分析与异常检测
-
-- **基线建立**：在冷启动后 30s、60s、120s 分别采样 VSS，建立各时间点的基线范围
-- **异常检测规则**：
-  - VSS 在 5 分钟内增长 > 100MB → 疑似内存泄漏
-  - VSS 持续接近 2GB（32 位进程）→ 预警
-  - 线程数突增 → 可能导致 VSS 线性增长
-
-### 与 MemoryAdvice API 的集成
-
-Google 提供的 [Memory Advice API](https://developer.android.com/games/sdk/memory-advice)（最初为游戏设计，但通用可用）可以在内存压力时回调通知：
-
-```java
-MemoryAdvice.registerWatcher(new MemoryAdvice.MemoryWatcher() {
-    @Override
-    public void onWarning(int warningState) {
-        if ((warningState & MemoryAdvice.RED) != 0) {
-            // 红色警告：内存极度紧张，立即释放资源
-            releaseCaches();
-            notifyBackground();
-        } else if ((warningState & MemoryAdvice.YELLOW) != 0) {
-            // 黄色警告：内存压力上升
-            reduceCacheSize();
-        }
-    }
-});
-```
-
-[适用版本: Android 10 (API 29) - Android 17 (API 37)]
-
----
-
-## 🔸 Native Hook 在虚拟内存优化中的应用
-
-### PLT Hook 拦截 mmap/munmap
-
-通过 PLT Hook（如 bytehook / bhook）拦截 so 库的外部函数调用，可以监控和管理虚拟内存分配：
-
-```c
-// Hook mmap 监控所有 mmap 调用
-static void* (*orig_mmap)(void*, size_t, int, int, int, off_t);
-
-static void* hooked_mmap(void* addr, size_t length, int prot, int flags,
-                          int fd, off_t offset) {
-    void* result = orig_mmap(addr, length, prot, flags, fd, offset);
-    if (length > 1024 * 1024) {  // 仅记录 > 1MB 的映射
-        log_mmap_allocation(result, length, prot, flags);
-    }
-    return result;
-}
-```
-
-### 线程创建监控
-
-Hook `pthread_create` 可以同时实现线程创建监控和栈大小定制：
-
-```c
-static int hooked_pthread_create(pthread_t* thread, const pthread_attr_t* attr,
-                                  void*(*start)(void*), void* arg) {
-    size_t stack_size = 0;
-    if (attr) {
-        pthread_attr_getstacksize(attr, &stack_size);
-    }
-    // 记录线程创建堆栈
-    log_thread_creation(stack_size);
-    // 可选：调整栈大小
-    return orig_pthread_create(thread, attr, start, arg);
-}
-```
-
-### Android 17 PLT Hook 兼容性
-
-在 Android 17 上，PLT Hook 面临以下兼容性考量：
-
-1. **16KB page size**：ELF 加载对齐变化，但不影响 PLT/GOT 表结构
-2. ** stricter namespace**：Android 11+ 的 `android_namespace_t` 限制了 so 库加载范围，但 PLT Hook 在进程内操作，不受 namespace 限制
-3. **RLIMIT_AS**：部分 OEM 设备通过 `setrlimit(RLIMIT_AS, ...)` 限制进程虚拟内存上限，hook 此调用可以观测但不应绕过
-
-[适用版本: PLT Hook 技术从 Android 7.0 起广泛使用，至 Android 17 兼容性良好]
-[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上/下）.md]
-
----
-
-## 实践总结
-
-### 优化优先级排序
-
-| 优先级 | 优化手段 | VSS 收益 | 实现难度 | 风险 |
-|--------|---------|---------|---------|------|
-| P0 | 线程池化 + 栈大小减半 | 50~150MB | ⭐ | 低 |
-| P0 | 多进程隔离大内存模块 | 100MB~1GB | ⭐⭐ | 低 |
-| P1 | WebView 预留释放（不用 WebView 时） | 130MB~1GB | ⭐⭐⭐ | 中 |
-| P2 | maps 分析 + 专项释放 | 视情况 | ⭐⭐ | 中 |
-| P3 | 禁用拷贝回收 + 释放备用 Space | ~512MB | ⭐⭐⭐ | 中（仅 Android 5~7） |
-
-### 32 位 vs 64 位策略差异
-
-**32 位进程**（存量旧设备）：
-- 全部优化手段都需要认真实施
-- VSS 是实际崩溃风险因素
-- 建议推动用户升级到 64 位包
-
-**64 位进程**（Android 14+ 新设备主流）：
-- 线程池化和多进程架构仍有价值（减少物理内存，提升性能）
-- WebView 预留释放必要性降低（1GB 对 256TB 微不足道）
-- 重点关注物理内存（PSS/RSS/USS）而非虚拟内存
-
-### 与其他章节的关系
-
-| 主题 | 机制原理 | 实战策略 |
-|------|---------|---------|
-| ART 内存管理 | → 4.3 | 本节（23.13） |
-| LMK 与进程优先级 | → 4.4 | 本节多进程部分 |
-| OOM 治理全景 | → 20.5 | 本节 VSS 专项 |
-| 多进程架构设计 | → 23.6 | 本节 VSS 视角 |
-| Native 内存优化 | → 23.3 | 本节虚拟内存视角 |
-| 内存分析工具 | → 14.3 | 本节 maps 分析 |
-
----
-
-> 📝 本节内容基于 Clippings 参考书的结构参考和知识点索引，结合 AOSP android-17.0.0_r1 源码验证撰写。所有源码引用已标注 `[已验证]`，未能独立验证的部分标注 `[待验证]`。
+- [`art/runtime/thread.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc)
+- [`art/runtime/native/java_lang_Thread.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/java_lang_Thread.cc)
+- [`libcore Thread.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java)
+- [`libcore VirtualThread.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/VirtualThread.java)
+- [`WebViewLibraryLoader.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/webkit/WebViewLibraryLoader.java)
+- [`WebView loader.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/native/webview/loader/loader.cpp)
+- [`art/runtime/gc/heap.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc)
+- [`android_os_Debug.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Debug.cpp)
+- [Android JNI tips](https://developer.android.com/training/articles/perf-jni)
+- [Linux 6.18 `/proc` 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst)
+- [Android 17 common kernel tag `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6)
