@@ -108,294 +108,303 @@ updated_date: "2026-07-08"
 -->
 <!-- outline-end -->
 
-## 为什么很多团队一开始就把选型做偏了
+一套 Android 线上可观测性系统包含信号来源、客户端上下文、采样与存储、查询告警、诊断产物和处理流程。单独接入一个帧指标库、一个崩溃 SDK 或一个 Web 控制台，都只能覆盖其中一部分。
 
-刚开始做线上性能治理时，最容易出现一种很自然的冲动：先去找“最强的那套方案”。于是大家开始比工具名、比功能表、比 README，问题逐渐变成“Matrix 和 Firebase 哪个更适合我们”“Measure 要不要一上来就接”“是不是再加一个 btrace 会更稳”。
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台基线。开源项目与托管服务变化更快，采用前还要检查当前 release、维护状态、Android Gradle Plugin 兼容性、数据区域和价格。
 
-这些问题看起来都很像选型问题，但它们的共同前提还没成立：团队到底想先解决哪一类问题？
-如果这个前提没说清楚，选型越认真，越容易把事情做偏。因为这些工具解决的并不是同一件事。
+## 把三层能力分开
 
-有些工具负责把线上问题先感知到，有些工具负责在异常发生时把现场保留下来，有些平台负责聚合、告警和回查，还有一些工具更偏开发阶段的调试现场。把它们都放进“性能库”这个大桶里看，结论往往只剩一个：信息很多，但判断不出来。
-
-所以这一章要做的第一件事，是把能力重新放回它们原本的位置。
-
-## 先把三层能力分开
-
-如果把线上性能治理拆开看，至少有三层能力：
-
-| 层次 | 解决的问题 | 代表能力 |
+| 层次 | 负责什么 | 代表能力 |
 |---|---|---|
-| **官方基线能力** | 系统已经愿意暴露哪些信号 | `JankStats`（AndroidX，低版本有回退）、`FrameMetrics`（API 24+）、`ApplicationExitInfo`（API 30+）、Android Vitals |
-| **客户端增强层** | 应用自己还能补哪些上下文和现场 | `Matrix`、`KOOM`、`LeakCanary`、`btrace`、`DoKit` |
-| **平台层** | 数据怎么聚合、回查、告警、进入治理 | Firebase Performance、Measure、自建平台 |
+| 官方信号 | 提供平台或分发侧事实 | `JankStats`、`FrameMetrics`、`ApplicationExitInfo`、`ProfilingManager`、Android Vitals |
+| 客户端 SDK | 添加业务上下文、采样、诊断产物和上传 | Matrix、KOOM、LeakCanary、btrace、DoKit、OpenTelemetry Android、商业 RUM SDK |
+| 后端与平台 | 接收、聚合、查询、告警、符号化和会话回查 | Firebase Performance、Measure、自建 OpenTelemetry 后端、商业 SaaS |
 
-这个分层看起来简单，但它恰好对应了团队最容易混淆的三个问题：
+下面的图标出一条数据从设备到处理人的路径。
 
-1. “系统已经给我的，够不够？”
-2. “系统没给的，我还能不能自己补？”
-3. “补回来之后，团队怎么把它用起来？”
+```mermaid
+flowchart LR
+    A["平台信号<br/>frame / exit / profile / vitals"] --> B["客户端上下文<br/>页面 / 场景 / session / trace"]
+    B --> C["采样与本地缓冲"]
+    C --> D["上传与脱敏"]
+    D --> E["聚合 / 查询 / 告警"]
+    E --> F["trace / hprof / tombstone / 日志回查"]
+    F --> G["负责人修复与版本验证"]
+```
 
-只要这三层没有分清，讨论很快就会变成“接哪个库”，而不是“团队当前缺哪一层能力”。
+这条路径中任一段缺失，数据价值都会下降。只有指标没有上下文，团队只能看到波动；只有 hprof 和 trace，没有聚合索引，产物很难找到；有告警却没有负责人和验证版本，问题会反复出现。
 
-## 第一层：官方基线能力，决定了你的最低起点
+## 先统一五种数据类型
 
-官方能力最适合拿来做基础信号。系统支持、口径相对稳定、兼容性通常更好。缺点也一样直接：系统没暴露的东西，它们给不了。
+APM 方案常把不同数据都称作“trace”，工程上需要拆开。
 
-### JankStats：先把帧级信号拿稳
+| 类型 | 示例 | 数据量 | 主要用途 |
+|---|---|---|---|
+| Metric | 启动时长分布、jank rate、ANR rate、RSS | 小 | 趋势、分组、告警 |
+| Event | 一次进程退出、一次网络错误、一次卡顿 | 中 | 检索、归因、会话重建 |
+| Span | 页面加载、数据库查询、HTTP 请求 | 中到大 | 时序与跨服务关联 |
+| Profile | Perfetto trace、heap profile、stack sample | 大 | 深度诊断 |
+| Snapshot | hprof、tombstone、ANR trace、截图 | 很大且敏感 | 单例问题取证 |
 
-`JankStats` 最适合解决的问题，不是“把所有流畅性问题都看透”，而是“先把最基础的线上帧级信号拿稳”。
+Metric 适合全量或较高采样率，profile 和 snapshot 应由低频规则、系统触发或远程开关控制。把每一帧、每次方法调用都当作远程 event 上传，会增加 CPU、磁盘、网络和费用，还可能让异常样本被海量正常数据淹没。
 
-它给出的信息并不复杂：
+## 官方信号层
 
-- 当前这帧花了多久
-- 这帧是否被判为 jank
-- 当时 UI 正在什么状态
+### JankStats：帧信号与 UI 状态
 
-`PerformanceMetricsState` 是 `JankStats` 区别于原始 `FrameMetrics` 的关键能力。它允许把页面名、列表滚动状态、业务场景等状态写入当前窗口的指标状态，回调里的帧数据会带上这些状态。平台收到帧记录时，可以直接知道 jank 发生在首页首屏、列表 fling 还是某个弹窗过渡期。
+`androidx.metrics:metrics-performance` 的 `JankStats` 以 Window 为单位监听每一帧，回调包含开始时间、UI duration、jank 判断和 `PerformanceMetricsState` 状态。Android 12 / API 31 及更高版本还能提供 frame overrun；API 24 起利用 `FrameMetrics` 获得更可靠的时长；API 16–23 使用较粗的回退。
 
-这个能力非常适合当第一层信号源。对一个刚开始做线上流畅性监控的团队来说，能先知道“哪些页面、哪些交互、哪些版本的帧开始变差”，已经非常有价值。
+接入时要守住三项边界：
 
-但它也只做到这里。`JankStats` 不负责：
+- 它提供每帧数据和 jank 启发式判断，不提供上传、聚合、告警或 trace 文件；
+- `OnFrameListener` 会在帧回调线程执行，API 23 及以下可能是主线程，回调必须快速返回；
+- `FrameData` 对象会复用，异步处理前要复制需要的字段，不能把对象引用直接放进队列。
 
-- trace 文件管理
-- 会话回放
-- 平台告警
-- 治理流程走通
+`PerformanceMetricsState` 适合写页面、滚动、动画或业务阶段。状态值要使用有限集合；把商品 ID、搜索词或完整路由参数写进去，会带来高基数和隐私风险。
 
-所以它更像基础设施，而不是完整答案。
+刷新率变化后，固定“超过 16.67 ms 就算卡顿”的规则会误判。JankStats 按平台能力和 heuristic multiplier 计算；平台聚合时应保留 frame deadline 或 overrun 语义。
 
-### FrameMetrics：在高版本上把帧拆得更细
+### FrameMetrics：需要原始阶段耗时时再用
 
-如果说 `JankStats` 解决的是“这一帧有没有问题”，那 `FrameMetrics` 更接近“问题更像发生在哪一段”。
-它在高版本设备上能补更细的帧阶段信息，所以更适合作为增强层，而不是唯一入口。
+`Window.addOnFrameMetricsAvailableListener()` 从 API 24 提供 Window 帧指标。Android 17 的 `FrameMetrics` 包括 layout/measure、draw、sync、command issue、swap、total duration 等字段；较新平台还提供 `DEADLINE` 与 FrameTimeline VSync ID。
 
-工程上更稳的理解不是“二选一”，而是：
+它适合已有自研采集器、需要控制字段和聚合方式的团队。Jank 判定、状态管理、低版本回退和上传都要自行实现。`FrameMetrics` 与 JankStats 常可组合：JankStats 提供统一入口，原始 FrameMetrics 只在高版本补充细分字段。
 
-- `JankStats` 负责统一信号源
-- `FrameMetrics` 负责高版本细分耗时
+### ApplicationExitInfo：用系统记录修正退出归因
 
-这样既不丢覆盖面，也不会让体系一开始就变得过重。
+API 30 起，`ActivityManager.getHistoricalProcessExitReasons()` 返回历史进程退出记录。公开字段包括 reason、status、importance、timestamp、PSS、RSS 和进程名；ANR 或 native crash 在条件满足时还可能提供 trace input stream。Android 17 的内部记录还保存 subreason，但 `getSubReason()` 标记为 `@hide`，普通应用不能把它当作公开契约。
 
-### ApplicationExitInfo：先把稳定性事实说准
+Android 17 源码给出几项限制：
 
-线上治理最怕误判。
-`ApplicationExitInfo` 的价值，不在信息量特别大，而在于它提供了一种更接近系统真相的出口：到底是 ANR、崩溃、后台被杀，还是其他退出原因。
+- AOSP `config_app_exit_info_history_list_size` 默认是 16，厂商资源覆盖后可能不同；
+- PSS/RSS 是系统最近一次采样，不保证等于进程死亡瞬间；
+- ANR trace 和 tombstone 位于有限的全局循环存储中，`getTraceInputStream()` 可能返回 null；
+- `AppExitInfoTracker` 同时处理 lmkd、子进程退出、应用 kill、recoverable crash 和 statsd 等来源，单一客户端心跳无法覆盖这些事实。
 
-没有这层能力，很多团队只能靠客户端自己的启发式判断去猜测“像不像 ANR”“是不是被系统回收了”。
-一旦口径建立在猜测上，后面的聚合和报警很容易一路变形。
+采集器应在首帧后或后台线程读取，按 `(processName, timestamp, reason, status)` 去重，并保存“来源是 system exit record”。不能把 `REASON_LOW_MEMORY`、Java OOM 和 native OOM 合成一个无来源标签。
 
-它的版本边界要单独写清：`ApplicationExitInfo` 从 Android 11（API 30）开始可用，API 26-29 不能把它当作基础能力。低版本上的 ANR、crash、low-memory 归因仍要依赖 traces、崩溃回调、前后台状态、进程重启痕迹和服务端会话拼接。接入时也不要在冷启动主线程同步拉取大量历史记录，`ActivityManager.getHistoricalProcessExitReasons()` 经过 `system_server`，适合延后到首帧后或后台线程。
+### ProfilingManager：系统代采诊断产物
 
-系统侧记录逻辑在 `frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java`。按 android-17.0.0_r1 源码核对，默认持久化文件落在 `/data/system/procexitstore/procexitinfo`，历史条数由 `config_app_exit_info_history_list_size` 控制，Android 17 默认值是 16。`KillHandler` 也不是单一的 `MSG_PROC_DIED` 主线，它还会处理 `MSG_LMKD_PROC_KILLED`、`MSG_CHILD_PROC_DIED`、`MSG_APP_KILL`、`MSG_APP_RECOVERABLE_CRASH`、`MSG_STATSD_LOG` 等消息。Android 17 的 lmkd 外部来源仍会把 `rss_kb` 传入 `onProcDied()`，所以线上平台展示退出原因时，最好保留 reason、status、importance、pss/rss、trace file 和 timestamp 这些字段，不要只存一个“疑似 ANR / OOM”的二值标签。
+`ProfilingManager` 从 API 35 支持请求 system trace、Java heap dump、heap profile 和 stack trace。Android 17 还提供系统触发式能力。系统负责配额、采集时机和文件交付，应用负责注册 listener、保存关联上下文和上传结果。
 
-### Android Vitals：最粗，但也最不能忽视
+它适合作为异常样本的诊断产物来源，不能替代日常 metric。系统可能因配额、设备状态或策略不执行请求，线上平台必须允许“事件存在，但 profile 缺失”。
 
-Android Vitals 的问题大家都知道：粒度不够细，自定义空间有限，很多时候只能看到趋势，拿不到足够多的现场。
+### Android Vitals：分发侧基线
 
-但它仍然是很多团队最早的性能入口：来自真实分发面，几乎没有接入成本。
-对于刚开始搭体系的团队来说，完全不看 Vitals，等于把一块已经放在手边的基础看板直接丢掉。
+Android Vitals 来自用户同意上传的认证设备和 Google Play 安装，覆盖 crash、ANR、启动、渲染、LMK、Wakelock 等质量信号。它还能发现 SDK 尚未初始化前的 crash 和部分系统侧 ANR。
 
-## 第二层：客户端增强层，决定了你能不能把现场留下来
+Vitals 与自建 APM 的分母通常不同。Play 可能按 daily active user 计算，自建平台常按 session、launch 或 event 计算；隐私阈值、渠道和用户同意范围也不同。两边数值不一致时，应先比较定义、覆盖和时间窗，不能用其中一个数字校准另一个。
 
-官方能力解决的是“系统已经愿意给你的信号”。客户端增强层解决的是另一件事：**当系统没直接给，或者你还需要更强现场时，应用自己能补到什么程度。**
+## 客户端增强工具
 
-### Matrix：把客户端常见监控问题先组织起来
+### Matrix：多插件采集框架
 
-Matrix 最值得写的一点，是它把客户端常见的监控问题组织成了一套框架。
+Matrix 提供 Trace Canary、IO Canary、SQLite lint、resource/内存、APK 分析等模块，并把结果交给应用自己的 `PluginListener`。它适合已有上传和后台平台、希望统一多类客户端信号的团队。
 
-这能解决一个常见卡点：很多团队接监控时，卡住的地方通常是缺少统一入口。流畅性一套、IO 一套、内存一套、battery 一套，结果谁都接了一点，谁也接不完整。Matrix 提供的恰好是一种更容易收敛的接入方式。
+兼容性是当前选择中的主要风险。上游最新正式 release 仍停在 2023 年，README 明确写 Matrix Gradle plugin 支持 AGP 3.5.0、4.0.0、4.1.0。AGP 8/9、Kotlin、R8、16 KB page size 和 Android 17 项目不能按 README 直接推定兼容。采用前应建立最小应用验证：
 
-它更适合的团队通常有两个特征：
+- debug/release、minify 开关和 baseline profile 构建；
+- Java/Kotlin/Compose 和多模块插桩；
+- mapping、native symbol 与反混淆；
+- 启动、帧、包体、内存和构建时间差值；
+- 崩溃时的远程关闭能力。
 
-- 已经有自己的上报通道
-- 需要更强的客户端现场
+使用内部 fork 时，还要记录与上游的差异、owner 和升级测试组合。
 
-它不适合被想象成“接了以后平台就有了”。
-很多团队用 Matrix 的难点，往往不在 SDK 接入，而在 schema、采样、回查和治理流程。
+### KOOM：线上内存专项
 
-版本兼容要单独核。Matrix README 仍把 Android Gradle Plugin 支持范围写在 3.5.0 / 4.0.0 / 4.1.0；AGP 7/8+ 项目接 Trace Canary 前，应先用最小样本验证 Gradle plugin、ASM 插桩和混淆流程，或确认团队使用的 fork 已完成适配。
+KOOM 分为 Java heap、native heap 和线程泄漏等模块。Java 方案利用 copy-on-write fork 子进程执行 heap dump 与分析，减少主进程长时间停顿；native 与线程模块使用各自的 hook 和分析策略。
 
-### KOOM：内存问题成为主矛盾时，它的价值更明显
+它适合 OOM、native 泄漏或线程泄漏已经成为主要稳定性问题的团队。评估时不能只看能否产出报告，还要测：
 
-`KOOM` 集中在 Java Heap、Native Heap、线程泄漏、OOM 治理。
-所以它更像一把专项刀，而不是总平台入口。
+- fork、dump 与分析在各 Android 版本和厂商 ROM 上的成功率；
+- 主进程暂停时间与峰值内存；
+- 低磁盘、低内存和进程被杀时的恢复；
+- hprof 裁剪后的可解释性；
+- native hook 与目标 ABI、MTE、Scudo、16 KB page size 的兼容；
+- 产物大小、脱敏与上传条件。
 
-如果团队当前最痛的是：
+### LeakCanary：开发阶段的 Java 泄漏定位
 
-- 低内存设备回前台慢
-- Native 泄漏难定位
-- OOM 突增
+LeakCanary 监视已结束生命周期但仍被引用的对象，触发 heap dump 后用 Shark 找到 GC root 到 retained object 的引用路径，并按 leak signature 分组。
 
-那 KOOM 的优先级会非常高。
-但如果团队当前主要卡在首页慢、列表卡、响应延迟，它通常不应该作为第一站。
+它适合 debug 和测试设备。heap dump 会暂停应用并包含对象内容，不能直接按本地配置搬到全量 release。线上内存治理还需要发生率、设备分布、RSS/PSS、OOM exit、产物采样与隐私策略，LeakCanary 本身不提供这些平台能力。
 
-KOOM 的 Java heap 方案常见做法是让主进程短暂停住 ART VM，`fork()` 出子进程后立刻恢复主进程，再由子进程完成 hprof dump、strip 和分析。这样可以避开 `Debug.dumpHprofData()` 长时间阻塞主进程的问题。落到平台选型时，除了“能不能抓 OOM”，还要看 dump 触发阈值、子进程失败兜底、裁剪后 hprof 的可还原性，以及上传体积是否会压垮低端设备。
+### btrace / RheaTrace：按需方法级现场
 
-### LeakCanary：本地排泄漏，仍然非常强
+btrace 3.x 的 Android 方案使用动态 hook 与同步抓栈，按运行时采样间隔收集方法栈，并可把应用数据与 Perfetto 的 sched、atrace、ftrace 写入同一份 protobuf trace。采样能覆盖未做编译期插桩的系统栈，但不会精确记录每次方法进入和退出。
 
-`LeakCanary` 更偏开发和测试阶段的本地排查工具。
-它最擅长的是把“谁没有被回收、为什么还活着”讲清楚。
+这种工具适合已发现启动或卡顿回归、普通 trace 缺少 Java 方法上下文时的定向采集。同步抓栈依赖选定触发点，长时间停在没有触发点的代码中可能形成采样空窗；采样合并还可能把两次相同栈误认为连续执行。结论应回到原始 sched、锁、I/O 和业务事件验证。
 
-因此：
+线上接入要配置构建开关、采样率、buffer 上限、采集时长、目标进程和符号文件。默认常驻打开所有模式没有依据。
 
-- `LeakCanary` 用来本地查泄漏
-- `KOOM` 用来线上治理内存问题
+### DoKit：Debug 研发工具
 
-把这两者混成“选一个就行”，读者后面很容易在使用场景上犯错。
+DoKit 提供网络 mock、沙盒查看、数据库、FPS、启动、布局、视觉和其他研发辅助面板。上游 README 明确说明功能面向 Debug，Release 未经过其保证。
 
-### btrace / RheaTrace：当普通指标不够时，用它把现场保下来
+它适合本地联调和测试效率，不应列入线上 APM SDK。release variant 应通过依赖隔离、no-op artifact 或构建检查确认没有把调试入口、网络拦截与敏感工具打进生产包。
 
-`btrace` 这类工具的价值，不在于平时全量开着，而在于**问题已经被发现，但现场还不够**的时候。
+## 传输与平台方案
 
-比如一个版本的冷启动 P95 开始抬升，JankStats 也能看出首页某段交互开始变差，但为什么变差仍然说不清。这种时候，如果能按异常样本补一段方法级 trace，再叠上 Perfetto 体系里的系统事件，很多原本模糊的问题会迅速清楚。
+### Firebase Performance
 
-所以 `btrace` 的位置是客户端增强层里的现场补强工具，不适合作为常驻 tracing 库。
+Firebase Performance 的 Android SDK 自动采集应用启动、screen rendering 和生命周期信号；加入 Gradle plugin 后可自动插桩 HTTP/S 请求，也支持 custom trace、custom metric 和 attribute。控制台提供版本、设备、国家和系统版本等聚合与告警。
 
-Matrix Trace Canary 和 btrace 都能补方法级现场，但路线不同。Matrix 依赖编译期 ASM 插桩，覆盖面广，包体积和运行时事件量也更高；btrace 3.0 更偏同步采样，默认开销低，代价是采样命中率和还原精度需要按场景评估。线上选型时要把这类差异写进采样率、灰度和开关策略。
+选择前要核对这些限制：
 
-### DoKit：更像开发和测试现场的工具箱
+- Android 自动网络采集依赖 Gradle plugin 与支持的网络调用路径；
+- 官方文档说明 Android 只支持 main process，独立进程需要另行设计；
+- 网络 URL 会做 pattern 聚合，仍要检查路径中的账号、文档 ID 等敏感片段；
+- custom trace 不适合逐帧或高频调用；
+- 数据存储、导出、区域、保留期和计费要符合组织要求；
+- 托管控制台不能接收任意 Perfetto、hprof 或自定义二进制产物。
 
-DoKit 覆盖的能力很杂，实用点也不少：FPS、启动耗时、网络、页面检查、调试辅助、沙盒浏览。
-它解决的是开发和测试现场怎样更快看到问题。
+它适合希望快速获得托管指标和告警、能够接受 Firebase 数据与平台约束的团队。
 
-所以它更接近研发工具箱，而不是线上治理平台。
-这也是为什么它和 Firebase、Measure 看起来都“能看性能”，但并不在同一条线上。
+### OpenTelemetry Android
 
-## 第三层：平台层，决定治理能不能持续运转
+OpenTelemetry Android 建立在 OTel Java 之上，当前提供 Activity/Fragment 生命周期、启动、ANR、crash、网络变化、慢帧/冻结帧、session、离线缓冲、自动与手动 instrumentation，并可导出到兼容后端。
 
-客户端能力再强，没有平台，很多时候也只能停留在“拿到了一些点状证据”。
-平台层补上的，是这些能力：
+OTel 解决的是统一数据模型、上下文传播和 exporter 接口。Collector、存储、查询、告警、移动端 issue grouping、符号化和大型附件管理仍需要后端能力。已有 OTel 服务端体系的团队可复用 trace context 与 collector；没有平台团队时，单接 SDK 只会得到待处理的遥测流。
 
-- 版本对比
-- 机型聚合
-- 页面榜单
-- 会话回查
-- 告警分级
-- 进入 backlog 的流转能力
+移动端资源有限，Batch export、采样、离线磁盘上限和 attribute redaction 都要在接入测试中验证。服务端 Java agent 的默认配置不能原样复制到 Android。
 
-### Firebase Performance：最容易进入团队视野的平台型能力
+### Measure
 
-Firebase Performance 最大的优点，是上手快。
-对一个刚开始做线上性能治理的团队来说，它很适合解决“先把基础指标跑起来”这个问题。
+Measure 是 Apache 2.0 的开源移动可观测性平台，包含 Android/iOS 等 SDK、session timeline、crash、ANR、performance trace、符号上传和自托管后端。当前 Android 能力还可通过 `ProfilingManager` 接收系统触发的 profile，并把产物关联到 session。
 
-但这类平台也有很清楚的边界：越往深走，越会碰到定制能力、私有化、trace 流程控制这些限制。
-它适合做第一层平台，不一定适合承载整个治理体系。
+它适合需要自托管和移动端会话上下文、并且有人维护升级、存储、备份、鉴权和告警的团队。自托管只改变控制权，不会消除运行成本。接入前应压测事件吞吐、附件增长、索引保留、版本迁移和灾难恢复。
 
-### Measure：更接近完整治理平台
+### 商业移动 APM / RUM
 
-`Measure` 是开源移动可观测性平台，适合想替代 Firebase 但又希望自托管、数据留存可控、会话时间线可回查的团队。它把崩溃、ANR、trace、日志放在同一个视角里组织，适合已有 owner 维护平台和数据 schema 的团队。
+商业 SaaS 常把 crash、ANR、RUM、network span、session replay、backend trace 和告警集成在一个控制台。产品名称相近，Android 覆盖差异很大。采购验证应使用真实 release APK 和目标设备，检查：
 
-对已经跨过“只想先看到几个指标”的团队来说，这类平台更贴近治理，不能只按展示看板来评估。
+- Compose、View、Fragment、WebView 和多进程；
+- OkHttp、Cronet、Ktor、gRPC 与自定义协议；
+- Java/Kotlin、JNI/native crash 与符号化；
+- session replay 的遮罩规则、截图与输入隐私；
+- W3C trace context 和自家后端的兼容；
+- 离线缓存、弱网重试、包体、启动和功耗；
+- 原始数据导出、区域、保留期、删除和退出成本。
 
-## 做选型时，先问四个问题
+销售功能表不能代替上述验证。
 
-### 1. 团队当前最缺的是感知，还是归因？
+## 自建 schema：先保证数据能解释
 
-- 还不知道问题在哪：优先建立信号层
-- 已经能看到异常，但说不清原因：优先补客户端增强层
+### 通用事件字段
 
-### 2. 团队当前最痛的是哪类问题？
+| 字段 | 用途 | 约束 |
+|---|---|---|
+| `event_id` | 上传幂等与去重 | 随机 ID，不复用用户标识 |
+| `event_type` / `name` | 区分 frame、launch、exit、network、profile | 枚举受版本管理 |
+| wall clock + monotonic time | 跨设备查询与单设备时长 | 时长优先使用 monotonic clock |
+| app version / build ID | 版本归因和符号匹配 | versionName 不足以唯一定位产物 |
+| API level / device / ABI / process | 平台与进程分组 | 设备型号需规范化 |
+| session ID | 组织一次前台使用期 | 与账号 ID 分离 |
+| trace ID / span ID | 关联一次分布式请求 | 使用随机值和标准传播格式 |
+| metric value / unit | 防止 ms、ns、bytes、KB 混用 | unit 必填，不写进 metric name 猜测 |
+| sampling rule / probability | 解释覆盖率和加权 | 远程配置版本一并保存 |
+| attributes | 页面、场景、网络等上下文 | allowlist、长度和基数限制 |
+| artifact reference | trace、hprof、tombstone 等附件 | 保存 hash、大小、类型、加密与过期时间 |
 
-- 卡顿 / 启动：先看 `JankStats`、Matrix Trace Canary、`btrace`
-- OOM / 泄漏：先看 `KOOM`、`LeakCanary`
-- 研发联调效率：先看 `DoKit`
+schema 要能区分“没有发生”“没有采集”“被采样丢弃”“上传失败”和“后端解析失败”。把它们都存成 null，会让发生率和覆盖率失真。
 
-### 3. 团队有没有平台承接能力？
+### Session ID 与 trace ID
 
-没有平台承接时，客户端采再多，也很容易堆成日志。
-有平台能力时，才值得把 trace-id、场景上下文、会话时间线这些字段认真组织起来。
+Session ID 表示一段用户使用期，trace ID 表示一次操作或请求树。一个 session 可以包含多个 trace，一次后台 trace 也可能不属于前台 session。二者都不应由账号、手机号或设备标识直接生成。
 
-### 4. 团队能承受多少运行时开销和维护成本？
+跨端与后端关联可使用 W3C `traceparent`。只向允许的自有域名传播，网关还要保留采样决定。第三方域名、广告和支付接口不应默认收到内部 baggage。
 
-没有任何线上 APM 是“零成本”的。成熟的方案，一定要同时看：
+### 高基数字段
 
-- 默认开销
-- 采样策略
-- 开关粒度
-- 数据边界
-- 平台运维成本
-- 版本兼容维护成本
+完整 URL、搜索词、聊天内容、文件路径和动态路由会同时增加索引成本与隐私风险。常用处理方式包括：
 
-如果团队没有明确 owner 去维护这件事，方案越重，后面越容易烂尾。
+- URL 只保留 host、method、状态码和模板化 path；
+- 页面使用稳定 screen ID，不上传可见文本；
+- 错误消息分成受控 error code 与采样后的脱敏详情；
+- stack trace 由 build ID + frame 组成，服务端完成符号化；
+- hprof、截图和 trace 使用单独权限与保留期。
 
-## 一张更实用的评估表
+## 采样与开销
 
-做选择时，可以用下面五个维度来问问题：
+### 不同数据使用不同预算
 
-| 维度 | 要问的问题 |
+| 数据 | 常用策略 |
 |---|---|
-| 感知能力 | 能不能及时发现卡顿、启动、ANR、OOM？ |
-| 归因深度 | 只能看到指标，还是能看到 trace、调用链和会话上下文？ |
-| 平台能力 | 有没有版本、机型、页面、地域等聚合视图？ |
-| 工程成本 | 接入复杂度、运行时开销、运维成本如何？ |
-| 数据边界 | 隐私、留存、自托管、上传策略是否可控？ |
+| crash / system exit | 高覆盖，严格去重，附件按可用性采集 |
+| ANR | 高覆盖事件，trace 受系统和存储限制 |
+| 启动 | 按 session 采样，区分 cold/warm/hot 与 TTID/TTFD |
+| frame | 端上聚合分布与场景，异常帧再抽样明细 |
+| network | 按 endpoint template、错误和慢请求分层采样 |
+| span | head sampling 为主，服务端可对错误提高保留 |
+| profile / hprof | 极低频、配额控制、远程开关、条件上传 |
 
-没有哪套方案会在所有维度都最优。
-选型要做的，是把“换来了什么”以及“付出了什么”同时看清楚。
+采样率变更必须随事件上报。版本 A 采 1%，版本 B 采 10%，直接比较 event count 没有意义。P95/P99 也不能由各设备已经计算好的 P95 再求平均；应上传可合并 histogram 或受控原始样本。
 
-## 按团队成熟度选，而不是按流行度选
+### 接入基准
 
-### 阶段 1：先建立基础信号
+每个 SDK 或插件都要在 release 构建上测量：
 
-如果团队现在还没有稳定线上信号，那最合理的顺序通常是：
+- cold/warm startup 与首帧；
+- 帧时长分布、ANR 和 crash；
+- Java/native heap、线程、FD 和磁盘；
+- 前后台 CPU、网络字节与电量；
+- APK/AAB 大小、DEX 方法、native library 和 16 KB page compatibility；
+- Gradle configuration/build time、R8 与 baseline profile；
+- 弱网、无网、低磁盘、低内存和进程被杀后的队列恢复。
 
-- `JankStats`
-- 启动埋点
-- `ApplicationExitInfo`（API 30+；低版本仍要保留传统 crash / ANR 归因）
-- Android Vitals / Firebase 这类基础平台能力
+结果要包含 SDK 全关、默认配置和目标采样配置三组。还要提供本地与远程 kill switch，确保 SDK 异常时无需发版即可停止高风险采集。
 
-这个阶段最忌讳一上来接过重方案。因为团队还没确认哪些指标最有用，过度建设只会放大噪音。
+## 选型对照表
 
-### 阶段 2：问题能看到，但现场不够
+| 当前需求 | 合适起点 | 采用前要确认 |
+|---|---|---|
+| Play 渠道质量基线 | Android Vitals | 分母、隐私阈值、渠道覆盖 |
+| 自建帧指标 | JankStats + 自有聚合 | 回调开销、状态基数、刷新率语义 |
+| 稳定进程退出归因 | ApplicationExitInfo | API 30、历史条数、trace 可用性 |
+| 托管启动/渲染/网络指标 | Firebase Performance | main process、数据区域、导出与自定义限制 |
+| 已有 OTel 后端 | OpenTelemetry Android | 移动端采样、离线缓存、RUM 展示能力 |
+| 自托管移动端 issue/session | Measure | 基础设施、附件成本、升级与备份 |
+| 自有平台 + 多类客户端监控 | Matrix 或内部框架 | 现代 AGP/Android 17 兼容与维护 owner |
+| OOM/内存泄漏专项 | KOOM；开发期配合 LeakCanary | dump 成功率、峰值内存、隐私和产物上传 |
+| 启动/卡顿方法级诊断 | btrace，配合 Perfetto | 采样空窗、符号、buffer 与按需开关 |
+| 本地研发调试 | DoKit、LeakCanary、Android Studio | release variant 完全隔离 |
+| 大型商业组织的一体化 RUM | 商业 SaaS 试点 | 真实端覆盖、费用、数据与退出成本 |
 
-这时应该补客户端证据层：
+## 一条可执行的采用顺序
 
-- `Matrix`
-- `btrace`
-- `KOOM`
+1. 写出要改善的用户体验和度量定义，例如 cold TTID P95、受影响 session 的 ANR rate。
+2. 用 Android Vitals、JankStats、ApplicationExitInfo 和现有日志建立基线。
+3. 设计 event schema、采样字段、隐私 allowlist 和 build ID。
+4. 选择一个平台路径：托管服务、OTel 后端或自托管移动平台。
+5. 只为当前证据缺口增加 Matrix、KOOM、btrace 等专项工具。
+6. 在 release 构建和真实设备上做开销、兼容与故障测试。
+7. 灰度后比较 SDK 自身引入的 crash、ANR、启动、流量和功耗变化。
+8. 给每个告警绑定负责人、诊断入口、修复版本和回归验证。
 
-目标从“有没有问题”变成“问题发生时能不能更快落到责任环节”。
+当指标已经很多、告警无人处理、trace 搜索困难时，继续增加采集器通常不会改善结果。此时应修复 schema、索引、owner 和处理时限。
 
-### 阶段 3：证据不少，但治理效率低
+## 源码与官方资料
 
-这时应该投的是平台和流程：
+- [JankStats API](https://developer.android.com/reference/androidx/metrics/performance/JankStats)
+- [JankStats 使用与 API level 差异](https://developer.android.com/topic/performance/jankstats)
+- [Android Vitals 定义与覆盖](https://developer.android.com/topic/performance/vitals)
+- [ApplicationExitInfo API](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+- [ProfilingManager API](https://developer.android.com/reference/android/os/ProfilingManager)
+- [Android 17 AppExitInfoTracker](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java)
+- [Android 17 ApplicationExitInfo](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java)
+- [Android 17 FrameMetrics](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java)
+- [Android 17 Window frame listener](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Window.java)
+- [Firebase Performance Monitoring](https://firebase.google.com/docs/perf-mon)
+- [Firebase Performance Android 接入与 main-process 边界](https://firebase.google.com/docs/perf-mon/get-started-android)
+- [OpenTelemetry Android](https://opentelemetry.io/docs/platforms/client-apps/android/)
+- [Measure](https://github.com/measure-sh/measure)
+- [Matrix](https://github.com/Tencent/matrix)
+- [KOOM](https://github.com/KwaiAppTeam/KOOM)
+- [LeakCanary](https://square.github.io/leakcanary/)
+- [btrace / RheaTrace](https://github.com/bytedance/btrace)
+- [DoKit](https://github.com/didi/DoKit)
 
-- 会话时间线
-- 版本 / 机型聚合
-- 告警分级
-- 问题榜单
-- 回查能力
+---
 
-也就是 `15.9` 和 `15.10` 里展开的那部分。
-
-## 什么时候反而不该继续扩 APM 体系
-
-下面几种情况，往往不适合继续堆能力：
-
-- 指标已经不少，但 backlog 没有人消费
-- trace 和 hprof 已经能拿到，但平台回查很弱
-- 团队没有明确 owner 维护版本兼容和采样策略
-
-这时候继续加能力，通常只会增加复杂度，而不会增加治理效果。
-
-## 给初学者的一个稳妥起点
-
-如果读者刚开始搭团队的线上性能体系，一个比较稳的起点是：
-
-1. 先用官方基线能力把启动、帧级信号、ANR / exit 看起来
-2. 再选一两个最贴近团队当前问题的客户端增强工具
-3. 再考虑平台整合和治理流程
-
-这个顺序不够激进，但更容易推行。
-
-## 与全书主线的关系
-
-这一章把工具能力放回治理体系里看：
-
-- `7/8/9` 解释了体验问题的分类和诊断入口
-- `15.3` 解释了该看哪些指标
-- `15.5` 解释了线上怎么感知
-- `15.9` 解释了感知之后怎么把治理走通
-- `15.10` 解释了团队怎么长期把这件事做对
-
-读者如果读完后，能先分层、再看目标、再按团队能力做组合，而不是直接抄一份工具清单，这一章就算达到目的了。
+**延伸阅读**：[14.7 ProfilingManager](07-profiling-manager.md) · [14.13 Hook 基础设施](13-hook-infrastructure.md) · [15.3 性能指标体系](../ch15-methodology/03-metrics.md) · [15.5 线上性能监控](../ch15-methodology/05-online-monitoring.md)
