@@ -32,68 +32,125 @@ task9_reviewed_date: "2026-04-28"
 
 # 第 13 章：Perfetto
 
-如果整本书里只能挑一个最应该反复回来的工具章节，那大概率就是这一章。
+Perfetto 是 Android 性能分析的统一时间轴。渲染、输入、启动、ANR、调度、锁、Binder、I/O、内存和功耗来自不同数据源，Trace Processor 把它们转换成可关联的表，Perfetto UI 再把时间关系呈现出来。本章的目标是让读者完成三件事：采到能回答问题的数据、读懂不同轨道的语义、把观察写成可复核的 SQL 与源码结论。
 
-原因很简单：Perfetto 不是一个“看图工具”，而是一整套观察 Android 运行时的方式。  
-渲染、输入、启动、ANR、调度、锁竞争、Binder、I/O，只要问题开始跨线程、跨进程、跨系统层级，最后几乎都会回到同一根时间线上来。
+## 版本口径
 
-这一章的目标是带着读者建立三层能力：
+| 层级 | 本章采用的版本 | 使用边界 |
+|---|---|---|
+| Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | 平台源码、数据源注册、权限和系统事件语义 |
+| Android 内核 | `android17-6.18-2026-06_r6` | `sched`、perf event、ftrace、DMA-BUF 等内核行为 |
+| 平台内 Perfetto | v54 时代快照，加 Android 固定 tag 中的后续改动 | 不能简写成纯 v54.0，也不能写成 Android 17 内置 v57 |
+| 宿主机分析器 | Perfetto v57.2 | 用于复核当前 UI、Trace Processor 和标准库；版本应和分析结果一起保存 |
+| AndroidX Tracing | 稳定版 1.3.0；2.0.0-beta01（2026-07-15） | 2.0 beta 的 `Tracer`、driver/sink、协程传播和 host JVM trace 属于应用依赖，不是平台 API 37 的组成部分 |
 
-- 先知道 Perfetto 到底是什么
-- 再知道怎样把 trace 抓对
-- 最后知道怎样从图、从 SQL、从专题分析里拿到真正能落手的判断
+设备采集端与宿主机分析端可以独立升级。新 UI 通常能读取旧 trace，却不能让旧设备凭空提供新的 data source。看到空表时，应检查采集配置、设备权限、trace data loss 和分析器 schema，不能只升级浏览器页面。
 
-到 2026 年，这套体系还有两个明显扩展方向。系统侧，`traced` / `traced_probes`、Mainline APEX 和标准 SQL 模块让采集、存储、分析拆成了可以独立演进的层；应用侧，AndroidX Tracing 2.0 又把进程内 TracePacket、协程上下文传播和 host JVM trace 拉进了同一个 Perfetto 数据模型。  
-但对大多数读者来说，第一步仍然是先学会把一份 trace 看明白。
+## 章节目录
 
-## 本章内容
+### 入门与采集
 
-- 13.1 Perfetto 简介与演进
-- 13.2 Trace 抓取
-- 13.3 Perfetto View 解读
-- 13.4 命令行打开超大 Trace
-- 13.5 专题解读
-- 13.6 线程 CPU 状态分析
-- 13.7 Perfetto 的高级用法
-- 13.8 Perfetto 输入延迟 SQL 深度分析
-- 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理
-- 13.10 Perfetto SQL 性能分析实战手册
-- 13.11 Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数
-- 13.12 Perfetto Profile 导入与 Flamegraph 分析
-- 13.13 Perfetto CPU 频率与 DVFS 关联分析
-- 13.14 Perfetto DataGrid 与 Jank CUJ 标准库
-- 13.15 BufferQueue 阻塞的 Perfetto 识别
-- 13.16 Agent 辅助 Perfetto 分析协议
-- 13.17 Android 17 Perfetto 数据源边界与验证
+- [13.1 Perfetto 简介与演进](01-perfetto-intro.md)
+- [13.2 Trace 抓取](02-trace-capture.md)
+- [13.3 Perfetto View 解读](03-perfetto-view.md)
+- [13.4 命令行打开超大 Trace](04-large-traces.md)
+- [13.5 专题解读](05-topic-analysis.md)
+- [13.6 线程 CPU 状态分析](06-thread-cpu-states.md)
+- [13.7 Perfetto 的高级用法](07-advanced-usage.md)
 
-## 阅读顺序建议
+### SQL 与跨层分析
 
-- 第一次接触 Perfetto，按 13.1 → 13.3 → 13.5 读，先建立 UI 和专题分析的基本视角。
-- 需要稳定抓 Trace 或处理大文件，接着看 13.2、13.4、13.7。
-- 需要把问题量化到 SQL，重点看 13.8、13.10、13.11、13.13。
-- 需要理解采集路径和扩展 tracing 能力，重点看 13.9、13.12、13.16，再回看 13.7 里的高级用法。
-- 需要分析 FrameTimeline、Jank CUJ 或 BufferQueue 阻塞，重点看 13.14、13.15。
+- [13.8 Perfetto 输入延迟 SQL 深度分析](08-input-latency-sql.md)
+- [13.9 atrace、ftrace 与 Perfetto 数据采集原理](09-tracing-infrastructure.md)
+- [13.10 Perfetto SQL 性能分析实战手册](10-perfetto-sql-cookbook.md)
+- [13.11 SPAN_JOIN 与窗口函数](11-perfetto-span-join-window-functions.md)
+- [13.12 Profile 导入与 Flamegraph 分析](12-perfetto-profiles-flamegraph.md)
+- [13.13 CPU 频率与 DVFS 关联分析](13-cpu-frequency-dvfs-analysis.md)
+- [13.14 DataGrid、Data Explorer 与 Jank CUJ 标准库](14-perfetto-data-explorer-jank-cuj.md)
+- [13.15 BufferQueue 阻塞的 Perfetto 识别](15-bufferqueue-blocking-perfetto.md)
+- [13.16 Agent 辅助 Perfetto 分析协议](16-agent-perfetto-analysis-protocol.md)
 
-如果你是在真实排障中第一次翻到这一章，最实用的方式通常是：
+### 数据源、SDK 与分析平台
 
-1. 先看 `13.3`，知道界面里到底在看什么。
-2. 再看 `13.2`，把 trace 抓对。
-3. 然后根据具体问题，回到 `13.5`、`13.6`、`13.8` 或 `13.10`。
+- [13.17 Android 17 Perfetto 数据源边界与验证](17-android17-data-sources.md)
+- [13.17 Perfetto SDK 与应用内 Trace 数据源](17-perfetto-sdk-in-app-tracing.md)
+- [13.18 SmartPerfetto 与可复用 Trace 分析平台](18-smartperfetto-trace-analysis-platform.md)
+- [13.19 FrameTracer 与 Graphics Frame Event 数据通路](19-frametracer-graphics-frame-event.md)
+- [13.20 Frame Timeline：Expected 与 Actual Timeline](20-frame-timeline-api33-perfetto-analysis.md)
+- [13.21 pprof 与 Simpleperf 原生可视化](21-perfetto-pprof-simpleperf-native-visualization.md)
+- [13.22 Perfetto SQL 查询库与 CI](22-perfetto-sql-cookbook-performance-analysis.md)
 
-这样读，效率通常比一上来先看架构史要高。
+### 补充专题
 
-## 延伸阅读
+- [Perfetto 版本演进与 Android 9—17 特性验证](13.21-perfetto-version-evolution.md)
+- [13.25 PerfDog 的 Android GPU/性能数据源](13.25-perfdog-android-platform-gpu-performance-data-sources.md)
+- [13.26 android.os.Trace API 与应用级自定义追踪](13.26-android-trace-api-custom-tracing.md)
+- [13.27 Android 17 trace、Perfetto v57 AI skill 与状态轨道](13.27-android17-perfetto-v57-ai-skill-state-tracks.md)
+
+目录中有两篇文章共用 `13.17`，版本演进专题与 pprof 专题共用 `13.21`。这是现有 metadata 的编号冲突。批量生成索引时应按路径和标题识别；若要重编号，需要同步修改 frontmatter、交叉引用、SUMMARY 和 Hermes 状态，不能只改正文标题。
+
+`13.1-07-04-android17-heapprofd-production-deployment-pe.md` 是 deprecated 迁移占位文件，不进入阅读路径。heapprofd 生产部署以 [§26.24 heapprofd 生产级部署与权限模型](../../part5-app/ch26-observability/24-heapprofd-production-deployment-permissions.md) 为准。
+
+## 按任务选择阅读路径
+
+### 第一次使用 Perfetto
+
+按 13.1 → 13.2 → 13.3 → 13.5 阅读。13.2 负责采集，13.3 解释轨道与选择区，13.5 把常见现象连接到后续专题。
+
+### 帧卡顿与渲染
+
+按 13.20 → 13.19 → 13.14 → 13.15 阅读。FrameTimeline 定位异常帧，FrameTracer 补 buffer 阶段，CUJ 标记场景，BufferQueue 说明 producer/consumer 阻塞。RenderThread、GPU 或 SurfaceFlinger 归因还要回到对应渲染章节。
+
+### CPU、调度与频率
+
+按 13.6 → 13.13 → 13.11 → 13.22 阅读。Running、Runnable 和 Sleeping 要分开统计；频率、调度区间和业务 slice 的关联使用区间连接，批量回归使用固定查询库。
+
+### 输入、Binder 与跨进程等待
+
+按 13.8 → 13.9 → 13.10 → 13.22 阅读。输入流水线负责确定事件身份与时间窗，Binder 标准库区分客户端等待和服务端处理，`thread_state` 补充调度与阻塞证据。
+
+### CPU profile 与内存
+
+按 13.12 → 13.21 → 13.22 阅读。pprof 是聚合 profile，Simpleperf protobuf 保存样本时间戳，Perfetto `linux.perf` 可以和 system trace 同轴采集。内存分析要区分 heap profile、heap graph、process counter 与 DMA-BUF。
+
+### 应用埋点与工具集成
+
+按应用内 SDK 专题 → 13.26 → 13.9 阅读。`android.os.Trace`、AndroidX Tracing 和 Perfetto SDK 的写入路径、文件格式与采集 session 依赖不同，选型前应确认目标是系统时间轴、独立进程内 trace 还是自定义 data source。
+
+### 自动化与代理分析
+
+按 13.16 → 13.22 → 13.18 → 13.27 阅读。自动分析必须保留 trace hash、分析器版本、执行 SQL、单位、结果行数和数据缺口。代理可以加快 schema 探索与查询迭代，结论仍需 trace 行、标准库语义和源码共同支持。
+
+## 一次可复核的分析流程
+
+1. 写出假设和所需数据源，再生成采集配置；
+2. 记录设备 build fingerprint、平台 tag、内核、采集端与分析端版本；
+3. 检查 `stats`、trace 时长、表是否存在及行数；
+4. 用 FrameTimeline、启动 marker、输入事件或业务 slice 固定时间窗；
+5. 分别检查 CPU 执行、Runnable 排队、睡眠、Binder、锁、I/O、GPU 和内存；
+6. 用 SQL 保留筛选条件、身份键、单位和样本数；
+7. 回到 Android 17 固定源码或对应上游 tag 验证字段与调用路径；
+8. 保存原始 trace、配置、SQL、工具 hash 和结论边界。
+
+UI 截图适合说明位置，不足以支撑可重复回归。SQL 聚合适合量化，也不能代替单帧、单事务或单调用栈的时序证据。
+
+## 延伸资料
 
 ### Perfetto 2026 架构级深度技术分析
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Perfetto 2026 架构级深度技术分析  .md
-- 类型：DeepResearch 调研结果
-- 摘要：覆盖 Perfetto v51-v54 与 Android 13-16 的架构演进，串起 traced、traced_probes、Mainline APEX、Trace Summary v2、FrameTimeline/CUJ/monitor contention 标准库以及主要 data source，是 2026 版 Android trace 体系总览与检索入口。
-- 注入时间：2026-04-20
-- 价值：信息面最全，适合作为 Perfetto 章节的年度更新型参考资料。
+
+路径：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Perfetto 2026 架构级深度技术分析  .md`
+
+该材料覆盖 Perfetto v51—v54、Trace Summary、FrameTimeline/CUJ、monitor contention 和主要 data source，适合查阅 2025—2026 年初的演进背景。它的上限是 v54 与 Android 16，Android 17 固定源码和 v55—v57 行为应以本章当前文章及官方源码复核。
 
 ### AndroidX Tracing 2.0 架构级深度技术分析
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/AndroidX Tracing 2.0 架构级深度技术分析 .md
-- 类型：DeepResearch 调研结果
-- 摘要：围绕 AndroidX Tracing 2.0 alpha05，拆解 Tracer、TraceDriver、TraceSink 新对象模型、协程上下文传播、纯 Kotlin Perfetto TracePacket 发射路径，以及与 1.x、Benchmark、Studio Profiler 的边界。
-- 注入时间：2026-04-21
-- 价值：适合和 13.7、13.9 一起看，判断应用侧 tracing 新能力当前能做什么、还不能做什么。
+
+路径：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/AndroidX Tracing 2.0 架构级深度技术分析 .md`
+
+该材料以 2.0.0-alpha05 为基线，适合理解 `Tracer`、`TraceDriver`、`TraceSink`、TracePacket 和协程传播的早期设计。当前依赖已经到 2.0.0-beta01，API、集成状态与生产采用建议应重新对照 [AndroidX Tracing 发布说明](https://developer.android.com/jetpack/androidx/releases/tracing)。
+
+## 官方入口
+
+- [Perfetto 文档](https://perfetto.dev/docs/)
+- [PerfettoSQL 标准库](https://perfetto.dev/docs/analysis/stdlib-docs)
+- [Android 17 Perfetto changelog](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/CHANGELOG)
+- [AndroidX Tracing 发布说明](https://developer.android.com/jetpack/androidx/releases/tracing)
