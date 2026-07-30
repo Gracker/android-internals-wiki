@@ -17,7 +17,7 @@ related_chapters: ["15.6", "14.4", "21.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-07"
 drafted_date: "2026-06-08"
-last_verified: "2026-06-08"
+last_verified: "2026-07-30"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 task9_result: auto-fixed
@@ -36,448 +36,335 @@ sources:
   - type: aosp
     path: "frameworks/base/core/java/android/os/StrictMode.java"
   - type: aosp
+    path: "frameworks/base/core/java/android/os/Parcel.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/app/ActivityThread.java"
+  - type: aosp
     path: "libcore/dalvik/src/main/java/dalvik/system/BlockGuard.java"
+  - type: aosp
+    path: "libcore/dalvik/src/main/java/dalvik/system/CloseGuard.java"
 gap_source: "AOSP结构/官方文档/章节深挖"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-19
+android17_review_notes: "校正 ThreadPolicy 线程范围、BlockGuard 检查点、penalty 执行、Binder 违规回传、临时放行、CI 安装位置及 Android 17 flagged VmPolicy"
 ---
 
 # 14.23 StrictMode 性能检查与开发期诊断
 
-StrictMode 是 Android 提供的开发期性能守卫工具，能在主线程执行磁盘 I/O、网络请求、Closeable 泄漏等操作时主动拦截并报告。它不用于线上监控——线上场景靠 APM SDK（详见 19.27），StrictMode 负责在开发和测试阶段提前暴露问题。
+StrictMode 是一组运行时规则：代码经过 Android 或 libcore 预埋的检查点时，规则可以报告磁盘读写、网络访问、显式 GC、资源未关闭和若干安全违规。它适合在开发、自动化测试和平台集成阶段暴露可疑行为。
 
-源码位置：`frameworks/base/core/java/android/os/StrictMode.java`。底层拦截机制依赖 `dalvik.system.BlockGuard`（`libcore/dalvik/src/main/java/dalvik/system/BlockGuard.java`），在 JNI 调用、文件操作、网络 socket 操作的关键路径上插入检查点。
+StrictMode 提供的是违规信号，不是完整性能采样。它不会拦住每一个系统调用，也不会自动判断某段业务代码是否超过 16 ms。需要精确耗时、CPU 调度、Binder 等待或块 I/O 证据时，应继续使用 Perfetto。
 
-## StrictMode 的两类策略
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点。
 
-StrictMode 分两条独立的策略线：
+## 先分清 ThreadPolicy 和 VmPolicy
 
-- **ThreadPolicy**：拦截当前线程上的阻塞操作（磁盘读、磁盘写、网络、自定义慢调用）
-- **VmPolicy**：拦截虚拟机级别的违规（Activity 泄漏、Closeable 未关闭、SQLite 对象泄漏、非 SDK API 调用）
+| 策略 | 生效范围 | 典型检查 |
+| --- | --- | --- |
+| `ThreadPolicy` | 调用 `StrictMode.setThreadPolicy()` 的当前线程 | 磁盘读、磁盘写、网络、自定义慢调用、资源类型不匹配、未缓冲 I/O、显式 GC |
+| `VmPolicy` | 当前进程 | Activity/Closable/SQLite/注册对象泄漏、非 SDK API、明文网络、URI 与 Intent 安全问题 |
 
-两条策略各自有独立的 detect 方法和 penalty 配置，互不干扰。
+`ThreadPolicy` 不等于“主线程策略”。应用通常在 `Application.onCreate()` 中设置它，而 `onCreate()` 恰好运行在进程主线程，所以常见用法只覆盖主线程。线程池、Binder 线程和手工创建的线程不会自动永久继承这份 Java 线程策略。
 
-## ThreadPolicy 配置
+`VmPolicy` 由 `StrictMode.setVmPolicy()` 安装到进程级静态状态，进程内各线程触发对应检查点时都受它约束。
 
-### 检测项
+每次 `setThreadPolicy()` 或 `setVmPolicy()` 都是替换现有策略。Builder 没有显式 penalty、但启用了检测项时，`build()` 会补上 `penaltyLog()`。
 
-```java
-StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
-    .detectDiskReads()
-    .detectDiskWrites()
-    .detectNetwork()
-    .detectCustomSlowCalls()
-    .detectResourceMismatches()      // API 23+
-    .detectExplicitGc()              // API 34+
-    .penaltyLog()
-    .build();
-StrictMode.setThreadPolicy(policy);
-```
+## 一份可解释的 Debug 配置
 
-各检测项的行为：
-
-- `detectDiskReads()`：拦截主线程的文件读取操作。底层通过 BlockGuard 包装 `FileInputStream`、`FileOutputStream`、`RandomAccessFile` 的 read/write 调用。`SharedPreferences.getString()` 走 `XmlUtils.readFileMap()` 会触发此检测。
-- `detectDiskWrites()`：拦截主线程的文件写入。`SharedPreferences.edit().commit()` 必然触发（`apply()` 不会，因为写入发生在后台线程）。参见 21.3 对 ContentProvider 启动阶段 SharedPreferences 使用方式的分析。
-- `detectNetwork()`：拦截主线程的网络操作。BlockGuard 对 `Socket`、`HttpURLConnection` 的 connect/write/read 插入拦截。OkHttp 底层也走 Socket，同样会触发。
-- `detectCustomSlowCalls()`：配合 `StrictMode.noteSlowCall("tag")` 使用，开发者自行标记耗时操作。适合标记那些不涉及磁盘/网络但耗时可能超标的逻辑（如 JSON 解析、Bitmap 解码）。
-- `detectResourceMismatches()`（API 23+）：检测资源定义类型与读取方法不匹配，比如 `TypedArray.getInt()` 读取到 String 类型资源时触发 `ResourceMismatchViolation`。
-- `detectExplicitGc()`（API 34+）：检测当前线程显式调用 `System.gc()` / `Runtime.gc()`。它是 ThreadPolicy 检测项，不属于 VmPolicy。
-
-### Penalty 策略
+下面的 Java 代码在每个应用进程的主线程安装显式规则，避免 `detectAll()` 随 target SDK、compat change 和 feature flag 改变覆盖范围：
 
 ```java
-// 选项一：仅打 Log（推荐开发期默认配置）
-.penaltyLog()
-
-// 选项二：抛异常让 App 崩溃（推荐 CI 环境和强制执行场景）
-.penaltyDeath()
-
-// 选项三：弹 Dialog 提示（开发期调试用，生产构建别开）
-.penaltyDialog()
-
-// 选项四：写入 DropBox（适合后台收集）
-.penaltyDropBox()
-
-// 选项五：自定义回调（接入自建日志或 APM）
-.penaltyListener(new StrictMode.OnThreadViolationListener() {
-    @Override
-    public void onThreadViolation(StrictMode.Violation v) {
-        // 自定义处理，如上报到内部日志系统
-    }
-})
-```
-
-`penaltyLog()` 在 Logcat 输出 tag 为 `StrictMode` 的日志。`penaltyDeath()` 抛出 `StrictModeViolation`（继承自 `RuntimeException`），适合 CI 环境把违规变成测试失败。`penaltyDeathWithNetwork()` 在网络违规时直接崩溃、其他违规仅打 Log——适合磁盘违规还想继续调试的场景。
-
-`penaltyListener()`（API 28+）适合接入内部日志系统或 APM SDK，不中断运行的同时把违规记录到线上。
-
-### Debug 构建启用模板
-
-```java
-public class MyApp extends Application {
+public final class App extends Application {
     @Override
     public void onCreate() {
-        if (BuildConfig.DEBUG) {
-            StrictMode.setThreadPolicy(
-                new StrictMode.ThreadPolicy.Builder()
-                    .detectDiskReads()
-                    .detectDiskWrites()
-                    .detectNetwork()
-                    .detectCustomSlowCalls()
-                    .penaltyLog()
-                    .build());
+        super.onCreate();
 
-            StrictMode.setVmPolicy(
-                new StrictMode.VmPolicy.Builder()
-                    .detectLeakedClosableObjects()
-                    .detectLeakedSqlLiteObjects()
-                    .detectActivityLeaks()
-                    .penaltyLog()
-                    .build());
+        if ((getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) == 0) {
+            return;
         }
+
+        StrictMode.setThreadPolicy(
+                new StrictMode.ThreadPolicy.Builder()
+                        .detectDiskReads()
+                        .detectDiskWrites()
+                        .detectNetwork()
+                        .detectCustomSlowCalls()
+                        .detectResourceMismatches()
+                        .detectUnbufferedIo()
+                        .detectExplicitGc()
+                        .penaltyLog()
+                        .build());
+
+        StrictMode.setVmPolicy(
+                new StrictMode.VmPolicy.Builder()
+                        .detectActivityLeaks()
+                        .detectLeakedClosableObjects()
+                        .detectLeakedSqlLiteObjects()
+                        .detectLeakedRegistrationObjects()
+                        .detectNonSdkApiUsage()
+                        .penaltyLog()
+                        .build());
     }
 }
 ```
 
-生产构建不启用。StrictMode 的检查本身有性能开销——BlockGuard 对每次 I/O 操作都做一次策略检查，在性能敏感路径上会影响测量结果。
+Android 会为应用的每个进程创建 `Application` 实例，因此同一个 `Application` 类的 `onCreate()` 会分别运行。上面的 `ThreadPolicy` 覆盖各进程主线程，`VmPolicy` 覆盖各自进程；它不会把策略送到另一个进程。
 
-## VmPolicy 配置
+团队可以从较少的 detector 开始，让日志保持可处理，再逐项增加。`detectNonSdkApiUsage()` 宜尽早安装，因为启用前发生的访问可能不会被补报。
 
-```java
-StrictMode.VmPolicy vmPolicy = new StrictMode.VmPolicy.Builder()
-    .detectActivityLeaks()
-    .detectLeakedClosableObjects()
-    .detectLeakedSqlLiteObjects()
-    .detectNonSdkApiUsage()           // API 28+
-    .detectUnsafeIntentLaunch()        // API 31+
-    .penaltyLog()
-    .build();
-StrictMode.setVmPolicy(vmPolicy);
-```
+## ThreadPolicy：检查的是操作类别
 
-各检测项说明：
+### 磁盘读写
 
-- `detectActivityLeaks()`：通过 `ActivityThread` 的创建/销毁路径维护 Activity 实例的期望计数；销毁后如果 `InstanceTracker` / `VMDebug.countInstancesOfClass()` 统计仍超过阈值，就报告 `InstanceCountViolation`。
-- `detectLeakedClosableObjects()`：检查 `Closeable` 对象（`InputStream`、`OutputStream`、`Cursor` 等）是否在 finalize 时仍未关闭。底层通过 `CloseGuard`（`libcore/dalvik/src/main/java/dalvik/system/CloseGuard.java`）实现，每个 `Closeable` 在构造时注册一个 guard，`finalize()` 时检查 guard 是否已关闭。
-- `detectLeakedSqlLiteObjects()`：SQLite 特化的泄漏检测。SQLiteCursor 和 SQLiteDatabase 在 finalize 时检查是否已关闭。和 `detectLeakedClosableObjects()` 有重叠，但 SQLite 检测会额外报告 SQL 语句和数据库路径。
-- `detectNonSdkApiUsage()`（API 28+）：拦截通过反射或 JNI 访问非 SDK 接口的行为。Android 9 起对 `@hide` API 实施限制，这个检测帮助发现代码中的灰色地带。`setVmPolicy()` 会注册 `VMRuntime.setNonSdkApiUsageConsumer()` 并关闭 ART 内部去重，非 SDK 访问检查命中后回调到 StrictMode。
-- `detectUnsafeIntentLaunch()`：检测应用把外部来源的 `Intent` 继续用于 `startActivity()`、`startService()`、`bindService()`、`sendBroadcast()` 或 `setResult()` 时可能触发的未保护组件/URI 授权风险。它主要是安全检测，不应写成 `setPackage()` / `setComponent()` 本身的性能问题。
+`detectDiskReads()` 和 `detectDiskWrites()` 通过当前线程的 `BlockGuard.Policy` 接收 `onReadFromDisk()`、`onWriteToDisk()` 回调。libcore 文件系统和 Android framework 的参与代码会在 I/O 前触发这些检查点。
 
-## 违规日志分析
+边界需要写清楚：
 
-StrictMode 违规在 Logcat 中的典型输出格式：
+- 直接从 native 代码发起、且没有经过对应检查点的 syscall 可能绕过检测；
+- 检测到磁盘访问不代表该访问一定很慢；
+- 主线程等待后台 I/O 的 `Future.get()` 不会因为“根因是磁盘”而自动得到 `DiskReadViolation`；
+- 第三方库若在后台线程读写，而后台线程没有安装策略，主线程策略看不到那次操作。
 
-```
-D/StrictMode: StrictMode policy violation: android.os.strictmode.DiskReadViolation
-    at android.os.StrictMode$AndroidBlockGuardPolicy.onThreadPolicyViolation(StrictMode.java:xxxx)
-    at dalvik.system.BlockGuard.wrapAround(BlockGuard.java:xxx)
-    at java.io.FileInputStream.read(FileInputStream.java:xxx)
-    at android.app.SharedPreferencesImpl.getString(SharedPreferencesImpl.java:xxx)
-    at com.example.MyActivity.onResume(MyActivity.java:42)
-```
+`SharedPreferences` 是典型例子。`SharedPreferencesImpl` 可以在后台加载 XML，主线程 getter 随后等待加载完成。磁盘 syscall 不在主线程时，主线程 StrictMode 可能没有 `DiskReadViolation`，界面仍会因等待而卡住。遇到这种现象要看 Perfetto 中的线程状态和工作线程 I/O。
 
-信息提取方法：
+`commit()` 允许调用线程同步完成持久化，可能触发主线程磁盘写；`apply()` 把持久化工作排入后台，仍要避免在紧邻路径等待它完成。
 
-1. **违规类型**：第一行的 `DiskReadViolation` / `DiskWriteViolation` / `NetworkViolation` / `CustomSlowCallViolation` 标明问题类别。
-2. **触发位置**：堆栈最下面的应用代码行（`MyActivity.java:42`）是问题发生的具体位置。
-3. **中间路径**：`SharedPreferencesImpl.getString` → `FileInputStream.read` 说明是 SharedPreferences 的同步读触发了磁盘 I/O。
+### 网络
 
-DropBox 标签：StrictMode 违规同时写入 DropBox（`android.os.DropBoxManager`），标签为 `system_app_strictmode`（系统应用）或 `data_app_strictmode`（第三方应用）。通过 `adb shell dumpsys dropbox --print` 可以查看历史违规记录，适合批量分析测试结果。
+`detectNetwork()` 由 `BlockGuard.Policy.onNetwork()` 触发。Java socket 和基于它的常见 HTTP 客户端会经过这类检查点。native socket 代码不保证进入同一检查。
 
-## 临时豁免机制
+`penaltyDeathOnNetwork()` 是一个特殊 penalty：检测到网络操作时会在其他 penalty 之前抛出 `NetworkOnMainThreadException`。只想记录时，不要把它和 `penaltyLog()` 一起加入策略。
 
-对已知的安全操作（如初始化时必要的文件读取），可以使用临时豁免：
+### 自定义慢调用
+
+`detectCustomSlowCalls()` 只让 `StrictMode.noteSlowCall(name)` 生效。`noteSlowCall()` 被执行就产生 `CustomViolation`，没有内建耗时阈值，也不会包围并测量后续方法。
+
+下面的写法用于标记一条团队认定不应出现在主线程的同步路径：
 
 ```java
-// 豁免磁盘读（包裹需要执行的操作）
-StrictMode.ThreadPolicy old = StrictMode.allowThreadDiskReads();
+StrictMode.noteSlowCall("decode-startup-config");
+decodeStartupConfig();
+```
+
+日志中的名字用于辨认检查点。若要知道 `decodeStartupConfig()` 花了多少时间，给它添加 trace section，并在 Perfetto 中读取 slice。
+
+### 资源不匹配、未缓冲 I/O 与显式 GC
+
+- `detectResourceMismatches()`：例如用 `TypedArray.getInt()` 读取 String 类型资源，转换可成功但会报告类型不匹配；
+- `detectUnbufferedIo()`：由参与的 I/O 实现调用 `BlockGuard.onUnbufferedIO()`，用于发现逐字节等未缓冲访问；
+- `detectExplicitGc()`：由显式 `Runtime.gc()` / `System.gc()` 检查点报告。Android 17 的 `detectAll()` 是否自动包含它还受 compat change 控制，显式调用 Builder 方法更稳定。
+
+这些 detector 不会覆盖分配抖动、系统触发 GC、GPU 工作或普通 CPU 密集计算。
+
+## VmPolicy：资源生命周期、API 与安全检查
+
+### 资源泄漏类检查
+
+| 方法 | Android 17 行为 |
+| --- | --- |
+| `detectActivityLeaks()` | 跟踪预期 Activity 实例数；快速计数超限后执行 GC/finalization，再用 `VMDebug.countInstancesOfClass()` 复核 |
+| `detectLeakedClosableObjects()` | 启用 `CloseGuard` reporter；只有接入 `CloseGuard`、且终结时仍为 open 的资源才会上报 |
+| `detectLeakedSqlLiteObjects()` | 接收 `SQLiteCursor` 等 SQLite 对象在未关闭终结时的专用报告 |
+| `detectLeakedRegistrationObjects()` | 在 `Context` 清理时报告未注销的 `BroadcastReceiver` 或 `ServiceConnection` |
+| `setClassInstanceLimit()` | 为指定类设置实例数上限，进程空闲检查时可触发 `InstanceCountViolation` |
+
+`detectLeakedClosableObjects()` 不是对所有实现了 `Closeable` 的对象做全堆扫描。资源类需要调用 `CloseGuard.open()`、`close()` 与 `warnIfOpen()` 才能参与。
+
+Activity 实例检查会主动 GC 和遍历堆，测试时可能带来明显扰动。它也依赖对象回收与生命周期时序，不宜把一次异步出现的日志当成稳定的单元测试断言。
+
+### API、网络与组件安全类检查
+
+Android 17 的 `VmPolicy.Builder` 还包含：
+
+- `detectNonSdkApiUsage()`：ART 把非 SDK API 使用消息交给 StrictMode；底层访问限制仍由 ART 自己执行；
+- `detectCleartextNetwork()`：通过 UID 明文网络策略与 netd 协作，记录模式和拒绝模式的行为不同；
+- `detectUntaggedSockets()`：报告未用 `TrafficStats` 标记的 Java socket，native socket 不在当前保证范围；
+- `detectFileUriExposure()`、`detectContentUriWithoutPermission()`：检查跨应用 URI 使用；
+- `detectUnsafeIntentLaunch()`：检查外部来源 Intent 被继续转发时可能产生的组件与 URI 授权风险；
+- `detectCredentialProtectedWhileLocked()`：用户锁定时访问 credential-protected 路径；
+- `detectIncorrectContextUse()`：例如从非 visual Context 获取依赖显示区域的 UI 服务。
+
+这组 detector 中有性能、资源和安全检查。看到 `VmPolicy` 违规时，应按 violation 类型分派给对应负责人，不能全部归为“卡顿”。
+
+### Android 17 的 flagged detector
+
+`android-17.0.0_r1` 还定义了两个受 feature flag 或 compat change 控制的 Builder API：
+
+| 方法 | 报告内容 | 使用限制 |
+| --- | --- | --- |
+| `detectBlockedBackgroundActivityLaunch()` | 应用发起的后台 Activity 或 PendingIntent 启动被系统阻止 | `@FlaggedApi(FLAG_BAL_STRICT_MODE_RO)`；设备 flag 与客户端策略都要满足 |
+| `detectImplicitUriPermissionGrant()` | 系统向应用做了隐式 URI 权限授予 | 受 security flag 与 compat change 控制 |
+
+`detectAll()` 会根据 target SDK 和设备开关决定是否加入这些检测。面向多版本设备的测试若依赖某个明确 violation，应显式启用并先判断 API/flag 可用性。
+
+## Penalty 的执行语义
+
+| penalty | 行为与边界 |
+| --- | --- |
+| `penaltyLog()` | 通过 StrictMode logger 输出 violation；相同指纹会限流 |
+| `penaltyDeath()` | ThreadPolicy 在 penalty 处理末尾抛 `RuntimeException`；VmPolicy 调用 `killProcess()` 并退出 |
+| `penaltyDeathOnNetwork()` | ThreadPolicy 网络检查点立即抛 `NetworkOnMainThreadException` |
+| `penaltyListener(executor, listener)` | 把原始 `Violation` 交给指定 Executor；Executor 参数必填 |
+| `penaltyDropBox()` | 经 ActivityManager 写 DropBox，源码定位是平台集成与 beta 现场采集 |
+| `penaltyDialog()` / `penaltyFlashScreen()` | 面向交互式平台调试，受系统服务和限流约束 |
+
+所有启用的通用 penalty 会应用于该 Builder 中的全部 detector。若某类违规只想记录、另一类要让测试失败，可以在不同测试阶段替换策略，或用 listener 分类后由测试框架做断言。
+
+### 正确使用 penaltyListener
+
+下面的代码把回调放到专用 Executor，避免在发生违规的线程里执行日志 I/O：
+
+```java
+Executor strictModeExecutor = Executors.newSingleThreadExecutor();
+
+StrictMode.setThreadPolicy(
+        new StrictMode.ThreadPolicy.Builder()
+                .detectDiskReads()
+                .detectDiskWrites()
+                .penaltyListener(
+                        strictModeExecutor,
+                        violation -> violationQueue.add(violation))
+                .build());
+```
+
+`onThreadPolicyViolation()` 会在回调执行期间临时放开回调线程的 ThreadPolicy，避免 listener 自己递归触发。队列消费、Executor 关闭和测试结束时的清理仍由应用负责。
+
+不要在回调里同步上传网络、写文件或执行重型符号化。堆栈、路径与明文网络数据也可能包含敏感信息，发布环境采集前要做数据评审。
+
+### Looper 上的 duration 代表什么
+
+线程带 Looper 时，StrictMode 记录 violation 时刻，并把处理任务插到消息队列前部。`durationMillis` 表示从 violation 到该轮队列回到处理点的时间，可能包含违规操作后的其他同步工作。它不是磁盘 syscall 或网络请求的精确耗时。
+
+同一 Looper 周期的记录数量有上限，日志、Dialog、DropBox 与 VM violation 也有各自限流。日志数量不能直接当成违规发生次数。
+
+## 跨 Binder 的 ThreadPolicy 传播
+
+`setThreadPolicyMask()` 同步更新两个线程局部状态：
+
+1. libcore `BlockGuard` 的 Java policy；
+2. Binder native 层保存的 StrictMode policy mask。
+
+发起同步 Binder 调用时，mask 可以随事务到达服务端 Binder 线程。服务端触发 ThreadPolicy 违规后，`PENALTY_GATHER` 把 `ViolationInfo` 放进 `gatheredViolations` ThreadLocal。`Parcel.writeNoException()` 最多把前三条违规写入 reply；调用方的 `Parcel.readException()` 再进入 `readAndHandleBinderCallViolations()`，补上本地调用栈并交给调用方当前策略处理。
+
+所以应用堆栈中可能看到发生在 `system_server` 或其他 Binder 服务里的磁盘违规。它有助于定位同步 IPC 间接做 I/O，也会让“应用源码里没有读文件却报 DiskReadViolation”看起来反常。
+
+这套传播处理的是 ThreadPolicy violation。它不会把远端 `VmPolicy` 变成调用方的进程级策略，也不会报告 Binder 调用本身花了多少时间。
+
+## 临时放行要精确恢复
+
+少量同步 I/O 确认无法迁移，且产品能够接受它的延迟时，可以在最小作用域内放行。下面的代码只在读取配置期间移除当前线程的 disk-read detector：
+
+```java
+StrictMode.ThreadPolicy oldPolicy = StrictMode.allowThreadDiskReads();
 try {
-    // 这里执行必要的磁盘读取
-    readConfigFromDisk();
+    readSmallBootConfig();
 } finally {
-    StrictMode.setThreadPolicy(old);
+    StrictMode.setThreadPolicy(oldPolicy);
 }
 ```
 
-`allowThreadDiskReads()` 和 `allowThreadDiskWrites()` 的返回值是当前的 ThreadPolicy，在 finally 块中恢复。注意这两个方法是 ThreadPolicy 级别的豁免，不影响 VmPolicy。
+返回值是放行前的完整策略，必须在 `finally` 中恢复。异常、提前返回和嵌套调用都不应让线程永久处于宽松状态。
 
-常见豁免场景：
-- SharedPreferences 首次初始化（`Context.getSharedPreferences()` 在 API 31 之前会在主线程读取 XML 文件）
-- 数据库首次打开（`SQLiteOpenHelper.getReadableDatabase()`）
-- 日志库初始化时的文件创建
+两个 API 的位操作不同：
 
-豁免不应该被滥用——每处豁免都应该有明确的注释说明为什么这条磁盘 I/O 不可避免。如果发现豁免超过 5 处，说明代码架构本身需要调整。
+- `allowThreadDiskReads()` 只清除 disk-read 检测；
+- `allowThreadDiskWrites()` 同时清除 disk-write 与 disk-read 检测，因为写文件通常伴随读取元数据。
 
-## CI/CD 集成
+放行不会让操作更快，也不会证明它适合主线程。注释应写明数据量上限、调用阶段和无法异步化的原因，并为后续迁移保留可搜索的 issue 标识。
 
-### Espresso 测试中启用
+## 自动化测试怎样安装策略
 
-```java
-@Before
-public void enableStrictMode() {
+### 不要只在测试线程调用 setThreadPolicy
+
+Instrumentation 测试的 `@Before` 通常运行在测试线程。在那里调用 `setThreadPolicy()` 只改变测试线程；应用主线程继续使用原策略。
+
+下面的 Kotlin 片段把策略安装动作切到应用主线程：
+
+```kotlin
+val instrumentation = InstrumentationRegistry.getInstrumentation()
+
+instrumentation.runOnMainSync {
     StrictMode.setThreadPolicy(
-        new StrictMode.ThreadPolicy.Builder()
+        StrictMode.ThreadPolicy.Builder()
             .detectDiskReads()
             .detectDiskWrites()
             .detectNetwork()
-            .penaltyDeath()    // CI 环境：违规即失败
-            .build());
-    StrictMode.setVmPolicy(
-        new StrictMode.VmPolicy.Builder()
-            .detectLeakedClosableObjects()
-            .detectActivityLeaks()
             .penaltyDeath()
-            .build());
+            .build()
+    )
 }
 ```
 
-`penaltyDeath()` 在测试环境中让违规变成测试失败，防止问题被忽略。结合 Firebase Test Lab 或 Android Test Orchestrator 时，StrictMode 违规会出现在测试报告的 crash 堆栈中。
+这能把主线程违规变成进程异常，测试运行器通常会把它记录为失败。策略应在测试结束时恢复，避免用例之间互相污染。
 
-`ActivityScenario` 不会替测试自动打开 StrictMode；需要在测试基类、JUnit Rule 或 `Application.onCreate()` 中显式设置策略，才能把违规转成 CI 失败。
+另一种做法是在 debug/test 专用 `Application` 中安装策略。它更早生效，也自然覆盖每个应用进程的主线程。需要检查线程池时，在工作线程初始化处单独设置 `ThreadPolicy`。
 
-### 将违规纳入 CI 失败条件
+### CI 结果的稳定性
 
-Gradle 配置示例（在 `build.gradle` 中通过 testOptions 传入）：
+适合做硬门槛的违规通常具备确定触发点，例如主线程网络、明确的同步磁盘访问或代码主动调用的 `noteSlowCall()`。依赖 finalization、GC、系统服务时序或 feature flag 的 VmPolicy 违规更适合先收集证据，再设计带等待和清理步骤的测试。
 
-```groovy
-android {
-    testOptions {
-        // 在 CI 环境通过系统属性控制
-        // System.setProperty("strictmode.test", "death")
-    }
-}
-```
+Gradle JVM 的 `-D` 属性不会自动出现在设备端应用进程。若需让 CI 选择 log/listener/death 模式，应通过 test manifest、instrumentation argument、BuildConfig 字段或设备端可读取的配置传递，并限制在测试构建。
 
-在 CI 脚本中通过 `-Dstrictmode.test=death` 传入系统属性，Application 的 `onCreate()` 中读取并决定使用 `penaltyLog()` 还是 `penaltyDeath()`。
+## 与协程、Compose 和多进程配合
 
-## 局限性与替代方案
+### 协程策略属于承载线程
 
-### StrictMode 检测不到的场景
+StrictMode 不认识 coroutine。`Dispatchers.Main` 上的协程使用主线程策略；切到 `Dispatchers.IO` 后使用线程池中那条 OS 线程的策略。把 I/O 移到 `Dispatchers.IO` 能离开主线程，但主线程 StrictMode 不能证明后台任务没有造成队列拥塞、锁竞争或回切等待。
 
-StrictMode 的拦截点有限，以下场景不会触发检测：
+Compose 的 composition、`LaunchedEffect` 和事件回调只要运行在主线程并经过检查点，就与 View 代码一样受 ThreadPolicy 约束。`AndroidView` 中的 `onMeasure()`、`onLayout()` 或回调也没有特殊豁免。
 
-- **后台线程的磁盘 I/O 延迟**：StrictMode 只看主线程。如果后台线程的磁盘操作阻塞了主线程（如通过 `Future.get()` 等待），StrictMode 只能看到 `Future.get()` 的阻塞，看不到根因是磁盘 I/O。这类问题需要 Perfetto 的 `ftrace` + `io_uring` 分析（参见 13.10）。
-- **Binder 调用耗时**：StrictMode 不检测 Binder IPC 耗时。跨进程调用 AMS/PMS/WMS 时的阻塞只能通过 Perfetto 的 Binder 轨道分析（参见 13.15）。
-- **GPU 操作**：GPU 渲染管线的耗时（`RenderThread` 的 `drawFrames`）不在 StrictMode 覆盖范围。用 `adb shell dumpsys gfxinfo` 或 Perfetto 的 `gpu_mem` counter 分析。
-- **内存分配抖动**：频繁的短生命周期对象分配导致的 GC 暂停，StrictMode 不检测。用 Android Studio Profiler 的 Memory面板或 Perfetto 的 `java_hprof` 数据源（参见 14.22）。
+### 每个进程分别安装
 
-### 何时从 StrictMode 迁移到 Perfetto
+`android:process` 创建的是另一个 Linux/ART 进程。系统会在那个进程内创建应用的 `Application`，然后调用其 `onCreate()`。同一配置代码会再次运行，策略状态和违规限流表与主进程相互独立。
 
-StrictMode 解决的是"有没有"的问题——有没有主线程磁盘读、有没有网络调用。Perfetto 解决的是"有多慢"的问题——这个磁盘操作耗时多少、Binder 调用路径哪一步最慢。
+Binder 调用期间的 ThreadPolicy mask 传播属于单次事务语义，不能代替远端进程自己的长期配置。
 
-当 StrictMode 的豁免列表越来越长、或者性能问题的瓶颈从"是否在主线程"转向"耗时多少毫秒"时，需要结合 Perfetto 自定义 trace 点做精确度量：
+## StrictMode 没覆盖什么
+
+| 问题 | StrictMode 能给出的信息 | 后续工具 |
+| --- | --- | --- |
+| 主线程命中磁盘/网络检查点 | violation 类型和调用栈，Looper 场景带近似区间 | Perfetto `sched`、Binder、文件系统与自定义 slice |
+| 主线程等待后台任务 | 常常没有磁盘 violation | Perfetto 线程状态、锁与工作线程轨道 |
+| Binder 调用慢 | 可能回传远端的 ThreadPolicy 违规；没有 IPC 精确耗时 | Perfetto Binder 轨道 |
+| GPU/RenderThread 慢 | 无对应 detector | Perfetto GPU/Frame Timeline、AGI、Winscope |
+| 分配抖动与系统 GC | 可报告显式 GC；不能刻画分配率和系统 GC 原因 | Android Studio Profiler、Perfetto ART 事件 |
+| native 代码直接 I/O | 可能绕过 Java/libcore 检查点 | Perfetto/ftrace、native tracing |
+| 完整资源泄漏证明 | 只覆盖接入的 detector，且部分依赖 GC | LeakCanary、HPROF、Perfetto ART Heap Graph |
+
+StrictMode 适合把“这条路径不该做这类操作”变成可见信号。Perfetto 再回答发生时间、持续区间、调度等待和跨线程因果。
+
+下面的 trace section 用于给已经由 StrictMode 定位的同步路径增加时间轴标记：
 
 ```java
-// 从 StrictMode 的 noteSlowCall 过渡到 Perfetto trace
-Trace.beginSection("MySlowOperation");
-doWork();
-Trace.endSection();
-```
-
-StrictMode + Perfetto 的组合使用：StrictMode 负责开发期门控（`penaltyDeath()` 阻止违规合入），Perfetto 负责性能度量（量化优化前后的耗时差异）。两者不是替代关系。
-
-### 性能开销
-
-BlockGuard 对每次 I/O 操作执行策略检查。在高频操作路径上（如每帧读取文件），StrictMode 会引入可测量的延迟。因此 StrictMode 仅在 Debug 构建启用，生产环境不开启。
-
-量化 StrictMode 开销时，需在目标设备上分别测量 `penaltyLog()`、`penaltyDeath()` 和 `penaltyListener()`。结论不可直接套用固定毫秒数：违规处理会构造堆栈，`penaltyDeath()` 还会抛异常，DropBox / listener 路径的耗时也取决于系统负载。
-
-## 扩展
-
-### StrictMode 与 Jetpack Compose 的兼容性
-
-Compose 的渲染管线在 `Composer` 层面不做文件 I/O，不会直接触发 StrictMode。但以下场景可能产生误报：
-
-- Compose 的 `LaunchedEffect` 默认继承当前 composition 的协程上下文；Android UI 组合通常在主线程上运行，effect 体里直接做文件 I/O 仍会触发 ThreadPolicy。需要显式切到 `Dispatchers.IO`，例如 `rememberCoroutineScope().launch(Dispatchers.IO) { ... }`。
-- `AndroidView` 包装的传统 View 如果在 `onMeasure`/`onLayout` 中做磁盘操作，会触发 StrictMode。这与 View 体系的行为一致，不是 Compose 特有问题。
-
-### 常见违规模式的修复
-
-| 违规模式 | 修复方向 | 注意事项 |
-|----------|----------|----------|
-| `SharedPreferences.commit()` | 改用 `apply()` | `commit()` 允许在调用线程同步写盘；`apply()` 走异步写盘，但仍要避免随后在主线程等待加载或 flush |
-| `FileInputStream.read()` 在 `onCreate()` | 移到 `Dispatchers.IO` 协程 | 注意协程切换后变量作用域的变化 |
-| `Cursor` 未关闭 | 使用 `use {}` 扩展函数 | Kotlin 的 `use` 会自动调用 `close()` |
-| `OkHttp.execute()` 在主线程 | 移到 `viewModelScope` + `Dispatchers.IO` | OkHttp 的 `enqueue()` 是另一种方式 |
-| `BitmapFactory.decodeFile()` | 移到后台线程 | `coil`/`Glide` 等图片库默认在后台解码 |
-
-### 多进程环境中的行为
-
-StrictMode 的策略是进程内的、线程级别的。每个进程需要独立配置。
-
-- **ContentProvider 进程**：在 `Application.onCreate()` 中配置即可，和主进程一样。
-- **Service 进程**：如果 Service 进程有自己的 `Application` 子类（通过 `android:process` 指定），在该子类的 `onCreate()` 中配置。如果共用 Application 类，通过进程名判断是否启用。
-- **多进程 StrictMode 检测结果互不干扰**：每个进程有自己的 StrictMode 策略实例，不会跨进程报告。
-
-
-
-
-## Android 14–17 VmPolicy 演进与跨 Binder 违规传播（源码级补充）
-
-> 以下从 AOSP android-17.0.0_r1 源码出发，补充主章节 VmPolicy 层面的细节：比特位全景、跨 Binder 违规传播机制、以及 Android 14–17 窗口内的演进。
-
-### VmPolicy 比特位全景（API 37 范围）
-
-`StrictMode.java`（android-17.0.0_r1）里，本文只讨论 API 37 范围内可用、且与性能诊断直接相关的 `DETECT_VM_*` 位；下表聚焦 Android 14–17 窗口内的 bit 9–14：
-
-| 比特 | 常量 | API | 主要特性 |
-|------|------|-----|---------|
-| bit 9  | `DETECT_VM_NON_SDK_API_USAGE` | API 28 | 与 `VMRuntime.setNonSdkApiUsageConsumer` 集成 |
-| bit 10 | `DETECT_VM_IMPLICIT_DIRECT_BOOT` | API 29 | 在 CE/DE 加密盘加载前检测 direct-boot 误用 |
-| bit 11 | `DETECT_VM_CREDENTIAL_PROTECTED_WHILE_LOCKED` | API 34 | 检测锁屏后访问 CE 加密路径 |
-| bit 12 | `DETECT_VM_INCORRECT_CONTEXT_USE` | API 34 | `@TestApi`，配合 `permitIncorrectContextUse()` 豁免 |
-| bit 13 | `DETECT_VM_UNSAFE_INTENT_LAUNCH` | API 33 | 通过 `IUnsafeIntentStrictModeCallback` 接收 AMS 端通知 |
-| bit 14 | `DETECT_VM_BACKGROUND_ACTIVITY_LAUNCH_ABORTED` | API 36 | `@FlaggedApi(Flags.FLAG_BAL_STRICT_MODE_RO)` 双门控 |
-
-### 跨 Binder 违规传播机制（gatheredViolations ThreadLocal）
-
-主章节已提及"StrictMode 策略是进程内的、线程级别的"。但这里需要细化：被调用方进程内的违规如何回写到调用方进程。答案是 `gatheredViolations` ThreadLocal + Parcel 反向序列化。
-
-**调用链**：
-
-1. `StrictMode.setThreadPolicyMask(int mask)` 同步写两个 thread-local：libcore `BlockGuard`（Java 层）+ `Binder.setThreadStrictModePolicy`（native 层）。native 层跨 Binder transaction 把 mask 带到被调用方线程。
-2. `libcore/.../BlockGuard.java::Policy.getPolicyMask()` 把 mask 暴露给 native binder —— `BlockGuard.Policy` 接口显式注释 `Returns the policy bitmask, for shipping over Binder calls to remote threads/processes`。
-3. 被调用方进程触发违规时（如 system_server 在 onTransaction 路径做磁盘读），走 `onThreadPolicyViolation` → 判 `PENALTY_GATHER` 启用 → 把 `ViolationInfo` 累积到 `gatheredViolations.get().add(info)`。
-4. `Parcel.writeNoException()` 返回前调 `StrictMode.hasGatheredViolations()` 检查 → 若有违规，把 `ViolationInfo` 列表序列化进 reply Parcel → `Parcel.writeException()` 反序列化在调用方进程重新 throw RuntimeException。
-
-**代码片段**：
-
-```java
-// StrictMode.java - gatheredViolations ThreadLocal
-private static final ThreadLocal<ArrayList<ViolationInfo>> gatheredViolations =
-        new ThreadLocal<ArrayList<ViolationInfo>>() {
-            @Override
-            protected ArrayList<ViolationInfo> initialValue() {
-                return null; // 起始 null，避免 hasGatheredViolations() 不必要分配
-            }
-        };
-
-/* package */ static boolean hasGatheredViolations() {
-    return gatheredViolations.get() != null;
-}
-
-/* package */ static void clearGatheredViolations() {
-    gatheredViolations.set(null);
-}
-
-// setThreadPolicyMask 同步写双 thread-local
-public static void setThreadPolicyMask(@ThreadPolicyMask int threadPolicyMask) {
-    setBlockGuardPolicy(threadPolicyMask);    // Java 层 (Dalvik BlockGuard)
-    Binder.setThreadStrictModePolicy(threadPolicyMask);  // Native 层 (Binder)
+Trace.beginSection("decode-startup-config");
+try {
+    decodeStartupConfig();
+} finally {
+    Trace.endSection();
 }
 ```
 
-**性能影响**：跨 Binder 违规采集是无锁 ThreadLocal 累积（O(1)），但 Parcel 反向序列化包含完整 stacktrace，`new Throwable().fillInStackTrace()` 通常 50–200μs。`gatheredViolations` 在同条 Binder 事务内会去重（`info.getStackTrace().equals(previous.getStackTrace())`），但跨事务不复用。
+在 Perfetto 中检查这个 slice 与主线程 running/runnable/sleeping 状态、Binder transaction 和 I/O 事件的重叠，才能判断时间花在 CPU、锁、IPC 还是存储。
 
-### DETECT_VM_BACKGROUND_ACTIVITY_LAUNCH_ABORTED 的双门控
+## Android 17 排障清单
 
-bit 14 在 Builder API 上是 `@FlaggedApi(Flags.FLAG_BAL_STRICT_MODE_RO)` 标注：
+遇到“没有报”“报错线程不对”或“日志数量对不上”时，按这个顺序检查：
 
-```java
-@SuppressWarnings("BuilderSetStyle")
-@FlaggedApi(Flags.FLAG_BAL_STRICT_MODE_RO)
-public @NonNull Builder detectBlockedBackgroundActivityLaunch() {
-    return enable(DETECT_VM_BACKGROUND_ACTIVITY_LAUNCH_ABORTED);
-}
+1. `setThreadPolicy()` 是在哪条 OS 线程调用的；
+2. 后续代码是否替换过策略，或临时放行后没有恢复；
+3. 目标操作是否经过 `BlockGuard`、`CloseGuard` 或 framework 检查点；
+4. Builder 是否包含对应 detector，是否依赖 `detectAll()` 的 target/flag 判断；
+5. penalty 是否被限流，Looper 是否还没处理队列中的 violation；
+6. 堆栈是否包含 Binder 远端违规和调用方补上的本地栈；
+7. 多进程场景中，出问题的进程是否运行过初始化代码；
+8. flagged API 在设备构建与运行时配置中是否启用。
 
-@SuppressWarnings("BuilderSetStyle")
-@FlaggedApi(Flags.FLAG_BAL_STRICT_MODE_RO)
-public @NonNull Builder ignoreBlockedBackgroundActivityLaunch() {
-    return disable(DETECT_VM_BACKGROUND_ACTIVITY_LAUNCH_ABORTED);
-}
-```
+## 参考源码与文档
 
-**双门控机制**：
-
-1. **客户端门控**：应用调用 `detectBlockedBackgroundActivityLaunch()` 才能在 VmPolicy mask 中打开 bit 14。
-2. **服务端门控**：`Flags.FLAG_BAL_STRICT_MODE_RO` 必须通过 `DeviceConfig` 推送到设备且打开。`setVmPolicy` 内部判 `if ((sVmPolicy.mask & DETECT_VM_BACKGROUND_ACTIVITY_LAUNCH_ABORTED) != 0) registerBackgroundActivityLaunchCallback()`，服务端 flag 未开启时 `registerBackgroundActivityLaunchCallback` 走 no-op，AMS 端不会回调。
-
-应用 + 服务端同时开启时，注册路径是 `ActivityTaskManager.getService().registerBackgroundActivityStartCallback(...)` → system_server 端 `ActivityTaskManagerService.mBgActivityStartCallbacks` 列表。BAL 被 abort 后通过 `IBackgroundActivityLaunchCallback.Stub` 回调到 app 进程，走 `penaltyLog()` 输出到 Logcat。
-
-### DETECT_VM_NON_SDK_API_USAGE 的 ART 端联动
-
-`StrictMode.setVmPolicy()` 内部根据 bit 9 是否开启，注册 / 取消 `VMRuntime.setNonSdkApiUsageConsumer`：
-
-```java
-private static final Consumer<String> sNonSdkApiUsageConsumer =
-        message -> onVmPolicyViolation(new NonSdkApiUsedViolation(message));
-
-// setVmPolicy 内部
-if ((sVmPolicy.mask & DETECT_VM_NON_SDK_API_USAGE) != 0) {
-    VMRuntime.setNonSdkApiUsageConsumer(sNonSdkApiUsageConsumer);
-    VMRuntime.setDedupeHiddenApiWarnings(false);  // 关闭 ART 内部去重
-} else {
-    VMRuntime.setNonSdkApiUsageConsumer(null);
-    VMRuntime.setDedupeHiddenApiWarnings(true);   // 恢复 ART 默认去重
-}
-```
-
-`setDedupeHiddenApiWarnings(false)` 关闭 ART 内部去重确保每次访问 @hide / @UnsupportedAppUsage 都触发 consumer 回调。生产应用误开此检测在高频反射路径（如 Gson、Retrofit）上可能造成每秒数万次回调。`setViolationLogger(ViolationLogger listener)` 是 TestApi，测试期把违规收集到自定义 logger。
-
-### DETECT_VM_CLEARTEXT_NETWORK 的 netd 集成
-
-```java
-int networkPolicy = NETWORK_POLICY_ACCEPT;
-if ((sVmPolicy.mask & DETECT_VM_CLEARTEXT_NETWORK) != 0) {
-    if ((sVmPolicy.mask & PENALTY_DEATH) != 0
-            || (sVmPolicy.mask & PENALTY_DEATH_ON_CLEARTEXT_NETWORK) != 0) {
-        networkPolicy = NETWORK_POLICY_REJECT;
-    } else {
-        networkPolicy = NETWORK_POLICY_LOG;
-    }
-}
-INetworkManagementService netd = INetworkManagementService.Stub.asInterface(
-        ServiceManager.getService(Context.NETWORKMANAGEMENT_SERVICE));
-if (netd != null) {
-    try {
-        netd.setUidCleartextNetworkPolicy(android.os.Process.myUid(), networkPolicy);
-    } catch (RemoteException ignored) { }
-}
-```
-
-`NETWORK_POLICY_LOG` 路径只记录明文网络事件，不阻断连接；`NETWORK_POLICY_REJECT` 路径才会由 netd 拒绝流量。应用层看到的异常类型取决于 socket / TLS / Network Security Config 触发点，不能固定写成某一种 `SocketException`。
-
-### DropBox 限流与 BackgroundThread 异步
-
-`dropboxViolationAsync` 通过 `sDropboxCallsInFlight: AtomicInteger` 跟踪在飞 DropBox 写入：
-
-```java
-private static void dropboxViolationAsync(final int penaltyMask, final ViolationInfo info) {
-    int outstanding = sDropboxCallsInFlight.incrementAndGet();
-    if (outstanding > 20) {
-        sDropboxCallsInFlight.decrementAndGet();
-        return; // 超过 20 直接丢弃，避免 DropBoxManager 雪崩
-    }
-    BackgroundThread.getHandler().post(() -> {
-        handleApplicationStrictModeViolation(penaltyMask, info);
-        sDropboxCallsInFlight.decrementAndGet();
-    });
-}
-```
-
-**实战含义**：线上应用如果同时开 `PENALTY_DROPBOX` + 在高频路径违规（每分钟数百条），`sDropboxCallsInFlight` 会经常到 20 上限，后续违规直接丢弃。DropBox 条目写入 `/data/system/dropbox`，tag 常见为 `system_app_strictmode`（系统应用）或 `data_app_strictmode`（第三方应用）。配额和保留时间由 `DropBoxManagerService` 的全局配置控制，android-17.0.0_r1 默认保留 3 天、全局配额约 10MB（user）/20MB（userdebug），不要把它理解成单个 StrictMode tag 固定 24h/8KB。CI 测试更适合用 `penaltyListener` 把违规统一收集到自定义 logger。
-
-### 推荐补充到章节 §14.23 的源码级引用清单
-
-完整调研覆盖 14 个函数与 6 个集成锚点，需要更深细节时参考对应 DeepResearch 报告。
-
-> [适用版本: Android 9 (API 28) - Android 17 (API 37)]
-> [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/StrictMode.java, libcore/dalvik/src/main/java/dalvik/system/BlockGuard.java]
-> [版本边界: 仅使用 Android 17/API 37 及以下源码锚点]
-
-> [适用版本: Android 9 (API 28) - Android 17 (API 37)]
-> [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/StrictMode.java]
-> [已验证: AOSP android-17.0.0_r1, libcore/dalvik/src/main/java/dalvik/system/BlockGuard.java]
-
-
-## 参考资料
-
-### Android 14–17 StrictMode VmPolicy 演进与跨 Binder 违规传播机制
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-14-android17-strictmode-vmpolicy-evolution-cross-binder-propagation.md
-- 类型：DeepResearch 调研结果
-- 摘要：StrictMode VmPolicy 从 Android 14 的 10 个 DETECT_VM_* 比特扩展到 Android 17 的 15 个，新增 credential-protected-while-locked、incorrect-context-use、BAL-aborted 等。跨 Binder 违规传播靠 gatheredViolations ThreadLocal + Parcel.writeNoException() 反向序列化；BlockGuard.Policy 通过 getPolicyMask() 把策略位图打包进 Binder native thread-local。定位 14 个函数与 6 个集成锚点。
-
-### Android 17 StrictMode 新增 FlaggedApi 集成与 ImplicitUriPermissionGrantViolation
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-19-strictmode-android17-new-features.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 17 引入 @FlaggedApi 标注的 detectBlockedBackgroundActivityLaunch 和 detectImplicitUriPermissionGrant，新增 BackgroundActivityLaunchViolation 和 ImplicitUriPermissionGrantViolation 两个 violation 类。bal_strict_mode_ro flag 通过 AConfig 实现 is_fixed_read_only 控制，支持双门控——应用端 enable + 服务端 DeviceConfig 推送同时开启才生效。
+- [StrictMode.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/StrictMode.java)
+- [Parcel.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Parcel.java)
+- [ActivityThread.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [BlockGuard.java（android-17.0.0_r1）](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/dalvik/src/main/java/dalvik/system/BlockGuard.java)
+- [CloseGuard.java（android-17.0.0_r1）](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/dalvik/src/main/java/dalvik/system/CloseGuard.java)
+- [Android Developers：StrictMode](https://developer.android.com/reference/android/os/StrictMode)
