@@ -9,7 +9,7 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-07-03"
 gap_source: "AOSP结构"
 ---
-> ⚠️ **本节已废弃 (deprecated 2026-07-04)**：与 9-12-android17-anr-输入事件超时检测双层预警机制.md (ready-for-review, 311 lines) 内容重复。
+> 本文件是 2026-07-04 标记的重复入口。请阅读 [9.12 Android 17 ANR 输入事件超时检测双层预警机制](9-12-android17-anr-输入事件超时检测双层预警机制.md)；不要根据状态名或行数寻找另一份正文。
 
 
 
@@ -70,5 +70,8 @@ gap_source: "AOSP结构"
 
 <!-- outline-end -->
 
-> 本节内容待加工。
-[结构参考: Clippings/Android应用稳定性剖析与优化.md]
+## 校勘结果
+
+本文件不承载独立技术结论。Android 17 / API 37 / `android-17.0.0_r1` 的源码校勘、no-focused-window pre-ANR 覆盖范围、warning API 调用关系和正式到期路径，均维护在上方链接的主文件中。
+
+保护区保留给 Hermes 任务追踪，其中的条目不能作为 Android 17 行为说明。
