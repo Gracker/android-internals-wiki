@@ -6,12 +6,32 @@ status: finalized
 drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) – Android 17 (API 37)"
-last_verified: "2026-04-22"
-last_verified_against: "AndroidX metrics-performance 1.0.0 Maven artifact (JankStats confirmed); AOSP android-17.0.0_r1 /base/core/java/android/app/ActivityManager.java (ApplicationExitInfo 相关方法, API 30+)"
-confidence: medium
+last_verified: "2026-07-30"
+last_verified_against: "AndroidX metrics-performance 1.0.0 sources；Android 17 / API 37 / AOSP android-17.0.0_r1；Android Vitals 与 Perfetto 官方文档"
+confidence: medium-high
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/vitals"
+  - type: official
+    path: "https://developer.android.com/topic/performance/vitals/anr"
+  - type: official
+    path: "https://developer.android.com/topic/performance/jankstats"
+  - type: source
+    path: "https://dl.google.com/dl/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
+  - type: source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java"
+  - type: source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+  - type: source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java"
+  - type: official
+    path: "https://perfetto.dev/docs/instrumentation/track-events"
+  - type: official
+    path: "https://perfetto.dev/docs/getting-started/in-app-tracing"
+  - type: source
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6"
 tags: [observability, apm, pipeline, governance, monitoring]
 related_chapters: ["7.1", "8.1", "9.1", "14.12", "15.3", "15.5", "15.6", "15.10"]
 pipeline_stage: ready-to-publish
@@ -59,242 +79,348 @@ last_deepseek_polish_at: "2026-05-24"
 - 🔸 自建平台中的 schema 演进和存储成本控制
 <!-- outline-end -->
 
-## 为什么很多监控系统最后都没用起来
+## 监控系统何时开始失效
 
-几乎每个做过线上性能治理的团队,都经历过一个类似阶段:平台建起来了,图表也出来了,版本发布后能看到一堆曲线,报警规则也配了几条。按理说,问题应该更容易被发现、更容易被修掉。可再过几个月回头看,常见结果却是另一种样子:
+一套平台可以持续接收指标，却无法回答某次回归由谁处理、依据是什么、修复是否有效。数据采集只完成了观测工作，治理还要求异常经过识别、调查、流转和验收。
 
-- 数据越来越多,但能走完整处理回路的问题很少。
-- 图表越来越复杂,但一到具体 case,还是要靠人工拼现场。
-- 报警越来越勤,但工程团队对它的信任越来越低。
+判断回路是否运转，不看图表数量，检查一条异常能否形成以下记录：
 
-原因不在"监控没做好",而在于很多系统只完成了前半段:**把数据采回来**。
-难的部分在后半段:这些数据怎么被组织成一个可以流动、可以判断、可以进入修复、最后还能回到验证环节的过程。
+- 明确的指标契约、受影响人群与开始时间；
+- 可以回查的会话、进程、页面和证据；
+- 责任人、优先级、处理时限与当前状态；
+- 修复版本、验证范围、对照基线和回滚条件；
+- 验收结论以及没有解决时的后续动作。
 
-本节聚焦的核心是：一条线上性能问题从被发现到被修掉，中间到底要经过哪些环节。
+任一项长期缺失，监控数据都会与工程工作脱节。常见表现包括告警重复、工单没有证据、同类问题反复调查，以及修复上线后无人核对结果。
 
-## 先把"监控"这件事拆开
+## 先区分四种数据
 
-如果把线上性能治理只理解成"采集指标",很快就会陷入一个误区:以为采得越多,系统越强。现实通常相反。
-一条能工作的治理回路,至少要同时解决下面四个问题:
+指标、事件、trace 和工单解决的问题不同。将它们放进同一张宽表，常会丢失各自的语义。
 
-1. **感知**:系统有没有发现异常?
-2. **定位**:系统有没有留下足够的上下文?
-3. **流转**:问题有没有进入正确的人手里?
-4. **验证**:修完之后,能不能确认它已经改善?
+| 数据类型 | 适合回答 | 不适合单独回答 |
+|---|---|---|
+| 指标与分布 | 发生率、分位数、趋势、分群差异 | 单个样本的执行路径 |
+| 事件与会话时间线 | 某次操作经历了哪些阶段 | 系统调度或跨进程根因 |
+| trace、profile、heap、ANR trace | 线程、调用、锁、调度、内存等现场 | 整体用户影响 |
+| 工单与发布记录 | 谁处理、何时发布、如何验收 | 运行时技术证据 |
 
-这四步里,只要断一环,平台就会开始失效。
-只感知不定位,图表会越来越热闹;只定位不流转,工程团队还是得靠口头同步;只修复不验证,平台最后只会沦为"看过但没验证"的证据仓库。
+指标负责发现异常，样本证据负责缩小调查范围，代码和实验负责确认因果，工单负责推进状态。trace 与异常时间相邻只能建立相关性；归因还要结合线程状态、调用关系、版本变化和可重复实验。
 
-## 一条完整治理回路,至少有八步
+## 治理回路的八个阶段
 
-这八步描述的是大多数成熟团队在实际运转中形成的现实结构。
+### 1. 采集：先定义问题，再选 API
 
-### 第一步:采集
+采集设计从用户问题和指标契约开始。每个指标至少写清：
 
-先决定采什么,再决定接什么库。
+- 事件起点、终点和单位；
+- 分子、分母与排除条件；
+- 一个用户、设备、会话或事件如何去重；
+- 哪个线程和时钟产生时间戳；
+- 支持的 Android 与库版本；
+- 采样概率、数据保留期和隐私级别。
 
-常见的信号源包括:
+同名指标若定义不同，不应合并。Play Console 的 user-perceived ANR rate 以日活用户为分母；客户端上报的“ANR 次数 / 启动次数”采用另一分母，两条曲线不能直接比较。
 
-- 帧级信号:`JankStats`（`androidx.metrics.performance.JankStats`，Maven 坐标 `androidx.metrics:metrics-performance:1.0.0`；核心 API 包括 `JankStats.createAndTrack(window, listener)` 注册帧回调、`OnFrameMetricsAvailableListener.onFrameMetricsAvailable(report)` 接收帧报告、`FrameData.getFrames()` 获取单帧时间戳。自 API 16 起提供基础帧耗时回调，API 31+ 内部分发至 `FrameMetrics.FRAME_TIMELINE_VSYNC_ID` 实现 VSync 对齐）、`FrameMetrics`
-- 启动:TTID、TTFD、自定义首屏埋点
-- 稳定性:`ApplicationExitInfo`（API 30+，Android 11 引入；API 26-29 需依赖 `ActivityManager.getRunningAppProcesses()` 或崩溃上报 SDK 获取进程退出信息；在 `android-17.0.0_r1` 中通过 `ActivityManager.java` 管理）
-- 现场证据:`Matrix`、`btrace`、`Perfetto SDK`
+### 帧信号：JankStats 的准确边界
 
-采集这一层解决的是"有没有最基本的感知能力"。
-没有这一步,后面所有治理都无从谈起。
+本章固定 `androidx.metrics:metrics-performance:1.0.0`。源码中的入口是 `JankStats.createAndTrack(window, JankStats.OnFrameListener)`，回调参数是 `FrameData`，不存在 `FrameData.getFrames()`。
 
-> **API 版本说明**：上述采集通道的可用性随 Android 版本而异。
->
-> | API 版本 | JankStats | FrameMetrics | 进程退出监控 |
-> |----------|-----------|--------------|-------------|
-> | API 26–29（Android 8–10） | ✅ 基础帧回调 | ✅ API 24 引入 | ⚠️ 需 `ActivityManager.getRunningAppProcesses()` / 崩溃 SDK / `StrictMode` |
-> | API 30（Android 11） | ✅ | ✅ | ✅ `ApplicationExitInfo` 引入 |
-> | API 31+（Android 12+） | ✅ 增强帧级 `DEADLINE` 跟踪和 `FRAME_TIMELINE_VSYNC_ID` VSync 事件标识 | ✅ 增强帧级 `DEADLINE` 跟踪和 `FRAME_TIMELINE_VSYNC_ID` VSync 事件标识 | ✅ |
-> | API 37（Android 17） | ✅ 完整支持所有帧分析 API | ✅ 完整支持所有帧分析 API | ✅ `android-17.0.0_r1` `/base/core/java/android/app/ActivityManager.java` 基线验证通过 |
->
-> 治理回路本身是版本无关的方法论框架，具体采集通道的可用性取决于目标 API 级别。API 26 以下的设备因市场占有率已极低，本节不再覆盖。
+JankStats 按 Window 工作。API 24 及以上基于 `FrameMetrics`，更早版本回退到 `OnPreDrawListener`；本书范围从 API 26 开始。所有版本都提供 `frameStartNanos`、`frameDurationUiNanos`、`isJank` 和 `states`。API 24 及以上的对象可表现为 `FrameDataApi24`，增加 `frameDurationCpuNanos`；API 31 及以上可表现为 `FrameDataApi31`，再增加 `frameDurationTotalNanos` 和 `frameOverrunNanos`。
 
-### 第二步:采样
+`FrameDataApi31.frameOverrunNanos` 来自 `FrameMetrics.TOTAL_DURATION - FrameMetrics.DEADLINE`。它为正表示帧超过平台给出的 deadline，为负表示仍有余量。`isJank` 由 JankStats 的 UI duration heuristic 判断，默认 multiplier 为 2；这两个字段的判定口径不同。
 
-采样决定的是"拿到多少数据"和"付出多大成本"。
+下面的代码只演示安全地接收帧数据并标记页面状态。`frameSink` 应由业务实现为有界、非阻塞的内存队列，上传和聚合放到其他线程。
 
-线上最常见的三种策略是:
+```kotlin
+class FeedActivity : AppCompatActivity() {
+    private lateinit var jankStats: JankStats
 
-- **基线全量 + 异常补采**:基础指标全量,trace / hprof 这类重证据按异常触发
-- **分群采样**:重点机型、重点渠道、灰度版本采得更密
-- **会话级采样**:一旦命中采样,一个会话里的关键采集通道都保持一致,避免数据割裂
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_feed)
 
-这一步最容易犯的错,是一开始就追求"大而全"。
-线上体系需要把该采的采稳,同时避免让不该采的数据拖累系统。
+        jankStats = JankStats.createAndTrack(window) { volatileFrameData ->
+            frameSink.offer(volatileFrameData.copy())
+        }
 
-### 第三步:聚合
+        val state =
+            PerformanceMetricsState
+                .getHolderForHierarchy(window.decorView)
+                .state
+        state?.putState("screen", "feed")
+    }
 
-单点事件的价值很有限。能支撑判断的,通常是分布和趋势。
+    override fun onDestroy() {
+        jankStats.isTrackingEnabled = false
+        super.onDestroy()
+    }
+}
+```
 
-所以聚合至少要能按这些维度切:
+`OnFrameListener` 收到的内部对象会在下一帧复用，回调返回后原引用已经不适合保存；代码在回调内调用 `copy()`。API 24 及以上回调运行在 FrameMetrics 使用的线程，API 23 及以下运行在主线程。无论版本如何，回调都不应做序列化、文件 I/O 或网络请求。状态值也要限制基数，不要把内容 ID、用户输入或完整 URL 写进 `states`。
 
-- 版本
-- 机型 / SoC / GPU
-- Android 版本
-- 页面 / 场景
-- 网络、前后台、多窗口等状态
+JankStats 适合应用内页面和交互分群。定位某次慢帧仍要依赖系统 trace、FrameTimeline、RenderThread、SurfaceFlinger 与调度信息；JankStats 事件不能替代这些现场证据。
 
-没有这些维度,平台很快就会退化成一块大盘:全局均值看起来没什么问题,某几个重点机型却已经明显坏掉了。
+### 进程退出：ApplicationExitInfo 的准确边界
 
-### 第四步:归因
+`ApplicationExitInfo` 从 Android 11 / API 30 提供。Android 17 的 `ActivityManager.getHistoricalProcessExitReasons()` 返回最近到最早的记录；系统使用有限环形缓冲，因此记录可能被覆盖。普通应用只能查询本 UID 的包，查询其他 UID 需要 `DUMP` 权限。
 
-归因回答的是:问题更像落在哪条责任链上。
+下面的代码在新进程启动后读取本 UID 最近的退出记录，并映射成轻量字段。调用方应在工作线程执行，不要阻塞启动主线程。
 
-有用的归因,至少应该能把异常往下面这些方向里归:
+```kotlin
+data class ExitSummary(
+    val timestampMillis: Long,
+    val processName: String,
+    val pid: Int,
+    val reason: Int,
+    val importance: Int,
+    val pssKb: Long,
+    val rssKb: Long,
+)
 
-- App MainThread
-- RenderThread / GPU
-- SurfaceFlinger / 显示管线
-- Binder / 系统服务
-- IO / 内存 / 调度 / thermal
+@WorkerThread
+@RequiresApi(Build.VERSION_CODES.R)
+fun loadRecentExits(context: Context): List<ExitSummary> {
+    val activityManager = context.getSystemService(ActivityManager::class.java)
+    return activityManager
+        .getHistoricalProcessExitReasons(null, 0, 20)
+        .map { info ->
+            ExitSummary(
+                timestampMillis = info.timestamp,
+                processName = info.processName,
+                pid = info.pid,
+                reason = info.reason,
+                importance = info.importance,
+                pssKb = info.pss,
+                rssKb = info.rss,
+            )
+        }
+}
+```
 
-如果平台只给出一句"某页面启动变慢了",对工程师帮助有限。
-如果它能进一步说"首页骨架屏已经出现,但 TTFD 主要拉长在数据就绪之前",这条信息就开始变得可执行。
+返回的 PSS/RSS 单位是 kB，数值来自系统对进程的上一次采样，不等于死亡瞬间内存；系统来不及采样时会是 0。调用者应按进程名、pid、timestamp、reason 等字段去重，并保存“已处理游标”，否则每次启动都会重复上报同一批记录。pid 会复用，不能单独充当记录 ID。
 
-### 第五步:告警
+`ApplicationExitInfo.getTraceInputStream()` 通常可为 ANR 提供 trace；API 31 及以上的 native crash 可能返回 protobuf tombstone。它允许返回 `null`，原因包括全局缓冲覆盖和平台未保留数据。ANR 恢复后进程又因其他原因死亡时，退出记录仍可能带着先前 ANR trace，因此要同时保留 `reason`、timestamp 与 trace 元信息，避免把 trace 类型直接等同于退出原因。
 
-告警要优先保证可行动性,而不是单纯追求速度。
+`ActivityManager.setProcessStateSummary()` 可以把最多 128 byte 的业务状态带入后续退出记录。Android 17 源码注明该接口可能限流，并明确禁止写入敏感信息。适合存放版本化的小型枚举或 feature bit，不适合 UI 恢复，也不适合频繁更新。
 
-所以比较稳的告警通常不会直接绑原始事件,而会绑业务可行动阈值,例如:
+API 26—29 没有等价的退出历史 API。`getRunningAppProcesses()` 只描述调用时仍在运行的进程，无法恢复已经消失的退出原因。旧系统需要组合崩溃上报、Play Console、服务端会话缺口和下一次启动标记；这些信号仍无法完整区分 LMKD、force-stop、系统终止和进程崩溃。
 
-- 首页 P95 TTFD 连续 2 天上升（单日 ≥ 200ms 涨幅，样本量 ≥ 1000）
-- 某机型 frozen frame rate 超阈值（P50 ≥ 2/min，连续 3 小时）
-- 某版本 user-perceived ANR rate ≥ 0.5‰（样本量 ≥ 10000 启动）
+### 版本边界
 
-如果平台把原始异常直接大量推给团队,结局通常只会是噪音堆积。
+| 平台范围 | 帧数据 | 进程退出 | 系统级现场 |
+|---|---|---|---|
+| Android 8—10 / API 26—29 | JankStats 经 FrameMetrics；也可直接使用 FrameMetrics | 无 ApplicationExitInfo | Perfetto/atrace、bugreport、开发设备 ANR 文件 |
+| Android 11 / API 30 | 同左 | ApplicationExitInfo | Perfetto system trace |
+| Android 12—17 / API 31—37 | JankStats 可返回 FrameDataApi31；系统 trace 可看 FrameTimeline | ApplicationExitInfo；native tombstone stream 从 API 31 开始 | FrameTimeline、sched、Binder、memory、power 等 |
 
-### 第六步:回查
+Android 17 的 `FrameMetrics.java` 含 `DEADLINE` 与 `FRAME_TIMELINE_VSYNC_ID`。`metrics-performance:1.0.0` 的 `JankStatsApi31Impl` 使用 `DEADLINE` 计算 overrun，但 `FrameData` 没有公开 VSync ID 字段。需要逐帧跨 app、HWUI 和 compositor 对齐时，应采集 FrameTimeline，而不是从 JankStats 推导一个不存在的 ID。
 
-回查能力决定了平台到底是"好看"还是"好用"。
+### 2. 采样：让概率和证据链都可解释
 
-工程师看到异常之后,至少要能回到:
+轻量计数器也会消耗 CPU、网络、电量和存储；trace、heap 与 profile 的成本更高。采样策略应包含明确预算：
 
-- 会话时间线
-- 页面 / 场景
-- 版本 / 渠道 / 设备
-- 相关 trace、堆栈、hprof、exit reason
-- 最近的代码变更
+- **基线采样**：对轻量事件采用固定概率或确定性 hash，保存 `sample_rate` 或 inclusion probability；
+- **分群采样**：提高新版本、灰度、重点设备或新功能的覆盖，同时保留未加权与加权结果；
+- **会话采样**：会话开始时作出一次决定，使启动、页面、网络和帧事件能够关联；
+- **异常补采**：本地有界环形缓冲保留异常前后少量上下文，触发后再固化允许上传的部分；
+- **诊断任务**：trace、profile、heap 等重证据通过远程配置限定版本、设备、时长、次数与截止日期。
 
-很多系统到后面失效，问题通常在于异常被看到之后拿不到足够的现场。
+按异常触发的样本天然偏向慢设备和失败会话，不能拿它估算总体发生率。总体指标来自概率已知的基线样本；异常样本用于调查。采样规则发生变化时提高 schema/config 版本，避免趋势图把策略变化显示成性能变化。
 
-### 第七步:修复
+诊断采集要设置止损条件：单日设备配额、全局字节预算、温度/电量/网络限制、服务端熔断和远程关闭。触发采集也要遵守用户授权、商店政策和适用地区的数据要求。
 
-进入治理阶段后,问题不能再停留在"看板异常"这一级,需要变成工程语言。
+### 3. 聚合：分母、分群和样本量同屏展示
 
-至少要落成这样几类信息:
+单次事件用于回查，趋势判断依赖分布。常见维度包括：
 
-- 影响面
-- 初步责任方向
-- 复现条件
-- 优先级
-- 验收指标
+- app version、build、channel、experiment；
+- SDK level、设备型号、SoC/GPU、ABI、刷新率；
+- page、scene、startup type、前后台与多窗口状态；
+- 网络类型、thermal 状态和内存档位；
+- 数据源、schema version、sampling config。
 
-没有这一步,平台和 backlog 之间就会一直断着。图表归图表,修复归修复,两边互相看得见,但互相接不上。
+维度越多，稀疏分组越多。平台应限制 metric label 的基数，把 `session_id`、`trace_id`、原始设备标识等高基数字段留在事件索引中。设备型号还要做最小样本门槛，避免一个用户或一台测试机制造醒目的百分比。
 
-**从异常到 Backlog 的 SLA 映射**：
+聚合侧至少保留 count、分母、缺失率、时间窗和分布摘要。不能平均各机型 P95 得到全局 P95，也不能把不同刷新率下的“超过 16.67 ms”统一叫慢帧。帧指标优先使用 deadline/overrun 或明确的刷新率预算。
 
-这一步的核心难点在于"什么样的异常该进 backlog、该给什么优先级"。常见的做法是建立两层 SLA：
+Play Vitals 与自建指标可以放在同一治理页面，但要标出来源。官方当前对 user-perceived ANR rate 的定义是：一天内至少遇到一次 input dispatching timeout 的日活用户占比。Google Play 公布的 bad behavior threshold 是全局 0.47%、单设备型号 8%。这是 Play 的发布质量边界，不等于团队内部告警必须等到该值才触发。
 
-- **业务 SLA**（用户可见）：首页 P95 TTFD ≥ 2.5s → 高危；冷启动 P90 ≥ 3s → 紧急；ANR 率 ≥ 0.5‰ → 紧急
-- **技术 SLA**（系统内部）：frozen frame count 每分钟 ≥ 3 → 关注；主线程 blocked ≥ 16ms 连续 3 帧 → 中危；Binder 调用 P99 ≥ 50ms → 关注
+### 4. 归因：从群体异常走到单个证据
 
-映射关系不是 1:1。同一个"首页变慢"可能对应多种技术 SLA 触发，归因后的技术 SLA 命中情况才决定 backlog 的优先级：
+归因页需要同时提供分群变化和可回查样本。建议按以下顺序工作：
 
-| 异常现象 | 归因结果 | 技术 SLA 命中 | Backlog 优先级 |
-|----------|---------|-------------|---------------|
-| 首页 P95 TTFD 2.8s | 网络首包耗时上涨 | 首页 OkHttp P95 ≥ 800ms | P1（影响面大，方向明确） |
-| 某机型 frozen frame 增多 | Shader 编译未命中缓存 | RenderThread ≥ 50ms 连续 5 帧 | P1（可复现，需要 GL 工程师） |
-| ANR 率 0.3‰ | 单线程 Binder 阻塞 | Binder P99 ≥ 200ms | P2（低于阈值但趋势上升） |
+1. 确认指标定义、数据完整性、采样配置和 schema 是否变化。
+2. 找出异常开始的 build、时间窗和受影响分群。
+3. 对照发布、远程配置、服务端和系统环境变化。
+4. 选择同分群的正常与异常样本，比较阶段耗时。
+5. 打开 trace、ANR trace、stack、heap 或退出记录，沿执行关系调查。
+6. 用本地复现、benchmark、开关实验或回滚验证假设。
 
-规则的目的是让 backlog 里的每一条都带着"为什么现在修"和"修完怎么判断成功"的信息。
+常用责任方向包括 App MainThread、RenderThread/GPU、SurfaceFlinger/显示链路、Binder/system_server、文件与网络 I/O、内存/GC、CPU 调度、thermal 以及厂商实现。平台可以给出候选分类，不应在缺少调用链时把候选写成结论。
 
-### 第八步:验收
+### 5. 告警：把发布红线与内部预警分开
 
-这是最容易被忽略的一步。
+告警规则至少包含：
 
-很多团队会修问题,但修完以后没有再把结果拉回平台确认。于是系统最后只能说"这个问题当时看过",却说不清到底有没有改善。
+- 指标与分群；
+- 绝对门槛或相对基线；
+- 最小分子、分母和完整窗口数；
+- 新问题、持续问题与恢复的判定；
+- owner、值班渠道、静默与合并规则；
+- 回查链接和期望动作。
 
-比较完整的验收至少要看:
+固定阈值适合稳定的用户体验边界；动态基线适合季节性、地域和流量变化。两者可以同时使用。发布阻断采用明确预算，日常预警采用较低门槛和连续窗口，容量异常采用增长速度与剩余空间。
 
-- 修复版本上线后指标是否回落
-- 关键场景的 Macrobenchmark 是否恢复
-- 线上 tail latency 是否改善
-- 有没有引入新的回归
+原文中的“TTFD 2.5 s”“Binder P99 50 ms”“每分钟 3 个 frozen frame”没有产品基线和官方来源，不能写成通用 SLA。团队应从自身 SLO、历史分布、用户影响、样本量和处理能力推导阈值，并在规则旁记录制定日期与依据。
 
-只看线下,不够;只看线上,也不够。两边都要回看。
+告警消息应描述“发生了什么”，例如“版本 B 的 Feed warm start P95 相对同设备分群的版本 A 上升，样本量满足门槛”。归因结果在证据确认后补充。这样可以避免把网络波动、采样切换或设备构成变化提前写成代码根因。
 
-## 一套治理回路需要哪些连接键
+### 6. 回查：连接键要稳定，也要控制基数
 
-治理回路难，最常见的瓶颈是数据之间连不起来。
+以下键分别服务于不同范围：
 
-高频有用的键通常不多,但必须稳定:
+| 键 | 生命周期与用途 |
+|---|---|
+| `event_id` | 单个事件幂等、重试去重 |
+| `session_id` | 一次前台或业务会话；会话结束后轮换 |
+| `page_instance_id` | 一次页面实例，区分同页多次进入 |
+| `trace_id` | 一次跨阶段或跨服务请求；可为空 |
+| `process_instance_id` | 一次进程生命周期，避免仅依赖复用的 pid |
+| `build_id` / `version_code` | 对齐二进制、mapping 与 native symbol |
+| `sampling_config_version` | 解释采样率和触发策略变化 |
 
-- `session_id`
-- `trace_id`
-- `page_id` / `scene_id`
-- `build / version / channel`
-- `device fingerprint`
+这些 ID 适合事件查找，不适合进入时序指标标签。ID 应随机生成或采用不可逆、可轮换的伪标识，不能把帐号、手机号、广告 ID 或设备硬件标识直接编码进去。
 
-这些字段的价值取决于能否把不同层的数据 join 起来。
-如果 trace 和指标、页面和版本、版本和报警之间连不上,平台功能再多也很难形成治理回路。
+时间字段至少区分 wall clock 与 monotonic clock。服务端排序和跨设备查询使用 UTC wall time；进程内阶段耗时使用 `elapsedRealtimeNanos()` 或库定义的 monotonic 时间。JankStats 的 `frameStartNanos` 不能直接与服务端毫秒时间戳相减。跨进程系统 trace 的时钟对齐交给 Perfetto clock snapshot 与 Trace Processor，业务上传数据则需要记录自己的时钟语义。
 
-## 平台视角和工程视角,最容易断在这里
+### 7. 修复：异常进入 backlog 时要携带证据
 
-平台关心的是趋势和分布,工程师关心的是具体根因。
-这两种视角天然不同,但又必须接上。
+一条可执行的性能工单应包含：
 
-平台一侧常见的断点是:图表越来越多,趋势越来越漂亮,可工程师拿不到具体现场。
-工程一侧常见的断点是:某次抓到了非常完整的 trace 和栈,但这些信息没有回流平台,后续版本再出类似问题时,还得从头再来。
+- 指标契约链接、异常时间窗和影响分群；
+- 基线版本、回归版本、绝对值与变化量；
+- 样本量、采样策略和数据缺口；
+- 正常/异常样本及 trace、ANR、heap 等受控链接；
+- 已验证事实、待验证假设和候选 owner；
+- 优先级依据、计划版本、风险与回滚条件；
+- 线下测试与线上验收指标。
 
-成熟的系统要同时支持两种回路:
+优先级通常由用户影响、发生范围、严重度、持续时间、证据置信度和修复风险共同决定。技术耗时不能单独决定优先级；一次 200 ms Binder 调用若位于不可见后台路径，与每次输入都发生的 40 ms 调用，用户影响不同。
 
-- 从群体趋势回到单次 case
-- 从单次 case 回到群体趋势
+状态机可以采用 `detected → triaged → investigating → fixing → validating → resolved`，并为 `false-positive`、`duplicate`、`cannot-reproduce` 和 `accepted-risk` 保留明确终态。每次状态变化记录操作者、时间和理由，避免“关闭”同时表示已修复、暂不修复和数据错误。
 
-只有这样,平台才会从展示层变成分析入口,工程分析也能从单次手工处理转成可复用经验。
+### 8. 验收：确认用户指标与技术证据同时改善
 
-### 多租户场景下的数据隔离
+修复合入只代表实现完成。验收需要回答：
 
-当平台需要服务多个业务线或外部合作方时，数据隔离是必须先解决的设计问题：
+- Macrobenchmark 或可重复实验是否覆盖原场景；
+- 同设备、同网络、同启动类型下技术指标是否改善；
+- 修复版本在线上是否达到预设成功条件；
+- crash、ANR、内存、能耗或功能正确性是否回归；
+- 灰度期是否足够覆盖工作日、周末和长尾设备；
+- 未达到目标时是回滚、继续观察还是重新调查。
 
-- **命名空间隔离**：每个租户的 `session_id` / `trace_id` 前缀加入租户标识，避免跨租户数据串扰。
-- **存储层隔离**：按租户维度分表或分库；小规模团队可用租户 ID 过滤，大规模场景建议走独立实例。
-- **访问控制**：基于租户 + 角色的权限模型——同一租户内的工程师可以查看自己团队的所有数据，跨租户查询需要显式授权。
-- **成本核算**：按租户维度拆分量化的存储成本和采样配额，让各业务线对资源消耗有感知。
+前后版本比较要控制设备构成、流量和配置变化。具备灰度或实验条件时，优先比较同时段对照组；只能做前后对比时，保留相同分群并说明外部变化。验收窗口、最小样本和成功门槛应在发布前写入工单，避免看完结果再选择口径。
 
-多租户不是锦上添花的功能。如果一个团队第一天就知道未来会有多条业务线接入，从第一版 schema 设计里就应该为 `tenant_id` 留出位置。
+治理系统还要记录负向结果。某次优化在线下减少 10 ms，却没有改变线上 tail，可能说明目标函数选错、场景覆盖不足或线上瓶颈位于其他阶段；这个结论应回到知识库和后续实验设计。
 
-## 一个现实可执行的最小治理回路
+## 从指标到 trace 的关联设计
 
-团队初期不一定需要自建完整平台。更现实的做法,是先建立一个能稳定运转的最小版本:
+Perfetto Track Event 提供 slice、counter 和 flow。slice 表示一段工作，counter 表示随时间变化的值，flow 连接不同 track 上相关的事件。对于 native 代码，Perfetto SDK 可将自定义 Track Event 写入应用内 trace，也可连接 Android 的 system backend，与 sched、Binder、FrameTimeline 等系统数据共同采集。
 
-1. 用 `JankStats`（API 16+）、启动埋点、`ApplicationExitInfo`（API 30+）建立基础指标；低于 API 30 的设备用崩溃上报 SDK 补充进程稳定性信号。
-2. 对异常样本按低比例补采 trace 或会话时间线。
-3. 用版本、机型、页面维度做最基本聚合。
-4. 周期性把异常榜单送进 backlog。
-5. 用 Macrobenchmark 和线上指标一起做修复验收。
+Java/Kotlin 代码可以使用平台或 AndroidX tracing 注解把业务阶段放入 system trace。事件名保持低基数，例如 `FeedLoad`；动态 ID 作为参数或业务事件字段保存，不要把每个内容 ID 拼进事件名。trace 里仍可能出现 URL、查询参数、文本和业务对象，上传前要做字段审计。
 
-这个最小治理回路的价值来自"责任清楚、能持续跑",不来自"功能很全"。
-一条稳定运转的小回路,远比一次性搭一个看起来很大的平台更有价值。
+指标事件与 trace 常见的连接方式有两种：
 
-## 本节在整本书里的位置
+- 异常事件保存 trace artifact ID，并由受控后端返回短期访问链接；
+- 业务阶段同时写入稳定的 request/flow 标识，使事件时间线可以定位 trace 中对应 slice。
 
-把本书主线往回连一下,
+平台应允许从聚合图进入异常分群，再进入若干匿名样本；也应允许从单个 trace 返回同版本、同设备类和同场景的发生率。前者回答“哪里变坏”，后者回答“这个现场是否具有代表性”。
 
-- `7/8/9` 负责解释用户到底在抱怨什么
-- `15.3` 负责解释这些抱怨该落到哪些指标上
-- `15.5` 负责解释怎样把这些指标从线上拿回来
-- 本节负责解释,拿回来之后怎样不让问题在流程里丢掉
-- `15.10` 继续往前一步,解释团队如何把这一整套机制长期跑起来
+## Schema 演进与存储成本
 
-所以这一章更适合放在整条线上治理主线的中段,不能只当成平台建设附录。
+### 事件信封
 
-## 结尾
+通用事件信封建议包含：
 
-线上性能治理最怕的场景:数据很多、问题也看到了,但最后没有流向修复和验证。
-治理回路的价值,在于让一条线上异常最终变成一条能被处理、被验证、被复盘的工程任务。
+| 字段 | 约束 |
+|---|---|
+| `event_name`、`event_schema_version` | 含义变化时升版本，旧 reader 可拒绝不支持的版本 |
+| `event_id` | 客户端重试幂等，不进入指标 label |
+| `occurred_at_unix_ms` | UTC wall time，并记录客户端时钟异常 |
+| `elapsed_realtime_ns` | 进程/设备内时序，禁止跨设备直接比较 |
+| `app_version_code`、`build_id` | 对齐代码、mapping、symbols |
+| `sdk_int`、`device_class` | 系统版本与受控设备分组 |
+| `session_id`、`process_instance_id`、`page_instance_id` | 可轮换的匿名关联键 |
+| `sample_rate`、`sampling_config_version` | 支持加权、审计策略变化 |
+| `payload` | 事件专属字段，遵守大小、基数和隐私限制 |
+
+新增可选字段通常保持向后兼容；删除字段或改变单位需要新 schema 版本。字段重命名不能只改 dashboard，因为离线任务、告警和历史数据仍依赖旧语义。生产者、消费者和指标定义应在同一变更记录中说明兼容窗口。
+
+### 热数据、冷数据和诊断附件
+
+存储可按用途分层：
+
+- 热层保存近期聚合与可检索事件，服务告警和日常调查；
+- 冷层保存降采样后的长期趋势，用于版本与季度比较；
+- trace、heap、tombstone 等附件单独加密存储，设置更短 TTL、访问审计和下载权限；
+- 原始事件超过保留期后删除，派生指标保留其 schema、采样和计算版本。
+
+每个数据源都应有事件大小、日量、保留天数、查询成本和删除机制。没有 owner 或查询记录的数据源应进入停采评估。诊断任务结束后关闭补采配置，防止一次调查演变成长期成本。
+
+### 多租户隔离
+
+`tenant_id` 应由受信任的服务端身份或发布配置确定，不能相信客户端任意上报的租户值。查询层必须强制执行 tenant + role 授权；在 session 前缀中加入租户名只避免 ID 碰撞，不构成访问隔离。
+
+逻辑分区、独立表、独立库或独立实例应根据监管、故障域、规模和成本选择。无论采用哪种存储，附件对象、缓存、导出任务、告警渠道和审计日志都要携带租户边界。跨租户查询必须经过单独授权并留下审计记录。
+
+## 一个可运行的最小回路
+
+小团队可以从一个黄金场景开始，例如 Feed warm start：
+
+1. 固定 TTID/TTFD、帧 overrun 和退出原因的指标契约。
+2. 采用会话级基线采样，保存版本、设备类、场景和采样配置。
+3. 为异常会话保留小型时间线；诊断期对指定分群采集少量 system trace。
+4. 每个工作日检查自动分群结果，满足规则时创建带证据的工单。
+5. 用 Macrobenchmark 守住线下回归，用灰度分群验证线上 tail。
+6. 验收后关联 commit、build、工单与指标窗口；失败则恢复调查状态。
+
+这套最小实现不要求自建完整 APM。Play Vitals、现有事件系统、对象存储、工单系统和测试流水线可以分别提供能力，连接键与状态规则把它们组成可追踪的过程。
+
+## 常见失效模式
+
+| 现象 | 常见原因 | 修正方向 |
+|---|---|---|
+| 全局曲线稳定，用户仍投诉 | 均值掩盖尾部或设备分群 | 看分位数、失败率和重点设备 |
+| 告警发布后突然增加 | schema、采样或设备构成变化 | 先审计数据变更，再调查代码 |
+| 工单长期无 owner | 告警只给现象，没有分群和证据 | 增加 triage 责任与回查入口 |
+| 同一事件重复上报 | 客户端重试没有幂等键 | 用 event_id 去重并监控重试 |
+| trace 很完整，无法判断影响 | 只有诊断样本，没有基线分母 | 保留概率已知的轻量指标 |
+| 修复上线后结论反复 | 验收门槛在看数据后才确定 | 发布前固定窗口、样本和目标 |
+| 查询成本持续增长 | 高基数标签、无限保留原始数据 | 分离事件与指标，设置 rollup/TTL |
+| 多业务线可互相看到附件 | 只在 UI 过滤 tenant | 在鉴权、查询、对象存储全程校验 |
+
+## 本节与其他章节的关系
+
+- §7、§8、§9 描述流畅性、启动和 ANR 的机制与证据。
+- §15.3 定义指标契约和分母。
+- §15.5 讨论线上采集、保护开关和监控实现。
+- 本节把指标、样本、工单、发布与验收组织成持续过程。
+- §15.10 继续讨论团队责任、门禁和长期运行。
+
+Android 平台源码锚点固定为 `android-17.0.0_r1`，最高平台版本为 Android 17 / API 37。涉及 sched、cgroup、Binder driver 等内核证据时，使用 `android17-6.18-2026-06_r6`；厂商设备必须对照设备对应的 kernel build 与源码。JankStats 属于 AndroidX 库，版本边界单独固定为 `metrics-performance:1.0.0`，不能用平台 API 37 代替库版本。
+
+## 参考资料
+
+- [Android Vitals](https://developer.android.com/topic/performance/vitals)
+- [Android Vitals：ANRs](https://developer.android.com/topic/performance/vitals/anr)
+- [JankStats 官方指南](https://developer.android.com/topic/performance/jankstats)
+- [AndroidX metrics-performance 1.0.0 sources](https://dl.google.com/dl/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar)
+- [ApplicationExitInfo API](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+- [Android 17 `ActivityManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java)
+- [Android 17 `ApplicationExitInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java)
+- [Android 17 `FrameMetrics.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java)
+- [Perfetto Track Event](https://perfetto.dev/docs/instrumentation/track-events)
+- [Perfetto in-app tracing](https://perfetto.dev/docs/getting-started/in-app-tracing)
+- [Android common kernel `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6)
