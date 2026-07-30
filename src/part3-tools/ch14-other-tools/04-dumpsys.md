@@ -100,391 +100,390 @@ task2b_verifier_notes: "2026-07-09 Task2B Verifier: status finalized→ready-for
 
 ## 为什么需要 dumpsys
 
-在分析 Android 性能问题的过程中，我们经常需要快速了解系统某个时刻的状态——比如哪个进程占用了多少内存、屏幕上当前叠加了多少个 Layer、哪个窗口持有焦点、最近 120 帧的渲染耗时分布如何。Perfetto 负责回答"过程"（事情是怎么一步步发生的），而 dumpsys 负责回答"当下"（此刻系统长什么样），两者互为补充。
+`dumpsys` 读取某个 Binder 服务在采集时刻愿意公开的内部状态。它适合回答“当前焦点在哪个窗口”“进程现在处于哪个 OOM 调整级别”“最近保留了哪些 HWUI 帧”等问题。Perfetto、Winscope 和 bugreport 负责补足时间顺序；一份文本快照无法证明事件先后。
 
-dumpsys 的工作方式是：遍历系统中所有注册到 ServiceManager 的系统服务，依次调用每个服务的 `dump()` 方法，把内部状态以文本形式输出到终端。
+Android 17 的 [`dumpsys.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/dumpsys/dumpsys.cpp) 会从 ServiceManager 取得服务列表，用 `checkService()` 找到目标 Binder，再调用 `IBinder::dump()`。全量模式按服务名排序后逐项执行，单个服务的默认超时为 10 秒。超时只表示 `dumpsys` 不再等待该输出，不能据此认定服务已经停止内部采集。
 
-每个系统服务都实现了自己的 `dump()` 方法，因此 dumpsys 的输出覆盖了 Android 系统的多个关键维度，从 Activity 栈到电池统计，从内存分配到图形合成，都能拿到对应的状态快照。
+下面的命令用于确认设备上有哪些服务，并控制一次 dump 的范围。
 
-`adb shell dumpsys -l` 可以列出所有子命令。下面聚焦性能分析中最常用的六个，逐个介绍用途、关键指标和实战用法。
+```bash
+# 列出当前注册且可见的 Binder 服务
+adb shell dumpsys -l
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/cmds/dumpsys/dumpsys.cpp]
+# 把单个服务的等待上限设为 3 秒
+adb shell dumpsys -T 3000 activity activities
+
+# 只查询服务所在进程的 PID
+adb shell dumpsys --pid SurfaceFlinger
+
+# 只 dump 注册为 CRITICAL 优先级的服务
+adb shell dumpsys --priority CRITICAL
+```
+
+`-t` 的单位是秒，`-T` 的单位是毫秒；二者属于 `dumpsys` 的全局参数，应写在服务名之前。`--proto` 只筛选并请求声明支持 proto dump 的服务，不能把任意文本输出自动变成稳定 schema。
+
+从 `adb shell` 发起的命令通常具备平台 `DUMP` 权限。普通应用 UID、受限 user build、厂商服务的额外权限检查和 SELinux 策略仍可能裁剪或拒绝输出。脚本应保存 build fingerprint、命令行和采集时间，字段名称也不能视作 SDK 兼容承诺。
+
+本文的平台实现固定到 `android-17.0.0_r1`。涉及 `/proc` 记账的说明固定到 `android17-6.18-2026-06_r6`；厂商内核、HWC 与服务扩展要以设备对应分支复核。
 
 ## dumpsys activity：Activity 栈、进程与 ANR 信息
 
-### 基本用法
+`activity` 服务横跨 ActivityTaskManager、进程管理、服务与退出记录。一次排障应只请求相关子项，避免在庞大的默认输出中丢失现场。
 
-`dumpsys activity` 是 ActivityManagerService（AMS）的状态输出窗口。在性能分析中，我们主要关注它的三个子项：
-
-- `dumpsys activity activities`：查看所有 Task 和 Activity 的栈信息
-- `dumpsys activity processes`：查看所有进程的优先级和状态
-- `dumpsys activity exit-info`：查看进程退出历史，ANR / Crash / LMK 归因优先从这里取证
-- `dumpsys activity lastanr`：遗留快照，只保留最近一次 ANR，作为没有 `exit-info` 历史时的兜底
-
-### 读懂 Activity 栈
-
-当我们怀疑某个场景的卡顿或 ANR 与 Activity 生命周期有关时，Activity 栈是第一手线索。执行 `adb shell dumpsys activity activities` 后，输出会按照 Task 分组，每个 Task 下列出从底到顶的 Activity 栈。关键的几个字段：
-
-- `Task`（早期资料常写作 `TaskRecord`）中的 `affinity` 和 `taskId` 告诉我们这个 Task 属于哪个应用
-- `ActivityRecord` 中的 `state` 表示 Activity 当前状态（resumed、paused、stopped 等）
-- `dumpsys activity activities` 会打印 `topDisplayFocusedRootTask` 和各 TaskDisplayArea 的 `Resumed:` Activity；窗口焦点本身要回到 `dumpsys window displays` 的 `mCurrentFocus` / `mFocusedApp` 交叉确认
-
-分析启动速度时，可以多次执行这个命令，跟踪目标 Activity 从 `INITIALIZING` / `STARTED` 到 `RESUMED` 的状态变化，判断各阶段耗时是否正常。
-
-### 进程优先级与 ANR
-
-`dumpsys activity processes` 会列出所有进程的 `oom_adj` 值和调度优先级。当分析 Low Memory Killer 误杀问题时，这里的 `oom_adj` 值就是最直接的证据。AOSP `ProcessList.java` 中定义了各级别的 `adj` 值。以 Android 10+ 为例，`FOREGROUND_APP_ADJ=0`（前台进程，优先级最高）、`VISIBLE_APP_ADJ=100`（可见但非前台）、`PERCEPTIBLE_APP_ADJ=200`（可感知但不可见）。Android 10 之前的常见资料里，`VISIBLE_APP_ADJ` 通常写成 `1`，只是数值尺度不同，优先级顺序没有变。`oom_adj` 值越低，进程优先级越高，越不容易被 LMK 杀掉。
-
-举个例子：如果一个 App 当前在前台展示界面，本应处于 `adj=0`（FOREGROUND），但 dumpsys 显示它的 `oom_adj=100`（VISIBLE），说明系统的进程优先级计算出了问题——进程被错误降级，LMK 在内存紧张时会优先杀掉它。
-
-Android 11+ 的 ANR 快照优先看 `dumpsys activity exit-info`。它来自 `ApplicationExitInfo` 历史记录，同一包名下可以保留多次退出原因，适合区分 `REASON_ANR`、Crash、LMK、用户强停等场景，也能和系统记录的 trace 文件路径、进程状态放在一起看。
+下面的命令分别采集任务栈、进程 OOM 状态和退出历史。
 
 ```bash
-# 查看全部进程退出历史
-adb shell dumpsys activity exit-info
+# Task、ActivityRecord 与各显示器上的 resumed 状态
+adb shell dumpsys activity activities
 
-# 查看指定包名的退出历史
-adb shell dumpsys activity exit-info <package_name>
+# 完整进程记录；oom 子项更适合只看 OOM 调整结果
+adb shell dumpsys activity processes
+adb shell dumpsys activity oom
+
+# ApplicationExitInfo 历史与最近一次 ANR 快照
+adb shell dumpsys activity exit-info com.example.app
+adb shell dumpsys activity lastanr
 ```
 
-`dumpsys activity lastanr` 仍可作为遗留兜底：它只保留最近一次 ANR 的文本快照，设备重启、日志轮转或新 ANR 出现后都可能覆盖旧现场。排查线上问题时，`exit-info` 负责确认“这个进程为什么退出”，Perfetto / bugreport / ANR traces 负责还原“退出前线程在等什么”。
+`activities` 输出按 display、TaskDisplayArea、root task 和 Task 组织。排查生命周期时关注 `ActivityRecord` 的 `state`、`visible`、`finishing`、所属 `taskId`，并记录目标 display。`Resumed:` 或 `topDisplayFocusedRootTask` 描述 ActivityTaskManager 的任务状态；它们不等同于窗口焦点，也不保证 InputDispatcher 正向该 Activity 投递输入。
 
-[已验证: AOSP android-17.0.0_r1, `frameworks/base/services/core/java/com/android/server/wm/Task.java`、`ActivityRecord.java`；`ActivityManagerService.java` 分发 `exit-info` 到 `mProcessList.mAppExitInfoTracker.dumpHistoryProcessExitInfo()`]
+反复执行该命令可以观察状态是否长期卡住，却不适合作为启动耗时计时器。两次 shell 调用之间已经跨过 Binder 调度、格式化和传输开销；启动阶段的毫秒级时序应交给 Perfetto、event log 或 launch metrics。
+
+### 读懂 OOM 调整值
+
+Android 17 的 [`psc/Constants.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/psc/Constants.java) 定义了几个基准值：`FOREGROUND_APP_ADJ=0`、`VISIBLE_APP_ADJ=100`、`PERCEPTIBLE_APP_ADJ=200`，cached 区间从 900 开始。数值越大，内存压力下通常越早进入回收候选；负值留给 system、persistent 等高保护级别进程。
+
+`processes` 详细记录中的字段要分开读：
+
+| 字段 | 含义 |
+|---|---|
+| `curRaw` | 本轮计算中尚未施加部分修正的 raw adj |
+| `setRaw` | 上次写入记录的 raw adj |
+| `cur` | 本轮计算后的目标 adj |
+| `set` | 已提交给进程/LMKD 路径的 adj |
+| `adjType`、`adjSource`、`adjTarget` | 哪个组件关系抬高或降低了进程保护级别 |
+
+可见进程还可能受 laddering 和设备配置影响而落在基准值之间。发现 `set` 与界面状态不符时，应连同 `adjType`、绑定服务、provider、前台服务和显示器可见性一起核对，不能只用一个数字判定 OOM 计算错误。LMK 归因还要对照 PSI、lmkd 日志和退出原因。
+
+### ANR 与退出历史
+
+Android 11 起的 `exit-info` 来自 `ApplicationExitInfo` 历史。它可区分 ANR、Java/native crash、low-memory kill、用户请求和初始化失败等原因，并保留多个进程实例。Android 17 的 [`ActivityManagerService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 把该子命令分发给 `AppExitInfoTracker`。
+
+`lastanr` 是 ActivityTaskManager 保存的最近 ANR 状态，容量和生命周期都有限。`exit-info` 用于确定退出类型与进程实例，ANR trace、tombstone、bugreport 和 Perfetto 用于解释线程阻塞位置。设备重启、历史裁剪或厂商策略都可能让旧记录消失，线上采集应尽早完成。
 
 ## dumpsys meminfo：系统和进程内存全景
 
-### 基本用法
+`meminfo` 服务由 ActivityManagerService 注册。Android 17 的 [`MemBinder`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 会检查 `DUMP` 与 usage stats 权限，再进入 `dumpApplicationMemoryUsage()`。
 
-`dumpsys meminfo` 是 Android 上最经典的内存分析命令。它可以查看系统全局内存概况，也可以查看单个进程的详细内存分布：
+下面的命令覆盖全局、单进程和多进程包三个采集范围。
 
 ```bash
-# 系统全局内存概况
+# 全系统汇总
 adb shell dumpsys meminfo
 
-# 指定进程的详细内存分布
-adb shell dumpsys meminfo <package_name>
+# 单个进程；-d 展开 ART/Dalvik 细项，-s 只保留 App Summary
+adb shell dumpsys meminfo -d com.example.app
+adb shell dumpsys meminfo -s com.example.app
 
-# 输出更完整的系统和进程内存明细
-adb shell dumpsys meminfo -a
+# 按包名收集所有已加载该包的进程
+adb shell dumpsys meminfo --package com.example.app
 ```
 
-`dumpsys meminfo` 没有 `--slab` 参数。AOSP `dumpApplicationMemoryUsage()` 支持的是 `-a/-d/-c/-s/-S/-p/--unreachable/--oom/--local/--package/--checkin/--proto/--logstats` 这组参数，不包含 `--slab`。全局输出里可能包含 slab 汇总；要深入看内核 slab，先读 `/proc/meminfo` 里的 `Slab`、`SReclaimable`、`SUnreclaim`，root 或 debuggable 环境下再看 `/proc/slabinfo`。
+Android 17 支持 `-a/-d/-c/-s/-S/-p/--unreachable/--oom/--local/--package/--checkin/--proto/--logstats` 等选项，没有 `--slab`。内核 slab 先看 `/proc/meminfo` 的 `Slab`、`SReclaimable`、`SUnreclaim`；有足够权限时再读 `/proc/slabinfo`。
 
-### 关键指标：PSS、USS、Private Dirty
+### 读数口径
 
-在 meminfo 的输出中，最核心的三个指标是 PSS、USS 和 Private Dirty。理解它们的区别，是用好这个命令的前提。
+| 指标 | 口径 | 适用问题 |
+|---|---|---|
+| RSS | 当前驻留在物理内存中的页，shared page 会在每个映射进程重复计算 | 进程驻留规模、LMKD 相关现场 |
+| PSS | shared page 按映射者数量比例分摊 | 跨进程归属和版本内对比 |
+| USS | private clean 与 private dirty 的合计 | 进程退出后较可能直接释放的私有页 |
+| Private Dirty | 进程私有且已修改的页 | 私有匿名内存、COW 后的变化 |
+| SwapPss | 换出页按共享关系分摊 | zRAM/swap 参与后的进程归属 |
 
-**PSS（Proportional Set Size）** 是我们最关注的指标。它衡量的是一个进程"实际占用"的物理内存。PSS 的特殊之处在于，对于被多个进程共享的内存页（比如共享库的代码段），它会按比例分摊：如果一张 4KB 的内存页被两个进程共享，每个进程的 PSS 只计入 2KB。把所有进程的 PSS 加起来，结果就接近系统实际使用的总物理内存。在判断一个 App "占了多少内存"时，PSS 是最准确的标准。
+PSS 是归属模型，不是硬件计量值。Android 17 的 `Debug.MemoryInfo.getTotalPss()` 在内核提供 SwapPss 时会把 proportional swapped-out pages 纳入 total；解析脚本不能再把单独的 SwapPss 列重复加到 `TOTAL PSS`。内核的 smaps/PSS 生成路径可从固定 kernel tag 的 [`fs/proc/task_mmu.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/task_mmu.c) 核对。
 
-**USS（Unique Set Size）** 是进程独占的物理内存，不被任何其他进程共享。如果这个进程被杀掉，USS 这部分内存会被完全释放。USS 适合用来估算一个进程被杀掉后理论上能回收多少私有内存，也适合做线下泄漏分析和方案对比。LMKD 运行时不会去计算 USS，目标选择仍要回到 `oom_score_adj`、RSS 和 PSI 这类实时决策线索。
+### 分类行只负责定位方向
 
-**Private Dirty** 是已经被修改过的私有内存页。这部分内存不能像 clean file-backed page 一样直接丢弃；在启用 zRAM 的设备上，部分脏页可能被压缩换出，并在 `dumpsys meminfo` 中体现为 `SwapPss` / `Swapped Dirty`。分析泄漏时不要只看单列，需同时看 PSS、Private Dirty、SwapPss 和设备的 zRAM 状态。
+- `Dalvik Heap` / ART 相关行增长，可能来自存活对象、缓存、尚未执行的 GC 或分配抖动。HPROF、LeakCanary 和 allocation profiling 才能区分对象持有与短命分配。
+- `Native Heap` 主要对应 allocator 管理的 native allocation。大型独立 `mmap`、allocator arena 与碎片会让它和 heapprofd live bytes 存在差异。
+- `Graphics` 依赖 graphics driver 通过 libmemtrack 上报 smaps 未覆盖的归属。GraphicBuffer、dma-buf 和跨进程共享可能分散在 `Graphics`、`GL`、设备映射及其他类别，某一行下降缓慢不能单独证明纹理泄漏。
+- `Code`、`Stack`、`.so mmap` 等文件映射和线程相关分类要结合进程数、ABI、动态模块与线程数量解释。
 
-[已验证: 官方文档, developer.android.com/topic/performance/memory]
+完整的对象图、native 分配栈和 dma-buf 归因流程见 §14.3 [内存分析工具](03-memory-tools.md)。
 
-### 内存分类与性能关联
+### 采样趋势
 
-meminfo 输出把进程的内存使用分为多个类别。在性能分析中，我们需要重点关注以下几类：
-
-**Dalvik Heap / ART Heap** 是 Java/Kotlin 对象的驻留之地。如果 `Heap Alloc` 持续增长而不回落，很可能存在内存泄漏。频繁的大对象分配则会导致 `memory churn`（内存抖动），引发频繁 GC，进而导致主线程暂停、帧丢失。在 Perfetto 中，这对应于 Main Thread 上出现的 GC slice。
-
-**Native Heap** 是 C/C++ 代码通过 `malloc` 分配的内存，第三方 native 库（如图片解码库）、JNI 代码分配的对象通常落在这里。GraphicBuffer / dma-buf 这类图形缓冲区的 backing memory 通常归到 `Graphics` / 设备映射路径，不能简单按 Native Heap 泄漏处理。如果 Native Heap 增长但 ART Heap 和 Graphics 都稳定，说明问题更可能在 native malloc 层，需要用 `heapprofd`（§14.3）或 `ddms` 的 Native Heap Dump 来定位。
-
-**Graphics** 包括 GL surface、纹理缓冲区、EGL 相关的图形资源。在图片密集型 App 或游戏中，这个值可能很大。如果退出一个界面后 Graphics 内存没有下降，说明纹理或 surface 没有被正确释放。
-
-### 实战用法：追踪内存趋势
-
-单次 dumpsys meminfo 只是一个快照。要发现内存泄漏，我们需要追踪趋势：
+下面的主机端循环用于保存同一 workload 下的摘要趋势。
 
 ```bash
-# 第一次抓取，记录基线
-adb shell dumpsys meminfo <package_name>
-
-# 执行一轮操作（如反复进出某个界面 20 次）
-
-# 第二次抓取，对比变化
-adb shell dumpsys meminfo <package_name>
+for round in $(seq 1 10); do
+  printf 'round=%s host_time=%s\n' "$round" "$(date +%s)"
+  adb shell dumpsys meminfo -s com.example.app
+  sleep 10
+done
 ```
 
-比较两次输出的 `TOTAL PSS` 和 `Private Dirty`，如果数值持续上升且不回落，就是泄漏的信号。对于更精确的趋势分析，建议使用 Android Studio Memory Profiler（§14.1）连续采样，它可以把 PSS 随时间的变化画成曲线。
-
-[来源: Obsidian Personal-Knowledge/source/Android-Jank-Debug.md]
+每轮 workload、前后台状态、进程 PID、设备温度和等待时间都要固定。稳定增长只构成继续取证的条件：Java 类别转 HPROF/LeakCanary，Native Heap 转 heapprofd，Graphics 转 memtrack、`dmabuf_dump` 与 SurfaceFlinger。进程重启、GC、trim、缓存上限和 zRAM 变化都会改变曲线形状。
 
 ## dumpsys gfxinfo：帧渲染统计与 Jank 定位
 
-### 基本用法
+`gfxinfo` Binder 由 ActivityManagerService 注册。服务找到目标包的运行进程后，经 `IApplicationThread.dumpGfxInfo()` 进入应用进程，再由 `ThreadedRenderer` 和各 Window 的 renderer 输出 HWUI 统计。应用卡死时，该跨进程链路也可能超时。
 
-`dumpsys gfxinfo` 是 Android 提供的帧渲染性能快照工具。它最常见的三种用法如下：
-
-```bash
-# 聚合统计（Janky frames 百分比、百分位耗时等）
-adb shell dumpsys gfxinfo <package_name>
-
-# 逐帧行时间（最近 120 帧的详细时间线）
-adb shell dumpsys gfxinfo <package_name> framestats
-
-# 重置统计（在测试前执行，确保数据干净）
-adb shell dumpsys gfxinfo <package_name> reset
-```
-
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
-
-### 聚合统计：快速判断渲染健康度
-
-不带 `framestats` 参数时，gfxinfo 输出聚合指标。最重要的几个：
-
-**Janky frames** 是超过帧预算的帧数。Android 15-17 的 HWUI 统计同时保留 legacy 判定和 deadline 判定：legacy 主要按固定帧间隔估算，deadline 判定会读取每帧的 `FrameDeadline` / `FrameInterval`，在 90Hz、120Hz、LTPO 自适应刷新率设备上更接近真实渲染预算。聚合输出里如果出现 `Number Frame deadline missed`，优先把它作为 VRR 场景的掉帧入口，再回到 Perfetto 的 FrameTimeline 核对该帧的 deadline。
-
-**90th / 95th / 99th percentile** 是帧耗时的分位值。如果 99th percentile 是 50ms，意味着有 1% 的帧耗时超过 50ms——在 60Hz 设备上这就是连续掉 3 帧，用户能明显感知到卡顿。
-
-**Number Slow UI thread** 告诉我们有多少帧的瓶颈在主线程——也就是 `measure`/`layout`/`draw` 阶段耗时过长。如果这个数字很高，说明我们需要优化布局层次或减少 `onDraw()` 中的计算。
-
-**Number Slow RenderThread** 表示有多少帧的瓶颈在 RenderThread——GPU 命令提交或光栅化阶段耗时过长。如果这个数字高而 Slow UI thread 低，说明瓶颈在渲染管线的后半段，需要减少过度绘制或简化绘制指令。
-
-### framestats：逐帧时间线
-
-`framestats` 输出最近 120 帧的逐帧时间戳。每一行是一帧，各列代表渲染管线中的关键时间节点：`IntendedVsync`、`Vsync`、`InputEventId`、`HandleInputStart`、`AnimationStart`、`PerformTraversalsStart`、`DrawStart`、`FrameDeadline`（Android 12+ 已存在）、`FrameStartTime`、`FrameInterval`（Android 12+ 已存在）、`WorkloadTarget`（Android 16+ 新增）、`SyncQueued`、`SyncStart`、`IssueDrawCommandsStart`、`SwapBuffers`、`FrameCompleted`、`GpuCompleted` 等。
-
-这个版本边界会影响解析脚本：Android 12 到 Android 15 的 `FrameInfo.h` 已经包含 `FrameDeadline` 和 `FrameInterval`，但没有 `WorkloadTarget`。兼容多版本设备时，解析器应按 header 列名或字段数量识别列，避免把三列都绑定到 Android 14+。
-
-所有时间戳均为纳秒（ns）。固定刷新率设备上可以用 60Hz 的 16667000ns（约 16.67ms）或 120Hz 的 8333000ns（约 8.33ms）做粗略基准；VRR / ARR 设备要读每行的 `FrameInterval` 和 `FrameDeadline`，不能把整段测试都按一个固定 VSync 周期判定。
-
-通过计算相邻时间点的差值，我们可以精确知道每一帧的时间花在了哪里。例如 `PerformTraversalsStart` 到 `DrawStart` 的差值就是主线程 `measure`/`layout` 的耗时；`SyncStart` 到 `IssueDrawCommandsStart` 是 RenderThread 执行 OpenGL 命令的时间。
-
-在实践中，我们通常不会手动解析这些数字，而是借助工具：Android Studio 的 System Trace 可以可视化这些时间线，JankStats 库（AndroidX）可以在运行时监控并上报 Jank。
-
-### 实战示例：定位滑动卡顿
-
-当我们收到一个"列表滑动卡顿"的 bug 时，用 gfxinfo 可以快速判断卡顿发生在哪个阶段：
+下面的三条命令用于划定一段可重复的 HWUI 测试窗口。
 
 ```bash
-# 第一步：重置统计
+# 清空进程内保存的 HWUI 帧数据
 adb shell dumpsys gfxinfo com.example.app reset
 
-# 第二步：复现问题（快速滑动列表 10-15 秒）
-
-# 第三步：抓取聚合统计
+# 复现后读取聚合统计
 adb shell dumpsys gfxinfo com.example.app
+
+# 输出环形缓冲区中的逐帧列
+adb shell dumpsys gfxinfo com.example.app framestats
 ```
 
-如果输出显示 `Number Slow UI thread` 很高，说明是主线程做了太多工作（比如 `onBindViewHolder` 中有耗时操作）。如果 `Number Slow bitmap uploads` 很高，说明图片解码阻塞了渲染。如果 `Number Slow RenderThread` 高但 UI thread 正常，可能是因为视图层次太复杂导致 GPU 合成压力过大。
+Android 17 的 [`ThreadedRenderer.dumpArgsToFlags()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ThreadedRenderer.java) 识别 `reset` 和 `framestats`。目标包有多个进程或多个硬件加速 Window 时，输出会出现多个分段；采集脚本要保留 pid 和 Window 标题。
 
-确认了问题阶段之后，再用 Perfetto 抓 Trace 做精确定位——gfxinfo 帮我们缩小了排查范围。
+### 聚合统计如何生成
+
+Android 17 同时打印 deadline-aware 与 legacy 统计。当前 [`JankTracker::finishFrame()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/JankTracker.cpp) 以 `GpuCompleted` 是否越过调整后的 `FrameDeadline` 记录 `Janky frames`；legacy 路径使用旧的固定间隔、swap deadline 与 triple-buffering 修正规则。VRR/ARR 场景优先读当前 deadline 口径，再用 legacy 行观察兼容指标。
+
+[`ProfileData.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/ProfileData.cpp) 在 Android 17 输出以下分类：
+
+| 输出 | AOSP 中的区间或判定 | 解读边界 |
+|---|---|---|
+| `Janky frames` | `GpuCompleted >= FrameDeadline` | HWUI deadline miss，仍需 trace 定位责任线程 |
+| `Janky frames (legacy)` | 旧 fixed-interval 模型 | 供历史报表兼容，不宜用于 VRR 精确判定 |
+| `Number Missed Vsync` | `IntendedVsync → Vsync` | App 收到帧回调已晚 |
+| `Number Slow UI thread` | `Vsync → SyncStart` 超过当前 frame interval 的 50% | UI 阶段偏长，原因可能含输入、动画、traversal、draw record |
+| `Number Slow bitmap uploads` | `SyncStart → IssueDrawCommandsStart` 超过 20% | 这是保留的输出名称，不能只凭名称认定发生了图片解码 |
+| `Number Slow issue draw commands` | `IssueDrawCommandsStart → FrameCompleted` 超过 75% | RenderThread 后半段偏长，不直接区分 CPU、GPU、queue 或 fence wait |
+| `Number Frame deadline missed` | 当前 deadline miss 计数 | 与 `Janky frames` 的当前口径对应 |
+
+源码没有名为 `Number Slow RenderThread` 的固定输出。分位值来自 `IntendedVsync → FrameCompleted` 的时长直方图；99th percentile 为 50 ms，表示该统计窗口内约 1% 的已记录帧落在 50 ms 或更慢的 bucket，不能换算成“连续丢三帧”。
+
+没有跨应用通用的 5% 合格线。基线应来自相同设备、刷新率、温控状态和 workload，并配合 FrameTimeline 的 jank type、用户可见场景和业务目标判断。
+
+### `framestats` 的列
+
+Android 17 的 [`FrameInfo.h`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/FrameInfo.h) 包含 `IntendedVsync`、`Vsync`、`InputEventId`、`HandleInputStart`、`AnimationStart`、`PerformTraversalsStart`、`DrawStart`、`FrameDeadline`、`FrameStartTime`、`FrameInterval`、`WorkloadTarget`、`SyncQueued`、`SyncStart`、`IssueDrawCommandsStart`、`SwapBuffers`、`FrameCompleted`、`GpuCompleted` 等字段。`JankTracker` 使用 120 项环形缓冲区，所以这里只保留近期帧，不代表整段测试。
+
+解析时读取 `---PROFILEDATA---` 后的 header，按列名建索引。不同 Android 版本会增加字段；按固定列号解析会把后续时间戳整体错位。未填充字段还可能使用 0、负值或最大整数哨兵，计算差值前要过滤。
+
+几个常用区间可以帮助缩小范围：
+
+- `Vsync → SyncStart` 覆盖 UI 线程消费帧的主要阶段。
+- `PerformTraversalsStart → DrawStart` 可观察 traversal 中 draw 之前的工作，但其中不只含 measure/layout。
+- `SyncQueued → SyncStart` 是 RenderThread 排队等待。
+- `SyncStart → IssueDrawCommandsStart` 覆盖同步与资源上传相关阶段。
+- `IssueDrawCommandsStart → FrameCompleted` 覆盖 RenderThread 发出绘制命令后的剩余工作。
+- `GpuCompleted` 是 GPU 完成边界可用时的时间点，和 `FrameCompleted` 口径不同。
+
+这些列能标出异常区间，方法级归因仍应回到 Perfetto 的 UI Thread、RenderThread、GPU、FrameTimeline、BufferQueue 和 fence 证据。你提供的 `rendering_pipelines` 系列也采用这条边界：App/HWUI、BLAST、SurfaceFlinger FrontEnd、CompositionEngine 与 HWC 要分层观察，单个 HWUI 行无法覆盖显示后半段。
 
 ## dumpsys cpuinfo：CPU 占用快速排查
 
-### 基本用法
+`cpuinfo` 输出 ActivityManager 后台维护的 `ProcessCpuTracker` 采样结果。它展示最近两个采样点之间的增量，调用命令的时刻不一定触发一段新的测量窗口，因此“瞬时 CPU”这个叫法会高估它的时间精度。
 
-`dumpsys cpuinfo` 提供系统当前各进程的 CPU 使用率快照，是快速判断"谁在吃 CPU"的第一步：
+下面的命令用于取得最近窗口，并在确定目标 PID 后切换到连续线程观察。
 
 ```bash
-# 查看所有进程的 CPU 占用
+# 最近一个 ProcessCpuTracker 采样窗口
 adb shell dumpsys cpuinfo
 
-# 持续监控（每秒刷新）
-adb shell top -H -p <pid>
+# 连续观察目标进程的线程
+APP_PID=$(adb shell pidof com.example.app | tr -d '\r')
+adb shell top -H -p "$APP_PID"
 ```
 
-### 关键指标
+Android 17 的 [`AppProfiler.CpuBinder`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppProfiler.java) 直接打印 tracker 保存的 current load/state。[`ProcessCpuTracker`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ProcessCpuTracker.java) 再用 `/proc/stat` 与 `/proc/<pid>/stat` 的增量生成各行。
 
-每个进程行主要拆成 user 和 kernel 两部分；`TOTAL` 行才会把全局 iowait、irq、softirq 也列出来。
+- 进程行的 `user` 与 `kernel` 分别来自该进程的用户态、内核态 CPU 时间。
+- `iowait`、`irq`、`softirq` 只在 `TOTAL` 行传入，不能从某个进程行反推中断归属。
+- `minor` / `major faults` 是采样窗口内的进程 fault 增量。
+- 多线程进程能并行占用多个 CPU，进程百分比可能超过 100%。
 
-- **user**：用户态 CPU 时间占比（应用代码执行）
-- **kernel**：内核态 CPU 时间占比（系统调用、内核执行）
-- **iowait / irq / softirq**：只在全局 `TOTAL` 行有意义，用来判断 I/O 等待或中断处理是否异常
+没有适用于所有后台进程的固定 5% 告警线。同步、媒体、定位、编译和空闲进程的合理基线差异很大。连续异常应由 `top` 或 Perfetto `sched` 轨道确认运行时间，再用 Simpleperf 定位函数；`TOTAL` 中 iowait/irq 异常则转向 block I/O、irq/softirq 与设备驱动证据。
 
-在性能排查中，如果一个后台进程的 CPU 占用持续超过 5%，就值得调查。常见的异常模式：
+跨设备比较 fault 次数时要记录页大小。Android 15 至 Android 17 可运行在 16 KB page-size 设备上，同样的访问范围可能产生更少的 fault。下面的命令用于保存该实验条件。
 
-- user 占用高 → 应用层在做密集计算（如 JSON 解析、图片解码）
-- kernel 占用高 → 大量系统调用（如频繁的 IPC、文件 I/O）
-- `TOTAL` 行 iowait / irq / softirq 高 → I/O 等待或中断处理异常，需结合 Perfetto CPU / irq / sched 轨道继续定位
+```bash
+adb shell getconf PAGESIZE
+```
 
-`dumpsys cpuinfo` 只提供瞬时快照，看不到趋势。如果需要持续监控 CPU 占用随时间的变化，建议使用 Perfetto 的 CPU 采样功能（通过 `perfetto` 命令抓取 `cpu` track），或者在终端使用 `adb shell top` 进行持续观察。
-
-如果输出里带有 `minor faults` / `major faults`，跨设备对比时要把 page size 放进测试条件。Android 15+ 已支持 16KB page size，单页覆盖范围变大后，同样访问模式下的 minor faults 次数可能低于 4KB 设备。这个数字下降不一定来自 I/O 或内存访问优化，先用 `adb shell getconf PAGESIZE` 确认页大小，再做同条件对比。
-
-[已验证: Android 17 基线下 dumpsys cpuinfo 仍保留按进程输出 CPU 快照；16KB page size 设备需单独标注 page size 条件]
+该值只说明内核页大小；major fault 仍要结合文件映射、存储等待和回收压力解释。Android 17 kernel 的全局 CPU 统计来源可从 [`fs/proc/stat.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/stat.c) 复核。
 
 ## dumpsys window：窗口层级与焦点
 
-### 基本用法
+窗口问题至少有三个观察者：ActivityTaskManager 管 Activity/Task，WindowManager 管 WindowState 与 display，InputDispatcher 管输入目标。三个焦点字段相同只是一种常见稳定状态。
+
+下面的命令按显示器保存 WMS 与 InputDispatcher 两份现场。
 
 ```bash
-# 完整的 WindowManager 状态
-adb shell dumpsys window
-
-# 窗口列表（含 Z-order）
+# WindowState 列表、显示器状态与焦点
 adb shell dumpsys window windows
-
-# DisplayContent 视角的焦点，适合 Android 15+ 和多屏场景
 adb shell dumpsys window displays
-adb shell dumpsys window displays | grep -E 'DisplayContent|mCurrentFocus|mFocusedApp'
 
-# InputDispatcher 视角的焦点
-adb shell dumpsys input | grep -E 'FocusedWindow|FocusedApplication'
+# 只做人工浏览时可缩小字段；正式附件应保留原始输出
+adb shell dumpsys window displays \
+  | grep -E 'DisplayContent|mCurrentFocus|mFocusedApp'
+
+# 输入分发器当前的 focused application/window
+adb shell dumpsys input \
+  | grep -E 'FocusedApplication|FocusedWindow'
 ```
 
-### 关键信息
+`DisplayContent.mCurrentFocus` 指向 WMS 当前聚焦的 `WindowState`；`mFocusedApp` 指向该 display 上被选中的 Activity token。通知栏、IME、系统对话框、多窗口切换和 transition 期间，两者可能来自不同组件。多屏设备还要保留 `displayId`，只 grep 一条全局结果会混淆主屏、副屏与虚拟显示。
 
-在性能分析中，dumpsys window 主要用于两类场景。
+“窗口有焦点但触摸无响应”要继续检查 InputDispatcher 的 focused window/application、对应 InputChannel、touchable region、`FLAG_NOT_TOUCHABLE`、窗口可见性和上层 overlay。WMS 中的 Z-order 与 InputDispatcher 的命中顺序也有不同过滤条件，不能仅凭一个 WindowState 排在前面就断言它会收到触摸。
 
-**第一类是确认窗口焦点。** 当用户报告"点了没反应"或"触摸不灵敏"时，优先从 `adb shell dumpsys window displays` 看每个 `DisplayContent` 下的 `mCurrentFocus` 和 `mFocusedApp`。Android 15+ 的焦点状态已经明显转向显示器维度；多屏、投屏、车机、副屏场景下，直接在全局输出里 grep `mCurrentFocus` 容易拿到非目标显示器的窗口。两者不一定一致——比如用户拉下通知栏时，`mCurrentFocus` 会切到 SystemUI 的通知面板，而 `mFocusedApp` 仍然是之前使用的 App。
-
-**第二类是排查 Input ANR。** `dumpsys window` 只能回答 WMS 视角的窗口状态，决定触摸事件去向的是 InputDispatcher。遇到窗口看起来有焦点、点击却没有反应的场景，要再执行 `adb shell dumpsys input`，联动查看 `FocusedWindow` 和 `FocusedApplication`。如果两边不一致，或者 InputDispatcher 指向了意料之外的窗口，再回头检查 `NOT_TOUCHABLE`、InputChannel 和覆盖层拦截。
-
-`dumpsys window` 的输出还包含 Z-order 信息，窗口从上到下排列。在排查覆盖层问题时（比如 Dialog 没有正确 dismiss 导致遮挡了底下的 Activity），Z-order 列表可以直观看到哪些窗口叠加在目标窗口上面。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java: dump()]
+Android 17 的 dump 入口位于 [`WindowManagerService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowManagerService.java)，每个显示器的焦点状态位于 [`DisplayContent`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/DisplayContent.java)。需要跨帧分析窗口层级、transition、insets 和输入区域时，用 Winscope 录制代替反复 grep 文本快照。
 
 ## dumpsys batterystats：电池使用与功耗分析
 
-### 基本用法
+`batterystats` 记录 UID、组件和系统事件在一段统计窗口内的活动及估算归属。部分值来自计时器，部分值来自 power profile 或设备 power stats；它不是外接功率计读数。
+
+下面的命令用于建立测试窗口、保存历史并恢复详细 history 开关。
 
 ```bash
-# 查看电池使用统计
-adb shell dumpsys batterystats
-
-# 重置统计（在功耗测试前执行）
+# 会清除当前统计和 history；执行前保存仍需使用的现场
 adb shell dumpsys batterystats --reset
 
-# 启用完整 wakelock 历史
+# 需要 userspace wakelock 时间线时临时开启
 adb shell dumpsys batterystats --enable full-wake-history
+
+# 复现后保存聚合、history 和 bugreport
+adb shell dumpsys batterystats --charged > batterystats.txt
+adb shell dumpsys batterystats --history > batterystats-history.txt
+adb bugreport bugreport.zip
+
+# 采集结束后恢复，避免长期放大 history
+adb shell dumpsys batterystats --disable full-wake-history
 ```
 
-### 功耗分析工作流
+Android 17 的 [`BatteryStatsService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java) 明确定义了 `--charged`、`--history`、`--reset`、`--enable/--disable full-wake-history`、`--usage` 等参数。`--reset` 会清空当前统计，属于有状态操作；共享测试机上要记录执行者和时间。
 
-dumpsys batterystats 本身输出的是原始数据，要发挥作用需要配合 Battery Historian 工具做可视化。标准工作流如下：
+一轮可比较的测试应固定：
 
-第一步，重置统计。在开始测试前执行 `adb shell dumpsys batterystats --reset`，清除历史数据，确保接下来的测试数据是干净的。
+1. build、设备、电池温度、亮度、网络类型和帐号同步状态；
+2. 充电状态与测试起止时刻；
+3. 前台/后台步骤、静置时长和重复次数；
+4. 目标 UID、进程重启和系统更新情况；
+5. 同期 Perfetto、bugreport 或 Power Profiler 证据。
 
-第二步，断开 USB（或至少断开充电），执行要测试的操作。如果测试的是后台功耗，可以让设备静置一段时间，模拟真实使用场景。
+### Wakelock 与功耗归因
 
-第三步，导出数据。执行 `adb bugreport > bugreport.zip` 生成完整的 bug report，其中包含 batterystats 的输出。
+`All partial wake locks` 给出 UID/名称维度的持有时长和次数。多个 wakelock 可以重叠，持有时长也不等于 CPU 全程运行时长；还要对齐 Battery Historian 的 `wake_lock`、`running`、JobScheduler、alarm、network、GNSS 和 screen 状态。异常名称负责定位调用方，功耗影响要由 suspend 机会、CPU 工作、radio tail 和测得能量共同确认。
 
-第四步，使用 Battery Historian 分析。Battery Historian 是 Google 提供的 Web 工具，可以把 batterystats 的原始数据渲染成时间线图表。在图表上可以直观看到 CPU 唤醒、wakelock 持有、网络活动、GPS 使用等事件与电量下降的对应关系。
-
-[已验证: 官方文档, developer.android.com/studio/profile/battery-historian]
-
-### Wakelock 分析
-
-在功耗优化中，最常见的问题之一是"后台唤醒过多"。设备在息屏后本应进入低功耗的 suspend 状态，但如果某个 App 持有 wakelock，CPU 就无法入睡，电量就会快速流失。
-
-在 batterystats 输出中，`All partial wake locks` 表格列出了每个 App 持有 wakelock 的累计时长和次数。如果一个 App 在后台持有了数小时的 partial wakelock，那就是功耗优化的首要目标。
-
-`Battery Historian` 的图表中有一个专门的 `wake_lock` 行，用彩色条段标记 wakelock 被持有的时段。结合 `running` 行（CPU 是否在运行）一起看，可以快速判断"CPU 被谁唤醒了"和"为什么没有重新入睡"。
-
-Battery Historian 工具本身已经不再积极维护（Google 已将重点转向 Android Studio Energy Profiler），但它对于分析 wakelock 和系统级功耗事件仍然是最直观的工具之一。
+[Battery Historian](https://developer.android.com/topic/performance/power/battery-historian) 已不再积极维护，适合查看 bugreport 中的系统级历史。官方当前建议优先考虑 system tracing、Macrobenchmark power metric 或 [Power Profiler](https://developer.android.com/studio/profile/power-profiler)。Power Profiler 的 ODPM power rails 是设备级数据，支持范围受机型限制，也不能自动归因到单个 App。
 
 ## dumpsys SurfaceFlinger：Layer 信息与合成状态
 
-### 基本用法
+SurfaceFlinger 的文本 dump 同时包含 FrontEnd、display、scheduler、CompositionEngine/HWC 和统计模块的信息。先选择视角，再保存原始输出。
+
+下面的命令覆盖 Android 17 排查 Layer 与 present 时间的常用入口。
 
 ```bash
-# SurfaceFlinger 状态快照；Android 15+ 默认以 Frontend 可见快照为主
+# 默认快照：可见 FrontEnd 列表以及 display/HWC 等综合状态
 adb shell dumpsys SurfaceFlinger
 
-# Android 15+：查看全部 Frontend LayerSnapshot / Input list / Hierarchy
+# 全部 FrontEnd snapshot、input list、主 hierarchy 与 offscreen hierarchy
 adb shell dumpsys SurfaceFlinger --frontend
 
-# 仅列出 Layer 名称
+# Layer 精确名称和 HWC minidump
 adb shell dumpsys SurfaceFlinger --list
-
-# 查看 HWC 视角的 Layer minidump
 adb shell dumpsys SurfaceFlinger --hwclayers
 
-# 查看特定 Layer 的历史 present 时间戳
-adb shell dumpsys SurfaceFlinger --latency <layer_name>
+# 单 Layer 的历史 present 三元组
+LAYER_NAME='com.example.app/com.example.app.MainActivity#123'
+adb shell dumpsys SurfaceFlinger --latency "$LAYER_NAME"
+adb shell dumpsys SurfaceFlinger --latency-clear "$LAYER_NAME"
+
+# 更适合时间关联的内部统计入口
+adb shell dumpsys SurfaceFlinger --frametimeline
+adb shell dumpsys SurfaceFlinger --scheduler
 ```
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp: dump()]
+Android 17 的 [`SurfaceFlinger::doDump()`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) 注册了这些参数。目标不存在时，`--latency` 仍可能只输出一行 pacesetter VSync period；脚本要验证后续三列是否存在。
 
 ### Layer 列表与合成方式
 
-`dumpsys SurfaceFlinger` 在 Android 15+ 上不能再按旧资料理解成“默认输出完整 Layer 属性表”。AOSP android-17.0.0_r1 的默认 dump 会输出 `Composition list`、`Input list`、Layer Hierarchy 和 HWC minidump，主要来自 Frontend 计算后的 `LayerSnapshot`；这和旧版从 `Layer` 对象直接展开 Source Crop、Display Frame、Composition Type 的文本格式不同。
+`dumpsys SurfaceFlinger` 在 Android 15 至 Android 17 上不能按早期资料理解成“默认展开每个旧 Layer 对象的全部属性”。Android 17 的默认路径调用 `dumpVisibleFrontEnd()` 生成可见的 `Composition list` 与 `Input list`，综合 dump 还会追加 display、HWC 和其他模块状态。`--frontend` 调用 `dumpFrontEnd()`，会输出全部 snapshot、主 hierarchy 与 offscreen hierarchy。
 
 读 Layer 时先分清三个视角：
 
 | 视角 | 命令 / 输出 | 适合回答的问题 |
 |------|-------------|----------------|
 | 名称列表 | `dumpsys SurfaceFlinger --list` | 当前有哪些 Layer，`--latency` 应该传哪个 layer name |
-| Frontend 快照 | `dumpsys SurfaceFlinger --frontend` 或默认 dump 的 `Composition list` / `Input list` | 当前参与合成和输入命中的 LayerSnapshot、LayerStack、bounds、transform、触摸相关属性 |
-| HWC 视角 | `dumpsys SurfaceFlinger --hwclayers` / 默认 dump 的 HWC minidump | 哪些 Layer 交给 HWC，哪些回退到 GPU 合成 |
+| FrontEnd 快照 | `--frontend` 或默认输出中的 `Composition list` / `Input list` | 当前 snapshot 的可见性、层级、几何、buffer 与输入状态 |
+| HWC minidump | `--hwclayers` | 采集时刻 HWC/CompositionEngine 暴露的 layer 合成状态 |
 
-`RequestedLayerState` 存的是客户端通过 transaction 请求的服务端状态；`LayerSnapshot` 是 SurfaceFlinger Frontend 在当前帧计算出的快照。排查“为什么某个窗口没有显示 / 没有接触摸”时，先看 `Composition list` 和 `Input list` 是否出现目标 Layer，再对比 HWC minidump 中的合成方式。
+`RequestedLayerState` 保存客户端 transaction 合入后的请求状态，`LayerSnapshot` 是 FrontEnd 为当前状态计算出的消费快照。显示缺失时检查 Composition list、可见性、bounds、transform、crop、alpha、buffer 和 display/layer stack；输入缺失时切到 Input list 与 WindowManager/InputDispatcher。两个列表用途不同。
 
-在实际分析中，如果我们发现大量 Layer 退回到 GPU 合成，常见原因是 HWC overlay 数量不够，或某些 Layer 的属性（如圆角、混合模式、颜色空间、保护内容）超出了 HWC 的硬件能力。这时再回到 App 端检查 Layer 数量和视觉效果复杂度。
+HWC minidump 中的 CLIENT/DEVICE 等合成选择只代表该次采集附近的状态。overlay 资源、圆角、混合、颜色空间、受保护内容、缩放旋转、带宽和厂商策略都可能改变选择。一次 CLIENT composition 不能证明某个 App layer 长期由 GPU 合成；跨帧结论应使用 Perfetto、Winscope、HWC trace 或稳定复现实验。
 
 ### Android 15+ 的输出变化
 
-从 Android 15（AOSP 15）开始，SurfaceFlinger Frontend 成为默认路径，dump 输出从旧版“逐 Layer 展开属性”转为快照化输出。`Composition list` 按合成顺序组织，`Input list` 按输入命中顺序组织，两者都围绕 `LayerSnapshot` 展开；源码入口在 `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp::dumpFrontEnd()` 和 `FrontEnd/LayerSnapshot.h`。
+从 Android 15 的 FrontEnd 默认路径到 Android 17，dump 的 Layer 主视角已经转向 snapshot。Android 17 的 `Composition list` 明确标为 top-to-bottom；Input list 由 `forEachInputSnapshot()` 生成。旧资料中的 `Source Crop`、`Display Frame` 和 composition type 表格仍可用于读旧版本或厂商扩展，不能套用为 Android 17 默认文本格式。
 
-AOSP android-17.0.0_r1 的公开 dumper 参数包括 `--frontend`、`--list`、`--hwclayers`、`--latency`，没有 `--all-layer`。如果厂商系统或调试资料里出现额外参数，以该设备的 `dumpsys SurfaceFlinger --help` 和对应源码分支为准。
+`android-17.0.0_r1` 的 dumper map 包含 `--frontend`、`--list`、`--hwclayers`、`--latency`、`--frametimeline`、`--scheduler` 等入口，没有 `--all-layer`。厂商系统出现额外参数时，以设备输出和厂商源码为准。
 
-在实际调试中，Winscope 工具（Android Studio 集成）更适合查看 Layer 层次结构和跨帧变化。文本 dump 适合取当前快照，Winscope 适合看一段时间内的 transaction、Layer 层级、可见性和输入区域变化。
-
-[来源: Obsidian Personal-Knowledge/source/2026-03-05_wechat_aosp15上SurfaceFlinger的dump部分新特性]
+你指定的 `rendering_pipelines` 系列把 Android 17 显示后半段固定为 FrontEnd snapshot、CompositionEngine 与 AIDL Composer/HWC 三层。这里沿用同一模型：文本 dump 负责当前状态，Winscope 负责 transaction、Layer hierarchy、可见性和输入区域的跨帧变化，Perfetto 负责 FrameTimeline、scheduler、BufferQueue、fence 与合成耗时。
 
 ### FrontEnd 架构补充（源码级）
 
-前面讲的是如何使用 `dumpsys SurfaceFlinger` 查看 Layer 列表和合成方式。对于做平台调试或性能分析的读者，以下基于 AOSP android-17.0.0_r1 源码补充了 FrontEnd 的内部机制，可按需阅读。
+FrontEnd dump 中的对象来自一条明确的数据转换链：
 
-**FrontEnd 组件清单：**
+| 组件 | Android 17 源码 | 职责 |
+|---|---|---|
+| `RequestedLayerState` | [`RequestedLayerState.h`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/RequestedLayerState.h) | 保存 transaction 请求状态与 `Changes` |
+| `LayerLifecycleManager` | [`LayerLifecycleManager.h`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/LayerLifecycleManager.h) | 管理 requested state、创建/销毁和 handle 生命周期 |
+| `TransactionHandler` | [`TransactionHandler.h`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/TransactionHandler.h) | 收集 transaction，执行 readiness 过滤并 flush 可应用项 |
+| `LayerHierarchyBuilder` | [`LayerHierarchy.h`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/LayerHierarchy.h) | 建立 z-order hierarchy，并表示 mirror 等共享关系 |
+| `LayerSnapshotBuilder` | [`LayerSnapshotBuilder.h`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/LayerSnapshotBuilder.h) | 根据 hierarchy、display 与全局状态生成 snapshot |
 
-| 组件 | 源码位置 | 核心职责 |
-|------|---------|---------|
-| `RequestedLayerState` | `FrontEnd/RequestedLayerState.h` | 存储客户端请求的层状态，含 22 种 `Changes` 位掩码（Created/Destroyed/Geometry/Buffer 等） |
-| `LayerLifecycleManager` | `FrontEnd/LayerLifecycleManager.h` | 管理 RequestedLayerState 的增删改，追踪 Handle 生命周期 |
-| `TransactionHandler` | `FrontEnd/TransactionHandler.h` | 通过 `LocklessQueue` 异步收集事务，按 `ApplyToken` 排序过滤 |
-| `LayerHierarchyBuilder` | `FrontEnd/LayerHierarchy.h` | 将 RequestedLayerState 列表构建为 z-order 层图（graph 结构支持 mirror 共享节点） |
-| `LayerSnapshotBuilder` | `FrontEnd/LayerSnapshotBuilder.h` | 从 LayerHierarchy 生成可消费的 `LayerSnapshot`，含 `tryFastUpdate()` 快速路径 |
+`LayerHierarchyBuilder` 的类定义就在 `LayerHierarchy.h`，源码树中没有 `LayerHierarchyBuilder.h`。写源码索引时应使用当前 tag 中存在的文件名。
 
-**事务收集与状态锁边界：**
-
-`SurfaceFlinger.cpp` 的 `updateLayerSnapshots()` 在 Android 17 中大致按下面顺序协作：
+下面的节选用于说明 `updateLayerSnapshots()` 的锁边界，省略了 tracing、display mirror、legacy layer 与 feature-flag 分支。
 
 ```cpp
-// 1. 收集事务
 mTransactionHandler.collectTransactions();
 
-// 2. 新增层、flush 事务
 mLayerLifecycleManager.addLayers(std::move(update.newLayers));
 update.transactions = mTransactionHandler.flushTransactions();
-
-// 3. 应用事务、处理 handle 销毁
 mLayerLifecycleManager.applyTransactions(update.transactions);
 mLayerLifecycleManager.onHandlesDestroyed(update.destroyedHandles);
-
-// 4. 构建 Hierarchy（仍在 mStateLock 之前）
 mLayerHierarchyBuilder.update(mLayerLifecycleManager);
 
-// 5. 进入状态锁，提交 display transaction 并更新 Snapshot
+State drawingState(mDrawingState);
 Mutex::Autolock lock(mStateLock);
 applyAndCommitDisplayTransactionStatesLocked(update.transactions);
 mLayerSnapshotBuilder.update(args);
 ```
 
-`mStateLock` 被推迟到事务收集、应用和 hierarchy 更新之后；但 Android 17 的 `LayerSnapshotBuilder.update()` 仍在 `mStateLock` 内执行，不能把 snapshot 生成描述成无锁路径。
+事务收集、requested state 应用和 hierarchy 更新位于 `mStateLock` 之前；display transaction 提交与 `LayerSnapshotBuilder.update()` 仍在锁内。因而“FrontEnd 整条 snapshot 路径无锁”与 Android 17 实现不符。完整顺序见 [`SurfaceFlinger::updateLayerSnapshots()`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)。
 
-**`RequestedLayerState::Changes` 位掩码设计：**
+`RequestedLayerState::Changes` 在该 tag 中有 22 个 bit。下面的源码形状用于核对 dump/trace 中的变化类型。
 
 ```cpp
 enum class Changes : uint32_t {
-    Created = 1u << 0,    // 新建层
-    Destroyed = 1u << 1, // 销毁层
-    Hierarchy = 1u << 2,  // 父子关系变更
-    Geometry = 1u << 3,  // 位置/尺寸/变换
-    Content = 1u << 4,   // Buffer 内容更新
-    Input = 1u << 5,     // 输入配置变更
-    Z = 1u << 6,         // Z-order 变更
-    Mirror = 1u << 7,    // 镜像
-    Parent = 1u << 8,    // 父层变更
+    Created = 1u << 0,
+    Destroyed = 1u << 1,
+    Hierarchy = 1u << 2,
+    Geometry = 1u << 3,
+    Content = 1u << 4,
+    Input = 1u << 5,
+    Z = 1u << 6,
+    Mirror = 1u << 7,
+    Parent = 1u << 8,
     RelativeParent = 1u << 9,
     Metadata = 1u << 10,
     Visibility = 1u << 11,
     AffectsChildren = 1u << 12,
     FrameRate = 1u << 13,
     VisibleRegion = 1u << 14,
-    Buffer = 1u << 15,   // Buffer 引用变更
+    Buffer = 1u << 15,
     SidebandStream = 1u << 16,
     Animation = 1u << 17,
     BufferSize = 1u << 18,
@@ -494,86 +493,128 @@ enum class Changes : uint32_t {
 };
 ```
 
-在 android-17.0.0_r1 中，`RequestedLayerState::kMustComposite` 仍包含 `Buffer` 和 `PostProcess`；真正决定纯 `Content` / `Buffer` 变更能否少走层级重建的是 `LayerSnapshotBuilder::tryFastUpdate()` 的全局变更掩码判断。
+`kMustComposite` 包含 `Content`、`Buffer` 与 `PostProcess` 等变化，表示该轮变化会推动合成判断。snapshot 是否必须完整遍历 hierarchy 是另一件事：`tryFastUpdate()` 先 merge 发生变化的 snapshot，只在全局变化超出 `Content | Buffer` 时退出 fast path。
 
-**LayerSnapshotBuilder.tryFastUpdate() 快速路径：**
-
-当全局变更只包含 `Content` / `Buffer` 且没有 force/display change 时，`tryFastUpdate()` 先 merge 已变化的 layer snapshot，并跳过完整 hierarchy traversal：
+下面的条件节选用于区分这两个判定。
 
 ```cpp
-// LayerSnapshotBuilder.h
-bool tryFastUpdate(const Args& args);  // 返回 true 表示快速路径成功
+if ((args.layerLifecycleManager.getGlobalChanges().get() &
+     ~(RequestedLayerState::Changes::Content |
+       RequestedLayerState::Changes::Buffer).get()) != 0) {
+    return false;
+}
+return true;
 ```
 
-这个设计让"只有画布刷新"的场景少走一部分几何重算路径；具体收益仍要在目标设备上用 trace 或 benchmark 复核。
-
-**源码索引（均来自 AOSP android-17.0.0_r1）：**
-
-- `RequestedLayerState.h` — Changes enum + 层状态结构体
-- `LayerLifecycleManager.h` — 生命周期管理接口
-- `TransactionHandler.h` — 无锁事务队列
-- `LayerSnapshotBuilder.h/.cpp` — 快速路径 + Snapshot 生成
-- `SurfaceFlinger.cpp` — `updateLayerSnapshots()` / `commit()` 中 FrontEnd 协作代码，约行 2493-2580 / 2691-2783
+仅含 Content/Buffer 且没有 force/display change 时，可以跳过完整 hierarchy traversal。它减少的是 snapshot 重算范围，不能推出本帧不会合成，也不能直接换算为固定性能收益。验证收益要看目标设备的 `FastPath` trace、FrontEnd 工作量与整帧 deadline。
 
 ### 帧延迟信息
 
-`dumpsys SurfaceFlinger --latency <layer_name>` 的输出需要特别注意格式。第一行是 **refresh period**（刷新周期），单位为纳秒，表示屏幕的 VSync 间隔——60Hz 设备上为 16666666ns（约 16.67ms），120Hz 设备上为 8333333ns（约 8.33ms）。
+`--latency` 仍是快速检查单 Layer 历史的入口。Android 17 的 `SurfaceFlinger::dumpStats()` 先打印 pacesetter VSync period，再按精确 layer name 查找 legacy Layer 并调用 `Layer::dumpFrameStats()`。
 
 从第二行开始，每行是一帧的三个时间戳（均为纳秒）：
 
 | 列 | 字段 | 含义 |
 |---|---|---|
-| 第一列 | `desired_present_time` | 该帧期望的呈现时间 |
-| 第二列 | `actual_present_time` | 该帧实际呈现时间 |
-| 第三列 | `frame_ready_time` | AOSP 记录的帧就绪时间；Android 16 新路径来自 FrameTimeline 的 SurfaceFrame endTime，旧 FrameTracker 口径是帧内容准备好可显示的时间，不等同于 HWC 提交或 GPU 完成时间 |
+| 第一列 | `desired_present_time` | 该 layer frame 的期望呈现时间 |
+| 第二列 | `actual_present_time` | 系统记录的呈现时间 |
+| 第三列 | `frame_ready_time` | frame-stats 路径记录的 ready 边界；不等同于 GPU completion 或 HWC present 调用时间 |
 
-判断掉帧的方法：计算 `actual_present_time - desired_present_time`，如果差值大于 refresh period（第一行的值），说明这一帧被延迟了至少一个 VSync 周期。如果 actual 频繁晚于 desired 超过一个 refresh period，说明这个 Layer 的生产者（App 端渲染线程）跟不上显示刷新率。
+`actual - desired` 可标记晚呈现，不能独立归因。晚呈现可能来自 producer、acquire fence、transaction readiness、SurfaceFlinger 调度、client composition、HWC、present fence 或显示模式切换。`frame_ready` 较晚可把方向推向前半段，仍要用同帧 FrameTimeline 和 fence 证据确认。
 
-在 VRR / ARR 场景下，第一行 refresh period 只能代表 dump 当下的 pacesetter VSync 周期，不能代表每一帧的动态预算。Android 15+ 设备上分析 `--latency` 时，把它作为初步筛选：发现 actual 晚于 desired 后，再回到 Perfetto FrameTimeline、`dumpsys gfxinfo framestats` 的 `FrameDeadline` / `FrameInterval`，或 SurfaceFlinger scheduler / vsync 轨道确认该帧对应的实际截止时间。
+第一行来自采集时刻的 pacesetter period。VRR/ARR、多 display、layer frame-rate override 与 frame-rate divisor 场景下，它不代表每一行的独立 deadline。解析器还应过滤 0、负值和未完成哨兵；只有三列都有效时才计算差值。
 
-当 desired_present_time 为 0 时，表示该帧没有期望呈现时间（通常是未使用的缓冲区槽位），应跳过不计。
+使用顺序建议如下：
 
-这个数据在分析滑动流畅度时非常有用。结合 gfxinfo 的帧统计一起看，可以区分"是 App 没画完"还是"是 SurfaceFlinger 合成慢了"。
+1. 用 `--list` 复制精确 layer name，并保存 `--latency` 原文；
+2. 标记 actual 明显晚于 desired 的候选行；
+3. 在 Perfetto FrameTimeline 找对应 display frame 与 surface frame；
+4. 检查 App/HWUI、BLAST/BufferQueue、acquire fence、SF scheduler、CompositionEngine/HWC 和 present fence；
+5. 动态 hierarchy 或输入问题转 Winscope。
+
+这套顺序与 `rendering_pipelines` 的分层一致，避免把显示端异常全部压到 App RenderThread。
 
 ## 进阶用法
 
 ### dumpsys package / alarm / jobscheduler
 
-虽然这三个子命令不直接属于性能分析的核心工具，但在特定场景下很有用：
+后台执行问题经常需要把声明、调度状态和功耗历史放在一起。下面的命令用于保存三个服务各自的当前视角。
 
-- `dumpsys package <package_name>` 可以查看 App 申请的所有权限、注册的 ContentProvider 和 Service。当怀疑一个 App 后台行为异常时，先看看它注册了什么后台组件。
-- `dumpsys alarm` 列出所有已注册的 Alarm，包括触发时间和目标 App。频繁触发的 Alarm 是后台功耗的常见来源。
-- `dumpsys jobscheduler` 显示当前所有 Job 的状态和执行历史。在分析后台任务调度是否合理时有用。
+```bash
+adb shell dumpsys package com.example.app
+adb shell dumpsys alarm
+adb shell dumpsys jobscheduler
+```
+
+- `package` 可核对安装用户、权限授予、组件、intent filter、版本和 package state。manifest 声明存在不代表组件此刻正在运行。
+- `alarm` 可核对已注册 alarm、batch、wakeup 与目标 UID。一次快照中的 alarm 数量不等于一段时间内的实际唤醒频率。
+- `jobscheduler` 可核对 pending/running job、约束和调度原因。执行耗时与历史完整度由该版本输出决定，功耗结论还要对照 batterystats 与 trace。
 
 ### 自定义 Service 的 dump 接口
 
-dumpsys 不只是系统服务的专利。任何应用或服务都可以实现自己的 `dump()` 方法，通过 `adb shell dumpsys <service_name>` 输出自定义的调试信息。
+普通应用 Service 不会自动注册成 ServiceManager 顶层服务，不能直接假设存在 `dumpsys <service_name>`。应用可重写 `Service.dump()`，由 ActivityManager 的 client dump 路径调用；平台 Binder 服务则在有权限注册到 ServiceManager 后直接响应 `dumpsys`。
 
-对于系统服务，在 AOSP 中实现 dump 只需要重写 `Binder.dump()` 方法。对于应用内部的 Service，可以通过 `adb shell dumpsys activity service <package_name>/<service_class>` 触发 Service 的 `dump()` 回调。
+下面的 Java 示例用于给一个已经运行的应用 Service 暴露有限状态。
 
-MTK/高通等厂商的定制系统服务中广泛使用了这个机制。例如 MTK 的 `perfboost` 服务就实现了 dump 接口，可以通过 `adb shell dumpsys perfboost` 查看当前的 CPU/GPU 频率策略和 boost 配置。在做平台级性能调试时，这类厂商自定义 dump 往往能直接给出关键线索。
+```java
+public final class SyncService extends Service {
+    private final AtomicInteger pendingCount = new AtomicInteger();
 
-## 常见问题与误区
+    @Override
+    protected void dump(
+            FileDescriptor fd, PrintWriter writer, String[] args) {
+        writer.println("pendingCount=" + pendingCount.get());
+    }
 
-**"dumpsys 输出太多，不知道看哪里"**——这是新手最常见的问题。正确做法是先明确分析目标，再选择对应的子命令。分析内存看 `meminfo`，分析卡顿看 `gfxinfo`，分析 ANR 优先看 `activity exit-info`，`lastanr` 只做遗留兜底，分析功耗看 `batterystats`。不要一上来就执行 `adb shell dumpsys` 不带参数——那会输出所有服务的 dump，几千行文本，几乎不可读。
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+}
+```
 
-**"gfxinfo 的 Janky frames 总是很多，是不是系统有问题"**——Janky frames 的判定标准是超过一个 VSync 周期。在 120Hz 设备上，超过 8.33ms 就算 Jank。一些合理的长帧（如页面切换时的布局重建）也会被计入。关注 Janky frames 占比而不是绝对值，如果占比低于 5%，通常不需要优化。
+下面的命令中，`-c` 必须写在 `service` 子项之前，它让 ActivityManager 进入应用进程调用 `Service.dump()`。
 
-**"dumpsys meminfo 显示的内存和 Android Studio Profiler 不一样"**——两者统计口径不同。dumpsys meminfo 报告的是操作系统视角的 PSS/USS（包含共享库按比例分摊），而 Android Studio Profiler 报告的是 Java Heap 的分配量（只统计 ART 管理的对象）。两者互为补充，不能互相替代。
+```bash
+adb shell dumpsys activity -c service \
+  com.example.app/.SyncService
+```
 
-**"dumpsys batterystats 就够了，不需要 Battery Historian"**——batterystats 的原始输出是一堆数字和时间戳，几乎不可能直接从中发现功耗问题的根因。Battery Historian 的可视化图表可以直观展示 CPU 唤醒、wakelock、网络活动等事件与电量下降的对应关系，这是纯文本做不到的。
+Android 17 的 [`ActiveServices.ServiceDumper.dumpWithClient()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java) 通过 `IApplicationThread.dumpService()` 把请求送到应用主线程，`ActivityThread` 再调用 Service 实例。Service 未运行、主线程阻塞或组件过滤不匹配时，客户端内容不会出现。
+
+dump 实现应先复制少量状态，再释放业务锁并格式化输出。不要在回调中等待网络、扫描大目录、打印 token/帐号/用户内容，或持有核心锁执行长时间 I/O。面向自动化的字段要有版本号、明确单位和稳定键名；平台服务可按 `PriorityDumper` 或 proto 提供机器读取入口。
+
+## 取证时常犯的错误
+
+- 直接执行无参数 `dumpsys`：它会顺序调用大量服务，每个服务默认可等待 10 秒，输出和扰动都很大。用 `-l` 找服务，再请求子项。
+- 只保存 grep 结果：display、pid、Window 标题、统计起点和上下文一旦丢失，字段很难解释。原始输出作为附件，grep 只用于现场浏览。
+- 把文本字段当稳定 API：dump 格式会随平台和厂商分支变化。脚本按 header/section 解析，支持 proto 的服务优先保存 proto，并记录 build fingerprint。
+- 用一份快照证明趋势：内存、CPU、alarm、job 和 Layer 都可能瞬时波动。固定 workload，重复采样，再用时间工具确认。
+- 把 `gfxinfo` 的分类名当根因：`Slow bitmap uploads` 是历史输出名，`Slow issue draw commands` 也没有区分 CPU、GPU 与 fence。两者都是 trace 入口。
+- 把 `dumpsys meminfo` 与 Android Studio Memory Profiler 强行对齐：前者按 OS 页和 memtrack 归组；后者会随 recording 类型呈现 Java/Kotlin allocation、native allocation 或进程内存类别。采样范围、时刻和口径不同，差值本身不构成 bug。
+- 把 batterystats 估算当功率计：估算归属、系统事件和 power rails 各有边界，耗电回归要用同条件 A/B 与可测量能量。
+
+## 采集复核清单
+
+- 命令、参数顺序、采集时间和 build fingerprint 是否已保存？
+- 输出对应哪个 PID、user、display、Window 或 Layer？
+- 统计是当前快照、最近采样窗口、环形缓冲，还是 since-reset 累计值？
+- reset、`--enable full-wake-history` 等有状态操作是否已记录并恢复？
+- PSS、frame deadline、present、wakelock 和 CPU 百分比的单位与口径是否写清？
+- 结论是否有第二类证据：Perfetto、Winscope、HPROF、heapprofd、bugreport、tombstone 或功率测量？
+- 厂商字段是否和 AOSP 字段分开标注？
 
 ## 参考资料
 
-- AOSP 源码：`frameworks/native/cmds/dumpsys/dumpsys.cpp`
-- AOSP 源码：`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`（dump 方法）
-- AOSP 源码：`frameworks/base/services/core/java/com/android/server/wm/Task.java`、`ActivityRecord.java`（现代 Task / Activity 栈结构）
-- AOSP 源码：`frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`（dump / `--frontend` / `--hwclayers` / `--latency`）
-- AOSP 源码：`frameworks/native/services/surfaceflinger/FrontEnd/LayerSnapshot.h`（Frontend 快照结构）
-- AOSP 源码：`frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java`（分显示器焦点状态）
-- AOSP 源码：`frameworks/base/libs/hwui/JankTracker.cpp`（`FrameDeadline` 与 `kMissedDeadline` 判定）
-- AOSP 源码：`frameworks/base/libs/hwui/service/GraphicsStatsService.cpp`（`Number Frame deadline missed` 输出）
-- 官方文档：[Investigate RAM usage](https://developer.android.com/studio/profile/investigate-ram)
-- 官方文档：[Profile GPU Rendering](https://developer.android.com/studio/profile/dev-options-rendering)
-- 官方文档：[Battery Historian](https://developer.android.com/studio/profile/battery-historian)
+- [dumpsys 命令实现（AOSP `android-17.0.0_r1`）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/dumpsys/dumpsys.cpp)
+- [ActivityManagerService（AOSP `android-17.0.0_r1`）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
+- [Process OOM constants（AOSP `android-17.0.0_r1`）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/psc/Constants.java)
+- [HWUI FrameInfo](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/FrameInfo.h)、[JankTracker](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/JankTracker.cpp) 与 [ProfileData](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/ProfileData.cpp)
+- [WindowManagerService（AOSP `android-17.0.0_r1`）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowManagerService.java)
+- [BatteryStatsService（AOSP `android-17.0.0_r1`）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java)
+- [SurfaceFlinger](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) 与 [FrontEnd 源码目录](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/)
+- [Android Developers：Investigate RAM usage](https://developer.android.com/studio/profile/investigate-ram)
+- [Android Developers：Slow rendering](https://developer.android.com/topic/performance/vitals/render)
+- [Android Developers：Battery Historian](https://developer.android.com/topic/performance/power/battery-historian)
+- [Android Developers：Power Profiler](https://developer.android.com/studio/profile/power-profiler)
 - 官方文档：[SurfaceFlinger and WindowManager](https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager)
