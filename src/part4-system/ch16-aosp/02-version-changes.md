@@ -3,26 +3,48 @@ title: "各 Android 版本性能变更追踪"
 chapter: "16.2"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-04-04"
-last_verified: 2026-06-29
-last_verified_against: AOSP android-17.0.0_r1 PerformanceHintManager / HintManagerService / IHintManager / packages/modules/NeuralNetworks / hardware/interfaces/power/aidl
-confidence: medium
+last_verified: 2026-07-30
+last_verified_against: AOSP android-17.0.0_r1 / Android 12-17 behavior changes / Android 17 API 37 reference / android17-6.18-2026-06_r6
+confidence: high
 sources:
   - type: official
-    path: "developer.android.com/about/versions/12/behavior-changes-12"
+    path: "https://developer.android.com/about/versions/12/behavior-changes-12"
   - type: official
+    path: "https://developer.android.com/about/versions/12/behavior-changes-all"
   - type: official
+    path: "https://developer.android.com/about/versions/13/features"
   - type: official
+    path: "https://developer.android.com/about/versions/14/behavior-changes-all"
   - type: official
+    path: "https://developer.android.com/about/versions/14/behavior-changes-14"
   - type: official
+    path: "https://developer.android.com/about/versions/15/behavior-changes-15"
   - type: official
+    path: "https://developer.android.com/about/versions/16/features"
   - type: official
+    path: "https://developer.android.com/about/versions/16/behavior-changes-16"
   - type: official
+    path: "https://developer.android.com/about/versions/17/release-notes"
   - type: official
+    path: "https://developer.android.com/about/versions/17/behavior-changes-17"
   - type: official
+    path: "https://developer.android.com/about/versions/17/behavior-changes-all"
   - type: official
+    path: "https://developer.android.com/about/versions/17/changes/messagequeue"
   - type: official
+    path: "https://developer.android.com/reference/android/os/ProfilingManager"
   - type: official
-  - type: blog
+    path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/PerformanceHintManager.Session"
+  - type: official
+    path: "https://source.android.com/docs/core/architecture/16kb-page-size/16kb"
+  - type: official
+    path: "https://source.android.com/docs/core/interaction/neural-networks"
+  - type: source
+    path: "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc"
+  - type: source
+    path: "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java"
 tags: ['version-changes', 'behavior-changes', 'api-evolution', 'migration', 'performance-api']
 related_chapters: ["1.6", "2.9", "4.6", "5.7", "6.4", "9.2", "13.1", "14.7"]
 task6_state: reviewed
@@ -86,633 +108,356 @@ last_task2b_by: openclaw-task2b
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么要关注版本变更
+## 为什么版本号必须进入性能结论
 
-每个 Android 版本发布时，开发者注意力通常集中在新 API 和新功能上。但影响 App 性能表现的，往往是那些藏在 Behavior Changes 文档角落里的"小字"——后台执行限制变多了、前台服务的超时变短了、某个性能 API 的行为改了。如果你的 App 还在用旧版本的假设跑在新系统上，性能表现可能在你不知不觉中退化。
+同一个 APK 在两个系统版本上可能走入不同的调度、进程管理和运行时路径。`targetSdkVersion` 又会单独开启一部分兼容性变更。因此，“Android 17 上发生”还不足以描述问题；性能记录至少要包含设备系统版本、`targetSdkVersion`、主线模块版本和内核版本。
 
-这一节不是简单罗列 Release Notes（你可以直接去 developer.android.com 看）。我们要做的是把这些变更**按对性能的实际影响**组织起来，告诉你在分析性能问题时，哪些版本行为差异是你需要考虑的变量。
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台上限。Android 17 对应的新 GKI 分支是 6.18，本文核验内核锚点为 `android17-6.18-2026-06_r6`。Android 17 设备仍可能采用平台支持期内的较早内核分支，看到 Android 17 不能反推设备必然运行 6.18。
 
-本章按两条线展开：先按版本走一遍性能相关的关键变更（从 Android 12 到 Android 17），再按主题（后台限制、性能 API、废弃 API、迁移策略）横向梳理，方便你带着具体问题来查。
+下面的“适用范围”分为两类：
 
-## Android 12（API 31）：后台执行限制增多
+- **所有 App**：只要运行在该系统版本上就受影响，通常与 `targetSdkVersion` 无关。
+- **目标版本变更**：只有 App 将 `targetSdkVersion` 提升到对应 API 后才启用。
 
-Android 12 在性能方面的影响，主要集中在**后台执行限制**和**前台服务约束**上。这些变化通常不提升 App 运行速度，但会改变它"在后台能做多少事"。
+| 版本 | 性能排查时优先关注 | 适用范围 |
+| --- | --- | --- |
+| Android 12 / API 31 | 后台前台服务、精确闹钟、通知跳板 | 多数为 target 31 |
+| Android 13 / API 33 | 通知权限、文本断字、FrameTimeline | 权限受 target 影响，渲染 API 为能力项 |
+| Android 14 / API 34 | 缓存进程资源、前台服务类型、JobScheduler ANR | 同时包含所有 App 与 target 34 |
+| Android 15 / API 35 | ProfilingManager、启动信息、ADPF 会话扩展、16 KB 页 | API 能力与 target 35 行为并存 |
+| Android 16 / API 36 | 触发式 Profiling、作业诊断、CPU/GPU headroom、大屏适配 | API 能力与 target 36 行为并存 |
+| Android 17 / API 37 | 无锁 MessageQueue、分代 CMC、新 ProfilingTrigger、App 内存限制 | 同时包含所有 App 与 target 37 |
 
-### 后台启动前台服务被禁止
+## Android 12（API 31）：后台执行边界收窄
 
-从 Android 12 开始，App 在后台运行时一般不能再启动前台服务（Foreground Service）。如果强行调用 `startForegroundService()`，系统会抛出 `ForegroundServiceStartNotAllowedException`。App 不能再依赖后台服务来维持长时间运行的性能监控或数据上传任务。
+### 后台启动前台服务
 
-替代方案是使用 `WorkManager`。对于需要在后台执行的性能分析任务（如定期采样 CPU 使用率、上报 ANR 统计），`WorkManager` 的约束调度机制是更合适的方案，因为它与系统的 Doze 模式和 App Standby Bucket 配合工作，不会触发系统限制。
+运行在 Android 12 及以上且 target 31 的 App，从后台启动前台服务时会受到限制。未命中官方豁免条件时，`startForegroundService()` 会抛出 `ForegroundServiceStartNotAllowedException`。这会改变后台采集、上传和周期维护任务的可达性，不能简单解释成任务“变慢”。
 
-### 精确闹钟需要权限
+迁移方案要按任务语义选择：
 
-Android 12 要求 App 声明 `SCHEDULE_EXACT_ALARM` 权限才能设置精确闹钟。如果你的性能监控框架使用 `AlarmManager.setExact()` 来定时采集数据，在 Android 12+ 上需要检查这个权限是否已授予。对于大多数性能分析场景，`setAndAllowWhileIdle()` 或 `WorkManager` 的周期任务已经够用，不需要精确闹钟。
+- 可延迟、受约束的持久工作交给 WorkManager。
+- 必须尽快执行且符合配额条件的短任务可以评估 expedited work。
+- 用户明确发起的大文件传输应评估相应系统版本提供的用户发起数据传输机制。
+- 需要持续感知的设备类场景还要评估 Companion Device Manager 等专用 API。
 
-### 通知跳板被禁用
+WorkManager 不能替代所有前台服务；持续导航、媒体播放、通话等用户可感知工作仍有各自的前台服务类型和运行条件。
 
-Android 12 禁止通过通知的 `PendingIntent` 启动 Service 或 BroadcastReceiver，再从这些组件中启动 Activity（即"通知跳板"）。如果你的 App 使用这种方式在通知点击后跳转到性能分析结果页面，需要改为直接在通知的 `PendingIntent` 中使用 `Activity` intent。
+### 精确闹钟
 
-### App 休眠
+target 31 的 App 使用精确闹钟时，需要声明 `SCHEDULE_EXACT_ALARM` 并检查特殊应用访问状态。周期遥测通常允许时间窗口，优先采用非精确闹钟或 WorkManager。只有业务语义要求精确触发时，才接受权限、配额和省电策略带来的成本。
 
-长时间不使用的 App 会被系统重置权限并进入休眠状态。这对性能分析框架意味着：如果你的 App 被休眠了，它注册的所有 `JobScheduler` 任务和 `AlarmManager` 闹钟都会被取消。在 Perfetto 中，你会看到被休眠 App 的进程完全消失，所有后台活动停止。
+Android 14 又调整了新安装 App 的默认授权状态。排查闹钟延迟时，要同时记录安装来源、授权状态和目标版本。
 
-### Stretch Overscroll
+### 通知跳板
 
-Android 12 将过度滚动（overscroll）效果从旧的 Glow 效果改为 Stretch（拉伸）效果。如果你在 Trace 中看到滚动边缘有额外的渲染工作，部分原因可能是新的 Stretch 动画计算。这个变化本身的性能开销可以忽略。但如果你的 App 自定义了 overscroll 行为，需要注意新效果可能额外触发 `draw()`。
+target 31 的 App 不能通过通知启动 BroadcastReceiver 或 Service，再由中间组件启动 Activity。通知点击应直接使用指向 Activity 的 `PendingIntent`。迁移后，冷启动链路会少一个中间组件；收益大小取决于原有实现，不能预设固定时延。
 
-### Game Mode API
+### Stretch Overscroll 与性能提示
 
-Android 12 引入了 Game Mode API，允许游戏根据用户选择的模式（性能优先/省电优先）调整渲染策略。这是 Android Dynamic Performance Framework（ADPF）的起点。如果你的游戏支持 Game Mode，可以在不同模式下对比 Perfetto Trace，观察 CPU 频率和帧时间的变化。
+Android 12 为所有 App 引入 stretch overscroll。自定义滚动容器若自行处理边缘效果，需要检查重复拉伸、额外绘制和触摸反馈一致性。
 
-## Android 13（API 33）：通知权限与 ART 优化
+`PerformanceHintManager` 也在 API 31 提供公开入口，应用可用线程组、目标工作时长和实际工作时长向系统表达持续负载。它属于 ADPF 的 CPU 性能提示路径，与 Game Mode 是两套 API。Game Mode 描述游戏运行偏好，不能代替每帧工作时长反馈。
 
-Android 13 的性能相关变更集中在**通知权限**、**ART 运行时优化**和**JobScheduler 改进**三个方面。
+## Android 13（API 33）：权限与帧标识能力扩展
 
 ### 运行时通知权限
 
-Android 13 引入了 `POST_NOTIFICATIONS` 运行时权限。如果你的性能监控框架通过通知栏展示实时性能数据（如 FPS 计数器、内存使用量），在 Android 13+ 上需要先获取这个权限。用户拒绝后，通知不会展示，但你的代码不会崩溃——只是数据推送变得无声无息。
+Android 13 引入 `POST_NOTIFICATIONS` 运行时权限。通知是前台服务可见性和后台任务反馈的一部分，拒绝权限不等于前台服务可以省略通知义务。性能测试需要覆盖首次授权、拒绝、升级安装和重新授权，避免把通知流程差异计入启动或任务耗时。
 
-### ART 运行时更新
+### ART Mainline 更新
 
-Android 13 包含了 ART 运行时的性能优化，这些优化通过 Google Play 系统更新推送到 Android 12+ 的设备上。关键改进包括更快的类查找和改进的垃圾回收调度。这些优化是全局性的，不需要 App 做任何修改就能受益。在 Perfetto 中，你可能会观察到 GC 事件的持续时间略有减少。
+Android 13 继续强化 ART 的 Mainline 更新路径。运行时实现可以随 Google Play 系统更新变化，设备的 Android 大版本相同也不保证 ART 构建完全相同。比较启动、编译或 GC 时，应记录 ART 模块版本，并避免将一次设备观测写成全平台结论。
 
-### JobScheduler 预取优化
+### 文本断字与 FrameTimeline
 
-Android 13 改进了 `JobScheduler` 的预取（prefetch）任务调度。系统会尝试预测 App 的下一次启动时间，并在此之前的合适窗口执行 prefetch 任务。如果你的 App 使用 prefetch 任务来预热缓存或预加载资源，这个改进意味着预热操作更有可能在用户实际启动 App 之前完成，从而减少冷启动耗时。
+Android 13 优化了断字实现，官方文档给出的上限描述是“最多约 200%”。开发者可按排版需求选择 `fullFast` 或 `normalFast`。该百分比来自平台说明，不代表任意文本、字体和语言都能复现；正文排版性能仍要用目标语料测量。
 
-### 断字性能大幅提升
+Choreographer 和 NDK `ASurfaceControl` 在 Android 13 获得 FrameTimeline 相关能力。一个应用帧可能对应多个 timeline，Vsync ID 可以把 App 侧帧工作与 SurfaceFlinger、显示流水线中的同一帧关联起来。排查卡顿时，应以帧标识对齐各阶段，少用时间戳邻近关系猜测归属。
 
-Android 13 将 `TextView` 的断字（hyphenation）性能提升了约 200%。如果你的 App 之前因为断字开销大而禁用了断字功能，Android 13+ 上可以重新启用，对渲染性能的影响已经微乎其微。在 Trace 中，这表现为 `measure()` 阶段中文字布局相关操作的耗时减少。
+## Android 14（API 34）：缓存进程和前台服务约束
 
-### Choreographer API 的关键里程碑
+### 缓存进程的资源限制
 
-Android 13 在 Choreographer 的演进中是一个重要节点。它引入了 `Choreographer.VsyncCallback` 和 NDK 端的 `AChoreographer_postVsyncCallback`，允许 App 接收更详细的帧时间信息。`AChoreographerFrameCallbackData` 负载还提供了多个候选帧时间线（frame timelines），App 可以根据渲染截止时间和期望呈现时间选择合适的时间线。
+Android 14 对所有 App 加强缓存进程管理。进程进入 cached 状态后，系统会在较短时间内限制其后台工作；动态注册的广播也可能在进程离开 cached 状态后再投递。缓存进程中的线程、网络循环或定时器不应被设计成可靠执行机制。
 
-在 Android 13+ 上，App 可以在渲染截止时间过近时动态简化渲染（比如跳过某些非关键绘制），而不必总是努力在下一个 VSync 前完成所有工作。这个能力是后续版本中 Frame Pacing 和自适应刷新率的基础。
+cached、frozen 和 killed 是三种不同状态。线程暂时没有获得 CPU 时间，不能单独证明进程已经冻结；要结合 ActivityManager 状态、freezer 相关系统信息和进程存活证据判断。
 
-## Android 14（API 34）：冻结缓存应用与前台服务类型
+### 前台服务类型
 
-Android 14 对后台进程管理做了迄今为止最大的调整——**冻结缓存应用**，同时对前台服务增加了类型声明要求。
+target 34 的 App 必须为前台服务声明符合用途的类型及对应权限。漏掉类型会在 `startForeground()` 时触发 `MissingForegroundServiceTypeException`，不满足运行时前置条件则可能触发 `SecurityException`。
 
-### 缓存应用冻结
+Android 14 新增 `shortService` 等类型。`shortService` 的运行窗口约为 3 分钟，超时后系统调用 `Service.onTimeout()`，服务未及时停止会触发 ANR。它适合短而不可延后的用户可感知工作，不适合无限续期的后台循环。
 
-Android 14 引入了对缓存应用（cached app）的冻结机制。当 App 进入缓存状态一段时间后，系统会冻结其进程，使其完全不能使用 CPU。据 Google 公开数据，这一机制使缓存应用的 CPU 占用降低了约 50%。
+### JobScheduler 回调超时
 
-如果 App 在后台有周期性工作（如定时采样、日志上报），Android 14+ 上这些工作会被冻结。你需要在 Trace 中看到 App 进程从 "Running" 变为 "Sleeping" 再到被冻结（frozen 状态），这不是 bug，是系统行为。
-
-冻结机制配合广播队列化（queued broadcasts）一起工作：缓存 App 注册的上下文广播会被排队，在 App 回到前台时一次性投递。如果你依赖广播来触发性能数据采集，在 Android 14+ 上这些广播可能延迟到 App 回到前台才投递。
-
-### 前台服务必须声明类型
-
-Android 14 要求每个前台服务声明至少一个 `foregroundServiceType`，并请求对应的权限。这个变化对性能分析工具尤其重要：如果你的 App 使用前台服务来保持性能数据采集（如持续 Perfetto 抓取），需要选择合适的服务类型。常见选择是 `specialUse`（需要在 Google Play Console 中说明理由）或 `dataSync`（但 Android 15 开始有 6 小时限制）。
-
-还有个类型值得留意：`shortService`：它有严格的大约 3 分钟生命周期限制。超时后系统会调用 `Service.onTimeout()`，如果 App 没有在短时间内调用 `stopSelf()`，会触发 ANR。这个机制是全新的——以前前台服务没有这种硬超时。
-
-### JobScheduler 对 ANR 的惩罚
-
-Android 14 引入了新的限制：如果一个 App 的 `JobService` 在 `onStartJob()`、`onStopJob()` 或 `onBind()` 中反复导致 ANR，系统会将该 App 的所有 Job 放入受限的 standby bucket。你的后台任务执行窗口会被大幅压缩。如果你的性能分析框架使用 `JobScheduler`，需要确保 `onStartJob()` 在主线程上的工作量极小，耗时操作放到后台线程。
+target 34 的 App 若在 `JobService.onStartJob()` 或 `onStopJob()` 中阻塞主线程，系统会以 ANR 处理。Android 14 对所有 App 还会把多次 JobScheduler ANR 计入受限 standby bucket 的判断。回调应快速返回，耗时工作转移到合适的执行器，并正确处理停止信号。
 
 ### 非线性字体缩放
 
-Android 14 支持字体缩放至 200%，但对大字号采用非线性缩放——文本越大，缩放比例越小。如果你的 App 在性能分析中关注布局耗时，需要知道：200% 字体缩放不等于所有文本面积翻倍。非线性缩放减少了极端字号下的布局计算量，但也意味着你不能简单地用线性关系估算字体缩放对布局性能的影响。
+Android 14 将字体最大缩放提高到 200%，并采用非线性缩放。大字号文本增长更明显，已经较大的文本增长较缓。性能测试应同时检查布局重排、文本测量次数、截断和滚动范围，不能把缩放后的布局抖动归因于绘制器本身。
 
-## Android 15（API 35）：ADPF 深化与 ProfilingManager 诞生
+## Android 15（API 35）：进程内 Profiling 与 16 KB 页支持
 
-Android 15 引入了两个会改变性能分析工作流的 API：**ProfilingManager** 和 **ApplicationStartInfo**，同时继续深化 ADPF。
+### ProfilingManager
 
-### ProfilingManager：App 内性能数据采集
+`ProfilingManager` 在 API 35 加入公开 SDK。App 可以通过 `requestProfiling()` 请求 Java heap dump、heap profile、stack sampling 或 system trace，并通过监听器接收结果。仅注册监听器不会开始采集；原文缺少请求调用，会让示例停在“等待一个从未发起的结果”。
 
-Android 15 首次引入 `ProfilingManager` API。在此之前，获取 Perfetto trace 或 heap dump 需要通过 `adb` 命令或 `Debug` 类的方法，只能在开发阶段使用。`ProfilingManager` 让 App 可以在运行时请求系统采集 profiling 数据，包括 Java heap dump、stack sample 和 system trace。
+它适合在用户同意和产品采样策略允许的场景中取得现场数据。系统仍会执行速率限制，并可能拒绝请求。调用方应把“请求成功提交”“收到结果”“超时或失败”记录为不同状态。
 
-这个 API 更适合做**线上性能诊断**。你可以在 App 的性能监控框架中集成 `ProfilingManager`，当检测到异常指标（如帧时间突然飙高）时，自动触发一次 trace 采集。采集到的数据保存在 App 的 data 目录，可以在后续启动时上传分析。
+### ApplicationStartInfo
 
-```java
-// API 35 基础用法：手动触发
-ProfilingManager pm = getSystemService(ProfilingManager.class);
-pm.registerForAllProfilingResults(
-    Executors.newSingleThreadExecutor(),
-    result -> {
-        // result.getResultFilePath() 包含 trace 文件路径
-        // 上传或本地分析
-    }
-);
-```
+`ApplicationStartInfo` 在 API 35 提供进程启动原因、启动类型、时间点和启动状态等结构化信息。它能减少只靠日志拼接启动阶段的歧义。时间点是否存在与启动路径有关，读取方必须检查返回数据，不能假设每个阶段都有值。
 
-### ApplicationStartInfo：启动分析的数据基础
+### ADPF 会话扩展
 
-Android 15 引入了 `ApplicationStartInfo` 类，提供 App 启动的详细信息，包括启动类型（冷/温/热）、各阶段耗时、启动时间戳等。这是启动优化分析（见 §8.2）的重要数据来源。
+API 35 为 `PerformanceHintManager.Session` 增加 `setPreferPowerEfficiency()` 和基于 `WorkDuration` 的 `reportActualWorkDuration()`。前者表达功耗优先偏好，后者可以报告更丰富的工作时长信息。二者都是提示，设备是否支持、系统如何响应、频点如何变化由实现和当前热状态决定。
 
-之前，开发者需要手动在 `Application.onCreate()` 和各 Activity 的生命周期中打点来测量启动耗时。`ApplicationStartInfo` 提供了系统视角的启动数据，包含了从进程创建到 `Application.onCreate()` 之前的系统开销（如 Zygote fork、ClassLoader 初始化），这些是手动打点无法覆盖的。
+### 前台服务时间配额
 
-### ADPF 能力扩展
+target 35 的 App 在后台运行 `dataSync` 和 `mediaProcessing` 前台服务时，每种类型共享 24 小时内 6 小时的总配额。用户把 App 带到前台会重置计时器。配额耗尽后，系统调用 `Service.onTimeout(int, int)`；服务只有很短的停止窗口。
 
-Android 15 在 ADPF 中引入了两个重要增强：
+这里的 6 小时按同一类型的全部服务累计，不能按每个 Service 实例分别计算。迁移时需要盘点并发服务、重启路径和用户回到前台的状态转换。
 
-第一，hint session 支持**省电模式**。App 可以标记某些 hint session 为省电优先，系统会降低对应线程的 CPU 频率目标。这适用于长时间运行的后台计算任务（如视频编码、大数据处理），在不需要极致性能时可以显著减少功耗。
+### 16 KB 页面大小
 
-第二，hint session 可以**同时报告 GPU 和 CPU 工作时长**。在此之前，ADPF 主要关注 CPU 调度。现在 App 可以告诉系统 GPU 端的负载情况，系统据此同时调整 CPU 和 GPU 频率，实现更均衡的性能-功耗权衡。
+Android 15 开始支持 16 KB 页大小的 arm64 设备。它在 Android 15 并未成为所有设备默认配置。含原生代码的 APK 需要检查 ELF 段对齐、打包对齐、预编译依赖和运行期页大小假设。
 
-### 前台服务时间限制
+页大小变化会影响页表、缺页、映射粒度和小对象驻留开销，方向取决于工作负载。只看到系统版本无法判断设备页大小，应用应通过运行期 API 或系统信息识别，并在 4 KB 与 16 KB 环境分别测量。
 
-Android 15 对 `dataSync` 和 `mediaProcessing` 类型的前台服务引入了 6 小时的时间上限。超过这个时间后，系统会调用 `Service.onTimeout(int, int)`；服务需要在回调里调用 `stopSelf()` 或停止前台状态收尾，否则会进入前台服务超时错误。若配额已经耗尽，继续启动同类型前台服务会抛出 `ForegroundServiceStartNotAllowedException`。如果性能数据同步任务依赖 `dataSync` 前台服务，需要设计成能在 6 小时内完成，或者改用 `WorkManager` 分批处理。
+## Android 16（API 36）：触发式 Profiling 与诊断 API
 
-### 16KB 页面大小支持
+### 触发式 Profiling
 
-Android 15 开始支持 16KB 内存页面大小。这对 App 性能有几个影响：内存分配更粗粒度（每个页 16KB 而不是 4KB），但 TLB miss 减少，大内存访问性能可能提升。如果你的 App 使用 NDK 库，需要重新编译以支持 16KB 页面对齐。未重新编译的库在 16KB 页面设备上可能导致内存使用增加和性能退化。
+`ProfilingManager.addProfilingTriggers()` 在 API 36 加入。App 可以注册由系统事件触发的采集规则，API 36 的公开触发类型包括 ANR 和 `APP_FULLY_DRAWN`。36.1 又增加运行中 trace 请求、强制停止、最近任务划掉和任务管理器停止等触发类型。
 
-## Android 16（API 36）：系统触发式 Profiling 与自适应应用
+触发式采集仍受系统速率限制和设备条件约束。它适合补充低复现率现场问题，不能保证每次事件都生成产物。
 
-Android 16 在性能分析工具链上的突破比在性能机制本身更大。它引入了**系统触发式 Profiling**、**ApplicationStartInfo 增强**和**自适应应用**要求，同时带来了 FrameMetrics 和 ADPF 的增量改进。
+### 启动、帧与作业诊断
 
-### 系统触发式 Profiling
+`ApplicationStartInfo.getStartComponent()` 在 API 36 加入，用于标识触发启动的组件类型。启动性能数据可以按 Activity、Service、BroadcastReceiver、ContentProvider 等入口分组，避免把不同启动原因混在同一分位数中。
 
-Android 16 把 `ProfilingManager` 从手动抓取扩展到系统触发式采样。App 先通过 `registerForAllProfilingResults()` 注册全局结果监听，再用 `addProfilingTriggers(List<ProfilingTrigger>)` 声明自己关心的系统事件。API 36 公开的触发器包括 `TRIGGER_TYPE_ANR` 和 `TRIGGER_TYPE_APP_FULLY_DRAWN`；API 36.1 继续补入 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`、`TRIGGER_TYPE_KILL_FORCE_STOP`、`TRIGGER_TYPE_KILL_RECENTS` 和 `TRIGGER_TYPE_KILL_TASK_MANAGER`。`TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`、`TRIGGER_TYPE_APP_COMPAT` 与 `TRIGGER_TYPE_ANOMALY` 要到 API 37 才出现在公开参考页里，所以不能把它们写成 Android 16 的稳定接口。
+`FrameMetrics.FRAME_TIMELINE_VSYNC_ID` 也在 API 36 提供。它返回当前帧 timeline 的 Vsync ID，可用于关联 HWUI、SurfaceFlinger 和 Perfetto 中的帧记录。设备或窗口条件不支持时，分析工具应保留缺失值。
 
-```java
-// Imports are omitted.
-ProfilingManager pm = getSystemService(ProfilingManager.class);
+`JobScheduler.getPendingJobReasons()` 返回一个作业当前可能存在的多个等待原因，`getPendingJobReasonsHistory()` 返回近期约束变化。后台任务“没运行”时，先读取约束历史，再检查配额、网络、电量和待机状态，比仅看一次当前状态更可靠。
 
-pm.registerForAllProfilingResults(
-    getMainExecutor(),
-    result -> Log.d(
-        "Profiling",
-        result.getTriggerType() + " -> " + result.getResultFilePath())
-);
+### SystemHealthManager headroom
 
-pm.addProfilingTriggers(
-    List.of(
-        new ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANR)
-            .setRateLimitingPeriodHours(12)
-            .build(),
-        new ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN)
-            .setRateLimitingPeriodHours(12)
-            .build()
-    )
-);
-```
+Android 16 在 `SystemHealthManager` 提供 CPU 和 GPU headroom API。支持该能力的设备可以按时间窗口查询资源余量估计。返回值适合驱动画质、工作量或并发度的渐进调整，不能视作固定频率预算，也不能绕开 Thermal API。
 
-`addProfilingTriggers()` 不带 request-scoped callback，系统触发结果要靠 `registerForAllProfilingResults()` 接收。对于线上偶发 ANR 和启动路径抖动，这类结果比事后手工复现更接近现场。
+调用方需要遵守最小查询间隔，处理设备不支持和无可用样本，并对信号做平滑。按单次读数立刻切换重负载档位，容易形成振荡。
 
-### ApplicationStartInfo.getStartComponent()
+### 大屏自适应
 
-Android 16 在 `ApplicationStartInfo` 上新增了 `getStartComponent()` 方法，返回触发进程启动的具体组件类型（Activity / BroadcastReceiver / ContentProvider / Service / Other）。
+target 36 的 App 在最小宽度 600dp 及以上设备上，系统会忽略一部分方向、宽高比和可调整性限制。迁移重点包括窗口尺寸变化、配置变化、状态恢复和多窗口布局。尺寸变化是否重建 Activity 取决于清单和配置处理，不能写成每次 resize 都必然重建。
 
-启动优化需要先区分触发组件。
+target 36 还可以用 `PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY` 暂时退出该行为。target 37 会忽略这项临时退出配置，所以 Android 16 的迁移不能停留在兼容模式。
 
-多数开发者假设冷启动由 Activity 触发，但 ContentProvider 初始化（多个 SDK 各自注册的 ContentProvider）和 BroadcastReceiver 也会触发进程创建。不同触发路径的初始化逻辑和优化策略差异很大。
+### 预测性返回、定期任务与 edge-to-edge
 
-有了 `getStartComponent()`，你可以精确区分并分别优化每条启动路径。
+target 36 的 App 运行在 Android 16 及以上时，系统默认启用 back-to-home、cross-task 和 cross-activity 的预测性返回动画。旧的 `onBackPressed()` 不再收到调用，`KEYCODE_BACK` 也不再分发。AndroidX 返回分发器、平台返回回调和页面状态恢复都要一并测试；清单里的 `android:enableOnBackInvokedCallback="false"` 只适合作为临时退出手段。
 
-### 自适应应用：大屏强制可调整
+`ScheduledThreadPoolExecutor.scheduleAtFixedRate()` 也有 target 36 行为变化。进程离开有效生命周期而错过多个周期后，恢复时最多立即执行一个遗漏任务。依赖“恢复后补跑全部周期”的统计或维护逻辑需要改成显式计算缺口。
 
-Android 16 对大屏设备（smallest width ≥ 600dp）强制忽略 `screenOrientation`、`resizableActivity="false"`、`minAspectRatio`、`maxAspectRatio` 以及对应的 运行时 API（`setRequestedOrientation()` / `getRequestedOrientation()`）。
+Android 16 在本系统上禁用 target 36 App 的 `windowOptOutEdgeToEdgeEnforcement`。页面应正确消费 system bar、display cutout 和 IME insets。布局区域变化会影响测量、绘制和滚动范围，基准测试必须使用迁移后的最终布局。
 
-Activity 会因窗口尺寸变化更频繁地 recreate，这对性能有直接影响。如果你的 App 在配置变更时没有正确保存和恢复 UI 状态（通过 ViewModel + `rememberSaveable`），用户会感知到界面闪烁和数据丢失——这不只是功能 bug，也是响应速度的退化。
+## Android 17（API 37）：消息队列、GC 与现场诊断
 
-### Predictive Back 默认启用
+### target 37 的无锁 MessageQueue
 
-Android 16 将 Predictive Back（预测性返回）设为默认启用。系统会在用户手势进行中就开始准备目标 UI，这对 App 的响应速度提出了更高要求——你不能再等到 `onBackPressed()` 被调用时才准备返回动画，因为 Predictive Back 在手势阶段就需要目标 UI 的预览。
+运行在 Android 17 且 target 37 的 App 使用新的无锁 `MessageQueue` 实现。官方目标是减少锁竞争和漏帧。公开 API 语义保持兼容，依赖私有字段或方法反射的代码会暴露问题。
 
-新增的 `finishAndRemoveTaskCallback()` 和 `moveTaskToBackCallback()` 让 App 可以精确控制 back 手势在不同层级的行为。`PRIORITY_SYSTEM_NAVIGATION_OBSERVER` 优先级允许 App 观察（但不消费）系统级 back 事件，用于分析统计。
+兼容层仍保留 `mMessages` 字段，但新实现下该字段始终为 `null`，它不能反映队列是否为空。测试依赖需要升级：
 
-`onBackPressed()` 在 Android 16 中被进一步标记为废弃。如果你还在用旧 API，建议迁移到 `OnBackInvokedDispatcher`。
+- Espresso 使用 3.7.0 或以上版本。
+- Robolectric 使用 4.17 或以上版本，并从 `@LooperMode(LEGACY)` 迁移到 `@LooperMode(PAUSED)`。
+- 自研空闲判断改用公开同步机制或 Android 16 引入的 `TestLooperManager` 能力。
 
-### FrameMetrics 新增 FRAME_TIMELINE_VSYNC_ID
+可在 debuggable 构建上用兼容性开关提前测试 `USE_NEW_MESSAGEQUEUE`。测试范围要覆盖 Handler 密集场景、IdleHandler、同步屏障、测试框架空闲判断和依赖反射的 SDK。
 
-Android 16 在 `FrameMetrics` 中新增了 `FRAME_TIMELINE_VSYNC_ID` 字段。这个字段提供了一个 ID，将 HWUI 生成的帧与 SurfaceFlinger 中的时间线数据关联起来。之前要追踪一帧从 App 端到 SurfaceFlinger 的完整生命周期需要靠时间戳做模糊匹配，现在有了精确的关联 ID，帧分析会可靠得多。
+Android 17 对 target 37 App 还禁止通过反射或 JNI 修改 `static final` 字段。性能测试框架若依赖这种方式替换时钟、常量或单例，需要同步清理。
 
-### ADPF：SystemHealthManager 余量 API
+### ART 分代 Concurrent Mark-Compact
 
-Android 16 在 `android.os.health.SystemHealthManager` 中放入了 `getCpuHeadroom()` 和 `getGpuHeadroom()`。这组接口在 android-16.0.0_r1 里仍带 `@FlaggedApi(android.os.Flags.FLAG_CPU_GPU_HEADROOMS)`，设备不支持时会抛 `UnsupportedOperationException`，服务端暂时拿不到稳定估算时也可能返回 `Float.NaN`。返回值本身是 0 到 100 的 `float`，更适合做低频采样或场景切换时的热约束判断。
+Android 17 的 ART Concurrent Mark-Compact 支持分代 GC。年轻代对象通常存活时间短，平台可以用更频繁、成本较低的 young collection 处理这部分对象，再按条件执行更大范围回收。
 
-源码实现会同步调用 `IHintManager` 获取结果，调用路径带 binder 往返成本，不适合放在每帧热点路径里轮询。游戏或重计算场景可以把它当作降档辅助信号，再配合 FrameTimeline、Perfetto 和温控日志做交叉判断。
+这项变化不能和 userfaultfd 混为同一开关。Concurrent Mark-Compact 使用 userfaultfd 的演进早于 Android 17；Android 17 新增的是分代策略。分析时应区分 young/full collection、暂停阶段、并发标记时间、晋升量和回收后驻留集。
 
-### JobScheduler 配额优化
+分代回收也不保证每个 App 都降低暂停时间。对象存活率高、跨代引用多或堆压力大时，收益会变化。结论需要来自目标设备、目标 ART 构建和稳定负载。
 
-Android 16 调整了 `JobScheduler` 的配额计算方式，基于 App 的 standby bucket 和是否以前台服务启动来动态调整运行时间配额。新增的 `getPendingJobReasons()` 和 `getPendingJobReasonsHistory()` API 让开发者可以查询 Job 未执行的具体原因（如待机桶限制、电量不足、网络不可用等），不再只能靠猜测。
+### API 37 的 ProfilingTrigger
 
-## Android 17（API 37）：NN HAL 1.3 稳态与 ProfilingManager 异常检测
+Android 17 扩充系统触发式 Profiling：
 
-Android 17 的性能侧改动集中在 **ProfilingManager 触发器扩展** 和 **系统级 AI 异常检测**，NN HAL 本身仍维持 1.3 不变（自 Android 13 起的稳定状态）。下面把与 AI 推理直接相关的两条线拆开讲。
+| 触发类型 | 系统事件 | 产物或行为 |
+| --- | --- | --- |
+| `TRIGGER_TYPE_OOM` | App 抛出 OOM | Java heap dump |
+| `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | 因 CPU 过度使用被终止 | 运行中 system trace 的快照 |
+| `TRIGGER_TYPE_COLD_START` | `START_TYPE_COLD` 冷启动 | 新 system trace 与 stack sampling |
+| `TRIGGER_TYPE_ANOMALY` | 平台识别的异常事件 | 产物由异常类型决定 |
+| `TRIGGER_TYPE_APP_COMPAT` | 兼容性事件 | 对应触发结果 |
 
-### NeuralNetworks HAL 1.3 在 Android 17 的实际状态
+冷启动采集持续到 App 调用 `Activity.reportFullyDrawn()`，默认上限为 5 秒，并使用 discard buffer 保留较早事件。未调用 `reportFullyDrawn()` 会失去业务就绪边界，只能依赖超时停止。
 
-NN HIDL HAL 最高版本在 AOSP `android-17.0.0_r1` 中仍是 1.3，未发布 HIDL 1.4 或 2.0。`hardware/interfaces/neuralnetworks/aidl/` 同时存在；本段讨论的是 HIDL 1.3 与 NDK NNAPI 的兼容边界。HAL 接口族由四个文件组成：
+OOM 触发要求自定义 `Thread.UncaughtExceptionHandler` 调用默认异常处理器。若异常链被截断，系统触发无法完成，App 只能另行调用 `requestProfiling()` 请求 heap dump。
 
-- `hardware/interfaces/neuralnetworks/1.3/IDevice.hal`：设备能力声明（`getCapabilities_1_3`）、op 支持查询（`getSupportedOperations_1_3`）、model 准备入口（`prepareModel_1_3` / `prepareModelFromCache_1_3`）、driver-managed buffer 分配（`allocate`）
-- `hardware/interfaces/neuralnetworks/1.3/IPreparedModel.hal`：执行入口族——`execute_1_3`（异步）/ `executeSynchronously_1_3`（同步）/ `executeFenced`（fenced）
-- `hardware/interfaces/neuralnetworks/1.3/IExecutionCallback.hal` / `IFencedExecutionCallback.hal`：异步与 fenced 回调
-- `hardware/interfaces/neuralnetworks/1.3/types.hal`：`Capabilities` / `Model` / `Request` / `OutputShape` / `Timing` 等共用结构
+### App 内存限制
 
-NDK API（`packages/modules/NeuralNetworks/runtime/include/NeuralNetworks.h`，2492 行）是 **stable header**——第三方 native 代码依赖，**不允许修改 enum / 宏 / 函数签名 / 结构体布局**。其 `__NNAPI_INTRODUCED_IN` 标签最高到 API 31（NNAPI feature level 5），API 32-37 未继续新增 NDK 符号；Android 15 起多处入口标注 `__NNAPI_DEPRECATED_IN(35)`：
+Android 17 对所有 App 引入保守的 App 内存限制，但只在部分设备上实施。命中限制后，`ApplicationExitInfo` 的 reason 为 `REASON_OTHER`，description 包含 `MemoryLimiter:AnonSwap`。只按 reason 聚合会把它和其他 `REASON_OTHER` 混在一起。
 
-> API 27（Android 8.1）：基础 NNAPI
-> API 28（Android 9）：AHardwareBuffer 集成
-> API 29（Android 10）：Capabilities 向量化、quant8/16、float16、BURST、QHIGH-priority
-> API 30（Android 11）：Fenced execution、IF/WHILE、QoS priority、MeasureTiming
-> API 31（Android 12）：runtime feature discovery、input/output padding、preferred memory alignment / padding 查询
+平台提供 `am memory-limiter status`、`manual` 和 `ignore` 子命令用于受支持设备上的测试。线上诊断可以结合 `TRIGGER_TYPE_ANOMALY` 获取命中内存限制时的 heap dump，但仍要考虑采样和速率限制。
 
-Android 15 起 NNAPI NDK API 被官方标记 deprecated（[source.android.com/docs/core/interaction/neural-networks](https://source.android.com/docs/core/interaction/neural-networks)）：
+### Android 17 的 NPU 与 NNAPI 边界
 
-> Starting in Android 15, the NNAPI (NDK API) is deprecated. The Neural Networks HAL interface continues to be supported.
+Android 17 要求 target 37 的 App 在直接访问 NPU 时声明 `FEATURE_NEURAL_PROCESSING_UNIT`。这属于设备能力声明与访问边界，不能据此推导某个模型会自动提速。
 
-对 App 端的实际含义：**NNAPI HAL 仍是 vendor driver 的官方扩展点**，但 NDK 公共入口已经不再演进；Google 推荐的迁移路径是 [NNAPI Migration Guide](https://developer.android.com/ndk/reference/group/neural-networks)（指向 TensorFlow Lite delegate / LiteRT 路线）。§16.2 在版本变更梳理里首次明确这一边界对 AI 推理加速策略的影响。
+NNAPI NDK 从 Android 15 起已废弃，NN HAL 仍供系统和设备实现使用。NN HAL 1.3 也早于 Android 17。`android-17.0.0_r1` 中继续存在相关代码，只能证明兼容实现仍在源码树内，不能把旧接口写成 Android 17 新增能力。
 
-### Framework 端 compilation caching 的实现机制
-
-`packages/modules/NeuralNetworks/runtime/ExecutionPlan.cpp` 中的 `compile()`（行 105-135）是 framework 端编译入口，关键逻辑：
-
-```cpp
-if (device.isCachingSupported() && token->ok() &&
-    token->updateFromString(device.getName().c_str()) &&
-    token->updateFromString(device.getVersionString().c_str()) &&
-    token->update(&executionPreference, sizeof(executionPreference)) &&
-    token->update(&compilationPriority, sizeof(compilationPriority)) &&
-    updateTokenFromMetaData(token, metaData) &&
-    token->finish()) {
-    cacheToken = CacheToken{};
-    const uint8_t* tokenPtr = token->getCacheToken();
-    std::copy(tokenPtr, tokenPtr + cacheToken->size(), cacheToken->begin());
-}
-
-device.prepareModel(makeModel, preference, priority, deadline, cacheInfo, cacheToken,
-                    metaData, extensionNameAndPrefix);
-```
-
-CacheToken 由 framework 哈希组成包括：`device.getName()` + `device.getVersionString()` + `executionPreference` + `compilationPriority` + extension metadata + 已被 framework 在 SIMPLE/COMPOUND body 阶段哈希过的 op index。具体来说：
-
-- 同一 model + 同一 driver 同一执行偏好 → 直接复用 prepared model 文件
-- driver 升级到不同 versionString → 缓存失效，需重新编译
-- 同一个 app 在不同 SoC 上的 缓存不通用（device name 不同）
-
-HAL 接口约定 token 碰撞由 app 承担风险：
-
-> The driver cannot detect a collision; a collision will result in a failed execution or in a successful execution that produces incorrect output values.
-
-所以 app 选 cache token 时应"低碰撞概率"——典型做法是 hash(model id + version + driver package name)。
-
-### 对 AI 推理加速的"加速"在哪
-
-既然 HAL 1.3 不变、Android 17 的"加速"主要体现在以下四点：
-
-1. **driver 端缓存复用**：第二次起的 prepare 走 `prepareModelFromCache_1_3`，避免 NPU/GPU 端重编译（数十 ms~数 s 级）
-2. **fenced execution**：NNAPI execute 与 `SyncFence` 链结合，消除 CPU↔NPU/GPU 的 polling wait；适合流式推理（语音、相机帧）pipeline
-3. **burst execution**：app↔driver 进程间通信绕过 binder，改用 FMQ；单次 execute 通信开销从 ~100 μs 降到 ~10 μs
-4. **executeSynchronously_1_3**：driver 无需单独的 callback 通知机制，省去 thread 切换——HAL 层支持与 NDK 层独立，HAL 同步不强制 NDK 同步
-
-### Android 17 异常检测 trigger 与 AI 推理
-
-Android 17 的 ProfilingManager 公开参考页新增的 4 个 trigger（API 37）：
-
-- `TRIGGER_TYPE_COLD_START`：app 冷启动触发，附带 call stack sample + system trace
-- `TRIGGER_TYPE_OOM`：`OutOfMemoryError` 触发，返回 Java Heap Dump——对大模型推理 / KV cache 溢出场景特别有用
-- `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`：异常高 CPU 触发，返回 call stack sample
-- `TRIGGER_TYPE_ANOMALY`：**异常检测 service**，监视 binder spam、excessive memory usage；在系统强杀前回调 app，可用于 AI 推理的内存/算力异常自我诊断
-
-最后一个 trigger 与 AI 推理直接相关——它把"系统判定资源滥用 → 强杀"的单向路径变成"先通知 app → app 自报异常数据 → 再判定"的交互式流程。AI 推理 app 注册这个 trigger 后，可以在被 system 强杀前拿到 call stack + heap dump，反推推理 pipeline 哪一步异常（如 LLM 的 KV cache 持续增长触顶、端侧 diffusion 推理中某 layer 内存峰值溢出）。
-
-### HAL 接口签名（关键源码摘录）
-
-`IDevice.hal` 1.3（节选）：
-```hal
-interface IDevice extends @1.2::IDevice {
-    getCapabilities_1_3() generates (ErrorStatus status, Capabilities capabilities);
-    getSupportedOperations_1_3(Model model)
-        generates (ErrorStatus status, vec<bool> supportedOperations);
-    prepareModel_1_3(Model model, ExecutionPreference preference,
-                     Priority priority, OptionalTimePoint deadline,
-                     vec<handle> modelCache, vec<handle> dataCache,
-                     uint8_t[BYTE_SIZE_OF_CACHE_TOKEN] token,
-                     IPreparedModelCallback callback)
-        generates (ErrorStatus status);
-    prepareModelFromCache_1_3(OptionalTimePoint deadline,
-                              vec<handle> modelCache, vec<handle> dataCache,
-                              uint8_t[BYTE_SIZE_OF_CACHE_TOKEN] token,
-                              IPreparedModelCallback callback)
-        generates (ErrorStatus status);
-    allocate(BufferDesc desc, vec<IPreparedModel> preparedModels,
-             vec<BufferRole> inputRoles, vec<BufferRole> outputRoles)
-        generates (ErrorStatus status, IBuffer buffer, uint32_t token);
-}
-```
-
-`IPreparedModel.hal` 1.3 的执行入口族：
-```hal
-interface IPreparedModel extends @1.2::IPreparedModel {
-    execute_1_3(Request request, MeasureTiming measure, OptionalTimePoint deadline,
-                OptionalTimeoutDuration loopTimeoutDuration, IExecutionCallback callback)
-        generates (ErrorStatus status);
-    executeSynchronously_1_3(Request request, MeasureTiming measure,
-                             OptionalTimePoint deadline,
-                             OptionalTimeoutDuration loopTimeoutDuration)
-        generates (ErrorStatus status, vec<OutputShape> outputShapes,
-                   Timing timing);
-    executeFenced(Request request, vec<handle> waitFor, MeasureTiming measure,
-                  OptionalTimePoint deadline,
-                  OptionalTimeoutDuration loopTimeoutDuration,
-                  IFencedExecutionCallback callback)
-        generates (ErrorStatus status, handle syncFence);
-}
-```
-
-注：HAL 1.3 引入 `loopTimeoutDuration` 参数（HAL 1.2 及更早没有），约束 `OperationType::WHILE` 单次执行时长；上限 `LoopTimeoutDurationNs::MAXIMUM`，默认 `DEFAULT`。
-
-### 信息源（全部为一手）
-
-- `android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/neuralnetworks/1.3/IDevice.hal`
-- `android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/neuralnetworks/1.3/IPreparedModel.hal`
-- `android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/neuralnetworks/1.3/types.hal`
-- `android.googlesource.com/platform/packages/modules/NeuralNetworks/+/refs/tags/android-17.0.0_r1/runtime/include/NeuralNetworks.h`
-- `android.googlesource.com/platform/packages/modules/NeuralNetworks/+/refs/tags/android-17.0.0_r1/runtime/ExecutionPlan.cpp`
-- [source.android.com/docs/core/interaction/neural-networks](https://source.android.com/docs/core/interaction/neural-networks)
-- [developer.android.com/about/versions/17/features](https://developer.android.com/about/versions/17/features)
-- 关联 DeepResearch 报告：`DeepResearch/2026-06-14-android17-neuralnetworks-hal-inference-acceleration.md`
+对端侧推理做版本比较时，至少固定模型、delegate/runtime、驱动、量化方案、热状态和功耗窗口。编译缓存是否命中、burst execution 是否可用都要从目标实现和 trace 证据判断，不应填写通用微秒级收益。
 
 ## 新增性能 API 的演进脉络
 
-以上是按版本时间线梳理的关键变更。下面换个视角，按 API 家族纵向追溯 FrameMetrics、ProfilingManager、ADPF 和 Choreographer 的演进路径——这比零散的版本条目更能看出 Google 在每个性能领域的设计意图。
+| API | 加入版本 | 用途 | 使用边界 |
+| --- | --- | --- | --- |
+| `PerformanceHintManager` | API 31 | 线程组工作时长提示 | 提示不等于频点命令 |
+| FrameTimeline / Vsync ID 能力 | API 33 起扩展 | 跨渲染阶段关联帧 | 以设备和具体 API 可用性为准 |
+| `ProfilingManager.requestProfiling()` | API 35 | App 主动请求 profile | 有速率限制，注册监听器不会发起采集 |
+| `ApplicationStartInfo` | API 35 | 结构化启动信息 | 时间点和字段可能缺失 |
+| `Session.setPreferPowerEfficiency()` | API 35 | 表达功耗优先偏好 | 由系统决定响应 |
+| `ProfilingManager.addProfilingTriggers()` | API 36 | 注册系统事件采集 | 触发类型跨 36、36.1、37 扩展 |
+| `FRAME_TIMELINE_VSYNC_ID` | API 36 | 关联窗口帧与系统帧 | 缺失时保留 unknown |
+| CPU/GPU headroom | API 36 | 估计资源余量 | 设备可选，限制查询频率 |
+| Android 17 新 ProfilingTrigger | API 37 | 冷启动、OOM、异常 CPU 等现场数据 | 受事件条件和速率限制 |
 
-### FrameMetrics 演进
+API 级别检查只解决符号可用性。设备能力、服务是否存在、权限、配额和厂商实现仍要单独探测。
 
-`FrameMetrics` 在 Android 7.0（API 24）引入，提供了帧渲染各阶段的耗时数据。此后各个版本的改进如下：
+## Deprecated API 与替代路径
 
-在 Android 12-15 期间，`FrameMetrics` 类本身没有新增字段。但周边的渲染管线持续演进——Android 13 的 `Choreographer.VsyncCallback` 和 `FrameTimeline` 提供了更丰富的帧调度信息，Android 14 的缓存冻结减少了后台进程对帧渲染的干扰，Android 15 的 ADPF 省电模式让系统在调度时有了更多选择。
+### 返回手势
 
-Android 16 是 `FrameMetrics` 的一次实质更新：`FRAME_TIMELINE_VSYNC_ID` 字段让帧追踪跨越了 App↔SurfaceFlinger 的边界。配合 `Choreographer` 的多时间线选择（API 33 引入），开发者现在可以精确知道：我选了哪条时间线渲染这一帧，这一帧最终在 SurfaceFlinger 端是否按时合成。
+`Activity.onBackPressed()` 从 API 33 起废弃，时间点早于 Android 16。应用层优先使用 AndroidX `OnBackPressedDispatcher` 管理回调和生命周期；平台侧可按需求接入 `OnBackInvokedDispatcher`。预测性返回还要求界面状态在手势进行过程中可预览，单纯替换方法名不能完成迁移。
 
-### ProfilingManager 演进
+### WebView 强制深色
 
-`ProfilingManager` 是 Android 近几年在性能工具链上的重点投入。它的演进路径很清楚：
+Android 13 起，`WebSettings.setForceDark()` 对 target 33 App 的行为变化，并进入废弃路径。网页内容应通过 `prefers-color-scheme` 和 WebView 的算法深色策略配合。切换主题时要测量页面重排与重绘，避免在滚动中反复改动设置。
 
-**Android 15（API 35）**：基础 API。App 可以手动请求 heap dump、stack sample 和 system trace，采集数据保存在 App 的 data 目录。
+### NNAPI NDK
 
-**Android 16（API 36）**：系统触发式 profiling 进入公开 API。公开参考页里的 API 36 触发器包括 `TRIGGER_TYPE_ANR` 和 `TRIGGER_TYPE_APP_FULLY_DRAWN`。
+NNAPI NDK 从 Android 15 起废弃。新推理方案应评估目标运行时及其 delegate，并把模型兼容性、驱动覆盖和回退路径纳入测试。HAL 继续存在不代表 App 应继续新增对废弃 NDK API 的依赖。
 
-**Android 16 SDK 36.1**：触发器扩展到运行中 trace 请求和 kill 类事件，新增 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`、`TRIGGER_TYPE_KILL_FORCE_STOP`、`TRIGGER_TYPE_KILL_RECENTS` 和 `TRIGGER_TYPE_KILL_TASK_MANAGER`。
+### edge-to-edge 与 elegant text
 
-**Android 17（API 37）**：触发类型继续扩展，公开参考页新增 `TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`、`TRIGGER_TYPE_APP_COMPAT` 和 `TRIGGER_TYPE_ANOMALY`。冷启动场景从 `reportFullyDrawn()` 时点前移到“尽早捕获冷启动路径”，触发器边界也更完整。
+`windowOptOutEdgeToEdgeEnforcement` 在 target 36 且运行 Android 16 时已经失效，替代路径是完整处理窗口 insets。`elegantTextHeight` 也在 target 36 时被忽略；受影响文字系统需要重新验证字形高度、基线、行距和裁切。
 
-### ADPF / Dynamic Performance 演进
+废弃标记不等于 API 会立刻消失。迁移顺序应由目标版本行为、调用频率、故障风险和替代方案成熟度共同决定。
 
-ADPF（Android Dynamic Performance Framework）从 Android 12 开始逐步构建，是 Google 让 App 参与系统性能调度的核心框架：
+## targetSdkVersion 升级检查表
 
-**Android 12**：引入 Performance Hint API，App 可以告诉系统"我接下来有重负载"。引入 Game Mode API，用户可选择性能优先或省电优先。
+### target 31
 
-**Android 13**：引入 Game State API，App 可以告诉系统当前状态（加载中/游戏中/后台），帮助系统做更智能的资源分配。
+- 枚举所有后台启动前台服务的入口及豁免条件。
+- 检查精确闹钟授权和非精确调度的容忍窗口。
+- 删除通知跳板。
 
-**Android 14**：ADPF 在更多厂商设备上得到支持（如 UNISOC），框架的可用性从旗舰 SoC 扩展到中低端平台。
+### target 33
 
-**Android 15**：Hint session 支持省电模式，可同时报告 GPU 和 CPU 工作时长。
+- 覆盖通知授权的完整状态转换。
+- 清理对 `onBackPressed()` 和旧深色策略的新增依赖。
+- 记录 ART 主线模块版本，避免只按 OS 大版本聚合。
 
-**Android 16**：`android.os.health.SystemHealthManager` 中加入 CPU / GPU headroom 查询接口，`Display` 中也出现了 `hasArrSupport()` / `getSuggestedFrameRate()` 这组 ARR 相关入口。它们在 android-16.0.0_r1 里都带 feature flag，是否可用还取决于 framework 开关和设备实现，迁移代码时要先做 API level 与能力探测。
+### target 34
 
-### Choreographer 演进
+- 为每个前台服务声明精确类型、权限和运行时前置条件。
+- 保证 JobService 回调快速返回。
+- 在 cached 状态验证后台工作不会依赖进程持续获得 CPU。
 
-Choreographer 的 API 演进是理解 Android 渲染调度演进的最佳切入点：
+### target 35
 
-**API 16（Android 4.1, Project Butter）**：引入 `FrameCallback`，首次让 App 能接收 VSync 回调。doFrame 按固定顺序执行回调：INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT。
+- 统计 `dataSync`、`mediaProcessing` 的 24 小时累计用量。
+- 实现并测试超时停止路径。
+- 在 4 KB 与 16 KB 页设备验证所有原生依赖。
 
-**API 24（Android 7.0）**：NDK 端 Choreographer 可用，Native 代码可直接接收 VSync 回调。
+### target 36
 
-**API 30（Android 11）**：引入刷新率回调，App 可以感知屏幕刷新率变化。
+- 在 600dp 及以上窗口测试 resize、旋转、多窗口和状态恢复。
+- 迁移预测性返回，覆盖 back-to-home、跨任务和跨 Activity。
+- 删除对 edge-to-edge 退出属性和 `elegantTextHeight` 的依赖。
+- 检查 fixed-rate 定期任务是否依赖恢复后连续补跑。
+- 使用新的作业等待原因历史定位后台任务。
+- 把 headroom 作为可选信号，保留 Thermal API 和静态档位回退。
 
-**API 33（Android 13）**：引入 `VsyncCallback`，提供多帧时间线选择。这是 Frame Pacing 的基础——App 可以选择一个合适的呈现时间，而不是盲目追赶下一个 VSync。
+### target 37
 
-**Android 16（API 36）**：与帧率策略相关的新增接口更多落在 `Display`，例如 `hasArrSupport()` / `getSuggestedFrameRate()`。这组 ARR 接口仍带 flag，只有系统打开功能且设备实现支持时才可用。
+- 提前启用 `USE_NEW_MESSAGEQUEUE` 兼容性变更，升级测试依赖。
+- 搜索对 `MessageQueue` 私有成员和 `static final` 修改的反射/JNI 代码。
+- 测试冷启动、OOM、异常 CPU 与内存限制的采集和退出信息解析。
+- 直接访问 NPU 的 App 声明对应硬件 feature，并处理设备不支持。
 
-## 废弃 API 与替代方案
+每次升级都应分开比较“系统版本变化”和“target 变化”。可在同一 Android 17 设备上用兼容性框架逐项开关行为，再用两个 target 构建复测，减少变量混杂。
 
-以下是 Android 12-16 中与性能分析直接相关的废弃 API，以及推荐替代方案：
+## Perfetto 与平台数据如何配合
 
-### onBackPressed() → OnBackInvokedDispatcher
+版本变化在 Perfetto 中的可见程度不同：
 
-`onBackPressed()` 从 Android 13 开始被标记为废弃，Android 16 进一步强化了 Predictive Back 的默认启用。如果你的 App 依赖 `onBackPressed()` 处理返回逻辑，在 Android 16+ 上可能遇到返回动画和手势行为不一致的问题。
+- 无锁 MessageQueue 的效果要从主线程调度、Handler 工作和帧 deadline 观察，trace 中没有一个可替代兼容性检查的“无锁已启用”结论。
+- FrameTimeline Vsync ID 可以关联应用帧、HWUI 和 SurfaceFlinger。
+- GC 需要区分 young/full collection 及暂停、并发阶段；只有总 GC 次数很难解释分代策略。
+- CPU/GPU headroom 是 App 可查询信号，频率、调度和热事件仍需系统 trace 辅助。
+- ProfilingManager 生成独立的 profile 产物，不能假设它自动出现在当前 Perfetto 会话中。
+- 前台服务配额、权限拒绝和 JobScheduler 等待原因需要结合 dumpsys、API 返回和系统日志，trace 只覆盖其中一部分。
 
-替代方案：使用 `OnBackInvokedDispatcher` 注册 `OnBackInvokedCallback`。如果你需要观察（但不拦截）系统返回事件，使用 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER` 优先级。
+一次可复核的跨版本实验，应固定 APK、数据集、操作序列、设备温度和电源条件，并记录 OS build fingerprint、target、ART/Mainline 模块、页大小、内核版本。Android 17 的内核字段若为 6.18，还要记录精确 tag；本知识库的核验锚点是 `android17-6.18-2026-06_r6`。
 
-### WebView.setForceDark() → prefers-color-scheme
+## 常见误区
 
-Android 13 废弃了 `WebView.setForceDark()`。对于 Web 内容的深色模式渲染，WebView 现在会根据 App 的 `isLightTheme` 属性自动设置 `prefers-color-scheme` CSS 媒体查询。如果你的 App 手动调用了 `setForceDark()`，在 Android 13+ 上调用无效，需要改为通过主题设置。
+### “只升级 compileSdk，不改 target，不会影响性能”
 
-### windowOptOutEdgeToEdgeEnforcement → 正确处理 insets
+compileSdk 只决定编译时可见 API。运行在新系统上的所有 App 变更仍会生效，例如 Android 14 的 cached 进程资源管理和 Android 17 部分设备的内存限制。
 
-Android 16 移除了 `windowOptOutEdgeToEdgeEnforcement` 属性。如果你的 App 之前用这个属性来避免边到边显示带来的 UI 遮挡问题，现在必须正确处理 WindowInsets。从性能角度看，正确的 insets 处理避免了不必要的布局重算——错误处理 insets 会导致 `measure()` 和 `layout()` 被触发多次。
+### “升 target 后的回归都是平台优化失败”
 
-### elegantTextHeight → 废弃
+target 会启用一组兼容性行为。任务不再执行、服务启动异常或测试框架无法判断主线程空闲，可能来自行为边界变化。应按兼容性开关逐项定位。
 
-Android 16 废弃了 `elegantTextHeight` 属性，在 targetSdkVersion 36+ 上该属性被忽略。如果你的布局依赖这个属性来控制文本高度，需要测试在 Android 16 上的实际显示效果。
+### “新性能 API 在低版本不能调用，所以没有集成价值”
 
-## targetSdkVersion 升级的性能影响
+可以用 API 级别、能力探测和回退实现渐进接入。价值取决于新数据是否改善诊断或控制决策，不取决于覆盖全部历史设备。
 
-每次提升 `targetSdkVersion`，你的 App 就会进入新版本的行为约束框架。以下是按版本梳理的性能相关影响清单。
+### “NN HAL 代码仍在 AOSP，说明 NNAPI 是 Android 17 新加速点”
 
-### 升级到 targetSdkVersion 31（Android 12）
+源码存在表示平台仍维护兼容路径。NNAPI NDK 已在 Android 15 废弃，NN HAL 版本也有独立历史。性能收益必须回到当前 runtime、delegate、驱动和模型测量。
 
-- 后台不能启动前台服务：检查所有从后台调用 `startForegroundService()` 的路径，改用 `WorkManager`。
-- 精确闹钟需要权限：如果使用了 `AlarmManager.setExact()` 系列，声明 `SCHEDULE_EXACT_ALARM` 权限或改用非精确闹钟。
-- 通知跳板被禁用：通知的点击处理必须直接启动 Activity。
+### “Android 17 的分代 GC 等于打开 userfaultfd”
 
-### 升级到 targetSdkVersion 33（Android 13）
-
-- 需要请求 `POST_NOTIFICATIONS` 权限：如果通过通知展示性能数据或 ANR 告警。
-- `WebView.setForceDark()` 调用无效：检查是否有相关代码。
-
-### 升级到 targetSdkVersion 34（Android 14）
-
-- 前台服务必须声明类型：逐个检查所有 `startForeground()` 调用点，补充 `foregroundServiceType` 声明和对应权限。
-- `shortService` 类型有 3 分钟超时 + `onTimeout()` 回调：如果使用此类型，实现超时处理。
-- JobScheduler 反复 ANR 会被降级：确保 `onStartJob()` 不做耗时操作。
-- 缓存 App 广播队列化：如果依赖实时广播触发后台性能采集，改为前台触发或 `WorkManager`。
-- Android 14 设备不允许安装 `targetSdkVersion < 23` 的新包；已安装旧包保留，测试旧包可通过 `adb install --bypass-low-target-sdk-block` 绕过。这个限制是系统安装限制，不是 Google Play 上架门槛。
-
-### 升级到 targetSdkVersion 35（Android 15）
-
-- Android 15 设备不允许安装 `targetSdkVersion < 24` 的新包；Google Play target API 要求按当年 Play 政策单独检查，例如 2025-08-31 起新应用和更新需 target Android 15（API 35）或更高。
-- `dataSync` 和 `mediaProcessing` 前台服务有 6 小时上限：检查是否有超过此时长的任务。
-- `FLAG_STOPPED` 状态变化：被强制停止的 App 的状态会持续到用户主动重新打开。
-- 16KB 页面大小：如果使用 NDK 库，需要重新编译。
-
-### 升级到 targetSdkVersion 36（Android 16）
-
-- 大屏设备忽略方向和宽高比限制：如果你的 App 是固定方向的，需要测试在大屏设备上的表现，确保 `onConfigurationChanged()` 正确处理。
-- Predictive Back 默认启用：检查返回手势的处理是否使用了 `onBackPressed()`，如果是，迁移到 `OnBackInvokedDispatcher`。
-- `windowOptOutEdgeToEdgeEnforcement` 被移除：处理 WindowInsets。
-- `elegantTextHeight` 被废弃：检查文本布局。
-- Intent 重定向保护增强：检查是否有通过 `PendingIntent` 或 `Intent` 传递组件名的代码。
-
-## 在 Perfetto 中的表现
-
-了解版本差异对 Perfetto 分析有直接帮助。以下是一些关键的可观测变化：
-
-**缓存 App 冻结（Android 14+）**：在 Perfetto 的 CPU 视图中，被冻结的 App 进程的线程状态会变为 "S"（Sleeping）且长时间不变化。你不会看到这些进程的任何 CPU 活动，直到用户重新打开 App。
-
-**前台服务超时（Android 14+）**：`shortService` 类型的前台服务超时后，在 Perfetto 中你会看到 Service 的 `onTimeout()` 被调用（如果 App 有对应 trace 点），随后可能看到 ANR 事件。
-
-**系统触发式 Profiling（Android 16+）**：当 `ProfilingManager` 的触发器被激活时，在 Perfetto 中你会看到系统自动开始和结束 trace 采集的标记。这些 trace 文件可以在 `ui.perfetto.dev` 中分析。
-
-**Predictive Back（Android 16+）**：在 Perfetto 的 Input Track 中，你会看到 back 手势的处理时间线变长——系统在手势进行中就开始准备目标 Activity 的布局，而不是等到手势完成后才触发。
-
-## 与其他机制的关系
-
-本节内容与全书的多个章节交叉关联：
-
-- **§1.6 Android 版本演进中的架构变化**：从架构层面追踪版本变化，本节侧重性能相关的 API 和行为变更。
-- **§2.9 渲染机制的版本演进**：Choreographer 和 FrameMetrics 的演进细节。
-- **§4.6 内存相关的版本演进**：16KB 页面大小、ART GC 演进等。
-- **§5.7 CPU 相关的版本演进**：EEVDF 调度器、UClamp 等系统级变化。
-- **§6.4 存储相关的版本演进**：文件系统和 I/O 调度的版本变化。
-- **§9.2 ANR 类型与触发条件**：前台服务 ANR 超时的版本演进。
-- **§13.1 Perfetto 简介与演进**：ProfilingManager 产生的 trace 如何在 Perfetto 中分析。
-- **§14.7 ProfilingManager**：ProfilingManager 的完整使用指南。
-
-## 常见问题与误区
-
-### "升级 targetSdkVersion 不会影响性能"
-
-这是一个危险的假设。每个版本的 behavior changes 都可能改变系统对 App 后台活动、进程管理、前台服务的约束。即使你的代码没变，App 在新系统上的性能表现也可能因为系统行为变化而不同。建议每次升级 targetSdkVersion 后，做一轮完整的性能回归测试。
-
-### "新 API 在低版本设备上不能用就不集成"
-
-ADPF、ProfilingManager、ApplicationStartInfo 等新 API 都设计为增量可用的——你可以在高版本设备上使用它们获取更好的性能数据，同时保持低版本设备的基本功能。推荐的做法是使用 `Build.VERSION.SDK_INT` 检查后优雅降级，而不是完全放弃新 API。
-
-### "缓存 App 冻结等于 App 被杀"
-
-不是。冻结（freeze）和被杀（kill）是完全不同的状态。冻结只是暂停了 App 的 CPU 执行，进程的内存空间还在。当 App 回到前台时，从冻结恢复比从被杀恢复快得多（不需要重新 fork Zygote、初始化 ART、加载 classes）。在 Perfetto 中，冻结的进程仍然存在，只是没有任何 CPU 活动。
-
-### "Predictive Back 只影响动画，和性能无关"
-
-Predictive Back 要求 App 在手势阶段就准备好目标 UI。如果你的返回目标需要重新加载大量数据或执行复杂布局，Predictive Back 的"预准备"阶段可能成为新的性能瓶颈。这类问题不属于传统卡顿（用户看不到帧丢失），更接近手势响应不够流畅。
-
-### "ProfilingManager 能替代 adb 抓取 Perfetto"
-
-不能完全替代。`ProfilingManager` 目前支持的 trace 类型有限（system trace、heap dump、stack sample），而且采集范围主要由系统控制。对于需要精细配置的 Perfetto 抓取（自定义 data source、特定 buffer size），`adb perfetto` 仍然不可替代。`ProfilingManager` 的优势在于**线上**和**自动触发**，不是开发阶段的替代品。
+userfaultfd 是 Concurrent Mark-Compact 的一条实现路径，分代是对象代际和回收范围策略。两者处在不同维度。
 
 ## 参考资料
 
-### Android 17 系统服务启动与 Binder IPC 优化
-- 来源：DeepResearch/2026-06-12-android17-system-server-binder-ipc-startup-optimization.md
-- 摘要：SystemServer 启动采用三阶段分层 init + InitThreadPool 并行子任务模型，四段方法贯穿八个 PHASE_* 阶段广播。Binder 端通过线程池配置与 BR_FROZEN_* 命令协同 cached app freezer 避免启动抖动。
+### Android Developers
 
-### 官方文档
-- Android 12 Behavior Changes: developer.android.com/about/versions/12/behavior-changes-12
-- Android 13 Behavior Changes: developer.android.com/about/versions/13/behavior-changes-13
-- Android 14 Behavior Changes: developer.android.com/about/versions/14/behavior-changes-14
-- Android 15 Behavior Changes: developer.android.com/about/versions/15/behavior-changes-15
-- Android 16 Behavior Changes: developer.android.com/about/versions/16/behavior-changes-16
-- ProfilingManager API Reference: developer.android.com/reference/android/os/ProfilingManager
-- ProfilingTrigger API Reference: developer.android.com/reference/android/os/ProfilingTrigger
-- ApplicationStartInfo API Reference: developer.android.com/reference/android/app/ApplicationStartInfo
-- SystemHealthManager API Reference: developer.android.com/reference/android/os/health/SystemHealthManager
-- Display API Reference: developer.android.com/reference/android/view/Display
-- Choreographer API Reference: developer.android.com/reference/android/view/Choreographer
-- FrameMetrics API Reference: developer.android.com/reference/android/view/FrameMetrics
-- ADPF Documentation: developer.android.com/topic/performance/adpf
-- Predictive Back Guide: developer.android.com/guide/navigation/custom-back/predictive-back
-- Game Mode API: developer.android.com/about/versions/12/features/game-mode
+- [Android 12：目标版本行为变化](https://developer.android.com/about/versions/12/behavior-changes-12)
+- [Android 12：所有 App 行为变化](https://developer.android.com/about/versions/12/behavior-changes-all)
+- [Android 13：功能与 API](https://developer.android.com/about/versions/13/features)
+- [Android 14：所有 App 行为变化](https://developer.android.com/about/versions/14/behavior-changes-all)
+- [Android 14：目标版本行为变化](https://developer.android.com/about/versions/14/behavior-changes-14)
+- [Android 14：前台服务类型](https://developer.android.com/about/versions/14/changes/fgs-types-required)
+- [Android 15：目标版本行为变化](https://developer.android.com/about/versions/15/behavior-changes-15)
+- [Android 16：功能与 API](https://developer.android.com/about/versions/16/features)
+- [Android 16：目标版本行为变化](https://developer.android.com/about/versions/16/behavior-changes-16)
+- [Android 17 Release Notes](https://developer.android.com/about/versions/17/release-notes)
+- [Android 17：目标版本行为变化](https://developer.android.com/about/versions/17/behavior-changes-17)
+- [Android 17：所有 App 行为变化](https://developer.android.com/about/versions/17/behavior-changes-all)
+- [Android 17 MessageQueue 迁移指南](https://developer.android.com/about/versions/17/changes/messagequeue)
+- [ProfilingManager API](https://developer.android.com/reference/android/os/ProfilingManager)
+- [ProfilingTrigger API](https://developer.android.com/reference/android/os/ProfilingTrigger)
+- [ApplicationStartInfo API](https://developer.android.com/reference/android/app/ApplicationStartInfo)
+- [FrameMetrics API](https://developer.android.com/reference/android/view/FrameMetrics)
+- [PerformanceHintManager.Session API](https://developer.android.com/reference/android/os/PerformanceHintManager.Session)
 
-### AOSP 源码路径
-- ProfilingManager: packages/modules/Profiling/framework/java/android/os/ProfilingManager.java
-- SystemHealthManager: frameworks/base/core/java/android/os/health/SystemHealthManager.java
-- Display: frameworks/base/core/java/android/view/Display.java
-- ApplicationStartInfo: frameworks/base/core/java/android/app/ApplicationStartInfo.java
-- Choreographer: frameworks/base/core/java/android/view/Choreographer.java
-- FrameMetrics: frameworks/base/core/java/android/view/FrameMetrics.java
-- ActiveServices (前台服务超时): frameworks/base/services/core/java/com/android/server/am/ActiveServices.java
+### AOSP 与平台文档
 
-### 研究素材
-### Android15适配之targetSdkVersion升到35后全是坑
-- 来源：https://juejin.cn/post/7584295332340858943
-- 类型：技术文章
-- 摘要：详尽记录将 targetSdkVersion 升级到 35（Android 15）过程中遇到的所有适配问题。涵盖隐私变更、前台服务类型强制分类、16KB 页面大小对 native 库的影响。
-- 入库时间：2026-04-06
-### Android 17 有什么需要适配的？
-- 来源：https://juejin.cn/post/7610233341305389099
-- 类型：技术文章
-- 摘要：Android 17 官方适配文档解读：隐私沙箱要求、更严格的后台限制、Predictive Back 强制适配、禁止侧载政策详解。
-- 入库时间：2026-04-06
-### 了解一下Android16更新事项
-- 来源：https://juejin.cn/post/7595053284915822632
-- 类型：技术文章
-- 摘要：Android 16 主要更新事项：照片权限细分、Notification 权限、后台服务限制、预测性返回手势。
-- 入库时间：2026-04-06
-
----
-
-## 附录：Android 17 端侧 AI 资源调度（ADPF + PowerHAL）源码调研
-
-**调研时间**：2026-06-13
-**来源选题**：daily-topics.json id=15
-
-### 关键源码发现
-
-**1. 端侧 AI 在 Android 17 上的资源调度不是新 `AIService`，而是 ADPF 主线的延伸**
-
-SDK 端入口仍是 `PerformanceHintManager`（`frameworks/base/core/java/android/os/PerformanceHintManager.java`），普通 App 公开可用的是创建 hint session、更新 target duration、上报 actual duration，以及带 flag 的 `setPreferPowerEfficiency()` / `reportActualWorkDuration(WorkDuration)`。`CPU_LOAD_*` / `GPU_LOAD_*` 走 hidden/TestApi `sendHint()`，不能写成普通 App 的公开迁移手段；其中 `GPU_LOAD_UP/DOWN/RESET` 还挂 `@FlaggedApi(Flags.FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION)`。
-
-**2. PowerHAL AIDL 把"端侧 AI 可调用边界"显式化了**
-
-Android 17 平台代码通过 `getInterfaceVersion()` 动态判断 PowerHAL 接口版本，`getSupportInfo()` 要求 HAL v6+（`HintManagerService.java:367`）。关键 AIDL 文件全部锚定 `android-17.0.0_r1`：`IPower.aidl`、`IPowerHintSession.aidl`、`SessionHint.aidl`、`SessionMode.aidl`、`SessionTag.aidl`、`CpuHeadroomParams.aidl`、`GpuHeadroomParams.aidl`、`WorkDuration.aidl`、`ChannelMessage.aidl`。
-
-`CpuHeadroomParams.calculationWindowMillis`（默认 1000ms）对应 `SupportInfo.aidl` 中的 `cpuMinCalculationWindowMillis=50` ~ `cpuMaxCalculationWindowMillis=10000` 范围，HAL 须支持该窗口超集；v6 之前的 HAL 不报错但 `getCpuHeadroom()` / `getGpuHeadroom()` 回 `Float.NaN`（`HintManagerService.java:335-358`）。
-
-**3. `HintManagerService` 的 3 个隐藏陷阱**
-
-- `mCpuHeadroomCache` / `mGpuHeadroomCache` 的缓存窗口由 HAL 上报的 `mSupportInfo.headroom.{cpu,gpu}MinIntervalMillis` 决定（`HintManagerService.java:335,358`），`HeadroomCache` 容量固定为 2；轮询间隔短于 HAL 窗口时会返回缓存结果，不会提升刷新率。
-- `MyUidObserver.onUidStateChanged` 在 uid 退出 `PROCESS_STATE_IMPORTANT_FOREGROUND` 时把所有 session 的 hint 推送静默丢弃；后台 ASR / OCR 的 hint 形同虚设，需前台服务保活。
-- `AppHintSessionSnapshot.mTag` 把 session 分类（OTHER/SURFACEFLINGER/HWUI/GAME/APP/SYSUI）写入 statsd；普通 App 通过公开 SDK 创建 session 时默认走 `APP` 边界，不能自行选择 `GAME` / `APP`。
-
-**4. `SessionMode` / `SessionTag` 的公开 API 边界**
-
-普通 App 通过 `PerformanceHintManager.createHintSession(int[] tids, long targetDurationNanos)` 创建 session，公开入口不能直接传 `SessionTag`，`IHintManager.SessionCreationReturn` 的默认 tag 是 `SessionTag.APP`。`SessionTag.GAME`、`GRAPHICS_PIPELINE`、`AUTO_CPU` / `AUTO_GPU` 出现在 hidden `IHintManager.createHintSessionWithConfig()` / `SessionCreationConfig` 路径，属于平台、OEM 或系统组件集成边界。
-
-| 场景 | App 侧可做的事 | 系统集成边界 |
-|------|----------------|--------------|
-| 实时 AR 滤镜 / AI 美颜 | 为渲染/推理线程创建 hint session，按帧更新 target duration / `WorkDuration` | `GAME` / `GRAPHICS_PIPELINE` 需要系统路径 |
-| 离线 OCR / 文档解析 | 默认 `APP` tag，必要时调用 `setPreferPowerEfficiency(true)` | 无需自选 tag |
-| 多模态模型（并行推理） | 拆分 CPU/GPU 工作时长并上报 `WorkDuration` | `AUTO_CPU` / `AUTO_GPU` 需要 hidden config |
-| 长时间后台 ASR | 前台服务保持 `IMPORTANT_FOREGROUND`，否则 hint update 会被 proc-state gating 丢弃 | 后台常驻不应依赖 ADPF hint |
-
-**5. FMQ `ChannelMessage` 不是默认必用**
-
-`IPower.getSessionChannel(tgid, uid)` 拿到 `ChannelConfig` 一次，多 session 共享 FMQ 通道；注释明确写 "HAL must validate all data"，App 自行构造的 `ChannelMessage` 不会被信任。单推理线程场景仍走 `IPowerHintSession` Binder 即可；FMQ 收益主要在多模态 / 多 NPU+GPU 并行的复杂负载。
-
-**版本历史**：
-- Android 12 (API 31)：`PerformanceHintManager` 初版，CPU only。
-- Android 15 (API 35)：`POWER_EFFICIENCY` mode + `WorkDuration.cpuDurationNanos/gpuDurationNanos` 同报。
-- Android 16 (API 36)：`SystemHealthManager.getCpuHeadroom()` / `getGpuHeadroom()` 公开（带 `FLAG_CPU_GPU_HEADROOMS`）。
-- Android 17 (API 37)：PowerHAL 接口 v6+（`getSupportInfo()` 要求 v6），`CpuHeadroomParams.calculationWindowMillis` 可用，`ChannelMessage` 可用；App 侧主要用 `WorkDuration`、`setPreferPowerEfficiency()` 和 headroom 查询，mode / tag 精细选择属于 hidden/system 集成边界。
-
-**信息源**（均锚定 `android-17.0.0_r1`）：
-
-- `frameworks/base/core/java/android/os/PerformanceHintManager.java`：[android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java) — `GPU_LOAD_*` hints / `setPreferPowerEfficiency` / `reportActualWorkDuration(WorkDuration)`
-- `frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java`：[android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/hint/HintManagerService.java) — `HeadroomCache` / `onUidStateChanged` / `getSessionChannel` / `AppHintSessionSnapshot`
-- `hardware/interfaces/power/aidl/android/hardware/power/`：[android-17.0.0_r1](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/aidl/android/hardware/power/) — `CpuHeadroomParams.aidl`（`calculationWindowMillis`）、`ChannelMessage.aidl`、`SupportInfo.aidl`（50-10000ms 范围）等全部 AIDL 文件
-
-> 本节源码锚点均已复核到 `android-17.0.0_r1`。
-
-## 附录：Android 16 ART Generational CMC / userfaultfd GC 机制源码调研
-
-**调研时间**：2026-05-18
-**来源选题**：daily-topics.json id=4
-
-### 关键源码发现
-
-**DeviceConfig 属性名**：`enable_uffd_gc_2`（非题目中的 gUseUserfaultfd）
-
-```cpp
-// art/runtime/gc/heap.cc DeviceConfig 读取逻辑
-bool phenotype_enable = GetCachedBoolProperty(
-    cached_properties, "persist.device_config.runtime_native_boot.enable_uffd_gc_2", false);
-bool phenotype_force_disable = GetCachedBoolProperty(
-    cached_properties, "persist.device_config.runtime_native_boot.force_disable_uffd_gc", false);
-bool build_enable = GetBoolProperty("ro.dalvik.vm.enable_uffd_gc", false);
-return (phenotype_enable || build_enable) && !phenotype_force_disable;
-```
-
-**版本历史**：
-- Android T（API 33）+：CMC GC 默认启用（需要 kernel userfaultfd 支持）
-- Android S（API 31）+：CMC GC 扩展为默认启用（commit 854cb7d）
-
-**userfaultfd 用途**：ART runtime 利用 Linux userfaultfd 系统调用在 GC 压缩期间延迟复制页面，实现并发压缩而不 stop-the-world。
-
-**信息源**：AOSP platform/art commit 854cb7d、8222aa2d；platform/build commit 53dd895
+- [`android-17.0.0_r1` ProfilingManager.java](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java)
+- [`android-17.0.0_r1` ART Mark-Compact](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc)
+- [16 KB page size](https://source.android.com/docs/core/architecture/16kb-page-size/16kb)
+- [NNAPI 驱动与废弃状态](https://source.android.com/docs/core/interaction/neural-networks)
+- [Android common kernels](https://source.android.com/docs/core/architecture/kernel/android-common)
+- [android17-6.18 release builds](https://source.android.com/docs/core/architecture/kernel/gki-android17-6_18-release-builds)
