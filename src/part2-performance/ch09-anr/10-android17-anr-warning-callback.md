@@ -34,309 +34,381 @@ sources:
 
 # 9.10 Android 17 ANR 预警回调与类型枚举
 
-> **版本边界**：本节内容基于 Android 17 (API 37)，源码锚定 `android-17.0.0_r1`
-> **前置阅读**：9.1 ANR 设计思想（AnrHelper / ProcessErrorStateRecord 核心流程）、9.2 ANR 类型与触发条件
+Android 17 / API 37 增加了公开的 ANR warning API。应用可以向 `ActivityManager` 注册 listener，在部分 ANR 计时器接近 deadline 时收到 `AnrWarningResult`。
 
----
+这个信号有三个边界：
 
-## 背景：为什么需要「预警」而非仅「通知」
+- warning 表示“某个计时条件已进入预警点”，系统尚未宣告 ANR；
+- 阻塞条件可能在 deadline 前恢复，因此 warning 后未必有 ANR；
+- 回调按 best-effort 投递，系统可能来不及调用，也可能在 executor 排队期间到达 deadline。
 
-在 Android 17 之前，ANR 机制是一个**事后通知系统**——超时已经发生、进程已经无响应、系统已经决定弹窗或杀进程之后，相关信息才会通过 `traces.txt`、Dropbox 和 `am_anr` event log 暴露出来。9.1 节详细分析过这个滞后性问题：SIGQUIT 触发堆栈 dump 时，导致超时的代码可能早已执行完毕，当前堆栈只是"替罪羊"。
+warning 不会暂停或延长原计时器。它适合记录轻量状态、串起 warning 与事后退出记录，不适合在回调里临时执行全线程 dump、同步落盘或网络上传。
 
-Android 16 引入了 `ProfilingManager` + `ProfilingTrigger.TRIGGER_TYPE_ANR`，允许系统在 ANR 发生时自动采集 system trace snapshot。这是一步前进，但仍然是**事后采集**——触发器在 ANR 判定后才激活，采集到的是结果而非原因。
+本章以 `android-17.0.0_r1` 为平台锚点。ANR 的 timeout 与报告管线见 [§9.1 ANR 设计思想](01-anr-design.md)，线程转储和 Perfetto 联合分析见 [§9.3](03-anr-analysis.md) 与 [§9.8](08-anr-kernel-trace-joint-diagnosis.md)。
 
-Android 17 的 ANR 预警回调系统填补了这个空白。它引入了三个新组件：
+## 1. 公开 API 在 `android.app`
 
-| 组件 | 文件路径 | 角色 |
-|------|----------|------|
-| `AnrTypes` | `frameworks/base/core/java/android/anr/AnrTypes.java` | ANR 类型枚举，统一分类标准 |
-| `AnrWarningResult` | `frameworks/base/core/java/android/anr/AnrWarningResult.java` | 预警结果数据结构，携带诊断上下文 |
-| `IAnrWarningCallback` | `frameworks/base/core/java/android/anr/IAnrWarningCallback.aidl` | AIDL 回调接口，定义预警投递协议 |
+Android 17 的相关类型位于 `android.app`：
 
-[来源: 技术文章/Android/Android-17系统层面新特性/39-ANR-类型和预警回调.md]
-[待验证: 上述文件路径基于 Android 17 新增 `android.anr` 包的推断，web 验证受限，待 AOSP 源码直接确认]
+| API | 作用 |
+|---|---|
+| `AnrTypes` | 结构化 ANR 类型常量 |
+| `AnrWarningResult` | warning 的 Parcelable 载荷 |
+| `ActivityManager.registerAnrWarningListener()` | 注册 executor 与 listener |
+| `ActivityManager.unregisterAnrWarningListener()` | 用同一个 listener 对象注销 |
 
----
+`IAnrWarningCallback.aidl` 是 ActivityManager 与 AMS 之间的 hidden Binder 接口，应用不需要直接实现它。`ActivityManager` 会在当前进程注册第一个 listener 时创建一个 Binder stub；同一进程后续 listener 复用这条系统回调。
 
-## 🔹 AnrTypes 枚举体系
+这些 API 都在 API 37 加入。公开文档没有要求 `targetSdkVersion >= 37`；应用需要用 API 37 SDK 编译，并在运行时检查设备版本。
 
-### 设计目标
+## 2. `AnrTypes` 的完整枚举
 
-`AnrTypes` 是 Android 17 首次引入的 ANR 分类枚举。在此之前，ANR 类型信息分散在多处：
+`AnrTypes` 使用 `@IntDef`，不是 Java/Kotlin `enum`。Android 17 定义了 11 个常量：
 
-- **InputDispatcher** 的超时原因用字符串拼接（`"Application does not have a focused window"` / `"... is not responding. Waited Xms for ..."`）
-- **BroadcastQueue** 通过 timeout 消息常量区分（`MSG_DELIVERY_TIMEOUT_SOFT` / `MSG_DELIVERY_TIMEOUT_HARD`）
-- **ActiveServices** 通过 Service AnrTimer 类型区分（`mActiveServiceAnrTimer` / `mShortFGSAnrTimer` / `mServiceFGAnrTimer`）
-- **ProcessErrorStateRecord** 的 `appNotResponding()` 将 reason 字符串写入 Dropbox 和 trace 文件
+| 值 | 常量 | 含义 |
+|---:|---|---|
+| 0 | `ANR_TYPE_OTHER` | 无法归入其他类型 |
+| 1 | `ANR_TYPE_INPUT_DISPATCH_NO_FOCUSED_WINDOW` | 输入派发期间没有 focused window |
+| 2 | `ANR_TYPE_INPUT_DISPATCH` | 输入事件响应超时 |
+| 3 | `ANR_TYPE_BROADCAST_OF_INTENT` | BroadcastReceiver 处理超时 |
+| 4 | `ANR_TYPE_START_FOREGROUND_SERVICE` | 前台服务没有按期进入 foreground |
+| 5 | `ANR_TYPE_EXECUTE_SERVICE` | Service `onCreate`、`onStartCommand` 或 `onBind` 执行超时 |
+| 6 | `ANR_TYPE_CONTENT_PROVIDER_NOT_RESPONDING` | 已连接 ContentProvider 的受监控调用超时 |
+| 7 | `ANR_TYPE_APP_TRIGGERED` | 应用主动请求触发 ANR |
+| 8 | `ANR_TYPE_FOREGROUND_SHORT_SERVICE_TIMEOUT` | short service 没有按期响应 `onTimeout()` |
+| 9 | `ANR_TYPE_JOB_SERVICE_START` | JobService 启动响应超时 |
+| 10 | `ANR_TYPE_APPLICATION_START` | 应用启动超时 |
 
-这种字符串驱动的分类方式导致：不同组件的 ANR 类型无法被程序化区分、监控 SDK 需要解析 reason 字符串做正则匹配、统计平台缺乏统一的 ANR 类型维度。
+这些常量还用于 Android 17 的 `ApplicationExitInfo.AnrInfo`。类型集合覆盖 ANR 分类，不表示每一种类型都已经拥有 warning producer。
 
-`AnrTypes` 枚举的引入，为以上场景提供了**类型安全的统一分类标准**。
+### 2.1 枚举覆盖与预警覆盖要分开
 
-### 枚举值与 ANR 触发路径映射
+在已核对的 `android-17.0.0_r1` 实现中，明确发出 warning 的路径有：
 
-基于 Android 17 的 ANR 触发路径（详见 9.1 和 9.2 节），`AnrTypes` 至少覆盖以下 ANR 类型：
+| warning producer | `AnrTypes` | 预警点 |
+|---|---|---|
+| InputDispatcher 等待 focused window | `INPUT_DISPATCH_NO_FOCUSED_WINDOW` | 剩余窗口为 timeout 的一半，或平台默认 pre-ANR window，取较长者 |
+| Service execution timer | `EXECUTE_SERVICE` | `AnrTimer` 运行到 50% split point |
+| short FGS timer | `FOREGROUND_SHORT_SERVICE_TIMEOUT` | `AnrTimer` 运行到 50% split point |
+| start-foreground timer | `START_FOREGROUND_SERVICE` | `AnrTimer` 运行到 50% split point |
 
-| AnrTypes 枚举值 | 对应触发路径 | 9.2 节分类 | 现有超时阈值 |
-|---|---|---|---|
-| 输入派发超时（Input Dispatch Timeout） | InputDispatcher.processAnrsLocked → AnrController → AnrHelper | 9.2 Input ANR | 5s × hw_timeout_multiplier |
-| 广播超时（Broadcast Timeout） | BroadcastQueueImpl + AnrTimer → AnrHelper | 9.2 Broadcast ANR | 前台 10-20s / 后台 60-120s |
-| 前台服务超时（Foreground Service Timeout） | ActiveServices.mShortFGSAnrTimer / mServiceFGAnrTimer → AnrHelper | 9.2 FGS ANR | SHORT_SERVICE 3min+缓冲 / startForeground 5s |
-| Service 执行超时（Service Execution Timeout） | ActiveServices.mActiveServiceAnrTimer → AnrHelper | 9.2 Service ANR | 前台 20s / 后台 200s |
-| ContentProvider 发布超时 | ContentProviderHelper → AnrHelper | 9.9 ContentProvider ANR | 10s（publish） |
+InputDispatcher 的 `processPreAnrsLocked()` 在该 tag 中只调用 `processNoFocusedWindowPreAnrLocked()`。普通 input connection timeout 没有沿这段代码发送 warning。BroadcastQueue、ContentProvider call detector、JobService 和 app-triggered ANR 也不能因为存在对应常量就推断已经投递 warning。
 
-[已验证: AOSP android-17.0.0_r1, 触发路径与 9.1/9.2/9.9 节源码验证一致]
-[待验证: AnrTypes 的确切枚举常量名称与完整列表，需直接读取 AnrTypes.java 确认]
+warning 覆盖还受 feature flag 与计时器实现影响。生产统计应同时保留“最终 ANR 无 warning”和“warning 后恢复”两类记录，不能把 listener 收到的数量当作全量 ANR 分母。
 
-### 与现有 reason 字符串的关系
+## 3. `AnrWarningResult` 只有五项数据
 
-`AnrTypes` 并不替换现有的 reason 字符串。`ProcessErrorStateRecord.appNotResponding()` 仍会生成详细的 reason 字符串写入 trace 文件和 Dropbox。`AnrTypes` 作为结构化元数据，与 reason 字符串并行传递，使得下游消费者（监控 SDK、statsd 上报、PrprofilingManager）可以按类型做策略分派，而不必解析自然语言字符串。
+Android 17 的载荷字段已经在源码和公开 API 中确定：
 
----
+| getter | 语义 |
+|---|---|
+| `getAnrId()` | 该类型下的 ANR event id |
+| `getAnrType()` | `AnrTypes` 中的类型值 |
+| `getConsumedMillis()` | warning 生成时已经消耗的时长，时钟为 `SystemClock.uptimeMillis()` |
+| `getTimeoutMillis()` | 系统为该次计时使用的总 deadline |
+| `getDescription()` | 短诊断描述，格式不稳定 |
 
-## 🔹 AnrWarningResult 预警结果
+载荷没有 PID、UID、包名、进程名、组件对象、线程栈、锁状态或 Binder 队列深度。`description` 可能包含 Service component 等提示，但 API 明确声明格式可变；可用于人工分析或辅助聚类，不应解析成稳定协议。
 
-### 数据结构角色
+`anrId` 只保证“在每个 `anrType` 内唯一”。持久化 key 应至少使用 `(anrType, anrId)`，还应带上用户、应用版本、设备 boot/session 和本地进程名，避免跨重启或多进程数据混在一起。
 
-`AnrWarningResult` 是预警回调的载荷对象（payload），封装了在 ANR 正式触发前系统收集的诊断上下文。它的设计目的是让回调接收方能够在**ANR 尚未完成 dump 流程的窗口期内**获取关键诊断信息。
+## 4. 注册与注销
 
-### 与 ApplicationExitInfo 的对比
+下面的 Kotlin 示例使用专用单线程 executor，把 warning 复制成小型内存记录。示例避免在回调里遍历全部线程或访问网络：
 
-Android 11 引入的 `ApplicationExitInfo`（通过 `ActivityManager.getHistoricalProcessExitReasons()` 获取）是**事后**诊断工具，提供 ANR 发生后的完整 trace 流、exit reason、timestamp 等。`AnrWarningResult` 与其互补：
+```kotlin
+class AnrWarningRecorder(
+    private val context: Context
+) : Closeable {
+    private val executor =
+        Executors.newSingleThreadExecutor { task ->
+            Thread(task, "anr-warning-recorder")
+        }
 
-| 维度 | ApplicationExitInfo（Android 11+） | AnrWarningResult（Android 17） |
-|------|-------------------------------------|-------------------------------|
-| 时机 | ANR 已完成后 | ANR 正式触发**前** |
-| 获取方式 | 主动查询 API | 被动回调接收 |
-| 内容完整性 | 完整 trace 流 + reason + timestamp | 预警级上下文（类型 + 原因 + 关键状态） |
-| 可用性 | ANR 后随时查询 | 仅在预警窗口期内可用 |
-| 典型用途 | 离线根因分析 | 实时诊断数据采集、紧急自救 |
+    private val lastWarning =
+        AtomicReference<WarningSnapshot?>()
 
-[结构参考: 9.1 节 ApplicationExitInfo.getTraceInputStream() 分析]
-[待验证: AnrWarningResult 的确切字段列表，需直接读取 AnrWarningResult.java 确认]
+    private val listener =
+        Consumer<AnrWarningResult> { result ->
+            lastWarning.set(
+                WarningSnapshot(
+                    type = result.anrType,
+                    id = result.anrId,
+                    consumedMs = result.consumedMillis,
+                    timeoutMs = result.timeoutMillis,
+                    description = result.description,
+                    callbackUptimeMs = SystemClock.uptimeMillis(),
+                    receiverProcess = Application.getProcessName()
+                )
+            )
+        }
 
-### 携带的关键信息
+    fun start() {
+        if (Build.VERSION.SDK_INT >= 37) {
+            context.getSystemService(ActivityManager::class.java)
+                .registerAnrWarningListener(executor, listener)
+        }
+    }
 
-基于 ANR 诊断流程（9.1 节）和预警机制的定位，`AnrWarningResult` 预期携带以下信息：
-
-1. **AnrTypes 枚举值**：标识即将触发的 ANR 类型
-2. **进程标识**：pid / uid / packageName
-3. **reason 字符串**：与 `ProcessErrorStateRecord` 中的 reason 一致或为其前体
-4. **组件标识**：触发 ANR 的具体组件（如 Activity 名、Service 名、BroadcastRecord）
-5. **时间戳**：预警发出的时间点
-
-[待验证: 实际字段列表需源码确认，以上为基于 ANR 流程分析的推断]
-
----
-
-## 🔹 IAnrWarningCallback.aidl 预警回调接口
-
-### AIDL 接口设计
-
-`IAnrWarningCallback.aidl` 定义了 ANR 预警的跨进程回调接口。这是 Android ANR 机制首次提供**应用侧可注册的 ANR 前置通知通道**。
-
-AIDL 接口的基本形态预期为：
-
-```java
-// frameworks/base/core/java/android/anr/IAnrWarningCallback.aidl
-// @ Android 17 (API 37)
-
-package android.anr;
-
-import android.anr.AnrWarningResult;
-
-/** @hide */
-oneway interface IAnrWarningCallback {
-    void onAnrWarning(in AnrWarningResult result);
+    override fun close() {
+        if (Build.VERSION.SDK_INT >= 37) {
+            context.getSystemService(ActivityManager::class.java)
+                .unregisterAnrWarningListener(listener)
+        }
+        executor.shutdown()
+    }
 }
 ```
 
-[待验证: 接口方法签名和注解，需直接读取 IAnrWarningCallback.aidl 确认]
+`WarningSnapshot` 是应用自定义的不可变数据类。若 recorder 与进程同寿命，可以在 `Application` 初始化时注册并长期保留；若它属于短生命周期组件，必须用原 listener 实例注销，随后关闭 executor。
 
-### 回调注册与触发时序
+官方文档要求 executor 不要使用应用主线程。原因很直接：主线程可能就是等待目标，把回调再次排到主线程会失去预警机会。executor 也不应与容易饱和的业务线程池共用。
 
-预警回调系统的整体流程与现有 ANR 检测链路的关系：
+## 5. 系统如何投递
 
+### 5.1 应用进程内
+
+`ActivityManager` 在进程内维护 `Consumer<AnrWarningResult> → Executor` 映射：
+
+1. 第一个 listener 注册时，向 AMS 注册一个 `IAnrWarningCallback`；
+2. AMS 调用 hidden AIDL 方法 `onAnrImminent(result)`；
+3. `ActivityManager` 遍历本进程 listener，把任务提交给各自 executor；
+4. 多个 listener 的通知顺序没有保证；
+5. 本进程移除全部 listener 后，系统 Binder callback 也会注销。
+
+重复注册同一个 listener 对象不会增加第二条记录。注销一个从未注册的 listener 会直接返回。
+
+### 5.2 system_server 内
+
+`AnrWarningController` 按 calling UID 保存 callback 列表，并为每个 Binder callback 注册 death recipient。producer 调用 `ActivityManagerService.notifyAnrWarning()` 后，controller：
+
+1. 为 `anrId` 取得 error id；
+2. 若该 UID 有 callback，发出 `debug.anr` category 的 `AnrWarningDetected` Perfetto instant；
+3. 构造 `AnrWarningResult`；
+4. 通过 oneway AIDL 通知该 UID 下的每个已注册进程；
+5. 记录 ANR warning API stats。
+
+注册范围由 calling UID 决定。应用不能监听其他 UID 的 warning。
+
+### 5.3 多进程应用会收到重复通知
+
+AMS 的 callback 表按 UID 分组。一个包的主进程和 `:remote` 进程都注册 listener 后，同一 UID 的 warning 会投递到两个进程；载荷又没有目标 PID。
+
+多进程应用应：
+
+- 在记录中加入 `Application.getProcessName()`；
+- 以 `(type, id, boot/session)` 去重上传；
+- 预先决定由哪个进程持久化；
+- 不从“收到回调的进程”推断“发生阻塞的进程”。
+
+同 UID 多包场景也要按 UID 语义处理。warning API 没有提供 package selector。
+
+## 6. warning 发生在 deadline 前
+
+旧式 ANR 线程转储在 deadline 到期后才开始，容易遇到取样变旧。Android 17 warning 的时序更早：
+
+```text
+计时器开始
+    │
+    ├── warning split point
+    │      └── AMS → onAnrImminent() → app executor
+    │
+    ├── 阻塞解除：timer cancel，本次不产生 ANR
+    │
+    └── deadline 到期：进入对应 timeout/ANR 处理
 ```
-[现有流程]                              [Android 17 新增]
-                                         ┌──────────────┐
-InputDispatcher / BroadcastQueue         │ 预警检查点    │
-  / ActiveServices                       │ (在超时判定    │
-  超时检测触发                            │  后、ANR dump │
-       │                                 │  前)          │
-       ▼                                 └──────┬───────┘
-  AnrTimer / Handler                            │
-  超时回调                                      ▼
-       │                              ┌──────────────────┐
-       ├──→ [新增] 预警阶段 ──→      │ IAnrWarning      │
-       │    构造 AnrWarningResult     │ Callback.onAnr   │
-       │    分发到已注册回调          │ Warning(result)  │
-       │                             └──────────────────┘
-       ▼
-  AnrHelper.appNotResponding()
-  → SIGQUIT → trace dump
-  → Dropbox / event log
-  → 弹窗 / 杀进程
-```
 
-**关键时序说明**：预警在超时判定之后、AnrHelper 正式执行 ANR dump 流程之前发出。这意味着回调接收方获得了一个**诊断窗口期**——从预警到 ANR dump 完成之间的时间（通常为数百毫秒到数秒），可用于采集当前线程栈、锁状态、Binder 队列深度等实时信息。
+图中的 app executor 任务可能晚于 Binder 回调执行。`getConsumedMillis()` 表示系统生成 warning 时的计时进度，`callbackUptimeMs` 才是应用代码开始处理的本地时间；二者不应混写。
 
-[待验证: 预警检查点的确切位置（是在 AnrHelper 之前还是 AnrController 阶段），需源码确认]
+### 6.1 Service timer
 
-### 注册方式
+`AnrTimer.Args.anrWarning(true)` 向 native timer 加入 50% split point。到点后，`AnrTimer` 把 `timerId`、关联对象和 elapsed time送回相应 Handler，再由 `ActiveServices` 生成 type、timeout 和 description。
 
-预警回调的具体注册 API 尚待官方文档确认。基于 Android 平台的 API 设计惯例，预期注册方式为：
+这一过程发生在 timer expiry 之前。系统负载、Handler 延迟和 executor 排队会缩短应用可用的剩余时间。
 
-```java
-// 预期 API 形态（待确认）
-AnrWarningCallback callback = new AnrWarningCallback() {
-    @Override
-    public void onAnrWarning(AnrWarningResult result) {
-        // 在 ANR 正式触发前采集诊断数据
-        // 例如：抓取当前所有线程栈、记录 Binder 状态
-        captureDiagnosticSnapshot(result);
+### 6.2 No-focused-window input
+
+InputDispatcher 为 no-focused-window 状态维护独立 pre-ANR 标记。pre-ANR window 取“总 timeout 的一半”与平台默认预警窗口中的较大值，再从 deadline 反推 warning 时刻。状态恢复、focused application 改变或已有 focused window 时，最终 ANR可以取消。
+
+该实现路径使用 `ANR_TYPE_INPUT_DISPATCH_NO_FOCUSED_WINDOW`。不能把它扩展解释为全部输入派发超时已有预警。
+
+## 7. warning 与最终 ANR 如何关联
+
+Android 17 为 `ApplicationExitInfo` 增加了 `getAnrInfo()`。当退出原因为 `REASON_ANR` 且系统保留结构化信息时，`ApplicationExitInfo.AnrInfo` 提供：
+
+- `getAnrId()`；
+- `getAnrType()`；
+- `getTimeoutMillis()`；
+- `isUserPerceptible()`。
+
+warning 的 `anrId` 会关联到最终 `ApplicationExitInfo.AnrInfo` 中的 id。下面的 Kotlin 代码用于在下次启动后匹配已保存的 warning key：
+
+```kotlin
+if (Build.VERSION.SDK_INT >= 37) {
+    val activityManager =
+        context.getSystemService(ActivityManager::class.java)
+
+    val anrExits =
+        activityManager.getHistoricalProcessExitReasons(
+            context.packageName,
+            0,
+            32
+        ).filter { it.reason == ApplicationExitInfo.REASON_ANR }
+
+    anrExits.forEach { exit ->
+        val info = exit.anrInfo ?: return@forEach
+        val key = "${info.anrType}:${info.anrId}"
+        Log.i(
+            "AnrCorrelation",
+            "key=$key timeout=${info.timeoutMillis} " +
+                "userPerceptible=${info.isUserPerceptible}"
+        )
     }
-};
-
-// 注册方式待确认，可能是：
-// ActivityManager.registerAnrWarningCallback(callback)
-// 或通过 ProfilingManager 扩展
+}
 ```
 
-[待验证: 注册 API 的确切类名和方法签名]
+若 warning 后条件恢复，不会出现匹配的 ANR exit。若有 ANR exit 却没有 warning，可能是该类型未接入 producer、feature 关闭、回调投递失败、executor 未运行或应用当时没有注册。
 
-### 与 isSilentAnr 的关系
+`isUserPerceptible()` 表示系统记录的用户可感知性，不等同于“进程一定展示了某种固定样式的对话框”。后台 silent ANR 与设备 UI 策略仍由最终 ANR 管线决定。
 
-9.1 节提到 `isSilentAnr()` 控制后台 ANR 是否弹窗——后台应用的 ANR 会被静默处理（直接 kill 而不弹窗）。预警回调系统与 isSilentAnr 的关系需要关注：
+## 8. 回调里适合记录什么
 
-- **预期行为**：预警回调应在静默 ANR 场景下同样触发，因为预警的价值正在于"系统即将杀进程"的提前通知
-- **监控 SDK 价值**：后台运行的监控 SDK 注册预警回调后，即使不弹窗的静默 ANR 也能被捕获并上报
-- **限制**：预警窗口期极短（AnrHelper 从收到 ANR 请求到开始 dump 可能在数百毫秒内完成），回调中不宜做耗时操作
+高价值且成本可控的数据包括：
 
-[待验证: 预警回调是否在 isSilentAnr=true 的场景下也会触发]
+- `(anrType, anrId)`、consumed/timeout；
+- callback 的 uptime 与 wall clock；
+- 当前 receiver process；
+- 当前 Activity、业务阶段、最近一次输入或生命周期事件；
+- 已经维护在内存中的主线程消息、Binder 调用和锁等待 breadcrumbs；
+- 内存压力、thermal 等已有快照的索引。
 
----
+下面这些动作风险较高：
 
-## 🔹 与现有 ANR 监控体系的集成
+- `Thread.getAllStackTraces()` 对全部线程做临时转储；
+- 同步写大文件、压缩或数据库 transaction；
+- 直接发网络请求；
+- 主线程 `runOnUiThread()` 并等待结果；
+- 临时启动完整 heap dump、长 CPU profile 或高频 trace。
 
-### 三层 ANR 可观测性体系
+应用无法通过公开 API在回调中读取 Binder 驱动队列深度或枚举 JVM 中的全部锁持有关系。需要这些信息时，应在平时维护低成本 breadcrumbs，或依赖系统 Perfetto snapshot 与 ANR trace。
 
-Android 17 的 ANR 可观测性形成了三层结构：
+## 9. 与 ProfilingManager 的关系
 
-| 层级 | 机制 | 引入版本 | 时机 | 内容 |
-|------|------|----------|------|------|
-| **预警层** | IAnrWarningCallback | Android 17 | ANR 前 | AnrTypes + 诊断上下文 |
-| **触发层** | ProfilingManager + TRIGGER_TYPE_ANR | Android 16 | ANR 时 | System trace snapshot |
-| **事后层** | ApplicationExitInfo + traces.txt + Dropbox | Android 11+ | ANR 后 | 完整 trace + exit reason |
+Android 16（API 36）的 `ProfilingTrigger.TRIGGER_TYPE_ANR` 在系统识别 ANR 时，请求一份正在运行的 system trace 快照。Android 17 的 `ProfilingManager` 在应用同时具备：
 
-**三层协同**的工作流：
-1. **预警层**触发 → SDK 在回调中采集实时线程栈、锁状态、内存快照
-2. **触发层**激活 → ProfilingManager 自动采集 system trace snapshot
-3. **事后层**完成 → traces.txt 写入 Dropbox、ApplicationExitInfo 可查询
+- 通过 `registerForAllProfilingResults()` 提供的 executor；
+- 已注册 `TRIGGER_TYPE_ANR` 或 all triggers；
 
-### 与 9.8 节 ANR Kernel Trace 联合诊断的关系
+会在内部调用 `ActivityManager.registerAnrWarningListener()`。它的 listener 写入一个短 trace section：
 
-9.8 节介绍了通过 ftrace / atrace 进行 ANR 的内核 trace 联合诊断。预警回调系统为内核 trace 联合诊断提供了**精确的时间锚点**：
-
-- 在预警回调中记录精确时间戳，可对齐 Perfetto trace 中的对应时段
-- 预警携带的 AnrTypes 可帮助快速定位应关注的 trace track（如 broadcast 相关 ANR → 关注 BroadcastQueue 调度）
-
-详见 9.8 节「ANR Kernel Trace 联合诊断」中的 ftrace 时间对齐方法论。
-
-### 与 APM SDK 集成的实操指引
-
-线上 APM SDK 接入 Android 17 预警回调的推荐策略：
-
-1. **快速采集**：回调中只做轻量采集——抓取当前线程栈（`getAllStackTraces()`）、关键锁状态，不做 I/O 操作
-2. **异步落盘**：采集的数据放入内存环形缓冲区，由后台线程异步写入
-3. **降级兼容**：`Build.VERSION.SDK_INT >= 37` 才注册预警回调，低版本仍依赖 SIGQUIT 信号监控等现有方案
-4. **去重**：连续 ANR 的预警可能多次触发（对应 9.1 节的连续 ANR 合并逻辑），需要做去重处理
-
----
-
-## 🔹 ANR 预警对线上可观测性的价值
-
-### 解决 ANR 根因定位的核心痛点
-
-ANR 诊断的最大挑战（9.1 节、9.3 节）是**堆栈滞后性**：SIGQUIT dump 的堆栈是超时检测之后的快照，导致超时的代码可能已经执行完毕。预警回调在超时判定后、dump 前提供了一个窗口，使得：
-
-| 诊断需求 | 现有方案（无预警） | 预警回调方案 |
-|----------|-------------------|-------------|
-| 主线程当前在做什么 | traces.txt 堆栈（可能已偏移） | 回调中实时抓取堆栈（更接近真正瓶颈） |
-| 锁竞争状态 | 无（trace 中只有持锁线程） | 回调中遍历 `Thread.holdsLock()` 检测 |
-| Binder 队列深度 | 无 | 回调中检查 Binder 线程池状态 |
-| GC 状态 | trace 中有 GC cause（但时间滞后） | 回调中记录是否正在 GC |
-
-### 与 26.1 节可观测性框架的关联
-
-预警回调是 Android 系统向应用层暴露的少数**前置诊断信号**之一。在 26.1 节讨论的性能可观测性框架中，预警回调对应「Event-Triggered Proactive Diagnostics」模式——系统事件（ANR 预警）触发现有诊断流水线，而非等待开发者主动触发。
-
----
-
-## 🔸 AnrWarningCallback 与 ProfilingTrigger 的联动
-
-Android 16 的 `ProfilingTrigger.TRIGGER_TYPE_ANR` 在 ANR 时自动采集 system trace snapshot。Android 17 预警回调是否能与 ProfilingTrigger 形成联动尚待确认：
-
-- **理想路径**：预警回调触发 → SDK 主动调用 `ProfilingManager.requestProfiling()` 采集 stack sample 或 heap dump → ANR 完成后这些产物与系统自动采集的 trace snapshot 合并
-- **限制**：`ProfilingManager.requestProfiling()` 是异步 API，从请求到实际采集有调度延迟，而预警窗口期极短
-- **兼容注意**：`ProfilingResult` 的回调通过 `registerForAllProfilingResults()` 接收，需要与预警回调统一处理
-
-[待验证: 预警窗口期内调用 ProfilingManager.requestProfiling() 是否能在 ANR dump 完成前产出结果]
-
----
-
-## 🔸 预警时序与 ANR 触发时序的关系
-
-从预警回调触发到 ANR 正式完成的时序分析：
-
-```
-T0: 超时检测命中（AnrTimer / InputDispatcher / Handler 消息）
-T1: 预警回调触发（构造 AnrWarningResult → 分发到注册的回调）
-    ├── 诊断窗口期（T1 到 T2）— 持续时间取决于 AnrHelper 排队和处理速度
-T2: AnrHelper.appNotResponding() 开始执行
-    ├── SIGQUIT 发送到目标进程
-    ├── 虚拟机 dump 所有线程堆栈
-    ├── CPU 信息采样
-    ├── event log (am_anr) 写入
-    ├── Dropbox (data_app_anr / system_app_anr) 写入
-T3: 弹窗决策（showDialog / isSilentAnr kill）
+```text
+ANR Warning ANR-Id: <id> consumedMs=<value> timeoutMs=<value>
 ```
 
-**诊断窗口期 (T1→T2) 的预期时长**：
-- `AnrHelper` 通过 `AnrConsumerThread` 单线程串行处理 ANR 请求。如果队列前方有其他 ANR 请求正在处理，新请求需排队等待
-- 正常情况下（无排队），从 `appNotResponding()` 入口到 SIGQUIT 发送在数百毫秒级别
-- 极端情况（连续 ANR 风暴），排队延迟可达数秒
+这段标记提供 warning 时间戳与 ANR id，并帮助 trace redactor 保留相关 slice。应用使用 `ProfilingManager` 的 ANR trigger 时，不需要为了这条内部标记再注册第二个 warning listener。
 
-**实操建议**：诊断窗口期内不宜执行超过 200ms 的操作，以确保在 ANR dump 开始前完成数据采集。
+warning listener 本身不会启动系统 trace，也不会补回注册前的历史。`TRIGGER_TYPE_ANR` 是否返回产物仍受后台 trace、buffer、系统限流和设备配置影响。
 
-[待验证: 预警检查点是在 AnrHelper 之前还是 AnrController/组件级超时阶段，实际窗口期需源码级测量]
+在 warning 回调里临时调用 `requestProfiling()` 也不能保证赶在 deadline 前产出结果。需要 prehistory 的诊断应依靠系统环形 trace、平时 breadcrumbs 或预先开启且经过开销验证的采集。
 
----
+## 10. 与 Perfetto 对齐
 
-## 版本边界与注意事项
+Android 17 的 `AnrWarningController` 在存在目标 UID callback 时发出：
 
-| 版本 | ANR 可观测性演进 |
-|------|-----------------|
-| Android 11 (API 30) | `AnrHelper` 统一 ANR 入口；`ApplicationExitInfo` 提供 trace 流 API |
-| Android 14 (API 34) | `BroadcastQueueModernImpl` 两级超时；SHORT_SERVICE FGS 超时 ANR |
-| Android 15 (API 35) | dataSync/mediaProcessing 6h/24h FGS 超时；Watchdog 预 dump 阶段 |
-| Android 16 (API 36) | `BroadcastQueueImpl` + `AnrTimer`；`ProfilingManager` + `TRIGGER_TYPE_ANR` |
-| **Android 17 (API 37)** | **`AnrTypes` 枚举 + `AnrWarningResult` + `IAnrWarningCallback` 预警回调** |
+- category：`debug.anr`；
+- instant name：`AnrWarningDetected`；
+- args：`anrId`、`errorId`、`anrTimeoutMs`、`consumedTimeMs`。
 
-**重要提醒**：
-- 预警回调系统是 Android 17 新增功能，仅在 `targetSdk >= 37` 或运行在 Android 17+ 设备上可用
-- 预警回调不阻止 ANR 的发生——它是一个通知机制，不是预防机制
-- 预警回调中执行耗时操作不会延长 ANR 超时窗口，反而可能导致回调方自身也陷入 ANR
-- OEM 定制的 ANR 逻辑可能影响预警回调的触发时机和频率 [待验证: AnrWarningCallback 是否受 OEM 定制 ANR 逻辑影响]
+最终 ANR 处理中，`ProcessErrorStateRecord` 还可发出 `ANR Detected` instant。抓取配置需要启用 `debug.anr` Track Event category，详细配置见 [§9.8](08-anr-kernel-trace-joint-diagnosis.md#3-android-17-中可用的数据源)。
 
----
+分析时可按下面的时间关系核对：
 
-## 本章小结
+1. `AnrWarningDetected`；
+2. 应用自定义 warning breadcrumb；
+3. `ANR Detected`；
+4. early dump 与完整 ANR trace；
+5. final exit 或恢复事件。
 
-Android 17 的 ANR 预警回调系统标志着 Android ANR 机制从**纯事后通知**向**事前预警 + 事后诊断**的双层架构演进。三个核心组件各自的角色：
+若只有 warning instant，没有最终 ANR instant，应检查条件是否恢复。若 app breadcrumb 缺失而 system instant 存在，应检查 Binder 投递、process callback、executor 和进程存活状态。
 
-- **AnrTypes**：将分散的 ANR 分类信息统一为类型安全的枚举，替代字符串匹配
-- **AnrWarningResult**：结构化携带诊断上下文，比 reason 字符串更易于程序化处理
-- **IAnrWarningCallback**：提供应用侧可注册的前置通知通道，打开诊断窗口期
+## 11. `description` 与类型的使用方式
 
-对于线上 APM SDK 和监控平台而言，预警回调的价值在于：在 ANR dump 流程启动前的诊断窗口期内，采集实时线程状态、锁竞争信息和 Binder 队列深度——这些信息在事后的 traces.txt 中往往已经滞后或丢失。结合 9.8 节的内核 trace 联合诊断方法，预警回调为 ANR 根因定位提供了更精确的时间锚点和数据维度。
+`anrType` 适合做稳定分组，`description` 适合保留原文供人工查看。一个可靠的存储模型可以包含：
+
+| 字段 | 用途 |
+|---|---|
+| `warning_key` | type + id + boot/session |
+| `type` | 稳定分类 |
+| `description_raw` | 原始提示，不作为协议解析 |
+| `consumed_ms` / `timeout_ms` | 计时进度 |
+| `system_warning_uptime_estimate` | 由 callback uptime 与投递延迟估算时需标明误差 |
+| `receiver_process` | 说明哪个进程接收 |
+| `matched_exit` | 是否匹配最终 `ApplicationExitInfo.AnrInfo` |
+| `evidence_refs` | trace、breadcrumb、日志文件索引 |
+
+warning 对恢复样本也有价值。大量 warning 在同一业务阶段恢复，说明该阶段接近 deadline，适合在产生用户可感知 ANR 前做性能治理。
+
+## 12. 常见误解
+
+### 收到 warning 就一定会 ANR
+
+计时对象可以在 deadline 前完成，producer 会取消 timer。warning 应标记为 potential event。
+
+### 所有 `AnrTypes` 都会触发 listener
+
+类型集合比 Android 17 当前 producer 覆盖广。统计平台要按实际收到的 type 记录覆盖率。
+
+### listener 收到 warning 的进程就是目标进程
+
+AMS 按 UID 分发。同 UID 的多个已注册进程都可能收到同一 warning。
+
+### warning 载荷带线程栈和组件
+
+载荷只有 id、type、consumed、timeout 和 description。组件可能出现在不稳定的 description 中。
+
+### 回调能给 ANR deadline 续时
+
+原计时器继续运行。回调耗时不会改变 timeout。
+
+### `targetSdkVersion` 决定能否注册
+
+公开 API 的版本门槛是运行平台 API 37；官方签名没有 target SDK 条件。feature flag 和设备实现仍可能影响 warning producer。
+
+## 13. 接入检查表
+
+- 用 API 37 SDK 编译，并用 `SDK_INT >= 37` 保护调用；
+- executor 与主线程、业务拥塞线程池隔离；
+- 保存同一个 listener 实例用于注销；
+- 记录 `(type, id)`，加入 boot/session 和 receiver process；
+- 回调只复制轻量内存状态；
+- 多进程按 UID 投递语义去重；
+- warning 与 `ApplicationExitInfo.AnrInfo` 双向匹配；
+- 单独统计 recovered warning、matched ANR 和 ANR-without-warning；
+- 对 description 只做原文保留或容错聚类；
+- 在目标 build 上验证 feature flag、覆盖类型和剩余窗口。
+
+## 版本结论
+
+Android 17 / API 37 把 ANR 类型、预警载荷和 listener 注册做成公开 API。它提供 deadline 前的 best-effort 信号，也让 warning id 能与事后的 `ApplicationExitInfo.AnrInfo` 对齐。
+
+这项能力适合补充已有监控：平时维护轻量 breadcrumbs，warning 时冻结一个小快照，ANR 后再与 system trace 和退出记录合并。它没有取代系统 ANR trace，也没有覆盖 Android 17 中的每一种 ANR 类型。
+
+## 参考资料
+
+- [Android Developers：ActivityManager.registerAnrWarningListener](https://developer.android.com/reference/android/app/ActivityManager#registerAnrWarningListener(java.util.concurrent.Executor,%20java.util.function.Consumer))
+- [Android Developers：AnrWarningResult](https://developer.android.com/reference/android/app/AnrWarningResult)
+- [Android Developers：AnrTypes](https://developer.android.com/reference/android/app/AnrTypes)
+- [Android Developers：ApplicationExitInfo.getAnrInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo#getAnrInfo())
+- [AOSP android-17.0.0_r1：ActivityManager warning API](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java)
+- [AOSP android-17.0.0_r1：AnrTypes](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/AnrTypes.java)
+- [AOSP android-17.0.0_r1：AnrWarningResult](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/AnrWarningResult.java)
+- [AOSP android-17.0.0_r1：IAnrWarningCallback](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/IAnrWarningCallback.aidl)
+- [AOSP android-17.0.0_r1：AnrWarningController](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AnrWarningController.java)
+- [AOSP android-17.0.0_r1：AnrTimer](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/utils/AnrTimer.java)
+- [AOSP android-17.0.0_r1：ActiveServices warning producers](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java)
+- [AOSP android-17.0.0_r1：InputDispatcher pre-ANR](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
+- [AOSP android-17.0.0_r1：WindowManager AnrController](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/AnrController.java)
+- [AOSP android-17.0.0_r1：ProfilingManager](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java)
+- [§9.1 ANR 设计思想](01-anr-design.md)
+- [§9.3 ANR 分析方法](03-anr-analysis.md)
+- [§9.8 ANR Kernel Trace 联合诊断](08-anr-kernel-trace-joint-diagnosis.md)
