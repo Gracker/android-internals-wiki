@@ -38,8 +38,8 @@ related_chapters:
   - "15.5"
   - "9.1"
   - "8.2"
-pipeline_stage: task6_pending
-task9_state: pending
+pipeline_stage: deep-review
+task9_state: reviewed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-30"
 
@@ -58,8 +58,13 @@ task9_result: auto-fixed
 last_task9_autofix_at: "2026-06-30"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-01
-last_task6_audit: "2026-07-06"
+last_task6_audit: 2026-07-06
 last_task6_audit_result: "l1-minor-fixes-closed-loop-action-verb"
+last_verified: "2026-07-30"
+last_verified_against: "AOSP android-17.0.0_r1 (ProfilingManager.java, ProfilingResult.java, ProfilingTrigger.java) + developer.android.com AndroidX Profiling docs"
+confidence: medium
+last_deep_review_at: "2026-07-30T20:35:18+08:00"
+last_deep_review_run_id: "20260730-203518-deep-review-c1183d58"
 ---
 
 # 14.7 ProfilingManager

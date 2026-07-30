@@ -4,18 +4,23 @@ chapter: "13.22"
 status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: ['perfetto', 'sql', 'trace-analysis', 'performance-query']
-related_chapters: ['13.10', '13.11', '13.14', '13.20', '13.21', '14.32']
+related_chapters: ['13.10', '13.11', '13.14', '13.20', '13.21', '13.27', '14.32']
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "章节深挖"
-task6_state: "pending"
-task9_state: "pending"
-pipeline_stage: "task6_pending"
+task6_state: "reviewed"
+task9_state: "reviewed"
+pipeline_stage: "finalized"
 last_verified: "2026-07-30"
 last_verified_against: "AOSP android-17.0.0_r1 Perfetto stdlib + Perfetto v57.2 host toolchain"
 last_draft_polish_at: "2026-07-30T19:35:11+08:00"
 last_draft_polish_run_id: "20260730-193511-draft-polish-61cb8abd"
-confidence: "medium"
+reviewed_date: "2026-07-30"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+last_review_finalize_at: "2026-07-30T20:11:15+08:00"
+last_review_finalize_run_id: "20260730-201115-18996eb0"
+confidence: "medium-high"
+status: finalized
 sources:
   - "AOSP android-17.0.0_r1 Perfetto stdlib (android.frames.timeline, android.cujs.sysui_cujs, sched.latency, android.binder, android.memory.dmabuf)"
   - "Perfetto v57.2 host Trace Processor release"
