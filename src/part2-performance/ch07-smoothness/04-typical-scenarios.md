@@ -20,8 +20,8 @@ reviewed_by: "openclaw-task6"
 rework_date: '2026-04-04'
 rework_by: openclaw-task2b
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-05-03'
-last_verified_against: "AOSP android-16.0.0_r1, AndroidX Fragment 1.8.x, Perfetto/Chromium docs, Android 15 Predictive Back CDD"
+last_verified: '2026-07-30'
+last_verified_against: "AOSP android-17.0.0_r1, AndroidX Fragment 1.8.x (17-fragmenttransaction-commit-jank source chain), platform OnBackInvokedCallback/OnBackAnimationCallback @ API 33+, Perfetto/Winscope, Android 17 CDD"
 confidence: high
 sources:
 - type: blog
@@ -53,22 +53,24 @@ related_chapters:
 - '7.3'
 - '2.4'
 - '2.5'
-pipeline_stage: "task2b_pending"
+pipeline_stage: "deep-review-passed"
 task6_state: "revisiting"
-task9_state: "pending"
+task9_state: "reviewed"
 task2b_state: "fixed"
 task2b_result: "fixed"
 task6_result: "pass-light-edit"
-task9_result: "needs-rework"
-task9_reviewed_date: "2026-05-23"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-23T15:20:00+08:00"
+task9_result: "pass-deep-review"
+task9_reviewed_date: "2026-07-30"
+task9_reviewed_by: "hermes-deep-review-aiw-polish"
+last_task9_at: "2026-07-30T08:35:51+08:00"
 last_task2b_at: "2026-04-27T12:54:09+08:00"
 last_task6_audit: "2026-05-21"
-task9_review_notes: "2026-05-23 Task9 深度复审：needs-rework。P0 1 / P1 1 / P2 0；Predictive Back 回调接口/Perfetto counter 与 Fragment commit 时序仍需修正。详见 logs/deep-review/2026-05-23-15-deep-review.md。"
+last_deep_review_at: "2026-07-30T08:35:51+08:00"
+last_deep_review_run_id: "20260730-083551-deep-review-0a16d729"
+task9_review_notes: "2026-07-30 deep-review (run 20260730-083551-deep-review-0a16d729): pass-deep-review。上一轮 P0/P1 已修复——Predictive Back 回调接口已拆分 OnBackPressedCallback/OnBackInvokedCallback/OnBackAnimationCallback，移除未核 predictive_back_progress counter；Fragment commit 段补充 enqueueAction/scheduleCommit/Handler post 与 Looper 时序依赖，消除固定顺序表述。详见 logs/deep-review/2026-07-30-20260730-083551-deep-review-0a16d729-deep-review.md。"
 auto_promoted: true
-last_task9_audit: "2026-05-23"
-last_task9_review_log: "logs/deep-review/2026-05-23-15-deep-review.md"
+last_task9_audit: "2026-07-30"
+last_task9_review_log: "logs/deep-review/2026-07-30-20260730-083551-deep-review-0a16d729-deep-review.md"
 ---
 
 # 典型场景分析
@@ -197,7 +199,7 @@ Android 17 的现代窗口过渡需要同时观察三条线：
 
 ### Fragment transaction
 
-AndroidX Fragment 的 `commit()` 把事务加入 FragmentManager 队列，随后由宿主主线程执行 pending actions。它没有承诺与某个 VSync 对齐。一次切换可能把 Fragment 状态推进、View 创建/移除、SpecialEffectsController、measure/layout 与动画准备集中到相邻几帧。
+AndroidX Fragment 的 `commit()` 把事务加入 FragmentManager 队列（经 `enqueueAction()` / `scheduleCommit()` 用宿主 `Handler` `post` 一个 `mExecCommit`），随后由宿主主线程执行 pending actions。它没有承诺与某个 VSync 对齐：`mExecCommit` 与 Choreographer 帧回调共享同一主 Looper，但实际执行先后取决于主 MessageQueue 中已有消息、同步屏障、异步 Choreographer 消息以及 `commit()` 的发生时刻，并不存在"`execPendingActions()` 必定早于/晚于某次 `doFrame`"的固定顺序。使用 `commitNow()` 会把工作压进当前调用栈，可改变这一相对位置。一次切换可能把 Fragment 状态推进、View 创建/移除、SpecialEffectsController、measure/layout 与动画准备集中到相邻几帧。
 
 几个 API 的边界需要分清：
 
@@ -242,13 +244,19 @@ Android 12（API 31）起，系统 SplashScreen API 为冷启动和温启动提�
 
 ### Predictive Back
 
-Android 15 移除了预测性返回的开发者选项。应用完成 opt-in 后，系统可以提供返回桌面、跨 Activity 和跨任务的预测动画；具体效果仍受导航结构、回调类型和系统实现影响。AndroidX 应用通常通过 `OnBackPressedCallback` 接入，平台侧可使用 `OnBackInvokedCallback`；需要连续进度的自定义动画时，要使用支持 started/progressed/cancelled/invoked 生命周期的接口。
+Android 15 移除了预测性返回的开发者选项。应用完成 opt-in 后，系统可以提供返回桌面、跨 Activity 和跨任务的预测动画；具体效果仍受导航结构、回调类型和系统实现影响。涉及的平台/AndroidX 回调接口需要分清，三者不能混用：
+
+- `OnBackPressedCallback`（AndroidX Activity 1.6+）：`handleOnBackPressed()`，由 `OnBackPressedDispatcher` 分发；它只在返回提交时触发，本身不提供连续进度。
+- `OnBackInvokedCallback`（平台，API 33+）：只有 `onBackInvoked()`，在返回“提交”时回调。它同样没有 started/progressed/cancelled 进度语义。
+- `OnBackAnimationCallback`（平台，API 33+，依赖 `android:enableOnBackInvokedCallback="true"`）：提供 `onBackStarted(BackEvent)`、`onBackProgressed(BackEvent)`、`onBackCancelled()` 和 `onBackInvoked()` 完整生命周期。需要按手势进度驱动自定义动画时，必须使用这个接口；前两者无法提供连续进度。
 
 诊断要同时检查三个问题：
 
-- 手势进度回调是否短小、连续，取消路径能否恢复界面状态；
+- 手势进度回调（`OnBackAnimationCallback`）是否短小、连续，取消路径（`onBackCancelled`）能否恢复界面状态；
 - 当前回调是否消费了系统返回，导致系统预测动画无法运行；
 - 当前窗口、目标窗口或 home/task surface 的 leash 与 display frame 是否按时。
+
+Perfetto 中没有名为 `predictive_back_progress` 的标准内置 counter。返回手势的进度与参与者由 SystemUI `EdgeBackGestureHandler`、WindowManager Shell transition 和 `BackGestureProto`/Winscope 记录，trace 里看到的应是各进程的自定义 Trace section、Shell transition marker 与 sched，而不是某个统一标准 counter 轨道。需要验证 progress 回调时序时，应靠应用自身插桩（`Trace.beginSection("onBackProgressed")` 等）或 Winscope 的 Shell 参与者，不要预设一个平台标准 counter 名。
 
 Android 16（API 36）起可用 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER` 观察系统导航而不消费返回，Android 17（API 37）继续保留这一能力。默认优先级或 overlay 优先级回调会参与消费决策，注册方式错误时，现象可能是“没有预测动画”，这和渲染掉帧属于两类问题。
 

@@ -390,6 +390,46 @@
       "summary": "Performance table (install time 3.5s→2.1s etc.) has no measurement source",
       "type": "fabricated-data",
       "updated_at": "2026-07-29T20:37:31.240509+08:00"
+    },
+    {
+      "chapter": "7.4",
+      "close_note": "Predictive Back 三接口已显式拆分；predictive_back_progress 未核 counter 已移除并替换为正确观察途径。",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260730-083551-deep-review-0a16d729",
+      "created_at": "2026-07-30T08:40:09.532676+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260730-083551-deep-review-0a16d729",
+      "details": "上一轮 P0：OnBackInvokedCallback 只有 onBackInvoked()，连续进度属 OnBackAnimationCallback；predictive_back_progress 不是 AOSP 标准 counter。本轮已将三接口显式拆分并移除未核 counter，给出正确观察途径。",
+      "id": "AIW-7.4-20260730-P0-predictive-back-callback-boundary",
+      "log_path": "logs/deep-review/2026-07-30-20260730-083551-deep-review-0a16d729-deep-review.md",
+      "severity": "P0",
+      "source_paths": [
+        "platform android.window.OnBackInvokedCallback/OnBackAnimationCallback @ API 33+; AOSP android-17.0.0_r1; 17-fragmenttransaction-commit-jank.md"
+      ],
+      "status": "fixed",
+      "summary": "§7.4 Predictive Back 混淆 OnBackInvokedCallback/OnBackAnimationCallback 进度语义并引用未核 predictive_back_progress counter，已修复",
+      "type": "source-boundary",
+      "updated_at": "2026-07-30T08:40:20.776825+08:00"
+    },
+    {
+      "chapter": "7.4",
+      "close_note": "Fragment commit 段已补 enqueueAction/scheduleCommit/Handler.post(mExecCommit) 链路与 Looper 时序依赖，消除固定顺序表述。",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260730-083551-deep-review-0a16d729",
+      "created_at": "2026-07-30T08:40:22.118615+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260730-083551-deep-review-0a16d729",
+      "details": "上一轮 P1：commit() 经 enqueueAction/scheduleCommit Handler.post(mExecCommit) 异步执行，与 Choreographer 共享主 Looper；执行先后取决于 MessageQueue/同步屏障/异步消息/调用时刻，无固定顺序。本轮已补源码链路与依赖说明。",
+      "id": "AIW-7.4-20260730-P1-fragment-commit-timing-order",
+      "log_path": "logs/deep-review/2026-07-30-20260730-083551-deep-review-0a16d729-deep-review.md",
+      "severity": "P1",
+      "source_paths": [
+        "AndroidX Fragment 1.8.x BackStackRecord/FragmentManager; 17-fragmenttransaction-commit-jank.md source chain"
+      ],
+      "status": "fixed",
+      "summary": "§7.4 Fragment commit 段隐含 execPendingActions 与 doFrame 固定顺序，已补 Looper 时序依赖依据修复",
+      "type": "source-boundary",
+      "updated_at": "2026-07-30T08:40:26.450951+08:00"
     }
   ],
   "schema_version": 1
