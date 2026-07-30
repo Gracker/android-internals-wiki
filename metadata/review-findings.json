@@ -466,6 +466,25 @@
       "summary": "Stale GPU debug outline stub (outline-start/end) from unrelated template; mismatched chapter topic",
       "type": "stale-template-content",
       "updated_at": "2026-07-30T16:08:18.665395+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch12-apk-network/08-networkagent-lifecycle-scoring.md",
+      "created_at": "2026-07-30T22:11:29.618639+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20260730-220530-7396baf7",
+      "details": "章节评分模型整节基于 pre-Android-12 legacyInt 数值比较范式。但 §1.62（confidence:high, verified 2026-07-25, 同一 baseline android-17.0.0_r1）明确：1) setLegacyInt() 在 Android 17 已退出排名，仅供日志；2) 实际排名用 FullScore 策略位有序筛选；3) NetworkScorecard 不参与 NetworkRanker 排序。本节错误传播了 legacyInt=主排序键、NetworkScorecard=二级排序键的错误模型，且完全缺失 FullScore 概念。已就地修正可直接修复的点（源码路径、评分描述、排序算法描述、VPN 表项），但评分模型整节需 rework 以 FullScore 策略位范式重写。",
+      "id": "finding-964ab7c1a918",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "packages/modules/Connectivity/service/src/com/android/server/connectivity/FullScore.java",
+        "packages/modules/Connectivity/service/src/com/android/server/connectivity/NetworkRanker.java",
+        "src/part1-fundamentals/ch01-architecture/1.62-android17-connectivitymanager-architecture-performance.md"
+      ],
+      "status": "open",
+      "summary": "评分模型核心描述与 §1.62 高置信度结论冲突：legacyInt 主排序键/NetworkScorecard 二级排序/缺少 FullScore 概念",
+      "type": "incorrect-technical-claim",
+      "updated_at": "2026-07-30T22:11:29.618639+08:00"
     }
   ],
   "schema_version": 1

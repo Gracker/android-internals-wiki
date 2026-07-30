@@ -2,29 +2,34 @@
 title: "Android 17 NetworkAgent 生命周期与 NetworkScorecard 动态评分机制"
 chapter: "12.8"
 section: "12.8"
-status: ready-for-review
+status: needs-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-tags: [NetworkAgent, NetworkScorecard, ConnectivityService, network-scoring, NetworkRanker, PSI, Android-17]
-related_chapters: ["12.5", "12.6", "24.9", "24.16"]
+tags: [NetworkAgent, NetworkScorecard, ConnectivityService, network-scoring, NetworkRanker, FullScore, PSI, Android-17]
+related_chapters: ["12.5", "12.6", "24.9", "24.16", "1.62"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-23"
 drafted_date: "2026-06-25"
 last_verified_against: "AOSP android-17.0.0_r1"
-confidence: medium-high
+confidence: medium
 last_verified: "2026-07-30"
 last_rework_at: "2026-07-30T21:35:26+08:00"
 last_rework_run_id: "20260730-213526-rework-9dc6f657"
-pipeline_stage: ready-for-review
-task6_state: revisiting
-task9_state: pending
+pipeline_stage: task9_needs_rework
+task6_state: needs-rework
+task9_state: needs-rework
+last_review_finalize_at: "2026-07-30T22:05:30+08:00"
+last_review_finalize_run_id: "20260730-220530-7396baf7"
 rework_notes: "2026-07-30 rework：解决 pending-verification-marker。1) 修正 markdown 格式 bug（****`candidate`**`** → 合并描述）。2) NetworkScore 的 candidate 字段不存在，改为描述 policies/legacyInt 实际结构，NetworkScorecard 历史数据作为排序辅助参考而非 NetworkScore 内嵌字段。3) MPTMP 笔误修正为 MPTCP，并更新 Android 17 MPTCP 可用性表述。4) VPN 评分表'声明值+101'修正为整数 101 强制接管。5) 清除全部 [待验证] 标记，改为 [边界]/确定性表述。"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+reviewed_date: "2026-07-30"
+review_notes: "2026-07-30 review-finalize：发现评分模型与 §1.62（confidence:high）核心冲突。1) legacyInt 在 Android 17 已退出排名，本节仍称其为主排序键——错误。2) NetworkScorecard 非 NetworkRanker 二级排序键——错误。3) 缺少 FullScore 概念。4) 源码路径 frameworks/opt/net 为主线模块化前旧路径，已修正为 packages/modules/Connectivity。5) VPN 101 描述修正为 FullScore 策略位而非无条件接管。已就地修正源码路径、评分模型描述、排序算法描述、VPN 表项，并标注 [待 rework] 引导重写。章节 NetworkAgent 生命周期/destroyNetwork/netd 协作部分技术结论可靠。需 rework 重写评分模型整节为 FullScore 策略位范式。"
 sources:
   - type: aosp
-    path: "frameworks/opt/net/ConnectivityService/src/com/android/server/connectivity/ConnectivityService.java"
-  - type: deepresearch
-    path: "DeepResearch/2026-06-22-android17-networkagent-lifecycle-scoring-mechanism.md"
+    path: "packages/modules/Connectivity/service/src/com/android/server/ConnectivityService.java"
   - type: aosp
     path: "packages/modules/Connectivity/service/src/com/android/server/connectivity/NetworkRanker.java"
+  - type: aosp
+    path: "packages/modules/Connectivity/service/src/com/android/server/connectivity/FullScore.java"
   - type: aosp
     path: "packages/modules/Connectivity/service/src/com/android/server/connectivity/NetworkScorecard.java"
 ---
@@ -33,9 +38,13 @@ sources:
 
 12.5 讲了应用层看到的 `NetworkCallback` 和 `NetworkCapabilities` 模型，12.6 讲了 DNS 解析和 netd 的诊断链路。本节往下拆一层：系统内部怎么管理一条网络的诞生、评分和销毁。`ConnectivityService` 是网络栈的中枢，`NetworkAgent` 是每种网络（Wi-Fi、蜂窝、VPN 等）向系统注册的句柄，`NetworkRanker` 负责在多网络并存时选出最优匹配。这三个组件的交互决定了应用看到的 `onAvailable()` / `onLost()` 时序和网络切换延迟。
 
-Android 12 到 17 的核心变化是评分机制从单一整数分值（`LegacyType` 时代的 `-50` ~ `100`）演进到多维度的 `NetworkScore` 对象，结合 `NetworkScorecard` 的历史数据做长期质量判断。这一变化影响了 OEM、运营商和应用开发者的网络选择策略实现。
+Android 12 到 17 的核心变化是评分机制从单一整数分值（`LegacyType` 时代的 `-50` ~ `100`）演进到 `NetworkScore` 对象 + `FullScore` 策略位排序。Android 17 中 `legacyInt` 已退出实际排名，`NetworkRanker` 基于 `FullScore` 的策略位做有序筛选。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/opt/net/ConnectivityService/src/com/android/server/connectivity/ConnectivityService.java]
+> **[待 rework]** 本节原描述"结合 `NetworkScorecard` 的历史数据做长期质量判断"不准确——`NetworkScorecard` 是独立质量记录类，不参与 `NetworkRanker` 排序。
+
+[已验证: AOSP android-17.0.0_r1, packages/modules/Connectivity/service/src/com/android/server/ConnectivityService.java]
+
+> **⚠️ 本节评分模型与排序算法描述与 §1.62 的高置信度源码结论存在关键冲突，待 rework 重写。** 核心 `legacyInt` 已退出实际排名、`FullScore` 策略位排序才是 Android 17 的实际机制、`NetworkScorecard` 并非 `NetworkRanker` 二级排序键——这些在当前正文仍未正确反映。详见下方 [待 rework] 段落与 frontmatter `rework_notes`。
 
 ## NetworkAgent 注册与销毁流程
 
@@ -131,15 +140,30 @@ Android 11 及更早版本使用整数分值（`-50` 到 `100`）。Wi-Fi 默认
 
 ### Android 12-17：NetworkScore 对象
 
-Android 12 引入 `NetworkScore` 类，到 Android 17 已经发展成包含多个评分因子的结构：
+Android 12 引入 `NetworkScore` 类。`NetworkAgent` 提供者通过 `NetworkScore.Builder` 构造评分对象，其中可设置 `legacyInt` 和若干 `Policy` 约束。但 Android 17 源码注释明确指出 `setLegacyInt()` 的值仅供测量和日志使用，**不再参与网络之间的排名**。
 
-- **`legacyInt`**：向后兼容的整数分值，用于不识别多维评分的旧代码路径，也是当前重匹配的主排序键
+实际参与排名的是 `FullScore`——`ConnectivityService` 把 `NetworkAgent` 上报的 `NetworkScore`（agent 策略）与 Connectivity 自身管理的状态（验证、用户选择、VPN、keep-connected 等）合并成 `FullScore` 的策略位集合，例如：
+
+- 当前或曾经验证（`POLICY_VALIDATED` / `POLICY_EVER_VALIDATED`）
+- VPN（`TRANSPORT_VPN` → `FullScore` 设置 VPN 策略）
+- 用户显式选择、接受未验证网络
+- 主传输（`POLICY_TRANSPORT_PRIMARY`）
+- 即将退出（`POLICY_EXITING`）
+- 已销毁但暂留以等待替换
+
+因此 Android 17 不存在"Wi-Fi 60 + validated 40 = 100"这类加分公式，OEM 上报的 `legacyInt` 仅用于兼容旧日志，排名由策略位集合 + `NetworkRanker` 的有序筛选决定。
+
+> **[待 rework：本段以下旧描述保留但已知不准确]** 下面的描述仍基于旧 legacyInt 范式，与上文的 Android 17 源码结论冲突，应在 rework 中重写。
+
+`NetworkScore` 对象结构（用于兼容和日志）：
+
+- **`legacyInt`**：向后兼容的整数分值，**Android 17 中已退出实际排名**，仅供测量和日志使用（详见 §1.62 与 `FullScore.java` 注释）
 - **`transportInfo`**：携带传输层特定信息（如 Wi-Fi 的 RSSI、蜂窝的 NR/ARFCN），供 `NetworkCapabilities` 透传
-- **`policies`**：一组 `NetworkScore.Policy` 约束（如 `POLICY_TRANSPORT_PRIMARY`、`POLICY_PEER_HANDOVER`），影响重匹配时是否允许抢占当前网络
+- **`policies`**：一组 `NetworkScore.Policy` 约束，由 agent 上报，经 `FullScore` 合并系统状态后形成完整策略位
 
-`NetworkScore` 本身不内嵌 `NetworkScorecard` 数据。`NetworkScorecard` 维护独立的长期质量历史（探测 RTT、DNS 成功率、丢包率），由 `NetworkRanker` 在 `legacyInt` 平分时作为二级排序参考，不会序列化进 `NetworkScore` 对象随评分上报传递。
+`NetworkScore` 本身不内嵌 `NetworkScorecard` 数据。`NetworkScorecard` 维护独立的长期质量历史（探测 RTT、DNS 成功率、丢包率），但 **`NetworkRanker` 的排名算法不使用 `NetworkScorecard` 做二级排序**——Android 17 的 `NetworkRanker` 基于策略位有序筛选（详见下节），而非数值比较 + 质量历史。
 
-[边界: Android 17 NetworkScore 是否新增内嵌 PQI/延迟字段，需以源码 NetworkScore.java 为准；本节按 legacyInt + policies + transportInfo 三件套描述当前可确认的结构]
+[边界: Android 17 NetworkScore / FullScore 的具体策略常量名以源码 `FullScore.java` 为准；本节列出的是已确认的主要策略位]
 
 `NetworkAgent` 通过 `sendNetworkScore()` 上报当前评分：
 
@@ -227,7 +251,9 @@ private NetworkReassignment computeNetworkReassignment(
 }
 ```
 
-`NetworkRanker.getBestNetwork()` 遍历所有 `NetworkAgentInfo`，过滤掉不满足 `NetworkRequest` 的 `NetworkCapabilities` 要求的网络，在合格网络中取评分最高者。比较顺序：先比 `NetworkScore.legacyInt`，分值相同再比 `NetworkScorecard` 的历史质量数据。
+`NetworkRanker.getBestNetwork()` 遍历所有 `NetworkAgentInfo`，过滤掉不满足 `NetworkRequest` 的 `NetworkCapabilities` 要求的网络，然后对候选集按 `FullScore` 的策略位做有序筛选——**不是数值比较**。Android 17 的筛选顺序（简化）为：invincible offer → 已连接 VPN → 用户选择且接受未验证 → 已验证/用户接受 → 非 exiting → 同 transport primary → transport 顺序（Ethernet > Wi-Fi > Bluetooth > Cellular）→ VCN → 非 destroyed-pending-replacement → 保持当前 satisfier。
+
+> **[待 rework]** 上面的 `getBestNetwork()` 签名描述可能不精确；Android 17 `NetworkRanker` 的实际方法名和参数列表应以源码 `NetworkRanker.java` 为准。原正文声称"先比 `NetworkScore.legacyInt`，分值相同再比 `NetworkScorecard` 的历史质量数据"是**错误的**——`legacyInt` 已退出排名，`NetworkScorecard` 不参与 `NetworkRanker` 排序。
 
 ### 算法复杂度与性能影响
 
@@ -288,7 +314,9 @@ mDnsManager.removeNetwork(nai.network);
 
 `destroyNetworkCache` 调用 `IDnsResolver` 的 native 方法，释放 `res_send` 级别的解析器状态。如果在缓存销毁后、新网络 DNS 缓存建立前有 DNS 查询，查询会走到系统默认 resolver（通常指向最后一个已验证网络的 DNS），可能返回错误的解析结果。
 
-`mDnsManager.removeNetwork()` 清理 `NetworkAgentInfo` 关联的 DNS 统计数据（成功率、延迟分布），这些数据会写入 `NetworkScorecard` 作为历史评分参考。
+`mDnsManager.removeNetwork()` 清理 `NetworkAgentInfo` 关联的 DNS 统计数据（成功率、延迟分布）。
+
+> **[待 rework]** 原文称 DNS 统计"会写入 `NetworkScorecard` 作为历史评分参考"——这与 §1.62 的结论冲突。`NetworkScorecard` 记录质量历史但不参与 `NetworkRanker` 排序，"作为评分参考"的措辞应改为"作为质量监控/诊断数据保留"。
 
 [已验证: AOSP android-17.0.0_r1, DnsManager.java, IDnsResolver.aidl]
 
@@ -334,14 +362,14 @@ Wi-Fi 关联完成 → DHCP 获取 IP（100-500ms）
 
 ### OEM 评分权重
 
-OEM 通过 `NetworkAgent` 的 `NetworkScore.legacyInt` 上报初始分值。AOSP 默认值：
+OEM 通过 `NetworkAgent` 的 `NetworkScore.Builder` 上报策略和兼容 legacyInt。AOSP 默认 legacyInt（仅供日志/兼容，不参与排名）：
 
 | 网络类型 | 默认 legacyInt | 说明 |
 |----------|---------------|------|
 | Wi-Fi（已验证） | 60 | 包含 NET_CAPABILITY_VALIDATED |
 | Wi-Fi（未验证） | 56 | 比已验证低 4 分 |
 | 蜂窝 | 50 | 按信号强度微调 |
-| VPN | 101 | 整数 101 表示无条件接管，覆盖所有物理网络（不是"声明值 + 101"） |
+| VPN | 101 | 原生 Vpn 构造 legacyInt=101 的 NetworkScore（历史兼容值）；FullScore 基于 TRANSPORT_VPN 设置 VPN 策略位，而非靠整数 101 "无条件接管" |
 
 OEM 可以修改 Wi-Fi 和蜂窝的基础分值。部分 OEM 的策略是：Wi-Fi RSSI 低于阈值时分数快速衰减，触发提前切换到蜂窝，避免用户在弱 Wi-Fi 下等待超时。
 
@@ -352,7 +380,9 @@ Wi-Fi 的评分变化由 `ClientModeImpl` 监听 RSSI 变化后触发。典型�
 - **-70 ~ -75 dBm**：信号衰减开始，评分下降
 - **-80 dBm 以下**：可能触发切换到蜂窝（取决于 OEM 配置）
 
-评分下降不会立即切换，需要蜂窝评分超过当前 Wi-Fi 评分才会触发 `rematchAllNetworksAndRequests()` 重新分配。这导致一个现象：信号已经很差，但应用仍在使用 Wi-Fi，直到下一次评分更新完成重匹配。
+评分变化不会立即切换，需要重匹配算法判定新网络在策略位筛选中胜出才会触发 `rematchAllNetworksAndRequests()` 重新分配。这导致一个现象：信号已经很差，但应用仍在使用 Wi-Fi，直到下一次评分更新完成重匹配。
+
+> **[待 rework]** 原文"需要蜂窝评分超过当前 Wi-Fi 评分"基于 legacyInt 数值比较范式；Android 17 的实际机制是策略位有序筛选（详见上节），非简单数值超越。
 
 ### 双连接场景
 
