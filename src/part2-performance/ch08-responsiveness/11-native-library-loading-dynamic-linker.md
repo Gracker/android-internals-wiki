@@ -93,134 +93,314 @@ last_deepseek_cn_review_at: 2026-06-13
 
 <!-- outline-end -->
 
-## 为什么 Native 库加载要单独看
+`System.loadLibrary()` 看起来只有一行，调用期间却会跨过 ART、`libnativeloader`、Bionic linker 和内核内存管理。ELF 映射、依赖搜索、符号重定位、ELF 构造器与 `JNI_OnLoad` 都可能占用调用线程。若它发生在 `ContentProvider`、`Application.onCreate()` 或首个 Activity 的主线程上，这段耗时会直接进入冷启动关键路径。
 
-很多启动优化文章会把 native 库加载塞进 Application 初始化里一笔带过。线上排查时，这一段经常单独变成瓶颈：一个 SDK 在 `Application.onCreate()` 里同步 `System.loadLibrary()`，React Native 或游戏引擎一次加载十几个 `.so`，Bionic linker 再完成 ELF 映射、重定位和初始化函数调用，首帧就会被推迟。
+本章以 Android 17 / API 37 的 `android-17.0.0_r1` 为平台源码锚点，kernel 侧固定到 `android17-6.18-2026-06_r6`。历史版本用于说明 Linker Namespace 和 16KB page size 的演进；Android 17 的主结论均以固定 tag 复核。
 
-这类问题和普通 Java/Kotlin 初始化不同。Java 侧能看到方法栈，native 库加载则跨过 ART、Bionic linker、内核 `mmap()` 和 ELF 格式。Perfetto 里有时只看到主线程被 `dlopen` 卡住，看不到每个重定位、每个 `DT_INIT_ARRAY` 回调的细节。要判断这段时间能不能省，先把库加载路径和可观测边界分清楚。
+## 从 `System.loadLibrary()` 到 `JNI_OnLoad`
 
-这类排查先拆成三件事：启动阶段哪些地方会触发 native 库加载；Bionic linker 做了哪些工作，哪些能在 Trace 或系统文件里确认；16KB page size、Linker Namespace、Hook SDK 这几类兼容问题会怎样改变加载成本和失败模式。JNI 热路径本身的调用成本见 §1.15，启动优化策略见 §8.3，16KB 页的系统机制见 §4.7。
+先把一次 Java/Kotlin 加载拆成可测量的阶段。下面的图对应 Android 17 源码中的主调用关系。
+
+```mermaid
+flowchart LR
+    App["System.loadLibrary()"]
+    ART["ART<br/>JavaVMExt::LoadNativeLibrary"]
+    NL["libnativeloader<br/>ClassLoader namespace"]
+    DL["android_dlopen_ext<br/>RTLD_NOW"]
+    Linker["Bionic linker<br/>map + DT_NEEDED + relocate"]
+    Ctor["ELF constructors<br/>DT_INIT / DT_INIT_ARRAY"]
+    JNI["ART 调用 JNI_OnLoad"]
+
+    App --> ART --> NL --> DL --> Linker --> Ctor --> JNI
+```
+
+`libnativeloader` 按调用方 ClassLoader 找到对应的 linker namespace，再以 `RTLD_NOW` 打开库。Bionic 负责 ELF 和依赖库的装载、重定位及构造器。`dlopen` 成功返回后，ART 才查找 `JNI_OnLoad` 并调用它。旧文中常把 `JNI_OnLoad` 写成 linker 的工作，这会把两个优化对象混在一起。
+
+### 四段成本要分别归因
+
+| 阶段 | 典型工作 | 常见证据 |
+|---|---|---|
+| ART / NativeLoader | ClassLoader、namespace、重复加载协调 | Java/native 调用栈、ART 日志 |
+| Bionic 映射与链接 | ELF 校验、`PT_LOAD`、`DT_NEEDED`、符号查找、重定位、RELRO | `dlopen:` trace、采样栈、`mmap`/page fault |
+| ELF 构造器 | `DT_INIT`、`DT_INIT_ARRAY` 中的进程级初始化 | native marker、采样栈、库源码 |
+| `JNI_OnLoad` | 注册 native 方法及 SDK 自定义初始化 | `JNI_OnLoad` marker、采样栈、SDK 源码 |
+
+外层 `System.loadLibrary()` 耗时包含整张表。只看到一个 40 ms 的调用，仍无法判断是重定位、缺页、构造器，还是 SDK 在 `JNI_OnLoad` 里读配置和建线程。
 
 ## Native 库加载在启动链路里的位置
 
-App 层最常见的入口是 `System.loadLibrary("xxx")`。它从 Java 层进入运行时，再走到 Bionic 的 `dlopen()` / `android_dlopen_ext()`。`android_dlopen_ext()` 是 Bionic 带 Android 扩展参数的库打开接口，通过 `android_dlextinfo` 可以携带文件描述符、RELRO、namespace 等参数。[已验证: 官方文档, https://developer.android.com/ndk/reference/group/libdl]
+常见触发点可以按“是否要求首帧前完成”分类：
 
-启动阶段触发 native 库加载的地方通常有四类：
+- **进程自动初始化**：`ContentProvider`、App Startup initializer、`Application` 或静态初始化块加载崩溃、监控、音视频等库。
+- **框架运行时创建**：React Native、Flutter、Unity、Unreal 等在创建 VM、engine 或 bridge 时加载多组库。
+- **首个 native 调用前**：业务入口延迟到第一次使用 JNI 功能时加载。
+- **动态功能入口**：相机、编辑器、端侧推理或通话模块在用户进入页面后加载。
 
-- **Application 或 ContentProvider 初始化**：埋点、崩溃、监控、音视频、地图 SDK 常在进程刚启动时加载自己的 native 层。如果多个 SDK 都这样做，`BindApplication` 后面的主线程时间会被连续占用。
-- **类加载副作用**：某个 Kotlin object、Java static initializer 或 SDK facade 首次访问时调用 `System.loadLibrary()`。这种加载点不一定出现在业务显式初始化代码里，需要用插桩或调用栈确认。
-- **框架入口**：React Native、Flutter、Unity、Unreal 等框架在创建运行时环境时加载桥接库、JavaScript 引擎或游戏引擎运行时。库数量、体积、重定位量都会影响首屏。
-- **延迟功能模块**：相机、音视频编辑、端侧 AI、WebView 相关能力可能在用户进入功能页时才加载。这种加载不影响冷启动首帧，但会影响功能页首帧或首次交互。
+类的静态初始化也会隐藏加载点。某个 Kotlin `object` 或 Java `static {}` 只要在冷启动被首次访问，就可能把 native 加载带进主线程。排查时应从 APK 内所有 `System.loadLibrary` / `System.load` 调用出发，再补上三方 SDK 自动初始化和引擎入口。
 
-在 Perfetto 中，这段时间不一定有统一的 “native library load” slice。工程上更稳的做法是在每个可控的 `System.loadLibrary()` 前后加 `Trace.beginSection()` / `Trace.endSection()`，再配合 simpleperf 或 Perfetto callstack 采样看 `dlopen`、`__dl__`、relocation、`JNI_OnLoad` 一类符号。[已验证: 参考 §1.15 的 NDK Trace / simpleperf 可观测性]
+### 给每个可控加载点加名称
 
-## Bionic linker 加载流程与可观测边界
+下面的 Kotlin 辅助方法为加载调用增加应用侧 trace section。
 
-Bionic linker 处理一个 `.so` 时，大体会经历这条路径：读取 ELF header 和 program header，检查 `PT_LOAD` 段对齐，预留地址空间，把各个 segment 映射到进程地址空间，处理 `DT_NEEDED` 依赖，做符号查找和重定位，设置 RELRO / 段权限，调用 `DT_INIT` / `DT_INIT_ARRAY`，完成后返回库句柄。
+```kotlin
+private fun loadNativeLibrary(name: String) {
+    Trace.beginSection("NativeLoad:$name")
+    try {
+        System.loadLibrary(name)
+    } finally {
+        Trace.endSection()
+    }
+}
+```
 
-AOSP `bionic/linker/linker_phdr.cpp` 中的 `ElfReader::LoadSegments()` 负责把 `PT_LOAD` 段映射进来；`linker_phdr_16kib_compat.cpp` 中的 compat 分支处理 4KB ELF 在 16KB 设备上的特殊路径。这些代码解释了为什么库加载不只是一次文件打开：它会触发地址空间预留、文件映射、匿名页、权限切换和初始化代码执行。[已验证: AOSP android-16.0.0_r1, `bionic/linker/linker_phdr.cpp`, `bionic/linker/linker_phdr_16kib_compat.cpp`]
+这段 marker 能回答“哪个调用阻塞了当前线程、总共多久”。它不能自动拆出构造器和 `JNI_OnLoad`，所以自有库还应在这两个位置增加 native trace marker。库名不要含用户数据，section 名也应保持短且稳定。
 
-可观测边界要分层看：
+加载点移出冷启动后，还要测首次功能入口。把 30 ms 从启动转移到用户点击后，只是换了发生位置；更合适的做法通常是在有明确空闲窗口时预热，并保留超时与失败处理。
 
-| 观察点 | 能回答的问题 | 不能回答的问题 |
-| --- | --- | --- |
-| `Trace` 包住 `System.loadLibrary()` | 哪个库加载阻塞了主线程、持续多久 | linker 内部每一步的精确耗时 |
-| simpleperf / Perfetto callstack | CPU 时间集中在重定位、初始化函数还是库自身代码 | 没被采样到的短时事件 |
-| `/proc/<pid>/maps` | 库是否已映射、路径来自 APK 还是文件系统 | 加载过程耗时 |
-| `/proc/<pid>/smaps` | `Shared_Clean`、`Private_Dirty`、PSS 是否异常 | 重定位细节和 Java 触发点 |
-| logcat / crash tombstone | `dlopen failed`、alignment、namespace 拒绝等失败原因 | 正常加载的性能分布 |
+## Android 17 Bionic linker 的加载流程
 
-如果要定位“加载慢”，优先把 `System.loadLibrary()` 拆成命名清楚的 trace section，再用采样确认是 linker 成本还是库初始化函数成本。很多 SDK 的 `JNI_OnLoad` 会顺手做线程创建、配置读取、设备信息采集，表面看是 `dlopen` 慢，瓶颈却在库自己的初始化代码。
+Android 17 的 `do_dlopen()` 会建立名为 `dlopen: <name>` 的 scoped trace，然后进入查找和链接流程。`find_libraries()` 处理目标库与 `DT_NEEDED` 依赖；`ElfReader` 读取 ELF header/program header 并保留地址空间；`LoadSegments()` 映射 `PT_LOAD`；linker 完成 prelink、符号查找和 relocation；成功后调用 `soinfo::call_constructors()`。
 
-## Linker Namespace 的隔离规则
+可以把性能成本理解为五组：
 
-Android 7 引入 Linker Namespace 后，`dlopen()` 不再是“知道路径就能打开”。namespace 约束决定当前库能访问哪些搜索路径、哪些 public library、哪些跨 namespace 共享库。AOSP `android_namespace_t::is_accessible(const std::string& file)` 的路径判断很直接：非 isolated namespace 直接放行；isolated namespace 先看 `allowed_libs_`，再检查 `ld_library_paths_`、`default_library_paths_`、`permitted_paths_`。[已验证: AOSP android-16.0.0_r1, `bionic/linker/linker_namespaces.cpp`, `bionic/linker/linker_namespaces.h`]
+1. **发现与打开文件**：按 namespace 的搜索路径、soname 和已加载库集合寻找目标。
+2. **地址空间与 segment**：为 ELF 保留虚拟地址，映射代码、只读数据、可写数据与 BSS。
+3. **依赖图**：解析 `DT_NEEDED`，加载尚未存在的依赖。
+4. **重定位**：`RTLD_NOW` 要在返回前完成所需符号解析和 relocation。
+5. **初始化函数**：按依赖顺序调用 ELF constructors。
 
-这条规则对性能排查有两个影响。
+共享库从 APK 中直接映射或从安装目录映射时，`mmap()` 本身可能很快，后续首次取指和读数据才触发缺页。仅统计系统调用耗时会漏掉 file-backed page fault；应把主线程调度、major/minor fault、I/O 和采样栈放在同一时间窗内。
 
-**失败模式会前移到加载阶段。** 某些旧 SDK 试图 `dlopen()` 系统私有库，低版本能跑，Android 7+ 之后可能直接报 `dlopen failed: library ... needed or dlopened by ... is not accessible for the namespace`。这不是“加载慢”，而是隔离规则拒绝。
+### 可观测边界
 
-**绕过方式有稳定性代价。** 一些 Hook 库不会通过 `dlopen()` 加载目标库，而是从 `/proc/self/maps` 或内存中的 ELF 信息找到已加载库，再改 PLT 或 inline 指令。这样做避开的是“新加载目标库”的 namespace 检查，不等于没有成本：代码页权限切换、trampoline 分配、W^X 约束、厂商 ROM 差异都会进入风险面。Hook 基础设施的完整边界见 §14.13。
+| 观察手段 | 能确认 | 仍需补充 |
+|---|---|---|
+| 应用 trace marker | 每个调用点的墙钟耗时与线程 | linker 内部分段 |
+| Bionic `dlopen:` slice | 目标库和 Bionic 调用区间 | constructor 内部业务语义 |
+| Perfetto / simpleperf callstack | CPU 时间集中在哪些符号 | 采样间隔内没有命中的短事件 |
+| page fault、block I/O、调度轨迹 | 等待是否来自缺页、存储或抢占 | 哪个业务模块触发 |
+| `/proc/<pid>/maps` | 已映射路径和地址范围 | 过去的加载耗时 |
+| `/proc/<pid>/smaps` | PSS、file-backed/anonymous 页等驻留结果 | relocation 和构造器耗时 |
+| `logcat` / tombstone | alignment、namespace、缺符号等失败原因 | 正常路径的性能分布 |
 
-写优化方案时，不要把 namespace 问题归类成普通“依赖缺失”。它更接近平台安全模型变化：能解决的是“使用公开 NDK / SDK 接口、更新 SDK、移除私有库依赖”，不该鼓励把系统私有库路径硬塞进加载逻辑。
+测量 release 构建时要保留 native 符号文件和 Build ID。设备上的 `.so` 可以 strip，分析端依靠匹配的未剥离符号还原调用栈。没有匹配符号时，`__dl__` 附近的大块 CPU 时间很难继续分责。
 
-## 16KB Page Size 对 native 库加载的影响
+## Linker Namespace：ClassLoader 的 native 可见范围
 
-Android 15 开始支持 16KB page size 设备。Google Play 的公开要求是：从 2025-11-01 起，提交到 Google Play 且 target Android 15+ 的新 App 和现有 App 更新，在 64 位设备上必须支持 16KB page size。官方文档也明确写到，直接或通过 SDK 使用 NDK 库的 App 需要重建 native 库。[已验证: 官方文档, https://developer.android.com/guide/practices/page-sizes]
+Android 7 / API 24 引入应用侧 native library 限制。Android Runtime 为 ClassLoader 关联 linker namespace；`libnativeloader` 在该 namespace 内调用 `android_dlopen_ext()`。这样既限制应用访问平台私有库，也阻止一个 APK 随意加载其他 APK 的 JNI 库。
 
-对 native 库加载来说，16KB 的检查点有两层。
+Android 17 `android_namespace_t::is_accessible()` 对 isolated namespace 的路径检查包括：
 
-**ELF segment 对齐。** `.so` 的 `PT_LOAD` 段要满足 16KB ELF alignment。官方建议 NDK r28+，因为 r28 起默认输出 16KB aligned；NDK r27 及更低版本需要链接参数 `-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384`。如果使用预编译 `.so`，也要拿到重新构建后满足 16KB 对齐的版本。[已验证: 官方文档, https://developer.android.com/guide/practices/page-sizes]
+- `allowed_libs_` 是否允许该 basename；
+- 文件是否位于 `ld_library_paths_`；
+- 文件是否位于 `default_library_paths_`；
+- 文件是否位于 `permitted_paths_`。
 
-**APK / AAB 包内 zip 对齐。** 对 uncompressed shared libraries，AGP 8.5.1+ 可以请求 16KB zip alignment；`bundletool dump config --bundle <app.aab> | grep alignment` 看到 `PAGE_ALIGNMENT_16K` 才能确认 bundle 配置。官方文档特别指出，AGP 8.3 到 8.5 可能本地看起来可用，但 bundletool 默认不做 16KB zipalign，走 Play 产物时仍可能安装失败。[已验证: 官方文档, https://developer.android.com/guide/practices/page-sizes]
+namespace 之间还可通过显式 link 暴露一组 shared libraries。某台设备碰巧能加载某个 vendor 或 system 私有库，不构成应用 API；OTA、APEX 更新或另一家 ROM 都可能改变结果。
 
-Bionic 还有一条兼容路径。AOSP `CompatMapSegment()` 的实现说明，4KB max-page-size ELF 不能直接按文件 `mmap()` 成 16KB 映射，linker 会把 ELF 内容读进匿名 RW 映射，并给 VMA 标成 “compat loaded”。这能让部分旧库继续加载，但它的目标是兼容，不是提速。匿名拷贝会减少可共享文件页，PSS 可能上升，启动阶段也会多一次读入和拷贝路径。[已验证: AOSP android-16.0.0_r1, `bionic/linker/linker_phdr_16kib_compat.cpp`]
+### 先区分“拒绝加载”和“加载很慢”
+
+典型 namespace 错误会包含 `is not accessible for the namespace`。这属于可见性失败，处理方向是：
+
+- 改用公开 NDK/SDK API；
+- 更新依赖并移除平台私有库；
+- 检查库是否被错误放入另一个 split、ClassLoader 或安装路径；
+- 对系统 App / APEX 按对应 linker config 修正镜像配置。
+
+反复修改绝对路径或扫描 `/system/lib64` 无法建立稳定兼容性。`dlopen` 能找到文件，也可能因 namespace、ABI、缺少 `DT_NEEDED` 或未定义符号而失败，错误文本要完整保留。
+
+## 16KB page size：检查 ELF、APK 和运行时假设
+
+16KB 支持至少包含三项，缺一项都可能在安装或加载时失败：
+
+| 层次 | 检查对象 | 合格条件 |
+|---|---|---|
+| ELF | 每个 ABI 下每个 `.so` 的 `PT_LOAD` | segment alignment 至少 16KB |
+| APK/AAB | 未压缩 `.so` 在 zip 中的起始位置 | 16KB zip alignment |
+| 代码 | `mmap`、`mprotect`、allocator、Hook 等 | 不写死 4096，按运行时 page size 对齐 |
+
+Google Play 的要求已从 2025 年 11 月 1 日起生效：面向 Android 15 / API 35 及以上设备的新 App 和更新，若提交到 Google Play，需要支持 16KB page size。这里的 target 描述来自 Play 规则，不能简化成“所有 targetSdk 35 应用在任何分发渠道都由系统拒绝安装”。
+
+### 构建工具边界
+
+官方当前建议使用 AGP 8.5.1 及以上、NDK r28 及以上，并确保所有预编译依赖也兼容 16KB：
+
+- NDK r28 及以上默认输出 16KB-aligned ELF。
+- NDK r27 及以下需要显式传入 `max-page-size` 和 `common-page-size`。
+- 未压缩 native library 需要 AGP 8.5.1 及以上提供正确的 16KB zip alignment。
+- AGP 8.3—8.5 的本地 APK 可能看起来正常，AAB 经旧版 bundletool 生成的 Play APK 仍可能缺少 16KB zip alignment。
+
+旧 NDK 的 CMake target 可以显式添加以下链接参数。
+
+```cmake
+target_link_options(your_native_target PRIVATE
+    "-Wl,-z,max-page-size=16384"
+    "-Wl,-z,common-page-size=16384"
+)
+```
+
+参数只影响当前重新链接的 target。AAR、Prefab、游戏插件或其他预编译 `.so` 不会自动改变，仍要逐个更新或替换。
+
+### 检查最终交付物
+
+下面这组命令分别检查设备 page size、ELF segment、APK zip alignment 和 AAB 对齐配置。
 
 ```bash
-# 检查 APK 中 native 库的 ELF segment alignment 和 zip alignment。
-# 重点看 LOAD 行的 align 是否低于 2**14，以及 zipalign 是否通过 -P 16 校验。
+adb shell getconf PAGE_SIZE
+
 llvm-objdump -p lib/arm64-v8a/libexample.so | grep -A4 LOAD
-zipalign -v -c -P 16 4 app-release.apk
+
+zipalign -c -P 16 -v 4 app-release.apk
+
+bundletool dump config --bundle=app-release.aab | grep alignment
 ```
 
-如果 `LOAD` 行仍是 `2**12` 或 `2**13`，这不是运行时调参能修掉的问题，需要用合适的 NDK / linker flags 重新构建库。`zipalign` 失败则说明打包层没有满足 16KB 安装要求，通常要升级 AGP 或调整 native library packaging。
+16KB 设备的第一条输出应为 `16384`；ELF 的 `LOAD` alignment 应达到 `2**14`；AAB 配置应显示 `PAGE_ALIGNMENT_16K`。这些静态检查通过后，还要在 16KB 设备上覆盖启动、动态功能、native plugin 和低内存场景。
 
-## 三方 SDK、React Native 与游戏引擎的排查清单
+### Android 17 的 backcompat 与 fail-fast
 
-Native 库加载问题在三方 SDK 中最麻烦，因为 App 团队不一定能控制 `.so` 的构建方式。排查时按产物而不是按 Gradle 依赖名看：最终进入 APK / AAB 的每个 ABI 目录下，所有 `.so` 都要能解释清楚来源、版本、是否满足 16KB 对齐、是否在启动阶段同步加载。
+当 16KB 内核发现 4KB-aligned ELF 或 4KB zip-aligned 的未压缩 ELF 时，Package Manager 可以为应用启用 16KB backcompat。Android 17 Bionic 的 `CompatMapSegment()` 说明了代价来源：4KB ELF 无法按 16KB page 直接 file-map，linker 会把 segment 读入 anonymous RW mapping，再设置对应保护。
 
-| 场景 | 重点检查 | 处理动作 |
-| --- | --- | --- |
-| 通用三方 SDK | 是否在 ContentProvider / Application 自动加载 `.so` | 能延后就关闭 auto-init；不能延后则记录首帧前成本 |
-| React Native | prefab / CMake 路径是否传递 16KB linker flags；Hermes / ReactAndroid 版本 | 优先升级到支持 16KB 的 RN / NDK 组合；旧版本逐个校验产物 |
-| Unity / Unreal | 引擎版本、IL2CPP / native plugin 是否满足 16KB 对齐 | 以引擎官方 16KB 指南和实际 APK 检查结果为准 |
-| 静态链接 NDK r27 `libc.a` | 是否出现 `WriteProtected mprotect ... Invalid argument` | 升级 NDK r28+ 或换已修复的预编译库 |
-| 监控 / 崩溃 SDK | 是否使用 Hook、signal handler、`/proc/self/maps` 解析 | 确认 Android 15+、16KB、MTE 下的官方兼容声明 |
+兼容模式可能让旧库运行，但它不能替代 16KB 构建与发布验证。anonymous mapping 会改变共享页和驻留内存形态，额外读取也可能影响加载时间；影响幅度要用目标设备测量。
 
-
-NDK r27 的 `libc.a` 问题需要单独记。`android/ndk#2026` 记录了 `WriteProtected mprotect ... Invalid argument` 的崩溃，反馈中确认 NDK r28 可用。这个问题影响的是静态链接到有问题 libc.a 的产物；不能把它泛化成“所有 r27 构建库都会崩”。如果线上看到这个崩溃签名，先确认库的 NDK 版本和静态链接方式。[已验证: GitHub issue, https://github.com/android/ndk/issues/2026]
-
-React Native 的典型风险来自 prefab / CMake 参数传递。`facebook/react-native#54073` 提到，某些构建路径没有把 `max-page-size` 传到最终 prefab 产物，导致 Play 16KB 合规失败。排查时不要只看 App 模块的 `CMAKE_SHARED_LINKER_FLAGS`，要直接检查最终 `.so`。[已验证: GitHub issue, https://github.com/facebook/react-native/issues/54073]
-
-## Hook / 监控 SDK 的风险边界
-
-Hook 和监控 SDK 常在 native 层做两件事：加载自己的采集库，或者修改已经加载的目标库。前者受普通 `dlopen()`、namespace、16KB alignment 约束；后者还要处理代码页权限、trampoline、指令缓存刷新和厂商内核策略。
-
-以 ShadowHook 这类 inline hook 为例，公开源码会解析 ELF program header，在可执行段或段尾 gap 中寻找 trampoline 空间。它的优势是不用重新 `dlopen()` 目标库，namespace 拒绝不一定挡住它；代价是更依赖内存布局、页权限和目标库是否已经加载。16KB page size 放大了这类假设：任何写死 4KB page size 的 `mprotect()`、页对齐、段尾空隙计算，都可能在新设备上变成崩溃或保护范围错误。[来源: OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-07-bionic-linker-namespace-hook-bypass.md]
-
-MTE 也会改变 native 监控 SDK 的风险面。官方 MTE 文档说明，自定义 allocator 如果要让非系统分配的内存参与 MTE，需要在 `mmap()` 或 `mprotect()` 的 `prot` 参数里使用 `PROT_MTE`，并保证 tagged allocation 以 16-byte granule 对齐。[已验证: 官方文档, https://developer.android.com/ndk/guides/arm-mte]
-
-这类能力适合放在“可控实验 + 灰度”路径里验证，不适合只看 SDK README 就全量上线。回归要覆盖：Android 12-17、4KB / 16KB 设备、arm64-v8a、主流厂商 ROM、debuggable / release、MTE 打开和关闭的组合。没有这些结果时，正文或设计文档里应标注 `[待验证]`。
-
-## 优化策略与回归验证
-
-优化 native 库加载时，先判断它是“必须在首帧前完成”，还是“只是被历史初始化顺序带进首帧前”。前者要缩短加载和初始化本身，后者优先延后加载。
-
-可执行动作按收益和风险排序：
-
-1. **把可延后的库移出冷启动路径。** 音视频编辑、地图、AI 推理、WebRTC、游戏内购这类功能库，通常不该在默认首页首帧前加载。移出后要在功能入口前做预热，避免把卡顿转移到点击后。
-2. **拆开 `dlopen` 和 `JNI_OnLoad` 成本。** `System.loadLibrary()` 只告诉我们整体耗时。给库自身初始化加 trace section，能区分 linker 成本和 SDK 初始化成本。
-3. **控制库数量和依赖层级。** 多个小库不一定比一个大库慢，判断要看 `DT_NEEDED` 链、重定位数量和初始化函数。合库会减少加载次数，但也可能增加首帧前必须加载的代码体积。
-4. **升级工具链和三方库。** NDK r28+、AGP 8.5.1+、满足 16KB 对齐的预编译依赖，是 16KB 合规的基线。旧工具链能通过 flags 补一部分，但预编译依赖仍要重新拿包。
-5. **建立 CI 检查。** 每个合入的 APK / AAB 都检查 ELF alignment、zip alignment、ABI 列表和未知 `.so` 来源，避免问题在发布前才被 Play Console 拦下。
-
-CI 可以保留一个轻量脚本，失败时直接指出具体库名：
+Android 17 还提供 `fatal` 模式，让不兼容 ELF 立即终止，适合实验室设备上的发布前验证。下面的命令会改变整台测试设备的临时 linker/Package Manager 行为。
 
 ```bash
-# 示例：扫描 APK 解包后的 arm64-v8a 库，检查 PT_LOAD alignment。
-# 生产脚本应补全 unzip、ABI 遍历和错误码处理。
-for so in app/lib/arm64-v8a/*.so; do
-  echo "== $so =="
-  llvm-objdump -p "$so" | awk '/LOAD/{print}'
-done
+adb shell setprop bionic.linker.16kb.app_compat.enabled fatal
+adb shell setprop pm.16kb.app_compat.disabled true
 ```
 
-回归验证至少保留三组指标：冷启动 TTID / TTFD，首帧前 `System.loadLibrary()` 总耗时，进程 PSS / `smaps` 中目标库的 `Shared_Clean` 和 `Private_Dirty`。如果启用了 16KB 兼容加载路径，重点看匿名页和 PSS 是否上升；如果延后加载，重点看功能页首次进入是否出现新的长帧。
+只在隔离的 16KB 测试设备上使用，并在测试后重启设备恢复临时属性。Manifest 的 `android:pageSizeCompat` 可以为单个应用启用或禁用 backcompat，也会抑制启动警告；它依然不等于 ELF 和 zip 已合规。
 
-## 扩展：厂商配置与预装库差异
+## 三方 SDK、React Native 与游戏引擎
 
-Linker Namespace 的具体配置来自系统镜像中的 linker config。AOSP 提供基础规则，但厂商可以根据分区、VNDK、APEX 和预装库做调整。App 不应依赖某台设备上可访问的私有库路径；那只是该 ROM 的偶然暴露，不是 Android API 契约。
+三方依赖应按最终产物审计。Gradle 坐标不能说明某个 ABI 最终打进了哪一版 `.so`，CMake 顶层参数也不能证明 Prefab 或预编译插件已经用相同参数重建。
+
+建议为每个交付库保存以下清单：
+
+| 字段 | 用途 |
+|---|---|
+| APK/AAB 内路径与 ABI | 找到所有副本和 split |
+| 来源组件、版本、许可证 | 追到负责团队或供应商 |
+| Build ID、NDK/引擎版本 | 匹配符号和构建工具 |
+| `DT_NEEDED` 与导出符号 | 评估依赖和重定位范围 |
+| ELF / zip alignment | 验证 16KB |
+| 首次加载阶段与调用线程 | 判断启动或交互影响 |
+| 4KB/16KB、MTE 测试结果 | 固化兼容性证据 |
+
+React Native、Flutter、Unity、Unreal 和 Cocos 都可能同时包含引擎库、C++ runtime、脚本 VM 与应用插件。采用引擎官方已支持 16KB 的版本只是起点，最终 APK/AAB 仍要扫描所有 ABI。旧插件可能覆盖引擎给出的正确 linker flags。
+
+遇到 `WriteProtected mprotect ... Invalid argument` 等已知签名时，要核对准确的 NDK、静态/动态 C++ runtime 和产生该库的构建任务。一个特定 NDK issue 不能推导为整代工具链的所有库都会失败。
+
+## Hook 与监控 SDK 的风险边界
+
+PLT/GOT hook、inline hook 和已加载 ELF 扫描可能绕开“重新打开目标私有库”这一步，却没有获得平台私有 ABI 的稳定性。它们还要同时处理：
+
+- 运行时 page size 与 `mprotect()` 覆盖范围；
+- W^X、BTI/PAC、指令缓存和 trampoline；
+- 目标库 Build ID、指令变化及 APEX/OTA 更新；
+- 多线程修改期间的原子性与重入；
+- MTE、signal handler 和现有崩溃处理器的交互。
+
+写死 `0x1000` 的页对齐在 16KB 设备上可能扩大或错置保护区间。内存页操作应使用 `getpagesize()` 或 `sysconf(_SC_PAGESIZE)`，并对长度、起始地址和溢出做检查。
+
+### MTE
+
+MTE 的分配标签粒度是 16 bytes，不等于系统 page size。自定义 allocator 若要让自己的映射参与 MTE，需要按官方要求使用 `PROT_MTE`，并维护 allocation tag。page alignment、MTE granule 和对象 alignment 是三组不同约束。
+
+监控 SDK 上线前应覆盖 4KB/16KB、MTE 同步/异步模式、release 优化、主流 ABI 与厂商版本。某个 hook 在当前测试机成功，只能证明该二进制组合通过，不能扩展成 Android 平台保证。
+
+## 优化策略
+
+### 1. 移出不必要的首帧工作
+
+先列出首帧前加载的库及其调用者。登录后才使用的音视频、编辑、通话、地图或推理能力，通常可以移到明确的预热窗口或功能入口。崩溃采集等要求极早生效的库则要保留，并缩短自身初始化。
+
+### 2. 让 `JNI_OnLoad` 保持小而确定
+
+`JNI_OnLoad` 适合校验 VM、注册 native 方法和建立少量只读状态。文件 I/O、网络、设备枚举、大对象构造和大量线程创建应转移到可观测、可取消的显式初始化 API。这样既缩短 `System.loadLibrary()`，也能给业务控制执行线程和时机。
+
+### 3. 减少没有价值的依赖和导出
+
+检查 `DT_NEEDED`、动态符号表和 relocation 数量。移除未使用依赖、收窄默认 symbol visibility、使用 version script，可以降低搜索范围和 accidental ABI。合并 `.so` 有时能减少加载次数，也可能迫使更多代码提前映射；要用真实启动 trace 决定。
+
+### 4. 避免盲目并发加载
+
+依赖顺序、ELF constructors 和 SDK 全局状态常带有隐含约束。把多个 `System.loadLibrary()` 扔进线程池，不保证缩短关键路径，还可能增加锁等待和难复现的初始化竞态。可并行的是已经证明互不依赖、又不阻塞首帧的预热任务。
+
+### 5. 同时看 CPU、I/O 和驻留内存
+
+优化前后保留：
+
+- 冷启动 TTID / TTFD；
+- 每个库的加载墙钟时间与调用线程；
+- `dlopen`、constructor、`JNI_OnLoad` 的 CPU 栈；
+- major/minor fault 与 block I/O；
+- 进程 PSS，以及目标库 file-backed/anonymous 页；
+- 延迟加载后首次功能入口的帧时间。
+
+只看 APK 体积无法预测加载时间。较大的 file-backed 库可能只按需 fault；较小的库也可能包含大量 relocation 和重构造器。
+
+## CI：从源码参数检查转向产物检查
+
+CI 应扫描每个 release APK/AAB，而非只检查 App 模块的 CMake 配置。下面的 shell 骨架假设 APK 已解包到临时目录，并逐个报告 arm64 库的 `LOAD` alignment。
+
+```bash
+set -eu
+
+for so_file in unpacked-apk/lib/arm64-v8a/*.so; do
+  echo "$so_file"
+  llvm-objdump -p "$so_file" | grep -A4 LOAD
+done
+
+zipalign -c -P 16 -v 4 app-release.apk
+bundletool dump config --bundle=app-release.aab | grep PAGE_ALIGNMENT_16K
+```
+
+生产脚本还要遍历所有交付 ABI、处理无匹配文件、返回明确错误码，并保存库来源和 Build ID。静态检查之后，用 16KB 设备运行 smoke test；Android 17 的 `fatal` 模式可把 backcompat 掩盖的问题转成明确失败。
+
+## Android 7—17 的版本边界
+
+| 版本 | 与本章相关的变化 |
+|---|---|
+| Android 7 / API 24 | 应用 native library 可见性受 Linker Namespace 和 public native library 约束 |
+| Android 15 / API 35 | 平台开始支持 16KB page size 设备；应用需同时修正构建、打包和运行时假设 |
+| Android 17 / API 37 | 本章源码锚点；16KB backcompat 增加 `fatal` fail-fast 测试方式 |
+
+Linker Namespace 的约束在后续版本持续演进，16KB backcompat 也属于迁移辅助。应用侧稳定边界仍是公开 NDK API、合规 ELF/zip alignment 和不依赖固定 page size 的代码。
+
+## Android 17 与 kernel 源码入口
+
+Android 17 平台侧可固定查看：
+
+- ART [`java_vm_ext.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/jni/java_vm_ext.cc)：`LoadNativeLibrary()`、`OpenNativeLibrary()` 返回后的 `JNI_OnLoad` 调用。
+- [`libnativeloader/native_loader.cpp`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/libnativeloader/native_loader.cpp)：ClassLoader namespace 与 `android_dlopen_ext(..., RTLD_NOW, ...)`。
+- Bionic [`linker.cpp`](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker.cpp)：`do_dlopen()`、`find_libraries()`、link 和 constructor 主线。
+- Bionic [`linker_phdr.cpp`](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker_phdr.cpp)：地址空间、`PT_LOAD` 和 segment 映射。
+- Bionic [`linker_phdr_16kib_compat.cpp`](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker_phdr_16kib_compat.cpp)：4KB ELF 在 16KB backcompat 下的 segment 读取与权限设置。
+- Bionic [`linker_namespaces.cpp`](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker_namespaces.cpp)：isolated namespace 的可访问性判断。
+
+动态共享库由用户空间 linker 发起 `mmap()`，后续映射、缺页和页表建立进入 kernel。`android17-6.18-2026-06_r6` 可固定查看 [`mm/mmap.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/mmap.c) 和 [`mm/memory.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/memory.c)。进程初始 ELF 由 [`fs/binfmt_elf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/binfmt_elf.c) 处理；`dlopen` 的 DSO 装载主体仍在 Bionic，不能把两条路径混写。
+
+## 与其他章节的关系
+
+- [§1.15 JNI/NDK 性能](../../part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md)：跨语言调用、引用、拷贝和线程附着。
+- [§4.7 16KB Page Size](../../part1-fundamentals/ch04-memory/07-16kb-page-size.md)：页表、TLB、ELF 和系统级影响。
+- [§8.2 App 启动全流程](02-app-launch.md)：native load 在进程启动和首帧中的位置。
+- [§8.3 启动优化策略](03-launch-optimization.md)：TTID/TTFD、初始化编排和回归。
+- [§14.13 Hook 基础设施](../../part3-tools/ch14-other-tools/13-hook-infrastructure.md)：PLT、inline hook 与平台保护边界。
+- [§13.3 Perfetto View](../../part3-tools/ch13-perfetto/03-perfetto-view.md)：trace 与调用栈分析。
+
+## 参考资料
+
+- [16KB page size 支持与验证](https://developer.android.com/guide/practices/page-sizes)
+- [Android NDK libdl reference](https://developer.android.com/ndk/reference/group/libdl)
+- [Android NDK MTE guide](https://developer.android.com/ndk/guides/arm-mte)
+- [NDK ABI 稳定性说明](https://developer.android.com/ndk/guides/stable_apis)
+- [Native libraries 平台访问限制](https://developer.android.com/about/versions/nougat/android-7.0-changes#ndk)
 
 ## 小结
 
-Native 库加载同时牵动启动耗时、平台兼容和发布合规。性能排查时，把 `System.loadLibrary()` 前后插桩，把库初始化和 linker 成本拆开；兼容排查时，直接检查最终 APK / AAB 里的 `.so`，不要只看源码仓库里的构建参数。16KB page size 之后，native 库加载已经从“偶发启动开销”变成发布前必须固定检查的质量门槛。
+一次 `System.loadLibrary()` 至少包含 NativeLoader/namespace、Bionic 映射与重定位、ELF constructors、ART `JNI_OnLoad` 四段。只有把 marker 和源码边界对齐，才能判断优化目标位于 linker、存储、库构造器还是 SDK 初始化。
+
+16KB 支持要检查每个 `.so` 的 ELF alignment、APK/AAB 的 zip alignment，以及代码中的 page size 假设。Android 17 backcompat 能帮助旧库迁移，`fatal` 模式适合在测试设备暴露不兼容产物；发布基线仍应是 16KB-aligned 交付物和 4KB/16KB 实机回归。
