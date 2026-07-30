@@ -34,14 +34,13 @@ last_task6_at: "2026-06-05T09:06:00+08:00"
 last_task6_audit: "2026-07-14"
 last_task6_review_log: "logs/review/2026-05-25-16-review.md"
 task6_review_notes: "2026-06-05 Task6 revisiting-review #3：L1/L2 无新增写作问题，内容清洁。task9_result=auto-fixed，queue 无 pending，自动晋升 finalized。"
-task9_review_notes: "2026-06-04 Task9 deep-review: auto-fixed. P1 原理链：NLS 回调阻塞到 Input ANR 必须补输入事件派发与主线程超时前提，已按 NotificationListenerService main looper 边界修正；P0 0 / P1 1 / P2 0。" | 2026-07-14 06:26 Task9 deep-review：pass-tech-review。P0 0 / P1 0 / P2 0。AOSP 源码路径/原理链/版本差异/交叉引用全部验证通过。保持 finalized。
+task9_review_notes: "2026-06-04 Task9 deep-review: auto-fixed. P1 原理链：NLS 回调阻塞到 Input ANR 必须补输入事件派发与主线程超时前提，已按 NotificationListenerService main looper 边界修正；P0 0 / P1 1 / P2 0。 | 2026-07-14 06:26 Task9 deep-review：pass-tech-review。P0 0 / P1 0 / P2 0。AOSP 源码路径/原理链/版本差异/交叉引用全部验证通过。保持 finalized。"
 review_notes: "2026-05-06 19:57 Task9：pass-tech-review。P0 0 / P1 0 / P2 2。旧 P0 已闭环；仅余 RemoteViews reapply flag 与 RankingMap 可见性过滤两个 P2，已写 suggestions；自动晋升 finalized。 | 2026-05-25 14:20 Task9 闲时抽检：needs-rework。P0 0 / P1 1 / P2 0。Android 17/API 37 已有官方 Notification.MetricStyle 与 Live Update Semantic Coloring API，章节仍写 Android 17 条目暂缓，已写 queue。"
 last_task9_audit: "2026-05-25"
 last_task9_autofix_at: 2026-06-04
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-15
 ---
--
 
 # 9.6 Notification 性能与 ANR
 
@@ -60,21 +59,33 @@ last_deepseek_cn_review_at: 2026-07-15
 
 ## 为什么 Notification 会引发 ANR
 
-做 Android 稳定性优化时，有两类栈经常出现:一类停在 `NotificationManager.notify()`,另一类停在 `NotificationListenerService.onNotificationPosted()`。它们都和“通知”有关,但阻塞位置不同。
+“通知导致 ANR”至少包含四条不同的执行链。它们共享 Notification 数据，却不共享线程和超时检测器。
 
-`notify()` 侧的问题,通常落在应用构造通知对象、Binder 过进程,或 NotificationManagerService(NMS)入口校验和入队这段同步路径上。`onNotificationPosted()` 侧的问题,通常落在监听器进程自己的主线程。SystemUI 渲染慢会拖迟通知实际显示出来,但默认不会让调用方一直等到界面画完。
+| 执行链 | 同步边界 | 可能出现的故障 |
+|---|---|---|
+| 发布应用调用 `notify()` | 构造对象、写 Parcel、同步 Binder、NMS 前半段 | 发布应用主线程 Input ANR、Binder 长等待 |
+| NMS 异步入队与分发 | system_server 的 notification handler、锁和 CPU | 通知积压、system_server 延迟，极端情况下进入 Watchdog 取证范围 |
+| SystemUI 消费并渲染 | SystemUI 的 inflate/apply、图片加载和主线程提交 | 通知晚显示、面板卡顿；有输入事件时可能形成 SystemUI Input ANR |
+| NLS 接收回调 | 监听器 Binder stub 转主线程 `MyHandler` | 监听器回调积压；进程持有窗口且输入超时时可能形成自己的 Input ANR |
 
-把这三段边界拆开，排查思路就清晰了:调用方卡住,先看应用线程与 Binder;监听器卡住,先看 NLS 主线程;通知晚到或下拉卡顿,再看 SystemUI 和 system_server 的调度状态。
+前台服务还有一条相邻的超时：`startForegroundService()` 启动后没有及时完成 `Service.startForeground()`，AMS 会让应用收到 `ForegroundServiceDidNotStartInTimeException`。这是进程崩溃路径，不是 `am_anr`。复杂通知经常消耗这段预算，所以诊断报告仍会把它与通知性能放在一起。
 
 ## 通知发布流程与 ANR 触发点
 
-### 一次 notify() 经历了什么
+### `notify()` 返回前做了哪些工作
 
-`NotificationManager.notify()` 会走到 `INotificationManager.enqueueNotificationWithTag()`。这一步是同步 Binder 调用,调用线程会等 system_server 的 Binder 入口返回,但不会一直等到 SystemUI 把通知画出来。
+`NotificationManager.notify()` 最终调用 `INotificationManager.enqueueNotificationWithTag()`。该 AIDL 方法没有 `oneway`，调用线程会等 system_server 返回。
 
-[图:App 线程调用 notify(),进入 system_server Binder 入口,NMS 把任务 post 到 Handler,再异步分发给 listener 和 SystemUI]
+Android 17 / `android-17.0.0_r1` 的调用顺序可以拆成六段：
 
-AOSP android-17 的边界在两处最清楚:
+1. 应用构造 `Notification`、样式、`RemoteViews`、`Icon` 和 extras。
+2. `NotificationManager` 执行兼容性修正并把对象写入 Binder Parcel。
+3. NMS 校验调用 UID、包名、用户、受限类别、通知渠道和前台服务策略。
+4. NMS 修正通知、创建 `StatusBarNotification` / `NotificationRecord`，检查数量和更新速率。
+5. NMS 为 PendingIntent 设置临时 allowlist 等状态，然后把 `EnqueueNotificationRunnable` post 到 handler。
+6. Binder 返回；排序、正式加入列表、listener fan-out 和 SystemUI 渲染继续执行。
+
+下面的源码片段标出同步 Binder 入口和异步分界：
 
 ```java
 // frameworks/base/core/java/android/app/NotificationManager.java
@@ -82,37 +93,27 @@ service.enqueueNotificationWithTag(
         targetPackage, sender, tag, id,
         fixNotification(notification),
         mContext.getUser().getIdentifier());
-```
 
-```java
 // frameworks/base/services/core/java/com/android/server/notification/NotificationManagerService.java
-final int packageImportance = getPackageImportanceWithIdentity(pkg);
-boolean isAppForeground = packageImportance == IMPORTANCE_FOREGROUND;
 mHandler.post(new EnqueueNotificationRunnable(
         userId, r, isAppForeground, isAppProvided, tracker));
 return true;
 ```
 
-对调用方来说,同步段通常只覆盖三类成本:
+`mHandler.post()` 之前的 NMS 工作都在发布者的同步等待范围内，远多于“权限校验后立刻入队”。`INotificationListener.aidl` 则声明为 `oneway interface`；listener 回调和 SystemUI 上屏不会加入发布者这次 Binder 的返回条件。
 
-- 应用侧构造 `Notification`、`RemoteViews`,以及把对象写入 `Parcel`
-- Binder 过进程和 NMS 入口的权限校验、建档、入队
-- system_server 入口处的锁竞争或 Binder 线程繁忙
+发布应用主线程停在 `notify()` 时，应继续判断耗时位于哪一侧：
 
-以下几件事不在 `notify()` 的同步返回时间里:
+- `notif.build` 很长：应用在读取文件、缩放图片、创建大量 action 或组装 extras；
+- Binder transaction 前的 Running 很长：Parcel 写入、bitmap 转共享内存或应用侧修正较重；
+- 同步 Binder wait 很长：NMS 同步段、system_server Binder 线程、内部锁或被调用服务较慢；
+- `notify()` 很快返回但用户晚看到：转查 NMS handler 与 SystemUI 消费链。
 
-- `EnqueueNotificationRunnable` 之后的排序、记录更新、listener fan-out
-- `INotificationListener` 回调
-- SystemUI 中的 `RemoteViews.apply()`、图片解码和完成上屏
+### 前台服务转换超时
 
-`INotificationListener.aidl` 在 AOSP 中声明为 `oneway interface`。SystemUI 和其他通知监听器属于异步消费者,不能把它们的耗时直接记成调用方 `notify()` 的同步阻塞。
+AMS 在启动要求转为前台的 Service 时安排独立 timer。服务完成 `startForeground()` 后才取消这段等待。图片下载、磁盘读图、数据库查询和复杂布局都不应放在此前的主线程路径上。
 
-### ANR 的三种核心触发场景
-
-**场景一:`startForegroundService()` 到 `Service.startForeground()` 的预算被通知构造吃掉。**
-系统给出的错误信息是 `Context.startForegroundService() did not then call Service.startForeground()`。这个超时窗口卡在启动前台服务之后、服务调用 `startForeground()` 之前。复杂通知构造、图片解码、磁盘读图如果都放在这段路径里,预算会很快耗尽。
-
-更稳妥的写法,是先发一个简单通知满足时限,再异步补全完整版:
+下面的两阶段写法先提交满足渠道、small icon 和内容要求的通知，再在后台生成增强内容：
 
 ```java
 Notification stub = new Notification.Builder(this, CHANNEL_ID)
@@ -127,44 +128,48 @@ backgroundExecutor.execute(() -> {
 });
 ```
 
-**场景二:`NotificationListenerService` 回调把监听器进程主线程拖住。**
-`NotificationListenerService` 在 `attachBaseContext()` 里把 `MyHandler` 绑到 `getMainLooper()`,`onNotificationPosted()` 也是 `@UiThread`。数据库 I/O、网络请求、复杂解析如果直接放在回调里,会占住监听器进程主线程；只有输入事件在该进程排队并超过输入分发超时,才会表现为监听器进程自己的 Input ANR,不是发布方 `notify()` 一定同步变慢。
+`startForeground()` 成功返回只表示系统已经接受这次前台转换和通知，不要求完整版已经生成。增强通知仍要处理取消竞态：后台任务完成时，Service 可能已经停止；更新前应检查任务代次或当前 Service 状态。
 
-**场景三:高频 update 命中 NMS 的更新速率限制。**
-android-17 的 `checkDisqualifyingFeatures()` 走的是包级 update 限流,不是通知渠道限流。命中条件是 `isUpdate && !hasCompletedProgress() && !isAutogroup`,速率来自 `mUsageStats.getAppEnqueueRate(pkg)`,默认阈值是 `DEFAULT_MAX_NOTIFICATION_ENQUEUE_RATE = 5f`。下载进度、歌词、导航剩余距离这类场景如果几百毫秒就 `notify()` 一次,很容易被 shed。
-
-还有一类现象容易误判:SystemUI 过载会拉长"通知何时显示给用户"的时间,也会让下拉通知栏更卡。但这件事默认不等于调用方一直卡在 `notify()` 里,结论要回到 Perfetto 的线程状态和 Binder 边界来下。
+故障日志含 `Context.startForegroundService() did not then call Service.startForeground()` 时，按前台转换超时处理。若同时存在 `am_anr`，需要分别保留两条时间线，不能用其中一条自动解释另一条。
 
 ## NotificationManagerService 内部机制
 
-### NMS 的执行上下文
+### Binder 线程与 handler 各自负责什么
 
-AOSP 当前实现里,`notify()` 的 Binder 入口会把发布任务 post 到 NMS 的 Handler 路径,后续 ranking / listener 相关工作继续异步执行。OEM 机型上的线程名、trace slice 名和打桩粒度可能与 AOSP 不同。
+NMS Binder 线程完成调用身份、渠道、策略、对象修正、配额检查和入队准备。`EnqueueNotificationRunnable` 进入 handler 后，NMS 才在通知锁保护下处理旧记录、分组、排序、提醒效果、URI 权限和 listener 通知。
 
-做排查时,建议把"线程名"降级为辅证,主证据放在三类信号上:
+源码里的线程名和 Trace section 会被平台分支调整。诊断时用执行上下文建立证据：
 
-- App 调用线程的 `slice` 和 `thread_state`
-- system_server 中与 `NotificationManagerService` 相关的方法调用或调度片段
-- NLS / SystemUI 进程自己的主线程负载
+- 发布线程是否处于 Running、Runnable 或 Binder sleep；
+- 同一 Binder transaction 的服务端线程何时开始、何时返回；
+- NMS handler 是否获得 CPU，是否长时间持有 `mNotificationLock`；
+- SystemUI 与每个 NLS 的 Binder 接收线程、主线程消息何时运行。
 
 ### 通知排序与分发的开销
 
-通知发布后,NMS 需要更新 `NotificationRecord`,执行拦截与排序,再把变化分发给 listener 和状态栏。通知数量很多、通知对象很重、监听器很多时，system_server 的 CPU 时间会明显上升。
+`NotificationListeners.prepareNotifyPostedLocked()` 会遍历已注册 listener，按用户、可见性、敏感信息与版本规则准备各自的数据。`makeRankingUpdateLocked(info)` 遍历当前通知列表，只把该 listener 可见的记录写进 `NotificationRankingUpdate`。这项工作发生在通知锁内；每个 listener 得到的 map 可能不同。
 
-公开文档和当前 AOSP 分支不足以把"Android 14 起并行分发""Android 15 起增量排序"这类变化逐版钉死。诊断时更实用的做法,是直接看当前 build 上 `system_server` 的实际调度和 listener 分发耗时。
+准备完成后，NMS 把 listener runnable post 到 handler，再调用 `oneway` Binder 接口。异步只消除了“等待客户端执行完”的依赖，以下成本仍在 system_server 内：
+
+- 为 listener 过滤、裁剪或脱敏 `StatusBarNotification`；
+- 构造该 listener 可见通知的 ranking 数组；
+- 把通知与 ranking update 写入 Binder Parcel；
+- 处理 Binder driver 背压、失败与 listener 生命周期。
+
+通知总数、listener 数量和更新频率一起决定 fan-out 成本。不能用一个固定的“通知超过多少条”阈值代替 Perfetto 测量。
 
 ### 通知限流策略
 
-速率限制的观察点需要改正两件事。
+Android 17 的更新速率限制位于 `checkDisqualifyingFeatures()`。它按包统计 enqueue rate，不按 channel 单独计数。默认配置值是 `DEFAULT_MAX_NOTIFICATION_ENQUEUE_RATE = 5f`，系统可从 `Settings.Global.MAX_NOTIFICATION_ENQUEUE_RATE` 覆盖，因此 `5` 不是应用可依赖的协议常量。
 
-一是它不是"每个通知渠道单独限流"。android-17 的实现是包级 enqueue rate,比较的是 `mUsageStats.getAppEnqueueRate(pkg)` 和 `mMaxPackageEnqueueRate`。
-
-二是它主要针对 update path。AOSP 条件是:
+下面是 `android-17.0.0_r1` 的核心判断：
 
 ```java
-boolean isUpdate = mNotificationsByKey.get(r.getSbn().getKey()) != null
-        || findNotificationByListLocked(mEnqueuedNotifications, r.getSbn().getKey()) != null;
-if (isUpdate && !r.getNotification().hasCompletedProgress() && !isAutogroup) {
+NotificationRecord previous = findPreviousNotificationLocked(r.getKey());
+if (previous != null
+        && previous.getNotification().getProgressState()
+                == r.getNotification().getProgressState()
+        && !isAutogroup) {
     final float appEnqueueRate = mUsageStats.getAppEnqueueRate(pkg);
     if (appEnqueueRate > mMaxPackageEnqueueRate) {
         return false;
@@ -172,19 +177,22 @@ if (isUpdate && !r.getNotification().hasCompletedProgress() && !isAutogroup) {
 }
 ```
 
-这段逻辑对进度型通知很有现实意义。已经完成的 progress 更新、autogroup 摘要和普通首次发布,处理路径不一样;需要重点压频的是"同一条通知不断 update"的场景。
+首次发布没有 `previous`，不会命中这段更新限流。进度状态从 NONE 变为 ONGOING、从 ONGOING 变为 COMPLETE 时，新旧状态不同，也会放行这次状态转换。同一状态内的反复更新受限；autogroup 路径另行处理。
+
+NMS 在超限时记录 `Shedding <notification-key>` 并返回 `false`，外部 AIDL 返回类型是 `void`。发布应用通常收不到异常或失败回调，所以进度值可能跳跃。限流本身不是 ANR，它负责抑制高频更新继续放大 NMS 与消费者负载。
+
+同一方法还限制普通应用保留的未完成通知数量。前台服务、user-initiated job 和聚合组有各自例外，不能把速率配额、数量配额和 channel 限制混成一个概念。
 
 ## RemoteViews 的性能开销
 
-### 跨进程 inflate 的工作原理
+### 传输的是布局标识和 action
 
-`RemoteViews` 存的不是一棵已经 inflate 好的 View 树,而是"要对哪一个布局做哪些操作"的描述。android-17 的类定义里,动作集合是 `ArrayList<Action> mActions`;应用到目标 View 树上时,走的是 `inflateView()` + `performApply()`。
+`RemoteViews` 保存布局标识、应用信息、action 和 bitmap/collection cache。它会被写入 Parcel；消费者拿到后再创建或复用 View 树。
+
+Android 17 的同步 `apply()` 路径可以缩写成下面三步：
 
 ```java
-// frameworks/base/core/java/android/widget/RemoteViews.java
-private ArrayList<Action> mActions;
-
-private View apply(...) {
+private View apply(Context context, ViewGroup parent, ...) {
     RemoteViews rvToApply = getRemoteViewsToApply(context, size);
     View result = inflateView(context, rvToApply, directParent, ...);
     rvToApply.performApply(result, rootParent, params);
@@ -192,182 +200,204 @@ private View apply(...) {
 }
 ```
 
-`mActions` 是内存中的动作列表,不是源码里的 `Parcel` 字段;示意代码也不能当作 AOSP 实现引用。这条边界是:`RemoteViews` 在跨进程传输时会被 parcelize;到 SystemUI 侧后,再把动作列表应用到真实 View 上。
+`writeToParcel()` 会写 bitmap cache、应用信息、layout ID 和逐个 action。`mActions` 是内存字段，Parcel 中保存的是 action count、tag 和各 action 数据，不存在一个叫 `mActions` 的 Parcel 字段。
 
 ### 布局复杂度会放大 SystemUI 的工作量
 
-自定义通知布局越深、子 View 越多、图片越大,SystemUI 侧的 inflate、measure 和图片处理成本越高。没有设备、图片尺寸、SystemUI 负载和测试条件时,`1-2ms`、`10-20ms`、`10-50ms`、`100ms+` 这类固定数字没有参考价值。
+自定义布局会增加两端成本。发布端要创建更多 action 并写入 Parcel；SystemUI 要 inflate、执行 action、measure/layout，并在主线程完成 View 绑定。耗时取决于设备、图片、布局、缓存和当时的 SystemUI 负载，不适合写成固定毫秒数。
 
-更稳妥的经验规则有三条:
-
-- 能用 `BigTextStyle`、`BigPictureStyle`、`MessagingStyle` 这类系统模板,就不要先上自定义 `RemoteViews`
-- 自定义布局控制层级和 View 数量,别把普通页面布局整块搬进通知
-- 图片按通知实际显示尺寸缩放,再决定是否放进通知
+工程上优先选择 `BigTextStyle`、`BigPictureStyle`、`MessagingStyle`、`ProgressStyle` 或 `MetricStyle` 等系统样式。标准样式仍通过框架生成的 `RemoteViews` 渲染，优势是布局和 action 受系统控制、适配一致，不能宣传为“没有 RemoteViews 开销”。
 
 ### RemoteViews 的 reapply 机制
 
-SystemUI 在渲染通知时有一条复用路径：如果新旧通知的 `package` 和 `layoutId` 没变，`NotificationContentInflater.canReapplyRemoteView()` 返回 true，SystemUI 不重新 inflate，而是调用 `RemoteViews.reapply()` 或 `reapplyAsync()` 把新的动作列表应用到已有 View 上。
+SystemUI 可以在复用谓词通过时调用 `reapply()` / `reapplyAsync()`。package 和 layout ID 稳定是常见必要条件，旧或新 `RemoteViews` 带 `FLAG_REAPPLY_DISALLOWED`、视图类型不匹配等情况会阻止复用。
 
-reapply 跳过了 inflate，但仍然会执行新 `RemoteViews` 的所有 action（如 setText、setImageViewBitmap 等）。成本从「inflate + 全部 action」降到了「全部 action」，action 数量不变时收益有限。实际收益需要用 SystemUI 侧的 Perfetto trace 验证：对比 `inflate` slice 与 `reapply` slice 的耗时差。
-
-对进度条型通知来说，如果布局结构不变、只有进度数字在变，reapply 能省掉 inflate 开销，但 setText 等 action 仍然逐条执行。保持 `package` 和 `layoutId` 稳定、避免每次 update 都换布局文件，是让 reapply 生效的前提。
+`reapply()` 跳过根布局 inflate，仍会执行新对象中的 action。频繁更新进度时，保持模板和布局身份稳定有助于复用；`setText`、`setImageViewBitmap` 等 action 的成本仍然存在。需要在目标 build 的 SystemUI trace 中分别测量 inflate、async apply、reapply 和主线程提交。
 
 ### 图片通知的开销落在三段
 
-图片型通知的成本通常分布在三段:
+图片型通知的成本分布在三个位置：
 
 1. 应用侧取图、缩放、构造通知对象
-2. 跨进程传输 `RemoteViews` 或图片相关数据
-3. SystemUI 侧 inflate、解码、绑定和上屏
+2. Parcel、共享内存和 Binder FD 传输
+3. SystemUI 侧加载、apply、布局与渲染
 
-排查时不要只盯着 `notify()`。如果应用侧主线程已经很轻,但用户还是感觉通知晚到,问题更可能在 SystemUI 侧的 decode / render,而不是调用方的 Binder 返回时间。
+三种 `Icon` 输入的成本模型不同：
 
-**图片通知的成本阶梯。** 通知图片有三条传入路径,成本各不相同:
+- `createWithResource()` 传包名与资源 ID，消费者按资源解析，适合应用内稳定资源；
+- `createWithContentUri()` 传 URI 字符串，消费者稍后打开并解码，需要 URI 在通知存活期间可读；
+- `createWithBitmap()` 在 `Icon.writeToParcel()` 中调用 `Bitmap.asShared()`。已由共享内存支持且不可变的 bitmap 可直接复用，其余情况要创建共享副本。
 
-1. **`Icon.createWithResource(resId)`**：只传资源 ID 引用，SystemUI 侧按自己的 `Context` 解码。跨进程开销最低，推荐优先使用
-2. **`Icon.createWithUri(uri)`**：传 URI，SystemUI 侧打开 ContentProvider 或文件流解码。跨进程开销是 URI 字符串本身，但 SystemUI 解码耗时取决于图片来源和尺寸
-3. **`Icon.createWithBitmap(bitmap)`**：AOSP `Icon.writeToParcel()` 对 `TYPE_BITMAP` / `TYPE_ADAPTIVE_BITMAP` 调用 `Bitmap.asShared()` 生成不可变的 shared-memory backed bitmap，再通过 `Bitmap.writeToParcel()` 以共享内存 FD 传递。SystemUI 侧从 Parcel 重建 bitmap 对象并绑定渲染。`Bitmap.asShared()` 的行为是：如果源 bitmap 已经是 shared-memory backed 的不可变 bitmap 则直接返回；否则创建一份 ashmem 副本；无法创建时抛异常。这条路径不走像素数据序列化，但 `asShared()` 的格式准备和 SystemUI 侧的解码绑定仍有开销。实战中优先用 `createWithResource`，次选 `createWithUri`，`createWithBitmap` 只在前面两条走不通时使用，且应确保 Bitmap 为 ARGB_8888 格式并已缩放到通知实际显示尺寸。
+共享内存避免把每个像素作为普通 Parcel 数据复制，不代表零成本。首次 `asShared()`、FD 管理、接收端对象创建和 GPU 上传仍要计入。AOSP 没有要求通知 bitmap 必须是 `ARGB_8888`；应根据图像内容选择有效格式，并在发布前缩放到实际需要的尺寸。
 
 ## NotificationListenerService 与性能
 
 ### NLS 回调的线程模型
 
-`NotificationListenerService` 的所有回调(`onNotificationPosted`、`onNotificationRemoved`、`onListenerConnected` 等)默认在**主线程**执行。这个陷阱容易被忽视。
+`NotificationListenerService.attachBaseContext()` 用 `getMainLooper()` 创建 `MyHandler`。Binder stub 收到通知后更新内部 ranking 状态，再把 `MSG_ON_NOTIFICATION_POSTED` 发给这个 handler；公开回调也标注为 `@MainThread`。
 
-当一个 App 注册为通知监听器后,系统中任何 App 发布或取消通知,都会触发 NMS 通过 Binder 回调这个监听器。在通知密集的场景下(如用户同时运行了多个会发送通知的 App),回调频率可能达到每秒数十次。
-
-如果 NLS 的回调实现中做了任何耗时操作,主线程就被占住了:
+下面的实现把数据库、网络和分析都留在主线程，容易让后续通知回调与应用 UI 消息排队：
 
 ```java
-// ❌ 典型的 NLS ANR 代码模式
 public class MyNotificationListener extends NotificationListenerService {
     @Override
-    public void onNotificationPosted(StatusBarNotification sbn) {
-        // 危险:这个方法在主线程执行
-        saveToDatabase(sbn);        // 数据库 I/O,可能 50-200ms
-        uploadToServer(sbn);         // 网络请求,可能数秒
-        analyzeNotification(sbn);    // CPU 密集计算
+    public void onNotificationPosted(
+            StatusBarNotification sbn,
+            RankingMap rankingMap) {
+        saveToDatabase(sbn);
+        uploadToServer(sbn);
+        analyzeNotification(sbn);
     }
 }
 ```
 
-在 Perfetto 中,这类问题的表现是主线程出现一段长时间 Running 或 Sleeping(如果等待数据库锁),stack trace 指向 `onNotificationPosted()` 内部的代码。如果这段阻塞期间有输入事件派发到该进程,主线程无法及时处理,`InputDispatcher` 的超时窗口才会触发 Input ANR；没有输入事件时,只能把它记为回调耗时或主线程长任务。
+这段代码会延迟该 listener 的 dispatch completion 和后续主线程消息。若进程没有窗口或输入连接，回调长耗时只表现为通知处理积压；只有输入事件也被派发到该进程并超过 InputDispatcher 预算时，才会形成 Input ANR。
 
-### 推荐做法:回调转发到后台线程
+### 回调只做快照与转交
+
+NLS 回调参数来自系统状态，后台任务应复制所需字段，并定义队列容量、覆盖和去重策略。下面的示例用单线程 executor 保序，同时避免把整个 `RankingMap` 长期留在队列中：
 
 ```java
-// ✅ 将耗时操作移到后台线程
 public class MyNotificationListener extends NotificationListenerService {
-    private final ExecutorService backgroundExecutor = Executors.newSingleThreadExecutor();
+    private final ExecutorService worker =
+            Executors.newSingleThreadExecutor();
 
     @Override
-    public void onNotificationPosted(StatusBarNotification sbn) {
-        // 主线程只做轻量操作(如更新内存缓存)
-        memoryCache.put(sbn.getKey(), sbn);
-
-        // 耗时操作转发到后台线程
-        backgroundExecutor.execute(() -> {
-            saveToDatabase(sbn);
-            // 注意:不要在这里调用 notifyDataSetChanged()
-            // NLS 的 UI 更新需要通过 mHandler.post() 回到主线程
-        });
+    public void onNotificationPosted(
+            StatusBarNotification sbn,
+            RankingMap rankingMap) {
+        NotificationSnapshot snapshot =
+                NotificationSnapshot.copyRequiredFields(sbn, rankingMap);
+        worker.execute(() -> persistAndAnalyze(snapshot));
     }
 }
 ```
 
-### 大量通知场景下的 RankingMap 重建
+`NotificationSnapshot` 是应用自定义 DTO。复制时只取业务需要的 key、package、post time、文本摘要和当前通知的 ranking；图片、完整 extras、历史 `RankingMap` 与大 `RemoteViews` 不应默认进入后台队列。队列满时可以按 notification key 合并 update，保留移除事件和终态。
 
-`NotificationListenerService.onNotificationPosted()` 的参数中包含 `RankingMap`,它是 NMS 对所有活跃通知的当前排名结果。每次有通知变化时,NMS 会重新生成完整的 `RankingMap` 并分发给所有监听器。
+### RankingMap 的成本与可见性
 
-在通知数量较多时(100+),`RankingMap` 的 Parcel 序列化/反序列化开销不可忽略。虽然单次开销在毫秒级,但在高频通知场景下会累积。如果 NLS 回调中持有 `RankingMap` 引用而不及时释放,还可能导致内存压力。
+每次 posted callback 携带的是该 listener 当前可见通知的 ranking map。NMS 会按 listener 过滤用户、通知类型、锁定模式与敏感内容，再构造 `Ranking[]`。因此：
 
-[已验证: AOSP frameworks/base/core/java/android/service/notification/NotificationListenerService.java - 回调在主线程的主 Looper 上执行]
+- map 不是系统所有通知的无条件快照；
+- 不同 listener 的条目数和内容可能不同；
+- 构造和 Parcel 成本随可见通知数量与 listener 数量增长；
+- 应用缓存旧 map 会延长整批 ranking 对象的生命周期。
+
+如果业务只关心本次 `sbn.getKey()`，在回调里调用 `rankingMap.getRanking(key, reusableRanking)` 取出需要字段即可。不要为“以后也许会用”保存每一代 map。
 
 ## 通知与 ANR 的典型模式
 
-### 模式一:前台服务启动预算被复杂通知吃掉
+### 模式一：发布应用主线程卡在同步 Binder
 
-这类问题常见于服务刚启动就要立刻变成前台服务的场景。预算窗口是 `startForegroundService()` 到 `Service.startForeground()` 之间,不是 `startForeground()` 之后还要再补一次 `notify()`。如果通知构造里混入图片解码、磁盘读取或复杂 `RemoteViews`,前台服务还没进入前台,预算已经被耗掉了。
+trace 位于 `NotificationManager.notify*()`、`BinderProxy.transactNative()` 或 Parcel/bitmap 路径。取证要覆盖应用 slice 和对应 system_server Binder 线程。若发布发生在主线程，长等待可能叠加输入事件并触发应用 Input ANR。
 
-两步式策略仍然有效:先用最小通知完成 `startForeground()`,再在后台线程构造完整版并 update 同一条通知。
+### 模式二：前台服务转换超时
 
-### 模式二:NLS 回调中的阻塞操作
+异常为 `ForegroundServiceDidNotStartInTimeException`，没有 `am_anr` 也能发生。检查 Service 回调入口到 `startForeground()` 的所有同步工作，先提交最小合规通知，再构造增强内容。
 
-如果应用实现了 `NotificationListenerService`,`onNotificationPosted()` 里的阻塞 I/O、数据库写入、JSON 解析和网络请求都会直接占住监听器进程的主线程。ANR 栈会落在监听器进程自己的回调实现里,和原始发布方的 `notify()` 不是同一条阻塞链。
+### 模式三：NLS 主线程回调积压
 
-### 模式三:高频通知更新导致 update path 过热
+监听器自己的主线程栈落在数据库、JSON、锁或网络等待。输入 ANR 还需证明该进程存在等待中的输入事件；没有这项证据时，结论写成 NLS 主线程长任务和回调积压。
 
-下载、歌词、导航、运动记录这类业务容易反复 update 同一条通知。这里的风险有两层:
+### 模式四：高频 update 被 shed
 
-1. 应用自己频繁构造通知对象,主线程先被拖慢
-2. NMS 对同一条通知的 update path 触发包级速率限制,更新被 shed 或明显排队
+下载、导航、计时和指标通知反复更新同一个 key。应用反复构造对象，NMS 反复检查并 fan-out，同 progress state 内的 update 还可能被静默丢弃。更新频率应依据用户可见变化、最大允许陈旧时间和终态保证设计，不跟随每个底层采样点发布。
 
-实践中的建议是:进度型通知不要跟随每个字节、每句歌词或每个定位点都 `notify()` 一次,应该按用户能感知的粒度压频。
+### 模式五：SystemUI 渲染长任务
 
-### 模式四:通知渠道创建和首次发通知挤在一起
+发布线程很快返回，通知显示却明显延后；Perfetto 显示 SystemUI 在 apply、图片加载、布局或主线程提交上耗时。若通知面板正接收触摸事件，SystemUI 主线程长任务还可能形成它自己的 Input ANR。
 
-`createNotificationChannel()` 和 `notify()` 都是跨进程调用。把它们放在同一个冷启动主线程片段里,容易把启动时序拉长。更稳妥的做法,是在应用初始化阶段把固定渠道建好,业务路径只负责发布或更新通知。
+### 模式六：渠道创建挤入首个热路径
 
-### 模式五:SystemUI 过载让"通知显示"变慢
-
-SystemUI 忙于锁屏动画、面板刷新或大量图片通知时,用户会感觉通知晚到、下拉卡顿,甚至把问题归因到发布方 `notify()` 被系统拖住。这个结论不能靠现象推断,必须回到 Perfetto:如果调用线程很快离开 Binder wait,问题更接近 SystemUI 显示时延;如果调用线程长时间睡在 Binder 边界,再看 system_server 的入口和队列。
+`createNotificationChannel()` 与 `notify()` 都会进入 NMS。固定 channel 可在可控的初始化阶段幂等创建；首个前台服务启动路径不应同时执行大量 channel 迁移、图片读取和通知发布。不要为了避开启动耗时延迟创建必需 channel，否则首个通知会因 channel 缺失被拒绝。
 
 ## Android 17 通知性能变更
 
-### 可确认的版本边界
+### 版本边界
 
-能从官方文档或 `android-17.0.0_r1` 直接核对的结论只有三类:Android 13 的通知权限、Android 16 的 `ProgressStyle` / promoted ongoing 相关文档,以及当前 AOSP 下的 NMS / `RemoteViews` 行为。Android 14 并行分发、Android 15 排名优化、Android 17 后台 NLS 限频都缺少足够一手材料,不适合作为固定版本事实。
+| 版本 | 已确认变化 | 性能诊断含义 |
+|---|---|---|
+| Android 12（API 31） | 本章支持范围的基线；NMS 已有通知数量与更新速率保护 | 不把这些保护误写成 Android 17 新增 |
+| Android 13（API 33） | `POST_NOTIFICATIONS` 成为 runtime permission | 发布前处理授权状态；它不改变已获授权通知的 NMS 同步边界 |
+| Android 16（API 36） | `Notification.ProgressStyle` 与 promoted ongoing / Live Update API | 进度场景可使用系统样式，Live Update 资格另行判断 |
+| Android 17（API 37） | `Notification.MetricStyle`、Metric value 类型、Semantic Coloring | 指标场景新增系统样式，语义颜色交给系统 surface 解释 |
 
-### POST_NOTIFICATIONS 在 Android 13,不在 Android 12
+没有 Android 17 一手证据支持“后台 NLS 统一按包限频”，本节不采用该说法。
 
-官方 notification permission 文档写得很清楚:`POST_NOTIFICATIONS` 是 Android 13 (API 33) 起的 runtime permission。Android 12 可以讨论的是通知 update 限流和前台服务相关约束,不该把通知权限提前一代。
+### ProgressStyle 与 Live Update 是两个概念
 
-### ProgressStyle 与 promoted ongoing 要分开写
+`ProgressStyle` 描述通知内容。Live Update 描述系统是否把 ongoing 通知提升到更显眼的 surface。Live Update 还要满足 manifest permission、ongoing、channel importance、样式和用户设置等条件；OEM 可以增加资格规则。
 
-`Notification.ProgressStyle` 是 API 36 新增的系统模板样式,用于 rideshare、delivery、navigation 这类有明确起点和终点的进度型通知。promoted ongoing / Live Update 是单独的展示资格,需要额外满足权限和样式约束。
+官方 Android 17 文档允许 Standard、`BigTextStyle`、`CallStyle`、`ProgressStyle` 和 `MetricStyle` 申请 Live Update，并禁止设置 `customContentView`。这条限制减少了 Live Update 上任意自定义布局，但不能据此保证某个通知耗时一定降低。
 
-从性能角度,`ProgressStyle` 的收益可以保守地理解成"优先走系统模板,减少自定义 `RemoteViews` 的需求"。
+### MetricStyle 与 Semantic Coloring
 
-### Android 17 (API 37)：MetricStyle 与 Live Update Semantic Coloring
+`Notification.MetricStyle` 在 API 37 加入，展开状态最多展示三个指标。每个 `Notification.Metric` 包含 label 和一种 `MetricValue`；系统提供整数、浮点、日期、时间、时间差和文本等 value 类型。被提升为 Live Update 时，critical metric 可能用于状态栏 chip。
 
-Android 17 新增 `Notification.MetricStyle` 通知模板，面向健康/健身、计时器、出行等场景，允许在 Always-On Display、锁屏、状态栏同时展示最多三个数据指标。相关类包括 `Notification.Metric`、`Notification.Metric.MetricValue`，用于定义指标名称、单位和数值。
+下面的 API 37 示例创建一个单指标系统样式：
 
-Live Update 扩展到新的模板类型：从 Android 16 的 `ProgressStyle` 扩展到 Android 17 的 `MetricStyle`，并引入 **Semantic Coloring API**，用语义化颜色（绿/红/蓝）标记积极/消极/中性内容，让系统根据语义自动选择展示颜色，减少应用自定义 RemoteViews 的需求。
+```java
+if (Build.VERSION.SDK_INT >= 37) {
+    Notification.Metric steps = new Notification.Metric(
+            new Notification.Metric.FixedInt(1979),
+            "步数");
+    Notification notification =
+            new Notification.Builder(context, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_stat)
+                    .setContentTitle("今日活动")
+                    .setStyle(new Notification.MetricStyle()
+                            .addMetric(steps))
+                    .build();
+}
+```
 
-从性能角度，`MetricStyle` 与 `ProgressStyle` 一样走系统模板渲染，减少自定义 `RemoteViews` 的 inflate 和绘制开销。Live Update 通知通过 promoted ongoing 机制保持展示优先级，对通知 ANR 的影响在于：高频更新指标值时仍受 NMS 包级速率限制约束。
+`MetricStyle` 至少要包含一个 metric，否则 `build()` 会抛出 `IllegalArgumentException`。源码只绑定前三个 metric，更多条目不会进入展开布局；应用应在构造前把列表限制为三个。
 
-> 后台 NLS 回调限频（per-package rate limiting）目前缺少足够一手公开材料，不写成固定版本结论。
+Android 17 的 semantic style 常量包括 `UNSPECIFIED`、`INFO`、`SAFE`、`CAUTION` 和 `DANGER`。它表达信息、安全、警示与危险等语义，由系统 surface 选择颜色；不能简化成应用指定绿、红、蓝。源码只在满足 feature flag、promoted ongoing 和非 unspecified 等条件时给 metric value 应用语义色。
+
+MetricStyle 数值反复 update 时，`getProgressState()` 通常保持 `NONE`，新旧状态相同，仍会进入包级速率检查。采用系统样式不会绕过 NMS 配额。
 
 ## 在 Perfetto 中诊断通知 ANR
 
-诊断通知 ANR 时,优先使用可复现的方法;不要依赖 `notif-handler`、`enqueueNotificationInternal`、`onNotificationPosted` 这类在不同 build 上不稳定的线程名或 slice 名。
+平台内部 slice 和线程名会随 build 改变。应用自己的 Trace section 能稳定标记构造、同步发布、前台转换和 NLS 回调，再用 Binder 与调度数据向系统侧扩展。
 
-### 采集策略:先埋应用自己的 Trace 标记
+### 应用侧标记
 
-如果要抓 `startForeground()`、`notify()`、NLS 回调的耗时,最稳的办法是在应用侧加 `Trace.beginSection()` 标记:
-
-```kotlin
-Trace.beginSection("notif.build")
-val notification = buildNotification()
-Trace.endSection()
-
-Trace.beginSection("notif.startForeground")
-ServiceCompat.startForeground(this, ID, notification, FOREGROUND_SERVICE_TYPE_DATA_SYNC)
-Trace.endSection()
-```
+下面的 Kotlin 代码把构造与发布分成两个 section，并确保异常时关闭 section：
 
 ```kotlin
-override fun onNotificationPosted(sbn: StatusBarNotification, rankingMap: RankingMap) {
-    Trace.beginSection("nls.onNotificationPosted")
+val notification = try {
+    Trace.beginSection("notif.build")
+    buildNotification()
+} finally {
+    Trace.endSection()
+}
+try {
+    Trace.beginSection("notif.notify")
+    notificationManager.notify(ID, notification)
+} finally {
+    Trace.endSection()
+}
+
+override fun onNotificationPosted(
+    sbn: StatusBarNotification,
+    rankingMap: RankingMap
+) {
     try {
-        handOffToExecutor(sbn)
+        Trace.beginSection("nls.callback")
+        handOffSnapshot(sbn, rankingMap)
     } finally {
         Trace.endSection()
     }
 }
 ```
 
-抓 trace 时,至少把 `sched`、`binder_driver`、`am`、`wm`、`gfx`、`view` 打开,并把目标 App 加到 atrace app 列表。这份 Perfetto text config 可以直接作为最小模板:
+`notif.build` 衡量应用构造，`notif.notify` 包含 Parcel 与同步 Binder，`nls.callback` 只应覆盖快照和入队。前台服务可另加 `notif.startForeground`。
+
+### 最小采集配置
+
+下面的 textproto 采集 30 秒环形缓冲，包含应用 atrace、Binder 和调度事件：
 
 ```textproto
 buffers: {
@@ -390,12 +420,14 @@ data_sources: {
     }
   }
 }
-duration_ms: 15000
+duration_ms: 30000
 ```
 
-### 用稳定表名看调用方阻塞
+15 秒固定窗口容易错过故障前因；这里使用 30 秒只是起点。线上触发器还要预留故障前缓存，并按设备内存调整 buffer。
 
-如果应用已经加了 trace section,`slice`、`thread_track`、`thread`、`process` 这组表就足够定位通知相关耗时:
+### 查询应用 section
+
+下面的 Perfetto SQL 按耗时列出应用埋点：
 
 ```sql
 SELECT
@@ -409,17 +441,18 @@ JOIN thread ON thread_track.utid = thread.utid
 JOIN process ON thread.upid = process.upid
 WHERE slice.name IN (
   'notif.build',
+  'notif.notify',
   'notif.startForeground',
-  'nls.onNotificationPosted'
+  'nls.callback'
 )
 ORDER BY slice.dur DESC;
 ```
 
-[图:App 主线程中的 `notif.build` / `notif.startForeground` slice 与 `thread_state` 对照]
+找到长 slice 后，回到对应时间范围检查 Binder transaction、线程状态和服务端调度。只看 section 总时长无法区分 Running 与睡眠等待。
 
-### 用 thread_state 看 Binder 等待和主线程饥饿
+### 查询主线程状态
 
-应用主线程到底是在忙自己的逻辑,还是在睡眠等待 Binder 返回,用 `thread_state` 更稳:
+下面的查询列出目标应用主线程超过 1 毫秒的状态片段：
 
 ```sql
 SELECT
@@ -437,91 +470,81 @@ WHERE process.name = 'your.package'
 ORDER BY thread_state.dur DESC;
 ```
 
-如果这里长时间停在 `binder_thread_read`,再去对应时间点看 `system_server` 的调度状态;如果长时间是 Running,通常是应用自己在 build notification、图片处理或 NLS 回调里占住了 CPU。
+长时间 Running 指向本进程 CPU 工作；`R` 表示 runnable 却未获 CPU；睡眠且 blocked function 落在 Binder 路径时，需要继续找对应 system_server transaction。线程状态只能给方向，仍要用 slice 与调用栈确认具体代码。
 
-### NLS 场景不要硬搜系统私有 slice
+### 三条链分别核对
 
-默认 trace 里,`enqueueNotificationInternal`、`onNotificationPosted` 这类系统私有 slice 名不一定稳定出现;不同 OEM 机型对线程命名和打桩粒度也不一样。把 SQL 写成 `slice.name LIKE '%binder%'` 或强行搜索 `notif-handler`,复用性很差。更稳的做法,是用应用自己的 trace section 作为锚点,再配合 `thread_state`、`sched` 和 `dumpsys notification` 做交叉验证。
+- 发布链：`notif.notify`、Binder client/server、NMS 同步段返回；
+- 分发链：NMS handler、通知锁、ranking 构造与 listener Binder；
+- 消费链：SystemUI/NLS Binder 接收、主线程消息、RemoteViews 或业务回调。
+
+不要依赖 `notif-handler`、`enqueueNotificationInternal` 之类私有 slice 名必然存在。应用 section、Binder transaction、PID/TID 和时间范围更稳定。
 
 ### 使用 dumpsys 辅助诊断
 
-当线上 ANR 报告里没有可用 trace 时,`dumpsys notification` 仍然有用:
-
-- 活跃通知数量是不是异常偏多
-- 当前有哪些 `NotificationListenerService` 注册着
-- 哪些包命中过 rate limit 或被系统拦截
+下面的命令保存 NMS 当前状态，并从 system log 搜索更新 shed 记录：
 
 ```bash
 adb shell dumpsys notification
+adb logcat -b system -d | grep -E \
+  'Package enqueue rate|Shedding .* package='
 ```
 
-[图:`dumpsys notification` 中 NotificationRecord / Listener Services / Rate Limiting 三段重点输出]
+`dumpsys` 适合确认活跃记录、listener、channel 与策略状态；超速被丢弃的单次证据以 NMS 日志和 trace 时间线为准。快照发生在故障之后时，已经移除的通知和短暂积压可能看不到。
 
 ## 与其他机制的关系
 
-- **Service ANR(§9.2)**:前台服务启动预算与通知构造是 Notification ANR 和 Service ANR 的交叉点,重点看 `startForegroundService()` 到 `Service.startForeground()` 之间的耗时
-- **Binder 性能(§1.4)**:通知发布的整个过程都依赖 Binder IPC,NMS 的线程模型和 Binder 线程池耗尽都可能导致通知延迟
-- **SharedPreferences ANR(§6.5)**:NLS 回调中的 SP `apply()` / `commit()` 是常见的 ANR 触发组合
-- **ContentProvider(§1.10)**:某些 NLS 实现在回调中通过 ContentProvider 查询数据,Provider 的冷启动会阻塞回调
-- **Perfetto SQL 分析(§13.7)**:通知 ANR 的深度分析需要结合 Perfetto SQL 查询 Binder 调用链
-
-## 版本演进
-
-| 版本 | 当前能确认的变化 | 性能含义 |
-|------|------------------|----------|
-| Android 12 (API 31) | NMS update path 存在包级通知速率限制 | 高频 `notify()` 更新更容易被 shed,进度型通知需要主动压频 |
-| Android 13 (API 33) | `POST_NOTIFICATIONS` 成为 runtime permission | 被拒绝的普通通知不会进入常规发布路径,系统总体通知负载会下降 |
-| Android 16 (API 36) | `Notification.ProgressStyle` 新增,promoted ongoing / Live Update 文档可用 | 进度型通知更适合走系统模板,减少自定义 `RemoteViews` 的必要性 |
-| Android 17 (API 37) | `Notification.MetricStyle` 新增,Semantic Coloring API 与 Live Update 扩展到 MetricStyle | 指标型通知走系统模板渲染,语义颜色减少自定义 RemoteViews；高频更新仍受 NMS 速率限制 |
-
-Android 14 和 15 的分发、排序及后台 listener 行为目前缺少足够一手材料,不写成固定版本结论。
+- **§9.2 Service ANR 与超时**：区分 Service 执行 ANR 和前台转换异常。
+- **§1.4 Binder IPC 与性能**：`notify()` 的同步返回、listener 的 oneway 回调和 Binder 背压属于不同事务。
+- **§6.5 SharedPreferences/DataStore**：NLS 主线程中的 `commit()` 或加载等待会直接延长回调。
+- **§1.10 ContentProvider**：URI 图标和 NLS 查询都可能触发 Provider 访问与冷启动。
+- **§13.7 Perfetto SQL**：用 Binder、slice 与 thread_state 还原跨进程时间线。
 
 ## 常见问题与误区
 
 ### 「通知 ANR 只发生在使用 NotificationListenerService 的 App」
 
-不准确。`NotificationListenerService` 回调阻塞只是通知 ANR 的一种模式。即使应用完全不使用 NLS,只要前台服务启动路径里的通知构造过重,`startForegroundService()` 到 `Service.startForeground()` 之间这段预算同样可能耗尽。
+发布应用、SystemUI 和带 UI 的监听器都可能因各自主线程阻塞触发 Input ANR。NLS 回调本身没有独立的“通知 ANR timer”。前台服务转换失败又是异常崩溃路径，应按 detector 分开统计。
 
-### 「notify() 是异步的,不会阻塞主线程」
+### 「`notify()` 是异步的，不会阻塞主线程」
 
-`NotificationManager.notify()` 的入口是一次同步 Binder 调用。App 线程至少要等 NMS 的入口校验和入队返回,但默认不会等到 SystemUI 把通知画完,也不会等所有 NLS 回调执行完。排查时要把"同步 Binder 入口"和"后续异步显示"分开。
+入口是同步 Binder。应用线程会等 NMS 完成入队前的校验、修正、记录构造和配额检查，并执行到 `mHandler.post()` 之后。它不等待 SystemUI 上屏，也不等待 NLS 用户回调完成。
 
-### 「通知限流会抛异常,所以不用担心」
+### 「更新被限流时会抛异常」
 
-Android 12+ 的通知限流是静默丢弃,超过频率限制的通知会被 NMS 直接忽略，不会抛异常，也不会回调通知 App。这说明进度更新可能丢失,但调用方收不到错误反馈,因此需要主动控制更新频率。
+超速 update 在 NMS 内返回 `false` 并写系统日志，外部 `enqueueNotificationWithTag()` 没有布尔返回值。应用通常只看到某一帧进度没有展示。终态需要降低频率并在状态转换时明确发布，不能依赖异常重试。
 
 ### 「自定义通知布局比标准模板性能更好」
 
-标准模板（如 `NotificationCompat.BigTextStyle`）也是系统生成的 RemoteViews——`Notification.Builder.createContentView()` 对标准模板调用 `applyStandardTemplate()` 返回 RemoteViews 对象，`NotificationContentInflater` 仍通过 RemoteViews 管线渲染。但标准模板的布局与 action 集合受系统控制，`package`/`layoutId` 稳定，更容易命中 `canReapplyRemoteView()` 走 `reapply` 路径，避免完整 inflate。自定义布局同样走 RemoteViews 管线，但布局嵌套更深、图片和 action 更多时 inflate 与 reapply 的成本都更高。
+标准模板也会生成 `RemoteViews`。它提供系统维护的布局、尺寸和 action 集合，通常更容易保持布局身份稳定。自定义布局是否更慢仍需测量；层级、action、图片与复用失败会增加风险。Live Update 直接禁止 `customContentView`，这还是资格规则，不是性能基准测试结论。
 
 ### 「Icon 构造方式对性能没影响」
 
-`Icon.createWithBitmap()` 在 `writeToParcel()` 时通过 `Bitmap.asShared()` 把 Bitmap 转为共享内存 backed 不可变副本，以 FD 形式跨进程传递，不走像素序列化。`asShared()` 的行为是:已 shared 的不可变 bitmap 直接返回，否则创建 ashmem 副本，无法创建时抛异常。`asShared()` 本身有格式转换和 ashmem 拷贝开销。通知图标优先用 `Icon.createWithResource(resId)`（只传资源 ID 引用，跨进程开销最低）。必须用 Bitmap 时，先按通知显示尺寸缩放并确保 ARGB_8888 格式，降低 `asShared()` 的拷贝开销。
+resource、URI 和 bitmap 分别把成本放在资源解析、延迟读取解码和共享内存复制上。bitmap 应预先缩放；URI 要保证授权与生命周期；resource 要保证接收端能解析对应包和资源。选择依据是来源、更新频率和目标尺寸，没有统一的性能排序能覆盖所有图片来源。
 
 ## 参考资料
 
-- **AOSP 源码路径**:
-  - `frameworks/base/core/java/android/app/NotificationManager.java` - App 侧 `notify()` 入口
-  - `frameworks/base/services/core/java/com/android/server/notification/NotificationManagerService.java` - NMS 核心实现与限流路径
-  - `frameworks/base/core/java/android/widget/RemoteViews.java` - `RemoteViews` 的动作列表、inflate 与 apply
-  - `frameworks/base/core/java/android/service/notification/NotificationListenerService.java` - NLS 回调线程模型
-  - `frameworks/base/core/java/android/service/notification/INotificationListener.aidl` - listener 回调的 `oneway` 边界
-  - `frameworks/base/services/core/java/com/android/server/notification/NotificationManagerService.java` — 监听器管理（`NotificationListeners` 为内部类）
+### Android 17 / API 37 源码
 
-- **官方文档**:
-  - [developer.android.com/develop/ui/views/notifications](https://developer.android.com/develop/ui/views/notifications) - 通知开发指南
-  - [developer.android.com/develop/ui/views/notifications/notification-permission](https://developer.android.com/develop/ui/views/notifications/notification-permission) - `POST_NOTIFICATIONS` 版本边界
-  - [developer.android.com/develop/background-work/services/fgs/troubleshooting](https://developer.android.com/develop/background-work/services/fgs/troubleshooting) - 前台服务启动超时排查
-  - [developer.android.com/about/versions/16/features/progress-centric-notifications](https://developer.android.com/about/versions/16/features/progress-centric-notifications) - Progress-centric notifications / Live Update
-  - [developer.android.com/reference/android/app/Notification.ProgressStyle](https://developer.android.com/reference/android/app/Notification.ProgressStyle) - `Notification.ProgressStyle` API 参考
-  - [developer.android.com/topic/performance/vitals/anr](https://developer.android.com/topic/performance/vitals/anr) - ANR 诊断指南
+- [NotificationManager.java：应用侧 notify 入口](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/NotificationManager.java)
+- [INotificationManager.aidl：同步 enqueue 接口](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/INotificationManager.aidl)
+- [NotificationManagerService.java：同步入队、配额、排序与 listener 分发](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/notification/NotificationManagerService.java)
+- [NotificationListenerService.java：主线程 Handler 与 RankingMap](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/service/notification/NotificationListenerService.java)
+- [INotificationListener.aidl：oneway listener 回调](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/service/notification/INotificationListener.aidl)
+- [Notification.java：ProgressStyle、MetricStyle 与 progress state](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/Notification.java)
+- [RemoteViews.java：Parcel、apply 与 reapply](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/widget/RemoteViews.java)
+- [Icon.java：resource、URI 与 bitmap Parcel 路径](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/drawable/Icon.java)
+- [ActiveServices.java：前台服务转换 timeout](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java)
 
-- **研究素材**:
-  - [intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md] - Android 16 ProgressStyle API 详细分析
+### 官方文档
 
-- **交叉引用**:
-  - §9.1 ANR 设计思想
-  - §9.2 ANR 类型与触发条件
-  - §9.4 特殊场景的 ANR
-  - §1.4 Binder IPC 与性能
-  - §6.5 SharedPreferences/DataStore 性能与 ANR 优化
+- [通知开发指南](https://developer.android.com/develop/ui/views/notifications)
+- [通知 runtime permission](https://developer.android.com/develop/ui/views/notifications/notification-permission)
+- [前台服务超时排查](https://developer.android.com/develop/background-work/services/fgs/troubleshooting)
+- [Android 16 ProgressStyle](https://developer.android.com/about/versions/16/features/progress-centric-notifications)
+- [Android 17 MetricStyle 指南](https://developer.android.com/develop/ui/views/notifications/metric-style)
+- [Live Update 资格与 surface](https://developer.android.com/develop/ui/views/notifications/live-update)
+- [Android 17 Semantic Coloring](https://developer.android.com/about/versions/17/features#live-update-semantic-color)
+- [ANR 诊断指南](https://developer.android.com/topic/performance/vitals/anr)
+
+本地研究素材：`intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md`。
