@@ -21,16 +21,52 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-28T06:28:00+08:00"
 pipeline_stage: ready-to-publish
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-04-03'
-last_verified_against: OkHttp 4.12.x / Android 16
-confidence: medium
+last_verified: '2026-07-31'
+last_verified_against: 'AOSP android-17.0.0_r1；Android 17 / API 37；OkHttp 5.3.0；Cronet Play services 18.0.1；HTTP/2、HTTP/3 与 QUIC RFC（2026-07）'
+confidence: high
 sources:
+- type: official
+  path: https://developer.android.com/develop/connectivity/network-ops/reading-network-state
 - type: official
   path: https://developer.android.com/reference/android/net/ConnectivityManager
 - type: official
-  path: https://square.github.io/okhttp/
+  path: https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback
 - type: official
-  path: https://developer.android.com/training/basics/network-ops
+  path: https://developer.android.com/reference/android/net/NetworkCapabilities
+- type: official
+  path: https://developer.android.com/develop/connectivity/cronet
+- type: official
+  path: https://developer.android.com/develop/connectivity/cronet/start
+- type: official
+  path: https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/CronetEngine.Builder
+- type: official
+  path: https://developer.android.com/reference/android/telephony/SubscriptionInfo
+- type: official
+  path: https://developer.android.com/privacy-and-security/local-network-permission
+- type: source
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/README.md
+- type: source
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/OkHttpClient.kt
+- type: source
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt
+- type: rfc
+  path: https://www.rfc-editor.org/rfc/rfc9113
+- type: rfc
+  path: https://www.rfc-editor.org/rfc/rfc9114
+- type: rfc
+  path: https://www.rfc-editor.org/rfc/rfc9000
+- type: rfc
+  path: https://www.rfc-editor.org/rfc/rfc9001
+- type: aosp
+  path: packages/modules/Connectivity/framework/src/android/net/ConnectivityManager.java
+- type: aosp
+  path: packages/modules/Connectivity/framework/src/android/net/NetworkCapabilities.java
+- type: aosp
+  path: packages/modules/Connectivity/service/src/com/android/server/ConnectivityService.java
+- type: aosp
+  path: packages/modules/NetworkStack/src/com/android/server/connectivity/NetworkMonitor.java
+- type: aosp
+  path: frameworks/base/telephony/java/android/telephony/SubscriptionInfo.java
 tags:
 - network
 - OkHttp
@@ -84,396 +120,574 @@ last_deepseek_cn_review_at: 2026-07-06
 
 <!-- outline-end -->
 
-## 为什么要关注网络性能
+一次接口调用的等待时间分散在客户端排队、域名解析、路由尝试、建连、加密握手、上传、边缘节点、服务端、响应传输、解析和界面更新中。“接口耗时 2 秒”只给出了结果，无法指出哪一段消耗了时间。
 
-当我们谈论 Android 性能时，往往最先想到的是渲染卡顿、内存泄漏、ANR 这些"看得见"的问题。但网络请求的慢——DNS 解析耗时 200ms、连接建立卡在 TLS 握手、弱网下反复超时重试——同样是用户可感知的性能劣化。它不表现为帧率下降，而是表现为"白屏等待"、"数据加载中"的时间变长，严重时直接导致请求超时、功能不可用。
+移动网络持续变化，客户端仍然可以控制请求时机、复用、总期限、缓存、重试和内容降级。优化工作的起点是统一计时口径，然后按协议、请求组织和网络状态选择策略。
 
-网络性能与本地性能有一个关键区别：**它不可控**。本地渲染管线的耗时主要由 App 自身代码决定，但网络请求的耗时取决于运营商、基站信号、DNS 服务器、CDN 节点、服务器负载等一系列不可控因素。正因如此，网络性能优化的核心思路不是"消除延迟"，而是**减少可控环节的延迟、增强对不可控因素的容错能力**。
+本节以 Android 17 / API 37、AOSP `android-17.0.0_r1`、OkHttp 5.3.0 和 Play services Cronet 18.0.1 为基准。系统服务、`netd`、DNS Resolver 和 `NetworkAgent` 的内部细节在后续章节展开。
 
-面对一个"网络慢"的用户反馈，判断路径通常从请求全生命周期开始：先区分 DNS、连接、TTFB 和传输耗时，再看协议选择、请求组织、弱网容错和监控体系。这样才能快速判断问题落在 DNS、连接还是服务端处理，并确认代码层面还能优化哪些环节。
+## 一次请求应当怎样计时
 
-## 网络性能指标：一次请求的时间分解
-
-一个 HTTP 请求从发起到收到完整响应，可以拆分为若干个阶段，每个阶段的耗时对应一个独立的性能指标。理解这些指标，是我们定位网络瓶颈的基础。
-
-一次完整的 HTTP 请求时间线大致如下：
+常规非双工请求可以按下面的顺序观察：
 
 ```text
-DNS 查询 → TCP 连接 → TLS 握手 → 发送请求头 → 发送请求体 →
-等待服务端处理 → 收到第一个响应字节 → 接收完整响应体
+enqueue / execute
+  → Dispatcher 排队
+  → 代理选择与 DNS
+  → 路由尝试
+  → TCP + TLS，或 QUIC + TLS
+  → 请求头与请求体
+  → 响应头
+  → 响应体
+  → 反序列化、业务处理与界面更新
 ```
 
-对应的关键指标有三个：
+缓存命中或连接复用会跳过若干阶段，重定向、认证、路由回退和重试又可能让某些阶段出现多次。双工请求还允许请求体与响应交错，因此监控系统要保存事件序列，不能假定每种事件只出现一次。
 
-**DNS 解析时间（DNS Time）**：从发起域名解析到获得 IP 地址的耗时。在移动网络下，DNS 解析通常是第一个瓶颈。本地 DNS 缓存可以缓解，但首次请求或缓存过期后的 DNS 查询可能需要 20-200ms，在极端情况下（如运营商 DNS 不可用）甚至超过数秒。
+### 需要分开的指标
 
-**连接时间（Connect Time）**：从开始建立 TCP 连接到连接就绪的耗时。如果使用 HTTPS（现在几乎所有请求都是），这里还包含 TLS 握手的时间。连接时间通常在 50-200ms 之间，但如果服务器物理距离远或网络拥堵，可能翻倍。
+| 指标 | 建议边界 | 能回答的疑问 |
+|---|---|---|
+| Call 总耗时 | `callStart` 到 `callEnd` / `callFailed` | 用户发起的单次 `Call` 在网络库内停留多久 |
+| Dispatcher 排队 | `dispatcherQueueStart` 到 `dispatcherQueueEnd` | 并发上限或线程资源是否造成客户端等待 |
+| DNS | 每组 `dnsStart` 到 `dnsEnd` | 域名解析、缓存和重定向域名是否消耗时间 |
+| TCP 建连 | `connectStart` 到 `secureConnectStart`，无 TLS 时到 `connectEnd` | Socket 建连和路由尝试是否缓慢 |
+| TLS | `secureConnectStart` 到 `secureConnectEnd` | 加密握手与证书处理消耗多少时间 |
+| 请求发送 | `requestHeadersStart` 到 `requestBodyEnd`，无请求体时到 `requestHeadersEnd` | 上传或请求体生产是否缓慢 |
+| 响应头等待 | 请求发送结束到 `responseHeadersStart` | 网络往返、边缘节点和服务端共同造成的等待 |
+| 响应体传输 | `responseBodyStart` 到 `responseBodyEnd` | 下载和应用读取速度是否偏低 |
+| 内容可用时间 | 业务发起到数据可展示 | 网络、解析、数据库和 UI 的整体结果 |
 
-**首字节时间（Time To First Byte, TTFB）**：从发送请求到收到服务端返回的第一个字节的时间。这个指标反映了服务端处理速度和网络往返延迟的综合影响。TTFB 是判断"问题在客户端还是服务端"的关键分水岭——如果 DNS 和连接都很快但 TTFB 高，问题几乎一定在服务端。
+OkHttp 5.3.0 的 `callStart` 在调用 `enqueue()` 或 `execute()` 后触发。若请求因 Dispatcher 或 HTTP/2 stream 资源不足而等待，`dispatcherQueueStart` / `dispatcherQueueEnd` 可以直接记录这段时间。相关约束写在 5.3.0 的 [`EventListener.kt`](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt) 中。
 
-为什么这三个指标如此重要？因为它们各自对应不同的优化方向。DNS 慢 → 用 DNS 预解析或 HTTPDNS；连接慢 → 用连接复用或预连接；TTFB 慢 → 优化服务端或用 CDN。不做指标拆分，只看"请求花了 2 秒"，根本无从下手。
+### TTFB 不是服务端耗时
 
-[已验证: Square OkHttp EventListener 官方文档 / Android ConnectivityManager 官方文档]
+“首字节时间”在不同平台可能采用不同起点。客户端常见的两种口径是：
 
-### 传输速率
+- `callStart` 到 `responseHeadersStart`：包含排队、DNS、连接、握手、上传和等待响应，接近用户等待响应头的时间。
+- 请求发送结束到 `responseHeadersStart`：排除了前置阶段，但仍包含网络往返、代理、CDN、服务端排队与处理。
 
-除了时间指标，传输速率（Throughput）也是网络性能的重要维度。它表示单位时间内传输的数据量，通常以 Mbps 或 MB/s 衡量。传输速率受带宽、网络拥塞、数据包大小等因素影响。
+因此，TTFB 高不能单独证明服务端慢。服务端 trace、`Server-Timing`、CDN cache 状态和客户端分段计时一起使用，才能缩小范围。对响应头和响应体之间的边界也要保持一致；OkHttp 的 `responseHeadersStart` 表示开始读取响应头，并不等同于业务已经拿到可展示数据。
 
-在实际优化中，传输速率主要影响大文件下载和上传场景（图片、视频、APK 更新包等）。对于常规的 API 请求（通常几 KB 到几十 KB），传输速率的影响远小于 DNS 和连接时间。这也是为什么网络优化的重心通常放在"减少请求次数"和"缩短连接建立时间"上，而不是"提升带宽利用率"。
+### 传输速率的口径
 
-## HTTP/2 与 HTTP/3(QUIC)：协议选择对性能的影响
+传输速率适合大响应、上传和媒体流。计算时至少记录：
 
-网络请求的底层协议决定了连接复用、头部压缩、丢包恢复等基础能力的上限。OkHttp 从 4.x 版本开始默认支持 HTTP/2（API 21+），而 HTTP/3（基于 QUIC）则需要通过 Cronet 等库引入。两者在移动场景下的性能差异，是我们选择技术方案的重要依据。
+- 有效载荷字节数与计时边界；
+- 内容编码，例如 gzip、Brotli；
+- 是否命中 HTTP cache；
+- 应用是否因消费响应过慢产生 backpressure；
+- 协议、网络 transport、是否 metered、是否 roaming；
+- 中断、续传和重试字节。
 
-### HTTP/2：多路复用解决了 HTTP/1.1 的队头阻塞
+`NetworkCapabilities.getLinkDownstreamBandwidthKbps()` 返回系统估计的**第一跳 transport 带宽**，不能代替请求吞吐。Wi‑Fi、蜂窝、VPN 也不能直接映射成“快”“慢”。
 
-HTTP/1.1 时代，浏览器通常会对同一域名的并发连接数做策略性限制，常见值是 6 左右。这个经验值来自浏览器实现，不是 HTTP/1.1 协议写死的上限。Android App 侧用 OkHttp 时，并发行为主要受 `Dispatcher`、`ConnectionPool` 和协议协商结果影响。以异步请求为例，OkHttp 默认用 `Dispatcher.maxRequestsPerHost()` 控制同一 host 的并发上限，默认值是 5；如果已经协商到 HTTP/2，同一连接上的多个 stream 又会改变排队方式。
+## HTTP/1.1、HTTP/2 与 HTTP/3
 
-HTTP/2 通过**多路复用**（Multiplexing）解决了这个问题。在 HTTP/2 下，一个 TCP 连接可以同时承载多个请求和响应，每个请求被分配一个独立的 Stream ID，数据被拆分为 Frame 在同一连接上交错传输。此外，HTTP/2 引入了 **HPACK 头部压缩**，减少了重复 Header 的传输开销。
+| 能力 | HTTP/1.1 | HTTP/2 | HTTP/3 |
+|---|---|---|---|
+| 传输 | TCP | TCP | QUIC over UDP |
+| 加密 | 可选；Android 业务通常使用 TLS | HTTPS 场景使用 TLS | TLS 1.3 集成在 QUIC 握手中 |
+| 同连接并发 | 常规实现中一条连接一次处理一个请求 | 多个 stream 复用一条连接 | 多个 QUIC stream 复用一条连接 |
+| 头部压缩 | 无协议级动态压缩 | HPACK | QPACK |
+| 丢包影响 | 该 TCP 连接等待缺失字节 | 同一 TCP 连接上的 stream 都受传输层顺序约束 | 丢失数据所属 stream 等待重传；共享拥塞控制仍会影响整条连接 |
+| 网络迁移 | 通常重建连接 | 通常重建连接 | 协议具备 Connection ID 与路径验证能力，能否迁移取决于实现和服务端 |
 
-在 Perfetto 中，如果 App 使用 HTTP/2，我们会看到 TCP 连接数量显著减少——多个请求共享同一个连接，而不是每个请求独占一个。这对移动网络特别有利，因为每次新建 TCP 连接都需要经历三次握手（加上 TLS 握手），在弱网环境下每次新建连接的 TLS 握手开销可能达到 100-200ms。
+HTTP/2 去掉了 HTTP/1.1 在应用层组织并发时对多连接的依赖，并通过 multiplexing 与 HPACK 降低重复开销。TCP 仍按字节序交付，一段数据丢失后，后续字节要等待重传。服务端的最大并发 stream、优先级实现和单连接拥塞也会影响结果。
 
-但 HTTP/2 并非完美。它解决了应用层的队头阻塞，却把问题推到了传输层——TCP 层仍然存在队头阻塞：如果一个 TCP 包丢失，该连接上所有 Stream 的数据传输都会被阻塞，直到丢包被重传。在高丢包率的移动网络下，这个问题尤为突出。
+HTTP/3 把 HTTP 映射到 QUIC stream。某个 stream 丢失的数据不会要求其他 stream 等待同一字节序列，但连接级拥塞窗口、设备 CPU、服务器调度和 UDP 路径仍是公共资源。“有丢包便一定更快”不成立。
 
-### HTTP/3(QUIC)：为移动网络设计的传输协议
+### 0-RTT 的边界
 
-HTTP/3 使用 QUIC 作为传输层协议，而 QUIC 基于 UDP 实现。这个架构变更带来了几个对移动网络场景尤为关键的改进：
+QUIC 恢复连接时可能发送 TLS early data，从而减少一次往返。它需要已有会话状态、客户端允许、服务端接受并保留相应配置。服务端可以拒绝 early data，客户端随后按正常握手继续，因此 0-RTT 不能写进功能正确性的前提。
 
-**零/一次 RTT 连接建立**：QUIC 将传输层握手和 TLS 1.3 加密握手合并为一次交互。首次连接只需 1-RTT，后续连接可以利用保存的会话信息实现 0-RTT，即第一个包就可以携带请求数据。在移动网络下，一个 RTT 可能是 50-100ms，省掉一次往返意味着白屏时间直接减少 50-100ms。
+Early data 可能被重放，安全属性也弱于新握手后的 1-RTT 数据。业务只能发送能够容忍重放的操作。支付、发帖、创建订单等操作需要等待握手完成，或采用服务端幂等键、去重记录和明确的重放策略。HTTP 方法名只能作为线索，不能代替业务语义审计。
 
-> **⚠️ 0-RTT 安全边界**：0-RTT 数据不具备前向安全性（Forward Secrecy），且易受重放攻击（Replay Attack）（RFC 9001 §9.2）。业务层必须确保通过 0-RTT 发送的请求是幂等的（如 GET、PUT），或者携带服务端幂等键（Idempotency Key）来防止重复执行。对非幂等请求（POST、PATCH），应在 QUIC 配置中显式禁用 0-RTT，或在应用层降级到 1-RTT 发送。Cronet 的 `QuicOptions.Builder.addAllowedQuicHost()` 只负责 QUIC host allowlist；0-RTT 还要结合 `enableTlsZeroRtt(boolean)`、HTTP disk cache / session state 和服务端 replay 防护一起配置。
+Cronet 的 `QuicOptions.Builder.enableTlsZeroRtt()` 控制 TLS 0-RTT；`addAllowedQuicHost()` 只配置 QUIC host allowlist。跨进程会话恢复还与磁盘 cache、provider 和服务端状态有关。
 
-**独立的 Stream 丢包恢复**：QUIC 在自己的传输层实现了多路复用，每个 Stream 的丢包重传互不影响。一个 Stream 丢包不会阻塞其他 Stream 的数据传输——这正是 HTTP/2 over TCP 最大的薄弱环节。
+### 连接迁移也有条件
 
-**连接迁移**：QUIC 使用 Connection ID 而不是四元组（源 IP、源端口、目标 IP、目标端口）来标识连接。当用户的网络从 Wi-Fi 切换到 4G/5G 时（IP 地址改变），QUIC 连接可以无缝迁移，不需要重新建立连接。在 HTTP/2 下，这种网络切换会导致所有正在进行的请求失败并需要重试。
+QUIC Connection ID 允许连接在 IP 或端口变化后通过新路径继续。Cronet 还提供 `ConnectionMigrationOptions`。迁移能否成功取决于 provider 配置、服务器支持、路径验证、NAT、VPN 和中间网络，切换 Wi‑Fi 与蜂窝时仍可能出现请求失败。业务层保留取消、重试和幂等处理，不能把迁移理解成无条件无感切换。
 
-业界数据也能说明 HTTP/3 在移动场景下的价值：Google 报告 YouTube 移动端缓冲时间减少约 15%，Uber 采用 QUIC 后尾部延迟降低 10-30%，Meta 在 Instagram 上看到请求错误率降低约 6%、尾部延迟降低约 20%。[已验证: Uber Engineering Blog, Google Chromium Blog]
+### Android 上怎样使用 HTTP/3
 
-### 在 Android 上的选择
+OkHttp 5.3.0 的稳定协议栈覆盖 HTTP/1.1 与 HTTP/2。需要 HTTP/3 时，可以评估 Cronet。当前 Android 官方接入使用下面的 Play services 依赖：
 
-在 Android 开发中，接入 HTTP/3 前要先选 Cronet 的 provider 形态。对有 GMS 的设备，`Cronet by Play Services` 是默认优先项，App 侧引入的是一层很薄的 Java 依赖，APK 增量通常是几十 KB，Cronet 内核跟随 Google Play services 更新。对无 GMS 设备，或者业务要求固定 Cronet 版本、离线也必须可用的产品，常见做法是打包 standalone 或 bundled provider，这时成本会变成数 MB 级的 native 库体积，以及随 APK 一起发布和回滚的运维成本。
-
-因此，“引入 Cronet 会让 APK 增加 1-2MB”不是通用结论。体积、更新路径和可用性要分开看。GMS 设备更看重 provider 是否已经安装、版本是否满足要求；非 GMS 设备更看重包体积、ABI 覆盖和发布节奏。生产实践里通常会先探测 Play Services provider，可用时优先走 Cronet；探测失败时回退到 bundled Cronet 或 OkHttp/HTTP/2。这样才能把性能收益、包体积和设备覆盖率放在同一个决策框架里。
-
-16KB page size 对 Cronet 冷启动的影响需要按设备和 provider 实测。`libcronet.so` 是大型 native 库，4KB 分页下页表条目更多，page fault 和重定位成本更容易出现在冷启动阶段；16KB 页可能减少页表项数量，但收益不是固定百分比。如果要把 Cronet 初始化放进启动预连接策略，建议在相同设备、相同 ABI、相同 provider 版本下，对比 4KB 与 16KB 环境的 `dlopen`、provider install 和首次请求发出三个时间点。
-
-[已验证: Android Developers Cronet 文档 / Google Play services CronetProviderInstaller]
-
-## 网络请求优化：连接复用、请求合并与预连接
-
-协议层能力决定连接层上限，应用层能直接控制的是三类优化：连接复用、请求合并、预连接。它们共同减少网络请求的"固定开销"——即与数据传输量无关，只要发起请求就必然产生的那部分延迟。
-
-### 连接复用：一个 OkHttpClient 实例走天下
-
-连接复用是最基础也是最容易被忽视的优化。OkHttp 通过 ConnectionPool 管理 TCP 连接的复用：一个请求完成后，连接不会立即关闭，而是保持在池中供后续请求使用。当新请求的目标地址与池中某个空闲连接匹配时，直接复用该连接，省去 TCP 三次握手和 TLS 握手的开销。
-
-但这个机制生效的前提是：**所有请求共享同一个 OkHttpClient 实例**。如果在代码中每次请求都 `new OkHttpClient()`，就完全绕过了连接池，每个请求都要从头建立连接。
-
-```java
-// 错误：每次请求创建新 client，无法复用连接
-void makeRequest() {
-    OkHttpClient client = new OkHttpClient(); // 每次都是全新的连接池
-    Request request = new Request.Builder()
-        .url("https://api.example.com/data")
-        .build();
-    client.newCall(request).execute();
+```kotlin
+dependencies {
+    implementation("com.google.android.gms:play-services-cronet:18.0.1")
 }
 ```
 
-正确做法是将 OkHttpClient 作为单例使用：
+构造 `CronetEngine` 前要调用 `CronetProviderInstaller.installProvider(Context)`，并处理 Play services 缺失、需要更新或安装失败。官方 `cronet-fallback` 是能力较弱的 Java fallback，不能预设它与 native Cronet 具有相同的 HTTP/3、性能和连接迁移表现。
 
-```java
-// 正确：全局共享一个 client，连接池生效
-public class NetworkClient {
-    private static final OkHttpClient INSTANCE = new OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
-        .build();
+一个进程通常只创建一个 `CronetEngine`。多个 engine 不能并发使用同一个 storage directory。若应用打包 native Cronet provider，还要按 §12.1 验证 ABI、符号和 16KB page-size 兼容性；页大小变化对初始化耗时没有通用收益比例。
 
-    public static OkHttpClient get() { return INSTANCE; }
+### 协议选择要看线上分组
+
+HTTP/3 发布至少要按这些维度分组：
+
+- 协商后的协议，而非客户端“已启用 QUIC”的配置值；
+- 首次连接、会话恢复和已有连接复用；
+- Wi‑Fi、蜂窝、VPN、漫游与 metered 状态；
+- 地区、运营商、CDN POP 和服务端版本；
+- P50、P95、P99 延迟，以及失败率、回退率和重试率；
+- 请求大小、响应大小与电量成本。
+
+服务器需要正确发布 HTTP/3 能力，CDN 和防火墙需要允许相应 UDP 路径。客户端还要保留 HTTP/2 回退。小流量灰度后若尾延迟或失败率变差，应按网络与地区定位，不能只看整体平均值。
+
+## 请求组织：复用、并发、合并与预热
+
+### 共享 OkHttpClient
+
+OkHttp 官方建议复用一个 `OkHttpClient`。每个 client 都有连接池和线程资源；每次请求新建 client 会丢失复用机会，还会留下空闲资源。
+
+下面的代码创建一个共享 client，并从它派生不同超时策略：
+
+```kotlin
+data class TimeoutPolicy(
+    val callMs: Long,
+    val connectMs: Long,
+    val readMs: Long,
+    val writeMs: Long,
+)
+
+val sharedClient = OkHttpClient()
+
+fun clientFor(
+    base: OkHttpClient,
+    policy: TimeoutPolicy,
+): OkHttpClient = base.newBuilder()
+    .callTimeout(policy.callMs, TimeUnit.MILLISECONDS)
+    .connectTimeout(policy.connectMs, TimeUnit.MILLISECONDS)
+    .readTimeout(policy.readMs, TimeUnit.MILLISECONDS)
+    .writeTimeout(policy.writeMs, TimeUnit.MILLISECONDS)
+    .build()
+```
+
+`newBuilder()` 派生的 client 会共享连接池和线程资源。业务可按交互请求、上传、流式读取等类别配置策略。代理、信任管理器、证书固定、DNS 或协议要求相互冲突时，才需要认真评估独立 client。
+
+连接可否复用还受 scheme、host、port、代理、DNS 路由、TLS、ALPN 和证书约束。HTTP/2 可以在满足证书与路由安全条件时做 connection coalescing，但应用不能假定两个域名一定共享连接。
+
+OkHttp 5 默认启用 fast fallback，会并行尝试可用路由以降低 IPv6 / IPv4 连接等待。这会让一次 `Call` 出现多组 connect 事件，监控代码要按 attempt 保存。
+
+### 并行和请求合并各有成本
+
+聚合接口可以减少往返、重复 header 和客户端调度，也会扩大响应体、缓存失效范围和单次失败影响。HTTP/2 / HTTP/3 并行请求允许各数据块独立缓存、独立失败和按优先级展示。
+
+选择时可以比较：
+
+- 页面最早可展示时间与全部数据完成时间；
+- 每个接口的缓存周期和权限边界；
+- 部分失败是否允许展示；
+- 聚合服务的超时与下游 fan-out；
+- header、序列化和重复字段占比；
+- 取消页面后还有多少无用请求继续执行。
+
+同一页面每次打开都发出相同请求时，缓存或状态复用通常比单纯增加并发更有效。搜索联想、滚动图片和页面切换要及时取消过期请求，释放 Dispatcher、stream 和带宽资源。
+
+### “预连接”是一笔真实请求成本
+
+OkHttp 没有承诺任意业务请求都能通过一个公开 `preconnect()` API预建连接。发送 HEAD 或空 GET 进行 warmup 会产生 DNS、连接、TLS、服务器、流量和电量成本。后续请求还可能因网络切换、不同 authority、证书条件、连接空闲回收或服务端关闭而无法复用。
+
+若冷启动指标证明预热有收益，可设置无副作用、低成本、允许失败的专用 endpoint，并满足这些条件：
+
+- 与后续请求使用同一 authority 和网络栈；
+- 不触发鉴权刷新、业务统计、昂贵后端或 WAF 规则；
+- 只在很快会使用该域名时执行；
+- 不阻塞首屏，也不把失败展示给用户；
+- 记录复用命中率、额外字节和电量变化。
+
+DNS 预解析只减少 resolver 阶段，无法完成 TCP、TLS 或 QUIC 握手。Cronet 的 QUIC hint 与会话元数据也属于提示和状态复用，不构成功能保证。
+
+## CDN、DNS 与图片
+
+### 客户端如何观察 CDN
+
+CDN 会改变 DNS 答案、边缘距离、TLS 会话、协议协商、缓存命中和回源路径。客户端可在不泄露敏感信息的前提下记录：
+
+- 业务域名的匿名分组；
+- 协议与 IP family；
+- CDN 提供的 POP / cache 状态响应头白名单；
+- DNS、connect、TLS、响应头等待和传输耗时；
+- 响应码、重试、回退和字节数。
+
+客户端很难仅凭 TTFB 区分边缘排队、cache miss 与源站处理。CDN 日志和服务端 trace ID应采用白名单传递，并避免把完整 URL、query、Cookie、Authorization 或用户标识写入 APM。
+
+### 自定义 DNS 需要系统边界
+
+OkHttp 的 `Dns` 接口允许自定义解析。HTTPDNS、DoH 或业务 DNS 服务需要处理 TTL、IPv6、多个地址、负缓存、取消、故障回退和缓存隔离。URL 仍应保留域名，让 Host、SNI 和证书校验使用域名；把 HTTPS URL 改成裸 IP 会破坏这些语义。
+
+自定义解析还可能绕开 Android Private DNS、VPN、企业 split DNS、局域网域名和 captive portal 流程。采用前要确认安全与网络治理要求。系统 DNS 慢的证据应来自按网络分组的事件数据，不能把个别超时扩展成全量切换理由。
+
+### 图片网络优化
+
+图片请求的主要手段是减少无用字节和无用工作：
+
+- 按显示尺寸、密度和裁剪方式请求合适分辨率；
+- 列表优先缩略图，进入详情后再请求大图；
+- 使用内存与磁盘 cache，服务端提供稳定 cache key、`ETag` 或合理的 `Cache-Control`；
+- 页面离开后取消不再可见的请求；
+- 根据请求观测和用户设置选择画质，避免用 Wi‑Fi / 蜂窝标签直接判定质量；
+- 渐进式图片仅在编码格式、解码器和渲染组件均支持时采用。
+
+缩略图和原图要使用可推导或可关联的 cache key，防止列表滚动时重复下载。渐进式传输如果需要多次解码，也会增加 CPU 和内存成本，必须同时测量首个可用画面与完整解码时间。
+
+## 弱网策略：期限、重试、缓存与降级
+
+### 超时是不同层级的期限
+
+OkHttp 5.3.0 的默认 connect、read、write timeout 都是 10 秒，默认没有覆盖完整 `Call` 的总 timeout。它们的含义不同：
+
+- `callTimeout` 覆盖整个调用，包括 DNS、建连、写入、服务端处理、读取、重定向和内部恢复。
+- `connectTimeout` 约束新 TCP socket 的连接阶段，不约束 DNS 和完整调用。
+- `readTimeout` 约束 socket 与单次读取操作，不等同于整个响应体期限。
+- `writeTimeout` 约束写入操作，不等同于上传业务的完整截止时间。
+
+超时值应来自接口 SLO、用户等待预算、请求体大小和可恢复方式。交互接口需要明确总期限；大文件上传更适合分片、进度与断点续传；长连接和流媒体要按心跳或 segment 设计；后台同步应使用 WorkManager 的网络约束与重试调度。
+
+把弱网 timeout 一律调大，会延长用户等待并占用并发资源。把 timeout 一律调小，则会放大尾部网络上的失败与重试。每类请求都要记录超时发生在哪一段，再调整对应边界。
+
+### 重试前先判断结果是否未知
+
+请求失败可以分成几类：
+
+| 失败位置 | 风险 | 处理方向 |
+|---|---|---|
+| DNS 或尚未发送请求的连接失败 | 服务端大多尚未收到业务请求 | 允许网络库尝试其他地址或路由，并受总期限限制 |
+| TLS 证书、主机名或协议校验失败 | 安全配置或中间网络异常 | 停止盲目重试，保留错误分类 |
+| 请求体发送后连接中断 | 服务端可能已经执行 | 查询业务状态，或依赖幂等键去重 |
+| HTTP 408、429、503 | 服务端可能允许稍后尝试 | 按接口契约和 `Retry-After` 决定 |
+| 其他 4xx | 请求、权限或业务状态通常需要修改 | 按响应语义处理 |
+| 响应体中途失败 | 已接收部分数据 | 支持 Range / ETag 的下载可续传，其他请求按业务语义恢复 |
+
+指数退避要加入随机抖动，并受尝试次数、总期限、前后台状态和用户取消约束。服务端给出 `Retry-After` 时优先遵守。恢复网络时不要让所有挂起请求同步重发。
+
+OkHttp 的 `retryOnConnectionFailure` 默认开启，用于处理部分路由和连接层恢复；重定向、认证与某些响应也会在一个 `Call` 内产生 follow-up。应用层重试叠加在其上时，要记录网络库 attempt 与业务 attempt，避免数量相乘。Interceptor 内阻塞等待退避会占用执行资源，重试调度更适合放在请求编排层或 WorkManager。
+
+HTTP 方法的规范语义也不足以保证业务安全。一个声明为 PUT 或 DELETE 的接口仍可能包含审计、通知或外部系统副作用。支付、订单和发帖等写操作应由服务端提供幂等键和可查询结果。
+
+### HTTP cache 与业务离线数据
+
+OkHttp cache 遵守 HTTP 缓存语义。下面的函数为共享 client 配置磁盘 cache，容量由产品策略传入：
+
+```kotlin
+fun withHttpCache(
+    base: OkHttpClient,
+    directory: File,
+    budgetBytes: Long,
+): OkHttpClient = base.newBuilder()
+    .cache(Cache(directory, budgetBytes))
+    .build()
+```
+
+服务端应正确返回 `Cache-Control`、`ETag`、`Last-Modified` 和 `Vary`。客户端 cache 只保存符合规则的 HTTP 响应，不能替代 Room、SQLite 或文件层的业务离线数据。
+
+离线时若产品允许使用一段时间内的 stale 响应，可以显式构造只读 cache 请求：
+
+```kotlin
+fun offlineRequest(
+    url: HttpUrl,
+    maxStaleSeconds: Int,
+): Request {
+    val policy = CacheControl.Builder()
+        .onlyIfCached()
+        .maxStale(maxStaleSeconds, TimeUnit.SECONDS)
+        .build()
+
+    return Request.Builder()
+        .url(url)
+        .cacheControl(policy)
+        .build()
 }
 ```
 
-OkHttp 默认的 ConnectionPool 配置是：最多 5 个空闲连接，每个连接保持存活 5 分钟。在 5 分钟内有新请求到同一地址，可以直接复用连接——在移动端频繁切换页面的场景下，这个时间窗口足够覆盖大部分复用机会。
+cache miss 时，`onlyIfCached()` 会得到 504 `Unsatisfiable Request`，不会自动访问网络。UI 要区分“没有缓存”“缓存过旧”“请求失败”和“已展示旧数据并刷新中”。
 
-[已验证: OkHttp 官方文档, square.github.io/okhttp/connections/]
+### 降级要基于内容能力
 
-### 请求合并：把多次往返变成一次
+弱网降级可以选择已有缓存、较低分辨率、较小分页、暂停自动播放或延后非交互同步。网络 transport 只是提示；同一 Wi‑Fi 可能经过拥塞链路，蜂窝也可能有良好吞吐。策略输入应结合用户设置、metered、roaming、系统估计和近期请求观测，并设置滞回，避免频繁切换画质。
 
-请求合并（Request Batching）的思路是：如果能一次请求拿到所有数据，就不要分成多次请求。这在 API 设计层面就需要考虑。
+## 监控：EventListener 与 NetworkCallback
 
-典型场景是一个页面需要多个接口的数据。如果串行请求三个接口，总耗时 = 请求1 + 请求2 + 请求3。但如果后端提供一个聚合接口，一次请求返回所有数据，总耗时 ≈ 单次请求耗时（数据量略大但传输时间远小于减少的往返次数）。
+### OkHttp EventListener
 
-在不修改后端 API 的情况下，OkHttp 的 HTTP/2 多路复用可以自动并行发送多个请求到同一服务器，省去串行等待。但注意：减少请求次数的效果通常大于并行化——并行化只减少了等待时间，而合并请求直接减少了 RTT 数量。
+每个 `Call` 都要由 `EventListener.Factory` 创建独立 listener。回调必须快速返回，不能执行磁盘或网络 I/O，也不能重新进入同一个 client。事件先写入无阻塞队列，再由后台消费者批量处理。
 
-### 预连接：在需要之前就准备好
+下面的示例记录总耗时与 Dispatcher 排队时间，不采集 URL 或 header：
 
-预连接（Preconnect）的目标可以分成三层。第一层是 DNS 预解析，只把域名解析成 IP，减少后续请求的 lookup 开销。第二层是预热 TCP + TLS，让真实请求直接复用已经握手完成的连接。第三层是预热 HTTP/2 或 HTTP/3 会话，让首个业务请求尽量避开 stream 建立、控制帧交换或 QUIC 会话恢复的冷启动成本。三层目标对应的收益和约束不同，设计时要分开看。
+```kotlin
+data class CallMetric(
+    val totalMs: Long,
+    val queueMs: Long?,
+    val failed: Boolean,
+)
 
-工程上常见的做法是用 HEAD 或 no-op GET 主动触发连接建立，但它只是 warmup 手段，不是语义保证。HEAD 仍可能命中业务逻辑、鉴权流程、缓存统计或 WAF。后续请求能否复用这条连接，还取决于是否命中同一个 authority（scheme + host + port）、证书与 SNI 是否匹配、ALPN 是否协商到同一协议，以及 HTTP/2 connection coalescing 或 HTTP/3 session reuse 条件是否成立。
+class CallTimingListener(
+    private val emit: (CallMetric) -> Unit,
+) : EventListener() {
+    private var callStartNs = 0L
+    private var queueStartNs = 0L
+    private var queueTotalNs = 0L
 
-更稳妥的做法是为预热准备一个 no-op endpoint，例如 `/generate_204`、`/healthz` 或专门的 warmup path，并把失败视为可静默回退的优化，不要把它做成功能前提。
-
-```java
-public final class PreconnectManager {
-    private final OkHttpClient client;
-
-    public PreconnectManager(OkHttpClient client) {
-        this.client = client;
+    override fun callStart(call: Call) {
+        callStartNs = System.nanoTime()
     }
 
-    public void warmUp(String url) {
-        Request request = new Request.Builder()
-            .url(url) // 建议指向 no-op endpoint，且与真实请求同 authority
-            .head()
-            .build();
+    override fun dispatcherQueueStart(call: Call, dispatcher: Dispatcher) {
+        queueStartNs = System.nanoTime()
+    }
 
-        client.newCall(request).enqueue(new Callback() {
-            @Override public void onFailure(Call call, IOException e) {
-                // 预热失败时静默回退，真实请求仍按正常路径发起
+    override fun dispatcherQueueEnd(call: Call, dispatcher: Dispatcher) {
+        if (queueStartNs != 0L) {
+            queueTotalNs += System.nanoTime() - queueStartNs
+            queueStartNs = 0L
+        }
+    }
+
+    override fun callEnd(call: Call) {
+        finish(failed = false)
+    }
+
+    override fun callFailed(call: Call, ioe: IOException) {
+        finish(failed = true)
+    }
+
+    private fun finish(failed: Boolean) {
+        val endNs = System.nanoTime()
+        val totalNs = endNs - callStartNs
+        val activeQueueNs = if (queueStartNs != 0L) {
+            endNs - queueStartNs
+        } else {
+            0L
+        }
+        val allQueueNs = queueTotalNs + activeQueueNs
+        emit(
+            CallMetric(
+                totalMs = TimeUnit.NANOSECONDS.toMillis(totalNs),
+                queueMs = allQueueNs.takeIf { it > 0L }?.let {
+                    TimeUnit.NANOSECONDS.toMillis(it)
+                },
+                failed = failed,
+            )
+        )
+    }
+}
+
+val metricQueue = ConcurrentLinkedQueue<CallMetric>()
+val monitoredClient = OkHttpClient.Builder()
+    .eventListenerFactory {
+        CallTimingListener { metric -> metricQueue.add(metric) }
+    }
+    .build()
+```
+
+生产监控可用同一方式增加 DNS、connect、secure connect、request、response 和 `connectionAcquired` span。DNS、connect、请求与响应事件可能因重定向和恢复重复出现，应追加到 attempt 列表。连接复用时 DNS 和 connect 事件会缺席，这属于正常结果。
+
+指标上传要限制基数并保护隐私。建议记录经过白名单映射的接口模板、协议、状态码、错误类别和时间分段；完整 URL、query、header、请求体、响应体、Cookie 与 token 不应进入网络性能日志。
+
+### ConnectivityManager.NetworkCallback
+
+`NetworkCallback` 描述系统已知的网络状态，不能测量某个业务 host 的延迟。下列三个概念要分开：
+
+- `NET_CAPABILITY_INTERNET`：网络配置为可访问公网；
+- `NET_CAPABILITY_VALIDATED`：系统最近一次探测确认了公网连通；
+- 业务请求成功：目标 DNS、路由、TLS、CDN 和服务端均可用。
+
+注册 default network callback 需要 `ACCESS_NETWORK_STATE`。基础权限可这样声明：
+
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+```
+
+这两个权限用于公网请求与读取网络状态，不会授予 Android 17 的广泛局域网访问能力。
+
+Android 8 / API 26 起，`onAvailable()` 后会按序收到 `onCapabilitiesChanged()` 和 `onLinkPropertiesChanged()`。不要在 `onAvailable()` 内同步调用 `getNetworkCapabilities()` 或 `getLinkProperties()`，返回对象可能已经过期。
+
+下面的监控器保存应用 default network 的最小快照：
+
+```kotlin
+data class DefaultNetworkState(
+    val network: Network?,
+    val validatedInternet: Boolean,
+    val metered: Boolean,
+    val downstreamKbpsEstimate: Int,
+)
+
+class DefaultNetworkMonitor(context: Context) : Closeable {
+    private val cm = context.getSystemService(ConnectivityManager::class.java)
+    private var registered = false
+    private var currentNetwork: Network? = null
+
+    @Volatile
+    var state = DefaultNetworkState(
+        network = null,
+        validatedInternet = false,
+        metered = true,
+        downstreamKbpsEstimate = 0,
+    )
+        private set
+
+    private val callback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            currentNetwork = network
+            state = state.copy(network = network, validatedInternet = false)
+        }
+
+        override fun onCapabilitiesChanged(
+            network: Network,
+            capabilities: NetworkCapabilities,
+        ) {
+            currentNetwork = network
+            val internet = capabilities.hasCapability(
+                NetworkCapabilities.NET_CAPABILITY_INTERNET
+            )
+            val validated = capabilities.hasCapability(
+                NetworkCapabilities.NET_CAPABILITY_VALIDATED
+            )
+            val unmetered = capabilities.hasCapability(
+                NetworkCapabilities.NET_CAPABILITY_NOT_METERED
+            )
+            state = DefaultNetworkState(
+                network = network,
+                validatedInternet = internet && validated,
+                metered = !unmetered,
+                downstreamKbpsEstimate =
+                    capabilities.linkDownstreamBandwidthKbps,
+            )
+        }
+
+        override fun onLost(network: Network) {
+            if (currentNetwork == network) {
+                currentNetwork = null
+                state = DefaultNetworkState(
+                    network = null,
+                    validatedInternet = false,
+                    metered = true,
+                    downstreamKbpsEstimate = 0,
+                )
             }
+        }
+    }
 
-            @Override public void onResponse(Call call, Response response) {
-                response.close();
-            }
-        });
+    @Synchronized
+    fun start() {
+        if (!registered) {
+            cm.registerDefaultNetworkCallback(callback)
+            registered = true
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        if (registered) {
+            cm.unregisterNetworkCallback(callback)
+            registered = false
+        }
     }
 }
 ```
 
-如果业务要覆盖 HTTP/3，还要额外验证 QUIC provider 是否可用、会话恢复是否命中，以及网络切换后连接迁移是否稳定。App 启动阶段不要为了“预连接”再额外制造一条关键路径，弱网下 warmup 本身也可能拖慢首屏。
+Default network 可能是 VPN，也可能在 Wi‑Fi 与蜂窝间切换。`onLost()` 对 default callback 表示该 `Network` 不再是应用默认网络，它不保证设备上没有其他网络。切换时还可能很快收到新 `onAvailable()`，所以业务应等待新快照或请求结果，避免立即批量重试。
 
-[已验证: OkHttp 连接复用文档 / Cronet 官方说明]
+系统把每个 UID 的 callback 与 network request 数量限制在共享额度内。组件销毁或监控不再使用时必须调用 `unregisterNetworkCallback()`。后台任务若只关心“有网”或“非计费网络”，优先交给 WorkManager constraints。
 
+## Android 17 的网络边界
 
-### 网络线程的能效分档
+### 运营商分配的流媒体速率
 
-Android 15 在 ADPF（Adaptive Performance Framework）的 `PerformanceHintManager.Session` 中新增了 `setPreferPowerEfficiency(boolean)` 方法，用于声明这个 hint session 绑定的线程可以偏向能效调度。公开 API 的承诺是调度偏好，不保证固定落到低功耗核心，也不保证直接降低 CPU 频率；实际效果取决于设备的系统服务和 vendor power HAL 策略。
+Android 17 在 `SubscriptionInfo` 新增：
 
-网络线程是否适合加入 power-efficient session，要先区分请求类型：
+- `getStreamingAppMaxDownlinkKbps()`
+- `getStreamingAppMaxUplinkKbps()`
 
-- **交互式网络线程**：用户正在等待结果（列表加载、搜索请求）。这类线程优先保证尾延迟，通常不应声明能效偏好。
-- **后台网络队列**：日志上报、数据同步、预加载等用户不直接等待的任务，可以在独立线程组上实验能效偏好，并用 PowerMonitor、Perfetto rail 或电量 A/B 结果验证收益。
+返回值表示运营商依据 GSMA TS.43 为流媒体应用分配的上下行最大速率，单位 Kbps；未知或不适用时返回 `SubscriptionPlan.BITRATE_UNKNOWN`。它适合给媒体码率选择提供上限，不能当作当前链路测速结果。读取 subscription 信息还受对应 telephony 权限、角色或 carrier privilege 约束。
 
-`setPreferPowerEfficiency(true)` 适合作为后台网络队列的可选优化项，不应写成通用准入指标。没有实测数据前，不能把它等同于“避免大核唤醒”或“降低频率”。
+AOSP 17 的实现与 API 注释位于 [`SubscriptionInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/telephony/java/android/telephony/SubscriptionInfo.java)。
 
-## 弱网优化策略：超时、重试与降级
+### 局域网运行时权限
 
-移动网络的不确定性远高于固定网络——电梯里信号突然消失、高铁上频繁切换基站、地下室完全无信号。弱网优化的目标是**让 App 在网络很差时依然可用或至少优雅降级**。
+面向 Android 17 / API 37 的应用若直接发现或连接局域网设备，需要适配 `ACCESS_LOCAL_NETWORK`，或采用系统提供的隐私保护 picker。广泛访问局域网时声明：
 
-### 超时策略：不要等太久，也不要放弃太快
-
-OkHttp 的超时分为三类，每一类对应请求生命周期的不同阶段：
-
-- **connectTimeout**：建立 TCP 连接的超时时间。默认 10 秒。在弱网下，10 秒可能都不够完成一次 TCP 握手，但如果设得太长，用户会面对漫长的"加载中"。
-- **readTimeout**：等待服务端响应数据的超时时间。默认 10 秒。这个值需要根据接口特性调整——列表接口可以短一些（10-15 秒），而文件上传、报表生成等需要更长（30-60 秒）。
-- **writeTimeout**：向服务端写入请求体的超时时间。默认 10 秒。主要影响上传场景。
-
-合理的超时配置应该按请求类型分档。关键接口（如支付、登录）可以给更长的超时；非关键接口（如上报、埋点）可以设短一些，快速失败不影响核心体验。
-
-```java
-// 全局默认超时
-OkHttpClient client = new OkHttpClient.Builder()
-    .connectTimeout(15, TimeUnit.SECONDS)
-    .readTimeout(20, TimeUnit.SECONDS)
-    .writeTimeout(15, TimeUnit.SECONDS)
-    .build();
-
-// 特定请求使用更长超时（OkHttp 支持按请求覆盖）
-Request request = new Request.Builder()
-    .url("https://api.example.com/report")
-    .build();
-
-OkHttpClient longTimeoutClient = client.newBuilder()
-    .readTimeout(60, TimeUnit.SECONDS)
-    .build();
-longTimeoutClient.newCall(request).execute();
+```xml
+<uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 ```
 
-[已验证: OkHttp 官方文档, square.github.io/okhttp — timeout 配置 API]
+该权限属于 `NEARBY_DEVICES` 组，需要运行时检查与请求。只访问公网的应用不需要它；targetSdk 低于 37 的应用也不应提前请求。拒绝或撤销后，投屏、智能家居、mDNS 和直接访问私网 IP 的代码要给出可恢复状态，不能把权限阻断归类成普通弱网超时。
 
-### 重试策略：指数退避 + 幂等性约束
+## 平台源码锚点
 
-在网络不稳定时，简单的"失败就重试"策略可能让情况更糟——大量重试请求涌入已经不堪重负的网络，形成"重试风暴"。正确的重试策略需要满足三个条件：
+Android 17 的应用 API 与服务端实现分布在 Connectivity Mainline 模块：
 
-**第一，只重试可恢复的错误。** 连接超时（SocketTimeoutException）、DNS 解析失败（UnknownHostException）可以重试；但 400 类客户端错误（参数错误、鉴权失败）重试毫无意义，服务端 5xx 错误可以有限重试。
+- [`ConnectivityManager.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java)：callback 注册、数量限制与权限契约。
+- [`NetworkCapabilities.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java)：capability、transport 和第一跳带宽估计。
+- [`ConnectivityService.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/service/src/com/android/server/ConnectivityService.java)：网络选择、default network 与 callback 分发。
+- [`NetworkMonitor.java`](https://android.googlesource.com/platform/packages/modules/NetworkStack/+/android-17.0.0_r1/src/com/android/server/connectivity/NetworkMonitor.java)：公网验证与 captive portal 探测。
 
-**第二，使用指数退避（Exponential Backoff）加抖动（Jitter）。** 每次重试的间隔时间翻倍：第一次等 1 秒，第二次 2 秒，第三次 4 秒。加上随机抖动可以避免多个客户端同时重试导致的"雷群效应"。
+`NET_CAPABILITY_VALIDATED` 来自系统探测状态，业务只应把它作为策略输入。目标服务仍可能因 DNS、路由、证书、区域或服务端故障而不可达。
 
-**第三，区分幂等和非幂等请求。** GET、PUT、DELETE 是幂等的，多次执行效果相同，可以安全重试。POST、PATCH 通常不是幂等的——重复提交可能导致重复扣款、重复发帖。对非幂等请求的重试必须配合服务端的幂等键（Idempotency Key）机制。
+## 版本边界
 
-OkHttp 本身有一定的内置重试逻辑（`RetryOnConnectionFailure` 默认开启），但它只处理连接级别的重试（如 TCP 连接失败后尝试备用 IP），不处理应用层的超时重试和指数退避。应用层重试需要通过 Interceptor 实现。
+| 版本 | 与本节相关的变化 |
+|---|---|
+| Android 8 / API 26 | 本节范围下界；`onAvailable()` 后的 capabilities 与 link properties callback 顺序得到公开保证 |
+| Android 11 / API 30 | 平台改进 5G 场景的带宽估计；返回值仍是第一跳估计 |
+| Android 17 / API 37 | `SubscriptionInfo` 增加流媒体分配速率；target 37 的局域网访问受 `ACCESS_LOCAL_NETWORK` 约束 |
+| OkHttp 5.3.0 | 本节客户端锚点；共享 client、fast fallback、EventListener 排队事件与默认 timeout 口径以此版本为准 |
+| Cronet 18.0.1 | 本节 Play services Cronet 接入锚点；provider 可用性和协议协商需要运行时观测 |
 
-### 降级策略：没有网络也要能用
+## 排查清单
 
-降级策略是指在网络极差或完全不可用时，App 仍然能提供基本功能。核心思路有两个：
+### 指标
 
-**本地缓存**：OkHttp 默认遵守 HTTP 缓存语义。服务端返回了合适的 `Cache-Control`、`Expires`、`ETag` 等头部后，客户端才会自动复用缓存；缓存过期后，默认行为是重新验证或回源，不会因为当前离线就无条件返回 stale response。离线读缓存通常有三种做法：请求侧显式使用 `CacheControl.FORCE_CACHE`，或 `onlyIfCached()` 配合 `maxStale()` 接受一定范围内的过期数据，或在离线拦截器里主动放宽缓存策略。如果本地没有可用缓存，`FORCE_CACHE` 和 `onlyIfCached()` 会直接返回 504 `Unsatisfiable Request`，不会自动联网。
+- [ ] 总耗时、排队、DNS、connect、TLS、响应头等待和响应体传输已分开
+- [ ] 计时使用单调时钟
+- [ ] 重定向、路由回退和重试按 attempt 保存
+- [ ] 协议、cache、network、metered 与失败类别进入低基数分组
+- [ ] APM 没有记录完整 URL、query、凭证或正文
 
-**功能降级**：对非核心功能，在网络差时主动降级。例如：图片加载从原图降级为缩略图甚至占位符；信息流从图文模式降级为纯文字；视频从高清降级为标清或仅显示封面。
+### 协议与请求组织
 
-实现降级的前提是 App 能感知当前网络状况，这就是 NetworkCallback 的用武之地。
+- [ ] OkHttpClient 或 CronetEngine 在进程内复用
+- [ ] HTTP/3 指标按协商协议统计，并保留 HTTP/2 回退
+- [ ] 0-RTT 只用于可容忍重放的业务
+- [ ] 聚合接口与并行请求比较了缓存、部分失败和最早展示时间
+- [ ] warmup 有专用 endpoint、命中率和额外流量数据
+- [ ] 页面离开后会取消失效请求
 
-## 网络性能监控：OkHttp EventListener 与 NetworkCallback
+### 弱网
 
-"无法度量就无法优化。"要系统化地改善网络性能，需要建立两个层面的感知能力：应用层面，精确度量每个请求各阶段的耗时；系统层面，感知当前网络环境的质量变化。前者由 OkHttp EventListener 承担，后者由 ConnectivityManager.NetworkCallback 承担。两者配合，才能实现“感知→度量→调整”的自适应循环。
+- [ ] 每类接口有总期限和阶段 timeout
+- [ ] 重试受幂等、结果未知、`Retry-After`、尝试次数和总期限约束
+- [ ] 网络恢复采用抖动，避免请求同步重发
+- [ ] HTTP cache 与业务离线数据职责清楚
+- [ ] 降级策略结合近期请求观测，带有滞回
 
-### OkHttp EventListener：请求全生命周期埋点
+### Android 平台
 
-OkHttp 的 EventListener 是一个回调接口，覆盖了 HTTP 请求从发起到结束的每一个阶段。它比 Interceptor 更适合做性能监控——Interceptor 看到的是"请求和响应"这个粒度，而 EventListener 能看到 DNS 查询、TCP 连接、TLS 握手这些底层细节。
-
-关键回调方法和对应的指标映射如下：
-
-| 回调方法 | 对应阶段 | 可度量指标 |
-|---------|---------|-----------|
-| `callStart` | 请求开始 | 总耗时起点 |
-| `dnsStart` / `dnsEnd` | DNS 解析 | DNS 解析时间 |
-| `connectStart` / `connectEnd` | 建连阶段 | 建连总耗时；HTTPS 下包含 TLS 握手 |
-| `secureConnectStart` / `secureConnectEnd` | TLS 握手 | TLS 握手时间 |
-| `requestHeadersStart` / `requestHeadersEnd` | 发送请求头 | 请求头发送时间 |
-| `responseHeadersStart` | 响应头开始返回 | TTFB 近似；GET 可用 `requestHeadersEnd` → `responseHeadersStart` |
-| `responseBodyStart` / `responseBodyEnd` | 接收响应体 | 响应体传输时间 |
-| `callEnd` / `callFailed` | 请求结束 | 总耗时 / 失败原因 |
-
-需要注意：当多个请求并发时，每个请求需要独立的 EventListener 实例来记录各自的时间戳。OkHttp 提供了 `EventListener.Factory` 接口来解决这个问题——每次请求通过 Factory 创建新的 EventListener 实例。
-
-```java
-public class PerfEventListener extends EventListener {
-    private long dnsStartNanos;
-    private long connectStartNanos;
-    private long requestHeadersEndNanos;
-
-    @Override
-    public void dnsStart(Call call, String domainName) {
-        dnsStartNanos = System.nanoTime();
-    }
-
-    @Override
-    public void dnsEnd(Call call, String domainName, List<InetAddress> list) {
-        long dnsMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - dnsStartNanos);
-        // 上报 DNS 耗时指标
-    }
-
-    private long callStartNanos;
-
-    @Override
-    public void callStart(Call call) {
-        callStartNanos = System.nanoTime();
-    }
-
-    @Override
-    public void requestHeadersEnd(Call call, Request request) {
-        requestHeadersEndNanos = System.nanoTime();
-    }
-
-    @Override
-    public void responseHeadersStart(Call call) {
-        long ttfbMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - requestHeadersEndNanos);
-        // GET 场景上报近似 TTFB；有请求体时应从 requestBodyEnd 重新起算
-    }
-
-    public static final Factory FACTORY = call -> new PerfEventListener();
-}
-
-// 注册
-OkHttpClient client = new OkHttpClient.Builder()
-    .eventListenerFactory(PerfEventListener.FACTORY)
-    .build();
-```
-
-在实际项目中，EventListener 收集的指标通常会上报到 APM（Application Performance Monitoring）平台，形成 P50/P90/P99 的分位数统计。我们关注的不是单个请求的耗时，而是大盘数据——如果 P90 的 DNS 时间从 50ms 涨到 200ms，说明 DNS 基础设施出了问题，需要考虑引入 HTTPDNS。
-
-[已验证: Square OkHttp EventListener 官方文档]
-
-### ConnectivityManager.NetworkCallback：感知网络环境变化
-
-EventListener 解决的是单次请求的拆账问题，NetworkCallback 解决的是当前网络环境发生了什么。但这里至少有四层语义要拆开：有没有网络、有没有经过系统验证的公网访问、系统给出的网络能力估计值、请求实际跑出来的吞吐与时延。把这四层压成一个 `isConnected` 布尔值，后续的重试、降级和预加载策略很容易跑偏。
-
-NetworkCallback 提供的几个回调里，语义最容易混淆的是 `onAvailable()` 和 `onCapabilitiesChanged()`：
-
-- `onAvailable(Network)`：系统拿到了一条可用网络。它说明 transport 已经可用，不说明这条网络一定能访问公网。
-- `onCapabilitiesChanged(Network, NetworkCapabilities)`：网络能力发生变化。在线判定、是否 metered、系统估计的上下行带宽，都应该在这里读取。
-- `onLost(Network)`：当前网络失效，可以触发离线模式或暂停非关键请求。
-- `onLinkPropertiesChanged(Network, LinkProperties)`：DNS、MTU、路由等网络属性变化。
-
-在 Application 层维护全局网络状态时，`onAvailable()` 适合记录“有网络对象出现了”，“在线”判定要放到 `onCapabilitiesChanged()`，同时检查 `NET_CAPABILITY_INTERNET` 和 `NET_CAPABILITY_VALIDATED`。`getLinkDownstreamBandwidthKbps()` 也只能当系统估计值，用来做粗粒度分档，不能把它当成真实吞吐。
-
-```java
-public final class NetworkMonitor {
-    private final ConnectivityManager cm;
-    private volatile boolean hasValidatedInternet = false;
-    private volatile int estimatedDownstreamKbps = 0;
-
-    public NetworkMonitor(Context context) {
-        cm = context.getSystemService(ConnectivityManager.class);
-    }
-
-    private final ConnectivityManager.NetworkCallback callback =
-            new ConnectivityManager.NetworkCallback() {
-        @Override
-        public void onAvailable(Network network) {
-            // 这里只表示网络可用，先不要宣布“已经联网”
-        }
-
-        @Override
-        public void onCapabilitiesChanged(
-                Network network, NetworkCapabilities caps) {
-            boolean internet = caps.hasCapability(
-                    NetworkCapabilities.NET_CAPABILITY_INTERNET);
-            boolean validated = caps.hasCapability(
-                    NetworkCapabilities.NET_CAPABILITY_VALIDATED);
-            hasValidatedInternet = internet && validated;
-            estimatedDownstreamKbps =
-                    caps.getLinkDownstreamBandwidthKbps();
-        }
-
-        @Override
-        public void onLost(Network network) {
-            hasValidatedInternet = false;
-            estimatedDownstreamKbps = 0;
-        }
-    };
-
-    public void start() {
-        cm.registerDefaultNetworkCallback(callback);
-    }
-}
-```
-
-
-`getLinkDownstreamBandwidthKbps()` 返回的是系统估算值，公开文档只承诺它表示 first-hop transport 的估计下行带宽。它适合做粗粒度分档，例如是否预加载大图、是否进入低码率模式；不适合当成真实吞吐或 RTT 判断。Android 16 公开文档没有说明该 API 已改由 eBPF 实测统计提供，也没有给出可依赖的精度变化。
-
-这段代码给的是策略输入，不是最终网络质量结论。网络是否真的“快”，还要结合 EventListener 里的 DNS、connect、TTFB 和响应体传输时间一起看。`NET_CAPABILITY_VALIDATED` 为 true 只能说明系统探测到这条网络能访问公网；`getLinkDownstreamBandwidthKbps()` 很高，也不代表当前请求就一定能跑到这个速率。
-
-[已验证: Android ConnectivityManager / NetworkCapabilities 官方文档]
-
-## 与其他机制的关系
-
-网络性能不是孤立的。它与本书其他章节的内容有交叉：
-
-- **§12.1 APK 体积优化**：APK 体积影响的是安装和更新时的下载耗时。两者的共同思路是"减少传输数据量"——APK 体积优化通过压缩和裁剪减少静态数据，网络优化通过缓存和增量更新减少动态数据。
-- **§6.1 存储架构**：网络请求的缓存依赖于本地存储。OkHttp 的 HTTP 缓存需要配置 Cache 目录，Room 或 SQLite 可以作为更灵活的离线数据层。
-- **§8.1 响应速度**：App 启动时的网络请求（如拉取配置、预加载首页数据）直接影响启动后的内容可用时间。预连接和请求合并在这里尤其重要。
-
-## 常见问题与误区
-
-**"网络慢就是服务端的问题"**——这是最常见的误区。DNS 慢、连接建立慢、客户端重试逻辑不当，都可能导致请求耗时长。区分责任方要看 TTFB：如果 TTFB 正常但总耗时高，问题在数据传输或客户端处理；如果 TTFB 本身就高，问题在服务端或网络路径。
-
-**"HTTP/2 就够了，不需要 HTTP/3"**——在稳定的 Wi-Fi 环境下通常成立。但在移动网络（尤其是弱网、高丢包、频繁切换基站）下，HTTP/3 的 QUIC 协议在高丢包和频繁网络切换场景下优势明显。如果 App 的用户主要在移动网络下使用，值得评估 HTTP/3。
-
-**"OkHttp 默认配置就够了"**——默认配置适合开发阶段，但生产环境需要根据业务特点调整超时时间、连接池大小、缓存策略。尤其是 connectTimeout 和 readTimeout，默认的 10 秒在弱网下可能太短（导致频繁超时），在好网络下可能太长（让用户白等）。
-
-**"网络优化就是优化请求速度"**——优化请求速度只是其中一面。另一面是减少请求的必要性：本地缓存减少重复请求、数据预加载减少用户等待时间、批量接口减少请求次数。最好的网络请求是不需要发出的请求。
-
-**"DNS 解析很快，不需要优化"**——在桌面网络下 DNS 通常几乎无感，但移动端的 DNS 解析面临两个特殊问题：运营商 DNS 服务器可能响应慢甚至返回劫持结果（指向广告页）；DNS 查询使用 UDP 协议，在弱网下丢包率较高导致超时重试。这就是 HTTPDNS 在国内大量使用的原因——绕过运营商 DNS，直接向可信的 DNS 服务（如阿里 DNS、腾讯 DNS）查询，同时还能返回离用户最近的 CDN 节点 IP。OkHttp 本身不内置 HTTPDNS，但可以通过 `Dns` 接口接入自定义解析逻辑。
+- [ ] default network callback 在不再使用时注销
+- [ ] `INTERNET`、`VALIDATED`、metered、transport 与请求结果没有混用
+- [ ] 第一跳带宽估计没有写成实时吞吐
+- [ ] Android 17 流媒体 carrier cap 正确处理 `BITRATE_UNKNOWN`
+- [ ] target 37 的局域网功能已适配权限或系统 picker
 
 ## 参考资料
 
-- OkHttp 官方文档: <https://square.github.io/okhttp/>
-- OkHttp EventListener API: <https://square.github.io/okhttp/events/>
-- Android ConnectivityManager: <https://developer.android.com/reference/android/net/ConnectivityManager>
-- Android NetworkCallback: <https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback>
-- HTTP/3 (QUIC) 规范: <https://www.rfc-editor.org/rfc/rfc9114>
-- Uber Engineering — 迁移到 QUIC: <https://eng.uber.com/en/better-http-3/>
-- Google Chromium Blog — HTTP/3 性能数据（通用参考）: <https://blog.chromium.org/>
-- Android 17 运营商数据限速查询与本地网络权限: <https://juejin.cn/post/7612545160434188297>，张拭心，2026-03。涵盖 Android 17 新增的 `getStreamingAppMaxDownlinkKbps/UplinkKbps`（查询运营商为流媒体分配的最大速率，用于动态调整媒体质量）和 `ACCESS_LOCAL_NETWORK` 运行时权限（保护 LAN 访问，投屏/智能家居场景需适配）
+- [Read network state](https://developer.android.com/develop/connectivity/network-ops/reading-network-state)
+- [`ConnectivityManager`](https://developer.android.com/reference/android/net/ConnectivityManager)
+- [`ConnectivityManager.NetworkCallback`](https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback)
+- [`NetworkCapabilities`](https://developer.android.com/reference/android/net/NetworkCapabilities)
+- [OkHttp 5.3.0 README](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/README.md)
+- [OkHttp 5.3.0 `OkHttpClient.kt`](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/OkHttpClient.kt)
+- [OkHttp 5.3.0 `EventListener.kt`](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt)
+- [Perform network operations using Cronet](https://developer.android.com/develop/connectivity/cronet)
+- [Send a simple Cronet request](https://developer.android.com/develop/connectivity/cronet/start)
+- [`CronetEngine.Builder`](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/CronetEngine.Builder)
+- [`QuicOptions.Builder`](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/QuicOptions.Builder)
+- [RFC 9113: HTTP/2](https://www.rfc-editor.org/rfc/rfc9113)
+- [RFC 9114: HTTP/3](https://www.rfc-editor.org/rfc/rfc9114)
+- [RFC 9000: QUIC](https://www.rfc-editor.org/rfc/rfc9000)
+- [RFC 9001: Using TLS to Secure QUIC](https://www.rfc-editor.org/rfc/rfc9001)
+- [`SubscriptionInfo`](https://developer.android.com/reference/android/telephony/SubscriptionInfo)
+- [Android 17 local network permission](https://developer.android.com/privacy-and-security/local-network-permission)
