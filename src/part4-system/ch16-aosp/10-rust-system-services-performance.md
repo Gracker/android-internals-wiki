@@ -8,24 +8,36 @@ related_chapters: ["1.4", "1.32", "3.8", "14.21", "20.16"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-28"
 drafted_date: "2026-06-30"
-last_verified: "2026-06-30"
-last_verified_against: "android-17.0.0_r1"
-confidence: medium
+last_verified: "2026-07-30"
+last_verified_against: "AOSP android-17.0.0_r1 (Keystore2 / DnsResolver / UWB / Bluetooth / VirtualizationService / libbinder_rs / Soong Rust / android-crates-io); official Android Rust, AIDL backend, and Scudo documentation"
+confidence: high
 sources:
   - type: aosp
-    path: "system/security/keystore2 (@android-17.0.0_r1)"
+    path: "https://android.googlesource.com/platform/system/security/+/refs/tags/android-17.0.0_r1/keystore2/"
   - type: aosp
-    path: "packages/modules/DnsResolver (@android-17.0.0_r1)"
+    path: "https://android.googlesource.com/platform/packages/modules/DnsResolver/+/refs/tags/android-17.0.0_r1/"
   - type: aosp
-    path: "system/uwb (@android-17.0.0_r1)"
+    path: "https://android.googlesource.com/platform/packages/modules/Uwb/+/refs/tags/android-17.0.0_r1/libuwb-uci/src/"
   - type: aosp
-    path: "packages/modules/Virtualization (@android-17.0.0_r1)"
+    path: "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/rust/"
   - type: aosp
-    path: "external/upstream crates (Soong rust crate management)"
+    path: "https://android.googlesource.com/platform/packages/modules/Virtualization/+/refs/tags/android-17.0.0_r1/android/virtualizationservice/"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/rust/Android.bp"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/build/soong/+/refs/tags/android-17.0.0_r1/rust/"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/external/rust/android-crates-io/+/refs/tags/android-17.0.0_r1/README.md"
   - type: official
-    path: "source.android.com/docs/security/features/rust-in-android"
-  - type: blog
-    path: "Android Developers Blog — Rust in Android系列"
+    path: "https://source.android.com/docs/setup/build/rust/building-rust-modules/overview"
+  - type: official
+    path: "https://source.android.com/docs/core/architecture/aidl/aidl-backends"
+  - type: official
+    path: "https://source.android.com/docs/security/test/scudo"
+  - type: official
+    path: "https://security.googleblog.com/2021/04/rust-in-android-platform.html"
+  - type: official
+    path: "https://security.googleblog.com/2022/12/memory-safe-languages-in-android-13.html"
 ---
 
 # 16.10 Android 17 平台 Rust 性能边界：Binder、CXX 与 Soong
@@ -258,13 +270,14 @@ r1 的几个全局编译选项可从 `build/soong/rust/config/global.go` 直接�
 |---|---|
 | `rust_binary` | Rust 可执行文件 |
 | `rust_library` | 同时提供 rlib 与 dylib variant，供 Rust 模块依赖 |
-| `rust_ffi` | 供 C/C++ 使用的 static/shared C-compatible library variant |
-| `rust_ffi_shared` | 只构建 shared C-compatible library，适合 JNI cdylib 等场景 |
+| `rust_ffi` | 同时构建 shared `cdylib` 与供后续静态 FFI 链接使用的 `rlib` variant |
+| `rust_ffi_shared` | 只构建 shared `cdylib`，适合 JNI 等需要动态加载的场景 |
+| `rust_ffi_static` | 只构建 `rlib`，供最终 C/C++ 静态链接步骤使用 |
 | `rust_bindgen` | 从 C header 生成 Rust binding crate |
 | `rust_proc_macro` | 过程宏 |
 | `aidl_interface` 的 Rust backend | 生成 Rust AIDL crate，供 `rustlibs` 引用 |
 
-现稿列出的 `rust_dylib` 不是 r1 中推荐的通用模块名。Soong 提供 `rust_library_dylib` 这类限定 variant，也推荐依赖方优先使用 `rustlibs`，让构建系统选择相容 linkage。
+现稿列出的 `rust_dylib` 不是 r1 注册的 Soong 模块类型。需要固定 Rust dylib variant 时可使用 `rust_library_dylib`；一般 Rust 依赖优先写入 `rustlibs`，由构建系统选择相容 linkage。
 
 ### 5.2 ThinLTO 语法与默认值
 
@@ -274,7 +287,7 @@ Soong 注释指出 ThinLTO 对 Rust code size 收益很大，生产构建若要�
 
 ### 5.3 第三方 crate 管理
 
-Android 17 的 crates.io 导入由 `external/rust/android-crates-io` 管理，各 crate 源码对应 `external/rust/crates/<name>` 仓库。`crate_tool`、`cargo_embargo.json` 与 `cargo_embargo` 负责可重复导入和生成 `Android.bp`。
+Android 17 的 crates.io 导入集中在 `external/rust/android-crates-io` 仓库，各 crate 位于该仓库的 `crates/<name>/` 子目录。每个目录可包含 `cargo_embargo.json`、Android 补丁、许可证元数据以及生成的 `Android.bp`。仓库根目录的 `crate_tool` 负责下载、打补丁并调用 `cargo_embargo` 重新生成这些文件。
 
 这套流程不同于现稿的 `external/upstream` 与 `development/tools/regex_gen_cargo2android.py`。平台开发不能把 `cargo build` 的依赖解析结果直接带入系统镜像；crate 版本、license、patch、Soong rule、APEX 可用性和测试都要进入 AOSP 管理。
 
@@ -395,7 +408,7 @@ heapprofd 能观察经过 malloc/free 的 Rust 分配。配置采样时要记录
 | 所有字符串跨 FFI 都 malloc + memcpy | 借用 view 可以零复制，owned/NUL-terminated 转换按接口决定 |
 | panic 可以在 FFI 入口用 `catch_unwind` 恢复 | device Rust 全局 `panic=abort`，panic 会终止进程 |
 | `panic=abort` 会删除 unwind table | r1 同时强制生成 unwind table |
-| Rust 分配不会承担 Scudo 成本 | 默认 System allocator 经 libc malloc，仍由设备 native allocator 服务 |
+| Rust 分配不受 Scudo 影响 | 默认 System allocator 经 libc malloc，仍由设备 native allocator 服务 |
 | Scudo 给每个对象放 guard page | Scudo 使用多种 hardened heap 机制，不等于逐对象 guard page |
 | ThinLTO 需要写 `lto: "thin"` 才开启 | r1 默认开启，属性结构为 `lto: { thin: ... }` |
 | Rust 服务性能可用固定百分比概括 | 需要按 IPC、FFI、分配、锁、代码体积和业务 I/O 分项测量 |
@@ -413,23 +426,25 @@ heapprofd 能观察经过 malloc/free 的 Rust 分配。配置采样时要记录
 
 ## 源码与官方资料
 
-- [Keystore2 Android.bp：Rust binary、libbinder_rs、prefer_rlib 与 AFDO](https://android.googlesource.com/platform/system/security/+/android-17.0.0_r1/keystore2/Android.bp)
-- [Keystore2 main：Rust Binder 服务注册](https://android.googlesource.com/platform/system/security/+/android-17.0.0_r1/keystore2/src/keystore2_main.rs)
-- [Keystore2 service：Rust 实现 IKeystoreService](https://android.googlesource.com/platform/system/security/+/android-17.0.0_r1/keystore2/src/service.rs)
-- [DnsResolver root Android.bp：C++ resolver 使用 Rust FFI defaults](https://android.googlesource.com/platform/packages/modules/DnsResolver/+/android-17.0.0_r1/Android.bp)
-- [DnsResolver rust Android.bp：libresolvrs_ffi 与 CXX bridge](https://android.googlesource.com/platform/packages/modules/DnsResolver/+/android-17.0.0_r1/rust/Android.bp)
-- [UWB Rust core 与 HAL adapter](https://android.googlesource.com/platform/packages/modules/Uwb/+/android-17.0.0_r1/libuwb-uci/src/Android.bp)
-- [Bluetooth Rust library 与 FFI module](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/android-17.0.0_r1/system/rust/Android.bp)
-- [VirtualizationService Rust binary](https://android.googlesource.com/platform/packages/modules/Virtualization/+/android-17.0.0_r1/android/virtualizationservice/Android.bp)
-- [Soong Rust global flags](https://android.googlesource.com/platform/build/soong/+/android-17.0.0_r1/rust/config/global.go)
-- [Soong Rust LTO 属性与默认值](https://android.googlesource.com/platform/build/soong/+/android-17.0.0_r1/rust/compiler.go)
+- [Keystore2 Android.bp：Rust binary、libbinder_rs、prefer_rlib 与 AFDO](https://android.googlesource.com/platform/system/security/+/refs/tags/android-17.0.0_r1/keystore2/Android.bp)
+- [Keystore2 main：Rust Binder 服务注册](https://android.googlesource.com/platform/system/security/+/refs/tags/android-17.0.0_r1/keystore2/src/keystore2_main.rs)
+- [Keystore2 service：Rust 实现 IKeystoreService](https://android.googlesource.com/platform/system/security/+/refs/tags/android-17.0.0_r1/keystore2/src/service.rs)
+- [DnsResolver root Android.bp：C++ resolver 使用 Rust FFI defaults](https://android.googlesource.com/platform/packages/modules/DnsResolver/+/refs/tags/android-17.0.0_r1/Android.bp)
+- [DnsResolver rust Android.bp：libresolvrs_ffi 与 CXX bridge](https://android.googlesource.com/platform/packages/modules/DnsResolver/+/refs/tags/android-17.0.0_r1/rust/Android.bp)
+- [UWB Rust core 与 HAL adapter](https://android.googlesource.com/platform/packages/modules/Uwb/+/refs/tags/android-17.0.0_r1/libuwb-uci/src/Android.bp)
+- [Bluetooth Rust library 与 FFI module](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/rust/Android.bp)
+- [VirtualizationService Rust binary](https://android.googlesource.com/platform/packages/modules/Virtualization/+/refs/tags/android-17.0.0_r1/android/virtualizationservice/Android.bp)
+- [libbinder_rs：Rust Binder 对 libbinder_ndk 的依赖](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/rust/Android.bp)
+- [Soong Rust global flags](https://android.googlesource.com/platform/build/soong/+/refs/tags/android-17.0.0_r1/rust/config/global.go)
+- [Soong Rust LTO 属性与默认值](https://android.googlesource.com/platform/build/soong/+/refs/tags/android-17.0.0_r1/rust/compiler.go)
+- [Soong Rust library 模块类型](https://android.googlesource.com/platform/build/soong/+/refs/tags/android-17.0.0_r1/rust/library.go)
 - [Android Rust introduction](https://source.android.com/docs/setup/build/rust/building-rust-modules/overview)
 - [Android Rust modules](https://source.android.com/docs/setup/build/rust/building-rust-modules/android-rust-modules)
 - [AIDL backends](https://source.android.com/docs/core/architecture/aidl/aidl-backends)
 - [Scudo](https://source.android.com/docs/security/test/scudo)
 - [Rust in the Android platform](https://security.googleblog.com/2021/04/rust-in-android-platform.html)
 - [Memory Safe Languages in Android 13](https://security.googleblog.com/2022/12/memory-safe-languages-in-android-13.html)
-- [android-crates-io 与 crate_tool](https://android.googlesource.com/platform/external/rust/android-crates-io/+/android-17.0.0_r1)
+- [android-crates-io 与 crate_tool](https://android.googlesource.com/platform/external/rust/android-crates-io/+/refs/tags/android-17.0.0_r1/README.md)
 
 ## 相关章节
 
