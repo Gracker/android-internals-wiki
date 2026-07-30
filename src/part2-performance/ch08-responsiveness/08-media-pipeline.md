@@ -72,12 +72,13 @@ last_deepseek_cn_review_at: 2026-06-23
 last_task6_audit: "2026-07-14"
 
 ---
-
-----
-
-
 # 8.8 Android 多媒体管线性能
 
+多媒体问题很少只属于某个线程。一次视频首帧要经过网络或文件读取、解复用、解密、解码、图形队列、合成和显示；一段音频还要经过应用缓冲、AudioFlinger 或 MMAP、HAL、DSP 与输出设备。任一阶段背压、排队或调度不及时，都可能表现为等待、掉帧、音画漂移、underrun 或功耗升高。
+
+分析时先给现象分类。播放器显示 buffering，优先检查数据供应与 ABR；解码输出已经产生但画面晚到，继续看 Surface、fence 和合成；音频断续则从回调周期、mixer thread 与 HAL 路径追查。把所有卡顿都归到 `MediaCodec`，往往会在错误的层次花时间。
+
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点，Media3 以 2026-07-30 的稳定版 1.10.1 为库锚点。历史演进保留到 Android 8，所有固定参数都注明对应版本或改为设备测量值。
 <!-- outline-start -->
 ## 本节要点大纲
 
@@ -99,549 +100,404 @@ last_task6_audit: "2026-07-14"
 
 > 锚点是最低覆盖要求。涉及 SoC 支持差异、Perfetto SQL 字段名、版本演进这类内容时，如果来源不够硬，保留 `[待验证]`，不要硬写结论。
 <!-- outline-end -->
+## 先建立端到端时间线
 
-## 为什么要了解多媒体管线性能
+视频播放可以拆成以下阶段：
 
-视频播放、音频录制或者 Camera 预览开发里，很容易遇到这些问题：视频首帧加载慢、播放过程中偶发卡顿、音频出现断续的"嘟嘟"声（underrun），或者后台播放时耗电飙升。
+| 阶段 | 主要组件 | 典型等待 | 观测入口 |
+| --- | --- | --- | --- |
+| 数据到达 | Media3 `DataSource`、网络栈、文件系统 | DNS/TLS、吞吐波动、磁盘读取 | Media3 load 事件、网络日志、Perfetto I/O |
+| 解复用与 DRM | Extractor、MediaDrm、Crypto | manifest、license、sample 解密 | Media3 analytics、DRM 回调、进程 slice |
+| 解码输入 | MediaCodec input buffer | 上游没数据、buffer 所有权未归还 | callback/dequeue 时间、codec metrics |
+| 解码执行 | Codec2/厂商 codec、VPU 或 CPU | codec 初始化、帧重排、资源竞争 | MediaCodec 回调、vendor trace、`dumpsys media.codec` |
+| 图形排队 | Surface、BufferQueue、fence | consumer 慢、队列满、fence 未 signal | FrameTimeline、SurfaceFlinger、fence |
+| 合成与显示 | SurfaceFlinger、HWC、显示驱动 | GPU/HWC 合成、vsync、present | Perfetto gfx、FrameTimeline、Winscope |
 
-这类问题的共同点是：Android 多媒体管线横跨 App 框架、硬件编解码器（VPU/DSP）、AudioFlinger、SurfaceFlinger 以及内核驱动，路径很长，参与组件也多。只要其中任何一个环节处理不及时，用户就会直接感知到，比如视频掉帧、音频爆音，或者后台播放耗电升高。
+音频路径可按“应用生产数据 → AudioTrack/AAudio → AudioFlinger 或 MMAP → Audio HAL/DSP → 输出设备”拆解。视频和音频在播放器的 media clock 处汇合；Bluetooth、USB、HDMI 和机身扬声器还会引入不同的设备侧缓冲。
 
-理解这条管线的架构和性能特征之后，问题落在解码、渲染、合成、音频 buffer 供给还是 CPU 调度，就不再靠猜——每个环节都有对应的排查入口。
+这张时间线用于定位归属，不表示每个阶段都在独立进程中串行执行。解码、加载、合成和音频播放会并行推进，队列把它们隔开；队列过深会增加延迟，队列过浅又更容易因抖动而耗尽。
 
-多媒体相关的信息在 Perfetto 中分布在多个 track 上——MediaCodec 的编解码耗时、AudioFlinger 的 mixer 活动、Surface 渲染的帧时间线，后续章节会逐项分析怎么对应到具体问题。
+## 视频输出：Surface、BufferQueue 与 copy-avoiding 路径
 
-## 多媒体管线架构全景
+### 从压缩 sample 到显示 layer
 
-Android 的多媒体处理围绕 MediaCodec 这个 API 展开。从数据流的角度看，一条完整的视频播放管线是这样的：
+典型播放数据流如下：
 
-`MediaExtractor` 从容器文件中分离出压缩的音视频轨道 → 压缩数据通过 `MediaCodec` 的 input buffer 送给硬件解码器 → 解码后的原始帧通过 `Surface`（底层是 `BufferQueue`）传递给 SurfaceFlinger 合成显示。
+`MediaExtractor / Media3 → MediaCodec input → decoder output Surface → BufferQueue 或 sideband → SurfaceFlinger / HWC → display`
 
-[已验证: 官方文档, developer.android.com/reference/android/media/MediaCodec]
+配置 output `Surface` 后，应用仍负责把压缩 sample 交给 codec，也仍会收到 output index；区别是解码后的像素不会以普通 `ByteBuffer` 交给应用读取。应用调用 `releaseOutputBuffer()` 后，codec 把图形 buffer 提交给 Surface 对应的下游。
 
-这三条输出路径都尽可能绕开 CPU，不让像素数据在 App 层再做一次搬运。MediaCodec 解码后的帧通常放在 Gralloc 分配的 `GraphicBuffer` / DMA-BUF 中，通过 `BufferQueue` 或 sideband handle 交给后续消费者。`Surface` 只是统一的配置入口，具体消费者会因为 `SurfaceView`、`TextureView` 和 tunneled mode 分成三条路径。
+这条路径减少了应用侧 CPU 像素读回与再次上传，适合称为 copy-avoiding。平台仍可能因颜色格式、缩放、受保护内容、GPU 特效或厂商实现发生转换与复制，不能把“传入 Surface”写成端到端零拷贝保证。
 
-| 输出方式 | producer → consumer | App / GPU 参与方式 | Overlay / 合成条件 | 排查观察点 |
-|------|------|------|------|------|
-| `SurfaceView` | `MediaCodec` → `BufferQueue` → `SurfaceFlinger` / HWC | 像素不回到 App；通常不需要 App 再做纹理采样 | 独立 video layer 满足格式、缩放、遮挡等约束时可走 HWC overlay，否则由 `SurfaceFlinger` 合成 | Perfetto 看 `SurfaceFlinger`、FrameTimeline；`dumpsys SurfaceFlinger` 看 layer / composition |
-| `TextureView` | `MediaCodec` → `BufferQueue` → `SurfaceTexture` → App `RenderThread` / GPU → `SurfaceFlinger` | App 进程要把外部纹理并入 UI 场景，多一次纹理采样和 GPU 合成 | 一般不会走独立 video overlay；效果、裁剪、变换更灵活 | Perfetto 同时看 App `RenderThread`、`SurfaceFlinger`、FrameTimeline |
-| tunneled sideband | Decoder / Codec2 → sideband handle → `SurfaceView` layer → HWC | App 仍要提供 `SurfaceView` 作为显示目标，但不再接触每帧像素 | 依赖解码器、HWC 和设备产品化配置；常见于 TV / 机顶盒 | `dumpsys SurfaceFlinger` 看 sideband layer / HWC composition；Perfetto 主看 `SurfaceFlinger` / HWC |
+`Surface` 表示 BufferQueue 的 producer 入口。consumer 由 Surface 的来源决定：
 
-三条路径的共同点是都尽量不把像素搬回 Java 层，差异在于消费者是谁、App 是否还要参与逐帧合成，以及由 `SurfaceFlinger` 还是 HWC 完成最终显示。
+| 显示目标 | consumer 与后续路径 | 性能特征 | 适用场景 |
+| --- | --- | --- | --- |
+| `SurfaceView` | SurfaceFlinger layer 消费图形 buffer，再交 HWC 或 GPU 合成 | 视频 layer 与应用 UI layer 分开，具备 HWC overlay 机会 | 常规播放、HDR、TV、受保护内容 |
+| `TextureView` | `SurfaceTexture` 消费 buffer，应用 UI 渲染再采样外部纹理 | 可做裁剪、旋转、alpha 与复杂动画，但增加应用 GPU 工作 | 必须把视频嵌入 View 变换的界面 |
+| tunneled playback | codec 通过 sideband handle 把视频交给 HWC | framework 与应用减少逐帧参与，依赖设备能力 | 支持该能力的 TV、机顶盒和特定播放场景 |
 
-[已验证: 官方文档, developer.android.com/reference/android/media/MediaCodec — Surface 数据路径]
+`SurfaceView` 也不保证每帧都走 overlay。遮挡、透明度、缩放、色彩空间、受保护路径、显示能力和厂商 HWC 策略都可能让 layer 改走 GPU composition。`TextureView` 也不能仅凭类型判定某一帧的耗时，仍要观察 RenderThread、SurfaceFlinger 与 GPU/HWC 的当前决策。
 
-### MediaCodec 的 Buffer 管理模型
+### Buffer 所有权比“有几个 buffer”更有用
 
-MediaCodec 管理着一组 input buffer 和 output buffer，用索引（index）来标识。整个工作流程围绕 buffer 的所有权转移展开：
+同步模式下，应用通过 `dequeueInputBuffer()` 取得 input index，填充 sample 后调用 `queueInputBuffer()` 归还；codec 用 `dequeueOutputBuffer()` 返回 output index，应用消费或安排渲染后再调用 `releaseOutputBuffer()`。等待时间由 dequeue 的 timeout 控制，不能笼统写成永久阻塞。
 
-1. App 调用 `dequeueInputBuffer()` 获得一个空的 input buffer（取得所有权）
-2. App 将压缩数据填入这个 buffer，调用 `queueInputBuffer()` 提交给解码器（释放所有权）
-3. 解码器处理完成后，App 调用 `dequeueOutputBuffer()` 获取解码后的帧数据（取得所有权）
-4. App 消费完数据后调用 `releaseOutputBuffer()` 将 buffer 归还（释放所有权）
+异步模式从 API 21 可用。`setCallback()` 必须在 `configure()` 前设置；指定 `Handler` 的重载从 API 23 可用。回调通知所有权变化，应用不再混用 dequeue API。下面的骨架把 callback 放到独立 Looper，避免默认落到主线程：
 
-如果配置了 output Surface，步骤 3-4 会被简化：App 只需调用 `releaseOutputBuffer(true)`，解码后的帧就会直接提交给 Surface 进行渲染，App 不需要也不应该去读取原始像素数据。这正是零拷贝管线的实现基础。
+```kotlin
+val codecThread = HandlerThread("VideoCodec").apply { start() }
+val codecHandler = Handler(codecThread.looper)
+val codec = MediaCodec.createDecoderByType(mimeType)
 
-```java
-// 配置 MediaCodec 时指定 output Surface，启用零拷贝路径
-MediaFormat format = MediaFormat.createVideoFormat("video/avc", width, height);
-MediaCodec codec = MediaCodec.createDecoderByType("video/avc");
-codec.configure(format, surface, null, 0);  // surface 参数开启 Surface 输出路径
-codec.start();
+codec.setCallback(
+    object : MediaCodec.Callback() {
+        override fun onInputBufferAvailable(codec: MediaCodec, index: Int) {
+            inputFeeder.onBufferAvailable(codec, index)
+        }
+
+        override fun onOutputBufferAvailable(
+            codec: MediaCodec,
+            index: Int,
+            info: MediaCodec.BufferInfo,
+        ) {
+            frameScheduler.releaseWhenDue(codec, index, info.presentationTimeUs)
+        }
+
+        override fun onOutputFormatChanged(codec: MediaCodec, format: MediaFormat) {
+            outputFormatObserver.onChanged(format)
+        }
+
+        override fun onError(codec: MediaCodec, error: MediaCodec.CodecException) {
+            errorObserver.onCodecError(error)
+        }
+    },
+    codecHandler,
+)
+codec.configure(format, outputSurface, null, 0)
+codec.start()
 ```
 
-这段代码里决定输出模型的是 `configure()` 的第二个参数。传入 `surface` 之后，解码器的 output buffer 不再以 `ByteBuffer` 暴露给 App，而是作为 `GraphicBuffer` 进入对应的图形队列。后续由谁消费，取决于这个 `surface` 来自哪里：`SurfaceView` 通常把帧交给 `SurfaceFlinger` / HWC，`TextureView` 背后则是 `SurfaceTexture`，帧会先被 App 的 `RenderThread` 当作外部纹理采样，再并入 UI 场景。若排查厂商编解码器兼容性，再用 `MediaCodecList` 或设备实际返回的 codec name 去锁定具体组件；直接写死 `OMX.qcom...` 只适合设备定向诊断，不能当跨设备范式。
+`inputFeeder` 与 `frameScheduler` 是应用自己的非阻塞组件。低层播放器需要把 media PTS 映射到接近 `System.nanoTime()` 的呈现时刻，再使用 `releaseOutputBuffer(index, renderTimestampNs)`；直接把从零开始的 PTS 乘成纳秒会得到错误的系统时间。若不自行维护时钟，应让 Media3 处理调度。异步模式调用 `flush()` 后还要再次 `start()` 才会继续收到 input callback。
 
-[已验证: 官方文档, developer.android.com/reference/android/media/MediaCodec — Buffer Management]
+异步模式减少轮询和专用等待线程，不会让硬件解码本身加速。回调里做网络 I/O、等待锁、长时间持有 index 或串行处理大量工作，同样会让 codec 缺少可用 buffer。排查时记录“input index 可用 → sample 入队”和“output index 可用 → release”的间隔，比只看 callback 名称更有信息量。
 
-### 同步模式 vs 异步模式
+### A/V sync 与视频呈现
 
-MediaCodec 有两种工作模式。同步模式下，`dequeueInputBuffer()` 和 `dequeueOutputBuffer()` 是阻塞调用，App 需要在一个循环中轮询 buffer 的可用性。异步模式（API 21+）通过 `setCallback()` 注册回调，当 input buffer 可用或 output buffer 就绪时系统会主动通知，不需要 App 做阻塞等待。
+每个压缩 sample 带 media presentation timestamp（PTS）。播放器还要维护播放速度、seek discontinuity、live offset 与系统单调时钟之间的映射。音频连续播放时常被选作 media clock，`AudioTrack.getTimestamp()` 或 renderer 的音频位置帮助估算当前媒体位置；视频 renderer 据此等待、按时 release 或丢弃已经过晚的帧。
 
-```java
-// 异步模式：通过 callback 驱动，避免阻塞主线程
-codec.setCallback(new MediaCodec.Callback() {
-    @Override
-    public void onInputBufferAvailable(MediaCodec mc, int index) {
-        // 在此处填充 input buffer
-        mc.queueInputBuffer(index, 0, dataSize, presentationTimeUs, 0);
-    }
+低层实现不能只比较“视频 PTS 大于 AudioTimestamp 就 sleep”。还要处理音频未启动、timestamp 暂不可用、播放速度变化、seek 后时间线重置、输出设备切换和 codec reorder。Media3 的 audio/video renderer 与 `MediaClock` 已处理这些状态，应用更适合记录 drift、dropped frame 和 first-frame 事件。
 
-    @Override
-    public void onOutputBufferAvailable(MediaCodec mc, int index, MediaCodec.BufferInfo info) {
-        // releaseOutputBuffer(true) 将帧提交给 Surface
-        mc.releaseOutputBuffer(index, true);
-    }
-    // ... 其他回调
-});
-```
+## Fence 与图形队列背压
 
-从性能角度看，异步模式通常更合适。同步模式的阻塞等待会占用线程资源，如果 dequeue 操作长时间没有返回（比如解码器内部排队），线程就会一直卡住。异步模式把回调时机交给系统调度，App 只需要在回调里处理实际的数据搬运。很多播放器框架，包括 Media3 / ExoPlayer，都会采用这种方式。
+BufferQueue 依靠 acquire、release 与 present fence 协调生产者、consumer 和显示硬件：
 
-[已验证: 官方文档, developer.android.com/reference/android/media/MediaCodec — Asynchronous Processing]
+| Fence | 谁等待 | 表达的条件 |
+| --- | --- | --- |
+| acquire fence | SurfaceFlinger/HWC 等 consumer | producer 对当前 buffer 的写入结束，可以读取 |
+| release fence | 下一次要复用该 buffer 的 producer | consumer 已不再读取旧 buffer |
+| present fence | 显示管线的观察者 | 当前合成已经呈现，或上一帧资源可以回收，具体语义由显示类型决定 |
 
-### 音视频同步
+Fence 允许设备在 GPU、VPU 和 HWC 之间异步排队，避免应用线程忙等。Fence 等待仍会贡献端到端延迟：decoder 迟交 acquire fence、HWC 迟交 release fence、显示 present 推迟，都可能让队列积压或 buffer 复用变慢。
 
-视频播放需要音画同步。Android 的方案是：AudioTrack 持续写入音频 PCM 数据，系统通过 `AudioTimestamp` 提供"当前正在播放的音频帧对应的时间戳"。视频端用这个时间戳来判断当前应该显示哪一帧，从而保持同步。
+一次“codec output 正常但屏幕掉帧”的排查顺序是：
 
-具体来说，如果视频帧的 presentation timestamp（PTS）早于 AudioTimestamp，说明视频落后了，需要追赶（可能跳过一些帧）；如果视频帧的 PTS 远远领先于 AudioTimestamp，说明视频太快了，需要等待。这套同步逻辑通常封装在播放器框架内部，比如 ExoPlayer，App 层一般不需要自己维护。
+1. 用播放器事件确认 sample 已到达、decoder 已初始化、output buffer 已返回。
+2. 检查应用是否及时 release output，Surface 是否仍有效。
+3. 在 FrameTimeline 中对齐 expected/actual present 与 jank 标记。
+4. 看对应 layer 的 acquire/release/present fence，以及 SurfaceFlinger 的 composition decision。
+5. 若 TextureView 路径还有 RenderThread/GPU 排队，再对比同一内容的 SurfaceView 基线。
+6. 若厂商 codec 内部没有 trace，结合 output callback、`dumpsys media.codec` 与 vendor 日志缩小区间。
 
-## MediaCodec 与 Surface 的协同
+“SurfaceView 一定修复掉帧”也不成立。若根因是网络、decoder、DRM、显示刷新率切换或 HDR tone mapping，换 View 类型不会消除等待。
 
-### 零拷贝管线的 Sync Fence 链
+## Tunneled playback：硬件 A/V sync 与 sideband
 
-当 MediaCodec 配置了 output Surface 时，解码后的帧通过 BufferQueue 传递给 SurfaceFlinger。但这里有一个时序问题：GPU 可能还在使用上一帧的 buffer 进行合成操作。如何确保不会出现一方还在写、另一方已经在读的情况？
+Android 5 起为 on-demand 播放定义了 tunneled playback。应用创建 `SurfaceView`，让 `AudioTrack` 与 `MediaCodec` 使用同一个 audio session，并在 codec format 中设置 `MediaFormat.KEY_AUDIO_SESSION_ID`。支持 `FEATURE_TunneledPlayback` 的 decoder 会获得硬件 A/V sync ID，建立 sideband stream；SurfaceFlinger 把 sideband handle 传给 HWC，HWC 按音频时钟取得和呈现视频帧。
 
-这里依赖 Sync Fence（参见 §2.16）。BufferQueue 的 `queueBuffer()` 操作会携带一个 acquire fence，表示"当这个 fence signal 时，buffer 的写入已完成，消费者可以安全读取"。SurfaceFlinger 在合成时等待这个 acquire fence，确保解码器已经完成写入。合成完成后，SurfaceFlinger 通过 release fence 通知"我已经用完这个 buffer 了"，解码器可以重新使用它。
+Android 11 起 Codec2 支持 tunneled playback，也为 Tuner live playback 定义了硬件同步 ID 路径。Android 17 源码中，Codec2 入口仍可在 [`CCodec::configureTunneledVideoPlayback()`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/sfplugin/CCodec.cpp) 找到。
 
-[已验证: 官方文档, source.android.com/docs/core/graphics — Explicit Sync]
+启用前要同时满足 decoder、audio sink、SurfaceView、内容格式和设备产品配置。Media3 可以通过 `DefaultTrackSelector.Parameters.Builder.setTunnelingEnabled(true)` 表达偏好；不支持的组合会走普通播放路径。API 31 的 `PARAMETER_KEY_TUNNEL_PEEK` 控制暂停音频时首个 tunnel frame 是否提前显示，不能拿它当作启用 tunnel 的开关。
 
-fence 链确保从硬件解码器到 GPU 合成再到显示控制器的整个流程不出现竞态条件，同时不引入额外的 CPU 等待开销——fence 在内核中以文件描述符的形式传递，GPU 和显示控制器直接在硬件层面等待 fence signal。
+Tunneled playback 适合受控设备与长时间播放。复杂 UI 变换、截图、逐帧特效、某些字幕/overlay、录屏和设备兼容性都可能限制使用。验收必须覆盖 seek、暂停、变速、DRM、音轨切换与 Surface 重建，不能只测连续播放功耗。
 
-### 案例：视频播放偶发掉帧的端到端定位
+## 低延迟解码
 
-一个典型的排查场景：用户反馈视频播放时偶发掉帧（非 rebuffering），Perfetto 里 decode slice 耗时正常，但 SurfaceFlinger 的 present fence 间隔出现不规则跳变。
+Android 11 / API 30 增加低延迟 decoder 能力。平台只在 codec 声明 `FEATURE_LowLatency` 时承诺识别该模式。下面的配置在 `configure()` 前查询能力并设置 format：
 
-排查步骤：
-
-1. **确认 MediaCodec 输出路径**：检查 App 代码中 `codec.configure(format, surface, ...)` 传入的 `surface` 来源。如果是 `TextureView`，解码后的帧要经过 App 的 `RenderThread` 做纹理采样再交 SurfaceFlinger，多了一跳 GPU 处理。切换到 `SurfaceView` 可以去掉这一跳。
-
-2. **检查 SurfaceFlinger 的 composition type**：在 Perfetto 中搜索 `SurfaceFlinger` track，看视频 layer 的 composition 是 `DEVICE`（HWC overlay）还是 `GPU`（SurfaceFlinger 合成）。如果是 GPU 合成，说明 HWC 拒绝了 overlay——常见原因包括视频分辨率超出了 HWC overlay 支持的最大尺寸（部分低端 SoC overlay 上限是 1920×1080）、视频 layer 被其他半透明 layer 遮挡、或者色彩空间不匹配。
-
-3. **观察 acquire fence 耗时**：如果视频 layer 走的是 `DEVICE` composition，但仍然掉帧，在 Perfetto 中检查 acquire fence 的 signal 时间。如果 decode 完成到 fence signal 之间有异常延迟（例如 >8ms），可能是解码器内部排队或 GPU 后处理阻塞。此时需要查看 codec 进程（`mediacodec` 或 `omx`）的线程活动。
-
-4. **对比 SurfaceView vs TextureView**：同一个视频流，分别用两种容器播放，在 Perfetto 中对比：
-   - `SurfaceView`：帧从 codec output 直接到 SurfaceFlinger / HWC，`RenderThread` 不参与
-   - `TextureView`：帧经过 `SurfaceTexture` → App `RenderThread` GPU 纹理采样 → SurfaceFlinger
-
-   TextureView 路径下，如果 App 主线程同时在做 UI 操作（列表滚动、动画），`RenderThread` 可能因为 GPU 命令队列拥塞而延迟提交视频帧。表现为 Perfetto 中 `RenderThread` 的 `DrawFrame` slice 出现排队。
-
-5. **结论**：常规视频播放场景优先用 `SurfaceView`。需要 UI 变换（圆角、动画、叠加）时才用 `TextureView`，此时要确保 `RenderThread` 的 GPU 工作量不与视频帧提交竞争。
-
-### Tunneled Video Playback：sideband 模式把显示交给 HWC
-
-普通视频播放并不只有一条显示路径。若 App 把解码器输出绑定到 `SurfaceView`，解码后的帧会通过 `BufferQueue` 交给 `SurfaceFlinger`，再由 `SurfaceFlinger` 或 HWC 合成显示。若绑定到 `TextureView`，consumer 则是 App 进程内的 `SurfaceTexture`，`RenderThread` 还要做一次纹理采样和 GPU 合成。tunneled playback 是第三条路径，它通常仍然要求 App 提供一个来自 `SurfaceView` 的 `Surface`，这样系统才有一个可放置的视频 layer；不同的是，App 不再接触每帧像素，解码器会把 sideband handle 绑定到这个 layer，后续由 HWC 直接取帧并按音频时钟显示。
-
-[图：`SurfaceView` / `TextureView` / tunneled sideband 三路径时序图。标出 `MediaCodec`、`BufferQueue` 或 sideband handle、`SurfaceTexture`、`SurfaceFlinger`、HWC，以及像素是否回到 App 进程。]
-
-这种模式常见于 Android TV、机顶盒或特定 SoC 的低延迟播放场景。收益通常来自两点：少掉 App `RenderThread` / GPU 的逐帧参与，以及由 HWC 直接完成 A/V sync。代价是：一般只适合 `SurfaceView`，对复杂 UI 变换、叠加特效、截图录屏等场景的支持更受限制。
-
-从实现路径看，tunneled playback 在 OMX 时代（Android 4.x-9）就已存在，通过 `OMX_IndexConfigAndroidTunnelingStatus` 配置 tunneled 节点。Android 10 起 Codec2 作为 OMX 的替代路径，逐步补齐了 tunneled playback 的对应能力（`CCodec::configureTunneledVideoPlayback()` 封装相同语义）。排查时不要误读为“Android 11 才支持 tunneled”——OMX 路径更早就有。组件为 tunneled 输出准备 sideband stream handle，对应的 `SurfaceView` layer 在 `SurfaceFlinger` / HWC 中以 sideband layer 的方式存在，像素不再经由普通 `BufferQueue` 逐帧送到 App 或 GPU。
-
-[已验证: AOSP 文档与实现, tunneled playback / sideband stream 机制, OMX tunneled → Codec2 tunneled 版本线]
-[待验证: 具体哪些 SoC/设备支持 tunneled mode，不同设备的支持情况差异较大]
-
-### HDR 与杜比视界的渲染开销
-
-HDR（高动态范围）视频和杜比视界（Dolby Vision）在标准 SDR 视频的基础上增加了额外的处理开销：
-
-- **色彩空间转换**：HDR 视频使用 BT.2020 色彩空间和 PQ/HLG 传输函数，GPU 合成时需要做 tone mapping
-- **元数据处理**：杜比视界每帧携带动态元数据，需要实时解析并应用
-- **显示控制器配置**：需要将显示面板切换到 HDR 模式，这可能涉及亮度范围和色彩配置的调整
-
-在实际分析中，如果发现视频播放时 GPU 占用异常升高，需要确认播放的是否是 HDR 内容。HDR tone mapping 是 GPU 密集型操作，在某些低端设备上可能成为性能瓶颈。
-
-[待补充：HDR 渲染的 Perfetto trace 特征]
-
-## Media3 / ExoPlayer 性能优化
-
-### Media3 的架构与设计
-
-Media3 是 Google 推出的 Jetpack 媒体库，是 ExoPlayer 的后继者。从架构上看，Media3 将 ExoPlayer 的播放逻辑与 UI 组件分离，提供了更清晰的模块化结构。对于性能分析来说，理解 Media3 的内部调度机制是定位问题的基础。
-
-Media3 内部有几个关键组件与性能直接相关：
-- **ExoPlayer**：核心播放引擎，负责调度解码、渲染、数据加载
-- **MediaCodecVideoRenderer / MediaCodecAudioRenderer**：封装 MediaCodec 的渲染器
-- **DefaultLoadControl**：缓冲策略控制器
-- **DefaultTrackSelector**：轨道选择器，管理 ABR（自适应码率）决策
-
-[已验证: 官方文档, developer.android.com/media/media3]
-
-### 自适应码率（ABR）与播放流畅度
-
-ABR 的目标是在带宽允许的范围内选择最高质量的视频流，同时在带宽下降时及时降低质量以避免卡顿。Media3 使用 `AdaptiveTrackSelection` 配合 `BandwidthMeter` 来实现这个逻辑。
-
-ABR 的性能影响体现在两个极端：
-- **切换太慢**：带宽已经下降但还在请求高质量流，导致 buffer 耗尽和 rebuffering
-- **切换太频繁**：带宽波动时频繁切换码率，每次切换都可能导致短暂的视频质量跳变
-
-Media3 的 ABR 决策由 `AdaptiveTrackSelection` 配合 `DefaultBandwidthMeter` 实现。`DefaultBandwidthMeter` 通过 `SlidingPercentile` 维护带宽估计，`AdaptiveTrackSelection` 通过 `updateSelectedTrack()` / `determineIdealSelectedIndex()` 结合带宽估计和 buffer 时长做出轨道切换决策。这两个方法在 androidx/media 公开源码中可直接溯源。
-
-决策窗口不是固定值——它取决于当前 chunk 下载完成时间、带宽滑动窗口和 buffer 水位，不同网络条件下的实际延迟差异很大。不要把一个具体的 "50-200ms" 或 "亚 100ms" 当作平台保证。
-
-[已验证: androidx/media3, AdaptiveTrackSelection.java + DefaultBandwidthMeter.java]
-
-
-### LoadControl 缓冲策略
-
-`DefaultLoadControl` 控制着 ExoPlayer 的缓冲行为。以 androidx/media `release` 分支中 `libraries/exoplayer/src/main/java/androidx/media3/exoplayer/DefaultLoadControl.java` 的当前常量为准，默认参数如下：
-
-| 参数 | 作用 | 默认值 | 性能影响 |
-|------|------|--------|----------|
-| `minBufferMs` | 最小缓冲时长 | 50,000ms (50s) | 越大越不容易 rebuffer，但启动等待和内存占用也会增加 |
-| `maxBufferMs` | 最大缓冲时长 | 50,000ms (50s) | 限制缓冲上限，避免缓存无限增长 |
-| `bufferForPlaybackMs` | 首次播放启动所需缓冲 | 1,000ms | 越小启动越快，但弱网下更容易刚播就卡 |
-| `bufferForPlaybackAfterRebufferMs` | rebuffer 后恢复播放所需缓冲 | 2,000ms | 越小恢复越快，但恢复后再次卡住的风险更高 |
-
-[已验证: androidx/media release, `DefaultLoadControl.java` 默认参数]
-
-在实际优化中，需要根据场景调整这些参数。短视频 Feed 场景常把 `bufferForPlaybackMs` 压到 500-1000ms 量级，以缩短首帧前的等待；长视频或弱网场景更看重 `minBufferMs` 和 `bufferForPlaybackAfterRebufferMs`，避免恢复播放后马上再次卡住。
-
-### Media3 1.6-1.10：预热、动态调度与 Compose 播放器演进
-
-Media3 近几个版本对播放性能的改动分布在不同 release 里，不能都归到 1.10：
-
-- **1.6.0**：ExoPlayer 新增实验性的 `MediaCodecVideoRenderer` prewarming，`DefaultRenderersFactory.experimentalSetEnableMediaCodecVideoRendererPrewarming(...)` 可以让播放器在连续媒体项切换前预热第二个视频 renderer，降低切换延迟。
-- **1.8.0**：`ExoPlayer.Builder.experimentalSetDynamicSchedulingEnabled()` 出现，播放器主循环可以按是否需要 render 动态放慢调度节奏，减少无效 CPU 唤醒。
-- **1.9.0**：`media3-ui-compose` 新增 `ContentFrame`，并把 `PlayerSurface` 作为 Compose 视频 surface 的标准入口；这解决的是 Compose 中视频画面的承载方式。
-- **1.10.0**：`media3-ui-compose-material3` 新增 `Player` composable，把 `ContentFrame` 和一组 Material3 控件封装成可直接复用的播放 UI。
-
-Player 池化与 `prepare()` 预热仍然是短视频 Feed 常用的工程模式，但它们属于应用层策略，不应写成“Media3 1.10 新增能力”。Media3 1.6.0 之后，官方 API 让 renderer 级预热更容易实施；池化规模、预热窗口和 Compose 状态读取策略仍要按业务自己控制。
-
-[已验证: AndroidX Media3 release notes 1.6.0 / 1.8.0 / 1.9.0 / 1.10.0, developer.android.com/jetpack/androidx/releases/media3]
-
-低内存设备上需要注意 Player 实例数量。每个 ExoPlayer 实例至少占用 20-30MB 内存（解码器 buffer + 缓冲数据），同时持有 3-4 个实例可能触发 LMK。建议通过 `ActivityManager.isLowRamDevice` 动态调整池化大小。
-
-## AudioFlinger 与音频延迟
-
-### AudioFlinger 架构
-
-在本章覆盖的 Android 8-17 范围里，AudioFlinger 运行在 `audioserver` 进程中，负责混合（mix）多个 App 的音频流并输出到 HAL（硬件抽象层）。Android 7 起媒体服务从单体 `mediaserver` 拆成了 `audioserver`、`cameraserver`、`mediacodec` 等多个进程；如果追溯更早版本，Android 6 及更早才是 `mediaserver` 承载 AudioFlinger。启动入口是 `frameworks/av/media/audioserver/main_audioserver.cpp`，服务实现位于 `frameworks/av/services/audioflinger/AudioFlinger.cpp`。
-
-AudioFlinger 内部有两种 mixer thread：
-
-**Normal Mixer Thread**：服务于大多数 `AudioTrack` 客户端，每约 20ms 执行一次混合操作。它支持完整的音频处理功能——多路混音（最多 32 路）、采样率转换、音效处理等。但它的延迟相对较高，因为 20ms 的调度间隔加上 buffer 深度，端到端延迟通常在 40-80ms。
-
-**Fast Mixer Thread**：Android 4.1（Project Butter）引入，专门为低延迟场景设计。它运行频率更高、每次处理的数据量更小，CPU 开销也比 Normal Mixer 低。Fast Mixer 走的是一条精简的处理路径——跳过采样率转换（SRC）和应用处理器音效。
-
-但 Fast Mixer 不是只要设置 `AUDIO_OUTPUT_FLAG_FAST` 就一定能命中。AudioFlinger 在创建 AudioTrack 时会检查一系列准入条件：采样率必须与输出设备匹配（不需要 SRC）、格式和声道数与 mixer 配置兼容、不依赖应用处理器上的音效处理链。任何一项不满足，AudioTrack 就会回退到 Normal Mixer，即使 App 端请求了 FAST flag。排查音频延迟时，如果发现 Fast Mixer 的延迟收益没有生效，优先检查这些准入条件——在 Perfetto 或 `dumpsys media.audio_flinger` 中能看到实际命中的 mixer thread 类型。
-
-[已验证: 官方文档, source.android.com/docs/core/audio — AudioFlinger / Fast Mixer]
-
-### AAudio：面向低延迟的 C API
-
-Android 8.0 引入了 AAudio API，专门为高性能、低延迟的音频应用设计（如音乐合成器、实时音效处理、游戏音频）。相比旧的 OpenSL ES，AAudio 的设计更简洁，延迟更低。
-
-AAudio 的主要使用模式是**异步回调**：App 注册一个回调函数，AAudio 在一个高优先级的内部线程中调用这个回调来传输音频数据。相比同步读写模式，回调模式的优势在于调度更及时、时序抖动更小。
-
-低延迟回调中的代码必须遵守严格的约束：
-- 不做内存分配/释放
-- 不做文件 I/O
-- 不等待 mutex（锁）
-- 不做耗时的 CPU 计算
-
-违反这些约束会导致回调执行超时，进而产生 audio underrun（音频断续）。
-
-[已验证: 官方文档, developer.android.com/ndk/guides/audio/aaudio/low-latency-audio]
-
-### AAudio MMAP 路径：低延迟数据路径
-
-Android 8.1 进一步引入了 MMAP（Memory Mapped）数据路径，可以将延迟降到最低。在 MMAP EXCLUSIVE 模式下，App 直接写入一块与 ALSA 驱动共享的内存映射 buffer，数据不会再经过 AudioFlinger 的 normal mixer，因此额外排队开销最小。
-
-MMAP 的两种模式：
-- **EXCLUSIVE**：App 独占音频设备，直接写 MMAP buffer，延迟最低
-- **SHARED**：多个 App 共享 MMAP buffer，AudioFlinger 的 mixer 仍然参与
-
-MMAP 需要 HAL 和驱动的支持。如果设备不支持 MMAP 或打开失败，AAudio 会自动回退到传统的 AudioFlinger 数据路径。这就是为什么同一款 App 在不同设备上的音频延迟差异可以很大——从不到 10ms（MMAP EXCLUSIVE）到超过 100ms（传统路径）。
-
-### 低延迟解码模式
-
-Android 11 引入了低延迟视频解码支持。在支持该特性的设备上，通过 `MediaFormat.KEY_LOW_LATENCY` 或运行时 `MediaCodec.PARAMETER_KEY_LOW_LATENCY`（通过 `setParameters` 或 configure 阶段 `setInteger`）设为 `1`，可以减少解码器内部的排队深度，降低首帧输出延迟。能力检测使用 `MediaCodecInfo.CodecCapabilities.isFeatureSupported(MediaCodecInfo.CodecCapabilities.FEATURE_LowLatency)`。这对视频通话、云游戏、实时屏幕共享等场景有直接帮助。
-
-排查低延迟解码是否生效时，先通过 `MediaCodecInfo.CodecCapabilities` 检查设备是否支持 `FEATURE_LowLatency`，再对比开启 `KEY_LOW_LATENCY` 前后的首帧 decode slice 耗时。不支持该特性的设备会静默忽略这个参数，不会报错但也没有收益。
-
-[已验证: 官方文档, developer.android.com/reference/android/media/MediaFormat#KEY_LOW_LATENCY, developer.android.com/reference/android/media/MediaCodec#PARAMETER_KEY_LOW_LATENCY]
-
-### 音频延迟的构成
-
-端到端音频延迟由多个环节叠加：
-
-1. **硬件延迟**：DAC 芯片处理延迟（通常 1-3ms）
-2. **HAL 延迟**：厂商音频 HAL 实现（差异最大，2-20ms 不等）
-3. **AudioFlinger 缓冲**：Normal Mixer 约 20ms 一轮，Fast Mixer 可以短到 2-4ms
-4. **应用缓冲**：App 端 AudioTrack/AAudio 的 buffer 大小配置
-
-**BLE Audio 空间音频路径**：Android 15 引入了 Spatial Audio over BLE Audio。利用 BLE Audio 的低延迟特性，从传感器（头动追踪）到音频渲染生效的端到端时延被显著压缩。在沉浸式应用中，头动追踪 → 音场更新的延迟此前是主要瓶颈；BLE Audio 把这条路径缩短到了可以接受的范围内。排查音频延迟时，如果涉及空间音频场景，需要额外关注传感器采样到 AudioFlinger 渲染生效的完整路径。
-
-在 Perfetto 中，可以通过音频相关的 track 观察 AudioFlinger 的 mixer 活动。如果 mixer thread 出现较大的调度间隔或者 underrun 标记，通常说明 CPU 调度不够及时，比如高优先级线程被抢占，或者 GC 暂停阻塞了音频回调。
-
-[待补充：AudioFlinger track 的 Perfetto 截图描述]
-
-## Perfetto 中的多媒体性能分析
-
-### MediaCodec 相关 Track
-
-在 Perfetto 中，MediaCodec 的活动主要出现在以下位置：
-
-- **App 进程的线程 track**：`MediaCodec` 相关的 slice 名称通常包含 `ACodec`、`MediaCodec`、`decode`、`queueInputBuffer`、`dequeueOutputBuffer` 等关键词
-- **codec 进程**：硬件编解码器可能运行在独立的 codec 进程中（`mediacodec` 或 `omx` 进程）
-
-### 常用 SQL 查询
-
-**查询 MediaCodec 解码耗时**：
-
-```sql
-SELECT
-  s.ts AS timestamp_ns,
-  s.dur AS duration_ns,
-  s.name AS slice_name,
-  p.name AS process_name,
-  t.name AS thread_name
-FROM slice AS s
-JOIN thread_track AS tt ON s.track_id = tt.id
-JOIN thread AS t ON tt.utid = t.utid
-JOIN process AS p ON t.upid = p.upid
-WHERE
-  (s.name GLOB '*MediaCodec*' OR s.name GLOB '*ACodec*')
-  AND (s.name GLOB '*decode*' OR s.name GLOB '*queueInputBuffer*'
-       OR s.name GLOB '*dequeueOutputBuffer*')
-ORDER BY timestamp_ns;
-```
-
-这个查询会返回所有 MediaCodec 解码相关的 slice，包括时间戳、耗时、所属进程和线程。通过 `duration_ns` 列可以判断解码是否成为瓶颈——如果单帧解码耗时超过一个 VSync 周期（如 120Hz 设备上超过 8.33ms），解码器就是瓶颈。
-
-[已验证: Perfetto 官方文档, ui.perfetto.dev — SQL Reference]
-
-**查询 buffer 操作详情**：
-
-```sql
-SELECT
-  s.ts AS timestamp_ns,
-  s.dur AS duration_ns,
-  s.name AS slice_name,
-  EXTRACT_ARG(s.arg_set_id, 'buffer_id') AS buffer_id,
-  EXTRACT_ARG(s.arg_set_id, 'size') AS buffer_size_bytes,
-  EXTRACT_ARG(s.arg_set_id, 'flags') AS buffer_flags
-FROM slice AS s
-JOIN thread_track AS tt ON s.track_id = tt.id
-JOIN thread AS t ON tt.utid = t.utid
-WHERE
-  s.name GLOB '*MediaCodec::queueInputBuffer*'
-  OR s.name GLOB '*MediaCodec::dequeueOutputBuffer*'
-ORDER BY timestamp_ns;
-```
-
-这个查询提取 buffer 操作的详细参数，可以帮助理解 buffer 的使用模式和流转状态。
-
-**聚合解码性能统计**：
-
-```sql
-SELECT
-  p.name AS process_name,
-  s.name AS slice_name,
-  COUNT(s.id) AS event_count,
-  AVG(s.dur) / 1e6 AS avg_duration_ms,
-  MAX(s.dur) / 1e6 AS max_duration_ms
-FROM slice AS s
-JOIN thread_track AS tt ON s.track_id = tt.id
-JOIN thread AS t ON tt.utid = t.utid
-JOIN process AS p ON t.upid = p.upid
-WHERE s.name GLOB '*decode*'
-GROUP BY p.name, s.name
-ORDER BY avg_duration_ms DESC;
-```
-
-这个查询给出每个进程的平均和最大解码耗时，适合用来快速定位"哪个进程的解码最慢"。
-
-[待验证: EXTRACT_ARG 的具体参数名在不同 Android 版本上可能有差异]
-
-### 抓取多媒体 Trace 的 atrace 分类
-
-要抓取完整的 MediaCodec 和 AudioFlinger 信息，需要启用以下 atrace 分类：
-
-```bash
-# 启用多媒体相关 atrace 分类的示例
-# 实际可用分类以 atrace --list_categories 输出为准
-atrace --stop
-atrace audio,video,camera,gfx,view,sched,freq
-```
-
-- `audio`：AudioFlinger mixer 活动、音频 underrun 事件
-- `video`：视频编解码相关事件
-- `camera`：Camera 管线事件
-- `gfx`：SurfaceFlinger 合成、RenderEngine、HWC 事件
-- `view`：Surface 渲染、View 系统事件
-- `sched`：CPU 调度（线程状态、唤醒、迁移）
-- `freq`：CPU 频率变化
-
-注意：AOSP `atrace.cpp` 中没有 `media` 或 `codec` 分类。如果需要覆盖编解码器的内部 trace，应依赖 `video` 分类以及 MediaCodec 组件自身暴露的 atrace/dumpsys 信息。不同 Android 版本上分类可用性有差异，抓取前建议先运行 `atrace --list_categories` 确认。
-
-[已验证: AOSP android-14/16 frameworks/native/cmds/atrace/atrace.cpp — atrace_categories]
-
-## 常见问题与最佳实践
-
-### 首帧解码延迟过高
-
-视频播放启动时，用户感知到的"首帧时间"由以下环节构成：网络请求（如果是流媒体）→ 解复用 → 编解码器初始化 → 首帧解码 → 渲染。其中编解码器初始化是主要耗时来源。
-
-创建一个 MediaCodec 实例并完成配置/启动的耗时受 codec 类型、分辨率、DRM / 安全解码、SoC 负载和厂商实现影响。同一设备上如果每次播放都创建新实例，这个开销会反复出现。解决方案是**解码器池化**：维护一个预热好的 MediaCodec 实例池，新播放请求直接从池中取出已初始化的实例；具体池化规模要用同机 trace 和内存水位确定。
-
-### 视频播放卡顿的几类根因
-
-视频播放出现卡顿时，需要区分几类不同的根因：
-
-**Buffer 耗尽（rebuffering）**：网络带宽不足以支撑当前码率，缓冲区被耗尽。表现为播放器进入 buffering 状态，用户看到加载指示器。通过降低目标码率或增加预缓冲时长可以缓解。
-
-**解码慢**：硬件解码器处理某些复杂帧（如高运动场景的 B 帧）耗时过长，超过了一个 VSync 周期。在 Perfetto 中表现为 decode slice 的 duration 出现异常峰值。解决方案包括降低分辨率/码率、或者切换到更高效的编码格式（如从 AVC 切换到 HEVC）。
-
-**AV1 软解不应直接判死刑**：Android 15 Beta 2 起提供 dav1d AV1 software decoder，官方说明其性能最高可比旧 AV1 软解提升约 3 倍；当时 App 需要按名称 `c2.android.av1-dav1d.decoder` opt-in，后续是否成为设备默认路径取决于平台更新和设备配置。排查 AV1 播放卡顿时，先确认设备是否有 AV1 硬解和实际选中的 codec name，再评估是否需要降分辨率，不要默认认为软解一定卡。
-
-**渲染慢**：解码完成了，但 GPU 合成耗时过长。这种情况在 HDR 内容或存在复杂的 Surface 叠加（如字幕 + 弹幕 + 视频）时容易出现。在 Perfetto 中，常见表现是 SurfaceFlinger 的合成耗时异常。
-
-### 音频 Underrun 的根因分析
-
-Audio underrun 是指 AudioFlinger 的 buffer 被耗尽，导致输出端没有数据可播放，用户听到"嘟"的一声断续。常见的根因有：
-
-- **CPU 调度不及时**：音频回调线程（SCHED_FIFO 高优先级）被其他高负载线程抢占。常见表现是音频线程的 scheduling slice 出现异常间隔
-- **GC 暂停**：如果音频回调在 Java 层执行，ART GC 的 stop-the-world 暂停会阻塞音频数据的生产。这就是为什么 AAudio 的推荐使用方式是纯 native 代码回调
-- **锁竞争**：音频回调路径上等待被其他线程持有的锁。在 Perfetto 中可以通过 monitor contention slice 看到锁等待
-
-### 多实例编解码器的资源限制
-
-硬件编解码器（VPU）的并发能力是有限的，具体上限由 SoC、codec 类型、分辨率、secure / non-secure 路径和厂商配置决定。超出设备可承载范围后，多余实例可能创建失败、排队等待，或被降级为软件解码。
-
-这个限制在以下场景容易触发：
-- 短视频 Feed 中同时有多个播放器处于 prepared 状态
-- 视频通话应用同时做编码和解码
-- 后台有其他应用在使用编解码器（如视频录制）
-
-在 Perfetto 中，如果发现 MediaCodec 创建耗时明显高于同机基线，或者 `onError` 回调被触发，需要排查是否碰到了硬件编解码器的并发上限。
-
-### Camera → MediaCodec 编码管线
-
-Camera 采集和视频编码的组合管线（如直播、录屏）需要特别注意帧的传递效率。理想的做法是让 Camera 的输出 Surface 直接作为 MediaCodec 编码器的 input Surface（`createInputSurface()`），形成零拷贝的直连管线。这样 Camera 采集的帧不需要经过 App 进程中转就直接进入编码器。
-
-但如果需要在帧上叠加水印或滤镜，就必须在中间插入一个 GPU 处理步骤：Camera → OpenGL Texture → 处理 → MediaCodec input Surface。这个额外的 GPU pass 会增加约一帧的延迟。对于实时直播场景，需要权衡画质增强和延迟增加之间的取舍。
-
-[关联: §14.9 Camera 性能与 Perfetto 分析]
-
-## 版本演进
-
-- **Android 4.1 (Project Butter)**：引入 Fast Mixer Thread，音频延迟从约 100ms 降到约 20-40ms
-- **Android 4.1 (API 16)**：`MediaCodec.configure(format, Surface, ...)` 支持将解码输出绑定到 Surface
-- **Android 4.3 (API 18)**：`MediaCodec.createInputSurface()` 支持编码器输入 Surface，开启 GPU 到编码器零拷贝路径
-- **Android 5.0**：引入 async mode (`setCallback`)，MediaCodec 从同步轮询变为异步回调驱动
-- **Android 8.0**：引入 AAudio API，提供 C 语言级别的低延迟音频接口
-- **Android 8.1**：AAudio 支持 MMAP 路径，延迟可降至 10ms 以下
-- **Android 11**：引入 low-latency decoding 模式（需要 SoC 支持）；Codec2 框架路径补齐 tunneled playback 支持（OMX 时代已支持 tunneled，Android 10+ 起 Codec2 作为 OMX 的替代路径逐步补齐对应能力）
-- **Android 10+**：媒体模块（`com.android.media`）通过 APEX 格式可独立更新，不再依赖系统 OTA
-- **Media3 1.6.0 (2025-03)**：引入 `MediaCodecVideoRenderer` 预热支持，减少连续媒体项切换延迟
-- **Media3 1.8.0 (2025-07-30)**：引入实验性的动态调度开关 `experimentalSetDynamicSchedulingEnabled()`
-- **Media3 1.9.0 (2025-12-17)**：`media3-ui-compose` / `media3-ui-compose-material3` 提供 `ContentFrame`、`PlayerSurface` 和 Material3 播放 UI 组件
-- **Android 15 (2024)**：Android 15 Beta 2 起提供 dav1d AV1 software decoder，官方称相对旧 AV1 软解最高约 3 倍性能；当时需 opt-in，默认路径取决于后续平台更新和设备配置
-- **Android 16 (Baklava)**：引入 16KB 页面支持；Gralloc AIDL V2（`Gralloc5.cpp`）包含 `additionalOptions` 字段传递，但其与 16KB 页面协调约束的具体语义和编解码吞吐量收益需独立 benchmark 确认
-- **Media3 1.10.0 (2026-03-26)**：`media3-ui-compose-material3` 提供 `Player` composable 与一组 Material3 播放控件
-
-[待验证: low-latency decoding 在不同 SoC 上的支持情况]
-
-
-
-## Codec2 / Tunneled Playback / Media3 ABR 深度验证
-
-### OMX → Codec2 演进路径源码锚点
-
-**演进驱动**：Android 10（API 29）引入 Codec2 框架作为 OMX 的替代路径；API 31+ 起 Codec2 在多数新设备上成为默认编解码路径。Android 5.0（API 21）并未引入 Codec2。
-
-**源码文件**：
-
-| 文件路径 | 要点 |
-|----------|---------|
-| `frameworks/av/media/libstagefright/omx/OMXNodeInstance.cpp` | Legacy OMX 节点实例，管理 IAndroidBufferUsageFlag |
-| `frameworks/av/media/codec2/core/include/C2Config.h` | 编解码配置参数结构体（含 profile/level/blockSize） |
-| `frameworks/av/media/codec2/sfplugin/CCodec.cpp` | Codec2-SurfaceFlinger 桥接，配置 tunneled playback |
-| `frameworks/av/media/codec2/sfplugin/CCodecBuffers.cpp` | Buffer 管理，含 BufferPool 机制 |
-
-Codec2 编解码初始化的典型路径：`MediaCodec.java` API → `MediaCodec.cpp` native 层 → `CCodec` 组件创建与配置方法（位于 `CCodec.cpp`）→ HAL 层。`CCodec` 的方法入口和内部状态机因 Android 版本和编解码器类型而异，公开 tag 中不提供固定伪代码。
-
-CCodec 桥接逻辑位于 `frameworks/av/media/codec2/sfplugin/CCodec.cpp`，包含组件创建、参数配置和队列管理。具体初始化路径随编解码器类型和配置参数变化，不在此给出伪代码。已验证的 tunneled 入口是 `configureTunneledVideoPlayback()`，涉及 `C2PortTunneledModeTuning`。
-
-**版本对应关系**：
-
-| API Level | Codec2 状态 | OMX 状态 |
-|-----------|-------------|----------|
-| 21-28 | 不存在 | 主导 |
-| 29-30 | 引入，部分设备可选 | 主导 |
-| 31-32 | 多数新设备默认启用 | 兼容模式 |
-| 33+ | 稳定/优化，V4L2 Codec2 支持 | 仅兼容 |
-
-> [已验证：android-16.0.0_r1 + AOSP 公开文档] Codec2 框架在 Android 10（API 29）首次引入，非 Android 5.0。API 29-30 期间以 OMX 为主、Codec2 为可选替代；API 31+ 起多数新设备默认 Codec2。V4L2 Codec2（`external/v4l2_codec2/`）在 API 33+ 获得官方支持。
-
-### Tunneled Playback 实现差异
-
-**Tunneled Playback 机制**：官方文档定义为压缩视频数据经硬件 video decoder 直接进入显示路径，不再由 App 代码或 Android framework 逐帧处理。on-demand 场景（Android 5+）使用与音频 presentation timestamp 同步的 `AudioTrack` clock；直播场景（Android 11+）可使用 Tuner 提供的 PCR / STC。App 侧关键入口是 `SurfaceView`、`audioSessionId`、带同一 session 的 `AudioTrack` 与 `MediaCodec`。
-
-**源码 / 配置锚点**：
-
-| 路径 / 符号 | 要点 |
-|-------------|----------|
-| `MediaFormat.KEY_AUDIO_SESSION_ID` | on-demand tunneled playback 将 `MediaCodec` 与 `AudioTrack` 关联到同一音频 session |
-| `AudioAttributes.FLAG_HW_AV_SYNC` / `AUDIO_PARAMETER_HW_AV_SYNC` | AudioFlinger / Audio HAL 侧用于获取和下发硬件 A/V sync id |
-| `native_window_set_sideband_stream()` | 将 codec 返回的 sideband handle 绑定到对应 native window |
-| `HWC_SIDEBAND` / `sidebandStream` | HWC 侧的 sideband layer 表示，HWC 按音频或 tuner 时钟显示视频帧 |
-| `CCodec::configureTunneledVideoPlayback()` / `C2PortTunneledModeTuning` | Android 10+ Codec2 路径中的 tunneled 配置入口 |
-
-**关键边界**：不要把 `AudioPresentation`、`BUFFER_FLAG_TUNNEL` 或 `IHapticStream` 写成 tunneled playback 的主要 API。官方路径围绕 `KEY_AUDIO_SESSION_ID` / `KEY_HARDWARE_AV_SYNC_ID`、HW_AV_SYNC、sideband handle 和 HWC sideband layer 展开。
-
-**性能收益**：Tunneled playback 的收益来自减少 App / Framework 逐帧参与，并由 HWC 按硬件同步时钟呈现视频帧。具体收益取决于设备 SoC、HAL 实现、内容格式和输出分辨率，不给固定 ms/帧结论。
-
-**版本差异**：
-- OMX 路径：通过 `OMX.google.android.index.configureVideoTunnelMode` 扩展参数配置 tunnel mode，并用 `OMX_IndexConfigAndroidTunnelPeek` 控制首帧 peek 行为。
-- Android 10+ Codec2 路径：通过 `CCodec::configureTunneledVideoPlayback()` 封装相同语义。
-
-### Media3 ExoPlayer ABR 算法源码
-
-**源码路径**：
-- Legacy ExoPlayer：`external/exoplayer/library/core/src/main/java/com/google/android/exoplayer2/trackselection/AdaptiveTrackSelection.java`
-- Media3：`androidx/media/blob/release/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/trackselection/AdaptiveTrackSelection.java` + `.../upstream/DefaultBandwidthMeter.java`
-
-**算法原理**：带宽自适应选择，通过 Factory 配置参数控制质量切换。
-
-**参数默认值**（AdaptiveTrackSelection.Factory）：
-
-| 参数 | 默认值 | 作用 |
-|------|--------|------|
-| `bandwidthFraction` | 0.7 | 估算可用带宽的 70%（留 30% buffer） |
-| `minDurationForQualityIncreaseMs` | 15000 | 缓冲 ≥15s 才允许升质量 |
-| `maxDurationForQualityDecreaseMs` | 2000 | 缓冲 <2s 立即降质量 |
-| `minDurationToRetainAfterDiscardMs` | 15000 | 升质量时保留至少 15s 低质量 buffer |
-| `maxWidthToDiscard` / `maxHeightToDiscard` | 1080p | 超出此分辨率的 buffer 可丢弃 |
-
-ABR 质量切换的调用路径：
-- `DefaultTrackSelector.selectTracks()` 调用 `AdaptiveTrackSelection.updateSelectedTrack()`
-- `updateSelectedTrack()` 结合 `DefaultBandwidthMeter` 的带宽估计（`SlidingPercentile`）和当前 buffer 时长
-- 通过 `determineIdealSelectedIndex()` 确定目标轨道索引，实现升/降质量
-
-以上方法在 androidx/media release 公开源码中可直接溯源。
-
-**代码段**（Factory 构造）：
-```java
-// AdaptiveTrackSelection.java
-public Factory(
-    int minDurationForQualityIncreaseMs,
-    int maxDurationForQualityDecreaseMs,
-    int minDurationToRetainAfterDiscardMs,
-    float bandwidthFraction) {
-    this.minDurationForQualityIncreaseMs = minDurationForQualityIncreaseMs;
-    this.maxDurationForQualityDecreaseMs = maxDurationForQualityDecreaseMs;
-    this.bandwidthFraction = bandwidthFraction;
+```kotlin
+val capabilities = codecInfo.getCapabilitiesForType(mimeType)
+if (capabilities.isFeatureSupported(
+        MediaCodecInfo.CodecCapabilities.FEATURE_LowLatency
+    )
+) {
+    format.setInteger(MediaFormat.KEY_LOW_LATENCY, 1)
 }
 ```
 
-### 性能影响总结
+启用后，decoder 应避免持有超出编码标准要求的 input/output 数据；运行中可用 `MediaCodec.PARAMETER_KEY_LOW_LATENCY` 切换。它不能删除 B-frame 重排、网络 jitter buffer、Surface 排队或显示 vsync，也不会保证某个固定首帧毫秒数。低延迟模式还可能减少 codec 的功耗优化空间，需要在目标 SoC 上同时测 latency、dropped frames 与能耗。
 
-> [待验证：android-16.0.0_r1] 以下性能数据为定性趋势参考，非统一测试条件下的精确数字。Codec2 Buffer pooling 的内存效益、Tunneled Playback 的延迟缩减因设备差异有显著波动。
+## HDR、Dolby Vision 与 Android 17 Eclipsa video
 
-1. **Codec2 内存效率**：Buffer pooling 机制可减少内存分配开销（幅度因编解码器实现和设备而异）
-2. **Tunneled Playback**：减少 App / Framework 逐帧参与，由 HWC 按硬件同步时钟呈现视频帧；收益需按设备实测确认
-3. **ABR 切换延迟**：`minDurationForQualityIncrease=15s` 的默认值可防止频繁质量震荡
+HDR 路径要同时检查内容、extractor、decoder profile、显示能力与合成路径。`Display.getHdrCapabilities()` 描述显示支持；`MediaCodecInfo.CodecCapabilities.profileLevels` 与 `isFormatSupported()` 用于检查 decoder；HDR10 静态元数据、HDR10+ 动态元数据及 Dolby Vision 数据还要沿 extractor、codec 与 surface 传递。
 
-### 信息源
+Tone mapping 可能发生在 HWC、SurfaceFlinger 的 RenderEngine、应用 shader 或厂商显示管线。HDR layer 与 SDR UI 混合时，系统还会处理 SDR white point 和 headroom。由此不能把 HDR 播放的额外开销固定归到 GPU。Perfetto 中应对比 layer composition、GPU/HWC 工作、显示模式切换与 frame timeline；画面错误则同时核对 metadata 和色彩空间。
 
-> [已验证：android-16.0.0_r1 + androidx/media release] 以下路径锚点已确认可访问：
+Android 17 / API 37 引入 Eclipsa video 的平台级播放与采集支持，格式基于 SMPTE ST 2094-50 动态元数据。Media3 ExoPlayer 能解析并应用相应 metadata；Camera2 采集侧使用兼容的 dynamic range profile。性能测试仍要区分硬件加速映射与软件/GPU 路径，不能因为 API 可用就推断所有显示都具有相同开销。
 
-| 来源 | 类型 |
-|------|------|
-| `frameworks/av/media/codec2/sfplugin/CCodec.cpp` | 一手（AOSP android-16.0.0_r1） |
-| `frameworks/av/media/codec2/core/include/C2Config.h` | 一手（AOSP android-16.0.0_r1） |
-| `frameworks/av/media/libstagefright/omx/OMXNodeInstance.cpp` | 一手（AOSP android-16.0.0_r1） |
-| `androidx/media/blob/release/libraries/exoplayer/.../AdaptiveTrackSelection.java` / `DefaultBandwidthMeter.java` | 一手（GitHub androidx/media release） |
-| `hardware/interfaces/audio/common/7.0/types.hal` | 一手（AOSP android-16.0.0_r1） |
+## Media3 1.10.1：ABR、缓冲、调度与预加载
+
+### 先固定库版本与线程模型
+
+截至 2026-07-30，Media3 稳定版是 1.10.1。本章不把 1.11.0 的候选版行为写进稳定基线。播放器、renderer、track selector、load control 与 analytics 都可能在版本升级中改变默认值，性能报告应记录完整 artifact 版本。
+
+`ExoPlayer` 的公开调用受 application Looper 约束。跨线程直接访问 player 会抛出 wrong-thread `IllegalStateException`。网络加载、codec callback 和渲染各有内部线程，应用侧 listener 也要避免在 application Looper 上执行长任务。
+
+### ABR 决策要同时看带宽和 buffer
+
+`DefaultBandwidthMeter` 产生带宽估计，`AdaptiveTrackSelection.updateSelectedTrack()` 结合估计带宽、播放速度、当前 buffer、live edge、可用轨道和已排队 chunk 选择格式。`DefaultTrackSelector` 还会应用分辨率、bitrate、MIME、显示大小、decoder 支持和应用 override。
+
+Media3 1.10.1 的 `AdaptiveTrackSelection` 默认值如下：
+
+| 常量 | 1.10.1 值 | 作用 |
+| --- | --- | --- |
+| `DEFAULT_BANDWIDTH_FRACTION` | 0.7 | 只把估算带宽的一部分用于选轨，给估算误差留余量 |
+| `DEFAULT_MIN_DURATION_FOR_QUALITY_INCREASE_MS` | 10,000 | 升档通常要求的最小 buffer |
+| `DEFAULT_MAX_DURATION_FOR_QUALITY_DECREASE_MS` | 25,000 | 降档判断使用的最大 buffer 阈值 |
+| `DEFAULT_MIN_DURATION_TO_RETAIN_AFTER_DISCARD_MS` | 25,000 | 为加快升档而丢弃旧 chunk 时至少保留的时长 |
+
+这些常量是算法 guard，不构成“10 秒升档、25 秒降档”的时间表。chunk 边界、live window、播放速度、当前格式、blacklist 与带宽估计都会改变决策。优化 ABR 时要同时记录 selected format、bitrate estimate、buffered duration、load time、rebuffer 和 dropped frames。
+
+### LoadControl 还有字节阈值
+
+Media3 1.10.1 的远程播放默认值为 `minBufferMs=50,000`、`maxBufferMs=50,000`、`bufferForPlaybackMs=1,000`、`bufferForPlaybackAfterRebufferMs=2,000`。`DEFAULT_PRIORITIZE_TIME_OVER_SIZE_THRESHOLDS=false`，player 还会依据 renderer 计算 target buffer bytes；达到字节目标后，实际 buffer 不一定增长到 50 秒。
+
+短视频把 start threshold 调小，可能缩短点击到播放，也可能增加弱网下的二次 buffering。长视频把 buffer 调大，会增加内存、网络预取和用户未观看流量。调整时保持 CDN、segment duration、码率梯度和网络模型一致，分别报告首帧、rebuffer ratio、平均码率、峰值内存与流量浪费。
+
+### 动态调度不能脱离版本讨论
+
+1.10.1 的 `experimentalSetDynamicSchedulingEnabled(true)` 是实验性 opt-in，该版本默认关闭。它让 playback loop 尽量只在 renderer 可推进时唤醒，目标是减少无效轮询；自定义 `AudioSink` 还要提供可靠的 buffer duration 查询。实验 API 的默认值与名称可能在后续版本变化，升级后需重新查 API/source 并测 CPU wakeup、音频稳定性和播放状态切换。
+
+### 预加载优先于无界 Player 池
+
+Feed 场景需要缩短切换等待，可以用 `DefaultPreloadManager` 按当前 item 距离预取 source、选轨或加载指定时长。它把预加载量显式化，比同时 prepare 多个完整 Player 更容易控制网络、内存和 codec 资源。
+
+MediaCodec 的 `getMaxSupportedInstances()` 只是并发上限提示，运行时可用实例还受分辨率、codec、secure session、其他应用与内存压力影响。Player 池若必须存在，应设置很小的上限，离屏 item 及时解绑 Surface，并记录 codec 创建失败与内存水位。维护多个 active decoder 只为“预热”会在低端设备上适得其反。
+
+Media3 还提供实验性的 secondary `MediaCodecVideoRenderer` prewarming，当前 API 要求 Android 14 / API 34+，默认关闭。它减少连续 media item 的 renderer 切换等待，却会额外占用 codec 资源。应与普通 preload、单 Player 复用和小型 Player 池分别做 A/B，而后选择目标设备上稳定的一种。
+
+### 用 Analytics 先划分网络、decoder 和 renderer
+
+在抓系统 trace 前，播放器至少记录：
+
+- prepare、play request、first sample 与 first rendered frame 的时刻；
+- decoder name、hardware acceleration、初始化耗时与 codec error；
+- selected track、bandwidth estimate、load duration 与 response bytes；
+- playback state、rebuffer 次数和时长；
+- dropped video frames、video size、audio underrun；
+- Surface 创建、替换、销毁和 player release。
+
+`AnalyticsListener`、`EventLogger` 与 `PlaybackStatsListener` 可以提供其中大部分事件；first sample 和 Surface 生命周期可用应用 trace 补齐。业务埋点要使用单调时钟，并给同一次播放分配 session ID，之后才能和 Perfetto 时间轴对齐。
+
+## AudioFlinger、AAudio 与 MMAP
+
+### 两条常见输出路径
+
+Android 17 中，AudioFlinger 位于 `audioserver`，源码锚点是 [`frameworks/av/services/audioflinger/`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/audioflinger/)。应用的 `AudioTrack` 或 AAudio legacy path 把 PCM 交给 AudioFlinger thread，再经 Audio HAL、DSP 和驱动输出。
+
+AudioFlinger 会根据设备、format、sample rate、channel mask、effect、flag 和共享状态选择 normal、fast、direct、offload 等路径。请求 `PERFORMANCE_MODE_LOW_LATENCY` 或 fast flag 只是意图；sample rate 转换、格式转换、音效链或资源冲突都可能让流改走别的 thread。用 `dumpsys media.audio_flinger` 检查 stream 与 thread 的当前归属。
+
+### AAudio 与 MMAP 边界
+
+AAudio 在 Android 8.0 / API 26 提供 native C 音频 API。Android 8.1 增加 MMAP/NOIRQ 低延迟路径：
+
+| 模式 | 数据路径 | 特征 |
+| --- | --- | --- |
+| MMAP EXCLUSIVE | 应用与 ALSA driver 共享映射 buffer，绕过 AudioFlinger mixer | 延迟潜力最低，设备与资源条件严格 |
+| MMAP SHARED | 映射 buffer 由 audioserver 中的 mixer 协调 | 支持共享，仍有 mixer 工作 |
+| legacy | 经 AudioFlinger 常规队列 | 兼容面最广，可在 MMAP 不可用时回退 |
+
+请求 `EXCLUSIVE` 后要读取打开结果，不能假定成功。设备可能只支持 SHARED，或完全回退 legacy。AOSP 提供 `AAudioStream_isMMapUsed()` 测试接口帮助 OEM/userdebug 验证路径；应用侧更常借助 Oboe、stream 属性和 AudioFlinger dump 判断。
+
+### 低延迟回调的约束
+
+Google 面向应用开发者推荐 Oboe：Android 8.1+ 走 AAudio，旧平台可回退 OpenSL ES。低延迟流请求 `PerformanceMode::LowLatency` 与 `SharingMode::Exclusive`，使用设备原生 sample rate 和合适的 frames-per-burst。
+
+音频 data callback 中不要分配内存、读写文件、等待 mutex、调用可能阻塞的 binder API 或执行无界计算。控制线程通过无锁队列或固定大小 ring buffer 交换参数；回调只消费/生产当前 burst。输出 buffer 耗尽会产生 underrun，输入消费不及时会产生 overrun。
+
+端到端音频延迟由这些项相加：
+
+- 应用 ring buffer 与 callback 调度；
+- AudioFlinger/mixer 或 MMAP queue；
+- sample-rate conversion、effect 与 DSP 算法延迟；
+- HAL、driver 与硬件 FIFO；
+- speaker、USB、Bluetooth/LE Audio 等输出 transport。
+
+任何统一的“Fast Mixer 为 2～4 ms”“端到端低于 10 ms”都会越过设备与测量口径。音乐与通话应用应使用 loopback 测 round-trip latency；播放器还要分别记录 output latency、underrun 和 A/V drift。
+
+## Camera 到 encoder：避免应用 CPU 读回
+
+Camera2/CameraX 录制可把 `MediaCodec.createInputSurface()` 返回的 Surface 作为 camera session target。相机 producer 把图形 buffer 交给 encoder consumer，应用不需要把 YUV 读入 CPU `ByteBuffer` 再写回 codec。这依然是 copy-avoiding 描述；ISP、颜色转换、缩放和厂商 buffer 管理可能包含内部复制。
+
+若要做水印、滤镜或几何变换，常见路径变为：
+
+`Camera Surface → GPU texture/effect pass → MediaCodec input Surface`
+
+GPU pass 会增加命令、buffer 和 fence 依赖，增加多少延迟取决于 pipeline depth 与呈现策略，不能固定写成“一帧”。性能验收要同时测 camera timestamp、encoder input/output PTS、GPU duration、encode latency 与 dropped frame；多路相机、编码和解码还要考虑 codec 并发上限。
+
+## Perfetto：从可用 trace 开始
+
+### 抓取配置
+
+Android 17 的 `atrace.cpp` 仍定义 `audio`、`video`、`camera`、`gfx` 与 `view` 分类，但厂商 codec 不一定暴露相同 slice。抓取前先列出目标设备支持的 category，再用 Perfetto 官方脚本同时记录调度和应用 trace。
+
+这组命令用于采集 20 秒媒体 trace：
+
+```bash
+adb shell atrace --list_categories
+
+python3 record_android_trace \
+  -o media.perfetto-trace \
+  -t 20s \
+  -b 64mb \
+  -a com.example.player \
+  sched freq idle gfx view audio video camera
+```
+
+`sched/freq/idle` 解释线程为什么没及时运行，`gfx/view` 覆盖应用与 SurfaceFlinger 图形事件，`audio/video/camera` 打开平台媒体标记，`-a` 打开目标应用的 `android.os.Trace` 事件。目标设备没有某个 category 时删掉它，不要虚构 `media` 或 `codec` 分类。
+
+trace 前后再保存服务状态。这组命令用于确认 codec、AudioFlinger 和 layer 配置：
+
+```bash
+adb shell dumpsys media.codec > media-codec.txt
+adb shell dumpsys media.audio_flinger > audio-flinger.txt
+adb shell dumpsys SurfaceFlinger > surface-flinger.txt
+```
+
+dump 内容会包含设备和厂商信息，分享前要做隐私检查。`dumpsys` 是状态快照，Perfetto 是时间线；两者要对应同一次复现。
+
+### SQL 先枚举 slice，再写设备专用查询
+
+旧式查询经常假定 slice 名一定包含 `MediaCodec::queueInputBuffer`，还假定 `arg_set_id` 里存在 `buffer_id`、`size`。平台 tag、Media3 版本和厂商 instrumentation 都会改变名称与参数。Perfetto 当前推荐先引入 `slices.with_context`，枚举本次 trace 中可见的媒体 slice：
+
+```sql
+INCLUDE PERFETTO MODULE slices.with_context;
+
+SELECT
+  process_name,
+  thread_name,
+  name,
+  COUNT(*) AS occurrences,
+  ROUND(AVG(dur) / 1e6, 3) AS avg_ms,
+  ROUND(MAX(dur) / 1e6, 3) AS max_ms
+FROM thread_or_process_slice
+WHERE
+  name GLOB '*Codec*'
+  OR name GLOB '*Audio*'
+  OR name GLOB '*Buffer*'
+  OR name GLOB '*Frame*'
+GROUP BY process_name, thread_name, name
+ORDER BY max_ms DESC;
+```
+
+结果用于发现名称和线程，不能直接把包含 `decode` 的 slice 当作单帧硬件解码耗时。找到目标 slice 后，再检查其嵌套关系、`args` 表与相邻 sched/thread_state；只有本次 trace 确认存在参数时才使用 `EXTRACT_ARG()`。
+
+### 读 trace 的顺序
+
+1. 在时间轴标出 play request、buffering、first frame、seek、underrun 等应用事件。
+2. 对齐网络 load、extract/DRM、codec init 与 output callback，判断数据是否及时到 decoder。
+3. 对齐 output release、BufferQueue、fence、FrameTimeline 与 SurfaceFlinger composition。
+4. 检查相关线程的 running/runnable/sleeping 状态、唤醒者、CPU 频率与 thermal counter。
+5. 音频问题再看 AudioFlinger thread、callback 周期、underrun 与输出设备切换。
+6. 只有在区间已经收窄后，才用 vendor codec/HAL trace 或 userdebug 日志继续深入。
+
+视频内容帧率可能是 24/30 fps，显示刷新率可能是 60/120 Hz。不能用“每个 vsync 都必须有新视频帧”的规则判断掉帧；应以 PTS、播放器 dropped-frame 事件和目标 cadence 为准。
+
+## 症状到证据的映射
+
+| 症状 | 先确认 | 常见归属 | 不应直接下的结论 |
+| --- | --- | --- | --- |
+| 首帧慢 | manifest/DRM、first sample、codec init、first output、first present | 网络、DRM、decoder 初始化、Surface 未就绪 | “MediaCodec 创建一定是主因” |
+| 播放中 buffering | load duration、带宽估计、buffered duration、selected bitrate | CDN、弱网、ABR、LoadControl | “视频 decoder 掉帧” |
+| decoder 有 output 但画面晚 | output release、Surface 生命周期、fence、FrameTimeline | 应用调度、BufferQueue、GPU/HWC、显示 | “硬解太慢” |
+| dropped frames 增多 | late frame、CPU/GPU、composition、刷新率 | renderer、调度、GPU/HWC、热限制 | “降低码率就会修复” |
+| A/V drift | audio clock、PTS discontinuity、seek、输出路由 | timestamp 映射、renderer、设备切换 | “AudioTimestamp 不准” |
+| 音频 underrun | callback 周期、thread_state、mixer thread、buffer size | 回调阻塞、调度、buffer、HAL | “GC 是唯一原因” |
+| 功耗偏高 | codec name、hardware acceleration、GPU composition、wakeups | 软解、TextureView/特效、轮询、transport | “tunneling 在所有手机都省电” |
+
+## 并发与资源限制
+
+`MediaCodecInfo.CodecCapabilities.getMaxSupportedInstances()` 返回的是上限提示。当前能创建多少实例还取决于 MIME/profile、分辨率、帧率、secure/non-secure、encoder/decoder 组合、内存和其他进程。应用必须处理 `CodecException` 与资源回收，不能用一个固定 Player 池大小覆盖所有设备。
+
+遇到创建慢或失败时：
+
+- 记录 codec name、API 29+ 的 `isHardwareAccelerated()`、profile/level 与 format；
+- 对比单实例和并发实例基线；
+- 检查离屏 Player 是否仍持有 Surface、decoder 或 DRM session；
+- 观察 `dumpsys media.codec`、内存水位和系统中其他媒体会话；
+- 降低预加载阶段，优先只准备 source/track，避免提前占用 decoder。
+
+## 版本边界
+
+| 版本 | 与本章相关的变化 |
+| --- | --- |
+| Android 8.0 / API 26 | AAudio native API |
+| Android 8.1 / API 27 | AAudio MMAP/NOIRQ 低延迟路径 |
+| Android 10 / API 29 | updatable Media/Media Codec 模块与 Codec2 迁移阶段 |
+| Android 11 / API 30 | `KEY_LOW_LATENCY` / `FEATURE_LowLatency`；Codec2 tunneled playback 支持 |
+| Android 15 / API 35 | dav1d AV1 software decoder 可按名称 opt-in，并可通过 Mainline 回溯到部分 Android 11+ 设备 |
+| Android 17 / API 37 | Eclipsa video 平台级播放与采集支持 |
+| Media3 1.10.1 | 本章 ABR、LoadControl、动态调度与预加载的稳定库锚点 |
+
+平台版本不能推导 codec 是否硬件加速、MMAP 是否可用、tunneling 是否稳定或 HDR 是否由 HWC 处理。能力查询、目标设备复现和端到端测量仍是验收依据。
+
+## Android 17 源码锚点
+
+- [`frameworks/av android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/)：MediaCodec、Codec2、AudioFlinger 与 AAudio 主仓。
+- [`MediaCodec.cpp`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libstagefright/MediaCodec.cpp)：framework native codec 状态机与组件桥接。
+- [`CCodec.cpp`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/sfplugin/CCodec.cpp)：Codec2 framework adapter、Surface 与 tunneled 配置。
+- [`AudioFlinger`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/audioflinger/)：mixer、track、thread 与输出管理。
+- [`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp) 与 [`BufferQueueConsumer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp)：图形 buffer 所有权与 fence 流转。
+- [`atrace.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/atrace/atrace.cpp)：Android 17 可用的系统 atrace category 定义。
+
+本章没有依赖某个 Linux scheduler 或驱动实现的固定时延结论。涉及 fence driver、DMA-BUF、音频 ALSA 或 codec driver 的设备定向分析时，内核源码统一以 `android17-6.18-2026-06_r6` 为锚点。
+
+## 参考资料
+
+### Android 与 AOSP 官方文档
+
+- [MediaCodec API](https://developer.android.com/reference/android/media/MediaCodec)
+- [MediaCodec low-latency decoding](https://source.android.com/docs/core/media/low-latency-media)
+- [Multimedia tunneling](https://source.android.com/docs/devices/tv/multimedia-tunneling)
+- [Updatable media modules](https://source.android.com/docs/core/media/media-modules)
+- [BufferQueue and Gralloc](https://source.android.com/docs/core/graphics/arch-bq-gralloc)
+- [Synchronization framework](https://source.android.com/docs/core/graphics/sync)
+- [HDR video playback](https://source.android.com/docs/core/display/hdr)
+- [Eclipsa video on Android 17](https://developer.android.com/media/platform/integrate-eclipsa-video)
+- [Android 15 dav1d AV1 decoder](https://developer.android.com/about/versions/15/features)
+- [AAudio and MMAP](https://source.android.com/docs/core/audio/aaudio)
+- [Audio latency for app developers](https://source.android.com/docs/core/audio/latency/app)
+- [Audio debugging](https://source.android.com/docs/core/audio/debugging)
+
+### Media3 1.10.1
+
+- [Media3 release notes](https://developer.android.com/jetpack/androidx/releases/media3)
+- [AdaptiveTrackSelection API](https://developer.android.com/reference/androidx/media3/exoplayer/trackselection/AdaptiveTrackSelection)
+- [DefaultLoadControl API](https://developer.android.com/reference/androidx/media3/exoplayer/DefaultLoadControl)
+- [DefaultPreloadManager guide](https://developer.android.com/media/media3/exoplayer/preloading-media/preloadmanager)
+- [AdaptiveTrackSelection 1.10.1 source](https://github.com/androidx/media/blob/1.10.1/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/trackselection/AdaptiveTrackSelection.java)
+- [DefaultLoadControl 1.10.1 source](https://github.com/androidx/media/blob/1.10.1/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/DefaultLoadControl.java)
+- [ExoPlayer 1.10.1 source](https://github.com/androidx/media/blob/1.10.1/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/ExoPlayer.java)
+- [DefaultRenderersFactory 1.10.1 source](https://github.com/androidx/media/blob/1.10.1/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/DefaultRenderersFactory.java)
+
+### Perfetto
+
+- [Record Android system traces](https://perfetto.dev/docs/getting-started/system-tracing)
+- [ATrace data source](https://perfetto.dev/docs/data-sources/atrace)
+- [PerfettoSQL with context](https://perfetto.dev/docs/analysis/perfetto-sql-getting-started)
+
+### 交叉章节
+
+- [GraphicBuffer 与 BufferQueue 内存复用](../../part1-fundamentals/ch02-rendering/32-graphic-buffer-memory-pool.md)
+- [SurfaceView 与 TextureView 选型](../../part5-app/ch22-rendering-practice/42-surfaceview-textureview-rendering-performance.md)
+- [Media3 视频播放管线实战](../../part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md)
