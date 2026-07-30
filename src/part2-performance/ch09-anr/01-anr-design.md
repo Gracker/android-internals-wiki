@@ -106,547 +106,388 @@ task2b_verifier_notes: "Task9 idle-audit auto-fix on 2026-07-11 set task6_state:
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么要了解 ANR 的设计思想
+## 从“用户等了多久”理解 ANR
 
-当用户点击屏幕后等了几秒钟，屏幕没有任何反应——没有动画，没有反馈，就像手机死了一样。这种体验会让用户焦虑，进而愤怒，甚至卸载你的 App。Android 设计者很早就明白：一个无响应的 App，会让用户对整个系统产生怀疑。
+用户不知道应用内部正在做数据库迁移、Binder 调用还是图片解码。他只知道触摸后没有反馈、页面停住了，或刚打开的界面迟迟不能接收按键。Android 必须在有限时间内结束这种失控状态，同时留下足够证据供开发者追查。
 
-ANR（Application Not Responding）机制就是 Android 对这个问题的系统性回答。它的角色是运行时防线，而非事后诊断工具：在应用失去响应能力的瞬间介入，给用户选择权——继续等待，或者杀掉它。
+ANR（Application Not Responding）因此承担三项工作：
 
-如果把全书的主线连起来看，ANR 属于广义流畅性里最极端的一层：`7.1` 讲的是用户把“卡顿、响应慢、ANR”统称为卡；`8.1` 讲的是系统还能在多大程度上及时反馈；到了 ANR，这条反馈链已经断到系统必须介入。所以 ANR 设计思想是一篇“体验保护机制”章节，异常处理只是其中一层。
+1. 给输入、广播、服务等关键工作设定响应期限。
+2. 期限耗尽时，从系统进程侧记录原因并采集现场。
+3. 依据进程重要性、可见性和系统策略，终止进程或安排无响应界面。
 
-理解 ANR 的设计思想，直接影响你分析 ANR 问题的思路。不了解系统"为什么这样设计"，拿到 traces.txt 就只看堆栈——而 ANR trace 的堆栈经常是"替罪羊"，真正导致超时的代码可能早就跑完了。
+这里有两个容易混淆的边界。
 
-## ANR 的设计初衷：站在用户和系统之间
+- ANR 约束的是系统正在等待的工作。应用中一次耗时操作若没有拖过任何受监控期限，系统不会仅凭“耗时很长”生成 ANR。
+- 主线程阻塞是高频原因，但检测对象不只是一条主线程。广播可以交给指定 `Handler`，服务问题可能牵涉 Binder 线程、锁持有者或远端进程；系统判定依据是对应工作没有按期完成。
 
-Android 设计 ANR 机制的出发点可以用一句话概括：**用户不应该被一个失控的 App 扣为人质。**
+所以，分析 ANR 时应问“哪个系统期限耗尽、系统在等什么完成信号”，再问“哪条线程阻断了完成条件”。直接从主线程栈猜业务根因，容易把采样时刻的现场当成完整过程。
 
-当应用的主线程被阻塞时，它无法处理任何用户输入——触摸事件、按键事件都被丢弃在消息队列中等待。如果系统不介入，用户面对的就是一块冻结的屏幕，只能强制重启手机来摆脱。
+## Android 17 的整体分层
 
-ANR 机制在这个场景中介入的方式是：设置一个超时计时器，如果在规定时间内应用没有完成某个关键操作，系统就会认为它"失去了响应能力"，然后弹出对话框让用户决定下一步。这套设计有三层：
+以 `android-17.0.0_r1` 为锚点，应用 ANR 可拆成四层。
 
-**第一层，ANR 是系统对应用的强制约束，不是应用自愿配合的机制。** 超时检测在 system_server 中运行，与应用自身的代码完全隔离。即使应用的主线程已经死锁，system_server 仍然能检测到超时并介入。这种设计保证了即使应用开发者完全不考虑响应性，系统也有兜底方案。
+| 层次 | 代表代码 | 职责 |
+|---|---|---|
+| 检测层 | `InputDispatcher`、`BroadcastQueueImpl`、`ActiveServices`、`ContentProviderHelper` | 建立期限，接收完成信号，发现超时 |
+| 语义层 | `TimeoutRecord` | 保存超时类型、原因、触发时刻和延迟采集状态 |
+| 编排层 | `AnrHelper` | 去重、尽早抓目标进程栈、排队处理 |
+| 记录与处置层 | `ProcessErrorStateRecord` | 写日志和统计、生成 trace、提交 DropBox，并进入杀进程或界面策略 |
 
-**第二层，ANR 保护的是"用户可感知的响应性"，不是"代码执行正确性"。** 系统不关心你的业务逻辑是否正确，它关心的是用户能否在合理时间内得到反馈。这就解释了为什么 ANR 超时阈值按组件类型区分：Activity 的输入事件要求 5 秒内响应（因为用户在等屏幕反馈），而后台 Service 给了 200 秒（因为用户通常看不到它在做什么）。
+这种分层解决了两个系统级问题。检测器最接近业务协议，能写出“广播未完成”或“输入窗口未响应”这类具体原因；重型采集放在统一路径，避免每种组件各自实现一套堆栈、CPU 和 DropBox 逻辑。
 
-**第三层，ANR 是"紧急刹车"，不该成为常规流程的一部分。** Google 明确将 ANR 率作为应用质量的核心指标之一，ANR 过高的应用会在 Google Play 中被降权。好的应用应该"永远不会触发 ANR"，而不是"触发了 ANR 之后能优雅处理"。
+### 检测器关注完成协议
 
-## ANR 机制的核心流程
+不同检测器等待的完成信号不同：
 
-ANR 机制可以拆成四个阶段：注册超时、主线程处理、超时触发、弹窗或杀进程。
+| 场景 | 系统开始等待 | 系统认定完成 |
+|---|---|---|
+| 输入派发 | 事件进入目标连接并等待确认，或系统等待焦点窗口出现 | 目标连接确认已处理事件，或焦点条件满足 |
+| 广播接收 | 有序或受跟踪的 receiver 开始交付 | receiver 返回，或 `goAsync()` 得到的 `PendingResult` 调用 `finish()` |
+| Service 执行 | 受监控的 Service 回调开始 | 应用通过框架协议报告对应执行完成 |
+| 前台服务启动 | `startForegroundService()` 建立前台化期限 | 服务按要求调用 `startForeground()` |
+| ContentProvider | 系统侧的 provider 调用监控被触发 | provider 调用返回 |
 
-### 第一阶段：注册超时
+输入派发的 AOSP 默认超时是 5 秒，设备实现可受 `ro.hw_timeout_multiplier` 和窗口级配置影响。广播、Service 等期限还会随前后台状态、目标 SDK 与组件类型变化，具体数值见 [9.2 ANR 类型与触发条件](02-anr-types.md)。把所有 ANR 统一记成“主线程超过 5 秒”会掩盖检测器差异。
 
-当某个需要应用响应的操作开始时，system_server 会在后台线程上设置延迟消息。以 BroadcastReceiver 为例，Android 13 及以下常用排查口径是前台广播 10 秒、后台广播 60 秒。Android 14/15 的现代广播队列实现是 `BroadcastQueueModernImpl`；Android 16/17 对应实现改为 `BroadcastQueueImpl`，并通过 `AnrTimer` 承接计时。下面的 soft / hard timeout 伪代码只锚定 `android-14.0.0_r1` 的 `BroadcastQueueModernImpl`：
+### `TimeoutRecord` 统一表达超时
 
-- **soft timeout**：前台广播 10 秒、后台广播 60 秒到期后，系统先检查接收进程的 CPU 调度延迟。如果进程拿到了足够的 CPU 时间，soft timeout 直接升级为 ANR
-- **hard timeout**：如果进程因 CPU starvation（系统负载高、进程刚拉起、调度优先级低）还没来得及执行 `onReceive()`，系统会追加一个 hard timeout 窗口。前台广播 hard deadline 约 20 秒，后台广播约 120 秒。hard timeout 的实际计算依赖于 `app.getCpuDelayTime()`——它衡量的是进程从被调度到实际获得 CPU 的时间差
-
-```java
-// 概念流程（简化）
-// frameworks/base/services/core/java/com/android/server/am/BroadcastQueue.java
-// frameworks/base/services/core/java/com/android/server/am/BroadcastQueueModernImpl.java
-// @ AOSP android-14.0.0_r1
-
-// Android 13 及以下：分发广播时设置固定 timeout
-scheduleBroadcastsDispatchAndCheckTimeout(r, BROADCAST_FG_TIMEOUT);
-
-// Android 14/15 Modern Broadcast Queue：两级超时
-// 第一级：soft timeout（fg=10s, bg=60s）
-//   dispatchReceivers() → scheduleDeliveryTimeoutMessageLocked(MSG_DELIVERY_TIMEOUT_SOFT)
-//   到期后 deliveryTimeoutSoftLocked() 检查 app.getCpuDelayTime()
-//     → CPU 延迟低 = 进程有足够 CPU → 判定 ANR
-//     → CPU 延迟高 = 进程被饿死 → 进入第二级
-// 第二级：hard timeout
-//   scheduleDeliveryTimeoutMessageLocked(MSG_DELIVERY_TIMEOUT_HARD)
-//   hard deadline = soft_timeout + 剩余补偿窗口（fg≈20s total, bg≈120s total）
-//   到期后无论 CPU 延迟如何，直接判定 ANR
-```
-
-两级超时设计的目的是区分「App 自己的 onReceive() 执行太慢」和「系统没给 App 足够的 CPU 时间」。排查 Android 14/15 设备的 Broadcast ANR 时，event log 中能看到 soft timeout 还是 hard timeout 触发的标记；排查 Android 16/17 时应从 `BroadcastQueueImpl` 和 `com.android.server.utils.AnrTimer` 追踪对应计时路径。
-
-### 第二阶段：主线程处理
-
-此时应用的主线程正在执行 `onReceive()`（或其他超时类型的对应方法）。如果主线程当前没有被其他任务阻塞，`onReceive()` 正常执行完毕，AMS 收到完成通知，取消超时消息，流程结束。
-
-但如果主线程正在忙于其他事情——比如前面有一个耗时 3 秒的数据库写入操作正在执行——那么 `onReceive()` 就得排队等待。如果等待时间超过了超时阈值，计时器就会到期。
-
-不同组件向 system_server 报告"操作已完成"的机制各不相同：
-
-- **BroadcastReceiver**：`onReceive()` 执行完毕后，`ActivityThread.handleReceiver()` 在主线程上直接调用 `IActivityManager.finishReceiver()` 通知 AMS——这是主线程上的同步 Binder 调用，不是异步 Binder 线程调用
-- **Service**：`onStartCommand()` 或 `onCreate()` 执行完毕后，`ActivityThread.handleServiceArgs()` 在主线程上通过 Binder 回调通知 AMS
-- **Input 事件**：应用通过 `InputConsumer.finishInputEvent()` 告知 InputDispatcher 事件已消费
-- **ContentProvider**：发布完成后通过 `IActivityManager.publishContentProviders()` 回调 AMS
-
-BroadcastReceiver 和 Service 的完成通知都在主线程上发起，与组件的执行同属一个线程。主线程不需要额外等待 AMS 确认——AMS 的超时计时器在 system_server 的后台线程独立运行，Binder 调用发出即视为完成。
-
-超时检测和应用执行是异步关系。超时计时器运行在 system_server 的后台线程上，它不会检查应用主线程"在做什么"，只检查"结果有没有回来"。如果超时检测同步调用应用，应用自身的问题可能连检测机制一起拖死。
-
-### 第三阶段：超时触发
-
-当延迟消息到期时，system_server 进入 ANR 处理流程。Android 11 起，这个入口由 `AnrHelper.appNotResponding()` 承接；更早版本会散在 `ActivityManagerService`、`BroadcastQueue` 或对应组件管理类中处理。Android 14 仍沿用 `AnrHelper`，并通过内部 `AnrRecord` 与 `AnrConsumerThread` 排队执行。
+Android 17 的检测器会创建相应的 `TimeoutRecord`。下面的源码节选用于说明语义对象包含什么，省略了无关工厂方法：
 
 ```java
-// 概念流程（简化）
-// frameworks/base/services/core/java/com/android/server/am/AnrHelper.java
-// @ AOSP android-14.0.0_r1
-
-void appNotResponding(ProcessRecord anrProcess, TimeoutRecord timeoutRecord) {
-    // 1. 把一次 ANR 请求封装成 AnrRecord
-    synchronized (mAnrRecords) {
-        mAnrRecords.add(new AnrRecord(anrProcess, activityShortComponentName, aInfo,
-                parentShortComponentName, parentProcess, aboveSystem, timeoutRecord,
-                isContinuousAnr, firstPidDumpPromise));
-    }
-    // 2. 由独立的 AnrConsumerThread 顺序处理，避免阻塞 AMS 主线程
-    startAnrConsumerIfNeeded();
+private TimeoutRecord(int kind, String reason, long endUptimeMillis,
+        boolean endTakenBeforeLocks) {
+    mKind = kind;
+    mReason = reason;
+    mEndUptimeMillis = endUptimeMillis;
+    mEndTakenBeforeLocks = endTakenBeforeLocks;
+    mLatencyTracker = new AnrLatencyTracker(kind, endUptimeMillis);
 }
 
-private final class AnrRecord {
-    void appNotResponding(boolean onlyDumpSelf) {
-        // 真实的 dump、event log、dropbox、弹窗/杀进程决策在这里继续展开
-        mApp.mErrorState.appNotResponding(mActivityShortComponentName, mAppInfo,
-                mParentShortComponentName, mParentProcess, mAboveSystem,
-                mTimeoutRecord, mAuxiliaryTaskExecutor, onlyDumpSelf,
-                mIsContinuousAnr, mFirstPidFilePromise);
-    }
+public static TimeoutRecord forInputDispatchWindowUnresponsive(String reason) {
+    return endingNow(TimeoutKind.INPUT_DISPATCH_WINDOW_UNRESPONSIVE, reason);
+}
+
+public static TimeoutRecord forContentProvider(String reason) {
+    return endingApproximatelyNow(TimeoutKind.CONTENT_PROVIDER, reason);
 }
 ```
 
-注意 `startAnrConsumerIfNeeded()`——ANR 处理被放到了单独的 `AnrConsumerThread` 中执行，目标是避免 ANR 处理逻辑阻塞 AMS 主线程。系统处理一个应用无响应事件时，AMS 仍要继续服务其他进程，ANR dump 不能把调度线程拖住。
+`mEndUptimeMillis` 记录检测器发现超时的系统运行时间，`mEndTakenBeforeLocks` 标明这个时间点是否在获取昂贵锁之前采集。后续 ANR 处理即使排队，这两个字段仍能把“超时发生时间”和“报告处理时间”分开。Android 17 还会把内部类型映射为公开的 `AnrTypes`，用于更精细的退出记录和预警信息。
 
-**连续 ANR 抑制。** 当同一个 App 短时间内反复触发 ANR 时，系统不会对每一次都执行完整的 dump + 弹窗流程。`AnrHelper` 内部通过 `isContinuousAnr` 标记和 `firstPidDumpPromise` 机制，对连续 ANR 做合并处理：第一次 ANR 正常 dump 全量堆栈，后续连续 ANR 可能只 dump 自身进程（`onlyDumpSelf=true`）或跳过 dump 直接走杀进程逻辑。这个设计有两个目的：避免频繁 SIGQUIT 导致系统 I/O 飙升（dump 一个进程的堆栈可能耗时数百毫秒），以及防止 ANR 处理本身成为系统瓶颈。排查时要注意：如果 traces.txt 中只看到一个 ANR 记录但 event log 显示多次 `am_anr`，可能就是连续 ANR 被合并了。
+## 四阶段流程：注册、执行、超时、处置
 
-### 第四阶段：弹窗或杀进程
+大纲中的“注册超时 → 主线程处理 → 超时触发 → 弹窗/杀进程”适合作为记忆框架。源码层面需要给每个箭头补上条件。
 
-ANR 触发后，系统的处理分为两种情况：
+### 阶段一：注册超时
 
-**前台 ANR（用户可见的应用）**：系统会向用户弹出"应用无响应"对话框，用户可以选择"等待"或"关闭应用"。在对话框出现之前，系统会先收集各种诊断信息。
+检测器在工作开始时设置期限。Android 17 的 `BroadcastQueueImpl`、`ActiveServices` 已使用 `AnrTimer`；输入路径由 native `InputDispatcher` 维护连接等待队列和 ANR 跟踪器。计时器与待处理对象绑定，完成时应取消或丢弃相应计时。
 
-**后台 ANR（用户看不到的应用）**：系统直接杀掉进程，不弹对话框。用户完全无感知，只是下次打开这个 App 时可能发现它已经被系统回收了。
+注册动作通常包含以下信息：
 
-## AMS 中 ANR 的核心代码路径
+- 负责完成工作的进程或窗口；
+- 组件、Intent 或输入目标；
+- 期限开始时间和时长；
+- 到期时可写入报告的原因文本。
 
-概念说完，落到源码。ANR 的代码路径虽然散在多个文件里，但主线很清楚。
+这也解释了为什么应用自建“主线程卡顿监控”不能替代系统 ANR 统计：应用监控能观察 Looper 延迟，却不知道 system_server 正在等待哪一项协议完成，也不能复刻窗口归因和进程策略。
 
-### 入口：不同组件的 ANR 触发点
+### 阶段二：应用执行并报告完成
 
-ANR 的触发点因组件类型而异，但最终都会汇聚到同一个处理流程：
+大部分 Android 组件回调在应用主线程运行，所以主线程 I/O、长计算、同步 Binder、锁竞争和死锁很容易拖过期限。这个阶段仍要关注非主线程参与者：
 
-**Input ANR**（Activity 触摸/按键无响应）：由 `InputDispatcher` 检测。当 InputDispatcher 发现一个输入事件在 5 秒内没有被目标窗口消费时，它会通过 `WindowManagerService` 向 AMS 报告输入超时。路径大致是 `InputDispatcher → InputManagerService(JNI) → WindowManagerService → ActivityManagerService`。
+- 主线程可能正在等待工作线程释放锁；
+- 同步 Binder 的耗时由服务端线程和调度状态决定；
+- `BroadcastReceiver.goAsync()` 把完成点延后到 `PendingResult.finish()`；
+- 使用自定义 `Handler` 的 receiver 可能在另一条 Looper 线程执行；
+- 系统负载或 CPU 调度饥饿会让可运行线程长期拿不到 CPU。
 
-**Service ANR**：由 `ActiveServices` 检测。当 Service 启动或绑定的超时到期时，`ActiveServices.serviceTimeout()` 或 `ActiveServices.serviceForegroundTimeout()` 被调用。
+“回调方法已经 return”也不总等于协议完成。`goAsync()` 是典型例子；前台服务还需完成 `startForeground()` 要求。排查时必须找到检测器对应的完成信号。
 
-**Broadcast ANR**：由 `BroadcastQueue` 检测。`BroadcastQueue.broadcastTimeoutLocked()` 在超时到期时被触发。
+### 阶段三：期限耗尽
 
-**ContentProvider ANR**：由 `ContentProviderHelper`（Android 14+）检测。ContentProvider 发布超时为 10 秒，常量是 `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`（`frameworks/base/core/java/android/content/ContentResolver.java`），值为 `10 * 1000 * Build.HW_TIMEOUT_MULTIPLIER`；AMS 侧通过 `ActivityManagerService.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG` 消息编号触发超时回调。与 Service/Activity ANR 一样是系统级强制约束。`ContentResolver.getType()` 的 MIME 查询是另一条路径：Android 17 对已连接 provider 调用隐藏 Binder `IContentProvider.getTypeAsync()` 并等待 `CONTENT_PROVIDER_TIMEOUT_MILLIS = 3 * 1000 * Build.HW_TIMEOUT_MULTIPLIER`；provider 未直接连接时通过 AMS 的 `getMimeTypeFilterAsync()` 等待 `REMOTE_CONTENT_PROVIDER_TIMEOUT_MILLIS`。`getProviderMimeTypeAsync()` 只属于 Android 12/13 的 AMS 旧命名，不应作为 Android 17 结论。
+计时器到期后，检测器再次核实目标是否仍处于等待状态。工作已完成、进程已退出或对象已被替换时，旧超时可被丢弃。确认超时后，检测器创建 `TimeoutRecord`，再把目标进程交给 AMS。
 
+输入路径还多一层归因。`InputDispatcher` 识别“没有焦点窗口”或“目标连接未确认事件”后，经 `InputManagerCallback` 进入 WMS 的 `AnrController`。`AnrController` 会解析 input token、窗口、Activity 与 PID；焦点请求来自其他窗口时，它也可能把责任归给对应窗口进程。确认目标后，调用 AMS 的 `inputDispatchingTimedOut()`，再进入 `AnrHelper`。
 
-**startForeground() 宽限期**：这条规则约束的是 `Context.startForegroundService()` 之后多久必须调用 `Service.startForeground()`。版本边界要分开记：Android 8.0 是 5 秒；Android 9-12 是 10 秒；Android 13/14/15 的默认值迁到 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS = 30 * 1000`，运行时字段是 `mServiceStartForegroundTimeoutMs`，设备也可通过 DeviceConfig 覆盖。Android 12 的主要变化是超时后常见 `ForegroundServiceDidNotStartInTimeException`；5 秒只对应 Android 8.0 的初始宽限期。
+这段路由表明，日志中的被归因进程由窗口和输入状态共同决定，未必就是用户认为的“前台 Activity 进程”。
 
+### 阶段四：采集并执行策略
 
+进入 AMS 后，系统会先保护诊断现场，再考虑用户界面。Android 17 的常见结果包括：
 
-**InputConnection / IME 输入相关无响应**：不要把它写成 `InputMethodManagerService#onInputEvent` 的 5 秒 timeout。AOSP android-14.0.0_r1 的 `InputMethodManagerService` 中没有这个判定点。IME 和 `InputConnection` 是输入法交互路径的一部分；如果表现为输入事件长期没有完成，最终仍要回到 `InputDispatcher` 的 dispatching timeout、waitQueue 和 `AnrTracker` 机制，由 `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` 处理。排查这类问题时，把 IME Binder 调用、目标应用主线程和 InputDispatcher 超时放在同一条时间线上看。
+- 后台且不具备用户相关性的 silent ANR：采集后直接杀进程；
+- 可感知进程：记录 `NOT_RESPONDING` 状态并向系统 UI Handler 投递无响应界面；
+- Window/Activity 控制器提前处理或要求终止；
+- 调试、Instrumentation、关机、进程已死等状态下跳过或改变处置。
 
+所以，“超时必定弹窗”和“超时必定立刻杀进程”都不成立。对话框是处置分支之一；厂商系统、调试状态、后台 ANR 设置和当前用户状态都会影响用户看到什么。无对话框也不能证明没有发生 ANR。
 
+## AMS 主路径：`AnrHelper`
 
-### 核心：AnrHelper 与 ProcessErrorStateRecord
+`AnrHelper` 的职责是让多个检测器快速交接，把堆栈新鲜度和重型报告成本隔开。
 
-Android 11 起，`AnrHelper` 成为应用 ANR 请求的排队入口。它把一次 ANR 封装成内部 `AnrRecord`，再交给 `AnrConsumerThread` 串行处理。负责收集 trace、写 event log / dropbox、决定弹窗或杀进程的路径，在 `ProcessErrorStateRecord.appNotResponding()` 里继续展开。
+### 先去重
 
-```java
-// frameworks/base/services/core/java/com/android/server/am/AnrHelper.java
-// @ AOSP android-14.0.0_r1
-// 节选后保留核心路径
+Android 17 会拒绝以下无效或重复请求：
 
-class AnrHelper {
-    private final ArrayList<AnrRecord> mAnrRecords = new ArrayList<>();
+- PID 为 0；
+- 同一 PID 正在处理；
+- 同一 PID 正在做早期临时 dump；
+- 同一 PID 已在 ANR 队列中。
 
-    void appNotResponding(ProcessRecord anrProcess, TimeoutRecord timeoutRecord) {
-        synchronized (mAnrRecords) {
-            mAnrRecords.add(new AnrRecord(anrProcess, activityShortComponentName, aInfo,
-                    parentShortComponentName, parentProcess, aboveSystem, timeoutRecord,
-                    isContinuousAnr, firstPidDumpPromise));
-        }
-        startAnrConsumerIfNeeded();
-    }
+这一层避免同一进程同时生成多份昂贵报告。它也意味着日志里“业务层连续卡住多次”和“系统完整处理多次 ANR”不是同一个计数口径。
 
-    private final class AnrConsumerThread extends Thread {
-        public void run() {
-            AnrRecord r;
-            while ((r = next()) != null) {
-                r.appNotResponding(onlyDumpSelf);
-            }
-        }
-    }
+### 尽早保存目标进程栈
 
-    private final class AnrRecord {
-        void appNotResponding(boolean onlyDumpSelf) {
-            mApp.mErrorState.appNotResponding(mActivityShortComponentName, mAppInfo,
-                    mParentShortComponentName, mParentProcess, mAboveSystem,
-                    mTimeoutRecord, mAuxiliaryTaskExecutor, onlyDumpSelf,
-                    mIsContinuousAnr, mFirstPidFilePromise);
-        }
-    }
-}
-```
+完整 ANR 报告可能还要抓 system_server、持久进程、原生守护进程和 CPU 状态。等待这些步骤完成后再抓目标进程，主线程现场可能已经变化。`AnrHelper` 因此把目标 PID 的临时 dump 提交给独立线程池，再把 ANR 记录放入队列。
 
-`mApp.mErrorState` 对应 `ProcessErrorStateRecord`。这条调用会进入 trace 收集、CPU 信息采样、event log、dropbox 和 UI 决策。文章里讨论“ANR 处理核心”时，应把 `AnrHelper` 理解成排队和线程隔离层，把 `ProcessErrorStateRecord` 理解成一次 ANR 的实际处理层。
-
-
-`AnrHelper` 这段路径暴露出几个排查时容易忽略的细节：
-
-**堆栈收集使用 SIGQUIT 信号。** system_server 向目标进程发送 Signal 3（SIGQUIT），触发虚拟机的堆栈 dump。这也是为什么 ANR traces 文件中会包含所有线程的堆栈——因为 SIGQUIT 的处理函数会遍历虚拟机中的所有线程。
-
-**traces 的堆栈有滞后性。** 钉钉团队在 ANR 治理实践中将这个问题形象地描述为"刻舟求剑"：从超时检测到发送 SIGQUIT 再到堆栈 dump 完成，中间经历了一系列异步操作。等到堆栈被捕获时，主线程上导致超时的长耗时任务可能已经执行完毕，当前正在执行的是另一个完全无关的任务。9.3 节（ANR 分析方法）会详细讨论如何应对这个挑战。
-
-**System Server 会向多个进程发送 SIGQUIT。** 系统不只会对发生 ANR 的进程发 SIGQUIT，还可能同时请求关联进程的堆栈信息。一个 App 收到 SIGQUIT 不代表自己发生了 ANR，也可能是另一个 App 触发的。
-
-## ANR 与 Watchdog 的区别
-
-不少开发者容易混淆 ANR 和 Watchdog 这两个机制，因为它们都涉及"超时检测"。但它们的设计目标、作用范围和处理方式完全不同，理解这个区别对性能分析非常重要。
-
-### 作用范围不同
-
-ANR 监控的是**应用进程**中的组件——Activity、Service、BroadcastReceiver、ContentProvider。它关心的是"某个 App 是否及时响应了系统请求"。
-
-Watchdog 监控的是 **system_server 自身**中的核心系统服务——ActivityManagerService、WindowManagerService、PackageManagerService 等。它关心的是"系统服务是否正常运行"。
-
-简单来说：ANR 是系统在"监视"应用，Watchdog 是系统在"监视"自己。
-
-### 检测机制不同
-
-ANR 采用"注册超时 → 完成取消"的模式：发起一个操作的同时设置超时计时器，操作完成后取消计时器。
-
-Watchdog 采用"超时巡检"模式：它运行在 system_server 中的一个独立线程上，默认超时窗口 60 秒，内部按 `watchdogTimeoutMillis / 2` 设定检查间隔。先等待 30 秒进入 `WAITED_HALF` 状态（可做半程 stack dump），再等 30 秒到 `OVERDUE` 时认定服务线程无响应。每个 `HandlerChecker` 可有自定义 timeout，`scheduleCheckLocked()` 还会乘 `Build.HW_TIMEOUT_MULTIPLIER`。
+下面的 Android 17 源码节选用于观察“先 dump、后排队”的顺序：
 
 ```java
-// frameworks/base/services/core/java/com/android/server/Watchdog.java
-// @ AOSP android-14.0.0_r1
-// 概念级简化
+Future<File> firstPidDumpPromise = mEarlyDumpExecutor.submit(() -> {
+    File tracesFile = StackTracesDumpHelper.dumpStackTracesTempFile(
+            incomingPid, timeoutRecord.mLatencyTracker);
+    mTempDumpedPids.remove(incomingPid);
+    return tracesFile;
+});
 
-public class Watchdog {
-    // 每个 HandlerChecker 监控一个 Looper 线程
-    final ArrayList<HandlerChecker> mHandlerCheckers = new ArrayList<>();
-    
-    void run() {
-        while (true) {
-            // 向所有注册的线程发送心跳
-            for (HandlerChecker hc : mHandlerCheckers) {
-                hc.scheduleCheckLocked();
-            }
-            // 两段式等待：30s WAITED_HALF → 60s OVERDUE
-            wait(checkIntervalMillis);
-            
-            // 检查是否有超时的
-            blockedCheckers = getBlockedCheckersLocked();
-            if (blockedCheckers.size() > 0) {
-                // 系统挂了！dump 堆栈 + 杀 system_server
-                dumpStackTraces();
-                killSystemServer();
-            }
-        }
-    }
-}
+mAnrRecords.add(new AnrRecord(
+        anrProcess, activityShortComponentName, aInfo,
+        parentShortComponentName, parentProcess, aboveSystem,
+        timeoutRecord, isContinuousAnr, firstPidDumpPromise));
 ```
 
-### 后果不同
+`Future<File>` 会随 `AnrRecord` 进入消费线程。生成正式 trace 时，`StackTracesDumpHelper` 优先复制这份早期结果；早期 dump 失败时，再对目标 PID 做回退采集。
 
-ANR 触发后，用户看到的是一个对话框——可以选择"等待"或"关闭"。App 进程可能被杀，但 system_server 不受影响，其他应用正常运行。
+### 队列拥塞时缩小采集范围
 
-Watchdog 触发后，意味着 system_server 本身出了问题（通常是死锁）。此时整个设备基本上已经无法正常使用了——系统会杀掉 system_server 进程，init 进程会重新启动它，效果等同于一次"软重启"。所有正在运行的应用都会被杀掉。
+`AnrConsumer` 逐条处理记录。Android 17 中，报告排队超过 10 秒，或系统启动不足 10 分钟时，`onlyDumpSelf` 为 `true`，系统只抓被归因进程，减少诊断风暴对设备的二次冲击。
 
-### 在 Perfetto 中的表现不同
+两次 ANR 若间隔不足 2 分钟，`AnrHelper` 会安排 Binder heavy-hitter 自动采样，用来补充高频 Binder 调用线索。这个 2 分钟常量服务于采样调度；它不表示系统把两次 ANR 合成一条，也不表示后一次 ANR 会被忽略。
 
-在 Perfetto Trace 中，ANR 事件通常表现为：
-- 应用主线程上出现一段长时间的非空闲执行块（RUNNABLE 或 BLOCKED）
-- system_server 进程中会出现 `AnrHelper` 相关的活动
-- Input ANR 可以在 InputDispatcher 的 track 中看到 "Application Not Responding" 标记
+Android 17 在单条 ANR 处理结束后还可发送 `ProfilingTrigger.TRIGGER_TYPE_ANR`。系统触发式 profiling 的注册与产物边界见 [8.16 ProfilingManager 系统触发式性能追踪](../ch08-responsiveness/08-system-triggered-profiling.md)；它是补充证据来源，不能替代 ANR trace。
 
-Watchdog 触发时，在 Perfetto 中会表现为：
-- system_server 进程中的某个系统服务线程长时间处于 BLOCKED 或 WAITING 状态
-- 如果抓到了 Watchdog 超时事件，通常意味着设备即将重启
+## AMS 主路径：`ProcessErrorStateRecord`
 
+`ProcessErrorStateRecord.appNotResponding()` 把一条已确认的超时转成可诊断、可统计、可处置的系统事件。
 
-## ANR 信息的产出
+### 进入报告前的状态防护
 
-ANR 触发后，系统会产出多种诊断信息，这是分析 ANR 问题的核心素材。
+AMS 在下列条件下跳过报告：系统正在关机、进程已有 ANR、进程正在崩溃、进程已被 ActivityManager 杀死、进程已经死亡。调试器附着时也不会按普通应用 ANR 路径处理。
 
-### traces.txt（或 /data/anr/ 目录下的文件）
+通过检查后，系统在锁保护下把进程标记为 `notResponding`，阻止同一进程并发进入重复报告。随后写入 `am_anr` EventLog，并尽快记录 Perfetto/Stats 触发点。
 
-这是最核心的 ANR 诊断文件。系统通过 SIGQUIT 信号触发虚拟机 dump 出所有线程的堆栈。文件内容包括：
+### 收集可关联证据
 
-- **所有线程的完整堆栈**：包括线程名、优先级、状态（RUNNABLE / BLOCKED / WAITING 等）、tid
-- **线程持有的锁信息**：如 `- locked <0x12345678>`，标明哪个线程持有哪些锁
-- **CPU 使用统计**：ANR 发生前一段时间的 CPU 负载信息
+Android 17 的报告路径会组合：
 
-在 Android 10 及以上版本中，ANR trace 文件不再统一写入 `/data/anr/traces.txt`，而是以 `anr_*` 命名存放在 `/data/anr/` 目录下。Android 14 起访问 `/data/anr/` 需要 root 权限，开发者获取原始 trace 的标准路径有两条：执行 **`adb bugreport`** 从完整报告里提取，或在应用内通过 **`ActivityManager.getHistoricalProcessExitReasons()`** 获取 `ApplicationExitInfo` 列表，再调用 **`ApplicationExitInfo.getTraceInputStream()`**（API 30+，随 `ApplicationExitInfo` 在 Android 11 引入）程序化读取 ANR 堆栈。
+- 超时原因、组件和 PID；
+- 目标进程及选定关联进程的 Java/native 线程栈；
+- 当前 CPU 使用和负载；
+- PSI 资源压力；
+- 目标进程内存摘要与 fs-verity 信息；
+- CriticalEventLog、EventLog、statsd 和 Perfetto 标记；
+- DropBox 报告与 `ApplicationExitInfo` 可回捞的 trace 片段。
 
-**traces.txt 中的主线程堆栈不一定是 ANR 的根因**。正如前面提到的"刻舟求剑"问题，堆栈捕获时导致超时的代码可能已经执行完毕。如果主线程堆栈显示 `Native (nativePollOnce)`，那说明 ANR 发生时主线程处于空闲状态——问题出在更早的消息处理中。
+下面的源码节选用于确认三类大纲要求的产物都来自同一处理函数：
 
-### Event Log
+```java
+EventLog.writeEvent(EventLogTags.AM_ANR, mApp.userId, pid,
+        mApp.processName, mApp.info.flags, annotation);
 
-ANR 发生时，系统会在 event log 中写入一条记录，包含进程名、PID、ANR 原因（如 `Input dispatching timed out`）等信息：
+File tracesFile = StackTracesDumpHelper.dumpStackTraces(
+        firstPids, processCpuTracker, lastPids, nativePidsFuture,
+        tracesFileException, firstPidEndOffset, annotation,
+        criticalEventLog, extraHeaders, auxiliaryTaskExecutor,
+        firstPidFilePromise, latencyTracker, timeoutRecord);
 
+mService.addErrorToDropBox("anr", mApp, mApp.processName,
+        activityShortComponentName, parentShortComponentName,
+        parentPr, null, report.toString(), tracesFile, null,
+        new Float(loadingProgress), incrementalMetrics, errorId,
+        volatileDropboxEntriyStates);
 ```
-// event log 示例
-04-02 10:30:15.123  1000  1234  5678 I am_anr: [0,com.example.app,12345,ActivityManager,Input dispatching timed out (Waiting to send non-key event because the touched window has not finished processing certain input events that were delivered to it over 500.0ms ago)]
-```
 
-通过 `adb logcat -b events | grep am_anr` 可以过滤 ANR 事件。这条日志能快速确认是哪个进程、因为什么原因触发了 ANR。
+EventLog 提供索引，trace 保存线程现场，DropBox 汇总更完整的报告。代码里的 `"anr"` 是错误类型参数；AMS 会结合进程类别形成具体 DropBox tag，排查时不应假定所有设备都只有固定的 `data_app_anr`。
 
-### Dropbox
+### 决定杀进程或展示界面
 
-Dropbox 是 Android 系统的持久化日志存储机制，用于保存系统级错误信息。ANR 信息会被写入 Dropbox，标签按进程类别区分（AOSP `ProcessErrorStateRecord` 以 eventType="anr" 调用 `addErrorToDropBox`，AMS 用 `processClass(process) + "_" + eventType` 生成 tag）：
+证据采集完成后，`WindowProcessController` 和系统控制器先获得处理机会。普通路径继续检查 `isSilentAnr()`：开发者选项没有开启“显示所有 ANR”，并且进程不属于用户相关进程时，系统按后台 ANR 杀死它。system_server、正在展示 Activity 的进程、SystemUI、具有 top UI 或 overlay UI 的进程会被视为更值得保留完整现场。
 
-- 三方应用：`data_app_anr`
-- 系统应用：`system_app_anr`
-- `system_server`：`system_server_anr`
+可展示路径会生成 `ProcessErrorStateInfo.NOT_RESPONDING`，并向 AMS UI Handler 发送 `SHOW_NOT_RESPONDING_UI_MSG`。界面到达用户之前仍可能受到当前用户、系统控制器、延迟策略和设备定制影响。
 
-与 traces.txt 不同，Dropbox 中的信息是持久化的，即使设备重启也不会丢失。
+## 应用 ANR 与 `system_server` Watchdog
 
-查看三方应用的 ANR 记录：
+两者都处理“长时间没有进展”，对象和恢复方式差异很大。
+
+| 维度 | 应用 ANR | `system_server` Watchdog |
+|---|---|---|
+| 保护对象 | 应用组件、输入窗口和应用进程 | `system_server` 的关键 Handler 与 Monitor |
+| 检测者 | 输入、广播、服务、Provider 等子系统 | `Watchdog` 线程与 `HandlerChecker` |
+| Android 17 默认期限 | 按场景配置；输入 AOSP 默认 5 秒 | 普通构建默认 60 秒，可由设置和硬件超时系数调整 |
+| 中间信号 | Android 17 部分路径有 ANR warning/pre-ANR | 期限的 1/4 进入 pre-watchdog；默认约 15 秒 |
+| 主报告路径 | `AnrHelper` → `ProcessErrorStateRecord` | `Watchdog.run()` → `collectThreadDumps()` |
+| 常见处置 | 后台杀进程或安排 ANR UI | 采集后杀掉 `system_server`，由系统重启；调试器和禁重启策略可阻止 |
+
+Watchdog 会把检查任务投递到 system_server 的关键 Looper，并执行注册的 Monitor。检查器迟迟不能完成时，它能区分等待、pre-watchdog 和 overdue。Android 17 的 `PRE_WATCHDOG_TIMEOUT_RATIO` 是 4，因此默认 60 秒期限下，pre-watchdog 起点约为 15 秒；pre-watchdog 采集受到一小时冷却限制，完整超时仍可能在约 60 秒触发。
+
+Watchdog 报告会使用 `pre_watchdog` 或 `watchdog` DropBox tag，并生成 system_server 及关键原生进程堆栈。完整超时后，若没有调试器、允许重启且控制器没有要求继续等待，Watchdog 调用 `Process.killProcess(Process.myPid())` 并退出。
+
+应用 ANR 也可能由 system_server 卡顿间接引起。例如应用主线程在同步 Binder 中等待 system_server，输入期限先耗尽，此时先记录的是应用 ANR；若 system_server 的受监控线程也持续不前进，Watchdog 才会独立触发。两个报告的时间线需要一起看，不能凭进程名把前者直接定性成应用缺陷。
+
+## 三类基础产物怎么配合
+
+### EventLog：回答“何时、谁、因为什么”
+
+Android 17 的 `am_anr` tag 为 30008，字段顺序是 user、PID、进程名、应用 flags、reason。reason 来自检测器构造的 `TimeoutRecord`，往往是分类入口中最稳定的线索。
+
+下面的命令用于在调试设备或 bugreport 文本中定位 ANR 索引：
 
 ```bash
+adb shell logcat -b events -d -v threadtime | grep 'am_anr'
+grep 'am_anr' bugreport.txt
+```
+
+第一条读取设备当前 events 缓冲区，第二条搜索已导出的报告。缓冲区会滚动，线上问题应优先保存带时间戳的完整 bugreport 或平台侧记录。
+
+### ANR trace：回答“采样时线程在做什么”
+
+Android 17 的 `StackTracesDumpHelper` 在 `/data/anr/` 创建 `anr_yyyy-MM-dd-HH-mm-ss-SSS` 文件，权限为 `0600`。旧资料常把所有版本的产物统称为 `traces.txt`；阅读历史 bugreport 时仍会遇到这个名字，本章用“ANR trace”统称两种形式。
+
+普通第三方应用不能直接遍历 `/data/anr`。开发阶段可从 bugreport 获取系统收集的 ANR 段；Android 11（API 30）起，应用还能通过 `ActivityManager.getHistoricalProcessExitReasons()` 查询自己的历史退出记录，并用 `ApplicationExitInfo.getTraceInputStream()` 读取系统保留的 trace。该流可能为 `null`，因为 trace 使用容量有限的全局循环缓冲区，也可能被后续记录覆盖。
+
+下面的 Kotlin 片段用于回捞当前应用最近一次带 trace 的 ANR 退出记录：
+
+```kotlin
+val activityManager = getSystemService(ActivityManager::class.java)
+val exits = activityManager.getHistoricalProcessExitReasons(
+    packageName,
+    0,
+    20,
+)
+
+val latestAnr = exits.firstOrNull {
+    it.reason == ApplicationExitInfo.REASON_ANR
+}
+
+latestAnr?.traceInputStream?.bufferedReader()?.use { reader ->
+    val traceText = reader.readText()
+    uploadAfterRedaction(traceText)
+}
+```
+
+这个 API 返回本应用可访问的历史信息，不是一份包含系统全貌的 bugreport。生产环境上传前应做大小限制、隐私审查和脱敏，并把 `null` 当作正常结果处理。
+
+Android 17（API 37）还给 `ApplicationExitInfo` 增加 `getAnrInfo()`。返回的 `AnrInfo` 包含 ANR ID、`AnrTypes` 类型、系统等待时长和用户可感知标志。它只在 `REASON_ANR` 记录中可能存在；输入派发等缺少 `AnrTimer.ExpiredTimer` 的路径仍可能拿不到对象，兼容代码要做版本和空值判断。
+
+### DropBox：回答“系统汇总了哪些上下文”
+
+`ProcessErrorStateRecord` 会把 ANR 摘要、资源压力、trace 文件和关联信息交给 `ActivityManagerService.addErrorToDropBox()`。最终 tag 与进程类别相关，常见形式包含 `data_app_anr`、`system_app_anr` 等；AOSP 与厂商构建可能存在差异。
+
+下面的命令用于在具备相应调试权限的设备上查看 DropBox 索引和内容：
+
+```bash
+adb shell dumpsys dropbox --file
 adb shell dumpsys dropbox --print data_app_anr
 ```
 
-不同 ROM 可能有 rate limit 或 tag enable 差异。这在分析偶发性 ANR 时特别有用——用户可能无法实时提供 traces.txt，但 Dropbox 中可能保留了之前 ANR 的记录。
+第一条先列出设备上已有条目及 tag，确认名称后再用第二类命令读取目标 tag，避免把某个示例 tag 当成所有 ANR 的固定名称。
 
+### 三者按时间关联
 
+一份可靠的基础证据包至少要对齐：
 
-### 三种信息的互补关系
+1. EventLog 的时间、PID、进程名和 reason；
+2. trace 文件头中的 PID、时间与 subject；
+3. DropBox 条目的 tag、时间和资源信息。
 
-这三种信息在 ANR 分析中各有侧重：
+PID 会复用，进程也可能在 ANR 后重启。只按包名合并多份报告，会把不同进程生命周期混在一起；时间、PID、进程名和错误 ID 应共同参与关联。
 
-- **traces.txt**：给出 ANR 时刻所有线程"在哪里"（堆栈快照）
-- **event log**：给出"为什么触发 ANR"（超时类型和具体原因）
-- **dropbox**：给出"历史上有多少次 ANR"（持久化统计）
+## trace 是快照，根因常在快照之前
 
-9.3 节（ANR 分析方法）会详细讨论如何综合使用这三种信息来定位 ANR 根因。
+系统已经尽量早抓目标进程栈，但采样仍发生在检测器确认超时之后。两类时间漂移很常见：
 
-## 各版本 ANR 机制的微调与改进 [扩展]
+- 主线程在期限耗尽前执行了长任务，dump 时任务刚结束，堆栈已回到 `nativePollOnce()`；
+- 主线程 dump 时等待某把锁，持锁线程稍后释放，后续采样只留下普通业务帧。
 
-ANR 机制自 Android 2.3 引入以来，基本框架没有大的变化，但几乎每个大版本都在细节上有所调整。其中影响较大的变化集中在以下几处。
+因此，主线程栈处于 `nativePollOnce()` 不能反向证明主线程一直空闲；主线程处于某个普通方法也不能单独证明该方法消耗了整个超时时间。官方 ANR 诊断文档也把“采样过晚的 idle 主线程聚类”列为低可操作性线索。
 
-Android 8.0 引入了后台执行限制。后台 Service 的超时阈值一直是前台超时的 10 倍（`DEFAULT_SERVICE_BACKGROUND_TIMEOUT = DEFAULT_SERVICE_TIMEOUT * 10`），对应前台 20 秒、后台 200 秒——这不是 Android 8.0 才引入的值，早期 AOSP 的 `ActivityManagerConstants` 里就已经这样定义。Android 8.0 的主要变化是后台执行限制本身：系统更倾向于直接杀掉后台应用而不是等它触发 ANR。200 秒的后台超时更多是一个保底兜底值，绝大多数后台 Service 会在远早于 200 秒时被后台限制策略回收。
+排查时可按下面的证据顺序推进：
 
-Android 10 解决了一个长期困扰开发者的诊断难题：ANR trace 文件从单一的 `traces.txt` 改为按时间和进程分别存储在 `/data/anr/` 目录下。在此之前，如果一个 App 连续触发多次 ANR，后面的 traces 会覆盖前面的，导致丢失重要的诊断信息。按进程和时间分开存储后，每次 ANR 都有独立的 trace 文件，历史信息不再被覆盖。
+1. 用 EventLog reason 确认检测类型和等待对象。
+2. 用 trace 找阻塞关系、Binder 调用、锁持有者和线程状态。
+3. 用 CPU、PSI 判断计算饱和、调度饥饿或内存/I/O 压力。
+4. 用 Perfetto 还原超时前几秒的调度、Binder、锁和主线程任务。
+5. 用版本、机型、进程生命周期与同时间段系统日志排除错误归因。
 
-Android 12 让前台服务启动失败后的异常表现更明确。`startForegroundService()` 后没有及时调用 `startForeground()` 时，常见结果是 `ForegroundServiceDidNotStartInTimeException`；AOSP 对应宽限期仍是 10 秒。Android 13 起，这个默认值迁到 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS = 30 * 1000`。
+更完整的 trace 逐段阅读方法见 [9.3 ANR 分析方法](03-anr-analysis.md)，系统与内核联合诊断见 [9.8 ANR 与内核 trace 联合诊断](08-anr-kernel-trace-joint-diagnosis.md)。
 
-Android 13 对 ANR trace 的存储做了改进：trace 文件改为按进程独立存储，并且增加了 trace 采集的可靠性。此前，在多个进程同时触发 ANR 时，trace 文件的写入可能互相干扰导致内容丢失。Android 13 还改进了后台执行限制策略，让后台 Service 的行为约束更严格，间接减少了后台 Service ANR 的场景。
+## Android 8 到 Android 17 的演进重点
 
-Android 14 的 ANR 变化主要落在触发条件和诊断口径上：BroadcastReceiver 的官方诊断窗口更新为前台 10-20 秒、后台 60-120 秒，并引入 `BroadcastQueueModernImpl` 这条现代广播分发实现；targetSdk 34+ 的 `JobService.onStartJob()` / `onStopJob()` 主线程超时也会显式上报 ANR。`AnrHelper` 从 Android 11 起已经负责排队和线程隔离。
+这里保留影响诊断模型的变化，不把每个内部重构都当成行为变化。
 
-Android 16 引入了系统触发式 ProfilingManager 追踪。应用先通过 `new ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANR).build()` 构造 ANR 触发器，再调用 `ProfilingManager.addProfilingTriggers(List<ProfilingTrigger>)` 注册；结果只能通过 `registerForAllProfilingResults(Executor, Consumer<ProfilingResult>)` 这类全局结果监听接收。`TRIGGER_TYPE_ANR` 的产物口径是 running system trace snapshot，文件会落到应用存储目录，不能写成 Java Heap Dump、Stack Sample、System Trace 三类都自动产出。
+- **Android 8（API 26）**：后台执行限制改变了后台组件的运行条件。分析旧应用时，要把“组件能否在后台启动”和“组件启动后是否超时”分开。
+- **Android 11（API 30）**：公开 `ApplicationExitInfo` 与 `getHistoricalProcessExitReasons()`，应用可以在下次启动后回捞自身历史退出原因和可用的 ANR trace。`AnrHelper` 也已进入 AMS 的统一编排路径。
+- **Android 14（API 34）**：面向目标 SDK 34 及以上的部分 `JobService` 回调超时会按明确 ANR 报告；广播派发进入现代队列实现，超时可依据进程状态调整。
+- **Android 15（API 35）**：公开 `ProfilingManager` 的主动采集能力；AOSP Watchdog 已具备 1/4 期限处的 pre-watchdog 采集。
+- **Android 16（API 36）**：公开 `ProfilingTrigger.TRIGGER_TYPE_ANR` 和系统触发式 profiling 注册能力，为 ANR 增加一份时间段证据。
+- **Android 17（API 37）**：`TimeoutRecord` 可映射公开 `AnrTypes`；`ApplicationExitInfo.getAnrInfo()` 提供结构化 ANR 元数据；`ActivityManager.registerAnrWarningListener()` 允许应用按尽力而为原则接收临近 ANR 期限的预警。详情见 [9.10 Android 17 ANR Warning Callback](10-android17-anr-warning-callback.md)。
 
-Android 17（API 37）把系统触发器扩到更多场景：`TRIGGER_TYPE_COLD_START` 用于冷启动，返回 system trace 和 stack sampling profile；`TRIGGER_TYPE_OOM` 用于 `OutOfMemoryError`，返回 Java Heap Dump；`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 用于过量 CPU 使用导致的进程终止，返回 running system trace snapshot；`TRIGGER_TYPE_ANOMALY` 用于系统检测到的异常资源行为。ANR 触发器仍按 Android 16 的 system trace snapshot 口径理解，不要把 Android 17 其他触发器的产物反推到 ANR 上。
+版本演进的方向很清楚：检测器保留各自的协议语义，AMS 加强统一编排；诊断材料从一次线程快照扩展到结构化退出信息、早期预警和可选的时间段 profiling。传统 trace 仍是基础证据，只是它不再承担全部解释任务。
 
-这项改进针对 traces.txt 的"刻舟求剑"问题：系统触发式 trace 可以捕获 ANR 发生前一段时间的主线程行为，比单个堆栈快照更接近时间线。`ApplicationStartInfo.getStartComponent()` 的引入也让冷启动追踪更精确：可以知道是哪个组件（Activity / Service / BroadcastReceiver / ContentProvider）触发了启动，从而针对不同启动路径优化。
+## Google Play Console 的统计边界
 
+截至 2026 年 7 月，Android vitals 同时提供：
 
-**Android 15**（[待验证]）：ANR 行为可能存在以下变更——更严格的 `startForeground()` 执行约束、前台 Service 类型声明的强制化。这些变更影响的是 ANR 的触发条件，而非 ANR 机制本身的架构。如有变更，将在后续 review 中更新。
+- **ANR rate**：每日活跃用户中经历任意 ANR 的比例；
+- **user-perceived ANR rate**：每日活跃用户中经历至少一次用户可感知 ANR 的比例；当前只计入 `Input dispatching timed out`；
+- **multiple ANR rate**：每日经历至少两次 ANR 的用户比例。
 
-**Android 17**（API 37）：ProfilingManager 新增冷启动、OOM、过量 CPU 使用终止、异常资源行为等系统触发器。它们补的是性能诊断入口，ANR 机制的架构仍是超时检测 → SIGQUIT dump → 弹窗/杀进程。
+用户可感知 ANR 率属于 Google Play core vital。官方当前的不良行为阈值是：
 
+| 统计范围 | 阈值 |
+|---|---:|
+| 全部设备型号的每日活跃用户 | 0.47% |
+| 单一手机型号的每日活跃用户 | 8% |
 
-## ANR 在 Google Play Console 中的统计与影响 [扩展]
+超过全局阈值可能影响应用在所有设备上的可发现性；只在部分机型超过单机型阈值，也可能影响对应设备上的曝光并触发商店警告。阈值属于平台运营规则，可能调整，做发布门禁时应读取 Play Console 和最新官方文档，不能把本章数值永久写死在监控代码里。
 
-Google Play Console 将 ANR 率作为应用核心性能指标（Android Vitals）的一部分进行监控。当用户的设备上发生 ANR 时，Play Services 会匿名上报 ANR 信息到 Play Console。
+还有一个统计陷阱：本地 APM 常按会话、事件数或进程启动次数计算，Android vitals 按每日活跃用户计算，并受到来源设备、用户共享设置和隐私门槛影响。两边数值不同不等于任何一边采集错误；团队应先统一分母、时间窗口和“用户可感知”的定义。
 
-当前 Android Vitals 的核心 ANR 指标采用“用户感知 ANR 率”（user-perceived ANR rate）口径。全局坏行为阈值是 **0.47%**：如果应用跨设备总体超过这条线，可能影响 Google Play 的曝光；Play Console 还会按设备型号检查局部高发问题。
+## 工程检查表
 
-按 10000 个日活用户估算，0.47% 对应每天约 47 个用户遇到用户感知 ANR。这个数字只是官方质量红线，不适合作为内部目标；线上治理通常要把内部告警线设得更低，并按设备、系统版本和场景拆开看。
+设计监控或阅读一条 ANR 报告时，依次回答这些问题：
 
-Play Console 提供的 ANR 信息包括：
-- 按设备和 Android 版本分组的 ANR 分布
-- ANR 触发时的堆栈信息（来自 traces.txt）
-- ANR 趋势图（按日/周/月）
-
-这些统计数据可以帮助开发者快速定位 ANR 在哪些设备或系统版本上高发，但根因分析仍然需要获取完整的 traces.txt 和 event log。
-
-## ANR trace 堆栈的"替罪羊"现象——为什么不能只看堆栈
-
-**ANR trace 中主线程的堆栈，往往不是导致 ANR 的直接原因。** 根源在于 ANR 机制的时序设计：超时检测发生在 system_server 中，而堆栈 dump 发生在超时检测之后。从"导致超时的代码开始执行"到"堆栈被 dump 下来"，中间经历了至少三个阶段：
-
-1. 超时计时器到期 → system_server 检测到超时
-2. system_server 的 AnrHelper 开始处理 → 创建 `AnrRecord` 并进入 `ProcessErrorStateRecord`
-3. 向目标进程发送 SIGQUIT → 目标进程 dump 堆栈
-
-在这整个过程中，应用的主线程并没有停止工作。导致超时的"长耗时消息"很可能已经执行完毕，主线程已经开始处理下一个消息，甚至进入了空闲状态（`nativePollOnce`）。
-
-钉钉团队在分析一个 ANR 问题时发现：BugReport 中的 traces.txt 显示主线程在处理传感器事件，导致 ANR 的实际原因是硬件渲染阶段的锁等待（耗时 68 秒）。传感器事件处理只用了 12 毫秒，但因为发生在超时检测之后，成了 traces.txt 中的"替罪羊"。
-
-这个认知直接决定 ANR 分析方式——不能简单地把 traces.txt 堆栈当作根因，而需要结合时间线和多种信息源交叉验证。这正是 9.3 节要讨论的核心主题。
-
-
-## 常见问题与误区
-
-### 误区一："主线程堆栈就是 ANR 的根因"
-
-这是最常见的误区。拿到一份 traces.txt，看到主线程堆栈在某个方法上，就认定这个方法是 ANR 的罪魁祸首。但 traces.txt 中的堆栈是超时检测之后才 dump 的，导致超时的代码很可能已经执行完毕。前面的"替罪羊"现象已经详细解释了这个时序问题。正确的做法是：traces.txt 是线索之一，但必须结合 event log 中的时间戳、systrace/perfetto 中的主线程时间线来交叉验证。
-
-### 误区二："ANR = CPU 高负载"
-
-ANR 的触发条件是"主线程在超时时间内没有响应"，不看 CPU 占用率是否高。一个 CPU 占用率极低的线程，如果被锁阻塞（BLOCKED 状态），同样会触发 ANR。反过来，CPU 占用率高但及时返回了结果的代码，不会触发 ANR。ANR 的本质是"响应超时"，不是"资源消耗过大"。
-
-### 误区三："后台 Service 超时 200 秒，所以不用担心"
-
-200 秒的后台 Service 超时只是 ANR 触发的阈值，不意味着系统会给后台 Service 200 秒的执行时间。Android 8.0 之后，系统对后台 Service 有严格的限制策略，大多数后台 Service 会在远早于 200 秒时被系统回收。如果后台 Service 触发了 200 秒超时，说明它已经违反了后台执行限制，即使不触发 ANR 也会被系统杀掉。
-
-### 误区四："ANR 率低就不需要关注"
-
-Google Play Console 的核心 ANR 坏行为阈值（用户感知 ANR 率 0.47%）是全局统计值。对于一个日活 100 万的应用，0.47% 意味着每天约 4700 个用户遇到用户感知 ANR。而且，ANR 率是按会话计算的，一个用户可能在同一天遇到多次 ANR，但只计算一次。所以即使 ANR 率在"可接受"范围内，频繁 ANR 的用户很可能已经流失了。
+- 哪个检测器报的超时，reason 原文是什么？
+- 系统等待的完成信号是什么，期限从哪个时刻开始？
+- 被归因的 PID、进程名、窗口或组件是否一致？
+- trace 与 EventLog 的时间差是多少，主线程现场是否可能已经漂移？
+- 主线程在运行、可运行、睡眠、Binder 等待还是锁等待？
+- 若有等待关系，远端 Binder 线程或锁持有者在做什么？
+- CPU、PSI、I/O 和系统服务是否显示设备级压力？
+- 进程是前台可感知、后台 silent ANR，还是 system_server Watchdog？
+- 相同错误是否集中在特定 Android 版本、设备型号或目标 SDK？
+- 修复是否缩短了检测器等待的那项工作，而不只是在 trace 顶部移动了栈帧？
 
 ## 参考资料
 
-
-- AOSP 源码路径：
-  - `frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java`
-  - `frameworks/base/services/core/java/com/android/server/am/AnrHelper.java`（Android 11+）
-  - `frameworks/base/services/core/java/com/android/server/am/ProcessRecord.java`
-  - `frameworks/base/services/core/java/com/android/server/Watchdog.java`
-  - `frameworks/base/services/core/java/com/android/server/am/BroadcastQueue.java`
-  - `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java`
-- 官方文档：
-  - [Android Vitals — ANR](https://developer.android.com/topic/performance/vitals/anr)
-  - [Keep your app responsive](https://developer.android.com/training/articles/perf-anr)
-- 素材来源：
-  - [钉钉 ANR 治理最佳实践 | 定位 ANR 不再雾里看花](https://mp.weixin.qq.com/s?__biz=Mzg4MjE5OTI4Mw==&mid=2247498818)
-  - Android 16/17 ProfilingManager 系统触发式追踪（[ProfilingManager API](https://developer.android.com/reference/android/os/ProfilingManager)、[ProfilingTrigger API](https://developer.android.com/reference/android/os/ProfilingTrigger)、[Android 17 features](https://developer.android.com/about/versions/17/features)）
-
-## 源码级补充：Android 14-17 ANR 检测路径（InputDispatcher → AMS → AnrHelper → ProcessErrorStateRecord）
-
-### 默认派发超时阈值
-
-**`frameworks/native/libs/input/android/os/IInputConstants.aidl`**：
-
-```aidl
-interface IInputConstants {
-    const int UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS = 5000; // 5 seconds
-}
-```
-
-`InputDispatcher.cpp:140-142` 引用并乘以 `HwTimeoutMultiplier()`（ro.hw_timeout_multiplier 系统属性，默认 1）：
-
-```cpp
-const std::chrono::duration DEFAULT_INPUT_DISPATCHING_TIMEOUT = std::chrono::milliseconds(
-        android::os::IInputConstants::UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS *
-        HwTimeoutMultiplier());
-```
-
-SLOW_EVENT_PROCESSING_WARNING_TIMEOUT = 2s（仅 logcat warning 不 ANR）；STALE_EVENT_TIMEOUT = 10s。
-
-### 三类 ANR 触发路径（InputDispatcher.cpp）
-
-1. **派发超时**（`InputDispatcher::onAnrLocked(connection)` @ line 6546）：mAnrTracker.firstTimeout() 命中 → 组装 reason（"Waited Xms for <event>"） → `updateLastAnrStateLocked()` 写入 mLastAnrState → `processConnectionUnresponsiveLocked` → `sendWindowUnresponsiveCommandLocked` 跨 binder 给 Java 侧。
-
-2. **无焦点窗口**（`InputDispatcher::onAnrLocked(application)` @ line 6581）：focusedWindowHandle == nullptr 且 focusedApplicationHandle != nullptr 时启动 `mNoFocusedWindowTimeoutTime = currentTime + getDispatchingTimeout(DEFAULT_INPUT_DISPATCHING_TIMEOUT)`；超时后 → `mPolicy.notifyNoFocusedWindowAnr(app)`。
-
-3. **mLastAnrState 诊断快照**（`InputDispatcher::updateLastAnrStateLocked` @ line 6605）：保留最近一次 ANR 的完整 dispatcher 状态，便于 dumpsys input 复盘。
-
-### Java 侧路由：AnrController
-
-`InputManagerCallback.notifyNoFocusedWindowAnr/notifyWindowUnresponsive`（line 108-119）→ `AnrController.notifyAppUnresponsive/notifyWindowUnresponsive`（line 68-220）。
-
-**关键 blamePendingFocusRequest 逻辑**（line 104-122）：input 焦点在 5s dispatch timeout 内切换则归咎焦点目标窗口而非原 ANR 应用，避免用户切到新 app 时新 app 的 ANR 被旧 app 误标；该逻辑在 `android-14.0.0_r1` 到 `android-17.0.0_r1` 的 `AnrController.java` 中均可见。
-
-### ActivityRecord → ActivityManagerService
-
-`ActivityRecord.inputDispatchingTimedOut`（line 7225）→ `ActivityManagerService.inputDispatchingTimedOut`（line 18115-18166）→ `mAnrHelper.appNotResponding`。后者会做 instrumentation 路径短路（line 18156）—— 进程正在 instrumentation 则 `finishInstrumentationLocked` 而非 ANR 流程。
-
-### AnrHelper 异步 trace dump 编排（Android 11 起承接，Android 14+ 增强）
-
-**核心常量**（`frameworks/base/services/core/java/com/android/server/am/AnrHelper.java`）：
-
-| 常量 | 值 | 含义 |
-|------|-----|------|
-| `EXPIRED_REPORT_TIME_MS` | 10s | ANR 报告延迟 > 10s 只 dump 自己不 dump 其他进程 |
-| `CONSECUTIVE_ANR_TIME_MS` | 2min | 短时间内连续 ANR 视为 continuous |
-| `SELF_ONLY_AFTER_BOOT_MS` | 10min | 开机后 10min 内 ANR 仅 dump 自己 |
-| `DEFAULT_THREAD_KEEP_ALIVE_SECOND` | 10s | AnrHelper 线程池空闲线程过期时间 |
-
-**线程池**：`mAuxiliaryTaskExecutor`（1 线程，做 early dump）+ `mMainProcessDumpThreadPool`（2 线程，main dump）+ `AnrConsumerThread` 单消费者。
-
-**appNotResponding skip 逻辑**（line 118-181）：zero pid / duplicate / pre-dumped / queued 全部跳过。**AnrConsumerThread.run**（line 215-274）：单线程串行处理 mAnrRecords 队列，处理前 `scheduleBinderHeavyHitterAutoSamplerIfNecessary()` 拍 binder heavy hitter；处理后 `currentPid != r.mPid` 检查防止进程已重启处理陈旧 ANR。
-
-### ProcessErrorStateRecord.appNotResponding
-
-`frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java:293-673`，关键路径：
-
-1. `appEarlyNotResponding`（line 318）— 早期 kill 路径，WindowProcessController 可决定是否立即 `killLocked("anr", REASON_ANR, true)`；
-2. `skipAnrLocked`（line 270-289）— shutdown / duplicate / 正在 crash / 已被 AM kill / 已死亡 等场景跳过；
-3. 写 `FrameworkStatsLog.ANR_OCCURRED`（line 608-620，含 FOREGROUND_STATE + IS_INSTANT_APP + loadingProgress + incrementalMetrics）；
-4. `addErrorToDropBox("anr", ...)`（line 646）→ dropboxTag = `processClass(process) + "_anr"`，例如 `system_server_anr`、`system_app_anr`、`data_app_anr`；AMS 入口在 `ActivityManagerService.java:9806-9840`，dropboxTag 受 `mDropboxRateLimiter.shouldRateLimit(eventType, processName)` 控制避免洪泛；
-5. `WindowProcessController.appNotResponding` 返回 true 则跳过 dialog 直接 kill（早期 kill 路径）；
-6. `isSilentAnr() && !isDebugging()`（line 672）→ 后台应用 `killLocked("bg anr", REASON_ANR, true)` 不弹 dialog；
-7. `makeAppNotRespondingLSP` + `mUiHandler.sendMessageDelayed(SHOW_NOT_RESPONDING_UI_MSG, anrDialogDelayMs)`（line 685-692）弹 "App Not Responding" dialog。
-
-**isSilentAnr = !getShowBackground() && !isInterestingForBackgroundTraces()**（line 781-783），`isInterestingForBackgroundTraces` 判断 system_server PID / 显示 Activity / SystemUI / hasTopUi / hasOverlayUi 之一。
-
-### Watchdog（system_server 独立 ANR 守护）
-
-`frameworks/base/services/core/java/com/android/server/Watchdog.java`：
-
-```java
-private static final long DEFAULT_TIMEOUT = DB ? 10 * 1000 : 60 * 1000;  // 60s
-private static final int PRE_WATCHDOG_TIMEOUT_RATIO = 4;  // pre-watchdog = 60/4 = 15s
-
-public int getCompletionStateLocked() {
-    if (mCompleted) return COMPLETED;
-    long latency = mClock.millis() - mStartTimeMillis;
-    if (latency < mWaitMaxMillis / PRE_WATCHDOG_TIMEOUT_RATIO) return WAITING;     // <15s
-    else if (latency < mWaitMaxMillis) return WAITED_UNTIL_PRE_WATCHDOG;           // 15-60s
-    return OVERDUE;                                                                 // ≥60s
-}
-```
-
-Android 15+ 引入 `PRE_WATCHDOG_TIMEOUT_RATIO` 阶段：15s 时先 dump stacktrace 但不杀进程（避免误杀正在做长 GC 的 system_server），60s 时才真正 crash；Android 14 仍是 30s 的 `WAITED_HALF` 半程检查口径。
-
-### 完整调用链
-
-```
-[Native] InputDispatcher::dispatchOnce
-  → processAnrsLocked
-    → mNoFocusedWindowTimeoutTime 命中 → processNoFocusedWindowAnrLocked
-      → onAnrLocked(application)
-        → mPolicy.notifyNoFocusedWindowAnr(app)
-    → mAnrTracker.firstTimeout() 命中 → onAnrLocked(connection)
-      → updateLastAnrStateLocked → mLastAnrState
-      → processConnectionUnresponsiveLocked → sendWindowUnresponsiveCommandLocked
-        → mPolicy.notifyWindowUnresponsive(token, pid, reason)
-
-[Java - WindowManagerService]
-InputManagerCallback.notifyXxx → AnrController.notifyAppUnresponsive/notifyWindowUnresponsive
-  → activity.inputDispatchingTimedOut 或 mAmInternal.inputDispatchingTimedOut
-
-[Java - ActivityTaskManagerService]
-ActivityRecord.inputDispatchingTimedOut → ActivityManagerService.inputDispatchingTimedOut
-
-[Java - ActivityManagerService]
-ActivityManagerService.inputDispatchingTimedOut → mAnrHelper.appNotResponding
-
-[Java - AnrHelper]
-mAnrRecords.add(AnrRecord) → startAnrConsumerIfNeeded → AnrConsumerThread 单消费者
-  → r.appNotResponding(onlyDumpSelf)
-    → ProcessErrorStateRecord.appNotResponding
-      → appEarlyNotResponding (early kill)
-      → skipAnrLocked
-      → FrameworkStatsLog.ANR_OCCURRED (statsd)
-      → addErrorToDropBox("anr", ...) (dropbox)
-      → WindowProcessController.appNotResponding (early kill)
-      → isSilentAnr → killLocked("bg anr")
-      → mUiHandler.sendMessageDelayed(SHOW_NOT_RESPONDING_UI_MSG)
-```
-
-### 版本差异要点
-
-| 版本 | 关键变化 |
-|------|---------|
-| Android 8.0 (API 26) | IInputConstants.UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS = 5000 已有；AnrHelper 未抽离 |
-| Android 11 (API 30) | AnrHelper 成为应用 ANR 排队入口；mLastAnrState 引入（dumpsys input 复用最近 ANR 状态） |
-| Android 14 (API 34) | BroadcastQueueModernImpl 的 soft / hard 广播超时口径；ProcessErrorStateRecord 路径包含 early kill + ANR_OCCURRED atom 上报 |
-| Android 15 (API 35) | Watchdog 引入 PRE_WATCHDOG_TIMEOUT_RATIO 预 dump 阶段；AnrController 沿用 pending focus 归因逻辑 |
-| Android 16/17 (API 36/37) | BroadcastQueueModernImpl 更名为 BroadcastQueueImpl，并接入 AnrTimer；mTempDumpedPids 防止 preDump 与 queue 同 pid 竞争；currentPid != r.mPid 防止陈旧 ANR；mDropboxRateLimiter rate-limit |
-
----
+- Android 17 AOSP：
+  - [`TimeoutRecord.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/os/TimeoutRecord.java)
+  - [`AnrHelper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/AnrHelper.java)
+  - [`ProcessErrorStateRecord.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ProcessErrorStateRecord.java)
+  - [`StackTracesDumpHelper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/StackTracesDumpHelper.java)
+  - [`BroadcastQueueImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastQueueImpl.java)
+  - [`ActiveServices.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java)
+  - [`AnrController.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/AnrController.java)
+  - [`Watchdog.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/Watchdog.java)
+  - [`InputDispatcher.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
+  - [`IInputConstants.aidl`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/android/os/IInputConstants.aidl)
+- Android Developers：
+  - [ANRs 与 Android vitals](https://developer.android.com/topic/performance/vitals/anr)
+  - [Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
+  - [`ActivityManager.registerAnrWarningListener()`](https://developer.android.com/reference/android/app/ActivityManager#registerAnrWarningListener(java.util.concurrent.Executor,java.util.function.Consumer%3Candroid.app.AnrWarningResult%3E))
+  - [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+  - [`ActivityManager.getHistoricalProcessExitReasons()`](https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,int,int))
+- AOSP 调试文档：
+  - [Read bug reports：ANRs and deadlocks](https://source.android.com/docs/core/tests/debug/read-bug-reports#anrs_and_deadlocks)
