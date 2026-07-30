@@ -350,7 +350,9 @@ Perfetto v54 同时改进了三处互相配合的能力：UI 的 DataGrid 增加
 
 ## DataGrid 适合做什么
 
-Perfetto v54 release notes 为 DataGrid table viewer 列出的改进包括 pivot table、glob / contains / not-contains filters 和 distinct value picker。同一版新增的 snap-to-boundaries 属于时间范围选择能力：拖动选择边界时会吸附临近 slice，按住 Alt 可暂时关闭。它不属于 DataGrid 的过滤功能。DataGrid 是 SQL 结果表的交互层；分析口径仍由 SQL 和标准库决定。**节点式数据流（node-based query builder）在 v54.0 已存在**，Android 17 范围内只按 `dev.perfetto.ExplorePage` 和基础节点能力讨论；后续版本的重命名与扩展节点不进入本节结论。详见本节末「节点式数据流补注」。
+Perfetto v54 changelog 为 DataGrid table viewer 列出的改进包括 pivot table、glob / contains / not-contains filters 和 distinct value picker。同一版新增的 snap-to-boundaries 属于时间范围选择能力：拖动选择边界时会吸附临近 slice，按住 Alt 可暂时关闭。它不属于 DataGrid 的过滤功能。v54 官方公告还单独发布了 Data Explorer 节点式查询构建器；上游 v54.0 tag 中的 plugin id 是 `dev.perfetto.ExplorePage`。
+
+`android-17.0.0_r1` 是 v54 时代加后续 AOSP 改动的固定快照。该 tag 已把 plugin 改名为 `dev.perfetto.DataExplorer`，并包含 graph tab、导入/导出和 dashboard 相关实现。DataGrid 是结果表的交互层，Data Explorer 组织查询节点，分析口径仍由生成的 SQL 和标准库决定。详见本节末「节点式数据流补注」。
 
 DataGrid 的价值在三类场景里最明显：
 
@@ -511,21 +513,22 @@ v54 Trace Processor 支持 Collapsed Stack 格式和 Firefox Profiler 预处理 
 
 这套顺序的约束是：CUJ 用来定场景，FrameTimeline 用来定帧，线程状态用来定等待类型，profile / heap graph 用来补调用栈和内存证据。任何一步缺采集数据，都应该标注采集缺口，不能用相邻证据替代。
 
-## 节点式数据流补注：ExplorePage（节点图编辑器）
+## 节点式数据流补注：Data Explorer（节点图编辑器）
 
-> Perfetto v54.0 已提供基础节点图编辑器，plugin id 是 `dev.perfetto.ExplorePage`。后续版本的重命名和扩展节点未进入 Android 17，本节不把它们作为正文结论或操作建议。
+> 上游 v54.0 和 Android 17 固定 tag 的 plugin 名称不同。阅读源码或复核操作时，应先确认所用的是纯 v54.0 release、`android-17.0.0_r1`，还是更新的宿主机 UI。
 
 ### 1. Android 17 范围内的源码锚点
 
-| Perfetto 版本 | Android 出厂基线 | 节点式工具 | 源码根目录 | 关键能力 |
+| 源码锚点 | Android 平台关系 | plugin id | 源码根目录 | 已核对能力 |
 |---|---|---|---|---|
-| v54.0 | Android 17 / API 37 | `dev.perfetto.ExplorePage` | `ui/src/plugins/dev.perfetto.ExplorePage/` | 基础节点图、Undo/Redo、Recent Graphs、server-side 分页/过滤/排序 |
+| 上游 Perfetto v54.0 | Android 17 所采用版本线的上游起点 | `dev.perfetto.ExplorePage` | `ui/src/plugins/dev.perfetto.ExplorePage/` | 节点图、Undo/Redo、Recent Graphs、server-side 分页/过滤/排序 |
+| `android-17.0.0_r1` | Android 17 / API 37 固定平台 tag | `dev.perfetto.DataExplorer` | `ui/src/plugins/dev.perfetto.DataExplorer/` | 查询图、graph tab、permalink 持久化、导入/导出、dashboard |
 
-v54.0 已有 `index.ts`、`explore_page.ts`、`query_builder/`、`node_registry.ts` 和 `core_nodes.ts`。可用节点覆盖 `slice`、`table`、`sql`、`timerange`、`add_columns`、`modify_columns`、`aggregation`、`filter_node`、`filter_during`、`filter_in`、`interval_intersect`、`join`、`union_node`、`create_slices`、`sort_node`、`limit_and_offset_node`、`metrics`、`counter_to_intervals`、`visualisation`。这些足够支撑 CUJ / 卡顿 trace 的探索式筛选。
+上游 v54.0 已有 `index.ts`、`explore_page.ts` 和 `query_builder/`。Android 17 固定 tag 中对应文件变成 `index.ts`、`data_explorer.ts`、`query_builder/` 与 `dashboard/`。两份源码都覆盖 table、slice、SQL、时间范围、filter、aggregation、join、interval intersect、sort 等基础节点，可以支撑 CUJ 与卡顿 trace 的探索式筛选。
 
 ### 2. 两阶段执行模型
 
-`QueryExecutionService`（`query_builder/query_execution_service.ts`）负责把节点图同步给 Trace Processor summarizer，并在需要时触发物化查询：
+两份源码都由 `QueryExecutionService`（`query_builder/query_execution_service.ts`）把节点图同步给 Trace Processor summarizer，并在需要时触发物化查询：
 
 - **自动执行路径**：`NodeExplorer.updateQuery()` → `service.processNode({ manual: false })` → `createSummarizer()` / `updateSummarizerSpec()` 同步 `PerfettoSqlStructuredQuery` 图，再通过 `querySummarizer()` 取回 `sql`、`textproto`、`standaloneSql`、物化表名、行数和列信息。
 - **DataGrid 展示路径**：`Builder` 使用 Trace Processor 返回的物化表名创建 `SQLDataSource`，由 DataGrid 做 server-side 分页、过滤和排序；调试时应以返回的 `tableName` 为准，不把物化表命名规则当稳定接口。
@@ -534,16 +537,16 @@ v54.0 已有 `index.ts`、`explore_page.ts`、`query_builder/`、`node_registry.
 
 ### 3. 与 DataGrid / 手写 SQL 的关系
 
-`dev.perfetto.ExplorePage` 在 DataGrid 之上组织节点关系，把「写 PerfettoSQL 文本 + 单次 query」改成「节点连边 + 自动生成 SQL + 物化中间结果」：
+Data Explorer 在 DataGrid 之上组织节点关系，把「写 PerfettoSQL 文本 + 单次 query」改成「节点连边 + 自动生成 SQL + 物化中间结果」：
 
-| 维度 | 手写 SQL | DataGrid | ExplorePage 节点图 |
+| 维度 | 手写 SQL | DataGrid | Data Explorer 节点图 |
 |---|---|---|---|
 | 适用对象 | 熟悉 PerfettoSQL 的工程师 | 能理解结果列和单位的工程师 | 能理解 trace schema 与节点关系的工程师 |
 | 中间结果可见性 | 一次 query 一个结果 | 一个 SQL 一个 DataGrid | 已执行节点可得到物化表 |
 | 可视化程度 | 纯文本 | 表格 + pivot | 节点图 + 表格 |
 | 跨会话复用 | 保存 SQL 文件 | 保存 permalink | 保存 permalink + 节点图 JSON |
 
-**结论**：Android 17 / Perfetto v54.0 已提供基础节点图编辑器 ExplorePage，可以支撑 CUJ 和卡顿 trace 的探索式筛选。后续版本的命名和功能扩展不在本节讨论范围内。
+Android 17 固定 tag 已提供 `dev.perfetto.DataExplorer`。它沿用 v54 查询图和 summarizer 执行模型，并包含固定 tag 自身的后续 UI 改动。分析报告应记录 UI commit，不能用“Android 17 等于纯 v54.0 UI”概括。
 
 ---
 
@@ -559,6 +562,8 @@ v54.0 已有 `index.ts`、`explore_page.ts`、`query_builder/`、`node_registry.
 - [v54.0 relevant threads 模块](https://github.com/google/perfetto/blob/v54.0/src/trace_processor/perfetto_sql/stdlib/android/cujs/threads.sql)
 - [v54.0 heap graph stats 模块](https://github.com/google/perfetto/blob/v54.0/src/trace_processor/perfetto_sql/stdlib/android/memory/heap_graph/heap_graph_stats.sql)
 - [v54.0 ExplorePage 执行服务](https://github.com/google/perfetto/blob/v54.0/ui/src/plugins/dev.perfetto.ExplorePage/query_builder/query_execution_service.ts)
+- [Android 17 DataExplorer plugin](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/ui/src/plugins/dev.perfetto.DataExplorer/index.ts)
+- [Android 17 DataExplorer 执行服务](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/ui/src/plugins/dev.perfetto.DataExplorer/query_builder/query_execution_service.ts)
 
 ### Perfetto DataGrid 与 Jank CUJ 标准库第三方 App 适用性验证
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-perfetto-cujs-third-party-app-scope.md
