@@ -5,10 +5,10 @@ section: "12.5"
 status: "finalized"
 pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
-tags: [[connectivity, network-callback, network-performance, power, android-16]]
+tags: [[connectivity, network-callback, network-performance, power, android-17]]
 confidence: high
-last_verified: "2026-06-09"
-last_verified_against: "AOSP android-16.0.0_r1 / developer.android.com; Android 17 tag not public on android.googlesource at audit time"
+last_verified: "2026-07-31"
+last_verified_against: "Android 17 / API 37; AOSP android-17.0.0_r1 packages/modules/Connectivity; Android Developers connectivity and local-network-permission docs"
 drafted_date: "2026-05-17"
 reviewed_date: "2026-05-17"
 reviewed_by: openclaw-task6
@@ -18,6 +18,27 @@ created_date: "2026-05-17"
 gap_source: "官方文档+AOSP结构+每日信息"
 gap_score: 15
 path: "packages/modules/Connectivity/framework/src/android/net/NetworkCapabilities.java"
+sources:
+  - type: official
+    path: "https://developer.android.com/about/versions/17/behavior-changes-17"
+  - type: official
+    path: "https://developer.android.com/develop/connectivity/network-ops/reading-network-state"
+  - type: official
+    path: "https://developer.android.com/reference/android/net/ConnectivityManager"
+  - type: official
+    path: "https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback"
+  - type: official
+    path: "https://developer.android.com/reference/android/net/NetworkCapabilities"
+  - type: official
+    path: "https://developer.android.com/privacy-and-security/local-network-permission"
+  - type: official
+    path: "https://developer.android.com/develop/connectivity/5g/use-network-slicing"
+  - type: official
+    path: "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java"
+  - type: official
+    path: "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java"
+  - type: official
+    path: "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/service/src/com/android/server/ConnectivityService.java"
 task6_state: "reviewed"
 task6_result: pass-light-edit
 task9_state: "reviewed"
@@ -40,377 +61,300 @@ last_deepseek_cn_review_at: 2026-06-24
 
 # 12.5 ConnectivityService 与网络状态监听性能
 
-网络状态监听看起来只是一个 `NetworkCallback`，放到性能问题里涉及三类成本：系统侧要维护请求和回调，应用侧要避免重复注册与后台唤醒，网络请求侧要把“网络可用”转成可执行的降级策略。12.2、12.3、12.4 已经讲请求耗时、连接池和 TLS，本节补平台连接状态这一层；连接池、HTTPDNS 和 TLS 细节只做交叉引用，不重复展开。
+应用观察网络状态时，面对的是一组随时变化的系统快照。`NetworkCallback.onAvailable()` 只说明某条 `Network` 已满足系统请求条件，不证明业务域名能解析、TLS 能握手、服务器能返回成功响应。把回调当成业务探活，会在网络切换时制造重试风暴。
 
-[已验证: 官方文档, developer.android.com/develop/connectivity/network-ops/reading-network-state] 官方建议用 `ConnectivityManager` 与 `NetworkCallback` 监听网络状态变化，而不是靠高频轮询。`NetworkCapabilities` 的 AOSP 注释也提醒，一次性读取到的能力可能很快过期，生产代码应通过回调持续接收变化。[已验证: AOSP android-16.0.0_r1, packages/modules/Connectivity/framework/src/android/net/NetworkCapabilities.java]
+本章以 Android 17（API 37）和 AOSP `android-17.0.0_r1` 为锚点，说明应用该选择哪种监听接口、回调顺序能保证什么、注册为何有配额，以及 Android 17 本地网络权限和通信优先能力如何改变旧代码。
 
-## 平台网络状态模型
+<!-- outline-start -->
+## 本节导读
 
-应用侧看到的网络状态由四个对象组成：`ConnectivityManager` 是入口，`Network` 是一条网络路径的句柄，`NetworkCapabilities` 描述这条路径的能力，`LinkProperties` 描述 DNS、接口名、路由等连接参数。弱网判断不要只看“有没有网络”，因为 `NET_CAPABILITY_INTERNET` 只表示这条网络声明可达互联网，`NET_CAPABILITY_VALIDATED` 才表示系统探测过公共互联网可达；Captive Portal、DNS 失效或局域网直连会把这两类状态拉开。[已验证: 官方文档, developer.android.com/develop/connectivity/network-ops/reading-network-state]
+- 🔹 状态模型：区分 `Network`、`NetworkCapabilities`、`LinkProperties` 与业务可达性。
+- 🔹 API 选择：区分一次性查询、默认网络监听、被动匹配、主动请求和后台约束。
+- 🔹 回调时序：说明 `onAvailable()`、能力变化、链路变化、阻塞、丢失和不可用。
+- 🔹 系统路径：从 `ConnectivityManager` 的 Binder 请求追到 `ConnectivityService` 的重匹配。
+- 🔹 Android 17 边界：补充 `ACCESS_LOCAL_NETWORK` 与统一通信优先能力。
+<!-- outline-end -->
 
-这几个对象回答的问题不同：
+## 平台网络状态不是一个布尔值
 
-| 对象 | 回答的问题 | 性能治理里的用法 |
-|------|------------|------------------|
-| `Network` | 当前请求走哪条网络路径 | 在多网络并存、VPN、专用网络里区分故障来源 |
-| `NetworkCapabilities` | 是否有互联网、是否已验证、是否计费、是否拥塞、传输类型是什么 | 决定预取、同步频率、图片清晰度、日志批量上报策略 |
-| `LinkProperties` | DNS、接口、路由、MTU 等连接参数 | 排查 DNS 解析失败、VPN 路由异常、网络切换后的连接复用问题 |
-| `ConnectivityManager` | 注册回调、一次性查询、请求特定网络能力 | 把平台状态接入应用网络调度层 |
+应用侧常用四类对象：
 
-一个常见误判是把 `onAvailable()` 当成“业务接口可用”。`onAvailable()` 只说明某条网络满足请求条件，业务接口还会受 DNS、TLS、连接池、服务端限流和运营商策略影响。请求耗时分析见 12.2，连接池与 TLS 复用见 12.3、12.4。
+| 对象 | 表达内容 | 适合回答的问题 |
+|:---|:---|:---|
+| `ConnectivityManager` | 查询、监听、请求和绑定网络的入口 | 应用该观察哪类网络 |
+| `Network` | 一条网络路径的稳定句柄 | 某次 DNS、Socket 或失败属于哪条路径 |
+| `NetworkCapabilities` | 互联网、验证、计费、拥塞、传输类型等能力 | 当前策略该预取、延后还是降档 |
+| `LinkProperties` | 接口、地址、DNS、路由、代理和 MTU | 网络切换后哪项链路配置发生变化 |
 
-## 监听方式选择：回调、查询与后台任务
+`NET_CAPABILITY_INTERNET` 表示网络被配置为可访问一般互联网。`NET_CAPABILITY_VALIDATED` 表示系统最近一次验证发现一般互联网连通。两者都不是业务探活结果：企业防火墙、指定域名 DNS、TLS、服务端鉴权和限流仍可能让请求失败。
 
-`ConnectivityManager` 给了三类入口，适用的性能含义不同。一次性查询适合当前页面做即时判断；默认网络回调适合维护应用级网络状态；带 `NetworkRequest` 的回调用于监听某类网络能力。后台下载、周期同步这类延迟任务不应该常驻回调后自己调度，交给 `WorkManager` 或 `JobScheduler` 的网络约束更省进程和电量。[已验证: 官方文档, developer.android.com/develop/connectivity/network-ops/reading-network-state]
+能力组合比单一标志更有信息量：
 
-| 入口 | 适用任务 | 主要风险 |
-|------|----------|----------|
-| `getActiveNetwork()` + `getNetworkCapabilities()` | 页面打开时判断当前网络是否适合立即发起请求 | 结果会过期，不能缓存很久 |
-| `registerDefaultNetworkCallback()` | 跟踪应用默认网络变化，维护内存态网络画像 | 重复注册会占用系统请求名额，回调里做重活会阻塞回调线程 |
-| `registerNetworkCallback(NetworkRequest, callback)` | 监听满足特定能力的网络，例如未计费网络、蜂窝网络、低延迟能力 | 过宽的请求会收到多条网络事件，过窄的请求会漏掉可用路径 |
-| `WorkManager` 网络约束 | 延迟下载、日志补报、离线队列同步 | 不适合要求秒级响应的前台交互 |
+| 能力 | 平台含义 | 应用侧用法 |
+|:---|:---|:---|
+| `VALIDATED` | 系统验证过一般互联网连通 | 控制自动重试和离线提示，但保留用户主动操作 |
+| `CAPTIVE_PORTAL` / `PARTIAL_CONNECTIVITY` | 需要门户登录，或只能访问部分互联网 | 引导用户处理网络，暂停非紧急后台流量 |
+| `NOT_METERED` / `TEMPORARILY_NOT_METERED` | 非计费，或当前临时非计费 | 决定大文件、高清媒体和批量同步 |
+| `NOT_ROAMING` | 当前不处于漫游 | 参与流量成本策略 |
+| `NOT_CONGESTED` / `NOT_SUSPENDED` | 网络当前未拥塞、未暂停 | 延后可推迟流量，避免密集重试 |
+| `NOT_BANDWIDTH_CONSTRAINED` | 网络不受严格带宽约束 | 缺失时限制带宽和访问频率 |
 
-平台 API 本身也把成本边界写得很清楚。`ConnectivityManager` 文档说明，`registerDefaultNetworkCallback()`、`registerNetworkCallback()`、`requestNetwork()` 与 `ConnectivityDiagnosticsManager` 回调共享每 UID 100 个 outstanding request 限额，超过后抛异常；AOSP 的 `ConnectivityService.MAX_NETWORK_REQUESTS_PER_UID` 同样是 100。[已验证: AOSP android-16.0.0_r1, packages/modules/Connectivity/framework/src/android/net/ConnectivityManager.java; packages/modules/Connectivity/service/src/com/android/server/ConnectivityService.java]
+`getLinkDownstreamBandwidthKbps()` 与 `getLinkUpstreamBandwidthKbps()` 只描述第一跳传输带宽估计，不是到业务服务器的实时吞吐。Wi‑Fi 或蜂窝也不等于免费、稳定或快速；计费和拥塞策略应读取能力，不应从 transport 名称推导。
 
-## NetworkCallback 的注册成本与生命周期
+## 先选对 ConnectivityManager 入口
 
-`NetworkCallback` 的成本不在回调对象本身，而在“注册一次”会穿过 Binder 进入系统服务，系统要保存 `NetworkRequest`、`Messenger`、`Binder` 和回调映射，再把网络变化分发回应用进程。AOSP 中 `ConnectivityManager.sendRequestForNetwork()` 会把 `NetworkCallback` 包进 `Messenger`，`LISTEN` 类型调用 `mService.listenForNetwork()`，其他请求调用 `mService.requestNetwork()`；`unregisterNetworkCallback()` 会释放对应 `NetworkRequest` 并从 `sCallbacks` 移除映射。[已验证: AOSP android-16.0.0_r1, packages/modules/Connectivity/framework/src/android/net/ConnectivityManager.java]
+| 入口 | 行为 | 适用场景 | 生命周期风险 |
+|:---|:---|:---|:---|
+| `activeNetwork` + `getNetworkCapabilities()` | 读取调用时刻的应用默认网络 | 页面进入、用户点击前的即时判断 | 快照会过期 |
+| `registerDefaultNetworkCallback()` | 监听该应用的默认网络 | 进程级网络状态源 | 重复注册、忘记注销 |
+| `registerNetworkCallback()` | 被动监听所有满足 `NetworkRequest` 的网络 | 多网络观察、特定能力监控 | 同时收到多条网络事件 |
+| `registerBestMatchingNetworkCallback()` | 只跟踪满足请求的最佳网络 | API 31+ 的单一路径选择观察 | 仍需对称注销 |
+| `requestNetwork()` | 查找最佳匹配；没有匹配时尝试拉起网络 | 专用网络、蜂窝能力、网络切片 | 会持有或拉起网络，需要 `CHANGE_NETWORK_STATE` |
+| WorkManager / JobScheduler constraint | 到满足条件时由系统运行后台任务 | 延迟同步、日志补报、大文件下载 | 不适合前台即时反馈 |
 
-回调生命周期按“应用级单例 + 显式注销”管理，页面不要各自注册一份。回调里只更新内存态状态或发轻量事件，DNS 重刷、连接池清理、接口重试放到单独的调度层。默认回调运行在内部 Handler 上；如果回调要做更多工作，使用带 `Handler` 的重载，把执行线程交给应用控制。[已验证: 官方文档, developer.android.com/develop/connectivity/network-ops/reading-network-state]
+查询与监听通常需要 `ACCESS_NETWORK_STATE`；主动 `requestNetwork()` 还需要 `CHANGE_NETWORK_STATE` 或相应的系统设置权限。构建请求时若加入受限能力，还可能有额外声明或特权要求。
 
-这段代码展示一种应用级网络状态监听写法，重点是单例注册、专用线程和对称注销：
+`registerNetworkCallback()` 是监听，`requestNetwork()` 是主动请求。用短 timeout 反复调用 `requestNetwork()` 轮询网络，会让系统尝试建立所请求的网络；官方文档明确要求用监听接口完成存在性观察。带 timeout 的主动请求触发 `onUnavailable()` 后会自动释放。
+
+API 36 的 `reserveNetwork()` 与 `NetworkCallback.onReserved()` 面向需要先预留能力、再由软硬件组件创建网络的专门流程。普通应用维护在线状态不需要它。
+
+## NetworkCallback 的顺序与语义
+
+### `onAvailable()` 后不要同步再查一遍
+
+从 Android 8.0（API 26）起，`onAvailable(network)` 会紧接着收到同一网络的 `onCapabilitiesChanged()`、`onLinkPropertiesChanged()` 和 `onBlockedStatusChanged()`。官方 API 明确要求不要在回调中同步调用 `getNetworkCapabilities(network)` 或 `getLinkProperties(network)`：同步查询与事件队列之间存在竞态，结果可能已经过期或为 `null`。应直接消费后续回调参数。
+
+几个回调处理不同的状态变化：
+
+- `onAvailable()`：该网络成为当前请求的匹配网络；还不能把它标成业务接口可用。
+- `onCapabilitiesChanged()`：验证、计费、拥塞、暂停、transport 等能力发生变化。
+- `onLinkPropertiesChanged()`：DNS、路由、地址、代理或 MTU 变化。
+- `onBlockedStatusChanged()`：系统策略允许或阻止应用访问该网络。
+- `onLosing()`：系统预计网络即将失去；突然断网时可能完全不调用。
+- `onLost()`：网络断开，或不再满足当前 callback/request。
+- `onUnavailable()`：主动请求或网络预留无法满足；普通监听不会用它表示“当前没网”。
+
+默认网络回调只跟踪应用当前最佳路径。Wi‑Fi 被更优网络替换后，旧 Wi‑Fi 可能仍连接，默认回调却会转到新 `Network`。普通 `registerNetworkCallback()` 则可能同时跟踪 Wi‑Fi、蜂窝和 VPN，状态容器必须以 `Network` 为 key，不能用一个全局布尔值覆盖所有事件。
+
+### 配额属于整个 UID
+
+Android 17 的公开 API 与 AOSP 源码一致：每个 UID 最多有 100 个 outstanding network requests。这个额度由 `registerDefaultNetworkCallback()`、`registerNetworkCallback()`、`requestNetwork()`、对应的 `PendingIntent` 变体和 `ConnectivityDiagnosticsManager` 回调共享。超过额度会抛出运行时异常。
+
+`NetworkCallback` 同一时刻最多注册一次。停止使用时调用 `unregisterNetworkCallback()`；若它来自 `requestNetwork()`，注销还可能让系统关闭仅为该请求维持的网络。把 callback 放进每个 Fragment、每次重组或每个 repository 实例，都会扩大泄漏和配额耗尽风险。
+
+## 一个进程级默认网络状态源
+
+下面的 API 26+ 示例只维护应用默认网络的有序快照。它把 callback 放在专用 `HandlerThread`，`close()` 是终止操作，调用后不再重新 `start()`。
 
 ```kotlin
-class NetworkStateMonitor(
+class AppNetworkMonitor(
     context: Context,
-    private val onStateChanged: (NetworkCapabilities?) -> Unit,
-) {
-    private val appContext = context.applicationContext
-    private val connectivityManager =
-        appContext.getSystemService(ConnectivityManager::class.java)
+    private val publish: (Snapshot) -> Unit,
+) : Closeable {
 
-    private val callbackThread = HandlerThread("network-state-callback").apply { start() }
-    private val callbackHandler = Handler(callbackThread.looper)
+    data class Snapshot(
+        val network: Network?,
+        val capabilities: NetworkCapabilities?,
+        val linkProperties: LinkProperties?,
+        val blocked: Boolean,
+    )
+
+    private val cm = context.applicationContext
+        .getSystemService(ConnectivityManager::class.java)
+    private val thread = HandlerThread("app-network-callback").apply { start() }
+    private val handler = Handler(thread.looper)
 
     @Volatile
     private var registered = false
+    private var closed = false
+
+    private var network: Network? = null
+    private var capabilities: NetworkCapabilities? = null
+    private var linkProperties: LinkProperties? = null
+    private var blocked = false
+
+    private fun emit() {
+        publish(Snapshot(network, capabilities, linkProperties, blocked))
+    }
 
     private val callback = object : ConnectivityManager.NetworkCallback() {
-        override fun onCapabilitiesChanged(
-            network: Network,
-            networkCapabilities: NetworkCapabilities,
-        ) {
-            onStateChanged(networkCapabilities)
+        override fun onAvailable(available: Network) {
+            network = available
+            capabilities = null
+            linkProperties = null
+            blocked = false
+            emit()
         }
 
-        override fun onLost(network: Network) {
-            onStateChanged(null)
+        override fun onCapabilitiesChanged(
+            changed: Network,
+            value: NetworkCapabilities,
+        ) {
+            if (changed != network) return
+            capabilities = value
+            emit()
+        }
+
+        override fun onLinkPropertiesChanged(
+            changed: Network,
+            value: LinkProperties,
+        ) {
+            if (changed != network) return
+            linkProperties = value
+            emit()
+        }
+
+        override fun onBlockedStatusChanged(changed: Network, value: Boolean) {
+            if (changed != network) return
+            blocked = value
+            emit()
+        }
+
+        override fun onLost(lost: Network) {
+            if (lost != network) return
+            network = null
+            capabilities = null
+            linkProperties = null
+            blocked = false
+            emit()
         }
     }
 
+    @Synchronized
     fun start() {
+        check(!closed) { "monitor is closed" }
         if (registered) return
-        connectivityManager.registerDefaultNetworkCallback(callback, callbackHandler)
+        cm.registerDefaultNetworkCallback(callback, handler)
         registered = true
     }
 
-    fun stop() {
-        if (!registered) return
-        connectivityManager.unregisterNetworkCallback(callback)
-        registered = false
-        callbackThread.quitSafely()
+    @Synchronized
+    override fun close() {
+        if (closed) return
+        if (registered) {
+            cm.unregisterNetworkCallback(callback)
+            registered = false
+        }
+        closed = true
+        thread.quitSafely()
     }
 }
 ```
 
-这段代码只维护状态，不在回调中直接发起网络请求。线上实现还要处理进程级生命周期：如果 `stop()` 后可能再次 `start()`，线程要延后到进程退出再关闭，或在重新注册前创建新的 `HandlerThread`。
+`publish` 在专用线程执行；UI 层需要自行切换到主线程。`onAvailable()` 发布的第一份快照故意不带 capabilities 和 link properties，后续两个有序回调会补齐。业务层应把相同策略状态去重，避免一次网络建立触发多轮等价刷新。API 24–25 没有带 `Handler` 的默认回调重载，可使用无 `Handler` 版本，或在回调内立刻转发到自己的串行执行器。
 
-## CONNECTIVITY_ACTION 限制与后台进程唤醒
+## AOSP Android 17 的注册与分发路径
 
-Android 7.0 开始，面向 API 24 及以上的应用如果在 manifest 里声明 `CONNECTIVITY_ACTION` receiver，系统不会因为网络变化把进程拉起来；运行时通过 `Context.registerReceiver()` 注册的 receiver 仍可在上下文有效期间收到广播。[已验证: 官方文档, developer.android.com/topic/performance/background-optimization]
+`ConnectivityManager.sendRequestForNetwork()` 会创建 `Messenger` 与 `Binder` token。`LISTEN` 类型走 `IConnectivityManager.listenForNetwork()`；主动请求、默认网络跟踪等其他类型走 `requestNetwork()`。成功后，framework 以 `NetworkRequest` 为 key 保存 callback 映射。
 
-这条限制直接改变了老架构里的“网络一变就启动进程补任务”模型。网络变化是高频事件，Wi-Fi 与蜂窝切换、VPN 重连、Captive Portal 校验都会触发状态变化；如果每个应用都靠隐式广播唤醒进程，系统会在同一时刻启动大量后台进程，带来 CPU、I/O 和电量开销。新的写法是：前台体验依赖 `NetworkCallback` 维护实时状态，后台补偿任务依赖 `WorkManager` 的网络约束，服务端推送优先用 FCM，避免应用自己轮询服务器。
+系统侧 `ConnectivityService.MAX_NETWORK_REQUESTS_PER_UID` 为 100。`NetworkAgent` 上报能力、链路和评分，`NetworkMonitor` 上报验证结果；这些变化可能触发网络与请求的重新匹配。`computeNetworkReassignment()` 收集当前 `NetworkAgentInfo`，遍历需要重评估的请求，并交给 `NetworkRanker` 选择匹配网络。源码给 `rematchNetworksAndRequests()` 留有“可能较慢，应优化”的 TODO。耗时随网络、请求和分层 request 数量增长，不能只用一个简化公式描述。
 
-这也解释了为什么网络状态监听不该和业务重试绑死。回调只告诉网络画像变化，业务层要按请求类型决定：前台请求可以立即重试一次，日志上报可以进入批量队列，大文件下载应等未计费网络或充电条件，非紧急同步交给后台任务调度。
-
-## 网络计量、漫游与请求降级策略
-
-`NET_CAPABILITY_NOT_METERED` 表示用户通常不按流量计费或不敏感，官方与 AOSP 都建议应用根据它控制大流量行为；`hasTransport(TRANSPORT_WIFI)`、`hasTransport(TRANSPORT_CELLULAR)` 只能说明传输类型，不能等价于“便宜”或“稳定”。热点、企业无线局域网、漫游蜂窝、临时不限量套餐都会让传输类型和计费状态不一致。[已验证: AOSP android-16.0.0_r1, packages/modules/Connectivity/framework/src/android/net/NetworkCapabilities.java]
-
-应用网络调度层可以把平台能力转成策略表：
-
-| 状态 | 请求策略 | 典型动作 |
-|------|----------|----------|
-| `VALIDATED` 缺失 | 暂停非紧急请求，保留用户主动刷新入口 | 显示网络不可用或登录门户提示，避免队列反复重试 |
-| 缺少 `NOT_METERED` | 降低预取和自动播放强度 | 图片降档、视频预加载窗口缩小、日志批量上报延后 |
-| 蜂窝且带宽估计较低 | 控制并发连接与请求体大小 | 分页缩小、上传压缩、重试退避时间拉长 |
-| 网络从无线局域网切到蜂窝 | 保护正在进行的大文件任务 | 暂停后台下载，前台请求按用户动作继续 |
-| VPN 存在 | 排查路径要把应用流量和系统默认网络分开 | 记录 `Network` 与 DNS 结果，避免把 VPN 路由问题归因到服务端 |
-
-策略表最好只影响“何时发、发多大、是否降级”，不要在这里直接替换 DNS、清空连接池或重建 HTTP 客户端。HTTPDNS 与连接池策略见 24.4；后台功耗治理见 25.2。
-
-## ConnectivityService 的系统侧分发路径
-
-应用调用 `registerDefaultNetworkCallback()` 后，路径大致是：应用进程的 `ConnectivityManager` 通过 Binder 调到 `ConnectivityService`，系统服务保存请求和回调通道；Wi-Fi、蜂窝、VPN 等网络由各自的 `NetworkAgent` 上报状态；`NetworkMonitor` 做验证探测并更新 `VALIDATED` 等能力；`ConnectivityService` 选择默认网络并向匹配的 `NetworkCallback` 分发 `onAvailable()`、`onCapabilitiesChanged()`、`onLinkPropertiesChanged()`、`onLost()` 等事件。[已验证: AOSP android-16.0.0_r1, packages/modules/Connectivity/service/src/com/android/server/ConnectivityService.java]
+下面的时序图用于定位一次默认网络 callback 从应用注册到系统回调的边界。
 
 ```mermaid
 sequenceDiagram
-    participant App as App process
-    participant CM as ConnectivityManager
-    participant CS as ConnectivityService(system_server)
-    participant Agent as NetworkAgent(Wi-Fi/Cellular/VPN)
-    participant Monitor as NetworkMonitor
+    participant App as "App process"
+    participant CM as "ConnectivityManager"
+    participant CS as "ConnectivityService"
+    participant Agent as "NetworkAgent"
+    participant Monitor as "NetworkMonitor"
 
-    App->>CM: registerDefaultNetworkCallback(callback)
-    CM->>CS: listenForNetwork / requestNetwork(Binder)
-    Agent->>CS: report network score and capabilities
-    Monitor->>CS: report validation and link state
-    CS-->>CM: callback event through Messenger
-    CM-->>App: onCapabilitiesChanged / onLost
+    App->>CM: registerDefaultNetworkCallback
+    CM->>CS: requestNetwork(TRACK_DEFAULT) via Binder
+    Agent->>CS: capabilities, LinkProperties, score
+    Monitor->>CS: validation result
+    CS->>CS: compute and apply reassignment
+    CS-->>CM: callback event via Messenger
+    CM-->>App: onAvailable and ordered state updates
 ```
 
-排查性能问题时，重点看五类信号：应用是否重复注册、系统是否存在大量 outstanding request、回调是否在主线程做重活、`VALIDATED` 是否频繁抖动、VPN 或多网络是否改变了默认路径。更底层的 TCP、TLS、HTTP/2 多路复用和连接池复用，回到 12.2、12.3、12.4 分析。
+图中的 `onAvailable` 代表系统选择结果，不代表 HTTP 请求已完成。NetworkAgent 注册、销毁和评分细节放在 12.8 处理，避免本章用易漂移的源码行号重复维护。
 
-## 5G Network Slicing 的适用边界
+## 回调、后台执行与重试必须分层
 
-Network Slicing 适合低延迟、专用带宽这类明确网络质量诉求，不适合当作通用“提速开关”。官方文档要求应用在资源里声明要使用的 premium capability，例如 `NET_CAPABILITY_PRIORITIZE_LATENCY`，再通过 `requestNetwork()` 请求满足能力的网络；Android 14 文档标注当时支持的 premium capability 是 `NET_CAPABILITY_PRIORITIZE_LATENCY`。[已验证: 官方文档, developer.android.com/develop/connectivity/5g/use-network-slicing]
+面向 API 24 及以上的应用，manifest 中声明的 `CONNECTIVITY_ACTION` receiver 不会因网络变化被系统启动。运行时注册的 receiver 仅在注册它的进程和 `Context` 有效时接收事件。`NetworkCallback` 同样不是后台保活机制：进程存活时它提供实时状态，进程退出后应由 WorkManager、JobScheduler 或服务端推送处理延迟工作。
 
-这个能力的可用性由运营商、套餐、设备、系统版本和企业策略共同决定。应用设计上要把它当成可选能力：请求成功时把低延迟业务绑定到返回的 `Network`，请求失败时回退到默认网络；不要把业务可用性建立在 slicing 一定存在的假设上。对于直播连麦、云游戏、工业控制这类场景，它的价值在于申请更匹配的网络能力；对于普通列表刷新、图片加载、日志上报，它通常不值得增加接入复杂度。
+推荐的职责分配如下：
 
-## 与 HTTPDNS、连接池和后台任务的关系
+- `NetworkCallback`：产出有序的网络快照。
+- 网络策略层：把能力映射为预取、媒体质量、并发和重试策略。
+- HTTP 客户端：处理 DNS、连接池、TLS、协议和请求级错误。
+- WorkManager / JobScheduler：等待网络、充电等约束后执行可延迟任务。
+- 业务重试器：结合请求幂等性、异常、服务端限流和网络切换决定退避。
 
-网络状态监听只回答“系统现在认为哪条网络路径可用、具备哪些能力”。它不替代 HTTPDNS，不负责选择服务端 IP；不替代 OkHttp 连接池，不负责复用 socket；不替代 WorkManager，不负责在后台找合适时机执行任务。
+网络事件到达时，不要统一清空连接池、重建 HTTP 客户端或立即重放全部失败请求。现有连接是否还能使用应由网络库和具体异常决定；批量重试还要加入指数退避、随机抖动和队列上限。
 
-建议的分工：
+## 从 NetworkCapabilities 生成业务策略
 
-- `NetworkCallback`：维护网络画像，输出计费、验证、传输类型、VPN、多网络等状态。
-- HTTPDNS / `Dns`：在业务域名层做解析策略，处理运营商 DNS 污染、跨地域调度和兜底解析。
-- OkHttp 连接池：控制连接复用、空闲连接淘汰、HTTP/2 多路复用和 TLS 会话复用。
-- WorkManager / JobScheduler：承接延迟任务，按网络、充电、电量、后台限制来安排执行窗口。
-- 业务重试器：把错误码、异常类型、网络画像和服务端限流合在一起，决定是否立即重试、退避重试或降级展示。
+| 观测状态 | 合理动作 | 不应推导的结论 |
+|:---|:---|:---|
+| 缺少 `VALIDATED` | 暂停自动刷新；允许用户主动重试；检查门户或局部连通 | 所有业务域名必然失败 |
+| 缺少 `NOT_METERED` | 降低预取、高清媒体和后台上传 | 当前一定是蜂窝网络 |
+| 缺少 `NOT_CONGESTED` | 延后遥测、索引和非紧急同步 | 立即中断前台请求 |
+| 缺少 `NOT_BANDWIDTH_CONSTRAINED` | 把吞吐与频率限制在平台带宽估计以内 | 仅降低图片清晰度便足够 |
+| `onBlockedStatusChanged(..., true)` | 停止自动网络工作并记录系统策略阻塞 | 服务端宕机 |
+| transport 发生变化 | 记录切换点，观察 DNS/TLS/连接复用 | 旧请求一定失败 |
 
-这种拆分能避免把所有弱网策略压到一个回调里。`NetworkCallback` 只做状态输入，策略由网络调度层统一消费，连接层和任务调度层各自处理自己的成本边界。
+Android 16（API 36）加入 `NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED`。当它缺失时，官方 API 要求应用限制高带宽传输和访问频率；持续超出网络承受范围，系统可能阻止应用使用该网络。Android 17 应把这项能力纳入大文件、媒体和设备间传输策略。
 
-## 扩展：多网络并存与 VPN 场景
+## 多网络、VPN 与绑定网络
 
-同一时刻可能存在无线局域网、蜂窝、VPN、企业专用网络和本地网络。应用默认网络不一定等于系统默认网络，VPN 也可能让应用流量走一条和系统探测不同的路径。遇到“用户说有网但接口失败”的问题，日志里至少记录 `Network`、`NetworkCapabilities` 摘要、DNS 结果、连接目标 IP、是否 VPN、请求开始时和失败时的网络状态。
+`registerDefaultNetworkCallback()` 观察的是应用默认网络，它可能是适用于该应用的 VPN，因此不必等于设备界面上显示的物理默认网络。`registerNetworkCallback()` 能看到多条匹配网络；日志与状态容器应保留 `Network` 身份，不能只记 Wi‑Fi/蜂窝。
 
-如果业务要绑定某条 `Network` 发请求，要把生命周期写清楚：`Network` 丢失后旧 socket 可能继续失败，连接池也可能保留旧路径上的连接。绑定网络是高级用法，适合企业 VPN、专线、低延迟网络这类有明确路径诉求的业务，不适合普通请求随手绑定。
+需要固定路径的业务可通过 `Network.getSocketFactory()`、`Network.openConnection()` 或 network-specific DNS 建立连接。`bindProcessToNetwork()` 会影响进程后续创建的 Socket 和 DNS，影响面更大。企业专线、VPN、Wi‑Fi Direct 等有明确路由要求的场景才适合绑定；普通 API 请求应跟随应用默认网络。
 
-## 扩展：网络切换期间的请求失败归因
+网络切换失败归因至少关联这些信息：request ID、`Network`、capabilities 摘要、DNS 服务器与解析结果、目标 IP、TCP/QUIC 建连、TLS、HTTP 状态、callback 时间线和服务端日志。`onLost()` 与请求异常时间接近只能证明相关，无法单独证明因果。
 
-无线局域网切蜂窝、VPN 重连、Captive Portal、DNS 缓存失效和服务端超时经常混在同一个时间窗口里。排查时不要只看 `onLost()` 和接口失败的时间接近就下结论，应把 OkHttp `EventListener`、应用网络画像、服务端访问日志放在同一条时间线上：DNS 是否重新解析、TLS 是否重新握手、连接池是否命中旧连接、失败请求是否跨越网络切换点。
+## Android 17 的本地网络权限
 
-可执行的记录字段包括：请求 ID、开始时间、结束时间、异常类型、`Network` 标识、是否 `VALIDATED`、是否 `NOT_METERED`、传输类型、DNS 耗时、TCP 连接耗时、TLS 握手耗时、HTTP 状态码。字段足够细，弱网问题才不会被简单归到“用户网络不好”。
+Android 17 对 targetSdk 37 及以上应用强制执行 `ACCESS_LOCAL_NETWORK` 运行时权限。限制位于网络栈深处，覆盖 TCP、UDP 单播、组播、广播、mDNS/SSDP、NsdManager 以及建立在 Socket 上的 OkHttp、Cronet 和 WebView。权限被拒绝或撤回时，应用仍可能有可用的 Wi‑Fi `Network`，但到 LAN 地址的流量会被阻止。
 
-## 小结
+有两条迁移路径：
 
-ConnectivityService 和 `NetworkCallback` 的性能价值在于提供平台级网络画像，让应用把预取、同步、降级、重试和后台任务调度建立在同一份状态上。注册回调要少而稳，后台任务交给系统调度，计费与验证状态要参与请求策略，连接池和 HTTPDNS 仍由网络栈独立处理。这样的网络层既能减少无效唤醒，也能让弱网归因更接近真实故障位置。
+- 媒体投放或单设备发现优先使用系统中介的 picker；`NsdManager` 的 picker 返回的设备地址可以在没有广泛 LAN 权限时连接。
+- 家庭自动化、IoT 管理等需要持续扫描和访问多个设备的功能，声明并在运行时请求 `ACCESS_LOCAL_NETWORK`，同时处理拒绝与撤回。
 
-### 12.5.6 NetworkAgent 生命周期与网络评分机制深度解析
+`NET_CAPABILITY_LOCAL_NETWORK` 与这项权限不是同一概念。该 capability 描述设备自己提供地址的本地网络，例如热点、Thread Border Router 或 Wi‑Fi P2P Group Owner；用于互联网接入的普通 Wi‑Fi 不会因此变成 `LOCAL_NETWORK`。权限则控制应用访问本地地址范围。
 
-基于 Android 17 / API 37 源码的深度分析，NetworkAgent 的生命周期管理与网络评分机制是整个网络栈的核心，直接影响网络分配的性能和准确性。
+## Android 17 的优先通信能力与 5G slicing
 
-#### NetworkAgent 生命周期管理
+API 33 提供 `NET_CAPABILITY_PRIORITIZE_LATENCY` 和 `NET_CAPABILITY_PRIORITIZE_BANDWIDTH`。targetSdk 34 及以上应用通过 `requestNetwork()` 请求这些自认证能力前，要在 manifest property 对应的 XML 中声明。网络能否满足请求仍取决于设备、运营商、套餐、区域和策略；请求失败时不会自动回到默认网络，应用要自行处理。
 
-**注册流程**（ConnectivityService.java:10422）：
-```java
-private NetworkAndAgentRegistryParcelable registerNetworkAgentInternal(
-        INetworkAgent na, NetworkInfo networkInfo,
-        LinkProperties linkProperties, NetworkCapabilities networkCapabilities,
-        NetworkScore currentScore, NetworkAgentConfig networkAgentConfig,
-        @Nullable LocalNetworkConfig localNetworkConfig, int providerId,
-        int uid, boolean isAppSpecificNetwork) {
-    
-    // 创建 NetworkAgentInfo 对象，分配唯一的 netId
-    final NetworkAgentInfo nai = new NetworkAgentInfo(na,
-            new Network(mNetIdManager.reserveNetId()), niCopy, lpCopy, ncCopy,
-            localNetworkConfig, currentScore, mContext, mTrackerHandler,
-            new NetworkAgentConfig(networkAgentConfig), this, mNetd, mDnsResolver, providerId,
-            uid, isAppSpecificNetwork, mLingerDelayMs, mQosCallbackTracker, mDeps);
-    
-    // 创建网络监控器
-    mDeps.getNetworkStack().makeNetworkMonitor(
-            nai.network, name, new NetworkMonitorCallbacks(nai));
-    
-    return result;
-}
-```
+Android 17 / API 37 又加入 `NET_CAPABILITY_PRIORITIZE_UNIFIED_COMMUNICATIONS`，范围限定为 OTT 语音与视频通话。系统可以在检测到合格通话时代表应用请求，也允许 OTT 应用通过 `requestNetwork(NetworkRequest, PendingIntent)` 请求。它是网络可能提供高优先级、低延迟数据路径的提示，不保证任意一次通话都会使用专用 slice。
 
-**销毁流程**（ConnectivityService.java:6287）：
-```java
-private void destroyNetwork(NetworkAgentInfo nai) {
-    // 通知 netd 清理网络配置
-    if (shouldDestroyNativeNetwork(nai)) {
-        destroyNativeNetwork(nai);
-    }
-    
-    // 移除接口转发规则
-    maybeDisableForwardRulesForDisconnectingNai(nai, false);
-    
-    // 销毁网络缓存
-    mDnsResolver.destroyNetworkCache(nai.network.getNetId());
-    mDnsManager.removeNetwork(nai.network);
-    
-    // 清理速率限制规则
-    if (nai.everConnected() && canNetworkBeRateLimited(nai) && mIngressRateLimit >= 0) {
-        mDeps.disableIngressRateLimit(nai.linkProperties.getInterfaceName());
-    }
-    
-    // 标记为已销毁
-    nai.setDestroyed();
-    nai.onNetworkDestroyed();
-}
-```
+列表刷新、图片加载和日志上传不应申请通信优先能力。音视频通话采用它时，也要保留默认网络路径、请求超时、callback 注销和通话结束释放逻辑。
 
-#### 网络评分机制
+## 诊断清单
 
-**评分更新机制**（ConnectivityService.java:13688）：
-```java
-private void updateNetworkScore(@NonNull final NetworkAgentInfo nai, final NetworkScore score) {
-    if (VDBG || DDBG) log("updateNetworkScore for " + nai.toShortString() + " to " + score);
-    nai.setScore(score);
-    rematchAllNetworksAndRequests();
-}
-```
+出现网络状态抖动、后台耗电或配额异常时，按下列顺序核对：
 
-**重匹配算法**（ConnectivityService.java:13092）：
-```java
-private void rematchAllNetworksAndRequests() {
-    rematchNetworksAndRequests(getNrisFromGlobalRequests());
-}
+1. callback 是否由进程级组件统一注册，注册和注销是否一一对应；
+2. 使用的是被动监听还是可能拉起网络的 `requestNetwork()`；
+3. 回调线程是否执行 DNS、磁盘 I/O、HTTP 请求或大批量序列化；
+4. 状态容器是否按 `Network` 区分多条路径，并消费有序的 capability/link 回调；
+5. `VALIDATED`、`PARTIAL_CONNECTIVITY`、blocked、metered、constrained 是否被压成一个布尔值；
+6. WorkManager 约束与 callback 是否重复触发同一批任务；
+7. targetSdk 37 后的 LAN 失败是否来自 `ACCESS_LOCAL_NETWORK`；
+8. `requestNetwork()` 与 diagnostics callback 总量是否接近每 UID 100 的共享配额。
 
-private void rematchNetworksAndRequests(@NonNull final Set<NetworkRequestInfo> networkRequests) {
-    ensureRunningOnConnectivityServiceThread();
-    final long start = SystemClock.elapsedRealtime();
-    
-    // 计算网络重分配
-    final NetworkReassignment changes = computeNetworkReassignment(networkRequests);
-    final long computed = SystemClock.elapsedRealtime();
-    
-    // 应用重分配
-    applyNetworkReassignment(changes, start);
-    final long applied = SystemClock.elapsedRealtime();
-    
-    // 发送网络需求通知
-    issueNetworkNeeds();
-}
-```
+调试设备可用 `adb shell dumpsys connectivity` 查看当前网络、requests 和默认网络选择；应用侧用 trace slice 标出 callback 与重试器事件，再与 OkHttp `EventListener`、Cronet NetLog 和服务端日志对齐。日志不要保存完整 IP 拓扑、Wi‑Fi 标识或鉴权数据。
 
-**网络排名计算**（ConnectivityService.java:13048）：
-```java
-private NetworkReassignment computeNetworkReassignment(
-        @NonNull final Collection<NetworkRequestInfo> networkRequests) {
-    final NetworkReassignment changes = new NetworkReassignment();
-    
-    // 收集所有相关的网络代理
-    final ArrayList<NetworkAgentInfo> nais = new ArrayList<>();
-    forEachNetworkAgentInfo(nai -> nais.add(nai));
-    
-    for (final NetworkRequestInfo nri : networkRequests) {
-        if (!nri.isMultilayerRequest() && nri.mRequests.get(0).isListen()) {
-            continue; // 忽略非多层监听请求
-        }
-        
-        NetworkAgentInfo bestNetwork = null;
-        NetworkRequest bestRequest = null;
-        
-        // 为每个请求找到最佳网络
-        for (final NetworkRequest req : nri.mRequests) {
-            bestNetwork = mNetworkRanker.getBestNetwork(req, nais, nri.getSatisfier());
-            if (null != bestNetwork) {
-                bestRequest = req;
-                break;
-            }
-        }
-        
-        // 如果当前满足者与最佳网络不同，添加重分配
-        if (nri.getSatisfier() != bestNetwork) {
-            changes.addRequestReassignment(new NetworkReassignment.RequestReassignment(
-                    nri, nri.mActiveRequest, bestRequest, nri.getSatisfier(), bestNetwork));
-        }
-    }
-    return changes;
-}
-```
+## 与其他章节的关系
 
-#### 关键调用链
-
-1. **网络注册调用链**：
-   ```
-   NetworkAgent.registerNetworkAgent()
-       ↓
-   ConnectivityService.registerNetworkAgent()
-       ↓
-   ConnectivityService.registerNetworkAgentInternal()
-       ↓
-   NetworkAgentInfo.NetworkAgentInfo()
-       ↓
-   NetworkStack.makeNetworkMonitor()
-   ```
-
-2. **评分更新调用链**：
-   ```
-   NetworkAgent.onNetworkScoreChanged()
-       ↓
-   ConnectivityService.updateNetworkScore()
-       ↓
-   NetworkAgentInfo.setScore()
-       ↓
-   ConnectivityService.rematchAllNetworksAndRequests()
-       ↓
-   ConnectivityService.computeNetworkReassignment()
-       ↓
-   ConnectivityService.applyNetworkReassignment()
-   ```
-
-3. **网络销毁调用链**：
-   ```
-   NetworkAgent.disconnect()
-       ↓
-   ConnectivityService.disconnectAndDestroyNetwork()
-       ↓
-   ConnectivityService.destroyNetwork()
-       ↓
-   netd.networkDestroy()
-       ↓
-   DnsResolver.destroyNetworkCache()
-   ```
-
-#### 性能影响
-
-1. **重匹配算法复杂度**：`rematchAllNetworksAndRequests()` 的时间复杂度为 O(n×m)，其中 n 是网络数量，m 是请求数量。代码中有 TODO 注释提到 "This may be slow, and should be optimized."
-
-2. **网络评分性能**：`updateNetworkScore()` 会立即触发全局重匹配，可能在网络频繁变化时造成性能开销。
-
-3. **内存管理**：NetworkAgentInfo 包含大量状态信息，包括 NetworkInfo、LinkProperties、NetworkCapabilities 等，需要有效的内存管理。
-
-#### Android 17 版本特性
-
-基于 Android 17 / API 37 源码分析，未发现与 Android 18+ 相关的特有变化。NetworkAgent 生命周期与网络评分机制在 API 37 中保持稳定，但评分算法的优化仍在进行中。
-
-**关键函数位置**：
-- `registerNetworkAgentInternal()` - 第10422行
-- `destroyNetwork()` - 第6287行  
-- `updateNetworkScore()` - 第13688行
-- `rematchAllNetworksAndRequests()` - 第13092行
-
-这些源码位置为理解 Android 网络栈的底层实现提供了完整的调用链和时序分析。
-
----
+- **12.2**：HTTP 请求分段与性能观测。
+- **12.3**：DNS、Socket、连接池和协议层诊断。
+- **12.4**：TLS、ECH、CT 与加密 DNS。
+- **12.6**：netd、DnsResolver 与系统网络诊断。
+- **12.8**：NetworkAgent 生命周期、网络评分与重匹配。
 
 ## 参考资料
 
-### 系统源码调研
-- [NetworkAgent 生命周期与网络评分机制（Android 17 源码调研）](DeepResearch/2026-06-22-android17-networkagent-lifecycle-scoring-mechanism.md) — `registerNetworkAgentInternal` netId 分配、`destroyNetwork` 清理链、`updateNetworkScore → rematchAllNetworksAndRequests → computeNetworkReassignment` 重匹配算法，含 `NetworkRanker` 分层评分逻辑。
-
-### 官方文档
-- [Reading network state — developer.android.com](https://developer.android.com/develop/connectivity/network-ops/reading-network-state)
-- [Optimize network power — developer.android.com](https://developer.android.com/topic/performance/power/network/action-app-traffic.html)
-
-### 交叉引用
-- 12.2 HTTP 请求耗时分析
-- 12.3 连接池复用
-- 12.4 TLS 握手优化
-- 24.4 网络相关的电池优化
-
+- [Read network state](https://developer.android.com/develop/connectivity/network-ops/reading-network-state)：默认网络、普通 callback 和回调时序。
+- [`ConnectivityManager`](https://developer.android.com/reference/android/net/ConnectivityManager) 与 [`NetworkCallback`](https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback)：API 语义、权限、配额和生命周期。
+- [`NetworkCapabilities`](https://developer.android.com/reference/android/net/NetworkCapabilities)：验证、计费、带宽约束、本地网络和 API 37 通信优先能力。
+- [Android 17 local network permission](https://developer.android.com/privacy-and-security/local-network-permission)：LAN 流量限制、权限迁移和系统 picker。
+- [Use network slicing](https://developer.android.com/develop/connectivity/5g/use-network-slicing)：自认证能力声明、主动请求和失败回退。
+- [Background optimization](https://developer.android.com/topic/performance/background-optimization)：`CONNECTIVITY_ACTION` 与后台执行边界。
+- [AOSP `ConnectivityManager.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java)：callback 映射、`listenForNetwork()` 与 `requestNetwork()`。
+- [AOSP `NetworkCapabilities.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java)：Android 17 capability 定义。
+- [AOSP `ConnectivityService.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/service/src/com/android/server/ConnectivityService.java)：每 UID 配额、NetworkAgent 注册、评分更新和网络重匹配。
