@@ -1,419 +1,319 @@
 ---
-title: "Android 17 Tare 经济模型与电池统计源码闭环"
+title: "TARE 退场：Android 17 后台任务预算与电量归因"
 chapter: "11.8"
 status: ready-for-review
-applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-tags: [tare, battery, power, economy-model, batterystats, power-profile, jobscheduler]
-related_chapters: ["11.1", "11.5", "5.8", "25.12"]
+applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
+tags: [tare, battery, power, app-standby, jobscheduler, quota, batterystats]
+related_chapters: ["11.1", "11.5", "5.8", "25.12", "25.14"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-04"
 drafted_date: "2026-06-04"
 drafted_by: "openclaw-task2a"
 gap_source: "素材驱动"
-last_verified: "2026-06-04"
-last_verified_against: "AOSP android-17.0.0_r1 + DeepResearch/2026-05-31-android-17-battery-tare-economic-model.md + DeepResearch/2026-05-23-android17-jobscheduler-excessive-cpu-powercheck.md"
-confidence: medium
+last_verified: "2026-07-31"
+last_verified_against: "AOSP android-13.0.0_r1 / android-14.0.0_r1 历史实现；TARE 删除提交 4a98dd235a70；AOSP android-17.0.0_r1；Android 17 / API 37 SDK 与官方功耗文档 2026-07"
+confidence: high
 sources:
   - type: aosp
-    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/tare/TareEconomicManager.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/4a98dd235a708115db41e722776eff3ef9ed09fe"
   - type: aosp
-    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/tare/AppBudgetManager.java"
+    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java"
   - type: aosp
-    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/tare/InternalResourceService.java"
+    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/JobStatus.java"
   - type: aosp
-    path: "frameworks/base/apex/jobscheduler/framework/java/android/app/tare/EconomyManager.java"
+    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java"
+    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/BackgroundJobsController.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/os/BatteryUsageStats.java"
+    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/FlexibilityController.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/os/BatteryUsageStatsQuery.java"
+    path: "frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java"
+  - type: aosp
+    path: "frameworks/base/apex/jobscheduler/framework/java/android/app/job/PendingJobReasonsInfo.java"
+  - type: aosp-historical
+    path: "android-14.0.0_r1/apex/jobscheduler/service/java/com/android/server/tare/InternalResourceService.java"
+  - type: aosp-historical
+    path: "android-14.0.0_r1/apex/jobscheduler/service/java/com/android/server/tare/Analyst.java"
+  - type: aosp-historical
+    path: "android-14.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/controllers/TareController.java"
+  - type: aosp-historical
+    path: "android-14.0.0_r1/apex/jobscheduler/framework/java/android/app/tare/EconomyManager.java"
+  - type: official
+    path: "https://developer.android.com/topic/performance/power/power-details"
+  - type: official
+    path: "https://developer.android.com/topic/performance/appstandby"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/job/JobScheduler"
   - type: research
     path: "DeepResearch/2026-05-31-android-17-battery-tare-economic-model.md"
   - type: research
     path: "DeepResearch/2026-05-23-android17-jobscheduler-excessive-cpu-powercheck.md"
 ---
 
-# 11.8 Android 17 Tare 经济模型与电池统计源码闭环
+# 11.8 TARE 退场：Android 17 后台任务预算与电量归因
 
-本章把 Android 的电池统计体系（BatteryStats / BatteryUsageStats）和 Tare（Think Advanced Resource Economy）经济模型放在一起，因为两者在 Android 17 里已经形成闭环：BatteryStats 采集应用的实际耗电数据，Tare 用这些数据作为配额计算的基准参照，反过来控制 JobScheduler 的调度决策。
+Android 17 不包含 TARE（The Android Resource Economy）。在 `android-17.0.0_r1` 中找不到 `com.android.server.tare`、`TareController`、`android.app.tare.EconomyManager` 或 `resource_economy` 服务。JobScheduler 当前使用 App Standby、`QuotaController`、后台限制、Doze、显式约束和 flexibility policy 管理后台任务。
 
-读完本章能带走三件事：
-1. BatteryStats → BatteryUsageStats 的数据采集路径和精度边界
-2. Tare 经济模型中 ARC（Android Resource Credits）的收入-支出机制
-3. 在 Perfetto 和 dumpsys 中观察 Tare 行为的方法
+这个版本边界值得单独成章。网上仍有不少资料把 ARC 余额、`dumpsys tare` 和 `EconomyManager` 写成 Android 17 能力；按这些资料排查，只会寻找已经删除的服务。TARE 的设计仍有学习价值，但它只能放在 Android 13—14 的历史源码中阅读。
 
-## 11.8.1 BatteryStatsService 与电量归因
+## 11.8.1 结论表：哪些说法已经失效
 
-### 采集路径
+| 说法 | Android 17 核查结果 | 对应证据 |
+|---|---|---|
+| Android 17 用 TARE 控制 JobScheduler | 错误 | `android-17.0.0_r1` 无 `tare/` 与 `TareController` |
+| BatteryUsageStats 的每 UID 耗电决定 ARC 余额 | 错误 | 历史 TARE 只用全局 screen-off discharge 辅助调节供给 |
+| `TareEconomicManager` 是服务入口 | 类不存在 | 历史入口是 `InternalResourceService` |
+| `AppBudgetManager` 提供毫秒预算 | 类与所列方法不存在 | 历史实现使用 `Agent`、`Ledger`、`EconomicPolicy` |
+| API 34 公开 `EconomyManager` 预算接口 | 错误 | Android 14 源码中的类标记为 `@hide`、`@TestApi`，且没有预算 API |
+| Android 17 可用 `dumpsys tare` 查询 ARC | 错误 | 对应 Binder 服务和 dump 入口已删除 |
+| `JobDebugInfo` 提供 TARE 原因 | 类不存在 | API 37 使用 `getPendingJobReasonStats()` |
+| Perfetto 有稳定的 `tare` / `battery_stats` atrace 类别 | 无此平台合同 | Android 17 应用公开接口与 JobScheduler dump 更可靠 |
 
-Android 的电量统计由 `BatteryStatsService` 驱动，运行在 `system_server` 进程。数据流从内核层到框架层有三段：
+这些错误不属于措辞差异。类名、服务、控制器和调度约束都已经变化，调试流程必须按 Android 17 重建。
 
-```
-kernel wakelock / CPU time / radio wakeup
-  → BatteryStatsImpl（框架层累加器，按 UID 记录各组件的活动时间）
-    → BatteryStatsService（对外暴露统计数据的 Binder 服务）
-```
+## 11.8.2 TARE 在历史源码里是什么
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java]
+已核对的 release tag 中，TARE 出现在 `android-13.0.0_r1` 与 `android-14.0.0_r1`；`android-12.0.0_r1` 尚无对应目录。Android 14 的实现默认关闭：
 
-BatteryStatsImpl 内部为每个 UID 维护一组 Counter 和 Timer，分别记录：
-- **CPU**：每个频率档位的累计运行时间（`cpuFreqTime`）
-- **屏幕**：亮屏时间、亮度档位分布
-- **网络**：移动网络 / Wi-Fi 的包数和字节量
-- **Wakelock**：partial wakelock 持有时长
-- **GPS / 传感器**：各传感器的活跃时间
-- **Job / Sync / FGS**：后台任务、同步、前台服务的累计执行时间
+- `EconomyManager.DEFAULT_ENABLE_TARE_MODE` 为 `ENABLED_MODE_OFF`；
+- `EconomyManager` 标记为 `@hide` 和 `@TestApi`；
+- JobScheduler 与 AlarmManager 都保留了可切换到 TARE policy 的内部路径；
+- TARE 可以运行在 on、off 或 shadow 模式。
 
-### PowerProfile：从时间到 mAh
+因此，TARE 从未成为普通应用可依赖的 SDK 合同。它是一套平台内部实验设计，设备是否启用、采用哪组价格和奖励，都不能由三方应用假定。
 
-BatteryStatsImpl 记录的是**活动时间**，不是电量。从时间换算到 mAh 靠的是 `PowerProfile`：
+### 历史组件
 
-```xml
-<!-- frameworks/base/core/res/res/xml/power_profile.xml（示意） -->
-<item name="screen.on">85 mA</item>
-<item name="cpu.active">150 mA</item>
-<item name="radio.active">200 mA</item>
-<item name="gps.on">50 mA</item>
-```
+Android 14 的实现主要由下面几部分组成：
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/res/res/xml/power_profile.xml]
+| 组件 | 历史职责 |
+|---|---|
+| `InternalResourceService` | 维护系统级状态、供给上限、包状态和内部服务 |
+| `Agent` | 处理 action bill、余额变化、负担能力监听 |
+| `Ledger` / `Scribe` | 保存 package 账本、交易记录和持久化状态 |
+| `EconomicPolicy` | 定义 action 的 cost-to-produce、base price 与 reward |
+| `TareController` | 把 JobScheduler 的 job 转成 action bill，维护 wealth constraint |
+| `AlarmManagerEconomicPolicy` | 为不同类型的 alarm 定义历史价格 |
+| `Analyst` | 统计 TARE 交易与整机后台电池变化，辅助调节供给 |
 
-每个组件有一个"单位时间电流"常量，乘以 BatteryStatsImpl 记录的活动时间就得到估算的 mAh 值。这套换算的精度受限于两个因素：
-1. PowerProfile 的数值是厂商在设备出厂时标定的，同一芯片平台不同厂商可能有差异
-2. 共享硬件（GPU、modem）的实际功耗无法按 UID 精确拆分——系统只能按启发式规则分摊
+ARC 是内部记账单位，底层还能细分为 cake。Job 或 alarm 对应一组 action；系统根据 action 的生产成本、基础价格和状态修正计算费用。用户交互、通知交互、widget 交互等事件可以产生 reward。
 
-### BatteryUsageStats API（API 31+）
+### 历史设计没有使用“每 UID mAh 直接扣 ARC”
 
-Android 12 引入了 `BatteryUsageStats` API，提供比传统 `BatteryStats` 更结构化的查询接口：
+这条边界常被误写。Android 14 的 `Analyst` 通过 `IBatteryStats` 读取：
 
-```java
-// API 31+
-List<BatteryUsageStats> stats = batteryManager.getBatteryUsageStats(
-    new BatteryUsageStatsQuery.Builder()
-        .addAggregateBatteryConsumerKey(BATTERY_CONSUMER_SCOPE_DEVICE)
-        .setIncludePowerUsageBreakdown(true)
-        .build()
-);
-```
+- screen-off realtime；
+- screen-off discharge mAh；
+- 电池电量变化。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/BatteryUsageStatsQuery.java]
+`InternalResourceService` 把 screen-off discharge 当成后台耗电代理，用于估算后台续航并调节全局 consumption limit。源码中还留有“后续获取更准确后台耗电”的 TODO。
 
-BatteryUsageStats 和 BatteryStats 的区别：
+TARE 对具体应用的扣费来自调度 action 和 policy，不是从 `BatteryUsageStats` 读取某个 UID 的 mAh 后换算 ARC。BatteryStats 提供的是全局校准信号，作用与逐应用结算不同。
 
-| 维度 | BatteryStats（传统） | BatteryUsageStats（API 31+） |
-|------|---------------------|------------------------------|
-| 接口 | `IBatteryStats` AIDL | `BatteryManager` API |
-| 查询方式 | `getStatistics()` 返回原始 proto | `getBatteryUsageStats()` 带过滤条件 |
-| 粒度 | 组件级 mAh | 按 UID / 时间范围 / 消费场景聚合 |
-| 适用场景 | dumpsys、系统内部 | 应用层查询、APM SDK |
+## 11.8.3 TARE 何时被删除
 
-BatteryUsageStats 的查询支持按时间范围过滤（`TIMESPAN_all` / `TIMESPAN_day` / `TIMESPAN_weekly`），也支持按 UID 聚合。Tare 经济模型依赖这套 API 获取各 UID 的历史消费数据。
+AOSP 提交 `4a98dd235a708115db41e722776eff3ef9ed09fe` 的标题为 `JobScheduler: remove TARE`，作者日期为 2024 年 3 月 22 日，提交日期为 3 月 29 日。该提交一次移除了：
 
-### 电量归因的精度边界
+- `EconomyManager` 与 `IEconomyManager`；
+- `InternalResourceService` 和整个 `com.android.server.tare`；
+- JobScheduler 的 `TareController` 与 `CONSTRAINT_TARE_WEALTH`；
+- AlarmManager 的 TARE policy；
+- `resource_economy` system service 注册；
+- TARE 配置、测试和 dump 路径。
 
-理解 BatteryStats 的归因精度，是判断 Tare 配额是否合理的边界条件：
+删除提交还恢复了 `QuotaController` 的持续生效。旧代码曾在启用 TARE policy 时关闭时间窗口配额；删除后，JobScheduler 不再在两套预算模型之间切换。
 
-- **可精确归因**：CPU 时间（per-UID cgroup 统计）、wakelock 持有时间、前台服务运行时间
-- **启发式分摊**：GPU 功耗（按渲染帧数 / surface 尺寸估算分摊给各 UID）、移动网络功耗（按包数比例分摊）
-- **无法归因**：modem 待机功耗、Wi-Fi 扫描功耗中的共享部分、屏幕功耗（归因到 foreground UID 但无法区分多窗口场景）
+按 release tag 检查，边界如下：
 
-Tare 在计算配额时依赖的正是这些归因数据，共享硬件的归因误差会传导到 Tare 的余额计算中。
+| Release tag | TARE 服务端 | `TareController` | `EconomyManager` |
+|---|---:|---:|---:|
+| `android-12.0.0_r1` | 无 | 无 | 无 |
+| `android-13.0.0_r1` | 有 | 有 | 有，隐藏 API |
+| `android-14.0.0_r1` | 有，默认关闭 | 有 | 有，隐藏 / Test API |
+| `android-15.0.0_r1` | 无 | 无 | 无 |
+| `android-16.0.0_r1` | 无 | 无 | 无 |
+| `android-17.0.0_r1` | 无 | 无 | 无 |
 
-## 11.8.2 Tare 经济模型架构全景
+讲版本演进时可以保留 ARC、reward 和 action bill；讲 Android 15—17 调度行为时应结束 TARE 分支。
 
-### 设计目标
+## 11.8.4 Android 17 的后台任务控制面
 
-Tare（Think Advanced Resource Economy）从 Android 12（API 31）引入，作为 JobScheduler Apex 模块的一部分。它要解决的问题是：在 Doze / App Standby 的硬性限制之外，给后台资源消耗建立一套**可调节的经济模型**。
+`JobSchedulerService` 在 Android 17 中注册的控制器包括 `PrefetchController`、`FlexibilityController`、`ConnectivityController`、`TimeController`、`IdleController`、`BatteryController`、`StorageController`、`BackgroundJobsController`、`ContentObserverController`、`DeviceIdleJobsController`、`QuotaController` 和 `ComponentController`。
 
-传统 Doze / App Standby 的工作方式是「到了某个状态就一刀切限制」，Tare 的思路是给每个应用一个"账户"，用"收入-支出"的模型管理配额。应用有余额就可以执行后台任务，余额不足就被限流。
+对应用最常见的等待原因可以分成五组：
 
-两者是互补关系：Doze / App Standby 控制设备级 / 应用级的空闲状态门控，Tare 控制的是 Job 级别的资源配额。详见 5.8 节对 Doze / App Standby 的分析。
+| 控制面 | Android 17 源码入口 | 回答的问题 |
+|---|---|---|
+| 应用显式约束 | Battery / Connectivity / Idle / Storage / Time controllers | 充电、网络、空闲、存储和时间条件是否满足 |
+| Doze 与设备状态 | `DeviceIdleJobsController` | 设备空闲状态是否推迟普通 job |
+| 应用后台资格 | `BackgroundJobsController` | 用户限制、AppOps、包 stopped 状态是否禁止后台运行 |
+| 时间与次数配额 | `QuotaController` | 当前 standby bucket 的 regular / expedited quota 是否耗尽 |
+| 机会调度 | `FlexibilityController` | JobScheduler 是否在等待更合适的充电、空闲或网络组合 |
 
-### 核心组件
+`JobStatus` 的隐式约束包含 `CONSTRAINT_WITHIN_QUOTA`、`CONSTRAINT_BACKGROUND_NOT_RESTRICTED`、`CONSTRAINT_DEVICE_NOT_DOZING` 和 `CONSTRAINT_FLEXIBLE`。Android 17 已没有 `CONSTRAINT_TARE_WEALTH`。
 
-Tare 的源码位于 `frameworks/base/apex/jobscheduler/service/java/com/android/server/tare/`，核心组件有三个：
+### `QuotaController` 记录什么
 
-**1. TareEconomicManager（经济管理器）**
+`QuotaController` 以 user/package 和 App Standby Bucket 为维度维护：
 
-Tare 的服务端入口，运行在 system_server。职责：
-- 追踪每个 UID 的 ARC 余额
-- 在 JobScheduler 调度前检查余额是否足够
-- 余额不足时拒绝新 Job 的执行
+- regular job 的执行时间；
+- timing session；
+- 窗口内 job 与 session 次数；
+- expedited job（EJ）的独立执行时间；
+- top-app、用户交互、临时 allowlist 等对 EJ quota 的影响；
+- 配额重新可用的时刻。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/tare/TareEconomicManager.java]
+它依靠调度与使用事件记账，没有读取 UID 的 mAh。`PENDING_JOB_REASON_QUOTA` 表示当前 quota 已消耗完，不能翻译成“ARC 余额不足”。
 
-**2. AppBudgetManager（预算管理器）**
+### Android 17 官方近似配额
 
-管理每个应用的预算配置：
-- `setAppBudget(uid, budgetMs)` — 设置应用的后台任务预算时长
-- `setAppToppingThreshold(uid, thresholdMs)` — 设置消费上限阈值
-- `getRemainingBudget(uid)` — 查询剩余配额
+官方文档将这些值标为近似指导值，设备状态、compat change、配置更新、充电状态和 OEM 策略都可能改变结果：
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/tare/AppBudgetManager.java]
+| Standby bucket | Regular job 指导值 | Expedited job 指导值 |
+|---|---|---|
+| Active | 最多约 20 分钟 / 滚动 60 分钟 | 最多约 30 分钟 / 滚动 24 小时 |
+| Working set | 最多约 10 分钟 / 滚动 4 小时 | 最多约 15 分钟 / 滚动 24 小时 |
+| Frequent | 最多约 10 分钟 / 滚动 12 小时 | 最多约 10 分钟 / 滚动 24 小时 |
+| Rare | 最多约 10 分钟 / 滚动 24 小时 | 最多约 10 分钟 / 滚动 24 小时 |
+| Restricted | 每天一个最长约 10 分钟的批次 | 最多约 5 分钟 / 滚动 24 小时 |
 
-**3. InternalResourceService（资源供给服务）**
+Android 16 起，Active bucket、前台服务期间和用户设为 unrestricted 的应用也进入新版 runtime quota 规则。Android 17 延续这套方向。WorkManager 在应用不可见时通常使用 JobScheduler，因此 Worker 也会受到这些资源限制。
 
-管理全局 ARC 供给。ARC 不是无限的——系统每天重新计算可分配总量，根据设备当前的电池状态、充电状态、用户使用模式动态调整。
+表格不能当成准点执行保证。JobScheduler 还会评估设备状态、并发槽位、thermal、内存压力、显式约束和优化策略。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/tare/InternalResourceService.java]
+## 11.8.5 Flexibility policy 与 quota 的差别
 
-### ARC（Android Resource Credits）机制
+`FlexibilityController` 会利用充电、battery-not-low、idle 和 connectivity 等机会条件安排可延迟工作。随着 job 生命周期推进，它会逐步放宽所需的灵活约束，防止任务一直等待理想设备状态。
 
-ARC 是 Tare 内部的"货币"。它的运作方式：
+两类等待在 API 中使用不同原因：
 
-**收入（赚取 ARC）：**
-- 用户打开应用（前台交互）→ 应用获得 ARC 奖励
-- 用户对应用有明确操作（点击通知、从 widget 进入）→ 额外奖励
-- 应用在前台运行期间持续累积 ARC
+- quota 耗尽：`PENDING_JOB_REASON_QUOTA`；
+- 等待 JobScheduler 选择更合适时机：`PENDING_JOB_REASON_JOB_SCHEDULER_OPTIMIZATION`。
 
-**支出（消耗 ARC）：**
-- 执行一个 Job → 扣除对应数量的 ARC
-- 发送推送通知 → 扣除
-- 执行同步操作 → 扣除
-- 下载文件 → 扣除
+前者需要等待配额恢复或应用状态变化；后者可能在机会条件出现、生命周期推进或调度资源释放后变化。只看到 `ENQUEUED` 或“尚未进入 `onStartJob()`”时，无法判断是哪一类。
 
-**余额管理：**
-- 空闲时段 ARC 余额会自然衰减（防止"攒配额"后集中消耗）
-- 不同操作消耗的 ARC 数量不同，取决于操作的资源消耗权重
-- TareEconomicManager 在 JobScheduler 调度前查询余额，余额不足则将 Job 延后
+## 11.8.6 BatteryStats 与 JobScheduler 的真实关系
 
-### EconomyManager 公开 API（API 34+）
+Android 17 的 BatteryStats 负责记录 CPU、wakelock、网络、传感器、job 等活动，并通过 power calculators / power stats processors 生成组件与 UID 归因。硬件 consumed-energy 数据可用时，部分组件会使用测量值；缺失时使用 `PowerProfile` 和活动时间估算。详见 11.1、11.2 节。
 
-Android 14（API 34）向应用开发者暴露了 `EconomyManager` API：
+JobScheduler 会把 job 的启动、停止和原因记入系统统计，BatteryStats 因而能观察后台任务活动。反方向的控制路径不同：当前 `QuotaController`、`BackgroundJobsController` 和 `FlexibilityController` 没有用 `BatteryUsageStats` 的 UID mAh 计算 job 余额。
 
-```java
-// API 34+
-EconomyManager economyManager = context.getSystemService(EconomyManager.class);
-// 应用自设置预算（建议值，系统可能忽略）
-economyManager.setAppBudgetoyant(packageName, budgetMs);
-// 查询剩余预算
-long remaining = economyManager.getRemainingBudget(packageName);
-```
+可以把两边的职责写成：
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/apex/jobscheduler/framework/java/android/app/tare/EconomyManager.java]
+```text
+JobScheduler 控制器
+  ├─ 输入：standby bucket、执行时间、约束、设备状态、用户限制
+  └─ 输出：等待、开始、停止、停止原因
 
-注意：`setAppBudgetoyant` 是建议性质的——系统不会因为应用设置了预算就保证执行。它的实际用途是让应用向系统表达"我不希望我的后台任务消耗超过 X 毫秒的预算"，系统在决策时可以参考。
-
-## 11.8.3 Tare 如何影响后台任务调度
-
-### 与 JobScheduler 的集成路径
-
-Tare 植入在 JobScheduler 的调度决策链中。一个 Job 从"待执行"到"被执行"之间的检查链：
-
-```
-JobScheduler 待执行队列
-  → App Standby Bucket 检查（限制频率）
-    → Tare ARC 余额检查（余额是否足够）
-      → QuotaController 配额检查（时间窗口内的累计执行时间）
-        → 执行 Job
+BatteryStats / BatteryUsageStats
+  ├─ 输入：job 与其他组件的活动、硬件能量或 power profile
+  └─ 输出：历史、组件和 UID 归因
 ```
 
-Tare 的检查位于 App Standby Bucket 检查之后、QuotaController 检查之前。三者的关系：
-- **App Standby Bucket**：按应用的活跃度分组（Active / Working Set / Frequent / Restricted），决定基础限流频率
-- **Tare**：检查应用是否有足够的 ARC 余额来执行这个 Job
-- **QuotaController**：检查应用在当前时间窗口（2 小时滚动窗口）内的累计执行时间是否超限
+这段图用于区分“调度决策”与“耗电归因”。两边会共享事件和设备状态，但 Android 17 没有历史 TARE 那种 ARC 经济账户。
 
-### 余额查询对调度延迟的影响
+`BatteryUsageStats`、`BatteryUsageStatsQuery` 在 `android-17.0.0_r1` 中仍标记为 `@hide`。普通应用不能使用原文中虚构的 `BatteryManager.getBatteryUsageStats(...)` 代码。应用侧诊断应使用公开 JobScheduler 原因 API、Android Studio Power Profiler、Battery Historian、Perfetto、Android vitals 和业务遥测。
 
-Tare 的余额查询是内存查找操作（O(1)），不会增加 Job 调度的实际延迟。它的性能影响体现在另一个维度：如果应用 ARC 余额不足，Job 会被延后到下一个余额充值周期，这个延迟可能是几分钟到几小时不等。
+## 11.8.7 用 API 37 定位 Job 为什么等待
 
-BatteryStatsService 的数据写入采用每分钟批次合并策略，减少实时 IPC 开销。Tare 读取 BatteryUsageStats 时的性能取决于查询复杂度——跨天聚合查询可能触发数据库扫描。
+Android 17 的公开接口已经能回答大部分应用侧问题：
 
-### 与 Excessive CPU Kill 的协同
+| API | 引入版本 | 返回内容 |
+|---|---:|---|
+| `getPendingJobReason(jobId)` | API 34 | 一个等待原因 |
+| `getPendingJobReasons(jobId)` | API 36 | 当前可能存在的全部原因 |
+| `getPendingJobReasonsHistory(jobId)` | API 36 | 有长度上限的原因变化历史 |
+| `getPendingJobReasonStats(jobId)` | API 37 | 每种原因累计持续时间 |
 
-Android 17 引入了 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`，当系统检测到应用在后台持续高 CPU 占用时，会终止应用并向 ProfilingManager 回调采样数据。
+下面的 Kotlin 片段用于在 Android 17 上记录各等待原因的累计时间：
 
-Tare 和 Excessive CPU Kill 的协同方式：
-- Tare 是**事前限流**：在 Job 调度前检查余额，余额不足就延后执行
-- Excessive CPU Kill 是**事后终止**：应用已经执行了一段时间、CPU 占用过高，系统强制终止
-
-Tare 扣费 + 系统终止构成两层防线。Tare 能拦截大部分"小额频繁"的后台滥用；对于绕过 JobScheduler 直接在 FGS 或子进程中跑长时间计算的场景，Excessive CPU Kill 是兜底。详见 25.12 节对 Excessive CPU Kill 的分析。
-
-### Tare 对 FGS 的影响
-
-Tare 主要管控的是通过 JobScheduler 提交的任务。FGS（前台服务）有自己的配额体系（Android 14 引入的 FGS 类型限制 + Android 17 的 FGS 超时机制），与 Tare 是并行的两套管控路径。
-
-但两者共享 BatteryStats 的归因数据：如果一个应用同时跑 FGS 和 JobScheduler 任务，BatteryStats 会分别统计两者的耗电，Tare 只管控 Job 部分，FGS 部分由 FGS 超时机制管控。详见 25.13 节。
-
-## 11.8.4 Perfetto 中观察 Tare 行为
-
-### atrace 标签
-
-Tare 相关的 atrace 标签：
-- `tare` — Tare 经济模型自身的决策日志
-- `battery_stats` — BatteryStatsService 的数据采集事件
-
-抓取包含 Tare 信息的 Perfetto trace：
-
-```
-adb shell perfetto \
-  -c - --txt \
-  -o /data/misc/perfetto-traces/tare.pb \
-<<EOF
-buffers: { size_kb: 65536 }
-data_sources: { config { name: "linux.ftrace" ftrace_config {
-  ftrace_events: "power/cpu_frequency"
-  atrace_categories: "tare"
-  atrace_categories: "battery_stats"
-  atrace_categories: "sched"
-}}}
-duration_ms: 60000
-EOF
+```kotlin
+@RequiresApi(37)
+fun logPendingReasonStats(
+    jobScheduler: JobScheduler,
+    jobId: Int,
+) {
+    jobScheduler.getPendingJobReasonStats(jobId)
+        .forEach { (reason, duration) ->
+            Log.d(
+                "JobDiag",
+                "jobId=$jobId reason=$reason pendingMs=${duration.toMillis()}",
+            )
+        }
+}
 ```
 
-### Perfetto SQL 查询 Tare 余额变化
+同一时段可以同时存在多个原因，因此各项 duration 相加可能超过 job 的总等待时间。统计不会跨重启持久化，job 成功完成或取消后也会清除；应用应在发现延迟时采集，而不是等任务结束后追查。
 
-Tare 的余额变化在 trace 中以 slice 形式记录。查询某个 UID 的 Tare 余额变化：
+`JobDebugInfo` 不是 API 37 类。若旧文、SDK 示例或代码审查意见出现这个名字，应改为 `PendingJobReasonsInfo` 和上表中的查询方法。
 
-```sql
--- 查询 Tare 相关的 slice 事件
-SELECT
-  ts,
-  name,
-  dur,
-  track_id
-FROM slice
-WHERE name LIKE '%tare%'
-ORDER BY ts;
+## 11.8.8 dumpsys 与 shell 调试
 
--- 查询特定 UID 的 Job 调度被 Tare 拒绝的记录
-SELECT
-  ts,
-  name,
-  EXTRACT_ARG(arg_set_id, 'uid') AS uid,
-  EXTRACT_ARG(arg_set_id, 'reason') AS reason
-FROM slice
-WHERE name LIKE '%job%tare%'
-  AND EXTRACT_ARG(arg_set_id, 'reason') LIKE '%insufficient%';
-```
-
-[待验证: Perfetto SQL 字段名基于 AOSP atrace 注册信息推断，实际 trace 中的字段名可能因版本差异略有不同]
-
-### dumpsys tare 输出解读
+下面命令用于保存 standby bucket、job 粗粒度状态、完整 JobScheduler dump 和同期 BatteryStats：
 
 ```bash
-adb shell dumpsys tare
+adb shell am get-standby-bucket com.example.app
+adb shell cmd jobscheduler get-job-state com.example.app 42
+adb shell dumpsys jobscheduler > jobscheduler.txt
+adb shell dumpsys batterystats --charged > batterystats.txt
 ```
 
-关键字段：
-- **Ledger**：每个 UID 的 ARC 账本，包含当前余额、累计收入、累计支出
-- **RewardPolicy**：当前的 ARC 奖励策略配置（哪些用户行为产生多少奖励）
-- **SpendPolicy**：当前的 ARC 消费策略（不同类型的 Job 消耗多少 ARC）
+`get-job-state` 只返回 pending、active、ready、waiting 等状态组合；控制器细节要从完整 dump 和公开 pending-reason API 补充。BatteryStats 文件用于对照任务是否运行及同期组件活动，不能用来读取 ARC。
 
-输出结构示意：
-```
-Ledger for UID 10xxx:
-  Balance: 42000 ARC
-  Total earned: 180000 ARC
-  Total spent: 138000 ARC
-  Last topup: 2026-06-04 14:30:00
-  Last consumption: 2026-06-04 14:32:15 (Job#45, -3000 ARC)
-```
+`cmd jobscheduler run -f` 会绕过部分技术约束，适合验证 JobService 代码能否启动，不适合证明自然调度会按时发生。要测试约束已满足时的行为，可使用 `run -s`。测试命令改变了系统决策条件，报告中应注明。
 
-### Tare 决策日志与 JobScheduler 调度日志的关联分析
+在 Android 17 上不要把 `dumpsys tare`、`tare` atrace slice 或 ARC ledger 当成必备证据。AOSP 对应服务已经不存在。若某个 OEM build 仍暴露同名私有服务，需要按该厂商源码和版本单独分析。
 
-排查"Job 为什么没执行"时的分析路径：
+## 11.8.9 工程策略
 
-1. `adb shell dumpsys jobscheduler` — 看 Job 的 pending reason
-2. `adb shell dumpsys tare` — 看对应 UID 的 ARC 余额
-3. 如果 ARC 余额接近 0，说明是 Tare 限流导致 Job 被延后
-4. 在 Perfetto trace 中搜索 `tare` 标签的 slice，观察余额变化时序
+### 调度语义
 
-Android 17 新增的 `JobDebugInfo` API（见 25.14 节）也提供了 Job 未运行原因的聚合信息，可以直接从 API 层获取 Tare 限流的统计数据。
+- 只为可延迟、可重试的工作使用 JobScheduler / WorkManager；
+- 用户正在等待的数据传输，评估 user-initiated data transfer job 或合适的前台机制；
+- 不依赖某个精确执行时刻；
+- 为网络、充电、idle 等约束提供业务理由，过多约束会缩短可运行窗口。
 
-## 11.8.5 Android 17 中 Tare 的行为变更
+### 任务实现
 
-### 已确认的变更
+- job 要幂等，进程被杀或 `onStopJob()` 后可以安全重试；
+- 长队列应分批，并保存可恢复进度；
+- 网络和服务端错误使用有上限的指数退避；
+- 记录 enqueue、start、stop、complete 时间以及 `JobParameters.getStopReason()`；
+- 避免短周期反复 schedule、cancel 或立即 retry。
 
-基于 Android 17（API 37）的公开文档和 AOSP android-17.0.0_r1 源码：
+### 线上观测
 
-1. **JobDebugInfo API 新增**：开发者可以通过 `JobDebugInfo` API 查询 Job 未运行原因的聚合信息，其中包含 Tare 限流的统计数据
-2. **ProfilingTrigger 新增 TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE**：系统终止高 CPU 后台应用时提供诊断数据（详见 25.12 节）
-3. **Background Battery Consumption 统计精度提升**：BatteryUsageStats 的归因算法在 Android 17 中有更新，具体改动需以 android-17.0.0_r1 的 BatteryStatsImpl diff 为准
+- 上报 standby bucket 时遵守隐私和采样限制；
+- 分开统计“未获得运行机会”“运行后失败”“运行中被停止”；
+- Android 17 上采集 `getPendingJobReasonStats()`，低版本按 API 能力降级；
+- 按机型、系统版本、充电状态和用户电池设置分组；
+- 不用“厂商 ARC 更少”解释 OEM 差异，应以公开原因、dump 和复现实验为证据。
 
-### 待验证的变更
+## 11.8.10 版本迁移清单
 
-以下内容在公开文档和源码中尚无确凿证据：
+- [ ] 删除 Android 15—17 使用 TARE 的架构图
+- [ ] 删除 `TareEconomicManager`、`AppBudgetManager` 与虚构预算方法
+- [ ] 删除普通应用调用 `EconomyManager` 的示例
+- [ ] 删除“每 UID BatteryUsageStats 决定 ARC”的表述
+- [ ] 将 `JobDebugInfo` 改为 pending-reason API
+- [ ] 将 `dumpsys tare` 改为 `dumpsys jobscheduler`
+- [ ] 把 `PENDING_JOB_REASON_QUOTA` 解释为 JobScheduler quota
+- [ ] 保留 Android 13—14 的 ARC 设计时标注隐藏、默认关闭和历史版本
+- [ ] Android 17 的数字以官方近似值和设备实测为准
+- [ ] WorkManager 排障包含 JobScheduler 资源限制
 
-- **Power Check 机制与 Tare 联动增强**：部分资料提及 Android 17 的"Power Check"机制与 Tare 有联动，但 `TareEconomicManager.checkPowerConstraints()` 的具体实现路径在 android-17.0.0_r1 中尚未确认
-- **新增 AI 推理任务的 ARC 消耗品类**：有资料提及 Tare 可能新增对端侧 AI 推理任务的消耗计量，但未在 AOSP 源码中找到对应的 SpendPolicy 条目
-- **ARC 余额公式变化**：InternalResourceService 的余额计算公式是否在 Android 17 中有调整，需要对比 android-16.0.0_r1 和 android-17.0.0_r1 的源码 diff
+## 小结
 
-[待验证: 以上三项标注为"待验证"，后续源码调研确认后更新]
+TARE 是 Android 13—14 AOSP 中一套默认关闭的内部经济模型，2024 年 3 月已从 JobScheduler、AlarmManager 和 system service 中删除。Android 15、16、17 都没有 ARC 账本，也没有供普通应用使用的 `EconomyManager` 预算接口。
 
-### 开发者可观察的 Tare 影响
-
-开发者无法直接查询 Tare 的 ARC 余额（这是系统内部实现），但可以从以下侧面感知 Tare 的影响：
-
-- **JobScheduler 回调**：`onStartJob()` 延迟触发或未触发 → 可能是 Tare 限流
-- **WorkManager 的 `WorkInfo` 状态**：`ENQUEUED` 长时间不转为 `RUNNING` → 检查 App Standby Bucket + Tare
-- **JobDebugInfo API**（Android 17+）：提供 Job 未运行原因的聚合数据，是观察 Tare 限流的直接渠道
-- **`EconomyManager.getRemainingBudget()`**（API 34+）：查询应用级别的预算剩余
-
-## 11.8.6 Tare 调试与优化实战
-
-### dumpsys tare 输出解读进阶
-
-排查应用被 Tare 限流的步骤：
-
-1. 确认应用的 App Standby Bucket：
-   ```bash
-   adb shell dumpsys battery unplug
-   adb shell am set-inactive <package> false
-   adb shell dumpsys usagestats | grep <package>
-   ```
-
-2. 检查 ARC 余额：
-   ```bash
-   adb shell dumpsys tare | grep -A 5 "UID <your_uid>"
-   ```
-
-3. 如果余额接近 0 或为负数，说明 Tare 限流正在生效。需要检查：
-   - 近期是否有大量 Job 执行记录
-   - 用户最近是否与该应用交互过（影响 ARC 充值）
-   - 应用是否在 Restricted bucket（充值速率极低）
-
-### 减少 Tare 消耗的编码实践
-
-1. **合并 Job**：把多个短 Job 合并为一个批量 Job，减少 ARC 的固定消耗
-2. **使用约束条件**：给 Job 设置充电、网络、空闲等约束，让系统在合适的时机执行，避免在 ARC 余额不足时反复尝试
-3. **避免重试风暴**：Job 失败后的重试间隔使用指数退避，不要立即重试
-4. **减少 FGS + Job 并行**：FGS 运行期间会持续消耗电池，同时 Job 也在消耗 ARC，两者叠加会加速余额耗尽
-5. **监听用户交互**：用户打开应用后是 ARC 充值的好时机，可以在这之后立即调度积压的 Job
-
-## 11.8.7 Tare 与 OEM 定制的关系
-
-### OEM 可定制的部分
-
-Tare 的策略分为两部分：框架提供默认值，OEM 可以通过 overlay 覆盖。
-
-OEM 可调的参数包括：
-- **RewardPolicy** 中的奖励倍率：用户交互给应用充值多少 ARC
-- **SpendPolicy** 中的消耗权重：不同类型的 Job 消耗多少 ARC
-- **余额上限**：单个 UID 的 ARC 余额上限
-- **衰减速率**：空闲时段余额的衰减速度
-
-### 厂商差异对应用行为的实际影响
-
-不同厂商的 Tare 策略差异会导致同一个应用在不同设备上的后台行为不同。常见差异：
-
-- 某些厂商降低了后台应用的 ARC 充值速率，导致后台任务更难获得执行机会
-- 某些厂商提高了特定操作类型的 ARC 消耗权重，变相限制了某些后台行为
-- 少数厂商完全禁用了 Tare（这种情况在 AOSP 兼容性测试下会被发现）
-
-开发者对此能做的不多，但可以通过 APM 上报 Job 执行成功率的多设备分布来发现厂商差异。如果某款设备的 Job 执行成功率显著低于平均水平，很可能与 Tare 策略定制有关。
-
----
-
-> 本章基于 AOSP android-17.0.0_r1 源码和官方文档编写。标注 [待验证] 的内容来自公开资料推断但未在源码中确认，后续调研更新。电池归因精度边界和 Tare 配额计算的关联分析为本章原创判断。
-
+Android 17 的后台任务预算来自 App Standby 与 `QuotaController`，再叠加后台限制、Doze、显式约束、flexibility policy 和系统资源状态。BatteryStats 继续记录与归因耗电，却不按 UID mAh 给 job 扣 ARC。排查 job 延迟时，应查看 pending-reason API、standby bucket、JobScheduler dump 和任务停止原因。
 
 ## 参考资料
 
-### Android 17 电池统计与 Tare 经济模型源码闭环
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-31-android-17-battery-tare-economic-model.md
-- 类型：DeepResearch 调研结果
-- 摘要：BatteryStatsService 运行在 system_server，通过 BatteryUsageStats API（API 31+）提供精细消费模型查询。Tare 经济模型作为 JobScheduler Apex 模块的一部分，使用 ARC 内部货币管理应用预算配额。TareEconomicManager 在 Job 调度前检查应用 ARC 余额，
-- 注入时间：2026-06-07
-- 价值：源码级闭环验证 Tare 经济模型与 BatteryStatsService 的数据依赖关系
+- [AOSP 提交：JobScheduler: remove TARE](https://android.googlesource.com/platform/frameworks/base/+/4a98dd235a708115db41e722776eff3ef9ed09fe)
+- [Android Developers：Power management resource limits](https://developer.android.com/topic/performance/power/power-details)
+- [Android Developers：App Standby Buckets](https://developer.android.com/topic/performance/appstandby)
+- [Android Developers：JobScheduler API](https://developer.android.com/reference/android/app/job/JobScheduler)
+- AOSP `android-14.0.0_r1`：`InternalResourceService.java`、`Analyst.java`、`TareController.java`、`EconomyManager.java`
+- AOSP `android-17.0.0_r1`：`JobSchedulerService.java`、`JobStatus.java`、`QuotaController.java`
+- AOSP `android-17.0.0_r1`：`BackgroundJobsController.java`、`FlexibilityController.java`、`PendingJobReasonsInfo.java`
