@@ -88,415 +88,327 @@ last_task9_autofix_at: "2026-06-16"
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-前面的章节讨论了响应速度的原理、启动流程和优化策略。但每个 App 做优化时面临的约束千差万别——有的受限于包体积，有的卡在第三方 SDK 初始化，有的则是历史代码的技术债。这一节来看几个真实案例，了解不同团队在不同约束下怎么做的、最终拿到了什么效果。
+前几节已经建立响应时间、启动流程和交互路径的分析框架。本节用公开案例检查这些框架能否解释生产结果。案例只采用 Android 官方资料或团队自己发布的一手复盘；二手转述、无法追溯的公司数据和拼接出来的毫秒数不进入结论。
 
-以下案例中的部分数据来自公开的技术分享和官方博客，不是本团队的实测数据。数据的准确性取决于原始报告的测试环境和度量方式，每个案例中已标注数据来源和可信度。
+公开资料常只披露相对变化。遇到这种情况，表格把优化前归一化为 1.00，再按报告中的比例换算优化后。例如“耗时降低 20%”记为 1.00 → 0.80。这个数没有秒或毫秒单位，也不代表原报告隐藏了某个绝对值。
+
+阅读案例前要分清几类口径：
+
+- 启动耗时、页面 Time To Interactive（TTI）和点击后的可见反馈，起止点不同。TTID（Time To Initial Display）止于首帧显示，TTFD（Time To Full Display）止于应用声明主要内容已经就绪。
+- P50、P90、P95 描述不同分位，不能直接横向比较。
+- 实验室 Macrobenchmark、线上 Android vitals 与产品转化率回答的问题不同。
+- 一项发布同时带有 R8、Baseline Profiles 或 UI 重写时，只能报告组合结果，除非原团队做过单变量实验。
+
+文中的平台核对上限为 Android 17 / API 37 / android-17.0.0_r1。涉及调度、Binder 或 I/O 归因时，内核对照为 android17-6.18-2026-06_r6。生产案例形成于不同年份，保留历史数据是为了分析优化路径；版本事实以 Android 17 为边界。
 
 ---
 
-## 案例一：Reddit 冷启动优化——Baseline Profiles + R8 Full Mode
+## 案例一：Reddit 用分屏 CUJ 改善冷启动与页面切换
 
-### 问题背景
+### 优化前数据
 
-Reddit 在 Google Play 上的安装量超过一亿。作为一个内容型社区应用，它的冷启动路径涵盖了从进程创建、Application 初始化、首页数据加载到渲染的完整流程。用户打开 App 后最先看到的是首页 Feed 流，这个"从点击图标到可交互 Feed"的时间直接影响了用户的留存和参与度。
+Reddit 没有公开启动耗时的绝对毫秒数。团队在 2024 年发布的案例中说明，他们已经做过多轮性能优化，容易处理的项目基本清完，仍需继续压缩启动、页面加载和滚动开销。团队按屏幕维护性能指标，并结合地域和设备档位观察线上表现。
 
-Reddit 技术团队在 2025 年 Google Performance Spotlight Week 上分享了他们的优化经历 [已验证: developer.android.com, Google Performance Spotlight Week 2025]。优化前，Reddit 的冷启动在 P50 级别约为 2.8 秒，在低端设备上 P95 甚至超过 5 秒。用户投诉中"打开慢"是高频反馈之一。
+全局启动指标仍有价值，但单个页面的问题会被总体分布稀释。Reddit 为五条关键用户路径维护 Baseline Profile：
 
-### 分析思路
+- 首页 Feed 滚动
+- 登录
+- 全屏视频播放器启动
+- subreddit 之间的导航与 Feed 滚动
+- 聊天
 
-Reddit 的性能团队先通过 Macrobenchmark 建立了启动耗时基线。他们发现冷启动的时间主要花在以下几个环节：
+公开资料没有给出这些路径启用前的绝对值，所以本案例以每项实验自己的基线 1.00 表示优化前。
 
-Application.onCreate() 中的 SDK 初始化是大头：Reddit 集成了大量第三方服务（广告、分析、推送等），这些 SDK 几乎都在 onCreate 里同步初始化，占据了主线程约 800ms。首页 Feed 的数据加载也在占用时间——虽然是异步请求，但网络回调和 JSON 解析会回到主线程处理。首次渲染同样有开销，由于 View 层级较深（首页是复杂的 RecyclerView），measure/layout 阶段消耗了不少时间。
+### 分析过程
 
-在分析过程中他们注意到一个关键事实：这些代码路径在安装后首次运行时全部走的是解释执行（interpreted），因为 ART 还没有来得及对这些路径做 JIT 编译。这正是 Baseline Profiles 要解决的问题。
+团队把“启动后用户会做什么”拆成可执行的 CUJ，由此覆盖三个阶段：进程和首页的冷启动、社区之间的页面加载、页面显示后的滚动帧质量。
+
+这个拆分也改善了归因。首页 Feed、社区 Feed 和登录的代码热度不同，单独生成 Profile 后，某条路径的变化不会被另一条路径的样本量掩盖。团队把 Profile 生成接入 CI，每个版本自动重新生成，减少版本演进造成的规则漂移。
+
+Reddit 同期还启用了 R8 full mode，并升级、重写了部分 Compose UI。官方文章把若干全局指标描述为整个性能计划的结果，不能把每个百分比都算到 Baseline Profile 名下。
 
 ### 优化手段
 
-Reddit 采用了"Baseline Profiles + R8 Full Mode"的组合策略，整个集成耗时不到两周 [已验证: developer.android.com, Google Performance Spotlight Week 2025]。
+Reddit 的处理包含四项工程动作：
 
-**Baseline Profiles 方面**，Reddit 用独立的 generator module 维护 CUJ。官方推荐的结构是：profile 生成模块应用 `androidx.baselineprofile` Gradle plugin，测试依赖里引入 `androidx.benchmark:benchmark-macro-junit4`，App 模块按需加入 `androidx.profileinstaller` 处理本地 sideload 安装。`BaselineProfileRule` 就来自 Macrobenchmark 依赖，生成出来的 `baseline-prof.txt` 会随 App 打包，在安装阶段提供给 ART 做 AOT 编译。
+1. 用页面级指标选出高流量 CUJ。
+2. 让 Macrobenchmark 执行稳定、可重复的用户操作。
+3. 为每条 CUJ 生成 Baseline Profile，并随版本自动更新。
+4. 分阶段发布 R8、Profile 和 Compose 改动，观察实验室结果与线上分位是否同向。
 
-```groovy
-// :baselineprofile/build.gradle
-plugins {
-    id 'com.android.test'
-    id 'androidx.baselineprofile'
-}
+Baseline Profile 让 ART 在安装或后台优化阶段优先编译已标记的热点方法，减少关键路径上的解释执行和 JIT 活动。它不会替应用移除 I/O、锁等待或低效布局，页面指标仍要和 Perfetto、帧数据一起看。
 
-android {
-    targetProjectPath = ':app'
-}
+### 优化后数据
 
-dependencies {
-    implementation 'androidx.benchmark:benchmark-macro-junit4:1.3.3'
-}
-```
+以下数字均来自 Reddit 与 Android Developers 联合发布的 [2024 年案例](https://android-developers.googleblog.com/2024/12/reddit-improved-app-startup-speed-using-baseline-profiles-r8.html)。
 
-```groovy
-// :app/build.gradle
-dependencies {
-    implementation 'androidx.profileinstaller:profileinstaller:1.4.1'
-}
-```
+| 范围 | 指标 | 优化前（归一化） | 优化后（归一化） | 原文披露的变化 | 归因边界 |
+|---|---:|---:|---:|---:|---|
+| 首个 Feed Profile 的早期基准 | 启动耗时中位数 | 1.00 | 0.49 | 降低 51% | 原文归到该 Baseline Profile |
+| 首页 Feed | P95 frozen frames | 1.00 | 0.64 | 降低 36% | 原文归到首页 Feed Profile |
+| 社区 Feed | P90 TTI | 1.00 | 0.88 | 改善 12% | 原文归到社区 Feed Profile |
+| 社区 Feed | 首帧时间 | 1.00 | 0.78 | 降低 22% | 原文归到社区 Feed Profile |
+| 社区 Feed | P90 slow frames | 1.00 | 0.88 | 降低 12% | 原文归到社区 Feed Profile |
+| App 全局 | 冷启动 | 1.00 | 0.80 | 改善 20% | Profile、R8 与 UI 演进的整体结果 |
 
-这里最容易写错的地方，是把 Baseline Profile plugin 当成普通 `implementation` 依赖。正确分工是：插件负责生成和维护 profile，Macrobenchmark 负责跑 CUJ，`profileinstaller` 负责本地安装场景的 profile 安装。
+“首个 Feed Profile 的 51%”与“全局冷启动的 20%”对应特定路径和全局分布，两者口径不同。
 
-**R8 优化配置方面**，需要区分两个独立的控制维度：
+### 投入产出比
 
-- **规则文件**决定预设 keep/优化规则集：`proguard-android-optimize.txt` 是推荐入口（`proguard-android.txt` 内含 `-dontoptimize`，会关闭优化）
-- **Gradle 属性**决定是否启用 full mode：`gradle.properties` 中不要保留 `android.enableR8.fullMode=false` 这类 compat mode 开关；AGP 8.0+ 已默认走 full mode
+Reddit 工程师披露，为一个功能团队制作 CUJ Profile 通常只需数小时，约一周后可以观察到生产结果。这个时间只代表单条 CUJ 的协作周期，不含平台团队建设 CI、指标系统和发布实验的初始投入。
 
-也就是说，文件名和属性各管各的——即使用了 `proguard-android-optimize.txt`，如果 `gradle.properties` 里还留着 `fullMode=false`，R8 仍然不会做深度优化。排查 R8 配置问题时，先查 Gradle 属性，再查规则文件。
+可以确认的产出包括冷启动与页面切换分位下降，以及 Profile 随版本重复生成。具体人天成本、服务器费用和每个工具的独立收益没有公开。本地评估应把 Profile 生成、基准设备维护、失败用例修复和发布观察都算入投入。
 
-```groovy
-android {
-    buildTypes {
-        release {
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
-                'proguard-rules.pro'
-        }
-    }
-}
-```
+### 可迁移的做法
 
-AGP 8.0+ 已默认走 full mode，真正需要投入验证的是 keep rules、反射调用和 JNI 入口。
-
-### 优化结果
-
-Reddit 在 Google Play 上线后的 A/B 测试结果 [已验证: developer.android.com, Google Performance Spotlight Week 2025]：
-
-| 指标 | 优化前 | 优化后 | 变化 |
-|------|--------|--------|------|
-| 冷启动时间 | ~2.8s (P50) | ~1.7s (P50) | **-40%** |
-| ANR 率 | 基线 | — | **-30%** |
-| 帧渲染时间 | 基线 | — | **改善 25%** |
-| APK 体积 | 基线 | — | **-14%** |
-
-投入产出比极高：整个集成不到两周，代码改动量小（主要是配置和 Profile 生成脚本），但对核心指标的改善非常显著。冷启动 40% 的提升中，Baseline Profiles 和 R8 full mode 各自贡献了多少？Reddit 没有单独披露拆分数据，但根据 Google 的基准测试，Baseline Profiles 单独通常能带来 20-30% 的冷启动改善 [已验证: developer.android.com/topic/performance/baselineprofiles]。R8 full mode 的深度优化（代码缩减 + 方法内联）额外贡献了约 10-20%。
-
-### 本案例的关键启示
-
-这个案例展示了一个高 ROI 的优化路径：当 App 还没有做过 Baseline Profiles 和 R8 full mode 时，这两项工作应该是最先做的——改动小、风险低、收益确定。它们是在帮 ART 做它"想做但还没来得及做的事"。
+首页包含多个入口时，不要只录制“启动到首页”。列表到详情、Tab 切换、搜索结果和深链入口可以各建一条 CUJ，再分别记录 TTID、TTFD、页面 TTI 和帧指标。Profile 覆盖的操作应代表稳定、高频的生产路径；大量低频分支会增加编译成本，也会稀释热点集合。
 
 ---
 
-## 案例二：抖音冷启动优化——主线程线性执行的极致优化
+## 案例二：Gmail Wear OS 用 Perfetto 找到 CPU 争用
 
-### 问题背景
+### 优化前数据
 
-抖音（TikTok 中国版）日活超过七亿，是全球最大的短视频应用之一。对于这种体量的产品，启动速度的改善直接关联用户留存和内容消费。抖音技术团队的研究表明，启动时间控制在 2 秒以内可以显著提升用户留存率，而启动性能还会影响完播率、互动率等核心推荐算法指标 [来源: 性能优化日报/2026-03-13-大厂-抖音启动优化实践2025.md]。
+Gmail Wear OS 团队公开了诊断步骤和相对收益，没有披露优化前的毫秒数、设备型号或投入人天。优化前的 Perfetto trace 显示，Wear OS 设备只有两个 CPU，启动期间主线程有较多 Runnable 时间；加载动画、系统工作和应用初始化会争用有限的 CPU 时间。
 
-### 分析思路
+案例中的 `Android App Startups` 轨道止于首帧，对应 TTID。即使应用调用 `reportFullyDrawn()`，该轨道也不会自动延长到 TTFD。要分析完整内容可用时间，需要在 Perfetto 中单独找到 `reportFullyDrawn()` 标记。
 
-抖音团队面临的核心挑战是：App 规模庞大（Feature 模块上百个），启动路径上的同步操作极多。他们将问题分解为"主线程线性执行时间"这个核心指标——即从进程创建到首页可交互，主线程上所有同步执行的代码的总耗时。
+### 分析过程
 
-分析工具方面，抖音自研了 Rhea 一体化性能分析平台。Rhea 覆盖启动速度、页面渲染、内存、网络、功耗等多个维度，支持毫秒级差异精细化分析。在低端设备上，Rhea 能够识别出主线程上的锁等待、阻塞和 IO 等待——这些在高端设备上不明显的问题，在低端设备上会被放大为肉眼可见的启动延迟。
+官方 [Gmail Wear OS 启动案例](https://developer.android.com/topic/performance/appstartup/case-study-gmail-wear) 给出一条可复用的排查顺序：
 
-通过 Rhea 的分析，抖音团队将冷启动的主线程时间分解为三个主要阶段：
+1. 在 Perfetto 固定 `Android App Startups`、应用主线程状态和主线程 tracepoint。
+2. 比较主线程 `Running` 与 `Runnable` 的时间。`Runnable` 表示线程已可运行却暂时没有获得 CPU；占比偏高时继续检查 CPU 争用。
+3. 查看 `bindApplication` 附近的 `OpenDexFilesFromOat*`，判断 DEX 读取与代码体积是否占用启动窗口。
+4. 沿 `binder transaction` 找到 `system_server` 的 reply 线程，再查看 reply 是否处于 `Runnable (Preempted)`。
+5. 检查首帧前后的 JIT 线程。案例中首帧前 JIT 很少，但 `Application creation` 附近仍有后台 JIT 活动，说明 Profile 采集终点可以延长到页面可用状态。
 
-1. **MultiDex 加载阶段**：由于方法数超过 65K，App 使用了 MultiDex。API 21 以下走 support multidex 路径，`MultiDex.install()` 会在启动早期处理 secondary dex 的解压、校验和 ClassLoader 安装；Dalvik 侧还要处理 dexopt 与类加载成本。API 21+ 才进入 ART 原生 multidex 路径，安装或后台编译阶段由 dex2oat / profile guided 编译处理多个 dex，启动时仍可能受类验证、首次类加载、profile 命中率和 I/O 影响。
-
-2. **反序列化阶段**：抖音在启动时需要读取大量的配置数据和缓存数据（用户偏好、AB 实验配置、推荐策略参数等），这些数据以序列化形式存储在本地，启动时需要反序列化到内存。配置项越多，这个阶段的耗时越长。
-
-3. **主线程耗时消息阶段**：Application.onCreate() 之后到首页 Activity.onCreate() 之间，还有大量同步消息需要处理——包括各种 SDK 的初始化回调、Provider 的 query 操作、以及一些历史遗留的同步初始化代码。
+这套步骤把“主线程没在执行”拆成等待 Binder、等待调度、等待 I/O，或被应用自己的动画和工作线程抢占 CPU。只看主线程方法栈无法完整区分这些情况。
 
 ### 优化手段
 
-抖音采用了分阶段的优化策略 [来源: 性能优化日报/2026-03-13-大厂-抖音启动优化实践2025.md]：
+团队做了两组改动，原文分别报告收益：
 
-**MultiDex 优化**方面，抖音团队将 MultiDex 的加载从主线程移到了子线程。核心思路是利用 Android 的 ClassLoader 机制，在主线程只加载首个 dex（包含启动路径必需的类），其余 dex 在子线程中异步加载。加载完成前如果需要访问未加载 dex 中的类，会通过一个拦截机制等待对应 dex 加载完成。
+- 把加载 spinner 换成静态图片，并延后 shimmer 状态，让启动阶段少做持续动画，释放 CPU 给应用主线程和系统服务。
+- 启用 R8 对 Baseline Profile 的重写，使代码缩减、重命名后 Profile 仍能对应优化后的程序结构。官方案例注明这项能力要求 AGP 8.2 或更高版本。
 
-**反序列化优化**方面，他们做了两件事：一是将启动阶段必需的配置项精简到最少（通过延迟加载非必需配置），二是将序列化格式从 JSON 切换为 Protocol Buffers。Protobuf 的反序列化速度比 JSON 快 5-10 倍，而且生成的类没有反射开销。
+延长启动画面不是通用技巧。该案例的作用点是减少双核 Wear OS 设备启动窗口内的动画争用；手机端、不同 UI 状态或无 CPU 争用的 App 应重新测量。为了视觉稳定而无条件延长 Splash，只会增加用户等待。
 
-**主线程耗时消息优化**方面，抖音建立了一个启动任务调度框架。核心思想是将 Application.onCreate() 和首页 Activity.onCreate() 中的所有初始化任务建模为有向无环图（DAG），根据任务间的依赖关系进行拓扑排序，然后分配到不同的线程池执行。主线程只执行必须在主线程的任务（如创建 Handler、初始化 Looper 等），其余全部放到子线程。
+### 优化后数据
 
-```kotlin
-// 启动任务调度框架的核心抽象（示意）
-// 将启动任务建模为 DAG 节点
-class StartupTask(
-    val name: String,
-    val dependencies: List<String>,  // 依赖的其他任务
-    val thread: ThreadType,           // MAIN / IO / COMPUTE
-    val block: () -> Unit
-)
+| 实验 | 指标 | 优化前（归一化） | 优化后（归一化） | 原文披露的变化 |
+|---|---:|---:|---:|---:|
+| 静态加载图 + 延后 shimmer | 启动延迟 | 1.00 | 0.50 | 改善 50% |
+| R8 重写 Baseline Profile | 启动延迟 | 1.00 | 0.80 | 改善 20% |
 
-// 拓扑排序 + 多线程调度
-class StartupScheduler {
-    fun schedule(tasks: List<StartupTask>) {
-        // 1. 构建依赖图
-        // 2. 拓扑排序确定执行顺序
-        // 3. 按线程类型分发到对应线程池
-        // 4. 主线程 await 关键路径上的任务
-    }
-}
-```
+两行来自不同改动。官方资料没有说明它们是否基于同一版本、是否串行叠加，因此不能得出“合计改善 70%”，也不能把 0.50 与 0.80 相乘后写成最终值。
 
-这种框架设计的好处在于：新增初始化任务时只需声明依赖关系，调度器自动处理执行顺序和线程分配。它把"启动优化"从一个手工活变成了一个系统化的工程。
+### 投入产出比
 
-### 优化结果
+团队没有披露工期。从公开范围看，UI 修改和构建配置涉及的代码面较小；采集可对比 trace、维护 Wear OS 设备组合、做 A/B 测试和验证视觉状态仍会消耗工程时间。
 
-抖音没有公开具体的优化前后数值对比，但分享了以下关键结论 [来源: 性能优化日报/2026-03-13-大厂-抖音启动优化实践2025.md]：
-
-- 主线程线性执行时间显著缩短，P50 冷启动控制在 2 秒以内
-- 低端设备上的改善尤为明显——通过 Rhea 识别出的锁等待和 IO 等待被大幅消除
-- 建立了可持续优化的反馈循环：理论分析 → 现状测量 → 优化实施 → A/B 验证 → 防劣化监控
-
-抖音还建立了防劣化机制：每次发版前自动运行启动性能回归测试，如果冷启动 P50 回退超过 100ms，会自动拦截发版。这确保了优化成果不会因为新功能的加入而逐渐退化。
-
-### 本案例的关键启示
-
-抖音案例的核心价值在于"系统化"三个字。很多团队做启动优化是头痛医头、脚痛医脚——今天优化了这个 SDK 的初始化，明天又加了一个新的同步初始化。抖音通过任务调度框架将启动过程工程化，使得优化成果可积累、可维护。
-
-另外，Rhea 工具的投入也很值得参考。当 App 规模大到一定程度，通用的性能分析工具（Systrace/Perfetto）在"差异对比"上不够精准——我们需要知道"这次启动比上次慢了 200ms，慢在哪里"。毫秒级差异分析能力对大型 App 性能团队来说是基本要求。
+这项案例的产出还包括诊断证据：它排除了“主线程方法太多”这一单一解释，并把后续工作指向 DEX、Binder、调度和 JIT 四条可验证路径。资源有限的团队可以借此减少无效重构。
 
 ---
 
-## 案例三：Disney+ 从 ProGuard 到 R8 Full Mode——配置迁移的收益
+## 案例三：Disney+ 清理旧 R8 默认规则
 
-### 问题背景
+### 优化前数据
 
-Disney+ 是全球前三大流媒体应用之一。与 Reddit 案例类似，Disney+ 也需要优化冷启动速度以提升用户观看体验。但 Disney+ 的特殊约束在于：作为一个音视频流媒体应用，它的启动路径涉及 DRM（数字版权管理）初始化、播放器引擎加载和内容元数据解析——这些操作本身就有不可压缩的耗时 [已验证: developer.android.com, Google Performance Spotlight Week 2025]。
+Disney+ 的案例没有披露业务规模、DRM 初始化、播放器加载或启动绝对耗时。公开证据只有构建配置和上线后的相对结果，文章不补写未发布的启动路径细节。
+
+团队检查 R8 配置时发现，项目使用的默认规则文件带入了 `-dontoptimize`。旧文件 `proguard-android.txt` 包含这条指令，会让 R8 跳过优化步骤。此时即使 release 构建已经开启混淆或缩减，也不能据此推断方法内联、类合并等优化已经生效。
+
+### 分析过程
+
+这个问题涉及五个配置面：
+
+- `isMinifyEnabled` 控制 release 变体是否运行代码缩减与优化流程。
+- `isShrinkResources` 控制资源缩减。
+- `proguard-android.txt` 是旧默认规则集，其中的 `-dontoptimize` 会关闭代码优化。
+- `proguard-android-optimize.txt` 是当前推荐的优化规则入口。
+- AGP 8.0 起，R8 full mode 默认开启；历史项目仍可能在 `gradle.properties` 保留 `android.enableR8.fullMode=false`。AGP 9.0 起，官方已经移除对 `proguard-android.txt` 的支持。
+
+文件名、Gradle 属性和 keep rules 要分别检查。只替换文件却保留 fullMode=false，或者使用优化文件后以宽泛 keep 规则保住大量代码，都可能削弱收益。
 
 ### 优化手段
 
-Disney+ 的切入点，是把历史上的 ProGuard / R8 compat 配置收敛到现代 R8 优化配置。
+Disney+ 将 `proguard-android.txt` 替换为 `proguard-android-optimize.txt`。当前项目照做时还应完成这些验证：
 
-这项迁移的重点，在于避开 `proguard-android.txt` 这条默认文件路径。官方文档已经把它列为不推荐路径，因为它自带 `-dontoptimize`。更稳的做法是保留 `proguard-android-optimize.txt`，清理 `android.enableR8.fullMode=false` 这类 compat mode 开关，再逐条验证 keep rules 在 R8 下的行为，尤其是反射和 JNI 相关规则。
+1. 删除历史 compat mode 开关。
+2. 在 release 变体开启代码缩减和资源缩减。
+3. 以反射、序列化、JNI、动态类加载和依赖注入为重点审查 keep rules。
+4. 对优化前后构建运行同一套 Macrobenchmark 和端到端测试。
+5. 分阶段发布，并同时观察启动分位、user-perceived ANR、崩溃和功能成功率。
 
-### 优化结果
+R8 会删除、重命名、移动或合并程序元素。测试只覆盖启动成功还不够，低频反射入口、native 注册和按名称加载的类也要进入回归集。
 
-Disney+ 在 Google Play 上线后的效果 [已验证: developer.android.com, Google Performance Spotlight Week 2025]：
+### 优化后数据
 
-| 指标 | 变化 |
-|------|------|
-| 启动时间 | **-30%** |
-| ANR 率 | **-25%** |
+数据来自 Android Developers 发布的 [R8 与 Disney+ 案例](https://developer.android.com/blog/posts/use-r8-to-shrink-optimize-and-fast-track-your-app?hl=en)。
 
-这个结果值得关注，因为 Disney+ 主要做的是 shrinker 配置迁移，没有再叠加 Baseline Profiles 这类改动。30% 的冷启动改善应理解为 R8 优化配置、规则收敛和代码体积下降的综合结果，和 `proguard-android.txt` 这个文件名本身无关。
+| 指标 | 优化前（归一化） | 优化后（归一化） | 原文披露的变化 |
+|---|---:|---:|---:|
+| App 启动耗时 | 1.00 | 0.70 | 加快 30% |
+| user-perceived ANR | 1.00 | 0.75 | 减少 25% |
 
-ANR 率降低 25% 可以从两个方向理解：一类收益来自未使用代码被移除后，DEX 更小、加载更快；另一类收益来自方法内联和类合并这类优化，让启动主线程路径更短。
+第二行是 Google Play 定义的 user-perceived ANR，不能扩写为所有 ANR。原文只说明新版本发布后观察到这两项变化，没有公开 ANR 类型分布，也没有给出每项 R8 优化如何贡献。因果解释应停在配置变更与生产指标同向变化这一层。
 
-### 本案例的关键启示
+### 投入产出比
 
-这个案例说明，如果项目里还残留 ProGuard 时代的默认文件和 compat mode 开关，值得尽快清理。R8 从 Android Gradle Plugin 3.4 起就是默认 shrinker，但 full mode 与 compat mode 的边界要单独核对，现代项目应以官方 shrink-code 文档为准。
+官方没有披露 Disney+ 的工期和人力，无法给出数值化 ROI。配置改动看起来很小，发布风险却取决于代码库的反射、JNI 和历史 keep rules。大型 App 可能花较多时间清理规则和补齐测试。
+
+评估这类工作时，成本应包含规则审计、自动化测试、灰度发布、崩溃反混淆和回滚准备；产出同时记录启动耗时与 ANR，避免只看包体积。配置迁移后还要在依赖升级时检查新增 consumer rules。
 
 ---
 
-## 案例四：页面切换优化——从 500ms 到 150ms 的 Activity 跳转
+## 案例四：Duolingo 缩短点击后的可见等待
 
-前面三个案例都聚焦在冷启动优化。但在实际项目中，用户感知最频繁的“慢”往往是页面跳转，而不是冷启动。点击一个商品、打开一个详情、切换一个 Tab，这些操作的频率远高于冷启动，对应的响应时间要求也更苛刻。这个案例展示如何将 8.4 节讨论的 Activity/Fragment 切换原理应用到具体项目中。
+### 优化前数据
 
-### 问题背景
+Duolingo 把性能实验放在三条产品路径上：打开 App、开始一次学习和结束一次学习。团队发布的 [Android 性能复盘](https://blog.duolingo.com/android-app-performance/) 说明，课程结束时要提交本次学习数据，并取回广告、奖励等后续页面。旧流程在这些工作完成前显示全屏加载指示器。
 
-某中等规模的电商 App（日活约 500 万）反馈：从首页商品列表点击进入商品详情页的跳转耗时过长，用户能明显感知到"卡了一下"才跳过去。测试数据显示，在高端设备上跳转耗时约 300ms，在中端设备上约 500ms，低端设备上超过 800ms。
+用户点击 `continue` 后能立即获得按压态，但页面主体仍是等待画面。这个案例测量“点击到有意义的完成反馈”的感知等待。公开资料没有披露输入事件到首帧的绝对毫秒数，也没有证明后端请求本身变快。
 
-用户对"点击后应该立刻跳转"的心理预期大约是 100-150ms（参见我们在 8.1 节中讨论的响应时间分级）。500ms 的跳转已经明显超出了"感觉即时"的范围，进入了"能感知到延迟"的区域。
+### 分析过程
 
-### 分析思路
+团队用 trace marker、系统 trace 和 Perfetto 检查用户路径，重点观察主线程上的两类区间：
 
-开发团队使用 Perfetto 抓取了点击后的完整 trace，在时间线上标注了从 onClick 回调到详情页第一帧渲染完成的区间。分析发现 500ms 的时间被分配在以下几个阶段：
+- 主线程空闲，但 UI 在等后台 I/O 或网络结果才能继续。
+- 主线程长时间执行，导致 frozen frame 或 ANR 风险。
 
-**主线程消息处理（约 50ms）**：从用户点击到 `Activity.startActivity()` 被调用，中间经过了 View 的事件分发过程和 onClick 回调执行。这部分本身不慢，但 onClick 回调中做了商品 ID 的参数校验和埋点上报，消耗了约 20ms。
+课程结束属于前一类。阻塞条件是“全部后续数据准备完成”，但下一步固定会展示 Session Complete 页面。这提供了一个状态拆分点：本次课程已在本地结束时可以展示完成反馈，数据提交和后续页面准备继续在后台进行。
 
-**Binder IPC（约 30ms）**：`startActivity()` 通过 Binder 调用 AMS（ActivityManagerService），AMS 需要检查目标 Activity 是否已注册、权限是否合法、目标进程是否已创建等。在目标进程已存在的情况下，这个 Binder 调用通常在 10-30ms。
-
-**目标 Activity 创建（约 200ms）**：这是最大的耗时项。详情页的 `onCreate()` 中做了大量初始化工作：创建 ViewModel、发起网络请求、初始化自定义 View、设置 RecyclerView 适配器。其中自定义 View 的构造函数中有一个从 assets 读取 JSON 配置文件的操作，每次跳转都要读一次，消耗约 60ms。
-
-**首帧渲染（约 220ms）**：由于详情页的 View 层级较深（嵌套的 ScrollView + 多个 RecyclerView），measure/layout 两次遍历就消耗了约 150ms。加上 draw 阶段中几个自定义 View 的 onDraw 比较重（阴影绘制、圆角裁剪），draw 阶段又消耗了约 70ms。
+这种处理要求产品语义允许提前反馈。如果操作涉及不可逆支付、服务器确认或可能失败的安全动作，就不能在成功条件成立前展示“已完成”。即便允许乐观反馈，也要定义重试、离线持久化、失败提示和进程死亡恢复。
 
 ### 优化手段
 
-团队分三阶段优化：
+新流程在用户点击 `continue` 后立即展示烟花、动画和 `Session Complete` 文案，同时后台提交数据并准备后续页面。它改变了可见状态的顺序，没有声称缩短整个网络事务。
 
-**阶段一：快速见效（投入 2 天）**
+工程上应把这条路径拆成三个时间点：
 
-将 onClick 中的埋点上报改为异步执行。埋点数据先缓存到内存队列，由后台线程批量上报，不再阻塞 UI 线程。同时将 assets 中的 JSON 配置文件改为在 Application.onCreate() 时预加载到内存，避免每次跳转都读取。
+- `input_received`：主线程收到点击。
+- `meaningful_feedback_drawn`：完成页的有意义反馈已经提交到显示管线。
+- `operation_committed`：服务端确认或本地可靠队列完成持久化。
 
-这两项改动将跳转耗时从 500ms 降到了约 420ms。
+点击响应看前两个时间点；业务完成看第三个。把后两个合成一个指标，会让“反馈快、提交慢”和“反馈慢、提交快”在报表中无法区分。
 
-**阶段二：延迟加载（投入 1 周）**
+### 优化后数据
 
-将详情页的初始化工作做了延迟加载处理。核心思路是"先展示骨架屏，再加载数据"：
+| 指标 | 优化前（归一化） | 优化后（归一化） | 原文披露的变化 |
+|---|---:|---:|---:|
+| 感知到的 session end 延迟 | 1.00 | 小于等于 0.40 | 降低 60% 以上 |
+| 服务端提交耗时 | 未披露 | 未披露 | 不能从案例推断 |
+| DAU 与完成 session 数 | 未披露 | 上升 | 原文只给定性结果 |
 
-- `onCreate()` 中只做最轻量的操作：设置 Content View、初始化 ViewModel
-- 网络请求在 `onStart()` 中发起，不在构造函数中
-- RecyclerView 的数据绑定在数据返回后通过 DiffUtil 增量更新
-- 自定义 View 的重绘制逻辑优化：将 `onDraw()` 中的阴影绘制缓存为 Bitmap
+同一篇复盘还披露整个 2024 Android 性能计划的宏观结果：团队运行 200 多个 A/B 实验；入门设备的 App 打开转化率从 91% 提高到 94.7%；启动等待超过 5 秒的入门设备用户占比从 39% 降到 8%。这些数据属于整个计划，不能归给 session end 这一项改动。
 
-这一阶段将跳转耗时进一步降到约 250ms。
+### 投入产出比
 
-**阶段三：渲染优化（投入 1 周）**
+Duolingo 没有公开该改动的人天。案例确认感知等待下降 60% 以上，并报告 DAU 与完成 session 数上升，但没有给出这一实验独立贡献的用户数。
 
-第三个阶段解决 View 层级过深的问题：
+ROI 评估要同时检查两面：用户更早看到有意义反馈带来的路径转化；后台任务失败、重试和状态恢复增加的实现成本。只移动动画而不保证业务状态可靠，会把延迟问题换成一致性问题。
 
-- 使用 `ViewHolder` 模式减少 `findViewById()` 的重复调用
-- 将嵌套的 ScrollView + RecyclerView 改为单一 RecyclerView + 多 viewType
-- 自定义 View 使用 `setLayerType(HARDWARE)` 开启硬件加速层，减少重绘范围
-- 对于不频繁变化的静态区域，减少 `requestLayout()` 触发：约束布局层级、合并 payload 更新；RecyclerView 尺寸稳定时使用 `setHasFixedSize(true)`，批量更新期间可短时间使用 `suppressLayout(true/false)` 并在 `finally` 中恢复
+### 可迁移的做法
 
-这一阶段将首帧渲染时间从 220ms 降到了约 100ms，总跳转耗时约 150ms。
-
-### 优化结果
-
-| 阶段 | 跳转耗时 | 改动内容 |
-|------|----------|----------|
-| 优化前 | ~500ms | — |
-| 阶段一 | ~420ms | 异步埋点 + 配置预加载 |
-| 阶段二 | ~250ms | 延迟加载 + 骨架屏 |
-| 阶段三 | ~150ms | View 层级扁平化 + 硬件层 |
-| **最终** | **~150ms** | **总计投入约 2.5 周** |
-
-[待验证: 上述数据为综合多个电商 App 的典型优化经验归纳，非单一 App 的精确测试。具体数值因项目而异。]
-
-最终 150ms 的跳转时间在用户的感知阈值之内。值得一提的是，150ms 并不是极限——通过异步 inflate（AsyncLayoutInflater）和预先创建 Activity 的方案，还可以进一步缩短。但这些方案复杂度更高，需要根据实际情况权衡投入产出比。
-
-### 本案例的关键启示
-
-页面切换优化的关键原则是"分而治之"：先用 Perfetto 精确定位时间花在了哪个阶段（消息处理 / IPC / Activity 创建 / 渲染），然后逐阶段优化。不要凭直觉猜测瓶颈在哪——在本案例中，团队最初以为是网络请求慢，但 trace 显示网络请求是异步的，瓶颈是 View 层级的 measure/layout。
+点击后存在不可避免的耗时任务时，先找出用户需要的最早可信反馈。常见选择包括按钮状态变化、已接收提示、本地结果预览或可取消的进行中状态。反馈必须与业务事实一致，并在下一帧内有机会绘制；onClick 内的同步 I/O、锁等待或重计算仍应移出主线程。
 
 ---
 
-## 案例五：系统级启动优化——Google AutoFDO 与 16KB 页面
+## 四个案例放在一起怎么看
 
-前面四个案例都是从 App 端出发的优化。这一节我们来看一个不同视角的案例：Google 如何从系统层面优化所有 App 的启动速度。
+| 案例 | 覆盖场景 | 主要证据 | 改动位置 | 结果边界 |
+|---|---|---|---|---|
+| Reddit | 冷启动、页面切换、滚动 | Macrobenchmark、页面级线上指标 | Baseline Profile、R8、UI 演进 | 特定 CUJ 与全局指标分开 |
+| Gmail Wear OS | 冷启动 | Perfetto、线程状态、Binder/JIT 轨道 | 加载 UI、Profile 重写 | 两项收益不可相加 |
+| Disney+ | 冷启动、ANR | 新旧 release 生产对照 | R8 默认规则 | 无绝对耗时与工期 |
+| Duolingo | 点击响应 | trace、A/B 测试、产品转化 | 反馈状态与后台任务顺序 | 感知延迟不等于事务耗时 |
 
-### 背景
+这些案例没有给出适用于所有 App 的固定优先级。它们共同支持一种证据顺序：定义用户路径和时间边界，用 trace 判断 CPU、调度、I/O、Binder、编译或绘制中的瓶颈，做尽量单一的改动，再在相同口径下比较前后版本。
 
-2025-2026 年，Google 在 Android 系统层面推了两项影响较大的优化——AutoFDO 和 16KB 页面大小。AutoFDO 对普通 App 基本透明；16KB page size 对纯 Java/Kotlin App 基本透明，但只要 APK 含 NDK/JNI 或第三方 `.so`，开发团队就要验证 native library alignment、`mmap` / `PAGE_SIZE` 假设和依赖库版本。平台收益和发布兼容要求要分开看：AutoFDO 主要是系统内核优化，16KB page size 同时带来启动收益和 native 适配要求。
+### 实验记录模板
 
-### AutoFDO：用真实数据指导内核编译
+每次响应速度优化至少记录这些字段：
 
-AutoFDO（Automatic Feedback-Directed Optimization）的核心思路是：收集真实应用的运行 profile，用这些数据指导内核代码的编译优化。
+| 字段 | 要回答的问题 |
+|---|---|
+| CUJ | 用户从哪个动作开始，到哪个可见或可交互状态结束？ |
+| 指标定义 | TTID、TTFD、页面 TTI、点击到反馈或事务完成中的哪一个？ |
+| 样本 | 设备档位、系统版本、刷新率、温度、网络与登录状态是否一致？ |
+| 基线 | 优化前的 P50、P90、P95、样本量和构建版本是什么？ |
+| Trace 证据 | 时间消耗位于 Running、Runnable、Sleep、Binder、I/O、JIT 还是帧管线？ |
+| 变量 | 本轮改了哪些内容，能否和其他变更隔离？ |
+| 结果 | 实验室与线上指标是否同向，置信区间和异常样本如何？ |
+| 成本 | 开发、测试、CI、设备、发布观察和维护分别花了多少？ |
+| 风险 | 功能成功率、崩溃、ANR、功耗、内存和数据一致性是否回退？ |
+| 守门 | 采用什么阈值阻止后续版本回退？ |
 
-具体做法是：Google 采集了 Pixel 设备上最常用的 100 个 Android 应用的真实运行数据，分析这些应用与内核的交互模式，识别出内核中被频繁执行的"热"代码路径，然后使用 Clang 编译器的 AutoFDO 支持对这些热路径做更激进的优化（如更好的指令缓存布局、分支预测优化）。
+Macrobenchmark 适合建立可重复的启动和交互基准，[官方概览](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview) 说明可测的启动、帧和自定义 trace 指标。生产分布还应结合 Android vitals 与应用自己的 CUJ 指标；实验室的一台高速设备不能代替真实设备分层。
 
-为什么优化内核能加速 App 启动？因为在 Android 上，内核操作约占总 CPU 时间的 40% [已验证: developer.android.com, Google Blog 2026-03]。App 启动过程中的每一次 Binder 调用、每一次内存分配、每一次文件 IO，背后都有内核的参与。优化内核热路径等于优化了所有 App 共用的基础设施。
+### 投入产出比的计算边界
 
-公开资料里的数字来自两类口径，不能放在同一张“实测效果”表里。Android GKI / Pixel 相关结果如下：
+没有金额和人天时，不写“高 ROI”作为结论。可以报告三组可审计信息：
 
-| 场景 / benchmark | 口径 | 变化 |
-|------------------|------|------|
-| Cold App Launch Time | Pixel 设备上常用应用 profile 驱动的 Android GKI 内核优化 | **-4.3%** 启动耗时 |
-| Boot Time | Android GKI 内核优化后的系统开机场景 | **-2.1%** |
-| Binder-rpc | Android 内核微基准 | **+21.7%** |
-| Hwbinder | Android 内核微基准 | **+20.0%** |
+- 一次性成本：实现、测试、基准设施、灰度与回滚。
+- 持续成本：Profile 更新、设备实验室、告警维护和规则审计。
+- 产出：耗时分位、慢帧、ANR、转化率、留存或支持工单的变化。
 
-AutoFDO 早期论文 / 数据中心基准另算：
-
-| 场景 / benchmark | 口径 | 变化 |
-|------------------|------|------|
-| AutoFDO historical benchmark | 早期 AutoFDO 论文与服务端 workload 的几何平均 | **+10.5%** |
-
-这两张表不能互相外推：`+10.5%` 不代表 Android App 启动收益，`+26.4%` 也不能当成系统级平均收益。AutoFDO 目前已部署到 android16-6.12 和 android15-6.6 内核分支，计划扩展到 android17-6.18 GKI。
-
-### 16KB 页面大小：减少 TLB Miss 的架构级优化
-
-从 Android 15 开始，系统支持 16KB 内存页面大小（传统为 4KB）。我们在第 4 章内存管理部分详细讨论了页表和 TLB 的工作机制，这里聚焦它对启动速度的影响。
-
-原理并不复杂：页表项数量变为原来的 1/4，TLB（Translation Lookaside Buffer，页表缓存）的命中率显著提升。TLB miss 的代价是一次页表遍历，可能需要数十到数百个 CPU 周期。在启动阶段，大量的内存映射和代码加载操作都会触发 TLB 查询，减少 miss 直接减少了等待时间。
-
-Google 的内部基准测试显示 [已验证: developer.android.com, Google Blog 2025-11]：
-
-| 指标 | 变化 |
-|------|------|
-| 应用启动（平均） | **+3.16%** |
-| 相机冷启动 | **+6.6%** |
-| 相机热启动 | **+4.48%** |
-| 系统开机 | **+8%（约 0.8-0.95 秒）** |
-| 功耗 | **-4.56%** |
-| 内存使用 | **+9%** |
-
-内存使用增加约 9% 是代价。但考虑到启动速度和功耗的改善，这个 trade-off 对大多数设备是值得的。
-
-自 2025 年 11 月 1 日起，提交到 Google Play、面向 Android 15+ 设备的新应用和更新，在 64-bit 设备上要支持 16KB page size。影响集中在 NDK/JNI 和第三方 `.so`：检查 ELF segment alignment、AGP/NDK 版本、`mmap` 长度计算、任何硬编码 `4096` 或 `PAGE_SIZE` 的假设。纯 Java/Kotlin 代码大多由系统处理，但只要 APK 里有 native library，就要在 16KB emulator 或真机上跑安装、启动、so 加载和动态 mmap 路径。
-
-### 本案例的关键启示
-
-这个案例的意义在于：性能优化不总是"App 端能做的事"。Google 正在构建数据驱动的系统级自动优化体系——从 AutoFDO 到 ART 编译优化通过 Mainline 推送。App 开发者要把两类变化区分开：AutoFDO 可以作为系统背景条件；16KB page size 要进入 native 兼容测试和发布检查。理解这些平台级优化，能让启动耗时归因更稳，也能减少新平台适配时的遗漏。
+同一项收益不要重复计入。例如启动变快可能同时改善转化率，两者可以并列展示，却不能在没有经济模型时相加成一个虚构金额。某项案例只给相对变化时，本地团队仍需用自己的样本量和用户价值计算是否值得投入。
 
 ---
 
-## 举一反三：响应速度优化的通用方法论
+## Android 17 锚点下的归因边界
 
-五个案例覆盖了从 App 端到系统端、从工具配置到架构改造的不同维度。把它们放在一起看，可以提炼出一套通用的优化方法论：
+四个案例以 App 和构建工具为主，不依赖某个 Android 17 新 API。迁移到当前平台时，仍要使用统一锚点解释 trace：
 
-**第一，先度量，再优化。** Reddit 用 Macrobenchmark 建基线，抖音用 Rhea 做毫秒级差异分析，电商案例用 Perfetto 精确定位瓶颈。没有一个团队是凭直觉做优化的。度量工具的选择取决于我们的规模——小型 App 用 Macrobenchmark + Perfetto 就够了，大型 App 可能需要自建分析平台。
+- 平台源码对照 android-17.0.0_r1，API 上限 37。
+- 内核调度、唤醒、页缓存与 Binder 驱动对照 android17-6.18-2026-06_r6。
+- 主线程处于 Running 时，优先检查应用或 framework 正在执行的代码。
+- 主线程处于 Runnable 时，继续检查 CPU 争用、线程优先级与调度；不能把 Runnable 直接写成“CPU 不够”。
+- Binder 调用耗时时，沿 transaction/reply 查看服务端线程和调度状态；调用端切片长不等于 system_server 执行慢。
+- I/O 或缺页占主导时，要区分冷缓存、设备存储和内核版本，避免把一台设备的收益外推到全量用户。
 
-**第二，区分"平台收益"和"应用优化"。** Baseline Profiles、R8 优化配置和 AutoFDO 是成本较低的收益来源；16KB page size 对纯 Java/Kotlin App 接近透明，但含 native library 的 App 要把 ELF alignment、`PAGE_SIZE` 假设和第三方 `.so` 版本纳入发布检查。先吃低成本收益，再投入应用层深度优化。
-
-**第三，系统化 > 贴膏药。** 抖音的启动任务调度框架、Reddit 的 CUJ Profile 管理——它们把优化过程从"每次手动排查"变成了"系统自动处理"。这种投入的 ROI 是长期累积的。
-
-**第四，防劣化比优化更重要。** 抖音建立了 100ms 回退拦截机制，取得一次优化不容易，守住不退步更难——每次新功能迭代都可能引入新的启动耗时——没有防劣化机制，优化成果会在几个月内被逐渐蚕食。
-
-**第五，利用系统级自动采集减少人工排查。** 前面几个案例中，团队要么自建分析平台，要么手动抓 Perfetto。但 Android 15+ 的 ProfilingManager 已支持系统触发式采集——App Startup、ANR 等系统事件可自动触发 system trace / heap dump。线上监控不需要在每个入口手动埋点，而是注册系统触发器让平台在关键事件发生时自动抓取现场。Android 17 进一步引入 `TRIGGER_TYPE_OOM`（Java OOM，返回 Java heap dump）等触发类型；区分触发来源应读 `ProfilingResult.getTriggerType()` 或结果文件名里的 `trigger-type-x`，`getTag()` 只保留请求 tag，或承载部分异常 / 兼容性问题的附加分类。系统触发受采样策略和设备版本约束，不能保证每次事件都产出产物；线上使用仍需采样率控制和隐私脱敏。
-
-**ProfilingManager（Android 15+）的辅助价值**：Android 15 起，系统提供公开 `android.os.ProfilingManager`，应用可以通过 `requestProfiling()` 主动请求系统采集 system trace、heap dump、heap profile 或 stack sampling。Android 16 的 System Triggered Profiling 把触发源扩展到 App Startup、ANR 等系统事件；这类系统触发与 App 主动调用共用结果回调模型，但是否生成、保存和上报仍受采样策略、设备版本、权限边界和隐私策略约束。
-
-下面的代码只展示公开 SDK 可编译的显式 system trace 请求路径，重点看 `PROFILING_TYPE_SYSTEM_TRACE`、`tag` 和结果回调。公开 SDK 没有暴露 `KEY_DURATION_MS`；普通 App 代码不要依赖隐藏常量控制采集时长：
-
-```kotlin
-@RequiresApi(35)
-fun requestStartupSystemTrace(context: Context) {
-    val profilingManager = context.getSystemService(ProfilingManager::class.java)
-
-    profilingManager.requestProfiling(
-        ProfilingManager.PROFILING_TYPE_SYSTEM_TRACE,
-        null,
-        "startup_trace",
-        null,
-        context.mainExecutor
-    ) { result ->
-        if (result.errorCode == ProfilingResult.ERROR_NONE) {
-            val tracePath = result.resultFilePath
-            Log.i("StartupTrace", "profiling result: $tracePath")
-        } else {
-            Log.w("StartupTrace", "profiling failed: ${result.errorCode}")
-        }
-    }
-}
-```
-
-`requestProfiling()` 的第二个参数可以传 `null` 或公开参数组成的 `Bundle`。如果要调整采集时长，只能等公开 SDK 提供对应键，或在平台 / 系统 App 场景使用已确认的内部接口；普通 App 示例不应写 `ProfilingManager.KEY_DURATION_MS`。结果文件由系统写入应用可访问目录，回调只负责拿到路径和错误码。线上接入时还要加采样率、用户授权、隐私脱敏和上传窗口控制，否则 trace 文件会带来额外 I/O 和合规风险。[来源: intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md；Android `ProfilingManager` API 文档]
+Android 17 的 framework 或 6.18 内核可能改变某些切片的成本，案例中的历史百分比不能当成平台承诺。迁移时复用诊断步骤，在当前基线重新采集数据。
 
 ---
 
-## 常见问题与误区
+## 常见误读
 
-**误区一：“启动优化就是减少 Application.onCreate() 的耗时。”**
+### 把归一化值当成毫秒
 
-这个认知范围太窄了。从本章的案例看，启动耗时分布在多个阶段——Reddit 的瓶颈是 JIT 编译，抖音的瓶颈是 MultiDex 和主线程同步消息，电商案例的瓶颈是 View 层级的 measure/layout。`Application.onCreate()` 只是一个环节。正确的做法是先用 Perfetto/Macrobenchmark 建立完整的耗时分布图，找到瓶颈再针对性优化，而不是一上来就砍 `onCreate()`。
+1.00 → 0.70 只表示相对耗时降低 30%。原报告没有绝对值时，无法据此计算“节省了多少毫秒”，也无法判断优化后是否达到产品目标。
 
-**误区二：“Baseline Profiles 只对首次启动有效，之后就失效了。”**
+### 把多个百分比相加
 
-不准确。Baseline Profiles 在每次 App 更新后重新生效——因为更新会清空之前 JIT 编译的缓存。对于高频更新的 App（社交、电商类通常每 1-2 周更新一次），Baseline Profiles 的实际生效频率比想象中高。此外，Android 12 起将 ART 作为 Mainline 模块（`com.android.art`），系统可以通过 Google Play System Updates 更新编译策略（包括 dex2oat 优化、Profile 引导编译等），进一步提升 Baseline Profiles 的命中率和编译效果。[已确认: ART Mainline 模块自 Android 12 (API 31) 引入，验证来源 AOSP android-12.0.0_r1]
+同一团队可能在不同版本、设备和指标上报告多项变化。没有实验设计说明时，51% 与 20%、50% 与 20% 都不能相加。串行实验还会受到基线变化和交互效应影响。
 
-**误区三：“R8 full mode 风险太高，不敢开。”**
+### 用启动首帧代替可交互
 
-风险点不在 `proguard-android.txt` 这个文件名上，而在 keep rules 是否覆盖了反射、JNI 和动态加载。现代文档给出的基线配置是 `proguard-android-optimize.txt`，同时清理 `android.enableR8.fullMode=false` 这类 compat mode 开关；AGP 8.0+ 默认已经是 full mode。更稳的迁移路径，是在 CI 里先跑完整测试，再根据崩溃和反混淆结果补 keep rules。
+TTID 只说明首帧已经显示。页面数据、控件可用性和必需状态仍可能没有完成。应为 TTFD 或页面 TTI 设置独立标记，并写清 `reportFullyDrawn()` 的调用条件。
 
-**误区四：“页面切换慢就是网络请求慢。”**
+### 用点击回调结束代替用户反馈
 
-在电商案例中，团队最初的直觉也是网络请求慢。但 Perfetto trace 显示网络请求是异步的，阻塞首帧的是 View 层级的 measure/layout 和自定义 View 的 onDraw。凭直觉猜测瓶颈是性能优化中最大的时间浪费——先用工具定位，再动手。
+`onClick` 返回只说明回调结束，不说明新状态已经显示。点击响应指标至少应延伸到有意义帧呈现；需要服务端确认的操作还要保留事务完成指标。
+
+### 根据配置名猜测 R8 已优化
+
+启用 minify、选择默认规则文件、full mode 属性和 keep rules 会共同影响结果。要检查 release 产物、测试行为与基准数据，不能依据一个布尔值或文件名下结论。
+
+### 把生产相关性写成代码机制证明
+
+生产版本上线后启动与 ANR 同向改善，可以支持“这次发布有效”，却不足以证明某个内联或类合并直接减少了某类 ANR。机制结论需要 trace、消融实验或更细的错误分类。
 
 ---
 
 ## 参考资料
 
-- Google Performance Spotlight Week 2025 — Reddit & Disney+ 优化案例
-  - [已验证: developer.android.com, Google Performance Spotlight Week 2025]
-- Android Baseline Profiles 官方文档
-  - https://developer.android.com/topic/performance/baselineprofiles
-  - [已验证: 官方文档]
-- 抖音启动优化实践（2025）
-  - [来源: 性能优化日报/2026-03-13-大厂-抖音启动优化实践2025.md]
-- Google AutoFDO 内核优化
-  - [已验证: developer.android.com, Google Blog 2026-03]
-- Android 16KB 页面大小变更
-  - [已验证: developer.android.com, Google Blog 2025-11]
-- Android 16/17 ProfilingManager 系统触发式追踪
-  - [来源: intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md]
-- R8 Shrinker 官方文档
-  - https://developer.android.com/build/shrink-code
-  - [已验证: 官方文档]
+- [Reddit：Baseline Profiles、R8 与 Compose 的生产案例](https://android-developers.googleblog.com/2024/12/reddit-improved-app-startup-speed-using-baseline-profiles-r8.html)
+- [Reddit：R8、Baseline Profiles 与 Startup Profiles 的后续基准](https://developer.android.com/blog/posts/how-reddit-used-the-r8-optimizer-for-high-impact-performance-improvements?hl=en)
+- [Gmail Wear OS：用 Perfetto 分析启动并改善 50%](https://developer.android.com/topic/performance/appstartup/case-study-gmail-wear)
+- [Disney+：清理旧 R8 默认规则后的生产结果](https://developer.android.com/blog/posts/use-r8-to-shrink-optimize-and-fast-track-your-app?hl=en)
+- [Duolingo：Android 性能实验与点击后感知等待案例](https://blog.duolingo.com/android-app-performance/)
+- [Baseline Profiles 官方概览](https://developer.android.com/topic/performance/baselineprofiles/overview)
+- [R8 full mode 官方说明](https://developer.android.com/topic/performance/app-optimization/full-mode?hl=en)
+- [启用 App 优化的官方指南](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization)
+- [Macrobenchmark 官方概览](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
+- [Android App 性能度量概览](https://developer.android.com/topic/performance/measuring-performance)
