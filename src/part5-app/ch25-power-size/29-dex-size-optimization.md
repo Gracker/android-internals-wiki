@@ -1,14 +1,20 @@
 ---
 title: "DEX 体积优化实战"
 chapter: "25.29"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [dex, r8, d8, apk-size, code-shrinking, baseline-profile, multidex]
 related_chapters: ["25.6", "25.7", "21.12", "1.57"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "Clippings参考书驱动"
-confidence: medium
+confidence: medium-high
+last_verified: 2026-07-30
+task6_state: pending
+task9_state: pending
+pipeline_stage: task6_pending
+last_draft_polish_at: 2026-07-30
+last_draft_polish_run_id: 20260730-235049-draft-polish-977cb49d
 ---
 
 # 25.29 DEX 体积优化实战
@@ -19,14 +25,14 @@ confidence: medium
 ### 🔹 DEX 文件结构与体积构成
 - DEX 二进制格式：header、string_ids、type_ids、proto_ids、field_ids、method_ids、class_defs、data
 - 体积来源：代码量（方法数/类数）、字符串池、调试信息（LineNumberTable、LocalVariableTable）
-- DEX 方法数 64K 限制与 Multidex 的体积代价 [结构参考: Clippings/Android 性能优化 - dex 文件的体积优化实战.md]
+- DEX 方法数 64K 限制与 Multidex 的体积代价
 
 ### 🔹 R8 Full Mode 与代码缩减
 - R8 Full Mode vs Compat Mode 的体积差异
 - Keep 规则精简：避免过度 Keep 导致死代码无法剔除
 - `@Keep` 注解滥用检测与治理
 - 规则合并与去重：`-whyareyoukeeping` 诊断无用 Keep
-- 详见 25.7 节的 R8 基础 [已验证: 官方文档, developer.android.com/build/shrink-code]
+- 详见 25.7 节的 R8 基础
 
 ### 🔹 D8 与 DexBuilder 选项调优
 - `--release` 模式对 DEX 体积的影响
@@ -35,14 +41,14 @@ confidence: medium
 
 ### 🔹 Debug 信息剥离与映射管理
 - `-strip-debug`：移除 LineNumberTable 对崩溃堆栈的影响
-- R8 `mapping.txt` 的保留与上传（Crash symbolicaton 依赖）
+- R8 `mapping.txt` 的保留与上传（Crash symbolication 依赖）
 - ReTrace 工具与 mapping 文件管理流程
 - 如何在减小体积的同时保证线上可调试
 
 ### 🔹 Multidex 体积代价与优化
 - Multidex DEX 文件数量与冷启动耗时的关联
 - Main Dex List 最小化：只保留启动必需类
-- Android 17 Art 加载多 DEX 的并行化优化 [待验证: AOSP android-17.0.0_r1]
+- Android 17 ART 支持多 DEX / DEX container 读取，但不向应用承诺"并行加载"性能契约 [已核对: AOSP android-17.0.0_r1，见正文 Multidex 节]
 - 通过模块化/动态特性模块减少主 APK DEX 数量
 
 ### 🔹 Startup Profile 与 DEX 布局优化
