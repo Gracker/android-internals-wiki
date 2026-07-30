@@ -6,18 +6,34 @@ status: finalized
 drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-22"
-last_verified_against: "Android Developers docs"
-confidence: medium
+last_verified: "2026-07-30"
+last_verified_against: "Android 17 / API 37 / AOSP android-17.0.0_r1；AndroidX Benchmark 1.4.1 sources；Baseline Profiles 与 Android Vitals 官方文档"
+confidence: medium-high
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/benchmarking/benchmarking-overview"
   - type: official
+    path: "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
+  - type: official
     path: "https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci"
+  - type: source
+    path: "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.4.1/benchmark-macro-1.4.1-sources.jar"
+  - type: source
+    path: "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro-junit4/1.4.1/benchmark-macro-junit4-1.4.1-sources.jar"
   - type: official
     path: "https://developer.android.com/topic/performance/vitals"
   - type: official
-    path: "https://developer.android.com/topic/libraries/app-startup"
+    path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
+  - type: official
+    path: "https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile"
+  - type: official
+    path: "https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles"
+  - type: official
+    path: "https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations"
+  - type: source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1"
+  - type: source
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6"
 tags: [governance, benchmark, ci, budget, release]
 related_chapters: ["7.1", "8.1", "8.3", "9.1", "14.12", "15.3", "15.5", "15.6", "15.9"]
 pipeline_stage: ready-to-publish
@@ -59,226 +75,301 @@ task9_review_notes: "2026-05-19 20 Task9 闲时抽检 → Task2B fixed: frontmat
 - 🔸 跨端团队 / 系统团队的协作分工模型
 <!-- outline-end -->
 
-## 为什么“大家都很重视性能”通常不够
+## 从个人能力转为团队机制
 
-技术团队几乎都会说自己重视性能，但能长期把性能做好的团队并不多。原因不复杂：
-性能问题容易靠高手救火，却很难靠流程稳定推进。
+会读 Perfetto、会分析 heap、熟悉 ART 或 SurfaceFlinger 的工程师仍然很重要。团队风险来自这些能力只存在于少数人手中：版本回归依靠临时救火，分析方法无法复用，修复完成后也没有稳定验收。
 
-现实里很常见的画面是：
+工程化治理要固定五类决策：
 
-- 某位同学很会看 Perfetto，于是性能问题总靠他救火。
-- 某次版本出了明显回归，大家紧急修一轮，但平时没有门禁。
-- 线上指标一直“看着还行”，直到某个活动或大版本把问题放大。
+- 哪些用户旅程属于 Critical User Journey（CUJ）；
+- 每条旅程采用什么指标、预算和设备；
+- 什么变化需要评审、阻断、灰度或回滚；
+- 异常由谁调查，证据如何交接；
+- 修复通过什么线下测试和线上指标验收。
 
-这些现象并不说明团队不懂性能，只说明性能仍然停留在“个人能力”层，还没有进入“团队机制”层。
+机制的目标是可重复决策。不同工程师面对同一份数据，应得到相近的发布结论；对结论有异议时，也能查到预算、基线、例外和证据。
 
-本节关注的重点，是怎样让性能治理变得可预测、可执行、可复用。
+## 五个支点
 
-## 先分清楚：工程化治理解决的到底是什么
+### 1. 预算：先固定测量契约
 
-性能治理工程化要做的，是把下面这些原来靠经验维持的事项固定下来：
+性能预算不能只写“启动 2 秒以内”。至少包含：
 
-- 什么算明显回归
-- 哪些场景一定要测
-- 哪些指标必须进灰度观察
-- 哪类问题一旦出现必须阻断发布
-- 修完以后怎样确认问题已经恢复
+| 字段 | 示例含义 |
+|---|---|
+| CUJ | 冷启动到首页 TTID、warm start 到 TTFD、Feed 连续滑动 |
+| 指标 | `timeToInitialDisplayMs`、frame overrun、峰值 RSS、包体积 |
+| 人群/设备 | 低内存设备、主力 SoC、API 26、API 37 |
+| 构建与编译状态 | benchmark/release 变体、R8 状态、Baseline Profile 模式 |
+| 统计口径 | median、P90、失败率、样本数、窗口 |
+| 预算 | 绝对上限、相对回归上限或两者组合 |
+| 动作 | 提醒、阻断合入、停止灰度、回滚 |
+| owner | 指标 owner、CUJ owner、批准例外的角色 |
 
-如果这些问题没有变成团队共识和固定机制，所谓“重视性能”最后通常只会表现为：出了事时大家都很焦虑，平时却没有人知道该盯哪几个点。
+预算可以分为三层：
 
-## 工程化治理至少要有五个支点
+- **用户体验 SLO**：线上启动、帧、ANR、crash、OOM、耗电等用户结果；
+- **实验室回归预算**：固定设备与场景下的 Macrobenchmark、内存和 CPU 结果；
+- **资源预算**：下载大小、安装大小、DEX/资源增长、启动初始化和后台资源。
 
-### 第一层：预算
+三层不能互相代替。线下启动稳定不代表全部厂商设备稳定；线上曲线稳定也可能由灰度量小或采样延迟造成。发布决策要说明使用了哪一层证据。
 
-预算的作用，是先把“多慢算慢、多差算差”说清楚。
+### 2. 基线：记录比较条件
 
-如果没有预算，所有回归讨论最后都会变成主观争论：
-“我觉得还能接受”对“我觉得已经很卡了”。
+预算描述目标，基线描述某组条件下已经测得的水平。更新基线时至少保留：
 
-比较稳的预算至少应该分层：
+- git commit、version code、依赖锁文件与构建变体；
+- benchmark/library/AGP/JDK 版本；
+- 设备型号、serial 或实验室资产 ID、Android build fingerprint；
+- 电量、温度、刷新率、网络与测试数据；
+- compilation mode、startup mode、迭代数；
+- JSON 结果、每轮 trace 和失败日志。
 
-- **核心路径预算**：启动、首页、支付、详情等
-- **平台预算**：APK 体积、Baseline Profile 命中率、关键 trace 阶段
-- **稳定性预算**：ANR、crash、OOM 红线
+基线必须与候选版本使用同一设备和同一配置。把 Pixel 的结果与另一品牌设备比较，把 `CompilationMode.None` 与 `Partial` 比较，或把 debug 与 benchmark 变体比较，所得差值都包含测试条件变化。
 
-预算不需要一开始就做得很细，但必须先有最小版本。
-没有预算，后面的基线、门禁和发布验收都无从谈起。
+基线也不是目标。某个历史版本已经超出 SLO 时，不能因为它“当前如此”就继续接受同等表现。预算变更与基线更新应由不同操作完成，并留下评审记录。
 
-### 第二层：基线
+### 3. 回归门禁：按证据确定强度
 
-预算回答的是“目标应该在哪里”，基线回答的是“现在真实水平在哪里”。
+门禁可以分三类：
 
-一个实用的基线通常至少包括三类：
+| 类型 | 适合内容 | 失败动作 |
+|---|---|---|
+| 确定性门禁 | CUJ 脚本可运行、APK/AAB 含 profile、包体积、禁用 API、缺少 mapping/symbol | 直接阻断 |
+| 测量门禁 | 启动、帧、内存、CPU benchmark | 达到样本与噪声规则后阻断；其余标记需复测 |
+| 线上门禁 | 灰度 ANR/crash、启动 tail、慢帧、OOM、退出原因 | 暂停扩量、关闭开关或回滚 |
 
-- **线下基线**：Macrobenchmark、冷启动、关键交互
-- **线上版本基线**：版本维度的启动、jank、ANR、exit
-- **重点设备基线**：重点机型、重点页面、重点 SoC
+Benchmark 是带噪测量。Android 官方 CI 文档明确提醒，它不像普通测试那样天然只有 pass/fail。可靠门禁要先测量设备自身的历史噪声，再规定：
 
-基线的价值在于帮助团队判断：
-这次变化到底是正常波动，还是明显退化。
+- 候选与基线的最小重复次数；
+- 可以比较的设备池；
+- 允许的绝对差和相对差；
+- 测量失败、thermal throttle、低电量和设备离线如何处理；
+- 何时自动复测，复测几次后转人工判断；
+- 哪些 trace 和 JSON 必须归档。
 
-### 第三层：回归门禁
+PR 可以运行 dry run，验证脚本、安装和导航是否正常。性能数值适合在稳定真机池的 nightly、合入队列或发布流水线评估。官方强烈不建议用模拟器结果代表用户性能；模拟器可用于 CUJ 脚本冒烟和部分 profile 生成。
 
-门禁是让性能进入工程流程的关键一步。
-如果没有门禁，性能就永远只能靠“版本前多看几眼”。
+不要在 CI 中全局压制 Macrobenchmark 的配置错误。target app 为 debuggable、未设为 profileable、设备为 emulator 或低电量时，库会报告可能损害测量的错误。单项抑制需要记录原因和到期时间。
 
-比较常见的门禁包括：
+### 4. 灰度观测：验证设备分布
 
-- PR 或 nightly 级的 Macrobenchmark
-- Baseline Profile 生成与验证
-- APK 大小、主线程风险扫描、启动任务检查
-- 关键场景帧时间或启动时间阈值
+灰度需要覆盖：
 
-不是所有指标都适合做硬门禁，但核心路径至少应该有几条硬规则。
-否则版本越赶，性能越容易第一个被让位给功能。
+- TTID、TTFD 和关键页面 tail；
+- frame overrun、慢帧/冻帧与交互失败；
+- user-perceived ANR、crash、OOM 与 `ApplicationExitInfo`；
+- 内存、后台 CPU、WakeLock 与网络异常；
+- 设备型号、SoC/GPU、SDK、渠道、地域和实验分群。
 
-### 第四层：灰度观测
+灰度组与对照组要处于相同时间窗，并控制版本、设备和远程配置。服务端延迟、活动流量、网络变化和实验开关都可能改变客户端结果。只看全局平均值会隐藏少数高流量机型或低内存设备。
 
-线下过了，不代表线上就没问题。
-Android 的现实世界太复杂：机型、SoC、ROM、后台环境、网络条件都会把问题放大。
+Google Play 的 Android Vitals 提供发布质量信号，自建指标提供更细场景与更快回查。两者分母、延迟和覆盖范围不同，门禁页面要标明数据源。Play 的阈值可作为外部红线，内部预算通常要更早发现趋势。
 
-所以灰度阶段至少要盯住：
+灰度规则应预先写明扩量、暂停和回滚条件。临时调整条件要进入发布记录，避免数据出现后再选择更宽松的口径。
 
-- 启动
-- 帧率 / 慢帧 / 冻帧
-- ANR / exit
-- 内存异常
-- 重点机型和渠道差异
+### 5. 发布验收：把结论写回版本
 
-灰度的意义，是把线下已经通过的结论放回真实设备分布里复核一次，避免只看图表就默认线上安全。
+发布验收记录至少包含：
 
-### 第五层：发布验收
+- CUJ 线下结果与预算结论；
+- profile、mapping、native symbols 等构建产物检查；
+- 灰度指标、样本量、观察窗口和重点设备；
+- 未解决问题、已批准例外和到期日；
+- 发布/暂停/回滚决定及批准人；
+- 上线后复查时间和 owner。
 
-发布验收不是“功能测完了顺手看一眼性能”。
-它应该是固定动作，而不是临场发挥。
+验收结果关联 commit、build、benchmark JSON、trace、dashboard 和工单。后续发现回归时，可以区分“当时没有信号”“规则没有触发”“例外放行”和“发布后环境变化”。
 
-至少要回答下面几个问题：
+## Macrobenchmark 进入 CI 的正确方式
 
-- 是否满足既定预算
-- 是否有重点机型异常
-- 是否有尾部延迟抬升
-- 是否有历史回归项复发
+Macrobenchmark 在独立 `com.android.test` 模块中从应用外部驱动 CUJ。target app 应使用接近 release 的 benchmark 变体，保持 non-debuggable，并通过 `<profileable>` 允许读取详细 trace。CI 构建 target APK 与 test APK，再安装到固定真机执行。
 
-发布验收越固定，团队越不容易在节奏紧时把它跳过。
+下面的测试已按 AndroidX Benchmark 1.4.1 源码核对，用于测量带 Baseline Profile 的冷启动。它把编译模式写进用例，避免 CI 默认值变化后仍沿用旧基线。
 
-## 把性能问题从“口头经验”变成“可交付物”
+```kotlin
+@LargeTest
+@RunWith(AndroidJUnit4::class)
+class StartupBenchmark {
+    @get:Rule
+    val benchmarkRule = MacrobenchmarkRule()
 
-很多团队会修性能问题，但问题经常停留在口头层面。
-“这个页面有点慢”“这个列表还能再优化”这类判断经常出现，但它们没有进入工程系统。
+    @Test
+    fun coldStartupWithBaselineProfile() =
+        benchmarkRule.measureRepeated(
+            packageName = TARGET_PACKAGE,
+            metrics = listOf(StartupTimingMetric()),
+            compilationMode = CompilationMode.Partial(
+                baselineProfileMode = BaselineProfileMode.Require,
+                warmupIterations = 0,
+            ),
+            startupMode = StartupMode.COLD,
+            iterations = 10,
+            setupBlock = {
+                pressHome()
+            },
+        ) {
+            startActivityAndWait()
+        }
+}
+```
 
-一条有效的性能治理项，至少要能写成下面这些东西：
+`BaselineProfileMode.Require` 会要求 APK 内存在可安装的 Baseline Profile，适合验证 profile 场景。`StartupMode.COLD` 会在 setup 与 measure 之间终止 app 进程；它描述进程冷启动，不等于设备重启后的全系统冷缓存。每个 iteration 会生成相应的 system trace，CI 还应归档 benchmark JSON。
 
-- 现象描述
-- 影响范围
-- 优先级
-- 指标变化
-- 初步归因
-- owner
-- SLO / 预算目标
-- 修复计划
-- 验收标准
+测试脚本要固定应用状态。若 CUJ 依赖不稳定网络，可使用受控测试后端或确定性数据；不要把公网波动当成 app 启动回归。需要测网络场景时，网络延迟本身也要成为实验变量和输出。
 
-只有到了这一步，性能问题才会从“口头共识”变成“有人负责推进到验收”。
+### 从结果到门禁
 
-## 日常、版本前、事故时，关注点不一样
+不要直接对单次 median 写一条 shell 比较。门禁程序应读取 JSON，并做以下检查：
+
+1. 验证设备、build、metric、compilation/startup mode 与基线匹配。
+2. 排除框架明确标记为错误的运行，保留排除原因。
+3. 比较每次 iteration，检查候选差值是否大于历史噪声。
+4. 同时应用绝对预算和相对回归预算。
+5. 对临界结果自动在同一设备复测。
+6. 阻断时附上最慢 iteration 的 trace 和基线 trace。
+
+真机池也会漂移。设备系统更新、换电池、存储老化或环境温度变化后，应重新建立基线，不能静默继承旧数据。
+
+## Baseline Profiles 与 Startup Profiles
+
+Baseline Profile 指导 ART 对常用代码路径做 AOT 编译，覆盖启动和其他关键交互。Startup Profile 用于 DEX 布局，使启动相关类和方法更适合放入 primary DEX。两者用途不同，官方建议同时使用。
+
+本书 Android 8—17 范围内：
+
+- Android 8 / API 26—27 使用 partial AOT；有 `ProfileInstaller` 时可在首轮运行后安装 Baseline Profile；
+- Android 9 / API 28 及以上还可获得 Google Play 聚合的 Cloud Profiles；
+- Cloud Profile 需要真实使用数据并有分发延迟，不能保护新版本最初一批用户；
+- 非 Play 分发渠道的安装和编译行为需要单独验证。
+
+Baseline Profile 工程检查分三层：
+
+1. **生成**：`BaselineProfileRule` 覆盖启动与稳定 CUJ，profile 随重要代码变化更新。
+2. **打包**：AAB 中检查 `/BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`，APK 中检查 `/assets/dexopt/baseline.prof`。
+3. **效果**：在真机上比较带自定义 profile 的 release 变体与只含 library profile 的对照变体。
+
+profile 文件存在只是打包成功的初步证据。`ProfileVerifier` 可以查询 profile 安装/编译状态，仍不提供“某个业务方法的 Baseline Profile 命中率”。原文把命中率写成通用平台预算不够严谨，应改为打包状态、编译状态和 CUJ 性能收益三组证据。
+
+生成 profile 与测量性能的设备要求也不同。官方允许为了便利在 emulator/GMD 上生成规则，因为生成过程不采集性能数值；收益测量使用物理设备。Firebase Test Lab 当前不支持 Baseline Profile 生成，这一点与“在 Test Lab 真机跑 Macrobenchmark”不能混为一谈。
+
+每次发布不必无条件扩大 profile。规则过宽会增加编译、磁盘和安装成本，官方文档还给出打包后二进制 profile 小于 1.5 MB 的约束。CUJ owner 要审查新增 journey 是否稳定、常用，并验证对其他场景没有负面影响。
+
+## 代码评审中的性能检查
+
+以下变化应触发性能影响说明：
+
+- `Application`、ContentProvider、App Startup initializer 或首个 Activity 的初始化；
+- 主线程文件/数据库/网络、同步 Binder、锁和反射；
+- 图片、序列化、数据库 schema、缓存和大数据路径；
+- View measure/layout/draw、Compose state/recomposition 与列表绑定；
+- 新 SDK、动态特性、native 库、资源或包体积增长；
+- 后台 Job、alarm、WakeLock、定位、传感器和轮询；
+- Baseline/Startup Profile 的 CUJ 或构建配置变化。
+
+PR 模板可以要求作者填写：
+
+- 受影响 CUJ 与线程；
+- 新增工作在调用链中的位置；
+- 预期复杂度、数据规模和设备边界；
+- 已运行的 benchmark/trace 或无需测量的理由；
+- 线上观察指标和失败开关。
+
+评审线索用于决定是否测量，不能只凭“看起来可能慢”要求重写。命中高风险路径时补 Macrobenchmark、Microbenchmark 或系统 trace；影响低且路径不频繁时，记录判断即可。
+
+## 角色与交接
+
+| 角色 | 主要责任 |
+|---|---|
+| Feature/CUJ owner | 场景脚本、代码修复、业务正确性、线上验收 |
+| 性能平台团队 | 指标契约、真机池、benchmark 工具、采样与 dashboard |
+| Release/值班角色 | 灰度节奏、门禁执行、暂停与回滚 |
+| 系统/ROM 团队 | framework、system_server、调度、thermal、GPU/驱动问题 |
+| 数据/服务端团队 | 服务延迟、实验分群、数据完整性与查询成本 |
+
+每个问题只有一个当前 owner。跨团队协作可以有多名参与者，但调查状态、下一动作和时限由当前 owner 维护。转交给系统或厂商团队时，证据包至少包含：
+
+- app build、复现步骤与发生率；
+- 设备型号、Android build fingerprint、kernel build；
+- 正常与异常对照；
+- Perfetto/bugreport/tombstone 等现场；
+- 已排除的 app 侧假设；
+- 期望对方验证的具体问题。
+
+“trace 里 system_server 很忙”不足以完成转交。需要沿 Binder flow、线程状态、锁、I/O 或调度证据指出可调查入口。涉及内核的判断固定到 `android17-6.18-2026-06_r6`；厂商设备按设备对应源码复核。
+
+## 例外机制
+
+业务可以在明确条件下接受性能回归。例外记录必须包含：
+
+- 指标、设备/CUJ、回归量和用户影响；
+- 放行原因、补偿措施与风险；
+- owner、批准人和到期日期；
+- 计划修复版本或重新评估条件；
+- 灰度观察与回滚规则。
+
+例外到期后自动恢复原门禁。若团队决定永久调整预算，应提交预算变更评审，展示用户影响、历史趋势和替代指标。不能通过更新基线隐藏回归，也不能无限延长同一例外。
+
+## 日常、版本和事故
 
 ### 日常
 
-日常治理的重点是把风险挡在最前面：
+- PR dry run 验证 CUJ，风险变更补充性能影响说明；
+- nightly 在固定真机跑关键 Macrobenchmark；
+- 趋势任务检查设备噪声、结果缺失和 profile 产物；
+- 线上 dashboard 按版本和设备分群审计。
 
-- 用 CI 跑关键场景 Macrobenchmark
-- 用静态规则和 code review 拦明显风险
-- 用线上基础指标看趋势
+### 发布前与灰度
 
-如果团队再成熟一点，可以把性能 review 也固定成代码评审的一部分，例如：
+- 冻结 benchmark、metric schema 和 sampling config 版本；
+- 生成并检查 Baseline/Startup Profile；
+- 运行 release candidate 的完整 CUJ 集；
+- 检查未关闭工单、例外和回滚开关；
+- 灰度阶段按预设规则扩量或暂停。
 
-- 有没有新增主线程风险？
-- 有没有引入新的启动初始化？
-- 有没有加重首屏依赖？
+### 事故
 
-### 版本前
+- 保留异常窗口、配置和证据；
+- 通过暂停扩量、开关、降级或回滚限制影响；
+- 比较正常/异常分群并验证归因；
+- 修复后同时复测线下 CUJ 与线上指标；
+- 只把稳定、可重复的检测方法加入日常门禁。
 
-版本前只复核最容易出问题的部分，不需要重新做一遍所有分析：
+事故复盘的产物可能是新 CUJ、指标、告警、lint、profile journey 或操作手册。若问题依赖偶发外部条件，强行加入不稳定硬门禁会制造噪声；此时更适合线上预警或人工专项。
 
-- 关键页面 / 关键路径专项检查
-- Baseline Profile / 启动任务 / 大依赖变更核对
-- 灰度指标检查
+## 从小规模开始
 
-### 事故时
+一个可运行的最小版本包括：
 
-事故时要先把平台视角和工程视角接起来，避免停在“谁先讲得最有道理”的争论里：
+1. 选择启动、首页和一个高频交互作为 CUJ。
+2. 为每条 CUJ 写指标契约、预算和固定真机。
+3. PR 跑脚本 dry run，nightly 跑完整 Macrobenchmark。
+4. 生成 Baseline/Startup Profile 并检查发布产物。
+5. 灰度观察启动、帧、ANR、crash、OOM 和退出原因。
+6. 所有回归进入带 owner、验收和到期时间的工单。
 
-- 平台先给出影响范围和分布
-- 工程再拿 trace、栈、case 现场
-- 修复后回到基线和预算重新验收
+稳定运行后再增加设备、场景和硬门禁。门禁数量不是成熟度指标；可靠覆盖高价值 CUJ、能够解释失败并持续验收，才说明机制有效。
 
-事故处理中最容易犯的两个错误是：
+## 本节与其他章节的关系
 
-- 只修表象，不回收进门禁
-- 只做一次复盘，不把规则写回日常流程
+- §7、§8、§9 解释流畅性、启动和 ANR 的平台机制。
+- §14.12 说明 Macrobenchmark 的用法与边界。
+- §15.3 定义性能指标契约。
+- §15.5 讨论线上监控和保护开关。
+- §15.6 讨论测试设计与统计可靠性。
+- §15.9 连接采集、归因、工单和验收。
+- 本节定义团队怎样把这些能力放进开发和发布流程。
 
-## 角色分工也要工程化
+平台源码锚点固定为 Android 17 / API 37 / `android-17.0.0_r1`。Benchmark、Baseline Profile 与 ProfileInstaller 属于 AndroidX/构建工具，版本应在项目依赖和基线记录中单独固定。涉及 CPU 调度、Binder driver、cgroup 或 thermal 的内核证据，使用 `android17-6.18-2026-06_r6`。
 
-如果角色分工不清晰，性能问题最后很容易退化成“谁都能讲一点，但没人负责推进到验收”。
+## 参考资料
 
-一个相对稳的分工通常是：
-
-- **App 团队**：负责主线程、渲染、启动、内存使用、埋点质量
-- **基础架构 / 平台团队**：负责 APM 能力、采样、聚合、门禁、统一 dashboard
-- **系统 / ROM / 设备协作方**：负责调度、thermal、GPU / 驱动、系统服务行为等跨应用问题
-
-这样分工的目的，是让问题能沿着正确方向流动，避免把责任切散。
-
-## 一条可以从小规模开始的成熟路径
-
-不是每个团队都需要一上来就搭完整治理体系。更现实的路径通常分四步。
-
-### 阶段 1：先有感知
-
-- 上线基础指标
-- 能看到版本和机型趋势
-
-### 阶段 2：再有回归能力
-
-- 核心场景进入 Macrobenchmark / CI
-- 有预算和基线
-
-### 阶段 3：再建立治理流程
-
-- 有固定门禁
-- 有 backlog 和 owner
-- 有灰度和发布验收
-
-### 阶段 4：最后形成持续优化能力
-
-- 问题不会总靠少数高手救火
-- 性能开始成为版本质量的一部分
-
-## 一个足够现实的最小组合
-
-如果团队现在还没有完整体系，一个够用的起点是：
-
-1. **线下**：Macrobenchmark + Baseline Profile + 最基本的 code review 规则
-2. **线上**：启动、流畅性（jank / 慢帧 / 冻帧）、crash、ANR、exit 这几类基础指标
-3. **流程**：固定灰度观测 + 发布验收
-4. **管理**：每条性能问题都要有 owner 和验收标准
-
-这四件事先跑起来，再逐步往更复杂的平台和自动化演进。
-顺序比一步到位更重要。
-
-## 本节在全书里的位置
-
-顺着全书主线往下看，这一章位于最后一层：
-
-- `7/8/9` 解释用户体验为什么会坏
-- `15.3` 解释该看哪些指标
-- `15.5` 解释怎样把这些指标从线上拿回来
-- `15.9` 解释怎样让问题进入持续跟踪和验收流程
-- 本节回答的是：团队如何长期把这件事做对
-
-所以这章是整条性能治理主线的收束点。
-
-## 结尾
-
-性能治理要解决的，是下一次回归能否被及时发现、及时拦住、及时修掉。
-工程化的价值，就在这里。
+- [Android 官方：Benchmark overview](https://developer.android.com/topic/performance/benchmarking/benchmarking-overview)
+- [Android 官方：Write a Macrobenchmark](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
+- [Android 官方：Benchmark in CI](https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci)
+- [Android 官方：Android Vitals](https://developer.android.com/topic/performance/vitals)
+- [Android 官方：Baseline Profiles overview](https://developer.android.com/topic/performance/baselineprofiles/overview)
+- [Android 官方：Create Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile)
+- [Android 官方：Debug Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles)
+- [Android 官方：Startup Profiles](https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations)
+- [AOSP `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1)
+- [Android common kernel `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6)
