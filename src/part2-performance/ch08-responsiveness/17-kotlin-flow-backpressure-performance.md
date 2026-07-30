@@ -191,7 +191,7 @@ Sequence 也不能写成“零分配”。它是同步、拉取式抽象，Flow 
 - 失败、重试与取消造成的瞬时放大；
 - 是否允许结果乱序。
 
-把并发从 16 调到 32不保证吞吐提高。瓶颈在服务端限流、磁盘或单核 CPU 时，更高并发可能只增加队列、上下文切换和尾延迟。
+把并发从 16 调到 32 不保证吞吐提高。瓶颈在服务端限流、磁盘或单核 CPU 时，更高并发可能只增加队列、上下文切换和尾延迟。
 
 ### 5.2 `flatMapConcat` 与普通 `map`
 
@@ -373,6 +373,6 @@ kernel scheduler 不理解 Flow 元素、Channel 容量或 conflation。Perfetto
 
 ## 交叉引用
 
-- **8.6 协程性能**：dispatcher、结构化并发与取消
-- **5.10 CPU 调度**：runnable 线程、优先级与调度延迟
-- **7.7 Compose 卡顿分析**：重组、布局和绘制阶段的观测
+- [**8.6 Kotlin Coroutine 性能实践**](06-coroutine-performance.md)：dispatcher、结构化并发与取消。
+- [**5.10 JobScheduler/WorkManager 调度与后台任务性能**](../../part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md)：进程内异步工作与系统持久化后台任务的边界。
+- [**7.7 Jetpack Compose 性能优化**](../ch07-smoothness/07-compose-performance.md)：重组、布局和绘制阶段的观测。
