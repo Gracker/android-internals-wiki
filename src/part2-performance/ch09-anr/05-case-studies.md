@@ -611,6 +611,7 @@ ANR 瞬时 trace 可能采到 `nativePollOnce`、锁等待或已经返回后的�
 ### Android 17 / API 37 源码锚点
 
 - [InputDispatcher.cpp：连接响应、WaitQueue、ANR reason 与 atrace counter](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
+- [InputTransport.cpp：InputChannel pair 的 server/client 端点命名](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/InputTransport.cpp)
 - [ActivityThread.java：Activity、Service 与 QueuedWork 收尾位置](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
 - [QueuedWork.java：待完成工作、finisher 与 waitToFinish](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/QueuedWork.java)
 - [SharedPreferencesImpl.java：apply、加载等待与文件写入](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java)
