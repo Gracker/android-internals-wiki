@@ -107,77 +107,89 @@ last_deepseek_cn_review_at: 2026-06-29
 
 ## 为什么这一章值得单独写
 
-官方工具已经很强了。Perfetto、Simpleperf、Profiler 这些能力，足够把很多问题看得很深。那为什么还要讲三方性能库？
+Perfetto、Simpleperf 和 Android Studio Profiler 适合在可控设备上还原现场。线上问题还有另外几项要求：按版本和设备采样、在异常发生前保留线索、控制采集开销、把同一次会话中的崩溃、卡顿、内存和网络事件关联起来。三方库主要补这些工程能力。
 
-因为真实工作里，很多问题发生在线上版本、灰度用户、复杂设备分布里。官方工具擅长把问题看透，三方库更擅长把问题先感知到、保留住、或者提前拦下来。两者在不同位置上各有分工。
+这不代表接入 SDK 后就可以放下官方工具。客户端监控负责发现异常和保存证据；Perfetto、系统 dump、基准测试与源码负责复现和归因。选型时应同时核对采集位置、适用系统、构建工具兼容性、运行开销、隐私边界和维护状态。
 
-这一章要回答的是：**什么场景下需要借助三方能力，它们各自补的是哪一块空白。**
+本章的平台判断以 Android 17 / API 37 / [`android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/) 为上限；涉及 ART 内部结构时对照同标签的 [platform/art](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/)。涉及 ftrace 或内核事件时，以 [`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/) 为内核口径。三方项目的“支持 Android 17”仍需结合目标 ROM、ABI、页面大小和构建链回归，不能由 README 的一行兼容表代替。
 
-## 先按层看，不要先按库名看
+## 按采集位置理解工具
 
-一上来就列库名，读者很容易只记住“Matrix、KOOM、LeakCanary、btrace”。这样很难记住工具和问题之间的对应关系。更稳的方式，是先把它们放回各自所在的层。
+库名会变，采集位置决定了它能看到什么，也决定了风险位于哪里。
 
-| 层次 | 代表方案 | 更接近什么 |
+| 位置 | 代表方案 | 能解决的问题 | 不能替代的能力 |
 |---|---|---|
-| **官方基础能力** | JankStats、FrameMetrics、ApplicationExitInfo | 指标与系统回调，不是完整 APM |
-| **客户端 SDK / 组件** | Matrix、KOOM、LeakCanary、btrace、DoKit、BlockCanary、Rabbit | 在 App 里负责采集或研发诊断 |
-| **平台 / 可观测性方案** | Firebase Performance、Measure | 聚合、展示、分析、告警 |
+| 系统与实验室工具 | Perfetto、Simpleperf、Profiler、系统 dump | 高保真时间线、采样、堆与系统状态 | 大规模线上采样与会话聚合 |
+| App 进程内探针 | Matrix、KOOM、LeakCanary、btrace | 方法、Looper、堆、线程、I/O 或 trace 线索 | 系统全局因果关系 |
+| 构建期改写 | Booster、Matrix Gradle 插件 | 字节码检查、替换和产物治理 | 运行时耗时与设备差异 |
+| 研发侧工具箱 | DoKit、Rabbit、BlockCanary | 开发和测试设备上的快速反馈 | 生产采样、后端聚合和告警 |
+| 可观测性平台 | Firebase Performance、Measure | 上传、聚合、筛选、会话关联 | 本地源码级定位 |
 
-先把层次分清楚，后面的选型才不会变成“哪个名字更响就接哪个”。
+截至 2026 年 7 月，本文涉及的几个版本口径如下。发布版本只能说明上游交付了什么，不能证明它适配当前项目的 AGP、R8、ROM 和安全策略。
+
+| 项目 | 可核对的上游版本 | 接入前应关注的状态 |
+|---|---|---|
+| Matrix | `v2.1.0` | README 仍声明 Gradle 插件支持 AGP 3.5/4.0/4.1 |
+| KOOM | `v2.2.2` | Java 模块支持 API 21+；Native/Thread 模块限 API 24+、arm64 |
+| Booster | `v5.1.0` | 发布版 README 兼容表止于 AGP 8.2；主分支已有更高 AGP 适配代码 |
+| btrace | `v3.1.0` | Android 8.0+、64 位；对象分配监控暂不支持 Android 15+ |
+| LeakCanary | 文档稳定线 `2.14` | 官方接入示例使用 `debugImplementation`；3.0 仍是 alpha 线 |
 
 ## Matrix：最像“客户端 APM 框架”的方案
 
-Matrix 是腾讯微信团队开源的 Android 性能监控框架。它的价值在于把客户端常见的性能监控问题组织成了一套相对统一的框架。
+Matrix 是腾讯微信团队开源的插件式性能监控框架。Android 端把多个采集器放在统一的插件生命周期和 `PluginListener` 回调下；数据存储、脱敏、上传、聚合和告警仍由接入方补齐。把 Matrix 称为“完整 APM 平台”会高估开源仓库提供的范围。
 
 ### 整体架构
 
-Matrix 的设计目标是低侵入接入，覆盖从采集到上报的完整监控流程。它通过 Gradle 插件在编译期完成字节码插桩，运行时通过 Hook 收集各类性能数据，最终将数据上报到监控平台。整个框架分为五个核心模块：
+各模块使用的观测手段并不相同。Trace Canary 依赖编译期字节码改写和运行时主线程观测；Resource Canary 使用弱引用、GC 检查和 Hprof；IO Canary 进入 native I/O 路径并改写 `CloseGuard` reporter。不能用“全部通过 Hook”概括 Matrix。上游 README 列出的主要 Android 能力包括：
 
+- **APK Checker**：检查包体、资源、Native 库和构建产物
 - **Trace Canary**：卡顿、ANR、启动耗时、帧率监控
-- **Resource Canary**：Activity 泄漏检测、冗余 Bitmap 检测（Fragment 泄漏支持取决于具体分支和版本，上游主干公开能力以 Activity leak + duplicated bitmap 为核心；若项目需要 Fragment 级泄漏监控，需确认使用的分支是否包含 `FragmentLifecycleCallbacks` 注册逻辑和对应的 watcher 实现）
+- **Resource Canary**：Activity 泄漏与重复 Bitmap 检测
 - **IO Canary**：文件 I/O 性能问题检测、Closeable 泄漏监控
 - **SQLiteLint**：SQLite 使用规范检测
 - **Battery Canary**：耗电行为监控
+- **Memory Hook / Pthread Hook / MemGuard**：Native 分配、线程资源和堆内存安全问题
 
-[已验证: 官方文档, github.com/Tencent/matrix]
+模块清单和公开能力可在 [Matrix README](https://github.com/Tencent/matrix/blob/master/README.md) 核对。不同模块的系统边界、ABI 和构建链要求各自独立，接入一个模块不等于获得整套能力。
 
-### Trace Canary：卡顿与 ANR 的精准定位
+### Trace Canary：卡顿与 ANR 的观测边界
 
-Trace Canary 的核心能力是检测卡顿、慢函数、ANR、启动耗时和帧率异常。它的工作原理可以分两层来看。
+Trace Canary 关注卡顿、慢方法、启动、帧率和 ANR 线索。理解它时要分开看“方法记录”“主线程消息观测”和“ANR 检测”，三者的触发条件与证据强度不同。
 
-第一层是**编译期插桩**。Trace Canary 会在编译阶段对应用字节码做方法级改写，在每个方法的入口和出口插入计时逻辑。这种插桩是选择性的，可以按包名、类名或白名单限制范围，控制运行时开销。插桩后的代码会在方法执行时记录起止时间戳和调用堆栈。公开上游长期保留的是 Transform 路径；截至 2025 Q1，Tencent/matrix 官方插件还没有发布面向 AGP 8.0+ 的正式可用版本。AGP 8.0 起 `android.registerTransform` 已移除，使用 AGP 8.0+ 的项目不要把 Matrix 官方插件视为可直接接入的选项。可执行路线只有两类：使用已经迁移到 Android Components instrumentation 管线且经过团队验证的 fork；或自行把 `MatrixTraceTransform` 迁到 `variant.instrumentation.transformClassesWith(...)` / `AsmClassVisitorFactory`，再按需配合 Artifacts API 处理产物。迁移验证至少覆盖 Debug/Release、R8、增量编译和多模块场景。
+**方法记录**由 Gradle 插件改写 class，在方法入口和出口调用 `AppMethodBeat`，再用 method id、时间和线程内执行顺序还原调用片段。`Constants.DEFAULT_EVIL_METHOD_THRESHOLD_MS` 在当前主分支为 700 ms，但这是上游默认配置，不是 Android 卡顿或 ANR 的系统判定线。包过滤、黑名单、插桩规模和 buffer 策略都会改变开销与可见范围。
 
-第二层是**运行时检测**。Trace Canary 监听主线程的 Looper 消息分发和 Choreographer 的 doFrame 回调。当一个 Message 的执行耗时超过阈值（比如默认 700ms），或者一帧的渲染超过 16.6ms 导致连续掉帧，它就会触发上报逻辑。对于 ANR 检测，Trace Canary 提供两种方式：LooperAnrTracer 在主线程 Message 开始执行时设置一个 5 秒超时（类似"埋炸弹"），如果超时触发则判定为 ANR；SignalAnrTracer 则通过捕捉系统发出的 SIGQUIT 信号来检测。
+**主线程观测**通过 Looper 分发边界与 `UIThreadMonitor` / `FrameTracer` 组织采样。不能把“单帧超过 16.6 ms”写成固定规则：Android 17 设备可能运行在 60、90、120 Hz 或动态刷新率下，帧预算取决于该帧所在的 VSync 时间线。应用采集到的慢消息或掉帧仍需和 Perfetto 中的 `Choreographer#doFrame`、RenderThread、SurfaceFlinger 与调度事件对齐。
 
-在实际分析中，我们可以通过 Trace Canary 的上报数据看到：触发卡顿的具体方法、完整的调用堆栈、该方法的执行耗时以及执行次数。这比在 Perfetto 中逐帧查看 Trace 要高效得多，特别是在线上环境中。
+**ANR 线索**有两条路径。`LooperAnrTracer` 在一次主线程 dispatch 开始后安排 5 秒延迟任务，dispatch 正常结束便取消；超时日志表达的是“主线程消息已持续 5 秒”，还不能单独证明系统已经确认 ANR。`SignalAnrTracer` 处理 SIGQUIT / trace dump 相关回调，并继续检查主线程阻塞和进程错误状态。Android 17 上这条路径涉及 ART、signal 与系统 ANR 实现细节，必须在目标 ROM 上验证权限、符号、回调时序和误报率。
 
-[已验证: Matrix 上游仍可见 `MatrixTraceLegacyTransform` 等 Transform 路径；公开 issue #888 记录 AGP 8.x 下 `android.registerTransform` 已移除；AGP 8.0+ 字节码改写需迁移到 Android Components instrumentation API / `AsmClassVisitorFactory`]
+构建兼容性是 Matrix 当前最醒目的门槛。官方 README 仍写明 Gradle 插件支持 AGP 3.5/4.0/4.1，源码也保留 `MatrixTraceLegacyTransform` 对 `com.android.build.api.transform` 的依赖；而 [AGP API 更新记录](https://developer.android.com/build/releases/gradle-plugin-api-updates) 明确说明旧 Transform API 从 AGP 8.0 起移除。使用 AGP 8/9 的项目应选择已迁移且经过内部验证的 fork，或把 class 级改写迁到 Instrumentation API，把全量 class 产物操作迁到 Scoped Artifacts API。验证范围至少包含 Debug/Release、R8、增量构建、配置缓存、多模块、动态特性和混淆 mapping。
+
+上述判断可由 Matrix 的 [`Constants`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-trace-canary/src/main/java/com/tencent/matrix/trace/constants/Constants.java)、[`LooperAnrTracer`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-trace-canary/src/main/java/com/tencent/matrix/trace/tracer/LooperAnrTracer.java)、[`SignalAnrTracer`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-trace-canary/src/main/java/com/tencent/matrix/trace/tracer/SignalAnrTracer.java) 和 [`MatrixTraceLegacyTransform`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-gradle-plugin/src/main/kotlin/com/tencent/matrix/plugin/transform/MatrixTraceLegacyTransform.kt) 交叉核对。
 
 ### Resource Canary：内存泄漏与冗余 Bitmap
 
-Resource Canary 采用弱引用（WeakReference）机制来检测 Activity 的泄漏（上游公开的监听入口主要是 `ActivityLifecycleCallbacks`，对应 `DestroyActivityLifecycleListener` 在 `onActivityDestroyed` 回调中执行入队）。它的做法是：将已销毁的 Activity 实例包装成弱引用并存入观察队列，然后定期触发 GC 并轮询检查队列中的弱引用是否已被回收。如果在多次检查后仍然存活，就认为发生了泄漏。Fragment 泄漏检测不在上游主干的默认路径中，Matrix 上游公开能力主要是 Activity leak 与 duplicated bitmap；如果团队需要 Fragment 级别监控，需要确认使用的 fork 是否自行注册了 `FragmentManager.FragmentLifecycleCallbacks` 并实现了对应的弱引用追踪。
+Resource Canary 的公开主路径从 `Application.ActivityLifecycleCallbacks.onActivityDestroyed()` 接收已销毁 Activity，为对象建立 `WeakReference`，放入待检查队列，并在后台线程按配置重试 GC 与存活检查。对象跨过多轮检查仍可达时，模块再按 `DumpMode` 进入“不 dump”“自动 dump”“手动 dump”“fork dump / analyze”等处理器。弱引用仍存活只说明对象尚未回收；低内存压力、调试器、GC 未执行和生命周期时序都会影响判断，因此需要重试与去重。
 
-检测到泄漏后，Resource Canary 会 Dump 出 Hprof 文件，但它不会把整个文件上传——那样太大了。它会在客户端对 Hprof 进行裁剪，只保留泄漏 Activity 到 GC Root 的强引用链和 Bitmap 数据缓冲区，大幅压缩文件大小后再上报。服务端收到后进行解析，还原出完整的引用链。
+Hprof 的处理方式取决于配置。上游同时包含 `HprofBufferShrinker`、客户端分析、fork dump / analyze 和仅报告对象信息等路径，不能把它固定描述成“客户端裁剪、服务端解析”。接入方应明确选择哪个处理器、原始或裁剪 Hprof 保存多久、是否允许上传、如何加密，以及分析进程允许使用多少 CPU、磁盘和 PSS。
 
-Resource Canary 还有一个独特的能力：**冗余 Bitmap 检测**。它通过分析 Hprof 中所有未被回收的 Bitmap 对象，对比其像素数据缓冲区的内容，找出图像数据完全相同但被多次创建的 Bitmap。这在实际项目中很有价值——我们经常看到不同模块各自 decode 了一份相同的图片资源。
+上游 README 还列出重复 Bitmap 检测：分析 heap 中存活 Bitmap 的像素缓冲区，找出内容重复的对象。它能提示重复 decode 或缓存分裂，但相同像素不等于对象可以直接合并；密度、色彩空间、可变性、硬件 Bitmap 和生命周期仍要逐项确认。
 
-[已验证: 官方文档, github.com/Tencent/matrix/wiki]
+对应实现可查看 [`ActivityRefWatcher`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-resource-canary/matrix-resource-canary-android/src/main/java/com/tencent/matrix/resource/watcher/ActivityRefWatcher.java) 与 [`processor` 目录](https://github.com/Tencent/matrix/tree/master/matrix/matrix-android/matrix-resource-canary/matrix-resource-canary-android/src/main/java/com/tencent/matrix/resource/processor)。当前上游默认观察入口面向 Activity；项目若声明 Fragment 检测，应给出所用 fork 的 `FragmentLifecycleCallbacks` 和 watcher 代码。
 
 ### IO Canary：文件 I/O 的问题扫描
 
-IO Canary 通过 Native Hook 的方式拦截 POSIX 层的文件操作接口（open、read、write、close），实现对文件 I/O 行为的全量监控。它使用的 Hook 方案是 PLT Hook（类似爱奇艺开源的 xHook），通过修改 GOT 表中的函数指针来拦截调用，而非修改目标函数的机器码。
+IO Canary 在 native 层拦截 `open`、`read`、`write`、`close` 等调用，把文件路径、Java 调用上下文、线程、次数、字节数和耗时汇总到 detector。上游 Matrix 公共组件内置了 xHook 风格的 PLT Hook 实现。PLT Hook 只能覆盖经过目标 ELF 重定位槽的调用；静态链接、同一 ELF 内部直接调用、内联、不同符号变体和未列入 Hook 集合的系统调用都可能绕过采集，所以“全量监控”不成立。
 
-通过 Hook 收集到的 I/O 信息，IO Canary 检测三类常见问题：
+三个公开 detector 的条件值得按源码理解：
 
-一是**主线程 I/O**。如果检测到 open、read、write 操作发生在主线程，且耗时超过阈值，就会上报。在 Perfetto 中，这类问题表现为 Main Thread 处于 Uninterruptible Sleep（D 状态），但在 Trace 中我们无法直接看到是哪个文件导致的。IO Canary 恰好补上了这个信息缺口。
+- **主线程 I/O**：检查文件操作是否来自主线程，并结合连续读写耗时等条件分类。文件 I/O 可能表现为 Running、Runnable、Sleeping 或 Uninterruptible Sleep，不能预设 Perfetto 中一定是 D 状态。
+- **小缓冲区**：默认阈值为 4096 B，但源码还要求操作次数大于 20、平均每次读写小于阈值，并且连续读写耗时达到 13 ms。它检测的是“频繁小 I/O 已形成可观测成本”，不是看到一次 2 KB `read()` 就报警。
+- **短时重复读取**：同一路径、相同调用信息在短窗口内达到默认重复次数 5 后报告；写操作会清掉对应观察记录。报告是缓存缺失的候选线索，也可能来自格式探测或刻意的分段读取。
 
-二是**Buffer 过小**。如果 read/write 操作使用的缓冲区小于 4KB（即一个内存页），IO Canary 会认为缓冲区设置不合理，容易导致频繁的系统调用。
+Java 侧 `CloseGuardHooker` 通过反射替换 `dalvik.system.CloseGuard.Reporter`，用于发现未关闭资源。它依赖非 SDK 实现细节，Android 17 / API 37 设备上要覆盖 user、userdebug、混淆、隐藏 API 策略和 OEM ROM 测试。反射失败时应降级并记录能力缺失，不能让监控组件影响业务启动。
 
-三是**重复读同一文件**。如果在短时间内多次 open 同一文件进行读取，说明可能存在缓存缺失或代码逻辑问题。
-
-此外，IO Canary 还通过 Java 层 Hook CloseGuard 的 Reporter 来监控 Closeable 资源（如 InputStream、OutputStream）的泄漏。
-
-[已验证: 官方文档, github.com/Tencent/matrix/wiki]
+默认条件可在 [`io_canary_env.h`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-io-canary/src/main/cpp/core/io_canary_env.h)、[`small_buffer_detector.cc`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-io-canary/src/main/cpp/detector/small_buffer_detector.cc) 和 [`CloseGuardHooker`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-io-canary/src/main/java/com/tencent/matrix/iocanary/detect/CloseGuardHooker.java) 中核对。
 
 ## KOOM：把内存问题单独拉出来处理
 
@@ -185,250 +197,266 @@ KOOM（Kwai OOM）是快手团队开源的内存监控方案。它最适合解�
 
 ### Java 堆泄漏检测
 
-KOOM 的 Java 堆泄漏检测采用"阈值触发 + Hprof 裁剪"的方案。它通过 Runtime.totalMemory() 和 maxMemory() 计算当前 Java 堆使用率，当使用率超过阈值（如 80%）时触发 Dump。Dump 出的 Hprof 文件会在客户端进行裁剪——KOOM 实现了一套 Hprof 文件解析和裁剪机制，只保留泄漏分析所需的关键数据（如 GC Root 引用链、必要对象记录和 bitmap buffer 相关信息）。公开 README 与源码能支撑“裁剪后再上报”这个机制，但具体压缩比例要看堆内容、bitmap 占比和裁剪策略，线上文档里不应写成固定 10%~20%。
+KOOM 的 Java 模块会周期性观察 Java heap、线程数、文件描述符数和 VSS。一个或多个指标连续越过配置阈值后，`OOMMonitor` 才进入 dump 与分析流程。示例中的 `setHeapThreshold(0.9f)`、`setThreadThreshold(50)` 等值明确标注为测试配置；生产阈值应来自目标设备分层和线上分布，不能抄示例。
 
-一个关键优化是：KOOM 使用了 Fork 子进程来执行 Hprof Dump，避免在主进程中执行耗时的 Dump 操作导致卡顿或 ANR。Fork 子进程前主进程会先 Suspend VM，fork 完成后立即 Resume——整个冻结窗口控制在 20ms 以内，所以 Dump 期间主线程不会出现长时间阻塞，用户感知不到监控本身的存在。
+为缩短主进程冻结时间，上游路径会暂停 ART VM、`fork()` 子进程、恢复父进程，再由子进程 dump heap。KOOM README 把传统 dump 的长冻结缩短到“20 ms 内”作为项目测量结果；Copy-on-write 页、堆规模、内存压力、ROM 修改和调度抖动都会影响结果，接入文档不应把 20 ms 写成设备保证。
 
-KOOM 的 Hprof 裁剪也做了针对性优化：`hprof_strip.cpp` 直接解析 Hprof 二进制格式，只保留泄漏分析所需的关键数据，裁剪后体积通常可减少 50-70%。
+子进程可生成 strip Hprof，并由基于 Shark 的分析器在设备侧计算泄漏对象和引用链；需要交给 Android Studio 或 MAT 时，上游还提供 refill 工具。Dump、裁剪和分析仍可能运行数分钟并占用一条 CPU 及较多内存，README 因此建议远程开关和采样。系统正处于低内存压力时启动分析，可能放大 OOM 风险；触发器要同时检查前后台、剩余磁盘、充电状态、温度和进程重要性。
 
-[已验证: github.com/KwaiAppTeam/KOOM]
-
-KOOM 的 Hprof 裁剪策略也值得一提：`hprof_strip.cpp` 直接解析 Hprof 二进制格式，只保留泄漏分析所需的关键数据（GC Root 引用链、必要对象记录和 bitmap buffer 信息），裁剪后体积通常可减少 50-70%。
-
-[已验证: github.com/KwaiAppTeam/KOOM]
+Java 模块的触发、兼容范围和资源提示见 [`koom-java-leak/README.md`](https://github.com/KwaiAppTeam/KOOM/blob/master/koom-java-leak/README.md)。该模块声明支持 Android 5.0 / API 21 及以上和四种常见 ABI；这项声明不自动覆盖 Android 17 上的所有 OEM ART 修改，仍需真机验证 fork、dump、解析与恢复路径。
 
 ### Native 堆泄漏检测
 
-KOOM 的 Native 泄漏检测模块（koom-native-leak）采用了与 Android 系统内置的 libmemunreachable 类似的方案，但做了工程化封装。它的核心原理分三步：
+`koom-native-leak` 采用“分配元数据 + 保守可达性扫描”的方案。工作过程可拆成三步：
 
-第一步是**Hook 内存分配器**。KOOM 通过 PLT Hook 拦截 malloc、free 等函数，记录每次 Native 内存分配的元数据：分配地址、大小和调用栈。
+1. 通过 PLT Hook 记录 `malloc` / `free` 等分配路径的地址、大小和分配栈。
 
-第二步是**Mark-and-Sweep 扫描**。KOOM 定期对整个进程的 Native 堆执行一次标记-清除（Mark-and-Sweep）分析。它会遍历进程内存中所有可达的指针，将它们指向的内存块标记为"可达"；未被标记的内存块就是"不可达"的——这些就是泄漏候选者。
+2. 周期性扫描寄存器、线程栈、全局区和 heap 中形似指针的值，把能到达的分配块标记为可达。
 
-第三步是**调用栈回溯**。利用检测到的不可达内存块的地址和大小，KOOM 从之前记录的分配元数据中回溯其分配时的调用栈，生成包含泄漏地址、大小和分配调用栈的报告。
+3. 将未标记块与分配元数据关联，输出地址、大小和分配栈。
 
-这个模块支持 Android N（API 24）及以上版本，仅支持 arm64-v8a 架构。
+这是保守扫描：一个恰好长得像地址的整数或 allocator 残留值可能把泄漏块继续标成可达，造成漏报；扫描时的线程与 allocator 状态也会影响结果。上游 README 给出的范围是 Android 7.0 / API 24 及以上、仅 `arm64-v8a`，并建议只在性能较好的设备上采样启用。Android 17 上还要覆盖 16 KB page size、目标 libc/allocator、PAC/BTI、unwind 和符号化配置。
 
-[已验证: github.com/KwaiAppTeam/KOOM, L2 交叉验证]
+实现说明见 [`koom-native-leak/README.md`](https://github.com/KwaiAppTeam/KOOM/blob/master/koom-native-leak/README.md)。
 
 ### 线程泄漏检测
 
-KOOM 还提供了线程泄漏检测能力。这里的“泄漏”分两类：线程长时间存活；POSIX 默认 joinable 线程已经退出、但没有被 `pthread_join()` 或 `pthread_detach()` 回收。joinable 线程结束后仍会保留线程描述符、栈等 native 资源，数量累积后会推高 native 内存和线程相关资源占用。KOOM ThreadLeakMonitor 通过 Hook `pthread_create`、`pthread_exit` 并跟踪 join/detach 状态，识别长时间存活的线程和退出后未回收的 joinable 线程。
+KOOM 的 ThreadLeakMonitor 通过 Hook `pthread_create`、`pthread_exit` 等生命周期函数，跟踪创建栈、线程名和回收状态。公开 README 聚焦一种明确的 POSIX 资源泄漏：joinable 线程已经退出，却没有执行 `pthread_join()` 或 `pthread_detach()`；线程的退出状态及相关资源会一直保留到被回收。业务线程长期运行属于另一类治理问题，不能仅凭存活时间归为 pthread 泄漏。
 
-官方 README 给这个模块的适用范围很窄：只支持 Android N（API 24）及以上，只支持 `arm64-v8a`。它不适合直接覆盖 Android 5/6 或 32 位设备。线上使用时通常还要配合线程白名单、业务线程命名规范或常驻线程标记，先过滤掉 Binder 线程池、线程池 worker、监控线程这类预期长期存活的线程，避免误报。
+该模块也只声明 Android 7.0 / API 24 及以上和 `arm64-v8a`。报告应保留创建栈、退出时刻、join/detach 状态和线程名，避免把 Binder 线程池、线程池 worker 或监控线程的长期存活混入同一种告警。
 
-[已验证: KwaiAppTeam/KOOM koom-thread-leak README, Scope: Android N+ / arm64-v8a]
+适用范围和判定条件见 [`koom-thread-leak/README.md`](https://github.com/KwaiAppTeam/KOOM/blob/master/koom-thread-leak/README.md)。
 
 ## Booster：把问题尽量拦在编译期
 
-前面几个工具更多在运行时工作，Booster 走的是另一条路：尽量在编译期就把问题扫出来，或者把优化提前做掉。它是一种编译期治理方案，和前面几个运行时工具的定位完全不同。
+Booster 在构建期检查或改写 class 和产物。它可以统一处理应用及依赖中的特定调用点，也可以产出检查报告。构建期结果描述的是静态代码和最终产物，无法回答某段代码在线上执行了多少次、耗时多少或在哪类设备上触发。
 
-### Transform API 的工作位置
+### 不要混淆两种 Transform
 
-要理解 Booster，我们先要知道它在构建流程中的位置。Android 应用的构建流程大致是：源码 → Java/Kotlin 编译 → .class 文件 → **Transform 阶段** → .dex 文件 → APK 打包。Booster 就工作在 Transform 阶段，拿到所有 .class 文件后、生成 .dex 之前。
+早期 Booster 建立在 AGP 的 `com.android.build.api.transform.Transform` 接口上。该接口从 AGP 8.0 起已经删除。Booster 文档中的 “Transform based modules” 又是它自己对字节码转换模块的分类，这个名称延续到了 5.x，不能据此推断 5.x 仍调用旧 AGP Transform API。
 
-Booster 能做的事情非常广泛：拿到整个应用的字节码后，可以做静态分析、代码注入和代码优化。这些操作都在编译期完成，对运行时性能没有额外开销。
+当前主分支的 `BoosterPlugin.registerTransform()` 在 `androidComponents.onVariants` 中注册任务，再通过 `variant.artifacts.forScope(ScopedArtifacts.Scope.ALL).toTransform(ScopedArtifact.CLASSES, ...)` 接入 class 产物。这属于 Android Components / Scoped Artifacts 路径。若只需逐 class ASM visitor，也可以使用 `variant.instrumentation.transformClassesWith()`；两类 API 的输入范围、增量粒度和 classpath 能力不同。
 
-[已验证: github.com/didi/Booster]
+编译期改写本身没有采集线程或定时器，但改写后的代码可能增加运行成本，线程重定向也会改变调度、公平性与故障表现。“构建期完成”不等于“运行时零开销”。
 
 ### Booster 的主要优化能力
 
-Booster 的功能以模块化形式提供，我们可以按需引入。
+Booster 以独立模块提供检查、替换和产物处理能力。生产项目应逐个启用模块并保存模块报告，避免把整套插件当成一个开关。
 
-**性能检测模块**通过静态分析所有 .class 文件构建全局调用图（Call Graph），找出在主线程调用了 I/O 操作、SharedPreferences 读写、网络请求等可能阻塞的 API。它生成可视化报告帮助我们快速定位问题代码。这和 Trace Canary 的运行时检测形成互补——Trace Canary 发现的是实际发生了的卡顿，Booster 发现的是潜在可能卡顿的代码。
+- **API 与字节码检查**：识别可能阻塞 UI 线程的 API、产物异常或不符合团队约束的调用。静态检查给出候选位置，是否在主线程执行仍需运行时证据。
+- **线程改写**：`booster-transform-thread` 将 `Thread`、`Executors`、`ThreadPoolExecutor` 等创建路径替换为 Booster 的 instrument 类，以统一命名和线程池策略。它会改变第三方库的执行语义，必须覆盖队列饱和、拒绝策略、优先级、线程本地变量、关闭与取消行为。
+- **资源索引内联**：`booster-transform-r-inline` 从 symbol list 解析资源 id，把字节码中的 `GETSTATIC R$*.field` 换成常量，并清理部分 R class 字段。AGP 的 non-final / non-transitive R、动态特性、资源 shrink、资源稳定 ID 和 library R 都会影响正确性；应比较改写报告、APK/AAB、安装后资源访问和 R8 结果。
+- **系统缺陷兼容模块**：Toast 模块把 `Toast.show()` 调用改写为 `ShadowToast.show(toast)`。在 API 25 上，wrapper 尝试替换 Toast 内部 Handler callback / runnable 来捕获 `BadTokenException`；它不是简单地给每个调用点包一层 `try-catch`，也不应在其他 API 上假定相同内部字段。
 
-**资源索引内联与常量清除**模块针对的是 Android 构建系统中一个经典的冗余问题。在 AGP 7.x 及更早版本中，编译后 R 类（如 R.id.xxx、R.layout.xxx）是一组 `static final int` 常量。运行时访问这些字段需要一次字段查找（虽然 JIT 会优化，但首次访问仍有开销）。Booster 直接将这些字段访问替换为字面值常量，并从类中删除不再需要的常量字段，既减少了包体积，也略微提升了运行时性能。
+这些模块与 Trace Canary 形成静态和动态两类证据：Booster 报告“代码中存在某种调用或改写”，运行时 trace 回答“调用是否发生、位于哪条路径、成本多大”。两类结果不要合并成同一个结论。
 
-**AGP 8.0+ 的 R 字段变更**：AGP 8.0 起 `android.nonFinalResIds` 和 `nonTransitiveRClass` 默认开启，应用模块的 R 字段不再是 `static final`——编译器会为每个资源 ID 生成 `static int`（非 final）的内联赋值。因此，Booster 原有的"把 R 字段访问替换为字面值"的前提（字段是 final 常量）在 AGP 8.0+ 默认配置下不再成立。使用 Booster 这类优化时需要确认项目仍在使用旧版 AGP 或已手动关闭 `nonFinalResIds`；对于 AGP 8.0+ 项目，该优化的收益和适用条件需要重新评估，Booster 官方或 fork 是否已适配 non-final R 字段也需要验证。
+源码依据包括 [`BoosterPlugin.kt`](https://github.com/didi/booster/blob/master/booster-gradle-plugin/src/main/kotlin/com/didiglobal/booster/gradle/BoosterPlugin.kt)、[`RInlineTransformer.kt`](https://github.com/didi/booster/blob/master/booster-transform-r-inline/src/main/kotlin/com/didiglobal/booster/transform/r/inline/RInlineTransformer.kt) 和 [`ToastTransformer.kt`](https://github.com/didi/booster/blob/master/booster-transform-toast/src/main/kotlin/com/didiglobal/booster/transform/toast/ToastTransformer.kt)。
 
-**系统 Bug 修复**模块展现了编译期优化的另一个优势。比如 Android API 25 中 Toast 的 BadTokenException 问题（在 Toast.show() 时如果 NotificationManagerService 还未来得及处理，会抛出异常导致崩溃）。Booster 通过字节码注入，在所有 Toast.show() 调用前后包裹 try-catch，一次性解决全局问题，而不需要每个调用点手动处理。
+### 版本兼容性怎么读
 
-**多线程优化**模块针对第三方 SDK 滥建线程的问题。很多 SDK 在初始化时会 new Thread() 或使用 Executors 创建线程池，如果集成多个 SDK，线程数可能快速膨胀。Booster 可以将这些线程创建重定向到统一的线程池管理器。
+Booster `v5.1.0` README 的发布版兼容表列出：
 
-[已验证: github.com/didi/Booster, L2 交叉验证]
-
-### Booster 的局限性
-
-Booster 基于 Transform API 的经典方案也有局限，但不能简单等同为“AGP 8 后都不可用”。当前 didi/Booster README 的兼容表写得更细：
-
-| 构建环境 | Booster 选择 | 迁移判断 |
+| AGP | Booster 发布线 | 判断 |
 |---|---|---|
-| AGP 7.x 及以下 | Booster 4.x | 继续使用 4.x 线，不升级到 Booster 5.x |
-| AGP 8.0 / 8.1 / 8.2 | Booster 5.0.0+ | 5.x 线面向 AGP 8；README 说明大多数 Task based modules 不再支持，但 Transform based modules 在 5.x 中仍 supported without breaking changes |
-| AGP 8.3 / 8.4 / 8.5 | N/A | README 兼容表未给可用 Booster 版本，接入前需要验证 fork 或替代方案 |
+| 7.x 及更早 | 4.x | 按表选择最低 Booster 版本 |
+| 8.0 / 8.1 / 8.2 | 5.0.0+ | 5.x 支持字节码转换模块；多数旧 Task 模块已移除 |
+| 8.3—8.5 | 表中为 N/A | `v5.1.0` 不能按发布表宣称支持 |
+| 8.6 及以上 | 发布表没有对应行 | 不能从主分支 adapter 推断 5.1.0 artifact 已支持 |
 
-因此，正确的迁移判断是按 AGP 与 Booster 双版本一起看：AGP 8.0 移除了 Android Gradle Plugin 原有 `registerTransform` 接口，但 Booster 5.x 已把一部分 Transform based modules 留在 8.0-8.2 的兼容范围内；AGP 8.3+ 则不能按旧经验假设可用。自研字节码改写继续往后迁移时，应优先评估 Android Components instrumentation API 的 `AsmClassVisitorFactory`，以及 Artifacts API 对产物编排的影响。另一个限制是编译期分析无法覆盖运行时行为，Booster 能发现“这段代码在主线程调用了 I/O”，但无法判断“这个 I/O 在实际运行中到底耗时多久”。
+2026 年的主分支已经出现 AGP 8.3—8.12 adapter 和集成测试，说明上游正在扩展范围；这些代码晚于 `v5.1.0`，不能倒推 Maven Central 的 5.1.0 已包含它们。接入策略应以“已发布 artifact + 对应 commit + CI 实测”三项为准。AGP 9 项目还要核对上游主分支移除 AGP 9 substitute module 的提交，不能根据模块名猜测兼容性。
 
-[已验证: didi/Booster README compatibility table + 5.x migration notes]
+升级验证至少覆盖 clean/incremental build、configuration cache、并行构建、R8、baseline profile、test/benchmark variant、动态特性、AAB 和 mapping/资源产物。官方兼容表与迁移说明见 [Booster README](https://github.com/didi/booster/blob/master/README.md)，AGP 旧 Transform API 的删除与替代接口见 [Android Gradle plugin API updates](https://developer.android.com/build/releases/gradle-plugin-api-updates)。
 
 ## 启动优化框架：组织启动阶段的任务依赖
 
-启动优化框架和前面的监控库定位不同。它们负责把启动阶段的任务组织得更清楚，减少串行依赖和不必要的阻塞。
+启动框架负责表达任务、依赖和等待点。它不会减少 SDK 自身的初始化工作，也无法突破 Android 启动的生命周期约束。任何异步化都要回答三个问题：首帧前是否必须完成、哪个线程允许调用、失败后谁负责降级或重试。
 
 ### 核心思路：有向无环图（DAG）调度
 
-大型 App 的 Application.onCreate() 和首个 Activity 的生命周期中往往要执行几十个初始化任务：SDK 初始化、数据预加载、组件注册、路由表构建等等。如果全部串行执行，启动时间会非常长。这些任务之间存在依赖关系（比如路由表初始化必须在页面跳转之前完成），但也有大量任务之间没有依赖，完全可以并行。
+大型 App 的 `Application.onCreate()` 和首个 Activity 生命周期中常有 SDK 初始化、数据预加载、组件注册和路由表构建。这些工作可以表示为 DAG：任务是节点，依赖是有向边；入度为零的后台任务可以调度执行，依赖完成后再释放后继节点。
 
-启动优化框架的核心思路是：将启动任务声明为节点，将依赖关系声明为边，构建一张有向无环图（DAG）。框架在运行时对 DAG 进行拓扑排序，找出哪些任务可以并行执行，按照依赖关系和优先级调度到线程池中。
+并行数量越多，CPU 竞争、锁冲突、I/O 队列和 class loading 抖动也越大。调度器需要限制并发，显式区分主线程任务与后台任务，并把首帧必需节点的最长依赖链当作关键路径。任务总耗时下降但关键路径变长时，启动指标仍会退化。
 
-[已验证: L2 交叉验证多个开源框架（Alpha、Anchors、AppInit）]
+还要区分“组件发现”和“并行调度”。[Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup) 通过一个共享 `InitializationProvider` 发现 `Initializer`，由 `dependencies()` 声明顺序，也支持手动延迟初始化；它的 `create()` 调用不提供通用后台并行调度器。需要并行 DAG、线程选择或锚点等待时，要由业务调度层承担。
 
 ### 典型框架对比
 
-**Alpha**（阿里巴巴开源）是最早广为人知的启动调度框架。它支持任务依赖声明、优先级设置、线程池配置。使用方式是继承 Task 类实现具体任务，通过 Task.Builder 构建依赖关系图。Alpha 的不足在于：它已经停止维护，API 设计比较早期，不支持 Kotlin DSL。
+**Alpha** 是阿里开源的早期 DAG 调度样本，支持任务依赖、优先级和线程池。仓库已归档，代码提交停在 2018 年，适合阅读设计，不适合直接作为新项目依赖。
 
-**Anchors** 是一个更轻量的方案，专注于"锚点"概念——即在特定时机必须完成的任务。比如"在 Activity.onCreate 之前必须完成路由表初始化"。它通过声明锚点来划分启动阶段，每个阶段内的任务并行执行，阶段之间按序串行。
+**Anchors** 在图调度上增加“锚点”：`AnchorsManager.start()` 可以阻塞等待指定节点完成，异步节点由线程池驱动，同步节点投递到主线程。它也支持显式 block/unlock。锚点放在 `Application.onCreate()` 时会直接占用主线程启动窗口，应只等待首个可交互页面不可缺少的节点。上游最新版本记录为 2022 年的 `v1.1.8`，接入现代 Kotlin、AGP 和 Android 17 项目前要自行回归。
 
-**AppInit** 采用注解驱动的方式，通过 @AppInit 注解标记初始化方法，编译期自动收集所有初始化方法并生成调度代码。它的优势是接入成本低——只需要加注解，不需要手动构建依赖图。但灵活性相应较低，复杂依赖关系不如编程式 API 好控制。
+**AppInit（hacket/AppInit）** 使用 `@AppInitTask` 标注任务 id、进程、优先级、依赖和是否后台执行，通过 KAPT/KSP 收集任务，也提供 AndroidX Startup 入口。仓库与 Maven `1.0.1` 线停在 2022 年。项目里的 `@AppInit` 若来自另一个同名库，必须先确认 group id 与仓库，避免把不同实现的能力写到一起。
 
-在实际项目中，选择哪个框架不如理解背后的设计原则重要：**任务拆细、依赖显式化、并行最大化、监控可量化**。即使不引入三方框架，团队也应该按这个思路组织自己的启动任务。
+选型时可用四项验收：
 
-[待验证: 各框架的最新维护状态]
+1. 循环依赖在构建期或启动早期失败，并给出完整环路。
+2. 每个任务有线程约束、进程范围、超时、失败策略和幂等说明。
+3. trace 中能看到任务排队、执行、等待和关键路径，线上指标能关联调度版本。
+4. 用 Macrobenchmark 比较冷启动分位数，同时检查首帧、完全绘制、CPU time、主线程 I/O 和后台抢占。
+
+上游状态可从 [alibaba/alpha](https://github.com/alibaba/alpha)、[DSAppTeam/Anchors](https://github.com/DSAppTeam/Anchors) 与 [hacket/AppInit](https://github.com/hacket/AppInit) 核对。
 
 ## 再补几类经常被漏掉的工具
 
 ### LeakCanary：本地泄漏排查工具
 
-`LeakCanary` 是开发和测试阶段最实用的内存泄漏分析工具之一。它最大的价值是能在本地把对象引用链解释得非常清楚。
+LeakCanary 在 debug / 测试构建中观察应被回收的对象，dump heap 后用 Shark 分析引用图，并给出到 GC root 的保留路径。官方 `2.14` 接入示例明确使用 `debugImplementation`，这与 KOOM 面向采样式线上取证的部署目标不同。
 
-放到这本书里，最好把它和 `KOOM` 分开写：
+- LeakCanary 适合研发复现、自动化测试和本地引用链解释。
+- KOOM 提供阈值触发、fork dump、Native heap 与 pthread 资源监控，更偏受控线上采样。
 
-- `LeakCanary`：更偏本地调试和研发自查
-- `KOOM`：更偏线上内存治理和生产环境取证
+两者都会遇到 heap dump 成本、对象暂时存活和框架已知引用等问题。报告中的 reference path 是“为什么对象仍可达”的证据，不自动等同于“应该在哪一行置 null”。修复前还要确认 owner 生命周期、泄漏对象的 retained size 与重复频率。
 
-这两者是互补，不是互斥。
-
-[已验证: github.com/square/leakcanary]
+当前稳定接入说明见 [LeakCanary Getting Started](https://square.github.io/leakcanary/getting_started/)。`3.0-alpha` 可用于跟踪演进，不宜在没有回归计划时替换稳定线。
 
 ### Firebase Performance：接入成本较低的平台型方案
 
-`Firebase Performance Monitoring` 的优点是接入成本低、启动 / 渲染 / HTTP 监控开箱即用，适合快速建立“线上能看到一些性能指标”的基础能力。它的边界也很明显：对复杂归因、私有化部署、自定义 trace 流程的控制不如自建方案灵活。
+Firebase Performance Monitoring 的 Android SDK 会自动采集 app start、前后台时长和 screen rendering；加入 Gradle 插件后还会插桩 HTTP/S 请求与 `@AddTrace`。自定义 trace 可以增加 duration、metric 和 attribute。它适合快速获得按设备、版本、国家等维度聚合的趋势。
 
-在本章里，它更适合被当成“平台型 APM”的典型代表，而不是和 `Matrix`、`KOOM` 按同一种维度比较。
+边界同样明确：官方文档写明多进程 Android App 只支持主进程；HTTP payload size 依赖 `content-length`，可能不准确；默认 trace 的起止定义也未必等于产品自己的“可交互”口径。接入还要审查数据收集开关、URL 聚合、属性基数、地区合规和 BigQuery 成本。
 
-[已验证: firebase.google.com/docs/perf-mon]
+能力和限制见 [Firebase Android 接入文档](https://firebase.google.com/docs/perf-mon/get-started-android) 与 [Performance Monitoring 概览](https://firebase.google.com/docs/perf-mon/)。
 
 ### Measure：更完整的平台视角
 
-`Measure` 的价值在于它不只是一个客户端 SDK，而是一整套以 session timeline 为中心的移动可观测性平台：把点击、导航、HTTP、log、crash、ANR 和 trace 放进同一个会话视角里。
+Measure 同时提供客户端 SDK、后端与 Web UI，可使用托管服务或自托管。它以 session timeline 组织点击、导航、HTTP、log、crash、ANR、trace 和 bug report，并提供 app health 与 adaptive capture。
 
-对已经跨过“只想看单项指标”的团队来说，这类平台更接近完整的线上性能治理方案。
+平台化的代价是运维和数据模型复杂度。评估时应验证采样决策是否能远程下发、会话数据如何脱敏、离线缓存上限、符号表和 mapping 保留期、服务端升级，以及一次事故需要关联的字段能否稳定落在同一个 session。
 
-[已验证: github.com/measure-sh/measure]
+项目范围与自托管入口见 [measure-sh/measure](https://github.com/measure-sh/measure)。
 
 ### DoKit：更像研发工具箱
 
-`DoKit` 的覆盖面很广，FPS、启动耗时、网络、沙盒浏览、各种研发辅助能力都在里面。它对开发和测试现场有价值，定位更接近“本地研发工具箱”；生产环境的大规模线上 APM 采样、聚合、告警不应依赖它。2024-2025 年间，DoKit 云端服务和官网维护状态不稳定，依赖 `www.dokit.cn` 的 Mock、数据看板等能力不应作为团队长期方案；离线可用的设备侧工具更值得保留。
+DoKit 把 App 信息、沙盒浏览、网络、UI 检查、启动耗时、FPS 等能力放进设备端入口，适合开发和测试现场。它还包含 AOP/字节码与平台服务相关功能，接入前要区分仅 debug 生效的 kit、会修改构建产物的插件和依赖远端服务的功能。
 
-把它和 `Firebase Performance`、`Measure` 完全写成同一类工具，会让读者误判其使用场景。
+GitHub release 页面、README badge 与 AGP 8.6 相关 feature 分支显示的 Android 版本线并不一致。新项目应从所需 kit 反推最小依赖，按选定 artifact 验证 AGP/Kotlin/R8 与 Android 17，避免因为一个调试入口引入整套运行时代码。DoKit 不承担大规模生产采样、后端聚合和告警。
 
-[已验证: github.com/didi/DoKit + external-review 2026-04-25]
+项目能力与数据收集说明见 [didi/DoKit](https://github.com/didi/DoKit)。
 
 ### BlockCanary：理解 Looper 监控的历史样本
 
-`BlockCanary` 已多年停更，不适合作为新项目的生产监控方案。它的价值在于展示早期卡顿监控的基本做法：通过 `Looper.getMainLooper().setMessageLogging(...)` 观察 Message 分发前后时间，再配合主线程堆栈采样定位长耗时片段。读旧项目时，如果看到类似 Printer / Looper 日志的卡顿监控，可以把它归到这一类。
+BlockCanary 的仓库没有正式 release，代码更新已长期停滞，不适合作为 Android 17 新项目的生产依赖。它仍是理解 Looper `Printer` 卡顿监控的历史样本：观察 Message 分发前后时间，并在超时期间采集主线程栈。该方法看不到 RenderThread、GPU、SurfaceFlinger 和系统调度全貌，也会和其他 `setMessageLogging()` 使用者争用入口。
 
-[已验证: github.com/markzhai/AndroidPerformanceMonitor]
+源码见 [markzhai/AndroidPerformanceMonitor](https://github.com/markzhai/AndroidPerformanceMonitor)。
 
-### Rabbit：轻量级研发侧后门
+### Rabbit：设备端调试入口
 
-`Rabbit`（`SusionSuc/rabbit-client`）更像轻量级研发侧工具，把性能观察、页面信息和调试入口放在手机端 UI 中。它适合中小团队在调研期快速建立“设备上能看到”的反馈面，但不承担完整线上 APM 的采样、聚合和告警能力。选型时应把它放在 DoKit 这类研发工具箱旁边，避免拿它和 Matrix、Measure 做同层比较。
+Rabbit（`SusionSuc/rabbit-client`）把页面信息、性能观察和调试入口放在设备 UI 中，定位接近 DoKit 一类研发工具箱。其 `v1.0-beta` 发布于 2020 年，仓库代码更新停在 2023 年。Android 17 项目若保留它，应限制到 internal/debug variant，并检查 exported component、网络代理、文件访问和隐私权限。
 
-[已验证: github.com/SusionSuc/rabbit-client]
+源码与发布记录见 [SusionSuc/rabbit-client](https://github.com/SusionSuc/rabbit-client)。
 
 ## 扩展：Rhea / btrace —— 字节跳动的 Trace 工具
 
-Rhea 是字节跳动在 Trace 工具上的一条演进线，后续以 `btrace` 项目的形式完全开源。它基于 Perfetto 生态，适合用来理解函数级 Trace 工具在真实业务里的工程化演进；当前开源 btrace 3.0 已覆盖 Android、iOS 和 HarmonyOS，但 Android 侧 README 标注的边界是 Android 8.0+、64 位设备 / 应用，Java 对象创建监控暂未适配 Android 15 及以上设备。
+Rhea 后续以 `btrace` 开源。旧文章常把 Rhea 1.0、2.0 和“Rhea 3.0”连成一套方法插桩方案，但当前 `btrace 3.x` 已经换了技术路线。阅读历史资料时要按版本拆开，避免把旧架构写成 3.1.0 的现状。
 
-### 从 Systrace 到 Rhea 的三阶段演进
+### 2.0 与 3.x 的边界
 
-抖音团队在性能优化过程中经历了三个 Trace 工具阶段，这个演进过程很值得我们了解。
+`btrace 2.0` 依赖编译期方法插桩。它能给被插桩方法较精确的进入/退出时序，却增加构建和维护成本，只能覆盖打进 APK 的方法，系统 framework 方法也不在该范围内。早期 Rhea 对 `trace_marker` 竞争、用户态缓存和异步转储的探索仍有历史价值；原团队公布的开销数字来自特定版本与测试环境，不能套用到当前设备。
 
-**第一阶段是 Systrace + 自动插桩**。Rhea 1.0 通过字节码插桩自动在每个方法的入口和出口插入 Trace.beginSection / Trace.endSection 调用，并限制方法层级来控制性能开销。但实测发现性能损耗约 11.5%——原因有两个：一是 Systrace 的所有线程向同一个 trace_marker 文件写入时竞争内核态 pos 锁，导致大量 Uninterruptible Sleep；二是限制层级导致超过层级的方法调用信息缺失。
+`btrace 3.x` 的 Android 路径改为“同步回溯 + 动态插桩”：
 
-**第二阶段是自研 Method Trace**。Rhea 2.0 摒弃了 Systrace，改为在 Java 层记录方法的首末时间戳，异步写入文件，然后转换为 Systrace 可视化格式。性能损耗从 11.5% 降到了约 3%。但它只能覆盖 Java 方法级信息，无法看到锁等待、I/O 耗时、Binder 调用等系统级行为。
+- 在目标线程经过高频叶子节点或阻塞点时，同步遍历 ART stack，先保存 method pointer，再批量符号化。
+- 使用 ShadowHook 动态代理 allocation、`MonitorEnter`、`Object.wait`、`Unsafe.park`、GC 等点，在进入或退出边界触发回溯并记录 wall time / thread CPU time。
+- Android 8.1 及以上默认使用 Perfetto 模式，合并 App trace 与设备可提供的 atrace/ftrace；旧系统可退回 simple 模式，只保留 App trace。
 
-**第三阶段是动态一体化 Trace**。Rhea 3.0 放弃了前面的方案，重新设计了一套完整架构：不限层级插桩获取函数耗时 + Hook atrace_marker_fd 拦截用户态 Trace + Hook libc 的 open/read/write/fsync 收集 I/O 信息 + Hook libbinder.so 的 IPCThreadState.transact 收集 Binder 耗时 + 运行时动态打开 ART 虚拟机的轻锁日志。最终将用户态 atrace 和内核态 ftrace 合并为一个完整的 Trace 文件，兼容 Systrace/Perfetto 可视化格式。
+同步回溯避开了周期性 suspend/resume 的部分成本，并可观察系统方法；它仍依赖触发点。线程长时间停在没有插桩点的计算或阻塞路径中，采样会出现空洞。生成的函数时长是相邻 stack sample 重建结果，不等于逐方法入口/出口的精确计时。
 
-Rhea 的一个关键优化是将直接写入内核态 trace_marker 文件的 Trace 在用户态拦截、缓存，再异步转储。这避免了大量线程同时向同一文件写入导致的 pos 锁竞争问题。这个问题在实际优化中很容易误导方向，因为工具本身的性能开销会表现为 I/O Wait。开源后的 btrace 3.0 又补了同步采样模式，用更低的持续开销换取函数级时序观测能力，更适合长时间抓取。
+### 当前开源使用边界
 
-[来源: Cubox/抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea]
+`v3.1.0` README 列出的 Android 条件是：
 
-[已验证: Rhea 后续以 btrace 形式完全开源，3.0 版本补充了同步采样等新能力]
+- Android 8.0 及以上；
+- 设备与 App 都是 64 位；
+- Java 对象分配监控尚未适配 Android 15 及以上；
+- PC 端需要 adb、Java、Python 3，设备要安装集成 btrace 的 APK；
+- online support 仍列在 roadmap。
+
+所以 btrace 适合连接设备的深度 trace 和内部构建诊断。若要用于线上用户，团队还需实现受控触发、权限、缓冲区上限、加密上传、超时、符号管理与远程熔断。Android 17 上它会接触 ART 内部符号和 ShadowHook，必须在 `android-17.0.0_r1` 对应的 Pixel/AOSP 镜像及目标 OEM ROM 上回归；Perfetto 中出现的内核事件再按 [`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/) 核对，不要用旧内核字段解释新 trace。
+
+当前原理与限制见 [btrace README](https://github.com/bytedance/btrace/blob/master/README.MD) 和 [btrace 3.0 Introduction](https://github.com/bytedance/btrace/blob/master/INTRODUCTION.MD)；早期方法插桩路线可对照[抖音 Rhea 文章](https://mp.weixin.qq.com/s/vkBeZ6hmVn_RaXS5Xv_L2g)阅读。
 
 ## 扩展：Hook 机制对比
 
-上面提到的工具大量使用了 Hook 技术，但 Hook 方案之间有结构性差异。理解这些区别有助于我们在评估工具时判断其适用范围和稳定性风险。
+“用了 native Hook”提供的信息太少。评审时至少要写清目标符号、拦截位置、ABI、装载时机、链式调用规则、失败降级和系统版本范围。
 
-### PLT Hook（以 xHook 为代表）
+### PLT Hook：改写调用方的重定位槽
 
-PLT Hook 的工作对象是 ELF 文件中的 .got（Global Offset Table）。当我们的代码调用外部函数时（比如调用 libc.so 的 open），实际是通过 .plt → .got 的间接跳转。.got 中存储了目标函数的实际地址。PLT Hook 就是修改 .got 中的函数指针，将其指向我们的 Hook 函数。
+ELF 调用外部符号时，会根据 relocation 记录经由 GOT/PLT 槽获得目标地址。PLT Hook 解析调用方 ELF 的 relocation，把匹配槽位从原函数改为代理函数。它修改的是“某个调用方如何调用外部符号”，没有覆盖同一 ELF 内的直接调用、静态链接、编译器内联、未匹配的符号版本或其他 syscall 路径。
 
-这种方案的优势是：不修改目标函数的机器码，只修改一个指针，兼容性和稳定性较好。xHook 的 upstream README 明确标注支持 Android 4.0 - 10（API 14 - 29），ABI 覆盖 armeabi、armeabi-v7a、arm64-v8a、x86 和 x86_64。Android 11+ 能否直接使用，要按目标系统和符号回归验证。劣势是：只能 Hook 通过 .got 进行的间接调用，无法 Hook 同一 ELF 内部函数之间的直接调用。
+xHook README 只声明 Android 4.0—10 / API 14—29。Android 17 项目不能因为 Matrix 或 KOOM 内含 xHook 派生代码，就推断该 fork 已覆盖 API 37。要核对 fork commit、linker namespace、REL/RELA/RELR、延迟装载和 16 KB page size。
 
-Matrix 的 IO Canary、KOOM 的内存分配 Hook 都使用了 PLT Hook 方案。
+ByteHook 是仍在活跃维护的 PLT Hook 实现，`v1.1.2` README 明确列出 Android 4.1—17 / API 16—37，并支持同一函数的多次 hook/unhook、自动处理新装载 ELF 和代理栈回溯。这个声明比 xHook 的范围更新，但生产接入仍要在目标 so 集合与 ROM 上做故障注入。
 
-[来源: Cubox/xHook PLT Hook 概述]
+资料可查 [xHook README](https://github.com/iqiyi/xHook) 与 [ByteHook README](https://github.com/bytedance/bhook)。
 
-### Inline Hook
+### Inline Hook：改写被调函数入口
 
-Inline Hook 直接修改目标函数的机器码（通常是将函数入口处的几条指令替换为跳转指令），将执行流导向 Hook 函数。这种方式理论上可以 Hook 任何函数调用，包括 ELF 内部的直接调用。
+Inline Hook 会改写目标函数入口指令，跳到代理或 trampoline，再在需要时执行被覆盖的原始指令并返回。它可以覆盖 ELF 内部直接调用，但需要正确搬移 PC-relative 指令、处理短函数与指令边界、协调并发改写、修改页权限，并刷新 instruction cache。
 
-优势是覆盖范围广，理论上无 Hook 盲区。劣势是：需要处理不同 CPU 架构的指令差异（ARM、ARM64、x86 等），兼容性风险高；如果目标函数很短（短于一条跳转指令的长度），可能无法 Hook；在多线程环境下修改代码段存在竞态条件。字节跳动在开源生态里把这两条路线拆得很清楚：`ByteHook` 是 PLT Hook 库，`ShadowHook` 才是 Inline Hook 库。分析字节系方案时，先区分自己看到的是 ELF 导入表拦截，还是函数入口改写。两者的稳定性边界和适用场景不同。
+ShadowHook `v2.0.1` README 明确列出 Android 4.1—17 / API 16—37，支持 `armeabi-v7a` 与 `arm64-v8a`，并提供 hook/intercept、自动处理新 ELF、循环调用保护、操作记录和代理函数回溯。其手册也要求调用方阅读生产注意事项；一行 `shadowhook_hook_sym_name()` 成功不代表后续装载、unhook、异常回溯和多 Hook 链都安全。
 
-Inline Hook 写入 trampoline 后，还要把被改写地址区间的 instruction cache 刷新掉。NDK 侧通常通过 `__builtin___clear_cache(begin, end)` 或 Hook 框架内部封装完成这一步；漏掉 I-cache 刷新时，CPU 可能继续执行旧指令，表现为偶发 `SIGILL`、跳转到旧入口或只在特定 SoC 上复现的崩溃。Android 15 的 16KB page size 设备还要求 Hook 库不要假设页大小固定为 4KB，涉及 `mprotect` 的页边界计算、trampoline 分配和 ELF segment alignment 的代码都要回归验证。
+Android 17 验收至少覆盖 4 KB/16 KB page size、arm64、目标函数带 BTI/PAC 的情况、CFI/unwind、RELRO、并发首次调用、动态 `dlopen()`、代理递归和崩溃现场可符号化。平台内部函数不是稳定 ABI；即使 Hook 框架支持 API 37，目标 ART/libc/libbinder 符号仍可能因构建与 OEM 修改而不同。
 
-[已验证: bytedance/bhook 为 PLT Hook，bytedance/android-inline-hook 为 ShadowHook Inline Hook；Inline Hook 需处理 I-cache 刷新和 16KB page size 兼容边界]
+详情见 [ShadowHook README](https://github.com/bytedance/android-inline-hook)。
 
-### Transform（编译期字节码修改）
+### 构建期字节码改写
 
-Booster 使用的 Transform 属于编译期方案。它在 .class 文件阶段对字节码进行修改，修改后的代码直接编译进 APK 中。
-
-优势是零运行时开销——修改在编译期完成，运行时不存在任何 Hook 成本。劣势是只能在编译期看到静态信息，无法根据运行时状态做动态决策。
+ASM/字节码改写不改进程中的 native 指令，也不受 linker relocation 限制。它只能处理进入构建输入且未被排除的 class；反射、JNI、动态下发代码和系统 framework 不在普通 class transform 的覆盖范围内。插入的探针仍有运行成本，替换调用还会改变异常、线程和资源语义。验证重点是 bytecode verifier、stack map frame、增量构建、R8、混淆 mapping 与多插件顺序。
 
 ## 工具选型指南
 
-理解了每个工具的原理之后，实际项目里可以按下面几个场景选择和组合使用。
+选型从“要保留什么证据”开始，再看采集方式和维护成本。
 
 ### 按场景选择
 
-**线上性能监控**需要 Matrix 或 KOOM 这类运行时方案。如果我们的核心关注点是卡顿和 ANR，Matrix 的 Trace Canary 是最成熟的选择。如果内存问题（特别是 Native 泄漏和线程泄漏）是主要矛盾，KOOM 的覆盖范围更广。很多团队的做法是同时接入两者——Matrix 负责卡顿/ANR/IO 监控，KOOM 负责内存监控。
-
-**编译期预防**需要 Booster。它在每次构建时自动扫描潜在问题，不依赖线上数据就能发现问题。特别是对第三方 SDK 的行为约束（线程数控制、主线程 I/O 检测），Booster 在编译期就能拦截。
-
-**启动任务管理**可以用 Anchors / AppInit 等调度框架。重点还是把 DAG 调度的思路落到任务拆分和依赖编排上，而不是绑定某个具体框架。如果项目规模不大，完全可以自建一个轻量的任务调度器。
-
-**线下深度 Trace**中 Perfetto 仍然是首选，btrace / Rhea 的价值在于把应用方法栈与系统 trace 放到同一个 Perfetto 视角里。按 bytedance/btrace 3.0 README，当前开源 Android 路径仍需要 PC 侧脚本、adb 可识别设备和集成 SDK 的 APK；online support 还在 roadmap。要做灰度用户远程取证，不能直接把 btrace 3.0 当成无需 PC / adb 的线上方案，需要先确认团队使用的是内部分支还是自建上传 / 触发通道。
+| 目标 | 候选能力 | 选型前的硬条件 |
+|---|---|---|
+| debug Java 泄漏 | LeakCanary | debug/test variant；可接受 heap dump 与本地分析 |
+| 受控线上 OOM 取证 | KOOM Java | 远程开关、采样、磁盘/内存保护、Hprof 合规 |
+| Native 分配或 pthread 资源 | KOOM Native/Thread、Matrix hook | API/ABI 符合；目标 ROM、unwind、page size 已回归 |
+| 卡顿、启动、I/O 线索 | Matrix 对应模块 | Gradle 插件已迁移；自建数据上传与聚合 |
+| 构建期扫描与替换 | Booster 或自研 AGP 插件 | AGP/Booster artifact 精确匹配；改写报告可审计 |
+| 会话聚合与告警 | Firebase Performance、Measure | 数据地区、脱敏、成本、主进程/多进程范围满足要求 |
+| 连接设备的函数级 trace | btrace + Perfetto | Android 8+、64 位、PC/adb；Android 17 真机验证 |
+| 启动依赖管理 | AndroidX Startup、自研 DAG、Anchors/AppInit | 先定义关键路径、线程约束、超时与失败策略 |
 
 ### 组合使用的注意事项
 
-同时接入多个性能库时，通常会遇到三类额外成本。
+**开销会叠加。** 方法探针、Looper 监听、native Hook、stack unwind、heap dump、裁剪与上传都会消耗资源。不要引用上游的固定百分比充当本项目数据；用目标低端机、Android 版本、采样率与典型业务跑 Macrobenchmark 和长稳测试，并用 Perfetto 检查监控线程本身。
 
-一是**性能开销叠加**。每个运行时监控工具都会引入额外成本，例如字节码插桩、Looper 监听、native Hook、Hprof 裁剪和上报队列；多个工具叠加后，低端机更容易出现用户可感知的卡顿。不要在选型文档里直接套用固定百分比，应在目标设备、目标版本和目标采样率下用 Macrobenchmark、Perfetto 或线上灰度指标测出基线。通常的做法是对监控工具本身做采样，只对部分用户开启完整监控。
+**Hook 链会冲突。** 两个库同时改写 `open`、`malloc` 或 ART 符号时，链顺序、原函数指针、unhook 和递归保护可能互相破坏。ByteHook 支持同一函数的多 Hook，不代表 xHook fork、另一套 inline hook 与它可以安全混用。接入清单应画出每个符号的 owner 与链顺序，并通过故障注入验证任一模块初始化失败或关闭时其余模块仍工作。
 
-二是**Hook 冲突**。如果 Matrix 和 KOOM 都 Hook 了 libc 的 open/write，可能出现 Hook 链冲突。xHook 本身支持 Hook 链（多个 Hook 函数按序执行），但不同工具使用不同的 Hook 库时可能冲突。建议统一使用同一个底层 Hook 库。
+**数据需要共同主键。** 卡顿、OOM、网络和启动数据若各自使用不同 session、时间源、版本号与用户匿名标识，事后无法关联。统一 monotonic/wall clock 换算、process start id、session id、build id、mapping id、ABI、page size 和采样配置，比统一 UI 更优先。
 
-三是**上报数据整合**。多个工具各自上报数据到各自的平台，分析问题时需要跨平台关联。理想情况是建设统一的 APM 平台，将卡顿、内存、I/O 等数据关联到同一个用户会话上。
+**监控必须可关闭。** 远程开关应支持按模块、版本、设备层级和采样组关闭，并设本地最大磁盘、内存、CPU 时间、上传次数与超时。监控代码发生崩溃、ANR 或 OOM 时，要能确认它是否参与了事故。
 
 ## 常见问题与误区
 
-**"Matrix 是万能的，接了就不用 Perfetto 了"**。Matrix 解决的是线上监控问题，Perfetto 解决的是线下深度分析问题。两者定位不同，互相不可替代。Matrix 能告诉你"用户 A 在某次操作中发生了卡顿，调用栈是 XXX"，但要理解为什么会走到这条代码路径、整个渲染管线当时的状态如何，还是需要 Perfetto Trace。
+**“Matrix 接入后可以替代 Perfetto。”** Matrix 记录 App 侧选定探针，Perfetto 负责跨进程时间线与系统数据源。一个慢方法栈解释不了 CPU 是否被抢占、Binder 对端、RenderThread、GPU fence 或 SurfaceFlinger 合成；线上报告应能引导到可复现的 Perfetto 场景。
 
-**"KOOM 的 Native 泄漏检测可以替代 ASan"**。KOOM 的 Mark-and-Sweep 方案是"不精确"的——它只能检测到"不可达"的内存块，但"不可达"不等于"泄漏"（某些长期存活的内存块可能在扫描瞬间没有被任何栈变量引用）。AddressSanitizer (ASan) 是更精确的工具，但它需要特殊编译且开销大，不适合生产环境。KOOM 适合生产环境的持续监控，ASan 适合开发阶段的问题定位。
+**“KOOM Native 可以替代 ASan/HWASan。”** KOOM 寻找保守扫描下不可达、仍未释放的分配块，偏向泄漏候选；ASan/HWASan 主要检测越界、use-after-free、double-free 等内存安全错误。保守扫描中的 pointer-like 值常造成漏报，sanitizer 又需要专门构建与更高开销，两者解决的问题和部署环境都不同。泄漏专项还应区分 LeakSanitizer、`libmemunreachable` 与分配采样。
 
-**"Booster 的 Transform API 已经过时了"**。Transform API 在 AGP 8.0 已经被移除，旧版基于 Transform 的 Booster 方案不能直接带到新的构建流程里。编译期优化本身还有效，只是接入点换成了 Instrumentation API 和 Artifacts API。
+**“AGP Transform API 删除，所以 Booster 的字节码模块都失效。”** 旧 AGP Transform 接口已删除；Booster 5.x 把 class 产物接到 Android Components / Scoped Artifacts。应检查具体 Booster 与 AGP 组合，不能从旧接口的名称推导整个项目状态。
 
-**"启动框架能自动优化启动速度"**。启动调度框架只是帮你更好地组织任务——把可以并行的任务并行化、把非关键路径的任务延迟化。它本身不会让任何单个任务执行得更快。如果每个初始化任务本身就很慢，用了框架也不会有质的变化。优化启动还是要减少启动路径上的工作量。
+**“启动框架会自动缩短启动。”** 调度器只能调整依赖、线程和时机。错误并行会增加争用，错误锚点会直接阻塞主线程。优化结果要用首帧与完全绘制分位数、关键路径和任务总 CPU time 验收，不能用“异步任务数量”验收。
+
+**“README 写支持 API 37，所有能力就都支持 Android 17。”** Hook 框架的系统范围、被 Hook 符号的稳定性、上层工具的逻辑和目标 OEM ROM 是四个层次。ByteHook/ShadowHook 支持 API 37，只能证明框架维护者覆盖了其公开测试范围；btrace 的对象分配监控仍明确排除 Android 15+，这两条信息并不矛盾。
 
 ## 参考资料
 
-- Matrix GitHub: https://github.com/Tencent/matrix
-- KOOM GitHub: https://github.com/KwaiAppTeam/KOOM
-- Booster GitHub: https://github.com/didi/Booster
-- xHook GitHub: https://github.com/iqiyi/xHook
-- ByteHook GitHub: https://github.com/bytedance/bhook (字节跳动 PLT Hook)
-- ShadowHook GitHub: https://github.com/bytedance/android-inline-hook (字节跳动 Inline Hook)
-- btrace GitHub: https://github.com/bytedance/btrace
-- 抖音 Android 性能优化系列：Rhea Trace 工具: https://mp.weixin.qq.com/s/vkBeZ6hmVn_RaXS5Xv_L2g
-- Android PLT Hook 概述（xHook 文档）: https://github.com/iqiyi/xHook/blob/master/docs/overview/android_plt_hook_overview.zh-CN.md
-- Alpha 启动调度框架: https://github.com/alibaba/alpha
+- [Matrix](https://github.com/Tencent/matrix)
+- [KOOM](https://github.com/KwaiAppTeam/KOOM)
+- [Booster](https://github.com/didi/booster)
+- [Android Gradle plugin API updates](https://developer.android.com/build/releases/gradle-plugin-api-updates)
+- [LeakCanary](https://square.github.io/leakcanary/)
+- [Firebase Performance Monitoring](https://firebase.google.com/docs/perf-mon/)
+- [Measure](https://github.com/measure-sh/measure)
+- [DoKit](https://github.com/didi/DoKit)
+- [btrace](https://github.com/bytedance/btrace)
+- [ByteHook](https://github.com/bytedance/bhook)
+- [ShadowHook](https://github.com/bytedance/android-inline-hook)
+- [xHook 与 Android PLT Hook 概述](https://github.com/iqiyi/xHook/blob/master/docs/overview/android_plt_hook_overview.zh-CN.md)
+- [AndroidX App Startup](https://developer.android.com/topic/libraries/app-startup)
+- [Alpha](https://github.com/alibaba/alpha)
+- [Anchors](https://github.com/DSAppTeam/Anchors)
+- [AppInit](https://github.com/hacket/AppInit)
