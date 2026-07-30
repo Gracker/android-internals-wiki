@@ -4,12 +4,16 @@ chapter: "14.27"
 status: ready-for-review
 drafted_date: "2026-07-08"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-07-08"
-last_verified_against: "androidx.benchmark:benchmark-macro-junit4 1.3.x"
+last_verified: "2026-07-30"
+last_verified_against: "AndroidX Benchmark 1.4.1 stable + Android 17 (API 37) + android-17.0.0_r1 + android17-6.18-2026-06_r6"
 confidence: high
 sources:
   - type: official
     path: "developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
+  - type: official
+    path: "developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics"
+  - type: official
+    path: "developer.android.com/topic/performance/benchmarking/benchmarking-in-ci"
   - type: official
     path: "developer.android.com/topic/performance/baselineprofiles/overview"
   - type: aosp
@@ -19,12 +23,13 @@ related_chapters: ["8.7", "13.21", "16.1", "21.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-05"
 gap_source: "Official docs/AOSP structure"
+android17_review_notes: "按 AndroidX Benchmark 1.4.1 稳定版与 Android 17 复核；修正 COLD page cache 语义、TraceMetric API、Gradle 任务和门禁统计独立性"
 ---
 
 # 14.27 Macrobenchmark 框架与自动化性能门禁
 
 > [!NOTE]
-> Frontmatter 记录的是初稿核对过的 AndroidX Benchmark 1.3.x。本文在保留流水线元数据的前提下，按 2026-07-30 的稳定版 `androidx.benchmark:benchmark-macro-junit4:1.4.1` 复核。AndroidX 独立于 Android 平台发布；测试 Android 17 时，平台锚点仍是 API 37 / `android-17.0.0_r1`。
+> 本文按 2026-07-30 的 AndroidX Benchmark 稳定版 `1.4.1` 复核。AndroidX 独立于 Android 平台发布；测试 Android 17 时，平台锚点仍是 API 37 / `android-17.0.0_r1`。`1.5.0-beta01` 已发布，但预览版不作为本章门禁基线。
 
 Macrobenchmark 适合测量跨进程的用户旅程，例如冷启动、页面滚动和动画。它能控制应用的启动与编译状态，并为每次测量保留结果和系统 trace。性能门禁还需要稳定设备、可重复数据、版本化结果解析和明确的统计政策，库本身不会把有噪声的 benchmark 自动变成可靠的 pass/fail。
 
@@ -55,11 +60,11 @@ Macrobenchmark 使用单独的 instrumentation test APK。测试进程通过 `Ma
 
 ### 3.1 依赖版本
 
-[AndroidX Benchmark 发布页](https://developer.android.com/jetpack/androidx/releases/benchmark) 在 2026-07-01 发布的稳定版是 1.4.1。下面的依赖用于锁定可复现版本：
+[AndroidX Benchmark 发布页](https://developer.android.com/jetpack/androidx/releases/benchmark) 在 2026-07-30 列出的稳定版是 1.4.1；该版本发布于 2025-09-10。下面的依赖用于锁定可复现版本：
 
 ```kotlin
 dependencies {
-    implementation(
+    androidTestImplementation(
         "androidx.benchmark:benchmark-macro-junit4:1.4.1"
     )
 }
@@ -74,7 +79,7 @@ Benchmark 模块通常使用 `com.android.test`，并把 `targetProjectPath` 指
 - `debuggable=false`；
 - 与发布版本相同的 R8、资源压缩、ABI 和 feature flags；
 - 允许 shell profiling 的 `profileable` 配置；
-- 使用固定签名、固定 version code 和相同安装路径；
+- 固定签名和安装路径，记录 version code，并避免安装/升级数据迁移进入测量区间；
 - 测试数据可重复，不依赖不可控线上接口。
 
 抑制 `DEBUGGABLE`、`EMULATOR`、`LOW-BATTERY` 或 `NOT-PROFILEABLE` 警告会掩盖测量环境变化。只在明确的诊断实验中抑制，并把原因写入结果元数据。
@@ -121,7 +126,7 @@ class StartupBenchmark {
 
 | 模式 | 测量前状态 | 适合场景 | 边界 |
 |---|---|---|---|
-| `COLD` | 目标进程不存活 | 用户从无进程状态打开应用 | 不等于磁盘 page cache 为空或设备刚重启 |
+| `COLD` | 目标进程不存活；默认配置还会清理 shader cache 并请求清理 kernel page cache | 用户从无进程、冷代码/资源缓存状态打开应用 | 不等于设备刚重启，也不会清除应用数据和所有外部缓存 |
 | `WARM` | 进程保留，Activity 需要重建或重新启动 | 进程尚在的返回路径 | 进程内缓存和单例会影响结果 |
 | `HOT` | 进程与 Activity 保留 | Activity 从 stopped 回到前台 | 接近 resume 路径，覆盖范围最窄 |
 
@@ -163,7 +168,7 @@ Frame metric 提供 p50、p90、p95、p99 分布。不能用“16 ms”作为 12
 
 ## 6. 自定义 trace 指标
 
-AndroidX Benchmark 1.4.1 的公开实验 API 是 `TraceSectionMetric`。下面的配置用于累加应用 trace section 的总时长：
+`TraceSectionMetric` 是 AndroidX Benchmark 1.4.1 的公开实验 API。下面的配置用于累加应用 trace section 的总时长：
 
 ```kotlin
 @OptIn(ExperimentalMetricApi::class)
@@ -173,9 +178,9 @@ val bindMetric = TraceSectionMetric(
 )
 ```
 
-应用必须使用 `Trace.beginSection()/endSection()` 或 AndroidX tracing 生成同名切片。section 名要稳定、短小，并避免在高频细粒度代码中制造明显 trace 开销。
+应用必须使用 `Trace.beginSection()/endSection()` 或 AndroidX tracing 生成同名切片。`Mode.Sum` 每个迭代输出 `Feed#bindSumMs` 和 `Feed#bindCount`；求和实现假设切片不重入，嵌套或重叠 section 会重复计算时间。section 名要稳定、短小，并避免在高频细粒度代码中制造明显 trace 开销。
 
-初稿中的 `TraceMetric("name") { "SELECT ..." }` 不是 1.4.1 的公开通用 API。任意 Perfetto SQL 可以在 CI 中用 `trace_processor` 对导出的 trace 后处理；查询文件、Perfetto 版本和 schema 都要跟结果一起版本化。
+`TraceMetric("name") { "SELECT ..." }` 不是 1.4.1 支持的构造方式。1.4.1 提供了实验性的抽象类 `TraceMetric`：自定义 metric 可以重写 `getMeasurements()`，通过 `TraceProcessor.Session` 执行 SQL；也可以在 CI 中用独立 `trace_processor` 后处理导出的 trace。两条路径都要版本化查询、Perfetto 版本、schema 和单位。
 
 完整的 trace 版本边界见 [13.21 Perfetto 版本演进](../ch13-perfetto/13.21-perfetto-version-evolution.md)。
 
@@ -201,7 +206,7 @@ val bindMetric = TraceSectionMetric(
 | `Partial(warmupIterations=n)` | 先运行旅程收集 warmup profile，再编译 | 模拟使用后 profile-guided 状态 | 会增加测试时长，语义不同于嵌入 Profile |
 | `None` | reset profile，不做预编译 | 观察 JIT/解释执行的较差状态、衡量 Profile 收益 | 不代表常见商店安装状态 |
 | `Full` | 对 app methods 做 full AOT | 减少 JIT 噪声、建立特殊上界 | 现代用户设备通常不是该状态 |
-| `Ignore` | 不 reset、不编译 | 自定义编译实验 | 调用方承担全部状态控制 |
+| `Ignore` | 不 reset、不编译 | 自定义编译实验 | 调用方负责全部状态控制 |
 
 编译模式必须成为 benchmark identity 的一部分。`coldStartup[Partial-Require]` 和 `coldStartup[None]` 是两个不同基线，不能覆盖到同一趋势序列。
 
@@ -257,17 +262,17 @@ Android 17 trace 涉及内核 sched、frequency、idle 或 power rail 时，源�
 
 ### 10.3 执行与产物
 
-下面的命令用于运行单个 benchmark 并把 JSON/trace 写到指定目录：
+下面的命令按官方 `connectedCheck` 入口运行单个 benchmark，并把 JSON/trace 写到设备上的指定目录：
 
 ```bash
-./gradlew :benchmark:connectedBenchmarkAndroidTest \
-  -P android.testInstrumentationRunnerArguments.class=\
+./gradlew :benchmark:connectedCheck \
+  -Pandroid.testInstrumentationRunnerArguments.class=\
 com.example.benchmark.StartupBenchmark#coldStartup \
-  -P android.testInstrumentationRunnerArguments.additionalTestOutputDir=\
+  -Pandroid.testInstrumentationRunnerArguments.additionalTestOutputDir=\
 /sdcard/Download/benchmark-output
 ```
 
-Gradle task 名取决于项目 variant。CI 要从测试输出或 Logcat 读取库打印的实际文件路径，再上传 JSON、每次迭代 trace、APK 哈希、设备元数据和测试日志。
+某些项目还会生成 variant 专用的 connected task，使用前应从 `./gradlew :benchmark:tasks` 核对。Android Gradle Plugin 通常会把 additional test output 复制到主机构建目录；CI 仍要从测试输出读取实际文件路径，再上传 JSON、每次迭代 trace、APK 哈希、设备元数据和测试日志。
 
 ## 11. 门禁统计
 
@@ -284,22 +289,13 @@ Gradle task 名取决于项目 variant。CI 要从测试输出或 Logcat 读取�
 
 ### 11.2 归一化数据层
 
-AndroidX JSON schema 会随库版本扩展。解析器应锁定 Benchmark 版本，并把原始结果转换成内部稳定结构。下面的格式用于统计脚本输入，它不是 AndroidX 原始 JSON：
+AndroidX JSON schema 会随库版本扩展。解析器应锁定 Benchmark 版本，并把原始结果转换成内部稳定结构。门禁脚本的输入应包含 metric、unit、与 metric 同单位的绝对预算、用小数表示的相对预算、最小配对数，以及 `pairs` 数组。每个 pair 保存同一设备、同一环境区组内 baseline 与 candidate 两次独立 benchmark invocation 的摘要值。
 
-```json
-{
-  "metric": "timeToInitialDisplayMs",
-  "unit": "ms",
-  "baseline": [482.1, 490.5, 487.3, 495.0, 488.4],
-  "candidate": [510.2, 514.8, 507.1, 518.0, 512.6]
-}
-```
-
-转换层要校验 benchmark name、metric name、unit、device ID、compilation mode 和 iteration 数；字段缺失时中止比较，不能把缺失值当成 0。
+转换层要校验 benchmark name、metric name、unit、device ID、compilation mode、iteration 数、APK 哈希和区组 ID；字段缺失时中止比较，不能把缺失值当成 0。一次 invocation 内的十个 iteration 共同形成一个摘要，不能拆成十个独立 pair。
 
 ### 11.3 相对阈值、绝对阈值与置信区间
 
-下面的 Python 片段用于对两组独立任务摘要做 bootstrap median delta；输入是上一节的归一化 JSON：
+下面的 Python 片段用于对配对的独立任务摘要做 bootstrap。输入是上一节描述的归一化 JSON，预算和最小样本数由产品策略写入文件：
 
 ```python
 import json
@@ -307,44 +303,69 @@ import random
 import statistics
 import sys
 
-data = json.load(open(sys.argv[1]))
-baseline = data["baseline"]
-candidate = data["candidate"]
+with open(sys.argv[1], encoding="utf-8") as source:
+    data = json.load(source)
 
-if len(baseline) < 5 or len(candidate) < 5:
-    raise SystemExit("insufficient independent samples")
+pairs = [
+    (float(row["baseline"]), float(row["candidate"]))
+    for row in data["pairs"]
+]
+minimum_pairs = int(data["minimumPairs"])
+if len(pairs) < minimum_pairs:
+    raise SystemExit("insufficient independent benchmark pairs")
 
-random.seed(20260730)
-deltas = []
-for _ in range(10_000):
-    b = [random.choice(baseline) for _ in baseline]
-    c = [random.choice(candidate) for _ in candidate]
-    deltas.append(statistics.median(c) - statistics.median(b))
+absolute_budget = float(data["absoluteBudget"])
+relative_budget = float(data["relativeBudget"])
+bootstrap_iterations = int(data.get("bootstrapIterations", 10_000))
+random.seed(int(data.get("bootstrapSeed", 20260730)))
 
-deltas.sort()
-lower = deltas[int(len(deltas) * 0.025)]
-upper = deltas[int(len(deltas) * 0.975)]
-baseline_median = statistics.median(baseline)
+absolute_deltas = []
+relative_deltas = []
+for _ in range(bootstrap_iterations):
+    sample = random.choices(pairs, k=len(pairs))
+    baseline_median = statistics.median(row[0] for row in sample)
+    candidate_median = statistics.median(row[1] for row in sample)
+    if baseline_median <= 0:
+        raise SystemExit("baseline median must be positive")
+    delta = candidate_median - baseline_median
+    absolute_deltas.append(delta)
+    relative_deltas.append(delta / baseline_median)
 
-absolute_budget_ms = 20.0
-relative_budget = 0.05
-failed = (
-    lower > absolute_budget_ms
-    and lower / baseline_median > relative_budget
-)
+def percentile(values, quantile):
+    ordered = sorted(values)
+    index = round((len(ordered) - 1) * quantile)
+    return ordered[index]
 
-print({
-    "baselineMedian": baseline_median,
-    "candidateMedian": statistics.median(candidate),
-    "delta95CiMs": [lower, upper],
-    "failed": failed,
-})
-raise SystemExit(1 if failed else 0)
+absolute_ci = [
+    percentile(absolute_deltas, 0.025),
+    percentile(absolute_deltas, 0.975),
+]
+relative_ci = [
+    percentile(relative_deltas, 0.025),
+    percentile(relative_deltas, 0.975),
+]
+
+if absolute_ci[0] > absolute_budget and relative_ci[0] > relative_budget:
+    status = "fail"
+elif absolute_ci[1] <= absolute_budget or relative_ci[1] <= relative_budget:
+    status = "pass"
+else:
+    status = "inconclusive"
+
+print(json.dumps({
+    "metric": data["metric"],
+    "unit": data["unit"],
+    "absoluteDelta95Ci": absolute_ci,
+    "relativeDelta95Ci": relative_ci,
+    "status": status,
+}, indent=2))
+
+raise SystemExit({"pass": 0, "fail": 1, "inconclusive": 2}[status])
 ```
 
-这里同时要求 95% 区间下界超过 20 ms 和 5%，避免很快的场景被微小绝对差值误伤，也避免很慢的场景被固定毫秒阈值放过。预算应来自产品 SLA 与同设备历史噪声，不应复制示例数字。
+脚本采用配对设计，区组内的 baseline 与 candidate 应在同一设备上运行，并交替或随机安排先后顺序。失败条件要求绝对增量和相对增量的 95% 区间下界都越过各自预算；任一维度的区间上界仍在预算内时通过，其余情况标为 inconclusive。
 
-样本太少或区间过宽时，结果应标为 inconclusive 并自动重跑；不能把不确定结果强行判为通过。
+预算来自产品 SLA 与同设备历史噪声。样本太少时脚本直接拒绝比较；区间跨越门槛时由流水线冷却设备并增加独立配对，不能把同一次 invocation 的 iteration 重复抽样来凑数量。
 
 ## 12. 降低噪声
 
@@ -368,7 +389,9 @@ raise SystemExit(1 if failed else 0)
 
 ### 12.3 Cache 边界
 
-`StartupMode.COLD` 会让目标进程在迭代前不存活，不会清空 Linux page cache、GPU cache、DNS 或服务端 cache。`drop_caches` 需要 root，也会改变全系统状态；它只适合独立的存储冷缓存实验。
+在本章覆盖的 API 31—37 上，`StartupMode.COLD` 会在每次迭代中停止目标进程。默认的 `androidx.benchmark.dropShaders.enable=true` 还会清理目标 shader cache，随后通过 `perf.drop_caches=3` 请求系统清理 kernel page cache。Macrobenchmark 会等待属性恢复为 0；默认配置下，清理失败会中止测试。
+
+这仍不是“设备重启后的所有缓存都为空”。DNS、GPU 驱动、系统服务、网络端和应用数据缓存各有生命周期。page cache 清理影响全系统，性能设备上不能并行运行其他任务；也不应再由外层脚本额外执行一次 `drop_caches`。
 
 ## 13. 从 metric 回到 trace
 
