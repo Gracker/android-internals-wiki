@@ -11,34 +11,48 @@ status: finalized
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
-last_verified: "2026-04-25"
-last_verified_against: "AOSP android-17.0.0_r1, Android ProfilingManager / ProfilingTrigger / ApplicationExitInfo docs, art/runtime/signal_catcher.cc"
-confidence: medium
+last_verified: "2026-07-30"
+last_verified_against: "AOSP android-17.0.0_r1; Android 17 / API 37 ApplicationStartInfo, ApplicationExitInfo.AnrInfo, AnrWarningResult, ProfilingManager and ProfilingTrigger; current Android Vitals, JankStats and Perfetto SDK documentation"
+confidence: high
 sources:
   - type: official
-    path: "developer.android.com/topic/performance/metrics"
+    path: "https://developer.android.com/topic/performance/metrics"
   - type: official
-    path: "developer.android.com/reference/android/view/FrameMetrics"
+    path: "https://developer.android.com/reference/android/view/FrameMetrics"
   - type: official
-    path: "developer.android.com/reference/android/app/ApplicationExitInfo"
+    path: "https://developer.android.com/topic/performance/jankstats"
   - type: official
-    path: "developer.android.com/reference/android/os/ProfilingManager"
+    path: "https://developer.android.com/reference/android/app/ApplicationStartInfo"
   - type: official
-    path: "developer.android.com/reference/android/os/ProfilingTrigger"
+    path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
   - type: official
-    path: "developer.android.com/topic/libraries/architecture/startup"
+    path: "https://developer.android.com/reference/android/app/ApplicationExitInfo.AnrInfo"
   - type: official
-    path: "developer.android.com/jetpack/androidx/releases/jankstats"
+    path: "https://developer.android.com/reference/android/app/AnrWarningResult"
   - type: official
-    path: "perfetto.dev/docs/instrumentation/tracing-sdk"
+    path: "https://developer.android.com/reference/android/os/ProfilingManager"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
+  - type: official
+    path: "https://developer.android.com/topic/libraries/architecture/startup"
+  - type: official
+    path: "https://developer.android.com/topic/performance/vitals/anr"
+  - type: official
+    path: "https://developer.android.com/topic/performance/vitals/render"
+  - type: official
+    path: "https://developer.android.com/topic/performance/vitals/slow-session"
+  - type: official
+    path: "https://perfetto.dev/docs/instrumentation/tracing-sdk"
   - type: aosp
     path: "art/runtime/signal_catcher.cc"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/AnrHelper.java"
+    path: "frameworks/base/services/core/java/com/android/server/am/StackTracesDumpHelper.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
+    path: "packages/modules/Profiling/framework/java/android/os/ProfilingManager.java"
+  - type: aosp
+    path: "packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java"
 tags: [monitoring, APM, FrameMetrics, JankStats, ANR, startup, production]
 related_chapters: ["7.1", "7.3", "8.1", "9.3", "14.1", "14.6", "14.12", "15.3", "15.4", "15.9", "15.10"]
 pipeline_stage: ready-to-publish
