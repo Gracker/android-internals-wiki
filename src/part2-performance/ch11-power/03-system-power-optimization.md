@@ -6,31 +6,46 @@ section: '11.3'
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 6.0 (API 23) - Android 17 (API 37)
-last_verified: '2026-04-20'
-last_verified_against: AOSP android-16.0.0_r1, Android Developers Doze / location
-  / foreground service docs
+last_verified: '2026-07-31'
+last_verified_against: AOSP android-17.0.0_r1, android17-6.18-2026-06_r6, Android Developers Doze / App Standby / Battery Saver / background limits / Android 17 JobScheduler and AlarmManager docs
 polish_count: 1
 polish_date: '2026-04-05'
 polish_by: task2b-polish
 rework_count: 3
 rework_date: '2026-05-07'
 rework_by: task2b-rework
-confidence: medium
+confidence: medium-high
 sources:
 - type: official
   path: https://developer.android.com/training/monitoring-device-state/doze-standby
 - type: official
   path: https://developer.android.com/topic/performance/appstandby
 - type: official
-  path: https://developer.android.com/topic/performance/power/power-details#app-stdby-bucket
+  path: https://developer.android.com/topic/performance/power/power-details
 - type: official
-  path: https://developer.android.com/guide/components/activities/background-starts
+  path: https://developer.android.com/topic/performance/power/test-power
+- type: official
+  path: https://developer.android.com/guide/components/activities/secure-bal
 - type: official
   path: https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start
 - type: official
-  path: https://developer.android.com/training/location/background
+  path: https://developer.android.com/develop/sensors-and-location/location/background
 - type: official
-  path: https://source.android.com/docs/core/power
+  path: https://source.android.com/docs/core/power/mgmt
+- type: official
+  path: https://source.android.com/docs/core/power/platform_mgmt
+- type: official
+  path: https://source.android.com/docs/core/power/trackers
+- type: official
+  path: https://source.android.com/docs/core/power/routine-battery-saver
+- type: official
+  path: https://developer.android.com/reference/android/os/PowerManager
+- type: official
+  path: https://developer.android.com/reference/android/app/job/JobScheduler
+- type: official
+  path: https://developer.android.com/reference/android/app/AlarmManager
+- type: official
+  path: https://developer.android.com/about/versions/17/features
 - type: aosp
   path: frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java
 - type: aosp
@@ -40,17 +55,33 @@ sources:
 - type: aosp
   path: frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java
 - type: aosp
+  path: frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java
+- type: aosp
   path: frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java
 - type: aosp
+  path: frameworks/base/services/core/java/com/android/server/power/LowPowerStandbyController.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/power/batterysaver/BatterySaverController.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/power/batterysaver/BatterySaverPolicy.java
+- type: aosp
   path: frameworks/base/core/java/android/app/ActivityOptions.java
 - type: aosp
   path: frameworks/base/core/java/android/os/PowerManager.java
-- type: official
+- type: kernel
+  path: kernel/power/suspend.c
+- type: kernel
+  path: kernel/sched/idle.c
+- type: kernel
+  path: drivers/base/power/wakeup.c
+- type: community
   path: https://dontkillmyapp.com/
 - type: official
   path: https://developer.android.com/topic/performance/app-hibernation
+- type: official
+  path: https://developer.android.com/about/versions/15/features#app-archiving
 - type: official
   path: https://developer.android.com/reference/android/content/pm/PackageInstaller#requestArchive(java.lang.String,android.content.IntentSender)
 - type: official
@@ -132,390 +163,362 @@ task9_review_notes: '2026-06-07 Task9 idle audit: auto-fixed broken App Archivin
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么要了解系统级功耗管理
+## 系统为什么要限制后台工作
 
-在 §11.2 中，我们讨论了 App 侧可以做的功耗优化：减少 WakeLock 持有时间、合理使用 WorkManager、优化网络请求频率等。这些都是在 App 主动配合的前提下完成的。即便一个 App 自身做得很好，系统依然可能替它"省电"——在用户不知情的情况下限制它的后台行为、推迟它的任务执行、甚至直接杀掉它的进程。
+单个 App 只知道自己的任务是否紧急，系统还要同时考虑电量、充电状态、屏幕、移动状态、温度、内存压力、网络和其他 App。Android 因此把后台资源分配拆成多组可以叠加的策略：
 
-Android 从 6.0 开始就内置了系统级功耗管理策略，经过 Android 9 的 App Standby Buckets、Android 12 的 Restricted 桶，到各厂商自研的后台管控机制，系统级功耗管理的能力越来越强、粒度越来越细。
+| 决策维度 | 主要机制 | 影响对象 |
+| --- | --- | --- |
+| 设备是否空闲 | Doze、Light Doze、Low Power Standby | 网络、WakeLock、Job、Alarm、Sync |
+| 用户多久使用一次 App | App Standby Buckets、Restricted bucket | Job 时长、Alarm 频率、后台网络 |
+| 用户是否主动限制 App | Battery settings、background restriction | Job、Alarm、网络与后台执行 |
+| 全局是否节电 | Battery Saver、OEM low-power policy | 位置、后台任务、显示、性能与厂商功能 |
+| App 当前是否可见 | 进程重要性、FGS、BAL、while-in-use 权限 | 资源配额、界面拉起、位置与敏感资源 |
+| ROM 的附加策略 | OEM 冻结、自启动和应用启动管理 | 进程调度、广播、推送与后台存活 |
 
-如果我们不了解这些机制，就会遇到一些令人困惑的现象：推送延迟到达、后台任务没有按预期执行、用户投诉 App "吃电" 但代码里找不到问题。这些问题的根因往往不在 App 内部，而在系统级功耗策略对外部行为的约束上。
+同一个 Job 可以同时等待充电约束、Doze 维护窗口、standby quota 和 OEM 调度条件。定位“为什么没运行”时，需要逐层找证据，不能只看 WorkManager 状态。
 
-理解这些机制后，我们能做的事情包括：在 Perfetto/Battery Historian 中识别系统级限制导致的延迟；根据 Standby Bucket 的不同配额调整后台任务策略；在用户反馈"后台被杀"时判断是 AOSP 行为还是厂商定制行为；有针对性地引导用户在系统设置中为 App 豁免某些限制。
+## Doze：按设备状态集中后台活动
 
-## Doze 模式：分阶段触发与维护窗口机制
+Android 6.0（API 23）引入 Doze。设备长时间未使用时，系统暂停普通后台网络，忽略 App WakeLock，并延后 Job、Sync 与普通 Alarm；设备会周期性进入维护窗口，批量处理积压工作。
 
-Doze 模式是 Android 6.0（API 23）引入的低功耗状态管理机制，核心思想是：当设备长时间不被使用时，系统主动限制后台 App 的 CPU 和网络活动，将它们集中到短暂的"维护窗口"中执行，其余时间设备尽可能保持深度睡眠。
+### Light Doze 与 Deep Doze
 
-### 两种 Doze：Light Doze 与 Deep Doze
+Android 7.0（API 24）加入更轻的屏幕关闭优化。两条状态机的触发条件与强度不同：
 
-Android 7.0（API 24）将 Doze 拆分为两个层级：
+| 模式 | 进入条件 | 主要目的 |
+| --- | --- | --- |
+| Light Doze | 屏幕关闭、未充电；不要求设备静止 | 较早限制后台网络和调度，移动中的设备也能节电 |
+| Deep Doze | 屏幕关闭、未充电、持续静止；完整实现依赖 significant motion detector | 延长 suspend 驻留，限制更严格 |
 
-**Light Doze** 的触发条件比较宽松——只要屏幕关闭且设备未在充电，即使设备在移动中也会进入。它的限制力度相对温和：推迟非关键的网络请求和 JobScheduler 任务，但仍然允许高优先级 FCM 消息到达、允许精确闹钟（有速率限制）、允许前台服务运行。
+设备移动、点亮屏幕或接入充电器会让 Deep Doze 退出。Light Doze 与 Deep Doze 在 `DeviceIdleController` 中有各自状态，`dumpsys deviceidle` 输出的 `mLightState`、`mState` 也要分开读。
 
-**Deep Doze** 则是原始的、更严格的 Doze。它需要设备满足三个条件：屏幕关闭、未在充电、且设备处于静止状态（通过加速度计判断）。一旦进入 Deep Doze，系统会实施大幅度的限制：网络访问被暂停、标准 AlarmManager 闹钟被推迟、WakeLock 大部分被忽略、JobScheduler 任务和 SyncAdapter 同步被延迟、后台 Wi-Fi 扫描停止。
+### 维护窗口不是定时器
 
+维护窗口短暂恢复网络并分发积压的 Sync、Job 和 Alarm。设备保持空闲后，维护窗口之间的休眠间隔逐步增长。具体时长由平台版本、资源 overlay、DeviceConfig 与设备实现决定，App 不能拿某款手机的窗口间隔当作调度 SLA。
 
-### 维护窗口：递增长度的呼吸机制
+窗口到来只表示限制暂时放宽，仍不保证某个任务马上执行。Job 还要满足自身约束、standby bucket、quota 和并发调度条件。
 
-Doze 在限制后台活动的同时，会周期性地进入短暂的维护窗口（Maintenance Window），在这个窗口内临时解除大部分限制，让 App 有机会完成积压的工作。
+### Doze 中哪些能力会被限制
 
-维护窗口的关键特征是**间隔递增**。设备刚进入 Doze 时，维护窗口相对更密；空闲时间继续拉长后，窗口之间的间隔会逐步变长，后期可能相隔数小时。具体数值受 Android 版本、设备配置和白名单状态影响，不适合把 1 小时、2 小时、4 小时写成固定常量。
+- 普通网络访问暂停。
+- App 持有的 WakeLock 被忽略。
+- `set()`、`setWindow()`、`setExact()` 等普通 Alarm 延后到维护窗口。
+- JobScheduler、WorkManager 和 SyncAdapter 延后。
+- 后台 Wi‑Fi 扫描停止。
+- FGS 可以提高进程重要性，但不能获得设备级 Doze 豁免。
 
-在维护窗口内，系统会短暂放开一部分限制，集中处理被延后的工作：
+高优先级 FCM 只适合时间敏感、会产生用户可见通知的消息。系统会给接收方短暂的网络和 partial WakeLock 能力，处理完成后设备继续空闲。普通数据刷新使用 normal priority，并接受维护窗口延迟。
 
-- 执行被推迟的 JobScheduler 任务和 SyncAdapter 同步
-- 允许被延迟的 AlarmManager 闹钟触发
-- 临时恢复网络访问
-- WakeLock 正常工作
+`setAndAllowWhileIdle()`、`setExactAndAllowWhileIdle()` 和 `setAlarmClock()` 能在空闲期间交付。前两者受每个 App 约九分钟一次的频率边界，系统还可以延长间隔。它们适合用户感知的关键事件，不能用于高频轮询。
 
-这也是为什么常会出现这样的用户反馈：“我的 App 后台同步有时候能工作，有时候不行。”如果同步恰好赶上了维护窗口，它就能完成；如果错过了，就要等下一个窗口。
+### Android 17 的 listener 型 allow-while-idle Alarm
 
-### 在 Perfetto 中的表现
+API 37 新增 `setExactAndAllowWhileIdle(int, long, String, Executor, OnAlarmListener)`。回调直接在指定 `Executor` 上执行，可以让仍有组件存活的 App 在低功耗模式等待精确回调，而无需持续持有 WakeLock。
 
-Doze 的取证不要依赖某个固定名字的 Track。更稳的做法，是把 Trace、`dumpsys deviceidle`、`dumpsys jobscheduler` 和 Battery Historian 对在一起看。
+`OnAlarmListener` alarm 依赖调用进程继续有组件运行，系统可以在进程没有 Activity、Service 或 ContentProvider 时取消它。需要在进程退出后仍能收到事件，应使用 `PendingIntent` 形式并遵守精确闹钟权限。新 API 没有改变 allow-while-idle 的稀疏使用原则。
 
-抓取 Trace 时，至少打开这几类信号：
+### Doze 豁免是部分豁免
 
-- ftrace：`sched/*`、`power/suspend_resume`、`power/cpu_frequency`、`power/cpu_idle`
-- framework atrace category：`power`、`am`、`wm`、`view`
-- 如果要看任务延迟，再补 `dumpsys jobscheduler`、`dumpsys alarm` 和 Battery Historian
+用户可以在系统设置中把 App 加入电池优化豁免列表。豁免 App 在 Doze 中可以访问网络并持有 partial WakeLock，普通 Alarm 等限制仍可能存在。App 可用 `PowerManager.isIgnoringBatteryOptimizations()` 检查状态。
 
-一组可复核的 Doze 证据通常有三步：
+`ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` 只适用于官方列出的少数核心场景，Google Play 也限制直接请求豁免。一般应用应打开电池优化设置页，由用户决定；不要在首次启动时把“无限制”当作必选权限。
 
-1. 用 `adb shell dumpsys deviceidle` 确认设备已经进入 `LIGHT`、`IDLE` 或 `IDLE_MAINTENANCE`，必要时用 `force-idle` / `step` / `unforce` 主动驱动状态迁移。
-2. 非维护窗口阶段，后台线程几乎没有 runnable slice，网络与 Job 分发明显收缩，`suspend_resume` 和 `cpu_idle` 驻留时间上升。
-3. 进入维护窗口后，系统会出现一小段批量唤醒，被延后的 Job、Alarm 或网络 I/O 集中执行；窗口结束后，又回到低活跃状态。
+### 从 framework 到 kernel suspend
 
+`DeviceIdleController` 决定何时限制 App 资源，`PowerManagerService` 与 SystemSuspend 协调系统休眠。内核 `android17-6.18-2026-06_r6` 的 `kernel/power/suspend.c` 执行 suspend 主流程，`drivers/base/power/wakeup.c` 管理 wakeup source，`kernel/sched/idle.c` 处理 CPU idle。
 
-### Doze 的豁免与例外
+Doze 不等于设备已经进入 suspend。设备仍可能被驱动 wakeup source、内核 timer、IRQ 或 system server 工作阻止休眠。framework 状态只能证明策略已进入 idle；还要用 `power/suspend_resume`、wakeup source 与 CPU idle 证据确认硬件状态。
 
-并非所有场景都适合被 Doze 限制。以下情况 Doze 不会生效或可以豁免：
+### 强制进入 Doze 的测试方法
 
-- **设备在充电时**：Doze 完全不激活
-- **高优先级 FCM 消息**：可以在 Doze 期间唤醒 App（这是 Google 推荐的紧急通知方式）
-- **用户在设置中手动豁免的 App**：设置 → 电池 → 未受限
-- **前台服务**：前台服务能提高进程优先级，降低因后台执行限制被回收的概率，但它不等于 Doze 豁免。设备进入 Doze 后，网络、JobScheduler、普通 Alarm 和同步限制仍按 device idle policy 生效。
-- **紧急闹钟**（`setAndAllowWhileIdle` / `setExactAndAllowWhileIdle`）：可以在 Doze 期间触发，但每个 App 有速率限制（大约每 9 分钟一次）
+下面的命令用于专用测试设备，主动驱动 DeviceIdle 状态并保存快照。
 
+```bash
+adb shell dumpsys battery unplug
+adb shell dumpsys deviceidle force-idle
+adb shell dumpsys deviceidle
+adb shell dumpsys jobscheduler com.example.app
+adb shell dumpsys alarm
 
-## App Standby：从二元状态到分桶调度
+# 测试结束后恢复设备状态
+adb shell dumpsys deviceidle unforce
+adb shell dumpsys battery reset
+```
 
-Doze 模式解决的是"设备空闲"场景的功耗问题。但很多时候，设备并不是空闲的——用户正在刷微博，但后台还有一个从来不用的购物 App 在频繁拉取数据。这就是 App Standby 要解决的问题。
+`force-idle` 会绕过正常等待时间，适合验证功能恢复和任务延迟，不适合测量自然进入 Doze 的时延。性能与续航测试还要覆盖屏幕关闭、设备静止的自然路径。
 
-**Android 6-8（API 23-27）** 已经有 App Standby 机制，但只有 idle / active 两个状态：被判定为 idle 的 App，后台网络访问、Job 和 Sync 会被推迟，充电时释放。判定依据是 App 是否有前台进程、是否最近被用过、是否被用户显式豁免。这时的限制相对粗粒度——要么限制，要么不限制。
+## App Standby Buckets：按使用关系分配配额
 
-**Android 9（API 28）** 把二元模型扩展为 App Standby Buckets，根据用户对每个 App 的使用频率，将它们分为五个优先级桶，每个桶拥有不同的后台资源配额。与 Doze 不同，App Standby 不需要设备处于空闲状态，它随时都在工作。API 31 新增了 Restricted 桶，进一步压缩长期不互动 App 的后台配额。
+App Standby 不要求整台设备空闲。Android 9（API 28）开始，系统根据使用模式把 App 动态放入 Active、Working set、Frequent、Rare 或 Restricted bucket；安装后从未运行的 App 还有 `Never` 状态。
 
-### 五个桶的定义与调度差异
+### 当前官方指导额度
 
-五个桶的作用，是把“最近是否真的被用户用到”翻译成后台资源预算。官方文档把这些额度当作近似指导值，不保证实际执行时长，设备是否充电、进程是否可见、前台服务、用户手动 unrestricted 都会覆盖桶限制。
+下表是 Android 官方在 2026 年提供的近似资源边界。它们不是执行承诺，设备状态、进程可见性、充电、用户限制、bucket 变化和未来系统更新都可能改变结果。
 
-| Bucket | 典型场景 | Regular jobs | Expedited jobs | Alarms | Network |
-|------|------|------|------|------|------|
-| Active | 正在使用、刚用过、或用户刚点过通知的 App | Android 16 起约 `20 min / 60 min`，Android 15 及更早没有这条显式上限 | 约 `30 min / 24h` | 不限 | 不限 |
-| Working set | 经常使用，但当前不在前台 | 约 `10 min / 4h` | 约 `15 min / 24h` | `10 次 / 小时` | 不限 |
-| Frequent | 会规律使用，但不是每天都打开 | 约 `10 min / 12h` | 约 `10 min / 24h` | `2 次 / 小时` | 不限 |
-| Rare | 很少打开 | 约 `10 min / 24h` | 约 `10 min / 24h` | `1 次 / 小时` | 后台禁用 |
-| Restricted | Android 12 引入，系统认为资源消耗异常或长期不互动 | 每天 1 次，最多 10 分钟，且与其他 Job 合批 | `5 min / 24h` | `1 次 / 天` | 后台禁用 |
+| Bucket | Regular jobs | Expedited jobs | Alarms | 后台网络 |
+| --- | --- | --- | --- | --- |
+| Active | Android 16+：滚动 60 分钟内最多约 20 分钟 | 滚动 24 小时内最多约 30 分钟 | 无 bucket 频率限制 | 不限制 |
+| Working set | 滚动 4 小时内最多约 10 分钟 | 滚动 24 小时内最多约 15 分钟 | 每小时最多约 10 次 | 不限制 |
+| Frequent | 滚动 12 小时内最多约 10 分钟 | 滚动 24 小时内最多约 10 分钟 | 每小时最多约 2 次 | 不限制 |
+| Rare | 滚动 24 小时内最多约 10 分钟 | 滚动 24 小时内最多约 10 分钟 | 每小时最多约 1 次 | 禁用 |
+| Restricted | 每天一次、批量会话最多约 10 分钟 | 滚动 24 小时内最多约 5 分钟 | 每天一次 exact 或 inexact alarm | 禁用 |
 
-Android 16 还改变了一个常见判断：FGS 运行期间启动的 regular job 仍会消耗 Job quota。`Active` 桶不再等于后台任务无限额；如果业务依赖 FGS 包住 Job 执行，需要用 `dumpsys jobscheduler <pkg>` 查看 quota 用量，不能只看 App 是否处于 Active。
+充电时多数 bucket 限制会放宽，Restricted 仍有专门规则。可见或前台进程通常不受 bucket 执行限制；运行 FGS 的进程仍要遵守 bucket 对 Job 和 Alarm 的限制。Android 16 之前，Active bucket 与 FGS 并发 job 的 runtime quota 更宽松，迁移测试要注意版本差异。
 
-Restricted 桶的触发条件要按版本拆开。Android 12 / 12L 的“不互动”阈值是 45 天，Android 13 起缩短到 8 天；设备关机的时长不计入这段天数。Android 13 以后，高优先级 FCM 配额也不再由桶直接决定。
+`QuotaController` 负责 JobScheduler 的配额判断，`AppStandbyController` 评估 bucket，`JobSchedulerService` 汇总约束并分发任务。表里的数字来自当前默认策略说明，不应硬编码进业务重试逻辑。
 
-除了桶配额之外，Android 15 引入了独立的能效维度。当系统判断当前能量预算不足（例如设备未充电且电量持续下降），即使 App 还在 Active 桶，Job 也可能因能效原因被挂起。排查时用 `adb shell dumpsys jobscheduler <pkg>` 查看 pending reason，可关注 `PENDING_JOB_REASON_DEVICE_STATE`（设备状态不适宜执行）、`PENDING_JOB_REASON_JOB_SCHEDULER_OPTIMIZATION`（系统优化决策）和 `PENDING_JOB_REASON_QUOTA`（配额耗尽）三类标识。不要把这些 pending 直接等同于"桶配额用完"——它们对应的是不同层面的约束。
+### Restricted bucket 的触发与例外
 
+Android 12/12L 的无互动阈值为 45 天；Android 13+ 缩短为 8 天，关机时间不计入。Android 13+ 还可能因为 24 小时内过量广播或 binding 把 App 放入 Restricted。设备厂商能调整非 Active App 的分类标准。
 
-### 桶的动态分配：Adaptive Battery 的角色
+Companion Device、device/profile owner、persistent、VPN、默认拨号、活动 widget，以及具备部分官方列出权限或用户指定“无限制”的 App，可能获得 Restricted 豁免。豁免条件应以运行设备和当前官方文档为准。
 
-App 不会被固定在某个桶里。系统会根据用户行为持续调整。这个分配决策背后是 Android 9 引入的 **Adaptive Battery** 机制。
+### Adaptive Battery 的可确认边界
 
-Adaptive Battery 使用一个运行在本地的机器学习模型来预测用户在未来几小时内可能使用哪些 App。[待验证：部分来源提及基于 TensorFlow Lite 的 CNN + 前馈网络架构，但具体网络结构未在 AOSP 源码或官方文档中确认] 模型基于以下信号做预测：
+官方契约只保证 bucket 会动态变化。设备可能预装一个使用机器学习的系统 App 来预测近期使用，也可以在没有该组件时按最近使用时间排序；厂商还能实现自己的分类标准。
 
-- App 的历史启动频率和时间分布
-- App 在前台的使用时长
-- App 的通知交互情况（用户是否点击通知打开 App）
-- 设备的整体状态（时间、位置等）
+AOSP 和公开文档没有规定统一的模型框架、网络结构、特征集合或训练方式。App 能依赖的接口是 `UsageStatsManager.getAppStandbyBucket()`，而非预测器内部结构。
 
-所有训练数据都在设备本地处理，个人身份信息在训练前被移除。模型的输出直接用于决定 App 应该被放入哪个 Standby Bucket。对于模型预测"用户近期不会打开"的 App，系统会将其放入更低优先级的桶，从而限制它的后台资源消耗。
+### 检查 bucket、quota 与 pending reason
 
-这解释了一个常见的开发困惑："我的 App 昨天后台任务还正常，今天就执行不了了。"原因可能是 Adaptive Battery 根据用户几天的使用模式，将 App 从 Working Set 降到了 Rare 桶。
+下面的命令把测试 App 设为不同 bucket，并对照 UsageStats 与 JobScheduler。
 
+```bash
+adb shell dumpsys battery unplug
+adb shell am set-standby-bucket com.example.app rare
+adb shell am get-standby-bucket com.example.app
+adb shell dumpsys usagestats appstandby
+adb shell dumpsys jobscheduler com.example.app
 
-### Bucket、Quota、Power Saver 的归属关系
+# 测试结束后恢复电池模拟状态
+adb shell dumpsys battery reset
+```
 
-Android 13 到 Android 17 的功耗策略分散在多个控制器中。排查后台任务问题时，需要先分清是 bucket 降级、quota 耗尽、device idle 触发还是全局 Battery Saver 打开——它们的证据入口各不相同。
+手工分桶只覆盖 bucket 维度。测试报告还要记录屏幕、充电、Doze、Battery Saver、网络和 App 进程状态，否则无法解释同一 bucket 下的不同结果。
 
-| 机制 | 控制器 | Android 17 入口 | 开发者验证入口 |
-|------|--------|-----------------|----------------|
-| Doze / Device Idle | `DeviceIdleController` | `frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java` | `adb shell dumpsys deviceidle`，再和 Trace 的 `suspend_resume` / `cpu_idle` 对时 |
-| App Standby Bucket 评估 | `AppStandbyController` | `frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java` | `adb shell am get-standby-bucket <pkg>`，`adb shell dumpsys usagestats appstandby` |
-| Usage 统计与事件上报 | `UsageStatsService` | `frameworks/base/services/usage/java/com/android/server/usage/UsageStatsService.java` | `adb shell dumpsys usagestats` |
-| Job quota 执行 | `JobSchedulerService` | `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java` | `adb shell dumpsys jobscheduler <pkg>`，Android 16 可再看 `getPendingJobReasons()` |
-| Battery Saver / low power mode | `PowerManagerService` | `frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java` | `adb shell settings get global low_power`，`adb shell dumpsys power`，App 侧用 `PowerManager.isPowerSaveMode()` |
+API 34 提供单个 pending reason，API 36 增加 `getPendingJobReasons()` 与 `getPendingJobReasonsHistory()`。API 37 的 `JobScheduler.getPendingJobReasonStats(jobId)` 返回 `PENDING_JOB_REASON_*` 到累计 `Duration` 的映射；多个原因可同时存在，所以各项时长之和可能大于任务总等待时间。统计不会跨重启保留，任务成功或取消后也会清除。
 
-看到后台任务没跑时，先分清是 bucket 变低、quota 用完、device idle 命中，还是全局 Battery Saver 打开；四种情况的证据入口并不相同。
+诊断时应区分：
 
-### 如何在开发中应对 Standby Buckets
+- `PENDING_JOB_REASON_APP_STANDBY`：bucket 阻止执行。
+- `PENDING_JOB_REASON_QUOTA`：当前 Job quota 已用完。
+- `PENDING_JOB_REASON_DEVICE_STATE`：Doze、Battery Saver、内存或温度等设备状态。
+- `PENDING_JOB_REASON_JOB_SCHEDULER_OPTIMIZATION`：JobScheduler 选择更合适的时间。
+- 显式 constraint reason：充电、网络、存储、minimum latency 等业务约束未满足。
 
-了解了 Buckets 机制后，我们的策略应该是：
+## 系统级后台限制
 
-1. **不要试图影响 Bucket 分配**——这是系统根据用户行为自动决定的，API 层面没有"请把我放到 Active 桶"的调用
-2. **适配而非对抗**——确保 App 在每个桶的限制下都能正常工作，尤其是 Rare 和 Restricted 桶
-3. **测试覆盖**——使用 ADB 命令模拟不同桶的状态：
-   ```bash
-   # 将 App 设置为 Rare 桶
-   adb shell am set-standby-bucket com.example.app rare
-   # 查看当前桶
-   adb shell am get-standby-bucket com.example.app
-   ```
-4. **使用 WorkManager 而非直接使用 JobScheduler**——WorkManager 内部已经处理了 Standby Bucket 的配额差异
+Doze 与 bucket 偏向“何时、能运行多久”。后台执行、后台界面和 while-in-use 权限还会直接判断当前操作能否开始。
 
-## 系统级限后台策略
+### Background Activity Launch
 
-Doze 和 Standby Buckets 会根据设备状态和用户行为限制后台活动。除此之外，Android 还有一类更直接的后台限制，不管设备状态如何，都会生效。这些限制从 Android 8.0 开始逐步加强，到 Android 14 已经形成了一套比较完整的后台管控体系。
+Android 10（API 29）开始限制后台 App 直接拉起 Activity。通知、全屏 intent、角色能力和用户交互各有专门规则，FGS 通知本身不提供通用 BAL 豁免。
 
-### Background Activity Starts 限制
+PendingIntent 与 IntentSender 的授权逐步改为显式 opt-in：
 
-从 Android 10（API 29）开始，后台 App 不能随意 `startActivity()`。Android 14 之后，这条限制对 `PendingIntent` 也从“默认沿用例外场景”改成了“显式 opt-in”。
+| 版本 | 变化 |
+| --- | --- |
+| target 34+ | PendingIntent 发送方不再默认授予自己的 BAL 能力；通过 `setPendingIntentBackgroundActivityStartMode()` 选择模式 |
+| target 35+ | PendingIntent 创建方不再默认把自己的 BAL 能力交给接收方；通过 `setPendingIntentCreatorBackgroundActivityStartMode()` 授权 |
+| API 36+ | 发送方优先使用 `MODE_BACKGROUND_ACTIVITY_START_ALLOW_IF_VISIBLE`；只有确有后台拉起需求时评估更宽模式 |
+| target 37+ | `IntentSender.sendIntent()` 也要求发送方按 BAL 规则显式 opt-in |
 
-如果后台 App 作为 `PendingIntent` 的发送方想拉起 Activity，targetSdk 34+ 需要在 `PendingIntent.send()` 时附带 `ActivityOptions`，并调用 `setPendingIntentBackgroundActivityStartMode(...)`。Android 14 和 Android 15 使用 `MODE_BACKGROUND_ACTIVITY_START_ALLOWED`；Android 16 把它拆成 `MODE_BACKGROUND_ACTIVITY_START_ALLOW_IF_VISIBLE` 和 `MODE_BACKGROUND_ACTIVITY_START_ALLOW_ALWAYS`，默认仍是不授予这项能力。
+授权链还必须包含一个本来就有后台启动资格的参与者。设置 mode 不会凭空创建权限。可见 App 绑定服务并希望被绑定方拉起 Activity 时，Android 14+ 还要核对 `BIND_ALLOW_ACTIVITY_STARTS`。
 
-如果 App 是 `PendingIntent` 的创建方，targetSdk 35+ 也不能再默认把这项能力连同 `PendingIntent` 一起交出去。需要在 `PendingIntent.getActivity()` 等创建点通过 `setPendingIntentCreatorBackgroundActivityStartMode(...)` 明确授予。
+### 后台位置
 
-这里没有新增 manifest 权限，也不是运行时权限。变化点是 `ActivityOptions` 的显式授权模式。
+- Android 8.0+：后台 App 通常每小时只能收到少量位置更新，此限制与 targetSdk 无关。
+- Android 10+：持续后台定位需要 `ACCESS_BACKGROUND_LOCATION`，仅有 coarse/fine 权限只覆盖 while-in-use。
+- Android 11+：从可见界面启动的 `location` FGS 属于 foreground location，界面退到后台后仍可继续；App 已在后台才启动 FGS 时，没有 `ACCESS_BACKGROUND_LOCATION` 就不能获得位置。
+- Android 14、target 34+：创建 `location` FGS 时立即校验类型权限与 while-in-use 条件。App 已在后台且不满足例外时，可能抛 `SecurityException` 或 FGS 启动异常。
 
-常见豁免场景包括：
+地理围栏和 batched location 可以降低 App 自己轮询的需求，但不会绕过权限和系统交付边界。
 
-- App 当前有可见窗口，或者刚刚结束一个可见 Activity
-- 用户刚刚完成明确交互，例如点击通知里的 Activity `PendingIntent`
-- 系统绑定服务或可见 App 绑定服务，并通过对应 opt-in 授予后台拉起 Activity 的能力；Android 14+ 可见 App 绑定时要使用 `BIND_ALLOW_ACTIVITY_STARTS`
-- App 是当前输入法、`VoiceInteractionService`、设备所有者等系统认可角色
+### 后台 Service 与 FGS
 
-前台服务通知本身不是通用豁免。它能提示用户 App 正在工作，但不能单独授予后台拉起 Activity 的能力。
+Android 8.0+ 对后台 Service 的创建和存活施加限制。可延迟任务交给 JobScheduler 或 WorkManager；用户知情的持续任务使用匹配类型的 FGS，并接受后台启动限制、类型权限和时长规则。
 
+FGS 不是提高 bucket、绕过 Doze、跳过 Job quota 或获取 while-in-use 权限的通用入口。Android 16 起，与 FGS 并发的 Job 明确受 runtime quota 约束。
 
-### 后台定位限制
+## Hibernation 与 Archiving
 
-位置信息本身耗电高，平台对“后台取位置”的限制也越来越明确，排查时要把权限、可见性和前台服务拆开看：
+这两种状态都会让“长期未用 App”停止后台活动，存储与恢复语义不同：
 
-**Android 8.0（API 26）**——后台 App 的位置更新频率被限制为“每小时几次”，与 targetSdkVersion 无关。
+| 机制 | 平台起点 | 系统动作 | 恢复时要处理 |
+| --- | --- | --- | --- |
+| App hibernation | Android 11 权限自动重置；Android 12 扩展完整休眠 | 重置运行时权限、停止后台 Job/Alarm/Push、清理 cache | 用户重新交互后退出休眠；权限不会自动恢复，旧 Job/Alarm 也不会自动重新调度 |
+| App archiving | Android 15 提供 OS 级 archive/unarchive | 安装器移除 APK 与 cache，保留用户数据；Launcher 可展示归档状态 | 用户点击后由负责的 installer 恢复包，再按安装/恢复路径初始化 |
 
-**Android 10（API 29）**——引入 `ACCESS_BACKGROUND_LOCATION`。应用如果要在不可见状态下持续取位置，需要单独申请这项权限；仅有 `ACCESS_COARSE_LOCATION` / `ACCESS_FINE_LOCATION` 只覆盖 while-in-use 场景。
+Android 15 提供 `PackageInstaller.requestArchive()`，调用者需要 `REQUEST_DELETE_PACKAGES`。是否自动选择长期未用 App、由哪个商店恢复、图标如何显示，取决于安装器和设备体验。不能把 Google Play 的 auto-archive 策略写成所有 Android 15 设备统一行为。
 
-**Android 11（API 30）**——前台服务不再被当成后台位置权限的替代品。应用退到后台后，如果用户没有授予“始终允许”，location access 仍然拿不到。
+Hibernation 恢复后，App 应检查权限并重建必要任务。WorkManager 能帮助恢复一部分持久工作，业务仍要验证依赖的 Alarm、通知和服务是否重新注册。
 
-**Android 14（API 34）**——系统在创建 `location` 类型的 foreground service 时就会检查前置条件。若应用已经在后台，且用户只给了 while-in-use 位置权限，启动这类服务可能直接抛 `SecurityException`。如果应用此时有可见 Activity，并且已经拿到前台位置权限，则可以启动 location FGS；只有“后台持续取位置”这条路径才要求 `ACCESS_BACKGROUND_LOCATION`。Manifest 里还要声明 `android:foregroundServiceType="location"` 和 `FOREGROUND_SERVICE_LOCATION`。
+## Battery Saver 与 Low Power Standby
 
-对性能优化的影响是：轨迹记录、后台导航、地理围栏回传这类场景，要把权限流程、前后台状态和 FGS 生命周期一起设计。否则在新系统上，问题看起来像定位偶发失效，根因往往是权限条件没有配齐。
+### Battery Saver 是全局策略输入
 
+`PowerManagerService` 发布 low-power 状态，`BatterySaverController` 与 `BatterySaverPolicy` 计算各服务策略。设备可以调整具体限制，所以 App 应读取公开状态并降低自身工作量：
 
-### 后台服务限制（Android 8.0+）
+- `PowerManager.isPowerSaveMode()` 判断 Battery Saver 是否开启。
+- `ACTION_POWER_SAVE_MODE_CHANGED` 监听状态变化。
+- `getLocationPowerSaveMode()` 返回当前定位节电策略，可能是屏幕关闭后停用 GNSS、停用全部 provider、只给前台 App、节流请求或不改变。
 
-Android 8.0（API 26）对后台服务做了关键限制：**当 App 处于后台超过几分钟，系统不再允许它创建后台服务**。已有的后台服务会在几分钟内被停止。
+Battery Saver 不会简单地把所有 App 改成 Rare bucket。Job、Alarm、位置、网络、显示与性能策略分别消费 low-power 状态，OEM 还能加入刷新率、性能上限或传感器策略。某项功能是否改变，应在目标 build 上读取状态并测量。
 
-这让 `JobScheduler` 和后来的 `WorkManager` 成为后台任务的首选方案。如果 App 需要在后台持续执行任务，必须使用前台服务（Foreground Service），它会显示一个持续通知告知用户。但这也会增加功耗和用户的感知负担。
+### Low Power Standby 的限制更直接
 
-Android 14 对前台服务进一步增加了限制：某些类型的前台服务（如位置相关的）需要声明特定的前台服务类型（foreground service type），并在 Manifest 中声明对应权限。
+Android 13（API 33）公开 Low Power Standby 状态。启用后，设备处于非交互状态且不在 maintenance window 时，App 的网络访问会被禁用，持有的 WakeLock 会被忽略；运行 FGS 的 App 也在范围内。系统角色、ongoing call、临时 allowlist 或设备 policy 可以获得例外。
 
+App 可用 `isLowPowerStandbyEnabled()` 检查功能是否开启，并监听 `ACTION_LOW_POWER_STANDBY_ENABLED_CHANGED`。排查“FGS 明明活着却断网”时，要把 Low Power Standby 与 Doze、Data Saver 分开确认。
 
-### App Archiving：物理清除而非冻结（Android 15+）
+### Adaptive Battery 与 Routine Battery Saver
 
-上述限制——Doze 推迟任务、Standby Buckets 压缩配额、Restricted 桶限制后台活动、厂商冻结进程——都仍然保留着 App 的安装状态和数据。Android 15 引入了更激进的手段：**自动归档（Auto-Archiving）**。
+- Adaptive Battery 影响单个 App 的 bucket 分类，分类器可以使用预测或最近使用排序。
+- Routine Battery Saver 是 Android 10 的可选 OEM 集成。OEM 通过 `config_batterySaverScheduleProvider` 指定特权 provider，provider 用受 `POWER_SAVER` 保护的 API 提供启用提示。
+- Adaptive Charging 属于电池健康与充电管理，设备实现可能根据日程、温度和电池状态控制充电。它不等于 App Standby 或 Battery Saver，也不能从 Android 版本推导每台设备的充电曲线。
 
-当设备存储空间紧张且用户长时间未使用某个 App 时，系统可以自动归档该 App。归档操作会：
-- 移除 APK 文件和缓存，释放大部分存储空间
-- 保留用户数据（账号、偏好、本地数据库）
-- 在 Launcher 中保留灰色图标，点击后从 Play Store 重新下载安装
+三项功能可能同时存在，证据入口分别是 bucket、low-power 状态和充电/health 服务。
 
-与 Restricted 桶和厂商冻结相比，App Archiving 不是"暂停执行"而是"物理清除"。归档后的 App：
-- 不再占据运行时资源（没有进程、没有 WakeLock、没有 Job）
-- 取消所有已注册的定时任务和通知监听
-- 不再接收 FCM 或厂商推送
+### Battery Saver 测试
 
-开发者不需要为归档做特殊适配——系统保证用户数据不丢、恢复后状态一致。但需要了解归档的存在，因为用户反馈"我的 App 不见了"时，除了卸载，归档也是可能的原因。排查路径是按包名查询 `adb shell pm get-archived-package-metadata <package>`（Android 15+），或用 `adb shell pm list packages -u --show-versioncode` 查看已卸载但保留数据的应用。后者不等于 archived 列表，但能覆盖未安装/保留数据的包。
+下面的官方测试命令模拟设备离电并打开 low-power setting，结束后恢复 BatteryService 的测试状态。
 
+```bash
+adb shell dumpsys battery unplug
+adb shell settings put global low_power 1
+adb shell dumpsys power
+adb shell dumpsys jobscheduler com.example.app
 
-## 省电模式下的系统行为变化
+# 测试结束后恢复
+adb shell dumpsys battery reset
+```
 
-上面讨论的 Doze 和 Standby Buckets 是系统自动触发的。省电模式（Battery Saver）则是由用户手动开启（或系统在电量低于一定阈值时建议开启）的更激进的功耗管理策略。
+性能基准要记录 Battery Saver、Low Power Standby、温度、充电和屏幕状态。CPU 频率下降或帧率变化属于设备结果，不能仅凭 `low_power=1` 预设固定幅度。
 
-### 省电模式的核心行为
+## OEM 功耗策略：把设备行为当作独立实现验证
 
-Battery Saver 是全局 low power mode，由 `PowerManagerService` 统一发布状态，各子系统再决定要不要限制对应能力。它不会把所有 App 的桶标签改写成 Rare，也不等于“后台一律断网”。
+AOSP 允许厂商调整 bucket 分类和低功耗策略。ROM 还可能提供自启动、关联启动、后台活动、睡眠待机、冻结和用户白名单等入口。这些名称、默认值和行为会随品牌、机型、地区与系统版本改变。
 
-在 AOSP 这层，能稳定确认的影响主要有四类：
+社区站点 Don't Kill My App 适合发现兼容性线索，不是稳定 API 契约。文档中出现“十分钟后冻结”“某品牌默认禁止全部自启动”或固定排行时，必须给出机型、build、地区、设置状态和复现证据；缺少这些条件就应删除数字。
 
-- **后台执行更保守**：Job、Alarm、网络和同步会把 low power mode、standby bucket、设备是否充电、进程重要性一起算进去。排查时要把这几层分开看。
-- **位置策略会变化**：App 可以用 `PowerManager.getLocationPowerSaveMode()` 查看系统当前采用的节电位置策略。常见模式是屏幕熄灭后限制定位；完全关闭定位的行为因设备而异。
-- **App 能收到显式状态信号**：App 可通过 `PowerManager.isPowerSaveMode()` 和 `ACTION_POWER_SAVE_MODE_CHANGED` 调整自己的轮询、上报和动画策略。
-- **厂商可以继续加码**：刷新率、GPU 频率、传感器、Motion Sense、Crash Detection 这类行为取决于设备实现，不能当成 Android 通用基线。
+### 区分几种容易混淆的现象
 
-涉及 Pixel 或 OEM 机型的显示降频、传感器关闭、特殊安全功能收缩时，最好把机型、ROM 版本和来源写在同一段；拿不到来源，就保留 `[待验证]`。
+| 现象 | 进程与包状态 | 证据 |
+| --- | --- | --- |
+| Job 等待系统条件 | 进程可能不存在，包可正常启动 | Job pending reason、bucket、Doze、quota |
+| OEM/内核冻结 | 进程可能仍在，但线程长时间不获调度 | vendor 日志、cgroup/freezer 状态、sched trace；接口随设备变化 |
+| 低内存回收 | 进程消失，系统有内存压力 | `ApplicationExitInfo`、lmkd/LMKD 日志、PSI 与内存 trace |
+| force-stop/用户停止 | 包进入 stopped 语义，后台触发被阻断 | package/activity 状态、用户操作时间、重新点击图标后的恢复 |
+| Hibernation | 长期未用，权限和后台任务被重置 | unused-app 设置、权限、Job/Alarm 与 push 状态 |
+| Archiving | APK 被移除，用户数据保留 | Launcher/PackageInstaller 的 archive metadata 与 installer 状态 |
 
+只凭 Perfetto 里“线程没有 runnable slice”无法证明 OEM 冻结。进程本来就可能在 epoll 等待，Job 也可能尚未分发。冻结结论需要 ROM 侧状态或 vendor 日志支撑。
 
-### 自适应省电（Adaptive Battery Saver）
+### 兼容性测试方法
 
-这里需要区分两个容易混淆的机制：
+- 为每个目标机型记录 `ro.build.fingerprint`、地区、系统更新版本和电池设置。
+- 同一 App 包与账号分别测试屏幕关闭、重启、充电、低电量、网络切换和多日不互动。
+- 保存 `dumpsys jobscheduler`、`deviceidle`、`alarm`、`activity processes`、bucket、AppOps 与设置页截图。
+- 读取 `ApplicationExitInfo`，区分 low memory、crash、ANR、user requested 和其他退出原因。
+- 推送测试记录服务端发送时间、设备到达时间、通知展示与用户交互，不能只记录“收到/未收到”。
+- 只有核心功能确受限制时才向用户解释设置入口；设置页面名称按设备动态展示，避免写成跨 ROM 固定路径。
 
-- **Adaptive Battery**（Android 9 引入）：运行在本地的 ML 模型预测用户对各个 App 的使用频率，输出直接影响 App Standby Bucket 分配。它影响的是单个 App 的后台资源配额（Job、Alarm、网络），不是全局省电开关。
-- **Routine Battery Saver**（Android 10 引入）：根据用户的日常充电习惯（比如"每天晚上 11 点充电"），在电量低于阈值且用户不太可能使用设备时自动启用 Battery Saver。OEM 需要通过 `config_batterySaverScheduleProvider` 配置一个 provider app 来提供调度策略；AOSP 默认不提供这个 provider，所以是否默认开启取决于 OEM 实现而非 Android 版本。
+删除系统包、禁用电源管理服务或要求所有用户打开“无限制”都不适合作为产品修复。前两项会改变系统安全与兼容性，后一项会增加用户电量成本。
 
-两者共享用户行为数据作为输入，但作用层面不同：Adaptive Battery 影响单个 App 的后台配额（微观），Routine Battery Saver 决定全局省电模式的开关（宏观）。
+## 统一诊断：按控制器收集证据
 
-### 在 Perfetto 中观察省电模式
+| 需要回答的问题 | framework 入口 | 调试入口 |
+| --- | --- | --- |
+| 设备是否在 Light/Deep Doze | `DeviceIdleController` | `dumpsys deviceidle` |
+| App 属于哪个 bucket | `AppStandbyController`、`UsageStatsService` | `am get-standby-bucket`、`dumpsys usagestats appstandby` |
+| Job 为什么等待 | `JobSchedulerService`、controllers | `dumpsys jobscheduler`、pending reason APIs |
+| Battery Saver 是否生效 | `PowerManagerService`、`BatterySaverController` | `dumpsys power`、`settings get global low_power` |
+| Low Power Standby 是否限制网络/WakeLock | `LowPowerStandbyController` | `dumpsys power`、PowerManager API |
+| 后台界面为何被拒绝 | ActivityTaskManager BAL controller、`ActivityOptions` | ActivityTaskManager 日志、调用链与 opt-in mode |
+| 是否进入 kernel suspend | SystemSuspend、kernel PM | Perfetto/ftrace `power/suspend_resume`、wakeup sources、CPU idle |
 
-省电模式也不要靠“PowerManagerService Track”这种名字判断。更稳的取证方式，是把 `low_power` 状态、CPU / 调度变化和任务延迟放到同一时间线上。
-
-建议的组合是：
-
-- 先记一份状态快照，至少保留 `adb shell settings get global low_power` 和 `adb shell dumpsys power`
-- Trace 打开 `sched/*`、`power/cpu_frequency`、`power/cpu_idle`、`power/suspend_resume`，再补 `am`、`wm`、`view`、`power` 这些 framework 侧 category
-- 如果怀疑是后台任务被压缩，再把 `dumpsys jobscheduler`、`dumpsys alarm`、Battery Historian 一起留档
-
-一段能说明问题的证据，通常包含三部分：`low_power` 从 0 变 1 的时间点；CPU 频率上限和后台 runnable slice 密度同时下降；Job / Alarm 触发节奏变稀或被合批。
-
-
-### 对 App 性能分析的影响
-
-当我们在做性能测试和分析时，省电模式是一个必须控制的变量。如果测试时设备处于省电模式，所有的帧率、启动时间、滑动流畅度数据都会偏慢，可能导致错误的优化方向。
-
-建议的做法：
-
-- 性能测试前确认设备未开启省电模式
-- 使用 `adb shell settings put global low_power 0` 确保省电模式关闭
-- 在测试报告中注明设备是否开启了省电模式
-
-## 厂商级功耗管理：Android 生态中的"灰色地带"
-
-AOSP 提供的功耗管理机制（Doze、Standby、省电模式）只是“官方基线”。在中国市场，几乎所有主流厂商都会在此基础上叠加自研的、更激进的后台管控策略。这些策略通常不在 AOSP 代码中，也不遵循标准的 Standby Bucket 配额，是 Android 碎片化问题中最让开发者头疼的一环。
-
-dontkillmyapp.com 持续跟踪各厂商的后台杀进程行为，其"杀伤力"评分直观反映了厂商策略的激进程度。
-
-### 小米（MIUI / HyperOS）
-
-小米的功耗管理在业界以"激进"著称：
-
-**自启动管理**——默认禁止所有 App 自启动（开机自动运行和被其他 App 唤醒）。用户需要手动为每个 App 开启"后台自启动"权限。如果 App 的核心功能依赖自启动（如消息推送的长连接），会直接受到影响。
-
-**后台冻结**——MIUI 的 `com.miui.powerkeeper` 服务会在后台持续扫描 App 活动。对于被标记为"可优化"的 App，系统会在它们进入后台一段时间后（通常 10 分钟左右）直接冻结进程，使其无法执行任何代码。
-
-**电池优化策略**——在设置 → 电池 → 应用智能省电中，用户可以为每个 App 选择"无限制"、"智能限制"或"后台运行 10 分钟后限制"。默认选择通常是"智能限制"。
-
-**应对策略**：对于需要后台持续运行的 App（如即时通讯、导航），需要在文档中引导用户：将 App 设为"无限制"电池策略、在最近任务界面锁定 App、开启自启动权限。
-
-### 华为（EMUI / HarmonyOS）
-
-华为的功耗管控同样以严格闻名：
-
-**应用启动管理**——设置 → 电池 → 应用启动管理中，华为为每个 App 提供了"自动管理"和"手动管理"两种模式。自动管理模式下，系统会根据使用频率决定是否允许 App 在后台运行。手动管理模式允许用户分别控制"自启动"、"关联启动"和"后台活动"三个开关。
-
-**PowerGenie**——公开机型经验里，PowerGenie 常被当作华为 ROM 的后台清理与限活跃策略之一。它会主动扫描长期不活跃的后台进程。面向普通用户的处理路径通常还是系统设置里的电池优化、应用启动管理和后台活动开关；部分开发者会用 `adb shell pm uninstall -k --user 0 com.huawei.powergenie` 做实验隔离，但这只是调试手段，不是所有版本都适用的通用解法。
-
-**超级省电模式**——极端省电模式下，系统只保留电话、短信等核心功能，所有第三方 App 被暂停。
-
-### OPPO / vivo（ColorOS / OriginOS）
-
-OPPO 和 vivo 的策略类似：
-
-**应用冻结/睡眠**——ColorOS 的"睡眠待机优化"会在设备空闲时限制后台 App 活动。在电池管理中，用户可以为每个 App 设置"允许后台活动"开关。
-
-**自启动管理**——与小米类似，默认禁止 App 自启动。需要在"手机管家"或"安全中心"中手动开启。
-
-**关联启动限制**——限制 App 之间的相互唤醒（A App 启动后拉起 B App），这是国内厂商特有的管控维度。
-
-### 厂商策略对性能分析的影响
-
-做功耗和后台行为分析时，厂商策略的影响主要体现在：
-
-1. **后台任务执行不稳定**——同一个 WorkManager 任务，在 Pixel 上能按时执行，在小米上可能被推迟数小时，根因通常是厂商的进程冻结策略。
-2. **推送延迟**——FCM 在国内不可用，App 通常使用厂商推送通道（小米推送、华为推送等）或第三方推送（如极光推送）。这些推送通道能否正常工作，取决于 App 是否被厂商系统"放行"。
-3. **功耗数据差异巨大**——同一 App 在不同厂商设备上的电池消耗报告可能差 3-5 倍，大部分差异来自厂商的后台管控策略，而非 App 本身的行为差异。
-
-**分析建议**：
-
-- Trace 里优先看 `sched/*`、`power/cpu_frequency`、`binder_driver`、`am`，确认进程是单纯没拿到 quota，还是进入了长时间不被调度的冻结状态。
-- 同步保存 `dumpsys activity processes`、`dumpsys jobscheduler <pkg>`、`dumpsys alarm` 和厂商电池策略设置页。只有把系统状态和 Trace 对起来，才能分清是 AOSP bucket / quota 触发，还是 ROM 额外的后台冻结。
-- 如果 Trace 中只剩 Binder / epoll wait，几乎没有 runnable slice，而同一时间窗口又看到了 pending job 或 delayed alarm，更像是厂商冻结或延迟分发，不要直接归因到 WorkManager。
-- `Process State` 只能当辅助信号，不要把它当成所有设备都存在的固定 Track。
-
-
-## 与其他机制的关系
-
-系统级功耗管理并非孤立存在，它和全书讨论的多个机制都有交叉：
-
-**与进程管理（§1.3）的关系**——LMK（Low Memory Killer）杀进程和厂商的后台杀进程策略是两套独立的机制，但它们会叠加影响。一个 App 可能先被厂商冻结，然后因为内存压力被 LMK 回收。
-
-**与 CPU 调度与功耗管理（§5.6）的关系**——§5.6 讨论的是 CPU 调度层面的功耗优化（EAS、UClamp、Doze 底层的 Idle 状态管理）。本节讨论的是应用框架层的功耗策略，是 §5.6 底层机制的上层体现。当本节提到的省电模式导致 CPU 降频时，实际的频率限制通过 §5.6 中讨论的 cpufreq 机制执行；Doze 模式下 CPU 进入深度 Idle 状态，对应的也是 §5.6 中介绍的 CPU Idle 状态管理。
-
-**与 App 耗电优化（§11.2）的关系**——§11.2 是"App 主动配合"，本节是"系统强制约束"。两者是互补关系：即便 App 做好了所有主动优化，系统策略仍然会限制它的后台行为。
-
-**与 Perfetto 工具（§13.1-13.7）的关系**——分析系统级功耗限制时，Perfetto 是最核心的工具。通过 Trace 能观察到进程调度状态、CPU 频率变化、网络活动窗口等信息，帮助区分问题来自 App 自身还是系统策略。
+Perfetto 配置至少考虑 `sched/*`、`power/suspend_resume`、`power/cpu_idle`、`power/cpu_frequency`，再按问题加入 Binder、network 和 framework `power`/`am` category。轨道名称和可用数据受 build 与厂商影响，`dumpsys` 快照与 trace 必须对齐同一测试窗口。
 
 ## 版本演进
 
-系统级功耗管理在不同 Android 版本中的演进路径：
+| 版本 | 系统级功耗与后台行为变化 |
+| --- | --- |
+| Android 6.0 / API 23 | Doze、App Standby、battery optimization exemption |
+| Android 7.0 / API 24 | Light Doze；屏幕关闭且移动时也能应用较轻限制 |
+| Android 8.0 / API 26 | 后台 Service、后台位置与隐式广播限制 |
+| Android 9 / API 28 | App Standby Buckets、Adaptive Battery；定位节电 mode API |
+| Android 10 / API 29 | BAL 限制、`ACCESS_BACKGROUND_LOCATION`、可选 Routine Battery Saver |
+| Android 11 / API 30 | 未使用 App 权限自动重置；后台位置改为通过系统设置授予 |
+| Android 12 / API 31 | Restricted bucket、App hibernation 完整效果、精确闹钟 special access |
+| Android 13 / API 33 | Restricted 无互动阈值改为 8 天；Low Power Standby 公开 API；高优先级 FCM quota 与 bucket 脱离 |
+| Android 14 / API 34 | PendingIntent 发送方 BAL opt-in；FGS type 与权限校验；Job pending reason API |
+| Android 15 / API 35 | PendingIntent 创建方 BAL opt-in；OS 级 App Archiving；部分 FGS type 时长限制 |
+| Android 16 / API 36 | Active bucket、top-started 和 FGS 并发 Job 受 runtime quota；多原因与历史 pending API |
+| Android 17 / API 37 | `getPendingJobReasonStats()`；listener 型 exact allow-while-idle Alarm；`IntentSender.sendIntent()` BAL opt-in |
 
-| 版本 | 关键变化 |
-|------|---------|
-| Android 6.0 (API 23) | 引入 Doze 模式和 App Standby |
-| Android 7.0 (API 24) | 拆分为 Light Doze 和 Deep Doze |
-| Android 8.0 (API 26) | 限制后台服务创建、限制后台定位频率、限制隐式广播 |
-| Android 9 (API 28) | 引入 App Standby Buckets（四桶：Active/Working/Frequent/Rare）、Adaptive Battery |
-| Android 10 (API 29) | Background Activity Starts 限制、`ACCESS_BACKGROUND_LOCATION` 权限 |
-| Android 11 (API 30) | 前台服务也不能无权限获取后台位置 |
-| Android 12 (API 31) | 新增 Restricted 桶、Exact Alarm 需要声明权限 |
-| Android 13 (API 33) | Restricted 桶触发条件从 45 天缩短到 8 天、FCM 配额不再与桶绑定 |
-| Android 14 (API 34) | PendingIntent 后台启动改为显式 opt-in API、前台服务类型强制声明 |
-| Android 15 (API 35) | App Archiving（自动归档）：存储紧张时物理清除长期未用 App 的 APK 和缓存，保留用户数据；能效维度纳入 Job 调度决策（`PENDING_JOB_REASON_DEVICE_STATE` / `JOB_SCHEDULER_OPTIMIZATION`），Job 因能量预算不足被挂起直至条件改善 |
-| Android 16 (API 36) | Active 桶开始引入 regular job 指导额度（约 20 min / 60 min），并补充 Job pending reason introspection |
+## Review 清单
 
+- 是否把 Doze 状态与 kernel suspend 证据分开？
+- 是否同时检查 Light Doze、Deep Doze 和维护窗口？
+- FGS 是否被错误地当成 Doze、Job quota 或 Low Power Standby 豁免？
+- bucket 配额是否注明“近似指导值”，并记录充电与进程状态？
+- Android 16+ 是否验证 top-started 与 FGS 并发 Job 的 quota？
+- Android 17 是否使用 pending reason stats 解释等待时间？
+- Adaptive Battery 描述是否停留在公开契约，没有猜测模型结构？
+- BAL 调用链是否按 sender、creator、IntentSender 与 targetSdk 分别检查？
+- 后台位置是否同时满足权限、可见性、FGS type 和启动条件？
+- Hibernation 与 Archiving 是否按权限、APK、数据和恢复语义区分？
+- Battery Saver、Low Power Standby、Data Saver 与 Doze 是否分别取证？
+- OEM 结论是否附机型、build、地区、设置和 trace/log？
+- 测试结束后是否恢复 battery、deviceidle 与 AppOps 状态？
 
-## 常见问题与误区
+## 与其他章节的关系
 
-### "后台被杀是 Android 的 Bug"
-
-不是。Android 的后台管控策略是有意为之。Doze、Standby Buckets、省电模式都是系统为了延长电池续航而设计的正常机制。厂商的后台管控虽然更激进，但也是在其 ROM 中有明确设置项供用户调整的。正确的心态是：理解这些机制，适配它们，而不是对抗它们。
-
-### "WorkManager 能保证任务一定执行"
-
-WorkManager 保证的是"最终一致性"——任务最终会被执行，但不保证在什么时候执行。在 Rare 或 Restricted 桶中，WorkManager 任务可能被推迟数小时甚至一天。如果业务需要精确的时间控制，需要结合前台服务或其他手段。
-
-### "用户不会手动调整电池设置"
-
-用户手动调整电池设置的比例并不低。尤其当系统提示“XX App 正在耗电”时，用户很可能会选择“限制”。我们的 App 也就可能随时从 Active 桶被手动降到 Restricted 桶，因此需要在设置页或帮助文档里说明后台运行权限的用途。
-
-### "Doze 只在晚上才会生效"
-
-不完全准确。Deep Doze 需要设备静止，但 Light Doze 只要屏幕关闭且未充电就会触发。如果用户习惯性地锁屏但不充电（比如开会时），Light Doze 在白天也会频繁生效。
-
-### "国产厂商的后台管控都是负面的"
-
-厂商的激进后台管控会给开发者带来适配负担，但从用户角度看，它也在换取更长的续航。更实际的做法是理解这些策略，并告诉用户如何在系统设置里放行我们的 App。
+§5.6 解释 cpuidle、cpufreq、EAS 与 suspend 相关基础，§11.1 说明能量归因，§11.2 讨论 App 如何减少 WakeLock、Job、位置和网络开销。本章位于它们之间：framework 策略决定任务何时获得资源，kernel 与硬件决定设备能进入多深的低功耗状态。进程被回收时再结合 §1.3，避免把 LMKD 与功耗限制混为一类。
 
 ## 参考资料
 
-### AOSP 源码路径
-
-- `frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java` — Doze / Device Idle 状态机
-- `frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java` — App Standby Bucket 评估
-- `frameworks/base/services/usage/java/com/android/server/usage/UsageStatsService.java` — usage 统计与事件上报
-- `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java` — Job quota 与 pending reason
-- `frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java` — `getPendingJobReasons()` 与 pending reason 常量
-- `frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java` — Battery Saver / low power mode
-- `frameworks/base/core/java/android/app/ActivityOptions.java` — PendingIntent 后台启动 opt-in API
-- `frameworks/base/core/java/android/os/PowerManager.java` — `isPowerSaveMode()` / `getLocationPowerSaveMode()`
-
-### 官方文档
+### 官方与 API 文档
 
 - [Optimize for Doze and App Standby](https://developer.android.com/training/monitoring-device-state/doze-standby)
-- [About App Standby Buckets](https://developer.android.com/topic/performance/appstandby)
-- [Power management resource limits](https://developer.android.com/topic/performance/power/power-details#app-stdby-bucket)
-- [Power usage optimization](https://developer.android.com/topic/performance/power)
+- [App Standby Buckets](https://developer.android.com/topic/performance/appstandby)
+- [Power management resource limits](https://developer.android.com/topic/performance/power/power-details)
+- [Test power-related issues](https://developer.android.com/topic/performance/power/test-power)
+- [AOSP：Platform power management with Doze](https://source.android.com/docs/core/power/platform_mgmt)
+- [AOSP：Power management](https://source.android.com/docs/core/power/mgmt)
+- [AOSP：App background behavior trackers](https://source.android.com/docs/core/power/trackers)
+- [AOSP：Routine Battery Saver](https://source.android.com/docs/core/power/routine-battery-saver)
+- [PowerManager API](https://developer.android.com/reference/android/os/PowerManager)
+- [JobScheduler API](https://developer.android.com/reference/android/app/job/JobScheduler)
+- [AlarmManager API](https://developer.android.com/reference/android/app/AlarmManager)
+- [Android 17 features and APIs](https://developer.android.com/about/versions/17/features)
+- [Secure background activity launches](https://developer.android.com/guide/components/activities/secure-bal)
+- [Background FGS start restrictions](https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start)
+- [Background location](https://developer.android.com/develop/sensors-and-location/location/background)
 - [Background execution limits](https://developer.android.com/about/versions/oreo/background)
-- [Restrictions on starting activities from the background](https://developer.android.com/guide/components/activities/background-starts)
-- [Request background location](https://developer.android.com/training/location/background)
-- [Android power management](https://source.android.com/docs/core/power)
+- [App hibernation](https://developer.android.com/topic/performance/app-hibernation)
+- [Android 15 App archiving](https://developer.android.com/about/versions/15/features#app-archiving)
 
-### 其他参考
+### Android 17 源码锚点
 
-- [Don't kill my app!](https://dontkillmyapp.com/) — 各厂商后台管控策略追踪
+- [DeviceIdleController.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java)
+- [AppStandbyController.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java)
+- [JobSchedulerService.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java)
+- [QuotaController.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java)
+- [JobScheduler.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java)
+- [PowerManagerService.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java)
+- [LowPowerStandbyController.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/power/LowPowerStandbyController.java)
+- [BatterySaverController.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/power/batterysaver/BatterySaverController.java)
+- [BatterySaverPolicy.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/services/core/java/com/android/server/power/batterysaver/BatterySaverPolicy.java)
+- [ActivityOptions.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/app/ActivityOptions.java)
+
+### Android 17 Kernel 锚点
+
+- [kernel/power/suspend.c](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/kernel/power/suspend.c)
+- [kernel/sched/idle.c](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/kernel/sched/idle.c)
+- [drivers/base/power/wakeup.c](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/base/power/wakeup.c)
+
+### OEM 行为线索
+
+- [Don't Kill My App](https://dontkillmyapp.com/)：社区维护的设备行为记录，只用于兼容性线索，结论需在目标 build 复测
