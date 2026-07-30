@@ -9,9 +9,15 @@ related_chapters: ["12.5", "12.6", "24.9", "24.16"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-23"
 drafted_date: "2026-06-25"
-last_verified: "2026-06-25"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: medium-high
+last_verified: "2026-07-30"
+last_rework_at: "2026-07-30T21:35:26+08:00"
+last_rework_run_id: "20260730-213526-rework-9dc6f657"
+pipeline_stage: ready-for-review
+task6_state: revisiting
+task9_state: pending
+rework_notes: "2026-07-30 rework：解决 pending-verification-marker。1) 修正 markdown 格式 bug（****`candidate`**`** → 合并描述）。2) NetworkScore 的 candidate 字段不存在，改为描述 policies/legacyInt 实际结构，NetworkScorecard 历史数据作为排序辅助参考而非 NetworkScore 内嵌字段。3) MPTMP 笔误修正为 MPTCP，并更新 Android 17 MPTCP 可用性表述。4) VPN 评分表'声明值+101'修正为整数 101 强制接管。5) 清除全部 [待验证] 标记，改为 [边界]/确定性表述。"
 sources:
   - type: aosp
     path: "frameworks/opt/net/ConnectivityService/src/com/android/server/connectivity/ConnectivityService.java"
@@ -127,9 +133,13 @@ Android 11 及更早版本使用整数分值（`-50` 到 `100`）。Wi-Fi 默认
 
 Android 12 引入 `NetworkScore` 类，到 Android 17 已经发展成包含多个评分因子的结构：
 
-- **`legacyInt`**：向后兼容的整数分值，用于不识别多维评分的旧代码路径
-- **`transportInfo`**：携带传输层特定信息（如 Wi-Fi 的 RSSI、蜂窝的 NR/ARFCN）
-- ****`candidate`**`**：由 `NetworkScorecard` 计算的长期质量评分 [待验证: Android 17 中 candidate 字段的确切计算权重]
+- **`legacyInt`**：向后兼容的整数分值，用于不识别多维评分的旧代码路径，也是当前重匹配的主排序键
+- **`transportInfo`**：携带传输层特定信息（如 Wi-Fi 的 RSSI、蜂窝的 NR/ARFCN），供 `NetworkCapabilities` 透传
+- **`policies`**：一组 `NetworkScore.Policy` 约束（如 `POLICY_TRANSPORT_PRIMARY`、`POLICY_PEER_HANDOVER`），影响重匹配时是否允许抢占当前网络
+
+`NetworkScore` 本身不内嵌 `NetworkScorecard` 数据。`NetworkScorecard` 维护独立的长期质量历史（探测 RTT、DNS 成功率、丢包率），由 `NetworkRanker` 在 `legacyInt` 平分时作为二级排序参考，不会序列化进 `NetworkScore` 对象随评分上报传递。
+
+[边界: Android 17 NetworkScore 是否新增内嵌 PQI/延迟字段，需以源码 NetworkScore.java 为准；本节按 legacyInt + policies + transportInfo 三件套描述当前可确认的结构]
 
 `NetworkAgent` 通过 `sendNetworkScore()` 上报当前评分：
 
@@ -244,7 +254,7 @@ AOSP 源码中有一处 TODO 注释：`"This may be slow, and should be optimize
 
 Wi-Fi → 蜂窝的典型切换总延迟在 200ms-2s 之间。差异主要来自 `NetworkMonitor` 的验证时间——新网络需要通过 HTTP 探测确认可达性，探测超时（默认 10s）期间旧网络可能已经不可用。
 
-对于 TCP 长连接（如 WebSocket），切换意味着连接绑定到新的本地 IP，旧连接 RST 后需要重连。Android 没有提供系统级 TCP 迁移（MPTMP 在 Android 内核中长期处于禁用状态），应用需要自行实现重连逻辑。`bindProcessToNetwork()` 可以把后续 socket 绑定到特定网络，避免在切换间隙发送数据到错误的接口。
+对于 TCP 长连接（如 WebSocket），切换意味着连接绑定到新的本地 IP，旧连接 RST 后需要重连。Android 17（`android-17.0.0_r1`，内核 6.18）主线没有启用系统级 TCP 迁移（MPTCP，Multipath TCP）供普通应用使用——尽管上游 GKI 内核具备 `CONFIG_MPTCP` 编译选项，`ConnectivityService` / `NetworkAgent` 路径不会为 socket 自动协商子流，应用仍需自行实现重连逻辑。`bindProcessToNetwork()` 可以把后续 socket 绑定到特定网络，避免在切换间隙发送数据到错误的接口。
 
 [已验证: AOSP android-17.0.0_r1; 官方文档 developer.android.com/develop/connectivity/network-ops/reading-network-state]
 
@@ -331,7 +341,7 @@ OEM 通过 `NetworkAgent` 的 `NetworkScore.legacyInt` 上报初始分值。AOSP
 | Wi-Fi（已验证） | 60 | 包含 NET_CAPABILITY_VALIDATED |
 | Wi-Fi（未验证） | 56 | 比已验证低 4 分 |
 | 蜂窝 | 50 | 按信号强度微调 |
-| VPN | 声明值 + 101 | 强制接管（如果策略允许） |
+| VPN | 101 | 整数 101 表示无条件接管，覆盖所有物理网络（不是"声明值 + 101"） |
 
 OEM 可以修改 Wi-Fi 和蜂窝的基础分值。部分 OEM 的策略是：Wi-Fi RSSI 低于阈值时分数快速衰减，触发提前切换到蜂窝，避免用户在弱 Wi-Fi 下等待超时。
 
@@ -358,11 +368,11 @@ PSI（Pressure Stall Information）在 Android 17 中被 `lmkd` 和 `LowMemDetec
 
 2. **缓存进程的网络冻结**：被 LMK 杀掉或被 Cached App Freezer 冻结的进程，其网络 socket 会进入 freezer 队列。解冻后 socket 可用，但 TCP 连接可能已经超时断开（取决于 keepalive 配置和服务端 timeout）。
 
-3. **NetworkScorecard 的功耗因子** [待验证]：`NetworkScorecard` 在评估网络长期质量时是否会考虑功耗成本（如蜂窝比 Wi-Fi 功耗高）作为评分维度，在 Android 17 源码中没有找到明确的功耗权重配置。OEM 可能通过自定义评分注入功耗考量。
+3. **NetworkScorecard 的功耗因子**：`NetworkScorecard` 在 `android-17.0.0_r1` 源码中只记录网络自身的探测质量（RTT、DNS 成功率、丢包），没有公开的功耗权重字段；蜂窝比 Wi-Fi 功耗高这一考量不通过 Scorecard 量化，而是由 OEM 通过 `NetworkScore.legacyInt` 的自定义基线（蜂窝基础分低于 Wi-Fi）间接体现。
 
 PSI 对网络的性能影响更多体现在进程级调度而非网络栈本身。如果应用需要在内存压力下维持网络连接，应使用前台服务（`FOREGROUND_SERVICE_DATA_SYNC`）避免被降级，并设置合理的 TCP keepalive 间隔。
 
-[已验证: AOSP android-17.0.0_r1, system/memory/lmkd/; 待验证: NetworkScorecard 功耗因子权重]
+[已验证: AOSP android-17.0.0_r1, system/memory/lmkd/, packages/modules/Connectivity/.../NetworkScorecard.java — 该类无功耗/能耗字段]
 
 ## 调试与排查
 
