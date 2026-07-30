@@ -60,19 +60,13 @@ task2b_notes: '2026-06-25 Task2B main: AOSP source path corrected to frameworks/
   and 26.12 (versioned diagnostics).'
 ---
 
----
-
 # ProfilingManager 系统触发式性能追踪
 
-## 为什么要了解系统触发式性能追踪
+冷启动慢、偶发 ANR 和一次性 OOM 常有同一个取证难点：工程师开始抓 trace 时，异常已经过去。`ProfilingManager` 允许应用预先注册系统事件。设备在满足触发条件并且还有采集配额时保存 profile，再把结果路径交给应用。
 
-线上冷启动慢、偶发 ANR、一次性 OOM，最麻烦的地方不是不会分析，而是问题发生时没有开启 Trace。ProfilingManager 的系统触发式 profiling 解决的正是这个空档。我们先把关心的事件注册进去，等事件发生时系统把结果放到应用目录，再回调给应用自己处理。
+这项能力不承诺每次触发都有文件。后台 trace 只会按系统策略间歇运行，采集还受应用级、系统级和 trigger 自定义限流影响。应用需要同时处理成功结果、错误结果以及长时间没有结果的情况。
 
-对启动优化来说，这让 `Activity.reportFullyDrawn()` 前后的启动收尾不再只能靠人工复现。对 ANR 排查来说，我们拿到的也不再只是 `traces.txt` 的定格画面，而是一份围绕触发时刻保存下来的 trace。对 OOM 来说，返回物是 Java heap dump，与其他 trigger 返回的 trace 不同。
-
-Android 17 新增的 `TRIGGER_TYPE_ANOMALY` 把这个能力又往前推了一步：系统检测到异常行为时，可以根据 anomaly-detector 规则触发日志或 profiling。MemoryLimiter 的 anon+swap 超限路径会在延迟 kill 目标进程之前先触发 ANOMALY；binder spam 这类规则则不等同于"马上杀进程"的信号。排查"应用被杀但不知道为什么"的问题时，ANOMALY 能补上部分进程终止前的现场；但收到结果后仍要看 tag 和返回物，不能把所有 ANOMALY 都按 kill 前 trace 处理。
-
-只有把这些触发器、产物类型、版本边界和结果交付方式拆开，后面分析时才知道该用什么工具、看什么轨道。
+本文以 Android 17 / API 37 的 `android-17.0.0_r1` 为平台源码锚点。Android 17 增加了冷启动、Java OOM、异常行为、过量 CPU kill 和兼容性问题等 trigger；不同 trigger 可能返回 system trace、stack sampling、Java heap dump 或带 metadata 的容器。文件类型没有辨认清楚，后续工具选择就会错位。
 
 <!-- outline-start -->
 ## 要点
@@ -110,225 +104,309 @@ Android 17 新增的 `TRIGGER_TYPE_ANOMALY` 把这个能力又往前推了一步
 
 ## 核心机制
 
-### ProfilingManager 在这里到底负责什么
+### API 与 Mainline 模块的边界
 
-Android 15 引入 `ProfilingManager`，先解决"应用怎样在公开设备上请求 profiling"这个问题。到了 Android 16，系统又在这个接口上补了 `addProfilingTriggers(List<ProfilingTrigger>)`，让应用可以提前声明自己关心哪些系统事件。事件实际发生时，系统把结果文件落到应用目录，再把文件路径和触发器类型通过 `ProfilingResult` 回传。
+Android 15 / API 35 引入 `ProfilingManager`，当时公开的是 `requestProfiling()` 等应用主动请求能力。Android 16 / API 36 增加 `addProfilingTriggers()`、`clearProfilingTriggers()` 和按类型移除 trigger 的接口，系统触发式采集由此进入公开 SDK。
 
-源码位置也要先摆正。公开 API 位于 `frameworks/base/core/java/android/os/ProfilingManager.java`、`ProfilingTrigger.java`、`ProfilingResult.java`——应用编译时使用的是 framework SDK 层路径。服务端实现位于 Mainline 模块 `packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`。这说明 ProfilingManager 的服务端是 Mainline 模块的一部分，不是老式 framework 服务路径上的普通类。
+这些类不在 `frameworks/base/core/java/android/os/`。Android 17 tag 中的准确位置如下：
 
-### 结果是怎么回来的
+- SDK 类：`packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`
+- trigger 与结果模型：同目录下的 `ProfilingTrigger.java`、`ProfilingResult.java`
+- 系统服务：`packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`
+- Perfetto 配置：服务目录下的 `Configs.java`
 
-system-triggered profiling 有一个容易写错的地方，结果只会发给全局 listener，不会发给某一次单独请求的 listener。公开文档和 AOSP 注释都写明，`registerForAllProfilingResults(Executor, Consumer<ProfilingResult>)` 是接收 system-triggered profiling 结果的唯一公开入口。`addProfilingTriggers()` 只是注册触发器，不负责直接把结果塞回调用现场。
+Profiling 模块以 Mainline 组件交付，公开 API 仍属于 `android.os`。分析公开契约时看 SDK 类注释；解释 Android 17 的文件格式、redaction 或限流实现时，再看 `ProfilingService` 和 `Configs`。服务实现可以随模块更新，不能把每个内部字段都当作应用契约。
 
-拿到 `ProfilingResult` 之后，我们先看两件事：
+### running snapshot 与新采集会看到不同时间窗
 
-1. `getTriggerType()`，分辨是 `APP_FULLY_DRAWN`、`ANR`、`OOM` 还是别的触发器
-2. `getResultFilePath()`，拿到结果文件路径
+多数 trigger 依赖系统事先运行的后台 system trace。系统按策略随机启动这类 trace，使用环形缓冲区保留触发前的一段历史。事件发生时，服务克隆正在运行的 session，执行 redaction，再把文件复制到应用私有目录。后台 trace 没有运行、配额不足或后处理失败时，注册过 trigger 也可能拿不到成功文件。
 
-如果这两个字段都没先看清,后面的分析工具就很容易选错。
+`TRIGGER_TYPE_COLD_START` 走另一条路径。系统在确认冷启动后尽早创建新的 profile，使用 discard buffer 保留开头数据；缓冲区满时丢弃后来的事件。它关注进程启动早期，running snapshot 关注触发前最近一段历史，两者的 buffer 策略不能互换解释。
 
-### 最小可用流程
+应用只通过 `registerForAllProfilingResults(Executor, Consumer<ProfilingResult>)` 接收 system-triggered 结果。某次 `requestProfiling()` 携带的 request-scoped listener 收不到这些结果。采集完成时应用若不在运行，系统可以在应用下次启动并重新注册全局 listener 后补发通知。
 
-下面这段代码只做一件事：注册全局结果回调，再添加两个 Android 16 就能使用的触发器。
-```java
-import android.content.Context;
-import android.os.ProfilingManager;
-import android.os.ProfilingResult;
-import android.os.ProfilingTrigger;
+### Android 17 trigger 对照表
 
-import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.function.Consumer;
+下表的常量、触发条件和产物以 `android-17.0.0_r1` 的 `ProfilingTrigger.java` 为准：
 
-public final class TriggeredProfilingRegistrar {
-    private final ProfilingManager profilingManager;
-    private final Executor executor;
-    private final Consumer<ProfilingResult> listener;
+| Trigger | 引入版本 | 值 | 触发条件 | 公开产物契约 |
+|---|---:|---:|---|---|
+| `APP_FULLY_DRAWN` | API 36 | `1` | 冷启动调用 `Activity.reportFullyDrawn()` 后 | running system trace snapshot |
+| `ANR` | API 36 | `2` | 系统已经识别 ANR、尚未尝试终止应用时 | running system trace snapshot |
+| `APP_REQUEST_RUNNING_TRACE` | 36.1 | `3` | 应用调用 `requestRunningSystemTrace()` | running system trace snapshot |
+| `KILL_FORCE_STOP` | 36.1 | `4` | 用户在应用信息页点击“强行停止” | running system trace snapshot |
+| `KILL_RECENTS` | 36.1 | `5` | 用户从最近任务中移除应用并触发相应 kill | running system trace snapshot |
+| `KILL_TASK_MANAGER` | 36.1 | `6` | 用户在任务管理器停止应用 | running system trace snapshot |
+| `OOM` | API 37 | `7` | 应用抛出 `OutOfMemoryError` | Java heap dump |
+| `ANOMALY` | API 37 | `8` | 系统检测到应用异常行为 | 随异常类型变化，tag 提供分类 |
+| `KILL_EXCESSIVE_CPU_USAGE` | API 37 | `9` | 系统因过量 CPU 使用终止应用，退出原因是 `REASON_EXCESSIVE_RESOURCE_USAGE` | running system trace snapshot |
+| `COLD_START` | API 37 | `10` | `ApplicationStartInfo` 判定为 `START_TYPE_COLD` | 新启动的 system trace，同时采集 stack sampling |
+| `APP_COMPAT` | API 37 | `11` | 系统发现未来 Android 版本将不再支持的应用行为 | 随兼容性问题变化，tag 提供分类 |
 
-    public TriggeredProfilingRegistrar(Context context, Executor executor) {
-        this.profilingManager = context.getSystemService(ProfilingManager.class);
-        this.executor = executor;
-        this.listener = result -> {
-            int triggerType = result.getTriggerType();
-            String resultFilePath = result.getResultFilePath();
-            // 这里按 triggerType 分发到冷启动、ANR、OOM 各自的离线分析流程
-        };
+`TRIGGER_TYPE_NONE = 0` 只表示该 `ProfilingResult` 不是由 trigger 发起，不能传给 `ProfilingTrigger.Builder`。
+
+### 生产接入要先处理错误结果
+
+下面的 Kotlin 骨架面向 `compileSdk = 37`。它注册 API 36 的两个基础 trigger，并在 Android 17 上增加冷启动、OOM 和 anomaly；回调只做分类与任务入队，不在 executor 上同步上传大文件：
+
+```kotlin
+import android.content.Context
+import android.os.Build
+import android.os.ProfilingManager
+import android.os.ProfilingResult
+import android.os.ProfilingTrigger
+import androidx.annotation.RequiresApi
+import java.util.concurrent.Executor
+import java.util.function.Consumer
+
+@RequiresApi(36)
+class TriggeredProfilingRegistration(
+    context: Context,
+    private val callbackExecutor: Executor,
+    private val enqueueProfile: (
+        triggerType: Int,
+        tag: String?,
+        resultFilePath: String
+    ) -> Unit,
+    private val reportError: (errorCode: Int, errorMessage: String?) -> Unit,
+) {
+    private val manager: ProfilingManager = requireNotNull(
+        context.applicationContext.getSystemService(ProfilingManager::class.java)
+    )
+
+    private val resultListener = Consumer<ProfilingResult> { result ->
+        val resultPath = result.resultFilePath
+        if (result.errorCode == ProfilingResult.ERROR_NONE && resultPath != null) {
+            enqueueProfile(result.triggerType, result.tag, resultPath)
+        } else {
+            reportError(result.errorCode, result.errorMessage)
+        }
     }
 
-    public void register() {
-        profilingManager.registerForAllProfilingResults(executor, listener);
+    fun register() {
+        val triggers = arrayListOf(
+            ProfilingTrigger.Builder(
+                ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN
+            ).setRateLimitingPeriodHours(24).build(),
+            ProfilingTrigger.Builder(
+                ProfilingTrigger.TRIGGER_TYPE_ANR
+            ).setRateLimitingPeriodHours(24).build(),
+        )
 
-        profilingManager.addProfilingTriggers(List.of(
-                new ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN)
-                        .setRateLimitingPeriodHours(24)
-                        .build(),
-                new ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANR)
-                        .setRateLimitingPeriodHours(24)
-                        .build()
-        ));
+        if (Build.VERSION.SDK_INT >= 37) {
+            triggers += ProfilingTrigger.Builder(
+                ProfilingTrigger.TRIGGER_TYPE_COLD_START
+            ).setRateLimitingPeriodHours(24).build()
+            triggers += ProfilingTrigger.Builder(
+                ProfilingTrigger.TRIGGER_TYPE_OOM
+            ).setRateLimitingPeriodHours(24).build()
+            triggers += ProfilingTrigger.Builder(
+                ProfilingTrigger.TRIGGER_TYPE_ANOMALY
+            ).build()
+        }
+
+        manager.registerForAllProfilingResults(
+            callbackExecutor,
+            resultListener,
+        )
+        manager.addProfilingTriggers(triggers)
+    }
+
+    fun unregisterListener() {
+        manager.unregisterForAllProfilingResults(resultListener)
     }
 }
 ```
 
-这段代码还顺带说明了两个边界。其一，`setRateLimitingPeriodHours()` 是"同一种 trigger 两次结果之间最短间隔"的应用侧约束，0 代表不加应用侧限流。其二，同一种 trigger 同时只能保留一个注册项，新注册会覆盖旧注册。
+`getResultFilePath()` 在 `getErrorCode() != ERROR_NONE` 时按契约返回 `null`，所以不能先上传路径再检查错误码。全局 listener 与 executor 宜保持应用级生命周期；需要停止接收时，用同一个 `Consumer` 实例注销。`unregisterForAllProfilingResults()` 只移除 listener，已注册 trigger 要用 `clearProfilingTriggers()` 或 `removeProfilingTriggersByType()` 单独管理。
 
-### trigger、产物和停止条件要分开看
+同一种 trigger 只能保留一个配置。再次注册会替换旧配置。`setRateLimitingPeriodHours(24)` 表示同类 trigger 的应用自定义最短间隔，系统仍可增加自己的限流或拒绝采集；设置为 `0` 只会取消这一层自定义间隔。
 
-这一节最容易混淆的地方，是把所有 trigger 都写成"抓一份 Trace"。公开 API 不是这么设计的。
+### 36.1 是 minor SDK release
 
-| Trigger | 版本 | 常量值 | 系统返回物 | 何时触发 | 停止条件 / 备注 |
-|---|---|---|---|---|---|
-| `TRIGGER_TYPE_APP_FULLY_DRAWN` | API 36 | `1` | running system trace snapshot | 冷启动里调用 `Activity.reportFullyDrawn()` 之后 | 适合复盘启动尾段 |
-| `TRIGGER_TYPE_ANR` | API 36 | `2` | running system trace snapshot | 系统已经识别到 ANR,但还没按公开契约结束该应用时 | 不等同于"应用一定已被杀" |
-| `TRIGGER_TYPE_COLD_START` | API 37 | `10` | newly started system trace + stack sampling | 应用冷启动尽早阶段,且 `ApplicationStartInfo.getStartType()` 为 `START_TYPE_COLD` | 调用 `reportFullyDrawn()` 时停止;没有调用时默认约 5 秒停止 |
-| `TRIGGER_TYPE_OOM` | API 37 | `7` | Java heap dump | 应用抛出 `OutOfMemoryError` | 自定义 `UncaughtExceptionHandler` 必须继续调用默认 handler |
-| `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | API 37 | `9` | running system trace snapshot | 应用因 `ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE` 被系统杀掉 | 公开文档没有给出 CPU 阈值 |
-| `TRIGGER_TYPE_ANOMALY` | API 37 | `8` | **依异常类型动态变化**:heap dump 或 stack sampling | 系统检测到异常行为;MemoryLimiter 这类 kill 路径会在终止前触发,binder spam 等规则可能只收集 profile | 产物类型和 tag 由 anomaly-detector 规则决定;`ProfilingResult.getTag()` 携带异常分类信息 |
-| `TRIGGER_TYPE_APP_COMPAT` | API 37 | `11` | **依兼容性问题类型动态变化** | 应用表现出兼容性回退行为 | 产物和 tag 随具体 compat 问题而定 |
+Android 16 的 36.1 使用 full SDK version 表示。它不属于 `SdkExtensions.getExtensionVersion()` 管理的 B Extensions。只检查 `SDK_INT >= 36` 会在首个 Android 16 release 上误调用 36.1 API。
 
-> **常量值说明**：上表常量值来自 AOSP `frameworks/base/core/java/android/os/ProfilingTrigger.java`（android-17.0.0_r1）中公开的 `TRIGGER_TYPE_*` 常量定义。Android 17 与 Android 16 的常量值在 `APP_FULLY_DRAWN` 和 `ANR` 上保持不变（分别为 1 和 2），API 37 新增常量从 7 开始编号。各常量值已在 android-17.0.0_r1 tag 中验证。
+下面的代码展示 36.1 API 的运行时边界，并在请求 running trace 前注册对应 trigger：
 
-这张表比散落的清单更有用,因为后续分析的入口已经固定下来了。`APP_FULLY_DRAWN` 和 `ANR` 的结果都可以走 Perfetto UI，`OOM` 该走 heap dump 分析，`COLD_START` 既有 system trace，也有 stack sampling。`ANOMALY` 和 `APP_COMPAT` 的产物不固定，收到结果后要先读 `getTag()` 判断异常类别，再根据文件后缀选择分析工具；Android 17 `ProfilingService` 中 Java heap dump 使用 `.perfetto-java-heap-dump` 后缀，system trace 使用 `.perfetto-trace` 后缀。
-
-### 36.1 trigger 还要单独判 extension version
-
-`APP_REQUEST_RUNNING_TRACE`、`KILL_FORCE_STOP`、`KILL_RECENTS`、`KILL_TASK_MANAGER` 都挂在 36.1 扩展上。运行时不能只看 API level,还要再用 `SdkExtensions.getExtensionVersion()` 或等价封装确认对应的 platform extension 已经到位。扩展值不够时,应用侧只能回退到 API 36 公开的 `APP_FULLY_DRAWN` 和 `ANR`。
-
-### `APP_FULLY_DRAWN` 和 `COLD_START` 不是同一件事
-
-Android 16 的 `TRIGGER_TYPE_APP_FULLY_DRAWN = 1`，语义是"冷启动里已经调用 `Activity.reportFullyDrawn()`，系统给出一份 running system trace snapshot"。它更像在启动完成点拿一张快照，帮助我们比对启动后段和 fully drawn 时刻前后的线程活动。
-
-Android 17 的 `TRIGGER_TYPE_COLD_START = 10` 则往前迈了一步。它要求系统在应用冷启动尽早阶段就开始录制，并持续到 `reportFullyDrawn()`，或者在没有调用 `reportFullyDrawn()` 时按默认 5 秒截止。公开文档还说明这类 trigger 使用 discard buffer，缓冲区满时会丢新事件，优先保留最早阶段的 tracepoint。写启动章节时，如果把这两个 trigger 混成一个名字，读者对采样窗口的判断就会直接错位。
-
-### OOM 说的是 Java 层 OOM,不是 LMK
-
-`TRIGGER_TYPE_OOM` 的公开语义非常具体，应用发生 Out Of Memory Exception 时，系统返回 Java heap dump。它和 `lmkd`、LMK、`Low Memory Killer` 不是一条问题路径。LMK 处理的是系统内存压力下的杀进程策略，章节 §4.4 已经单独展开；这里说的是应用自己因为堆分配失败抛出 OOM。
-
-这里还有一个经常漏写的条件。官方文档明确要求，如果应用自定义了 `Thread.UncaughtExceptionHandler`，它仍然要继续调用默认的 `UncaughtExceptionHandler`。不然这个 trigger 不会生效。
-
-### ANOMALY:按异常类型收集现场
-
-`TRIGGER_TYPE_ANOMALY`(API 37,常量值 8)由 Android 17 系统层的异常检测机制驱动。设备端根据规则监控异常行为,Android 17 `ProfilingService` 源码中已包含 binder spam detector 的采集路径;MemoryLimiter 的 anon+swap 超限路径会先通知 `ProfilingServiceHelper` 触发 ANOMALY,再延迟 kill 目标进程。也就是说,ANOMALY 不是"所有异常都代表进程马上被杀"的统一信号:有些规则只触发日志或 profile 收集,只有 MemoryLimiter 这类 kill 路径才适合按进程终止前现场来理解。
-
-**产物的动态性**:ANOMALY 不像其他 trigger 返回固定的文件格式。`ProfilingResult#getTag()` 会携带异常分类信息(如 `memory_limit`),`getResultFilePath()` 返回的文件后缀决定分析工具--`.perfetto-java-heap-dump` 走 Java heap dump 工具链,`.perfetto-trace` 走 Perfetto UI。处理 ANOMALY 结果时,要先读 tag 再决定分析路径,不能一律当 system trace 处理。
-
-**MemoryLimiter 场景**:当 MemoryLimiter 的 anon+swap 限额路径触发时，系统会先通过 `ProfilingServiceHelper` 触发 ANOMALY，再延迟 kill 目标进程。kill 后 `ApplicationExitInfo.getReason()` 返回资源过量类型（如 `REASON_EXCESSIVE_RESOURCE_USAGE`），描述中携带 `MemoryLimiter:AnonSwap` 等线索。`ProfilingService` 对这类异常使用 `memory_limit` tag，并返回 Java heap dump。
-
-**关联排查流程**：收到 ANOMALY 结果后，需要把 ProfilingManager 返回的现场和 `ApplicationExitInfo` 中的退出信息关联比对：
-
-1. 通过 `registerForAllProfilingResults()` 收到 `ProfilingResult`，确认 `getTriggerType()` 为 `TRIGGER_TYPE_ANOMALY`
-2. 读 `ProfilingResult.getTag()`——`memory_limit` 对应 MemoryLimiter kill 路径，其他 tag 对应非 kill 类异常
-3. 取 `ProfilingResult.getResultFilePath()`，按文件后缀选分析工具（`.perfetto-java-heap-dump` 走 MAT/Android Studio Profiler，`.perfetto-trace` 走 Perfetto UI）
-4. 同时查 `ActivityManager.getHistoricalProcessExitReasons()` 获取进程终止原因，将 `ApplicationExitInfo.getReason()` / `getDescription()` 与 ANOMALY tag 对照——这一步区分"ANOMALY 伴随了 kill"还是"只有 ANOMALY 日志/采样"
-5. heap dump 场景：入 MAT 后定位 retained size 最高的引用路径，对照进程终止前的内存使用量判断哪些对象顶满了堆
-
-**边界**:公开 API 文档没有列出系统异常检测的全部判定规则和触发阈值,这些属于系统内部策略。同一 UID 下多个包注册 ANOMALY trigger 时,系统可能不为某些异常提供产物;多进程应用也不要假设每个进程都能收到独立的 profiling 结果。线上接入时要考虑这种不确定性,不能假设注册了就一定能拿到产物。
-
-### ANR 和 excessive CPU 也不要发明内部阈值
-
-`TRIGGER_TYPE_ANR` 的公开定义是"ANR 已被识别,但系统还没准备按公开契约结束该应用"。文档没有公开具体的预警阈值。`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 也只公开到了"应用因 `ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE` 被杀后返回 running system trace snapshot"这一层,没有把 CPU 百分比、持续时间、采样窗口当成 API 契约。
-
-所以这一类章节不该写成一组固定百分比、固定时长和固定预警窗口。如果没有源码、实验或 device_config 证据支撑,那就是把内部策略猜想写成公开合同。
-
-## 在工具中的表现与验证路径
-
-### 冷启动样例:`APP_FULLY_DRAWN` / `COLD_START`
-
-对冷启动来说,我们先确认返回物是不是 `.perfetto-trace`,再用 Perfetto UI 打开。`APP_FULLY_DRAWN` 更适合复盘启动收尾阶段,`COLD_START` 更适合看进程创建后的完整启动窗口。
-
-> 图：`TRIGGER_TYPE_APP_FULLY_DRAWN` 返回的 `.perfetto-trace` 在 Perfetto UI 中的观测示意。标出应用主进程、主线程 `Choreographer#doFrame`、RenderThread、SurfaceFlinger 合成轨，并在启动尾段比对 `reportFullyDrawn()` 附近的最后几帧。
-
-> 图：`TRIGGER_TYPE_COLD_START` 返回的 system trace + stack sampling 结果示意。标出应用冷启动早期的进程创建、主线程首个长任务、`reportFullyDrawn()` 停止点，以及默认 5 秒停止的回退边界。
-
-分析这两类结果时，先确定时间窗口，再看线程状态、Binder 等待、渲染帧和系统服务干预。
-
-### ANR 样例:running system trace snapshot
-
-ANR 结果同样是 `.perfetto-trace`,但目标从启动耗时换成了"找到超时前的阻塞对象"。我们通常会把主线程、Binder 线程池、持锁线程、`system_server` 放在一起看,而不是只盯着一条主线程 slice。
-
-> 图：`TRIGGER_TYPE_ANR` 返回的 running system trace 示意。标出应用主线程 blocked 状态、对应的 owner 线程、同步 Binder 调用等待区间，以及 `system_server` 中可能卡住的服务线程。
-
-这种结果比单独的 `traces.txt` 多了一段历史信息。我们可以把 `traces.txt` 当成终点快照,把 system-triggered trace 当成"终点之前发生了什么"。
-
-### OOM 样例:Java heap dump
-
-`TRIGGER_TYPE_OOM` 不该塞回 Perfetto trace 段落里一起写。它返回的是 Java heap dump，分析目标也从线程调度切到"谁持有对象、谁把堆顶满了、是否存在大对象或意外 retained path"。
-
-> 图：`TRIGGER_TYPE_OOM` 返回的 Java heap dump 分析示意。标出 dominator tree 中占用最大的对象组、retained size 最高的引用路径，以及触发 OOM 前最后一次大分配对应的业务对象。
-
-如果一个章节把 OOM、ANR、cold start 全都说成"自动抓 Trace",读者在工具选择上就已经走偏了。
-
-### 本地验证与 redaction 边界
-
-ProfilingManager 返回的结果默认是 redacted 版本,只保留请求进程本身的信息。拿到 `.perfetto-trace` 之后，看不到其他应用的完整上下文，依赖全局系统视角的 Perfetto 标准库查询也可能缩水。
-
-做本地验证时,Android 16+ 和 Android 15 的调试开关不同:
-
-- Android 16+:`device_config put profiling_testing delete_temporary_results.disabled true`。打开后,系统会在临时目录保留 redacted 和 unredacted 结果(适用时),logcat 会给出路径。
-- Android 15:`device_config put profiling_testing delete_unredacted_trace.disabled true`。这一代只会在临时目录保留 unredacted 文件;无 root 的设备若想取 redacted 结果,需要把文档里的 `/pkg/files/profiling/file.type` 复制到 `/pkg/cache/file.type`。
-
-要测试 system-triggered trigger,还要给目标包打开 testing mode:
-
-```bash
-device_config put profiling_testing system_triggered_profiling.testing_package_name com.your.app
+```kotlin
+if (
+    Build.VERSION.SDK_INT >= 36 &&
+    Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1
+) {
+    manager.addProfilingTriggers(
+        listOf(
+            ProfilingTrigger.Builder(
+                ProfilingTrigger.TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE
+            ).setRateLimitingPeriodHours(1).build()
+        )
+    )
+    manager.requestRunningSystemTrace("checkout")
+}
 ```
 
-这个开关会确保后台 trace 常驻,并让目标包的 trigger 绕过系统级 rate limiter。测试结束后,再执行:
+`requestRunningSystemTrace()` 只请求克隆当前后台 trace。没有运行中的 trace、未注册 `APP_REQUEST_RUNNING_TRACE` 或限流拒绝时，它不保证返回 profile。`addAllProfilingTriggers()` 同样从 36.1 可用；生产应用通常按诊断需求注册少量 trigger，避免收集无法消费的文件。
 
-```bash
-device_config delete profiling_testing system_triggered_profiling.testing_package_name
+## 产物与分析路径
+
+### `APP_FULLY_DRAWN` 与 `COLD_START` 的时间窗
+
+`APP_FULLY_DRAWN` 在一次冷启动调用 `reportFullyDrawn()` 后克隆 running trace。它能覆盖多少启动历史，取决于后台 trace 当时是否运行以及环形缓冲区还保留了什么。
+
+`COLD_START` 在系统判定 `ApplicationStartInfo.getStartType() == START_TYPE_COLD` 后尽早启动新采集。调用 `reportFullyDrawn()` 会停止采集；应用没有调用时，公开默认值是 5 秒。Android 17 服务端还为它设置 `KEY_COLLECT_STACK_SAMPLING = true` 和 discard fill policy，所以同一 profile 可同时检查调度时间线与采样调用栈，并优先保住启动早期事件。
+
+这两种结果都不能代替应用自己的启动指标。trace 用来解释 TTID、TTFD 或业务 ready 指标为什么变慢，线上指标负责说明问题影响了多少用户。
+
+### ANR 与过量 CPU kill
+
+ANR trigger 在系统已经识别 ANR 后发生，返回触发前的 running trace snapshot。分析顺序可以从主线程 `thread_state` 开始，再追同步 Binder、锁 owner、I/O 和 CPU 饥饿。redaction 会移除其他应用信息，`system_server` 的完整上下文也可能不可见，不能期待它等同于本地抓取的全系统 trace。
+
+`KILL_EXCESSIVE_CPU_USAGE` 在系统已经做出 kill 判断后触发。公开契约只给出 `ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE` 和 system trace snapshot，没有固定 CPU 百分比、持续时长或设备统一阈值。结果可能延迟交付，应用应把它与 `ActivityManager.getHistoricalProcessExitReasons()` 返回的退出记录一并保存，再按包、进程和相近时间做关联；不能假定列表第一项必然对应这份 profile。
+
+### Java OOM、Memory Limiter 与 LMKD 是三条路径
+
+`TRIGGER_TYPE_OOM` 针对应用抛出的 `OutOfMemoryError`，产物是 Perfetto Java heap dump。应用若安装了自定义 `Thread.UncaughtExceptionHandler`，必须继续调用默认 handler，否则 OOM trigger 无法工作。这个文件是 Perfetto profile，不应直接当作传统 `.hprof` 交给 MAT。
+
+Android 17 Memory Limiter 使用 cgroup v2 的 `memory` controller 约束应用进程。超过设备配置的内存边界时，系统可以在执行约束动作前触发 `TRIGGER_TYPE_ANOMALY`。该场景与 Java 堆分配抛 OOM 不同，也和系统内存压力下的 LMKD 选杀路径不同。
+
+Android 17 公开文档给出的两个 anomaly 示例是过量内存与 Binder spam：前者提供 heap dump，后者提供 stack sampling。`ProfilingResult.getTag()` 携带异常分类。`android-17.0.0_r1` 的 `ProfilingService` 对 Memory Limiter 路径使用 `memory_limit` tag，并在 `attachMetadataIfNeeded()` 中把 heap dump 与 `perfetto_metadata.json` 封装成 `-metadata.zip`。这是当前 tag 的实现细节，应用不应只凭 `.perfetto-java-heap-dump` 后缀分流 ANOMALY。
+
+收到 anomaly 或 app-compat 结果时，建议按以下字段保存索引：
+
+1. `getTriggerType()`：区分 anomaly 与 app-compat
+2. `getTag()`：记录系统提供的具体分类
+3. `getErrorCode()` 与 `getErrorMessage()`：保留失败原因
+4. `getResultFilePath()`：成功后交给文件识别与上传任务
+5. 应用版本、进程名、设备 build fingerprint 和本地接收时间
+
+同一 UID 下有多个包注册 ANOMALY 时，公开 API 明确允许某些异常不返回 artifact。多进程应用也不能据此推导“每个进程都会得到一份文件”。
+
+### 工具选择
+
+| 产物 | 推荐入口 | 要回答的问题 |
+|---|---|---|
+| `.perfetto-trace` | Perfetto UI、`trace_processor_shell` | 主线程为何没有运行、Binder 或锁在等谁、启动阶段卡在哪一段 |
+| system trace 中的 stack sampling | Perfetto UI flamegraph / SQL | CPU 时间集中在哪些调用栈 |
+| `.perfetto-java-heap-dump` | Perfetto UI Heap Dump Explorer / PerfettoSQL | 哪些类型实例多、谁保留了大对象、GC root 路径是什么 |
+| `-metadata.zip` | 支持 Perfetto metadata 的工具，必要时检查容器内 profile 与 JSON | anomaly 类型、标注区域与对应 heap/stack 证据 |
+
+下面的查询用于在 Java heap dump 已被 Perfetto 正确解析后找出实例数较高的类型：
+
+```sql
+INCLUDE PERFETTO MODULE android.memory.heap_graph.heap_graph_class_aggregation;
+
+SELECT *
+FROM android_heap_graph_class_aggregation
+WHERE obj_count >= 2
+ORDER BY obj_count DESC
+LIMIT 100;
 ```
 
-## 与其他机制的关系
+实例数高只是一条线索。还要结合 total size、retained size、dominator 与到 GC root 的最短路径，确认它是合理缓存、批量业务数据还是泄漏。对 Memory Limiter anomaly，还要检查 native、graphics、swap 等 Java heap dump 覆盖不到的内存，因为 cgroup 约束面对的是进程内存，不只 Java heap。
 
-### 和 `Activity.reportFullyDrawn()` 的关系
+## 本地验证
 
-`APP_FULLY_DRAWN` 与 `COLD_START` 都和 `Activity.reportFullyDrawn()` 有直接关系。前者在调用之后返回 running trace snapshot，后者把它当作录制截止点之一。启动文章里谈 fully drawn 时，不能只把它当埋点 API；到了 ProfilingManager 这里，它还是 system-triggered profiling 的停止和取样边界。
+### 强制后台 trace 并保留临时文件
 
-### 和 `ApplicationStartInfo` 的关系
+Android 16 及以上可指定一个测试包，让系统持续运行后台 trace，并让该包绕过系统 trigger rate limiter。`delete_temporary_results.disabled` 会保留 redacted 和适用场景下的 unredacted 结果；`rate_limiter.disabled` 便于同时测试应用主动请求。下面的命令用于一次本地验证：
 
-`COLD_START` 的公开文档把触发前提说得很明确,`ApplicationStartInfo.getStartType()` 必须是 `START_TYPE_COLD`。这让 ProfilingManager 和启动类型判断连到一起。我们在 §8.2 里分析冷启动时,可以用 `ApplicationStartInfo` 先分流,再决定是否注册或解释 cold-start profiling 结果。
+```bash
+adb shell device_config put profiling_testing \
+  system_triggered_profiling.testing_package_name com.example.app
+adb shell device_config put profiling_testing \
+  delete_temporary_results.disabled true
+adb shell device_config put profiling_testing \
+  rate_limiter.disabled true
 
-### 和 `ApplicationExitInfo` 的关系
+adb shell am force-stop com.example.app
+adb shell am start -W \
+  -n com.example.app/.MainActivity
 
-`KILL_EXCESSIVE_CPU_USAGE` 的判断依据来自系统已经做出的 kill 判断(`ApplicationExitInfo.getReason() == REASON_EXCESSIVE_RESOURCE_USAGE`),应用侧不需要自行检测 CPU。也就是说,ProfilingManager 这里拿到的是系统已经做出 kill 判断后的 profiling 结果,而不是一个持续轮询 CPU 的前台预警器。
+adb logcat -d -s ProfilingService
+```
+
+应用需要在启动完成点调用 `Activity.reportFullyDrawn()`，上面的冷启动才能触发 `APP_FULLY_DRAWN`。测试包模式绕过系统限流，不会绕过 `ProfilingTrigger.Builder` 设置的应用自定义间隔；调试构建可临时用 `0` 重新注册。logcat 会给出保留文件的位置，业务代码仍应以 `ProfilingResult.getResultFilePath()` 为准。
+
+测试结束后要恢复三个开关，避免后台 trace 持续耗电并占用磁盘：
+
+```bash
+adb shell device_config delete profiling_testing \
+  system_triggered_profiling.testing_package_name
+adb shell device_config put profiling_testing \
+  delete_temporary_results.disabled false
+adb shell device_config put profiling_testing \
+  rate_limiter.disabled false
+```
+
+Android 15 使用旧的 `delete_unredacted_trace.disabled` 调试项，只保留适用场景下的 unredacted 文件；system-triggered API 尚未引入，所以这条历史边界只用于验证应用主动请求。
+
+### redaction 的诊断边界
+
+交付给应用的 profile 会经过隐私处理，只保留请求应用相关信息。依赖其他应用、完整 `system_server` 或全局进程关系的 PerfettoSQL 模块可能没有足够数据。查询返回空表时，要先确认 redaction 是否删除了所需轨道，再判断业务事件是否缺失。
+
+本地保留的 unredacted 文件只用于受控设备排查。heap dump、stack sampling 和 trace 仍可能包含类名、业务 tag、线程名与用户数据，不应直接上传到通用日志系统。线上采集需要明确保留时长、访问权限、加密与删除策略。
 
 ## 版本演进
 
-| 版本 | 能力面 | 这一版该怎么理解 |
+| 平台 | 公开能力 | 运行时判断 |
 |---|---|---|
-| Android 15 (API 35) | `ProfilingManager` 基础请求能力 | 重点是 `requestProfiling()` 和结果回调,本节的 system-triggered profiling 还没出现 |
-| Android 16 (API 36) | `addProfilingTriggers()`、`APP_FULLY_DRAWN=1`、`ANR=2` | 首次把"由系统条件触发结果采集"放进公开 API |
-| Android 16 extension 36.1 | `APP_REQUEST_RUNNING_TRACE=3`、`KILL_FORCE_STOP=4`、`KILL_RECENTS=5`、`KILL_TASK_MANAGER=6` | 这几类都属于 running system trace snapshot,运行时要按 extension 36.1 做 gating |
-| Android 17 (API 37) | `OOM=7`、`ANOMALY=8`、`KILL_EXCESSIVE_CPU_USAGE=9`、`COLD_START=10`、`APP_COMPAT=11` | 触发器不再只返回 running trace,开始出现新开 trace、stack sampling、heap dump 和"artifact varies" 这类更细分的模型。系统异常检测机制新增设备端异常检测;MemoryLimiter 等 kill 路径可在终止前触发 ANOMALY,其他 anomaly 规则按配置收集 profile 或日志 |
+| Android 15 / API 35 | `ProfilingManager` 主动请求、全局结果 listener | `SDK_INT >= 35` |
+| Android 16 / API 36 | `addProfilingTriggers()`、`APP_FULLY_DRAWN=1`、`ANR=2` | `SDK_INT >= 36` |
+| Android 16 minor release 1 / 36.1 | `APP_REQUEST_RUNNING_TRACE=3`、三个用户终止类 trigger、`addAllProfilingTriggers()` | `SDK_INT_FULL >= VERSION_CODES_FULL.BAKLAVA_1` |
+| Android 17 / API 37 | `OOM=7`、`ANOMALY=8`、`KILL_EXCESSIVE_CPU_USAGE=9`、`COLD_START=10`、`APP_COMPAT=11` | `SDK_INT >= 37` |
 
-`ANOMALY` 和 `APP_COMPAT` 也要点一下。文档没有把它们都固定成某一种结果文件,而是明确写了 artifact 会按 anomaly 类型变化,`ProfilingResult#getTag()` 里会带额外信息。写版本表时,如果把 Android 17 只概括成 OOM 和 excessive CPU,就把 public surface 少写了一截。
+36.1 的判断使用 `SDK_INT_FULL`；SDK Extensions 适用于可通过 Mainline 向既有平台 SDK 增加的另一套 API 版本体系。两者名字接近，运行时接口不同。
 
-## 常见问题与误区
+## 源码锚点与内核边界
 
-### 误区 1:`APP_FULLY_DRAWN` 就是 `COLD_START`
+本文的平台结论锚定 `android-17.0.0_r1`。`ProfilingTrigger.java` 定义公开常量与 artifact 契约，`ProfilingManager.java` 定义 listener 和注册行为，`ProfilingService.java` 负责后台 trace、交付、redaction、trigger 限流与 Android 17 anomaly metadata。
 
-不是一个东西。`APP_FULLY_DRAWN` 是 API 36 的 running trace snapshot,`COLD_START` 是 API 37 的"尽早开始录制,再到 fully drawn 停止"的完整窗口。两者的采样范围不同,常量值也不同。
+Memory Limiter 涉及内核时，以 `android17-6.18-2026-06_r6` 为本知识库内核锚点。它要求设备具备 cgroup v2 与 `memory` controller；OEM 仍可决定是否启用及如何配置 `/vendor/etc/memory-limiter-config.xml`。ProfilingManager 是取证接口，不能改变内存限制或 LMKD 策略。
 
-### 误区 2:OOM trigger 等于 LMK 现场
+## 常见误区
 
-`TRIGGER_TYPE_OOM` 处理的是 Java 层 OOM 异常,返回 Java heap dump。LMK 和 `lmkd` 看的是系统内存压力和杀进程策略,应该回到 §4.4 去分析。
+### 把 `APP_FULLY_DRAWN` 当作完整冷启动录制
 
-### 误区 3:注册 trigger 就能直接在本次回调里拿到结果
+它克隆触发时正在运行的后台 trace，开头可能早于或晚于进程启动。需要从冷启动早期新建采集时，Android 17 提供 `COLD_START`。
 
-system-triggered profiling 的结果只会通过 `registerForAllProfilingResults()` 的全局 listener 回来。把它写成 request-scoped listener,或者再造一个并不存在的注册接口,应用一上手就会编译失败。
+### 用 `SdkExtensions` 判断 36.1
 
-### 误区 4:系统公开了 ANR / CPU 的内部阈值
+36.1 是 minor SDK release。应使用 `SDK_INT_FULL` 与 `VERSION_CODES_FULL.BAKLAVA_1`，并用 `SDK_INT >= 36` 保护对这些字段的访问。
 
-公开 API 没有给出具体的 CPU 阈值。没有源码、实验或 device_config 证据时,章节里就不该擅自补这些数字。
+### 成功前直接读取文件路径
+
+失败结果的路径为 `null`。先检查 `ERROR_NONE`，再保存 trigger、tag 和路径；上传任务还要能处理文件已被清理、空间不足和重复交付。
+
+### 把 Java heap dump 当作 MAT 可直接读取的 HPROF
+
+ProfilingManager 通过 Perfetto 的 `android.java_hprof` data source 生成 profile。使用 Perfetto UI Heap Dump Explorer 或 PerfettoSQL；若某工具只接受标准 HPROF，需要经过该工具明确支持的转换流程。
+
+### 为 ANR、CPU 或 anomaly 编造统一阈值
+
+公开 API 没有承诺固定 CPU 百分比、ANR 预警时长或 anomaly 阈值。设备配置和 Mainline 更新都可能改变内部策略，应用侧只依赖 trigger 条件、结果字段与公开 artifact 契约。
 
 ## 参考资料
 
-- 官方文档:`https://developer.android.com/reference/android/os/ProfilingManager`
-- 官方文档:`https://developer.android.com/reference/android/os/ProfilingTrigger`
-- 官方文档:`https://developer.android.com/reference/android/os/ProfilingResult`
-- 官方文档:`https://developer.android.com/reference/android/os/ext/SdkExtensions`
-- AOSP（SDK 层）：`frameworks/base/core/java/android/os/ProfilingManager.java`（android-17.0.0_r1）
-- AOSP（SDK 层）：`frameworks/base/core/java/android/os/ProfilingTrigger.java`（android-17.0.0_r1，触发器常量定义）
-- AOSP（SDK 层）：`frameworks/base/core/java/android/os/ProfilingResult.java`（android-17.0.0_r1）
-- AOSP（服务端）：`packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java`（android-17.0.0_r1）
+- [ProfilingManager API](https://developer.android.com/reference/android/os/ProfilingManager)
+- [ProfilingTrigger API](https://developer.android.com/reference/android/os/ProfilingTrigger)
+- [ProfilingResult API](https://developer.android.com/reference/android/os/ProfilingResult)
+- [Trigger-based profiling](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture)
+- [Profiling limitations and rate limiting](https://developer.android.com/topic/performance/tracing/profiling-manager/will-my-profile-always-be-collected)
+- [Debug commands for local profiling](https://developer.android.com/topic/performance/tracing/profiling-manager/debug-mode)
+- [Query ProfilingManager profiles](https://developer.android.com/topic/performance/tracing/profiling-manager/querying-profiles)
+- [Build.VERSION.SDK_INT_FULL](https://developer.android.com/reference/android/os/Build.VERSION#SDK_INT_FULL)
+- [Build.VERSION_CODES_FULL](https://developer.android.com/reference/android/os/Build.VERSION_CODES_FULL)
+- [Android 17 Memory Limiter](https://source.android.com/docs/core/perf/memory-limiter)
+- [Android 17 `ProfilingManager.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java)
+- [Android 17 `ProfilingTrigger.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java)
+- [Android 17 `ProfilingResult.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingResult.java)
+- [Android 17 `ProfilingService.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java)
+- [Android 17 `Configs.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/Configs.java)
+- [Android 17 `PerfettoMetadata.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/util/src/com/android/profiling/utils/PerfettoMetadata.java)
+
+## 相关章节
+
+- [应用启动分析](02-app-launch.md)
+- [ANR 分析方法](../ch09-anr/03-anr-analysis.md)
+- [LMKD 与内存压力](../../part1-fundamentals/ch04-memory/04-lmk.md)
+- [Perfetto 查看与基础分析](../../part3-tools/ch13-perfetto/03-perfetto-view.md)
+- [ApplicationExitInfo](../../part5-app/ch26-observability/09-application-exit-info.md)
