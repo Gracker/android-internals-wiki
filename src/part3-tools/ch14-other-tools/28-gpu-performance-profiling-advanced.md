@@ -19,9 +19,11 @@ last_review_finalize_at: "2026-07-27T20:13:43+08:00"
 last_review_finalize_run_id: "20260727-201343-4b671d13"
 last_rework_at: "2026-07-27T21:36:40+08:00"
 last_rework_run_id: "20260727-213543-rework-30f4d38e"
-last_verified: "2026-07-27"
-confidence: medium-high
+last_verified: "2026-07-30"
+last_verified_against: "AOSP android-17.0.0_r1 external/perfetto；Writer rendering_pipelines S01/S02/S03/S04/S05/S11/S12/S13"
+confidence: high
 rework_resolution: "收窄章节标题与正文范围，仅保留 android-17.0.0_r1 可由 external/perfetto 一手 proto、trace processor parser 与 SQL 视图支撑的 Perfetto GPU counter / GPU memory 事件链路；移除未取证的跨厂商阈值、Ray Tracing、NPU/ML、远程调试与 AGI 工作流结论。"
+android17_review_notes: "2026-07-30：复核 GpuCounterDescriptor、GpuCounterEvent、GpuCounterConfig、Trace Processor 回看式采样与 GpuMemTotalEvent；结合 rendering_pipelines 补充标准 HWUI、TextureView、独立 Surface、Camera/Video、Game 与混合出图的信号归属及归因边界。原 task6/task9/OpenClaw 字段完整保留。"
 sources:
   - "AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/common/gpu_counter_descriptor.proto"
   - "AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/trace/gpu/gpu_counter_event.proto"
@@ -32,6 +34,14 @@ sources:
   - "AOSP android-17.0.0_r1: external/perfetto/src/trace_processor/importers/proto/gpu_event_parser.cc"
   - "AOSP android-17.0.0_r1: external/perfetto/src/trace_processor/metrics/sql/android/gpu_counter_span_view.sql"
   - "AOSP android-17.0.0_r1: external/perfetto/test/trace_processor/diff_tests/parser/graphics/gpu_counter_specs.textproto"
+  - "Writer/rendering_pipelines/S01_rendering_types_overview.md"
+  - "Writer/rendering_pipelines/S02_aosp_standard_type.md"
+  - "Writer/rendering_pipelines/S03_surfaceview_type.md"
+  - "Writer/rendering_pipelines/S04_textureview_type.md"
+  - "Writer/rendering_pipelines/S05_mixed_rendering_type.md"
+  - "Writer/rendering_pipelines/S11_camera_type.md"
+  - "Writer/rendering_pipelines/S12_video_overlay_hwc_type.md"
+  - "Writer/rendering_pipelines/S13_game_type.md"
 ---
 
 # 14.28 Perfetto GPU Counter 与 GPU Memory 事件分析
@@ -45,6 +55,7 @@ sources:
 3. Trace Processor 在 `gpu_event_parser.h/.cc` 中维护 GPU counter track 与上一条 counter row 状态，并把回看式采样值写回上一行；`android-17.0.0_r1` 没有早稿曾引用的 `gpu_counter_sequence_state.h`。
 4. `gpu_counter_span_view.sql` 用 `LEAD() OVER (PARTITION BY track_id ORDER BY ts)` 将 counter 采样点转为 span，适合按 GPU track 计算区间持续时间。
 5. `GpuMemTotalEvent` 位于 `protos/perfetto/trace/android/gpu_mem_event.proto`，由 Android `GpuService` 生成；`pid=0` 表示全局总量，其他 pid 表示进程归属。
+6. `GpuCounterEvent` 不携带 pid、tid、layer、FrameTimeline token 或 GPU submission id。单条 counter track 只能直接说明某个 `gpu_id` 上的设备级变化，归因到 App、SurfaceFlinger 或某一显示帧还需要其它时间线证据。
 
 ## `GpuCounterDescriptor`：协议层的标准化骨架
 
@@ -209,13 +220,59 @@ message GpuMemTotalEvent {
 
 这条平台事件可以观察全局或进程归属的 GPU 内存总量，但不能替代厂商 GPU counter，也不能自动推出带宽、shader throughput、缓存命中率或功耗阈值。pid 归属还不等同于物理页的唯一持有者；跨进程共享 buffer、驱动保留和显示系统引用需要结合 GpuService、dma-buf 与厂商工具解释。
 
+## 把 counter 放回 Android 显示路径
+
+### 设备级 counter 没有内建的帧归属
+
+`GpuCounterEvent.GpuCounter` 只有 `counter_id` 和一个数值，外层事件只增加 descriptor 与 `gpu_id`。协议里没有 pid、tid、layer id、BufferQueue frame number、FrameTimeline token 或 GPU submission id。Trace Processor 因此创建的是 GPU counter track，并不会自动把 counter span 挂到某个 App 或某个显示帧。
+
+这条边界会直接影响结论强度：
+
+| 证据 | 可以确认 | 不能单独确认 |
+|---|---|---|
+| GPU counter span | 某个 `gpu_id` 在该区间的频率、吞吐、利用率或厂商定义事件值发生变化 | 哪个进程、layer 或 command buffer 造成变化 |
+| GPU render-stage / submission 事件 | 已被 producer 标注的 GPU 工作区间与提交关系 | 未标注工作属于哪个业务帧，或该帧已经显示 |
+| App / RenderThread slice | CPU 何时准备、提交或等待 GPU 工作 | GPU 何时完成，SurfaceFlinger 是否采用该 buffer |
+| producer completion fence | 对应 buffer 何时可由 consumer 安全读取 | 该 buffer 是否赶上目标 display present |
+| FrameTimeline、layer 与 present | App/SF 帧、buffer/layer 选择及显示时序 | counter 峰值由哪条 shader、纹理或硬件单元产生 |
+
+归因时要用时间重叠缩小候选范围，再用 submission、buffer、fence、layer 和 frame token 建立关系。仅凭“counter 峰值与卡顿同时出现”还不能得出因果结论。
+
+### 出图拓扑决定 counter 应该和谁对齐
+
+以下判读表来自 `rendering_pipelines` 的 Android 17 显示模型。表中的“GPU counter”均指设备级轨道；厂商若提供更细的 context、queue 或 stage 事件，可以继续细分。
+
+| 出图路径 | 可能进入同一 GPU counter 的工作 | 需要同时核对的证据 | 常见误判 |
+|---|---|---|---|
+| 标准 View / Compose App Window | HWUI/Skia 绘制 App buffer；发生 CLIENT composition 时还包含 SurfaceFlinger RenderEngine | MainThread、RenderThread、GPU stage、App completion fence、host `BufferTX`、SF composition type、present | 把 RenderThread duration 当成 GPU duration，或把所有 GPU 峰值算给 App |
+| TextureView | 外部 Producer 可能使用 GPU；宿主 HWUI 还要 acquire、采样外部 image 并写 App Window | 外部 BufferQueue 与 fence、`DeferredLayerUpdater`、宿主 GPU、host layer、最终 composition | 只看到宿主 counter 变高，就断定外部视频、相机或地图 Producer 变慢 |
+| SurfaceView / 独立 Surface | 游戏或自研 renderer 的 GPU 工作；若该 layer 或同屏其它 layer 转为 CLIENT，还会增加 RenderEngine 工作 | 独立 BLAST child、producer fence、per-layer composition type、client target、release/present fence | `SurfaceView` 一定不占 GPU，或 DEVICE composition 等于 Producer 没有 GPU 成本 |
+| Camera / 普通视频 Surface | 主体像素可能由 ISP、codec、blitter 或其它硬件产生；TextureView、自研滤镜、CLIENT composition 才会额外引入可见 GPU 工作 | Camera/codec result、buffer timestamp、acquire fence、carrier 类型、HWC strategy、present | GPU counter 低就表示预览/播放链路没有瓶颈 |
+| 本地游戏 | engine submit、GPU queue execution、可能的 SurfaceFlinger CLIENT composition | Input、Game/Render/RHI、submission、producer fence、queue depth、latch、present | submit 返回等于 GPU 完成，或 FPS 稳定等于输入延迟低 |
+| 混合出图 | 多个 Producer、宿主采样与 RenderEngine 可能共享同一个 `gpu_id` | 每个 Surface/BufferQueue、目标 display 的可见 layer 集合、DEVICE/CLIENT 变化、各自 fence | 用一条全局 GPU track 给某个 layer 定责 |
+
+TextureView 与独立 Surface 的差异尤其容易被 counter 隐藏。TextureView 输入进入宿主 HWUI 后，HWC 通常只看到最终 App Window；独立 Surface 保留单独 layer，HWC 可以逐层选择 DEVICE 或 CLIENT。某次 DEVICE→CLIENT 变化可能让 GPU counter 上升，但触发条件也许来自同屏 layer、透明度、变换、HDR、protected usage 或 plane 竞争，不能只检查目标 App 的 shader。
+
+Camera 和视频还存在相反情况：主体内容通过 ISP、codec 与 HWC 路径完成，GPU counter 可能保持很低，画面仍会因 HAL/codec 晚、acquire fence 晚、requested present timestamp、HWC 或 display driver 而错过显示。GPU counter 没有覆盖这些硬件阶段。
+
+### 一次可复用的关联顺序
+
+1. 从异常的 display present 或 FrameTimeline actual frame 选定时间窗口，记录 `display_frame_token`、目标 layer 和 present 时间。
+2. 按标准窗口、TextureView、独立 Surface、Camera/Video、Game 或混合页面建立 Producer—BufferQueue—layer 对象表。
+3. 沿目标 buffer 反查 Producer CPU 工作、GPU submission/render stage、completion fence、`queueBuffer`、SF latch 与 composition type。
+4. 在已经确定归属的 GPU 工作区间内读取 counter span，使用 descriptor 的名称、单位、group、采样周期和 block 配置解释数值。
+5. 对比相同设备、相同 counter 配置、相同温度和显示模式下的基线。跨厂商、跨驱动或不同 counter 组合不直接比较绝对值。
+
+这套顺序把 counter 放在逐帧证据之后。counter 适合回答“已定位的 GPU 区间为什么变重”，不适合跳过对象和同步关系直接回答“谁让这一帧卡了”。
+
 ## 采集与分析建议
 
 1. **先看 descriptor，再解释数值**：分析 counter value 前，应先确认 `counter_id` 对应的 `name`、`numerator_units`、`denominator_units` 与 `groups`。
 2. **尊重 block capacity**：批量启用 counter 时，应按 `GpuCounterBlock.block_capacity` 检查是否超出同一硬件 block 的同时采样能力。
 3. **区分平台事件与厂商 counter**：`GpuMemTotalEvent` 是 Android 平台 GPU memory 事件；GPU 频率、fragment、triangle 等 counter 仍依赖 GPU counter producer 暴露。
-4. **避免跨厂商强归一**：仅凭同属 `MEMORY`、`FRAGMENTS` 或 `COMPUTE` 分组不足以证明 counter 可比。若要建立跨设备基准，必须记录厂商 producer、counter 名称、单位、采样频率与替代映射依据。
-5. **控制 trace 体积**：样本数量近似为 `counter 数 × 采样频率 × 时长`，但 protobuf 的 `int_value` 是变长编码，`double_value`、嵌套 message、packet framing、descriptor 与 interning 也有额外成本。不要用固定的“每项 12 bytes”推算容量；先做短时采集，测量生成 trace 的 bytes/s，再为目标时长设置 buffer 和采样周期。
+4. **记录出图拓扑**：同一 counter 峰值在标准 HWUI、TextureView、独立 Surface 和视频 overlay 场景中的来源不同。采集说明至少记录 Surface 类型、layer、graphics API、HWC composition 与显示模式。
+5. **避免跨厂商强归一**：仅凭同属 `MEMORY`、`FRAGMENTS` 或 `COMPUTE` 分组不足以证明 counter 可比。若要建立跨设备基准，必须记录厂商 producer、counter 名称、单位、采样频率与替代映射依据。
+6. **控制 trace 体积**：样本数量近似为 `counter 数 × 采样频率 × 时长`，但 protobuf 的 `int_value` 是变长编码，`double_value`、嵌套 message、packet framing、descriptor 与 interning 也有额外成本。不要用固定的“每项 12 bytes”推算容量；先做短时采集，测量生成 trace 的 bytes/s，再为目标时长设置 buffer 和采样周期。
 
 ## 不在本章结论范围内的主题
 
@@ -242,4 +299,6 @@ message GpuMemTotalEvent {
 - [`src/trace_processor/metrics/sql/android/gpu_counter_span_view.sql`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/metrics/sql/android/gpu_counter_span_view.sql)
 - [`test/trace_processor/diff_tests/parser/graphics/gpu_counter_specs.textproto`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/test/trace_processor/diff_tests/parser/graphics/gpu_counter_specs.textproto)
 
-<!-- AIW-rework-verified-2026-07-27 -->
+渲染路径与显示边界还对照了 `Writer/rendering_pipelines` 中的 S01、S02、S03、S04、S05、S11、S12 与 S13。该系列用于确认 Producer、BufferQueue、layer、fence、SurfaceFlinger/HWC 与 present 的关系；GPU counter 协议和 Trace Processor 行为仍以上述 Android 17 AOSP 源码为准。
+
+<!-- AIW-rework-verified-2026-07-30 -->
