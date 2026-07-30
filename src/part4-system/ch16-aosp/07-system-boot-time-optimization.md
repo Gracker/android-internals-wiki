@@ -1,12 +1,13 @@
 ---
 title: "Android 系统启动耗时优化与 bootanalyze"
 chapter: "16.7"
+section: "16.7"
 status: ready-for-review
 drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-17"
-last_verified_against: "AOSP main; source.android.com 2025-07/2026-02; developer.android.com 2026-02"
-confidence: medium
+last_verified: "2026-07-30"
+last_verified_against: "AOSP android-17.0.0_r1; Android Common Kernel android17-6.18-2026-06_r6; source.android.com boot guidance; Android Developers 16 KB page-size guidance"
+confidence: high
 sources:
   - type: official
     path: "https://source.android.com/docs/core/perf/boot-times"
@@ -17,13 +18,21 @@ sources:
   - type: official
     path: "https://developer.android.com/guide/practices/page-sizes"
   - type: aosp
-    path: "system/extras/boottime_tools/bootanalyze/README.md"
+    path: "https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/boottime_tools/bootanalyze/README.md"
   - type: aosp
-    path: "system/extras/boottime_tools/bootio/README.md"
+    path: "https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/boottime_tools/bootio/README.md"
   - type: aosp
-    path: "system/core/init/README.md"
+    path: "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/init/README.md"
   - type: aosp
-    path: "system/core/bootstat/README.md"
+    path: "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/bootstat/bootstat.cpp"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/java/com/android/server/SystemServer.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/pm/DexOptHelper.java"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/base/dd.c"
 tags: [aosp, boot, boot-time, perfetto, performance]
 related_chapters: ["1.2", "8.2", "13.2", "16.1"]
 created_by: "task2a-knowledge-gap"
@@ -47,12 +56,14 @@ last_research_source: "DeepResearch/2026-06-28-android17-bootanalyze-zsygotelazy
 |---|---|---|---|
 | kernel entry | bootloader 日志、UART、硬件计时 | bootloader 已经把控制权交给 kernel | 上电到 kernel 的完整时间 |
 | second-stage `init` | dmesg、`init second stage started` | kernel 和 first-stage init 的基线 | `/data` 挂载、Zygote、桌面可用 |
-| Zygote start | `ro.boottime.event.zygote-start`、init 日志 | framework 进程模型何时开始建立 | `system_server` 是否 ready |
+| Zygote start | `ro.boottime.zygote`、init 日志；flag 开启时可用 `ro.boottime.event.zygote-start` | framework 进程模型何时开始建立 | `system_server` 是否 ready |
 | `sys.boot_completed=1` | property、bootstat | AMS 已进入 boot completion 收尾 | Launcher 是否已绘制且可操作 |
 | Launcher shown | Launcher 自有事件、Surface/Window trace | 首个桌面窗口是否显示 | 输入是否已被处理 |
 | first interactive | 自动化输入、画面检测、产品事件 | 用户何时能完成第一个关键动作 | 单纯的 property 时间 |
 
 Android 17 的 `ActivityManagerService.finishBooting()` 会设置 `sys.boot_completed`，随后继续处理用户级 boot complete、用户 profile 启动和广播。这个 property 是稳定的平台边界，但它不等于“桌面已显示”，也不等于“触摸已有响应”。
+
+init 会用 `ro.boottime.<service-name>` 记录 service 第一次启动的 `CLOCK_BOOTTIME` 时间，所以主 Zygote 对应 `ro.boottime.zygote`。`ro.boottime.event.<event-name>` 记录 Action 开始执行的时间，但只有 `com.android.init.flags.enable_init_event_timestamp` 开启时才生成。分析工具必须允许 event property 缺失，不能把缺值解释为 Zygote 没有启动。
 
 实验报告应把起点和终点写进指标名。例如：
 
@@ -219,7 +230,7 @@ Android 17 `do_class_start()` 遍历 `ServiceList`，对属于目标 class 的 s
 
 ### event trigger 与 property trigger
 
-`on boot && property:x=y` 只在 `boot` event 发生时检查组合条件。如果 `boot` 已经过去，property 随后才变成 `y`，这条 Action 不会补跑。只依赖 property 的 `on property:x=y` 会在 property 变化时触发。
+`on boot && property:x=y` 只在 `boot` event 发生时检查组合条件。如果 `boot` 已经过去，property 随后才变成 `y`，这条 Action 不会补跑。只依赖 property 的 `on property:x=y` 会在属性变成目标值时触发；`boot` event 的末条 command 执行完以后，init 还会对全部 property trigger 做一次检查，执行当时已经满足条件的 Action。
 
 持久化 property 还有额外顺序边界：当 `ro.property_service.async_persist_writes=true` 时，persistent setprop 与普通 setprop 的触发先后没有定义。修改 rc 时要用状态机或显式 property 表达依赖，不能依赖日志里一次偶然的顺序。
 
@@ -368,7 +379,7 @@ Android 17 的 AMS 只有在 boot animation 完成后才继续 `finishBooting()`
 - `--record_time_since_factory_reset`
 - `-l`
 
-`RecordBootComplete()` 还会收集 `ro.boottime.init.*`、`ro.boottime.event.*` 和 `ro.boot.boottime` 中的 bootloader 分段。bootloader 没有提供 `ro.boot.boottime` 时，bootstat无法补出上电到 kernel 的缺失时间。
+`RecordBootComplete()` 还会收集一组明确列出的 `ro.boottime.init.*`、`ro.boottime.event.*` 字段，以及 `ro.boot.boottime` 中的 bootloader 分段。event 字段只有在 init 的 event timestamp flag 开启并成功写入 property 时才有值。bootloader 没有提供 `ro.boot.boottime` 时，bootstat 无法补出上电到 kernel 的缺失时间。
 
 下面的命令用于记录自定义事件并检查本机事件：
 
