@@ -27,215 +27,347 @@ sources:
 
 # 9.9 ContentProvider ANR 双路径：Publish 超时与 Call Hang 检测
 
-ContentProvider 在 AOSP 中存在两条独立的超时/ANR 路径，触发机制、超时常量、处理流程和 Perfetto 表现完全不同：
+ContentProvider 相关卡死至少涉及四个计时器，其中只有一条路径直接进入 Provider 宿主进程的 ANR 管线：
 
-1. **Provider 进程 publish 注册超时**——进程启动后未在规定时间内向 AMS 注册 provider，结果是被杀，不弹 ANR 对话框
-2. **已发布 provider 的 call hang 检测**——调用方主动开启超时监控，超时后走标准 ANR 流程，弹对话框
+1. 已 attach 的进程没有按期发布 Provider：以初始化失败移除宿主进程。
+2. 获取方等待 Provider ready 到期：结束本次获取或唤醒等待者。
+3. `ContentResolver` 等异步回调到期：返回空结果或走错误处理。
+4. 特权调用方启用 `ContentProviderClient.setDetectNotResponding()`，远程调用超过调用方配置的期限：Provider 宿主进入 `AnrHelper`。
 
-两条路径容易混淆，因为它们的 Reason 行都包含 "ContentProvider"，但根因和排查方向截然不同。
+“Publish 超时”和“ContentProvider not responding”在日志中都带 ContentProvider 字样，处理对象、时间起点和退出原因却不同。诊断时应先确认触发入口，再看 Provider 的 `onCreate()`、Binder 线程或数据库栈。
 
-（ContentProvider 的基础架构、初始化时序和跨进程通信机制详见 §1.10；ANR 的四大类型概览详见 §9.2。）
+本章以 `android-17.0.0_r1` 为平台锚点。ContentProvider 的发布、引用计数和 Binder Transport 结构见 [§1.10 ContentProvider 性能与优化](../../part1-fundamentals/ch01-architecture/10-content-provider.md)；通用 ANR 证据流程见 [§9.3 ANR 分析方法](03-anr-analysis.md)。
 
-## ContentProvider 超时常量定义
+## 1. 四个常量，四种语义
 
-四个超时常量全部定义在 `ContentResolver`（`frameworks/base/core/java/android/content/ContentResolver.java`），而非 `ContentProviderHelper`。每个常量对应 AMS 中不同的 `what` 消息码和等待条件。
+Android 17 的四个常量都定义在 `ContentResolver`，但它们没有全部映射到 AMS Handler，也不会全部产生 ANR。
 
-| 常量 | 基准值 | 含义 | AMS 消息码 |
-|------|--------|------|-----------|
-| `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` | 10s × HW | Provider 进程 publish 注册超时 | `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG = 57` |
-| `CONTENT_PROVIDER_READY_TIMEOUT_MILLIS` | 20s × HW | 调用方等待新启动 provider 发布 | `WAIT_FOR_CONTENT_PROVIDER_TIMEOUT_MSG = 73` |
-| `CONTENT_PROVIDER_TIMEOUT_MILLIS` | 3s × HW | `getTypeAsync()`、`canonicalizeAsync()` 等异步回调超时 | — |
-| `REMOTE_CONTENT_PROVIDER_TIMEOUT_MILLIS` | — | 远端 provider 操作超时 | — |
+下面的源码片段用于确认四个预算之间的计算关系：
 
-所有基准值都乘以 `Build.HW_TIMEOUT_MULTIPLIER`（§9.2 已提及该系数对各类型 ANR 超时的影响）。
+```java
+public static final int CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS =
+        10 * 1000 * Build.HW_TIMEOUT_MULTIPLIER;
 
-[已验证: AOSP android-16.0.0_r1, ContentResolver.java l.786-806, ActivityManagerService.java:1551,1561]
+public static final int CONTENT_PROVIDER_READY_TIMEOUT_MILLIS =
+        CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS
+        + 10 * 1000 * Build.HW_TIMEOUT_MULTIPLIER;
 
-## 路径 1：Provider Publish 超时
+private static final int CONTENT_PROVIDER_TIMEOUT_MILLIS =
+        3 * 1000 * Build.HW_TIMEOUT_MULTIPLIER;
 
-### 触发流程
-
-当 AMS 拉起一个包含 ContentProvider 的进程后，该进程必须在 `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`（默认 10s × HW multiplier）内向 AMS 注册其 provider。注册动作发生在 `ActivityThread.handleBindApplication()` → `installContentProviders()` 完成之后，通过 `IActivityManager.publishContentProviders()` 把 provider 的 `ContentProviderHolder` 放入 `mProviderMap`。
-
-```
-AMS.attachApplicationLocked()
-  → 发送 CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG (what=57)
-  → 等待进程调用 publishContentProviders()
+private static final int REMOTE_CONTENT_PROVIDER_TIMEOUT_MILLIS =
+        CONTENT_PROVIDER_READY_TIMEOUT_MILLIS
+        + CONTENT_PROVIDER_TIMEOUT_MILLIS;
 ```
 
-[已验证: AOSP android-16.0.0_r1, ActivityManagerService.attachApplicationLocked()]
+默认倍率为 1 时，它们依次是 10 秒、20 秒、3 秒和 23 秒。具体用途如下。
 
-如果在超时窗口内进程未完成 publish，AMS 的 handler 收到 `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG` 后调用 `ContentProviderHelper.processContentProviderPublishTimedOutLocked()`，最终执行 `removeProcessLocked()` + `REASON_INITIALIZATION_FAILURE` 杀掉进程。
+| 预算 | 起点与等待对象 | 到期动作 | 会直接进入 `AnrHelper` |
+|---|---|---|---|
+| publish，`10s × HW` | Provider 宿主 attach 后，等待该进程发布 launching providers | 以 `REASON_INITIALIZATION_FAILURE` 移除宿主进程 | 否 |
+| ready，`20s × HW` | 获取方等待正在启动的 Provider 发布 | 标记发布失败、唤醒等待方；获取返回 `null` | 否 |
+| connected callback，`3s × HW` | 已连接 Provider 的 `getTypeAsync()`、`canonicalizeAsync()` 等回调 | 结束等待并按调用点返回或抛错 | 否 |
+| remote callback，`23s × HW` | 经 `system_server` 获取 MIME type 等异步结果 | 结束等待并按调用点降级 | 否 |
+| call detector，调用方配置 | `ContentProviderClient` 的一次远程操作 | 对 Provider 宿主发起 `ContentProvider not responding` ANR | 是 |
 
-### 关键特征：不弹 ANR 对话框
+前三个固定预算和 call detector 相互独立。某次 Provider 查询还可能触发调用方的输入 ANR，例如调用方在主线程等待 Provider ready；那是调用方的输入 deadline 到期，ANR subject 不会因此自动变成 `ContentProvider not responding`。
 
-这是路径 1 与路径 2 的根本区别。publish 超时直接杀进程，不会弹出 ANR 对话框，Perfetto 中不会出现 `am_anr` 事件。能观察到的是：
+## 2. Publish guard：初始化失败清进程
 
-- `am_proc_died` 事件，附带 `SUBREASON_UNKNOWN` 或 `REASON_INITIALIZATION_FAILURE`
-- 日志中出现 "Unable to launch app ... for provider ... launching app became null"
+### 2.1 计时从 attach 开始
 
-### publish 超时的常见根因
+AMS 启动承载 Provider 的进程后，把对应 `ContentProviderRecord` 放入 `mLaunchingProviders`。进程 attach 到 `system_server` 时，`ActivityManagerService.attachApplicationLocked()` 检查它是否仍承载 launching provider；满足条件便发送：
 
-- `ContentProvider.onCreate()` 执行了同步数据库初始化、大文件读取、网络请求等耗时操作
-- 多个 ContentProvider 顺序初始化，累计耗时超过 10s（关于 CP 初始化顺序的影响详见 §1.10）
-- Provider 进程本身启动缓慢（Zygote fork + Application 初始化 + CP 初始化全部挤在同一个 10s 窗口内）
-- 低端设备上 HW_TIMEOUT_MULTIPLIER 放大了基准超时，但实际初始化时间增长可能超过乘数补偿
+- message：`CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG`；
+- `what`：57；
+- delay：`CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`；
+- `obj`：宿主 `ProcessRecord`。
 
-## 路径 2：Provider Call Hang 检测
+这个 10 秒窗口不包含 Zygote fork 到进程 attach 之前的时间。它覆盖 attach 之后的 `bindApplication` 准备、Application 实例创建、Provider 安装及各 Provider 的 `onCreate()`。
 
-### 触发条件
+Android 17 的 `ActivityThread.handleBindApplication()` 顺序很容易被写反：
 
-路径 2 是调用方主动开启的。通过 `ContentProviderClient.setDetectNotResponding(timeoutMillis)` 设置超时阈值后，每次通过该 client 执行 CRUD 操作时，框架会在主线程 Looper 上投递一个延迟的 `NotRespondingRunnable`。如果在 `timeoutMillis` 内操作未完成，`NotRespondingRunnable` 被执行，进入 ANR 流程。
+1. 创建 Application 对象；
+2. `installContentProviders()` 顺序安装 Provider，并调用每个 Provider 的 `onCreate()`；
+3. `publishContentProviders()` 把 holder 列表交给 AMS；
+4. 随后才调用 `Application.onCreate()`。
 
-[已验证: AOSP android-11.0.0_r1, ContentProviderClient.setDetectNotResponding()]
+因此，普通启动场景中 `Application.onCreate()` 不消耗 publish guard；Application 类加载、构造、attach 和更早的 bind 初始化仍可能消耗。Provider 已发布后，远程 query 可能与尚未结束的 `Application.onCreate()` 并发，这部分时间会落入远程调用等待。
 
-**注意**：`setDetectNotResponding()` 是 `@hide` / `@SystemApi` / `@TestApi` 方法，并要求 `REMOVE_TASKS` 权限。普通应用编译时拿不到这个方法。它面向 framework 内部和系统测试场景，不是应用侧可直接使用的 API。
+### 2.2 多个 Provider 共用一次 publish
 
-[已验证: AOSP android-11.0.0_r1, ContentProviderClient.setDetectNotResponding() 带 @hide / @SystemApi / @TestApi 标注]
+`installContentProviders()` 逐个安装清单中的 Provider，把成功安装的 holder 收集到列表，再调用一次 `IActivityManager.publishContentProviders()`。任何一个排在前面的 `onCreate()` 卡住，后面的 Provider 都无法安装，整批 holder 也无法发布。
 
-### ANR 流程
+常见阻塞点包括：
 
-路径 2 走标准 ANR 管线：
+- Provider `onCreate()` 中同步打开或迁移数据库；
+- 文件锁、进程锁或跨进程 Binder 环；
+- 主线程文件 I/O、资源解压和 page fault；
+- SDK 自动初始化器之间的依赖或递归获取 Provider；
+- 等待一个尚未建立的业务 executor、Future 或 CountDownLatch。
 
+网络请求不应放进 `onCreate()`。即使网络栈在某台设备上很快，它的外部时延和失败重试也不适合 Provider 发布期限。
+
+### 2.3 到期动作
+
+message 57 到期后，AMS 调用 `ContentProviderHelper.processContentProviderPublishTimedOutLocked()`。Android 17 的处理是：
+
+1. 清理该进程仍占用的 launching-provider 状态；
+2. 调用 `removeProcessLocked()`；
+3. exit reason 记为 `ApplicationExitInfo.REASON_INITIALIZATION_FAILURE`；
+4. subreason 使用 `SUBREASON_UNKNOWN`；
+5. 描述为 `timeout publishing content providers`。
+
+这条路径没有调用 `mAnrHelper.appNotResponding()`，不会生成 `ContentProvider not responding` 类型的 ANR。进程退出是否有用户可见 UI，取决于前台状态和上层启动场景；它不属于 `AppNotRespondingDialog` 管线。
+
+### 2.4 如何取证
+
+应用下次启动后，可以查询自己的历史退出原因。下面的 Kotlin 代码用于筛选初始化失败记录：
+
+```kotlin
+val activityManager =
+    context.getSystemService(ActivityManager::class.java)
+
+val initializationFailures =
+    activityManager.getHistoricalProcessExitReasons(
+        context.packageName,
+        0,
+        32
+    ).filter {
+        it.reason == ApplicationExitInfo.REASON_INITIALIZATION_FAILURE
+    }
+
+initializationFailures.forEach { exit ->
+    Log.i(
+        "ProviderExit",
+        "process=${exit.processName}, time=${exit.timestamp}, " +
+            "description=${exit.description}"
+    )
+}
 ```
-NotRespondingRunnable.run()
-  → ContentResolver.appNotRespondingViaProvider()
-    → ContentProviderHelper.appNotRespondingViaProvider(IBinder connection)
-      → mAnrHelper.appNotResponding(proc, timeoutRecord)
-        → ProcessErrorStateRecord.appNotResponding()
-          → AppNotRespondingDialog
+
+`description` 属于诊断信息，格式可能变化。识别 publish timeout 时，还应结合同一时段的 `ActivityManager` 日志、Provider authority、进程 attach 和 `bindApplication` trace。
+
+## 3. Ready timeout：获取失败，不是 Provider ANR
+
+当调用方请求一个尚未发布的远程 Provider，AMS 可以先返回 `provider == null` 的 `ContentProviderHolder`。应用进程中的 `ActivityThread.acquireProvider()` 随后在 `ProviderKey.mLock` 上等待，最长为 `CONTENT_PROVIDER_READY_TIMEOUT_MILLIS`。
+
+system_server 同时为该 `ContentProviderRecord` 安排 `WAIT_FOR_CONTENT_PROVIDER_TIMEOUT_MSG`：
+
+- `what`：73；
+- delay：`20s × HW_TIMEOUT_MULTIPLIER`；
+- 到期：`onProviderPublishStatusLocked(false)`，通知等待者发布失败。
+
+应用侧等待结束后若 holder 仍为空，`acquireProvider()` 记录 `Failed to find provider info` 并返回 `null`。shell 等 external client 的特殊路径会在 system_server 内等待同一 ready 预算，到期后写 `Timeout waiting for provider` 并返回 `null`。
+
+Ready timeout 比 publish guard 长 10 秒，是为了给宿主的 publish timeout、进程清理和等待方通知留下顺序空间。它不会把等待方或 Provider 宿主直接送入 `AnrHelper`。
+
+这里有一个并行 deadline：调用方若在 UI 线程同步执行 `ContentResolver.query()`，可能在 ready timeout 到达前就因输入事件、Service 或 Broadcast deadline 产生调用方 ANR。栈中常见 `ActivityThread.acquireProvider()`、`Object.wait()` 或 AMS Binder 调用。归因时要写“调用方主线程同步等待 Provider 发布”，不要标成 call detector 触发的 Provider ANR。
+
+## 4. Call hang detector：由特权调用方开启
+
+### 4.1 API 权限与计时方式
+
+`ContentProviderClient.setDetectNotResponding(long)` 在 Android 17 中是 `@SystemApi`、`@hide`，并要求 `android.permission.REMOVE_TASKS`。普通 SDK 应用无权把它当作 CRUD timeout API。
+
+启用后，`ContentProviderClient` 的远程方法经 `execute()` 包装：
+
+1. `beforeRemote()` 把 `NotRespondingRunnable` 延迟投递到调用方进程的 main looper；
+2. 当前线程执行 Binder 调用；
+3. 调用及时返回时，`afterRemote()` 移除 runnable；
+4. runnable 到期执行时，调用 `ContentResolver.appNotRespondingViaProvider()`。
+
+检测 runnable 使用 main looper 的异步 `Handler`。若调用方恰好在自己的主线程阻塞执行远程调用，main looper 无法按期运行 detector；调用方更可能先触发输入或组件 ANR。系统组件使用此能力时，应让 main looper 保持可调度，并在 worker 上执行被监控调用。
+
+### 4.2 AMS 如何找到被归责进程
+
+`ActivityThread.appNotRespondingViaProvider()` 通过 Provider binder 找到本进程持有的 `ProviderRefCount`，把 holder 中的 connection 传给 AMS。`ContentProviderHelper.appNotRespondingViaProvider()`：
+
+1. 校验调用方具有 `REMOVE_TASKS`；
+2. 从 `ContentProviderConnection` 取出 `conn.provider.mProc`；
+3. 创建 reason 为 `ContentProvider not responding` 的 `TimeoutRecord`；
+4. 调用 `mAnrHelper.appNotResponding(host, timeoutRecord)`。
+
+被标记无响应的是 Provider 宿主，调用方继续卡在原来的 Binder 调用中。前台、后台和系统设置会影响后续处置：后台 silent ANR 可以直接杀进程，前台记录可能进入 ANR UI；不能笼统写成“每次都会弹框”。
+
+### 4.3 Android 17 的 cancellation-aware 变体
+
+Android 17 源码还包含受 feature flag 控制的 `setDetectNotRespondingOnCancel(fixed, onCancel)`：
+
+- 不支持 cancellation 的调用使用 fixed timeout；
+- 支持 cancellation 且配置了 on-cancel timeout 时，从 `CancellationSignal.cancel()` 后开始计时；
+- cancellable 调用配置 on-cancel timeout 后，不再套 fixed timeout；
+- 调用长期没有响应 cancellation 时，可以把 Provider 宿主送入相同的 ANR 路径。
+
+旧的 `setDetectNotResponding(fixed)` 在对应 flag 启用时委托给新方法，并把 on-cancel timeout 设为 0，从而保留固定期限语义。系统应用若依赖这条新路径，应核对目标 build 的 flag，而不能只看 API 37。
+
+## 5. Async callback timeout：结果降级
+
+`CONTENT_PROVIDER_TIMEOUT_MILLIS` 用在已取得 Provider 后的短异步回调，例如：
+
+- `getTypeAsync()`；
+- `canonicalizeAsync()`；
+- `uncanonicalizeAsync()`。
+
+`REMOTE_CONTENT_PROVIDER_TIMEOUT_MILLIS` 用于通过 ActivityManager 异步获取远程 MIME type 等结果，预算包含 ready timeout 再加 3 秒回调等待。
+
+这两条到期路径会结束 `ResultListener` 等待，再由调用点返回 `null`、传播记录的异常或执行降级。它们没有调用 `appNotRespondingViaProvider()`。看到 3 秒或 23 秒等待，不能据此声称 Provider 宿主发生 ANR。
+
+## 6. 诊断决策表
+
+| 证据 | 对应路径 | 被处理对象 | 下一步 |
+|---|---|---|---|
+| exit reason 为 `INITIALIZATION_FAILURE`，描述含 publish timeout | publish guard | Provider 宿主 | 看 attach→publish、各 `onCreate()` |
+| `Failed to find provider info` 或 `Timeout waiting for provider` | ready wait | 本次获取 | 看进程启动、publish status 与调用线程 |
+| 调用返回 `null`，窗口约 3/23 秒 | async callback wait | 本次 API 调用 | 看 callback 是否回送、RemoteException |
+| ANR subject 为 `ContentProvider not responding` | call detector | Provider 宿主 | 看 detector 配置方、Binder call 与宿主线程 |
+| 调用方 ANR，栈在 `acquireProvider()` | 调用方其他 deadline | 调用方 | 查主线程同步获取与对应 ANR 类型 |
+| Provider binder 线程全忙，缺少目标 query 开始 slice | call detector 或普通慢调用 | Provider 宿主 | 查 Binder 线程池饱和与嵌套同步调用 |
+
+这张表里的日志字符串是 Android 17 AOSP 线索，厂商可能改文案。退出原因、ANR reason、PID 和源码路径比单条日志更稳定。
+
+## 7. Perfetto 怎么看
+
+### 7.1 Publish 路径
+
+采集至少包含：
+
+- `am`、`binder_driver`、`sched`、`freq`；
+- 目标进程的 atrace app category；
+- `linux.process_stats`；
+- 按需加入 disk、reclaim 和 CPU sampling。
+
+在 Provider 宿主主线程上定位 `bindApplication`，展开到 Provider 类名、`installProvider` 或 `onCreate()`。下面的 SQL 用于列出目标进程中与启动和 Provider 相关的 thread slice：
+
+```sql
+SELECT
+  slice.ts,
+  slice.dur / 1e6 AS dur_ms,
+  thread.name AS thread_name,
+  slice.name
+FROM slice
+JOIN thread_track ON slice.track_id = thread_track.id
+JOIN thread USING (utid)
+JOIN process USING (upid)
+WHERE process.name = 'com.example.provider'
+  AND (
+    slice.name GLOB '*bindApplication*'
+    OR slice.name GLOB '*Provider*'
+    OR slice.name GLOB '*provider*'
+  )
+ORDER BY slice.ts;
 ```
 
-[已验证: AOSP, ContentProviderHelper.appNotRespondingViaProvider()]
+用户代码没有埋点时，结果可能只显示 framework 阶段。此时用主线程调度状态、CPU sampling、文件系统事件和启动日志补足，不要用空白区间猜某个 Provider。
 
-Perfetto 中标记为 `am_anr` 事件，Reason 行包含 "ContentProvider" 和 "not responding"。
+### 7.2 Call hang 路径
 
-### 系统侧的使用场景
+Call detector 走标准 ANR 管线。Android 17 可在采到 `debug.anr` Track Event 时搜索 `ANR Detected`，再核对 reason 是否为 `ContentProvider not responding`。分析重点在 Provider 宿主：
 
-AOSP 中系统服务自身会调用 `setDetectNotResponding()`。例如 `ContentProviderHelper` 在获取远端 provider 连接时，如果需要同步等待 provider 发布和响应，会通过 client 设置 call hang 检测。这意味着即使是路径 2 的 ANR，触发方也可能是系统服务而非应用代码——排查时需要确认 `setDetectNotResponding` 的调用来源。
+- main 线程是否仍在 `Application.onCreate()`；
+- Binder 线程是否进入 `ContentProvider$Transport.query/insert/call`；
+- 目标 Binder 线程在 Running、R、S、D 中各持续多久；
+- 是否等待数据库锁、文件 I/O、另一个 Binder 服务或主线程；
+- 全部 Binder 线程是否被同步事务占满。
 
-## 两条路径的对比
+支持 Binder 标准库的 Perfetto 版本可以用下面的查询筛选 Provider 宿主接收的慢调用：
 
-| 维度 | 路径 1：Publish 超时 | 路径 2：Call Hang 检测 |
-|------|---------------------|----------------------|
-| 触发条件 | Provider 进程未在 10s×HW 内完成 publish | `setDetectNotResponding()` 开启后，CRUD 操作超时 |
-| 超时阈值 | `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`（10s×HW） | 由调用方通过 `setDetectNotResponding(timeout)` 指定 |
-| 处理结果 | 杀进程（`removeProcessLocked`），不弹 ANR 对话框 | 标准ANR流程，弹出 AppNotRespondingDialog |
-| Perfetto 表现 | `am_proc_died`，无 `am_anr` | `am_anr` 事件 |
-| 日志关键词 | `REASON_INITIALIZATION_FAILURE` / `launching app became null` | `ContentProvider not responding` |
-| 超时来源 | AMS handler 消息（what=57） | `NotRespondingRunnable`（主线程 Looper） |
-| 谁会被杀/ANR | Provider 所在进程被杀 | Provider 所在进程被判定 ANR |
-| 可见性 | 无对话框，用户感知为 App 闪退 | 有 ANR 对话框，用户明确看到 |
+```sql
+INCLUDE PERFETTO MODULE android.binder;
 
-## HW_TIMEOUT_MULTIPLIER 的影响
+SELECT
+  client_ts,
+  client_process,
+  client_thread,
+  server_process,
+  server_thread,
+  client_dur / 1e6 AS client_wall_ms,
+  server_dur / 1e6 AS server_wall_ms,
+  aidl_name
+FROM android_binder_txns
+WHERE server_process = 'com.example.provider'
+  AND client_ts BETWEEN 123000000000 AND 143000000000
+ORDER BY client_dur DESC;
+```
 
-所有 ContentProvider 超时基准都乘以 `Build.HW_TIMEOUT_MULTIPLIER`。这个系数的目的是给性能较低的硬件更多时间完成操作。Performance Class 低的设备 multiplier 通常 ≥ 1.5x，意味着 publish 超时实际可能 ≥ 15s。
+`aidl_name` 能否解出 `IContentProvider` 方法取决于 trace 数据和解析器。即使方法名缺失，client/server PID、事务 slice 和双方线程状态仍可用于还原等待阶段。
 
-分析 ContentProvider 相关的 trace 时，必须考虑目标设备的 HW_TIMEOUT_MULTIPLIER：
+### 7.3 不依赖 `am_anr` 字符串 SQL
+
+`am_proc_died`、`am_anr` 是否以 slice 名出现，受 atrace、EventLog 导入、Perfetto parser 和厂商实现影响。用 `slice.name LIKE '%am_anr%'` 同时承担“发现事件”和“判断原因”，漏报与误报都很常见。
+
+更稳的入口是：
+
+1. `ApplicationExitInfo` 或系统 EventLog 确认退出类型；
+2. Android 17 `ANR Detected` instant 与 ANR reason 确认 call detector；
+3. PID、process start/attach/publish 时序确认宿主；
+4. Binder flow 和线程状态解释耗时。
+
+## 8. `HW_TIMEOUT_MULTIPLIER` 的边界
+
+Android 17 的定义是：
+
+```java
+public static final int HW_TIMEOUT_MULTIPLIER =
+        SystemProperties.getInt("ro.hw_timeout_multiplier", 1);
+```
+
+它是整数，默认值为 1。源码注释说明它面向比真机慢几个数量级的软件模拟器；真机和硬件加速虚拟设备不应设置。它与 Android Performance Class 没有自动换算关系，也不存在由平台统一配置的 1.5 倍档位。
+
+下面的命令用于读取测试设备的属性值：
 
 ```bash
-# 查询设备实际值
 adb shell getprop ro.hw_timeout_multiplier
 ```
 
-如果 multiplier = 2，那么 publish 超时实际是 20s 而非 10s。在 Perfetto 中测量时间间隔时，需要用实际超时值来判断是否真的触发了超时。
+空值按 `Build` 中的默认值 1 解释。若输出 2，publish、ready、connected callback 和 remote callback 分别变成 20、40、6、46 秒。`setDetectNotResponding()` 的时长由调用方传入，不会自动乘这个倍率。
 
-## Perfetto 调试方法
+## 9. 修复策略
 
-### 区分两条路径的 SQL 查询
+### 9.1 Publish 超时
 
-**路径 1（publish 超时）——查 am_proc_died，无 am_anr：**
+- 记录每个 Provider `onCreate()` 的开始、结束和 authority，定位批次中最早卡住的位置。
+- 把数据库 migration、全量索引、网络和大文件扫描移出 publish 路径。
+- 对必须 lazy 的资源定义并发安全的 ready 状态；只把任务扔到后台、却让首个 query 同步等同一任务，延迟仍会转移到 call hang。
+- 检查 Provider 间相互查询、文件锁和 SDK 初始化依赖，避免启动期环。
+- 为独立进程 Provider 单独测量 attach→publish；拆进程只能隔离主进程成本，无法取消远程 Provider 自己的 publish guard。
 
-```sql
--- 查找 publish 超时导致的进程死亡
-SELECT
-  ts,
-  process.name AS process_name,
-  slice.name AS event
-FROM slice
-JOIN process_track ON slice.track_id = process_track.id
-JOIN process USING (upid)
-WHERE slice.name LIKE '%am_proc_died%'
-  AND slice.name NOT LIKE '%am_anr%'
-ORDER BY ts DESC
-LIMIT 20;
-```
+Jetpack App Startup 会把多个 initializer 放进一个 `InitializationProvider`。它减少 Provider 组件数量，却仍在该 Provider 的 `onCreate()` 中执行 initializer。慢 initializer、错误依赖图和同步 I/O仍会阻塞整批 publish，不应给“每合并一个 Provider 固定节省若干毫秒”这类跨设备承诺。
 
-**路径 2（call hang ANR）——查 am_anr 事件：**
+### 9.2 Provider call hang
 
-```sql
--- 查找 ContentProvider call hang 导致的 ANR
-SELECT
-  ts,
-  process.name AS process_name,
-  slice.name AS event
-FROM slice
-JOIN process_track ON slice.track_id = process_track.id
-JOIN process USING (upid)
-WHERE slice.name LIKE '%am_anr%'
-  AND (slice.name LIKE '%content_provider%'
-    OR slice.name LIKE '%ContentProvider%')
-ORDER BY ts DESC
-LIMIT 20;
-```
+- query 先缩小 projection、selection 和返回行数，避免在 Binder 线程做无边界扫描。
+- 数据库 migration 与 query 分离，明确数据库锁的持有范围。
+- 不在 Provider Binder 线程中同步等待主线程；主线程也不要反向等待同一 Binder 线程。
+- 限制嵌套同步 Binder，保留线程池处理新请求的能力。
+- 支持 `CancellationSignal` 的操作应及时传播到数据库、文件或下游服务。
+- 系统调用方配置 detector 时，要保证 main looper 能运行检测 runnable，并把阈值与接口契约、取消语义和误杀成本一起评估。
 
-### 排查入口速查
+普通应用侧应把远程 Provider 调用移出 UI deadline，使用 cancellation 和业务超时控制自己的等待。反射调用 hidden API 既不稳定，也会因权限校验失败；`setDetectNotResponding()` 的动作是让系统对远端宿主发起 ANR，不能当成普通 Future timeout。
 
-| 观察到的现象 | 排查方向 |
-|-------------|---------|
-| `am_proc_died` + `REASON_INITIALIZATION_FAILURE`，无 `am_anr` | 路径 1：检查 Provider 进程的 `onCreate()` 耗时 |
-| `am_anr` + "ContentProvider not responding" | 路径 2：检查远端 Provider 的 CRUD 操作耗时 + Binder 线程池状态 |
-| 调用方主线程 WAITING，远端进程在 `handleBindApplication()` | 路径 1 的变体：远端进程冷启动慢导致调用方等待超过 ready 超时 |
-| Binder 线程全部 BUSY + `ContentProvider$Transport.*` 栈帧 | Binder 线程耗尽，不是独立的 ContentProvider 超时路径（详见 §9.4） |
+## 10. 版本结论
 
-## 扩展
+截至 Android 17 / API 37：
 
-### ContentProvider ANR 与应用启动的关系
+- publish guard 固定为 `10s × HW_TIMEOUT_MULTIPLIER`，入口是 AMS message 57；
+- ready wait 固定为 `20s × HW_TIMEOUT_MULTIPLIER`，AMS message 73 和 `ActivityThread` 等待共同处理发布结果；
+- connected/remote callback 预算为 `3s × HW` 和 `23s × HW`，到期不自动触发 ANR；
+- `setDetectNotResponding()` 属于受权限保护的 System API，期限由调用方设置；
+- cancellation-aware detector 受 Android 17 feature flag 控制；
+- Provider ANR 的宿主处置沿 `ContentProviderHelper → AnrHelper → ProcessErrorStateRecord` 执行，后台记录可能没有对话框。
 
-ContentProvider publish 超时频繁发生在应用冷启动阶段。在 multi-process 场景下，Provider 进程的初始化链路（Zygote fork → Application 创建 → CP 初始化 → publish）需要在 10s×HW 内全部完成，任何一个环节变慢都可能导致超时。
+遇到 ContentProvider 相关故障时，先把“发布、等待 ready、异步 callback、远程 call”四个阶段分开，再讨论优化。只看 10 秒常量或一行 `ContentProvider` 日志，无法判断被处理的是调用方还是 Provider 宿主。
 
-冷启动期间常见的叠加因素：
+## 参考资料
 
-- 多个 SDK 通过 ContentProvider 自动初始化（详见 §1.10 的量化数据）
-- Provider 进程是独立进程（`android:process=":remote"`），有独立的 Application 初始化开销
-- Provider 的 `onCreate()` 内做了同步磁盘 I/O 或数据库 migration
-
-Jetpack App Startup 通过合并多个 CP 为单个 `InitializationProvider` 来减轻初始化负担，每合并一个 CP 约节省 2ms 启动时间（§1.10 有详细的量化数据）。但 App Startup 只解决同进程内多个 CP 的累积耗时问题，不解决单个 CP 自身 `onCreate()` 过慢的根因。
-
-### HW_TIMEOUT_MULTIPLIER 查询与关联分析
-
-在 Perfetto 中关联分析 HW_TIMEOUT_MULTIPLIER 的步骤：
-
-1. 从设备信息中获取 multiplier 值（`ro.hw_timeout_multiplier` 属性）
-2. 计算实际超时阈值：`基准值 × multiplier`
-3. 在 Perfetto 中测量从进程启动到 publish 完成（或超时）的时间间隔
-4. 用实际超时阈值判断是否属于正常超时行为
-
-如果设备 multiplier = 2 但 publish 仍在 15s 内完成，说明 publish 本身是成功的（实际超时阈值是 20s）。如果 multiplier = 1 但 publish 耗时 11s，则已超过 10s 阈值，进程会被杀。
-
-### ContentProvider ANR 的治理策略
-
-**应用侧：**
-
-- 延迟初始化：将 `ContentProvider.onCreate()` 中的非关键操作延迟到首次使用时执行
-- 异步化：数据库 migration、大文件读取等操作移到后台线程，`onCreate()` 尽快返回
-- 合并 CP：用 Jetpack App Startup 减少 CP 数量
-- 进程拆分：将重度初始化的 CP 放到独立进程，避免影响主进程启动
-
-**系统侧（面向 ROM/系统应用开发者）：**
-
-- 关注 HW_TIMEOUT_MULTIPLIER 对低端设备的实际影响
-- `setDetectNotResponding()` 的超时值需根据设备性能等级动态调整
-- 在系统应用中使用 `ContentProviderClient` 时考虑 call hang 检测的开启条件
-
-> [自动发现] 路径 2 的 `setDetectNotResponding()` 在 Android 11（API 30）加入 AOSP，但始终是 hidden/system API。排查线上 ContentProvider ANR 时，如果 Reason 行包含 "ContentProvider not responding"，应优先检查系统框架或系统应用的调用链，而非应用代码。
-
-
-## 延伸阅读
-
-### Android 16/17 ContentProvider ANR 双路径机制源码深度分析
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-06-android17-contentprovider-anr-double-path.md
-- 类型：DeepResearch 调研结果
-- 摘要：还原 ContentProvider 两条正交 ANR 路径：publish 超时（10s×HW_MULTIPLIER，进程初始化失败杀进程）与 call hang 超时（setDetectNotResponding 触发真 ANR），精确到常量定义位置、Handler 消息码、Perfetto SQL 查询、HW_TIMEOUT_MULTIPLIER 对低端机的影响。
-- 注入时间：2026-06-11
-- 价值：与 ch09/09 章节主题完全吻合，补充了源码级常量定位、HW_TIMEOUT_MULTIPLIER 分析和 Perfetto SQL 排查查询
+- [Android Developers：Content provider not responding](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs#content-provider-not-responding)
+- [AOSP android-17.0.0_r1：ContentResolver](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ContentResolver.java)
+- [AOSP android-17.0.0_r1：ContentProviderClient](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ContentProviderClient.java)
+- [AOSP android-17.0.0_r1：ActivityThread](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [AOSP android-17.0.0_r1：ContentProviderHelper](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderHelper.java)
+- [AOSP android-17.0.0_r1：ActivityManagerService](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
+- [AOSP android-17.0.0_r1：ProcessErrorStateRecord](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ProcessErrorStateRecord.java)
+- [AOSP android-17.0.0_r1：Build.HW_TIMEOUT_MULTIPLIER](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Build.java)
+- [§9.2 ANR 类型与触发条件](02-anr-types.md)
+- [§9.3 ANR 分析方法](03-anr-analysis.md)
+- [§9.8 ANR Kernel Trace 联合诊断](08-anr-kernel-trace-joint-diagnosis.md)
