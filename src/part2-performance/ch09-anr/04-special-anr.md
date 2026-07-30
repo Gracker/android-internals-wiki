@@ -72,403 +72,421 @@ last_task9_autofix_at: "2026-06-15"
 ---
 # 特殊场景的 ANR
 
-> **阅读本章前，你需要了解：** §9.1 ANR 的设计思想（ANR 的超时机制与触发流程）、§9.2 ANR 类型与触发条件。
-> **阅读本章后，你可以去看：** §9.5 案例集（本章讨论的场景在真实 Trace 中的完整分析过程）。
+> 阅读前可先看 [§9.2 ANR 类型与触发条件](02-anr-types.md) 和 [§9.3 ANR 分析方法](03-anr-analysis.md)。本章沿用其中的 Android 17 detector、时间点和证据等级。
 
-## 为什么要了解"特殊场景的 ANR"
+## “特殊”指的是证据跨了边界
 
-在 §9.2 中，我们梳理了 ANR 的标准触发条件——Input 事件 5 秒超时、Service 20 秒超时。Broadcast 的窗口要再细分一步：Android 13 及以下通常按前台 10 秒、后台 60 秒计时；Android 14 及以上如果接收进程处于 CPU starvation，`FLAG_RECEIVER_FOREGROUND` 广播会放宽到 10-20 秒，后台广播会放宽到 60-120 秒。把这些窗口看成固定常量，后面的 trace 很容易读偏。
+ANR 仍由 Input、Broadcast、Service、ContentProvider、Job 等 detector 按各自期限判定。这里讨论的场景有一个共同点：触发超时的进程与消耗时间的资源拥有者可能分属不同线程、进程，甚至不同内核子系统。
 
-但在实际分析工作中，有一类 ANR 让人头疼：**traces 文件里主线程的堆栈看起来"没干什么坏事"**——可能只是在等一个 Binder 回复、在等一个 SharedPreferences 写入完成、或者干脆处在 RUNNABLE 状态但 CPU 已经被其他进程占满。这类 ANR 的根因不在 App 代码本身，而在系统层面的资源竞争、跨进程依赖或者一些容易被忽视的框架行为。
+常见跨边界关系包括：
 
-我们把这些情况称为"特殊场景的 ANR"。它们的共同特点：
+- 主线程已 Runnable，CPU 时间被同 cpuset 的其他线程消耗；
+- 调用方主线程等待 Binder reply，慢路径位于服务端或更深的嵌套调用；
+- `SharedPreferences.apply()` 已返回，组件完成信号仍被尚未写完的数据拖住；
+- Provider 初始化发生在应用冷启动早段，超时却表现为输入、广播或调用方 ANR；
+- GC、reclaim、page fault 和低频 CPU 同时挤压主线程预算；
+- SQLite 调用卡在连接池、事务、checkpoint 或文件系统中的某一层。
 
-第一，**不容易从 App 代码直接定位**。在 traces 里看到主线程在等 Binder 调用返回，但问题可能发生在对端进程。
+分析时不要用“系统问题”或“应用问题”提前结束调查。每个结论都应写清 detector、等待者、资源拥有者、时间区间和能够实施的修复点。
 
-第二，**往往涉及多个因素叠加**。一个 SharedPreferences apply() 引起的 ANR，背后可能是磁盘 I/O 慢、系统负载高、加上 Activity 切换时机三者的综合作用。
+本章源码锚点为 AOSP `android-17.0.0_r1`，内核语义锚点为 `android17-6.18-2026-06_r6`。
 
-第三，**在 Trace 中的表现比较隐蔽**。需要知道该看哪里——CPU 全局利用率、D 状态线程、Binder 调用的对端。
+## CPU 饥饿、I/O 等待与 freezer
 
-## 系统负载高导致的 ANR
+### 主线程 Runnable 才是 CPU 饥饿的直接入口
 
-### 现象：主线程看起来没做错什么，但还是 ANR 了
+主线程长时间处于 Runnable、Running 占比很低，说明它已具备运行条件却没有及时获得 CPU。整机 CPU 利用率高、Load 高或某个进程占比高只能说明环境，不能替代目标线程的调度证据。
 
-Bug report 里的 ANR traces 显示主线程要么在 `nativePollOnce()`（idle 等待），要么在做很轻量的操作，但 input event 还是超时了。这时候查看 CPU 使用率，会发现整机负载极高。
+Perfetto 中要按唤醒事件拆分：
 
-这种情况的本质是：**App 本身没做错什么，但它被系统环境拖累了。** 当 CPU 饱和时，即使主线程只需要几毫秒就能处理完 input event，调度器也可能等了几秒才把 CPU 时间片分给它。
+1. 主线程何时从睡眠或等待变为 Runnable；
+2. wakeup-to-run 延迟多长；
+3. 延迟期间同 CPU、同 cpuset 上运行了哪些线程；
+4. 目标线程的 nice、调度组、uclamp 与 CPU affinity 是否符合预期；
+5. CPU frequency、idle 和 thermal 是否降低了可用算力。
 
-### CPU 饱和：调度器来不及调度
+多核总利用率没有达到 100% 时也可能发生局部饥饿。空闲核可能不在目标 cpuset、频率很低，或者任务受 affinity 限制。反过来，所有核很忙也不保证主线程必然饿死；更高优先级和调度组仍可能让它及时运行。
 
-在正常情况下，Android 的主线程优先级（`THREAD_PRIORITY_FOREGROUND`，-2）足以让调度器在几毫秒内把 CPU 分配给它。但当整机 CPU 饱和时，情况就不同了。
+### `D` 状态需要 kernel callstack
 
-CPU 饱和通常由以下因素造成：后台有大量进程同时运行（比如刚开机、批量安装应用）、某个进程的 worker 线程池全部跑满、系统服务的 Binder 线程池被打满导致请求排队。
+6.18 内核中的 `TASK_UNINTERRUPTIBLE` 会在常见工具里显示为 `D`。它表示任务正处于不可中断等待，状态字母没有指出磁盘、驱动、futex、内存回收或 freezer 中的哪一种原因。
 
-在 Perfetto 中，通过 CPU Scheduling track 可以直接看到这个状态：所有 CPU 核心都被占满，主线程长时间处于 Runnable 状态（青色条）但无法被调度执行。
+把 `D` 归到 I/O 至少需要一组相互支持的信号：
 
-### I/O 阻塞：D 状态与磁盘带宽竞争
+- 目标线程的 kernel callstack 落在文件系统、块设备或具体驱动等待路径；
+- 同一时间段存在 block I/O、`fsync()`、major fault 或 I/O PSI 增量；
+- 请求提交、设备服务和线程唤醒在时间线上能够对齐。
 
-在 Perfetto 的线程状态 track 中，会看到线程进入 D 状态（Uninterruptible Sleep），通常标注为 `D (disk sleep)` 或 `D (iowait)`。线程在等待磁盘 I/O 完成，而且这个等待不可中断。
+`loadavg` 把 Runnable 与不可中断等待任务都计入。8 核设备 Load 为 16 不能直接翻译为“CPU 使用 200%”，也不能判断其中有多少任务在等 I/O。
 
-当整机 I/O 压力大时，以下看似无害的操作都可能变成 ANR 的导火索：主线程读取一个 SharedPreferences 文件；主线程通过 `open()` 打开一个文件；ContentResolver 执行一次 `query()`；甚至主线程执行一次 Binder 调用，而对端进程正好在做 I/O 无法响应。
+### freezer 要用冻结状态确认
 
+`D` 和 `__refrigerator` 都不应当作 Cached Apps Freezer 的单点证明。6.18 内核有独立的 `TASK_FROZEN` 状态；cgroup v2 在 `cgroup.freeze` 完成后把 `cgroup.events` 的 `frozen` 置为 `1`。Android 系统侧还会记录 freeze/unfreeze reason。
 
-### 进程冻结导致的 ANR：Android 16+ 的诊断简化
+Android 17 的 Broadcast 路径对 freezer 有明确处理：
 
-在 Android 15 及以下，进程被系统冻结（Cached Apps Freezer）后，如果在该进程被冻结期间收到了 input event 或 broadcast，系统会等待进程解冻后再处理。解冻本身需要时间（从冻结到可调度通常需要几百毫秒到数秒），如果这个等待叠加到 ANR 超时窗口内，就会出现"应用什么都没做但还是 ANR 了"的情况。
+- `BroadcastQueueImpl` 发现目标是 warm process 时，会在投递前调用临时解冻；
+- 进程进入 running broadcast queue 时，系统通过 process state controller 更新接收状态，旧开关路径也会显式解冻；
+- `BroadcastAnrTimer` 使用 `AnrTimer.Args().extend(true)`，允许按软超时窗口内的 CPU delay 延长等待；
+- 当前锚点没有在这个 timer 上配置 `freeze(true)`。
 
-在 Perfetto 中，这类问题的特征是主线程在 ANR 时间窗内有 `__refrigerator` 或 `D (frozen)` 状态段，说明进程当时被系统冻结了。
+这些规则只约束 Broadcast。Input、execute-service、Provider 和应用自建 Binder 协议各有自己的冻结与进程状态路径。报告应同时给出目标 PID 的冻结区间、unfreeze reason、receiver 调度时间和 ANR timer 起点。
 
-**Android 16+ 的变化**：Android 16 的 `BroadcastQueueImpl` 在调度 receiver 前会调用 `unfreezeTemporarily(... START_RECEIVER)` 临时解冻目标进程，广播 ANR 计时使用 `BroadcastAnrTimer`（`AnrTimer.Args` 配置 `extend(true)` 和 `freeze(true)`），`extend(true)` 表示可按 CPU delay 做一次软超时延长。广播和回调调度对 freezer 更敏感：投递前先解冻，并且可以用 CPU starvation 延长超时。排查广播 ANR 时，看 freezer/unfreeze 事件、binder callback 在冻结期是否积压、以及具体 ANR 类型。注意这个结论只适用于广播 ANR 路径。Input、Service、ContentProvider 等场景的 freezer 处理逻辑各自独立，排查时需要分别确认对应路径的行为。
+## 广播洪峰：排队延迟与 receiver ANR 要分开
 
-### 在 Perfetto 中怎么分析
+### Android 17 按进程组织广播队列
 
-先看 CPU 概览 track：确认在 ANR 发生的时间段，所有 CPU 核心的占用率是否接近 100%。
+`BroadcastQueueImpl` 为每个目标进程维护 `BroadcastProcessQueue`，再按优先级、可运行时间和全局并行度选择运行队列。默认普通并行进程队列数在低内存设备为 2、其他设备为 4，DeviceConfig 可以改写。系统还限制单个 running process queue 连续投递的 active broadcast 数量，以便其他进程获得调度机会。
 
-然后看主线程的线程状态 track。如果主线程长时间是 Runnable（青色）而不是 Running（蓝色），说明它"想跑但跑不了"——CPU 被其他线程占了。
+这个模型没有取消以下约束：
 
-如果主线程长时间是 `D (iowait)`（深红色），说明它在等磁盘。需要去看是哪个进程在做密集 I/O。
+- 同一进程默认仍由主线程顺序处理 receiver callback；
+- ordered broadcast 和需要 result 的投递仍有完成依赖；
+- `goAsync()` 之后，`PendingResult.finish()` 仍是本次交付的完成信号；
+- 某些运行时注册的无序 receiver 可走 assumed-delivered，不启动 receiver ANR timer。
 
-再检查 ANR 发生时刻的 `loadavg`。如果 1 分钟平均负载远超 CPU 核心数（比如 8 核设备上负载 > 16），说明整机处于过载状态。
+receiver ANR timer 在 `dispatchReceivers()` 准备向 warm process 调度回调时启动。广播在 system_server 队列里等待的时间不会自动继承到该 receiver 的 10/60 秒窗口；系统把 receiver 调度出去后，主线程排队、应用初始化、`onReceive()`、异步工作和延迟的完成回执才会消耗这只 timer。
 
-## Broadcast 风暴导致的连锁 ANR
+### 洪峰为何仍会产生一组 ANR
 
-### 什么是 Broadcast 风暴
+大量广播可以同时制造三种压力：
 
-Android 的广播机制中，AMS 是**串行分发**有序广播的——必须等上一个接收者的 `onReceive()` 返回后，才能发给下一个。广播风暴发生在大批量广播在短时间内同时发出的情况。
+- system_server 排队和进程启动增加，用户可见动作整体变晚；
+- 多个接收进程同时执行初始化、Binder、数据库和文件写入，争用 CPU 与 I/O；
+- receiver 自己的 worker pool、`QueuedWork` 或对端服务已被前一批工作占满。
 
-### 连锁 ANR 的形成过程
+因此，同一时间段出现多条 `Broadcast of Intent` 只说明存在聚集现象。要写成“广播洪峰导致连锁 ANR”，还要证明发送速率或 pending queue 上升、各 receiver 的 timer 区间重叠，以及它们共享同一项受压资源。
 
-AOSP 会对每个 receiver 单独计时，不存在“前面排队太久，后面自动继承超时”的累计模型。`FLAG_RECEIVER_FOREGROUND` 广播在 Android 13 及以下通常按 10 秒算，后台广播按 60 秒算；Android 14 及以上如果进程明显拿不到 CPU，这两个窗口会放宽到 10-20 秒和 60-120 秒。判断边界别只看业务语义，直接看 ANR subject 里的 `flg=` 字段；带 `0x10000000` 就是 `FLAG_RECEIVER_FOREGROUND`。
+排查时保留以下时间点：
 
-广播风暴仍然会打出一串 ANR，因为 system_server 串行分发有序广播时，大量 receiver 会一起争抢 CPU、I/O 和 Binder 线程池。某个 receiver 如果在 `onReceive()` 里做数据库写入、网络等待或跨进程同步调用，会把后面的分发起点整体往后推；等这些 App 拿到执行机会时，各自的超时窗口已经被系统负载吃掉了一大截。
+| 时间点 | 说明 |
+|---|---|
+| 入队 | 广播进入 system_server 队列 |
+| 进程启动 | 冷进程开始拉起、attach 完成 |
+| 调度 receiver | ANR timer 可能在此启动 |
+| `onReceive()` 开始/返回 | 同步 receiver 的执行区间 |
+| `goAsync()` / `finish()` | 异步 receiver 的生命周期 |
+| `finishReceiver()` 到达 system_server | 平台收到完成回执 |
 
-因此，这里的因果链要写成“每个 receiver 仍然按自己的窗口超时，但广播风暴把整机拖慢了”，不要写成“广播队列自己累计超时”。
+若主线程 trace 停在 `nativePollOnce`，应检查自定义 Handler、`goAsync()` worker 和 `QueuedWork`。广播工作可能从未在主线程执行，主线程空闲与 Broadcast ANR 可以同时成立。
 
-### Trace 特征
+### 修复方向
 
-在 Perfetto 中，广播风暴的典型表现是：system_server 的 Binder 线程中看到大量连续的 `broadcastIntent` 调用；多个 App 进程几乎同时出现主线程被阻塞；ANR traces 中多个 App 的主线程都停在 `ActivityThread.handleReceiver()`。
+- 合并应用内部的高频事件，避免用全局广播传递可直接调用的进程内状态；
+- receiver 只解析必要字段并快速安排有界工作；
+- `goAsync()` 使用有容量规划的专用执行器，每条路径在 `finally` 中完成 `PendingResult`；
+- 长任务交给 JobScheduler、WorkManager 或前台服务，并遵守对应的后台执行规则；
+- 监控 sender UID、action、pending 数、冷启动数、receiver 执行和 finish 延迟。
 
-### 异步广播的优先级反转陷阱
+扩大线程池可能让 CPU、Binder 或数据库竞争更严重。应先确认排队来自容量不足，还是任务本身在等待不可用资源。
 
-Android 14+ 引入了 Modern Broadcast Queue（`BroadcastQueueModernImpl` + `BroadcastProcessQueue`，Android 16 侧为 `BroadcastQueueImpl`），将广播按目标进程组织成队列，解决了旧模型中串行分发导致的"队头阻塞"问题。这一改动发生在 system_server 侧——system_server 按进程维度排队与调度广播投递，不再让同一个进程的多个 receiver 互相阻塞。
+## Provider 初始化：三个超时出口
 
-App 侧 `onReceive()` 的线程模型没有变。Manifest 注册的 receiver 仍由 `IApplicationThread.scheduleReceiver()` 投递到 `ActivityThread.H.RECEIVER`，再在 `ActivityThread.handleReceiver()` 中直接调用 `receiver.onReceive(...)`——跑在主线程上。动态注册 receiver 默认也是注册线程或主线程 Handler，除非调用方显式传入其他 Handler。framework 没有把 `onReceive()` 投递到进程内部的线程池。
+### Provider 早于 `Application.onCreate()`
 
-trace 里如果看到后台线程池执行了广播相关逻辑，根因是 App 自己的 `goAsync()`、executor 或 SDK 内部线程池，不是 framework 的 ModernBroadcastQueue。
+Android 17 的 `ActivityThread.handleBindApplication()` 先创建 `Application` 对象，再调用 `installContentProviders()`，之后才执行 `Instrumentation.callApplicationOnCreate()`。Provider 的 `attachInfo()` 会进入其 `onCreate()`，所以静态 Provider 的初始化位于应用冷启动主线程早段。
 
-排查 Modern Broadcast Queue 相关问题时，Perfetto 中要看两个层面：system_server 侧按进程排队的投递节奏（`BroadcastQueueModernImpl` / `BroadcastQueueImpl` 的调度 slice），以及目标 App 主线程 `handleReceiver()` 的执行耗时。整机负载高时，ANR 的根因可能是主线程被其他工作占满，也可能是 system_server 调度延迟导致投递本身推后——两种情况在 trace 里表现不同。
+这段时间可能从三个出口表现出来：
 
-## ContentProvider 冷启动导致的 ANR
+1. **No-focused-window 或 Input ANR**：Activity 的首窗因 Provider 初始化迟迟没有建立，或主线程无法处理输入。
+2. **Broadcast/execute-service ANR**：系统已把 receiver 或 Service transaction 排在 `bindApplication` 之后，应用初始化占用其完成期限。
+3. **调用方派生 ANR**：另一个应用在主线程同步获取或调用该 Provider，等待目标进程发布和回复，调用方自己的输入期限到期。
 
-### ContentProvider 的初始化时序陷阱
+Android 17 的 10 秒 Provider publish guard 属于进程初始化保护。超时后系统以 `REASON_INITIALIZATION_FAILURE` 移除 Provider 进程，它不是 Provider ANR。显式远程调用监视要由调用方配置 `ContentResolver.setDetectNotResponding()`，到期后才进入 `ContentProvider not responding` ANR。三条路径的 reason 和被归责进程不同，详见 [§9.2 的 Provider 边界](02-anr-types.md#contentprovider发布保护与调用-anr-要分开)。
 
-ContentProvider 有一个容易被忽视的特性：**它在 `Application.onCreate()` 之前就被初始化了。** 当系统启动一个 App 进程时，`ActivityThread.handleBindApplication()` 的执行顺序是：创建 Application 对象 → 逐一安装所有声明的 ContentProvider → 调用每个 ContentProvider 的 `onCreate()` → 才调用 `Application.onCreate()`。
+### 诊断 Provider 冷启动
 
-如果某个 ContentProvider 的 `onCreate()` 做了耗时操作（数据库初始化、读取大文件、网络请求），它会直接拉长整个 App 的冷启动时间，而这个时间是被算在 ANR 超时里的。
+时间线上至少对齐：
 
-更隐蔽的问题来自第三方 SDK。很多 SDK 通过声明 ContentProvider 来实现自动初始化。如果有五六个 SDK 都这样做，每个在 `onCreate()` 里花几百毫秒，累计下来可能就是两三秒。
+- 目标进程 fork、attach 与 `bindApplication`；
+- 各 Provider 的 `attachInfo()` / `onCreate()`；
+- `Application.onCreate()`；
+- Provider publish；
+- 调用方的 acquire、query/call 与 Binder reply；
+- 首窗或 receiver/Service 的 deadline。
 
-### 跨进程 ContentProvider 查询的超时
+若目标进程在 Provider publish guard 到期前被移除，调用方可能收到 provider acquisition failure，而非目标进程 ANR。若调用方主线程仍在等待或重试，它仍可能随后发生自己的 Input ANR。
 
-在 Perfetto 中，重点看调用方的长段 WAITING 是否与对端进程的 `ActivityThread.handleBindApplication()` / Provider 初始化时间对齐。
+### App Startup 能解决哪部分
 
-另一个常见场景是 App A 通过 ContentResolver 查询 App B 的 ContentProvider。如果 App B 的进程还没有启动（冷启动），系统需要先启动 App B 的进程，初始化它的 ContentProvider，然后才能响应查询。这个冷启动的全过程对 App A 来说就是一个 Binder 同步调用等待。
+Jetpack App Startup 让多个组件共享一个 `InitializationProvider`，并用 `Initializer.dependencies()` 声明顺序。自动发现的 initializer 仍在 Provider 初始化阶段执行；只把多个 Provider 合成一个，不会自动缩短所有初始化工作。
 
-### Jetpack App Startup 的解决方案
+收益来自两点：
 
-Google 推出了 Jetpack App Startup 库。核心思路是用一个 ContentProvider 统一管理所有 SDK 的初始化，减少 ContentProvider 数量，同时支持按依赖顺序和懒加载初始化。（关于 ContentProvider 初始化的完整时序分析，参见 §1.10。）
+- 去掉多个独立 Provider 的实例化和重复发现成本；
+- 对启动不必需的组件关闭自动初始化，在业务需要时用 `AppInitializer` 懒加载。
 
-## SharedPreferences apply() 导致的 ANR
+第三方 SDK 自带 Provider 时，要通过 manifest merge 检查并按 SDK 文档关闭自动初始化。直接删除 Provider 可能破坏 SDK 契约。
 
-### apply() 的危险点在组件边界等待
+## `SharedPreferences.apply()`：返回快，完成信号仍会等待
 
-`SharedPreferencesImpl.apply()` 会先把修改提交到内存，再通过 `enqueueDiskWrite()` 把 XML 写盘放进 `QueuedWork`。单看调用点，它比 `commit()` 更接近异步接口。
+### Android 17 的写入链
 
-问题出在另一头：框架会在 BroadcastReceiver、Service，以及部分组件收尾路径上调用 `QueuedWork.waitToFinish()`，要求进程里尚未完成的 `QueuedWork` 先处理完。旧应用的 Activity pause 也会走这条路径，但 Android 8-16 的日常排查里，更常见的是 receiver 和 service 边界被慢刷盘拖住。
-
-### 从 apply() 到阻塞的过程
-
-一个页面或 receiver 里频繁调用了 `apply()` 保存状态。修改先进入内存，磁盘写入随后排进 `QueuedWork`。如果这时整机 I/O 压力很高，`writeToFile()` 里的 XML 落盘和 `fsync()` 会明显变慢。
-
-等到组件离开当前边界，框架调用 `QueuedWork.waitToFinish()`，主线程就会被迫等这些未完成的写盘收尾。这里看到的是组件边界上的等待，耗时通常落在尚未完成的 XML 落盘和 `fsync()`。
-
-### 源码里注册的是什么
+`apply()` 先通过 `commitToMemory()` 更新内存状态，再把 `writeToDiskRunnable` 放入 `QueuedWork`。它还注册一个等待 `writtenToDiskLatch` 的 finisher。下面的 Android 17 摘要片段用于说明这三个对象的关系：
 
 ```java
-// frameworks/base/core/java/android/app/SharedPreferencesImpl.java
-// @ AOSP android-14.0.0_r1
-@Override
-public void apply() {
-    final MemoryCommitResult mcr = commitToMemory();
-    final Runnable awaitCommit = new Runnable() {
-        @Override
-        public void run() {
-            try {
-                mcr.writtenToDiskLatch.await();
-            } catch (InterruptedException ignored) {
-            }
-        }
-    };
+final MemoryCommitResult mcr = commitToMemory();
+final Runnable awaitCommit = () -> {
+    try {
+        mcr.writtenToDiskLatch.await();
+    } catch (InterruptedException ignored) {
+    }
+};
 
-    QueuedWork.addFinisher(awaitCommit);
+QueuedWork.addFinisher(awaitCommit);
 
-    Runnable postWriteRunnable = new Runnable() {
-        @Override
-        public void run() {
-            awaitCommit.run();
-            QueuedWork.removeFinisher(awaitCommit);
-        }
-    };
+Runnable postWriteRunnable = () -> {
+    awaitCommit.run();
+    QueuedWork.removeFinisher(awaitCommit);
+};
 
-    SharedPreferencesImpl.this.enqueueDiskWrite(mcr, postWriteRunnable);
-}
+enqueueDiskWrite(mcr, postWriteRunnable);
 ```
 
-这里塞进 `sFinishers` 的是 `awaitCommit()`。`QueuedWork.waitToFinish()` 在 apply 场景里跑到的 `toFinish.run()`，对应的是等待 `writtenToDiskLatch`；`writeToFile()` 则在 `enqueueDiskWrite()` 安排的 `writeToDiskRunnable` 里执行。
+`apply()` 返回时内存值已经可见，磁盘写入可能仍未结束。`enqueueDiskWrite()` 串行执行 XML 写入、`FileUtils.sync()` 与结果通知；存储拥塞、文件过大或短时间多次修改都会拉长队尾。
 
-`QueuedWork.waitToFinish()` 还会先尽快清空 pending work，所以 trace 里经常会同时看到等待和慢 I/O 叠在一起。分析时把视线放在慢 `fsync()`、存储拥塞、批量 `apply()` 调用即可；如果把 `sFinishers` 写成“主线程亲自逐条刷盘队列”，整段解释就会偏掉。
+### 不同组件边界有两种等待方式
 
-### 解决方案
+Android 17 的调用点需要逐条区分：
 
-最佳方案是迁移到 Jetpack DataStore（Preferences DataStore），它把持久化调度和类型约束放到了更清晰的异步模型里。
+- **Activity stop**：现代应用在 `handleStopActivity()` 的主线程调用 `QueuedWork.waitToFinish()`；pre-Honeycomb 兼容路径在 pause。
+- **Service start/stop**：`handleServiceArgs()` 与 `handleStopService()` 在向 AMS 报告执行完成前调用 `waitToFinish()`。
+- **Manifest receiver**：`PendingResult.finish()` 发现有 pending work 时，把 `sendFinished()` 排到 QueuedWork 队尾，避免阻塞当前线程；Broadcast ANR timer 会继续等完成回执。
 
-短期缓解方案：减少 `apply()` 调用频率，把多次修改合并成一次；对必须立刻落盘的状态单独安排时机；避开广播、服务收尾和其他容易触发 `QueuedWork.waitToFinish()` 的边界。
+`QueuedWork.waitToFinish()` 会在调用线程执行 `processPendingWork()`，随后逐个运行 finisher。因此 Activity/Service 主线程既可能亲自执行尚未开始的写盘 runnable，也可能等另一个线程已开始的写盘完成。Broadcast 路径则可能出现主线程已经回到 `nativePollOnce`，完成回执仍排在慢写盘后面的现象。
 
-## 多进程场景的 Binder 死锁 ANR
+### 如何确认
 
-### Binder 死锁的经典模型
+需要把以下证据放到同一时间窗：
 
-进程 A 的主线程持有一个锁 L1，然后通过 Binder 同步调用进程 B；进程 B 的 Binder 线程在处理这个请求时，需要通过 Binder 同步调用回进程 A；但进程 A 的主线程正阻塞在等进程 B 的返回，无法响应进程 B 的 Binder 调用。这就形成了死锁。
+- ANR reason 是 Broadcast、execute-service 还是 Input；
+- `apply()` 的调用次数、文件名和待写 generation；
+- `QueuedWork.waitToFinish()`、`PendingResult.finish()`、`awaitCommit` 的栈或 slice；
+- queued-work-looper 的 `writeToFile()`、`fsync()` 与调度状态；
+- I/O latency、I/O PSI、reclaim 和存储错误。
 
-### Binder 线程池耗尽
+只看到 `apply()` 调用不够，已经合并掉的中间 generation 可能没有写盘。只看到 `waitToFinish()` 也不够，QueuedWork 还可能承载其他框架工作。
 
-普通进程通过 libbinder 的 `ProcessState` 初始化 Binder 线程池时，默认上限为 **15** 个 Binder worker 线程（`DEFAULT_MAX_BINDER_THREADS`，见 `frameworks/native/libs/binder/ProcessState.cpp`，Android 14/15/16 均为 15）。system_server 等系统进程会通过 `ProcessState::setThreadPoolMaxThreadCount()` 显式调高。排查时看接近 15 个 Binder worker 被同步调用占满的情况。
+### 修复
 
-这个问题的触发条件比严格的死锁更容易满足：多个组件同时发起 Binder 调用 → 对端响应慢 → Binder 线程逐渐被占满 → 形成活锁。
+- 把一次业务状态的多个键合并到同一个 Editor；
+- 避免把大集合、JSON 或高频计数写进 XML；
+- 让非关键状态延后到交互期限之外；
+- 用 DataStore 承载适合异步、事务化更新的偏好数据，并设计迁移与读取时机；
+- 结构化、大体量或需要查询的数据使用 Room 等数据库；
+- 在 userdebug/测试构建启用 StrictMode，并为 `apply` 到写盘完成建立耗时指标。
 
-### 在 ANR traces 中怎么识别
+把 `apply()` 换成 `commit()` 会把同步写盘直接暴露给调用线程，通常会加重主线程风险。
 
-主线程堆栈显示 `BinderProxy.transact(Native Method)`，说明在等待 Binder 同步调用返回。然后去看对端进程的 traces，如果对端的 Binder 线程也在等另一个 Binder 调用返回，形成环形依赖，就确认是死锁。
+## Binder 循环等待与线程池耗尽
 
-### 预防和解决方案
+### 用资源等待图描述死锁
 
-核心原则：**永远不要在持锁状态下发起同步 Binder 调用。** 在实际项目中，如果必须在处理 Binder 请求时再发起另一个 Binder 调用，优先使用 `oneway` 接口（异步，不等待返回）。同时需要监控 Binder 线程池的使用率——如果经常出现接近 15 个线程全部占满的情况，说明调用频率或对端响应时间有问题，需要从这两个方向排查。
+“A 调 B，B 回调 A”还不足以构成死锁。Binder 支持嵌套同步事务和一定程度的重入，回调也可能由 Binder 线程池处理。死锁需要形成闭合的资源等待环，例如：
 
-## 低内存触发频繁 GC 导致的 ANR
+1. A 的线程持有锁 L，发起同步事务到 B；
+2. B 的处理线程调用回 A；
+3. A 的回调处理需要锁 L，或必须同步切到正等待 B 的主线程；
+4. A 等 B，B 等 A 的回调，回调又等 L 或主线程。
 
-### GC 不是免费的：STW 停顿的累积效应
+另一个常见环来自线程池：A 的 Binder workers 全在等待 B，B 回调 A 时没有可服务线程；B 的 workers 又逐步被这些调用占满。此时没有 Java monitor 环，资源环落在“线程槽位”上。
 
-ART 的垃圾回收器从 Android 8.0 开始采用 Concurrent Copying（CC）GC，大部分标记和拷贝工作与应用线程并发执行。但"并发"不等于"零暂停"——CC GC 在处理线程 root（栈引用、JNI 全局引用等）时仍然需要短暂地暂停所有线程（Stop-The-World）。
+### “默认 15”不是进程线程总数
 
-在正常情况下，年轻代 GC（Young Generation Collection）的 STW 暂停时间在 1-3ms 之间（实测平均约 1.83ms），对 60fps 的帧渲染周期（16.67ms）影响可以忽略。但当 Java 堆使用率持续攀升时，情况会迅速恶化。
+Android 17 的 libbinder `ProcessState.cpp` 把 `DEFAULT_MAX_BINDER_THREADS` 设为 15，并通过 `BINDER_SET_MAX_THREADS` 告诉驱动可请求的线程上限。进程还可能显式加入 thread pool、修改上限或采用系统进程专用配置；总参与线程数不能靠数 15 条栈机械判断。
 
-ART 的 GC 触发不能按固定 50% 线理解。`TargetHeapUtilization` 是 GC 后计算 heap growth target / target footprint 的输入，影响下一次 GC 的触发距离；触发还会看 `concurrent_start_bytes_`、`target_footprint_` / `growth_limit_`、本次分配是否触顶、native allocation 压力、显式 `System.gc()`、后台 trim 等 `GcCause`。在 trace 里判断 GC 风暴，要同时看 GC cause、heap size、allocated bytes、concurrent GC 间隔和 STW slice，不能只看 heap 利用率。[待验证: Android 17 CMC GC 是否调整了默认触发阈值]
+诊断时记录：
 
-触发链路上的关键源码：
+- 每个同步 transaction 的 from/to PID、TID 与 code；
+- Binder worker 的 Running、Runnable、锁等待和嵌套事务；
+- 驱动是否请求新线程、进程是否已启动 pool；
+- one-way 队列是否拥塞；
+- 调用前持有哪些应用锁，回调需要哪些执行器或主线程状态。
 
-`art/runtime/gc/heap.cc` 中，`Heap::GrowForUtilization()` 在每次 GC 后更新 `target_footprint_` 和 `concurrent_start_bytes_`，决定了下一次 concurrent GC 的触发距离。分配慢路径会对比 footprint / growth limit 和 concurrent start 阈值，按需请求 concurrent GC 或 for-alloc GC。`art/runtime/gc/gc_cause.h` 定义了 `kGcCauseForAlloc`、`kGcCauseBackground`、`kGcCauseExplicit`、`kGcCauseForNativeAlloc` 等触发原因，不同 cause 对应不同的暂停特征和排查方向。
+### 设计约束
 
-下面是概念伪代码，用来说明判断顺序，不是 AOSP 函数体摘录：
+- 不在持有跨模块锁时调用不受控的同步 IPC；
+- Binder 服务实现不在持锁区调用客户回调；
+- 回调需要主线程时采用有界异步协议，处理生命周期与取消；
+- `oneway` 只移除调用方等待 reply，事务仍会排队并占用 buffer，不能当作无限容量通道；
+- 为服务端耗时、并发数和队列长度设置观测与过载降级。
 
-```text
-if allocated_bytes >= concurrent_start_bytes_:
-    request concurrent GC, cause = background / collector transition 等
+扩大 Binder thread pool 可能延后饱和，也可能增加锁、CPU 和内存竞争。先消除循环等待和无界扇出。
 
-if allocation fails within current target_footprint_ or growth_limit_:
-    run for-alloc GC, cause = kGcCauseForAlloc
+## GC、reclaim 与 LMKD 的叠加
 
-after GC:
-    GrowForUtilization(...) updates target_footprint_ and concurrent_start_bytes_
+### GC 要拆成暂停、分配等待和 CPU 竞争
+
+Android 8 起 ART 默认采用 Concurrent Copying；Android 10 起该计划支持分代收集。并发收集仍包含短暂停顿，线程到达 suspend point 的延迟也计入暂停。一次 ANR 时间窗内还可能出现：
+
+- 主线程等待正在进行的 GC；
+- 分配慢路径触发 `kGcCauseForAlloc`；
+- native allocation 压力触发 `kGcCauseForNativeAlloc`；
+- GC 并发线程消耗 CPU，主线程 Runnable 等待变长；
+- 分配速度高，GC 间隔缩短但每轮回收收益低；
+- 大对象、fragmentation 或 collector transition 改变收集成本。
+
+Android 17 的 `Heap::GrowForUtilization()` 会依据回收后存活字节、target utilization、growth limit 等信息更新 `target_footprint_` 与 `concurrent_start_bytes_`。不存在跨设备通用的“堆到 50% 就 GC”规则，也没有固定的 GC 次数或毫秒数可直接定义“GC 风暴”。
+
+应读取该进程自己的 GC performance dump 和 Perfetto：
+
+- 各 collector 的 pause histogram、time to suspend、总 GC 时间与吞吐；
+- GC cause、young/full 类型、回收前后字节数；
+- 主线程每次暂停及暂停之间的 Running/Runnable；
+- HeapTaskDaemon/GC 线程的 CPU 消耗；
+- 分配热点和对象存活率。
+
+官方文档中的 1.83 ms 是特定示例设备的一组 Young CC 数据，不是 Android 平台阈值。
+
+### 系统内存压力是另一条链
+
+低可用内存可能触发 kswapd、direct reclaim、compaction、zram/swap I/O 和 major fault。这些活动会增加 CPU 与 I/O 压力，使 GC 和应用分配更慢。LMKD 根据压力与进程优先级选择牺牲进程，杀掉后台进程通常用于缓解压力；不要把“LMKD 杀进程”写成存活进程随后磁盘缺页的固定原因。
+
+归因需要同时观察：
+
+- memory/io PSI 在 ANR 窗口内的增量；
+- direct reclaim、compaction、kswapd 与 swap/zram；
+- major fault、存储读取和目标页来源；
+- lmkd kill 的时间、被杀进程和目标应用 adj；
+- 应用 Java/native heap、分配速率与 GC pause。
+
+如果主线程主要卡在自身高频分配和 GC，修复点在对象生命周期与分配热点。若多个进程同时受 reclaim 和调度影响，应把系统内存压力列为主因或放大因素，并保留应用侧可移除的主线程工作。
+
+## 前台服务附近的四条结果
+
+FGS 日志经常与 ANR 同时出现，但四条规则的结果不同。Android 17 的边界如下：
+
+| 场景 | Android 17 计时或入口 | 结果 |
+|---|---|---|
+| `startForegroundService()` 后未及时 `startForeground()` | 公开契约要求几秒内完成，ANR 概览给出 5 秒；源码默认内部 timeout 为 30 秒，另有 10 秒 ANR delay，均可配置 | ANR 延迟路径或 `ForegroundServiceDidNotStartInTimeException` |
+| 后台不满足豁免却启动 FGS | 启动入口检查 | `ForegroundServiceStartNotAllowedException`，不是 ANR |
+| `shortService` 到期未停止 | 默认约 3 分钟，`onTimeout(int, int)` 后源码默认再等 10 秒 | ANR |
+| targetSdk 35+ 的 `dataSync` / `mediaProcessing` 用尽后台额度仍未停止 | 每个类型各自默认累计 6 小时，`onTimeout(int, int)` 后源码默认清理期 10 秒 | `ForegroundServiceDidNotStopInTimeException` 崩溃 |
+
+内部 30 秒不能替代应用面向 SDK 文档遵守的 5 秒约束。DeviceConfig、HW timeout multiplier、targetSdk 和 compat change 可能改变设备行为，报告应记录原始 reason 与观测到的时长。
+
+特殊场景常发生在服务 transaction 已排到主线程，而 `bindApplication`、Provider、数据库迁移或同步 I/O 仍未完成。修复时先构造最小合规通知并及时调用 `startForeground()`，再启动耗时工作；收到 `onTimeout()` 后只做有界清理并尽快停止服务。
+
+完整 detector 和源码路径见 [§9.2 的 FGS 分类](02-anr-types.md#前台服务附近有三种不同的超时结果)。
+
+## SQLite：连接池、WAL、checkpoint 与 I/O
+
+### 先确认 journal mode
+
+Rollback journal 的 `UNLOCKED/SHARED/RESERVED/PENDING/EXCLUSIVE` 五态不能直接套到 WAL。WAL 用共享内存中的 read mark 和写入、checkpoint、recovery 等锁协调：
+
+- 多个 reader 可以按各自 end mark 读取一致快照；
+- 同一 WAL 同时只有一个 writer；
+- checkpoint 可以与 reader 并行，但不能越过仍被 reader 使用的 end mark；
+- 长 reader 会让 checkpoint 无法推进到末尾，WAL 可能继续增长。
+
+Android framework 还管理 `SQLiteConnectionPool`。主线程可能等连接、等 writer、等应用 Java 锁，也可能进入 `fsync()`、checkpoint 或文件系统等待。把所有栈归成“文件锁”会漏掉修复点。
+
+### 多进程场景
+
+多进程直接打开同一数据库时，writer、reader 和 checkpoint 分布在不同进程。一个后台进程持有长事务，主进程可能经历：
+
+- 连接池没有可用连接；
+- 新 writer 等当前 writer；
+- 长 reader 阻止 checkpoint 前进；
+- WAL 变大增加读取和恢复成本；
+- commit/checkpoint 的同步写入遇到存储压力。
+
+ContentProvider 可以把跨进程数据库访问集中到一个所有者进程，但调用方若在主线程同步查询，慢 Provider 仍会转化为 Binder 等待。Room 默认禁止主线程数据库访问；不要用 `allowMainThreadQueries()` 绕过这个保护。
+
+### 16 KB 内核页不是 SQLite 页
+
+Android 15 起 AOSP 支持 16 KB 内存页设备，Android 17 继续支持。内核 page size、文件系统 block size、SQLite `PRAGMA page_size` 和 WAL frame size属于不同层级。16 KB 内核页不会自动把既有数据库的 SQLite page 改成 16 KB，也没有“checkpoint 固定放大四倍”的平台规律。
+
+下面的命令用于记录设备与数据库的现场配置：
+
+```bash
+adb shell getconf PAGE_SIZE
+adb shell grep -m 1 KernelPageSize /proc/<pid>/smaps
+
+sqlite3 app.db 'PRAGMA page_size;'
+sqlite3 app.db 'PRAGMA journal_mode;'
+sqlite3 app.db 'PRAGMA wal_autocheckpoint;'
+sqlite3 app.db 'PRAGMA synchronous;'
 ```
 
-Concurrent Copying 仍然包含短暂停顿，例如暂停线程处理 roots、处理 dirty objects 或完成收尾。正常情况下这些 STW slice 很短；当内存抖动、native allocation 压力或系统内存回收叠加时，GC 频率和调度延迟一起上升，主线程就可能在 ANR 窗口里拿不到足够执行时间。
+设备命令确认进程运行时内存页，PRAGMA 确认数据库层设置。还要测 WAL 大小、checkpoint 返回值与耗时、connection wait、busy/locked 次数和块设备延迟。没有这些数据时，不应把 16 KB 兼容性直接写成 ANR 根因。
 
-### 从"偶尔 GC"到"GC 风暴"的临界点
+### 修复顺序
 
-假设一个 App 在正常状态下每秒触发 1-2 次 Young GC，每次 STW 1-3ms，一秒内 GC 总暂停约 2-6ms——主线程还有 10ms+ 的 CPU 时间。但当这个 App 存在内存抖动（Memory Churn）——比如在 `onDraw()` 中频繁创建临时对象——堆的分配速度会远超回收速度，ART 被迫从 Young GC 升级到 Partial GC 甚至 Full GC。
+1. 移除主线程上的数据库访问；
+2. 缩短事务，避免在事务内执行网络、Binder 或大对象转换；
+3. 核对 WAL 是否启用、是否存在 attached database 等并发限制；
+4. 找出长 reader、唯一 writer 和 checkpoint 的时间关系；
+5. 仅在工作负载测量支持时调整 autocheckpoint 或同步策略；
+6. 多进程数据库建立单一所有者或明确的进程间访问协议。
 
-此时会出现一个恶性循环：GC 越频繁，每次回收的对象越少（因为大部分是短期对象还没到回收时机），堆使用率居高不下，触发更频繁的 GC。在极端情况下，GC 频率可以飙升到每秒几十次，累积 STW 时间达到数百毫秒。
+`beginTransactionNonExclusive()` 在 WAL 下可提高读写并发，但它不能让两个 writer 同时提交，也不能修复长事务和 I/O 拥塞。
 
-更严重的情况发生在系统内存不足时。当 LMK（Low Memory Killer）开始杀后台进程（参见 §4.4），被杀进程释放的内存页可能需要通过磁盘 I/O 重新分配给存活进程。这个过程中，kswapd 内核线程会加大回收力度，进一步增加 I/O 压力和 CPU 占用。此时即使主线程没有被 GC 直接暂停，调度器也可能因为 CPU 被 kswapd 和其他系统进程占满而无法及时调度主线程。
+## 快速判断表
 
-### 与 §4.3 的关系
-
-这一节讨论的 GC 机制在 §4.3（ART 虚拟机内存管理）中有完整的原理分析。这里聚焦的是 GC 在极端情况下如何成为 ANR 的间接推手——问题本质不在 GC 本身，而在于 App 的内存抖动或系统内存压力导致 GC 频率失控。
-
-## 前台服务的启动超时与后台启动限制
-
-### 两条路径不要写混
-
-`startForegroundService()` 之后迟迟不调用 `startForeground()`，走的是 `RemoteServiceException$ForegroundServiceDidNotStartInTimeException` 这条“已启动但没有及时晋升前台”的路径。Android 12 之后在后台直接启动前台服务被拒绝，走的是 `ForegroundServiceStartNotAllowedException` 这条“当前时机不允许启动”的路径。两者都会出现在 logcat 里，但语义完全不同。
-
-| 版本 / 场景 | 规则 | 常见表现 |
-|:---|:---|:---|
-| Android 8 | `startForegroundService()` 后宽限期 5 秒（`SERVICE_START_FOREGROUND_TIMEOUT = 5*1000`，见 `ActiveServices.java` android-8.1.0_r81） | `RemoteServiceException` / 服务启动超时 |
-| Android 9-13 已启动未晋升 | 宽限期提升到 10 秒（`SERVICE_START_FOREGROUND_TIMEOUT = 10*1000`，从 android-9.0.0_r61 起）；Android 12+ 的后台启动限制不改变这条“已启动但未及时前台化”路径 | `ForegroundServiceDidNotStartInTimeException` |
-| Android 12+ 宽限期乘数 | Android 12 起 `SERVICE_START_FOREGROUND_TIMEOUT` 乘以 `Build.HW_TIMEOUT_MULTIPLIER`，实际宽限期 = `10 * HW_TIMEOUT_MULTIPLIER` 秒 | 同上，部分硬件平台宽限期更长 |
-| Android 12+ 后台启动限制 | 后台启动前台服务必须满足豁免条件，入口处直接判定 | `ForegroundServiceStartNotAllowedException` |
-| Android 14 shortService | `foregroundServiceType="shortService"` 有独立短超时；超时后回调 `Service.onTimeout()`，服务未及时停止会进入异常或 ANR 路径；源码看 `ActiveServices` 与 `ServiceRecord.ShortFgsInfo` | `Service.onTimeout()`、shortService timeout ANR |
-| Android 15 dataSync / mediaProcessing | `dataSync`、`mediaProcessing` 属于 time-limited FGS 类型，公开资料常按 6h / 24h 配额讨论；超时后先给 `Service.onTimeout()` 收尾窗口 | `Service.onTimeout()`、超时后的内部 exception / ANR 判定 |
-| Android 16 / 17 后续演进 | time-limited FGS 的配额、迟到 ANR 和 system_server 归因细节继续演进；核验时看 `ActiveServices`、`AnrTimer`、`ServiceRecord` | 同一个 logcat 关键字背后可能是不同版本规则 |
-
-### 已启动，但没有及时晋升前台
-
-这一路最常见的触发方式是：`onCreate()` 或 `onStartCommand()` 里先做数据库查询、文件 I/O、远端请求，再去调 `ServiceCompat.startForeground()`。服务已经起来了，但前台通知迟迟没挂上去，系统就会按“did not start in time”处理。
-
-排查时先看 logcat。若出现 `Context.startForegroundService() did not then call Service.startForeground()` 或 `ForegroundServiceDidNotStartInTimeException`，就该把问题定性为“晋升前台太晚”，不要再去搜 `ForegroundServiceStartNotAllowedException`。
-
-在 Perfetto 里，这类问题通常表现为 Service 初始化开始后，主线程还卡在 `Application` 初始化、Provider 初始化或某段同步 I/O 上，前台通知对应的 `notify()` 没有在宽限期内出现。
-
-### Android 12+ 后台启动被拒绝
-
-`ForegroundServiceStartNotAllowedException` 讲的是另一件事：App 已经退到后台，而且当前调用点不满足豁免条件，系统从入口处就不允许启动这个前台服务。这里没有“5 秒内补一个 `startForeground()` 就能救回来”的补救空间，因为服务压根不该从这个时机启动。
-
-### 预防方案
-
-把 `ServiceCompat.startForeground()` 放到 `onCreate()` 或 `onStartCommand()` 的最前面，通知先挂上，再做任何耗时工作。若业务发生在后台，先确认自己是否满足 Android 12+ 的前台服务豁免；若日志里出现 `short service` 或 `Service.onTimeout()`，就转去看 Android 14+ 的类型化前台服务超时规则，不要和启动宽限期混成一类问题。
-
-## 文件锁竞争导致的 ANR
-
-### SQLite WAL：单 writer、多 reader，不套 rollback journal 五态锁
-
-Android 上绝大多数数据库操作（包括通过 Room、ContentProvider 间接使用）最终都落在 SQLite 上。WAL（Write-Ahead Logging）的基本设计是：写事务先追加到 `.db-wal`，checkpoint 再把 WAL 内容合并回主数据库文件。读事务通过 WAL-index 选择自己的 end mark，因此一个 writer 和多个 readers 通常可以并发存在。
-
-这里要把两个模型分开。rollback journal 文档里的 `UNLOCKED` / `SHARED` / `RESERVED` / `PENDING` / `EXCLUSIVE` 是五态锁模型；WAL 的并发主要靠 `.db-shm` WAL-index 里的 read locks、write lock、checkpoint lock 和 recovery lock 协调。WAL 仍然只有一个 writer，checkpoint 也可能被长读事务挡住；WAL 文件持续变大后，后续读写和 checkpoint 都会变慢。
-
-Android 还要区分 compatibility WAL 与 full WAL。Android 9+ framework 引入 compatibility WAL 以兼容旧行为，Room / SupportSQLiteOpenHelper 常见配置会显式启用 WAL。排查时别只看系统版本，还要看 `SQLiteOpenHelper#setWriteAheadLoggingEnabled()`、Room builder 配置、数据库打开日志和实际的 `journal_mode`。
-
-### 锁竞争导致 ANR 的典型场景
-
-常见场景是同一 App 的多个进程访问同一个数据库文件。主进程的 ContentProvider 在主线程上执行 `query()`；后台进程持有长写事务，WAL 文件持续增长，checkpoint 又被某个长读事务挡住。此时主线程可能卡在连接池等待、写事务结束、checkpoint 或文件系统 I/O 上。ANR 根因不一定是“读被写直接挡住”，也可能是 WAL 积压、连接池耗尽和 checkpoint 放大了等待时间。
-
-Perfetto 中的表现要分两类看：如果主线程在 `SQLiteConnectionPool`、Java 锁或 native mutex 上等待，常见状态是 WAITING / futex；如果卡在 `fsync()`、`fcntl()`、checkpoint 或底层 I/O，才更容易看到 D 状态。只用一个“文件锁”标签归因，很容易漏掉连接池和 checkpoint。
-
-
-### 16KB Page Size 下的数据库 I/O 变化
-
-Android 15+ 设备开始使用 16KB kernel page size，Google Play 从 2025-11-01 起要求面向 Android 15+ 的新应用和更新兼容 16KB page sizes。kernel page size 的变化可能影响 SQLite 的物理 I/O 行为，但影响程度取决于多个因素的实际配置，不能简单断言为固定倍数的写放大。
-
-**影响链条需要实测确认**：kernel page size、filesystem block size、SQLite `PRAGMA page_size`、Room/SQLite 版本和 WAL 文件大小，这些因素共同决定 checkpoint 的实际 I/O 开销。排查时先确认设备的 kernel page size（`adb shell getconf PAGE_SIZE` 或 `grep KernelPageSize /proc/<pid>/smaps`），再读取数据库的 `PRAGMA page_size` 和 `PRAGMA wal_autocheckpoint`。
-
-当 kernel page size 和 filesystem block size 都切到 16KB，且 SQLite database page size 也是 16KB 时，每个脏页的物理写入从 4KB 变为 16KB，checkpoint 的单次 I/O 开销可能相应增大。但这不是“所有 16KB 设备上的 SQLite 都写放大 4 倍”——database page size 由数据库创建时的参数决定，很多现有数据库的 `PRAGMA page_size` 仍然是 1024 或 4096。
-
-**排查步骤**：
-1. 确认设备 kernel page size：`adb shell getconf PAGE_SIZE` 或 `adb shell getconf PAGESIZE`
-2. 确认数据库 page size：`PRAGMA page_size`
-3. 确认当前 autocheckpoint 阈值：`PRAGMA wal_autocheckpoint`
-4. 监控 WAL 文件大小和 checkpoint 耗时
-5. 检查 SQLite busy / locked 日志，确认是否存在锁竞争叠加
-
-**checkpoint 调参建议**：只有确认 checkpoint 耗时在实际 workload 下成为瓶颈后，再考虑调低 `wal_autocheckpoint`。具体值取决于业务写入模式、WAL 增长速率和可接受的 checkpoint 停顿时长，不建议固定为某个通用值（如 250）。默认 1000 页在多数场景下工作正常；调低后 checkpoint 更频繁但每次更轻量，反过来也意味着更频繁的写锁竞争机会。
-
-### 源码锚点与防御手段
-
-```java
-// frameworks/base/core/java/android/database/sqlite/SQLiteDatabase.java
-// @ AOSP android-14.0.0_r1
-// beginTransaction() 默认使用 TRANSACTION_MODE_EXCLUSIVE
-public void beginTransaction() {
-    getThreadSession().beginTransaction(
-        SQLiteSession.TRANSACTION_MODE_EXCLUSIVE, ...
-    );
-}
-
-// beginTransactionNonExclusive() 使用 TRANSACTION_MODE_IMMEDIATE
-public void beginTransactionNonExclusive() {
-    getThreadSession().beginTransaction(
-        SQLiteSession.TRANSACTION_MODE_IMMEDIATE, ...
-    );
-}
-```
-
-这段代码只能说明 Android framework 层事务模式的入口，不能拿来替代 SQLite WAL 锁模型。实践里更稳的策略是：主线程不执行数据库写事务；大事务拆小；Room 使用异步 DAO；跨进程访问通过 ContentProvider 统一调度；批量写入场景评估 `beginTransactionNonExclusive()` 和 `yieldIfContendedSafely()`，并把 checkpoint 时机放到后台窗口。
-
-多进程共用数据库时，还要监控 WAL 文件大小、checkpoint 耗时、SQLite busy / locked 次数、连接池等待时间。只有把这些信号放到同一个 ANR 时间窗里检查，才能区分“业务主线程误用数据库”和“后台写入 / checkpoint 把系统拖慢”。
-
-## 在 Perfetto / 工具中的表现
-
-### 系统负载型 ANR
-
-CPU 概览 track 显示所有核心接近满载。主线程出现大段 Runnable（青色）状态。如果主线程有持续的 D 状态段，而且在同一时间段系统 I/O 压力很大，就是 I/O 阻塞导致的。
-
-### SharedPreferences apply() ANR
-
-主线程堆栈如果落在 `QueuedWork.waitToFinish()`，再叠看 `SharedPreferencesImpl.apply()`、`awaitCommit()`、慢 `fsync()` 或 receiver / service 收尾路径，通常就能把问题收敛到 pending 的 SP 刷盘。旧应用可能出现在 `ActivityThread.handlePauseActivity()`，更常见的是 receiver / service 边界。
-
-### Binder 死锁 ANR
-
-在 Perfetto 的 Binder track 中，调用方的线程在等待对端的 Binder 线程响应。如果形成环形依赖，会看到 A 等 B、B 等 A 的环形箭头。
-
-### Broadcast 风暴 ANR
-
-在 system_server 的 Binder 线程 track 中，看到大量连续的 `broadcastIntent` 调用。多个 App 进程的主线程几乎同时出现阻塞（堆栈停在 `ActivityThread.handleReceiver()`）。如果多个 App 在同一时间段内触发 ANR traces，且时间间隔很短（几十毫秒到几秒），就可能是 Broadcast 风暴的连锁反应。
-
-### ContentProvider 冷启动 ANR
-
-在 Perfetto 中，App A 的主线程发起 `ContentProviderClient.query()` 后进入 WAITING 状态（紫色），等待 App B 的 Binder 回复。同时 App B 进程处于冷启动阶段——在 `ActivityThread.handleBindApplication()` 中初始化 ContentProvider。如果 App B 的 ContentProvider `onCreate()` 耗时过长，App A 的主线程就会一直等待。对应的 Track 表现是：App A 主线程的长段 WAITING 与 App B 进程的启动序列在时间线上对齐。
-
-### 低内存 / 频繁 GC ANR
-
-在 Perfetto 的 ART 内部 track 中搜索 `A.RT` 或 `GC` 相关的 slice，能观察到 GC 事件的频率和持续时间。正常情况下 Young GC 的 slice 间隔在 500ms 以上；如果间隔缩短到几十毫秒，且每次 GC 的持续时间增加（从 1-3ms 升高到 10ms+），就是 GC 风暴的信号。同时可以在 CPU track 中看到 `HeapTaskDaemon` 线程的 CPU 占用异常升高。如果是系统级内存压力，`kswapd` 内核线程的 CPU 占用也会显著增加。
-
-### 文件锁竞争 ANR
-
-主线程如果卡在 `SQLiteConnectionPool` 或 Java / native mutex 上，常见状态是 WAITING / futex；如果卡在 `fsync()`、`fcntl()`、checkpoint 或底层 I/O，才更容易进入 D 状态。多进程数据库场景要把后台写事务、WAL 文件增长、checkpoint、SQLite busy / locked 日志和连接池等待时间放到同一时间窗里看。
-
-## 与其他机制的关系
-
-- **§1.4 Binder IPC**：Binder 死锁和线程池耗尽是 Binder 同步调用的固有限制
-- **§4.4 LMK**：系统负载高和内存紧张经常同时出现
-- **§9.1 / §9.2**：特殊场景的 ANR 仍然遵循标准超时机制，只是根因不在 App 代码本身
-- **§6.3 I/O 调度**：系统负载型 ANR 中的 I/O 阻塞问题，与存储子系统的 I/O 调度策略直接相关
+| 采样现象 | 容易误写的结论 | 下一份证据 |
+|---|---|---|
+| 主线程 `nativePollOnce` | 应用无责任 | detector、采样延迟、worker、QueuedWork |
+| 主线程 Runnable 很长 | CPU 已经 100% | wakeup-to-run、cpuset、频率、竞争线程 |
+| 主线程 `D` | 磁盘慢或进程冻结 | kernel callstack、block I/O、cgroup frozen |
+| `BinderProxy.transact` | 对端服务有 bug | transaction flow、对端线程、嵌套调用 |
+| 15 个 Binder worker | 线程池一定满 | 驱动请求、显式 join、进程配置、等待图 |
+| `QueuedWork.waitToFinish` | `apply()` 一定写盘慢 | pending work 类型、writeToFile、fsync |
+| Provider `onCreate()` 慢 | Provider ANR | 原始 reason、publish guard、调用方 deadline |
+| GC slice 密集 | GC 是唯一根因 | pause、time to suspend、分配与 sched |
+| Load 很高 | 所有 CPU 核已满 | sched、CPU idle/frequency、`D` 任务 |
+| WAL 文件很大 | writer 挡住所有 reader | reader end mark、checkpoint、connection pool |
 
 ## 版本演进
 
-- **Android 8**：`startForegroundService()` 的前台化宽限期 5 秒（`SERVICE_START_FOREGROUND_TIMEOUT = 5*1000`）；后台 service 限制开始明显变严格。
-- **Android 9**：前台化宽限期提升到 10 秒（`10*1000`，见 ActiveServices.java android-9.0.0_r61）。
-- **Android 10 / 11**：AOSP 常见前台化宽限期提升到 10 秒；广播超时仍以前台 10 秒、后台 60 秒为主。
-- **Android 12**：新增 `ForegroundServiceStartNotAllowedException`，把“后台启动被拒绝”和“已启动但未及时前台化”拆成两条路径。
-- **Android 14**：Broadcast 在 CPU starvation 条件下会出现前台 10-20 秒、后台 60-120 秒的浮动窗口；`shortService` 前台服务类型引入独立 timeout 与 `Service.onTimeout()`。
-- **Android 15 / 16**：`dataSync` / `mediaProcessing` 这类 time-limited FGS 需要按配额、`onTimeout()` 和迟到 ANR / exception 路径排查；本章涉及的 `QueuedWork` / `SharedPreferences.apply()` 机制没有看到公开文档级别的机制改写。
+- **Android 8 / API 26**：加入 `startForegroundService()`；ART 默认 GC 计划切换到 Concurrent Copying。
+- **Android 10 / API 29**：Concurrent Copying 支持分代收集。
+- **Android 12 / API 31**：后台启动 FGS 的入口限制加强，使用 `ForegroundServiceStartNotAllowedException` 表达拒绝。
+- **Android 14 / API 34**：Broadcast timeout 可按 CPU starvation 延长；加入 `shortService` 与超时回调。
+- **Android 15 / API 35**：AOSP 支持 16 KB page-size 设备；targetSdk 35+ 的 `dataSync`、`mediaProcessing` 进入限时 FGS 规则。
+- **Android 17 / API 37**：本文以 `BroadcastQueueImpl`、`BroadcastAnrTimer`、Android 17 ActivityThread/QueuedWork、ART heap 和 6.18 内核状态为结论锚点。
 
-## 常见问题与误区
+历史变化可以帮助解释旧设备日志，现场结论仍要按 build fingerprint、targetSdk、DeviceConfig 和原始 reason 校准。
 
-**"apply() 是异步的，不会导致 ANR"** — `apply()` 会把写盘排进后台队列，但在 BroadcastReceiver、Service 和其他组件边界上，`QueuedWork.waitToFinish()` 仍可能把主线程拖住。
+## 与其他章节的关系
 
-**"ANR 一定是 App 代码的问题"** — 不完全是。系统负载高、I/O 阻塞、Broadcast 风暴等原因导致的 ANR，根因在系统层面。
-
-**"主线程堆栈在 nativePollOnce 就没有问题"** — 如果 input event 已经派发但主线程长时间没被调度到，也可能触发 ANR。需要看 CPU Scheduling track。
-
-**"多进程 App 不会比单进程更容易 ANR"** — 恰恰相反。多进程 App 有更多的 Binder 调用、进程间同步和 ContentProvider 交互，增加了死锁和线程池耗尽的风险。
-
-**"GC 不会导致 ANR"** — 当内存紧张触发频繁 GC 时，每次 GC 的 STW 停顿会累积，效果等同于主线程被长时间阻塞。
+- [§1.4 Binder IPC](../../part1-fundamentals/ch01-architecture/04-binder.md)：同步事务、重入与线程池。
+- [§1.10 ContentProvider](../../part1-fundamentals/ch01-architecture/10-content-provider.md)：安装、发布和跨进程调用。
+- [§4.3 ART 内存](../../part1-fundamentals/ch04-memory/03-art-memory.md)：GC、堆增长与分配路径。
+- [§4.4 LMK](../../part1-fundamentals/ch04-memory/04-lmk.md)：内存压力与进程牺牲策略。
+- [§6.3 I/O 调度](../../part1-fundamentals/ch06-storage/03-io-scheduling.md)：block I/O 与存储延迟。
+- [§9.5 ANR 案例集](05-case-studies.md)：跨层证据在完整案例中的使用。
 
 ## 参考资料
 
-### AOSP 源码
+Android 17 平台源码：
 
-- `frameworks/base/core/java/android/app/ActivityThread.java` — `handlePauseActivity()`、`handleBindApplication()`、receiver / service 边界上的 `QueuedWork.waitToFinish()` 调用点
-- `frameworks/base/core/java/android/app/SharedPreferencesImpl.java` — `apply()`、`awaitCommit()`
-- `frameworks/base/core/java/android/app/QueuedWork.java` — `waitToFinish()`
-- `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — `broadcastIntentLocked()`
-- `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` / `ServiceRecord.java` — 前台服务 timeout、`ServiceRecord.ShortFgsInfo`、迟到 ANR 判定
-- `art/runtime/gc/heap.cc` / `art/runtime/gc/gc_cause.h` — heap growth target、`concurrent_start_bytes_`、GC cause
-- `frameworks/base/core/java/android/database/sqlite/SQLiteDatabase.java` / `SQLiteConnectionPool.java` — 事务模式与连接池等待
+- [ActivityThread：Provider、组件边界与 QueuedWork](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [SharedPreferencesImpl：apply 与写盘](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java)
+- [QueuedWork：pending work 与 finisher](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java)
+- [BroadcastReceiver：PendingResult.finish](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/BroadcastReceiver.java)
+- [BroadcastQueueImpl](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastQueueImpl.java)
+- [BroadcastProcessQueue](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastProcessQueue.java)
+- [ActiveServices：execute-service 与 FGS timeout](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java)
+- [ProcessState：Binder thread-pool 配置](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/ProcessState.cpp)
+- [ART Heap](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc)
+- [ART GC causes](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/gc_cause.h)
+- [SQLiteDatabase](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteDatabase.java)
+- [SQLiteConnectionPool](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteConnectionPool.java)
 
-### 官方文档
+内核与公开文档：
 
-- [Jetpack DataStore Guide](https://developer.android.com/topic/libraries/architecture/datastore)
-- [Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup)
-- [Binder IPC Overview](https://source.android.com/docs/core/architecture/aidl)
-
-### 高质量参考
-
-- 高爷 androidperformance.com ANR 分析系列
-- [Perfetto Official Documentation](https://perfetto.dev/docs/)
-
-### Android 14 → Android 17 Foreground Service Timeout / ANR 机制深度解析
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md
-- 类型：DeepResearch 调研结果
-- 摘要：聚焦 `ActiveServices`、`ServiceRecord.ShortFgsInfo`、`AnrTimer` 等源码，梳理 Android 14–17 中 shortService 与 time-limited FGS 的超时窗口、回调语义、异常抛出与迟到 ANR 触发路径，适合补齐特殊场景 ANR 的系统侧视角。
-- 注入时间：2026-04-24
-- 价值：直接补上前台服务超时 ANR 的版本演进与 system_server 判责链路。
+- [Android Common Kernel 6.18：task state](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/sched.h)
+- [Android Common Kernel 6.18：PSI](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/accounting/psi.rst)
+- [Android Common Kernel 6.18：cgroup v2 freezer](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst)
+- [Android Developers：诊断和修复 ANR](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
+- [Android Developers：App Startup](https://developer.android.com/topic/libraries/app-startup)
+- [Android Developers：DataStore](https://developer.android.com/topic/libraries/architecture/datastore)
+- [Android Developers：FGS timeout](https://developer.android.com/develop/background-work/services/fgs/timeout)
+- [Android Developers：排查 FGS](https://developer.android.com/develop/background-work/services/fgs/troubleshooting)
+- [Android Developers：支持 16 KB page size](https://developer.android.com/guide/practices/page-sizes)
+- [AOSP：ART GC 调试](https://source.android.com/docs/core/runtime/gc-debug)
+- [SQLite：WAL](https://www.sqlite.org/wal.html)
+- [SQLite：rollback journal locking](https://www.sqlite.org/lockingv3.html)
+- [高爷：Android App ANR 分析系列](https://www.androidperformance.com/2025/02/08/Android-ANR-02-How-to-analysis-ANR/)
