@@ -8,24 +8,36 @@ related_chapters: ["5.1", "5.4", "5.5", "4.9", "16.4", "16.5", "16.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-09"
 drafted_date: "2026-07-11"
-last_verified: "2026-07-11"
-last_verified_against: "AOSP android-17.0.0_r1, Linux kernel arch/arm64 Kconfig & Documentation"
-confidence: medium
+last_verified: "2026-07-30"
+last_verified_against: "Android 17 / API 37 / AOSP android-17.0.0_r1; Android Common Kernel android17-6.18-2026-06_r6 (gki_defconfig, ARM64 and arch Kconfig, entry, KASLR, Spectre, PAC, MTE, GCS, kernel parameters)"
+confidence: high
 sources:
-  - type: aosp
-    path: "arch/arm64/Kconfig (android17-6.12 kernel branch)"
-  - type: aosp
-    path: "arch/arm64/include/asm/asm-bugs.h (android17-6.12)"
-  - type: aosp
-    path: "arch/arm64/kernel/entry.S (android17-6.12)"
-  - type: aosp
-    path: "arch/arm64/mm/ptdump.c (android17-6.12)"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/Kconfig"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/Kconfig"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/include/asm/barrier.h"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/nospec.h"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/kernel/entry.S"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/kernel/kaslr.c"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/kernel/proton-pack.c"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/kernel-parameters.txt"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/arch/arm64/pointer-authentication.rst"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/arch/arm64/memory-tagging-extension.rst"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/arch/arm64/gcs.rst"
   - type: official
-    path: "source.android.com/docs/security/features — Kernel security"
-  - type: official
-    path: "ARM Architecture Reference Manual (ARMv8.5-A/ARMv9-A)"
-  - type: blog
-    path: "LWN.net — Kernel security mitigation coverage articles"
+    path: "https://source.android.com/docs/security/test/memory-safety/arm-mte"
 ---
 
 # 16.11 Android 17 ARM64 内核安全缓解机制性能开销与调优
@@ -91,7 +103,7 @@ KPTI 的热点位于用户态与内核态的往返路径。系统调用、缺页
 
 ### 4.1 Spectre v1：局部代码修复
 
-Spectre v1 属于 bounds-check bypass。内核在有风险的数据依赖点使用 `array_index_nospec()` 一类接口，并由架构代码提供相应的 speculation barrier。ARM64 不能照搬 x86 的指令描述：`SSBS` 控制 Speculative Store Bypass，面向 Spectre v4；它不是 Spectre v1 数组索引修复的通用代称。
+Spectre v1 属于 bounds-check bypass。通用 `array_index_nospec()` 会调用架构提供的 mask 实现；6.18 ARM64 的 `array_index_mask_nospec()` 用比较结果生成全零或全一掩码，并在返回前执行 `CSDB`。`SSBS` 控制 Speculative Store Bypass，面向 Spectre v4，不能用来概括这条数组索引修复路径。
 
 局部修复分布在各子系统中，开销也与命中这些路径的次数有关。若性能回退集中在一个驱动或系统调用，需要检查该路径生成的指令和采样结果，不能把整机差异统一归到 Spectre v1。
 
@@ -127,7 +139,7 @@ ARM64 用户态 PAC 支持由 `CONFIG_ARM64_PTR_AUTH` 控制。Linux 文档列�
 
 `CONFIG_ARM64_PTR_AUTH_KERNEL` 的范围更窄：编译器为内核函数返回地址加入保护。该选项不能概括成“所有内核函数指针都会被 PAC 签名”。对间接函数指针调用的前向保护，应查看 KCFI 与 BTI。
 
-用户态通过 `HWCAP_PACA` 和 `HWCAP_PACG` 获知相应能力。二进制是否使用 PAC 还取决于编译选项和 ELF 属性；硬件支持本身不会给现有代码自动加入函数序言与尾声。
+用户态通过 `HWCAP_PACA` 和 `HWCAP_PACG` 获知相应能力。二进制是否使用 PAC 取决于生成的指令与运行库策略；硬件支持本身不会给已有代码自动加入函数序言与尾声。ELF note 可作为构建属性证据，反汇编中的 `PAC*`/`AUT*` 指令才能直接说明目标代码包含认证序列。
 
 ### 5.2 BTI
 
@@ -156,7 +168,7 @@ llvm-objdump -d libexample.so | grep -E '\bbti\b|\bpaci[ab]sp\b|\bauti[ab]sp\b'
 
 ARM64 MTE 为每个 16 字节 allocation granule 保存 4 位 allocation tag，并让指针携带 logical tag。访问时比较两者，tag mismatch 可按同步、异步或 asymmetric 模式报告。
 
-内核支持由 `CONFIG_ARM64_MTE` 控制。用户空间需要在支持的匿名内存或 RAM-backed 文件映射上使用 `PROT_MTE`，线程还要通过 `PR_SET_TAGGED_ADDR_CTRL` 设置 tagged-address ABI 与 fault mode。Android 进程通常还会受 manifest、运行时和分配器策略影响。
+内核支持由 `CONFIG_ARM64_MTE` 控制，硬件与内核同时支持时通过 `HWCAP2_MTE` 告知用户空间。带标签的页只能来自使用 `PROT_MTE` 的匿名映射或 RAM-backed 文件映射；线程还要通过 `PR_SET_TAGGED_ADDR_CTRL` 设置 tagged-address ABI 与 fault mode。Android 应用通常由 `android:memtagMode`、运行时和分配器完成这些配置，不要求业务代码逐个调用 `mmap()`。
 
 4 位标签是架构标签存储格式，不能换算成“PSS 固定增加 3% 或 5%”。标签存储、分配器元数据、页提交、工作集和故障模式对 CPU 与内存指标的影响不同。评估 MTE 时至少分别记录：
 
@@ -174,7 +186,7 @@ ARM64 MTE 为每个 16 字节 allocation granule 保存 4 位 allocation tag，�
 
 用户态通过 `HWCAP_GCS` 发现硬件与内核支持，再按线程调用 `prctl(PR_SET_SHADOW_STACK_STATUS, PR_SHADOW_STACK_ENABLE, ...)` 启用。新线程继承状态，`exec()` 会清除启用状态。GCS 检查失败通过 `SIGSEGV` 和 `SEGV_CPERR` 上报；受保护栈页可在 `/proc/<pid>/smaps` 中显示 `ss` 标志。
 
-因此，`CONFIG_ARM64_GCS=y`、CPU 支持 GCS、Android runtime 或 native 程序启用 GCS 是三件独立的事。没有进程侧证据时，不能声称应用已承担 GCS 成本，也不能给出每次调用固定周期数。
+因此，`CONFIG_ARM64_GCS=y`、CPU 支持 GCS、Android runtime 或 native 程序启用 GCS 是三件独立的事。没有进程侧证据时，不能把 GCS 开销计入应用，也不能给出每次调用固定周期数。
 
 ## 8. 设备核查方法
 
@@ -272,8 +284,11 @@ Android 公共 NDK API 没有承诺应用可以直接依赖设备内核的 `io_u
 - [通用 arch Kconfig：Shadow Call Stack 与 KCFI](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/Kconfig)
 - [ARM64 KASLR 实现](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/kernel/kaslr.c)
 - [ARM64 Spectre 与 SSBD 运行时实现](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/kernel/proton-pack.c)
+- [通用 `array_index_nospec()`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/nospec.h)
+- [ARM64 `array_index_mask_nospec()` 与 `CSDB`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/include/asm/barrier.h)
 - [ARM64 异常入口实现](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/kernel/entry.S)
 - [Linux 6.18 启动参数](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/kernel-parameters.txt)
 - [ARM64 Pointer Authentication 用户 ABI](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/arch/arm64/pointer-authentication.rst)
 - [ARM64 Memory Tagging Extension 用户 ABI](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/arch/arm64/memory-tagging-extension.rst)
 - [ARM64 Guarded Control Stack 用户 ABI](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/arch/arm64/gcs.rst)
+- [Android MTE 进程配置](https://source.android.com/docs/security/test/memory-safety/arm-mte)
