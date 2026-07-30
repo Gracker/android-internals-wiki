@@ -3,22 +3,50 @@ title: "GPU / 图形内存统计与实战监控"
 chapter: "10.8"
 status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-06-07"
-last_verified_against: "AOSP android-16.0.0_r1 / android-17.0.0_r1, perfetto.dev, developer.android.com"
-confidence: medium
+last_verified: "2026-07-31"
+last_verified_against: "AOSP android-17.0.0_r1, Android common kernel android17-6.18-2026-06_r6, Perfetto current docs"
+confidence: high
 drafted_date: "2026-06-07"
 drafted_by: "openclaw-task2a"
 sources:
   - type: aosp
     path: "hardware/interfaces/memtrack/aidl/android/hardware/memtrack/IMemtrack.aidl"
   - type: aosp
-    path: "frameworks/native/services/surfaceflinger/CompositionEngine/src/Output.cpp"
+    path: "frameworks/base/core/jni/android_os_Debug.cpp"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/Debug.java"
+  - type: aosp
+    path: "frameworks/native/services/gpuservice/GpuService.cpp"
+  - type: aosp
+    path: "frameworks/native/services/gpuservice/gpumem/GpuMem.cpp"
+  - type: aosp
+    path: "frameworks/native/services/gpuservice/tracing/GpuMemTracer.cpp"
+  - type: aosp
+    path: "frameworks/native/libs/gui/BufferQueueCore.cpp"
+  - type: aosp
+    path: "frameworks/native/libs/gui/BufferQueueProducer.cpp"
   - type: aosp
     path: "system/memory/libdmabufheap/BufferAllocator.cpp"
+  - type: kernel
+    path: "android17-6.18-2026-06_r6/include/trace/events/gpu_mem.h"
+  - type: kernel
+    path: "android17-6.18-2026-06_r6/drivers/dma-buf/dma-heap.c"
+  - type: kernel
+    path: "android17-6.18-2026-06_r6/Documentation/driver-api/dma-buf.rst"
   - type: official
     path: "perfetto.dev/docs/data-sources/gpu"
   - type: official
+    path: "perfetto.dev/docs/analysis/stdlib-docs#androidgpu-memory"
+  - type: official
     path: "developer.android.com/reference/android/graphics/Bitmap"
+  - type: official
+    path: "developer.android.com/reference/android/graphics/Bitmap.Config"
+  - type: official
+    path: "developer.android.com/reference/android/view/TextureView"
+  - type: official
+    path: "developer.android.com/agi"
+  - type: research
+    path: "DeepResearch/2026-07-11-android17-gpu-memory-tracking-pool-defrag.md"
 tags: [gpu-memory, dmabuf, gralloc, perfetto, memory-tracking, graphics, memtrack]
 related_chapters: ["2.15", "4.2", "10.1", "14.8", "22.17", "23.2"]
 created_by: "task2a-knowledge-gap"
@@ -28,169 +56,332 @@ gap_source: "AOSP结构/章节深挖/官方文档"
 
 # 10.8 GPU / 图形内存统计与实战监控
 
-GPU 内存在 `dumpsys meminfo` 里常被一行 "Graphics" 带过，但它背后的分配路径、统计口径和监控手段，和 Java Heap 或 Native Heap 完全不同。图形 buffer 走 DMA-BUF / Gralloc 分配，计入 PSS 的方式依赖 `memtrack` HAL，而 HAL 实现又因 SoC 厂商而异。这节讲清楚 GPU 内存在 Android 上怎么被分配、怎么被统计、怎么被监控，以及 GPU 内存泄漏时用什么方法定位。
+Android 没有一个能够回答全部图形内存问题的数字。`dumpsys meminfo` 以进程 PSS 和 memtrack 分类为中心，`dumpsys gpu --gpumem` 读取驱动上报的 GPU 地址空间总量，DMA-BUF 接口描述共享 buffer，Vulkan tracker 记录 API 级分配事件。它们可能覆盖同一块资源，也可能各自遗漏一部分。
 
-机制层面的图形内存分配流程（DMA-BUF Heaps、Gralloc 描述符、BufferQueue slot 管理）详见 2.15 节。本节聚焦**观测与归因**：拿到一份 `dumpsys meminfo` 或 Perfetto trace，如何判断 GPU 内存是否正常、哪里在增长、如何定位。
+排查图形内存增长时，应先给数字写清四项限定：采集接口、设备与 build、被归因的进程、资源是否共享。离开这些限定，`Graphics = 120 MB` 既不能说明物理内存有多少，也不能证明应用泄漏。
 
-## 要点
+<!-- outline-start -->
+- 🔹 Gralloc、DMA-BUF 与驱动私有分配的边界
+- 🔹 Android 17 `dumpsys meminfo` 与 memtrack 口径
+- 🔹 GpuService、`gpu_mem_total` 与 Perfetto 时间线
+- 🔹 Kernel 6.18 DMA-BUF 观测入口
+- 🔹 Bitmap、Surface、GL/Vulkan 资源增长的归因流程
+- 🔹 16 KB page size、BufferQueue 与多媒体场景的预算方法
+<!-- outline-end -->
 
-### 🔹 锚点 1：GPU 内存在 Android 上的分配路径
+## 1. 先区分资源，再选择计数器
 
-Android 图形内存分两类：**共享内存**（DMA-BUF，跨进程可见，BufferQueue 传递的 buffer 属于此类）和 **GPU 私有内存**（GPU 内部纹理、着色器、命令缓冲区，对 CPU 侧不可见）。
+### 1.1 两类常见图形分配
 
-共享内存的分配路径：应用通过 HWUI / Skia 构造 `GraphicBuffer`，Gralloc allocator 根据宽高、格式、usage 决定从哪个 DMA-BUF heap 分配。分配结果是一个 fd，通过 `GraphicBuffer::flatten()` 经 Binder 传递给 SurfaceFlinger 或其他消费者。这条路径在 2.15 节有完整展开。
+通过 Gralloc 创建的 `GraphicBuffer` / `HardwareBuffer` 通常以 DMA-BUF 文件描述符跨进程和硬件模块共享。producer、SurfaceFlinger、显示控制器、相机、视频编解码器与 GPU 可以引用同一个 buffer；是否映射到 CPU 地址空间、GPU 地址空间或两者，取决于 usage、mapper 和驱动。
 
-GPU 私有内存由 GPU 驱动自行管理，AOSP 没有 HAL 层面的统一分配接口。Qualcomm Adreno、ARM Mali、Imagination 各有自己的显存管理策略，不经过 Gralloc。这部分内存的可见性依赖厂商的 debug 接口和 `memtrack` HAL 实现。
+GPU 驱动还会管理 API 私有资源，例如纹理、render target、Vulkan device memory、命令与内部缓存。这些资源可能没有可供应用检查的 DMA-BUF fd，也可能采用厂商专用分配器。AOSP 没有统一的用户态“显存分配器”或“显存碎片整理器”；Gralloc HAL 与 GPU 驱动决定格式布局、heap、映射和回收策略。
 
-两者的统计口径不同：DMA-BUF 共享内存会出现在 `/proc/<pid>/smaps` 的 PSS 中（按共享比例分摊），而 GPU 私有内存只在 `memtrack` HAL 暴露时才被 `dumpsys meminfo` 的 "Graphics" 行捕获。[已验证: AOSP android-16.0.0_r1, hardware/interfaces/memtrack/aidl/android/hardware/memtrack/IMemtrack.aidl]
+一张逻辑图片也可能沿不同路径出现：
 
-### 🔹 锚点 2：dumpsys meminfo 中 GPU / Graphics 内存解读
+- 软件 Bitmap 的像素位于 native heap，首次硬件绘制还可能建立 GPU 纹理缓存；
+- `Bitmap.Config.HARDWARE` 的像素放在图形内存中，Bitmap 对象仍由 Java 引用链控制生命周期；
+- 相机或视频帧常由 Gralloc buffer 组成，多个 Surface 各有自己的 BufferQueue；
+- Vulkan 应用可显式申请 `VkDeviceMemory`，再把 image 或 buffer 绑定到该内存。
 
-`adb shell dumpsys meminfo <pkg>` 的输出中，和 GPU 内存相关的行有：
+这些资源不能只按 Java 对象数量换算。一个对象可能没有独立 backing allocation，多个对象也可能共享同一个 DMA-BUF。
 
-- **Graphics**：`memtrack` HAL 报告的图形内存。包括 GPU 纹理、framebuffer、EGL surface 等被 HAL 追踪到的部分。
-- **GL**：OpenGL ES / Vulkan 资源占用的内存。同样是 `memtrack` HAL 的上报范围。
-- **Other Dev**：其他设备内存映射。某些 SoC 会把 GPU 相关的 mmap 区域记到这里。
+### 1.2 同一资源在不同工具里的视角
 
-[已验证: AOSP android-16.0.0_r1, hardware/interfaces/memtrack/aidl/android/hardware/memtrack/IMemtrack.aidl] Android 12 起的 AIDL `IMemtrack` 接口提供 `getMemory(int pid, MemtrackType type)` 方法，type 可以是 `GL` 或 `GRAPHICS`。HAL 返回的 `MemtrackRecord` 包含 size 和 flags。`FLAG_SMAPS_UNACCOUNTED` 表示这块内存不在 `/proc/<pid>/smaps` 的 PSS 里——此时 "Graphics" 行的数字包含了 `smaps` 无法感知的 GPU 私有部分。
+| 工具或指标 | 主要回答的问题 | 不能直接回答的问题 |
+|---|---|---|
+| `dumpsys meminfo` | 进程的 smaps 分类与 memtrack 补充归因 | 系统中唯一物理 buffer 总量、分配调用栈 |
+| `dumpsys gpu --gpumem` | 驱动上报的全局及各 PID GPU-addressable 总量 | 资源类型、创建位置、DMA-BUF 唯一物理占用 |
+| `/proc/PID/fdinfo/FD` | 某进程仍持有的 DMA-BUF fd 及 size/exporter | 没有 fd 的 GPU 私有资源、由别处持有的引用 |
+| `/sys/kernel/dmabuf/buffers` | 系统中每个 DMA-BUF inode 的 size/exporter | 哪段业务创建了它、哪个引用阻止释放 |
+| Perfetto GPU memory | GPU 总量随时间的变化及进程归因 | 单个纹理名称、完整分配栈 |
+| Vulkan memory tracker / AGI | Vulkan API 分配、绑定及单帧资源 | 非 Vulkan 路径的全部系统图形内存 |
+| ART / native heap profile | Bitmap、Surface 等 owner 或 wrapper 的引用与调用栈 | DMA-BUF、驱动私有页的完整字节数 |
 
-不同设备上 "Graphics" 行的数字差异很大。Pixel 设备上 `memtrack` HAL 实现比较完整，Graphics 数字能覆盖大部分 GPU 纹理和 framebuffer；部分 OEM 设备上 HAL 只上报一部分，Graphics 行可能明显偏低。分析 GPU 内存问题时，先确认设备的 `memtrack` 覆盖范围——在同一台设备上做前后对比才有意义，跨设备比绝对值不靠谱。
+各列不能直接相加。进程 GPU 总量可能重复计入跨进程 import，memtrack 则要求按 PSS 规则处理共享并排除类型间重叠；两套接口的目标不同。
 
-`adb shell dumpsys gpu` 可以看系统级 GPU 内存概览。输出格式因 OEM 而异，但通常会包含全局 GPU 内存使用量和按进程的 GPU 分配。这条命令在排查 "谁吃了 GPU 内存" 时比 `dumpsys meminfo` 更直接，但稳定性不如 `meminfo`。
+## 2. `dumpsys meminfo`：Graphics 摘要由什么组成
 
-`adb shell dumpsys gfxinfo <pkg>` 的输出聚焦帧率和渲染管线状态，不直接报告 GPU 内存大小。但 `gfxinfo` 中的帧数据和 GPU 内存消耗有关联：大量纹理加载时帧耗时上升、GPU 利用率升高，可以和 `meminfo` 趋势交叉验证。
+### 2.1 Android 17 的详细行
 
-### 🔹 锚点 3：Perfetto GPU Memory 计数器与 SQL 查询
-
-Perfetto 提供三个 GPU 相关数据源用于内存分析：
-
-**`gpu.counters`**：采集 GPU 硬件计数器，包括频率、利用率、带宽。不直接报告内存大小，但可以观察 GPU 利用率和带宽趋势，辅助判断 GPU 负载和内存压力的相关性。采集配置需要指定可用的 counter 列表，不同 GPU 支持的 counter 不同。
-
-**`gpu.renderstages`**：记录 GPU 执行各渲染阶段的时间。可以和 CPU 侧的 `doFrame` / `drawFrames` 对齐，看 GPU 端实际执行耗时。和内存分析的关联在于：如果 GPU render stage 中 texture upload 阶段持续偏长，说明有大量新纹理在加载，对应的 GPU 内存也在增长。[已验证: perfetto.dev/docs/data-sources/gpu]
-
-**`gpu.track` / `gpu.memory`**：Perfetto UI 中的 GPU memory 轨道。Android 14+ 部分设备支持 `android.gpu.memory` 数据源，可以在 Perfetto 中看到进程级别的 GPU 内存变化曲线。这项功能的可用性取决于 GPU 厂商的 Perfetto producer 实现——Adreno 设备支持较好，Mali 设备需要确认具体型号。
-
-Perfetto SQL 查询 GPU 内存（在支持 `gpu.memory` 数据源的设备上）：
-
-```sql
--- 按进程聚合 GPU 内存快照
-SELECT
-  t.ts,
-  t.value / 1024.0 AS gpu_mem_kb,
-  p.name AS process_name
-FROM counter c
-JOIN track t ON c.track_id = t.id
-JOIN process_track pt ON pt.id = t.id
-JOIN process p USING (upid)
-WHERE t.name GLOB '*gpu*memory*'
-ORDER BY t.ts DESC
-LIMIT 50;
-```
-
-上面这个查询在不同设备上需要根据实际的 track name 做调整。先用 `SELECT name FROM track WHERE name GLOB '*gpu*'` 查看设备上有哪些 GPU 相关 track。
-
-如果设备不支持 `gpu.memory` 数据源，退回到 `dumpsys meminfo` 的定时采集方案：每 5 秒抓一次 Graphics 行，用脚本记录趋势。
-
-### 🔹 锚点 4：procfs / sysfs 中的 GPU 内存指标
-
-系统级 GPU 内存信息可以从 debugfs / procfs 获取，但多数路径需要 root 权限。
-
-**DMA-BUF 统计**：
+下面的命令用于采集应用的完整进程内存明细：
 
 ```bash
-# 列出所有 dma-buf 及其大小和导出者
-adb shell su -c "cat /sys/kernel/debug/dma_buf/bufinfo"
-# 按进程统计 dma-buf 占用
-adb shell su -c "cat /proc/<pid>/dmabuf"
+adb shell dumpsys meminfo com.example.gallery
 ```
 
-`/sys/kernel/debug/dma_buf/bufinfo` 列出每个 DMA-BUF 的大小、导出者（expander）和当前 attach 的设备。这个信息可以确认哪些进程持有大量图形 buffer。Android 12+ 部分设备上 `/proc/<pid>/dmabuf` 也提供进程级 DMA-BUF 统计。[待验证: `/proc/<pid>/dmabuf` 在 Android 16/17 userdebug 版本上的可用性——部分内核配置可能未启用]
+多进程应用会出现多个 PID，应逐个保存结果。App Summary 里的 `Graphics` 不是 memtrack `GRAPHICS` 类型的原样输出。Android 17 的 `Debug.MemoryInfo.getSummaryGraphics()` 把三项 private memory 相加：
 
-**GPU 厂商专用路径**：
+1. `Gfx dev`：从 smaps 识别的图形设备映射；
+2. `EGL mtrack`：memtrack `GRAPHICS` 的 `SMAPS_UNACCOUNTED` 记录；
+3. `GL mtrack`：memtrack `GL` 的 `SMAPS_UNACCOUNTED` 记录。
 
-| GPU | 路径 | 内容 |
-|-----|------|------|
-| ARM Mali | `/sys/kernel/debug/mali/gpu_memory`（或 `/d/mali/gpu_memory`） | 全局 GPU 内存使用量 |
-| Qualcomm Adreno | `/sys/class/kgsl/kgsl-3d0/gpu_mm_heap` 或 `kgsl_proc/<pid>/` | 进程级 GPU 内存统计 |
-| Imagination | `/sys/kernel/debug/pvr/` | PowerVR debug 信息 |
+详细表里还可能出现 `Other mtrack`，它来自 memtrack 的 `MULTIMEDIA`、`CAMERA` 与 `OTHER` 分类，不属于 App Summary 的 `Graphics` 项。旧工具或 OEM 定制输出的标签可能不同，分析报告应保存原始文本。
 
-这些路径在 userdebug / eng 版本可用，user 版本通常被 SELinux 隐藏。`adb shell su -c "ls /sys/kernel/debug/"` 先确认设备上有哪些 debug 目录。
+### 2.2 `SMAPS_UNACCOUNTED` 的设计目的
 
-`/proc/<pid>/smaps` 中也可以间接看到 GPU 相关映射：搜索 `dmabuf`、`gpu`、`mali`、`kgsl` 等关键字，对应的 VMA 区域大小加起来就是进程通过 mmap 访问的 GPU buffer 大小。但这只包含 CPU 侧 mmap 的部分，GPU 私有纹理不算在内。
+Android 17 的 `android_os_Debug.cpp` 调用以下三个 libmemtrack 聚合函数：
 
-### 🔹 锚点 5：GPU 内存泄漏的诊断方法
+- `memtrack_proc_graphics_pss()`
+- `memtrack_proc_gl_pss()`
+- `memtrack_proc_other_pss()`
 
-GPU 内存泄漏的常见模式：
+它们只累加带 `MemtrackRecord.FLAG_SMAPS_UNACCOUNTED` 的记录，避免把已经由 `/proc/PID/smaps` 统计的映射重复加入 `Debug.MemoryInfo`。
 
-**Hardware Bitmap 未回收**：`Bitmap.Config.HARDWARE` 的像素存在 GPU / graphics 内存中，Java 侧只有轻量引用。如果 Bitmap 对象生命周期管理不当（比如缓存池只清了引用没等 GPU 侧释放），Graphics 行会持续增长。诊断方法：反复进出含大图的页面，每次返回后抓 `dumpsys meminfo`，如果 Graphics 不回落，检查 Bitmap 缓存策略。详见 22.17 节对 Hardware Bitmap 资源代价的分析。
+`IMemtrack.aidl` 对类别给出了更具体的要求：
 
-**Surface / EGL Context 泄漏**：SurfaceView、TextureView、MediaCodec 的 Surface 如果没有正确释放，对应的 GraphicBuffer 和 EGL surface 会一直占 GPU 内存。`dumpsys meminfo` 里 Graphics 和 GL 行同时增长时，优先排查 Surface 生命周期。
+- `GRAPHICS + SMAPS_UNACCOUNTED` 报告该 PID 的 CPU-mapped 与 GPU-mapped DMA-BUF PSS，并去掉两个集合的交集；
+- `GL + SMAPS_UNACCOUNTED` 报告该 PID 未被 smaps 统计的 GPU private allocation；
+- `OTHER + SMAPS_UNACCOUNTED` 报告剩余的未统计设备内存；
+- `VM_PFNMAP` 映射在 smaps 中可能得到 0 RSS/PSS，也属于 memtrack 要补充的范围。
 
-**RenderScript / Vulkan 资源泄漏**：Allocation、VkImage、VkDeviceMemory 如果没有在正确的生命周期释放，GPU 内存不会回收。这类泄漏在 `dumpsys meminfo` 的 Other Dev 行可能有体现，但更常见的是只有通过 GPU 厂商的 debug 接口才能看到。
+HAL 实现若缺项或不支持某种 type，相应行就可能为 0 或缺失。0 只代表该接口没有返回可计入值，不能据此断言进程没有 GPU 资源。跨设备比较前要确认 memtrack HAL、GPU 驱动和 build 一致。
 
-**诊断流程**：
+### 2.3 PSS、GPU 映射总量与物理唯一占用
 
-1. 建立基线：冷启动后抓 `dumpsys meminfo`，记录 Graphics / GL 行的基线值
-2. 操作复现路径：反复执行疑似泄漏的操作（如列表滑动、图片加载、相机预览切换）
-3. 每轮操作后抓 `dumpsys meminfo`，记录 Graphics 变化趋势
-4. 如果 Graphics 持续增长且不回落，用 `adb shell dumpsys gpu` 看全局 GPU 内存是否同步增长
-5. 如果有 root 设备，用 `/sys/kernel/debug/dma_buf/` 确认是否有大量未释放的 DMA-BUF
+PSS 试图把共享资源按引用者分摊。`gpu_mem_total` 描述驱动认为某 PID 映射到 GPU 地址空间的总量。`/sys/kernel/dmabuf/buffers` 按 inode 列出唯一 DMA-BUF。三者回答的是三个问题：
 
-Heapprofd 可以追踪 Native 层分配来源，但图形 buffer 走 DMA-BUF / Gralloc 路径，不在 malloc 管辖范围内。要追踪 Gralloc 分配来源，需要 GPU 厂商的专用工具（如 Adreno Profiler、Mali GPU Debugger），或者用 Perfetto 的 `gpu.renderstages` 结合 CPU 侧调用栈做间接关联。
+- 进程应分到多少共享成本；
+- 该进程的 GPU 地址空间目前覆盖多少内存；
+- 系统当前存在哪些唯一共享 buffer。
 
-### 🔹 锚点 6：Android 17 图形内存管理变更
+同一 DMA-BUF 被两个进程和 GPU 同时引用时，进程总量之和可能大于唯一物理容量。不要用所有 PID 的 `gpu_mem_total` 求和代替全局 `pid = 0` 记录，也不要拿 App Summary `Graphics` 与 DMA-BUF 全局总和做等式校验。
 
-**16KB Page Size 对 GPU 内存的影响**：Android 16 起引入 16KB page size 支持，Android 17 继续推进。GPU 内存分配以 page 为最小单位，page size 从 4KB 增大到 16KB 意味着小 buffer 的内部碎片率增加。一张 1920×1080 ARGB_8888 的 buffer 约 8MB，不受影响；但大量小纹理或临时 buffer 的实际内存占用可能比 4KB page 模式高出 10-20%。2.24 节对 16KB page size 下的图形内存边界有详细分析。[已验证: 官方文档, developer.android.com/guide/practices/page-sizes]
+## 3. Android 17 GpuService：从 tracepoint 到快照
 
-**DMA-BUF Heaps 成熟度**：Android 12 引入 DMA-BUF Heaps 替代 ION，到 Android 17 已经是主要分配路径。GKI 2.0 内核中 `/dev/dma_heap/system` 和 `/dev/dma_heap/system_uncached` 是通用节点，厂商私有 heap 通过 sepolicy 控制访问。`libdmabufheap` 提供用户态封装，内部有 ION 回退逻辑。GPU 内存的分配请求最终由 Gralloc allocator 映射到具体的 heap。[已验证: AOSP android-17.0.0_r1, system/memory/libdmabufheap/BufferAllocator.cpp]
+### 3.1 `dumpsys gpu --gpumem`
 
-**Gralloc 4.0+ 对 GPU 内存追踪的改善**：Gralloc 4.0 (Android 11+) 和后续版本的 AIDL allocator 接口统一了描述符格式，让图形 buffer 的 usage、格式、尺寸信息在 framework 层可追踪。但 Gralloc 不直接报告已分配 buffer 的总量——这个数字仍然依赖 `memtrack` HAL 和 DMA-BUF debugfs。
+Android Common Kernel 的 `gpu_mem/gpu_mem_total` tracepoint 要求 GPU 驱动在 allocate、free、import、unimport 改变 GPU-addressable 总量时发出更新。事件字段包含 `gpu_id`、`pid` 和当前 size；`pid = 0` 表示全局总量，正 PID 表示进程总量。
 
-**GPU 内存与 LMK 的交互**：GPU 占用的 DMA-BUF 会计入进程的 RSS/PSS，在高内存压力下 `lmkd` 会根据 `oom_score_adj` 选择 victim 进程。如果一个后台进程持有大量未释放的 GraphicBuffer（比如后台视频播放器、相机服务），它可能成为 LMK 的优先目标。4.4 节对 LMK 的选进程策略有展开。
+Android 17 的 GpuService 把 eBPF 程序挂到该 tracepoint，并维护以 `(gpu_id, pid)` 为 key 的 BPF map。下面的命令用于读取这一时刻的 map：
 
-### 🔹 锚点 7：GPU 内存优化实战建议
+```bash
+adb shell dumpsys gpu --gpumem
+```
 
-**Hardware Bitmap 的使用与回收时机**：对"只上屏不读写"的大图使用 `Bitmap.Config.HARDWARE`，减少 Java heap 压力和 texture upload 抖动。但 Hardware Bitmap 的 GPU 内存不参与 Java GC——必须在确定不再绘制时主动回收（recycle 或等引用链断开）。列表场景中建议限制 Hardware Bitmap 池大小，避免快速滑动时大量图片同时驻留 GPU 内存。详见 22.17 节。
+输出中的 `Global total` 与各项 `Proc PID total` 是原始字节数。若驱动没有发 tracepoint、BPF 程序未加载或 map 初始化失败，命令会返回空 map 或初始化失败；这种设备上不能把 0 当作有效测量。
 
-**SurfaceView vs. TextureView 的 GPU 内存开销**：SurfaceView 有独立 BufferQueue，不占用应用 Surface 的合成资源；TextureView 的 buffer 需要被应用 Surface 的 RenderThread 绘制，多一次 GPU 采样和合成。同等场景下 TextureView 的 GPU 内存开销更高。如果不需要 View 层级的动画变换（旋转、缩放），优先用 SurfaceView。
+这条命令适合回答“增长集中在哪个 PID”。它没有 allocation ID、格式、调用栈或资源名称，也不能展示驱动内部碎片。定位创建点还要依赖 API 级 tracker、应用埋点或厂商工具。
 
-**帧缓冲区数量与 GPU 内存的关系**：BufferQueue 的 maxBufferCount 默认是 3（三缓冲），每增加一个 buffer 就是多一张完整分辨率的 GraphicBuffer。4K 显示设备上一张 buffer 约 32MB，三缓冲就是约 96MB GPU 内存。大部分应用不需要手动调整 buffer 数量，但如果通过 `Surface.setDequeueBufferTimeout` 或自定义 BufferQueue 管理器改了 buffer count，需要评估 GPU 内存代价。
+### 3.2 Perfetto 的初始值与增量
 
-**大分辨率图片加载的 GPU 内存控制**：在 4K / 大屏设备上，全分辨率加载一张图片的 GPU 纹理可能达到数十 MB。图片库（Glide / Coil）的 `override(size)` / `target()` 可以控制解码尺寸，避免把 4K 原图直接上传到 GPU。`Bitmap.prepareToDraw()` 可以提前触发 texture upload，把首帧的 GPU 同步开销分摊到预加载阶段。
+Android 17 的 `GpuMemTracer` 注册 `android.gpu.memory` 数据源。trace 启动时，它遍历 BPF map 并写入 `GpuMemTotalEvent`，提供一组初始 counter。持续变化来自 `gpu_mem/gpu_mem_total` ftrace 事件。
 
-## 扩展
+下面的 TraceConfig 片段用于同时采集初始快照和后续变化：
 
-### 🔸 扩展点 1：不同 SoC 平台的 GPU 内存统计差异
+```protobuf
+data_sources {
+  config {
+    name: "android.gpu.memory"
+  }
+}
 
-`memtrack` HAL 的实现质量直接决定 `dumpsys meminfo` 中 Graphics / GL 行的准确性和完整性。
+data_sources {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      ftrace_events: "gpu_mem/gpu_mem_total"
+    }
+  }
+}
+```
 
-- **Qualcomm Adreno**：`memtrack` 实现覆盖较全，`dumpsys gpu` 输出包含进程级 GPU 内存明细。Adreno Profiler 可以追踪纹理和 buffer 的分配来源。
-- **ARM Mali**：Mali 设备的 `memtrack` 实现因 OEM 而异。部分设备只报告 GL 内存不报告 Graphics，导致 `dumpsys meminfo` 中 Graphics 行偏低。Mali GPU Debugger 提供独立的内存追踪能力。
-- **Samsung Xclipse (AMD RDNA)**：Samsung 定制的 GPU，debug 接口和 `memtrack` 行为与标准 Mali 不同，需要 Samsung 专用工具链。
+只开 ftrace 时，trace 开始前已存在且期间不变化的资源缺少基线；只开 `android.gpu.memory` 时，只能得到启动快照。设备仍需 GPU 驱动实现 tracepoint。
 
-OEM 自定义的 GPU 内存 debug 接口通常在 `/sys/kernel/debug/<vendor>/gpu/` 下，需要查阅对应 SoC 的厂商文档。[待验证: 各 SoC 平台在 Android 17 上的 `memtrack` 实现差异需要逐设备确认]
+Perfetto 当前标准库已经把事件整理为按进程的区间 counter。下面的 SQL 用于列出 GPU 内存随时间的变化：
 
-### 🔸 扩展点 2：GPU 内存与整体系统内存预算
+```sql
+INCLUDE PERFETTO MODULE android.gpu.memory;
 
-在 4GB 以下内存的设备上，GPU 内存占用可能占系统总内存的 15-25%。如果前台应用同时持有大量 GPU 纹理和 Java heap 对象，后台进程的可用内存会快速收窄，触发 LMK。
+SELECT
+  g.ts,
+  g.dur,
+  p.pid,
+  p.name AS process_name,
+  g.gpu_memory / 1048576.0 AS gpu_memory_mib
+FROM android_gpu_memory_per_process AS g
+JOIN process AS p USING (upid)
+ORDER BY g.ts, p.pid;
+```
 
-GPU 纹理、framebuffer、DMA-BUF 的 PSS 计入方式是按共享比例分摊。一张被 2 个进程共享的 DMA-BUF，每个进程的 PSS 只记一半。但 SurfaceFlinger 持有的合成 buffer 通常被多个 layer 共享，PSSI 分摊后的数字可能低估了实际的 GPU 内存压力。
+`gpu_memory` 是驱动上报的总量，不是 PSS。查询结果为空时，应先检查 trace 配置和设备 tracepoint 支持，再检查 SQL；旧稿中直接把 `counter` 与通用 `track` 当作进程轨道连接，会得到错误关系。
 
-在低内存设备上做性能优化，除了关注 Java heap 和 Native heap，也要定期检查 Graphics 行的增长趋势。如果发现应用的 GPU 内存占用稳定在 100MB 以上，考虑减少同时可见的纹理数量、降低图片分辨率或使用 SurfaceView 替代 TextureView。
+### 3.3 其他 GPU 数据源各有用途
 
-### 🔸 扩展点 3：Game / AR / Camera 场景的 GPU 内存管理
+- `gpu.counters` 采集厂商定义的频率、利用率、带宽等硬件 counter；counter 名称和支持范围依设备而变。
+- `gpu.renderstages` 提供 graphics/compute submission 的执行阶段和时长，不保证存在名为“texture upload”的统一 stage。
+- `vulkan.memory_tracker` 记录 Vulkan 的 driver/device memory allocation 与 bind 事件，适合 Vulkan 资源生命周期；它不覆盖 OpenGL、HWUI、Camera 和 SurfaceFlinger 的全部资源。
+- 部分旧版或厂商内核还导出 DMA heap allocation/free tracepoint；`android17-6.18-2026-06_r6` 的通用锚点不提供一条可移植的 `dmabuf_heap/dma_heap_stat` 事件，采集配置应以目标设备的 `available_events` 为准。
 
-**游戏**：游戏是 GPU 内存消耗最高的应用类型。纹理、渲染目标（render target）、深度缓冲、命令缓冲都需要 GPU 内存。Unity / Unreal 引擎有自己的纹理流式加载（texture streaming）机制，根据相机距离动态调整纹理分辨率。`MemoryAdvice API`（详见 23.10 节）可以在系统内存压力升高时通知游戏释放资源。
+`dumpsys gfxinfo` 关注帧时间、HWUI 状态和渲染统计。它可以与内存时间线对齐，却不提供一份通用 GPU 内存总账。
 
-**AR（ARCore）**：ARCore 的 GPU 内存消耗来自相机帧 buffer、点云数据渲染、平面检测的可视化层。多 AR session 切换时如果没有正确释放前一个 session 的资源，GPU 内存会累积。
+## 4. Kernel 6.18 的 DMA-BUF 观测入口
 
-**Camera**：Camera2 / CameraX 的 ImageReader 配置直接影响 GPU 内存：每一路输出 surface 都有独立的 BufferQueue，buffer 数量和分辨率决定了 GPU 内存占用。高分辨率 + 多路输出场景（如同时预览 + 录制 + 人脸检测）需要仔细计算 buffer 总量。
+### 4.1 进程 fd：谁还持有共享 buffer
 
-## DeepResearch 延伸参考
+标准 Linux 接口位于 `/proc/PID/fdinfo/FD`。DMA-BUF fd 会额外输出 `size`、`count`、`exp_name`，有名称时还会输出 `name`。
 
-### Android 17 GPU 内存管理优化与显存池碎片整理技术
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-11-android17-gpu-memory-tracking-pool-defrag.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 17 AOSP 用户态不做显存分配和碎片整理，实际分配交给 gralloc/HAL 驱动层。AOSP 核心职责是观测：GpuMem 通过 eBPF 追踪 gpu_mem_total tracepoint，GpuMemTracer 推 Perfetto 数据源，GpuStats 通过 statsd pull atom 提供驱动统计。碎片整理是 gralloc 驱动内部职责，AOSP 只观测结果。
-- 注入时间：2026-07-12
-- 价值：纠正了「应用层池化+碎片整理」的常见误解，明确 AOSP GPU 内存管理的观测边界与 gralloc 职责分界
+下面的命令用于列出示例应用当前持有的 DMA-BUF fd 信息：
+
+```bash
+adb shell '
+pid=$(pidof com.example.gallery)
+for info in /proc/$pid/fdinfo/*; do
+  if grep -q "^exp_name:" "$info"; then
+    grep -H -E "^(size|count|exp_name|name):" "$info"
+  fi
+done
+'
+```
+
+`size` 是 buffer 容量，`count` 是 dma-buf file 的引用计数，`exp_name` 是 exporter。权限受 Android SELinux 和 `/proc` 可见性限制；没有输出也可能是 shell 无权读取，或 fd 已转交后由其他进程持有。
+
+Linux 没有通用的 `/proc/PID/dmabuf` 文件。设备私有节点即使存在，也不能写成 Android 平台保证。
+
+### 4.2 全局 sysfs：系统里有哪些唯一 DMA-BUF
+
+在 `CONFIG_DMABUF_SYSFS_STATS` 开启时，`/sys/kernel/dmabuf/buffers/<inode>/` 提供 `size` 与 `exporter_name`。下面的命令用于生成按 inode 的快照：
+
+```bash
+adb shell '
+for entry in /sys/kernel/dmabuf/buffers/*; do
+  inode=${entry##*/}
+  size=$(cat "$entry/size")
+  exporter=$(cat "$entry/exporter_name")
+  printf "%s %s %s\n" "$inode" "$size" "$exporter"
+done
+'
+```
+
+sysfs 覆盖系统中的 DMA-BUF，适合按 inode 去重和按 exporter 聚合。它不保存创建调用栈；把 inode 与进程 fd 对上，只能确认当前持有关系，不能证明最早的 allocator owner。Android user build 还可能限制 shell 读取。
+
+### 4.3 debugfs：实验室设备上的完整快照
+
+下面的命令用于在已 root 且挂载 debugfs 的实验室设备上读取全局列表：
+
+```bash
+adb shell su 0 cat /sys/kernel/debug/dma_buf/bufinfo
+```
+
+debugfs 不适合作为生产接口，格式也不承诺稳定。厂商 GPU 节点同样受驱动、内核版本和 SELinux 约束；报告应记录设备路径与原始输出，避免把 Adreno、Mali、PowerVR 的私有路径互相套用。
+
+### 4.4 16 KB kernel page 的精确边界
+
+`android17-6.18-2026-06_r6` 的 `dma_heap_buffer_alloc()` 使用 `__PAGE_ALIGN(len)`，DMA heap allocation 的起止对齐到 kernel page。16 KB kernel page 会增加小 allocation 尾部向上取整的上限。
+
+这条规则不能推导出统一的“图形内存增加百分比”。Gralloc 的 stride、plane、格式、压缩、tiling、secure heap 和驱动页表粒度都可能比尾部 page rounding 更大。比较 4 KB 与 16 KB build 时，应以 DMA-BUF inode size 和 GPU counter 实测，按 allocation 尺寸分布解释差异。
+
+## 5. 从增长曲线定位资源 owner
+
+### 5.1 先辨认缓存、延迟释放与泄漏
+
+图形资源释放常受三类延迟影响：
+
+- GPU command 尚未完成，driver 等 fence signal 后才回收 backing memory；
+- BufferQueue 的 producer、consumer 或 SurfaceFlinger 仍持有 slot；
+- 图片库、HWUI 或图形 API 保留高水位缓存，复用后不继续增长。
+
+预热后保持平台不再上升，通常符合有上限缓存；每轮相同操作后基线持续上移，更像 owner 引用或资源销毁不完整；退出页面后短时不降，需要把 fence 和 queue drain 时间放进采样窗口。一次 `System.gc()` 不能证明图形资源应立即归零。
+
+### 5.2 可复查的诊断实验
+
+建议按同一套脚本保存下列数据：
+
+1. 记录设备型号、Android build、GPU driver、kernel page size 和 app 版本。
+2. 冷启动后等待页面稳定，采集 `meminfo`、`--gpumem`、DMA-BUF inode 快照和 Perfetto 基线。
+3. 用固定数据集执行同一段页面、相机、视频或渲染操作。
+4. 每轮在相同 UI 状态采样，并给 GPU fence 与异步销毁留下可观察区间。
+5. 比较进程 GPU 总量、唯一 DMA-BUF、EGL/GL mtrack 与 Java/native owner 数量。
+6. 找到最早开始增长的指标，再选择 Bitmap、Surface、GL/Vulkan 或厂商工具继续定位。
+
+报告要保存原始值与差值。若只有 App Summary `Graphics` 一列，就无法区分 Gfx dev、EGL mtrack 和 GL mtrack。
+
+### 5.3 Java 与 native profile 能发现什么
+
+ART heap dump 适合查找仍被引用的 `Bitmap`、`Drawable`、`Surface`、`SurfaceTexture`、`ImageReader`、`Image`、`HardwareBuffer` 及业务缓存。native heap profile 可以发现 wrapper、命令构建对象和应用自己的 allocator。
+
+heapprofd 只追踪 `malloc` 家族或显式接入 custom allocator 的分配。Gralloc DMA-BUF 与 GPU driver private allocation 不受普通 malloc hook 管理；heap profile 里的 wrapper 字节数不能代替 GPU backing size。它的用途是找到 owner 和创建栈，再用 GPU/DMA-BUF 指标确认 backing memory 是否同步变化。
+
+## 6. 资源类型与修复方向
+
+### 6.1 Hardware Bitmap
+
+`Bitmap.Config.HARDWARE` 在 API 26 引入，像素存放在 graphic memory，Bitmap 不可变。它能避免每次绘制都从软件像素上传纹理，但会占用图形资源，并限制像素读写和部分 Canvas 操作。
+
+现代 Android 上不应把 `Bitmap.recycle()` 当作 Hardware Bitmap 的常规释放协议。Java 与 native 引用消失后，runtime 会回收 backing resource；手动 recycle 只有在确认 View、Canvas、RenderThread 和缓存都不再使用该 Bitmap 时才安全。官方 API 特别提醒：硬件加速会缓存绘制命令，invalidate 后还要经过一次 draw pass，旧 Bitmap 才能确认退出使用。
+
+图片页面的优先动作是按显示尺寸解码、限制内存缓存权重、在页面和请求取消时移除引用，并让 Glide/Coil 等图片库管理其资源池。`prepareToDraw()` 可以提前触发尚未上传 Bitmap 的 RenderThread 上传，降低首次绘制抖动；它不会降低驻留内存。
+
+### 6.2 Surface、BufferQueue 与媒体资源
+
+应用自己创建的 `Surface`、`SurfaceTexture`、`ImageReader`、`Image`、`MediaCodec` 和相机 session 要按 API 生命周期关闭。`ImageReader.acquire*()` 得到的每个 `Image` 都需要及时 `close()`；未关闭的 Image 会占用 `maxImages` 配额和对应 buffer。
+
+Surface 销毁后，buffer 还可能由 consumer 或 fence 持有。看到延迟下降时，应对齐 `onSurfaceTextureDestroyed()`、codec stop/release、camera session close 与 GPU counter，而不是只检查页面对象是否离开 Activity。
+
+BufferQueue 没有适用于所有 producer/consumer 的固定“三缓冲”结论。可用 slot 与同时分配的 buffer 数由 max dequeued、min undequeued、max acquired、异步模式和 producer 行为共同决定。每个 buffer 的逻辑 payload 可用 `width × height × bytesPerPixel` 粗估，真实 allocation 还要看 stride、plane、格式、压缩和对齐。
+
+### 6.3 OpenGL ES 与 Vulkan
+
+OpenGL ES 资源需要在拥有相应 share group 的 context 中调用匹配的 delete API。删除纹理、buffer、renderbuffer、framebuffer 或 EGL surface 后，driver 仍可等到引用它的命令完成再释放。
+
+Vulkan 要区分 object 与 bound memory：销毁 `VkImage` 不会隐式替代所有 `vkFreeMemory()`，suballocation 还要交还给应用 allocator。释放前必须满足 Vulkan 生命周期与同步规则。诊断构建可用 validation layer、`vulkan.memory_tracker` 和 AGI frame profile 核对 allocation/bind/free；不要在每次资源销毁时用 `vkDeviceWaitIdle()` 作为生产修复，它会破坏并行。
+
+RenderScript 已在 API 31 废弃。维护历史代码时仍需销毁 `Allocation` 等对象，新项目应迁移到当前图形、计算或媒体 API。
+
+### 6.4 SurfaceView 与 TextureView
+
+`SurfaceView` 由独立 Surface layer 提供内容，系统有机会交给 Hardware Composer；`TextureView` 把 SurfaceTexture 内容作为 View 层级的一部分由 HWUI 采样，因此支持普通 View 的 alpha、旋转和裁剪，但可能增加采样与合成工作。
+
+内存上不能给出固定的“TextureView 一定更大”排序：SurfaceView 自己也有 BufferQueue，TextureView 所在应用窗口也需要 window buffers。分辨率、格式、queue 深度、overlay 资格和内容路径共同决定总量。相机和视频页面应在同一设备上比较进程 GPU counter、DMA-BUF inode 与帧时间，再结合变换、HDR、DRM 和生命周期需求选择。
+
+## 7. Game、Camera 与 AR 的预算方法
+
+游戏的纹理、render target、depth/stencil、swapchain image、staging buffer 与 allocator block 都要纳入预算。引擎的 texture streaming 或 Vulkan suballocator 只改变资源管理方式，不会让 driver fragmentation 对 AOSP 可见。AGI frame profile 可以查看单帧的纹理、shader、render target 和 RAM/GPU memory；系统级趋势仍要用 Perfetto 或 `--gpumem`。
+
+Camera2 / CameraX 的每路输出 Surface 都可能维护独立 buffer 集合。预览、录制、分析、JPEG/RAW 同时开启时，应按每路分辨率、格式、`maxImages` 和 queue 行为计算，并确认分析线程及时关闭 Image。只按相机传感器分辨率乘一个 buffer 数会漏掉多 plane、stride 和各 consumer 的独立队列。
+
+AR 场景还包含相机输入、环境纹理、depth、mesh、点云与 render target。切换 session 后若 GPU 总量和 DMA-BUF inode 都持续增加，应同时查 session owner、Surface/Image 生命周期和引擎资源表，避免只从 Java heap 寻找答案。
+
+## 8. Android 17 边界与发布检查
+
+Android 17 的 AOSP 图形内存链提供观测能力：
+
+- memtrack 为 `dumpsys meminfo` 补充 smaps 看不到的进程图形内存；
+- GpuMem 用 eBPF map 保存驱动 `gpu_mem_total` 的全局与进程总量；
+- GpuMemTracer 给 Perfetto 提供 trace 启动时的初始快照；
+- ftrace 记录 trace 期间的 GPU 总量变化；
+- kernel DMA-BUF sysfs/debugfs/fdinfo 描述共享 buffer。
+
+它们不提供跨厂商统一的 allocation call stack、资源名或碎片率。AOSP 也没有应用可调用的 GPU 内存 compact API。需要精确到纹理、VkImage 或厂商 heap 时，应使用应用资源注册表、AGI、Vulkan tracker 或目标 GPU 的官方工具。
+
+发布前至少确认：
+
+- 指标名称、单位、设备 build、GPU driver 与采样时间写进报告。
+- `Graphics` 摘要与 `EGL mtrack`、`GL mtrack`、`Gfx dev` 没有混写。
+- `--gpumem` 支持已验证，0 与“不支持”能够区分。
+- Perfetto 同时具备基线和增量，SQL 使用 `android.gpu.memory` 标准库。
+- DMA-BUF 按 inode 去重，进程 fd 总和没有冒充系统唯一物理量。
+- Hardware Bitmap 通过引用与缓存策略释放，没有依赖随意 `recycle()`。
+- Image、Surface、SurfaceTexture、codec、camera session 都有明确 close/release owner。
+- GL/Vulkan 资源销毁满足 context、share group、queue 和 fence 生命周期。
+- 4 KB / 16 KB 差异来自同一 workload 实测，没有套用固定增长比例。
+- 高水位缓存、GPU 延迟释放和持续泄漏已经用多轮时间线区分。
+
+## 参考资料
+
+- [Android 17 `IMemtrack.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/memtrack/aidl/android/hardware/memtrack/IMemtrack.aidl)
+- [Android 17 `android_os_Debug.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Debug.cpp)
+- [Android 17 `Debug.MemoryInfo`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Debug.java)
+- [Android 17 `GpuService.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/gpuservice/GpuService.cpp)
+- [Android 17 `GpuMem.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/gpuservice/gpumem/GpuMem.cpp)
+- [Android 17 `GpuMemTracer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/gpuservice/tracing/GpuMemTracer.cpp)
+- [Android 17 `BufferQueueCore.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueCore.cpp)
+- [Kernel `android17-6.18-2026-06_r6` `gpu_mem.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/gpu_mem.h)
+- [Kernel `android17-6.18-2026-06_r6` `dma-heap.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-heap.c)
+- [Linux DMA-BUF 文档](https://docs.kernel.org/driver-api/dma-buf.html)
+- [Perfetto GPU 数据源](https://perfetto.dev/docs/data-sources/gpu)
+- [Perfetto `android.gpu.memory`](https://perfetto.dev/docs/analysis/stdlib-docs#androidgpu-memory)
+- [Bitmap API](https://developer.android.com/reference/android/graphics/Bitmap)
+- [Bitmap.Config API](https://developer.android.com/reference/android/graphics/Bitmap.Config)
+- [TextureView API](https://developer.android.com/reference/android/view/TextureView)
+- [Android GPU Inspector](https://developer.android.com/agi)
