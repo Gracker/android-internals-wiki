@@ -7,39 +7,29 @@ tags: ["memory", "optimization", "android17"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-03"
 gap_source: "AOSP结构/官方文档/研究素材"
+last_verified: "2026-07-30"
+last_verified_against: "AOSP android-17.0.0_r1；主维护章节 14.22"
+confidence: high
+sources:
+  - type: local
+    path: "src/part3-tools/ch14-other-tools/22-hprof-heapdump-javahprof-datasource.md"
+android17_review_notes: "确认与 14.22 重复；删除无关占位大纲，保留废弃重定向页以避免链接失效"
 ---
-> ⚠️ **本节已废弃 (deprecated 2026-07-04)**：与 14.22 (22-hprof-heapdump-javahprof-datasource.md, finalized, 664 lines) 内容重复。duplicate of 14.22 which already comprehensively covers HPROF HeapDump + Perfetto java_hprof。
-
-
 
 # 26 HPROF HeapDump管线与Perfetto art_hprof优化解析
 
-<!-- outline-start -->
-## 要点
+> 本节已废弃，保留文件仅为兼容既有链接。请阅读 [§14.22 HPROF、`dumpheap` 与 Perfetto `android.java_hprof`](22-hprof-heapdump-javahprof-datasource.md)。
 
-### 🔹 内存管理基础
-HPROF HeapDump管线与Perfetto art_hprof优化解析的核心概念与架构原理
+## 废弃原因
 
-### 🔹 Android 17 新特性
-Android 17中的关键改进与性能优化
+本节与 §14.22 讨论同一条 Android 17 内存快照链路。继续维护两份正文会让命令、权限和 ART 实现边界出现版本差异，因此只保留 §14.22 作为主维护章节。
 
-### 🔹 协作机制实现
-AppFlow与LMKD v2的具体协作方式
+§14.22 已覆盖以下内容：
 
-### 🔹 性能优化策略
-针对不同场景的优化配置与参数调优
+- 传统完整 HPROF 与 Perfetto `android.java_hprof` HeapGraph proto 的格式差异。
+- `am dumpheap`、`Debug.dumpHprofData()` 与 Perfetto data source 的入口和权限边界。
+- ART 在 heap dump 期间的挂起、fork、对象遍历与输出流程。
+- Perfetto 配置、触发方式、SQL/标准库分析和失败诊断。
+- Android 17/API 37 与 `android-17.0.0_r1` 的源码锚点。
 
-## 扩展
-
-### 🔸 大应用冷启动优化
-GB级应用的启动性能优化方案
-
-### 🔸 内存回收策略
-智能内存回收与预加载机制
-
-### 🔸 实战案例分析
-典型场景下的优化效果验证
-
-<!-- outline-end -->
-
-> 本节内容待加工。
+旧大纲中的 AppFlow、LMKD、冷启动和预加载不属于 HPROF 管线，已从本页移除。需要这些主题时应进入对应内存管理或启动优化章节。
