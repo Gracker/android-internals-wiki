@@ -4,8 +4,8 @@ chapter: "7.16"
 status: ready-for-review
 drafted_date: "2026-05-18"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-07-26"
-last_verified_against: "Perfetto docs + Android Developers power docs + AOSP android-17.0.0_r1 public paths"
+last_verified: "2026-07-30"
+last_verified_against: "Perfetto docs + Android Developers power docs + AOSP android-17.0.0_r1 public paths + PowerManager API reference"
 confidence: medium-high
 tags: [jank, power, thermal, perfetto, battery-historian]
 related_chapters: ["5.5", "5.10", "7.15", "11.1", "13.2", "14.11", "25.1", "25.2"]
@@ -13,11 +13,11 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "章节深挖/研究素材/官方文档"
 task6_state: fixed
-task9_state: rework-fixed
-pipeline_stage: ready-for-review
-last_rework_at: "2026-07-26T13:35:22+08:00"
-last_rework_run_id: "20260726-133522-rework-e61f2940"
-rework_summary: "修复核验占位标记和版本基线：将 thermal headroom 跨厂商差异改为需要实机标注的边界说明，补齐 android-17.0.0_r1 校验口径、Power Stats HAL 来源与章节 path。"
+task9_state: rework-verified
+pipeline_stage: rework-verified
+last_rework_at: "2026-07-30T09:37:01+08:00"
+last_rework_run_id: "20260730-093701-rework-e61f2940"
+rework_summary: "解决 pending-verification-marker（§四类场景入口将「待验证假设」改为「证据缺口记录」）和 thin-source-marking（正文新增 5 处 [来源:]/[已验证:] 内联证据标记，覆盖 ThermalManagerService、PowerManager.getThermalHeadroom、IPowerStats、FrameTimeline SurfaceView 边界和 ARR API）。frontmatter 新增 PowerManager API 与 thermal-mitigation 来源。"
 path: "src/part2-performance/ch07-smoothness/16-power-thermal-jank-playbook.md"
 sources:
   - type: official
@@ -34,10 +34,16 @@ sources:
     path: "https://developer.android.com/topic/performance/power/battery-historian"
   - type: official
     path: "https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/PowerManager"
+  - type: official
+    path: "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate"
   - type: aosp
     path: "hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl"
   - type: aosp
     path: "hardware/interfaces/thermal/aidl/android/hardware/thermal/"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java"
   - type: internal
     path: "intake/research-gaps.md#2026-05-17-7.15"
   - type: internal
@@ -131,7 +137,7 @@ thermal 现场常同时出现两条路径。
   → 系统组件与应用按状态减载
 ```
 
-Android 17 的 `ThermalManagerService` 位于 `frameworks/base/services/core/java/com/android/server/power/thermal/`。AOSP 源码会从缓存的 SKIN 类型温度中取最高 throttling severity，更新整体 status，并通过 `TRACE_TAG_POWER` 写入名为 `ThermalManagerService.status` 的 counter。启用 `power` atrace 类别后，这条 counter 是 Framework 热状态与 Perfetto 对齐的重要入口。
+Android 17 的 `ThermalManagerService` 位于 `frameworks/base/services/core/java/com/android/server/power/thermal/`。AOSP 源码会从缓存的 SKIN 类型温度中取最高 throttling severity，更新整体 status，并通过 `TRACE_TAG_POWER` 写入名为 `ThermalManagerService.status` 的 counter。启用 `power` atrace 类别后，这条 counter 是 Framework 热状态与 Perfetto 对齐的重要入口。[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java]
 
 整体 status 表达面向用户体验的 thermal severity。它不等于 CPU 温度，也不承诺映射到固定 GHz、固定 GPU 档位或某个 cooling device state。详细传感器数据由 Thermal HAL 面向可信系统组件提供；普通应用使用公开的 `PowerManager` 状态和 headroom API。
 
@@ -145,7 +151,7 @@ Android 17 的 `ThermalManagerService` 位于 `frameworks/base/services/core/jav
 | `getThermalHeadroomThresholds()` | API 35 | status 到 headroom threshold 的设备映射；可能不含全部 status |
 | `addThermalHeadroomListener()` | API 36 | headroom 或 thresholds 变化回调 |
 
-`getThermalHeadroom()` 返回非负值，`1.0` 对应 `SEVERE` threshold；大于 `1.0` 没有统一的更高 severity 映射。不支持、服务未准备好或调用过密时可能得到 `NaN`。官方 API 文档说明这类慢变化传感器没有必要以高于约每秒一次的频率轮询。
+`getThermalHeadroom()` 返回非负值，`1.0` 对应 `SEVERE` threshold；大于 `1.0` 没有统一的更高 severity 映射。不支持、服务未准备好或调用过密时可能得到 `NaN`。官方 API 文档说明这类慢变化传感器没有必要以高于约每秒一次的频率轮询。[来源: developer.android.com/reference/android/os/PowerManager#getThermalHeadroom(int)]
 
 API 35 的 thresholds 来自设备配置。API 36 起 thresholds 可发生变化，可通过 headroom listener 获知。应用应保存 status、headroom、thresholds、时间戳和设备身份，不要把自定的 `0.8` 之类阈值写成平台常量。
 
@@ -253,13 +259,13 @@ data_sources {
 }
 ```
 
-`power/cpu_frequency` 记录变化事件，`cpufreq_period_ms` 补 trace 开始处的当前值；两者一起使用可减少误读。`gpufreq_period_ms`、`devfreq_period_ms`、thermal tracepoint 和 wakeup-source 轨道仍依赖设备。`collect_power_rails` 需要 ODPM/PowerStats HAL 的 energy-meter channel；另外两个开关分别请求 EnergyConsumer breakdown 与 PowerEntity state residency。
+`power/cpu_frequency` 记录变化事件，`cpufreq_period_ms` 补 trace 开始处的当前值；两者一起使用可减少误读。`gpufreq_period_ms`、`devfreq_period_ms`、thermal tracepoint 和 wakeup-source 轨道仍依赖设备。`collect_power_rails` 需要 ODPM/PowerStats HAL 的 energy-meter channel；另外两个开关分别请求 EnergyConsumer breakdown 与 PowerEntity state residency。[已验证: AOSP android-17.0.0_r1, hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl; perfetto.dev/docs/data-sources/battery-counters]
 
 模板使用 128 MiB ring buffer，是为了容纳高频 sched 事件。若目标设备的 Perfetto guardrail 拒绝该大小，或采集本身改变了温控曲线，应缩短窗口、分开采集高频与低频数据，或改用 periodic snapshot；分析前还要在 trace `stats` 表检查 packet loss 和 buffer overwrite。
 
 配置本身不包含通用的网络包归因。不同内核的网络 tracepoint 开销和权限差异很大，应用应给请求、重试、DNS 和响应增加 marker，并保留 OkHttp/Chromium/播放器等组件的事件日志；长窗口再用 Batterystats 的 UID 网络统计验证。
 
-FrameTimeline 当前不覆盖 `SurfaceView` 内容帧。视频、相机和游戏若通过独立 Surface 输出，要补 Producer、BufferQueue、fence、SurfaceFlinger 与 HWC 证据，不能用宿主 App Window 的绿色帧代表内容层按时呈现。
+FrameTimeline 当前不覆盖 `SurfaceView` 内容帧。视频、相机和游戏若通过独立 Surface 输出，要补 Producer、BufferQueue、fence、SurfaceFlinger 与 HWC 证据，不能用宿主 App Window 的绿色帧代表内容层按时呈现。[已验证: perfetto.dev/docs/data-sources/frametimeline]
 
 ## 怎样证明 thermal throttling 影响了卡顿
 
@@ -299,7 +305,7 @@ power rail 是设备级累计能量。其他应用、SurfaceFlinger、媒体和�
 
 高刷新率同时缩短帧预算并增加显示更新机会。60 Hz 常见周期约 16.67 ms，120 Hz 约 8.33 ms；可变刷新率和 Android 15 引入的 Adaptive Refresh Rate 会改变运行时节奏，分析时应读取 trace 中的 Expected Timeline、VSync 与显示模式。
 
-ARR 只在实现相应 HWC HAL 能力的 Android 15 QPR1+ 设备上可用。API 36 提供 `hasArrSupport()` 等公开能力查询。ARR 面板可在同一显示模式内按离散 VSync 步进调整刷新节奏，因此“当前模式是 120 Hz”不代表内容持续以 120 fps 产生或显示。
+ARR 只在实现相应 HWC HAL 能力的 Android 15 QPR1+ 设备上可用。API 36 提供 `hasArrSupport()` 等公开能力查询。ARR 面板可在同一显示模式内按离散 VSync 步进调整刷新节奏，因此“当前模式是 120 Hz”不代表内容持续以 120 fps 产生或显示。[来源: developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
 
 对普通 View/Compose Window，可沿 `Choreographer → RenderThread → BLAST BufferQueue → SurfaceFlinger → HWC → present` 对齐帧与功耗。`SurfaceView`、`TextureView`、WebView 和视频要按输出路径分流：
 
@@ -410,7 +416,7 @@ Perfetto 的 `collect_power_rails` 对应可用的 energy-meter channels。`coll
 | 视频 | MediaCodec、SurfaceView/TextureView、BufferQueue、fence、SF/HWC、network、display rail | 解码、缓冲、合成、刷新节奏哪一段晚 | 把 `releaseOutputBuffer()` 当成屏幕已显示 |
 | WebView | provider 版本、renderer、JS/layout、图片、网络、宿主 HWUI、媒体 Layer | renderer、宿主还是独立媒体层形成负载 | 只看宿主主线程和单一进程 |
 
-案例缺少实机 trace 时，只保留复现脚本与待验证假设，不填写固定收益或跨设备阈值。后续补证据时应保存 trace 时间区间、线程/Layer、counter 名称、Batterystats UID 字段和对照结果。
+案例缺少实机 trace 时，只保留复现脚本与证据缺口记录（明确标注「无实机证据」），不填写固定收益或跨设备阈值。后续补证据时应保存 trace 时间区间、线程/Layer、counter 名称、Batterystats UID 字段和对照结果。
 
 ## 现场结论模板
 
