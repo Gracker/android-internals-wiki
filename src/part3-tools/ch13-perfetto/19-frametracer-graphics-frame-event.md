@@ -25,531 +25,292 @@ gap_source: "研究素材"
 
 # 13.19 FrameTracer 与 Graphics Frame Event 数据通路
 
-## 两条数据源，两个问题
+FrameTimeline 已经告诉我们某个 SurfaceFrame 或 DisplayFrame 是否按预测时间完成，FrameTracer 则提供 buffer 从 Producer 持有、提交、可读、latch 到 present 的观测点。两套数据经常出现在同一条 trace 中，却使用不同的身份与时间语义。混用 `frame_number`、FrameTimeline token 和三类 fence，会让一段可执行查询变成错误归因。
 
-SurfaceFlinger 进程内运行着两条容易混淆的 Perfetto 数据源：
+本节的平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`。FrameTracer 位于 framework 与 SurfaceFlinger，不依赖内核函数才能解释其事件；继续追查 dma-buf、sync_file 或 dma-fence 时，内核锚点固定为 `android17-6.18-2026-06_r6`。SQL 以 SmartPerfetto v1.3.0 固定的 Perfetto v57.2 `trace_processor_shell` 为查询环境，并与该版本的 importer diff test 对照。
 
-| 数据源 | 承载文件 | 回答的问题 |
-|--------|---------|-----------|
-| `android.surfaceflinger.frametimeline` | `Scheduler/FrameTimeline.cpp` | 这帧是否按时，为何延迟 |
-| `android.surfaceflinger.frame` | `FrameTracer/FrameTracer.cpp` | buffer 在 GPU↔HWC 流水线上卡在哪一步 |
+## 两条数据源分别保存什么
 
-FrameTimeline 产出 jank 分类（App deadlined miss / SurfaceFlinger deadlined miss / Display halo / Dropped / Missed），对「帧有没有问题」给出定性判断。FrameTracer 产出的是 buffer 生命周期事件——从 App 端 `dequeueBuffer` 到 SF 释放 `RELEASE_FENCE`，每一步都有时间戳。它回答的是「这帧在流水线的哪一段花的时间最长」。
+SurfaceFlinger 注册了两条独立的 Perfetto 数据源：
 
-两者通过 `buffer_id` + `frame_number` 在 trace processor 侧可关联。典型工作流：先用 FrameTimeline 找到 jank 帧，再用 FrameTracer 定位卡在哪个阶段。
+| 数据源 | 主要实现 | 观测对象 | 适合回答的问题 |
+| --- | --- | --- | --- |
+| `android.surfaceflinger.frametimeline` | `Scheduler/FrameTimeline.cpp` | expected/actual SurfaceFrame 与 DisplayFrame | 帧有没有晚、丢弃或发生 stuffing，App 与 SF 哪一侧错过预测时间 |
+| `android.surfaceflinger.frame` | `FrameTracer/FrameTracer.cpp` | 每个 layer/buffer 的阶段事件 | Producer 何时持有和提交 buffer、producer fence 何时 signal、SF 何时 latch、显示 present 反馈何时到达 |
 
-> 源码级细节（初始化路径、proto 定义、Layer.cpp 调用点分布）详见 13.17 §1.7-1.8。本节聚焦实战诊断方法。
+FrameTimeline 的核心身份是 `surface_frame_token` 与 `display_frame_token`。一个 DisplayFrame 可以包含多个 SurfaceFrame。FrameTracer 的核心身份是 layer、buffer id 与 BufferQueue frame number；Perfetto 导入后，buffer id 主要编码在 track name 中，`frame_number` 与 `layer_name` 作为 `frame_slice` 字段暴露。
 
-## Buffer 生命周期事件链
+两套身份没有可直接等值连接的“全程帧号”。FrameTracer 的 `frame_number` 不能与 `surface_frame_token` 或 `display_frame_token` 直接比较。联合分析要先限定同一个 layer，再用时间重叠、present 邻域和必要的 transaction 证据建立对应关系。
 
-FrameTracer 追踪的是一个 GraphicBuffer 从 App dequeue 到最终显示再释放的完整旅程。13 种 `BufferEventType` 中，AOSP 代码中实际发射的只有 6 种，其余是 proto 占位符或 OEM 自定义。下图展示的是 AOSP 可观测的完整链路：
+## Android 17 的六个实际发射事件
+
+`graphics_frame_event.proto` 定义了 14 个枚举值（含 `UNSPECIFIED`）。枚举是协议容量，不代表 AOSP 每一种都会发射。对 `android-17.0.0_r1` 的 `Layer.cpp`、`FrameTracer.cpp`、`SurfaceFlinger.cpp` 和 `HWComposer.cpp` 核对后，AOSP SurfaceFlinger 的实际调用点只有以下六类：
+
+| 事件 | Android 17 发射位置 | 时间含义 | 判读限制 |
+| --- | --- | --- | --- |
+| `DEQUEUE` | `Layer::setBuffer()` 处理带有效 `dequeueTime` 的 buffer transaction | Producer 获得该 buffer 的时间 | 只在 transaction 携带正数 `dequeueTime` 时记录 |
+| `QUEUE` | 同一处理路径中的 `postTime` | buffer transaction 的 post 时间 | 不能当成 GPU 已完成；也不等同于 SF 已收到并采纳 |
+| `ACQUIRE_FENCE` | latch 路径调用 `traceFence()` | producer/acquire fence 的 signal 时间 | 对 HWUI 常对应 GPU 写完；Camera、Video 或原生 Producer 可能来自其他硬件 |
+| `LATCH` | `Layer::latchBufferImpl()` 附近 | SF 采纳该 buffer 的 latch 时间 | Android 13+ 允许特定 unsignaled buffer 先 latch，读取前仍须遵守 fence |
+| `FALLBACK_COMPOSITION` | `OutputLayer::requiresClientComposition()` 为真时 | 该 layer 被加入 client composition 的时间戳 | 这是排入 RenderEngine client composition 的观测点，不是 GPU 合成完成时间 |
+| `PRESENT_FENCE` | post-composition 路径 | display present fence signal；无有效 fence 时使用 HWC present timestamp 推导值 | present fence 是 per-display/per-frame，FrameTracer 把同一 display 反馈记到相关 layer 上 |
+
+下面这张图把六个事件放回 Producer、SurfaceFlinger 与显示系统的公共路径。虚线 release 路径用于说明真实 buffer 回收关系，它不属于 AOSP FrameTracer 的 emit 集合。
 
 ```mermaid
 sequenceDiagram
-    participant App
-    participant BufferQueue
+    participant P as Producer
+    participant BQ as BufferQueue / BLAST
     participant SF as SurfaceFlinger
-    participant HWC
-    participant Display
+    participant RE as RenderEngine
+    participant HWC as HWC / Composer HAL
+    participant D as Display
 
-    App->>BufferQueue: dequeueBuffer
-    Note over App,BufferQueue: ◀ DEQUEUE (Layer.cpp:982)
-    App->>BufferQueue: queueBuffer
-    Note over App,BufferQueue: ◀ QUEUE (Layer.cpp:986)
-    BufferQueue->>SF: acquireBuffer + acquireFence
-    Note over SF: ◀ ACQUIRE_FENCE (Layer.cpp:1269)
-    SF->>SF: latchBuffer
-    Note over SF: ◀ LATCH (Layer.cpp:1271)
-    alt HWC 合成
-        SF->>HWC: validate + present
-        Note over SF: ◀ HWC_COMPOSITION_QUEUED (OEM 自定义)
-    else GPU 合成 (FALLBACK)
-        SF->>SF: RenderEngine::drawLayers
-        Note over SF: ◀ FALLBACK_COMPOSITION (Layer.cpp:1453)
+    P->>BQ: dequeue buffer
+    Note over P,BQ: DEQUEUE
+    P->>BQ: queue/post buffer + producer fence
+    Note over P,BQ: QUEUE
+    BQ->>SF: buffer transaction + acquire fence
+    Note over SF: ACQUIRE_FENCE 记录 fence signal
+    SF->>SF: latch selected buffer
+    Note over SF: LATCH
+    opt layer 需要 CLIENT composition
+        SF->>RE: prepare / draw client composition
+        Note over SF,RE: FALLBACK_COMPOSITION 记录排入时间
+        RE->>HWC: client target + fence
     end
-    HWC->>Display: present
-    Note over SF: ◀ PRESENT_FENCE (Layer.cpp:1476)
-    SF->>BufferQueue: releaseBuffer + releaseFence
-    Note over SF: ◀ RELEASE_FENCE
+    SF->>HWC: DEVICE layers / client target
+    HWC->>D: present display frame
+    D-->>SF: present fence signal
+    Note over SF,D: PRESENT_FENCE
+    HWC-->>BQ: per-layer release fence
+    BQ-->>P: old buffer becomes reusable
 ```
 
-六个阶段的时间含义：
+图中的 `PRESENT_FENCE` 表示 Android 显示栈的 present 时间锚点。它不证明面板像素已经完成光学响应，也不能代替 per-layer release fence。release fence 决定旧 buffer 何时可安全复用；AOSP Android 17 虽然在 proto 中保留 `RELEASE_FENCE = 9`，FrameTracer 没有对应发射点。
 
-| 阶段 | 起止 | 含义 |
-|------|------|------|
-| DEQUEUE → QUEUE | App 端 | App 拿到 buffer 后的绘制耗时（CPU + GPU 提交） |
-| QUEUE → ACQUIRE_FENCE | BufferQueue 传输 | buffer 从 App 进程到 SF 进程的传输 + acquire fence signal 等待（GPU 完成渲染） |
-| ACQUIRE_FENCE → LATCH | SF 内部 | SF acquire buffer 到决定 latch 的间隔，通常接近 0（同一帧内） |
-| LATCH → FALLBACK_COMPOSITION | GPU 合成 | 仅 GPU 合成路径有此事件，表示 GPU 实际完成合成的时刻 |
-| LATCH → PRESENT_FENCE | 显示呈现 | latch 到上屏的时间，包含 HWC 合成或 GPU 合成 + 显示控制器刷新 |
-| PRESENT_FENCE → RELEASE_FENCE | buffer 回收 | buffer 被显示控制器读取完毕，归还给 BufferQueue 供 App 复用 |
+### `HWC_COMPOSITION_QUEUED` 与 `RELEASE_FENCE`
 
-关键区分点：`HWC_COMPOSITION_QUEUED`（类型 6）在 AOSP 源码中**没有发射点**——`FrameTracer.cpp`、`Layer.cpp`、`SurfaceFlinger.cpp`、`HWComposer.cpp` 均无对应的 `traceTimestamp/traceFence` 调用。该 proto 值是给 OEM HWC HAL 使用的占位符，Pixel/Samsung 等闭源实现可能自行发射。如果在 trace 中看到 `HWC_COMPOSITION_QUEUED`，来源是 OEM 扩展而非 AOSP。详见 13.17 §1.8 的校正分析。
+`HWC_COMPOSITION_QUEUED = 6` 和 `RELEASE_FENCE = 9` 在 Android 17 的 AOSP SurfaceFlinger 中都没有 emit 调用。trace 中出现前者时，应记录设备 build 与来源实现，再判断是否为 OEM instrumentation。仅凭 proto 注释，无法把它归为标准 AOSP 事件。
 
-## Perfetto SQL 实战：buffer 阶段耗时分析
+同理，缺少 `RELEASE_FENCE` 事件不表示系统没有 release fence。HWC 仍会返回 per-layer release fence，SurfaceFlinger 仍会合并并通过 release callback / BufferQueue 传给 Producer。FrameTracer 数据源没有把这条信号写入 `GraphicsFrameEvent`。
 
-FrameTracer 数据存储在 `android.surfaceflinger.frame` track 中。下面是四个递进的诊断查询。
+## `traceFence()` 为什么可能缺尾部事件
 
-### 查询 1：查看 trace 中有哪些 layer 的 buffer 事件
+`traceFence()` 遇到已 signal 的 fence 时，会按 signal time 写入事件；遇到 pending fence 时，会把它保存到对应 layer、buffer id 的 `pendingFences`。同一个 buffer 以后再次触发 FrameTracer 调用时，`tracePendingFencesLocked()` 才会重新检查并补写已经 signal 的事件。
 
-```sql
--- 快速查看 trace 中有哪些 layer 产生了 FrameTracer 事件
-SELECT DISTINCT
-  EXTRACT_ARG(arg_set_id, 'graphics_frame_event.buffer_event.layer_name') AS layer_name,
-  COUNT(*) AS event_count
-FROM slice
-WHERE name = 'graphics_frame_event'
-GROUP BY layer_name
-ORDER BY event_count DESC;
+这套实现带来三个诊断边界：
+
+1. 补写发生得晚，TracePacket 的 timestamp 仍使用原 fence signal time；trace processor 排序后看起来会回到正确时间位置；
+2. trace 结束前没有后续同 buffer 调用时，尾部 pending fence 可能没有机会补写；
+3. signal time 距检查时刻超过 60 秒的 pending fence 会被丢弃，避免旧 trace 的 fence 污染后续采集。
+
+因此，缺少某一帧的 `AcquireFenceSignaled` 或 `PresentFenceSignaled` 需要结合 trace 尾部、buffer 是否继续复用、fence 有效性和数据源采集区间判断，不能直接写成“fence 从未 signal”。
+
+## Perfetto v57.2 怎样导入 Graphics Frame Event
+
+Perfetto 的 `GraphicsFrameEventParser` 将一份 proto 事件投影成 raw event 与 phase slice。当前查询入口是 `gpu_track` 和 `frame_slice`，筛选条件为 `gpu_track.scope = 'graphics_frame_event'`。
+
+| track name | slice 内容 | `dur` 的含义 |
+| --- | --- | --- |
+| `Buffer: <bufferId> <layer>` | `Dequeue`、`Queue`、`AcquireFenceSignaled`、`Latch`、`FallbackComposition`、`PresentFenceSignaled` 等 raw event | fence 事件在提供 start time 时可形成 span；Android 17 这些调用通常是 instant |
+| `APP_<bufferId> <layer>` | 一帧对应一个 phase slice | `DEQUEUE → QUEUE` |
+| `GPU_<bufferId> <layer>` | 一帧对应一个 phase slice | `QUEUE → ACQUIRE_FENCE signal` |
+| `SF_<bufferId> <layer>` | 一帧对应一个 phase slice | `LATCH → PRESENT_FENCE signal` |
+| `Display_<layer>` | 连续 present 之间的 phase slice | 当前 present → 同 layer 下一次 present |
+
+`APP_` phase 表示 Producer 持有 buffer 的时间。它可能包含 CPU 准备、GPU 提交、主动 pacing、锁等待或其他 Producer 行为，不能统一命名为“App 绘制耗时”。`GPU_` phase 表示提交到 producer fence signal 的间隔；对于 HWUI 它常能反映 GPU 完成等待，对 Camera、Video 和其他硬件 Producer 则要改用相应生产者语义。
+
+`SF_` phase 将 latch 到 display present feedback 放在一起，覆盖 SF 调度、client/device composition 和显示后段，无法单独量出 HWC 或 RenderEngine 的执行时间。`Display_` phase 是相邻 present 的 cadence；它不表示 buffer 从 present 到 release 的生命周期。末尾的 `Display_` slice 没有下一次 present 来闭合时，`dur` 为 `-1`。
+
+还有一个容易漏掉的 parser 分支：acquire fence 可能在 `QUEUE` packet 被处理前已经 signal。此时 importer 不创建 `GPU_` phase，避免制造反向或错误时长。某一帧缺 `GPU_` slice，不应自动解释为数据损坏。
+
+## 先确认 trace 中是否有这组数据
+
+下面的配置只展示启用两条 SurfaceFlinger 数据源所需的核心字段，适合合并到现有采集配置中。
+
+```textproto
+duration_ms: 10000
+buffers {
+  size_kb: 32768
+  fill_policy: RING_BUFFER
+}
+data_sources {
+  config { name: "android.surfaceflinger.frame" }
+}
+data_sources {
+  config { name: "android.surfaceflinger.frametimeline" }
+}
 ```
 
-### 查询 2：单帧全阶段耗时分解
+这段配置没有加入 sched、atrace、GPU counter 或应用 track event。完整排障应按问题补充这些数据源，并核对环形缓冲区是否足以覆盖目标场景。只打开 `gfx` atrace category，不能据此假定两条原生 Perfetto 数据源都已启用。
+
+## SQL 1：列出目标 layer 的 raw event 与 phase
+
+这条查询直接采用 Perfetto v57.2 importer diff test 使用的表关系，并加上目标 layer 过滤。
 
 ```sql
--- 将 FrameTracer 事件展开为每帧每阶段的耗时表
-WITH frame_events AS (
+SELECT
+  fs.ts,
+  fs.dur,
+  gt.name AS track_name,
+  fs.name AS slice_name,
+  fs.frame_number,
+  fs.layer_name
+FROM gpu_track AS gt
+JOIN frame_slice AS fs
+  ON fs.track_id = gt.id
+WHERE gt.scope = 'graphics_frame_event'
+  AND fs.layer_name GLOB '*com.example.app*'
+ORDER BY fs.ts;
+```
+
+把包名替换为目标 layer 的稳定片段。`Buffer:` 轨迹用于查看六类 raw event；`APP_`、`GPU_`、`SF_`、`Display_` 轨迹已经由 importer 计算好阶段时长。查询结果中 `dur = -1` 的未闭合 slice 不能参与均值、P95 或总时长统计。
+
+## SQL 2：按 frame number 汇总四类 phase
+
+下面的查询把 importer 生成的 phase 归入四列，不使用 SQLite 不支持的 `PIVOT` 语法。
+
+```sql
+WITH phase AS (
   SELECT
-    EXTRACT_ARG(arg_set_id, 'graphics_frame_event.buffer_event.layer_name') AS layer_name,
-    EXTRACT_ARG(arg_set_id, 'graphics_frame_event.buffer_event.frame_number') AS frame_number,
-    EXTRACT_ARG(arg_set_id, 'graphics_frame_event.buffer_event.type') AS event_type,
-    ts,
-    dur
-  FROM slice
-  WHERE name = 'graphics_frame_event'
-)
-SELECT * FROM frame_events
-WHERE layer_name = 'com.example.app/com.example.app.MainActivity'
-  AND frame_number = 42
-ORDER BY ts;
-```
-
-结果示例（单帧 7 个事件，时间戳单位 ns）：
-
-```
-layer_name         | frame_number | event_type           | ts           | dur
--------------------|--------------|----------------------|--------------|-----
-com.example...     | 42           | DEQUEUE (1)          | 100034000000 | 0
-com.example...     | 42           | QUEUE (2)            | 100048000000 | 0
-com.example...     | 42           | ACQUIRE_FENCE (4)    | 100050200000 | 5600000
-com.example...     | 42           | LATCH (5)            | 100050200000 | 0
-com.example...     | 42           | FALLBACK_COMPOSITION | 100053800000 | 0
-com.example...     | 42           | PRESENT_FENCE (8)    | 100066600000 | 0
-```
-
-这一帧的瓶颈在读这张表时一目了然：
-- App 绘制（DEQUEUE → QUEUE）：14ms
-- GPU 渲染（QUEUE → ACQUIRE_FENCE signal）：2.2ms + 5.6ms fence wait
-- GPU 合成（LATCH → FALLBACK_COMPOSITION）：3.6ms
-- 上屏（FALLBACK_COMPOSITION → PRESENT_FENCE）：12.8ms（含 vsync 等待）
-
-### 查询 3：批量计算每帧总延迟和阶段占比
-
-```sql
--- 按帧聚合，计算 DEQUEUE 到 PRESENT_FENCE 的端到端延迟
--- 以及各阶段耗时占比
-WITH events_pivot AS (
-  SELECT
-    layer_name,
-    frame_number,
-    MAX(CASE WHEN event_type = 1 THEN ts END) AS ts_dequeue,
-    MAX(CASE WHEN event_type = 2 THEN ts END) AS ts_queue,
-    MAX(CASE WHEN event_type = 4 THEN ts END) AS ts_acquire,
-    MAX(CASE WHEN event_type = 5 THEN ts END) AS ts_latch,
-    MAX(CASE WHEN event_type = 7 THEN ts END) AS ts_fallback,
-    MAX(CASE WHEN event_type = 8 THEN ts END) AS ts_present
-  FROM (
-    SELECT
-      EXTRACT_ARG(arg_set_id, 'graphics_frame_event.buffer_event.layer_name') AS layer_name,
-      EXTRACT_ARG(arg_set_id, 'graphics_frame_event.buffer_event.frame_number') AS frame_number,
-      EXTRACT_ARG(arg_set_id, 'graphics_frame_event.buffer_event.type') AS event_type,
-      ts
-    FROM slice
-    WHERE name = 'graphics_frame_event'
-  )
-  GROUP BY layer_name, frame_number
+    fs.layer_name,
+    fs.frame_number,
+    fs.dur,
+    CASE
+      WHEN gt.name GLOB 'APP_*' THEN 'app_hold'
+      WHEN gt.name GLOB 'GPU_*' THEN 'producer_fence_wait'
+      WHEN gt.name GLOB 'SF_*' THEN 'latch_to_present'
+      WHEN gt.name GLOB 'Display_*' THEN 'present_interval'
+    END AS phase_name
+  FROM gpu_track AS gt
+  JOIN frame_slice AS fs
+    ON fs.track_id = gt.id
+  WHERE gt.scope = 'graphics_frame_event'
+    AND fs.dur >= 0
+    AND fs.layer_name GLOB '*com.example.app*'
 )
 SELECT
   layer_name,
   frame_number,
-  (ts_present - ts_dequeue) / 1e6 AS total_ms,
-  (ts_queue - ts_dequeue) / 1e6 AS app_draw_ms,
-  (ts_acquire - ts_queue) / 1e6 AS gpu_render_ms,
-  (ts_latch - ts_acquire) / 1e6 AS sf_latch_ms,
-  COALESCE((ts_fallback - ts_latch) / 1e6, 0) AS gpu_compose_ms,
-  (ts_present - COALESCE(ts_fallback, ts_latch)) / 1e6 AS present_ms
-FROM events_pivot
-WHERE ts_present IS NOT NULL AND ts_dequeue IS NOT NULL
-ORDER BY total_ms DESC
-LIMIT 20;
+  MAX(CASE WHEN phase_name = 'app_hold' THEN dur END) / 1e6
+    AS app_hold_ms,
+  MAX(CASE WHEN phase_name = 'producer_fence_wait' THEN dur END) / 1e6
+    AS producer_fence_wait_ms,
+  MAX(CASE WHEN phase_name = 'latch_to_present' THEN dur END) / 1e6
+    AS latch_to_present_ms,
+  MAX(CASE WHEN phase_name = 'present_interval' THEN dur END) / 1e6
+    AS present_interval_ms
+FROM phase
+WHERE phase_name IS NOT NULL
+GROUP BY layer_name, frame_number
+ORDER BY latch_to_present_ms DESC;
 ```
 
-### 查询 4：识别频繁 GPU 合成的 layer
-
-```sql
--- 统计每个 layer 的 GPU 合成占比
--- FALLBACK_COMPOSITION 出现 = HWC 无法合成该 layer
-WITH composition_stats AS (
-  SELECT
-    layer_name,
-    COUNT(DISTINCT CASE WHEN event_type = 7 THEN frame_number END) AS gpu_compose_frames,
-    COUNT(DISTINCT CASE WHEN event_type = 8 THEN frame_number END) AS total_presented_frames
-  FROM (
-    SELECT
-      EXTRACT_ARG(arg_set_id, 'graphics_frame_event.buffer_name.layer_name') AS layer_name,
-      EXTRACT_ARG(arg_set_id, 'graphics_frame_event.buffer_event.frame_number') AS frame_number,
-      EXTRACT_ARG(arg_set_id, 'graphics_frame_event.buffer_event.type') AS event_type
-    FROM slice
-    WHERE name = 'graphics_frame_event'
-  )
-  GROUP BY layer_name
-)
-SELECT
-  layer_name,
-  gpu_compose_frames,
-  total_presented_frames,
-  ROUND(100.0 * gpu_compose_frames / NULLIF(total_presented_frames, 0), 1) AS gpu_compose_pct
-FROM composition_stats
-WHERE total_presented_frames > 0
-ORDER BY gpu_compose_pct DESC;
-```
-
-`gpu_compose_pct` 高意味着大量帧走了 GPU 合成而非 HWC overlay。常见原因：layer 数量超过 HWC overlay plane 上限、layer 带有复杂变换（缩放/旋转/半透明叠加）、HWC 不支持的像素格式。
-
-## GPU Stall 三种典型模式
-
-用 FrameTracer 数据能区分三种性能瓶颈：
-
-**模式一：ACQUIRE_FENCE 等待过长（GPU 渲染慢）**
-
-QUEUE 到 ACQUIRE_FENCE 的间隔包含 buffer 跨进程传递 + acquire fence signal 等待。fence signal 时间取决于 GPU 完成渲染的时刻。如果这个间隔 > 1 帧（16.6ms @ 60Hz / 8.3ms @ 120Hz），说明 GPU 渲染本身是瓶颈。
-
-```sql
--- 找出 GPU 渲染耗时超过 1 帧周期的帧
-SELECT
-  layer_name,
-  frame_number,
-  (ts_acquire - ts_queue) / 1e6 AS gpu_wait_ms
-FROM (
-  SELECT
-    EXTRACT_ARG(arg_set_id, 'graphics_frame_event.buffer_event.layer_name') AS layer_name,
-    EXTRACT_ARG(arg_set_id, 'graphics_frame_event.buffer_event.frame_number') AS frame_number,
-    EXTRACT_ARG(arg_set_id, 'graphics_frame_event.buffer_event.type') AS event_type,
-    ts
-  FROM slice WHERE name = 'graphics_frame_event'
-)
-PIVOT(
-  MAX(ts) FOR event_type IN (2 AS ts_queue, 4 AS ts_acquire)
-)
-WHERE (ts_acquire - ts_queue) / 1e6 > 16.6  -- 超过 60Hz 单帧
-ORDER BY gpu_wait_ms DESC;
-```
-
-**模式二：FALLBACK_COMPOSITION 频繁触发（HWC 合成能力不足）**
-
-`FALLBACK_COMPOSITION` 表示 HWC 决策该 layer 走 GPU 合成（`requiresClientComposition() == true`）。频繁出现意味着 HWC overlay 处于不健康状态。
-
-判定函数（`OutputLayer.cpp:1137-1140`，android-17.0.0_r1）：
-
-```cpp
-bool OutputLayer::requiresClientComposition() const {
-    const auto& state = getState();
-    return !state.hwc || state.hwc->hwcCompositionType == Composition::CLIENT;
-}
-```
-
-触发条件有两个：`state.hwc == nullptr`（layer 没有 HWC 关联）或 `hwcCompositionType == Composition::CLIENT`（HWC 主动决策回退到 GPU）。其余 6 种 composition type（DEVICE / SOLID_COLOR / CURSOR / SIDEBAND / DISPLAY_DECORATION / REFRESH_RATE_INDICATOR）走 HWC 路径。
-
-**模式三：LATCH 到 PRESENT_FENCE 间隔异常（合成 + 上屏延迟）**
-
-这个间隔包含 HWC/GPU 合成执行 + 显示控制器刷新等待。如果 HWC 合成正常但此间隔过长，问题可能在显示控制器端（如 vsync 等待过长、刷新率切换中）。
-
-## 版本边界与数据可用性
-
-| Android 版本 | FrameTracer 状态 | 可用事件 | 注意事项 |
-|-------------|-----------------|---------|---------|
-| 10 (API 29) 及以下 | 不存在 | 无 | 只能用 `ATRACE_TAG_GRAPHICS` atrace 手工对齐时间戳 |
-| 11 (API 30) | 引入 | 7 种（核心 6 种 + RELEASE_FENCE） | 无 FrameTimeline 配套，诊断能力有限 |
-| 12 (API 31) | 稳定 | 13 种 proto 定义，6 种实际发射 | FrameTimeline 同步引入，可联合分析 |
-| 13-14 (API 33-34) | 默认启用 | 同上 | `gfxinfo framestats` 也开始输出对应数据 |
-| 15 (API 35) | 稳定 | 同上 + 部分 OEM 扩展 | Pixel 设备可能额外发射 `HWC_COMPOSITION_QUEUED` |
-| 16-17 (API 36-37) | 稳定 | 同上，`getCurrentBufferId()` → `getLatchedBufferId()` API 一致性改动 | buffer 标识获取方式变更，不影响事件类型 |
-
-[已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/]
-
-跨版本诊断建议：Android 11 以下无法使用 FrameTracer，需要用 `systrace` 抓 `gfx` + `view` category，手工对齐 `RenderThread` 的 `eglSwapBuffers` 时间戳与 SF 的 `composite` 时间戳。Android 12+ 可以直接在 Perfetto UI 中用 `android.surfaceflinger.frame` track 可视化查看。
-
-## FrameTracer + FrameTimeline 联合诊断
-
-FrameTracer 的 buffer 阶段数据 + FrameTimeline 的 jank 分类数据，组合起来才能回答「这帧为什么 jank」和「jank 卡在哪一步」两个层面的问题。
-
-关联键：FrameTracer 的 `frame_number` + `layer_name` ↔ FrameTimeline 的 `frame_number` + layer 信息。
-
-```sql
--- 联合查询：找出被 FrameTimeline 标记为 jank 的帧，
--- 并从 FrameTracer 数据定位延迟阶段
-WITH jank_frames AS (
-  SELECT
-    layer_name,
-    frame_number,
-    jank_tag,
-    prediction_type
-  FROM android.frames
-  WHERE jank_tag IS NOT NULL AND jank_tag != 'None'
-),
-frame_stages AS (
-  SELECT
-    layer_name,
-    frame_number,
-    (ts_present - ts_dequeue) / 1e6 AS total_ms,
-    (ts_queue - ts_dequeue) / 1e6 AS app_draw_ms,
-    (ts_acquire - ts_queue) / 1e6 AS gpu_render_ms,
-    COALESCE((ts_fallback - ts_latch) / 1e6, 0) AS gpu_compose_ms
-  FROM (
-    SELECT
-      EXTRACT_ARG(arg_set_id, 'graphics_frame_event.buffer_event.layer_name') AS layer_name,
-      EXTRACT_ARG(arg_set_id, 'graphics_frame_event.buffer_event.frame_number') AS frame_number,
-      EXTRACT_ARG(arg_set_id, 'graphics_frame_event.buffer_event.type') AS event_type,
-      ts
-    FROM slice WHERE name = 'graphics_frame_event'
-  )
-  PIVOT(
-    MAX(ts) FOR event_type IN (
-      1 AS ts_dequeue, 2 AS ts_queue, 4 AS ts_acquire,
-      5 AS ts_latch, 7 AS ts_fallback, 8 AS ts_present
-    )
-  )
-)
-SELECT
-  j.layer_name,
-  j.frame_number,
-  j.jank_tag,
-  f.total_ms,
-  f.app_draw_ms,
-  f.gpu_render_ms,
-  f.gpu_compose_ms,
-  CASE
-    WHEN f.app_draw_ms > 16.6 THEN 'App draw slow'
-    WHEN f.gpu_render_ms > 16.6 THEN 'GPU render slow'
-    WHEN f.gpu_compose_ms > 8 THEN 'GPU compose heavy'
-    ELSE 'SF scheduling / HWC delay'
-  END AS likely_bottleneck
-FROM jank_frames j
-JOIN frame_stages f USING (layer_name, frame_number)
-ORDER BY f.total_ms DESC
-LIMIT 30;
-```
-
-`likely_bottleneck` 列给出的是基于阈值的初步判断，不是精确归因。实际分析还需结合线程 slice 数据（App 主线程、RenderThread、SF 主线程）确认。但这一步已经把 jank 帧从几十上百帧缩小到了「App 侧问题还是 SF/GPU 侧问题」的二分判断，后续下钻方向就明确了。
-
-## 扩展
-
-### FrameTracer 与 GPU 内存 counter 的联合观测
-
-FrameTracer 记录 buffer 生命周期，结合 `gpu_memory` counter track 可以观察 GPU 内存随帧的变化趋势。当 App 频繁 allocate/free 大尺寸 GraphicBuffer（如相机预览、视频解码、大图加载）时，GPU 内存曲线会出现阶梯式波动。
-
-观测方法：在 Perfetto UI 中同时勾选 `android.surfaceflinger.frame`（slice track）和 `gpu_memory`（counter track），按时间轴对齐。SQL 侧可以按 frame_number 分组，关联 buffer 生命周期内的 GPU 内存变化：
-
-```sql
--- 每帧期间 GPU 内存峰值与均值
-WITH frame_windows AS (
-  SELECT
-    layer_name,
-    frame_number,
-    MIN(ts) AS frame_start,
-    MAX(ts) AS frame_end
-  FROM (
-    SELECT
-      EXTRACT_ARG(arg_set_id, 'graphics_frame_event.buffer_event.layer_name') AS layer_name,
-      EXTRACT_ARG(arg_set_id, 'graphics_frame_event.buffer_event.frame_number') AS frame_number,
-      ts
-    FROM slice WHERE name = 'graphics_frame_event'
-  )
-  GROUP BY layer_name, frame_number
-)
-SELECT
-  f.layer_name,
-  f.frame_number,
-  MAX(c.value) / 1e6 AS peak_gpu_mb,
-  AVG(c.value) / 1e6 AS avg_gpu_mb
-FROM frame_windows f
-JOIN counter c
-  ON c.ts BETWEEN f.frame_start AND f.frame_end
-JOIN counter_track t ON c.track_id = t.id
-WHERE t.name LIKE '%gpu_memory%'
-GROUP BY f.layer_name, f.frame_number
-ORDER BY peak_gpu_mb DESC
-LIMIT 20;
-```
-
-[待验证: `gpu_memory` counter track 名称在不同设备/版本上可能不同，需对照实际 trace 确认]
-
-### FrameTracer 在游戏场景的限制
-
-游戏通常使用 `SurfaceView` 或 ANativeWindow 直出，buffer 流转路径与普通 View 体系不同：
-
-- **事件链更短**：缺少 View 测量/布局/绘制的对应 slice，DEQUEUE → QUEUE 的间隔直接对应游戏引擎的帧渲染耗时（Unity/Godot/自定义引擎），中间没有 `RenderThread` 参与的痕迹。
-- **HWC 事件可能缺失**：部分游戏使用 `SECURE` 或 `PROTECTED` buffer，HWC 行为与普通 buffer 不同，`PRESENT_FENCE` 可能延迟或缺失。
-- **多 buffer 深度**：游戏常使用 triple buffering（`minUndequeuedBuffers = 2`），buffer 流水线深度更大，DEQUEUE 到 PRESENT_FENCE 的端到端延迟天然比双 buffer 长，分析时需调整预期基线。
-- **帧率不匹配**：游戏跑 30/60/90/120fps 时，FrameTimeline 的 vsync 周期预期不同。FrameTracer 的 `frame_number` 是连续的，但并非每个 frame_number 都对应一次上屏——游戏丢帧时 buffer 被 cancel 或 reuse。
-
-对游戏场景，建议同时开启 `gfx` + `gpu` atrace category 配合 FrameTracer 分析，`gpu` category 包含 GPU 频率和 GPU queue 深度信息，能补齐 FrameTracer 在 GPU 侧的观测盲区。
-
-
-<!-- AIW-源码调研-2026-06-28 -->
-## FrameTimeline 数据结构详解（android-17.0.0_r1 补充）
-
-### FrameTimelineEvent proto 与 JankType bitmask
-
-**源码位置**：`external/perfetto/protos/perfetto/trace/android/frame_timeline_event.proto`（android-17.0.0_r1）
-
-FrameTimeline 的核心是 `FrameTimelineEvent` 消息，按 `oneof event` 区分五类子消息：`ExpectedDisplayFrameStart` / `ActualDisplayFrameStart` / `ExpectedSurfaceFrameStart` / `ActualSurfaceFrameStart` / `FrameEnd`。每条事件通过 `cookie`（int64）关联 start / end，每帧内部由若干 SurfaceFrame 和一个 DisplayFrame 组成（多对一关系：`One DisplayFrame can map to N SurfaceFrame(s)`，通过 `display_frame_token` 字段关联）。
-
-`ActualSurfaceFrameStart` 是诊断 jank 的核心字段（节选）：
-
-| 字段 | 类型 | 含义 |
-|------|------|------|
-| `present_type` | enum | 帧实际呈现时机：ON_TIME=1 / LATE=2 / EARLY=3 / DROPPED=4 / UNKNOWN=5 |
-| `on_time_finish` | bool | 是否在预测 deadline 内完成 |
-| `gpu_composition` | bool | **GPU 合成 vs HWC 合成的边界标志** |
-| `jank_type` | int32 | **bitmask，可同时标记多个 jank 原因** |
-| `prediction_type` | enum | PREDICTION_VALID=1 / EXPIRED=2 / UNKNOWN=3 |
-| `is_buffer` | bool | 是否为 buffer 路径（vs bufferless） |
-| `jank_severity_type` | enum | SEVERITY_UNKNOWN=0 / NONE=1 / PARTIAL=2 / FULL=3 |
-| `present_delay_millis` | float | 上屏相对预测时刻的延迟（ms） |
-| `vsync_resynced_jitter_millis` | float | vsync 重新同步后的抖动（ms） |
-| `jank_severity_score` | float | 综合严重度分数（连续值） |
-
-**Android 17 新增的 JankType bitmask 项**：
-
-| bit 值 | 名称 | 引入版本 |
-|--------|------|----------|
-| 8192 | `JANK_DISPLAY_NOT_ON` | **Android 17 新增** |
-| 16384 | `JANK_DISPLAY_MODE_CHANGE_IN_PROGRESS` | **Android 17 新增** |
-| 32768 | `JANK_DISPLAY_POWER_MODE_CHANGE_IN_PROGRESS` | **Android 17 新增** |
-
-判断依据：`frame_timeline_event.proto` 在 android-12.0.0_r1 起即存在，bit 0-12 共 13 个 JankType；Android 14 引入 `JANK_APP_RESYNCED_JITTER`（bit 12）；Android 17 新增 bit 13-15 三个 display 相关 jank 原因，反映 17 对 display power / mode 切换的额外关注。
-
-完整 bitmask 表（android-17.0.0_r1，按 bit 位置排序）：
-
-```
-bit 0: JANK_UNSPECIFIED = 0
-bit 1: JANK_NONE = 1
-bit 2: JANK_SF_SCHEDULING = 2
-bit 3: JANK_PREDICTION_ERROR = 4
-bit 4: JANK_DISPLAY_HAL = 8
-bit 5: JANK_SF_CPU_DEADLINE_MISSED = 16
-bit 6: JANK_SF_GPU_DEADLINE_MISSED = 32
-bit 7: JANK_APP_DEADLINE_MISSED = 64
-bit 8: JANK_BUFFER_STUFFING = 128
-bit 9: JANK_UNKNOWN = 256
-bit 10: JANK_SF_STUFFING = 512
-bit 11: JANK_DROPPED = 1024
-bit 12: JANK_NON_ANIMATING = 2048
-bit 13: JANK_APP_RESYNCED_JITTER = 4096   (Android 14+)
-bit 14: JANK_DISPLAY_NOT_ON = 8192          (Android 17+)
-bit 15: JANK_DISPLAY_MODE_CHANGE_IN_PROGRESS = 16384  (Android 17+)
-bit 16: JANK_DISPLAY_POWER_MODE_CHANGE_IN_PROGRESS = 32768  (Android 17+)
-```
-
-### GPU/HWC 合成边界在 FrameTimeline 中的判定路径
-
-FrameTimeline 的 `gpu_composition` 字段与 FrameTracer 的 `FALLBACK_COMPOSITION` 事件由同一段代码设置：
-
-**源码位置**：`frameworks/native/services/surfaceflinger/Layer.cpp:1451-1462`（android-17.0.0_r1）
-
-```cpp
-const auto outputLayer = findOutputLayerForDisplay(display);
-if (outputLayer && outputLayer->requiresClientComposition()) {
-    nsecs_t clientCompositionTimestamp = outputLayer->getState().clientCompositionTimestamp;
-    mFlinger->mFrameTracer->traceTimestamp(layerId, getLatchedBufferId(), mCurrentFrameNumber,
-                                           clientCompositionTimestamp,
-                                           FrameTracer::FrameEvent::FALLBACK_COMPOSITION);
-    if (mDrawingState.bufferSurfaceFrameTX) {
-        mDrawingState.bufferSurfaceFrameTX->setGpuComposition();   // ← 与 FrameTimeline 共享标志
-    }
-    ...
-}
-```
-
-**数据通路**：`OutputLayer::requiresClientComposition()` → 返回 true → `setGpuComposition()` 写 SurfaceFrame → FrameTimeline 上报时读取该标志填充 `ActualSurfaceFrameStart.gpu_composition` 字段。
-
-判断 GPU stall 的两步走法：
-
-1. **过滤**：在 `actual_frame_timeline_slice` 中筛 `gpu_composition = true AND present_type = PRESENT_LATE OR PRESENT_DROPPED`，拿到所有 GPU 合成路径下的 jank 帧；
-2. **关联**：用 `frame_number` + `display_frame_token` 关联到 `android.surfaceflinger.frame` 的 `FALLBACK_COMPOSITION` 事件，读 `clientCompositionTimestamp` 与 `ts_present` 的差值，量化 GPU 合成耗时。
-
-### PRESENT_FENCE 双发射路径
-
-**源码位置**：`frameworks/native/services/surfaceflinger/Layer.cpp:1473-1499`（android-17.0.0_r1）
-
-```cpp
-if (presentFence->isValid()) {
-    mFlinger->mFrameTracer->traceFence(layerId, getLatchedBufferId(), mCurrentFrameNumber,
-                                       presentFence,
-                                       FrameTracer::FrameEvent::PRESENT_FENCE);   // 现代 HWC 路径
-} else if (... && mFlinger->getHwComposer().isConnected(*displayId)) {
-    // HWC doesn't support present fences, so use the present timestamp instead.
-    const nsecs_t presentTimestamp = mFlinger->getHwComposer().getPresentTimestamp(*displayId);
-    const nsecs_t vsyncPeriod = ...;
-    const nsecs_t actualPresentTime = now - ((now - presentTimestamp) % vsyncPeriod);
-    mFlinger->mFrameTracer->traceTimestamp(layerId, getLatchedBufferId(),
-                                           mCurrentFrameNumber, actualPresentTime,
-                                           FrameTracer::FrameEvent::PRESENT_FENCE);  // 老硬件路径
-}
-```
-
-**判断**：Pixel / 三星等现代设备的 trace 中 PRESENT_FENCE 几乎都来自 fence 路径；车机 / 旧 IoT 设备可能命中 timestamp 路径，分析时需要区分。
-
-### AOSP 不发射的两个事件（边界确认）
-
-通过 grep 验证（android-17.0.0_r1）：
-
-| 事件 | proto 值 | AOSP 发射点 |
-|------|----------|-------------|
-| `HWC_COMPOSITION_QUEUED` | 6 | **0 个**（OEM HWC HAL 扩展占位） |
-| `RELEASE_FENCE` | 9 | **0 个**（proto 保留，无 Layer.cpp / FrameTracer.cpp 调用） |
-
-结论：trace 中看到 `HWC_COMPOSITION_QUEUED` 一定来自 OEM HAL；`RELEASE_FENCE` 在 AOSP 设备上不会出现，分析"上屏→buffer 回收"延迟只能依赖其他信号（如 buffer 复用率、BufferQueue counter track）。
-
-### FrameTracer fence 处理：60s 过期机制
-
-**源码位置**：`frameworks/native/services/surfaceflinger/FrameTracer/FrameTracer.h:72`
-
-```cpp
-static constexpr nsecs_t kFenceSignallingDeadline = 60'000'000'000; // 60 seconds
-```
-
-`FrameTracer::tracePendingFencesLocked()` 把未 signal 的 fence 挂到 `pendingFences[bufferID]` 列表，等下次同 buffer 的 trace 调用时检查；若 60s 内仍未 signal 则丢弃，避免旧 trace 的 fence 在新 trace 中误触发事件。
-
-### Perfetto 标准表名
-
-`actual_frame_timeline_slice` 和 `expected_frame_timeline_slice` 是 Perfetto UI 默认加载的标准化表，字段含义：
-
-| 标准表字段 | 来源 proto 字段 |
-|-----------|-----------------|
-| `ts, dur` | 事件时间戳与持续时间 |
-| `surface_frame_token` | `ActualSurfaceFrameStart.token`（App 侧工作 token） |
-| `display_frame_token` | `ActualSurfaceFrameStart.display_frame_token`（SF 侧工作 token） |
-| `process.name` | 通过 `upid` JOIN `process` 表获得 |
-
-> 来源：[Perfetto FrameTimeline 文档](https://perfetto.dev/docs/data-sources/frametimeline)（确认 GPU Composition 字段语义、Android 12+ 要求、数据源名 `android.surfaceflinger.frametimeline`）
-
-### 与 HWC_COMPOSITION_QUEUED 校正报告的关系
-
-本文档与 2026-06-27 的 `2026-06-27-android17-hwc-composition-queue-event-source.md` 是同根但不同侧重：本次校正已覆盖 HWC_COMPOSITION_QUEUED 的"AOSP 无发射点"事实，本节补充 FrameTimeline 数据结构与 Android 17 的 jank 原因新增项（`JANK_DISPLAY_NOT_ON` / `JANK_DISPLAY_MODE_CHANGE_IN_PROGRESS` / `JANK_DISPLAY_POWER_MODE_CHANGE_IN_PROGRESS`），二者不冲突。
-
-## 延伸阅读
-
-### Android 17 HWC Composition Queue 事件追踪与 GPU 渲染性能边界判定
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-27-android17-hwc-composition-queue-event-source.md
-- 类型：DeepResearch 调研结果
-- 摘要：基于 4 个 AOSP tag 的 proto diff 证明 HWC_COMPOSITION_QUEUED 自 Android 12 即存在且无 emit 站点，FALLBACK_COMPOSITION 才是真实 GPU 合成事件。完整记录 presentOrValidate 快速/慢速路径状态机、traceFence pending 队列机制，以及 GPU/HWC 合成边界的 OutputLayer 判定逻辑。
-- 注入时间：2026-06-28
-- 价值：修正 HWC_COMPOSITION_QUEUED 为 Android 17 新增的错误认知，提供 FrameTracer 事件 emit 站点的完整源码排查，对 Perfetto GPU 分析至关重要
-
-### Android 17 FrameTimeline 数据结构与 GPU/CPU 合成边界判定机制
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-28-android17-frametimeline-gpu-cpu-boundary-hwc-composition.md
-- 类型：DeepResearch 调研结果
-- 摘要：揭示 Android 17 Perfetto GPU trace 由 FrameTracer（6类事件）与 FrameTimeline（5类子消息）双数据源构成；HWC_COMPOSITION_QUEUED(proto值6)和 RELEASE_FENCE(proto值9)在 AOSP 主线均无发射点，是 OEM HAL 扩展占位符；GPU/HWC 合成边界由 gpu_composition 标志位判定，Layer.cpp 仅在 requiresClientComposition() 为真时触发 FALLBACK_COMPOSITION。
-- 注入时间：2026-06-29
-- 价值：修正 FrameTracer 事件体系的认知盲区，明确哪些 proto 枚举有实际 emit 站点、哪些是占位符，对 Perfetto GPU 渲染分析至关重要
+NULL 列表示该 phase 在当前 trace 中没有闭合或没有生成。不要用 `COALESCE(..., 0)` 把缺失证据改写成零耗时。排序只是定位候选帧，根因仍要结合 active refresh rate、FrameTimeline expected/actual、线程状态、GPU 数据和 composition type 判断。
+
+## FrameTimeline 与 FrameTracer 怎样配合
+
+FrameTimeline 从 Android 12 起提供 expected/actual SurfaceFrame 与 DisplayFrame。`ActualSurfaceFrameStart` 在 Android 17 包含 `present_type`、`on_time_finish`、`gpu_composition`、`jank_type`、`prediction_type`、`is_buffer`、severity 和 present delay 等字段。SQL 视图会把 jank bitmask 转成可读分类。
+
+Android 17 的 proto 相比 `android-16.0.0_r1` 增加了以下枚举值：
+
+| 值 | Android 17 名称 | 诊断含义 |
+| ---: | --- | --- |
+| 4096 | `JANK_APP_RESYNCED_JITTER` | App 侧重新同步相关抖动 |
+| 8192 | `JANK_DISPLAY_NOT_ON` | Display 未处于 on 状态 |
+| 16384 | `JANK_DISPLAY_MODE_CHANGE_IN_PROGRESS` | 显示模式切换进行中 |
+| 32768 | `JANK_DISPLAY_POWER_MODE_CHANGE_IN_PROGRESS` | 显示电源模式切换进行中 |
+
+这些值是 bitmask，可以同时出现多个原因。版本首引来自 Android 16 与 Android 17 固定 tag 的 proto 对比，不能由当前文件的存在反推到更早版本。
+
+### `gpu_composition` 与 `FALLBACK_COMPOSITION`
+
+Android 17 的 `Layer.cpp` 在 `OutputLayer::requiresClientComposition()` 为真时记录 `FALLBACK_COMPOSITION`，并对相关 SurfaceFrame 调用 `setGpuComposition()`。所以 FrameTimeline 的 `gpu_composition` 与 FrameTracer raw event 来自同一条 client-composition 判定分支。
+
+`requiresClientComposition()` 的条件是当前 output layer 没有 HWC state，或 HWC composition type 为 `CLIENT`。一次 display frame 可以混合 DEVICE layer 与 CLIENT target。某个 layer 出现 `FallbackComposition` 只证明该 layer 进入 client composition；它无法单独证明 overlay plane 耗尽，也无法量化 RenderEngine GPU 时长。format、transform、blend、dataspace、color transform、protected content 和 vendor HWC 策略都可能影响决策。
+
+### 不要把两个 frame identity 直接 JOIN
+
+FrameTimeline 查询应使用 `surface_frame_token` 对齐 App expected/actual，使用 `display_frame_token` 对齐 SurfaceFrame 与 DisplayFrame。FrameTracer 查询使用 `layer_name` 与 BufferQueue `frame_number`。可靠的联合步骤是：
+
+1. 在 `actual_frame_timeline_slice` 中选出目标进程和目标 layer 的 late/dropped frame；
+2. 记录该 SurfaceFrame 的时间区间与 `display_frame_token`；
+3. 在相同 layer、相邻时间范围内查找 `APP_`、`GPU_`、`SF_` phase 和 raw event；
+4. 回到 Perfetto UI 检查 layer、transaction、`BufferTX - <layerName>` 与 present 邻域；
+5. 需要自动化关联时，使用时间窗并输出匹配置信度，不能把 frame token 与 frame number 写成等值条件。
+
+标准 HWUI App Window 的 FrameTimeline 覆盖较完整。SurfaceView、Camera、Video、游戏、WebView overlay、Flutter PlatformView 等路径可能有独立 Producer、独立 layer 或不完整的 App SurfaceFrame。此时先识别 Producer 与目标 layer，再决定 FrameTimeline 是否能作为主索引。
+
+## 四类耗时怎样读
+
+### `APP_` 偏长：Producer 长时间持有 buffer
+
+`DEQUEUE → QUEUE` 增长说明 Producer 拿到 buffer 后较晚提交。对标准 HWUI，可检查 MainThread、RenderThread、`DrawFrame`、Skia/GPU submit 与 pacing；对游戏看 Logic、Render/RHI、swap；对 Camera/Video 看 HAL、codec 与时间戳策略。CPU 线程不忙时，也可能是主动 pacing、GPU backpressure 或同步依赖。
+
+### `GPU_` 偏长：producer completion fence 晚
+
+`QUEUE → ACQUIRE_FENCE signal` 增长表示 Consumer 较晚获得可安全读取的 buffer。HWUI 或游戏通常要补 GPU stage、frequency、utilization、shader 和内存带宽证据。Camera、Video 和硬件 blitter 路径需要使用对应生产设备的 completion 语义。固定使用 16.6 ms 判定会在 90/120 Hz、30 fps 内容、VRR/ARR 和非整数 cadence 场景中产生误报，应与当前 expected timeline 和目标帧率比较。
+
+### acquire 已 signal，latch 仍晚：检查 transaction 与 SF 调度
+
+FrameTracer importer 没有生成独立的 acquire-to-latch phase track。可以从 raw event 时间或事件参数确认二者间隔，再查看 transaction readiness、同步 transaction、`BufferTX - <layerName>`、SF actual timeline 和 layer 是否被选择。Android 13+ 的 unsignaled latch 还会让 latch 与 fence signal 的先后关系更灵活，单看事件顺序不足以解释读取等待发生在哪里。
+
+### `SF_` 偏长：系统输出段的综合延迟
+
+`LATCH → PRESENT_FENCE signal` 同时包含 SF 调度、HWC validate/present、可选 RenderEngine client composition、显示模式节奏和 display 后段。若 `FallbackComposition` 出现，继续查 RenderEngine 与 GPU；若全部目标 layer 走 DEVICE，继续查 HWC/DisplayHAL、刷新率或 mode change。present fence 仍是显示栈锚点，panel 扫描和光学响应需要额外测量。
+
+### `Display_` 偏长：present cadence 出现空档
+
+`Display_` 的 duration 是同 layer 相邻两次 present feedback 的间隔。它适合观察 cadence 和沿用旧 buffer 的时段，不等于某个 buffer 的 release latency。30 fps 内容在 60 Hz display 上出现约 33.3 ms 间隔可以完全符合预期，必须结合 requested frame rate、内容 cadence 与 FrameTimeline 判断。
+
+## 按出图类型修正解释
+
+| 出图类型 | FrameTracer 中要锁定的对象 | 不能直接套用的解释 |
+| --- | --- | --- |
+| 标准 App Window | 宿主 App Window layer | `APP_` 仍不等于完整 `doFrame`；主线程工作可能发生在 dequeue 前 |
+| SurfaceView / 游戏 Surface | 独立 Surface layer | 宿主窗口 token 不能代替独立 layer 的 buffer frame number |
+| TextureView | 宿主 App Window layer，外部 SurfaceTexture 另查 | 外部 Producer 的 ready 时间不等于宿主窗口 present |
+| Camera / 普通 Video Surface | preview/video layer | acquire fence 可能来自 HAL 或 codec，不能统一归为 GPU |
+| Tunneled / sideband video | sideband layer 与 HAL/HWC 证据 | 可能没有普通逐帧 BufferQueue / FrameTracer 事件 |
+| WebView / Flutter / React Native | 先区分宿主合成和独立 overlay | framework frame id 不能直接作为 BufferQueue frame number |
+
+这种分型来自渲染管线的 Producer、Surface、layer 与 composition 边界。工具只看到事件时，很容易把宿主窗口、独立 Surface 和 display frame 混成一条“App 帧”。
+
+## 版本边界
+
+| 平台 | 数据能力 | 本节判读影响 |
+| --- | --- | --- |
+| Android 11 / API 30 | FrameTracer 数据源已经存在 | 缺少 Android 12 的 FrameTimeline 配套；可单独分析 buffer phase |
+| Android 12 / API 31 | FrameTimeline 成为现代 trace 基线 | 可以用 SurfaceFrame/DisplayFrame 选 jank 候选，再按 layer 与时间匹配 FrameTracer |
+| Android 13 / API 33 | `AutoSingleLayer` unsignaled latch 成为默认策略 | latch 与 acquire fence signal 不再保持简单的“必须先 signal 再 latch”假设 |
+| Android 14～16 / API 34～36 | 两条数据源的公共模型延续 | 仍要固定设备、vendor build、刷新率和 Perfetto 版本 |
+| Android 17 / API 37 | 本节当前源码与 proto 锚点；扩展 FrameTimeline jank bitmask | 使用 Android 17 调用名、emit 集合和四个新增 jank 值 |
+
+文章适用范围从 Android 12 开始，因为联合诊断依赖 FrameTimeline。Android 11 的 FrameTracer 可以作为历史兼容路径保留。Android 10 及更早版本应使用当时可用的 BufferQueue、atrace、SF 与 fence 证据，不能假定存在这条 Perfetto data source。
+
+## 使用边界
+
+FrameTracer 提供的是一组时间锚点和 importer 生成的阶段，不是端到端用户可见延迟测量。使用它时要守住以下边界：
+
+- `QUEUE` 之后 Producer 仍可能写 buffer，完成时刻由 acquire fence 约束；
+- `LATCH` 表示 SF 采纳 buffer，不保证内容已经完成读取或显示；
+- `FALLBACK_COMPOSITION` 表示进入 client composition，不提供 RenderEngine 完成时刻；
+- `PRESENT_FENCE` 是 per-display 的 present 反馈，不是 per-layer release，也不是 panel 光学响应；
+- FrameTimeline token 与 BufferQueue frame number 属于不同身份域；
+- phase 缺失、`dur = -1` 和 trace 尾部 pending fence 都要按缺失证据处理；
+- 固定毫秒阈值只能作为筛选条件，帧预算应来自实际刷新率、内容 cadence 与 expected timeline。
+
+遵守这些条件后，FrameTimeline 用来选择“哪一帧值得查”，FrameTracer 用来判断“buffer 路径哪一段出现等待”，线程、GPU、HWC 和 display 证据再负责解释等待来源。
+
+## 参考源码与验证材料
+
+- [Android 17 `FrameTracer.h`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrameTracer/FrameTracer.h) 与 [`FrameTracer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrameTracer/FrameTracer.cpp)
+- [Android 17 `Layer.cpp` 的六类 emit 调用](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Layer.cpp)
+- [Android 17 `graphics_frame_event.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/trace/android/graphics_frame_event.proto)
+- [Android 17 `frame_timeline_event.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/trace/android/frame_timeline_event.proto)
+- [Perfetto v57.2 GraphicsFrameEvent importer](https://github.com/Gracker/perfetto/blob/39bdbfe942aa51de9a08c4fc5f363c2ca57ebd9f/src/trace_processor/importers/proto/graphics_frame_event_parser.cc)
+- [Perfetto v57.2 importer diff test 与标准查询](https://github.com/Gracker/perfetto/blob/39bdbfe942aa51de9a08c4fc5f363c2ca57ebd9f/test/trace_processor/diff_tests/parser/graphics/tests.py)
+- [Perfetto FrameTimeline 文档](https://perfetto.dev/docs/data-sources/frametimeline)
+- [Android 图形同步框架](https://source.android.com/docs/core/graphics/sync)
+- [kernel `android17-6.18-2026-06_r6` `sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)
