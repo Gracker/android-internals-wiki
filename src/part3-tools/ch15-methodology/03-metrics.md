@@ -4,36 +4,50 @@ chapter: "15.3"
 status: finalized
 drafted_date: "2026-04-04"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-25"
-last_verified_against: "developer.android.com/topic/performance/vitals/render, FrameMetrics.DEADLINE, Macrobenchmark FrameTimingMetric, ApplicationExitInfo, lmkd 官方文档"
-confidence: medium
+last_verified: "2026-07-30"
+last_verified_against: "AOSP android-17.0.0_r1；Android common kernel android17-6.18-2026-06_r6；Android Vitals / Macrobenchmark 1.4.1 文档"
+confidence: high
 sources:
+  - type: aosp
+    tag: "android-17.0.0_r1"
+    path: "frameworks/base/core/java/android/view/FrameMetrics.java"
+  - type: aosp
+    tag: "android-17.0.0_r1"
+    path: "frameworks/base/core/java/android/app/ApplicationExitInfo.java"
+  - type: aosp
+    tag: "android-17.0.0_r1"
+    path: "system/memory/lmkd/lmkd.cpp"
+  - type: aosp
+    tag: "android-17.0.0_r1"
+    path: "hardware/interfaces/power/stats/aidl/android/hardware/power/stats/EnergyMeasurement.aidl"
+  - type: aosp
+    tag: "android-17.0.0_r1"
+    path: "hardware/interfaces/power/stats/aidl/android/hardware/power/stats/EnergyConsumerResult.aidl"
+  - type: kernel
+    tag: "android17-6.18-2026-06_r6"
+    path: "Documentation/accounting/psi.rst"
   - type: official
-    path: "https://developer.android.com/topic/performance/vitals"
+    path: "developer.android.com/topic/performance/vitals"
   - type: official
-    path: "https://developer.android.com/topic/performance/vitals/render"
+    path: "developer.android.com/topic/performance/vitals/render"
   - type: official
-    path: "https://developer.android.com/topic/performance/launch-time"
+    path: "developer.android.com/topic/performance/vitals/launch-time"
   - type: official
-    path: "https://support.google.com/googleplay/android-developer/answer/9844476"
+    path: "developer.android.com/topic/performance/vitals/excessive-wakelock"
   - type: official
-    path: "https://developer.android.com/reference/android/view/FrameMetrics"
+    path: "support.google.com/googleplay/android-developer/answer/9844486"
   - type: official
-    path: "https://developer.android.com/reference/androidx/core/app/FrameMetricsAggregator"
+    path: "developer.android.com/reference/androidx/benchmark/macro/FrameTimingMetric"
   - type: official
-    path: "https://developer.android.com/reference/android/os/ProfilingManager"
+    path: "developer.android.com/reference/android/app/ApplicationExitInfo"
   - type: official
-    path: "https://developer.android.com/reference/android/view/FrameMetrics#DEADLINE"
+    path: "source.android.com/docs/core/perf/lmkd"
   - type: official
-    path: "https://developer.android.com/reference/androidx/benchmark/macro/FrameTimingMetric"
+    path: "developer.android.com/topic/performance/memory"
   - type: official
-    path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
+    path: "perfetto.dev/docs/data-sources/battery-counters"
   - type: official
-    path: "https://source.android.com/docs/core/perf/lmkd"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/battery-counters"
-  - type: official
-    path: "https://source.android.com/docs/core/power/power-stats-hal"
+    path: "source.android.com/docs/core/power/power-stats-hal"
 tags:
   - android
   - research
@@ -58,7 +72,18 @@ repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-25T08:51:01+08:00"
 section: "15.3"
-related_chapters: ['7.1', '7.2', '7.3', '8.1', '8.2', '9.1', '10.1', '11.1', '15.5', '15.9', '15.10']
+related_chapters:
+  - "7.1"
+  - "7.2"
+  - "7.3"
+  - "8.1"
+  - "8.2"
+  - "9.1"
+  - "10.1"
+  - "11.1"
+  - "15.5"
+  - "15.9"
+  - "15.10"
 review_round: 5
 review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 1 banned-word cleanup in 03-metrics; AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
 last_task9_audit_at: '2026-06-14T18:20:00+08:00'
@@ -72,499 +97,393 @@ task9_review_notes: "2026-06-14 Task9 idle audit: auto-fixed FrameMetrics.DEADLI
 last_task9_review_log: "logs/deep-review/2026-06-14-18-audit.md"
 last_task2b_verifier_at: "2026-06-14T19:31:17"
 task2b_verifier_result: "status-fix-ready-for-task6"
+android17_review_notes: "2026-07-30：保留全部 task6/task9/OpenClaw 字段与 outline；平台锚点升级到 android-17.0.0_r1，PSI 锚点升级到 android17-6.18-2026-06_r6；重建流畅性、启动、稳定性、内存与功耗指标合同；修正 Play 当前阈值、TTID 起点、FrameMetrics/FrameTimingMetric、PSS/RSS、ApplicationExitInfo、Power Stats 单位与采样聚合边界；删除无来源阈值、固定采样率和虚构数据。"
 ---
-
 
 # 性能指标体系
 
 <!-- outline-start -->
+
 ## 本节要点大纲
 
-### 锚点(必须覆盖)
+### 锚点（必须覆盖）
 
-- 🔹 流畅性指标:FPS、Janky Frame Rate、Frame Time P90/P99、Frozen Frame Rate
-- 🔹 响应速度指标:TTID、TTFD、Click-to-Display
-- 🔹 稳定性指标:ANR Rate、Crash Rate
-- 🔹 内存指标:PSS、Java Heap Usage、OOM Rate
-- 🔹 功耗指标:Battery Drain Rate、Active/Idle Power
-- 🔹 指标体系设计:线上 vs 线下、聚合粒度、分位数选择
+- 🔹 流畅性指标：FPS、Janky Frame Rate、Frame Time P90/P99、Frozen Frame Rate
+- 🔹 响应速度指标：TTID、TTFD、Click-to-Display
+- 🔹 稳定性指标：ANR Rate、Crash Rate
+- 🔹 内存指标：PSS、Java Heap Usage、OOM Rate
+- 🔹 功耗指标：Battery Drain Rate、Active/Idle Power
+- 🔹 指标体系设计：线上 vs 线下、聚合粒度、分位数选择
 
-### 扩展(可选深入)
+### 扩展（可选深入）
 
 - 🔸 Google Play Console 中的 Android Vitals 指标
 - 🔸 自定义业务性能指标的设计原则
 
 ### OpenClaw 加工指引
 
-> **锚点**是最低覆盖要求,加工时必须逐条落实并标注验证结果。
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
 > **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点,
-> 可**就地插入**最相关的锚点之后,并用 `[自动发现]` 标注,方便后续 review。
-> 锚点内容需 L1/L2 验证,扩展内容至少 L2 验证,自动发现内容至少标注来源。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+
 <!-- outline-end -->
 
-## 为什么要先讲指标
+## 指标先写合同，再写数值
 
-性能优化最容易掉进一个陷阱:花了很多时间分析和修改,最后却说不清到底好没好。
+“启动耗时”“掉帧率”“OOM 率”都只是名字。团队要得到可比较的数据，还要定义事件、分母、统计窗口和排除条件。缺少这些信息，同名看板可能统计着不同对象。
 
-如果一轮优化结束后，只能说"感觉顺了一点""看起来没那么卡了"，那这轮工作还没有完成验证。性能问题要回答的是"比之前好多少""影响了多少人""值得不值得优先修"——这些判断都离不开指标。
+每个长期指标至少包含以下字段：
 
-所以本节讲清楚：什么数字值得长期盯、什么数字适合拿来诊断、什么数字适合做发布门禁。
+| 字段 | 需要写清楚的内容 |
+|---|---|
+| 用户场景 | 哪个 CUJ、页面或业务动作 |
+| 起点/终点 | 由哪个事件或时间戳定义 |
+| 观测单位 | frame、launch、operation、session、user-device-day 等 |
+| 数值单位 | ns、ms、byte、uWs、次数或比例 |
+| 分子/分母 | 哪些事件进入计算，哪些事件被排除 |
+| 统计窗口 | 单次运行、小时、天、发布周期或 28 天 |
+| 聚合方法 | count、sum、mean、P50/P90/P99、比例、直方图或 sketch |
+| 维度 | App/Android 版本、设备、刷新率、场景、启动类型、网络等 |
+| 采样方法 | 采样概率、稳定抽样键、丢弃规则和权重 |
+| 数据源版本 | Android、SDK、Benchmark/Perfetto、schema 与采集配置 |
+| 负责人 | 谁解释异常、谁维护埋点、谁批准口径变化 |
 
-## 指标体系服务于决策
+指标合同改变时，应新建 schema/version，避免把新旧口径拼进同一条趋势线。
 
-指标体系的价值在于它能不能支持决策。一个好的指标至少要回答下面三个问题中的一个:
+## 指标的四种职责
 
-- 现在有没有问题?
-- 这个问题影响面多大?
-- 它更像哪一类问题,应该先找谁?
+| 类型 | 用途 | 示例 |
+|---|---|---|
+| 用户结果指标 | 描述用户是否顺利完成操作 | TTFD、click-to-display、播放首帧、搜索结果可见时间 |
+| 健康指标 | 观察线上影响范围 | user-perceived ANR/crash、slow startup、excessive wake lock |
+| 门禁指标 | 判断候选版本是否允许发布 | 固定 CUJ 的 Macrobenchmark 分布、内存峰值、功耗区间 |
+| 诊断指标 | 解释为何回退 | thread state、frame overrun、Binder latency、RSS/heap、energy consumer |
 
-如果一个指标既不能决定优先级,也不能帮助归因,那它大概率只是"好看但不好用"。
+同一数值可以出现在不同层，但合同通常不同。Play 的 bad-behavior threshold 是外部健康线；它不适合作为 App 团队唯一的发布目标。
 
 ## 流畅性指标
 
-流畅性是用户最先感知到的性能维度。界面顺不顺,动画跟不跟手,列表是不是一滑就顿,最后都要落到流畅性指标上。
+### FPS
 
-### FPS(每秒帧数)
+FPS 表示单位时间内实际呈现或生成的帧数，定义时要注明是哪一层：
 
-FPS 是最直觉的流畅性指标:一秒钟内屏幕上成功渲染了多少帧。60Hz 屏幕的理论上限是 60 FPS,120Hz 屏幕是 120 FPS。在 Perfetto 中,可以通过统计 RenderThread 和 SurfaceFlinger 的工作周期来计算实际 FPS。
+- App 生产帧；
+- SurfaceFlinger 呈现帧；
+- 游戏 session 的实际 frame rate；
+- 采样窗口内的平均值。
 
-但 FPS 是平均值——平均值看起来漂亮,不代表体验稳定。
+高 FPS 不能说明每一帧都稳定。少量长帧会被较长窗口的平均 FPS 稀释；静止页面主动减少帧数也可能是正确的节能行为。FPS 适合描述持续动画或游戏吞吐，普通 UI 的回归更适合结合 frame deadline、jank 比例和场景状态。
 
-这就是为什么我们做性能分析时,很少只用 FPS。
+### Android Vitals 的 slow/frozen rendering
 
-FPS 更像展示指标,不太适合做治理主指标。治理时更有价值的,通常是帧时间分位数、jank rate 和 frozen frame rate 这类更能反映尾部体验的指标。
+当前 Android Vitals 对使用 View/Canvas UI Toolkit 的应用记录：
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
+- slow frame：渲染时间位于 16 ms 到 700 ms；
+- frozen frame：渲染时间超过 700 ms。
 
-### Frame Time 与分位数(P90 / P99)
+这是 Play 的固定报表口径。Vulkan、Unity、Unreal、OpenGL 等不使用该 UI Toolkit 的渲染内容，不能假定会出现在这组数据中。游戏应另看 slow sessions 等游戏指标。
 
-Frame Time 是单帧渲染耗时。它比 FPS 更有分析价值,因为它保留了"每一帧到底花了多久"这件事,而不是把一切都摊平。
+16 ms 也不是所有设备的实时 deadline。90 Hz、120 Hz 与可变刷新率设备应使用 FrameTimeline 或 frame overrun 判断是否错过平台分配的窗口。
 
-在做线上监控时,我们通常关心的是分位数--P50(中位数)、P90、P99。P50 告诉你"大多数用户看到的帧有多快",P90 告诉你"10% 的帧有多慢",P99 则暴露最差的 1% 的尾部延迟。
+### FrameMetrics
 
-为什么 P90 和 P99 这么重要?因为在高刷设备上,用户对偶发卡顿的敏感度反而更高。120Hz 屏幕的帧预算只有 8.33ms,一个 20ms 的长帧就会造成肉眼可见的跳帧。如果 P99 超过了帧预算的 2 倍(约 16ms@120Hz),说明每 100 帧里就有一帧会让用户感到顿挫。这个频率在快速滑动列表时会被明显感知到。
+`FrameMetrics` 从 API 24 提供窗口帧的阶段数据。Android 17 的 `FrameMetrics.java` 定义了 `TOTAL_DURATION`、`GPU_DURATION`、`DEADLINE` 与 `FRAME_TIMELINE_VSYNC_ID` 等指标；源码明确写出 `TOTAL_DURATION < DEADLINE` 表示 App 命中该帧的 intended deadline。
 
-采集方式上,线下可以通过 `dumpsys gfxinfo` 获取逐帧耗时,线上则推荐使用 `FrameMetrics` API(Android 7.0+, API 24)或 AndroidX 的 `FrameMetricsAggregator`。后者底层仍然依赖 `FrameMetrics`,可用范围同样是 API 24+,但更适合做批量聚合,可以按 Input、Animation、Layout、Draw 等阶段拆分耗时。
+使用 `Window.OnFrameMetricsAvailableListener` 时要记录：
 
-```java
-// FrameMetrics 基本用法
-// @ API 24+
-Window.OnFrameMetricsAvailableListener listener = (window, frameMetrics, dropCount) -> {
-    long totalFrameTime = frameMetrics.getMetric(FrameMetrics.TOTAL_DURATION); // 纳秒
-    long drawDuration = frameMetrics.getMetric(FrameMetrics.DRAW_DURATION);
-    // 上报到监控系统
-};
-window.addOnFrameMetricsAvailableListener(listener, handler);
-```
+- `dropCountSinceLastInvocation`，否则回调拥塞会造成选择性丢帧；
+- first draw 与普通交互帧的区分；
+- 页面/CUJ 与刷新率；
+- API level，因为部分字段在较新版本才存在；
+- 指标对应哪个 Window；SurfaceView、独立渲染 surface 或游戏引擎的输出需另核对。
 
-这段代码注册了帧时间监听器,每帧回调一次。`TOTAL_DURATION` 给出从 VSync-app 到帧提交的完整耗时,可以把它收集起来计算分位数。
+`TOTAL_DURATION - DEADLINE` 可以表达 deadline 余量，但只有在对应字段有效时才计算。缺失值不能当作 0。
 
-[已验证: 官方文档, developer.android.com/reference/android/view/FrameMetrics; developer.android.com/reference/androidx/core/app/FrameMetricsAggregator]
+### Macrobenchmark FrameTimingMetric
 
-这里有一个常见误区:直接把所有帧混在一起算全局 P90。更稳的做法是至少按页面 / 场景分桶,再计算分位数。否则首页、详情页、播放页、后台恢复全混在一起,结论很容易失真。
+当前 `FrameTimingMetric` 输出的主要字段包括：
 
-### Janky Frame Rate(慢帧率)
+- `frameOverrunMs`：API 31+ 可用；正值表示错过 deadline，负值表示仍有余量；
+- `frameDurationCpuMs`：UI Thread 与 RenderThread 生产该帧所用的 CPU 时间；
+- `frameCount`：被统计的总帧数。
 
-Google 在 Android Vitals 中把 slow rendering 定义为单帧渲染时间落在 16ms 到 700ms 之间,700ms 以上则单独记为 frozen frame。这里的 16ms 是 Vitals 的统一口径,不会因为设备是 90Hz 或 120Hz 就改成 11ms / 8ms。`Janky Frame Rate` 更适合描述"超过当前刷新率预算的帧比例",但在看 Play Console 时,最好直接按 slow rendering 和 frozen frames 两套指标理解。
+官方文档建议在可用时优先用 `frameOverrunMs` 检测回归，因为它更适合高刷和可变刷新率。`frameCount` 也要一起观察：移除大量无意义的轻量帧后，剩余帧的分位数可能变差，但总工作量和功耗已经改善。
 
-高刷设备的帧预算仍然要单独看。90Hz 的预算约 11.1ms,120Hz 约 8.3ms,这些阈值适合做线下 trace 和机型专项诊断;如果讨论的是游戏 slow sessions 或高刷机型掉帧,就单列一段,不要把它和 Android Vitals 的定义混在一起。
+### Frame Time 分位数与 jank rate
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
+P50、P90、P99 描述分布中的不同位置。使用分位数前要保证样本来自同一合同：
 
-从治理角度看,`Janky Frame Rate` 更像平台监控指标,`Frame Time P90/P99` 更像工程诊断指标。前者便于横向比较版本和机型,后者更适合回到具体页面或 trace 做深入分析。
+- 同一 CUJ 与页面状态；
+- 相同刷新率或按刷新率分桶；
+- 相同 App/Android 版本和设备档位；
+- 相同 first draw、动画、滚动或静止帧类型；
+- 相同丢帧与采样规则。
 
-### Frame Overrun(Deadline 超限)
+“P99 高”说明尾部分布较长，不能单靠 P99 推出根因。高分位还需要足够样本；样本很少时，直接保留所有观测值更诚实。
 
-在 Android 12(API 31)之后,帧诊断可以从"耗时有没有超过固定 16ms"前进到"这一帧有没有错过系统给它的 deadline"。`FrameMetrics.DEADLINE` 给出系统分配给 App 生成这一帧的时间预算,`TOTAL_DURATION` 给出实际耗时。用 `TOTAL_DURATION - DEADLINE` 得到 overrun:正值表示帧晚于 deadline,负值表示还有余量。
-
-这个口径更适合高刷和可变刷新率设备。120Hz 的单帧预算约 8.3ms,一帧耗时 10ms 时仍低于 Android Vitals 的 16ms slow rendering 口径,但已经可能错过本轮刷新窗口。线下门禁和 Macrobenchmark 更适合看 `frameOverrunMs`,Play Console 报表仍按 Android Vitals 的 slow / frozen frames 口径解释。
-
-Macrobenchmark 的 `FrameTimingMetric` 会同时输出两类信号:
-
-- `frameDurationCpuMs`:App 侧 UI Thread 与 RenderThread 为单帧消耗的 CPU 时间,适合判断 CPU 侧工作是否过重。
-- `frameOverrunMs`:帧完成时间相对 deadline 的偏移,正值说明 missed deadline,负值说明在预算内完成。API 31+ 上这个指标更贴近高刷和 VRR 场景。
-
-用这组指标做门禁时,不要只写"P99 小于 16ms"。更稳的写法是按场景和刷新率分开设阈值:60Hz 先看 Vitals slow frame 口径,90Hz / 120Hz 专项再看 `frameOverrunMs` 的 P90/P99 和正值占比。
-
-[已验证: FrameMetrics.DEADLINE; Macrobenchmark FrameTimingMetric]
-
-### Frozen Frame Rate(冻帧率)
-
-冻帧(Frozen Frame)是慢帧的极端形态:渲染耗时超过 700ms 的帧。当一帧超过 700ms 时,用户会感觉 App 卡死了将近一秒--在这段时间内,屏幕完全不动,触摸事件也无法响应。在 Android Vitals 中,冻帧是独立于慢帧之外单独统计的重要指标。
-
-冻帧几乎总是由主线程上的长阻塞操作造成:同步 I/O(如直接在 UI 线程读文件或数据库)、锁竞争(等另一个线程释放 synchronized 块)、或者在前台执行了大量的序列化/反序列化操作。如果在 Perfetto 中看到一段超过 700ms 的主线程连续运行(没有 Sleep/Blocked 状态切换),那大概率是冻帧的候选对象。
-
-[已验证: 官方文档, developer.android.com/topic/performance/vitals]
-
-这类指标的治理价值通常比平均 FPS 更高,因为它更接近"用户真的会抱怨"的那部分体验。
+jank rate 的分子必须定义。它可以是 `frameOverrunMs > 0` 的帧数、JankStats 启发式判定帧数、FrameTimeline 某组 jank type，或业务自定阈值。不同分子不能共用一个“卡顿率”名称。
 
 ## 响应速度指标
 
-响应速度关注的是"从用户发出操作到看到结果"的延迟。它和流畅性的区别在于观察窗口不同:流畅性看的是持续渲染,响应速度看的是单次反馈。
+### TTID
 
-### TTID(Time to Initial Display)
+TTID（Time to Initial Display）是从系统收到启动请求到 App 第一帧显示的时间。冷启动包含进程创建，温/热启动不一定创建进程，因此不能把 TTID 一律写成“进程创建到首帧”。
 
-TTID 是 App 启动过程中,从进程创建到第一帧绘制完成的时间。这帧通常是启动画面(Splash Screen)或主界面的初始布局,标志着"App 已经打开了"。
+Android Framework 自动报告 TTID。Play 当前使用 TTID 判断 slow startup，并按启动类型区分：
 
-Android 系统通过 ActivityManager 内部的 `reportActivityLaunched` 事件自动记录 TTID。在 `logcat` 中过滤 `Displayed` 关键字就能看到:
+| Play slow startup 口径（核对日期：2026-07-30） | TTID |
+|---|---:|
+| Cold | ≥ 5 s |
+| Warm | ≥ 2 s |
+| Hot | ≥ 1 s |
 
-```text
-ActivityManager: Displayed com.example.app/.MainActivity: +1s234ms
-```
+这些值用于解释 Play Console。项目内部预算应更严格，并绑定设备档位、构建、编译模式和分位数。
 
-从 Android 12 开始,SplashScreen API 让系统默认在 TTID 之前就显示一个启动画面,使得用户感知的等待时间变短--但 TTID 本身的度量起点仍然是进程创建,这个不会变。
+### TTFD
 
-Google Play 的 Android Vitals 将 TTID 作为主要启动指标之一。冷启动 TTID 的不良行为阈值是:超过 5 秒。如果 App 冷启动 TTID 中位数超过 2 秒,就应该认真优化了。
+TTFD（Time to Full Display）覆盖 TTID 以及首帧后异步加载的主要内容，终点由 App 调用 `reportFullyDrawn()` 标记。若 App 不调用该 API，就没有可用的 TTFD。
 
-[已验证: 官方文档, developer.android.com/topic/performance/launch-time]
+标记位置应对应“主要内容完成且用户可交互”的业务状态。调用过早会把空壳页面记作完成；调用过晚会把非首屏工作混入启动。埋点评审应把 fully drawn 条件写进合同，并在 UI/导航改版后复核。
 
-### TTFD(Time to Full Display)
+TTID 与 TTFD 要分开看。前者适合观察系统启动、Application/Activity 创建和首帧；后者能覆盖首屏数据、图片与业务准备。
 
-TTFD 度量的是 App 从启动到"内容完全可用"的时间。和 TTID 的区别在于:TTID 只管第一帧画出来,但那可能只是一个空壳布局(加载中的骨架屏、空白列表);TTFD 关注的是完整业务内容加载完成--列表数据拿到了、图片显示了、用户可以开始交互了。
+### Click-to-Display
 
-开发者需要手动调用 `reportFullyDrawn()` 来标记 TTFD:
+Click-to-display 是自定义端到端指标，必须明确两端：
 
-```java
-// 在数据加载完成、UI 完全就绪后调用
-@Override
-public void onDataLoaded(List<Item> items) {
-    recyclerView.setAdapter(new ItemAdapter(items));
-    // 数据就绪后立即标记 Fully Drawn
-    reportFullyDrawn();
-}
-```
+- 起点可选 input reader、input dispatch、App 收到事件或业务点击回调；
+- 终点可选 App 提交帧、SurfaceFlinger present 或外部光学传感器检测到屏幕变化。
 
-这个调用时机需要斟酌:太早则 TTFD 失去意义(内容还没加载完),太晚则会把首屏问题掩盖掉。TTFD 本身是启动指标,和是否抓 trace 是两回事。
-
-Android 16 的 system-triggered profiling 建立在 `ProfilingManager` 之上。应用可以注册 `TRIGGER_TYPE_APP_FULLY_DRAWN` 这类触发器,让系统在 `reportFullyDrawn()` 发生时自动收集一段 Perfetto profile。它适合调试启动问题,但不改变 TTID / TTFD 的定义,也不应该拿来充当启动指标的证据来源。
-
-[已验证: 官方文档, developer.android.com/topic/performance/launch-time; developer.android.com/reference/android/os/ProfilingManager]
-
-TTID 和 TTFD 的治理分工也应分开:
-
-- **TTID** 更适合看"框架、初始化、首帧渲染"这段问题
-- **TTFD** 更适合看"首屏数据、可交互时机、骨架屏停留时间"这段问题
-
-如果把二者混成一个"启动时长",大概率会丢失很多定位价值。
-
-### Click-to-Display(点击到显示延迟)
-
-Click-to-Display 是一个端到端的延迟指标:从用户手指触碰屏幕的那一刻,到屏幕上显示对应的视觉反馈,经历了多少毫秒。这个指标覆盖了完整的事件路径:触摸中断 → InputDispatcher 分发 → App 主线程处理事件 → UI 更新 → RenderThread 渲染 → SurfaceFlinger 合成 → 显示硬件输出。
-
-在 Perfetto 中,一次 Click-to-Display 的完整路径跨越多个 Track:从 `Input` track 上的触摸事件,到主线程的 `Choreographer.doFrame`,再到 `RenderThread` 的绘制和 `SurfaceFlinger` 的合成。可以在这些 Track 之间手动量取时间差来估算这个延迟。
-
-这个指标在线上很难直接采集(需要硬件辅助或特殊测量工具),但它对用户感知的影响非常直接。Google 在内部测试中使用的标准是:触摸响应延迟应控制在 100ms 以内,超过 200ms 用户会明显感到迟钝。
-
-[待验证: 100ms/200ms 阈值为行业经验值,未找到 Google 官方公开文档确认]
+软件 Trace 通常无法覆盖触控控制器之前和面板 scanout 之后的物理延迟。跨版本比较时，应固定起止层级；“点击回调到 App 提交帧”和“手指接触到屏幕发光”是两项不同指标。没有公开依据时，不为它写统一的 100 ms/200 ms 阈值。
 
 ## 稳定性指标
 
-稳定性是最基础的质量指标。一个频繁崩溃或无响应的 App,性能再好也没用。
+### Android Vitals 的分母
 
-这也是为什么很多团队在绩效或版本门禁里,会把 crash / ANR 作为硬性红线,而把流畅性和启动作为持续优化目标。
+Play Console 的 ANR/crash rate 按 daily active users 归一化；同一用户在不同设备上的使用会贡献不同的 active user-device。次数、受影响用户比例和受影响 session 比例是三种不同分母。
 
-### ANR Rate(应用无响应率)
+截至 2026-07-30，Play 的 core-vital bad-behavior thresholds 为：
 
-ANR(Application Not Responding)发生在 App 的主线程被阻塞超过一定时间时。最常见的触发条件是:输入事件在 5 秒内未处理完毕(Input dispatching timed out),或 Service 在规定时间内未执行完毕。
+| 指标 | Overall | Per device model |
+|---|---:|---:|
+| User-perceived ANR rate | ≥ 0.47% | ≥ 8% |
+| User-perceived crash rate | ≥ 1.09% | ≥ 8% |
 
-Android Vitals 度量的是"用户感知到的 ANR 率"(User-Perceived ANR Rate),即每日活跃用户中经历过至少一次用户可感知 ANR 的百分比。所谓"用户可感知",主要指 App 在前台时发生的 ANR--后台 Service 超时导致的 ANR 虽然也会统计,但对用户体验的影响不同。
+Play 当前说明中，user-perceived ANR rate 只计入 `input dispatching timed out` 类别。项目仍应监控 Service、Broadcast、前台服务等其他 ANR，它们属于 overall ANR 或内部稳定性指标。
 
-Google Play 设定的不良行为阈值(截至 2026 年):
+Play 通常使用最近 28 天评估 core vitals，数据来自选择共享诊断数据的部分设备，并排除未通过 Google Play 安装的版本及未认证设备。它不是全量用户数据。
 
-- **全机型不良行为**:用户感知 ANR 率 ≥ 0.47%
-- **单机型不良行为**:用户感知 ANR 率 ≥ 8%
+### Crash/ANR 内部指标
 
-超过阈值后,Play Store 会在 App 详情页显示警告标签,同时降低在搜索结果和推荐中的排名。
+内部看板应同时保留：
 
-[已验证: 官方文档, support.google.com/googleplay/android-developer/answer/9844476]
+- 受影响 user-device-day 比例；
+- 受影响 session 比例；
+- 事件次数与重复事件用户；
+- error/ANR cluster；
+- App/Android 版本、设备型号、进程与前后台状态；
+- 采样率和缺失率。
 
-线上治理时,不要只盯总 ANR rate,还应看:
+Crash 与 ANR 的分母必须分别记录。一次 session 发生多次同类错误时，事件率会上升，受影响 session 率只记一次；两者回答的问题不同。
 
-- user-perceived ANR rate
-- 单机型 ANR rate
-- 前台 / 后台分布
-- 版本回归趋势
+### ApplicationExitInfo
 
-### Crash Rate(崩溃率)
+API 30+ 的 `ActivityManager.getHistoricalProcessExitReasons()` 可以读取系统保留的历史退出记录。`ApplicationExitInfo` 能提供 reason、timestamp、status、importance、PSS/RSS 采样以及可选 trace：
 
-Crash Rate 的统计方式与 ANR Rate 类似,度量的是每日活跃用户中经历过至少一次崩溃的比例。Android Vitals 同样区分"用户感知的崩溃"(App 在前台时崩溃)和后台崩溃。
+- `REASON_LOW_MEMORY` 的支持度要用 `ActivityManager.isLowMemoryKillReportSupported()` 检查；
+- `getPss()` / `getRss()` 是系统最近记录的值，不保证等于死亡瞬间峰值；
+- `getTraceInputStream()` 只在系统保存了对应 trace/tombstone 时可用；
+- 历史记录有数量和保留范围，不应当作无损事件日志。
 
-Google Play 设定的不良行为阈值:
-
-- **全机型不良行为**:用户感知崩溃率 ≥ 1.09%
-- **单机型不良行为**:用户感知崩溃率 ≥ 8%
-
-注意这两个指标的分子定义:崩溃次数不等于受影响用户比例(前者按次数计,后者按会话占比计)。这个定义更贴近用户体验--一个用户一天崩溃 10 次和一个用户崩溃 1 次,在 Crash Rate 中都是"1 个受影响用户"。但要评估严重程度,需要同时看崩溃次数和受影响用户数。
-
-采集崩溃数据的方式主要有三种:Google Play Console 自动收集(Java 崩溃和 Native 崩溃都能捕获)、Firebase Crashlytics(支持实时上报和聚合分析)、自建监控 SDK(可以采集更丰富的上下文信息如内存状态、线程堆栈)。
-
-[已验证: 官方文档, support.google.com/googleplay/android-developer/answer/9844476]
-
-Crash rate 和 ANR rate 的治理方法也不同。Crash 更适合按错误簇、版本、堆栈聚类;ANR 更依赖线程状态、等待路径和系统负载背景。
-
-### 进程退出原因分析(ApplicationExitInfo)
-
-Crash / ANR 只回答"有没有失败",`ApplicationExitInfo` 回答进程为什么退出。Android 11(API 30)开始,`ActivityManager.getHistoricalProcessExitReasons()` 可以读取系统保存的进程退出记录,用来区分 crash、ANR、LMK、用户或系统主动结束进程。
-
-这段代码展示采集入口,主要看 `reason`、退出前内存采样和 trace 取法:
-
-```kotlin
-val activityManager = context.getSystemService(ActivityManager::class.java)
-val exits = activityManager.getHistoricalProcessExitReasons(
-    context.packageName,
-    0, // 0 means all pids for this package.
-    20
-)
-
-for (exit in exits) {
-    when (exit.reason) {
-        ApplicationExitInfo.REASON_LOW_MEMORY -> handleLmk(exit.getRss(), exit.getPss())
-        ApplicationExitInfo.REASON_ANR -> exit.traceInputStream?.use(::saveAnrTrace)
-        ApplicationExitInfo.REASON_CRASH,
-        ApplicationExitInfo.REASON_CRASH_NATIVE -> handleCrashExit(exit)
-    }
-}
-```
-
-`REASON_LOW_MEMORY` 用来把 LMK 与普通 crash 分开。设备是否支持低内存杀进程报告,要通过 `ActivityManager.isLowMemoryKillReportSupported()` 判断;不支持的设备可能只给出 `REASON_SIGNALED` 和 `SIGKILL` 状态。`getTraceInputStream()` 可用于读取 ANR trace 或 native crash tombstone,`getRss()` / `getPss()` 是系统最近一次内存采样,不等于进程死亡瞬间的精确值。
-
-把这个指标放进稳定性看板后,Crash Rate、ANR Rate 和"系统杀进程后用户回到 App 看到重启"的问题才能分开治理。
-
-[已验证: ActivityManager.getHistoricalProcessExitReasons; ApplicationExitInfo]
+内部可把 exit reason 率分为 ANR、Java/native crash、low memory、excessive resource、user requested 等类别。LMK、OOM 和 crash 不能合并成一个“内存崩溃率”。
 
 ## 内存指标
 
-内存指标的重要性常常被低估。在 Android 上,内存问题不只是 OOM--一个 App 占用内存过多,会触发系统更频繁的 GC、增加 LMK(Low Memory Killer)杀进程的概率、影响其他 App 的可用内存,最终以卡顿或闪退的形式呈现给用户。
+### PSS 与 RSS
 
-所以内存指标最容易出现的误区,就是"只在 OOM 时才看"。很多性能差评在发生 OOM 之前很久就已经开始了。
+| 指标 | 含义 | 适合用途 | 限制 |
+|---|---|---|---|
+| PSS | 私有驻留页 + 按共享者比例分摊的共享驻留页 | 进程占用归因、场景前后快照 | 采集有成本；受共享页和采样时点影响 |
+| RSS | 进程全部 resident 页，共享页按完整大小计入 | 时间趋势、reclaim/LMK 前后对照 | 跨进程相加会重复计算共享页 |
+| Java heap | ART 管理的对象堆 | 分配速率、GC、存活对象与 heap 趋势 | 不包含完整 native、graphics、mmap 与共享内存 |
+| Native heap | native allocator 管理的分配 | JNI/C++ 分配与泄漏诊断 | 不等同于进程所有 native/mmap/GPU 内存 |
 
-### PSS(Proportional Set Size)
+PSS/RSS 是占用指标，不是 lmkd 的唯一杀进程排序规则。Android 17 `lmkd.cpp` 会结合 PSI、内存状态、`oom_score_adj` 与设备策略选择候选进程。
 
-PSS 是 Android 上度量 App 真实物理内存占用的标准指标。它的计算方式是:App 独占的内存页(Private Clean + Private Dirty)加上按比例分摊的共享内存页。所谓"按比例分摊",是指如果一个 4KB 的内存页被 4 个进程共享,那么每个进程的 PSS 只计算 1KB。
+### PSI 与系统压力
 
-这种统计方式的好处是:把系统上所有进程的 PSS 加总,约等于实际使用的物理内存总量。PSS 适合做进程占用归因,但不要把它写成 lmkd 的杀进程优先级。现代 lmkd 先由 PSI / vmpressure 等信号判断内存压力,再用 `oom_score_adj` 限定可杀进程范围;具体目标还受 `ro.lmk.kill_heaviest_task` 等策略影响。PSS / RSS 能帮助估算回收收益,不是单独的优先级规则。
+Android common kernel `android17-6.18-2026-06_r6` 的 PSI 文档定义了 CPU、memory、I/O 的 `some`/`full` stall：
 
-可以通过 `dumpsys meminfo <package_name>` 获取 App 的详细内存分布:
+- `some` 表示至少部分任务因该资源停顿；
+- `full` 表示所有非 idle 任务同时停顿；system-level CPU 不定义 `full`。
 
-```text
-** MEMINFO in pid 12345 [com.example.app] **
-                   Pss      Private  Private  SwapPss     Heap     Heap     Heap
-                 Total    Dirty    Clean    Dirty     Size    Alloc     Free
-                ------   ------   ------   ------   ------   ------   ------
-  Native Heap    12,345    12,000        0      256   16,384   15,872      512
-  .so mmap       8,765     1,024    2,048       64
-  .dex mmap      3,456      512    1,024        0
-  .oat mmap      1,234       64      512        0
-  .art mmap      6,789    4,096    1,024      128   24,576   20,480    4,096
- ...
-        TOTAL   45,678   22,528    8,192      640   40,960   36,352    4,608
-```
+PSI 描述资源争用造成的 stall，不描述单个 App 的 PSS。内存看板可以把 App 占用、系统 PSI、reclaim 和 lmkd 事件放在同一时间轴，但不能用一个指标替代另一个。
 
-这个输出中最值得关注的几个维度:Native Heap(Native 层分配)、.art mmap(ART 运行时堆)、.so mmap(共享库映射)、.dex mmap(DEX 代码映射)。如果某个维度异常偏高,就是接下来排查的方向。
+### Java heap 与 GC
 
-[已验证: 官方文档, developer.android.com/studio/profile/memory]
+`Runtime.totalMemory() - Runtime.freeMemory()` 只能估算当前 Java heap 内已使用空间，不代表进程总内存。heap 上限还受设备、ART、`getMemoryClass()`、largeHeap 与运行状态影响；固定写成某个 MB 范围会误导跨设备门禁。
 
-从线上治理角度,PSS 更适合作为"系统压力代理指标",而 Java Heap Usage 更适合作为"应用内部堆行为指标"。二者不要混用。
+GC 次数本身也不是性能缺陷。需要结合暂停时间、分配速率、帧/响应窗口和存活对象。大量并发 GC 可能对主线程影响很小，短时间 stop-the-world 暂停也可能恰好跨过 frame deadline。
 
-### PSS 与 RSS 的分工
+### OOM、native allocation failure 与 LMK
 
-PSS 和 RSS 都在描述内存占用,但统计口径不同。PSS 会把共享页按进程数量分摊,适合回答"这个 App 实际占用了多少物理内存"。RSS 统计进程当前驻留在内存中的页,包含共享页的完整大小,适合观察 resident 内存增长、瞬时抖动和内核侧回收压力。
+建议拆为三类：
 
-| 维度 | PSS | RSS |
+| 类别 | 典型证据 | 推荐分母 |
 |---|---|---|
-| 统计口径 | 独占页 + 按比例分摊的共享页 | 进程 resident 页总量,共享页不分摊 |
-| 适合用途 | 线上内存占用归因、跨进程汇总、发布门禁 | Perfetto / kernel 侧趋势、瞬时增长、LMK 前后对照 |
-| 常见入口 | `dumpsys meminfo`、`Debug.MemoryInfo`、Android Studio Profiler | Perfetto `rss_stat`、`/proc/<pid>/status`、`ApplicationExitInfo.getRss()` |
+| Java OOM | `OutOfMemoryError` crash cluster | session 或 user-device-day |
+| Native allocation failure | tombstone、abort message、allocator/driver 日志 | session 或进程启动 |
+| LMK/low-memory exit | `ApplicationExitInfo`、lmkd 事件 | session、进程启动或返回前台次数 |
 
-Perfetto 里看到 `rss_stat` 抬升时,不要直接拿它和 PSS 门禁阈值对比。更稳的做法是:RSS 用来定位哪个时间段 resident 内存增长,PSS 用来评估该场景最终给系统带来的占用成本。
-
-[已验证: Perfetto rss_stat; ApplicationExitInfo.getRss; source.android.com/docs/core/perf/lmkd]
-
-### Java Heap Usage
-
-Java Heap 是 ART 虚拟机管理的堆内存,App 中所有 Java/Kotlin 对象分配都在这里。每个 App 的 Java Heap 有一个上限(由 `dalvik.vm.heapsize` 系统属性决定,不同设备从 128MB 到 512MB 不等),超过上限就会抛出 `OutOfMemoryError`。
-
-Java Heap Usage 在 Perfetto 中可以通过 `Memory` track 观察。在 Android Studio 的 Memory Profiler 中,能看到实时堆使用曲线和 GC 事件。频繁的 GC(特别是 Young GC)通常是内存抖动的信号--大量短命对象被反复创建和回收,导致主线程暂停。
-
-线上监控 Java Heap 的推荐方式是通过 `Runtime.getRuntime().totalMemory()` 和 `Runtime.getRuntime().freeMemory()` 定期采样,或者使用 `android.os.Debug.getMemoryInfo()` 获取更详细的内存分类数据。
-
-[已验证: 官方文档, developer.android.com/topic/performance/memory]
-
-实际使用时,Java Heap 更适合做趋势观察,而不是做绝对门禁。因为它太容易受场景、设备和采样点影响。
-
-### OOM Rate
-
-OOM(OutOfMemoryError)率度量的是 App 因内存不足而崩溃的频率。在 Android 8.0 之前,OOM 主要由 Java Heap 超限引起;8.0 之后,大部分 Bitmap 像素数据移到了 Native 堆,Java Heap 的压力有所缓解,但 Native OOM 的风险增加了。
-
-OOM Rate 的计算通常是:OOM 崩溃次数 / 总会话数。在线上监控中,需要区分两种 OOM:Java 层的 `java.lang.OutOfMemoryError`(可以通过 Crashlytics 等工具捕获)和 Native 层的分配失败(通常表现为 SIGABRT 或 malloc 返回 NULL)。
+分母要与产品问题对应。若关注“切回 App 后被重启”，返回前台次数可能比总 session 更有解释力。
 
 ## 功耗指标
 
-功耗指标的特殊之处在于:它们通常需要系统级权限或硬件辅助才能准确测量,App 端能做的更多是间接估算。
+### Battery drain rate
 
-### Battery Drain Rate(电池消耗速率)
+电量百分比每小时适合长时场景的粗粒度观察，但电池曲线受充放电状态、温度、电池健康度和系统平滑算法影响。短时实验应优先使用可用的 energy counter、Power Rails/ODPM、Energy Consumer 或外部功耗仪。
 
-Battery Drain Rate 度量的是 App 在单位时间内的电池消耗量,通常以 mAh/hour 或百分比/hour 表示。线上采集依赖 `BatteryManager` API 读取电池电量变化,线下可以通过 Batterystats 工具(`dumpsys batterystats`)或 Battery Historian 做更详细的分析。
+若能读取累计能量，平均功率可由同一 counter 的窗口差分计算：
 
-2026 年 3 月起,Google Play 将"过度部分 WakeLock"(Excessive Partial Wake Lock)纳入 Android Vitals 主要指标。如果一个 App 在 24 小时内持有非豁免的部分 WakeLock 累计超过 2 小时,且 28 天内 5% 以上的用户会话达到这个标准,就会被认定为不良行为,面临 Play Store 降权和警告标签的处罚。
+> average power = Δenergy / Δtime
 
-非豁免 WakeLock 是指那些没有明确用户收益的后台保活行为--音乐播放、导航、用户主动发起的下载等属于豁免类别。
+Android 17 Power Stats AIDL 中，`EnergyMeasurement.energyUWs` 与 `EnergyConsumerResult.energyUWs` 都以 microwatt-seconds（uWs）表示；timestamp/duration 使用毫秒。累计 counter 要先做差分，再按时间换算功率。counter reset、wrap、缺失与设备不支持都要显式处理。
 
-[已验证: 官方文档, support.google.com/googleplay/android-developer/answer/9844476]
+### Active/Idle power
 
-### Active / Idle Power
+Active 与 Idle 需要由项目定义场景。前台静止、后台同步、息屏待机、音频播放和导航不能共用一个 idle 基线。实验至少固定：
 
-Active Power 是 App 在前台活跃使用时的功耗,主要由 CPU 计算、GPU 渲染、屏幕刷新和网络通信组成。Idle Power 是 App 在后台时的功耗,理想情况下应该趋近于零--但在实践中,后台同步、推送接收、定位更新等都会消耗电量。
+- 屏幕亮度、刷新率和显示内容；
+- 网络类型与信号；
+- 充电状态、电池温度和 thermal；
+- 设备/App 版本与后台进程；
+- 场景时长、预热和统计窗口。
 
-做功耗分析时,一个有效的思路是"归因分析":把总功耗分解到各个子系统(CPU、GPU、屏幕、网络、传感器),找出占比最高的那个子系统,然后针对性地优化。Perfetto 的电源数据主要来自 Battery counters、Power Rails(ODPM)和 Energy Consumer;具体轨道和精度取决于设备硬件与 HAL 支持。
+Power Rails 与 Energy Consumer 的可用项、命名和精度取决于设备硬件与 HAL 实现。CPU frequency 只能提供活动背景，不能换算出 App 精确功耗。
 
-在 Perfetto 中观察功耗数据,主要使用以下 Track:
+### Excessive partial wake locks
 
-- **Power Rails track**:显示各电源轨(如 CPU cluster、display、modem 等)的累计能量计数;原始轨道常以 `_uws` 标识微瓦秒,需要按时间窗口做差分后再换算功耗。
-- **Battery track**:显示电池电量、剩余电荷和瞬时电流等 battery counters。
-- **CPU Frequency track**:与 Power track 对照查看,可以确认功耗上升是否对应 CPU 频率提升。
-- **Energy Consumer track**(Android 12+):按子系统(CPU cluster、Display、GPU、Radio 等)报告能量消耗;分析占比时同样按窗口差分计算。
+Android Vitals 当前把后台或前台服务期间的非豁免 partial wake lock 累计时长纳入统计：
 
-使用方法:在 Perfetto UI 中搜索 `power` 或 `energy`,即可找到相关 Track。将功耗曲线与 CPU/GPU 活动放在同一时间轴上,就能看到哪个子系统在什么时间段消耗了最多电量。
+- 24 小时内合计达到 2 小时或更多，session 被标记为 excessive；
+- 最近 28 天内超过 5% 的 App sessions 命中时，可能影响 Play 可见度；
+- audio、location、JobScheduler user-initiated 等场景有官方豁免。
 
-[待补充: Perfetto Power track 截图示例]
+这是一项 Play 健康指标。内部功耗目标还应记录 wake lock 名称、持有区间、调用方和是否存在更合适的调度 API。
 
-## 指标体系设计原则
+## 线上与线下怎样配合
 
-讨论完单个指标,我们需要回答一个更上层的问题:怎么把这么多指标组织成一套可用的体系。
-
-### 线上 vs 线下
-
-线上指标(Online Metrics)和线下指标(Offline Metrics)的定位完全不同,不能互相替代。
-
-线下指标的价值在于**精确诊断**。在 Perfetto 里能看到每一帧的详细耗时、每一次 GC 的暂停时长、每一个线程的状态变化。这种精度是线上指标做不到的--线上不可能给每个用户开一个 Perfetto trace。线下指标的局限在于:它是你在实验室环境采集的,不能代表真实用户的设备分布、网络条件和使用习惯。
-
-线上指标的价值在于**趋势监控和回归发现**。通过 SDK 采集线上用户的聚合数据(分位数、P90、P99),能发现新版本发布后某项指标有没有劣化、某个机型上是不是特别差。线上指标的局限在于精度低--拿不到每帧的详细堆栈,只能看到聚合后的数字。
-
-一个成熟的性能团队通常这样搭配使用:线上指标发现异常("P90 帧时间从 12ms 涨到了 18ms"),线下指标定位原因(在 Perfetto 中找到具体哪一步变慢了)。
-
-### 聚合粒度
-
-线上指标需要选择合适的聚合维度。最基本的维度是:
-
-- **时间粒度**:按小时、按天、按周聚合。日常监控看天级数据,版本对比看周级数据,紧急问题看小时级数据。
-- **设备维度**:按机型、SoC 平台、Android 版本、内存大小分组。Android 生态的设备碎片化决定了同一 App 在不同设备上的性能差异可以非常大。
-- **用户场景**:按 App 内的关键路径(首页、列表页、详情页、视频播放等)拆分。不同场景的性能特征差异很大,混在一起看平均值会掩盖问题。
-
-聚合粒度越细,数据量越大,存储和查询成本越高。实践中建议:核心指标按天×机型×场景三维聚合,次要指标只按天聚合。不要一开始就追求最细粒度,从粗到细逐步添加。
-
-### 分位数 vs 均值
-
-还有一个重要问题:为什么我们反复强调用分位数(P50/P90/P99)而不是均值(Average/Mean)?
-
-均值的问题在于它会被极端值拉偏。假设有一组帧时间数据:[8, 8, 8, 8, 8, 8, 8, 8, 8, 200],均值是 27.2ms,看起来不差。但 P50 是 8ms(很好),P90 是 8ms(也不错),P99 是 200ms(有一个极端长帧)。P99 暴露了均值完全掩盖的尾部问题。
-
-在性能领域,更该关注的是最差体验,而非平均体验--因为用户离开的原因通常是那一次最差的体验,而不是平均表现。所以 P90 和 P99 在性能监控中的价值远高于均值。
-
-一个健康的指标分布应该是:P90 接近 P50,P99 略高于 P90。如果 P99 远高于 P50(比如 P50=8ms 但 P99=150ms),说明系统存在偶发的严重问题,需要排查。
-
-同一个名字的指标,在不同场景下职责经常不同。这里用一个对照表收束前面的讨论:
-
-| 指标 | 线下更关注 | 线上更关注 |
+| 维度 | 线下实验 | 线上监控 |
 |---|---|---|
-| Frame Time | 具体帧、具体阶段、具体 trace | P90/P99、机型差异、版本回归 |
-| TTID / TTFD | 单次启动路径和阶段耗时 | 中位数、P95、冷温热分布 |
-| ANR / Crash | 复现条件和线程状态 | 受影响用户比例、机型 / 版本趋势 |
-| PSS / Java Heap | 场景峰值和增长曲线 | 分布、异常版本、设备聚类 |
+| 目标 | 复现、归因、验证改动 | 发现趋势、影响范围和设备长尾 |
+| 条件 | 可控制设备、构建、thermal、网络 | 环境复杂，存在采样与选择偏差 |
+| 数据 | Trace、调用栈、逐次观测 | 聚合分布、cluster、少量上下文 |
+| 优势 | 因果验证能力强 | 覆盖版本与设备群 |
+| 限制 | 样本小，代表性有限 | 难以直接给出代码根因 |
 
-把线下单次结果直接当成线上结论,或者拿线上聚合指标替代线下 trace 分析,都会跑偏。
+线上异常应生成可复现的分群：版本、设备、Android、场景、网络和状态。线下按该分群搭建实验；修复后用相同实验与线上分群共同验证。
 
-## Android Vitals 与 Google Play Console
+## 聚合规则
 
-Android Vitals 是 Google Play Console 内置的性能监控面板,它自动采集所有 Play Store 分发的 App 的性能数据,不需要开发者额外集成 SDK。
+### 不要平均分位数
 
-Android Vitals 的核心指标(Core Vitals)包括:
+机型 A 的 P90 与机型 B 的 P90 不能通过普通平均得到总体 P90；每日 P99 的平均值也不是周期 P99。跨分片聚合应合并原始直方图、t-digest/DDSketch 等可合并摘要，或重新计算原始样本。
 
-- **用户感知 ANR 率**(User-Perceived ANR Rate)
-- **用户感知崩溃率**(User-Perceived Crash Rate)
-- **过度部分 WakeLock**(Excessive Partial Wake Locks,2026 年 3 月起新增)
+看板应标明分位数基于 frame、launch、session 还是 user 聚合。高频用户产生更多事件时，event-level P99 会偏向高频用户；user-level 指标应先在用户内聚合，再在用户间聚合。
 
-这些指标都有明确的不良行为阈值(前文已列出)。超过阈值会直接影响 App 在 Play Store 中的可见度。
+### 均值仍有用途
 
-除了上述指标外,Android Vitals 还提供以下诊断数据:
+均值适合可加总的成本指标，例如 CPU time、energy、bytes 和基础设施成本。对长尾敏感的交互延迟，应同时提供分位数、超阈值比例和样本量。不要把“永远不用均值”写成规则。
 
-- **启动时间**(TTID/TTFD)的分布和趋势
-- **慢帧率**和**冻帧率**的按版本和设备分布
-- **电池使用**的 WakeLock 和网络后台活动
-- **ANR 和崩溃**的详细堆栈信息(经过混淆符号表解析后)
+### 采样率由误差预算决定
 
-对于大多数 App 团队来说,Android Vitals 是最基础的性能监控入口--在建设自有的线上监控体系之前,先把 Android Vitals 看板用起来。
+固定建议“高频事件采 1%—10%，启动 100%”缺少业务、样本量和隐私背景。采样设计应记录：
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals]
+- 稳定抽样键，避免一次 session 内忽采忽不采；
+- 每条数据的采样概率或权重；
+- 分层抽样策略，保护低端机、低版本和小流量场景；
+- 客户端丢弃、限流和上传失败；
+- 指标要求的最小样本与误差范围。
 
-## 一个更可执行的指标分层
+异常触发采样会改变分布。若慢事件更容易被上传，必须在合同中注明，不能与均匀采样数据直接合并。
 
-比较稳的做法,是把指标分成三层:
+### 维度要控制基数
 
-### 1. 门禁指标
+常用维度包括 App/Android 版本、设备型号、SoC、内存档位、刷新率、页面、CUJ、启动类型和网络。用户 ID、完整 URL、自由文本和堆栈不适合作为时序标签，可进入受控日志或 cluster 系统。
 
-- 启动预算
-- 主要场景 frame time / jank 阈值
-- Crash / ANR 红线
+## Android Vitals 的位置
 
-### 2. 诊断指标
+Android Vitals 无需 App 集成自有 SDK，但数据来自选择共享 usage/diagnostics 的部分认证设备，并要求相关 App 版本通过 Google Play 安装。它提供：
 
-- 分阶段 frame metrics
-- 启动子阶段耗时
-- 内存维度分解
-- trace / stack / exit reason
+- core vitals 与 bad-behavior thresholds；
+- 版本、Android、设备、形态和地区等分群；
+- slow startup、rendering、battery、crash/ANR 等数据；
+- Play Developer Reporting API。
 
-### 3. 治理指标
+团队还需要自建业务 CUJ、非 Play 渠道、特定设备实验和详细上下文。两套数据应通过版本与场景关联，避免把分母不同的比例放进同一图表。
 
-- 版本趋势
-- 机型聚类
-- 页面 / 场景榜单
-- 回归是否修复
+## 自定义业务指标
 
-当指标被这样分层后,团队就不容易再问"到底应该看哪个数",而是先问"我现在是在做门禁、诊断,还是治理"。
+定义“信息流刷新完成”“视频首帧”“搜索结果可见”等指标时，逐项回答：
 
-## 自定义业务性能指标的设计原则
+1. 用户动作从哪个事件开始？
+2. 终点是数据返回、UI 提交、屏幕 present，还是可交互？
+3. 取消、失败、缓存命中、后台恢复怎样计入？
+4. 超时样本是否保留？若只记录成功，会产生幸存者偏差。
+5. 跨进程/跨设备时钟怎样对齐？
+6. 一个 session 多次操作如何聚合？
+7. 采样和隐私规则是什么？
+8. 指标变化后由谁启动 Trace、日志或回滚流程？
 
-除了系统级指标,App 团队通常还需要定义自己的业务性能指标。比如:信息流列表从触发刷新到内容展示完成的耗时、视频从点击播放到首帧渲染的耗时、搜索从输入到结果返回的延迟。
+自定义指标应尽量落到用户可见终点，同时保留网络、解析、业务、UI、present 等诊断阶段。用户结果与内部阶段分开命名。
 
-设计自定义指标时有几个原则:
+## 常见误区
 
-第一,指标要对应真实的用户体验,而不是技术实现细节。"Feed 加载完成"比"网络请求返回"更有意义,因为前者是用户感知到的。
+### FPS 高就代表流畅
 
-第二,要有明确的起点和终点。起终点定义不一致是自定义指标最常见的坑--同样是"搜索耗时",如果有人从输入框 change 事件算起,有人从请求发送算起,数据就不具备可比性。建议在团队内明确约定每个自定义指标的起终点,并写进文档。
+平均 FPS 会隐藏长帧；静止页面低 FPS 也可能符合设计。结合 deadline、jank 比例、分位数和 CUJ。
 
-第三,采样率要合理。不是每个事件都需要 100% 上报。高频事件(如每帧的 Frame Time)可以采样 1%-10%,低频关键事件(如启动耗时)应该 100% 上报。采样率的选择需要平衡数据精度和上报成本。
+### TTID 快就代表启动完成
 
-第四,维度标签要稳定。每个指标应该附带固定的维度标签(App 版本、设备型号、场景名称),但不要把用户 ID 等高基数(high-cardinality)值作为标签--这会导致聚合爆炸。
+TTID 只到首帧。主要内容和交互准备要由 TTFD 或业务指标覆盖。
 
-## 常见问题与误区
+### Play 阈值可以直接当门禁
 
-**"FPS 够高就说明流畅"**--不一定。120 FPS 的 App 可能存在偶发的 50ms 长帧,平均 FPS 看起来很好,但用户在滑动列表时会感觉到间歇性卡顿。看 P99 Frame Time 比 FPS 更能反映真实体验。
+Play 阈值用于平台健康评估，且可能更新。内部预算需要绑定用户旅程、设备、构建和统计分布。
 
-**"启动时间只要 TTID 够快就行"**--TTID 快只说明启动画面出来得快,如果 TTFD 慢(内容加载了 3 秒才出来),用户看到的是一个空壳页面转圈。同时优化 TTID 和 TTFD 才是完整的启动体验优化。
+### PSS、RSS、Java heap 可以互换
 
-**"ANR 率低就不用担心主线程"**--ANR 的阈值是 5 秒,但主线程上 500ms 的阻塞就会造成明显的冻帧。即使 ANR 率为零,也可能存在大量影响用户体验的主线程卡顿。
+三者的页分摊、覆盖范围和采集时点不同。趋势图和预算必须标明具体指标。
 
-**"内存指标只要不 OOM 就行"**--PSS 过高的 App 会挤压系统中其他 App 的可用内存,增加 LMK 杀进程的概率。当用户切换回 App 时发现它被杀了需要重新启动,这就是"内存性能差"的间接表现。
+### P99 可以跨天求平均
 
-**"线上监控加个均值就够了"**--均值无法反映尾部延迟。一个 P50=10ms、P99=500ms 的指标和 P50=10ms、P99=12ms 的指标,均值可能差不多,但前者意味着每 100 次操作有一次严重卡顿,用户体验完全不同。
+分位数不能普通平均。保留可合并分布摘要与样本量。
+
+### 只记录成功操作
+
+失败和超时被排除后，延迟看板会虚假改善。成功率与延迟应成对观察。
 
 ## 参考资料
 
-- [Android Vitals | developer.android.com](https://developer.android.com/topic/performance/vitals)
-- [App startup time | developer.android.com](https://developer.android.com/topic/performance/launch-time)
-- [FrameMetrics API | developer.android.com](https://developer.android.com/reference/android/view/FrameMetrics)
-- [FrameMetricsAggregator | developer.android.com](https://developer.android.com/reference/androidx/core/app/FrameMetricsAggregator)
-- [ProfilingManager | developer.android.com](https://developer.android.com/reference/android/os/ProfilingManager)
-- [FrameMetrics.DEADLINE | developer.android.com](https://developer.android.com/reference/android/view/FrameMetrics#DEADLINE)
-- [FrameTimingMetric | developer.android.com](https://developer.android.com/reference/androidx/benchmark/macro/FrameTimingMetric)
-- [ApplicationExitInfo | developer.android.com](https://developer.android.com/reference/android/app/ApplicationExitInfo)
-- [Low memory killer daemon | source.android.com](https://source.android.com/docs/core/perf/lmkd)
-- [Perfetto Power data sources | perfetto.dev](https://perfetto.dev/docs/data-sources/battery-counters)
-- [Power stats HAL | source.android.com](https://source.android.com/docs/core/power/power-stats-hal)
-- [Android Vitals bad behavior thresholds | support.google.com](https://support.google.com/googleplay/android-developer/answer/9844476)
-- [Investigate RAM usage | developer.android.com](https://developer.android.com/studio/profile/memory)
-- [Manage your app's memory | developer.android.com](https://developer.android.com/topic/performance/memory)
-- [Battery Historian | developer.android.com](https://developer.android.com/topic/performance/power/battery-historian)
-- [Macrobenchmark | developer.android.com](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
+- [Android Developers：Android vitals](https://developer.android.com/topic/performance/vitals)
+- [Play Console Help：Monitor your app's technical quality](https://support.google.com/googleplay/android-developer/answer/9844486)
+- [Android Developers：Slow rendering](https://developer.android.com/topic/performance/vitals/render)
+- [Android Developers：App startup time](https://developer.android.com/topic/performance/vitals/launch-time)
+- [Android Developers：Excessive partial wake locks](https://developer.android.com/topic/performance/vitals/excessive-wakelock)
+- [AndroidX Benchmark：FrameTimingMetric](https://developer.android.com/reference/androidx/benchmark/macro/FrameTimingMetric)
+- [Android API：ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+- [AOSP android-17.0.0_r1：FrameMetrics.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java)
+- [AOSP android-17.0.0_r1：ApplicationExitInfo.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java)
+- [AOSP android-17.0.0_r1：lmkd.cpp](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp)
+- [AOSP android-17.0.0_r1：EnergyMeasurement.aidl](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/EnergyMeasurement.aidl)
+- [AOSP android-17.0.0_r1：EnergyConsumerResult.aidl](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/EnergyConsumerResult.aidl)
+- [Android common kernel android17-6.18-2026-06_r6：PSI](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/accounting/psi.rst)
+- [AOSP：Low memory killer daemon](https://source.android.com/docs/core/perf/lmkd)
+- [Perfetto：Battery counters and power rails](https://perfetto.dev/docs/data-sources/battery-counters)
+- [AOSP：Power Stats HAL](https://source.android.com/docs/core/power/power-stats-hal)
+- [Android Developers：Manage your app's memory](https://developer.android.com/topic/performance/memory)
+- [Android Developers：Battery Historian](https://developer.android.com/topic/performance/power/battery-historian)
+
+<!-- AIW-review-verified-2026-07-30 -->
