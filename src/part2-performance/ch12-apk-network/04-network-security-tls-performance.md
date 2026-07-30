@@ -5,27 +5,43 @@ section: "12.4"
 status: finalized
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
-last_verified: "2026-07-07"
-last_verified_against: "Android Developers docs: Android 17/API 37, Android 10 TLS, CT Policy; AOSP DnsResolver android-17.0.0_r1/android-13.0.0_r1 PrivateDnsConfiguration.cpp"
-confidence: medium
+applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37)"
+last_verified: "2026-07-31"
+last_verified_against: "Android 17 / API 37; AOSP android-17.0.0_r1 Conscrypt and DnsResolver; RFC 8446 / 9180 / 9849; OkHttp 5.3.0 and Cronet 18.0.1 public APIs"
+confidence: high
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/behavior-changes-17"
   - type: official
-    path: "https://developer.android.com/privacy-and-security/security-config#ech"
-  - type: official
-    path: "https://developer.android.com/reference/android/crypto/hpke/HpkeSpi"
-  - type: official
-    path: "https://developer.android.com/privacy-and-security/security-gms-provider"
-  - type: official
-    path: "https://developer.android.com/about/versions/10/features#tls-1.3"
+    path: "https://developer.android.com/privacy-and-security/security-config"
   - type: official
     path: "https://developer.android.com/privacy-and-security/certificate-transparency-policy"
   - type: official
+    path: "https://developer.android.com/about/versions/10/features#tls-1.3"
+  - type: official
+    path: "https://developer.android.com/reference/android/crypto/hpke/package-summary"
+  - type: official
+    path: "https://developer.android.com/reference/android/crypto/hpke/Hpke"
+  - type: official
+    path: "https://developer.android.com/reference/android/crypto/hpke/HpkeSpi"
+  - type: official
+    path: "https://android.googlesource.com/platform/external/conscrypt/+/android-17.0.0_r1/common/src/main/java/org/conscrypt/SSLParametersImpl.java"
+  - type: official
+    path: "https://android.googlesource.com/platform/external/conscrypt/+/android-17.0.0_r1/platform/src/main/java/org/conscrypt/Platform.java"
+  - type: official
     path: "https://android.googlesource.com/platform/packages/modules/DnsResolver/+/android-17.0.0_r1/PrivateDnsConfiguration.cpp"
   - type: official
-    path: "https://android.googlesource.com/platform/packages/modules/DnsResolver/+/android-13.0.0_r1/PrivateDnsConfiguration.cpp"
+    path: "https://www.rfc-editor.org/rfc/rfc8446"
+  - type: official
+    path: "https://www.rfc-editor.org/rfc/rfc9180"
+  - type: official
+    path: "https://www.rfc-editor.org/rfc/rfc9849"
+  - type: official
+    path: "https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/ConnectionPool.kt"
+  - type: official
+    path: "https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+  - type: official
+    path: "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/QuicOptions.Builder.html"
 tags: [network-security, tls, ech, hpke, certificate-transparency, cleartext, performance]
 related_chapters: ["12.2", "12.3", "1.6"]
 created_by: "task2a-knowledge-gap"
@@ -76,248 +92,220 @@ last_task2b_verifier_at: "2026-07-07T23:28:23+08:00"
 
 # 12.4 Android 网络安全与 TLS 性能优化
 
-一次 API 请求的 payload 可能只有几 KB，首包却要多等上百毫秒——瓶颈通常在连接建立阶段的 TLS 握手。Android 近几代持续收紧网络安全默认值：TLS 1.3 成为常态，Certificate Transparency 与 Encrypted Client Hello 开始进入平台配置面，明文流量也被逐步收紧。平台还单独公开了 HPKE 这类加密能力 API，用来覆盖端到端加密等场景。网络延迟和安全策略需要一起评估。
+一个 HTTPS 请求在传输业务数据前，可能依次经过 DNS、传输层建连、TLS 握手和证书验证。短请求的业务数据很少，建连阶段反而可能占据大部分等待时间。分析这类问题时，不能把所有耗时都记到“TLS”名下，也不能用降低验证强度来换取表面上的延迟下降。
 
-这一节关注两个问题：Android 平台上的安全机制会怎样影响网络性能，以及怎样在安全和连接成本之间做判断。
+本章以 Android 17（API 37）和 AOSP `android-17.0.0_r1` 为平台锚点，说明 TLS 1.3、连接复用、Encrypted Client Hello（ECH）、Certificate Transparency（CT）、明文流量策略与 HPKE 的职责边界。版本迭代只保留影响迁移判断的节点。
 
 <!-- outline-start -->
 ## 本节导读
-- 🔹 TLS 握手与连接延迟：梳理 TLS 1.2、TLS 1.3、0-RTT 与 Session Resumption 对连接时延的影响。
-- 🔹 ECH、CT 与 Cleartext 迁移：说明 Android 17 相关安全默认值带来的延迟、兼容性与迁移成本。
-- 🔹 HPKE SPI：交代 API 35 / Android 15 引入的 HPKE 能力、适用场景与性能边界。
-- 🔹 优化实践：从连接池、DNS、证书链和重定向配置出发，整理可执行的优化动作。
-- 🔹 版本演进与交叉引用：把网络安全策略放回 Android 版本演进和相关章节的上下文里。
+- 🔹 请求分段：区分 DNS、传输层连接、TLS、证书验证与等待响应。
+- 🔹 TLS 连接成本：说明 TLS 1.2、TLS 1.3、会话恢复、连接复用和 0-RTT。
+- 🔹 Android 17 安全策略：说明 ECH 与 CT 的启用条件、失败语义和性能边界。
+- 🔹 平台加密能力：区分 API 35 的 HPKE SPI、API 37 的应用层 HPKE API 与 ECH 内部使用的 HPKE。
+- 🔹 诊断方法：使用网络库回调、服务端指标和系统 trace 建立可核对的证据链。
 <!-- outline-end -->
 
-## TLS 握手与连接延迟
+## 先把一次安全连接分段
 
-TLS 握手是网络请求延迟中最容易被忽视的一环。对于一个小数据量的 API 请求，TLS 握手耗时可能占到整个请求延迟的 30%-50%，尤其是在移动网络环境下。
+RTT（Round-Trip Time）表示报文往返一次的时间。不同网络制式、无线信号、运营商路由和服务端地域会让 RTT 相差很大，因此本章不使用固定毫秒数估算握手成本。一次新 HTTPS 连接可按下列阶段记录：
 
-### TLS 1.2 vs TLS 1.3：握手次数的质变
-
-TLS 1.2 的完整握手需要 2 个 RTT（Round-Trip Time）。客户端先发 ClientHello；服务器回复 ServerHello + Certificate + ServerHelloDone；客户端再发 ClientKeyExchange + ChangeCipherSpec + Finished；服务器最后回复 ChangeCipherSpec + Finished。在移动网络下，一个 RTT 通常在 50-200ms（4G 网络），完整的 TLS 1.2 握手会额外增加 100-400ms 延迟。
-
-TLS 1.3 把这个流程压缩到了 1-RTT。核心变化在于密钥交换机制：客户端在第一次握手时就带上 KeyShare，服务器可以在第一次回复时就推导出会话密钥并发送加密数据。相比 TLS 1.2，连接建立时间减少约 50%。
-
-
-Google 在 Android 10（API 29）上默认启用 TLS 1.3 后报告，相比 TLS 1.2 有最高 40% 的速度提升。
-
-TLS 1.3 还定义了 0-RTT（Zero Round-Trip Time）恢复模式。当客户端之前连接过某个服务器并获得 session ticket 后，下次连接时可以在 ClientHello 中携带加密的 "early data"。Android 客户端能不能使用这条路径，取决于网络库是否公开 early data / QUIC / HTTP/3 能力。
-
-OkHttp 可以通过平台 TLS provider 使用 TLS 1.3，但 OkHttp 5 的公开 `protocols` 配置面仍以 `http/1.1`、`h2`、`h2_prior_knowledge` 为主，没有稳定公开的 0-RTT early data 开关。需要 QUIC / HTTP/3 / 0-RTT 时，优先评估 Cronet 或平台 `HttpEngine`。
-
-0-RTT early data 不具备前向安全性且可被重放，因此只适用于幂等请求（GET / HEAD），不能用于有副作用的操作（POST /transfer）。Android 10 的 TLS 1.3 文档明确说明平台 TLS 1.3 不支持 0-RTT；后续可用性主要取决于网络栈是否公开 QUIC / HTTP/3 / TLS 0-RTT 能力。`HttpEngine.Builder.addQuicHint()` 只说明开启 HTTP cache 后可辅助 QUIC 0-RTT connection establishment；Cronet `QuicOptions.Builder.enableTlsZeroRtt()` 是 QUIC/TLS 0-RTT 开关。当前公开文档不能推出“Android 15 Conscrypt 自动阻断 0-RTT 重放”。
-
-工程建议：GET 类请求和首屏元数据请求，在确认网络库支持 QUIC / TLS 0-RTT、服务端实现了 anti-replay 并通过灰度验证后，再把 0-RTT 纳入连接延迟优化；有副作用的写操作（POST / PUT / DELETE）不应走 0-RTT。
-
-### Session Resumption：被低估的优化手段
-
-Session Resumption 分两种机制：Session ID 和 Session Ticket。
-
-Session ID 方式下，服务器在握手时分配一个 session ID，客户端下次连接时携带这个 ID，服务器从缓存中找到之前的会话状态，跳过完整的密钥协商过程。TLS 1.2 的 session resumption 需要 1-RTT，TLS 1.3 的 PSK（Pre-Shared Key）恢复也是 1-RTT，但 TLS 1.3 的 0-RTT 可以做到 0-RTT。
-
-在实际应用中，session resumption 是降低 TLS 开销最有效的手段之一。一个良好的实践是确保连接池（ConnectionPool）的 keep-alive 时间足够长（OkHttp 默认 5 分钟），这样 TCP 连接保持期间内复用连接完全不需要 TLS 握手。只有连接断开后重新建立时，session resumption 才发挥作用。
-
-
-### Android 各版本的 TLS 默认行为
-
-Android 平台的 TLS 行为随着版本演进持续收紧：
-
-| 版本 | TLS 默认行为 |
-|------|------------|
-| Android 7.0 (API 24) | TLS 1.1/1.2 默认启用，但部分设备不支持 |
-| Android 8.1 (API 27) | TLS 1.2 连接验证更严格 |
-| Android 10 (API 29) | TLS 1.3 默认启用，通过 Conscrypt provider |
-| Android 11 (API 30) | TLS 1.3 完善支持 |
-| Android 17 (API 37) | ECH 平台配置面、targetSdk 37+ CT 默认验证 |
-
-Android 的 TLS 实现由 Conscrypt 安全提供者（基于 BoringSSL）负责。这个提供者通过 Google Play System Updates（Project Mainline）推送，设备不需要系统 OTA 就能收到 TLS 安全补丁和协议更新。实际更新范围取决于设备厂商对 Mainline 模块的支持程度。
-
-## Encrypted Client Hello (ECH) 的性能影响
-
-TLS 握手长期存在一个隐私缺陷：ClientHello 中的 SNI（Server Name Indication）字段是明文传输的。即使 TLS 加密了后续所有通信，网络中间人（ISP、企业网关）仍然可以知道你在访问哪个域名。
-
-Encrypted Client Hello（ECH，RFC 9849）的目的是加密 TLS ClientHello 中的敏感字段，SNI 是最常见的一项。ECH 的握手内部会用到 HPKE，但协议本身和 HPKE 不是同一个规范。
-
-### Android 17 的 ECH 支持
-
-Android 17（API 37）在平台级别加入了 ECH 支持，并通过 Network Security Configuration 的 `<domainEncryption>` 元素提供配置面。官方文档公开的枚举是 `mode="enabled"` 和 `mode="disabled"`，默认启用。ECH 是否生效，还要同时满足两件事：应用使用的网络库已经接入 ECH，服务端也支持 ECH。按照 Network Security Config 的 `enabled` 语义，有 ECHConfig 时会强制 ECH；没有 ECHConfig 时启用 ECH GREASE。ECH 协商失败后的行为取决于网络库和服务端配置，不能简单等同于回退到普通 TLS。
-
-ECH 配置通常通过 DNS 的 HTTPS/SVCB 记录分发。解析过程可以走传统 DNS，也可以走 DoH/DoT；DoH/DoT 只是 DNS 传输层的实现方式，不是 ECH 协商本身的前提。做性能分析时，要把“拿到 ECH 配置的 DNS 成本”和“TLS 握手里执行 ECH 的成本”拆开看。
-
-### 性能开销
-
-ECH 的额外开销来自两部分：
-
-1. **DNS 查询增加**：客户端要先拿到 ECH 配置。这个动作通常体现在一次 DNS HTTPS/SVCB 查询或缓存命中判断里，不一定意味着额外发起一次 DoH HTTPS 请求。首次解析未命中缓存时，额外延迟主要还是 RTT；命中缓存后，这部分成本接近零。
-
-2. **ClientHello 加密**：ECH 使用 HPKE（Hybrid Public Key Encryption）对 ClientHello 进行加密。公开资料通常把延迟主项放在 DNS 查询、缓存命中和网络 RTT 上，而不是 HPKE 本身。具体耗时取决于 KEM 算法（X25519 / P-256）、AEAD 套件（AES-GCM / ChaCha20-Poly1305）、payload 大小和设备加速能力，不适合用单一数字概括。
-
-在性能排查里，先拆 DNS HTTPS/SVCB 获取、TLS 握手、连接复用和证书验证四段，再决定是否需要单独压测 HPKE suite。
-
-Android 17 的 Advanced Protection Mode 主要面向设备安全策略，例如 2G/WEP 限制、sideloading 防护、forensic logging、未知号码来电和消息链接防护等。排查 ECH 问题时，只需确认设备是否处于 APM 状态，不需要把 APM 当作 ECH 失败或 DoH3 路径切换的直接原因。
-
-**ECH 的 CPU 开销**：ECH 握手会多一次 HPKE 封装 / 解封装路径，成本集中在握手阶段，连接建立后不再出现。对高频短连接场景（如消息轮询、推送心跳），需要按 ECHConfig 获取方式、KEM / AEAD suite、SoC 加速能力和网络库实现做同设备 A/B 测试才能得出可用数字。
-
-
-## Certificate Transparency 的开销
-
-在 TLS 握手过程中，客户端验证服务器证书合法性——但"合法"不等于"可信"。一个被 CA 秘密签发的证书也能通过常规验证。Certificate Transparency（CT，RFC 6962）解决的就是这个问题：它要求 CA 把每一张签发的证书登记到公开可审计的日志中，客户端在握手时检查证书里有没有这个登记记录（SCT，Signed Certificate Timestamp）。
-
-CT 验证本身的开销通常不是性能工程师的首要关注点，性能排查更常遇到的是兼容性风险：如果服务器证书缺少足够的 SCT，Android 17 的默认验证会让连接直接失败。
-
-### Android 17 默认启用
-
-Android 16 及之前，CT 默认不启用，需要 App 通过 Network Security Configuration 显式 opt-in。Android 17 对 targetSdkVersion >= 37 的 App 默认启用 CT 验证，服务器证书需要满足 Android CT Policy。这里不能只写“至少 2 个 SCT”，因为 SCT 的交付方式会改变检查口径。
-
-| SCT 交付方式 | Android CT Policy 关注点 | 排查入口 |
+| 阶段 | 常见工作 | 观测重点 |
 |:---|:---|:---|
-| 嵌入证书 | 至少有 1 个 SCT 来自检查时处于 Qualified / Usable / ReadOnly 状态的日志；还要按证书有效期满足 distinct log 数，180 天及以内通常为 2 个，超过 180 天通常为 3 个；满足数量的 SCT 中至少来自 2 个不同 log operators | 证书的 X.509v3 SCT 扩展 |
-| OCSP Stapling | 服务器在 TLS 握手里附带 OCSP 响应，响应中需要包含满足策略的 SCT | 服务器 OCSP stapling 配置、TLS 抓包 |
-| TLS 扩展 | 服务器通过 `signed_certificate_timestamp` TLS 扩展发送 SCT，仍要满足日志状态和 operator 要求 | TLS 扩展抓包、服务端配置 |
+| DNS | A/AAAA 查询；ECH 场景还可能读取 HTTPS 资源记录 | 缓存命中、解析器类型、查询并发 |
+| 传输层 | TCP 三次握手，或 QUIC 的传输层建连 | 新连接比例、IPv4/IPv6 竞速、丢包 |
+| TLS | ClientHello、密钥协商、证书和 Finished 消息 | TLS 版本、完整握手或恢复、ECH |
+| 证书验证 | 信任链、主机名、有效期、CT 等检查 | 失败类型、证书链、SCT |
+| HTTP | 发送请求并等待响应头与响应体 | 协议、连接复用、服务端处理 |
 
-### 性能影响：先查兼容性，再查计算成本
+HTTP/2 或 HTTP/3 可以让多个请求复用一条连接。复用命中时，前四段不会为每个请求重新执行；这通常比微调某个加密算法更值得检查。
 
-CT 验证通常不该成为移动网络请求的首要耗时项。更常见的现场是兼容性失败：证书缺少足够 SCT、SCT 来自不合规日志、私有 CA 或内部证书没有按 Android CT Policy 配置，targetSdk 37 升级后 TLS 直接失败。App 不会收到“性能差”的反馈，而是直接收到连接异常。
+## TLS 1.3 减少了哪些等待
 
-CT 验证的具体耗时取决于设备型号、Android 版本、证书链长度、SCT 数量和签名算法，不同环境差异很大。
+### 完整握手
 
-排查时，在 OkHttp 的 `EventListener` 中监听 `connectEnd` / `connectFailed` 回调。targetSdk 37 升级后如果出现大量 TLS 连接失败，优先检查服务器证书的 SCT 配置。用 `openssl s_client -connect host:443 -ct` 可以直接查看证书中的 SCT 数量。
+在常见的 TLS 1.2 完整握手中，客户端要在收到服务器第一轮握手消息后发送密钥交换与 Finished，服务器确认后才进入应用数据阶段，连接成本通常按两个网络往返理解。TLS 1.3 让客户端在首个 ClientHello 中发送 key share，完整握手可在一个往返后发送应用数据。这里比较的是协议消息路径，不能直接换算成固定百分比或固定毫秒数。
 
-## 从 HTTP 到 HTTPS：迁移中的延迟陷阱
+Android 10（API 29）起，平台 TLS 实现默认启用 TLS 1.3。该版本的 Android 文档同时明确：平台 TLS 1.3 socket 不支持 0-RTT。Android 17 上，应用通过 `SSLSocket`、`SSLEngine` 或依赖平台 provider 的网络库使用 TLS 1.3，仍要以网络库公开的能力和服务端协商结果为准。
 
-Android 对明文流量的限制逐代收紧。当前能从官方文档稳定确认的边界是：API 23 引入 `usesCleartextTraffic`，API 24 引入 Network Security Configuration，targetSdkVersion >= 28 默认禁止明文流量。迁移本身的技术难度不大——把 URL 从 `http://` 改成 `https://`——但迁移过程中的几个延迟陷阱经常被忽略。
+### 连接复用和会话恢复
 
-### 弃用时间线
+这三个概念容易混淆：
 
-Android 对明文流量（HTTP）的限制是一个渐进过程：
+| 机制 | 是否新建传输层连接 | 是否重新进行 TLS 握手 | 适用时机 |
+|:---|:---:|:---:|:---|
+| HTTP 连接复用 | 否 | 否 | 原连接仍可用 |
+| TLS 会话恢复 | 是 | 是，但使用 PSK/session state 缩短协商 | 原连接已关闭，双方仍保留恢复状态 |
+| TLS 1.3 0-RTT | 是 | 恢复握手中提前发送 early data | 网络栈、服务端和业务语义均允许 |
 
-- **Android 6.0 (API 23)**：引入 `usesCleartextTraffic` 标志和 `StrictMode` 检测
-- **Android 7.0 (API 24)**：引入 Network Security Configuration，提供更细粒度的控制
-- **Android 9 (API 28)**：targetSdkVersion >= 28 的 App 默认禁止明文流量
+OkHttp 5.3 的默认连接池保留最多 5 条空闲连接，每条空闲连接的 keep-alive 时长为 5 分钟。“5”是空闲连接上限，不是客户端总并发连接数。不要因为某个经验数字就扩大连接池；应先统计 `connectionAcquired` 命中、新建连接率、域名数量和服务端空闲超时，再调整 `maxIdleConnections` 与 keep-alive。
 
-### 迁移中的延迟变化
+会话恢复发生在新连接上。客户端有可用 ticket，并不保证服务端接受恢复：服务端重启、ticket key 轮换、负载均衡路由和 ticket 有效期都可能让连接转为完整握手。仅看客户端的 `secureConnectStart`/`secureConnectEnd` 也无法可靠判断是否恢复，应结合 TLS 库日志或服务端的 full/resumed handshake 指标。
 
-从 HTTP 迁移到 HTTPS 的主要延迟影响来自 TLS 握手。但这个影响是一次性的，连接建立完成后，TLS 对数据传输的吞吐量影响很小。Google 的研究表明，当数据量超过 500KB 时，TLS 的能量开销相比传输 I/O 开销可以忽略。
+### 0-RTT 的限制来自“可重放”
 
-迁移中要检查三类延迟变化：
+TLS 1.3 early data 可能被攻击者重放，RFC 8446 要求应用协议评估重复执行的后果。HTTP 方法名只能作为初筛条件：一个 GET 请求也可能消费一次性令牌、改变计数器或读取带时序约束的敏感资源；某些 POST 请求在业务上则可能具备幂等键。安全条件应写成“该请求被重复执行也不会产生不可接受后果”，不能简化为 GET/HEAD 白名单。
 
-1. **混合内容（Mixed Content）**：如果 App 的部分请求走 HTTPS，部分走 HTTP，浏览器/WebView 会阻塞或警告混合内容。这不会增加延迟，但会导致请求失败，用户感知为"加载变慢"。
+OkHttp 5.3 的稳定公开协议配置没有 HTTP/3 或 TLS early-data 开关。Cronet 的 `QuicOptions.Builder.enableTlsZeroRtt()` 面向 QUIC/TLS 0-RTT；平台 `HttpEngine` 的 QUIC hint 也不等于某个请求已使用 early data。启用前应确认以下事项：
 
-2. **HTTP→HTTPS 重定向**：如果服务端只是做了 301/302 重定向，客户端先发 HTTP 请求再被重定向到 HTTPS，等于额外增加了 1-2 个 RTT 的延迟。正确的做法是在客户端直接使用 HTTPS URL。
+- 网络库版本和具体传输协议支持 0-RTT；
+- 服务端具备 replay 防护，并能区分 early data；
+- 请求语义允许重放，鉴权材料也允许在 early data 中发送；
+- 指标能区分普通恢复、0-RTT 被接受和 0-RTT 被拒绝后重发。
 
+## Android 网络安全能力的版本边界
 
-3. **证书链过长**：如果服务器配置了过长的证书链（超过 4-5 层），TLS 握手时传输的证书数据量增加，在高延迟网络下会增加握手时间。服务端只需发送必要的中间证书。
+| 版本 | 已核对的平台变化 | 迁移含义 |
+|:---|:---|:---|
+| Android 6.0 / API 23 | `android:usesCleartextTraffic` 与 `NetworkSecurityPolicy` 进入平台 | 应用可声明和查询明文策略 |
+| Android 7.0 / API 24 | Network Security Configuration 上线 | 可按域名配置明文、信任锚、调试证书和证书固定 |
+| Android 9 / API 28 | targetSdk 28 及以上默认不允许明文流量 | 旧应用升级 targetSdk 时要检查 HTTP 端点 |
+| Android 10 / API 29 | 平台 TLS 1.3 默认启用；平台 TLS socket 不支持 0-RTT | TLS 版本与 early data 能力要分别判断 |
+| Android 15 / API 35 | 新增 `android.crypto.hpke.HpkeSpi` | provider 实现层获得标准 SPI |
+| Android 16 / API 36 | 应用可在 Network Security Configuration 中选择启用 CT | 升级 targetSdk 37 前可先做兼容性验证 |
+| Android 17 / API 37 | ECH 进入平台网络安全配置；targetSdk 37 及以上默认启用 CT；新增应用层 HPKE API | 同时核对运行系统、targetSdk、网络库和服务端 |
 
-### Network Security Configuration 的性能配置
+Android 的 Java TLS 路径由 Conscrypt 等安全 provider 实现，底层使用 BoringSSL。模块化更新能让部分实现随 Google Play 系统更新交付，但设备、模块版本和厂商支持存在差异。诊断报告应记录设备 build fingerprint、provider 名称与版本，不能只记录“Android 17”。
 
-Network Security Configuration 是 Android 推荐的网络安全管理方式，能比 `usesCleartextTraffic` 更细地控制域名、信任锚和明文策略。有几个配置项和性能直接相关：
+## Android 17 的 Encrypted Client Hello
 
-```xml
-<!-- res/xml/network_security_config.xml -->
-<network-security-config>
-    <!-- 全局禁止明文 -->
-    <base-config cleartextTrafficPermitted="false">
-        <trust-anchors>
-            <certificates src="system" />
-        </trust-anchors>
-    </base-config>
+普通 TLS ClientHello 会暴露 SNI 等元数据。ECH（RFC 9849）把敏感的 ClientHello 内容放入加密的 inner ClientHello，外层仍保留可完成路由和兼容协商的信息。网络观察者仍可能依据 IP、流量形态和 DNS 看到部分元数据，ECH 不等于隐藏全部访问行为。
 
-    <!-- 调试模式允许 localhost 明文（仅 debuggable=true 时生效） -->
-    <debug-overrides>
-        <trust-anchors>
-            <certificates src="user" />
-        </trust-anchors>
-    </debug-overrides>
-</network-security-config>
-```
+### 四个生效条件
 
-`debug-overrides` 只在 App 处于 debuggable 模式时生效，不会影响生产环境的性能和安全。
+Android 17 的 `<domainEncryption>` 提供 `enabled` 和 `disabled` 两种公开模式。对于运行在 Android 17、targetSdk 37 及以上的应用，平台配置默认启用 ECH。一次连接要发出有效 ECH，还要同时满足：
 
-## HPKE 混合加密 SPI
+1. 应用使用的网络库已经接入 Android ECH 能力；
+2. DNS 或网络库获得了服务端可用的 ECHConfig；
+3. 服务端终止 TLS 的基础设施支持对应配置；
+4. 当前连接路径没有绕过平台网络安全策略。
 
-Android 15（API 35）公开了 Hybrid Public Key Encryption（HPKE，RFC 9180）的 Service Provider Interface（SPI）。HPKE 是一组独立的加密能力 API，适合端到端加密、密钥封装和安全配置分发，和普通 HTTPS 连接默认走的 TLS 路径是两回事。
+官方文档对 `enabled` 的定义很具体：存在 ECHConfig 时要求使用 ECH；没有配置时发送 ECH GREASE，以降低协议僵化风险。`disabled` 既不启用 ECH，也不发送 GREASE。应用通常不应自行解析和安装 ECHConfig，交给已经完成平台接入的网络库处理。
 
-### 为什么要关注
+AOSP `android-17.0.0_r1` 中，Conscrypt 的 `SSLParametersImpl.getEchOptions()` 根据网络安全策略生成 ECH 选项；`Platform` 会把配置不匹配包装为 `android.net.ssl.EchConfigMismatchException`，其中可携带服务端返回的重试配置。这说明“ECH 失败后静默改用普通 TLS”不是可靠的统一行为。网络库可能按重试配置重连，也可能把失败交给调用者。
 
-在 HPKE 之前，如果开发者需要实现端到端加密，通常要自己组合密钥交换（ECDH）和对称加密（AES-GCM）方案。不同的实现方式安全性和性能差异很大。HPKE 通过标准化这个流程，减少开发者自行组合加密原语时出错的概率；性能仍要按 provider、suite 和消息体大小实测。
+### ECH 的性能应分两段测量
 
-### 适用场景
+ECHConfig 常由 DNS HTTPS 资源记录分发。查询是否产生额外网络等待，取决于缓存、解析器是否并行查询 A/AAAA 与 HTTPS 记录、加密 DNS 连接是否复用，以及网络库自己的解析流程。不能统一写成“ECH 增加一次 DNS RTT”。
 
-HPKE 适合以下需要公钥加密的场景：
+ClientHello 加密使用 HPKE。客户端只在新 TLS 握手中执行相关密码运算，已建立连接上的 HTTP 请求不会重复执行。评估时分别记录：
 
-- **端到端加密消息**：使用接收者的公钥加密消息内容
-- **安全配置分发**：设备注册时加密敏感配置数据
-- **跨进程安全通信**：App 内部不同组件间的加密数据传递
+- HTTPS 资源记录的缓存命中和查询时长；
+- 有 ECHConfig、仅 GREASE、配置不匹配三类连接；
+- 完整握手、会话恢复和连接复用比例；
+- 同一设备、同一网络条件下的 CPU 时间与握手墙钟时间。
 
-## 优化实践：从观测到行动
+## Android 17 的 Certificate Transparency
 
-如果 Perfetto 中的网络请求 track 显示 TLS 握手在每次连接时都重复出现，或者 `ConnectionPool` 命中率低，下面几个方向的收益是递减排列的——优先解决前面的。
+CA 签名和系统信任链只能证明证书能追溯到受信任根。CT 通过公开日志和 Signed Certificate Timestamp（SCT）提供额外的可审计证据，用于发现误签或恶意签发。
 
-### 连接池与 TLS 连接复用
+### 默认值由运行时和 targetSdk 共同决定
 
-在 Perfetto 中，一次 TLS 握手对应 `cronet` 或 `okhttp` track 中一段连续的 connect + handshake 区域。如果同一个域名反复出现这段握手，说明连接池复用出了问题。
+Android 16（API 36）提供 CT opt-in。应用运行在 Android 17 且 targetSdk 37 及以上时，平台默认启用 CT。运行在旧系统上的同一 APK 不会获得 Android 17 的平台 CT 验证；targetSdk 低于 37 的应用也不能仅凭“设备是 Android 17”推断默认已开启。
 
-OkHttp 的 `ConnectionPool` 默认保持 5 个空闲连接 5 分钟。在此期间，TCP + TLS 连接完全复用，没有任何握手开销。
+Network Security Configuration 的规则还包含一个容易遗漏的分支：
 
-需要关注的配置：
+1. 当前域显式启用 CT 时，执行 CT 验证；
+2. 当前域使用用户证书或内联自定义信任锚时，默认不执行 CT；
+3. 其他情况继承上层配置。
 
-```java
-// OkHttp ConnectionPool 配置
-ConnectionPool pool = new ConnectionPool(
-    5,      // maxIdleConnections: 空闲连接上限
-    5,      // keepAliveDuration: 保持时间（分钟）
-    TimeUnit.MINUTES
-);
-OkHttpClient client = new OkHttpClient.Builder()
-    .connectionPool(pool)
-    .build();
-```
+私有 PKI 和抓包调试环境常落入第二种情况。它解释了为何同一应用的公网站点执行 CT，而使用企业根证书的内网站点表现不同。若业务确需让自定义信任锚也执行 CT，应显式配置并验证证书签发流程，不能用公网证书的经验替代测试。
 
-调整 `maxIdleConnections` 时要同时控制空闲连接数量：过多的空闲连接会占用服务器资源（每个连接对应服务器端的一个 socket + 线程），对于高并发 App（如即时通讯），适当增大到 10-15 可以减少 TLS 重握手频率。
+### Android CT Policy 不是固定的“SCT 至少两个”
 
-### DNS-over-HTTPS / DNS-over-TLS 的权衡
+策略会按 SCT 交付方式、证书有效期、日志状态和日志运营者判断：
 
-Android 9（API 28）引入了 Private DNS（DoT）设置；AOSP DnsResolver 到 Android 13 主线才出现完整 DoH 查询路径，Android 17 中 DoH 与 DoT 都属于 resolver 的加密 DNS 通道。加密 DNS 查询增加了 DNS 解析延迟（首次），但它保护的是 DNS 查询通道，只能降低 DNS 劫持和明文查询泄露风险。TLS SNI 隐私需要 ECH；单独使用 DoH/DoT 不能隐藏 ClientHello 里的 SNI。
+| SCT 交付方式 | Android CT Policy 的检查要点 |
+|:---|:---|
+| 嵌入证书 | 至少 1 个 SCT 来自检查时处于 Qualified、Usable 或 ReadOnly 状态的日志；证书有效期不超过 180 天时需要来自 2 个不同日志，超过 180 天时需要 3 个；满足数量的 SCT 至少覆盖 2 个日志运营者 |
+| OCSP stapling 或 TLS 扩展 | 至少 2 个 SCT 来自检查时合格的不同日志，并覆盖至少 2 个日志运营者 |
 
-[已验证: AOSP android-17.0.0_r1, packages/modules/DnsResolver/PrivateDnsConfiguration.cpp；历史参照: android-13.0.0_r1 同路径已包含 `setDoh()` / `dohQuery()` 集成，android-11.0.0_r1 未见 DoH 集成路径]
+日志状态和 Android CT log list 会变化。证书部署流水线应以当前 Android CT Policy 和预发布设备测试为准，不要把表中的数字固化成多年不变的服务端规则。
 
-从性能角度：
+CT 检查通常使用握手携带的证书、OCSP 响应或 TLS 扩展在本地验证，不应按“额外一次网络请求”估算。迁移期间更常见的影响是握手直接失败，例如 SCT 缺失、日志状态不满足政策、证书链发送错误。客户端要保留异常类型、域名、系统版本和证书摘要；服务端要监控 targetSdk 37 灰度期间的 TLS 失败率。
 
-- **首次查询**：DoH 增加约 1 个 RTT 的延迟（建立 TLS 连接 + HTTPS 请求）
-- **后续查询**：DoH 连接复用后，延迟接近传统 DNS
-- **缓存**：Android 的 DNS 缓存（`InetAddress` 级别）会缓存解析结果，有效 TTL 内不会重新查询
+## 明文策略、信任锚和证书链
 
-如果 App 大量请求使用不同域名（如 CDN 分发、多服务 API），DNS 查询频率较高，可以考虑在 App 层面做 DNS 预解析（`Dns` 接口自定义实现），在后台线程提前解析可能用到的域名。
+### 明文默认值
 
-### 快速排查对照表
+Android 7.0 及以上可使用 Network Security Configuration 按域名管理明文和信任锚。应用 targetSdk 28 及以上时，`cleartextTrafficPermitted` 的默认值为 `false`；targetSdk 27 及以下默认为 `true`。这是 targetSdk 默认值，不代表所有第三方或 native 网络实现都会遵守。网络库是否查询 `NetworkSecurityPolicy`，需要核对对应代码。
 
-在 Perfetto 或网络 profiler 中看到异常后，可以对照下表定位可能的安全机制因素：
+从 HTTP 迁移时，客户端应直接配置 HTTPS URL。先访问 HTTP 再跟随 301/302 会多一次明文请求、一次服务端响应和一条新的 HTTPS 连接路径，还会在重定向前暴露请求元数据。WebView 的 mixed content 策略是另一组配置，不能用普通 API 客户端的明文策略推断 WebView 行为。
 
-| 现象 | 可能原因 | 排查方向 |
-|---|---|---|
-| 每次请求都出现 TLS 握手段 | 连接池未复用 | 检查 ConnectionPool 配置和 keep-alive |
-| 首次请求延迟明显高于后续 | DNS + TLS 握手叠加 | DNS 预解析 + Session Resumption |
-| targetSdk 37 升级后大量连接失败 | CT 验证不通过 | 检查服务器证书 SCT 数量 |
-| 部分请求走 HTTP 被拦截 | 混合内容 / cleartext 限制 | 全面迁移 HTTPS，去掉重定向 |
-| 自定义加密方案性能差 | 非 HPKE 标准实现 | 评估迁移到平台 HPKE API |
+### 证书链与证书固定
+
+TLS 服务端应发送叶子证书和客户端建立信任链所需的中间证书，通常不发送根证书，也不发送无关中间证书。证书数据会进入握手字节数；在带宽低、丢包高的网络上，过大的握手更容易跨越多个传输包并触发重传。判断“过长”应看实际链路字节和兼容性，不能套用固定层数。
+
+Network Security Configuration 支持 certificate pinning，但 Android 官方文档不建议一般应用把 pinning 当作默认方案：服务端证书或 CA 轮换处理不当会使应用失联。如果威胁模型要求 pinning，需要准备 backup pin、合理的失效时间、证书轮换演练和远端恢复方案。删除证书校验、信任所有证书或放宽主机名校验都不属于性能优化。
+
+## API 35 与 API 37 的 HPKE 不是同一层接口
+
+HPKE（RFC 9180）把 KEM、KDF 和 AEAD 组合成标准公钥加密方案。它适合用接收方公钥加密较短的消息或会话材料，不替代 HTTPS 的身份验证、连接管理和传输协议。
+
+Android 的 API 演进分为两步：
+
+- Android 15 / API 35 新增 `android.crypto.hpke.HpkeSpi`。它是安全 provider 实现 HPKE 引擎的 SPI，应用开发者不应把它当作日常加密入口。
+- Android 17 / API 37 新增 `Hpke`、`Sender`、`Recipient`、`Message` 及参数规范。`Hpke.getInstance()` 提供实例获取，`seal()`/`open()`提供 one-shot 操作，`Sender`/`Recipient`面向多条消息的上下文。
+
+当前 Android 文档标明平台 HPKE 只支持 RFC 9180 的 base mode。base mode 不认证发送方身份；如果业务要求发送方认证，应在协议层增加经过审计的签名或身份绑定设计，不能把“使用接收方公钥加密”当作双向身份认证。
+
+ECH 协议内部也使用 HPKE 加密 inner ClientHello，但应用不需要调用 `android.crypto.hpke.Hpke` 来实现 ECH。自行用应用层 HPKE 包裹 HTTP payload，也不会获得 ECH 对 ClientHello 元数据的保护。
+
+## 加密 DNS 与 ECH 的关系
+
+Android 9 引入 Private DNS 的 DNS over TLS（DoT）设置。AOSP `android-17.0.0_r1` 的 DnsResolver `PrivateDnsConfiguration.cpp` 同时包含 DoT 与 DoH 的配置和查询路径。DoT/DoH 保护客户端到解析器之间的 DNS 传输；ECH 保护 TLS ClientHello 中的敏感字段。两者处理不同的泄露面：
+
+- 只有 DoT/DoH：旁路观察者不易读取 DNS 查询内容，但普通 TLS SNI 仍可能暴露目标域名；
+- 只有 ECH：ClientHello 的敏感字段被保护，但明文 DNS 仍可能暴露查询；
+- 两者均启用：仍不能隐藏目标 IP、包长、时序和连接频率。
+
+DoH 首次查询也不等于固定增加一个 RTT。已有 HTTP/2/HTTP/3 连接、DNS 缓存、连接竞速和解析器实现都会改变成本。应用层自定义 DNS 还可能绕过系统 Private DNS、HTTPS 记录处理或网络切换语义，采用前要评估这些副作用。
+
+## 建立可核对的性能证据
+
+### 客户端事件
+
+OkHttp `EventListener` 可记录 `dnsStart`/`dnsEnd`、`connectStart`、`secureConnectStart`/`secureConnectEnd`、`connectionAcquired`、`responseHeadersStart` 和失败回调。这些时间点能回答“时间花在哪一段”，却不能独自证明会话已恢复、ECH 已被接受或 CT 的某条规则已命中。
+
+Perfetto 不会自动生成通用的 OkHttp 握手轨道。若要把网络阶段与线程、CPU、Radio 和进程状态对齐，应在网络回调中加入应用 trace slice，或使用 Cronet NetLog、平台网络日志和服务端 TLS 指标补充协议证据。生产日志不要记录会话密钥、完整证书、鉴权头或用户请求内容。
+
+### 服务端指标
+
+服务端至少应能按应用版本和灰度批次观察：
+
+- TLS 版本、cipher suite、ALPN 与完整/恢复握手比例；
+- HTTP/2、HTTP/3 连接比例和 0-RTT 接受/拒绝情况；
+- ECH 接受、GREASE、配置不匹配和重试；
+- 证书链版本、SCT 交付方式与 TLS alert；
+- 新连接率、连接寿命、空闲超时和负载均衡迁移。
+
+客户端和服务端时间基准可能不同。分析单次请求时，用 request ID 关联事件；比较分布时，使用同一网络类型、同一设备组和同一发布阶段，避免把用户构成变化误判为协议收益。
+
+### 排查对照表
+
+| 现象 | 优先核对 | 常见误判 |
+|:---|:---|:---|
+| 同一域名频繁出现 `secureConnectStart` | 客户端实例是否复用、服务端 keep-alive、网络切换、连接失败 | 直接增大空闲连接上限 |
+| 首次请求慢，后续请求正常 | DNS 缓存、新连接、完整 TLS 握手、服务端冷路径 | 把整段都归为证书验证 |
+| targetSdk 37 灰度后 TLS 失败增加 | Android 17 设备占比、CT Policy、SCT 与自定义信任锚 | 关闭全部证书校验 |
+| Android 17 上 ECH 连接失败 | 网络库是否接入、HTTPS 记录、ECHConfig 轮换、`EchConfigMismatchException` | 假定平台总会静默降级 |
+| 开启 DoH 后解析变慢 | DoH 连接复用、缓存、解析器地域、网络切换 | 固定认为多一个 RTT |
+| HPKE 解密失败 | suite、info、AAD、密钥格式和 base mode 边界 | 把 HPKE 当作 TLS 会话 |
 
 ## 与其他章节的关联
 
-- **§12.2 网络性能优化**：本章的安全机制是网络请求延迟的一部分，与连接池、缓存等优化手段配合使用
-- **§12.3 网络性能深入**：连接池、TLS、DNS 是网络请求的底层基础设施，理解这些有助于分析整体网络性能
-- **§1.6 版本演进**：TLS 和网络安全策略的版本演进是 Android 安全生态演进的重要组成部分
+- **§12.2 网络性能优化**：连接池、缓存、HTTP/2 和 HTTP/3 决定新连接出现的频率。
+- **§12.3 网络性能深入**：DNS、Socket、OkHttp 事件和系统网络栈提供更完整的诊断路径。
+- **§1.6 版本演进**：适合核对 targetSdk 与运行系统共同改变行为的案例。
 
 ## 参考资料
 
-- [Android 17 Behavior Changes](https://developer.android.com/about/versions/17/behavior-changes-17)，官方行为变更文档
-- [Encrypted Client Hello / Network Security Configuration](https://developer.android.com/privacy-and-security/security-config#ech)，ECH 模式与 `<domainEncryption>` 配置说明
-- [HpkeSpi API Reference](https://developer.android.com/reference/android/crypto/hpke/HpkeSpi)，Android 平台公开的 HPKE SPI 参考
-- [ECH RFC 9849](https://www.rfc-editor.org/rfc/rfc9849)，ECH 标准规范
-- [HPKE RFC 9180](https://www.rfc-editor.org/rfc/rfc9180)，HPKE 标准规范
-- [TLS 1.3 RFC 8446](https://www.rfc-editor.org/rfc/rfc8446)，TLS 1.3 标准规范
-- [Certificate Transparency RFC 6962](https://www.rfc-editor.org/rfc/rfc6962)，CT 标准规范
-- [Android Certificate Transparency Policy](https://developer.android.com/privacy-and-security/certificate-transparency-policy)，Android CT Policy 的 SCT 与日志状态要求
-- [OkHttp Protocols API](https://square.github.io/okhttp/5.x/okhttp/okhttp3/-ok-http-client/-builder/protocols.html)，OkHttp 5 公开协议配置面
-- [Conscrypt Security Provider](https://developer.android.com/privacy-and-security/security-gms-provider)，Android TLS 实现说明
-- [Android 17 适配：usesCleartextTraffic 弃用与 CT 默认开启](https://juejin.cn/post/7610233341305389099)，恋猫de小郭，2026-02。涵盖 Android 17 中 `usesCleartextTraffic` 的未来弃用计划（建议迁移到 Network Security Config）、Certificate Transparency 默认强制开启、`USE_LOOPBACK_INTERFACE` 本地网络保护等网络安全相关变更
+- [Android 17 behavior changes](https://developer.android.com/about/versions/17/behavior-changes-17)：ECH 与 targetSdk 37 的 CT 默认行为。
+- [Network Security Configuration](https://developer.android.com/privacy-and-security/security-config)：明文、信任锚、CT、ECH 和证书固定配置。
+- [Android Certificate Transparency Policy](https://developer.android.com/privacy-and-security/certificate-transparency-policy)：SCT 数量、日志状态和运营者要求。
+- [Android 10 TLS 1.3](https://developer.android.com/about/versions/10/features#tls-1.3)：TLS 1.3 默认启用及平台 0-RTT 边界。
+- [Android HPKE package](https://developer.android.com/reference/android/crypto/hpke/package-summary)、[Hpke](https://developer.android.com/reference/android/crypto/hpke/Hpke) 与 [HpkeSpi](https://developer.android.com/reference/android/crypto/hpke/HpkeSpi)：API 35/37 的接口层次与 base mode 限制。
+- [AOSP Conscrypt `SSLParametersImpl.java`](https://android.googlesource.com/platform/external/conscrypt/+/android-17.0.0_r1/common/src/main/java/org/conscrypt/SSLParametersImpl.java) 与 [`Platform.java`](https://android.googlesource.com/platform/external/conscrypt/+/android-17.0.0_r1/platform/src/main/java/org/conscrypt/Platform.java)：Android 17 ECH 策略映射与配置不匹配异常。
+- [AOSP DnsResolver `PrivateDnsConfiguration.cpp`](https://android.googlesource.com/platform/packages/modules/DnsResolver/+/android-17.0.0_r1/PrivateDnsConfiguration.cpp)：Android 17 DoT/DoH 实现锚点。
+- [RFC 8446: TLS 1.3](https://www.rfc-editor.org/rfc/rfc8446)、[RFC 9180: HPKE](https://www.rfc-editor.org/rfc/rfc9180)、[RFC 9849: ECH](https://www.rfc-editor.org/rfc/rfc9849)。
+- [OkHttp 5.3 `ConnectionPool.kt`](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/ConnectionPool.kt) 与 [`EventListener.kt`](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt)：连接池默认值和客户端事件边界。
+- [Cronet `QuicOptions.Builder`](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/QuicOptions.Builder.html)：QUIC/TLS 0-RTT 的公开配置面。
