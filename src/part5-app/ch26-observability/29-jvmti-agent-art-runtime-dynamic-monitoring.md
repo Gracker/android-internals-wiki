@@ -1,7 +1,7 @@
 ---
 title: "26.29 JVMTI Agent — ART 运行时动态监控的实验入口与证据边界"
 chapter: "26.29"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [JVMTI, ART, runtime-monitoring, dynamic-instrumentation, profilo, method-tracing]
 related_chapters: ["26.21", "26.23", "26.27", "1.35", "14.1"]
@@ -29,13 +29,13 @@ last_body_apply_at: "2026-07-24T07:15:55+08:00"
 last_body_apply_run_id: "20260724-071534-2a71a09c"
 last_body_apply_source: "source-index:91"
 task2b_state: fixed
-task6_state: reworked
-task9_state: ready-for-review
-pipeline_stage: rework-verified
-reviewed_date: "2026-07-29"
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: finalized
+reviewed_date: "2026-07-30"
 reviewed_by: hermes-aiw-review-finalize-apply
-last_review_finalize_at: "2026-07-29T14:11:14+08:00"
-last_review_finalize_run_id: "20260729-141114-2b90f77e"
+last_review_finalize_at: "2026-07-30T14:10:00+08:00"
+last_review_finalize_run_id: "20260730-140532-12094eb9"
 last_rework_at: "2026-07-29T14:25:42+08:00"
 last_rework_run_id: "20260729-142542-rework-afd64006"
 rework_resolution: "第四轮 rework：从本卷已验证章节 [1.35][14.1][26.23] 引入 AOSP android-17.0.0_r1 源码级 JVMTI 交叉引用（events.cc / deopt_manager.cc / ti_redefine.cc / instrumentation.h），解决唯一来源为 Android CLI 博文的问题；CLI 材料降级为实验工具节；标题保持但副标题已明确为实验入口与证据边界。confidence 从 low 提升至 medium。"
@@ -160,6 +160,22 @@ ART Instrumentation 子系统（`art/runtime/instrumentation.h`）的 `Instrumen
 
 ## 复查结论
 
+> **第五轮 review-finalize（2026-07-30）：`rework-verified` → `finalized`**
+
+本轮深度复核逐项核验了章节交叉引用与源码一致性，全部通过，推进为 finalized。
+
+核验结论：
+
+1. **事件→deopt 映射表**（line 71-76）：与 [1.35] line 215-219 完全一致——breakpoint/exception/method-entry-exit 为 limited；exception-catch 全局监听为 full deopt；field access/modification、single-step、frame-pop、force-early-return 有目标线程→线程级、无目标线程→full deopt；class load/compiled method load/GC 不要求 deopt。
+2. **DeoptManager 三种作用域**（line 84-92）：与 [1.35] line 187-213 一致——`kInstrumentNothing` / `kInstrumentWithEntryExitHooks` / `kInstrumentWithInterpreter`，方法级/线程级/全局 deopt 机制。
+3. **RedefineClasses**（line 96-101）：与 [1.35] line 239-250 一致——非结构性 vs 结构性 redefinition，`InvalidateAllCompiledCode()`。
+4. **Agent 注入路径**（line 63-65）：与 [14.1] line 169/173 一致——`libperfa.so` → `/data/local/tmp/perfd/perfd` → `am attach-agent`，`SupportLevel.kt:39-46` profileable 约束。
+5. **InstrumentationListener 回调**（line 113）：与 [26.23] line 57-60 一致——`MethodEntered` / `MethodExited` / `MethodUnwind`。
+6. **版本边界**：所有结论限定 android-17.0.0_r1 / API 37；CLI 示例 `platforms/android-34` 明确标注不扩大版本边界。
+7. **来源结构**：6 个 AOSP/official 源码 + 1 个 article 材料分层标注，article 材料正确降级为"实验准备工具"节。
+
+置信度从 medium 评估后维持——交叉引用章节 [1.35] (confidence: high) 和 [14.1] (confidence: high) 均已 finalized/verified，可充分支撑本章源码级结论。Android CLI 实验工具节作为流程入口参考，不承担运行时机制断言。剩余 5 项后续源码实测清单诚实标注了需独立验证的边界（`Debug.attachAgent` 权限模型、`Agent_OnLoad/OnUnload` 生命周期、TagObject 等），不影响已确立的框架性结论的正确性。
+
 > **第四轮 rework（2026-07-29）：`needs-rework` → `rework-verified`**
 
 本次 rework 的核心修复：从本卷已验证章节 [1.35][14.1][26.23] 引入 AOSP `android-17.0.0_r1` 源码级 JVMTI 交叉引用，解决了前三轮复核中"唯一来源为 Android CLI 博文，无法支撑源码级结论"的问题。
@@ -171,7 +187,7 @@ ART Instrumentation 子系统（`art/runtime/instrumentation.h`）的 `Instrumen
 3. **后续源码实测清单更新**：标注每项已通过交叉引用建立的结论范围和仍需独立实测的边界。
 4. **选型对比表**：新增 JVMTI / 字节码插桩 / XTrace 三方选型表，交叉引用 [26.21][26.23]。
 
-剩余风险：
+剩余风险（维持追踪）：
 
 - 本章 JVMTI 语义全部来自对本卷其他章节的交叉引用，尚未在本章内部独立进行 AOSP 源码逐行核验和端到端实测。若引用章节被修改，本章结论受影响。
 - TagObject/GetObjectsWithTags 对象标记能力的具体实现边界未在任何已验证章节中展开。

@@ -55,7 +55,13 @@ task6_reviewed_by: "openclaw-task6"
 last_task9_autofix_at: "2026-05-29"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-06
-last_task6_audit: "2026-07-11"
+last_task6_audit: 2026-07-11
+last_verified: 2026-07-30
+last_verified_against: "android-17.0.0_r1 (HardwareBufferRenderer.java, SurfaceControl.java, surface_control.h, HardwareBuffer.java)"
+confidence: high
+last_idle_audit_at: "2026-07-30T14:36:00+08:00"
+last_idle_audit_run_id: "20260730-143536-idle-audit-5b58c196"
+last_idle_audit_result: "pass-frontmatter-fix"
 ---
 # Hardware Buffer Renderer
 
