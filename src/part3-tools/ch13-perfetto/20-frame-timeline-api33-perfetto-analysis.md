@@ -30,335 +30,370 @@ sources:
 
 # 13.20 Frame Timeline API 33 Perfetto 深度分析：Expected vs Actual Timeline
 
-FrameTimeline 是 Android 12 引入、Android 13 对应用层开放 API 的帧级性能诊断能力。它回答一个核心问题：**某一帧是"按预期完成"还是"超时了"，如果超时，责任在 App、SurfaceFlinger、还是显示硬件。**
+FrameTimeline 把调度预测、应用出帧、SurfaceFlinger 合成和显示提交放到同一组帧身份上，适合回答三个问题：哪一帧偏离了预测、偏差发生在应用侧还是显示合成侧、下一步应查看哪条线程或 buffer 路径。
 
-本节聚焦 Perfetto 中 Frame Timeline 数据源的可视化分析方法论——如何读 Expected / Actual 两条时间线 Track、如何用颜色编码做 jank 归因、如何通过 FrameData API 和 SQL 查询定位问题帧。FrameTimeline 的内部数据结构（SurfaceFrame、TokenManager、JankClassificationThresholds）详见 §2.32；Buffer 级事件追踪（FrameTracer）详见 §13.19；CUJ 场景级聚合分析详见 §13.14。
+本节的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`。FrameTimeline trace 数据源从 Android 12 / API 31 起可用；标题中的 API 33 指 `Choreographer.VsyncCallback`、`FrameData` 与 `FrameTimeline` 公共 API 的引入版本。涉及 dma-buf、sync_file 或 dma-fence 时，内核锚点固定为 `android17-6.18-2026-06_r6`。SQL 按 Perfetto v57.2 的内置表验证。
 
-## 要点
+FrameTimeline 的内部对象与分类流程见 §2.32，buffer 阶段事件见 §13.19，CUJ 聚合见 §13.14。本文集中处理 Expected/Actual 语义、API 33 回调、采集配置和可执行 SQL。
 
-### 🔹 Expected Timeline 与 Actual Timeline 的物理含义
+## 先分清两类帧
 
-FrameTimeline 在 Perfetto 中产出的核心数据是两条并排的 Track：**Expected Timeline** 和 **Actual Timeline**。理解它们各自度量什么，是 jank 诊断的起点。
+FrameTimeline 同时记录应用的 SurfaceFrame 和 SurfaceFlinger 的 DisplayFrame：
 
-**Expected Timeline** 记录的是系统为应用分配的帧时间窗口。每个 slice 的起始时间对应 Choreographer 回调的预期调度时刻，结束时间对应预期完成渲染的时刻。这个"预期"不是简单的 VSync-app 时刻——它由 SurfaceFlinger 的 VSyncPredictor 综合以下因素计算得出：
+| 对象 | `surface_frame_token` | `display_frame_token` | 代表什么 |
+| --- | ---: | ---: | --- |
+| 应用 SurfaceFrame | 非 0 | 非 0 | 某进程向一个 layer 提交的一帧 |
+| SF DisplayFrame | 0 | 非 0 | SurfaceFlinger 组合后提交给某个 display 的一帧 |
 
-- **VSync offset**：VSYNC-sf 与 VSYNC-app 之间的相位差（典型值 1-3ms），决定了 App 和 SF 各自的可用工作时间窗
-- **SurfaceFlinger 合成时间预算**：SF 需要在 VSYNC-sf 之前完成合成准备工作
-- **Display 显示延迟**：从 SF 提交到像素实际出现在屏幕上的时间
+一个 DisplayFrame 可以组合多个进程、多个 layer 的 SurfaceFrame，因此 `display_frame_token` 在应用行上天然是多对一关系。它适合从应用帧追到显示帧，不适合直接连接应用 Expected 与应用 Actual；后一种连接要使用同一 `upid` 下的 `surface_frame_token`。
 
-三者的叠加构成了 Expected Timeline slice 的起止边界。因此 Expected Timeline slice 的起点与 VSYNC-app 信号时刻之间存在可观测的时间差——这个差值就是 VSync offset 加上 SF 合成预算。
+标准 HWUI App Window 的 SurfaceFrame 数据最完整。SurfaceView 由独立 Producer 和独立 Surface 出帧，Perfetto 官方文档仍将其列为 FrameTimeline 不支持的路径。Camera、Video、游戏 Surface、WebView overlay 和跨进程嵌入也要先确认 Producer 与 layer，不能拿宿主窗口的 token 代替独立 Surface 的帧身份。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.h:83-94; perfetto.dev/docs/data-sources/frametimeline]
+## Expected 与 Actual 各自量什么
 
-**Actual Timeline** 记录的是应用实际完成帧渲染（含 GPU 工作）并发送给 SurfaceFlinger 的真实耗时。Actual Timeline slice 的结束时间取 `max(gpu_completion_time, post_time)`——也就是说，它等待 GPU 真正完成渲染后才标记帧结束。这是 Actual Timeline 与 Choreographer#doFrame slice 的关键区别：doFrame 只反映 CPU 侧的回调执行耗时，而 Actual Timeline 包含了 GPU 异步渲染的等待时间。
+每个有可见帧的应用进程会得到 Expected Timeline 和 Actual Timeline，SurfaceFlinger 也有自己的一对 track。
 
-两条 Timeline 的偏差即为 jank：当 Actual Timeline slice 的结束时间超出 Expected Timeline slice 的边界，这一帧就是 jank 帧。
+### 应用侧
 
-### 🔹 Perfetto 中的三条关键 Track
+- Expected slice 的起点是 Choreographer 回调被计划运行的时刻，slice 表示系统给应用准备该帧的时间窗口。
+- Actual slice 的起点是 `Choreographer#doFrame` 或 `AChoreographer_vsyncCallback` 开始运行的时刻。
+- Actual slice 的终点取 GPU 完成时间与 post time 的较晚者。post time 表示应用帧发给 SurfaceFlinger 的时刻。
 
-打开一份包含 Frame Timeline 数据源的 Perfetto trace，需要在 UI 中定位三条 Track 才能完成帧级诊断：
+`Choreographer#doFrame` 只覆盖主线程回调区间。Actual SurfaceFrame 还考虑异步 GPU 工作和提交时刻，所以短 `doFrame` 不能证明该帧按时 ready。Android 17 的 trace 名为 `Choreographer#doFrame <vsyncId>`，例如 `Choreographer#doFrame 12345`；方括号形式不符合该 tag 的源码。
 
-| Track 名称 | 位置 | 回答的问题 |
-|------------|------|-----------|
-| **Expected Timeline** | SurfaceFlinger 进程下 | 系统为每帧分配的时间窗口是什么 |
-| **Actual Timeline** | SurfaceFlinger 进程下 | 每帧实际花了多长时间 |
-| **Choreographer#doFrame** | App 主线程 Track 中 | App 侧每帧的 CPU 执行耗时是多少 |
+### SurfaceFlinger 侧
 
-三者按时间轴对齐后，诊断逻辑如下：
+SF Expected slice 表示当前 DisplayFrame 的预测工作窗口。SF Actual slice 从 SF 主线程开始处理该帧，覆盖 Composer/Display HAL 相关路径，终点落在 Android 显示栈报告的 on-screen update 边界。
 
-1. 看 **Expected Timeline**：帧的预期开始和结束时刻，确认刷新率是否正确（90Hz 设备的 Expected slice 宽度应约 11.1ms）
-2. 看 **Actual Timeline**：帧的实际耗时 slice 是否超出 Expected 边界
-3. 看 **Choreographer#doFrame**：如果 Actual 超时，进一步确认 CPU 侧 doFrame 耗时是否合理——doFrame 快但 Actual 慢说明瓶颈在 GPU 异步渲染；doFrame 本身慢说明 CPU 侧（measure/layout/draw）是瓶颈
+这个 present 边界可以用于分析 Android 显示管线，不能证明面板像素已经完成扫描和光学响应。触摸到光子的端到端测量仍需输入时间戳、显示链路和外部光学设备。
 
-一个常见误区是只看 Choreographer#doFrame 就下结论。doFrame 在主线程上只是一个 CPU 侧的 slice，它结束时 GPU 可能还在异步渲染。如果只看 doFrame 耗时正常就判定"没有 jank"，会漏掉 GPU 渲染超时导致的帧。Actual Timeline 的价值正在于它包含了 GPU 完成时间。
+### 不能把 Expected 宽度当刷新周期
 
-> Choreographer#doFrame slice 中还携带 vsyncId 参数（如 `Choreographer#doFrame [vsyncId=12345]`），可以用来与 Expected/Actual Timeline 中的对应帧精确对齐。
+Expected slice 的宽度来自该回调的调度预算。官方示例中应用 Expected slice 约 20.5 ms，SF Expected slice 约 10.5 ms；它们都不能用“90 Hz 就应固定为 11.1 ms”校验。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java — doFrame 回调链; perfetto.dev/docs/data-sources/frametimeline]
+Android 17 的 `VSyncDispatchTimerQueueEntry::schedule()` 以预测的目标 VSYNC 为锚点，并使用 `workDuration`、`readyDuration` 计算 wakeup 与 ready 时刻：
 
-### 🔹 颜色编码规则与 Jank 归因
+```text
+nextReadyTime  = nextVsyncTime - readyDuration
+nextWakeupTime = nextReadyTime - workDuration
+```
 
-Perfetto UI 中 Expected 和 Actual Timeline 的 slice 使用颜色编码标识 jank 类型。这套颜色编码是 FrameTimeline 在 SurfaceFlinger 侧计算后写入 trace 的，不需要开发者手动判定。
+这两行用于说明 Android 17 调度窗口的计算方向。固定的 “VSYNC-app 提前 1～3 ms、再叠加 SF 预算” 模型无法描述动态刷新率、不同 work budget、重同步或 stuffing 状态，也不应拿来反推 Expected slice。
 
-| 颜色 | 含义 | 判定条件 |
-|------|------|---------|
-| 🟢 绿色 | 帧按时完成，无 jank | Actual 在 Expected 边界内完成 |
-| 🔴 红色 | App 导致 jank | Actual 超出 Expected，且 `jank_type` 包含 `AppDeadlineMissed` 或 `AppResyncedJitter` |
-| 🟡 黄色 | SurfaceFlinger 导致 jank | Actual 超出 Expected，且 `jank_type` 包含 `SurfaceFlingerCpuDeadlineMissed` / `SurfaceFlingerGpuDeadlineMissed` / `SurfaceFlingerScheduling` |
-| 灰色 | 非 jank 的掉帧或特殊状态 | `Dropped`、`DisplayHAL`、`PredictionError` 等 |
+## 三个字段要一起看
 
-红色的判定依据来自 FrameTimeline 的 `isSelfJunky()` 检查（§2.32）：只有 `AppDeadlineMissed | AppResyncedJitter | Unknown` 三种 jank 类型被视为 App 自身造成的 jank。SurfaceFlinger 调度延迟、HWC 超时、预测误差等原因导致的掉帧不会标记为红色——它们的责任不在 App。
+Actual slice 的详情至少包含以下三组独立信息：
 
-这意味着一个重要的实践结论：**看到 Actual Timeline 中有红色 slice，App 开发者需要关注；看到黄色 slice，问题出在系统侧（可能是 HWC overlay 不足、SF 合成超时或设备调度问题），App 侧优化无法解决。**
+| 字段 | 问题 | 常见值 |
+| --- | --- | --- |
+| `present_type` | 该帧何时 present | `Early Present`、`On-time Present`、`Late Present`、`Dropped Frame` |
+| `on_time_finish` | 生产该帧的工作是否按时结束 | 0 或 1 |
+| `jank_type` / `jank_tag` | FrameTimeline 的原因位与归责结果 | `App Deadline Missed`、`Buffer Stuffing`、`Self Jank`、`Other Jank` 等 |
 
-[已验证: AOSP android-17.0.0_r1, frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.cpp:562-573 — isSelfJanky() 判定逻辑]
+时间轴上的偏差适合发现候选帧，分类字段负责解释候选帧。`on_time_finish = 0` 只表示工作超出 ready deadline，不能充当全部 jank 的过滤条件。Buffer Stuffing 常见 `on_time_finish = 1`、`Late Present`：应用生产工作按时结束，队列中积压的 buffer 仍使输入延迟增加。
 
-### 🔹 FrameData API 核心方法
+Perfetto UI 的颜色按归责和状态编码：
 
-Android 13（API 33）在 Choreographer 中引入了 `FrameData` 内部类，向应用层暴露 FrameTimeline 的关键时间戳。这是应用层第一次能在代码中直接获取帧调度信息，而不依赖 Perfetto trace 的事后分析。
+| 颜色 | UI 含义 | 判读 |
+| --- | --- | --- |
+| 绿色 | good frame | 没有检测到 jank |
+| 浅绿色 | high-latency state | cadence 可能平滑，帧持续晚 present，输入延迟增加 |
+| 红色 | self jank | 当前 slice 所属进程被判为原因 |
+| 黄色 | other jank | 只用于应用 track；当前应用帧受 SF/display 侧问题影响 |
+| 蓝色 | dropped frame | 应用状态更新未及时交给 RenderThread，或 SF 选择较新的显示帧 |
 
-`Choreographer.FrameData` 包含四个核心方法：
+Android 17 `SurfaceFrame::isSelfJanky()` 将 `AppDeadlineMissed`、`AppResyncedJitter` 和 `Unknown` 视为应用自身 jank。SF scheduling、SF CPU/GPU deadline、Display HAL 和 Prediction Error 会形成系统侧原因。黄色只说明当前帧的归责结果；复杂 layer、GPU 负载或 composition 变化仍可能由应用行为触发，排障时要继续检查 flow、layer 和系统负载。
 
-| 方法 | 返回值 | 含义 |
-|------|--------|------|
-| `getFrameTimeNanos()` | `long` | 当前帧的 VSync 时间戳（即 frameTimeNanos，与 `doFrame(long frameTimeNanos)` 参数一致） |
-| `getLastFrameTimeNanos()` | `long` | 上一帧的 VSync 时间戳 |
-| `getIntervalNanos()` | `long` | 帧间隔（由当前刷新率决定，60Hz 约 16.6ms，120Hz 约 8.3ms） |
-| `getDeadlineNanos()` | `long` | 帧截止时间（帧必须在此时间前完成 CPU 侧工作） |
+`jank_type` 是 bitmask 的字符串投影，一帧可以同时带多个原因。Perfetto v57.2 还提供 `jank_tag`，把结果归并为 `Self Jank`、`Other Jank`、`Buffer Stuffing`、`SurfaceFlinger Stuffing`、`Dropped Frame`、`Non-perceivable Jank` 等稳定类别，做统计时比字符串包含判断更安全。
 
-`getDeadlineNanos()` 是其中最有诊断价值的方法。它返回的时间戳表示当前帧的 CPU 侧工作截止时刻——超过这个时间，帧就有 jank 风险。Compose 的 PausableComposition 正是基于 `FrameData.deadlineNanos` 做暂停判定：当 deadline 临近时暂停 Composition，让出主线程给当前帧的绘制任务（详见 §2.28）。
+## API 33 的 `FrameData` 用法
 
-获取 FrameData 的方式：
+API 33 新增 `Choreographer.postVsyncCallback(VsyncCallback)`。这个一次性回调接收 `FrameData`，公开方法如下：
+
+| 类型 | 方法 | 返回内容 |
+| --- | --- | --- |
+| `FrameData` | `getFrameTimeNanos()` | 当前回调使用的 frame time |
+| `FrameData` | `getFrameTimelines()` | 按时间排序的候选 `FrameTimeline[]` |
+| `FrameData` | `getPreferredFrameTimeline()` | 平台当前选中的候选 timeline |
+| `FrameTimeline` | `getVsyncId()` | 与 HWUI、SurfaceFlinger trace 关联的 VSYNC id |
+| `FrameTimeline` | `getExpectedPresentationTimeNanos()` | 预测 present 时间 |
+| `FrameTimeline` | `getDeadlineNanos()` | 该候选帧需要 ready 的时间 |
+
+`FrameData.getLastFrameTimeNanos()`、`FrameData.getIntervalNanos()`、`Choreographer.getFrameData()` 都不是公共 API。deadline 也不是“主线程 CPU 工作结束时间”；应用的 buffer 与 GPU 工作需要在这个 ready 边界前满足消费条件。
+
+下面的 Java 片段演示如何在 API 33+ 复制一次回调中的标量值。
 
 ```java
-// Java — 在 Choreographer.FrameCallback 中获取
-choreographer.postFrameCallback(new Choreographer.FrameCallback() {
-    @Override
-    public void doFrame(long frameTimeNanos) {
-        // API 33+ 可通过 FrameTimeline 获取扩展信息
-        if (Build.VERSION.SDK_INT >= 33) {
-            // FrameData 通过 Choreographer 实例获取
-            // 实际 API 路径：Choreographer.getFrameData() (API 33+, hidden 到 System API)
-        }
-    }
-});
-```
+if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    Choreographer choreographer = Choreographer.getInstance();
+    choreographer.postVsyncCallback(frameData -> {
+        Choreographer.FrameTimeline preferred =
+                frameData.getPreferredFrameTimeline();
 
-```kotlin
-// Kotlin — 通过 FrameTimeline 获取多帧预测
-if (Build.VERSION.SDK_INT >= 33) {
-    val frameTimelines = choreographer.frameTimelines // List<FrameTimeline>
-    val preferred = choreographer.preferredFrameTimeline // 当前最优帧调度计划
-    // preferred.frameTimeNanos / preferred.deadlineNanos / preferred.expectedPresentationTimeNanos
+        long frameTimeNanos = frameData.getFrameTimeNanos();
+        long vsyncId = preferred.getVsyncId();
+        long deadlineNanos = preferred.getDeadlineNanos();
+        long expectedPresentNanos =
+                preferred.getExpectedPresentationTimeNanos();
+
+        recordFramePlan(
+                frameTimeNanos,
+                vsyncId,
+                deadlineNanos,
+                expectedPresentNanos);
+    });
 }
 ```
 
-`getFrameTimelines()` 返回系统支持的所有帧时间线列表（Android 17 中 `FRAME_TIMELINES_CAPACITY = 7`），`getPreferredFrameTimeline()` 返回系统推荐的最优帧调度计划。多帧时间线预测能力使得 App 可以提前知道未来几帧的调度计划，做资源预加载或自适应渲染决策。
+这段代码需要在带 `Looper` 的线程调用，回调会在 `Choreographer` 所绑定的同一线程执行。`FrameData` 与其中的 `FrameTimeline` 只在 `onVsync` 执行期间有效；Android 17 源码在回调外访问时会抛出 `IllegalStateException`。需要异步记录时，只复制 `long` 等标量值。`postVsyncCallback()` 执行一次后会移除，连续观测需要由调用方再次注册，并控制日志与分配成本。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java — FrameData 内部类定义; §2.32 FrameTimeline 数据结构]
+Android 17 内部 `DisplayEventReceiver.VsyncEventData` 当前为候选数组预留 7 个槽位，但 `FrameData.update()` 会按事件携带的 `frameTimelinesLength` 重新分配数组。公共 API 没有承诺固定返回 7 项，业务代码应读取数组长度并使用 preferred 项。
 
-### 🔹 FrameTimeline 数据源在 Perfetto 中的配置
+这些 API 暴露的是本次回调可选的调度计划，不能替代 FrameTimeline trace。应用进程无法仅凭 `FrameData` 得到最终 present、SF 分类、其他 layer 或 Display HAL 结果。
 
-FrameTimeline 数据通过 Perfetto 数据源 `android.surfaceflinger.frametimeline` 发射。要在一个 Perfetto trace 中获得 Frame Timeline 数据，需要确保 trace 配置中包含该数据源。
+## 正确启用数据源
 
-**方法一：通过 atrace 命令快速采集**（适合开发调试）
+FrameTimeline 是原生 Perfetto 数据源 `android.surfaceflinger.frametimeline`。`gfx`、`view` 属于 atrace category，它们能补充 `Choreographer#doFrame`、`DrawFrame` 和图形 slice，却不会隐式打开 FrameTimeline 数据源。
 
-```bash
-# 基础 atrace 配置：包含 FrameTimeline 必需的 category
-adb shell atrace -z -b 32768 \
-  sched freq idle am wm gfx view binder_driver hal \
-  -t 10 -o /sdcard/trace.trace
-```
+下面的最小配置同时采集 FrameTimeline、FrameTracer、应用图形 slice 和线程调度信息。
 
-其中 `gfx` 和 `view` 是 FrameTimeline 数据的关键 atrace category。`gfx` 启用 SurfaceFlinger 侧的 FrameTimeline track 输出；`view` 启用 App 侧的 Choreographer#doFrame slice。
-
-**方法二：通过 perfetto 命令行精确配置**（适合生产环境精确采集）
-
-```bash
-# 使用 perfetto 命令行，通过 config 文件精确控制数据源
-adb shell perfetto -o /data/misc/perfetto-traces/trace.perfetto-trace -t 15s \
-  sched freq idle am wm gfx view binder_driver hal
-```
-
-**方法三：通过 Perfetto config 文件（推荐生产使用）**
-
-```protobuf
-# perfetto-config.pbtxt
+```textproto
 duration_ms: 15000
-buffers { size_kb: 65536 }
-
-# FrameTimeline 数据源（SurfaceFlinger 侧）
-data_sources {
-  config {
-    name: "android.surfaceflinger.frametimeline"
-    target_buffer: 0
-  }
+buffers {
+  size_kb: 65536
+  fill_policy: RING_BUFFER
 }
 
-# FrameTracer 数据源（Buffer 级事件，可选但推荐）
 data_sources {
-  config {
-    name: "android.surfaceflinger.frame"
-    target_buffer: 0
-  }
+  config { name: "android.surfaceflinger.frametimeline" }
 }
-
-# atrace categories（App 侧 Choreographer#doFrame）
+data_sources {
+  config { name: "android.surfaceflinger.frame" }
+}
 data_sources {
   config {
     name: "linux.ftrace"
     ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_waking"
+      ftrace_events: "power/cpu_frequency"
       atrace_categories: "view"
       atrace_categories: "gfx"
-      atrace_categories: "sched"
-      atrace_apps: "*"
+      atrace_categories: "wm"
+      atrace_apps: "com.example.app"
     }
   }
 }
 ```
 
-**采集注意事项**：
+`android.surfaceflinger.frame` 为可选的 buffer 阶段数据源，见 §13.19。定位单个应用时应把 `atrace_apps` 换成目标包名；全局 `*` 会增加 ftrace 体积。生产问题还需按假设加入 GPU counter、binder、memory 或 power 数据，避免无关数据挤占环形缓冲区。
 
-- FrameTimeline 数据源的输出在 Perfetto UI 中显示为 SurfaceFlinger 进程下的 Expected Timeline 和 Actual Timeline Track
-- 如果 trace 中缺少这两条 Track，首先检查设备是否 Android 12+（FrameTimeline 从 Android 12 开始可用），以及 atrace/perfetto 配置是否包含 `gfx` category
-- `android.surfaceflinger.frametimeline` 和 `android.surfaceflinger.frame` 是两个独立数据源（详见 §13.19），前者回答"帧是否按时"，后者回答"buffer 卡在哪个阶段"
+下面的命令使用文本配置采集并拉回 trace。
 
-[已验证: AOSP android-17.0.0_r1; perfetto.dev/docs/data-sources/frametimeline]
-
-### 🔹 Expected Timeline 与 VSYNC-app 的时间差分析
-
-在 Perfetto trace 中仔细观察会发现：Expected Timeline slice 的起始时间与 VSYNC-app 信号时刻并不重合，两者之间存在一个可观测的时间差。理解这个时间差的来源，是正确解读 FrameTimeline 数据的关键。
-
-VSYNC-app 是 App 收到 VSync 信号并开始执行 doFrame 回调的时刻。Expected Timeline 的起始时间则是一个**经过 VSyncPredictor 优化计算后的调度计划时刻**，它考虑了整个渲染管线的时间预算分配：
-
-```text
-VSync 信号周期 (T)
-├── VSYNC-app offset ──→ App 可用工作时间窗
-│   └── App 在此窗口内完成 measure/layout/draw + GPU 提交
-├── VSYNC-sf offset ──→ SurfaceFlinger 可用工作时间窗
-│   └── SF 在此窗口内完成 layer 合成准备
-└── Display latency ──→ 像素实际出现在屏幕上
-
-Expected Timeline = [VSYNC-app, VSYNC-app + App工作预算 + SF合成预算 + Display延迟]
+```bash
+adb push frame_timeline.pbtxt /data/local/tmp/
+adb shell perfetto --txt \
+  -c /data/local/tmp/frame_timeline.pbtxt \
+  -o /data/misc/perfetto-traces/frame_timeline.perfetto-trace
+adb pull /data/misc/perfetto-traces/frame_timeline.perfetto-trace
 ```
 
-具体来说，Expected Timeline 的起始时间对应 `VsyncEventData.preferredFrameTimeline().vsyncId` 映射的时间戳，而非原始的 `frameTimeNanos`。在 Android 17 中，Choreographer 的多帧时间线预测架构（`FRAME_TIMELINES_CAPACITY = 7`）支持同时维护 7 条候选帧时间线，`getPreferredFrameTimeline()` 返回其中最优的一条。
+采集结束后先在 Trace Processor 中确认两张 FrameTimeline 表有数据。若 UI 缺少应用 Expected/Actual track，依次检查平台是否为 Android 12+、原生数据源是否启用、目标应用在采集区间内是否产生可见帧，以及目标路径是否属于独立 Surface 或未覆盖的 SurfaceView。
 
-**这个时间差的实际影响**：
+## UI 排障顺序
 
-1. 不能用 `SystemClock.nanoTime() - frameTimeNanos` 来判断帧是否超时——正确的参照是 `FrameData.getDeadlineNanos()` 而非 `frameTimeNanos + frameInterval`
-2. 高刷新率设备（120Hz/144Hz）的 VSync offset 更小，App 可用工作窗口更窄，Expected 与 Actual 的偏差容忍度更低
-3. Buffer Stuffing Recovery（Android 16 引入，详见 §2.25）会在 buffer 等待时对 FrameTimeline 施加负偏移，进一步改变 Expected Timeline 的节拍
+一次可靠的帧级分析可以按下面的顺序进行：
 
-### 🔹 Perfetto SQL 查询：从 Frame Timeline 提取 jank 数据
+1. 在目标进程下选中红色、黄色、浅绿色或蓝色 Actual slice，记录 `surface_frame_token`、`display_frame_token`、layer、`jank_tag`、`jank_type`、`present_type` 和 `on_time_finish`。
+2. 用 `surface_frame_token` 找同进程的 Expected slice，比较计划起点、实际回调起点、ready 窗口和 Actual 终点。
+3. 沿 UI flow 跟到 SurfaceFlinger 的 DisplayFrame。一个显示帧可能连接多条应用 layer，不要把同 token 的所有行当成重复数据。
+4. `Self Jank` 时检查同一 VSYNC id 的 `Choreographer#doFrame <id>`、RenderThread `DrawFrame <id>`、CPU scheduling、GPU 与 acquire fence。
+5. `Other Jank` 时检查 SF actual track、composition type、RenderEngine、HWC/Display HAL、刷新率和 mode/power change。
+6. `Buffer Stuffing` 时检查 Producer cadence、连续 late present、dequeue 阻塞和 FrameTracer phase；`on_time_finish = 1` 不能排除这类高延迟状态。
 
-Perfetto UI 的可视化适合定性分析（"有没有 jank"），SQL 查询适合定量分析（"多少帧 jank 了，各是什么类型"）。FrameTimeline 数据在 Trace Processor 中存储在两张核心表中：`expected_frame_timeline_slice` 和 `actual_frame_timeline_slice`。
+`doFrame` 较长只能说明主线程回调占用明显。`doFrame` 较短而 Actual 较长时，RenderThread、GPU、提交等待或 Producer/SF 边界都仍在候选范围内。根因需要下一层证据闭合。
 
-**查询 1：列出所有 jank 帧**
+## Perfetto SQL：按正确身份对齐
+
+`expected_frame_timeline_slice` 与 `actual_frame_timeline_slice` 是 Trace Processor 的内置表，查询它们不需要 `INCLUDE PERFETTO MODULE android.frames.timeline`。Perfetto v57.2 的表结构包含 `name`、两个 token、`upid`、`layer_name`、`present_type`、`on_time_finish`、`jank_type` 与 `jank_tag`；不存在 `slice_name` 列。
+
+### 查询 1：逐帧比较应用 Expected 与 Actual
+
+下面的查询限定应用 SurfaceFrame，并用 `upid + surface_frame_token` 对齐两条 timeline。
 
 ```sql
-INCLUDE PERFETTO MODULE android.frames.timeline;
-
+WITH app_actual AS (
+  SELECT
+    a.*,
+    p.name AS process_name
+  FROM actual_frame_timeline_slice AS a
+  LEFT JOIN process AS p USING (upid)
+  WHERE a.surface_frame_token != 0
+),
+app_expected AS (
+  SELECT
+    upid,
+    surface_frame_token,
+    ts AS expected_ts,
+    dur AS expected_dur
+  FROM expected_frame_timeline_slice
+  WHERE surface_frame_token != 0
+)
 SELECT
-  actual.slice_name,
-  CAST((actual.ts - trace_start()) / 1e6 AS INTEGER) AS time_ms,
-  CAST(actual.dur / 1e6 AS FLOAT) AS actual_ms,
-  CAST(expected.dur / 1e6 AS FLOAT) AS expected_ms,
-  actual.on_time_finish,
-  actual.jank_type
-FROM actual_frame_timeline_slice AS actual
-JOIN expected_frame_timeline_slice AS expected
-  ON actual.display_frame_token = expected.display_frame_token
-WHERE actual.on_time_finish = 0
-ORDER BY actual.ts
-LIMIT 50;
+  a.process_name,
+  a.layer_name,
+  a.surface_frame_token,
+  a.display_frame_token,
+  a.ts / 1e6 AS actual_start_ms,
+  a.dur / 1e6 AS actual_dur_ms,
+  e.expected_ts / 1e6 AS expected_start_ms,
+  e.expected_dur / 1e6 AS expected_dur_ms,
+  (a.ts + a.dur - e.expected_ts - e.expected_dur) / 1e6
+    AS end_delta_ms,
+  a.present_type,
+  a.on_time_finish,
+  a.jank_tag,
+  a.jank_type
+FROM app_actual AS a
+JOIN app_expected AS e
+  USING (upid, surface_frame_token)
+WHERE a.process_name = 'com.example.app'
+ORDER BY a.ts;
 ```
 
-`on_time_finish = 0` 表示帧未按时完成（jank 帧）。`display_frame_token` 是连接 Expected 和 Actual 的外键——同一个 frame token 在两条 timeline 中各有一个 slice。`jank_type` 是 SurfaceFlinger 写入的 jank 分类字符串。
+`end_delta_ms` 是 Actual 终点相对 Expected 终点的几何偏差，用于排序和定位，不应单独改写成 jank 判定。若同一 token 对应多个 layer，结果会保留多条 Actual 行；这正是 layer 级证据，不能用 `DISTINCT` 隐去。
 
-**查询 2：按 jank 类型统计**
+### 查询 2：按归责、present 与 ready 状态统计
+
+下面的查询保留 Buffer Stuffing、Dropped Frame 和 non-perceivable 状态，不使用 `on_time_finish = 0` 预先删行。
 
 ```sql
-INCLUDE PERFETTO MODULE android.frames.timeline;
-INCLUDE PERFETTO MODULE android.frames.jank_type;
-
 SELECT
-  jank_type,
+  a.jank_tag,
+  a.jank_type,
+  a.present_type,
+  a.on_time_finish,
   COUNT(*) AS frame_count,
-  CAST(AVG(dur / 1e6) AS FLOAT) AS avg_dur_ms,
-  CAST(MAX(dur / 1e6) AS FLOAT) AS max_dur_ms
-FROM actual_frame_timeline_slice
-WHERE on_time_finish = 0
-GROUP BY jank_type
+  AVG(a.dur) / 1e6 AS avg_actual_ms,
+  MAX(a.dur) / 1e6 AS max_actual_ms
+FROM actual_frame_timeline_slice AS a
+LEFT JOIN process AS p USING (upid)
+WHERE a.surface_frame_token != 0
+  AND p.name = 'com.example.app'
+GROUP BY
+  a.jank_tag,
+  a.jank_type,
+  a.present_type,
+  a.on_time_finish
 ORDER BY frame_count DESC;
 ```
 
-`jank_type` 的值与颜色编码的映射关系：包含 `AppDeadlineMissed` 的帧在 UI 中显示为红色；包含 `SurfaceFlingerCpuDeadlineMissed` 或 `SurfaceFlingerGpuDeadlineMissed` 的帧显示为黄色。jank 类型的完整列表和 `isSelfJanky()` 判定逻辑详见 §2.32。
+这份聚合能区分“工作超 deadline”“present 晚”“队列 stuffing”和“归责在其他进程”。`dur` 来自 FrameTimeline 的 Actual slice，不能统一解释为主线程、GPU 或端到端显示耗时。
 
-**查询 3：计算 P50/P90/P99 帧耗时分布**
+### 查询 3：把应用帧连接到 SF DisplayFrame
+
+下面的查询用 `display_frame_token` 追踪应用 SurfaceFrame 对应的 SF DisplayFrame，并通过 SF 行的 `surface_frame_token = 0` 防止连接到其他应用 layer。
 
 ```sql
-INCLUDE PERFETTO MODULE android.frames.timeline;
-
-WITH frame_durations AS (
+WITH app_frame AS (
   SELECT
-    CAST(dur / 1e6 AS FLOAT) AS dur_ms,
-    on_time_finish,
-    jank_type
-  FROM actual_frame_timeline_slice
-  -- 可选：按 layer/进程名过滤
-  -- WHERE slice_name LIKE 'com.example.%'
+    a.*,
+    p.name AS process_name
+  FROM actual_frame_timeline_slice AS a
+  LEFT JOIN process AS p USING (upid)
+  WHERE a.surface_frame_token != 0
+    AND p.name = 'com.example.app'
+),
+display_frame AS (
+  SELECT
+    a.*
+  FROM actual_frame_timeline_slice AS a
+  LEFT JOIN process AS p USING (upid)
+  WHERE a.surface_frame_token = 0
+    AND p.name GLOB '*surfaceflinger'
 )
 SELECT
-  COUNT(*) AS total_frames,
-  SUM(CASE WHEN on_time_finish = 0 THEN 1 ELSE 0 END) AS jank_frames,
-  CAST(SUM(CASE WHEN on_time_finish = 0 THEN 1.0 ELSE 0 END) / COUNT(*) * 100 AS FLOAT) AS jank_rate_pct,
-  APPROX_QUANTILE(dur_ms, 0.5) AS p50_ms,
-  APPROX_QUANTILE(dur_ms, 0.9) AS p90_ms,
-  APPROX_QUANTILE(dur_ms, 0.99) AS p99_ms
-FROM frame_durations;
+  app.surface_frame_token,
+  app.display_frame_token,
+  app.layer_name,
+  app.jank_tag AS app_jank_tag,
+  app.jank_type AS app_jank_type,
+  sf.jank_tag AS sf_jank_tag,
+  sf.jank_type AS sf_jank_type,
+  sf.present_type AS sf_present_type
+FROM app_frame AS app
+LEFT JOIN display_frame AS sf
+  USING (display_frame_token)
+ORDER BY app.ts;
 ```
 
-这张表适合作为帧性能的量化基线：P50 反映典型帧耗时，P90 反映用户体验下限（10% 的帧比这更慢），jank_rate_pct 反映整体流畅度。
+一个 SF DisplayFrame 对应多条应用 SurfaceFrame，查询结果出现相同 `display_frame_token` 属于正常多对一关系。UI flow 还保留时间位置与其他 layer，排查单帧时通常比只看表格直观。
 
-[已验证: Perfetto v54.0 — `android.frames.timeline` / `android.frames.jank_type` 标准库模块]
+## Android 17 的分类边界
 
-## 扩展
+Android 17 `frame_timeline_event.proto` 继续用 bitmask 表示原因，并在 Android 16 固定 tag 的基础上加入四项平台状态：
 
-### 🔸 自定义 Frame Timeline 可视化分析
+| bit | Android 17 枚举 | 诊断含义 |
+| ---: | --- | --- |
+| 4096 | `JANK_APP_RESYNCED_JITTER` | 应用 VSYNC 重同步相关抖动 |
+| 8192 | `JANK_DISPLAY_NOT_ON` | display 未处于 on 状态 |
+| 16384 | `JANK_DISPLAY_MODE_CHANGE_IN_PROGRESS` | 显示模式切换进行中 |
+| 32768 | `JANK_DISPLAY_POWER_MODE_CHANGE_IN_PROGRESS` | 显示电源模式切换进行中 |
 
-Perfetto UI 的 Expected/Actual Timeline Track 适合单次 trace 分析，但在团队协作和持续监控场景下，需要把帧数据导出为结构化报告。
+前三类 display 状态会影响“用户是否能感知”和归责标签，不能全部算进应用 jank rate。Perfetto v57.2 已把 bitmask 投影为 `jank_type`、`jank_tag`、`jank_severity_type` 和 `jank_score`；自动化报告应保存原始类型和工具版本，避免不同 Perfetto 版本的派生字段混在同一基线。
 
-**方法一：Perfetto Trace Processor + Python 脚本**
+Buffer Stuffing 在 Android 17 `FrameTimeline.cpp` 中被列入 non-jank bitmask，用于表达持续晚 present 的高延迟状态。它仍会影响输入延迟和 buffer 可用性，所以性能报告应单独统计，不能与 `No Jank` 合并。
 
-```python
-# 使用 trace_processor Python API 批量提取帧性能数据
-from perfetto.trace_processor import TraceProcessor
+## 出图类型改变证据强度
 
-tp = TraceProcessor(trace='trace.perfetto-trace')
-query = """
-INCLUDE PERFETTO MODULE android.frames.timeline;
+从 `rendering_pipelines` 系列的 Producer、Surface、layer 与 fence 边界出发，FrameTimeline 的证据强度可以这样划分：
 
-SELECT
-  CAST((actual.ts - trace_start()) / 1e6 AS INTEGER) AS time_ms,
-  CAST(actual.dur / 1e6 AS FLOAT) AS actual_ms,
-  actual.on_time_finish,
-  actual.jank_type
-FROM actual_frame_timeline_slice AS actual
-WHERE actual.on_time_finish = 0
-ORDER BY actual.ts
-"""
-df = tp.query(query).as_pandas_dataframe()
-# 导出为 CSV 或接入 Grafana / Power BI
-df.to_csv('jank_report.csv', index=False)
-```
+| 出图路径 | FrameTimeline 主索引 | 补充证据 |
+| --- | --- | --- |
+| 标准 View/Compose App Window | App Window 的 SurfaceFrame token | MainThread、RenderThread、HWUI、GPU、FrameTracer |
+| SurfaceView / 游戏独立 Surface | 先找独立 layer；App Timeline 可能缺失 | Producer 线程、BufferQueue、FrameTracer、GPU |
+| TextureView | 宿主 App Window token | 外部 SurfaceTexture Producer 与宿主合成时序 |
+| Camera / Video Surface | preview/video layer 的 present cadence | HAL、codec、acquire fence；fence 来源未必是 GPU |
+| Tunneled / sideband video | FrameTimeline 可能无法覆盖逐帧 buffer | HWC、HAL、sideband 与显示状态 |
+| WebView / Flutter / 跨进程嵌入 | 区分宿主窗口和独立 overlay | 各进程 layer、flow、buffer 与 composition type |
 
-**方法二：结合 CUJ 标准库做场景级分析**
+`queueBuffer` 返回只代表 Producer 已提交 buffer；acquire fence 决定 Consumer 何时可安全读取。present fence 属于 display/frame，release fence 属于 layer/frame。FrameTimeline 的 present 边界也不能替代 release fence，更不能从 token 推导 BufferQueue frame number。
 
-当需要把 jank 帧关联到具体的用户交互场景（如"列表滚动"、"页面返回"）时，使用 `android.cujs.base` 模块（详见 §13.14）。CUJ 分析会把 jank 帧按交互场景分组，计算每个场景的 weighted jank score——这比单纯的帧数统计更能反映用户体验。
+## 版本边界
 
-注意：`android.cujs.base` 默认仅覆盖 `com.android.*` 和 `com.google.android.*` 进程。第三方 App 需要使用 AndroidX JankStats API 或自定义 atrace marker 扩展（三条路径详见 §13.14）。
+| 平台 | 能力 | 分析影响 |
+| --- | --- | --- |
+| Android 12 / API 31 | FrameTimeline 数据源进入平台 | Expected/Actual track 与两张内置表可用于帧归责 |
+| Android 13 / API 33 | 公共 `VsyncCallback`、`FrameData`、`FrameTimeline` | 应用可在回调内读取候选 deadline、expected present 与 VSYNC id |
+| Android 14～16 / API 34～36 | 公共模型延续，分类和调度实现继续演进 | 固定设备 build、刷新率和 Perfetto 版本后再比较 |
+| Android 17 / API 37 | 本节的平台、源码与 proto 锚点 | 使用动态 work/ready budget、当前 jank bitmask 与 v57.2 表结构 |
 
-### 🔸 与 Compose PausableComposition 的联动分析
+FrameTimeline trace 的最低平台是 Android 12，API 33 只限定应用代码示例。Android 17 之后的行为不在本文结论范围内。
 
-Compose 1.10（2025 年 12 月稳定）将 PausableComposition 设为默认行为。该机制在帧 deadline 临近时暂停 Composition，让出主线程给当前帧的绘制任务。通过 Frame Timeline 可以直接观察 PausableComposition 的效果。
+## 使用边界
 
-**观察方法**：
+- Expected 是调度预测窗口，不是刷新周期的同义词。
+- Actual 应用 slice 覆盖回调起点到 GPU/post 边界，不等于 `doFrame` CPU 时长。
+- `on_time_finish`、`present_type`、`jank_type`、`jank_tag` 要联合判断。
+- `surface_frame_token` 对齐同一应用帧；`display_frame_token` 连接应用帧与显示帧。
+- 一个 display frame 可以组合许多 layer，重复的 display token 不表示重复采样。
+- 红色和黄色提供归责入口，CPU、GPU、HWC 或队列根因仍需转到对应证据。
+- SurfaceView 与独立 Surface 先确认覆盖范围，缺少 App Timeline 不能写成没有出帧。
+- present 是 Android 显示栈边界，release 和 panel 光学时刻需要其他数据。
 
-1. 在 Perfetto trace 中找到 Compose 应用的主线程 Track
-2. 观察 `Choreographer#doFrame` slice 内部的 Composition 相关 slice（如 `Compose:recompose`、`Compose:applyChanges`）
-3. 对比 Expected Timeline：如果 Composition slice 在 deadline 前暂停（slice 出现间隙），下一帧的 Actual Timeline 应该显示帧按时完成
-4. 如果暂停后仍然 jank（Actual 超出 Expected），说明即使暂停了 Composition，剩余的绘制 + GPU 渲染仍然超出了帧预算——需要优化 UI 复杂度或减少 layout 次数
+守住这些边界后，FrameTimeline 负责选择问题帧和归责层级，线程、GPU、FrameTracer、HWC 与 display 数据负责解释等待发生在哪里。
 
-**shouldPause 回调与 FrameData.deadline 的关系**：
+## 参考源码与验证材料
 
-PausableComposition 的 `shouldPause` lambda 内部检查 `FrameData.getDeadlineNanos() - System.nanoTime() < threshold`。当剩余时间小于阈值时返回 true，Composition 暂停。这意味着：
-
-- deadline 的准确性直接影响 PausableComposition 的效果
-- 如果 Expected Timeline 与 Actual Timeline 的偏差较大（PredictionError jank 频繁），说明 VSyncPredictor 的预测不准，PausableComposition 基于 deadline 的暂停判定也会受影响
-- 在高刷新率设备上（120Hz/144Hz），帧间隔更短，deadline 更紧，PausableComposition 的暂停频率更高，每次暂停的代价（上下文切换）相对于帧预算的占比也更大
-
-[结构参考: intake/research-feeds/2026-04-10-07-compose-pausable-composition-choreographer-deadline.md]
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java — FrameData.deadlineNanos]
+- [Android 17 `Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java)
+- [API 33 `Choreographer.FrameData`](https://developer.android.com/reference/android/view/Choreographer.FrameData)、[`FrameTimeline`](https://developer.android.com/reference/android/view/Choreographer.FrameTimeline) 与 [`VsyncCallback`](https://developer.android.com/reference/android/view/Choreographer.VsyncCallback)
+- [Android 17 `Scheduler/FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp)
+- [Android 17 `VSyncDispatchTimerQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/VSyncDispatchTimerQueue.cpp)
+- [Android 17 `frame_timeline_event.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/trace/android/frame_timeline_event.proto)
+- [Perfetto FrameTimeline 官方文档](https://perfetto.dev/docs/data-sources/frametimeline)
+- [Perfetto v57.2 FrameTimeline importer](https://github.com/google/perfetto/blob/v57.2/src/trace_processor/importers/proto/frame_timeline_event_parser.cc)
+- [Perfetto v57.2 `android.frames.timeline` 标准库](https://github.com/google/perfetto/blob/v57.2/src/trace_processor/perfetto_sql/stdlib/android/frames/timeline.sql)
+- §13.19 FrameTracer：buffer event、fence 与 frame identity 的边界
+- `Writer/rendering_pipelines/S01_rendering_types_overview.md`、`S02_aosp_standard_type.md`：本文出图分型与 present/release 语义的校验基线
 
 <!-- outline-end -->
