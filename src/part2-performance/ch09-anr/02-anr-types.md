@@ -86,316 +86,396 @@ updated_date: "2026-07-09"
 
 ### 锚点（必须覆盖）
 
-- 🔹 Input Dispatching Timeout：5s，触摸/按键事件无响应
-- 🔹 BroadcastReceiver Timeout：Android 13 及以下前台 10s / 后台 60s；Android 14+ 前台 10-20s / 后台 60-120s
-- 🔹 Service Timeout：前台 20s / 后台 200s
-- 🔹 ContentProvider Timeout：10s（publish timeout）
-- 🔹 各类型 ANR 在 Logcat 中的标识特征
+- 🔹 Input Dispatching Timeout：默认 5 秒，窗口连接或焦点窗口未按时就绪
+- 🔹 BroadcastReceiver Timeout：Android 13 及以下 10 秒 / 60 秒；Android 14+ 诊断区间为 10–20 秒 / 60–120 秒
+- 🔹 Execute Service Timeout：高优先级执行 20 秒，后台执行 200 秒
+- 🔹 ContentProvider：10 秒 publish 保护会移除启动进程；Provider ANR 由客户端显式探测触发
+- 🔹 从 `Reason`、超时结束信号和源码入口识别 ANR 类型
 
 ### 扩展（可选深入）
 
-- 🔸 执行 Service startForeground 的 ANR（FGS 超时）
-- 🔸 Android 14+ JobService callback ANR 与 job 超时边界
+- 🔸 前台服务晋升、`shortService`、限时 FGS 的不同后果
+- 🔸 Android 14+ `JobService` 回调 ANR 与 job 运行超时的边界
 
 ### OpenClaw 加工指引
 
-## 为什么要了解 ANR 的类型分类
+## 先认超时契约，再看线程栈
 
-在上一节中，我们了解了 ANR 机制的设计思想——系统通过超时计时器在应用失去响应能力时介入。但"超时"不是一个统一的概念，不同类型的 ANR 有不同的触发条件、超时阈值和检测机制。如果拿到一份 ANR trace，第一步就是判断它属于哪种类型——因为不同类型的 ANR，分析方法完全不同。
+ANR 报告中的 `Reason` 描述了系统等待哪一个完成信号。Input 等输入连接确认，Broadcast 等 receiver 完成，execute-service 等服务生命周期调用结束。它们可能留下相似的主线程栈，触发它们的计时器和责任边界却不同。
 
-举例来说，一个 Input ANR 意味着主线程在用户点击后 5 秒内没有处理完输入事件，问题通常出在主线程被阻塞。而一个 Broadcast ANR 可能在后台静默发生，超时时间长达 60 秒，根因可能完全不在主线程——而是 `goAsync()` 的后台任务没有及时调用 `finish()`。
+拿到报告后可以依次回答三个问题：
 
-了解每种 ANR 类型的触发条件，是精准分析 ANR 的前提。
+1. 系统等待什么完成信号？
+2. 计时从哪个动作开始，冷启动是否占用同一段预算？
+3. 到期后走 `appNotResponding()`、移除进程，还是抛出远程服务异常？
 
-## Input Dispatching Timeout（输入分发超时）
+这三个问题比“主线程卡在哪里”更早。类型判错后，即使栈读对了，也可能把结果回调、进程启动或远端 Provider 的责任归到错误位置。
 
-### 超时阈值：5 秒
+Android 17 的常用类型可以先按下表定位。表中的数值是 AOSP 默认值；`Build.HW_TIMEOUT_MULTIPLIER`、DeviceConfig、广播 CPU 饥饿补偿和 OEM 配置都可能改变设备上的等待时长。
 
-这是开发者最常遇到的 ANR 类型，也是用户最直接能感知到的。当用户触摸屏幕或按下按键时，系统通过 InputDispatcher 将事件分发给对应窗口所在的 App 进程。如果 App 的主线程在 5 秒内没有处理完这个事件（即没有"消费"或"丢弃"该事件），InputDispatcher 就会触发 ANR。
+| 触发器 | Android 17 默认等待 | 系统等待的完成信号 | 常见 `Reason` 片段 |
+|---|---:|---|---|
+| Input connection | 5 秒 | 已分发事件得到完成确认 | `Input dispatching timed out`、`is not responding. Waited ... for ...` |
+| No focused window | 5 秒 | 已聚焦应用出现可接收输入的窗口 | `does not have a focused window` |
+| Broadcast | 10 秒或 60 秒；CPU 饥饿时最多再延长一段同等时长 | `onReceive()` 返回，或 `PendingResult.finish()` | `Broadcast of Intent` |
+| Execute service | 20 秒或 200 秒 | `onCreate()`、`onBind()`、`onStartCommand()` 等调度执行结束 | `executing service ... waited ...ms` |
+| FGS 晋升 | 源码默认 30 秒，另有 10 秒 ANR 延迟 | `startForegroundService()` 启动的服务调用 `startForeground()` | `did not then call Service.startForeground()` |
+| `shortService` | 约 3 分钟，回调后源码默认再等 10 秒 | `onTimeout(int, int)` 后停止服务 | `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE did not stop` |
+| Provider 远程调用 | 客户端配置 | 远程 Provider 调用返回 | `ContentProvider not responding` |
+| `JobService` 回调 | 8 秒 | `onStartJob()` 或 `onStopJob()` 返回 | `No response to onStartJob` / `onStopJob` |
 
-### 检测机制：从 InputDispatcher 到 AMS
+`10 秒 Provider publish timeout` 没有列成 Provider ANR，因为 Android 17 对该超时的处理是以初始化失败原因移除进程。后文会给出对应源码。
 
-Input ANR 的检测不在 Java 层，而是在 Native 层的 InputDispatcher 中完成。整个检测流程可以拆解为以下几步：
+## Input ANR：输入连接和焦点窗口是两条路径
 
-**第一步：事件入队。** InputReader 从 EventHub 读取原始输入事件后，交给 InputDispatcher。InputDispatcher 将事件放入 outboundQueue，准备分发给目标窗口。
+### 默认 5 秒从哪里来
 
-**第二步：等待确认。** 事件通过 InputChannel（基于 Unix socketpair）发送给 App 进程的 InputConsumer。App 主线程的 Looper 被唤醒，将事件交给 InputEventReceiver 处理。处理完成后，App 通过同一个 InputChannel 发回"已消费"确认。
+`InputDispatcher` 位于 native inputflinger。事件写入应用的 InputChannel 后，待确认的 `DispatchEntry` 留在 connection 的 `waitQueue` 中。应用完成输入处理时，`InputEventReceiver.finishInputEvent()` 方向的确认使条目离开等待队列。普通 View 层事件通常由主线程处理，所以主线程阻塞是高频根因；检测对象仍是输入连接的响应状态。
 
-**第三步：超时检测。** InputDispatcher 将已发送但未确认的事件移入 waitQueue，并记录每个事件的发送时间。在每次处理循环中，InputDispatcher 检查 waitQueue 头部的事件——如果它已经等待超过 `DEFAULT_INPUT_DISPATCHING_TIMEOUT`（5 秒），就调用 `onAnrLocked()`。
-
-**超时检测是针对 waitQueue 头部的事件**，不是最新的事件。队列中有多个未确认事件时，超时计算的是最老的那个。
+下面的源码用于确认 Android 17 的默认值、硬件超时倍率和窗口级覆盖能力：
 
 ```cpp
 // frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
-// @ AOSP android-17.0.0_r1
-// 实际实现使用 std::chrono，并通过 HwTimeoutMultiplier 缩放
-static constexpr std::chrono::nanoseconds DEFAULT_INPUT_DISPATCHING_TIMEOUT =
-    std::chrono::milliseconds(
-        IInputConstants::UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS
-        * HwTimeoutMultiplier());
-// 默认约 5s（UNMULTIPLIED_DEFAULT = 5000ms, HW multiplier 默认 1.0）
+const std::chrono::duration DEFAULT_INPUT_DISPATCHING_TIMEOUT = std::chrono::milliseconds(
+        android::os::IInputConstants::UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS *
+        HwTimeoutMultiplier());
+
+std::chrono::nanoseconds InputDispatcher::getDispatchingTimeoutLocked(
+        const std::shared_ptr<Connection>& connection) {
+    if (connection->isFocusMonitor) {
+        return mMonitorDispatchingTimeout;
+    }
+    const sp<WindowInfoHandle> window = mWindowInfos.findWindowHandle(connection->getToken());
+    if (window != nullptr) {
+        return window->getDispatchingTimeout(DEFAULT_INPUT_DISPATCHING_TIMEOUT);
+    }
+    return DEFAULT_INPUT_DISPATCHING_TIMEOUT;
+}
 ```
 
-**第四步：通知 AMS。** InputDispatcher 检测到超时后，通过 `InputManagerCallback` -> `WindowManagerService` -> `ActivityManagerService.inputDispatchingTimedOut()` 的调用链通知 AMS。
+`IInputConstants.UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS` 为 5000。默认 5 秒适用于没有其他设置的窗口和 input monitor；窗口可以提供自己的 dispatching timeout，因此报告中的等待值应结合目标设备和窗口状态解读。
 
-### 在 Logcat 中的特征
+### Connection ANR
 
-```logcat
-E/ActivityManager: ANR in com.example.app (PID: 12345)
-Reason: Input dispatching timed out: com.example.app/.MainActivity is not responding.
-        Waited 6178ms for MotionEvent(action=ACTION_DOWN, ...)
+`processAnrsLocked()` 从 `mAnrTracker` 取得到期 connection。进入 `onAnrLocked(connection)` 后，源码选取 `waitQueue.front()` 作为诊断用的 oldest entry，并用 `now() - deliveryTime` 生成等待时长。
+
+源码注释补充了一个限制：oldest entry 最适合帮助排查，却未必是造成计时器到期的那一个事件。窗口超时在事件等待期间发生变化时，较新的事件可能更早达到自己的期限。报告里的事件描述要当作高价值线索，不能当作唯一因果证据。
+
+Android 17 生成的 native reason 形如：
+
+`<input-channel> is not responding. Waited <N>ms for <event-description>`
+
+随后 `processConnectionUnresponsiveLocked()` 将事件、持续时间和 connection token 交给 policy 层，WMS/AMS 再构造 ANR 记录。`cancelEventsForAnrLocked()` 会取消该 connection 上的后续事件，避免继续向已判定无响应的连接送入工作。
+
+排查 connection ANR 时要覆盖这些可能性：
+
+- 主线程执行长任务、锁等待、Binder 同步调用或文件 I/O；
+- 主线程 Runnable 排队过深，输入消息迟迟得不到调度；
+- native input receiver 或自建 InputChannel 没有按协议完成事件；
+- 进程长时间处于 Runnable，但缺少 CPU 时间；
+- 系统端或跨进程依赖拖住主线程，触发点仍落在应用的输入窗口。
+
+### No focused window ANR
+
+InputDispatcher 已知 focused application、却找不到 focused window 时，会启动另一只计时器。到期 reason 是：
+
+`<application> does not have a focused window`
+
+这条记录指向窗口建立或焦点交接。常见检查项包括 Activity 启动是否卡在 `bindApplication` / `Application.onCreate()`、首个窗口是否迟迟没有加入 WMS、窗口切换期间 token 是否失配，以及显示切换或多窗口状态是否异常。看到 no-focused-window 后直接按“点击事件处理超过 5 秒”分析，通常会错过启动链。
+
+## Broadcast ANR：判断依据是广播标志和完成回执
+
+### 10/60 秒与 10–20/60–120 秒
+
+Android 17 的基础常量仍是：
+
+- 带 `Intent.FLAG_RECEIVER_FOREGROUND` 的广播使用 10 秒软超时；
+- 其余受跟踪广播使用 60 秒软超时。
+
+这里的“前台广播”描述广播标志，不等同于接收进程当时位于前台。Android 14 起，系统会按进程在软超时窗口内 Runnable 却拿不到 CPU 的时间延长等待，延长量限制在原软超时以内。因此官方诊断范围写作 10–20 秒和 60–120 秒。
+
+以下 Android 17 片段用于展示何时启动计时器，以及超时时如何进入 ANR：
+
+```java
+// frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java
+final boolean assumeDelivered = r.isAssumedDelivered(index);
+if (mService.mProcessesReady && !r.timeoutExempt && !assumeDelivered) {
+    queue.setTimeoutScheduled(true);
+    final int softTimeoutMillis = (int) (r.isForeground() ? mFgConstants.TIMEOUT
+            : mBgConstants.TIMEOUT);
+    startDeliveryTimeoutLocked(queue, softTimeoutMillis);
+}
+
+// deliveryState == BroadcastRecord.DELIVERY_TIMEOUT
+TimeoutRecord tr = TimeoutRecord.forBroadcastReceiver(
+        r.intent, packageName, className);
+mAnrTimer.accept(queue, tr);
+mService.appNotResponding(queue.app, tr);
 ```
 
-关键信息：**"Input dispatching timed out"** 明确标识这是 Input ANR；**"Waited ...ms"** 对应 Android 17 `InputDispatcher::onAnrLocked()` 中 oldest entry 从 `deliveryTime` 到触发时的等待时间；事件描述用于判断卡住的是按键、触摸还是无焦点窗口路径。
+系统尚未完成启动、`timeoutExempt` 广播和 `assumeDelivered` 的交付不会启动这只计时器。动态注册的无序 receiver 可能走 assumed-delivered 路径，所以“每个 BroadcastReceiver 都有 10/60 秒 ANR 计时器”不成立。
 
-### 特殊情况：无焦点窗口的 Input ANR
+### `goAsync()` 没有增加一段预算
 
-有一种容易忽略的 Input ANR 变体："no focused window" ANR。它发生在 InputDispatcher 试图将事件分发给一个应该有焦点、但没有对应窗口的 App。这种情况虽然也归类为 Input ANR，但根因可能不是主线程阻塞，而是窗口切换过程中的状态不一致。
+同步 receiver 的结束信号是 `onReceive()` 返回。调用 `goAsync()` 后，结束信号改为 `PendingResult.finish()`，原广播 deadline 仍在运行。后台线程池拥塞、网络等待、锁竞争或漏调 `finish()` 都可能让 deadline 到期。
 
-## BroadcastReceiver Timeout（广播超时）
+冷启动也要计入分析。广播需要拉起进程时，进程创建、`bindApplication`、`Application` 和静态 Provider 初始化会先占用交付时间。ANR 栈只记录超时附近的瞬间，启动早期已完成的慢步骤可能不再出现在栈顶。
 
-与 Input ANR 不同，Broadcast ANR 的触发并不依赖用户交互——它可能在一个完全没有用户操作的静默时段发生。理解它的超时机制，有助于排查那些“明明没有用户操作却发生了 ANR”的问题。
+常见 `Reason` 以 `Broadcast of Intent` 开头，并携带 action、component 或 receiver 包名。诊断时同时记录：
 
-### 超时阈值：Android 13 及以下前台 10 秒 / 后台 60 秒；Android 14+ 前台 10-20 秒 / 后台 60-120 秒
+- 是否设置 `FLAG_RECEIVER_FOREGROUND`；
+- receiver 是 manifest 注册还是运行时注册，是否为 ordered；
+- 是否调用 `goAsync()`，每条分支是否都能执行 `finish()`；
+- 进程在接收前是否存在，CPU starvation 是否明显；
+- `onReceive()` 之前是否经历长时间应用初始化。
 
-Broadcast ANR 的判断要同时看前后台优先级、同步还是异步 receiver，以及应用启动时间有没有落进同一段窗口。Android 13 及以下按前台 **10 秒**、后台 **60 秒** 排查；Android 14+ 官方诊断口径改成前台 **10-20 秒**、后台 **60-120 秒**。进程处于 CPU-starved 状态时，系统会把窗口拉到上限；没有 CPU starvation 时，排查起点仍接近 10 秒 / 60 秒。
+## Execute-service ANR：20/200 秒描述执行优先级
 
-`goAsync()` 不会重置这段窗口。同步 receiver 要在 `onReceive()` 内返回；异步 receiver 要在同一窗口内调用 `PendingResult.finish()`。如果广播拉起了冷启动进程，进程启动和 `Application` 初始化时间也会算进这次超时。
+### “前台 20 秒”不等于“前台服务 20 秒”
 
-### 检测机制：BroadcastQueueImpl 的超时计时器
+AMS 为进程调度 service lifecycle transaction 后，会把该服务加入 executing set。`ActiveServices.scheduleServiceTimeoutLocked()` 根据 `ProcessServiceRecord.isExecServicesFg()` 选择 20 秒或 200 秒。这是 execute-service 的调度优先级，不能用前台服务类型直接替换。
 
-Android 17 中 Broadcast ANR 的检测路径是：`BroadcastQueueImpl.startDeliveryTimeoutLocked()` 通过 `BroadcastAnrTimer` 启动软超时计时器；如果超时命中，进入 `deliveryTimeoutLocked()`，最终在 `finishReceiverActiveLocked()` 中构造 `TimeoutRecord.forBroadcastReceiver()` 并调用 `mService.appNotResponding()` 触发 ANR。
-
-做 App 侧排障时，判断边界比“ordered / parallel”更直接：
-
-- **同步 receiver**：`onReceive()` 必须在当前广播窗口内返回。
-- **异步 receiver**：调用 `goAsync()` 后，`PendingResult.finish()` 也必须在同一窗口内完成。
-- **冷启动 receiver**：如果广播唤起了进程，进程启动、`Application` 初始化和 receiver 执行共享同一段超时预算。
-
-`ordered / parallel` 仍然有价值，但它更适合解释分发路径和是否会拖住后续 receiver；单看这一条已经不够覆盖 Android 14+ 的超时诊断口径。
-
-### 在 Logcat 中的特征
-
-```logcat
-E/ActivityManager: ANR in com.example.app (PID: 12345)
-Reason: Broadcast of Intent { act=android.intent.action.BOOT_COMPLETED
-        cmp=com.example.app/.receiver.BootReceiver }
-```
-
-特征是 Reason 行以 **"Broadcast of Intent"** 开头，后面跟着具体的 Action 和 Component 名称。
-
-### 常见触发场景
-
-**冷启动流程过长。** 广播拉起进程后，Zygote fork、`Application` 初始化、`ContentProvider` 初始化和 receiver 业务代码都在同一窗口里，启动阶段慢会先把预算吃掉。
-
-**`goAsync()` 后台线程没有及时 finish。** `goAsync()` 只把工作移出 `onReceive()`，没有获得新的超时预算。后台线程被共享线程池、网络等待或 Binder 阻塞拖住时，仍会触发 ANR。
-
-**慢 Receiver 拖住广播分发。** 有序广播里，一个 Receiver 的延迟会顺着队列传递给后续 Receiver；并行分发场景里，单个进程仍可能因为自己的处理超时而报 ANR。
-
-## Service Timeout（服务超时）
-
-### 超时阈值：前台 20 秒 / 后台 200 秒
-
-Service ANR 的超时阈值在所有类型中跨度最大：前台 Service 是 **20 秒**，后台 Service 是 **200 秒**。
+下面的常量用于确认 Android 17 的默认执行时限：
 
 ```java
 // frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java
-// @ AOSP android-17.0.0_r1
 private static final long DEFAULT_SERVICE_TIMEOUT =
         20 * 1000 * Build.HW_TIMEOUT_MULTIPLIER;
 private static final long DEFAULT_SERVICE_BACKGROUND_TIMEOUT =
         DEFAULT_SERVICE_TIMEOUT * 10;
+
+long SERVICE_TIMEOUT = DEFAULT_SERVICE_TIMEOUT;
+long SERVICE_BACKGROUND_TIMEOUT = DEFAULT_SERVICE_BACKGROUND_TIMEOUT;
 ```
 
-### 检测机制：ActiveServices 的超时 Handler
+源码把默认值放入运行时字段；设备配置和硬件倍率可能改变数值。报告中的 `waited ...ms` 比记忆中的固定秒数更可靠。
 
-超时检测的目标是 Service 的生命周期方法：`onCreate()`、`onStartCommand()` 或 `onBind()`。Android 14 的 `ActiveServices` 不再自己声明固定的 20 秒 / 200 秒常量，而是在调度超时时读取 `mAm.mConstants.SERVICE_TIMEOUT` 和 `mAm.mConstants.SERVICE_BACKGROUND_TIMEOUT`。默认值仍对应前台 20 秒、后台 200 秒，但会乘 `Build.HW_TIMEOUT_MULTIPLIER`，运行时也可能被系统配置覆盖。
+计时覆盖 `onCreate()`、`onBind()`、`onStartCommand()` 等执行阶段，也可能包含服务进程冷启动所消耗的时间。`TimeoutRecord.forServiceExec()` 生成的 reason 形如：
 
-另一个细节是，超时计算从 Service 被调度到进程执行开始，不是从业务代码第一行开始。如果进程本身还在启动，进程启动时间也计算在内。
+`executing service <short-instance-name>, waited <N>ms`
 
-### 在 Logcat 中的特征
+同一进程可以同时执行多个 Service。计时器归责到进程，trace 中的主线程栈需要结合 executing service 列表、transaction 记录和业务日志，定位究竟是哪次生命周期调用未完成。
 
-```logcat
-E/ActivityManager: ANR in com.example.app (PID: 12345)
-Reason: executing service com.example.app/com.example.app.MyService
+## 前台服务附近有三种不同的超时结果
+
+前台服务相关报错经常被统称为“FGS ANR”，这样会把修复点混在一起。Android 17 至少要分开以下三条路径。
+
+### `startForegroundService()` 后没有及时晋升
+
+`startForegroundService()` 建立 `fgRequired` 约束，服务需要尽早调用 `startForeground()` 并发布合规通知。官方 ANR 概览给出的应用侧时限是 5 秒，FGS 排障页表述为“几秒内”；AOSP Android 17 的内部实现默认使用：
+
+- `DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS = 30 * 1000`；
+- `DEFAULT_SERVICE_START_FOREGROUND_ANR_DELAY_MS = 10 * 1000`。
+
+这两个值可由 DeviceConfig 改写，不应写进应用业务计时逻辑，也不能拿 30 秒替代公开契约。`serviceForegroundTimeout()` 生成：
+
+`Context.startForegroundService() did not then call Service.startForeground(): <ServiceRecord>`
+
+该方法会停止服务，并在源码默认 10 秒后投递 `SERVICE_FOREGROUND_TIMEOUT_ANR_MSG`。另一条服务拆除路径会投递 `SERVICE_FOREGROUND_CRASH_MSG`，由 `serviceForegroundCrash()` 创建 `ForegroundServiceDidNotStartInTimeException`。设备日志可能呈现 ANR 或该远程服务异常，排查入口都是 `startForeground()` 晋升契约。
+
+应用侧应在 `onCreate()` 或 `onStartCommand()` 的早段准备最小可用通知并调用 `startForeground()`。数据库迁移、网络请求、账号刷新和大文件扫描应放到晋升之后；把晋升放进异步结果回调会增加超时概率。
+
+### `shortService` 超时后未停止：ANR
+
+Android 14 引入 `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE`。Android 17 默认时限为 3 分钟。到期后系统调用 `Service.onTimeout(int startId, int fgsType)`，同时为兼容 API 34 保留单参数 `onTimeout(int startId)` 语义；面向 Android 15+ 的实现只需覆盖双参数回调。系统还会启动 short-FGS ANR timer，源码默认再等待 10 秒。服务仍未停止时，`onShortFgsAnrTimeout()` 构造以下 reason 并调用 `appNotResponding()`：
+
+`A foreground service of FOREGROUND_SERVICE_TYPE_SHORT_SERVICE did not stop within a timeout: <component>`
+
+`onTimeout(int, int)` 应只做有界清理并尽快调用 `stopSelf()` 或 `stopService()`。在回调中继续等待原任务完成，会把清理窗口也耗尽。
+
+### `dataSync` / `mediaProcessing` 超时后未停止：崩溃
+
+对 targetSdk 35+，Android 15 开始限制这两类前台服务在应用处于后台时的累计运行时间。Android 17 的默认值分别为 6 小时，统计按 UID 和 FGS 类型维护；两个类型各有自己的 `TimeLimitedFgsInfo`，没有共享一份 6 小时额度。24 小时窗口到期会重置统计，用户把应用带到前台也会刷新可用时间的计算起点。
+
+额度耗尽时，系统调用 `Service.onTimeout(int startId, int fgsType)`。源码默认给予 10 秒清理时间；服务没有停止时，`onFgsCrashTimeout()` 通过 `ForegroundServiceDidNotStopInTimeException` 使进程崩溃。这条路径不调用 `appNotResponding()`，因此不要把它计入 ANR 类型统计。
+
+| FGS 场景 | 到期回调 | 未在宽限期内处理的 Android 17 结果 |
+|---|---|---|
+| 未完成 `startForeground()` 晋升 | 无 `Service.onTimeout()` | ANR 延迟路径或 `ForegroundServiceDidNotStartInTimeException` |
+| `shortService` 约 3 分钟 | `Service.onTimeout(int, int)` | ANR |
+| `dataSync` 累计 6 小时 | `Service.onTimeout(int, int)` | `ForegroundServiceDidNotStopInTimeException` 崩溃 |
+| `mediaProcessing` 累计 6 小时 | `Service.onTimeout(int, int)` | `ForegroundServiceDidNotStopInTimeException` 崩溃 |
+
+## ContentProvider：发布保护与调用 ANR 要分开
+
+### 10 秒 publish timeout 是初始化失败保护
+
+进程启动时，AMS 等待它发布清单中声明的 Provider。`ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` 在 Android 17 默认为 10 秒乘硬件倍率。Provider 的 `onCreate()`、`Application.onCreate()` 或更早的进程初始化拖住发布，都会耗掉这段时间。
+
+下面两段源码用于核对超时值和超时后的系统动作：
+
+```java
+// frameworks/base/core/java/android/content/ContentResolver.java
+public static final int CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS =
+        10 * 1000 * Build.HW_TIMEOUT_MULTIPLIER;
+
+// frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java
+void processContentProviderPublishTimedOutLocked(ProcessRecord app) {
+    cleanupAppInLaunchingProvidersLocked(app, true);
+    mService.mProcessList.removeProcessLocked(app, false, true,
+            ApplicationExitInfo.REASON_INITIALIZATION_FAILURE,
+            ApplicationExitInfo.SUBREASON_UNKNOWN,
+            "timeout publishing content providers");
+}
 ```
 
-特征是 Reason 行以 **"executing service"** 开头。
+处理函数没有创建 `TimeoutRecord`，也没有调用 `AnrHelper.appNotResponding()`。它清理 launching provider，并以 `REASON_INITIALIZATION_FAILURE` 移除进程。因此“Provider 10 秒未 publish 会触发 ContentProvider ANR”是错误映射。
 
-### startForegroundService 到 startForeground 的宽限期
+这类问题仍会阻塞调用方或启动流程。排查时搜索 `timeout publishing content providers`，再检查 `Application`、Provider `onCreate()`、自动初始化 SDK 和类加载开销；ANR 报表未必会把它归入 Provider ANR。
 
-这条超时链和普通 Service 的 20 秒 / 200 秒执行超时不是一回事。它约束的是 `Context.startForegroundService()` 之后，Service 多久必须调用 `startForeground()` 完成前台晋升。
+### Provider 调用 ANR 需要显式探测
 
-- **Android 8.0：** AOSP `ActiveServices.SERVICE_START_FOREGROUND_TIMEOUT = 5 * 1000`，宽限期 5 秒
-- **Android 9-12：** AOSP 把这条宽限期提升到 10 秒
-- **Android 13-17：** 默认值迁到 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS`，默认 30 秒，对应运行时字段 `mServiceStartForegroundTimeoutMs`
+Android 17 的 Provider ANR 入口来自 `ContentProviderClient.setDetectNotResponding(timeoutMillis)`。该接口属于 `@SystemApi`，需要 `REMOVE_TASKS` 权限，普通三方应用不能把任意 `ContentResolver.query()` 配置成系统级 Provider ANR。
 
-超时后的后果取决于哪条超时链被触发，这里要把两条路径分开看。
+配置探测后，`ContentProviderClient.beforeRemote()` 会在调用前安排定时任务。远程调用到期未返回时，客户端经 `ContentResolver.appNotRespondingViaProvider()` 通知 AMS。`ContentProviderHelper.appNotRespondingViaProvider()` 创建：
 
-**路径一：startForeground 未调用（DidNotStartInTime）。** `Context.startForegroundService()` 之后，Service 在宽限期内没有调用 `startForeground()`。AOSP 路径是 `ActiveServices.serviceForegroundTimeout()` → `stopServiceLocked()` → 延迟 `SERVICE_FOREGROUND_TIMEOUT_ANR_MSG` → `appNotResponding()`。Android 12+ 对此抛出 `ForegroundServiceDidNotStartInTimeException`——这条路径没有 `Service.onTimeout()` 回调自救，超时就直接进入 ANR/异常流程。
+`TimeoutRecord.forContentProvider("ContentProvider not responding")`
 
-**路径二：FGS 运行超时（shortService / dataSync / mediaProcessing）。** Service 已经成功调用了 `startForeground()`，但运行时间超过该 FGS 类型的限额。以 Android 14+ 的 `shortService`（约 3 分钟）为例：**第一阶段**是回调自救——系统通过 `Service.onTimeout()` 给应用一个窗口执行清理并调用 `stopSelf()`；**第二阶段**是硬性惩罚——如果应用在宽限期内没有主动停止，系统抛出 `ForegroundServiceDidNotStopInTimeException` 或直接杀进程。Android 15 的 `dataSync`（6 小时）和 `mediaProcessing`（6 小时）走同样的两段式语义，各自类型在后台 24 小时窗口内累计运行不超过 6 小时（AOSP `ActivityManagerConstants.DEFAULT_MEDIA_PROCESSING_FGS_TIMEOUT_DURATION = 6 * 60 * 60_000`，`DEFAULT_DATA_SYNC_FGS_TIMEOUT_DURATION` 同理）。
+随后目标 Provider 进程进入 `AnrHelper`。超时值来自客户端配置，所以不存在适用于所有 Provider 调用的固定 10 秒 ANR 阈值。
 
-这两条路径的入口、触发条件和后果都不同，排查时要先确认是"没有调 startForeground"还是"FGS 运行超时"。
+普通应用在主线程执行慢 `query()` 仍可能触发 ANR，只是类型通常由外层契约决定。例如主线程等待 Provider 超过输入期限，报告会归为 Input ANR。Provider 端耗尽 Binder 线程也可能拖慢多个调用方；这是一种因果链，不能据此把所有慢 Provider 调用标成 Provider ANR。
 
-常见触发场景：
+Provider 的两条系统路径和案例分析见 [9.9 ContentProvider ANR 双路径](09-contentprovider-anr-double-path.md)。
 
-1. `onStartCommand()` 中有阻塞操作，阻塞了 `startForeground()` 的调用
-2. 等待异步结果（如网络请求）后再调用 `startForeground()`，但异步操作超过当前版本的宽限期
-3. 从后台启动，被系统调度延迟
+## JobService：8 秒回调限制和 job 运行时限无关
 
-**正确做法：** 先调用 `startForeground()` 展示通知，再执行其他逻辑。
+`JobService.onStartJob()` 与 `onStopJob()` 都在应用主线程执行。Android 17 的 `JobServiceContext` 位于 JobScheduler APEX：
 
-## ContentProvider Timeout（内容提供者超时）
+`frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java`
 
-前三种 ANR 类型都围绕主线程的“执行超时”，ContentProvider ANR 的触发逻辑有所不同——它的超时发生在“发布”阶段，也就是 App 还没来得及执行任何业务代码的时候。
+以下片段用于确认回调、绑定和通知三种等待值：
 
-### 超时阈值：10 秒（publish timeout）
+```java
+private static final long OP_BIND_TIMEOUT_MILLIS =
+        18 * 1000 * Build.HW_TIMEOUT_MULTIPLIER;
+private static final long OP_TIMEOUT_MILLIS =
+        8 * 1000 * Build.HW_TIMEOUT_MULTIPLIER;
+private static final long NOTIFICATION_TIMEOUT_MILLIS =
+        10_000L * Build.HW_TIMEOUT_MULTIPLIER;
 
-系统在两种场景下检测 ContentProvider 的超时：
-
-**场景一：Provider 发布超时。** 当 App 进程启动时，系统等待该进程 publish 其声明的 ContentProvider。如果进程在 **10 秒**内没有完成 `ContentProvider.onCreate()` 并返回 provider 对象，就会触发 ANR。这个超时尤其危险，因为它发生在应用启动的早期阶段——Provider 不 publish，Activity 就无法启动。
-
-**场景二：Provider 客户端超时。** 当一个 App 通过 `ContentResolver.query()` 访问另一个 App 的 ContentProvider 时，如果 Provider 端响应过慢，客户端的 Binder 线程会被阻塞。虽然没有独立的超时计时器，但阻塞时间过长可能导致客户端进程因 Binder 线程耗尽而触发 ANR。
-
-### 在 Logcat 中的特征
-
-```logcat
-E/ActivityManager: ANR in com.example.app (PID: 12345)
-Reason: ContentProvider com.example.app/.provider.MyProvider not responding
+@ChangeId
+@EnabledAfter(targetSdkVersion = Build.VERSION_CODES.TIRAMISU)
+static final long ANR_PRE_UDC_APIS_ON_SLOW_RESPONSES = 258236856L;
 ```
 
-特征是 Reason 行包含 **"ContentProvider"** 和 **"not responding"**。
+`@EnabledAfter(TIRAMISU)` 使 targetSdk 34+ 的应用在慢 `onStartJob()` / `onStopJob()` 上进入显式 ANR。`handleOpTimeoutLocked()` 对应生成 `No response to onStartJob` 或 `No response to onStopJob`，再通过 `ActivityManagerInternal.appNotResponding()` 上报。18 秒 bind timeout 走绑定失败和重调度处理，不能写成 JobService ANR 阈值。
 
-## 各类型 ANR 速查对照表
+三条时间线应分别阅读：
 
-| 类型 | 超时阈值 | 检测位置 | 触发条件 | 用户感知 |
-|------|---------|---------|---------|---------|
-| Input Dispatching | 5s | InputDispatcher (Native) | 主线程未消费输入事件 | 直接感知，界面冻结 |
-| Broadcast (前台) | Android 13 及以下 10s；Android 14+ 10-20s | BroadcastQueueImpl / BroadcastAnrTimer (AMS) | `onReceive()` 未返回，或 `goAsync()` 后未 `finish()` | 可能无感知 |
-| Broadcast (后台) | Android 13 及以下 60s；Android 14+ 60-120s | BroadcastQueueImpl / BroadcastAnrTimer (AMS) | 同上；冷启动时间也可能计入窗口 | 无感知 |
-| Service (前台) | 20s | ActiveServices (AMS) | `onCreate()` / `onStartCommand()` / `onBind()` 未完成 | 可能无感知 |
-| Service (后台) | 200s | ActiveServices (AMS) | `onCreate()` / `onStartCommand()` / `onBind()` 未完成 | 无感知 |
-| ContentProvider | 10s | AMS | Provider 未在时间内 publish | 间接感知（阻塞启动） |
-| startForeground | Android 8.0 5s / 9-12 10s / 13-14+ 默认 30s | AMS | `startForeground()` 未在宽限期内调用 | Android 12+ 常见直接崩溃 |
-| JobService callback (14+) | 8s（`OP_TIMEOUT_MILLIS` × HW_TIMEOUT_MULTIPLIER） | JobScheduler / AMS | `onStartJob()` 或 `onStopJob()` 主线程未及时返回 | 多为后台无感知 |
+- **回调 ANR**：`onStartJob()` 或 `onStopJob()` 超过默认 8 秒没有返回；
+- **job 运行超时**：`onStartJob()` 已返回 `true`，JobScheduler 之后因配额或执行时限停止 job 并调用 `onStopJob()`；停止动作本身不构成 ANR；
+- **通知超时**：公开 API 要求 `JobParameters.isUserInitiatedJob()` 为 `true` 且继续运行的 job 在 10 秒内调用 `setNotification()`；Android 17 内部以 `JobStatus.isUserVisibleJob()` 设置 `mAwaitingNotification`。超时 reason 为 `required notification not provided`，并触发 ANR。
 
-## 在 Perfetto 中的表现
+耗时工作应在 `onStartJob()` 中快速交给受控执行器并返回 `true`。任务完成时调用 `jobFinished()`；收到 `onStopJob()` 后快速取消或标记工作并返回重调度决策。回调里等待 Future、线程 join 或同步 Binder，会直接占用 8 秒窗口。
 
-**Input ANR** 最容易识别。目标 App 主线程 Track 中出现一段很长的 Running/Runnable 状态，InputDispatcher Track 中出现 ANR 标记，SurfaceFlinger 中 App 没有提交新 Frame。
+## Android 17 的 `AnrTypes`
 
-**Service/Broadcast ANR** 更隐蔽。主线程可能在等待 Binder 返回（`binder_thread_read` sleep 状态），也可能在执行耗时操作。关键线索是检查 ANR 时间点前后的系统事件 Track。
+Android 17 在 `frameworks/base/core/java/android/app/AnrTypes.java` 中给出公开分类常量。这个类型受 feature flag 约束，OEM 也可能保留额外的私有 detector；它适合统一平台分类，不能替代 `Reason` 和 `TimeoutRecord`。
 
-**ContentProvider ANR** 表现为目标进程启动阶段过长。进程已创建但 `ContentProvider.onCreate()` 长时间未返回，调用方进程在等待 Binder 响应。
+| 值 | 常量 | 含义 |
+|---:|---|---|
+| 0 | `ANR_TYPE_OTHER` | 其他或无法归类 |
+| 1 | `ANR_TYPE_INPUT_DISPATCH_NO_FOCUSED_WINDOW` | 输入期间没有焦点窗口 |
+| 2 | `ANR_TYPE_INPUT_DISPATCH` | 输入连接无响应 |
+| 3 | `ANR_TYPE_BROADCAST_OF_INTENT` | 广播处理超时 |
+| 4 | `ANR_TYPE_START_FOREGROUND_SERVICE` | 前台服务晋升超时 |
+| 5 | `ANR_TYPE_EXECUTE_SERVICE` | Service 执行超时 |
+| 6 | `ANR_TYPE_CONTENT_PROVIDER_NOT_RESPONDING` | Provider 远程调用无响应 |
+| 7 | `ANR_TYPE_APP_TRIGGERED` | 应用主动触发 |
+| 8 | `ANR_TYPE_FOREGROUND_SHORT_SERVICE_TIMEOUT` | `shortService` 超时 |
+| 9 | `ANR_TYPE_JOB_SERVICE_START` | JobService 启动回调超时 |
+| 10 | `ANR_TYPE_APPLICATION_START` | 应用启动超时 |
 
-## 版本演进中的变化
+枚举名里的 `JOB_SERVICE_START` 比底层 reason 粗。Android 17 的 `TimeoutRecord.forJobService()` 也可承载 `onStopJob` 或通知超时 reason，所以分析工具应保留原始 reason，避免只存一个整数后丢失细节。
 
-> 本节追踪 Android 8.0 到 Android 17 中与 ANR 触发条件和超时阈值相关的关键变更。未提及的版本意味着对应版本没有重大变化。
+## 如何从设备证据识别类型
 
-**Android 8.0（API 26）：** 引入 `startForegroundService()` / `startForeground()` 的 5 秒宽限期。
+### Logcat 和 bugreport
 
-**Android 9-12（API 28-32）：** AOSP 把 `startForegroundService()` 到 `startForeground()` 的宽限期提升到 10 秒；Android 12 同时把超时结果收紧为 `ForegroundServiceDidNotStartInTimeException`。
-
-**Android 13（API 33）：** `startForegroundService()` 到 `startForeground()` 的默认宽限期仍是 30 秒；Broadcast 超时排障口径通常仍按前台 10 秒、后台 60 秒。
-
-**Android 14（API 34）：** BroadcastReceiver 的官方诊断口径更新为前台 10-20 秒、后台 60-120 秒，并把 CPU starvation 与 app startup 纳入超时窗口解释。引入 `shortService` 前台 Service 类型，约 3 分钟运行超时，超时后走 `Service.onTimeout()` 回调自救 → 硬杀的两段式语义。targetSdk 34+ 的 `JobService.onStartJob()` / `onStopJob()` 超时也会以显式 ANR 上报。`AnrTimer` 已在 AOSP `android-15.0.0_r1` 中存在（`com.android.server.utils.AnrTimer`），`ActiveServices` 中已使用 `ServiceAnrTimer`；Android 16 在此基础上继续完善。
-
-**Android 15（API 35）：** 新增 `dataSync` 和 `mediaProcessing` 前台 Service 类型，各自类型在后台 24 小时窗口内累计运行时间限制为 6 小时（`dataSync` 与 `mediaProcessing` 同类型服务共享配额，AOSP `ActivityManagerConstants` 中两者超时常量一致）。`dataSync` 和 `mediaProcessing` 的累计限制是跨生命周期的——重启进程或杀掉 App 不能重置计时器，必须真实结束任务或等待 24 小时窗口滚动。开发者不能通过"拆分多个短任务 + 重启 Service"来绕过配额。
-
-**Android 16（API 36）：** `AnrTimer` 在 Android 15 已引入的基础上进一步扩展覆盖范围。传统 Handler 计时受 AMS 主线程负载影响：如果 AMS 主线程在处理其他事务（比如同时处理多个应用的 ANR dump），超时消息可能延迟投递，导致 ANR 检测不准时。`AnrTimer` 在独立线程中运行，不受 Java 层调度抖动影响，计时精度更高。调试时可在 `adb shell dumpsys activity` 的完整输出中查找 `AnrTimer` dump 段（AOSP `AnrTimer.dump(pw, false)` 会输出当前活跃的 ANR 计时器状态），具体过滤命令需以目标版本的 `dumpsys activity` 输出格式为准。
-
-**Android 17（API 37）：** Broadcast ANR 的源码锚点收敛在 `BroadcastQueueImpl`、`BroadcastAnrTimer` 与 `AnrTimer`；`BroadcastQueueModernImpl.java` 不在 `android-17.0.0_r1` 源码树中，不能作为 Android 17 主线结论的引用路径。
-
-## JobService callback ANR 与 job 超时的边界 [扩展]
-
-Android 14 起，JobScheduler 不再只是长任务调度器。对 targetSdk 34+ 的应用，`JobService.onStartJob()` 和 `JobService.onStopJob()` 都运行在主线程；如果这两个 callback 在 8 秒内不返回（AOSP `JobServiceContext.OP_TIMEOUT_MILLIS = 8 * 1000 * Build.HW_TIMEOUT_MULTIPLIER`，`handleOpTimeoutLocked()` 生成 `No response to onStartJob/onStopJob` 并调用 `ActivityManagerInternal.appNotResponding()`），系统会直接报 ANR。Android 13 及以下这类 ANR 多为 silent ANR，不会显式回传给应用。
-
-这里要把三条超时链分开看：
-
-- **JobService callback ANR**：`onStartJob()` / `onStopJob()` 主线程卡住，超过 `OP_TIMEOUT_MILLIS`（默认 8 秒 × `HW_TIMEOUT_MULTIPLIER`）不返回，`handleOpTimeoutLocked()` 调用 `appNotResponding()` 触发 ANR。
-- **Job 运行超时**：`onStartJob()` 已返回且返回 `true`，系统开始等待 `jobFinished()`。这条线通常是分钟级调度超时，超时后系统会停止 job 并回调 `onStopJob()`；它不等同于 ANR。
-- **普通 Service ANR**：`JobService` 作为 `Service` 子类，仍受 Service 生命周期与前台服务规则影响；但这条线针对的是 `onCreate()` / `onStartCommand()` / `onBind()` 或 `startForeground()` 宽限期，不等于 JobScheduler callback ANR。
-
-另一条独立规则是 user-initiated job：`onStartJob()` 返回后，应用还要在几秒内调用 `JobService.setNotification()`；这条要求超时也会落进 JobScheduler 的 ANR 诊断。
-
-## 各类型 ANR 在 Logcat 中的标识特征汇总
-
-| ANR 类型 | Logcat Reason 关键词 |
-|----------|---------------------|
-| Input | `Input dispatching timed out` |
-| Broadcast | `Broadcast of Intent` |
-| Service | `executing service` |
-| ContentProvider | `ContentProvider` + `not responding` |
-| startForeground (12+) | `startForegroundService() did not then call Service.startForeground()` |
-| JobService callback (14+) | `No response to onStartJob` / `No response to onStopJob` |
-
-掌握这些模式后，我们可以在拿到 ANR 报告的几秒钟内判断类型，进而选择正确的分析路径。
-
-快速提取 ANR 类型的命令行方式：
+`ActivityManager` 文本日志可能经过裁剪，events buffer 的 `am_anr` 和 bugreport 更适合作为取证入口。下面的命令用于收集两类设备证据：
 
 ```bash
-# 从 logcat 中提取最近一条 ANR 的类型
-adb logcat -d -s ActivityManager:E | grep "ANR in" | tail -1
+# 普通 user、userdebug、eng 构建均可尝试
+adb shell logcat -b events -d -v threadtime | grep am_anr
+adb bugreport bugreport.zip
 
-# 从 ANR trace 文件中查看详细信息（Android 11+ 路径）
-adb shell cat /data/anr/anr_* | tail -200
+# 仅 userdebug / eng 且 adbd 允许 root 时读取原始 /data/anr
+adb root
+adb shell ls -lt /data/anr
+adb pull /data/anr ./anr-traces
 ```
 
-第一条命令可以直接看到 Reason 行，从而判断 ANR 类型。第二条命令可以获取完整的 ANR trace，包含当时所有线程的调用栈。
+普通量产 user 构建通常不能 `adb root`，也不能直接读取 `/data/anr`。此时使用 bugreport、Play Console、OEM 平台或 `ApplicationExitInfo` 提供的退出记录。收集后先保存发生时间、进程、`Reason`、目标 component 和等待时长，再进入线程栈。
 
-## 常见问题与误区
+### `Reason` 到检查方向
 
-**误区一："ANR 超时时间都是 5 秒。"** 5 秒只适用于 Input ANR。Service 后台超时是 200 秒，Broadcast 后台超时是 60 秒。
+| `Reason` 线索 | 优先检查 |
+|---|---|
+| `Input dispatching timed out` | main Looper、输入 connection、焦点窗口、CPU 调度 |
+| `does not have a focused window` | Activity 启动、首窗添加、焦点 token、显示切换 |
+| `Broadcast of Intent` | action、广播 flags、冷启动、`goAsync()` 与 `finish()` |
+| `executing service` | executing service 列表、生命周期方法、冷启动 |
+| `did not then call Service.startForeground()` | 晋升调用位置、通知构建、启动链阻塞 |
+| `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE did not stop` | `onTimeout()`、停止调用、清理耗时 |
+| `ContentProvider not responding` | detector 配置、authority、Provider 进程 Binder 和主线程 |
+| `No response to onStartJob/onStopJob` | JobService 主线程回调 |
+| `required notification not provided` | user-initiated job 的公开通知契约、内部 user-visible 状态 |
 
-**误区二："只有主线程阻塞才会导致 ANR。"** Broadcast ANR 可能发生在 `goAsync()` 的后台线程中；ContentProvider publish 超时发生在进程启动阶段。
+Logcat 文案可能被 AMS 再包装，不要要求整行和表格逐字相同。`TimeoutRecord` kind、`ApplicationExitInfo` 子原因和原始 reason 的组合更稳妥。
 
-**误区三："Broadcast ANR 只要看 ordered / 动态注册 就够了。"** App 侧排查还要同时看前后台优先级、同步还是 `goAsync()`、以及广播是否把冷启动时间带进同一窗口。`ordered / parallel` 更适合用来解释 AOSP 分发路径。
+## Perfetto 中能确认什么
 
-**误区四："Service ANR 只发生在前台 Service。"** 后台 Service 超时是 200 秒，长时间操作仍可能触发。
+Perfetto 用来回答“超时窗口内线程和 CPU 在做什么”，不能单靠一张 trace 自动确定 ANR 类型。类型仍由系统 detector 和 `Reason` 决定。
 
-**误区五："ContentProvider ANR 不常见。"** 在使用多个 ContentProvider 做初始化的架构中（很多第三方 SDK 通过 ContentProvider 做自动初始化），任何一个超时都会阻塞整个 App 启动。
+对 Input ANR，检查主线程从事件 delivery 到 timeout 之间是 Running、Runnable、Sleeping，还是 Binder 等待；再关联 input、sched、binder 和 frame timeline。主线程长时间 Runnable 表示有工作可运行却缺少 CPU，长时间 Sleeping 要继续看 futex、Binder 或 I/O 唤醒来源。
 
-## 参考资料
+对 Broadcast、Service 和 JobService，围绕系统调度 transaction 与应用回调开始点对齐时间。冷启动样本要把 process start、bindApplication、Provider 初始化和回调执行放在一条时间线上。只看 ANR 时刻的栈，容易漏掉已经结束的启动耗时。
 
-- Android 14→17 Foreground Service Timeout / ANR 机制（DeepResearch，2026-04-29）：AOSP 源码视角梳理 ShortService 3 分钟超时、TimeLimitedFgs 6h / 24h 滚动窗口、AnrTimer 演进，以及 ActiveServices / ServiceRecord 中的超时判定路径。
+对 Provider 远程调用，关联 caller 的 Binder transaction、provider 进程 binder thread 和 provider 主线程。caller 等待时 provider 可能在主线程工作、binder pool 排队、锁等待或下游 Binder 调用，不能用单一线程状态替代完整调用链。
 
-- 官方文档：
-  - https://developer.android.com/topic/performance/vitals/anr
-  - https://developer.android.com/develop/background-work/services/fgs/troubleshooting
-  - https://developer.android.com/guide/components/fg-services
-- 研究素材：
-  - intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md
+## 版本演进：保留变化，结论落到 Android 17
 
-## 源码映射：ANR 类型与 InputDispatcher/AMS 路径
+- **Android 8.0 / API 26**：引入 `startForegroundService()` 与及时调用 `startForeground()` 的契约。
+- **Android 12 / API 31**：后台启动前台服务受到更严格限制，晋升超时的 `ForegroundServiceDidNotStartInTimeException` 成为常见诊断信号。
+- **Android 14 / API 34**：广播诊断文档加入 CPU starvation 延长窗口；引入 `shortService` 及其超时回调；targetSdk 34+ 的慢 `JobService` 回调进入显式 ANR。
+- **Android 15 / API 35**：targetSdk 35+ 的 `dataSync`、`mediaProcessing` 采用后台累计 6 小时限制，并通过 `Service.onTimeout(int, int)` 给出停止机会；未停止的结果是远程服务异常崩溃。
+- **Android 17 / API 37**：本文源码基线为 `android-17.0.0_r1`。Broadcast 使用 `BroadcastQueueImpl`、`BroadcastAnrTimer` 和通用 `AnrTimer`；平台给出 `AnrTypes` 分类，并可为部分 ANR timer 接入预警回调。各 detector 的完成信号仍需逐类判断。
 
-| ANR 类型 | 触发源 | 关键源码 | 阈值 |
-|---------|--------|---------|------|
-| **Input 派发超时** | `InputDispatcher::onAnrLocked(connection)` @ `InputDispatcher.cpp:6792` | mAnrTracker.firstTimeout() 命中 | `UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS = 5000` × HwTimeoutMultiplier |
-| **无焦点窗口** | `InputDispatcher::onAnrLocked(application)` @ `InputDispatcher.cpp:6835` | mNoFocusedWindowTimeoutTime 到期 | 同上 |
-| **Watchdog (system_server hang)** | `Watchdog.java:getCompletionStateLocked()` @ line 336 | 60s default / 15s pre-watchdog | `PRE_WATCHDOG_TIMEOUT_RATIO = 4` |
-| **Provider 超时** | `AMS.appNotRespondingViaProvider` @ `ActivityManagerService.java:7939` | `mCpHelper.appNotRespondingViaProvider(connection)` | 沿用 AnrHelper 流程 |
-| **Broadcast / Service 超时** | `ActiveServices.scheduleServiceTimeoutLocked` / `BroadcastQueueImpl.startDeliveryTimeoutLocked`、`deliveryTimeoutLocked` | Service 侧经 `ServiceAnrTimer`，Broadcast 侧经 `BroadcastAnrTimer` 后进入 `appNotResponding` | 详见各模块 |
+版本号只说明平台能力。DeviceConfig、compat change、targetSdk、广播 flags 和厂商修改都会影响某台设备的行为，分析报告应同时记录 build fingerprint、API level、targetSdk 和原始超时值。
 
-**Input 派发超时细分**：
+## 排查清单
 
-- **Connection ANR**（App 进程无响应）：waitQueue 头元素 `deliveryTime` 超 threshold → `connection->responsive = false` → `cancelEventsForAnrLocked` 清空后续事件。
-- **No Focused Window ANR**（启动期无窗口）：focusedApplicationHandle 存在但 focusedWindowHandle 为空 → 启动超时 → 等待焦点窗口出现；若超时则归咎 application 而非窗口。
+- 从 `Reason` 确定 detector，保留完整原文。
+- 记录计时开始点、到期点和系统等待的完成信号。
+- 查明冷启动是否占用了 Broadcast、Service 或 Provider 的等待时间。
+- Broadcast 记录 `FLAG_RECEIVER_FOREGROUND`、注册方式、ordered 状态和 `goAsync()` 完成路径。
+- Service 区分 execute-service、FGS 晋升、`shortService` 和限时 FGS。
+- Provider 区分 publish 初始化失败、显式 Provider detector 和调用方派生的 Input ANR。
+- JobService 区分 8 秒回调、job 运行时限、18 秒 bind timeout 和通知要求。
+- 线程栈与 Perfetto 只解释采样时刻；用日志、调度事件和 Binder 链补齐时间线。
+- 报告阈值时写明“源码默认值”或“设备观测值”，不要把可配置常量当成 SDK 保证。
 
-**关键 ANR 路径在 `AnrHelper` 内有 4 类 skip**（`AnrHelper.java:117-180`）：
+## 源码与官方资料
 
-1. zero pid（zygote 等极端）
-2. mProcessingPid 命中（同一 pid 重复处理）
-3. mTempDumpedPids 已 add（已被 earlyDump 处理）
-4. mAnrRecords 队列里已有同 pid（已排队，避免并发 dump）
+源码锚点均为 AOSP `android-17.0.0_r1`：
 
-**`isContinuousAnr=true` 触发条件**：CONSECUTIVE_ANR_TIME_MS = 2min 内同一应用再次 ANR，AppNotRespondingDialog 文案会带 "持续无响应" 提示。
+- `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`
+- `frameworks/base/core/java/android/os/IInputConstants.aidl`
+- `frameworks/base/core/java/android/app/AnrTypes.java`
+- `frameworks/base/core/java/android/content/ContentResolver.java`
+- `frameworks/base/core/java/android/content/ContentProviderClient.java`
+- `frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java`
+- `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java`
+- `frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java`
+- `frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java`
+- `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java`
+- `frameworks/base/services/core/java/com/android/server/am/TimeoutRecord.java`
 
-**Dropbox tag 命名规则**（`AMS.addErrorToDropBox` @ `ActivityManagerService.java:10537-10681`）：
+官方资料：
 
-- `dropboxTag = processClass(process) + "_" + eventType`
-- `processClass(process)` 返回值：`system_server`（PID=system_server）/ `system_app`（system UID）/ `data_app`（其他）
-- ANR tag 示例：`system_server_anr`、`system_app_anr`、`data_app_anr`
-- 受 `Settings.Global.MAX_ERROR_BYTES_PREFIX + dropboxTag` 控制单条最大字节数
-
----
-
+- [Keep your app responsive：ANR 类型与基础诊断](https://developer.android.com/topic/performance/vitals/anr)
+- [Diagnose and fix ANRs：广播、输入、execute-service 与 Provider 诊断](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
+- [Foreground service timeout behavior](https://developer.android.com/develop/background-work/services/fgs/timeout)
+- [Troubleshoot foreground services](https://developer.android.com/develop/background-work/services/fgs/troubleshooting)
+- [`JobService` API reference](https://developer.android.com/reference/android/app/job/JobService)
+- 研究素材：`intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md`
