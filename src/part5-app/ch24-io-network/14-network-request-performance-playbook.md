@@ -116,151 +116,421 @@ App 侧策略入口聚焦本地拆段、降级和指标埋点；线上接入层�
 
 <!-- outline-end -->
 
-移动端网络优化不能只盯一个慢接口。一次请求从域名解析到响应解析，中间会经过 DNS、建连、TLS、写请求、首字节、读响应、业务解码；任何一段抖动，页面都会变慢。App 侧要做的是把这些等待段拆清楚，再按场景选择网络栈、缓存、降级和监控策略。
+页面等待的是一次业务操作完成，网络库记录的却可能是若干次连接尝试、重定向和重试。只看请求总耗时，无法判断时间消耗在客户端排队、域名解析、服务端处理，还是响应解码。有效的治理方式是先建立分段时间线，再给每个场景分配总预算、重试预算和流量预算。
 
-App 侧可执行的策略主要落在请求分段、网络栈选型、弱网治理、后台约束和指标采集。DNS 与连接池细节见 24.4、24.10，HTTP/2、HTTP/3、QUIC 与 gRPC 见 24.5，线上网络质量观测见 26.17。
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台基准，聚焦普通 HTTP 请求的工程做法。连接池与超时见 24.4，协议与 QUIC 见 24.5，HTTPDNS 边界见 24.10，跨端线上观测见 26.17。
 
-## 先把一次请求拆成七段
+## 七段之前，还有排队和缓存判定
 
-网络请求总耗时没有诊断价值。要定位慢在哪里，日志至少拆成七段。
+对普通、非双工的 HTTP 请求，可以把网络与内容处理拆成七段。请求进入这七段前，还可能停留在业务队列、OkHttp `Dispatcher` 或缓存判定中。首屏偶发慢而 DNS、连接、TLS 全部正常时，这两段很容易被漏掉。
 
-| 阶段 | 典型等待 | App 侧观测入口 | 常见处理 |
-|---|---|---|---|
-| DNS | 域名解析慢、返回坏 IP、IPv6/IPv4 回退慢 | OkHttp `dnsStart/dnsEnd`、HTTPDNS 缓存命中率 | 异步预取、短 TTL、失败 IP 隔离 |
-| TCP connect | 建连慢、SYN 重传、单 IP 不通 | `connectStart/connectEnd/connectFailed` | 多 IP fast fallback、连接池复用、预连接 |
-| TLS | 握手慢、证书校验失败、会话恢复未命中 | `secureConnectStart/End` | 会话复用、证书链治理、减少跨域名散点 |
-| request write | 上传体大、写 socket 阻塞 | request body bytes、write timeout | 分片上传、压缩、限速、后台任务约束 |
-| TTFB | 服务端排队、接入层路由慢 | response headers 到达时间、服务端 trace id | 接入层日志关联、超时分层、灰度摘流 |
-| response read | 带宽低、大响应体、单连接限速 | body bytes、read timeout、吞吐估算 | 分页、断点续传、媒体自适应码率 |
-| decode/render | JSON/Proto 解码、图片解码、主线程阻塞 | 业务耗时、CPU trace、主线程任务 | 后台解码、缓存、减少首屏字段 |
+| 位置 | 时间边界 | 常见原因 | 可执行动作 |
+| --- | --- | --- | --- |
+| 业务与调度队列 | 业务提交时间到网络执行开始 | 同一主机并发占满、低优先级请求挤占、线程执行器拥塞 | 区分前台与后台调度，记录队列长度和等待时间 |
+| 缓存判定 | 执行开始到缓存命中，或进入网络阶段 | 缓存键错误、响应指令禁止缓存、条件请求 | 记录命中、条件命中和未命中，不把命中请求算作“零毫秒网络” |
+| DNS | `dnsStart` 到 `dnsEnd` | 解析器慢、无可用地址、地址顺序不合适 | 后台刷新、系统 DNS 回退、按 `Network` 隔离结果 |
+| connect | 每次 `connectStart` 到对应的成功或失败事件 | SYN 重传、某个地址不可达、代理连接慢 | 连接复用、OkHttp Fast Fallback、限制预连接 |
+| TLS | `secureConnectStart` 到 `secureConnectEnd` | 证书验证失败、完整握手、服务端配置异常 | 修复证书链、减少无价值跨域、观察会话恢复 |
+| request write | 请求头开始到请求体写完 | 上传体积大、发送窗口受限、写超时 | 分片、可恢复上传、限制后台大请求 |
+| TTFB | 请求发送完成到响应头开始到达 | 上行传输、接入层排队、服务端处理、下行首字节传输 | 关联服务端追踪记录，分离网关与业务耗时 |
+| response read | 响应体开始到读取结束 | 带宽不足、大响应、服务端发送慢 | 分页、断点续传、媒体自适应码率 |
+| decode/render | 完整数据可用到界面完成消费 | JSON/Proto 或图片解码、主线程工作、布局绘制 | 后台解码、裁剪字段、按需渲染 |
 
-OkHttp 的 `EventListener` 文档提供了 DNS、connect、secureConnect、request/response header/body 等事件，可用于把请求耗时拆到具体阶段。 如果使用 Cronet，优先使用 public Cronet API 的完成回调和指标能力；不要依赖 Android framework 里未公开或版本漂移的 `android.net.http` 内部指标类。
+TTFB 不是“读取响应头用了多久”。它覆盖请求发完以后，到客户端收到响应首部的等待。服务端指标正常而客户端 TTFB 偏高，仍可能是上行末尾、无线接入网、代理、下行首包或连接迁移造成的。流式上传、双工请求和长连接没有同一套时间边界，应单独定义事件。
 
-## 速度、弱网、安全和功耗分开设计
+### 用 OkHttp 事件记录事实，不急着在回调里算结论
 
-参考书把网络优化拆成速度、弱网、安全三个目标；Android 官方电量文档还要加上功耗。四个目标会互相牵制。
+下面的代码按 OkHttp 5.4.0 公开接口记录单调时钟上的事件点，作用是保留一次 `Call` 的原始顺序。阶段配对和聚合放到采集线程之外完成。
 
-| 目标 | 主要手段 | 代价 | 适用场景 |
-|---|---|---|---|
-| 速度 | HTTP/2 复用、HTTP/3/QUIC、预连接、缓存 | 连接和缓存状态更复杂 | 首屏、多小请求、API 域名集中 |
-| 弱网可用性 | 多 IP、重试、缓存降级、请求裁剪 | 流量放大、服务端幂等要求更高 | 地铁、电梯、蜂窝切 Wi-Fi、海外长距离线路 |
-| 安全 | HTTPS、证书校验、证书透明度、敏感接口 pinning | 握手成本、证书轮换成本 | 登录、支付、账号与隐私数据 |
-| 功耗/流量 | 批量同步、预取、后台约束、压缩 | 实时性下降、缓存一致性复杂 | feed、离线包、日志上报、后台同步 |
+```kotlin
+data class NetworkStageEvent(
+    val callSequence: Long,
+    val name: String,
+    val elapsedNanos: Long,
+    val byteCount: Long? = null,
+)
 
-同一个 App 通常要有两套路由：用户可见路径偏向低延迟，后台同步偏向批量和省电。把后台任务和首屏请求放在同一个 Dispatcher 或同一组连接策略里，低优先级请求会挤占用户可见路径。
+class TimelineEventListener(
+    private val callSequence: Long,
+    private val emit: (NetworkStageEvent) -> Unit,
+) : EventListener() {
+    private val originNanos = SystemClock.elapsedRealtimeNanos()
 
-## 网络栈选型：OkHttp、Cronet、自研长连接
+    private fun mark(name: String, byteCount: Long? = null) {
+        emit(
+            NetworkStageEvent(
+                callSequence = callSequence,
+                name = name,
+                elapsedNanos = SystemClock.elapsedRealtimeNanos() - originNanos,
+                byteCount = byteCount,
+            ),
+        )
+    }
 
-24.4 已经覆盖 OkHttp 的连接池、Dispatcher、Dns 和弱网策略。网络栈选型还要补上业务层边界。
+    override fun callStart(call: Call) = mark("call_start")
 
-| 方案 | 适合做什么 | 不适合做什么 | 验证点 |
-|---|---|---|---|
-| OkHttp | 常规 REST API、拦截器体系、Kotlin/Java App 网络层 | 需要 HTTP/3/QUIC 的路径；跨端统一网络栈 | EventListener 分段、连接池复用、Dispatcher 队列 |
-| Cronet | 需要 Chromium 网络栈、HTTP/3 over QUIC、Brotli、缓存、媒体/gRPC 集成 | 强依赖 OkHttp 拦截器模型的业务层；需要深度改写 socket 策略 | QUIC 成功率、fallback、缓存命中、请求完成指标 |
-| Android `HttpEngine` | Android 平台内的 Cronet 风格 HTTP stack 能力 | 旧系统兼容和第三方分发一致性 | API level、模块版本、QUIC/Brotli/cache 开关 |
-| 自研长连接 / Mars 类方案 | IM、推送、弱网保活、跨端 socket 层策略 | 通用 HTTP API 的完整替代 | 心跳、重连、前后台状态、服务端接入层协同 |
+    override fun dispatcherQueueStart(call: Call, dispatcher: Dispatcher) =
+        mark("dispatcher_queue_start")
 
-Android Developers 的 Cronet 文档说明，Cronet 是面向 Android App 的 Chromium network stack，目标是降低延迟、提高吞吐；它原生支持 HTTP、HTTP/2、HTTP/3 over QUIC，请求默认异步，并支持缓存和 Brotli 压缩。
+    override fun dispatcherQueueEnd(call: Call, dispatcher: Dispatcher) =
+        mark("dispatcher_queue_end")
 
-`android-17.0.0_r1` 中的 `android.net.http.HttpEngine.Builder` 也能看到相同方向的能力：`setEnableQuic()` 默认启用 QUIC，`setEnableHttp2()` 默认启用 HTTP/2，`setEnableBrotli()` 开启后会在 `Accept-Encoding` 中声明 Brotli，`setEnableHttpCache()` 可缓存 HTTP 数据和 QUIC server information，`addQuicHint()` 可提示某个 host 支持 QUIC，并说明跨 session 的 0-RTT 需要 disk HTTP cache。
+    override fun cacheHit(call: Call, response: Response) = mark("cache_hit")
+    override fun cacheMiss(call: Call) = mark("cache_miss")
 
-Cronet 不能让所有请求直接变快。接入前要用灰度实验回答四个问题：QUIC 建连成功率是否足够高；失败后回退到 TCP/TLS 的尾延迟是否可控；缓存和 Brotli 是否降低首屏字节数；业务层的重试、鉴权、trace id、日志脱敏能否迁移。
+    override fun cacheConditionalHit(call: Call, cachedResponse: Response) =
+        mark("cache_conditional_hit")
 
-## DNS、建连和连接复用要组合设计
+    override fun dnsStart(call: Call, domainName: String) = mark("dns_start")
 
-DNS 优化解决的是“连到哪里”，连接池解决的是“少建几次连接”，协议升级解决的是“同一连接上怎么承载请求”。三者不要混在一个拦截器里。
+    override fun dnsEnd(
+        call: Call,
+        domainName: String,
+        inetAddressList: List<InetAddress>,
+    ) = mark("dns_end")
 
-HTTPDNS 的同步接入边界见 24.10：OkHttp `Dns.lookup()` 位于 route 生成路径，返回前请求无法进入 connect；把实时 HTTPDNS 请求放进 `lookup()` 会把弱网 HTTP 请求塞进建连前置路径。更稳的模型是后台异步刷新，`lookup()` 只读缓存，缓存缺失或过期时回退系统 DNS。
+    override fun connectStart(
+        call: Call,
+        inetSocketAddress: InetSocketAddress,
+        proxy: Proxy,
+    ) = mark("connect_start")
 
-建连策略按风险分层：
+    override fun secureConnectStart(call: Call) = mark("tls_start")
 
-- 高价值域名可以做短窗口预连接，但要限制前后台状态和网络类型，避免唤醒 radio 后又没有用户请求。
-- 多 IP 返回要保留失败隔离，隔离维度至少包含 hostname、IP、Network、失败类型和时间窗。
-- IPv6/IPv4 fallback 要记录尝试顺序和失败原因，不能只上报最终成功 IP。
-- HTTP/2 connection coalescing 会让不同域名复用同一条 TLS 连接，证书 SAN、DNS 结果、IP 和 host 策略要一起验证，不能只按域名统计连接数。
+    override fun secureConnectEnd(call: Call, handshake: Handshake?) =
+        mark("tls_end")
 
-Android 的网络切换事件不要用同步查询补状态。`ConnectivityManager.NetworkCallback` 文档说明，`onAvailable()` 从 Android O 起会紧跟 `onCapabilitiesChanged()` 与 `onLinkPropertiesChanged()`，并明确不要在 callback 中调用 `getNetworkCapabilities()` 或 `getLinkProperties()` 等同步方法，因为结果可能过期或为空。
+    override fun connectEnd(
+        call: Call,
+        inetSocketAddress: InetSocketAddress,
+        proxy: Proxy,
+        protocol: Protocol?,
+    ) = mark("connect_end")
 
-## 弱网治理：先收敛失败，再谈加速
+    override fun connectFailed(
+        call: Call,
+        inetSocketAddress: InetSocketAddress,
+        proxy: Proxy,
+        protocol: Protocol?,
+        ioe: IOException,
+    ) = mark("connect_failed")
 
-弱网下最容易出问题的是请求风暴。一次超时触发多层重试，DNS、网络库、业务层、图片库、下载器各重试一次，用户看到的是更慢，服务端看到的是流量突增。
+    override fun connectionAcquired(call: Call, connection: Connection) =
+        mark("connection_acquired")
 
-弱网策略建议按这条顺序处理：
+    override fun connectionReleased(call: Call, connection: Connection) =
+        mark("connection_released")
 
-1. 区分失败类型：DNS 失败、connect timeout、TLS 失败、read timeout、HTTP 5xx、业务错误码分开统计。
-2. 限制重试对象：只对幂等 GET、可恢复下载、明确幂等的 POST 重试；支付、下单、状态变更接口靠服务端幂等 key。
-3. 给重试加预算：按页面或任务设置最大重试次数和总耗时，超出后切缓存或降级 UI。
-4. 按网络切换刷新策略：Wi-Fi/蜂窝/VPN 切换后刷新 DNS 与连接池状态，但保留短时兜底缓存，避免切网瞬间全部重建。
-5. 降低请求体积：弱网模式下裁剪字段、降低图片规格、推迟非首屏接口、关闭自动播放。
+    override fun requestHeadersStart(call: Call) = mark("request_headers_start")
 
-弱网不能用单一阈值概括。直播、游戏、文件下载和普通 API 对 RTT、丢包、吞吐的权重不同。点播更看重持续吞吐，游戏和语音更看重 RTT 与抖动，feed 首屏更看重 DNS、connect、TTFB 和首屏字节数。策略表要按业务类型拆开。
+    override fun requestHeadersEnd(call: Call, request: Request) =
+        mark("request_headers_end")
 
-## 压缩、缓存和预取要用请求形态验证
+    override fun requestBodyStart(call: Call) = mark("request_body_start")
 
-Cronet 和 Android `HttpEngine` 都暴露了 Brotli 开关，HTTP cache 还能缓存 HTTP 数据和 QUIC server information。 压缩和缓存的收益要按请求形态看。
+    override fun requestBodyEnd(call: Call, byteCount: Long) =
+        mark("request_body_end", byteCount)
 
-| 请求形态 | 优先策略 | 容易误判的点 |
-|---|---|---|
-| 小 JSON 配置 | ETag / Cache-Control / 服务端聚合 | gzip/Brotli 的 CPU 成本可能高于字节收益 |
-| 首屏 feed | 字段裁剪、分页、图片规格降级、预取下一页 | 预取过多会浪费流量和电量 |
-| 大文件下载 | 断点续传、分块校验、后台约束 | 多连接下载可能被服务端限速或触发风控 |
-| 图片/视频 | CDN、尺寸协商、AVIF/WebP、ABR | HTTP API 的结论不能直接套到媒体栈 |
-| 日志上报 | 批量、压缩、充电/Wi-Fi 约束 | 失败重试容易放大后台移动数据 |
+    override fun responseHeadersStart(call: Call) = mark("response_headers_start")
+    override fun responseBodyStart(call: Call) = mark("response_body_start")
 
-Android 官方 network access optimization 文档把无线电状态机作为省电依据：每次创建新网络连接都会让 radio 进入高功耗状态，频繁小传输会让 radio 长时间停在高功耗；批量传输和预取可以减少独立传输会话，降低 radio 激活次数，同时改善延迟和下载时间。
+    override fun responseBodyEnd(call: Call, byteCount: Long) =
+        mark("response_body_end", byteCount)
 
-预取要有退出条件：只预取用户下一步大概率会用到的数据；网络切到计费、受限、后台或低电量时停止；缓存命中率、废弃率和预取字节数必须上报。预取命中率低于业务阈值时，省下的等待会被浪费的流量和电量抵消。
+    override fun retryDecision(
+        call: Call,
+        exception: IOException,
+        retry: Boolean,
+    ) = mark(if (retry) "retry_accepted" else "retry_rejected")
 
-## 后台网络要按电量和 Vitals 指标约束
+    override fun canceled(call: Call) = mark("canceled")
+    override fun callEnd(call: Call) = mark("call_end")
+    override fun callFailed(call: Call, ioe: IOException) = mark("call_failed")
+}
 
-后台网络任务不能复用前台的“越快越好”策略。Android power 文档把网络请求与电量消耗直接关联；Android Vitals 的 excessive mobile network usage 页面说明，后台移动网络会唤醒 CPU 和 radio，反复执行会消耗电量，Play Console 会对后台移动网络使用过多给出提醒。
+fun buildNetworkClient(
+    eventSink: (NetworkStageEvent) -> Unit,
+): OkHttpClient {
+    val callSequence = AtomicLong()
+    return OkHttpClient.Builder()
+        .eventListenerFactory {
+            TimelineEventListener(
+                callSequence = callSequence.incrementAndGet(),
+                emit = eventSink,
+            )
+        }
+        .build()
+}
+```
 
-工程上把后台网络拆成三类：
+`callSequence` 只用于关联同一进程内的事件，跨端追踪仍要使用受控的追踪标识。代码刻意没有记录域名、IP、完整 URL 和异常消息；生产采集应使用路由模板、错误分类和匿名化网络标识，避免把令牌、查询参数或用户地址写入日志。`eventSink` 还要支持并发写入，因为并行建连和取消可能从不同线程回调。事件方法必须快速返回，文件和网络 I/O 放到异步消费端，也不能从回调重新调用同一个客户端。
 
-- 用户可感知但可延迟：草稿同步、离线缓存、上传队列。使用 WorkManager 约束网络、电量和充电状态。
-- 用户不可感知：埋点、日志、模型配置、AB 配置。批量上报，限制移动网络和失败重试。
-- 业务保活：IM、推送、实时协作。单独设计心跳和退避，不能和普通 API 共享重试器。
+同一 `Call` 内的事件不保证各出现一次：
 
-`TrafficStats` 可作为 App 侧流量基线：android-17.0.0_r1 文档说明它提供发送/接收字节和包数，范围包括所有接口、移动接口和 per-UID；统计值重启后清零，Android N 起查询其他 UID 会因隐私限制返回 `UNSUPPORTED`，历史网络统计应使用 `NetworkStatsManager`。
+- 连接池复用时不会出现 DNS、connect 和 TLS 事件。
+- 缓存直接命中时不会进入网络读写。
+- 重定向、身份验证跟进和连接恢复可能形成多个请求/响应交换。
+- OkHttp 5 默认启用 `fastFallback`，多个地址可能并行建连，因此 `connectStart`、`connectFailed` 和 `connectEnd` 会重复或交错。
+- 响应体只有被读取或关闭后，生命周期数据才完整。只拿到 `Response` 就结束计时，会漏掉下载耗时。
 
-## 指标采集要覆盖客户端、接入层和业务层
+业务队列仍需在业务提交与 `Call.enqueue()` 两处打点。OkHttp 5.4.0 的 `dispatcherQueueStart/End` 则直接标记网络库因线程或流数量限制产生的等待；未排队的调用不会收到这对事件。`callStart` 到首个缓存、代理或连接事件之间不能统一命名为 DNS 耗时。
 
-网络优化必须用同一套 trace id 把客户端事件、接入层日志和业务服务日志串起来。客户端只知道 DNS、connect、TLS、读写和本地解码，服务端只知道接入层排队、上游耗时和响应字节；两边不关联，TTFB 慢很容易被误判成“网络差”。
+## 速度、弱网、安全和功耗是四组约束
 
-推荐的最小指标集：
+这四项目标的策略会相互影响。预连接可能降低下一次请求延迟，也可能无故唤醒无线电；并行建连能缩短坏地址带来的等待，也会增加连接尝试；频繁重试提高某些请求的成功率，同时会放大流量和服务端压力。
 
-| 层级 | 指标 | 用途 |
-|---|---|---|
-| 客户端请求 | 协议、network type、DNS 耗时、connect 耗时、TLS 耗时、TTFB、body bytes、失败类型 | 找出慢在哪一段 |
-| 客户端流量 | UID Rx/Tx、移动网络字节、后台字节、预取废弃字节 | 约束电量和流量 |
-| 网络库状态 | 连接池命中、HTTP/2 stream 数、QUIC 使用率、fallback 次数 | 验证网络栈收益 |
-| 接入层 | region、IDC/CDN、upstream latency、5xx、限流、重试 | 区分客户端网络与服务端问题 |
-| 业务层 | 页面阶段、接口优先级、缓存命中、降级状态 | 判断用户是否真的变快 |
+| 目标 | 常用手段 | 必须同时观察 |
+| --- | --- | --- |
+| 交互速度 | 连接复用、缓存、请求合并、减少首屏字段、合适的 HTTP/2 或 HTTP/3 | P50/P95/P99、队列等待、缓存路径、首屏完成时间 |
+| 弱网可用性 | 多地址建连、总截止时间、幂等重试、缓存数据、降级界面 | 物理尝试数、尾延迟、重复写入、取消是否生效 |
+| 传输安全 | HTTPS、平台证书验证、Network Security Configuration、证书透明度 | 握手失败分类、证书轮换、调试信任配置是否进入发布包 |
+| 功耗与流量 | 批量同步、计费网络约束、压缩、受控预取 | 后台移动流量、无线电唤醒、废弃预取字节、任务新鲜度 |
 
-参考书提到插桩、Native Hook、TrafficStats、接入层监控这些方向。当前章节不建议把 Hook 当成默认方案：Aspect/OkHttp interceptor 适合统一自家网络层；Native Hook 能覆盖更底层 socket，但兼容性、稳定性和隐私风险更高，适合 APM SDK 或实验环境。常规业务 App 先把网络库事件和 TrafficStats 做准。
+安全策略不能用跳过证书校验换成功率。自定义“信任所有证书”的 `TrustManager`、宽松 `HostnameVerifier` 和明文回退都应从发布构建中移除。对于以 Android 17 / API 37 为目标版本的应用，证书透明度默认启用；只有确有私有证书体系等兼容需求时才评估按域配置。
 
-## 不同场景不要套同一套网络结论
+Android 官方安全文档不建议普通应用使用证书固定。服务端更换证书或 CA 后，旧版本客户端可能全部断网。如果业务风险评估后仍决定固定公钥，必须准备备用公钥、短有效期、服务端轮换演练和应用版本覆盖方案。证书固定不能代替标准证书链与主机名验证。
 
-普通 API、WebView、Media3/ExoPlayer、文件下载和 IM 长连接使用的网络栈可能不同。Cronet integration 文档说明 Cronet 可以与 ExoPlayer、gRPC、OkHttp、Glide、Dart 等库集成；这说明网络栈有机会统一，但不代表所有库天然共用同一套连接池和指标。
+前台交互和后台同步还应拥有不同的并发配额。共享一个 `OkHttpClient` 有利于复用连接和线程资源，但业务调度层可以为后台任务设置独立队列或并发闸门，防止批量上传占满用户可见请求的执行机会。
 
-场景拆分建议：
+## OkHttp、Cronet、HttpEngine 与长连接怎么选
 
-- API 请求：以 OkHttp/Cronet 请求事件为主，关注 DNS、connect、TLS、TTFB。
-- 媒体播放：以 ABR、buffer health、CDN、range request、播放器 network stack 为主，详见 24.5 与媒体章节。
-- WebView：网络栈受 WebView/Chromium 版本影响，App 的 OkHttp 拦截器通常覆盖不到。
-- 下载器：关注断点续传、校验、后台约束、失败恢复和服务端限速。
-- 长连接：关注心跳、前后台状态、NAT 超时、重连退避和服务端接入层。
+网络栈的协议列表只说明能力，无法直接证明业务收益。选型时同时检查兼容范围、可观测性、现有拦截器语义、缓存目录和服务端配置。
 
-## 检查清单
+| 方案 | 合适的请求 | 主要能力 | 引入时要验证 |
+| --- | --- | --- | --- |
+| OkHttp 5 | 常规 REST、GraphQL、文件上传下载 | 成熟的拦截器、HTTP/1.1 与 HTTP/2、连接池、`EventListener` | 调度等待、连接复用、业务拦截器顺序；它本身不提供 HTTP/3 |
+| Cronet 库 | 需要 Chromium 网络栈、HTTP/3 over QUIC、Brotli 或 Cronet 生态集成的路径 | 异步请求、HTTP/1.1、HTTP/2、HTTP/3、缓存、`RequestFinishedInfo` | 提供程序、QUIC 成功率、TCP 回退尾延迟、回调线程、缓存目录 |
+| 平台 `HttpEngine` | 系统版本和扩展版本满足条件，并希望使用平台 HTTP 引擎的应用 | Cronet 风格 API，HTTP/2 与 QUIC 默认开启，可选 Brotli 与 HTTP 缓存 | API/扩展版本、公开指标边界、厂商模块更新、存储目录 |
+| 自有长连接 | IM、实时协作、推送补充通道等有持续会话语义的业务 | 自定义心跳、消息确认、重连和流控 | NAT 超时、前后台限制、鉴权续期、服务端容量；不用于替代全部 HTTP API |
 
-上线前按这张表验收：
+Cronet 可以通过应用库或 Google Play 服务提供程序加载。工程上应检查最终选中的 `CronetProvider`；Java 回退实现的性能和协议能力不能当作原生 Cronet 等价物。应用通常复用一个 `CronetEngine`，同一个磁盘存储目录也不能被多个引擎同时占用。请求完成数据由 `RequestFinishedInfo.Listener` 采集，调试环境还可按需生成 NetLog，但 NetLog 可能包含敏感网络信息，不应默认上传。
 
-- 每条请求能拆出 DNS、connect、TLS、TTFB、body read、decode 耗时。
-- DNS 优化没有把 HTTPDNS 网络请求放进 OkHttp `Dns.lookup()` 同步路径。
-- 多 IP fallback 有失败隔离和总耗时预算。
-- QUIC/HTTP/3 有成功率、fallback、尾延迟和服务端成本数据。
-- 预取有命中率、废弃字节、移动网络字节和后台状态限制。
-- 后台同步使用网络、电量、充电、计费约束，并独立统计 Android Vitals 风险。
-- 大响应体、上传和下载有断点恢复、校验和重试预算。
-- 客户端 trace id 能关联接入层和业务服务日志。
-- WebView、媒体、下载和长连接没有直接套用普通 API 的优化结论。
+Cronet 的 `UrlRequest.Callback.onResponseStarted()` 收到的是重定向后的最终响应头。HTTP 4xx/5xx 仍是成功完成传输的 HTTP 响应，业务必须读取或取消响应体；它们不会自动进入 `onFailed()`。`NetworkException.immediatelyRetryable()` 只是网络库给出的一个信号，业务仍要检查幂等性、总截止时间和尝试次数。
+
+### `android-17.0.0_r1` 的 HttpEngine 边界
+
+Android 17 公开 SDK 中，`HttpEngine` 从 API 34 / Android S 扩展 7 起可用。`HttpEngine.Builder` 的默认值是：
+
+- HTTP/2：开启。
+- QUIC：开启。
+- HTTP 缓存：关闭。
+- Brotli：关闭。
+
+`setEnableHttpCache()` 的磁盘模式除 HTTP 响应外，还可保存 QUIC 服务器信息；`HTTP_CACHE_DISK_NO_HTTP` 只持久化这类非 HTTP 数据。开启磁盘模式前必须设置独占的存储目录。`setEnableBrotli(true)` 会让引擎在 `Accept-Encoding` 中声明 Brotli，不能因为类存在就假定已经开启。
+
+`android-17.0.0_r1` 的公开 API 没有完整的逐请求 DNS、connect、TLS 分段结果。后续模块版本增加的 `FinishedRequestTimings` 不属于这个源码锚点，基于 `r1` 构建的观测代码不能依赖它。`UrlResponseInfo` 可提供协商协议、缓存标记和字节等公开结果，完整分段应在所选网络库公开能力范围内设计，不能调用隐藏类补齐。
+
+这些结论可在 [`android-17.0.0_r1` 的 API 37 公开签名](https://android.googlesource.com/platform/prebuilts/sdk/+/refs/tags/android-17.0.0_r1/37.0/public/api/android.txt) 中核对。24.5 继续说明 QUIC、0-RTT 和模块版本边界。
+
+## DNS、建连和网络切换按 Network 隔离
+
+DNS 决定候选地址，连接池减少重复握手，Fast Fallback 控制多个候选地址的尝试节奏。三部分相互影响，但生命周期不同。
+
+HTTPDNS 的同步边界见 24.10。OkHttp `Dns.lookup()` 位于路由生成前，请求必须等它返回。把一次实时 HTTPDNS 请求放进 `lookup()` 会让原请求依赖另一条网络请求，还可能递归进入同一个网络栈。生产实现通常由后台任务刷新结果，`lookup()` 只读本地快照；无结果、过期或失败时回到系统 DNS。
+
+OkHttp 5 的 `fastFallback` 默认开启，通过并行尝试多个地址减少单个坏地址造成的等待。它会消耗额外套接字和握手资源，因此要记录每个连接尝试的地址族、开始顺序、失败分类和获胜协议。日志中的地址应匿名化，故障隔离至少包含主机、地址、Android `Network`、失败类型和有效期。
+
+不要因 DNS TTL 到期就清空连接池。已经建立的连接有自己的可用性与安全校验，TTL 管理的是后续解析结果。HTTP/2 连接合并还可能让多个主机共用一条连接，是否可复用要同时满足证书、地址、代理和网络库规则，不能用“每个域名一条连接”推算。
+
+### 网络回调只使用随回调送达的数据
+
+Android 8.0 起，默认网络回调中的 `onAvailable(network)` 后会依次送达 `onCapabilitiesChanged()`、`onLinkPropertiesChanged()` 和 `onBlockedStatusChanged()`。不要在这些回调里同步调用 `getNetworkCapabilities()` 或 `getLinkProperties()`；返回对象可能已经过期，也可能为空。Android 17 对应实现可在 [`ConnectivityManager.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java) 中核对。
+
+判断网络时使用能力，少用传输类型猜测：
+
+- `NET_CAPABILITY_INTERNET` 表示网络配置为可访问互联网，不代表已经通过系统验证。
+- `NET_CAPABILITY_VALIDATED` 是系统确认公共互联网可达的信号。
+- `NET_CAPABILITY_CAPTIVE_PORTAL` 表示可能需要门户登录。
+- `NET_CAPABILITY_NOT_METERED` 表示系统认为该网络不计费。
+- Wi-Fi 可能计费、拥塞或无互联网；蜂窝网络也可能吞吐更高。一个网络还可能同时具有多个传输类型，VPN 会进一步改变观察结果。
+
+默认网络切换后，新建套接字会使用新的默认网络；已有连接可能短时间继续工作，随后失效。不要在每次 `onAvailable()` 或能力变化时直接调用 `connectionPool.evictAll()`：这会终止可复用连接，并让所有请求同时重建。更稳妥的处理是让网络库识别连接失效，对失败的幂等请求在预算内恢复。显式使用 `Network.bindSocket()` 的业务应按 `Network` 管理客户端和连接池，并在对应网络失效后关闭该组资源。
+
+## 弱网治理从一次逻辑操作开始计数
+
+“请求重试了几次”常有歧义。一次页面加载可能触发一个逻辑操作，逻辑操作包含多个网络库 `Call`；每个 `Call` 又可能包含多个路由尝试和 HTTP 交换。
+
+| 层级 | 示例 | 应记录的标识与预算 |
+| --- | --- | --- |
+| 逻辑操作 | 刷新首页、提交订单、上传草稿 | `operation_id`、用户等待截止时间、允许的总字节 |
+| 网络库调用 | 一次 OkHttp `Call` 或 Cronet `UrlRequest` | `call_id`、调用序号、取消原因 |
+| 连接尝试 | IPv6、IPv4、代理或替代地址建连 | `attempt_id`、地址族、`Network`、错误分类 |
+| HTTP 交换 | 重定向、401 认证跟进、业务层重试 | `exchange_id`、响应码、发送与接收字节 |
+
+所有内部恢复都消耗逻辑操作的总预算。网络库连接恢复一次、业务层再重试两次，不能在报表里写成“只重试两次”。
+
+### 重试前回答五个问题
+
+1. 失败发生在哪一段？DNS、connect、TLS、写入、读取、HTTP 状态码和业务错误不能放在一个“网络失败”桶里。
+2. 服务端是否可能已经执行？请求体写出后连接断开，客户端不知道服务端是否收到了并提交事务。
+3. 操作是否幂等？GET、HEAD 通常可重试；支付、下单、发消息等写操作需要服务端支持稳定的幂等键和结果查询。
+4. 剩余截止时间是否足够？新尝试要包含排队、解析、建连、TLS 和读取时间，不能只比较单次读超时。
+5. 服务端是否要求等待？遇到 429 或 503 时解析 `Retry-After`，并与客户端总截止时间共同决定是否再试。
+
+OkHttp 的 `retryOnConnectionFailure` 处理部分可恢复连接故障，不会替业务处理 HTTP 429、5xx 或业务错误码。业务重试器要放在它的外层统一计数，采用有上限的指数退避与随机抖动，并响应页面销毁、协程取消和进程后台化。多个请求同时失败时，还要限制恢复并发，避免网络恢复瞬间发出一批重复请求。
+
+状态变更接口即使带了幂等键，也要由服务端定义键的作用域、保留时长、参数冲突行为和结果查询方式。客户端生成一个随机键但服务端不存储，不能提供幂等保证。
+
+降级同样属于预算决策。缓存数据要标注新鲜度，界面要区分“旧数据可用”和“操作提交失败”；读请求可以显示旧数据，写请求不能用本地成功状态掩盖服务端结果未知。
+
+## 压缩、缓存和预取要分别核算
+
+这三类策略节省的资源不同：
+
+- 压缩减少线上传输字节，同时增加压缩、解压和缓存变体成本。
+- HTTP 缓存避免或缩短网络访问，正确性由 `Cache-Control`、`ETag`、`Vary` 等响应语义决定。
+- 预取把一次可能发生的请求提前执行，命中时减少等待，未使用时会浪费流量、电量和缓存空间。
+
+| 请求形态 | 优先检查 | 常见误判 |
+| --- | --- | --- |
+| 小型 JSON 配置 | `ETag`、字段裁剪、合并往返 | Brotli 节省的字节可能抵不过额外处理和首包开销 |
+| 首屏列表 | 分页、响应字段、图片尺寸、下一页概率 | 拉取更多数据不等于首屏更快 |
+| 大文件 | Range、实体校验、临时文件、原子完成 | 仅支持 Range 不代表资源变更后还能安全续传 |
+| 图片与视频 | CDN、尺寸协商、格式、播放器自适应码率 | 普通 API 的超时和并发参数不适用于媒体 |
+| 日志与遥测 | 批量、压缩、去重、后台约束 | 每条日志独立重试会增加无线电唤醒 |
+
+记录字节数时必须写明语义：线上压缩字节、解压后的响应体字节、业务对象大小不能混为一个字段。各网络库公开指标包含的头部、协议开销和解压阶段也可能不同，跨网络栈对比前要统一口径。
+
+缓存命中率也要分路径：直接命中、条件请求返回 304、网络取回新实体、请求不可缓存。带鉴权信息的响应是否允许共享或本地保存，由服务端缓存指令和产品安全要求共同决定，客户端不能为了命中率强制缓存。
+
+预取应由下一步使用概率、对象体积和资源状态共同控制。出现计费网络、Data Saver、低电量、后台受限或业务方向改变时，及时取消尚未开始的任务；已经执行的请求仍要纳入废弃字节统计。Android 官方网络功耗文档中的无线电状态数字来自特定制式和设备，只适合作为机制示例，不能直接当作 LTE、5G 和所有运营商的固定参数。
+
+## 后台请求由 WorkManager 和系统约束调度
+
+后台同步的目标是按期完成并控制资源，而不是争抢最低延迟。可延迟的持久任务使用 WorkManager 表达网络、电量、充电、空闲和存储约束；用户主动发起、需要进度与取消控制的大传输，应评估 `DownloadManager` 或系统的用户发起数据传输任务。
+
+下面的示例为可延迟同步创建唯一任务，避免同一业务范围反复入队。`NetworkType.UNMETERED` 表示系统判定为不计费，不等同于指定 Wi-Fi。
+
+```kotlin
+fun enqueueDeferredSync(
+    context: Context,
+    uniqueName: String,
+    requireCharging: Boolean,
+) {
+    val constraints = Constraints.Builder()
+        .setRequiredNetworkType(NetworkType.UNMETERED)
+        .setRequiresBatteryNotLow(true)
+        .setRequiresCharging(requireCharging)
+        .build()
+
+    val request = OneTimeWorkRequestBuilder<DeferredSyncWorker>()
+        .setConstraints(constraints)
+        .setBackoffCriteria(
+            BackoffPolicy.EXPONENTIAL,
+            WorkRequest.MIN_BACKOFF_MILLIS,
+            TimeUnit.MILLISECONDS,
+        )
+        .build()
+
+    WorkManager.getInstance(context).enqueueUniqueWork(
+        uniqueName,
+        ExistingWorkPolicy.KEEP,
+        request,
+    )
+}
+```
+
+`uniqueName` 应表示稳定的任务范围，并避免包含账号、文档名等个人信息。`KEEP` 适合“已有同范围任务就不重复加入”的语义；如果新任务必须取代旧输入，需明确选择 `REPLACE` 带来的取消行为，或重新设计可合并的输入队列。
+
+约束在 Worker 运行期间变为不满足时，WorkManager 会停止工作，条件恢复后再安排。Worker 因此必须支持协作式取消：关闭响应体、取消进行中的 HTTP 调用、保留可验证的续传位置，并让服务端写操作具备幂等性。退避时间是调度下限，不是精确执行时刻。
+
+Android vitals 把应用处于 `PROCESS_STATE_BACKGROUND` 或 `PROCESS_STATE_CACHED` 时，每天移动网络接收与发送合计 50 MB 视为过度后台移动网络使用。这个值是 Play Console 的告警定义，不是业务可以放心用满的配额。定位功耗时优先使用系统追踪、Macrobenchmark 功耗指标或 Power Profiler；Battery Historian 已不再积极维护。
+
+Data Saver 开启且当前网络计费时，系统可能限制后台数据，前台应用也应减少非必要传输。任务是否执行应结合系统限制、用户设置和产品时效要求，不能只判断 Wi-Fi 或蜂窝图标。
+
+### TrafficStats 能回答什么
+
+`TrafficStats.getUidRxBytes()` 与 `getUidTxBytes()` 可以观察当前 UID 自开机以来、跨所有网络接口累计的网络层字节。它适合做进程内前后差值和粗粒度异常发现，但有以下边界：
+
+- 设备重启后归零，设备不支持时返回 `UNSUPPORTED`。
+- Android 7.0 起只能查询调用方 UID，查询其他 UID 返回 `UNSUPPORTED`。
+- UID 数值包含该 UID 的全部接口和 TCP/UDP 流量，无法直接得到单请求、单域名或后台移动网络字节。
+- 接口级统计对 VPN、CLAT 等调整并不完整，不能用作结算或安全审计。
+- 历史用量查询应使用 `NetworkStatsManager`，还要遵守权限和用户授权要求。
+
+Android 17 的这些约束可在 [`TrafficStats.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework-t/src/android/net/TrafficStats.java) 中核对。`TrafficStats.setThreadStatsTag()` 只提供流量归因标签，不会替应用执行限流、取消或后台约束。
+
+## 指标按逻辑操作、尝试和交换建模
+
+客户端只能观察本地队列、网络库事件和解码；接入层知道路由、限流与上游耗时；业务服务知道事务和依赖。三方使用同一个追踪标识，才能判断 TTFB 增长来自无线网络、网关排队还是服务端。
+
+推荐的字段按职责分组：
+
+| 层级 | 字段 | 说明 |
+| --- | --- | --- |
+| 逻辑操作 | 路由模板、操作类型、前后台、总截止时间、最终结果 | 统计一次用户动作，不被内部重试放大 |
+| 网络调用 | 网络栈、缓存路径、协商协议、响应码、发送/接收字节 | 协议从公开协商结果读取，不按 URL 或端口猜测 |
+| 连接尝试 | DNS、connect、TLS 事件，地址族，代理类型，匿名化 `Network` | 允许缺失和重复，保留并行尝试关系 |
+| Android 网络 | `VALIDATED`、`NOT_METERED`、`CAPTIVE_PORTAL`、传输集合、Data Saver | 使用回调提供的能力快照 |
+| 服务端 | 区域、接入节点、排队、上游耗时、限流、重试 | 与客户端 TTFB 和响应码关联 |
+| 页面消费 | 解码、数据合并、首屏提交、降级类型、缓存年龄 | 判断网络变快是否转化为用户可见收益 |
+
+追踪标识可通过标准追踪头或业务头传递，但服务端要限制长度、字符集和信任边界，不能把客户端提供的任意值直接写入高基数字段。完整 URL、查询参数、Cookie、Authorization、原始 IP、证书内容和异常正文不进入常规遥测。路由用 `/items/{id}` 这类模板表示。
+
+统计时至少分开以下分母：
+
+- 逻辑操作成功率：用户动作是否在截止时间内得到可用结果。
+- 网络调用成功率：每个 `Call` 或 `UrlRequest` 的结果。
+- 连接尝试成功率：每个地址与协议尝试的结果。
+- 缓存可用率：直接命中、条件命中和旧数据降级。
+
+如果把所有连接尝试都当请求，Fast Fallback 会抬高“失败率”；如果只保留获胜连接，又看不到 IPv6、代理或某组地址持续失败。原始事件与面向业务的聚合指标应同时保留定义。
+
+Native socket Hook 可以覆盖未接入统一网络库的流量，但它会引入 ABI、兼容性、稳定性和隐私风险。普通应用应先把 OkHttp `EventListener`、Cronet 完成信息、平台公开回调和业务追踪记录准确；Hook 更适合受控诊断或专门的 APM 组件。
+
+## 不同请求场景分别验收
+
+Cronet 可以接入 Media3/ExoPlayer、gRPC、OkHttp 传输适配器和图片库，但“用了 Cronet”不代表这些组件自动共用同一个引擎、连接池、缓存目录或指标。必须检查应用创建和注入的实例。
+
+| 场景 | 主要指标 | 不能直接套用的结论 |
+| --- | --- | --- |
+| 普通 API | 队列、缓存、DNS、connect、TLS、TTFB、解码 | 单接口平均值不能代表页面完成时间 |
+| WebView | WebView/Chromium 版本、导航与资源时序、Service Worker | App 的 OkHttp 拦截器通常覆盖不到 WebView |
+| 媒体播放 | 启播、卡顿、缓冲余量、码率切换、CDN、Range | 普通 JSON 的超时与并发配置不适用于媒体段 |
+| 大文件传输 | 断点位置、实体校验、磁盘空间、用户取消、完整性 | 多连接下载不保证更快，也可能触发服务端限制 |
+| IM 与长连接 | 握手、鉴权、心跳、确认、积压、重连退避 | HTTP 请求成功率不能描述会话可用性 |
+
+弱网实验也要覆盖业务会遇到的网络状态：高 RTT、限带宽、丢包、IPv6-only/NAT64、门户网络、VPN、Data Saver、前后台切换和 Wi-Fi/蜂窝切换。测试代理可以制造延迟、断流和状态码，MockWebServer 可以验证重定向、重试、半包与响应体关闭；真机测试负责验证 Android 网络回调、无线电和系统后台限制。
+
+每次改动至少比较：
+
+- 逻辑操作的 P50、P95、P99 与超时率。
+- 每个操作产生的网络调用数、连接尝试数和总字节。
+- 缓存直接命中、条件命中与旧数据降级比例。
+- 切网、取消和页面退出后的遗留请求数。
+- 后台移动网络字节、任务完成时效与功耗变化。
+
+平均耗时下降但 P99、重试次数或后台字节上升，不能直接判定优化有效。
+
+## 上线检查清单
+
+- 业务入队、网络执行、缓存路径和七段时间线都有明确边界。
+- `EventListener` 允许事件缺失、重复和并行，不用单一 `connectStart` 覆盖后续尝试。
+- TTFB 从请求发送结束算到响应开始，并能与接入层和服务端追踪记录关联。
+- HTTPDNS 没有在 `Dns.lookup()` 内执行同步网络请求，结果按 Android `Network` 隔离。
+- 网络切换不会无条件清空全局连接池，也不会在回调内同步查询网络属性。
+- 重试从逻辑操作统一计数，并同时受幂等性、总截止时间、总字节和并发限制。
+- 429/503 处理 `Retry-After`；写入后断线被视为结果未知，不直接重复提交。
+- Android 17 保留平台证书验证与默认 CT，不含信任所有证书或宽松主机名验证。
+- Cronet、HttpEngine 和 OkHttp 的协议、缓存、压缩与指标能力按实际配置记录。
+- WorkManager 唯一任务、约束、停止和退避行为与业务语义一致。
+- `TrafficStats` 只用于其支持的 UID 粗粒度统计，不冒充单请求或后台移动流量。
+- WebView、媒体、大文件和长连接使用各自的指标与测试场景。
+
+## 参考资料
+
+- [Android 17 / API 37 公开 API 签名](https://android.googlesource.com/platform/prebuilts/sdk/+/refs/tags/android-17.0.0_r1/37.0/public/api/android.txt)
+- [HttpEngine.Builder API](https://developer.android.com/reference/android/net/http/HttpEngine.Builder)
+- [Cronet 概览](https://developer.android.com/develop/connectivity/cronet)
+- [Cronet 集成](https://developer.android.com/develop/connectivity/cronet/integration)
+- [Cronet RequestFinishedInfo](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo)
+- [OkHttp 5.4.0 EventListener 源码](https://github.com/square/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt)
+- [OkHttp 5.4.0 OkHttpClient 源码](https://github.com/square/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/OkHttpClient.kt)
+- [读取 Android 网络状态](https://developer.android.com/develop/connectivity/network-ops/reading-network-state)
+- [Network Security Configuration](https://developer.android.com/privacy-and-security/security-config)
+- [Android 网络协议安全](https://developer.android.com/privacy-and-security/security-ssl)
+- [定义 WorkManager 任务](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work)
+- [用户发起数据传输](https://developer.android.com/develop/background-work/background-tasks/uidt)
+- [优化网络访问以降低功耗](https://developer.android.com/topic/performance/power/network/index.html)
+- [后台移动网络用量 Android vitals](https://developer.android.com/topic/performance/vitals/bg-network-usage)
+- [TrafficStats API](https://developer.android.com/reference/android/net/TrafficStats)
