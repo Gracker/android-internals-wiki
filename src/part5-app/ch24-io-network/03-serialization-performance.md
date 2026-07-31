@@ -91,91 +91,177 @@ last_deepseek_cn_review_at: 2026-07-01
 
 ## 为什么要了解序列化性能对比与选型
 
-序列化选型会同时影响 CPU、内存分配、包体积、混淆稳定性和协议演进。它不像数据库慢查询那样容易在 trace 里留下一个醒目的耗时片段，更多时候表现为冷启动阶段的短时 CPU 峰值、一次网络响应后的对象洪峰、Binder 调用前后多出来的复制成本，或者线上只在混淆包里复现的字段丢失。
+本文的平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`；涉及 Binder 驱动时，内核锚点是 `android17-6.18-2026-06_r6`。JSON、Protocol Buffers、FlatBuffers 等库独立于 Android 平台发布，行为要以项目锁定的依赖版本为准。
 
-应用侧选型要回答几个问题：JSON 库怎么选，什么时候换成 Protocol Buffers 或 FlatBuffers，进程间传对象该用 Parcelable 还是 Serializable，序列化工作怎么从启动路径和 Binder 路径里移出去。Binder 事务模型和线程池竞争详见 1.4 节；启动阶段的 TTID/TTFD 观测详见 21.1 节；连接池、弱网重试和协议层设计详见 24.4 节。
+序列化会消耗 CPU，产生临时对象，也会改变包体积、混淆规则和协议演进方式。问题通常表现为冷启动解析配置时的 CPU 区段、网络响应后的分配与 GC、Binder 调用两侧的编解码，或者只在 R8 发布包中出现的字段丢失。
 
+选型要先确定数据边界：
+
+- 进程内函数调用直接传对象，不需要序列化。
+- 网络与持久化需要可演进、跨版本的格式，例如 JSON 或 Protocol Buffers。
+- Android 组件参数、瞬时状态和跨进程调用使用 `Parcelable`、`Bundle` 或 AIDL 支持的类型。
+- 大型二进制内容应通过文件描述符、内容 URI 或分页接口传递，不应内嵌进一个 Binder 事务。
+
+Binder 机制见 [1.4 Binder IPC](../../part1-fundamentals/ch01-architecture/04-binder.md)，启动观测见 [21.1 启动分析](../ch21-startup/01-startup-analysis.md)，网络协议设计见 [24.4 网络架构](04-network-architecture.md)。
 
 ## JSON（Gson / Moshi / kotlinx.serialization）性能对比
 
-JSON 的优势是可读、调试方便、后端兼容成本低。代价是文本格式本身需要 token 扫描和字符串处理；对象绑定还会产生字段匹配、构造对象、集合扩容和临时字符串。小请求里这部分成本通常被网络延迟盖住，大列表、配置下发、启动预拉取和离线缓存恢复时，序列化就会进入用户可感知路径。
+JSON 便于抓包、日志检查和跨语言协作。解析端仍要扫描词法单元、解码字符串、匹配字段并构造对象；若先建 `JsonElement` 或类似树结构，再转换成业务对象，还会增加一轮对象分配。小响应中的成本可能低于网络等待，大列表、配置恢复和启动预读则需要单独测量。
 
-Gson 的主要问题不只在速度。Gson README 已明确说明，它不推荐作为 Android JSON 方案：运行时开放反射与 shrink/optimization/obfuscation 不好配合，Android 场景更适合 Kotlin Serialization 或 Moshi Codegen 这类代码生成方案。已有 Gson 存量项目可以保留在非关键路径，但新模型不要继续把 Gson 放进启动、列表首屏或大批量缓存恢复路径。[已验证: 官方文档, github.com/google/gson/blob/main/README.md]
+### 三个库的当前边界
 
-Moshi 适合 Kotlin/Java 混合项目。Moshi README 说明，Kotlin 场景可以用 reflection、codegen 或二者混用；Codegen 通过 KSP 为每个 Kotlin class 生成小而快的 adapter。Moshi 的价值不在于所有场景都最快；主要收益是把字段访问和构造逻辑提前到编译期，减少运行时反射、降低混淆风险。对 Android 业务代码，默认把 `@JsonClass(generateAdapter = true)` 作为数据模型约束更稳。[已验证: 官方文档, github.com/square/moshi/blob/master/README.md]
+Gson 当前处于维护模式。其项目说明明确指出：Gson 以 Java 为主要目标，不支持 Kotlin 非空类型和默认参数等语言语义；开放式反射也不适合 Android 发布包的压缩、优化与混淆流程，因此不再推荐用 Gson 处理 Android JSON。存量项目不必仅因这段说明立即重写，但需要固定 R8 规则，并用混淆后的发布制品验证字段名、构造方式和泛型适配器。新 Kotlin 数据模型宜优先评估代码生成方案。
 
-kotlinx.serialization 的定位是 Kotlin 多平台、多格式、无反射序列化。它通过 `@Serializable` 和编译器插件生成序列化器，JSON 只是其中一种格式。纯 Kotlin 模块、共享模型、需要同时支持 JSON/CBOR/ProtoBuf 的场景更适合这条路线。代价是模型要遵守插件约束，第三方 Java bean 或动态字段很多的接口迁移成本较高。[已验证: 官方文档, kotlinlang.org/docs/serialization.html]
+[Gson 项目说明](https://github.com/google/gson)
 
-应用内选型可以按这张表落到工程约束，而不是只看单次 benchmark 排名：
+Moshi 同时支持 Java 和 Kotlin。Kotlin 类可以使用反射适配器，也可以用 KSP 在编译期生成适配器；`@JsonClass(generateAdapter = true)` 会让 Moshi 选择生成代码。代码生成减少运行时反射依赖，并让 R8 规则更容易审计，但不保证在每种数据形状上都比其他库快。迁移 Gson 时还要逐项验证空值、默认值、枚举、时间格式和自定义适配器，不能按 API 外形相似直接替换。
 
-| 场景 | 优先选择 | 判断依据 |
-|------|----------|----------|
-| 新 Kotlin 模块、模型受控 | kotlinx.serialization 或 Moshi Codegen | 编译期生成序列化器，减少运行时反射；字段默认值、空值策略要在模型层写清楚 |
-| Java/Kotlin 混合、需要平滑替换 Gson | Moshi Codegen | API 迁移成本较低，代码生成 adapter 更适合 Android 混淆包 |
-| 存量 Gson、非关键路径 | 保留 Gson，补混淆与回归测试 | 避免一次性重写造成协议兼容风险；把热路径模型逐步迁出 |
-| 大响应、只读取少数字段 | streaming reader 或拆接口 | 避免把完整 JSON 树和全部 DTO 一次性建出来 |
-| 端到端协议可控 | Protocol Buffers | 二进制 schema 更适合高频网络与磁盘缓存 |
+[Moshi 项目说明](https://github.com/square/moshi)
 
-这段代码表达 JSON 选型后的性能基线写法。先固定同一份 payload、同一组模型、同一台设备和同一套混淆配置，再看 parse/encode 时间与分配量。
+`kotlinx.serialization` 通过 Kotlin 编译器插件为 `@Serializable` 类型生成序列化器，适合受控的 Kotlin 与 Kotlin Multiplatform 数据模型。它的 JSON 格式 API 已稳定；截至 2026 年 6 月，官方仍把 CBOR、Protocol Buffers、HOCON 和 Properties 格式列为实验 API。`kotlinx-serialization-protobuf` 也不能与 `protoc` 生成的 Java/Kotlin API 混为一谈，跨端协议采用它之前要单独验证线格式和演进规则。
+
+[Kotlin 序列化格式状态](https://kotlinlang.org/docs/serialization.html)
+
+### 先验证语义，再比较速度
+
+同一份 JSON 在不同库中未必得到相同对象。基准测试前要固定以下规则：
+
+| 规则 | 需要验证的内容 |
+| --- | --- |
+| 未知字段 | 忽略、报警还是拒绝 |
+| 缺失与 `null` | 是否使用默认值，非空字段如何失败 |
+| 数字 | 整数范围、浮点特殊值、字符串数字是否接受 |
+| 枚举 | 未知枚举值的处理 |
+| 多态 | 类型判别字段、未知子类型与安全范围 |
+| 字段名 | `@SerializedName`、`@Json`、`@SerialName` 是否完全对应 |
+| 发布包 | R8 后生成代码、反射规则和自定义适配器是否仍可用 |
+
+应用场景可以按下面的顺序筛选：
+
+| 场景 | 候选方案 | 工程判断 |
+| --- | --- | --- |
+| 新 Kotlin 模块，模型可加注解 | kotlinx.serialization JSON 或 Moshi KSP | 对比协议语义、构建插件、包体积与目标路径数据 |
+| Java/Kotlin 混合 | Moshi 代码生成或经过约束的 Gson | Java 模型覆盖率与迁移回归成本更重要 |
+| 存量 Gson | 保留并补发布包测试，按路径迁移 | 不把一次性全量替换当作性能优化 |
+| 大响应，只读取少量字段 | 流式读取或拆分接口 | 避免构造完整 JSON 树和全部传输对象 |
+| 客户端与服务端共同维护协议 | Protocol Buffers | 评估字段演进、运行库、压缩后大小和调试工具 |
+
+### 用可复现的基准测试比较
+
+下面的代码只比较“同一字符串解码成同一对象”的稳态成本。两个数据类同时启用 kotlinx.serialization 和 Moshi 代码生成；夹具校验放在计时循环之外，`BlackHole.consume()` 防止编译器或 R8 删除未使用结果。
 
 ```kotlin
+@Serializable
+@JsonClass(generateAdapter = true)
+data class BenchmarkFeed(
+    val items: List<BenchmarkItem> = emptyList()
+)
+
+@Serializable
+@JsonClass(generateAdapter = true)
+data class BenchmarkItem(
+    val id: Long,
+    val title: String,
+    val tags: List<String> = emptyList()
+)
+
 @RunWith(AndroidJUnit4::class)
 class FeedJsonBenchmark {
     @get:Rule
     val benchmarkRule = BenchmarkRule()
 
-    private val payload = InstrumentationRegistry.getInstrumentation()
+    private val fixture = InstrumentationRegistry.getInstrumentation()
         .context.assets.open("feed_payload.json")
         .bufferedReader()
         .use { it.readText() }
 
-    private val json = Json { ignoreUnknownKeys = true }
+    private val kotlinxJson = Json {
+        ignoreUnknownKeys = true
+    }
+
     private val moshi = Moshi.Builder().build()
-    private val moshiAdapter = moshi.adapter(FeedResponse::class.java)
+    private val moshiAdapter = moshi.adapter(BenchmarkFeed::class.java)
+
+    @Before
+    fun verifyFixture() {
+        val kotlinxResult = kotlinxJson.decodeFromString<BenchmarkFeed>(fixture)
+        val moshiResult = checkNotNull(moshiAdapter.fromJson(fixture))
+        assertEquals(kotlinxResult, moshiResult)
+    }
 
     @Test
     fun decodeWithKotlinxSerialization() = benchmarkRule.measureRepeated {
-        json.decodeFromString<FeedResponse>(payload)
+        val result = kotlinxJson.decodeFromString<BenchmarkFeed>(fixture)
+        BlackHole.consume(result)
     }
 
     @Test
     fun decodeWithMoshiCodegen() = benchmarkRule.measureRepeated {
-        moshiAdapter.fromJson(payload)
+        val result = checkNotNull(moshiAdapter.fromJson(fixture))
+        BlackHole.consume(result)
     }
 }
 ```
 
-Jetpack Microbenchmark 文档提供了 Android 端小段代码性能测量工具。序列化 benchmark 要跟随 release 构建、R8、目标 API、样本 payload 和机型一起记录；只拿 debug 包结果做选型，会把反射、内联、类加载和 JIT 状态都混在一起。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/microbenchmark-overview]
+这段测试没有测首次类加载、读取文件、网络等待或对象到领域模型的转换，也没有比较编码。它适合隔离解码函数，不代表启动或接口的端到端结果。项目还应分别建立编码用例、小型与大型夹具、正常与缺字段夹具；库配置必须与发布代码一致。
 
-JSON 适合可读性优先、协议快速迭代的场景。当协议稳定、需要更小的传输体积和更快的解析速度时，二进制格式就该纳入考虑。
+Jetpack Microbenchmark 会预热代码，记录执行时间和分配次数，并把明细写入 JSON 报告。较新的插件在满足官方版本要求时默认完整编译基准测试 APK；若需要验证 R8 后的差异，应按文档配置最小化，不要拿可调试包或模拟器结果决定线上选型。首次使用成本和用户路径仍要由 Macrobenchmark 与 Perfetto 验证。
+
+[Microbenchmark 概览](https://developer.android.com/topic/performance/benchmarking/microbenchmark-overview) · [编写 Microbenchmark](https://developer.android.com/topic/performance/benchmarking/microbenchmark-write) · [`BlackHole`](https://developer.android.com/reference/kotlin/androidx/benchmark/BlackHole)
 
 ## Protocol Buffers 与 FlatBuffers
 
-Protocol Buffers 适合端到端协议可控的结构化数据。官方概览把它定义为 language-neutral、platform-neutral、extensible 的结构化数据序列化机制，并说明它类似 JSON，但更小、更快，并会生成对应语言的 binding。对 Android 来说，它常见于网络协议、磁盘缓存、跨端共享模型和 gRPC 通信。[已验证: 官方文档, protobuf.dev/overview]
+Protocol Buffers 通过字段编号编码结构化数据，并为各语言生成访问代码。它适合客户端、服务端和缓存格式由同一套协议管理的场景。是否比 JSON 更小、更快仍取决于字段类型、字符串比例、压缩、运行库和访问方式；应比较压缩后的线上字节数与端到端 CPU，而不是引用公开排名。
 
-Protobuf 的工程收益来自 schema。字段编号稳定后，客户端和服务端可以独立演进；新增字段能被旧端跳过，删除字段可以保留编号避免复用事故。它也会把“字段名字符串匹配”换成“字段编号解析”，payload 通常比 JSON 小。代价是可读性下降，抓包调试要配 `.proto`，动态字段和临时实验字段不如 JSON 灵活。
+模式演进比格式名称更重要。字段编号发布后不能改作其他含义；删除字段时应同时保留编号和名称，阻止后续复用。二进制 Proto3 会保留未知字段并在再次编码时写回，但转换成 JSON 或逐字段复制到新消息可能丢失未知字段。标量字段还要决定是否需要显式记录字段存在性（presence），否则“未提供”和“默认值”可能无法区分。
 
-FlatBuffers 的目标不同。FlatBuffers README 说明，它面向内存效率设计，允许直接访问序列化数据，不需要先解析或 unpack。这个特性适合读多写少、只访问局部字段、数据块较大且结构稳定的场景，比如离线索引、模型元数据、地图/游戏资源、端侧配置快照。它不适合频繁修改的业务对象；写入侧 builder、schema 维护和调试成本更高。[已验证: 官方文档, github.com/google/flatbuffers/blob/master/README.md]
+下面的模式片段演示字段删除和存在性处理。`legacy_title` 与编号 4 都被保留；`subtitle` 使用 `optional`，使生成代码能够区分缺失和空字符串。
 
-二者在 Android 里的判断口径可以压成三条：
+```proto
+syntax = "proto3";
 
-- 协议长期稳定、跨端共享、服务端能配合生成代码：优先看 Protocol Buffers。
-- 数据需要 mmap 或从二进制块里按需读字段：评估 FlatBuffers。
-- 后端字段仍在频繁试验、排查依赖可读文本、接口体积不大：保留 JSON，等协议稳定后再迁移。
+package feed.v1;
 
-迁移时不要把 JSON DTO 原样翻成 `.proto`。更安全的做法是为网络层定义独立 schema，再在仓储层转换成 UI/domain model。这样能把协议演进、默认值、未知字段处理和 UI 状态分开，也避免一个字段名调整牵动页面模型。
+message FeedItem {
+  reserved 4;
+  reserved "legacy_title";
 
-网络和存储的序列化选型讨论到这里。Android 还有一类特殊的序列化场景：进程间通信。
+  int64 id = 1;
+  string title = 2;
+  optional string subtitle = 3;
+  repeated string tags = 5;
+}
+```
+
+这个片段只是线格式的一部分。发布检查还要让新旧客户端互相读写夹具，验证未知字段、枚举、默认值和重编码路径。Android 端可以评估 Protocol Buffers lite 运行库；官方生成代码文档说明，lite 运行库更适合资源受限设备，但会舍弃描述符、反射等能力。运行库和 `protoc` 版本也应纳入依赖锁定。
+
+[Protocol Buffers 概览](https://protobuf.dev/overview/) · [Proto3 演进规则](https://protobuf.dev/programming-guides/proto3/#updating) · [Java lite 运行库](https://protobuf.dev/reference/java/java-generated/#runtime-library)
+
+FlatBuffers 的目标是直接从序列化数据读取字段，省去先解析或解包成完整对象的步骤。它适合结构稳定、读多写少、常只访问局部字段的大型数据，例如离线索引或资源清单。它并不会自动使用 `mmap`；应用需要自己把文件映射成可访问的字节缓冲区，而且映射也不会消除页错误与存储 I/O。生成访问器、构建器、模式演进、输入校验和调试工具都要一起评估。
+
+[FlatBuffers 项目说明](https://github.com/google/flatbuffers)
+
+选型时可用下面的比较维度：
+
+| 维度 | JSON | Protocol Buffers | FlatBuffers |
+| --- | --- | --- | --- |
+| 人工检查 | 直接可读 | 需要 `.proto` 与解码工具 | 需要 `.fbs` 与工具 |
+| 访问方式 | 解析为对象或流式读取 | 解析为生成消息 | 可从字节缓冲区按字段访问 |
+| 演进约束 | 由字段名与应用规则管理 | 字段编号、字段存在性、未知字段 | 模式兼容规则与生成代码 |
+| Android 代价 | 解析、字符串和对象分配 | 运行库、生成代码和消息分配 | 原生/Java 制品、构建器与缓冲区生命周期 |
+| 适用判断 | 协议变化快、可读性重要 | 跨端稳定协议、高频编解码 | 大型稳定数据、局部读取 |
+
+不要把现有 JSON 传输对象逐字段翻译成 `.proto` 或 `.fbs` 后直接复用为界面对象。网络模式、持久化模式和界面状态有不同的演进周期；在仓储层做显式转换，能让默认值和兼容逻辑有清晰归属。
 
 ## Parcelable vs Serializable
 
-Android IPC 和组件参数传递优先使用 Parcelable。AOSP `Parcel.java` 文档写得很直接：Parcel 不是通用序列化机制，它和 Parcelable API 是为高性能 IPC transport 设计的，不适合持久化存储；Parcel 底层实现变化可能让旧数据不可读。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/Parcel.java]
+`Parcel` 是 Android 的高效 IPC 传输容器，不是通用序列化格式。Android 17 的 `Parcel.java` 明确禁止把 Parcel 数据写入持久化存储，因为底层实现变化可能让旧数据无法读取。磁盘缓存和网络协议不应在 Parcelable 与 Serializable 之间二选一，而应使用有版本规则的持久化格式。
 
-同一份 AOSP 文档还说明，`writeTypedObject`、`writeTypedArray`、`writeTypedList`、`readTypedObject`、`createTypedArrayList` 这组方法比普通 `writeParcelable` / `readParcelable` 更高效，因为它们不把原对象的 class 信息写入 Parcel，读取方通过 `Parcelable.Creator` 明确知道类型。AIDL、Bundle、Intent extra 和跨进程回调里，能用 typed Parcelable 就不要退回泛型容器。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/Parcel.java]
+在组件参数或跨进程接口中，优先使用 SDK/AIDL 原生类型或明确的 Parcelable。`writeParcelable()` 会同时写类名和数据；`writeTypedObject()`、`writeTypedList()` 等类型明确的 API 由读取方提供 `Parcelable.Creator`，不写对象类信息，因此更紧凑。AIDL 已知参数类型时会生成相应编解码代码，业务层不应再把对象包进 `Serializable` 或无类型的嵌套容器。
 
-Serializable 只适合低频、兼容旧接口、数据量很小的场景。AOSP `writeValue()` 注释把 Serializable 放在支持类型列表末尾，并明确提示前面的类型都有相对高效的 Parcel 写入实现；依赖 generic serialization 的方式低效，应尽量避免。原因不需要神化：Java 序列化会走通用对象图、类描述、字段访问和流格式，Android IPC 没必要付这笔成本。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/Parcel.java]
+Android 17 的 `writeValue()` 把 `Serializable` 放在兜底分支，并注明通用 Java 序列化开销很大。它需要处理类描述和对象图，还会受类结构、`serialVersionUID` 与混淆影响。已有低频接口可以在测量后保留，新接口不应只因 `implements Serializable` 写起来短就选择它。
 
-这段 Parcelable 代码只展示写入顺序和 typed API 的配合。读写字段顺序必须稳定，新增字段要考虑版本兼容；跨进程大对象不要直接塞进 Bundle。
+下面的代码展示 `@Parcelize` 数据对象和一个调试期大小估算函数。`writeTypedObject()` 与读取端已知类型的场景一致；`Parcel.dataSize()` 给出本地编码后的字节数。
 
 ```kotlin
 @Parcelize
@@ -185,51 +271,73 @@ data class UserCard(
     val avatarUrl: String?
 ) : Parcelable
 
-class UserServiceProxy(private val remote: IUserService) {
-    fun send(card: UserCard) {
-        remote.updateUserCard(card)
+fun parcelSizeBytes(card: UserCard): Int {
+    val parcel = Parcel.obtain()
+    return try {
+        parcel.writeTypedObject(card, 0)
+        parcel.dataSize()
+    } finally {
+        parcel.recycle()
     }
 }
 ```
 
-`@Parcelize` 可以减少手写样板代码，但它不会自动处理大对象、跨版本兼容和 Binder 事务大小——这些仍需开发者自己关注。性能问题仍要回到字段数量、字符串长度、集合规模、是否包含 Bitmap/byte array、调用频率和线程位置。
+这个数值只用于发现对象随数据增长的趋势，不包括 Binder 命令、对象偏移表、同进程其他在途事务或返回值，不能当作安全阈值。`@Parcelize` 也只生成读写代码，不提供持久化版本协议。使用 `@RawValue` 时，插件会退回 `Parcel.writeValue()`；高频 IPC 中应审计该属性最终采用的类型分支。
+
+[Android 17 `Parcel.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Parcel.java) · [Parcelize 文档](https://developer.android.com/kotlin/parcelize)
 
 ## 序列化在启动和 IPC 中的性能影响
 
-启动阶段的序列化问题通常来自四类路径：`Application` 同步读取配置、ContentProvider 初始化时解析缓存、首屏接口返回后一次性构建大 DTO、AB 实验/灰度配置在主线程展开。这些路径都会把 CPU 解析、对象分配和类加载放进 TTID/TTFD 前后。启动分析方法详见 21.1 节；24.3 的处理动作是把大 payload 延后、拆小、缓存已解析结果，或者换成生成代码/二进制 schema。
+### 启动路径：区分稳态速度和首次使用成本
 
-不要在启动路径里创建大量一次性 parser、adapter 或 `Json` 实例。kotlinx.serialization 文档建议复用自定义 format 实例，因为 format 实现可能缓存和 class 相关的额外信息；Moshi 的 adapter 也应按类型复用。复用不会自动解决所有性能问题，但能减少冷启动里重复建立元数据和 adapter 查找。[已验证: 官方文档, android.googlesource.com/platform/external/kotlinx.serialization/+/refs/heads/upstream-1.2.0-release/docs/json.md][已验证: 官方文档, square.github.io/moshi]
+`Application.onCreate()`、初始化 `ContentProvider`、首屏配置恢复和接口返回后的批量对象构造都可能位于 TTID/TTFD 路径。官方启动文档也把反序列化列为应在启动瓶颈中检查的工作。处理顺序是：
 
-IPC 路径要控制 Parcel 大小和调用频率。`TransactionTooLargeException.java` 说明，Binder 事务 buffer 当前固定大小为 1 MB，并由进程内进行中的事务共享；异常只能作为大事务失败的启发式信号，无法判断请求没发出去还是响应没回去。规避方式是让事务保持小，避免传巨大字符串数组或大 Bitmap，把大结果拆页返回，或者先返回必要字段再让客户端按需请求。[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/TransactionTooLargeException.java]
+- 只解析首帧或可交互状态需要的数据，其余数据延后或分页。
+- 若只读取少量字段，使用流式读取或调整接口，不先构建完整 JSON 树。
+- 复用应用级格式配置和 Moshi 适配器；Moshi 返回的适配器可跨线程复用。
+- 在真实冷启动中测首次类加载、生成序列化器初始化、磁盘读取、解析和领域转换。
+- 若解析后的内容需要跨启动复用，把它写成有版本的数据库或文件格式，不能持久化 Parcel。
 
-序列化问题在 Perfetto 中可以从三个方向定位：
+Microbenchmark 的预热与完整编译适合比较稳态函数；Macrobenchmark 和 Perfetto 才能回答“这次解析是否延迟首帧或可交互状态”。可在解析边界加窄范围的应用追踪区段，并结合采样调用栈、分配与 GC 判断时间花在词法扫描、对象构造还是业务转换。
 
-- 主线程或启动关键线程出现连续 CPU slice，但没有明显 I/O 等待：结合方法 trace 或 simpleperf 查 JSON/Proto/Parcel 相关栈。
-- `binder transaction` 前后耗时变长：查参数对象大小、列表长度、是否重复传完整 DTO。
-- GC 在接口返回或缓存恢复后变密：查一次解析生成的对象数量，优先处理大集合和嵌套对象。
+[应用启动性能](https://developer.android.com/topic/performance/vitals/launch-time)
 
-一旦确认是序列化成本，不要一上来就换库。更稳的改法是先缩小 payload、减少字段、延迟解析、拆页、复用 adapter、把大对象放到文件/数据库后传 key；库替换放在后面，用这些优化后的场景再去比较 JSON/Proto/FlatBuffers 的实际差异。
+### Android 17 Binder 缓冲区边界
+
+“Binder 每笔事务有 1 MB”是不准确的。Android 17 的 `ProcessState.cpp` 把普通 `/dev/binder` 映射大小定义为 `1 MiB - 2 × 运行时页大小`。`android17-6.18-2026-06_r6` 的 `binder_alloc.c` 允许的映射上限是 4 MiB，但实际缓冲区取用户空间请求值与该上限的较小者。平台 native 层请求约 1 MiB，所以 `TransactionTooLargeException` 文档将当前容量概括为 1 MB；在 16 KiB 页设备上，表达式还会扣除两个 16 KiB 页。
+
+这块空间属于进程，并由该进程正在处理的 Binder 事务共享，不是某次调用的独占配额。单个参数看起来小，也可能在并发调用、返回值和其他系统交互同时发生时失败。`TransactionTooLargeException` 只是启发式异常，客户端不能确定请求未发送，还是服务端处理后无法返回结果；重试有副作用的调用前必须使用幂等协议或查询提交状态。
+
+状态保存数据也会经由系统进程参与 Binder 传输。Android 官方建议将这类数据保持在 50 KB 以下；这个建议只针对状态保存，不是所有 Binder 接口的通用上限。状态中应保存恢复界面所需的标识和少量输入，不保存列表、位图或完整接口响应。
+
+[Android 17 `ProcessState.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/ProcessState.cpp) · [6.18 内核 `binder_alloc.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_alloc.c) · [Android 17 `TransactionTooLargeException.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/TransactionTooLargeException.java) · [Parcelable 与 Bundle 建议](https://developer.android.com/guide/components/activities/parcelables-and-bundles)
+
+大型结果应改变接口形状：
+
+- 列表按稳定游标分页，避免重复传整页已有数据。
+- 大型二进制数据通过受权限保护的内容 URI 或 `ParcelFileDescriptor` 读取。
+- 进程间只传记录标识，让接收方通过明确的数据接口查询。
+- 高频小调用可以在保持事务时长可控的前提下批量化，并验证尾延迟和失败语义。
 
 ## 建立序列化选型基线
 
-序列化库的公开 benchmark 只能作为方向参考。应用自己的模型、R8 规则、payload 分布、字段默认值、字符串长度和设备 CPU 都会改写结果。选型前至少补三组基线：
+公开基准测试只能用于发现候选项。应用自己的字段分布、字符串长度、R8 配置、依赖版本、设备 CPU 和协议压缩都会改变结果。至少建立四组可复现数据：
 
-| 基线 | 观测指标 | 用途 |
-|------|----------|------|
-| decode/encode microbenchmark | 单次耗时、分配量、P50/P90 | 判断库和模型生成策略 |
-| 启动路径 trace | TTID/TTFD 附近 CPU slice、GC、类加载 | 判断是否要延后解析或预生成缓存 |
-| IPC 压测 | Parcel 大小、调用频率、TransactionTooLargeException | 判断是否要分页或传 key |
+| 基线 | 记录内容 | 回答的问题 |
+| --- | --- | --- |
+| 编解码 Microbenchmark | 时间、分配次数、制品配置、设备与夹具哈希 | 单个函数的稳态差异 |
+| 冷启动 Macrobenchmark | TTID、TTFD、解析追踪区段、GC 与类加载 | 首次解析是否影响用户路径 |
+| 网络或磁盘端到端测试 | 压缩前后字节数、读写时间、领域转换 | 格式变化是否改善完整链路 |
+| IPC 压测 | 本地 Parcel 估算、并发数、往返延迟、失败与重试 | 接口是否需要分页或外部数据通道 |
 
-如果三组基线指向不同结论，以用户路径优先。启动慢就先处理启动路径里的解析；Binder 失败就先拆事务；后台同步耗电再看批量 encode/decode 的 CPU 和分配量。库替换是工程动作，选型依据必须来自目标路径。
+发布前还要运行协议回归：
 
-## 参考资料
+- 当前解码器读取所有仍受支持的历史夹具。
+- 新旧编码器与解码器交叉验证，检查缺失字段、未知字段和默认值。
+- R8 发布制品执行相同测试，覆盖反射、生成代码和自定义适配器。
+- 目标设备覆盖 Android 10 / API 29 与 Android 17 / API 37；包含 16 KiB 页设备时，额外观察 Binder 缓冲区与原生序列化库。
+- 畸形、过大和过深输入能够受控失败，不把原始用户数据写入性能日志。
 
-- [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/Parcel.java]
-- [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/TransactionTooLargeException.java]
-- [引用: developer.android.com/reference/android/os/Parcelable]
-- [引用: developer.android.com/topic/performance/benchmarking/microbenchmark-overview]
-- [引用: github.com/google/gson/blob/main/README.md]
-- [引用: github.com/square/moshi/blob/master/README.md]
-- [引用: kotlinlang.org/docs/serialization.html]
-- [引用: protobuf.dev/overview]
-- [引用: github.com/google/flatbuffers/blob/master/README.md]
+## 小结
+
+JSON 库先比较协议语义和发布包稳定性，再比较速度；Gson 存量代码可以渐进迁移，新 Kotlin 模型宜优先评估生成代码。Protocol Buffers 依赖严格的字段编号与兼容测试，FlatBuffers 的直接访问优势只在目标数据形状中成立。Parcelable 服务于 Android 瞬时传输，不能用于持久化；Android 17 的 Binder 容量还是进程共享资源。优化顺序应从减少数据、延迟非必要解析、分页和调整接口开始，换库必须由同一业务路径上的测量结果支持。
