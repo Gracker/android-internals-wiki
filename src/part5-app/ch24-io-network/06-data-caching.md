@@ -77,121 +77,254 @@ last_deepseek_cn_review_at: 2026-07-06
 
 ## 为什么要了解数据压缩与缓存策略
 
-网络慢不一定要从连接层解决。24.4 已经讲过连接池、DNS 和弱网调度，12.2 也讲过一次 HTTP 请求的耗时拆分。App 侧还会遇到另一类更贴近业务的数据问题：同一份数据能不能少传、能不能少解析、能不能复用已有结果、离线时能不能继续读。
+网络耗时不只由 DNS、建连和拥塞决定。应用还可以减少传输字节、避免重复下载、复用已经解析的数据，并在断网时继续提供可读内容。压缩、HTTP 缓存、进程内缓存和离线数据源分别负责其中一部分，不能用一种机制代替其余机制。
 
-压缩和缓存的收益都来自一次少做一点工作。压缩减少传输字节，缓存减少网络、磁盘、序列化和 UI 等待。代价也很直接：压缩会吃 CPU，缓存会吃内存和存储，还会引入过期、一致性和隐私边界。工程上不要把“加缓存”当成默认答案，先确认这份数据是否会被重复访问、过期成本有多高、命中率能不能被量化。
+压缩以 CPU 和少量协议开销换取更少的传输字节；缓存以内存、存储和一致性成本换取更少的网络访问与解析工作；离线优先架构还要维护可恢复的写队列。评审方案时应同时回答以下问题：
+
+- 数据是否会被重复读取，允许陈旧多久？
+- 哪一份数据是界面读取的权威副本？
+- 账号切换、退出登录和租户切换后，旧数据怎样隔离或删除？
+- 缓存文件被系统清理、文件损坏或应用升级后，读取路径能否自行恢复？
+- 压缩节省的传输时间，是否大于编码、解码和额外耗电？
+
+本节的平台锚点是 Android 17（API 37）/ `android-17.0.0_r1`，HTTP 客户端实现以 OkHttp 5.3.0 为例。服务端、CDN 或客户端库版本不同时，应按线上版本重新核对行为。
 
 ## 请求 / 响应数据压缩（gzip / brotli）
 
-HTTP 压缩由客户端和服务端共同决定。客户端通过 `Accept-Encoding` 声明可接收的编码，服务端用 `Content-Encoding` 标明响应体使用的编码。RFC 9110 把 `gzip` 定义为标准内容编码；Brotli 对文本类响应通常有更高压缩率，但需要客户端和服务端同时支持。
+### 先区分内容编码与数据格式
 
-在 Android App 里，响应压缩通常交给网络库处理，不要在业务层手动包一层解压逻辑。OkHttp 5 的 `CompressionInterceptor` 文档说明，它会生成类似 `Accept-Encoding: br, gzip` 的请求头，并根据响应编码做透明解压；`okhttp-brotli` 的 `BrotliInterceptor` 会添加 `Accept-Encoding: br`，并处理 `Content-Encoding: br` 响应。
+客户端通过 `Accept-Encoding` 声明能够接收的内容编码，服务端通过 `Content-Encoding` 标出响应体采用的编码。`gzip` 和 Brotli 都属于 HTTP 内容编码。JSON、Protocol Buffers、JPEG 和 MP4 则是数据或媒体格式，两者不是同一层概念。
 
-压缩选型按数据形态判断：
+Protocol Buffers 提供二进制序列化，不自动压缩。它通常比等价 JSON 紧凑，但字段值仍可能包含可压缩的重复内容。是否再做 gzip 或 Brotli，要根据样本数据测量，不能因为使用了 `.proto` 就判定“已经压缩”。
 
-- 文本响应：JSON、HTML、XML、GraphQL 这类重复字段多的文本适合 gzip / brotli。服务端需要同时返回正确的 `Content-Encoding` 和 `Vary: Accept-Encoding`，否则 CDN 或中间缓存可能把某个编码版本误发给不支持的客户端。
-- 已压缩资源：JPEG、WebP、AVIF、MP4、ZIP、protobuf 里已经压缩过的大字段，二次 gzip 收益很低，还会增加 CPU 和耗电。图片和视频应优先从编码格式、尺寸、码率、分片下载等方向处理，详见 24.5 和 12.2 节。
-- 小响应：几十到几百字节的响应不适合强行压缩。压缩头、字典初始化和解压 CPU 可能抵消传输收益。
-- 请求体：客户端上传压缩需要服务端明确支持请求 `Content-Encoding`。日志、埋点批量上报、大 JSON 上传可以评估压缩；普通表单、小 POST 请求不建议默认压缩。
+### OkHttp 5.3.0 的透明解压边界
 
-压缩上线前要记录四个指标：原始字节数、线上传输字节数、解压耗时、端到端请求耗时。只看压缩率容易误判，低端机上的解压 CPU 占用、主线程上的解压或解析、重试放大的流量，都会把省下的网络时间还回去。
+OkHttp 默认的 `BridgeInterceptor` 只在请求没有显式设置 `Accept-Encoding`、并且没有 `Range` 时添加 `Accept-Encoding: gzip`。满足以下条件时，它会流式解压响应：
+
+- 该请求由 OkHttp 自动添加了 gzip 协商头；
+- 响应包含 `Content-Encoding: gzip`；
+- 响应语义允许携带响应体。
+
+解压后返回给应用的响应会移除 `Content-Encoding` 和 `Content-Length`，解码后长度也被标为未知。业务代码读取的是解压后的内容，不能再用返回响应的 `Content-Length` 推算传输字节数。
+
+OkHttp 5.3.0 还提供通用 `CompressionInterceptor`。它把注册算法组成 `Accept-Encoding`，只解码自己认识的响应编码。该版本按完整的 `Content-Encoding` 值匹配单个算法，不会逐层解码由多个编码组成的值。`okhttp-brotli` 5.3.0 中的 `BrotliInterceptor` 继承该实现，并按源码注册 `Brotli` 与 `Gzip`。这会替代 `BridgeInterceptor` 的默认 gzip 路径。
+
+如果调用方手动设置了 `Accept-Encoding`，`CompressionInterceptor` 和默认 gzip 路径都不会替调用方透明解码。要关闭压缩，可显式发送 `Accept-Encoding: identity`。不要只添加 `br` 或 `gzip` 请求头，却仍假设响应体会自动解压。
+
+服务端按 `Accept-Encoding` 返回不同表示时，应发送 `Vary: Accept-Encoding`。共享缓存据此区分 gzip、Brotli 和未编码的响应，避免把一种表示发给不支持它的客户端。
+
+### 哪些数据值得压缩
+
+用线上样本测量压缩收益，不设置适用于所有接口的固定字节阈值：
+
+| 数据形态 | 建议 | 原因 |
+| --- | --- | --- |
+| JSON、HTML、XML、GraphQL 文本 | 评估 gzip 与 Brotli | 键名和结构重复较多，通常存在压缩空间 |
+| Protocol Buffers | 用样本决定 | 二进制序列化不等于压缩，收益受字段内容影响 |
+| JPEG、WebP、AVIF、音视频和 ZIP | 通常不再套通用压缩 | 这类格式已经使用专用编码，再压缩常见收益有限 |
+| 加密或高熵内容 | 通常不再压缩 | 输出接近随机分布，通用压缩难以缩小 |
+| 很小的响应 | 以端到端测量决定 | 编码头、压缩器初始化和 CPU 成本可能高于传输收益 |
+
+图片和视频应优先调整尺寸、格式、码率和分片策略，相关网络边界见 24.5，端到端耗时分析见 12.2。
+
+请求体压缩需要服务端明确接受对应的请求 `Content-Encoding`。批量日志或大型结构化上传可以评估请求压缩；表单和小型写请求不应默认启用。压缩包装可能改变请求体是否可重复发送，重试前要继续遵守 24.4 的幂等与一次性请求体边界。
+
+### 测量与防护
+
+至少分别记录：
+
+- 编码前的应用数据大小；
+- 网络上传输的字节数；
+- 解码后的响应体大小；
+- 编码、解码和解析耗时；
+- 请求端到端耗时、失败类型与重试次数。
+
+透明解压会让应用层看到的长度与线上传输长度不同。传输字节应从服务端、网络层观测或已验证口径的事件指标采集，解码后长度则在消费响应体时计数，两者不能混用。
+
+客户端还要限制解码后的数据量、集合元素数量和解析深度。压缩响应的线上传输体积很小，不代表解压后也小；仅依赖压缩前 `Content-Length` 无法防止异常放大。限制应放在开始构建大型对象之前，超限时终止读取并记录服务端、媒体类型和编码方式。
 
 ## 多级缓存设计：内存 / 磁盘 / 网络
 
-缓存要分层设计，因为每一层解决的问题不同。内存缓存服务于当前进程内的重复访问；磁盘缓存服务于进程重启和离线读取；HTTP 缓存服务于标准协议下的网络复用；数据库或文件缓存服务于业务可控的数据状态。
+### 每层只负责自己的语义
+
+内存缓存服务于当前进程内的重复访问；磁盘文件缓存允许跨进程生命周期复用可再生成的数据；HTTP 缓存按协议复用响应；Room、DataStore 或持久文件保存应用需要恢复的状态。只有应用数据源可以被定义为界面读取的权威副本，HTTP 缓存和 `cacheDir` 都不具备这个保证。
 
 | 层级 | 常见载体 | 适合缓存的数据 | 淘汰依据 | 主要风险 |
-|------|----------|----------------|----------|----------|
-| 内存缓存 | `LruCache`、图片库内存层、进程内 Map | Bitmap、解析后的列表项、短生命周期配置 | 容量、最近访问、业务热度 | 占用 Java 堆，低端机容易诱发 GC 或 OOM |
-| 磁盘缓存 | `Context.getCacheDir()`、`getExternalCacheDir()`、图片库磁盘层 | 图片、接口响应快照、预取文件 | 存储配额、最近访问时间、业务分组 | 系统可随时清理，不能当持久数据源 |
-| HTTP 缓存 | OkHttp `Cache`、CDN、代理缓存 | 带 `Cache-Control` / `ETag` / `Last-Modified` 的 GET 响应 | RFC 9111 freshness 与 revalidation | 服务端头配置错误会导致过期数据 |
-| 业务缓存 | Room、DataStore、文件索引 | 用户可见数据、离线数据、同步状态 | 业务版本、用户、租户、分页游标、服务端版本 | 一致性和冲突处理成本高 |
+| --- | --- | --- | --- | --- |
+| 内存 | `LruCache`、图片库内存层、进程内 Map | Bitmap、解析结果、短生命周期配置 | 容量、最近访问、业务热度 | 占用堆，可能增加 GC 或 OOM 风险 |
+| 可删除磁盘文件 | `cacheDir`、`externalCacheDir`、图片库磁盘层 | 图片、接口快照、预取文件 | 配额、最近修改时间、业务分组 | 系统或用户可以删除，读取必须允许缺失 |
+| HTTP | OkHttp `Cache`、CDN、代理缓存 | 符合 HTTP 缓存规则的响应 | 新鲜度、验证器和缓存指令 | 错误响应头、账号隔离和陈旧数据 |
+| 应用数据源 | Room、DataStore、持久文件 | 用户可见数据、离线数据、同步状态 | 业务版本、账号、租户、服务端版本 | 迁移、冲突、隐私和恢复成本 |
 
-AOSP `Context.getCacheDir()` 文档明确写到，系统会在设备空间不足时自动删除该目录文件，并且建议 App 控制在 `StorageManager.getCacheQuotaBytes()` 返回的配额以下；`StorageManager` 还提供 `setCacheBehaviorGroup()` 和 `setCacheBehaviorTombstone()`，用于把一组互相依赖的缓存文件按组处理，或在系统清理时保留零长度墓碑文件。
+内存缓存的容量应按实际对象大小计算。以 Bitmap 为例，条目大小应来自分配字节数等可验证数据，而不是条目个数。内存等级只能作为容量输入，不能解释为应用可以占满的额度；界面、数据库游标、原生内存和图形资源仍会共同占用进程预算。
 
-这段代码展示 OkHttp 磁盘 HTTP 缓存的最小接入方式。这里需要确认两点：缓存目录放在 `cacheDir`，容量有明确上限。
+AOSP `Context.getCacheDir()` 在 `android-17.0.0_r1` 中说明：
+
+- 系统需要回收存储空间时，会按 `lastModified()` 从较旧文件开始处理；
+- 应用应尽量把缓存使用量控制在 `StorageManager.getCacheQuotaBytes()` 返回的动态配额以内；
+- 设备采用可迁移存储后，绝对路径可能变化，只应持久化相对路径；
+- 应用无需额外权限访问自己的内部缓存目录。
+
+API 26 起公开的 `StorageManager.setCacheBehaviorGroup()` 可以让一个目录在系统自动清理时按组保留或删除，并用组内最新的修改时间代表该组；`setCacheBehaviorTombstone()` 可以让自动清理后的文件留下零长度文件。两者都只接受目录并递归应用，也都只改变系统自动清理时的处理方式。用户主动清除缓存时，墓碑行为会被忽略；按组处理也不提供持久性保证。
+
+`externalCacheDir` 可能不可用，使用前要检查返回值和卷状态。需要在应用升级、进程重启或设备重启后仍可靠恢复的数据，应放在持久数据源中，不应依靠任一缓存目录。
+
+### 配置 OkHttp 磁盘缓存
+
+下面的函数展示如何显式传入容量，并为 OkHttp 分配独占子目录：
 
 ```kotlin
-val httpCache = Cache(
-    directory = File(application.cacheDir, "http_cache"),
-    maxSize = 50L * 1024L * 1024L,
-)
+fun buildHttpClient(
+    context: Context,
+    maxCacheBytes: Long,
+): OkHttpClient {
+    require(maxCacheBytes > 0) { "maxCacheBytes must be positive" }
 
-val client = OkHttpClient.Builder()
-    .cache(httpCache)
-    .build()
+    val httpCache = Cache(
+        directory = File(context.cacheDir, "okhttp-http-cache"),
+        maxSize = maxCacheBytes,
+    )
+
+    return OkHttpClient.Builder()
+        .cache(httpCache)
+        .build()
+}
 ```
 
-OkHttp 文档把缓存命中分为直接命中、未命中和条件命中。条件命中会向服务端发起验证请求，如果服务端返回 `304 Not Modified`，客户端继续使用本地响应体，只更新响应元数据。缓存命中率要接入埋点；只有缓存层代码，不代表线上有有效命中。可以按“命中次数 / 读取次数”记录图片、接口响应、Room 查询、预取列表四类指标。命中率低时，从访问模式查起：一次性大图、临时活动页、短期热榜，可能会挤掉首页头像、会话列表、配置项这类更高复用价值的数据。
+容量由设备存储、缓存配额、内容分布和命中收益共同决定，因此不在示例中写固定值。`Cache` 必须独占目录，同一目录不能交给多个 `Cache` 实例；一个实例可以由多个 OkHttpClient 共用。应用通常应共享长生命周期的 OkHttpClient，替换或结束使用缓存实例时再正确关闭它。
 
-## 缓存失效策略与一致性
+OkHttp 的 `Cache.delete()` 会删除所配置目录中的全部内容，因此该目录不能混放应用的其他文件。缓存读写失败应退回网络或上层数据源，并记录错误；损坏的缓存不应阻塞正常读取。
 
-缓存失效不要只靠固定时间。固定 TTL 容易在两端同时出问题：时间太短，命中率上不去；时间太长，用户读到过期数据。更稳的做法是把协议、业务版本和用户动作拆开处理。
+## HTTP 缓存：由协议决定能否复用
 
-HTTP 层使用服务端头做主判断：
+### 新鲜度、存储和验证是三件事
 
-- `Cache-Control: max-age=...` 决定响应在多长时间内仍然新鲜。
-- `ETag` 配合 `If-None-Match` 做实体标签验证，适合内容版本可以被服务端稳定标识的接口。
-- `Last-Modified` 配合 `If-Modified-Since` 做时间验证，精度和可靠性弱于 `ETag`，但兼容性好。
-- `no-store` 用于禁止存储，适合令牌、隐私数据、一次性凭证这类不该落盘的数据。
+RFC 9111 把“能否存储”“当前是否新鲜”“过期后能否验证”分开定义：
 
-RFC 9111 规定，缓存可以用新鲜度和验证机制判断存储响应是否可复用；验证请求中应带上已有的实体标签，`ETag` 优先级高于只依赖修改时间。
+- `max-age` 表示响应经过多长时间后变为陈旧。`Date`、`Age` 和本地驻留时间都会参与当前年龄计算，不能只比较设备时钟与下载时间。
+- `Expires` 是绝对过期时间；存在适用的 `max-age` 时，优先采用后者。
+- `no-cache` 允许存储，但每次复用前必须向源站验证。它不是“不要缓存”。
+- `no-store` 要求缓存不要存储请求或响应，也不要用它满足后续请求。它不能替代传输加密、访问控制或端侧数据保护。
+- `private` 限制共享缓存存储响应，不会禁止专属于单个用户的私有缓存。OkHttp 的磁盘缓存属于私有缓存。
+- `s-maxage` 面向共享缓存。OkHttp 5.3.0 的缓存策略源码明确忽略它。
 
-业务层要把缓存键设计清楚。一个安全的缓存键通常至少包含接口名、用户 ID、租户或环境、参数摘要、分页游标、数据版本。对多账号 App，缺少用户维度会串数据；对灰度接口，缺少实验分组会串策略；对分页接口，缺少游标会把不同页覆盖到同一份缓存里。
+陈旧响应不应被无条件返回。服务端或请求可以通过标准指令允许有限度使用陈旧响应；产品若采用“先展示旧数据、后台刷新”，还要在应用数据层表达刷新中、陈旧时间和刷新失败，不能把这一行为完全交给 HTTP 缓存。
 
-写操作发生后，缓存失效要跟着业务语义走：
+### 验证器没有固定高低之分
 
-- 用户改资料：用户详情缓存、个人页摘要、会话头像都要被标记过期，不能只清当前接口。
-- 用户点赞或收藏：本地列表可以先更新计数和状态，再把远端确认结果写回；失败时要能回滚或标记待同步。
-- 服务端配置变更：配置类数据应有版本号，客户端启动时先读本地版本，再按版本决定是否拉取。
-- 批量预取：预取数据要有来源和过期时间，避免把用户主动访问产生的高价值缓存淘汰掉。
+`ETag` 配合 `If-None-Match`，`Last-Modified` 配合 `If-Modified-Since`。服务端返回 `304 Not Modified` 后，客户端保留本地响应体并更新可合并的响应元数据。
 
-缓存一致性的边界要写进代码注释或数据模型。`cacheDir` 下的数据可能被系统删除，业务代码读取时必须能处理文件不存在；Room 里的业务缓存不能因为“离线可读”就跳过 schema 迁移；HTTP 缓存不能缓存带隐私的 `Authorization` 响应，除非服务端明确给出可缓存策略并做了用户隔离。
+`ETag` 可以表达与时间无关的表示版本，也有强验证器和弱验证器之分。`Last-Modified` 适用于服务端能可靠维护修改时间的资源，但 HTTP 日期粒度、时钟和生成方式会影响判断。应根据服务端数据模型选择验证器，不应笼统地把一种描述成另一种的低级替代。
+
+服务端返回随请求头变化的表示时，用 `Vary` 声明参与选择的请求头。OkHttp 会保存并比较这些请求头；`Vary: *` 的响应不会进入 OkHttp 缓存。缓存键只看 URL、却忽略语言、内容编码或账号范围，会导致错误复用。
+
+### OkHttp 5.3.0 的实现边界
+
+按 OkHttp 5.3.0 `Cache` 与 `CacheStrategy` 源码：
+
+- 磁盘缓存只写入 `GET` 的完整响应，不缓存部分响应；
+- 请求或响应含 `no-store` 时不会写入；
+- 请求含 `no-cache` 时会访问网络或执行条件验证；
+- `only-if-cached` 找不到可用条目时返回 `504`，它不等于“网络失败”；
+- 条件命中同时计入 `networkCount` 和 `hitCount`；
+- `requestCount`、`networkCount`、`hitCount` 可用于观察缓存使用情况。
+
+这些计数只能解释 OkHttp 这一层。图片库内存命中、Room 查询和应用文件缓存要分别统计，不能合并成一个缺少层级信息的“总命中率”。评估时还应观察写入失败、淘汰、条件请求、响应年龄、账号范围和因缓存节省的网络字节。
+
+### 账号与敏感数据隔离
+
+OkHttp 的缓存以 URL 为主键，并依据 `Vary` 记录的请求头匹配表示。应用内多账号不等于 RFC 所说的“单个用户”环境。带凭据接口需要明确选择：
+
+- 敏感或一次性数据由服务端返回 `no-store`；
+- 允许端侧缓存的账号数据使用账号级独立缓存目录和客户端，退出登录时关闭并删除该账号目录；
+- 应用自建缓存键包含账号、租户、环境、查询参数、分页位置和数据版本，但不写入原始令牌；
+- 日志、埋点和错误上报不记录 `Authorization`、Cookie 或完整敏感缓存键。
+
+仅返回 `private` 不能解决同一应用内的多账号隔离。让响应 `Vary: Authorization` 虽然能影响匹配，还会把相应请求头写入缓存元数据；采用该方案前必须评估端侧凭据存储风险。
+
+## 业务缓存失效与一致性
+
+### 先指定权威数据源
+
+固定 TTL 只能表达时间，无法表达用户刚完成写操作、服务端版本改变或依赖资源已经更新。应用应为每类数据指定权威数据源，并给缓存条目记录可验证的来源与版本。
+
+一个应用自建缓存条目通常需要以下维度：
+
+- 资源标识、账号、租户和环境；
+- 经过规范化的查询参数与分页位置；
+- 数据结构版本、服务端版本或验证器；
+- 写入时间、允许陈旧时间和来源；
+- 完整性信息，例如长度、校验值或原子提交标记。
+
+写操作成功后，按资源关系标记受影响条目，而不是只删除当前接口 URL。例如，头像更新会影响用户详情、会话列表和个人页摘要。依赖关系可以用标签或反向索引记录；无法可靠枚举时，提升账号或资源版本比散落多处的手工删除更容易验证。
+
+### 处理并发、损坏和陈旧数据
+
+同一缓存键并发失效时，可用 single-flight 或等价的请求合并机制，让并发读取共享一次刷新结果。互斥范围应限制在同一键，超时与取消不能让其他键停止刷新。多进程应用还要使用进程间可见的原子写入或数据库事务，进程内锁无法保护另一个进程。
+
+磁盘文件建议写入临时文件、校验成功后原子替换。读取时把文件不存在、零长度、结构版本不支持、校验失败和解析失败都视为可恢复的缓存未命中；删除损坏条目，再从权威数据源获取。只有持久业务数据损坏才进入迁移或恢复流程。
+
+展示陈旧数据时，界面状态至少能区分“已有旧数据、正在刷新”“已有旧数据、刷新失败”和“没有数据”。`lastSyncedAt` 应表示最近一次成功同步，而不是最近一次尝试。预取任务要设置业务范围和淘汰优先级，避免一次性内容挤占高复用资源。
 
 ## 离线数据同步
 
-离线能力不等于把所有接口结果落盘。Android Developers 的离线优先文档把本地数据源放在 UI 和网络之间：UI 读取本地数据，仓库负责和网络数据源同步；网络不可用时，本地数据源可能落后于服务端，网络恢复后再同步。
+### 缓存与离线数据源不是同一概念
 
-离线同步在这里作为缓存边界处理，冲突解决和乐观更新详见 24.7 节。
+Android Developers 的离线优先架构要求带网络访问的仓库同时具有本地与网络数据源，并建议上层只从本地权威数据源读取。HTTP 缓存可以减少下载，却不能表示一次本地写入是否等待上传，也不能保存冲突版本、幂等键和错误状态。这些状态应由持久待发送队列（Outbox）记录。
+
+下面的结构图用于区分读路径和持久写队列：
 
 ```text
 UI
- ↓ 读取 Flow / suspend 查询
+ │ 只观察本地数据
+ ▼
 Repository
- ↓ 先读本地数据源，再触发刷新
-Room / DataStore / 文件缓存
- ↓ 后台任务同步
-Network API
+ ├── 读：Room / DataStore / 持久文件 ← 网络刷新
+ └── 写：本地事务 = 业务数据变更 + Outbox 记录
+                                  │
+                                  ▼
+                       WorkManager 处理队列
+                                  │
+                                  ▼
+                              Network API
 ```
 
-读路径和写路径要分开设计：
+界面始终观察本地权威数据源；网络刷新写回本地后，界面由数据流更新。需要离线提交的用户动作，应在同一事务中更新本地业务数据并写入 Outbox，避免应用在两次写入之间终止后丢失待上传操作。
 
-- 读路径：界面优先读本地数据源；缓存为空或过期时触发刷新；弱网下展示旧数据时要给 UI 一个状态，例如 `stale=true` 或 `lastSyncedAt`。
-- 写路径：用户动作先写本地待同步队列，再由后台任务发送；服务端确认后写入最终状态；失败时保留错误码、重试次数和下一次重试时间。
-- 调度路径：周期同步、约束网络类型、充电状态、指数退避重试，交给 WorkManager 这类持久后台任务；网络连通性变化只负责唤醒，不要在回调里直接跑大量同步逻辑。
-- 合并路径：同一资源的多次本地写入要能合并，例如连续修改草稿、批量点赞、重复上报日志，避免网络恢复后一口气打爆服务端。
+### 读、写与调度分别设计
 
-Android 的网络优化文档建议把可预取的数据集中传输，减少无线电被频繁唤醒的次数；也建议在发起请求前检查连接状态，网络不可用时把请求延后。
+- 读路径：先读取本地数据；需要刷新时由仓库访问网络，再以事务更新本地数据。旧数据继续可读时，状态中附带同步时间、刷新进度和错误。
+- 写路径：按业务要求选择仅在线写、排队写或先本地后网络。要求离线不丢的写操作放入持久 Outbox。
+- 调度路径：用 WorkManager 的网络约束等待可用网络，并用唯一工作限制同时运行的同步任务。Worker 读取持久队列，按结果返回成功、失败或重试。
+- 合并路径：只有业务语义允许时才合并操作。草稿连续编辑可以保留最终版本；订单提交、转账和审计事件不能按“同资源”任意覆盖。
 
-离线同步的失败处理要能回到用户动作。缓存层只能回答“本地有什么”，不能回答“这次写入有没有被服务端接受”。待同步表至少记录资源 ID、操作类型、幂等键、payload 摘要、创建时间、重试次数、上次错误。没有这些字段，线上排查只能看到“数据不一致”，很难还原是哪一次写入卡住。
+`NetworkCallback` 提供的是网络状态信号，不保证源站可访问，也不适合在回调中执行整批同步。需要进程终止后继续存在的任务由 WorkManager 约束调度；前台页面的即时刷新可以独立发起，但仍要写回同一个本地数据源。
+
+Outbox 记录应按协议需求保存资源标识、操作类型、幂等键、期望服务端版本、请求数据、状态、尝试次数、下次允许尝试时间、创建与更新时间、最近错误分类。请求数据是否允许持久化、是否需要加密、保留多久，都要纳入隐私设计。冲突检测、乐观更新和服务端合并策略详见 24.7。
 
 ## 执行检查清单
 
-- 压缩：记录压缩前后字节数、解压耗时、端到端耗时；小响应和已压缩资源不默认压缩。
-- 内存缓存：给 `LruCache` 设置按字节计算的容量，低端机按 `ActivityManager.getMemoryClass()` 或图片库推荐值收敛上限。
-- 磁盘缓存：放在 `cacheDir` 的数据必须允许丢失；业务持久数据放 Room、DataStore 或 app-specific files，不要混进临时缓存目录。
-- HTTP 缓存：只缓存 GET 和明确可缓存响应；让服务端提供 `Cache-Control`、`ETag` 或 `Last-Modified`。
-- 业务缓存：缓存键包含用户、租户、参数、版本；写操作后按资源维度失效。
-- 离线同步：本地读、后台写、可重试、可合并、可观测；冲突策略交给 24.7 的离线优先架构处理。
+- 压缩协商：没有手动覆盖 `Accept-Encoding` 后又依赖透明解压；服务端按编码返回不同表示时发送正确的 `Vary`。
+- 压缩选型：Protocol Buffers 不被当成压缩格式；文本、媒体、加密内容和小响应分别测量。
+- 解码防护：限制解码后大小、集合数量和解析深度；主线程不执行大型解码或解析。
+- 内存缓存：容量按字节等真实成本计算；缓存项可被淘汰，业务对象没有只存在于内存缓存。
+- 磁盘缓存：`cacheDir` 数据允许随时缺失；使用相对路径；OkHttp 使用独占子目录。
+- HTTP 指令：区分 `no-cache`、`no-store`、`private` 与 `s-maxage`；正确处理 `Vary` 和验证器。
+- 账号隔离：敏感响应不存储；多账号缓存分区；退出登录时清除所属数据；缓存键和日志不包含原始凭据。
+- 一致性：写后按资源关系失效；同键刷新合并；文件原子替换；损坏条目可删除并重新获取。
+- 离线同步：本地数据源是上层读取入口；业务写入与 Outbox 在同一事务；Worker 使用持久队列、网络约束、幂等与可分类重试。
 
 ## 参考与验证
 
 - [Android Developers · App-specific storage](https://developer.android.com/training/data-storage/app-specific)
+- [Android Developers · StorageManager API reference](https://developer.android.com/reference/android/os/storage/StorageManager)
 - [Android Developers · Network access optimization](https://developer.android.com/develop/connectivity/network-ops/network-access-optimization)
 - [Android Developers · Offline-first architecture](https://developer.android.com/topic/architecture/data-layer/offline-first)
-- [OkHttp · Caching](https://square.github.io/okhttp/features/caching/)
-- [OkHttp 5.x · CompressionInterceptor](https://square.github.io/okhttp/5.x/okhttp/okhttp3/-compression-interceptor/)
-- [OkHttp Brotli · BrotliInterceptor](https://square.github.io/okhttp/5.x/okhttp-brotli/okhttp3.brotli/-brotli-interceptor/)
+- [OkHttp 5.3.0 · BridgeInterceptor.kt](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/BridgeInterceptor.kt)
+- [OkHttp 5.3.0 · CompressionInterceptor.kt](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/CompressionInterceptor.kt)
+- [OkHttp 5.3.0 · BrotliInterceptor.kt](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp-brotli/src/main/kotlin/okhttp3/brotli/BrotliInterceptor.kt)
+- [OkHttp 5.3.0 · Cache.kt](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Cache.kt)
+- [OkHttp 5.3.0 · CacheStrategy.kt](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/cache/CacheStrategy.kt)
 - [RFC 9110 · HTTP Semantics](https://www.rfc-editor.org/rfc/rfc9110.html)
 - [RFC 9111 · HTTP Caching](https://www.rfc-editor.org/rfc/rfc9111.html)
 - [AOSP android-17.0.0_r1 · Context.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/Context.java)
