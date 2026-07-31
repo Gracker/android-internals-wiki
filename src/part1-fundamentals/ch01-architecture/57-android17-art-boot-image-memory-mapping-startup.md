@@ -59,7 +59,7 @@ ART Boot Image 是 `dex2oat` 生成的可加载运行时快照。它保存选入
 一个 Boot Image 组件通常对应三类产物：
 
 | 产物 | 主要内容 | 运行时用途 |
-|---|---|---|
+| --- | --- | --- |
 | `.art` | `ImageHeader`、镜像对象、`ArtField`、`ArtMethod`、类表、字符串表、位图等 | 建立 `ImageSpace`，恢复预先构造的对象和 ART 元数据 |
 | `.oat` | OAT 头、编译代码、运行时所需元数据 | 提供 AOT 代码和镜像依赖信息 |
 | `.vdex` | DEX 与验证相关数据；是否携带 DEX section 取决于产物模式 | 配合 OAT 打开 DEX，复用验证结果 |
@@ -74,12 +74,14 @@ ART Boot Image 是 `dex2oat` 生成的可加载运行时快照。它保存选入
 
 `GetDefaultBootImageLocationSafe()` 在 Android 17 上按以下次序选择默认镜像：
 
-1. `/data/misc/apexdata/com.android.art/dalvik-cache` 中存在完整且可用的主镜像时，优先使用这里的 `boot.art`。这类产物由 `odrefresh` 生成。
+1. `odsign.verification.success` 为 `true`，且 `/data/misc/apexdata/com.android.art/dalvik-cache` 中存在完整主镜像时，优先使用这里的 `boot.art`。这类产物由 `odrefresh` 生成并由 `odsign` 校验。
 2. 完整镜像生成失败但最小镜像可用时，可以使用 `boot_minimal.art`。最小镜像只覆盖 ART 模块内的 Boot Class Path JAR，后续组件按配置处理。
 3. 没有可用的 `/data` 产物时，使用系统分区预编译镜像。Android 17 源码注释给出的主位置是 `/system/framework/boot.art`，实际文件仍带指令集子目录。
 4. Mainline Boot Class Path JAR 可以拥有单独的 Boot Image Extension，运行时把它附加到主镜像描述中。
 
 因此，看到 ART 已经模块化，不能直接推导出 `boot.art` 一定位于 `/apex/com.android.art`。ART APEX 提供运行时、profile 和工具；当前进程使用的镜像可能来自 `/system`，也可能来自 ART APEX 的 `/data` 目录。
+
+`GetBootImageLocationForDefaultBcpRespectingSysProps()` 会在 `odsign.verification.success` 不为 `true` 时设置 `deny_art_apex_data_files`。这意味着 `/data` 中即使残留同名文件，运行时也不会仅凭路径存在就采用它；设备取证应把 `odsign` 验证结果与进程 `maps` 一起检查。
 
 ## `dex2oat` 怎样生成 Boot Image
 
@@ -127,7 +129,7 @@ Android 17 的定义位于 `art/runtime/oat/image.h`，文件格式实现位于 
 Android 17 的 `ImageSections` 顺序如下：
 
 | Section | 内容 |
-|---|---|
+| --- | --- |
 | `kSectionObjects` | Java 镜像对象 |
 | `kSectionArtFields` | `ArtField` 数据 |
 | `kSectionArtMethods` | `ArtMethod` 数据 |
@@ -222,7 +224,7 @@ Boot Image 提供构建期生成的对象与元数据；Zygote preload 提供本
 ## 五类容易混淆的 profile 与清单
 
 | 名称 | 作用对象 | 使用阶段 | 是否直接改变 Boot Image |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Boot Image Profile | Boot Class Path 的类和方法 | 系统构建或 `odrefresh` 编译 Boot Image | 是，影响 image class 与 `speed-profile` 方法编译 |
 | `preloaded-classes` | Zygote 要加载并初始化的类 | Zygote 启动；也传给 Boot Image 编译器 | 会参与编译约束，但主要职责是 Zygote 预加载 |
 | System Server profile | System Server Class Path JAR | 系统构建或 `odrefresh` 编译 System Server 产物 | 不修改主 Boot Image |
@@ -231,7 +233,7 @@ Boot Image 提供构建期生成的对象与元数据；Zygote preload 提供本
 
 应用 Startup Profile 是 Baseline Profile 的启动子集，用来影响 APK/AAB 内 DEX 的排列，让启动代码更集中。它不会生成 `/system/etc/preloaded-classes`，也不会选择平台 `boot.art` 中的类。
 
-Boot Image Profile 与 `preloaded-classes` 可以来自同一批关键用户旅程采样。`profman --generate-boot-image-profile` 也能同时输出 Boot Image Profile 和预加载类清单，但输出文件仍承担不同职责。
+Boot Image Profile 与 `preloaded-classes` 可以来自同一批关键用户旅程采样。`profman --generate-boot-image-profile` 也能同时输出 Boot Image Profile 和预加载类清单，但两个输出文件的用途不同。
 
 ## ART Mainline 更新与 `odrefresh`
 
