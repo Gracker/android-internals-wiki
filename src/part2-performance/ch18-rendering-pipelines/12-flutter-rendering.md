@@ -1,12 +1,121 @@
 ---
 
-title: "Flutter 渲染管线"
+title: "Android 17 Flutter 渲染管线"
 chapter: "18.12"
 section: "18.12"
 status: finalized
 pipeline_stage: ready-to-publish
 applicable_versions: "Flutter 3.32 stable+（Merged Platform Model 主路径） / Flutter 3.27+（Android API 29+ Impeller 默认） / Flutter 3.44+（HCPP experimental opt-in） / Android 10-17"
-tags: ['rendering', 'pipeline']
+tags:
+- Flutter
+- Impeller
+- Skia
+- FlutterSurfaceView
+- FlutterTextureView
+- FlutterImageView
+- SurfaceProducer
+- PlatformView
+- HCPP
+- FrameTimeline
+related_chapters:
+- '2.11'
+- '18.6'
+- '18.7'
+- '18.13'
+sources:
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S10_flutter_type.md
+  role: Flutter root、external texture、PlatformView、fence、Perfetto 与版本边界
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S10_flutter_architecture/source.md
+  role: Flutter framework、engine、embedder 与 Android 显示架构
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S10_flutter_engine_threads_architecture/source.md
+  role: platform、Dart UI、Raster、IO 与 GPU 线程关系
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S10_flutter_surface_render_mode_pipeline/source.md
+  role: FlutterSurfaceView 独立 Surface 输出
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S10_flutter_texture_render_mode_pipeline/source.md
+  role: FlutterTextureView、SurfaceTexture 与宿主 HWUI 消费
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S10_flutter_imageview_pipeline/source.md
+  role: FlutterImageView、ImageReader 与宿主 Canvas/HWUI
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S10_flutter_plugin_surfaceproducer_pipeline/source.md
+  role: 插件 external texture 与 SurfaceProducer backing
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S10_flutter_platformview_texturelayer_pipeline/source.md
+  role: TLHC 与 VirtualDisplay 中转路径
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S10_flutter_platformview_hybrid_composition_pipeline/source.md
+  role: 原始 Hybrid Composition 的 ImageReader 与宿主层级
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S10_flutter_hcpp_overlay_optimization_pipeline/source.md
+  role: HCPP SurfaceControl、overlay 与 transaction synchronization
+- type: official
+  path: https://docs.flutter.dev/resources/architectural-overview
+  role: Flutter 3.29 起 Android/iOS UI 与 platform thread 合并口径
+- type: official
+  path: https://github.com/flutter/flutter/issues/150525
+  role: Flutter 3.32 stable 默认合并线程与 opt-out 的维护者说明
+- type: official
+  path: https://docs.flutter.dev/perf/impeller
+  role: Flutter 3.27、Android API 29+ Impeller 默认范围与回退
+- type: official
+  path: https://docs.flutter.dev/platform-integration/android/platform-views
+  role: TLHC、HC、HCPP 版本、条件、限制与回退
+- type: official
+  path: https://docs.flutter.dev/release/breaking-changes/android-surface-plugins
+  role: SurfaceProducer 3.24 稳定边界、生命周期与 crop/rotation 迁移
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/vsync_waiter_android.cc
+  role: NDK Choreographer 优先、Java VsyncWaiter 回退与 PlatformVsync
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/common/vsync_waiter.cc
+  role: VsyncFireCallback、VsyncProcessCallback 与 UI task runner
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/common/rasterizer.cc
+  role: Rasterizer::DoDraw 与 Rasterizer::DrawToSurfaces
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/io/flutter/embedding/android/FlutterActivity.java
+  role: opaque/transparent BackgroundMode 的默认 root RenderMode
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java
+  role: SurfaceProducer backing、ImageReader fence、surface swap 与 texture 注册
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/io/flutter/view/TextureRegistry.java
+  role: SurfaceLifecycle、callback 与 handlesCropAndRotation 契约
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java
+  role: TLHC、VD、HC、FlutterImageView 与 overlay
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController2.java
+  role: HCPP SurfaceControl.Transaction、root control 与 overlay
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/shell/platform/android/android_context_dynamic_impeller.cc
+  role: Impeller Vulkan 到 Impeller OpenGLES 的动态回退
+- type: flutter
+  path: https://github.com/flutter/flutter/blob/8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2/engine/src/flutter/impeller/renderer/backend/vulkan/pipeline_cache_data_vk.cc
+  role: Vulkan pipeline cache 文件名、设备与驱动兼容校验
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/TextureView.java
+  role: SurfaceTexture frame available、TextureLayer 更新与宿主绘制
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceView.java
+  role: 独立 child Surface、生命周期与 SurfaceControl
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp
+  role: buffer latch、composition 与 display present
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c
+  role: 跨设备共享 buffer 基础
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
+  role: fence signal、callback 与 wait
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c
+  role: dma-fence 的 sync_file fd 接口
 reviewed_date: "2026-07-04"
 reviewed_by: "openclaw-task6"
 created_by: "rendering-pipelines-merge"
@@ -32,7 +141,7 @@ task6_reviewed_date: "2026-07-04T20:18:00+08:00"
 task6_reviewed_by: "openclaw-task6"
 task6_l1_l2_fixes: "3"
 task6_l3_l4_issues: "0"
-last_verified_against: "Flutter 3.32 thread merge docs + Flutter 3.44 VsyncWaiterAndroid/Choreographer/HCPP source"
+last_verified_against: "Flutter 3.44.7 docs + Flutter commit 8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2 (VsyncWaiterAndroid, VsyncWaiter, Animator, Rasterizer, Android embedding, SurfaceProducer, Impeller, PlatformViewsController/2) / android-17.0.0_r1 (TextureView.java, SurfaceView.java, SurfaceFlinger.cpp) / android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, sync_file.c)"
 task2b_fix_source: task9-deep-tech-review
 task2b_fix_summary: "Flutter merged UI+Platform 线程模型版本边界从 3.29+→3.32 stable+，旧模型边界从 3.28-→3.31-，与 2.11/18.12 交叉引用闭环（依据 Flutter issue #150525 + release-notes-3.32.0）"
 last_task9_review_log: logs/deep-review/2026-07-02-10-deep-review.md
@@ -43,12 +152,14 @@ p0: 0
 p1: 1
 p2: 1
 task9_review_notes: "2026-07-02 Task9 deep-review AUTO-FIX: P0 0 / P1 1 / P2 1；修正 Flutter Android VSync 入口为 NDK AChoreographer 优先、Java VsyncWaiter fallback，修正 Perfetto trace 关键词与 applicable_versions 元数据；回到 Task6 复审。详见 logs/deep-review/2026-07-02-10-deep-review.md。"
-last_verified: "2026-07-29"
+last_verified: "2026-07-31"
 confidence: high
 last_idle_audit_at: "2026-07-29T22:35:32+08:00"
 last_idle_audit_run_id: "20260729-223532-idle-audit-fc0aee5f"
 last_idle_audit_result: "pass-frontmatter-fix"
 ---
+
+# 18.12 Android 17 Flutter 渲染管线
 
 <!-- outline-start -->
 
@@ -223,7 +334,9 @@ API 29+ 的固定源码会取 `Image.getHardwareBuffer()`，再用 `Bitmap.wrapH
 - 未强制 GL texture、API 29+ 且设备不在已知 HardwareBuffer 缺陷列表时，使用 `ImageReaderSurfaceProducer`；
 - 其他情况使用 `SurfaceTextureSurfaceProducer`。
 
-`createSurfaceProducer()` 默认采用 `SurfaceLifecycle.manual`。只有请求 `resetInBackground` 且选择 ImageReader backing 的调用方，才会注册相应的内存压力清理行为。插件还要检查 `handlesCropAndRotation()`：固定源码中 ImageReader backing 返回 `false`，SurfaceTexture backing 返回 `true`。相机画面方向或裁剪错误可能源于插件契约，不能直接归因给 SurfaceFlinger transform。
+`TextureRegistry.SurfaceProducer` 在 Flutter 3.22 落入源码，官方迁移文档把 3.24 定为插件可采用的最低稳定版本。`onSurfaceAvailable()` 与 `handlesCropAndRotation()` 的新契约在 3.27 提供，`onSurfaceCleanup()` 在 3.29 取代旧的 `onSurfaceDestroyed()`。审计插件时还要核对它声明的 Flutter 最低版本和实际覆盖的回调，不能用当前 API 文档反推旧插件行为。
+
+`createSurfaceProducer()` 默认采用 `SurfaceLifecycle.manual`。只有请求 `resetInBackground` 且选择 ImageReader backing 的调用方，才会注册相应的内存压力清理行为。固定源码中 `SurfaceTextureSurfaceProducer.setCallback()` 是空实现，不能期待它收到与 ImageReader backing 相同的清理和恢复通知。插件还要检查 `handlesCropAndRotation()`：ImageReader backing 返回 `false`，SurfaceTexture backing 返回 `true`。相机画面方向或裁剪错误可能源于插件契约，不能直接归因给 SurfaceFlinger transform。
 
 Perfetto 中看到 external texture 卡顿时，应分别记录 texture id、producer queue、Flutter frame 和 root buffer。中间 texture 往往不会作为独立可见 layer 出现在 SurfaceFlinger 树中。
 
@@ -452,12 +565,12 @@ Flutter 源码固定到 commit `8a9f61cfd67396fb2f9afc3cd7854035e9cd6fc2`。线�
 
 - Android 17 [`TextureView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java) 与 [`SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java)：宿主 View、SurfaceTexture 更新与独立 Surface；
 - Android 17 [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)：latch、composition 与 present 主线；
-- kernel [`dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c) 与 [`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：共享 buffer 与 fence 基础。
+- kernel [`dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)、[`dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c) 与 [`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：共享 buffer、fence signal/wait 与 sync_file fd 接口。
 
 ## 与其他章节的关系
 
 - [2.11 Flutter 渲染管线与性能](../../part1-fundamentals/ch02-rendering/11-flutter-rendering.md)：framework/engine 原理与性能视角；
-- [18.6 SurfaceView 直出路径](06-surfaceview.md) 与 [18.7 TextureView 纹理路径](07-textureview.md)：Android 容器的源码细节；
+- [18.6 SurfaceView 独立 Surface 路径](06-surfaceview.md) 与 [18.7 TextureView 宿主合成链路](07-textureview.md)：Android 容器的源码细节；
 - [18.13 WebView 渲染管线](13-webview-rendering.md)：WebView 作为 PlatformView 时的 Chromium 与 Android 显示路径。
 
 ## 小结
