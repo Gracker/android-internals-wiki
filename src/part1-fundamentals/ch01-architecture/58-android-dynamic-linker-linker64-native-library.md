@@ -185,7 +185,7 @@ Android 17 的配置选择仍保留多级来源。源码会依次考虑与 APEX 
 编码格式与 CPU 重定位类型是两个维度。以 64 位进程为例：
 
 | 编码或表 | 作用 | 运行时特征 |
-|---|---|---|
+| --- | --- | --- |
 | `DT_RELR` | 压缩大量 relative relocation | 只需基址与位图展开，不查动态符号 |
 | `DT_ANDROID_RELA` + `APS2` | Android packed relocation | 用分组和差值编码缩小重定位表 |
 | 普通 `.rela.dyn` | 一般数据、符号与 TLS 重定位 | 某些条目需要在 lookup list 中查符号 |
@@ -406,7 +406,9 @@ llvm-readelf -lW libfoo.so
 
 ### 2. 用 Perfetto 分开 linking 与 constructor
 
-Android 17 的 `do_dlopen()` 写入 `dlopen: <name>` 与 `dlopen: <name> - loading and linking` trace，`call_constructors()` 还写入 `calling constructors: <realpath>`。采集含 bionic/native slices 的 Perfetto trace 后，可以判断时间花在锁外等待、加载链接还是构造函数。
+Android 17 的 `do_dlopen()` 写入 `dlopen: <name>` 与 `dlopen: <name> - loading and linking` trace，`call_constructors()` 还写入 `calling constructors: <realpath>`。`loading and linking` 在 `find_library()` 返回后结束，外层 `dlopen` slice 则继续覆盖 constructor，因此两者的差值可以帮助定位构造阶段。
+
+锁等待不在这两条 bionic slice 内：`dlfcn.cpp` 的 `dlopen_ext()` 先获取 `g_dl_mutex`，之后才调用 `do_dlopen()`。要测 loader-lock wait，需要在调用侧给整个 `System.loadLibrary()` 或 `dlopen()` 加 trace，并结合线程调度/futex 状态及同时持锁线程的 bionic slice；调用侧 slice 开始到 `dlopen:` slice 出现前的区间，才可能包含等锁时间。
 
 若 Java 调用仍比 bionic slice 长，再检查 ART 的 native library load 与 `JNI_OnLoad`。
 
