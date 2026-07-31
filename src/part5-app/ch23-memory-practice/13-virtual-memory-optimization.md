@@ -71,26 +71,51 @@ material_count: 4
 | Java `OutOfMemoryError` | ART heap 上限、对象保活与 GC；同时确认错误消息是否指向线程创建 |
 | LMKD 杀进程 | PSS/RSS、进程状态和系统压力；VSS 不是 LMKD 的直接排序指标 |
 
+### 1.3 `VmSwap` 不能当成另一份 VSS
+
+内核 `proc.rst` 把 `VmSwap` 定义为匿名私有数据使用的 swap，shared memory 的 swap 不包含在内。页被换出后，原虚拟地址仍在 VMA 中，所以该页仍计入 `VmSize`；`VmSwap` 不是可以再加到 VSS 上的独立地址空间。
+
+Android 17 引入的 `mmd` 体系由 `mmd_setup` 配置 ZRAM，再由 `mmd` 执行重压缩和可选的 writeback。应用从 `VmSwap` 只能看到按页核算的换出量，不能反推出 ZRAM 中的压缩后字节数，也不能判断页面此刻位于 ZRAM 还是后备存储。分析卡顿时，应把 `VmSwap` 增长与 major fault、PSI、`lmkd` 事件和业务时间线放在一起。
+
+`android17-6.18-2026-06_r6` 还包含 Multi-Gen LRU。它按访问新旧程度参与页回收选择，但不会改变 VSS、RSS、PSS 的定义。应用侧应优化工作集和访问局部性，不应把内核回收策略当作某个 VMA 可被手动解除的依据。
+
 ## 2. 建立可复现的地址空间快照
 
 ### 2.1 设备侧基础采集
 
-下面的命令用于在同一时间点采集 ABI、页大小、VSS、RSS、线程数和 maps：
+下面的脚本用于在同一时间点采集页大小、VSS、RSS、线程数和 maps。调用时显式传入包名与输出目录，避免把示例包名误用于现场：
 
 ```bash
-package=com.example.app
-pid=$(adb shell pidof -s "$package" | tr -d '\r')
+#!/usr/bin/env bash
+set -euo pipefail
 
-adb shell getconf PAGE_SIZE
-adb shell cat "/proc/$pid/status" \
-  | grep -E '^(Name|VmPeak|VmSize|VmRSS|RssAnon|RssFile|VmSwap|Threads):'
-adb shell "ls /proc/$pid/task | wc -l"
-adb shell "wc -l /proc/$pid/maps"
-adb shell cat "/proc/$pid/maps" > maps.txt
-adb shell dumpsys meminfo "$package" > meminfo.txt
+if (( $# != 2 )); then
+  echo "usage: $0 <package-name> <output-directory>" >&2
+  exit 2
+fi
+
+package_name="$1"
+output_directory="$2"
+pid="$(adb shell pidof -s "$package_name" | tr -d '\r')"
+
+if [[ -z "$pid" ]]; then
+  echo "process not found: $package_name" >&2
+  exit 1
+fi
+
+mkdir -p "$output_directory"
+adb shell getconf PAGE_SIZE | tr -d '\r' > "$output_directory/page-size.txt"
+adb shell cat "/proc/$pid/status" > "$output_directory/status.txt"
+adb shell "ls /proc/$pid/task | wc -l" > "$output_directory/task-count.txt"
+adb shell "wc -l /proc/$pid/maps" > "$output_directory/vma-count.txt"
+adb shell cat "/proc/$pid/maps" > "$output_directory/maps.txt"
+adb shell dumpsys meminfo "$package_name" > "$output_directory/meminfo.txt"
+
+grep -E '^(Name|VmPeak|VmSize|VmRSS|RssAnon|RssFile|VmSwap|Threads):' \
+  "$output_directory/status.txt"
 ```
 
-`VmSize` 与 maps 总跨度接近，`Threads` 应与 `/proc/<pid>/task` 数量一致。`dumpsys meminfo` 补充 PSS、RSS 和 heap 分类。部分量产设备会限制 `showmap` 或 `smaps`，权限失败要记录为观测缺口。
+`VmSize` 应与 maps 中各 VMA 长度之和接近，不是最低地址到最高地址的跨度；两段 VMA 之间的空洞不计入 `VmSize`。`Threads` 应与 `/proc/<pid>/task` 数量一致。脚本中的 `pidof -s` 只选择一个 PID，多进程应用需要对每个目标进程分别采集。`dumpsys meminfo` 补充 PSS、RSS 和 heap 分类。部分量产设备会限制 `showmap` 或 `smaps`，权限失败要记录为观测缺口。
 
 采集点至少覆盖：
 
@@ -114,15 +139,20 @@ adb shell dumpsys meminfo "$package" > meminfo.txt
 
 Android 17 的 [`android_os_Debug.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Debug.cpp) 通过 `meminfo` 解析器读取进程映射并按 heap 类型汇总。应用自建分类器不应假设标签在所有厂商版本上都完全一致。
 
-下面的离线脚本用于按 pathname 汇总 VSS，并统计无 pathname 的匿名 VMA：
+下面的离线脚本用于按 pathname 汇总 VSS，并统计无 pathname 的匿名 VMA。参数是上一节生成的 `maps.txt`：
 
 ```python
 from collections import defaultdict
 from pathlib import Path
+import sys
+
+if len(sys.argv) != 2:
+    raise SystemExit(f"usage: {sys.argv[0]} <maps-file>")
 
 groups = defaultdict(lambda: {"bytes": 0, "vmas": 0})
+maps_path = Path(sys.argv[1])
 
-for line in Path("maps.txt").read_text().splitlines():
+for line in maps_path.read_text(encoding="utf-8").splitlines():
     fields = line.split(maxsplit=5)
     if len(fields) < 5:
         continue
@@ -144,7 +174,9 @@ for name, stat in sorted(
 
 `getconf PAGE_SIZE` 返回 `16384` 时，VMA 边界、guard page 和 ART 对齐都以 16 KiB 页大小计算。小对象仍可由 allocator 在页内切分；maps 只展示页级映射。
 
-自研 native 组件需要遵守运行时页大小，禁止写死 `4096`、`0x1000` 或 4 KiB 对齐。解析 `start/end` 的十六进制差值不受页大小影响，但任何 `mmap`、`mprotect`、`munmap` 参数都要按设备页大小对齐。
+自研 native 组件需要遵守运行时页大小，[Android 的 16 KiB 页适配指南](https://developer.android.com/guide/practices/page-sizes) 要求清理写死的 `4096`、`0x1000` 或 4 KiB 对齐。解析 `start/end` 的十六进制差值不受页大小影响；调用 `mmap()`、`mprotect()`、`munmap()` 时，则要分别遵守接口对地址、offset 和 length 的约束。
+
+这里需要区分每个系统调用的契约：文件映射的 `mmap()` offset 必须按页对齐，内核会把 length 向上覆盖到完整页；`MAP_FIXED` 地址、`mprotect()` 起始地址和 `munmap()` 起始地址有页对齐要求。不能把“所有参数都必须页对齐”当成统一规则，具体以调用的 flags 和接口文档为准。
 
 ## 3. 线程栈：先治理线程数量
 
@@ -154,9 +186,11 @@ for name, stat in sorted(
 
 1. 传入 `0` 时改用 ART default stack size；
 2. 增加 1 MiB，以兼容依赖 Dalvik 较大 native stack 的应用；
-3. 增加 stack overflow protected/reserved 区；
-4. 向运行时页大小取整；
-5. 把结果交给 `pthread_attr_setstacksize()` 和 `pthread_create()`。
+3. sanitizer 构建保证至少 2 MiB；
+4. 保证不小于 `PTHREAD_STACK_MIN`；
+5. 增加 stack overflow protected/reserved 区；
+6. 向运行时页大小取整；
+7. 把结果交给 `pthread_attr_setstacksize()` 和 `pthread_create()`。
 
 所以“每个 Java 线程固定占 1 MiB”只是粗略说法。最终 reservation 还包含 ART default、guard/reserved 区、页对齐和构建配置。应从 maps 中的 `[anon:stack_and_tls:<tid>]` 或线程 dump 读取目标设备结果。
 
@@ -164,30 +198,39 @@ for name, stat in sorted(
 
 ### 3.2 有界线程池
 
-下面的 Java 示例用于展示有界队列、有界线程数和命名，参数需要按任务时延与设备档位压测：
+下面的 Java 工厂方法用于展示有界队列、有界线程数和命名。调用方必须传入经过压测的 worker 数与队列容量，示例不内置设备无关的固定阈值：
 
 ```java
-int cpuCount = Runtime.getRuntime().availableProcessors();
-int workerCount = Math.max(2, Math.min(cpuCount, 8));
+static ThreadPoolExecutor newBoundedExecutor(
+        String threadNamePrefix,
+        int workerCount,
+        int queueCapacity,
+        RejectedExecutionHandler rejectedExecutionHandler) {
+    if (workerCount <= 0 || queueCapacity <= 0) {
+        throw new IllegalArgumentException("workerCount and queueCapacity must be positive");
+    }
+    Objects.requireNonNull(threadNamePrefix);
+    Objects.requireNonNull(rejectedExecutionHandler);
 
-AtomicInteger sequence = new AtomicInteger();
-ThreadFactory factory = runnable -> {
-    Thread thread = new Thread(runnable);
-    thread.setName("image-worker-" + sequence.incrementAndGet());
-    return thread;
-};
+    AtomicInteger sequence = new AtomicInteger();
+    ThreadFactory factory = runnable -> {
+        Thread thread = new Thread(runnable);
+        thread.setName(threadNamePrefix + "-" + sequence.incrementAndGet());
+        return thread;
+    };
 
-ThreadPoolExecutor executor = new ThreadPoolExecutor(
-        workerCount,
-        workerCount,
-        30L,
-        TimeUnit.SECONDS,
-        new ArrayBlockingQueue<>(128),
-        factory,
-        new ThreadPoolExecutor.CallerRunsPolicy());
+    return new ThreadPoolExecutor(
+            workerCount,
+            workerCount,
+            0L,
+            TimeUnit.MILLISECONDS,
+            new ArrayBlockingQueue<>(queueCapacity),
+            factory,
+            rejectedExecutionHandler);
+}
 ```
 
-固定上限可以阻止突发任务无限扩张线程。队列容量和拒绝策略属于业务语义：`CallerRunsPolicy` 会把背压传给提交方，如果提交方可能是主线程，就要改成丢弃、合并或异步重试。
+固定上限可以阻止突发任务无限扩张线程。`workerCount` 要结合 CPU/IO 比例和任务驻留内存确定，`queueCapacity` 要结合可接受排队时延确定。拒绝策略也由调用方显式选择：`CallerRunsPolicy` 会让提交线程执行任务，提交方可能是主线程时，应改用合并、拒绝或异步重试等符合业务语义的处理。
 
 重点检查这些来源：
 
@@ -208,9 +251,9 @@ CPU 密集任务的并发度可从 CPU 核数起步，IO 任务没有通用的�
 
 ### 3.4 Android 17 的虚拟线程
 
-`android-17.0.0_r1` 的 libcore 已包含 `Thread.ofVirtual()`、`startVirtualThread()` 和 `VirtualThread` 实现，但 [`api/current.txt`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/api/current.txt) 给创建入口标记了 `com.android.libcore.virtual_thread_api_v1` `FlaggedApi`。实现还检查 continuation 与 ART 侧发布开关；不支持 continuation 时存在 bound virtual thread 路径，它仍绑定平台线程。
+`android-17.0.0_r1` 的 libcore 已包含 `Thread.ofVirtual()`、`startVirtualThread()` 和 `VirtualThread` 实现，但 [`api/current.txt`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/api/current.txt) 给创建入口标记了 `com.android.libcore.virtual_thread_api_v1` `FlaggedApi`。[`ThreadBuilders.newVirtualThread()`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/ThreadBuilders.java) 会检查 `ContinuationSupport.isSupported()`：支持时创建 continuation 驱动的 `VirtualThread`，不支持且调用方未指定自定义 scheduler 时创建 `BoundVirtualThread`，后者由平台线程承载。
 
-因此不能把“Android 17 虚拟线程一定不创建 pthread、每个任务都省下 1 MiB”当成通用结论。产品采用前需要确认目标镜像开放 API、运行时 flag、pinning 行为、调试工具和关键库兼容性。当前稳定方案仍以协程、有界 executor 和结构化取消为主。
+因此不能把“Android 17 虚拟线程一定不创建 pthread、每个任务都省下 1 MiB”当成通用结论。产品采用前需要确认目标镜像是否开放该 API、运行时是否支持 continuation、pinning 行为、调试工具和关键库兼容性。面向 Android 10—17 的通用实现仍应以协程、有界 executor 和结构化取消为主。
 
 更完整的线程泄漏边界参阅 [20.25 线程泄漏与匿名线程监控](../ch20-stability/25-thread-leak-anonymous-thread-monitoring.md)。
 
@@ -249,13 +292,13 @@ WebView loader 后续把 `gReservedAddress` 和 `gReservedSize` 交给 `android_
 
 Android 17 的 [`Heap::SupportHomogeneousSpaceCompactAndCollectorTransitions()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc) 要求同时存在 `main_space_backup_`、`main_space_`，且前台 collector 为 CMS。`PerformHomogeneousSpaceCompact()` 还会在 moving GC 已禁用、collector 已是 moving collector 或 main space 不能移动对象时拒绝执行。
 
-这段兼容代码不能推出“每个 Android 17 应用都有两块固定 512 MiB MainSpace”。ART 会按 collector、heap growth limit、设备配置和进程类型建立不同 space；RegionSpace、zygote space、large object space、image space 和 JIT 也各有生命周期。
+同一文件的 Heap 构造路径会对 CC 和 CMC 关闭 `use_homogeneous_space_compaction_for_oom_`。这说明 HSC 是受 collector 与 space 布局约束的兼容路径，不是 Android 17 应用普遍执行的内存整理流程。它也不能推出“每个 Android 17 应用都有两块固定 512 MiB MainSpace”。ART 会按 collector、heap growth limit、设备配置和进程类型建立不同 space；RegionSpace、zygote space、large object space、image space 和 JIT 也各有生命周期。
 
 ### 5.2 JNI critical section 必须成对释放
 
 [Android JNI tips](https://developer.android.com/training/articles/perf-jni) 对 `GetPrimitiveArrayCritical()` 的约束是：VM 可以返回直接指针或副本。调用期间，native 代码不能长时间阻塞，也不能任意调用 JNI；完成访问后必须执行 `ReleasePrimitiveArrayCritical()`。
 
-永久保留 critical pointer 会让 ART 的 moving GC 受到抑制，并可能造成 GC、分配与线程停顿问题。随后 `munmap()` 任一 `dalvik-*` 区域会破坏 ART 的 allocator、card table、bitmap 与对象引用。初稿中的“禁用 moving GC 后释放备用 Space”从工程建议中删除。
+长期保留 critical pointer 可能延迟或限制 GC，具体影响取决于 VM 返回直接指针还是副本以及当前 collector 的实现；无论哪条路径，都违反了短临界区的使用前提，并可能放大分配与线程停顿。随后 `munmap()` 任一 `dalvik-*` 区域会破坏 ART 的 allocator、card table、bitmap 与对象引用。初稿中的“禁用 moving GC 后释放备用 Space”从工程建议中删除。
 
 应用侧能控制的是对象生命周期和分配形态：
 
@@ -304,7 +347,7 @@ Android 17 的 [`Heap::SupportHomogeneousSpaceCompactAndCollectorTransitions()`]
 - `VmSize`、`VmPeak`、`VmRSS`、`RssAnon`、`RssFile`、`VmSwap`；
 - 线程数、VMA 数量和 FD 数量；
 - Java heap、native heap、graphics、code 与 stack 的 PSS；
-- 前五个 VSS 分类及其 VMA 数量；
+- 占用较大的 VSS 分类及其 VMA 数量，保留多少类由报告容量决定；
 - 最近一次 `mmap`、`pthread_create` 或 allocator 失败信息。
 
 采样频率按风险控制。`/proc/self/status` 成本较低，可在场景边界采样；读取并解析 `maps`、`smaps` 或抓 heap dump 应由异常触发，避免高频磁盘读取和主线程阻塞。
@@ -369,11 +412,14 @@ Android 17 的 [`Heap::SupportHomogeneousSpaceCompactAndCollectorTransitions()`]
 - [`art/runtime/thread.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc)
 - [`art/runtime/native/java_lang_Thread.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/java_lang_Thread.cc)
 - [`libcore Thread.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java)
+- [`libcore ThreadBuilders.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/ThreadBuilders.java)
 - [`libcore VirtualThread.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/VirtualThread.java)
 - [`WebViewLibraryLoader.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/webkit/WebViewLibraryLoader.java)
 - [`WebView loader.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/native/webview/loader/loader.cpp)
 - [`art/runtime/gc/heap.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc)
 - [`android_os_Debug.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Debug.cpp)
 - [Android JNI tips](https://developer.android.com/training/articles/perf-jni)
+- [Android 17 Memory management daemon](https://source.android.com/docs/core/perf/mmd)
 - [Linux 6.18 `/proc` 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst)
+- [Linux 6.18 Multi-Gen LRU](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/mm/multigen_lru.rst)
 - [Android 17 common kernel tag `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6)
