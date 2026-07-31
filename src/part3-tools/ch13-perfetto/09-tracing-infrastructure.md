@@ -50,11 +50,11 @@ last_deepseek_cn_review_at: "2026-06-07"
 
 
 
-# 13.9 Android Tracing 基础设施:atrace、ftrace 与 Perfetto 数据采集原理
+# 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理
 
-当 Perfetto 里某个 Track 突然不出数,或者自定义 tag 没进 Trace 时,只会看 UI 已经不够了。需要知道这些数据是从哪一层采上来,又是沿着什么路径写进 Trace 文件的。
+Perfetto 界面里的调度切片、应用自定义区间和计数器来自多条采集路径。某条轨道没有数据时，只查 SQL 往往定位不到原因：事件可能没有在 tracefs 中启用，也可能已经写入内核缓冲区却来不及读取，还可能在 Perfetto 的共享内存或中央缓冲区中丢失。
 
-这一节拆开 Android Tracing 的整条数据链:Linux 内核的 ftrace 如何提供基础事件,atrace 如何把用户空间 tag 接到这条链上,Perfetto 的 `traced` / `traced_probes` 如何把内核和用户空间数据汇到同一个 Trace 中,以及 App、Framework、Kernel 三层分别怎么扩展自定义追踪点。
+本节以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，内核部分以 `android17-6.18-2026-06_r6` 为锚点。阅读目标是分清每一层的职责，并能沿着数据实际经过的路径排查问题。
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -79,218 +79,202 @@ last_deepseek_cn_review_at: "2026-06-07"
 > 如果从 AOSP 源码或官方文档中发现更精确的数据流细节,可在对应锚点后补充,并标注验证来源。
 <!-- outline-end -->
 
-## Linux 内核 ftrace 框架
+## 先分清三层缓冲区
 
-Perfetto Trace 中大部分内核事件的数据源头都是 ftrace。它是 Linux 内核自 2.6.27 起内置的函数追踪框架,是一整套追踪基础设施的总称。
+系统追踪讨论中的“缓冲区”至少有三种，混用名称会把丢数原因引向错误位置。
 
-### ftrace 的三种核心模式
+| 所在层 | 数据结构 | 写入者与读取者 | 常见丢数表现 |
+|---|---|---|---|
+| Linux 内核 | ftrace 的每 CPU 环形缓冲区 | tracepoint 或 `trace_marker` 写入，`traced_probes` 读取 | `ftrace_cpu_overrun_delta` 非零 |
+| Perfetto 数据生产者 | 数据生产者（`Producer`）与 `traced` 之间的共享内存 | `traced_probes`、应用 SDK 等数据生产者写入，`traced` 接收提交 | `traced_buf_trace_writer_packet_loss` 非零 |
+| Perfetto 服务 | `TraceConfig.buffers` 定义的中央缓冲区 | `traced` 汇集各数据源，数据使用方（`Consumer`）读取或写文件 | `chunks_overwritten` 或 `chunks_discarded` 非零 |
 
-ftrace 提供了三种工作模式,各有适用场景:
+`ftrace_config.buffer_size_kb` 调整第一层，而且单位是“每个 CPU 的 KiB”。`TraceConfig.buffers.size_kb` 调整第三层。二者名字相近，控制的内存和失效方式完全不同。Perfetto 的[缓冲区说明](https://perfetto.dev/docs/concepts/buffers)给出了三类丢数统计及其语义。
 
-**function tracer**——在内核编译时通过 `-mfentry`(x86)或 `-pg`(ARM)GCC 选项,在几乎每个内核函数入口插入一条 `fentry_call` 指令。默认情况下这条指令是 `nop`,开销为零。当启用 function tracer 时,运行时动态将 `nop` 替换为对追踪回调函数的调用。
+## ftrace：事件源与函数 tracer
 
-function tracer 因而可以记录内核中**所有被追踪函数的调用序列**,粒度极细,但开销也最大。在 ARM64 上,function tracer 的典型开销约为 10-15% 的系统性能下降,因此不适合在性能测试中使用,主要用于调试和代码理解。
+ftrace 同时包含事件追踪、函数追踪、环形缓冲区和 tracefs 控制接口。把它只理解成“函数追踪器”会漏掉 Android 性能分析最常用的 tracepoint 路径。
 
-**function_graph tracer**——在 function tracer 的基础上进一步记录函数的调用和返回,可以输出类似代码缩进的调用图。开销比 function tracer 还要高一些,因为它需要在函数入口和出口都插入钩子。
+### “三种模式”的准确边界
 
-**tracepoint**——这是 Android 性能分析中最常用的 ftrace 模式。与 function tracer 不同,tracepoint 不是"追踪所有函数",而是在内核源码中**预定义的探测点**。内核开发者在关键位置使用 `TRACE_EVENT` 宏声明一个 tracepoint,编译后它在未被启用时是一条分支预测为 not-taken 的 `if` 判断(使用 `static_key` 机制),开销接近零。当启用时,它执行对应的 probe 回调函数,将事件数据写入 per-CPU ring buffer。
+许多教程把 `function`、`function_graph`、tracepoint 称作 ftrace 的三种模式。这个说法便于入门，但内核接口的分类更精确：
 
-Perfetto Trace 中的 `sched_switch`、`sched_wakeup`、`cpu_frequency`、`binder_transaction`、`block_rq_issue` 等内核事件,全部来自 tracepoint。它们是 ftrace 中开销最低、最稳定的数据源。
+- `function` 是写入 `current_tracer` 的 tracer，记录经过筛选的函数入口。动态 ftrace 会在未启用时把可追踪调用点修补为快速路径；具体指令和编译选项取决于体系结构及内核构建配置。
+- `function_graph` 也是 tracer。它在函数入口信息之外记录返回关系，因而能还原调用层级和耗时。过滤范围过宽时，事件量和扰动都会快速上升。
+- tracepoint 属于事件源。启用 `sched/sched_switch` 等事件时，`current_tracer` 通常仍是 `nop`，事件通过 `events/<group>/<name>/enable` 独立控制。
 
-### tracefs 文件系统接口
+因此，本节所说的“三种模式”是三种常见观测形态，不代表 tracepoint 是第三个 `current_tracer` 值。Android 日常系统性能采集应优先选静态 tracepoint；函数 tracer 适合缩小到明确函数集合后的内核调试。内核锚点的 [`ftrace.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/trace/ftrace.rst)记录了 tracer、动态 ftrace 和过滤接口的定义。
 
-用户空间通过 tracefs(通常挂载在 `/sys/kernel/tracing/`,旧内核在 `/sys/kernel/debug/tracing/`)与 ftrace 交互。关键文件包括:
+tracepoint 通过 `TRACE_EVENT` 等宏在源码中声明字段。未启用时会经过静态分支快速路径，开销很小但不能写成绝对零；启用后还要分配事件、复制字段并写入当前 CPU 的环形缓冲区。事件频率、字段长度和消费者读取速度共同决定实际成本。
 
-- `available_events`:列出所有已注册的 tracepoint 名称
-- `set_event`:写入要启用的 tracepoint 名称来激活
-- `trace`:读取当前 ring buffer 中的追踪数据
-- `buffer_size_kb`:设置 per-CPU ring buffer 的大小
-- `tracing_on`:控制追踪的启停(写入 0/1)
+### tracefs 暴露了哪些控制点
 
+Android 17 设备通常把 tracefs 挂载在 `/sys/kernel/tracing/`。`/sys/kernel/debug/tracing/` 是 libcutils 仍保留的兼容回退位置。排查采集问题时，以下文件最有用：
 
+| tracefs 节点 | 含义 |
+|---|---|
+| `available_events` | 当前内核及已加载模块实际注册的事件 |
+| `events/<group>/<name>/format` | 事件编号、字段布局和文本打印格式 |
+| `events/<group>/<name>/enable` | 单事件启停开关 |
+| `set_event` | 批量启停事件的兼容接口 |
+| `available_tracers` / `current_tracer` | 可用 tracer 与当前 tracer |
+| `set_ftrace_filter` / `set_graph_function` | 函数与函数图过滤范围 |
+| `buffer_size_kb` | 每 CPU 内核环形缓冲区大小 |
+| `per_cpu/cpu<N>/trace_pipe_raw` | 单 CPU 二进制事件流 |
+| `per_cpu/cpu<N>/stats` | 单 CPU 缓冲区覆盖、丢弃和读取统计 |
+| `tracing_on` | 当前 tracefs 实例是否记录事件 |
 
-用 Perfetto 抓取 Trace 时,traced 守护进程通过读写这些文件来控制 ftrace 的启停和数据采集。Perfetto 的 `TraceConfig.ftrace_config.ftrace_events` 字段列出的每一个事件名,最终都会被写入 `set_event` 文件。
+Android 17 的 Perfetto [`Tracefs::EnableEvent()`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traced/probes/ftrace/tracefs.cc)先向单事件 `enable` 文件写 `1`；写入失败后才把 `group:name` 追加到 `set_event`。停用过程对称，回退内容是 `!group:name`。所以“Perfetto 会把每个事件写入 `set_event`”不符合当前源码。
 
-### Android 常用 tracepoint 分类
+tracefs 还支持 `instances/<name>/` 下的命名实例。Perfetto 的 `FtraceController` 可以按 `FtraceConfig.instance_name` 创建并读取次级实例。次级实例适合隔离内核事件；Android 的 atrace category 仍受主实例和系统属性约束，不应假设它能随次级实例完整隔离。
 
-Android 系统中与性能分析相关的 tracepoint 主要分布在以下几个子系统:
+### Android 17 常用事件
 
-| 子系统 | 代表性 tracepoint | 用途 |
-|--------|-------------------|------|
-| sched | `sched_switch`, `sched_wakeup`, `sched_wakeup_new`, `sched_blocked_reason` | CPU 调度分析,线程状态追踪(§13.3 中大量使用) |
-| power | `cpu_frequency`, `cpu_idle`, `clock_set_rate`, `clock_disable` | 功耗与频率分析,DVFS 行为追踪 |
-| binder | `binder_transaction`, `binder_transaction_received`, `binder_lock`, `binder_unlock` | IPC 延迟分析,Binder ANR 诊断(§9.1, §9.2) |
-| block | `block_rq_issue`, `block_rq_complete`, `block_rq_insert` | I/O 延迟分析,存储性能诊断(§6.1-6.3) |
-| net | `netif_receive_skb`, `net_dev_xmit`, `napi_gro_receive_entry` | 网络传输分析 |
-| drm | `drm_vblank_event`, `drm_sched_job`, `drm_run_job` | 显示管线 VSync 追踪、GPU 任务调度(§2.3) |
+事件名必须以设备的 `available_events` 为准。GKI、厂商内核配置和驱动实现都会改变可用集合。
 
+| 分析对象 | Android 17 锚点中的代表事件 | 说明 |
+|---|---|---|
+| CPU 调度 | `sched/sched_switch`、`sched/sched_waking`、`sched/sched_wakeup`、`sched/sched_wakeup_new` | 生成 `sched`、`thread_state` 等派生数据 |
+| CPU 频率与空闲 | `power/cpu_frequency`、`power/cpu_idle`、可选的 `power/cpu_frequency_limits` | 频率限制事件是否存在仍需查设备 |
+| Binder | `binder/binder_transaction`、`binder/binder_transaction_received`、`binder/binder_set_priority` | Android 17 的 Binder 追踪头文件没有旧资料常列的全局 `binder_lock` 事件 |
+| 存储 | `block/*`、`f2fs/*`、`ext4/*` 中设备支持的事件 | 不同内核版本的 block 事件集合变化较多 |
+| 中断 | `irq/*`、`ipi/*` | 高频事件应按问题范围选择 |
+| 厂商驱动 | GPU、显示、UFS 等驱动自定义组 | 不能把某款设备的事件名写成 Android 通用接口 |
 
+Binder 事件可以直接对照内核锚点的 [`drivers/android/binder_trace.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_trace.h)。atrace 的事件组合则应对照平台锚点的 [`cmds/atrace/atrace.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/atrace/atrace.cpp)。
 
-Perfetto 对 ftrace 事件做了两层处理:**原始 ftrace 事件**存放在 `ftrace_event` 表中(可按 `name` 列过滤事件类型),**派生表/视图**则对原始事件做结构化解析后生成更易查询的形式。例如 `sched_switch` 参与生成 `sched` 表的调度切片视图,`cpu_frequency` 进入 `cpu_frequency_counters` 表。
+Perfetto 会把可识别的高价值事件转换成领域表。例如，调度事件参与构造 `sched` 和 `thread_state`，频率事件进入计数器相关表。`ftrace_event` 保留原始事件索引及 `arg_set_id`，适合核对采集和查看尚无专用解析器的事件。正式分析应优先使用语义更稳定的派生表。
 
-不是每个 tracepoint 都有独立的派生表——部分事件只在 `ftrace_event` 原始表中体现,查询时需要按 `name` 过滤。`ftrace_event` 表主要用于调试和验证采集是否生效;生产分析应优先使用 Perfetto 提供的派生表(`sched`、`cpu_frequency_counters` 等),字段更丰富且经过类型转换。理解这种"原始事件 → 派生视图"的分层关系,有助于在 Perfetto 中遇到数据异常时快速定位是采集层面的问题还是分析层面的问题。
+## atrace category 不是事件别名
 
-## atrace 用户空间追踪框架
+`atrace` category 是 Android 定义的一组开关。一个 category 可以控制用户空间 tag 位、内核事件，也可以同时控制两者：
 
-ftrace 是内核层的机制。Android 应用和 Framework 代码运行在用户空间,需要一个桥梁把用户空间的追踪需求传递到内核。这个桥梁就是 atrace。
+- `view`、`wm`、`am` 等 category 主要对应 `ATRACE_TAG_*`，使相应进程允许写用户空间追踪事件。
+- `sched` 没有用户空间 tag 位，主要启用一组调度、任务和可选的内存相关 tracepoint。
+- `gfx` 启用 `ATRACE_TAG_GRAPHICS`，还可附带 `gpu_mem/gpu_mem_total` 等内核事件。
+- `freq` 和 `idle` 是两个独立 category，分别覆盖频率与 CPU idle 事件。
+- 厂商可以从 `/vendor/etc/atrace/atrace_categories.txt` 增加设备专用 category 和 sysfs 开关。
 
-### atrace 的分类机制
+Perfetto 的 `linux.ftrace` 数据源同时提供两种选择方式：
 
-`atrace` 命令(源码位于 `frameworks/native/cmds/atrace/`)对 ftrace 的 tracepoint 做了分类封装。执行 `atrace --help` 时看到的那一堆 category(`sched`, `freq`, `binder_driver`, `gfx`, `view`, `dalvik` 等),每个 category 背后对应一组 ftrace events 和/或用户空间 tag 的启停。
+- `ftrace_events` 精确指定 `group/event`，适合已知问题和可复现实验。
+- `atrace_categories` 复用 Android category，适合需要用户空间 tag 与配套内核事件的系统分析。
 
-例如:
-- `atrace sched` → 启用 ftrace 的 `sched_switch`, `sched_wakeup`, `sched_wakeup_new` 等 tracepoint
-- `atrace gfx` → 主线实现里至少启用 `ATRACE_TAG_GRAPHICS`,并可附带 `events/gpu_mem/gpu_mem_total/enable` 这类 graphics 相关 sysfs 开关;厂商还可以追加自己的 vendor categories,因此不能把 `gfx` 直接等同为某一个固定的 kernel event
-- `atrace freq` → 启用 `events/power/cpu_frequency/enable`,并按设备支持启用 `clock/cpu_frequency_limits`、`clock/cpuhp/suspend_resume` 等与频率变化相关的事件或开关
-- `atrace idle` → 启用 `events/power/cpu_idle/enable`
+两者可以放在同一份配置中。category 展开后仍要检查 Trace 中的 `unknown_ftrace_events`、`failed_ftrace_events` 和 atrace 错误；category 名称存在，并不能保证其中每个可选事件都存在于当前设备。
 
-功耗分析里常把 `sched + freq + idle + power` 放在同一份采集配置中。这里的 `idle` 是独立 category,不能把 `cpu_idle` 归到 `freq`。
+## Android 17 用户空间事件有两条路径
 
+“`android.os.Trace` 一定写 `trace_marker`”只适用于较早实现。Android 17 的 Java Framework 路径已经具备 Perfetto TrackEvent 与 atrace 兼容路径的选择逻辑。
 
+### `android.os.Trace` 的当前路径
 
-Perfetto 的 `TraceConfig.ftrace_config.ftrace_events` 直接绕过 atrace 的分类,直接操作 ftrace 的 event 名称。因此可以精确指定需要哪些 tracepoint,不受 atrace 预设分类限制。
+Android 17 的 [`android_os_Trace.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Trace.cpp)把 `nativeTraceBegin()`、`nativeTraceEnd()`、异步事件和计数器转交给 `tracing_perfetto::*`。随后 [`tracing_perfetto.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/tracing_perfetto/tracing_perfetto.cpp)按 category 状态选择：
 
-### 用户空间 Trace tag 的底层实现
+- atrace tag 未启用、对应 Perfetto category 已启用：写 Perfetto TrackEvent。
+- atrace tag 已启用、Perfetto category 未启用：调用 `atrace_begin()` 等 libcutils 接口。
+- 两边都启用：`debug.atrace.prefer_sdk` 的 category 位决定是否优先走 SDK。该属性由 `atrace --prefer_sdk` 配合 Perfetto 的 `atrace_categories_prefer_sdk` 管理，用于处理并发会话的兼容要求。
+- 两边都未启用：调用直接返回，不产生事件。
 
-App 和 Framework 中常用的 `Trace.beginSection("myTag")` / `Trace.endSection()`(Android API)和 C/C++ 中的 `ATRACE_CALL()` / `ATRACE_BEGIN()` 宏,它们的数据最终通过 ftrace 或 Perfetto 自身的管道传递。具体路径与 Android 版本有关,不能一概写成"全部经 trace_marker → ftrace ring buffer"。
+Android 14 及更早分支中的 Java Trace 主要走 libcutils atrace。Android 15 开始接入 `tracing_perfetto`，后续版本补上并发 atrace 会话的优先级处理。分析跨版本 Trace 时，应把事件的采集路径与目标系统分支对应起来。
 
-#### Java 侧 android.os.Trace
+### libcutils `ATRACE_*` 仍写 `trace_marker`
 
-`android.os.Trace.beginSection("myTag")` 在 Android 14 及更早版本中的路径:
+使用 `system/core/libcutils/include/cutils/trace.h` 中经典 `ATRACE_BEGIN()`、`ATRACE_END()`、`ATRACE_INT()` 的 native 代码，仍由 [`trace-dev.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libcutils/trace-dev.cpp)打开 `/sys/kernel/tracing/trace_marker`，失败时再尝试 debugfs 路径。
 
-1. `Trace.beginSection()` → `nativeTraceBegin()` JNI 入口 `frameworks/base/core/jni/android_os_Trace.cpp`
-2. 老路径通过 `libcutils/trace-dev.cpp` 中的 `atrace_begin()` 写入 `/sys/kernel/tracing/trace_marker`
+Android 17 的 libcutils 生成以下常用消息：
 
-Android 15+ 的实际路径变了:`android_os_Trace.cpp` 转而调用 `tracing_perfetto::traceBegin()`(位于 `frameworks/native/libs/tracing_perfetto/tracing_perfetto.cpp`)。Android 15.0.0_r1 先用 `toPerfettoCategory()` 判断是否有可用 Perfetto category;Android 16.0.0_r1 起再通过 `shouldPreferAtrace()` 处理 atrace 与 Perfetto 同时启用时的优先级:
-- Perfetto category 已启用,且当前配置不要求兼容同一 category 的 atrace 会话时,走 **Perfetto TrackEvent** 路径,数据由 Perfetto producer 直接汇入 Trace 文件,不经过 ftrace ring buffer
-- Perfetto category 未启用、tag 仍由 atrace 会话采集,或 Android 16+ 并发 atrace 兼容规则要求保留 atrace 输出时,走 `atrace_begin()` → `trace_marker` 路径
+| API | 写入格式 |
+|---|---|
+| 同步区间开始 | `B\|<pid>\|<name>` |
+| 同步区间结束 | `E\|<pid>` |
+| 异步区间开始/结束 | `S\|<pid>\|<name>\|<cookie>` / `F\|<pid>\|<name>\|<cookie>` |
+| 即时事件 | `I\|<pid>\|<name>` |
+| 计数器 | `C\|<pid>\|<name>\|<value>` |
 
-Android 15+ 中用户空间的 trace section 不再只有 ftrace ring buffer 一条通道:Perfetto TrackEvent 路径让数据可以绕开 ftrace ring buffer 直接进入 traced。分析 Android 15+ 设备的 Trace 时,Java 侧用户空间 slices 可能同时来自 trace_marker 解析出的 slice / `ftrace_event` 原始事件和 Perfetto SDK track;是否走 TrackEvent 取决于 Perfetto category 是否启用以及并发 atrace 兼容规则。
+这些字符串进入 ftrace 的 `print` 事件，再由 Perfetto 解析成时间片、即时事件或计数器。事件名称包含的换行和竖线会被清理，libcutils 的单条消息缓冲区上限是 1024 字节；应用公开 API 还对区间名称施加更短的限制。
 
-#### C/C++ ATRACE 宏
-
-`ATRACE_CALL()` / `ATRACE_BEGIN()` / `ATRACE_END()` 宏定义在 `system/core/libcutils/include/cutils/trace.h`,底层仍调用 `atrace_begin()` 等接口。与 Java 侧不同,这些宏在 Android 15+ 中仍然走 `atrace_begin()` → `trace_marker` 路径,没有切换到 TrackEvent 分支。
-
-`trace_marker` 常见写入格式包括 `B|<pid>|<name>`(begin)、`E|<pid>`(end)和 `C|<pid>|<name>|<value>`(counter)。Counter 用于记录随时间变化的数值,例如队列长度、缓存大小或业务侧自定义计数。Perfetto 解析 Trace 时,会把这些用户空间 tag 转成对应进程的 slice 或 counter Track。
-
-
-
-Android 14 及更早版本中,用户空间追踪事件和内核 `sched_switch` 等事件共用 ftrace ring buffer,因此天然在同一根时间线上。Android 15+ 的 TrackEvent 路径让部分用户空间事件不再经过 ftrace ring buffer,但 traced 会把各路数据源汇流到同一个 Trace 文件中,时间线仍然统一。
-
-### atrace / Perfetto 在启动过程中的角色
-
-启动期 trace 需要按版本区分两条路径。
-
-- **较早的 atrace boot trace**:`init` 监听 `persist.debug.atrace.boottrace=1`,随后启动 `boottrace` 服务。该服务实际执行的是 `atrace --async_start -f /data/misc/boottrace/categories`,从 `/data/misc/boottrace/categories` 读取 category 列表,把事件写进内核 trace buffer。它没有固定的 trace 文件输出目录,通常要在系统起来后再执行 `atrace --async_stop -z -o <path>` 导出结果。
-- **Android 13+ 的 Perfetto boot trace**:`perfetto.rc` 监听 `persist.debug.perfetto.boottrace=1`,启动 `perfetto_trace_on_boot`。配置文件固定放在 `/data/misc/perfetto-configs/boottrace.pbtxt`,输出文件固定写到 `/data/misc/perfetto-traces/boottrace.perfetto-trace`。
-
-两条路径都依赖 init 属性触发,但落盘方式不同。atrace 负责先把 trace 挂到 ring buffer 上,Perfetto 则在启动期直接按配置生成可分析的 `.perfetto-trace` 文件。
-
-
-
-## Perfetto traced 守护进程与数据流
-
-Perfetto 在 Android 9(Pie)引入,从 Android 10 开始替代 Systrace 成为默认的追踪后端。它的核心是 `traced` 守护进程。
-
-### traced 的架构
-
-traced 进程(源码位于 `external/perfetto/src/traced/`)采用 producer-consumer 架构:
-
-- **traced service**:中心协调者,管理数据源的注册和启停
-- **traced_probes**:内置的 producer 进程,负责从 ftrace、`/proc` 文件系统等系统数据源采集数据
-- **Consumer**:发起 Trace 请求的客户端(可以是 Perfetto CLI、Android Studio、或通过 `android.os.TracingManager` 的 App)
-
-数据流如下(Android 15+ 双路径):
+两条路径汇总后，Android 17 的数据流如下。图中的 Perfetto TrackEvent 不经过内核 ftrace 缓冲区。
 
 ```text
-ftrace tracepoints ──┐
-                      ├── traced_probes ──→ traced service ──→ Trace 文件
-/proc/* 文件系统 ────┤
-                      │
-用户空间 tag ─────────┤
-  ├── C/C++ ATRACE: trace_marker ──→ ftrace ring buffer ──→ traced_probes
-  └── Java Trace (Android 15+)
-      ├── atrace fallback ──→ trace_marker ──→ ftrace ring buffer ──→ traced_probes
-      └── Perfetto TrackEvent ──→ traced service (直连)
+内核 tracepoint ──────────────────────→ 每 CPU ftrace 缓冲区 ─┐
+                                                              │
+libcutils ATRACE_* → trace_marker → ftrace/print ─────────────┤
+                                                              ├→ traced_probes
+Java android.os.Trace ─┬→ atrace 兼容路径 → trace_marker ─────┘       │
+                       │                                             │
+                       └→ Perfetto TrackEvent Producer ───────────────┤
+                                                                     ↓
+Consumer → TraceConfig → traced ← Producer 共享内存提交 → 中央缓冲区 → Trace 文件
 ```
 
-[图:ftrace tracepoint、trace_marker、traced_probes、traced service 到 Trace 文件的数据流示意图,标注 Android 15+ TrackEvent 分流]
+图中 `traced` 接收数据使用方的配置并协调数据生产者；`traced_probes` 是拥有 `linux.ftrace` 等系统数据源的数据生产者。二者不处在同一个职责层级。
 
+## `traced` 与 `traced_probes` 如何协作
 
+Android 17 的 [`perfetto.rc`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/perfetto.rc)定义了两个独立服务：
 
-### traced 如何采集 ftrace 数据
+- `traced` 提供 Producer 套接字和 Consumer 套接字，管理会话、中央缓冲区、数据源启停和输出读取。
+- `traced_probes` 以受限权限访问 tracefs、`/proc` 等系统接口，注册 `linux.ftrace`、`linux.process_stats` 等数据源。
 
-traced_probes 采集 ftrace 数据的核心步骤:
+Perfetto CLI、Android Studio 或 `TracingManager` 充当数据使用方。它们把 `TraceConfig` 交给 `traced`。`traced` 按数据源名称找到数据生产者，并把对应的 `DataSourceConfig` 发给它。官方的 [Trace 配置说明](https://perfetto.dev/docs/concepts/config)和 [`traced_probes` 参考](https://perfetto.dev/docs/reference/traced_probes)描述了这套协议边界。
 
-1. 读取 `TraceConfig` 中的 `ftrace_config.ftrace_events` 列表
-2. 打开 `/sys/kernel/tracing/` 目录下的控制文件
-3. 将需要启用的 tracepoint 名称写入 `set_event`
-4. 设置 `buffer_size_kb` 为配置值(通常 32-128MB)
-5. 写入 `tracing_on` 为 `1` 开始采集
-6. 循环读取 per-CPU ring buffer 中的数据(通过 `trace_pipe_raw`),解析后写入 Perfetto protobuf 流
-7. Trace 结束时写入 `tracing_on` 为 `0`,关闭所有 fd
+### `linux.ftrace` 的采集过程
 
-`TraceConfig` 中几个容易忽略的 ftrace 相关配置:
+Android 17 源码中的实际步骤可以归纳为：
 
-- `ftrace_config.drain_period_ms`:多久从 ring buffer 读一次数据。AOSP `ftrace_controller.cc` 中 `kDefaultTickPeriodMs = 100`,即未显式配置时历史默认值为 100ms;若所有实例使用 buffer watermark polling,`GetTickPeriodMs()` 返回 `kPollBackingTickPeriodMs = 1000`。proto 注释建议除本地精调外保持 unset。设太大会导致 buffer 溢出丢数据,设太小会增加 CPU 唤醒频率。注意这是 `FtraceConfig` 消息内的字段名,不是顶层的 `TraceConfig` 字段
-- `ftrace_config.buffer_size_kb`:per-CPU ring buffer 大小。设备 8 核时设 32KB 意味着总共 256KB 的内核缓冲区,高负载场景下很容易溢出。32KB 是一个容易溢出的反例值,不是默认值;Perfetto v43+ 多数配置不显式设置该字段,默认值 / `buffer_size_lower_bound` 通常远大于 32KB
-- `ftrace_config.ftrace_events`:要启用的 tracepoint 列表。这是 `FtraceConfig` 消息内的字段,通过 `TraceConfig.ftrace_config` 设置
+1. `FtraceConfigMuxer` 合并同一 tracefs 实例上的活跃会话配置，计算事件并集。
+2. `Tracefs` 启用事件，配置时钟、缓冲区和受支持的选项。
+3. `FtraceController` 为每个 CPU 打开 `per_cpu/cpu<N>/trace_pipe_raw`。
+4. `CpuReader` 读取二进制页，按运行时读取到的事件格式解码，并写成 Perfetto protobuf 数据包。
+5. `traced_probes` 通过 Producer 共享内存向 `traced` 提交数据包。
+6. 会话退出时，muxer 只停用已不再被任何会话需要的事件；全部配置移除后才清理该实例的公共状态。
 
-traced_probes 读取 ftrace 数据的源码路径:
+并发会话使若干参数无法按单个配置独占。`buffer_size_kb` 和 `drain_period_ms` 的 proto 注释都明确写着并发时不保证请求值。函数图还会修改 `current_tracer`，存在并发配置不兼容时，Perfetto 会拒绝启用或要求独占会话。
 
-- `FtraceController`(`external/perfetto/src/traced/probes/ftrace/ftrace_controller.cc`)负责读取 `TraceConfig`、启停 ftrace,并按 `FtraceConfig.drain_period_ms` 触发采集循环
-- `CpuReader`(`external/perfetto/src/traced/probes/ftrace/cpu_reader.cc`)负责解析单个 CPU 的原始 ftrace page
-- `Tracefs`(`external/perfetto/src/traced/probes/ftrace/tracefs.cc` / `tracefs.h`)封装 tracefs 访问;`OpenPipeForCpu()` 打开 `/sys/kernel/tracing/per_cpu/cpu<N>/trace_pipe_raw`
-- 原始二进制事件通过 ftrace parser / event filter 处理后,写入 Perfetto protobuf 流并交给 traced service
-- `trace_pipe_raw` 与 `trace`(文本格式)的区别:前者输出二进制 ftrace event 结构体,由 traced_probes 直接解析,避免一次文本序列化和反序列化
+### 一份可审计的采集配置
 
+下面的配置只演示字段归属和一组常见事件，不把时长、中央缓冲区大小当作通用推荐值。`ftrace_config.buffer_size_kb` 与 `drain_period_ms` 故意留空，让 Android 17 的 Perfetto 选择默认值。
 
+```protobuf
+duration_ms: 10000
 
-### 用户空间 Data Source 注册
+buffers {
+  size_kb: 32768
+  fill_policy: RING_BUFFER
+}
 
-除了 ftrace,Perfetto 还支持用户空间自定义 Data Source。这里需要区分两条路径:
+data_sources {
+  config {
+    name: "linux.ftrace"
+    target_buffer: 0
+    ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_waking"
+      ftrace_events: "power/cpu_frequency"
+      ftrace_events: "power/cpu_idle"
 
-**路径一:App 层时间片(最常用)。** 通过 `android.os.Trace` / `androidx.tracing` 写 section:Android 14 及更早版本经 `trace_marker` 进入 ftrace;Android 15+ 按前文的 TrackEvent / atrace fallback 双路径进入 Perfetto。适合绝大多数场景,不需要引入额外依赖。
-
-**路径二:Perfetto C++ SDK 自定义 Data Source。** 如果需要发射结构化的自定义数据(不是简单的时间片),可以使用 Perfetto C++ SDK 注册自定义数据源。这是纯 C++ API,Java/Kotlin 应用需要通过 JNI 调用:
-
-```cpp
-// Perfetto C++ SDK - 注册自定义 Data Source
-#include "perfetto.h"
-
-class MyDataSource : public perfetto::DataSource<MyDataSource> {
- public:
-  void OnSetup(const SetupArgs&) override {}
-  void OnStart(const StartArgs&) override {}
-  void OnStop(const StopArgs&) override {}
-};
-
-PERFETTO_DECLARE_DATA_SOURCE_STATIC_MEMBERS(MyDataSource);
-PERFETTO_DEFINE_DATA_SOURCE_STATIC_MEMBERS(MyDataSource);
-
-// 注册时:
-perfetto::DataSourceDescriptor dsd;
-dsd.set_name("my.custom.data");
-MyDataSource::Register(dsd);
+      atrace_categories: "gfx"
+      atrace_categories: "view"
+      atrace_apps: "com.example.app"
+    }
+  }
+}
 ```
 
-注册后,在 `TraceConfig` 中通过 `data_sources` 字段指定名称即可启用。
+这里的 32768 KiB 是 Perfetto 中央缓冲区，10 秒是示例采集窗口。真实值应由事件速率、复现窗口、设备内存和丢数统计共同决定。配置中列出的可选事件若不在 `available_events`，应从目标设备配置中删除。
 
+Android 17 的 `FtraceConfigMuxer` 在调用方未指定内核缓冲区时，物理内存低于约 7 GiB 的设备选择每 CPU 2 MiB，达到或高于该阈值时选择每 CPU 8 MiB。这个分支是当前源码默认值，不能替代设备实测。`drain_period_ms` 未设置时，控制器使用 100 ms 历史周期；所有实例都使用缓冲区水位轮询时，保底周期放宽到 1000 ms。内核 6.18 支持 `drain_buffer_percent` 所依赖的 6.9+ 水位轮询能力，常规配置仍可保持未设置状态。
 
+## App、Framework、内核三层自定义入口
 
-## 自定义 Tracing 实战
+入口要和要回答的问题相匹配。应用业务区间用 `android.os.Trace` 已经足够；平台原生 C/C++ 热路径可使用有 category 的 ATRACE；需要观察内核状态转换时才添加 tracepoint。
 
-理解了这条数据链后,就可以按层次添加自定义追踪点。
+### App：同步区间、异步区间与计数器
 
-[图:App、Framework、Kernel 三层 tracing 入口与数据汇合位置示意图]
-
-### App 层:android.os.Trace 和 androidx.tracing
-
-最简单的方式:
+下面是应用方法体内的代码，用于标记一次数据库读取。`finally` 保证异常路径也能闭合区间。
 
 ```java
-// android.os.Trace(API 18+)
-Trace.beginSection("loadUserData");
+Trace.beginSection("UserRepository.load");
 try {
     loadUserDataFromDatabase();
 } finally {
@@ -298,48 +282,36 @@ try {
 }
 ```
 
-在 Perfetto 中,这些 section 会出现在**调用该方法的线程 Track** 中(不限于主线程),名称为 `loadUserData`。约束有三点:
-- `beginSection` 和 `endSection` 必须在同一线程配对调用
-- section 可以嵌套,但不能交叉
-- section 名称在 Perfetto SQL 的 `slice` 表中,可按名称过滤
+同步区间必须在同一线程正确嵌套。它会显示在调用线程的轨道上，不局限于主线程。API 29 及以上可以用 `beginAsyncSection(name, cookie)` 与 `endAsyncSection(name, cookie)` 表示跨线程工作；同名并发操作需要不同 `cookie`。持续数值适合 `setCounter()`，不要用大量零时长区间模拟计数器。
 
-如果需要跨线程追踪异步操作,API 29+ 提供了 `Trace.beginAsyncSection()` / `Trace.endAsyncSection()`,用 cookie 关联起止端。
+动态拼接区间名称会产生字符串分配，还可能把用户数据写进 Trace。只有名称构造确有成本时，才用 `Trace.isEnabled()` 避免未采集状态下的临时对象。公开 API 的同线程配对、异步 `cookie` 和名称限制可查 [`android.os.Trace`](https://developer.android.com/reference/android/os/Trace)。
 
-`androidx.tracing` 库(`androidx.tracing:tracing`)提供两个价值:一是向后兼容(API < 18 时自动降级为空操作),二是通过 `TraceCompat`(已 deprecated,新代码直接用 `androidx.tracing.Trace`)统一 `beginSection` / `beginAsyncSection` 的调用入口。
+### Framework 原生层：保留 category 语义
 
-1.x 版本主要做兼容封装;2.0.0-alpha 引入了新的低开销 in-process tracing API,支持协程上下文传播和可插拔后端。
-
-
-
-### Framework 层:ATRACE 宏
-
-在 Framework Java 代码中,Android 提供了 `android.os.Trace` 的同等 API。在 native C/C++ 代码中(如 SurfaceFlinger、AudioFlinger),使用 `ATRACE_CALL()` 和 `ATRACE_BEGIN()` 宏:
+下面是平台函数中的示意节选，省略头文件和类声明。它标记原生函数范围，并在一个较小子区间上补充语义。
 
 ```cpp
-// 自动 RAII:构造时 begin,析构时 end
-void SurfaceFlinger::handleMessageRefresh() {
-    ATRACE_CALL();  // 自动以函数名作为 section 名称
-    // ... 合成一帧的逻辑
-}
+void RenderEngine::drawLayers() {
+    ATRACE_CALL();
 
-// 手动控制
-ATRACE_BEGIN("computeLayerBounds");
-computeLayerBounds();
-ATRACE_END();
+    ATRACE_BEGIN("RenderEngine.prepareLayers");
+    prepareLayers();
+    ATRACE_END();
+
+    submit();
+}
 ```
 
-这些宏定义在 `system/core/libcutils/include/cutils/trace.h` 中,底层调用 `atrace_begin()` / `atrace_end()`,最终写入 `trace_marker`。
+`ATRACE_CALL()` 通过 RAII 在作用域退出时闭合。手工 `ATRACE_BEGIN()` / `ATRACE_END()` 没有这种保护，提前返回和错误分支都必须闭合。平台代码还要在包含 `trace.h` 前选择正确的 `ATRACE_TAG`；否则 category 配置和事件可见性会偏离设计意图。
 
+对极高频路径，区间边界应围住能回答问题的工作单元。把每次循环迭代、每个像素或每个小对象操作都写入系统 Trace，会同时增加目标线程成本和事件带宽。
 
+### 内核：在 6.18 锚点添加静态 tracepoint
 
-### 内核层:添加自定义 tracepoint
-
-系统/OEM 开发者添加内核级 tracepoint 时,最小可编译路径分三步。
-
-1. 在 `include/trace/events/<subsystem>.h` 声明 tracepoint。`<trace/define_trace.h>` 要放在 include guard 外面:
+下面的头文件展示 Android 17 内核锚点可用的最小声明形式。`define_trace.h` 必须位于 include guard 外，`__assign_str(name)` 使用 Linux 6.18 的单参数形式。
 
 ```c
-// include/trace/events/my_custom.h
+/* include/trace/events/my_custom.h */
 #undef TRACE_SYSTEM
 #define TRACE_SYSTEM my_custom
 
@@ -357,142 +329,177 @@ TRACE_EVENT(my_event,
     ),
     TP_fast_assign(
         __entry->value = value;
-        __assign_str(name, name); // Linux < 6.10 使用双参数形式
-        // Linux 6.10+ 使用 __assign_str(name),第二个参数被移除
+        __assign_str(name);
     ),
-    TP_printk("value=%d name=%s", __entry->value, __get_str(name))
+    TP_printk("value=%d name=%s",
+              __entry->value, __get_str(name))
 );
 
 #endif /* _TRACE_MY_CUSTOM_H */
 
-/* This part must be outside protection. */
 #include <trace/define_trace.h>
 ```
 
-2. 在唯一一个 C 文件中生成 tracepoint 定义:
+`__string(name, name)` 保存源表达式，`__assign_str(name)` 在快速赋值阶段复制它。旧内核使用过双参数形式，移植代码时要按目标分支的 `trace_events.h` 和样例修改，不能把旧写法带进 6.18。锚点内核的 [`trace-events-sample.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/samples/trace_events/trace-events-sample.h)提供了各字段宏的当前说明。
+
+还需要在唯一一个编译单元中实例化定义。下面这段代码只负责生成 tracepoint 符号。
 
 ```c
-// drivers/.../my_custom_trace.c
 #define CREATE_TRACE_POINTS
 #include <trace/events/my_custom.h>
 ```
 
-3. 在业务代码中调用生成的 helper:
+业务代码随后调用生成的 helper。下面的调用会产生 `my_custom:my_event`。
 
 ```c
 #include <trace/events/my_custom.h>
 
-void my_path(void)
+static void update_state(int value, const char *name)
 {
-    trace_my_event(42, "test_event");
+    trace_my_event(value, name);
 }
 ```
 
-Makefile 只负责把包含 `CREATE_TRACE_POINTS` 的源文件编进对应模块或内核目录,不在 `kernel/trace/Makefile` 里"注册" tracepoint。编译完成后,事件会出现在 tracefs 的 `available_events` 中,名称是 `my_custom:my_event`,Perfetto 配置里写成 `my_custom/my_event`。
+模块或内核编译完成后，事件应出现在 `events/my_custom/my_event/` 和 `available_events` 中。Perfetto 配置使用斜杠形式 `my_custom/my_event`。只有事件成功注册、当前构建允许 `traced_probes` 访问且配置成功启用，Trace 中才会出现数据。
 
+### 从 `ftrace_event` 核对自定义事件
 
-
-> **内核版本差异**:`__assign_str()` 宏在 Linux 6.10 发生了参数变更。旧内核(包括当前 GKI 6.6 分支)使用双参数写法 `__assign_str(dst, src)`;Linux 6.10+ 移除了第二个参数,改为 `__assign_str(dst)`,编译器自动从 `TP_STRUCT__entry` 中的 `__string()` 声明推导源字段。如果目标设备运行 Android 17 / Kernel 6.12,需确认内核版本后使用对应的写法。
-
-### 在 Perfetto 中查看自定义追踪数据
-
-只要自定义 tracepoint 被注册到 ftrace,Perfetto 就能采集它。在 `TraceConfig` 中添加:
-
-```protobuf
-ftrace_config {
-  ftrace_events: "my_custom/my_event"
-}
-```
-
-在 SQL 中查询:
+新增事件还没有专用 Trace Processor 解析器时，可以先列出原始事件名称。下面的查询也能发现配置名与实际 `ftrace_event.name` 的差异。
 
 ```sql
--- 调试用:从原始 ftrace_event 表查询自定义事件
-SELECT ts, name
+SELECT
+  name,
+  COUNT(*) AS event_count
 FROM ftrace_event
-WHERE name = 'my_custom_my_event'
+GROUP BY name
+ORDER BY event_count DESC;
 ```
 
-> **注意**:`ftrace_event` 表是 Perfetto 对原始 ftrace ring buffer 数据的直接映射,字段较少。生产分析应优先使用 `sched`、`thread_state`、`counter`、`slice` 等派生表;结构化参数通过 `arg_set_id` / `EXTRACT_ARG()` 获取,查询前可先 `SELECT DISTINCT name FROM ftrace_event` 确认目标事件是否存在。如果自定义事件需要在分析中反复使用,推荐通过 Perfetto 的 `trace_processor_shell --metrics-v2` 或自定义 SQL view 做二次封装。
+结果中的名称来自 Perfetto 实际写入的事件描述，不能用 `group_event` 之类的拼接规则猜测。确认名称后，再用 `arg_set_id` 展开字段。下面的查询保留 CPU、线程和全部参数。
 
-## Tracing 开销与性能影响
-
-"加 Trace 会不会影响性能"--这是很多人关心但很少被量化回答的问题。
-
-### 不同追踪模式的开销对比
-
-| 追踪模式 | 典型开销 | 适用场景 |
-|----------|---------|---------|
-| function tracer | 系统 10-15% 性能下降 | 内核调试、代码理解,**禁止**在生产或性能测试中启用 |
-| tracepoint(已启用) | 单个 tracepoint 约 100-500ns | 性能分析首选;Android 默认追踪集开销 < 3% 需按设备和事件集复测 |
-| tracepoint(未启用) | 接近零(static_key branch) | 平时零开销,按需启用 |
-| trace_marker(用户空间 tag) | 约 200-500ns/次 | App/Framework 追踪,高频调用时需注意 |
-| eBPF kprobe | 约 500-2000ns/次 | 动态追踪,比 tracepoint 开销略高 |
-
-
-
-### ftrace buffer 与数据丢失
-
-ftrace 使用 per-CPU ring buffer 存储事件。当事件产生速度超过消费者(traced_probes)的读取速度时,旧事件会被覆盖。Perfetto 中某个时间段的数据突然消失,通常就是 ring buffer 溢出造成的。
-
-缓解方法:
-- 增大 buffer(`buffer_size_kb`),但会占用更多内核内存
-- 减少启用的 tracepoint 数量,只采集需要的
-- 调整 `TraceConfig.ftrace_config.drain_period_ms`,让 traced_probes 更频繁地读取
-
-### 生产环境中的 Tracing 最佳实践
-
-1. **最小化启用的事件集**:不要"全选"。只启用分析目标相关的事件
-2. **控制 Trace 时长**:30-60 秒足够大多数分析场景,超过 5 分钟的 Trace 文件会很大且难以分析
-3. **避免高频自定义 tag**:如果在一个循环里调用 `Trace.beginSection()`,频率超过每秒 1000 次时,tag 本身就会成为性能负担
-4. **控制 buffer 大小**:在低内存设备上,大 buffer 可能导致内存压力
-
-## 与 eBPF 的关系
-
-eBPF 是 tracepoint 的重要补充。传统的 tracepoint 是静态的--必须在编译时在源码中声明。而 eBPF 提供了动态追踪能力:
-
-- **kprobe**:动态附加到任意内核函数入口,无需修改内核源码
-- **uprobe**:动态附加到用户空间函数入口,无需修改应用代码
-- **tracepoint**:eBPF 程序也可以附加到现有的静态 tracepoint 上,获取结构化的参数数据
-
-Android 16 引入的 UprobeStats 是基于 eBPF uprobe 机制的动态埋点工具,可以在不修改应用代码的情况下对用户态函数做耗时统计。实际开销与命中频率、BPF map 更新次数、ring buffer 写入和栈回溯深度强相关(详见 §14.10);简单的 uprobe/uretprobe 单次开销常在微秒级,高频热点函数上需要评估对目标线程的尾部延迟影响。UprobeStats 适合低频采样或冷路径观测,不建议对帧循环内的高频函数做全量统计。
-
-
-
-§14.10 会继续讨论 eBPF 在 Android 性能分析中的具体应用。
-
-## 小结
-
-这一节梳理了 Android Tracing 的完整数据流:
-
-```text
-内核 tracepoint ──→ ftrace ring buffer ──→ traced_probes ──→ traced ──→ Trace 文件 ──→ Perfetto UI/SQL
-C/C++ ATRACE ──→ trace_marker ──→ ftrace ring buffer ──↗
-Java android.os.Trace (Android 14 及更早) ──→ trace_marker ──→ ftrace ring buffer ──↗
-Java android.os.Trace (Android 15+) ──┬── Perfetto TrackEvent ──→ traced ──↗
-                                      └── atrace fallback ──→ trace_marker ──→ ftrace ring buffer ──↗
+```sql
+SELECT
+  f.ts,
+  f.cpu,
+  f.utid,
+  f.name,
+  a.key,
+  a.display_value
+FROM ftrace_event AS f
+LEFT JOIN args AS a USING (arg_set_id)
+WHERE f.name = 'my_event'
+ORDER BY f.ts, a.key;
 ```
 
-理解这个链条后:
-- 遇到 Trace 数据缺失,先检查 ftrace buffer 配置
-- 需要自定义追踪点,按 App、Framework、Kernel 三层选择入口
-- 评估 Tracing 对测试结果的影响时,对照不同模式的开销范围
-- OEM/系统开发者可以沿着内核 tracepoint 到 Perfetto 的路径扩展观测能力
+若该事件会长期参与统计，应在 Perfetto 中增加专用 protobuf 与解析器，或在项目 SQL 库中封装语义视图。原始表适合验证采集，像调度状态、CPU 频率这类已有领域模型的数据仍应使用派生表。
 
-## 延伸阅读
+## 开销不能套固定百分比
 
-本节集中介绍了 Android Tracing 的基础设施层。以下调研覆盖了应用层和生产级动态追踪方案，适合作为横向对比阅读：
+系统追踪对工作负载的影响由事件命中频率、每条事件的字段量、字符串构造、内核缓冲区写入、Producer 解析和读取周期共同决定。给 `function tracer`、tracepoint 或 uprobe 写一个跨设备通用的纳秒数或百分比，会掩盖最有影响的变量。
 
-- **XTrace**：字节跳动的生产级 Android 动态追踪系统，利用 ART Instrumentation 机制做非侵入式追踪。通过改造 entry point 路径绕开了全局方法注入和强制解释执行两大性能坑，在线上 A/B 测试和故障诊断中给出了可量化的收益。适合从本章的基础设施层延伸到生产级方案对比。
-- **btrace (bytedance/btrace)**：从 1.0 到 3.0 的演进展示了从编译期插桩转向运行时 Hook + 同步抓栈的设计取舍，覆盖 ShadowHook、StackVisitor hack、ART method pointer 批量符号化，以及和 Perfetto、异步采样方案的边界选择。适合补强 tracing 生态的横向对比。
-- **traced_perf 与 FrameTimeline 数据源源码分析**：`linux.perf`（traced_perf）和 `android.surfaceflinger.frametimeline` 两个 Perfetto 数据源的源码级实现分析。traced_perf 守护进程负责 Linux 性能计数器采样，FrameTimeline 通过 SurfaceFlinger 捕获帧时间线数据检测卡顿源头。
+| 机制 | 未启用时仍存在的工作 | 启用后的主要新增工作 | 使用建议 |
+|---|---|---|---|
+| 静态 tracepoint | 静态分支快速路径 | 字段计算、复制、每 CPU 缓冲区写入 | 系统性能采集的常用入口 |
+| `function` / `function_graph` | 动态 ftrace 快速路径 | 大量函数事件、返回关系和过滤判断 | 只在可控构建上缩小函数集合 |
+| libcutils ATRACE | tag 状态检查 | 名称处理、系统调用写 `trace_marker`、ftrace 记录 | 避开高频细粒度循环 |
+| Perfetto TrackEvent | category 状态检查 | 数据包构造、共享内存提交 | 使用 category 与轨道模型控制范围 |
+| eBPF kprobe/uprobe | 探针未挂载时无对应程序执行 | BPF 程序、map 更新、可选环形缓冲区输出 | 根据命中率和程序内容实测 |
 
-以上三份调研均来自同书 DeepResearch 成果，文件路径见 Obsidian 仓库 DeepResearch 目录。
+开销评估应采用同一设备、同一构建、同一温控条件和同一输入脚本，交替运行无采集与有采集样本。比较目标指标之外，还要记录采集进程 CPU、Trace 文件速率和丢数统计。只跑一轮 A/B 无法区分追踪扰动与温度、频率、后台任务造成的波动。
 
+## 丢数诊断与配置调整
 
-### Perfetto 关键数据源 linux.perf 与 frametimeline 的 AOSP 17 边界验证
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-08-android-17-perfetto-data-sources-boundary-verification.md
-- 类型：DeepResearch 调研结果
-- 摘要：基于 android-17.0.0_r1 锚点验证：linux.perf(traced_perf/perf_producer 路径)与 android.surfaceflinger.frametimeline 两个数据源在 Android 17 中保持完整实现，包括 external/perfetto/src/profiling/perf/perf_producer.cc 的 kDataSourceName="linux.perf"、frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.{h,cpp} 的 kFrameTimelineDataSource 注册路径、JankType 分类逻辑与阈值参数。
-- 注入时间：2026-06-09
-- 价值：精确到文件+行号+函数名的一手源码证据，补全 §13.9 对 linux.perf 和 frametimeline 数据源的验证边界声明
+完成采集后，先运行一条统一查询。新版 Trace Processor 会把当前会话内的 ftrace 计数增量放在 `*_delta`；其中 `ftrace_cpu_overrun_delta` 可能仍标为 `info`，只筛 `data_loss` 会漏掉它。
+
+```sql
+SELECT
+  name,
+  idx,
+  severity,
+  source,
+  value
+FROM stats
+WHERE value != 0
+  AND (
+    severity IN ('data_loss', 'error')
+    OR name IN (
+      'ftrace_cpu_overrun_delta',
+      'ftrace_cpu_commit_overrun_delta',
+      'ftrace_cpu_dropped_events_delta'
+    )
+  )
+ORDER BY name, idx;
+```
+
+查询有结果时，要按统计项所在层处理：
+
+- `ftrace_cpu_overrun_delta` 非零：内核旧事件在 `traced_probes` 读取前被覆盖。减少高频事件通常比盲目扩容更有效；确认事件集已经精简后，再评估每 CPU `buffer_size_kb` 或读取策略。
+- `ftrace_cpu_commit_overrun_delta` 非零：内核记录提交发生异常，需检查缓冲区大小、极端中断负载和内核实现。
+- `ftrace_cpu_dropped_events_delta` 非零：关闭覆盖模式后，缓冲区已满导致新事件被拒绝。
+- `traced_buf_trace_writer_packet_loss` 非零：Producer 共享内存提交发生丢包，应检查数据生产者是否被阻塞、数据包是否过大及系统调度压力。
+- `traced_buf_chunks_overwritten` 非零：中央 `RING_BUFFER` 已回绕。它可能符合“只保留故障前最近窗口”的设计，也可能覆盖了分析所需的开头。
+- `traced_buf_chunks_discarded` 非零：中央 `DISCARD` 缓冲区已满，后续数据被丢弃。
+
+`buffer_size_kb`、`drain_period_ms`、`drain_buffer_percent` 都会改变内存、唤醒与丢数之间的权衡。修改一个参数后应重新运行同一复现并复查 `stats`，避免把“文件变大”当成“数据完整”。
+
+## 生产环境抓取约束
+
+生产采集要把诊断价值、性能扰动和数据敏感性一起纳入配置。
+
+- 按问题选择事件。调度延迟需要 `sched_switch` 和唤醒事件，未必需要所有 Binder、I/O、IRQ 和驱动事件。
+- 采集窗口围绕可识别触发点设置。固定宣称某个秒数适合所有问题没有依据；低频故障可以用长时环形缓冲区配合触发器保留故障前窗口。
+- 自定义名称使用稳定、低基数的操作名。用户输入、URL、账号、消息内容等数据不应进入 Trace。
+- 高频路径先计算事件速率，再决定采样、聚合或缩小区间。源码里一行 Trace 调用并不等于一次固定成本。
+- 区分 `user`、`userdebug` 和 `eng` 构建权限。函数图、内核符号和部分系统数据源在 `user` 构建上受 SELinux、系统属性或 Perfetto 保护规则限制。
+- 每份性能结论都保留 TraceConfig、设备构建号、内核版本、复现步骤和丢数查询结果。缺少这些信息时，后续很难判断差异来自代码还是采集条件。
+
+## eBPF 与静态 tracepoint 的分工
+
+静态 tracepoint 适合长期保留的内核语义事件。字段布局随内核演进，但事件位置由维护者在源码中选择，通常比函数符号更稳定。eBPF 可以附着到现有 tracepoint，在内核侧过滤或聚合；也可以用 kprobe、kretprobe、uprobe 和 uretprobe 观察尚无静态事件的函数。
+
+kprobe 与 uprobe 依赖函数符号、内联、优化和二进制版本。平台升级后，探针位置与参数解释必须重新验证。BPF 程序若只在 map 中计数，与每次命中都向用户空间输出事件的成本差异很大。因此，静态 tracepoint、eBPF 聚合和 Perfetto 全量时间线应按问题组合，不能用一个固定开销表决定取舍。§14.10 会继续讨论 Android 动态探针的权限、版本边界和验证方法。
+
+## Android 17 启动期 Trace
+
+Android 17 的标准 Perfetto 启动期 Trace 由 `perfetto.rc` 中的 `perfetto_trace_on_boot` 服务执行。它等待持久属性可用、`persist.traced.enable=1` 且 `traced` 已监听 Consumer 套接字，然后读取：
+
+- 配置：`/data/misc/perfetto-configs/boottrace.pbtxt`
+- 输出：`/data/misc/perfetto-traces/boottrace.perfetto-trace`
+- 一次性触发属性：`persist.debug.perfetto.boottrace=1`
+
+在允许 `root` 的调试设备上，可以用下面的命令准备下一次启动采集。
+
+```bash
+adb root
+adb push boottrace.pbtxt /data/misc/perfetto-configs/boottrace.pbtxt
+adb shell setprop persist.debug.perfetto.boottrace 1
+adb reboot
+
+# 设备完成目标启动阶段后执行
+adb pull /data/misc/perfetto-traces/boottrace.perfetto-trace
+```
+
+该属性会在服务启动时被清空，避免每次重启都重复抓取。服务需要等待 `/data`、持久属性和 `traced`，所以它不能覆盖这些条件满足前的全部内核和早期用户空间事件。需要更早窗口时，应使用内核启动参数预配置 ftrace，再通过 `preserve_ftrace_buffer` 接入 Perfetto，或使用设备启动链提供的早期追踪方案。官方的 [Android boot tracing 案例](https://perfetto.dev/docs/case-studies/android-boot-tracing)给出了配置与触发流程。
+
+旧版本 Android 还存在 atrace boot trace 路径。它以 category 配置内核和用户空间 atrace 状态，输出流程与 Perfetto boot trace 不同。Android 17 新配置应以 `perfetto_trace_on_boot` 为准，阅读历史故障记录时仍需识别旧路径。
+
+## 排查顺序
+
+遇到“某条轨道没有数据”，按数据路径检查会更快：
+
+1. 在目标设备的 `available_events` 中确认事件存在。
+2. 确认配置使用正确的 `group/event`、atrace category 和目标应用名。
+3. 检查 Trace 的 `unknown_ftrace_events`、`failed_ftrace_events` 与 atrace 错误。
+4. 用 `ftrace_event` 验证原始事件是否进入 Trace，再查看派生表。
+5. 查询 `stats` 的所有非零 `data_loss` 项，定位丢数层。
+6. Android 15 及以上的 Java Trace 同时考虑 TrackEvent 与 atrace 兼容路径；经典原生 C/C++ `ATRACE_*` 仍检查 `trace_marker`。
+7. 只改动一个采集变量，并用同一复现验证变化。
+
+这套顺序把“事件不存在”“配置没有启用”“采集途中丢失”“解析层没有派生数据”分成四类问题。定位到具体层后，再调整事件、缓冲区或解析逻辑，结论才有源码和采集证据支撑。
+
+## 源码与文档锚点
+
+- Android 17 平台：[`atrace.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/atrace/atrace.cpp)、[`android_os_Trace.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Trace.cpp)、[`tracing_perfetto.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/tracing_perfetto/tracing_perfetto.cpp)、[`trace-dev.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libcutils/trace-dev.cpp)
+- Android 17 Perfetto：[`tracefs.cc`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traced/probes/ftrace/tracefs.cc)、[`ftrace_controller.cc`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traced/probes/ftrace/ftrace_controller.cc)、[`ftrace_config_muxer.cc`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traced/probes/ftrace/ftrace_config_muxer.cc)、[`perfetto.rc`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/perfetto.rc)
+- Android 17 内核 6.18：[`ftrace.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/trace/ftrace.rst)、[`trace-events-sample.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/samples/trace_events/trace-events-sample.h)、[`binder_trace.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_trace.h)
+- Perfetto 官方文档：[ftrace 采集与解析](https://perfetto.dev/docs/getting-started/ftrace)、[atrace instrumentation](https://perfetto.dev/docs/getting-started/atrace)、[TraceConfig](https://perfetto.dev/docs/reference/trace-config-proto)、[缓冲区与丢数](https://perfetto.dev/docs/concepts/buffers)
