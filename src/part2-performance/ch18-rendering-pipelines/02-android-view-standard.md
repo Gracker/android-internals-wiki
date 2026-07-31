@@ -6,21 +6,46 @@ chapter: '18.2'
 section: '18.2'
 status: finalized
 applicable_versions: Android 11 (API 30) - Android 17 (API 37)
-last_verified: '2026-05-05'
-last_verified_against: AOSP ViewRootImpl/HWUI/BLASTBufferQueue + Compose 官方 Phases
-  of a frame + 2026-04-29 external review
-confidence: medium
+last_verified: '2026-07-31'
+last_verified_against: AOSP android-17.0.0_r1 Choreographer/ViewRootImpl/HWUI/BufferQueue/BLAST/SurfaceFlinger/HWComposer + Perfetto android-17.0.0_r1
+confidence: high
 sources:
-- type: aosp
-  path: "frameworks/base/core/java/android/view/ViewRootImpl.java"
-- type: aosp
-  path: "frameworks/base/libs/hwui/"
-- type: aosp
-  path: "frameworks/native/libs/gui/BLASTBufferQueue.cpp"
-- type: official
-  path: "https://developer.android.com/develop/ui/compose/phases"
-- type: research
-  path: "DeepResearch/2026-05-15-android-view-blast-art-gc.md"
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S02_aosp_standard_type.md"
+    role: "标准 HWUI 页面分型、完整证据链与版本演进"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java"
+    role: "VSync callback、五阶段 doFrame 与 buffer stuffing recovery"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java"
+    role: "Traversal、同步屏障与 HWUI 入口"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp"
+    role: "UI thread unblock、syncFrameState 与 RenderThread draw"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp"
+    role: "HWUI draw、FrameTimeline 信息与 ADPF hint session"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp"
+    role: "BufferQueue slot 状态与 dequeue/queue 约束"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
+    role: "BufferItem transaction、release channel 与 buffer wait callback"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp"
+    role: "SurfaceFrame actual end、DisplayFrame 与 jank 分类"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp"
+    role: "HWC skip-validate、present 与 release fence"
+  - type: perfetto
+    path: "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/prelude/after_eof/events.sql"
+    role: "FrameTimeline SQL table schema"
+  - type: official
+    path: "https://developer.android.com/develop/ui/compose/phases"
+    role: "Compose Composition、Layout 与 Drawing 阶段"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6"
+    role: "调度、cpuset、uclamp、cpufreq、dma-buf 与 sync_file 的统一 kernel 锚点"
 tags:
 - BLAST
 - RenderThread
@@ -38,7 +63,7 @@ related_chapters:
 - '18.1'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: ready-to-publish"
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
@@ -72,28 +97,36 @@ last_task9_audit_log: "logs/deep-review/2026-06-21-21-audit.md"
 ---
 
 
-# Android View 标准管线（BLAST 深入）
+# 18.2 Android View 标准管线（BLAST 深入）
 
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
-- [18.2.1 一帧的完整旅程](#一帧的完整旅程) — 从 VSync 到上屏的完整路径
-- [18.2.2 BLAST Buffer 生命周期](#blast-buffer-生命周期) — Buffer 状态机与 Triple Buffering
-- [18.2.3 渲染时序图](#渲染时序图blast-sequence) — BLAST 模式下的跨进程交互
-- [18.2.4 Trace 视角](#trace-视角) — Perfetto 中的关键 Slice
-- [18.2.5 FrameTimeline 与 Jank 检测](#frametimeline-与-jank-检测) — Android 12+ 的帧判定机制
-
-**扩展（可选深入）：**
-- SyncFrameState 的阻塞语义
-- Fence 在 App-SF 间的流转
-- Thread Roles 与职责边界
-- Jetpack Compose 在这条管线上的位置
+- [18.2.1 标准 HWUI 页面的判定条件](#如何确认这是标准-hwui-页面) — 主体 Producer、Surface 与 layer
+- [18.2.2 一帧的完整旅程](#一帧的完整旅程) — 从 VSync 到 present feedback
+- [18.2.3 BLAST Buffer 生命周期](#blast-buffer-生命周期) — Slot、队列深度与 release
+- [18.2.4 Trace 视角](#trace-视角) — MainThread、RenderThread、GPU 与 SF/HWC
+- [18.2.5 FrameTimeline 与 Jank 检测](#frametimeline-与-jank-检测) — expected/actual 与 token
+- [18.2.6 Compose 的位置](#compose-在标准-app-window-中的位置) — App 侧阶段改变，系统显示主线复用
 
 <!-- outline-end -->
 
 这篇只讨论标准 HWUI App Window：页面主体由普通 View 或 Compose host 组织，RenderThread 生成宿主窗口 buffer，没有承载主体内容的独立 Surface、浏览器 compositor、游戏引擎 swapchain、Camera HAL 或视频解码器 Producer。
 
 平台实现固定到 Android 17 / API 37 的 `android-17.0.0_r1`；涉及调度、cpuset、uclamp、cpufreq、dma-buf 和 fence 时，内核固定到 `android17-6.18-2026-06_r6`。Compose 独立于 Android platform 发布，本篇只说明它在标准 App Window 中的位置，不把某个 Jetpack 版本的行为归到 Android 17。
+
+## 如何确认这是标准 HWUI 页面
+
+分类依据是主体内容的生产与提交路径。普通 View、纯 Compose 或 `ComposeView` 页面通常属于标准类型，但页面中出现某个框架控件名不能单独作为结论。
+
+| 条件 | 标准类型的证据 | 需要切换章节的信号 |
+|---|---|---|
+| 主体 Producer | `ViewRootImpl`、HWUI RenderThread 与 App GPU queue | Chromium、Flutter raster、Camera HAL、MediaCodec 或游戏引擎主导主体内容 |
+| 输出目标 | 当前 App Window 的 `Surface` / BLAST BufferQueue | 独立 Surface、SurfaceTexture 输入、sideband stream 或另一条 swapchain |
+| layer 拓扑 | 主体像素落在 App Window layer | 出现承载主体内容的 child layer 或多个独立 Producer layer |
+| 帧节奏 | `Choreographer#doFrame` 与窗口 SurfaceFrame 能解释主体更新 | 引擎、解码器或硬件模块维护独立 cadence |
+
+常规列表页、详情页和设置页是典型标准页面。它们可能包含复杂布局、昂贵 shader 或大量 Compose 重组；“标准”只描述路径，不评价负载大小。页面嵌入视频、地图、相机预览或大型 WebView 后，应按实际占主体内容的 Producer 和 layer 重新分类。
 
 ## 一帧的完整旅程
 
@@ -134,6 +167,27 @@ UI 线程会在 `DrawFrameTask::postAndWait()` 等待 RenderThread。`DrawFrameT
 
 这解释的是 UI/RenderThread 同步边界，不能据此判断 GPU 是否完成，也不能把 `syncAndDrawFrame` 的结束时刻当成 present。
 
+下面的源码骨架用于展示 UI thread 的等待与放行位置。它省略了 callback、skip-frame 和错误分支，不是可编译代码。
+
+```text
+RenderProxy::syncAndDrawFrame()
+    DrawFrameTask::drawFrame()
+        postAndWait()
+
+DrawFrameTask::run()
+    canUnblockUiThread = syncFrameState(info)
+    if (canUnblockUiThread)
+        unblockUiThread()
+    if (canDrawThisFrame)
+        CanvasContext::draw()
+    else
+        CanvasContext::waitOnFences()
+    if (!canUnblockUiThread)
+        unblockUiThread()
+```
+
+`syncFrameState()` 在 `CanvasContext::prepareTree()` 之后返回 `info.prepareTextures`。纹理准备成功时 UI thread 可在 draw 前继续；纹理缓存空间不足等情况会让 UI thread 保持等待，直到本轮 draw 或 fence wait 结束。
+
 ### ④～⑥ RenderThread 生产窗口 buffer
 
 RenderThread 使用 App Window 的 `Surface` / BufferQueue Producer：
@@ -149,6 +203,25 @@ CPU command submission 与 `queueBuffer()` 返回时，GPU 仍可能继续写入
 标准 App Window 的 BLASTBufferQueue 位于应用进程。`onFrameAvailable()` 取得 `BufferItem` 后，`acquireNextBufferLocked()` 调用 `Transaction::setBuffer()`，写入 buffer、acquire fence、frame number 和 release callback；需要同步的窗口 transaction 可以按 frame number 合并，随后 `apply()` 到 SurfaceFlinger。
 
 SurfaceFlinger server 收到含 buffer 的 transaction 并计入 pending 后，`BufferTX - <layerName>` 增加；buffer 被 latch 或 drop 后减少。App 侧 `queueBuffer()` 与 server 侧 `BufferTX` 是两个时间点。
+
+下面的源码骨架用于标出 `queueBuffer()` 之后的 BLAST transaction 边界。它没有展开 callback 和同步事务合并。
+
+```text
+BufferQueueProducer::queueBuffer(slot, QueueBufferInput{fence, ...})
+    slot.state = QUEUED
+    frameAvailableListener.onFrameAvailable(BufferItem)
+
+BLASTBufferQueue::onFrameAvailable(BufferItem)
+    acquireNextBufferLocked()
+        Transaction.setBuffer(
+            surfaceControl, buffer, acquireFence, frameNumber, ...)
+        Transaction.apply()
+
+SurfaceFlinger::setTransactionState(...)
+    TransactionHandler::queueTransaction(...)
+```
+
+这段路径传递 slot、buffer handle、元数据和同步对象，不会经 Binder 复制整帧像素。SF 侧收到 transaction 后还要经过 readiness、snapshot、latch 和 composition，所以上述任一步完成都不能代替 present 证据。
 
 ### ⑦～⑧ SF FrontEnd 与 latch
 
@@ -223,7 +296,9 @@ Release 信息携带当前刷新率相关的 acquired count；BLAST 对 EGL prod
 
 Android 17 的 `Choreographer`/HWUI 路径包含 buffer stuffing recovery。`BBQBufferQueueProducer::waitForBufferRelease()` 记录等待，`ViewRootImpl` / `ThreadedRenderer` 把信号传到 `Choreographer.onWaitForBufferRelease()`；等待超过相应阈值时，后续 `doFrame()` 可以主动延后一帧，使 queued buffer 数下降。
 
-这项机制处理的是队列过深造成的额外输入到显示延迟，不是提高吞吐。Perfetto 中看到 `Buffer stuffing recovery`、`buffer stuffed` 或 `Negative offset`，要与 dequeue wait、FrameTimeline `Buffer Stuffing`、queue backlog 回落共同分析。具体 aconfig flag 取值由设备配置决定。
+Android 17 r1 的阈值是最近 frame interval 的一半。进入 recovery 后，`DELAY_FRAME` 会请求下一次 VSync 并跳过当前 `doFrame()`；后续 recovery 还可能对 animation frame time 应用一个 frame interval 的负 offset。`buffer_stuffing_multi_recovery` 控制同一段动画是否允许多次恢复；`buffer_stuffing_recovery_threshold` 启用时，累计主动 delay 的上限为 100 ms。两项都是可变 aconfig flag，目标设备的取值必须从配置或 trace 确认。
+
+这项机制处理队列过深造成的额外输入到显示延迟，不提高吞吐。Perfetto 中看到 `Buffer stuffing recovery`、`buffer stuffed` 或 `Negative offset`，要与 dequeue wait、FrameTimeline `Buffer Stuffing`、queue backlog 回落共同分析。
 
 ## 渲染时序图（BLAST Sequence）
 
@@ -298,6 +373,18 @@ sequenceDiagram
 
 `主线程短 + RenderThread 短 + Jank` 不能直接写成“SurfaceFlinger 或 HWC 问题”。GPU completion、buffer transaction、acquire fence、display prediction error 都可能落在两个 CPU slice 之外。
 
+### 用 RecyclerView 滑动校准观察顺序
+
+跟手滑动适合把上述关口连成一帧：
+
+1. `ACTION_MOVE` 经输入通道到达应用，同一 VSync 周期积累的 batched motion event 在 INPUT callback 中消费；滚动容器据此更新偏移并请求 redraw。
+2. ANIMATION、INSETS_ANIMATION 与 TRAVERSAL 继续执行。RecyclerView 是复用 DisplayList，还是重新 bind、measure、layout item，要以本帧 slice 和 layout request 为准。
+3. `ThreadedRenderer.draw()` 更新 root RenderNode，RenderThread 取得窗口 buffer、提交 GPU 命令并 `queueBuffer()`。
+4. BLAST 把 `BufferItem` 放入 transaction。SF server 计入 pending 时 `BufferTX` 增加，latch 或 drop 后下降。
+5. HWC 决定 composition type，DisplayFrame 与 present fence 给出显示栈时间边界；触摸到光子的完整时延还需要输入、driver 与外部测量。
+
+手指抬起进入 fling 后，驱动位移的来源转为 ANIMATION 阶段的 `OverScroller` 等对象，INPUT 变轻或消失不代表动画线程异常。
+
 ## FrameTimeline 与 Jank 检测
 
 FrameTimeline 从 Android 12 起为标准 App Window 提供 `SurfaceFrame` 和 `DisplayFrame` 的 expected/actual 时间线。Android 17 里，App 通过 FrameTimeline VSync id 选择预期 present timeline；该信息沿 HWUI/BLAST transaction 进入 SurfaceFlinger。
@@ -316,6 +403,8 @@ FrameTimeline 从 Android 12 起为标准 App Window 提供 `SurfaceFrame` 和 `
 - expected end = `expected.ts + expected.dur`；
 - actual end = `actual.ts + actual.dur`；
 - overrun = actual end - expected end。
+
+Android 17 `SurfaceFrame::setAcquireFenceTime()` 把 App actual end 设置为 `max(acquire fence signal time, queue time)`；fence 仍处于 pending 时暂用 queue time。对标准 HWUI 窗口，actual end 因而反映 producer 完成可读与 buffer post 两个边界中较晚的一项，不能用 UI thread 返回时刻替代。
 
 `jank_type` 是分类线索，不是根因结论。`Buffer Stuffing` 还要结合 dequeue wait、queued backlog、`BufferTX`、latch、release fence 和 recovery trace；`SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed`、`DisplayHAL`、`PredictionError` 也要与相应线程/硬件证据对齐。
 
@@ -410,6 +499,16 @@ RecyclerView GapWorker、Compose Lazy prefetch、图片预热和 shader/pipeline
 
 证明预取有效需要看到 prefetch 工作前移，以及后续关键帧 bind/measure/upload 或 pipeline creation 成本下降；不能只凭滑动变顺推断系统“提前补帧”。
 
+### 结论与证据门槛
+
+| 想确认的结论 | 至少要保存的证据 | 单独不足的信号 |
+|---|---|---|
+| UI/RenderThread 调度等待下降 | 同场景 runnable delay、线程状态、CPU 落点和优先级/cgroup 对比 | 单帧 duration 变短 |
+| ADPF 产生设备侧响应 | HintSession 上报、vendor hint 响应、随后发生的调度或频率变化 | 只有 API 调用或只有 cpufreq 上升 |
+| BufferQueue 深度改变 | max dequeued/acquired、slot/async 配置及 queue wait 对比 | `dequeueBuffer` 变短 |
+| stuffing recovery 生效 | recovery trace、主动 delay 与 backlog 回落 | 只有 FrameTimeline `Buffer Stuffing` |
+| HWC 使用 DEVICE composition | per-layer composition type、HWC 或 GPU composition 证据 | 功耗下降、SF slice 变短或 present 提前 |
+
 ## 版本边界
 
 | 平台 | 标准页面相关节点 | 分析影响 |
@@ -427,11 +526,13 @@ RecyclerView GapWorker、Compose Lazy prefetch、图片预热和 shader/pipeline
 平台源码全部固定到 `android-17.0.0_r1`：
 
 - [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java) 与 [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)：VSync 申请、五类 callback、buffer stuffing recovery、traversal；
+- [view flags](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/flags/view_flags.aconfig)：`buffer_stuffing_multi_recovery` 与 `buffer_stuffing_recovery_threshold` 的可变 flag 定义；
 - [`ThreadedRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ThreadedRenderer.java)、[`HardwareRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareRenderer.java) 与 [HWUI JNI](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/android_graphics_HardwareRenderer.cpp)：Java 到 native HWUI；
 - [`RenderProxy.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/RenderProxy.cpp)、[`DrawFrameTask.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp)、[`CanvasContext.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp)：UI unblock、RenderThread draw、buffer duration、hint session；
 - [`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp)、[`BufferQueueConsumer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp) 与 [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)：slot 状态、dequeued/acquired 上限、buffer transaction 与 release；
 - [`SurfaceFlinger FrontEnd`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/FrontEnd/)、[`Layer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Layer.cpp) 与 [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)：requested state、snapshot、`BufferTX`、transaction readiness 与 latch；
 - [`HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)、[`HWC2.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWC2.cpp) 与 [`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp)：composition strategy、present/release fence、SurfaceFrame/DisplayFrame。
+- [Perfetto `events.sql`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/prelude/after_eof/events.sql)：`actual_frame_timeline_slice` 与 `expected_frame_timeline_slice` 的字段定义。
 
 Kernel 侧固定到 `android17-6.18-2026-06_r6`：
 
