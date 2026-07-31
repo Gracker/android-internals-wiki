@@ -62,9 +62,9 @@ last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度
 
 # 13.11 Perfetto 时间跨度关联：SPAN_JOIN 与窗口函数
 
-Perfetto SQL 里最容易写错的一类查询，是把两个时间区间表按重叠关系关联起来。帧在一段时间内运行，线程调度在另一组时间段内发生，CPU 频率又是一组离散 counter；如果只用普通 `JOIN` 加 `ts` 条件，很快会遇到重复行、漏算边界和全表扫描。
+区间关联最容易出现“SQL 能运行，数字却多算或少算”的问题。帧、线程调度状态和锁等待已经带有 `ts + dur`；CPU 频率、内存等计数器只有采样时刻，要先补出有效区间。输入区间一旦重叠、分区键选错或末端边界没有定义，`SPAN_JOIN` 不会替查询者修正语义。
 
-`SPAN_JOIN` 是 Trace Processor 提供的 operator table，专门计算两个 span 表的时间交集。本节把它和窗口函数放在一起讲：窗口函数负责把离散事件整理成 `ts + dur` 的 span，`SPAN_JOIN` 负责把两组 span 按时间切成可统计的小段。
+本章的平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，调度事件对应的内核锚点为 `android17-6.18-2026-06_r6`。示例使用 Android 17 Perfetto SQL 标准库和该版本的 `span_join_operator` 约束；历史版本可以保留各自字段差异，但分析结果不得套用高于 Android 17 的平台假设。
 
 <!-- outline-start -->
 
@@ -81,464 +81,582 @@ Perfetto SQL 里最容易写错的一类查询，是把两个时间区间表按�
 
 <!-- outline-end -->
 
-## SPAN_JOIN 处理的是区间交集
+## `SPAN_JOIN` 处理区间交集
 
-Perfetto 文档把 span 定义为包含 `ts` 和 `dur` 两列的行。`ts` 是起点，`dur` 是持续时间，`slice`、`sched`、`thread_state` 这类表天然就是 span；`counter` 只有采样点，需要先补出每个值的有效区间。
+Perfetto 把含 `ts` 和 `dur` 的一行称为时间段（`span`）。区间采用半开形式 `[ts, ts + dur)`；相邻区间在同一个端点接触时，交集长度为零。`slice`、`sched` 和 `thread_state` 已经是时间段，`counter` 表中仍是离散采样点。
 
-[已验证: Perfetto Trace Processor docs, perfetto.dev/docs/analysis/trace-processor]
-
-普通 SQL 更擅长等值关联，比如 `slice.track_id = thread_track.id`。时间重叠关联属于区间关系，常见写法是：
+普通 SQL 也能计算交集。两段时间相交的条件为 `a.ts < b.end_ts AND b.ts < a.end_ts`，交集起点取两个起点的较大值，终点取两个终点的较小值。下面用固定数据验证这套公式，便于观察边界。
 
 ```sql
--- 用普通 JOIN 表达区间重叠，适合小表验证，不适合大 Trace 长期复用
+WITH
+  table_a(id, ts, dur) AS (
+    VALUES
+      (1, 10, 10),
+      (2, 30, 10)
+  ),
+  table_b(id, ts, dur) AS (
+    VALUES
+      (11, 15, 20),
+      (12, 40, 5)
+  )
 SELECT
-  a.ts AS a_ts,
-  a.dur AS a_dur,
-  b.ts AS b_ts,
-  b.dur AS b_dur,
-  MAX(a.ts, b.ts) AS overlap_ts,
-  MIN(a.ts + a.dur, b.ts + b.dur) - MAX(a.ts, b.ts) AS overlap_dur
-FROM table_a AS a
-JOIN table_b AS b
-  ON a.ts < b.ts + b.dur
- AND b.ts < a.ts + a.dur;
+  table_a.id AS a_id,
+  table_b.id AS b_id,
+  MAX(table_a.ts, table_b.ts) AS overlap_ts,
+  MIN(
+    table_a.ts + table_a.dur,
+    table_b.ts + table_b.dur
+  ) - MAX(table_a.ts, table_b.ts) AS overlap_dur
+FROM table_a
+JOIN table_b
+  ON table_a.ts < table_b.ts + table_b.dur
+ AND table_b.ts < table_a.ts + table_a.dur
+ORDER BY a_id, b_id;
 ```
 
-这段 SQL 的判断条件没有错，但工程上很容易失控：两张表没有按目标进程、线程、CPU、时间窗收窄时，候选组合会迅速膨胀；`overlap_dur` 还要额外过滤 `> 0`；如果某一边同一分区内存在重叠 span，聚合结果会重复计入。
+第一段交集是 `[15, 20)`，时长为 5。`table_a` 的第二段结束于 40，`table_b` 的第二段从 40 开始，两者只接触端点，因此不会输出一行。对小表或可能嵌套的事件，普通区间条件通常更容易保留事件身份。
 
-`SPAN_JOIN` 把这类查询换成虚拟表：
-
-```sql
--- table_a 与 table_b 都必须包含 ts 和 dur，两边按同一个整数分区列对齐
-CREATE VIRTUAL TABLE joined
-USING SPAN_JOIN(table_a PARTITIONED part_id, table_b PARTITIONED part_id);
-
-SELECT ts, dur, part_id
-FROM joined
-WHERE dur > 0;
-```
-
-输出表里的 `ts` 是两边起点的较大值，`dur` 是两边终点的较小值减去这个起点。源码里的 `Column()` 分支也按这个公式返回结果：`max(t1.ts, t2.ts)` 与 `min(t1.raw_ts_end(), t2.raw_ts_end()) - max_start`。
-
-[已验证: AOSP external/perfetto, span_join_operator.cc]
-
-适合用 `SPAN_JOIN` 的场景有三个特征：
-
-- **两边都是时间段**：例如帧区间、调度区间、线程状态区间、锁等待区间、GC pause 区间。
-- **结果要按重叠时长加权**：例如一帧内 2ms 在 710MHz、4ms 在 1804MHz，不能只取某个采样点。
-- **需要复用 SQL 模板**：例如同一套查询用于多条 trace、CI 回归或问题库归因。
-
-## 用窗口函数把 counter 变成 span
-
-CPU 频率、内存、温度、功耗估算等数据通常来自 `counter` 表。counter 记录“某个时间点值发生变化”，缺少“这个值持续了多久”。要把它和帧、线程运行段关联，先要用窗口函数补出 `dur`。
-
-`LEAD()` 的用途是拿到同一 track 内下一条 counter 的时间戳：
+`SPAN_JOIN` 把交集计算实现为虚拟表算子。它会将两侧区间按时间切开，并把两侧除 `ts`、`dur` 和分区键以外的列带到结果中。下面的合成数据演示按整数分区关联。
 
 ```sql
--- 把 cpufreq counter 转成带 dur 的 span 视图
-CREATE VIEW cpu_freq_span AS
-SELECT
-  counter.ts,
-  LEAD(counter.ts) OVER (
-    PARTITION BY counter.track_id
-    ORDER BY counter.ts
-  ) - counter.ts AS dur,
-  cpu_counter_track.cpu,
-  CAST(counter.value AS INT) AS freq_khz
-FROM counter
-JOIN cpu_counter_track
-  ON counter.track_id = cpu_counter_track.id
-WHERE cpu_counter_track.name = 'cpufreq';
-```
-
-`PARTITION BY counter.track_id` 不能省。CPU 0 和 CPU 4 的频率 track 各自独立，如果只按全局 `ts` 排序，某个 CPU 的当前值会被另一个 CPU 的下一条 counter 截断，`dur` 会变成跨 track 的假区间。
-
-[已验证: Perfetto getting started 示例与 Trace Processor docs]
-
-末尾 counter 没有下一条记录，`LEAD()` 会返回 `NULL`。处理方式取决于查询目标：
-
-```sql
--- 用 trace_end() 给末尾段补边界，便于做完整窗口统计
-CREATE PERFETTO TABLE cpu_freq_span_bounded AS
-WITH raw AS (
-  SELECT
-    counter.ts,
-    LEAD(counter.ts) OVER (
-      PARTITION BY counter.track_id
-      ORDER BY counter.ts
-    ) AS next_ts,
-    cpu_counter_track.cpu,
-    CAST(counter.value AS INT) AS freq_khz
-  FROM counter
-  JOIN cpu_counter_track
-    ON counter.track_id = cpu_counter_track.id
-  WHERE cpu_counter_track.name = 'cpufreq'
+CREATE PERFETTO TABLE demo_left (
+  ts TIMESTAMP,
+  dur DURATION,
+  part_id LONG,
+  left_name STRING
+) AS
+WITH data(ts, dur, part_id, left_name) AS (
+  VALUES
+    (10, 10, 1, 'left-a'),
+    (30, 10, 1, 'left-b'),
+    (10, 10, 2, 'left-c')
 )
-SELECT
-  ts,
-  COALESCE(next_ts, trace_end()) - ts AS dur,
-  cpu,
-  freq_khz
-FROM raw
-WHERE COALESCE(next_ts, trace_end()) > ts;
-```
+SELECT * FROM data;
 
-如果分析只关心某个短时间窗，也可以把 `trace_end()` 换成窗口结束时间。不要让 `NULL dur` 直接进入 `SPAN_JOIN`；结果可能报错，也可能让后续聚合悄悄少一段。
+CREATE PERFETTO TABLE demo_right (
+  ts TIMESTAMP,
+  dur DURATION,
+  part_id LONG,
+  right_name STRING
+) AS
+WITH data(ts, dur, part_id, right_name) AS (
+  VALUES
+    (15, 20, 1, 'right-a'),
+    (12, 4, 2, 'right-b')
+)
+SELECT * FROM data;
 
-## PARTITIONED 的约束比语法更要紧
+CREATE VIRTUAL TABLE demo_intersection
+USING SPAN_JOIN(
+  demo_left PARTITIONED part_id,
+  demo_right PARTITIONED part_id
+);
 
-`PARTITIONED` 告诉 `SPAN_JOIN`：只在同一个分区内计算重叠。调度与频率要按 `cpu` 分区，线程状态与 slice 要按 `utid` 分区，帧与进程级事件可以用 `upid` 或自定义整数键。
-
-`SPAN_JOIN` 有两个硬限制：分区列必须是整数；同一表、同一分区内的 span 不能重叠。源码里的 `Query::CursorNext()` 会检查分区列类型，非整数会返回 `SPAN_JOIN: partition is not an INT column`。
-
-[已验证: Perfetto Trace Processor docs + AOSP external/perfetto span_join_operator.cc]
-
-字符串分区需要先转成整数。官方文档提到可用 `HASH()` 处理字符串列：
-
-```sql
--- 把字符串事件名转成整数分区，再参与 SPAN_JOIN
-CREATE PERFETTO TABLE named_slice_span AS
 SELECT
   ts,
   dur,
-  HASH(name) AS name_hash,
-  name,
-  track_id
-FROM slice
-WHERE dur > 0;
+  part_id,
+  left_name,
+  right_name
+FROM demo_intersection
+ORDER BY part_id, ts;
 ```
 
-`HASH(name)` 解决的是类型限制，不解决语义问题。只有当两边的字符串含义完全一致时，hash 后的分区才有意义；如果一边是线程名，另一边是 slice 名，转成整数也不能关联。
+分区 1 会输出 `[15, 20)` 与 `[30, 35)`，分区 2 会输出 `[12, 16)`。脚本会在当前 Trace Processor 会话创建对象；重复运行前要删除这些对象或更换名称。
 
-同一分区内不能重叠，是比类型更容易踩的坑。`sched` 按 `cpu` 分区天然不重叠，因为一个 CPU 同一时刻只能运行一个线程；`thread_state` 按 `utid` 分区也应当连续互斥。普通 `slice` 就不同了，同一线程 track 上可能有嵌套 slice，同一时间有父子多层调用。直接拿 `slice PARTITIONED utid` 去 join，往往会把父子层级一起算进去。
+### 算子不会检查同分区重叠
 
-处理重叠数据有三种常用方式：
+Android 17 的实现会按分区和 `ts` 推进两侧游标。为了保持这一算法的成本可控，算子要求同一输入表、同一分区内的时间段互不重叠。源码和官方文档都明确说明：违反约束时可能静默产生错误行，算子不会主动报错。
 
-- **只取目标层级**：例如 `slice.depth = 0` 或取某个具体 `name`，让同一 track 内保留互斥区间。
-- **先 flatten**：使用标准库里的 flattened slice 视图，把嵌套调用整理成互斥片段后再 join。
-- **改用 interval 标准库**：需要保留两边重叠层级时，使用 `intervals.overlap` / `intervals.intersect` 这类模块比强塞进 `SPAN_JOIN` 更稳。
+输入还要满足以下条件：
 
-Perfetto 标准库的 `thread_executing_span_with_slice.sql` 就展示了这条思路：先构造受限的 `thread_state` 和 flattened slice 视图，再用 `SPAN_LEFT_JOIN` 按 `utid` 关联。
+- 两侧都必须有 `ts`，且至少一侧必须有 `dur`。点事件本身不定义覆盖范围，本章的区间分析会为两侧都显式提供 `dur`。
+- `dur` 应大于零；`dur = -1` 的开放区间要先裁到查询窗口或 `trace_end()`。
+- 分区列必须是整数。两侧都分区时，列名必须相同。
+- 分区键必须表达同一种实体，例如 `ucpu` 对 `ucpu`、`utid` 对 `utid`。
+- 只给一侧分区也受支持，未分区表会分别与每个分区求交。
 
-[已验证: AOSP external/perfetto, perfetto_sql/stdlib/sched/thread_executing_span_with_slice.sql]
+字符串可以用 `HASH()` 转成整数，但哈希只解决列类型。两个字符串字段的业务含义不同，转成整数后依旧不具备关联关系；自动化查询还应评估哈希碰撞是否可接受。
 
-## 案例：把每帧运行时间拆到 CPU 频率上
+## 用窗口函数把计数器点变成时间段
 
-帧耗时高时，单看 `Choreographer#doFrame` 的 `dur` 只能说明主线程这一帧忙了多久。要判断“忙的时候 CPU 频率是否足够”，需要把帧区间、线程运行区间和 CPU 频率区间放到同一条时间轴上。
+计数器在 `ts` 处记录“数值从此刻开始变为 value”。前向有效区间通常为 `[当前 ts, 下一条 ts)`，同一轨道的末条记录延续到明确的窗口末端。`LEAD()` 必须按 `track_id` 分区，否则一个 CPU 的频率点会被另一个 CPU 的采样时刻截断。
 
-这个例子拿主线程的 `Choreographer#doFrame` slice 作为帧窗口，用 `sched` 找出主线程在各 CPU 上运行的片段，再通过 `SPAN_JOIN` 把运行片段与 cpufreq span 关联起来。
+手工把 `cpufreq` 计数器转成前向区间，并通过 `cpu` 表取得跨机器 Trace 也唯一的 `ucpu`，可以核对标准库的输入语义。
 
 ```sql
--- 参数：把 com.example.app 换成目标进程名
-CREATE PERFETTO TABLE target_main_thread AS
-SELECT
-  thread.utid,
-  process.upid,
-  process.name AS process_name
-FROM thread
-JOIN process USING (upid)
-WHERE process.name = 'com.example.app'
-  AND (thread.is_main_thread = 1 OR thread.tid = process.pid)
-LIMIT 1;
-
-CREATE PERFETTO TABLE frame_span AS
-SELECT
-  ROW_NUMBER() OVER (ORDER BY slice.ts) AS frame_id,
-  slice.ts,
-  slice.dur,
-  thread_track.utid
-FROM slice
-JOIN thread_track
-  ON slice.track_id = thread_track.id
-JOIN target_main_thread
-  ON target_main_thread.utid = thread_track.utid
-WHERE slice.name = 'Choreographer#doFrame'
-  AND slice.dur > 0;
-
-CREATE PERFETTO TABLE main_sched_span AS
-SELECT
-  sched.ts,
-  sched.dur,
-  sched.cpu,
-  sched.utid
-FROM sched
-JOIN target_main_thread
-  ON target_main_thread.utid = sched.utid
-WHERE sched.dur > 0;
-
-CREATE PERFETTO TABLE cpu_freq_span AS
-WITH raw AS (
+WITH frequency_points AS (
   SELECT
     counter.ts,
     LEAD(counter.ts) OVER (
       PARTITION BY counter.track_id
       ORDER BY counter.ts
     ) AS next_ts,
-    cpu_counter_track.cpu,
-    CAST(counter.value AS INT) AS freq_khz
+    counter.track_id,
+    cpu_desc.ucpu,
+    track.cpu,
+    CAST(counter.value AS INTEGER) AS freq_khz
   FROM counter
-  JOIN cpu_counter_track
-    ON counter.track_id = cpu_counter_track.id
-  WHERE cpu_counter_track.name = 'cpufreq'
+  JOIN cpu_counter_track AS track
+    ON track.id = counter.track_id
+  JOIN cpu AS cpu_desc
+    ON cpu_desc.machine_id IS track.machine_id
+   AND cpu_desc.cpu = track.cpu
+  WHERE track.name = 'cpufreq'
 )
 SELECT
   ts,
   COALESCE(next_ts, trace_end()) - ts AS dur,
+  ucpu,
   cpu,
   freq_khz
-FROM raw
-WHERE COALESCE(next_ts, trace_end()) > ts;
-
-CREATE VIRTUAL TABLE sched_with_freq
-USING SPAN_JOIN(main_sched_span PARTITIONED cpu, cpu_freq_span PARTITIONED cpu);
+FROM frequency_points
+WHERE COALESCE(next_ts, trace_end()) > ts
+ORDER BY ucpu, ts;
 ```
 
-`sched_with_freq` 的每一行都表示：主线程在某个 CPU 上运行的一小段时间，以及这段时间内该 CPU 的频率。再把它裁进帧窗口：
+`cpu` 是单机中常见的逻辑 CPU 编号，`ucpu` 是 Trace 内的唯一 CPU 标识。多机器 Trace 应按 `ucpu` 分区。末条记录裁到 `trace_end()` 只表示“最近一次已知值延续到 Trace 结束”，不能补出首个采样点之前的频率。
+
+Android 17 标准库已经封装了同一过程。`linux.cpu.frequency` 通过 `counters.intervals` 生成 `cpu_frequency_counters`，并输出 `ts`、`dur`、`freq`、`ucpu` 和 `cpu`。正式查询优先使用该表。
 
 ```sql
--- 按帧统计主线程实际运行时间、加权平均频率和低频运行占比
--- 关键：用 overlap_dur 裁剪到帧边界，避免跨帧 sched 段污染指标
+INCLUDE PERFETTO MODULE linux.cpu.frequency;
+
 SELECT
-  frame.frame_id,
-  ROUND(frame.dur / 1e6, 3) AS frame_wall_ms,
-  ROUND(SUM(
-    MIN(joined.ts + joined.dur, frame.ts + frame.dur)
-    - MAX(joined.ts, frame.ts)
-  ) / 1e6, 3) AS main_cpu_ms,
-  ROUND(
-    SUM(
-      (MIN(joined.ts + joined.dur, frame.ts + frame.dur) - MAX(joined.ts, frame.ts))
-      * joined.freq_khz
-    ) * 1.0
-    / SUM(
-      MIN(joined.ts + joined.dur, frame.ts + frame.dur)
-      - MAX(joined.ts, frame.ts)
-    )
-  ) AS avg_freq_khz,
-  ROUND(
-    SUM(CASE
-      WHEN joined.freq_khz < 1000000
-      THEN MIN(joined.ts + joined.dur, frame.ts + frame.dur) - MAX(joined.ts, frame.ts)
-      ELSE 0
-    END) * 100.0
-    / SUM(
-      MIN(joined.ts + joined.dur, frame.ts + frame.dur)
-      - MAX(joined.ts, frame.ts)
-    ),
-    2
-  ) AS low_freq_pct
-FROM frame_span AS frame
-JOIN sched_with_freq AS joined
-  ON joined.utid = frame.utid
- AND joined.ts < frame.ts + frame.dur
- AND frame.ts < joined.ts + joined.dur
-WHERE joined.dur > 0
-GROUP BY frame.frame_id
-ORDER BY frame.frame_id;
+  ts,
+  dur,
+  ucpu,
+  cpu,
+  freq
+FROM cpu_frequency_counters
+WHERE dur > 0
+ORDER BY ucpu, ts;
 ```
 
-这里用普通 `JOIN` 做重叠判断，但所有度量（运行时间、加权频率、低频占比）都基于 `overlap_dur = MIN(joined.end, frame.end) - MAX(joined.start, frame.start)` 裁剪到帧边界。如果某个 `sched` 段跨越帧边界，只有落在帧内的部分被计入，不会把帧外时间污染进该帧指标。如果帧量很大，也可以把 `frame` 与 `sched_with_freq` 做一个按 `utid` 的 `SPAN_JOIN`，`SPAN_JOIN` 内部会自动做边界裁剪。
+频率表为空时，应检查 `power/cpu_frequency` ftrace 事件或 `linux.sys_stats` 的 CPU 频率轮询是否启用。事件驱动采集可能在 Trace 开头缺少初始频率；`SPAN_JOIN` 会保留这个数据缺口，不会猜测频率。
 
-这个统计能回答两个问题：帧的墙上时间里主线程占用 CPU 跑了多久；主线程运行期间 CPU 频率处在哪个区间。如果 `frame_wall_ms` 很高但 `main_cpu_ms` 很低，瓶颈更可能是等锁、等 Binder、等 I/O 或调度排队，详见 §13.6。若 `main_cpu_ms` 高且 `avg_freq_khz` 长期偏低，需要继续看温控、后台功耗限制、线程优先级和厂商调度策略，eBPF 侧的频率驻留统计可作为补充，详见 §14.10。
+## `PARTITIONED` 前先验证输入
 
-上述查询已经用 `MIN(joined.end, frame.end) - MAX(joined.start, frame.start)` 裁剪重叠时长，frame 边界是安全的。如果改为 `SPAN_JOIN(frame_span PARTITIONED utid, sched_with_freq PARTITIONED utid)`，`SPAN_JOIN` 内部会按交集自动切段，聚合 `joined.dur` 也不会越界——这是等价写法，选择哪种取决于查询规模和调试习惯：普通 JOIN + overlap 公式适合快速验证少量帧；`SPAN_JOIN` 适合大 trace 时把边界裁剪交给算子，减少 SQL 里的重复公式。
+`sched` 按 `ucpu` 分区时天然互斥，因为同一个 CPU 同一时刻只运行一个线程。`thread_state` 按 `utid` 分区也应形成互斥状态区间。普通线程 `slice` 带有父子嵌套，直接按 `utid` 交给 `SPAN_JOIN` 会重复计算父层和子层。
+
+下面的检查使用“前序最大结束时间”寻找同一 `utid` 中的重叠。相比只看 `LAG(ts + dur)`，运行最大值可以识别 `[1, 10)`、`[2, 3)`、`[9, 12)` 这类嵌套后再次相交的序列。
+
+```sql
+WITH
+  candidate_span AS (
+    SELECT
+      slice.id,
+      slice.ts,
+      slice.dur,
+      thread_track.utid,
+      slice.name
+    FROM slice
+    JOIN thread_track
+      ON thread_track.id = slice.track_id
+    WHERE slice.name GLOB 'Choreographer#doFrame*'
+      AND slice.dur > 0
+  ),
+  checked AS (
+    SELECT
+      candidate_span.*,
+      MAX(ts + dur) OVER (
+        PARTITION BY utid
+        ORDER BY ts, dur
+        ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+      ) AS previous_max_end
+    FROM candidate_span
+  )
+SELECT
+  id,
+  ts,
+  dur,
+  utid,
+  name,
+  previous_max_end
+FROM checked
+WHERE ts < previous_max_end
+ORDER BY utid, ts;
+```
+
+有输出就说明候选表违反互斥约束。处理方式取决于分析目标：限定具体层级或事件名可以保留事件身份；只关心覆盖时长时，可以先合并区间；需要保留多重重叠身份时，应使用普通区间关联或 `intervals.intersect`。
+
+`intervals.overlap` 提供 `interval_merge_overlapping_partitioned!`，可以按多个分区列生成最小的不重叠覆盖集。下面把目标进程的 `doFrame` 区间按 `upid`、`utid` 合并，适合在只统计覆盖时长时清理输入。
+
+```sql
+INCLUDE PERFETTO MODULE intervals.overlap;
+INCLUDE PERFETTO MODULE slices.with_context;
+
+WITH target_intervals AS (
+  SELECT
+    ts,
+    dur,
+    upid,
+    utid
+  FROM thread_slice
+  WHERE process_name = 'com.example.app'
+    AND name GLOB 'Choreographer#doFrame*'
+    AND dur > 0
+)
+SELECT
+  ts,
+  dur,
+  upid,
+  utid
+FROM interval_merge_overlapping_partitioned!(
+  (SELECT * FROM target_intervals),
+  (upid, utid)
+)
+ORDER BY upid, utid, ts;
+```
+
+合并后无法再区分原始 `slice.id`。诊断单个事件时应保留原始表；计算某类事件对窗口的总覆盖时间时，合并可以避免嵌套或重复事件被累计多次。
+
+## 案例：每帧运行时间与 CPU 频率
+
+`Choreographer#doFrame` 的墙上时间同时包含运行、等待 CPU 和睡眠。分析频率时只应关联 `sched` 中的 `Running` 区间。Android 17 的 `android.frames.timeline` 已经给出帧与 `doFrame` 的对应关系，避免手工按名称和行号生成不稳定的帧 id。
+
+异构 SoC 上，不同 CPU 簇的频率范围与每 MHz 性能不同。把所有 CPU 的 kHz 混成一个平均值没有可比性。本节输出每帧、每个 `ucpu`、每个频点的运行驻留时间；解释性能时再结合 CPU capacity、簇信息和同设备基线。
+
+下面的完整脚本先关联调度与频率，再按 `utid` 将结果裁进 `doFrame`。两个 `SPAN_JOIN` 的输入在各自分区内均为互斥区间。
+
+```sql
+INCLUDE PERFETTO MODULE android.frames.timeline;
+INCLUDE PERFETTO MODULE linux.cpu.frequency;
+
+CREATE PERFETTO TABLE cookbook_do_frames (
+  ts TIMESTAMP,
+  dur DURATION,
+  utid LONG,
+  upid LONG,
+  frame_id LONG,
+  frame_wall_dur DURATION
+) AS
+SELECT
+  do_frame.ts,
+  do_frame.dur,
+  frames.ui_thread_utid AS utid,
+  frames.upid,
+  frames.frame_id,
+  frames.dur AS frame_wall_dur
+FROM android_frames AS frames
+JOIN slice AS do_frame
+  ON do_frame.id = frames.do_frame_id
+WHERE frames.process_name = 'com.example.app'
+  AND do_frame.dur > 0
+  AND frames.dur > 0;
+
+CREATE PERFETTO TABLE cookbook_ui_sched (
+  ts TIMESTAMP,
+  dur DURATION,
+  ucpu LONG,
+  utid LONG
+) AS
+SELECT
+  sched.ts,
+  sched.dur,
+  sched.ucpu,
+  sched.utid
+FROM sched
+JOIN (
+  SELECT DISTINCT utid
+  FROM cookbook_do_frames
+) AS target_threads
+  USING (utid)
+WHERE sched.dur > 0
+  AND sched.ucpu IS NOT NULL;
+
+CREATE VIRTUAL TABLE cookbook_sched_frequency
+USING SPAN_JOIN(
+  cookbook_ui_sched PARTITIONED ucpu,
+  cpu_frequency_counters PARTITIONED ucpu
+);
+
+CREATE VIRTUAL TABLE cookbook_frame_running_frequency
+USING SPAN_JOIN(
+  cookbook_do_frames PARTITIONED utid,
+  cookbook_sched_frequency PARTITIONED utid
+);
+
+SELECT
+  upid,
+  frame_id,
+  ROUND(frame_wall_dur / 1e6, 3) AS frame_wall_ms,
+  ROUND(
+    SUM(SUM(dur)) OVER (PARTITION BY upid, frame_id) / 1e6,
+    3
+  ) AS known_frequency_running_ms,
+  ucpu,
+  cpu,
+  freq AS freq_khz,
+  ROUND(SUM(dur) / 1e6, 3) AS residency_ms,
+  ROUND(
+    100.0 * SUM(dur)
+      / SUM(SUM(dur)) OVER (PARTITION BY upid, frame_id),
+    2
+  ) AS frame_running_share_pct
+FROM cookbook_frame_running_frequency
+GROUP BY
+  upid,
+  frame_id,
+  frame_wall_dur,
+  ucpu,
+  cpu,
+  freq
+ORDER BY upid, frame_id, ucpu, freq;
+```
+
+`known_frequency_running_ms` 只累计同时具有 `sched` 和频率数据的运行时间。它小于该帧的主线程总运行时间时，可能存在频率采集缺口。`frame_running_share_pct` 的分母也是已知频率运行时间，不能当作 `doFrame` 的 CPU 占用比例。
+
+频率低不自动等于调频故障。线程可能运行在能效核，短任务也可能在升频前完成；温控、ADPF、线程优先级、CPU affinity 和厂商调度策略都可能影响选择。判断应比较同一设备、同一场景和同一采集配置，并将 `ucpu` 映射到 CPU capacity 或簇。
 
 ## 帧 × Binder / 锁 / GC 的交叉分析
 
-`SPAN_JOIN` 的价值不只在 CPU 频率。只要把事件整理成 `ts + dur + 分区键`，就能把帧窗口与 Binder、锁竞争、GC pause 关联起来。
+`SPAN_JOIN` 适合互斥区间流。Binder 事务可能出现嵌套调用，普通 `slice` 也有父子层级；此时直接按 `utid` 送入算子会违反约束。Android 17 标准库已经提供 Binder、monitor 锁竞争和 GC 事件的语义表，可以先按 `doFrame` 裁剪，再按事件类型合并覆盖区间。
 
-Binder 分析常用主线程上的 Binder slice 或标准库视图。查询目标应落到 Binder 与帧重叠了多久，而不只判断“这一帧里有没有 Binder”：
-
-```sql
--- 主线程帧窗口与 Binder slice 的重叠时长
-CREATE PERFETTO TABLE main_binder_span AS
-SELECT
-  slice.ts,
-  slice.dur,
-  thread_track.utid,
-  slice.name
-FROM slice
-JOIN thread_track
-  ON slice.track_id = thread_track.id
-JOIN target_main_thread
-  ON target_main_thread.utid = thread_track.utid
-WHERE slice.dur > 0
-  AND slice.name GLOB '*binder*';
-
-CREATE VIRTUAL TABLE frame_binder_overlap
-USING SPAN_JOIN(frame_span PARTITIONED utid, main_binder_span PARTITIONED utid);
-
-SELECT
-  frame_id,
-  ROUND(SUM(dur) / 1e6, 3) AS binder_ms,
-  COUNT(*) AS binder_segments
-FROM frame_binder_overlap
-WHERE dur > 0
-GROUP BY frame_id
-ORDER BY binder_ms DESC
-LIMIT 20;
-```
-
-如果某些帧的 `binder_ms` 高，不要直接下结论说 Binder 慢。Binder slice 可能包含服务端处理、客户端等待、线程调度和锁等待等多种成本，下一步应回到 Binder 章节或服务端线程 trace 做调用关系确认。
-
-锁竞争与 GC 也可以用同样的模型。锁竞争通常来自 `monitor contention` 或应用自定义 trace；GC pause 在 ART 相关 slice 中体现。写查询时要把事件名收窄到具体来源，避免把无关 slice 一并统计进去。
+这条查询分别计算 UI 线程 Binder 客户端区间、UI 线程 monitor 锁等待和进程 GC 活动与 `doFrame` 的重叠。`interval_merge_overlapping_partitioned!` 会在每个帧和事件类型内合并重叠，避免同类嵌套事件重复累计。
 
 ```sql
--- Step 1: 收集 GC 事件，先按 ts 合并为同线程内互不重叠的 pause window
--- 目的：避免不同 GC 阶段/嵌套 GC 的重叠 slice 违反 SPAN_JOIN 同分区不重叠约束
-CREATE PERFETTO TABLE gc_pause_window AS
-WITH raw_gc AS (
-  SELECT
-    thread_track.utid,
-    slice.ts,
-    slice.ts + slice.dur AS end_ts,
-    slice.name
-  FROM slice
-  JOIN thread_track
-    ON slice.track_id = thread_track.id
-  WHERE slice.dur > 0
-    AND (slice.name GLOB '*GC*' OR slice.name GLOB '*Garbage*')
-),
-merged AS (
-  SELECT
-    utid,
-    ts,
-    end_ts,
-    name,
-    -- 用运行最大结束时间判定合并组起点。
-    -- LAG(end_ts) 只比较前一行的 end，遇到嵌套区间（如 A[1,10]、B[2,3]、C[9,12]）时
-    -- C 只与 B.end=3 比较会被误判为新组，产出两个重叠窗口违反 SPAN_JOIN 同分区不重叠约束。
-    -- MAX(end_ts) OVER 取前序所有行的最大结束时间，嵌套区间可正确合并到同一组。
-    CASE WHEN ts <= MAX(end_ts) OVER (
-      PARTITION BY utid
-      ORDER BY ts, end_ts
-      ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+INCLUDE PERFETTO MODULE android.frames.timeline;
+INCLUDE PERFETTO MODULE android.binder;
+INCLUDE PERFETTO MODULE android.monitor_contention;
+INCLUDE PERFETTO MODULE android.garbage_collection;
+INCLUDE PERFETTO MODULE intervals.overlap;
+
+WITH
+  frame_windows AS (
+    SELECT
+      frames.upid,
+      frames.frame_id,
+      frames.ui_thread_utid,
+      do_frame.ts,
+      do_frame.dur
+    FROM android_frames AS frames
+    JOIN slice AS do_frame
+      ON do_frame.id = frames.do_frame_id
+    WHERE frames.process_name = 'com.example.app'
+      AND do_frame.dur > 0
+  ),
+  binder_overlap AS (
+    SELECT
+      MAX(frames.ts, binder.client_ts) AS ts,
+      MIN(
+        frames.ts + frames.dur,
+        binder.client_ts + binder.client_dur
+      ) - MAX(frames.ts, binder.client_ts) AS dur,
+      frames.upid,
+      frames.frame_id,
+      CASE
+        WHEN binder.is_sync = 1 THEN 'binder_sync_client'
+        ELSE 'binder_async_send'
+      END AS event_kind
+    FROM frame_windows AS frames
+    JOIN android_binder_txns AS binder
+      ON binder.client_upid = frames.upid
+     AND binder.client_utid = frames.ui_thread_utid
+     AND binder.client_ts < frames.ts + frames.dur
+     AND binder.client_ts + binder.client_dur > frames.ts
+    WHERE binder.client_dur > 0
+  ),
+  lock_overlap AS (
+    SELECT
+      MAX(frames.ts, contention.ts) AS ts,
+      MIN(
+        frames.ts + frames.dur,
+        contention.ts + contention.dur
+      ) - MAX(frames.ts, contention.ts) AS dur,
+      frames.upid,
+      frames.frame_id,
+      'monitor_contention' AS event_kind
+    FROM frame_windows AS frames
+    JOIN android_monitor_contention AS contention
+      ON contention.upid = frames.upid
+     AND contention.blocked_utid = frames.ui_thread_utid
+     AND contention.ts < frames.ts + frames.dur
+     AND contention.ts + contention.dur > frames.ts
+    WHERE contention.dur > 0
+  ),
+  gc_overlap AS (
+    SELECT
+      MAX(frames.ts, gc.gc_ts) AS ts,
+      MIN(
+        frames.ts + frames.dur,
+        gc.gc_ts + gc.gc_dur
+      ) - MAX(frames.ts, gc.gc_ts) AS dur,
+      frames.upid,
+      frames.frame_id,
+      'gc_activity' AS event_kind
+    FROM frame_windows AS frames
+    JOIN android_garbage_collection_events AS gc
+      ON gc.upid = frames.upid
+     AND gc.gc_ts < frames.ts + frames.dur
+     AND gc.gc_ts + gc.gc_dur > frames.ts
+    WHERE gc.gc_dur > 0
+  ),
+  all_overlap AS (
+    SELECT * FROM binder_overlap
+    UNION ALL
+    SELECT * FROM lock_overlap
+    UNION ALL
+    SELECT * FROM gc_overlap
+  ),
+  merged_overlap AS (
+    SELECT *
+    FROM interval_merge_overlapping_partitioned!(
+      (
+        SELECT
+          ts,
+          dur,
+          upid,
+          frame_id,
+          event_kind
+        FROM all_overlap
+        WHERE dur > 0
+      ),
+      (upid, frame_id, event_kind)
     )
-      THEN 0 ELSE 1 END AS is_start
-  FROM raw_gc
-),
-groups AS (
-  SELECT
-    *,
-    SUM(is_start) OVER (PARTITION BY utid ORDER BY ts) AS grp
-  FROM merged
-)
+  )
 SELECT
-  utid,
-  MIN(ts) AS ts,
-  MAX(end_ts) - MIN(ts) AS dur
-FROM groups
-GROUP BY utid, grp;
-
--- Step 2: 与主线程帧窗口做 SPAN_JOIN（数据已保证同 utid 不重叠）
-CREATE VIRTUAL TABLE frame_gc_overlap
-USING SPAN_JOIN(frame_span PARTITIONED utid, gc_pause_window PARTITIONED utid);
-
--- Step 3: 按帧聚合 GC 重叠时长
-SELECT
+  upid,
   frame_id,
-  ROUND(SUM(dur) / 1e6, 3) AS gc_overlap_ms
-FROM frame_gc_overlap
-WHERE dur > 0
-GROUP BY frame_id
-ORDER BY gc_overlap_ms DESC
-LIMIT 20;
+  event_kind,
+  ROUND(SUM(dur) / 1e6, 3) AS covered_ms
+FROM merged_overlap
+GROUP BY upid, frame_id, event_kind
+ORDER BY upid, frame_id, covered_ms DESC;
 ```
 
-这段 SQL 先把 GC 事件按线程内时间顺序合并为互不重叠的 pause window，再与帧窗口做 `SPAN_JOIN`。合并步骤避免了不同 GC 阶段（如并发标记、STW pause）的嵌套/重叠 slice 违反 `SPAN_JOIN` 的同分区不重叠约束。它回答的是“GC 活动与主线程帧窗口在时间上重叠了多久”，不代表 GC 一定阻塞了主线程。若要判断主线程是否被 STW pause 阻塞，需要继续看 `thread_state`、ART slice 和应用线程是否同时出现停顿。
+三类覆盖时间不能相加为“总阻塞时间”，因为 Binder、锁和 GC 活动可能彼此重叠。同步 Binder 的客户端区间包含等待回复；异步事务的客户端区间只描述发送。monitor 锁竞争直接说明 UI 线程等锁。`gc_activity` 覆盖整个标准库 GC 事件，包含并发工作与等待，不能等同于 stop-the-world 暂停。
+
+确定因果关系还要检查 `thread_state` 和事件层级。帧内出现 GC 活动，只能证明时间相关；主线程在同一时段是否停顿，需要查看主线程状态和 ART 暂停事件。合并后的表也不再保留原始事务或 GC id，追踪单个事件时应回查标准库源表。
 
 ## 与 Trace Processor 标准库配合
 
-复杂查询不应从 raw 表一路手写到底。Perfetto 标准库已经把很多稳定关系封装成模块，比如 thread / process 上下文、sched 派生视图、Frame Timeline、锁竞争和 interval 工具。直接用标准库能少写 JOIN，也能减少字段名随版本变化带来的维护成本。
+标准库封装了解析差异和常见区间关系。Android 17 中与本章直接相关的模块包括：
 
-常用选择是：
+- `linux.cpu.frequency`：把 `cpufreq` 计数器转成 `cpu_frequency_counters`。
+- `counters.intervals`：提供计数器前向区间宏。
+- `intervals.overlap`：统计、展平和合并重叠区间。
+- `intervals.intersect`：对多个区间表求交，并保留输入 id。
+- `slices.with_context`：提供带线程与进程信息的 `thread_slice` 等视图。
+- `android.frames.timeline`、`android.binder`、`android.monitor_contention`、`android.garbage_collection`：提供 Android 平台语义表。
 
-- **线程与进程上下文**：`thread_slice` / `process_slice` 这类视图把 `slice`、`thread_track`、`thread`、`process` 的关联封装好，适合按线程或进程筛选 slice。
-- **调度视图**：`sched`、`thread_state` 和 sched 标准库视图负责描述线程什么时候 Running、Runnable、Sleeping，适合接到帧窗口或锁等待窗口后做 off-CPU 分析。
-- **interval 模块**：当两边可能有嵌套层级、需要保留多重重叠，`intervals.overlap` / `intervals.intersect` 比 `SPAN_JOIN` 更适合。
-- **宏与函数**：固定问题可以封装成 `CREATE PERFETTO MACRO`，把目标进程、时间窗、阈值作为参数传入。
+`sched.thread_executing_span_with_slice` 的 Android 17 源码展示了标准库内部做法：先使用展平后的 `slice`，确保同一 `utid` 的输入互斥，再用 `SPAN_LEFT_JOIN` 关联 `thread_state`。该模块导出的很多对象以 `_` 开头，属于内部实现细节，业务查询不应依赖这些名字。
 
-[已验证: Perfetto stdlib docs 搜索结果 + AOSP external/perfetto stdlib 源码]
+选择工具时按输入形状判断：
 
-临时 SQL 变成团队可复用工具时，建议按这个顺序整理：
+- 两侧都是互斥时间段，且只关心交集切片：`SPAN_JOIN`。
+- 一侧或两侧的未匹配区间也要保留：`SPAN_LEFT_JOIN` / `SPAN_OUTER_JOIN`。
+- 输入含嵌套或需要保留多重事件身份：普通区间条件或 `intervals.intersect`。
+- 只统计一类事件的总覆盖：先用 `interval_merge_overlapping_partitioned!` 合并。
+
+## `SPAN_LEFT_JOIN` 与 `SPAN_OUTER_JOIN`
+
+`SPAN_JOIN` 只输出两侧真实区间的交集。`SPAN_LEFT_JOIN` 会用影子时间段（`shadow span`）补足左侧未匹配的时间，`SPAN_OUTER_JOIN` 会补足两侧未匹配时间。结果中的另一侧业务列为空，可以区分“有覆盖”和“没有覆盖”。
+
+下面的固定数据演示左连接如何保留左侧空档。
 
 ```sql
--- 用宏封装“目标线程在每帧内的 CPU 运行时间”这类固定问题
-CREATE PERFETTO MACRO _target_main_thread(_process_name Expr)
-RETURNS TableOrSubQuery AS
-(
-  SELECT thread.utid, process.upid, process.name AS process_name
-  FROM thread
-  JOIN process USING (upid)
-  WHERE process.name = $_process_name
-    AND (thread.is_main_thread = 1 OR thread.tid = process.pid)
-  LIMIT 1
+CREATE PERFETTO TABLE left_demo (
+  ts TIMESTAMP,
+  dur DURATION,
+  part_id LONG,
+  left_name STRING
+) AS
+WITH data(ts, dur, part_id, left_name) AS (
+  VALUES
+    (10, 20, 1, 'left-a')
+)
+SELECT * FROM data;
+
+CREATE PERFETTO TABLE right_demo (
+  ts TIMESTAMP,
+  dur DURATION,
+  part_id LONG,
+  right_name STRING
+) AS
+WITH data(ts, dur, part_id, right_name) AS (
+  VALUES
+    (15, 5, 1, 'right-a')
+)
+SELECT * FROM data;
+
+CREATE VIRTUAL TABLE left_demo_result
+USING SPAN_LEFT_JOIN(
+  left_demo PARTITIONED part_id,
+  right_demo PARTITIONED part_id
 );
+
+SELECT
+  ts,
+  dur,
+  part_id,
+  left_name,
+  right_name
+FROM left_demo_result
+ORDER BY ts;
 ```
 
-宏里只放稳定筛选逻辑，`CREATE VIRTUAL TABLE ... USING SPAN_JOIN` 这类中间结果仍然建议在外层显式创建。这样调试时可以逐张表 `SELECT * LIMIT 20`，避免把所有逻辑折叠成一条难排查的查询。
+结果会把左侧 `[10, 30)` 切成 `[10, 15)`、`[15, 20)`、`[20, 30)`；中间一段带有 `right_name`，两侧空档的该列为 `NULL`。这类输出适合计算“帧内没有 Binder 覆盖的时间”，前提是左表本身满足互斥约束。
 
-## SPAN_LEFT_JOIN 与 SPAN_OUTER_JOIN
-
-`SPAN_JOIN` 只输出两边有交集的区间。`SPAN_LEFT_JOIN` 和 `SPAN_OUTER_JOIN` 用来保留缺失的一边，行为接近 SQL 的 left join / outer join，但因为时间轴和 shadow slice 的存在，边界比普通等值连接更复杂。
-
-```sql
--- 左表保留：即使右表没有匹配区间，左表时间段仍可出现在结果里
-CREATE VIRTUAL TABLE left_result
-USING SPAN_LEFT_JOIN(left_span PARTITIONED part_id, right_span PARTITIONED part_id);
-
--- 两边都不分区的 outer span join
-CREATE VIRTUAL TABLE outer_result
-USING SPAN_OUTER_JOIN(left_span, right_span);
-```
-
-需要注意一个边界行为：参与 outer join 的分区表为空,或者 left join 右侧的分区表为空时，即使另一边非空，也可能没有 slice 输出。这个行为来自 span join 对分区 shadow 的处理，不能完全按普通 SQL 外连接直觉理解。
-
-[已验证: Perfetto Trace Processor docs]
-
-实战里优先用 `SPAN_JOIN`。只有在问题明确需要“没有匹配也要保留时间段”时，再用 `SPAN_LEFT_JOIN`。例如统计一帧内没有任何 Binder 的区间，或者把线程状态与 slice 关联后仍保留纯线程状态时间段。
+分区表为空时有一个已记录的特殊行为：空分区表参加 `outer join`，或作为 `left join` 的右表时，即便另一侧非空，也可能不输出时间段。官方文档将其归因于分区影子区间的定义。依赖未匹配区间的自动化查询要加入空表测试，不能直接套用普通 SQL 外连接的直觉。
 
 ## 查询成本与索引策略
 
-`SPAN_JOIN` 在源码里没有把两表做笛卡尔积再过滤。`FindOverlappingSpan()` 会让两个 cursor 按分区和时间推进，`FindEarliestFinishQuery()` 按分区、结束时间、是否真实 slice 的顺序选择下一步推进哪一侧。每个子查询还会按 `partition, ts` 或 `ts` 排序。
+`SPAN_JOIN` 不构造完整笛卡尔积。Android 17 的 `CreateSqlQuery()` 会为子查询生成按分区和 `ts` 排序的读取，游标再按较早结束的一侧向前移动。总体成本仍由输入构造、排序和输出交集数量决定。
 
-[已验证: AOSP external/perfetto, span_join_operator.cc]
+大 Trace 查询按以下顺序控制成本：
 
-这不代表它可以直接吃全量 trace。大 trace 上，成本通常花在三处：构造子表、排序、输出交集行。优化方向也对应三处：
+1. 按 `upid`、`utid`、`ucpu` 和明确时间窗过滤原始表。
+2. 用 `CREATE PERFETTO TABLE` 物化会重复使用的窗口函数结果。
+3. 只带入后续需要的列，避免把大字符串和完整 `args` 放进虚拟表。
+4. 在每个分区检查重叠和非正 `dur`，防止错误输入扩大输出。
+5. 用 `EXPLAIN QUERY PLAN` 检查普通筛选与关联，再决定是否创建索引。
 
-- **先收窄时间窗和目标对象**：目标进程、目标线程、目标 CPU、目标帧范围先过滤，再建 span 表。
-- **物化中间表**：多次复用的子查询用 `CREATE PERFETTO TABLE` 固化，避免窗口函数反复计算。
-- **控制输出粒度**：只选择需要的列，避免把大文本字段、args 展开结果带进虚拟表。
-
-`CREATE INDEX` 对普通 SQLite 临时表有帮助，但对 `SPAN_JOIN` 的输入，排序和物化更影响查询成本。源码里的 `CreateSqlQuery()` 会生成按分区与 `ts` 排序的子查询；输入表已经足够小，比事后补索引更有效。
+Perfetto 原生表的 id 查询已有专门优化。需要为物化表加索引时使用 `CREATE PERFETTO INDEX`，并评估内存成本。索引可以帮助筛选和等值关联，但不能消除 `SPAN_JOIN` 为时间顺序读取所需的排序，也不能修复重叠输入。
 
 ## 在 CI 中复用复杂 Perfetto SQL
 
-Perfetto SQL 适合进入 CI，但不要把 UI 里临时调试出来的一长串 SQL 直接放进流水线。CI 查询需要三个特征：输入稳定、输出字段稳定、阈值能解释。
+CI 查询要固定采集配置、Trace Processor 版本、输出列与比较方法。设备型号、构建、刷新率、温控前置条件和场景步骤也要随结果保存。缺少 `sched_switch` 或 `cpufreq` 时，查询应显式报告覆盖不足，不能把空值当成零。
 
-一个可维护的流程是：
-
-1. 抓取固定场景 trace，例如冷启动、列表滑动、页面切换。
-2. 用 SQL 输出少量指标，例如 P90 帧耗时、主线程 CPU ms、低频运行占比、Binder 重叠 ms。
-3. 输出 CSV / JSON 后由 CI 判断阈值，阈值旁边记录设备型号、刷新率、温控条件和 trace 配置。
-
-`trace_processor_shell` 可以在命令行执行 SQL 文件。SQL 文件里保留参数占位，通过外层脚本替换进程名、时间窗和阈值：
+在独立 Trace Processor 进程中执行 SQL 文件并把结果写到 CSV，可以让流水线同时保留查询脚本和原始输出。
 
 ```bash
-trace_processor_shell --query-file frame_cpu_freq.sql trace.perfetto-trace > frame_cpu_freq.csv
+trace_processor_shell \
+  trace.perfetto-trace \
+  --query-file frame_cpu_frequency.sql \
+  > frame_cpu_frequency.csv
 ```
 
-CI 里的阈值不要只写“超过 16.67ms 就失败”。120Hz、90Hz、60Hz 的预算不同，温控状态也会影响频率。更稳的做法是比较同设备、同场景、同版本基线：例如 P90 帧耗时回退超过 15%，或低频运行占比异常升高超过 20 个百分点。
+每次启动独立进程也能避免前一次查询创建的临时表污染当前运行。回归判断应比较同设备、同场景的基线分布，并在仓库中记录阈值来源；16.67 ms、某个固定 kHz 或任意百分比都不具备跨设备通用性。
 
 ## 排查清单
 
-写 `SPAN_JOIN` 查询时，按下面几项检查，能避开大部分假结果：
+提交区间查询前逐项核对：
 
-- **输入表是否有 `ts` 和 `dur`**：counter 必须先用窗口函数补 `dur`，末尾段要给明确边界。
-- **分区键是否是整数且语义一致**：`cpu` 对 `cpu`，`utid` 对 `utid`，不要把不同含义的整数列强行关联。
-- **同分区内是否重叠**：普通 slice 有嵌套层级，进入 `SPAN_JOIN` 前要筛层级或 flatten。
-- **时间单位是否统一**：Perfetto 的时间单位是 ns，输出给人看时再除以 `1e6`。
-- **输出是否按重叠时长加权**：频率、温度、状态占比都要乘 `dur` 后再聚合。
-- **边界是否被裁剪**：窗口开始和结束处要用 `MAX(start)` / `MIN(end)` 或通过 `SPAN_JOIN` 自动切段。
+- 输入表是否都有有效 `ts` 与正数 `dur`。
+- `dur = -1` 是否已裁到明确窗口。
+- 分区列是否为整数，两侧是否表达同一种实体。
+- 单机 `cpu` 与 Trace 内唯一 `ucpu` 是否用在正确场景。
+- 同一输入、同一分区内是否存在嵌套或重叠。
+- 计数器是否按 `track_id` 生成前向区间，首尾缺口是否被记录。
+- 结果是否使用交集 `dur` 加权，是否误用原始事件时长。
+- 不同事件类型的覆盖时间是否发生重叠，汇总时是否重复累计。
+- FrameTimeline、Binder、GC、锁与调度事件是否在采集配置中启用。
+- 空结果究竟表示“没有事件”，还是数据源、解析或关联条件缺失。
 
-`SPAN_JOIN` 是 Perfetto 对时间区间分析的可复用算子。帧、调度、频率、Binder、锁、GC 都整理成同一种数据形状后，性能分析会从“看一条长 trace”变成“验证几个可重复的时间关系”。
+`SPAN_JOIN` 解决的是互斥区间流的时间交集。把输入约束、采集缺口和分区语义写进查询，结果才具备复查价值。
+
+## 源码与文档依据
+
+- [PerfettoSQL 入门：`SPAN_JOIN` 与窗口函数](https://perfetto.dev/docs/analysis/perfetto-sql-getting-started)
+- [PerfettoSQL 语法与索引](https://perfetto.dev/docs/analysis/perfetto-sql-syntax)
+- [Perfetto SQL 标准库索引](https://perfetto.dev/docs/analysis/stdlib-docs)
+- [CPU 频率采集与已知边界](https://perfetto.dev/docs/data-sources/cpu-freq)
+- [Android 17 `span_join_operator.cc`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/intrinsics/operators/span_join_operator.cc)
+- [Android 17 `span_join_operator.h`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/intrinsics/operators/span_join_operator.h)
+- [Android 17 `linux.cpu.frequency` 标准库源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/frequency.sql)
+- [Android 17 `intervals.overlap` 标准库源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/intervals/overlap.sql)
+- [Android 17 `android.frames.timeline` 标准库源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/frames/timeline.sql)
+- [Android 17 `android.binder` 标准库源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/binder.sql)
+- [Android 17 `android.garbage_collection` 标准库源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/garbage_collection.sql)
+- [Android 17 kernel 6.18 `sched` tracepoint 定义](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h)
