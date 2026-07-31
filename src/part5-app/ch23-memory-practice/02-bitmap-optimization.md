@@ -89,10 +89,9 @@ updated_by: openclaw-task9
 
 ## 为什么要了解 Bitmap 与图片内存优化
 
-图片内存问题很少是单一原因。解码尺寸、缓存复用、页面生命周期、设备内存预算——这几个因素叠加才会把问题放大。举例：一张 4000×3000 的 `ARGB_8888` 图片解码后约 45.8 MB，如果在列表里只显示成 200×150 的缩略图，99% 的像素根本没参与显示，却已经把 Native Heap 或 Java Heap 占满了。
+图片内存问题很少是单一原因。解码尺寸、缓存复用、页面生命周期、设备内存预算——这几个因素叠加才会把问题放大。举例：一张 4000×3000 的 `ARGB_8888` 图片需要 48,000,000 字节，约 45.8 MiB；200×150 的目标视图只有 30,000 个像素。若仍按原尺寸解码，分配的像素数是显示目标的 400 倍，随后交给 Canvas 缩小也无法省掉这次解码分配。Android 10 到 Android 17 的普通软件 Bitmap 会推高 Native Heap，硬件 Bitmap 则占用图形缓冲区。
 
 这一节从四个应用侧入口来谈：解码前算清目标尺寸，用 `inSampleSize` 降低像素数；理解 Android 8.0 之后 Bitmap 像素内存进了 Native Heap，对监控口径的影响；在图片加载入口记录大图和泄漏线索；用 `inBitmap` 复用减少反复分配。ART 堆和 GC 的机制详见 4.3 节，图片加载和渲染侧问题详见 22.6 节，页面对象泄漏对 Bitmap 的放大效应详见 23.1 节。
-
 
 ## Bitmap 内存计算与 inSampleSize
 
@@ -136,6 +135,9 @@ fun calculateInSampleSize(
     reqWidth: Int,
     reqHeight: Int
 ): Int {
+    require(reqWidth > 0 && reqHeight > 0) {
+        "Requested dimensions must be positive"
+    }
     val rawWidth = options.outWidth
     val rawHeight = options.outHeight
     var sample = 1
@@ -161,9 +163,9 @@ fun calculateInSampleSize(
 [已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/Bitmap.java]
 [已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/BitmapFactory.java]
 
-Bitmap 像素数据的存放位置经历过三次变化：Android 2.3.3 及更早版本放在 Native 内存；Android 3.0 到 7.1 随 Bitmap 对象放在 Dalvik Heap；Android 8.0 及以上重新进入 Native Heap。当前章节覆盖 Android 10 到 Android 17，排查时应按 Native Heap 口径处理 Bitmap 像素内存。
+Bitmap 像素数据的存放位置经历过三次变化：Android 2.3.3 及更早版本放在 Native 内存；Android 3.0 到 7.1 随 Bitmap 对象放在 Dalvik Heap；Android 8.0 及以上重新进入 Native Heap。当前章节覆盖 Android 10 到 Android 17：普通软件 Bitmap 的像素分配按 Native Heap 排查，`Config.HARDWARE` 的像素分配则按图形缓冲区排查。
 
-AOSP `Bitmap.java` 中，Java 对象保存 `mNativePtr`，构造时会计算 `getAllocationByteCount()`，再通过 `NativeAllocationRegistry.registerNativeAllocation(this, mNativePtr)` 注册 Native 释放器。这个设计带来两个工程结论：
+AOSP `Bitmap.java` 中，Java 对象保存 `mNativePtr`。Android 17 的 `registerNativeAllocation()` 使用两个 `NativeAllocationRegistry`：一个以 no-op 释放函数登记像素数据大小，用于把 Native 分配反馈给 ART；另一个通过 `sRegistry` 登记 native Bitmap 对象及其释放函数。`recycle()` 使用前者返回的 `mRecycler` 更新像素分配记账。这个设计带来两个工程结论：
 
 - **Bitmap 对象仍受 Java 可达性影响**：Java 层对象被 Activity、Adapter、缓存或回调引用时，Native 像素内存也会被保留。Bitmap 泄漏的根不一定在 Native 层，常常是 Java 引用链没有断开。
 - **Native Heap 变大不等于 JNI 泄漏**：Android 8.0 之后，图片加载增加会直接推高 Native Heap。用 `dumpsys meminfo` 或线上内存指标看到 Native Heap 上升时，先区分是 Bitmap 分配还是 JNI/so 库分配，不要直接归因到 JNI 泄漏。
@@ -177,7 +179,7 @@ AOSP `Bitmap.java` 中，Java 对象保存 `mNativePtr`，构造时会计算 `ge
 
 图片监控不要等到 OOM 再看堆。统一图片入口应记录“原图尺寸、目标 View 尺寸、解码后尺寸、配置、分配字节数、页面名、调用栈摘要”。这组信息能直接回答两个问题：是否解码了远大于显示尺寸的图片；是否有页面在退出后仍保留大图。
 
-大图阈值建议按屏幕和业务类型拆开。全屏照片预览允许接近屏幕像素的 1 到 2 倍；头像、列表封面、icon 这类控件，如果解码尺寸超过目标 View 的 2 到 3 倍，就应该进入告警。只用固定 MB 阈值会漏掉低端机和高刷新列表，也会误报正常的图片编辑场景。
+大图阈值应按屏幕、业务类型、同时在内存中的图片数量和设备内存档位制定。全屏预览、图片编辑、头像和列表封面的合理预算不同；同一张图在单图详情页可以接受，进入多列列表后就可能让并发像素预算失控。维度比与分配字节数都应做成可配置策略，并通过目标设备上的峰值内存和滚动测试确定阈值。只用一个固定 MB 数字会漏掉低内存设备，也会误报正常的图片编辑场景。
 
 下面这段代码展示统一解码后的记录点。它不替代图片库，只负责把高风险 Bitmap 暴露出来。
 
@@ -214,15 +216,22 @@ fun Bitmap.toDecodeRecord(
     )
 }
 
-fun BitmapDecodeRecord.isSuspiciousLargeBitmap(): Boolean {
-    if (targetWidth <= 0 || targetHeight <= 0) return allocationBytes >= 8 * 1024 * 1024
+fun BitmapDecodeRecord.isSuspiciousLargeBitmap(
+    maxAllocationBytes: Int,
+    maxDimensionRatio: Float
+): Boolean {
+    require(maxAllocationBytes > 0 && maxDimensionRatio >= 1f)
+    if (targetWidth <= 0 || targetHeight <= 0) {
+        return allocationBytes >= maxAllocationBytes
+    }
     val widthRatio = bitmapWidth.toFloat() / targetWidth
     val heightRatio = bitmapHeight.toFloat() / targetHeight
-    return allocationBytes >= 4 * 1024 * 1024 && (widthRatio >= 3f || heightRatio >= 3f)
+    return allocationBytes >= maxAllocationBytes &&
+        (widthRatio >= maxDimensionRatio || heightRatio >= maxDimensionRatio)
 }
 ```
 
-这段记录要和页面生命周期合起来看。页面退出后，如果同一 `scene` 的大图对象仍在 Hprof 中可达，按 23.1 节的引用链方法处理；如果对象已释放，但 Native Heap 峰值过高，重点查解码尺寸、缓存上限和并发解码数量。
+调用方需要按场景传入经过实测的字节预算和维度比，不能把示例函数变成全业务共用的固定阈值。这段记录还要和页面生命周期合起来看。页面退出后，如果同一 `scene` 的大图对象仍在 Hprof 中可达，按 23.1 节的引用链方法处理；如果对象已释放，但 Native Heap 峰值过高，重点查解码尺寸、缓存上限和并发解码数量。
 
 线上采样要控制频率。建议只上报超过阈值的记录，保留图片来源的模板化标识，不上传真实 URL、文件名或用户图片内容。图片问题经常涉及用户隐私，监控只需要尺寸、配置、字节数和页面路径。
 
@@ -303,9 +312,9 @@ fun decodeWithReuse(
 [已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/BaseCanvas.java]
 [已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/ImageDecoder.java]
 
-`Bitmap.Config.HARDWARE` 的含义很明确：像素只放在图形内存里，不走 Java/Native Heap。`ImageDecoder` 的 AOSP 注释说明，它默认创建的 Bitmap 通常是 immutable，并且常见配置是 `Config.HARDWARE`；这适合只展示、不修改、由硬件加速管线绘制的图片，例如详情页大图、列表中不需要像素读取的封面图。
+`Bitmap.Config.HARDWARE` 表示像素只存放在图形内存中；Java `Bitmap` 包装对象和 native 元数据仍然存在，因此“像素不在 Java/Native Heap”不等于这张图没有内存成本。`ImageDecoder` 的 AOSP 注释说明，默认创建的 Bitmap 是 immutable，并且通常采用 `Config.HARDWARE`。这里的“通常”不能省略：`ALLOCATOR_DEFAULT` 可能为小图选择软件分配，也会在 mutable、alpha mask 等条件与硬件分配不兼容时切换到软件。只展示、不修改、由硬件加速管线绘制的图片适合硬件 Bitmap，例如详情页大图、列表中不需要像素读取的封面图。
 
-硬件 Bitmap 的限制集中在可变性和绘制路径：它不能作为 `inBitmap` 候选，也不能和 `inMutable = true` 同时要求。AOSP `BaseCanvas` 在软件渲染模式下遇到 `Config.HARDWARE` 会抛出 `IllegalArgumentException("Software rendering doesn't support hardware bitmaps")`。因此下列场景应避免硬件 Bitmap：
+硬件 Bitmap 的限制集中在可变性和绘制路径：它不能作为 `inBitmap` 候选，也不能和 `inMutable = true` 同时要求。AOSP `BaseCanvas` 的标准软件绘制路径遇到 `Config.HARDWARE` 会抛出 `IllegalArgumentException("Software rendering doesn't support hardware bitmaps")`。因此下列场景应避免硬件 Bitmap：
 
 - 需要 `Canvas` 软件绘制、截图合成、离屏处理或生成分享图。
 - 需要读取或修改像素，例如滤镜、马赛克、取色、手写涂鸦。
