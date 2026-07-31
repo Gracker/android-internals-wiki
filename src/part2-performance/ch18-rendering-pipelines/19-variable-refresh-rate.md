@@ -1,34 +1,104 @@
 ---
-title: "可变刷新率渲染管线"
+title: "Android 17 可变刷新率（ARR/VRR）渲染管线"
 chapter: "18.19"
+section: "18.19"
+section_title: "Android 17 可变刷新率（ARR/VRR）渲染管线"
 status: finalized
-applicable_versions: "多刷新率背景：Android 11 (API 30) - Android 14；ARR 主体：Android 15-QPR1 - Android 17 (API 37)；Display 查询 API：Android 16 (API 36)"
-last_verified: "2026-07-26"
-last_verified_against: "AOSP android-17.0.0_r1 frameworks/base + frameworks/native SurfaceFlinger Scheduler；Android Developers ARR/View/Display/Surface 文档；Perfetto android.frames.timeline stdlib"
+applicable_versions: "多刷新率背景：Android 11 (API 30) - Android 14；ARR 主体：Android 15 QPR1 - Android 17 (API 37)"
+last_verified: "2026-07-31"
+last_verified_against: "android-17.0.0_r1 (MediaCodec, View, ViewGroup, ViewRootImpl, Display, FrameRateVelocityPoint, Surface, Window, WindowManager, SurfaceControl, BufferQueueConsumer, Scheduler, LayerHistory, RefreshRateSelector, HWComposer) / Android 17 API 37 与 Compose 1.9.0、1.10.0 官方文档 / Perfetto FrameTimeline 与 android.frames.timeline / android17-6.18-2026-06_r6 (drm_vblank.c, drm_vblank.h)"
 confidence: high
 sources:
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S12_video_framerate_present_pipeline/source.md"
+    role: "视频 release timing、buffer desired-present timestamp、layer vote、Scheduler 与 display present 的关系"
   - type: official
-    path: https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate
+    path: "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate"
+    role: "ARR 设备条件、View 投票生命周期与公开用法"
   - type: official
-    path: https://developer.android.com/reference/android/view/View
+    path: "https://developer.android.com/reference/android/view/View"
+    role: "API 35+ requested frame rate 与 content velocity"
   - type: official
-    path: https://developer.android.com/reference/android/view/Display
+    path: "https://developer.android.com/reference/android/view/ViewGroup"
+    role: "API 36+ 子树 requested frame rate 传播"
   - type: official
-    path: https://developer.android.com/reference/android/view/Surface
+    path: "https://developer.android.com/reference/android/view/Display"
+    role: "API 36 ARR 查询及 API 37 per-display velocity mapping"
   - type: official
-    path: https://perfetto.dev/docs/analysis/stdlib-docs
+    path: "https://developer.android.com/reference/android/view/FrameRateVelocityPoint"
+    role: "API 37 fps 与 dp/s 阈值数据结构"
+  - type: official
+    path: "https://developer.android.com/reference/android/view/Surface"
+    role: "Surface frame-rate compatibility、切换策略与 API 37 producer throttling"
+  - type: official
+    path: "https://developer.android.com/reference/android/view/Window"
+    role: "API 35 touch boost 与 power-savings policy"
+  - type: official
+    path: "https://developer.android.com/reference/android/media/MediaCodec"
+    role: "带纳秒时间戳释放视频输出 buffer"
+  - type: official
+    path: "https://developer.android.com/reference/kotlin/androidx/compose/ui/preferredFrameRate.modifier"
+    role: "Compose 1.9.0 数值重载与 1.10.0 category 重载"
+  - type: official
+    path: "https://perfetto.dev/docs/data-sources/frametimeline"
+    role: "FrameTimeline 目标与真实帧时间模型"
+  - type: official
+    path: "https://perfetto.dev/docs/analysis/stdlib-docs"
+    role: "android.frames.timeline 表与字段"
   - type: aosp
-    path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java"
+    role: "View vote、下一绘制帧有效期与 velocity-to-rate 映射"
   - type: aosp
-    path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Display.java
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewGroup.java"
+    role: "requested frame rate 对 View 子树的传播"
   - type: aosp
-    path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java"
+    role: "聚合 View vote 并通过 SurfaceControl transaction 下发 layer frame rate"
   - type: aosp
-    path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Display.java"
+    role: "ARR 能力、建议 render rate、支持值与 per-display velocity mapping"
   - type: aosp
-    path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameRateVelocityPoint.java"
+    role: "API 37 帧率与滚动速度阈值对象"
   - type: aosp
-    path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Surface.java"
+    role: "稳定 setFrameRate API、AT_LEAST、flagged FrameRateParams 与 producer throttling"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Window.java"
+    role: "Window touch boost 与 power-savings policy"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/WindowManager.java"
+    role: "Window 帧率策略字段及 Android 17 默认值"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java"
+    role: "ViewRootImpl 到 layer frame-rate transaction 的接口"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodec.java"
+    role: "releaseOutputBuffer(index, renderTimestampNs) 的 Surface 时间戳语义"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/Surface.cpp"
+    role: "native Surface frame-rate vote 与 producer throttling 转发"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp"
+    role: "desired-present timestamp、过早 buffer 延后 acquire 与 PRESENT_LATER"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp"
+    role: "content requirements、pacesetter/follower Display 与全局信号"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/LayerHistory.cpp"
+    role: "Surface compatibility 到 VRR/MRR layer vote 的映射"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp"
+    role: "候选 render rate 与 physical mode 的 layer 评分和排序"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp"
+    role: "HWC validate/present 与 Display present fence"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_vblank.c"
+    role: "通用 DRM CRTC vblank 计数、时间戳与中断生命周期"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/drm/drm_vblank.h"
+    role: "通用 DRM vblank 状态、计数与时间接口"
 tags: ["VRR", "ARR", "Variable-Refresh-Rate", "LTPO", "setFrameRate", "FrameTimeline", "渲染管线"]
 related_chapters: ["2.3", "2.18", "2.19"]
 created_by: "rendering-pipelines-merge"
@@ -69,6 +139,7 @@ last_deepseek_cn_review_at: 2026-07-05
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
+
 - VRR、多刷新率、ARR 的边界
 - App 端 API：`Surface.setFrameRate()`、Android 15 的 `View.setRequestedFrameRate()` / Compose、Android 16 的 `Display` 查询 API
 - `VSYNC-app` / `VSYNC-sf` 的动态周期
@@ -76,17 +147,20 @@ last_deepseek_cn_review_at: 2026-07-05
 - 在 Perfetto 中按统一口径分析：`VSYNC-app`、`VSYNC-sf`、`expected_frame_timeline_slice`、`actual_frame_timeline_slice`、refresh-rate selection slice
 
 **扩展（可选深入）：**
+
 - LTPO 面板与 device-specific HAL support
 - 视频播放场景的帧率投票
 - 静态页面的低刷新率驻留
 
 <!-- outline-end -->
 
+# 18.19 Android 17 可变刷新率（ARR/VRR）渲染管线
+
 ## 为什么这一节容易误判
 
-固定刷新率设备上，分析入口很稳定。60Hz 对应 16.67ms，120Hz 对应 8.33ms，超过预算就去找慢帧。到了支持可变刷新率的设备，这个预算不再固定。`VSYNC-app` 和 `VSYNC-sf` 的间隔可能在 8.33ms、16.67ms、33.3ms 或其他离散档位之间变化，静态页面和低帧率内容也会主动把目标周期拉长。
+固定刷新率设备的预算容易计算：60Hz 对应约 16.67ms，120Hz 对应约 8.33ms。支持多刷新率或 ARR 后，`VSYNC-app` 和 `VSYNC-sf` 的间隔会随当前 render rate、physical mode 与设备实现变化。滚动可能使用较短周期，静态页面和低帧率内容可能使用较长周期，分析工具里不能继续套用固定的 16.67ms 阈值。
 
-误判通常出在第二步。刷新周期变长，不等于系统把一帧已经超时的工作补救回来。刷新率选择仍然要经过 App 投票、内容节奏判断、Scheduler 决策和设备能力约束。某一帧一旦错过自己的 `expected_frame_timeline_slice`，Perfetto 里依旧会落到 app jank 或 sf jank。ARR 改变的是目标节拍，不会消掉 deadline。
+刷新周期变长也无法补救已经错过 deadline 的帧。刷新率选择要经过 App 投票、内容节奏判断、Scheduler 决策和设备能力约束。某一帧错过自己的 `expected_frame_timeline_slice` 后，Perfetto 仍会记录 app jank 或 sf jank。ARR 调整目标节拍，deadline 仍然存在。
 
 分析时还要分开三种频率：
 
@@ -94,25 +168,27 @@ last_deepseek_cn_review_at: 2026-07-05
 - **应用 render rate**：Choreographer/producer 被允许或选择以多快的节奏生成帧。
 - **Display refresh rate**：面板每秒刷新多少次，例如 120Hz。
 
-24fps 内容可以在 120Hz Display 上每帧重复 5 次；60fps render rate 也可能运行在 120Hz 面板上。`setFrameRate(24)` 表达内容/渲染偏好，不保证面板一定切成 24Hz，更不是 producer 的限速器。
+24fps 内容可以在 120Hz Display 上按 5:5 cadence 显示；60fps render rate 也可以运行在 120Hz 面板上。`setFrameRate(24)` 表达内容或渲染偏好，不保证面板切到 24Hz，也不限制 producer 的供帧速度。
 
 ## VRR、多刷新率和 ARR 的边界
 
 | 名称 | 关注点 | 章节里怎么用 |
-|:---|:---|:---|
+| --- | --- | --- |
 | 多刷新率 | 设备在 60Hz、90Hz、120Hz 等固定 Display mode 之间选择 | Android 11–14 的公开帧率 API 主要在这个背景下使用 |
 | VRR | 面板/Composer 能在能力范围内动态改变 VSync 周期，不必把每个 render rate 都表示成独立固定 mode | 硬件与 HAL 能力，不能只由“面板是 LTPO”推出 |
 | ARR | Android 根据 View/Surface vote、内容 cadence、touch/transition 等策略选择 render/refresh rate | 支持设备从 Android 15-QPR1+ 提供，Android 16 增加公开能力查询 |
 
-LTPO 面板常和 ARR 同时出现，因为它更容易覆盖宽刷新率范围；它不是 ARR 的充分条件。官方要求设备运行 Android 15-QPR1+ 并实现指定 HAL API。应用到 API 36 才能通过 `Display.hasArrSupport()` 做公开查询。
+LTPO 描述面板技术，ARR 描述 Android 的调度能力，两者不能互相替代。官方 ARR 文档要求设备运行 Android 15 QPR1 或更高版本，并具备相应 Composer HAL 能力。应用到 API 36 才能通过 `Display.hasArrSupport()` 查询公开能力。返回 `false` 时，设备仍可能支持多个固定 Display mode，只是不能按 ARR 路径解释动态周期。
 
 ## 系统如何决定刷新节奏
 
 刷新率选择可以拆成三层。
 
-- **App 投票层**：Android 11+ 的 `Surface.setFrameRate()`、Android 15（API 35）的 `View.setRequestedFrameRate()`，以及滚动时的 `setFrameContentVelocity()` 表达内容更新需求。Compose 1.9 的 `preferredFrameRate()` 会汇总 composable 的偏好。
+- **App 投票层**：Android 11+ 的 `Surface.setFrameRate()`、Android 15（API 35）的 `View.setRequestedFrameRate()`，以及滚动时的 `setFrameContentVelocity()` 表达内容更新需求。Compose 的 `preferredFrameRate()` 会把 composable 偏好传给平台。
 - **系统策略层**：SurfaceFlinger 汇总可见 layer 的 vote/历史 cadence，并结合 focus、touch boost、window transition、idle、policy range 等信号给候选 render/physical rate 评分。
 - **设备能力层**：Display mode、seamless switch group、面板和 device-specific HAL support 约束最终能否使用 ARR；不满足 ARR 条件时仍可能做离散 mode switching。
+
+下面的链路用来区分投票、系统选择与供帧过程：
 
 ```text
 App vote / content cadence
@@ -124,7 +200,7 @@ VSYNC-app / VSYNC-sf interval changes
 App draw → queueBuffer → SurfaceFlinger compose → present
 ```
 
-这张图里的 vote 是提示，不是命令。当前可见的其他 App/SystemUI layer、触控状态和电源策略都可能改变结果；刷新周期已经变化，也不能反向证明某一个 View vote 被原样采纳。
+vote 只是候选选择的输入。当前可见的其他 App/SystemUI layer、触控状态和电源策略都可能改变结果。观察到刷新周期变化，也不能反向证明某一个 View vote 被原样采纳。
 
 ## App 端 API
 
@@ -138,9 +214,17 @@ surface.setFrameRate(60f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT);
 surface.setFrameRate(0f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT);
 ```
 
-`FRAME_RATE_COMPATIBILITY_FIXED_SOURCE` 适合视频等固定 cadence 内容，系统可以选择其整数倍刷新率。`DEFAULT` 更适合游戏/UI 等可随显示节奏运行的 producer。该 API 不会替应用 pacing：请求 60fps 后仍以 120fps 连续 queue buffer，依旧可能产生 buffer stuffing 和额外功耗。
+这三个调用依次表示固定 24fps 内容、可随显示节奏运行的 60fps 偏好，以及清除偏好。`FRAME_RATE_COMPATIBILITY_FIXED_SOURCE` 适合视频等固定 cadence 内容，系统可以选择其整数倍刷新率。`DEFAULT` 在 Android 17 更适合游戏。API 36 新增的 `FRAME_RATE_COMPATIBILITY_AT_LEAST` 适合 UI、滚动和动画，含义是候选 render rate 不低于给定值。
 
-API 31+ 的三参数重载还允许选择 `CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS` 或 `CHANGE_FRAME_RATE_ALWAYS`。后者可能引起可见黑屏/闪烁，只适合长时间视频等“匹配内容收益大于切换成本”的场景。清除 vote 时用 frame rate 0；API 34+ 也可调用语义更清楚的 `clearFrameRate()`。不要让上一段视频的 24fps vote 污染后续 UI。
+`setFrameRate()` 不会替应用 pacing。请求 60fps 后仍以 120fps 连续 `queueBuffer()`，依旧可能出现 buffer stuffing 和额外功耗。API 31+ 的三参数重载还允许选择 `CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS` 或 `CHANGE_FRAME_RATE_ALWAYS`。后者可能引起可见黑屏或闪烁，只适合长时间视频等切换收益足以覆盖视觉代价的场景。清除 vote 时可传 0；API 34+ 也可调用语义更清楚的 `clearFrameRate()`。
+
+Android 17 的 `Surface.FrameRateParams` 出现在 `android-17.0.0_r1` 源码中，但带有 `@FlaggedApi`。同一实现还保留了“min/max plumbing 尚未完成”的 TODO：当前逻辑优先取 `fixedSourceRate`，否则只取 `desiredMinRate`。跨设备代码应继续使用官方 API reference 已稳定列出的 `setFrameRate(float, int[, int])`，不能依据源码类名推断所有 API 37 设备都完整支持区间投票。
+
+### Android 17：producer throttling 和刷新率投票分属两套控制
+
+API 37 的 `Surface.setProducerThrottlingEnabled(boolean)` 控制 EGL/Vulkan producer 在 `queueBuffer()` 附近的 CPU back-pressure。默认开启时，`eglSwapBuffers()` 或 `vkQueuePresentKHR()` 可能等待 consumer 处理前一帧；关闭后，队列填满时仍会在后续 dequeue 或 `vkAcquireNextImageKHR()` 处形成自然背压。异步模式下该开关无效，throttling 仍保持开启。
+
+这个 API 不提交 Hz，也不改变 `LayerHistory` 的 frame-rate vote。关闭 queue-time back-pressure 前，Vulkan producer 还要具备明确的 CPU/GPU 同步和在途帧控制；不能把它当作通用的低延迟开关。排查“线程为什么卡在 swap/present”时看 producer throttling、queue 深度和 fence；排查“系统为什么选 60/90/120Hz”时看 `setFrameRate()`、View vote 与 Scheduler。把两套信号混在一起，会把队列背压误判为刷新率选择。
 
 ### Android 15：View / Compose 开始直接表达刷新率偏好
 
@@ -156,10 +240,10 @@ list.setFrameContentVelocity(2400f);
 View vote 有三个容易漏掉的约束：
 
 - View 需要 redraw 时才投票；静止且不再 invalidated 的 View 不会永久占住高刷。
-- API 35 在 `ViewGroup` 上调用不会自动传给 child View；API 36+ 若需要对子树生效，可评估 `ViewGroup.propagateRequestedFrameRate()`。
+- API 35 在 `ViewGroup` 上调用不会自动传给 child View；API 36+ 若需要对子树生效，可调用 `ViewGroup.propagateRequestedFrameRate(frameRate, forceOverride)`。`forceOverride=false` 会保留 child 自己的请求，`true` 才覆盖整棵子树。
 - `setFrameContentVelocity()` 的单位是 pixels/second，值只对下一次 drawn frame 有效；自定义 fling 组件要在每个绘制帧更新，而不是手势开始时只写一次。
 
-Compose 1.9 对应 `Modifier.preferredFrameRate(frameRate)` 和 `Modifier.preferredFrameRate(frameRateCategory)`。同一帧里的 composable vote 会被收集、汇总，再作为偏好传到下层 layer；它不绕过 View/SurfaceFlinger 的策略。
+Compose 的版本边界需要单独记录：`Modifier.preferredFrameRate(frameRate: Float)` 加入 Compose UI 1.9.0，`Modifier.preferredFrameRate(frameRateCategory: FrameRateCategory)` 加入 1.10.0。多个 composable 的数值偏好会汇总成可行值，偏好只在 composable 被绘制时有效；它不会绕过 View 与 SurfaceFlinger 的策略。
 
 `Display.hasArrSupport()` 不属于 API 35。面向 Android 15 的代码要把刷新率投票和设备能力查询拆开：投票走 `View` / Compose，能力查询只在 API 36+ 调用。
 
@@ -180,9 +264,15 @@ if (display != null && display.hasArrSupport()) {
 
 Android 15-QPR1 设备可能有 ARR 调度逻辑，却没有 API 36 的公开查询。应用在 API 35 上可以安全提交 View/Surface hint，由系统按能力处理；不要读取私有属性或维护机型白名单。诊断时再结合设备文档、实际 VSync 周期和 SurfaceFlinger 的 refresh-rate selection 证据确认是否启用。
 
+### Android 17：滚动速度映射属于当前 Display
+
+API 37 的 `Display.getFrameRateVelocityMapping()` 返回只读的 `FrameRateVelocityPoint` 列表。每个点由 fps 与 dp/s 阈值组成，供 RecyclerView、ScrollView 一类 fling 场景把内容速度映射到帧率。`View` 源码先把 pixels/second 按 density 换算成 dp/s，再按当前 Display 的列表查找匹配帧率。
+
+这份映射不是全设备常量。窗口从折叠屏外屏移到内屏，或移到外接显示器后，要从新窗口关联的 `Display` 重新查询；收到 `DisplayListener.onDisplayChanged()` 也要更新缓存。业务层若自行实现 velocity-to-rate 逻辑，应读取该映射并保留平台回退路径，不能把 120fps/300dp/s 这样的文档示例写成固定阈值。
+
 ### Android 15+：Window 级策略开关
 
-API 35 还提供 Window 级的 `setFrameRateBoostOnTouchEnabled()` 和 `setFrameRatePowerSavingsBalanced()`。默认 touch boost 会在触摸和释放后一段时间提高节奏，普通交互窗口不建议关闭。power-savings balance 允许系统按需降低刷新率；只有出现经过 trace 证实的体验问题时才考虑禁用，因为代价通常是更高功耗。
+API 35 还提供 Window 级的 `setFrameRateBoostOnTouchEnabled()` 和 `setFrameRatePowerSavingsBalanced()`。`android-17.0.0_r1` 的 `WindowManager.LayoutParams` 把两项都初始化为 `true`：touch boost 在触摸期间提高节奏，power-savings balance 允许 toolkit 按需调整刷新率。普通交互窗口应保留默认值；经过 trace 确认策略本身造成体验问题后，再缩小范围测试关闭其中一项的影响。
 
 这些开关是 Window policy，不是给某一帧指定 Hz。局部动画优先使用 View/Compose vote，视频/游戏 Surface 使用 `Surface.setFrameRate()`。
 
@@ -192,9 +282,22 @@ API 35 还提供 Window 级的 `setFrameRateBoostOnTouchEnabled()` 和 `setFrame
 
 视频更适合在承载视频的 Surface 上提交 `FIXED_SOURCE` vote，例如 24/30fps，让系统选择匹配 cadence 的 rate 或整数倍。若视频上方还有持续 60/120fps 更新的控件、字幕或 SystemUI layer，整屏选择要综合这些可见 layer，不能只按视频 fps 预测。
 
+视频链路里还有一个容易与 vote 混淆的时间信号。两者的职责如下：
+
+- `Surface.setFrameRate(24, FIXED_SOURCE)` 给 layer 提交内容 cadence 偏好，供 Scheduler 选择 render rate 与 Display mode；
+- `MediaCodec.releaseOutputBuffer(index, renderTimestampNs)` 给这一张输出 buffer 设置期望呈现时间；
+- `BufferQueueConsumer::acquireBuffer(expectedPresent)` 比较 buffer 的 desired-present timestamp 与 consumer 的目标呈现时刻；buffer 还太早时返回 `PRESENT_LATER`，本轮不 acquire；
+- HWC present 产生的 present fence 表示 Display 侧完成时点，可用于后续调度和 trace 归因。
+
+因此，24fps vote 正确也不能修正错误的 `renderTimestampNs`。时间戳过早、过晚或单位错误，会造成延后 acquire、丢帧或 cadence 抖动；反过来，buffer timestamp 正确也不能保证整屏采用 24/48/120Hz，因为其他可见 layer 与 policy 仍参与选择。`rendering_pipelines` 的 S12 资料把这条链路定义为 `player release timing → BufferQueue desired present → Scheduler/HWC timing → display feedback`，本章沿用这套证据边界。
+
 ## Android 17 的 Scheduler 怎样处理 vote
 
-Android 17 的 `Scheduler::chooseRefreshRateForContent()` 先让 `LayerHistory` 汇总可见 layer 的近期需求，再把 content requirements 交给 policy/selector。`RefreshRateSelector` 对候选 render rate 与 physical mode 排序，评分会考虑：
+View 路径要经过一次聚合。每个 View 在绘制过程中调用内部 `votePreferredFrameRate()`：正数 requested rate 使用 `FIXED_SOURCE`，由 velocity 换算出的 rate 使用 `AT_LEAST`。`ViewRootImpl` 汇总本帧投票，再通过 `SurfaceControl.Transaction.setFrameRate()` 把结果提交给窗口 layer。`setFrameContentVelocity()` 只对下一张 drawn frame 有效，这也解释了 fling 组件为何要逐帧更新速度。
+
+多个数值 vote 之间存在整倍数关系时，`ViewRootImpl` 选其中较高且能覆盖其他 vote 的值。两组 vote 互相不能整除时，源码设置 conflict 标记，停止直接提交该数值，并按最大值是否高于 60fps 回退到 HIGH 或 NORMAL category。查看 trace 时看到 category vote，不能据此认定应用只调用了 category API；它也可能是数值冲突的回退结果。
+
+SurfaceFlinger 收到 layer 属性后，Android 17 的 `Scheduler::chooseRefreshRateForContent()` 让 `LayerHistory` 汇总可见 layer 的近期需求，再把 content requirements 交给 policy/selector。`RefreshRateSelector` 对候选 render rate 与 physical mode 排序，评分会考虑：
 
 - layer 的可见权重、focus 和期望 frame rate；
 - `ExplicitExact`、`ExplicitExactOrMultiple`、`ExplicitGte`、`ExplicitDefault`、`ExplicitCategory`、`Heuristic` 等 vote 语义；
@@ -202,15 +305,27 @@ Android 17 的 `Scheduler::chooseRefreshRateForContent()` 先让 `LayerHistory` 
 - switch 是否 seamless、候选是否在 primary physical/render range；
 - touch、idle、power mode 等全局信号。
 
-这不是一张固定的“vote 优先级表”。例如 `ExplicitExact` 在支持 per-app frame-rate override 时可以接受目标 rate 的整数倍；`ExplicitGte` 对不低于目标的候选给满分；`NoVote`、`NoPreference` 和 `Min` 在 layer 评分循环中跳过。最终结果还要叠加其他可见 layer 的权重和系统 policy。
+这里没有一张固定的“vote 优先级表”。例如 `ExplicitExact` 在支持 per-app frame-rate override 时可以接受目标 rate 的整数倍；`ExplicitGte` 对不低于目标的候选给满分；`NoVote`、`NoPreference` 和 `Min` 在 layer 评分循环中跳过。选择结果还要叠加其他可见 layer 的权重和系统 policy。
 
-源码入口是 [Android 17 `Scheduler.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp) 与 [`RefreshRateSelector.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp) 的 `calculateLayerScoreLocked()` / `getRankedFrameRates()`。
+`AT_LEAST` 在两类设备上的转换值得单独检查。`LayerHistory.cpp` 在 VRR Display 上把它转换为 `ExplicitGte`；在只能切换固定 mode 的 MRR Display 上转换为 `Max`，注释给出的原因是离散切换可能带来 jank，动画与滚动更偏向流畅度。相同 API 调用在两台设备上出现不同选择结果，可能来自这一设备能力分支。
+
+多 Display 也不能描述成完全独立的多个 Scheduler。`Scheduler::chooseDisplayModes()` 先为 pacesetter Display 排序，再把 pacesetter fps 传给已上电的 follower Display；每个 Display 使用自己的 `RefreshRateSelector`，idle/power 信号可以按 Display 读取，但 content requirements 与 pacesetter 关系仍会形成约束。窗口跨屏后，要同时核对目标 Display、pacesetter/follower 关系和该 Display 的 mode 集合。
+
+`chooseRefreshRateForContent()` 完成 policy 更新后，还可以把已选 pacesetter fps 传给 `updateAttachedChoreographers()`。该函数遍历 layer hierarchy，并为 `FIXED_SOURCE` / `DEFAULT` 等 vote 计算合适的 divisor，再更新相应 `EventThreadConnection.frameRate`。这条路径把 Display 选择传回 attached Choreographer 的回调节奏，是 `VSYNC-app` 间隔随选择结果变化的源码依据之一。
+
+源码入口是 [Android 17 `Scheduler.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp)、[`LayerHistory.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/LayerHistory.cpp) 与 [`RefreshRateSelector.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp) 的 `chooseRefreshRateForContent()`、`chooseDisplayModes()`、`calculateLayerScoreLocked()` 和 `getRankedFrameRates()`。
 
 `Scheduler.cpp` 里的 `FPS_THRESHOLD_FOR_KERNEL_TIMER = 65_Hz` 属于 hardware VSync idle 控制：timer reset 且当前 peak rate 高于 65Hz 时允许重新同步硬件 VSync；timer expired 且 rate 不高于 65Hz 时可关闭空闲 hardware VSync。它不是“低于 65fps 就把应用降频”的策略，也不能用于解释某一层的 frame-rate vote。
 
+### Kernel 锚点只能说明通用 vblank 记账
+
+本章的 kernel 基线是 `android17-6.18-2026-06_r6`。通用 DRM 的 `drm_vblank.c` 维护 CRTC vblank 计数与时间戳，驱动在 vblank 中断中调用 `drm_crtc_handle_vblank()`；`drm_vblank.h` 暴露 count/time、vblank on/off 与 wait 接口。这些代码可以支撑“内核/驱动需要提供显示时序事件”这一层判断。
+
+它们不能证明某台 Android 设备的面板 VRR 范围、DPU 编程方法或 Composer HAL 决策。手机 SoC 的 Display driver 和面板控制常位于厂商代码中，AOSP common kernel 只提供通用参考。遇到“面板为何没有切到某一 Hz”时，证据还要补齐目标设备的 Composer capability、HWC trace、vendor Display driver 与面板 mode，不能从 `drm_vblank.c` 反推产品实现。
+
 ## 渲染过程里的 deadline 没有消失
 
-支持 ARR 的设备上，`VSYNC-app` 和 `VSYNC-sf` 的节拍会跟着当前内容变化。滚动时周期可能收紧，静态页面可能拉长，SurfaceFlinger 侧也会出现 refresh-rate selection 相关的决策 slice。这个变化会直接改写“这一帧应该在多久内完成”的预算。
+支持 ARR 的设备上，`VSYNC-app` 和 `VSYNC-sf` 的节拍会跟着当前内容变化。滚动时周期可能缩短，静态页面可能拉长，SurfaceFlinger 侧也会出现 refresh-rate selection 相关的决策 slice。这个变化会直接改写“这一帧应该在多久内完成”的预算。
 
 预算会变，deadline 还在。`expected_frame_timeline_slice` 给出的窗口一旦确定，App 线程、RenderThread 或 SurfaceFlinger 任何一段超时，`actual_frame_timeline_slice` 仍会留下 `on_time_finish`、`present_type`、`jank_type` 这些字段。分析慢帧时，应该把“当前目标周期是多少”和“这一帧有没有按时完成”分开读。
 
@@ -291,16 +406,16 @@ LIMIT 20;
 ## 版本演进
 
 | 版本 | 公开能力 | 分析重点 |
-|:---|:---|:---|
+| --- | --- | --- |
 | Android 11 | `Surface.setFrameRate()` + 多刷新率 mode switching | 区分固定 mode 切换和普通慢帧 |
 | Android 12-14 | Android 12 开始有 FrameTimeline，可把目标窗口和真实完成时间拆开看 | 这一阶段仍以多刷新率背景为主 |
 | Android 15 / 15-QPR1+ | `View.setRequestedFrameRate()`、`setFrameContentVelocity()`、Window touch/power policy；支持设备启用 ARR | 把 View vote、touch/scroll policy 与 Scheduler 决策放到同一时间窗 |
-| Android 16 | `Display.hasArrSupport()`、`Display.getSuggestedFrameRate(int)` | 公开查询能力和 NORMAL/HIGH 建议值 |
-| Android 17 | 延续 ARR API，并以 `android-17.0.0_r1` 的 layer ranking、attached Choreographer 更新和 per-display Scheduler 为源码基线 | 不把某条 vote、LTPO 标签或 65Hz idle timer 阈值当作最终选择结果 |
+| Android 16 | `Display.hasArrSupport()`、`Display.getSuggestedFrameRate(int)`、`FRAME_RATE_COMPATIBILITY_AT_LEAST`、`ViewGroup.propagateRequestedFrameRate()` | 查询 ARR 与建议值；区分 VRR 的 `ExplicitGte` 和 MRR 的 `Max` |
+| Android 17 | `Display.getFrameRateVelocityMapping()` / `FrameRateVelocityPoint`；`Surface.setProducerThrottlingEnabled()` | per-display 滚动映射；把 producer back-pressure 与 Hz 投票分开；以 `android-17.0.0_r1` 的 pacesetter/follower 排序为源码基线 |
 
 Android 11–14 负责交代多刷新率背景，Android 15-QPR1+ 进入 ARR 主体，Android 16 补齐公开能力查询，Android 17 仍沿用同一职责划分。
 
-Compose 1.9 的 `preferredFrameRate()` 属于 Jetpack 版本演进，不和某个 Android 平台版本一一绑定；能否产生 ARR 效果仍取决于运行设备的系统与 Display 能力。
+Compose 1.9.0 的数值 `preferredFrameRate()` 与 1.10.0 的 category 重载属于 Jetpack 版本演进，不和某个 Android 平台版本一一绑定；能否产生 ARR 效果仍取决于运行设备的系统与 Display 能力。
 
 ## 与其他章节的关系
 
@@ -312,13 +427,24 @@ Compose 1.9 的 `preferredFrameRate()` 属于 Jetpack 版本演进，不和某�
 
 - [Android Developers：Adaptive refresh rate](https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate)
 - [Android API：View](https://developer.android.com/reference/android/view/View)
+- [Android API：ViewGroup](https://developer.android.com/reference/android/view/ViewGroup)
 - [Android API：Display](https://developer.android.com/reference/android/view/Display)
+- [Android API：FrameRateVelocityPoint](https://developer.android.com/reference/android/view/FrameRateVelocityPoint)
 - [Android API：Surface](https://developer.android.com/reference/android/view/Surface)
 - [Android API：Window](https://developer.android.com/reference/android/view/Window)
+- [Android API：MediaCodec](https://developer.android.com/reference/android/media/MediaCodec)
+- [Compose UI：preferredFrameRate](https://developer.android.com/reference/kotlin/androidx/compose/ui/preferredFrameRate.modifier)
 - [Perfetto：FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
 - [PerfettoSQL：android.frames.timeline](https://perfetto.dev/docs/analysis/stdlib-docs)
-- [Android 17 AOSP：View.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java)
-- [Android 17 AOSP：Display.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Display.java)
-- [Android 17 AOSP：Surface.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java)
-- [Android 17 AOSP：Scheduler.cpp](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp)
-- [Android 17 AOSP：RefreshRateSelector.cpp](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp)
+- [Android 17 AOSP：View.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java)
+- [Android 17 AOSP：ViewRootImpl.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)
+- [Android 17 AOSP：Display.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Display.java)
+- [Android 17 AOSP：Surface.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Surface.java)
+- [Android 17 AOSP：WindowManager.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/WindowManager.java)
+- [Android 17 AOSP：MediaCodec.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodec.java)
+- [Android 17 AOSP：BufferQueueConsumer.cpp](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp)
+- [Android 17 AOSP：Scheduler.cpp](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp)
+- [Android 17 AOSP：LayerHistory.cpp](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/LayerHistory.cpp)
+- [Android 17 AOSP：RefreshRateSelector.cpp](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp)
+- [Android 17 AOSP：HWComposer.cpp](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)
+- [Android 17 common kernel：drm_vblank.c](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_vblank.c)
