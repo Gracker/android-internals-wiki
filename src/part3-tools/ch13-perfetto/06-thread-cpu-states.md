@@ -8,8 +8,8 @@ drafted_by: openclaw-task2a
 reviewed_date: "2026-06-12"
 reviewed_by: openclaw-task6
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-04-03'
-last_verified_against: perfetto.dev/docs/data-sources/cpu-scheduling
+last_verified: '2026-07-31'
+last_verified_against: AOSP android-17.0.0_r1 external/perfetto, android17-6.18-2026-06_r6, perfetto.dev
 confidence: high
 sources:
 - type: blog
@@ -22,6 +22,26 @@ sources:
   path: https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-sleep/
 - type: official
   path: https://perfetto.dev/docs/data-sources/cpu-scheduling
+- type: official
+  path: https://perfetto.dev/docs/case-studies/scheduling-blockages
+- type: source
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/common/thread_state_tracker.cc
+- type: source
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/ftrace/ftrace_parser.cc
+- type: source
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/tables/sched_tables.py
+- type: source
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/sched/latency.sql
+- type: source
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/sched/time_in_state.sql
+- type: source
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/ftrace/ftrace_config.proto
+- type: source
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/sched.h
+- type: source
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h
+- type: source
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c
 tags:
 - perfetto
 - thread-state
@@ -58,7 +78,6 @@ last_task6_at: "2026-06-12T04:05:00+08:00"
 last_task6_audit: "2026-06-15"
 ---
 
-
 # 线程 CPU 状态分析
 
 <!-- outline-start -->
@@ -86,470 +105,414 @@ last_task6_audit: "2026-06-15"
 > 锚点内容需 L1/L2 验证,扩展内容至少 L2 验证,自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么要了解线程 CPU 状态
+线程状态回答的是“这段墙钟时间里，线程具不具备运行条件，是否占着 CPU”。它不会自动回答线程在执行哪个函数、等待哪把锁或哪次 I/O。可靠的分析要把状态区间与 Slice、调用栈、唤醒者、Binder、文件系统和设备事件放在同一时间范围内核对。
 
-在 Perfetto 中打开一段 Trace,展开任意一个线程,我们会看到一条由不同颜色的色块拼接而成的轨道--绿色、蓝色、白色、橙色交替出现。这些色块不是装饰,它们是线程在整个生命周期中的"呼吸记录":什么时候在 CPU 上跑,什么时候在排队等 CPU,什么时候在睡觉等资源,什么时候卡死了谁都叫不醒。
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 的 Perfetto 导入逻辑和 `android17-6.18-2026-06_r6` 内核为源码锚点。旧平台也有调度事件，但字段、内核符号和标准库模块可能不同。
 
-如果我们在做性能优化,这条轨道就是我们最基础的分析入口。无论是卡顿、ANR、启动慢、还是功耗高,最终的答案几乎都能追溯到线程的 CPU 状态上:**一个线程花在 Running 以外的时间越久,它完成任务就越慢**。理解每种状态的含义、知道在 Perfetto 中怎么读取、怎么判断异常,是从"看 Trace 发呆"到"看 Trace 定位问题"的分水岭。
+## 13.6.1 状态从哪里来
 
+### Linux 状态与 Perfetto 状态不是同一层概念
 
-## 五种核心状态
+Linux 6.18 的 `include/linux/sched.h` 把 `TASK_RUNNING` 定义为 0。这个值既覆盖正在 CPU 上执行的任务，也覆盖具备运行条件的任务；只看 `task_struct->__state` 无法区分 Running 与 Runnable。
 
-Linux 内核为每个线程维护了一个状态字段。从性能分析的视角,我们需要关注的有五种:
+Perfetto 依靠事件补出时间线：
 
+- `sched_switch` 说明前一个线程何时离开 CPU、下一个线程何时进入 CPU。Perfetto 把下一个线程记为 `Running`，并用 `prev_state` 为离开的线程打开后续状态区间。
+- `sched_waking` 说明某个事件正在把线程变为可运行。Perfetto 关闭原来的阻塞区间，打开 `R`，并尽量记录 `waker_utid`、`waker_id` 和 `irq_context`。
+- 下一次 `sched_switch` 选中该线程时，Perfetto 关闭 `R` 或 `R+`，打开 `Running`。
 
-**Running**:线程正在某个 CPU 核心上执行代码。这是唯一真正在消耗 CPU 算力的状态。在 Perfetto 的线程轨道上显示为**绿色**。
+`sched_slice` 从 CPU 视角记录“哪个 `utid` 在哪个 CPU 上运行多久，切出时是什么状态”。`thread_state` 从线程视角记录连续状态，并附带 CPU、I/O 等待、阻塞函数和唤醒者等可选字段。两张表中的 `dur = -1` 表示区间未闭合，常见于 Trace 结束或数据丢失；聚合时应排除。
 
-**Runnable (R)**:线程已经具备运行的一切条件,只差一个 CPU 核心来执行它。它被放在某个 CPU 的运行队列里排队,等待调度器的裁决。在 Perfetto 中显示为**蓝色/浅绿色**。
+### Android 17 中可见的状态
 
-**Runnable (R+)**:线程原本在 Running,但在执行内核态代码期间被更高优先级的任务强行打断,被迫让出 CPU。这里的 `+` 号代表"被抢占"(Preempted)。这和普通 Runnable 的区别在于,R+ 意味着非自愿的让出--线程自己并不知道要停下来。
+| Perfetto 状态 | 含义 | 能直接得出的事实 |
+| --- | --- | --- |
+| `Running` | 线程被调度在某个 CPU 上 | 该调度区间占用 CPU 时间线 |
+| `R` | Runnable | 线程具备运行条件，尚未进入 CPU |
+| `R+` | Runnable (Preempted) | 前一次切出被内核标为抢占式切换 |
+| `S` | Sleeping | 线程处于可中断睡眠 |
+| `D` | Uninterruptible Sleep | 线程处于不可中断睡眠 |
+| `T` | Stopped | 线程被停止 |
+| `t` | Traced | 线程受跟踪控制 |
+| `X` / `Z` / `x` | 退出、僵尸或死亡相关状态 | 线程处于退出流程 |
+| `I` / `P` / `W` / `K` / `N` | Idle、Parked、Waking、Wake Kill、No Load | 特殊调度状态，按原始事件解释 |
 
-**Sleeping (S)**:线程在等待某个事件--锁、Binder 回复、I/O、定时器。这种等待是可以被信号中断的。在 Perfetto 中显示为**白色**。
+状态名称应以详情面板或 SQL 字段为准。Perfetto UI 的颜色会受版本、主题和选中状态影响，不能把某种颜色当作稳定接口。
 
-**Uninterruptible Sleep (D)**:线程在等待硬件 I/O 操作完成或持有内核锁,期间不能被任何信号打断,甚至连 `kill -9` 都无效。内核这样设计是为了保护进程与设备交互过程中数据的一致性。在 Perfetto 中显示为**橙色**。
+### `R+` 的源码边界
 
-此外还有两个不太常见但值得知道的状态:
+Android 17 所用的 6.18 内核在 `sched_switch` Tracepoint 中按下面的逻辑编码抢占：
 
-- **Stopped (T)**:线程被暂停,通常是因为收到 SIGSTOP 信号或正在被调试器 attach。
-- **Zombie (Z)**:线程已执行完毕但父进程尚未回收它的退出状态。
+```c
+if (preempt)
+    return TASK_REPORT_MAX;
 
-在实际的性能分析中,我们 99% 的时间都在处理 Running、Runnable、Sleeping 和 Uninterruptible Sleep 这四种状态。Stopped 和 Zombie 通常意味着系统级的异常,需要具体问题具体分析。
+/* TP_printk() 在 TASK_REPORT_MAX 置位时追加 "+"。 */
+```
 
+这段逻辑把抢占式切出的线程统一呈现为 `R+`。它没有限定“线程必须在内核态”，也没有在 `R+` 中保存抢占者身份或抢占原因。时间片、调度类、优先级和唤醒抢占等因素还要结合同一 CPU 上随后的 `sched_slice`、线程优先级与调度策略判断。
 
-## 在 Perfetto 中读取线程状态
+`R` 也不等于“由睡眠刚刚唤醒”。线程在保持可运行状态时离开 CPU，同样可能产生 `R`。只有存在对应 `sched_waking` 和 `waker_utid` 时，才能讨论这次可运行区间的唤醒来源。
 
-### CPU Scheduling 轨道
+## 13.6.2 采集与 UI 读取
 
-Perfetto 的 CPU 相关信息通常分组置于顶部区域。最核心的是 **CPU Scheduling** 轨道,它可视化展示了每个 CPU 核心上正在执行哪个线程。数据来源于 Linux 内核 ftrace 中的 `sched/sched_switch` 事件--每当调度器做出一次切换决策,这个事件就会被记录下来。
-
-每个 CPU 核心对应一行独立的轨迹,不同颜色的色块代表不同线程在该 CPU 核心上运行的时间片段。点击任意一个色块,下方的详情面板会显示这次调度的具体信息:`cpu`(哪个核)、`end_state`(线程被切出时的状态)、`priority`(优先级)、`process/thread`(所属进程和线程名)。
-
-
-### Thread State 轨道
-
-从 CPU 区域向下展开到进程级别,再展开到具体的线程,我们会看到每个线程拥有一条独立的 **thread_state** 轨道。这条轨道上,时间轴被切割成连续的色块,每个色块代表线程在某个时间段的状态:
-
-- **绿色**:Running
-- **蓝色/浅绿色**:Runnable(含 Runnable 和 Runnable (Preempted))
-- **白色**:Sleeping
-- **橙色**:Uninterruptible Sleep
-
-> **注意**:Runnable 在 Perfetto 中只对应蓝色/浅绿色,白色是 Sleeping。分析调度延迟时,需要同时关注 `R` 和 `R+` 两种 Runnable 子状态。
-
-这条轨道是分析单线程性能瓶颈的首选入口。选中任何一个色块,Current State 面板会显示该状态的详细信息,包括持续时间和阻塞原因。
-
-
-### 抓取配置
-
-要让 Perfetto 完整记录所有线程状态信息,需要在 TraceConfig 中启用正确的 ftrace 事件。以下是推荐的最小 CPU 分析配置:
+下面的配置覆盖线程状态、唤醒、D 状态原因、频率和中断，适合十几秒的定点复现：
 
 ```protobuf
+buffers {
+  size_kb: 65536
+  fill_policy: RING_BUFFER
+}
+duration_ms: 15000
+
 data_sources {
   config {
     name: "linux.ftrace"
     ftrace_config {
-      ftrace_events: "sched/sched_switch"        # 调度切换(必需)
-      ftrace_events: "sched/sched_waking"         # 唤醒事件
-      ftrace_events: "sched/sched_wakeup_new"     # 新线程唤醒
-      ftrace_events: "sched/sched_blocked_reason"  # D 状态阻塞原因
-      ftrace_events: "power/cpu_frequency"        # CPU 频率变化
-      ftrace_events: "power/cpu_idle"             # CPU 空闲状态
+      compact_sched {
+        enabled: true
+      }
+
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_waking"
+      ftrace_events: "sched/sched_wakeup_new"
+      ftrace_events: "sched/sched_blocked_reason"
+      ftrace_events: "sched/sched_process_exit"
+      ftrace_events: "sched/sched_process_free"
+      ftrace_events: "task/task_newtask"
+      ftrace_events: "task/task_rename"
+
+      ftrace_events: "power/cpu_frequency"
+      ftrace_events: "power/cpu_idle"
+
+      ftrace_events: "irq/irq_handler_entry"
+      ftrace_events: "irq/irq_handler_exit"
+      ftrace_events: "irq/softirq_entry"
+      ftrace_events: "irq/softirq_exit"
+
       symbolize_ksyms: true
-      disable_generic_events: true
+    }
+  }
+}
+
+data_sources {
+  config {
+    name: "linux.process_stats"
+    process_stats_config {
+      scan_all_processes_on_start: true
     }
   }
 }
 ```
 
-其中 `sched/sched_switch` 是绝对必需的,它是所有线程状态分析的基础数据源。`sched/sched_blocked_reason` 对分析 Uninterruptible Sleep 很有用,它会记录线程进入 D 状态时正在执行的内核函数,是定位 I/O 瓶颈的关键线索。`sched/sched_waking` 用于唤醒关系分析,我们后面会详细讨论。
+`sched_switch` 是构建 Running 和切出状态的基础，`sched_waking` 补充唤醒与 Runnable 起点，`sched_blocked_reason` 补充 D 状态的 `io_wait` 和睡眠函数。`compact_sched` 在 Android 17 的 Perfetto 中用于压缩高频调度事件。`symbolize_ksyms` 需要 `traced_probes` 具备 root 权限，或设备降低 `kptr_restrict`；权限不足时，调度状态仍可用，`blocked_function` 可能为空。
 
+设备可能缺少某些 Tracepoint，量产构建也可能限制内核符号。录制后应检查 `stats` 表中的 `unknown_ftrace_events`、`failed_ftrace_events`、ftrace 丢包和 Perf 采样丢失，不要把空字段直接解释为“没有发生”。
 
-## Running:线程在干活,但活可能太多
+在 UI 中有两个互补入口：
 
-### 正常情况
+- CPU Scheduling 轨道按 CPU 展示 `sched_slice`。选中区间可查看 `utid`、CPU、优先级和 `end_state`，也能看到之前的 Runnable 延迟与唤醒信息。
+- 进程下的 `Thread State` 轨道按线程展示 `thread_state`。选中状态可查看持续时间、CPU、`io_wait`、`blocked_function`、唤醒者和中断环境。
 
-Running 是最"健康"的状态--线程正在 CPU 上执行代码。对于 UI 线程来说,一帧的 doFrame 回调中的 Running 时间就是实际执行 measure、layout、draw 的时间。只要这个时间不超过一帧的预算(120Hz 下约 8.33ms,60Hz 下约 16.67ms),就不会出现掉帧。
+分析关键路径时，先固定业务 Slice 或 FrameTimeline 帧，再看该时间范围内的线程状态。整条线程生命周期的大比例通常会被 Looper 的正常睡眠主导，对一次掉帧或启动没有直接解释力。
 
-### Running 过长的原因
+## 13.6.3 Running：已被调度，不等于应用代码独占 CPU
 
-当 Running 时间超出预期,意味着线程在 CPU 上做了太多的计算。这不是调度的问题,而是代码本身的问题。常见的原因有:
+`Running` 表示调度器让该线程占据某个 CPU 的任务时间线。它可能在用户态执行，也可能在系统调用或异常处理的内核态执行。硬中断会打断当前任务，但不一定发生 `sched_switch`；这段 IRQ 时间仍落在外层 Running 调度区间里。SoftIRQ 既可能在当前 CPU 的中断返回路径处理，也可能由 `ksoftirqd` 线程处理。
 
-**代码复杂度高**。这是最常见的原因。某个函数的算法复杂度过高、循环层数太深、或者在不该做大量计算的地方做了大量计算。在 Perfetto 中,我们会看到一长条绿色的色块,持续几毫秒到几十毫秒不等。
+因此，长 Running 区间需要分层验证：
 
-定位具体是哪段代码导致 Running 过长,需要借助其他工具。Perfetto 中的 CPU 火焰图(需要启用 `linux.perf` 数据源)可以直接看到函数级别的热点;simpleperf 也能以时间线的方式展示函数执行流。此外,也可以在代码中通过 `Trace.beginSection()` / `Trace.endSection()` 手动添加 tracepoint,将长绿色块拆解为更细粒度的子任务。
+- 应用或框架 Slice 能否解释这段工作。
+- `linux.perf` 或 simpleperf 样本中的 `cpu_mode` 和调用栈指向用户态还是内核态。
+- 同一 CPU 的 IRQ / SoftIRQ 轨道是否覆盖其中一部分。
+- 线程运行在哪个 CPU，该 CPU 的 `capacity`、频率和空闲状态如何。
+- 该区间是否位于启动、帧、输入或 Binder 的关键路径。
 
-**跑在了小核上**。即使代码本身没问题,如果线程被调度到了小核执行,由于小核的 IPC(Instructions Per Cycle)和主频都远低于大核,同样的代码需要更长的 Running 时间。在 Perfetto 中,我们可以通过点击绿色色块查看它运行在哪个 CPU 核心上,结合设备的核编号划分(比如 CPU 0-3 为小核,4-6 为大核,7 为超大核)来判断调度是否合理。
+Running 长不等于算法有问题。一次必须完成的后台计算可以合法地占满 CPU；一段很短的 Running 也可能因为频繁唤醒、缓存失效或跨线程串行化而拖慢关键路径。
 
-**CPU 频率太低**。即使线程运行在大核上,如果 CPU 频率因为温控、省电等原因被限制在低频,代码执行也会变慢。这时需要结合 Perfetto 的 **CPU Frequency** 轨道,观察线程运行期间 CPU 频率是否正常。
+### 帧分析不要套固定毫秒阈值
 
-**代码以解释方式执行**。刚安装、未经过 dex2oat 编译的应用,或者使用了某些 ART 运行时特性(如频繁 JNI 调用、反复反射调用)的代码,可能以解释方式运行,性能远低于编译后的代码。在 Trace 中如果看到"Compiling"字样,就可能属于这种情况。
+60 Hz 的名义周期约为 16.67 毫秒，120 Hz 约为 8.33 毫秒，但单个 `doFrame` 的 Running 时间不能直接与这两个数字比较。帧还包含 Runnable、同步等待、`RenderThread`、GPU 和 SurfaceFlinger，调度偏移、刷新率切换与预测也会改变具体截止时刻。Android 12 及以上应读取 FrameTimeline 的 Expected / Actual Timeline 和 overrun，再回看线程状态。
 
-### CPU 时间与墙上时间的关系
+### CPU 类型与频率只解释执行环境
 
-在 Perfetto 中选中任何一个调度切片,详情面板会显示两个时间值:**Wall**(墙上时间)和 **CPU**(CPU 时间)。
+CPU 编号与大小核布局由 SoC 决定，不能把“0—3 是小核、4—7 是大核”写成通用规则。Perfetto 的 `cpu` 表可提供 `cluster_id`、`processor` 和 `capacity`，频率轨道提供该时刻的 kHz。相同频率下，不同微架构和容量的 CPU 吞吐量可能不同；高频也不证明线程负载高，因为 Governor、Boost 与热策略都会影响频点。
 
-- **Wall** 是这个切片从开始到结束的真实世界时间。
-- **CPU** 是线程真正在 CPU 上运行的时间。
+手工绑核会缩小调度器可选 CPU 集合，还会受 cpuset、在线 CPU 和权限限制。普通应用不应依赖 CPU 编号或固定亲和性。平台侧若要调整亲和性、cpuset 或 uclamp，应使用同场景 Trace 验证延迟、能耗和热稳定性。
 
-`Wall = CPU + 该时间窗内全部 off-CPU 状态的总和`。这里的 off-CPU 不只包含 Runnable 和 Sleeping,也包含 Uninterruptible Sleep、Stopped 等没有占到 CPU 的时间。
+## 13.6.4 Runnable：测量唤醒到运行的等待
 
-这个对比在定位瓶颈时很好用。选中一个关键切片(比如 `Choreographer#doFrame`),比较 Wall 和 CPU:
+Runnable 区间表示线程具备运行条件却未在 CPU 上执行。对由 `sched_waking` 打开的 `R`，其持续时间近似“被唤醒到被调度”的延迟；`R+` 则从抢占式切出持续到下一次运行。
 
-- 如果 `Wall ≈ CPU`,说明线程大部分时间都在真正执行代码,瓶颈更接近计算过重。这时优先看火焰图和函数热点。
-- 如果 `Wall >> CPU`,说明大量时间花在排队或等待上。回到 `thread_state` 轨道,再拆 R、S、D 和其他 off-CPU 状态的占比,才能判断是在等 CPU、等 Binder、等锁,还是卡在 I/O。
+Runnable 变长常见于：
 
+- 所有合适的 CPU 都在运行其他任务，或高调度优先级、实时任务和 IRQ 持续占用。
+- 线程的调度类、nice、cpuset、亲和性、uclamp 或厂商策略限制了可用 CPU 与竞争顺序。
+- CPU 离线、热限制、频率降低或设备容量不足，使队列消化速度下降。
+- 唤醒放置与负载均衡暂时保留线程所在 CPU，避免跨核迁移成本。
+- cgroup CPU 带宽、实时节流或其他资源控制延后执行。
 
-## Runnable:线程准备好了,但 CPU 没空
+看到空闲 CPU 也不能直接判定调度器错误。Perfetto 官方文档指出，普通 Linux 调度配置不保证严格 work-conserving；调度器可能暂缓迁移，换取缓存局部性与功耗。还要确认目标线程是否允许在那颗 CPU 运行。
 
-### 正常情况
+### 查询每次运行前的 Runnable 延迟
 
-线程处于 Runnable,意味着它已经获得了运行所需的一切资源(锁拿到了、I/O 完成了、数据准备好了),只差一个 CPU 核心来执行。它被放入某个 CPU 的运行队列中,等待调度器选中。
+Android 17 的 `sched.latency` 标准库把每个 Running 状态关联到它之前的 Runnable 状态。下面的查询列出 SystemUI 主线程最长的 20 次延迟：
 
-Runnable 状态的出现是正常的--毕竟 CPU 核心数量有限,不可能所有线程都同时执行。对于普通线程,几微秒到几百微秒的 Runnable 等待是完全可接受的。
+```sql
+INCLUDE PERFETTO MODULE sched.latency;
 
-### Runnable 过长的五种原因
-
-当关键线程(特别是 UI 线程、RenderThread 这类对时序敏感的线程)长时间处于 Runnable 状态,意味着它在排队等 CPU,任务无法及时完成,直接表现为卡顿或掉帧。
-
-**原因一:优先级设置错误。** 线程的优先级决定了它在运行队列中的排队顺序。如果关键线程的优先级被设置得太低,它会被其他线程反复抢先,始终拿不到 CPU 时间。更隐蔽的情况是,某些应用或系统服务把无关线程的优先级设得太高,反而抢占了关键线程的 CPU 时间。从 Perfetto 中可以追踪线程被哪个线程抢占:点击 Runnable 色块旁边的 Running 色块,查看正在占用该 CPU 的是哪个线程。
-
-三方应用开发者一般不建议直接调用优先级相关的 API。不同厂商对调度器有各自的客制化改动(如 OPPO 的蜂鸟引擎),应用设置的优先级在某些厂商的调度策略下可能出现"水土不服",弄巧成拙。更靠谱的方式是合理安排自己的任务模型,不要把对实时性要求很高的任务放到 worker 线程上。
-
-
-**原因二:绑核不合理。** 有些开发者为了追求性能,会将线程绑定到特定的大核上。但绑核是双刃剑:一旦绑定,该线程只能在这个核上运行,即使其他核很空闲也无法迁移。如果多个线程绑在同一个核上,当该核繁忙时,所有绑在上面的线程都会出现长时间 Runnable。绑核应以 CPU 簇为单位(如大核簇 4-7),而不是单个核心。
-
-绑核时还需要注意:正确区分大小核(不同平台编号不同)、只能在 CPUSET 允许范围内绑核(否则会失败甚至出现致命错误)、2 个大核平台要尽量减少绑大核的线程数目。
-
-
-**原因三:系统负载过高。** 当系统整体负载很高时--可能是因为应用自身开了太多线程,也可能是因为系统服务或后台进程占用大量 CPU--所有线程的排队时间都会变长。在 Perfetto 的 CPU 区域,我们会看到每个核上都排满了密密麻麻的色块,几乎没有空闲间隙。选中一个区间按时间排序,可以查看都在执行什么任务,逐个排查原因。
-
-**原因四:CPU 算力受限。** 即使负载不高,如果 CPU 被锁频(温控导致降频)、锁核(关闭部分核心)、或者设备本身算力较弱,有限的 CPU 资源也会导致排队时间变长。这种情况需要结合 CPU Frequency 轨道和设备硬件参数来综合判断。
-
-**原因五:软件架构的线程依赖过重。** 如果关键操作需要多个线程协同完成(比如 UI Thread → Render Thread → SurfaceFlinger → HWC 的渲染管线),每个线程间的等待和唤醒都会增加一次 Runnable 排队的机会。依赖链越长,某个环节出问题的概率就越高。最常见的模式是:两个线程之间有频繁的通讯与等待(线程 A 把任务转移到线程 B 执行,A 等待 B 任务执行完后被唤醒),CPU 繁忙时很容易打出 Runnable 等待。
-
-
-### Runnable 的三种子类型
-
-仔细观察 Perfetto 的 thread_state 轨道,Runnable 可以细分为三种来源:
-
-1. **从 Sleep 中唤醒**。线程因等待的资源(锁、I/O、Binder 回复)已经就绪,从 S 或 D 状态被唤醒,进入 Runnable 排队。这是最常见的类型。
-
-2. **用户抢占**。线程的运行时间片用完,或出现更高优先级的任务,调度器在从内核态返回用户态时决定换下当前线程。此时 `sched_switch` 的 `prev_state` 标记为 `R`。
-
-3. **内核抢占**。更高优先级的任务在当前线程正在执行内核态代码期间就强行将其打断。此时 `prev_state` 标记为 `R+`,Perfetto 会标注为 `Runnable (Preempted)`。
-
-理解这三种类型的区别有助于精细判断调度延迟的原因。大量的 `R+`(Preempted)可能暗示系统中存在频繁的高优先级唤醒源,或者当时 CPU 已经满载,低优先级线程很容易被抢占。如果我们的关键 Task 总是被抢占,需要考虑调整优先级。
-
-
-## Sleeping:线程在等,要找清它在等谁
-
-### 正常情况
-
-Sleeping 是线程最常见的状态。打开 Perfetto,我们会看到大量线程长时间处于白色--这是正常的。Android 中的 Looper 机制就是典型的 Sleeping:线程调用 `epoll_wait()` 等待新消息到来,期间进入 Sleeping 状态,不消耗 CPU 资源。
-
-Sleeping 本身不是问题。问题在于关键线程在不该等的时候等了太久。
-
-### Sleeping 过长的常见原因
-
-**锁竞争。** 等待获取一个 Java 锁(synchronized / ReentrantLock)或 native futex。当多个线程争抢同一把锁时,拿不到锁的线程会进入 Sleeping。在 SystemServer 这种高并发的进程里,锁竞争尤为常见。Binder 多线程并行化或抢占公共资源是 SystemServer 中锁竞争的主要来源。
-
-**Binder 通信。** 当线程发起一个同步 Binder 调用后,会等待对端进程返回结果。如果对端处理缓慢--可能是因为对端也在等锁、或者对端的线程处于 Runnable 排不上 CPU--调用方就会长时间 Sleeping。通过 Perfetto 中的唤醒关系可以追踪到对端线程。
-
-**I/O 操作。** 等待网络 socket 数据(`epoll_wait`)、等待文件读写完成。关键路径上的同步 I/O 是 Sleeping 的常见来源。
-
-**主动等待。** 代码中显式调用了 `Thread.sleep()` 或 `Object.wait()`。这需要检查代码逻辑,判断等待是否合理。
-
-**等待 GPU 执行完毕。** 等 GPU fence 时间。常见原因有渲染任务过重、GPU 能力弱、GPU 频率低等。优化方向包括提升 GPU 频率、降低渲染任务复杂度(精简 Shader、降低渲染分辨率、降低 Texture 画质)。
-
-
-### 唤醒关系:找到"等谁"的方法
-
-当一个线程长时间 Sleeping 时,先定位它在等谁。Perfetto 提供了唤醒关系的可视化功能来回答这个问题。
-
-在 Perfetto 的 CPU 区域中,选中一个处于 Running 状态的线程切片,Perfetto 会自动绘制一条从"唤醒者"到"被唤醒者"的箭头,高亮显示唤醒源所在的线程。底层原理是:当线程 T1 释放了某个资源(如解锁、完成 Binder 调用),而线程 T2 正在等待该资源时,内核会将 T2 标记为 Runnable,并记录一条 `sched_waking` 事件。Perfetto 解析这条事件,把 waker 线程和被唤醒线程连起来,帮助我们回看依赖链。这里看到的是"谁让线程变成 runnable",后面是否立刻拿到 CPU,还要再看 runqueue 排队、迁核和优先级竞争。
-
-通过唤醒分析,可以清晰地追踪复杂的调用链。例如:UI 线程等待 Binder 调用 → Binder 线程执行任务 → Binder 线程等待另一个锁 → 持锁线程释放锁并唤醒 Binder 线程 → Binder 线程完成任务并唤醒 UI 线程。整个过程中的瓶颈点一目了然。
-
-不过 `wakeup from` 信息有时候并不稳定,原因和具体的 tracepoint 类型、内核实现有关。它也不是完整的锁依赖图。分析时要把它和 Binder 轨道、slice、代码路径一起交叉看。
-
-
-## Uninterruptible Sleep:线程卡死了,谁都叫不醒
-
-### 为什么需要这个状态
-
-我们可能会问,既然已经有了 Sleeping(可中断睡眠),为什么还需要一个"不可中断"的版本?
-
-原因在于数据一致性。当一个线程与硬件设备打交道时--比如正在执行磁盘 I/O 操作--内核不希望这个过程中被信号打断,因为中断可能导致设备状态和内存状态不一致。TASK_UNINTERRUPTIBLE 就是内核为这种场景设计的保护机制:线程进入这个状态后,只有它等待的资源就绪了才能被唤醒,信号(包括 `kill -9`)都不起作用。
-
-这个设计思路在内核中很常见。Linux 处理硬件调度时会临时关闭中断控制器,调度时也会临时关闭抢占功能,目的都是"防止程序流程进入不可控的状态"。TASK_KILLABLE 是一个变种,等同于 `TASK_WAKEKILL` | `TASK_UNINTERRUPTIBLE`,可以接受 Kill 类型的 Signal。
-
-Linux 内核中很多路径使用了 Uninterruptible Sleep:Swap 读数据、信号量机制、某些 mutex 锁的慢路径、内存回收的慢路径等。
-
-
-### Uninterruptible Sleep 分为两类
-
-Perfetto v53+ 的 `thread_state` 表把 D 状态再拆了一层,排查时可以把 `state='D'` 和 `io_wait` 一起看:
-
-| 观测项 | 常见含义 | 排查入口 |
-|---|---|---|
-| `state='D'` 且 `io_wait=1` | 更接近磁盘、块设备、Swap 等 I/O 等待 | 结合 Block Reason、文件访问、Page Fault、存储负载看 |
-| `state='D'` 且 `io_wait=0` | 更接近内核锁、页表、内存回收、驱动内部等待 | 结合 Block Reason、锁路径、内存压力看 |
-| `state='D'` 但 `io_wait` 为空 | 这份 trace 没把相关字段带出来 | 回到 Current State 面板和 `sched_blocked_reason` 交叉看 |
-
-**I/O 等待(iowait)**。线程在等待磁盘 I/O 完成。在 Perfetto 的 Current State 面板中,D 状态如果伴有 `(iowait)` 标记,则明确表示在等待 I/O。CPU 内部缓存(L1/L2/L3)的访问速度最快,内存次之,磁盘最慢,它们之间的延迟差异是数量级的。系统越是从磁盘中读取数据,对整体性能的影响就越大。
-
-**非 I/O 等待(内核锁等)**。线程在等待内核级别的锁或资源。Binder 驱动在高负载下的内部锁竞争是典型场景。与 I/O 等待不同,这类等待的根因通常更隐蔽,需要结合 Block Reason 和内核代码来定位。
-
-### I/O 等待的常见原因
-
-**应用主动 I/O 操作。** 在主线程上执行频繁或大量的文件读写操作。多应用同时下发 I/O 也会互相加剧等待。低端设备上磁盘碎片化、器件老化、剩余空间少都会放大这个问题。文件系统特性(某些文件系统的内部操作也会表现为 I/O 等待)和 Swap 读取也是来源。
-
-**低内存导致 I/O 变多。** 内存紧张时,系统的 PageCache 命中率下降,原本可以从内存中读取的数据不得不去磁盘读取。同时,Swap 机制的引入会让数据从 Swap 分区中读取,这就是高频的磁盘 I/O。内存和 I/O 之间存在紧密的耦合关系:内存越多,PageCache 越大,I/O 越少;反之亦然。
-
-### 非 I/O 等待的常见原因
-
-**内存压力下的回收等待。** 系统物理内存不足时,kswapd 等回收线程工作加重,应用程序可能陷入 D 状态等待内存回收完成。
-
-**Binder 驱动锁竞争。** 高负载下 Binder 驱动内部的锁竞争也会导致线程陷入 D 状态。
-
-**其他内核锁。** 内核中各种热点区域的锁保护,不胜枚举。结合 Block Reason 的诊断方法来具体分析。
-
-### Block Reason:定位 D 状态的利器
-
-Perfetto 提供了一个非常有用的线索来帮助定位 D 状态的原因--**Block Reason**。
-
-Android 内核中有一个由 Google 工程师 Riley Andrews 提交的 tracepoint 补丁,它在线程进入 D 状态时记录一条 `sched_blocked_reason` 事件,包含线程是否在等待 I/O(`iowait` 字段)以及进入 D 状态前最后一个非调度器函数的调用地址(`caller` 字段)。Perfetto v53+ 的 `thread_state.io_wait` 也是围绕这组信息展开的,所以 SQL 里不必只靠颜色判断 D 状态。
-
-在 ftrace 中的记录格式如下:
-
-```
-sched_blocked_reason: pid=30235 iowait=0 caller=get_user_pages_fast+0x34/0x70
+SELECT
+  p.upid,
+  running.ts AS running_ts,
+  runnable.state AS runnable_state,
+  ROUND(l.latency_dur / 1e6, 3) AS latency_ms,
+  ss.cpu,
+  ss.priority,
+  wp.name AS waker_process,
+  wt.name AS waker_thread,
+  runnable.irq_context
+FROM sched_latency_for_running_interval AS l
+JOIN thread_state AS running
+  ON running.id = l.thread_state_id
+JOIN thread_state AS runnable
+  ON runnable.id = l.runnable_latency_id
+JOIN sched_slice AS ss
+  ON ss.id = l.sched_id
+JOIN thread AS t
+  ON t.utid = running.utid
+JOIN process AS p
+  USING (upid)
+LEFT JOIN thread AS wt
+  ON wt.utid = runnable.waker_utid
+LEFT JOIN process AS wp
+  ON wp.upid = wt.upid
+WHERE p.name = 'com.android.systemui'
+  AND t.is_main_thread
+ORDER BY l.latency_dur DESC
+LIMIT 20;
 ```
 
-在 Perfetto 中,选中 D 状态的色块,Current State 面板会显示 Block Reason。例如 `get_user_pages_fast` 表示线程在执行内存页面映射时被阻塞,`do_page_fault` 表示在处理缺页中断。
+查询按 `upid` 保留进程实例。`waker_process` 为空可能来自 `R+`、Trace 开头、数据丢失或缺少 `sched_waking`。`irq_context = 1` 表示唤醒事件发生在 HardIRQ 或 SoftIRQ 环境，此时当前任务名称通常不是业务上的唤醒发起者。
 
-定位到具体的内核函数后,需要结合内核源码来理解该函数的行为。以 `get_user_pages_fast` 为例,它会先通过无锁方式 pin 应用侧的 pages,如果失败则走慢速执行路径,需要获取 `mmap_lock`。如果此时锁被其他线程持有(比如另一个线程正在执行 `mmap` 操作),当前线程就会陷入等待。
+### 解读 `R` 与 `R+`
 
-需要注意,这个补丁未合入 Linux 上游主线,是 Android 内核的独有特性。不同厂商的内核不一定包含此补丁，接入前需要确认。
+`R+` 多说明线程遭遇抢占式切换，但次数或占比高不能直接推出优先级设置错误。要查看切出后哪条任务在相同 CPU 上运行、它属于哪个调度类、目标线程允许在哪些 CPU 执行，以及这段等待是否越过业务 deadline。
 
+`R` 包含唤醒后的排队，也可能来自线程保持可运行状态时的切出。具备 `waker_utid` 的 `R` 才能沿 Woken by 关系查看唤醒线程。唤醒者负责把线程变为可运行，不一定是锁持有者、Binder 服务端或设备中断的源头；语义关系还需 Binder Flow、锁事件或代码路径。
 
-### 系统调度与 D 状态的耦合
+## 13.6.5 Sleeping：找到等待条件和唤醒者
 
-有一种比较棘手的情况:线程 A 持有一把锁并处于 D 状态(等待 I/O),线程 B 想要获取同一把锁而进入 D 状态。此时如果线程 A 的 I/O 完成了并被唤醒,但它却长时间处于 Runnable(排不上 CPU),那么线程 B 的等待时间就会进一步拉长。更极端的情况是,即使锁持有的实际时间很短,如果锁持有者在被唤醒后长时间排不上 CPU,等待者感知到的锁等待时间也会很长。
+`S` 是可中断睡眠。Looper 在 `epoll_wait()` 等消息、线程等待条件变量或 futex、同步 Binder 客户端等待回复、定时器等待到期，都可能表现为 `S`。大多数线程长期 Sleeping 是健康的空闲状态。
 
-这种调度延迟和锁竞争互相放大的问题，是目前 Android 性能优化中比较棘手的场景。不同厂商的调度器和内核补丁策略不同，处理这类问题的路径也不一样。
+关键 Slice 内出现长 `S` 时，可按以下证据追查：
 
+- Slice 名称或事件触发采样栈说明线程在哪个等待 API 进入睡眠。
+- `thread_state.waker_utid` 与 `waker_id` 指向哪个线程状态。
+- Binder 事务、Monitor Contention、futex、Flow 或定时器事件能否解释唤醒关系。
+- 从唤醒到 Running 的 `R` 是否又贡献了明显调度延迟。
 
-## 唤醒事件与调度延迟分析
+一次同步等待可以同时包含 `S + R + Running`：线程睡眠等待条件，条件满足后进入 Runnable，获得 CPU 后继续执行。只量 `S` 会漏掉唤醒后的排队。
 
-线程从 Sleeping 到真正 Running,中间需要经历两个步骤:被唤醒(变成 Runnable)→ 被调度器选中(变成 Running)。这两个步骤之间的时间差就是**调度延迟**(Scheduling Latency)。
+### Woken by 的边界
 
-在 Perfetto 中,这段延迟对应的就是 Runnable 状态的持续时间。通过唤醒事件(`sched_waking`),我们可以更精确地分析这段延迟:
+Android 17 的 `ThreadStateTracker::PushWakingEvent()` 仅在被唤醒线程原本处于阻塞状态时关闭旧状态并打开 `R`。线程已处于 Running 或 Runnable 时收到的重复唤醒会进入 `spurious_sched_wakeup`，不会重写当前状态。
 
-- `sched_waking` 在线程被标记为可运行(R)时发出。
-- `sched_wakeup` 与跨 CPU 唤醒有关,可能记录在源或目的 CPU 上。
+Woken by 记录的是执行唤醒动作的线程：
 
-对大多数延迟分析而言,仅 `sched_waking` 已足够。
+- 解锁路径中，它可能是释放锁的线程。
+- Binder 回复中，它可能落在驱动或服务端执行路径。
+- 中断唤醒中，`irq_context` 会标记 HardIRQ / SoftIRQ，当前被中断线程不应被当作设备事件的业务来源。
+- 缺少事件、Trace 起点或 ftrace 丢包都会造成关系中断。
 
-### 非 work-conserving 的调度器
+复杂等待可使用 UI 的 Critical Path 辅助查看依赖。该视图依赖唤醒图和 Trace 完整性，仍需回到原始状态、Slice 与代码确认。
 
-多数 Linux 调度配置在通用优先级下并非严格"work-conserving"。也就是说,即使有空闲 CPU,调度器也可能不会立刻把刚唤醒的线程迁移过去,而是等待当前 CPU 自然空闲。这是因为跨核迁移本身有额外开销和功耗代价。这种策略会导致 Runnable 状态下的排队延迟--但这不一定异常,而是调度器在性能和功耗之间的权衡。
+Perfetto 官方的调度阻塞案例还展示了事件触发调用栈：用 `linux.perf` 在 `sched_switch` 和 `sched_waking` 上采样，并用 `prev_comm`、`next_comm` 或 `comm` 过滤目标线程。对全系统每次调度切换都取栈会迅速压垮采样器；过滤条件和丢样统计是使用这项技术的前提。
 
-排查思路:
-1. 在目标线程的 thread_state 轨道中筛选 `state=R` 的切片,作为调度延迟的直接证据。
-2. 同步对照同一 CPU 的其它重负载线程与 IRQ/SoftIRQ 轨迹,验证是否存在时间重叠的抢占。
-3. 若频繁以 `end_state=R+` 收尾,说明非自愿抢占严重,需评估优先级和负载均衡策略。
+## 13.6.6 Uninterruptible Sleep：D 只说明不可中断等待
 
+Linux 6.18 把 `TASK_UNINTERRUPTIBLE` 定义为独立任务状态。处于该状态的普通信号不会让等待提前返回；条件满足后线程被唤醒，挂起的信号才有机会处理。内核还提供 `TASK_KILLABLE = TASK_WAKEKILL | TASK_UNINTERRUPTIBLE`，供允许致命信号唤醒的等待点使用。
 
-## 用户态与内核态的区分
+D 状态可出现在块 I/O、Swap、内存回收、页迁移、驱动等待和内核同步路径。Minor Page Fault 通常不需要存储 I/O，也未必让线程睡眠；Major Page Fault 可能等待文件页或 Swap，仍需页故障和块设备证据。不能把所有 Page Fault 或所有 D 都归为磁盘。
 
-Running 状态的绿色色块未必都是应用代码在忙。如果线程陷入单个长系统调用(如 `sys_read`、`sys_futex`),它仍然显示为 Running,但用户态的 CPU 采样火焰图可能几乎为空。
+### `io_wait` 与 `blocked_function` 的源码含义
 
-判断方法:如果 UI 线程某段 Running 很长,但火焰图几乎没有用户态热点:
-1. 打开该线程的 slice 视图,查找是否存在长时间的 `sys_*` 切片。
-2. 若存在,瓶颈多在 I/O 或同步原语,优先检查 I/O 路径、锁粒度与访问模式。
-3. 若不存在,回到火焰图,继续剖析用户态热点函数。
+锚点内核的 `sched_blocked_reason` Tracepoint 写入两个字段：
 
+```c
+__entry->caller = (void *)__get_wchan(tsk);
+__entry->io_wait = tsk->in_iowait;
+```
 
-## irq/softirq 对线程调度的影响
+`io_wait` 来自任务的 `in_iowait` 记账标志。值为 1 能提高 I/O 等待的可能性，但不包含文件名、设备、请求类型或业务调用方；值为 0 也不能直接命名为“内核锁”。`caller` 来自 `__get_wchan()`，表示内核看到的睡眠位置，不保证等于最初发起等待的应用函数或锁持有者。
 
-硬中断(hard IRQ)在 interrupt context 中执行,ARM64 平台通常使用独立的 IRQ 栈,不共享当前进程的用户态栈。softirq 可能在被中断任务的上下文中执行,也可能由 `ksoftirqd` 内核线程处理。当硬中断或 softirq 频繁触发时,当前 CPU 上正在运行的线程会被抢占--Perfetto 中线程仍显示为 Running,但有效执行时间被中断处理压缩。
+Android 17 的 `FtraceParser::ParseSchedBlockedReason()` 把这两个字段写入最近的阻塞 `thread_state` 行。只有采集了该 Tracepoint 才会有 `io_wait`；只有内核符号成功解析时才会有 `blocked_function`。
 
-这种影响在 Perfetto 中不太容易直接观察到。间接判断方法:如果线程的 CPU 时间(火焰图上的用户态执行时间)明显少于对应 Running 色块的时间跨度,差异可能来自中断处理。更直接的证据需要启用 `irq` / `softirq` ftrace 事件或 `irq/` 轨道来观察中断活动;`ksoftirqd` 线程的 CPU 占用也能间接反映 softirq 负载。
+### 查询 D 状态
 
-## 从线程状态分析性能瓶颈的方法论
-
-了解了每种状态的含义之后,我们需要一个系统化的方法来从线程状态中定位性能瓶颈。
-
-### 第一步:定位问题切片
-
-从 Perfetto 的 thread_state 轨道开始。找到目标线程(比如 UI 线程),定位到出问题的时间段(比如掉帧发生的那一帧)。选中 `Choreographer#doFrame` 切片,查看 Wall 与 CPU 的比值。
-
-### 第二步:拆解状态分布
-
-如果 `Wall >> CPU`,说明线程花了大量时间在等。查看该时间段内 thread_state 轨道的颜色分布:
-
-- **蓝色占比高**(Runnable 过长):CPU 争抢问题。查看同一时间段内所有 CPU 的负载情况,是谁在占用 CPU?关键线程的优先级是否合理?是否需要绑核?
-- **白色占比高**(Sleeping 过长):依赖等待问题。通过唤醒关系找到线程在等谁,是锁、Binder、还是 I/O?
-- **橙色占比高**(D 状态过长):I/O 或内核锁问题。查看 Block Reason 确定是 I/O 还是内核锁。如果是 I/O,检查是否在关键路径上做了同步 I/O;如果是内存压力导致,检查系统内存使用情况。
-
-### 第三步:使用 SQL 量化分析
-
-Perfetto 内置的 SQL 引擎可以对线程状态进行精确的量化统计。以下是一些常用的查询:
-
-**查询某线程的状态时间分布:**
+下面的查询列出 SystemUI 主线程最长的 D 区间及其可用线索：
 
 ```sql
 SELECT
-  CASE
-    WHEN state = 'Running' THEN 'Running'
-    WHEN state IN ('R', 'R+') THEN 'Runnable'
-    WHEN state = 'S' THEN 'Sleeping'
-    WHEN state = 'D' THEN 'Uninterruptible Sleep'
-    ELSE state
-  END AS state_name,
-  sum(dur) / 1e6 AS total_time_ms
-FROM thread_state
-WHERE utid = (SELECT utid FROM thread WHERE name = 'surfaceflinger' LIMIT 1)
-GROUP BY state_name
-ORDER BY total_time_ms DESC;
+  p.upid,
+  ts.ts,
+  ROUND(ts.dur / 1e6, 3) AS duration_ms,
+  ts.io_wait,
+  ts.blocked_function
+FROM thread_state AS ts
+JOIN thread AS t
+  USING (utid)
+JOIN process AS p
+  USING (upid)
+WHERE p.name = 'com.android.systemui'
+  AND t.is_main_thread
+  AND ts.state = 'D'
+  AND ts.dur > 0
+ORDER BY ts.dur DESC
+LIMIT 20;
 ```
 
-**查询某线程 Runnable 中 R 和 R+ 的占比:**
+非 Running 状态没有“正在执行的 CPU”，需要从相邻调度区间或相关设备事件确定 CPU。`blocked_function` 为空时，应检查 Tracepoint、符号权限、数据丢失和工具版本；不能由空值推断“没有内核阻塞”。
+
+归因 D 区间时，可按证据选择方向：
+
+- `io_wait = 1` 且与块设备或文件系统事件重叠：继续查设备、inode、页故障、Swap 和发起调用栈。
+- 内存回收、压缩或页迁移事件重叠：查看 PSI、reclaim、compaction 和进程内存压力。
+- `blocked_function` 指向驱动或同步路径：查对应子系统源码、等待条件与负责唤醒的执行路径。
+- 多个线程等待同一资源：查持有者是否 Sleeping、Runnable 或被其他任务抢占，识别优先级反转和锁队列串行化。
+
+D 状态不会直接触发 ANR。ANR 由输入分发、服务、广播等框架监控条件触发；D 只有在阻止受监控工作按时完成时才会参与这条因果路径。不能给 D 单独套一个通用 ANR 秒数。
+
+## 13.6.7 Stopped 与其他状态
+
+`T` 常见于 `SIGSTOP`、作业控制或调试操作，`t` 表示被跟踪。它们在调试会话中可能完全符合预期。`Z` 表示退出后等待回收的僵尸状态，短暂出现也不等于性能故障；持续堆积才需要检查父进程的回收逻辑。
+
+`X`、`x`、`I`、`P`、`W`、`K`、`N` 属于退出或特殊调度状态。Perfetto 官方文档提醒，不是所有字符组合都有意义。遇到复合状态时，应保留原始 `end_state`，再对照锚点内核的 `TASK_*` 定义和产生该事件的代码。
+
+## 13.6.8 IRQ / SoftIRQ：调度区间里的隐含执行
+
+HardIRQ 在中断环境执行，会暂停当前 CPU 上的任务；SoftIRQ 可在中断返回路径执行，也可由 `ksoftirqd` 线程处理。前两种情况不要求发生任务切换，外层线程在 `thread_state` 中仍可能连续显示 Running。把这整段 Running 都算成应用函数时间，会高估任务执行。
+
+下面的查询汇总已采集的 IRQ 与 SoftIRQ Slice：
 
 ```sql
 SELECT
-  CASE
-    WHEN state = 'R' THEN 'Runnable'
-    WHEN state = 'R+' THEN 'Runnable (Preempted)'
-  END AS runnable_type,
-  sum(dur) / 1e6 AS total_time_ms
-FROM thread_state
-WHERE utid = (SELECT utid FROM thread WHERE name = 'surfaceflinger' LIMIT 1)
-  AND state IN ('R', 'R+')
-GROUP BY runnable_type
-ORDER BY total_time_ms DESC;
+  tr.type AS interrupt_type,
+  s.name,
+  COUNT(*) AS event_count,
+  ROUND(SUM(s.dur) / 1e6, 3) AS total_ms,
+  ROUND(MAX(s.dur) / 1e6, 3) AS max_ms
+FROM slice AS s
+JOIN track AS tr
+  ON tr.id = s.track_id
+WHERE tr.type IN ('cpu_irq', 'cpu_softirq')
+  AND s.dur > 0
+GROUP BY tr.type, s.name
+ORDER BY SUM(s.dur) DESC
+LIMIT 30;
 ```
 
-如果 R+ 占比高,说明该线程频繁被高优先级任务抢占,需要评估优先级和负载均衡策略。
+Android 17 的 Ftrace 导入器分别用 `cpu_irq` 和 `cpu_softirq` 轨道保存这些区间。汇总只能发现高频或长中断候选，关键路径仍要做时间相交；网络、存储、显示和定时器中断也要结合设备驱动与业务动作。
 
-**查询某线程 D 状态里 `io_wait` 的分布:**
+`ksoftirqd/<cpu>` 是普通可调度内核线程，它的 Running 会直接出现在 CPU Scheduling 轨道。SoftIRQ 在线执行与 `ksoftirqd` 执行不能重复计算。
+
+## 13.6.9 在业务区间内量化状态
+
+线程整段生命周期的状态占比很少能定位一次卡顿。Android 17 的 `sched.time_in_state` 提供区间函数，下面的查询选取 SystemUI 主线程中最长的 `Choreographer#doFrame`，汇总该 Slice 内的状态：
 
 ```sql
+INCLUDE PERFETTO MODULE sched.time_in_state;
+
+WITH target AS MATERIALIZED (
+  SELECT
+    s.ts,
+    s.dur,
+    t.utid,
+    p.upid
+  FROM slice AS s
+  JOIN thread_track AS tt
+    ON s.track_id = tt.id
+  JOIN thread AS t
+    USING (utid)
+  JOIN process AS p
+    USING (upid)
+  WHERE p.name = 'com.android.systemui'
+    AND t.is_main_thread
+    AND s.name GLOB 'Choreographer#doFrame*'
+    AND s.dur > 0
+  ORDER BY s.dur DESC
+  LIMIT 1
+)
 SELECT
+  target.upid,
+  state,
   io_wait,
-  sum(dur) / 1e6 AS total_time_ms
-FROM thread_state
-WHERE utid = (SELECT utid FROM thread WHERE name = 'surfaceflinger' LIMIT 1)
-  AND state = 'D'
-GROUP BY io_wait
-ORDER BY total_time_ms DESC;
+  blocked_function,
+  ROUND(SUM(x.dur) / 1e6, 3) AS state_ms
+FROM target
+JOIN sched_time_in_state_for_thread_in_interval(
+  target.ts,
+  target.dur,
+  target.utid
+) AS x
+GROUP BY target.upid, state, io_wait, blocked_function
+ORDER BY SUM(x.dur) DESC;
 ```
 
-`io_wait=1` 更接近 I/O 等待,`io_wait=0` 更接近内核锁或内存回收;为空时,说明这份 trace 没把相关字段带出来。
+查询使用具体进程和 Slice，执行前应确认录制中确有 SystemUI 帧。`doFrame` 最长不等于最差用户体验帧；Android 12 及以上可以先由 FrameTimeline 的 overrun 选中错过 deadline 的 `frame_id`，再把帧区间交给状态函数。
 
-**查询 D 状态的阻塞函数分布(需要 sched_blocked_reason):**
+### 从状态走到修改点
 
-```sql
-SELECT
-  ts,
-  dur / 1e6 AS duration_ms,
-  io_wait,
-  blocked_function
-FROM thread_state
-WHERE utid = (SELECT utid FROM thread WHERE name = 'surfaceflinger' LIMIT 1)
-  AND state = 'D'
-  AND blocked_function IS NOT NULL
-ORDER BY dur DESC
-LIMIT 20;
-```
+| 区间特征 | 下一组证据 | 可以形成的结论 |
+| --- | --- | --- |
+| Running 为主 | Slice、用户态/内核态调用栈、CPU capacity/freq、IRQ | 哪段执行或中断贡献 CPU 时间 |
+| `R` 为主 | waker、同 CPU 运行者、调度类、cpuset/affinity、CPU 在线状态 | 唤醒后为什么未及时运行 |
+| `R+` 为主 | 切出后的任务、优先级、实时与 IRQ 活动 | 哪类抢占与 deadline 重叠 |
+| `S` 为主 | 阻塞栈、waker、Binder、锁、Flow、定时器 | 等待条件由谁满足 |
+| `D` 为主 | `io_wait`、`blocked_function`、页故障、回收、块设备、驱动 | 不可中断等待发生在哪个内核路径 |
+| IRQ / SoftIRQ 高 | 中断名称、CPU、设备驱动、业务时间范围 | 中断处理占用了多少关键区间 |
 
-`blocked_function` 来自 `sched/sched_blocked_reason` ftrace 事件,记录线程进入 D 状态前最后一个非调度器内核函数。如果 `blocked_function` 为空,不能直接判定这份 trace 没有启用该事件;还要检查当前是否为 userdebug/eng build、内核是否包含 `sched_blocked_reason` tracepoint,以及抓取配置是否启用了该事件。
+状态只是分析入口。结论至少应包含业务区间、`upid` / `utid`、状态持续时间、连接原因的第二种证据，以及修改前后的同条件对照。
 
-**查询某线程在各 CPU 核心上的运行时间分布(判断是否被调度到小核):**
+## 13.6.10 常见误读
 
-```sql
-SELECT
-  cpu,
-  sum(dur) / 1e6 AS time_on_cpu_ms
-FROM sched
-WHERE utid = (SELECT utid FROM thread WHERE name = 'system_server' LIMIT 1)
-GROUP BY cpu
-ORDER BY cpu;
-```
+### “线程 Running 占比高，所以它有性能故障”
 
-**查询 CPU 利用率最高的进程(判断系统整体负载):**
+Running 只表示线程被调度。还要确认它是否位于关键路径、执行内容是否可以减少，以及 IRQ 是否占用其中一部分。后台吞吐任务的高 CPU 使用率可能符合设计。
 
-```sql
-SELECT
-  process.name AS process_name,
-  100 * sum(dur) / CAST(TRACE_END() - TRACE_START() AS REAL) AS cpu_utilization_percent
-FROM sched
-JOIN thread ON sched.utid = thread.utid
-JOIN process ON thread.upid = process.upid
-GROUP BY process.name
-ORDER BY cpu_utilization_percent DESC
-LIMIT 20;
-```
+### “Runnable 长就是调度器选错”
 
-**查询特定时间段内 CPU 消耗最高的线程(分析特定场景):**
+Runnable 是结果。系统负载、调度类、优先级、亲和性、cpuset、CPU 容量、热限制、带宽控制和唤醒放置都可能贡献延迟。只看到空闲 CPU 也不足以判断，因为目标线程未必允许迁移过去。
 
-```sql
-SELECT
-  thread.name,
-  sum(dur) / 1e9 AS cpu_time_s
-FROM sched
-JOIN thread ON sched.utid = thread.utid
--- 时间戳单位为纳秒,可加上 WHERE ts > 2e9 AND ts < 5e9 来取某一段时间
-GROUP BY thread.name
-ORDER BY cpu_time_s DESC
-LIMIT 20;
-```
+### “`R+` 就是某条高优先级线程抢占”
 
+`R+` 只保存这次切出带有抢占标志。具体抢占者和原因需要查看相同 CPU 上后续运行的任务、调度类和优先级。
 
-### 第四步:结合 CPU 架构和频率
+### “Sleeping 不消耗 CPU，所以不影响性能”
 
-线程的 Running 时间不仅取决于代码本身,还取决于它在哪个核心上、以什么频率运行。分析时需要结合 Perfetto 的 CPU Frequency 轨道和设备的核心架构(big.LITTLE)来综合判断。
+空闲线程 Sleeping 很正常。关键路径中的 Sleeping 会增加墙钟时间，需要查等待条件、唤醒者和唤醒后的 Runnable 延迟。
 
-一个关键认知:在异构 CPU 上,同为 2.0 GHz,小核与大核的实际算力天差地别。大核通常具备更宽的乱序执行、更多执行端口、更大的缓存与更激进的预取/分支预测,同频下完成同样工作所需时间更短。因此,"关键线程跑在小核"和"关键线程在大核但频率被限制"都是需要关注的异常信号。
+### “D 或 `io_wait = 1` 就是应用磁盘 I/O”
 
-### 总结:状态→原因→优化的速查表
+D 覆盖多种不可中断等待，`in_iowait` 也是内核记账标志。应用归因还要依赖调用栈、页故障、文件系统、块设备或驱动事件。
 
-| 状态占比异常 | 可能原因 | 排查方向 |
-|---|---|---|
-| Running 过长 | 代码计算过重 / 跑小核 / CPU 降频 / 解释执行 | 火焰图 + CPU 频率 + 核心类型 |
-| Runnable 过长 | 优先级低 / 绑核不当 / 系统负载高 / CPU 降频锁核 | CPU 负载分布 + 优先级 + 绑核策略 |
-| Sleeping 过长 | 锁竞争 / Binder 等待 / I/O 等待 / 主动 sleep | 唤醒关系 + Binder 轨道 + 代码审查 |
-| D 状态过长 | 磁盘 I/O / 内存压力 / 内核锁 | Block Reason + I/O 模式 + 内存状态 |
+### “把各进程 CPU 利用率相加后应小于 100%”
 
-## 与其他章节的关系
-
-本节讨论的线程 CPU 状态是性能分析的"原子单位"。理解了这些状态之后:
-
-- **5.1 Linux 进程调度基础** 解释了为什么线程会被调度或等待--调度器的选核、迁移、优先级策略决定了 Runnable 时间的长短。
-- **13.1 Perfetto 基础** 介绍了 Perfetto 的基本操作和视图,是本节的前置知识。
-- **13.5 CPU 分析** 从 CPU 整体视角分析频率、负载、调度策略,与本节的线程视角互补。
-
-## 常见问题与误区
-
-**"线程 CPU 使用率高就说明有问题"**。不一定。Running 时间长可能只是因为线程有大量工作要做。关键看它是否影响了关键路径上的时序。一个后台线程跑满 CPU,只要不抢占 UI 线程的 CPU 时间,用户体验不受影响。
-
-**"Runnable 时间长一定是调度器的问题"**。不完全是。虽然调度器决策影响 Runnable 时间,但更常见的原因是系统整体负载过高或线程优先级设置不当。在分析时,先排除负载和优先级因素,再考虑调度器策略。
-
-**"D 状态一定会导致 ANR"**。不一定。短时间的 D 状态是正常的(比如短暂的 I/O 操作)。只有当 D 状态持续时间超过 ANR 超时阈值(前台 Service 10 秒、前台 Input 5 秒)时,才会触发 ANR。但 D 状态是 ANR 的常见原因之一,特别是当它与内核锁或频繁 I/O 操作关联时。
-
-**"wakeup from 信息一定准确"**。不一定。wakeup from 的准确性取决于底层 tracepoint 的类型和内核实现。某些情况下唤醒信息可能指向错误的线程,需要结合代码逻辑和 Binder 调用链来交叉验证。
-
-**"Sleeping 状态不消耗 CPU,所以不影响性能"**。这是对性能的误解。Sleeping 状态下线程虽然不消耗 CPU,但它在等待--等待本身就消耗时间。如果关键线程在执行关键任务时长时间 Sleeping,用户感知到的就是卡顿或延迟。
-
-**"应用设置高优先级就能解决 Runnable 问题"**。不一定,甚至可能适得其反。不同厂商对调度器有各自的客制化改动,应用设置的优先级在某些厂商的调度策略下可能出现意料之外的行为。更可靠的做法是合理安排任务模型,减少关键路径上的线程依赖。
-
+CPU 时间若以 Trace 墙钟时间为分母，多核进程可以超过 100%，全系统上限接近在线 CPU 数乘以 100%。报告必须写明是单核归一化、设备总容量归一化，还是 CPU 时间。
 
 ## 参考资料
 
-- [Perfetto 官方文档 - CPU Scheduling](https://perfetto.dev/docs/data-sources/cpu-scheduling)
-- [高爷博客 - Android Perfetto 系列 9:CPU 信息解读](https://www.androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/)
-- [高爷博客 - Systrace 线程 CPU 运行状态分析技巧 - Runnable 篇](https://www.androidperformance.com/2022/01/21/android-systrace-cpu-state-runnable/)
-- [高爷博客 - Systrace 线程 CPU 运行状态分析技巧 - Running 篇](https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-running/)
-- [高爷博客 - Systrace 线程 CPU 运行状态分析技巧 - Sleep 和 Uninterruptible Sleep 篇](https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-sleep/)
-- [Linux 内核 - TASK_UNINTERRUPTIBLE 定义](https://elixir.bootlin.com/linux/latest/ident/TASK_UNINTERRUPTIBLE)
+- [Perfetto：CPU Scheduling events](https://perfetto.dev/docs/data-sources/cpu-scheduling)
+- [Perfetto：用调度事件和调用栈分析阻塞](https://perfetto.dev/docs/case-studies/scheduling-blockages)
+- [Android 17 `ThreadStateTracker` 源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/common/thread_state_tracker.cc)
+- [Android 17 Ftrace Parser 源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/ftrace/ftrace_parser.cc)
+- [Android 17 `thread_state` 表定义](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/tables/sched_tables.py)
+- [Android 17 `sched.latency` 标准库](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/sched/latency.sql)
+- [Android 17 `sched.time_in_state` 标准库](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/sched/time_in_state.sql)
+- [Android 17 `FtraceConfig` 源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/ftrace/ftrace_config.proto)
+- [Android 17 / Linux 6.18 `TASK_*` 定义](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/sched.h)
+- [Android 17 / Linux 6.18 调度 Tracepoint 定义](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h)
+- [Android 17 / Linux 6.18 调度器主流程](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c)
+- [高爷：Android Perfetto 系列 9，CPU 信息解读](https://www.androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/)
+- [高爷：Systrace Runnable 分析](https://www.androidperformance.com/2022/01/21/android-systrace-cpu-state-runnable/)
+- [高爷：Systrace Running 分析](https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-running/)
+- [高爷：Systrace Sleep 与 Uninterruptible Sleep 分析](https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-sleep/)
