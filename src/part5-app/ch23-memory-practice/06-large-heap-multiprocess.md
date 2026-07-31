@@ -95,115 +95,196 @@ last_deepseek_cn_review_at: 2026-06-15
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
+> **版本基线**
+>
+> 本章的平台源码统一以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点；涉及 `/proc` 与虚拟地址空间时，内核侧以 `android17-6.18-2026-06_r6` 为基线。历史版本只用于说明兼容边界，最高版本为 Android 17。
+
 ## 为什么要了解大内存与多进程策略
 
 大内存策略解决的是两个不同层面的限制：Java Heap 的增长上限，以及进程虚拟地址空间的可用范围。前者决定单进程内 Java 对象能申请到多少空间，后者决定 32 位进程还能不能继续 `mmap` 线程栈、`.so`、`.dex`、Bitmap、图形缓冲或匿名内存。
 
-`android:largeHeap`、多进程和 64 位迁移经常被放在同一个讨论里，但它们的收益和代价不一样。`largeHeap` 扩大的是当前应用进程的 Dalvik / ART heap 增长上限；多进程把不同业务拆到多个 Linux 进程，各自拥有独立地址空间和运行时；64 位迁移把地址空间瓶颈从 32 位用户态的 GB 级抬到 TB 级。三者都可能降低 OOM 发生率，也都可能增加 PSS、启动耗时和维护成本。
+`android:largeHeap`、多进程和 64 位迁移作用在不同边界。`largeHeap` 扩展应用进程的 ART heap growth limit；多进程让组件拥有独立的地址空间和运行时，同时产生重复的进程级成本；64 位迁移扩大可用虚拟地址范围，也会改变指针和部分 native 数据结构的大小。任何一种手段都不能保证降低 PSS 或消除泄漏。
 
-实战里不要把它们当成“加内存开关”。先确认 OOM 类型，再决定手段：Java Heap OOM 优先回到 23.4 节处理对象和缓存；低内存杀进程优先看 4.4 节的 LMKD / oom_adj；32 位虚拟地址耗尽、线程栈过多、WebView / 图形 / Native 映射过大，才进入本篇的策略选择。
+先确认失败类型，再选择手段：Java Heap OOM 回到 23.4 节检查对象与缓存；低内存杀进程看 4.4 节的 LMKD 与进程优先级；`pthread_create`、`mmap` 或 linker 失败需要同时检查线程数、映射布局、ABI 和资源限制。WebView、Graphics 或 Native 指标上涨，也要先确认具体分配方。
+
+Android 17 还在部分设备上引入基于设备总 RAM 的 app memory limits，目标是限制极端泄漏和异常值。该机制适用于运行在 Android 17 上的应用，不受 `targetSdkVersion` 控制；是否启用以及限制状态需要从设备查询。`largeHeap` 或拆分进程都不能作为绕过系统内存约束的方案，退出识别与取证详见 23.9 节。
+
+[已验证: Android 17 behavior changes, https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits]
 
 ## largeHeap 的使用场景与代价
 
-`android:largeHeap="true"` 声明在 `<application>` 上。官方文档的定义是：应用进程会以 large Dalvik heap 创建；该属性作用于应用创建的所有进程，但只对某个进程里第一个加载的应用生效。官方也明确提示，大多数 App 不该依赖它，开启后也不保证可用内存固定增加，因为设备总内存仍然会限制结果。[已验证: 官方文档, developer.android.com/guide/topics/manifest/application-element#largeHeap]
+`android:largeHeap="true"` 声明在 `<application>` 上。官方文档定义了三个边界：它作用于该应用创建的所有进程；同一进程只采用第一个被加载应用的设置；共享 UID 且共享进程的应用必须保持一致。设备可以让 large memory class 与普通 memory class 相同，因此开启属性不保证增加固定容量。
 
-AOSP 的启动路径能解释这个属性的边界。`ActivityThread.handleBindApplication()` 在绑定应用时检查 `ApplicationInfo.FLAG_LARGE_HEAP`：命中后调用 `VMRuntime.getRuntime().clearGrowthLimit()`，否则调用 `clampGrowthLimit()`。`ActivityManager.getMemoryClass()` 读取 `dalvik.vm.heapgrowthlimit`，`getLargeMemoryClass()` 读取 `dalvik.vm.heapsize`。这说明 largeHeap 影响的是 ART heap 的 growth limit，不会让 Native heap、图形内存、线程栈或文件映射免费变小。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java; frameworks/base/core/java/android/app/ActivityManager.java]
+Android 17 的 `ActivityThread.handleBindApplication()` 检查 `ApplicationInfo.FLAG_LARGE_HEAP`：命中后调用 `VMRuntime.getRuntime().clearGrowthLimit()`，否则调用 `clampGrowthLimit()`。`ActivityManager.getMemoryClass()` 读取 `dalvik.vm.heapgrowthlimit`，`getLargeMemoryClass()` 读取 `dalvik.vm.heapsize`。这些路径只改变 ART heap 限制，不会降低 Native Heap、Graphics、线程栈或文件映射。
+
+[源码锚点: AOSP `android-17.0.0_r1`, `frameworks/base/core/java/android/app/ActivityThread.java`, `frameworks/base/core/java/android/app/ActivityManager.java`]
 
 适合打开 largeHeap 的场景很少，通常要同时满足三个条件：
 
 - 峰值来自短时 Java 对象或大数组，并且已经做过对象生命周期、缓存、Bitmap 和流式处理治理；如果主要增长来自 Native / Graphics / Stack，largeHeap 不会解决根因。
-- 业务有明确的高内存窗口，例如大图编辑、离线地图切片、短时间批处理导入、复杂文档解析；长期常驻缓存不应借 largeHeap 扩大。
+- 业务有明确的高内存窗口，例如大图编辑、离线地图切片、批处理导入或复杂文档解析；长期常驻缓存不应借 largeHeap 扩大。
 - 能按设备分层降级：低 RAM 设备、32 位进程、后台态或发热状态下，降低分辨率、批大小、并发数或缓存上限。
 
-运行时先读取设备给出的上限，再按比例设预算。下面这段代码只用于确认当前进程可用的 Java Heap 级别，不能当成“还能分配多少内存”的实时值。
+下面的函数读取设备提供的普通/large memory class、当前进程的 `Runtime.maxMemory()` 和 low-RAM 标记。这些值是制定策略的输入，不等于此刻还能成功分配的字节数。
 
 ```kotlin
-val am = context.getSystemService(ActivityManager::class.java)
-val appInfo = context.applicationInfo
-val heapClassMb = if ((appInfo.flags and ApplicationInfo.FLAG_LARGE_HEAP) != 0) {
-    am.largeMemoryClass
-} else {
-    am.memoryClass
-}
+data class HeapPolicyInputs(
+    val normalClassMb: Int,
+    val largeClassMb: Int,
+    val runtimeMaxBytes: Long,
+    val largeHeapEnabled: Boolean,
+    val lowRamDevice: Boolean
+)
 
-val javaCacheBudgetBytes = heapClassMb * 1024L * 1024L / 8L
+fun readHeapPolicyInputs(context: Context): HeapPolicyInputs {
+    val am = context.getSystemService(ActivityManager::class.java)
+    val largeHeapEnabled =
+        (context.applicationInfo.flags and ApplicationInfo.FLAG_LARGE_HEAP) != 0
+
+    return HeapPolicyInputs(
+        normalClassMb = am.memoryClass,
+        largeClassMb = am.largeMemoryClass,
+        runtimeMaxBytes = Runtime.getRuntime().maxMemory(),
+        largeHeapEnabled = largeHeapEnabled,
+        lowRamDevice = am.isLowRamDevice
+    )
+}
 ```
 
-这段预算把 Java 缓存控制在 heap class 的一小部分。比例要按业务压测调整：图片列表、播放器、地图和文档阅读器的缓存压力不同；后台进程还要主动收缩缓存，避免把前台进程推向低内存回收。
+缓存预算还要结合对象实测大小、并发峰值、重建成本、前后台状态和其他内存类型，不能由 memory class 乘一个通用比例得出。`Runtime.maxMemory()` 只描述当前 ART heap 上限；Native 与 Graphics 仍需单独测量。
 
 largeHeap 的代价主要有四类：
 
-- GC 停顿风险变高：heap 上限扩大后，存活对象集合也可能变大；对象图越大，标记和移动成本越高。详见 23.4 节。
+- GC 成本可能增加：largeHeap 本身不会创建对象；应用若用新增空间保留更多对象，标记、复制或压缩的工作量才会随 live set 增长。详见 23.4 节。
 - 系统回收压力增加：PSS 上升后，LMKD 在内存压力下更容易杀缓存进程或低优先级进程。详见 4.4 节。
 - 问题被延后暴露：泄漏、无界缓存和错误的批处理大小可能从“快速 OOM”变成“运行更久后卡顿或被杀”。
 - 多进程口径更复杂：该属性作用于应用创建的所有进程，但共享 UID 或同进程加载多个应用时存在一致性要求，不能只按单个组件理解。
 
-判断 largeHeap 是否有效，要看同一设备、同一场景、同一输入规模下的三组数据：Java Heap alloc / free、GC 次数与停顿、进程 PSS。只看 OOM 是否消失，容易把风险转移到系统内存压力上。[已验证: 官方文档, developer.android.com/reference/android/app/ActivityManager]
+判断 largeHeap 是否有效，要在同一设备、场景和输入下比较 Java Heap 存活量、分配与 GC、进程 PSS/RSS，以及 Android 17 的退出原因。只看 OOM 是否消失，可能把风险转移到系统内存压力上。
+
+[已验证: 官方文档, https://developer.android.com/guide/topics/manifest/application-element#largeHeap]
+[已验证: 官方文档, https://developer.android.com/reference/android/app/ActivityManager]
 
 ## 多进程内存隔离与共享
 
 Android 默认让同一应用的组件运行在同一进程和主线程。组件可以通过 manifest 的 `android:process` 放到其他进程；远程 Binder 调用进入服务进程后，由系统维护的 Binder 线程池执行，服务端方法必须按并发调用设计。[已验证: 官方文档, developer.android.com/guide/components/processes-and-threads]
 
-多进程的价值是隔离地址空间和故障域。大对象解析、WebView、地图、相机预览、图片编辑、插件运行时、短时批处理这类模块，放到子进程后可以在任务结束时退出整个进程，让 Java Heap、Native heap、线程栈、JIT 缓存、`.so` 映射和图形资源一起释放。对 32 位进程来说，这比在主进程里反复释放对象更干净，因为虚拟地址碎片也随进程退出消失。
+多进程的主要价值是隔离地址空间、组件生命周期与故障域。图片编辑、插件运行时或边界清楚的批处理服务放到独立进程后，系统回收该进程时会一并释放 Java Heap、Native Heap、线程栈、JIT cache 和映射。应用不能把“主动杀子进程”当作正常资源释放 API：Android 进程生命周期由系统根据活动组件和重要性管理，任务结束时应停止 Service、解除绑定并持久化结果，让组件状态准确反映进程是否仍有工作。
 
 多进程不会自动降低总内存。每个进程都会有独立的 ART 运行时、ClassLoader、线程、Binder 线程池、Native allocator 状态和业务缓存。`.so`、`.dex`、framework 代码页可以共享，脏页、Java 对象、线程栈和多数 Native 分配不能共享。官方文档对 PSS 的定义也说明了这一点：共享页按进程数量分摊，非共享页完整计入当前进程；RSS 统计更快，但会把共享页完整算进每个进程。[已验证: 官方文档, developer.android.com/topic/performance/memory-management]
 
 适合拆进程的模块通常有这些特征：
 
-- 峰值高且生命周期短：任务结束后能退出子进程，释放地址空间和脏页。
+- 峰值高且生命周期清楚：任务完成后没有继续存活的组件或绑定关系，系统可以把该进程转为 cached 并在需要时回收。
 - 故障影响大：Native crash、WebView renderer 异常、插件崩溃不应带走主进程。
 - 跨进程数据边界清晰：输入输出能压成文件路径、URI、句柄、任务 ID 或小型结果对象。
-- 启动链路可控：子进程冷启动、ClassLoader 初始化、Provider 初始化不会拖慢用户路径。
+- 启动链路可控：子进程冷启动、ClassLoader 初始化和在该进程运行的 ContentProvider 初始化已经纳入目标路径测量。
 
 不适合拆进程的模块也要明确：高频小调用、强共享内存状态、需要大量 Java 对象跨进程传输、每次都要同步 UI 状态的模块，拆出去后很容易把内存问题换成 Binder 成本、序列化成本和一致性问题。
 
-一个可执行的拆分模板是“主进程只保留调度和轻量状态，子进程承载高峰值任务”。子进程启动后按任务 ID 拉取输入，产物写入文件或数据库，主进程只接收结果摘要。大数组和大 Bitmap 不走 Binder；跨进程传输大数据时优先用文件、`ContentProvider`、`ParcelFileDescriptor` 或共享内存句柄，并给句柄生命周期做归属记录。[已验证: 官方文档, developer.android.com/guide/components/processes-and-threads]
+一个可执行的拆分模板是“主进程保留调度与轻量状态，独立进程处理边界明确的任务”。服务按任务 ID 读取输入，把产物写入文件或数据库，Binder 只返回状态与结果引用。Binder transaction buffer 当前是每个进程固定的 1 MB，并由该进程所有进行中的 transaction 共享；单次参数不大也可能在并发 transaction 下触发 `TransactionTooLargeException`。因此，大数组和 Bitmap 不应直接放进 Parcel。
+
+大数据可以通过 `ContentProvider`、`ParcelFileDescriptor`、文件或 `SharedMemory` 传递句柄，并明确关闭时机、访问权限与并发读写协议。句柄方案减少 Parcel payload，不代表数据没有内存和 I/O 成本。
+
+WebView 还要单独说明：从 Android 8.0（API 26）起，WebView 可以在多进程模式下使用沙箱化 renderer。把承载 WebView 的 Activity 再放入应用自定义进程，会增加一个应用进程，但不等于合并或替代 renderer。是否存在关联 renderer 可通过 `WebView.getWebViewRenderProcess()` 检查；测量时要区分宿主进程、renderer、GPU 与主进程。
+
+[已验证: 官方文档, https://developer.android.com/guide/components/processes-and-threads]
+[已验证: 官方文档, https://developer.android.com/guide/components/activities/process-lifecycle]
+[已验证: 官方文档, https://developer.android.com/reference/android/os/TransactionTooLargeException]
+[已验证: 官方文档, https://developer.android.com/reference/android/webkit/WebView]
 
 ## 进程内存预算管理
 
 预算要按“进程 × 内存类型 × 场景”拆开，不能只给 App 一个总数。主进程、WebView 进程、图片编辑进程、播放器进程的风险点不同：主进程怕常驻 PSS 和缓存；WebView 进程怕 renderer 峰值；图片编辑进程怕 Bitmap / Native / Graphics；播放器进程怕解码缓冲和 surface。
 
-线下先用 `dumpsys meminfo` 建立基线，再补 Java heap dump、Native heap、Perfetto memory counter 或线上采样。`dumpsys meminfo` 的用途是确认 PSS / private dirty / heap alloc 等指标的组成；它不是泄漏归因工具，归因仍要回到对象、分配栈、maps / smaps 和业务生命周期。
+线下先用 `dumpsys meminfo` 建立基线，再补 Java heap dump、Native heap、Perfetto memory counter 或线上采样。`dumpsys meminfo` 用于查看 PSS、private dirty、Java/Native heap 等分类；泄漏归因仍要回到对象引用、分配栈、`maps` / `smaps` 和业务生命周期。
+
+下面三条命令分别查看主进程总账、指定子进程总账和内核的 `smaps_rollup` 汇总。第三条通常需要 root、userdebug 环境或设备允许相应的 `/proc` 访问，普通量产设备上出现 `Permission denied` 不代表进程没有该映射。
 
 ```bash
 adb shell dumpsys meminfo com.example.app
 adb shell dumpsys meminfo com.example.app:editor
-adb shell cat /proc/$(adb shell pidof com.example.app:editor)/smaps_rollup
+editor_pid="$(adb shell pidof com.example.app:editor | tr -d '\r')"
+adb shell su 0 cat "/proc/${editor_pid}/smaps_rollup"
 ```
 
-这三条命令对应三个问题：主进程总账、子进程总账、指定进程的内核口径汇总。多进程场景下不要只看主进程，否则会漏掉子进程把系统内存推高的情况。
+`dumpsys meminfo` 的各列和 `/proc` 的 RSS/PSS 口径不能直接混成一条时间序列。固定设备、版本、场景和采样工具后再比较；多进程应用还要把应用进程、WebView renderer 和相关 GPU 开销分开记录。
 
-推荐把预算表写进发布检查，而不是停留在经验判断。
+预算值应来自目标设备上的实测峰值和可接受的降级结果。下表给出各进程需要记录的输入、退出条件和降级动作，不给跨设备通用比例。
 
-| 进程 | Java Heap 预算 | Native / Graphics 预算 | 退出策略 | 触发降级 |
-| --- | --- | --- | --- | --- |
-| 主进程 | 按 `memoryClass` 的固定比例给缓存 | 监控 Native heap 与 EGL / Graphic PSS | 不退出，只收缩缓存 | `onTrimMemory()`、后台、低 RAM |
-| 图片编辑进程 | 按输入尺寸和图层数计算上限 | Bitmap / HardwareBuffer / 解码缓存单独计数 | 任务完成后退出或空闲超时退出 | 分辨率降级、分块处理 |
-| WebView 进程 | 限制页面缓存和 JS bridge 对象 | renderer PSS、GPU 内存、磁盘缓存分开看 | 页面关闭后延迟回收 | 低端机禁用预热、减少并发页面 |
-| 批处理进程 | 按批大小线性估算 | 文件 mmap、Native buffer 单独计数 | 每批结束释放，异常时杀进程重试 | 缩小批大小、暂停后台任务 |
+| 对象 | 需要单独测量 | 生命周期控制 | 超出预算后的动作 |
+| --- | --- | --- | --- |
+| 主进程 | Java 缓存的实测 payload；Native、Graphics 与线程栈分别计数 | UI 隐藏或进入后台时释放可重建资源 | 缩小缓存、停止预取、降低后台并发 |
+| 图片任务进程 | 输入尺寸、图层数、解码副本、Bitmap / HardwareBuffer | 任务完成后停止 Service、解除绑定并关闭句柄 | 降低分辨率、分块处理、限制并发任务 |
+| WebView 宿主与 renderer | 页面数量、JS bridge 持有对象、renderer PSS、GPU 使用 | 页面销毁时移除引用；用 renderer 回调识别退出 | 禁用不必要的预热、减少并发页面、简化页面资源 |
+| 批处理进程 | 单批对象、文件映射、Native buffer 和序列化副本 | 每批关闭流与描述符；无任务时停止组件 | 缩小批大小、暂停后台任务、按任务 ID 幂等重试 |
 
-预算的触发点要接系统信号。在本节适用范围内，Android 14-16（API 34-36）的 `onTrimMemory()` 实现应聚焦 `TRIM_MEMORY_UI_HIDDEN` 与 `TRIM_MEMORY_BACKGROUND`；`TRIM_MEMORY_RUNNING_LOW`、`TRIM_MEMORY_RUNNING_MODERATE`、`TRIM_MEMORY_RUNNING_CRITICAL`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 从 API 34 起不再投递，并在 API 35 被废弃。Android 13 及以下兼容代码可以保留旧等级分支。低 RAM 设备通过 `ActivityManager.isLowRamDevice()` 单独配置预算，不能沿用高端机阈值。[已验证: 官方文档, developer.android.com/topic/performance/memory; developer.android.com/reference/android/content/ComponentCallbacks2; AOSP android-16.0.0_r1, frameworks/base/core/java/android/content/ComponentCallbacks2.java]
+### 用进程状态信号释放可重建资源
 
-线程栈也要进入虚拟内存预算。ART 在 `Thread::CreateNativeThread()` 路径里会修正线程栈大小，并通过 `pthread_attr_setstacksize()` 传给 `pthread_create()`；参考书把“线程数量 × 栈空间”作为 32 位虚拟内存压力来源，是一个适合落到治理清单里的观察点。工程上优先收敛线程池和野线程，谨慎改线程栈大小；栈缩小后要覆盖递归、JNI、复杂解析和三方库调用，避免把 OOM 变成 StackOverflowError 或 native crash。[已验证: AOSP android-16.0.0_r1, art/runtime/thread.cc]
+Android 17 的 `onTrimMemory()` 实现应聚焦 `TRIM_MEMORY_UI_HIDDEN` 与 `TRIM_MEMORY_BACKGROUND`。从 Android 14（API 34）开始，系统不再投递 `TRIM_MEMORY_RUNNING_*`、`TRIM_MEMORY_MODERATE` 和 `TRIM_MEMORY_COMPLETE`；这些常量在 Android 15（API 35）正式废弃。前两个信号描述 UI 可见性和进程进入后台 LRU 的状态，不是连续的系统内存压力刻度。低 RAM 设备还要通过 `ActivityManager.isLowRamDevice()` 单独选择资源规格。
+
+下面的回调只释放可重建资源。`releaseUiOnlyResources()` 不应清掉仍在播放、导航或前台服务使用的数据，`releaseRebuildableCaches()` 也不应关闭仍被活跃任务占用的资源。
+
+```kotlin
+override fun onTrimMemory(level: Int) {
+    if (level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
+        releaseRebuildableCaches()
+    }
+    if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
+        releaseUiOnlyResources()
+    }
+}
+```
+
+使用 `>=` 可以容纳未来插入的中间等级。`BACKGROUND` 的数值更高，此时两个分支都会执行，因此两个释放函数需要职责分离并保持幂等。Android 13 及以下的兼容实现可以保留旧等级逻辑，但不要期待这些等级在 Android 17 上出现。
+
+[已验证: Android Developers “Manage your app's memory”; `ComponentCallbacks2`; AOSP `android-17.0.0_r1`, `frameworks/base/core/java/android/content/ComponentCallbacks2.java`]
+
+### 把线程数纳入虚拟地址预算
+
+线程栈既占虚拟地址，也可能按实际触页量进入 RSS/PSS。Android 17 ART 的 `Thread::CreateNativeThread()` 会先调用 `FixStackSize()`：默认请求会换成运行时默认值，随后加入兼容空间、栈溢出保护区，满足 `PTHREAD_STACK_MIN`，并向上对齐到页大小；修正后的值再交给 `pthread_attr_setstacksize()` 和 `pthread_create()`。因此，代码传入的 stack size 不等于最终映射大小。
+
+工程治理应先限制线程来源和最大并发：复用有界线程池，关闭不再使用的 executor，排查每个 SDK 的常驻线程。自行缩小栈只适用于调用深度可控且已经覆盖递归、JNI、复杂解析与第三方库路径的场景，否则可能把线程创建失败换成 `StackOverflowError` 或 native crash。
+
+[源码锚点: AOSP `android-17.0.0_r1`, `art/runtime/thread.cc`, `FixStackSize()` 与 `Thread::CreateNativeThread()`]
+
+### 验证 Android 17 App Memory Limits
+
+Android 17 的 App Memory Limits 只在部分设备启用，限制取决于设备总 RAM，并区分 visible 与 non-visible 进程。它与 ART 的 `memoryClass`、`largeHeap` 和 LMKD 不是同一个限制。发生命中时，可从 `ApplicationExitInfo` 看到 `REASON_OTHER`，且 `getDescription()` 包含 `MemoryLimiter:AnonSwap`。
+
+下面的命令用于测试启用了该功能的 Android 17 设备。运行前需要把 `TEST_LIMIT_MB` 设置为测试方案选择的整数 MB；该值是故障注入条件，不是线上预算。
+
+```bash
+target_pid="$(adb shell pidof com.example.app:editor | tr -d '\r')"
+test_limit_mb="${TEST_LIMIT_MB:?export TEST_LIMIT_MB to an integer MB value}"
+adb shell am memory-limiter status
+adb shell am memory-limiter manual "$target_pid" "$test_limit_mb"
+adb shell am memory-limiter manual "$target_pid" none
+```
+
+`status` 只查询当前状态；`manual` 会修改指定 PID 的测试限制，`none` 移除手动值并恢复系统默认限制（如果设备有默认值）。这些命令在未启用 Memory Limiter 的设备上没有效果。不要用 `max` 或 `ignore all` 掩盖测试失败；完整的退出取证流程见 23.9 节。
+
+[已验证: Android 17 behavior changes for all apps, “App memory limits”]
 
 ## 64 位迁移与内存空间扩展
 
-多进程和预算管理解决的是“怎么分”的问题，64 位迁移解决的是“地址空间够不够”的问题——两者常常需要一起评估。
+多进程改变分配所属的进程，64 位迁移扩大单进程可用的虚拟地址范围，两者需要分别判断。
 
-64 位迁移对内存策略有两层影响。第一层是兼容要求：Google Play 要求发布的 App 支持 64 位架构；如果 App 或 SDK 包含 C/C++ native code，就要检查 APK / AAB 里的 ABI 目录，为每个支持的 32 位 ABI 提供对应 64 位 ABI，例如 `armeabi-v7a` 对应 `arm64-v8a`，`x86` 对应 `x86_64`。[已验证: 官方文档, developer.android.com/google/play/requirements/64-bit]
+Google Play 的 64 位要求针对包含 native code 的应用。若继续分发某个 32 位 ABI，应为对应架构提供可工作的 64 位版本，例如 `armeabi-v7a` 对应 `arm64-v8a`、`x86` 对应 `x86_64`；也可以在设备兼容性与分发策略允许时只提供 64 位 ABI。纯 Java / Kotlin 应用及其纯 Java / Kotlin 依赖无需添加 native 库，就能运行在 64 位设备上。
 
-第二层是地址空间：64 位进程能显著降低 32 位虚拟地址耗尽导致的 mmap 失败。线程多、`.so` 多、`.dex` / `.oat` 映射多、WebView / 图形 / Native buffer 多的 App，在 32 位进程里可能还没耗尽物理内存就先耗尽连续虚拟地址；64 位迁移后，这类失败会少很多。
+线程、`.so`、`.dex` / `.oat`、WebView、图形资源和 Native buffer 都要占用虚拟地址。32 位进程可能在物理内存尚未耗尽时因为地址空间不足或找不到合适的连续区间而让 `mmap`、linker 或 `pthread_create` 失败。64 位进程显著放宽这一限制，但不增加设备物理 RAM，也不改变系统对应用施加的内存限制。
 
-64 位不是免费扩容。指针宽度增加会放大部分对象、表结构和 Native 数据结构；`.so` 体积、冷启动 I/O、指令缓存和内存局部性也可能变化。只用 Java / Kotlin 的 App 通常已经能在 64 位设备上运行；包含 native code 的 App 要把 ABI、三方 SDK、插件、热修复、`.so` 加载路径、崩溃符号表和性能基线一起迁移。
+指针变宽会增加部分 Native 对象、表结构和容器节点的体积；二进制大小、冷启动 I/O、指令缓存和局部性也可能改变。JNI 代码不能把指针存入 `int` 或 `jint`，需要使用 `uintptr_t`、`intptr_t` 或与指针宽度匹配的字段。ABI 迁移还要覆盖第三方 SDK、插件、热修复、动态加载路径、符号文件和 Native 崩溃回溯。
 
 迁移检查按这条顺序做：
 
-- 包产物检查：AAB / APK 中是否包含 `lib/arm64-v8a`；如果还保留 `armeabi-v7a`，两边 `.so` 集合要能对应业务功能。
-- 运行时检查：启动日志、`Build.SUPPORTED_ABIS`、native loader、插件 `.so` 搜索路径和灰度开关要能区分 32 / 64 位。
+- 包产物检查：用 APK Analyzer 或解包结果核对 ABI；每个要支持的 64 位环境都不能依赖仅有 32 位版本的 `.so`。
+- 运行时检查：用 `Process.is64Bit()` 确认当前进程位数；`Build.SUPPORTED_ABIS` 表示设备支持的 ABI 顺序，不能单独证明当前进程是 64 位。
+- 代码检查：排查指针截断、结构体布局、序列化格式、汇编、编译参数和按 ABI 选择资源的逻辑。
 - 性能检查：同设备对比启动耗时、PSS、Native heap、Graphics、线程数、page fault 和崩溃率。
-- 兜底检查：老设备、只支持 32 位的三方 SDK、厂商 ROM、WebView / Chromium 版本差异要保留降级路径。
+- 设备检查：至少覆盖 64 位进程、仍需支持的 32 位设备和 64 位-only 环境；后者最容易暴露遗漏的 32 位-only 依赖。
 
-对内存优化来说，优先级可以这样排：32 位虚拟地址 OOM 或 `pthread_create` / `mmap` 失败高发，优先推动 64 位和线程治理；单进程 Java Heap OOM 高发，优先处理对象生命周期、缓存和 largeHeap 边界；主进程常驻 PSS 高，优先拆预算和清理常驻资源；高峰值短任务高，优先评估子进程隔离。
+[已验证: Android Developers “Support 64-bit architectures”; Android `Process.is64Bit()` API]
 
 ## 实战决策表
 
@@ -211,69 +292,35 @@ adb shell cat /proc/$(adb shell pidof com.example.app:editor)/smaps_rollup
 | --- | --- | --- | --- |
 | Java Heap OOM，GC 后仍无法分配对象 | `java.lang.OutOfMemoryError`、heap dump、`getMemoryClass()` | 回到 23.4 节治理对象和缓存；短时峰值可评估 largeHeap | 直接拆进程但不改对象生命周期 |
 | `pthread_create` 失败或 maps 地址空间碎片严重 | 线程数、`/proc/<pid>/maps`、32 / 64 位状态 | 收敛线程池、减少常驻线程、推动 64 位 | 全局缩小线程栈且不做压测 |
-| WebView / 图片编辑导致主进程峰值过高 | 子模块 PSS、Native / Graphics、任务生命周期 | 拆子进程，任务完成后释放或退出 | 把 largeHeap 当 WebView 内存方案 |
-| 后台被系统杀 | oom_adj、PSS、后台任务、缓存大小 | 降低后台缓存，响应 `onTrimMemory()`，减少后台并发 | 提高 heap 上限或保活 |
+| WebView / 图片编辑导致主进程峰值过高 | 宿主进程、renderer、Native / Graphics、任务生命周期 | 边界清楚时拆进程；停止已完成任务的组件并关闭资源 | 把 largeHeap 当作 WebView 或 Graphics 内存方案 |
+| 后台发生 LMK | Android Vitals、进程重要性、PSS、后台任务和缓存 | 响应状态回调，降低可重建缓存与后台并发，缩短组件活跃时间 | 提高 heap 上限或用常驻组件保活 |
+| Android 17 Memory Limiter 命中 | `ApplicationExitInfo` 的 reason 与 description、limiter status | 定位匿名内存或 swap 异常增长，在目标设备复现并修复 | 用 `ignore all` 或 `max` 作为发布方案 |
 | 低端机运行不稳 | `isLowRamDevice()`、ABI、RAM、zRAM、LMKD 日志 | 降级分辨率、批大小、缓存和并发数 | 沿用高端机预算 |
-
-## 附：mSponge 黑科技源码级边界（android-17.0.0_r1）
-
-本书多次提及的字节 mSponge 黑科技，核心是在 Android 17 ART Heap::num_bytes_allocated_（Atomic<size_t>）字段下 Hook。通过 ELF .symtab 定位符号 _ZN3art2gc5Heap19num_bytes_allocated_E，mprotect 修改页权限，在每次 LargeObjectMapSpace::Alloc 后对 num_bytes_allocated_.fetch_sub(allocation_size)，使 LOS 分配不计入 GC 触发统计，从而突破 LargeObjectSpace 总容量上限。
-
-**源码机制**：
-- art/runtime/gc/heap.h：Atomic<size_t> num_bytes_allocated_; 是 GC 触发唯一权威源（行 1535）
-- art/runtime/gc/heap.cc：UpdateAndReportBytesAllocated → AddBytesAllocated 把 LOS 字节汇入总计数（行 4975–4982）
-- art/runtime/gc/space/large_object_space.cc：LargeObjectMapSpace::Alloc 同时更新 LOS 自身计数和返回 *bytes_allocated（行 138–177）
-
-**可行性边界**：
-1. **安全性**：Android 13+ ART runtime 对 libart.so bss 段完整性校验会使 mprotect 修改触发 tampering 检测
-2. **副作用**：Heap::CalculateGcWeightedAllocatedBytes 基于偏小值计算权重，导致后台 GC 调度异常
-3. **收益窗口**：在 64 位进程时代，突破 32 位进程 512MB 限制的工程意义已大幅收窄
-
-**与大内存策略关联**：mSponge 的"突破"实际是绕过 GC 触发阈值，本质仍是单一进程内打满内存。在 §23.6 实战决策表中，LargeObject OOM 情景应当优先评估：① 原因（Image 大小异常？Glide/WebView/Media 编码器占压？）② 减少对象生命周期加载或拆进程，而非依赖 mSponge 规避风险。因为 mSponge 虽能"绕过"统计，但硬件内存压力终会传导到进程本身 OOM 和 LMKD 回收。
-
-<!-- AIW-源码调研-2026-07-05 -->
-
-<!-- AIW-源码调研-2026-07-06：HeapTask 并发与 GC 抑制源码级机制 -->
-
-## 附 2：HeapTask 调度与 GC 抑制护栏（android-17.0.0_r1）
-
-承接 mSponge 黑科技边界分析，本节向上溯源到 HeapTask 调度层，把"为什么 fetch_sub 一下 num_bytes_allocated_ 就能抑制 GC"在源码上闭环。ART 的并发 GC 调度统一收敛到 `Heap::RequestConcurrentGC()` 一个入口，6 个 `HeapTask` 子类共用同一按 `target_run_time` 排序的 `std::multiset`（`art/runtime/gc/task_processor.h:33-46`、`task_processor.cc:41-46`）。
-
-### 6 种 HeapTask 子类
-
-源码锚点 `art/runtime/gc/heap.cc`：
-
-| 子类 | 行号 | 触发源 | 是否自递归 |
-|---|---|---|---|
-| `ConcurrentGCTask` | 4113 | `RequestConcurrentGC`，`num_bytes_allocated_ >= concurrent_start_bytes_` 触发 | ✅ 在 `continuous_gc_mode_` 下递归 + 1ms `usleep` 节流 |
-| `CollectorTransitionTask` | 4211 | `RequestCollectorTransition`，前后台 collector 切换 | ❌ |
-| `HeapTrimTask` | 4259 | `RequestTrim`，`onTrimMemory` 回调 | ❌ |
-| `TimeBasedGcThresholdCheckTask` | 4385 | `RequestTimeBasedGcThresholdCheck`，每 ≥10ms 节流重排 | ✅ 每次 Run 末尾再 AddTask |
-| `TriggerPostForkCCGcTask` | 5050 | `PostForkChildAction`，zygote fork 后 | ❌ |
-| `ReduceTargetFootprintTask` | 5069 | `PostForkChildAction`，延迟 shrink | ❌ |
-
-`TimeBasedGcThresholdCheck` 在 Android 17 引入 `time_based_gc_triggering_via_integral` 累积量分支（heap.cc:4436-4440），替代旧版"字节×时间"乘法避免溢出，并通过 `pending_time_based_gc_threshold_check_` 指针 + `UpdateTargetRunTime` 复用同一 task 对象，**不产生新 HeapTask**——这是 mSponge 不直接命中、但生产环境最常见的 GC 节流机制。
-
-### 三层 GC 抑制护栏
-
-| 护栏 | 源码位置 | 作用 | mSponge 是否影响 |
-|---|---|---|---|
-| `CanAddHeapTask()` | heap.cc:4137-4143 | 守 Runtime 生命周期（未启动/已关闭/栈溢出） | ❌ 无关 |
-| `pending_*` + `UpdateTargetRunTime` | heap.cc:4222-4240、4398-4416 | 复用同一 HeapTask 对象，不新增 | ❌ 无关 |
-| `max_gc_requested_.compare_exchange_weak` | heap.cc:4148-4173 | 序列号守门防 ConcurrentGCTask 递归风暴 | ❌ 无关 |
-
-关键发现：**mSponge 的 fetch_sub 不影响任何一条护栏**。它绕过的是护栏之上的"是否要触发 GC"判断——`concurrent_start_bytes_`（heap.h:1518-1525）就是用 `num_bytes_allocated_` 与阈值比较的，LOS 字节被人为压低后永远不达阈，于是 RequestConcurrentGC 根本不被调用，三层护栏都用不上。
-
-### 与 §23.6 决策表的关联
-
-对实战决策表的语义补强：
-
-- **拆进程** vs **mSponge**：拆进程走 `ActivityManager` fork 路径，每次 fork 触发 `PostForkChildAction`（heap.cc:5118-5163），自动重置 `time_based_gc_threshold_ = 0` 并按 `kPostForkMaxHeapDurationMS`（源码实测默认）排定 `ReduceTargetFootprintTask` 与 `TriggerPostForkCCGcTask` 双守护。这是 Android 17 给的"安全大内存路径"，**优先于** mSponge 类的 fetch_sub 绕过方案。
-- **largeHeap 评估**：本质仍是调整 `concurrent_start_bytes_` 与 `target_footprint_`（heap.h:1518-1525），调用 `SetDefaultConcurrentStartBytesLocked` 重算阈值（heap.cc:5084）。若同时启用 mSponge，largeHeap 阈值被 fetch_sub 进一步压低，反而误导后续 GC 调度。
-- **native GC 触发**：heap.cc:4587 的 `kGcCauseForNativeAlloc` 路径用 `force_full=true` 入队，**绕过 mSponge 干扰**——这是 mSponge 在 Android 17 收益收窄的另一原因：native 路径直接 full GC。
-
-
 
 ## 小结
 
-大内存策略的安全顺序是：先定位 OOM 类型，再缩小对象和线程的常驻面，随后用多进程隔离高峰值任务，再评估 largeHeap。64 位迁移适合解决地址空间瓶颈，但不能替代预算管理。每一种方案都要用 PSS、Java Heap、Native / Graphics、线程数、GC 停顿和 LMKD 结果复测，避免把一个进程里的 OOM 转移成整机内存压力。
+`largeHeap`、多进程和 64 位分别改变 ART heap 上限、地址空间归属和虚拟地址范围。选型前要区分 Java Heap OOM、Native / Graphics 增长、线程或映射失败、LMK 与 Android 17 Memory Limiter 命中。
+
+预算必须落实到每个进程、每种内存和具体场景。高峰任务只有在生命周期与 IPC 边界清楚时才适合拆进程；任务结束后停止组件并关闭资源，进程何时被回收仍由系统决定。64 位能缓解地址空间不足，不能增加物理内存或代替泄漏治理。所有方案都要在同一设备和输入下复测 Java Heap、Native / Graphics、PSS、线程、GC、退出原因与用户可见性能。
+
+## 参考资料
+
+- [Android 17：App memory limits](https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits)
+- [`<application android:largeHeap>`](https://developer.android.com/guide/topics/manifest/application-element#largeHeap)
+- [`ActivityManager`：memory class API](https://developer.android.com/reference/android/app/ActivityManager)
+- [Processes and threads overview](https://developer.android.com/guide/components/processes-and-threads)
+- [Processes and app lifecycle](https://developer.android.com/guide/components/activities/process-lifecycle)
+- [`TransactionTooLargeException`](https://developer.android.com/reference/android/os/TransactionTooLargeException)
+- [`WebView` renderer process API](https://developer.android.com/reference/android/webkit/WebView)
+- [`WebViewRenderProcess`](https://developer.android.com/reference/android/webkit/WebViewRenderProcess)
+- [Manage your app's memory](https://developer.android.com/topic/performance/memory)
+- [`ComponentCallbacks2`](https://developer.android.com/reference/android/content/ComponentCallbacks2)
+- [Support 64-bit architectures](https://developer.android.com/google/play/requirements/64-bit)
+- [AOSP `ActivityThread.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [AOSP `ActivityManager.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityManager.java)
+- [AOSP `ComponentCallbacks2.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/ComponentCallbacks2.java)
+- [AOSP ART `thread.cc` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/thread.cc)
+- 结构参考：`Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md`
+- 结构参考：`Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md`
+- 结构参考：`Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md`
+- 结构参考：`Clippings/Android 性能优化 - 原理：重新认识内存.md`
