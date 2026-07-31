@@ -1,6 +1,8 @@
 ---
 title: "Android 17 HWUI Vulkan 多队列并行渲染与帧边界管理"
 chapter: "18.26"
+section: "18.26"
+section_title: "Android 17 HWUI Vulkan 多队列并行渲染与帧边界管理"
 status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [vulkan, hwui, rendering, gpu, multi-queue, frame-boundary, android17]
@@ -8,16 +10,79 @@ related_chapters: ["2.10", "2.14", "18.9", "18.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-27"
 drafted_date: "2026-06-27"
-last_verified: "2026-06-27"
-last_verified_against: "AOSP android-17.0.0_r1"
+last_verified: "2026-07-31"
+last_verified_against: "AOSP android-17.0.0_r1 / android-14.0.0_r1 至 android-16.0.0_r1 历史标签 / Writer rendering_pipelines S01、S02 / Vulkan 规范 / android17-6.18-2026-06_r6"
 confidence: high
 sources:
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md"
+    role: "标准 App Window 从应用生产 buffer 到 SurfaceFlinger、HWC 和 present 的公共基线"
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S02_aosp_standard_type.md"
+    role: "Choreographer、UI Thread、RenderThread、BufferQueue 与 FrameTimeline 的标准 HWUI 路径"
   - type: aosp
-    path: "frameworks/base/libs/hwui/renderthread/VulkanManager.cpp (android-17.0.0_r1)"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp"
+    role: "VkDevice、双 graphics queue、Skia context、global priority、frame boundary 与 sync-fd 导入导出"
   - type: aosp
-    path: "frameworks/base/libs/hwui/renderthread/VulkanManager.h (android-17.0.0_r1)"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.h"
+    role: "VulkanManager 对象边界、queue 字段、Vulkan 1.1 上限与 AGI 私有扩展说明"
   - type: aosp
-    path: "frameworks/base/libs/hwui/renderthread/RenderThread.cpp (android-17.0.0_r1)"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/HardwareBitmapUploader.cpp"
+    role: "GL/Vulkan hardware bitmap 上传、GrallocUploadThread、CPU 同步等待与 60 秒闲置回收"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/hwui/Bitmap.cpp"
+    role: "allocateHardwareBitmap 的内容复制语义"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp"
+    role: "窗口 dequeue、draw、finishFrame 与 swapBuffers 的调用顺序"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/VulkanSurface.cpp"
+    role: "ANativeWindow buffer、dequeue fence、buffer age、surface damage 与 queueBuffer"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp"
+    role: "FrameTimeline 元数据、damage history、dequeue/queue duration 与帧完成时间"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/Properties.cpp"
+    role: "partial update、buffer age、render pipeline 与 context priority 的属性入口"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/VkFunctorDrawable.cpp"
+    role: "WebView Vulkan functor 在 RenderThread 上的私有互操作边界"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/Surface.cpp"
+    role: "ANativeWindow dequeueBuffer、queueBuffer 与 fence fd 传递"
+  - type: aosp-history
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp"
+    role: "Android 14 双 graphics queue 与 global priority 基线"
+  - type: aosp-history
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp"
+    role: "Android 15 对照"
+  - type: aosp-history
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp"
+    role: "Android 16 frame-boundary 与 global-priority query 对照"
+  - type: specification
+    path: "https://registry.khronos.org/vulkan/specs/latest/man/html/VkFrameBoundaryEXT.html"
+    role: "VK_EXT_frame_boundary 的 submission annotation 语义"
+  - type: specification
+    path: "https://registry.khronos.org/vulkan/specs/latest/man/html/VkDeviceQueueCreateInfo.html"
+    role: "同一 queue family 创建多条 VkQueue 的规范字段"
+  - type: official
+    path: "https://perfetto.dev/docs/data-sources/gpu"
+    role: "GPU counter 与 render stage 数据源"
+  - type: official
+    path: "https://perfetto.dev/docs/data-sources/frametimeline"
+    role: "FrameTimeline expected/actual 时间线与 jank 分类"
+  - type: official
+    path: "https://developer.android.com/agi/frame-trace/frame-profiler"
+    role: "AGI 单帧 Vulkan/GL 调用、资源和 pipeline state 分析"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c"
+    role: "Android 17 内核 dma_fence 状态、回调与等待基线"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c"
+    role: "sync_file fd 对 dma_fence 的封装与用户空间边界"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c"
+    role: "RenderThread 与上传线程的 CPU 调度基线；不定义 Vulkan queue 的 GPU 执行顺序"
 gap_source: "研究素材/AOSP结构"
 gap_score:
   素材丰富度: 5
@@ -38,9 +103,9 @@ Android 17 的 HWUI Vulkan 后端会从同一个 graphics queue family 取得两
 ## 复核基线
 
 | 层级 | 本文基线 | 负责内容 |
-|---|---|---|
+| --- | --- | --- |
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | HWUI、VulkanManager、SkiaVulkanPipeline、ANativeWindow、FrameTimeline |
-| Android 内核 | `android17-6.18-2026-06_r6` | 调度、GPU 驱动执行、dma-buf、sync fence；没有 `VulkanManager` 或 Skia 逻辑 |
+| Android 内核 | `android17-6.18-2026-06_r6` | CPU 线程调度、dma-buf、dma-fence 与 sync_file；厂商 GPU 调度仍由具体驱动实现，没有 `VulkanManager` 或 Skia 逻辑 |
 | 历史对照 | `android-14.0.0_r1`、`android-15.0.0_r1`、`android-16.0.0_r1` | 判断双 queue 与 frame-boundary 代码何时已出现 |
 
 正文讨论 HWUI 选择 `SkiaVulkan` 的进程。应用自己创建的 Vulkan device/queue、SurfaceFlinger 的 RenderEngine Vulkan 上下文，以及厂商 GPU 服务不属于这个 `VulkanManager` 实例。
@@ -52,16 +117,22 @@ Android 17 的 HWUI Vulkan 后端会从同一个 graphics queue family 取得两
 ```mermaid
 flowchart LR
     UI["UI 线程录制 RenderNode display list"] --> RT["RenderThread / SkiaVulkanPipeline"]
-    RT --> Q0["VkQueue 0: mGraphicsQueue"]
     DEC["Bitmap decode / createBitmap"] --> UP["GrallocUploadThread / VkUploader"]
-    UP --> Q1["VkQueue 1: mAHBUploadQueue"]
-    Q0 --> DEV["同一个 VkDevice / graphics queue family"]
-    Q1 --> DEV
-    DEV --> WIN["App Window AHardwareBuffer"]
+    subgraph DEV["同一个 VkDevice / graphics queue family"]
+        Q0["VkQueue 0: mGraphicsQueue"]
+        Q1["VkQueue 1: mAHBUploadQueue"]
+    end
+    RT --> Q0
+    UP --> Q1
+    Q1 --> HBM["Hardware Bitmap AHardwareBuffer"]
+    HBM --> TEX["供后续窗口帧作为纹理采样"]
+    Q0 --> WIN["App Window AHardwareBuffer"]
     WIN --> BQ["ANativeWindow queueBuffer + producer completion fence"]
     BQ --> SF["SurfaceFlinger latch / composition"]
     SF --> HWC["HWC / RenderEngine / present"]
 ```
+
+这张图沿用 `rendering_pipelines/S01`、`S02` 的标准 App Window 基线：应用进程生产窗口 buffer，SurfaceFlinger 负责 latch 和合成决策，HWC/显示设备完成 present。本章只把应用进程内的 HWUI Vulkan 部分展开到两条 queue；它没有改变后半段的 BufferQueue、SurfaceFlinger 与显示路径。
 
 queue 1 只负责把 CPU 侧 bitmap 像素复制进新分配的 AHardwareBuffer；窗口帧仍由 queue 0 生成。上传完成的 hardware bitmap 后续可以被 queue 0 采样，但两条 queue 不会共同 present 同一个 App Window 帧。
 
@@ -213,7 +284,7 @@ FrameTimeline 的 `vsyncId` 走另一条路径。`CanvasContext::draw()` 取得 
 两类 ID 的差异如下：
 
 | 对象 | 生成位置 | 主要消费者 | 是否直接表示 expected present |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Vulkan `currentFrameID` | HWUI `VulkanManager::finishFrame()` 的进程内计数器 | Skia、Vulkan 工具、AGI capture | 否 |
 | FrameTimeline `vsyncId` | Choreographer / 平台帧时间线传入 HWUI | ANativeWindow、SurfaceFlinger、Perfetto FrameTimeline | 是 |
 | BufferQueue frame number | Producer queue 次序 | BLAST、SurfaceFlinger、transaction/trace | 不单独表示 |
@@ -256,7 +327,7 @@ queue 0 绘制结束时，`finishFrame()` 创建可导出 sync-fd 的 semaphore�
 
 这个 fd 在 BufferQueue 消费侧成为当前 buffer 的 acquire fence：SurfaceFlinger 可以接收 buffer 元数据，但必须尊重 fence，等待 GPU 写完后再安全读取。`presentCurrentBuffer()` 这个函数名容易让人误会；源码行为是 queue buffer，不是屏幕 present。
 
-如果导出 semaphore 失败，`finishFrame()` 会用 `mQueueWaitIdle(mGraphicsQueue)` 做保守兜底。正常路径不需要 RenderThread 在 CPU 上等待整帧 GPU 完成。
+创建可导出 semaphore 失败、导致 `sharedSemaphore` 为空时，`finishFrame()` 会用 `mQueueWaitIdle(mGraphicsQueue)` 做保守兜底。`vkGetSemaphoreFdKHR()` 在成功提交后单独失败时，Android 17 源码只记录错误并返回无效 fd，不能把这两类失败写成同一条 fallback。正常路径不需要 RenderThread 在 CPU 上等待整帧 GPU 完成。
 
 下面的时序图用于检查 fence 方向。
 
@@ -305,7 +376,7 @@ HWUI 会把 buffer age 与 swap history 结合，扩大本次需要恢复的 dam
 两种后端的可观察差异应这样描述：
 
 | 维度 | SkiaVulkan | SkiaGL |
-|---|---|---|
+| --- | --- | --- |
 | HWUI 明确管理的提交对象 | 同一 VkDevice 上两条 graphics `VkQueue` | RenderThread 与 uploader 各自的 EGL/GL context；驱动内部 queue 拓扑不可由 GL API直接得知 |
 | AHB 上传完成等待 | UploadThread `GrSyncCpu::kYes` | UploadThread `eglClientWaitSyncKHR()` |
 | 窗口完成 fence | Vulkan semaphore 导出 sync fd | EGL/GL native fence 路径 |
@@ -339,7 +410,7 @@ AGI 不替代系统 trace：它擅长解释一帧 GPU 命令做了什么；Frame
 ### 常见症状与证据
 
 | 症状 | 先看 | 避免的误判 |
-|---|---|---|
+| --- | --- | --- |
 | hardware bitmap 创建卡住调用线程 | decode、AHB allocation、GrallocUploadThread、`GrSyncCpu` wait | 看到 queue 1 就认定调用异步返回 |
 | RenderThread 慢且 upload 同期发生 | queue 0/1 submission、GPU busy、带宽、频率、调度 | 把两个 queue 直接当成两套 GPU 引擎 |
 | `dequeueBuffer` 长等待 | 上一轮 release fence、buffer 数量、SF/HWC/GPU 使用期 | 归因于 Vulkan command recording |
@@ -352,7 +423,7 @@ AGI 不替代系统 trace：它擅长解释一帧 GPU 命令做了什么；Frame
 以下结论只来自固定 tag 的代码对照：
 
 | 平台标签 | 双 graphics queue | frame-boundary 相关代码 | global-priority 相关代码 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `android-14.0.0_r1` | 已有 queue 0 + AHB upload queue 1 | 本次对照未见 Android 17 形态的 boundary 分支 | 已有 `VK_EXT_global_priority` 请求 |
 | `android-15.0.0_r1` | 保持双 queue | 本次对照未见 Android 17 形态的 boundary 分支 | 保持 extension 请求 |
 | `android-16.0.0_r1` | 保持双 queue | 已有 `VK_EXT_frame_boundary`、AGI 私有扩展与 `fFrameID` | 增加 global-priority query/KHR 相关处理 |
@@ -362,13 +433,17 @@ AGI 不替代系统 trace：它擅长解释一帧 GPU 命令做了什么；Frame
 
 ## 源码核对索引
 
-- [`VulkanManager.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp) / [`VulkanManager.h`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.h)：device、两条 queue、context、global priority、frame boundary、fence 导入导出；
-- [`HardwareBitmapUploader.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/HardwareBitmapUploader.cpp)：GL/Vulkan 上传线程、CPU 等待与 60 秒 idle timeout；
-- [`SkiaVulkanPipeline.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp)：dequeue、draw、finishFrame、swapBuffers 的调用关系；
-- [`VulkanSurface.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/VulkanSurface.cpp)：ANativeWindow buffer、dequeue fence、surface damage 与 queueBuffer；
-- [`CanvasContext.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp)：FrameTimeline info、swap history、dequeue/queue duration；
+- 内部基线：`Writer/rendering_pipelines/S01_rendering_types_overview.md` 与 `S02_aosp_standard_type.md` 用于核对标准 App Window、SurfaceFlinger、HWC 与 present 的公共路径，完整本地路径记录在 frontmatter；
+- [`VulkanManager.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp) / [`VulkanManager.h`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/VulkanManager.h)：device、两条 queue、context、global priority、frame boundary、fence 导入导出；
+- [`HardwareBitmapUploader.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/HardwareBitmapUploader.cpp) / [`Bitmap.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/hwui/Bitmap.cpp)：GL/Vulkan 上传线程、首次内容复制、CPU 等待与 60 秒 idle timeout；
+- [`SkiaVulkanPipeline.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp)：dequeue、draw、finishFrame、swapBuffers 的调用关系；
+- [`VulkanSurface.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/VulkanSurface.cpp)：ANativeWindow buffer、dequeue fence、buffer age、surface damage 与 queueBuffer；
+- [`CanvasContext.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp)：FrameTimeline info、damage history、dequeue/queue duration；
+- 历史标签：[`android-14.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp)、[`android-15.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-15.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp)、[`android-16.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r1/libs/hwui/renderthread/VulkanManager.cpp)：双 queue、frame-boundary 与 global-priority query 的版本对照；
 - [Khronos `VkFrameBoundaryEXT`](https://registry.khronos.org/vulkan/specs/latest/man/html/VkFrameBoundaryEXT.html)：Vulkan frame annotation 的规范语义；
+- [内核 `dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c) / [`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：`android17-6.18-2026-06_r6` 的 fence 与 sync-file 边界；
 - [Perfetto GPU data sources](https://perfetto.dev/docs/data-sources/gpu)：GPU counter、render stage 与设备 producer 的观察口径；
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)：expected/actual 时间线与 jank 分类；
 - [AGI Frame Profiler](https://developer.android.com/agi/frame-trace/frame-profiler)：单帧 Vulkan/GL 调用和 GPU 资源分析。
 
 上述平台源码均固定在 `android-17.0.0_r1`。内核侧采用 `android17-6.18-2026-06_r6`，只用于解释线程调度、GPU driver、dma-buf 与 fence 机制，不把厂商 driver 行为伪装成 AOSP HWUI 保证。
