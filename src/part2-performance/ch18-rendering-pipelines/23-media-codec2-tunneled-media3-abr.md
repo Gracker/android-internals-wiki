@@ -1,13 +1,14 @@
 ---
-title: "多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR"
+title: "Android 17 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR"
 chapter: "18.23"
 section: "18.23"
+section_title: "Android 17 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR"
 status: ready-for-review
 drafted_date: "2026-05-21"
-applicable_versions: "Android 10 (API 29) - Android 17 (API 37); Media3 1.x"
-last_verified: "2026-05-21"
-last_verified_against: "AOSP main; Android Developers / source.android.com docs updated 2026-03/2026-04"
-confidence: medium
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)；当前平台锚点 Android 17 / API 37；Media3 1.10.1"
+last_verified: "2026-07-31"
+last_verified_against: "android-17.0.0_r1 (MediaCodec, MediaFormat, MediaCodecInfo, MediaCodec.cpp, CCodec, CCodecBufferChannel, CCodecConfig, C2Config, ACodec) / Media3 1.10.1 commit 5fb306449733dd71595700c1227ad6087578c559 / Multimedia tunneling 官方文档 2026-06-17 / Writer rendering_pipelines S03、S04、S12 / android17-6.18-2026-06_r6"
+confidence: high
 tags: [media, codec2, mediacodec, tunneled-playback, media3, abr, video-playback]
 related_chapters: ["2.6", "2.13", "2.16", "18.6", "18.15", "24.5", "26.3"]
 created_by: "task2a-knowledge-gap"
@@ -16,65 +17,131 @@ gap_source: "研究素材/AOSP结构/官方文档"
 gap_score: 18
 material_count: 6
 sources:
-  - type: local
-    path: "DeepResearch/2026-05-12-android-media-codec2-tunneled-playback-analysis.md"
-  - type: local
-    path: "DeepResearch/2026-05-15-android-multimedia-codec2-tunneled-abr.md"
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S03_surfaceview_type.md"
+    role: "SurfaceView 独立 BLAST child、宿主窗口与 HWC composition 的边界"
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S04_textureview_type.md"
+    role: "TextureView 的 SurfaceTexture、宿主 HWUI 二次采样与两套 BufferQueue"
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S12_video_overlay_hwc_type.md"
+    role: "普通视频 Surface、tunneled sideband、protected path 与 HWC 决策链"
   - type: official
     path: "https://source.android.com/docs/devices/tv/multimedia-tunneling"
+    role: "tunnel 接入、peek、音频时钟、Codec2/OMX、sideband 与 OEM 实现契约"
   - type: official
-    path: "https://source.android.com/docs/core/media/updatable-media"
+    path: "https://source.android.com/docs/core/media/media-modules"
+    role: "Android 10+ Media Codecs APEX、可更新软件 Codec2 与 vendor C2 service"
+  - type: official
+    path: "https://source.android.com/docs/core/media/vvc"
+    role: "Android 17 VVC framework/MP4/Codec2 支持与 vendor decoder 边界"
+  - type: official
+    path: "https://developer.android.com/jetpack/androidx/releases/media3"
+    role: "Media3 1.10.1 稳定版、1.11.0-rc01 与 tunnel audio session 竞态修复"
+  - type: official
+    path: "https://github.com/androidx/media/releases/tag/1.10.1"
+    role: "Media3 1.10.1 tag、commit 与 release 内容"
   - type: official
     path: "https://developer.android.com/media/media3/exoplayer/track-selection"
+    role: "Media3 track selection 公开配置与约束"
   - type: official
     path: "https://developer.android.com/media/media3/exoplayer/troubleshooting"
+    role: "Media3 播放、解码器与设备差异诊断"
+  - type: official
+    path: "https://perfetto.dev/docs/data-sources/frametimeline"
+    role: "FrameTimeline 的宿主窗口、显示帧与 SurfaceView 支持边界"
   - type: aosp
-    path: "frameworks/base/media/java/android/media/MediaCodec.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodec.java"
+    role: "audio session 转换、tunnel peek、首帧 ready 与 frame rendered API"
   - type: aosp
-    path: "frameworks/base/media/java/android/media/MediaFormat.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaFormat.java"
+    role: "KEY_AUDIO_SESSION_ID 与 KEY_ALLOW_FRAME_DROP"
   - type: aosp
-    path: "frameworks/av/media/codec2/sfplugin/CCodec.cpp"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodecInfo.java"
+    role: "FEATURE_TunneledPlayback 能力定义"
   - type: aosp
-    path: "frameworks/av/media/libstagefright/ACodec.cpp"
+    path: "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libstagefright/MediaCodec.cpp"
+    role: "Android 17 tunnel peek 状态机、legacy unspecified 模式与首帧内部标记"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/sfplugin/CCodec.cpp"
+    role: "CCodec tunnel sync type、sideband handle 查询与 native window 绑定"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/sfplugin/CCodecBufferChannel.cpp"
+    role: "C2Work 首帧 hold、FLAG_INCOMPLETE、ready 与 render time 回调"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/sfplugin/CCodecConfig.cpp"
+    role: "tunnel peek 内部参数到 C2 参数的映射"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/core/include/C2Config.h"
+    role: "tunneled mode、handle、hold/start render 与 CLOCK_MONOTONIC render time 协议"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libstagefright/ACodec.cpp"
+    role: "Android 17 保留的 OMX tunnel 与 sideband 路径"
   - type: source
-    path: "androidx/media/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/trackselection/AdaptiveTrackSelection.java"
+    path: "https://github.com/androidx/media/blob/1.10.1/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/trackselection/AdaptiveTrackSelection.java"
+    role: "Media3 1.10.1 ABR 常量、带宽预算、buffer 门槛与 chunk 丢弃"
   - type: source
-    path: "androidx/media/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/upstream/DefaultBandwidthMeter.java"
+    path: "https://github.com/androidx/media/blob/1.10.1/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/upstream/DefaultBandwidthMeter.java"
+    role: "Media3 1.10.1 传输样本、权重、分位数与初始带宽"
+  - type: source
+    path: "https://github.com/androidx/media/blob/1.10.1/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/upstream/experimental/ExperimentalBandwidthMeter.java"
+    role: "Media3 1.10.1 实验带宽计与 TTFB 估计"
+  - type: source
+    path: "https://github.com/androidx/media/blob/1.10.1/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/trackselection/DefaultTrackSelector.java"
+    role: "Media3 1.10.1 tunnel renderer 与全部已选 track 能力判定"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c"
+    role: "普通视频 graphic buffer 的 dma-buf 共享基础"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c"
+    role: "fence 作为 fd 跨用户空间传递"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/dma-fence.h"
+    role: "dma-fence 的完成与 wait 语义"
 ---
 
-# 18.23 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR
+# 18.23 Android 17 多媒体播放管线：Codec2、Tunneled Playback 与 Media3 ABR
 
 <!-- outline-start -->
 ## 要点
 
 ### 🔹 多媒体播放链路的分层边界
+
 梳理 Media3 / ExoPlayer、MediaCodec、Stagefright、Codec2 / OMX、Surface / SurfaceView、AudioTrack、SurfaceFlinger 与 HWC 的职责边界，说明视频播放卡顿、音画不同步、弱网降质和硬解失败分别落在哪一层观察。
 
 ### 🔹 OMX 到 Codec2 的迁移对性能诊断的影响
+
 围绕 Android 10+ Codec2 架构、ComponentStore、C2Component、C2Work / C2Buffer 与旧 OMX 回调模型对比，解释为什么同样是 MediaCodec API，底层组件、buffer 生命周期和厂商 HAL 行为可能完全不同。
 
 ### 🔹 Tunneled Playback 的直出路径
+
 覆盖 tunneled playback 的条件、AudioTrack 同步、sideband / tunnel handle、SurfaceView layer 与 HWC 直出关系，区分普通 BufferQueue 合成路径和硬件 tunnel 路径的延迟、功耗与可观测性差异。
 
 ### 🔹 Media3 ABR 与网络/解码能力协同
+
 整理 Adaptive Bitrate 的决策输入：带宽估计、buffer 水位、track selection 参数、设备解码能力、DRM / 高帧率内容限制，避免把弱网卡顿、解码瓶颈和渲染合成瓶颈混在一起。
 
 ### 🔹 Perfetto 与日志观察点
+
 建立排查清单：MediaCodec / Codec2 线程、binder 调用、BufferQueue、FrameTimeline、SurfaceFlinger、AudioTrack、network 与 app 自定义 event，用于定位掉帧、卡顿、seek 慢、首帧慢和码率切换抖动。
 
 ### 🔹 应用侧优化策略
+
 给出播放器工程可执行策略：能力探测、SurfaceView / TextureView 选择、tunnel 开关灰度、Media3 参数治理、低端设备降档、弱网预加载、首帧指标与线上分桶归因。
 
 ## 扩展
 
 ### 🔸 低延迟直播与普通点播的诊断差异
+
 补充 live edge、buffer 策略、码率升降级和丢帧策略对低延迟直播体验的影响。
 
-### 🔸 DRM、HDR、高帧率内容的设备兼容矩阵
+### 🔸 DRM、HDR、高帧率内容的设备组合验证
+
 补充 secure decoder、HDR format、60fps/120fps、widevine security level 与 SoC 能力差异对播放性能的影响。
 
-### 🔸 Media3 Transformer / 转码链路
-如后续素材充分，可拆出离线转码、剪辑、滤镜和导出性能的独立小节。
+### 🔸 Media3 Transformer 的责任边界
+
+界定离线转码、剪辑、滤镜与导出性能的独立管线，避免把 Transformer 的 decoder/effect/encoder/muxer 成本混入播放 ABR。
 
 <!-- outline-end -->
 
@@ -82,7 +149,7 @@ sources:
 
 - Android 平台：Android 17 / API 37 / `android-17.0.0_r1`。
 - kernel：`android17-6.18-2026-06_r6`。
-- Media3：截至 2026-07-25 的最新稳定版 1.10.1，源码 tag 对应 commit `5fb306449733dd71595700c1227ad6087578c559`。1.11.0 当时仍是 RC，不用于本文常量基线。
+- Media3：截至 2026-07-31 的最新稳定版为 1.10.1，源码 tag 对应 commit `5fb306449733dd71595700c1227ad6087578c559`。1.11.0-rc01 已在 2026-07-22 发布，本文仍以稳定版 1.10.1 的常量为准。
 
 Android 平台版本和 Media3 版本彼此独立。设备运行 Android 17，不表示应用使用最新 Media3；升级 Media3 也不会替换设备上的 codec、Composer HAL 或显示驱动。
 
@@ -108,7 +175,7 @@ Media3 决定下载哪个分片、保留多少 buffer、从哪些 track 中选�
 常见现象可以先这样归位：
 
 | 现象 | 优先核对 | 有效证据 |
-|---|---|---|
+| --- | --- | --- |
 | 弱网降质或反复切档 | DataSource、BandwidthMeter、ABR | 传输样本、带宽估计、buffered duration、track change reason |
 | 首帧慢 | manifest、首个分片、codec 初始化、首帧显示 | 请求时长、configure/start、首个 input/output PTS、first-frame callback |
 | seek 慢 | 请求范围、关键帧、flush 后预解码 | seek 目标、前一同步帧、discard 数量、seek 后首帧 |
@@ -120,12 +187,12 @@ Media3 决定下载哪个分片、保留多少 buffer、从哪些 track 中选�
 
 ## Android 17 同时保留 Codec2 与 OMX 路径
 
-Android 10 引入 Codec2 作为新一代媒体组件接口，Android 11 起 Codec2 支持 tunneled playback。Android 17 的 `frameworks/av` 仍同时包含 `CCodec` 和 `ACodec`，因此不能把平台现状概括成“已经全面切到 Codec2”。
+Android 10 已把可更新的软件 Codec2 组件纳入 Media Codecs APEX，并支持 vendor C2 service；Android 11 起 Codec2 协议支持 tunneled playback。Android 17 的 `frameworks/av` 仍同时包含 `CCodec` 和 `ACodec`，因此不能把平台现状概括成“已经全面切到 Codec2”。
 
 两条路径的应用入口都可以是 `MediaCodec`，native 侧对象和等待点却不同：
 
 | 维度 | Codec2 / CCodec | OMX / ACodec |
-|---|---|---|
+| --- | --- | --- |
 | 组件入口 | `C2ComponentStore`、`C2Component` | OMX node、component、port |
 | 工作单元 | `C2Work`、`C2Buffer`、config update | input/output buffer、port callback |
 | 完成通知 | `onWorkDone()` 等 C2 listener | empty/fill buffer done、OMX event |
@@ -151,7 +218,7 @@ Codec 名称仍是线上诊断的关键字段。API level 只能说明框架能�
 普通 SurfaceView、TextureView 和 tunneled playback 都能显示视频，帧的消费者不同。
 
 | 路径 | decoded frame 的去向 | SurfaceFlinger/HWC 看到什么 | 主要取舍 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 普通 SurfaceView | codec → Surface/BufferQueue | 独立视频 layer；HWC 每轮决定 DEVICE 或 CLIENT 等 composition | 适合长视频、高分辨率和 protected 内容；overlay 只是候选结果 |
 | TextureView | codec → SurfaceTexture → App HWUI → App Window | 视频已采样进宿主窗口，通常没有独立视频 layer | 支持 View 变换、裁剪和动画；增加宿主 GPU 采样与窗口提交 |
 | Tunneled playback | codec/HAL → sideband stream | sideband layer；HWC 按 A/V 同步取得视频帧 | 减少常规 decoded-buffer 处理，适合部分 TV/机顶盒；调试证据和图形效果受限 |
@@ -168,9 +235,9 @@ Tunnel 也没有“绕过 SurfaceFlinger 直接显示”。Android 官方文档�
 
 低层播放器需要同时满足这些条件：
 
-1. 选中的音频和视频 decoder 能力支持 `MediaCodecInfo.CodecCapabilities.FEATURE_TunneledPlayback`。
+1. 低层平台接入时，选中的视频 decoder 必须支持 `MediaCodecInfo.CodecCapabilities.FEATURE_TunneledPlayback`；音频输出还要能建立硬件 A/V sync。Media3 会进一步检查已选音频、视频 renderer 的 tunneling support。
 2. 点播场景创建一个有效的 audio session id，并让 `AudioTrack` 与视频 `MediaCodec` 使用同一个 id。
-3. 音频路径使用硬件 A/V sync。只把视频格式标成 tunneled，不能建立完整同步关系。
+3. `AudioTrack` 使用带 `AudioAttributes.FLAG_HW_AV_SYNC` 的输出路径，并接收带 PTS 的音频数据。只把视频格式标成 tunneled，不能建立完整同步关系。
 4. 输出使用 `SurfaceView` 提供的 Surface。官方低层接入步骤也以 `SurfaceView` 为承载面。
 5. MIME、profile/level、secure decoder、DRM、HDR、分辨率和帧率在同一 codec 组合中均受支持。
 
@@ -213,7 +280,7 @@ Android 17 的 `MediaCodec.configure()` 遍历 `MediaFormat` 时，会把 `KEY_A
 
 `C2Config.h` 把 tunneled mode、sync type、sync id、tunnel handle 和 tunnel render time 定义成独立参数。这里能确认的是框架与 component 的协议。sideband handle 之后如何关联 codec 硬件、secure video path 和 display plane，由 vendor codec/HWC/driver 实现决定。
 
-ACodec/OMX 也有对应路径：读取 `feature-tunneled-playback` 和 `audio-hw-sync`，调用 OMX tunnel extension，取得 sideband window，再绑定到 native window。Android 17 保留这段实现，运行时应以实际 codec 名称和日志判断走哪一支。
+ACodec/OMX 也有对应路径：读取 `feature-tunneled-playback` 和 `audio-hw-sync`，调用 OMX tunnel extension，取得 sideband window，再绑定到 native window。配置成功后，`ACodec` 把输出端口的 `nBufferCountActual` 设为 0，跳过普通 native window buffer 分配。Android 17 保留这段实现，运行时应以实际 codec 名称和日志判断走哪一支。
 
 ### 首帧 ready、首帧 render 与 panel 可见是三个时刻
 
@@ -227,12 +294,15 @@ Tunnel 的首帧控制很容易被误读。Android 17 提供：
 
 Codec2 的对应路径为：
 
-- 输入 buffer 的内部 `tunnel-first-frame` 标记转成 `C2StreamTunnelHoldRender`；
+- Android 17 的 native `MediaCodec` 在显式 peek 状态下给第一块非 CSD、非 decode-only 输入写入内部 `tunnel-first-frame` 标记；
+- `CCodecBufferChannel` 把该标记转成 `C2StreamTunnelHoldRender`；
 - component 返回带 `C2StreamTunnelHoldRender` 和 `FLAG_INCOMPLETE` 的 work update 时，CCodec 上报 first-tunnel-frame-ready；
-- `android._trigger-tunnel-peek` 通过 `CCodecConfig` 映射到 `C2_PARAMKEY_TUNNEL_START_RENDER`；
-- component 通过 `C2PortTunnelSystemTime` 上报 render time，CCodec 再触发 frame-rendered callback。
+- `MediaCodec` 收到 ready 事件且 peek 已开启时发出内部 `android._trigger-tunnel-peek`，`CCodecConfig` 再把它映射到 `C2_PARAMKEY_TUNNEL_START_RENDER`；
+- component 通过 `C2PortTunnelSystemTime` 上报 `CLOCK_MONOTONIC` 纳秒时间，CCodec 再触发 frame-rendered callback。
 
-应用如果依赖 seek 预览或暂停态首帧，应显式设置 peek，并在 `flush`、`stop/start` 后重新核对状态。AOSP API 文档给出默认启用语义，设备实现文档仍提醒未显式设置时可能存在 OEM 行为差异；对产品行为有要求时不要依赖默认值。
+这里存在一处公开文档与兼容实现必须同时阅读的边界。`MediaCodec.java` 的 API 注释写着 peek 默认开启；Android 17 的 native `MediaCodec.cpp` 却在应用未显式设置时保留 `kLegacyMode`，`start` 后把 `android._tunnel-peek-set-legacy=1` 传给 component。`CCodecConfig` 将其映射为 `UNSPECIFIED_PEEK`，decoder 可以忽略 hold/start-render 协议。官方设备实现文档也说明：应用未设置 `PARAMETER_KEY_TUNNEL_PEEK` 时，行为由 OEM 决定。
+
+依赖 seek 预览或暂停态首帧的应用应在 codec 第一次 `start` 后、提交第一块有效视频输入前显式设置 `PARAMETER_KEY_TUNNEL_PEEK` 为 0 或 1。Android 17 会在 `flush` 或 `stop/start` 时保留已经显式设置的 enable bit，并把状态重置为“尚无首帧”；如果要改变策略，应在这个重置边界之后、下一块有效输入之前设置新值。重建 codec 实例时仍要重新显式设置，避免回到 legacy unspecified 模式。
 
 点播 tunnel 通常以音频时钟推进视频。AudioTrack underrun、pause 或路由切换导致时钟不前进时，视频也可能停住。静音不等于可以停止喂音频；官方实现要求继续提交带 PTS 的音频数据。
 
@@ -260,7 +330,7 @@ Media3 1.10.1 的 `DefaultBandwidthMeter` 在一次全速网络传输结束时�
 Media3 1.10.1 的 `AdaptiveTrackSelection` 默认值为：
 
 | 常量 | 值 | 含义 |
-|---|---:|---|
+| --- | ---: | --- |
 | `DEFAULT_MIN_DURATION_FOR_QUALITY_INCREASE_MS` | 10,000 ms | 点播升档通常要求的最小 buffer |
 | `DEFAULT_MAX_DURATION_FOR_QUALITY_DECREASE_MS` | 25,000 ms | buffer 达到该值时可推迟降档 |
 | `DEFAULT_MIN_DURATION_TO_RETAIN_AFTER_DISCARD_MS` | 25,000 ms | 为加快升档而丢弃旧 chunk 时，至少保留的播放时长 |
@@ -268,11 +338,15 @@ Media3 1.10.1 的 `AdaptiveTrackSelection` 默认值为：
 | `DEFAULT_BUFFERED_FRACTION_TO_LIVE_EDGE_FOR_QUALITY_INCREASE` | 0.75 | 靠近 live edge 时调整升档门槛 |
 | `DEFAULT_MAX_WIDTH_TO_DISCARD` / `HEIGHT` | 1279 / 719 | 允许为升档丢弃的旧低清 chunk 尺寸上限 |
 
-有效预算一定会考虑播放速度：
+有效预算会考虑播放速度。TTFB 或下一 chunk 时长未知时，1.10.1 的计算为：
 
-`cautiousBandwidth = bitrateEstimate * bandwidthFraction`
+`allocatableBandwidth = bitrateEstimate * bandwidthFraction / playbackSpeed`
 
-当 `BandwidthMeter` 同时提供 TTFB，且下一个 chunk 时长已知时，可用于下载的时间才进一步变为 `chunkDuration / playbackSpeed - TTFB`。1.10.1 的 `DefaultBandwidthMeter` 没有覆盖该接口，返回 `TIME_UNSET`；`ExperimentalBandwidthMeter` 可以提供 TTFB 估计。多条 adaptive selection 共用带宽时，factory 生成的 adaptation checkpoints 还会参与预算分配。因此，把算法简化成 `track bitrate < 0.7 × bandwidth estimate` 会漏掉直播、倍速、可选的 TTFB 和并行选择影响。
+当 `BandwidthMeter` 同时提供 TTFB，且下一个 chunk 时长已知时，预算改为：
+
+`allocatableBandwidth = cautiousBandwidth × max(chunkDuration / playbackSpeed - TTFB, 0) / chunkDuration`
+
+1.10.1 的 `DefaultBandwidthMeter` 没有覆盖 `BandwidthMeter.getTimeToFirstByteEstimateUs()`，因此使用接口默认值 `TIME_UNSET`；`ExperimentalBandwidthMeter` 则通过 `TimeToFirstByteEstimator` 提供估计。多条 adaptive selection 共用带宽时，factory 生成的 adaptation checkpoints 还会参与预算分配。因此，把算法简化成 `track bitrate < 0.7 × bandwidth estimate` 会漏掉直播、倍速、可选的 TTFB 和并行选择影响。
 
 `updateSelectedTrack()` 先求忽略 buffer 健康度的理想档位，再做两项抑制：
 
@@ -292,7 +366,7 @@ Media3 1.10.1 的默认 ABR 源码中没有 `AdaptivePlaybackCache` 或 `StreamS
 下面这组判断比“码率高所以卡”更可靠：
 
 | 观察结果 | 更可能的方向 | 还需排除 |
-|---|---|---|
+| --- | --- | --- |
 | segment 下载耗时持续超过媒体时长，buffer 下降 | 网络/CDN/带宽估计 | 后台限速、请求排队、错误重试 |
 | 下载快且 buffer 充足，codec output 持续晚于 PTS | 解码能力或 codec 配置 | thermal、secure/HDR 组合、倍速 `KEY_OPERATING_RATE` |
 | codec output/release 准时，普通 Surface queue/latch 晚 | BufferQueue、fence、Surface 消费 | TextureView 宿主帧、错误 timestamp |
@@ -331,7 +405,7 @@ Tunnel 的逐帧 decoded buffer 不走普通 BufferQueue 形态，不要强行�
 - 首帧 ready、首帧 rendered、应用定义的可见首帧；
 - dropped/skipped frame、rebuffer、seek、decoder exception。
 
-`FrameTimeline` 对应用 UI 和普通 layer 很有价值，但不能代表 tunnel decoder 的每个视频 PTS，也不能单独证明某个视频帧已被 panel 扫描。视频指标要保留媒体 PTS 与 display 时间两套语义。
+`FrameTimeline` 对应用宿主窗口和 SurfaceFlinger 显示帧很有价值；Perfetto 官方文档仍说明 SurfaceView 未获完整支持。它不能代表 tunnel decoder 的每个视频 PTS，也不能单独证明某个视频帧已被 panel 扫描。视频指标要保留媒体 PTS 与 display 时间两套语义。
 
 ## `KEY_ALLOW_FRAME_DROP` 的适用边界
 
@@ -352,6 +426,8 @@ View surface 在 Android 10 之前就会丢弃过量帧，公开文档只把“�
 7. **组合测试 DRM/HDR/高帧率。** 用目标内容覆盖 secure decoder、Widevine 等级、HDCP、HDR format、60/120 fps、AV1/HEVC/VVC、tunnel 和外接显示。
 8. **使用 Media3 1.10.1 或核对对应修复。** 1.10.1 release notes 包含 tunnel 模式 audio session id 生成竞态的修复；旧版本遇到相关 `IllegalStateException` 时，应先确认是否命中该已知问题。
 
+Android 17 增加了 VVC/H.266 的 framework MIME、MediaCodec/Codec2 API 与 MP4 extractor 支持，但 AOSP 不提供 VVC 软件 decoder，也不提供 VVC encoder。设备只有在 SoC 厂商提供并注册 vendor Codec2 VVC decoder 后才能解码。因此，“运行 API 37”和“本机能播放 VVC”必须作为两个字段记录。
+
 ## 低延迟直播与倍速播放
 
 点播 ABR 追求较低 rebuffer 和稳定画质。低延迟直播还要约束 live offset；buffer 过厚会离 live edge 越来越远，buffer 过薄又放大网络抖动。分析时至少记录 target live offset、current live offset、segment/part duration、playback speed 调整和每次选档原因。
@@ -368,18 +444,21 @@ Tunnel 的 sideband handle 不会让 AOSP common kernel 自动暴露完整逐帧
 
 ## Android 17 源码与官方资料
 
-- [Android 17 `MediaCodec.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/media/java/android/media/MediaCodec.java)：audio session 转换、tunnel peek、first-tunnel-frame-ready 与 frame-rendered API。
-- [Android 17 `MediaFormat.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/media/java/android/media/MediaFormat.java)：`KEY_AUDIO_SESSION_ID` 与 `KEY_ALLOW_FRAME_DROP`。
-- [Android 17 `MediaCodecInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/media/java/android/media/MediaCodecInfo.java)：`FEATURE_TunneledPlayback`。
-- [Android 17 `CCodec.cpp`](https://android.googlesource.com/platform/frameworks/av/+/android-17.0.0_r1/media/codec2/sfplugin/CCodec.cpp)：tunnel 条件、C2 配置、handle 查询和 native window 绑定。
-- [Android 17 `CCodecBufferChannel.cpp`](https://android.googlesource.com/platform/frameworks/av/+/android-17.0.0_r1/media/codec2/sfplugin/CCodecBufferChannel.cpp)：tunnel first frame、render time 与 C2 work 回调。
-- [Android 17 `CCodecConfig.cpp`](https://android.googlesource.com/platform/frameworks/av/+/android-17.0.0_r1/media/codec2/sfplugin/CCodecConfig.cpp)：tunnel peek 到 C2 参数的映射。
-- [Android 17 `C2Config.h`](https://android.googlesource.com/platform/frameworks/av/+/android-17.0.0_r1/media/codec2/core/include/C2Config.h)：tunneled mode、sideband handle、hold/start render 与 render time 参数。
-- [Android 17 `ACodec.cpp`](https://android.googlesource.com/platform/frameworks/av/+/android-17.0.0_r1/media/libstagefright/ACodec.cpp)：仍保留的 OMX tunneled playback 路径。
+- [Android 17 `MediaCodec.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodec.java)：audio session 转换、tunnel peek、first-tunnel-frame-ready 与 frame-rendered API。
+- [Android 17 `MediaFormat.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaFormat.java)：`KEY_AUDIO_SESSION_ID` 与 `KEY_ALLOW_FRAME_DROP`。
+- [Android 17 `MediaCodecInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodecInfo.java)：`FEATURE_TunneledPlayback`。
+- [Android 17 native `MediaCodec.cpp`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libstagefright/MediaCodec.cpp)：peek 状态机、legacy unspecified 行为与首帧内部标记。
+- [Android 17 `CCodec.cpp`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/sfplugin/CCodec.cpp)：tunnel 条件、C2 配置、handle 查询和 native window 绑定。
+- [Android 17 `CCodecBufferChannel.cpp`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/sfplugin/CCodecBufferChannel.cpp)：tunnel first frame、render time 与 C2 work 回调。
+- [Android 17 `CCodecConfig.cpp`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/sfplugin/CCodecConfig.cpp)：tunnel peek 到 C2 参数的映射。
+- [Android 17 `C2Config.h`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/core/include/C2Config.h)：tunneled mode、sideband handle、hold/start render 与 render time 参数。
+- [Android 17 `ACodec.cpp`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libstagefright/ACodec.cpp)：仍保留的 OMX tunneled playback 路径。
 - [Media3 1.10.1 `AdaptiveTrackSelection.java`](https://github.com/androidx/media/blob/1.10.1/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/trackselection/AdaptiveTrackSelection.java)：ABR 常量、预算与升降档条件。
 - [Media3 1.10.1 `DefaultBandwidthMeter.java`](https://github.com/androidx/media/blob/1.10.1/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/upstream/DefaultBandwidthMeter.java)：传输样本和 sliding percentile。
+- [Media3 1.10.1 `ExperimentalBandwidthMeter.java`](https://github.com/androidx/media/blob/1.10.1/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/upstream/experimental/ExperimentalBandwidthMeter.java)：实验带宽估计与 TTFB 输入。
 - [Media3 1.10.1 `DefaultTrackSelector.java`](https://github.com/androidx/media/blob/1.10.1/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/trackselection/DefaultTrackSelector.java)：tunnel renderer 组合判定。
-- [Media3 release notes](https://developer.android.com/jetpack/androidx/releases/media3)、[track selection guide](https://developer.android.com/media/media3/exoplayer/track-selection) 与 [multimedia tunneling](https://source.android.com/docs/devices/tv/multimedia-tunneling)：版本、应用接入和设备实现边界。
+- [Media3 release notes](https://developer.android.com/jetpack/androidx/releases/media3)、[Media3 1.10.1 release](https://github.com/androidx/media/releases/tag/1.10.1)、[track selection guide](https://developer.android.com/media/media3/exoplayer/track-selection) 与 [multimedia tunneling](https://source.android.com/docs/devices/tv/multimedia-tunneling)：版本、应用接入和设备实现边界。
+- [Android Media modules](https://source.android.com/docs/core/media/media-modules) 与 [Android 17 VVC support](https://source.android.com/docs/core/media/vvc)：Codec2 模块边界以及 API 37 VVC framework/vendor 分工。
 - Kernel `android17-6.18-2026-06_r6`：[dma-buf](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)、[sync_file](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c) 与 [dma-fence](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/dma-fence.h)。
 
 ## 小结
