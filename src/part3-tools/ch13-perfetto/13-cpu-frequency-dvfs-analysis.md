@@ -97,16 +97,35 @@ last_deepseek_cn_review_at: 2026-07-13
 
 <!-- outline-end -->
 
-Perfetto 里的 CPU Frequency 轨道回答的是“这个 CPU 当时被请求或报告到什么频率”，线程轨道回答的是“这个线程当时处于什么调度状态”。两条轨道要放在同一个时间窗里读：线程 Running 但频率低，才可能指向 DVFS 或温控；线程 Runnable 很长，问题更接近调度排队；CPU 已经 idle 时，频率值常常只剩上一段运行频率的残留语义。
+本章的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点是 `android17-6.18-2026-06_r6`。Perfetto 的 CPU Frequency 轨道记录软件可见的频率状态，线程轨道记录调度状态。两者落在同一时间窗，才能回答“线程 Running 时，所在 CPU 报告了什么频率”。
 
-这一节把 `sched`、`thread_state`、`cpufreq`、`cpuidle` 和 SQL 查询放在一条判断路径里，用来处理三类问题：启动短突发为什么没跑满频、滑动掉帧是不是频率没升起来、后台批处理为什么把功耗拖长。
+这里有一条必须守住的证据边界：频率轨并非硬件时钟探针。Android 17 内核在 cpufreq 普通切换完成后，把 `freqs->new` 写入 `cpu_frequency`；快速切换路径写入驱动返回的 `freq`。同一 policy 内的在线 CPU 会分别产生事件。`linux.sys_stats` 的轮询结果也只能代表 sysfs 暴露的值。仅凭这些数据，不能断言某段代码获得了对应数量的有效执行周期。
+
+## 频率轨记录的是什么
+
+CPUFreq 把调频路径分成 policy、governor 和 scaling driver：
+
+- policy 表示一组共享硬件性能控制接口的 CPU，并维护允许的最小、最大频率与当前频率；
+- governor 根据利用率、时序约束等信息提出目标频率；
+- scaling driver 把目标提交给硬件，硬件仍可能受固件、温控或内部控制影响。
+
+Android 17 的 `schedutil` 以利用率和容量计算候选频率，再交给 `cpufreq_driver_resolve_freq()` 选择驱动支持的频点。源码还保留 Android vendor hook，厂商可以改写映射结果。默认更新间隔来自 `cpufreq_policy_transition_delay_us(policy)`，不存在跨设备通用的固定调频周期。[Android 17 schedutil 源码](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c)
+
+频率证据可以按下面的强弱理解：
+
+| 数据 | 能证明什么 | 不能单独证明什么 |
+|---|---|---|
+| `power/cpu_frequency` | cpufreq 路径报告了一次频率切换 | 硬件在整个区间都精确运行于该频率 |
+| `linux.sys_stats` | 轮询时刻的 sysfs 频率值 | 两次轮询之间的瞬时切换 |
+| `power/cpu_frequency_limits` | policy 的最小、最大频率约束发生更新 | 约束由 thermal、Power HAL 还是厂商逻辑触发 |
+| `cpuinfo_cur_freq` / `cpuinfo_avg_freq` | 驱动具备相应反馈能力时，更接近硬件观测 | 所有设备都实现并允许读取 |
+| PMU / AMU 与硬件功耗计 | 实际执行、周期或能耗的补充证据 | 单靠 Perfetto cpufreq 轨无法替代这些数据 |
+
+Android 17 的 Perfetto 文档和 proto 注释把轮询路径描述为读取 `cpuinfo_cur_freq`，同一版本的 `CpuFreqInfo::ReadCpuCurrFreq()` 实现读取的是 `scaling_cur_freq`。内核文档指出，`scaling_cur_freq` 多数情况下表示 scaling driver 最近请求的 P-state，未必等于硬件瞬时频率。做版本锚定时应以该版本实现为准，并保留文档与实现的差异。[Android 17 Perfetto 采集实现](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traced/probes/common/cpu_freq_info.cc) [Android 17 CPUFreq 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/pm/cpufreq.rst)
 
 ## 采集入口：事件、轮询和系统信息
 
-CPU 频率数据有两条采集路径。`power/cpu_frequency` 走 ftrace 事件——内核 cpufreq scaling driver 改频时才记一条，时间点精确。`linux.sys_stats` 走 sysfs 轮询，按 `cpufreq_period_ms` 周期读 `/sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_cur_freq`，适合补 trace 开头缺初始频率的坑。
-
-
-这段配置用于同时抓频率变更、空闲态变更、当前频率轮询和可用频点列表；如果后续要计算线程 Running/Runnable 占比，还要同时启用 sched 事件。
+下面的配置同时采集频率切换、频率限制、空闲状态、调度事件、轮询频率和可用频点。`500 ms` 来自 Android 17 Perfetto 官方示例，只用于补充初始频率和观察慢变化；它不适合还原单帧内的调频过程。
 
 ```protobuf
 data_sources: {
@@ -114,11 +133,12 @@ data_sources: {
     name: "linux.ftrace"
     ftrace_config {
       ftrace_events: "power/cpu_frequency"
+      ftrace_events: "power/cpu_frequency_limits"
       ftrace_events: "power/cpu_idle"
       ftrace_events: "power/suspend_resume"
       ftrace_events: "sched/sched_switch"
-      ftrace_events: "sched/sched_wakeup_new"
       ftrace_events: "sched/sched_waking"
+      ftrace_events: "sched/sched_wakeup_new"
     }
   }
 }
@@ -139,94 +159,112 @@ data_sources: {
 }
 ```
 
-`power/cpu_frequency` 把每次频率变化写成 counter 事件；`power/cpu_idle` 给出 CPU 进入、退出 idle state 的时间点；`linux.system_info` 在 trace 开始时记录每个 CPU 支持的频率列表，后续可用 `cpu_freq` 表辅助识别大小核和 cluster。[来源: Cubox/Perfetto查看CPU 频率部分指导-2026-05-03.md]
+`power/cpu_frequency` 提供切换时间点，`linux.sys_stats` 补充轮询快照，`linux.system_info` 在采集开始时读取可用频点。三条路径可能因驱动、内核配置、权限或 sysfs 导出差异而缺失，采集后应先检查数据完整性。[Android 17 Perfetto CPU frequency 文档](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/docs/data-sources/cpu-freq.md)
 
-采集配置有两个边界。
+事件驱动路径只在频率发生变化时写记录。某个 CPU 在 trace 开头保持原频点，轨道左侧就会留白；这段空白不能解释为 CPU 停止运行。轮询能补快照，却会漏掉采样点之间的切换。面向启动和掉帧的分析要保留事件驱动采集。
 
-- 事件驱动会漏掉“开头已经在某个频率上”的状态。短 trace 里，如果某个 CPU 几秒内没有改频，左侧会出现空白；这不是 CPU 没频率，而是 trace 没拿到变更事件。
-- sysfs 轮询有采样间隔。`cpufreq_period_ms: 500` 能补初始值，但不能精确描述 10 ms 级的瞬时升频和降频。分析启动和单帧掉帧时，事件驱动仍要保留。
+`power/cpu_frequency_limits` 值得与频率事件一起抓。Android 17 内核在 policy 限制更新时记录 `min_freq`、`max_freq` 和 policy 的代表 CPU，它能区分“governor 没有请求更高频率”和“当前上限不允许再升频”这两类线索。限制来源仍需结合 thermal、Power HAL、节电模式和厂商代码确认。[Android 17 CPU frequency tracepoint](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/power.h) [Android 17 cpufreq core](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/cpufreq/cpufreq.c)
 
+## Running、Runnable、idle 与频率
 
-## Running、频率和空闲态不能混读
+线程状态和频率轨回答不同问题：
 
-线程处于 Running，只说明调度器把它放到了某个 CPU 上执行。它是否跑在高频、跑在大核、是否刚从深 idle state 恢复，要继续看 `cpufreq`、`cpuidle` 和 CPU 编号。
-
-| 观察组合 | 更接近的判断 | 下一步 |
+| 观察组合 | 当前证据支持的判断 | 应补的证据 |
 |---|---|---|
-| Thread Running 长，CPU 频率高 | 代码执行成本高 | 看函数采样、atrace slice、simpleperf |
-| Thread Running 长，CPU 频率低 | DVFS 未升频、被限频或跑在小核 | 看 `cpufreq`、thermal、uclamp、CPU 编号 |
-| Thread Runnable 长，CPU 频率高 | CPU 忙但目标线程没拿到时间片 | 看同核上正在 Running 的线程和优先级 |
-| Thread Sleeping / D 长，CPU 频率高 | 线程在等锁、Binder、I/O 或内核资源 | 回到阻塞原因和调用栈，不按 CPU 算力判断 |
-| CPU idle 且频率轨保持某个值 | 频率值语义变弱 | 结合 `cpuidle`，不要把 idle 时的频率当运行频率 |
+| Running 长，报告频率高 | 线程获得 CPU，执行时间较长 | 调用栈、函数采样、缓存与内存停顿、PMU |
+| Running 长，报告频率低 | 低频、限频或低容量 CPU 值得检查 | policy limit、thermal、uclamp、CPU capacity、硬件频率反馈 |
+| Runnable 长 | 线程可运行却在等待 CPU | 同 CPU 的运行者、优先级、调度类、CPU 压力 |
+| Sleeping 长 | 线程主动等待 | 锁、条件变量、Binder、futex、定时器 |
+| D 状态长 | 不可中断等待 | I/O、驱动、内核阻塞原因 |
+| CPU idle，频率轨保留高值 | 频率值可能是进入 idle 前的残留 | `cpuidle`、唤醒源、设备功耗 |
 
-一个容易忽略的点：很多 SoC 上 CPU idle 后会 clock-gated，频率轨显示的常常是进入 idle 前的上一段运行频率。也就是说，灰色 idle 区间上的高频不等于 CPU 还在高频耗电。功耗判断要结合 idle state 和整机功耗数据，详见 11.1 节。
+Running 时间也不能直接换算成“CPU 算力已用满”。相同 wall time 下，指令级并行度、缓存未命中、内存带宽、分支预测、SMT/共享资源和迁核都会改变有效吞吐。频率分析适合定位相关性，根因判断还要依赖调用栈、硬件计数器和对照实验。
 
+分析 App 卡顿时，可以沿着下面的顺序读取：
 
-对 App 卡顿来说，推荐按这个顺序读：
+1. 在 UI 线程或 RenderThread 找到对应帧和慢 slice。
+2. 统计 slice 内 Running、Runnable、Sleeping 与 D 状态。
+3. 只对 Running 子区间关联 `ucpu`、逻辑 CPU、capacity、频率和 idle 状态。
+4. 向前覆盖足够的负载建立阶段，观察唤醒、迁核、policy 限制与升频次序。观察窗应由 workload 周期决定，不套固定毫秒数。
+5. 用调用栈、thermal、uclamp、Power HAL 或 PMU 证据验证假设。
 
-1. 在 UI 线程或 RenderThread 找到慢 slice，例如 `Choreographer#doFrame`、`DrawFrame`、`performTraversals`。
-2. 看 slice 内线程状态占比。Running 占比高再看频率；Runnable 占比高先看调度排队；Sleeping / D 占比高转向等待来源。
-3. 对 Running 子区间取 CPU 编号和频率。小核低频上的长 Running，与大核高频上的长 Running，不应归为同一类问题。
-4. 把前后 50-200 ms 的 `cpuidle` 加进来。短突发任务常常受 idle 退出和升频滞后共同影响。
+Perfetto 的 `cpu_idle_counters` 已把原始值 `4294967295` 转成 `-1`，代表 CPU 回到 active；非负值越大通常表示更深的 idle state。具体 state 含义由 SoC 和 CPUIdle driver 定义，不能跨设备比较数字本身。
 
-这套顺序能避免一个常见误判：只看到绿色 Running 长，就断定“CPU 被打满”。Running 是调度状态，不是频率状态，也不是能耗状态。
+CPUIdle 的 target residency 是进入某个状态后至少停留多久才比浅层状态更节能，其中包含进入成本；exit latency 是从唤醒到开始执行第一条指令的最坏时间。短任务的首段延迟可能同时受 idle 退出与升频影响，需要观察任务唤醒前后的完整区间。[Android 17 CPUIdle 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/pm/cpuidle.rst)
 
-## 识别大小核和 cluster
+## policy、cluster 与 CPU 标识
 
-Linux CPUFreq 用 policy 表示一组共享 P-state 控制接口的 CPU。多个 CPU 如果指向同一个 policy，写一次硬件接口会同时影响这组 CPU。Android 大小核设备上，这组 CPU 通常对应一个 cluster，所以 Perfetto 里经常能看到 CPU 0-3 同步变频、CPU 4-6 同步变频、CPU 7 单独变频。
+CPUFreq policy 是调频控制域，cluster 是处理器拓扑或容量分组。很多 Android SoC 的 policy 与 cluster 一一对应，所以多个 CPU 会同步变频；这是一种常见实现，不能当成定义。异构平台也可能让一个 cluster 出现多个 policy，或让多个逻辑 CPU 共享同一 policy。
 
+本地设备上，`policy*/related_cpus` 和 `policy*/affected_cpus` 是判断共享控制接口的直接证据。下面的命令读取 policy 成员、频率限制、governor 和可用频点。
 
-`linux.system_info` 数据源在 trace 开头记录每个 CPU 的 `scaling_available_frequencies`，Trace Processor 解析后可通过 `cpu_freq` 表读取。当前 Trace Processor 的 `cpu` 表在有数据时还会暴露 `cluster_id` 与 `capacity`，识别顺序应先看 `cpu.cluster_id` / `capacity`，再用频点集合和同步变频交叉验证；缺字段时退回 sysfs `policy*/affected_cpus`。
+```bash
+adb shell 'for p in /sys/devices/system/cpu/cpufreq/policy*; do
+  echo "[$p]"
+  for f in related_cpus affected_cpus scaling_min_freq scaling_max_freq \
+           scaling_governor scaling_available_frequencies; do
+    if [ -r "$p/$f" ]; then
+      printf "%s: " "$f"
+      cat "$p/$f"
+    fi
+  done
+done'
+```
 
-这段 SQL 用于查看 trace 中记录到的可用频点，帮助识别 cluster。
+输出中的 `related_cpus` 包含 policy 关联的在线和离线 CPU，`affected_cpus` 表示当前在线且受该 policy 影响的 CPU。部分厂商设备不会导出所有文件，缺字段时应记录设备边界，避免补写推测值。
+
+Trace Processor 里有三种容易混淆的标识：
+
+- `cpu` 是设备内的逻辑 CPU 编号；
+- `ucpu` 是 Trace Processor 的可连接 CPU 标识，多机或虚拟化 trace 也能保持唯一；
+- `cluster_id` 和 `capacity` 来自已采集的处理器信息，用于描述拓扑与相对容量。
+
+只要查询涉及 `sched` 和 CPU counter 的时间交集，就应以 `ucpu` 分区。把 `sched.ucpu` 与 `cpu_counter_track.cpu` 直接比较，会混用两个标识域，在多机 trace 中尤其危险。
+
+下面的查询读取 Android 17 `linux.system_info` 产生的可用频点，并与 CPU 拓扑关联。
 
 ```sql
-SELECT c.cpu, c.cluster_id, c.capacity, cf.freq
+SELECT
+  c.cpu,
+  c.cluster_id,
+  c.capacity,
+  cf.freq
 FROM cpu_freq AS cf
-JOIN cpu AS c ON cf.ucpu = c.id
+JOIN cpu AS c ON cf.ucpu = c.ucpu
 ORDER BY c.cpu, cf.freq;
 ```
 
-结果先按 `cluster_id` / `capacity` 分组；字段缺失或全为默认值时，再横向对比每个 `cpu` 的频点集合。集合完全相同且频率变化同步的一组 CPU，可作为同一 cluster 处理；只有最高频率高低差异时，再结合设备 SoC 拓扑确认小核、大核和超大核的编号。
+Android 17 的公开表名是 `cpu_freq`，连接键是两侧的 `ucpu`。后续版 Trace Processor 曾调整相关公开表名；分析 Android 17 trace 时，应以配套 Trace Processor 的 schema 为准。频点集合、`cluster_id`、`capacity` 和同步变频可以互相校验，policy 成员仍以设备 sysfs 或内核源码为准。[Android 17 `cpu_freq` 表定义](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/tables/metadata_tables.py)
 
-如果 trace 里没有 `cpu_freq` 表数据，可以退回设备 sysfs：
-
-```bash
-adb shell 'for p in /sys/devices/system/cpu/cpufreq/policy*; do echo $p; cat $p/affected_cpus; cat $p/scaling_available_frequencies; done'
-```
-
-这条命令在设备端读取 policy、影响的 CPU 和可用频点。它适合本地复现实验，不适合直接写成所有线上设备都能读取的能力，因为权限、SELinux、厂商内核导出项都会影响结果。
-
-## DVFS 滞后怎样影响三类场景
-
-DVFS 的目标是在性能和功耗之间选频率。Linux 文档把这件事拆成 CPUFreq core、scaling governor 和 scaling driver 三层：governor 估计需要的 CPU capacity，driver 写平台硬件接口，policy 表示一组共享调频接口的 CPU。
-
+## 三类 workload 的判断方法
 
 ### 启动短突发
 
-冷启动早期有大量 1-10 ms 的短任务：类加载、资源解析、Binder 往返、View inflate、首次 draw。若 governor 还没把目标 cluster 拉到合适频率，UI 线程会在低频 Running 上消耗更长 wall time。trace 表现是：关键 slice 几乎都在 Running，但 `cpufreq` 在 slice 中段或结束后才抬升。
+冷启动由类加载、资源解析、Binder 往返、View 构建、编译与首次绘制等阶段组成。关键线程在低频 Running，且频率在关键 slice 结束附近才抬升，可以提出“调频响应晚于该段工作”的假设。还要排除下面几种情况：
 
-这类问题不能只靠“提前拉满频”解决。高频时间过长会增加热量，后续可能更早触发 thermal 限频。实战里更稳的动作是减少启动短任务数量，合并 I/O，避免在首帧前制造碎片化 CPU burst；需要系统侧配合时，再看 ADPF / PerformanceHint、uclamp、Power HAL 策略。DVFS 机制详见 5.4 节。
+- 当前 CPU 属于低容量 policy，线程随后发生迁核；
+- policy 的 `scaling_max_freq` 已被 thermal、节电模式或系统策略限制；
+- `power/cpu_frequency` 表示请求值，硬件有效频率另有偏差；
+- 代码受缓存或内存停顿限制，提高频率对 wall time 的收益有限；
+- UI 线程 Running 之外仍有较长 Runnable、Binder 或 I/O 等待。
+
+优化优先落在工作量本身：减少首帧前任务、合并可延后的工作、降低同步 I/O 与跨进程往返。系统侧调优再结合 PerformanceHint/ADPF、uclamp、Power HAL 和目标设备的能效曲线验证，不能从一条低频轨直接推出“锁最高频”。
 
 ### 连续渲染负载
 
-滑动、动画和游戏帧循环有稳定节奏。理想情况是 CPU cluster 在前几帧内升到能覆盖帧预算的频率，随后保持在相对稳定的频点。如果 trace 中每隔几帧出现一次低频 Running 长块，再伴随 Runnable 抖动，说明 governor 在负载谷底降得太快，下一帧来时又要重新升频。
+滑动、动画和游戏帧循环具有重复节奏。分析时按帧切窗，并分别观察 UI 线程、RenderThread、GPU 提交线程与 SurfaceFlinger。频率升降若总是落后于负载相位，可能带来周期性 wall time 波动；线程迁往不同 capacity CPU、Runnable 排队或 GPU fence 等待也会产生相似画面。
 
-判断时要把帧窗口切开：UI 线程、RenderThread、GPU 提交线程不一定在同一个 CPU 上。某一帧掉了，可能是 UI 线程低频，也可能是 RenderThread 被迁到小核，或 GPU/显示侧等待。CPU 频率只解释 CPU 侧执行速度，不能替代渲染管线分析，相关渲染机制详见 Part 1 的 2.x 章节。
+频率高不保证帧能按期完成，频率低也不必然是异常。帧内工作量较少时，低频可能正是能效目标。判断依据应是相同设备、相同温度和相同 workload 下的帧时序与频率变化，并结合 2.x 渲染章节的应用、RenderThread、GPU、合成与显示链路。
 
 ### 后台批处理
 
-后台压缩、数据库迁移、日志整理这类任务对单帧时序不敏感，但会拉长 CPU active 时间。频率过低时，单次任务耗时拉长，CPU 更晚回到 idle；频率过高时，任务结束更快，但瞬时功耗和热量上升。哪种更省电，取决于任务类型、cluster 能效曲线和 idle state 恢复成本。
+压缩、数据库迁移、索引和日志整理通常对单帧时序不敏感。低频可能延长 active 时间，高频可能缩短完成时间并提高瞬时功耗。哪种方案能耗更低，取决于电压频率曲线、内存行为、policy 能效、idle state、唤醒次数和 thermal 状态。
 
-CPUIdle 文档列出两个和性能判断直接相关的参数：target residency 表示进入该状态至少要停留多久才划算，exit latency 表示从该状态恢复执行的最坏时间。后台任务如果频繁把 CPU 从深 idle 拉醒，问题常常不在单次 CPU 频率，而在唤醒频率和任务批量化策略。
-
+频率轨不含电压，也不等价于整机功耗。后台任务的评估至少要同时比较完成时间、CPU active/idle 分布、唤醒次数、温度和硬件功耗数据。高频更快或低频更省电都只能作为待验证假设。
 
 ## 用 SQL 重建频率时间线
 
-Perfetto 把 CPU 频率和 idle state 都建模为 counter。`counter` 存时间戳和值，`cpu_counter_track` 存 track 名称和 CPU 编号。`cpuidle` 值里的 `0xffffffff`（4294967295）表示回到非 idle 状态。
-
-
-这段 SQL 用于快速检查 trace 是否抓到了频率和 idle 数据。
+Android 17 把原始频率和 idle 事件建模为 `counter`，轨道属性放在 `cpu_counter_track`。下面的查询用于确认 trace 是否含有原始数据。
 
 ```sql
 SELECT
@@ -235,55 +273,72 @@ SELECT
   t.cpu,
   c.value
 FROM counter AS c
-JOIN cpu_counter_track AS t ON c.track_id = t.id
+JOIN cpu_counter_track AS t ON t.id = c.track_id
 WHERE t.name IN ('cpufreq', 'cpuidle')
-ORDER BY c.ts
+ORDER BY c.ts, t.cpu
 LIMIT 200;
 ```
 
-如果这里没有 `cpufreq` 行，要回到采集配置检查 `power/cpu_frequency` 和 `linux.sys_stats`；如果没有 `cpuidle` 行，Perfetto UI 可能不会显示组合轨，SQL 里也无法判断 idle 区间。
+`cpufreq` 的值单位是 kHz。`cpuidle` 原始值 `4294967295` 代表退出 idle。结果为空时要回查采集配置和设备支持情况；UI 没有显示轨道时也应执行该查询，因为 Android 17 文档记录过“缺少 idle 事件时 UI 不渲染频率轨，但 SQL 数据存在”的显示问题。
 
-要把“线程在哪个频率上运行”算出来，需要把调度切片和频率区间做时间交集。`SPAN_JOIN` 正是用来解决这个问题的。
+Perfetto 标准库已经把 counter 转成带 `dur` 的区间。下面的查询读取频率区间和规范化后的 idle 区间。
 
 ```sql
-CREATE VIEW sp_sched AS
-SELECT s.ts, s.dur, s.ucpu AS cpu_id, c.cpu, s.utid
-FROM sched AS s
-JOIN cpu AS c ON s.ucpu = c.id
-WHERE dur > 0;
+INCLUDE PERFETTO MODULE linux.cpu.frequency;
+INCLUDE PERFETTO MODULE linux.cpu.idle;
 
-CREATE VIEW sp_frequency AS
-SELECT
-  c.ts,
-  LEAD(c.ts) OVER (PARTITION BY c.track_id ORDER BY c.ts) - c.ts AS dur,
-  t.cpu AS cpu_id,
-  c.value AS freq
-FROM counter AS c
-JOIN cpu_counter_track AS t ON c.track_id = t.id
-WHERE t.name = 'cpufreq';
+SELECT ts, dur, ucpu, cpu, freq
+FROM cpu_frequency_counters
+ORDER BY ts, cpu
+LIMIT 100;
 
-CREATE VIRTUAL TABLE sched_with_frequency
-USING SPAN_JOIN(sp_sched PARTITIONED cpu_id, sp_frequency PARTITIONED cpu_id);
-
-SELECT ts, dur, cpu, utid, freq
-FROM sched_with_frequency
-WHERE dur > 0;
+SELECT ts, dur, cpu, idle
+FROM cpu_idle_counters
+ORDER BY ts, cpu
+LIMIT 100;
 ```
 
-这张临时表会把每段调度运行时间切成更小的片段，每个片段带上当时 CPU 的频率。后续可以按线程、进程、帧窗口继续聚合。`SPAN_JOIN` 要求同一 partition 内输入 span 不重叠；对 `sched` 和按 track 重建的 `cpufreq` 区间来说，这个条件通常成立。
+`cpu_frequency_counters` 同时提供 `ucpu` 与逻辑 `cpu`；`cpu_idle_counters.idle = -1` 表示 active。`dur = -1` 可能表示区间延续到 trace 末尾，做交集或聚合时要按查询目标处理开放区间。[Android 17 frequency 标准库](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/frequency.sql) [Android 17 idle 标准库](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/idle.sql)
 
-这个模板计算某个线程在 Running 时间上的频率分布。`target_tid` 换成线程的 Linux tid，结果能回答“它主要跑在哪些频点上”。
+下面的模板用 `ucpu` 对调度区间与频率区间做 `SPAN_JOIN`。它是后续频率分布、迁核和帧窗口查询的公共准备步骤。
+
+```sql
+INCLUDE PERFETTO MODULE linux.cpu.frequency;
+
+CREATE PERFETTO VIEW _running_spans AS
+SELECT ts, dur, ucpu, cpu, utid
+FROM sched
+WHERE dur > 0;
+
+CREATE PERFETTO VIEW _frequency_spans AS
+SELECT ts, dur, ucpu, freq
+FROM cpu_frequency_counters
+WHERE dur > 0 AND freq IS NOT NULL;
+
+CREATE VIRTUAL TABLE _running_with_frequency
+USING SPAN_JOIN(
+  _running_spans PARTITIONED ucpu,
+  _frequency_spans PARTITIONED ucpu
+);
+```
+
+结果中的每一行都是“某线程在某逻辑 CPU 上 Running，且该 CPU 处于某个已知频率区间”的时间交集。使用内连接会舍弃未知频率区间，汇总时应同时报告被覆盖的 Running 时间，防止把缺失数据当成零。
+
+下面的查询以 `com.android.settings` 主线程为可执行示例，统计它在各频点上的 Running 时间。
 
 ```sql
 WITH target_thread AS (
-  SELECT utid
-  FROM thread
-  WHERE tid = $target_tid
-), running_freq AS (
+  SELECT t.utid
+  FROM thread AS t
+  JOIN process AS p ON t.upid = p.upid
+  WHERE p.name = 'com.android.settings'
+    AND t.tid = p.pid
+),
+running_freq AS (
   SELECT swf.dur, swf.freq
-  FROM sched_with_frequency AS swf
+  FROM _running_with_frequency AS swf
   JOIN target_thread USING (utid)
-  WHERE swf.dur > 0 AND swf.freq IS NOT NULL
+  WHERE swf.dur > 0
 )
 SELECT
   freq,
@@ -294,59 +349,119 @@ GROUP BY freq
 ORDER BY running_ms DESC;
 ```
 
-这个结果只统计 Running 时间，不包含 Runnable 排队和 Sleeping 等待。若一个慢 slice 的 wall time 很长，但这里的 Running 时间很短，CPU 频率不是主因，应回到线程状态占比。
+把包名替换为目标进程名即可复用。`tid = pid` 用于定位 Linux 主线程，随后全程使用 `utid`，从而避开长 trace 中 tid 复用。这里的百分比是“已知频率覆盖范围内的 Running 时间占比”，不能解释为指令占比、周期占比或能耗占比。
 
-## 端侧 AI 推理里的 governor 错配
+下面的查询把 UI 线程 Running 区间裁到 `android_frames` 的帧窗口内，适合检查掉帧附近的频率分布。
 
-移动端 LLM 推理把 DVFS 问题的复杂度提了一级。arXiv 2507.02135 在 Pixel 7 / Pixel 7 Pro 上用 llama.cpp 测试发现：就算模型主要跑 GPU，CPU 还得管 OpenCL command queue，内存频率还影响 KV cache 访问。CPU、GPU、内存 governor 各调各的，同一个推理任务被拆成三个互相不知情的局部决策。
+```sql
+INCLUDE PERFETTO MODULE android.frames.timeline;
 
+SELECT
+  f.frame_id,
+  swf.cpu,
+  swf.freq,
+  SUM(
+    MIN(swf.ts + swf.dur, f.ts + f.dur) -
+    MAX(swf.ts, f.ts)
+  ) / 1000000.0 AS ui_running_ms
+FROM android_frames AS f
+JOIN _running_with_frequency AS swf
+  ON swf.utid = f.ui_thread_utid
+ AND swf.ts < f.ts + f.dur
+ AND f.ts < swf.ts + swf.dur
+WHERE f.process_name = 'com.android.settings'
+GROUP BY f.frame_id, swf.cpu, swf.freq
+ORDER BY f.frame_id, ui_running_ms DESC;
+```
 
-这个现象适合用 Perfetto 验证：decode 阶段 GPU 利用率不一定持续打满，GPU governor 可能降频；CPU 侧看自己利用率也不高，EAS / CPU governor 继续降；但 GPU 还在等 CPU 喂下一批 kernel，两边同时降频的结果就是 token 输出时间拉长。论文实验条件是 Android 13、root/open 设备、battery bypass、屏幕关闭、Monsoon 0.2 ms 功耗采样、ShareGPT 数据集和固定频率搜索口径；在这个前提下，Pixel 7 / 7 Pro 上部分 prefill / decode 延迟有 40.4% 的优化空间，FUSE 方案让 TTFT 降低 7.0%-16.9%，TPOT 降低 25.4%-36.8%。
+这个结果只覆盖 UI 线程。RenderThread 需要改用 `f.render_thread_utid` 单独查询；GPU、SurfaceFlinger 和显示侧仍要沿渲染链路核对。帧窗口内缺少频率行时，先计算该帧的 Running 时间与频率覆盖率，再讨论低频相关性。
 
+线程迁核可以直接从公共结果里观察。下面的查询列出目标主线程连续 Running 区间之间的 CPU、cluster 与频率变化。
 
-这组结论不能外推成“LLM 推理都要锁高频”。它的设备边界是 Pixel 7 / Pixel 7 Pro，SoC 是 Google Tensor G2，模型和框架以论文实验为准。放到 Android 性能分析里，更稳的用法是把它当成一个提醒：端侧 AI 推理要同时看 CPU 频率、GPU 频率、内存带宽、温控和每 token 延迟；只看 CPU Frequency 轨，会漏掉多组件 governor 之间的错配。
+```sql
+WITH target_thread AS (
+  SELECT t.utid
+  FROM thread AS t
+  JOIN process AS p ON t.upid = p.upid
+  WHERE p.name = 'com.android.settings'
+    AND t.tid = p.pid
+),
+ordered AS (
+  SELECT
+    swf.ts,
+    swf.dur,
+    swf.cpu,
+    c.cluster_id,
+    c.capacity,
+    swf.freq,
+    LAG(swf.cpu) OVER (ORDER BY swf.ts) AS prev_cpu,
+    LAG(c.cluster_id) OVER (ORDER BY swf.ts) AS prev_cluster_id
+  FROM _running_with_frequency AS swf
+  JOIN target_thread USING (utid)
+  JOIN cpu AS c ON c.ucpu = swf.ucpu
+)
+SELECT *
+FROM ordered
+WHERE prev_cpu IS NOT NULL
+  AND (cpu != prev_cpu OR cluster_id != prev_cluster_id)
+ORDER BY ts;
+```
 
-分析端侧 AI 推理 trace 时，建议额外记录 GPU counter、thermal 事件、CPU sched、`cpufreq`、内存带宽或厂商可用的 DDR 频率数据。若设备不暴露 GPU/DDR 频率，CPU 侧结论只能标成局部证据。
+该查询展示相邻的已知频率 Running 区间，不保证两行之间没有 Runnable、Sleeping 或未知频率空洞。迁核原因需要结合 `thread_state`、wakeup、uclamp、调度优先级和系统负载判断。
+
+## 端侧 AI 推理中的 governor 协同
+
+论文 *Dissecting the Impact of Mobile DVFS Governors on LLM Inference Performance and Energy Efficiency* 研究了 CPU、GPU 和内存调频各自决策时的能效错配。实验设备是 Pixel 7 与 Pixel 7 Pro，SoC 为 Tensor G2，系统为 Android 13；测试采用 llama.cpp、OpenCL/CLBlast、TinyLlama 1.1B、StableLM-Zephyr 3B 和 Llama-2 7B，并在 root、battery bypass、屏幕关闭和外部功耗采样条件下运行。
+
+在这组实验边界内，独立 governor 相对同能耗的频率组合，部分 prefill/decode 延迟最多增加 40.4%。论文提出的 FUSE 在相同单 token 能耗下，平均降低 7.0%—16.9% 的 TTFT 和 25.4%—36.8% 的 TPOT。[论文页面](https://arxiv.org/abs/2507.02135)
+
+这些数字不能外推到 Android 17、其他 SoC、NPU 后端或不同推理运行时。它们提供的是一种诊断视角：GPU 执行仍依赖 CPU 提交，KV cache 与权重访问受内存系统影响，单看 CPU 利用率可能低估整条推理流水线的时序需求。
+
+端侧推理 trace 至少要把 CPU sched/cpufreq、GPU job 与频率、内存带宽或 DDR 频率、thermal、TTFT、TPOT 和单 token 能耗放在相同实验中。设备不暴露 GPU 或 DDR 数据时，结论应明确限定为 CPU 侧观察。
+
+## 与 EAS、uclamp、thermal 交叉验证
+
+CPU Frequency 是结果信号，解释其来源还要连接下面几组证据：
+
+- **EAS 与 task placement**：确认线程所在 CPU 的 `capacity`、迁核方向和同核竞争，详见 5.2 节；
+- **uclamp 与 PerformanceHint**：确认任务的利用率下限、上限及会话提示是否改变 schedutil 输入，详见 5.4 节；
+- **CPUFreq policy**：对照 `scaling_min_freq`、`scaling_max_freq`、governor、`cpu_frequency_limits` 和可用频点；
+- **thermal 与电源策略**：检查温度、冷却设备、节电模式、Power HAL 和 sustained workload，详见 11.1 节；
+- **执行效率**：用 Simpleperf/Perf 采样、PMU、AMU 或厂商计数器排除缓存、内存和前端停顿。
+
+Android 17 通用内核能说明 CPUFreq、schedutil、uclamp、EAS 与 CPUIdle 的框架。设备上的 energy model、频点表、thermal policy、Power HAL 和 vendor hook 可能来自厂商内核或闭源组件。没有目标设备的源码、sysfs 和 trace，结论只能停留在通用框架层。
+
+## 线上与工具预设的采集边界
+
+本地 `adb perfetto` 接受完整 TraceConfig，在设备允许的范围内可以显式启用本章所需数据源。Android Studio Profiler 使用工具自己的采集配置，版本与入口不同会得到不同字段；分析前应检查 `cpu_counter_track` 和 trace metadata，不应按界面名称推断采集内容。
+
+Android 17 的 `ProfilingManager` system trace 由平台 `Configs` 生成固定配置。该配置包含 compact sched、进程信息、应用 atrace 分类和 SurfaceFlinger FrameTimeline，未启用 `power/cpu_frequency`、`power/cpu_idle`、`linux.sys_stats` 或 `linux.system_info`。system trace 结果还会进入 redaction 流程，并受系统 rate limiter、参数范围和设备配置约束。它可以支持应用侧线上性能采样，却不能替代本章的本地 CPU DVFS TraceConfig。[Android 17 Profiling 配置](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/Configs.java) [Android 17 ProfilingService](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java)
+
+拿到线上 trace 后，先列出实际存在的数据源和轨道。缺少 idle、policy limit、GPU 或 thermal 时，报告应写成“已观测 CPU 频率与调度状态的相关性”，不能升级为整机能耗或 governor 根因。
 
 ## 误判清单
 
-- **USB 采集会影响 idle state**：多数 Android 设备插着 USB 时不会进入某些 idle state——USB driver stack 持有 wakelock。用 USB 抓功耗 trace 时，idle 分布可能比真实使用场景浅。
-- **频率事件缺失不等于 CPU 没跑**：`power/cpu_frequency` 只在变频时出事件。trace 开头空白通常要靠 `linux.sys_stats` 补初始频率。
-- **idle 区间上的频率不能当运行频率**：CPU clock-gated 后，频率值可能只是进入 idle 前的上一段运行值。看功耗时要结合 `cpuidle` 和 11.1 节的功耗模型。
-- **UI 不显示不等于 SQL 没数据**：某些情况下 Perfetto UI 不渲染 cpufreq track，但数据仍可通过 Trace Processor 查询。遇到 UI 空白要先跑 SQL。
-- **Intel 与 ARM 暴露能力不同**：现代 Intel CPU 的内部 DVFS 可能不向内核暴露频率变更事件；Android ARM SoC 上通常更可靠，但也受厂商内核影响。
-- **厂商策略不可互推**：联发科、高通、三星、Google Tensor 的 EAS 参数、Power HAL、thermal 策略和 GPU governor 各不相同。没有实机 trace 和源码证据，结论只能限定在具体设备。
-- **thermal 和 uclamp 会改变解释**：同一段低频 Running，可能来自 governor 未升频，也可能来自 thermal 限频、`uclamp_max`、省电模式或厂商策略。要与 5.2、5.4、11.1 节交叉验证。
+- **USB 改变 idle 条件**：Android 17 Perfetto 文档指出，许多 Android 设备接入 USB 时，USB driver stack 持有 wakelock，部分 idle state 不会出现。USB trace 的 idle 分布未必代表脱线使用。
+- **轨道开头空白**：`power/cpu_frequency` 只记录切换，空白可能来自初始值缺失；用轮询补快照，并在 SQL 中报告覆盖率。
+- **idle 区间的频率残留**：CPU clock-gated 后，轨道可能保留进入 idle 前的频率。频率值不能替代 idle state 或功耗数据。
+- **请求频率等同硬件频率**：`cpu_frequency` 与 `scaling_cur_freq` 多数情况下更接近软件请求或驱动报告值；需要硬件反馈才能讨论有效频率。
+- **高频等同高吞吐**：缓存未命中、内存带宽、分支和共享资源会让高频 Running 仍然很慢。
+- **低频等同 governor 反应慢**：policy 上限、thermal、uclamp、节电模式、迁核和 vendor hook 都可能限制结果。
+- **同步变频等同 cluster**：同步轨迹只能提示共享 policy；用 `cluster_id`、capacity、`related_cpus` 和源码确认拓扑。
+- **频率等同功耗**：轨道没有电压、漏电、内存、GPU 和屏幕功耗。整机能耗需要硬件功耗计或可靠的设备级计量。
+- **UI 没轨等同没数据**：Android 17 文档记录过 cpuidle 缺失导致 UI 不渲染 cpufreq 的问题，SQL 查询才是数据存在性的判据。
+- **厂商策略可以互推**：高通、联发科、三星、Google Tensor 的 policy、Power HAL、thermal 与 GPU/内存调频实现不同，结论必须绑定设备、版本和 workload。
 
-## 与 EAS、uclamp、thermal 的交叉验证
+## 查询结果应怎样写进报告
 
-Perfetto CPU Frequency 分析只覆盖“观察到的频率结果”。要解释结果来源，还要把三层信号接上：
+一份可复核的 DVFS 结论至少包含：
 
-- **EAS / task placement**：看线程是否被放到合适 cluster，详见 5.2 节。若 UI 线程持续在小核低频 Running，先确认是否有迁移、优先级、uclamp 或 top-app 状态问题。
-- **schedutil / DVFS**：看频率是否跟随 utilization 变化，详见 5.4 节。短 burst 结束后才升频，属于典型调频滞后观察点。
-- **thermal / power model**：看是否有温控限频、功耗归属异常或 sustained workload，详见 11.1 节和热管理相关章节。
+1. 设备、构建版本、内核版本、Trace Processor 版本与采集配置；
+2. workload、温度、充电/USB、屏幕、节电模式和重复次数；
+3. 目标线程的 wall time、Running、Runnable、阻塞与频率覆盖率；
+4. CPU 的逻辑编号、`ucpu`、capacity、cluster 与 cpufreq policy；
+5. 频率切换、policy limit、idle、迁核和 thermal 的时间关系；
+6. 代码或调用栈热点，以及必要的 PMU、AMU、GPU、内存与功耗证据；
+7. 明确区分观测、推断和已验证根因。
 
-一个需要注意的边界：AOSP / Linux 主线能解释通用的 cpufreq、schedutil、uclamp、EAS 框架，但 vendor-specific 的 energy model、freq table、Power HAL 策略多数在厂商内核或闭源组件里。开源框架的行为不能写成所有设备的最终调度策略。[来源: DeepResearch/2026-05-11-soc-platform-diff-dimensity-scheduling.md]
-
-## 线上采集能力边界
-
-本地 Perfetto 走完整 TraceConfig，`linux.ftrace`、`linux.sys_stats`、`linux.system_info` 都能开。线上分两种情况：
-
-- **应用主动请求的 system trace**：Android 15 起 `ProfilingManager` / AndroidX Profiling 支持应用请求 system trace、heap dump、heap profile、stack sampling。但返回文件受平台限流、隐私裁剪和设备策略影响，不能假设和本地 `adb perfetto` 一致。详见 14.7 节。
-- **Android Studio / System Profiler**：适合本地复现和交互查看，采集 preset 可能漏 ftrace event。频率轨缺失时回到 TraceConfig 或 SQL 检查。
-
-线上 trace 里如果缺少 `power/cpu_idle`、GPU counter 或 thermal 信息，结论要收窄到“CPU 频率观察”。不要把它扩成整机能耗判断。
-
-## SQL 模板集
-
-这组模板可作为独立查询片段维护。
-
-| 模板 | 回答的问题 | 依赖表 |
-|---|---|---|
-| CPU 频率分布 | 某个 CPU / cluster 在哪些频点停留更久 | `counter`, `cpu_counter_track` |
-| Running 时间加权频率 | 某个线程 Running 时主要处于哪些频点 | `sched`, `thread`, `counter`, `cpu_counter_track`, `SPAN_JOIN` |
-| cluster 迁移前后频率变化 | 线程从小核迁到大核前后频率是否同步变化 | `sched`, `thread`, `cpu_freq`, `counter` |
-| 帧窗口内频率统计 | 掉帧窗口是否伴随低频或升频滞后 | `slice`, `sched`, `counter`, `SPAN_JOIN` |
-
-使用这些模板时要保留两个字段：`cpu` 和 `utid`。前者防止把不同 cluster 的频率混在一起，后者防止 Linux tid 复用带来的误匹配。Trace Processor 文档推荐用 `utid` / `upid` 做线程和进程的唯一标识，这一点在长 trace 中尤其要保留。
-
+“目标线程在已知频率覆盖的 Running 时间中，有多少比例落在某频点”是可复核观测。“governor 导致掉帧”属于因果结论，需要对照实验：固定 workload，控制温度与系统状态，改变一个调频相关变量，并确认帧时序随之稳定变化。这样写，频率轨才会从截图线索变成可验证的性能证据。
