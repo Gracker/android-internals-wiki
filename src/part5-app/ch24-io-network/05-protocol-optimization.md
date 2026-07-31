@@ -39,6 +39,7 @@ last_deepseek_cn_review_at: 2026-07-06
 ---
 # 网络协议优化（HTTP/2、HTTP/3、gRPC）
 
+<!-- markdownlint-disable MD022 MD032 -->
 <!-- outline-start -->
 ## 本节要点大纲
 
@@ -54,131 +55,308 @@ last_deepseek_cn_review_at: 2026-07-06
 ### OpenClaw 加工指引
 
 <!-- outline-end -->
+<!-- markdownlint-enable MD022 MD032 -->
 
 ## 为什么要了解网络协议优化（HTTP/2、HTTP/3、gRPC）
 
-24.4 已经把网络层拆成连接、解析、调度和容错四个控制面。到了协议层，同一组 API 继续用 HTTP/1.1、升级到 HTTP/2、切到 HTTP/3/QUIC，或者改成 gRPC，性能收益和兼容成本完全不同。协议优化的目标是减少等待段，不是追新。HTTP/2 主要减少同域名并发请求的连接数量；HTTP/3/QUIC 主要降低丢包、网络切换和建连恢复的损耗；gRPC 适合强契约、高频内部 RPC 和长连接流式场景。TLS、证书、连接池和 DNS 的细节详见 12.3、12.4，这里把它们压缩成选型时要用到的工程结论。
+协议名称不会直接转化为性能收益。HTTP/2、HTTP/3 和 gRPC 解决的问题不同：
+
+- HTTP/2 用 stream 复用和 HPACK 减少并发请求对连接数量与重复首部的需求。
+- HTTP/3 在 QUIC 上提供 HTTP 语义，避免 TCP 字节流导致的跨 stream 传输层队头阻塞，并支持连接迁移机制。
+- gRPC 是 RPC 框架和调用契约，Android 上的常用传输仍是 HTTP/2；它不等于 HTTP/3。
+
+本节以 Android 17 / API 37 / AOSP `android-17.0.0_r1` 为平台锚点，以 OkHttp 5.3.0、RFC 9113、RFC 9000、RFC 9114 和当前 gRPC 官方文档为客户端与协议依据。连接池、DNS、超时和重试边界见 [24.4 网络架构与连接管理](04-network-architecture.md)，分段性能与 TLS 见 [12.3 网络性能深入](../../part2-performance/ch12-apk-network/03-network-performance-deep.md) 和 [12.4 网络安全与 TLS 性能](../../part2-performance/ch12-apk-network/04-network-security-tls-performance.md)。
+
+## 先区分协议、客户端和传输实现
+
+Android 项目常见的协议能力来自不同组件：
+
+| 组件 | Android 17 下的协议能力 | 版本边界 |
+| --- | --- | --- |
+| OkHttp 5.3.0 | HTTP/1.1、HTTP/2 | 没有稳定的公开 HTTP/3 配置入口 |
+| `android.net.http.HttpEngine` | 由设备提供的 HTTP 引擎处理 HTTP/1.1、HTTP/2、HTTP/3 | API 34 起可用，也标注为 S Extensions 7；实际能力受设备实现影响 |
+| Cronet 库 | Chromium 网络栈，支持 HTTP/1.1、HTTP/2、HTTP/3 over QUIC | 随应用或 Google Play services 提供，能力取决于所选实现提供方与版本 |
+| gRPC Java / Kotlin | RPC 语义、生成 stub、streaming、deadline 与状态码 | 常用 Android transport 基于 HTTP/2；也可评估 Cronet transport |
+
+“启用 HTTP/3”和“这次请求使用 HTTP/3”也是两件事。服务端能力、Alt-Svc 或其他发现机制、代理、UDP 可达性、证书、客户端状态都会影响最终协商。线上数据必须记录请求实际使用的协议，不能用客户端库名称代替。
 
 ## HTTP/2 多路复用与服务端推送
 
-HTTP/2 的收益来自三件事：二进制分帧、请求多路复用、Header 压缩。OkHttp 5 文档把 HTTP/2 描述为 IETF 的二进制分帧协议，支持同一 socket 上的多请求复用、Header 压缩和 server push；HTTP/1.1 语义仍然保留在 HTTP/2 之上。Android 端经由 ALPN 协商到 `h2` 后，OkHttp 可以在同一条 TLS 连接上承载多个 stream。对 App 来说，HTTP/2 最适合这类请求形态：同一个 API 域名下短请求多、单个响应体不大、请求之间没有强顺序依赖。首页接口、配置接口、批量小资源请求通常能受益，因为 DNS、TCP、TLS 的固定成本被摊到一条连接上。
+### 多路复用减少连接，不消除排队
+
+HTTP/2 保留 HTTP 方法、状态码和首部语义，将消息编码为二进制 frame，并把 frame 归属到不同 stream。多个 stream 可以在同一连接上交错传输，HPACK 则压缩重复首部。Android 上的 HTTPS 请求通常通过 ALPN 协商 `h2`。
 
 | 维度 | HTTP/1.1 | HTTP/2 |
-|---|---|---|
-| 同域名并发 | 通常依赖多条连接 | 一条连接承载多个 stream |
-| 连接成本 | 并发越多，建连和 TLS 成本越高 | 固定成本集中在少量连接上 |
-| 队头阻塞位置 | 请求层面容易排队 | TCP 丢包仍会影响整条连接 |
-| 客户端观测 | 多条连接分散 | 要按 stream、连接和 TTFB 分开看 |
+| --- | --- | --- |
+| 并发请求 | 通常需要多条连接 | 一条连接可以承载多个 stream |
+| 首部编码 | 每次发送文本首部 | HPACK 可复用首部表并压缩 |
+| 应用层队头等待 | 一条连接同一时刻通常处理一个 exchange | stream 可并发推进 |
+| 传输层队头等待 | TCP 丢包阻塞连接后续字节 | 仍运行在 TCP 上，因此影响同一连接的 stream |
+| 流量控制 | 主要依靠 TCP 与应用读取 | 同时存在连接级和 stream 级 HTTP/2 流量控制 |
 
-OkHttp 的并发实现有一个容易误判的点：业务线程看到的是阻塞式 API，但底层 HTTP/2 socket 要有专门的读线程持续读取 frame，再把不同 stream 的数据分发给调用方。OkHttp 文档明确写到，reader thread 不能执行应用层代码，也不能在写 socket 时阻塞，否则一个慢 stream 可能拖住整条连接。因此，HTTP/2 并不会自动消除所有排队。服务端响应慢、单个大响应体占用带宽、客户端读取 body 不及时，都会让同一连接上的其他 stream 感知到延迟。排查时要记录三个指标：请求使用的协议、是否复用连接、同一连接上的并发 stream 数。只看接口总耗时，无法判断瓶颈在协议、服务端还是业务调度。服务端推送要单独处理。HTTP/2 协议里有 server push，但移动 App 不应把它当成默认优化手段。Chrome 106 起默认禁用 HTTP/2 Server Push，Chrome 团队给出的原因包括收益不稳定、使用率低、缺少明确净收益。对 App API 来说，服务端推送还会带来缓存一致性、权限、灰度和流量浪费问题。更稳的做法是把首屏依赖收敛成明确 API，或者用服务端聚合接口替代“猜测客户端下一步会要什么”。一个可执行的 HTTP/2 检查表如下：
-- 服务端是否通过 ALPN 正常协商 `h2`，客户端是否记录 `Response.protocol`。
-- 同一业务域名是否共享 `OkHttpClient` 和连接池，避免把 HTTP/2 复用切碎。
-- 大文件下载、图片预加载、普通 API 是否分 Dispatcher，避免大响应占住 API 请求。
-- CDN、网关和后端是否都支持 HTTP/2；中间层回源仍是 HTTP/1.1 时，客户端收益会变小。
-- 是否把 server push 从优化清单中移除，改用显式预取、聚合接口或缓存策略。
+HTTP/2 的并发数还受服务端 `SETTINGS_MAX_CONCURRENT_STREAMS`、客户端 Dispatcher、连接和 stream 流量窗口、服务端容量与设备资源限制。它不会保证所有请求都共用一条连接，也不会为业务请求提供优先级承诺。
 
-## HTTP/3 / QUIC 的优势与适用场景
+大响应体会争用同一连接的带宽和拥塞窗口。消费方长时间不读取响应体，还会产生 stream 级背压，并可能影响连接级流量窗口。大文件与短 API 是否使用同一客户端或 Dispatcher，应根据排队和尾延迟数据决定，不能只凭“HTTP/2 支持多路复用”得出结论。
 
-HTTP/3 把 HTTP 语义放到 QUIC 之上。QUIC 运行在 UDP 上，内置 TLS 1.3，加上 stream 多路复用、拥塞控制、连接 ID 和连接迁移。RFC 9000 写明，QUIC 的一个收益是避免跨 stream 的队头阻塞：某个 packet 丢失时，只阻塞包含该 packet 数据的 stream，其他 stream 仍可继续推进。HTTP/3 的工程价值主要在三类场景：
+连接复用仍取决于 OkHttp 的 `Address`、route、证书和连接健康状态。域名分片可能增加 DNS、TCP 与 TLS 成本，也可能阻止符合条件的 HTTP/2 连接合并。相关资格检查见 24.4。
 
-| 场景 | HTTP/3/QUIC 的收益 | 评估指标 |
-|---|---|---|
-| 弱网和丢包 | 丢包影响范围从 TCP 连接收窄到相关 QUIC stream | packet loss 下的 P90/P99 TTFB、body 下载时间 |
-| 网络切换 | connection ID 支持 Wi-Fi / 蜂窝切换时保留连接上下文 | 网络切换后的失败率、重连次数、恢复耗时 |
-| 高频短请求 | 结合会话恢复降低重复建连成本 | 首包耗时、握手耗时、复用率 |
+### Server Push 是协议能力，不是 OkHttp 应用能力
 
-Android 端的公开接入路径有两条。API 34 起，`android.net.http.HttpEngine` 是平台暴露的 HTTP 引擎；AOSP android-17.0.0_r1 的 `platform/external/cronet/android/java/src/android/net/http/HttpEngine.java` 中，`HttpEngine.Builder` 注释写明默认配置启用 HTTP/2 和 QUIC，HTTP 缓存默认关闭。Cronet 是以库形式提供给 App 的 Chromium 网络栈，Android 官方文档说明 Cronet 原生支持 HTTP、HTTP/2、HTTP/3 over QUIC。媒体场景还有一个明确口径：Media3 文档写明，API 34（或 S extensions 7）起，HttpEngine 是 Android 上推荐的默认网络栈；多数情况下它内部使用 Cronet，并支持 HTTP、HTTP/2、HTTP/3 over QUIC。视频、音频、长下载这类吞吐敏感场景，可以优先评估 HttpEngine / Cronet，而不是只在 OkHttp 上继续调连接池。QUIC 连接迁移要看服务端支持。AOSP android-17.0.0_r1 的 `platform/external/cronet/android/java/src/android/net/http/ConnectionMigrationOptions.java` 注释写明，连接迁移只对 QUIC 连接可用，并且服务器需要支持连接迁移；典型场景是设备从 Wi-Fi 切到蜂窝，连接 ID 让服务器识别这是同一条连接的延续。HTTP/3 也有兼容边界。RFC 9114 写明，UDP 被阻断等连接问题会导致 QUIC 建连失败，客户端应尝试 TCP-based HTTP 版本。实际 App 里要保留 HTTP/2 / HTTP/1.1 fallback，并记录失败原因：UDP 不通、QUIC 握手失败、Alt-Svc 未命中、证书或代理策略不兼容。一套上线顺序可以这样设计：1. 对灰度用户打开 HttpEngine / Cronet，记录协议、建连耗时、TTFB、失败码和网络类型。2. 对支持 QUIC 的域名启用 HTTP/3，保留 HTTP/2 fallback。3. 把弱网、网络切换、视频播放、长列表首屏这些场景单独分桶。4. 对比 P50、P90、P99，而不是只看平均值。5. 若 QUIC 失败率高于 HTTP/2，先查 UDP 阻断、代理、CDN Alt-Svc、服务端连接迁移配置。HTTP/3 的收益通常出现在尾延迟和网络切换，不一定体现在每次请求的平均耗时。评估时要把请求大小、网络类型、丢包率、服务端支持和 fallback 比例一起写进实验条件。
+RFC 9113 定义了 `PUSH_PROMISE`，但客户端可以限制或拒绝推送。OkHttp 5.3.0 的 `Http2Connection.Builder` 默认使用内部 `PushObserver.CANCEL`；该观察器收到推送事件后请求取消，`OkHttpClient.Builder` 也没有面向应用开放的 PushObserver 配置。
+
+因此，使用 OkHttp 的 Android 应用不应把 HTTP/2 Server Push 写进可执行的性能方案。更容易观测和控制的替代方式包括：
+
+- 首屏聚合接口，减少明确存在的依赖链。
+- 客户端在用户意图足够明确时发起可取消的预取。
+- 使用标准 HTTP 缓存，让重复资源按新鲜度复用。
+- 服务端返回资源清单，由客户端按当前界面、网络费用和本地缓存决定是否获取。
+
+即使换用支持推送的客户端，也要测量推送资源被使用、已缓存、重复传输和取消的比例。协议存在该能力，不代表它对移动 API 有净收益。
+
+## HTTP/3 与 QUIC 的收益边界
+
+### 传输层发生了什么变化
+
+HTTP/3 把 HTTP 消息映射到 QUIC stream。QUIC 在 UDP 之上实现可靠传输、拥塞控制、TLS 1.3、stream 复用和连接 ID。它主要改变以下行为：
+
+- 一个 stream 丢失的数据需要重传时，其他不依赖该数据的 stream 可以继续交付。HTTP/2 运行在单个 TCP 有序字节流上，丢失字节会阻塞后续字节。
+- TLS 与 QUIC 握手集成，已建立状态满足条件时可使用恢复；0-RTT 仍是可选能力。
+- 连接用 connection ID 标识，IP 地址或端口变化后可以执行路径验证和迁移。
+
+这些机制仍有共享资源。QUIC 的拥塞控制通常作用于连接路径，丢包导致拥塞窗口变化时，多个 stream 的吞吐都会受到影响。HTTP/3 也不会缩短 DNS、服务端处理或应用读取时间。
+
+QUIC 位于 Cronet/Chromium 用户空间。Android common kernel 负责 UDP socket、IP、路由、队列和设备驱动，不实现 HTTP/3 状态机。涉及内核路径时，本项目使用 `android17-6.18-2026-06_r6`；可从该标签的 [`net/ipv4/udp.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/ipv4/udp.c)继续追踪 UDP 收发。
+
+### 连接迁移不是切网成功保证
+
+RFC 9000 定义了连接迁移和路径验证机制。Android 17 的 `ConnectionMigrationOptions` 源码也写明两项前提：连接必须是 QUIC，服务端必须支持迁移。客户端还要面对以下约束：
+
+- 新网络需要可达同一服务端，并通过路径验证。
+- NAT、企业代理、VPN、防火墙和服务端负载均衡配置可能阻止迁移。
+- 迁移期间的请求可能超时或被取消，业务仍要有恢复策略。
+- 允许使用非默认网络可能产生流量费用；`setAllowNonDefaultNetworkUsage()` 在 AOSP `android-17.0.0_r1` 中标注为实验 API。
+
+`HttpEngine.Builder.setConnectionMigrationOptions()` 在同一源码锚点中也带有 `ConnectionMigrationOptions.Experimental` 注解。项目可以在受控实验中启用默认网络迁移，生产使用前要验证设备实现、服务端、代理、计费网络和关闭开关。
+
+### 0-RTT 只用于可重放操作
+
+QUIC 的 0-RTT 允许恢复连接在握手完成前发送 early data，但这类数据缺少连接间防重放保证。登录、支付、下单和产生一次性副作用的写请求不能仅凭“使用 HTTPS”就进入 0-RTT。
+
+HttpEngine 的 `addQuicHint()` 文档还说明，跨引擎会话利用 0-RTT 需要启用磁盘缓存。即使配置满足，服务端也可以拒绝 early data，客户端必须允许按正常握手继续。指标应区分最终协议和业务总耗时，不应把“启用 QUIC”直接记成“命中 0-RTT”。
+
+### UDP、代理和发现机制决定可用性
+
+HTTP/3 依赖 UDP。部分企业网络、代理、VPN 或热点会阻断或限制 QUIC，客户端需要保留基于 TCP 的 HTTP/2 或 HTTP/1.1。RFC 9114 明确允许在 QUIC 连接问题发生时尝试 TCP-based HTTP。
+
+服务端还要通过客户端支持的方式声明 HTTP/3 能力，例如 Alt-Svc，或者由应用提供可信的 QUIC hint。打开 `setEnableQuic(true)` 只允许引擎使用 QUIC，不会让缺少服务端配置的域名自动变成 HTTP/3。
+
+Android 17 / API 37 为 `HttpEngine.Builder` 增加 `setProxyOptions()`。应用代理配置会覆盖系统代理配置；若企业环境依赖系统代理，错误的应用代理或缺少最终的 `null` 回退可能导致完全不可达。协议灰度必须包含企业代理和 VPN 场景。
+
+## Android 17 上选择 OkHttp、HttpEngine 或 Cronet
+
+### OkHttp 5.3.0
+
+OkHttp 适合已有 Retrofit、拦截器、Cookie、缓存和 EventListener 体系的 HTTP/1.1、HTTP/2 API。它能通过 `Response.protocol` 报告最终协议，也能用 EventListener 记录 DNS、连接、TLS 和交换阶段。OkHttp 5.3.0 没有稳定的公开 HTTP/3 配置入口。
+
+若项目希望保留 OkHttp API 并使用 Cronet transport，Android 官方集成文档列出了 Cronet Transport for OkHttp。接入时仍要核对该 transport 的版本、支持的 OkHttp API、拦截器语义、缓存、证书、代理和事件指标；它不是替换依赖后即可无差异工作的开关。
+
+### HttpEngine
+
+`HttpEngine` 从 API 34 起提供，也标注为 S Extensions 7。AOSP `android-17.0.0_r1` 的 `HttpEngine.Builder` 直接使用 `NativeCronetEngineBuilderImpl`。默认配置：
+
+- 启用 HTTP/2。
+- 启用 QUIC。
+- 关闭 HTTP 缓存。
+
+默认启用表示协议可被选择，最终请求仍可能使用 HTTP/1.1 或 HTTP/2。若需要 HTTP 缓存，必须显式配置缓存模式与容量；磁盘缓存还要配置独占的存储目录。同一目录不能同时被多个 HttpEngine 使用。
+
+HttpEngine 应作为长生命周期对象复用，并在不再使用时调用 `shutdown()`。按请求创建引擎会失去连接、QUIC 状态、线程和缓存复用，也可能违反存储目录的单实例约束。
+
+### Cronet 库
+
+Cronet 是随应用或实现提供方交付的 Chromium 网络栈。Android 官方指南当前列出 Google Play services 提供方，并为无法加载它的情况提供 Java 回退实现。回退实现的性能和协议能力不能按 native Cronet 推断。
+
+项目需要记录实际实现提供方、版本与最终协议。Android 10—13 若要使用 HTTP/3，通常需要外部 Cronet；Android 14 及以上可评估平台 HttpEngine。选择哪条路径还取决于包体积、设备覆盖、更新渠道、现有网络层适配和可观测性。
+
+### 基础 API 37 能观测什么
+
+`UrlResponseInfo` 在基础 API 37 提供最终协商协议、缓存使用情况和接收字节下界。下面的代码用于在请求的终止回调中生成一条结果记录。
+
+```kotlin
+data class HttpEngineResult(
+    val negotiatedProtocol: String?,
+    val cacheUsed: Boolean,
+    val receivedByteCountLowerBound: Long,
+)
+
+fun UrlResponseInfo.toTerminalResult(): HttpEngineResult {
+    return HttpEngineResult(
+        negotiatedProtocol = negotiatedProtocol.ifEmpty { null },
+        cacheUsed = wasCached(),
+        receivedByteCountLowerBound = receivedByteCount,
+    )
+}
+```
+
+应在终止回调中读取最终字节数；`onFailed()` 和 `onCanceled()` 还要先确认 `UrlResponseInfo` 非空。`wasCached()` 返回 `true` 时也可能包含经过网络重新验证的响应，不能把它一律解释成零网络流量。`getReceivedByteCount()` 是处理请求所需网络字节的最小计数，包含重定向且位于解压前，但可以忽略 IP、TCP/UDP、TLS 和代理开销。空协议字符串表示未协商、未知或普通 HTTP/HTTPS，不能自行改写成 HTTP/1.1。
+
+`FinishedRequestTimings` 和 `UrlRequest.getFinishedRequestTimings()` 是 37.1 / S Extensions 23 新增能力，不属于本章的 API 37 / `android-17.0.0_r1` 锚点。基础 API 37 的文章不能据此声称可直接获得 DNS、连接和 TLS/QUIC 的完整公开时序。
 
 ## gRPC 在移动端的实践
 
-gRPC 适合“客户端和服务端都由同一组织控制”的接口。它用 `.proto` 描述服务和消息，默认使用 Protocol Buffers 作为 IDL 和载荷格式，支持 Unary、server streaming、client streaming、bidirectional streaming 四类方法。Android 端官方 gRPC 文档提供 Java / Kotlin quickstart，适合在移动端生成 typed stub。移动端用 gRPC 的收益有三点：
+### gRPC 是调用契约，不是通用 HTTP 替代品
 
-- **接口契约更强**：字段类型、服务方法和兼容策略写在 `.proto` 里，客户端少做 JSON 手写解析和字段猜测。
-- **HTTP/2 连接复用**：多个 RPC 可以复用同一条 HTTP/2 连接，适合高频内部 API。
-- **流式能力明确**：长连接推送、上传进度、实时协作这类场景可以用 streaming RPC 表达，不必额外发明一套 WebSocket 子协议。
+gRPC 用 `.proto` 描述服务与消息，Android 通常使用 protobuf lite 生成客户端类型。它提供四种方法形态：
 
-gRPC 也有移动端成本：二进制协议不方便直接抓包阅读，网关、CDN、代理和安全审计要配套；包体积会增加 protobuf、stub 和 transport 依赖；弱网下的 deadline、retry、keepalive 如果没有统一策略，失败会比 REST 更难排查。官方性能建议里有两条适合直接写进 Android 网络层规范：复用 stub 和 channel；长生命周期数据流使用 streaming RPC，避免持续创建 RPC 带来的客户端负载均衡、HTTP/2 请求启动和服务端 handler 创建成本。keepalive ping 能让空闲期后的首次 RPC 避免重新建连，但过高频率会增加电量和服务器压力，必须按业务场景设置。
+| 方法形态 | 请求与响应 | 适合的业务 |
+| --- | --- | --- |
+| 一元调用 | 单请求、单响应 | 有明确边界的查询与写入 |
+| 服务端流 | 单请求、响应流 | 服务端持续发送一组结果或更新 |
+| 客户端流 | 请求流、单响应 | 分段上传或批量聚合 |
+| 双向流 | 双向流 | 双方独立持续发送消息的会话 |
 
-移动端接入 gRPC 时，建议把下面四个策略统一放到基础库：
+生成代码能提供字段类型与方法签名，但协议演进仍要遵守 Protobuf 兼容规则。字段号不能复用，删除字段应保留编号，客户端与服务端要支持新旧版本交错发布。序列化边界见 [24.3 序列化与反序列化](03-serialization-performance.md)。
 
-| 策略 | 建议 | 失败表现 |
-|---|---|---|
-| Channel 生命周期 | 按后端域名和登录态复用 channel，不在每次请求时创建 | 首包慢、连接数高、TLS 握手多 |
-| Deadline | 每个 RPC 必须有 deadline，按业务接口区分 | 弱网下调用长时间占住资源 |
-| Retry | 只对幂等 RPC 做受控重试，写操作依赖幂等键 | 超时后重复提交、服务端压力放大 |
-| Keepalive | 长空闲后首包敏感的场景再启用 | 心跳耗电、服务端拒绝过密 ping |
+标准 gRPC 在 HTTP/2 上承载 metadata、长度前缀消息和 trailers。HTTP 状态码不足以表示 RPC 结果；监控必须记录 gRPC status、服务名、方法名、deadline、取消、消息字节和 attempt，而不是只记录 HTTP 200。
 
-gRPC 和 REST 可以共存。公开 API、弱网兼容要求高、需要浏览器或第三方直接调用的接口，继续保留 REST / JSON 更稳；App 与自家后端之间的高频结构化调用，再评估 gRPC。不要为了统一技术栈，把登录、支付、埋点、图片、下载全部搬到 gRPC。
+### Channel 是虚拟连接
+
+gRPC `Channel` 表示到一个逻辑目标的通信通道，可以在内部持有零条、一条或多条实际连接，并参与名称解析与客户端负载均衡。它不能简单等同于一条 socket。
+
+官方性能建议要求尽量复用 channel 和 stub。复用边界应按 target、TLS、代理、名称解析和服务配置决定。用户 token 更适合通过每次调用的 credentials 或 metadata 提供；仅因账号切换就重建 channel，会丢失可安全共享的传输资源。认证实现必须避免把旧 token 固化在长生命周期拦截器中。
+
+### Deadline、取消和 Wait-for-Ready
+
+gRPC 默认不设置 deadline，客户端可能一直等待。每个方法需要根据用户交互期限、网络分布和服务端处理预算设置 deadline。上游取消、页面销毁和后台任务停止也应传播到 RPC。
+
+`wait-for-ready` 允许调用在 channel 暂时不可用时等待恢复，但 deadline 仍然生效。它适合允许短暂等待连接恢复的调用，不适合绕过用户取消或无限延长启动等待。
+
+流式 RPC 还要定义断线恢复语义。连接中断时，未完成 stream 会失败；重新建流不能自动恢复业务位置。消息序号、游标、确认、去重和补发属于应用协议。
+
+流式 RPC 还受 gRPC 与 HTTP/2 流量控制约束。一次写入只表示消息交给 gRPC，不代表字节已经发到网络；发送方速度长期高于接收方时，框架会等待或缓存。应用队列必须有界，手动流量控制还要保证两端持续读取，避免双方都等待写入空间。
+
+### Retry 由 Service Config 和业务语义共同决定
+
+gRPC 支持透明重试，即使没有显式 retry policy，也可能对确定未进入服务端应用逻辑的低层竞态执行有限恢复。更广泛的重试通过 Service Config 按方法配置 attempt 上限、退避、可重试状态码和节流。
+
+状态码 `UNAVAILABLE` 并不自动表示业务操作可重复。客户端与服务端仍要确认方法语义：
+
+- 查询或幂等操作可以在总 deadline 内进行受控重试。
+- 写操作需要幂等键、版本条件或查询确认，不能只按 gRPC status 重发。
+- 一旦收到响应首部，gRPC retry 机制会把 RPC 视为已提交，不再按同一策略重试。
+- 应同时记录逻辑 RPC 与每次 attempt，避免把内部重试时间全部归为一次服务端延迟。
+
+### Keepalive 和长流会消耗移动网络资源
+
+gRPC keepalive 使用 HTTP/2 PING 检查空闲连接。客户端需要与服务端约定频率和是否允许无活动 RPC 时发送；服务端可用 `GOAWAY` 和 `too_many_pings` 拒绝过密 ping。
+
+移动端还要考虑蜂窝无线电唤醒、Doze、应用进程回收和后台执行限制。低频通知通常更适合系统共享推送通道。长流适用于前台持续交互或业务确有连续传输需求的场景，并应具备取消、恢复与断点状态。
+
+长生命周期 stream 启动后通常不能重新参与客户端负载均衡。服务端滚动发布、连接年龄和节点故障都会中断它，因此“保持一个永久 stream”不是高可用设计。
 
 ## 协议选型与兼容策略
 
-协议选型要从请求形态出发，而不是从客户端库出发。
+### 从请求形态与系统约束选择
 
-| 请求形态 | 推荐协议 / 栈 | 原因 | 兼容边界 |
-|---|---|---|---|
-| 普通 JSON API，同域名短请求多 | OkHttp + HTTP/2 | 成本低，ALPN 自动协商，Retrofit 生态成熟 | 服务端、CDN、网关都要支持 `h2` |
-| 弱网、网络切换、媒体播放、长下载 | HttpEngine / Cronet + HTTP/3 fallback HTTP/2 | QUIC 对丢包和网络迁移更友好 | UDP、代理、CDN Alt-Svc、服务端 QUIC 配置 |
-| 内部高频 RPC、强 schema、双向流 | gRPC over HTTP/2 | typed stub、streaming、连接复用 | 网关、监控、调试、包体积和运维成本 |
-| 第三方开放接口、浏览器共用接口 | REST / JSON over HTTP/2 | 兼容最好，调试成本低 | 载荷冗余和弱契约问题要靠规范解决 |
-| 低频后台同步、日志上报 | REST / 批量接口 | 易降级、易缓存、易延迟执行 | 不要占用前台请求并发槽 |
+| 请求形态 | 候选方案 | 需要验证的边界 |
+| --- | --- | --- |
+| 常规 REST / JSON，同一 authority 下短请求较多 | OkHttp + HTTP/2 | 网关与 CDN 的 ALPN、连接复用、服务端 stream 上限 |
+| 媒体、长下载、切网与丢包敏感流量 | HttpEngine / Cronet，评估 HTTP/3 | UDP、代理、VPN、服务端 QUIC、迁移和缓存 |
+| 自有客户端与服务端之间的强类型 RPC | gRPC over HTTP/2 | protobuf 演进、网关、status/trailers、deadline、重试 |
+| 长生命周期双向消息 | gRPC bidi stream 或已有消息协议 | 后台限制、流量控制、断线恢复、负载均衡 |
+| 浏览器和第三方共同使用的公开接口 | REST / JSON，必要时另建 gRPC-Web 网关 | 调试、兼容、缓存和跨语言契约 |
+| 可延迟后台上报 | 批量 REST 或批量 RPC | WorkManager 约束、幂等、与交互流量隔离 |
 
-兼容策略至少包含四层 fallback：
+协议选择还要计算包体积、适配成本、发布渠道和排障工具。一个小型低频接口即使能使用 gRPC 或 HTTP/3，也可能无法抵消新增依赖与运维成本。
 
-- **协议 fallback**：HTTP/3 失败回 HTTP/2，HTTP/2 不可用回 HTTP/1.1。RFC 9114 对 UDP 阻断场景也给出了使用 TCP-based HTTP 的建议。
-- **网络 fallback**：Wi-Fi / 蜂窝切换时记录连接迁移是否成功；失败后允许重建连接，但避免无限重试。
-- **接口 fallback**：gRPC 调用失败时，关键业务可以保留 REST 兜底接口；兜底接口要有同样的权限和幂等设计。
-- **产品 fallback**：首屏可展示缓存或降级数据，后台任务交给 WorkManager 约束网络和电量；详见 24.4、24.6、24.7。
+### 回退要分协议与业务两层
 
-上线协议优化前，要先补齐观测字段。最少要记录：请求域名、业务接口、网络类型、协议、是否复用连接、DNS 耗时、连接耗时、TLS / QUIC 握手耗时、TTFB、body 下载耗时、失败码、fallback 结果。没有这些字段，HTTP/3 或 gRPC 灰度后只能看到“整体变慢/变快”，很难定位是哪一段改变了。
+HTTP/3 到 HTTP/2、HTTP/2 到 HTTP/1.1 属于同一 HTTP 语义下的传输协商。成熟客户端可以根据服务端和网络条件完成。应用仍要记录最终协议和错误，但不必为每次 QUIC 失败手写另一遍请求。
 
-```kotlin
-class ProtocolEvent(
-    val host: String,
-    val api: String,
-    val protocol: String,
-    val reusedConnection: Boolean,
-    val dnsMs: Long?,
-    val connectMs: Long?,
-    val handshakeMs: Long?,
-    val ttfbMs: Long?,
-    val bodyMs: Long?,
-    val networkType: String,
-    val fallback: String?,
-    val error: String?,
-)
-```
+gRPC 到 REST 属于两套接口契约，不是协议自动回退。只有业务明确维护双路径时才可使用，而且两条路径必须共享：
 
-这段结构只用于说明采集字段，不绑定具体 APM 实现。OkHttp 可以从 `EventListener` 和 `Response.protocol` 采集；Cronet / HttpEngine 要结合对应 callback、请求状态和日志；gRPC 要把 method、deadline、status code、retry 次数和 channel 状态补进去。
+- 权限与鉴权规则。
+- 幂等键、版本条件和重复提交处理。
+- 字段含义、默认值和错误映射。
+- 灰度、审计与数据一致性规则。
 
-## HTTP/3 接入不要绕过现有安全与缓存策略
+双路径会增加测试与服务端维护成本。多数业务更适合在当前 RPC 上恢复或显示错误，而不是看到任意 gRPC 失败就改发 REST。
 
-接入 Cronet / HttpEngine 时，容易只盯着协议收益，忽略网络层已有的证书、代理、缓存、Header、埋点和灰度能力。官方 Cronet integration 文档说明，Cronet 可以作为 gRPC、OkHttp、Glide、Dart 等库的 transport；OkHttp 用户可通过 Cronet transport 获得 QUIC/HTTP3 和 connection migration 等能力。因此，迁移时要把“传输栈替换”和“业务网络层契约”分开：
-- Auth header、trace id、灰度 header、压缩策略要在新栈里逐项核对。
-- 证书固定、Network Security Config、代理和抓包开关要有测试用例。
-- HTTP 缓存、业务缓存、CDN 缓存的命中口径要重新核对。
-- APM 里的 DNS、connect、handshake、TTFB 字段要能兼容新栈。
-- 灰度开关要支持按 host、接口、网络类型和 App 版本回滚。
+### 更换传输实现时保持业务契约不变
 
-协议升级只改 transport，不应该顺手改接口语义、重试策略和缓存策略。否则灰度数据里混入多种变化，后续无法判断收益来自 HTTP/3、服务端改造，还是业务层缓存命中率变化。
+从 OkHttp 迁移到 HttpEngine/Cronet，或为 OkHttp 接入 Cronet transport 时，应逐项核对：
 
-## 扩展
+- Authorization、Cookie、trace ID、实验首部和 User-Agent。
+- Network Security Config、证书 pin、用户 CA、系统代理、应用代理和 VPN。
+- HTTP 缓存、业务缓存、Cookie 存储和磁盘目录。
+- 重定向、上传重放、取消、超时和后台生命周期。
+- 压缩、字节统计、错误分类和敏感字段脱敏。
 
-### 服务端推送的替代方案
+协议实验期间保持接口语义、服务端业务逻辑和缓存策略稳定。多项改动同时发布会破坏归因。
 
-HTTP/2 Server Push 不建议作为移动端默认方案。可替代方案包括首屏聚合接口、客户端显式预取、HTTP 缓存、CDN 缓存、离线缓存和服务端按页面维度返回资源清单。每种方案都比 server push 更容易观测命中率和浪费率。
+## 协议灰度与可观测性
 
-### 协议灰度实验设计
+### 各客户端公开指标不同
 
-协议灰度至少分三组：HTTP/2 基线组、HTTP/3 实验组、HTTP/3 fallback 组。指标不要只看平均耗时，要看 P90/P99、失败率、fallback 率、网络切换恢复耗时、App 冷启动首批请求耗时和电量相关后台网络次数。若实验组收益只出现在强 Wi-Fi 下，移动网络和弱网没有收益，就不应全量开启。
+| 客户端 | 基础可观测信息 | 限制 |
+| --- | --- | --- |
+| OkHttp 5.3.0 | `Response.protocol`、EventListener 阶段、连接事件 | HTTP/2 stream 并发与底层 TCP 指标不是完整公开 API |
+| 基础 API 37 HttpEngine | `getNegotiatedProtocol()`、`wasCached()`、接收字节下界、回调时刻与异常 | 没有 37.1 的 `FinishedRequestTimings` |
+| Cronet 库 | 实现提供方给出的请求完成信息、NetLog 与回调 | 能力随 Cronet 版本和集成方式变化 |
+| gRPC | method、status、deadline、metadata、逻辑调用和 attempt 指标 | 还需与所用 transport 的连接指标关联 |
+
+最终协商为 HTTP/2 不能证明客户端先尝试过 HTTP/3。只有底层日志或可靠的 attempt 指标能区分“未发现 HTTP/3”“UDP 不通”“QUIC 握手失败”和“策略未启用”。缺少证据时，应把数据标记为最终协议，不能命名为 HTTP/3 回退。
+
+### 实验单位与分层
+
+协议实验应稳定地按用户或设备分组，并限制到明确的 host 与接口。分析时至少按以下维度分层：
+
+- 最终协议、客户端实现与实现提供方版本。
+- 默认网络变化序号、transport、计费属性、VPN 和代理。
+- 请求与响应大小、缓存状态、冷连接或复用连接。
+- DNS、连接、握手、TTFB、响应体与逻辑调用总时长；只使用当前客户端实际公开的阶段。
+- HTTP 或 gRPC 错误、取消、重试 attempt 与最终成功率。
+- 前台交互、后台任务、媒体传输和切网场景。
+
+比较中位数和高分位延迟，同时观察错误率、取消率、字节量与电量。连接状态、CDN 节点、服务端版本和缓存命中未分层时，平均值变化无法归因到协议。
+
+灰度开关应支持按 host、接口、网络类型、客户端版本和应用版本关闭。回滚只改变传输选择，不能丢失正在执行写操作的幂等状态。
 
 ## 工程检查清单
-- 是否记录每个请求协商到的协议，而不是只记录使用的客户端库？
-- HTTP/2 复用是否被多个 `OkHttpClient`、多套证书策略或多域名拆散？
-- 是否移除了 HTTP/2 Server Push 作为默认优化项？
-- HTTP/3 是否具备 HTTP/2 fallback，并记录 fallback 原因？
-- QUIC 连接迁移是否经过 Wi-Fi / 蜂窝切换测试？
-- gRPC channel 和 stub 是否复用，是否给每个 RPC 配了 deadline？
-- 流式 RPC 是否有取消、重连、前后台切换和电量策略？
-- CDN、网关、服务端、客户端是否对同一协议版本有一致支持？
-- APM 是否能区分 DNS、connect、TLS / QUIC handshake、TTFB、body 下载和业务排队？
-- 协议灰度是否按 host、接口、网络类型、App 版本分桶，并可快速回滚？
+
+- 是否记录请求最终协商的协议，而不是只记录客户端库名称。
+- HTTP/2 连接复用是否被无意义的多客户端或域名分片削弱。
+- 是否把服务端 stream 上限、流量控制和 TCP 队头等待纳入分析。
+- OkHttp 方案是否已移除不可用的 HTTP/2 Server Push 假设。
+- HTTP/3 是否保留基于 TCP 的协议协商路径。
+- QUIC 迁移是否覆盖 Wi-Fi/蜂窝切换、VPN、代理、计费网络和服务端不支持场景。
+- 0-RTT 是否只允许可重放操作，指标是否避免把 QUIC 等同于 0-RTT。
+- HttpEngine 是否复用，缓存与磁盘目录是否显式配置。
+- Android 17 应用代理是否验证系统代理覆盖与最终回退。
+- 基础 API 37 指标是否避免引用 37.1 才提供的详细时序。
+- gRPC channel 与 stub 是否复用，token 是否按调用安全更新。
+- 每个 gRPC 方法是否有合理 deadline，取消是否传播。
+- gRPC retry 是否由 Service Config 与业务幂等语义共同限制。
+- 流式 RPC 是否具备流量控制、断线恢复、前后台和电量策略。
+- 灰度是否保持服务端业务、缓存和接口语义稳定。
+
+## 源码与规范依据
+
+- [AOSP `android-17.0.0_r1` HttpEngine](https://android.googlesource.com/platform/external/cronet/+/android-17.0.0_r1/android/java/src/android/net/http/HttpEngine.java)
+- [AOSP `android-17.0.0_r1` ConnectionMigrationOptions](https://android.googlesource.com/platform/external/cronet/+/android-17.0.0_r1/android/java/src/android/net/http/ConnectionMigrationOptions.java)
+- [AOSP `android-17.0.0_r1` UrlResponseInfo](https://android.googlesource.com/platform/external/cronet/+/android-17.0.0_r1/android/java/src/android/net/http/UrlResponseInfo.java)
+- [Android HttpEngine.Builder API](https://developer.android.com/reference/android/net/http/HttpEngine.Builder)
+- [Android Cronet 功能](https://developer.android.com/develop/connectivity/cronet)
+- [Android Cronet 与其他库集成](https://developer.android.com/develop/connectivity/cronet/integration)
+- [OkHttp 5.3.0 Http2Connection](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http2/Http2Connection.kt)
+- [OkHttp 5.3.0 PushObserver](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http2/PushObserver.kt)
+- [RFC 9113：HTTP/2](https://www.rfc-editor.org/rfc/rfc9113.html)
+- [RFC 9000：QUIC](https://www.rfc-editor.org/rfc/rfc9000.html)
+- [RFC 9001：Using TLS to Secure QUIC](https://www.rfc-editor.org/rfc/rfc9001.html)
+- [RFC 9114：HTTP/3](https://www.rfc-editor.org/rfc/rfc9114.html)
+- [gRPC Android Java 指南](https://grpc.io/docs/platforms/android/java/basics/)
+- [gRPC Deadline](https://grpc.io/docs/guides/deadlines/)
+- [gRPC Retry](https://grpc.io/docs/guides/retry/)
+- [gRPC Flow Control](https://grpc.io/docs/guides/flow-control/)
+- [gRPC Keepalive](https://grpc.io/docs/guides/keepalive/)
+- [gRPC 性能建议](https://grpc.io/docs/guides/performance/)
