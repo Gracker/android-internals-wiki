@@ -1,8 +1,104 @@
 ---
 title: Trace 抓取
 chapter: '13.2'
+section: '13.2'
+section_title: Trace 抓取
 status: "finalized"
-applicable_versions: Android 10 (API 29) - Android 17 (API 37)
+applicable_versions: Android 9 (API 28) - Android 17 (API 37)
+last_verified: '2026-07-31'
+last_verified_against: AOSP android-17.0.0_r1（external/perfetto ece66975738007dd0978b911d8a2077e49b8f31e、frameworks/native ae266dcb706d083868578cfedce381ef44488a07）+ android17-6.18-2026-06_r6 + Perfetto/Android 官方文档
+confidence: high
+sources:
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-05-trace-capture-linux-perf-frametimeline.md
+  role: Trace 抓取、FrameTimeline 与 linux.perf 源码研究入口
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-12-android17-ftrace-atrace-perfetto-bridge.md
+  role: Android 17 ftrace、atrace 与 Perfetto 数据通路研究入口
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-tracekit-perfetto-apm-toolchain.md
+  role: Android 14-17 data source 与 APM 工具链演进研究入口
+- type: official
+  path: https://perfetto.dev/docs/getting-started/system-tracing
+  role: Perfetto UI、record_android_trace 与基础系统追踪流程
+- type: official
+  path: https://perfetto.dev/docs/learning-more/android
+  role: Android 9-12 服务启用、PBTX 输入、配置目录与设备端 CLI 边界
+- type: official
+  path: https://perfetto.dev/docs/concepts/config
+  role: TraceConfig、buffer、duration 与 data source
+- type: official
+  path: https://perfetto.dev/docs/reference/trace-config-proto
+  role: Android 17 TraceConfig、HeapprofdConfig、JavaHprofConfig 与 PerfEventConfig 字段
+- type: official
+  path: https://perfetto.dev/docs/getting-started/atrace
+  role: linux.ftrace 中的 atrace_categories 与 atrace_apps
+- type: official
+  path: https://perfetto.dev/docs/data-sources/native-heap-profiler
+  role: heapprofd 版本、采样模型和 user build 权限
+- type: official
+  path: https://perfetto.dev/docs/data-sources/java-heap-profiler
+  role: ART heap graph 版本、配置和权限
+- type: official
+  path: https://perfetto.dev/docs/quickstart/callstack-sampling
+  role: linux.perf 调用栈采样与 scope 配置
+- type: official
+  path: https://perfetto.dev/docs/visualization/large-traces
+  role: 大型 trace 的本机 Trace Processor 后端
+- type: official
+  path: https://perfetto.dev/docs/analysis/sql-stats
+  role: stats 表的 data_loss、error 与各采集层统计项
+- type: official
+  path: https://developer.android.com/reference/android/os/Trace
+  role: Java Trace API 版本、配对、名称长度与异步 cookie
+- type: official
+  path: https://developer.android.com/ndk/reference/group/tracing
+  role: NDK ATrace API 与版本边界
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/tools/record_android_trace
+  role: Android 17 锚点脚本的 CLI 参数和执行流程
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/trace_config.proto
+  role: buffer fill policy、long trace、duration 与 flush 语义
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/data_source_config.proto
+  role: Android 17 平台 data source 配置入口
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/perf_event_config.proto
+  role: Android 17 linux.perf timebase、callstack_sampling 与 scope
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/heapprofd_config.proto
+  role: heapprofd 目标、采样间隔与 continuous dump 字段
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/java_hprof_config.proto
+  role: ART heap graph 目标与周期 dump 字段
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/profiling/perf/perf_producer.cc
+  role: linux.perf 注册、目标过滤和进程分片
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/profiling/perf/traced_perf.cc
+  role: traced_perf 的 init socket 接收与 proc 文件描述符转交
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/traced_perf.rc
+  role: traced_perf 身份、init socket、group 与 capability
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/atrace/atrace.cpp
+  role: Android 17 atrace category 与对应 tracefs 事件
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp
+  role: FrameTimeline data source 注册
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.h
+  role: FrameTimeline data source 名称与 trace cookie
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java
+  role: Android 17 App Trace API 实现
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h
+  role: sched_switch、sched_wakeup 等通用调度 tracepoint
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/power.h
+  role: cpu_frequency、cpu_idle 等通用功耗 tracepoint
 tags:
 - tools
 - perfetto
@@ -44,212 +140,119 @@ last_task9_audit: 2026-07-11
 
 ### 锚点（必须覆盖）
 
-- 🔹 命令行抓取：perfetto -c config.pbtxt -o trace.perfetto-trace
-- 🔹 常用 TraceConfig 配置项：buffer_size、duration、data_sources
-- 🔹 系统 atrace categories 配置：sched、gfx、view、wm、am、binder 等
-- 🔹 用 record_android_trace 脚本快速抓取
-- 🔹 通过 Perfetto UI 在线配置与抓取
-- 🔹 在 App 中用 Trace.beginSection / Trace.endSection 添加自定义标记
+- 🔹 命令行抓取：`perfetto --txt -c config.pbtx -o trace.perfetto-trace`
+- 🔹 常用 `TraceConfig` 配置项：`buffers`、`duration_ms`、`data_sources`
+- 🔹 系统 atrace categories 配置：`sched`、`gfx`、`view`、`wm`、`am`、`binder_driver` 等
+- 🔹 用 `record_android_trace` 脚本快速抓取
+- 🔹 通过 Perfetto UI 配置与抓取
+- 🔹 在 App 中用 `Trace.beginSection()` / `Trace.endSection()` 添加自定义标记
 
 ### 扩展（可选深入）
 
-- 🔸 长时间 Trace（Long Trace）的配置与分割策略
-- 🔸 Heap Profiling 与 Callstack Sampling 的配置
+- 🔸 Long trace 的周期写文件、文件上限与分段策略
+- 🔸 Heap profiling、ART heap graph 与 callstack sampling
 
 ### OpenClaw 加工指引
-
-
-
-### 🔸 linux.perf 与 FrameTimeline 数据源实现细节
-
-以下是 `linux.perf` 和 `android.surfaceflinger.frametimeline` 两个关键数据源在 Android 17 中的实现细节：
-
-#### Linux.perf 数据源实现
-- **守护进程**: `traced_perf` 通过 `ANDROID_SOCKET_traced_perf` 继承 socket 连接到 traced 服务
-- **数据源注册**: `kDataSourceName = "linux.perf"` 在 `perf_producer.cc` 中定义
-- **事件配置**: 支持内置计数器、追踪点和原始事件三种类型，通过 `EventConfig` 结构管理
-- **目标过滤**: `TargetFilter` 支持命令行、PID 和进程分片多重过滤机制
-
-#### FrameTimeline 数据源实现  
-- **服务注册**: SurfaceFlinger 模块注册为 `android.surfaceflinger.frametimeline`
-- **核心功能**: 检测帧卡顿类型（AppDeadlineMissed、BufferStuffing、SurfaceFlingerCpuDeadlineMissed 等）
-- **数据结构**: 提供预期时间线（ExpectedTimeline）和实际时间线（ActualTimeline）两种切片
-- **跨进程追踪**: 通过 surface_frame_token 和 display_frame_token 关联应用与 SurfaceFlinger 帧
-
-#### Android 17 版本兼容性
-两个数据源在 Android 17 (API 37) 中保持与 Android 12+ 相同的配置方式，源码实现稳定。以下源码锚点均基于 AOSP `android-17.0.0_r1`。
-
-**运行时要求**: userdebug/eng 构建支持大多数进程采样；user 构建需要目标应用声明 `android:profileable="true"`。
-
 
 > **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
 > **扩展**视素材丰富程度选择性深入。
 > 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+
+### 🔸 `linux.perf` 与 FrameTimeline 数据源实现细节
+
+- `traced_perf` 通过 Producer IPC 连接 `traced`；init 传入的 `ANDROID_SOCKET_traced_perf` 监听 socket 用来接收目标进程 `/proc/<pid>/{maps,mem}` 文件描述符。
+- `perf_producer.cc` 在 Android 17 中用 `kDataSourceName = "linux.perf"` 注册数据源；`PerfEventConfig` 使用 `timebase`、`callstack_sampling` 和 `scope`。
+- SurfaceFlinger 在 `FrameTimeline::onBootFinished()` 中初始化 system backend，并把 `android.surfaceflinger.frametimeline` 注册为 data source。
+- FrameTimeline 产出 expected/actual timeline，并通过 surface frame token 和 display frame token 关联 App 与 SurfaceFlinger 的帧。
+- `linux.perf` 在 user build 上采样 App 调用栈时，目标应用需要 `profileable` 或 `debuggable`；FrameTimeline 不使用 App manifest 的 profiling gate。
 <!-- outline-end -->
 
-> **深度扩展**：以下两节面向需要源码级验证或想了解数据源内部实现的读者。如果只需掌握抓取方法，可以直接跳到正文开头。
+## 抓取配置决定分析上限
 
-### 🔸 FrameTimeline 与 Linux.Perf 源码锚点强化
+一份 trace 能回答哪些问题，由时间窗口、data source、目标进程和 buffer 完整性共同决定。卡顿发生在采集结束之后，或配置里缺少 FrameTimeline、Binder、调度事件时，UI 再熟练也补不回缺失的证据。
 
-#### FrameTimeline 架构细节（基于 android-17.0.0_r1）
+抓取前写下一句待验证的问题。例如：“主线程长帧来自 CPU 执行、Binder 等待，还是长期 Runnable 却得不到 CPU？”这句话会直接决定是否采集 App atrace、Binder tracepoint、`sched_switch`、`sched_wakeup`、线程状态和 FrameTimeline。
 
-1. **数据源注册**：`frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp:1344-1354`（android-17.0.0_r1）
-   ```cpp
-   void FrameTimeline::onBootFinished() {
-       perfetto::TracingInitArgs args;
-       args.backends = perfetto::kSystemBackend;
-       perfetto::Tracing::Initialize(args);
-       registerDataSource();
-   }
-   void FrameTimeline::registerDataSource() {
-       perfetto::DataSourceDescriptor dsd;
-       dsd.set_name(kFrameTimelineDataSource);  // "android.surfaceflinger.frametimeline"
-       FrameTimelineDataSource::Register(dsd);
-   }
-   ```
+抓取完成后还要检查丢包。文件成功生成，只能证明会话结束并拿到了输出，不能证明每个 Producer 和 buffer 都没有丢数据。
 
-2. **SurfaceFrame Jank 分类逻辑**：`FrameTimeline.cpp:829-899`
-   - `SurfaceFrame::classifyJankLocked(...)` 在 Android 17 中返回 `void`，不是旧资料里的 `uint32_t` 返回值函数。
-   - 该函数先处理 invalid present time、prediction expired、missing token，再调用 `classifyJankLegacyLocked(...)` 并计算 deadline/present delta。
-   - `AppDeadlineMissed`、`BufferStuffing`、`SurfaceFlingerCpuDeadlineMissed` 仍属于 SurfaceFrame jank 归因，但不能把旧版伪代码当作 Android 17 源码片段。
+## 本文复核基线
 
-3. **TraceCookie 机制**：`FrameTimeline.h:148-156, 677`
-   - `TraceCookieCounter::mTraceCookie = std::atomic<int64_t>` 负责生成 Perfetto packet cookie。
-   - `FrameTimeline` 持有 `mTraceCookieCounter`，SurfaceFrame / DisplayFrame 通过该 counter 匹配 start/end packet。
+| 层级 | 固定锚点 | 本章引用范围 |
+| --- | --- | --- |
+| Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | 设备端 `perfetto`、平台 data source、App Trace API |
+| 平台内 Perfetto | `external/perfetto` 提交 `ece66975738007dd0978b911d8a2077e49b8f31e` | `TraceConfig`、`record_android_trace`、heapprofd、`linux.perf` |
+| Framework Native | `frameworks/native` 提交 `ae266dcb706d083868578cfedce381ef44488a07` | atrace category、SurfaceFlinger FrameTimeline |
+| Android 内核 | `android17-6.18-2026-06_r6` | `sched_switch`、`sched_wakeup`、`cpu_frequency`、`cpu_idle` 等通用 tracepoint |
 
-4. **FeatureFlag 机制**：`frameworks/native/services/surfaceflinger/common/FlagManager.cpp:137,154-155`
-   ```cpp
-   DUMP_ACONFIG_FLAG(frametimeline_boottime_in_lambda);
-   DUMP_ACONFIG_FLAG(use_content_priority_for_jank_classification);
-   DUMP_ACONFIG_FLAG(use_experimental_jank_classification);
-   ```
-   Android 17 未复核到旧资料中的 `filter_frames_before_trace_starts`，FrameTimeline 相关判断应以上述 AOSP flags 为锚点。
+设备平台和主机脚本要分别记录版本。本文的源码字段固定到 Android 17 平台；浏览器 UI、主机 `trace_processor` 和上游脚本仍会继续变化。
 
-#### Linux.Perf 守护进程架构（基于 android-17.0.0_r1）
+Android 9 到 17 的设备端入口有三处分界：
 
-1. **Socket 继承机制**：`external/perfetto/src/profiling/perf/traced_perf.cc:34-40`
-   ```cpp
-   static constexpr char kTracedPerfSocketEnvVar[] = "ANDROID_SOCKET_traced_perf";
-   int GetRawInheritedListeningSocket() {
-       const char* sock_fd = getenv(kTracedPerfSocketEnvVar);
-       if (sock_fd == nullptr) PERFETTO_FATAL("Did not inherit socket from init.");
-   }
-   ```
+| Android 版本 | tracing service | 文本配置 | 配置传入方式 |
+| --- | --- | --- | --- |
+| Android 9 | 服务已进系统镜像；非 Pixel 设备常要手动设置 `persist.traced.enable=1` | 不支持 `--txt` | simple mode，或经 stdin 传入预先序列化的 binary `TraceConfig` |
+| Android 10 / 11 | Android 10 非 Pixel 设备仍可能要手动启用；Android 11 起多数设备默认启用 | 支持 PBTX + `--txt` | 非 root 设备宜经 stdin 传入 |
+| Android 12-17 | 默认启用 | 支持 PBTX + `--txt` | shell 可从 `/data/misc/perfetto-configs/` 读取配置 |
 
-2. **Producer 注册**：`external/perfetto/src/profiling/perf/perf_producer.cc:80-81`
-   ```cpp
-   constexpr char kProducerName[] = "perfetto.traced_perf";
-   constexpr char kDataSourceName[] = "linux.perf";
-   ```
+## 三种抓取入口
 
-3. **进程过滤实现**：`perf_producer.cc:326-381`
-   - `PerfProducer::ShouldRejectDueToFilter(...)` 先匹配 `exclude_cmdlines` / `exclude_pids`，再匹配 `cmdlines` / `pids`，allow filter 为空时保留未显式排除的进程。
-   - `TargetFilter` 还支持 `additional_cmdline_count` 与 `process_sharding`，用于摊薄系统级 unwinding 成本。
+| 入口 | 优点 | 适用场景 | 主要边界 |
+| --- | --- | --- | --- |
+| 设备端 `perfetto` | 直接控制 CLI 和完整 `TraceConfig` | 验证命令、调试设备侧权限、自动化底层流程 | 需要自行处理配置传输、停止和导出 |
+| `record_android_trace` | 自动调用设备端 CLI、拉取结果并打开 UI | 日常 ADB 抓取、团队共享配置 | 脚本版本要记录；`-c` 模式由文件控制，短参数不会改写文件内容 |
+| Perfetto UI Recording | 可视化选择 transport、buffer 和 probes | 初次组装配置、现场交互抓取 | 页面选项随 UI 版本变化，生成的配置仍要保存 |
 
-4. **execve 保护延迟**：`perf_producer.cc:73`
-   ```cpp
-   constexpr uint32_t kProcDescriptorsAndroidDelayMs = 50;  // 防止 execve 期间 signal disposition 默认 terminate
-   ```
+三种入口最终都在控制 Perfetto tracing service。入口不同不会自动补齐未启用的数据源。
 
-#### Android 17 源码验证
+## 用设备端 `perfetto` 快速抓取
 
-以下源码锚点均基于 AOSP `android-17.0.0_r1`（Android 17 / API 37），已通过 Gitiles 复核确认可访问：
-
-- `external/perfetto/src/profiling/perf/perf_producer.cc:81` — `kDataSourceName = "linux.perf"`
-- `external/perfetto/src/profiling/perf/traced_perf.cc:34` — `ANDROID_SOCKET_traced_perf`
-- `frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.h:656` — `kFrameTimelineDataSource`
-- `frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp:1351-1354` — `registerDataSource()`
-- `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp:820` — `mFrameTimeline->onBootFinished()`
-
-
-
-## 为什么要了解 Trace 抓取
-
-性能分析的第一步永远是"拿到数据"。不管我们是排查卡顿、分析启动速度、还是调查 ANR，都需要先抓取一份 Trace 文件，然后在 Perfetto UI 中打开它。如果抓取的配置不对——比如漏掉了关键的 atrace category，或者 buffer 太小导致数据被覆盖——后续分析就无从谈起。
-
-而且，Trace 抓取不是只有一种方式。不同场景需要不同的抓取策略：快速复现一个卡顿问题，用 `record_android_trace` 脚本几行命令就能搞定；分析启动性能，需要在 App 代码中插入自定义标记来精确度量各个阶段；排查内存泄漏，则需要额外开启 Heap Profiling。了解这些方式的差异和适用场景，能让我们在最短时间内拿到最有价值的 Trace 数据。
-
-PerfettoTrace 有几种常见抓取方式，从命令行到 Perfetto UI、从系统级到 App 内自定义标记，各有适用场景。文末附有覆盖常见分析场景的推荐配置。
-
-## 命令行抓取：perfetto 命令
-
-[已验证: 官方文档, perfetto.dev/docs/quickstart/android-tracing]
-
-最基础的抓取方式是直接在设备上运行 `perfetto` 命令。Perfetto 从 Android 10（API 29）开始作为系统级追踪工具内置在设备中，我们只需要通过 `adb shell` 就可以调用它。
-
-> **Android 17 源码状态** [已验证]：以下数据源在 Android 10–17 范围内均保持可用：
-> - `linux.ftrace`、`linux.process_stats`、`linux.sys_stats`：Android 10+ 可用
-> - `android.heapprofd`：Android 10+ 可用
-> - `android.java_hprof`：Android 11+ 可用
-> - `android.surfaceflinger.frametimeline`：Android 12+ 可用
-> - `linux.perf`：Android 12+ 可用
-> 本节抓取方法和配置示例基于 Android 10–17 源码与官方兼容性文档校验。Android 17 的 `DataSourceConfig` 追加了 `android.user_list`、`android.inputmethod`、`android.aflags` 等数据源；上述常用抓取数据源在 Android 17 中未废弃。
-
-### 最简命令
+下面的 simple mode 命令用于抓 10 秒调度、频率、窗口、渲染、Binder 和输入事件，并把结果拉回主机。
 
 ```bash
-adb shell perfetto -o /data/misc/perfetto-traces/trace.perfetto-trace -t10s \
-  sched freq idle am wm gfx view binder_driver hal dalvik input res memory
+adb shell perfetto \
+  -o /data/misc/perfetto-traces/trace.perfetto-trace \
+  -t 10s \
+  sched freq idle am wm gfx view binder_driver input
+
+adb pull /data/misc/perfetto-traces/trace.perfetto-trace .
 ```
 
-这条命令启动一个 10 秒的追踪会话，收集指定的 atrace category 数据，输出到设备上的指定路径。抓取完成后，用 `adb pull` 把文件拉到本地：
+simple mode 会根据短参数生成受限的 `TraceConfig`，仍依赖 `traced` 和 `traced_probes`。输出路径位于 `/data/misc/perfetto-traces/`；Android 9 若无法直接 `adb pull`，可用 `adb shell cat` 把文件重定向到主机。
 
-```bash
-adb pull /data/misc/perfetto-traces/trace.perfetto-trace
-```
+`adb shell perfetto` 在非交互 ADB 会话里不一定能可靠接收 `Ctrl+C`。可复现问题宜设置 `-t`；后台会话则按 Perfetto background tracing 文档保存 PID，并显式停止该进程。
 
-这几个参数决定输出位置、抓取时长和事件范围：
+## 用完整 TraceConfig 抓取
 
-- `-o` 指定输出路径。Perfetto 要求输出路径必须在 `/data/misc/perfetto-traces/` 目录下（需要 root 或 shell 权限），这个目录是 Perfetto 服务进程有写入权限的标准位置。
-- `-t10s` 指定追踪时长。也可以用 `-t20s`、`-t1m` 等格式。如果不指定 `-t`，追踪会持续到手动停止。
-- 后面的 `sched freq idle am wm gfx ...` 是 atrace category 列表，决定抓取哪些系统事件。我们稍后详细讨论。
+normal mode 接收 protobuf 编码的 `TraceConfig`。PBTX（也常写作 pbtxt）是文本表示，Android 10 起由 `--txt` 解析；Android 9 设备端只接收 binary protobuf。
 
-### 使用配置文件抓取
-
-当追踪需求稍微复杂一些——比如需要调整 buffer 大小、开启多个数据源、或者配置 Long Trace——直接在命令行拼接参数就不太方便了。这时候可以用配置文件的方式。
-
-Perfetto 使用 ProtocolBuffer 文本格式（`.pbtxt`）的配置文件，官方称为 `TraceConfig`。我们可以把完整的配置写到一个文件中，然后通过 `-c` 参数传给 `perfetto` 命令。
-
-**Android 12+** 可以把配置文件 push 到设备上直接引用：
-
-```bash
-adb push config.pbtxt /data/misc/perfetto-configs/config.pbtxt
-adb shell perfetto -c /data/misc/perfetto-configs/config.pbtxt \
-  --txt \
-  -o /data/misc/perfetto-traces/trace.perfetto-trace
-```
-
-**Android 10/11** 非 root 设备受 SELinux 规则限制，配置只能通过 stdin 传入：
-
-```bash
-cat config.pbtxt | adb shell perfetto -c - \
-  --txt \
-  -o /data/misc/perfetto-traces/trace.perfetto-trace
-```
-
-注意 `--txt` 参数告诉 Perfetto 配置文件是人类可读的文本格式（而非二进制 protobuf）。
-
-`TraceConfig` 文件的基本结构是这样的：
+下面的 Android 12-17 配置用于采集 20 秒 App 渲染、调度、Binder、进程信息和 FrameTimeline。64 MiB 只是便于起步的示例值，抓取后要根据丢包统计和事件速率调整。
 
 ```textproto
 buffers {
-  size_kb : 65536
-  fill_policy : DISCARD
+  size_kb: 65536
+  fill_policy: RING_BUFFER
 }
 
 data_sources {
   config {
     name: "linux.ftrace"
     ftrace_config {
-      ftrace_events : "sched/sched_switch"
-      ftrace_events : "power/cpu_frequency"
-      ftrace_events : "power/cpu_idle"
-      atrace_categories : "am"
-      atrace_categories : "wm"
-      atrace_categories : "gfx"
-      atrace_categories : "view"
-      atrace_categories : "sched"
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_wakeup"
+      ftrace_events: "sched/sched_waking"
+      ftrace_events: "sched/sched_blocked_reason"
+      ftrace_events: "power/cpu_frequency"
+      ftrace_events: "power/cpu_idle"
+
+      atrace_categories: "am"
+      atrace_categories: "wm"
+      atrace_categories: "gfx"
+      atrace_categories: "view"
+      atrace_categories: "input"
+      atrace_categories: "binder_driver"
+      atrace_categories: "dalvik"
+      atrace_apps: "com.example.myapp"
     }
   }
 }
@@ -258,183 +261,7 @@ data_sources {
   config {
     name: "linux.process_stats"
     process_stats_config {
-      scan_all_processes_on_start : true
-    }
-  }
-}
-
-duration_ms : 10000
-```
-
-[图：TraceConfig 文件结构示意——buffer 配置、data_sources 配置、duration 配置三段]
-
-这份配置做的事情是：分配 64MB 的 tracebuffer，开启 ftrace 数据源（包括内核调度事件和 atrace category），同时收集进程信息，追踪 10 秒后自动停止。
-
-## 常用 TraceConfig 配置项
-
-[已验证: 官方文档, perfetto.dev/docs/concepts/config]
-
-TraceConfig 决定 Perfetto 追踪会话的 buffer、时长和数据源。理解这几个配置项后，抓取窗口和数据量才好控制。
-
-### buffer 配置
-
-`buffers` 块定义了 Trace 数据的内存缓冲区。每个 Trace 会话至少需要一个 buffer。
-
-```textproto
-buffers {
-  size_kb : 65536          # 64MB
-  fill_policy : DISCARD     # 满了就丢弃新数据
-}
-```
-
-- `size_kb`：buffer 大小，单位 KB。常见的值是 32768（32MB）到 131072（128MB）。buffer 太小会导致数据被覆盖或丢失，太大会占用过多内存。对于 10-30 秒的常规 Trace，64MB 通常是够用的。如果开启了调用栈采样或 Heap Profiling，需要更大的 buffer。
-- `fill_policy`：满时的策略。`DISCARD` 表示 buffer 满后丢弃新事件（Stop when full），适合确定性抓取；`RING_BUFFER` 表示环形覆盖，旧数据被新数据覆盖，适合长时间监控。
-
-### duration 配置
-
-```textproto
-duration_ms : 10000    # 10 秒
-```
-
-`duration_ms` 指定追踪时长，单位毫秒。如果不设置，Trace 会一直持续到手动停止（通过 `adb shell kill -S IGINT <pid>`）。对于可复现的性能问题，设置固定时长可以精确控制抓取窗口。
-
-### data_sources 配置
-
-`data_sources` 是 TraceConfig 中最核心的部分，它决定了我们抓取哪些数据。每个 data_source 都有一个 `name` 字段和对应的 config。
-
-最常用的数据源是 `linux.ftrace`，它负责采集内核 ftrace 事件和 atrace 用户空间事件。其他的常用数据源包括：
-
-- `linux.process_stats`：进程和线程信息
-- `linux.sys_stats`：系统级统计（CPU、内存、I/O）
-- `android.log`：logcat 日志
-- `android.surfaceflinger.frametimeline`：帧时间线数据（仅 Android 12+，API 31+）。此数据源在 Android 17 (API 37) 中持续可用，配置方式与 Android 12+ 一致。
-- `android.gpu.memory`：GPU 内存使用
-
-我们可以同时启用多个数据源，只需要在 TraceConfig 中添加多个 `data_sources` 块即可。
-
-### 一个推荐的通用配置
-
-通用配置可以拆成两份可直接执行的版本。`.pbtxt` 是 protobuftextformat，不能把版本判断写成运行时分支后直接塞进配置文件。跨版本抓取有两种做法：手工准备两份配置，或由 host 侧脚本按 APIlevel 生成对应文件。
-
-#### Android 10 / 11 基线配置
-
-```textproto
-buffers {
-  size_kb : 65536
-  fill_policy : DISCARD
-}
-
-data_sources {
-  config {
-    name: "linux.ftrace"
-    ftrace_config {
-      ftrace_events : "sched/sched_switch"
-      ftrace_events : "sched/sched_wakeup"
-      ftrace_events : "sched/sched_waking"
-      ftrace_events : "sched/sched_blocked_reason"
-      ftrace_events : "power/cpu_frequency"
-      ftrace_events : "power/cpu_idle"
-      ftrace_events : "power/gpu_frequency"
-      ftrace_events : "power/suspend_resume"
-
-      atrace_categories : "am"
-      atrace_categories : "wm"
-      atrace_categories : "gfx"
-      atrace_categories : "view"
-      atrace_categories : "input"
-      atrace_categories : "binder_driver"
-      atrace_categories : "hal"
-      atrace_categories : "dalvik"
-      atrace_categories : "res"
-      atrace_categories : "sched"
-      atrace_categories : "freq"
-      atrace_categories : "idle"
-
-      atrace_apps : "com.example.myapp"
-    }
-  }
-}
-
-data_sources {
-  config {
-    name: "linux.process_stats"
-    process_stats_config {
-      scan_all_processes_on_start : true
-    }
-  }
-}
-
-data_sources {
-  config {
-    name: "linux.sys_stats"
-    sys_stats_config {
-      meminfo_period_ms : 1000
-      stat_period_ms : 1000
-      stat_counters : STAT_CPU_TIMES
-      stat_counters : STAT_FORK_COUNT
-    }
-  }
-}
-
-duration_ms : 20000
-```
-
-#### Android 12+ 配置（追加 FrameTimeline）
-
-```textproto
-buffers {
-  size_kb : 65536
-  fill_policy : DISCARD
-}
-
-data_sources {
-  config {
-    name: "linux.ftrace"
-    ftrace_config {
-      ftrace_events : "sched/sched_switch"
-      ftrace_events : "sched/sched_wakeup"
-      ftrace_events : "sched/sched_waking"
-      ftrace_events : "sched/sched_blocked_reason"
-      ftrace_events : "power/cpu_frequency"
-      ftrace_events : "power/cpu_idle"
-      ftrace_events : "power/gpu_frequency"
-      ftrace_events : "power/suspend_resume"
-
-      atrace_categories : "am"
-      atrace_categories : "wm"
-      atrace_categories : "gfx"
-      atrace_categories : "view"
-      atrace_categories : "input"
-      atrace_categories : "binder_driver"
-      atrace_categories : "hal"
-      atrace_categories : "dalvik"
-      atrace_categories : "res"
-      atrace_categories : "sched"
-      atrace_categories : "freq"
-      atrace_categories : "idle"
-
-      atrace_apps : "com.example.myapp"
-    }
-  }
-}
-
-data_sources {
-  config {
-    name: "linux.process_stats"
-    process_stats_config {
-      scan_all_processes_on_start : true
-    }
-  }
-}
-
-data_sources {
-  config {
-    name: "linux.sys_stats"
-    sys_stats_config {
-      meminfo_period_ms : 1000
-      stat_period_ms : 1000
-      stat_counters : STAT_CPU_TIMES
-      stat_counters : STAT_FORK_COUNT
+      scan_all_processes_on_start: true
     }
   }
 }
@@ -445,379 +272,286 @@ data_sources {
   }
 }
 
-duration_ms : 20000
+duration_ms: 20000
 ```
 
-两份配置的差别只有一处：Android 12+ 多了 `android.surfaceflinger.frametimeline` 数据源。低版本设备保留 `linux.ftrace`、`linux.process_stats` 和 `linux.sys_stats`，就能正常抓取调度、atrace 和系统统计数据。
+`linux.ftrace` 同时承载 raw ftrace event 和 atrace 标记；`linux.process_stats` 补充进程信息；FrameTimeline 是独立 data source。Android 10/11 使用这份配置时，应删除 `android.surfaceflinger.frametimeline` 块。
 
-[图：通用配置覆盖的数据维度——CPU 调度、渲染管线、系统统计、帧时间线]
+### 在不同版本上传入配置
 
-注意 `atrace_apps` 字段。如果要追踪特定 App 的自定义 Trace 标记（通过 `Trace.beginSection` 添加的），必须在这里指定 App 的包名。否则即使 App 代码中有 `Trace.beginSection` 调用，也不会出现在 Trace 中。
-
-## atraceCategories 详解
-
-[已验证: 官方文档, source.android.com/devices/tech/debug/ftrace; AOSPatrace category 定义]
-
-atrace categories 是 Android 系统预定义的事件分类，每一个 category 对应一组系统模块的追踪事件。选择正确的 category 组合，是拿到有价值 Trace 的关键。
-
-在命令行中，我们可以用 `adb shell atrace --list_categories` 查看当前设备支持的所有 category。不同设备、不同 Android 版本支持的列表可能略有差异，但核心的几个 category 在所有设备上都可用。
-
-日常性能分析中最常用的 categories 可以按用途分组：
-
-### 渲染与 UI（分析卡顿、流畅度必备）
-
-- **gfx**：Graphics 子系统的事件，包括 SurfaceFlinger 合成、BufferQueue 状态变化、Choreographer 的 VSync 回调等。分析帧渲染管线问题（如掉帧、GPU 耗时过长）时，`gfx` 是必选的。
-- **view**：View 系统事件，包括 measure、layout、draw 的耗时。卡顿分析中，`view` category 能直接告诉我们某一帧的 measure/layout/draw 阶段花了多长时间。
-
-### 系统服务（分析启动、ANR 必备）
-
-- **am**：ActivityManager 事件，包括 Activity 的生命周期回调、Service 启停、Broadcast 分发等。分析 App 启动流程和 ANR 时，`am` 是核心 category。
-- **wm**：WindowManager 事件，包括窗口的添加、移除、焦点变化等。配合 `am` 使用可以追踪完整的 UI 展示流程。
-- **sm**：ServiceManager 事件，追踪系统服务的注册和获取。在 Binder 调用频繁的场景中有参考价值。
-
-### CPU 调度（几乎所有场景都要选）
-
-- **sched**：CPU 调度事件，包括线程的唤醒、切换、阻塞原因。这是 Perfetto 中最重要的 category——没有 `sched`，我们看不到每个线程在什么时候运行、什么时候被挂起、为什么被挂起。几乎所有性能分析场景都应该选上 `sched`。
-- **freq**：CPU 频率变化事件。配合 `sched` 使用，可以看出线程在什么频率的 CPU 核心上运行，判断是否存在频率爬升慢导致的性能问题。
-- **idle**：CPU idle 状态事件。可以观察 CPU 是否进入了深度睡眠，以及被唤醒的原因。
-
-### Binder 与 IPC
-
-- **binder_driver**：Binder 驱动事件，包括 Binder 事务的开始和完成。分析跨进程调用的耗时、Binder 调用阻塞主线程导致的 ANR 时，通常都要带上这个 category。
-
-### 运行时与资源
-
-- **dalvik**：ART 虚拟机事件，包括 GC、JIT 编译等。内存抖动或 GC 暂停导致的卡顿，需要 `dalvik` category 来定位。
-- **res**：资源加载事件。追踪资源（图片、布局等）的加载耗时。
-- **input**：Input 事件分发，包括触摸事件的入队和分发。分析点击响应延迟、滑动卡顿时，`input` category 提供了事件到达应用的时间线起点。
-- **memory**：内存事件。追踪内存分配和释放相关的系统事件。
-
-### 按分析场景选择 Categories
-
-不同性能分析场景需要不同的 category 组合，可以先按这份表选：
-
-| 分析场景 | 推荐 Categories |
-|---------|----------------|
-| 卡顿/流畅度 | `sched freq gfx view input` |
-| App 启动 | `sched freq am wm view binder_driver` |
-| ANR | `sched am wm binder_driver input` |
-| Binder 性能 | `sched binder_driver` |
-| 内存问题 | `sched dalvik memory gfx` |
-| 功耗分析 | `sched freq idle power` |
-
-这张表适合入门阶段使用。经验积累到一定程度后，可以按具体问题调整 category 组合——例如分析 HAL 层音频延迟时加上 `audio`，追踪 Camera 管线时加上 `camera`。`sched` + `freq` + `gfx` + `view` 仍然是多数场景下的基础组合。
-
-## 用 record_android_trace 快速抓取
-
-[已验证: 官方文档, perfetto.dev/docs/quickstart/android-tracing]
-
-`record_android_trace` 是 Perfetto 团队提供的一个 Python 脚本，它封装了底层 `perfetto` 命令的复杂性，让抓取 Trace 变得像运行一个命令一样简单。
-
-### 获取脚本
+Android 12-17 可以把 PBTX 放进专用配置目录。下面的命令用于这条路径。
 
 ```bash
-curl -L 'https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/tools/record_android_trace?format=TEXT' \
-  | python3 -c 'import base64,sys; sys.stdout.buffer.write(base64.b64decode(sys.stdin.buffer.read()))' \
+adb push config.pbtx /data/misc/perfetto-configs/config.pbtx
+adb shell perfetto \
+  --txt \
+  -c /data/misc/perfetto-configs/config.pbtx \
+  -o /data/misc/perfetto-traces/trace.perfetto-trace
+```
+
+`perfetto.rc` 会为 shell 创建并放行 `/data/misc/perfetto-configs/`。结果文件仍写到 trace 专用目录。
+
+Android 10/11 的非 root 设备宜通过 stdin 传入同一份 PBTX。下面的管道避免了 SELinux 对普通临时目录读取的限制。
+
+```bash
+cat config.pbtx | adb shell perfetto \
+  --txt \
+  -c - \
+  -o /data/misc/perfetto-traces/trace.perfetto-trace
+```
+
+`-c -` 表示从标准输入读取配置。Android 9 没有 `--txt`；只有在主机已经按匹配的 proto schema 生成 binary `TraceConfig` 时，才能用同样的 stdin 方式传入二进制。
+
+### `buffers`：容量和保留方向
+
+`size_kb` 定义 tracing service 的 central buffer，单位为 KiB。它不包含内核 per-CPU ftrace buffer，也不包含每个 Producer 的 shared memory；这三层都可能发生数据丢失。
+
+`fill_policy` 决定 central buffer 满时保留哪一端：
+
+- `RING_BUFFER` 是默认策略。新 packet 覆盖较旧的未读 packet，适合保留停止前的一段时间窗。
+- `DISCARD` 在 writer 碰到未读 chunk 后停止接收新 packet，保留较早数据。会话仍可继续运行，不能把它解释为“buffer 满后立刻停止 tracing”。
+
+固定写“10 秒用 64 MiB”缺少事件速率和设备条件。更稳妥的做法是先抓短 trace，检查 `stats`，再按峰值写入量和所需时间窗调整。
+
+### `duration_ms`：活动时间和墙上时间
+
+Android 17 的 `TraceConfig.duration_ms` 默认使用不计休眠时间的时钟。短 trace 几乎感受不到差别；跨待机的长 trace 可能在墙上时间里持续得更久。需要把设备休眠也计入期限时，设置 `prefer_suspend_clock_for_duration: true`。
+
+未设置 `duration_ms` 时，会话由 Consumer 显式停止。自动化采集应提供时长、trigger 或清晰的停止路径，避免遗留后台会话。
+
+### `data_sources`：名称、专属配置和目标 buffer
+
+每个 `data_sources.config` 至少给出 data source 名称。需要额外参数时，再填写与该名称配套的字段，例如 `linux.ftrace` 对应 `ftrace_config`，`linux.perf` 对应 `perf_event_config`。
+
+配置多个 central buffer 时，data source 通过 `target_buffer` 选择目标，索引从 0 开始。把高流量 profiling 数据放进独立 buffer，可以避免它覆盖调度和渲染事件；容量仍要用实际 trace 的写入量校准。
+
+## ftrace event 与 atrace category
+
+两类配置都写在 `linux.ftrace.ftrace_config` 中，但来源不同：
+
+- `ftrace_events` 直接启用 tracefs event，例如 `sched/sched_switch`、`binder/binder_transaction`。
+- `atrace_categories` 选择 Android 平台预定义的 category。一个 category 可能打开 ATRACE tag、若干 tracefs event，或两者。
+- `atrace_apps` 指定哪些 App 的 `ATRACE_TAG_APP` 标记可见，值可以是包名，也可以按官方约定使用 `*`。
+
+Android 17 的 `frameworks/native/cmds/atrace/atrace.cpp` 把 `sched` 映射到调度 tracepoint，把 `freq` 映射到 `power/cpu_frequency` 等事件，把 `binder_driver` 映射到 Binder 驱动 tracepoint。common kernel `android17-6.18-2026-06_r6` 的 `sched.h` 和 `power.h` 提供通用定义；设备是否启用某个事件还受内核配置和厂商实现影响。
+
+下面的命令用于查看当前设备能够启用的 category。
+
+```bash
+adb shell atrace --list_categories
+```
+
+设备输出才是本次抓取的可用清单。AOSP category 存在，不保证厂商内核提供其依赖的每个 tracefs event。
+
+### 按问题选择最小证据集
+
+| 问题 | 建议起点 | 还需按设备确认的证据 |
+| --- | --- | --- |
+| App 长帧 | `sched freq gfx view input` + `atrace_apps` + FrameTimeline | GPU render stage、SurfaceFlinger/HWC、厂商频率事件 |
+| 冷启动 | `sched freq am wm ss view binder_driver dalvik` + 目标 App | `android_startup` 所需事件、磁盘 I/O、类加载和包管理 |
+| ANR / Binder 等待 | `sched am wm ss binder_driver input` | 对端进程 atrace、锁竞争、ANR 窗口前的日志 |
+| 内存压力 | `sched memory dalvik` + `linux.process_stats` | PSI、mm event、heapprofd 或 ART heap graph |
+| 功耗 | `sched freq idle power` | `android.power`、ODPM rail、热状态和厂商事件 |
+
+表里的组合只负责建立起点。某个问题已经定位到 Binder，就可以删掉无关图形事件；要解释显示末端，则要补 SurfaceFlinger、FrameTimeline、GPU/HWC 或显示侧数据。
+
+## 用 `record_android_trace` 抓取
+
+本文把脚本固定到 Android 17 平台 tag，避免脚本参数随上游更新而悄悄改变。下面的命令从 Gitiles 下载并解码该版本。
+
+```bash
+curl -L \
+  'https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/tools/record_android_trace?format=TEXT' \
+  | python3 -c \
+    'import base64,sys; sys.stdout.buffer.write(base64.b64decode(sys.stdin.buffer.read()))' \
   > record_android_trace
 chmod +x record_android_trace
 ```
 
-> 上述命令锚定 AOSP `android-17.0.0_r1` 的脚本版本。Perfetto GitHub `main` 上也有更新脚本，但它不作为本文 Android 17 技术结论的依据。
+下载得到的脚本可用 `python3 record_android_trace --help` 查看参数。使用上游新版脚本也可以，但构建报告中应记录脚本版本。
 
-### 基本用法
+Android 17 tag 的脚本在 API 29 以下设备上会 sideload `tracebox` 到 `/data/local/tmp/`，因此 Android 9 的脚本抓取路径和直接调用系统 `/system/bin/perfetto` 并不相同。
 
-最小命令不带任何参数：
-
-```bash
-python3 record_android_trace -o trace.perfetto-trace
-```
-
-如果不传 `-t`，脚本会持续抓取，直到我们手动停止。更多时候，我们会显式给出时长、buffer 大小和 atrace categories：
+下面的短参数模式抓 10 秒系统 trace，同时启用目标 App 的 atrace 标记。
 
 ```bash
-python3 record_android_trace -o trace.perfetto-trace -t20s -b 64mb \
-  sched freq idle am wm gfx view binder_driver hal dalvik input res memory
+python3 ./record_android_trace \
+  -o trace.perfetto-trace \
+  -t 10s \
+  -b 32mb \
+  -a com.example.myapp \
+  sched freq view ss input
 ```
 
-这里 `-t20s` 表示 20 秒，`-b 64mb` 表示 64 MB buffer，后面的参数是 atrace category 列表。`-t`、`-b`、`-a` 这一组 short options 只适用于不带 `-c/--config` 的快速抓取。
+Android 17 tag 的脚本要求提供至少一个 event 或 `-c/--config`。它会调用设备端 `perfetto`、把结果拉回主机，并在默认情况下打开 Perfetto UI；远程主机可加 `--no-open`。
 
-### 为什么推荐这个脚本
-
-相比直接在设备上运行 `perfetto` 命令，`record_android_trace` 把最繁琐的几个步骤自动化了。脚本会自动从设备 pull Trace 文件到本地当前目录，省去了手动 `adb pull`。抓取完成后还会自动在浏览器中打开 Perfetto UI 并加载 Trace，不需要手动拖文件。ADB 连接和权限问题也由脚本处理——对于需要频繁抓取 Trace 的日常分析，这些自动化能省下不少时间。
-
-如果需要更精细的配置，可以通过 `-c` 参数传入 `.pbtxt` 配置文件。这时 `duration_ms`、buffer 大小、`atrace_apps` 等参数也写回 `config.pbtxt`，不再和 `-t`、`-b`、`-a` 混用：
+已经准备好 PBTX 时，使用配置模式。下面的命令让时长、buffer、App 和 data source 全部由文件控制。
 
 ```bash
-python3 record_android_trace -c config.pbtxt -o trace.perfetto-trace
+python3 ./record_android_trace \
+  -c config.pbtx \
+  -o trace.perfetto-trace
 ```
 
-对于日常的快速分析场景，`record_android_trace` 脚本依然是最省事的抓取入口。
+配置模式不要再叠加 `-t`、`-b` 或 `-a`；脚本在 `-c` 分支中直接读取文件，这些短参数不会改写 PBTX。团队复现问题时，提交 PBTX 和脚本版本，比只分享一条临时命令更容易追溯。
 
-## 通过 Perfetto UI 在线抓取
+## 通过 Perfetto UI 抓取
 
-[已验证: 官方文档, ui.perfetto.dev/#!/record]
+在 `ui.perfetto.dev` 打开 “Record New Trace” 后，页面会提供当前可用的设备 transport，并逐项检查连接条件。不同 UI 版本可能提供 ADB WebSocket、WebUSB 或其他连接方式，应按页面提示授权，不能用 `adb devices` 的结果代替 UI 自身的连接状态。
 
-Perfetto UI（<https://ui.perfetto.dev>）不仅是一个 Trace 分析工具，它还内置了 Trace 抓取功能。打开网站后，左侧导航栏选择 "Record new trace"，就可以通过图形界面配置和执行抓取。
+Recording Settings 主要控制三件事：
 
-### 连接设备
+- **Recording mode**：`Stop when full` 保留较早数据，`Ring buffer` 保留停止前的数据，`Long trace` 周期写入文件。
+- **In-memory buffer size / Max duration**：定义 central buffer 和会话期限。
+- **Probes**：选择调度、频率、atrace、FrameTimeline、内存、功耗或 profiling 数据。
 
-使用 USB 线连接设备和电脑后，Perfetto UI 会自动检测到连接的 Android 设备。在 "Target platform" 下拉框中选择对应设备。
+UI 的 probes 名称和分组会随版本调整。配置完成后打开 “Recording command”，保存生成的 PBTX，再用同一份文件执行 `record_android_trace -c`，就能把交互抓取变成可重复的命令。
 
-如果设备没有被检测到，需要确认 ADB 连接正常（`adb devices` 能列出设备），并且浏览器支持 WebUSB。
+## 在 App 中添加 Trace 标记
 
-### 配置抓取参数
+### 同步区间：`beginSection()` / `endSection()`
 
-Perfetto UI 把配置分成了几个直观的 Tab：
-
-**Buffer 模式选择**（在 "Recording mode" 区域）：
-- **Stop when full**：buffer 满了就停止（默认，最常用）。适合确定性时长抓取。
-- **Ring buffer**：环形覆盖，新数据覆盖旧数据。适合不确定何时复现的问题。
-- **Long trace**：持续写入文件。适合长时间追踪（几分钟到几小时）。
-
-**数据源选择**（在各个 Tab 页中）：
-- **CPU**：包括 CPU 调度、频率、idle 状态、调用栈采样。性能分析基本都要选。
-- **GPU**：GPU 渲染阶段、GPU 内存。
-- **Memory**：内存信息、Heap Profiling。
-- **AndroidApps**：atrace categories 和指定 App 的 Trace 事件。
-- **Advanced**：logcat、系统统计、网络包等。
-
-[图：Perfetto UI 抓取界面截图——左侧 Recordingmode 选择，中间数据源配置 Tab，右侧 StartRecording 按钮]
-
-### 导出配置为命令行
-
-Perfetto UI 可以把可视化配置导出为命令行：在 UI 上配好参数后，切到 "Recording command" Tab，就会显示对应的命令行和 `.pbtxt` 配置文件。
-
-这样我们就能把 UI 上的可视化配置直接转成可重复执行的脚本命令。在团队协作中，可以把这份配置文件提交到代码仓库，确保所有人使用相同的 Trace 配置。
-
-操作方式是：在 "Recording command" Tab 中，复制两个 EOF 标记之间的内容，保存为 `config.pbtxt` 文件。之后团队成员就可以直接用这个配置文件来抓取 Trace，抓取时长和 buffer 参数也统一由 `config.pbtxt` 控制：
-
-```bash
-python3 record_android_trace -c config.pbtxt -o trace.perfetto-trace
-```
-
-## 在 App 中添加自定义 Trace 标记
-
-[已验证: 官方文档, developer.android.com/reference/android/os/Trace; AOSP `frameworks/base/core/java/android/os/Trace.java`]
-
-系统默认的 atrace category 覆盖了大部分系统级行为，但很多时候我们需要在 App 代码中标记自定义的业务逻辑耗时——比如 "加载首页数据"、"初始化播放器"、"解析 JSON 响应" 这些 App 特有的阶段。Android 提供了 `android.os.Trace` API 来实现这个需求。
-
-### 基本用法
+`Trace.beginSection()` 从 API 18 起可用，区间必须在同一线程内正确嵌套。下面是调用点示例，业务方法的实现未展开。
 
 ```java
 import android.os.Trace;
 
-// 标记一段代码的开始
 Trace.beginSection("loadHomePageData");
-
 try {
-    // ... 实际的业务代码 ...
-    fetchDataFromNetwork();
-    parseJsonResponse();
-    updateUI();
+    loadHomePageData();
 } finally {
-    // 标记结束（必须与 beginSection 配对）
     Trace.endSection();
 }
 ```
 
-抓取 Trace 时，只要在 atrace categories 中包含了 App 的包名（通过 `atrace_apps` 或命令行参数 `-a com.example.myapp`），这些自定义标记就会出现在 Perfetto UI 中**调用线程对应的 track** 上，显示为带有标签名的彩色切片。如果示例在主线程调用 `Trace.beginSection`，slice 显示在主线程 track；如果在工作线程或 RenderThread 调用，slice 会出现在对应线程 track，不会统一落到主线程。跨线程操作应改用 `Trace.beginAsyncSection` / `Trace.endAsyncSection`。
+`finally` 保证异常路径也能关闭最近打开的 section。抓取配置还要把包名放进 `atrace_apps`，否则 App 的 `ATRACE_TAG_APP` 标记不会进入这次 system trace。
 
-`Trace.beginSection` 和 `Trace.endSection` 使用的底层标签是 `ATRACE_TAG_APP`。因此，所有通过 `android.os.Trace` API 添加的标记都会归类到同一个 tag 下。
+Android 17 的 `Trace.java` 将 section name 上限固定为 127 个 Unicode code unit；超长名称会抛出 `IllegalArgumentException`。`|`、换行和空字符由底层协议占用，API 会把它们替换为空格。名称宜包含稳定操作名，动态 ID 放进异步 cookie 或 Counter，避免制造大量难以聚合的 Slice 名称。
 
-### 使用约束
+格式化 section name 可能创建临时字符串。API 29 及以上可以先用 `Trace.isEnabled()` 判断是否值得构造这类字符串；低版本代码需要按 SDK 版本分支处理。Trace API 内部已经检查开关，普通常量名称不需要重复判断。
 
-使用这套 API 时有几个关键约束。
+### 异步区间和 Counter
 
-最基本的要求是 `beginSection` 和 `endSection` 必须**严格配对、嵌套调用**——不能交叉嵌套，也不能在一个线程中 `beginSection` 然后在另一个线程中 `endSection`。`Trace.endSection()` 不需要传入标签名，它自动关闭最近一次 `beginSection` 对应的区域，和栈的 push/pop 机制一样。正因为这个栈式设计，如果 `endSection` 调用次数和 `beginSection` 不匹配，后续所有标记都会错位。
-
-底层原因是一条 trace_marker 消息要同时装下事件类型、线程信息和 section name。名字太长会撑大 trace buffer 开销，Perfetto UI 里也不好读。
-
-另外，`beginSection`/`endSection` 只能在同一线程中使用。跨线程操作要改用异步 API。
-
-### 异步标记（API 29+）
-
-从 Android 10（API 29）开始，`android.os.Trace` 增加了异步追踪 API，可以跨线程标记一个操作的开始和结束：
+`beginAsyncSection()`、`endAsyncSection()` 和 `setCounter()` 从 API 29 起可用。异步区间可以跨线程，也不要求嵌套，但开始和结束必须使用相同名称与 `int` cookie。
 
 ```java
 import android.os.Trace;
 
-// 在一个线程中开始
-int cookie = 1001;  // 同一次异步操作在 begin / end 两端保持同一个 int 值
-Trace.beginAsyncSection("networkRequest", cookie);
+int requestCookie = 1001;
+Trace.beginAsyncSection("loadProfile", requestCookie);
 
-// ... 网络请求 ...
-
-// 在回调线程中结束
-Trace.endAsyncSection("networkRequest", cookie);
+startProfileRequest()
+        .whenComplete((result, error) -> {
+            Trace.setCounter("profileQueueDepth", pendingRequestCount());
+            Trace.endAsyncSection("loadProfile", requestCookie);
+        });
 ```
 
-`beginAsyncSection` 和 `endAsyncSection` 通过同一个 `int cookie` 关联一次异步操作。这解决了异步操作（如网络请求、Handler 回调）中无法使用同步 `beginSection`/`endSection` 的问题。如果业务里原本用的是 `long` 请求 ID，需要先做显式转换或映射，再传给这组 API。
+cookie 用来区分同名并发操作。结束调用要覆盖成功、失败和取消等终止路径。业务请求 ID 若为 `long` 或字符串，应建立稳定的 `int` 映射，不能依赖可能冲突的随意截断。
 
-### Native 代码中的自定义标记
+### NDK ATrace
 
-对于普通 App 的 C/C++ 代码（JNI 层、NDK so），用 public NDK 头文件 `android/trace.h`：
+普通 App 的 Native 代码使用公开头文件 `<android/trace.h>`。同步 API 从 API 23 起可用；异步区间和 Counter 从 API 29 起可用。下面的调用点省略了初始化函数的实现。
 
 ```c
 #include <android/trace.h>
 
 ATrace_beginSection("nativeInit");
-// ... 初始化代码 ...
+initialize_native_components();
 ATrace_endSection();
 ```
 
-这组 API 和 `android.os.Trace` 一样，底层都走 app tracing tag，抓取时仍然需要把目标包名放进 `atrace_apps` 或 `record_android_trace -a`。
+这段标记仍走 App tracing tag，抓取时同样要设置 `atrace_apps`。AOSP 平台内部代码常见 `<cutils/trace.h>` 与 `ATRACE_BEGIN`，它们不属于普通 NDK App 的公开集成方式。
 
-如果代码运行在平台内部模块里，AOSP 代码里还会看到 `<cutils/trace.h>` 和 `ATRACE_BEGIN` / `ATRACE_END`。这套头文件不面向普通 App / NDK 工程，这里只把它当作 framework / system code 的实现路径，不把它当成通用示例。
+Perfetto C++ SDK 的 Track Event 可以提供 category、flow、显式轨道和结构化 annotation。它是另一套埋点路径，具体集成见 §13.26 和 §13.17；只需要 Java/Kotlin 方法区间时，`android.os.Trace` 更直接。
 
-如果要讲 PerfettoSDK，则是另一条集成路径。PerfettoSDK 通过头文件注入的方式集成，需要在项目的 `CMakeLists.txt` 或 `Android.bp` 中添加 SDK 源码依赖，然后使用 `TRACE_EVENT` 宏来标记自定义事件。集成方式详见 Perfetto 官方文档的 [Instrumentation SDK](https://perfetto.dev/docs/instrumentation/tracing-sdk) 章节。[待补充: 完整的 CMake 集成示例]
+## Long trace：周期写文件
 
-### 在 Perfetto 中的表现
+默认会话把 packet 留在 central buffer，Consumer 在结束时读取。Long trace 设置 `write_into_file: true`，让 tracing service 周期性把已提交数据写入 Consumer 提供的文件描述符。
 
-在 Perfetto UI 中，自定义 Trace 标记出现在 App 进程对应线程的 track 上。每个 `beginSection`/`endSection` 对显示为一个带有标签文字的切片（slice），长度表示耗时。
-
-[图：Perfetto UI 中自定义 Trace 标记的展示——App 主线程 track 上的 "loadHomePageData" 等自定义切片]
-
-自定义标记和系统事件叠在同一时间轴上，业务逻辑的耗时区间和系统行为（VSync、GC、Binder 调用）能直接对照。这是 Perfetto 相比传统 profiler 最实用的特点之一。
-
-此外，Android 设备的开发者选项中内置了**系统追踪**应用，可以直接在设备上配置和启动 Trace 抓取，无需连接电脑。适合在现场复现问题时使用。抓取完成后，Trace 文件保存在设备上，后续可以通过 `adb pull` 导出。入口为"设置 → 开发者选项 → 系统追踪"。
-
-## Long Trace：长时间追踪
-
-[已验证: 官方文档, perfetto.dev/docs/concepts/config#long-traces]
-
-默认情况下，Perfetto 把 Trace 数据全部缓存在内存 buffer 中，在会话结束时一次性写入文件。这种方式的优点是开销最小，缺点是 Trace 大小受设备物理内存限制——通常能记录几十秒到几分钟的数据。
-
-但有些问题需要长时间追踪才能复现：比如偶发的 ANR（可能几小时才出现一次）、长时间运行后的内存泄漏、或者跑分场景下完整的 Benchmark 过程。Perfetto 的 Long Trace 模式就是为了这类场景设计的。
-
-### 启用 Long Trace
-
-启用 Long Trace 时，需要在 TraceConfig 中设置 `write_into_file: true`：
+下面的 Android 17 配置演示 1 小时墙上时间、5 秒写文件周期和 2 GiB 文件上限。32 MiB buffer 仍是示例起点，必须用目标设备的事件速率复核。
 
 ```textproto
 buffers {
-  size_kb : 32768    # 32MB in-memory buffer
+  size_kb: 32768
+  fill_policy: RING_BUFFER
 }
 
 write_into_file: true
-file_write_period_ms : 5000     # 每 5 秒刷盘一次
-max_file_size_bytes : 2147483648   # 最大 2GB
+file_write_period_ms: 5000
+max_file_size_bytes: 2147483648
 
-duration_ms : 3600000   # 1 小时
+duration_ms: 3600000
+prefer_suspend_clock_for_duration: true
 
 data_sources {
   config {
     name: "linux.ftrace"
     ftrace_config {
-      ftrace_events : "sched/sched_switch"
-      ftrace_events : "sched/sched_wakeup"
-      ftrace_events : "power/cpu_frequency"
-      atrace_categories : "am"
-      atrace_categories : "wm"
-      atrace_categories : "gfx"
-      atrace_categories : "view"
-      atrace_categories : "sched"
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_wakeup"
+      ftrace_events: "power/cpu_frequency"
+      atrace_categories: "am"
+      atrace_categories: "wm"
+      atrace_categories: "gfx"
+      atrace_categories: "view"
     }
   }
 }
 ```
 
-这几个参数决定刷盘节奏和文件上限：
+`file_write_period_ms` 的有效最小值是 100 ms。写文件周期越短，磁盘唤醒和 I/O 越频繁；周期越长，central buffer 越要覆盖这一段时间内的峰值写入量。`max_file_size_bytes` 达到上限时会停止 tracing，即使 `duration_ms` 尚未结束。
 
-- `write_into_file: true`：启用 Long Trace 模式，Trace 数据会定期从内存 buffer 刷写到磁盘文件。
-- `file_write_period_ms`：刷盘间隔。默认是 5000ms（5 秒）。更短的间隔意味着每次刷盘的数据量更少、buffer 可以更小，但磁盘 I/O 更频繁。
-- `max_file_size_bytes`：Trace 文件的最大大小。达到上限后 Trace 自动停止。不设置则无限制（直到磁盘满）。
-- `duration_ms`：总追踪时长。Long Trace 通常设置较长的时长。
+`flush_period_ms` 要求 Producer 定期提交尚未填满的 shared-memory page，和 `file_write_period_ms` 的 central buffer 写文件动作不同。Android 17 的 service 会为 long trace 自动处理周期 flush，大多数配置无需手动设置；过于频繁的 flush 会增加开销。
 
-### Long Trace 的注意事项
+这些字段生成一个持续增长的文件，不提供自动轮转。需要多个独立文件时，可运行有界的连续会话，或采用 trigger、clone/periodic snapshot 方案；分段之间是否允许空窗和重叠，要在采集设计里明确。
 
-Long Trace 在降低内存要求的同时引入了新的 trade-off。
+长 trace 结束后仍要检查丢包和文件尾部完整性。浏览器受内存上限影响时，使用本机 `trace_processor server http trace.perfetto-trace` 作为 UI 后端，详见 §13.4。
 
-**磁盘 I/O 开销**是一个需要关注的因素。每次刷盘都会产生磁盘写入，在 I/O 敏感的场景（如 Benchmark）中可能影响测量结果的准确性。如果对 I/O 干扰敏感，可以适当增大 `file_write_period_ms` 来降低刷盘频率，代价是内存 buffer 需要更大来缓存中间数据。
+## Heap profiling 与 Callstack sampling
 
-数据源也需要精简。长时间追踪时，如果开启了太多 atrace category，生成的数据量可能非常大。建议只保留分析目标相关的核心 category，通常 `sched` + `freq` + `gfx` + `view` 就够了。
+profiling 数据量和运行开销通常高于普通调度 trace。应先固定目标进程和问题类型，再设置采样间隔、频率、buffer 与会话时长。
 
-最实际的挑战是**大文件分析**。长时间追踪可能产生几百 MB 甚至几 GB 的 Trace 文件，这种大文件在浏览器中通过 ui.perfetto.dev 打开会非常慢甚至崩溃。解决方案是使用 `trace_processor_shell` 命令行工具在本地解析，然后在 Perfetto UI 中通过本地 HTTP 服务查看。具体操作参见 §13.4（大 Trace 文件处理）。
+| 目标 | Data source | 平台边界 | user build 的 App 门槛 |
+| --- | --- | --- | --- |
+| Native 分配与释放调用栈 | `android.heapprofd` | Android 10+ | `profileable` 或 `debuggable` |
+| ART 对象分配调用栈 | `android.heapprofd` + `heaps: "com.android.art"` | Android 12+ | `profileable` 或 `debuggable` |
+| Java 对象保留图 | `android.java_hprof` | Android 11+ | `profileable` 或 `debuggable` |
+| CPU / PMU 调用栈采样 | `linux.perf` | Android 12+ 平台已有；Android 17 源码按本节配置 | `profileable` 或 `debuggable` |
 
-## Heap Profiling 与 Callstack Sampling
+debug Android build 可以扩大到多数 App 和系统服务，具体范围仍受 SELinux、kernel perf 权限、目标进程和厂商配置影响。FrameTimeline 属于 SurfaceFlinger 系统数据，不使用这张表里的 App profiling gate。
 
-[已验证: 官方文档, perfetto.dev/docs/data-sources/native-heap-profiler ; perfetto.dev/docs/reference/trace-config-proto#perfeventconfig]
+### Native 与 ART allocation sampling
 
-Perfetto 不只能做时间线追踪。它还集成了内存剖析（Heap Profiling）和 CPU 调用栈采样（Callstack Sampling），可以在同一个 Trace 会话中同时收集这些数据。
+heapprofd 是进程外守护进程。目标进程内的 client 在分配路径采样并把记录写入 shared memory，守护进程负责异步展开调用栈、记账和写 trace；不能把整套 profiler 描述成“运行在目标进程中”。
 
-### 数据源选择指南
-
-开启 Heap Profiling 或 Callstack Sampling 之前，先确认问题类型和可用权限，再选择对应的数据源：
-
-| 分析目标 | 推荐数据源 | 最低 Android 版本 | 权限要求 | 数据形态 |
-|----------|-----------|------------------|---------|---------|
-| Native 内存泄漏（趋势观察） | `android.heapprofd` | Android 10 | userdebug/eng，或 user 构建 + `android:profileable` | 按调用栈聚合的分配统计 + 火焰图 |
-| Java 对象持有关系（快照） | `android.java_hprof` | Android 11 | userdebug/eng，或 user 构建 + `android:profileable` | 单次 heap dump，进程会短暂停顿 |
-| Java 分配热点（持续） | `android.heapprofd` + `heaps:"com.android.art"` | Android 12 | 同 heapprofd | 持续采样 Java 堆分配 |
-| CPU 密集型瓶颈 | `linux.perf` | Android 12 | userdebug/eng（user 构建须目标 App 为 profileable/debuggable） | 调用栈采样频率图 |
-| 调用栈采样（system_server） | `linux.perf` | Android 12+ | system_server 在 user 构建下也支持采样 | 系统服务调用栈火焰图 |
-
-选择流程：**问题类型 → 对应数据源 → 确认权限可用性 → 评估 buffer 和性能开销 → 确定结果分析方式**。
-
-开启 profiling 类数据源会显著增加 Trace 体积和运行时开销。建议：
-- **buffer**：Heap Profiling 和 Callstack Sampling 建议 buffer ≥ 128 MB，Long Trace 场景 ≥ 256 MB
-- **采样间隔**：heapprofd 官方默认 `sampling_interval_bytes: 4096`。采样间隔越小，精度越高、运行时开销越大；设到 1024 这类更激进的值前，应先用短 Trace 验证目标场景是否可接受
-- **先排查再 profiling**：先用 `linux.ftrace` + `gfx`/`sched` 快速定位问题线程，再针对性地开启 profiling
-
-### Native Heap Profiling（heapprofd）
-
-`heapprofd`（Heap Profiling Daemon）是 Android 10+ 内置的采样式堆内存分析器，运行在目标进程中。它通过 hook `malloc`/`free`（以及 C++ 的 `operator new`/`delete`）来追踪 Native 堆分配，生成按调用栈聚合的分配统计。
-
-在 TraceConfig 中启用 heapprofd 时，`data_sources.config.name` 从 Android 10 起就是 `android.heapprofd`：
+下面的配置针对一个 App 采集 Native 分配，并每 10 秒导出一次累计统计。
 
 ```textproto
 data_sources {
   config {
     name: "android.heapprofd"
     heapprofd_config {
-      sampling_interval_bytes : 4096
       process_cmdline: "com.example.myapp"
+      sampling_interval_bytes: 4096
       continuous_dump_config {
-        dump_phase_ms : 0
-        dump_interval_ms : 10000
+        dump_phase_ms: 0
+        dump_interval_ms: 10000
       }
     }
   }
 }
 ```
 
-这些字段决定采样范围和导出节奏：
-- `sampling_interval_bytes`：采样间隔，默认 4096 字节。意味着每分配 4096 字节采样一次。更大的值意味着更低的开销但更粗的粒度。
-- `process_cmdline`：目标进程的包名。不设置时 heapprofd **不会**采样任何进程；如确实要 profile 所有符合条件的进程，必须显式设置 `all : true`（`HeapprofdConfig` proto 的独立字段）。全进程采样在 userdebug 设备上开销很高，可能导致 heapprofd 过载。
-- `continuous_dump_config`：周期性导出快照的间隔。用于观察内存增长趋势。
+`sampling_interval_bytes` 在手写 `TraceConfig` 时必须显式设为非零值。4096 表示平均每 4 KiB 分配量抽取一个样本，采样是随机化过程，并非机械地记录每第 4096 个字节。间隔越小，细粒度分配越容易被观察到，client、shared memory、unwinding 和 trace 体积的成本也越高。
 
-在 Perfetto UI 中，Heap Profiling 数据显示为火焰图（Flamegraph）和分配详情表，可以直接看到哪些调用路径分配了最多的内存。
+没有 `process_cmdline` 或 `pid` 时，普通目标配置不会自行选择进程。`all: true` 可以请求所有符合资格的进程，但低采样间隔下很容易让 heapprofd 过载。
 
-**权限边界**：heapprofd 在 `userdebug`/`eng` 构建上可采样大多数 App 和系统服务；在 `user` 构建上只能采样 manifest 中声明了 `android:profileable="true"` 或 `android:debuggable="true"` 的 App。未满足条件的目标进程会得到空 profile 或采样失败。官方文档见 [ perfetto.dev — HeapProfiler](https://perfetto.dev/docs/data-sources/native-heap-profiler)。
+Android 12+ 若要采集 ART 对象分配，把 `heaps: "com.android.art"` 加入同一 `heapprofd_config`。它回答“采样窗口内哪些调用栈发生分配”，不提供某一时刻的完整对象持有关系。
 
-### Java Heap Sampling（Android 12+）
+### Java heap graph
 
-从 Android 12 开始，heapprofd 也支持 Java 堆的采样分析。这里要分清两层边界：`android.heapprofd` 这个数据源 Android 10+ 就有了，但 `heaps : "com.android.art"` 这类 Java heap selector 是 Android 12 才引入的字段。配置示例：
-
-```textproto
-data_sources {
-  config {
-    name: "android.heapprofd"
-    heapprofd_config {
-      sampling_interval_bytes : 4096
-      heaps : "com.android.art"
-      process_cmdline: "com.example.myapp"
-    }
-  }
-}
-```
-
-Java Heap Sampling 和传统的 Java Heap Dump（如通过 `android.os.Debug.dumpHprofData(String)` 导出、`adb shell am dumpheap <pid>` 捕获、Android Studio Profiler 的 DumpJavaHeap，或本节后文的 `android.java_hprof` 数据源触发）是两种不同的分析手段。Sampling 记录的是每次分配发生时的调用栈，能看到"谁在频繁分配内存"；HeapDump 是某一时刻的对象存留快照，能看到"谁持有大量对象不释放"。两者互补，前者适合定位分配热点，后者适合定位泄漏源头。
-
-### JavaHeapSnapshot（Android 11+）
-
-如果目标是查看某一刻的 Java 对象保留关系，使用 `android.java_hprof` 数据源。它走 `JavaHprofConfig`，输出一次 Java heap 快照；数据形态不同于 `android.heapprofd` + `heaps : "com.android.art"` 的持续采样。
-
-最小配置如下：
+`android.java_hprof` 让目标 ART 进程生成对象引用图。下面的最小配置按进程名请求一次 heap graph。
 
 ```textproto
 data_sources {
@@ -829,22 +563,14 @@ data_sources {
   }
 }
 
-duration_ms : 10000
+duration_ms: 10000
 ```
 
-选择方式可以按问题类型确定：
+结果用于 retained graph 和泄漏保留关系分析，不是包含全部对象字段值的传统 `.hprof` 文件。生成对象图会暂停目标进程并消耗额外内存，抓取窗口应避开需要测量原始延迟的区间。
 
-- `android.heapprofd` + `heaps : "com.android.art"`：Android 12+，看 Java 分配热点和调用栈，适合回答“谁在频繁分配”。
-- `android.java_hprof` + `java_hprof_config`：Android 11+，看快照里的对象持有关系，适合回答“谁还持有没有释放”。
-- 快照会让目标进程产生停顿，适合复现窗口明确、可接受短暂停顿的泄漏分析；长时间趋势仍然用 heapprofd continuous dump。
+### `linux.perf` 调用栈采样
 
-源码锚点基于 AOSP `android-17.0.0_r1`：`external/perfetto/protos/perfetto/config/data_source_config.proto:208` 中 `perf_event_config = 111`，以及 `external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto`。
-
-### CPU Callstack Sampling
-
-Perfetto 还可以在 Trace 中集成 CPU 调用栈采样。这对分析 CPU 密集型瓶颈（如某段计算代码占用大量 CPU）非常有用。
-
-**版本与设备要求**：`linux.perf` 数据源（即 `traced_perf` 守护进程）从 Android 12 (API 31) 起可用。源码证据：`external/perfetto/src/profiling/perf/perf_producer.cc:81` 定义 `kDataSourceName = "linux.perf"`，`traced_perf.cc` 完整实现；`external/perfetto/protos/perfetto/config/data_source_config.proto` 在 android-12.0.0_r1 与 android-17.0.0_r1 中都有 `perf_event_config` 配置入口。Android 17 已基于 `android-17.0.0_r1` 复核。运行条件取决于构建类型：`userdebug`/`eng` 构建可采样大多数进程；`user` 构建上目标 App 必须声明 `android:profileable="true"` 或 `android:debuggable="true"`，二者满足其一即可。非符合条件的目标进程会被跳过，trace 中无采样数据。官方 quickstart 见 [perfetto.dev — CPU Profiling](https://perfetto.dev/docs/quickstart/callstack-profiling)。
+Android 17 的 `PerfEventConfig` 已把新配置分成 `timebase` 和 `callstack_sampling`。下面的配置用每 CPU 100 Hz 的 `SW_CPU_CLOCK` 作为采样源，只保留目标 App 的用户空间调用栈。
 
 ```textproto
 data_sources {
@@ -852,8 +578,9 @@ data_sources {
     name: "linux.perf"
     perf_event_config {
       timebase {
-        frequency : 100
-        timestamp_clock : PERF_CLOCK_MONOTONIC
+        counter: SW_CPU_CLOCK
+        frequency: 100
+        timestamp_clock: PERF_CLOCK_MONOTONIC
       }
       callstack_sampling {
         scope {
@@ -865,339 +592,74 @@ data_sources {
 }
 ```
 
-`frequency : 100` 表示每秒采样 100 次（10ms 间隔）。采样频率越高，结果越精确，但开销也越大。对于大多数分析场景，100-1000Hz 是合理的范围。
+100 Hz 是配置示例，不是跨设备建议值。`frequency` 是向内核请求的每 CPU 采样频率，内核可能因负载而节流；采样结束后应检查丢样统计。省略 `scope` 会保留所有进程的样本，用户空间 unwinder 更容易过载。
 
-`scope.target_cmdline` 限定只对目标进程采样。如果不设 `scope`，`traced_perf` 会保留所有进程的样本，unwinder 队列容易过载，导致采样丢失和 `traced_perf` 内存暴涨。Android 12+ 的 `target_cmdline` 支持通配符（如 `com.example.*`）。
+Android 13+ 的 `target_cmdline` 支持一个 `*` 通配符，Android 12 按归一化后的命令行做精确匹配。需要内核栈时可设置 `kernel_frames: true`，但 user build 仍受 `kptr_restrict` 和平台权限限制。
 
-在 Perfetto UI 中，调用栈采样数据显示为火焰图，可以直观地看到 CPU 时间花在了哪些函数调用上。
+`linux.perf` 和 simpleperf 都调用 `perf_event_open`。前者把样本写进 Perfetto trace，便于与调度、Binder 和帧事件放在同一时间轴；后者输出 `perf.data`，更适合独立 CPU profile 和成熟的命令行分析流程。
 
-### perf_event vs atrace：两条正交的追踪路径
+## Android 17 源码核对点 [自动发现]
 
-理解 `linux.perf` 数据源，需要先认识它与 `linux.ftrace`（即 atrace）之间的本质差异。两者在数据源、overhead 和适用场景上完全不同：
+| 结论 | Android 17 源码位置 | 代码能证明什么 |
+| --- | --- | --- |
+| atrace category 映射 | `frameworks/native/cmds/atrace/atrace.cpp` | `sched`、`freq`、`idle`、`binder_driver`、`memory` 等 category 对应哪些 ATRACE tag / tracefs event |
+| FrameTimeline 注册 | `FrameTimeline.h:656`、`FrameTimeline.cpp:1344-1354` | data source 名为 `android.surfaceflinger.frametimeline`，在 SurfaceFlinger boot finished 路径注册 |
+| `linux.perf` 注册 | `perf_producer.cc:80-81, 1327-1331` | Producer 名为 `perfetto.traced_perf`，data source 名为 `linux.perf` |
+| `traced_perf` socket | `traced_perf.cc:34-40`、`traced_perf.rc` | init socket 用于接收 `/proc` 文件描述符；守护进程以 `nobody` 运行并依赖 group、capability 和 SELinux |
+| profiling 配置 | `perf_event_config.proto`、`heapprofd_config.proto`、`java_hprof_config.proto` | Android 17 的字段、deprecated 边界、scope 和目标过滤语义 |
+| 新增平台入口 | `data_source_config.proto` | Android 17 增加 `android.user_list`、`android.inputmethod`、`android.aflags` 配置字段，已有常用 data source 仍保留 |
 
-| 维度 | `linux.ftrace`（atrace） | `linux.perf`（perf_event） |
-|------|--------------------------|---------------------------|
-| **底层机制** | ftrace ring buffer + `trace_marker` | `perf_event_open` syscall |
-| **数据类型** | 注解事件（ATrace API 写入）、内核 ftrace 事件 | 硬件计数器采样（CPU cycles、cache-miss）、调用栈 |
-| **调用栈采集** | 不支持 | 支持（DWARF unwind） |
-| **硬件计数器** | 不支持 | 支持（PMU events） |
-| **overhead** | 低（仅注解点） | 中（采样频率可调，需按目标设备实测） |
+源码存在某个配置字段，只能证明平台代码具备入口。设备能否产出数据，还要看 Producer 是否注册、feature flag、权限、内核/HAL 和目标进程资格。
 
-`linux.perf` 数据源通过 `traced_perf` 守护进程实现，它调用 Linux 内核的 `perf_event_open` syscall，为每个 CPU 创建一个 perf event group leader（由 `timebase` 定义），然后周期性采样。
+## 抓取后的质量检查
 
-**PerfEventConfig 字段说明**：
+分析前先确认这五项：
 
-源码锚点在 `protos/perfetto/config/profiling/perf_event_config.proto`。Android 17 的 `PerfEventConfig` 已经把调用栈相关约束收进 `Callstack Sampling` 子消息，字段编号也和早期文章里常见的旧 schema 不同：
+1. trace 的起止时间覆盖了复现动作，设备时间轴上能找到触发点。
+2. 目标进程、线程和 App 自定义标记存在，包名没有写错。
+3. 问题所需 data source 有可查询的轨道或表；空轨道要回查配置与权限。
+4. `stats` 没有与结论相关的数据丢失；存在丢包时只对完整区间下判断。
+5. 记录设备 build、内核、PBTX、脚本和分析端版本，保证别人能复现。
 
-```protobuf
-// 节选自 protos/perfetto/config/profiling/perf_event_config.proto
-message PerfEventConfig {
-  optional PerfEvents.Timebase timebase = 15;
-  optional CallstackSampling callstack_sampling = 16;
-  repeated FollowerEvent followers = 19;
-  optional uint32 ring_buffer_pages = 3;
-  optional uint32 ring_buffer_read_period_ms = 8;
-  optional uint64 max_enqueued_footprint_kb = 17;
-  optional uint32 max_daemon_memory_kb = 13;
-  repeated uint32 target_cpu = 20;
-}
+下面的 PerfettoSQL 用于列出非零的数据丢失和错误统计。
 
-message CallstackSampling {
-  optional Scope scope = 1;
-  optional bool kernel_frames = 2;
-  optional UnwindMode user_frames = 3;
-}
+```sql
+SELECT
+  name,
+  severity,
+  source,
+  value
+FROM stats
+WHERE severity IN ('data_loss', 'error')
+  AND value != 0
+ORDER BY severity, name;
 ```
 
-- `timebase`：定义主采样事件和采样频率，常见写法是 `frequency : 100`。
-- `callstack_sampling`：打开调用栈采样，并通过 `scope`、`kernel_frames`、`user_frames` 控制保留哪些进程、是否带内核栈、使用哪种 userspace unwinder。
-- `followers`：在同一个采样点附带记录其他硬件计数器，适合同时看 cycles、instructions、cache-misses。
-- `ring_buffer_pages` / `ring_buffer_read_period_ms`：控制 kernel 到 `traced_perf` 的 ringbuffer 容量和读取节奏。
-- `max_enqueued_footprint_kb` / `max_daemon_memory_kb`：限制 unwinder 队列和 `traced_perf` 自身的内存占用，超限后会丢样或停止数据源。
+每个命中项要回到对应层处理：ftrace 丢包检查内核 buffer 和读取速率，Producer/central buffer 丢包检查 shared memory、buffer 容量与写文件周期，profiling 丢样还要检查 unwinder 和守护进程资源限制。
 
-旧资料里常见的顶层 `target_cmdline`、`target_pid`、`kernel_frames` 字段在 Android 17 的 proto 中已标为 deprecated。新配置优先写在 `callstack_sampling.scope` 里。
+## 常见误区
 
-**PerfettoSQL 中的 `perf_sample` 表**：linux.perf 采样数据存入 `perf_sample` 表，可通过 Perfetto Trace Processor 查询：
+**category 越多越好。** 多余事件会提高写入速率、扩大解析成本，还可能覆盖需要的时间窗。先用问题驱动的最小集合，证据不足时再补。
 
-| 列名 | 含义 |
-|------|------|
-| `id` | 采样唯一 ID |
-| `ts` | 采样时间戳（ns） |
-| `utid` | 被采样线程的 UTID |
-| `cpu` | 采样时所在的 CPU |
-| `cpu_mode` | "user" 或 "kernel" |
-| `callsite_id` | 指向 `stack_profile_callsite` 表的外键（用于重建调用栈） |
+**文件生成就代表数据完整。** 会话可以在部分 data source 空结果或 buffer 丢包的情况下正常产出文件。`stats`、轨道、目标进程和采集窗口都要检查。
 
-通过 JOIN `stack_profile_callsite` 表和 `stack_profile_frame` 表可以重建完整的火焰图调用栈。
+**App 写了 `Trace.beginSection()` 就一定可见。** system trace 还要在 `atrace_apps` 里选中包名，并覆盖这段代码的执行时间。
 
-**simpleperf 与 Perfetto linux.perf 的关系**：simpleperf（`platform/system/extras/simpleperf/`）是 AOSP 自带的命令行 CPU profiling 工具，输出 `perf.data` 文件；Perfetto linux.perf 将采样数据直接写入 Perfetto trace 文件。两者都基于 `perf_event_open` syscall，核心差异在于输出格式和与 Perfetto UI 的集成程度。
+**Long trace 会自动切成多个文件。** `file_write_period_ms` 控制周期写入，`max_file_size_bytes` 达到上限后停止会话；这两个字段都不负责文件轮转。
 
+**profiling 配置可直接复用到整机。** 省略 `scope`、使用过小的 heap sampling interval 或过高的 perf frequency，都会放大采集扰动。目标进程、频率和采样间隔必须在目标设备上试跑。
 
-### 同时收集多种数据的配置示例
+## 后续阅读
 
-一份 TraceConfig 可以同时开启多个数据源。这个示例同时收集 ftrace 事件、Heap Profiling 和 CPU 调用栈采样：
-
-```textproto
-buffers {
-  size_kb : 131072   # 128MB，Heap Profiling 需要更大 buffer
-  fill_policy : DISCARD
-}
-
-data_sources {
-  config {
-    name: "linux.ftrace"
-    ftrace_config {
-      ftrace_events : "sched/sched_switch"
-      ftrace_events : "sched/sched_wakeup"
-      ftrace_events : "power/cpu_frequency"
-      atrace_categories : "am"
-      atrace_categories : "wm"
-      atrace_categories : "gfx"
-      atrace_categories : "view"
-      atrace_categories : "sched"
-      atrace_apps : "com.example.myapp"
-    }
-  }
-}
-
-data_sources {
-  config {
-    name: "android.heapprofd"
-    heapprofd_config {
-      sampling_interval_bytes : 4096
-      heaps : "com.android.art"
-      process_cmdline: "com.example.myapp"
-    }
-  }
-}
-
-data_sources {
-  config {
-    name: "linux.perf"
-    perf_event_config {
-      timebase {
-        frequency : 100
-        timestamp_clock : PERF_CLOCK_MONOTONIC
-      }
-      callstack_sampling {
-        scope {
-          target_cmdline: "com.example.myapp"
-        }
-      }
-    }
-  }
-}
-
-duration_ms : 20000
-```
-
-注意这里的 heapprofd 配置默认按 Android 12+ 写法展示了 `heaps : "com.android.art"`。如果目标设备是 Android 10/11，需要删掉 `heaps` 字段，只保留 Native Heap Profiling。当同时开启 Heap Profiling 时，buffer 建议设为 128MB 或更大，因为调用栈数据的体积比单纯的 ftrace 事件大得多。
-
-## 常见问题与误区
-
-**"atrace categories 选得越多越好"**——不对。每个 category 都会持续产生额外事件，数据量会很快膨胀，buffer 也更容易被写满。关键数据被覆盖后，后面的分析就失去了定位依据。更稳妥的做法是根据分析目标选一组最小 category 组合，再按需要逐步加项，参考前面「按分析场景选择 Categories」的推荐表。
-
-**"Trace 文件越大，信息越丰富"**——也不对。信息丰富度取决于数据源的选择和配置是否精准，而不是文件大小。一份 20MB 的精准 Trace 通常比一份 200MB 的冗余 Trace 更容易定位问题。
-
-**"抓 Trace 影响性能，测出来的数据不准"**——要看配置。只开 `sched`、`gfx`、`view` 这类核心 category 时，Perfetto 通常适合日常定位问题；但 Heap Profiling、Long Trace 持续刷盘、高频 CPU 采样都会明显抬高开销。做严格 Benchmark 时，最好把“测性能”和“抓 Trace”拆成两轮，或者只保留最小数据源。
-
-**"beginSection 忘了 endSection 没关系"**——这会导致 Trace 数据混乱。未配对的 section 会被 Perfetto 解析器丢弃，浪费了 instrumentation 的努力。强烈建议用 try/finally 包裹，确保 `endSection` 总是被调用。
-
-## 与其他章节的关系
-
-Trace 抓取是工具篇的入口。掌握抓取方式后，后续章节会基于这些 Trace 数据展开分析：
-
-- §13.3（PerfettoView）会介绍如何在 Perfetto UI 中阅读和导航 Trace
-- §13.5（主题分析）会深入各性能主题的 Trace 分析方法
-- §13.6（线程 CPU 状态）专门讲解如何通过 `sched` category 分析线程的运行状态
-- §14.1（Android Studio Profiler）提供了另一种可视化 Trace 的方式
-
-如果已经抓到了一份 Trace 但不知道怎么看，直接跳到 §13.3 即可。
+§13.3 讲 Perfetto UI，§13.4 讲大型 trace，§13.6 讲线程 CPU 状态。拿到 trace 后，先完成本章的五项质量检查，再进入具体主题分析。
 
 ## 参考资料
 
-
-
-1. Perfetto 官方文档 - Quickstart : AndroidTracing : https://perfetto.dev/docs/quickstart/android-tracing
-2. Perfetto 官方文档 - TraceConfig 配置: https://perfetto.dev/docs/concepts/config
-3. Perfetto 官方文档 - Native Heap Profiler : https://perfetto.dev/docs/data-sources/native-heap-profiler
-4. Perfetto 官方文档 - TraceConfigProtoReference（PerfEventConfig）: https://perfetto.dev/docs/reference/trace-config-proto#perfeventconfig
-5. Perfetto AOSP Proto - JavaHprofConfig : external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto
-6. Android Developers - Trace API : https://developer.android.com/reference/android/os/Trace
-7. AOSP Trace.java 源码: frameworks/base/core/java/android/os/Trace.java
-8. 高爷博客 - Android Perfetto 系列 2：PerfettoTrace 抓取: https://www.androidperformance.com/2024/05/21/Android-Perfetto-02-how-to-get-perfetto/
-9. 高爷博客 - Android Perfetto 系列 4：使用命令行在本地打开超大 Trace: https://www.androidperformance.com/2025/02/08/Android-Perfetto-04-Open-Big-Trace-With-Command-Line/
-10. **PerfettoAPM 工具链演进（Android 14→16）**：Android 14 至 16 累计新增 15 个 datasource（Nextid 123→138），APM 端侧三件套（cpu_per_uid_config / app_wakelock_config / kernel_wakelocks_config），traced_probes readtracefs 权限升级，traced.rcperfetto_trace_on_boot 新增。详见 DeepResearch：[2026-06-09-android17-tracekit-perfetto-apm-toolchain.md](file:///Users/gracker/Library/Mobile%20Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-09-android17-tracekit-perfetto-apm-toolchain.md)
-
-**核心数据源源码锚点**（全部基于 AOSP `android-17.0.0_r1`）：
-
-- `linux.perf`：`perf_producer.cc:81`（数据源名定义）、`traced_perf.cc`（守护进程）、`perf_event_config.proto`（配置协议）
-- `android.surfaceflinger.frametimeline`：`FrameTimeline.h:656`（数据源名定义）、`FrameTimeline.cpp:1351-1354`（注册入口）、`SurfaceFlinger.cpp:820`（SF 集成点）
-
-完整源码路径和行号已在前文「源码深度补充」和「FrameTimeline 与 Linux.Perf 源码锚点强化」小节给出。
-
-
-## 附录：源码验证记录（2026-06-06）
-
-以下为历史版本对照记录，正文结论均已整合到前文对应小节。仅作归档参考。
-
-### 版本对照记录
-
-关键标识符在各 Android 版本的源码行号（`linux.perf` 的 `perf_producer.cc`）：
-- Android 12.0.0_r1: line 77
-- Android 15.0.0_r1: line 81
-- Android 16.0.0_r1: line 80
-- Android 17.0.0_r1: line 81（当前主线）
-
-数据源标识符和核心注册路径在所有版本中保持一致，正文所有结论均基于 `android-17.0.0_r1`。
-
-### FrameTimelineEvent 协议增强（Android 16）
-
-在 `external/perfetto/protos/perfetto/trace/android/frame_timeline_event.proto` 中新增：
-```
-message ActualSurfaceFrameStart {
-  optional JankSeverityType jank_severity_type = 12;  // field11 → 12
-}
-
-message ActualDisplayFrameStart {
-  optional JankSeverityType jank_severity_type = 9;   // field8 → 9  
-}
-```
-
-**性能影响**：Android 16 支持更精细的卡顿类型分级统计，`jank_severity_type` 字段为帧级分析提供统一的卡顿严重度标签。
-
-### traced_perf.rc 权限简化
-
-Android 17.0.0_r1 配置：
-```rc
-group nobody readproc readtracefs          # 新增 readtracefs
-task_profiles ProcessCapacityHigh          # 新增任务配置
-shared_kallsyms                           # 新增共享符号访问
-```
-
-**安全优化**：移除 `writepid` 依赖，改用 `readtracefs`，提升 LinuxPerf 权限模型安全性
-
-### PerfEventConfig 协议扩展
-
-协议从 Android 12 的 "Nextid : 19" 扩展到 Android 16 的 "Nextid : 21"：
-```protobuf
-FollowerEvent followers = 19;             // 新增：群组内事件跟随
-repeated uint32 target_cpu = 20;          // 新增：精确 CPU 索引计数
-```
-
-**性能提升**：`target_cpu` 字段支持按 CPU 索引精确过滤 perf 事件，减少不相关事件的处理开销。
-
-### Simpleperf 解耦验证
-
-AOSP simpleperf (`system/extras/simpleperf/`) 与 Perfetto linux.perf 为不同实现：
-- 使用相同底层 API：perf_event_open
-- 输出格式不同：simpleperf → Android 自定义格式，linux.perf → Perfetto 格式
-- 权限管理分离： traced_perf.rc vs simpleperf.rc
-
-
-
-
-## 附录：APM 工具链演进记录（2026-06-09）
-
-以下基于 Android 16.0.0_r4 源码保留 Android 14 → Android 16 Perfetto APM 工具链演进对照。Android 17 主线结论必须以上文 `android-17.0.0_r1` 复核结果为准；本小节只作为历史演进材料，不把 Android 16 锚点外推为 Android 17 事实。
-
-### DataSourceConfig 协议版本演进
-
-源码：`external/perfetto/protos/perfetto/config/data_source_config.proto`
-
-| Android 版本 | tag | Nextid | 备注 |
-|---|---|---|---|
-| Android 14 | android-14.0.0_r1 | 123 | 基线（含 android.network_packets124、Android14QPR1+ android.sdk_sysprop_guard125）|
-| Android 15 | android-15.0.0_r1 | 130 | 新增 android.protolog(127)、android.input.inputevent(128)、android.pixel.modem(130) |
-| Android 16 | android-16.0.0_r4 | 138 | 新增 android.windowmanager(131)、org.chromium.system_metrics(132)、android.kernel_wakelocks(133)、gpu.renderstages(134)、org.chromium.histogram_samples(135)、android.app_wakelocks(136)、android.cpu_per_uid(137) |
-| Android 17 | android-17.0.0_r1 | 141 | 新增 android.user_list(138)、android.inputmethod(139)、android.aflags(140) |
-
-### Android 16 APM 三件套源码定位
-
-- **`android.cpu_per_uid`**：`external/perfetto/protos/perfetto/config/android/cpu_per_uid_config.proto`（Copyright 2025）
-  ```protobuf
-  message CpuPerUidConfig {
-    optional uint32 poll_ms = 1;
-  }
-  ```
-- **`android.app_wakelocks`**：`external/perfetto/protos/perfetto/config/android/app_wakelock_config.proto`（Copyright 2025）
-  ```protobuf
-  message AppWakelocksConfig {
-    optional int32 write_delay_ms = 1;     // 建议 5000ms
-    optional int32 filter_duration_below_ms = 2;
-    optional bool drop_owner_pid = 3;
-  }
-  ```
-- **`android.kernel_wakelocks`**：`external/perfetto/protos/perfetto/config/android/kernel_wakelocks_config.proto`
-
-### traced_probes 权限模型升级
-
-源码：`external/perfetto/traced_perf.rc`（android-16.0.0_r4）
-
-```rc
-service traced_perf /system/bin/traced_perf
-    class late_start
-    disabled
-    socket traced_perf stream 0666 root root
-    user nobody
-    group nobody readproc readtracefs
-    capabilities KILL DAC_READ_SEARCH
-    task_profiles ProcessCapacityHigh
-    shared_kallsyms
-```
-
-`traced_probes.rc`（同版本）：
-
-```rc
-service traced_probes /system/bin/traced_probes
-    class late_start
-    disabled
-    user nobody
-    group nobody readproc log readtracefs
-    task_profiles ProcessCapacityHigh
-    onrestart exec_background -nobody shell -- /system/bin/traced_probes --cleanup-after-crash
-    file /dev/kmsg w
-    capabilities DAC_READ_SEARCH SYS_NICE
-    shared_kallsyms
-```
-
-`readtracefs` group + `DAC_READ_SEARCH` capability 替代旧版 `writepid`，LinuxPerf / ftrace 路径只读。
-
-### android.input.inputevent 数据源
-
-源码：`external/perfetto/protos/perfetto/config/android/android_input_event_config.proto`（Copyright 2024）
-
-- TraceMode: TRACE_MODE_TRACE_ALL（仅 userdebug/eng）/ TRACE_MODE_USE_RULES
-- TraceLevel : NONE / REDACTED（抹去坐标+keycode）/ COMPLETE
-- TraceRule 支持 match_all_packages / match_any_packages / match_secure / match_ime_connection_active
-- `trace_dispatcher_input_events` + `trace_dispatcher_window_dispatch` 双开关可独立启用
-
-### FtraceConfig atrace 集成新增
-
-源码：`external/perfetto/protos/perfetto/config/ftrace/ftrace_config.proto`（android-16.0.0_r4，Nextid : 36）
-
-```protobuf
-repeated string atrace_categories_prefer_sdk = 28;
-optional bool atrace_userspace_only = 34;   // Perfetto v52+
-```
-
-`atrace_userspace_only = true` 关闭 vendor-specific ftrace 事件注入；`atrace_categories_prefer_sdk` 让混合路径切到纯 Perfetto SDK track_event。
-
-### ProducerIPC 零拷贝路径
-
-源码：`external/perfetto/src/tracing/ipc/producer/producer_ipc_client_impl.h`（android-16.0.0_r4）
-
-```cpp
-SharedMemoryArbiter* MaybeSharedMemoryArbiter() override;
-bool IsShmemProvidedByProducer() const override;
-void OnConnectionInitialized(bool connection_succeeded,
-                             bool using_shmem_provided_by_producer,
-                             bool direct_smb_patching_supported,
-                             bool use_shmem_emulation);
-```
-
-`direct_smb_patching_supported` 决定 producer→traced 是否走 SMB 直接 patch，APM SDK 在 Android 16+ 可借此减少一次数据拷贝。
-
-### Android 17 验证结论
-
-本节源码锚点已基于 AOSP `android-17.0.0_r1`（Android 17 / API 37）通过 Gitiles 复核，关键文件和行号与正文一致。`external/perfetto`、`frameworks/native`、`frameworks/base` 下的核心源码路径均可公开访问。
+- [Recording system traces with Perfetto](https://perfetto.dev/docs/getting-started/system-tracing) 与 [Advanced System Tracing on Android](https://perfetto.dev/docs/learning-more/android)：设备端 CLI、`record_android_trace`、Android 9-12 输入和服务边界。
+- [Trace configuration](https://perfetto.dev/docs/concepts/config) 与 [TraceConfig reference](https://perfetto.dev/docs/reference/trace-config-proto)：buffer、duration、long trace、heapprofd、JavaHprofConfig 和 PerfEventConfig。
+- [Instrumenting Android apps/platform with atrace](https://perfetto.dev/docs/getting-started/atrace)、[Android `Trace` API](https://developer.android.com/reference/android/os/Trace) 与 [NDK tracing API](https://developer.android.com/ndk/reference/group/tracing)：App 标记、包名、配对、名称长度和 API level。
+- [Native/ART allocation profiling](https://perfetto.dev/docs/data-sources/native-heap-profiler)、[ART heap graph](https://perfetto.dev/docs/data-sources/java-heap-profiler) 与 [`linux.perf` callstack sampling](https://perfetto.dev/docs/quickstart/callstack-sampling)：profiling 数据形态、配置和权限。
+- [Visualising large traces](https://perfetto.dev/docs/visualization/large-traces) 与 [Trace Processor Stats](https://perfetto.dev/docs/analysis/sql-stats)：本机 Trace Processor HTTP 后端，以及 data loss/error 统计项。
+- Android 17 `external/perfetto` 的 [`record_android_trace`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/tools/record_android_trace)、[`trace_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/trace_config.proto)、[`data_source_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/data_source_config.proto)、[`heapprofd_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/heapprofd_config.proto)、[`java_hprof_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/java_hprof_config.proto) 与 [`perf_event_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/perf_event_config.proto)：脚本参数和平台配置协议。
+- Android 17 [`atrace.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/atrace/atrace.cpp)、[`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp) 与 [`Trace.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java)：category、FrameTimeline 和 App Trace 实现。
+- common kernel `android17-6.18-2026-06_r6` 的 [`sched.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h) 与 [`power.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/power.h)：调度、频率和 idle tracepoint。
