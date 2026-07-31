@@ -131,18 +131,18 @@ Android 上有三层常用埋点接口。选择依据是数据表达能力和采
 - 团队愿意同步维护 Trace Processor importer、存储表和查询；
 - schema 具备字段编号、单位、枚举演进和兼容策略。
 
-custom data source 写出的私有 protobuf 不会自动变成 PerfettoSQL 表。缺少 importer 时，Perfetto UI 只能保留未知 packet，查询层拿不到业务字段。
+custom data source 写出的私有 protobuf 不会自动变成 PerfettoSQL 表。原始 trace 文件仍保留未知字段的编码字节，但未包含对应 schema 和 importer 的官方 Trace Processor 会跳过这些字段，PerfettoSQL 查询层拿不到业务数据。
 
 ## 2. in-process backend：应用自己控制 session
 
 in-process backend 把 tracing service、consumer 和 producer 都放在当前进程，不连接 Android 的 `/dev/socket/traced_producer`。应用可以创建、停止并读取 session，产物只含注册到该进程内 backend 的数据源。它不会补出 ftrace、Binder、SurfaceFlinger 或其他进程事件。
 
-下面的示例把 backend 选择写死为 `kInProcessBackend`，避免一个进程同时初始化多个 backend 后由 `NewTrace()` 自动选择：
+下面的示例把 backend 选择写死为 `kInProcessBackend`，并让调用方传入实测得到的 buffer 容量与应用私有输出 fd：
 
 ```cpp
-#include <fstream>
+#include <cstdint>
 #include <memory>
-#include <vector>
+#include <utility>
 
 #include <perfetto.h>
 
@@ -158,9 +158,10 @@ void InitPerfetto() {
   perfetto::TrackEvent::Register();
 }
 
-std::unique_ptr<perfetto::TracingSession> StartAppTrace() {
+std::unique_ptr<perfetto::TracingSession> StartAppTrace(
+    uint32_t buffer_size_kb, int output_fd) {
   perfetto::TraceConfig config;
-  config.add_buffers()->set_size_kb(4096);
+  config.add_buffers()->set_size_kb(buffer_size_kb);
 
   auto* ds_config = config.add_data_sources()->mutable_config();
   ds_config->set_name("track_event");
@@ -173,36 +174,30 @@ std::unique_ptr<perfetto::TracingSession> StartAppTrace() {
 
   auto session =
       perfetto::Tracing::NewTrace(perfetto::kInProcessBackend);
-  session->Setup(config);
+  session->Setup(config, output_fd);
   session->StartBlocking();
   return session;
 }
 
-void DrawFrame(uint64_t frame_id) {
+template <typename DrawFn>
+void TraceDrawFrame(uint64_t frame_id, DrawFn&& draw) {
   TRACE_EVENT("rendering", "DrawFrame", "frame_id", frame_id);
+  std::forward<DrawFn>(draw)();
   TRACE_COUNTER("rendering", "SubmittedFrameId", frame_id);
-  // Rendering work is omitted.
 }
 
-bool StopAppTrace(
+void StopAppTrace(
     std::unique_ptr<perfetto::TracingSession> session) {
   perfetto::TrackEvent::Flush();
   session->StopBlocking();
-  std::vector<char> data = session->ReadTraceBlocking();
-
-  std::ofstream output("app-only.pftrace", std::ios::binary);
-  output.write(data.data(),
-               static_cast<std::streamsize>(data.size()));
-  output.close();
-  return output.good();
 }
 ```
 
-初始化、`TrackEvent::Register()` 和 category 静态存储都要在事件写入前完成。`StartBlocking()` 返回后，配置才处于活动状态；此前执行的 `TRACE_EVENT` 不会被这次普通 in-process session 回收。
+初始化、`TrackEvent::Register()` 和 category 静态存储都要在事件写入前完成。`StartBlocking()` 返回后，配置才处于活动状态；此前执行的 `TRACE_EVENT` 不会被这次普通 in-process session 回收。`TraceDrawFrame()` 让实际渲染函数在 slice 作用域内执行，避免用休眠或空函数伪造耗时。
 
-`TrackEvent::Flush()` 把尚未提交的 writer 数据推向 service，`StopBlocking()` 负责结束 session，`ReadTraceBlocking()` 再读取 consumer buffer。这三个调用含义不同。长 trace 不宜把完整结果复制到 `std::vector<char>`；SDK 的 `TracingSession::Setup()` 支持传入输出文件描述符，让 service 直接写文件。
+`TrackEvent::Flush()` 把尚未提交的 writer 数据推向 service，`StopBlocking()` 负责结束 session。示例使用 `Setup(config, output_fd)` 直接写入由应用以私有权限打开的文件；调用方要保持 fd 有效，并在停止完成后关闭。若 `Setup()` 不传 fd，才使用 `ReadTraceBlocking()` 读取 consumer buffer。两种导出路径不要混用。
 
-这段示例的 4MiB buffer 只是演示值。容量要用目标设备上的事件率、最长采集时间和丢包统计计算。环形缓冲覆盖旧 packet，`DISCARD` 则在写满后舍弃新 packet，两者对应的故障证据不同。
+`buffer_size_kb` 要用目标设备上的事件率、最长采集时间和丢包统计计算。环形缓冲覆盖旧 packet，`DISCARD` 则在写满后舍弃新 packet，两者对应的故障证据不同。
 
 ## 3. system backend：应用只作为 producer
 
@@ -224,41 +219,7 @@ void InitSystemProducer() {
 
 `enable_system_consumer = false` 配合“代码中不显式调用 `NewTrace(kSystemBackend)`”时，链接器可以移除未使用的 system consumer IPC。这个字段是链接裁剪提示，不是权限开关；应用侧仍应在架构上禁止创建 system consumer，也不调用 `ReadTraceBlocking()`。外部 consumer 决定何时选择 `track_event`。
 
-下面的 pbtxt 同时请求应用 TrackEvent 和调度事件，适合 adb 或受控实验环境：
-
-```textproto
-duration_ms: 10000
-buffers {
-  size_kb: 65536
-  fill_policy: RING_BUFFER
-}
-data_sources {
-  config {
-    name: "track_event"
-    track_event_config {
-      enabled_categories: "rendering"
-      disabled_categories: "*"
-    }
-  }
-}
-data_sources {
-  config {
-    name: "linux.ftrace"
-    ftrace_config {
-      ftrace_events: "sched/sched_switch"
-      ftrace_events: "sched/sched_waking"
-    }
-  }
-}
-```
-
-配置由有权访问 consumer socket 的进程提交，例如：
-
-```bash
-adb shell perfetto --txt \
-  -c /data/local/tmp/app-system-trace.pbtxt \
-  -o /data/misc/perfetto-traces/app-system.perfetto-trace
-```
+adb 或受控实验环境的外部 TraceConfig 要显式请求 `track_event`，并在 `TrackEventConfig` 中启用目标 category。需要调度证据时，再加入 `linux.ftrace` 的 `sched_switch`、`sched_waking`；duration 与 buffer 按复现窗口和实测写入速率设置。配置由具备 consumer socket 权限的 shell 或系统组件提交，应用 producer 不负责创建输出文件。
 
 应用进程必须在 session 期间运行并完成 data source 注册。若配置能抓到 ftrace 却没有 `rendering` slice，应依次检查 producer 是否连接、`track_event` descriptor 是否出现、category 是否匹配、进程是否在采集窗口内写事件。`profileable` / `debuggable` 会影响若干平台 profiler 和 shell profiling 能力，但它们不会把应用提升为 system trace consumer。
 
@@ -268,55 +229,18 @@ adb shell perfetto --txt \
 
 custom data source 继承 `perfetto::DataSource<T>`。每个活动 trace session 会创建独立实例；多个并发 session 可能让 `Trace()` lambda 执行多次。没有活动实例时 lambda 不执行，高成本参数的计算应放在 lambda 内。实例状态访问需要 `GetDataSourceLocked()`，否则停止 session 与业务线程写入可能发生生命周期竞争。
 
-下面的骨架展示注册和生命周期回调，不涉及私有 protobuf：
+自定义数据源的四个边界如下：
 
-```cpp
-class EngineStateDataSource
-    : public perfetto::DataSource<EngineStateDataSource> {
- public:
-  void OnSetup(const SetupArgs&) override {
-    // Parse the data source config and allocate bounded state.
-  }
+| 入口 | 可做的工作 | 生命周期约束 |
+|---|---|---|
+| `OnSetup(const SetupArgs&)` | 解析本实例配置，准备有界状态 | `SetupArgs::config` 只在回调期间有效，不能保存指针 |
+| `OnStart(const StartArgs&)` | 启动子系统采样 | 回调可能来自 Perfetto 内部线程 |
+| `Trace(lambda)` | 按活动实例写 packet | 没有活动实例时 lambda 不执行；并发 session 可执行多次 |
+| `OnStop(const StopArgs&)` | 停止采样并写收尾 packet | 不应长时间阻塞 Perfetto 回调线程 |
 
-  void OnStart(const StartArgs&) override {
-    // Enable the engine-side sampler.
-  }
+`OnStop()` 中存在异步清理时，要调用 `StopArgs::HandleStopAsynchronously()` 取得 acknowledgement closure。清理线程写完末尾 packet 后，还要在末次 `Trace()` lambda 中显式调用 `TraceContext::Flush()`，再执行 closure。这个过程必须在 consumer 配置的 stop timeout 内完成；超时后服务会强制停止，随后写出的末尾数据不会进入 trace。数据源名称宜使用团队控制域名的反向域名形式，减少与其他 producer 的命名冲突。
 
-  void OnStop(const StopArgs&) override {
-    // Disable the sampler and release session state.
-  }
-};
-
-PERFETTO_DECLARE_DATA_SOURCE_STATIC_MEMBERS(
-    EngineStateDataSource);
-PERFETTO_DEFINE_DATA_SOURCE_STATIC_MEMBERS(
-    EngineStateDataSource);
-
-void RegisterEngineStateDataSource() {
-  perfetto::DataSourceDescriptor descriptor;
-  descriptor.set_name("com.example.engine_state");
-  EngineStateDataSource::Register(descriptor);
-}
-```
-
-`OnStop()` 中存在异步清理时，要调用 `StopArgs::HandleStopAsynchronously()` 取得 acknowledgement closure，并在清理和末尾 packet 写完后执行该 closure。超过 service 的 stop timeout 才确认会丢失收尾数据。数据源名称宜使用反向域名，减少与其他 producer 的命名冲突。
-
-强类型 packet 还需要扩展 TracePacket schema。下面是结构示意；`set_engine_state()` 代表项目自行添加并生成的字段，原版 amalgamated SDK 不提供这个方法：
-
-```cpp
-EngineStateDataSource::Trace(
-    [](EngineStateDataSource::TraceContext context) {
-      auto packet = context.NewTracePacket();
-      packet->set_timestamp(
-          perfetto::TrackEvent::GetTraceTimeNs());
-      auto* state = packet->set_engine_state();
-      state->set_frame_id(42);
-      state->set_queue_depth(3);
-      state->set_stage(EngineStage::GPU_SUBMIT);
-    });
-```
-
-完整实现至少包含四处同步修改：
+强类型 packet 需要扩展 TracePacket schema。原版 amalgamated SDK 不会为项目私有消息生成 setter，完整实现至少包含四处同步修改：
 
 1. 为 packet 定义稳定的 protobuf 字段和编号；
 2. 生成 SDK 侧 pbzero 写入接口；
@@ -327,7 +251,7 @@ EngineStateDataSource::Trace(
 
 ## 5. startup tracing、触发器与环形缓冲
 
-普通 session 只能记录启动后发生的事件。Perfetto SDK 的 startup tracing 会先用占位 target buffer 启动 data source，等待后续 system session 以匹配配置接管。Android 17 的 `Tracing::SetupStartupTracingOpts` 默认超时是 10 秒；超时、配置不匹配或 service 不接受 producer-provided shared memory 时，startup session 会被终止。
+普通 session 只能记录启动后发生的事件。Perfetto SDK 的 startup tracing 会先用临时目标缓冲区启动 data source，等待后续 system session 以匹配配置接管。Android 17 的 `Tracing::SetupStartupTracingOpts` 默认超时是 10 秒；超时、配置不匹配或 service 不接受 producer-provided shared memory 时，startup session 会被终止。
 
 下面的代码固定 system backend，并把 session handle 交给调用方；不再等待 system session 时，可以通过该 handle 主动 abort：
 
@@ -336,22 +260,22 @@ std::unique_ptr<perfetto::StartupTracingSession>
 StartStartupTracing(const perfetto::TraceConfig& config) {
   perfetto::Tracing::SetupStartupTracingOpts options;
   options.backend = perfetto::kSystemBackend;
-  options.timeout_ms = 10'000;
   return perfetto::Tracing::SetupStartupTracingBlocking(
       config, options);
 }
 ```
 
-`SetupStartupTracingOpts` 还提供 `on_setup`、`on_adopted` 和 `on_aborted` 回调，生产实现应记录采用或中止结果。startup tracing 不支持 in-process backend。in-process 场景应在目标初始化工作前创建普通 session，并等待 `StartBlocking()` 完成。system 场景还需要外部 consumer 在超时内提交可匹配配置；调用 `SetupStartupTracingBlocking()` 本身不会生成可读取的系统 trace 文件。
+未覆盖 `timeout_ms` 时，Android 17 SDK 使用源码默认值 10 秒。`SetupStartupTracingOpts` 还提供 `on_setup`、`on_adopted` 和 `on_aborted` 回调，生产实现应记录采用或中止结果。startup tracing 不支持 in-process backend。in-process 场景应在目标初始化工作前创建普通 session，并等待 `StartBlocking()` 完成。system 场景还需要外部 consumer 在超时内提交可匹配配置；调用 `SetupStartupTracingBlocking()` 本身不会生成可读取的系统 trace 文件。
 
-Perfetto trigger 是另一套机制。外部配置可以让 tracing service 等待命名触发器，应用再调用：
+Perfetto trigger 是另一套机制。下面是 Android 17 头文件公开的触发接口：
 
 ```cpp
-perfetto::Tracing::ActivateTriggers(
-    {"com.example.rendering_jank"}, 5000);
+static void ActivateTriggers(
+    const std::vector<std::string>& triggers,
+    uint32_t ttl_ms);
 ```
 
-这次调用只向已连接或 5 秒内连接的 backend 发送触发信号。trace 的 ring buffer、停止策略和输出文件仍由 consumer 配置。应用内 APM 可以决定何时发信号，但不能借此读取 consumer buffer。
+`ttl_ms` 由调用方根据 producer 连接策略确定。调用只向当前已连接或在 TTL 内完成连接的 backend 发送触发信号；trace 的 ring buffer、停止策略和输出文件仍由 consumer 配置。应用内 APM 可以决定何时发信号，但不能借此读取 consumer buffer。
 
 “持续保留故障前窗口”要求 session 在故障发生前已经运行，并使用 ring buffer。故障出现后才启动 trace，只能看到故障后的活动。进程被 LMK 或 native crash 直接终止时，尚未提交的 producer chunk 和应用私有文件都可能丢失；线上方案要单独验证异常退出路径。
 
@@ -369,7 +293,7 @@ perfetto::Tracing::ActivateTriggers(
 
 Perfetto tracing protocol 的 socket、共享内存和 protobuf 协议维持双向兼容，新 client 可以连接旧 service，未知字段会被旧端忽略。兼容协议不代表所有新特性都能在旧 service 上工作；依赖新 IPC 方法、capability 或 data source 字段时仍要做功能探测。
 
-公开 C++ `TrackEvent` 与 custom data source 属于官方 API 面，发布形态是静态库。`include/perfetto/ext/` 是内部接口，不应在应用中依赖。`include/perfetto/public` 下的新 C API/ABI 仍标记为不稳定，纯 C 或 Rust FFI 项目采用它时要锁定 revision，并把编译、运行和 trace 解析回归纳入每次升级。
+公开 C++ `TrackEvent` 与 custom data source 属于官方 API 面，发布形态是静态库。“公开 API”不等于稳定的跨动态库 C++ ABI；应用不能从一个 linker unit 导出 Perfetto C++ 类型给另一个 linker unit 使用。`include/perfetto/ext/` 是内部接口，不应在应用中依赖。Android 17 源码文档仍把 `include/perfetto/public` 下的 C API/ABI 标为不稳定，纯 C 或 Rust FFI 项目采用它时要锁定 revision，并把编译、运行和 trace 解析回归纳入每次升级。
 
 APK 体积不能用一个固定数字描述。至少要分别测量：
 
@@ -422,7 +346,7 @@ Android 17 的 `packages/modules/Profiling/service/.../Configs.java` 给出了�
 | 开发期 Native 单测 | SDK in-process `track_event` | 应用 | 只含本进程 SDK 事件的 `.pftrace` |
 | adb / 实验室专项 | SDK system backend + ATrace | shell 或受控工具 | 显式配置的 TrackEvent、ftrace、Binder、渲染数据 |
 | Android 15-17 公开线上 profiling | ATrace + `ProfilingManager` | 平台 service | 限流、redaction 后的请求 App 相关结果 |
-| 系统/内测版本 | SDK system backend + 平台数据源 | 系统签名 consumer 或 shell | 授权范围内的完整 system trace |
+| 系统/内测版本 | SDK system backend + 平台数据源 | 具备 `traced_consumer` 策略权限的系统组件或 shell | 授权配置范围内的 system trace |
 
 `ProfilingManager.requestProfiling()` 从 API 35 可用，系统触发注册从 API 36 可用。请求受系统限流且不保证执行；回调成功后也要使用 `ProfilingResult.getResultFilePath()` 取得交付文件。API 37 没有开放任意 TraceConfig 注入，所以应用不能要求它顺带启用私有 custom data source。
 
@@ -437,7 +361,7 @@ SELECT
   process.name AS process_name,
   thread.name AS thread_name,
   slice.ts / 1e6 AS ts_ms,
-  slice.dur / 1e6 AS dur_ms,
+  IIF(slice.dur = -1, trace_end() - slice.ts, slice.dur) / 1e6 AS dur_ms,
   slice.name,
   slice.category
 FROM slice
