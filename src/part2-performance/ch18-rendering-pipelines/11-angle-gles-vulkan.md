@@ -1,7 +1,7 @@
 ---
 
 
-title: ANGLE（GLES-over-Vulkan 翻译层）
+title: Android 17 ANGLE（GLES-over-Vulkan 翻译层）
 chapter: '18.11'
 section: '18.11'
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
@@ -18,12 +18,54 @@ related_chapters:
 - '18.8'
 - '18.9'
 sources:
-- Google ANGLE 项目文档 (chromium.googlesource.com/angle)
-- 'Android 官方文档: ANGLE on Android'
-- AOSP external/angle/
-- AOSP android-17.0.0_r1 frameworks/base/core/java/android/os/GraphicsEnvironment.java
-- AOSP android-17.0.0_r1 frameworks/native/opengl/libs/EGL/Loader.cpp
-- AOSP android-17.0.0_r1 external/angle/src/libANGLE/renderer/vulkan/SyncVk.cpp
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md
+  role: Native Graphics 类型边界、ANGLE backend、frame pacing 与显示后半段
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S08_angle_gles_to_vulkan_pipeline/source.md
+  role: ANGLE frontend、Vulkan backend、driver selection 与 trace 证据边界
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/GraphicsEnvironment.java
+  role: Settings、allowlist/denylist、game policy、manifest 偏好与 APK/system ANGLE 选路
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/opengl/libs/EGL/Loader.cpp
+  role: native、ANGLE namespace、system ANGLE 与 updatable driver 加载边界
+- type: aosp
+  path: https://android.googlesource.com/platform/external/angle/+/refs/tags/android-17.0.0_r1/android/AndroidManifest.xml
+  role: AOSP ANGLE system package 与 intent action
+- type: aosp
+  path: https://android.googlesource.com/platform/external/angle/+/refs/tags/android-17.0.0_r1/src/libANGLE/renderer/vulkan/CompilerVk.cpp
+  role: Vulkan backend 的 SPIR-V translator 输出类型
+- type: aosp
+  path: https://android.googlesource.com/platform/external/angle/+/refs/tags/android-17.0.0_r1/src/compiler/translator/CodeGen.cpp
+  role: TranslatorSPIRV 创建分支
+- type: aosp
+  path: https://android.googlesource.com/platform/external/angle/+/refs/tags/android-17.0.0_r1/src/libANGLE/renderer/vulkan/ContextVk.cpp
+  role: dirty-state 同步、draw、flush 与 Vulkan command submit
+- type: aosp
+  path: https://android.googlesource.com/platform/external/angle/+/refs/tags/android-17.0.0_r1/src/libANGLE/renderer/vulkan/android/WindowSurfaceVkAndroid.cpp
+  role: ANativeWindow 到 VkSurfaceKHR 的 Android 桥接
+- type: aosp
+  path: https://android.googlesource.com/platform/external/angle/+/refs/tags/android-17.0.0_r1/src/libANGLE/renderer/vulkan/SurfaceVk.cpp
+  role: swapchain acquire、swap、throttle、present 与 gpu.angle event
+- type: aosp
+  path: https://android.googlesource.com/platform/external/angle/+/refs/tags/android-17.0.0_r1/src/libANGLE/renderer/vulkan/ProgramExecutableVk.cpp
+  role: per-program pipeline cache、warm-up、merge 与序列化
+- type: aosp
+  path: https://android.googlesource.com/platform/external/angle/+/refs/tags/android-17.0.0_r1/src/libANGLE/renderer/vulkan/SyncVk.cpp
+  role: native fence client/server wait、临时 semaphore、fd 所有权与 trace event
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c
+  role: dma-fence 的 sync_file fd 接口
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
+  role: fence signal、callback 与 wait
+- type: official
+  path: https://developer.android.com/games/develop/vulkan/overview
+  role: Android 15 可选 ANGLE、包级测试、API 37 manifest 偏好与回退
+- type: official
+  path: https://perfetto.dev/docs/data-sources/frametimeline
+  role: App SurfaceFrame、DisplayFrame 与显示端 jank
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 task6_state: "reviewed"
@@ -55,7 +97,8 @@ last_deepseek_cn_review_at: 2026-06-14
 last_task9_autofix_at: "2026-06-14"
 last_task2b_verifier_at: "2026-06-14T19:31:17"
 task2b_verifier_result: "status-fix-ready-for-task6"
-last_verified: "2026-07-26"
+last_verified: "2026-07-31"
+last_verified_against: "android-17.0.0_r1 (GraphicsEnvironment.java, Loader.cpp, ANGLE AndroidManifest.xml, CompilerVk.cpp, CodeGen.cpp, ContextVk.cpp, WindowSurfaceVkAndroid.cpp, SurfaceVk.cpp, ProgramExecutableVk.cpp, SyncVk.cpp) / android17-6.18-2026-06_r6 (sync_file.c, dma-fence.c)"
 confidence: high
 last_idle_audit_at: "2026-07-26T14:35:30+08:00"
 last_idle_audit_run_id: "20260726-143530-idle-audit-2c5482aa"
@@ -63,6 +106,7 @@ last_idle_audit_log: "logs/audit/2026-07-26-20260726-143530-idle-audit-2c5482aa-
 idle_audit_result: "pass-safe-metadata-and-source-marking-fix"
 ---
 
+# 18.11 Android 17 ANGLE（GLES-over-Vulkan 翻译层）
 
 <!-- outline-start -->
 
@@ -338,7 +382,7 @@ contextVk->addGarbage(&waitSemaphore.get());
 
 `SyncHelperNativeFence::clientWait()` 先检查 signal 和 timeout，必要时把等待放进 `UnlockedTailCall`。tail call 会在 frontend 锁释放后、对应 EGL API 调用结束前执行。`SyncHelper::clientWait()` 对 GL sync 采用同类设计。它们减少持有 ANGLE 全局 / display 锁等待的时间，调用线程仍会等待结果；阻塞不会自动转移成异步 GPU 线程。
 
-该等待使用 `poll()`，将纳秒 timeout 转成毫秒；非零且小于 1 ms 的 timeout 会提升为 1 ms。这里描述的是 ANGLE 的用户态调用方式，fd 本身仍由内核 sync_file / dma-fence 机制支撑。内核源码统一参照 `android17-6.18-2026-06_r6` 的 `drivers/dma-buf/sync_file.c`。
+该等待使用 `poll()`，将纳秒 timeout 转成毫秒；非零且小于 1 ms 的 timeout 会提升为 1 ms。这里描述的是 ANGLE 的用户态调用方式，fd 本身仍由内核 sync_file / dma-fence 机制支撑。内核源码统一参照 `android17-6.18-2026-06_r6` 的 `drivers/dma-buf/sync_file.c` 与 `drivers/dma-buf/dma-fence.c`。
 
 `serverWait()` 本身没有 `ANGLE_TRACE_EVENT`。Perfetto 中搜索函数名通常得不到 slice；要结合 Vulkan submit、调用栈采样和后续 GPU 执行确认。`clientWait` 与 `clientWait block (unlocked)` 在 Android 17 tag 中有 `gpu.angle` event。
 
@@ -529,14 +573,14 @@ Android 17 增加 manifest `com.android.graphics.driver.prefer_angle` 请求。�
 - [`WindowSurfaceVkAndroid.cpp`](https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/android/WindowSurfaceVkAndroid.cpp) 与 [`SurfaceVk.cpp`](https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/SurfaceVk.cpp)：Android `VkSurfaceKHR`、swapchain acquire 和 present。
 - [`ProgramExecutableVk.cpp`](https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/ProgramExecutableVk.cpp)：pipeline cache 初始化、warm-up、合并与序列化。
 - [`SyncVk.cpp`](https://android.googlesource.com/platform/external/angle/+/android-17.0.0_r1/src/libANGLE/renderer/vulkan/SyncVk.cpp)：native fence、client wait 和 server wait。
-- kernel [`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：sync fd 对 dma-fence 的内核封装。
+- kernel [`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c) 与 [`dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)：sync fd、signal、callback 与 wait。
 
 ---
 
 > **交叉引用**
 >
-> - 原生 GLES 与 EGL 路径详见 [18.8 OpenGL ES 渲染路径](08-opengl-es.md)
-> - Android Vulkan WSI 详见 [18.9 Vulkan 原生渲染路径](09-vulkan-native.md)
-> - SurfaceControl 与 fence 所有权详见 [18.10 SurfaceControl API](10-surface-control-api.md)
+> - 原生 GLES 与 EGL 路径详见 [18.8 Android 17 EGL / OpenGL ES 渲染链路](08-opengl-es.md)
+> - Android Vulkan WSI 详见 [18.9 Android 17 Vulkan 原生渲染管线](09-vulkan-native.md)
+> - SurfaceControl 与 fence 所有权详见 [18.10 Android 17 SurfaceControl NDK API](10-surface-control-api.md)
 > - 游戏 render loop 与 frame pacing 详见 [18.16 游戏引擎渲染路径](16-game-engine.md)
 > - 图形 API 选择详见 [2.14 图形 API 演进与选择策略](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)
