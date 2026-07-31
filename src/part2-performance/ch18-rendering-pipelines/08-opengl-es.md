@@ -1,5 +1,5 @@
 ---
-title: OpenGL ES 渲染链路
+title: Android 17 EGL / OpenGL ES 渲染链路
 chapter: '18.8'
 status: finalized
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
@@ -9,15 +9,67 @@ tags:
 - GLThread
 - GLSurfaceView
 - eglSwapBuffers
+- ANativeWindow
+- BufferQueue
 - fence
 - ANGLE
-- Triple-Buffering
 related_chapters:
 - '2.1'
 - '2.6'
+- '2.13'
 - '2.14'
 - '18.6'
+- '18.7'
 - '18.9'
+sources:
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md
+  role: Native Graphics 类型边界、EGL/GLES 提交、frame pacing、ANGLE 与 Perfetto 证据链
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/opengl/java/android/opengl/GLSurfaceView.java
+  role: GLThread、render mode、Renderer 回调、swap、生命周期与 context lost
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/GraphicsEnvironment.java
+  role: ANGLE driver 选择顺序、denylist 与 API 37 manifest 偏好信号
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/opengl/libs/EGL/egl_platform_entries.cpp
+  role: libEGL validation、surface metadata、damage 与 native/ANGLE driver 分发
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/Surface.cpp
+  role: ANativeWindow、dequeue/queue、buffer age、frame-rate hint 与 fences
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueCore.cpp
+  role: slot、buffer 数量与队列配置
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp
+  role: dequeue、queue、outstanding 限制与 backpressure
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp
+  role: buffer transaction、acquire 与 release
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/
+  role: layer state、snapshot 与 transaction readiness
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp
+  role: composition strategy、validate、present 与 release fences
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c
+  role: 跨模块共享 buffer 基础
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c
+  role: dma-fence 的 sync_file fd 接口
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
+  role: fence signal、callback 与 wait
+- type: official
+  path: https://developer.android.com/games/sdk/frame-pacing
+  role: SwappyGL、presentation timing 与 pipeline mode
+- type: official
+  path: https://developer.android.com/games/develop/vulkan/overview
+  role: Android 15 ANGLE 可选层、API 37 manifest 偏好与回退边界
+- type: official
+  path: https://perfetto.dev/docs/data-sources/frametimeline
+  role: SurfaceFrame、DisplayFrame 与 jank 字段
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 pipeline_stage: ready-to-publish
@@ -42,12 +94,14 @@ task9_review_notes: "2026-05-20 Task9 深度复审：needs-rework。P0 1 / P1 1 
 task6_review_notes: "2026-05-25 20:12 Task6：Task2B 修复后写作复审；小修 10 处（否定纠正式、直接称呼、图/代码说明、Buffer 等待措辞）；锚点覆盖完整，无新增 L3/L4 回炉项，转 Task9 复核。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-05
-last_verified: 2026-07-29
-last_verified_against: android-17.0.0_r1 / android17-6.18-2026-06_r6
-confidence: medium-high
+last_verified: 2026-07-31
+last_verified_against: android-17.0.0_r1 (GLSurfaceView.java, GraphicsEnvironment.java, egl_platform_entries.cpp, Surface.cpp, BufferQueueCore.cpp, BufferQueueProducer.cpp, BLASTBufferQueue.cpp, FrontEnd, HWComposer.cpp) / android17-6.18-2026-06_r6 (dma-buf.c, sync_file.c, dma-fence.c)
+confidence: high
 last_idle_audit_at: 2026-07-29
 last_idle_audit_run_id: 20260729-103556-idle-audit-caf6b94a
 ---
+
+# 18.8 Android 17 EGL / OpenGL ES 渲染链路
 
 <!-- outline-start -->
 
@@ -196,7 +250,7 @@ AOSP `libEGL` 的 `eglSwapBuffersImpl()` 进入 `eglSwapBuffersWithDamageKHRImpl
 - ANGLE 路径进入 ANGLE 的 EGL；
 - extension 可用时，带 damage 的调用进入 `eglSwapBuffersWithDamageKHR()`，否则回退到普通 swap。
 
-这意味着 AOSP wrapper 不是完整 swap 实现。dequeue 的具体时机、GPU flush/submit、swap interval 和 fence 生成通常位于 ANGLE 或厂商 driver。正文不能把 `eglSwapBuffers()` 固定展开成一条对所有设备相同的内部调用栈。
+AOSP wrapper 只覆盖平台分发边界，不包含完整的 swap 实现。dequeue 的具体时机、GPU flush/submit、swap interval 和 fence 生成通常位于 ANGLE 或厂商 driver。正文不能把 `eglSwapBuffers()` 固定展开成一条对所有设备相同的内部调用栈。
 
 调用的职责可用下面的概念骨架理解：
 
@@ -312,7 +366,7 @@ common kernel 只能解释通用同步语义。某块 Adreno、Mali、Immortalis
 
 ANGLE 可以在应用继续调用 GLES/EGL 时，把命令翻译到 Vulkan 等 backend。应用可见提交点仍是 `eglSwapBuffers()`，底层则可能出现 Vulkan command buffer、queue submit、pipeline cache 与 Vulkan driver 工作。
 
-ANGLE 不是按 Android 版本全局强制开启。选择会受设备配置、开发者选项、应用 manifest、graphics driver 包、系统属性和厂商策略影响。Android 15 提供 ANGLE 开发者测试入口，也不能推导出所有 Android 15—17 设备默认使用 ANGLE。
+ANGLE 不是按 Android 版本全局强制开启。选择会受设备配置、开发者选项、应用 manifest、graphics driver 包、系统属性和厂商策略影响。Android 15 提供 ANGLE 开发者测试入口。Android 17 新增 manifest 元数据 `com.android.graphics.driver.prefer_angle=true`，向系统表达应用希望使用 ANGLE；`GraphicsEnvironment#queryAngleChoice()` 仍可能因为平台选择优先级、denylist、essential-tier、低内存设备、旧 vendor API 或 ANGLE 不可用而保留/回退到 GPU 厂商 GLES driver。这个元数据是偏好信号，不能证明当前进程已经使用 ANGLE。
 
 ### 怎样确认 backend
 
@@ -381,7 +435,7 @@ Android 17 的 HWC 主线仍要区分 SF 侧 `presentOrValidate()`、`validate()
 
 ### GLSurfaceView 与原生 EGL
 
-`GLSurfaceView` 适合单一 Surface、标准生命周期和简化 EGL 管理。原生 EGL 适合需要多个 surface/context、共享资源、定制 pacing、明确错误恢复或引擎自有线程模型的场景。原生实现要自行承担：
+`GLSurfaceView` 适合单一 Surface、标准生命周期和简化 EGL 管理。原生 EGL 适合需要多个 surface/context、共享资源、定制 pacing、明确错误恢复或引擎自有线程模型的场景。原生实现需要自行处理：
 
 - `ANativeWindow` 引用计数和 SurfaceHolder/NativeActivity 生命周期；
 - config/context/surface 创建与销毁；
@@ -401,11 +455,12 @@ Android 17 的 HWC 主线仍要区分 SF 侧 `presentOrValidate()`、`validate()
 | Android 14 / API 34 | EGL→ANativeWindow→BufferQueue 主结构延续 | 不要寻找虚构的 API 34 swap 重构 |
 | Android 15 / API 35 | ARR 平台能力演进；提供 ANGLE 开发者测试入口；16 KB page-size 兼容进入 native 发布要求 | backend 和 native `.so` 兼容要分开验证 |
 | Android 16 / API 36 | ARR/headroom/ADPF 能力扩展，GPU syscall filtering 影响非标准调试/注入路径 | API 路径与 profiling 工具要分别验证 |
-| Android 17 / API 37 | GLES/EGL/ANGLE 与 Vulkan 并存，Platform 源码仍保留 EGL 分发与 Surface/BufferQueue 主线 | 不应宣称 GLES 被移除或 Android 17 全量强制 ANGLE |
+| Android 17 / API 37 | 增加 `com.android.graphics.driver.prefer_angle` manifest 偏好信号；GLES/EGL、ANGLE 与 Vulkan 继续并存 | 检查选择优先级和实际 renderer，不能把偏好写成强制 ANGLE |
 
 ### Android 17 源码锚点
 
 - [`GLSurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/opengl/java/android/opengl/GLSurfaceView.java)：GLThread、render mode、Renderer 回调、swap、pause/resume 和 context lost；
+- [`GraphicsEnvironment.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/GraphicsEnvironment.java)：ANGLE driver 选择优先级、denylist 与 API 37 manifest 偏好信号；
 - [`egl_platform_entries.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/opengl/libs/EGL/egl_platform_entries.cpp)：libEGL validation、damage、native/ANGLE 分发；
 - [`Surface.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/Surface.cpp)、[`Surface.h`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/include/gui/Surface.h)：ANativeWindow、dequeue/queue、buffer age 与 fences；
 - [`BufferQueueCore.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueCore.cpp)、[`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp)：buffer 数量、slot 与 backpressure；
@@ -415,8 +470,8 @@ Android 17 的 HWC 主线仍要区分 SF 侧 `presentOrValidate()`、`validate()
 
 相关章节：
 
-- [18.6 SurfaceView 直出路径](06-surfaceview.md)
-- [18.7 TextureView 合成链路](07-textureview.md)
+- [18.6 SurfaceView 独立 Surface 路径](06-surfaceview.md)
+- [18.7 TextureView 宿主合成链路](07-textureview.md)
 - [18.9 Vulkan 原生渲染链路](09-vulkan-native.md)
 - [2.13 BufferQueue](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
 - [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)
