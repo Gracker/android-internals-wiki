@@ -133,7 +133,7 @@ startApexServices(t);
 
 ### Binder：跨进程控制面
 
-Binder 由用户态 `libbinder` 与内核 Binder 驱动共同完成。Android 17 的 `frameworks/native/libs/binder/ProcessState.cpp` 定义了接收 transaction 的映射区和默认线程上限：
+Binder 由用户态 `libbinder` 与内核 Binder 驱动共同完成。Android 17 的 `frameworks/native/libs/binder/ProcessState.cpp` 定义了接收 transaction 的映射区，以及默认写入 `BINDER_SET_MAX_THREADS` 的动态线程上限：
 
 ```cpp
 // AOSP android-17.0.0_r1
@@ -141,7 +141,7 @@ Binder 由用户态 `libbinder` 与内核 Binder 驱动共同完成。Android 17
 #define DEFAULT_MAX_BINDER_THREADS 15
 ```
 
-`ProcessState::startThreadPool()` 启动池中的首个线程；内核在没有等待线程且已注册线程数低于 `max_threads` 等条件成立时，通过 `BR_SPAWN_LOOPER` 请求用户态增加线程。`setThreadPoolMaxThreadCount()` 会使用 `BINDER_SET_MAX_THREADS` 配置驱动，而且线程池启动后不能缩小已有上限。
+`DEFAULT_MAX_BINDER_THREADS = 15` 不是进程内 Binder 线程总数。`ProcessState::startThreadPool()` 另行启动池中的首个线程；内核在没有等待线程、尚无未完成的增线程请求、驱动请求启动的线程数低于 `max_threads`，且当前线程已经进入 Binder looper 等条件成立时，通过 `BR_SPAWN_LOOPER` 请求用户态增加线程。手工调用 `IPCThreadState::joinThreadPool()` 的线程也不包含在这 15 个驱动请求名额中。`setThreadPoolMaxThreadCount()` 会使用 `BINDER_SET_MAX_THREADS` 配置驱动，而且线程池启动后不能缩小已有上限。
 
 这些常量不能直接变成“应用用 4 到 8 个、系统服务用 30 到 50 个”之类的通用建议。线程数太少会让长事务阻塞后续请求，线程数太多会增加并发、锁竞争和内存成本。调整前要用 Perfetto 和服务日志确认：
 
