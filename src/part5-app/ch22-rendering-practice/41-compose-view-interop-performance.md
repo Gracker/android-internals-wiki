@@ -70,18 +70,20 @@ Compose 与 View 互操作有两个方向：
 | 层级 | 基线 | 本章使用范围 |
 | --- | --- | --- |
 | Android platform | Android 17 / API 37 / `android-17.0.0_r1` | ViewRoot、HWUI、Surface、帧率投票与显示路径 |
-| Jetpack Compose | Compose BOM 2026.06.00；UI、Runtime 1.11.4 | `AndroidView`、`ComposeView`、复用、追踪与测试 |
+| Jetpack Compose | Compose BOM 2026.06.01；UI、Runtime、Foundation 1.11.4 | `AndroidView`、`ComposeView`、复用、追踪与测试 |
 | Kotlin / Compose compiler | Kotlin 2.4.10 / Compose compiler plugin 2.4.10 | 编译报告与生成代码边界 |
 | Android kernel | `android17-6.18-2026-06_r6` | 调度、fence 等设备侧机制；不决定互操作 API 语义 |
 
 Compose 独立于 Android platform 发布。`android-17.0.0_r1` 能固定 `ViewRootImpl`、`SurfaceView`、`TextureView` 和 HWUI，不能固定 AndroidX Compose 1.11.4 的实现；Compose 的实现要按对应 artifact 源码核查。
+
+Google Maven 中的 Compose BOM 2026.06.01 把 UI、Runtime 和 Foundation 都约束为 1.11.4。BOM 只负责 AndroidX library 版本，Kotlin 2.4.10 与 Compose compiler plugin 2.4.10 仍按 Kotlin 工具链配置。
 
 提纲中的三项说法需要收窄：
 
 | 提纲说法 | Compose UI 1.11.4 中的边界 |
 | --- | --- |
 | `ViewTreeHostingRegistry` 优化 | 公开类型名是实验性的 `ComposeViewContext`；内部另有 `ViewTreeHostDefaultProvider`。当前源码没有名为 `ViewTreeHostingRegistry` 的通用优化 API |
-| `PausableComposition` 让 `AndroidView` 区域变快 | 可暂停的预组合能帮助 Lazy/Subcompose 预取分批执行 Composition；View 的 `factory` 一旦调用，创建、测量和绘制成本仍由 View 承担 |
+| `PausableComposition` 让 `AndroidView` 区域变快 | 可暂停的预组合能帮助 Lazy/Subcompose 预取分批执行 Composition；View 的 `factory` 一旦调用，创建、测量和绘制成本仍由 View 负责 |
 | `Modifier.Node` 优化 View 事件链 | Node 架构能减少 Compose modifier 一侧的分配与更新成本；`MotionEvent` 仍要跨过 `pointerInteropFilter` 并进入 View 的 dispatch 链 |
 
 因此，本章会分别判断 Compose 侧成本、View 侧成本和显示系统成本，不从某个 Compose 版本特性直接推导整个混合页面提速。
@@ -103,7 +105,7 @@ Compose UI 1.11.4 的 `AndroidView` 会创建 `ViewFactoryHolder`，其父类 `A
 
 ### `ComposeView`：一个 ViewGroup 承载一个 Compose 根
 
-`AbstractComposeView` 是 `ViewGroup`，内部只允许 Compose 创建的 `AndroidComposeView` 子节点。一次 `setContent` 会建立 Composition，并通过以下顺序解析父 CompositionContext：
+`AbstractComposeView` 是 `ViewGroup`，内部只允许 Compose 创建的 `AndroidComposeView` 子节点。`ComposeView.setContent` 会保存 content；View 已附着时立即保证 Composition 存在，尚未附着时通常等到首次 attach。创建 Composition 时，父 CompositionContext 按以下顺序解析：
 
 1. 显式设置的 parent context；
 2. View tree 中可找到的 composition context；
@@ -114,11 +116,11 @@ Compose UI 1.11.4 的 `AndroidView` 会创建 `ViewFactoryHolder`，其父类 `A
 
 ### 普通互操作不会自动增加一个可见 Surface
 
-没有内嵌 `SurfaceView`、`TextureView`、WebView、视频、地图或相机输出时，普通 `AndroidView` 与 `ComposeView` 仍走标准 App Window：
+只包含普通 View 与 Compose 内容时，`AndroidView` 和 `ComposeView` 仍走标准 App Window：
 
 `Snapshot / Recomposer → Compose measure/layout/draw → AndroidComposeView → ViewRootImpl / HWUI → RenderThread → App Window BLASTBufferQueue → SurfaceFlinger → HWC → present`
 
-桥接本身会增加主线程对象与调用，不会凭空创建一条独立 buffer stream。页面出现 `SurfaceView` 后才会增加独立 Surface/BufferQueue/layer；`TextureView` 则把外部 buffer 作为纹理采样进宿主 App Window。排查时要先确认出图类型，再解释主线程和 RenderThread 数据。
+桥接本身会增加主线程对象与调用，不会凭空创建一条独立 buffer stream。`SurfaceView` 会维护独立的内容 Surface、BufferQueue 和 SurfaceFlinger 子层；`TextureView` 的外部 buffer 由宿主 HWUI 采样进 App Window，输入流通常不会成为独立可见 layer。标准硬件加速 WebView 的页面主体也经 functor 合入宿主窗口，网页视频、受保护内容或自定义 Surface 才可能增加媒体 overlay。地图、视频和相机控件使用哪种拓扑取决于控件实现，排查时应以 Producer、BufferQueue 和 layer tree 为证据。
 
 ## 二、`AndroidView` 的成本模型
 
@@ -126,16 +128,16 @@ Compose UI 1.11.4 的 `AndroidView` 会创建 `ViewFactoryHolder`，其父类 `A
 
 官方契约和 1.11.4 源码给出的生命周期如下：
 
-| 回调 | 调用语义 | 适合承担的工作 |
+| 回调 | 调用语义 | 适合执行的工作 |
 | --- | --- | --- |
 | `factory` | 每个 View 实例调用一次，在 UI 线程执行 | 构造 View、一次性属性、注册长期 listener |
 | `update` | `factory` 后至少调用一次；读取的 Compose State 改变后可再次调用，在 UI 线程执行 | 把当前 UI model 以幂等方式写入 View |
 | `onReset` | 使用复用 overload 时，在兼容实例进入复用前调用 | 清除瞬时状态、动画、按压、临时 listener 或旧 item 内容 |
 | `onRelease` | 实例永久离开 Compose 管理时调用一次 | 释放播放器、WebView、传感器、线程、回调等资源 |
 
-`factory` 里 inflate 一个复杂 XML、构造 WebView 或启动播放器，都直接占用当前 UI 线程时间。把 View 预先放进 `remember` 不能绕过这个成本，还会破坏 owner、attachment 和复用语义。官方建议在 `factory` 内创建 View。
+`factory` 里 inflate 一个复杂 XML、构造 WebView 或启动播放器，都直接占用当前 UI 线程时间。把 View 预先放进 `remember` 不能绕过这个成本，还可能破坏 owner、attachment 和复用语义。官方建议在 `factory` 内创建 View。
 
-`update` 的执行由 Snapshot 读取驱动。只读取 `model.title`，后续 `model.image` 的变化不会因为同一个 model 类型自动触发该 lambda。反过来，`update` 每次都调用昂贵 setter，也会把一次轻量重组扩大成 View 的重新布局、重绘或资源请求。
+`AndroidViewHolder` 会用 `OwnerSnapshotObserver` 观察 `update` 内部读取的 Snapshot State。假设 `title` 与 `image` 是两个由 State 委托的属性，而 block 只读取 `model.title`，`model.image` 变化不会触发这次观察。普通参数捕获走另一条路径：宿主 composable 重组并提供新的 `update` block 时，holder 也会执行新 block。无论由哪条路径触发，昂贵 setter 都可能把一次轻量状态更新扩大成 View 的重新布局、重绘或资源请求。
 
 下面的宿主实现展示一次性 listener、幂等更新和资源释放各自所在的位置。
 
@@ -172,12 +174,25 @@ fun LegacyChartHost(
 
 listener 只安装一次，并通过 `rememberUpdatedState` 取得当前回调；`update` 在引用未变化时跳过 setter；终止回调放在 `onRelease`。若 model 是可变对象且原地更新，引用比较不足以识别内容变化，应改用不可变 UI model、版本号或字段比较。
 
+### `AndroidViewBinding` 沿用同一套桥接与复用语义
+
+`AndroidViewBinding` 来自 `androidx.compose.ui:ui-viewbinding:1.11.4`。它调用生成的 ViewBinding factory 完成 inflate，把 binding 保存在根 View 上，再用 `AndroidView` 承载这个根节点。因此，它减少的是手写 `findViewById` 和类型转换，不会省去 XML inflate、View measure/layout/draw 或输入桥的成本。
+
+1.11.4 同样提供带 `onReset`、`onRelease` 的 overload。非空 `onReset` 才允许 View 与 binding 在兼容的 Lazy item 之间复用；两个回调的时序与 `AndroidView` 一致。布局包含 `FragmentContainerView` 时还有额外边界：
+
+- `AndroidViewBinding` 会优先使用父 Fragment 的 `LayoutInflater`，让 XML 中的 Fragment 成为正确的 child Fragment；
+- release 时先运行调用方的 `onRelease`，再遍历根布局中的 `FragmentContainerView`；
+- 找到 Fragment 且 `FragmentManager.isStateSaved == false` 时，内部用 `commitNow` 移除；状态已经保存时不会强行提交事务；
+- 官方源码不建议为承载 Fragment 的 binding 刻意启用 Lazy 复用，Fragment 有独立的 View lifecycle，通常也不处于能稳定获益的复用场景。
+
+因此，普通 XML item 可以按 `AndroidView` 的复用方法处理；包含 Fragment 的布局则应优先保证 FragmentManager、状态保存和销毁顺序正确，不能只看 View 创建次数。
+
 ### Compose 状态变化不等于 View 一定重新布局
 
 一次 Compose State 变化会触发哪些工作，取决于读取位置和 setter 行为：
 
 - State 在 `update` 中被读取：Snapshot observer 会安排 `update`；
-- setter 只调用 `invalidate()`：View 的脏区域会映射到对应 Compose layer 重绘；
+- setter 只调用 `invalidate()`：`AndroidViewHolder` 最终调用 `LayoutNode.invalidateLayer()`；原始 dirty rect 不会原样传到 Compose layer；
 - setter 调用 `requestLayout()`：`AndroidViewsHandler.requestLayout()` 找到 holder 对应的 LayoutNode，并调用 `requestRemeasure()`；
 - View 的测量尺寸变化：Compose 在 remeasure 后重新放置受影响节点；
 - State 只在父级 modifier 或布局中读取：可能改变 Compose 布局，却不运行无关的 View setter。
@@ -333,7 +348,7 @@ override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
 ### RecyclerView 中不要在临时回收时盲目 dispose
 
-默认 pooling 策略就是为 RecyclerView 临时 detach 设计的。`onViewRecycled()` 每次都调用 `disposeComposition()`，会丢失池化带来的保留收益，并在回滚时重复创建整个 Composition。
+默认 pooling 策略就是为 RecyclerView 临时 detach 设计的。`onViewRecycled()` 每次都调用 `disposeComposition()`，会丢失池化带来的保留收益，并在列表再次滚回该位置时重新创建整个 Composition。
 
 一种稳定写法是在 holder 初始化时调用一次 `setContent`，bind 时只更新 holder 持有的 Compose State。
 
@@ -539,7 +554,7 @@ Compose Runtime Tracing 能提供 composable 级 trace 信息。它不会自动�
 
 ### PausableComposition
 
-可暂停 composition 主要服务 Subcompose/Lazy 预取：一项预组合工作可以分段执行，避免长 item 的全部 Composition 集中在单个调度片段。它能改变 Compose 代码何时执行。
+`PausableComposition` API 从 Runtime 1.8.0 起存在。Foundation 1.11.4 的 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled` 默认值为 `true`，Lazy 预取可以把一项预组合分段执行，避免长 item 的全部 Composition 集中在单个调度片段。应用仍可关闭这个回归保护开关，因此性能报告要记录 flag；该机制也不能推广到所有 Composition。
 
 以下成本仍需单独处理：
 
@@ -571,7 +586,7 @@ View 侧仍会收到标准 `MotionEvent`，继续执行 `dispatchTouchEvent`、�
 | --- | --- | --- | --- |
 | 普通 View | 记录进宿主 HWUI / App Window | 主体仍是 App Window layer | 主线程 traversal、RenderThread/GPU |
 | TextureView | 外部 buffer 被 HWUI 采样进 App Window | 外部流通常没有独立可见 layer | 两次生产、纹理采样、宿主帧依赖 |
-| SurfaceView | Producer 提交到独立 Surface | 宿主 layer 加 SurfaceView 子层 | 两条帧节奏、几何 transaction、fence/HWC |
+| SurfaceView | Producer 提交到独立 Surface | 宿主 layer 加 SurfaceView 子层树 | 两条帧节奏、几何 transaction、fence/HWC |
 
 `AndroidView` 只描述 UI 宿主方式，不能据此判断出图类型。包装普通 TextView 与包装视频 SurfaceView 的性能模型相差很大。
 
@@ -735,7 +750,7 @@ Compose test rule 会同步它掌握的 Compose 工作；虚拟测试时钟不�
 
 ## 结论
 
-`AndroidView` 的主要成本来自 View 实例创建、Compose Constraints 到 MeasureSpec 的转换、View measure/layout/draw、输入桥和资源生命周期。Compose State 变化只会运行读取它的 `update`；是否重测量或重绘取决于 View setter 发出的 `requestLayout()` 与 `invalidate()`。
+`AndroidView` 的主要成本来自 View 实例创建、Compose Constraints 到 MeasureSpec 的转换、View measure/layout/draw、输入桥和资源生命周期。`update` 内读取的 Snapshot State 变化会由 holder 的观察器触发执行；普通参数变化则可以随宿主重组提供新的 block。是否重测量或重绘取决于 View setter 发出的 `requestLayout()` 与 `invalidate()`。
 
 `ComposeView` 在同一窗口中通常共享 window `Recomposer`，但每个实例仍是独立 Composition 与布局/语义根。Fragment 应按 ViewTree lifecycle 处置，RecyclerView 应保留 pool-aware 策略并避免每次 bind 重新 `setContent`。Compose UI 1.11 的 `ComposeViewContext` 能共享部分宿主对象并支持实验性离树预组合，不能消除每个根的业务状态和布局成本。
 
@@ -754,17 +769,27 @@ Compose test rule 会同步它掌握的 Compose 工作；虚拟测试时钟不�
 - [Compose in Views](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views)
 - [Compose UI releases](https://developer.android.com/jetpack/androidx/releases/compose-ui)
 - [Compose BOM](https://developer.android.com/develop/ui/compose/bom)
+- [Google Maven：Compose BOM 2026.06.01 POM](https://dl.google.com/dl/android/maven2/androidx/compose/compose-bom/2026.06.01/compose-bom-2026.06.01.pom)
+- [`AndroidView` API](https://developer.android.com/reference/kotlin/androidx/compose/ui/viewinterop/AndroidView.composable)
+- [`AndroidViewBinding` API](https://developer.android.com/reference/kotlin/androidx/compose/ui/viewinterop/AndroidViewBinding.composable)
+- [`ViewCompositionStrategy` API](https://developer.android.com/reference/kotlin/androidx/compose/ui/platform/ViewCompositionStrategy)
+- [`ComposeViewContext` API](https://developer.android.com/reference/kotlin/androidx/compose/ui/platform/ComposeViewContext)
+- [`PausableComposition` API](https://developer.android.com/reference/kotlin/androidx/compose/runtime/PausableComposition)
 - [Compose phases](https://developer.android.com/develop/ui/compose/performance/phases)
 - [Compose performance tracing](https://developer.android.com/develop/ui/compose/tooling/tracing)
 - [Define custom trace events](https://developer.android.com/topic/performance/tracing/custom-events)
 - [Compose testing interoperability](https://developer.android.com/develop/ui/compose/testing/interoperability)
 - [Compose test synchronization](https://developer.android.com/develop/ui/compose/testing/synchronization)
 - [Adaptive refresh rate](https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate)
+- [`Modifier.preferredFrameRate` API](https://developer.android.com/reference/kotlin/androidx/compose/ui/preferredFrameRate.modifier)
 - [Slow rendering](https://developer.android.com/topic/performance/vitals/render)
 - [Macrobenchmark overview](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
-- [Compose UI 1.11.4 sources](https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui/1.11.4/ui-1.11.4-sources.jar)
+- [Compose UI Android 1.11.4 sources](https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.11.4/ui-android-1.11.4-sources.jar)
+- [Compose UI ViewBinding 1.11.4 sources](https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-viewbinding/1.11.4/ui-viewbinding-1.11.4-sources.jar)
+- [Compose Foundation Android 1.11.4 sources](https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation-android/1.11.4/foundation-android-1.11.4-sources.jar)
 - [Android 17 `ViewRootImpl`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)
 - [Android 17 `Choreographer`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)
 - [Android 17 `SurfaceView`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java)
 - [Android 17 `TextureView`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java)
+- [Android 17 HWUI `WebViewFunctor`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/private/hwui/WebViewFunctor.h)
 - [Android 17 kernel tag `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)
