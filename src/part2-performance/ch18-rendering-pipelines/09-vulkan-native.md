@@ -1,44 +1,77 @@
 ---
-title: "Vulkan 原生渲染管线"
+title: "Android 17 Vulkan 原生渲染管线"
 chapter: "18.9"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 section: "18.9"
-last_verified: "2026-06-28"
-last_verified_against: "AOSP android-17.0.0_r1 frameworks/native/vulkan/libvulkan/swapchain.cpp, frameworks/native/libs/renderengine/{RenderEngine.h, GraphiteVkRenderEngine.cpp, RenderEngineThreaded.cpp}, Android Vulkan docs, Android Game SDK Swappy API reference, Khronos Vulkan-Profiles"
-confidence: medium
+last_verified: "2026-07-31"
+last_verified_against: "AOSP android-17.0.0_r1 swapchain.cpp / VP_ANDROID_17_requirements.json / Surface.cpp / BufferQueueProducer.cpp / SurfaceFlinger FrontEnd / HWComposer.cpp / RenderEngine.h / GraphiteVkRenderEngine.cpp / RenderEngineThreaded.cpp + kernel android17-6.18-2026-06_r6 dma-buf.c / sync_file.c / dma-fence.c"
+confidence: high
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-06-28"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-06-28T22:28:19+08:00"
-tags: ["Vulkan", "VkSwapchainKHR", "explicit-control", "AVP", "Swappy", "frame-pacing", "VkQueue", "Presentation-Mode"]
-related_chapters: ["2.1", "2.6", "2.14", "16.5", "18.8", "18.10"]
+tags: ["Vulkan", "VkSwapchainKHR", "Android-WSI", "ANativeWindow", "BufferQueue", "explicit-control", "AVP", "Swappy", "frame-pacing", "VkQueue", "Presentation-Mode", "VK_EXT_present_timing"]
+related_chapters: ["2.1", "2.6", "2.13", "2.14", "16.5", "18.6", "18.8", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 sources:
-  - type: official
-    path: "developer.android.com/ndk/guides/graphics"
-  - type: official
-    path: "developer.android.com/games/sdk/frame-pacing"
-  - type: official
-    path: "developer.android.com/about/versions/15/features#vulkan"
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md"
+    role: "Native Graphics 类型边界、Vulkan swapchain、frame pacing、显示后半段与 Perfetto 证据链"
   - type: aosp
-    path: "platform/frameworks/native/+/refs/tags/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp"
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/vulkan/libvulkan/swapchain.cpp"
+    role: "surface capabilities、present modes、AcquireImageANDROID、QueueSignalReleaseImageANDROID、queueBuffer 与 present timing"
   - type: aosp
-    path: "platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/renderengine/include/renderengine/RenderEngine.h"
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json"
+    role: "VRA17 适用芯片、父 profile、Vulkan 版本、extension 与 feature 集合"
   - type: aosp
-    path: "platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/renderengine/skia/GraphiteVkRenderEngine.cpp"
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/Surface.cpp"
+    role: "ANativeWindow dequeue/queue、frame timestamp、present mode 与 fences"
   - type: aosp
-    path: "platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/renderengine/threaded/RenderEngineThreaded.cpp"
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp"
+    role: "slot、dequeue、queue、outstanding 限制与 backpressure"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/"
+    role: "layer state、snapshot 与 transaction readiness"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp"
+    role: "composition strategy、validate、present 与 release fences"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/renderengine/include/renderengine/RenderEngine.h"
+    role: "SurfaceFlinger RenderEngine backend 枚举与 Ganesh 默认值"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/renderengine/skia/GraphiteVkRenderEngine.cpp"
+    role: "Graphite Recording、wait/signal semaphore、submit 与 sync fd 导出"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/renderengine/threaded/RenderEngineThreaded.cpp"
+    role: "SFRenderEnginePolicy、SCHED_FIFO 与 threaded task"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c"
+    role: "跨模块共享 buffer 基础"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c"
+    role: "dma-fence 的 sync_file fd 接口"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c"
+    role: "fence signal、callback 与 wait"
   - type: official
-    path: "developer.android.com/games/sdk/reference/frame-pacing/group/swappy-vk"
+    path: "https://developer.android.com/ndk/guides/graphics/android-vulkan-profile"
+    role: "AVP 2025 的兼容性定位"
   - type: official
-    path: "github.com/KhronosGroup/Vulkan-Profiles/profiles/VP_ANDROID_15_minimums.json"
+    path: "https://developer.android.com/games/develop/vulkan/frame-pacing-extensions"
+    role: "Android 17 VK_EXT_present_timing、VK_KHR_present_id2、swapchain flag 与 fallback"
   - type: official
-    path: "github.com/KhronosGroup/Vulkan-Profiles/profiles/VP_ANDROID_16_minimums.json"
+    path: "https://developer.android.com/games/sdk/frame-pacing"
+    role: "Swappy Vulkan、presentation timing 与 pipeline mode"
   - type: official
-    path: "registry.khronos.org/vulkan/specs/latest/html/vkspec.html#fundamentals-threadingbehavior"
-  - type: research
-    path: "../DeepResearch/2026-06-07-android-17-gpu-render-pipeline-vulkan-graphite.md"
+    path: "https://developer.android.com/games/develop/vulkan/native-engine-support"
+    role: "surface、swapchain、同步、pre-rotation 与运行时能力查询"
+  - type: official
+    path: "https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#fundamentals-threadingbehavior"
+    role: "host access 与 external synchronization 规范"
+  - type: official
+    path: "https://perfetto.dev/docs/data-sources/frametimeline"
+    role: "SurfaceFrame、DisplayFrame 与 jank 字段"
 
 last_task2b_at: "2026-04-27T03:40:00+08:00"
 rework_by: openclaw-task2b
@@ -70,7 +103,7 @@ review_notes_append: "| 2026-06-28 Task6 20:13：revisiting 复审 Task9 2026-06
 last_deepseek_cn_review_at: 2026-06-28
 ---
 
-# 18.9 Vulkan 原生渲染管线
+# 18.9 Android 17 Vulkan 原生渲染管线
 
 <!-- outline-start -->
 
@@ -108,7 +141,7 @@ OpenGL ES 把较多状态验证、资源转换和同步决策放在 driver；Vul
 
 这些是能力，不是自动收益。引擎若频繁创建 pipeline、错误拆分提交、过度 barrier、堆积过多 in-flight frame，Vulkan 也会产生高 CPU 开销、GPU bubble 和输入延迟。GLES 与 Vulkan 的性能应在同一内容、分辨率、pacing 和设备温度下比较。
 
-### 应用承担的责任
+### 应用侧的责任
 
 | 领域 | 应用需要管理的内容 |
 |---|---|
@@ -400,6 +433,7 @@ MAILBOX 不自动等于最低时延，更多可用 image 也不自动等于更�
 - 查询 `VkPhysicalDevicePresentTimingFeaturesEXT`；
 - 按规范启用 `VK_KHR_present_id2` 等依赖；
 - 查询具体 surface 的 timing capabilities；
+- 创建 swapchain 时设置 `VK_SWAPCHAIN_CREATE_PRESENT_TIMING_BIT_EXT`；
 - 处理 timing queue full 与结果延迟。
 
 它提供 Android 显示阶段反馈，不等于外部光学测量。旧设备可继续评估 `VK_GOOGLE_display_timing`；两套 API 的能力和时间域不能混用。
@@ -534,7 +568,7 @@ Graphite 的 `flushAndSubmit()` 用 Recording、wait/signal backend semaphores �
 
 相关章节：
 
-- [18.8 OpenGL ES 渲染管线](08-opengl-es.md)
+- [18.8 EGL / OpenGL ES 渲染链路](08-opengl-es.md)
 - [18.10 SurfaceControl API 深入](10-surface-control-api.md)
 - [2.13 BufferQueue](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
 - [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)
