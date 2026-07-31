@@ -82,16 +82,20 @@ last_task9_autofix_at: "2026-06-30"
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
+> **版本基线**
+>
+> 本章的平台实现统一以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点。历史版本只用于说明 collector 和工具能力的演进，最高版本为 Android 17。
+
 ## 为什么要了解内存抖动与 GC 治理
 
 内存抖动说的是短时间大量分配、很快失效、又反复触发回收的问题。前文已经讲过 Java Heap 预算与缓存控制（23.4 节），以及 ART GC 的机制和 Perfetto 识别方法（10.6 节、4.8 节）。这一节把视角切到应用实战：怎么把分配峰值从启动、首帧、滑动、动画这些敏感窗口里移走。
 
-Android Developers 的慢渲染文档把对象分配和 GC 列为卡顿原因，结论很明确：ART 之后 GC 的影响小了很多，但高频路径里的分配仍然会吃掉 CPU，也会让 GC 更频繁。Memory Profiler 文档也说明，Android 的 GC 会在某些时刻短暂停应用代码；如果应用分配速度快于回收速度，线程会等回收器释放出足够内存再继续分配。
+ART 的并发 collector 缩短了许多暂停，但分配、标记、复制或压缩仍要消耗 CPU 和内存带宽，部分阶段仍需暂停 mutator。应用分配速度超过回收与堆扩展能力时，分配线程还可能等待 GC 完成。因而，卡顿归因不能简化成“看到 GC 就是 GC 卡住主线程”，也不能假设并发 GC 没有应用侧成本。
 
-这一节不推荐把治理方向放在 Hook `libart.so` 或人为阻塞 `HeapTaskDaemon` 上。参考书里提到过 GC 抑制方案，这类方案适合理解 ART 内部任务调度，不适合作为通用应用优化手段。工程侧更稳的做法是把分配热点找出来，减少临时对象，控制批处理规模，并把重分配从用户能感知的帧窗口里挪开。
+Hook `libart.so` 或阻塞 `HeapTaskDaemon` 会破坏 ART 的回收时序，并依赖非公开 ABI。应用治理应从 trace 和 allocation call stack 找到分配热点，缩短无用中间态的生命周期，控制单次处理范围，再验证 GC 与慢帧是否同步改善。
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
-[已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
+[已验证: 官方文档, https://developer.android.com/topic/performance/vitals/render]
+[已验证: 官方文档, https://developer.android.com/studio/profile/record-java-kotlin-allocations]
 
 ## 内存抖动的成因与表现
 
@@ -99,16 +103,23 @@ Android Developers 的慢渲染文档把对象分配和 GC 列为卡顿原因，
 [已验证: AOSP android-17.0.0_r1, art/runtime/gc/heap.cc]
 [已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
 
-内存抖动由“分配密度”触发，而不只由“对象大小”触发。一个页面每秒创建几万个小对象，即使单个对象只有几十字节，也会快速推高 `bytes_allocated`，让 ART 更早发起并发 GC。AOSP android-17.0.0_r1 中，`Heap::AllocObjectWithAllocator()` 在分配后会检查 `ShouldConcurrentGCForJava(new_num_bytes_allocated)`；如果启用 time-based GC triggering 且配置了 `time_based_gc_threshold_`，该函数会结合上次 GC 后的分配量和时间进度触发 `kNeedGc` 或调度阈值检查，`concurrent_start_bytes_` 则作为防止堆空间耗尽的兜底阈值。未启用该路径时，函数退回到 Java 已分配字节数和 `concurrent_start_bytes_` 的比较，并进入 `RequestConcurrentGCAndSaveObject()` 路径。
+内存抖动同时受分配大小、分配频率和对象存活时间影响。大量小对象可以快速推进已分配字节数，大对象则可能直接形成峰值；只按对象大小排序会漏掉高频调用栈。
+
+Android 17 的 `Heap::AllocObjectWithAllocator()` 在分配记账后调用 `ShouldConcurrentGCForJava(new_num_bytes_allocated)`。启用 time-based GC triggering 且 `time_based_gc_threshold_` 非零时，该函数结合 GC 后新增字节数与时间进度，返回立即请求 GC 或安排阈值复查；`concurrent_start_bytes_` 保留为接近堆限制时的保护条件。未启用这条路径时，判断回到已分配字节数与 `concurrent_start_bytes_` 的比较。任务排队发生在对象可以安全暴露后，由 `RequestConcurrentGCAndSaveObject()` 请求 `ConcurrentGCTask`。
+
+[源码锚点: AOSP `android-17.0.0_r1`, `art/runtime/gc/heap-inl.h::Heap::AllocObjectWithAllocator()`, `Heap::ShouldConcurrentGCForJava()`, `art/runtime/gc/heap.cc::Heap::RequestConcurrentGC()`]
 
 从应用层来看，内存抖动通常表现为四种现象：
 
 - **堆曲线呈锯齿状**：内存快速上升，又被 GC 拉回，周期很短。单次峰值可能不高，但回收频率高。
 - **Logcat 或 trace 里 GC 密集**：`HeapTaskDaemon` 活跃，Perfetto / Systrace 能看到多个 GC 片段紧贴在交互窗口附近。
-- **帧耗时波动**：Frame Timeline 里不是每一帧都慢，而是滑动、动画或输入期间隔几帧出现尖峰。
-- **Allocation Stall**：线程在分配时等 GC 或堆扩容，代码火焰图里业务函数不一定耗时长，但调用栈附近有分配和回收活动。
+- **帧耗时波动**：Frame Timeline 里的慢帧可能间隔出现，并集中在滑动、动画或连续输入期间。
+- **分配慢路径或等待**：线程在分配时等待 GC 完成，或进入需要扩展/回收的慢路径。业务函数自身的 CPU 时间可能不高，但 wall time 会被等待拉长。
 
-ART 从 Android 8 起默认使用 Concurrent Copying，Android 10 之后 Concurrent Copying 默认按分代模式运行；Android 17 release notes 又把 Concurrent Mark-Compact collector 的 generational GC 列为 Runtime/Performance 能力。source.android.com 的 ART GC 文档也写到，过量分配这种 mutator 行为仍会造成性能问题。应用侧不能把“现代 GC 更快”理解成“高频分配可以不管”。
+Android 8 起，ART 的默认计划是 Concurrent Copying；官方 GC 文档说明 Android 10 及以上的 CC 默认使用分代模式。Android 17 又为 Concurrent Mark-Compact 增加分代 GC 能力。collector 与 generational 开关仍取决于运行时配置，不能从系统版本推断每个进程都采用同一组合；Android 17 的 `PostForkChildAction()` 会在日志中输出当前进程使用的 generational/non-generational collector，可与 trace 一起确认。
+
+[已验证: 官方文档, https://source.android.com/docs/core/runtime/gc-debug]
+[已验证: Android 17 release notes, https://developer.android.com/about/versions/17/release-notes]
 
 ## 频繁 GC 对帧率的影响
 
@@ -119,22 +130,30 @@ ART 从 Android 8 起默认使用 Concurrent Copying，Android 10 之后 Concurr
 
 GC 对帧率的影响来自两块：短暂停应用线程，以及后台 GC 线程和渲染线程抢 CPU。AOSP `Daemons.java` 中 `HeapTaskDaemon` 会调用 `VMRuntime.getRuntime().runHeapTasks()`；`TaskProcessor::RunAllTasks()` 从队列取 `HeapTask` 并执行。Android Developers 的慢渲染文档也提到，新版本 Android 上 GC 通常运行在名为 `HeapTaskDaemon` 的后台线程上，大量分配会让更多 CPU 资源花在 GC 上。
 
-一帧只有十几毫秒，GC 不需要长时间停主线程也能影响体感。滑动时主线程、RenderThread、图片解码线程、后台数据线程本来就在争 CPU；如果 `HeapTaskDaemon` 在同一帧里密集运行，主线程拿到 CPU 的时机就可能被挤到后面，RenderThread 提交也会变晚。7.2 节讲的是卡顿归因树，这里只看应用动作：不要让可避免的分配跟帧生产抢同一个时间段。
+每帧预算由屏幕刷新率决定，不能固定写成某个毫秒数。滑动时主线程、RenderThread、图片解码线程和后台任务共同使用 CPU；GC 工作与帧生产重叠时，可能增加调度等待、内存带宽压力或短暂停顿。是否影响用户可见帧必须由 Frame Timeline 与线程轨道证明。
 
-排查时不要只盯单次 GC 耗时。一次 2 ms 的 GC 落在空闲期可能没有感知；连续多次 GC 落在 fling、动画或首帧窗口里，帧耗时会被抬高。更可靠的判断方式是把三类轨道放到同一张 trace 里对齐：
+排查时不要只盯单次 GC 耗时。相同的 GC 工作落在空闲窗口与关键帧窗口，用户影响不同。把三类轨道放到同一张 trace 里比较：
 
 - **Frame Timeline**：确认 missed frame、slow frame 和 present 结果，判断是否影响用户可见帧。
 - **主线程 / RenderThread**：确认帧生产阶段是否被分配、锁、Binder 或调度延迟干扰。
 - **HeapTaskDaemon / GC 事件**：确认 GC 是否和帧尖峰重叠，不能只根据内存曲线猜。
 
-这里的“对齐”是时间轴对齐，不是汇报口径。只要 GC 事件和慢帧时间重叠，还要继续看主线程状态：Running 表示 CPU 争用更可疑，Sleeping / Blocked 表示锁、Binder 或等待更可疑。
+时间重叠只能建立相关性，还要检查主线程和 RenderThread 的状态。`Running` 表示线程正在 CPU 上执行，应查看对应 slice 或调用栈；`Runnable` 表示线程已就绪却没有获得 CPU，才更支持调度延迟或 CPU 竞争；`Sleeping`、`Blocked` 等状态要继续追踪唤醒者、锁、Binder 或其他等待原因。GC 与慢帧相邻但不重叠，也不能据此判定因果。
+
+### Android 17 的 post-fork GC 不一定来自页面抖动
+
+Android 17 的 `Heap::PostForkChildAction()` 在 `initial_heap_size_ < growth_limit_` 时安排 target footprint 调整，并为新 fork 的应用进程排入 `TriggerPostForkCCGcTask`。该任务只有在计划时间到达、且从 fork 后尚未发生其他 GC 时，才请求一次后台 GC；如果期间已经有 GC，它就是 no-op。调度时间还带有按 UID 确定、在不同进程间变化的偏移。从这段实现可以推断，该偏移用于降低多个进程在同一时刻发起这类 GC 的概率。
+
+因此，启动后看到一次后台 GC 时，要同时查看 GC cause、进程启动时间和前后的分配轨道。不能仅凭“启动附近出现 GC”就归因到某个页面的临时对象。
+
+[源码锚点: AOSP `android-17.0.0_r1`, `art/runtime/gc/heap.cc::Heap::PostForkChildAction()`, `TriggerPostForkCCGcTask`]
 
 ## 典型内存抖动场景
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
 [已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
 
-内存抖动最常出现的位置不是“看起来最复杂”的业务代码，而是调用频率最高的回调。一次分配在点击按钮时没有问题，放到 `onDraw()`、`onBindViewHolder()`、`onTouchEvent()`、Compose recomposition 或动画回调里，就会被帧率放大。
+调用频率比代码表面的复杂度更值得优先检查。一次分配在点击按钮时没有问题，放到 `onDraw()`、`onBindViewHolder()`、`onTouchEvent()`、Compose recomposition 或动画回调里，就会被帧率放大。
 
 ### onDraw / onMeasure 中分配对象
 
@@ -165,11 +184,11 @@ class GaugeView @JvmOverloads constructor(
 }
 ```
 
-这段写法没有把所有分配都消掉，`View` 初始化和尺寸变化仍可能分配对象。它只处理高频帧路径。优化后要用 allocation recording 或 Perfetto heap profile 验证 `onDraw()` 调用期间分配次数是否下降。
+这段写法没有消除初始化和尺寸变化时的分配，只把 `Paint` 与 `RectF` 的创建移出高频绘制路径。优化后要用 Java/Kotlin allocation recording 或 Perfetto ART allocation profiling 检查 `onDraw()` 时间窗内的分配调用栈。
 
 ### 字符串拼接和格式化
 
-字符串抖动常出现在日志、埋点、列表绑定和调试面板里。`String.format()`、复杂模板、循环里的 `+` 拼接、把大 JSON 拼成日志字符串，都会产生临时对象。问题不在字符串本身，而在拼接频率、字符串长度和调用窗口。
+字符串抖动常出现在日志、埋点、列表绑定和调试面板里。`String.format()`、复杂模板、循环里的 `+` 拼接、把大 JSON 拼成日志字符串，都会产生临时对象。影响取决于拼接频率、字符串长度和调用窗口。
 
 下面这段代码用于列表绑定场景，把格式化器复用起来，并把展示字符串生成限制在绑定边界。重点看 `NumberFormat` 没有在每次 `onBindViewHolder()` 里创建。
 
@@ -194,20 +213,26 @@ class GoodsViewHolder(
 }
 ```
 
-如果绑定频率很高，还可以把服务端已稳定的展示字段下沉到数据层，或者只在数据变化时更新文案。不要为了减少字符串分配把所有展示文案做成全局缓存；列表数据变化快，缓存命中率低时会变成常驻内存。
+`NumberFormat` 不是线程安全对象，这个 formatter 应限制在 RecyclerView 所在的主线程。`formatFen()` 仍会创建结果 `String`；复用只省去重复构造格式器的成本。若价格、币种与 Locale 未变化，可以让不可变 UI state 保存已格式化结果，并在任一输入变化时重新计算。不要把所有展示文案放进全局缓存，否则失效逻辑和常驻内存可能抵消收益。
 
 ### 自动装箱和临时集合
 
 自动装箱会把基本类型包成对象，Kotlin / Java 的集合 API 很容易在泛型、lambda、nullable、`Map<Int, T>` 这些地方触发装箱。少量装箱不值得处理；滑动、采样、埋点聚合或图表绘制里每帧装箱，就会形成稳定分配源。
 
-这段代码用于高频计数场景，用平台集合替代 `MutableMap<Int, Int>`，避免 key 和 value 在热路径上反复装箱。重点看计数更新只处理 `Int`。
+这段代码用于高频计数场景，用平台集合替代 `MutableMap<Int, Int>`，避免 key 和 value 在热路径上反复装箱。bucket 宽度由调用方按分析精度传入，示例不内置一个通用分界。
 
 ```kotlin
-class FrameBucketCounter {
+class FrameBucketCounter(
+    private val bucketWidthMicros: Int
+) {
+    init {
+        require(bucketWidthMicros > 0)
+    }
+
     private val buckets = SparseIntArray()
 
-    fun add(frameCostMs: Int) {
-        val bucket = frameCostMs / 4
+    fun add(frameCostMicros: Int) {
+        val bucket = frameCostMicros / bucketWidthMicros
         buckets.put(bucket, buckets.get(bucket, 0) + 1)
     }
 
@@ -221,7 +246,7 @@ class FrameBucketCounter {
 }
 ```
 
-`snapshot()` 仍会创建普通 `Map`，这是有意保留的边界：热路径只记录，低频读取时再转换成易用结构。治理内存抖动时要把“高频写”和“低频读”分开，不要让 API 好用性污染帧路径。
+`snapshot()` 仍会创建普通 `Map` 并发生装箱，这是有意设置的边界：热路径只记录，低频读取时再转换为通用结构。调用方还要保证计数不会在无限生命周期内溢出，可按测试场景创建并丢弃 counter。
 
 ## 内存抖动检测与治理
 
@@ -240,15 +265,18 @@ class FrameBucketCounter {
 - **GC 信号**：Logcat、Profiler 或 trace 里 GC 是否密集，`HeapTaskDaemon` 是否在同一窗口活跃。
 - **分配信号**：Java/Kotlin allocation recording 或 heap profile 是否显示对象数量快速上升。
 
-Android Studio Memory Profiler 可以查看 heap dump、对象数量、GC 事件，也可以记录 Java/Kotlin allocations。Perfetto heapprofd 文档说明，Android 12+ 支持 Java allocation profiling，配置 `heaps: "com.android.art"` 后可以按时间采样 Java 分配调用栈。线下分析优先用这些工具，不要在线上长期开启重型分配采样。
+Android Studio 的 Java/Kotlin allocation recording 需要 debuggable 构建；Full 模式可能让高分配应用出现可见的 profiler 开销，必要时改用 Sampled，并把这个采样条件写进对比记录。Perfetto 从 Android 12 起支持 ART allocation profiling，在 `HeapprofdConfig` 中配置 `heaps: "com.android.art"` 后采集分配调用栈样本。它记录创建时的调用栈与累计分配，不记录对象何时被回收，不能替代 retention heap dump。
+
+[已验证: 官方文档, https://developer.android.com/studio/profile/record-java-kotlin-allocations]
+[已验证: Perfetto ART Allocation Profiling, https://perfetto.dev/docs/data-sources/native-heap-profiler]
 
 ### 分配归因：按调用频率排序，不按代码体量排序
 
-找到分配栈后，先按调用频率分层：每帧调用、每个 item 调用、每次页面打开调用、后台批处理调用。每帧调用的 64 B 临时对象，优先级可能高于页面打开时的一次 64 KB 对象。内存抖动关注的是单位时间内的分配总量。
+找到分配栈后，按调用频率、单次字节数和存活时间共同分层：每帧调用、每个 item 调用、每次页面打开调用、后台批处理调用。高频小对象可能比低频大对象产生更多累计分配，但优先级必须由目标时间窗内的总字节、次数和慢帧重叠关系决定。
 
 常用修复动作有四类：
 
-- **移出高频回调**：把 `Paint`、`Path`、`RectF`、formatter、临时 buffer 移到成员字段或尺寸变化回调里。
+- **移出高频回调**：把可安全复用的 `Paint`、`Path`、`RectF`、formatter 或 buffer 移到与使用者相同的生命周期，并在尺寸或配置变化时更新。持有 View、Context 或大数组的对象不能无条件提升为全局成员。
 - **合并中间态**：数据转换时减少 DTO → domain → UI 多份临时集合，能流式处理就不要全量 materialize。
 - **换基本类型容器**：高频 `Int` / `Long` key 场景用 `SparseArray`、`SparseIntArray`、`LongSparseArray` 或专用数组结构。
 - **分批处理**：大列表 diff、日志解析、埋点聚合按 chunk 推进，把分配峰值拆到多个调度片段里。
@@ -257,40 +285,38 @@ Android Studio Memory Profiler 可以查看 heap dump、对象数量、GC 事件
 
 零分配不应该是通用目标。现代 ART 对短命小对象已经做了优化，强行对象池化反而可能把短命对象变成长命对象，给老年代增加压力，还容易因为忘记重置字段引入脏数据。对象池只适合创建频繁、初始化成本高、状态可完整清理的对象；普通数据对象和持有 View / Context / callback 的对象不要池化。
 
-下面这段代码用于批处理场景，目标是把一次性分配峰值切成小批次。重点看每批结束后只保留必要结果，中间列表不会跨批次长期持有。
+下面的函数用于把批处理切成多个协作式调度片段。它直接把原列表和 `[start, end)` 索引交给调用方，省去 chunk 子列表；`chunkSize` 必须由测量决定。
 
 ```kotlin
-suspend fun <T, R> mapInChunks(
+suspend fun <T> processInChunks(
     source: List<T>,
-    chunkSize: Int = 200,
-    mapper: (T) -> R
-): List<R> = coroutineScope {
-    val result = ArrayList<R>(source.size)
+    chunkSize: Int,
+    processRange: suspend (source: List<T>, start: Int, endExclusive: Int) -> Unit
+) {
+    require(chunkSize > 0)
+
     var index = 0
     while (index < source.size) {
-        val end = minOf(index + chunkSize, source.size)
-        for (i in index until end) {
-            result += mapper(source[i])
-        }
+        val end = index + minOf(chunkSize, source.size - index)
+        processRange(source, index, end)
         index = end
         yield()
     }
-    result
 }
 ```
 
-这段代码降低的是单个调度片段里的分配密度，不会减少最终结果集大小。若最终结果本身过大，仍要回到 23.4 节的大对象和集合优化策略：分页、流式处理、缓存预算和生命周期清理。
+`yield()` 只提供协作式让出机会，不保证跨帧执行，也不会自动切换到后台线程。调用方要选择合适的 dispatcher，并确认 `processRange` 不在主线程执行重 CPU 工作。该函数不会减少最终结果集；如果调用方仍把所有结果保存在内存中，稳定占用不会下降。最终结果过大时，应改用分页、流式消费或外部存储。
 
 ### 回归防护：给高频路径设分配预算
 
-内存抖动很容易在重构后回来，尤其是列表绑定、绘制和埋点代码。建议把分配预算写进性能验收：
+列表绑定、绘制和埋点代码重构后，分配热点可能重新出现。分配预算应来自同一设备、同一构建和确定脚本的基线分布，再按可接受回退范围设置门槛，不要复制其他项目的固定数值。
 
 - **启动**：记录首屏前总分配字节、GC 次数和 `HeapTaskDaemon` 活跃区间。
-- **滑动**：固定列表数据、固定设备和固定手势，记录每秒分配字节、慢帧数和 GC 次数。
-- **绘制**：自定义 View / 图表 / 动画组件在 5-10 秒压力场景下记录 allocation count。
-- **线上**：只采轻量指标，例如 Java Heap 使用率、GC 次数、页面和设备维度；发现异常后再回到线下采样。
+- **滑动**：固定列表数据、设备条件和输入脚本，比较单位时间分配字节、慢帧与 GC 的时间关系。
+- **绘制**：让自定义 View、图表或动画运行到数据稳定，记录目标方法时间窗内的 allocation count 与调用栈。
+- **线上**：只采已有的有界趋势指标和场景标签，不在用户设备上持续运行 Full allocation recording。异常版本回到实验设备复现；需要现场证据时使用受控的系统 profiling 能力。
 
-对于启动、首帧和滑动，应用侧可以把重分配延后到帧稳定后执行——比如首屏渲染完再预热低优先级缓存，或者 fling 结束再刷新非关键统计。这不会改变 ART GC 机制，只改变分配的时间分布。
+把非关键工作延后只能改变时间分布，不能减少总分配。首屏后预取或 fling 后刷新统计仍可能与下一次输入、图片解码或后台任务竞争 CPU；要根据任务优先级设置取消条件，并在 trace 中确认延后后的窗口没有产生新的慢帧。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
 
@@ -298,122 +324,27 @@ suspend fun <T, R> mapInChunks(
 
 ### “看到 GC 就要抑制 GC”
 
-GC 是结果，不是根因。AOSP 里 `ConcurrentGCTask` 是 `ShouldConcurrentGCForJava()` 判定需要 GC 后加入任务队列的结果，应用侧盲目抑制 GC 只会把回收延后。除非做虚拟机研究或受控实验，业务应用不要通过 native hook 阻塞 `HeapTaskDaemon`。
+GC 请求反映了堆状态和分配行为。AOSP 里，`ShouldConcurrentGCForJava()` 判定需要回收后才会请求 `ConcurrentGCTask`；应用侧盲目抑制 GC 只会把回收延后。除非做虚拟机研究或受控实验，业务应用不要通过 native hook 阻塞 `HeapTaskDaemon`。
 
 ### “对象池一定能减少卡顿”
 
-对象池只减少重复创建，不能自动减少状态复杂度。池里的对象生命周期变长后，可能提高保留内存，也可能把短命对象推向更长生命周期。对象池上线前至少比较三组数据：分配次数、GC 次数、帧耗时。
+对象池只减少重复创建，不能自动减少状态复杂度。池里的对象生命周期变长后，可能提高保留内存，也可能把短命对象推向更长生命周期。上线前要同时比较分配、GC、稳定占用和帧表现，并验证对象能够完整重置。
 
 ### “一次 heap dump 就能定位抖动”
 
 Heap dump 适合看某一刻还活着的对象，抖动里的临时对象可能已经被回收。要定位抖动，需要 allocation recording 或 Perfetto Java allocation profiling，看对象在时间轴上的生成速度和调用栈。
 
-
-
-<!-- AIW-源码调研-2026-07-05 -->
-
-## 附：Android 17 ART HeapTask 体系源码级补充（android-17.0.0_r1）
-
-§23.5 主体正文已简述 HeapTaskDaemon → TaskProcessor 入口。本节给 §23.5 补充 7 种 HeapTask 子类的源码级全景，方便做 GC 抑制方案选型时直接对照。
-
-### 7 种 HeapTask 子类总览
-
-| 子类 | 文件 | 触发 API | 关键行为 |
-|---|---|---|---|
-| `ConcurrentGCTask` | `art/runtime/gc/heap.cc:4113` | `Heap::RequestConcurrentGC()` | `Heap::ConcurrentGC` + `continuous_gc_mode_` 时 `usleep(1'000)` 追加 |
-| `CollectorTransitionTask` | `art/runtime/gc/heap.cc:4211` | `Heap::RequestCollectorTransition()` | `DoPendingCollectorTransition` + 去重 `UpdateTargetRunTime` |
-| `HeapTrimTask` | `art/runtime/gc/heap.cc:4259` | `Heap::RequestTrim()` | `Heap::Trim` + `madvise(MADV_PAGEOUT)`；去重逻辑在 `pending_task_lock_` |
-| `ClearedReferenceTask` | `art/runtime/gc/reference_processor.cc:364` | `ReferenceProcessor::CollectClearedReferences()` | `java.lang.ref.ReferenceQueue.add` 异步入队（`kAsyncReferenceQueueAdd=true`） |
-| `StartupCompletedTask` | `art/runtime/startup_completed_task.cc:42` | `VMRuntime.notifyStartupCompleted()` | `DeleteStartupDexCaches` + `RuntimeImage::WriteImageToDisk` |
-| `TriggerPostForkCCGcTask` | `art/runtime/gc/heap.cc:5050` | `Heap::PostForkChildAction()` | 若 `GetCurrentGcNum() == initial_gc_num_` 才触发 GC，**Android 17 新增** |
-| `ReduceTargetFootprintTask` | `art/runtime/gc/heap.cc:5069` | `Heap::PostForkChildAction()` | `CompareAndSetStrongRelaxed(target_footprint_, new_target_sz_)` 渐进收缩，**Android 17 新增** |
-
-### 任务队列数据结构
-
-```cpp
-// art/runtime/gc/task_processor.h:86-91 (android-17.0.0_r1)
-mutable Mutex lock_ DEFAULT_MUTEX_ACQUIRED_AFTER;
-ConditionVariable cond_ GUARDED_BY(lock_);
-bool is_running_ GUARDED_BY(lock_);
-std::multiset<HeapTask*, CompareByTargetRunTime> tasks_ GUARDED_BY(lock_);
-Thread* running_thread_ GUARDED_BY(lock_);
-```
-
-`std::multiset` 按 `target_run_time_` 升序，`GetTask()` 用 `CondVar::TimedWait(target_run_time - now)` 精确等待；写入路径仅 `tasks_.insert` + `cond_.Signal()`。Android 17 把历史 FIFO 链表改为按到期时间排序后的 multiset 是为了在 `CollectorTransitionTask` 等延迟任务存在时仍能优先执行最近到期的 GC 任务。
-
-### PostForkChildAction 的 3 段式收缩
-
-`Heap::PostForkChildAction`（heap.cc:5113-5161）在 zygote fork 后入队 3 个 HeapTask：
-
-```cpp
-// 1) 第一次收缩：延迟 kPostForkMaxHeapDurationMS（≈2s），目标 = max(growth_limit_/4, initial_heap_size_)
-GetTaskProcessor()->AddTask(
-    self, new ReduceTargetFootprintTask(last_adj_time, first_shrink_size, starting_gc_num));
-
-// 2) 第二次收缩（可选）：再延 4 × kPostForkMaxHeapDurationMS，目标 = initial_heap_size_
-GetTaskProcessor()->AddTask(
-    self, new ReduceTargetFootprintTask(last_adj_time, initial_heap_size_, starting_gc_num));
-
-// 3) 后置 GC：4 × kPostForkMaxHeapDurationMS + 伪随机偏移（基于 getuid 0-19999ms）
-GetTaskProcessor()->AddTask(self,
-                            new TriggerPostForkCCGcTask(post_fork_gc_time, starting_gc_num));
-```
-
-`GetPseudoRandomFromUid()`（heap.cc:5077-5082）使用 `std::default_random_engine(getuid())` + `std::uniform_int_distribution(0, 19999)`，目的是 **避免大量应用在同一时刻触发 GC 形成「GC 风暴」**。
-
-### 守门条件
-
-```cpp
-// heap.cc:4143-4148
-static bool CanAddHeapTask(Thread* self) {
-  Runtime* runtime = Runtime::Current();
-  return runtime != nullptr && runtime->IsFinishedStarting() && !runtime->IsShuttingDown(self)
-      && !self->IsHandlingStackOverflow<kNativeStackType>();
-}
-```
-
-任何 HeapTask 入队前都过这道关：runtime 未启动完成、正在 shutdown、native 栈溢出 三种情形拒绝入队。**业务侧通过 native hook 替换 `Run` 函数指针来抑制 GC 在 Android 17 上仍然可行**——`CanAddHeapTask` 不检查 hook 状态。但要警惕 `TriggerPostForkCCGcTask` 会在 fork 后 10s 内强制触发 GC，抑制窗口被严格限制。
-
-### 与 §23.5 主体「GC 抑制」小节的联动
-
-§23.5 主体指出「业务应用不要通过 native hook 阻塞 `HeapTaskDaemon`」。本节补充源码级边界：
-- **可阻塞但风险升高**：Hook `ConcurrentGCTask::Run` 让并发 GC 不执行，会让 `ShouldConcurrentGCForJava` 持续判定需要 GC 但无人响应，最终触发 native 分配失败或 `ConcurrentGC` 抢占主线程。
-- **不可阻塞**：`TriggerPostForkCCGcTask` 是启动后的「保底 GC」，阻塞它会导致 zygote fork 垃圾长期驻留，`usleep(1'000)` 间隔的连续请求会让 task_processor 队列堆积。
-- **完全不可控**：`HeapTrimTask` 的 `madvise(MADV_PAGEOUT)` 与 HeapTaskDaemon 主循环解耦——即使阻塞 HeapTaskDaemon，`Heap::RequestTrim` 仍可能被其他代码路径触发。
-
-结论：参考书提到的「GC 抑制」方案在 Android 17 上仍是「能跑通但不能工程化」的边界技巧，不应作为通用应用优化手段。生产环境的 GC 治理应回到 §23.5 的三条主线：减少分配、及时清理、增加可用 Java Heap（详见 §23.4）。
-
-### 源码索引（android-17.0.0_r1）
-
-- `libcore/libart/src/main/java/java/lang/Daemons.java:58-63, 743-768`
-- `libcore/libart/src/main/java/dalvik/system/VMRuntime.java:871, 877, 883, 905`
-- `art/runtime/gc/task_processor.cc` 全文 156 行
-- `art/runtime/gc/task_processor.h` 全文 96 行
-- `art/runtime/gc/heap.cc:4113-4141, 4158, 4211-4257, 4259-4302, 5050-5161`
-- `art/runtime/gc/reference_processor.cc:364-404`
-- `art/runtime/startup_completed_task.cc:42-72`
-- `art/runtime/native/dalvik_system_VMRuntime.cc:339-340, 591`
-
-相关深度报告：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-05-android17-art-heaptask-system-7-subclasses-source-closed-loop.md`
-
 ## 参考资料
 
-### AOSP 源码
-
-- `android-17.0.0_r1/libcore/libart/src/main/java/java/lang/Daemons.java`：`HeapTaskDaemon` 调用 `VMRuntime.getRuntime().runHeapTasks()`。
-- `android-17.0.0_r1/art/runtime/gc/task_processor.cc`：`TaskProcessor::RunAllTasks()` 取出 `HeapTask` 并执行。
-- `android-17.0.0_r1/art/runtime/gc/heap-inl.h`：`Heap::AllocObjectWithAllocator()` 分配后检查 `ShouldConcurrentGCForJava()`；Android 17 该函数包含 time-based GC triggering 分支。
-- `android-17.0.0_r1/art/runtime/gc/heap.cc`：`RequestConcurrentGCAndSaveObject()`、`ConcurrentGCTask` 和 GC 请求路径。
-
-### 官方文档
-
-- Android Developers — Slow rendering：对象分配和 GC 对慢帧的影响。
-- Android Studio — Memory Profiler：heap dump、Java/Kotlin allocation recording 和 GC 事件观察。
-- Android Open Source Project — Debug ART garbage collection：ART GC 策略、GC 性能观察和 Perfetto / Systrace 建议。
-- Perfetto docs — Heap profiler：Android 12+ Java allocation profiling 与 `com.android.art` heap 配置。
-
-### 结构参考
-
-- Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？
-- Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化
-- Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型
+- [已验证: Android Developers, Slow rendering, https://developer.android.com/topic/performance/vitals/render]
+- [已验证: Android Developers, Record Java/Kotlin allocations, https://developer.android.com/studio/profile/record-java-kotlin-allocations]
+- [已验证: Android Developers, Android 17 release notes, https://developer.android.com/about/versions/17/release-notes]
+- [已验证: AOSP, Debug ART garbage collection, https://source.android.com/docs/core/runtime/gc-debug]
+- [已验证: Perfetto, ART Allocation Profiling, https://perfetto.dev/docs/data-sources/native-heap-profiler]
+- [已验证: AOSP `android-17.0.0_r1`, `Daemons.java`, https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/libart/src/main/java/java/lang/Daemons.java]
+- [已验证: AOSP `android-17.0.0_r1`, `heap-inl.h`, https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap-inl.h]
+- [已验证: AOSP `android-17.0.0_r1`, `heap.cc`, https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc]
+- [已验证: AOSP `android-17.0.0_r1`, `task_processor.cc`, https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/task_processor.cc]
+- [结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
+- [结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
+- [结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
