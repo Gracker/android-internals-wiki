@@ -2,26 +2,60 @@
 title: "命令行打开超大 Trace"
 chapter: "13.4"
 section: "13.4"
+section_title: "命令行打开超大 Trace"
 status: finalized
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-06-30"
-last_verified_against: "AOSP android-17.0.0_r1 external/perfetto trace_processor_shell.cc / traceconv main.cc; Perfetto trace_processor / Python API / traceconv docs"
-confidence: medium
+last_verified: "2026-07-31"
+last_verified_against: "AOSP android-17.0.0_r1 external/perfetto ece66975738007dd0978b911d8a2077e49b8f31e（trace_processor shell/query/query-output/server/export + traceconv）+ 2026-07-31 Perfetto 官方 C++/Python/Batch/large-trace 文档"
+confidence: high
 sources:
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-perfetto-remote-trace-processor-architecture.md"
+    role: "本机 Trace Processor RPC 与大型 trace 分析架构"
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-30-android17-perfetto-version-availability-verification.md"
+    role: "Android 17 Perfetto 主机工具与平台版本边界"
+  - type: official
+    path: "https://perfetto.dev/docs/visualization/large-traces"
+    role: "浏览器内存边界与 native accelerator"
   - type: official
     path: "https://perfetto.dev/docs/analysis/trace-processor"
+    role: "Trace Processor 下载、交互模式、query/server/export 子命令与兼容层"
   - type: official
-    path: "https://perfetto.dev/docs/analysis/trace-analysis-with-sql"
+    path: "https://perfetto.dev/docs/analysis/perfetto-sql-getting-started"
+    role: "PerfettoSQL 基础"
+  - type: official
+    path: "https://perfetto.dev/docs/analysis/sql-tables"
+    role: "slice、sched、thread_state、counter 等内置表"
+  - type: official
+    path: "https://perfetto.dev/docs/analysis/trace-processor-python"
+    role: "Python TraceProcessor、版本固定与 DataFrame 输出"
   - type: official
     path: "https://perfetto.dev/docs/analysis/batch-trace-processor"
+    role: "多 trace 查询、结果合并与内存模型"
   - type: official
     path: "https://perfetto.dev/docs/quickstart/traceconv"
+    role: "格式转换、profile 与 bundle"
   - type: aosp
-    path: "external/perfetto/src/trace_processor/"
+    path: "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/trace_processor_shell.cc"
+    role: "Android 17 子命令入口、classic 参数兼容与全局选项"
   - type: aosp
-    path: "external/perfetto/src/traceconv/"
+    path: "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/shell/query_subcommand.cc"
+    role: "Android 17 query 文件、stdin 与多语句入口"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/shell/query.cc"
+    role: "Android 17 非交互查询的单结果集限制与 CSV 输出"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/shell/server_subcommand.cc"
+    role: "Android 17 HTTP/stdio RPC server"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/shell/export_subcommand.cc"
+    role: "Android 17 SQLite export"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traceconv/main.cc"
+    role: "Android 17 traceconv mode 与参数"
 tags: [perfetto, trace_processor, sql, python, cli, large-traces]
 related_chapters: ["13.1", "13.2", "13.3", "13.5"]
 task9_state: reviewed
@@ -78,582 +112,447 @@ last_deepseek_cn_review_at: 2026-07-04
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么需要命令行分析大 Trace
+## 大 Trace 的压力来自运行时表示
 
-我们在上一节里用 Perfetto UI 打开 Trace、看 Track、看 Slice，体验很流畅。但当你处理一个 500MB 甚至 2GB 的 Trace 文件时，情况就完全不同了——浏览器标签页会疯狂吃内存，UI 变得卡顿甚至直接崩溃。瓶颈在浏览器的 WebAssembly（WASM）引擎——数据集一大，它就扛不住。
+Perfetto UI 在浏览器中运行 WebAssembly 版 Trace Processor。浏览器常会限制单个站点可用的内存，官方文档给出的典型运行时上限约为 2 GB。这个数字指站点的运行时内存，并非 Trace 文件大小，也不是所有浏览器都遵循的固定阈值。
 
-另一个常见场景：我们需要对一批 Trace 做批量分析，比如每天自动抓取 50 个冷启动 Trace，统计 P95 启动时间。手动一个个打开 UI 不现实，我们需要一个可以用脚本驱动、不依赖浏览器的分析工具。
+Trace Processor 会把输入解析成便于查询的列式表。对未压缩 protobuf Trace，官方给出的运行时体积经验值是文件体积的 2～4 倍；比例仍会随数据源、事件密度、输入格式和工具版本变化。用“超过 200 MB 一定打不开”或“500 MB 必然需要多少内存”判断风险都不可靠。
 
-Perfetto 官方为我们提供的解决方案就是 `trace_processor`——一个 C++ 实现的命令行工具，它能把 Trace 文件当作数据库来查询。我们写 SQL，它返回结果。它会将 Trace 中的每一类事件解析成结构化的表（`slice`、`sched`、`counter`……），然后我们直接用 SQL 去查询。
+本机原生 Trace Processor 可以使用主机可用内存，并绕过浏览器站点的内存上限。它依旧要读取并解析 Trace，不会把超大文件变成流式、常量内存查询。排查顺序应当是：检查主机资源和 Trace 质量，再决定使用本机后端、缩小采集范围或分批处理。
 
-另外值得一提：`trace_processor` 完全本地运行，Trace 文件不需要上传到任何云端。对于包含敏感信息的系统级 Trace，这比浏览器方案更稳妥。
+命令行还有一项独立价值：同一份 SQL 可以重复运行在一组 Trace 上，适合回归测试和持续集成。Trace 默认留在本机；若文件含应用标记、进程名、URL 或用户数据，仍须遵守团队的数据分级和保留策略。
 
-## 大 Trace 的挑战：浏览器为什么扛不住
+## 固定主机工具版本
 
-[已验证: 官方文档, perfetto.dev/docs/analysis/trace-processor]
+Android 17 / API 37 的平台源码锚点是 `android-17.0.0_r1`。Trace 文件的生产端版本和主机分析工具版本是两条轴：Android 17 设备产生的 Trace 可以交给匹配版本或经过兼容性验证的较新主机工具分析。分析结果要可复现，就要记录主机工具版本，不能只记录设备版本。
 
-Perfetto UI（ui.perfetto.dev）是在浏览器里运行一个由 C++ 编译成的 WebAssembly 模块。这个模块负责解析 protobuf 格式的 Trace 数据，构建内存中的 SQL 数据库，然后在 UI 上渲染各种 Track。
-
-当 Trace 文件在几十 MB 以内时，这套流程工作得很好。但当 Trace 超过 200MB，问题开始出现：
-
-浏览器对单个标签页的内存有限制（Chrome 通常是 2-4GB），而解析一个大 Trace 本身就需要大量内存——原始 protobuf 数据、解析后的 SQL 表、UI 渲染用的数据结构，加起来往往是原始文件大小的 3-5 倍。一个 500MB 的 Trace 轻松就能吃掉 1.5GB 以上的浏览器内存。
-
-另外，Perfetto UI 加载 Trace 时是先把整个文件读入内存，再逐步解析。加载完成之前，UI 通常会冻结，我们看到的往往只是一个转圈圈的进度条。
-
-而 `trace_processor` 作为原生 C++ 二进制文件，没有浏览器的内存沙箱限制，可以直接使用操作系统的全部可用内存。同样的 500MB Trace，在命令行下通常能更快速、更稳定地完成解析和查询。
-
-## trace_processor：命令行交互式查询工具
-
-[已验证: 官方文档, perfetto.dev/docs/analysis/trace-processor]
-
-### 下载与安装
-
-Perfetto 官方提供了预编译的二进制文件，支持 Linux、macOS 和 Windows：
+下面的命令下载官方启动脚本并打印它选中的 Trace Processor 版本：
 
 ```bash
-# Linux / macOS
 curl -LO https://get.perfetto.dev/trace_processor
 chmod +x ./trace_processor
+./trace_processor --version
 ```
 
-[已验证: 官方文档, get.perfetto.dev]
+下载到的 `trace_processor` 是需要 Python 3 的轻量启动脚本。它在首次运行时获取对应平台的原生程序，并将其缓存在 `~/.local/share/perfetto/prebuilts`。因此，归档分析环境时应记录启动脚本的校验和与 `--version` 输出；只保存脚本文件名无法证明底层程序版本。
 
-这个二进制文件是自包含的，不依赖任何外部库，下载后直接运行即可。
+若流水线要求长期复现，可以把审核过的原生程序放入受版本控制的工具目录，并让 Python API 的 `bin_path` 指向它。临时探索可以使用官方启动脚本，正式基线不应随“latest”无记录地漂移。
 
-### 基本使用：交互式查询
+## 交互式 Trace Processor
 
-加载一个 Trace 文件进入交互式 SQL shell：
+下面的命令加载一份 Trace 并进入 PerfettoSQL 交互终端：
 
 ```bash
-./trace_processor my_trace.perfetto-trace
+./trace_processor trace.perfetto-trace
 ```
 
-这会启动一个交互式命令行，提示符变成 `sql>`。在这个 shell 里，我们可以直接写 SQL 查询 Trace 数据。几个关键的元命令（不是 SQL，是 shell 自带的命令）我们需要先知道：
+程序完成解析后显示 SQL 提示符。输入文件也可以是包含多份 Trace 的 ZIP 或 TAR；此时 Trace Processor 会把它们合并到同一时间线上，分析前必须确认时钟同步和归属信息符合预期。
 
-`.tables` 列出当前 Trace 中所有可用的表。这是我们拿到一个陌生 Trace 后的第一步——先看看有哪些数据可用：
+交互终端常用的元命令如下：
 
-```
-sql> .tables
-args                cpu_freq              process_tree         slice
-binder_tx           counter               sched                thread_state
-cpu_active          cpu_track             thread               track
-...
-```
-
-`.schema <表名>` 查看某个表的列定义。比如我们想查 `slice` 表有哪些字段：
-
-```
-sql> .schema slice
+```text
+.tables
+.schema slice
+.read analysis.sql
+.quit
 ```
 
-它会返回完整的 CREATE TABLE 语句，告诉我们每列的名称和类型。
+`.tables` 列出本次输入产生的表和视图，`.schema` 查看列定义，`.read` 执行 SQL 文件，`.quit` 退出。拿到陌生 Trace 时，应先检查表和数据，再套用已有查询；采集配置没有启用的数据源，不会因为 SQL 正确就自动出现。
 
-`.read <文件>` 从外部 `.sql` 文件批量执行查询。对于复杂的分析脚本，我们会把 SQL 写到文件里，然后用 `.read` 一次性执行。
+## 用本机后端保留 Perfetto UI
 
-`.quit` 或 `.q` 退出 shell。
-
-### 两种工作模式
-
-`trace_processor` 主要有两种工作模式。
-
-**交互模式**就是上面说的，直接启动 shell 手动查询，适合探索性的分析——我们对 Trace 里有什么还不太确定，想先看看。
-
-**HTTP 守护进程模式**则更适合配合 Perfetto UI 使用。启动时加 `--httpd` 参数：
+需要时间轴、Track 嵌套和跨线程对齐视图时，可以让 UI 连接本机原生后端。当前子命令写法如下：
 
 ```bash
-./trace_processor --httpd /path/to/trace.perfetto-trace
+./trace_processor server http /path/to/trace.pftrace
 ```
 
-这会在本地启动一个 HTTP 服务（默认监听 `127.0.0.1:9001`）。然后我们打开 ui.perfetto.dev，浏览器会弹窗询问是否连接到本地 trace processor，选"YES"后，UI 就不再自己解析 Trace 了——它把 SQL 查询发给本地的 `trace_processor` 进程，由 C++ 后端完成解析和计算，UI 只负责展示结果。
+服务默认监听 `127.0.0.1:9001`。打开 [Perfetto UI](https://ui.perfetto.dev) 后，页面会探测该地址，并询问使用外部加速器还是浏览器内置的 WebAssembly 后端。旧写法 `./trace_processor --httpd /path/to/trace.pftrace` 仍由兼容层支持，行为相同。
 
-这个模式的好处是：我们同时拥有了命令行的分析能力和 UI 的可视化能力。对于大 Trace 文件，这是推荐的工作方式。
+`server http` 把解析和 SQL 执行放到本机原生进程，UI 负责交互与显示。它不降低 Trace Processor 自身的完整解析内存需求。`--port` 可改端口，`--ip-address` 可改绑定地址，`--additional-cors-origins` 可增加允许的来源；除非有明确的隔离和鉴权方案，不要把含敏感 Trace 的服务监听到局域网或公网地址。
 
-## Perfetto SQL 查询基础
+## PerfettoSQL 的数据模型
 
-[已验证: 官方文档, perfetto.dev/docs/analysis/trace-analysis-with-sql]
+PerfettoSQL 使用 SQLite 语法，并增加 `CREATE PERFETTO VIEW`、`CREATE PERFETTO MACRO`、标准库模块和区间处理能力。查询能否跨版本工作，取决于表、列、模块及输入数据源，不能用一个固定百分比概括它与 SQLite 的相似度。
 
-PerfettoSQL 建立在 SQLite 引擎之上，语法与标准 SQL 基本一致。但 Perfetto 在此基础上扩展了一些专有语法（如 `CREATE PERFETTO VIEW`、`CREATE PERFETTO MACRO`），并提供了一组专门用于 Trace 分析的表和函数。
+常见内置表承担不同职责：
 
-### 核心概念：时间戳、Slice、Counter、Track
+- `slice` 保存有开始时间和持续时间的区间事件，通过 `track_id` 关联所属 Track。
+- `sched` 保存线程在某个 CPU 上实际运行的区间。
+- `thread_state` 保存线程运行、可运行、睡眠等状态区间。
+- `counter` 保存某个时间点的数值样本，通过 `track_id` 关联计数器 Track。
+- `thread` 与 `process` 保存线程、进程元数据。
+- `stats` 保存解析错误、数据丢失和调试统计，是自动分析的质量入口。
 
-在写查询之前，我们需要理解 Perfetto 对 Trace 数据的抽象方式。
+`ts` 和 `dur` 通常以纳秒表示。Trace 中的单调时钟时间戳可以做区间运算，但不能直接解释为墙上时钟时间。Perfetto 使用 `utid` 和 `upid` 标识一次 Trace 内的线程与进程实例，避免 Linux `tid`、`pid` 退出后复用造成错误关联。按进程聚合时，应同时按 `upid` 与名称分组；只按名称会合并同名的不同进程实例。
 
-所有时间戳都以**纳秒**为单位。它从某个起始点开始单调递增（通常是 BOOTTIME 时钟），不同于 wall clock time。所以我们可以直接对时间戳做减法得到持续时长，但不能把它直接当成“几点几分”这样的时钟时间。
+### 先确认表和事件
 
-**Slice** 是一个时间段，表示"某个操作从什么时候开始、持续了多久"。比如主线程上一次 `measure` 操作、一个 Binder 调用的耗时、一次 GC 过程，在 Perfetto 中都是一个 Slice。
-
-**Counter** 是一个随时间变化的数值。比如 CPU 频率、内存使用量、帧率。Counter 没有持续时间的概念，它只是在某个时间点记录了一个值。
-
-**Track** 是同一类型、同一上下文的事件集合。可以理解成 Perfetto UI 中的一行——CPU 0 的调度事件在一条 Track 上，主线程的 Slice 在另一条 Track 上。
-
-### 常用表速览
-
-我们不需要记住所有表，但以下几张表是分析中最常用的：
-
-`slice` 表是使用频率最高的。它记录了所有的 Slice 事件，核心列包括 `ts`（开始时间戳）、`dur`（持续时长，纳秒）、`name`（Slice 名称）、`track_id`（所属 Track）。如果我们想查"主线程上耗时最长的 10 个操作"，查的就是这张表。
-
-`sched` 表记录了 CPU 调度事件——哪个线程在哪个 CPU 核心上跑了多久。它是分析 CPU 使用、线程迁移、调度延迟的核心数据源。
-
-`thread` 和 `process` 表提供了线程和进程的元信息。Perfetto 使用 `utid`（unique tid）和 `upid`（unique pid）来标识线程和进程，而不是系统原生的 `tid`/`pid`。这是因为系统级的 ID 会被复用——一个已退出的线程的 `tid` 可能被新线程拿走，直接用 `tid` 做 JOIN 会得到错误的结果。`utid` 和 `upid` 在一次 Trace 中是唯一且不变的。
-
-`counter` 表存储了所有 Counter 事件，通过 `track_id` 关联到具体的 Counter Track。
-
-### 使用前必做：验证事件是否存在
-
-在写任何针对具体 Slice 名称的查询之前，先用一个简单查询确认目标事件在当前 Trace 中存在：
-
-```sql
--- 查看当前 Trace 中有哪些 Slice 名称（采样前 50 条）
-SELECT DISTINCT name FROM slice ORDER BY name LIMIT 50;
-
--- 或者在 EXTRACT_ARG 之前，先确认目标 Slice 存在
-SELECT COUNT(*) FROM slice WHERE name = 'inflate';
-```
-
-这是因为很多 Slice 名称（如 `inflate`、`Application.onCreate`、`ActivityThread.handleBindApplication`、`ANR`）是否出现在 Trace 中，取决于采集时开启了哪些 atrace category 和应用是否打了自定义 Trace marker。如果查询返回空结果，多半是采集配置没有覆盖对应事件，而不是 SQL 本身写错了。
-
-### 几个典型查询
-
-下面通过几个实际查询来理解 PerfettoSQL 的用法。
-
-**查询某个进程中耗时最长的 10 个 Slice：**
+下面的查询用一个结果集检查常用表，并列出实际出现的 Slice 名称：
 
 ```sql
 SELECT
-  slice.name,
-  slice.ts,
-  slice.dur,
-  slice.dur / 1e6 AS dur_ms
-FROM slice
-JOIN thread_track ON slice.track_id = thread_track.id
-JOIN thread USING (utid)
-JOIN process USING (upid)
-WHERE process.name = 'com.example.app'
-ORDER BY slice.dur DESC
-LIMIT 10;
+  'table' AS item_type,
+  name AS item_name
+FROM sqlite_master
+WHERE type IN ('table', 'view')
+  AND name IN ('slice', 'sched', 'thread_state', 'counter', 'stats')
+
+UNION ALL
+
+SELECT
+  'slice_name' AS item_type,
+  name AS item_name
+FROM (
+  SELECT DISTINCT name
+  FROM slice
+  ORDER BY name
+  LIMIT 100
+)
+ORDER BY item_type, item_name;
 ```
 
-这个查询的逻辑是：从 `slice` 出发，通过 `track_id` 关联到 `thread_track`，再通过 `utid` 关联到 `thread`，最后通过 `upid` 关联到 `process`，然后按进程名过滤。`dur / 1e6` 把纳秒转换成毫秒，方便阅读。
+`item_type` 区分表名与 Slice 名称。名称列表只用于发现输入中已有的事件；生产指标应绑定经过验证的系统 Slice、自定义 Trace 标记或标准库模块，并把“事件缺失”保留为缺失值，不要静默写成零。
 
-**查询每个进程的 CPU 占用总时长：**
+### 先过数据质量门
+
+下面的查询列出解析阶段报告的错误和数据丢失：
 
 ```sql
 SELECT
-  process.name AS process_name,
-  SUM(sched.dur) / 1e9 AS total_cpu_sec
-FROM sched
-JOIN thread USING (utid)
-JOIN process USING (upid)
-GROUP BY process.name
-ORDER BY total_cpu_sec DESC
+  severity,
+  name,
+  idx,
+  value
+FROM stats
+WHERE severity IN ('error', 'data_loss')
+  AND value != 0
+ORDER BY severity, name, idx;
+```
+
+有结果不等于整份 Trace 必然不可用，但相应数据源和时间区间需要单独判定。流水线至少要保存这些记录，并阻止受影响的指标悄悄进入历史基线。
+
+### 找出某个进程的长 Slice
+
+下面的查询使用 Android 系统界面进程作为具体例子，找出它的 20 个最长线程 Slice：
+
+```sql
+SELECT
+  p.upid,
+  p.name AS process_name,
+  t.utid,
+  t.name AS thread_name,
+  s.name AS slice_name,
+  s.ts,
+  s.dur,
+  s.dur / 1e6 AS dur_ms
+FROM slice AS s
+JOIN thread_track AS tt ON s.track_id = tt.id
+JOIN thread AS t USING (utid)
+JOIN process AS p USING (upid)
+WHERE p.name = 'com.android.systemui'
+  AND s.dur >= 0
+ORDER BY s.dur DESC
 LIMIT 20;
 ```
 
-这里我们从 `sched` 表出发，关联到进程信息后，按进程名分组求和。`dur / 1e9` 把纳秒转换成秒。
+关联路径是 `slice → thread_track → thread → process`。分析应用进程时，应先从 `process` 表确认包进程的实际名称，再替换过滤条件；多进程应用的 `:remote` 等进程不能自动并入主进程。
 
-**查询主线程在某个时间段内的 D 状态（Uninterruptible Sleep）时长：**
+### 按进程实例统计 CPU 运行时间
 
-```sql
-SELECT
-  SUM(thread_state.dur) / 1e6 AS d_state_ms
-FROM thread_state
-JOIN thread USING (utid)
-JOIN process USING (upid)
-WHERE process.name = 'com.example.app'
-  AND thread.name = 'main'
-  AND thread_state.state = 'D'
-  AND thread_state.ts >= 10e9      -- 从第 10 秒开始
-  AND thread_state.ts < 20e9;     -- 到第 20 秒结束
-```
-
-`thread_state` 表记录了线程的状态变迁，`state = 'D'` 表示不可中断睡眠（通常是等 I/O）。这个查询帮助我们判断主线程是否在等磁盘 I/O。
-
-### JOIN 的路径模式
-
-PerfettoSQL 查询中最容易出错的部分是表之间的 JOIN 路径。一个常见的模式是：
-
-- 要获取 Slice 所属的进程/线程信息：`slice` → `thread_track`（通过 `track_id`）→ `thread`（通过 `utid`）→ `process`（通过 `upid`）
-- 要获取 Counter 所属的上下文：`counter` → 对应的 counter_track 表（`process_counter_track` 或 `cpu_counter_track`）→ 进一步关联到进程或 CPU
-
-记住这条路径就够了：`slice → thread_track → thread → process`。绝大多数分析查询都是这条路径的变体。
-
-[自动发现] Perfetto 还提供了一组辅助函数来简化 JOIN 操作。`EXTRACT_ARG(arg_set_id, key)` 可以直接从 `args` 表中提取某个 Slice 的自定义属性，而不需要显式 JOIN `args` 表。比如查看 `sched_switch` ftrace 事件中被换出的前一个进程名：
+下面的查询对 `sched` 区间求和，并保留进程实例标识：
 
 ```sql
 SELECT
-  name,
-  EXTRACT_ARG(arg_set_id, 'prev_comm') AS prev_comm
-FROM ftrace_event
-WHERE name = 'sched_switch'
-LIMIT 10;
+  p.upid,
+  COALESCE(p.name, '[unknown]') AS process_name,
+  SUM(s.dur) / 1e9 AS cpu_seconds
+FROM sched AS s
+JOIN thread AS t USING (utid)
+LEFT JOIN process AS p USING (upid)
+WHERE s.dur > 0
+GROUP BY p.upid, p.name
+ORDER BY cpu_seconds DESC
+LIMIT 20;
 ```
 
-> **注意**：`EXTRACT_ARG` 可用的 key 取决于对应事件的 `args` 表内容。使用前建议先查看 schema：`.schema args` 或 `SELECT DISTINCT key FROM args LIMIT 50`。
->
-> 另外 `EXTRACT_ARG` 在大表上性能不如显式 JOIN——它每行都要执行一次子查询。对探索性分析没问题，但在批量脚本中如果性能敏感，建议改用 JOIN。
+这里得到的是所有线程在各 CPU 上运行时间的总和。多核并行时，进程 CPU 时间可以大于墙上时钟经过时间；它也不等于 CPU 利用率，计算利用率还需要明确分析窗口和可用 CPU 数。
 
-## 用 trace_processor 批量跑 SQL 脚本
+### 用真实区间计算线程状态交集
 
-当我们确定了查询逻辑后，下一步通常是把它固化成脚本，实现自动化分析。
-
-### 用 `-q` 执行 SQL 文件
-
-如果已经进入交互式 shell，可以用 `.read` 执行外部 SQL 文件。脚本场景里，更常用的是 `-q`：
-
-```bash
-./trace_processor -q my_analysis.sql trace.perfetto-trace
-```
-
-`-q` 模式下，`trace_processor` 不会进入交互式 shell，而是执行完 SQL 文件后直接退出，结果输出到 stdout。`trace_processor --help` 也明确写了 `-q/--query-file` 只是“从文件读取并执行 SQL 查询”。这里只需要记一条规则：SQL 文件里可以有多个语句，但允许返回结果的只能是末尾那条语句；如果前面已经有 `SELECT` 产出行，CLI 会直接报错。
-
-### 一个完整的批量分析脚本示例
-
-假设需要对每个 Trace 统计：主线程总运行时长、GC 次数、ANR 数量。`analyze_trace.sql` 可以写成一个最终 `SELECT`：
+固定“Trace 第 10～20 秒”或“启动后 5 秒”容易把无关工作算入指标。更稳妥的做法是让被测应用写入边界明确的自定义 Trace 标记。下面假定被测代码已经产生一个持续时间大于零、名称唯一的 `cold_start` Slice，并统计该 Slice 所在线程与各线程状态的交集：
 
 ```sql
-SELECT 'main_thread_cpu_ms' AS metric,
-       COALESCE(SUM(sched.dur) / 1e6, 0) AS value
-FROM sched
-JOIN thread USING (utid)
-WHERE thread.is_main_thread = 1
-
-UNION ALL
-
-SELECT 'gc_count' AS metric,
-       COUNT(*) AS value
-FROM slice
-WHERE name LIKE '%GC%'
-
-UNION ALL
-
-SELECT 'anr_count' AS metric,
-       COUNT(*) AS value
-FROM slice
-WHERE name = 'ANR';
+WITH target AS (
+  SELECT
+    s.ts AS start_ts,
+    s.ts + s.dur AS end_ts,
+    tt.utid
+  FROM slice AS s
+  JOIN thread_track AS tt ON s.track_id = tt.id
+  WHERE s.name = 'cold_start'
+    AND s.dur > 0
+  ORDER BY s.ts
+  LIMIT 1
+),
+overlap AS (
+  SELECT
+    st.state,
+    st.io_wait,
+    st.blocked_function,
+    MIN(st.ts + st.dur, target.end_ts)
+      - MAX(st.ts, target.start_ts) AS overlap_ns
+  FROM thread_state AS st
+  JOIN target USING (utid)
+  WHERE st.dur > 0
+    AND st.ts < target.end_ts
+    AND st.ts + st.dur > target.start_ts
+)
+SELECT
+  state,
+  io_wait,
+  blocked_function,
+  SUM(overlap_ns) / 1e6 AS overlap_ms
+FROM overlap
+GROUP BY state, io_wait, blocked_function
+ORDER BY overlap_ms DESC;
 ```
 
-然后用一个 shell 脚本遍历所有 Trace 文件：
+区间相交条件确保只累计目标 Slice 内的状态片段。Linux 的 `D` 表示不可中断睡眠，不能直接翻译成“磁盘 I/O 等待”；需要结合 `io_wait`、`blocked_function`、内核事件和调用栈确认阻塞原因。若 `cold_start` 标记不存在，查询返回空集，流水线应将本次样本判为采集不完整。
+
+## 非交互查询与导出
+
+Android 17 源码中的 Trace Processor 已提供 `query`、`interactive`、`server`、`summarize`、`export` 等子命令。旧的 `-q`、`-Q`、`--httpd`、`-e` 参数仍由转换层兼容，新脚本宜使用子命令接口。
+
+下面展示内联 SQL、SQL 文件和标准输入三种输入方式：
 
 ```bash
-#!/bin/bash
-TRACE_DIR="/data/traces/daily"
-TRACE_PROCESSOR="./trace_processor"
-SQL_FILE="analyze_trace.sql"
+./trace_processor query trace.pftrace \
+  "SELECT ts, dur, name FROM slice LIMIT 5"
 
-echo "trace_file,metric,value"
-for trace in "$TRACE_DIR"/*.perfetto-trace; do
-  filename=$(basename "$trace")
-  tmp_csv=$(mktemp)
-  "$TRACE_PROCESSOR" -q "$SQL_FILE" "$trace" > "$tmp_csv"
-  python3 - "$filename" "$tmp_csv" <<'PY'
-import csv
-import sys
+./trace_processor query -f queries.sql trace.pftrace
 
-trace_name, csv_path = sys.argv[1], sys.argv[2]
-with open(csv_path, newline='') as f:
-    reader = csv.DictReader(f)
-    for row in reader:
-        print(f"{trace_name},{row['metric']},{row['value']}")
-PY
-  rm -f "$tmp_csv"
+./trace_processor query -f - trace.pftrace < queries.sql
+```
+
+SQL 可以包含多条以分号分隔的语句。`android-17.0.0_r1` 的 `query.cc` 会检查前序语句是否产生结果行：只有末尾语句可以返回结果，前面可放不返回行的建表、插入或模块加载语句。非交互结果按 CSV 输出，解析时应使用 CSV 库。
+
+当前 Perfetto 网页文档描述了依次打印多个 CSV 结果集的行为，但 Android 17 标签源码与 2026-07-31 从官方下载的 v57.2 实测仍执行单结果集限制。自动化脚本应按锚点版本的严格行为编写，并在升级主机工具时用最小查询重新验证。
+
+### 给批处理建立固定质量输出
+
+下面的 `trace_quality.sql` 始终返回一行，适合作为每份 Trace 的入库门：
+
+```sql
+SELECT
+  COALESCE(SUM(
+    CASE WHEN severity = 'data_loss' THEN value ELSE 0 END
+  ), 0) AS data_loss_count,
+  COALESCE(SUM(
+    CASE WHEN severity = 'error' THEN value ELSE 0 END
+  ), 0) AS parser_error_count
+FROM stats
+WHERE severity IN ('data_loss', 'error');
+```
+
+两个字段只代表 Trace Processor 报告的解析统计，不覆盖业务埋点缺失、场景执行失败或时间边界错误。它们应与必需表、必需标记和设备执行日志一起检查。
+
+下面的脚本逐份处理 `./traces` 中的 Trace，并把结果写到独立文件：
+
+```bash
+for trace in ./traces/*.pftrace; do
+  [ -e "$trace" ] || continue
+  ./trace_processor query -f trace_quality.sql "$trace" \
+    > "${trace}.quality.csv"
 done
 ```
 
-这里 trace 文件要作为位置参数传给 `trace_processor`，`-q` 只负责指定 SQL 文件。非交互模式下的查询结果是带表头的 CSV。做最小验证时优先使用长参数 `--query-string`，例如 `trace_processor --query-string "select 1 as a, 2 as b" trace.perfetto-trace`；如果手头的发行版没有开放 query-string 参数，就把查询写入临时 `.sql` 文件后用 `-q` 执行。输出是标准 CSV，例如 `"a","b"` 和 `1,2` 两行，分隔符不会变成 `|` 或制表符。
+逐份启动会重复付出解析成本，却把峰值内存限制在单份 Trace 附近。文件名和 Trace 校验和仍要写进结果清单，避免复制或重命名后失去样本身份。
 
-### 查询结果的格式控制
+### 导出 SQLite 与诊断 Trace Processor
 
-批处理时先把输出理解成 CSV。交互式 shell 里看到的是排版后的表格，两者不要混用。如果需要更稳定的结构化结果，有三种方案：
-
-**方案一：Python API**（推荐，灵活性最高）
-
-前面介绍的 Python `TraceProcessor.query().as_pandas_dataframe()` 可以直接拿到结构化数据，导出为 CSV、JSON 或 Parquet 都很方便。
-
-**方案二：导出为 SQLite 数据库**
+下面的命令分别导出 SQLite、关闭通用 ftrace 原始表摄取，并记录加载与查询耗时：
 
 ```bash
-./trace_processor export sqlite -o result.sqlite trace.perfetto-trace
+./trace_processor export sqlite -o result.sqlite trace.pftrace
+
+./trace_processor --no-ftrace-raw trace.pftrace
+
+./trace_processor query --perf-file tp-perf.txt \
+  trace.pftrace "SELECT COUNT(*) AS slice_count FROM slice"
 ```
 
-`export sqlite -o` 子命令会把 trace_processor 的内存数据库导出为 SQLite 文件；classic interface 也可以用 `./trace_processor -e result.sqlite trace.perfetto-trace`，但不能和 `-q/--query-file` 同时使用。导出后可以用任意 SQLite 工具查询，也可以用 `sqlite3` 命令行的 `.mode json` 输出 JSON。
+`export sqlite` 便于交给 SQLite 工具继续处理，但生成数据库前仍要完整解析输入。`--no-ftrace-raw` 阻止类型化 ftrace 事件额外进入通用原始表，可在不查询这条访问路径时降低内存；使用前应确认分析 SQL 不依赖 `ftrace_event`。`--perf-file` 记录加载和查询耗时，用来定位慢在解析还是 SQL。`--full-sort` 会强制完整排序，不能当作省内存选项。
 
-**方案三：shell 脚本后处理**
+## Python API
 
-如果只想留在 shell，按 CSV 解析就够了。可以用 Python `csv`、`xsv`、`mlr --icsv --ocsv` 这一类工具，不要假设分隔符是 `|` 或制表符。
+Python API 适合组织多步查询、结构化输出和统计处理。安装要求是 Python 3；`as_pandas_dataframe()` 还需要 Pandas 与 NumPy。
 
-### trace_processor 的高级参数
-
-一些实用的启动参数：
-
-`--httpd` 启动 HTTP 守护进程模式，配合 Perfetto UI 使用。前面已经讲过。AOSP android-17.0.0_r1 `external/perfetto` 的 classic help 同时包含 `--http-port PORT` 和 `--http-ip-address ip`；旧版平台或独立上游二进制仍以本机 `trace_processor --help` 输出为准。
-
-`-W` 或 `--wide` 加宽输出列宽，让长字符串（如完整 Slice 名称）不被截断。在交互式查询中查看长名称时很有用。
-
-`-e <path>` 将内存中的数据库导出为 SQLite 文件，classic interface 下不能和 `-q/--query-file` 同时使用。分析完成后可以把整个 Trace 数据库持久化，后续用 `sqlite3` 命令行或其他工具继续分析，不用重新加载原始 Trace。
-
-[已验证: perfetto.dev docs + AOSP android-17.0.0_r1 trace_processor_shell.cc, 2026-06-30]
-
-## 用 Python 的 perfetto.trace_processor 库做自动化分析
-
-[已验证: 官方文档, perfetto.dev/docs/analysis/batch-trace-processor]
-
-当分析逻辑变得复杂——比如需要多步查询、结果需要进一步计算、要生成图表——shell 脚本就开始力不从心了。这时更适合切到 Python，用 Perfetto 官方提供的 Python API 组织查询和后处理。
-
-### 安装
+下面的命令安装官方包及 DataFrame 依赖：
 
 ```bash
-pip install perfetto
-pip install pandas  # 推荐安装，用于 DataFrame 输出
+python3 -m pip install perfetto pandas numpy
 ```
 
-Perfetto Python API 要求 Python 3，底层仍然调用 C++ 的 `trace_processor` 库，所以性能不会因为用了 Python 而变差。
+正式流水线应在锁文件中固定 Python 包版本。默认配置会下载与已安装 `perfetto` 包绑定的 Trace Processor 版本；升级 Python 包时，底层程序也可能变化。
 
-### 基本使用
-
-[已验证: 官方文档, perfetto.dev/docs/analysis/trace-processor#python-api]
-
-```python
-from perfetto.trace_processor import TraceProcessor
-
-# 加载 Trace 文件
-tp = TraceProcessor(trace='my_trace.perfetto-trace')
-
-# 执行 SQL 查询
-qr_it = tp.query('SELECT name, dur / 1e6 AS dur_ms FROM slice ORDER BY dur DESC LIMIT 10')
-
-# 迭代结果
-for row in qr_it:
-    print(f'{row.name}: {row.dur_ms:.2f} ms')
-
-# 或者直接转成 Pandas DataFrame
-df = tp.query('SELECT ts, dur, name FROM slice').as_pandas_dataframe()
-print(df.head())
-```
-
-`tp.query()` 返回的是迭代器，不是一次性加载所有结果的列表。这样设计，是为了处理可能很大的查询结果集。结果不大时，直接迭代就行；如果准备交给 Pandas 做后续分析，再用 `as_pandas_dataframe()` 一次性转成 DataFrame。
-
-### 实战：冷启动分析脚本
-
-下面是一个实际可用的脚本，用来统计一批冷启动 Trace 的关键指标：
-
-```python
-import glob
-from perfetto.trace_processor import TraceProcessor
-
-def analyze_cold_start(trace_path):
-    """分析单个 Trace 的冷启动指标"""
-    tp = TraceProcessor(trace=trace_path)
-
-    # 1. 找到启动阶段关键 Slice 的耗时
-    # 注意：这些 slice name 来自 atrace 的 gfx/input/view category + 应用自定义 Trace marker，
-    # 采集时必须开启对应 category 才能查到
-    oncreate = tp.query("""
-        SELECT dur / 1e6 AS dur_ms
-        FROM slice
-        WHERE name = 'Application.onCreate'
-        LIMIT 1
-    """).as_pandas_dataframe()
-
-    # 2. 统计主线程在启动期间的 D 状态时长
-    # 先定位启动起点（handleBindApplication 通常是系统侧标记），
-    # 如果该 slice 不存在，可以退而用 trace 开头时间作为起点
-    startup_start = tp.query("""
-        SELECT COALESCE(
-          (SELECT MIN(ts) FROM slice WHERE name = 'ActivityThread.handleBindApplication'),
-          (SELECT MIN(ts) FROM slice LIMIT 1)
-        ) AS ts
-    """).as_pandas_dataframe()
-
-    # 2b. 用 startup_start 计算 D 状态时长
-    if len(startup_start) > 0 and startup_start['ts'].iloc[0] is not None:
-        start_ts = startup_start['ts'].iloc[0]
-        d_state = tp.query(f"""
-            SELECT SUM(dur) / 1e6 AS d_state_ms
-            FROM thread_state
-            JOIN thread USING (utid)
-            WHERE thread.is_main_thread = 1
-              AND state = 'D'
-              AND ts >= {start_ts}
-              AND ts < {start_ts} + 5e9
-        """).as_pandas_dataframe()
-    else:
-        d_state = None
-
-    # 3. 统计启动阶段主线程的 Binder 调用次数
-    # 注意：binder slice name 格式取决于 atrace 配置，不同版本可能有差异
-    binder_count = tp.query("""
-        SELECT COUNT(*) AS cnt
-        FROM slice
-        JOIN thread_track ON slice.track_id = thread_track.id
-        JOIN thread USING (utid)
-        WHERE thread.is_main_thread = 1
-          AND slice.name LIKE 'binder%'
-          AND slice.ts < (SELECT MIN(ts) + 5e9 FROM slice
-                          WHERE name = 'ActivityThread.handleBindApplication')
-    """).as_pandas_dataframe()
-
-    tp.close()
-
-    return {
-        'oncreate_ms': oncreate['dur_ms'].iloc[0] if len(oncreate) > 0 else None,
-        'd_state_ms': d_state['d_state_ms'].iloc[0] if d_state is not None and len(d_state) > 0 else 0,
-        'binder_calls': binder_count['cnt'].iloc[0] if len(binder_count) > 0 else 0,
-    }
-
-# 批量分析
-traces = glob.glob('traces/cold_start_*.perfetto-trace')
-results = []
-for t in traces:
-    metrics = analyze_cold_start(t)
-    metrics['trace'] = t
-    results.append(metrics)
-
-import pandas as pd
-df = pd.DataFrame(results)
-print(df.describe())  # 统计 P50/P95/P99
-```
-
-这个脚本做了三件事：提取 `Application.onCreate` 的耗时、统计主线程 D 状态时长（反映 I/O 瓶颈）、统计启动阶段的 Binder 调用次数。三个指标分别反映了启动过程的三个不同维度：代码执行、I/O 等待、IPC 开销。
-
-### 批量分析：BatchTraceProcessor
-
-[已验证: 官方文档, perfetto.dev/docs/analysis/batch-trace-processor]
-
-当需要同时分析多个 Trace 文件时，Perfetto 提供了 `BatchTraceProcessor`，它在底层管理多个 `trace_processor` 实例的生命周期：
-
-```python
-from perfetto.batch_trace_processor.api import BatchTraceProcessor
-
-files = glob.glob('traces/*.perfetto-trace')
-
-with BatchTraceProcessor(files) as btp:
-    # 对每个 Trace 执行同一个查询，返回 DataFrame 列表
-    results = btp.query('SELECT COUNT(*) AS slice_count FROM slice')
-    for i, df in enumerate(results):
-        print(f'{files[i]}: {df["slice_count"].iloc[0]} slices')
-```
-
-`BatchTraceProcessor` 会为每个 Trace 文件启动一个 `trace_processor` 实例。当 Trace 数量较多（几十个以上）时，需要注意内存消耗——每个实例都会在内存中维护一份完整的 SQL 数据库。如果遇到内存不足，可以分批处理，或者考虑使用 Perfetto 的 Bigtrace 分布式方案（适用于需要分析数千个 Trace 的场景）。
-
-### TraceProcessorConfig
-
-默认情况下，Python API 不把 ftrace 原始数据加载到 `ftrace_event` 表中（为了节省内存）。如果我们需要查 ftrace 级别的数据，需要手动开启：
+下面的程序固定原生程序路径，查询长 Slice，并用上下文管理器释放服务进程：
 
 ```python
 from perfetto.trace_processor import TraceProcessor, TraceProcessorConfig
 
-config = TraceProcessorConfig(ingest_ftrace_in_raw=True)
-tp = TraceProcessor(trace='trace.perfetto-trace', config=config)
+config = TraceProcessorConfig(
+    bin_path="./tools/trace_processor",
+)
+
+with TraceProcessor(
+    trace="trace.pftrace",
+    config=config,
+) as tp:
+    rows = tp.query("""
+        SELECT name, ts, dur / 1e6 AS dur_ms
+        FROM slice
+        WHERE dur >= 0
+        ORDER BY dur DESC
+        LIMIT 20
+    """)
+    for row in rows:
+        print(row.name, row.ts, row.dur_ms)
 ```
 
-[已验证: 官方文档, perfetto.dev/docs/analysis/trace-processor#python-api]
+`query()` 返回可迭代结果，SQL 的解析和执行由原生 Trace Processor 完成。把结果转换为 Pandas 或 Polars DataFrame 会在 Python 进程中物化查询结果；宽表或海量明细可能增加显著的内存和转换时间。聚合、过滤和列裁剪应尽量在 SQL 中完成。
 
-## traceconv：格式转换工具
+`TraceProcessorConfig(bin_path=...)` 最适合固定经过审核的程序。未指定时，官方包会使用与该包绑定的版本，仍具备可复现性；设置 `fetch_latest_trace_processor=True` 会尝试获取最新预编译程序，不适合作为稳定基线。
 
-[已验证: 官方文档, perfetto.dev/docs/quickstart/traceconv]
+### BatchTraceProcessor
 
-在有些场景下，我们需要把 Perfetto 的 protobuf 格式 Trace 转成其他格式。比如需要在 `chrome://tracing` 中打开，或者需要人类可读的文本格式做快速检查。
-
-Perfetto 提供了 `traceconv` 工具（早期叫 `trace_to_text`）：
-
-```bash
-# 下载
-curl -LO https://get.perfetto.dev/traceconv
-chmod +x traceconv
-
-# 转为 protobuf text 格式（人类可读）
-./traceconv text trace.perfetto-trace output.txt
-
-# 转为 Chrome JSON 格式（可在 chrome://tracing 打开）
-./traceconv json trace.perfetto-trace output.json
-
-# 转为 systrace 文本格式（兼容旧版 Android systrace 工具）
-./traceconv systrace trace.perfetto-trace output.txt
-
-# 提取 heapprofd / perf / Java heap profile 数据为 pprof 文件目录
-./traceconv profile --output-dir ./profiles trace.perfetto-trace
-```
-
-其中 `text` 格式输出的是 protobuf 的文本序列化形式，每个事件一行，适合用 `grep`、`awk` 等文本工具做快速过滤。`json` 格式则是 Chrome Trace Event 格式，可以直接拖入 `chrome://tracing` 查看。
-
-需要注意：对于大 Trace 文件，`traceconv` 转换过程本身也需要相当的时间和内存。特别是 `json` 格式，输出文件可能比原始 protobuf 大好几倍。建议只在需要其他工具兼容时才做转换，日常分析直接用 `trace_processor` 更高效。
-
-## 自建 Perfetto 分析 Pipeline 的实践建议
-
-[已验证: 官方文档, perfetto.dev/docs/analysis/batch-trace-processor]
-
-分析需求从"偶尔查一两个 Trace"升级到"每天自动处理几十个 Trace 并出报告"时，就需要搭一个分析 Pipeline。下面是一些实践经验。
-
-### 结果存储与趋势追踪
-
-每次分析的结果应该持久化存储（SQLite、CSV、或者时序数据库），这样才能做趋势对比。最省事的做法，是每次分析结果写入带日期列的 CSV，再用 Pandas 看趋势：
+下面的程序查询目录中的多份 Trace，并保留每份结果：
 
 ```python
-import pandas as pd
-from datetime import date
+from pathlib import Path
 
-# 追加今天的分析结果
-today = date.today().isoformat()
-df = pd.DataFrame(results)
-df['date'] = today
-df.to_csv('metrics_history.csv', mode='a', header=False, index=False)
+from perfetto.batch_trace_processor.api import BatchTraceProcessor
 
-# 读取历史数据，看趋势
-history = pd.read_csv('metrics_history.csv')
-recent = history[history['date'] >= '2026-03-01']
-print(recent.groupby('date')['oncreate_ms'].describe())
+paths = sorted(Path("traces").glob("*.pftrace"))
+files = [str(path) for path in paths]
+
+with BatchTraceProcessor(files) as btp:
+    results = btp.query("""
+        SELECT COUNT(*) AS slice_count
+        FROM slice
+    """)
+
+for path, frame in zip(paths, results):
+    print(path.name, int(frame["slice_count"].iloc[0]))
 ```
 
-### SQL 查询的版本管理
+`query()` 返回与输入 Trace 一一对应的 DataFrame 列表。`query_and_flatten()` 可以合并结果，并按所用解析器增加来源列。每份已加载 Trace 都完整驻留内存；官方给出的粗略估算是 `2 × 平均文件大小 × Trace 数量`，内容差异会让实际值明显偏离。官方文档提到可查询约千份 Trace，这不是容量承诺，应以样本大小、主机内存和并发配置压测。
 
-分析用的 SQL 文件应该纳入版本控制（Git）。原因是：Perfetto 的表结构在不同版本之间可能变化——比如 Android 14 新增的 `power_rail` 表在 Android 12 的 Trace 里不存在。我们的查询逻辑也需要随着 Trace 格式演进。
+## traceconv 用于格式互操作
 
-### 查询性能优化
+`traceconv` 可把 Perfetto protobuf Trace 转为文本、Chrome JSON、systrace、压缩 systrace、pprof 或 Firefox Profiler 格式，也能处理符号、R8/ProGuard 映射和压缩包。官方地址下载到的同样是 Python 3 启动脚本，原生程序会缓存在 Perfetto 预编译目录。
 
-对大 Trace 做查询时，几个优化点值得记住：
+下面的命令下载工具，并展示几种经过 Android 17 源码与当前文档核对的模式：
 
-在 WHERE 子句中尽量缩小时间范围。Perfetto 的底层存储是按时间排序的列式存储，带时间范围的查询可以利用时间索引快速跳过不相关的数据块。
+```bash
+curl -LO https://get.perfetto.dev/traceconv
+chmod +x ./traceconv
 
-避免 `SELECT *`。只查需要的列，减少内存占用。
+./traceconv text trace.pftrace trace.textproto
+./traceconv json trace.pftrace trace.json
+./traceconv systrace trace.pftrace trace.html
+./traceconv profile --output-dir ./profiles trace.pftrace
+./traceconv bundle trace.pftrace trace.bundle.tar
+```
 
-`EXTRACT_ARG` 函数虽然方便，但在大表上性能不如显式 JOIN。生产脚本中建议用 JOIN 替代。
+`profile` 会生成一个或多个 pprof 文件，因此使用 `--output-dir`。`bundle` 要求输入、输出都是实际文件路径，它把 Trace、原生符号和 R8/ProGuard 映射整理为可直接由 UI 或 Trace Processor 打开的 TAR，适合分享和归档。文本与 JSON 输出可能远大于原始 protobuf；格式转换服务于兼容性，不会解决超大 Trace 的解析内存问题。
 
-如果查询涉及 `GROUP BY` + `SUM`，可以先加 `WHERE` 条件过滤，再做聚合，而不是先全量聚合再过滤。
+## 可复现的分析流水线
 
-### 与 CI/CD 集成
+持续分析不能只保留一个指标 CSV。每份样本至少要有一份可审计清单，记录：
 
-如果团队有自动化测试流程（比如每天跑一次启动性能测试），可以把 Perfetto 分析脚本集成到 CI 中：
+- Trace 文件 SHA-256；
+- 设备构建指纹、Android 版本和 API 等级；
+- 内核版本；本项目面向 Android 17 时以 `android17-6.18-2026-06_r6` 为内核侧基线；
+- Perfetto 采集配置全文或校验和；
+- 场景名称、迭代编号、开始与结束判据；
+- Trace Processor `--version` 输出和程序校验和；
+- SQL 代码提交号、输出结构版本与单位。
 
-1. 测试完成后自动抓取 Trace
-2. 用 `trace_processor -q` 执行分析 SQL
-3. 把结果写入数据库
-4. 如果关键指标超过阈值，自动发告警
+这些字段必须由采集与分析程序现场生成。手写设备构建、工具版本或哈希会破坏证据链，也容易把测试环境的变化误判成性能变化。
 
-这样性能回归就能在第一时间被发现，而不是等用户投诉。
+进入历史基线前，至少执行这些检查：
 
-## 常见问题与误区
+1. `stats` 中与目标数据源有关的数据丢失和解析错误已判定；
+2. 必需表、标准库模块和自定义标记存在；
+3. 测试场景成功，测量窗口由可复核事件限定；
+4. SQL 对目标 Trace Processor 版本有回归测试；
+5. 单位在字段名或结构版本中明确，跨版本列变更已有迁移；
+6. 缺失值、零值和查询错误分开存储；
+7. 每份 Trace 保留独立结果，再计算分位数和置信区间。
 
-**"trace_processor 能完全替代 Perfetto UI 吗？"**
+阈值告警应来自稳定基线和已知噪声分布。固定的 P95/P99 只有在样本量、设备状态、温度、电量、编译产物与测试步骤受控时才有解释价值。
 
-不能，也不应该。两者是互补关系。`trace_processor` 擅长精确的数值查询和批量分析，Perfetto UI 擅长可视化——看 Track 上的时间分布、看 Slice 的嵌套关系、看多个 Track 之间的时间关系。实际工作里，通常先用 `trace_processor` 做初步筛选和指标提取，发现可疑区域后，再用 UI 上的 HTTP 守护进程模式打开同一个 Trace 做深入可视化分析。
+## 原生工具也内存不足时
 
-**"Python API 是不是比命令行慢？"**
+按下面的顺序处理，通常比盲目增加并发更容易得到可信结果：
 
-不是。Python API 底层调用的仍然是 C++ 的 `trace_processor` 库，数据解析和 SQL 执行都在 C++ 层完成。Python 层只负责发送 SQL 和接收结果，这层开销几乎可以忽略。
+1. 回到采集端缩短时间窗口，只覆盖可复核的测试区间；
+2. 减少与问题无关的数据源、atrace 类别和高频事件；
+3. 长时间观测使用 ring buffer 或 long trace 配置，保留所需历史；
+4. 不需要通用 ftrace 原始表时评估 `--no-ftrace-raw`；
+5. 多份 Trace 改为顺序或小批加载，按主机峰值内存设批大小；
+6. 单机方案完成容量测试后，再评估 BigTrace。
 
-**"Trace 文件太大，trace_processor 也吃不下怎么办？"**
+拆批只解决多文件并发驻留。单份 Trace 仍然过大时，需要重新采集或换更大内存的分析主机；Python `TraceProcessor` 和 `BatchTraceProcessor` 都不会按 Track 局部加载输入。
 
-可以尝试几种方法：一是抓 Trace 时缩小时间范围，只保留要分析的窗口；二是用 ring buffer 模式抓取，只保留最近的数据；三是减少 atrace category 和高开销 data source；四是把多份文件拆批交给 `BatchTraceProcessor`；五是在更大规模场景下改用 Bigtrace。Python `TraceProcessor` / `BatchTraceProcessor` 都会 ingest 整个 trace，不支持按 track 局部加载。
+## Android 17 源码落点 [自动发现]
 
-**"PerfettoSQL 和标准 SQL 有什么区别？"**
+`android-17.0.0_r1` 的 `external/perfetto` 已包含本章采用的接口：
 
-语法上 95% 是一样的——SELECT/FROM/WHERE/JOIN/GROUP BY/ORDER BY/LIMIT 完全一致。区别主要在两方面：一是 Perfetto 提供了一些扩展语法，如 `CREATE PERFETTO VIEW`、`CREATE PERFETTO MACRO`、以及 `SPAN_JOIN` 等专有操作符表；二是时间戳和持续时长都以纳秒为单位，做计算时需要注意单位转换。
+- `src/trace_processor/trace_processor_shell.cc` 定义子命令入口、公共参数和旧接口转换层；
+- `src/trace_processor/shell/query_subcommand.cc` 处理内联 SQL、文件、标准输入和多语句入口；
+- `src/trace_processor/shell/query.cc` 检查单结果集约束并生成 CSV；
+- `src/trace_processor/shell/server_subcommand.cc` 实现 HTTP 和标准输入输出 RPC 服务；
+- `src/trace_processor/shell/export_subcommand.cc` 实现 SQLite 导出；
+- `src/traceconv/main.cc` 定义 `text`、`json`、`systrace`、`ctrace`、`profile`、`bundle` 等模式。
+
+这些源码落点证明命令在 Android 17 锚点中存在。主机上从 `get.perfetto.dev` 获取的程序可能更新得更快，运行时能力仍以本机 `--version`、`--help` 和流水线固定版本为准。
+
+## 常见误区
+
+**原生后端会让超大 Trace 变成低内存查询吗？**
+
+不会。它解除浏览器站点内存限制并使用原生代码执行，Trace Processor 仍需摄取和维护查询所需的数据结构。
+
+**D 状态就是磁盘 I/O 吗？**
+
+不能这样下结论。D 只表示不可中断睡眠，还要检查 `io_wait`、`blocked_function`、内核事件与调用栈。
+
+**Python API 的额外开销可以忽略吗？**
+
+SQL 解析和执行在原生进程完成，结果传输与 DataFrame 物化仍有成本。查询返回大量行时，这部分可能成为内存和耗时主体。
+
+**导出 JSON 能缓解文件过大吗？**
+
+通常不能。JSON 和 protobuf 文本面向兼容与检查，输出经常更大。分析大文件应优先使用 Trace Processor，或在采集端控制数据量。
+
+**Slice 名称匹配到就能作为跨版本指标吗？**
+
+不能。名称可能来自平台实现、atrace 类别、Track Event 或应用自定义标记。指标必须说明来源、版本边界、线程归属和缺失时的处理规则。
 
 ## 参考资料
 
-- Perfetto 官方文档 - Trace Processor: https://perfetto.dev/docs/analysis/trace-processor
-- Perfetto 官方文档 - SQL 分析: https://perfetto.dev/docs/analysis/trace-analysis-with-sql
-- Perfetto 官方文档 - Batch Trace Processor: https://perfetto.dev/docs/analysis/batch-trace-processor
-- Perfetto 官方文档 - traceconv: https://perfetto.dev/docs/quickstart/traceconv
-- Perfetto SQL 表参考: https://perfetto.dev/docs/analysis/sql-tables
-- AOSP 源码路径: external/perfetto/src/trace_processor/
+- [Visualising large traces](https://perfetto.dev/docs/visualization/large-traces)
+- [Trace Processor（C++）](https://perfetto.dev/docs/analysis/trace-processor)
+- [PerfettoSQL 入门](https://perfetto.dev/docs/analysis/perfetto-sql-getting-started)
+- [PerfettoSQL 内置表](https://perfetto.dev/docs/analysis/sql-tables)
+- [Trace Processor（Python）](https://perfetto.dev/docs/analysis/trace-processor-python)
+- [Batch Trace Processor](https://perfetto.dev/docs/analysis/batch-trace-processor)
+- [traceconv](https://perfetto.dev/docs/quickstart/traceconv)
+- [Android 17 trace_processor_shell.cc](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/trace_processor_shell.cc)
+- [Android 17 query_subcommand.cc](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/shell/query_subcommand.cc)
+- [Android 17 query.cc](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/shell/query.cc)
+- [Android 17 server_subcommand.cc](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/shell/server_subcommand.cc)
+- [Android 17 export_subcommand.cc](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/shell/export_subcommand.cc)
+- [Android 17 traceconv/main.cc](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traceconv/main.cc)
