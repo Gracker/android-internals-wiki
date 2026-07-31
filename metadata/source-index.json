@@ -1670,6 +1670,204 @@
       "action": "indexed-only-chapter-freeze",
       "score": 15,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-31-76648069-掌握NestedScrolling嵌套滑.md",
+      "title": "[技术文章] 掌握 NestedScrolling 嵌套滑动：手写仿知乎折叠主页本文深入剖析 NestedScrolling 嵌套滑动",
+      "summary": "> 发布时间: 2026-07-21T11:06:56.000Z > 原文链接: https://juejin.cn/post/7664806921777610815 2026-07-21 180 阅读14分钟 Android 进阶知识 现在，我们要实现的效果是——可折叠的标题栏。它有很多日常的场景，例如知乎的个人主页：往上滑动时标题栏会先收起，到顶部后内容再开始滚动。...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-31T06:20:37.476501+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-31-76666577-Android中coroutineSco.md",
+      "title": "[技术文章] Android 中coroutineScope 和 supervisorScope 到底怎么选？先搞清楚 Exception 和 Result",
+      "summary": "> 发布时间: 2026-07-26T23:59:22.000Z > 原文链接: https://juejin.cn/post/7666657719916085298 2026-07-27 569 阅读6分钟 很多开发者都会遇到这些困惑： coroutineScope 和 supervisorScope 到底应该怎么选择？ Data 层应该直接抛异常，还是返回 Resul...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-31T06:20:37.476501+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-31-76677803-AGP9.0的主要变更项，给Gradle.md",
+      "title": "[技术文章] AGP9.0的主要变更项，给Gradle来一次大变样AGP9.0出来有一段时间了，但一直没有真正去了解它更新了些啥，跟以",
+      "summary": "> 发布时间: 2026-07-30T02:02:18.000Z > 原文链接: https://juejin.cn/post/7667780391577305103 2026-07-30 90 阅读6分钟 AGP9.0出来有一段时间了，但一直没有真正去了解它更新了些啥，跟以前有啥不一样，毕竟升级了一个大版本，那么借今天这篇文章，就一起来看下AGP9.0 首先要知道一点，...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-31T06:20:37.476501+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-31-76678379-从预加载View泄露到Surface爆满.md",
+      "title": "[技术文章] 从预加载 View 泄露到 Surface 爆满与 Socket 堵塞：一次车机全屏卡死与 Native 崩溃的终极排查",
+      "summary": "> 发布时间: 2026-07-29T15:25:37.000Z > 原文链接: https://juejin.cn/post/7667837994720084008 2026-07-29 34 阅读6分钟 在车载 Android 系统的 HMI 开发中，为了追求极致的冷启动“首屏 0 毫秒闪现”体验，我们引入了 **View 预加载机制**：在应用启动时，利用单例（如...",
+      "chapter": "ch08",
+      "processed_at": "2026-07-31T06:20:37.476501+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-31-76678421-AndroidGPU渲染管线：一帧画面如.md",
+      "title": "[技术文章] Android GPU 渲染管线：一帧画面如何走上屏幕Android 硬件加速的GPU渲染管道分析，认识GPU呈现模式的",
+      "summary": "> 发布时间: 2026-07-29T17:26:46.000Z > 原文链接: https://juejin.cn/post/7667842166611214382 2026-07-30 41 阅读23分钟 本文以传统 View 系统和 Android 11 为背景，沿默认的硬件加速路径，完整追一帧画面从产生到上屏的过程：从 VSync 出发，经过主线程、RenderT...",
+      "chapter": "ch02",
+      "processed_at": "2026-07-31T06:20:37.476501+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-31-76681566-深入理解Kotlin协程(九)：互通有无.md",
+      "title": "[技术文章] 深入理解 Kotlin 协程 (九)：互通有无，解构 Channel 缓冲策略与底层无锁机制本文深入剖析 Kotlin",
+      "summary": "> 发布时间: 2026-07-30T11:18:33.000Z > 原文链接: https://juejin.cn/post/7668156693868593206 2026-07-30 24 阅读6分钟 Channel 是 Kotlin 协程之间进行安全通信的工具，本质上就是一个并发安全的队列，以下是其基本用法： fun main() = runBlocking {...",
+      "chapter": "ch16",
+      "processed_at": "2026-07-31T06:20:37.476501+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-30-evening-AmnesiaAgent-HFrogue-research/02-dump-hf-rogue-checklist.md",
+      "title": "[DeepResearch] Dump B · HF rogue agent 取证与个人/小团队检查表",
+      "summary": "--- phase: 1b sub_question: B-HF-rogue-forensics-checklist date: 2026-07-30 --- # Dump B · HF rogue agent 取证与个人/小团队检查表 ## 研究问题 从 HF 交互回放与技术时间线，抽出可执行暴露面检查表，而不是科幻叙事。 ## 一手时间线（综合 HF technical timeline + disclosure + OpenAI",
+      "chapter": "ch16",
+      "processed_at": "2026-07-31T06:20:37.476501+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-30-evening-AmnesiaAgent-HFrogue-research/master-research.md",
+      "title": "[DeepResearch] Master Research · 2026-07-30 evening",
+      "summary": "--- phase: 1d topic: amnesia-agent amplify + HF rogue checklist date: 2026-07-30 slot: evening morning_status: complete sources: [opencli-twitter, opencli-web, opencli-google, local-vault] xurl: unused --- # Master Resea",
+      "chapter": "ch16",
+      "processed_at": "2026-07-31T06:20:37.476501+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_confidence": 0,
+      "route_terms": [
+        "research",
+        "topic",
+        "date",
+        "complete",
+        "sources",
+        "resea",
+        "aiw"
+      ],
+      "route_status": "quarantined-false-route-mismatch",
+      "route_demoted_at": "2026-07-31T09:15:01+08:00",
+      "route_demoted_run_id": "20260731-091501-5ea2e92c",
+      "route_demoted_reason": "topic mismatch: material is about HF rogue agent / Codex Security (agent security), target chapter is Android 17 Staged Install state machine internals. route_terms were generic metadata words only."
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-30-evening-AmnesiaAgent-HFrogue-research/03-dump-t3-footnote.md",
+      "title": "[DeepResearch] Dump C · T3 移动端脚注（不撑长文）",
+      "summary": "--- phase: 1b sub_question: C-T3-mobile-footnote date: 2026-07-30 --- # Dump C · T3 移动端脚注（不撑长文） ## 结论（承接 morning） - T3 = agent harness 控制面；手机是遥控 UI；密钥宜留本机 provider - vs OpenMinis = 端上 Linux 沙箱执行 - 晚间只出短 X 帖骨架 + 对照表，不新开长调",
+      "chapter": "ch16",
+      "processed_at": "2026-07-31T06:20:37.476501+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-30-evening-AmnesiaAgent-HFrogue-research/references/01-reuters-modal.md",
+      "title": "[DeepResearch] EXCLUSIVE: OpenAI's rogue agent compromised a customer at a second tech firm, executive says",
+      "summary": "--- source: opencli-web-read file: 01-reuters-modal.md fetched: 2026-07-30T21:10:19+08:00 slot: evening-2026-07-30 --- (node:6843) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any ti",
+      "chapter": "ch16",
+      "processed_at": "2026-07-31T06:20:37.476501+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-30-evening-AmnesiaAgent-HFrogue-research/raw/reuters.md",
+      "title": "[DeepResearch] EXCLUSIVE: OpenAI's rogue agent compromised a customer at a second tech firm, executive says",
+      "summary": "(node:6843) [UNDICI-EHPA] Warning: EnvHttpProxyAgent is experimental, expect them to change at any time. (Use `node --trace-warnings ...` to show where the warning was created) # EXCLUSIVE: OpenAI's rogue agent compromis",
+      "chapter": "ch13",
+      "processed_at": "2026-07-31T06:20:37.476501+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-30-morning-Harness记忆-可替换模型-研究材料/master-research.md",
+      "title": "[DeepResearch] Master Research · 2026-07-30 morning",
+      "summary": "--- phase: 1d topic: Harness记忆 / 可替换模型 / K3门槛 / T3移动 date: 2026-07-30 slot: morning sources: [opencli-twitter, opencli-web, opencli-google, local-vault] --- # Master Research · 2026-07-30 morning ## 执行摘要 - 材料包：`DeepResea",
+      "chapter": "ch16",
+      "processed_at": "2026-07-31T06:20:37.476501+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_confidence": 0,
+      "route_terms": [
+        "research",
+        "topic",
+        "date",
+        "slot",
+        "sources",
+        "deepresea",
+        "ch04"
+      ],
+      "route_status": "quarantined-false-route-mismatch",
+      "route_demoted_at": "2026-07-31T09:15:01+08:00",
+      "route_demoted_run_id": "20260731-091501-5ea2e92c",
+      "route_demoted_reason": "topic mismatch: material is about Harness memory / replaceable models / T3 mobile (agent harness), target chapter is zram compressed swap. route_terms were generic metadata words only."
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-30-morning-Harness记忆-可替换模型-研究材料/03-dump-k3-t3.md",
+      "title": "[DeepResearch] Dump C · K3 本地门槛 + T3 移动端交叉",
+      "summary": "--- phase: 1 sub_question: C-k3-1bit-threshold-and-t3-mobile topic: K3 1-bit 门槛更新 + T3 移动遥控 --- # Dump C · K3 本地门槛 + T3 移动端交叉 ## C1 Unsloth Kimi K3 1-bit ### 官方 guide 要点（unsloth.ai/docs/models/kimi-k3，已归档） - 模型：2.8T 参数 /",
+      "chapter": "ch16",
+      "processed_at": "2026-07-31T06:20:37.476501+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-30-morning-Harness记忆-可替换模型-研究材料/references/00-primary-x-signals.md",
+      "title": "[DeepResearch] Primary X signals (opencli twitter)",
+      "summary": "--- source: opencli-twitter fetched: 2026-07-30 research_topic: Harness memory and substitutable model system --- # Primary X signals (opencli twitter) ## OpenAI ARC-AGI-3 harness thread ### @OpenAI 2082616636989952217 G",
+      "chapter": "ch16",
+      "processed_at": "2026-07-31T06:20:37.476501+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch06-storage/6.03-Android-17-SharedPreferencesImpl-ANR机制.md",
+      "route_confidence": 28,
+      "route_terms": [
+        "research",
+        "topic",
+        "memory",
+        "and",
+        "system",
+        "thread",
+        "aiw",
+        "references"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-30-morning-Harness记忆-可替换模型-研究材料/references/06-t3-architecture.md",
+      "title": "[DeepResearch] Architecture",
+      "summary": "# Architecture T3 Code runs as a **Node.js WebSocket server** that wraps `codex app-server` (JSON-RPC over stdio) and serves a React web app. ``` ┌─────────────────────────────────┐ │ Browser (React + Vite) │ │ wsTranspo",
+      "chapter": "ch16",
+      "processed_at": "2026-07-31T06:20:37.476501+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-30-morning-Harness记忆-可替换模型-研究材料/references/05-t3-remote-access.md",
+      "title": "[DeepResearch] Remote Access",
+      "summary": "# Remote Access Use this when you want to connect to a T3 Code server from another device such as a phone, tablet, or separate desktop app. ## Recommended Setup Use a trusted private network that meshes your devices toge",
+      "chapter": "ch16",
+      "processed_at": "2026-07-31T06:20:37.476501+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ]
 }
