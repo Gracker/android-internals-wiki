@@ -63,149 +63,319 @@ last_task6_audit: 2026-07-05
 > 锚点内容需 L1/L2 验证,扩展内容至少 L2 验证,自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么要看内存优化案例
+## 案例应该回答什么
 
-前面几节已经把内存泄漏、Bitmap、Native Heap、Java Heap、GC 抖动和线上监控拆开讲过。案例集换一个视角:把线上现象、排查路径、验证材料和修复动作放在同一张表里,避免只得到"内存涨了"这种不可执行的结论。
+内存曲线上升只是现象。可复用的案例还要回答：哪个业务事件触发增长，增长属于哪类内存，哪些对象或调用栈仍然存活，谁拥有这些资源，修改后怎样证明问题已经消失。
 
-本节不重复展开 ART 堆结构、Bitmap 解码 API、heapprofd 配置和线上指标采集。相关机制详见 23.1、23.2、23.3、23.4、23.7 节;OOM 分类与稳定性口径详见 20.5 节。
+本节以 Android 17（API 37）和 AOSP `android-17.0.0_r1` 为平台锚点。案例涉及 Android 10 引入的 heapprofd、Android 8.0 以后 Bitmap 像素数据的位置等历史边界时，会保留相应版本信息。ART 堆、Native Heap、GC 和线上采集机制分别见 23.1、23.2、23.3、23.4、23.7；OOM 分类见 20.5。
 
-[结构参考: Clippings/Android 性能优化 - Native 内存优化(上):so 库申请的内存优化.md]
+一份可信的内存复盘应形成下面这条证据链：
 
-一个公开的脱敏案例能说明案例集应该保留哪些证据。货拉拉司机端的内存治理复盘里,治理前 OOM 设备崩溃率峰值为 0.8‱,约占整体崩溃率 20%;线上内存触顶率为 0.64%,高频页面集中在首页和车贴拍摄页。治理后,OOM 设备崩溃率降到 0.01‱,线上内存触顶率降到 0.01%,核心页面和核心流程 OOM 崩溃率降到 0。
+> 用户场景 → 可重复的触发动作 → 同口径的前后快照 → 对象引用链或 native 分配栈 → 资源所有权缺陷 → 最小修改 → 同场景复测 → 线上结果
 
-这类案例不是只写"修了泄漏"。复盘里至少保留了四组证据:离线日志显示首页 OOM 与大量新单推送弹窗相关;线下每 2 秒触发一次弹窗、运行约 8 分钟后内存上涨约 50 MB;Heap Dump 里 `SolverVariable[]` / `ArrayRow` 等布局对象增长,引用链落到弹窗 View、`LifecycleRegistry.mObserverMap` 和 `MainActivity`;修复点是弹窗 `dismiss` 时移除 Lifecycle 监听。车贴拍摄页的另一条线索来自 OOM 快照,`byte[]` 占比超过 90%,对象主要由录制和图像处理类持有,后续通过对象复用减少频繁分配和 GC。
+其中，快照之间的相关性只能帮助提出假设。只有引用链、分配栈或明确的生命周期代码能够说明资源为何没有释放。
 
-这个案例的价值在于证据链完整:现象、指标、Heap Dump、引用链、根因、修复和线上结果都能对上。后面的 Bitmap、Native 和预算场景都按这条标准组织。
+## 公开案例：货拉拉司机端内存治理
 
-## Bitmap 内存治理实战:先拆成"大图"和"泄漏"两类
+货拉拉团队公开的复盘提供了两类很有代表性的证据。下面的数据均为原文报告值，反映的是该 App 当时的版本、用户群和统计口径，不是其他项目可以直接采用的目标值。
 
-图片问题常见于信息流、相册、商品详情和富文本页面。症状看起来相似:Native Heap、Graphics 或 PSS 在滑动后上升,页面退出后回落慢,低端机更容易触发 OOM。排查时先把问题拆成两类:解码出来的 Bitmap 本身太大,或者 Bitmap 所属页面已经失效但对象还被引用。
+- 治理前，OOM 设备崩溃率峰值为 `0.8‱`，约占整体崩溃率的 `20%`；线上内存触顶率为 `0.64%`。首页与车贴拍摄页是高频 OOM 页面。
+- 治理后，OOM 设备崩溃率降到 `0.01‱`，线上内存触顶率降到 `0.01%`，核心页面和核心流程的 OOM 崩溃率降到 `0`。
 
-两类问题要用不同证据确认。
+这些结果只有结合排查过程才有参考价值。
 
-- **大图问题**:同一张图片在屏幕上只显示成缩略图,解码后却保留原始像素尺寸。Android Developers 的大图加载文档给出的路径是先用 `inJustDecodeBounds` 读取边界,再按目标显示尺寸计算 `inSampleSize`,第二次 decode 才分配像素内存。
-- **泄漏问题**:页面退出、列表 item 回收或弹窗关闭后,Bitmap 仍被 Activity、Adapter、ImageView、缓存集合或异步回调持有。AOSP `Bitmap` Java 对象持有 native 指针,并通过 `NativeAllocationRegistry` 关联 Native 释放;Java 对象活着时,像素内存也可能继续留在进程里。
+### 首页弹窗：从业务事件找到泄漏引用链
 
-一个可复用的排查表如下。
+原文先从 OOM 前的离线日志发现共同点：用户命中了大量新单推送弹窗。线下复现时，测试人员在首页每两秒触发一次弹窗；约八分钟、约 240 次展示后，Profiler 观察到内存上涨约 50 MB，且当时没有下降趋势。线上 OOM 样本中的弹窗展示次数超过 2000 次。
 
-| 观察项 | 大图问题 | 泄漏问题 |
-| --- | --- | --- |
-| 触发方式 | 首次进入页面或快速滑动时峰值过高 | 多次进出页面后阶梯式增长 |
-| 主要证据 | 宽高、`config`、`allocationByteCount` 超出显示需求 | Heap Dump 中退出页面仍有 Bitmap / ImageView / Activity 引用链 |
-| 优先工具 | 图片加载入口日志、Memory Profiler、`dumpsys meminfo` | LeakCanary、Heap Dump、页面生命周期回放 |
-| 修复动作 | 采样解码、尺寸上限、低端机降规格、分块加载 | 取消请求、清理 View 引用、缩短缓存生命周期、校验复用池回收 |
+这组数据建立了“弹窗展示次数与内存增长相关”的假设，还不能单独证明泄漏。Heap Dump 的前后对比补上了对象证据：
 
-图片入口建议记录四个字段:原始尺寸、目标显示尺寸、Bitmap 配置和 `allocationByteCount`。只记录文件大小没有用,JPEG / WebP 压缩文件很小,解码后的像素内存仍可能很大。
+- `float[]`、`SolverVariable[]`、`SolverVariable`、`ArrayRow` 等布局相关对象持续增加；
+- 一条可疑引用链从 `SolverVariable[]` 到弹窗的 `mView`，再经过 `LifecycleRegistry.mObserverMap` 到常驻的 `MainActivity`；
+- 代码审查发现 Dialog 初始化时注册了 Activity 的 Lifecycle 监听，却没有在 `dismiss` 时移除。
 
-下面这段代码用于给图片解码入口补充预算日志。重点看 `allocationByteCount` 和目标尺寸的对比,不把日志当成修复手段。
+`MainActivity` 仍然存活，`LifecycleRegistry` 中的观察者也就仍然可达；观察者再保留旧 Dialog 和 View，GC 无法回收整棵对象图。修复是在弹窗结束时移除对应观察者，并用相同事件序列复测对象数量与内存回落。有效修复来自注册方、注销方和生命周期终点重新一致，代码行数并不能说明修复质量。
+
+### 车贴拍摄：高占比 `byte[]` 指向高频分配
+
+车贴拍摄页缺少清晰的业务日志线索。团队从 OOM 时采集的内存快照观察到，`byte[]` 占总体的比例超过 `90%`，主要由图像录制和处理类持有。线下拍摄没有复现 OOM，却复现了频繁的内存波动和 GC。
+
+继续检查图像回调后发现，识别逻辑一秒接收多帧，部分录制对象既没有复用，也没有及时释放。团队用对象池减少录制对象的创建，并在灰度阶段确认该页面的 OOM 消失。
+
+这里要区分两个结论：
+
+- **原文事实**：快照中的 `byte[]` 占比、持有者、高频回调、线下 GC 现象以及灰度结果；
+- **工程判断**：对象池是否适合某个新项目，仍要测池命中率、池容量、单对象大小和空闲时保留量。池本身也会延长对象寿命。
+
+两个案例说明，同一条“内存上涨”告警可能对应长期可达对象，也可能对应高频分配与峰值压力。修复工具和验收指标不能混用。
+
+## Bitmap 内存治理：区分尺寸、持有与图形资源
+
+图片场景至少要区分三类问题：
+
+| 类型 | 典型曲线 | 需要的证据 | 常见修改位置 |
+| --- | --- | --- | --- |
+| 解码尺寸过大 | 首次进入或处理原图时出现峰值 | 源图尺寸、目标尺寸、配置、已分配字节数、同一时刻的进程分类 | 解码入口、旋转/裁剪入口、图片加载请求 |
+| 生命周期过长 | 多次进出页面后阶梯式增长 | 退出页面后的 Heap Dump、Bitmap/ImageView/页面引用链、缓存键与淘汰记录 | 请求取消、View 清理、回调注销、缓存策略 |
+| Hardware Bitmap、纹理或 Surface 资源滞留 | Java Heap 变化有限，Graphics 或总体 PSS 增长 | `dumpsys meminfo` 分类、图形缓冲记录、Surface/纹理生命周期 | 渲染资源释放、图片加载配置、Surface 所有者 |
+
+分类表用于选择下一项证据，不能仅凭曲线给问题定性。
+
+### Android 17 上 Bitmap 的内存含义
+
+Android Developers 的版本说明指出：Android 8.0（API 26）及以后，Bitmap 的像素数据位于 native heap。Android 17 的 AOSP `Bitmap.java` 还能看到更具体的关联方式：
+
+- Java `Bitmap` 保存 `mNativePtr`；
+- `registerNativeAllocation()` 使用 `NativeAllocationRegistry`登记 native 对象与像素分配；
+- 登记的像素大小来自 `getAllocationByteCount()`；
+- `recycle()` 会进入 native 回收逻辑并更新相关登记。
+
+这解释了为什么 Java 对象仍然可达时，相关 native 内存也可能继续留在进程中。但“API 26 以后像素在 native heap”不等于所有图片内存都会稳定显示在 `dumpsys meminfo` 的某一个栏目。Hardware Bitmap、图形缓冲、共享映射和厂商实现可能影响分类结果，应同时看对象证据、Graphics、Native Heap 与总体 PSS。
+
+`getAllocationByteCount()`比“宽 × 高 × 每像素字节数”更适合作为单个 Bitmap 的已分配容量。Android 17 源码注释明确说明：Bitmap 被 `inBitmap` 复用或手动重配置后，这个值可以大于 `getByteCount()`，并在该 Bitmap 生命周期内保持不变。因此，容量异常既可能来自当前解码尺寸，也可能来自复用了更大的存储。
+
+下面的代码用于生成一条不含文件路径、URL 或业务标识的 Bitmap 观测记录。它只采集事实，不在基础函数里写统一告警阈值。
 
 ```kotlin
-fun Bitmap.reportBitmapBudget(
-    scene: String,
+data class BitmapObservation(
+    val role: String,
+    val decodedWidth: Int,
+    val decodedHeight: Int,
+    val targetWidth: Int,
+    val targetHeight: Int,
+    val config: String,
+    val allocationBytes: Long
+)
+
+fun Bitmap.toObservation(
+    role: String,
     targetWidth: Int,
-    targetHeight: Int,
-    warnBytes: Long
-) {
-    val bytes = allocationByteCount.toLong()
-    if (bytes >= warnBytes) {
-        Log.w(
-            "BitmapBudget",
-            "scene=$scene bitmap=${width}x$height config=$config " +
-                "target=${targetWidth}x$targetHeight bytes=$bytes"
-        )
-    }
+    targetHeight: Int
+): BitmapObservation {
+    require(role.isNotBlank())
+    require(targetWidth > 0 && targetHeight > 0)
+
+    return BitmapObservation(
+        role = role,
+        decodedWidth = width,
+        decodedHeight = height,
+        targetWidth = targetWidth,
+        targetHeight = targetHeight,
+        config = config?.name ?: "UNKNOWN",
+        allocationBytes = allocationByteCount.toLong()
+    )
 }
 ```
 
-这段日志只适合开发包、灰度包或采样用户。线上全量记录会增加 I/O 和隐私风险,栈信息也要脱敏。进入治理阶段后,阈值不要写成一个全局常量,要按页面类型、设备内存档位和图片角色拆开:头像、缩略图、长图预览、高清查看器不应该共用同一条线。
+调用方应使用有限枚举作为 `role`，例如缩略图、预览图、编辑输入，避免记录用户文件名。采样系统再按场景、设备档位和角色比较 `allocationBytes` 的分布；阈值应来自本项目的基线和风险预算，而不是写进这段采集代码。
 
-修复顺序建议按收益和风险排序:先修明显超出显示尺寸的大图,再修页面退出后仍存活的 Bitmap,后处理复用池策略。`inBitmap` 复用能降低反复分配,但复用池本身也会保留内存;没有命中率数据时扩大复用池,可能把峰值问题改成常驻占用问题。
+### 大图问题的排查顺序
 
-公开案例里的图片发送场景给出了一条 Bitmap 证据链:发送图片后 Native 内存出现突刺,dump 突刺时的内存信息后,增长点落到一个大 Bitmap;代码排查发现发送前有图片旋转逻辑,直接把原图加载成 Bitmap 再处理。Android 8.0 及以后 Bitmap 像素内存进入 Native Heap,这类问题在 `dumpsys meminfo` 里更容易表现为 Native Heap 或 PSS 峰值,Java Heap 单项曲线可能不明显。修复方向应从图像入口处理:旋转、压缩、上传前预览都先按目标尺寸解码,再进入后续图像处理。
+图片加载库通常会处理尺寸协商、缓存和复用，但业务传入原始尺寸、错误的目标尺寸或绕开加载库进行旋转时，仍可能创建大 Bitmap。按下面的顺序核对：
 
-## Native 内存泄漏排查案例：Java Heap 稳定时看 Native Heap 和匿名映射
+1. 记录源图宽高、方向信息、目标 View 尺寸、请求尺寸、Bitmap 配置和 `allocationByteCount()`。
+2. 检查解码是否发生在目标尺寸已知之前。直接使用 `BitmapFactory` 时，可以先用 `inJustDecodeBounds` 读取边界，再计算合适的 `inSampleSize`；使用图片库时，应通过库的尺寸 API 表达目标，而不是再手写第二套缓存与复用逻辑。
+3. 检查旋转、裁剪、圆角、模糊、压缩和上传预处理是否又创建了全尺寸中间 Bitmap。
+4. 在动作前、峰值、页面退出和冷却后采集同口径数据，确认峰值下降且资源能够释放。
 
-Native 内存泄漏常见于音视频 SDK、地图 SDK、图片库、加密库和自研 JNI 模块。典型现象是 Java Heap 曲线稳定，PSS 或 Native Heap 随场景次数增长；重启进程后恢复，清理 Java 缓存没有效果。
+压缩文件大小不能代表解码内存。JPEG 或 WebP 文件可能很小，显示前仍要展开为像素数据。`ARGB_8888` 的常见估算是每像素四字节，但宽色域、`RGBA_F16`、Hardware Bitmap、行对齐和复用容量都会改变实际占用，验收时仍以观测值为准。
 
-排查时先确认增长口径，再抓分配栈。`dumpsys meminfo <pid>` 可以看 Native Heap、Dalvik Heap、Graphics、Stack、Code 等分类；在调试包、自有进程可读、root 或 userdebug/eng 环境下，`/proc/<pid>/smaps` 可以进一步确认增长区域是 `[anon:libc_malloc]`、`[anon:scudo:*]`、so 私有脏页，还是图形缓冲。分类对了，工具才选得对。
+### 公开案例中的图片发送峰值
 
-常用排查路径分成四步：
+货拉拉复盘还记录了一个 Native 内存峰值案例：发送图片后容易发生 Native OOM；线下操作能看到发送前后的 Native 内存突增；内存信息把增长点指向大 Bitmap；代码检查发现旋转逻辑先把原图完整解码成 Bitmap。
 
-1. **复现场景**：固定一次业务路径，例如"进入预览 → 拍照 → 退出"重复 10 轮，每轮记录 PSS、Native Heap、Graphics 和线程数。
-2. **区分来源**：Native Heap 增长先确认工具条件，Android 10+ 且目标 app 可 profile 时优先采 heapprofd；Graphics / dma-buf 增长回到图片、Surface、纹理释放；so 私有脏页异常看库装载和初始化写入。
-3. **抓调用栈**：Perfetto 文档说明 heapprofd 需要 Android 10+；调试 Android build（userdebug/eng）可分析所有 app 和大多数系统服务，user build 只能分析 manifest 带 `debuggable` 或 `<profileable android:shell="true"/>` 的 app。条件满足后，heapprofd 会跟踪指定时间窗口内的堆分配和释放，并把内存归因到调用栈。
-4. **回到所有权**：找到调用栈后检查 JNI handle、`malloc/free` 配对、C++ 对象析构、SDK `release()` 时机，以及 Java 层对象是否还持有 native 句柄。
+这条链路支持“全尺寸解码造成峰值”的结论。修改时应把尺寸约束放在第一次像素分配之前：先读取边界和方向，按输出需求决定解码尺寸，再旋转或裁剪。若先完整解码再缩小，最终 Bitmap 虽然变小，峰值阶段的原图与中间结果仍可能同时存在。
 
-Native 泄漏修复不建议一开始就使用 Hook。参考书里把 Native Hook、PLT Hook、Inline Hook 放在排查方案中，适合做专项工具或内部平台；日常业务排查优先用系统工具。Hook 会引入兼容性和稳定性成本，尤其是线上环境。
+验收不能只看操作结束后的平均值。至少要比较处理前基线、解码峰值、变换峰值、上传结束和页面退出后的回落；还要覆盖接近业务允许上限的输入尺寸和方向组合。
 
-工具权限要单独记录在排查单里：量产 user 设备上，heapprofd 不等于任意进程可采；没有 `debuggable` / `profileable` 的第三方 app 会得到空 profile。`/proc/<pid>/smaps` 更适合实验室或调试环境；如果 adb shell 没有权限读取目标 smaps，先保留 `dumpsys meminfo` 的分类趋势，再换调试包、root 或 userdebug/eng 设备补 VMA 明细。
+## Native 内存泄漏排查：先确认类别，再分析分配栈
 
-这组命令用于把"哪类内存在涨"先确认下来。重点看趋势,不用单次快照下结论。
+Java Heap 稳定而 PSS 上升，不足以直接判定 Native Heap 泄漏。进程内存还可能增长在 Graphics、线程栈、文件映射、JIT/Code、共享内存或其他匿名映射中。
+
+| 观察结果 | 下一项证据 | 不应直接得出的结论 |
+| --- | --- | --- |
+| `Native Heap` 的 allocated/PSS 随动作增加 | heapprofd、malloc debug、native 所有权代码 | 看到一次上涨就判定泄漏 |
+| `Graphics` 或图形相关映射增加 | Surface、纹理、Hardware Bitmap、缓冲队列生命周期 | 归因给普通 `malloc` |
+| `Stack` 与线程数一起增加 | 线程列表、创建栈、线程退出路径 | 只调整 Java 堆上限 |
+| 文件私有脏页或匿名映射增加 | `smaps_rollup`/`smaps`、映射名称、库初始化路径 | 把所有 PSS 增长算入 Native Heap |
+| Java Heap 增加且页面退出后对象仍可达 | ART Heap Dump 与 GC Root 引用链 | 使用 heapprofd 代替 Java 堆分析 |
+
+`dumpsys meminfo`适合快速确认进程级分类；`/proc/<pid>/smaps_rollup`和 `smaps`用于查看映射级证据，但 adb shell 在量产设备上通常没有权限读取目标应用的这些文件。遇到权限拒绝，应记录工具条件并换用自有调试包、root 或 userdebug/eng 实验设备，不能把空结果解释成“没有增长”。
+
+下面的脚本用于在一个检查点保存 `dumpsys meminfo`，并在权限允许时补充 `smaps_rollup`。把不同检查点写入不同目录，即可保留动作前、峰值和冷却后的原始输出。
 
 ```bash
-# 记录进程级分类,适合对比每轮操作后的 Native Heap / Graphics / PSS
-adb shell dumpsys meminfo <package_or_pid>
+#!/usr/bin/env bash
+set -euo pipefail
 
-# 保存 VMA 明细,仅适用于 adb shell/root/userdebug 或自有调试进程可读 smaps 的环境
-adb shell cat /proc/<pid>/smaps > smaps-after-round-10.txt
+if [[ $# -ne 2 ]]; then
+  echo "usage: $0 <package-name> <output-directory>" >&2
+  exit 2
+fi
 
-# 采集 Native Heap 分配画像;user build 需要目标 app debuggable/profileable
-adb shell perfetto -c heapprofd-config.pbtxt -o /data/misc/perfetto-traces/native.pb
+package_name=$1
+output_directory=$2
+mkdir -p "$output_directory"
+
+adb shell dumpsys meminfo "$package_name" \
+  > "$output_directory/dumpsys-meminfo.txt"
+
+pid=$(adb shell pidof -s "$package_name" | tr -d '\r')
+if [[ -z "$pid" ]]; then
+  echo "process is not running: $package_name" >&2
+  exit 1
+fi
+
+if ! adb shell "cat /proc/$pid/smaps_rollup" \
+  > "$output_directory/smaps-rollup.txt"; then
+  echo "smaps_rollup is not readable in this device/build context" >&2
+fi
 ```
 
-这些命令只能确认方向。定位到某条 native 分配栈以后,还要回到业务生命周期:对象在哪个 Java API 创建、谁负责释放、异常路径是否跳过释放、页面退出和进程后台时是否都能走到清理逻辑。只补一个 `free()` 往往不够,资源所有权不清楚时,同一类泄漏会换一个入口再出现。
+每个检查点必须使用同一设备、系统版本、App 构建、账号数据和动作脚本。重复次数与冷却时长由场景的稳定性实验确定，并写进实验记录；没有测量依据时，不要固定成“十轮”或“后台五分钟”。
 
-一个安全的修复模板是把 native 资源封装成显式生命周期对象:创建后只通过一个 owner 持有,页面退出、任务取消、异常失败都进入同一个 `close()` / `release()` 路径;测试用例把同一场景重复执行多轮,并断言 Native Heap 在冷却窗口后回到基线附近。
+### heapprofd 的适用边界
 
-## 大型 App 内存预算管理:把预算分给场景和团队
+heapprofd 从 Android 10 开始提供按调用栈归因的堆分配分析，默认跟踪 `malloc/free`、`new/delete` 等 native 分配。它记录的是采样时间窗内的分配与释放，因此更适合回答“哪些调用栈保留了多少 native 分配”，不能解释所有 Graphics、文件映射或自定义分配器占用。
 
-[结构参考: Clippings/Android 性能优化 - 物理内存优化实战:Java Heap 内存优化.md]
+设备与应用还要满足权限条件：
 
-大型 App 的内存问题很少由单个模块独立造成。首页框架、图片库、Feed、WebView、地图、直播、IM、广告 SDK、埋点 SDK 都会申请缓存和线程。每个团队只看自己的模块,单项都合理,合在一个进程里仍可能超过设备承受范围。
+- debug Android build 可分析更广的进程集合，但关键系统服务仍可能受 SELinux 策略限制；
+- 量产 user build 只允许分析 manifest 标记为 debuggable 或 profileable 的应用；
+- `<profileable android:shell="true"/>`允许 shell 侧的 Perfetto、simpleperf 等工具分析发布构建，且比 debuggable 构建更适合性能测量；
+- 调用栈需要与被测构建严格匹配的符号文件。发布构建还要保留对应的 native 符号和 Java/Kotlin 映射文件。
 
-预算管理要按进程、设备档位和场景组合拆开,不能只设"全 App 一个阈值"。
+Perfetto 官方推荐使用仓库中的 `tools/heap_profile`脚本。下面的命令让进程名由调用参数传入，持续采集到用户中断；输出目录由官方脚本创建并在结束时打印。
 
-| 维度 | 预算口径 | 失败信号 |
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+  echo "usage: $0 <process-name>" >&2
+  exit 2
+fi
+
+perfetto_checkout=${PERFETTO_CHECKOUT:?set PERFETTO_CHECKOUT to a Perfetto checkout}
+process_name=$1
+
+"$perfetto_checkout/tools/heap_profile" android -n "$process_name"
+```
+
+采集期间执行预先写好的业务动作，随后在终端中断采集。把脚本生成的 `raw-trace`载入 Perfetto UI，先比较动作前后仍存活的分配，再沿调用栈回到具体库和业务入口。采样间隔会影响开销与精度；只有出现 buffer overrun 等明确证据时，才按官方故障排查建议调整共享缓冲或采样间隔。
+
+### 从分配栈回到资源所有权
+
+一条增长调用栈只是分配入口。代码审查还要回答：
+
+- native 句柄由谁创建，Java/Kotlin 层是否只有一个明确的所有者；
+- `malloc/free`、`new/delete`、`NewGlobalRef/DeleteGlobalRef`是否配对；
+- 正常完成、取消、超时、异常和页面销毁是否进入同一释放路径；
+- C++ 析构是否会执行，是否存在跨线程引用、回调注册或 SDK 内部缓存；
+- `close()`/`release()`是否允许重复调用，调用后是否禁止继续使用句柄；
+- 修复后，仍存活分配的调用栈与字节数是否在同场景下回到稳定范围。
+
+C++ 优先使用 RAII 容器和智能指针表达所有权；JNI 边界可以在 Java/Kotlin 层使用 `AutoCloseable`暴露显式生命周期，但 native 侧仍须防止重复释放和并发使用。若第三方 so 没有符号或释放 API，应把版本、厂商、复现输入和调用栈地址一起提交给供应方，同时准备关闭能力、减少并发或隔离进程等可逆方案。
+
+Hook 型工具可以覆盖系统工具难以观察的场景，也会增加兼容性、递归分配和稳定性风险。应先在实验环境验证采集器本身的开销与正确性，再决定是否用于灰度或线上采样。
+
+## 大型 App 内存预算：按进程、场景和设备管理
+
+大型 App 常把图片、Feed、WebView、地图、音视频、广告和监控 SDK 放在同一进程。每个模块单独看都没有越界，组合场景仍可能出现峰值叠加。预算必须描述“什么环境、哪个进程、哪个检查点、哪类内存”，不能只设一个全局 MB 数。
+
+| 维度 | 必须记录的上下文 | 用途 |
 | --- | --- | --- |
-| 设备档位 | 按 `memoryClass`、系统可用内存、低内存设备标记分组 | 低端机 OOM、后台保活下降、切回重启 |
-| 进程角色 | 主进程、推送进程、WebView / 渲染进程、工具进程分开看 | 子进程异常放大、主进程被附带拖高 |
-| 场景窗口 | 启动、首页首屏、Feed 连续滑动、详情页、拍摄/播放、后台 5 分钟 | 峰值过高、退出不回落、版本回归 |
-| 内存类型 | Java Heap、Native Heap、Graphics、Code、Stack、PSS 分列 | 只看总量导致归因错误 |
+| 平台与构建 | Android/API、AOSP 或设备构建指纹、App version/commit、ABI | 避免跨版本和跨二进制误比 |
+| 设备档位 | 机型、物理内存、`memoryClass`、低内存设备标记、厂商 | 解释设备能力差异；`memoryClass`不是 PSS 总预算 |
+| 进程 | 主进程、WebView/渲染进程、播放器或工具进程 | 防止只优化主进程而遗漏子进程 |
+| 场景与检查点 | 输入数据、动作序列、前台/后台、基线、峰值、退出、冷却 | 区分峰值、常驻量和回落能力 |
+| 内存类别 | Java Heap、Native Heap、Graphics、Stack、Code、总 PSS | 指导下一种分析工具 |
+| 统计信息 | 样本量、P50/P90/P99、异常值规则、采集来源 | 说明结果的稳定性和可比性 |
+| 责任与处置 | 模块、负责人、变更、开关、回滚或降级方案 | 超预算时能够执行决策 |
 
-预算表要服务排查,不是做展示。每个场景至少保留三类数据:基线版本、当前版本、变更模块。这样才能把"这个版本 PSS 多了 40 MB"变成"图片缓存多 18 MB、直播 SDK Native Heap 多 12 MB、线程栈多 6 MB"。如果没有拆分口径,评审会上只能互相猜。
+`ActivityManager.getMemoryClass()`给出应用堆级别的近似上限，不代表进程可以安全使用同等数量的 PSS，也不代表设备在当前压力下能长期保留该进程。预算需要同时参考历史稳定版本、目标设备上的实测分布、OOM/LMK 结果与业务峰值。
 
-把上面的公开案例放进预算表,需要拆成三条记录:首页弹窗对应常驻页面在重复业务事件下持续留存 View 和布局求解对象;车贴拍摄页对应录制和识别链路在高频回调下产生 `byte[]` 分配抖动;发送图片对应原图旋转前缺少尺寸预算。预算表要把这些问题拆到 `scene`、`trigger`、`memory_type`、`evidence` 和 `owner`,否则同一个版本里多个模块同时涨内存时,很难确认先修哪一条。
+### 把公开案例写入预算记录
 
-[自动发现] 预算应接入发版门禁:灰度包采样记录关键场景的 P50 / P90 / P99,超过阈值时阻断发版或要求模块 owner 给出解释。阈值要保留机型维度,不能把高端机的结果拿去代表低端机。Android Studio Memory Profiler 适合单机定位;线上侧更适合采样 PSS、Java Heap、Native Heap、OOM 前兆和场景标签。完整监控设计先以 23.7 节为准,26.3 成稿后再恢复正式引用。
+货拉拉案例可以拆成三条独立记录：
 
-团队看板至少需要保留这些字段。
+| 场景 | 触发动作 | 增长类别与证据 | 所有权或分配问题 | 验证重点 |
+| --- | --- | --- | --- | --- |
+| 首页常驻 | 重复展示并关闭新单弹窗 | Java 对象数量与 Heap Dump 引用链 | Lifecycle 观察者未移除，旧 Dialog/View 仍可达 | 观察者、Dialog 与布局对象不再按次数累积 |
+| 车贴拍摄 | 相机帧进入录制与识别 | 快照中 `byte[]` 高占比，线下频繁 GC | 多帧回调持续创建录制对象，释放与复用不足 | 分配速率、GC、峰值及灰度 OOM |
+| 图片发送 | 解码并旋转原图 | Native 内存峰值与大 Bitmap | 第一次解码前没有尺寸约束 | 解码/变换峰值、输入上限、退出回落 |
+
+这三条记录不能合并成“图片模块增长”。它们的内存类别、根因和验收信号不同，合并后会丢失行动信息。
+
+### 预算与发版门禁
+
+预算值应从可比较的历史样本中建立。推荐流程如下：
+
+1. 为关键场景固定设备档位、输入数据、动作脚本和检查点。
+2. 用稳定版本建立基线，保存原始数据、样本量和采集工具版本。
+3. 新版本在相同条件下比较分位数、峰值和退出后的残留量，并按内存类别归因。
+4. 超过预先批准的预算时，由对应模块给出证据、修复、降级或例外说明；例外需要到期时间。
+5. 灰度阶段继续观察 OOM、LMK、`ApplicationExitInfo`与场景内存分布，确认实验室结果能在目标用户群复现。
+
+P50、P90、P99 是对样本分布的描述，不是天然的门禁线。样本量不足、机型混合、版本口径变化或采集触发偏差都会让分位数失真。看板至少要保留这些字段：
 
 | 字段 | 含义 |
 | --- | --- |
-| `scene` | 启动、首页、Feed 滑动、详情、拍摄、播放、后台等业务场景 |
-| `device_tier` | low / mid / high,规则由内存、SoC、系统版本共同决定 |
-| `process` | 主进程或具体子进程名 |
-| `java_heap_mb` | Java Heap 已用量,用于判断对象分配和缓存压力 |
-| `native_heap_mb` | Native Heap,用于识别 JNI、SDK、图片和 allocator 压力 |
-| `graphics_mb` | 图形缓冲和纹理相关占用,用于识别图片、Surface、视频问题 |
-| `pss_mb` | 按比例分摊后的进程总体内存,用于线上趋势和保活风险判断 |
-| `version` | 版本号、灰度批次或 commit 区间 |
-| `owner` | 超预算时负责解释和修复的模块 |
+| `experiment_id` | 可追溯到动作脚本和原始证据的实验标识 |
+| `platform_version` | Android/API 与设备构建信息 |
+| `app_build` | App version、commit 或灰度批次 |
+| `device_tier` | 有明确规则的设备档位 |
+| `process_name` | 目标进程 |
+| `scene` / `checkpoint` | 业务场景与采集检查点 |
+| `metric_source` | `dumpsys meminfo`、应用 API、Perfetto 或其他来源 |
+| `java_heap_bytes` | Java Heap 观测值及统一单位 |
+| `native_heap_bytes` | Native Heap 观测值及统一单位 |
+| `graphics_bytes` | 图形相关观测值及统一单位 |
+| `total_pss_bytes` | 进程总体 PSS，明确换算方式 |
+| `sample_count` | 对应分布的样本数 |
+| `owner` / `decision` | 负责人和本次处理决定 |
+| `rollback` | 开关、回滚或降级路径 |
 
-预算执行有三个动作:新增大缓存必须声明场景和上限;引入 SDK 必须提供内存基线;灰度阶段发现超预算,要能回滚开关或降级能力。单纯要求"少占内存"没有操作性,给出场景、数据、owner 和回滚路径,才能把问题持续压回预算线内。
+新增缓存和 SDK 时，评审材料要说明常驻量、场景峰值、线程与子进程、清理 API、低内存回调行为以及关闭方案。上线后若只能看到总 PSS，而看不到版本、场景和进程，预算表也无法用于归因。
 
-## 复盘模板:让每个内存问题变成下一次排查入口
+## 内存案例复盘模板
 
-内存问题修完后要留下结构化记录。下一次出现同类曲线时,团队应该能从旧案例里复用排查路径,而不是重新猜一遍。
+每次修复后保留下面的信息，后续同类曲线才能复用这次排查结果：
 
-每个案例至少保留这些信息:
+- **问题范围**：受影响版本、设备、ABI、进程、场景和用户影响。
+- **现象口径**：OOM、LMK、PSS、Java Heap、Native Heap、Graphics、线程或 GC；写明来源、单位和采样时机。
+- **复现条件**：输入数据、动作脚本、检查点、重复策略与冷却条件。
+- **假设与反证**：每个假设对应什么证据，哪些观测已经排除。
+- **对象或调用栈证据**：GC Root 引用链、heapprofd 栈、VMA、Surface/缓冲记录及符号版本。
+- **资源所有权**：创建者、持有者、释放者，以及取消、异常和销毁路径。
+- **修改内容**：代码、配置、缓存、尺寸约束或 SDK 版本，附风险和回滚方案。
+- **离线验证**：同设备、同输入、同口径的修改前后数据，覆盖峰值与回落。
+- **线上验证**：灰度样本量、目标指标、观察窗口及未改善时的处理条件。
+- **防复发措施**：回归用例、采集点、预算项、代码审查规则与负责人。
+- **负结果**：没有支持某个假设的实验也要保留，避免下次重复消耗时间。
 
-- **现象**:用户场景、机型、系统版本、前后台状态、是否与版本发布相关。
-- **指标**:PSS、Java Heap、Native Heap、Graphics、GC 频率、OOM / LMK 记录,注明采样时间和样本量。
-- **证据**:Heap Dump、heapprofd trace、`dumpsys meminfo`、smaps、图片入口日志、泄漏引用链。
-- **根因**:哪类对象或哪条 native 调用栈增长,为什么生命周期没有结束。
-- **修复**:代码改动、配置改动、降级开关、回滚方案。
-- **验证**:修复前后同场景对比,至少包含峰值、回落能力和多轮复现结果。
-- **防复发**:新增监控、测试用例、预算门禁或代码评审规则。
+复盘中要把观测与解释分开写。例如，“退出页面后 `Native Heap`仍高于动作前”是观测；“某 SDK 泄漏”是待验证的解释。只有分配栈和所有权代码对得上，后者才可以升级为根因。
 
-案例的价值在证据完整度。没有复现路径、没有对比数据、没有修复后验证的记录,只能算故障流水账,下一次仍然要从头排查。
+## 小结
+
+内存治理需要用多种证据逐步缩小问题范围，万能阈值或单一工具无法覆盖所有类别：
+
+- Bitmap 先区分解码尺寸、对象持有和图形资源，再决定看入口日志、Heap Dump 还是图形生命周期；
+- Native 问题先用进程分类和映射证据确认增长位置，权限满足时再用 heapprofd 将保留分配归因到调用栈；
+- 大型 App 的预算要绑定平台、设备、进程、场景、检查点和采集来源；
+- 每个修复都要通过同场景复测与线上样本验证，原始数据和失败假设也应留档。
+
+案例写得越具体，下一次排查越容易从已有证据继续，而不是重新猜测曲线含义。
+
+## 参考资料
+
+- [货拉拉司机 Android 端内存治理实践（本地归档）](../../../../Cubox/货拉拉司机Android端内存治理实践-2024-10-08.md)
+- [Android Developers：Manage your app's memory](https://developer.android.com/topic/performance/memory)
+- [Android Developers：Managing Bitmap Memory](https://developer.android.com/topic/performance/graphics/manage-memory)
+- [Android Developers：Loading Large Bitmaps Efficiently](https://developer.android.com/topic/performance/graphics/load-bitmap)
+- [Android Developers：Bitmap API reference](https://developer.android.com/reference/android/graphics/Bitmap)
+- [AOSP `android-17.0.0_r1`：`Bitmap.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java)
+- [Perfetto：Memory—Callstack-based Allocation Profiling](https://perfetto.dev/docs/data-sources/native-heap-profiler)
+- [Perfetto：`heap_profile` command reference](https://perfetto.dev/docs/reference/heap_profile-cli)
+- [Android Developers：`<profileable>` manifest element](https://developer.android.com/guide/topics/manifest/profileable-element)
+- [Android Developers：`dumpsys` command](https://developer.android.com/tools/dumpsys)
