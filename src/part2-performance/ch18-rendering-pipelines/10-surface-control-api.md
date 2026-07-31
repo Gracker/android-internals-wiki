@@ -1,11 +1,80 @@
 ---
-title: SurfaceControl API 深入
+title: Android 17 SurfaceControl NDK API
 chapter: '18.10'
 section: '18.10'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-tags: 
-related_chapters: 
+tags:
+- SurfaceControl
+- ASurfaceControl
+- ASurfaceTransaction
+- NDK
+- AHardwareBuffer
+- FrameTimeline
+- BLAST
+- SurfaceFlinger
+- SurfaceControlViewHost
+- sync-fence
+related_chapters:
+- '2.6'
+- '2.13'
+- '2.16'
+- '18.2'
+- '18.6'
+- '18.9'
+- '18.13'
+sources:
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S03_surfaceview_type.md
+  role: SurfaceControl layer 树、BLAST buffer transaction、几何同步与 release fence
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S05_mixed_rendering_type.md
+  role: 混合内容对象、原子 Transaction、SurfaceSyncGroup 与独立 Producer 边界
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/include/android/surface_control.h
+  role: NDK API 级别、fd 所有权、transaction、callback 与 backpressure 语义
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/include/android/surface_control_jni.h
+  role: API 34 Java/native control 与 transaction 桥接所有权
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/native/android/surface_control.cpp
+  role: ASurfaceControl 到 SurfaceControl/Transaction 的实现映射
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/include/android/choreographer.h
+  role: NDK FrameTimeline 候选、vsyncId、expected time 与 deadline
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java
+  role: Java Layer 树、Parcelable 与 Transaction
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/SurfaceComposerClient.cpp
+  role: transaction 状态收集、merge、apply 与 callback
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp
+  role: BufferItem acquire、buffer transaction、frame merge 与 release
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/
+  role: RequestedLayerState、snapshot、hierarchy 与 transaction readiness
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp
+  role: SurfaceFrame、DisplayFrame 与 timeline 结果
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp
+  role: composition strategy、present 与 per-layer release fences
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c
+  role: dma-fence 的 sync_file fd 接口
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
+  role: fence signal、callback 与 wait
+- type: official
+  path: https://developer.android.com/ndk/reference/group/native-activity
+  role: SurfaceControl NDK 公开 API 与版本边界
+- type: official
+  path: https://developer.android.com/reference/android/view/SurfaceControlViewHost
+  role: 跨进程 View 嵌入与 SurfacePackage
+- type: official
+  path: https://perfetto.dev/docs/data-sources/frametimeline
+  role: SurfaceFrame、DisplayFrame 与 jank 字段
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 last_task2b_at: '2026-05-27T10:50:00+08:00'
@@ -44,15 +113,15 @@ last_deepseek_cn_review_at: 2026-07-16
 last_task2b_verifier_at: "2026-07-08T03:31:42+08:00"
 task2b_verifier_result: "status-corrected-ready-for-task6"
 task2b_verifier_notes: "2026-07-08 Task2B Verifier: status finalized→ready-for-review; auto-fixed by Task9, pipeline=task6_pending, queue clear. Ready for Task6 re-review."
-last_verified: "2026-07-29"
-last_verified_against: "android-17.0.0_r1"
+last_verified: "2026-07-31"
+last_verified_against: "android-17.0.0_r1 (surface_control.h, surface_control_jni.h, surface_control.cpp, choreographer.h, SurfaceControl.java, SurfaceComposerClient.cpp, BLASTBufferQueue.cpp, FrontEnd, FrameTimeline.cpp, HWComposer.cpp) / android17-6.18-2026-06_r6 (sync_file.c, dma-fence.c)"
 confidence: "high"
 last_idle_audit_at: "2026-07-29T14:35:28+08:00"
 last_idle_audit_run_id: "20260729-143528-idle-audit-fb6d5268"
 last_idle_audit_result: "pass-minor-fix"
 ---
 
-# 18.10 SurfaceControl API 深入
+# 18.10 Android 17 SurfaceControl NDK API
 
 <!-- outline-start -->
 
@@ -74,7 +143,7 @@ last_idle_audit_result: "pass-minor-fix"
 
 <!-- outline-end -->
 
-本文以 AOSP `android-17.0.0_r1` 为源码锚点。`ASurfaceControl` 从 Android 10（API 29）起向 NDK 开放，它适合已有原生渲染器、硬件缓冲池或跨进程嵌入架构的组件。普通 View 页面通常不需要绕过 HWUI 直接使用这组 API。
+本文以 AOSP `android-17.0.0_r1` 为 Platform 源码锚点，以 `android17-6.18-2026-06_r6` 为 kernel 锚点。`ASurfaceControl` 从 Android 10（API 29）起向 NDK 开放，它适合已有原生渲染器、硬件缓冲池或跨进程嵌入架构的组件。普通 View 页面通常不需要绕过 HWUI 直接使用这组 API。
 
 理解 SurfaceControl 的关键，是把 **Layer 状态**、**像素缓冲**、**事务** 和 **同步 fence** 分开。`ASurfaceControl` 负责指向 Layer 节点，`AHardwareBuffer` 携带像素，`ASurfaceTransaction` 描述一批状态变更，fence 决定 buffer 何时可以被读取或复用。这四类对象的职责不能互相替代。
 
@@ -98,7 +167,7 @@ last_idle_audit_result: "pass-minor-fix"
 
 若已经持有一个 `ASurfaceControl*`，`ASurfaceControl_create(parent, name)` 会在同一个 `SurfaceComposerClient` 下创建子节点。两种创建函数都把返回引用交给调用方；失败时返回 `nullptr`，成功后要配对 `ASurfaceControl_release()`。
 
-这里不应把 NDK 创建的节点简单分成“Buffer Layer、Color Layer、Container Layer”三类。公开 C API 的创建函数没有 Java `SurfaceControl.Builder` 那样的 layer type 选项。`ASurfaceTransaction_setColor()` 在 Android 17 实现中调用 `setBackgroundColor()`，设置的是 buffer 透明区域下方的背景色，并非创建独立 Color Layer。只承担组织作用的节点可以不提交 buffer，但它仍是这组 NDK 创建函数生成的 buffer-state 节点。
+这里不应把 NDK 创建的节点简单分成“Buffer Layer、Color Layer、Container Layer”三类。公开 C API 的创建函数没有 Java `SurfaceControl.Builder` 那样的 layer type 选项。`ASurfaceTransaction_setColor()` 在 Android 17 实现中调用 `setBackgroundColor()`，只设置 buffer 透明区域下方的背景色，不会创建独立 Color Layer。只用于组织子树的节点可以不提交 buffer，但它仍是这组 NDK 创建函数生成的 buffer-state 节点。
 
 ### Java 与 NDK 句柄桥接
 
@@ -470,6 +539,8 @@ acquire fence 保护“写完再读”，release fence 保护“读完再写”�
 
 调用 `setBuffer()` 或 `setBufferWithRelease()` 后，framework 接管传入的 acquire fence fd。若调用方还要保留同一 fence 做诊断，必须在调用前 `dup()` 一份；不能在调用后关闭或复用已经转移的 fd。
 
+kernel `android17-6.18-2026-06_r6` 的 `drivers/dma-buf/sync_file.c` 把 dma-fence 暴露为 fd，`drivers/dma-buf/dma-fence.c` 提供 signal、callback 与 wait 原语。它们定义通用同步机制，无法单独说明某台设备的 GPU、codec 或 display fence 为何迟到；归因仍要结合 vendor driver timeline 和目标 buffer 的所有权。
+
 ### API 36：按 buffer 接收 release
 
 release callback 可以在任意线程执行。回调不宜直接永久阻塞；更安全的做法是把 slot 和 fence fd 交给专门的回收队列。
@@ -568,7 +639,7 @@ SurfaceControl 适合把更新节奏不同的少量内容分开：主画面每�
 
 ### 先建内容对象表
 
-你的权威 rendering pipeline 笔记反复强调：分析单位应是内容对象，而非应用名或某一条线程。SurfaceControl 场景可以先填这张表：
+S05 混合出图章节把内容对象作为分析单位，不按应用名或某一条线程直接归类。SurfaceControl 场景可以先填这张表：
 
 | 内容 | Producer | 提交入口 | SF Layer / parent | buffer 标识 | acquire / release | FrameTimeline |
 |:---|:---|:---|:---|:---|:---|:---|
@@ -633,14 +704,15 @@ Perfetto 配置应包含应用 atrace、调度、Binder、gfx / view、SurfaceFl
 - [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)：BLAST 消费 BufferQueue 并生成事务的路径。
 - [`SurfaceComposerClient.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/SurfaceComposerClient.cpp)：transaction 状态收集和提交。
 - [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) 与 [`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp)：事务应用、帧调度和展示结果。
+- [`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c) 与 [`dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)：kernel fence fd、signal、callback 与 wait 语义。
 
 ---
 
 > **交叉引用**
 >
 > - BLAST Buffer 生命周期详见 [18.2 Android View 标准路径（BLAST 深入）](02-android-view-standard.md)
-> - SurfaceView 的 Layer 结构详见 [18.6 SurfaceView 直出路径](06-surfaceview.md)
-> - Vulkan WSI 与 BufferQueue 详见 [18.9 Vulkan 原生渲染路径](09-vulkan-native.md)
+> - SurfaceView 的 Layer 结构详见 [18.6 SurfaceView 独立 Surface 路径](06-surfaceview.md)
+> - Vulkan WSI 与 BufferQueue 详见 [18.9 Android 17 Vulkan 原生渲染管线](09-vulkan-native.md)
 > - WebView 的宿主 functor 与媒体 overlay 详见 [18.13 WebView 渲染路径](13-webview-rendering.md)
 > - BufferQueue 对象边界详见 [2.13 图形缓冲区管理（BufferQueue）](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
 > - SurfaceFlinger 合成策略详见 [2.6 SurfaceFlinger 与合成](../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md)
