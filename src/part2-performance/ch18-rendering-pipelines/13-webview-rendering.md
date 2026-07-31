@@ -1,5 +1,5 @@
 ---
-title: "WebView 渲染管线"
+title: "Android 17 WebView 渲染管线"
 chapter: "18.13"
 section: "18.13"
 status: finalized
@@ -9,15 +9,111 @@ related_chapters: ["2.5", "2.6", "7.11", "18.6", "18.7", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 sources:
-  - AOSP frameworks/base/core/java/android/webkit/WebView.java
-  - AOSP frameworks/base/core/java/android/webkit/WebChromeClient.java
-  - AOSP frameworks/base/core/java/android/webkit/WebViewFactory.java
-  - AOSP frameworks/base/services/core/java/com/android/server/webkit/WebViewUpdateServiceImpl.java (Android 14 / Android 15 early tags) / WebViewUpdateServiceImpl2.java (Android 15 later tags - Android 17)
-  - AndroidX WebKit WebViewCompat.getCurrentWebViewPackage()
-  - Chromium android_webview/browser/gfx/browser_view_renderer.cc
-  - Chromium android_webview/browser/gfx/hardware_renderer.cc
-  - Chromium android_webview/browser/gfx/overlay_processor_webview.cc
-  - Chromium Viz Compositor architecture docs
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S09_webview_type.md
+  role: WebView 双版本、functor、overlay、renderer 生命周期、Perfetto 与版本边界
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S09_webview_architecture/source.md
+  role: WebView provider、宿主 HWUI、定制容器与最终显示对象分类
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S09_webview_chromium_process_architecture/source.md
+  role: browser code、renderer、GPU service 与 Viz 的进程和线程边界
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S09_webview_functor_drawfn_pipeline/source.md
+  role: 标准 WebView functor 与 DrawFn 宿主窗口路径
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S09_webview_software_fallback_pipeline/source.md
+  role: OnDrawSoftware、CPU Canvas 与宿主窗口 fallback
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S09_webview_surfacecontrol_overlay_pipeline/source.md
+  role: WebView overlay gate、SurfaceControl child 与 HWC
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S09_webview_imagereader_pipeline/source.md
+  role: ImageReader、AHardwareBuffer、acquire 与中间消费
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S09_webview_surfaceview_pipeline/source.md
+  role: fullscreen/custom-container 独立 Surface 分支
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S09_webview_textureview_pipeline/source.md
+  role: TextureView-like producer、宿主更新与纹理采样
+- type: official
+  path: https://developer.android.com/develop/ui/views/layout/webapps/webview
+  role: WebView 公开集成与宿主责任
+- type: official
+  path: https://developer.android.com/develop/ui/views/layout/webapps/managing-webview
+  role: renderer 消失、优先级与生命周期
+- type: official
+  path: https://developer.android.com/develop/ui/views/layout/webapps/optimize-webview-startup
+  role: Jetpack WebKit 1.16.0+ 异步启动边界
+- type: official
+  path: https://developer.android.com/reference/androidx/webkit/WebViewCompat
+  role: provider 身份与 startUpWebView API
+- type: official
+  path: https://developer.android.com/jetpack/androidx/releases/webkit
+  role: AndroidX WebKit 稳定版本记录
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/webkit/WebView.java
+  role: framework WebView 代理与公开能力
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/webkit/WebViewFactory.java
+  role: provider 选择、校验、class loader 与 native library 装载
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/webkit/WebViewUpdateServiceImpl2.java
+  role: Android 17 provider 准备、切换与 waitForAndGetProvider
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/webkit/WebChromeClient.java
+  role: fullscreen custom view 托管协议
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/webkit/WebViewClient.java
+  role: onRenderProcessGone 后的实例清理责任
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/private/hwui/WebViewFunctor.h
+  role: GLES/Vulkan DrawFn、overlay 与 rendering-thread callback 边界
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/WebViewFunctorManager.cpp
+  role: overlay gate、Webview Overlay SurfaceControl 与 transaction merge
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/TextureView.java
+  role: TextureView-like 分支的 frame available 与宿主 invalidation
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp
+  role: SurfaceTexture image acquire 与 TextureLayer 更新
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp
+  role: host/overlay layer latch、composition 与 present
+- type: chromium
+  path: https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/docs/architecture.md
+  role: WebView provider、browser code、renderer 与进程内服务
+- type: chromium
+  path: https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/public/browser/draw_fn.h
+  role: DrawFn GLES/Vulkan 与 overlay ABI
+- type: chromium
+  path: https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/browser/gfx/aw_draw_fn_impl.cc
+  role: DrawFn trace、RenderThreadManager 与 overlay 回调
+- type: chromium
+  path: https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/browser/aw_contents.cc
+  role: hardware/software draw 分流
+- type: chromium
+  path: https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/browser/gfx/browser_view_renderer.cc
+  role: OnDrawHardware、OnDrawSoftware 与 synchronous compositor
+- type: chromium
+  path: https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/browser/gfx/hardware_renderer.cc
+  role: child frame、Viz draw/swap 与 rendering-thread reporting
+- type: chromium
+  path: https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/browser/gfx/overlay_processor_webview.cc
+  role: overlay candidate、AHardwareBuffer、acquire fence 与 SurfaceControl
+- type: chromium
+  path: https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/gpu/command_buffer/service/image_reader_gl_owner.cc
+  role: AImageReader、AHardwareBuffer、fence 与 TextureOwner 中转
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c
+  role: 跨进程共享 buffer 基础
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
+  role: fence signal、callback 与 wait
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c
+  role: dma-fence 的 sync_file fd 接口
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
@@ -53,27 +149,30 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-25
 last_idle_audit_at: "2026-07-27T14:35:45+08:00"
 last_idle_audit_run_id: "20260727-143545-idle-audit-0d80d330"
-last_verified: "2026-07-27"
+last_verified: "2026-07-31"
+last_verified_against: "android-17.0.0_r1 (WebView.java, WebViewFactory.java, WebViewUpdateServiceImpl2.java, WebChromeClient.java, WebViewClient.java, WebViewFunctor.h, WebViewFunctorManager.cpp, TextureView.java, DeferredLayerUpdater.cpp, SurfaceFlinger.cpp) / Chromium 4e18c703f7cd950c890e14105da8eff42192af6a (architecture, DrawFn, AwContents, BrowserViewRenderer, HardwareRenderer, OverlayProcessorWebView, ImageReaderGLOwner) / AndroidX WebKit 1.16.0 docs / android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, sync_file.c)"
 confidence: high
 idle_audit_result: pass-metadata-refresh
 idle_audit_notes: "2026-07-27 idle audit: 未发现未来版本越界、验证占位残留或需降级的问题；补齐 last_verified/confidence 与本轮抽检记录。"
 ---
 
-# WebView 渲染管线
+# 18.13 Android 17 WebView 渲染管线
 
 <!-- outline-start -->
 
-**锚点(必须覆盖):**
-- WebView 的进程模型:Browser Code / GPU Services / Renderer 进程
-- 三层边界:官方 Android System WebView provider 内部路径 / 宿主全屏托管分支 / 第三方 SDK 扩展路径
-- 官方 provider 内部两条常见路径:GL Functor / SurfaceControl 独立子 Surface
+**锚点（必须覆盖）：**
+
+- WebView 的进程模型：Browser Code / GPU Services / Renderer 进程
+- 三层边界：官方 Android System WebView provider 内部路径 / 宿主全屏托管分支 / 第三方 SDK 扩展路径
+- 官方 provider 内部两条常见路径：GL Functor / SurfaceControl 独立子 Surface
 - 宿主全屏 custom view 与第三方 Texture-like 实现的 producer / consumer 关系
 - 常见现场对比表
 - 如何判断当前 WebView 走哪条路径
 
-**扩展(可选深入):**
+**扩展（可选深入）：**
+
 - WebViewFactory 初始化与 Chromium 内核加载
-- Hardware Draw Functor API(Android 10+)
+- Hardware Draw Functor API（Android 10+）
 - 国内 X5/UC 内核的特殊实现
 
 <!-- outline-end -->
@@ -95,7 +194,7 @@ WebView 同时跨过 Chromium 与 Android 两套渲染系统。网页侧负责 J
 WebView 现场常被混在一起的内容有三类。
 
 | 边界 | 谁负责 | 常见形态 | 不能直接推出什么 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 官方 Android System WebView provider 内部 | framework WebView、可更新 provider、Chromium renderer / GPU service、HWUI | 普通页面经 functor / DrawFn 合入宿主窗口；合格的内容候选可走 SurfaceControl overlay | 看到 WebView 就等于存在独立 SF layer |
 | 宿主全屏托管 | `WebChromeClient.onShowCustomView()` 与宿主全屏容器 | 页面进入 fullscreen mode 后，WebView 把一个 `View` 交给宿主 | 回调给出的 `View` 必然是 `SurfaceView` 或 `TextureView` |
 | 第三方 SDK 扩展 | X5、UC、定制 Chromium 或厂商包装层 | 可能使用 Texture-like、独立 Surface、ImageReader 或私有桥接 | 可以直接套用 Android System WebView 的内部类名与 trace slice |
@@ -277,7 +376,7 @@ provider 请求父节点时，HWUI 创建名为 `Webview Overlay SurfaceControl`
 网页主体和 overlay 的 producer / consumer 关系如下：
 
 | 内容 | Producer | 进入 Android 显示系统的方式 | Consumer |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 普通网页主体 | renderer + Chromium compositor / GPU service | functor 画入 host App Window buffer | SurfaceFlinger 消费宿主窗口 layer |
 | 提升的媒体或受保护候选 | decoder / GPU service / provider | AHardwareBuffer + acquire fence 更新到 SurfaceControl child layer | SurfaceFlinger / HWC 消费独立 layer |
 | overlay 几何状态 | 宿主 HWUI draw + provider | crop、position、visibility 等 transaction | SurfaceFlinger transaction state |
@@ -285,6 +384,12 @@ provider 请求父节点时，HWUI 创建名为 `Webview Overlay SurfaceControl`
 buffer ready 与几何 transaction ready 是两个条件。媒体 buffer 晚到可能沿用旧内容；宿主滚动或变换事务晚到会造成位置不同步；HWC plane、裁剪、alpha、HDR / SDR 或保护要求变化，还可能让 layer 在 DEVICE 与 CLIENT composition 之间切换。
 
 Android 10—11 的平台 tag 已有现代 WebView functor 接口，但还没有 `WebViewOverlayData` 中的 SurfaceControl / transaction 回调；[`android-12.0.0_r1` 的 `WebViewFunctor.h`](https://android.googlesource.com/platform/frameworks/base/+/android-12.0.0_r1/libs/hwui/private/hwui/WebViewFunctor.h) 已包含 `getSurfaceControl()` 与 `mergeTransaction()`，Android 17 又保留了这组接口并增加 rendering-thread reporting。某台设备是否命中，仍需按 Android tag、provider revision、运行时开关与页面候选共同判断。不要只看 API level 得出“整页独立出图”的结论。
+
+## ImageReader：中间 buffer 不等于最终 layer
+
+标准 Chromium 也可能出现 ImageReader，不能把它自动归到第三方 SDK。固定 revision 的 `ImageReaderGLOwner` 通过 `AImageReader_newWithUsage()` 创建 private-format reader，按 TextureOwner mode 请求 GPU sampling、protected content 或 composer overlay usage；新 image 到达后，它异步 acquire image 与 fence，并可取出 `AHardwareBuffer` 供后续纹理采样或 overlay 使用。
+
+这条证据只能说明中间 image 的 producer/consumer 关系，不能单独确定最终显示对象。ImageReader image 可能被 Chromium/HWUI 再采样进宿主 App Window，也可能服务 SurfaceControl overlay。排障时应同时核对 `ImageReaderGLOwner` mode、usage、acquire fence、buffer owner、后续 DrawFn 和 SurfaceFlinger layer；若 acquire 迟到或 reader 的可用 image 数不足，还要检查 producer backpressure 与旧帧复用。
 
 ## 宿主全屏托管：`onShowCustomView()`
 
@@ -353,6 +458,8 @@ X5、UC 或定制 Chromium 可以在包装层中采用 `TextureView` / `SurfaceT
 - 宿主 RenderThread 执行 `updateTexImage()` 或等价的纹理获取；
 - SurfaceFlinger layer tree 仍以宿主 App Window 为主体，没有与该内容对应的独立 Surface layer。
 
+确认 TextureView-like 之后，Android 17 的宿主消费段还要继续追 `SurfaceTexture.OnFrameAvailableListener`、`TextureView.updateLayer()` / `invalidate()`、RenderThread 的 `DeferredLayerUpdater::apply()` 与 `ASurfaceTexture_dequeueBuffer()`。provider 或第三方 GPU 线程完成 `swapBuffers` 只说明 producer 已提交；宿主是否及时申请 vsync、获取新 image 并画入 App Window，要看这条 consumer 链。完整的平台实现见 [18.7 TextureView 宿主合成链路](07-textureview.md)。
+
 这条路径的 producer 是第三方内核或其 GPU 线程，consumer 是宿主 HWUI。它会增加一次纹理采样以及相应同步，但开销大小必须用该 SDK 版本、页面负载和设备 trace 测量，不能预设为更快或更慢。
 
 ## 从网页更新到显示的一帧
@@ -419,7 +526,7 @@ adb shell dumpsys SurfaceFlinger --list
 ### 3. 在 Perfetto 中连接五段证据
 
 | 观察点 | 说明 | 下一步 |
-|---|---|---|
+| --- | --- | --- |
 | renderer main 长时间 Running | JavaScript、style、layout、paint 可能超预算 | 用 DevTools CPU profile / Performance panel 补函数与 DOM 证据 |
 | raster worker、image decode 或 GPU service 晚 | tile、解码、资源准备或 GPU queue 可能迟到 | 查 worker queue、Skia / decode、GPU fence 与内存压力 |
 | host UI thread 很晚才 traversal | invalidate、主线程调度或其他 View 工作阻塞 | 对齐 `Choreographer#doFrame`、ViewRoot 与 Runnable latency |
@@ -455,7 +562,7 @@ adb shell dumpsys SurfaceFlinger --list
 ## 常见现场对比表
 
 | 现场 | 所属边界 | Producer | Consumer / 最终落点 | 宿主 RenderThread | 关键证据 |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | 标准 GL / Vulkan functor | 官方 provider 主体路径 | renderer + Chromium compositor / GPU service | HWUI host target → App Window → SF | 执行 DrawFn，参与主体合成 | provider revision + DrawFn slice + 只有 host layer |
 | SurfaceControl overlay 候选 | 官方 provider 可选路径 | decoder、GPU service 或 provider | child SurfaceControl → SF / HWC | 主体仍走 DrawFn，并协调 overlay transaction | overlay-enabled draw + child layer / buffer + transaction |
 | 软件 fallback | 官方 provider fallback | Chromium software compositor / CPU raster | host Canvas 或 software layer → App Window | 不执行硬件 DrawFn，是否参与取决于宿主形态 | software draw stack + Canvas 状态 + DrawFn 缺失 |
@@ -465,7 +572,7 @@ adb shell dumpsys SurfaceFlinger --list
 ## 常见误判
 
 | 误判 | 修正方法 |
-|---|---|
+| --- | --- |
 | Android 17 唯一确定 WebView 源码 | 同时记录 provider 包版本并匹配 Chromium revision |
 | Chromium 有 compositor，所以网页一定是独立 SF layer | 看 host DrawFn 与 SurfaceFlinger layer tree；普通主体通常合入 App Window |
 | `Webview Overlay SurfaceControl` 代表整页 WebView | 检查其 child、buffer owner 与 candidate；它是 overlay 容器 |
@@ -499,6 +606,7 @@ kernel 统一到 `android17-6.18-2026-06_r6` 后，host window 与媒体 overlay
 - [`WebViewUpdateServiceImpl2.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/webkit/WebViewUpdateServiceImpl2.java)：系统怎样选择、准备与切换 provider；
 - [`WebChromeClient.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/webkit/WebChromeClient.java)、[`WebViewClient.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/webkit/WebViewClient.java)：全屏托管与 renderer 消失后的宿主责任；
 - [`WebViewFunctor.h`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/private/hwui/WebViewFunctor.h)、[`WebViewFunctorManager.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/WebViewFunctorManager.cpp)：GL / Vulkan functor、overlay gate、SurfaceControl 与 transaction；
+- [`TextureView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java)、[`DeferredLayerUpdater.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp)：TextureView-like 分支的 frame available、invalidation 与 image acquire；
 - [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)、[`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp)、[`HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)：host / overlay layer 的 latch、composition 与 present。
 
 ### WebView provider
@@ -509,12 +617,14 @@ Chromium 是可更新组件。下面固定在本文复核时的上游 revision `
 - [`aw_contents.cc`](https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/browser/aw_contents.cc)、[`browser_view_renderer.cc`](https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/browser/gfx/browser_view_renderer.cc)：硬件 / 软件 draw 分流与 synchronous compositor；
 - [`hardware_renderer.cc`](https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/browser/gfx/hardware_renderer.cc)：child frame 与 Viz 合成；
 - [`overlay_processor_webview.cc`](https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/android_webview/browser/gfx/overlay_processor_webview.cc)：WebView overlay candidate 与 SurfaceControl 更新。
+- [`image_reader_gl_owner.cc`](https://chromium.googlesource.com/chromium/src/+/4e18c703f7cd950c890e14105da8eff42192af6a/gpu/command_buffer/service/image_reader_gl_owner.cc)：ImageReader TextureOwner、AHardwareBuffer、acquire/release fence 与 backpressure。
 
 公开 API 与生命周期要求可交叉核对 [WebView 开发指南](https://developer.android.com/develop/ui/views/layout/webapps/webview)、[WebView 对象管理](https://developer.android.com/develop/ui/views/layout/webapps/managing-webview) 和 [WebView 启动优化](https://developer.android.com/develop/ui/views/layout/webapps/optimize-webview-startup)。
 
 ### Kernel 6.18
 
 - [`dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)：dma-buf 对象、fd 与 attachment 基础；
+- [`dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)：fence signal、callback 与 wait；
 - [`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：以 fd 携带 fence 的 sync_file；
 - [Linux 6.18 dma-buf 文档](https://docs.kernel.org/6.18/driver-api/dma-buf.html)：import / export、attachment、CPU access 与同步约束。
 
