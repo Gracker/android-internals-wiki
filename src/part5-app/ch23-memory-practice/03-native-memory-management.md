@@ -80,11 +80,15 @@ last_deepseek_cn_review_at: 2026-06-11
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
+> **版本基线**
+>
+> 本章的平台源码统一以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点。涉及 `/proc`、VMA 与内核统计接口时，以 `android17-6.18-2026-06_r6` 为内核侧基线。旧版本只用于说明能力的引入时间，不作为当前实现依据。
+
 ## 为什么要处理 Native 内存
 
-Java Heap 没有持续增长，不代表进程内存安全。使用 JNI、音视频 SDK、地图 SDK、游戏引擎、图片库、加密库的应用，Native Heap、匿名 `mmap`、共享库映射和图形缓冲都可能把 PSS 推高，进而触发后台保活变差、前台卡顿、低内存杀进程，甚至 native crash。
+Java Heap 没有持续增长，不代表进程的内存占用稳定。使用 JNI、音视频 SDK、地图 SDK、游戏引擎、图片库或加密库的应用，Native Heap、匿名 `mmap`、共享库映射和图形缓冲都可能让 PSS 上升。后果可能是后台进程更早被回收、前台发生内存压力或 native crash。
 
-本节面向应用侧排查：先把 Native 内存拆成能观察的几类，再选择 heapprofd、malloc_debug、ASan、HWASan、GWP-ASan、MTE 等工具定位问题。底层内存模型详见 4.1、4.2 节；工具细节详见 14.3 节。
+本节面向应用侧排查：先确认增长属于哪一种系统统计，再按问题类型选择 heapprofd、`libmemunreachable`、malloc_debug、ASan、HWASan、GWP-ASan 或 MTE。容量问题与非法访问需要不同证据：前者关注分配栈和存活量，后者关注越界、释放后访问等错误现场。底层内存模型详见 4.1、4.2 节，工具细节详见 14.3 节。
 
 ## Native 内存由哪些部分组成
 
@@ -92,39 +96,55 @@ Java Heap 没有持续增长，不代表进程内存安全。使用 JNI、音视
 
 - **Native Heap**：C/C++ 代码通过 `malloc`、`calloc`、`realloc`、`new` 申请的堆内存，常见来源是 JNI 层业务代码、第三方 so、音视频编解码、图片库和加密库。
 - **匿名 `mmap` 区域**：代码直接用 `mmap` 申请的私有匿名映射，或者 allocator 内部向内核申请的大块 arena。`/proc/<pid>/smaps` 中可能显示为 `[anon:libc_malloc]`、`[anon:scudo:*]` 或业务自定义名称。
-- **SO / ELF 映射**：`.so` 文件被动态链接器映射到进程地址空间后，会产生代码段、只读数据、可写数据、重定位相关页面。共享只读页面通常按 PSS 分摊，可写脏页由当前进程承担。
-- **图形与硬件缓冲**：Bitmap 像素、OpenGL/Vulkan 纹理、Surface buffer、`dma-buf` 等可能计入 Native Heap、Graphics、GL 或 memtrack 相关分类。图片内存详见 23.2 节。
+- **SO / ELF 映射**：`.so` 文件被动态链接器映射到进程地址空间后，会产生代码段、只读数据、可写数据、重定位相关页面。共享只读页面通常按 PSS 分摊，可写脏页计入当前进程。
+- **图形与硬件缓冲**：Bitmap 像素、OpenGL/Vulkan 纹理、Surface buffer、`dma-buf` 等资源可能出现在 Native Heap、Graphics、GL 或 memtrack 相关统计中。统计位置受分配方式、驱动和厂商实现影响，不能只根据一个 VMA 名称判断资源类型。图片内存详见 23.2 节。
 
-AOSP 的 `android_os_Debug.cpp` 在汇总 `dumpsys meminfo` 时会通过 libmeminfo 读取 `/proc/<pid>/smaps`；VMA 名称分类规则在 `androidprocheaps.cpp`，例如 `[heap]`、`[anon:libc_malloc]`、`[anon:scudo:*]`、`[anon:GWP-ASan*]` 会进入 Native Heap 相关统计，`.so`、`.jar`、`.apk` 等文件映射进入 code 相关统计。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/jni/android_os_Debug.cpp; system/memory/libmeminfo/androidprocheaps.cpp]
+Android 17 中，`android_os_Debug.cpp` 的 `android_os_Debug_getDirtyPagesPid()` 调用 libmeminfo 的 `ExtractAndroidHeapStats()` 取得按 VMA 分类的统计，再把 memtrack 返回的图形数据计入相应字段。VMA 分类规则位于 `androidprocheaps.cpp`：`[heap]`、`[anon:libc_malloc]`、`[anon:scudo:]` 和 `[anon:GWP-ASan]` 等名称归入 Native Heap，`.so` 归入 SO，`.jar`、`.apk` 等归入对应的代码分类。Graphics 数值还可能来自 memtrack，不能推断所有 `dma-buf` 都由 `androidprocheaps.cpp` 按名称归类。
 
-这四类的处理动作不同：Native Heap 用分配栈定位；SO 映射看装载数量、重定位和脏页；图形缓冲看图像解码和渲染资源释放；匿名 `mmap` 要追调用方或自定义 VMA 名称。把它们混在一起，只会得到“Native 内存很大”这种不可执行的结论。
+这里还有一个容易混淆的读取路径。`androidprocheaps.cpp` 必须扫描详细的 `/proc/<pid>/smaps`，因为分类依赖每个 VMA 的名字。`ProcMemInfo::SmapsOrRollup()` 则服务于 PSS、RSS 等聚合值；内核提供 `smaps_rollup` 时可以读取汇总文件，否则回到 `smaps`。`smaps_rollup` 没有逐 VMA 名称，不能替代前一条分类路径。
+
+[源码锚点: AOSP `android-17.0.0_r1`, `frameworks/base/core/jni/android_os_Debug.cpp`, `system/memory/libmeminfo/androidprocheaps.cpp`, `system/memory/libmeminfo/procmeminfo.cpp`]
+
+四类内存对应不同的诊断动作：Native Heap 看分配栈；SO 映射看装载范围、重定位和脏页；图形缓冲看图像、渲染资源与 memtrack；匿名 `mmap` 需要追踪调用方或业务设置的 VMA 名称。把它们合成一个“Native 内存”数字，会丢失定位所需的信息。
 
 ## 排查入口：先看趋势，再抓调用栈
 
 Native 内存问题分两种：一次性峰值过高，或者存活内存随操作次数持续增长。前者多见于大图、模型、音视频缓冲和一次性解压；后者更像泄漏、缓存失控或对象池没有回收。
 
-线下排查建议从三组数据开始：
+下面三组命令用于建立第一次快照。`dumpsys meminfo` 适合先看系统分类；读取 `smaps` 适合检查 VMA，但在量产设备上可能受到 UID、SELinux 和 `/proc` 访问限制，需要 root、userdebug 或目标进程具备相应调试条件。
 
 ```bash
 # 1. 看系统口径的进程内存分类
 adb shell dumpsys meminfo <package_or_pid>
 
-# 2. 看 VMA 级别明细，适合确认 [anon:*]、.so、ashmem、dmabuf 等来源
+# 2. 在权限允许时保存 VMA 级明细
 adb shell cat /proc/<pid>/smaps > smaps.txt
 
-# 3. 看 Native Heap 运行时统计，适合快速判断 malloc 分配量是否异常
+# 3. 从系统分类中单独观察 Native Heap
 adb shell dumpsys meminfo <pid> | grep -A 20 "Native Heap"
 ```
 
-这三条命令只回答“哪一类在涨”。如果 Native Heap 增长明显，下一步采 heapprofd；如果 Graphics / GL / dma-buf 增长，回到图片和渲染资源排查路径；如果 `.so` 私有脏页异常，检查动态库装载、初始化写入和符号/重定位成本。
+这些快照只能说明“哪一类发生变化”，不能直接证明泄漏。应在相同设备、相同构建和相同操作序列下，对比进入场景前、场景稳定后、退出并等待回收后的数据。如果 Native Heap 持续增长，再采 heapprofd；如果 Graphics、GL 或 memtrack 相关值增长，转到图片和渲染资源路径；如果 `.so` 的私有脏页异常，再检查动态库装载、初始化写入和重定位。
 
 [已验证: 官方文档, https://source.android.com/docs/core/tests/debug/native-memory]
 
 ## heapprofd：默认首选的 Native Heap 分配画像
 
-heapprofd 适合回答两个问题：哪条调用栈累计分配最多，哪条调用栈在快照时仍有大量存活分配。它是 Perfetto 的 native heap profiler，从 Android 10 开始可用，常用在开发包、profileable release 包、userdebug/eng 设备上。
+heapprofd 适合回答两个问题：哪条调用栈的累计分配量高，哪条调用栈在快照时仍有较多存活分配。它是 Perfetto 的 native heap profiler，从 Android 10 开始可用。user build 上只能分析满足系统权限规则的 debuggable 或 profileable 应用；系统进程和更深的诊断通常需要 userdebug/eng 环境。
 
-这段配置用于采集指定进程的 Native Heap 分配，重点看 `process_cmdline` 和 `sampling_interval_bytes`：
+### 中央服务默认禁用，由采集请求按需启动
+
+Android 17 的 `heapprofd.rc` 把 `heapprofd` 服务声明为 `disabled`。`persist.heapprofd.enable=1` 或 `traced.lazy.heapprofd=1` 时 init 才启动服务；两个属性都清空后停止。因此，heapprofd 不是从开机起持续运行的常驻采集器。
+
+服务启动后，`heapprofd.cc::StartCentralHeapprofd()` 从 init 传入的 socket 取得监听端，建立 `HeapprofdProducer`，接收目标进程中 profiler client 的连接。应用进程侧不是依赖 `LD_PRELOAD`：`malloc_interceptor_bionic_hooks.cc` 通过 Bionic 的 `MallocDispatch` 接管 `malloc`、`free`、`calloc`、`realloc` 等入口，并通过 `AHeapProfile_registerHeap` 注册要分析的 heap。
+
+这套接口属于 heapprofd 与系统 allocator 的内部协作面，不应当作为应用 SDK 的公共 malloc-hook API。Android 17 源码里的 `heapprofd_get_malloc_leak_info` 和 `heapprofd_write_malloc_leak_info` 是显式的空实现，不能把它们解释为 LeakCanary 或其他 native 泄漏 SDK 的基础接口。
+
+[源码锚点: Perfetto `android-17.0.0_r1`, `heapprofd.rc`, `src/profiling/memory/heapprofd.cc`, `src/profiling/memory/malloc_interceptor_bionic_hooks.cc`]
+
+### 采集配置与采样语义
+
+这段配置演示如何采集一个指定进程。`size_kb` 和 `dump_interval_ms` 是诊断示例值，需要根据复现时长和设备负载调整；决定采样密度的是 `sampling_interval_bytes`。
 
 ```protobuf
 buffers: {
@@ -144,26 +164,49 @@ data_sources: {
 }
 ```
 
-采集后在 Perfetto UI 打开 trace，查看 Heap profile 火焰图。排查泄漏时看快照中的存活分配；排查抖动时看累计分配和分配频率。采样间隔越小，越容易捕获小对象，开销也更高。线上实验包不建议无差别开启，要按用户白名单、场景开关和采样窗口控制成本。
+Perfetto 官方文档把 `4096` 字节作为默认采样间隔。`Sampler::SampleSize()` 对小于间隔的分配使用按字节推进的概率采样，含义是长期期望每 N 字节产生一个样本；单次分配大于或等于间隔时绕过该概率路径，记录这次分配的原始大小。因而，不能用“采样覆盖率”直接换算某个对象被记录的固定次数，也不能脱离设备、调用栈展开成本和负载给出固定 CPU 百分比。
+
+采集后在 Perfetto UI 查看 Heap Profile。分析泄漏时，比较多个时间点仍然存活的分配及其调用栈；分析分配抖动时，观察累计分配量与分配频率。间隔越小，小分配的细节越多，事件量与运行开销也越高。应先在目标设备上测量开销，再决定复现窗口和采样间隔。
+
+[源码锚点: Perfetto `android-17.0.0_r1`, `src/profiling/memory/sampler.h`, `src/profiling/memory/sampler.cc`]
 
 [已验证: 官方文档, https://perfetto.dev/docs/data-sources/native-heap-profiler]
 
-## malloc_debug：本地复现时拿更完整的分配证据
+### Native Heap 与 Java HPROF 是两条独立路径
 
-`malloc_debug` 是 Bionic 提供的调试能力，能在分配前后加保护、记录 backtrace、导出 heap dump。它比 heapprofd 更偏调试，不适合普通线上包；在能复现的线下场景里，它能给出更细的分配记录。
+Android 17 的 Perfetto 源码为 native heapprofd 使用 `__SIGRTMIN + 4`，为 Java HPROF 使用 `__SIGRTMIN + 6`。Java HPROF producer 在发送信号前还会通过 `CanProfile()` 检查目标进程是否允许分析。两者是不同的数据源、信号与权限路径；某一种 dump 命令能运行，不能推出另一种 Perfetto 数据源也一定可用。
 
-这组命令展示的是调试思路：用 wrap 属性让目标应用冷启动时加载 malloc 调试配置，再复现操作并抓日志。具体选项要按 Android 版本核对 Bionic README。
+[源码锚点: Perfetto `android-17.0.0_r1`, `src/profiling/memory/heapprofd_producer.cc`, `src/profiling/memory/java_hprof_producer.cc`]
+
+## libmemunreachable 与 malloc_debug：本地复现时补充泄漏证据
+
+`libmemunreachable` 在请求发生时扫描 native allocator 中无法从可达根访问的分配块。默认模式不会为每次分配记录回溯，因此运行期开销低，但报告只能提供地址、大小上界和部分内容。启用 malloc_debug backtrace 后，报告可以带分配栈，代价是明显的运行时开销。
+
+Android 17 固定标签下，面向应用的可验证流程位于独立仓库 `platform/system/memory/libmemunreachable`。下面的命令用于 userdebug 设备上的单个应用；`<process>` 要替换为进程名，设置属性后必须终止并重新启动进程。
 
 ```bash
-adb shell setprop wrap.com.example.app '"LIBC_DEBUG_MALLOC_OPTIONS=backtrace logwrapper"'
-adb shell am force-stop com.example.app
-adb shell monkey -p com.example.app 1
-adb logcat | grep -i malloc
+adb root
+adb shell setprop libc.debug.malloc.program app_process
+adb shell setprop wrap.<process> "\$\@"
+adb shell setprop libc.debug.malloc.options backtrace=4
+
+# 重启目标进程并复现问题后执行
+adb shell dumpsys -t 600 meminfo --unreachable <process>
 ```
 
-`malloc_debug` 的限制来自系统属性、进程重启和运行开销，部分能力还需要 root、userdebug 或可调试设备。工程上常把它放在“本地复现后进一步确认”的位置，而不是第一入口。
+`--unreachable` 报告的是扫描时无法到达的分配块，不等于语言层意义上的确定泄漏。保守扫描可能把某些整数误认成指针，第三方 allocator 或自管理内存也可能不在它的观察范围内。应结合可重复的增长趋势、分配栈和资源生命周期判断。
 
-[已验证: AOSP android-16.0.0_r1, bionic/libc/malloc_debug/README.md]
+完成诊断后要清除三个属性并重启进程，避免后续测试继续承受 backtrace 开销：
+
+```bash
+adb shell setprop libc.debug.malloc.options "''"
+adb shell setprop libc.debug.malloc.program "''"
+adb shell setprop wrap.<process> "''"
+```
+
+这些清理命令只撤销本次 malloc_debug 配置，不会修改应用数据。量产 user 设备通常不具备执行该流程所需的 root、属性和 SELinux 权限，因此它应位于可控环境的复现阶段。
+
+[已验证: AOSP `android-17.0.0_r1`, `platform/system/memory/libmemunreachable/README.md`]
 
 ## ASan、HWASan、GWP-ASan、MTE 怎么选
 
@@ -172,7 +215,7 @@ Native 内存问题不只有泄漏。越界写、use-after-free、double free �
 | 工具 | 适合场景 | 代价与边界 |
 | --- | --- | --- |
 | ASan | 开发阶段发现越界访问、use-after-free | 需要重新编译插桩，内存和运行时开销高，不适合常规 release 包 |
-| HWASan | 64 位 Arm 开发包上的内存错误检测，速度和定位能力优于传统 ASan 场景 | 需要支持的系统镜像和编译配置，主要用于测试和预发 |
+| HWASan | 64 位 Arm 测试环境中的内存错误检测 | 需要支持的系统镜像和编译配置，主要用于测试和预发 |
 | GWP-ASan | 在较低开销下抽样捕获 native heap use-after-free、heap-buffer-overflow | 抽样检测，不保证每次问题都命中 |
 | MTE | Arm Memory Tagging Extension，硬件标签检测越界和释放后访问 | 依赖硬件、系统版本和 manifest / 系统配置，模式不同会影响性能与报错时机 |
 
@@ -192,16 +235,16 @@ SO 库相关内存要拆成装载成本、运行时分配和可写脏页。三�
 
 可执行动作：
 
-- 合并小型 native 模块，减少启动阶段 `dlopen` 数量；
+- 只在测量表明 `dlopen` 数量或重复元数据造成显著成本时，评估合并小型 native 模块；合并后若低频代码被一并加载，也可能增加常驻映射；
 - 把低频功能的 so 延后到功能入口加载；
-- 清理未使用 ABI、未使用架构和重复打包的 so；
-- release 包保留必要符号文件到构建产物，App 内不携带调试符号。
+- 清理未使用 ABI、未使用架构和重复打包的 so，这主要减少安装包与安装占用；只有相关文件原本会被映射时，才会影响运行时 RSS/PSS；
+- 把 release 符号文件作为独立构建产物保存，供 tombstone、Perfetto 和地址回溯使用；从 App 内移除调试段主要减少文件体积，不能直接视为等量的运行时内存收益。
 
 ### 运行时分配：把大块分配变成可解释事件
 
 第三方 so 分配异常时，单靠 `dumpsys meminfo` 只能看到 Native Heap 变大。heapprofd 或 malloc hook 能把分配归到调用栈；如果符号文件保留完整，还能还原到函数名和源码行。
 
-工程上建议给 native 大对象建立统一分配入口，例如模型缓冲、音视频 frame buffer、解码输出池、压缩临时缓冲都经过封装层。封装层记录大小、用途、生命周期和调用栈摘要，线上只上报聚合数据；线下再打开 heapprofd 或 malloc_debug 做细查。
+工程上可以为可控的 native 大对象建立统一分配入口，例如模型缓冲、音视频 frame buffer、解码输出池和压缩临时缓冲。封装层记录大小、用途、生命周期与调用位置，线上只上报有界的聚合数据；线下再使用 heapprofd 或 malloc_debug 取得完整分配栈。对于不可改动的第三方库，以 profiler 证据为准，避免仅凭库名归因。
 
 ### 可写脏页：少改共享映射，少做启动期全量初始化
 
@@ -216,24 +259,26 @@ SO 库相关内存要拆成装载成本、运行时分配和可写脏页。三�
 一套可控方案可以分三层：
 
 - **基础指标层**：定时采集 PSS、RSS、Native Heap Alloc、Graphics、GL、线程数、fd 数，并带上页面、业务场景、前后台状态、设备内存档位。采集频率按场景设定，避免常驻高频轮询。
-- **异常判定层**：同一用户同一会话内看增长斜率，例如进入页面前后、重复打开页面 N 次后、播放/拍摄/上传结束后。只用单点阈值容易误伤高内存设备或资源密集场景。
+- **异常判定层**：在同一会话内观察增长斜率，例如进入页面前后、按确定脚本重复操作后、播放或上传结束后。单点阈值容易把合理的高占用当成异常。
 - **诊断触发层**：命中灰度规则后，对少量 debug/profileable 包触发 heapprofd、系统 meminfo 快照或业务侧 native 分配摘要。普通 release 包只上报聚合指标和场景标签。
 
-指标上报要区分“占用高”和“泄漏”。缓存命中带来的短时 Native Heap 增长不一定是问题；退出场景、收到 `onTrimMemory()`、完成任务后仍不回落，才进入泄漏或缓存失控路径。
+指标上报要区分“占用高”和“泄漏”。缓存命中带来的短时 Native Heap 增长不一定是问题；退出场景、收到 `onTrimMemory()` 或完成任务后仍不回落，只能构成进一步分析的信号，还需要分配栈与对象生命周期证明原因。allocator 可能保留空闲页，PSS 没有立刻下降也不能单独证明对象仍然存活。
 
 ## 🔸 jemalloc / scudo allocator 差异
 
 Android 应用通常不直接选择系统 allocator，但 allocator 会影响碎片率、释放回收、错误检测和 `smaps` 命名。排查时关注现象，不要把问题写成“换 allocator 就能解决”。
 
-Scudo 的设计目标是在 native heap 层面更好地检测越界、use-after-free、double free 等内存错误，并在内存映射名称中留下 `[anon:scudo:*]` 一类线索。jemalloc 更强调通用分配性能和碎片控制。不同 Android 版本、设备配置和进程状态下，系统默认 allocator 与安全开关可能不同，应用侧结论要以设备上的 `smaps`、系统属性和 crash tombstone 为准。
+Android 官方 Scudo 文档说明：从 Android 11 开始，除低内存设备继续使用 jemalloc 外，Android 用 Scudo 处理 native 分配。Scudo 是带有安全加固与部分错误检测能力的 allocator，不是 ASan/HWASan 那样覆盖更广的 sanitizer，不能保证发现每次越界或 use-after-free。Android 17 的 Bionic 源码也把设备端 heap 实现指向 `external/scudo`。
 
-[已验证: 官方文档, https://source.android.com/devices/tech/debug/scudo]
-[待验证: 不同厂商 Android 14-16 user 版本默认 allocator 与安全开关清单]
+设备厂商仍可带来配置差异。判断某个 Android 17 进程使用何种 allocator 时，应检查该设备的构建、`smaps` 名称和 tombstone，而不是只依据系统版本。`[anon:scudo:*]` 可以作为 Scudo 映射的线索；它本身不能说明泄漏或内存破坏已经发生。
+
+[已验证: 官方文档, https://source.android.com/docs/security/test/scudo]
+[源码锚点: AOSP `android-17.0.0_r1`, `platform/bionic/README.md`, `platform/external/scudo`]
 
 ## 排查清单
 
 - `dumpsys meminfo` 中增长的是 Native Heap、Graphics/GL、Code，还是 Unknown？
-- 同一操作重复 5-10 次后，退出场景是否回落？
+- 使用确定的操作脚本重复场景后，内存曲线是趋于平台、随次数增长，还是只出现一次峰值？
 - heapprofd 的存活分配火焰图中，最大路径是否来自业务 JNI、第三方 SDK、图片库或音视频库？
 - Native crash 是否带有 ASan、HWASan、GWP-ASan、MTE 相关标记？
 - 相关 so 是否有符号文件可用于地址还原？
@@ -243,53 +288,22 @@ Scudo 的设计目标是在 native heap 层面更好地检测越界、use-after-
 ## 参考资料
 
 - [结构参考: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md]
--
 - [已验证: 官方文档, Debug native memory use, https://source.android.com/docs/core/tests/debug/native-memory]
 - [已验证: 官方文档, Perfetto Native Heap Profiler, https://perfetto.dev/docs/data-sources/native-heap-profiler]
 - [已验证: 官方文档, Memory error debugging and mitigation, https://developer.android.com/ndk/guides/memory-debug]
 - [已验证: 官方文档, GWP-ASan, https://developer.android.com/ndk/guides/gwp-asan]
 - [已验证: 官方文档, Arm MTE, https://developer.android.com/ndk/guides/arm-mte]
-- [已验证: AOSP android-16.0.0_r1, bionic/libc/malloc_debug/README.md]
-- [已验证: AOSP android-16.0.0_r1, frameworks/base/core/jni/android_os_Debug.cpp]
-- [已验证: AOSP android-16.0.0_r1, system/memory/libmeminfo/androidprocheaps.cpp]
-
-
-<!-- AIW-源码调研-2026-06-15 -->
-
-## 工具实现层源码补充
-
-本章前文引用"工具细节详见 14.3 节"。在 14.3 节实体落盘之前，本节先把 `heapprofd` 与 `dumpsys meminfo` 的源码骨架落地，方便排查时直接定位文件而不是停留在概念。
-
-### heapprofd 是常驻中央守护进程（不是按需进程）
-
-**源码位置**：Perfetto `src/profiling/memory/main.cc`（21 行 wrapper）+ `heapprofd.cc::StartCentralHeapprofd()`（行 50-83）。
-
-入口是 init.rc 拉起的常驻守护进程，通过 `kHeapprofdSocketEnvVar` 环境变量继承 init 阶段传入的 unix socket fd，随后用 `base::UnixSocket::Listen()` 监听来自各 app 进程内嵌 client lib（`client_api_factory_android.cc::ConstructClient()`）的连接请求。守护进程注册 `SIGUSR1` handler（行 73-78），在 userdebug 设备上可以用 `kill -SIGUSR1 $(pidof heapprofd)` 触发 `producer.DumpAll()`，对所有活跃 data source 做全量 dump。[已验证: 一手, 本地 Perfetto main 分支, src/profiling/memory/heapprofd.cc 行 50-83]
-
-### native 分配拦截走 bionic MallocDispatch，不是 LD_PRELOAD
-
-**源码位置**：Perfetto `src/profiling/memory/malloc_interceptor_bionic_hooks.cc`。
-
-`heapprofd_initialize(const MallocDispatch*, bool*, const char*)`（行 142-149）接收 bionic 传入的 `MallocDispatch*`（Android 7.0 / API 24 起 bionic 提供的官方 hook 表），把 `heapprofd_malloc/free/calloc/realloc/memalign/aligned_alloc/malloc_usable_size` 等注册到 bionic dispatch 层。这套接口在 `heapprofd_client_api.map.txt` 中以 `HEAPPROFD_API_S` version script 暴露给 `systemapi`，核心入口 `AHeapProfile_registerHeap` 把 heap 挂到 libperfetto 的中央 bookkeeping；外部 module 拿不到 `AHeapProfile_initSession`（PRIVATE 段）。bionic 保证 `android_mallopt(M_RESET_HOOKS)` 和 `heapprofd_initialize` 互斥，所以"profile-on / profile-off"切换不会出现双 hook。[已验证: 一手, 本地 Perfetto main 分支, src/profiling/memory/malloc_interceptor_bionic_hooks.cc 行 76-156]
-
-`heapprofd_get_malloc_leak_info` / `heapprofd_malloc_backtrace(void*, frames[], count)` 是 LeakCanary、native leak SDK 的底层接口——遇到 native 泄漏要查"指针回溯栈"时，可以直接定位到这里。
-
-### Java HPROF 触发信号 SIGRTMIN+6，native heapprofd 触发信号 SIGRTMIN+4，两路独立
-
-**源码位置**：Perfetto `src/profiling/memory/java_hprof_producer.cc`（行 32）+ `heapprofd_producer.cc`（行 71）。
-
-`kJavaHeapprofdSignal = __SIGRTMIN + 6`、`kProfilingSignal = __SIGRTMIN + 4`，二者各自注册独立的 sigaction，互不冲突。Java HPROF 用 `sigqueue(pid, kJavaHeapprofdSignal, signal_value)` 投递，`signal_value.sival_int = tracing_session_id % INT32_MAX`，让 ART 端的 SIGRTMIN+6 handler 能识别归属会话。`JavaHprofProducer::DataSource::SendSignal()`（行 53-93）在发信号前还会先 `ReadStatus(pid)` + `GetUids()` + `CanProfile(target_installed_by)`，做 `android:profileable` / debuggable 检查——这是为什么生产构建下大部分 app 用 `am dumpheap` 仍然能拿到 Hprof，但 Perfetto HPROF data source 抓不到。[已验证: 一手, 本地 Perfetto main 分支, src/profiling/memory/java_hprof_producer.cc 行 30-100]
-
-### Poisson 采样（Chromium-style）
-
-**源码位置**：Perfetto `src/profiling/memory/sampler.h`（80+ 行）+ `sampler.cc`（28 行）。
-
-`Sampler::SampleSize(alloc_sz)` 用 `std::exponential_distribution<double> dist(sampling_rate_)` 抽取"下次采样间隔字节数"，分配按字节累减 `interval_to_next_sample_`，归零则累计 `num_samples++`。`alloc_sz >= sampling_interval` 时直接整笔采样，保证大对象不漏。算法来自 `go/chrome-shp`（Chromium Sampling Heap Profiler），与 Android Studio Profiler 的"按分配数采样"最大的差异：**采样以字节为单位，不是以分配为单位**。`sampling_interval = 4096` 字节时，每 4096 字节平均采样 1 次，单次 8 KB 分配有 50% 概率被采样到 2 次，1 MB 分配会被采样到 250 次左右。线上选 4096 字节间隔，覆盖率约 0.024%，开销 ~0.5% CPU；不建议 < 512 字节，CPU 开销 > 5%。[已验证: 一手, 本地 Perfetto main 分支, src/profiling/memory/sampler.h 行 30-80]
-
-### dumpsys meminfo 的 VMA 分类全部在 libmeminfo，不在 AMS
-
-`adb shell dumpsys meminfo` 的分类（Native Heap / Code / Stack / Graphics / Other）不是在 `ActivityManagerService` 里算的，而是 libmeminfo 的活。**源码位置**：AOSP `system/memory/libmeminfo/androidprocheaps.cpp`（VMA 名 → 分类）+ `system/memory/libmeminfo/procmeminfo.cpp`（`SmapsOrRollup()` 入口，kernel 4.14+ 走 `smaps_rollup`，否则逐 VMA 读 smaps fallback）+ `frameworks/base/core/jni/android_os_Debug.cpp`（JNI 把分类结果塞进 `Debug.MemoryInfo` Parcelable）+ `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java::dumpMemInfo()`（把 Parcelable 序列化成 dumpsys 文本）。
-
-排查 smaps 看到 `[anon:scudo:*]` / `[anon:libc_malloc]` / `[anon:GWP-ASan*]` 等 VMA 名时，直接对应到 libmeminfo 分类即可。kernel 5.10+ 会把 dma-buf 显式标记成 `[anon:dmabuf*]`，归到 Graphics 分类——这是 23.2 节 DMA-BUF 在 meminfo 中可见的前提。
-
-[调研来源: DeepResearch/2026-06-15-memory-analysis-tools-source-code-stack.md §1-§5]
+- [已验证: 官方文档, Scudo, https://source.android.com/docs/security/test/scudo]
+- [已验证: AOSP `android-17.0.0_r1`, libmemunreachable README, https://android.googlesource.com/platform/system/memory/libmemunreachable/+/refs/tags/android-17.0.0_r1/README.md]
+- [已验证: AOSP `android-17.0.0_r1`, android_os_Debug.cpp, https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_os_Debug.cpp]
+- [已验证: AOSP `android-17.0.0_r1`, androidprocheaps.cpp, https://android.googlesource.com/platform/system/memory/libmeminfo/+/android-17.0.0_r1/androidprocheaps.cpp]
+- [已验证: AOSP `android-17.0.0_r1`, procmeminfo.cpp, https://android.googlesource.com/platform/system/memory/libmeminfo/+/android-17.0.0_r1/procmeminfo.cpp]
+- [已验证: AOSP `android-17.0.0_r1`, Bionic README, https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/README.md]
+- [已验证: Perfetto `android-17.0.0_r1`, heapprofd.rc, https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/heapprofd.rc]
+- [已验证: Perfetto `android-17.0.0_r1`, heapprofd.cc, https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/heapprofd.cc]
+- [已验证: Perfetto `android-17.0.0_r1`, malloc_interceptor_bionic_hooks.cc, https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/malloc_interceptor_bionic_hooks.cc]
+- [已验证: Perfetto `android-17.0.0_r1`, heapprofd_producer.cc, https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/heapprofd_producer.cc]
+- [已验证: Perfetto `android-17.0.0_r1`, java_hprof_producer.cc, https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/java_hprof_producer.cc]
+- [已验证: Perfetto `android-17.0.0_r1`, sampler.h, https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/sampler.h]
+- [已验证: Perfetto `android-17.0.0_r1`, sampler.cc, https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/sampler.cc]
+- [调研来源: DeepResearch/2026-06-15-memory-analysis-tools-source-code-stack.md §1-§5；已按 Android 17 固定标签复核后改写]
