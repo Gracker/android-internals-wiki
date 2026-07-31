@@ -349,29 +349,89 @@ AndroidJankCujMetric proto  (android/android_jank_cuj.sql)
 
 <!-- outline-end -->
 
-Perfetto v54 同时改进了三处互相配合的能力：UI 的 DataGrid 增加 pivot 和筛选功能，SQL 标准库补充 relevant threads jank CUJ 模块，CUJ metric 增加基于 counter 的 weighted jank。DataGrid 用来探索结果，标准库用来组织交互场景，weighted counter 用来区分同样掉帧数下的严重程度。
+本章的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，分析器锚点是该源码标签中的 Perfetto。上游 Perfetto v54.0 只作为版本演进参照：它引入了本章涉及的 DataGrid 改进、Jank CUJ 相关线程、基于计数器的加权卡顿、`heap_graph_stats` 和两种采样格式导入能力。Android 17 的 Perfetto 已包含 v54 之后的改动，不能用“Android 17 等于 v54.0”概括。
 
-一段滑动、展开、返回或者 Launcher 动画看上去只是“偶尔卡一下”，单看 FrameTimeline 能定位异常帧，却无法直接判断异常来自 App、SurfaceFlinger、GPU completion、HWC release，还是调度等待。CUJ 把交互切成窗口，DataGrid 负责筛选结果，SQL 固定判断口径。
+阅读这一章时要区分三层：
 
-## DataGrid 适合做什么
+- DataGrid 是结果表组件，提供筛选、排序、透视等交互；
+- Data Explorer 是节点式查询编辑器，负责组织结构化查询和中间结果；
+- PerfettoSQL 标准库与指标脚本定义字段语义，是可复核结论的依据。
 
-Perfetto v54 changelog 为 DataGrid table viewer 列出的改进包括 pivot table、glob / contains / not-contains filters 和 distinct value picker。同一版新增的 snap-to-boundaries 属于时间范围选择能力：拖动选择边界时会吸附临近 slice，按住 Alt 可暂时关闭。它不属于 DataGrid 的过滤功能。v54 官方公告还单独发布了 Data Explorer 节点式查询构建器；上游 v54.0 tag 中的 plugin id 是 `dev.perfetto.ExplorePage`。
+界面有助于缩小范围，SQL、trace 和源码决定证据是否成立。
 
-`android-17.0.0_r1` 是 v54 时代加后续 AOSP 改动的固定快照。该 tag 已把 plugin 改名为 `dev.perfetto.DataExplorer`，并包含 graph tab、导入/导出和 dashboard 相关实现。DataGrid 是结果表的交互层，Data Explorer 组织查询节点，分析口径仍由生成的 SQL 和标准库决定。详见本节末「节点式数据流补注」。
+## DataGrid 与 Data Explorer 的版本边界
 
-DataGrid 的价值在三类场景里最明显：
+Perfetto v54.0 的变更日志明确记录了 DataGrid 的三类改进：可配置透视表、`glob` / `contains` / `not-contains` 过滤器、过滤器的 distinct value picker（非重复值选择器）。同期的 snap-to-boundaries（吸附到边界）属于时间范围选择功能，与 DataGrid 过滤无关。[Perfetto v54.0 变更日志](https://github.com/google/perfetto/blob/v54.0/CHANGELOG)
 
-- 异常帧筛选：把 SQL 查出的帧结果按 `app_missed`、`sf_missed`、`jank_score`、`dur_ms` 排序，先找最重的一批帧。
-- CUJ 聚合：按 `cuj_name`、进程名、状态和 weighted jank 做透视，判断问题集中在哪个交互场景。
-- 线程证据核对：把 UI 线程、RenderThread、SurfaceFlinger main / RenderEngine、GPU completion 和 HWC release 的 slice 结果放在一起，检查同一 CUJ 里谁先超预算。
+v54.0 标签中已经存在节点式查询插件，插件标识为 `dev.perfetto.ExplorePage`。Android 17 固定标签把对应插件命名为 `dev.perfetto.DataExplorer`，并包含图编辑、导入导出、固定链接和仪表盘等实现。两个版本的 `QueryExecutionService` 都把节点图转成 `PerfettoSqlStructuredQuery`，通过 Trace Processor 的 `summarizer` 同步、查询和物化；DataGrid 再通过 `SQLDataSource` 读取物化表。[v54.0 ExplorePage 源码](https://github.com/google/perfetto/tree/v54.0/ui/src/plugins/dev.perfetto.ExplorePage) [Android 17 DataExplorer 源码](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/ui/src/plugins/dev.perfetto.DataExplorer/)
 
-这种工作流不替代手写 SQL。SQL 决定表里有哪些列、每列怎么计算、跨表 join 的时间窗怎么取；DataGrid 只负责把结果变成可观察的表格。团队里多人复盘同一类卡顿时，应该把 SQL 留在文档或仓库里，把 DataGrid 当成交互式验证入口。
+这套执行方式带来两个工程约束：
 
-## 从手写 SQL 到可视化分析管线
+- 节点图生成的 SQL、物化表名和界面状态可能随 UI 版本变化，报告要记录 Perfetto UI 与 Trace Processor 版本；
+- 可长期维护的资产应是输入 trace、明确的 SQL、字段单位和源码 tag，不能依赖某个自动生成的物化表名。
 
-PerfettoSQL 的稳定工作方式是先写出一个“窄表”：每一行对应一个可解释对象，例如一个 CUJ、一个 frame、一个 slice 或一个线程状态区间；每一列对应一个判断维度，例如是否 app missed、是否 SF missed、帧耗时、线程状态、blocked function、counter 值。窄表进入 DataGrid 后，排序、过滤、分组才有意义。
+DataGrid 最适合承载“窄表”：一行表示一个 CUJ、一帧或一段线程状态，一列表示一个可解释维度。把未经约束的宽表直接做透视，重复行和多层 FrameTimeline 数据很容易放大计数。
 
-下面这段查询用于把 Jank CUJ metric 初始化，并列出 counter 口径下 App / SF weighted jank 最重的 CUJ。重点看 `weighted_missed_app_frames_total`、`weighted_missed_sf_frames_total`、`missed_app_frames` 和 `missed_sf_frames` 四组字段：
+## Android 17 系统 Jank CUJ 的输入
+
+Android 17 的 Jank CUJ 指标汇合三组独立数据：
+
+| 输入 | 产生者 | 在指标中的用途 |
+|---|---|---|
+| `J<CUJ_NAME>`、`FT#beginVsync`、`FT#endVsync` 等标记 | `InteractionJankMonitor` / Java `FrameTracker` | 定义 CUJ 名称、状态、进程、UI 线程和 vsync 边界 |
+| `J<CUJ_NAME>#totalFrames`、`#weightedAppJank` 等计数器 | Java `FrameTracker.finishTraced()` | 提供 CUJ 结束后的聚合计数 |
+| expected / actual FrameTimeline、`jank_type`、`jank_score` | SurfaceFlinger FrameTimeline | 给出逐帧时序与 App / SF 分类 |
+
+HWUI 的 C++ `JankTracker` 是另一套帧统计实现。它计算 `kMissedDeadline`、`kSlowUI`、`kSlowSync`、`kSlowRT` 等本地帧指标，并通过 FrameMetrics 报告接口上报；它不会自动生成 `android_jank_cuj` 所需的 Java FrameTracker 计数器。两个类名相近，数据来源与职责不能混写。[Android 17 Java FrameTracker](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/jank/FrameTracker.java) [Android 17 HWUI JankTracker](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/JankTracker.cpp)
+
+`android.cujs.base` 对输入有明确限制：
+
+- CUJ 必须是 `process_track` 上持续时间大于零、名称匹配 `J<*>` 的 slice；
+- 进程名必须匹配 `com.android.*` 或 `com.google.android*`；
+- `FT#end`、`FT#cancel`、begin/end vsync、layer id 和 UI thread 标记用于修正状态与边界；
+- `android_jank_cuj.state` 的实际输出是 `completed`、`canceled` 或 `NULL`。
+
+第三方 App 即使写出同名标记，也不会自动进入这张表。该过滤是 Android 17 标准库源码行为，不是 DataGrid 的显示条件。[Android 17 `android.cujs.base`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/cujs/base.sql)
+
+## 建立可筛选的 CUJ 窄表
+
+这条查询使用 Android 17 公共标准库，列出系统 CUJ 及其 RenderThread。它适合作为 DataGrid 或 Data Explorer 的首张表。
+
+```sql
+INCLUDE PERFETTO MODULE android.cujs.base;
+INCLUDE PERFETTO MODULE android.cujs.threads;
+
+SELECT
+  c.cuj_id,
+  c.cuj_name,
+  c.process_name,
+  c.state,
+  c.ts,
+  c.dur,
+  c.begin_vsync,
+  c.end_vsync,
+  r.utid AS render_thread_utid,
+  r.track_id AS render_thread_track_id
+FROM android_jank_cuj AS c
+LEFT JOIN android_jank_cuj_render_thread AS r USING (cuj_id)
+ORDER BY c.ts;
+```
+
+`LEFT JOIN` 会保留没有 RenderThread 记录的 CUJ。缺失可能来自场景没有走对应 HWUI 路径、线程名不匹配、CUJ 被截断或采集数据不足，不能直接解释为 RenderThread 未参与。
+
+`android.cujs.threads` 的公共入口包括 `android_jank_cuj_app_thread(thread_name)` 和 `android_jank_cuj_render_thread`。GPU completion、HWC release、SurfaceFlinger main、SurfaceFlinger GPU completion 与 RenderEngine 等表由 `android/android_jank_cuj.sql` 的指标初始化过程继续创建。耐久脚本不要直接依赖 `_android_sf_process`、`_android_sf_thread()` 这类下划线开头的内部对象；它们没有公共兼容承诺。
+
+## 基于计数器的加权卡顿
+
+Android 17 的 Java `FrameTracker.finishTraced()` 在 CUJ 收尾后写出：
+
+- `totalFrames`、`missedFrames`、`missedAppFrames`、`missedSfFrames`；
+- `maxSuccessiveMissedFrames`、`maxFrameTimeMillis`、`totalAnimTime`；
+- `weightedAppJank`、`weightedSfJank`。
+
+计数器名称是 `J<CUJ_NAME>#COUNTER_NAME`。标准库先按 `upid` 和 CUJ 名找轨道，再由指标脚本把计数器匹配到对应 CUJ。相邻的同名 CUJ 会用下一个 CUJ 的结束时间限制搜索范围。`com.android.*` 与 Pixel Launcher 从 CUJ 结束时刻开始找计数器；其他已获标准库准入的 Google 进程允许向前回看 4 ms。这是 Android 17 SQL 中的兼容规则，不应复制成第三方 App 的通用时序约定。
+
+这条查询运行 Android 17 Jank CUJ 指标，并把加权速率换算成当前 CUJ 窗口内的加权丢帧总量。
 
 ```sql
 SELECT RUN_METRIC('android/android_jank_cuj.sql');
@@ -384,8 +444,10 @@ SELECT
   missed_frames,
   missed_app_frames,
   missed_sf_frames,
-  weighted_missed_app_frames * anim_duration_ms / 1000 AS weighted_missed_app_frames_total,
-  weighted_missed_sf_frames * anim_duration_ms / 1000 AS weighted_missed_sf_frames_total,
+  weighted_missed_app_frames * anim_duration_ms / 1000.0
+    AS weighted_missed_app_frames_total,
+  weighted_missed_sf_frames * anim_duration_ms / 1000.0
+    AS weighted_missed_sf_frames_total,
   frame_dur_max / 1e6 AS frame_dur_max_ms
 FROM android_jank_cuj_counter_metrics
 ORDER BY
@@ -394,188 +456,244 @@ ORDER BY
 LIMIT 20;
 ```
 
-这张表适合作为 DataGrid 的入口。`missed_frames` 回答“掉了多少帧”，`weighted_missed_app_frames_total` 和 `weighted_missed_sf_frames_total` 回答 counter 口径下 App / SF 两侧各自多重，`missed_app_frames` 和 `missed_sf_frames` 则把责任先粗分到 App 侧和 SurfaceFlinger 侧。后续再展开单帧和线程状态，不要在这一步直接下根因结论。
+`weighted_missed_app_frames` 与 `weighted_missed_sf_frames` 在表中是速率：原始整数计数器除以 `1000` 后按 jank/s 解释。乘以 `anim_duration_ms / 1000` 才得到该次 CUJ 的加权总量。两个 `*_total` 是查询别名，不是表字段。[Android 17 计数器指标](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/metrics/sql/android/jank/internal/counters.sql) [Android 17 指标输出](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/metrics/sql/android/android_jank_cuj.sql)
 
-两个 `*_total` 字段是查询临时计算的别名，不是 v54.0 表字段。表内的 `weighted_missed_app_frames` / `weighted_missed_sf_frames` 已由整数 counter 除以 1000，单位按源码注释为 jank/s；再乘 `anim_duration_ms / 1000` 才得到本次 CUJ 观测窗口内的 weighted missed frames。
+加权总量适合排序严重程度，不提供根因。一次高分可能来自一个很重的超时，也可能来自连续多帧延迟。还要展开 FrameTimeline、相关线程和调用栈。
 
-## Jank CUJ 标准库模块怎样组织线程
+指标同时提供计数器指标、trace 指标与时间线指标：
 
-CUJ 分析的难点在于把同一段交互里的相关线程找齐。Perfetto 的 jank CUJ 初始化脚本会创建主线程、RenderThread、GPU completion、HWC release、SurfaceFlinger main、SurfaceFlinger GPU completion、RenderEngine 等表。`android.cujs.threads` 标准库里也提供了 `android_jank_cuj_app_thread(thread_name)` 这类入口，用线程名把 CUJ 和进程内线程关联起来。
+- 计数器指标来自 Java FrameTracker 的事后汇总；
+- trace 指标来自 `android_jank_cuj_frame`，包含 DoFrame、DrawFrame、GPU fence 与 FrameTimeline 的组合；
+- 时间线指标直接按 `android_jank_cuj_frame_timeline` 聚合。
 
-下面这段查询用于检查每个 CUJ 是否能匹配到 RenderThread。读者只需要看 `cuj_id`、`cuj_name`、`utid` 和 `track_id`，后续追 slice 时会用到这些 ID：
+三者不一致时，要检查标记、计数器、FrameTimeline、回调漏采、trace 截断和分类版本，不能挑一个数覆盖其余数据。
 
-```sql
-INCLUDE PERFETTO MODULE android.cujs.base;
-INCLUDE PERFETTO MODULE android.cujs.threads;
+## 从异常 CUJ 展开到异常帧
 
-SELECT
-  c.cuj_id,
-  c.cuj_name,
-  c.process_name,
-  r.utid AS render_thread_utid,
-  r.track_id AS render_thread_track_id
-FROM android_jank_cuj AS c
-LEFT JOIN android_jank_cuj_render_thread AS r USING (cuj_id)
-ORDER BY c.ts;
-```
-
-`LEFT JOIN` 保留下没有 RenderThread 的 CUJ，避免把“采集缺口”误判成“线程没有参与”。如果某类 CUJ 总是缺 RenderThread，需要回到 trace config 和 App 场景确认：可能是场景本身不走 HWUI，也可能是 trace 缺少相关 track。
-
-## weighted jank counter 解决什么问题
-
-只看 dropped / missed frame 数量会漏掉严重程度。一个 CUJ 掉 3 帧，可能是 3 个轻微超时，也可能包含一次连续多帧延迟。v54 release notes 提到 counter-based weighted jank metrics；Perfetto v54.0 源码里的 `android_jank_cuj_counter_metrics` 会读取 FrameTracker 在 CUJ 结束后写出的 `weightedAppJank`、`weightedSfJank` counter，并除以 1000 转成每秒 jank 口径的浮点值。若要和最终 metric 的 counter metrics 对齐，还要乘以 `anim_duration_ms / 1000` 转成 App / SF 各自的 total weighted missed frames。`weightedJank` / `weighted_missed_frames` 总量字段出现在 main 分支后续版本，不能写成 v54.0 SQL 的固定字段。
-
-这类 counter 有两个使用边界：
-
-- 它依赖 CUJ 结束后的 counter 写入，短时间内同名 CUJ 连续出现时，脚本会用下一个同名 CUJ 的结束时间限制 counter 匹配范围。
-- 它适合给排序和告警做权重，不适合单独解释根因。根因仍要回到 FrameTimeline、slice 和 `thread_state`。
-
-Perfetto 的 metric 输出里同时保留 counter metrics、trace metrics 和 timeline metrics。counter metrics 来自 FrameTracker 的汇总，trace / timeline metrics 来自 trace 中逐帧数据。两者不一致时，先检查 trace 是否缺 frame 数据、CUJ marker 是否完整、采集窗口是否截断。
-
-## 与 FrameTimeline 和 thread_state 联合分析
-
-FrameTimeline 从 Android 12 开始提供 expected / actual timeline。App actual timeline 的结束时间取 `max(gpu time, post time)`，SurfaceFlinger actual timeline 覆盖 main thread 到屏幕更新的路径。Perfetto 文档把 jank 分成 AppDeadlineMissed、BufferStuffing、SurfaceFlingerCpuDeadlineMissed、SurfaceFlingerGpuDeadlineMissed、DisplayHAL、PredictionError 等类型。CUJ 级别分析应该顺着这些分类找证据。
-
-下面这段查询从 Jank CUJ metric 生成的帧表里抽出异常帧。重点看 `app_missed`、`sf_missed` 和 `jank_score`：
+以下查询列出指标判断为 App missed 或 SF missed 的帧，并保留回调漏采标记。
 
 ```sql
 SELECT RUN_METRIC('android/android_jank_cuj.sql');
 
 SELECT
-  cuj_id,
-  frame_number,
-  vsync,
-  dur / 1e6 AS dur_ms,
-  dur_expected / 1e6 AS expected_ms,
-  app_missed,
-  sf_missed,
-  jank_score,
-  sf_callback_missed,
-  hwui_callback_missed
-FROM android_jank_cuj_frame
-WHERE app_missed OR sf_missed
-ORDER BY jank_score DESC, dur DESC
+  c.cuj_name,
+  f.cuj_id,
+  f.frame_number,
+  f.vsync,
+  f.dur / 1e6 AS dur_ms,
+  f.dur_expected / 1e6 AS expected_ms,
+  f.app_missed,
+  f.sf_missed,
+  f.jank_score,
+  f.sf_callback_missed,
+  f.hwui_callback_missed
+FROM android_jank_cuj_frame AS f
+JOIN android_jank_cuj AS c USING (cuj_id)
+WHERE COALESCE(f.app_missed, 0) != 0
+   OR COALESCE(f.sf_missed, 0) != 0
+ORDER BY f.jank_score DESC, f.dur DESC
 LIMIT 50;
 ```
 
-这张表只给出“哪一帧异常”。下一步要回到异常帧对应的时间窗，查看 UI 线程和 RenderThread 的 `thread_state`：Running 时间长说明 CPU 执行占满预算；Runnable 时间长说明线程想跑但没拿到 CPU；uninterruptible sleep 且 `io_wait = 1` 更像 I/O 或内核等待；blocked function 非空时要继续查锁、futex 或 Binder 等待。
+`app_missed` 与 `sf_missed` 来自 FrameTimeline `jank_type` 的分类函数。它们标出责任侧线索，还没有定位到具体函数、锁、调度或 GPU 等待。`sf_callback_missed` / `hwui_callback_missed` 表示 trace 没捕获到预期回调，不能当成 SurfaceFlinger 或 HWUI 自身掉帧。
 
-## v54 schema 变更与旧 SQL 迁移
+Android 17 指标在 expected timeline 缺失时，会用 `16.6 ms` 作为 `dur_expected` 的兼容回退。这个值来自指标源码，不能据此声称设备当时运行在 60 Hz。报告中遇到该回退，应把 expected timeline 缺失列为采集限制。
 
-v54 的 Trace Processor 有几处会直接影响旧 SQL：
+FrameTimeline 的 `on_time_finish` 也不能单独充当全部 jank 判据。Buffer Stuffing 可能在 App 按期完成时仍被标为 jank；Prediction Error 也有独立语义。优先使用 `jank_type`、`jank_score`、expected/actual 时间线和标准库聚合结果。[Android 17 FrameTimeline 文档](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/docs/data-sources/frametimeline.md) [Android 17 jank type 分类](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/frames/jank_type.sql)
 
-| 变化 | 旧写法风险 | 迁移方向 |
-|---|---|---|
-| `slice.stack_id` / `slice.parent_stack_id` 被删除 | 旧 SQL 直接查字段会失败 | 使用 `slices.stack` 标准库里的 stack 关系函数 |
-| `machine_id` 变为非空 | 用 `NULL` 表示 host machine 的判断会失效 | host machine 按 0 处理，多机器 trace 显式过滤 `machine_id` |
-| `metadata` 支持 `trace_id` / `machine_id` | 旧 SQL 默认单 trace，合并 trace 时会混数据 | join 时带上 `trace_id` 和 `machine_id` |
-| `--add-sql-module` / `--override-sql-module` 移除 | 旧脚本启动 Trace Processor 会失败 | 改用 `--add-sql-package` / `--override-sql-package` |
+## 用 thread_state 判断时间花在哪里
 
-迁移旧 SQL 时，先把查询拆成三层：原始表读取、标准库派生表、业务筛选条件。字段改名或移除只应该影响前两层，业务筛选条件不要和 schema 细节混在一段 SQL 里。这样同一套卡顿规则从 v53 迁到 v54 时，只需要替换入口表或标准库模块。
+异常帧有了时间范围后，再把 UI 线程状态裁进帧窗口。这条查询按状态、I/O wait 与 blocked function 汇总相交时间。
 
-## heap_graph_stats 与 dmabuf 分析入口
+```sql
+SELECT RUN_METRIC('android/android_jank_cuj.sql');
 
-v54 还新增了 `heap_graph_stats` 模块，并加入 DMA-BUF 支持。源码里 `android_heap_graph_stats` 每行对应一次 ART heap graph sample，字段包括 Java heap 总大小、reachable heap、NativeAllocationRegistry、对象数量、OOM score、anon RSS + swap，以及 `dmabuf_rss_size`。
+WITH bad_frame AS (
+  SELECT
+    f.cuj_id,
+    f.frame_number,
+    f.ts,
+    f.dur,
+    mt.utid
+  FROM android_jank_cuj_frame AS f
+  JOIN android_jank_cuj_main_thread AS mt USING (cuj_id)
+  WHERE f.dur > 0
+    AND (
+      COALESCE(f.app_missed, 0) != 0 OR
+      COALESCE(f.sf_missed, 0) != 0
+    )
+),
+intersection AS (
+  SELECT
+    b.cuj_id,
+    b.frame_number,
+    st.state,
+    st.io_wait,
+    st.blocked_function,
+    MIN(b.ts + b.dur, st.ts + st.dur) -
+      MAX(b.ts, st.ts) AS overlap_dur
+  FROM bad_frame AS b
+  JOIN thread_state AS st
+    ON st.utid = b.utid
+   AND st.dur > 0
+   AND st.ts < b.ts + b.dur
+   AND b.ts < st.ts + st.dur
+)
+SELECT
+  cuj_id,
+  frame_number,
+  state,
+  io_wait,
+  blocked_function,
+  SUM(overlap_dur) / 1e6 AS overlap_ms
+FROM intersection
+WHERE overlap_dur > 0
+GROUP BY
+  cuj_id,
+  frame_number,
+  state,
+  io_wait,
+  blocked_function
+ORDER BY cuj_id, frame_number, overlap_ms DESC;
+```
 
-下面这段查询用于把 Java heap 和图形内存放到同一张表里。重点看 `reachable_heap_mb` 和 `dmabuf_rss_mb` 是否同时上涨：
+`Running` 表示线程正在 CPU 上执行；`R` 与 `R+` 表示 Runnable，其中 `R+` 带有被抢占语义；`D` 表示不可中断睡眠。`io_wait = 1` 和 `blocked_function` 能缩小排查范围，但字段缺失不能反向证明没有 I/O、锁或内核等待。Running 占比高也只说明 CPU 执行时间多，函数热点仍需采样剖析。
+
+UI 线程只是应用侧的一部分。RenderThread 要改用 `android_jank_cuj_render_thread.utid`；GPU completion、HWC release 与 SurfaceFlinger 线程则使用指标初始化出的相关线程和 slice 表。每条线程都要在各自边界内做时间交集，不能把 UI 帧窗口机械套到所有线程。
+
+## 第三方 App 的可执行路径
+
+第三方 App 不在 `android_jank_cuj` 默认进程过滤范围。写 `J<*>` slice 或 `J<*>#*` 计数器也不会绕过 `JOIN android_jank_cuj USING (upid)`。单纯模仿系统计数器名称会混淆数据来源，数据仍由应用自己的 `Trace` 调用产生。
+
+第三方 App 更适合组合三种能力：
+
+- AndroidX JankStats 负责应用内帧指标与 UI 状态标签；
+- `Trace` 写应用自有命名空间的阶段标记；
+- FrameTimeline 与 `thread_state` 在 Perfetto 中完成逐帧和调度分析。
+
+这段代码用公开 `Trace` API 标记一次跨回调的应用交互。标记使用应用命名空间，避免与系统 `J<*>` CUJ 混淆。
+
+```kotlin
+private const val FEED_SCROLL = "myapp.cuj.feed_scroll"
+
+fun onScrollStarted(cookie: Int) {
+    Trace.beginAsyncSection(FEED_SCROLL, cookie)
+}
+
+fun onScrollSettled(cookie: Int) {
+    Trace.endAsyncSection(FEED_SCROLL, cookie)
+}
+```
+
+同名并发交互必须使用不同 cookie，每次 begin 必须有一次匹配的 end。采集配置还要把目标包加入 `atrace_apps`，并启用 `android.surfaceflinger.frametimeline`；否则标记或帧数据会缺失。
+
+随后用以下查询处理 thread track 与 process track 上的自定义 slice，并把它关联到 Android 17 `android_frames` 与 overrun。
+
+```sql
+INCLUDE PERFETTO MODULE slices.with_context;
+INCLUDE PERFETTO MODULE android.frames.per_frame_metrics;
+
+WITH custom_cuj AS (
+  SELECT
+    ts,
+    dur,
+    name,
+    upid,
+    process_name
+  FROM thread_or_process_slice
+  WHERE process_name = 'com.example.app'
+    AND name = 'myapp.cuj.feed_scroll'
+    AND dur > 0
+)
+SELECT
+  c.name AS custom_cuj_name,
+  f.frame_id,
+  f.ts,
+  f.dur / 1e6 AS frame_dur_ms,
+  o.overrun / 1e6 AS overrun_ms,
+  f.ui_thread_utid,
+  f.render_thread_utid
+FROM custom_cuj AS c
+JOIN android_frames AS f
+  ON f.upid = c.upid
+ AND f.ts < c.ts + c.dur
+ AND c.ts < f.ts + f.dur
+LEFT JOIN android_frames_overrun AS o USING (frame_id)
+ORDER BY f.ts;
+```
+
+把包名和标记名称替换为目标 App。`overrun > 0` 表示 actual frame end 晚于 expected frame end；`NULL` 表示无法形成对应 overrun，不能按零处理。这条路径不依赖系统 CUJ 进程白名单，也不会自动获得 Java FrameTracker 的加权计数器。
+
+## `heap_graph_stats` 与 DMA-BUF
+
+Jank 伴随内存上涨时，可以单独引入 `android.memory.heap_graph.heap_graph_stats`。它每行对应一次 ART heap graph，汇总 Java heap、NativeAllocationRegistry、对象数、OOM adj、anon RSS + swap 和 DMA-BUF RSS。
+
+这条查询把主要内存字段换算成 MiB，便于在 DataGrid 中按采样时间比较。
 
 ```sql
 INCLUDE PERFETTO MODULE android.memory.heap_graph.heap_graph_stats;
 
 SELECT
-  process.name AS process_name,
-  graph_sample_ts,
-  reachable_heap_size / 1024.0 / 1024.0 AS reachable_heap_mb,
-  reachable_native_alloc_registry_size / 1024.0 / 1024.0 AS native_registry_mb,
-  anon_rss_and_swap_size / 1024.0 / 1024.0 AS anon_rss_swap_mb,
-  dmabuf_rss_size / 1024.0 / 1024.0 AS dmabuf_rss_mb,
-  oom_score_adj
-FROM android_heap_graph_stats
-JOIN process USING (upid)
-ORDER BY graph_sample_ts;
+  p.name AS process_name,
+  h.graph_sample_ts,
+  h.total_heap_size / 1024.0 / 1024.0 AS total_heap_mib,
+  h.reachable_heap_size / 1024.0 / 1024.0 AS reachable_heap_mib,
+  h.reachable_native_alloc_registry_size / 1024.0 / 1024.0
+    AS reachable_native_registry_mib,
+  h.anon_rss_and_swap_size / 1024.0 / 1024.0 AS anon_rss_swap_mib,
+  h.dmabuf_rss_size / 1024.0 / 1024.0 AS dmabuf_rss_mib,
+  h.oom_score_adj
+FROM android_heap_graph_stats AS h
+JOIN process AS p USING (upid)
+ORDER BY h.graph_sample_ts;
 ```
 
-这类数据适合接到图片、视频、Camera、SurfaceView 或 Compose 大图场景。Java heap 没涨但 `dmabuf_rss_size` 涨，排查方向应转向图形 buffer、解码缓存、Surface 生命周期和跨进程持有；Java heap 与 DMA-BUF 同时涨，才考虑对象持有和图形资源释放两个方向一起查。
+模块为 OOM adj、RSS/swap 与 DMA-BUF 查找覆盖 heap dump 时刻的区间；没有覆盖时，允许选择 dump 之后 `500 ms` 内最近的数据点。各字段可能为 `NULL`，也不构成同一时刻的原子快照。trace 没有 ART heap graph 时，表自然为空。[Android 17 heap graph stats](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/memory/heap_graph/heap_graph_stats.sql)
 
-`android_heap_graph_stats` 只有在 trace 含 ART heap graph 时才有行。模块为 OOM adj、RSS/swap 和 DMA-BUF 查找同进程、同一时间跨度内的值；找不到时还允许取 heap dump 之后 500 ms 内最近的一条记录。查询结果可能为 `NULL`，时间偏移也要保留在分析说明中，不能把三个数据源当成同一时刻的原子快照。
+Java heap 稳定而 DMA-BUF RSS 上涨，只能把范围转向图形 buffer、解码、Surface 生命周期和跨进程持有；它还不能直接指出泄漏对象。Java heap 与 DMA-BUF 同时上涨时，也要分别验证对象可达路径和图形资源所有权。
 
-## Collapsed Stack / Firefox Profiler 格式导入
+## 怎样迁移 v54 表结构变化
 
-v54 Trace Processor 支持 Collapsed Stack 格式和 Firefox Profiler 预处理 JSON。Collapsed Stack 是 `main;foo;bar 100` 这类火焰图输入，适合把 Brendan Gregg FlameGraph 生态里的历史数据导入 Perfetto；Firefox Profiler JSON 适合跨工具查看已有 profile。
+v54.0 的变化应按表结构处理，不能靠字符串替换：
 
-这两类格式的使用边界要写清：它们能保留调用栈聚合信息，但通常没有 Android system trace 里的 FrameTimeline、Binder、调度、counter 和 CUJ marker。用它们做 CPU 热点归因可以，用它们解释“某一帧为什么掉了”证据不够。遇到具体卡顿，仍要重新采带 FrameTimeline、sched、freq、binder、gfx / view 相关 atrace category 的 Perfetto trace。
+| v54.0 变化 | 迁移原则 |
+|---|---|
+| 删除 `slice.stack_id` / `slice.parent_stack_id` | 使用 `slices.stack` 标准库的栈关系函数 |
+| 所有表的 `machine_id` 改为非空，host 为 `0` | 删除 `machine_id IS NULL` 假设；多机 trace 在有该列的表上显式限定机器 |
+| `metadata` 增加 `trace_id` 与 `machine_id` | 只在 metadata 语义需要时使用；不能假设每张业务表都有 `trace_id` |
+| 删除 `--add-sql-module` / `--override-sql-module` | 改用 `--add-sql-package` / `--override-sql-package` |
 
-## 排障顺序
+标准库、指标与核心表的兼容级别不同。以下划线开头的对象、指标中间表、Data Explorer 物化表都更容易变化。生产查询应固定 Trace Processor 版本，入口尽量使用公开表和公开模块，并在升级时运行空 trace 语法测试与代表性 trace 回归。
 
-一条可复用的 Jank CUJ 分析顺序如下：
+## Collapsed Stack 与 Firefox Profiler 导入
 
-1. 用 `android/android_jank_cuj.sql` 生成 CUJ metric，按 App / SF weighted total 或 `missed_frames` 找最重的 CUJ。
-2. 在 DataGrid 里按 `cuj_name`、进程、`missed_app_frames`、`missed_sf_frames` 分组，确认问题集中在哪类场景。
-3. 展开 `android_jank_cuj_frame`，找 `jank_score` 最高的帧。
-4. 回到该帧时间窗，看 UI 线程、RenderThread、GPU completion、HWC release、SurfaceFlinger main / RenderEngine 的 slice。
-5. 用 `thread_state` 判断线程是在执行、抢 CPU、睡眠、I/O 等待还是阻塞。
-6. 如果怀疑内存或图形 buffer，把同一时间窗接到 `android_heap_graph_stats`、RSS、DMA-BUF 和 OOM score。
+v54.0 增加了 Collapsed Stack 和 Firefox Profiler preprocessed JSON 导入：
 
-这套顺序的约束是：CUJ 用来定场景，FrameTimeline 用来定帧，线程状态用来定等待类型，profile / heap graph 用来补调用栈和内存证据。任何一步缺采集数据，都应该标注采集缺口，不能用相邻证据替代。
+- Collapsed Stack 保存“调用栈 + 聚合计数”，适合迁移 FlameGraph 资产；
+- Firefox Profiler preprocessed JSON 主要保留已处理的采样信息。
 
-## 节点式数据流补注：Data Explorer（节点图编辑器）
+这两类输入通常没有 Android system trace 的 FrameTimeline、Binder、调度、CUJ 标记和设备计数器。它们可以回答 CPU 样本集中在哪些栈，无法单独解释某个 Android 帧为何超时。要做逐帧归因，仍需重新采集带 FrameTimeline、sched、应用 atrace 与必要系统数据源的 Perfetto trace。
 
-> 上游 v54.0 和 Android 17 固定 tag 的 plugin 名称不同。阅读源码或复核操作时，应先确认所用的是纯 v54.0 release、`android-17.0.0_r1`，还是更新的宿主机 UI。
+## 一轮可复核的分析顺序
 
-### 1. Android 17 范围内的源码锚点
+1. 记录 Android 构建、Perfetto UI、Trace Processor、采集配置和负载条件。
+2. 查询标记、计数器、FrameTimeline、sched 与相关线程是否存在，列出采集缺口。
+3. 区分系统 InteractionJankMonitor CUJ 与第三方 App 自定义窗口。
+4. 生成一行一个 CUJ 的窄表，用加权总量、丢帧数和最大帧时排序。
+5. 展开异常帧，分别查看 App / SF 分类、回调漏采与 expected timeline 回退。
+6. 对 UI、RenderThread、GPU/HWC 和 SurfaceFlinger 线程做时间交集，再接函数采样、GPU fence、Binder 或内存证据。
+7. 在报告中分开写观测、推断、采集限制和经过对照实验确认的根因。
 
-| 源码锚点 | Android 平台关系 | plugin id | 源码根目录 | 已核对能力 |
-|---|---|---|---|---|
-| 上游 Perfetto v54.0 | Android 17 所采用版本线的上游起点 | `dev.perfetto.ExplorePage` | `ui/src/plugins/dev.perfetto.ExplorePage/` | 节点图、Undo/Redo、Recent Graphs、server-side 分页/过滤/排序 |
-| `android-17.0.0_r1` | Android 17 / API 37 固定平台 tag | `dev.perfetto.DataExplorer` | `ui/src/plugins/dev.perfetto.DataExplorer/` | 查询图、graph tab、permalink 持久化、导入/导出、dashboard |
+DataGrid 和 Data Explorer 负责提高浏览效率。提交审阅的结论应能由保存的 SQL 在相同 Trace Processor 上复现，并能回到 Android 17 或 v54.0 的明确源码位置解释字段含义。
 
-上游 v54.0 已有 `index.ts`、`explore_page.ts` 和 `query_builder/`。Android 17 固定 tag 中对应文件变成 `index.ts`、`data_explorer.ts`、`query_builder/` 与 `dashboard/`。两份源码都覆盖 table、slice、SQL、时间范围、filter、aggregation、join、interval intersect、sort 等基础节点，可以支撑 CUJ 与卡顿 trace 的探索式筛选。
+## 参考源码
 
-### 2. 两阶段执行模型
-
-两份源码都由 `QueryExecutionService`（`query_builder/query_execution_service.ts`）把节点图同步给 Trace Processor summarizer，并在需要时触发物化查询：
-
-- **自动执行路径**：`NodeExplorer.updateQuery()` → `service.processNode({ manual: false })` → `createSummarizer()` / `updateSummarizerSpec()` 同步 `PerfettoSqlStructuredQuery` 图，再通过 `querySummarizer()` 取回 `sql`、`textproto`、`standaloneSql`、物化表名、行数和列信息。
-- **DataGrid 展示路径**：`Builder` 使用 Trace Processor 返回的物化表名创建 `SQLDataSource`，由 DataGrid 做 server-side 分页、过滤和排序；调试时应以返回的 `tableName` 为准，不把物化表命名规则当稳定接口。
-
-这个模型没有增加新的分析口径。节点图编辑器把 PerfettoSQL 查询拆成可视化节点、结构化查询和可检查的中间表；技术结论仍应落回 SQL、标准库和 trace 数据。
-
-### 3. 与 DataGrid / 手写 SQL 的关系
-
-Data Explorer 在 DataGrid 之上组织节点关系，把「写 PerfettoSQL 文本 + 单次 query」改成「节点连边 + 自动生成 SQL + 物化中间结果」：
-
-| 维度 | 手写 SQL | DataGrid | Data Explorer 节点图 |
-|---|---|---|---|
-| 适用对象 | 熟悉 PerfettoSQL 的工程师 | 能理解结果列和单位的工程师 | 能理解 trace schema 与节点关系的工程师 |
-| 中间结果可见性 | 一次 query 一个结果 | 一个 SQL 一个 DataGrid | 已执行节点可得到物化表 |
-| 可视化程度 | 纯文本 | 表格 + pivot | 节点图 + 表格 |
-| 跨会话复用 | 保存 SQL 文件 | 保存 permalink | 保存 permalink + 节点图 JSON |
-
-Android 17 固定 tag 已提供 `dev.perfetto.DataExplorer`。它沿用 v54 查询图和 summarizer 执行模型，并包含固定 tag 自身的后续 UI 改动。分析报告应记录 UI commit，不能用“Android 17 等于纯 v54.0 UI”概括。
-
----
-
-## 参考资料
-
-### 官方与源码锚点
-
-- [Perfetto v54.0 release notes](https://github.com/google/perfetto/releases/tag/v54.0)
-- [Perfetto v54.0 FrameTimeline 文档](https://github.com/google/perfetto/blob/v54.0/docs/data-sources/frametimeline.md)
-- [v54.0 Jank CUJ counter metric](https://github.com/google/perfetto/blob/v54.0/src/trace_processor/metrics/sql/android/jank/internal/counters.sql)
-- [v54.0 `android_jank_cuj` metric 输出](https://github.com/google/perfetto/blob/v54.0/src/trace_processor/metrics/sql/android/android_jank_cuj.sql)
-- [v54.0 CUJ 进程过滤](https://github.com/google/perfetto/blob/v54.0/src/trace_processor/perfetto_sql/stdlib/android/cujs/base.sql)
-- [v54.0 relevant threads 模块](https://github.com/google/perfetto/blob/v54.0/src/trace_processor/perfetto_sql/stdlib/android/cujs/threads.sql)
-- [v54.0 heap graph stats 模块](https://github.com/google/perfetto/blob/v54.0/src/trace_processor/perfetto_sql/stdlib/android/memory/heap_graph/heap_graph_stats.sql)
-- [v54.0 ExplorePage 执行服务](https://github.com/google/perfetto/blob/v54.0/ui/src/plugins/dev.perfetto.ExplorePage/query_builder/query_execution_service.ts)
-- [Android 17 DataExplorer plugin](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/ui/src/plugins/dev.perfetto.DataExplorer/index.ts)
-- [Android 17 DataExplorer 执行服务](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/ui/src/plugins/dev.perfetto.DataExplorer/query_builder/query_execution_service.ts)
-
-### Perfetto DataGrid 与 Jank CUJ 标准库第三方 App 适用性验证
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-22-perfetto-cujs-third-party-app-scope.md
-- 类型：DeepResearch 调研结果
-- 摘要：从 Perfetto google/perfetto cujs.sql 源码验证 android.cujs.base 默认仅覆盖 com.android.*/com.google.android.* 进程，第三方 App 的 CUJ 不自动进入 android_jank_cuj 表。梳理三条第三方可执行路径：AndroidX JankStats（推荐）、自定义 atrace marker（J<> 格式）、FrameTimeline direct join，含完整 FrameTracker 数据流和 JankStats vs FrameTracker 分工对比。
-
-### Perfetto DataGrid 与 Jank CUJ 标准库 v54 · 进程过滤与 FrameTracker Join 深挖
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-15-perfetto-jank-cuj-v54-process-filter-and-frametracker-join.md
-- 类型：DeepResearch 调研结果
-- 摘要：对 Perfetto v54 Jank CUJ 标准库的二次深挖：确认 `android.cujs.base` 进程名过滤分两层（GLOB com.google.android*/com.android.*），第二层 `cujs_ordered` CTE 按进程名决定 counter 回溯窗口（系统进程 0 回溯、NexusLauncher 白名单、其他进程 MAX(ts, ts_end-4ms)）；`android_jank_cuj_frame` vs `android_jank_cuj_frame_timeline` 的分工（frame 用于拼完整帧范围，timeline 用于 jank_type 分类）；JankTracker.cpp deadline miss 主判定、阶段拆分 JankType 与 CUJ 标准库事后聚合的关系；`relevant_threads.sql` 的 SF 线程视图迁移策略（旧表有后续删除计划）。
+- [Perfetto v54.0 release](https://github.com/google/perfetto/releases/tag/v54.0)
+- [Android 17 DataExplorer plugin](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/ui/src/plugins/dev.perfetto.DataExplorer/index.ts)
+- [Android 17 DataExplorer query execution](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/ui/src/plugins/dev.perfetto.DataExplorer/query_builder/query_execution_service.ts)
+- [Android 17 CUJ threads](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/cujs/threads.sql)
+- [Android 17 CUJ frame counters](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/cujs/cuj_frame_counters.sql)
+- [Android 17 Jank CUJ metric initialization](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/metrics/sql/android/jank/android_jank_cuj_init.sql)
+- [Android 17 Jank CUJ frames](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/metrics/sql/android/jank/frames.sql)
+- [Android 17 InteractionJankMonitor](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/jank/InteractionJankMonitor.java)
+- [Android 17 Trace API](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java)
