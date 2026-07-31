@@ -47,7 +47,7 @@ WindowManager 和 SurfaceFlinger 描述同一屏幕的不同层次。WindowManag
 Winscope 中的主要证据如下。
 
 | 数据源 | 记录内容 | 能确认什么 | 仍需其它证据的问题 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | WindowManager | WindowContainer 层级、bounds、visibility、focus、orientation、Insets 等 | 窗口与 Task 是否处于预期逻辑状态 | 应用是否及时提交新像素，某段代码为何耗时 |
 | SurfaceFlinger layers | 每个 snapshot 的 layer 层级、buffer、requested/calculated geometry、可见区域、输入区域等 | layer 在该状态下能否参与显示，父层与遮挡关系是否正确 | buffer 内的像素是否正确，present 是否按 deadline 完成 |
 | SurfaceFlinger transactions | 初始状态与提交到 SF 的原子状态变化 | 哪个 PID/UID、transaction id、layer id 改了属性 | 发起方为何晚提交，某次 GPU 工作何时结束 |
@@ -72,7 +72,7 @@ Android 17 的 WMS Perfetto 路径由 `WindowTracingPerfetto` 注册 `android.wi
 
 ### SurfaceView 与独立 Surface
 
-SurfaceView 的主体内容走独立 buffer stream。Android 17 的常见对象关系包括 SurfaceView container、BLAST buffer child 和按条件显示的背景 color layer。几何、crop、显隐和相对 Z 常落在 container；frame number 与内容 buffer 落在 BLAST child。只选中 container 就宣布“有 buffer”会得出错误结论。[已验证: AOSP `SurfaceView.java`, https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceView.java]
+SurfaceView 的主体内容走独立 buffer stream。Android 17 的常见对象关系包括 SurfaceView container、BLAST buffer child 和按条件显示的背景 color layer。几何、crop、显隐和相对 Z 主要落在 container；frame number 与内容 buffer 落在 BLAST child。container 的状态已经进入 SF snapshot，只能证明几何或层级已经生效，不能证明 BLAST child 的新 buffer 也被同一个 display frame 采用。只选中 container 就宣布“有 buffer”会得出错误结论。[已验证: AOSP `SurfaceView.java`, https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceView.java]
 
 宿主 App Window 与 SurfaceView 内容各有 buffer transaction、acquire/release channel 和更新节奏。黑屏或一帧错位时要分别检查：
 
@@ -97,7 +97,7 @@ TextureView 的外部 buffer 先由应用进程内的 SurfaceTexture/HWUI 消费
 Winscope 报告中的对象可以回到以下 Android 17 源码入口。
 
 | 面板或字段 | Android 17 源码入口 | 阅读重点 |
-|---|---|---|
+| --- | --- | --- |
 | WM hierarchy | `WindowContainer`、`DisplayContent`、`Task`、`ActivityRecord`、`WindowState` | 逻辑 parent、display、bounds、visibility、focus、Insets |
 | WM Perfetto trace | `WindowTracingPerfetto`、`WindowTracingDataSource` | `LOG_LEVEL_*`、`LOG_FREQUENCY_*` 与 WMS dump 序列化 |
 | Shell transition | `TransitionController`、`PerfettoTransitionTracer`、`TransitionDataSource` | sync/transition id、target leash layer id、start/finish transaction、finish/abort |
@@ -198,7 +198,7 @@ adb pull /data/misc/perfetto-traces/winscope_window_debug.perfetto-trace .
 
 默认配置没有启用 `TRACE_FLAG_EXTRA`、`TRACE_FLAG_HWC`、WindowManager verbose、ProtoLog stacktrace 和全量 input event。它们会明显增加内存、运行开销或隐私风险。只有当前问题需要对应字段时才在短时本地 trace 中启用。
 
-WindowManager 的 `LOG_FREQUENCY_FRAME` 每帧记录一个已提交状态，开销较低；`LOG_FREQUENCY_TRANSACTION` 会记录同一帧内的中间 transaction 状态，适合追一帧错位，但数据量和开销更高。默认 `LOG_LEVEL_DEBUG + LOG_FREQUENCY_FRAME` 已覆盖多数窗口问题。
+WindowManager 的 `LOG_FREQUENCY_FRAME` 在 WMS 提交一帧时记录状态快照；没有 WMS frame commit 的显示刷新不会凭空增加记录。`LOG_FREQUENCY_TRANSACTION` 在每次 WMS transaction commit 时记录快照，因此可能保留同一显示周期内的中间状态，适合追一帧错位，但数据量和开销通常更高。默认 `LOG_LEVEL_DEBUG + LOG_FREQUENCY_FRAME` 已覆盖多数窗口问题。
 
 ## 6. 从录像到窗口、layer 与 transaction
 
@@ -239,7 +239,7 @@ Requested geometry/effects 是该 layer 请求的值；Calculated 是父层继�
 
 ### 6.6 回到 transaction 与 transition
 
-SurfaceFlinger transaction trace 提供 transaction id、PID、UID、layer id、状态变化和关联 `vsync_id`。看到 bounds、alpha、crop 或 reparent 异常后，搜索对应 transaction，确认它来自 App、system_server、SystemUI/WM Shell 还是其它进程。
+SurfaceFlinger transaction trace 提供 transaction id、PID、UID、layer id 与状态变化。`vsync_id` 位于一次 SF commit 形成的 trace entry 上，同一 entry 内的 transactions 共用它；它不是每笔客户端 transaction 自带的提交时钟。看到 bounds、alpha、crop 或 reparent 异常后，搜索对应 transaction，确认它来自 App、system_server、SystemUI/WM Shell 还是其它进程。
 
 Android 17 的 `PerfettoTransitionTracer` 记录 transition id、create/send/finish/abort 时间、start/finish transaction id、目标 leash layer id、window id、起止 display/rotation/bounds。通过同一 id 能把 Shell transition 与 SF transaction、WM container、目标 layer 对齐。transition 已 finish 只说明系统状态机结束，仍需检查目标 layer 是否显示正确。
 
@@ -266,7 +266,7 @@ Winscope 能指出“哪一个状态从哪一帧开始错误”。若状态序�
 
 ### SurfaceView 一帧错位
 
-同时选择宿主 App Window、SurfaceView container 和 BLAST child。对比 container geometry transaction、宿主 draw transaction、BLAST child frame number 和生效 snapshot。container 已移动而 child 仍显示旧 buffer 不一定是错误；若 crop、relative Z 或内容/几何长期错帧，继续查 `mergeWithNextTransaction()`、`applyTransactionOnDraw()` 与 Producer 节奏。
+同时选择宿主 App Window、SurfaceView container 和 BLAST child。对比 container geometry transaction、宿主 draw transaction、BLAST child frame number、buffer transaction 与目标 display snapshot。container 已移动而 child 沿用旧 buffer 不一定是错误：几何和内容来自不同状态源，只有经 frame number 合并、同步组或同一 transaction 建立约束时，才能要求它们一起生效。若 crop、relative Z 或内容/几何持续错帧，继续查 `mergeWithNextTransaction()`、`applyTransactionOnDraw()`、`applyTransactionToFrame()` 与 Producer 节奏。
 
 ### TextureView 黑屏
 
@@ -347,7 +347,7 @@ dump 没有前后状态，不能证明闪屏、转场顺序或一帧错位。连
 ## 11. Winscope、Perfetto、AGI 与 dumpsys 的分工
 
 | 工具 | 主要证据 | 适合的判断 |
-|---|---|---|
+| --- | --- | --- |
 | Winscope | WM/SF/transition/transaction/input 状态序列 | 对象是谁，窗口与 layer 状态何时偏离预期 |
 | Perfetto | 调度、slice、counter、Binder、FrameTimeline、ftrace、部分图形数据源 | 哪个阶段迟到，CPU/锁/Binder/fence/I/O 等待在哪里 |
 | AGI | GPU 与图形 API、帧/系统分析视图 | GPU workload、GL/Vulkan 调用、部分合成与 buffer 现象 |
