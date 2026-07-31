@@ -41,216 +41,261 @@ gap_source: "素材驱动/官方文档/Clippings结构参考"
 
 # 23.11 Scudo 分配器与 Native Heap 性能边界
 
-Native Heap 治理容易被写成一条 `malloc` 曲线的治理，但线上问题很少这么干净。`dumpsys meminfo` 里的 Native Heap、`Debug.getNativeHeapAllocatedSize()`、`smaps` 里的匿名映射、heapprofd 的分配栈、Bitmap 像素内存和图形缓冲区，回答的是不同问题。把这些口径混在一起，会把 allocator 行为、业务分配、图形资源和文件映射揉成一个无法解释的指标。
+Native 内存曲线变大时，先确认正在看哪一种“大小”。`Debug.getNativeHeapAllocatedSize()`、`dumpsys meminfo` 的 Native Heap、`smaps` 的匿名映射、heapprofd 的未释放样本和 Graphics PSS 来自不同统计路径。它们可以同时变化，也可能朝相反方向变化。
 
-这一节只处理实践边界：Scudo 在 Android Native 分配路径中管什么，Native Heap 异常该按什么顺序观察，哪些开关适合线上采样，哪些只能放到调试或灰度环境。Native 内存的基础分层见 4.5 节，工具总览见 14.3 节，Native 内存管理的常规排查见 23.3 节，MTE 崩溃治理见 20.11 节。
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点。涉及页大小、`/proc` 和 MTE 的内核边界时，以 `android17-6.18-2026-06_r6` 为基线。Scudo 属于用户态分配器，内核版本不会把某次 `malloc()` 自动归为业务泄漏。Native 内存分层见 4.5 节，常规排查见 23.3 节，MTE 崩溃分析见 20.11 节。
 
-[结构参考: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md]
-[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native 内存泄漏监控：寻找 Native 中不可达内存.md]
+## 先把五种口径分开
 
-## Native Heap 不等于所有 Native 内存
-
-Native Heap 指标要拆成三层看。
-
-- 分配器口径：`malloc()`、`calloc()`、`realloc()`、`new`、`delete` 等 C/C++ 堆分配入口，最终由 bionic 的 malloc dispatch 交给当前 allocator。Android 11 之后，常规 native 代码默认使用 Scudo，低内存设备仍可能使用 jemalloc。[已验证: AOSP Scudo 文档, source.android.com/docs/security/test/scudo]
-- 进程地址空间口径：`/proc/<pid>/maps` 和 `/proc/<pid>/smaps` 按 VMA 记录地址区间、权限、映射文件、匿名映射和 RSS/PSS 等统计。`mmap()` 既能映射文件，也能申请匿名内存；匿名映射未必都来自 `malloc()`。
-- Android 内存分类口径：`dumpsys meminfo` 把 smaps、libmemtrack、allocator 统计等数据整理成 Native Heap、Dalvik Heap、Graphics、Stack、Code、Unknown 等类别。Graphics 中一部分可能不映射到应用进程地址空间，需要 libmemtrack 补齐。[已验证: AOSP main, frameworks/base/core/jni/android_os_Debug.cpp]
-
-这三层口径的误差就是排查入口。`Debug.getNativeHeapAllocatedSize()` 走 `mallinfo().uordblks`，适合低成本记录分配器已分配字节数；`dumpsys meminfo` 更适合看系统分类和 PSS；heapprofd 更适合把 Native Heap 分配归因到调用栈；`smaps` 适合确认匿名映射、文件映射、线程栈和 so 映射的具体分布。[已验证: AOSP main, frameworks/base/core/jni/android_os_Debug.cpp]
-
-Bitmap 是最容易混入口径的对象。Android 8.0 之后，Bitmap 像素内存计入 Native 侧，但治理入口通常仍在 Java/Kotlin 层：图片尺寸、解码格式、缓存策略、生命周期引用。Bitmap 原理和常规优化见 4.5 节与 23.3 节；在 Native 指标解释里，它主要是一个分叉项。
-
-一个实用判断：如果 `Debug.getNativeHeapAllocatedSize()` 和 heapprofd 的趋势一起涨，优先看 C/C++ 分配栈；如果 `dumpsys meminfo` 的 Graphics 或 Unknown 涨得更快，就不要急着改 allocator 配置，先回到 `smaps`、libmemtrack、Bitmap 与图形资源路径。
-
-## Scudo 在 Android 分配路径中的位置
-
-Scudo 是用户态 heap allocator，提供 `malloc/free` 和 `new/delete` 等标准分配与释放入口。它的目标是提高堆内存安全性，例如检测堆溢出、use-after-free、double free 等风险；它不是 ASan/HWASan 那种完整内存错误检测器。[已验证: AOSP Scudo 文档, source.android.com/docs/security/test/scudo]
-
-在 Android 运行时路径里，可以按职责分层：
-
-- bionic libc：暴露 `malloc()`、`calloc()`、`realloc()`、`free()`、`mallinfo()` 等接口，并通过 malloc dispatch 指向当前分配器或调试实现。[已验证: AOSP main, bionic/libc/bionic/malloc_common.cpp]
-- Scudo：服务常规 native heap 分配，维护 chunk metadata、quarantine、校验、随机化等安全机制。它发现不可恢复的堆损坏时，会打印 `Scudo ERROR` 并终止进程。
-- GWP-ASan：抽样拦截一小部分 heap allocation，把样本放进特殊区域，用来捕获 use-after-free 和 heap-buffer-overflow。它不要求重新编译，Android 11+ 面向 targetSdk 30+ 应用可用。[已验证: 官方文档, developer.android.com/ndk/guides/gwp-asan]
-- MTE：Arm 硬件内存标记能力，由硬件、内核、用户态 allocator 和进程配置共同生效。`android:memtagMode` 的选择和崩溃归因见 20.11 节。[已验证: AOSP MTE 文档, source.android.com/docs/security/test/memory-safety/arm-mte]
-- heapprofd / Android Studio Native Allocations / malloc debug：它们是观测工具，负责采样、记录栈和展示分配事件，不负责改变业务分配模式。
-
-因此，线上 Native Heap 治理不应从“换 allocator”开始。Android 平台已经提供默认 allocator，应用侧更常见的工作是降低异常大块分配、减少泄漏、拿到可归因的分配栈、为灰度开关设定回滚条件。
-
-## 安全检查与性能成本的取舍
-
-Scudo 的安全能力不是零成本。quarantine 会延迟释放 chunk，使 use-after-free 更容易被发现，但也会增加内存占用；chunk metadata 和校验能发现损坏，但会增加 allocator 内部工作；释放回 OS 的策略影响 RSS 回落速度。AOSP 文档列出的 `QuarantineSizeKb`、`ThreadLocalQuarantineSizeKb`、`QuarantineChunksUpToSize`、`ZeroContents`、`hard_rss_limit_mb`、`soft_rss_limit_mb`、`allocator_release_to_os_interval_ms` 等选项，适合平台进程、系统调试或受控实验，不适合作为普通 App 的线上调参入口。[已验证: AOSP Scudo 文档, source.android.com/docs/security/test/scudo]
-
-应用侧更可控的是 GWP-ASan 和 MTE：
-
-| 能力 | 适用场景 | 线上建议 | 成本边界 |
+| 口径 | 数据来源 | 适合回答的问题 | 不能直接回答的问题 |
 | --- | --- | --- | --- |
-| GWP-ASan `android:gwpAsanMode="always"` | 复现困难的 native heap use-after-free / overflow | 小流量灰度或问题进程单独开启 | 固定 RAM 开销约 70 KiB/受影响进程；命中后进程终止 |
-| Recoverable GWP-ASan | Android 14+ 生产环境发现内存破坏 | 保留默认行为，APM 侧接入历史退出原因 | 约 1% app launch 抽样；每次启动最多一份报告；报告后继续运行但进程状态不可再假设安全 |
-| MTE ASYNC | 低开销发现内存安全问题 | 已充分测试的进程可灰度 | 错误定位不如 SYNC 精确 |
-| MTE SYNC | 测试、专项复现、攻击面高的进程 | 不作为大盘默认开关 | 命中时立即 SIGSEGV，开销更高 |
-| HWASan / ASan | 本地复现和开发测试 | 不作为线上方案 | 需要专门构建或运行环境，开销大 |
+| `Debug.getNativeHeapAllocatedSize()` | allocator 的 `mallinfo().uordblks` | 当前由分配器记为已分配的字节数 | 进程全部 Native RSS、Graphics、任意 `mmap()` |
+| `dumpsys meminfo` 的 Native Heap | Scudo、jemalloc、GWP-ASan 等堆 VMA 的 PSS/RSS 分类，加上相关统计 | Native Heap 对进程物理内存的贡献 | 哪条调用栈仍持有对象 |
+| `/proc/$pid/smaps`、`showmap` | 内核记录的 VMA 与页统计 | 匿名映射、文件映射、线程栈、共享库分别占多少 | 每次 `malloc()` 的调用者 |
+| heapprofd、Native Allocations | 对分配与释放事件采样并记录调用栈 | 哪些调用栈产生分配、哪些样本仍未释放 | 录制开始前的分配、非 allocator 映射 |
+| Graphics | `smaps` 可见部分与 libmemtrack 补充数据 | 图形缓冲区对进程和系统内存的影响 | C/C++ 普通堆对象的持有关系 |
 
-[已验证: 官方文档, developer.android.com/ndk/guides/gwp-asan]
-[已验证: AOSP MTE 文档, source.android.com/docs/security/test/memory-safety/arm-mte]
+### `getNativeHeapAllocatedSize()` 的源码口径
 
-线上策略应写成灰度矩阵，而不是单一开关：先按进程、ABI、机型、Android 版本、targetSdk 切分，再设定退出条件。退出条件至少包括 native crash 率、`ApplicationExitInfo` 中的 native tombstone 占比、PSS/RSS 抖动、启动和核心页面耗时。MTE 和 GWP-ASan 报告都指向真实内存安全问题，但报告触发具有抽样性；没有报告不代表没有 bug。
+Android 17 在同一文件中用三个接口分别读取 `mallinfo` 字段。下面只摘录 `getNativeHeapAllocatedSize()`，用于确认它对应 `uordblks`。
 
-## Native 内存异常的观测路径
-
-排查顺序从低成本到高证据密度推进。
-
-### 1. 大盘指标确认异常形态
-
-线上监控先记录这些字段：
-
-- PSS/RSS：用于判断进程对系统内存压力的贡献。PSS 更适合大盘统计，RSS 更适合低成本趋势和 LMKD 风险判断。
-- Native Heap Alloc / Free：来自 allocator 统计，适合观察 `malloc` 家族分配趋势。它不覆盖所有映射和图形资源。
-- Graphics / Unknown / Code / Stack：来自 `dumpsys meminfo` 分类，用来判断异常是否偏离 Native Heap。
-- 分配速率和峰值回落：持续增长指向泄漏或缓存无上限，尖峰后不回落要区分 allocator 保留、业务缓存和匿名映射残留。
-- 进程退出归因：native crash、low memory kill、ANR 和用户主动退出要分开统计。
-
-指标层只负责确认问题形态，不负责裁决代码归因。
-
-### 2. 线下用 `dumpsys meminfo` 和 `smaps` 建立分类
-
-这组命令用于把系统分类和地址空间明细拉到本地，比单看 Android Studio 面板更适合做一次完整快照。
-
-```bash
-adb shell dumpsys meminfo <package_or_pid> > meminfo.txt
-adb shell cat /proc/<pid>/smaps > smaps.txt
-adb shell showmap <pid> > showmap.txt
+```cpp
+static jlong android_os_Debug_getNativeHeapAllocatedSize(CRITICAL_JNI_PARAMS)
+{
+    struct mallinfo info = mallinfo();
+    return (jlong) info.uordblks;
+}
 ```
 
-`meminfo.txt` 看 Native Heap、Graphics、Unknown、Code、Stack 的相对占比；`smaps.txt` 看匿名映射、文件映射、线程栈和 so 映射；`showmap.txt` 适合快速按 VMA 汇总。没有 root 时，应用读取其他进程的 `/proc/<pid>/smaps` 会受权限限制，调试环境可通过本进程或 debuggable 包补证据。
+这段实现位于 [`frameworks/base/core/jni/android_os_Debug.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_os_Debug.cpp)。它说明该 API 是 allocator 统计，不是对 `/proc/$pid/smaps` 求和。它适合低频记录趋势，不能代替 PSS/RSS，也不能覆盖所有匿名 `mmap()`、线程栈、共享库和图形缓冲区。
 
-### 3. heapprofd 把 Native Heap 分配归因到调用栈
+### `dumpsys meminfo` 为什么会更大
 
-Android 10 支持 heapprofd，它是低开销采样 heap profiler，可以把 native memory usage 归因到调用栈。[已验证: AOSP native-memory 文档, source.android.com/docs/core/tests/debug/native-memory]
+Android 17 的 `libmeminfo` 会把以下 VMA 名归到 `HEAP_NATIVE`：
 
-heapprofd 适合回答三个问题：哪条调用栈分配最多，哪类分配持续留存，哪段操作触发分配尖峰。它不适合回答 Graphics buffer、文件映射、线程栈数量等非 allocator 问题。若 heapprofd 样本无法解释 `dumpsys meminfo` 的增长，回到 smaps 分类，不要硬套 `malloc` 结论。
+- `[heap]`
+- `[anon:libc_malloc]`
+- `[anon:scudo:*]`
+- `[anon:GWP-ASan*]`
 
-### 4. Android Studio Native Allocations 做交互式确认
+分类逻辑见 [`system/memory/libmeminfo/androidprocheaps.cpp`](https://android.googlesource.com/platform/system/memory/libmeminfo/+/android-17.0.0_r1/androidprocheaps.cpp)。Native Heap 行反映这些映射中当前驻留页面的 PSS/RSS 等数据，粒度是 VMA 和页面。Scudo 可以保留已经没有活跃对象的页，也可以把空闲页归还操作系统；因此 allocator 已分配字节下降后，Native Heap PSS 不要求同步下降。
 
-Android Studio 的 Native Allocations 任务会记录指定时间段内 native code 的 allocations、deallocations、allocation size、remaining size，并用默认 2048 bytes 采样间隔生成快照。调小 sample size 会提高精度，也会增加记录开销。[已验证: 官方文档, developer.android.com/studio/profile/record-native-allocations]
+这是诊断上的推断，不是泄漏判据。要证明泄漏，需要同时看到可重复的增长场景和对象归因，例如：
 
-它适合本地复现场景：打开目标页面、执行固定操作、停止录制、按 remaining size 或 allocation size 找调用栈。线上归因仍建议用 heapprofd、tombstone、GWP-ASan/MTE 报告和自研采样数据汇合。
+- 同一操作重复执行后，allocator 已分配字节持续上升；
+- heapprofd 的未释放样本集中在稳定调用栈；
+- 离开页面并等待业务缓存过期后，样本仍保持增长；
+- Graphics、线程栈、文件映射等旁路没有解释这部分增量。
 
-### 5. malloc debug、libmemunreachable 和 Native hook 只放到受控场景
+Android 17 的 `android_os_Debug.cpp` 还通过 libmemtrack 读取未出现在 `smaps` 中的 graphics memory。看到 Graphics 增长时，应转向 BufferQueue、Bitmap、硬件缓冲区和驱动侧归因，修改 Scudo 参数无法处理这类内存。
 
-malloc debug 能拦截 allocator 事件并记录更多调试信息，适合 root、userdebug 或本地复现环境。libmemunreachable 使用类似 mark-and-sweep 的方式扫描 native memory，报告不可达块；AOSP 代码中会遍历 heap mapping，也识别 `[anon:libc_malloc]`、`[anon:scudo:]`、`[anon:GWP-ASan]` 等映射，并通过 fork 出的 heap walker 进程收集结果。[已验证: AOSP main, system/memory/libmemunreachable/MemUnreachable.cpp]
+## Scudo 在 Android 17 中负责什么
 
-Native hook 适合自研监控或专项排查，但要把成本写清楚：hook 范围、栈回溯方式、符号化、采样率、线程安全和崩溃兜底。第三方 so 无源码时，拿到分配栈也不等于能修复，只能支撑版本替换、功能降级、进程隔离或供应商反馈。
+[AOSP Scudo 文档](https://source.android.com/docs/security/test/scudo)把 Scudo 定义为用户态 heap allocator。它提供标准的 `malloc/free`、`new/delete` 等接口，并对 heap buffer overflow、use-after-free、double free 等风险增加防护。Android 11 起，Scudo 服务常规 Native Heap；低内存设备仍可能使用 jemalloc。
 
-## 16KB Page、MTE 与 allocator 行为的交叉影响
+Android 17 的 bionic 仍保留 malloc dispatch。`malloc()`、`free()`、`mallinfo()` 等入口先检查动态 dispatch，再调用构建时选定的 allocator 实现，代码见 [`bionic/libc/bionic/malloc_common.cpp`](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/libc/bionic/malloc_common.cpp)。malloc debug、heapprofd 和 GWP-ASan 能接入这条路径，但职责不同：
 
-从 Android 15 开始，AOSP 支持配置为 16 KB page size 的设备。Google Play 从 2025-11-01 起要求面向 Android 15+ 设备的新应用和更新在 64 位设备上支持 16 KB page size。含 NDK 或三方 native library 的应用需要重新构建并检查 ELF segment alignment。[已验证: 官方文档, developer.android.com/guide/practices/page-sizes]
+| 组件 | 职责 | 看到异常时能得到什么 |
+| --- | --- | --- |
+| Scudo | 分配、释放、缓存、quarantine 和一致性检查 | `Scudo ERROR`、触发检查时的线程栈 |
+| heapprofd | 采样分配/释放事件 | 分配调用栈、未释放样本和时间分布 |
+| malloc debug | 以更高成本记录 allocator 调试信息 | 本地或系统调试环境中的详细分配证据 |
+| GWP-ASan | 抽样保护少量 heap allocation | 命中样本的访问、分配和释放信息 |
+| MTE | 用硬件内存标签检查访问 | 标签不匹配故障与相应诊断信息 |
+| HWASan | 编译插桩检测更广的内存错误 | 测试构建中的高密度错误报告 |
 
-16 KB page 影响的是页粒度、ELF 对齐、映射和内存回收边界，不应被写成“某个 allocator 一定更省内存”。AOSP 文档给出的测试收益包括启动、功耗、相机启动、系统启动时间等平均改善，但也明确 16 KB 设备平均内存使用略高，真实收益会随设备和 App 场景变化。[已验证: 官方文档, developer.android.com/guide/practices/page-sizes]
+Scudo 是防护能力，也是一套分配实现。它不记录所有对象的业务语义，不负责分析引用关系，也不是完整的内存错误检测器。
 
-排查 16 KB 相关 Native 内存问题时，按这个顺序切分：
+## 分配器保留不等于业务泄漏
 
-- APK 层：用 APK Analyzer、lint、`llvm-objdump` 和 `zipalign -P 16` 检查 so 对齐与打包状态。
-- 映射层：用 `smaps` 看 so、匿名映射、线程栈和 ashmem/dma-buf 变化，不把所有 PSS 增长归到 allocator。
-- 分配层：用 heapprofd 或 Native Allocations 看业务分配栈是否变化。
-- 安全层：MTE 与 GWP-ASan 报告看内存破坏，不用它们解释常规内存峰值。
+`free()` 完成后，内存至少经历两个层面的状态变化：
 
-MTE 的 SYNC/ASYNC 选择、ASYMM 平台行为和 `android:memtagMode` 详见 20.11 节。这里的实践结论是：16 KB page、MTE、Scudo 是三条不同轴线。一个问题可能同时受它们影响，但证据也要分别采集。
+1. 对业务而言，这个 chunk 已经不可再访问；
+2. 对 allocator 而言，这块空间可以进入 quarantine、线程缓存或空闲结构，等待复用或归还操作系统。
 
-## 线上治理指标与降级策略
+Scudo 文档公开了 `QuarantineSizeKb`、`ThreadLocalQuarantineSizeKb`、`QuarantineChunksUpToSize` 与 `allocator_release_to_os_interval_ms` 等选项。它们说明安全检查、线程竞争、复用速度与 RSS 回落之间存在取舍。文档中的默认值属于特定位数和版本的实现配置，不应转写成所有设备、所有进程都固定不变的应用预算。
 
-Native Heap 的线上治理要把指标、样本和动作绑定起来。
+普通应用排查内存增长时，不建议把 `SCUDO_OPTIONS` 或 `__scudo_default_options` 当作常规优化入口，理由有三点：
 
-| 目标 | 指标 | 触发条件示例 | 动作 |
-| --- | --- | --- | --- |
-| 发现持续泄漏 | Native Heap Alloc、PSS、remaining size、进程存活时长 | 同一会话内持续增长且退出页面后不回落 | 开启 heapprofd 采样或上报轻量分配栈；关联页面路径 |
-| 发现大块分配 | 单次分配大小、调用栈、线程名 | 超过页面预算或设备分档阈值 | 降低图片/缓冲区尺寸；延迟加载；拆分批处理 |
-| 发现内存破坏 | GWP-ASan/MTE tombstone、Scudo ERROR | use-after-free、heap-buffer-overflow、double free | 按 so、ABI、版本聚合；灰度停发；切换安全实现 |
-| 控制系统压力 | PSS/RSS、LMKD 退出、后台存活时长 | 低内存设备或后台进程被杀上升 | 关闭大缓存；降低预加载；拆进程或延迟初始化 |
-| 管住三方 so | so 名、版本、分配栈、tombstone build id | 同一三方库聚合异常 | 版本回滚、供应商升级、进程隔离、功能限流 |
+- 低内存设备可能仍使用 jemalloc，同一选项没有统一适用面；
+- 降低 quarantine 会削弱 use-after-free 防护；
+- 调整释放节奏可能改变 RSS、CPU 和锁竞争，单看内存峰值无法评价结果。
 
-阈值不要写成全量统一数字。高端机、低内存机、32 位进程、64 位进程、16 KB page 设备、图像密集页面、常驻后台进程，预算都不同。比较稳的做法是按设备内存档位设 P90/P95/P99 基线，再对单会话增长率、页面退出回落率和异常栈聚合设告警。
+需要评估 allocator 配置的系统组件，应使用可回滚的受控实验：固定系统镜像、ABI、页大小、负载脚本和进程生命周期，同时比较分配延迟、CPU、RSS/PSS、故障检测能力与重复运行的方差。应用工程师更应处理可归因的业务分配、缓存上限和资源生命周期。
 
-降级策略也要能被远程配置：关闭超大图预解码、降低 native cache 上限、延迟 so 初始化、暂停问题特性、切换三方 SDK 版本、把高风险任务移到独立进程。对 Native 内存安全问题，降级只是止血；GWP-ASan、MTE、Scudo 报告指向的代码路径仍要修。
+## 一套可复现的快照采集
 
-## 扩展：malloc debug、heapprofd 与 Android Studio Native Allocations 的对照表
+下面的脚本接收包名和输出目录，采集一次 `meminfo`，并在权限允许时补充 `showmap` 与 `smaps`。它避免把示例占位符直接复制进终端。
 
-| 工具 | 适合回答的问题 | 版本/权限边界 | 线上使用 |
-| --- | --- | --- | --- |
-| `dumpsys meminfo` | 进程内存分类、PSS/RSS、Native Heap 与 Graphics 占比 | adb 或调试权限；线上只能采集低频摘要 | 可采摘要，不上传敏感映射明细 |
-| `smaps` / `showmap` | VMA 级别映射来源、匿名映射、so、线程栈 | `/proc` 权限受系统版本和调试状态影响 | 只在授权调试或崩溃诊断中使用 |
-| heapprofd | Native Heap 分配调用栈、分配热点、留存样本 | Android 10+；采样 profiler | 可做低频、受控采样 |
-| Android Studio Native Allocations | 本地交互式录制 allocations/deallocations | Android Studio Profiler；调试设备 | 不作为线上方案 |
-| malloc debug | 更重的 allocator 调试信息 | 多用于 root/userdebug/本地复现 | 不建议常态线上开启 |
-| libmemunreachable | Native 不可达内存扫描 | 调用条件和权限受系统限制 | 可作为专项方案验证，不做大盘常开 |
-| GWP-ASan | 抽样发现 heap use-after-free / overflow | Android 11+；manifest 或平台默认 | 可灰度，Android 14+ 关注 recoverable 报告 |
-| MTE | 硬件标记发现内存安全问题 | 设备硬件、系统、manifest 共同决定 | ASYNC/ASYMM 可灰度，SYNC 更偏测试 |
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-## 扩展：Scudo / GWP-ASan / MTE 在 Native Crash 治理中的分工
+if (( $# != 2 )); then
+  echo "usage: $0 PACKAGE OUTPUT_DIR" >&2
+  exit 2
+fi
 
-Scudo 的 crash 多表现为 allocator 在释放、复用或检查 chunk 时发现状态不合法，例如 chunk header 损坏、double free、misaligned pointer、allocation/deallocation type mismatch。它提供的是“堆已经被破坏”的就地信号。[已验证: AOSP Scudo 文档, source.android.com/docs/security/test/scudo]
+package_name="$1"
+output_dir="$2"
+mkdir -p "$output_dir"
 
-GWP-ASan 的价值在样本报告：命中的 allocation/deallocation trace、访问类型和错误原因会进入 native crash report。Android 14+ 的 Recoverable GWP-ASan 默认约 1% app launch 抽样，报告可通过 `ActivityManager#getHistoricalProcessExitReasons` 获取；报告后进程继续运行，但不应把后续行为当作可靠状态。[已验证: 官方文档, developer.android.com/ndk/guides/gwp-asan]
+pid="$(adb shell pidof -s "$package_name" | tr -d '\r')"
+if [[ -z "$pid" ]]; then
+  echo "process not found: $package_name" >&2
+  exit 1
+fi
 
-MTE 的价值在硬件标记检查。SYNC 模式定位更准，ASYNC/ASYMM 更适合低开销发现。它与 GWP-ASan 都能发现 use-after-free 和 buffer overflow，但触发方式、设备覆盖、报告形态和性能成本不同。章节 20.11 已展开 memtagMode 与 Native 崩溃治理。这里沿用那里的实践口径：线上按进程灰度，APM 聚合时保留 signal、si_code、fault address、allocation/deallocation trace、so build id、ABI、设备和系统版本。
+adb shell dumpsys meminfo "$pid" > "$output_dir/meminfo.txt"
 
-## 扩展：三方 so 的 Native 内存治理
+if ! adb shell showmap "$pid" > "$output_dir/showmap.txt"; then
+  rm -f "$output_dir/showmap.txt"
+  echo "showmap unavailable for pid $pid" >&2
+fi
 
-三方 so 的治理不要停在“找到堆栈”。没有源码、没有符号、没有稳定复现时，能做的动作主要有四类：
+if ! adb shell cat "/proc/$pid/smaps" > "$output_dir/smaps.txt"; then
+  rm -f "$output_dir/smaps.txt"
+  echo "smaps unavailable for pid $pid" >&2
+fi
+```
 
-- 版本替换：对比三方 SDK 版本、build id、ABI 和异常占比，优先回滚或升级。
-- 灰度隔离：按设备、系统、用户分组关闭高风险功能，避免全量触发。
-- 调用路径限流：对图片处理、音视频编解码、模型推理、加密压缩等 native-heavy 路径加并发和尺寸上限。
-- 进程隔离：把高风险 native 任务放到独立进程，结合进程级 GWP-ASan/MTE、退出原因和重启策略降低主进程损伤。
+`meminfo.txt` 用于比较 Native Heap、Graphics、Code、Stack 与 Unknown；`showmap.txt` 用于快速查看 VMA 汇总；`smaps.txt` 用于核对每段映射的 RSS、PSS、Private Dirty 和名称。user build 对 `/proc` 和其他调试接口有限制，失败结果应记录为“无权限或工具不可用”，不能补写成零。
 
-符号化链路要提前准备。native crash、GWP-ASan 报告、heapprofd 样本和自研分配栈都依赖 so build id、未 strip 符号、maps/smaps、ABI 和版本号。缺少这些字段时，只能得到“某个三方 so 异常”，很难把问题推进到可修复状态。
+采集时还要控制场景。冷启动、页面首次进入、重复操作、退出页面和等待缓存过期各取一组快照；每组测试保持设备、ABI、页大小和进程状态一致。单张快照只能描述当时状态，增长是否异常要靠同场景的时间序列判断。
+
+## 工具如何选择
+
+### heapprofd：回答“谁分配了这些对象”
+
+[Perfetto heapprofd 文档](https://perfetto.dev/docs/data-sources/native-heap-profiler)明确说明：Android 10 起可记录 `malloc/free`、`new/delete` 的分配与释放，并把内存归因到调用栈。user build 上，目标应用需要是 debuggable 或 profileable。Native profiling 只观察录制开始后的事件，不会还原此前已经存在的分配。
+
+推荐使用 Perfetto 的 `tools/heap_profile android -n PROCESS_NAME`，或在 Perfetto UI 中启用 Native heap profiling。采样间隔应按目标进程的分配速率和设备成本选择：
+
+- 样本太稀，短生命周期对象和小额热点可能缺失；
+- 样本太密，profiling 开销与缓冲区压力会上升；
+- 出现 buffer overrun 时，先检查突发分配速率，再调整共享内存或采样间隔。
+
+heapprofd 的未释放样本可以提示增长调用栈，但仍是采样结果。修复前要用固定操作复测，并检查样本的 so build ID 与本地符号是否一致。
+
+### Android Studio Native Allocations：本地交互验证
+
+[Android Studio 文档](https://developer.android.com/studio/profile/record-native-allocations)中的 Native Allocations 任务会展示 allocation、deallocation、两者的字节数、净数量和 Remaining Size。它适合开发阶段观察某个页面或某段操作。
+
+文档当前默认 sample size 为 2048 bytes；更小的值会提高采样频率和精度，也会增加资源消耗。这个数值是工具默认配置，不是业务阈值，更不是 Scudo 的分配粒度。团队记录报告时，应同时写下 Android Studio 版本、sample size、设备和操作步骤。
+
+### malloc debug 与 libmemunreachable：受控诊断
+
+[AOSP Native memory 文档](https://source.android.com/docs/core/tests/debug/native-memory)把 malloc debug、libmemunreachable、malloc hooks 和 heapprofd 分成不同工具。malloc debug 适合 root、userdebug 或可控调试条件，不应常驻普通应用生产进程。
+
+libmemunreachable 用保守的可达性扫描报告疑似不可达 Native Heap。Android 17 的 [`MemUnreachable.cpp`](https://android.googlesource.com/platform/system/memory/libmemunreachable/+/android-17.0.0_r1/MemUnreachable.cpp)会把 `[anon:libc_malloc]`、`[anon:scudo:*]` 和 `[anon:GWP-ASan*]` 识别为 heap mappings，并通过 `DetectLeaks()`、结果归并与回溯生成报告。保守扫描可能因为类似指针的数值而保留对象，也可能受权限和线程状态影响；报告适合作为线索，需要用分配栈和复现场景确认。
+
+### `smaps`：回答“增长属于哪种映射”
+
+以下情况应回到 VMA，而不是继续放大 heap profiler：
+
+- `dumpsys meminfo` 的 Unknown、Code 或 Stack 比 Native Heap 涨得快；
+- 线程数量与 Stack RSS 同时增加；
+- 大块匿名 `mmap()` 没有经过 `malloc()`；
+- 共享库或模型文件映射增加；
+- Graphics 增长明显，heapprofd 没有对应样本。
+
+`smaps` 中出现 `[anon:scudo:primary]` 或 `[anon:scudo:secondary]` 只能证明这段 VMA 由 Scudo 管理。它不能指出哪个对象泄漏，也不能说明 VMA 内每一页都被业务对象占用。
+
+## Scudo 崩溃如何归因
+
+Scudo 发现不可恢复的堆状态异常时会输出 `Scudo ERROR` 并终止进程。常见类型包括 corrupted chunk header、invalid chunk state、misaligned pointer、allocation type mismatch 和 invalid sized delete。错误名称是 allocator 在检查点看到的症状。
+
+例如，线程 B 在 `free()` 时发现 chunk header 损坏，越界写入可能早已发生在线程 A。此时 B 的栈可以确认检查点，不能单独证明 B 是写坏内存的位置。排查应保留：
+
+- 完整 tombstone、signal、fault address 和 Scudo 错误文本；
+- so 路径、Build ID、ABI、Android 版本和设备；
+- 崩溃线程与相关工作线程；
+- 可匹配 Build ID 的未剥离符号；
+- GWP-ASan、MTE 或 HWASan 提供的 allocation、deallocation、access 信息。
+
+### GWP-ASan 的生产边界
+
+[GWP-ASan 官方文档](https://developer.android.com/ndk/guides/gwp-asan)给出的当前规则如下：
+
+- GWP-ASan 适用于 target Android 11 / API 30 及以上的应用；
+- `android:gwpAsanMode="always"` 会在命中保护样本时终止进程；
+- Android 14 / API 34 及以上，manifest 未指定该属性时默认使用 Recoverable GWP-ASan；
+- Recoverable GWP-ASan 约在 1% 的应用启动中启用，每次启动最多生成一份报告；
+- Recoverable 模式写出 tombstone 后允许进程继续运行，但此后的程序行为未定义；
+- 报告可通过 `ActivityManager.getHistoricalProcessExitReasons()` 获取。
+
+官方文档还给出启用 GWP-ASan 时每个受影响进程当前约 70 KiB 的固定 RAM 开销。这里的“约”与“当前”必须保留，它是平台实现说明，不能当成所有未来版本的保证。
+
+Recoverable 模式没有立即结束进程，不表示内存破坏已恢复。应用侧应优先修复该报告，不要依赖损坏后的进程继续提供正确结果。
+
+### MTE 的测试与生产边界
+
+[AOSP MTE 文档](https://source.android.com/docs/security/test/memory-safety/arm-mte)说明，MTE 用硬件标签检查指针与内存标签，可发现 use-after-free 和 buffer overflow。模式选择影响错误定位与成本：
+
+- SYNC 在标签不匹配时立即触发 `SIGSEGV`，诊断更精确，适合测试和专项复现；
+- ASYNC 会延后到内核入口处报告，性能成本较低，故障地址与访问位置不如 SYNC 精确；
+- ASYMM 对读写采用不同检查方式，最终行为还受设备硬件和平台配置影响。
+
+应用 manifest 的 `android:memtagMode` 只表达进程请求，设备是否支持、平台如何配置以及 CPU 核心的有效模式都要一并确认。20.11 节详细说明 MTE 报告和灰度策略。
+
+## 16 KB Page Size 与 Native Heap
+
+Android 15 起，AOSP 支持使用 16 KB page size 的设备。[Android 16 KB page size 指南](https://developer.android.com/guide/practices/page-sizes)还记录了 Android 17 的兼容行为和当前工具要求。页大小影响 ELF LOAD segment 对齐、APK 中未压缩 so 的 zip alignment、`mmap()` 参数与物理页统计。
+
+它与 Scudo 的关系需要分层理解：
+
+- Scudo 管理对象分配和自己的内存区域；
+- 内核按页面维护映射与驻留状态；
+- 16 KB 页会改变小映射、线程栈、文件映射和 allocator region 的页面粒度；
+- PSS/RSS 变化不能直接推导为 `malloc()` 对象增加。
+
+含 Native 代码或三方 so 的应用，应检查所有 ABI 的 ELF segment 和 APK 对齐。运行时用 `adb shell getconf PAGE_SIZE` 读取设备实际页大小，不要在代码中假设 `4096`。官方指南要求 Google Play 上面向 Android 15 及以上设备的新应用和更新自 2025 年 11 月 1 日起支持 16 KB page size；该要求是发布兼容性规则，不是内存性能结论。
+
+Android 17 还允许将 16 KB backcompat 设为 `fatal`，用于让不兼容二进制立即中止。该模式适合兼容性测试；内存治理仍要分别观察 allocator 统计、VMA 和调用栈。
+
+## 三方 so 的排查重点
+
+三方 so 没有源码时，分配栈仍能支持工程决策，但前提是保留可比对的信息：
+
+- SDK 名称、版本、so Build ID 和 ABI；
+- 触发功能、输入尺寸、并发数与进程；
+- Android 版本、设备页大小和是否启用 GWP-ASan/MTE；
+- heapprofd 样本、tombstone 与相同场景的 `meminfo`；
+- 供应商提供的符号或符号化结果。
+
+可执行动作包括升级或回退 SDK、限制输入和并发、关闭问题功能、把高风险任务放到独立进程。进程隔离可以减少主进程受影响的范围，不会修复泄漏或内存破坏。缺少 Build ID 与版本信息时，同名 so 的报告可能来自不同二进制，聚合结果会失真。
+
+## 建立可回归的判断标准
+
+Native Heap 预算应按设备内存档位、ABI、页大小、进程类型和业务场景分别建立。固定一个全量阈值会把正常差异与异常增长混在一起。
+
+每个回归用例至少记录：
+
+1. 操作前、峰值、退出页面后和稳定等待后的 allocator allocated、PSS/RSS 与内存分类；
+2. 重复操作次数、输入规模、并发数和缓存状态；
+3. heapprofd 或 Native Allocations 的未释放调用栈；
+4. 线程数、Graphics、匿名映射和文件映射的增量；
+5. native crash、LMKD 退出与用户可见性能变化。
+
+修复是否有效，要看同设备分组、同场景和同工具配置下的差值。若 allocator allocated 回落而 PSS 暂未回落，应继续观察复用与页面归还；若未释放样本和 allocated 持续上升，则回到持有路径；若 PSS 增长集中在 Graphics 或非 heap VMA，则转到对应子系统。
 
 ## 小结
 
-Scudo 负责服务 Android 默认 native heap 分配并提供堆安全缓解；heapprofd、Native Allocations、malloc debug、libmemunreachable 负责观察；GWP-ASan 和 MTE 负责把抽样或硬件层面的内存安全问题暴露出来。线上治理的主线是分清口径、拿到栈、按进程灰度、按指标回滚。只看一条 Native Heap 曲线，无法判断问题属于 allocator、业务分配、Bitmap、图形缓冲区、线程栈还是文件映射。
+Scudo 是 Android 17 的常规 Native Heap 分配器和安全防护组件，低内存设备仍可能使用 jemalloc。`Debug.getNativeHeapAllocatedSize()` 读取 allocator 的已分配字节；`dumpsys meminfo` 按 VMA 和页面统计 Native Heap；heapprofd 对录制期间的分配事件采样。三种数据不能互相替代。
+
+排查顺序应保持稳定：确认内存分类，比较时间序列，再用分配栈或 VMA 证明归因。Scudo ERROR 表示 allocator 发现了异常，触发检查的栈未必是最早的破坏位置。GWP-ASan、MTE、HWASan、符号与可重复场景共同决定能否定位代码。
 
 ## 参考资料
 
-- [结构参考: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md]
-- [结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
-- [结构参考: Clippings/Android 应用稳定性剖析与优化 - Native 内存泄漏监控：寻找 Native 中不可达内存.md]
-- [已验证: AOSP Scudo 文档, source.android.com/docs/security/test/scudo]
-- [已验证: AOSP native-memory 文档, source.android.com/docs/core/tests/debug/native-memory]
-- [已验证: AOSP main, frameworks/base/core/jni/android_os_Debug.cpp]
-- [已验证: AOSP main, bionic/libc/bionic/malloc_common.cpp]
-- [已验证: AOSP main, system/memory/libmemunreachable/MemUnreachable.cpp]
-- [已验证: 官方文档, developer.android.com/studio/profile/record-native-allocations]
-- [已验证: 官方文档, developer.android.com/ndk/guides/gwp-asan]
-- [已验证: 官方文档, developer.android.com/guide/practices/page-sizes]
-- [已验证: AOSP MTE 文档, source.android.com/docs/security/test/memory-safety/arm-mte]
-
-
-<!-- AIW-源码调研-2026-06-15 -->
-
-## 工具实现层补充：Scudo 在 dumpsys meminfo 与 heapprofd 中的可见形态
-
-本节上文已说明 Scudo 通过 `[anon:scudo:primary]` / `[anon:scudo:secondary]` VMA 名留下可识别痕迹。补一组实现层细节方便排查时直接定位。
-
-### Scudo VMA 在 libmeminfo 中的分类
-
-**源码位置**：AOSP `system/memory/libmeminfo/androidprocheaps.cpp`（android-16.0.0_r1 锚点，AIW §23.3 已引用）。
-
-`ClassifyVma()` 把 `[anon:scudo:*]` 全部归入 Native Heap 分类，与 `[heap]` / `[anon:libc_malloc]` / `[anon:GWP-ASan*]` 同级。在 `dumpsys meminfo` 输出里它们共同计入 `Native Heap` 行的 PSS / Private Dirty，不区分 allocator。区分 allocator 需要看 smaps 行尾的 VMA 名，例如：
-
-```
-[已验证: AOSP android-16.0.0_r1, system/memory/libmeminfo/androidprocheaps.cpp]
-564dca440000-564dca660000 rw-p 00000000 00:00 0
-Name:   [anon:scudo:primary]
-```
-
-### Scudo 在 heapprofd 中的采样
-
-**源码位置**：Perfetto `src/profiling/memory/malloc_interceptor_bionic_hooks.cc`（本地 main 分支）。
-
-Scudo 作为 bionic 默认 allocator（Android 11+），在 `heapprofd_initialize` 接收的 `MallocDispatch*` 中本身就是 `scudo_malloc/free/calloc` 等。当 heapprofd 采样开启后，`heapprofd_malloc(size)` → `wrap_malloc` → Poisson 采样 → 命中时取调用栈。这意味着 **heapprofd 能直接抓到 Scudo 分配热点**，不需要替换 allocator 或重新编译 app。线上选 4096 字节间隔即可同时覆盖 Scudo 与旧 libc malloc 的分配点。[已验证: 一手, 本地 Perfetto main 分支]
-
-### Scudo 与 GWP-ASan 的区分
-
-GWP-ASan 的 VMA 名是 `[anon:GWP-ASan*]`（前缀可配），libmeminfo 同样归入 Native Heap，但在 heapprofd 火焰图中一般采样率低（每 128 次分配抽样一次）；Scudo 自己的抽样（`gwp_asan_sample_rate` 默认 250）与 heapprofd 采样是两个独立机制，**不要混淆**——一个触发崩溃 sample（带 backtrace + tombstone），一个触发 perf sample（写 ring buffer）。[已验证: 一手, 本地 Perfetto main 分支, sampler.h + malloc_interceptor_bionic_hooks.cc]
-
-[调研来源: DeepResearch/2026-06-15-memory-analysis-tools-source-code-stack.md §2, §3, §5]
+- [AOSP：Scudo](https://source.android.com/docs/security/test/scudo)
+- [AOSP：Debug native memory use](https://source.android.com/docs/core/tests/debug/native-memory)
+- [AOSP Android 17：`android_os_Debug.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_os_Debug.cpp)
+- [AOSP Android 17：bionic `malloc_common.cpp`](https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/libc/bionic/malloc_common.cpp)
+- [AOSP Android 17：libmeminfo `androidprocheaps.cpp`](https://android.googlesource.com/platform/system/memory/libmeminfo/+/android-17.0.0_r1/androidprocheaps.cpp)
+- [AOSP Android 17：libmemunreachable `MemUnreachable.cpp`](https://android.googlesource.com/platform/system/memory/libmemunreachable/+/android-17.0.0_r1/MemUnreachable.cpp)
+- [Android 17 Kernel：`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)
+- [Perfetto：Callstack-based Allocation Profiling](https://perfetto.dev/docs/data-sources/native-heap-profiler)
+- [Android Studio：Record native allocations](https://developer.android.com/studio/profile/record-native-allocations)
+- [Android NDK：GWP-ASan](https://developer.android.com/ndk/guides/gwp-asan)
+- [Android Developers：Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
+- [AOSP：Arm Memory Tagging Extension](https://source.android.com/docs/security/test/memory-safety/arm-mte)
