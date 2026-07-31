@@ -88,7 +88,7 @@ Media3 的默认 ABR 不读取 HWC composition type，也不会根据 renderer �
 
 ### Android 平台负责什么
 
-Android 侧承担：
+Android 侧负责：
 
 - `MediaCodec` Java API 与 native Stagefright 状态机；
 - CCodec/Codec2 或 ACodec/OMX 组件接入；
@@ -148,7 +148,7 @@ val player = ExoPlayer.Builder(context, renderersFactory)
 
 ### Android 17 的 crypto async 分支
 
-Media3 1.10.1 在异步 adapter 中还处理 `CONFIGURE_FLAG_USE_CRYPTO_ASYNC`。源码只在 API 36 及以上选择这条配置，并配合专门的 buffer enqueuer。它属于 secure input queueing 行为，不能用来推导图形输出 Surface 的异步状态。
+Media3 1.10.1 在异步 adapter 中还处理 `CONFIGURE_FLAG_USE_CRYPTO_ASYNC`。`DefaultMediaCodecAdapterFactory(Context)` 默认启用这项实验配置，但源码只在 API 36 及以上设置 flag；此时 input buffer 改由同步 enqueuer 提交，crypto 工作交给 codec 的异步路径。它属于 secure input queueing 行为，不能用来推导图形输出 Surface 的异步状态。
 
 ## 四、从 PTS 到 release timestamp
 
@@ -167,7 +167,7 @@ Media3 1.10.1 的普通输出路径包含几组重要阈值：
 | 帧仍早于目标超过 50 ms | `TRY_AGAIN_LATER`，暂不释放 |
 | 帧晚约 30 ms 以上 | 可以 drop 当前输出帧 |
 | 帧晚约 500 ms 以上 | 可以丢到关键帧并 flush/reinitialize codec |
-| 已晚且超过 100 ms 没有释放新帧 | 可以强制释放一帧，避免画面长时间停住 |
+| 帧晚约 30 ms 以上，且超过 100 ms 没有释放新帧 | 可以强制释放一帧，避免画面长时间停住 |
 | decoder input 预计晚约 15 ms 以上 | sample 标记为不被后续帧依赖，或 AV1 依赖解析证明安全时，可提前丢输入 |
 
 这些值属于 Media3 1.10.1 的 `MediaCodecVideoRenderer` 与 `VideoFrameReleaseControl`，不是 Android 17 平台常量。子类可以覆盖部分决策，实验 API 也可以关闭 input drop 门槛。
@@ -292,6 +292,8 @@ API 34 及以上，Media3 1.10.1 创建默认 `SurfaceView` 时把 Surface 生�
 
 `PlayerView` 放入 `AndroidView` 时，SurfaceView 会跨 View/Compose 与 SurfaceFlinger 的同步边界。Media3 提供 `setEnableComposeSurfaceSyncWorkaround()` 处理 API 34 的特定兼容问题，但该 workaround 默认关闭，因为它会影响 XML View 的 shared element transition。
 
+只需要视频承载面时，Media3 1.10.1 的 `media3-ui-compose` 已提供 `PlayerSurface`；需要宽高比、shutter 等基础容器能力时可使用 `ContentFrame`。`PlayerSurface` 仍在内部通过 `AndroidView` 创建 SurfaceView 或 TextureView，并负责调用 Player 的 set/clear API；它不是把 decoder buffer 变成 Compose 纹理。其 SurfaceView 分支会在 API 34 自动使用 `SurfaceSyncGroup` 规避尺寸同步问题，API 35 及以上不走该 workaround。
+
 Compose 页面应把以下状态分开记录：
 
 - composable 是否仍在 composition；
@@ -321,9 +323,9 @@ API 35 及以上，框架还提供 detached output surface 能力；Media3 只�
 
 Android 17 的 `MediaCodec::connectToSurface()` 为每次连接生成：
 
-`generation = (pid << 10) | counter`
+`generation = (pid << 10) | (++counter & ((1 << 10) - 1))`
 
-连接时还会 disconnect/reconnect 并安装 `OnBufferReleasedListener`。generation number 用于防止旧连接留下的 free buffer 被错误附着到新连接。它解决 buffer 身份归属，不保证新 Surface 立刻有内容。
+低 10 bit 是进程内递增计数，高位来自 PID。连接时还会 disconnect/reconnect 并安装 `OnBufferReleasedListener`。generation number 用于防止旧连接留下的 free buffer 被错误附着到新连接。它解决 buffer 身份归属，不保证新 Surface 立刻有内容。
 
 ### 复用 codec 需要满足格式边界
 
@@ -356,9 +358,9 @@ Media3 1.10.1 提供实验性的 secondary `MediaCodecVideoRenderer` prewarming�
 
 Stagefright 根据 codec 名称和 owner 创建 native codec：
 
-- 名称以 `c2.` 开头时创建 CCodec；
-- 名称以 `omx.` 开头时创建 ACodec；
-- owner 明确指定 `codec2` 或 `default` 时走对应分支。
+- owner 为 `default` 时创建 ACodec，以 `codec2` 开头时创建 CCodec；这个判断优先于名称；
+- 没有已识别的 owner 时，名称以 `c2.` 开头创建 CCodec；
+- 没有已识别的 owner 时，名称以 `omx.` 开头创建 ACodec。
 
 Android 17 主流新设备以 Codec2 路径为主，源码仍保留 ACodec/OMX 兼容实现。只展示 ACodec 的 port 配置，无法代表 Android 17 的完整视频 decoder 路径。
 
@@ -945,8 +947,10 @@ tunnel 不依赖普通逐帧 `queueBuffer()` 作为主证据。采样重点转�
 - [Media3 1.10.1 `VideoFrameReleaseHelper.java`](https://github.com/androidx/media/blob/1.10.1/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/video/VideoFrameReleaseHelper.java)：VSync 调整与 `Surface.setFrameRate()`。
 - [Media3 1.10.1 `PlaybackVideoGraphWrapper.java`](https://github.com/androidx/media/blob/1.10.1/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/video/PlaybackVideoGraphWrapper.java)：effects 输入、输出与晚帧控制。
 - [Media3 1.10.1 `PlayerView.java`](https://github.com/androidx/media/blob/1.10.1/libraries/ui/src/main/java/androidx/media3/ui/PlayerView.java)：默认 SurfaceView、Surface 生命周期与 Compose workaround。
+- [Media3 1.10.1 `PlayerSurface.kt`](https://github.com/androidx/media/blob/1.10.1/libraries/ui_compose/src/main/java/androidx/media3/ui/compose/PlayerSurface.kt)：Compose Surface 的绑定、复用与 API 34 同步处理。
 - [Media3 release notes](https://developer.android.com/jetpack/androidx/releases/media3)
 - [Media3 surface types](https://developer.android.com/media/media3/ui/surface)
+- [Media3 `PlayerSurface` reference](https://developer.android.com/reference/kotlin/androidx/media3/ui/compose/PlayerSurface.composable)
 - [Media3 customization](https://developer.android.com/media/media3/exoplayer/customization)
 - [VideoRendererEventListener reference](https://developer.android.com/reference/androidx/media3/exoplayer/video/VideoRendererEventListener)
 
