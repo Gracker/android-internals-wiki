@@ -103,614 +103,425 @@ last_deepseek_cn_review_at: 2026-06-12
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么要了解内存监控与线上治理
+> **版本基线**
+>
+> 本章的平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为锚点；读取 `/proc` 指标时，内核侧以 `android17-6.18-2026-06_r6` 为基线。历史版本只用于说明 API 与行为边界，最高版本为 Android 17。
 
-内存优化做到线上阶段，问题已经从“哪里多占了内存”变成“什么时候该报警、该保留什么现场、该把哪类样本交给谁处理”。本地 Profiler 适合看清单机现象，线上监控要回答的是趋势、阈值、版本回归和 OOM 前兆。
+## 线上监控要回答什么
 
-这里的边界是监控与治理策略。Java 泄漏引用链详见 23.1 节，OOM 分类详见 20.5 节，内存分析工具详见 10.1 节，KOOM 这类专项工具详见 19.3 节。原理部分不重复展开，重点放在可持续采集、告警和现场保存。
+本地 Memory Profiler 适合解释一次复现，线上系统面对的是分散在版本、设备、进程和业务场景中的样本。它至少要回答四个问题：
 
-参考书把 Android App 内存拆成 Java Heap、Native Heap、图形/文件映射、线程栈、多进程共享页等多个来源，这个拆法适合作为线上指标体系的结构参考。线上面板不能只放一个“内存占用”，否则 Java 泄漏、Native 泄漏、图片缓存、线程栈增长、mmap 增长都会混在同一条曲线上。
+- 哪一类内存在增长：Java Heap、native allocator、图形、文件映射、线程栈，还是多个进程的合计。
+- 增长是短时峰值、可回落缓存，还是跨页面、跨会话持续积累。
+- 变化是否集中在某个版本、设备档位、ABI、进程或用户路径。
+- 需要保留轻量指标、退出记录、Java heap dump，还是 native heap profile。
 
-## 内存指标采集：PSS / RSS / Java Heap / Native Heap
+只上报一个“内存占用”无法区分这些问题。PSS、RSS、Java Heap 和 Native Heap 的统计对象不同，任何一项都不能单独代表应用的全部内存。多进程应用还要带进程名；把所有进程混成一个分布，会掩盖主进程回归或独立任务进程的峰值。
 
-线上采集要把“系统怎么计量”和“业务怎么判断”分开。PSS 更适合看进程对系统内存压力的分摊，RSS 更适合看进程当前驻留物理内存，Java Heap 与 Native Heap 用来定位增长来源。
+Java 泄漏引用链见 23.1 节，Native 分配诊断见 23.3 节，Java Heap 预算见 23.4 节，OOM 分类见 20.5 节。本节聚焦生产环境中的指标、判断、降级和证据采集。
 
-| 指标 | 采集入口 | 线上用途 | 边界 |
-|---|---|---|---|
-| PSS | `ActivityManager.getProcessMemoryInfo(intArrayOf(pid))` 或 `Debug.getMemoryInfo()` | 观察进程对系统内存的分摊压力，适合做版本基线和 OOM 前兆指标 | Android Q 起 `getProcessMemoryInfo()` 采样频率被系统限制，过快调用会拿到上一次结果；PSS 读取成本高，不适合秒级轮询 |
-| RSS | Android Studio Process Memory 口径、`/proc/self/status` 的 `VmRSS`、API 35+ 的 `Debug.getRss()` | 观察进程驻留物理内存，适合发现 native 分配、mmap、线程栈和图形资源抬升 | RSS 包含共享页，不能直接等同于“应用独占内存”；公开 API 可用性随版本变化，线上兼容采集应优先读本进程 `/proc` |
-| Java Heap | `Runtime.totalMemory() - Runtime.freeMemory()`、`Runtime.maxMemory()`、`Debug.MemoryInfo.dalvikPss` | 判断 Java 对象分配与 `maxMemory()` 的距离，适合 Java OOM 预警和泄漏趋势 | `dalvikPss` 是内存页口径，`Runtime` 是 Java 堆对象口径，两者不能混算 |
-| Native Heap | `Debug.getNativeHeapAllocatedSize()`、`Debug.MemoryInfo.nativePss` | 观察 C/C++、Bitmap native backing、第三方 SDK、播放器、图形相关分配 | native 增长不等于泄漏，缓存、解码 buffer、mmap 和线程栈都要分开归因 |
-| 系统水位 | `ActivityManager.getMemoryInfo(ActivityManager.MemoryInfo)` | 判断设备是否进入低内存状态，结合 `availMem`、`threshold`、`lowMemory` 做全局背景信号 | 这是设备维度信号，不是单个 App 的 OOM 阈值 |
+## 内存指标采集：先统一口径
 
-[已验证: 官方文档, developer.android.com/reference/android/os/Debug.MemoryInfo] `Debug.MemoryInfo` 按 dalvik、native、other 拆分内存映射，公开字段包含 `dalvikPss`、`nativePss`、`otherPss`、private dirty 等，单位为 kB。
+### PSS、RSS、Java Heap 与 Native Heap
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Debug.java] `Debug.getMemoryInfo(MemoryInfo)` 直接读取当前进程可见的底层内存信息；源码注释说明它可能拿不到某些受保护分配，例如 graphics，若要覆盖进程分配信息，应使用 `ActivityManager.getProcessMemoryInfo(int[])`。
+| 指标 | Android 入口 | 适合回答 | 不能据此断言 |
+| --- | --- | --- | --- |
+| PSS | `ActivityManager.getProcessMemoryInfo()`、`Debug.getPss()`、`Debug.MemoryInfo.totalPss` | 进程私有页加共享页按比例分摊后的系统内存占用 | 某个 Java 对象或 native 调用栈造成了增长 |
+| RSS | API 35+ 的 `Debug.getRss()`；旧版本可读本进程 `/proc/self/status` 的 `VmRSS` | 当前驻留页总量及其变化 | RSS 全部由应用独占；共享页会被每个进程完整计入 |
+| Java Heap | `Runtime.totalMemory() - Runtime.freeMemory()`、`Runtime.maxMemory()` | ART heap 已用空间的近似值与当前上限 | 已用值全是可达对象；尚未 GC 的不可达对象也可能在其中 |
+| native allocator | `Debug.getNativeHeapAllocatedSize()` | 当前进程 native heap allocator 已分配的字节数 | 所有 Native、Graphics、mmap、线程栈都包含在该值中 |
+| 分类页 | `Debug.MemoryInfo.dalvikPss`、`nativePss`、`otherPss` 及 summary stats | PSS 按映射类别的组成 | `nativePss` 等于 `malloc` 活跃分配；两者统计路径不同 |
+| 设备水位 | `ActivityManager.getMemoryInfo()` | `availMem`、`threshold`、`lowMemory` 所描述的设备背景 | 当前进程离 Java OOM 还有多少字节 |
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ActivityManager.java] `getProcessMemoryInfo(int[])` 通过系统服务返回每个 pid 对应的 `Debug.MemoryInfo`；源码注释写明 Android Q 起该 API 采样频率受到限制，调用过快会返回上一次数据。
+`Debug.MemoryInfo` 的 PSS 字段以 kB 表示；`Runtime` 和 `Debug.getNativeHeapAllocatedSize()` 返回字节，入库前必须保留单位。`Debug.getMemoryInfo()` 直接读取当前进程，但 Android 17 源码注释说明它可能无法取得 graphics 等受保护分配；需要更完整的进程分类时，应使用 `ActivityManager.getProcessMemoryInfo()`。
 
-一段可用的采集代码要做两件事：按低频周期采 PSS / native 页口径，按更高频周期采 Java Heap 对象口径。下面是采集骨架，重点看单位换算和采样频率分离。
+Android 10（API 29）起，普通应用通过 `getProcessMemoryInfo()` 只能取得调用方 UID 下的进程信息，其他 PID 的条目为零；平台还会限制采样频率，调用过密可能收到上一次结果。采样请求时间不等于底层数据的新鲜时间，监控系统不能用高频调用制造虚假的高分辨率曲线。
+
+Android 17 的 `Debug.getRss()` 仍是当前进程 API。AOSP JNI 路径读取 `StatusVmRSS()`，并在 memtrack 可用时加入 graphics、GL 和 other；直接读取 `/proc/self/status` 只能得到原始 `VmRSS`。因此，API 35 前后的 RSS 来源需要单独标记，不能无说明地拼进同一条基线。
+
+[源码锚点: AOSP `android-17.0.0_r1`, `frameworks/base/core/java/android/os/Debug.java`, `frameworks/base/core/jni/android_os_Debug.cpp`, `frameworks/base/core/java/android/app/ActivityManager.java`]
+
+### 一个可审计的采样骨架
+
+下面的代码采集当前进程的低频快照。调用方需要在非主线程执行，并由远程策略决定采样时机；代码没有假设固定周期或固定阈值。
 
 ```kotlin
 import android.app.ActivityManager
+import android.app.Application
 import android.content.Context
+import android.os.Build
 import android.os.Debug
 import android.os.Process
+import android.os.SystemClock
+import java.io.File
 
-// 示意代码：调用方需要放到后台线程，并加采样率、远程开关和异常保护。
-data class MemorySample(
-    val timestampMs: Long,
-    val pssKb: Int,
-    val javaHeapUsedKb: Long,
-    val javaHeapMaxKb: Long,
-    val nativeHeapAllocatedKb: Long,
-    val dalvikPssKb: Int,
-    val nativePssKb: Int,
-    val otherPssKb: Int
+enum class RssSource {
+    DEBUG_API_WITH_MEMTRACK,
+    PROC_STATUS
+}
+
+data class ProcessMemorySample(
+    val elapsedRealtimeMs: Long,
+    val pid: Int,
+    val processName: String,
+    val pssKb: Int?,
+    val rssKb: Long?,
+    val rssSource: RssSource,
+    val javaHeapUsedBytes: Long,
+    val javaHeapLimitBytes: Long,
+    val nativeAllocatorBytes: Long,
+    val systemAvailBytes: Long,
+    val systemThresholdBytes: Long,
+    val systemLowMemory: Boolean
 )
 
-fun collectMemorySample(context: Context): MemorySample {
-    val am = context.getSystemService(ActivityManager::class.java)
-    val info = am.getProcessMemoryInfo(intArrayOf(Process.myPid())).first()
-    val runtime = Runtime.getRuntime()
+private fun readVmRssKb(): Long? = runCatching {
+    File("/proc/self/status").useLines { lines ->
+        lines.firstOrNull { it.startsWith("VmRSS:") }
+            ?.substringAfter(':')
+            ?.trim()
+            ?.split(Regex("\\s+"))
+            ?.firstOrNull()
+            ?.toLongOrNull()
+    }
+}.getOrNull()
 
-    return MemorySample(
-        timestampMs = System.currentTimeMillis(),
-        pssKb = info.totalPss,
-        javaHeapUsedKb = (runtime.totalMemory() - runtime.freeMemory()) / 1024,
-        javaHeapMaxKb = runtime.maxMemory() / 1024,
-        nativeHeapAllocatedKb = Debug.getNativeHeapAllocatedSize() / 1024,
-        dalvikPssKb = info.dalvikPss,
-        nativePssKb = info.nativePss,
-        otherPssKb = info.otherPss
+fun collectProcessMemorySample(context: Context): ProcessMemorySample {
+    val am = context.getSystemService(ActivityManager::class.java)
+    val processInfo = am.getProcessMemoryInfo(intArrayOf(Process.myPid()))
+        .firstOrNull()
+    val runtime = Runtime.getRuntime()
+    val systemInfo = ActivityManager.MemoryInfo().also(am::getMemoryInfo)
+
+    val debugRssKb = if (Build.VERSION.SDK_INT >= 35) {
+        Debug.getRss().takeIf { it > 0L }
+    } else {
+        null
+    }
+    val rssKb = debugRssKb ?: readVmRssKb()
+
+    return ProcessMemorySample(
+        elapsedRealtimeMs = SystemClock.elapsedRealtime(),
+        pid = Process.myPid(),
+        processName = Application.getProcessName(),
+        pssKb = processInfo?.totalPss?.takeIf { it > 0 },
+        rssKb = rssKb,
+        rssSource = if (debugRssKb != null) {
+            RssSource.DEBUG_API_WITH_MEMTRACK
+        } else {
+            RssSource.PROC_STATUS
+        },
+        javaHeapUsedBytes = runtime.totalMemory() - runtime.freeMemory(),
+        javaHeapLimitBytes = runtime.maxMemory(),
+        nativeAllocatorBytes = Debug.getNativeHeapAllocatedSize(),
+        systemAvailBytes = systemInfo.availMem,
+        systemThresholdBytes = systemInfo.threshold,
+        systemLowMemory = systemInfo.lowMemory
     )
 }
 ```
 
-这段代码只能作为基础探针。线上版本还要补进程名、前后台状态、页面、机型、Android 版本、App 版本、采样原因和采样间隔；没有这些维度，单点数值很难转成治理动作。
+`pssKb == null` 或 `rssKb == null` 表示本次未取得有效值，不能按零内存上报。`elapsedRealtimeMs` 适合计算当前进程内的时间差；跨进程、跨重启聚合时还要带服务端接收时间。事件包还应包含 App 版本、Android 版本、ABI、设备 RAM 档位、前后台状态、页面类别、采样原因、采样策略版本和每个指标的来源。
 
-[自动发现] RSS 曲线要单独入库。Android Studio 2026 年文档把 Process Memory（RSS）拆成 Total、Allocated、File Mappings、Shared，用来解释物理驻留内存来自匿名私有分配、文件映射还是共享内存。线上不一定能拿到 Studio 的完整拆分，但至少要区分 `VmRSS`、PSS 和 Java Heap，避免把 RSS 抬升误判成 Java 泄漏。[已验证: 官方文档, developer.android.com/studio/profile/chart-glossary/process-memory]
+### 采样频率由成本和问题决定
 
+指标分为三类：
 
+- 本进程计数：Java Heap 和 native allocator 读取较直接，可以在关键业务边界采集。
+- 映射统计：PSS 需要读取进程映射并可能经过系统服务，适合低频、场景结束或异常触发。
+- 系统产物：heap dump、heap profile 和 Perfetto profile 开销与敏感度高，只能由严格条件触发。
 
-<!-- AIW-源码调研-2026-06-22 -->
-## 源码调研补充：Android 17 内存监控工具适配实践
-
-**调研发现（2026-06-22）：**
-
-### Valgrind 在 Android 17 中的状态
-- **状态：完全废弃** - AOSP 最后更新于 2014 年（Valgrind SVN r14689），仅支持 Android 4.x
-- **构建支持：** 无 Android.bp/Android.mk，无 arm64 支持
-- **结论：** Android 17 中**完全不可用**，已被 AddressSanitizer 完全替代
-
-### AddressSanitizer 在 Android 17 中的实现机制
-- **核心发现：** ASan 在 Android 17 中通过 `linker_asan` 动态库重定向机制工作
-- **关键路径：** 
-  ```text
-  App binary → linker_asan → AndroidRuntime → JNI → ASan runtime → shadow memory mapping
-  ```
-- **源码位置：** 
-  - `bionic/linker/linker.cpp`：定义库搜索路径 `/data/asan/system/lib64`、`/system/lib64/asan` 等
-  - `external/compiler-rt/lib/asan/asan_linux.cc`：Android 特定空实现 `AsanCheckDynamicRTPrereqs()`
-  - `llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp`：32 位 Android 使用动态 shadow 偏移
-
-### Android 17 官方政策变化
-- **2023 年官方声明：** ASan 标记为"unsupported"
-- **推荐替代：** HWASan（ARM64，Android 14+）
-- **向后兼容：** ASan 仍可用但可能存在 bug
-
-### ELF Note 机制澄清
-- **用途：** 页面大小迁移检测（`NT_ANDROID_TYPE_PAD_SEGMENT`）
-- **与 ASan 关系：** **不相关**，主要用于 linker 内部页面大小处理
-
-<!-- AIW-源码调研-2026-06-22 结束 -->
-
-<!-- AIW-源码调研-2026-06-13 -->
-### Android 14+ 高精度内存跟踪 API 源码补充
-
-本节正文与延伸阅读已点名 `setWatchHeapLimit`、`ApplicationExitInfo.REASON_FREEZER`、`bionic M_PURGE_ALL` 等概念。下列源码锚点用于把这些概念落到具体的调用链。
-
-#### setWatchHeapLimit → setDumpHeapDebugLimit → AppProfiler
-
-App 侧入口：`frameworks/base/core/java/android/app/ActivityManager.java` 行 5810-5843
-```java
-public void setWatchHeapLimit(long pssSize) {
-    try {
-        getService().setDumpHeapDebugLimit(null, 0, pssSize,
-                mContext.getPackageName());
-    } catch (RemoteException e) {
-        throw e.rethrowFromSystemServer();
-    }
-}
-```
-AIDL 定义：`frameworks/base/core/java/android/app/IActivityManager.aidl` 行 581
-```
-void setDumpHeapDebugLimit(in String processName, int uid, long maxMemSize,
-        in String reportPackage);
-```
-
-服务端注册：`frameworks/base/services/core/java/com/android/server/am/AppProfiler.java` 行 287、行 1159-1172
-```java
-private final ProcessMap<Pair<Long, String>> mMemWatchProcesses = new ProcessMap<>();
-
-void setDumpHeapDebugLimit(String processName, int uid, long maxMemSize,
-        String reportPackage) {
-    synchronized (mProfilerLock) {
-        if (maxMemSize > 0) {
-            mMemWatchProcesses.put(processName, uid, new Pair(maxMemSize, reportPackage));
-        } else {
-            if (uid != 0) {
-                mMemWatchProcesses.remove(processName, uid);
-            } else {
-                mMemWatchProcesses.getMap().remove(processName);
-            }
-        }
-    }
-}
-```
-
-阈值命中逻辑：`AppProfiler.recordPssSampleLPf` 行 938-960
-```java
-if ((pss * 1024) >= check && profile.getThread() != null
-        && mMemWatchDumpProcName == null) {
-    if (Build.IS_DEBUGGABLE || proc.isDebuggable()) {
-        Slog.w(TAG, "Process " + proc + " exceeded pss limit " + check + "; reporting");
-        startHeapDumpLPf(profile, false);
-    }
-}
-```
-关键约束：① `mMemWatchDumpProcName == null` 互斥，同一时刻只能一个进程 dump；② release 包（`!Build.IS_DEBUGGABLE && !proc.isDebuggable()`）只写日志不 dump；③ watch 状态在 system_server，进程被 kill + 重启后仍生效。
-
-Android 15 起 `recordRssSampleLPf`（行 998-1042）走同样的 `mMemWatchProcesses` 检查，覆盖 `Flags.removeAppProfilerPssCollection()` 启用后的 RSS 路径。
-
-#### PSS 采样的高效路径：smaps_rollup
-
-JNI：`frameworks/base/core/jni/android_os_Debug.cpp` 行 264-329 调 `::android::meminfo::ProcMemInfo::SmapsOrRollup(&stats)`。
-
-`platform/system/memory/libmeminfo/procmeminfo.cpp` 行 334-338
-```cpp
-bool ProcMemInfo::SmapsOrRollup(MemUsage* stats) const {
-    std::string path = ::android::base::StringPrintf(
-            "/proc/%d/%s", pid_, IsSmapsRollupSupported() ? "smaps_rollup" : "smaps");
-    return SmapsOrRollupFromFile(path, stats);
-}
-```
-`IsSmapsRollupSupported()`（行 657-677）一次性探测 `/proc/self/smaps_rollup` 并把结果原子化缓存：kernel 支持时单次 readline 即可拿到 PSS / Private_Clean / Private_Dirty / SwapPss 汇总，VMA 全量扫描的旧路径降级为 fallback。这是 `setWatchHeapLimit` 能落到 AMS 周期性 PSS 采样上不被 I/O 拖垮的前提。
-
-#### 客户端节流：RateLimitingCache
-
-`ActivityManager.java` 行 243-244、行 3509-3527
-```java
-private static final RateLimitingCache<MemoryInfo> mMemoryInfoCache =
-        new RateLimitingCache<MemoryInfo>();
-
-public void getMemoryInfo(MemoryInfo outInfo) {
-    if (Flags.rateLimitGetMemoryInfo()) {
-        synchronized (mMemoryInfoCache) {
-            mMemoryInfoCache.get(() -> {
-                getMemoryInfoInternal(mRateLimitedMemInfo);
-                return mRateLimitedMemInfo;
-            });
-            mRateLimitedMemInfo.copyTo(outInfo);
-        }
-    } else {
-        getMemoryInfoInternal(outInfo);
-    }
-}
-```
-`Flags.rateLimitGetMemoryInfo()` 是 aconfig flag，启用后即使 App 内部高频调用 `getMemoryInfo()`，穿透到 system_server 的频率也会被 `RateLimitingCache` 压制。
-
-服务端 `ActivityManagerService.getProcessMemoryInfo`（行 3947-4037）另有 `mConstants.MEMORY_INFO_THROTTLE_TIME` 节流：非 shell 调用且距上次采样未过期则直接返回 `ProcessProfileRecord.lastMemInfo`。两层节流叠加决定了线上只能「分钟级或事件触发式」采样。
-
-#### ApplicationExitInfo 退出原因细分
-
-`frameworks/base/core/java/android/app/ApplicationExitInfo.java` 行 165-183
-```java
-public static final int REASON_FREEZER = 14;
-public static final int REASON_PACKAGE_STATE_CHANGE = 15;
-public static final int REASON_PACKAGE_UPDATED = 16;
-```
-subreason（行 200-261）补齐 `SUBREASON_MEMORY_PRESSURE = 6`、`SUBREASON_LARGE_CACHED = 5` 等低内存子原因；`getPss()` / `getRss()` 字段携带被杀瞬间的 PSS / RSS 快照，等价于「被杀瞬间的精确 PSS 样本」。
-
-线上策略升级：App 启动时 `ActivityManager.getHistoricalProcessExitReasons(packageName, pid, maxNum)` 拉取最近 N 次退出原因，遇到 `REASON_LOW_MEMORY` + `SUBREASON_LARGE_CACHED` / `SUBREASON_MEMORY_PRESSURE` 直接归因到 LMK，无须依赖 fork dump 或第三方 KOOM。
-
-#### 范围边界与未验证项
-
-本补充基于 AOSP main 分支，`refs/heads/android-17.0.0_r1` tag 在 2026-06-13 调研时点尚未公开合并（googlesource.com 上未返回 200），因此 23.7 节正文里以 main 分支为锚点描述 Android 17 行为时需要保留这层不确定性标注，待 Android 17 release tag 上线后单独 rebase 验证。
-
-未在本报告验证：`Flags.rateLimitGetMemoryInfo()` 默认窗口、`mConstants.MEMORY_INFO_THROTTLE_TIME` 字面量、`bionic M_PURGE_ALL` 在 libc 的具体路径。建议下一轮专题分别覆盖。
-
-[已验证: 一手 AOSP main 分支源码锚点，见 DeepResearch/2026-06-13-android14-memory-tracking-apis-leak-detection.md]
-
+采样任务自身也要测量执行时间、分配量、I/O 和上报量。若探针在启动、滚动或渲染关键路径执行，采集行为可能改变被观察对象。官方也不建议持续轮询 `ActivityManager.getMemoryInfo()`。每轮发布都要保留“未采到、被限流、权限不足、文件失败”等状态，不能只统计成功样本。
 
 ## 内存水位线与告警策略
 
-水位线不要写成固定百分比。不同设备的 `memoryClass`、前后台行为、64 位比例、图片规格、页面复杂度和厂商 LMK 策略都不一样，固定“80% 报警”会在低端机上过晚，在高端机上过早。
+### 不使用跨设备固定百分比
 
-更稳的水位线由三层组成：
+Java heap limit、设备 RAM、页面资源、ABI、WebView 版本和厂商内存策略都会改变正常分布。一个跨设备固定比例容易同时产生漏报与误报。线上阈值应来自同类样本：
 
-| 层级 | 判断对象 | 触发方式 | 处理动作 |
-|---|---|---|---|
-| 版本基线 | P50 / P90 / P99 的 PSS、RSS、Java Heap 使用率 | 每个版本、机型档位、进程类型分别建基线 | 发现版本回归，拦截灰度扩大 |
-| 设备水位 | `ActivityManager.MemoryInfo.availMem`、`threshold`、`lowMemory` | 系统进入低内存区间，或 `availMem` 接近 `threshold` | 降低缓存、停止预加载、延后非必要任务 |
-| 进程水位 | Java Heap 使用率、PSS / RSS 连续增长、Native Heap 增长 | 连续 N 次采样超过阈值，且 GC / trim 后仍未回落 | 采集快照、打标页面、触发专项诊断 |
+- 版本：当前灰度版本对比上一稳定版本。
+- 设备：按 RAM 档位、low-RAM 标记、ABI 和形态分组。
+- 进程：主进程、独立任务进程、推送进程、WebView 宿主分别统计。
+- 场景：冷启动稳定点、页面停留、任务峰值、页面退出后的回落、后台驻留分别统计。
+- 状态：前台可见、前台服务、后台和 cached 状态不能共用一条阈值。
 
-[已验证: 官方文档, developer.android.com/reference/android/app/ActivityManager.MemoryInfo] `ActivityManager.MemoryInfo` 提供 `availMem`、`totalMem`、`threshold` 和 `lowMemory`。其中 `threshold` 是系统认为可用内存偏低并开始杀后台服务或非必要进程的 `availMem` 门槛，`lowMemory` 表示系统当前是否处于低内存状态。
+基线至少要保留分布、样本数和缺失率。均值会掩盖长尾；分位数能描述尾部，但样本不足、设备构成变化或场景口径变化时，分位数也不能直接用于发布判断。
 
-告警规则要看“持续增长”和“回落能力”。一次 PSS 高点可能来自大图解码、页面切换、短视频缓冲或文件 mmap；连续多个采样窗口高位不回落，才更接近泄漏或缓存失控。
+### 一条告警需要趋势、恢复能力和上下文
 
-一套常用的内存告警口径可以这样落表：
+| 观察 | 需要组合的信号 | 更可能的方向 |
+| --- | --- | --- |
+| Java Heap 接近上限 | 使用比例、分配/回收趋势、页面退出后的回落 | 无界缓存、对象泄漏、批量分配过大 |
+| RSS/PSS 上涨而 Java Heap 平稳 | native allocator、Graphics、线程数、FD、mmap 场景 | Native、图形、线程栈或文件映射 |
+| native allocator 上涨 | `nativeAllocatorBytes` 与 `nativePss`、RSS 同向性 | malloc 路径增长；仍需 heap profile 或调用栈确认 |
+| PSS 高但 RSS 变化不同 | 共享页比例、进程数量、WebView renderer | 共享映射或进程结构变化 |
+| `lowMemory=true` | `availMem`、`threshold`、进程状态、设备档位 | 设备整体压力，不等同于当前进程泄漏 |
+| 资源释放后不回落 | 相同场景的多次采样、GC 与生命周期边界 | 持有关系、allocator 保留或映射未释放 |
 
-| 事件 | 条件 | 样本字段 |
-|---|---|---|
-| `memory_baseline_regression` | 同机型档位 P90 PSS 比上一稳定版本上升超过阈值，并持续两个灰度批次 | version、device_tier、process、pss_p90、rss_p90、sample_count |
-| `java_heap_pressure` | Java Heap 使用率连续超过阈值，且手动释放业务缓存后仍未回落 | heap_used、heap_max、page_stack、gc_count、cache_size |
-| `native_growth` | Native Heap 或 RSS 连续增长，但 Java Heap 稳定 | native_heap、rss、thread_count、fd_count、top_page |
-| `system_low_memory` | `lowMemory=true` 或 `availMem` 接近 `threshold` | avail_mem、threshold、foreground、trim_level、device_tier |
-| `snapshot_triggered` | 满足快照条件并成功保留现场 | snapshot_type、file_size、duration、result、reason |
+下面的分类器只处理 Java Heap 连续高位。阈值和最少样本数必须由发布策略传入，不能把示例值写死在客户端。
 
-这类事件要能转成治理动作：版本回归给发布门禁，单设备高水位给快照采集，低内存信号给端侧降级。把所有情况都打成一个 “OOM warning” 会让排查入口失效。
+```kotlin
+data class HeapPressurePolicy(
+    val warningFraction: Double,
+    val captureFraction: Double,
+    val minimumSamples: Int
+) {
+    init {
+        require(warningFraction in 0.0..1.0)
+        require(captureFraction in warningFraction..1.0)
+        require(minimumSamples > 0)
+    }
+}
+
+enum class HeapPressure {
+    NORMAL,
+    REDUCE_REBUILDABLE_RESOURCES,
+    CAPTURE_CANDIDATE
+}
+
+fun classifyHeapPressure(
+    samples: List<ProcessMemorySample>,
+    policy: HeapPressurePolicy
+): HeapPressure {
+    val recent = samples.takeLast(policy.minimumSamples)
+    if (recent.size < policy.minimumSamples) return HeapPressure.NORMAL
+    if (recent.any { it.javaHeapLimitBytes <= 0L }) return HeapPressure.NORMAL
+
+    val fractions = recent.map {
+        it.javaHeapUsedBytes.toDouble() / it.javaHeapLimitBytes
+    }
+    return when {
+        fractions.all { it >= policy.captureFraction } ->
+            HeapPressure.CAPTURE_CANDIDATE
+        fractions.all { it >= policy.warningFraction } ->
+            HeapPressure.REDUCE_REBUILDABLE_RESOURCES
+        else -> HeapPressure.NORMAL
+    }
+}
+```
+
+这个结果只是一个候选信号。进入 `CAPTURE_CANDIDATE` 前还要检查前后台状态、用户交互、磁盘、电量、近期采集配额和隐私策略；进入资源收缩后要再采一次轻量指标，记录释放动作是否有效。
+
+### 告警事件要能指导排查
+
+建议把事件分开，而非统一命名为“OOM warning”：
+
+| 事件 | 判定重点 | 必要字段 |
+| --- | --- | --- |
+| `memory_baseline_regression` | 同一分组相对稳定版本的分布变化 | 基线版本、当前版本、分组键、分位数、样本数、缺失率 |
+| `java_heap_pressure` | Java Heap 连续高位与回落失败 | used/max、GC 统计、页面类别、缓存规模、执行动作 |
+| `native_or_mapping_growth` | RSS/PSS 上涨且 Java Heap 平稳 | native allocator、分类 PSS、线程、FD、任务类型 |
+| `system_memory_pressure` | 设备低内存背景与应用状态 | availMem、threshold、lowMemory、进程重要性 |
+| `profile_requested` | 满足证据采集条件 | 触发规则、配额、设备状态、请求类型 |
+| `profile_result` | 系统返回成功或错误 | result type、错误码、文件大小、策略版本 |
+| `previous_memory_exit` | 重启后发现 LMK 或 Memory Limiter | exit reason、description marker、上次采样 PSS/RSS |
+
+事件里应保存页面类别或业务阶段，不要默认上传完整 URL、搜索词、对象字符串或用户标识。监控维度越细，越需要在客户端先做枚举化和最小化。
 
 ## OOM 预警与主动回收
 
-OOM 预警不是等 `OutOfMemoryError` 抛出来。线上更有价值的窗口在 OOM 之前：Java Heap 接近上限、PSS / RSS 长时间不回落、系统低内存信号增强、页面刚经历大图/视频/列表密集加载。
+### 能安全释放的只有业务可控资源
 
-可执行的预警策略按信号强弱分级：
+预警阶段可以缩小图片缓存、停止预取、取消尚未开始的批处理、减少播放器预缓冲、关闭闲置 WebView、释放页面级对象并降低后续输入规格。流、游标、文件描述符、`ParcelFileDescriptor`、`SharedMemory` 映射和 native handle 要按所有权关闭。
 
-| 等级 | 信号 | 端侧动作 | 上报动作 |
-|---|---|---|---|
-| L1 观察 | Java Heap 或 PSS 高于该设备档位 P90 | 记录页面和业务状态，不打扰用户 | 普通采样上报 |
-| L2 降级 | 连续采样高位；Android 13 及以下可结合 `TRIM_MEMORY_RUNNING_LOW`，Android 14+ 主要看 `MemoryInfo.lowMemory` / `availMem` 接近 `threshold` | 清理可重建缓存、暂停预取、降低图片内存缓存、停止后台批处理 | 上报内存压力事件 |
-| L3 保留现场 | 清理后仍未回落，或接近 Java Heap 上限 | 在采样命中、前台安全、磁盘充足时触发 heap dump / 专项工具 | 上报快照摘要与触发原因 |
-| L4 保护 | 低端机、前台高交互、短时间已 dump、剩余磁盘不足 | 放弃 dump，只保留轻量指标 | 上报放弃原因，避免重复触发 |
+不要把 `System.gc()` 当成常规回收接口。GC 只能处理不可达对象，无法释放仍被缓存、单例、JNI global reference 或活跃组件持有的数据；显式 GC 还可能增加停顿。也不要在全局捕获 `OutOfMemoryError` 后继续运行：OOM 发生时，错误处理路径本身可能无法分配对象，进程状态也可能不再满足业务不变量。只有边界清楚的单次分配可以设计局部降级，例如图片解码失败后改用更小规格。
 
-主动回收只处理“业务可控资源”。图片内存缓存、页面级大对象、预加载队列、临时 byte buffer、播放器预缓冲、WebView 预热实例，都可以按优先级释放；不应该尝试频繁调用 `System.gc()` 作为常规治理手段。GC 只能处理不可达对象，不能释放仍被缓存或单例持有的对象，频繁触发还会带来停顿。
+Android 17 上，`onTrimMemory()` 仍应聚焦 `TRIM_MEMORY_UI_HIDDEN` 和 `TRIM_MEMORY_BACKGROUND`，用于表示 UI 隐藏或进程进入后台 LRU。从 Android 14（API 34）起，其余旧内存压力等级不再投递，并在 Android 15（API 35）废弃。设备压力使用 `ActivityManager.MemoryInfo` 观察；Android 17 App Memory Limits 的预先取证使用 `TRIGGER_TYPE_ANOMALY`，退出后再读 `ApplicationExitInfo`。
 
-参考书把 Java Heap 优化拆成减少缓存、按需加载、优化数据结构和释放无效对象，这个顺序适合线上回收策略：先删业务缓存，再降低后续分配，再进入专项分析。
+[已验证: Android Developers “Manage your app's memory”; `ComponentCallbacks2` API]
 
-一段端侧判断逻辑要保守，只在连续窗口里触发。下面代码只展示规则形状，不代表阈值可以照搬。
+### 重启后核对退出原因
+
+Android 11（API 30）起，`getHistoricalProcessExitReasons()` 可以读取调用方 UID 最近的退出记录。下面的代码只挑出 LMK 和 `android-17.0.0_r1` 所定义的 Memory Limiter 记录。
 
 ```kotlin
-// 示意代码：阈值应按设备档位、进程类型、版本基线动态下发。
-private const val WARN_RATIO = 0.75
-private const val DANGER_RATIO = 0.88
-private const val MIN_CONSECUTIVE_WINDOWS = 3
+import android.app.ActivityManager
+import android.app.ApplicationExitInfo
+import android.content.Context
+import android.os.Build
 
-fun classifyJavaHeapPressure(samples: List<MemorySample>): String {
-    val recent = samples.takeLast(MIN_CONSECUTIVE_WINDOWS)
-    if (recent.size < MIN_CONSECUTIVE_WINDOWS) return "normal"
+enum class MemoryExitKind {
+    LOW_MEMORY_KILL,
+    ANDROID_17_MEMORY_LIMITER
+}
 
-    val ratios = recent.map { it.javaHeapUsedKb.toDouble() / it.javaHeapMaxKb }
-    val allDanger = ratios.all { it >= DANGER_RATIO }
-    val allWarn = ratios.all { it >= WARN_RATIO }
+data class MemoryExitRecord(
+    val kind: MemoryExitKind,
+    val timestampMs: Long,
+    val processName: String,
+    val lastSampledPssKb: Long?,
+    val lastSampledRssKb: Long?
+)
 
-    return when {
-        allDanger -> "snapshot_candidate"
-        allWarn -> "degrade_cache"
-        else -> "normal"
+fun readRecentMemoryExits(
+    context: Context,
+    maxRecords: Int
+): List<MemoryExitRecord> {
+    require(maxRecords > 0)
+    if (Build.VERSION.SDK_INT < 30) return emptyList()
+
+    val am = context.getSystemService(ActivityManager::class.java)
+    return am.getHistoricalProcessExitReasons(
+        context.packageName,
+        0,
+        maxRecords
+    ).mapNotNull { exit ->
+        val kind = when {
+            exit.reason == ApplicationExitInfo.REASON_LOW_MEMORY ->
+                MemoryExitKind.LOW_MEMORY_KILL
+            Build.VERSION.SDK_INT >= 37 &&
+                exit.reason == ApplicationExitInfo.REASON_OTHER &&
+                exit.description?.contains("MemoryLimiter:AnonSwap") == true ->
+                MemoryExitKind.ANDROID_17_MEMORY_LIMITER
+            else -> null
+        } ?: return@mapNotNull null
+
+        MemoryExitRecord(
+            kind = kind,
+            timestampMs = exit.timestamp,
+            processName = exit.processName,
+            lastSampledPssKb = exit.pss.takeIf { it > 0L },
+            lastSampledRssKb = exit.rss.takeIf { it > 0L }
+        )
     }
 }
 ```
 
-这段逻辑的判断点在“连续窗口”。一次峰值只记录，连续高位才降级或保留现场。实际工程还要叠加前后台、页面类型、用户交互状态、磁盘容量和远程开关。
+`getPss()` 和 `getRss()` 是系统上一次采样值，可能为零，也不是进程死亡前一刻的精确内存。`getDescription()` 的一般格式没有稳定保证；这里匹配的 `MemoryLimiter:AnonSwap` 是 Android 17 r1 行为文档明确给出的标记，不应扩展成对其他 description 文本的解析。23.9 节会继续说明 Memory Limiter 的设备范围和测试命令。
 
-[自动发现] `onTrimMemory()` 适合做进程状态和可回收资源信号，不适合单独作为 OOM 预警。Android 14/API 34 起，系统不再向 App 投递 `TRIM_MEMORY_RUNNING_LOW`、`TRIM_MEMORY_RUNNING_CRITICAL`、`TRIM_MEMORY_RUNNING_MODERATE`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 等旧低内存等级；这些常量在 API 35 被废弃。线上策略应把 `TRIM_MEMORY_UI_HIDDEN` / `TRIM_MEMORY_BACKGROUND` 作为缓存收缩时机，把设备级低内存判断交给 `ActivityManager.MemoryInfo` 与自身 PSS / RSS / Java Heap 曲线。详见 20.5 节对 OOM 分类与系统回收路径的讨论。[已验证: 官方文档, developer.android.com/reference/android/content/ComponentCallbacks2; AOSP android-16.0.0_r1, frameworks/base/core/java/android/content/ComponentCallbacks2.java]
+[源码锚点: AOSP `android-17.0.0_r1`, `frameworks/base/core/java/android/app/ApplicationExitInfo.java`]
 
-## 内存快照（Heap Dump）线上采集方案
+## 内存快照线上采集
 
-线上 heap dump 的目标是保留“足够定位问题”的证据，不是把用户设备变成分析机。直接在主进程里 dump 完整 Hprof 会触发 GC、写大文件并占用 I/O；如果触发时机选错，诊断动作本身会放大卡顿、ANR 或 OOM 风险。
+### 先按问题选择产物
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Debug.java] `Debug.dumpHprofData(String)` 调用 `VMDebug.dumpHprofData(fileName)`，源码注释写明它会把 hprof 数据写入指定文件，且可能触发 GC，并可能抛出 `UnsupportedOperationException` 或 `IOException`。
+| 产物 | 适用问题 | 主要限制 |
+| --- | --- | --- |
+| 轻量摘要 | 全量趋势、版本回归、采集前筛选 | 只能指出方向，不能提供对象引用链 |
+| Java heap dump | Java/Kotlin 对象数量、持有关系、泄漏 | 只覆盖 Java Heap；生成与处理会消耗内存、CPU、I/O |
+| heap profile | Java 或 native 分配热点与调用栈 | 采样结果需要结合场景解释，不等于存活对象图 |
+| Perfetto system trace | GC、调度、内存计数与业务时序 | 不替代对象级 heap dump |
+| `ApplicationExitInfo` | LMK、Memory Limiter 及其他退出后的证据 | 记录有限；PSS/RSS 是上次采样值 |
 
-[已验证: 官方文档, developer.android.com/studio/profile/capture-heap-dump] Android Studio 文档建议用 heap dump 查看某个时刻仍占用内存的对象，尤其适合长时间用户会话后识别仍不应存活的对象；文档也说明 Android 的 GC 会短暂停住代码，分配速度超过回收速度会造成跳帧或可见卡顿。
+`Debug.dumpHprofData()` 可以把当前进程 Java heap 写入指定文件。Android 17 `Debug.java` 的注释指出该操作可能触发 GC，并可能抛出 `UnsupportedOperationException` 或 `IOException`。它适合本地、内部构建或受控诊断，不应在内存已经很紧张时由普通线上规则直接调用。
 
-线上方案通常分成四层：
+`ActivityManager.setWatchHeapLimit()` 也不是生产监控接口。Android 17 源码和 API 注释明确要求调用进程为 debuggable，或设备为 userdebug/eng；它适合开发阶段验证 PSS 阈值与 heap dump 流程。
 
-| 层级 | 产物 | 适用场景 | 风险控制 |
-|---|---|---|---|
-| 轻量指标 | PSS / RSS / Java Heap / Native Heap、页面、前后台、trim level | 默认全量或高采样率 | 控制频率，批量上报 |
-| 摘要快照 | top 对象类型、线程数、FD 数、缓存大小、页面历史 | L2 / L3 内存压力 | 不写大文件，适合更多设备 |
-| Hprof 文件 | Java Heap dump | Java 泄漏疑似、灰度设备、低频采样 | 远程开关、磁盘配额、前台保护、超时、上传裁剪 |
-| 专项工具产物 | KOOM / LeakCanary / native leak 报告 | 已确认某类内存问题集中爆发 | 只对命中版本和设备打开，保留放弃原因 |
+Android 15（API 35）起，`ProfilingManager` 支持 app-driven Java heap dump、heap profile、stack sampling 和 system trace，并有系统限流。官方 Jetpack wrapper 提供 `JavaHeapDumpRequestBuilder` 与 `HeapProfileRequestBuilder`；请求不保证执行，结果和错误都通过 `ProfilingResult` 返回。
 
-Android 15 起，官方提供 app-driven profiling 能力。`ProfilingManager` 可以通过不同 builder 发起 profile 请求，其中 `JavaHeapDumpRequestBuilder` 用于 heap dump，`HeapProfileRequestBuilder` 用于 heap profile；官方文档同时说明系统内置 rate limiter，避免重复 profiling 请求影响设备性能。[已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture]
+### Android 17 的 OOM 与 anomaly trigger
 
-Android 10 到 14 的线上 heap dump 仍多依赖 `Debug.dumpHprofData()`、专项 SDK 或 fork dump 方案。fork dump、Hprof 裁剪、引用链摘要这类细节详见 19.3 节 KOOM；这里保留治理约束：
+Android 17（API 37）增加 `TRIGGER_TYPE_OOM` 和 `TRIGGER_TYPE_ANOMALY`：
 
-- **触发前检查**：前台高交互、低电量、低剩余内存、磁盘不足、短时间重复触发时放弃。
-- **触发后限流**：同设备、同版本、同签名只保留有限样本；失败原因也要上报。
-- **文件处理**：Hprof 不直接上传全量，优先裁剪、压缩、加密，只上传引用摘要或问题签名。
-- **隐私处理**：对象字符串、图片、用户输入、网络返回体可能出现在 Hprof 中，上传前要做脱敏与白名单过滤。
-- **分析归因**：快照必须带 App 版本、构建号、进程、页面、用户路径、设备档位、触发规则和采集耗时。
+- OOM trigger 在应用出现 `OutOfMemoryError` 时提供 Java heap dump。若应用安装了自定义 `UncaughtExceptionHandler`，应保存安装前的默认 handler，并在自定义处理结束后转交给它；未调用默认 handler 时，该 trigger 无法工作。
+- Anomaly trigger 在系统识别异常资源行为时触发，产物类型取决于异常。Android 17 App Memory Limits 命中时，系统可以在执行限制前提供 Java heap dump。
 
-这一层的治理目标很明确：默认采指标，异常采摘要，少量设备采 dump。把 dump 当成常规监控，会把线上诊断成本转嫁给用户。
+下面的注册函数同时监听两种内存 trigger。它应在要监控的进程启动后注册一次，并保留返回的 listener，供不再需要时调用 `unregisterForAllProfilingResults()`。
 
-## 扩展：采集开销、隐私与发布门禁
+```kotlin
+import android.content.Context
+import android.os.ProfilingManager
+import android.os.ProfilingResult
+import android.os.ProfilingTrigger
+import androidx.annotation.RequiresApi
+import java.util.concurrent.Executor
+import java.util.function.Consumer
 
-[自动发现] 内存监控本身也要进性能预算。`getProcessMemoryInfo()` 会跨进程访问系统服务，PSS 读取来自底层内存映射统计，Android Q 之后平台已经对采样频率做限制；线上探针应使用分钟级或事件触发式采样，Java Heap 这类本进程轻量指标可以更高频。采集线程不能和主线程、渲染线程、启动路径抢资源。[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java]
+@RequiresApi(37)
+fun registerMemoryProfilingTriggers(
+    context: Context,
+    callbackExecutor: Executor,
+    onArtifact: (ProfilingResult) -> Unit,
+    onError: (errorCode: Int, errorMessage: String?) -> Unit
+): Consumer<ProfilingResult> {
+    val manager = context.getSystemService(ProfilingManager::class.java)
+    val listener = Consumer<ProfilingResult> { result ->
+        if (result.errorCode == ProfilingResult.ERROR_NONE) {
+            onArtifact(result)
+        } else {
+            onError(result.errorCode, result.errorMessage)
+        }
+    }
 
-发布门禁不应该只看平均值。更合理的规则是：按设备档位看 P90 / P99，按进程类型看前台主进程、推送进程、WebView 进程，按场景看冷启动后、首页稳定后、长会话后。每个版本都要和上一个稳定版本比较，并保留样本数，样本不足时不能给出强结论。
+    manager.registerForAllProfilingResults(callbackExecutor, listener)
+    manager.addProfilingTriggers(
+        listOf(
+            ProfilingTrigger.Builder(
+                ProfilingTrigger.TRIGGER_TYPE_OOM
+            ).build(),
+            ProfilingTrigger.Builder(
+                ProfilingTrigger.TRIGGER_TYPE_ANOMALY
+            ).build()
+        )
+    )
+    return listener
+}
+```
 
-隐私风险要前置处理。Hprof、对象摘要、页面路径、网络缓存、图片缓存都可能含有用户数据；线上系统默认只上传数值和签名，明文对象内容必须经过白名单和脱敏规则。没有隐私评审和远程关闭能力的 dump 方案，不应进入生产环境。
+系统 trigger 受设备采样与系统限流影响，不保证每次事件都有产物。trigger 结果只能通过全局 listener 接收；如果采集时进程已经退出，系统会在应用再次启动并注册 listener 后尝试交付。文件位置必须使用 `ProfilingResult.getResultFilePath()`，不能依赖内部目录结构。应用还可以用 `ProfilingTrigger.Builder.setRateLimitingPeriodHours()` 添加自己的冷却时间，但策略值应由团队的采样配额和隐私规则决定。
+
+[已验证: Android 17 `ProfilingTrigger` API; Android Developers “Trigger-based profiling”]
+[源码锚点: AOSP `android-17.0.0_r1`, `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`, `ProfilingTrigger.java`]
+
+### 产物治理比触发代码更重要
+
+Java heap dump 可能包含对象字符串、用户输入、请求响应、缓存键、文件路径和业务标识。它不能因为位于应用私有目录就被视为已脱敏。上线前需要完成：
+
+- 采集资格：版本、进程、场景、设备状态、磁盘和配额均满足策略。
+- 最小化：能用指标或摘要定位时不采完整 dump；Native 问题不采 Java dump。
+- 安全传输：文件在端侧、传输中和服务端均按敏感诊断数据保护。
+- 访问控制：限制可查询人员、记录访问审计、设置保留期限并支持删除。
+- 用户与合规：遵循产品隐私说明、用户选择、地区法规和商店政策。
+- 资源控制：远程关闭、失败退避、每设备与每版本配额、上传网络条件。
+- 可分析性：保留构建符号、混淆映射、版本、进程、触发规则和场景标签。
+
+收到文件路径后，不要在 callback 中直接做压缩和网络上传。callback 只登记结果与错误，后续任务再核对文件、策略和设备条件。分析完成后要能从问题签名回查对应版本与样本分组，但不需要把原始用户路径写进文件名。
+
+## 发布门禁与线上复盘
+
+发布门禁应同时看分布和失败率：
+
+- 主进程与各独立进程的 PSS/RSS 分布是否相对稳定版本回归。
+- Java Heap 峰值、页面退出后的回落和长会话斜率是否改变。
+- Native allocator、Graphics、线程与 FD 是否出现同向增长。
+- Android Vitals 的 user-perceived LMK、Java OOM 与 native crash 是否变化。
+- `ApplicationExitInfo` 中 LMK、Android 17 Memory Limiter 与其他退出是否集中在同一分组。
+- Profiling 请求成功率、限流率、无产物率和文件处理失败率是否符合预期。
+
+灰度扩大前要核对样本数、设备构成和场景覆盖。发现回归时，先缩小到版本、进程、设备与场景，再决定需要 Java heap dump、heap profile 还是 Perfetto。没有证据表明 Java 对象增长时，不要因为“内存高”就批量采 Hprof。
 
 ## 小结
 
-内存监控的有效性取决于指标拆分和触发策略。PSS / RSS 看进程对系统和物理内存的压力，Java Heap / Native Heap 用于判断增长来源，`ActivityManager.MemoryInfo` 提供设备低内存背景信号。线上治理按“指标 → 水位线 → 降级 → 快照 → 专项分析”推进，少量高质量现场比大量单点数值更有用。
-
-## 延伸阅读
-
-- [Android 14 高精度内存跟踪 API 与泄漏检测增强机制](DeepResearch/2026-06-12-android14-memory-tracking-apis-leak-detection.md) — 分析 Android 14 新增的 setWatchHeapLimit PSS 阈值自动 dump Hprof 机制、ApplicationExitInfo REASON_FREEZER 等退出原因细分、bionic M_PURGE_ALL 激进回收指令，以及 App 端内存泄漏检测从 Debug API 向系统级委托的迁移路径。
-
-
-<!-- AIW-源码调研-2026-06-15 -->
-
-### 2026-06-15 补充：PSS/RSS 快速路径与 getRss() 新 API
-
-#### StatusVmRSS 廉价路径与 Debug.getRss() 新增 API
-
-Android 15+ (main 分支) 新增 `Debug.getRss()` 走 `/proc/<pid>/status` 的 `VmRSS` 字段，比传统的 smaps_rollup 更快：
-
-- **三层采样路径**：`SmapsOrRollup`（PSS/全量）→ `SmapsOrRollupPss`（PSS/精简）→ `StatusVmRSS`（RSS/廉价）
-- **5分钟限速机制**：`ActivityManagerConstants.MEMORY_INFO_THROTTLE_TIME` 默认 300_000 ms，避免高频 PSS 采样导致 system_server 压力
-- **Shell bypass**：`adb shell dumpsys meminfo` 走 `instr.mSourceUid == SHELL_UID || ROOT_UID`，不受限速限制
-- **Battery Historian 集成**：`FrameworkStatsLog.PROCESS_MEMORY_STAT_REPORTED` 将 PSS/USS/RSS 上报到 statsd，供 Vitals 分析
-
-源码锚点：
-- `libmeminfo::ProcMemInfo::StatusVmRSS()`（procmeminfo.cpp L346-348）
-- `Debug.getRss(int pid, long[] outMemtrack)`（main 分支，`@FlaggedApi(Flags.FLAG_REMOVE_APP_PROFILER_PSS_COLLECTION)`）
-- `ActivityManagerService.getProcessMemoryInfo()` 限速逻辑（android-14-release L3928-4030）
-
-[调研来源: DeepResearch/2026-06-15-android-pss-rss-fastpath-smaps-rollup-status-vmrss-throttle.md]
-
-## 工具实现层补充：dumpsys meminfo 与 heapprofd 的源码骨架
-
-本节上文写"内存分析工具详见 10.1 节"，并已在 23.3 节进一步指向 14.3 节。在 14.3 节实体落盘之前，把这两条核心工具的源码锚点补在这里，方便做线上 dump 时直接定位。
-
-### dumpsys meminfo 调用链（自顶向下）
-
-```
-shell → dumpsys meminfo <pkg>
-  → ServiceManager.getService("activity") → IActivityManager
-  → Binder transact → ActivityManagerService.handleDumpMemInfo()
-    → ActivityManagerService.dumpMemInfo(PrintWriter, args, ...)
-      → for each pid: ActivityManagerService.getProcessMemoryInfoNative(intArrayOf(pid))
-        → Debug.getMemoryInfo() JNI → android_os_Debug.cpp::native_get_process_memory_info()
-          → libmeminfo::ProcMemInfo::SmapsOrRollup(pid)
-            // kernel 4.14+ 走 smaps_rollup（一次 syscall 拿到进程级 PSS / Private_Clean / Private_Dirty / SwapPss 汇总）
-            // 老设备 fallback：逐 VMA 读 /proc/<pid>/smaps
-              → for each VMA: libmeminfo::ClassifyVma(vma_name, vma_flags)
-                // [heap] / [anon:libc_malloc] / [anon:scudo:*] / [anon:GWP-ASan*] → Native Heap
-                // [stack] → Stack
-                // .so / .jar / .apk / .dex / .vdex / .odex → Code
-                // [anon:dmabuf*] / "dmabuf_*" → Graphics
-                // [vdso] / [vvar] / 其他 [anon:*] → Other
-          → 汇总 → androidprocheaps.cpp::PrintProcessMemoryInfo()
-          → 回写 Debug.MemoryInfo (Parcelable): dalvikPss / nativePss / graphicsPss / codePss / stackPss / otherPss
-        → dumpMemInfo(PrintWriter, MemoryInfo[]) → 文本输出
-```
-
-关键源码锚点：AOSP android-16.0.0_r1 的 `system/memory/libmeminfo/androidprocheaps.cpp`、`system/memory/libmeminfo/procmeminfo.cpp`、`frameworks/base/core/jni/android_os_Debug.cpp`、`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`。`smaps_rollup` 路径在 kernel 4.14+ 设备上约 1-5 ms 完成；老设备逐 VMA 路径约 50-300 ms（依映射数量）。[已验证: AOSP android-16.0.0_r1 锚点，与本报告 23.3 / 4.1 章节一致]
-
-### heapprofd 调用链（与 dumpsys meminfo 完全独立）
-
-```
-Perfetto trace config: data_source.name = "android.java_hprof" 或 "android.heapprofd"
-  → JavaHprofProducer 或 HeapprofdProducer 接入 traced
-  → App 进程内嵌 libheapprofd.so（client lib）
-    → client_api_factory_android.cc::ConstructClient()
-      → Client::ConnectToHeapprofd(kHeapprofdSocketFile) → /dev/socket/heapprofd abstract unix socket
-  → 一次 malloc → bionic MallocDispatch → heapprofd_malloc
-    → wrap_malloc → Sampler::SampleSize → 命中采样
-      → unwindstack 取调用栈 → 写 shared_ring_buffer
-  → central heapprofd 守护进程从 ring buffer 读
-    → 写 heap_profile_packet 到 perfetto producer
-    → traced → TraceBuffer → /data/misc/perfetto-traces/...
-```
-
-关键源码锚点：Perfetto `src/profiling/memory/heapprofd.cc`（守护进程入口）、`malloc_interceptor_bionic_hooks.cc`（bionic hook 注册）、`sampler.h`（Poisson 采样算法）、`java_hprof_producer.cc`（Java HPROF 信号触发）。守护进程独立走 init.rc + abstract unix socket，**不依赖 dumpsys / AMS / binder**，这就是它能在不重启 app 的情况下持续 profile 多个进程的基础。`JavaHprofProducer` 与 `HeapprofdProducer` 是两个独立 producer，各连一次 traced（heapprofd.cc TODO 标了"未来合成一个"），所以 Java HPROF 与 native heapprofd 的会话在 Perfetto trace 里属于两条独立 data source stream。[已验证: 一手, 本地 Perfetto main 分支]
-
-### 工具选型对照表（按问题类型）
-
-| 排查场景 | 首选工具 | 入口 | 触发开销 | 备注 |
-|---|---|---|---|---|
-| 单进程 PSS / RSS / Private 总量 | `dumpsys meminfo` | shell 命令 | 1-300 ms | 一次性的，不持续采样 |
-| 进程分类趋势（fg/bg/cached/frozen/idle） | `dumpsys procstats --hours N` | shell 命令 | 30-80 ms | 读 `/data/system/procstats/`，无运行时开销 |
-| Java 对象分布 / 泄漏 | Perfetto `android.java_hprof` data source（SIGRTMIN+6） | Perfetto UI | dump 期间 200-800 ms 全线程挂起 | 需 `android:profileable` 或 debuggable |
-| native 分配热点 | Perfetto `android.heapprofd` data source（SIGRTMIN+4） | Perfetto UI | malloc 路径 +50-100 ns；总 CPU ~0.5% | bionic dispatch 路径，无 LD_PRELOAD |
-| 高频持续指标采集 | 自研 PSS/RSS 探针 | App 端 `Debug.MemoryInfo` | 单次 ~5 ms | Android Q 起 `getProcessMemoryInfo()` 平台限速 |
-| Hprof 自动 dump（API 37） | `ProfilingTrigger.TRIGGER_TYPE_OOM/ANOMALY` | ProfilingManager | 同 Java HPROF | API 37 落地（详见 26.12 / 23.10） |
-
-[调研来源: DeepResearch/2026-06-15-memory-analysis-tools-source-code-stack.md §1-§6]
-
-
-<!-- AIW-源码调研-2026-06-18 -->
-### 2026-06-18 补充：libmeminfo 三层采样路径的完整源码骨架
-
-23.7 节正文已用一段高层描述解释 `SmapsOrRollup`，本节落到 procmeminfo.cpp 与 android_os_Debug.cpp 的具体行号，把 SmapsOrRollup / SmapsOrRollupPss / StatusVmRSS 三条路径的入口、判定条件和 JNI 汇聚点补齐。
-
-#### libmeminfo 三条路径头文件契约
-
-`platform/system/memory/libmeminfo/include/meminfo/procmeminfo.h` 注释（行 99-108）明确说明三条路径的字段填充差异：
-
-```cpp
-// Used to parse either of /proc/<pid>/{smaps, smaps_rollup} and record the process's
-// Pss and Private memory usage in 'stats'. The method only populates the fields
-// of the MemUsage structure that are intended to be used by Android's periodic
-// Pss collection: Pss / Rss / Uss / private_clean / private_dirty / SwapPss.
-// All other fields of MemUsage are zeroed.
-bool SmapsOrRollup(MemUsage* stats) const;
-bool SmapsOrRollupPss(uint64_t* pss) const;   // 只解析 Pss: 一行
-// StatusVmRSS() 走 /proc/<pid>/status:VmRSS（procmeminfo.cpp L346-348）
-```
-
-AMS 周期采样默认走 `SmapsOrRollupPss`，要拿 USS/SwapPss/Private 才升到全量 `SmapsOrRollup`，这是 23.7 节正文未展开的隐藏优化。
-
-#### SmapsOrRollup 入口与 smaps_rollup 支持判定
-
-`platform/system/memory/libmeminfo/procmeminfo.cpp`（行 305-310 + 624-642）：
-
-```cpp
-bool ProcMemInfo::SmapsOrRollup(MemUsage* stats) const {
-    std::string path = ::android::base::StringPrintf(
-            "/proc/%d/%s", pid_, IsSmapsRollupSupported() ? "smaps_rollup" : "smaps");
-    return SmapsOrRollupFromFile(path, stats);
-}
-
-bool IsSmapsRollupSupported() {
-    enum smaps_rollup_support rollup_support =
-        g_rollup_support.load(std::memory_order_relaxed);
-    if (rollup_support != UNTRIED) return rollup_support == SUPPORTED;
-
-    if (access("/proc/self/smaps_rollup", F_OK | R_OK)) {
-        g_rollup_support.store(UNSUPPORTED, std::memory_order_relaxed);
-        return false;
-    }
-    g_rollup_support.store(SUPPORTED, std::memory_order_relaxed);
-    LOG(INFO) << "Using smaps_rollup for pss collection";
-    return true;
-}
-```
-
-判定仅探测 `/proc/self`，结果以 atomic relaxed 缓存；这是线上 device 看不到 smaps_rollup 但 kernel 真的支持时的回退依据（自身能读就视为支持，不再做 per-pid 探测）。
-
-#### JNI 汇聚点与 memtrack 独立读取
-
-`frameworks/base/core/jni/android_os_Debug.cpp::android_os_Debug_getPssPid`（行 497-563）：
-
-```cpp
-jlong pss = 0, rss = 0, swapPss = 0, uss = 0, memtrack = 0;
-struct graphics_memory_pss graphics_mem;
-if (read_memtrack_memory(pid, &graphics_mem) == 0) {
-    pss = uss = rss = memtrack = graphics_mem.graphics
-         + graphics_mem.gl + graphics_mem.other;
-}
-
-::android::meminfo::ProcMemInfo proc_mem(pid);
-::android::meminfo::MemUsage stats;
-if (proc_mem.SmapsOrRollup(&stats)) {
-    pss += stats.pss; uss += stats.uss; rss += stats.rss;
-    swapPss = stats.swap_pss;
-    pss += swapPss;  // 被 swap 出去的页会计入 PSS
-} else { return 0; }
-```
-
-- `/proc/<pid>/memtrack` 不在 smaps 内，必须独立读取（GPU graphics + GL driver + other）。
-- `SmapsOrRollup` 返回 false 时直接 `return 0`；**调用方拿到 0 不代表内存为 0，而是解析失败**，线上探针必须做 `>0` 校验。
-- `swap_pss` 加入 pss，符合"未被驻留但占用 swap 槽位"的内存压力定义。
-
-#### AMS 节流规则：5 分钟窗口 + shell bypass
-
-`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java::getProcessMemoryInfo`（行 3928 起）：
-
-- 非 shell 调用：`now - lastSampleTime < mConstants.MEMORY_INFO_THROTTLE_TIME` 时直接返回 `ProcessProfileRecord.lastMemInfo` 缓存。
-- shell / instrumentation 调用：完全 bypass 限速（`isCallerInstrumentedFromShell` 标志位）。
-- `MEMORY_INFO_THROTTLE_TIME` 默认 5 分钟（300_000 ms）——23.7 节正文未明示这个数字。线上每分钟调一次 `getProcessMemoryInfo` 实际拿到的是同一份缓存。
-
-App 端 `ActivityManager.getMemoryInfo()` 在 `Flags.rateLimitGetMemoryInfo()` 启用后叠加 `RateLimitingCache<MemoryInfo>` 限速，两层节流叠加决定线上只能"分钟级或事件触发式"采样。
-
-#### 全链路调用链（一次 PSS 采样）
-
-```
-Debug.getPss() (Debug.java:1942)
-  └─ JNI android_os_Debug_getPss
-       └─ meminfo::ProcMemInfo::SmapsOrRollup
-            ├─ IsSmapsRollupSupported()  → atomic cache
-            └─ SmapsOrRollupFromFile
-                 └─ fopen("/proc/<pid>/smaps_rollup")  (kernel 4.14+)
-                 └─ parse Pss/Private_Clean/Private_Dirty/SwapPss
-                 └─ MemUsage 累加
-       └─ read_memtrack_memory(pid)  → /proc/<pid>/memtrack
-  └─ 返回 pss
-```
-
-#### 性能开销对照（已含上文表格，这里只补行内提醒）
-
-- `SmapsOrRollup` 走 smaps_rollup：1-5 ms
-- 老 kernel fallback 到 smaps：50-300 ms（依 VMA 数量）
-- `SmapsOrRollupPss`：<1 ms（只解 Pss:）
-- `StatusVmRSS`：<1 ms（只读 VmRSS:）
-
-线上策略：周期采样走 `SmapsOrRollupPss`，事件触发（watch heap 命中 / dumpsys / OOM 前兆）走全量 `SmapsOrRollup`，大批量 RSS 监控走 `StatusVmRSS`。
-
-[调研来源: DeepResearch/2026-06-18-memory-metrics-collection-source-stack.md §1-§7]
-
-
-### 2026-06-24 补充：MemoryTracking JNI 汇聚点与 AMS 侧节流
-
-> 本节补足 2026-06-15 / 2026-06-18 / 2026-06-22 三份 libmeminfo 报告未覆盖的 **Java ↔ C++ ↔ HAL 端到端桥接**与 **system_server 侧限速实现**。源码锚点：android-17.0.0_r1。
-
-#### JNI 汇聚点：`core/jni/android_os_Debug.cpp`
-
-`Debug.getMemoryInfo(int pid, MemoryInfo)` 的 JNI 实现是 `android_os_Debug_getDirtyPagesPid`（`core/jni/android_os_Debug.cpp:188-260`），**把 libmeminfo 与 memtrack HAL 双源汇合到 Java MemoryInfo**：
-
-```
-Java: Debug.getMemoryInfo(pid, mi)
-  └─ JNI: android_os_Debug_getDirtyPagesPid(env, clazz, pid, mi)
-       ├─ libmeminfo: ExtractAndroidHeapStats(pid, stats, ...)
-       │    └─ procinfo::ReadProcessMaps(pid) + smaps parse
-       │    └─ 按 VMA 名归类到 HEAP_DALVIK/HEAP_NATIVE/HEAP_STACK/...
-       ├─ memtrack HAL: read_memtrack_memory(pid)
-       │    └─ /proc/<pid>/memtrack 或 memtrack HAL v1.0 callback
-       │    └─ 返回 graphics_mem.{graphics, gl, other}
-       └─ 写回 Java 字段（HEAP_DALVIK 等 7 个 core + 其他 14 个 exclusive）
-```
-
-**关键事实**：
-- `HEAP_GRAPHICS / HEAP_GL / HEAP_OTHER_MEMTRACK` 这三项由 memtrack HAL 注入，**不**由 smaps 解析填充。如果设备 HAL 报 0，`getMemoryInfo` 拿到的 graphics 永远是 0——这是 Pixel 设备与某些国产 ROM 报告 PSS 差距的根源。
-- `androidprocheaps.h` 定义的完整 HEAP 分区（节选）：`HEAP_DALVIK / HEAP_NATIVE / HEAP_STACK / HEAP_ASHMEM / HEAP_GL_DEV / HEAP_SO / HEAP_DEX / HEAP_OAT / HEAP_ART / HEAP_GRAPHICS / HEAP_GL / HEAP_OTHER_MEMTRACK / HEAP_MEMFD / HEAP_DALVIK_NORMAL / HEAP_DALVIK_LARGE / HEAP_DALVIK_ZYGOTE / HEAP_ART_APP / HEAP_ART_BOOT` 等共 `_NUM_HEAP` 项。
-
-#### `Debug.getPss()` 与 `Debug.getRss()` 双轨实现
-
-Android 17 新增 `Debug.getRss()`（`@FlaggedApi(Flags.FLAG_REMOVE_APP_PROFILER_PSS_COLLECTION)`，`Debug.java:2034`），与 `getPss()` 形成轻/重两条采样轨：
-
-| 入口 | libmeminfo 调用 | 典型耗时 | 适用 |
-|---|---|---|---|
-| `getPss()` | `proc_mem.SmapsOrRollup(&stats)` | 1-5 ms (rollup) / 50-300 ms (smaps) | 事件触发、低频 |
-| `getRss()` | `proc_mem.StatusVmRSS(&status_rss)` | < 0.1 ms | 周期采样、大批量 |
-
-`getRss()` 同样叠加 memtrack HAL（`read_memtrack_memory`），所以"RSS = VmRSS + graphics + gl + other"。线上周期采样走 `getRss()` 可避免 smaps_rollup 解析开销，**批量 1000 个进程从 5 s 降到 100 ms 量级**。
-
-#### AMS 侧第二层 throttle：`ActivityManagerService.getProcessMemoryInfo`
-
-应用端 `ActivityManager.getMemoryInfo()` 已有 `RateLimitingCache<MemoryInfo>`（10/秒，100/秒上限），但跨进程调 `getProcessMemoryInfo`（Binder 服务端）还有**第二层 throttle**——线上高频调用真正命中的层级是这里（`ActivityManagerService.java:4625`）：
-
-```java
-public Debug.MemoryInfo[] getProcessMemoryInfo(int[] pids) {
-    final long lastNow = SystemClock.uptimeMillis() - mConstants.MEMORY_INFO_THROTTLE_TIME;
-    ...
-    // 核心节流逻辑
-    if (profile.getLastMemInfoTime() >= lastNow
-        && profile.getLastMemInfo() != null
-        && !isCallerInstrumentedFromShell) {
-        mi.set(profile.getLastMemInfo());  // ← 直接返回 ProcessProfileRecord 缓存
-        continue;
-    }
-    ...
-    Debug.getMemoryInfo(pids[i], memInfo);  // 真正采样
-    profile.setLastMemInfo(memInfo);
-    profile.setLastMemInfoTime(SystemClock.uptimeMillis());
-    profile.addPss(mi.getTotalPss(), mi.getTotalUss(), mi.getTotalRss(),
-        false, ProcessStats.ADD_PSS_EXTERNAL_SLOW, duration);
-}
-```
-
-**关键事实**：
-1. **`MEMORY_INFO_THROTTLE_TIME` 默认 5 分钟**（300_000 ms）。`profile.getLastMemInfoTime() >= lastNow` 直接返回 `ProcessProfileRecord.getLastMemInfo()` 缓存，**完全不再调用 JNI**——这是线上为什么采样频率提到 1Hz 后内存开销仍可控的根源。
-2. **`ProcessProfileRecord`** 是 `ProcessRecord.mProfile` 字段，跟随 `ProcessRecord` 生命周期，**进程死后 LRU 释放**。它**只在 AMS 侧维护**，与 Java 应用端 `RateLimitingCache<MemoryInfo>`（10 条/秒）不互通。
-3. **shell/instrumentation bypass**：`isCallerInstrumentedFromShell` 标志让 `adb shell dumpsys meminfo` 和 `am instrument` 跳过 5 分钟 throttle——这是 `dumpsys meminfo` 拿到的总是新值的原因。
-4. **permission gate**：跨 UID 需要 `mAtmInternal.isGetTasksAllowed("getProcessMemoryInfo", ...)`，跨 user 需要 `INTERACT_ACROSS_USERS_FULL` 权限，普通应用调这个 API 拿其他进程数据会被 `continue` 跳过。
-5. **`addPss(... ADD_PSS_EXTERNAL_SLOW, duration)`**：把这次采样结果和采样耗时一起喂给 `ProcessStats`，`ProcessStats` 据此在 OOM/lowmemory 时推算"实际 PSS 增量"——`duration` 是采样的可观测性指标。
-
-#### 实战：线上策略对照
-
-| 场景 | 推荐 API | 节流层级 | 单次开销 |
-|---|---|---|---|
-| 应用端 `getMemoryInfo()`（自己进程） | `ActivityManager.getMemoryInfo()` | App 端 RateLimitingCache 10/s + 100/s 上限 | < 0.1 ms (全 cache) |
-| 跨进程 PSS 采样（`getProcessMemoryInfo`） | 同上（Binder） | AMS `MEMORY_INFO_THROTTLE_TIME` 5 min | < 0.1 ms (cache) / 1-5 ms (miss) |
-| `dumpsys meminfo` / `am instrument` | `Debug.getMemoryInfo(pid, mi)` | shell bypass | 1-5 ms (smaps_rollup) |
-| 周期 RSS 大批量采样 | `Debug.getRss(pid)` | 无（直走 libmeminfo） | < 0.1 ms (StatusVmRSS + memtrack) |
-| OOM 现场 / dump heap | `Debug.getMemoryInfo(pid, mi)` | 无 | 1-5 ms (smaps_rollup) |
-
-**Android 17 演进方向**：`@FlaggedApi(Flags.FLAG_REMOVE_APP_PROFILER_PSS_COLLECTION)` 标注意味着未来 `AppProfiler` 将完全切换到 RSS 路径——线上监控可以 **不再依赖 smaps_rollup**。
-
-[调研来源: DeepResearch/2026-06-24-android17-memtrack-jni-aggregation-ams-throttle.md]
+线上内存治理从口径开始：PSS 表示共享页按比例分摊后的占用，RSS 表示驻留页总量，Java Heap 和 native allocator 只覆盖各自的分配域，设备 `MemoryInfo` 提供全局背景。所有指标都要带单位、来源、进程、场景和策略版本。
+
+告警要观察同类样本的趋势与回落能力，再选择释放可重建资源、记录退出原因或申请系统 profile。Android 17 的 OOM/anomaly trigger 为难复现问题提供了系统产物，但仍受限流与采样约束。heap dump 是高成本且敏感的诊断数据，采集、传输、访问和删除必须作为同一项工程能力设计。
+
+## 参考资料
+
+- [`Debug`：PSS、RSS、native heap 与 Hprof API](https://developer.android.com/reference/android/os/Debug)
+- [`Debug.MemoryInfo`](https://developer.android.com/reference/android/os/Debug.MemoryInfo)
+- [`ActivityManager.getProcessMemoryInfo()`](https://developer.android.com/reference/android/app/ActivityManager#getProcessMemoryInfo(int%5B%5D))
+- [`ActivityManager.MemoryInfo`](https://developer.android.com/reference/android/app/ActivityManager.MemoryInfo)
+- [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+- [`ComponentCallbacks2`](https://developer.android.com/reference/android/content/ComponentCallbacks2)
+- [Manage your app's memory](https://developer.android.com/topic/performance/memory)
+- [Process Memory chart glossary](https://developer.android.com/studio/profile/chart-glossary/process-memory)
+- [Capture a heap dump](https://developer.android.com/studio/profile/capture-heap-dump)
+- [App-driven profiling](https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture)
+- [Trigger-based profiling](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture)
+- [`ProfilingManager`](https://developer.android.com/reference/android/os/ProfilingManager)
+- [`ProfilingTrigger`](https://developer.android.com/reference/android/os/ProfilingTrigger)
+- [Android 17：App memory limits](https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits)
+- [Android vitals：Low memory killer](https://developer.android.com/topic/performance/vitals/lmk)
+- [AOSP `Debug.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Debug.java)
+- [AOSP `android_os_Debug.cpp` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_os_Debug.cpp)
+- [AOSP `ActivityManager.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityManager.java)
+- [AOSP `ApplicationExitInfo.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java)
+- [AOSP `ComponentCallbacks2.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/ComponentCallbacks2.java)
+- [AOSP Profiling `ProfilingManager.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java)
+- [AOSP Profiling `ProfilingTrigger.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java)
+- [Kernel `/proc/<pid>/status` @ `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/array.c)
+- [Kernel `smaps_rollup` @ `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/task_mmu.c)
+- 结构参考：`Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md`
+- 结构参考：`Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md`
+- 结构参考：`Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md`
