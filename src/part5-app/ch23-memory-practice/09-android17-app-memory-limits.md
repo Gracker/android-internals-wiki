@@ -77,198 +77,310 @@ gap_source: "官方文档/每日信息/章节深挖/Clippings结构参考"
 
 <!-- outline-end -->
 
-Android 17 把一类过去容易被归到“低内存被杀”的问题拆了出来：应用会因为超过系统按设备 RAM 设定的内存上限而退出。官方文档把这个机制描述为面向极端内存泄漏和异常内存膨胀的保护网，目标是在 UI 卡顿、电量消耗放大、系统不稳定之前切断异常进程。[已验证: 官方文档, developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits]
+Android 17（API 37）新增 App Memory Limits，用于处理极端内存泄漏和异常内存膨胀。它提供了新的系统退出信号与触发式诊断材料，也改变了 Android 17 设备上的内存回归测试方式。
 
-这节不重复 20.5 的 OOM 分类，也不重写 23.1 的泄漏检测原理。这里处理三个实战问题：线上怎么识别这类退出，命中后怎么拿到可分析证据，版本上线前怎么把内存基线纳入灰度门禁。
+本节以 AOSP `android-17.0.0_r1` 为平台源码锚点，以 `android17-6.18-2026-06_r6` 为内核文档锚点。Java Heap OOM、LMKD、一般内存泄漏与线上监控分别见 20.5、4.4、23.1、23.7；本节只讨论 MemoryLimiter 的特有边界。
 
-## Android 17 App Memory Limits 的边界
+## 适用范围：不按 targetSdk 限制，只在部分设备启用
 
-App Memory Limits 不是 Java Heap 的 `OutOfMemoryError`，也不是 LMKD 在全局内存压力下按 `oom_score_adj` 杀进程。官方说法是：Android 17 会按设备总 RAM 建立应用内存上限，面向所有运行在 Android 17 上的应用，并把当前阈值设得相对保守，用来处理极端泄漏和异常值。[已验证: 官方文档, developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits]
+App Memory Limits 位于 Android 17 的“影响所有应用”行为变更页面，含义是它不受应用 `targetSdkVersion` 控制。应用只要运行在启用了该机制的 Android 17 设备上，就可能受到影响。
 
-排障时先把四类现象拆开：
+这不表示每台 Android 17 设备都会启用。官方页面明确注明，限制只施加在部分设备上。`android-17.0.0_r1` 的源码给出了启用条件：
 
-| 现象 | 直接信号 | 常见来源 | 处理入口 |
+- `MemoryLimiter` 功能标志处于启用状态；
+- 设备存在 `/vendor/etc/memory-limiter-config.xml`；
+- 配置中至少有一组 `minimumRequiredMemTotal` 不高于设备的 `/proc/meminfo` `MemTotal`；
+- 目标进程不在系统维护的豁免集合中。
+
+配置按设备总 RAM 选择匹配项，并分别提供 visible 与 not-visible 进程状态的内存、swap 限制。具体数值由设备配置决定。AOSP 中的 `sDefaultConfig` 明确标为测试用途，不应当被引用为量产阈值。
+
+因此，应用侧不能根据“设备是 Android 17”推算限制值，也不能用一个固定 MB 数覆盖所有厂商和 RAM 档位。测试前先运行 `adb shell am memory-limiter status`；若设备不施加限制，后续 `am memory-limiter` 调整命令不会产生预期效果。
+
+## MemoryLimiter 的系统实现
+
+### cgroup 控制文件与用户空间判定
+
+内核 cgroup v2 文档对几个控制文件的定义如下：
+
+- `memory.high` 是内存使用的节流边界。超过边界会让进程承受直接回收压力；这个控制文件本身不会调用 OOM killer。
+- `memory.swap.max` 是 swap 使用的硬上限；达到该值后，该 cgroup 的匿名页不能继续换出。
+- `memory.stat` 提供匿名页、共享内存等分类数据。
+- `memory.swap.current` 提供当前 cgroup 的 swap 使用量。
+
+Android 17 的 `MemoryLimiter.cpp`使用这些内核接口，但终止进程的决定来自 Android 用户空间。它先监视 `memory.high`事件；进入高压区后，轮询下面的指标：
+
+> `memory.stat` 中的 `anon + shmem`，再加 `memory.swap.current`
+
+源码把这项指标称为 `AnonSwap`。对应上限由当前进程状态的 `memHigh + swapMax` 得出；Java 配置字段名仍是 `swapHigh`，native 层写入的文件则是 `memory.swap.max`。超过上限后，native 层通知 `MemoryLimiter.java`，由后者执行 profiling 与终止流程。这里要保留两个边界：
+
+- `AnonSwap` 不是 PSS、RSS 或 Java Heap 的别名；
+- cgroup 的 `memory.high` 负责节流和回收，`MemoryLimiter` 才负责 Android 侧的超限判定与进程处置。
+
+### 进程状态会改变限制
+
+`MemoryLimiter.java`按 `ActivityManager` 的进程状态选择 visible 或 not-visible 配置。例如 top、bound-top、important-foreground 使用 visible 配置，foreground-service、service、receiver 等状态使用 not-visible 配置。cached 与 persistent 类进程还有单独处理。
+
+同一个进程在前台正常、进入后台后命中限制，并不矛盾。复盘时必须记录退出前的进程状态、前后台切换和相关时间点，不能只比较进程启动后的最高 RSS。
+
+### 超限后的顺序
+
+在 `android-17.0.0_r1` 中，`AnonSwap` 超限后的主要步骤是：
+
+1. 解除该进程当前的 `memory.high` 与 `memory.swap.max` 限制，避免 profiling 阶段继续受原限制影响。
+2. 条件满足时，向 Profiling 服务发送 `TRIGGER_TYPE_ANOMALY`。
+3. 延迟 30 秒发送终止请求，为 profiler 留出处理时间。
+4. 使用 `MemoryLimiter:AnonSwap` 作为终止原因字符串。
+
+30 秒是该源码版本中的实现常量，不是应用可以依赖的 API 契约。厂商修改、平台维护版本和 profiling 状态都可能影响应用观察到的时间。应用也不能把这段时间当作保存业务数据的宽限期。
+
+## 与其他内存故障的区别
+
+| 类型 | 系统或应用信号 | 主要压力来源 | 取证入口 |
 | --- | --- | --- | --- |
-| Java Heap OOM | 崩溃堆栈含 `java.lang.OutOfMemoryError` | 集合、图片、缓存、生命周期泄漏 | 20.5、23.1 |
-| Native / 匿名页膨胀 | RSS、Native Heap、Anon、Anon Swap 持续上涨 | so 分配、线程栈、mmap、Bitmap、JNI 引用 | 23.3、4.1 |
-| LMKD 压力杀 | 退出原因与系统低内存、进程优先级相关 | 全局内存压力、后台进程竞争 | 4.4、20.5 |
-| Android 17 MemoryLimiter | `ApplicationExitInfo` 中 `REASON_OTHER` + `MemoryLimiter:AnonSwap` | 进程匿名页或 swap 相关内存持续膨胀 | 本节、26.9、26.12 |
+| Java Heap OOM | `OutOfMemoryError` 与 Java 崩溃栈 | ART 管理堆达到分配极限或无法满足连续分配 | Heap Dump、GC/分配记录、引用链 |
+| Native 分配失败 | native crash、分配返回失败或进程异常退出 | malloc、mmap、线程栈、图像与第三方 so | tombstone、heapprofd、`smaps` |
+| LMKD 终止 | `ApplicationExitInfo.REASON_LOW_MEMORY`，且设备支持该报告 | 系统整体内存压力与进程优先级 | exit info、lmkd/系统压力记录 |
+| MemoryLimiter 终止 | Android 17 r1 上为 `REASON_OTHER`，description 包含 `MemoryLimiter:AnonSwap` | 受控进程的 anon、shmem 与 swap 指标超过设备配置 | exit info、anomaly profile、cgroup/进程内存证据 |
 
-`MemoryLimiter:AnonSwap` 这个名字已经给出排查方向：不要只看 Java Heap 曲线。匿名页、Native 分配、线程栈、图形缓冲、WebView renderer、mmap 缓存都要纳入证据包。[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
+MemoryLimiter 命中不能单独证明存在“泄漏”。未设尺寸上限的大图处理、AI 推理、WebView、多窗口或音视频峰值也可能让匿名页与 swap 达到限制。应沿业务场景和分配证据继续区分长期增长与合法峰值。
 
-## MemoryLimiter:AnonSwap 的退出归因
+## 用 ApplicationExitInfo 识别退出
 
-Android 11 以后，线上进程退出归因的入口是 `ActivityManager.getHistoricalProcessExitReasons()`。Android 17 的 App Memory Limits 命中后，官方文档要求检查 `ApplicationExitInfo.getDescription()`：`getReason()` 为 `REASON_OTHER`，`description` 包含 `MemoryLimiter:AnonSwap`。[已验证: 官方文档, developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits]
+Android 11（API 30）引入 `ActivityManager.getHistoricalProcessExitReasons()`。Android 17 r1 的 MemoryLimiter 归因规则由官方文档明确指定：
 
-`ApplicationExitInfo.java` 中 `REASON_OTHER` 的注释也说明，这类退出要依赖 `getDescription()` 补充系统给出的原因。[已验证: AOSP main, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
+- `ApplicationExitInfo.getReason()` 等于 `REASON_OTHER`；
+- `getDescription()` 包含 `MemoryLimiter:AnonSwap`，并可能附带其他信息。
 
-这段代码只做归因筛选，重点是三处：`reason`、`description`、`pss/rss` 快照。它不能替代泄漏分析。
+`android-17.0.0_r1` 的 `ApplicationExitInfo.java`没有专用的 memory-limiter reason 常量，因此本节不使用其他 reason 值代替这组条件。
+
+下面的代码用于读取当前 UID 可见的历史退出记录，并把 MemoryLimiter 事件转换为单位明确的数据对象。
 
 ```kotlin
-fun findAndroid17MemoryLimitExits(context: Context): List<ApplicationExitInfo> {
-    val am = context.getSystemService(ActivityManager::class.java)
-    return am.getHistoricalProcessExitReasons(null, 0, 20)
-        .filter { exit ->
-            exit.reason == ApplicationExitInfo.REASON_OTHER &&
-                exit.description?.contains("MemoryLimiter:AnonSwap") == true
+private const val MEMORY_LIMITER_DESCRIPTION = "MemoryLimiter:AnonSwap"
+
+data class MemoryLimiterExit(
+    val timestampMillis: Long,
+    val pid: Int,
+    val processName: String,
+    val importance: Int,
+    val pssKb: Long,
+    val rssKb: Long,
+    val description: String
+)
+
+@RequiresApi(37)
+fun Context.readMemoryLimiterExits(
+    maxRecords: Int = 0
+): List<MemoryLimiterExit> {
+    require(maxRecords >= 0)
+
+    val activityManager = getSystemService(ActivityManager::class.java)
+    return activityManager
+        .getHistoricalProcessExitReasons(null, 0, maxRecords)
+        .mapNotNull { exit ->
+            val description = exit.description ?: return@mapNotNull null
+            if (
+                exit.reason != ApplicationExitInfo.REASON_OTHER ||
+                !description.contains(MEMORY_LIMITER_DESCRIPTION)
+            ) {
+                return@mapNotNull null
+            }
+
+            MemoryLimiterExit(
+                timestampMillis = exit.timestamp,
+                pid = exit.pid,
+                processName = exit.processName,
+                importance = exit.importance,
+                pssKb = exit.pss,
+                rssKb = exit.rss,
+                description = description
+            )
         }
 }
 ```
 
-命中后，把以下字段随稳定性事件一起上报：
+`maxRecords = 0`表示不额外限制返回数量，系统仍只保留环形缓冲区中的近期记录。传入 `packageName = null`只能查询调用方 UID 可见的包；共享 UID 或 external service 场景需要结合 API 文档解释结果范围。
 
-- `timestamp`：退出发生时间，用来和版本、灰度、实验分组、前后台状态关联。
-- `processName` / `packageName`：区分主进程、WebView 独立进程、推送进程、图片编辑/直播等重内存进程。
-- `pss` / `rss`：退出前系统记录的内存快照，用来判断是共享页还是常驻页上升。
-- `description`：保留完整字符串，不只保留布尔标记，后续系统版本可能追加细分信息。
-- `traceInputStream`：若系统提供 trace 或 tombstone 输入流，按 26.9 的证据包规则归档。
+`pss`和 `rss` 的单位都是 kB。它们来自系统最近一次采样，不能代表终止前一刻的精确快照；进程来不及被采样时，值还可能为零。代码保留原始 description 用于诊断，但稳定聚合条件只依赖官方指定的 token；`getDescription()`的整体格式没有跨版本稳定保证。
 
-这个信号能回答“本次退出是否属于 Android 17 内存上限命中”。它不能单独回答“哪一行代码泄漏”。下一步要回到 PSS/RSS 曲线、heap dump、Native allocation、线程数、`/proc/<pid>/smaps` 分类和页面路径复现。
+`getTraceInputStream()`也不能当作 MemoryLimiter 的固定附件。API 文档主要保证 ANR trace，并从 API 31 起为 native crash 提供 tombstone；其他原因可能返回 `null`。MemoryLimiter 的主要大对象证据来自 ProfilingManager 结果。
 
-## TRIGGER_TYPE_ANOMALY 与触发式堆转储
+## 用 TRIGGER_TYPE_ANOMALY 获取诊断材料
 
-Android 17 的 `ProfilingTrigger.TRIGGER_TYPE_ANOMALY` 适合处理 MemoryLimiter 这类难复现问题。API reference 标注该常量 added in API 37，触发条件是系统检测到应用异常行为；Android 17 Beta 4 文档说明，在应用超过系统定义的内存限制时，anomaly trigger 会给应用提供特定于该应用的 heap dump，用于定位内存问题。[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingTrigger][已验证: 官方博客, developer.android.com/blog/posts/the-fourth-beta-of-android-17]
+`ProfilingTrigger.TRIGGER_TYPE_ANOMALY`在 API 37 加入。Android 17 官方说明指出，当应用达到 OS 定义的内存限制时，anomaly trigger 可产生针对该应用的 heap dump；回调发生在系统执行终止动作之前。AOSP r1 中的 30 秒延迟也说明平台会为采集留出时间。
 
-触发式采集的工作方式是系统后台按采样策略运行 trace；触发事件发生时，如果应用已注册且限流允许，系统把触发前后的 profile 保存到应用目录，并通过 `registerForAllProfilingResults()` 回调结果路径。官方文档明确提醒：文件路径应以 `ProfilingResult.getResultFilePath()` 为准，因为目录结构可能变化。[已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture]
+这仍然不是必达接口：
 
-下面的代码用于注册 Android 17 anomaly trigger。生产环境要加版本判断、采样策略和上传限制。
+- 系统必须正在运行相应的后台 profiling；
+- 系统级和应用自定义限流都允许本次结果；
+- 同一 UID 下存在多个包时，部分 anomaly 可能不提供 artifact；
+- profiling 或文件交付失败会通过 `ProfilingResult.errorCode` 返回；
+- 回调重投、进程重启和文件清理都要求应用使用一个长期存活的统一接收者。
+
+下面的类用于集中注册 anomaly trigger，并在结束时移除同类 trigger 与全局监听器。它把限流周期交给调用方决定，不写入通用固定值。
 
 ```kotlin
 @RequiresApi(37)
-fun registerMemoryAnomalyProfiling(
+class MemoryAnomalyProfiler(
     context: Context,
     executor: Executor,
-    onProfileReady: (Path) -> Unit,
-) {
-    val profilingManager = context.getSystemService(ProfilingManager::class.java)
-    val trigger = ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANOMALY)
-        .setRateLimitingPeriodHours(24)
-        .build()
+    rateLimitHours: Int,
+    private val onArtifact: (filePath: String, tag: String?) -> Unit,
+    private val onFailure: (errorCode: Int, message: String?) -> Unit
+) : AutoCloseable {
 
-    profilingManager.registerForAllProfilingResults(executor) { result ->
+    private val manager = context.getSystemService(ProfilingManager::class.java)
+
+    private val listener = Consumer<ProfilingResult> { result ->
         if (result.errorCode == ProfilingResult.ERROR_NONE) {
-            onProfileReady(Path.of(result.resultFilePath))
+            val filePath = result.resultFilePath
+            if (filePath != null) {
+                onArtifact(filePath, result.tag)
+            } else {
+                onFailure(result.errorCode, "successful result has no file path")
+            }
+        } else {
+            onFailure(result.errorCode, result.errorMessage)
         }
     }
-    profilingManager.addProfilingTriggers(listOf(trigger))
+
+    init {
+        require(rateLimitHours >= 0)
+
+        manager.registerForAllProfilingResults(executor, listener)
+        manager.addProfilingTriggers(
+            listOf(
+                ProfilingTrigger
+                    .Builder(ProfilingTrigger.TRIGGER_TYPE_ANOMALY)
+                    .setRateLimitingPeriodHours(rateLimitHours)
+                    .build()
+            )
+        )
+    }
+
+    override fun close() {
+        manager.removeProfilingTriggersByType(
+            intArrayOf(ProfilingTrigger.TRIGGER_TYPE_ANOMALY)
+        )
+        manager.unregisterForAllProfilingResults(listener)
+    }
 }
 ```
 
-这段注册代码只解决“命中时拿证据”。证据能否上传、保留多久、谁能查看，要交给平台侧策略处理。heap dump 可能包含对象内容、URL、用户输入片段和业务标识；默认不应全量上传。更稳的做法是：灰度包开启低比例采集，端侧先计算摘要，命中白名单场景再上传原始文件，并在服务端设置过期清理。
+`registerForAllProfilingResults()`是 UID 级的全局结果监听器，`addProfilingTriggers()`注册的是当前进程感兴趣的 trigger。一个进程只允许同一 trigger type 保留一份，新注册会替换旧配置。因此，这个类应由进程级诊断组件统一持有，不能让多个页面分别创建实例。
 
-## Android Studio Panda LeakCanary Profiler 工作流
+成功回调中的 `resultFilePath`才是文件位置依据；官方不保证目录结构固定。`result.tag`包含异常类型的补充信息，接收端仍要验证文件类型、大小和关联事件，不能把所有 anomaly 结果都标成内存限制。
 
-Android Studio Panda 把 LeakCanary 集成进 Profiler，作为 IDE 内的独立 task，并和源码上下文结合。它的价值在开发期：复现页面路径、抓 heap dump、看 retained object、回到源码修引用关系。[已验证: 官方文档, developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits]
+## 在测试设备上验证限制
 
-它不替代线上监控。线上 MemoryLimiter 命中时，应用进程已经处在系统限制附近；本地 LeakCanary 更适合把线上归因转成可复现用例。
+官方提供三个 `am memory-limiter` 子命令：
 
-推荐流程：
+- `status`：查看设备是否启用以及 visible、not-visible 限制；
+- `ignore <uid>|none|all`：调整 UID 的忽略状态；
+- `manual <pid> <limit>|max|none`：为测试进程设置、移除或恢复限制。
 
-1. 从线上事件挑样本：筛 `description` 含 `MemoryLimiter:AnonSwap` 的退出，按设备 RAM、进程名、页面路径、版本号分桶。
-2. 在本地构造路径：还原同一页面、登录状态、图片数量、WebView 页面、后台停留时长和横竖屏/窗口化状态。
-3. 用 Panda Profiler 跑 LeakCanary task：确认 retained object、GC Root、引用路径和源码位置。
-4. 同时观察 RSS / Native Heap / Graphics：如果 Java retained object 不高，转向 Native、Bitmap、线程栈或 WebView renderer。
-5. 修复后跑长驻回归：同一路径循环打开/关闭，比较 PSS、RSS、Java Heap、Native Heap、Anon Swap 的斜率。
+命令只应在专用测试设备和可恢复的测试账号上使用。手动限制可能直接终止进程，`ignore all`会改变整台设备的系统行为。
 
-[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md][结构参考: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md][结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md]
+源码锚点还存在一个必须注意的版本差异：当前官方页面记录了 `manual ... max`，但 `android-17.0.0_r1` 的 `ActivityManagerShellCommand`只解析整数和 `none`。针对 r1 的自动化脚本不要发送 `max`；每条变更命令后都用 `status`核对，并以结束目标进程、重新启动测试环境作为恢复步骤。
 
-## 内存基线与灰度门禁
+建议用两组对照验证：
 
-Android 17 之后，内存基线不能只写“平均 PSS”。MemoryLimiter 面向极端值，门禁也要看尾部样本和增长斜率。
+1. 相同设备、构建和动作脚本，在默认限制下记录基线。
+2. 在测试进程上设置经过风险评估的较低手动限制，确认退出记录、description 和 anomaly artifact 是否能关联到同一场景。
 
-| 维度 | 建议记录 | 判定方式 |
+测试数值来自该场景已测得的内存分布，不应抄录其他项目的 MB 数。测试报告还要记录 `am memory-limiter status`原始输出、设备构建指纹、PID、进程状态、动作时间与结果文件。
+
+## Android Studio Panda 与 LeakCanary
+
+Android Studio Panda 在 Profiler 中提供独立的 LeakCanary task，并把分析结果与 IDE 源码上下文结合。它适合把线上 MemoryLimiter 样本还原为本地可重复路径：
+
+1. 从 `ApplicationExitInfo` 事件确定设备、进程、前后台状态、版本和时间。
+2. 从 anomaly artifact、页面埋点或业务日志恢复输入规模与动作序列。
+3. 在同类设备上重复场景，用 LeakCanary task 检查 retained object、GC Root 和引用路径。
+4. 同时观察 Java Heap、Native Heap、Graphics、线程和总体 PSS。
+5. 修改后重复相同脚本，比较对象存活、峰值和退出后的回落。
+
+LeakCanary 只能分析 Java/Kotlin 可达对象。若 retained object 没有异常，而 Native Heap、Graphics、线程栈或匿名映射继续增长，应转向 heapprofd、`dumpsys meminfo`、`smaps`或图形资源分析。线上退出信号、本地 Java 引用链与 native 分配栈分别回答不同问题。
+
+开发包也不等同于量产包。debuggable、调试器、LeakCanary、未压缩资源和不同的 native 符号都会改变内存曲线。复现根因后，还要用接近发布配置的 profileable 构建验证预算。
+
+## 建立内存基线与灰度门禁
+
+MemoryLimiter 面向分布尾部和长期异常，单一“平均 PSS”无法支持发版判断。每条基线至少绑定以下条件：
+
+| 维度 | 记录内容 | 原因 |
 | --- | --- | --- |
-| 设备 RAM 档位 | 4GB 以下、6GB、8GB、12GB+，平板/桌面窗口化单独分组 | 不跨档位比较绝对值 |
-| 进程 | 主进程、WebView renderer、播放器/图片编辑/推送进程 | 每个进程单独建基线 |
-| 页面路径 | 冷启动、首页停留、信息流滚动、详情页来回、后台恢复 | 同路径比较 P50/P90/P99 与增长斜率 |
-| 内存指标 | PSS、RSS、Java Heap、Native Heap、Graphics、Anon Swap | 指标同时上升时优先看匿名页和 Native |
-| 时间窗口 | 5 分钟、30 分钟、2 小时、隔夜后台 | 长驻场景看斜率，不只看峰值 |
-| 退出证据 | `ApplicationExitInfo.reason/description/pss/rss` | `MemoryLimiter:AnonSwap` 单独建稳定性事件 |
+| 设备 | 型号、RAM、page size、ABI、构建指纹、是否启用 MemoryLimiter | 设备限制与内存行为不可跨组推断 |
+| App | version、commit、构建类型、实验组 | 保证二进制和配置可追溯 |
+| 进程 | 进程名、进程状态、是否独立 WebView/播放器/工具进程 | 限制按进程与状态变化 |
+| 场景 | 输入规模、动作序列、前后台切换、窗口模式 | 区分泄漏、峰值与组合场景 |
+| 检查点 | 动作前、峰值、退出、冷却后 | 同时观察峰值和回落 |
+| 指标 | Java Heap、Native Heap、Graphics、线程、PSS、RSS、swap 相关观测 | 避免只看一种内存 |
+| 统计 | 样本量、P50/P90/P99、异常值处理、采集失败率 | 说明尾部结果是否可信 |
+| 退出 | reason、description、PSS/RSS 采样值、artifact 状态 | 把增长与系统处置关联 |
 
-灰度门禁建议按“是否出现新型退出”和“是否显著抬高尾部内存”两条线执行：
+设备分组应从真实用户分布和实测差异得到，不要预设“4 GB 以下、6 GB、8 GB”后长期不变。高 RAM 设备也会在多窗口、相机、视频或端侧 AI 组合场景中产生较高匿名页。
 
-- Android 17 设备出现 `MemoryLimiter:AnonSwap`：阻断继续放量，先完成样本归因。
-- 同版本同页面 P99 RSS 或 Anon Swap 斜率明显高于上一版：暂停放量，补复现场景。
-- Java Heap 稳定但 RSS 持续上涨：优先查 Native 分配、线程栈、mmap、Bitmap、WebView renderer。
-- 只在低 RAM 档位出现：检查缓存上限、图片规格、后台任务、`onTrimMemory()` 释放策略。
+灰度阶段可以设置三类决策条件：
 
-官方 memory guide 给出的方向仍然有效：收到 `onTrimMemory()` 后按等级释放 UI 缓存、后台资源和数据库连接；Android 会给每个应用设置 heap 上限，多进程并不能消除系统总内存约束。[已验证: 官方文档, developer.android.com/topic/performance/memory]
+- 新版本出现此前没有的 `MemoryLimiter:AnonSwap` 事件时，暂停扩大灰度，先检查进程与场景聚类；
+- 同设备组、同场景的尾部分位数或冷却后残留量超过预先批准的预算时，由所属模块给出证据和处置；
+- Java Heap 稳定而 RSS/AnonSwap 相关观测增长时，不要继续只查 Java 引用链，转向 native、线程、图片、WebView 与 mmap。
 
-## 与 OOM 治理、稳定性治理的交叉
+P50/P90/P99 只是样本分布，门禁线必须来自稳定版本、业务风险和样本量。`ApplicationExitInfo.pss/rss`又是最近采样值，适合用于退出事件聚类，不适合单独替代持续监控曲线。
 
-本节只覆盖 Android 17 新退出信号和取证路径。修复动作要回到已有章节：
+## 线上诊断与隐私
 
-- Java / Kotlin 对象泄漏：详见 23.1。这里补充的是 MemoryLimiter 命中后的样本筛选和 Panda Profiler 复现流程。
-- Java Heap、Native、线程数、FD、32 位虚拟地址空间 OOM：详见 20.5。这里不重复 OOM 投递路径。
-- 低内存杀进程与 LMKD：详见 4.4。MemoryLimiter 命中不能直接等同于系统全局低内存。
-- 线上退出归因：详见 26.9。这里补充 `MemoryLimiter:AnonSwap` 的特定筛选条件。
-- ProfilingManager 与 ProfilingTrigger 版本能力：详见 26.12。这里只落到内存上限命中的采集策略。
-- Android Studio Profiler / LeakCanary task：详见 14.14。这里把 IDE 工作流接到线上样本回放。
+MemoryLimiter 退出记录属于低敏感度的系统诊断摘要；heap dump 可能包含字符串、URL、用户输入、令牌、图片元数据和业务对象，应按高敏感数据处理。
 
-```mermaid
-sequenceDiagram
-    participant App as App 线上版本
-    participant System as Android 17 MemoryLimiter
-    participant AEI as ApplicationExitInfo
-    participant PM as ProfilingManager
-    participant IDE as Panda Profiler
+推荐分三层采集：
 
-    App->>PM: 注册 TRIGGER_TYPE_ANOMALY
-    System->>System: 检测到内存上限命中
-    System->>PM: 保存 heap dump / profile
-    System->>AEI: 记录 REASON_OTHER + MemoryLimiter:AnonSwap
-    App->>AEI: 下次启动读取退出原因
-    App->>PM: 接收 ProfilingResult 文件路径
-    App->>IDE: 用线上样本复现路径
-    IDE->>IDE: LeakCanary task 定位 retained object
-```
+- **默认事件**：reason、官方 description token、进程、版本、设备组、最近页面和 PSS/RSS 采样值；
+- **诊断摘要**：artifact 类型、大小、成功/失败码、类名与 retained-size 聚合，类名也要经过白名单；
+- **原始 artifact**：仅在授权样本中上传，端到端加密，限制访问者和保留期，并提供服务端删除审计。
 
-图里的两个证据源要分开看：`ApplicationExitInfo` 负责确认退出类别，`ProfilingManager` 负责补触发前后的分析材料。Panda Profiler 负责本地复现和源码定位。
+应用收到成功回调后，应把文件登记到持久任务队列再处理。不能假设当前 Activity 存活，也不能在主线程解析或上传 heap dump。上传失败、用户退出诊断计划或样本过期时，都要能删除本地副本。
 
-## AOSP MemoryLimiter 源码路径
+系统与应用层都有 rate limit，profiling 结果也不保证产生。监控看板必须统计“触发事件数、成功 artifact 数、失败码分布”，否则缺失文件会被误解成没有内存问题。
 
-当前已核到两条公开源码路径：
+## 与其他章节的关系
 
-- `frameworks/base/core/java/android/app/ApplicationExitInfo.java`：`REASON_OTHER` 和 `getDescription()` 是应用侧读取退出原因的 API 边界。[已验证: AOSP main, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
-- `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`、`ProfilingTrigger.java`：触发式 profiling 的注册、回调、限流和触发对象在 Profiling module 中实现。[已验证: AOSP main, packages/modules/Profiling/framework/java/android/os/]
+- Java/Kotlin 对象泄漏与 GC Root：23.1。
+- OOM 类型、崩溃与进程退出：20.5。
+- Native 分配、heapprofd 与所有权：23.3。
+- 线上内存采集与 `ApplicationExitInfo` 最近采样边界：23.7。
+- LMKD 与进程优先级：4.4。
+- 进程退出归因：26.9。
+- ProfilingManager 通用能力：26.12。
+- Android Studio 内存工具：14.14。
 
-MemoryLimiter 本身与 `AnonSwap` 字符串写入位置还没有在公开 AOSP tag 中完成定位，本节不编源码调用栈。后续复核方向：ActivityManager 退出记录、进程资源监控、memory cgroup / swap accounting、Profiling anomaly 服务之间的连接点。[待验证: Android 17 MemoryLimiter AOSP 具体实现路径]
-
-## 设备 RAM 档位与阈值策略
-
-官方没有公开固定阈值，正文也不应给出“超过 X MB 就会被杀”的数字。工程上按设备档位建自己的风险线：
-
-- 低 RAM 设备：缓存、图片、WebView、长驻后台任务更容易把尾部样本推高，门禁以 P90/P99 和斜率为主。
-- 主流旗舰：绝对内存更高，但多窗口、桌面模式、相机/视频/AI 推理同时运行时，RSS 和 Graphics 更容易被忽略。
-- 平板和桌面窗口化：多个 Activity、多个窗口和更长后台停留时间会改变复现路径，不能直接套手机基线。
-
-同一指标跨设备比较时，先按 RAM 档位、page size、刷新率、页面路径和进程拆分。没有这些条件，固定阈值只会制造误报。
-
-## 线上告警与隐私合规
-
-MemoryLimiter 命中属于稳定性事件，但 heap dump 属于高敏感证据。推荐把采集分成三层：
-
-- 默认层：只上报 `ApplicationExitInfo` 摘要、版本、设备档位、页面路径、PSS/RSS、前后台状态。
-- 诊断层：灰度或内部用户开启 `TRIGGER_TYPE_ANOMALY`，采样收集 profile 文件路径和大小。
-- 原始证据层：上传 heap dump 前做授权、脱敏、加密、过期清理，并限制访问权限。
-
-发布门禁只依赖默认层就能发现问题；诊断层和原始证据层用于定位原因，不应变成常态化全量采集。
+Android 17 的 MemoryLimiter 增加了一类可识别的系统终止原因，但根因仍要回到原有的 Java、native、图形、线程和业务场景证据。
 
 ## 小结
 
-Android 17 App Memory Limits 把极端内存膨胀变成了可归因的线上事件：`REASON_OTHER` 加 `MemoryLimiter:AnonSwap` 用来识别退出，`TRIGGER_TYPE_ANOMALY` 用来补触发式证据，Panda Profiler 用来把线上样本还原成本地泄漏修复路径。治理重点不在背系统阈值，而在建立按设备、进程、页面和长驻时间拆分的内存基线。
+Android 17 App Memory Limits 的关键边界可以归纳为五点：
+
+- 它不按 targetSdk 限制，但只在具备 vendor 配置并启用该能力的部分设备上施加；
+- `android-17.0.0_r1` 通过 cgroup v2 指标监视进程的 anon、shmem 与 swap，Android 用户空间决定是否终止进程；
+- 退出归因使用 `REASON_OTHER` 与包含 `MemoryLimiter:AnonSwap` 的 description；
+- `TRIGGER_TYPE_ANOMALY`可以提供 heap dump，但受后台采集、限流和交付状态影响；
+- 发版判断要绑定设备、进程状态、场景、检查点和样本量，系统阈值不能由应用猜测。
+
+把退出分类、触发式 artifact、本地复现和灰度基线放在同一份记录里，才能从“进程被系统结束”继续定位到可修改的资源所有权或峰值策略。
 
 ## 参考资料
 
-- Android Developers: Behavior changes: all apps — App memory limits
-- Android Developers Blog: The Fourth Beta of Android 17
-- Android Developers: `ProfilingTrigger` API reference
-- Android Developers: Trigger-based profiling
-- Android Developers: Manage your app's memory
-- AOSP: `frameworks/base/core/java/android/app/ApplicationExitInfo.java`
-- AOSP: `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`
-- AOSP: `packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java`
-- [结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
-- [结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
-- [结构参考: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md]
-- [结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md]
+- [Android Developers：Android 17 behavior changes—App memory limits](https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits)
+- [Android Developers Blog：The Fourth Beta of Android 17](https://developer.android.com/blog/posts/the-fourth-beta-of-android-17)
+- [Android Developers：`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+- [Android Developers：`ProfilingTrigger`](https://developer.android.com/reference/android/os/ProfilingTrigger)
+- [Android Developers：`ProfilingManager`](https://developer.android.com/reference/android/os/ProfilingManager)
+- [Android Developers：Trigger-based profiling](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture)
+- [Android Developers：Manage your app's memory](https://developer.android.com/topic/performance/memory)
+- [AOSP `android-17.0.0_r1`：`MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java)
+- [AOSP `android-17.0.0_r1`：`MemoryLimiter.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp)
+- [AOSP `android-17.0.0_r1`：`ActivityManagerShellCommand.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java)
+- [AOSP `android-17.0.0_r1`：`ApplicationExitInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java)
+- [AOSP `android-17.0.0_r1`：`ProfilingTrigger.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java)
+- [AOSP `android-17.0.0_r1`：`ProfilingManager.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java)
+- [Android Common Kernel `android17-6.18-2026-06_r6`：cgroup v2 memory controller](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst)
