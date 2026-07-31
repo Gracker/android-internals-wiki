@@ -1,6 +1,6 @@
 ---
-title: Hardware Buffer Renderer
-chapter: "18"
+title: Android 17 HardwareBufferRenderer
+chapter: "18.17"
 section: "18.17"
 status: "finalized"
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
@@ -10,12 +10,15 @@ tags:
   - GPU
   - RenderNode
   - HDR
-  - BLAST
+  - SurfaceControl
   - 渲染管线
 related_chapters:
   - 2.5
   - 2.10
   - 18.2
+  - 18.10
+  - 18.15
+  - 18.20
 created_by: rendering-pipelines-merge
 created_date: 2026-04-09
 pipeline_stage: "ready-to-publish"
@@ -56,18 +59,113 @@ last_task9_autofix_at: "2026-05-29"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-06
 last_task6_audit: 2026-07-11
-last_verified: 2026-07-30
-last_verified_against: "android-17.0.0_r1 (HardwareBufferRenderer.java, SurfaceControl.java, surface_control.h, HardwareBuffer.java)"
+last_verified: 2026-07-31
+last_verified_against: "android-17.0.0_r1 (HardwareBufferRenderer.java, android_graphics_HardwareBufferRenderer.cpp, HardwareRenderer.java, RenderNode.java, RenderProxy.cpp, CanvasContext.cpp, DrawFrameTask.cpp, Surface.java, SurfaceControl.java, android_view_SurfaceControl.cpp, HardwareBuffer.java, SyncFence.java, AHardwareBuffer.cpp, surface_control.h, SurfaceFlinger.cpp, Display.cpp, Output.cpp, BufferUsage.aidl) / Android 17 API 37 HBR, SurfaceControl, SyncFence and HDR docs / android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, dma-fence.h, sync_file.c)"
 confidence: high
 last_idle_audit_at: "2026-07-30T14:36:00+08:00"
 last_idle_audit_run_id: "20260730-143536-idle-audit-5b58c196"
 last_idle_audit_result: "pass-frontmatter-fix"
+sources:
+  - type: official
+    path: "https://developer.android.com/reference/android/graphics/HardwareBufferRenderer"
+    role: "API 34 HBR 生命周期、共享 RenderThread 与独立 HardwareBuffer 目标"
+  - type: official
+    path: "https://developer.android.com/reference/android/graphics/HardwareBufferRenderer.RenderRequest"
+    role: "request 复用、color space、transform、draw callback 与 fence 契约"
+  - type: official
+    path: "https://developer.android.com/reference/android/hardware/HardwareBuffer"
+    role: "format、usage、isSupported、Parcelable 与资源所有权"
+  - type: official
+    path: "https://developer.android.com/reference/android/hardware/SyncFence"
+    role: "presentation/release fence、等待、signal time 与 close"
+  - type: official
+    path: "https://developer.android.com/reference/android/view/Surface"
+    role: "lockCanvas 与 lockHardwareCanvas 的目标和内容保留语义"
+  - type: official
+    path: "https://developer.android.com/reference/android/view/SurfaceControl.Transaction"
+    role: "setBuffer、release callback、dataspace、HDR headroom 与 FrameTimeline"
+  - type: official
+    path: "https://developer.android.com/reference/android/graphics/RenderNode"
+    role: "显示列表、属性更新与硬件加速场景树"
+  - type: official
+    path: "https://source.android.com/docs/core/graphics/arch-bq-gralloc"
+    role: "GraphicBuffer、gralloc、dma-buf 与图形 buffer 共享架构"
+  - type: official
+    path: "https://developer.android.com/reference/androidx/graphics/CanvasBufferedRenderer"
+    role: "AndroidX 管理 HardwareBuffer 池与 fence 的兼容封装"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java"
+    role: "HBR Java API、request reset、直角旋转、生命周期与 callback"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/jni/android_graphics_HardwareBufferRenderer.cpp"
+    role: "HBR JNI、RenderProxy、INVALID_VSYNC_ID 与 syncAndDrawFrame"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/HardwareRenderer.java"
+    role: "Surface 目标的 HWUI renderer 对照"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java"
+    role: "RenderNode recording、显示列表与属性语义"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/RenderProxy.cpp"
+    role: "HardwareBuffer 绑定与 RenderThread 代理"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp"
+    role: "HardwareBuffer render target 与 HWUI pipeline"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp"
+    role: "场景树同步、GPU flush 与 presentation fence callback"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Surface.java"
+    role: "software/hardware Canvas 与完整覆盖约束"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java"
+    role: "Java setBuffer、release callback、dataspace、HDR 与 FrameTimeline"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_view_SurfaceControl.cpp"
+    role: "Java fence 强引用与 release callback 到 native transaction"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/HardwareBuffer.java"
+    role: "Java format、usage、allocation、Parcelable 与 close"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/SyncFence.java"
+    role: "Java fence wait、signal time 与 fd 资源管理"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/nativewindow/AHardwareBuffer.cpp"
+    role: "AHardwareBuffer 分配、引用、Parcelable 与 dataspace"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/include/android/surface_control.h"
+    role: "NDK API 29-37 buffer、previous release fence 与 API 36 release callback"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp"
+    role: "direct Layer buffer、FrameTimeline、dataspace 与 HDR 状态接收"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Display.cpp"
+    role: "HWC composition strategy、present fence 与 Layer release fence"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp"
+    role: "RenderEngine client composition 与显示输出"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/common/aidl/android/hardware/graphics/common/BufferUsage.aidl"
+    role: "GPU、composer、protected 与 front-buffer usage 定义"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c"
+    role: "HardwareBuffer 跨 GPU、DPU 与进程的 dma-buf 共享"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c"
+    role: "fence signal、callback 与 wait"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/dma-fence.h"
+    role: "dma-fence 公共同步接口与语义"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c"
+    role: "presentation/release fence 的 sync_file fd 接口"
 ---
-# Hardware Buffer Renderer
+# 18.17 Android 17 HardwareBufferRenderer
 
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
+
 - 🔹 HardwareBufferRenderer 解决的核心问题：lockCanvas() 的性能瓶颈
 - 🔹 GPU 硬件加速离屏渲染 vs CPU 软件渲染
 - 🔹 API 使用流程：RenderRequest → GPU Rasterize → Fence → SurfaceControl
@@ -75,6 +173,7 @@ last_idle_audit_result: "pass-frontmatter-fix"
 - 🔹 适用场景：HDR、跨进程 Buffer 共享、高帧率渲染
 
 **扩展（可选深入）：**
+
 - 🔸 Java API vs NDK API 的差异
 - 🔸 与 RenderNode 的关系
 - 🔸 在旧版本上的降级策略
@@ -88,14 +187,14 @@ last_idle_audit_result: "pass-frontmatter-fix"
 不过，不能据此得出“HBR 是 `lockCanvas()` 的硬件加速开关”。Android 还有 `Surface.lockHardwareCanvas()`，它已经使用 HWUI/GPU，只是输出目标仍是 `Surface`。三者的边界如下：
 
 | API | 光栅化执行者 | 输出目标 | 提交与 buffer 复用 |
-|:---|:---|:---|:---|
+| --- | --- | --- | --- |
 | `Surface.lockCanvas()` | CPU / Skia software | `Surface` 背后的 buffer | 由 `unlockCanvasAndPost()` 和 BufferQueue 协作 |
 | `Surface.lockHardwareCanvas()` | HWUI / GPU | `Surface` 背后的 buffer | 仍沿用 Surface / BufferQueue；每帧必须完整覆盖 |
 | `HardwareBufferRenderer` | HWUI RenderThread / GPU | 调用方提供的 `HardwareBuffer` | 调用方选择 consumer，并管理 presentation fence、release fence 和 buffer 池 |
 
 所以，HBR 的独特价值是：把一棵 `RenderNode` 场景树光栅化到**调用方拥有的 `HardwareBuffer`**。它适合离屏结果需要直接交给 `SurfaceControl`、跨进程传递或继续送入其他 GPU/媒体 consumer 的场景。如果手里已经有一个正常消费的 `Surface`，只需要 GPU Canvas，`lockHardwareCanvas()` 或 `HardwareRenderer` 往往更贴合问题。
 
-Android 17 的 `Surface.java` 还明确规定，`lockHardwareCanvas()` 不保留前一帧内容，调用方每次都要完整覆盖；HBR 的语义正好不同：它在 draw 前**不会自动清空**目标，未被本次绘制覆盖的像素会保留。[AOSP: `Surface.lockHardwareCanvas()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java) [AOSP: `HardwareBufferRenderer`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java)
+Android 17 的 `Surface.java` 还明确规定，`lockHardwareCanvas()` 不保留前一帧内容，调用方每次都要完整覆盖；HBR 的语义正好不同：它在 draw 前**不会自动清空**目标，未被本次绘制覆盖的像素会保留。[AOSP: `Surface.lockHardwareCanvas()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Surface.java) [AOSP: `HardwareBufferRenderer`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java)
 
 ## Android 17 中的实现边界
 
@@ -108,7 +207,16 @@ HBR 是 Android 14 / API 34 加入的 Java API。它复用了 HWUI 的现有基�
 - `setContentRoot()` 会让内部根节点记录一次 `drawRenderNode(content)`。之后修改这棵 `RenderNode` 树的显示列表或属性，不必重复调用 `setContentRoot()`；下一次 render request 会同步最新状态。
 - `obtainRenderRequest()` 返回内部可复用的请求对象。每次调用都会把 color space 重置为 sRGB、transform 重置为 identity；请求不是线程安全对象，调用 `draw()` 后便不能继续使用或长期持有。
 
-这些行为都能直接在 Android 17 的 [`HardwareBufferRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java) 中核对。
+这些行为都能直接在 Android 17 的 [`HardwareBufferRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java) 中核对。
+
+`draw()` 之后的 native 链也能在 `android-17.0.0_r1` 中闭合：
+
+1. `RenderRequest.draw()` 调用 `nRender()`。
+2. `android_graphics_HardwareBufferRenderer.cpp` 把尺寸、旋转变换、color space 和 callback 写入 `HardwareBufferRenderParams`，再调用 `RenderProxy::syncAndDrawFrame()`。
+3. `DrawFrameTask` 同步 RenderNode 树并让 HWUI pipeline 写入构造时绑定的 `AHardwareBuffer`。
+4. pipeline `flush()` 导出 producer fence，JNI 把 fd 包装成 `RenderResult.getFence()` 返回。
+
+HBR 的 JNI 在构造 `UiFrameInfo` 时使用 `INVALID_VSYNC_ID`。这能解释为何一次 HBR draw 本身不属于某个有效 App FrameTimeline；如果结果要按 VSync 上屏，调用方仍需用 Choreographer 选择目标帧，并在 `SurfaceControl.Transaction` 上设置对应 FrameTimeline。
 
 ## 从 RenderNode 到屏幕的完整路径
 
@@ -169,8 +277,14 @@ request.draw(callbackExecutor, result -> {
     SyncFence presentationFence = result.getFence();
     if (result.getStatus()
             != HardwareBufferRenderer.RenderResult.SUCCESS) {
-        presentationFence.close();
-        markSlotIdleAfterRenderFailure();
+        releaseExecutor.execute(() -> {
+            try (presentationFence) {
+                if (presentationFence.isValid()) {
+                    presentationFence.awaitForever();
+                }
+            }
+            markSlotIdleAfterRenderFailure();
+        });
         return;
     }
 
@@ -199,7 +313,9 @@ request.draw(callbackExecutor, result -> {
 });
 ```
 
-这段代码刻意显式 clear，因为 HBR 不会替调用方清除旧像素。若业务保证每次记录都覆盖整个 buffer，可以省掉 clear；局部更新则要自己维护未覆盖区域的正确内容。
+这段代码刻意显式 clear，因为 HBR 不会替调用方清除旧像素。失败分支也先处理返回 fence，再把 slot 放回空闲队列，避免尚有 GPU 工作时复用目标。若业务保证每次记录都覆盖整个 buffer，可以省掉 clear；局部更新则要自己维护未覆盖区域的正确内容。
+
+成功分支把 presentation fence 交给 `setBuffer()` 后便关闭 Java wrapper。Android 17 的 `android_view_SurfaceControl.cpp` 会把 native fence 保存为 transaction 持有的 `sp<Fence>`，所以关闭原 wrapper 不会移除 transaction 的引用；保留原 wrapper 反而会多占一个 fd / native 资源。
 
 三个 usage flag 各有职责：
 
@@ -207,7 +323,7 @@ request.draw(callbackExecutor, result -> {
 - `USAGE_GPU_SAMPLED_IMAGE`：SurfaceFlinger 可能通过 GPU 采样合成。
 - `USAGE_COMPOSER_OVERLAY`：直接调用 `SurfaceControl.Transaction.setBuffer()` 时需要，HWC 也可能把它作为 overlay layer。
 
-Android 17 的 Java `setBuffer()` 文档同时要求 `GPU_SAMPLED_IMAGE` 和 `COMPOSER_OVERLAY`。格式与 usage 的组合受 gralloc 能力约束，分配前应使用 `HardwareBuffer.isSupported()`，不能假设所有设备都支持任意尺寸、FP16 与用途组合。[AOSP: `HardwareBuffer`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/HardwareBuffer.java) [AOSP: `SurfaceControl.Transaction.setBuffer()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java)
+Android 17 的 Java `setBuffer()` 文档同时要求 `GPU_SAMPLED_IMAGE` 和 `COMPOSER_OVERLAY`。格式与 usage 的组合受 gralloc 能力约束，分配前应使用 `HardwareBuffer.isSupported()`，不能假设所有设备都支持任意尺寸、FP16 与用途组合。[AOSP: `HardwareBuffer`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/HardwareBuffer.java) [AOSP: `SurfaceControl.Transaction.setBuffer()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java)
 
 ### RenderNode 更新与阴影
 
@@ -218,6 +334,8 @@ Android 17 的 Java `setBuffer()` 文档同时要求 `GPU_SAMPLED_IMAGE` 和 `CO
 ### Transform 只支持直角旋转
 
 Android 17 的 HBR 源码只接受 identity、90°、180°、270° 四种 `BUFFER_TRANSFORM_*` 值。90°/270° 时，内部会交换 render width 与 height。它用于预旋转 buffer，不能替代 RenderNode 上的任意缩放、镜像或透视变换。
+
+公开 `RenderRequest` 文档因为参数标注为通用 `SurfaceControl.BufferTransform`，枚举列表还包含水平/垂直镜像；Android 17 的 `HardwareBufferRenderer.java` 会对镜像值抛出 `IllegalArgumentException`。应用面向 API 37 时应按这四个实际接受值设计，不能只按文档的通用枚举列表放行。
 
 ## Buffer 池：复用规则比“几缓冲”更重要
 
@@ -261,21 +379,34 @@ AHardwareBuffer_allocate
 NDK 路径的版本和所有权容易混淆，Android 17 的头文件规定如下：
 
 | API 范围 | 提交 API | 安全复用当前 buffer 的依据 |
-|:---|:---|:---|
+| --- | --- | --- |
 | API 26–28 | 有 `AHardwareBuffer`，没有公开的 `ASurfaceTransaction` buffer 提交 | 走 `ANativeWindow`/EGL/Vulkan 等对应 consumer 的同步规则 |
 | API 29–35 | `ASurfaceTransaction_setBuffer()` | 后续 transaction 的 `OnComplete` 中读取 **previous buffer** 的 release fence |
 | API 36–37 | 优先 `ASurfaceTransaction_setBufferWithRelease()` | 与当前提交 buffer 一一对应的 `ASurfaceTransaction_OnBufferRelease` |
 
 API 29–35 的 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 返回“被本次 transaction 替换或移除的上一块 buffer”的 fence。它不能用来回收本次刚提交的 buffer；当前 buffer 要等下一次替换它的 transaction。
 
-API 36–37 的 release callback 更直接。若 callback 给出非负 fd，接收方拥有该 fd，要等待并关闭；`-1` 表示已经释放。传给 `setBuffer*()` 的 acquire fence fd 则由 framework 接管并关闭。`ASurfaceTransaction_create()` 返回的 transaction 仍属于调用方，`apply()` 后要调用 `ASurfaceTransaction_delete()`。[AOSP: `surface_control.h`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/include/android/surface_control.h)
+API 36–37 的 release callback 更直接。若 callback 给出非负 fd，接收方拥有该 fd，要等待并关闭；`-1` 表示已经释放。传给 `setBuffer*()` 的 acquire fence fd 则由 framework 接管并关闭。`ASurfaceTransaction_create()` 返回的 transaction 仍属于调用方，`apply()` 后要调用 `ASurfaceTransaction_delete()`。[AOSP: `surface_control.h`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/include/android/surface_control.h)
+
+## 内核边界：共享对象与同步原语
+
+Java `HardwareBuffer` 在 native 侧映射到 `AHardwareBuffer` / `GraphicBuffer`，allocator 可通过 dma-buf 让 GPU、DPU 或其他设备共享同一底层存储。`SyncFence` 和 NDK fence fd 走 sync_file 接口，其后由 dma-fence 表达异步硬件工作的完成依赖。
+
+在 `android17-6.18-2026-06_r6` 中，通用语义可从四个入口核对：
+
+- `drivers/dma-buf/dma-buf.c`：buffer attachment、map 与跨设备共享；
+- `drivers/dma-buf/dma-fence.c`：signal、callback 和 wait；
+- `include/linux/dma-fence.h`：dma-fence 接口、上下文与序列号；
+- `drivers/dma-buf/sync_file.c`：把一个或一组 dma-fence 暴露为 sync_file fd。
+
+内核层不知道 RenderNode、HBR request 或 SurfaceControl Layer 的业务含义。它能证明共享对象和同步依赖是否成立，不能单独说明 HWUI 是否按预期绘制、Layer 是否被 HWC 选为 `DEVICE`，也不能把 release fence signal 等同于像素已被用户看到。
 
 ## 性能：要和正确的基线比较
 
 HBR 的收益取决于瓶颈位置。下面只能作为选型判断，不能替代同设备、同内容的测量：
 
 | 维度 | `lockCanvas()` | `lockHardwareCanvas()` | `HardwareBufferRenderer` |
-|:---|:---|:---|:---|
+| --- | --- | --- | --- |
 | 光栅化 | CPU | GPU / HWUI | GPU / HWUI |
 | 目标 | `Surface` | `Surface` | 调用方的 `HardwareBuffer` |
 | 局部内容保留 | software Surface 支持 dirty region 语义 | 每帧完整覆盖 | 旧内容保留，是否 clear 由调用方决定 |
@@ -347,7 +478,7 @@ HBR 没有承诺一个在所有版本、厂商设备上都相同的 trace slice 
 6. **release callback**：slot 何时能再次进入 producer。
 
 | 现象 | 更可能的证据 |
-|:---|:---|
+| --- | --- |
 | `draw()` 发起很晚 | recording、业务调度或空闲 slot 获取慢 |
 | callback 很快，layer 却很晚 latch | presentation fence 长时间未 signal，或 transaction 提交晚 |
 | GPU 忙而 CPU 很轻 | 离屏 raster 或系统其他 GPU 工作成为瓶颈 |
@@ -370,7 +501,7 @@ presentation fence 约束“consumer 何时可读”，release fence 约束“pr
 
 同一块 buffer 还在 layer 上显示时又发起 HBR draw，会让 producer 与 consumer 同时访问它。单 buffer 只有等 release 后才能下一次写；连续动画应维护有背压的 buffer 池。
 
-### 忘记 clear，或误以为能自动保留完整帧
+### 忘记 clear，或把旧内容当成完整帧缓存
 
 HBR 保留未覆盖像素，这既支持调用方自己做局部更新，也会保留意外的旧内容。透明背景尤其要显式决定清屏策略。
 
@@ -385,6 +516,18 @@ HBR 构造时固定输出 buffer，没有更换 target 的 API。buffer 池应�
 ### 把 `SurfaceControl.setBuffer()` 当成任意应用窗口入口
 
 调用方必须拥有一个生命周期有效、已正确挂到 layer tree 的 `SurfaceControl`。普通 View 业务不应为了使用 HBR 绕开既有窗口渲染；很多场景用 `SurfaceView`、`AttachedSurfaceControl`、`HardwareRenderer` 或 AndroidX Graphics 更合适。
+
+## Android 13 到 Android 17 的接口边界
+
+| 版本 | 与 HBR 直接相关的公开能力 |
+| --- | --- |
+| Android 13 / API 33 | Java `SyncFence`；`SurfaceControl.Transaction.setBuffer(HardwareBuffer, SyncFence, releaseCallback)` 提供 direct Layer 的 producer / consumer 同步 |
+| Android 14 / API 34 | `HardwareBufferRenderer`、`RenderRequest` 与 `RenderResult` 公开，支持 RenderNode 到调用方 HardwareBuffer |
+| Android 15 / API 35 | `Transaction.setFrameTimeline()`、`setDesiredPresentTimeNanos()` 与 `setDesiredHdrHeadroom()` 公开 |
+| Android 16 / API 36 | NDK `ASurfaceTransaction_setBufferWithRelease()` 和逐 buffer release callback 公开 |
+| Android 17 / API 37 | HBR 没有新增公开方法；本章按 `android-17.0.0_r1` 核对 request reset、四种直角旋转、JNI fence 和 SurfaceControl 提交语义 |
+
+这一演进表不能反向推出旧版本存在 HBR。API 33 已有 HardwareBuffer direct Layer 和 fence 基础能力，Java HBR 类仍要到 API 34 才能使用。
 
 ## Android 14 以下的降级
 
@@ -417,14 +560,28 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
 - [ ] HDR 同时校验 format、color space、dataspace、headroom 与显示能力
 - [ ] Perfetto 中把 app、RenderThread、GPU、SurfaceFlinger 和 release 串成同一帧
 
+## 小结
+
+- HBR 把 RenderNode 场景树写入调用方拥有的 `HardwareBuffer`；若目标只是现成 `Surface`，应同时比较 `lockHardwareCanvas()` 或 `HardwareRenderer`。
+- Android 17 的 HBR 仍共享应用 RenderThread 和 GPU context，离屏任务会与普通 UI 渲染争用资源。
+- `RenderResult` 的 presentation fence 约束 consumer 读取，SurfaceControl release fence 约束 producer 复用，两类 fence 不能互换。
+- 持续渲染需要按 slot 配置 buffer、renderer、generation 和 release 状态，池大小由 GPU 与显示延迟实测决定。
+- Java HBR 从 API 34 提供；NDK 需要用 AHardwareBuffer 加 EGL / Vulkan，并按 API 29–35 与 API 36–37 的不同 release 契约实现。
+- HDR 需要同时匹配 format、color space、dataspace、headroom 与显示能力，`RGBA_FP16` 单独出现不能证明内容是 HDR。
+- Android 17 源码只接受 identity 与三种直角旋转；公开文档列出的镜像 transform 不能直接用于 HBR request。
+
 ## 参考资料
 
 - [Android API：HardwareBufferRenderer（API 34）](https://developer.android.com/reference/android/graphics/HardwareBufferRenderer)
 - [Android API：HardwareBufferRenderer.RenderRequest](https://developer.android.com/reference/android/graphics/HardwareBufferRenderer.RenderRequest)
 - [Android API：HardwareBuffer](https://developer.android.com/reference/android/hardware/HardwareBuffer)
+- [Android API：SyncFence](https://developer.android.com/reference/android/hardware/SyncFence)
 - [Android API：SurfaceControl.Transaction](https://developer.android.com/reference/android/view/SurfaceControl.Transaction)
-- [Android 17 AOSP：HardwareBufferRenderer.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java)
-- [Android 17 AOSP：HardwareBuffer.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/HardwareBuffer.java)
-- [Android 17 AOSP：Surface.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java)
-- [Android 17 AOSP：SurfaceControl.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java)
-- [Android 17 AOSP：NDK surface_control.h](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/include/android/surface_control.h)
+- [AndroidX Graphics：CanvasBufferedRenderer](https://developer.android.com/reference/androidx/graphics/CanvasBufferedRenderer)
+- [Android 17 AOSP：HardwareBufferRenderer.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java) 与 [JNI](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/jni/android_graphics_HardwareBufferRenderer.cpp)
+- [Android 17 AOSP：DrawFrameTask.cpp](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp)
+- [Android 17 AOSP：HardwareBuffer.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/HardwareBuffer.java)
+- [Android 17 AOSP：Surface.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Surface.java)
+- [Android 17 AOSP：SurfaceControl.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java) 与 [JNI](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_view_SurfaceControl.cpp)
+- [Android 17 AOSP：NDK surface_control.h](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/include/android/surface_control.h)
+- [Kernel android17-6.18：dma-buf.c](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)、[dma-fence.c](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)、[dma-fence.h](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/dma-fence.h)、[sync_file.c](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)
