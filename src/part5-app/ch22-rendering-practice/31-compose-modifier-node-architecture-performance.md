@@ -27,391 +27,564 @@ sources:
 
 # 22.31 Compose Modifier.Node 架构与性能迁移
 
-§22.3 已经覆盖了 Compose 重组控制、Strong Skipping 和阶段性读取优化的通用方法。本节专门讨论 Modifier.Node 架构（自 Compose Foundation 1.7 起稳定）：它的设计动机、对重组和布局/绘制的影响、自定义 Modifier 的迁移路径，以及在 Android 17 + Compose 1.10 工具链下的实践边界。
+`Modifier.Node` 是 Compose UI 的自定义 Modifier 基础设施。它把短生命周期的配置对象与可跨重组复用的运行节点分开，适合实现绘制、测量、语义、焦点和输入等底层行为。本节说明它解决了什么问题、节点如何复用、何时无需使用它，以及迁移时容易写错的生命周期和失效逻辑。
 
-Modifier.Node 不由 Android 17（API 37）平台决定，而是由项目依赖的 Compose 库版本决定。本节以 Compose BOM 2025.12.00（Compose 1.10）为版本基线。
+本节的验证基线为：
 
-[适用版本: Compose Foundation 1.7+（Modifier.Node 稳定），Android 12+]
+- Android 平台：Android 17、API 37、`android-17.0.0_r1`
+- 内核：`android17-6.18-2026-06_r6`
+- Compose：Compose BOM `2026.06.01`，Compose UI 与 Foundation `1.11.4`
+- Compose UI 源码：AndroidX 提交 `854220f44ea8ea80fee824a6c5a045f39bede289`
 
-## 旧 Modifier API 的性能瓶颈
+`Modifier.Node` 随 Compose UI 库发布，不由设备 API 级别或 Linux 内核版本提供。Android 17 与内核锚点用于限定本知识库的系统环境；本节涉及的节点复用、链更新和自动失效语义，应以应用实际依赖的 Compose UI 版本为准。
 
-Compose 1.0–1.6 时代的 Modifier 链由 `Modifier.Element` 接口的实现类组成。每个 Modifier 元素是一个数据对象（data class 或等价结构），携带配置参数。每次重组发生时，Compose 运行时执行以下流程：
+`Modifier.Node` API 在 Compose UI 1.3.0 以实验形式出现。当前项目采用 1.11.4 稳定版，因此正文不再用“从某个 Android 版本开始支持”描述它，也不把早期实验版本的内部实现当成当前契约。
 
-1. **重新构造 Modifier 链**：Composable 函数重新执行，生成一组新的 Modifier.Element 实例。即使参数没变，`Modifier.composed { }` 块也会在每次组合时创建新的 Modifier 树。
-2. **逐元素比较**：运行时把新旧 Modifier 链做结构性比较（通过 `equals()`），判断哪些元素需要更新。
-3. **销毁旧节点 → 创建新节点**：不相等的元素对应的底层节点被销毁并重建，包括 LayoutNode、DrawNode 等内部节点。
+## 1. 先判断是否需要自定义节点
 
-这套机制的性能压力集中在两处：**对象分配**和**节点重建**。高频重组场景（动画、滚动、手势）中，每帧重建 Modifier 链和底层节点会带来可测量的 GC 压力和主线程开销。
+官方文档给出的选择顺序很实用：
 
-`Modifier.composed { }` 是最常见的性能陷阱。它是一个工厂函数，每次组合时重新执行 lambda 体。这意味着 lambda 内部的 `remember`、`MutableState` 和副作用都会被反复创建和丢弃，无法稳定复用。在 Compose 1.6 之前，如果需要状态化的自定义 Modifier，`composed()` 几乎是唯一选择。
+| 需求 | 合适的实现 |
+| --- | --- |
+| 只需组合现有 Modifier | 编写普通、非 `@Composable` 的 Modifier 工厂并链接现有 Modifier |
+| 只需把参数传给现有 Modifier | 继续使用现有 Modifier，不增加 Node |
+| 必须读取组合调用点的值，且无法改为节点侧读取 | 谨慎使用 `@Composable` Modifier 工厂 |
+| 需要新的绘制、测量、语义、焦点或输入行为 | `ModifierNodeElement` + `Modifier.Node` |
+| 节点内部需要跨重组状态或附着期任务 | 在 Node 字段与 `coroutineScope` 中管理 |
 
-[结构参考: Compose 官方文档 — Custom Modifiers]
-
-## Modifier.Node 的核心设计
-
-Modifier.Node 架构在 Compose 1.7 进入稳定状态。它的核心改变是把 Modifier 从「数据对象」变成「持久化节点」。
-
-### 架构对比
-
-| 维度 | 旧 Modifier.Element | Modifier.Node |
-|------|---------------------|---------------|
-| 本体 | 数据对象（data class） | 有状态节点（class，持有关联状态） |
-| 生命周期 | 随组合/重组创建和销毁 | 跨组合持久化，附着到 Compose UI 树 |
-| 更新方式 | 旧对象 equals 新对象 → 不等则重建 | `update()` 方法接收新配置，原地更新 |
-| 状态存储 | 外部 remember 或 composed() | Node 自身字段 |
-| 子树影响 | 元素变化可能触发下游重组 | Node 可以声明只影响 Layout 或 Draw 阶段 |
-
-ModifierNodeElement 是新架构的「桥接器」。它仍然是 Modifier.Element 的实现，负责在组合阶段创建和更新 Node。运行时通过 `ModifierNodeElement.create()` 创建 Node，通过 `ModifierNodeElement.update(node)` 更新已有 Node 的配置。这样，Modifier 链的比较仍然是元素级的，但底层节点的重建被原地更新替代。
-
-[已验证: AndroidX androidx-compose-release, compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/ModifierNodeElement.kt]
-
-### Node 类型层次
-
-Modifier.Node 不是单一类，而是一个类型层次，每种类型对应渲染管线的一个阶段：
-
-| Node 类型 | 阶段 | 职责 | 代表性内置实现 |
-|-----------|------|------|---------------|
-| `LayoutModifierNode` | Layout | 测量、放置 | `Modifier.padding`, `Modifier.size` |
-| `DrawModifierNode` | Draw | 绘制内容 | `Modifier.background`, `Modifier.drawBehind` |
-| `CompositionLocalProviderModifierNode` | Composition | 提供 CompositionLocal | `Modifier.compositionLocalOverride` |
-| `SemanticsModifierNode` | Semantics | 无障碍语义 | `Modifier.semantics` |
-| `PointerInputModifierNode` | Input | 手势输入分发 | `Modifier.pointerInput` |
-| `LayoutAwareModifierNode` | Layout | 布局回调 | 内部使用 |
-
-一个 Node 可以同时实现多个接口。例如 `GraphicsLayerModifierNode` 同时实现 `DrawModifierNode` 和 `LayoutModifierNode`，这样它在绘制阶段处理合成层，在布局阶段参与测量。
-
-### 与 NodeCoordinator 的协作
-
-每个 Modifier.Node 在 UI 树中由 NodeCoordinator 持有。NodeCoordinator 是 Compose 运行时内部对象，负责协调同一位置上多个 Modifier Node 的链式调用。布局阶段，NodeCoordinator 按链顺序依次调用每个 `LayoutModifierNode` 的测量方法；绘制阶段同理。
-
-NodeCoordinator 还负责生命周期管理。当 Modifier 链发生变化（元素增删或替换），NodeCoordinator 执行以下流程：
-
-1. 比较新旧 `ModifierNodeElement` 列表
-2. 对匹配的元素调用 `update(node)` 更新配置
-3. 对新增元素调用 `create()` 并插入到链中
-4. 对移除的元素调用 `Node.onDetach()` 并从链中摘除
-
-[已验证: AndroidX androidx-compose-release, compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/NodeCoordinator.kt]
-
-## Modifier.Node 对重组性能的影响
-
-### 避免不必要的节点重建
-
-旧架构下，`Modifier.composed { remember { ... } }` 的 remember 在重组发生时有可能被丢弃（取决于 Composable 是否离开组合）。Modifier.Node 的状态直接存储在 Node 字段中，Node 的生命周期独立于单次组合。这意味着：
-
-- 动画驱动的频繁重组不再触发 Node 创建/销毁
-- Modifier 配置变化只调用 `update()`，不触发下游 Composable 重组
-- Node 内部的状态（如动画进度、手势状态）在重组间稳定保持
-
-### 缩小 invalidation 范围
-
-Modifier.Node 允许更精确地声明变化影响范围。例如，一个只实现 `DrawModifierNode` 的自定义 Modifier，配置变化时只需要重绘当前节点，不会触发父级或子级 Composable 重组。这在旧架构下需要依赖阶段性读取（`Modifier.drawBehind` 读 State）才能实现；Modifier.Node 把这个能力变成了架构级保证。
-
-对照 §22.3 的阶段性读取策略：阶段分离仍然有价值，但 Modifier.Node 让自定义 Modifier 默认就能获得阶段隔离能力，不需要开发者手动把状态读取放到特定 lambda 中。
-
-## 自定义 Modifier.Node 实现模式
-
-### 基本结构
-
-一个自定义 Modifier.Node 实现需要两个类：
-
-1. **ModifierNodeElement 子类**：数据层，负责创建和更新 Node，作为 Modifier 链上的元素
-2. **Modifier.Node 子类**：逻辑层，持有状态和阶段实现
+下面的工厂只组合已有能力，增加 Node 反而会提高维护成本。
 
 ```kotlin
-// 数据层：Modifier 链上的元素
-data class ShadowModifierElement(
-    val elevation: Dp,
-    val shape: Shape
-) : ModifierNodeElement<ShadowNode>() {
+fun Modifier.articleCard(
+    background: Color,
+    shape: Shape,
+): Modifier = this
+    .clip(shape)
+    .background(background)
+    .padding(horizontal = 16.dp, vertical = 12.dp)
+```
 
-    override fun create(): ShadowNode = ShadowNode(
-        elevation = elevation,
-        shape = shape
-    )
+这段代码没有自定义阶段行为。`clip`、`background` 和 `padding` 已有各自的节点实现，普通工厂还能在组合外创建并复用。
 
-    override fun update(node: ShadowNode) {
-        node.elevation = elevation
-        node.shape = shape
-        // 通知 Node 重绘
-        node.invalidateDraw()
-    }
+需要新行为时，Node 的主要收益来自运行对象复用和明确的阶段接口。它并不保证每个自定义 Modifier 都更快；热点是否改善仍要通过分配、帧时间和阶段执行记录确认。
 
-    override fun hashCode(): Int = resultOf(elevation, shape)
-}
+## 2. Element 与 Node 各自保存什么
 
-// 逻辑层：持久化节点
-class ShadowNode(
-    var elevation: Dp,
-    var shape: Shape
+一个 Node 型 Modifier 包含两类对象：
+
+- `ModifierNodeElement<N>` 是轻量配置值。Composable 执行时仍可能创建新的 Element。
+- `Modifier.Node` 是附着在 `LayoutNode` 的运行对象，可以保存状态并跨多次重组复用。
+
+Element 负责 `create()` 与 `update(node)`。Node 通过所实现的接口声明自己参加哪些阶段，例如：
+
+| 节点接口 | 作用 |
+| --- | --- |
+| `LayoutModifierNode` | 测量与放置 |
+| `DrawModifierNode` | 绘制 |
+| `SemanticsModifierNode` | 语义与无障碍 |
+| `PointerInputModifierNode` | 指针命中与事件分发 |
+| `CompositionLocalConsumerModifierNode` | 读取附着位置的 `CompositionLocal` |
+| `ObserverModifierNode` | 观察显式 `observeReads` 中的快照读取 |
+| `LayoutAwareModifierNode` | 尺寸或放置回调 |
+
+Node 可以实现多个接口。运行时会据此计算节点的 `kindSet` 位集合，用于跳过不相关的链区间并触发对应阶段的自动失效。
+
+### 2.1 一个最小、可复用的绘制节点
+
+下面的示例增加一个圆形绘制行为，结构与 Compose 1.11.4 官方示例一致。
+
+```kotlin
+private class CircleNode(
+    var color: Color,
 ) : Modifier.Node(), DrawModifierNode {
 
     override fun ContentDrawScope.draw() {
-        // 绘制阴影 + 内容
-        drawOutline(
-            outline = shape.createOutline(size, layoutDirection, density),
-            color = Color.Black.copy(alpha = 0.25f),
-            blendMode = BlendMode.SrcOver
-        )
+        drawCircle(color)
         drawContent()
     }
 }
 
-// 扩展函数入口
-fun Modifier.customShadow(elevation: Dp, shape: Shape = RectangleShape): Modifier =
-    this.then(ShadowModifierElement(elevation, shape))
-```
+private data class CircleElement(
+    val color: Color,
+) : ModifierNodeElement<CircleNode>() {
 
-### update() 的职责
+    override fun create(): CircleNode = CircleNode(color)
 
-`update()` 是 Modifier.Node 架构的核心方法。它在以下场景被调用：
+    override fun update(node: CircleNode) {
+        node.color = color
+    }
 
-- Composable 重组时，新的 Element 与旧 Element 不 equals（但类型相同）
-- 父级 Composable 传入新的参数值
-
-`update()` 的职责是**同步配置到 Node 并触发必要的 invalidation**。不要在 `update()` 中执行耗时操作；它运行在主线程组合阶段。如果配置变化需要重绘，调用 `invalidateDraw()`；需要重新布局，调用 `invalidateLayout()`。如果两者都不需要，说明这个 Modifier 是纯数据性的，可以不调用任何 invalidate。
-
-```kotlin
-override fun update(node: GradientHeaderNode) {
-    val colorChanged = node.startColor != startColor || node.endColor != endColor
-    val sizeChanged = node.height != height
-
-    node.startColor = startColor
-    node.endColor = endColor
-    node.height = height
-
-    if (colorChanged) node.invalidateDraw()
-    if (sizeChanged) node.invalidateLayout()
+    override fun InspectorInfo.inspectableProperties() {
+        name = "circle"
+        properties["color"] = color
+    }
 }
+
+fun Modifier.circle(color: Color): Modifier =
+    this then CircleElement(color)
 ```
 
-### CompositionLocal 的访问方式
+`CircleElement` 只保存输入，`CircleNode` 保存当前运行状态。相同位置继续使用 `CircleElement` 时，颜色变化会更新现有 Node；默认自动失效随后安排绘制，无需在这个 `update()` 中再次调用 `invalidateDraw()`。
 
-Modifier.Node 中不能直接使用 `@Composable` 注解，因此不能直接调用 `CompositionLocal.current`。Compose 提供了两种替代方案：
+示例调用了 `drawContent()`，所以链中更内侧的绘制和组件内容仍会执行。如果设计目标是完全替换内容绘制，才应省略它。
 
-| 方案 | API | 适用场景 |
-|------|-----|----------|
-| 通过 Element 传入 | 在 ModifierNodeElement 中读取 CompositionLocal，作为参数传给 Node | CompositionLocal 值不频繁变化 |
-| CompositionLocalProviderModifierNode | 实现 `CompositionLocalProviderModifierNode` 接口 | Node 自身需要提供 CompositionLocal |
+## 3. NodeChain 如何决定复用、更新或替换
 
-大多数情况下推荐第一种方案：在 Composable 函数中读取 CompositionLocal，作为参数传入 Modifier 工厂函数，Element 再传给 Node。这样 Node 保持纯逻辑层，不依赖 Composition 环境。
+节点链的所有权与差分逻辑位于 `LayoutNode.nodes` 对应的 `NodeChain`。`NodeCoordinator` 负责坐标、绘制、命中和布局协作；它不是 Element 列表的所有者，也不独自执行整条 Modifier 差分。
 
-## Modifier.Node 与布局性能
+Compose UI 1.11.4 的 `NodeChain.actionForModifiers()` 规则如下：
 
-### LayoutModifierNode 的测量缓存
+| 旧 Element 与新 Element | 动作 | Node 结果 |
+| --- | --- | --- |
+| `prev == next` | 复用 | 沿用 Node，不调用 `update()` |
+| 不相等，但运行时类型相同 | 更新 | 沿用 Node，调用新 Element 的 `update(node)` |
+| 运行时类型不同 | 替换 | 移除旧 Node，创建新 Node |
 
-`LayoutModifierNode` 接口要求实现 `MeasureScope.measure(measurable: Measurable, constraints: Constraints): MeasureResult`。与旧 `LayoutModifier` 元素不同，Modifier.Node 版本的测量结果可以被 NodeCoordinator 缓存。
+等长、类型顺序稳定的链走线性快速路径。出现插入、删除或类型变化后，`NodeChain` 使用修改过的 Myers 差分算法计算结构变化。`LayoutModifierNode` 需要专用的 `LayoutModifierNodeCoordinator`；其他节点会与所在链段共享协调器。
 
-当 Modifier 链中其他元素发生变化但本 Node 的配置未变时，NodeCoordinator 可以跳过本 Node 的测量，直接复用缓存结果。旧架构下，Modifier 链上任何元素变化都可能导致整个链重新测量。
+这套规则带来三个实现要求：
+
+1. Element 的 `equals()` 与 `hashCode()` 必须覆盖所有会改变 Node 行为的输入。
+2. `update()` 必须把这些输入同步到现有 Node。
+3. 不要把会频繁变化的运行状态放进 Element；它应留在 Node，或由节点观察外部状态。
+
+参数型 Element 使用 `data class` 通常最安全。无参数 Element 可以使用单例，并提供稳定的相等与散列语义。错误的 `equals()` 会让运行时错误地跳过 `update()`；遗漏字段则可能让界面保留旧配置。
+
+Node 复用不等于 Element 零分配。Modifier 工厂在 Composable 内执行时，新的轻量 Element 仍可能出现；复用的是 Element 背后的 Node 及其状态。
+
+## 4. update() 与自动失效
+
+`Modifier.Node.shouldAutoInvalidate` 默认返回 `true`。同类型 Element 发生更新后，运行时会按 Node 接口自动安排相关工作：
+
+- `LayoutModifierNode`：使测量结果失效；
+- `DrawModifierNode`：使绘制层失效；
+- `SemanticsModifierNode`：使语义配置失效；
+- `LayoutAwareModifierNode`：按具体回调类型安排测量、放置或位置通知；
+- 其他支持自动失效的节点类型：执行各自的失效处理。
+
+所以，常规 `update()` 只同步字段即可。无条件手动调用 `invalidateDraw()` 或 `invalidateMeasurement()` 会重复表达运行时已经知道的信息。
+
+### 4.1 何时关闭自动失效
+
+一个 Node 同时实现多个阶段接口，而某些参数只影响其中一个阶段时，可以把 `shouldAutoInvalidate` 设为 `false`，再由 `update()` 精确选择失效范围。这样写的责任更大：遗漏调用会造成 UI 不更新。
+
+下面的节点只参与绘制，用它演示手动失效的完整约束。
 
 ```kotlin
-class AspectRatioNode : Modifier.Node(), LayoutModifierNode {
-    var ratio: Float = 1f
+private class StripeNode(
+    var color: Color,
+    var visible: Boolean,
+) : Modifier.Node(), DrawModifierNode {
 
-    override fun MeasureScope.measure(
-        measurable: Measurable,
-        constraints: Constraints
-    ): MeasureResult {
-        val width = constraints.maxWidth
-        val height = (width / ratio).toInt()
-        val placeable = measurable.measure(
-            Constraints.fixed(width, height)
-        )
-        return layout(placeable.width, placeable.height) {
-            placeable.placeRelative(0, 0)
+    override val shouldAutoInvalidate: Boolean = false
+
+    override fun ContentDrawScope.draw() {
+        drawContent()
+        if (visible) {
+            drawRect(
+                color = color,
+                size = Size(width = size.width, height = 2.dp.toPx()),
+            )
         }
+    }
+}
+
+private data class StripeElement(
+    val color: Color,
+    val visible: Boolean,
+) : ModifierNodeElement<StripeNode>() {
+
+    override fun create(): StripeNode = StripeNode(color, visible)
+
+    override fun update(node: StripeNode) {
+        val visualChanged =
+            node.color != color || node.visible != visible
+
+        node.color = color
+        node.visible = visible
+
+        if (visualChanged) {
+            node.invalidateDraw()
+        }
+    }
+}
+
+fun Modifier.bottomStripe(
+    color: Color,
+    visible: Boolean,
+): Modifier = this then StripeElement(color, visible)
+```
+
+这里关闭自动失效后，`update()` 只在可见结果变化时安排绘制。若节点还实现 `LayoutModifierNode`，尺寸参数变化应调用 `invalidateMeasurement()`；只影响放置逻辑的参数可调用 `invalidatePlacement()`。当前公开 API 中没有 `invalidateLayout()` 这个 `LayoutModifierNode` 扩展函数。
+
+默认自动失效适合绝大多数业务节点。只有剖析结果表明无效阶段调用值得优化，并且测试能覆盖每个参数分支时，才考虑手动模式。
+
+## 5. 生命周期、协程与可复用内容
+
+Node 有四个生命周期入口需要区分：
+
+- `create()` 创建对象；Node 此时尚未附着。
+- `onAttach()` 表示 Node 已进入 UI 树，可以访问 `owner` 和 `coroutineScope`；实现相应消费接口后也可读取 `CompositionLocal`。
+- `onDetach()` 在 Node 离开当前 UI 树前调用；之后节点协程作用域会被取消。
+- `onReset()` 在可复用布局进入复用池前调用，例如 Lazy 列表中的内容被移出可见区域。
+
+`onDetach()` 后同一个 Node 仍可能再次附着。`onReset()` 还表示它未来可能服务于语义上不同的数据项，因此焦点、按压、拖拽进度和临时选择等数据项级状态需要清理。
+
+Node 自带的 `coroutineScope` 仅在附着期间可访问。无需从 Element 传入外部作用域，也不能在 Node 中调用 `LaunchedEffect`。下面用两个短节点分别展示附着期动画和复用状态清理。
+
+```kotlin
+private class EntranceOverlayNode :
+    Modifier.Node(), DrawModifierNode {
+
+    private val progress = Animatable(0f)
+
+    override fun onAttach() {
+        coroutineScope.launch {
+            progress.snapTo(0f)
+            progress.animateTo(1f)
+        }
+    }
+
+    override fun ContentDrawScope.draw() {
+        drawContent()
+        val alpha = (1f - progress.value) * 0.08f
+        if (alpha > 0f) {
+            drawRect(Color.Black.copy(alpha = alpha))
+        }
+    }
+}
+
+private class SelectableNode : Modifier.Node() {
+    var selected by mutableStateOf(false)
+
+    override fun onReset() {
+        selected = false
     }
 }
 ```
 
-### 与 Intrinsic 测量的交互
+`EntranceOverlayNode` 每次附着都在新作用域中重置并启动动画；解除附着后，作用域由 Node 自动取消。`Animatable.value` 在绘制阶段读取，快照变化会使绘制阶段重新执行。`SelectableNode` 则在进入复用流程时清除与旧数据项绑定的选择状态。
 
-Modifier.Node 的 intrinsic 测量通过 `IntrinsicMeasureScope.minIntrinsicWidth()` 等方法提供。当自定义 Modifier 影响子内容的 intrinsic 尺寸时，需要同时覆写四个 intrinsic 方法（min/max × width/height）。
+## 6. Modifier.composed 与 @Composable 工厂的准确边界
 
-Compose 在 1.6 之后对 intrinsic 测量做了性能优化（详见 §22.25），Modifier.Node 的 intrinsic 结果也会被 NodeCoordinator 缓存。但如果 Node 的 `measure()` 实现中忽略 constraints 直接返回固定尺寸，intrinsic 测量也会变得无意义。确保 `measure()` 正确传播 constraints。
+`Modifier.composed {}` 可以保存实例专属状态。块中的 `remember` 在组合位置保持不变时会复用，并不会因为每次重组就必然创建和丢弃。它的问题来自另一组成本：
 
-详见 22.25 节
+- `composed` Element 应用到布局前要经过 `Composer.materialize()`；
+- 工厂为每个应用位置进入组合并生成实际 Modifier 链；
+- 状态和副作用依赖组合槽位生命周期，而非 Node 的附着与复用生命周期；
+- 相比 Node，会增加组合工作和中间对象。
 
-## Modifier.Node 与绘制性能
+官方当前文档把 `composed {}` 标为“不再推荐”，没有把所有重载从公开 API 删除。维护旧代码时，应依据热点数据安排迁移，避免把“不推荐”写成“运行即错误”。
 
-### DrawModifierNode 的绘制缓存
+`@Composable` Modifier 工厂也有相似限制。返回值不是 `Unit` 的 Composable 函数不能被 Compose 编译器跳过，因此这种工厂即使输入稳定，也会在调用者重组时执行。它读取的 `CompositionLocal` 值来自工厂调用位置，而普通 Node 工厂可在使用位置读取附着环境。
 
-`DrawModifierNode` 的 `ContentDrawScope.draw()` 方法替代了旧 `DrawModifier` 的 draw lambda。关键区别在于：Node 的绘制不依赖于每次重组创建新的 lambda 对象。
-
-旧写法的问题：
+下面的代码用于说明调用位置语义，不是推荐模板。
 
 ```kotlin
-// 旧写法：每次重组创建新的 draw lambda
-Modifier.drawBehind {
-    // 这个 lambda 在每次组合时重新创建
-    // 即使 background 没变，draw lambda 对象也是新的
-    drawRect(color)
+@Composable
+fun Modifier.localTint(): Modifier {
+    val tint = LocalContentColor.current
+    return drawWithContent {
+        drawContent()
+        drawRect(tint.copy(alpha = 0.08f))
+    }
 }
 ```
 
-Modifier.Node 写法：
+`LocalContentColor` 在 `localTint()` 被调用的位置解析。如果构造出的 Modifier 被传到另一个具有不同 `CompositionLocalProvider` 的子树，它不会自动改用应用位置的值。需要应用位置语义时，应让 Node 实现 `CompositionLocalConsumerModifierNode`。
+
+## 7. 在 Node 中读取 CompositionLocal
+
+Node 不能调用 `CompositionLocal.current`。实现 `CompositionLocalConsumerModifierNode` 后，可以通过 `currentValueOf(local)` 读取 Node 所附着布局位置的值。
+
+下面的绘制节点在 draw 阶段读取本地背景色。
 
 ```kotlin
-// 新写法：Node 持有绘制逻辑，不随重组重建
-class BackgroundNode : Modifier.Node(), DrawModifierNode {
-    var color: Color = Color.Transparent
+private class LocalBackgroundNode :
+    Modifier.Node(),
+    DrawModifierNode,
+    CompositionLocalConsumerModifierNode {
 
     override fun ContentDrawScope.draw() {
+        val color = currentValueOf(LocalArticleBackground)
         drawRect(color)
         drawContent()
     }
 }
 ```
 
-虽然 `Modifier.drawBehind` 在 Compose 1.7+ 内部已经迁移到 Modifier.Node 实现（用户层无感知），但自定义绘制 Modifier 如果仍使用 `composed { drawBehind { ... } }` 模式，就无法享受 Node 的持久化优势。
+测量、绘制、语义等受快照观察的阶段会跟踪 `currentValueOf()` 读取。对应 `CompositionLocal` 改变后，Compose 会使读取它的阶段失效。
 
-### GraphicsLayerModifier.Node 与 Hardware Layer
-
-`Modifier.graphicsLayer` 在 Compose 1.7+ 已经基于 Modifier.Node 实现。`GraphicsLayerModifierNode` 同时实现 `DrawModifierNode` 和 `LayoutModifierNode`，在绘制阶段通过 `RenderEffect` 和 hardware layer 实现高效合成。
-
-动画场景下，直接修改 `GraphicsLayerModifierNode` 的 `scaleX`、`scaleY`、`alpha`、`translationX` 等属性并调用 `invalidateDraw()`，不会触发重组——只触发重绘。这与 §22.3 中推荐的 `Modifier.graphicsLayer { }` lambda 写法效果一致，但 Node 版本可以更精确地控制哪些属性变化需要 invalidate。
-
-### pointerInput Modifier.Node 的事件分发
-
-`PointerInputModifierNode` 接口让自定义 Modifier 可以拦截触摸事件，而不需要依赖 `Modifier.pointerInput(key) { awaitPointerEventScope { ... } }` 的挂起函数模式。
-
-Node 版本的事件分发直接在 UI 线程的事件循环中执行，不需要创建协程。这对高频手势事件（如拖拽、缩放）的性能有帮助，减少了协程调度开销。
+如果读取发生在这些阶段之外，需要同时实现 `ObserverModifierNode`，并在每次通知后重新进入 `observeReads`。
 
 ```kotlin
-class TouchInterceptorNode : Modifier.Node(), PointerInputModifierNode {
+private class LocalPolicyNode :
+    Modifier.Node(),
+    CompositionLocalConsumerModifierNode,
+    ObserverModifierNode {
+
+    private var policy: ArticlePolicy? = null
+
+    override fun onAttach() {
+        readPolicy()
+    }
+
+    override fun onObservedReadsChanged() {
+        readPolicy()
+    }
+
+    override fun onDetach() {
+        policy = null
+    }
+
+    private fun readPolicy() {
+        observeReads {
+            policy = currentValueOf(LocalArticlePolicy)
+        }
+    }
+}
+```
+
+`observeReads` 的通知是一次性的观察回调。`onObservedReadsChanged()` 必须再次读取，才能继续观察后续变化。`currentValueOf()` 只能在 Node 已附着时调用。
+
+## 8. LayoutModifierNode：复用不等于测量缓存
+
+`LayoutModifierNode.measure()` 与 `LayoutModifier.measure()` 遵守相同的单子项测量协议：接收父约束、选择传给被包裹内容的约束、取得 `Placeable`，再返回自身尺寸和放置逻辑。
+
+下面的示例给内容增加水平方向的内边距，用于展示约束传播。
+
+```kotlin
+private class HorizontalInsetNode(
+    var inset: Dp,
+) : Modifier.Node(), LayoutModifierNode {
+
+    override fun MeasureScope.measure(
+        measurable: Measurable,
+        constraints: Constraints,
+    ): MeasureResult {
+        val insetPx = inset.roundToPx()
+        val horizontal = insetPx * 2
+        val childConstraints =
+            constraints.offset(horizontal = -horizontal)
+        val placeable = measurable.measure(childConstraints)
+
+        val width =
+            constraints.constrainWidth(placeable.width + horizontal)
+        val height =
+            constraints.constrainHeight(placeable.height)
+
+        return layout(width, height) {
+            placeable.placeRelative(insetPx, 0)
+        }
+    }
+}
+
+private data class HorizontalInsetElement(
+    val inset: Dp,
+) : ModifierNodeElement<HorizontalInsetNode>() {
+
+    override fun create(): HorizontalInsetNode =
+        HorizontalInsetNode(inset)
+
+    override fun update(node: HorizontalInsetNode) {
+        node.inset = inset
+    }
+}
+
+fun Modifier.horizontalInset(inset: Dp): Modifier {
+    require(inset.value >= 0f)
+    return this then HorizontalInsetElement(inset)
+}
+```
+
+默认自动失效会在 `inset` 更新后安排重新测量。示例限制了非负值；生产实现还要根据产品允许的最大尺寸防止像素加法溢出。
+
+这段代码用于解释测量协议。业务仅需水平内边距时，应直接使用 `Modifier.padding(horizontal = inset)`；只有内置 Modifier 无法表达布局语义时才保留自定义节点。
+
+Node 的持久化可以减少 Node 创建与链结构更新，但不会为每个 `LayoutModifierNode` 自动提供“参数不变就复用上次 MeasureResult”的公开保证。是否跳过测量由 `LayoutNode` 的测量状态、父约束、子项状态和读取依赖共同决定。不要把 Node 复用当成测量缓存。
+
+`LayoutModifierNode` 已为四种固有尺寸测量方法提供默认实现，它们通过节点的 `measure()` 估算结果。自定义布局若需要不同语义，应覆写对应方法并保持约束一致性；源码没有承诺由 `NodeCoordinator` 为每个 Modifier 单独缓存固有尺寸结果。
+
+## 9. PointerInputModifierNode：消费发生在 change 上
+
+Compose UI 1.11.4 中，接口签名为：
+
+```kotlin
+fun onPointerEvent(
+    pointerEvent: PointerEvent,
+    pass: PointerEventPass,
+    bounds: IntSize,
+)
+```
+
+方法返回 `Unit`。需要消费事件时，对相应的 `PointerInputChange` 调用 `consume()`；不能用 Boolean 返回值声明消费。
+
+下面的节点只观察 Initial pass，并把事件交给调用者。
+
+```kotlin
+private class PointerObserverNode(
+    var onEvent: (PointerEvent) -> Unit,
+) : Modifier.Node(), PointerInputModifierNode {
 
     override fun onPointerEvent(
         pointerEvent: PointerEvent,
         pass: PointerEventPass,
-        bounds: IntSize
-    ): Boolean {
-        // 返回 true 表示消费此事件
-        return when (pass) {
-            PointerEventPass.Initial -> handleInitial(pointerEvent)
-            PointerEventPass.Main -> handleMain(pointerEvent)
-            else -> false
+        bounds: IntSize,
+    ) {
+        if (pass == PointerEventPass.Initial) {
+            onEvent(pointerEvent)
         }
     }
 
-    override fun onCancelPointerInput() {
-        // 清理手势状态
+    override fun onCancelPointerInput() = Unit
+}
+
+private data class PointerObserverElement(
+    val onEvent: (PointerEvent) -> Unit,
+) : ModifierNodeElement<PointerObserverNode>() {
+
+    override fun create(): PointerObserverNode =
+        PointerObserverNode(onEvent)
+
+    override fun update(node: PointerObserverNode) {
+        node.onEvent = onEvent
     }
 }
 ```
 
-## 从旧 Modifier API 迁移
+直接实现该接口适合明确理解三个事件分发阶段、命中路径和消费规则的底层组件。复杂手势继续使用 `Modifier.pointerInput`、`awaitPointerEventScope` 与 Foundation 手势检测器通常更安全。当前 `pointerInput` 本身已经由 `SuspendingPointerInputModifierNode` 支持，挂起式手势的结构化并发、取消和重启语义有实际价值，不能简单归类为应消除的“协程调度开销”。
 
-### 迁移优先级判断
+## 10. graphicsLayer 与阶段读取
 
-不是所有自定义 Modifier 都需要迁移到 Modifier.Node。迁移的价值取决于 Modifier 是否满足以下条件：
+`Modifier.graphicsLayer { ... }` 的 lambda 版本允许在图层属性配置阶段读取状态。状态变化时可以只更新图层属性，避开组合与布局阶段，适合 `alpha`、`scale`、`translation` 等视觉属性动画。
 
-| 条件 | 高优先级迁移 | 可选迁移 |
-|------|-------------|----------|
-| 使用 `composed()` | ✅ 必须迁移 | — |
-| 包含动画/频繁重组 | ✅ 性能收益显著 | — |
-| 使用 `remember` 在 Modifier 内部 | ✅ 状态管理简化 | — |
-| 纯无状态 Modifier（`then()` 拼接） | — | 可保持现状 |
-| 仅使用内置 Modifier 组合 | — | 无需迁移 |
-
-### 迁移示例：从 composed() 到 Modifier.Node
-
-旧写法（Compose 1.0–1.6 常见模式）：
+下面的代码用于把动画值放到图层阶段读取。
 
 ```kotlin
-fun Modifier.fadeOnPress(): Modifier = composed {
-    var pressed by remember { mutableStateOf(false) }
-    val alpha by animateFloatAsState(if (pressed) 0.5f else 1f)
-
-    this.pointerInput(Unit) {
-        detectTapGestures(
-            onPress = { pressed = true; tryAwaitRelease(); pressed = false }
-        )
-    }.graphicsLayer { this.alpha = alpha }
+val alpha by transition.animateFloat(
+    transitionSpec = { tween() },
+    label = "article-alpha",
+) { visible ->
+    if (visible) 1f else 0f
 }
+
+Box(
+    Modifier.graphicsLayer {
+        this.alpha = alpha
+    }
+)
 ```
 
-这段代码的问题：每次组合都创建新的 `MutableState`、新的 `Animatable`、新的 `pointerInput` lambda。如果父级 Composable 频繁重组，这些对象会被反复创建。
+这一模式已经使用 Compose 内部的 Node 实现。业务代码无需为了“使用 Node”再复制内部 `GraphicsLayerModifierNode`。公开 `graphicsLayer` API 还能处理图层创建、属性更新和平台渲染后端适配，通常比自建绘制节点更稳妥。
 
-新写法（Modifier.Node）：
+Node 本身也不会阻止父 Composable 重组。性能收益来自把状态读取放在需要的阶段、复用运行节点并减少 `materialize()` 展开或节点替换；父级是否重组仍由 Compose Runtime 的状态读取和跳过规则决定。
 
-```kotlin
-class FadeOnPressNode : Modifier.Node(), PointerInputModifierNode {
-    var alpha = 1f
-        set(value) { if (field != value) { field = value; invalidateDraw() } }
+## 11. 迁移步骤
 
-    private var pressed = false
+### 11.1 清点旧实现
 
-    override fun onPointerEvent(
-        pointerEvent: PointerEvent,
-        pass: PointerEventPass,
-        bounds: IntSize
-    ): Boolean {
-        if (pass == PointerEventPass.Main) {
-            pressed = pointerEvent.changes.any { it.pressed }
-            alpha = if (pressed) 0.5f else 1f
-        }
-        return false
-    }
+优先检查：
 
-    override fun onCancelPointerInput() {
-        pressed = false
-        alpha = 1f
-    }
-}
+- `Modifier.composed {}` 中存在状态、动画或副作用；
+- `@Composable` Modifier 工厂在滚动列表或动画热点中频繁执行；
+- 自定义旧式 `DrawModifier`、`LayoutModifier` 或 `PointerInputFilter`；
+- Element 的输入频繁变化，且当前实现出现明显分配或链替换；
+- 同一行为需要精确管理附着、取消或复用状态。
 
-data class FadeOnPressElement : ModifierNodeElement<FadeOnPressNode>() {
-    override fun create(): FadeOnPressNode = FadeOnPressNode()
-    override fun update(node: FadeOnPressNode) {
-        // 无配置需要同步，Node 初始状态正确
-    }
-}
+只组合内置 Modifier 的普通工厂可以保留。低频页面也无需因为 API 更新而强制迁移。
 
-fun Modifier.fadeOnPress(): Modifier = this.then(FadeOnPressElement())
+### 11.2 分开配置与运行状态
+
+迁移时可按下表安排字段：
+
+| 字段 | 放置位置 |
+| --- | --- |
+| 调用者传入的颜色、尺寸、回调、策略 | Element，并在 `update()` 同步给 Node |
+| 按压、拖拽、焦点、动画进度、缓存对象 | Node |
+| 只在附着期间运行的任务 | Node 的 `coroutineScope` |
+| 与复用数据项绑定的临时状态 | Node，并在 `onReset()` 清理 |
+| 应用位置的 CompositionLocal | `CompositionLocalConsumerModifierNode` |
+
+Element 应保持轻量与不可变。Node 中不要保存 Activity、View 或长生命周期对象，除非拥有明确的释放规则。
+
+### 11.3 保持 Element 类型稳定
+
+同一链位置在两个不同 Element 子类之间切换会导致 Node 替换。可选行为如果能够由同一个 Element 的参数表达，通常更利于复用；但不要为此制造包含大量互斥字段的通用 Node。类型设计仍应以职责清晰为前提。
+
+### 11.4 选择失效策略
+
+先使用默认自动失效，确认功能和阶段行为正确。若节点实现多个接口且更新非常频繁，再通过跟踪记录观察是否存在多余测量或绘制。只有证据充分时才关闭自动失效，并为每个输入写出对应的 `invalidateDraw()`、`invalidateMeasurement()`、`invalidatePlacement()` 或语义失效调用。
+
+## 12. 性能验证：测什么，怎样解释
+
+迁移前后要使用同一构建类型、设备状态、操作脚本和样本窗口。推荐至少观察以下四类证据：
+
+| 证据 | 工具 | 可回答的问题 |
+| --- | --- | --- |
+| 分配记录 | Android Studio Memory Profiler、分配跟踪 | Element、lambda、Node 或手势对象分配是否减少 |
+| 主线程阶段 | Perfetto、Compose tracing | Composition、Measure、Layout、Draw 的工作是否变化 |
+| 用户可见帧表现 | Macrobenchmark、FrameTimingMetric | P50、P90、P95、P99 与超时帧是否改善 |
+| 编译器可跳过性 | Compose compiler reports/metrics | 相关 Composable 的稳定性与跳过条件是否合理 |
+
+不要预设“迁移后 Composable 重组次数一定下降”。Modifier 工厂所在的父函数仍可能重组，Element 也可能重建。更可靠的预期是：
+
+- 相同 Element 类型保留既有 Node；
+- `composed` 的 `materialize()` 展开成本消失；
+- Node 内状态不再依赖额外的 Modifier 组合层；
+- 参数变化只触发节点声明的阶段；
+- 热点路径中的对象分配和阶段耗时有机会下降。
+
+Macrobenchmark 的目标值应由当前产品基线、设备档位和业务场景确定，不使用脱离项目数据的固定百分比。若帧时间没有改善，也要检查瓶颈是否位于图片解码、文本布局、GPU、Binder、I/O 或其他部分。
+
+### 12.1 一条实用的源码断言
+
+调试 Element 是否复用时，可以把 Compose 1.11.4 的链动作规则作为断言模型：
+
+```text
+equals -> reuse without update
+same runtime type, not equals -> reuse node and update
+different runtime type -> replace node
 ```
 
-新写法中，Node 只创建一次，跨组合复用。按压状态直接存储在 Node 字段中，alpha 变化只触发 `invalidateDraw()`，不触发重组。如果需要平滑动画，可以在 Node 中持有 `Animatable` 实例并 `LaunchedEffect` 驱动（通过 Element 传入 coroutineScope）。
+这段规则适合帮助解释 `create()` 与 `update()` 的调用次数。它属于 Compose UI 内部实现，升级 Compose 后仍应回到目标版本源码复核，不能将其视为跨所有未来版本不变的二进制契约。
 
-### 迁移后的验证方法
+## 13. Android 17 与多平台边界
 
-迁移完成后，需要验证以下指标：
+Android 17 不改变 `ModifierNodeElement` 的复用协议。它可能通过平台输入、窗口、渲染、无障碍或硬件加速行为影响具体组件，但这些影响要在对应 Android API 章节单独验证。
 
-| 指标 | 工具 | 预期变化 |
-|------|------|----------|
-| 重组次数 | Compose Compiler Metrics（§22.28） | 含此 Modifier 的 Composable 重组次数下降 |
-| 对象分配 | Layout Inspector / Memory Profiler | 每帧 Modifier 相关对象分配减少或消失 |
-| 帧时间 | Macrobenchmark / Perfetto | 高频动画/滚动场景的帧时间 P90 下降 |
-| 阶段隔离 | Perfetto trace 标记 | 确认 invalidateDraw 不触发 Composition 阶段 |
+`Modifier.Node` 与主要节点接口位于 Compose UI 的 `commonMain` 源码，因此 Compose Multiplatform 也共享这套抽象。平台渲染后端、输入接入和窗口系统并不相同，不能由 Android 的 HardwareRenderer 行为推导 iOS、Desktop 或 Web 的帧表现。跨平台项目应在各目标平台分别测量。
 
-详见 22.28 节（Compose Compiler Metrics）和 22.25 节（布局测量缓存）
+Linux 内核锚点 `android17-6.18-2026-06_r6` 不参与 Node 链差分。只有分析调度、频率、GPU 驱动或输入延迟的系统跟踪时，内核版本才进入证据范围。
 
-## Modifier.Composed 的废弃趋势
+## 14. 源码导航与核查清单
 
-`Modifier.composed { }` 在 Compose 1.7+ 已被官方标记为不推荐用于新代码。Compose 团队在 Google I/O 2024 明确表示：
+本节结论以 Compose UI 1.11.4 发布提交为准，关键文件如下：
 
-- 新代码使用 ModifierNodeElement + Modifier.Node
-- 内置 Modifier 已全部迁移到 Modifier.Node 实现
-- `composed()` 不会立即删除，但不会获得新功能优化
+- [`ModifierNodeElement.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/ModifierNodeElement.kt)：`create()`、`update()`、`equals()` 与 `hashCode()` 要求
+- [`Modifier.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/Modifier.kt)：Node 生命周期、`coroutineScope`、`shouldAutoInvalidate`
+- [`NodeChain.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/NodeChain.kt)：Element 差分、Node 复用和协调器同步
+- [`NodeKind.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/NodeKind.kt)：节点类型识别与自动失效
+- [`LayoutModifierNode.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutModifierNode.kt)：测量、固有尺寸默认实现与布局失效 API
+- [`PointerInputModifierNode.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/PointerInputModifierNode.kt)：事件签名、取消与命中扩展
+- [`CompositionLocalConsumerModifierNode.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/CompositionLocalConsumerModifierNode.kt)：应用位置的 `CompositionLocal` 读取与观察规则
+- [`ComposedModifier.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/ComposedModifier.kt)：`composed` Element 与 `materialize()` 展开
 
-这并不意味着现有 `composed()` 代码必须立刻迁移——如果性能达标且不在热点路径，保持现状是合理的。但新编写的自定义 Modifier 应直接使用 Modifier.Node 架构。
+版本与用法文档：
 
-[结构参考: Google I/O 2024 — Compose Modifiers deep dive]
+- [Compose BOM mapping](https://developer.android.com/develop/ui/compose/bom/bom-mapping)
+- [Compose UI release notes](https://developer.android.com/jetpack/androidx/releases/compose-ui)
+- [Custom modifiers](https://developer.android.com/develop/ui/compose/custom-modifiers)
+- [Modifier.Node API reference](https://developer.android.com/reference/kotlin/androidx/compose/ui/Modifier.Node)
 
-## 扩展
+提交迁移代码前，逐项确认：
 
-### 🔸 Modifier.Node 与 Compose Multiplatform
-
-Modifier.Node 架构是 Compose Runtime 层的设计，不依赖 Android 平台特性。在 Compose Multiplatform（iOS、Desktop、Web）场景下，Modifier.Node 同样适用。不同平台的 NodeCoordinator 实现可能不同，但 Node 接口和 Element 协议保持一致。
-
-性能差异主要来自各平台的渲染后端：Android 使用 HardwareRenderer + Skia/RenderThread，iOS 使用 CoreGraphics/Metal，Desktop 使用 Swing/AWT pipeline。Modifier.Node 的架构收益（减少对象分配、缩小 invalidation 范围）在所有平台上都成立。
-
-### 🔸 Modifier.Node 源码导航
-
-阅读 AndroidX Compose 源码时，以下路径是 Modifier.Node 的核心实现：
-
-- `compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/ModifierNodeElement.kt` — Element 协议
-- `compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/NodeCoordinator.kt` — 链式协调器
-- `compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/ModifiedDrawNode.kt` — DrawModifierNode 实现
-- `compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/ModifiedLayoutNode.kt` — LayoutModifierNode 实现
-- `compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Background.kt` — 内置 Modifier 迁移参考
-
-内置 Modifier 的迁移代码是最好的实现参考：它们展示了 `update()` 的正确写法、invalidation 的精确触发、以及多接口 Node 的组合方式。
+- Element 的全部行为输入都参与 `equals()` 与 `hashCode()`；
+- `update()` 同步了所有 Element 输入；
+- 默认自动失效没有被重复手动调用；
+- 关闭自动失效后，每类变化都有对应失效调用；
+- `currentValueOf()` 只在附着期读取，阶段外读取使用 `observeReads`；
+- 附着期任务使用 Node 的 `coroutineScope`；
+- 可复用内容的临时状态在 `onReset()` 清理；
+- 指针输入通过 `PointerInputChange.consume()` 表达消费；
+- 测量逻辑遵守父约束，没有假设 Node 自带 MeasureResult 缓存；
+- 性能结论来自迁移前后的同条件数据。
