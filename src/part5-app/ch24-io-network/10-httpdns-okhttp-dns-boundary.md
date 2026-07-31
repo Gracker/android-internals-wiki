@@ -72,315 +72,26 @@ OkHttp 5 的 Happy Eyeballs 并发尝试机制，以及连接池复用与 DNS �
 
 <!-- outline-end -->
 
-HTTPDNS 接入最容易出问题的位置不在"能不能拿到 IP",而在 `Dns.lookup()` 被 OkHttp 调用的时机。这个回调属于建连前的路由规划路径,返回 IP 列表之前,请求不能继续进入 TCP connect。把实时 HTTPDNS 请求塞进 `lookup()`,会把弱网 HTTP 请求、服务可用性和递归解析风险一起带进建连路径。
+HTTPDNS 的风险集中在调用位置。OkHttp 要在建连前把主机名转换成一组
+`InetAddress`，`Dns.lookup()` 返回之前，请求还没有进入 TCP 连接阶段。如果在这个
+同步回调中再发起 HTTP 请求，一次普通业务请求便多了一段不可忽略的网络等待。
 
-24.4 已经讲过网络层的连接、解析、调度、容错四个控制面;12.3 负责连接池、TLS 和传输细节。本节只展开 HTTPDNS 与 OkHttp `Dns` 的工程边界:同步路径只读缓存,网络查询放到异步预取,兜底路径保留系统 DNS。
+本文的平台基准是 Android 17 / API 37 / `android-17.0.0_r1`，OkHttp 源码基准是
+5.4.0 的 `parent-5.4.0` 标签。版本演进部分会提到 OkHttp 4.x，但分析当前实现时
+使用 `RealRoutePlanner`、`RouteSelector` 和 `FastFallbackExchangeFinder`，不再用
+旧版 `StreamAllocation` 调用链解释 5.x。
 
-## OkHttp Dns.lookup() 在哪条路径上执行
+24.4 讨论网络架构，24.5 讨论 HTTP 与传输协议。本节只回答四个问题：
 
-OkHttp 的 `Dns` 文档把接口定义得很窄:给定 hostname,返回 OkHttp 将按顺序尝试的 IP 地址列表;实现必须支持并发调用。默认实现是 `Dns.SYSTEM`,内部委托 `InetAddress.getAllByName()`。 [已验证: 官方文档, https://square.github.io/okhttp/5.x/okhttp/okhttp3/-dns/] [已验证: OkHttp source, okhttp3/Dns.kt]
+- `Dns.lookup()` 何时执行，哪些请求不会执行它；
+- HTTPDNS 查询、缓存和系统解析各自应处于哪条路径；
+- 默认网络、指定 `Network`、VPN 与 Private DNS 怎样影响解析结果；
+- 如何证明自定义解析改善了业务指标，同时没有削弱兼容性与安全性。
 
-连接规划里,URL 会被拆成 `Address` 和 `Route`。OkHttp connections 文档说明,`Route` 包含 DNS 查询得到的具体 IP、代理和 TLS 版本;没有 route,就没法创建 socket。 [已验证: 官方文档, https://square.github.io/okhttp/features/connections/]
+## `Dns.lookup()` 位于路由规划的同步路径
 
-在 OkHttp 5 当前源码里,路径可以压缩成这样:
-
-```text
-RealRoutePlanner.plan()
-  → planConnect()
-    → RouteSelector.next()
-      → resetNextInetSocketAddress(proxy)
-        → address.dns.lookup(socketHost)
-        → InetSocketAddress(inetAddress, socketPort)
-```
-
-`RealRoutePlanner.planConnect()` 的注释直接写出"List available IP addresses for the current proxy. This may block in Dns.lookup().";`RouteSelector.resetNextInetSocketAddress()` 在非 SOCKS 代理路径下调用 `address.dns.lookup(socketHost)`,空结果会抛出 `UnknownHostException`。 [已验证: OkHttp source, RealRoutePlanner.kt] [已验证: OkHttp source, RouteSelector.kt]
-
-这条路径带来三个约束:
-
-- `lookup()` 是同步回调,返回前会占住当前 call 的建连流程。
-- `lookup()` 可能被多个请求同时调用,内部缓存、失败隔离表和刷新状态必须并发安全。
-- `lookup()` 抛出的 `UnknownHostException` 会变成这次路由规划失败,不能把可降级错误随意抛出。
-
-## HTTPDNS 同步查询会放大哪些风险
-
-HTTPDNS 服务本身也是 HTTP 服务。若在 `lookup()` 内实时请求 HTTPDNS,就会把一个 HTTP call 嵌进另一个 HTTP call 的建连前置阶段。
-
-```kotlin
-class BlockingHttpDns(
-    private val client: OkHttpClient,
-    private val endpoint: HttpUrl,
-) : Dns {
-    override fun lookup(hostname: String): List<InetAddress> {
-        // 反例:业务请求的 DNS 阶段又发起一次 HTTP 请求。
-        val request = Request.Builder()
-            .url(endpoint.newBuilder().addQueryParameter("host", hostname).build())
-            .build()
-
-        client.newCall(request).execute().use { response ->
-            return parseAddresses(response.body.string())
-        }
-    }
-}
-```
-
-这段代码有四类风险。
-
-| 风险 | 触发条件 | 线上表现 |
-|---|---|---|
-| 建连路径阻塞 | HTTPDNS 服务慢、弱网、TLS 握手慢 | `dnsStart → dnsEnd` 变长,所有新连接排队 |
-| 递归解析 | HTTPDNS 请求复用同一个配置了自定义 `Dns` 的 client | HTTPDNS 域名也进入同一个 `lookup()`,递归或超时 |
-| Dispatcher 互相挤占 | HTTPDNS 请求和业务请求共用 Dispatcher | 首屏请求等待 HTTPDNS 查询队列,故障时互相拖慢 |
-| 错误传播过重 | HTTPDNS 返回空、5xx、超时后直接抛异常 | 系统 DNS 本可成功,请求却以 `UnknownHostException` 结束 |
-
-OkHttp 的 DoH 模块可作为参照。`DnsOverHttps.lookup()` 内部会发 HTTP 请求,并用 `CountDownLatch.await()` 等待 A / AAAA 响应;它的 Builder 会给 DoH client 设置 bootstrap DNS,README 示例也使用 `bootstrapClient` 和 `bootstrapDnsHosts(8.8.4.4, 8.8.8.8)`,避免 DoH 服务自身还要依赖未完成的自定义 DNS 解析。 [已验证: OkHttp source, okhttp-dnsoverhttps/DnsOverHttps.kt] [已验证: OkHttp README, okhttp-dnsoverhttps/README.md]
-
-自研 HTTPDNS 也要沿用这个边界:HTTPDNS 查询可以使用独立 bootstrap client;业务主 client 的 `Dns.lookup()` 不做实时网络 I/O。
-
-## 异步预取与缓存读取模型
-
-更稳的模型是把 HTTPDNS 拆成两条路径:后台刷新路径负责发网络请求,`Dns.lookup()` 同步路径只读本地结果。
-
-```text
-App 启动 / 首页前置 / 网络恢复
-  → HttpDnsPrefetcher.refresh(hosts)
-    → bootstrapClient 请求 HTTPDNS 服务
-    → 校验 TTL、IP 格式、网络类型
-    → 写入内存缓存和磁盘快照
-
-OkHttp 建连
-  → Dns.lookup(hostname)
-    → 读内存缓存
-    → 内存未命中时读磁盘快照
-    → 过滤过期与隔离 IP
-    → 无可用结果时 fallback 到 Dns.SYSTEM
-```
-
-这个设计同时兼顾"提升命中率"和"控制等待段"：在用户进入高概率网络场景前预取域名，在建连路径上只做常数级缓存读取。
-
-同步 `Dns` 可以写成下面这种形态。代码是工程骨架,字段和持久化格式按项目替换。
-
-```kotlin
-class CachedHttpDns(
-    private val memory: HttpDnsMemoryCache,
-    private val disk: HttpDnsDiskSnapshot,
-    private val quarantine: IpQuarantine,
-    private val fallback: Dns = Dns.SYSTEM,
-    private val refresh: (String) -> Unit,
-    private val clock: Clock,
-) : Dns {
-    override fun lookup(hostname: String): List<InetAddress> {
-        val nowMs = clock.millis()
-        val cached = memory.get(hostname, nowMs)
-            ?: disk.get(hostname, nowMs)?.also { memory.put(hostname, it) }
-
-        val usable = cached
-            ?.addresses
-            .orEmpty()
-            .filterNot { quarantine.isBlocked(hostname, it, nowMs) }
-
-        if (cached == null || cached.shouldRefresh(nowMs)) {
-            refresh(hostname)
-        }
-
-        if (usable.isNotEmpty()) return usable
-        return fallback.lookup(hostname)
-    }
-}
-```
-
-这段实现只做本地读取和过滤,不在 `lookup()` 内执行 HTTP 请求。`refresh(hostname)` 只投递后台任务;即使刷新失败,也不影响当前请求用系统 DNS 继续建连。
-
-后台预取器单独持有 bootstrap client。它可以使用系统 DNS、固定 bootstrap IP、DoH bootstrap host 或厂商 SDK 提供的初始化入口;不要复用业务主 client 的自定义 `Dns`。
-
-```kotlin
-class HttpDnsPrefetcher(
-    private val bootstrapClient: OkHttpClient,
-    private val endpoint: HttpUrl,
-    private val memory: HttpDnsMemoryCache,
-    private val disk: HttpDnsDiskSnapshot,
-) {
-    fun refresh(hostname: String) {
-        val request = Request.Builder()
-            .url(endpoint.newBuilder().addQueryParameter("host", hostname).build())
-            .tag("httpdns-prefetch")
-            .build()
-
-        bootstrapClient.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                // 记录失败,不清空仍在 TTL 内的旧结果。
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                response.use {
-                    val record = parseAndValidate(hostname, it)
-                    memory.put(hostname, record)
-                    disk.put(hostname, record)
-                }
-            }
-        })
-    }
-}
-```
-
-预取触发点要保守:启动后一小段空闲期、登录后、首页业务域名固定时、网络从不可用恢复到可用时。列表滚动、按钮点击、接口请求同步路径里不要触发大批预取,否则优化动作会和前台请求抢资源。
-
-## TTL、失败 IP 隔离与系统 DNS 兜底
-
-HTTPDNS 缓存不能只按 hostname 存一组 IP。至少要保存 TTL、来源、网络快照和失败状态。
-
-```kotlin
-data class HttpDnsRecord(
-    val hostname: String,
-    val addresses: List<InetAddress>,
-    val source: Source,
-    val expireAtMs: Long,
-    val refreshAfterMs: Long,
-    val networkKey: String,
-)
-```
-
-| 字段 | 用途 | 判断边界 |
-|---|---|---|
-| `expireAtMs` | 确认结果是否还能返回给 OkHttp | 过期结果不能继续当主路径使用 |
-| `refreshAfterMs` | 提前刷新,避免 TTL 到期瞬间集中未命中 | 通常早于 `expireAtMs`,具体比例来自 HTTPDNS 服务契约 |
-| `networkKey` | 区分 Wi-Fi、蜂窝、VPN、默认 network 变化 | 网络切换后优先刷新,不盲目沿用旧 IP |
-| `source` | 区分 HTTPDNS、磁盘快照、系统 DNS | 线上排查要能看到命中路径 |
-| quarantine | 隔离短时间失败的 IP | 单 IP 失败不等于 hostname 不可用 |
-
-失败隔离要按"hostname + IP + 网络"记录。某个 IP connect timeout、TLS 失败或连续 HTTP 5xx 后,可以短时间降低排序或移出候选;同一 hostname 的其他 IP 仍应保留。隔离窗口不能过长,否则 CDN 调度恢复后 App 还在避开可用节点。
-
-系统 DNS 兜底是 HTTPDNS 的保底方案。HTTPDNS 查询失败、缓存为空、缓存全过期、IP 全被隔离时,`lookup()` 返回 `Dns.SYSTEM.lookup(hostname)` 的结果。系统 DNS 也失败时,再把 `UnknownHostException` 交给 OkHttp。
-
-## 网络切换后的刷新策略
-
-移动端的 DNS 结果和当前网络强相关。Wi-Fi 切蜂窝、蜂窝切 Wi-Fi、VPN 打开、Captive Portal 登录完成,都会改变可达 IP、最优 CDN 节点和代理路径。24.9 已经展开系统网络选择;HTTPDNS 侧要做的事更简单:监听默认网络变化,给缓存打网络维度标记,优先刷新高价值域名。
-
-```kotlin
-class NetworkAwareDnsRefresher(
-    private val connectivityManager: ConnectivityManager,
-    private val prefetcher: HttpDnsPrefetcher,
-    private val hosts: () -> List<String>,
-) : ConnectivityManager.NetworkCallback() {
-    override fun onAvailable(network: Network) {
-        hosts().forEach(prefetcher::refresh)
-    }
-
-    override fun onLost(network: Network) {
-        // 不清空缓存。等待新的默认网络出现后刷新。
-    }
-
-    override fun onCapabilitiesChanged(
-        network: Network,
-        capabilities: NetworkCapabilities,
-    ) {
-        if (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) {
-            hosts().forEach(prefetcher::refresh)
-        }
-    }
-}
-```
-
-切网后不要立刻删除所有旧缓存。新网络刚出现时,系统验证、代理、DNS 和链路质量可能仍在变化;保留旧结果作为短时兜底,再对高价值域名刷新,能减少集中未命中。大下载、上传、视频这类长连接场景还要结合 24.5 的 HTTP/3/QUIC 连接迁移或业务层断点恢复处理。
-
-## 弱网验证与线上指标设计
-
-HTTPDNS 是否有效,不能只看平均 DNS 耗时。弱网下更该看尾延迟、失败分布和兜底命中率。
-
-OkHttp EventListener 能采集 `dnsStart/dnsEnd`、`connectStart/connectEnd`、`secureConnectStart/secureConnectEnd`、`responseHeadersStart` 等事件。文档示例也提醒:连接复用的第二次请求不会再触发 DNS 和 connect 事件;并发请求要用 `EventListener.Factory` 为每个 call 保留独立状态。 [已验证: 官方文档, https://square.github.io/okhttp/features/events/]
-
-建议把 HTTPDNS 埋点拆成三组。
-
-| 指标组 | 字段 | 用途 |
-|---|---|---|
-| 解析路径 | `dns_source`、`cache_hit`、`record_age_ms`、`ip_count` | 判断命中 HTTPDNS、磁盘、系统 DNS 的比例 |
-| 等待段 | `dns_ms`、`connect_ms`、`tls_ms`、`ttfb_ms` | 区分解析慢、建连慢、TLS 慢、服务端慢 |
-| 失败分布 | `UnknownHostException`、`connect_timeout`、`ssl_error`、`httpdns_empty`、`fallback_used` | 判断兜底策略是否降低故障影响 |
-
-弱网压测至少覆盖下面几类场景:
-
-- HTTPDNS 服务不可达:`lookup()` 应快速走系统 DNS,`fallback_used=true`。
-- HTTPDNS 返回空列表:不把空列表交给 OkHttp,直接兜底。
-- 单个 IP connect timeout:隔离该 IP,下一次返回剩余 IP。
-- 多 IP + IPv6/IPv4 混合:保留地址族候选,让 OkHttp fast fallback 发挥作用。
-- 网络切换:旧缓存不被立刻清空,新网络 validated 后刷新高价值域名。
-- HTTPDNS 预取队列堆积:前台业务请求的 Dispatcher 不被预取任务占满。
-
-验收标准:HTTPDNS 上线后,`dns_ms` 的 P90/P99 不应恶化;`UnknownHostException` 率不应高于系统 DNS baseline;HTTPDNS 服务故障演练期间,请求成功率由系统 DNS 兜底保持在可接受范围内;切网后 30 秒内的 DNS 失败率和建连失败率不能出现明显尖刺。没有这些数据,HTTPDNS 只能算功能接入,不能算性能优化。
-
-## DoH、HTTPDNS、系统 DNS 的选型对照表
-
-| 方案 | 优点 | 代价 | 适用场景 |
-|---|---|---|---|
-| 系统 DNS | 和平台网络选择、VPN、私有 DNS、企业代理兼容性最好 | 受本地 DNS 质量影响,调度能力受限 | 默认路径、兜底路径、长尾域名 |
-| HTTPDNS | 可按业务域名做调度、容灾和灰度,能绕开部分本地 DNS 问题 | 要维护 TTL、缓存、兜底、服务 SLA 和合规策略 | 核心 API、CDN、跨运营商质量差异明显的域名 |
-| DoH | 标准化,OkHttp 有模块可复用,传输加密 | 仍有 bootstrap 问题,部分网络或企业环境可能拦截 | 对隐私和标准化要求高、可接受依赖公开或自建 DoH 服务的场景 |
-
-HTTPDNS 与 DoH 都不能替代系统 DNS 成为唯一出口。移动端会遇到 VPN、企业代理、校园网、Captive Portal、私有域名、内网测试环境;系统 DNS 往往最了解当前网络的约束。更稳的策略是把自定义解析当作加速和容灾层,把系统 DNS 留作兼容层。
-
-## 多 IP fast fallback 与连接池复用边界
-
-OkHttp 5 的 fast fallback 会按 Happy Eyeballs 思路并发尝试多个 TCP 连接,文档写明它会交替 IPv6 / IPv4 地址、相邻尝试间隔 250 ms、保留最先成功的 TCP 连接。 [已验证: 官方文档, https://square.github.io/okhttp/features/connections/]
-
-HTTPDNS 返回结果时不要只给"最优单 IP"。单 IP 看起来减少了尝试次数,却移除了连接层回退空间;这个 IP 在某个运营商、某个小区网络或某段时间失败时,OkHttp 没有候选 route 可换。更稳的返回顺序是:同一 hostname 保留 2-4 个候选,IPv6/IPv4 都有验证数据时混排,失败隔离只移除短时坏 IP。
-
-连接池复用和 DNS 也有边界。OkHttp 找到可复用连接时,不一定触发 DNS;新建连接、连接不健康、连接池没有可用连接、HTTP/2 coalescing 需要更多 route 信息时,才会进入路由规划。线上分析不要把"没有 dnsStart 事件"误判成 DNS 模块失效,它也可能只是连接池命中。
-
-
-
-## DnsOverHttps 内部同步化机制
-
-### DnsOverHttps 内部 CountDownLatch 同步化
-
-`DnsOverHttps.lookup()` 虽然内部使用 `client.newCall(...).enqueue(callback)` 发起**异步 HTTP 请求**,但通过 `CountDownLatch.await()` 将其同步化,调用线程仍被阻塞:
-
-```kotlin
-// okhttp-dnsoverhttps/DnsOverHttps.kt
-private fun executeRequests(...): List<InetAddress> {
-    val latch = CountDownLatch(networkRequests.size)
-    for (call in networkRequests) {
-        call.enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) { ... latch.countDown() }
-            override fun onResponse(call: Call, response: Response) { ... latch.countDown() }
-        })
-    }
-    try {
-        latch.await()  // ← 调用线程被阻塞,直到所有 DOH 查询完成
-    } catch (e: InterruptedException) {
-        failures.add(e)
-    }
-}
-```
-
-**影响**:弱网下,这会导致连接池调度线程被阻塞数秒,而非快速失败切换系统 DNS。
-
-### 完整调用链(源码堆栈重建)
-
-```
-StreamAllocation.findConnection
-  → RouteSelector.next()
-    → RouteSelector.nextProxy()
-      → RouteSelector.resetNextInetSocketAddress()
-        → address.dns().lookup(hostname)   // ← 同步阻塞点
-```
-
-堆栈依据:GitHub issues #3122、#3919 的 `UnknownHostException` 堆栈,重建了 OkHttp 4.x 的 `Dns$1.lookup()` → `RouteSelector.resetNextInetSocketAddress()` 路径。
-
-### OkHttp 5 AsyncDns 草案状态
-
-GitHub issue #8318(2024-03)讨论了 OkHttp 5 引入 `AsyncDns` 接口的可能性,允许真正的异步 DNS 查询:
-
-```kotlin
-interface AsyncDns {
-    fun onAddresses(hasMore: Boolean, hostname: String, addresses: List<InetAddress>)
-    fun onFailure(hasMore: Boolean, hostname: String, e: IOException)
-}
-```
-
-但截至目前(OkHttp 5.0.x 正式 release 前),**标准 `Dns` 接口仍为同步阻塞**,AsyncDns 未进入正式版。
-
-### Dns 接口类型(Kotlin SAM)
-
-OkHttp 4.x/5.x 使用 `fun interface Dns`,编译后等价于 Java 抽象类:
+OkHttp 5.4.0 的 [`Dns`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dns.kt)
+只有一个同步方法：
 
 ```kotlin
 fun interface Dns {
@@ -389,94 +100,449 @@ fun interface Dns {
 }
 ```
 
-`fun interface` = Kotlin SAM(Single Abstract Method)接口,只能有一个抽象方法,编译后生成 `$DefaultImpls` 静态内部类。实现可以是 lambda:`Dns { hostname -> Dns.SYSTEM.lookup(hostname) }`。
+这段接口定义说明了两个限制。调用方要等到整个地址列表返回后才能继续；同一个
+`Dns` 实例可能被不同请求并发调用，因此实现中的缓存、刷新去重和失败记录都要满足
+并发访问要求。默认的 `Dns.SYSTEM` 调用 `InetAddress.getAllByName(hostname)`。
 
-来源:`github.com/square/okhttp/blob/728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dns.kt`
+新连接的主要调用路径如下，用途是定位同步等待发生的位置：
 
-## 工程检查清单
+```text
+RealCall
+  → RealRoutePlanner.plan()
+    → RealRoutePlanner.planConnect()
+      → RouteSelector.next()
+        → resetNextInetSocketAddress(proxy)
+          → address.dns.lookup(socketHost)
+          → 生成一组 Route
+  → ExchangeFinder 选择或连接 Route
+```
 
-- `Dns.lookup()` 内是否只读内存/磁盘缓存,不发 HTTP 请求。
-- `Dns` 实现里的缓存、隔离表、刷新状态是否并发安全。
-- HTTPDNS 查询是否使用独立 bootstrap client,避免复用业务主 client 的自定义 `Dns`。
-- HTTPDNS 域名自身是否有系统 DNS、固定 bootstrap IP 或 DoH bootstrap host。
-- 缓存是否保存 TTL、刷新时间、来源、网络快照和 IP 列表。
-- 单 IP 失败是否短时隔离,而不是清空整个 hostname。
-- 缓存为空、过期、全隔离时是否回退到 `Dns.SYSTEM`。
-- 网络切换后是否刷新高价值域名,同时保留旧缓存短时兜底。
-- 是否通过 EventListener 同时采集 DNS、connect、TLS、TTFB、失败类型。
-- 弱网演练是否覆盖 HTTPDNS 服务不可达、返回空、多 IP 失败、网络切换和 Dispatcher 挤占。
+[`RealRoutePlanner.planConnect()`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealRoutePlanner.kt)
+在列举地址的位置明确注明 `Dns.lookup()` 可能阻塞。
+[`RouteSelector`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RouteSelector.kt)
+先触发 `dnsStart`，同步调用 `lookup()`，检查结果非空，再触发 `dnsEnd` 并生成
+`InetSocketAddress`。空列表会被转换成 `UnknownHostException`。
 
+这条路径还有几个容易遗漏的分支：
 
+- 连接池已有合格连接时，请求可以直接复用连接，不发生 DNS 查询。
+- URL 主机本身是 IP 字面量时，`RouteSelector` 直接构造地址，不调用 `Dns`。
+- SOCKS 代理使用未解析的 `InetSocketAddress`，主机名交给 SOCKS 代理解析。
+- 使用 HTTP 代理时，OkHttp 在这里解析代理主机；目标站点的解析通常由代理完成。
+- HTTP/2 连接合并可能复用另一个主机已有的连接，前提仍受证书与路由检查约束。
 
-## ExchangeFinder 与 RealRoutePlanner 同步调用链
+因此，线上没有 `dnsStart` 不等于解析模块没有生效。连接复用、IP 字面量和代理模式
+都可能使该事件缺席。
 
-### RealRoutePlanner.planConnect() 阻塞注释
+## 在同步回调中请求 HTTPDNS 的故障形态
 
-OkHttp 5.x `RealRoutePlanner.kt` 的 `planConnect()` 方法注释直接写明:
-> "List available IP addresses for the current proxy. **This may block in Dns.lookup().**"
-
-这是 OkHttp 官方代码对 `Dns.lookup()` 同步阻塞特性的最直接确认。
-
-### ExchangeFinder.findConnection() 完整路径(335 行 Kotlin 源码)
+下面的代码用于展示应当避免的结构：
 
 ```kotlin
-// ExchangeFinder.kt 节选(findConnection 方法核心路径)
-private fun findConnection(...): RealConnection {
-    // 1. 先在池内查找已有连接(无 DNS)
-    if (connectionPool.callAcquirePooledConnection(address, call, null, false)) {
-        foundPooledConnection = true
-        result = call.connection
-    } else if (nextRouteToTry != null) {
-        selectedRoute = nextRouteToTry
-    }
+class BlockingHttpDns(
+    private val client: OkHttpClient,
+    private val endpoint: HttpUrl,
+) : Dns {
+    override fun lookup(hostname: String): List<InetAddress> {
+        val request = Request.Builder()
+            .url(
+                endpoint.newBuilder()
+                    .addQueryParameter("host", hostname)
+                    .build(),
+            )
+            .build()
 
-    // 2. 池命中失败 → 创建 RouteSelector 并调用 .next()(触发同步 DNS)
-    if (selectedRoute == null && (routeSelection == null || !routeSelection!!.hasNext())) {
-        val localRouteSelector = RouteSelector(address, call.client.routeDatabase, call, eventListener)
-        this.routeSelector = localRouteSelector
-        newRouteSelection = true
-        routeSelection = localRouteSelector.next()  // ← 同步阻塞 DNS lookup 在这里
+        return client.newCall(request).execute().use { response ->
+            parseAddresses(response)
+        }
     }
-
-    // 3. 创建 RealConnection 并执行 TCP+TLS handshake(也是阻塞调用)
-    result!!.connect(connectTimeout, readTimeout, writeTimeout, pingIntervalMillis, ...)
 }
 ```
 
-关键点:`routeSelector.next()` 是 `RouteSelector.next()`,内部调用 `resetNextInetSocketAddress()` → `address.dns().lookup()`。
+业务请求必须等待内层 HTTPDNS 请求完成。若 `client` 也安装了这个 `Dns`，解析
+HTTPDNS 服务域名时还会再次进入 `lookup()`；即使通过固定地址避开递归，共用
+`Dispatcher`、连接池和请求并发配额仍会让解析流量与业务流量相互影响。HTTPDNS
+服务变慢、TLS 握手失败或响应解析异常，也会直接延长外层请求的建连前等待。
 
-### Dns 接口并发安全要求(官方文档原文)
+`connectTimeout` 只约束套接字连接，不是 DNS 超时。OkHttp 的 `callTimeout` 文档把
+DNS 计入整次调用期限，但取消一个 call 无法保证任意自定义阻塞代码立即返回。
+自定义 `lookup()` 保持本地、短小且可预测，比依赖外层超时更可靠。
 
-OkHttp Dns 接口文档(square.github.io/5.x):
-> "**Implementations must support concurrent execution.**"
+OkHttp 自带的
+[`DnsOverHttps`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp-dnsoverhttps/src/main/kotlin/okhttp3/dnsoverhttps/DnsOverHttps.kt)
+也受同步接口约束。5.4.0 源码会异步提交 A、AAAA 请求，再用 `CountDownLatch.await()`
+等待这些请求结束。这里的 `enqueue()` 没有使 `lookup()` 变成异步方法。使用 DoH
+仍需给解析服务准备独立的引导解析和受控的网络客户端，并接受其网络等待处于路由
+规划阶段这一事实。
 
-这意味着:即使 `lookup()` 在建连前被同步调用,OkHttp 要求实现必须并发安全--内部缓存、失败隔离表等数据结构必须能承受多线程同时调用。
+## Android 17 系统解析器提供了哪些语义
 
-### Fast Fallback 与 Happy Eyeballs(OkHttp 5.x 新特性)
+在 `android-17.0.0_r1` 中，
+[`InetAddress.getAllByName()`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/net/InetAddress.java)
+把默认网络标识交给 Android 的底层解析实现。Android 的
+[`com.android.resolv`](https://source.android.com/docs/core/ota/modular-system/dns-resolver)
+模块负责 DNS 查询和缓存，并为 `InetAddress.getAllByName()`、
+`Network.getAllByName()` 等接口提供系统解析能力。
 
-| 规则 | 说明 |
-|------|------|
-| 地址族交替 | 优先交替 IPv6/IPv4,IPv6 优先 |
-| 尝试间隔 | 新尝试延迟 250ms 后发起 |
-| 连接保留 | 保留最先成功 TCP 连接,取消其他 |
-| TLS 时机 | 只在 winning TCP 连接上做 TLS handshake |
+使用 `Dns.SYSTEM` 可以自然继承这些平台语义：
 
-Fast Fallback 可以缓解 DNS 解析慢导致的建连延迟,但无法消除 `lookup()` 同步阻塞本身。
+- 查询跟随系统选出的默认网络；
+- 解析器使用当前网络提供的 DNS 配置和系统缓存；
+- Android 9 及以上的 Private DNS 配置由系统正确处理；
+- VPN、企业网络的分域解析和本地网络名称仍有机会按系统策略工作；
+- 网络变化时，平台解析器能按相应网络配置查询。
 
-### 来源
+自定义 HTTPDNS 返回 IP 后，OkHttp 不再通过系统解析器查询该主机。这样会绕过当前
+网络的部分 DNS 策略。Android 的
+[`LinkProperties`](https://developer.android.com/reference/android/net/LinkProperties)
+文档要求应用在 Private DNS 生效时不要发送未加密查询；严格模式还要求查询指定的
+Private DNS 主机。面向 Android 9 及以上版本的应用，不应静默用明文自定义 DNS
+替代用户或设备管理员设置的加密解析。
 
-- `github.com/square/okhttp` commit `19cb19ab4ac31aa789bc94759d13898f64f93ce3`
-  - `okhttp/src/main/java/okhttp3/internal/connection/ExchangeFinder.kt`(335 行,raw 源码)
-- `github.com/square/okhttp` source `728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab`
-  - `okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealRoutePlanner.kt`(注释来源)
-- square.github.io/okhttp/features/connections/(Fast Fallback 文档)
+兼容性问题不只来自加密方式。企业 VPN 可能通过分域 DNS 返回内网地址，校园网和
+酒店网络可能需要先完成门户认证，`.local` 名称可能由系统 mDNS 处理。公共
+HTTPDNS 服务通常不掌握这些信息。域名不在经过验证的 HTTPDNS 允许列表内，或当前
+网络处于 VPN、门户认证等不适合自定义解析的状态时，应直接使用系统解析。
 
+## Android 17 的 `DnsResolver` 仍不能改变 OkHttp 接口
 
+`DnsResolver` 从 API 29 起提供异步查询。Android 17 / API 37 新增
+`DnsResolver(Context, Looper)`，并弃用无上下文的 `getInstance()`；API 37 还增加了
+A、AAAA 与 HTTPS 记录的并发查询接口。平台会通过调用者指定的 `Executor` 返回
+结果，并支持 `CancellationSignal`。详见
+[`DnsResolver` API](https://developer.android.com/reference/android/net/DnsResolver)。
 
-## 延伸阅读
+这些能力适合后台预取，也适合需要明确指定 `Network` 的系统 DNS 查询，却不能直接
+作为 OkHttp 的异步解析扩展。把回调结果用 `CountDownLatch` 或 `Future.get()` 等待，
+只是再次把异步 API 同步化。若应用使用 `DnsResolver` 预热系统或自建缓存，回调应在
+后台完成；`Dns.lookup()` 仍只读取已经发布的结果。
 
+`DnsResolver.query()` 返回的 `List<InetAddress>` 不包含可供应用缓存的 TTL。需要
+掌握原始 DNS TTL 时，应使用能返回 TTL 的服务契约或解析原始响应，并负责协议解析、
+安全校验和版本兼容责任。
 
-### OkHttp Dns.lookup() 执行边界与 HTTPDNS 工程化陷阱
-- 来源:/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-14-okhttp-dns-lookup-httpdns-engineering.md
-- 类型:DeepResearch 调研结果
-- 摘要:OkHttp Dns.lookup() 同步阻塞,RouteSelector 在建连前调用。HTTPDNS 在 lookup() 内实时请求会递归依赖同一 OkHttpClient 形成死锁。Square 推荐 bootstrap client 独立实例模式。OkHttp 5.0+ 支持 Happy Eyeballs。
+## 查询与读取分离
+
+移动端 HTTPDNS 更适合采用两条相互独立的执行路径：
+
+```text
+后台刷新
+  触发条件
+    → 对 hostname + network 做并发去重
+    → 独立客户端请求 HTTPDNS
+    → 校验主机名、地址、TTL 与响应来源
+    → 原子发布不可变快照
+
+OkHttp 路由规划
+  Dns.lookup(hostname)
+    → 读取当前 network 对应的内存快照
+    → 去掉已过期或暂时不可用的地址
+    → 异步请求刷新
+    → 没有可用地址时调用系统解析
+```
+
+这段流程的重点是发布关系。刷新线程完成全部校验后一次性替换不可变快照，
+`lookup()` 不遍历正在修改的集合，也不等待磁盘或网络任务。
+
+缓存记录至少需要下列信息：
+
+```kotlin
+data class CacheKey(
+    val hostname: String,
+    val networkHandle: Long?,
+)
+
+data class HttpDnsRecord(
+    val addresses: List<InetAddress>,
+    val receivedAtEpochMs: Long,
+    val ttlMillis: Long,
+    val refreshAtElapsedMs: Long,
+    val expiresAtElapsedMs: Long,
+    val source: Source,
+)
+```
+
+`networkHandle` 区分实际出站网络；没有显式绑定网络时，也应记录刷新开始时的默认网络
+标识。内存中的刷新与过期判断使用单调时钟，避免用户修改系统时间造成记录突然失效或
+长期不过期。磁盘记录无法跨重启保存 `elapsedRealtime` 的含义，加载时要根据服务端
+TTL、接收时的墙上时钟和合理性检查重新计算，不能直接复用旧的单调时钟值。
+
+下面的实现骨架用于说明 `lookup()` 的职责边界，省略了具体存储和地址排序策略：
+
+```kotlin
+class CachedHttpDns(
+    private val records: AtomicReference<Map<CacheKey, HttpDnsRecord>>,
+    private val networkKey: () -> Long?,
+    private val quarantine: IpQuarantine,
+    private val scheduleRefresh: (CacheKey) -> Unit,
+    private val fallback: Dns = Dns.SYSTEM,
+    private val elapsedRealtimeMs: () -> Long = SystemClock::elapsedRealtime,
+) : Dns {
+    override fun lookup(hostname: String): List<InetAddress> {
+        if (hostname.isBlank()) {
+            throw UnknownHostException("hostname is empty")
+        }
+
+        val now = elapsedRealtimeMs()
+        val key = CacheKey(hostname.lowercase(Locale.US), networkKey())
+        val record = records.get()[key]
+
+        if (record == null || now >= record.refreshAtElapsedMs) {
+            scheduleRefresh(key) // 只投递任务，并按 key 合并重复刷新。
+        }
+
+        val cached = record
+            ?.takeIf { now < it.expiresAtElapsedMs }
+            ?.addresses
+            .orEmpty()
+            .filterNot { quarantine.isBlocked(key, it, now) }
+
+        return cached.ifEmpty { fallback.lookup(hostname) }
+    }
+}
+```
+
+当前请求只会读内存、检查时间和筛选地址。`scheduleRefresh()` 必须立即返回，并按
+`CacheKey` 合并并发刷新。缓存没有命中、已经到达强制过期时间或所有地址都不可用时，
+代码调用系统解析；它不会把空列表交给 OkHttp。
+
+磁盘快照不宜在每次 `lookup()` 中同步读取。应用可以在进程初始化阶段异步装载并原子
+发布；装载完成前使用 `Dns.SYSTEM`。这样能避免慢存储、文件损坏和解密操作进入每个
+新连接的路由规划。
+
+## TTL 是有效期，不是刷新建议
+
+HTTPDNS 服务返回的 TTL 决定地址还能被信任多久。工程实现通常需要两个时间点：
+
+- `refreshAtElapsedMs` 到达后启动后台刷新，旧记录在 TTL 内仍可使用；
+- `expiresAtElapsedMs` 到达后停止把旧记录作为 HTTPDNS 结果返回。
+
+刷新时间可以带随机抖动，避免大量客户端在同一秒请求解析服务；具体比例应来自服务
+契约和线上测量，不宜写成通用常量。超出 TTL 后继续使用旧 IP 属于额外的陈旧数据
+策略，必须由域名所有者确认。没有这项约定时，回退系统解析比擅自延长 TTL 更安全。
+
+负结果也不能无限缓存。NXDOMAIN、空响应、服务端错误、响应签名失败和本地解析异常
+代表不同原因。只有服务契约明确给出负缓存语义时才缓存对应结果；其余情况记录失败并
+使用系统解析。
+
+## HTTPDNS 刷新客户端必须独立
+
+刷新客户端至少应与业务客户端隔离以下配置：
+
+- 不安装业务 `CachedHttpDns`，避免解析服务域名再次进入同一套逻辑；
+- 使用独立 `Dispatcher` 和连接池，使解析服务拥塞不会占用业务请求配额；
+- 设置与解析服务相符的调用、连接和读取期限；
+- 仅访问固定的 HTTPS 解析端点，并执行正常的证书与主机名校验；
+- 限制刷新域名集合、并发数和重试次数。
+
+若 HTTPDNS 端点仍通过系统 DNS 引导，刷新客户端可以保留 `Dns.SYSTEM`。若服务方
+提供固定引导地址，自定义 `Dns` 只能对端点主机返回这些地址，其他主机仍交给系统
+解析。固定地址也要有更新、双栈和撤销方案，不能作为永远有效的常量。
+
+刷新成功后要验证响应属于请求的 hostname，地址列表非空，TTL 可解析，地址族和
+地址范围符合该域名的策略。解析响应中的文本 IP 时应直接构造 `InetAddress`，不要
+为了把字符串转换为地址再次触发名称查询。
+
+## 指定 `Network` 时要同时约束解析和套接字
+
+默认网络客户端可以使用 `Dns.SYSTEM` 回退。显式绑定 Wi-Fi、蜂窝或其他
+`Network` 的客户端则需要更严格的配对：解析要发生在同一个 `Network`，套接字也要
+从这个 `Network` 的 `SocketFactory` 创建。
+
+下面的工厂用于表达这种配对关系：
+
+```kotlin
+fun OkHttpClient.onNetwork(network: Network): OkHttpClient {
+    val networkDns = Dns { hostname ->
+        network.getAllByName(hostname).toList()
+    }
+
+    return newBuilder()
+        .dns(networkDns)
+        .socketFactory(network.socketFactory)
+        .build()
+}
+```
+
+`Network.getAllByName()` 在指定网络上解析，
+[`Network.getSocketFactory()`](https://developer.android.com/reference/android/net/Network)
+创建发往同一网络的套接字。只绑定套接字却使用默认网络 DNS，或在指定网络解析后让
+套接字走另一条网络，都会产生分域 DNS、NAT64、VPN 和 CDN 调度不一致的问题。
+`Network` 失效后，它的 `SocketFactory` 和既有套接字都不再可用；绑定客户端应随
+网络生命周期释放。
+
+HTTPDNS 刷新同样要记录实际出站网络。一个可行做法是为刷新任务创建绑定到目标
+`Network` 的独立客户端，并在写缓存前确认该网络仍有效。若刷新过程使用默认网络，
+默认网络已经改变的响应不应写入新网络对应的缓存项。
+
+## 网络切换时按网络隔离，不清空全部记录
+
+使用 `registerDefaultNetworkCallback()` 可以接收默认网络变化。`onAvailable()` 之后
+平台会继续报告该网络的能力和链路属性；不要在 `onAvailable()` 中同步调用
+`getNetworkCapabilities()` 猜测后续状态。等
+`onCapabilitiesChanged()` 报告 `NET_CAPABILITY_VALIDATED` 后，再刷新需要联网的
+核心域名。
+
+网络切换时推荐执行这些动作：
+
+- 原子更新当前默认网络标识和网络代次；
+- 新查找只读取新网络键下的记录；
+- 合并同一主机、同一网络上的刷新任务；
+- 保留其他网络的缓存项供该网络再次出现时校验，但不跨网络直接复用；
+- `onLost()` 只让对应网络的绑定客户端和任务失效，不删除无关网络记录；
+- VPN 开启或关闭后重新判断该域名是否仍允许走 HTTPDNS。
+
+这样做不需要在切网瞬间同步清空磁盘，也不会把 Wi-Fi 上得到的 CDN 地址直接当成
+蜂窝网络结果。新网络的 HTTPDNS 结果尚未准备好时，当前请求使用该网络的系统解析。
+
+## 失败地址隔离要使用可归因的证据
+
+隔离键采用 `hostname + IP + network`，但不是每种失败都能归因到某个 IP。
+
+适合短时间降低某个地址优先级的证据包括：
+
+- 直连该地址时发生连接超时、拒绝连接或无路由；
+- 同一网络下的多次独立连接都在该地址失败，而其他地址成功；
+- 服务端控制面明确撤下该地址。
+
+下列信号不应直接判定 IP 不可用：
+
+- TLS 证书或主机名校验失败，原因可能是配置、安全拦截或证书发布问题；
+- HTTP 5xx，响应可能来自共享集群，连接本身已经成功；
+- 请求超时，耗时可能发生在上传、服务端处理或响应读取阶段；
+- 使用 HTTP 代理时的 `connectFailed`，其中的套接字地址属于代理，不是目标站点；
+- Fast Fallback 中被取消的竞速连接，它没有产生可归因的连接失败。
+
+OkHttp 本身会记录失败路由并尝试其他候选，自定义隔离层不应设置过长期限，也不应因
+一个地址失败而删除整个主机记录。成功连接可以提前清除对应地址的临时降级。所有期限
+和触发次数应由故障演练与线上数据确定。
+
+## 不要把 HTTPS URL 改写为 IP
+
+HTTPDNS 只应替换 `Dns` 返回的连接地址，原始 URL 仍保留域名。这样 OkHttp 才能用
+原始主机名生成 HTTP `Host`、TLS SNI、证书主机名校验、Cookie 作用域和证书锁定
+检查。
+
+把 `https://api.example.com/` 改成 `https://203.0.113.10/`，再手工补一个 `Host`
+请求头，会改变 TLS 主机名、连接合并、重定向和 Cookie 语义。关闭
+`HostnameVerifier`、信任所有证书或放宽 Network Security Config 来适配这种改写，
+会把解析优化变成传输安全漏洞。
+
+HTTPDNS 响应也应视为网络输入。应用至少要校验 HTTPS 端点、响应主机、地址格式和
+允许的地址范围。公网业务域名若意外返回回环、链路本地、组播或未指定地址，应拒绝
+该结果。企业内网域名可能合法返回私有地址，这类例外需要按域名配置，不能用一条全局
+规则覆盖。
+
+## 多地址与 OkHttp 5 Fast Fallback
+
+HTTPDNS 返回单一“最优 IP”会移除连接层的备用路线。只要服务契约允许，结果应保留
+经过验证的多个候选和可用的 IPv6、IPv4 地址。候选顺序表达服务端偏好，但 OkHttp 5
+启用 Fast Fallback 后不会严格串行等待每个地址超时。
+
+OkHttp 5.4.0 默认启用 `fastFallback`。
+[`RouteSelector`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/InetAddressOrder.kt)
+在双栈结果中交替排列 IPv6 与 IPv4，并保持每个地址族内部的相对顺序。
+[`FastFallbackExchangeFinder`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/FastFallbackExchangeFinder.kt)
+每隔 250 ms 启动一个新的 TCP 尝试，某个 TCP 连接成功后取消其他竞速连接，再由胜出
+路线完成代理隧道、TLS 等后续步骤。若 TLS 阶段失败，路由规划仍可继续尝试后续方案。
+
+Fast Fallback 缩短坏地址带来的连接等待，却无法缩短 `Dns.lookup()` 本身。地址列表
+要在竞速开始前完整返回。HTTPDNS 若只返回 IPv4，也会让 OkHttp 失去双栈选择空间。
+
+## TTL 到期不会驱逐已复用连接
+
+DNS 参与新路线生成，不管理已经进入连接池的连接。一个 HTTP/2 连接可以在 DNS TTL
+到期后继续服务请求，只要 OkHttp 判断连接健康且仍符合主机与证书规则。新的 DNS
+结果不会自动关闭它。
+
+这通常是期望行为：DNS TTL 约束名称解析记录，不是现有 TCP/TLS 会话的存活时间。
+若服务端需要紧急撤下节点，应配合负载均衡、连接排空、服务端关闭连接和客户端版本
+策略。频繁执行 `connectionPool.evictAll()` 会损失连接复用，并可能影响共享同一
+客户端的无关域名。必须隔离处置时，应让特殊业务使用独立客户端和连接池。
+
+## 系统 DNS、DoH 与 HTTPDNS 的选择
+
+| 方案 | 保留的平台语义 | 主要代价 | 适合的用途 |
+| --- | --- | --- | --- |
+| `Dns.SYSTEM` | 默认网络、Private DNS、VPN、分域解析和系统缓存 | 调度能力受当前网络 DNS 限制 | 默认方案、兼容方案、长尾域名 |
+| DoH | 取决于 DoH 客户端配置，查询传输可加密 | 引导解析、同步等待、企业网络兼容和服务可用性 | 有明确隐私策略并能控制解析服务的场景 |
+| HTTPDNS | 由业务服务控制 TTL、候选地址和调度 | 自建缓存、网络隔离、安全、合规与容灾责任 | 少量经过评估的核心公网域名 |
+
+系统 DNS 应是起点，也是自定义解析失败时的兼容路径。HTTPDNS 和 DoH 都不适合未经
+评估地覆盖所有域名。应用还要考虑域名是否属于用户数据、解析请求会发送到哪个地区、
+服务方保留哪些日志，以及隐私政策是否已经披露。
+
+## 观测不能只依赖 `dnsStart` 与 `dnsEnd`
+
+OkHttp
+[`EventListener`](https://lysine.dev/okhttp/features/events/)
+提供 DNS、TCP、TLS、请求和响应阶段事件。连接复用时 DNS 与连接事件可能都不存在；
+自定义 `lookup()` 抛出异常时，`RouteSelector` 也不会执行正常的 `dnsEnd`。因此，
+HTTPDNS 实现还要记录自己的查询结果，不能只用两个事件相减。
+
+建议按 call 关联以下信息：
+
+| 维度 | 建议字段 | 解释 |
+| --- | --- | --- |
+| 解析决策 | 来源、缓存年龄、网络代次、地址数量、回退原因 | 解释这次返回了哪组地址 |
+| 网络阶段 | DNS、TCP、TLS、TTFB、整次调用耗时 | 区分解析与后续等待 |
+| 路线结果 | 目标地址族、连接成功或失败、是否复用连接 | 判断地址质量和连接池影响 |
+| 网络环境 | 传输类型、是否 validated、是否 VPN、切网代次 | 避免把不同网络混在一起 |
+| 安全与合规 | 只记录归一化错误和域名分组 | 不在日志中泄露完整查询与用户信息 |
+
+地址、域名和网络信息可能具有隐私属性。线上日志应采样、脱敏并设置保留期限，不能把
+完整 URL、DNS 响应和用户标识一起上报。
+
+## 验证方案从故障分支开始
+
+单元测试可以用假 `Dns`、假时钟和 MockWebServer 验证确定性逻辑：
+
+- TTL 内命中、刷新时间到达、强制过期三种状态；
+- 同一个缓存键的并发刷新只发出一项任务；
+- 空响应、格式错误、服务端错误都回退系统解析；
+- 单地址隔离不会删除同一主机的其他候选；
+- 网络代次变化后不读取上一网络的 HTTPDNS 记录；
+- 磁盘快照损坏、过期或来自上次启动时不会进入同步路径。
+
+设备与网络实验应覆盖：
+
+- Wi-Fi、蜂窝、双栈、IPv4-only 和 NAT64 网络；
+- VPN 开关、Private DNS 严格模式、企业分域 DNS；
+- 门户认证前后以及网络从未验证到已验证；
+- HTTPDNS 端点超时、证书失败、空响应和错误 TTL；
+- 多地址中首个地址不可达，以及 Fast Fallback 开启和关闭；
+- 连接池命中与新建连接，确认两者的事件差异。
+
+上线判断使用应用既有的成功率和分位耗时目标，分别比较缓存命中、系统回退、网络类型
+和地址族。固定写一个通用 P90/P99 数值或“切网后若干秒”的门槛没有依据；阈值应来自
+上线前基线、用户体验目标和故障预算。HTTPDNS 服务完全不可用时，系统解析路径仍应
+保持可用，这项故障演练比平均 DNS 耗时下降更有说服力。
+
+## 工程检查清单
+
+- `Dns.lookup()` 是否只执行并发安全的内存读取和筛选；
+- 刷新任务是否立即返回，并按主机和网络合并重复请求；
+- HTTPDNS 是否使用独立客户端、调度器、连接池和引导解析；
+- 缓存键是否包含实际出站网络，网络变化后是否避免跨网络复用；
+- TTL 到期后是否停止返回旧记录，陈旧结果策略是否得到服务方确认；
+- 缓存为空、过期、全被隔离时是否调用合适网络上的系统解析；
+- VPN、Private DNS、内网域名和门户认证是否有明确的禁用或回退策略；
+- 是否保留多个有效候选，让 OkHttp 5 的 Fast Fallback 有选择空间；
+- 是否只依据可归因的连接失败隔离地址，并忽略竞速取消与 HTTP 5xx；
+- HTTPS URL 是否始终保留原主机名，证书与主机名校验是否保持开启；
+- 指定 `Network` 时，DNS 与 `SocketFactory` 是否绑定同一个网络；
+- 指标是否区分连接复用、解析来源、网络代次和地址族；
+- 故障演练是否证明 HTTPDNS 失效时业务仍能回退到系统解析。
+
+## 源码与文档索引
+
+- [Android 17 `InetAddress`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/net/InetAddress.java)
+- [Android DNS Resolver 模块](https://source.android.com/docs/core/ota/modular-system/dns-resolver)
+- [Android `DnsResolver` API](https://developer.android.com/reference/android/net/DnsResolver)
+- [Android `Network` API](https://developer.android.com/reference/android/net/Network)
+- [Android 不安全 DNS 配置风险](https://developer.android.com/privacy-and-security/risks/bad-dns)
+- [OkHttp 5.4.0 `Dns`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dns.kt)
+- [OkHttp 5.4.0 `RouteSelector`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RouteSelector.kt)
+- [OkHttp 5.4.0 `RealRoutePlanner`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealRoutePlanner.kt)
+- [OkHttp 5.4.0 Fast Fallback](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/FastFallbackExchangeFinder.kt)
+- [OkHttp 5.4.0 `DnsOverHttps`](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp-dnsoverhttps/src/main/kotlin/okhttp3/dnsoverhttps/DnsOverHttps.kt)
