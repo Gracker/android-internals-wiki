@@ -1,6 +1,8 @@
 ---
-title: "EyeDropper API 与跨设备协作性能"
+title: "Android 17 EyeDropper API 与跨设备协作性能"
 chapter: "18.21"
+section: "18.21"
+section_title: "Android 17 EyeDropper API 与跨设备协作性能"
 status: finalized
 applicable_versions: "Android 17 (API 37)"
 task9_result: pass-tech-review
@@ -13,20 +15,73 @@ related_chapters: ["2.6", "8.2", "18.20"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-10"
 gap_source: "官方文档+新特性"
-confidence: medium
+last_verified: "2026-07-31"
+last_verified_against: "android-17.0.0_r1 (Intent/current.txt, ScreenCapture, WindowManagerService, packages/apps/EyeDropper) / Android 17 API 37 Intent、Activity Result、Package Visibility 与 Trace 官方文档"
+confidence: high
 sources:
   - type: official
     path: "https://developer.android.com/reference/android/content/Intent#ACTION_OPEN_EYE_DROPPER"
-    title: "Intent.ACTION_OPEN_EYE_DROPPER"
-    date: "2026"
+    role: "API 37 EyeDropper action、RESULT_OK、opaque ARGB 与 secure/protected redaction 契约"
   - type: official
     path: "https://developer.android.com/reference/android/content/Intent#EXTRA_COLOR"
-    title: "Intent.EXTRA_COLOR"
-    date: "2026"
+    role: "通用 0xAARRGGBB int extra 契约"
+  - type: official
+    path: "https://developer.android.com/sdk/api_diff/37/changes/android.content.Intent"
+    role: "API 36 到 37 的 Intent public API 差异"
   - type: official
     path: "https://developer.android.com/training/basics/intents/result"
-    title: "Get a result from an activity"
-    date: "2026"
+    role: "Activity Result API 生命周期安全接入方式"
+  - type: official
+    path: "https://developer.android.com/training/package-visibility/declaring"
+    role: "resolveActivity 查询与 manifest queries 的 package visibility 边界"
+  - type: official
+    path: "https://developer.android.com/reference/android/graphics/Bitmap"
+    role: "HardwareBuffer 包装成 hardware Bitmap 的格式与 ColorSpace 边界"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/Trace"
+    role: "同步与异步 trace section 接口"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/Intent.java"
+    role: "EyeDropper action、EXTRA_COLOR 文档与 FlaggedApi 声明"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/api/current.txt"
+    role: "API 37 public SDK 字段及 feature flag 标记"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/ScreenCapture.java"
+    role: "screen capture 参数、redaction policy 与 preserve display colors 语义"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowManagerService.java"
+    role: "READ_FRAME_BUFFER 检查、参数转译与 systemScreenshot 调用"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/Android.bp"
+    role: "platform certificate、privileged app 与 platform API 构建属性"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/AndroidManifest.xml"
+    role: "隐式 action handler 与三个系统权限"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/flags/eye_dropper_flags.aconfig"
+    role: "enable_eye_dropper_api 的 aconfig 声明"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/MainActivity.kt"
+    role: "多 display 截图启动、service 绑定与 Activity result 返回"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/util/ScreenCaptureHelper.kt"
+    role: "截图参数、HardwareBuffer 到 software Bitmap 复制与 2 秒超时"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/EyeDropperControllerService.kt"
+    role: "per-display Compose overlay、配置变化取消与会话生命周期"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/util/WindowHelper.kt"
+    role: "TYPE_SCREENSHOT 透明 trusted overlay"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/ui/touchscreen/ActiveDisplayTracker.kt"
+    role: "同一系统内多 display 的活动 reticle 切换"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/desktop/DesktopDisplayListener.kt"
+    role: "display 增删时取消会话、display change 的当前边界"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/ui/BaseEyeDropperViewModel.kt"
+    role: "software Bitmap.getPixel 与结果回调"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -44,7 +99,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-17
 ---
 
-# EyeDropper API 与跨设备协作性能
+# Android 17 EyeDropper API 与跨设备协作性能
 
 ## 这章要解决什么问题
 
@@ -157,7 +212,7 @@ Caller Activity
 `ScreenCaptureHelper` 通过内部 `IWindowManager.screenCapture()` 获取每个 display 的 `HardwareBuffer`。关键参数包括：
 
 | 参数 | Android 17 AOSP 取值 | 含义 |
-|:---|:---|:---|
+| --- | --- | --- |
 | secure content policy | `SECURE_CONTENT_POLICY_REDACT` | secure window 内容被遮蔽 |
 | protected content policy | `PROTECTED_CONTENT_POLICY_REDACT` | protected buffer 内容被遮蔽 |
 | pixel format | `HardwareBuffer.RGBA_8888` | 每像素四字节的捕获格式 |
@@ -167,6 +222,8 @@ Caller Activity
 
 回调拿到 `HardwareBuffer` 后，代码先用 `Bitmap.wrapHardwareBuffer()` 创建 hardware Bitmap，再调用 `copy(Bitmap.Config.ARGB_8888, false)` 生成 software Bitmap，因为 `Bitmap.getPixel()` 不能读取 hardware Bitmap。用户确认时，ViewModel 从这份 software Bitmap 读取一个像素并返回。
 
+调用链进入 system_server 后，`WindowManagerService.screenCapture()` 会检查 `READ_FRAME_BUFFER`，把 `ScreenCaptureParams` 转成 display capture 参数，再交给 `DisplayManagerInternal.systemScreenshot()`。回调把 `ScreenshotHardwareBuffer` 中的 `HardwareBuffer` 和 `ColorSpace` 送回 EyeDropper 进程。这个边界解释了权限检查的位置：截图由系统显示捕获路径完成，调用方 Activity 和 EyeDropper 的 Compose overlay 都不是截图执行者。
+
 因此，准确的隐私表述是：**系统特权实现内部持有 display 截图，普通调用方只收到一个颜色整数。** “调用方不需要 MediaProjection 授权”不等于“系统内部没有屏幕捕获”。
 
 ### 为什么普通 App 做不了同样的内部流程
@@ -174,7 +231,7 @@ Caller Activity
 AOSP EyeDropper manifest 使用了三个普通第三方应用拿不到的权限：
 
 | 权限 | 用途 |
-|:---|:---|
+| --- | --- |
 | `READ_FRAME_BUFFER` | 调用系统屏幕捕获能力 |
 | `INTERNAL_SYSTEM_WINDOW` | 添加 `TYPE_SCREENSHOT` 系统 overlay |
 | `INJECT_EVENTS` | 使用受限的输入/指针能力 |
@@ -212,7 +269,7 @@ AOSP 捕获参数还设置了 `preserveDisplayColors(false)`。因此，`0xFFRRG
 ### 与其他取色方案的区别
 
 | 方案 | 调用方拿到什么 | 权限/确认 | 适用范围 |
-|:---|:---|:---|:---|
+| --- | --- | --- | --- |
 | EyeDropper | 用户选择的一个 opaque ARGB 值 | 系统取色 UI；调用方无截图权限 | 跨 App 的一次性人工取色 |
 | 应用内取色 | App 自有 Bitmap/View 数据 | 不需要额外系统授权 | 只处理应用拥有的内容 |
 | PixelCopy | 指定 Window/Surface 等的像素副本 | 受目标对象和权限边界约束 | App 自有窗口或 Surface 的局部复制 |
@@ -242,7 +299,7 @@ minimum working-set estimate ≈ width × height × 4 × 2 bytes
 这个公式只用于估算量级。常见分辨率对应的两份像素数据约为：
 
 | 分辨率 | 两份 4 B/px Buffer 的数据量 |
-|:---|---:|
+| --- | ---: |
 | 1920 × 1080 | 15.8 MiB |
 | 2560 × 1440 | 28.1 MiB |
 | 3840 × 2160 | 63.3 MiB |
@@ -254,7 +311,7 @@ minimum working-set estimate ≈ width × height × 4 × 2 bytes
 “launch 到 result”包含用户寻找像素和确认的思考时间，不能直接当作系统性能指标。建议拆成三类：
 
 | 指标 | 起止点 | 回答的问题 |
-|:---|:---|:---|
+| --- | --- | --- |
 | 启动可用延迟 | launch → overlay 首次可交互 | capture、Bitmap copy、service/overlay 初始化是否慢 |
 | 交互流畅度 | reticle 移动期间 | Compose/UI/GPU 是否 miss 当前帧 deadline |
 | 结果应用延迟 | result callback → 调用方新颜色帧 present | 调用方自己的状态更新是否造成卡顿 |
@@ -313,7 +370,9 @@ private fun onEyeDropperResult(result: ActivityResult) {
 }
 ```
 
-`eye_dropper_session` 适合定位一次具体复现，不适合作为自动化性能分数，因为它包含人为停留时间。若要量 overlay 首次可交互，需要 UI 自动化的可识别条件，或在可控系统构建中增加内部打点；result 后的 `apply_picked_color` 则可以直接结合调用方 FrameTimeline。
+`eye_dropper_session` 适合定位一次具体复现，不适合作为自动化性能分数，因为它包含人为停留时间。示例用布尔状态限制同一进程只开启一段会话；允许并发时，应为每次请求分配进程内唯一 cookie。进程在结果返回前退出时，trace 可能只留下未闭合的 async slice，复盘时应把它标成中断会话。
+
+若要量 overlay 首次可交互，需要 UI 自动化的可识别条件，或在可控系统构建中增加内部打点；result 后的 `apply_picked_color` 则可以直接结合调用方 FrameTimeline。
 
 ## 跨设备协作：只同步结果
 
@@ -326,7 +385,8 @@ session_id
 event_id
 opaque_argb
 source_device_id
-selected_at_elapsed_or_server_time
+source_boot_id
+source_elapsed_realtime_ns
 document_revision
 ```
 
@@ -337,6 +397,8 @@ document_revision
 - 文档 revision 已变化时是拒绝、提示还是应用到新对象；
 - 远端更新是否触发渲染，是否需要合并同一帧内的多次状态变化；
 - 日志是否记录了不必要的设备标识或用户操作时间。
+
+`source_elapsed_realtime_ns` 只能在同一设备、同一次开机内排序。两个设备的 elapsed time 没有共同原点，不能直接比较；跨设备冲突应使用服务端分配的 revision/sequence，或由服务端记录接收时间。`source_boot_id` 只用于防止把重启前后的单调时钟混在一起，不应当作长期设备身份。
 
 单个颜色事件的网络负载很小，体验通常受往返时延、重连、冲突处理和远端下一帧 present 影响。若协议开始传输截图、reticle 坐标或连续像素流，需求已经进入屏幕共享或远程画布，应重新做权限、带宽和隐私设计，不能继续沿用“一次性颜色结果”的风险判断。
 
@@ -360,8 +422,9 @@ document_revision
 - Android Developers, [`Intent.ACTION_OPEN_EYE_DROPPER`](https://developer.android.com/reference/android/content/Intent#ACTION_OPEN_EYE_DROPPER) 与 [`Intent.EXTRA_COLOR`](https://developer.android.com/reference/android/content/Intent#EXTRA_COLOR)
 - Android Developers, [API 36 → 37 `Intent` diff](https://developer.android.com/sdk/api_diff/37/changes/android.content.Intent)
 - Android Developers, [Get a result from an activity](https://developer.android.com/training/basics/intents/result)
-- AOSP Android 17, [`Intent.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/Intent.java)
-- AOSP Android 17 EyeDropper, [`Android.bp`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/android-17.0.0_r1/Android.bp)、[`AndroidManifest.xml`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/android-17.0.0_r1/AndroidManifest.xml) 与 [`eye_dropper_flags.aconfig`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/android-17.0.0_r1/flags/eye_dropper_flags.aconfig)
-- AOSP Android 17 EyeDropper, [`MainActivity.kt`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/android-17.0.0_r1/src/com/android/eyedropper/MainActivity.kt)、[`ScreenCaptureHelper.kt`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/android-17.0.0_r1/src/com/android/eyedropper/util/ScreenCaptureHelper.kt) 与 [`BaseEyeDropperViewModel.kt`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/android-17.0.0_r1/src/com/android/eyedropper/ui/BaseEyeDropperViewModel.kt)
-- AOSP Android 17 EyeDropper, [`EyeDropperControllerService.kt`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/android-17.0.0_r1/src/com/android/eyedropper/EyeDropperControllerService.kt) 与 [`ActiveDisplayTracker.kt`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/android-17.0.0_r1/src/com/android/eyedropper/ui/touchscreen/ActiveDisplayTracker.kt)
-- Kernel common [`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6)
+- Android Developers, [Package visibility `<queries>`](https://developer.android.com/training/package-visibility/declaring) 与 [`Trace`](https://developer.android.com/reference/android/os/Trace)
+- AOSP Android 17, [`Intent.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/Intent.java)、[`current.txt`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/api/current.txt) 与 [`ScreenCapture.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/ScreenCapture.java)
+- AOSP Android 17, [`WindowManagerService.screenCapture()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowManagerService.java)
+- AOSP Android 17 EyeDropper, [`Android.bp`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/Android.bp)、[`AndroidManifest.xml`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/AndroidManifest.xml) 与 [`eye_dropper_flags.aconfig`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/flags/eye_dropper_flags.aconfig)
+- AOSP Android 17 EyeDropper, [`MainActivity.kt`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/MainActivity.kt)、[`ScreenCaptureHelper.kt`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/util/ScreenCaptureHelper.kt) 与 [`BaseEyeDropperViewModel.kt`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/ui/BaseEyeDropperViewModel.kt)
+- AOSP Android 17 EyeDropper, [`EyeDropperControllerService.kt`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/EyeDropperControllerService.kt)、[`ActiveDisplayTracker.kt`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/ui/touchscreen/ActiveDisplayTracker.kt) 与 [`DesktopDisplayListener.kt`](https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/desktop/DesktopDisplayListener.kt)
