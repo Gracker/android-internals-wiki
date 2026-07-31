@@ -1,5 +1,5 @@
 ---
-title: "Camera 渲染管线"
+title: "Android 17 Camera 渲染管线"
 chapter: "18.14"
 section: "18.14"
 status: "finalized"
@@ -8,9 +8,115 @@ applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 tags: ["Camera", "Camera2", "HAL3", "ZSL", "多流并发", "SurfaceView", "ImageReader", "渲染管线"]
 reviewed_by: "openclaw-task6"
 path: "hardware/interfaces/camera/device/aidl/android/hardware/camera/device/ICameraDeviceSession.aidl"
-related_chapters: ["2.13", "2.15", "14.9", "18.6"]
+related_chapters: ["2.13", "2.15", "14.9", "18.6", "18.7", "18.10", "18.15"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
+sources:
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S11_camera_type.md
+  role: Camera 多输出、预览承载、fence、Perfetto、内存证据与版本边界
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S11_camera_architecture/source.md
+  role: Camera2、cameraserver、HAL3、consumer 与显示系统总体架构
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S11_camera_multi_output_pipeline/source.md
+  role: preview、record、analysis 与 still capture 多输出关系
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S11_camera_surfaceview_preview_pipeline/source.md
+  role: SurfaceView preview 独立 layer 与宿主窗口关系
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S11_camera_textureview_gl_pipeline/source.md
+  role: TextureView 与自研 GL/Vulkan 中间消费路径
+- type: official
+  path: https://developer.android.com/about/versions/17/release-notes
+  role: Android 17 动态会话更新、RAW14、vendor extension 与 device type
+- type: official
+  path: https://developer.android.com/reference/android/hardware/camera2/CameraCaptureSession
+  role: API 37 updateOutputConfigurations 契约与运行中 Surface 替换边界
+- type: official
+  path: https://developer.android.com/reference/android/hardware/camera2/params/OutputConfiguration
+  role: deferred output、stream use case、dynamic range 与 timestamp base
+- type: official
+  path: https://developer.android.com/media/camera/camera2/multiple-camera-streams-simultaneously
+  role: Camera2 多流配置与设备能力查询
+- type: official
+  path: https://developer.android.com/media/camera/camerax/preview
+  role: CameraX Preview、SurfaceProvider 与 PreviewView
+- type: official
+  path: https://developer.android.com/media/camera/camerax/analyze
+  role: ImageAnalysis backpressure 与 ImageProxy 归还
+- type: official
+  path: https://developer.android.com/media/camera/camerax/take-photo/zsl
+  role: CameraX ZSL 支持条件、回退和组合限制
+- type: official
+  path: https://source.android.com/docs/core/camera/camera3
+  role: Camera HAL3 与 Android 13 以后 AIDL 边界
+- type: official
+  path: https://source.android.com/docs/core/camera/camera3_requests_hal
+  role: HAL3 request、result、partial metadata 与 output buffer 语义
+- type: official
+  path: https://source.android.com/docs/core/camera/buffer-management-api
+  role: requestStreamBuffers、returnStreamBuffers 与 signalStreamFlush 契约
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraCaptureSession.java
+  role: API 37 动态更新接口、输出数量限制与旧 Surface buffer 回收
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/impl/CameraCaptureSessionImpl.java
+  role: 动态输出更新到 CameraDeviceImpl 的实现入口
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/impl/CameraDeviceImpl.java
+  role: session、request、配置映射与 replaced output 跟踪
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/params/OutputConfiguration.java
+  role: output 属性、deferred Surface、stream use case 与 timestamp base
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CaptureRequest.java
+  role: CaptureRequest 与 CONTROL_ENABLE_ZSL
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraCharacteristics.java
+  role: reprocessing、secure image、stream capability 与 INFO_DEVICE_TYPE
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/ImageFormat.java
+  role: API 37 RAW14 格式定义
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3Device.cpp
+  role: RequestThread、in-flight map、result 与 stream 配置
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3Stream.cpp
+  role: stream buffer 上限、handout、return 与 fence 状态
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3OutputStream.cpp
+  role: ANativeWindow dequeue、queue、timestamp 与 buffer fence
+- type: aosp
+  path: https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/ICameraDeviceSession.aidl
+  role: configureStreamsV2、process request、flush 与 offline session
+- type: aosp
+  path: https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/ICameraDeviceCallback.aidl
+  role: capture result、requestStreamBuffers 与 returnStreamBuffers
+- type: aosp
+  path: https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/HalStream.aidl
+  role: HAL 返回的 producer usage、override format 与 maxBuffers
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/TextureView.java
+  role: camera frame available、updateLayer 与宿主 invalidation
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp
+  role: SurfaceTexture 最新 buffer 获取与 HWUI layer 更新
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp
+  role: preview 与 host layer 的 latch、composition 与 present
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp
+  role: HWC composition、present 与 fence 交互
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c
+  role: camera、GPU、codec 与 HWC 跨设备共享 buffer
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
+  role: fence signal、callback 与 wait
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c
+  role: dma-fence 的 sync_file fd 接口
 task6_state: reviewed
 task9_state: reviewed
 task9_result: "auto-fixed"
@@ -33,17 +139,20 @@ last_task6_audit_log: "logs/review/2026-07-09-19-audit.md"
 last_task9_autofix_at: "2026-06-04"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-23
-last_verified: 2026-07-29
-last_verified_against: "android-17.0.0_r1"
+last_verified: "2026-07-31"
+last_verified_against: "android-17.0.0_r1 (CameraCaptureSession.java, CameraCaptureSessionImpl.java, CameraDeviceImpl.java, OutputConfiguration.java, CaptureRequest.java, CameraCharacteristics.java, ImageFormat.java, Camera3Device.cpp, Camera3Stream.cpp, Camera3OutputStream.cpp, ICameraDeviceSession.aidl, ICameraDeviceCallback.aidl, HalStream.aidl, TextureView.java, DeferredLayerUpdater.cpp, SurfaceFlinger.cpp, HWComposer.cpp) / Android 17 API 37 Camera docs / android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, sync_file.c)"
 confidence: high
 last_idle_audit_at: "2026-07-29T18:36:00+08:00"
 last_idle_audit_run_id: "20260729-183600-idle-audit-25e2b504"
 last_idle_audit_result: "frontmatter-fix-pass"
 ---
 
+# 18.14 Android 17 Camera 渲染管线
+
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
+
 - Camera 的多消费者（Multi-Stream）架构
 - HAL3 的 Request-Buffer 生命周期
 - 三种消费路径：Preview / Recording / Analysis
@@ -51,6 +160,7 @@ last_idle_audit_result: "frontmatter-fix-pass"
 - 常见掉帧场景与诊断
 
 **扩展（可选深入）：**
+
 - CameraCaptureSession 回调的时间戳分析
 - DRM / Secure Camera Path
 - SurfaceView vs TextureView 预览的性能差异
@@ -116,6 +226,18 @@ HAL 返回每个 stream 的 producer usage、override format 与 `maxBuffers`。
 
 创建失败、首帧慢或运行中反复黑屏时，先确认 session 是否反复重配。只检查 `CaptureRequest` 参数，容易漏掉更早的 stream negotiation 问题。
 
+### API 37 可以替换既有输出 Surface，不能增删 stream
+
+Android 17 / API 37 新增 `CameraCaptureSession.updateOutputConfigurations(List)`，可把 deferred output 换成有效 Surface，也可在不关闭整个 session 的前提下替换既有输出 Surface。它适合照片与录像等 use case 之间的 Surface 切换，但接口约束比“动态重配 session”窄：
+
+- 新列表的 `OutputConfiguration` 数量必须与 session 当前 output 数量相同；
+- 每个配置必须能按 size、format 等属性对应到创建 session 时的既有配置；
+- 允许替换关联 Surface 或切回 deferred 状态，不允许通过该调用新增或删除 `OutputConfiguration`；
+- 调用会停止仍以旧 Surface 为目标的 active request，应用随后要提交指向新 Surface 的 request；
+- framework 会继续跟踪旧 Surface，等在途 buffer 全部返回后再断开旧连接。
+
+`CameraCaptureSessionImpl` 把调用交给 `CameraDeviceImpl.updateOutputConfigurations()`。后者先把新配置映射回现有 stream id，再通过 camera service 更新；被替换的旧 Surface 以弱引用保存在 `mReplacedOutputs`，用于处理尚未归还的 buffer。这个 API 减少了整组 session 关闭与重建，但没有放宽格式、尺寸和 output 数量约束，也不能替代 HAL 对配置的校验。
+
 ### Stream Use Case 是逐流提示，不是性能承诺
 
 Android 13 / API 33 引入 `OutputConfiguration.setStreamUseCase()`。它让 App 为单个 output 声明 preview、still capture、video record、preview-video-still、video call 或 cropped RAW 等用途，HAL 可以据此选择 sensor mode、tuning 和 image-processing pipeline。
@@ -169,7 +291,7 @@ input stream 也按 HAL 返回的 `max_buffers` 控制 handout 数量。不能�
 ### 三类 fence 要分别看
 
 | 同步对象 | 表示什么 | 常见等待方 |
-|---|---|---|
+| --- | --- | --- |
 | framework 交给 HAL 的 acquire fence | output buffer 何时可以被 HAL 写入 | HAL / ISP / vendor GPU |
 | HAL 随 result 返回的 release fence | 图像写入何时完成，consumer 何时可以读取 | BufferQueue、ImageReader、MediaCodec、App GPU |
 | SF / HWC 对预览 layer 的 release fence | 显示 consumer 何时不再读取该预览 buffer | BufferQueue / 后续 producer |
@@ -183,7 +305,7 @@ display present fence 描述一轮显示帧的 present 边界，不能替代 cam
 预览 carrier 决定相机 buffer 怎样进入最终 App 画面。
 
 | Carrier | Camera buffer 的 consumer | 最终 SF layer | 主要代价与证据 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `SurfaceView` | Surface / BufferQueue → SurfaceFlinger | preview child layer 与 host App Window 分开 | 少一次宿主纹理采样；查 preview layer buffer、geometry transaction 和 HWC composition type |
 | `TextureView` | `SurfaceTexture` → 宿主 HWUI RenderThread | 通常只有 host App Window | 易做 matrix、clip、alpha；多一次宿主纹理获取、采样与窗口提交 |
 | 自研 GL / Vulkan | OES texture、AHardwareBuffer 或 ImageReader → App GPU | 取决于 renderer 的 output Surface | HAL 是第一生产者，App renderer 同时是中间 consumer 与第二生产者 |
@@ -191,6 +313,8 @@ display present fence 描述一轮显示帧的 present 边界，不能替代 cam
 `SurfaceView` 预览在现代 Android 上经 SurfaceControl / BLAST 与宿主窗口协调几何，但相机像素仍由独立 BufferQueue 提交。preview layer 是否走 HWC DEVICE composition 取决于整组 layer 的格式、缩放、alpha、crop、色彩空间和 plane 资源，不能把 SurfaceView 等同于硬件 overlay。
 
 `TextureView` 有两条 BufferQueue：camera → SurfaceTexture，以及 HWUI → App Window。camera buffer 已到达，只说明纹理可供宿主获取；画面还要等宿主 `Choreographer`、traversal、RenderThread 和 host window queue。
+
+Android 17 的 `TextureView` 收到 `SurfaceTexture.OnFrameAvailableListener` 回调后执行 `updateLayer()` 与 `invalidate()`；RenderThread 侧 `DeferredLayerUpdater::apply()` 再通过 `ASurfaceTexture_dequeueBuffer()` 取得最新 `AHardwareBuffer` 并更新 HWUI layer。这个调用链能解释一类常见现场：camera release fence 已完成，宿主窗口仍因没有及时 draw 或提交而沿用上一帧。
 
 自研滤镜、畸变矫正、分割或 AR 管线还多一个 App GPU pass。排查时分别测量 camera release fence、App GPU completion 与 output Surface present，避免把第二段迟到归给 ISP。
 
@@ -243,7 +367,7 @@ CameraX 的 `CAPTURE_MODE_ZERO_SHUTTER_LAG` 封装了这条思路。当前官方
 ### 怎样判断 ZSL 卡在哪里
 
 | 现象 | 优先检查 |
-|---|---|
+| --- | --- |
 | `CONTROL_ENABLE_ZSL=true` 但照片仍来自当前帧 | 这是允许行为；核对 key 是否可用、capture intent、flash、HAL 策略与 result sensor timestamp |
 | CameraX `isZslSupported()` 为 false | API level、PRIVATE reprocessing、flash、VideoCapture、Extensions、quirk 与库版本 |
 | 快门快，但后台很久才出 JPEG | reprocess / ISP、offline processing、JPEG consumer 与 storage |
@@ -294,7 +418,7 @@ Android 13 起，`OutputConfiguration` 可以选择 timestamp base。Android 17 
 ### 按五段证据定位
 
 | 阶段 | 观察点 | 典型异常 |
-|---|---|---|
+| --- | --- | --- |
 | App / CameraX | session configure、repeating / single capture、callback executor | 反复重配、请求间隔异常、callback 被业务阻塞 |
 | cameraserver | `Camera3Device` RequestThread、in-flight map、stream dequeue | request 排队、buffer limit wait、stream abandon |
 | HAL / sensor / ISP | `processCaptureRequest`、SOF、vendor job、`processCaptureResult` | 曝光变化、ISP stall、算法或 HAL queue 堵塞 |
@@ -336,6 +460,8 @@ slice 很长时同时看线程状态：
 
 把静态 output 组合稳定下来；动态 3A / zoom / exposure 尽量通过 request 更新。必须重配时，把停流、configure 与首个 result 分段计时。
 
+API 37 上，若切换只涉及同构 `OutputConfiguration` 的 Surface，可评估 `updateOutputConfigurations()`。output 数量、format 或 size 发生变化时仍要重新创建 session；旧 Surface 上的 active request 也要按接口契约停止并改投新目标。
+
 ### Analysis consumer 反压
 
 症状是 analysis 延迟持续增加、`maxImages` 被占满、stream buffer request 变慢或超时。把推理移出回调线程、按需求使用 latest-only 策略、减少 YUV 回拷，并保证所有异常路径关闭 Image。盲目增大队列只会推迟拥塞并抬高内存。
@@ -365,7 +491,7 @@ SurfaceView preview buffer 已 ready 但没有 present，继续查 release fence
 - **Android 14 / API 34**：Ultra HDR still image 与 gainmap 进入公开链路，cropped RAW stream use case 用于 in-sensor zoom；它们不表示普通 preview 自动切到 HDR 或 RAW。
 - **Android 15 / API 35**：Low Light Boost 为支持设备提供连续预览 / video 的低光 AE mode，与多帧 Night still capture 不同。曝光和算法负载变化会改变可达帧率。
 - **Android 16 / API 36**：color temperature / tint、hybrid auto-exposure、night mode indicator、motion photo capture intent 等能力扩展 request 与 metadata，但没有替代 Surface / HAL buffer / consumer 回收主线。
-- **Android 17 / API 37**：`ImageFormat.RAW14` 支持紧凑的 14-bit RAW；vendor-defined camera extensions 与 `INFO_DEVICE_TYPE` 扩展能力发现。RAW14 只影响兼容并显式配置的 RAW stream，不会改变普通 preview 格式。
+- **Android 17 / API 37**：`CameraCaptureSession.updateOutputConfigurations()` 支持在不关闭整个 session 的情况下替换既有同构 output 的 Surface；`ImageFormat.RAW14` 支持紧凑的 14-bit RAW，vendor-defined camera extensions 与 `INFO_DEVICE_TYPE` 扩展能力发现。动态更新不能增删 output，RAW14 也只影响兼容并显式配置的 RAW stream。
 
 Android 17 平台继续使用 HAL3 request-result 与多 output Surface 模型。新 metadata 或 extension 会改变配置与处理负载，不会消除 buffer ownership、fence 与 consumer backpressure。
 
@@ -373,28 +499,30 @@ Android 17 平台继续使用 HAL3 request-result 与多 output Surface 模型�
 
 ### Framework 与 cameraserver
 
-- [`CameraDeviceImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/camera2/impl/CameraDeviceImpl.java)、[`CameraCaptureSessionImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/camera2/impl/CameraCaptureSessionImpl.java)：session、request 与 callback；
-- [`OutputConfiguration.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/camera2/params/OutputConfiguration.java)：stream use case、timestamp base、dynamic range 与 output 属性；
-- [`CaptureRequest.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/camera2/CaptureRequest.java)、[`CameraCharacteristics.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/camera2/CameraCharacteristics.java)：ZSL、reprocessing、secure image、stream capability 与 device type；
-- [`ImageFormat.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageFormat.java)：RAW14 与其他公开 image format；
-- [`Camera3Device.cpp`](https://android.googlesource.com/platform/frameworks/av/+/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3Device.cpp)、[`Camera3Stream.cpp`](https://android.googlesource.com/platform/frameworks/av/+/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3Stream.cpp)、[`Camera3OutputStream.cpp`](https://android.googlesource.com/platform/frameworks/av/+/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3OutputStream.cpp)：configure、RequestThread、in-flight map、buffer limit、dequeue / queue 与 fence。
+- [`CameraCaptureSession.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraCaptureSession.java)、[`CameraCaptureSessionImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/impl/CameraCaptureSessionImpl.java)、[`CameraDeviceImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/impl/CameraDeviceImpl.java)：session、request、动态输出更新与 callback；
+- [`OutputConfiguration.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/params/OutputConfiguration.java)：stream use case、timestamp base、dynamic range 与 output 属性；
+- [`CaptureRequest.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CaptureRequest.java)、[`CameraCharacteristics.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraCharacteristics.java)：ZSL、reprocessing、secure image、stream capability 与 device type；
+- [`ImageFormat.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/ImageFormat.java)：RAW14 与其他公开 image format；
+- [`Camera3Device.cpp`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3Device.cpp)、[`Camera3Stream.cpp`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3Stream.cpp)、[`Camera3OutputStream.cpp`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3OutputStream.cpp)：configure、RequestThread、in-flight map、buffer limit、dequeue / queue 与 fence。
 
 ### Camera HAL AIDL
 
-- [`ICameraDeviceSession.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/ICameraDeviceSession.aidl)：configure、process request、flush 与 offline session；
-- [`ICameraDeviceCallback.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/ICameraDeviceCallback.aidl)：notify、partial / final result、request / return stream buffers；
+- [`ICameraDeviceSession.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/ICameraDeviceSession.aidl)：configure、process request、flush 与 offline session；
+- [`ICameraDeviceCallback.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/ICameraDeviceCallback.aidl)、[`HalStream.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/camera/device/aidl/android/hardware/camera/device/HalStream.aidl)：capture result、request / return stream buffers 与逐流 `maxBuffers`；
 - [Camera HAL3 request / result](https://source.android.com/docs/core/camera/camera3_requests_hal)、[Camera HAL3 buffer management](https://source.android.com/docs/core/camera/buffer-management-api)：接口语义与版本演进。
 
 ### Consumer、显示与 kernel
 
-- [Camera2 多流](https://developer.android.com/media/camera/camera2/multiple-camera-streams-simultaneously)、[CameraX Preview](https://developer.android.com/media/camera/camerax/preview)、[CameraX Image Analysis](https://developer.android.com/media/camera/camerax/analyze)、[CameraX ZSL](https://developer.android.com/media/camera/camerax/take-photo/zsl)：公开 consumer 与库层约束；
-- [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)、[`HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)：预览 layer 的 latch、composition 与 present；
-- kernel `android17-6.18-2026-06_r6` 的 [`dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)、[`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：buffer 共享与 fence fd。
+- [Android 17 Camera 更新](https://developer.android.com/about/versions/17/release-notes)、[`CameraCaptureSession`](https://developer.android.com/reference/android/hardware/camera2/CameraCaptureSession)、[Camera2 多流](https://developer.android.com/media/camera/camera2/multiple-camera-streams-simultaneously)：API 37 动态输出更新与多流公开契约；
+- [CameraX Preview](https://developer.android.com/media/camera/camerax/preview)、[CameraX Image Analysis](https://developer.android.com/media/camera/camerax/analyze)、[CameraX ZSL](https://developer.android.com/media/camera/camerax/take-photo/zsl)：公开 consumer 与库层约束；
+- [`TextureView.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/TextureView.java)、[`DeferredLayerUpdater.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp)：TextureView frame available、宿主 invalidation 与最新 buffer 获取；
+- [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)、[`HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)：预览 layer 的 latch、composition 与 present；
+- kernel `android17-6.18-2026-06_r6` 的 [`dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)、[`dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)、[`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：buffer 共享、fence signal / wait 与 fence fd。
 
 ## 常见误判
 
 | 误判 | 修正方法 |
-|---|---|
+| --- | --- |
 | 同一 request 的多路输出共用同一块 buffer | 按 stream、buffer id、format 与 consumer 分别追踪 |
 | `maxBuffers` 在 HAL3 中固定为 2 | 它由 HAL 在 configure 阶段逐流返回 |
 | result metadata 到达表示所有 buffer 都 ready | partial / final metadata 与不同 stream buffer 可以分开返回 |
@@ -405,6 +533,7 @@ Android 17 平台继续使用 HAL3 request-result 与多 output Surface 模型�
 | SurfaceView 一定使用 HWC overlay | 查看实际 composition type 与整组 layer 条件 |
 | TextureView buffer 到达就已上屏 | 还要等宿主 traversal、RT、App Window 与 SF |
 | 增大 `maxImages` 可以修复慢分析 | 它只增加缓冲与内存，长期吞吐仍由 consumer 决定 |
+| API 37 动态更新可以任意增删 output | 只能替换既有同构配置的 Surface，output 数量不变 |
 | RAW14 会改变 Android 17 的所有预览 | 只影响设备支持并显式配置的 RAW14 stream |
 
 ## 与其他章节的关系
