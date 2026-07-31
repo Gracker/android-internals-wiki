@@ -42,10 +42,12 @@ FrameTimeline 同时记录应用的 SurfaceFrame 和 SurfaceFlinger 的 DisplayF
 
 | 对象 | `surface_frame_token` | `display_frame_token` | 代表什么 |
 | --- | ---: | ---: | --- |
-| 应用 SurfaceFrame | 非 0 | 非 0 | 某进程向一个 layer 提交的一帧 |
-| SF DisplayFrame | 0 | 非 0 | SurfaceFlinger 组合后提交给某个 display 的一帧 |
+| 应用 SurfaceFrame | 非空 | 非空 | 某进程向一个 layer 提交的一帧 |
+| SF DisplayFrame | `NULL` | 非空 | SurfaceFlinger 组合后提交给某个 display 的一帧 |
 
 一个 DisplayFrame 可以组合多个进程、多个 layer 的 SurfaceFrame，因此 `display_frame_token` 在应用行上天然是多对一关系。它适合从应用帧追到显示帧，不适合直接连接应用 Expected 与应用 Actual；后一种连接要使用同一 `upid` 下的 `surface_frame_token`。
+
+DisplayFrame 的 proto 只有自己的 display token，没有 surface token。Perfetto v57.2 因而把 DisplayFrame 行的 `surface_frame_token` 保留为 `NULL`；部分文档示例仍把这一格显示为 0。查询应按字段是否为空区分两类帧，不能依赖数值 0。
 
 标准 HWUI App Window 的 SurfaceFrame 数据最完整。SurfaceView 由独立 Producer 和独立 Surface 出帧，Perfetto 官方文档仍将其列为 FrameTimeline 不支持的路径。Camera、Video、游戏 Surface、WebView overlay 和跨进程嵌入也要先确认 Producer 与 layer，不能拿宿主窗口的 token 代替独立 Surface 的帧身份。
 
@@ -104,7 +106,9 @@ Perfetto UI 的颜色按归责和状态编码：
 
 Android 17 `SurfaceFrame::isSelfJanky()` 将 `AppDeadlineMissed`、`AppResyncedJitter` 和 `Unknown` 视为应用自身 jank。SF scheduling、SF CPU/GPU deadline、Display HAL 和 Prediction Error 会形成系统侧原因。黄色只说明当前帧的归责结果；复杂 layer、GPU 负载或 composition 变化仍可能由应用行为触发，排障时要继续检查 flow、layer 和系统负载。
 
-`jank_type` 是 bitmask 的字符串投影，一帧可以同时带多个原因。Perfetto v57.2 还提供 `jank_tag`，把结果归并为 `Self Jank`、`Other Jank`、`Buffer Stuffing`、`SurfaceFlinger Stuffing`、`Dropped Frame`、`Non-perceivable Jank` 等稳定类别，做统计时比字符串包含判断更安全。
+`jank_type` 是 bitmask 的字符串投影，一帧可以同时带多个原因。Perfetto v57.2 还提供 `jank_tag`，把结果归并为 `Self Jank`、`Other Jank`、`Buffer Stuffing`、`SurfaceFlinger Stuffing`、`Dropped Frame`、`Non-perceivable Jank` 等预计算类别，做统计时比字符串包含判断更安全。
+
+Android 17 的 Actual SurfaceFrame proto 还记录 `present_delay_millis`、`vsync_resynced_jitter_millis`、`jank_severity_type` 与 `jank_severity_score`；DisplayFrame 没有 VSYNC 重同步抖动字段。Perfetto v57.2 在内置表中把 severity score 命名为 `jank_score`。这些值可以描述偏差幅度和严重度，不能脱离 `jank_type`、present 状态与采集版本另造 jank 判定。proto 中带 `experimental` 的 jank、present 与 debug 字段明确标注为调试数据，不应进入正式 jank 指标。
 
 ## API 33 的 `FrameData` 用法
 
@@ -155,15 +159,9 @@ Android 17 内部 `DisplayEventReceiver.VsyncEventData` 当前为候选数组预
 
 FrameTimeline 是原生 Perfetto 数据源 `android.surfaceflinger.frametimeline`。`gfx`、`view` 属于 atrace category，它们能补充 `Choreographer#doFrame`、`DrawFrame` 和图形 slice，却不会隐式打开 FrameTimeline 数据源。
 
-下面的最小配置同时采集 FrameTimeline、FrameTracer、应用图形 slice 和线程调度信息。
+下面的配置片段同时启用 FrameTimeline、FrameTracer、应用图形 slice 和线程调度信息，需合并到已经定义采集时长与 buffer 的完整配置中。
 
 ```textproto
-duration_ms: 15000
-buffers {
-  size_kb: 65536
-  fill_policy: RING_BUFFER
-}
-
 data_sources {
   config { name: "android.surfaceflinger.frametimeline" }
 }
@@ -186,7 +184,7 @@ data_sources {
 }
 ```
 
-`android.surfaceflinger.frame` 为可选的 buffer 阶段数据源，见 §13.19。定位单个应用时应把 `atrace_apps` 换成目标包名；全局 `*` 会增加 ftrace 体积。生产问题还需按假设加入 GPU counter、binder、memory 或 power 数据，避免无关数据挤占环形缓冲区。
+这段内容不能单独作为采集配置运行。采集时长和 buffer 容量应根据复现窗口、设备内存与实际数据速率设定，不存在适用于所有场景的固定数值。`android.surfaceflinger.frame` 为可选的 buffer 阶段数据源，见 §13.19。定位单个应用时应把 `atrace_apps` 换成目标包名；全局 `*` 会增加 ftrace 体积。生产问题还需按假设加入 GPU counter、binder、memory 或 power 数据，避免无关数据挤占环形缓冲区。
 
 下面的命令使用文本配置采集并拉回 trace。
 
@@ -228,7 +226,7 @@ WITH app_actual AS (
     p.name AS process_name
   FROM actual_frame_timeline_slice AS a
   LEFT JOIN process AS p USING (upid)
-  WHERE a.surface_frame_token != 0
+  WHERE a.surface_frame_token IS NOT NULL
 ),
 app_expected AS (
   SELECT
@@ -237,7 +235,7 @@ app_expected AS (
     ts AS expected_ts,
     dur AS expected_dur
   FROM expected_frame_timeline_slice
-  WHERE surface_frame_token != 0
+  WHERE surface_frame_token IS NOT NULL
 )
 SELECT
   a.process_name,
@@ -278,7 +276,7 @@ SELECT
   MAX(a.dur) / 1e6 AS max_actual_ms
 FROM actual_frame_timeline_slice AS a
 LEFT JOIN process AS p USING (upid)
-WHERE a.surface_frame_token != 0
+WHERE a.surface_frame_token IS NOT NULL
   AND p.name = 'com.example.app'
 GROUP BY
   a.jank_tag,
@@ -292,7 +290,7 @@ ORDER BY frame_count DESC;
 
 ### 查询 3：把应用帧连接到 SF DisplayFrame
 
-下面的查询用 `display_frame_token` 追踪应用 SurfaceFrame 对应的 SF DisplayFrame，并通过 SF 行的 `surface_frame_token = 0` 防止连接到其他应用 layer。
+下面的查询用 `display_frame_token` 追踪应用 SurfaceFrame 对应的 SF DisplayFrame，并通过 `surface_frame_token IS NULL` 限定 DisplayFrame 行，防止连接到其他应用 layer。
 
 ```sql
 WITH app_frame AS (
@@ -301,7 +299,7 @@ WITH app_frame AS (
     p.name AS process_name
   FROM actual_frame_timeline_slice AS a
   LEFT JOIN process AS p USING (upid)
-  WHERE a.surface_frame_token != 0
+  WHERE a.surface_frame_token IS NOT NULL
     AND p.name = 'com.example.app'
 ),
 display_frame AS (
@@ -309,7 +307,7 @@ display_frame AS (
     a.*
   FROM actual_frame_timeline_slice AS a
   LEFT JOIN process AS p USING (upid)
-  WHERE a.surface_frame_token = 0
+  WHERE a.surface_frame_token IS NULL
     AND p.name GLOB '*surfaceflinger'
 )
 SELECT
@@ -331,18 +329,19 @@ ORDER BY app.ts;
 
 ## Android 17 的分类边界
 
-Android 17 `frame_timeline_event.proto` 继续用 bitmask 表示原因，并在 Android 16 固定 tag 的基础上加入四项平台状态：
+Android 17 `frame_timeline_event.proto` 继续用 bitmask 表示原因，并在 Android 16 固定 tag 的基础上加入五项分类：
 
 | bit | Android 17 枚举 | 诊断含义 |
 | ---: | --- | --- |
+| 2048 | `JANK_NON_ANIMATING` | 非动画内容或无法按动画节奏解释的 present 状态；源码将其放入 non-jank bitmask |
 | 4096 | `JANK_APP_RESYNCED_JITTER` | 应用 VSYNC 重同步相关抖动 |
 | 8192 | `JANK_DISPLAY_NOT_ON` | display 未处于 on 状态 |
 | 16384 | `JANK_DISPLAY_MODE_CHANGE_IN_PROGRESS` | 显示模式切换进行中 |
 | 32768 | `JANK_DISPLAY_POWER_MODE_CHANGE_IN_PROGRESS` | 显示电源模式切换进行中 |
 
-前三类 display 状态会影响“用户是否能感知”和归责标签，不能全部算进应用 jank rate。Perfetto v57.2 已把 bitmask 投影为 `jank_type`、`jank_tag`、`jank_severity_type` 和 `jank_score`；自动化报告应保存原始类型和工具版本，避免不同 Perfetto 版本的派生字段混在同一基线。
+后三项 display 状态会影响“用户是否能感知”和归责结果，不能全部算进应用 jank rate。Perfetto v57.2 已把 bitmask 投影为 `jank_type`、`jank_tag`、`jank_severity_type` 和 `jank_score`；自动化报告应保存原始类型和工具版本，避免不同 Perfetto 版本的派生字段混在同一基线。
 
-Buffer Stuffing 在 Android 17 `FrameTimeline.cpp` 中被列入 non-jank bitmask，用于表达持续晚 present 的高延迟状态。它仍会影响输入延迟和 buffer 可用性，所以性能报告应单独统计，不能与 `No Jank` 合并。
+Buffer Stuffing、SurfaceFlinger Stuffing、Non Animating 和三项 display 状态在 Android 17 `FrameTimeline.cpp` 中都位于 non-jank bitmask。这些位单独出现时不会增加 `jank_severity_score`，却仍可能描述高延迟、不可感知或显示状态变化。性能报告应分别统计，不能全部并入 `No Jank`，也不能全部算作应用 jank。
 
 ## 出图类型改变证据强度
 
@@ -356,6 +355,9 @@ Buffer Stuffing 在 Android 17 `FrameTimeline.cpp` 中被列入 non-jank bitmask
 | Camera / Video Surface | preview/video layer 的 present cadence | HAL、codec、acquire fence；fence 来源未必是 GPU |
 | Tunneled / sideband video | FrameTimeline 可能无法覆盖逐帧 buffer | HWC、HAL、sideband 与显示状态 |
 | WebView / Flutter / 跨进程嵌入 | 区分宿主窗口和独立 overlay | 各进程 layer、flow、buffer 与 composition type |
+| Software / 离屏渲染 | 只有最终提交到可见 Surface 的帧可能进入 FrameTimeline | CPU raster、Bitmap/ImageReader 消费者与后续上传或提交 |
+| Native EGL / Vulkan | 以 ANativeWindow 对应的 layer 为主索引 | 引擎线程、swap/present、GPU queue、BufferQueue 与 fence |
+| 多窗口 / 多 display | 每个可见窗口或独立 Surface 分别找 layer | 窗口可见性、目标 display、刷新模式与同一 DisplayFrame 的 layer 集合 |
 
 `queueBuffer` 返回只代表 Producer 已提交 buffer；acquire fence 决定 Consumer 何时可安全读取。present fence 属于 display/frame，release fence 属于 layer/frame。FrameTimeline 的 present 边界也不能替代 release fence，更不能从 token 推导 BufferQueue frame number。
 
