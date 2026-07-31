@@ -77,239 +77,282 @@ gap_source: "官方文档/AOSP结构/每日信息"
 
 <!-- outline-end -->
 
-## 先确认版本口径：Memory Advice API beta 已废弃
+## 先确定结论：新项目不要新增 Memory Advice 依赖
 
-Memory Advice API 的官方文档在 2026-02 之后已经标注：beta 阶段结束，库已废弃，不再推荐使用。新项目不应把它当作 2026 年的首选内存治理入口。[已验证: 官方文档, developer.android.com/games/sdk/memory-advice/overview]
+Android Developers 已在 2026 年 2 月把 Memory Advice API 标记为 deprecated，并明确表示 beta 已结束。新项目应采用引擎内存预算、仍有效的生命周期回调、系统诊断工具、`ApplicationExitInfo`与 Android Vitals 等能力，不应再把 Memory Advice 加入核心依赖。
 
-这不代表这个 API 没有阅读价值。它仍然适合两类场景：历史游戏项目已经接入，需要判断它给出的状态是否可信；自研引擎需要参考一套“运行时内存压力信号 → 资产降级 → 事后归因”的工程组织方式。本文按这个口径展开。
+这套 API 仍值得研究，原因有两个：
 
-[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md] 只用于组织内存指标口径，[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]、[结构参考: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md] 和 [结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md] 只用于整理“指标 → 归因 → 释放动作”的顺序。正文不复用参考书原文与代码。
+- 历史游戏可能已经接入，需要知道状态值、线程和预测模型的边界，避免误用；
+- 它展示了一种可复用的工程结构：压力信号只负责提出降级请求，资源策略负责选择动作，系统指标负责验证效果。
 
-## Memory Advice API 解决的问题
+本节的平台行为以 Android 17（API 37）和 AOSP `android-17.0.0_r1` 为锚点，内核压力语义以 `android17-6.18-2026-06_r6` 为锚点。Memory Advice 属于独立的 Games SDK 源码仓库，该仓库没有 `android-17.0.0_r1` 标签，因此源码机制引用固定 commit `044fd03c4a7d3b75aeb6ca2bd7fb6155d2cdb787`，不把可变的 `master` 当成 Android 17 平台源码。
 
-游戏内存压力和普通页面应用不同。普通 App 主要盯 Java Heap、Bitmap、Native Heap、PSS 增长；游戏还要把纹理、mesh、音频包、关卡流式加载、OpenGL ES / Vulkan 图形分配、DMA-BUF 和引擎对象池放在一起看。系统最终只关心进程在内存压力下是否该被回收，游戏关心的是在被杀之前能否主动降一档画质或释放一批资源。
+## Memory Advice 解决的历史问题
 
-Memory Advice API 的设计目标就是给游戏一个运行时信号：当前还能不能继续安全分配内存，是否已经接近限制，是否应尽快释放资源。官方文档把它描述为 experimental native API，估算范围包含 `malloc` 申请的 Native Heap，以及 OpenGL ES / Vulkan 图形 API 分配的图形内存，定位明显偏游戏和图形重负载应用。[已验证: 官方文档, developer.android.com/games/sdk/memory-advice/overview]
+游戏的主要内存消费者通常跨越多个分配体系：Java/Kotlin 对象、native arena、纹理、mesh、音频解码缓冲、Vulkan/OpenGL 资源、DMA-BUF、线程栈和引擎缓存。Java Heap 水位无法代表整个进程。
 
-它给出的不是系统承诺，也不是进程保活能力。更准确的读法是：
+Memory Advice 是一个 native 库，不是 framework 服务。官方把它定义为实验性 API：库采集设备与进程指标，再结合设备测试和机器学习数据估算内存安全余量。官方说明估算范围考虑 `malloc` 分配和 OpenGL ES/Vulkan 图形分配，目标是让游戏在进入危险区时减少资源。
 
-| API 输出 | 工程含义 | 适合触发的动作 | 不适合承担的职责 |
-| --- | --- | --- | --- |
-| `MEMORYADVICE_STATE_OK` | 当前估算值仍在安全范围内 | 维持现有资源档位，继续记录基线 | 不能承诺下一次大分配一定成功 |
-| `MEMORYADVICE_STATE_APPROACHING_LIMIT` | 继续增长可能逼近安全边界 | 暂停预加载，减少新资源分配，清理可重建缓存 | 不能当作 OOM 已发生 |
-| `MEMORYADVICE_STATE_CRITICAL` | 需要尽快降低进程内存占用 | 释放高成本纹理、缩小池化对象、降低资源质量档位 | 不能替代 LMKD、`ApplicationExitInfo` 和线上 LMK 指标 |
+三种状态表达的是建议，不是系统承诺：
 
-这种接口适合挂在引擎资源管理器上，而不是散落在业务层。业务层只应看到“资源质量档位”“预加载开关”“关卡缓存预算”这类稳定抽象，避免每个模块都直接读取 API 状态。
-
-## 接入形态与版本边界
-
-Memory Advice API 是 AGDK / Jetpack games-memory-advice 库能力，不是 Android framework 新增系统服务。AOSP `frameworks/opt/gamesdk` 里有独立的 `games-memory-advice` 模块，`build.gradle` 使用 `com.android.library`，`minSdkVersion 21`、`targetSdkVersion 35`，通过 Prefab 发布 `memory_advice` / `memory_advice_static` 头文件与库。[已验证: AOSP master, frameworks/opt/gamesdk/games-memory-advice/build.gradle]
-
-官方接入路径分三类：
-
-| 接入对象 | 入口 | 工程边界 |
+| 状态 | 可采用的工程解释 | 不可推导的结论 |
 | --- | --- | --- |
-| Android Studio + C/C++ 游戏 | Jetpack Android Games libraries，CMake 链接 `games-memory-advice::memory_advice` | 适合 NDK 引擎；文档示例要求在 Java/Kotlin 侧加载 `libmemory_advice.so`，native 侧包含 `memory_advice/memory_advice.h` |
-| Unity 游戏 | Unity package 插件 | 官方文档列出 Unity 2019/2020 + NDK r19、Unity 2021 + NDK r21、Unity 2022 + NDK r23 的已测组合；其他组合要按工程实际验证 |
-| 自研或 Unreal 引擎 | 原生 C API / C++ namespace API | 需要自己把状态映射到资源系统；Unreal 没有官方同等层级的通用插件说明，通常走 native module 封装 |
+| `MEMORYADVICE_STATE_OK` | 当前模型没有产生告警 | 下一次大分配一定成功；LMKD 或 Android 17 MemoryLimiter 不会终止进程 |
+| `MEMORYADVICE_STATE_APPROACHING_LIMIT` | 应停止非必要增长并准备释放可重建资源 | 已经发生 OOM；某个具体模块存在泄漏 |
+| `MEMORYADVICE_STATE_CRITICAL` | 应请求资源系统降低峰值和常驻量 | 系统一定会在固定时间内终止进程 |
+| `MEMORYADVICE_STATE_UNKNOWN` 或负错误码 | 本次状态不可用，应记录错误并切换到其他信号 | 内存安全 |
 
-[已验证: 官方文档, developer.android.com/games/sdk/memory-advice/start] [已验证: 官方文档, developer.android.com/games/engines/unity/memory-advice]
+业务模块不应直接读取这些值。更稳妥的接口是 `Normal`、`Conservative`、`Emergency` 之类的引擎资源档位，由一个进程级策略组件把信号映射到档位。
 
-接入前要先做一次取舍：历史项目可继续维护；新项目优先使用 `onTrimMemory()`、引擎内存预算、Android Vitals LMK、`ApplicationExitInfo`、Perfetto / Android Studio Profiler 组成的组合方案。官方已经把 Memory Advice API 标为 deprecated 后，把它作为新增依赖会引入维护风险。
+## 发行形态与适用边界
 
+Memory Advice 曾通过三种渠道分发：
 
-<!-- AIW-源码调研-2026-06-05 -->
-### 源码层验证：Memory Advice 库在 AOSP 公开分支的实际状态
+- Android Games Jetpack 的 `androidx.games:games-memory-advice`；
+- AGDK 二进制发行包；
+- AOSP 的 `frameworks/opt/gamesdk` 独立仓库源码。
 
-| 维度 | Android Developers 文档 | AOSP main / android-16.0.0_r3 源码 |
-|---|---|---|
-| 库可用性 | 顶部 banner "The Memory Advice API beta is now deprecated, and no longer recommended for use" | 完整保留 v2.2.0，未删除 .cpp/.h，未在源码内加 `@Deprecated` 标注 |
-| `versionName` / `versionCode` | – | `1.1` / `1`（build.gradle） |
-| `targetSdkVersion` / `compileSdk` | – | `35` / `31`（build.gradle） |
-| `namespace` | – | `com.google.androidgamesdk.memory_advice`（build.gradle） |
-| 状态机实现 | – | `MemoryAdviceImpl::GetMemoryState()` 走 `available.tflite` + `available_features.json` 预测 `predictedAvailable`；按 `heuristics.formulas` 输出 `MEMORYADVICE_STATE_OK/APPROACHING_LIMIT/CRITICAL` |
+官方 Android Studio 指南使用 `games-memory-advice:1.0.0-beta01`、Prefab 和 `games-memory-advice::memory_advice` CMake target。这些内容是历史维护参考，不是推荐新接入的版本清单。
 
-AOSP 关键源码（main，2026-06-05 抓取）：
+运行环境也有限制：
+
+- 面向以 C/C++ 为主的 native 应用；
+- 只支持物理设备，不支持模拟器；
+- 官方总览记录的最低系统要求为 Android 4.4（API 19），具体二进制还要遵守其 release notes、NDK 与 STL 组合；
+- Unity 官方插件页面只列出 Unity 2019—2022 与 NDK r19/r21/r23 的已测组合。
+
+这些旧组合不能证明现代 Unity、NDK 或 Android 17 工程仍受支持。历史项目应锁定现有插件、NDK、STL 和构建工具版本，先建立可复现构建，再评估迁移；源码仍留在 AOSP 仓库也不表示产品支持仍在继续。
+
+## 从源码理解状态与“可用内存”
+
+固定 commit 的 `memory_advice.h` 定义了四个状态，以及下列主要 C API：
+
+- `MemoryAdvice_init()`：在其他调用之前初始化；
+- `MemoryAdvice_getMemoryState()`：同步计算状态；
+- `MemoryAdvice_getAvailableMemory()`：返回模型估算的安全可分配字节数；
+- `MemoryAdvice_getPercentageAvailableMemory()`：返回估算百分比；
+- `MemoryAdvice_getTotalMemory()`：返回设备总内存；
+- `MemoryAdvice_registerWatcher()` / `MemoryAdvice_unregisterWatcher()`：注册或移除 watcher。
+
+`GetAvailableMemory()`不是 `/proc/meminfo` 的 `MemAvailable`。源码计算方式是：
+
+> `predictedAvailable × GetTotalMemory()`
+
+`predictedAvailable`来自模型预测，`GetTotalMemory()`来自初始化 baseline 中的 `ActivityManager.MemoryInfo.totalMem`。`metrics_provider.cpp`还读取 `/proc/meminfo`、当前进程 `/proc/<pid>/status`、`oom_score`、`ActivityManager.getMemoryClass()`、`getLargeMemoryClass()`和 `isLowRamDevice()` 等指标。
+
+`GetMemoryState()`会读取 advice JSON：存在 red warning 时返回 `CRITICAL`，存在其他 warning 时返回 `APPROACHING_LIMIT`，没有 warning 时返回 `OK`。这说明状态是模型与规则的结果，并非内核或图形驱动直接报告的剩余容量。官方所说的图形内存“纳入估算”，也不能理解为库逐项枚举了每个 Vulkan allocation。
+
+## watcher 的线程与生命周期
+
+官方文档给出三个必须保留的行为：
+
+- watcher 在库创建的独立线程中执行回调；
+- 每次计算状态通常消耗 1—3 ms，频率要根据设备与游戏负载决定；
+- 状态为 `OK` 时不调用 watcher，只有非 `OK` 状态才回调。
+
+AOSP `state_watcher.cpp`进一步说明，内部线程按 `intervalMillis`休眠，然后调用 `GetMemoryState()`。这带来几个工程后果：
+
+- 回调不能直接销毁纹理、mesh、scene graph 或其他要求引擎线程亲和性的对象；
+- watcher 不会通知状态恢复为 `OK`，恢复策略必须在引擎线程主动复查；
+- 过短间隔会增加计算开销，过长间隔会延迟建议，没有一个适用于所有设备的固定值；
+- `MemoryAdvice_unregisterWatcher(callback)`按函数指针移除所有同 callback 的 watcher，不是按注册句柄精确移除；
+- 注销与回调可能存在并发窗口，`user_data` 的生命周期必须长于可能执行中的回调。
+
+下面的适配层只把最高压力等级写入原子变量。资源线程随后读取并执行策略，watcher 线程不触碰引擎对象。
 
 ```cpp
-// platform/frameworks/opt/gamesdk/include/memory_advice/memory_advice.h
-typedef enum MemoryAdvice_MemoryState : int32_t {
-  MEMORYADVICE_STATE_UNKNOWN = 0,
-  MEMORYADVICE_STATE_OK = 1,
-  MEMORYADVICE_STATE_APPROACHING_LIMIT = 2,
-  MEMORYADVICE_STATE_CRITICAL = 3,
-} MemoryAdvice_MemoryState;
-```
-
-```cpp
-// platform/frameworks/opt/gamesdk/games-memory-advice/core/memory_advice_impl.cpp
-MemoryAdvice_MemoryState MemoryAdviceImpl::GetMemoryState() {
-    Json::object advice = GetAdvice();
-    if (advice.find("warnings") != advice.end()) {
-        Json::array warnings = advice["warnings"].array_items();
-        for (auto& it : warnings) {
-            if (it.object_items().at("level").string_value() == "red") {
-                return MEMORYADVICE_STATE_CRITICAL;
-            }
-        }
-        return MEMORYADVICE_STATE_APPROACHING_LIMIT;
-    }
-    return MEMORYADVICE_STATE_OK;
-}
-```
-
-工程含义：源码 v2.2.0 与 `targetSdkVersion 35` 表明 AOSP 内部仍在维护，但文档已挂 deprecation banner。新项目接入建议遵循 23.10 节"接入前要先做一次取舍"——把 Memory Advice 包成可替换的"信号源"层，未来切到 `TRIGGER_TYPE_OOM` / `TRIGGER_TYPE_ANOMALY` 时业务侧不用改。`TRIGGER_TYPE_OOM` 与 Memory Advice 的关键差异：前者是 Java OOM 异常的当场 heap dump（一次性事件），后者是 TFLite 预测的连续状态信号。两者在产物类型（heap dump vs JSON 状态）上完全不同，**不能视为等价替代**。
-<!-- /AIW-源码调研-2026-06-05 -->
-
-## MemoryState、可用内存与 watcher 回调
-
-AOSP 头文件 `include/memory_advice/memory_advice.h` 定义了 C API 的状态和接口。状态枚举包括 `UNKNOWN`、`OK`、`APPROACHING_LIMIT`、`CRITICAL`；查询接口包括 `MemoryAdvice_getMemoryState()`、`MemoryAdvice_getAvailableMemory()`、`MemoryAdvice_getPercentageAvailableMemory()`、`MemoryAdvice_getTotalMemory()`；watcher 通过 `MemoryAdvice_registerWatcher(intervalMillis, callback, user_data)` 注册。[已验证: AOSP master, frameworks/opt/gamesdk/include/memory_advice/memory_advice.h]
-
-这段示例只展示 watcher 应该触发什么等级的动作，主要看状态到资源动作的映射，不要照搬为发布代码。
-
-```cpp
+#include <atomic>
+#include <cstdint>
 #include <memory_advice/memory_advice.h>
 
-static void OnMemoryAdvice(MemoryAdvice_MemoryState state, void* user_data) {
-  auto* budget = static_cast<GameMemoryBudget*>(user_data);
+namespace {
+std::atomic<int32_t> g_pending_state{MEMORYADVICE_STATE_OK};
+std::atomic<bool> g_watcher_registered{false};
 
-  switch (state) {
-    case MEMORYADVICE_STATE_APPROACHING_LIMIT:
-      budget->StopLevelPreload();
-      budget->ShrinkRebuildableCaches();
-      break;
-    case MEMORYADVICE_STATE_CRITICAL:
-      budget->DropTextureQualityOneStep();
-      budget->ReleaseUnusedSceneAssets();
-      budget->FlushPipelineCacheIfSafe();
-      break;
-    default:
-      break;
+void OnMemoryAdvice(MemoryAdvice_MemoryState state, void*) {
+  int32_t expected = g_pending_state.load(std::memory_order_relaxed);
+  const int32_t incoming = static_cast<int32_t>(state);
+  while (expected < incoming &&
+         !g_pending_state.compare_exchange_weak(
+             expected,
+             incoming,
+             std::memory_order_release,
+             std::memory_order_relaxed)) {
   }
 }
+}  // namespace
 
-void RegisterMemoryAdvice(GameMemoryBudget* budget) {
-  constexpr uint64_t kIntervalMs = 2000;
-  MemoryAdvice_registerWatcher(kIntervalMs, OnMemoryAdvice, budget);
+bool StartMemoryAdviceWatcher(uint64_t interval_millis) {
+  if (interval_millis == 0 || g_watcher_registered.exchange(true)) {
+    return false;
+  }
+
+  const auto error = MemoryAdvice_registerWatcher(
+      interval_millis,
+      OnMemoryAdvice,
+      nullptr);
+  if (error != MEMORYADVICE_ERROR_OK) {
+    g_watcher_registered.store(false);
+    return false;
+  }
+  return true;
+}
+
+MemoryAdvice_MemoryState ConsumeMemoryAdviceState() {
+  return static_cast<MemoryAdvice_MemoryState>(
+      g_pending_state.exchange(
+          MEMORYADVICE_STATE_OK,
+          std::memory_order_acq_rel));
+}
+
+void StopMemoryAdviceWatcher() {
+  if (!g_watcher_registered.exchange(false)) {
+    return;
+  }
+  MemoryAdvice_unregisterWatcher(OnMemoryAdvice);
 }
 ```
 
-发布代码还要补三件事：初始化失败时降级为自研采样；引擎销毁或场景切换时调用 `MemoryAdvice_unregisterWatcher()`；所有释放动作都要保证在引擎线程模型下安全执行。AOSP `state_watcher.cpp` 显示 watcher 内部会创建线程，按 `intervalMillis` sleep 后调用 `GetMemoryState()`，只有状态不为 `OK` 时才回调业务函数。[已验证: AOSP master, frameworks/opt/gamesdk/games-memory-advice/core/state_watcher.cpp]
+调用这段代码前仍须检查 `MemoryAdvice_init()`返回值。引擎资源线程定期调用 `ConsumeMemoryAdviceState()`，再把压力请求交给策略组件。示例使用进程期全局状态，避免短生命周期对象成为 `user_data`；发布代码还要记录注册、注销与初始化错误码。
 
-`GetAvailableMemory()` 也不能按“系统剩余内存”理解。AOSP `memory_advice_impl.cpp` 的实现是读取预测出的 `predictedAvailable`，再乘以 `GetTotalMemory()` 得到估算字节数；`GetTotalMemory()` 来自 baseline 中的 `totalMem`。`metrics_provider.cpp` 会从 `/proc/meminfo`、`/proc/<pid>/status`、`oom_score`、`ActivityManager.MemoryClass`、`LargeMemoryClass`、`isLowRamDevice()` 等来源取指标，再交给预测模型。[已验证: AOSP master, frameworks/opt/gamesdk/games-memory-advice/core/memory_advice_impl.cpp] [已验证: AOSP master, frameworks/opt/gamesdk/games-memory-advice/core/metrics_provider.cpp]
+`CRITICAL`被消费后不能立即恢复高资源档位。watcher 不报告 `OK`，策略组件应通过低频 polling 确认恢复，并使用由实测确定的滞回条件，防止纹理反复卸载和重载。
 
-这带来三个边界：
+## 从压力状态到资源动作
 
-- 采样有成本。官方文档写明每次生成内存状态通常需要 1-3ms，频率由设备和游戏负载决定。2s 轮询只是示例，不应在每帧或高频资源分配点调用。
-- 状态有预测成分。它适合控制资源预算，不适合写成精确容量保证。大块 Vulkan allocation、驱动内部图形内存、厂商 allocator 行为都可能让实际结果偏离估算。
-- 回调线程不能直接改渲染对象。纹理、pipeline cache、scene graph 的释放应投递到引擎资源线程或渲染线程，不能在 watcher 回调里直接销毁 GPU 对象。
+降级动作必须满足三个条件：资源可重建、释放线程正确、释放成本可控。
 
-## 与 LMKD、ApplicationExitInfo、Android Vitals 的分工
-
-Memory Advice API、LMKD、`ApplicationExitInfo` 和 Android Vitals 解决的是同一类问题的不同阶段。
-
-| 阶段 | 工具 / 信号 | 能回答的问题 | 不能回答的问题 |
+| 资源类别 | `APPROACHING_LIMIT` 请求 | `CRITICAL` 请求 | 验证重点 |
 | --- | --- | --- | --- |
-| 运行中 | Memory Advice API / `onTrimMemory()` / 引擎预算 | 当前是否应主动降低资源占用 | 进程被杀的最终原因 |
-| 系统回收 | LMKD / PSI / 内核回收信号 | 系统是否因内存压力回收进程 | 应用内部哪类资产增长失控 |
-| 下次启动 | `ApplicationExitInfo` | 上一次退出是否可能是低内存、ANR、native crash 等 | 退出前每个资源模块的占用曲线 |
-| 线上聚合 | Android Vitals LMK rate / Play Developer Reporting API | 用户感知 LMK 是否在版本、机型、地区上升 | 单个会话里哪一次 allocation 触发临界点 |
-| 根因分析 | `dumpsys meminfo`、Perfetto、heapprofd、Android Studio Profiler | Java / Native / Graphics / DMA-BUF / 线程栈等占用来源 | 自动给出业务释放方案 |
+| 纹理 | 停止更高 mip 或更高分辨率的预取；限制新缓存增长 | 卸载不在当前视野且可重建的高分辨率资源；后续加载降低质量 | Graphics、DMA-BUF、帧时间、重载次数 |
+| mesh/动画 | 缩短预加载距离；阻止池继续扩容 | 卸载远距离高 LOD、非当前角色动画数据 | native/graphics 内存、切场景卡顿 |
+| 音频 | 减少非即时音效预解码；限制缓存增长 | 释放可从包体重建的解码缓存 | native 内存、音频缺失与解码尖峰 |
+| 场景流式加载 | 暂停推测性加载 | 取消非当前路径的加载任务并回收 staging buffer | 峰值、I/O、任务取消正确性 |
+| 对象池与 arena | 冻结容量增长 | 按空闲块和重建成本缩减；保留活跃对象 | allocator 保留量、碎片、下一次扩容 |
+| shader/pipeline 数据 | 限制新建与预热范围 | 只清理引擎已证明可重建、低命中的缓存 | 编译卡顿、驱动内存、缓存命中 |
 
-LMKD 依据系统压力和进程优先级做回收，应用侧无法通过 Memory Advice API 阻止 LMKD。`ApplicationExitInfo` 是事后归因入口，详见 26.9 节；低内存对系统性能的影响和 LMKD 触发路径详见 10.4 节。
+“清理 pipeline cache”不能作为通用动作。磁盘序列化缓存、CPU 侧缓存和驱动对象的生命周期不同；盲目清理可能没有可测内存收益，却增加 shader 编译卡顿。每一种动作都要对应引擎的所有权模型和前后指标。
 
-Android Vitals 的 LMK 指标适合看版本质量和机型分布。若某版本的 user-perceived LMK rate 上升，端侧可以回放该版本的 Memory Advice 状态、资源档位、PSS / RSS / Graphics 曲线，确认是否存在资源预算失控。Android Vitals 不会告诉你“哪张纹理应该释放”。
+GPU 对象还受命令队列与 fence 生命周期约束。资源已经从业务容器移除，不代表驱动可以立即释放底层内存。应使用引擎现有的延迟销毁队列，并把“发出释放请求”和“系统指标下降”记录为两个检查点。
 
-## 游戏资产与图形内存降级策略
+## Android 17 上应采用的替代结构
 
-Memory Advice API 的价值取决于资源系统是否有可执行动作。只监听状态、不改变资源预算，线上结果不会变。
+Memory Advice deprecated 后，没有一个新 API 可以原样替代其连续预测状态。Android 官方当前建议组合使用：
 
-一套可执行的分级表通常长这样：
+- 引擎自有的内存预算与资产计数；
+- `TRIM_MEMORY_UI_HIDDEN`、`TRIM_MEMORY_BACKGROUND`等仍有效的生命周期机会，释放进入后台后可重建的资源；
+- `dumpsys meminfo`、Perfetto、Android Studio、Unity Memory Profiler 或 Unreal Memory Insights 做定位；
+- `ApplicationExitInfo`识别上一次运行的低内存或 Android 17 MemoryLimiter 退出；
+- Android Vitals 的 user-perceived LMK rate 观察用户影响。
 
-| 压力等级 | 纹理 / 图片 | mesh / 动画 | 音频 | 关卡与场景 | 引擎缓存 |
-| --- | --- | --- | --- | --- | --- |
-| `OK` | 按设备档位加载 | 保持当前 LOD | 保持当前采样率和缓存 | 保持预加载窗口 | 维持命中率优先 |
-| `APPROACHING_LIMIT` | 停止加载更高 mip / 高分辨率贴图 | 新对象使用较低 LOD | 限制长音频预解码 | 缩短下一场景预加载窗口 | 清理可重建缓存，冻结对象池扩容 |
-| `CRITICAL` | 降低一档纹理质量，释放屏外大贴图 | 释放不可见角色高模资源 | 清理非即时音效缓存 | 取消后台关卡流式加载 | 释放 shader / pipeline cache 中低命中项，回收临时 arena |
+这里不能把 `onTrimMemory()`当成 native 内存压力传感器。Android 官方说明，大多数旧 trim level 已废弃，仍保留的 level 主要表达 UI 隐藏或后台状态。它们适合触发后台资源清理，无法提供 Memory Advice 那样的预测状态。
 
-这些动作要满足两个约束。第一，释放后必须可恢复；用户切回高画质或进入新场景时能重新加载。第二，释放路径本身不能制造卡顿；大批量 GPU 资源销毁应分帧执行，并记录每批资源数量、耗时和释放前后内存指标。
+一个可替换的策略组件可以保留相同结构：
 
-游戏项目容易把 Java Heap 优化当成全部内存优化。Memory Advice API 的估算会把 Native Heap 和图形 API 分配纳入视野，实际治理也要把 Java 对象、Native arena、纹理、DMA-BUF、线程栈一起纳入预算。Java Heap 收缩了，但 Vulkan 纹理池继续涨，LMK 风险不会自然消失。Native 内存排查详见 23.3 节，线上水位线详见 23.7 节。
+| 层 | 输入/输出 | 约束 |
+| --- | --- | --- |
+| 信号层 | 引擎占用、PSS/RSS 采样、生命周期、历史退出、可选旧 Memory Advice | 每个信号标明来源、单位、延迟和失败状态 |
+| 策略层 | 根据设备、场景与预算输出资源档位 | 不直接操作纹理或对象池 |
+| 执行层 | 在正确线程分批释放、降规格或暂停加载 | 动作可取消、可恢复、可记录 |
+| 验证层 | 峰值、回落、帧时间、LMK/MemoryLimiter 退出 | 同设备与同场景比较 |
 
-## Perfetto 与 meminfo 验证方法
+这样可以移除旧库，而不修改每个资源模块。
 
-Memory Advice 状态只能作为输入信号，发布前要用系统指标复核。最小验证路径分四层：
+## 与 LMKD、ApplicationExitInfo、Vitals 的分工
 
-| 验证层 | 命令 / 工具 | 读数 | 用法 |
+| 阶段 | 信号或工具 | 能回答的问题 | 不能回答的问题 |
 | --- | --- | --- | --- |
-| 进程全景 | `adb shell dumpsys meminfo <package>` | PSS、Private Dirty、Java Heap、Native Heap、Graphics | 确认状态变化前后进程总占用是否下降 |
-| VMA 明细 | `/proc/<pid>/maps`、`/proc/<pid>/smaps_rollup` | `[anon:*]`、`.so`、ashmem、dmabuf 映射 | 区分 Native arena、线程栈、图形 buffer 和文件映射 |
-| 分配调用栈 | Perfetto heapprofd / Android Studio Native Memory Profiler | Native allocation callstack、malloc RSS 差异 | 找到哪个模块持续分配，避免只按资源类型猜 |
-| 图形内存 | Perfetto memory counters、GPU / DMA-BUF 相关轨道、厂商工具 | graphics PSS、DMA-BUF、Vulkan / GL 分配趋势 | 验证纹理和图形 buffer 降级是否反映到系统口径 |
+| 运行时 | Memory Advice（历史项目）、引擎预算、有效 trim 回调 | 是否请求资源降级 | 系统会在何时、以何种原因终止进程 |
+| 系统压力 | LMKD、PSI 与回收机制 | 系统是否处于资源竞争 | 哪个业务资产应释放 |
+| 下次启动 | `ApplicationExitInfo` | 最近进程退出原因与系统最近内存采样 | 每个资源模块的完整时间序列 |
+| 线上聚合 | Android Vitals user-perceived LMK rate | 版本、设备和用户群的 LMK 影响 | 单次会话的分配栈 |
+| 根因定位 | meminfo、Perfetto、heapprofd、引擎 profiler | 内存类别、趋势与调用栈 | 自动选择无副作用的业务降级 |
 
-Perfetto heapprofd 适合解释 Native Heap 由谁分配，但它和 `malloc_info()`、RSS、PSS 的口径不同。Perfetto 文档也提示：heapprofd 看到的是分配调用栈，RSS 还受 allocator 缓存、ZRAM、页面驻留影响；`dumpsys meminfo` 的 Private Dirty 更接近系统侧回收成本。[已验证: Perfetto docs, perfetto.dev/docs/data-sources/native-heap-profiler]
+LMKD 基于系统压力和进程优先级选择目标。内核 PSI 量化 CPU、memory、I/O 争用导致的 stall；它是系统守护进程的重要输入，不是 Memory Advice watcher 的回调来源。应用不能依靠 Memory Advice 阻止 LMKD。
 
-一次合格的验证至少包含三组数据：
-
-- 状态序列：每次 `MemoryState` 变化、`GetAvailableMemory()`、资源档位、场景名、帧率档位。
-- 内存序列：PSS / RSS / Java Heap / Native Heap / Graphics / DMA-BUF，按场景和设备 RAM 档位分组。
-- 结果序列：LMK、`ApplicationExitInfo` reason、冷启动回访、卡顿率、资源降级用户感知投诉。
-
-如果 `CRITICAL` 出现后内存没有下降，要查释放动作是否只清了 Java 缓存；如果内存下降但卡顿上升，要查释放动作是否集中在渲染线程；如果状态长期 `OK` 但 Vitals LMK 上升，要回到 LMKD、机型 RAM 档位和图形内存口径重新核对。
-
-## Unity / Unreal 接入差异
-
-Unity 官方插件把 C API 包装成 C# 可调用接口，示例同样围绕 `GetMemoryState()` 和 watcher 展开。它适合历史 Unity 项目做最小接入，但版本组合要按官方列出的 Unity / NDK 对照关系验证，不能只看 Android API level。[已验证: 官方文档, developer.android.com/games/engines/unity/memory-advice]
-
-Unreal 或自研引擎更适合在 native 层封装一层 `MemoryPressureService`，对外只暴露资源预算变化。例如：
-
-- `MemoryPressure::Normal`: 维持当前资源档位。
-- `MemoryPressure::Conservative`: 停止预加载，缩小缓存。
-- `MemoryPressure::Emergency`: 分帧释放非当前视野资源，降低纹理质量。
-
-这样做的好处是后续替换信号源不会影响资源系统。Memory Advice API 废弃后，可以把信号源切到 `onTrimMemory()`、自研 PSS/RSS 采样、Android Vitals 线上阈值、`ApplicationExitInfo` 回访结果，而业务层不用改。
+读取低内存退出时，还要先检查 `ActivityManager.isLowMemoryKillReportSupported()`；设备不支持报告时，缺少 `REASON_LOW_MEMORY`记录不等于没有 LMK。Android 17 MemoryLimiter 则使用 23.9 所述的 `REASON_OTHER + MemoryLimiter:AnonSwap`。
 
 ## 与 Android 17 App Memory Limits 的关系
 
-23.9 节讨论的是 Android 17 App Memory Limits 和内存泄漏治理，它关注系统侧限制、退出归因和触发式诊断。Memory Advice API 关注的是运行中提前降级。两个方向的关系可以按时间顺序理解：
+Android 17 App Memory Limits 根据设备总 RAM 和 vendor 配置限制部分设备上的应用进程。Memory Advice 的预测模型并不知道某台 Android 17 设备当前的 MemoryLimiter 配置，也没有 API 保证 `APPROACHING_LIMIT`或 `CRITICAL`一定先于系统限制命中。
 
-1. 运行中：Memory Advice API 或替代信号提示引擎收缩资源预算。
-2. 接近系统限制：`onTrimMemory()`、系统内存压力、LMKD 风险升高。
-3. 退出后：`ApplicationExitInfo`、Android Vitals、端侧日志回放确认是否低内存退出。
-4. 下一版本：把退出归因回灌到资源预算表，调整纹理、关卡预加载、对象池上限。
+两者的关系只能表述为：
 
-如果 Android 17 App Memory Limits 在目标设备上提供更明确的退出归因，Memory Advice API 仍然不能替代它；它只能作为“退出前尝试自救”的一类输入。新项目应优先围绕系统公开诊断能力和自研预算体系搭建，不要因为历史 API 名字里带 advice 就把它放到架构中心。
+- Memory Advice 可作为历史项目中的一项提前降级输入；
+- Android 17 MemoryLimiter 是系统保护机制，命中后可通过 `ApplicationExitInfo`归因，并可触发 anomaly heap dump；
+- 资源预算与系统验证决定降级是否有效，不能用 Memory Advice 状态代替 MemoryLimiter 证据。
 
-## 线上灰度策略
+对于新项目，连续运行时决策应来自引擎预算和经过校准的进程指标。`TRIGGER_TYPE_ANOMALY`产生的是命中异常时的诊断 artifact，不是连续压力回调，不能用来重建 Memory Advice 状态机。
 
-内存降级策略不能一次性对所有用户打开。推荐按“只采集 → 温和动作 → 激进动作”三阶段灰度：
+## Perfetto 与 meminfo 的验证方法
 
-| 阶段 | 开关 | 动作 | 退出条件 |
-| --- | --- | --- | --- |
-| 只采集 | 记录状态、场景、内存曲线，不改变资源 | 建立状态与 LMK / 卡顿的相关性 | 数据覆盖主力机型和低 RAM 档位 |
-| 温和动作 | `APPROACHING_LIMIT` 触发停止预加载、清理可重建缓存 | 观察卡顿率、资源重载耗时、用户画质感知 | LMK 下降且卡顿无明显上升 |
-| 激进动作 | `CRITICAL` 触发画质降档、释放图形资源 | 小流量灰度，强制记录释放批次和耗时 | 有明确收益，且投诉和卡顿指标可控 |
+压力状态只能触发实验，系统指标才用于确认资源动作是否有效。
 
-端侧日志要能回答四个问题：什么场景触发、哪个状态触发、释放了多少资源、释放后系统口径是否下降。缺少这四个字段，线上只会留下“某次回调触发过”的弱证据。
+| 证据 | 适合回答的问题 | 边界 |
+| --- | --- | --- |
+| `dumpsys meminfo <package>` | Java、Native、Graphics、Private Dirty、总体 PSS 的检查点差异 | 分类受版本和实现影响，单次快照不能说明趋势 |
+| Perfetto memory counters / 长 trace | RSS 峰值、回收与场景时间关系 | 需要固定设备、trace 配置和动作脚本 |
+| heapprofd | `malloc/free` 等 native 分配的存活字节与调用栈 | 不覆盖所有图形、映射和自定义 allocator |
+| `/proc/<pid>/smaps_rollup` / `smaps` | 匿名页、文件映射和 VMA 证据 | 量产 user 设备上的 adb shell 通常无权限 |
+| GPU、DMA-BUF 与引擎工具 | 纹理、缓冲与渲染资源趋势 | 可见性取决于设备、驱动、权限与工具 |
+| Unity/Unreal profiler | 引擎资源分类、快照和标签 | 与系统 PSS/RSS 口径不同，需要对齐时间点 |
+
+RSS 采集成本通常低于 PSS，更适合观察细粒度峰值；PSS 适合比较共享页按比例分摊后的进程规模。二者都不能直接替代资产计数。
+
+一次回归至少包含：
+
+- 相同设备、构建、关卡、输入与动作序列；
+- 动作前、资源峰值、降级请求、降级完成、场景退出和冷却后的检查点；
+- 状态或策略输入、每批资源动作、Java/Native/Graphics/PSS/RSS 与帧时间；
+- 下一次启动读取到的退出原因，以及线上 LMK/MemoryLimiter 聚合。
+
+若收到 `CRITICAL`后内存没有下降，应检查动作是否只修改了逻辑档位、资源是否仍被引用、GPU 是否仍等待 fence、allocator 是否保留空闲页。若内存下降而帧时间恶化，应检查销毁批次、重新加载和 shader 编译。若状态长期为 `OK`而 LMK 上升，应停止依赖该预测，回到设备分组和系统证据。
+
+## Unity、Unreal 与自研引擎
+
+历史 Unity 项目若已使用官方插件，应保留它列出的 Unity/NDK 组合，并用 Unity Memory Profiler 与系统指标验证。迁移到现代 Unity 或 NDK 时，deprecated 插件应视为待移除依赖，不能只通过编译成功判断兼容。
+
+官方没有提供与 Unity 插件同级的通用 Unreal Memory Advice 接入说明。Unreal 项目更适合用 Memory Insights、Low Level Memory tags 和平台层信号建立自己的策略组件。自研引擎也应在 native 平台层封装信号，不把 C API 传播到纹理、音频和场景模块。
+
+无论引擎类型，资源动作都要用引擎的线程、引用和延迟销毁机制。直接从 watcher 线程调用资源释放 API，是最需要避免的接入错误。
+
+## 线上灰度
+
+迁移或调整降级策略时，按三个阶段验证：
+
+1. **只记录**：保存信号来源、场景、设备、资源档位和系统内存，不改变资源。
+2. **低风险动作**：停止推测性预加载、限制缓存增长、清理明确可重建的空闲资源。
+3. **高影响动作**：降低后续纹理质量、缩短流式加载距离、卸载非当前场景资源。
+
+每个动作都要记录请求时间、执行线程、资源数量或字节、完成时间、系统指标变化和用户体验指标。灰度比例、观察时长与预算线来自项目基线，不在通用章节中给固定数字。
+
+回滚应能单独禁用某个信号源或某类动作，并让其余诊断组件继续工作。若旧 Memory Advice 与自研预算给出不同结果，日志必须保留两者原始值，策略层只输出一份最终决定。
 
 ## 小结
 
-Memory Advice API 的发布口径已经变了：它是一个已废弃的 beta 库，不适合作为新项目首选方案。历史项目维护时，可以把它当作运行时内存压力信号，驱动游戏资源系统做分级降级；所有结论都要用 `dumpsys meminfo`、Perfetto、heapprofd、`ApplicationExitInfo` 和 Android Vitals 复核。
+Memory Advice API 已经 deprecated。历史项目可以继续把它当成一个带预测成分的运行时信号，但要记住：
 
-对游戏内存治理来说，最稳的结构是信号源可替换、资源预算可配置、释放动作可回放。Memory Advice API 只是其中一个信号源。
+- `GetAvailableMemory()`是模型估算，不是系统剩余内存；
+- watcher 在库线程执行，且不会回调恢复到 `OK`；
+- 资源释放必须切换到引擎规定的线程，并通过系统指标验证；
+- LMKD、Android 17 MemoryLimiter、`ApplicationExitInfo`和 Android Vitals 分别处理系统处置、退出归因与线上聚合；
+- 新项目应使用可替换信号层、引擎预算、资源策略和验证工具，不再新增该库依赖。
+
+这套分层比任何单一压力 API 更重要：信号可以变化，资源所有权、预算和复测证据必须长期稳定。
 
 ## 参考资料
 
-- [Memory Advice API overview](https://developer.android.com/games/sdk/memory-advice/overview)
-- [Get started with the Memory Advice API](https://developer.android.com/games/sdk/memory-advice/start)
-- [Manage memory effectively in games](https://developer.android.com/games/optimize/memory-allocation)
-- [memory_advice namespace reference](https://developer.android.com/reference/games/memory-advice/namespacememory/advice)
-- [Low memory killers | Android Developers](https://developer.android.com/games/optimize/vitals/lmk)
-- [AOSP gamesdk memory_advice.h](https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/master/include/memory_advice/memory_advice.h)
-- [AOSP gamesdk MemoryAdviceImpl](https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/master/games-memory-advice/core/memory_advice_impl.cpp)
-- [AOSP gamesdk MetricsProvider](https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/master/games-memory-advice/core/metrics_provider.cpp)
-- [AOSP gamesdk StateWatcher](https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/master/games-memory-advice/core/state_watcher.cpp)
-- [结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
-- [结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
-- [结构参考: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md]
-- [结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md]
+- [Android Developers：Memory Advice API overview](https://developer.android.com/games/sdk/memory-advice/overview)
+- [Android Developers：Get started with the Memory Advice API](https://developer.android.com/games/sdk/memory-advice/start)
+- [Android Developers：Manage memory effectively in games](https://developer.android.com/games/optimize/memory-allocation)
+- [Android Developers：Memory Advice C++ reference](https://developer.android.com/reference/games/memory-advice/namespacememory/advice)
+- [Android Developers：Low memory killers and Android Vitals](https://developer.android.com/games/optimize/vitals/lmk)
+- [Android Developers：Memory Advice for Unity](https://developer.android.com/games/engines/unity/memory-advice)
+- [Android Developers：Android 17 App memory limits](https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits)
+- [Perfetto：Native heap profiler](https://perfetto.dev/docs/data-sources/native-heap-profiler)
+- [Games SDK commit `044fd03c...`：`memory_advice.h`](https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/044fd03c4a7d3b75aeb6ca2bd7fb6155d2cdb787/include/memory_advice/memory_advice.h)
+- [Games SDK commit `044fd03c...`：`memory_advice_impl.cpp`](https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/044fd03c4a7d3b75aeb6ca2bd7fb6155d2cdb787/games-memory-advice/core/memory_advice_impl.cpp)
+- [Games SDK commit `044fd03c...`：`metrics_provider.cpp`](https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/044fd03c4a7d3b75aeb6ca2bd7fb6155d2cdb787/games-memory-advice/core/metrics_provider.cpp)
+- [Games SDK commit `044fd03c...`：`state_watcher.cpp`](https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/044fd03c4a7d3b75aeb6ca2bd7fb6155d2cdb787/games-memory-advice/core/state_watcher.cpp)
+- [AOSP `android-17.0.0_r1`：`MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java)
+- [Android Common Kernel `android17-6.18-2026-06_r6`：PSI](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/accounting/psi.rst)
