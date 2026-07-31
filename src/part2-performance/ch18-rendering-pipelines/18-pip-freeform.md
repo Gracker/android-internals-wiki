@@ -1,37 +1,118 @@
 ---
 
-title: "PIP 与自由窗口渲染"
+title: "Android 17 PiP 与自由窗口渲染"
 chapter: "18.18"
 section: "18.18"
-section_title: "PIP 与自由窗口渲染"
+section_title: "Android 17 PiP 与自由窗口渲染"
 status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-07-07"
-last_verified_against: "AOSP android-17.0.0_r1 ViewRootImpl / Choreographer / DisplayEventReceiver / BLASTBufferQueue / TaskOrganizer / WindowContainerTransaction / PipTaskOrganizer；Android Picture-in-Picture / Multi-Window / SurfaceView 官方文档"
+last_verified: "2026-07-31"
+last_verified_against: "android-17.0.0_r1 (PictureInPictureParams, PictureInPictureUiState, ViewRootImpl, Choreographer, RenderThread, DrawFrameTask, SurfaceSyncGroup, ActivityInfo, AppCompatRecreateOnConfigChangePolicy, BLASTSyncEngine, WindowContainer, PipTaskOrganizer, BLASTBufferQueue, Display, Output, HWComposer) / Android 17 API 37 PiP、大屏 resizability、multi-window 与 per-display desktop 文档 / android17-6.18-2026-06_r6 (sched/core.c, cpuset.c, dma-fence.c, sync_file.c)"
+confidence: high
 sources:
-  - type: official
-    path: "frameworks/base/core/java/android/view/ViewRootImpl.java"
-  - type: official
-    path: "frameworks/base/core/java/android/view/Choreographer.java"
-  - type: official
-    path: "frameworks/base/core/java/android/view/DisplayEventReceiver.java"
-  - type: official
-    path: "frameworks/native/libs/gui/BLASTBufferQueue.cpp"
-  - type: official
-    path: "frameworks/base/core/java/android/window/TaskOrganizer.java"
-  - type: official
-    path: "frameworks/base/core/java/android/window/WindowContainerTransaction.java"
-  - type: official
-    path: "frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/pip/PipTaskOrganizer.java"
-  - type: official
-    path: "frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java"
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S06_multi_window_type.md"
+    role: "多窗口拓扑、共享资源、PiP/Freeform 同步边界与证据方法"
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S06_multi_window_architecture/source.md"
+    role: "WindowManager 容器树、应用 buffer 与 Display 合成架构"
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S06_same_process_multi_viewroot_pipeline/source.md"
+    role: "同进程多 ViewRoot 共享 UI Looper、Choreographer 与 RenderThread"
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S06_cross_process_multi_window_pipeline/source.md"
+    role: "跨进程独立生产、同 Display 统一合成"
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S06_window_geometry_sync_pipeline/source.md"
+    role: "WCT、SurfaceControl 几何与 BLAST buffer transaction 的同步关系"
   - type: official
     path: "https://developer.android.com/develop/ui/views/picture-in-picture"
+    role: "PiP 生命周期、auto-enter、sourceRectHint 与 UI state"
   - type: official
     path: "https://developer.android.com/guide/topics/large-screens/multi-window-support"
+    role: "多窗口生命周期、Configuration 与应用适配"
   - type: official
-    path: "https://developer.android.com/reference/android/view/SurfaceView"
-tags: ["PIP", "画中画", "Freeform", "多窗口", "SurfaceControl", "BLAST", "渲染路径"]
+    path: "https://developer.android.com/about/versions/17/changes/ff-restrictions-ignored"
+    role: "API 37 大屏方向、resizability 与宽高比限制"
+  - type: official
+    path: "https://developer.android.com/guide/topics/resources/runtime-changes"
+    role: "Android 17 Configuration 默认不重建项与 recreateOnConfigChanges"
+  - type: official
+    path: "https://source.android.com/docs/core/display/multi-window"
+    role: "平台多窗口架构与实现边界"
+  - type: official
+    path: "https://source.android.com/docs/core/display/desktop-windowing"
+    role: "Android 17 per-display desktop windowing 与 TaskDisplayArea 状态"
+  - type: official
+    path: "https://developer.android.com/reference/android/window/SurfaceSyncGroup"
+    role: "API 34+ 应用侧 Surface transaction 同步组"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/PictureInPictureParams.java"
+    role: "sourceRectHint、auto-enter、seamless resize 及 r1 默认值实现"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/PictureInPictureUiState.java"
+    role: "进入 PiP 动画阶段的 UI state 回调"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java"
+    role: "窗口 traversal、Choreographer 与下一帧 transaction 同步"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java"
+    role: "ThreadLocal Choreographer 与 UI Looper 帧回调"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/RenderThread.cpp"
+    role: "进程级 HWUI RenderThread 单例"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp"
+    role: "窗口 DrawFrameTask 进入共享 RenderThread queue"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/SurfaceSyncGroup.java"
+    role: "公开 SurfaceSyncGroup 的 transaction 收集与完成回调"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/WindowContainerTransaction.java"
+    role: "Task/TaskFragment bounds、windowing mode 与层级操作"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java"
+    role: "layer position、crop、alpha、reparent 与 buffer transaction"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/pm/ActivityInfo.java"
+    role: "Android 17 跳过 Activity 重建的 compat change 与配置位"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/AppCompatRecreateOnConfigChangePolicy.java"
+    role: "配置资源扫描与 Activity 是否重建的实现"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java"
+    role: "system_server SyncGroup ready、依赖、timeout 与合并 transaction"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowContainer.java"
+    role: "WindowContainer sync 状态、绘制完成与 transaction 收集"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/pip/PipTaskOrganizer.java"
+    role: "PiP leash 动画与结束时 WindowContainerTransaction"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
+    role: "buffer acquire、FREEZE 尺寸保护与下一帧 transaction 合并"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Display.cpp"
+    role: "per-display composition strategy、present 与 fence 提取"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp"
+    role: "client composition、client target 与 Output present 流程"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp"
+    role: "presentOrValidate/validate/present、present fence 与 layer release fence"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c"
+    role: "线程调度与唤醒公共基线"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/cgroup/cpuset.c"
+    role: "cpuset 约束与 CPU 可运行范围"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c"
+    role: "跨设备 buffer 完成依赖"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c"
+    role: "userspace sync_file fence 封装与等待"
+tags: ["PiP", "画中画", "Freeform", "多窗口", "SurfaceControl", "BLAST", "渲染路径"]
 related_chapters: ["2.6", "2.12", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
@@ -65,18 +146,22 @@ finalized_by: "openclaw-task9-auto-promote"
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
+
 - 多窗口在 SurfaceFlinger 侧的 Layer 组织形式
-- PIP 模式的渲染流程与性能考量
+- PiP 模式的渲染流程与性能考量
 - Freeform 窗口 Resize 的竞态条件
 - BLAST Sync 如何缓解 Resize 同步问题
 - 在 Perfetto 中识别多窗口渲染问题
 
 **扩展（可选深入）：**
+
 - Android 12+ TaskFragment/RootTask 的层级变化
 - 折叠屏场景下的多窗口渲染
 - Configuration Change 对渲染的影响
 
 <!-- outline-end -->
+
+# 18.18 Android 17 PiP 与自由窗口渲染
 
 ## 多窗口问题要先分清三个对象
 
@@ -162,9 +247,20 @@ WCT 不携带应用下一块 buffer；SurfaceControl 几何 transaction 也不�
 
 ## 多窗口怎样共享帧调度资源
 
+窗口外观不能确定线程拓扑。定位卡顿前，至少要把场景归入下表中的一类：
+
+| 拓扑 | 应用侧调度 | buffer 与显示侧 |
+| --- | --- | --- |
+| 一个 ViewRoot 内的多栏 UI | 一个 UI Looper、一个 `Choreographer`、一个顶层 App Window buffer | SF 仍只接收这个顶层窗口及其可选子 Surface |
+| 同进程、同 UI 线程的多个 Window | 多个 `ViewRootImpl` 共用该线程的 `Choreographer`，硬件加速绘制进入进程级 RenderThread | 每个 Window 保持独立 BLAST/BufferQueue |
+| 同进程、不同 UI 线程的多个 Window | 每个 Looper 线程有自己的 `Choreographer`，HWUI 窗口仍共用进程级 RenderThread | 每个 Window 保持独立 buffer 周转 |
+| 跨进程多个 Window | 各进程有自己的 UI 调度和 RenderThread | 同一 Display 上的 layer 仍由同一轮 SF/HWC 合成与 present |
+
 同一 UI Looper 上的多个 `ViewRootImpl` 会取得同一个 ThreadLocal `Choreographer`。各窗口把 traversal callback 放进同一个 Looper，callback 到期后仍在 UI 线程串行执行。Window A 的 `performTraversals()` 很长，会压缩 Window B 在同一 VSync 周期内可用的主线程时间。
 
 同一进程的硬件加速窗口各有 renderer/`CanvasContext` 和独立 Surface，但共享进程级 HWUI RenderThread。它们的 `DrawFrame`、buffer dequeue 和 layer update 会进入同一 RenderThread 任务系统。共享线程不等于共享 BufferQueue：每个顶层 Window 仍有自己的 BLAST/buffer 周转和 release 约束。
+
+Android 17 的实现给出了三处可核查的连接点：`ViewRootImpl` 构造时调用 `Choreographer.getInstance()`；`Choreographer` 用 `ThreadLocal` 保存线程实例；HWUI 的 `RenderThread::getInstance()` 返回进程内静态实例，而每个 `DrawFrameTask::postAndWait()` 都向这个实例的 queue 投递任务。因而，排查同进程多窗口时要同时查看 UI 线程串行和 RenderThread 排队，不能仅比较两个 `doFrame()` slice 的长度。
 
 跨进程窗口各有 UI Looper、Choreographer connection 和 RenderThread。它们不在应用线程上串行，却仍会在同一 Display 上竞争：
 
@@ -189,7 +285,7 @@ WCT 不携带应用下一块 buffer；SurfaceControl 几何 transaction 也不�
 
 这个过程没有为 PiP 新建一套 VSync 或 BufferQueue 规则。视频可以保持 24/30fps，Display 仍按 60/90/120Hz present；SF 在多个 display frame 中复用同一块 PiP 视频 buffer 是正常的，不能按“每个 VSync 都没有新 BufferTX”判为丢帧。
 
-[Android 17 `PipTaskOrganizer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/pip/PipTaskOrganizer.java) 是控制面入口；应用窗口的像素提交仍要回到 [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java) 和 BLAST 路径。
+[Android 17 `PipTaskOrganizer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/pip/PipTaskOrganizer.java) 是控制面入口；应用窗口的像素提交仍要回到 [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java) 和 BLAST 路径。
 
 ### `PictureInPictureParams` 直接影响过渡质量
 
@@ -200,12 +296,14 @@ PiP 参数不是装饰信息，几项配置会改变 transition 的处理方式�
 - `setSeamlessResizeEnabled(true)` 只适合可以被系统连续缩放而不出现布局伪影的内容，典型是视频。Android 17 源码注释说明，设为 `false` 时系统会使用额外 transition 遮盖 resize artifact；复杂非视频 UI 应按视觉结果选择。
 - target Android 15 / API 35+ 的应用可通过 `onPictureInPictureUiStateChanged()`，在 enter animation 开始时获知 `isTransitioningToPip()`，及时隐藏标题、推荐卡片等 PiP 不需要的 overlay，避免动画结束后才骤然消失。
 
+`autoEnterEnabled` 在 Android 17 r1 未设置时返回 `false`。`seamlessResizeEnabled` 还存在一处源码与注释不一致：Builder 和字段注释写的是“为兼容旧应用默认 true”，但 `android-17.0.0_r1` 的 `isSeamlessResizeEnabled()` 对 `null` 返回 `false`，`PipTaskOrganizer` 又直接用这个 getter 决定 resize 结束时是否走 snapshot cross-fade。以 r1 运行路径为准时，未设置应按 `false` 分析。应用不应依赖这个隐式值；视频明确传 `true`，复杂 UI 明确传 `false`，再用真机录屏和 trace 验证 transition。
+
 应用应在内容 bounds 或宽高比变化时更新 params。一个很常见的错误是只在 Activity 创建时算一次 `sourceRectHint`，旋转、折叠或播放器 layout 改变后继续使用旧坐标。
 
 ### PiP 的主要性能风险
 
 | 风险 | 发生机制 | 应看证据 |
-|:---|:---|:---|
+| --- | --- | --- |
 | 新 bounds 配旧 buffer | leash geometry 已推进，应用或视频 producer 尚未提供目标内容 | Shell transaction、App BufferTX、目标 DisplayFrame |
 | HWC 路径变化 | 圆角、阴影、alpha、遮挡、HDR/SDR 混合改变整屏 layer 条件 | HWC composition type、client target、SF/GPU 时间 |
 | resize 时内存峰值 | 旧大 buffer 尚未 release，新尺寸 buffer 已开始分配/queue | buffer id/size、dequeue、release fence、内存轨道 |
@@ -221,7 +319,7 @@ Freeform/desktop 拖拽把“geometry 与 buffer 来自不同模块”放大了�
 把旧状态记作 `G0/B0`，新状态记作 `G1/B1`，SF 可能暂时看到：
 
 | 组合 | 视觉结果 |
-|:---|:---|
+| --- | --- |
 | `G0 + B0` | 仍显示旧窗口，内容一致 |
 | `G1 + B0` | 旧内容被缩放、裁剪或 letterbox；策略不当时出现拉伸/黑边 |
 | `G1 + B1` | 新几何与新内容一致 |
@@ -254,7 +352,9 @@ sequenceDiagram
 
 图中 BQ 到 sync group 的箭头表示职责关系，不是一次从 native BLAST 直接调用 Java `BLASTSyncEngine`：buffer transaction 会经对应 WindowContainer 的 sync transaction 被 WMS 收集。
 
-Activity 是否重建取决于 `configChanges` 声明和实际 Configuration 变化。自行处理配置不会免除 layout 适配；让系统重建也要求可靠保存 UI/播放状态。折叠姿态、旋转、caption/Insets、Display 切换可能与 resize 同时发生，排查时要记录完整 `Configuration` 和 WindowMetrics，不能只看宽高。
+Activity 是否重建取决于平台版本、target SDK、manifest 配置和具体的 Configuration 变化。自行处理配置不会免除 layout 适配；让系统重建也要求可靠保存 UI/播放状态。折叠姿态、旋转、caption/Insets、Display 切换可能与 resize 同时发生，排查时要记录完整 `Configuration` 和 WindowMetrics，不能只看宽高。
+
+Android 17 对这条边界又做了一次调整：键盘、键盘可见性、导航设备、触摸屏、颜色模式，以及进入或离开 `UI_MODE_TYPE_DESK` 的 UI mode 变化，默认跳过 Activity 重建并派发 `onConfigurationChanged()`。这条规则仍有实现分支：`AppCompatRecreateOnConfigChangePolicy` 会扫描应用是否带有对应的限定资源，存在相关资源时可恢复重建；应用也可用 `android:recreateOnConfigChanges` 显式选择相应项目。没有发生重建时，Compose 可随配置重组，`AndroidView`、`AndroidFragment` 和自定义资源缓存仍要由应用更新。排查时应以生命周期回调和 `ActivityRecord` 决策为证据，不能只按 manifest 推测。
 
 ## “BLAST Sync”有两层含义
 
@@ -266,13 +366,13 @@ Android 17 的 `BLASTBufferQueue::acquireNextBufferLocked()` 会从 BufferQueue 
 
 `syncNextTransaction()` 用于把下一次取得的 buffer 放进一份 sync transaction，`mergeWithNextTransaction()` 则按 frame number 合并外部 transaction。这些能力解决“应用窗口的下一块 buffer 与相关 layer 状态如何一起提交”，不会凭空知道业务所说的“下一帧视频”是哪一块。
 
-[Android 17 `BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp) 可核查 `acquireNextBufferLocked()`、`syncNextTransaction()` 和 `mergeWithNextTransaction()`。
+[Android 17 `BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp) 可核查 `acquireNextBufferLocked()`、`syncNextTransaction()` 和 `mergeWithNextTransaction()`。
 
 ### system_server 的 `BLASTSyncEngine`
 
 WMS 内部 `BLASTSyncEngine` 建立 `SyncGroup`，监视注册的 `WindowContainer` 子树何时进入 finished 状态：收到所需绘制内容，或对象消失。group ready 后，它把收集的 `SurfaceControl.Transaction` 交给 transition/调用方；重叠 group 还可能被串行化或建立依赖，并有 timeout 兜底。
 
-它只等待加入 group 的对象。独立 camera、codec、游戏引擎 producer 如果没有通过受控 Surface 参与这份同步，WMS 不能为它推导内容语义。[Android 17 `BLASTSyncEngine.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java)
+它只等待加入 group 的对象。独立 camera、codec、游戏引擎 producer 如果没有通过受控 Surface 参与这份同步，WMS 不能为它推导内容语义。[Android 17 `BLASTSyncEngine.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java)
 
 ### API 34+ 的 `SurfaceSyncGroup`
 
@@ -292,14 +392,16 @@ HWC 按整个 Display 的可见 layer 集合选择 composition strategy，不按
 
 窗口数量增加不保证进入 CLIENT composition；一个带复杂变换或特殊格式的 layer 也可能改变策略。要比较异常前后的完整 layer set 和 HWC composition type，不能只看 PiP layer 名。
 
+Android 17 的调用顺序可以压缩成两段：`Display::chooseCompositionStrategy()` 进入 `HWComposer::getDeviceCompositionChanges()`，在条件允许时尝试 `presentOrValidate()`，否则执行 `validate()` 并读取 changed composition types；需要 CLIENT composition 时，RenderEngine 还要生成 client target。随后 `Display::presentFrame()` 调用 `presentAndGetReleaseFences()`。返回结果中，一个 present fence 对应该 Display 的本轮 present，各 HWC layer 另有 release fence。两块 Display 的 present fence、同一 Display 上两个 layer 的 release fence 都不能互换。
+
 `FLAG_SECURE` 与 protected buffer 也要分开：前者约束截图/录屏和非安全 Display，后者要求受保护的读取与显示路径。protected PiP 无法取得合适硬件路径时可能黑屏，不能让普通 RenderEngine 随意采样作为回退。
 
-Android 17 的公共 kernel 锚点只解释通用调度与 fence：[`kernel/sched/core.c`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/kernel/sched/core.c)、[`sync_file.c`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c) 和 [`dma-fence.c`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)。某台设备的 DPU、HWC plane 或 Display driver 延迟仍要看 vendor 实现和设备 trace。
+Android 17 的公共 kernel 锚点只解释通用调度与 fence：[`kernel/sched/core.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c)、[`cpuset.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/cgroup/cpuset.c)、[`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c) 和 [`dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)。某台设备的 DPU、HWC plane 或 Display driver 延迟仍要看 vendor 实现和设备 trace。
 
 ## Android 8 到 Android 17 的分析边界
 
 | 平台 | 变化 | Review 时怎么用 |
-|:---|:---|:---|
+| --- | --- | --- |
 | Android 8 / API 26 | 手机 PiP 进入公开平台能力 | 进入/退出小窗要同时看 Task 几何和内容供帧 |
 | Android 11 / API 30 | BLASTBufferQueue 进入现代 App Window 提交路径 | resize 要对齐 App buffer transaction 与 layer geometry |
 | Android 12 / API 31 | WM Shell transition/PiP 控制与 FrameTimeline 成为现代分析基线；PiP 增加 auto-enter、seamless resize | PiP 过渡要结合 Shell transition、source rect 与 SurfaceFrame/DisplayFrame |
@@ -307,9 +409,9 @@ Android 17 的公共 kernel 锚点只解释通用调度与 fence：[`kernel/sche
 | Android 14 / API 34 | 公开 `SurfaceSyncGroup` | 应用/跨进程嵌入 Surface 可显式建立同步组 |
 | Android 15 / API 35 | PiP UI transition state、target 35 edge-to-edge 等行为影响 UI/Insets | PiP enter 可更早隐藏 overlay；resize/IME 要检查 Insets |
 | Android 16 / API 36 | OEM 可配置 desktop windowing；target 36 大屏方向/宽高比/resizability 限制开始被忽略，但有临时 opt-out | 测试 freeform、外接屏、旋转与配置重建 |
-| Android 17 / API 37 | per-display desktop windowing；target 37 在大屏移除上述 opt-out | 按 Display 记录 desktop state；固定方向和不可 resize 不能再作为大屏布局前提 |
+| Android 17 / API 37 | per-display desktop windowing；target 37 在大屏移除上述 opt-out；部分硬件和 desk UI 配置变化默认不重建 Activity | 按 Display 记录 desktop state；固定方向和不可 resize 不能再作为大屏布局前提；核查 `onConfigurationChanged()` 与 `recreateOnConfigChanges` |
 
-Android 17 的 target 37 规则适用于 `sw ≥ 600dp` 大屏：固定方向值、`resizeableActivity`、`minAspectRatio`、`maxAspectRatio` 等限制被忽略；小于 `sw600dp`、按 `android:appCategory` 分类的游戏，以及用户在 aspect ratio 设置里明确选择应用偏好的情况属于例外。这个行为增加应用遇到 resize/configuration 的机会，没有替换 BLAST、SurfaceFlinger 或 HWC 主路径。
+Android 17 的 target 37 规则适用于满足 `sw600dp` 的大屏，也就是 `smallestWidthDp ≥ 600`：固定方向值、`resizeableActivity`、`minAspectRatio`、`maxAspectRatio` 等限制被忽略；小于 `sw600dp`、按 `android:appCategory` 分类的游戏，以及用户在 aspect ratio 设置里明确选择应用偏好的情况属于例外。这个行为增加应用遇到 resize/configuration 的机会，没有替换 BLAST、SurfaceFlinger 或 HWC 主路径。
 
 Android 17 的 per-display desktop windowing 还意味着内屏和外接屏可以处于不同 desktop-first/touch-first 状态。窗口从一块屏移动到另一块屏时，要重新记录 displayId、density、WindowMetrics、refresh rate、color mode、Insets 和 present fence。
 
@@ -329,7 +431,7 @@ Android 17 的 per-display desktop windowing 还意味着内屏和外接屏可�
 先为每个可见对象记录下面的映射，避免把同名旧 layer 或另一块 Display 的 frame 接进来：
 
 | 维度 | 需要记录 |
-|:---|:---|
+| --- | --- |
 | 归属 | uid、pid、package、Activity/PiP/SystemUI |
 | 执行 | UI tid/Looper、ViewRoot、RenderThread tid、独立 producer 线程 |
 | WMS | displayId、Task/TaskFragment、WindowState、windowing mode、bounds |
@@ -353,7 +455,7 @@ Android 17 的 per-display desktop windowing 还意味着内屏和外接屏可�
 ### 常见症状的证据方向
 
 | 症状 | 起点 | 需要排除 |
-|:---|:---|:---|
+| --- | --- | --- |
 | PiP 进入时闪一下 | `sourceRectHint`、Shell overlay/leash、App 首块 PiP 内容 | 只凭录屏归因 App draw |
 | Freeform 拖拽拉伸 | requested/buffer size、destination frame、leash scale、sync group | 把所有缩放都判为 BLAST 失败 |
 | 同进程 Window B 总是晚 | UI traversal 顺序、共享 RenderThread 队列、Window A fence wait | 只量 Window B 自己的 draw duration |
@@ -397,15 +499,21 @@ Android 17 的 per-display desktop windowing 还意味着内屏和外接屏可�
 
 ## 参考资料
 
-- [Android 17 AOSP：ViewRootImpl.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)
-- [Android 17 AOSP：Choreographer.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)
-- [Android 17 AOSP：RenderThread.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/RenderThread.cpp)
-- [Android 17 AOSP：PictureInPictureParams.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/PictureInPictureParams.java)
-- [Android 17 AOSP：WindowContainer.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowContainer.java)
-- [Android 17 AOSP：BLASTSyncEngine.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java)
-- [Android 17 AOSP：PipTaskOrganizer.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/pip/PipTaskOrganizer.java)
-- [Android 17 AOSP：BLASTBufferQueue.cpp](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)
+- [Android 17 AOSP：ViewRootImpl.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)
+- [Android 17 AOSP：Choreographer.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java)
+- [Android 17 AOSP：RenderThread.cpp](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/RenderThread.cpp)
+- [Android 17 AOSP：PictureInPictureParams.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/PictureInPictureParams.java)
+- [Android 17 AOSP：PictureInPictureUiState.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/PictureInPictureUiState.java)
+- [Android 17 AOSP：ActivityInfo.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/pm/ActivityInfo.java)
+- [Android 17 AOSP：AppCompatRecreateOnConfigChangePolicy.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/AppCompatRecreateOnConfigChangePolicy.java)
+- [Android 17 AOSP：WindowContainer.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowContainer.java)
+- [Android 17 AOSP：BLASTSyncEngine.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java)
+- [Android 17 AOSP：PipTaskOrganizer.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/pip/PipTaskOrganizer.java)
+- [Android 17 AOSP：BLASTBufferQueue.cpp](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)
+- [Android 17 AOSP：Display.cpp](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Display.cpp)
+- [Android 17 AOSP：HWComposer.cpp](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)
 - [Android Developers：Picture-in-picture](https://developer.android.com/develop/ui/views/picture-in-picture)
 - [Android Developers：Android 17 大屏方向与 resizability 变化](https://developer.android.com/about/versions/17/changes/ff-restrictions-ignored)
+- [Android Developers：Android 17 Configuration 变化处理](https://developer.android.com/guide/topics/resources/runtime-changes)
 - [AOSP：Multi-window support](https://source.android.com/docs/core/display/multi-window)
 - [AOSP：Android 17 desktop windowing](https://source.android.com/docs/core/display/desktop-windowing)
