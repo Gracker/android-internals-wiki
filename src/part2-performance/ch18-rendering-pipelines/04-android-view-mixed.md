@@ -1,25 +1,65 @@
 ---
-title: "Android View 混合渲染链路"
+title: "Android 17 混合渲染链路"
 chapter: "18.4"
 section: "18.4"
 status: finalized
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 sources:
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S05_mixed_rendering_type.md"
+    role: "混合出图的对象模型、三类拓扑、同步边界与 Perfetto 证据链"
   - type: aosp
-    path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java"
+    role: "SurfaceTexture frame-available、updateLayer 与宿主 invalidation"
   - type: aosp
-    path: "frameworks/native/libs/gui/SurfaceComposerClient.cpp"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp"
+    role: "syncFrameState 中的 pending layer update"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp"
+    role: "SurfaceTexture 最新 buffer 的 acquire 与宿主采样"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java"
+    role: "container、BLAST child、hole-punch、redraw、composition order 与 blur"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
+    role: "独立 Surface 的 buffer transaction 与 release"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java"
+    role: "多 Surface 状态、buffer、listener、desired present 与 FrameTimeline"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/window/SurfaceSyncGroup.java"
+    role: "受控 Surface 的同步组与 merged transaction"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/FrontEnd/"
+    role: "RequestedLayerState、layer lifecycle 与 snapshot"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp"
+    role: "validate、present-or-validate、present 与 release fences"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c"
+    role: "dma-fence 的 sync_file fd 接口"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c"
+    role: "fence signal、callback 与 wait"
   - type: official
     path: "https://developer.android.com/reference/android/view/SurfaceView"
-tags: ["hybrid-composition", "SurfaceView", "mixed-rendering", "parallel-pipeline", "video-playback"]
-related_chapters: ["2.1", "2.6", "18.2", "18.6"]
+    role: "SurfaceView 的公开 API 与版本语义"
+  - type: official
+    path: "https://developer.android.com/reference/android/view/SurfaceControl.Transaction"
+    role: "Transaction 原子状态、listener 与调度 API"
+  - type: official
+    path: "https://developer.android.com/reference/android/window/SurfaceSyncGroup"
+    role: "公开同步组契约"
+tags: ["hybrid-composition", "SurfaceView", "TextureView", "SurfaceControl", "SurfaceSyncGroup", "mixed-rendering", "parallel-pipeline", "video-playback", "HWC"]
+related_chapters: ["2.1", "2.6", "18.2", "18.6", "18.7", "18.10", "18.15"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
-last_verified: "2026-07-27"
+last_verified: "2026-07-31"
+last_verified_against: "AOSP android-17.0.0_r1 TextureView/HWUI/SurfaceView/BLAST/SurfaceControl/SurfaceFlinger FrontEnd/HWComposer + kernel android17-6.18-2026-06_r6"
 confidence: high
 last_idle_audit_at: "2026-07-27T18:35:19+08:00"
 last_idle_audit_run_id: "20260727-183519-idle-audit-207a0280"
@@ -39,6 +79,8 @@ task2b_result: fixed
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-15
 ---
+
+# 18.4 Android 17 混合渲染链路
 
 <!-- outline-start -->
 
@@ -117,6 +159,23 @@ flowchart TD
 
 图中 Texture 输入在 App RenderThread 中变成宿主窗口像素；独立 Surface 保持单独的 SF buffer layer。分析前必须先判断内容走了哪条线。
 
+### 一次 display 更新怎样汇合
+
+以“宿主控制层 + TextureView 地图 + SurfaceView 视频”为例，一次可见更新要经过这些阶段：
+
+1. 地图 Producer 向 `SurfaceTexture` 提交 buffer，frame-available 回调请求宿主更新；
+2. 宿主 MainThread 在 `Choreographer#doFrame()` 中更新 View/Compose 状态和 RenderNode；
+3. RenderThread 在 `DrawFrameTask::syncFrameState()` 处理 pending `DeferredLayerUpdater`，取得 Texture 输入的最新可用 buffer；
+4. HWUI 将地图、普通 View、遮罩和控制层画入宿主 App Window buffer；
+5. 宿主 BLAST 把 host buffer transaction 交给 SurfaceFlinger；
+6. 视频 Producer 按自己的 cadence 向 SurfaceView BLAST child 提交独立 buffer 和 acquire fence；
+7. SurfaceView container 的 position、crop、alpha、visibility 与 relative Z 由相应 Transaction 更新；
+8. SurfaceFlinger FrontEnd 处理各路状态和 buffer readiness；没有选中新 buffer 的 layer 可以沿用已选中的旧内容；
+9. CompositionEngine/HWC 针对整屏可见 layer 集合协商 DEVICE/CLIENT，必要时由 RenderEngine 生成 client target；
+10. present 路径返回 display 级 present fence 和各 layer 的 release fence，信号稍后异步完成。
+
+这十步没有共享的“业务帧”对象。目标 present 可能组合新宿主、旧视频，也可能让新视频配上旧 container 几何；需要同步的业务关系必须由应用或受控 Surface 的同步机制表达。
+
 ### 常见组合
 
 | 页面组合 | SurfaceFlinger 侧常见形态 | 诊断入口 |
@@ -159,7 +218,7 @@ flowchart TD
 
 ### TextureView 回流
 
-地图或视频 Producer 向 `SurfaceTexture` queue buffer。Android 17 的 `TextureView` 在 frame-available 回调中安排 layer update 和 View invalidation；宿主硬件 draw 记录 `TextureLayer`，RenderThread 的 `DeferredLayerUpdater::apply()` 再通过 `ASurfaceTexture_dequeueBuffer()` 取得当前内容。
+地图或视频 Producer 向 `SurfaceTexture` queue buffer。Android 17 的 `TextureView` 在 frame-available 回调中安排 layer update 和 View invalidation；宿主硬件 draw 记录 `TextureLayer`。`DrawFrameTask::syncFrameState()` 随后遍历 pending layer，并调用 `DeferredLayerUpdater::apply()`；该方法再通过 `ASurfaceTexture_dequeueBuffer()` 取得当前内容。
 
 源码注释明确指出，`ASurfaceTexture_dequeueBuffer()` 会丢弃此前未消费帧，只保留最新一帧。外部 Producer 已 queue 不表示宿主本帧一定采到了它；要继续对齐 frame-available、宿主 traversal、`DeferredLayerUpdater` acquire 与 host draw。
 
@@ -199,7 +258,7 @@ Producer 进程不能靠固定名单判断。应从目标 BufferQueue connection
 
 默认位于宿主下方的 SurfaceView 需要让宿主窗口对应区域透明。Android 17 不是模糊的“OEM 可能自行裁剪”：`SurfaceView.draw()` / `dispatchDraw()` 在 `mDrawFinished` 且 Surface 位于 parent 下方时调用 `clearSurfaceViewPort()`，后者通过 `Canvas.punchHole()` 处理矩形或圆角区域及 alpha。
 
-`mDrawFinished` 表示应用已经向 Surface 产生过帧；首 buffer 到来前谨慎打洞，可以避免宿主提前出现一块空洞。
+`mDrawFinished` 在 `surfaceRedrawNeededAsync` 的回调集合完成后置为 `true`。它表示 framework 认为 Surface redraw 回调阶段已经结束，不能单独证明 Producer 已提交首 buffer，更不能证明该 buffer 已被 latch 或 present。黑屏分析仍要继续检查 Producer connection、首个 buffer transaction、acquire fence、layer 可见性和目标 present。
 
 SurfaceView 还要分清三个对象：
 
@@ -290,6 +349,23 @@ sequenceDiagram
 ### 同一 Transaction
 
 `SurfaceControl.Transaction` 可以同时更新多个 SurfaceControl 的 position、crop、alpha、layer、reparent，也可以通过公开 `setBuffer()` 提交调用方掌握的 `HardwareBuffer`。同一次 `apply()` 内的状态原子提交。
+
+下面的职责模型用于区分同一 Transaction 内的状态与外部 BufferQueue 事件；它只表达边界，不是可编译代码。
+
+```text
+Transaction T
+  setPosition(surfaceA)
+  setCrop(surfaceA)
+  setAlpha(surfaceB)
+  optional setBuffer(surfaceC, hardwareBuffer, acquireFence)
+  apply T atomically
+
+external producer
+  queueBuffer(surfaceB)
+  remains a separate BufferQueue event
+```
+
+`surfaceB` 的 alpha 属于 Transaction T，外部 Producer 之后提交的 buffer 仍是另一项事件。若业务要求新 alpha、新几何和新内容出现在同一逻辑帧，还要把对应 buffer transaction 纳入控制，或使用能够等待目标 Surface 的同步机制。
 
 原子性只覆盖已经加入 Transaction 的状态。Camera、codec 或游戏 Producer 之后向另一个 BufferQueue queue 的“下一帧”不会自动加入。两个 container 几何同帧生效、某个 child 仍沿用旧 buffer，并不表示 Transaction 丢了状态。
 
