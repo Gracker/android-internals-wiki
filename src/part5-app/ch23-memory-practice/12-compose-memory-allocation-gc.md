@@ -87,609 +87,327 @@ sources:
 
 ## 本节定位
 
-这一节讲 Compose 在应用实战中的内存分配模式和 GC 交互。机制层面的问题——SlotTable 的 gap-buffer 结构、Composer 的调度原理、RecomposeScopeImpl 的依赖追踪——在 10.6 节和 DeepResearch 源码调研中已经展开过，这里不重复。本节关注三件事：哪些 Compose 分配是结构性的、哪些是可避免的、怎么在工程中诊断和治理。
+本章讨论 Android 上的 Compose Runtime、应用 Java Heap 与 ART GC。平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准，内核基线为 `android17-6.18-2026-06_r6`。Compose 是独立发布的 Jetpack 库，本章使用 2026 年 7 月的稳定版 Compose Runtime 1.11.4，并把对应 AndroidX 提交 `854220f44ea8ea80fee824a6c5a045f39bede289` 作为源码锚点。
 
-Compose 的内存问题和传统 View 系统的内存问题性质不同。传统 View 系统的分配热点集中在 `onDraw()` 里创建 `Paint`、`Path` 等绘制对象（详见 23.5 节），治理手段是把对象提到成员变量。Compose 的分配来源更分散：重组过程中 `RecomposeScopeImpl`、`block` Lambda、`SlotTable` 数组扩容、`State<T>` 装箱、`derivedStateOf` 的 `ResultRecord` 链都会产生对象。其中一部分是结构性必然分配——只要用 Compose 就会发生——只能压缩不能消除。
+Compose 1.12.0-beta02 已发布，但仍是 beta。本章只在版本演进处说明其中与内存有关的修复，不用 beta 行为替代稳定版结论。
 
-[结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md — 参考其"从运行时模型定位分配源头"的组织方式]
+处理 Compose 内存问题时，先区分两种症状：
 
-## Compose 运行时的内存模型
+- 存活对象持续增加：常见于 Composition 没有按宿主生命周期释放、协程或监听器存活过久、状态所有者范围过大、View 与 Compose 互相持有。
+- 短命对象分配速率过高：常见于组合阶段反复排序、映射、格式化，频繁重建输入对象，或在高频状态变化中执行不必要的组合。
 
-[已验证: androidx-main (Compose 1.8.x), androidx.compose.runtime.composer.gapbuffer.SlotTable]
-[已验证: androidx-main (Compose 1.8.x), androidx.compose.runtime.RecomposeScopeImpl]
+重组表示 Compose 重新执行一部分 UI 描述。它不保证发生对象分配，也不保证创建新的 `RecomposeScopeImpl`。定位时要分别观察重组、allocation 和 GC，不能用其中一项替代另外两项。
 
-Compose 运行时的内存占用由三部分组成：`SlotTable`（组合树的物理存储）、`RecomposeScopeImpl` 集合（重组追踪）、`State<T>` 实例（可观察状态）。这三部分的内存特征和传统 View 对象完全不同。
+## Compose Runtime 会长期持有什么
 
-`SlotTable` 把整棵组合树序列化到两个数组里：`IntArray` 存组信息（key、nodeCount、size、parentAnchor、dataAnchor），`Array<Any?>` 存槽位值（State 实例、Lambda、LayoutNode、CompositionLocal 等）。组信息每组占 5 个 int，全部内联，没有对象头开销。槽位数组是 Compose 内存模型的核心容器——所有引用类型的值都在这里。
+一份活跃 Composition 至少要保存组合结构、`remember` 的值、重组范围、状态观察关系和待应用的变更。Compose Runtime 1.11.4 的源码给出了几个重要边界。
 
-`RecomposeScopeImpl` 是每个 restartable composable 函数对应的「重启句柄」。一个含 50 个 @Composable 的页面，初始组合就产生 50 个 scope 对象。每个 scope 内部有 `block: (Composer, Int) -> Unit` 字段——一个真正的 Kotlin Lambda 对象，持有所有可观察 State 的引用。scope 还有 `trackedInstances: ScatterSet` 和 `trackedDependencies: MutableObjectIntMap` 两个按需创建的集合，用于依赖追踪。
+### Slot storage 不是固定实现
 
-`State<T>` 实例的数量取决于 `mutableStateOf` 和 `remember { mutableStateOf(...) }` 的调用次数。`SnapshotMutableStateImpl` 内部维护 `StateRecord` 链，每次快照切换追加一条记录。
+Compose 1.11.4 同时包含 gap-buffer 与新的 link-buffer slot storage。`CompositionImpl.createSlotStorage()` 根据 `ComposeRuntimeFlags.isLinkBufferComposerEnabled` 选择实现，见稳定提交中的 [`Composition.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composition.kt)。
 
-这三部分的内存加起来，一个中等复杂度的页面（20-30 个 Composable）静态占用约 60-100KB，每次重组动态分配 3-6KB。10.x 专题中给出了更详细的估算表。
+[`ComposeRuntimeFlags.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/ComposeRuntimeFlags.kt)显示，1.11.4 中 `isLinkBufferComposerEnabled` 默认仍为 `false`，新实现是实验选项。AndroidX 的 [Compose Runtime 1.11 发布说明](https://developer.android.com/jetpack/androidx/releases/compose-runtime)指出，新实现的目标是减少删除、移动和重排组合内容时的数组复制。
 
-## 重组中的对象分配热点
+因此：
 
-[已验证: androidx-main (Compose 1.8.x), androidx.compose.runtime.Composer]
-[已验证: androidx-main (Compose 1.8.x), androidx.compose.runtime.composer.RememberManager]
+- 未启用实验标志的 1.11.4 应按 gap-buffer 分析；
+- 开启标志的应用要按 link-buffer 分析；
+- heap dump 中的内部类名和引用形态可能不同；
+- 不应给所有 Compose 版本套用固定的 SlotTable 字节数或扩容次数。
 
-重组过程中的分配可以分为三类：结构性必然分配、条件性分配、反模式分配。区分这三类决定了优化方向——结构性分配只能压缩，条件性分配可以消除触发条件，反模式分配必须修掉。
+Slot storage 持有 remembered values 和组合结构。Composition 被宿主继续引用时，里面的值也会继续存活。看到 SlotTable 或 LinkTable 出现在引用链中时，应沿 dominator 向上查找 Activity、Fragment view、`ComposeView`、Navigation destination、Recomposer 或长期协程，内部表结构通常只是持有路径中的一环。
 
-**结构性必然分配**指只要 Compose 执行组合就会产生的对象，与代码写法无关：
+### `RecomposeScopeImpl` 会复用
 
-- 每个 restartable composable 的 `RecomposeScopeImpl` 实例。`endRestartGroup()?.updateScope { ... }` 中的 Lambda 每次重组都会被新 Lambda 覆盖，旧 Lambda 进入年轻代等 GC。
-- `SlotTable` 在首次组合时 `IntArray` 和 `Array<Any?>` 从 0 开始倍增扩容。一个深度组合的初始帧可能触发 10 次以上的 array reallocate，每次都是 old array → new array 的复制。
-- `RememberObserverHolder` 包装 `remember` 出来的对象，每个 `remember { ... }` 创建一个。
+稳定版 [`RecomposeScopeImpl.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/RecomposeScopeImpl.kt)中，`trackedInstances` 与 `trackedDependencies` 初始为 `null`，读到状态或派生状态后才创建。`release()` 会清空 owner、追踪集合和重启 block。
 
-这类分配无法通过改代码消除，但可以通过减少 Composable 数量、降低嵌套深度来缩小规模。
+重组时已有 scope 可以继续使用。代码中的 `updateScope()` 只替换重启 block，不能据此推导“每次重组创建一个 scope”。Lambda 是否产生新对象还受 Compose Compiler 生成代码与 Strong Skipping 影响。
 
-**条件性分配**取决于代码写法和 Compose 版本：
+[Strong Skipping 官方说明](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)记录了两条规则：
 
-- `if/when` 分支切换时，旧分支的 scope `release()`（`trackedInstances`/`trackedDependencies` 置空），新分支的 scope 创建。如果分支快速抖动（loading → loaded → loading → loaded），scope 和内部集合会反复 create+release。
-- `remember(key) { ... }` 当 key 变化时丢弃旧 Holder + 创建新 Holder。如果把一个不稳定对象作为 key（如 `remember(someList) { ... }`，`someList` 每次都是新实例），缓存形同虚设。
-- `derivedStateOf { ... }` 每次 snapshot 切换创建新的 `ResultRecord<T>`。在滚动监听或动画帧驱动场景下，每帧都会产生新 record。
+- Kotlin 2.0.20 起默认启用 Strong Skipping；
+- restartable composable 即使带不稳定参数也可以被跳过，composable 内部的 Lambda 会自动 memoize。
 
-**反模式分配**是必须修掉的写法问题：
+不稳定参数使用引用相等比较，稳定参数使用对象相等比较。调用方每次构造新 `List`、新 UI model 或新 Lambda capture，仍可能让比较失败。优化对象应是输入身份与数据流，而不是统计源码里有多少个 Lambda 表达式。
 
-```kotlin
-// 反模式：每次重组都创建新 List
-@Composable
-fun BadExample(items: List<String>) {
-    val processed = items.map { it.uppercase() }  // 每次重组都分配新 List
-    Column {
-        processed.forEach { Text(it) }
-    }
-}
+### Snapshot record 在写入时演进
 
-// 修正：用 remember 缓存，只在输入变化时重新计算
-@Composable
-fun FixedExample(items: List<String>) {
-    val processed = remember(items) {
-        items.map { it.uppercase() }
-    }
-    Column {
-        processed.forEach { Text(it) }
-    }
-}
-```
+`MutableState` 与 `derivedStateOf` 都基于 Snapshot state record，但“切换一次 snapshot 就为所有 state 新建一条 record”并不成立。写入需要可写 record；读取会选择当前 snapshot 可见的 record。并发 snapshot、写入频率与 record 复用共同决定对象数量。
 
-这段代码的用途是展示 List 处理的两种写法。重点看 `remember(items)` —— 只有 `items` 引用变化时才重新分配 List。如果 `items` 是同一个引用但内容变化了，需要用 `items.toList()` 作为 key 或改用 `derivedStateOf`。
+Compose Runtime 1.11.4 的 [`DerivedState.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/DerivedState.kt)显示，`ResultRecord` 保存 dependencies、result 和用于有效性判断的 hash。结果与 mutation policy 判定等价时，实现可以更新当前 record 的依赖信息；结果变化时才申请可写 record。不能把每一帧或每次 snapshot apply 直接换算成一个 `ResultRecord`。
 
-[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md — 参考其"从 HeapTaskDaemon 执行流程定位分配热点"的分析思路，但本章不推荐 GC 抑制方案]
+## 哪些分配值得优先处理
 
-## State 对象与内存开销
+### 组合阶段的集合加工与格式化
 
-[已验证: androidx-main (Compose 1.8.x), androidx.compose.runtime.SnapshotMutableStateImpl]
-[已验证: androidx-main (Compose 1.8.x), androidx.compose.runtime.DerivedSnapshotState]
-
-### MutableState 的装箱开销
-
-`mutableStateOf<Int>(0)` 创建的 `SnapshotMutableStateImpl<Int>` 内部用 `Any?` 装载值。读取 `state.value` 时，`Int` 会被装箱成 `Integer` 对象。这在少量读取时不是问题，但在高频读取的热路径上（比如动画回调每帧读 state），装箱会产生稳定的短命对象流。
-
-Compose 编译器对 `changed(value: Int)` 等原始类型提供了显式重载来避免编译器侧的装箱——注释明确写到「This overload is provided to avoid boxing [value] to compare with a potentially boxed version of [value] in the composition state」。但 `State<Int>.value` 的 getter 仍会装箱一次。
-
-解决方案是使用 `SnapshotIntState`、`SnapshotLongState`、`SnapshotFloatState` 等 API（Compose 1.6+）：
+Composable body 可能因状态变化多次执行。排序、`map`、字符串拼接、解析和对象适配如果直接放在 body 中，也会重复执行。下面的代码用于把排序结果缓存到 Composition，并给 Lazy list 提供稳定身份。
 
 ```kotlin
-// 问题：每次读取 state.value 都装箱 Int
-val count = mutableStateOf(0)
-// count.value 是 Int? → 每次读取装箱
-
-// 修正：使用原始类型特化 State
-val count = mutableIntStateOf(0)
-// count.intValue 是 Int → 不装箱
-```
-
-`mutableIntStateOf` 创建的 `SnapshotIntStateImpl` 内部用 `Int` 字段（不是 `Any?`），读取 `intValue` 直接返回原始类型。在每帧读取的场景下，这个改动能消除一个 `Integer` 对象的分配。
-
-### derivedStateOf 的 ResultRecord 链
-
-`derivedStateOf { ... }` 内部创建 `DerivedSnapshotState` 实例。每次 snapshot 切换（其他 state 写入触发 apply）都会创建新的 `ResultRecord<T>`。`ResultRecord` 持有 `dependencies: ObjectIntMap<StateObject>`，在 `calculation` 块每次执行后更新。
-
-高频场景下的风险：
-
-```kotlin
-// 问题：在 Lazy 列表 item 内部使用 derivedStateOf
 @Composable
-fun ListItem(index: Int, list: SnapshotStateList<Item>) {
-    // 每个 item 都创建一个 DerivedSnapshotState
-    // 滚动时每帧产生 N 个 ResultRecord
-    val displayText by remember {
-        derivedStateOf { list.getOrNull(index)?.text ?: "" }
+fun ContactList(
+    contacts: List<Contact>,
+    comparator: Comparator<Contact>,
+    modifier: Modifier = Modifier,
+) {
+    val sortedContacts = remember(contacts, comparator) {
+        contacts.sortedWith(comparator)
     }
-    Text(displayText)
-}
 
-// 修正：把派生计算提到 item 外部，或直接读取
-@Composable
-fun ListItem(index: Int, list: SnapshotStateList<Item>) {
-    val displayText = remember(list, index) {
-        list.getOrNull(index)?.text ?: ""
-    }
-    Text(displayText)
-}
-```
-
-这段代码的用途是对比 Lazy item 内部 `derivedStateOf` 和 `remember` 的分配差异。重点看修正版用 `remember(list, index)` 替代 `derivedStateOf`——滚动场景下 list 引用不变，`remember` 不会重新执行，每帧零分配。
-
-### snapshotFlow 的内存特征
-
-`snapshotFlow { ... }` 创建一个 Coroutine Flow，每次 snapshot 状态变化时重新执行 block。block 内部读取的所有 State 会被追踪。只要 Flow 处于活跃状态，这些 State 的引用就不会被 GC——因为 snapshot 系统持有读锁期间的快照引用。
-
-常见问题是 `snapshotFlow` 放在 `LaunchedEffect` 里但没有正确取消，导致旧 snapshot 持有 State 引用。诊断方法：在 Memory Profiler 里搜索 `Snapshot` 相关对象，看是否有超过预期数量的实例存活。
-
-## SlotTable 内存增长模式
-
-[已验证: androidx-main (Compose 1.8.x), androidx.compose.runtime.composer.gapbuffer.SlotTable]
-
-### 首次组合的数组倍增
-
-`SlotTable` 的 `IntArray` 和 `Array<Any?>` 初始大小为 0。首次组合时，数组按倍增策略扩容：1 → 2 → 4 → 8 → 16 → ... 直到能容纳所有组和槽位。每次倍增都触发一次 `Arrays.copyOf()`，旧数组等待 GC。
-
-一个含 200 个 Composable 的页面，groups 数组可能需要容量 1000（200 组 × 5 int/组），经历约 7-8 次倍增（1 → 2 → 4 → 8 → 16 → 32 → 64 → 128 → 256 → 512 → 1024）。slots 数组的增长类似。首次组合期间，这些倍增产生的旧数组是短命对象，年轻代 GC 能快速回收，但如果首帧发生在用户可感知的窗口（如冷启动），分配峰值会抬高帧耗时。
-
-### 重组时的 gap buffer 机制
-
-`SlotTable` 采用 gap-buffer 数据结构：写时把 gap（空闲空间）移动到插入/删除位置附近，避免大规模数据搬移。gap 的存在意味着 `IntArray` 和 `Array<Any?>` 的实际容量大于已用空间——多出来的部分是 gap buffer。
-
-gap buffer 的大小由 `SlotStorage.capacityLimit()` 控制。正常重组不会触发数组扩容，因为 gap 已经预留了空间。但如果重组过程中大量插入新组（比如一个条件分支从隐藏变为显示，且内部 Composable 数量多），gap 可能不够用，触发一次 `reallocate()`。
-
-### disposeComposition 的内存释放
-
-离开 Composition 时调用 `disposeComposition()` 会释放 `SlotTable` 的所有引用。`SlotTable` 不会缩小数组——它把内容清空但保留容量。这意味着如果页面被反复进入和退出（如 Navigation 跳转），`SlotTable` 的数组容量不会自动缩小。Compose Runtime 内部有 `reusable` 机制复用 `SlotTable`，但如果不走复用路径，旧的 `SlotTable` 实例会作为整体等待 GC。
-
-诊断方法：在 Memory Profiler 中搜索 `SlotTable` 实例。如果一个应用有多个页面但 `SlotTable` 实例数远超活跃页面数，可能有 Composition 泄漏。
-
-## Compose 混合栈的内存叠加
-
-[已验证: 官方文档, developer.android.com/jetpack/compose/migrate-strategy]
-
-现代应用普遍采用混合架构：Compose 用于新功能，View 系统保留已有组件。这种模式下会有两类内存叠加。
-
-### AndroidComposeView 的开销
-
-每个 `ComposeView`（或 `AbstractComposeView`）在 View 树中创建一个 `AndroidComposeView`。这个对象同时是 View 系统的节点（参与 measure/layout/draw）和 Compose 的宿主（持有 `Composition`、`Recomposer`、`Owner`）。它的内存开销包括：
-
-- 一个完整的 `SlotTable`（即使内容很少，初始化也会分配数组）
-- `Recomposer` 的 coroutine scope 和调度状态
-- `ViewRootForInspector` 等调试基础设施
-
-在多 Fragment 场景下，如果每个 Fragment 各自创建 `ComposeView`，每个 Fragment 都有独立的 `AndroidComposeView` + `SlotTable`。Fragment 数量多时，这些宿主对象的静态内存不可忽略。
-
-### AndroidView 桥接的双状态追踪
-
-`AndroidView` 用于在 Compose 中嵌入传统 View。每次 Compose 重组时，`AndroidView` 的 `update` 回调会执行。如果 View 内部有状态（如 `RecyclerView` 的 adapter），Compose 侧和 View 侧各自追踪状态——Compose 通过 `remember` 追踪，View 通过自身字段追踪。
-
-```kotlin
-// 问题：Compose 和 View 双重状态追踪
-@Composable
-fun HybridList(items: List<String>) {
-    val selectedItem = remember { mutableStateOf(-1) }
-
-    AndroidView(
-        factory = { context ->
-            RecyclerView(context).apply {
-                adapter = MyAdapter(items)  // adapter 持有 items 引用
-                // 点击回调持有 Compose state 引用
-                addItemTouchListener(object : SimpleOnItemTouchListener() {
-                    override fun onItemClick(position: Int) {
-                        selectedItem.value = position  // View → Compose 引用
-                    }
-                })
-            }
-        },
-        update = { recyclerView ->
-            // 每次重组都可能触发 adapter 更新
-            (recyclerView.adapter as? MyAdapter)?.updateItems(items)
+    LazyColumn(modifier) {
+        items(
+            items = sortedContacts,
+            key = { contact -> contact.id },
+        ) { contact ->
+            ContactRow(contact)
         }
+    }
+}
+```
+
+`remember` 在 key 的比较结果不变时返回已保存值；key 变化后重新计算。更重的数据加工可以移到 ViewModel 或数据层。`contacts` 若在原对象上原地修改，Compose 和 `remember` 都可能无法观察内容变化；推荐把 UI state 暴露为新的不可变列表实例，或使用能通知写入的 snapshot collection。每次重组创建 `contacts.toList()` 作为 key 会引入一份新列表，不能修正原地修改的数据模型。
+
+### 原始类型 State
+
+Compose Runtime 提供 `mutableIntStateOf`、`mutableLongStateOf`、`mutableFloatStateOf` 和 `mutableDoubleStateOf`。下面的代码用于让高频计数状态走原始类型接口。
+
+```kotlin
+@Composable
+fun FrameCounter() {
+    var frameCount by remember { mutableIntStateOf(0) }
+
+    Text(
+        text = frameCount.toString(),
+        modifier = Modifier.clickable { frameCount++ },
     )
 }
 ```
 
-这段代码展示了混合栈的典型问题：`selectedItem` 是 Compose 状态，`RecyclerView` 是 View 状态，两者通过回调互相引用。`update` 回调在每次重组时执行，如果 `items` 引用每次都变，adapter 会反复更新。
+稳定版 [`SnapshotIntState.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotIntState.kt)中的 `SnapshotMutableIntStateImpl` 用 `IntStateStateRecord` 保存 `Int`，`intValue` 直接读写原始类型。委托运算符也访问 `intValue`。这能避免通用 `MutableState<Int>` 路径的自动装箱，但收益仍要在 allocation recording 中验证；少量低频状态无需机械替换。
 
-### 减少混合栈内存叠加
+### Lambda 与 Modifier
 
-- 新页面直接用 Compose，不要在 Compose 里嵌 View 再在 View 里嵌 Compose（三层嵌套）
-- `AndroidView` 的 `factory` 用 `remember` 缓存 View 实例，`update` 只做必要的状态同步
-- 多 Fragment 场景考虑用 `CompositionLocal` 共享 `Recomposer`，减少重复创建
+Strong Skipping 会 memoize composable 内的 Lambda，但以下代码仍可能产生额外分配或失去跳过机会：
 
-## GC 压力与帧抖动
+- 在调用 composable 前反复构造新的 UI model 或集合；
+- 明确使用 `@DontMemoize`；
+- 在非 composable 热路径中创建捕获 Lambda；
+- 每次执行 body 都构造复杂 Modifier 链或中间集合；
+- 参数对象的引用每次变化，使不稳定参数的 `===` 比较失败。
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/gc/heap-inl.h]
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
-[已验证: DeepResearch/2026-06-19-jetpack-compose-memory-churn-source-analysis.md]
+Compose Compiler 报告能说明函数是否 restartable、skippable，以及参数稳定性。它不能给出运行时对象分配数量。编译器报告与 allocation recording 应配合使用。
 
-Compose 产生的短命对象对 GC 的影响，和传统 `onDraw()` 分配 Paint 的性质类似——都是高频分配短命对象推高 `bytes_allocated`，让 ART 更早发起并发 GC。差异在于 Compose 的分配源更分散，不像 `onDraw()` 集中在一个函数里。
+## `derivedStateOf` 与 `snapshotFlow`
 
-4.8 节展开过 ART GC 的分配-回收机制：`Heap::AllocObjectWithAllocator()` 分配后检查 `ShouldConcurrentGCForJava()`，达到阈值后触发 `ConcurrentGCTask`。Compose 的重组分配每帧增加几 KB 到几十 KB 的 `bytes_allocated`，如果重组频率高（动画、滚动、快速状态切换），阈值会更快达到。
+### `derivedStateOf` 负责压缩 UI 失效
 
-Android 16 (API 36) 的分代 Concurrent Mark-Compact (CMC) GC 对 Compose 短命对象更友好：年轻代回收频率更高，Eden 区切分更细，`RecomposeScopeImpl` 和 Lambda 这类活不过两帧的对象在年轻代就被回收，不会晋升到老年代。Android 17 (API 37) 方向上分代 CMC 继续优化，但公开 AOSP 截至 2026-06 尚无 `android-17.0.0_r1` tag，CMC 全量情况待验证。
+`derivedStateOf` 适合“输入变化很频繁，UI 只关心较少的结果变化”。滚动位置每次变化，按钮只关心是否已经离开列表顶部，就是典型场景。
 
-[待验证: AOSP android-17.0.0_r1, 分代 CMC 是否全量默认启用]
+下面的代码用于把高频滚动状态压成一个 Boolean，并把该对象保存在 Composition 中。
 
-### 诊断 Compose 引发的 GC 抖动
+```kotlin
+@Composable
+fun ScrollToTopButton(listState: LazyListState) {
+    val showButton by remember(listState) {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0
+        }
+    }
 
-诊断流程和 23.5 节的通用内存抖动方法一致，但需要额外关注 Compose 特有信号：
+    AnimatedVisibility(visible = showButton) {
+        Button(onClick = { /* launch scroll */ }) {
+            Text("返回顶部")
+        }
+    }
+}
+```
 
-1. **Perfetto trace 对齐三轨道**：Frame Timeline + 主线程/RenderThread + HeapTaskDaemon/GC 事件。如果 GC 事件密集出现在 Compose 重组窗口（通常是状态变化后的 1-2 帧），说明重组分配是触发源。
+只要 `showButton` 的结果没有变化，读取它的 composable 不需要因每个滚动更新而重组。`derivedStateOf` 自己要维护依赖与缓存，因此普通字符串拼接、两个低频状态的简单组合、每次输入变化都会产生新输出的计算，通常直接计算更清楚。
 
-2. **Allocation Recording**：在 Android Studio Memory Profiler 中开启分配记录，过滤 `androidx.compose.runtime` 包名。重点观察 `RecomposeScopeImpl`、`StateRecord`、`ResultRecord`、`Lambda`（表现为 `...$xxx$1` 类名）的分配频率。
+Compose Runtime 1.12.0-beta01 的发布说明记录了一项潜在内存泄漏修复：未正确 remember 的 `derivedStateOf()` 在 forward writes 场景中可能被 Composition 保留到 dispose。稳定版 1.11.4 尚未包含这项 beta 修复。可执行的版本边界是：
 
-3. **Compose Compiler Metrics**：在 `build.gradle` 中开启 Compose Compiler metrics：
+- composable 内创建 `derivedStateOf` 时使用 `remember`；
+- 不把 beta 修复描述成稳定版已有行为；
+- 怀疑该问题时，在 heap dump 中检查 `DerivedSnapshotState` 到 Composition 的引用链，再决定升级验证；
+- 不用 `remember(list, index)` 代替对 `SnapshotStateList` 元素的观察，因为列表身份不变时缓存可能返回旧数据。
 
-```gradle
+### `snapshotFlow` 负责把 State 转成事件流
+
+`snapshotFlow` 收集 block 读取的 snapshot state，相关 state apply 后重新运行 block，并按结果是否相等决定是否 emit。稳定版 [`SnapshotFlow.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotFlow.kt)会注册 apply observer、维护订阅集合，并在 Flow 退出时取消订阅和 dispose 内部 manager。
+
+下面的代码用于把列表位置变化交给分析事件；该任务会随 `LaunchedEffect` 离开 Composition 或 key 变化而取消。
+
+```kotlin
+@Composable
+fun TrackListPosition(
+    listState: LazyListState,
+    reportIndex: (Int) -> Unit,
+) {
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex }
+            .collect { index -> reportIndex(index) }
+    }
+}
+```
+
+把 `snapshotFlow` 放在 `LaunchedEffect` 中不会天然泄漏。风险来自外部作用域比 UI 所有者存活更久、effect key 选择错误、回调捕获 Activity/View，或重复启动未受管理的收集任务。heap dump 中只看到 Snapshot 类也不足以定案，要继续找协程 Job、Flow collector 和宿主生命周期。
+
+## Lazy layout 的 key 到底解决什么
+
+Lazy layout 默认按位置识别 item。数据重排后，同一个业务对象的位置变化，位置身份会让 remembered state 无法随业务对象移动。[Lazy list 官方文档](https://developer.android.com/develop/ui/compose/lists)建议提供稳定且唯一的 key，使 item state 在重排时跟随 item。
+
+key 的主要价值包括：
+
+- 数据插入、删除和排序后保持 item 身份；
+- 减少无关 item 的重组；
+- 让 `rememberSaveable` 状态在符合条件时恢复。
+
+key 不能保证滚出屏幕的所有节点永久常驻，也不能单独消除 item 内部对象分配。用于 `rememberSaveable` 时，key 类型还要能由 `Bundle` 支持。业务稳定 ID 是优先选择；只有列表内容和顺序永远不变时，位置才可能满足身份语义。
+
+## View 与 Compose 混合时的生命周期
+
+### `ComposeView` 应跟随正确的 LifecycleOwner
+
+每个 `ComposeView` 都有自己的 Composition 和宿主 View 引用。Fragment 的 View 销毁后，如果 Composition 仍由更长生命周期持有，remembered values、effects 和 UI tree 会继续存活。
+
+下面的代码用于让 Fragment 中的 Composition 随 view lifecycle 销毁。
+
+```kotlin
+override fun onCreateView(
+    inflater: LayoutInflater,
+    container: ViewGroup?,
+    savedInstanceState: Bundle?,
+): View {
+    return ComposeView(requireContext()).apply {
+        setViewCompositionStrategy(
+            ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+        )
+        setContent {
+            AppTheme {
+                ScreenContent()
+            }
+        }
+    }
+}
+```
+
+[Compose in Views 官方文档](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views)把 `DisposeOnViewTreeLifecycleDestroyed` 列为 Fragment View 的适用策略。普通 View 场景的默认策略是 `DisposeOnDetachedFromWindowOrReleasedFromPool`。选择策略时要按宿主类型判断，不要给所有 `ComposeView` 写同一个释放规则。
+
+### `AndroidView.factory` 不需要额外 `remember`
+
+`AndroidView` 的 `factory` 用于创建 View，`update` 在 View 创建后执行，也会在读取的 state 变化时再次执行。把 View 另存进 `remember` 可能制造第二个所有者，增加生命周期错误。
+
+Lazy list 中需要复用 View 时，应使用带 `onReset` 的 overload。下面的代码用于在复用前清理上一条 item 的瞬时状态，并在不再复用时释放资源。
+
+```kotlin
+AndroidView(
+    factory = { context -> PreviewView(context) },
+    update = { view ->
+        view.bind(model)
+    },
+    onReset = { view ->
+        view.clearTransientState()
+    },
+    onRelease = { view ->
+        view.release()
+    },
+)
+```
+
+[Views in Compose 官方文档](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose)说明，`onReset` 必须非空才会启用 Lazy 容器中的 View 复用。`update` 应是幂等的；监听器若在每次 update 中注册，也要先替换或移除旧监听器。
+
+混合页面的 heap dump 应同时检查 View tree 与 Composition。常见 dominator 包括 Fragment view binding、adapter、listener、`AndroidView` 内的 WebView/播放器/地图、Navigation back stack 和长生命周期 ViewModel。
+
+## Android 17 中分配如何触发 ART GC
+
+Compose Runtime 对象位于应用 Java Heap。Android 17 的 [`heap-inl.h`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap-inl.h)显示，Java 对象分配会更新已分配字节；并发 collector 下，`ShouldConcurrentGCForJava()` 根据当前配置检查分配阈值或 time-based GC 条件。需要 GC 时，分配路径在允许线程挂起后调用 `RequestConcurrentGCAndSaveObject()`。
+
+[`heap.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc)中的 `ConcurrentGCTask` 由 task processor 调度。GC 名称包含“concurrent”不表示应用线程完全没有暂停；root 扫描、checkpoint、对象移动与系统调度仍可能影响帧。
+
+Android 17 同时支持 generational CC 与 generational CMC。是否启用还要经过 collector、read barrier 或 userfaultfd 能力、`-Xgc` 选项、ART feature flag 和 DeviceConfig 属性判断。源码中的属性默认值不能替代设备实测。不要写成“所有 Android 17 应用都固定使用分代 CMC”。
+
+Compose 分配与卡顿之间需要建立证据链：
+
+1. Frame Timeline 出现 missed frame 或长帧；
+2. Compose tracing 显示对应窗口执行了哪些 composable；
+3. allocation recording 证明该窗口分配速率或特定类型增加；
+4. ART GC slice、线程状态和暂停区间与长帧重叠；
+5. 修正分配后，同一设备与场景的长帧和 GC 数据同步改善。
+
+只有 GC 与帧出现在相近时间，尚不能证明 GC 是主因。重组中的业务计算、measure/layout、图片解码和主线程 I/O 都可能与 GC 同时发生。
+
+## 诊断与回归流程
+
+### 用 release 构建测性能
+
+Debug 构建、Layout Inspector、method tracing 和 allocation recording 都会改变执行与分配行为。[Compose 稳定性诊断文档](https://developer.android.com/develop/ui/compose/performance/stability/diagnose)要求编译器报告使用 release build；页面性能回归也应使用 release-like、可 profile 的构建，并保持 R8、Baseline Profile 和依赖版本一致。
+
+下面的 Gradle 配置用于输出 Compose Compiler 稳定性报告和模块指标。
+
+```kotlin
 composeCompiler {
     reportsDestination = layout.buildDirectory.dir("compose_compiler")
+    metricsDestination = layout.buildDirectory.dir("compose_compiler")
 }
 ```
 
-生成的报告包含每个 @Composable 函数的 restartable/restartable-skippable 状态。如果大量函数标记为 `restartable but not skippable`，说明这些函数每次都会重组——对应的 `RecomposeScopeImpl` 和 block Lambda 每次都会分配。
+报告中的 `restartable`、`skippable` 和参数稳定性用于筛选可疑 composable。它们不是优化目标清单：某个函数不可跳过但调用很少，可能没有用户可见成本；把不满足契约的类型强行标成 `@Stable` 会造成 UI 不更新。
 
-这段配置的用途是让 Compose Compiler 输出稳定性报告。重点看 `restartable` 标记——一个函数是 restartable 但不是 skippable，意味着参数变化时它一定会重新执行。
+### 四类工具回答四个问题
 
-4. **Layout Inspector 的 Recomposition Counts**：Android Studio Layout Inspector 可以显示每个 Composable 的重组次数。如果某个 Composable 在静止状态下重组次数不为 0，说明有不必要的状态读取。
+| 工具 | 回答的问题 | 使用限制 |
+| --- | --- | --- |
+| Compose Compiler reports | 编译器如何判断函数与参数 | 没有运行时次数和 allocation |
+| Layout Inspector | 当前会话中哪些 composable 重组或被跳过 | 调试工具有观测成本 |
+| Perfetto + Compose tracing | 重组、布局、绘制、线程与 GC 的时间关系 | 需要固定场景和 release-like 构建 |
+| Allocation recording / heap dump | 哪些类型在分配、哪些对象被谁持有 | recording 成本高；heap dump 是单点状态 |
 
-### Compose 在低端设备上的 GC 表现
+[Composition tracing 文档](https://developer.android.com/develop/ui/compose/tooling/tracing)说明，Macrobenchmark 可以产出带 Compose tracing 的系统 trace。滚动、页面切换和启动应写成可重复的 Macrobenchmark；Memory Profiler 用于专项归因，不作为唯一回归基线。
 
-低端设备的 ART 堆更小（`dalvik.vm.heapsize` 通常 192-256MB），`concurrent_start_bytes_` 阈值更低，GC 触发更频繁。Compose 的每帧几 KB 分配在旗舰机上不会引起感知，在低端设备上可能每帧触发 minor GC。
+### 先判断 churn，再判断 leak
 
-实测建议：在 Android Studio 的 Device Manager 中创建一个 RAM 2GB 的模拟器（如 Pixel 4a 级别），运行 Compose 页面并抓取 Perfetto trace。如果 `HeapTaskDaemon` 在滑动期间持续 Running，且每帧都有 GC 事件，说明 Compose 分配密度对这个设备档次偏高。优化方向是减少每帧分配——比减少重组次数更直接的收益。
+建议按以下顺序检查：
 
-## 内存优化策略
+1. 用 `dumpsys meminfo` 和 Java Heap 曲线确认水位与增长形态；
+2. 用 allocation recording 找高频类型与调用栈；
+3. 用 heap dump 查看离开页面后仍存活对象的 dominator；
+4. 用 Perfetto 对齐 Compose、frame 与 GC；
+5. 修改一处后复跑相同操作，不同时改状态模型、列表与图片策略。
 
-[已验证: 官方文档, developer.android.com/jetpack/compose/performance]
-[结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md — 参考其"从源头分类治理"的优化策略组织方式]
+页面退出后仍存在一份 Composition 不一定异常，Navigation 可能保留 destination 状态。要结合 back stack、宿主 lifecycle 与产品预期判断。相同 destination 不断累积、旧 Fragment view 已销毁却仍支配 Composition，才有明确的泄漏方向。
 
-### 1. 减少 Composable 函数的 restartable but not skippable
+## 版本边界
 
-Compose Compiler 会对每个 @Composable 函数做稳定性推断。参数类型被标记为 `@Stable` 或 `@Immutable` 的函数可以 skip（参数没变就不重组）。参数包含 `List<T>`、`Map<K,V>` 等不稳定类型的函数无法 skip。
+| 版本 | 与本章相关的变化 |
+| --- | --- |
+| Kotlin 2.0.20+ | Strong Skipping 默认启用；不稳定参数按引用相等判断，composable 内 Lambda 自动 memoize |
+| Compose Runtime 1.11.4 | 本章 Jetpack 稳定锚点；link-buffer 实现存在但默认关闭 |
+| Compose Runtime 1.12.0-beta01/02 | beta 发布说明记录 `derivedStateOf` forward writes 潜在保留问题修复；不能当作 1.11.4 已有修复 |
+| Android 17 / API 37 | ART 源码锚点为 `android-17.0.0_r1`；GC collector 与 generational 模式仍受运行时和设备配置影响 |
 
-```kotlin
-// 问题：List 参数不稳定，函数每次都会重组
-@Composable
-fun UserList(users: List<User>) {
-    // users 是 List<User>，Compose 认为 List 不稳定
-    // 即使 users 内容没变，函数也会重新执行
-    Column {
-        users.forEach { UserItem(it) }
-    }
-}
+Compose Multiplatform 在不同目标上使用不同运行时与内存管理器。本章所有 GC、heap dump 和 Android View 互操作结论只适用于 Android；不能把 Desktop/JVM、iOS 或 Wasm 的对象大小与 GC 行为直接移植过来。
 
-// 修正 1：用 @Immutable 注解包装
-@Immutable
-data class UserList(val users: List<User>)
+## 小结
 
-@Composable
-fun UserList(data: UserList) {
-    Column {
-        data.users.forEach { UserItem(it) }
-    }
-}
+Compose 内存治理要把“被长期持有”和“分配过快”分开。Slot storage、RecomposeScope 和 Snapshot record 是运行时结构，看到类名不等于发现泄漏。泄漏要沿 dominator 找宿主生命周期，churn 要用 allocation stack 证明。
 
-// 修正 2：改用 SnapshotStateList
-@Composable
-fun UserList(users: SnapshotStateList<User>) {
-    // SnapshotStateList 是 Compose 已知的稳定类型
-    Column {
-        users.forEach { UserItem(it) }
-    }
-}
-```
-
-这段代码展示了让 Composable 函数变成 skippable 的两种方式。重点看 `@Immutable` 注解和 `SnapshotStateList`——两者都让 Compose Compiler 认为参数是稳定的，函数可以被跳过。
-
-### 2. 用 SnapshotIntState/LongState/FloatState 替代 MutableState<Int>
-
-前面 State 对象一节已经解释了装箱开销。这里给出替换对照：
-
-| 原始写法 | 替换写法 | 消除的分配 |
-|----------|----------|-----------|
-| `mutableStateOf(0)` | `mutableIntStateOf(0)` | 每次读取的 `Integer` 装箱 |
-| `mutableStateOf(0L)` | `mutableLongStateOf(0L)` | 每次读取的 `Long` 装箱 |
-| `mutableStateOf(0f)` | `mutableFloatStateOf(0f)` | 每次读取的 `Float` 装箱 |
-
-在动画回调、计数器、进度条等高频读取场景，这个替换的收益明显。
-
-### 3. LazyList 的 key 参数
-
-`LazyColumn` / `LazyRow` 的 `items()` 如果不带 `key`，列表重排时 Compose 无法复用 item 的 `SlotTable` 节点。带 `key` 后，Compose 可以把滚出屏的 item 节点和滚入屏的 item 节点做映射，避免重复创建。
-
-```kotlin
-// 问题：无 key，列表重排时全部重建
-LazyColumn {
-    items(products) { product ->
-        ProductItem(product)  // 每个 item 的 SlotTable 节点都是新的
-    }
-}
-
-// 修正：用稳定 key
-LazyColumn {
-    items(products, key = { it.id }) { product ->
-        ProductItem(product)  // SlotTable 节点可复用
-    }
-}
-```
-
-这段代码展示 Lazy item key 的内存价值。重点看 `key = { it.id }`——`it.id` 必须是稳定的唯一标识，用 `hashCode` 或 `index` 作为 key 没有意义。
-
-### 4. 合理使用 derivedStateOf
-
-`derivedStateOf` 的定位是「多个 State 输入 → 一个派生输出，且只有结果变化才触发重组」。它适合输入频繁变化但输出偶尔变化的场景（如 `scrollState.value > threshold` 的布尔判断）。错误用法是把它当成通用缓存——在高频更新路径上（如列表滚动），`ResultRecord` 链的增长本身就是一个分配源。
-
-判断标准：如果派生计算每次都会产生新结果，`derivedStateOf` 没有缓存命中，它的开销比直接读取更大。适合用 `derivedStateOf` 的场景是输入变化频率远高于输出变化频率。
-
-### 5. 避免分支抖动
-
-```kotlin
-// 问题：loading 状态快速切换导致 scope 反复 create+release
-@Composable
-fun Content(viewModel: ViewModel) {
-    if (viewModel.isLoading) {
-        LoadingView()  // scope A
-    } else {
-        ContentView()  // scope B
-    }
-    // 如果 isLoading 在 1 秒内切换 5 次，scope A 和 B 各 release+create 5 次
-}
-
-// 修正：用 AnimatedContent 或 Crossfade 平滑过渡
-@Composable
-fun Content(viewModel: ViewModel) {
-    Crossfade(targetState = viewModel.isLoading) { isLoading ->
-        if (isLoading) LoadingView() else ContentView()
-    }
-}
-```
-
-`Crossfade` 内部管理过渡状态，不会像裸 `if/else` 那样每次切换都销毁和重建 scope。对于真正频繁切换的状态（如网络重试），考虑把 loading 和 content 都组合在同一 Composable 中用 alpha/visibility 控制，而不是用条件分支。
-
-### 6. 首帧分配优化
-
-首帧（冷启动后第一个 Compose 帧或页面首次组合）的 `SlotTable` 倍增和 scope 批量创建会形成分配峰值。优化方向：
-
-- 减少首屏 Composable 数量：拆分页面，延迟加载非首屏内容
-- 用 `LazyColumn` 替代 `Column { items.forEach { ... } }`：Lazy 版本只组合可见 item
-- 避免在 Composition 阶段做重计算：数据预处理移到 ViewModel
-
-## 源码级证据补充（2026-06-22 调研）
-
-[已验证: androidx-main, compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/RecomposeScopeImpl.kt]
-[已验证: androidx-main, compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotIntState.kt]
-[已验证: androidx-main, compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotState.kt]
-[已验证: androidx-main, compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/GapComposer.kt]
-[已验证: androidx-main, compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/composer/gapbuffer/SlotTable.kt]
-[DeepResearch: 2026-06-22-jetpack-compose-state-management-source.md]
-
-本节是源码级补充，给出上文中关键论断的直接源码引用。所有路径基于 `androidx-main` 分支（对应 Compose 1.8.x / Android 17 / API 37 兼容版本）。
-
-### `RecomposeScopeImpl` 的 Lazy 字段分配（§3.2 补充）
-
-上文提到 "RecomposeScopeImpl 内部有 trackedInstances: ScatterSet 和 trackedDependencies: MutableObjectIntMap 两个按需创建的集合"。源码确认这两个字段都是 `null`-initialized 且只在首次访问时 Lazy 创建：
-
-```kotlin
-// RecomposeScopeImpl.kt:300-309
-fun recordRead(instance: Any): Boolean {
-    if (rereading) return false
-    val trackedInstances =
-        trackedInstances ?: MutableObjectIntMap<Any>().also { trackedInstances = it }
-    val token = trackedInstances.put(instance, currentToken, default = -1)
-    if (token == currentToken) return true
-    return false
-}
-```
-
-```kotlin
-// RecomposeScopeImpl.kt:315-322
-fun recordDerivedStateValue(instance: DerivedState<*>, value: Any?) {
-    val trackedDependencies =
-        trackedDependencies
-            ?: MutableScatterMap<DerivedState<*>, Any?>().also { trackedDependencies = it }
-    trackedDependencies[instance] = value
-}
-```
-
-**工程意义**：一个纯静态 `@Composable fun Header(title: String)`（不读任何 state、不读 derived state），其 `RecomposeScopeImpl` 实例不付出 `MutableObjectIntMap`/`MutableScatterMap` 的代价，只占用对象头 + 几个引用字段 + flags Int。**这是 Compose 内存模型的稳定基石**：静态 composable 的内存成本接近常数。
-
-### 11 个 Boolean 标志打包到 1 个 Int
-
-上文提到 "scope 内部还有多个 Boolean 状态"。源码验证这些 Boolean 状态用位标志打包到一个 Int 字段（`RecomposeScopeImpl.kt:73-83`）：
-
-```kotlin
-private const val UsedFlag = 0x001
-private const val DefaultsInScopeFlag = 0x002
-private const val DefaultsInvalidFlag = 0x004
-private const val RequiresRecomposeFlag = 0x008
-private const val SkippedFlag = 0x010
-private const val RereadingFlag = 0x020
-private const val ForcedRecomposeFlag = 0x040
-private const val ForceReusing = 0x080
-private const val Paused = 0x100
-private const val Resuming = 0x200
-private const val ResetReusing = 0x400
-```
-
-通过 `getFlag()`/`setFlag()` 读写。11 个独立 Boolean 字段在 JVM 上对齐到 ~44 字节，打包后 ~4 字节 + getter/setter 内联开销。**单个 scope 节省 ~40 字节**，50 个 composable 的页面累计节省 ~2 KB。这是 Compose 在大型页面上仍能保持紧凑内存的关键设计。
-
-### `SnapshotMutableIntStateImpl` 的零装箱证据（§3.1 补充）
-
-`mutableIntStateOf` 调用的 `SnapshotMutableIntStateImpl` 内部用原始 `Int` 字段存储，源码 KDoc 明确承诺：
-
-```kotlin
-// SnapshotIntState.kt:38-49 (KDoc)
-/**
- * ... On the JVM, values are stored in memory as the primitive `int` type,
- * avoiding the autoboxing that occurs when using `MutableState<Int>`.
- */
-@StateFactoryMarker
-public fun mutableIntStateOf(value: Int): MutableIntState = createSnapshotMutableIntState(value)
-```
-
-```kotlin
-// SnapshotIntState.kt:155-167
-override var intValue: Int
-    get() = next.readable(this).value           // 直接返回 Int——零装箱
-    set(value) =
-        next.withCurrent(this) {
-            if (it.value != value) {
-                next.overwritable(this, it) { this.value = value }
-            }
-        }
-
-private class IntStateStateRecord(snapshotId: SnapshotId, var value: Int) :
-    StateRecord(snapshotId) {
-    override fun assign(value: StateRecord) {
-        this.value = (value as IntStateStateRecord).value
-    }
-    // ...
-}
-```
-
-对比通用版本 `SnapshotMutableStateImpl<T>`（`SnapshotState.kt:141-148`）：
-
-```kotlin
-override var value: T
-    get() = next.readable(this).value    // T 是 Object——Int 必装箱
-    set(value) =
-        next.withCurrent(this) {
-            if (!policy.equivalent(it.value, value)) {
-                next.overwritable(this, it) { this.value = value }
-            }
-        }
-
-private class StateStateRecord<T>(snapshotId: SnapshotId, myValue: T) :
-    StateRecord(snapshotId) {
-    var value: T = myValue              // T 是 Object——Int 必装箱
-}
-```
-
-接口层 `IntState.value` getter 仍返回 `Int` 但有 `@Suppress("AutoBoxing")`（`SnapshotIntState.kt:71`）。`value` 仅为满足 `State<T>` 接口契约；Compose Compiler 生成的代码优先用 `intValue` 无装箱版本。
-
-### Scope 分配的三条路径（§3.3 补充）
-
-上文提到 "一个含 50 个 @Composable 的页面，初始组合就产生 50 个 scope 对象"。源码 `GapComposer.addRecomposeScope()` 明确三条分配路径（`GapComposer.kt:2119-2155`）：
-
-| 路径 | 触发条件 | 新分配？ |
-|------|----------|----------|
-| `inserting == true`（首次组合） | Composition 首次进入该节点 | ✅ 新分配 |
-| `slot == Composer.Empty`（复活） | `if/when` 分支从隐藏变可见（之前 `deactivateToEndGroup()` 清空） | ✅ 新分配 |
-| 重组路径 | 重组触发，scope 已在 SlotTable 中 | ❌ 复用旧 scope |
-
-复用路径仅设置 `scope.requiresRecompose = invalidation != null || scope.forcedRecompose`。**重组不会分配新 `RecomposeScopeImpl`**——这是 Compose 内存稳定的核心契约。
-
-### endRestartGroup 触发 block Lambda 分配（§3.4 补充）
-
-上文提到 "scope 还有 block: (Composer, Int) -> Unit 字段——一个真正的 Kotlin Lambda 对象"。`GapComposer.endRestartGroup()` 决定是否返回 `ScopeUpdateScope`：
-
-```kotlin
-// GapComposer.kt:2158-2196
-override fun endRestartGroup(): ScopeUpdateScope? {
-    val scope = if (invalidateStack.isNotEmpty()) invalidateStack.pop() else null
-    if (scope != null) { ... }
-    val result =
-        if (scope != null && !scope.skipped && (scope.used || forceRecomposeScopes)) {
-            // 返回 scope——编译器生成代码会调用 scope.updateScope { ... }
-            scope
-        } else {
-            null  // scope.skipped=true 时不返回——跳过则不分配 Lambda
-        }
-    end(isNode = false)
-    return result
-}
-```
-
-返回非 null 时，编译器生成的字节码调用 `scope.updateScope { composer, _ -> /* composable body */ }`，新 Lambda 实例被 `scope.block = block` 覆盖（`RecomposeScopeImpl.kt:253-255`）。旧 Lambda 失去唯一引用后等待 GC。
-
-**优化机会**：当 scope.skipped = true（参数未变化，组合跳过），`endRestartGroup` 返回 null，不分配新 Lambda。**Strong Skipping Mode 让"参数未变"的 scope 完全跳过，不仅省 CPU，也省 Lambda 分配**——这是 `mutableStateOf` → `mutableIntStateOf` 之外的第二个关键优化路径。
-
-### SlotTable 的最小扩容单位
-
-上文提到 "SlotTable 的 IntArray 和 Array<Any?> 初始大小为 0。首次组合时，数组按倍增策略扩容"。源码确认扩容的下限（`SlotTable.kt:3935-3937`）：
-
-```kotlin
-// The minimum number of groups to allocate the group table
-private const val MinGroupGrowthSize = 32
-
-// The minimum number of data slots to allocate in the data slot table
-private const val MinSlotsGrowthSize = 32
-```
-
-`Group_Fields_Size = 5`（`SlotTable.kt:3897`）——每组 5 个 int。首次扩容到 32 组 = 160 个 int = 640 字节 groups 数组 + 32 个 slot = 256 字节 slots 数组。**最小页面的 SlotTable 静态占用约 1 KB**，避免了"1→2→4→8"的多轮扩容抖动。
-
-`GroupInfo` 字段是位打包（`SlotTable.kt:3918-3928`）：bit 31=Node，bit 30=ObjectKey，bit 29=Aux，bit 28=Mark，bit 27=ContainsMark，bit 0-25=NodeCount（26 位，最大 ~6700 万）。这让一个 Int 同时携带"组元数据 + 节点计数"，避免额外的 int 字段。
-
-### derivedStateOf 的 Compose 1.12 修复
-
-`derivedStateOf { ... }` 在 Compose 1.7-1.11 之间存在一个内存泄漏：`derivedStateOf` 实例被 `RecomposeScopeImpl.trackedDependencies` 强引用，scope 又被 SlotTable 强引用。Forward writes（先写入 derived、再写入底层 StateFlow）形成引用链：`composition → SlotTable → scope.trackedDependencies → DerivedSnapshotState → 外部对象`。
-
-**LazyColumn 快速滚动时，scope 反复销毁/重建，但旧的 `derivedStateOf` 实例仍被已不在使用中的 scope 引用**——直到整个 composition dispose 才回收，可能累计 MB 级。
-
-AndroidX 公告 `Ib5d87, b/516904513`（Compose 1.12.0-beta01）修复：让 `DerivedSnapshotState` 不再通过 `trackedDependencies` 形成强引用闭环，或在 scope `release()` 时显式断开引用。
-
-**Android 17 / Compose 1.8.x 实践建议**（在 1.12 修复之前的版本）：
-- 列表项内避免 `derivedStateOf`，直接用 `remember(list, index) { ... }`；
-- 必须用时确保 derived state 块的依赖项是稳定的（不引用 ViewModel 的可变 StateFlow）；
-- 诊断方法：在 Memory Profiler 搜索 `DerivedSnapshotState` 实例，确认活跃实例数不超过活跃 composition 数。
-
-### 一手源码路径速查
-
-| 类/常量 | 路径 | 用途 |
-|--------|------|------|
-| `RecomposeScopeImpl` | compose/runtime/.../RecomposeScopeImpl.kt | scope 实例字段分配、bit flags、release() |
-| `SnapshotMutableStateImpl<T>` | compose/runtime/.../SnapshotState.kt | 通用 T 类型装箱版本 |
-| `SnapshotMutableIntStateImpl` | compose/runtime/.../SnapshotIntState.kt | Int 原生特化版本（零装箱） |
-| `SnapshotMutableLongStateImpl` | compose/runtime/.../SnapshotLongState.kt | Long 原生特化 |
-| `SnapshotMutableFloatStateImpl` | compose/runtime/.../SnapshotFloatState.kt | Float 原生特化 |
-| `SnapshotMutableDoubleStateImpl` | compose/runtime/.../SnapshotDoubleState.kt | Double 原生特化 |
-| `GapComposer.addRecomposeScope` | compose/runtime/.../GapComposer.kt:2119-2155 | scope 分配的三条路径 |
-| `GapComposer.endRestartGroup` | compose/runtime/.../GapComposer.kt:2158-2196 | 返回 ScopeUpdateScope 的条件 |
-| `SlotTable.Group_Fields_Size` | compose/runtime/.../SlotTable.kt:3897 | 常量 = 5 |
-| `SlotTable.MinGroupGrowthSize` | compose/runtime/.../SlotTable.kt:3935 | 常量 = 32 |
-| `SlotTable.MinSlotsGrowthSize` | compose/runtime/.../SlotTable.kt:3937 | 常量 = 32 |
-
-## 扩展
-
-### Compose Multiplatform 的内存差异
-
-[待验证: 未在 KMP 项目中实测]
-
-Compose Multiplatform 在 Android 上使用 ART，在 Desktop/JVM 上使用宿主 JVM 的 GC。两者对短命对象的回收策略不同：ART 的分代 CMC 针对移动设备的低内存场景优化，Desktop JVM 的 G1/ZGC 针对大堆低延迟优化。同一个 Compose 页面在 Desktop 上内存占用通常更高（JVM 对象头更大、堆初始大小更大），但 GC 压力相对更低（堆空间充裕）。
-
-### Compose 测试的内存开销
-
-Compose UI Test 运行时会在测试进程创建额外的 Composition。`createComposeRule()` 每次创建一个独立的 `Composition` 和 `SlotTable`。如果测试套件包含大量 `@Composable` 测试用例，测试进程的内存占用可能显著高于正常运行时。在 CI 环境中，这可能表现为 OOM 或 Gradle 测试任务被 kill。
-
-缓解方法：测试间用 `composeTestRule.disposeContent()` 清理 Composition；批量测试拆分到多个测试类运行。
-
-## 诊断工具速查
-
-| 工具 | 适用场景 | 关注指标 |
-|------|---------|---------|
-| Compose Compiler Metrics | 函数稳定性分析 | restartable/skippable 标记 |
-| Layout Inspector | 运行时重组计数 | 静止状态下重组次数 |
-| Memory Profiler Allocation Recording | 分配频率分析 | `RecomposeScopeImpl`、`StateRecord`、`ResultRecord` 分配数 |
-| Perfetto trace | GC 与帧对齐 | HeapTaskDaemon 活跃时段 vs Frame Timeline |
-| `dumpsys meminfo <pkg>` | 整体内存水位 | Java Heap + Native Heap + Graphics 变化趋势 |
-
-## 与其他章节的关系
-
-- **10.x Compose 内存管理专题**：Compose 内存模型的机制详解，本节是其应用实战篇
-- **23.5 内存抖动与 GC 治理**：通用内存抖动的诊断和治理方法，本节是 Compose 场景的专项补充
-- **4.8 ART GC 机制**：`Heap::AllocObjectWithAllocator` → `ShouldConcurrentGCForJava()` → `ConcurrentGCTask` 的完整链路
-- **7.7 Compose 卡顿分析**：Compose 卡顿的归因方法，本节从内存分配角度补充
-- **22.3 Compose 渲染管线**：Compose 从组合到渲染的完整流程
+对应用代码，优先处理组合阶段的重复计算、每次创建的新输入对象、错误的状态所有者、未管理的协程和 View 资源。`remember`、`derivedStateOf`、primitive State、Lazy key 与 Strong Skipping 各有明确语义，不能互相替代。ART GC 的触发与 collector 配置以 Android 17 源码和设备 trace 为准，不使用固定堆大小、每帧分配量或 GC 次数作通用结论。
 
 ## 参考资料
 
-- [Compose 性能最佳实践](https://developer.android.com/jetpack/compose/performance)
-- [Compose 稳定性说明](https://developer.android.com/jetpack/compose/performance/stability)
-- [Android 内存优化指南](https://developer.android.com/topic/performance/memory)
-- DeepResearch/2026-06-19-jetpack-compose-memory-churn-source-analysis.md
-
-
-### Jetpack Compose 状态管理机制的内存分配与 GC 交互
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-22-jetpack-compose-state-management-source.md
-- 类型：DeepResearch 调研结果
-- 摘要：基于 androidx-main 源码深度解析 Compose 状态管理的内存模型：MutableState 通用版本的装箱开销 vs 原始类型特化（mutableIntStateOf）的直接存储；RecomposeScopeImpl 的 Lazy 字段分配策略（不读 state 时不创建集合）；derivedStateOf 的 ResultRecord 链开销与 Compose 1.12 修复的前向写泄漏（b/516904513）。所有源码基于 Compose 1.8.x / Android 17 API 37。
-- 注入时间：2026-06-22
-- 价值：补足"为什么 mutableIntStateOf 不装箱"的源码证据，揭示 ReccomposeScopeImpl 的 Lazy 分配策略和 derivedStateOf 在 Snapshot 体系下的 record 链开销
+- [Compose Runtime release notes](https://developer.android.com/jetpack/androidx/releases/compose-runtime)
+- [Compose performance best practices](https://developer.android.com/develop/ui/compose/performance/bestpractices)
+- [Compose phases and performance](https://developer.android.com/develop/ui/compose/performance/phases)
+- [Strong Skipping](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)
+- [Diagnose Compose stability](https://developer.android.com/develop/ui/compose/performance/stability/diagnose)
+- [State and Jetpack Compose](https://developer.android.com/develop/ui/compose/state)
+- [Lazy lists and grids](https://developer.android.com/develop/ui/compose/lists)
+- [Composition tracing](https://developer.android.com/develop/ui/compose/tooling/tracing)
+- [Using Compose in Views](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views)
+- [Using Views in Compose](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose)
+- [Compose Runtime 1.11.4：`Composition.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composition.kt)
+- [Compose Runtime 1.11.4：`RecomposeScopeImpl.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/RecomposeScopeImpl.kt)
+- [Compose Runtime 1.11.4：`DerivedState.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/DerivedState.kt)
+- [Compose Runtime 1.11.4：`SnapshotFlow.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotFlow.kt)
+- [AOSP Android 17：ART `heap-inl.h`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap-inl.h)
+- [AOSP Android 17：ART `heap.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc)
+- [Android 17 Kernel：`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)
