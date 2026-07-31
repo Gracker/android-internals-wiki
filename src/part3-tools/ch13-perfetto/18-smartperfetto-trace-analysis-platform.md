@@ -213,7 +213,9 @@ v1.3.0 注册了五条 production runtime：
 
 Qoder SDK 不随默认 Docker、portable 或 npm 安装提供，启用前需要审阅其独立条款并显式安装 optional peer。Pi、OpenCode、Qoder 在 SmartPerfetto 中都只获得按请求生成的分析工具，不应按通用 coding agent 的文件、shell 或网络权限理解。
 
-runtime 选择顺序是：请求或会话内的 provider、Provider Manager 当前 active provider、`SMARTPERFETTO_AGENT_RUNTIME`、默认 `claude-agent-sdk`。恢复历史 session 时，provider/runtime 身份随快照固定；已绑定的 provider 被删除会 fail-fast，不会静默改用另一个 provider。
+新建 session 时，runtime 选择依次检查请求指定的 `providerId`、Provider Manager 当前 active provider、`SMARTPERFETTO_AGENT_RUNTIME`，再回到默认的 `claude-agent-sdk`。请求明确指定的 provider 不存在时会 fail-fast。恢复历史 session 走保存下来的 provider/runtime 分支：已保存的 provider 仍优先，env/default session 的 `runtimeOverride` 位于当前环境变量之前，恢复过程不会重新采用后来切换的 active provider。已绑定的 provider 被删除时同样会 fail-fast，不会静默改用另一个 provider。
+
+v1.3.0 还有一个需要单独标注的快照缺口。常规 runtime 选择器已经接受 `qoder-agent-sdk`，但 `providerSnapshot.ts` 的纯 env runtime 解析只列出了 Claude、OpenAI、Pi 和 OpenCode。只靠 `SMARTPERFETTO_AGENT_RUNTIME=qoder-agent-sdk` 启动时，本次运行可以进入 Qoder，env/default 会话快照却不能据此证明 Qoder 身份已经被正确固定。这个限制不影响显式 provider 的存在性检查；恢复该类 Qoder session 前仍应在修复版本上做回归，或重新创建 session。
 
 排障要读取带鉴权的 `GET /api/runtime-health`，检查 runtime、模型和 credential source。公开 `GET /health` 只表示服务存活，不返回凭证来源。这个区别可以防止“连接测试成功”被误判成“分析 runtime 已按预期切换”。
 
@@ -332,6 +334,8 @@ printf 'cutover_confirmed=%s\n' "${SMARTPERFETTO_ENTERPRISE_CUTOVER_CONFIRMED:-<
 - [SmartPerfetto v1.3.0 核对提交](https://github.com/Gracker/SmartPerfetto/tree/24eba544cebf231524294aa50def33ee0e267c9e)
 - [Perfetto v57.2 host 工具固定配置](https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/scripts/trace-processor-pin.env)
 - [Agent runtime 架构](https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/docs/architecture/agent-runtime.md)
+- [runtime 选择与 snapshot override 顺序](https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/backend/src/agentRuntime/runtimeSelection.ts)
+- [v1.3.0 provider/runtime 快照解析](https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/backend/src/services/providerManager/providerSnapshot.ts)
 - [私有分析上下文边界](https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/docs/architecture/private-analysis-context.md)
 - [DataEnvelope、Query Review 与 Analysis Receipt](https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/backend/docs/DATA_CONTRACT_DESIGN.md)
 - [raw SQL stdlib include 注入](https://github.com/Gracker/SmartPerfetto/blob/24eba544cebf231524294aa50def33ee0e267c9e/backend/src/agentv3/sqlIncludeInjector.ts)
