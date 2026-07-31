@@ -87,11 +87,11 @@ last_deepseek_cn_review_at: 2026-07-01
 
 大多数 Java 泄漏不复杂，源头是“长生命周期对象持有短生命周期对象”。排查时先找持有者，再判断它的生命周期是否长于被持有对象。
 
-- **Activity 泄漏**：`Activity.finish()` 后 AOSP 会把 `mFinished` 置为 `true`，`performDestroy()` 中会把 `mDestroyed` 置为 `true`，`isDestroyed()` 也直接返回这个字段。被销毁的 Activity 仍被单例、静态集合、未注销 listener、长任务回调引用时，就形成页面级泄漏。Activity 往往还持有 View 树、Fragment、Adapter、图片对象，单个 Activity 泄漏会把一串对象一起留下。
+- **Activity 泄漏**：Android 17 的 `Activity.finish(int)` 先通过 `ActivityClient.finishActivity()` 请求系统结束页面，只有该调用返回成功时才把客户端的 `mFinished` 置为 `true`；`Activity.performDestroy()` 则在调用 `onDestroy()` 前把 `mDestroyed` 置为 `true`，`isDestroyed()` 直接读取这个字段。因此，`finish()` 表示结束请求，`onDestroy()` 才是 LeakCanary 观察 Activity 应当失效的生命周期事件。被销毁的 Activity 仍被单例、静态集合、未注销 listener 或长任务回调引用时，就形成页面级泄漏。Activity 往往还持有 View 树、Fragment、Adapter、图片对象，单个 Activity 泄漏会把一串对象一起留下。
 - **Fragment / Fragment View 泄漏**：Fragment 本体和它的 View 生命周期不同。`onDestroyView()` 后如果还持有 binding、Adapter、RecyclerView callback 或 viewLifecycleOwner 之外启动的任务，会保留整棵 View 树。修复点通常在 `onDestroyView()` 清空 View 相关字段，而不是等到 `onDestroy()`。
 - **Handler / Runnable 泄漏**：AOSP `Handler.post()` 会把 `Runnable` 包进 `Message.callback`，`enqueueMessage()` 会把 `Message.target` 指向当前 Handler。只要消息还在队列中，`Message → callback / target → 外部类` 这条路径就存在。Activity 退出前没有执行 `removeCallbacksAndMessages(null)`，延迟消息就可能把页面对象保留到执行时刻。
 - **匿名内部类与 lambda 泄漏**：非静态匿名内部类默认持有外部类引用，lambda 只要捕获了 `this`、View、binding、Context，也会产生同类路径。风险点常见于 listener、计时器、线程任务、网络回调和动画回调。
-- **Bitmap 间接泄漏**：Android 8.0 之后 Bitmap 像素内存主要由 Native 侧承载，但 AOSP `Bitmap` Java 对象仍保存 `mNativePtr`，并通过 `NativeAllocationRegistry.registerNativeAllocation()` 关联 Native 释放。Java 层 Bitmap 或持有它的 Activity 泄漏时，Native 像素内存也可能被拖住。图片问题的完整治理放到 23.2 节，本节只把它作为泄漏放大器处理。[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/Bitmap.java]
+- **Bitmap 间接泄漏**：Android 8.0 之后，普通软件 Bitmap 的像素数据主要位于 Native 内存。Android 17 的 `Bitmap.registerNativeAllocation()` 会分别登记像素数据大小和带释放函数的 native Bitmap 对象；Java `Bitmap` 仍保存 `mNativePtr`。只要 Java 对象或持有它的 Activity 仍然可达，关联的清理动作就不会按对象失效时机执行。硬件 Bitmap 的像素存储还可能位于 `GraphicBuffer`，排查时不能把所有 Bitmap 占用都归入 Java Heap 或普通 Native Heap。图片问题的完整治理放到 23.2 节，本节只把它作为泄漏放大器处理。[已验证: AOSP android-17.0.0_r1, frameworks/base/graphics/java/android/graphics/Bitmap.java]
 
 Handler 相关风险的排查样板如下。重点看两个动作：延迟任务入队，以及页面销毁时清队列。
 
@@ -122,7 +122,7 @@ class DetailActivity : AppCompatActivity() {
 
 [已验证: LeakCanary 官方文档, square.github.io/leakcanary/fundamentals-how-leakcanary-works/]
 
-LeakCanary 的价值不是“告诉你内存变大了”，而是在对象失效后给出 GC Root 到泄漏对象的引用路径。它的默认流程有四步：
+LeakCanary 的核心价值是在对象失效后给出 GC Root 到泄漏对象的引用路径；单纯观察“内存变大了”无法得到这个结论。它的默认流程有四步：
 
 1. **观察失效对象**：Activity、Fragment、Fragment View、ViewModel 等对象生命周期结束后，交给 `ObjectWatcher`。
 2. **弱引用等待回收**：`ObjectWatcher` 持有弱引用，等待一段时间并触发 GC。官方文档说明，等待 5 秒后弱引用仍未清除的对象会被视为 retained object。
