@@ -75,7 +75,7 @@ gap_source: "AOSP结构/官方文档/章节深挖"
 | --- | --- | --- |
 | Android platform | Android 17 / API 37 / `android-17.0.0_r1` | `SurfaceView`、`TextureView`、BLAST、HWUI、SurfaceFlinger、HWC |
 | Android kernel | `android17-6.18-2026-06_r6` | sync file、dma-fence 等底层同步语义 |
-| Jetpack Compose | Compose BOM 2026.06.00；UI 1.11.4 | `AndroidView` 与 external surface 互操作边界 |
+| Jetpack Compose | Compose BOM 2026.06.01；UI 1.11.4 | `AndroidView` 与 external surface 互操作边界 |
 | Media3 / CameraX | 使用项目锁定的稳定版 | 组件策略独立发布，不能由 platform tag 代替 |
 
 版本演进保留 Android 12—17 的现代路径。Android 10/11 只用于兼容性判断，不把早期实现套到 Android 17。
@@ -283,6 +283,14 @@ Android 17 的 `BLASTBufferQueue::acquireNextBufferLocked()` 从 Consumer 侧取
 
 `mergeWithNextTransaction()` 按 frame number 保存外部状态；对应 buffer 到达后，`mergePendingTransactions()` 将其合入同一 buffer transaction。这个机制能协调已知 frame number 的状态，不能替 Camera、codec 或游戏 Producer 提前产出画面。
 
+### 多 Surface 一致性要明确参与者
+
+同一 `SurfaceControl.Transaction` 能让多项 layer 状态原子应用，却不会等待未加入 transaction 的 Producer 生成业务上的下一帧。API 34 的 `SurfaceSyncGroup` 可以收集 `AttachedSurfaceControl`、`SurfaceControlViewHost.SurfacePackage` 与附加 transaction；调用 `markSyncReady()` 后，系统等待已经注册的 child sync 完成，再应用最终合并的 transaction。
+
+同步组只约束加入组的对象。Camera HAL、MediaCodec 或游戏引擎若独立向 Surface 输出，而且没有通过受控 Surface 的同步回调参与该组，`SurfaceSyncGroup` 无法判断哪块 buffer 对应业务期望的逻辑帧。`setDesiredPresentTimeNanos()` 与 `setFrameTimeline()` 也只提供显示调度目标，不会代替 Producer 完成内容。
+
+Perfetto 中看到 Android 13 引入的 `AutoSingleLayer` latch-unsignaled 路径，也不能据此推断多个 Surface 已经同步。AOSP 把它限制在单 layer 的纯 buffer update；跨 layer、几何变化和 sync transaction 都不属于这个优化范围。
+
 ### HWC overlay 的正确表述
 
 SurfaceFlinger 为当前 display 构建可见 layer 集合，HWC 再返回 DEVICE/CLIENT composition 建议。SurfaceView child 作为独立 layer，可获得独立的格式、source crop、destination frame、dataspace 和保护属性。
@@ -405,7 +413,7 @@ Android 17 没有一个通用的“SurfaceView 黑屏 bug”能解释所有场�
 
 ### 相机预览
 
-CameraX `PreviewView` 的 `PERFORMANCE` 是默认模式，支持时使用 SurfaceView；`COMPATIBLE` 使用 TextureView。CameraX 会在旧 API、LEGACY camera hardware、目标旋转与 display rotation 不一致等条件下回退。
+CameraX `PreviewView` 的 `PERFORMANCE` 是默认模式，支持时使用 SurfaceView；`COMPATIBLE` 使用 TextureView。即使选择 `PERFORMANCE`，CameraX 也会在 API 24 及以下、LEGACY camera hardware，或目标旋转与 display rotation 不一致时回退到 TextureView。
 
 下面的代码用于明确需要普通 View 变换兼容性的页面。
 
@@ -452,9 +460,9 @@ Media3 `PlayerView` 的 `surface_type` 默认是 `surface_view`，官方也建�
 ANativeWindow* window = ANativeWindow_fromSurface(env, javaSurface);
 
 VkAndroidSurfaceCreateInfoKHR createInfo{
-    .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
-    .window = window,
+    VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR
 };
+createInfo.window = window;
 
 VkSurfaceKHR vkSurface = VK_NULL_HANDLE;
 vkCreateAndroidSurfaceKHR(instance, &createInfo, nullptr, &vkSurface);
@@ -474,7 +482,7 @@ Unity、Unreal 或自研引擎的内部 Surface 拓扑会随版本、渲染后�
 | --- | --- | --- |
 | SurfaceView 视频 + 宿主 View/Compose 弹幕 | 视频可独立评估 HWC；弹幕开发简单 | 两路 cadence 独立，字幕时间要靠 media clock 对齐 |
 | TextureView 视频 + 宿主弹幕 | 视频可按 View 语义变换 | 视频仍经宿主 GPU，弹幕与视频未自动成为同一纹理 pass |
-| 视频和弹幕统一进 GL/Vulkan | shader、mask、滤镜和时钟更可控 | GPU、内存带宽、颜色/HDR 与资源生命周期由应用承担 |
+| 视频和弹幕统一进 GL/Vulkan | shader、mask、滤镜和时钟更可控 | GPU、内存带宽、颜色/HDR 与资源生命周期由应用负责 |
 
 只为让弹幕盖在视频上，不必直接选择 TextureView。默认 Z-below SurfaceView 允许宿主 UI 覆盖；需要复杂交叉透明或把两者一起做后处理时，再评估统一 GPU 路径。
 
@@ -595,7 +603,7 @@ Android 14 alpha、Android 16 composition order 和 Android 17 blur region 扩�
 
 ### Compose 中包装 SurfaceView/TextureView
 
-`AndroidView.factory` 对每个 View 实例调用一次；重组只会运行读取相应 State 的 `update`，不会天然重建 Surface。危险操作包括：
+`AndroidView.factory` 对每个 View 实例调用一次，随后执行 `update`；后续重组可以再次执行 `update`。`update` 内读取的 Snapshot State 也会被观察，其变化会安排新的更新。无论是哪种触发方式，重组都不会天然重建 Surface。危险操作包括：
 
 - 在 `update` 中重复切换 Player surface；
 - 每次重组注册新的 `SurfaceHolder.Callback` 或 listener；
@@ -603,35 +611,49 @@ Android 14 alpha、Android 16 composition order 和 Android 17 blur region 扩�
 - Lazy item 没有 `onReset`/`onRelease`，旧 Producer 继续输出；
 - composition 离开后只释放 View，未停止 codec/camera/EGL/Vulkan。
 
-下面的 Compose 宿主把 listener 安装和资源释放放在明确位置，`CameraPreviewProducer` 是业务接口。
+下面的 Compose 宿主把 listener 安装、复用后的重新绑定和资源释放放在明确位置。`CameraPreviewProducer` 是业务接口，其中 `bindIfSurfaceValid()` 必须幂等：只在 holder 已有有效 Surface 且尚未绑定时连接。
 
 ```kotlin
+private interface CameraPreviewProducer {
+    val surfaceCallback: SurfaceHolder.Callback
+
+    fun bindIfSurfaceValid(holder: SurfaceHolder)
+    fun detachAndWaitUntilIdle()
+}
+
 @Composable
 fun CameraSurfaceHost(
     producer: CameraPreviewProducer,
     modifier: Modifier = Modifier,
 ) {
-    AndroidView(
-        modifier = modifier,
-        factory = { context ->
-            SurfaceView(context).also { view ->
-                view.holder.addCallback(producer.surfaceCallback)
-            }
-        },
-        onReset = {
-            producer.detachAndWaitUntilIdle()
-        },
-        onRelease = { view ->
-            view.holder.removeCallback(producer.surfaceCallback)
-            producer.detachAndWaitUntilIdle()
-        },
-    )
+    key(producer) {
+        AndroidView(
+            modifier = modifier,
+            factory = { context ->
+                SurfaceView(context).also { view ->
+                    view.holder.addCallback(producer.surfaceCallback)
+                }
+            },
+            update = { view ->
+                producer.bindIfSurfaceValid(view.holder)
+            },
+            onReset = {
+                producer.detachAndWaitUntilIdle()
+            },
+            onRelease = { view ->
+                view.holder.removeCallback(producer.surfaceCallback)
+                producer.detachAndWaitUntilIdle()
+            },
+        )
+    }
 }
 ```
 
-业务实现要保证 `detachAndWaitUntilIdle` 幂等，并处理 reset 后未立即 update 的状态。`producer` 由上层持有时，整个 Producer 的终止释放应放在上层 owner；这里仅移除当前 Surface。播放器优先使用 Media3 自己的生命周期感知 API；Media3 还说明 `PlayerView` 放入 `AndroidView` 的兼容性不作统一保证，API 34 的特定 Surface 同步问题需要按其当前 workaround 文档验证。
+`onReset` 先解除旧绑定；同一 View 再次启用时，后续 `update` 会检查当前 holder 并重新连接。Compose 也允许 View 在 reset 后暂时处于未启用状态，此时不会立即调用 `update`，所以 reset 阶段不能继续输出。`key(producer)` 使 Producer 身份变化时旧 View 退出组合，避免 callback 仍指向旧对象。业务实现还要保证 `detachAndWaitUntilIdle()` 幂等。`producer` 由上层持有时，整个 Producer 的终止释放应放在上层 owner；这里仅解除当前 Surface。
 
-Compose Foundation 还提供 `AndroidExternalSurface` 与 `AndroidEmbeddedExternalSurface`，Media3 Compose 提供 `PlayerSurface`。它们的 Surface 类型、生命周期与功能限制要按当前库版本核查，不能只因 API 名带 Compose 就省略 layer/BufferQueue 分析。
+播放器优先使用 Media3 自己的生命周期感知 API。Media3 明确说明 `PlayerView` 并非针对 `AndroidView` 设计，不能统一保证兼容性；API 34 的拉伸、裁剪或 Surface 泄漏问题可按当前文档评估 `setEnableComposeSurfaceSyncWorkaround()`，但该 workaround 与 XML shared transition 存在冲突。
+
+Compose Foundation 还提供 `AndroidExternalSurface` 与 `AndroidEmbeddedExternalSurface`：前者使用窗口外的独立 layer，后者把外部内容作为 Compose 层级中的常规元素交给 GPU 合成。Media3 Compose 提供生命周期感知的 `PlayerSurface`。这些 API 的 Surface 类型、生命周期与功能限制要按当前库版本核查，不能只因 API 名带 Compose 就省略 layer/BufferQueue 分析。
 
 ## 八、Android 12—17 演进
 
@@ -704,14 +726,19 @@ TextureView 把外部 BufferQueue 交给应用内 HWUI。它能够使用普通 V
 - [Android `SurfaceHolder.Callback` reference](https://developer.android.com/reference/android/view/SurfaceHolder.Callback)
 - [Android `SurfaceTexture` reference](https://developer.android.com/reference/android/graphics/SurfaceTexture)
 - [Android `SurfaceControl.Transaction` reference](https://developer.android.com/reference/android/view/SurfaceControl.Transaction)
+- [Android `SurfaceSyncGroup` reference](https://developer.android.com/reference/android/window/SurfaceSyncGroup)
 - [CameraX PreviewView implementation mode](https://developer.android.com/reference/androidx/camera/view/PreviewView.ImplementationMode)
 - [CameraX preview](https://developer.android.com/media/camera/camerax/preview)
 - [Media3 surface types](https://developer.android.com/media/media3/ui/surface)
 - [Media3 `PlayerView`](https://developer.android.com/reference/androidx/media3/ui/PlayerView)
+- [Compose `AndroidView`](https://developer.android.com/reference/kotlin/androidx/compose/ui/viewinterop/AndroidView.composable)
+- [Compose `AndroidExternalSurface`](https://developer.android.com/reference/kotlin/androidx/compose/foundation/AndroidExternalSurface.composable)
+- [Compose `AndroidEmbeddedExternalSurface`](https://developer.android.com/reference/kotlin/androidx/compose/foundation/AndroidEmbeddedExternalSurface.composable)
 - [Vulkan on Android](https://developer.android.com/codelabs/beginning-vulkan-on-android)
 - [Android game native/Vulkan engine support](https://developer.android.com/games/develop/vulkan/native-engine-support)
 - [BufferQueue and gralloc](https://source.android.com/docs/core/graphics/arch-bq-gralloc)
 - [HWC composition operations](https://source.android.com/docs/core/graphics/implement-hwc#display_comp_ops)
+- [AutoSingleLayer unsignaled buffer latch](https://source.android.com/docs/core/graphics/unsignaled-buffer-latch)
 - [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
 - [Android 17 `SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java)
 - [Android 17 `TextureView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java)
@@ -720,6 +747,7 @@ TextureView 把外部 BufferQueue 交给应用内 HWUI。它能够使用普通 V
 - [Android 17 `DrawFrameTask.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp)
 - [Android 17 `BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)
 - [Android 17 `SurfaceControl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java)
+- [Android 17 `SurfaceSyncGroup.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/window/SurfaceSyncGroup.java)
 - [Android 17 SurfaceFlinger FrontEnd](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/FrontEnd/)
 - [Android 17 `HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)
 - [Android 17 kernel `sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)
