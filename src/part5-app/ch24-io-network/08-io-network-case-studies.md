@@ -94,266 +94,331 @@ last_deepseek_cn_review_at: 2026-06-13
 
 ## 为什么要了解 I/O 与网络优化案例集
 
-I/O 与网络优化最怕只改一个点。SP 写入从调用点看很快，生命周期收尾时可能卡在 `QueuedWork.waitToFinish()`；接口耗时看起来是服务端慢，细拆后可能是 DNS、建连、Dispatcher 排队或缓存命中率低；大文件上传下载看起来只是“放后台”，上线后却占满 API 并发、耗电、失败重传、进度丢失。
+本节给出三个诊断模板：SharedPreferences 生命周期 ANR、页面请求变慢、大文件传输失败。它们不是带有真实业务数据的收益报告，因此不提供虚构的毫秒数、并发数或提升比例。项目应先采集自己的基线，再填写阈值和验收目标。
 
-24.1 到 24.7 已经分别讲过文件 I/O、数据库、序列化、网络架构、协议、缓存和离线优先。落到项目里，问题通常会混在一起：SP ANR、页面网络慢、大文件传输。三个案例都沿着“现象 → 观测 → 根因 → 改法 → 验收”展开，方便在项目里复用排查路径。
+本节的平台锚点是 Android 17（API 37）/ `android-17.0.0_r1`，网络客户端以 OkHttp 5.3.0 为实现样本。每个案例都按“现象、证据、机制、修复、验证”展开：
 
-速度问题先拆 CPU 等待、I/O 等待和缓存命中，再回到线程池与任务调度。
+- 现象只帮助确定排查入口，不能代替根因证据；
+- 证据要能区分主线程等待、磁盘 I/O、调度排队和网络交换；
+- 修复要保留失败、取消、进程终止和账号切换语义；
+- 验收要在同一业务路径、设备分层与网络条件下比较。
 
 ## SharedPreferences ANR 治理实战
 
 ### 现象
 
-一个常见现场是页面退出、切后台或服务停止时出现 ANR，主线程堆栈停在 `QueuedWork.waitToFinish()`，后台线程堆栈能看到 `SharedPreferencesImpl.writeToFile()`、`FileUtils.sync()` 或 XML 写入。业务侧通常会说“这里只是 `apply()`，不是 `commit()`”，但 ANR 发生点已经离调用点很远。
+页面停止、应用进入后台或服务回调结束时发生 ANR，主线程堆栈停在 `QueuedWork.waitToFinish()`。同时，`queued-work-looper` 或其他线程可能正在执行 `SharedPreferencesImpl.writeToFile()`、XML 序列化或 `FileUtils.sync()`。
 
-SP 的风险在两个阶段。读取阶段，首次访问可能等待 XML 加载；写入阶段，`apply()` 更新内存并排队写磁盘，生命周期收尾时可能等待队列清空。从 AOSP `SharedPreferencesImpl` 和 `QueuedWork` 源码可以看到这条路径：`apply()` 创建写入任务，`QueuedWork` 保存 pending work，框架在部分组件收尾路径调用 `waitToFinish()`。[已验证: AOSP android-35 SDK sources, android/app/SharedPreferencesImpl.java, android/app/QueuedWork.java]
+看到 `apply()` 不能排除 SharedPreferences。Android 官方 API 参考明确说明，待完成的 `Editor.apply()` 会在 Activity 或 Service 的生命周期转换期间阻塞主线程，以保证持久化完成。
+
+### Android 17 源码路径
+
+`android-17.0.0_r1` 中有四段行为需要一起看：
+
+- `SharedPreferencesImpl.edit()` 会调用 `awaitLoadedLocked()`；首次加载尚未完成时，连创建编辑器都可能等待。
+- `apply()` 先执行 `commitToMemory()`，再把等待磁盘完成的 finisher 交给 `QueuedWork`，随后安排磁盘写入。
+- `ActivityThread` 在 Activity 停止、Service 命令结束和 Service 销毁等路径调用 `QueuedWork.waitToFinish()`。
+- `commit()` 等待 `writtenToDiskLatch`；在没有其他磁盘写入时，源码允许当前调用线程直接执行写文件。
+
+`apply()` 只是把调用点与磁盘写入分开。生命周期稍后仍可能等待此前的写入，异步接口也没有向调用方报告持久化失败。
 
 ### 观测路径
 
-排查不要只查 ANR 日志。要同时抓三类证据：
+排查时同时保留以下证据：
 
 | 证据 | 观测方式 | 判断点 |
 | --- | --- | --- |
-| 主线程堆栈 | ANR traces、Crash 平台、Bugreport | 是否停在 `QueuedWork.waitToFinish()`、`Object.wait()`、`CountDownLatch.await()` |
-| 调用来源 | SP 写入封装埋点、线程名、key 维度统计 | 哪些 key 写入频率高、单次 value 多大、是否在页面生命周期内连写 |
-| I/O 等待 | Perfetto 线程状态、StrictMode、磁盘事件 | 主线程是否等待后台 I/O，后台写入是否发生在切后台窗口 |
+| ANR 主线程 | ANR trace、bugreport | 是否停在 `QueuedWork.waitToFinish()` 或 SharedPreferences 首次加载等待 |
+| 磁盘线程 | 同一时间窗口的线程 trace、Perfetto | 是否正在写 XML、同步文件或等待块设备 |
+| 写入来源 | 统一存储封装 | 偏好文件、业务类别、调用线程、调用阶段、写入类型和次数 |
+| 文件状态 | 应用内部诊断 | XML 大小、偏好项数量、备份文件是否存在 |
+| 生命周期 | Activity、Service 与广播时序 | 写入是否集中发生在停止、销毁或广播返回前 |
 
-StrictMode 可以在 Debug 包暴露主线程读写风险。它不能直接判断“这次 `apply()` 会不会在稍后引发 ANR”，但能把启动和点击路径上的同步 I/O 先清出来。StrictMode、SP、DataStore 和 MMKV 的完整边界见 24.1；这个案例关注启动和点击路径上的同步 I/O 清理。[已验证: AOSP android-35 SDK sources, android/os/StrictMode.java；详见 24.1 节]
+不要在日志中输出原始偏好键和值。可记录经过分类的业务来源或稳定散列，并设置采样和保留期限。
+
+StrictMode 能发现主线程上的同步磁盘访问，但无法证明某次 `apply()` 稍后是否会在 `waitToFinish()` 中等待。Android 17 的 `QueuedWork.waitToFinish()` 还会临时允许当前线程磁盘写入，因此 StrictMode 结果只能作为补充证据。
 
 ### 根因
 
-SP ANR 往往是三类模式叠加：
+常见根因可以互相叠加：
 
-- 大文件：多个业务把配置塞进同一个 XML，首次加载和写回都变慢。
-- 高频写：埋点开关、弹窗状态、草稿、实验参数在短时间内多次 `apply()`，写入队列积压。
-- 错误时机：`onPause()`、`onStop()`、广播回调、服务停止前写 SP，正好撞上框架等待 pending work 的窗口。
-
-`apply()` 适合低频小配置，不适合当成无成本异步落盘接口。官方 `SharedPreferences.Editor` 文档区分了 `apply()` 的异步持久化和 `commit()` 的同步结果返回；DataStore 文档则把协程、Flow 和事务化更新作为 SP 替代方案。[已验证: 官方文档, developer.android.com/reference/android/content/SharedPreferences.Editor][已验证: 官方文档, developer.android.com/topic/libraries/architecture/datastore]
+- 一个 XML 保存了过多数据，首次加载、复制内存映射、序列化和文件同步都变慢；
+- 高频状态变化每次都调用 `apply()`，待处理写入与内存复制增多；
+- 在 `onStop()`、Service 回调结束或广播返回前集中写入，随后立刻进入框架等待点；
+- 在主线程调用 `commit()`，调用线程直接参与文件写入并等待结果；
+- 把 JSON、大集合、日志计数或草稿放进 SharedPreferences；
+- 多进程同时使用 SharedPreferences；官方文档明确说明它不支持跨进程。
 
 ### 改法
 
-治理时按访问路径分层处理：
+数据类型决定迁移方向：
 
 | 数据类型 | 原问题 | 改法 |
 | --- | --- | --- |
-| 启动强依赖配置 | 首次读取卡启动 | 拆成小文件，进程启动前段预热；非首屏 key 延后读取 |
-| 高频运行态标记 | 多次 `apply()` 造成 pending work 积压 | 合并写入，内存态先更新，定时或生命周期外统一刷盘 |
-| 结构化对象 | JSON 字符串塞进 XML，文件膨胀 | 迁移到 Proto DataStore、Room 或专用文件 |
-| 交易类状态 | 异步写入失败不可感知 | 使用可确认的持久化方案，写入结果进入业务状态机 |
+| 小型设置 | SharedPreferences 写入集中、失败不可见 | Preferences DataStore 或 Proto DataStore |
+| 结构化、可查询数据 | JSON 或集合放入 XML | Room |
+| 高频瞬时状态 | 每次变化都持久化 | 进程内状态；只在业务要求的检查点保存 |
+| 需要确认的用户操作 | `apply()` 无失败结果 | 持久业务状态与可观察错误 |
+| 跨进程数据 | SharedPreferences 不支持多进程 | ContentProvider、Room 多实例失效通知或服务进程接口 |
 
-这段代码展示轻量合并写入器的形态：把多次小写合并成一次后台刷盘，并把调用点从页面生命周期里移出去。类名和调度方式可以按项目替换，写入合并和生命周期外刷盘这两个边界要保留。
+不要用固定时间的 debounce 伪装持久化保证。持续写入可能让 debounce 长时间不输出，进程终止还会丢失尚未提交的值。只有“中间状态可丢、保留较新值即可”的数据才允许合并，并且要写清触发与恢复规则。
+
+下面的示例假设项目已有 Proto DataStore `Settings`，用于展示可等待持久化结果的设置更新：
 
 ```kotlin
-class PreferenceWriteBuffer(
-    private val prefs: SharedPreferences,
-    private val scope: CoroutineScope,
+class SettingsRepository(
+    private val settingsStore: DataStore<Settings>,
 ) {
-    private val pending = MutableStateFlow<Map<String, Any>>(emptyMap())
+    val settings: Flow<Settings> = settingsStore.data
 
-    fun putBoolean(key: String, value: Boolean) {
-        pending.update { it + (key to value) }
-    }
-
-    fun start() {
-        scope.launch(Dispatchers.IO) {
-            pending
-                .debounce(1_000)
-                .filter { it.isNotEmpty() }
-                .collect { snapshot ->
-                    prefs.edit().apply {
-                        snapshot.forEach { (key, value) ->
-                            if (value is Boolean) putBoolean(key, value)
-                        }
-                    }.apply()
-                    pending.update { current ->
-                        current.filterNot { (key, value) ->
-                            snapshot[key] == value
-                        }
-                    }
-                }
+    suspend fun setExperimentEnabled(enabled: Boolean) {
+        settingsStore.updateData { current ->
+            current.toBuilder()
+                .setExperimentEnabled(enabled)
+                .build()
         }
     }
 }
 ```
 
-刷盘后不能无条件把 `pending` 清空。`flush` 期间可能又有新的 `putBoolean()` 写入，清空会直接丢掉这些更新；上面的写法只移除本轮 snapshot 已经落盘且当前值没有变化的 key，新写入或值已变化的 key 会留到下一轮刷盘。这段代码仍然使用 SP，只适合低风险开关类数据。高频结构化数据要迁到 DataStore 或 Room；跨进程共享、小型热数据可以评估 MMKV，边界见 24.1 节。
+`updateData()` 执行原子读改写，并在数据持久化后完成挂起调用。DataStore 适合小型数据；需要局部更新、关系查询或较大数据集时使用 Room。迁移期间要保证同一份数据只有一个写入归属，避免 SharedPreferences 与 DataStore 双写产生顺序冲突。
 
 ### 验收
 
-上线前至少确认四个指标：单个 SP 文件大小、每分钟写入次数、`apply()` 到写盘完成的 P95、ANR 堆栈中 `QueuedWork.waitToFinish()` 占比。治理后如果只看 ANR 总量，可能会被版本流量、设备分布和后台限制掩盖。更可靠的验收是用同一批页面路径复测：启动、切后台、频繁进入退出页面、低端机存储压力场景都要覆盖。
+验收不使用无法公开观测的“`apply()` 完成耗时”。`apply()` 没有完成回调，除非项目已经验证了内部插桩口径，否则该数字不可得。
+
+可以比较：
+
+- 同一偏好文件的大小、项目数量和写入调用次数；
+- 生命周期结束前后的写入来源分布；
+- Perfetto 中 `queued-work-looper` 的执行与主线程等待；
+- `QueuedWork.waitToFinish()` 相关 ANR 在活跃用户或会话中的归一化比例；
+- 迁移前后的读取错误、持久化失败和数据回退。
+
+测试覆盖冷启动首次读取、连续修改、立即切后台、Service 停止、进程终止、存储压力、升级迁移和多进程误用。
 
 ## 网络请求性能优化案例
 
-SP ANR 的根因在 I/O 路径上；另一种常见的性能退化则来自网络路径——请求本身不慢，但端到端耗时被 DNS、建连和调度排队吃掉了一大块。
-
 ### 现象
 
-页面接口 P95 从 800 ms 涨到 2 s，服务端日志只显示处理耗时 200 ms。客户端抓包和 OkHttp EventListener 拆分后，慢在三个位置：DNS 偶发 300 ms 以上，部分请求没有复用连接，首屏接口被图片预取和日志上报挤在 Dispatcher 队列后面。
-
-OkHttp 文档把一次 Call 拆成请求、重定向、重试和响应过程；异步请求由 Dispatcher 控制总并发和单 host 并发。EventListener 可以记录 `dispatcherQueueStart/dispatcherQueueEnd`、`dnsStart/dnsEnd`、`connectStart`、`secureConnectStart`、`connectionAcquired`、`responseHeadersStart` 等事件，用来区分 Dispatcher 排队、解析、建连、TLS、连接复用和服务端等待。[已验证: OkHttp Calls docs, square.github.io/okhttp/features/calls/][已验证: OkHttp Events docs, square.github.io/okhttp/features/events/][已验证: OkHttp Dispatcher docs, square.github.io/okhttp/5.x/okhttp/okhttp3/-dispatcher/]
+页面端到端请求变慢，而服务端记录的处理时间没有同步增长。慢请求集中出现 DNS、建连、TLS、异步调度队列、响应下载或业务解析中的一个或多个阶段。图片预取、日志和大文件还可能与交互接口争用并发与带宽。
 
 ### 观测路径
 
-客户端网络慢要先拆时间段。只记录总耗时会把 DNS、建连、排队、服务端、下载、解析混在一起。
+OkHttp 5.3.0 `EventListener` 能记录事件，但事件序列不是固定直线。重定向、认证和重试会让 DNS、连接、请求与响应事件在同一个 `Call` 中出现多次；复用连接时不会出现 DNS 和建连事件；双工请求还会让请求体与响应事件交错。
 
 | 时间段 | OkHttp 事件或业务埋点 | 常见根因 |
 | --- | --- | --- |
-| 排队 | OkHttp 5.x 的 `dispatcherQueueStart` → `dispatcherQueueEnd`；旧版 OkHttp 需要自定义 Dispatcher 队列埋点 | 并发上限过低，图片、下载、API 共用队列 |
-| DNS | `dnsStart` → `dnsEnd` | 本地 DNS 慢，HTTPDNS 缓存失效，网络切换 |
-| 建连/TLS | `connectStart` → `secureConnectEnd` | 连接池被切碎，短连接过多，证书链或代理慢 |
-| TTFB | request body 结束 → `responseHeadersStart` | 服务端处理慢，网关排队，弱网重传 |
-| body 下载 | `responseBodyStart` → `responseBodyEnd` | 响应体过大，未压缩，大 JSON |
-| 解析落库 | body 结束后业务耗时 | JSON 解析、数据库事务、主线程回调 |
+| 异步排队 | `dispatcherQueueStart` → `dispatcherQueueEnd` | 异步并发额度、单主机额度、任务混用 |
+| DNS | `dnsStart` → `dnsEnd` | 解析器、网络切换、错误缓存或备用解析 |
+| TCP / TLS | `connectStart`、`secureConnectStart` 及对应结束事件 | 新连接、代理、握手或路由失败 |
+| 连接取得 | `connectionAcquired`，结合是否出现 DNS / connect | 连接复用、重定向或新路由 |
+| 首个响应头 | 请求头或请求体结束 → `responseHeadersStart` | 上传、网络往返、网关与服务端处理 |
+| 响应体消费 | `responseBodyStart` → `responseBodyEnd` / `responseFailed` | 响应大小、读取速度、提前关闭或解析背压 |
+| 解析与入库 | 应用自己的解析、事务和界面状态时间 | 大对象、数据库事务或主线程工作 |
 
-这张表对应 24.4 的连接、解析、调度、容错四个控制面。协议层细节见 24.5，压缩和缓存见 24.6。
+`dispatcherQueueStart` / `dispatcherQueueEnd` 只描述被排队的异步 `enqueue()` 调用。同步 `execute()` 会登记为运行中的同步调用，但不受 `maxRequests` 与 `maxRequestsPerHost` 的异步队列限制。`callStart` 也不能当成出队时间。
+
+TTFB 需要按每次网络交换分析。无请求体、`Expect: 100-continue`、双工请求和重试的事件顺序不同，不能用一条通用减法覆盖所有请求。保留事件所属 `Call`、交换次数、URL 模板和连接标识，避免把重试阶段相加后误报为一次服务端处理。
 
 ### 根因
 
-这个案例的问题在于网络层没有隔离请求等级。API、图片预取、日志上报、大文件都共用一个 `OkHttpClient` 和 Dispatcher；业务方为了“多发一点”调大总并发，反而让同 host 并发和移动网络带宽竞争变得不可控。把速度问题拆成 CPU、缓存和任务调度；放到网络层，对应的治理动作是限制低优先级请求，不让它抢占首屏等待窗口。
+根因常见于以下组合：
 
-HTTPDNS 接入也有一个边界：自定义 `Dns.lookup()` 同步参与 OkHttp 路由规划，不能在 `lookup()` 里实时发一次依赖同一 client 的 HTTPDNS 请求。更稳的方式是异步预取、内存/磁盘缓存读取、TTL 刷新、失败 IP 隔离，并保留系统 DNS 兜底。HTTPDNS 的完整设计边界见 24.4；这个案例只取异步预取、缓存读取和兜底这三个处置动作。
+- API、图片预取、遥测和大文件共用同一个异步 Dispatcher；
+- 多个短生命周期 `OkHttpClient` 各自持有连接池，连接复用率下降；
+- 只提高并发，没有同时观察服务端限流、HTTP/2 流限制与移动网络带宽；
+- 手动创建多个客户端时丢失 Cookie、代理、证书固定、认证或事件监听配置；
+- HTTPDNS 在 `Dns.lookup()` 中同步访问网络，甚至递归使用同一个客户端；
+- 只记录总耗时，解析与数据库时间被算进网络时间。
+
+HTTPDNS 的备用路径还要遵守系统 Private DNS、VPN、代理和网络切换边界，详见 24.4 与 24.10。缓存 IP 不能绕过 TLS 主机名校验，也不能把连接到某个 IP 解释为接口可用。
 
 ### 改法
 
-网络治理按三步改：
+可按任务类别设置独立异步 Dispatcher，同时从一个配置完整、长生命周期的基础客户端派生，保留共享连接池与安全配置。
 
-1. API、图片、大文件、日志分 Dispatcher；API 请求保留稳定并发窗口，大文件和预取限制并发。
-2. 给所有请求接 EventListener，产出阶段耗时和连接复用指标；慢请求必须能定位到 DNS、建连、服务端、下载或业务解析。
-3. HTTPDNS 只走缓存读取，缓存失效时后台刷新；返回 IP 要有 TTL、失败隔离和系统 DNS 兜底。
-
-这段配置展示分 Dispatcher 的边界。数字只是示例，生产值要用线上阶段耗时和服务端限流能力校准。
+下面的代码要求调用方传入已经用压测和线上观测确定的并发参数，不提供通用默认值：
 
 ```kotlin
-object HttpClients {
-    private val apiDispatcher = Dispatcher().apply {
-        maxRequests = 64
-        maxRequestsPerHost = 8
+data class AsyncRequestLimits(
+    val total: Int,
+    val perHost: Int,
+)
+
+fun OkHttpClient.withAsyncRequestLimits(
+    limits: AsyncRequestLimits,
+): OkHttpClient {
+    require(limits.total > 0)
+    require(limits.perHost > 0)
+
+    val dispatcher = Dispatcher().apply {
+        maxRequests = limits.total
+        maxRequestsPerHost = limits.perHost
     }
-
-    private val bulkDispatcher = Dispatcher().apply {
-        maxRequests = 6
-        maxRequestsPerHost = 2
-    }
-
-    val apiClient: OkHttpClient = OkHttpClient.Builder()
-        .dispatcher(apiDispatcher)
-        .eventListenerFactory { MetricsEventListener() }
-        .build()
-
-    val bulkClient: OkHttpClient = apiClient.newBuilder()
-        .dispatcher(bulkDispatcher)
+    return newBuilder()
+        .dispatcher(dispatcher)
         .build()
 }
 ```
 
-`newBuilder()` 会复用原 client 的一部分配置，但新 Dispatcher 会形成独立排队策略。API 与大文件是否共享连接池，要结合域名、证书、Cookie、鉴权和流量隔离一起评估；不能为了复用连接把所有请求重新塞回同一个队列。
+`newBuilder()` 派生的客户端继续共享基础客户端的连接池，并复制其他配置；新 Dispatcher 提供独立的异步排队额度。它不能保证带宽优先级，两个 Dispatcher 仍会争用设备网络、服务端容量和共享连接。交互 API 的资源预留要通过弱网测试验证。
+
+`EventListener.Factory` 应在基础客户端上配置，事件记录要控制 URL、请求头和错误中的敏感信息。并发值按主机、协议、请求体大小、服务器限制、失败率和页面等待目标调整；OkHttp 默认值只能作为库行为，不能直接成为业务基线。
 
 ### 验收
 
-网络优化验收看分位数和结构占比：DNS P95、建连/TLS P95、连接复用率、Dispatcher 排队 P95、首屏关键 API P95、响应体字节数、缓存命中率。Android 官方网络优化文档建议减少不必要传输、合并和延后网络访问、按网络与充电状态安排大任务；这些动作必须反映到指标上。[已验证: 官方文档, developer.android.com/develop/connectivity/network-ops/network-access-optimization]
+验收同时看总耗时与阶段分布：
 
-如果优化后总耗时下降，但失败率、重试次数或耗电上升，这个方案不能算通过。弱网下的重试尤其要限制次数和退避窗口，避免接口慢变成重试风暴。
+- 异步排队、DNS、建连、TLS、首个响应头与响应体消费的分位数；
+- 每个 `Call` 的交换次数、重定向、重试和失败分类；
+- 连接复用与新建连接数量；
+- 交互 API 与批量任务各自的排队和失败；
+- 响应传输字节、解码后字节和缓存命中；
+- 移动网络、VPN、代理、网络切换和服务端限流场景；
+- CPU、流量与电量是否因提高并发或重试而增加。
+
+修改 Dispatcher 后还要验证同步 `execute()` 调用，因为它们不会进入这套异步配额。
 
 ## 大文件上传下载优化
 
-网络请求优化解决的是"多而碎"的请求被排队和建连拖慢的问题；大文件是"少而大"——单次传输拉长、占用连接更久、失败恢复成本更高。
-
 ### 现象
 
-大文件问题通常有两类：下载任务跑在普通 API client 上，导致接口排队；上传任务一次性把文件读进内存，低端机出现 OOM 或长时间 GC。断点续传、网络切换、后台限制、进度恢复没有设计时，用户看到的是进度卡住、重新上传、耗电明显增加。
+大文件任务占用连接时间长，失败后重传成本高。常见故障包括：
 
-大文件不是普通请求的放大版。它占用更久的连接、更大的带宽窗口、更长的持久化状态和更复杂的失败恢复。24.6 处理缓存与压缩，24.7 处理离线队列，25.4 处理 WorkManager；上传下载方案要把这些能力组合起来。
+- 下载与交互 API 共用异步队列，页面请求长期等待；
+- 上传前把整个文件读入内存；
+- 网络切换或进程终止后从零开始；
+- 已下载字节与远端表示不一致，却直接追加到临时文件；
+- 用户选择的 `content://` URI 权限在后台任务运行前失效；
+- 系统停止任务后，进度只在内存中，恢复时无法定位已确认分片。
 
-### 下载治理
+### 选择正确的执行 API
 
-下载任务按“用户立即需要”和“后台可延后”拆开：
+Android 17 上应先按用户意图、持续时间和系统集成选择执行方式：
 
-| 下载类型 | 执行方式 | 约束 |
+| 场景 | API 选择 | 边界 |
 | --- | --- | --- |
-| 用户点击后立即打开 | 前台任务或可取消请求 | 展示进度，支持取消，失败保留恢复入口 |
-| 离线包、地图包、模型包 | WorkManager / DownloadManager | Wi-Fi 或非计费网络、充电、电量不低、存储空间检查 |
-| 图片和短视频缓存 | 图片库 / 媒体缓存层 | 限制并发，按页面生命周期取消 |
+| 页面可取消的小传输 | 页面协程与普通 HTTP 请求 | 页面离开后允许停止 |
+| 系统管理的长时间 HTTP 下载 | `DownloadManager` | 系统处理 HTTP、失败重试、连接变化和重启；产品接受其通知与目标文件语义 |
+| 用户发起、要求立即开始并持续显示进度的长传输 | API 34+ UIDT `JobScheduler` 任务 | 需要通知、调度时机满足可见性要求，并持久化恢复状态 |
+| 后台发起、可延后且可中断的传输 | WorkManager | 约束满足后执行，不保证精确开始时间 |
+| 低版本 UIDT 兼容或特殊短时任务 | 按官方选择指南评估前台服务或 WorkManager 前台模式 | 受前台服务类型、启动和执行限制 |
 
-Android 官方网络优化文档给出的典型方向是把完整下载安排到 Wi-Fi，必要时还要求设备充电；WorkManager 文档支持 `NetworkType.UNMETERED`、充电等约束。AOSP `DownloadManager` 也提供系统级下载入口，适合交给系统通知、网络和重试策略管理的公开下载任务。[已验证: 官方文档, developer.android.com/develop/connectivity/network-ops/network-access-optimization][已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work][已验证: AOSP android-35 SDK sources, android/app/DownloadManager.java]
+官方数据传输选择指南把标准 WorkManager 传输定位在短于常规执行窗口的任务。长时间 Worker 会进入前台服务与 JobScheduler 限制范围，不能因为使用 WorkManager 就忽略平台配额和停止条件。
 
-这段 WorkManager 配置表达后台大文件下载的约束边界：非计费网络、充电和唯一任务名共同避免同一资源被重复下载。
+UIDT 从 Android 14（API 34）开始提供。系统仍可能因约束失效、热状态、系统健康或低内存停止任务；用户从任务管理器停止应用时，进程可能被直接终止且不调用 `onStopJob()`。下载状态必须在传输过程中持续写入持久存储。
 
-```kotlin
-val constraints = Constraints.Builder()
-    .setRequiredNetworkType(NetworkType.UNMETERED)
-    .setRequiresCharging(true)
-    .build()
+`NetworkType.UNMETERED` 表示非计费网络，不等于 Wi-Fi。Wi-Fi 可能计费，蜂窝网络也可能暂时或长期非计费。用户明确触发的传输和后台预取应使用不同的产品策略。
 
-val request = OneTimeWorkRequestBuilder<LargeFileDownloadWorker>()
-    .setConstraints(constraints)
-    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
-    .build()
+### 下载断点必须验证同一远端表示
 
-WorkManager.getInstance(context).enqueueUniqueWork(
-    "download-model-v3",
-    ExistingWorkPolicy.KEEP,
-    request,
-)
-```
+断点记录至少包含资源标识、目标临时文件、已验证字节数、总长度、强 ETag 或其他稳定版本、校验信息和任务状态。
 
-如果用户明确点击“立即下载”，约束可以降级为 `CONNECTED`，但 UI 要提示流量和电量成本。后台预取不要偷偷抢占用户当前页面的 API 并发。
+恢复 HTTP 下载时：
+
+- 请求 `Range: bytes=<offset>-`，并用 `If-Range` 携带强验证器；
+- 收到 `206 Partial Content` 后，验证 `Content-Range` 的起点、终点和总长度，再追加；
+- 收到 `200 OK` 表示服务端发送完整表示，丢弃或重建旧临时文件，不能直接追加；
+- 收到 `416 Range Not Satisfiable` 时，根据 `Content-Range` 与本地长度重新核对，不能直接宣告完成；
+- 多段内容只有共享同一强验证器时才能安全组合；
+- 透明内容编码会改变字节偏移，断点协议要使用稳定的编码表示，或明确发送 `Accept-Encoding: identity`。
+
+下载完成后校验长度、摘要或签名，再以原子方式把临时文件发布为正式文件。存储空间预检查只能减少失败，写入过程仍要处理空间耗尽、介质移除和权限变化。
 
 ### 上传治理
 
-上传比下载更容易出错，因为文件读取、压缩、分片、重试和服务端幂等都在客户端路径里。治理时按四个边界设计：
+上传前把用户选择的内容复制到应用拥有的不可变暂存文件，或通过 `ACTION_OPEN_DOCUMENT` 获取并持久化 URI 权限。即使调用 `takePersistableUriPermission()`，原文档被移动或删除后仍会失去访问；恢复代码必须处理这一情况。
 
-- 流式读取：不要把完整文件读进内存；用 `RequestBody` 从文件流分段写入 sink。
-- 分片与断点：大文件拆成 chunk，每个 chunk 有编号、校验值和服务端确认状态。
-- 幂等：上传会被重试，服务端要用 uploadId、chunk index、checksum 去重。
-- 取消与恢复：用户取消、网络切换、进程重启后，客户端能从本地状态表恢复。
-
-这段代码只保留流式 `RequestBody` 的写入路径。生产环境还要补 MIME、进度回调、取消检查、错误映射和分片状态。
+OkHttp 5.3.0 已提供 `File.asRequestBody()`，会从文件源流式写入。下面的函数只构造请求，不把文件读入字节数组：
 
 ```kotlin
-class FileStreamingBody(
-    private val file: File,
-    private val mediaType: MediaType,
-) : RequestBody() {
-    override fun contentType(): MediaType = mediaType
-    override fun contentLength(): Long = file.length()
-
-    override fun writeTo(sink: BufferedSink) {
-        file.source().use { source ->
-            sink.writeAll(source)
-        }
-    }
+fun buildUploadRequest(
+    endpoint: HttpUrl,
+    stagedFile: File,
+    mediaType: MediaType,
+): Request {
+    require(stagedFile.isFile)
+    return Request.Builder()
+        .url(endpoint)
+        .post(stagedFile.asRequestBody(mediaType))
+        .build()
 }
 ```
 
-这类实现避免一次性读完整文件，但不等于上传就安全。移动网络下可能在任意 chunk 失败；服务端如果没有幂等，客户端重试会制造重复文件或重复资源记录。
+该请求体默认可以再次读取，因此暂存文件在上传完成前必须保持路径、长度和内容不变。OkHttp 5.3.0 的 `FileDescriptor.toRequestBody()` 则明确标为 one-shot，不能假设认证、连接失败或服务端响应后还能自动重发。
+
+需要断点上传时，客户端与服务端共同定义协议：
+
+- 创建上传会话，得到稳定的 `uploadId`；
+- 每个分片携带序号或字节范围、长度和校验值；
+- 服务端原子确认已接收分片，重复分片按同一结果返回；
+- 客户端持久化已确认范围，不把“已发送”当成“已确认”；
+- 完成操作使用幂等语义，并由服务端校验完整长度与摘要；
+- 分片并发、大小和重试按网络、服务端限制与设备 I/O 测量，不采用通用固定值。
+
+进度回调要按时间或进度变化节流，不能每写少量字节就切换到主线程。取消应停止网络读取，并保存已经由服务端确认的状态。
 
 ### 验收
 
-大文件优化要用场景表验收：
+大文件验证以恢复正确性为主，再比较吞吐和资源：
 
 | 场景 | 验收点 |
 | --- | --- |
-| Wi-Fi 正常网络 | 下载/上传 P50、P95、吞吐、CPU、内存峰值 |
-| 蜂窝网络 | 是否尊重用户设置和网络计费状态 |
-| 网络切换 | 断点是否恢复，失败是否可重试 |
-| 进程被杀 | 本地状态能否恢复，临时文件是否清理 |
-| 存储不足 | 是否提前检查空间，失败提示是否可操作 |
-| 多任务并发 | 普通 API 是否被大文件请求挤占 |
+| 完整传输 | 长度、摘要、正式文件发布和服务端完成状态一致 |
+| 网络切换 | 旧连接失败后按已确认断点恢复，不重复发布资源 |
+| 远端文件变化 | `If-Range` 失配后重建临时文件，不拼接不同版本 |
+| 进程终止 | 重启后从持久状态恢复，未确认分片可安全重发 |
+| 任务停止 | WorkManager、UIDT 或用户取消后资源及时释放 |
+| 存储不足 | 临时文件清理可控，错误能引导用户处理 |
+| URI 失效 | 权限丢失、文档移动或删除后进入可恢复错误 |
+| 多任务并发 | 交互 API 的排队、失败和耗时没有异常恶化 |
+| 计费网络 | 遵守用户选择、后台策略和系统网络能力 |
 
-Android `NetworkCapabilities` 提供 `NET_CAPABILITY_NOT_METERED` 等网络能力标记，可用于判断当前网络是否非计费；WorkManager 约束则负责把后台任务交给系统调度。两者都不能替代产品层确认：用户点击“立即上传”的路径，和后台预取大资源的路径，应该有不同策略。[已验证: AOSP android-35 SDK sources, android/net/NetworkCapabilities.java][已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work]
+Android 17 的 `NetworkCapabilities` 源码说明，`NET_CAPABILITY_NOT_METERED` 比 Wi-Fi 传输类型更适合判断计费属性；同步查询得到的能力快照可能立即过期。前台界面用 `NetworkCallback` 接收变化，后台任务使用 WorkManager 或 JobScheduler 约束，并在传输过程中继续处理网络失效。
 
 ## 案例复盘清单
 
-三个案例有同一条排查线：先把等待段拆出来，再把等待段归到 I/O、网络、调度或缓存命中率。SP ANR 看 `QueuedWork` 和文件大小；网络慢看 EventListener 阶段耗时和 Dispatcher 排队；大文件看队列隔离、断点状态和系统约束。
+### SharedPreferences
 
-可复用的上线门槛如下：
+- ANR 主线程与磁盘线程证据位于同一时间窗口；
+- 首次加载、`apply()` finisher、`commit()` 和生命周期等待分开判断；
+- 新数据优先使用 DataStore 或 Room；
+- 合并写只用于允许丢中间态的数据，没有固定 debounce 伪装持久化；
+- 验收采用归一化 ANR 和可观测写入数据。
 
-- SP：单文件大小、写入频率、pending work 等待、`QueuedWork.waitToFinish()` ANR 占比都有监控。
-- 网络：关键 API 有阶段耗时，DNS、建连、TLS、排队、TTFB、body、解析分开记录。
-- 大文件：独立并发策略、支持取消/恢复、尊重网络约束，不抢占首屏 API 请求。
-- 缓存：记录命中率和过期原因；命中率低时先改访问模式和淘汰策略，再加容量。
-- 灰度：每个优化都有回滚开关，按设备档位、网络类型和版本分组看 P95/P99。
+### 网络请求
 
-[已验证: AOSP android-35 SDK sources, SharedPreferencesImpl / QueuedWork / DownloadManager / NetworkCapabilities]
-[已验证: 官方文档, Android Developers network access optimization / WorkManager define work / SharedPreferences.Editor / DataStore]
-[已验证: OkHttp docs, Calls / Events / Dispatcher]
+- 每次 `Call` 能区分多个网络交换；
+- 异步排队与同步 `execute()` 采用不同口径；
+- 连接复用通过事件缺失与 `connectionAcquired` 共同判断；
+- Dispatcher 参数来自本项目基线，独立队列不被描述成带宽优先级；
+- HTTPDNS 保留系统网络策略、TLS 主机名与失败处理。
+
+### 大文件
+
+- 执行 API 与用户意图、传输时长和平台版本匹配；
+- 下载断点使用强验证器，正确处理 `206`、`200` 与 `416`；
+- 上传输入可在后台继续访问，内容在重试期间保持不变；
+- 已发送与已确认状态分开持久化；
+- 进程终止、任务停止、网络切换和账号退出均可恢复或清理。
+
+## 参考与验证
+
+- [AOSP android-17.0.0_r1 · SharedPreferencesImpl.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java)
+- [AOSP android-17.0.0_r1 · QueuedWork.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java)
+- [AOSP android-17.0.0_r1 · ActivityThread.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [AOSP android-17.0.0_r1 · DownloadManager.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/DownloadManager.java)
+- [AOSP android-17.0.0_r1 · NetworkCapabilities.java](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java)
+- [Android Developers · SharedPreferences](https://developer.android.com/reference/android/content/SharedPreferences)
+- [Android Developers · DataStore](https://developer.android.com/topic/libraries/architecture/datastore)
+- [Android Developers · Data transfer background task options](https://developer.android.com/develop/background-work/background-tasks/data-transfer-options)
+- [Android Developers · User-initiated data transfer](https://developer.android.com/develop/background-work/background-tasks/uidt)
+- [Android Developers · DownloadManager](https://developer.android.com/reference/android/app/DownloadManager)
+- [Android Developers · Define work requests](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work)
+- [Android Developers · Read network state](https://developer.android.com/develop/connectivity/network-ops/reading-network-state)
+- [Android Developers · Access documents and other files](https://developer.android.com/training/data-storage/shared/documents-files)
+- [OkHttp 5.3.0 · EventListener.kt](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt)
+- [OkHttp 5.3.0 · Dispatcher.kt](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dispatcher.kt)
+- [OkHttp 5.3.0 · RequestBody.kt](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/RequestBody.kt)
+- [RFC 9110 · HTTP Semantics](https://www.rfc-editor.org/rfc/rfc9110.html)
