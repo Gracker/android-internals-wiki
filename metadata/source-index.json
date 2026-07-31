@@ -1833,7 +1833,7 @@
       "summary": "--- source: opencli-twitter fetched: 2026-07-30 research_topic: Harness memory and substitutable model system --- # Primary X signals (opencli twitter) ## OpenAI ARC-AGI-3 harness thread ### @OpenAI 2082616636989952217 G",
       "chapter": "ch16",
       "processed_at": "2026-07-31T06:20:37.476501+08:00",
-      "action": "indexed-only-chapter-freeze",
+      "action": "body-apply-rejected-misroute",
       "score": 19,
       "target_path": "src/part1-fundamentals/ch06-storage/6.03-Android-17-SharedPreferencesImpl-ANR机制.md",
       "route_confidence": 28,
@@ -1847,7 +1847,19 @@
         "aiw",
         "references"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "quarantined-misroute-3x-rejected",
+      "score": 0,
+      "rejected_at": "2026-07-31T13:15:33+08:00",
+      "rejected_run_id": "20260731-131533-d602fc9b",
+      "rejected_reason": "Material is AI agent harness/memory X-signals (OpenAI ARC-AGI-3, Nadella, Kimi K3, T3 Code); target is AOSP SharedPreferencesImpl ANR chapter. Zero topical overlap; route_confidence=28 with generic stopwords. Prevented fabrication.",
+      "prev_action": "indexed-only-chapter-freeze",
+      "re_rejected_at": "2026-07-31T19:15:33+08:00",
+      "re_rejected_run_id": "20260731-191522-42c39a9e",
+      "re_rejected_reason": "Selector re-surfaced same misrouted candidate as candidate_ready despite prior body-apply-rejected-misroute. Material verified again: pure AI-agent-harness/memory content (ARC-AGI-3 retained reasoning/context compaction, Nadella substitutable-model-system, Unsloth K3 1-bit, T3 Code). Target chapter 6.03 is AOSP SharedPreferencesImpl ANR. Zero overlap; route_confidence=28; all route_terms are stopwords. Fail-closed; no body change; no fabrication.",
+      "quarantined_at": "2026-07-31T21:15:38+08:00",
+      "quarantined_run_id": "20260731-211538-5672ada9",
+      "quarantine_reason": "Third consecutive rejection of identical misroute. Material verified 3x: content is 100% AI-agent-harness/LLM industry signals (ARC-AGI-3 retained reasoning/context compaction, Nadella substitutable-model-system, Unsloth K3 1-bit, T3 Code iOS/Android). Target src/part1-fundamentals/ch06-storage/6.03-Android-17-SharedPreferencesImpl-ANR机制.md is AOSP SharedPreferencesImpl/QueuedWork/ANR. Zero topical overlap. route_confidence=28, all route_terms are stopwords. Score zeroed and route_status escalated to quarantined-misroute-3x-rejected to stop selector re-surfacing loop. No body change; no fabrication.",
+      "action": "quarantined-misroute"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-30-morning-Harness记忆-可替换模型-研究材料/references/06-t3-architecture.md",
