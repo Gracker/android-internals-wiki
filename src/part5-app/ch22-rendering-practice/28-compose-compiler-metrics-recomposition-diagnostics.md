@@ -26,412 +26,682 @@ sources:
 
 # 22.28 Compose Compiler Metrics 与 Recomposition 诊断体系
 
-Compose 重组控制的基本概念（Stability 推断、Strong Skipping Mode、derivedStateOf）在 §22.3 已系统说明。本节聚焦**诊断工具链**：如何用编译器报告定位不稳定 Composable、如何解读重组原因、如何在 Perfetto 中关联运行时重组行为，以及如何在 CI 中建立自动化 Stability 回归检测。
+Compose 性能排查容易混淆三类证据：编译器生成了什么代码、运行时执行了哪些组合函数、用户看到的帧是否按时显示。它们分别回答不同问题，不能互相代替。
 
-本节使用 **Compose BOM 2026.06.00 / Kotlin 2.2 / Compose Compiler Gradle Plugin** 作为版本基线。编译器报告功能需要 Kotlin 2.0+（旧版 Compose Compiler 插件用不同的启用方式和字段格式，本节不覆盖）。
+本章给出一条可复现的诊断链路：
 
-[已验证: 官方文档, developer.android.com/develop/ui/compose/performance/stability/diagnose — 最后更新 2026-06-13]
-[已验证: 官方文档, developer.android.com/jetpack/androidx/releases/compose-compiler]
-[适用版本: Android 12 - Android 17 / Compose Compiler Gradle Plugin (Kotlin 2.0+)]
+1. 用 Compose 编译器报告检查稳定性推断、重启组和可跳过性。
+2. 用 Layout Inspector 观察目标交互期间的重组与跳过计数。
+3. 用 Composition Tracing 在系统 Trace 中定位组合函数的执行区间。
+4. 用 FrameTimeline 和 Macrobenchmark 判断这些工作是否造成可感知慢帧。
 
----
+## 核查口径与版本锚点
 
-## 编译器报告的生成与文件结构
+本文按以下版本核查配置、输出格式和运行时行为：
 
-### 启用报告输出
+| 层级 | 固定锚点 | 使用范围 |
+| --- | --- | --- |
+| Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | `Choreographer`、`ViewRootImpl`、FrameTimeline、RenderThread、SurfaceFlinger |
+| Android kernel | `android17-6.18-2026-06_r6` | 调度、唤醒和 fence 等底层证据 |
+| Kotlin | 2.3.20 | Compose 编译器及 Gradle 插件版本 |
+| Compose Runtime / UI | 1.11.4 稳定版 | 重组、运行时 Trace 与 UI 执行行为 |
 
-Compose Compiler Gradle Plugin（Kotlin 2.0+）在模块的 `build.gradle.kts` 中配置：
+Compose 编译器从 Kotlin 2.0 起随 Kotlin 一同发布，`org.jetbrains.kotlin.plugin.compose` 的版本必须与 Kotlin 插件一致。Compose 库独立于 Android 平台发布；API 37 不会自动决定项目使用哪个 Compose 版本。
+
+版本演进章节可以比较旧版行为。本章的配置、报告字段和示例输出只对上表中的当前锚点作保证。
+
+## 一、先分清四层证据
+
+| 证据 | 能回答的问题 | 不能据此断言的结论 |
+| --- | --- | --- |
+| `classes.txt`、`composables.txt`、CSV | 编译器如何推断类型稳定性；函数是否生成重启组、是否允许跳过 | 某函数在设备上重组了多少次；一次重组耗时多少 |
+| `module.json` | 当前编译任务的模块级代码生成统计和功能开关 | 页面是否流畅；某个函数是否是热点 |
+| Layout Inspector | 连接期间，界面节点观察到的重组与跳过计数 | Release 包的精确耗时；线上用户的慢帧比例 |
+| Composition Tracing、FrameTimeline | 组合函数何时执行、执行多久；帧是否错过截止时间 | 类型为什么被判为 `unstable`；改动后代码生成是否发生变化 |
+
+因此，“`unstable` 数量下降”只是静态信号，“重组次数下降”是运行时信号，“慢帧下降”才是用户结果。优化结论至少应包含一项静态证据和一项运行时证据。
+
+## 二、按 Kotlin 2.3.20 生成编译器报告
+
+### 1. 应用与 Kotlin 同版本的 Compose 插件
+
+下面的根项目配置用于锁定 Kotlin 与 Compose 编译器插件版本。
 
 ```kotlin
-composeCompiler {
-    reportsDestination = layout.buildDirectory.dir("compose_compiler")
-    metricsDestination = layout.buildDirectory.dir("compose_compiler")
+plugins {
+    id("org.jetbrains.kotlin.android") version "2.3.20" apply false
+    id("org.jetbrains.kotlin.plugin.compose") version "2.3.20" apply false
 }
 ```
 
-- `reportsDestination`：输出 Stability 推断和 Composable 可跳过性分析结果
-- `metricsDestination`：输出模块级统计数据（Composable 数量、各类统计）
+两个插件均使用 `2.3.20`。如果项目通过版本目录管理插件，约束仍然相同：Kotlin Android 插件和 Compose 插件引用同一个 Kotlin 版本。
 
-⚠️ **必须在 Release build 下生成**。Debug build 启用了 Compose Runtime 的调试特性（如 `ComposeNodeData` 追踪），Stability 推断结果可能与 Release 不一致。
+下面的模块配置用于启用 Compose 编译器报告，并把报告与模块指标分开存放。
 
-[已验证: 官方文档, developer.android.com/develop/ui/compose/performance/stability/diagnose — "Make sure to always run this on a release build to ensure accurate"]
+```kotlin
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
+}
 
-### 输出文件清单
-
-每个模块构建后，`reportsDestination` 生成三个文件：
-
-| 文件 | 内容 | 用途 |
-|------|------|------|
-| `<module>-classes.txt` | 类的 Stability 推断结果 | 定位不稳定的数据类 |
-| `<module>-composables.txt` | Composable 函数分析：restartable / skippable / 参数稳定性 | 定位不可跳过的 Composable |
-| `<module>-composables.csv` | composables.txt 的 CSV 版本 | 脚本/CI 批处理 |
-
-`metricsDestination` 额外生成模块级统计文件，包含 Composable 总数、Stable/Unstable 比例等汇总指标。
-
----
-
-## classes.txt：类的 Stability 推断解读
-
-### 报告格式
-
-每个类在 `classes.txt` 中有一条记录。以官方文档的典型示例：
-
-```
-Set<String> is UNSTABLE
+composeCompiler {
+    reportsDestination =
+        layout.buildDirectory.dir("compose_compiler/reports")
+    metricsDestination =
+        layout.buildDirectory.dir("compose_compiler/metrics")
+}
 ```
 
-这表示 `Set<String>` 类型被判定为 Unstable。原因：`Set` 是接口类型，编译器只能看到声明类型，无法确认运行时实现不是 `MutableSet`。即使变量声明为 `val set: Set<String> = setOf("a")`，编译器也无法保证不存在 `val set: Set<String> = mutableSetOf("a")` 的情况。
+`reportsDestination` 生成函数和类型级报告，`metricsDestination` 生成模块级 JSON。旧文章中常见的自定义 `-P composeCompilerReportsDestination=...` 只有在项目脚本主动读取该属性时才有效，它不是 Compose 插件提供的通用 Gradle 参数。
 
-### Stable 的判定规则
+### 2. 固定构建变体和编译输入
 
-编译器在以下条件全部满足时，将类标记为 Stable：
+官方诊断文档建议使用 Release 构建生成报告。团队基线还应固定 Kotlin 版本、Compose 插件配置、模块、变体、代码压缩设置和源码提交；混用不同输入得到的数量没有可比性。
 
-1. 所有属性都是 `val`（不可变引用）
-2. 所有属性的类型本身也是 Stable（递归判定）
-3. 属性类型为基本类型（`String`、`Int`、`Boolean` 等）或被标注 `@Stable` / `@Immutable` 的类型
+下面的命令用于重新编译应用模块的 Release 变体。
 
-`data class` 满足条件 1 时通常会被自动推断为 Stable——但前提是它的所有属性类型也满足条件 2。如果 `data class` 包含 `List<X>` 属性，即使 `X` 是 Stable，`List<X>` 仍然是 Unstable。
+```bash
+./gradlew :app:clean :app:assembleRelease
+```
 
-### @Stable 与 @Immutable 注解
+`clean` 可避免把旧编译任务留下的报告误当成本次结果。大型工程可以清理目标模块的输出目录并执行对应编译任务，无须每次清空全仓库缓存。
 
-这两个注解是开发者与编译器之间的**契约**，不是编译器自动推断的魔法：
+下面的命令用于确认实际生成的文件，而不是假定某个固定的变体子目录。
 
-- `@Immutable`：承诺类的所有实例在构造后完全不可变，所有方法都是引用透明的
-- `@Stable`：承诺属性可以变，但每次变化编译器都能通过 `equals()` 检测到（通常配合 `MutableState` 使用）
+```bash
+find app/build/compose_compiler -type f -print | sort
+```
 
-⚠️ **错误标注不会导致编译错误，但会导致重组错误**。如果把一个实际可变且 `equals()` 不会变化的类标注为 `@Immutable`，Compose 运行时将无法检测到变化，UI 会"卡住"不更新。
+Kotlin Gradle 插件会按目标和 compilation 组织部分指标目录，多模块工程也会产生不同文件前缀。CI 应从构建产物中发现文件，再按模块和变体归档。
 
-[已验证: 官方文档, developer.android.com/develop/ui/compose/performance/stability/fix]
+### 3. Kotlin 2.3.20 的输出文件
 
-### 集合类型的默认 Unstable 行为及解决方案
+`reportsDestination` 可产生以下文件：
 
-| 解决方式 | 适用场景 | 代价 |
-|----------|----------|------|
-| `kotlinx.collections.immutable`（`ImmutableList`、`ImmutableSet` 等） | 需要编译时不可变性保证 | alpha 库，API 可能变化 |
-| 自定义 Stable 包装类 | 不想引入新依赖 | 需手写 equals/hashCode |
-| Stability 配置文件 | 第三方库类不可控 | 绕过编译器安全检查 |
-| Strong Skipping Mode（Kotlin 2.0.20+ 默认） | 不想改数据层 | 不减少重组——只减少不可跳过导致的完整执行 |
+| 文件 | 内容 |
+| --- | --- |
+| `*-classes.txt` | 类型及属性的稳定性推断 |
+| `*-composables.txt` | 组合函数标签、参数稳定性、组与调用信息 |
+| `*-composables.csv` | 便于机器处理的组合函数表 |
+| `*-composables.log` | 仅在编译器记录相关日志消息时出现 |
 
-**Stability 配置文件**（Compose Compiler 1.5.5+）允许将指定类声明为 Stable：
+`metricsDestination` 产生 `*-module.json`。Kotlin 2.3.20 的 JSON 包含 `totalComposables`、`skippableComposables`、`restartableComposables`、各类参数和类统计，以及本次编译的 `featureFlags`。
+
+这些文件是编译器实现的诊断接口，不是跨版本不变的公共数据协议。升级 Kotlin 时应先检查字段和语义，再更新 CI 解析器与基线。
+
+## 三、用一份实测报告读懂标签
+
+### 1. 测试源码
+
+下面的最小样例用于同时覆盖稳定参数、不稳定集合、显式禁止跳过和非 `Unit` 返回值。
+
+```kotlin
+package lab
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.NonSkippableComposable
+
+data class Snack(
+    val id: Long,
+    val tags: Set<String>,
+)
+
+@Composable
+fun StableParameters(
+    count: Int,
+    title: String,
+) {
+}
+
+@Composable
+fun UnstableList(
+    snacks: List<Snack>,
+    onClick: (Long) -> Unit,
+) {
+    if (snacks.isNotEmpty()) {
+        StableParameters(
+            count = snacks.size,
+            title = snacks.first().id.toString(),
+        )
+        onClick(snacks.first().id)
+    }
+}
+
+@NonSkippableComposable
+@Composable
+fun ExplicitlyNonSkippable(
+    count: Int,
+) {
+}
+
+@Composable
+fun NonUnitResult(
+    count: Int,
+): Int = count
+```
+
+`Set` 和 `List` 的声明类型无法证明底层实现不可变，因此 `Snack` 和 `snacks` 会进入不稳定路径。函数类型由编译器按稳定类型处理。
+
+### 2. `composables.txt` 的实测输出
+
+Kotlin 2.3.20 在默认功能开关下为上述样例生成以下关键记录。
 
 ```text
-// stability_config.conf
-// 考虑 java.time.LocalDateTime 为 Stable
-java.time.LocalDateTime
-
-// 考虑整个 datalayer 包为 Stable
-com.datalayer.*
-
-// 支持通配符
-com.example.GenericClass<*,_>
+restartable skippable fun lab.StableParameters(
+  unused stable count: Int
+  unused stable title: String
+)
+restartable skippable fun lab.UnstableList(
+  unstable snacks: List<Snack>
+  stable onClick: Function1<Long, Unit>
+)
+restartable fun lab.ExplicitlyNonSkippable(
+  unused stable count: Int
+)
+fun lab.NonUnitResult(
+  stable count: Int
+): Int
 ```
 
-配置方式：
+各标签应逐项解读：
 
-```kotlin
-composeCompiler {
-    stabilityConfigurationFile = rootProject.layout.projectDirectory.file("stability_config.conf")
+- `restartable`：编译器为该函数建立可独立重新执行的重启边界。
+- `skippable`：父级重组调用到这里时，运行时允许在参数满足比较规则后跳过函数体。
+- `stable`、`unstable`：参数类型的编译期稳定性分类。
+- `unused`：参数没有被该函数生成的组合逻辑读取。
+- 没有 `restartable`：该函数不构成可独立重启的组合边界。非 `Unit` 返回值就是一种常见原因。
+
+`UnstableList` 同时出现 `unstable snacks` 和 `skippable` 并不矛盾。Kotlin 2.3.20 默认启用 Strong Skipping，所有可重启的组合函数都可以生成跳过逻辑；参数稳定性决定运行时采用哪种比较方式。
+
+`ExplicitlyNonSkippable` 仍是 `restartable`，但 `@NonSkippableComposable` 阻止编译器为它生成 `skippable` 标签。报告中不存在 `@NonSkippableOptIn` 这一注解。
+
+### 3. `classes.txt` 的实测输出
+
+同一编译任务对 `Snack` 产生以下记录。
+
+```text
+unstable class lab.Snack {
+  stable val id: Long
+  unstable val tags: Set<String>
+  <runtime stability> = Unstable
 }
 ```
 
-⚠️ 配置文件和注解一样是契约——声明 Stable 后如果类实际可变，重组会静默失效。
+`val` 只能保证引用不能重新赋值，不能保证引用指向的对象不可变。`Set<String>` 是接口，运行时对象仍可能是可变集合，所以编译器不能把它证明为不可变。
 
-[已验证: 官方文档, developer.android.com/develop/ui/compose/performance/stability/fix — "Stability configuration file"]
+### 4. CSV 与模块 JSON 的准确含义
 
----
+Kotlin 2.3.20 的 CSV 表头如下。
 
-## composables.txt：Composable 可跳过性分析
-
-### 报告字段含义
-
-每个 `@Composable` 函数在 `composables.txt` 中的输出格式：
-
-```
-restartable skippable fun SnackCollection(
-  snackCollection: Stable
-  onSnackClick: Function1<Long, Unit>: Stable
-)
+```text
+package,name,composable,skippable,restartable,readonly,inline,isLambda,hasDefaults,defaultsGroup,groups,calls,
 ```
 
-| 标签 | 含义 | 影响 |
-|------|------|------|
-| `restartable` | 函数有独立的重启边界，可以作为 Composition 子树独立重组 | 是 skippable 的前提 |
-| `skippable` | 所有参数都是 Stable 时，运行时可以跳过函数体执行 | 减少不必要的重组 |
-| `restartable skippable` | 两者兼具——理想的 Composable | — |
-| `restartable`（无 `skippable`） | 有重启边界但参数含 Unstable 类型，每次父级重组都会执行 | 需检查参数 |
-| 无标签 | 内联 Composable 或无独立重启边界 | 无法独立优化 |
+布尔列使用 `1` 和 `0`，CSV 没有名为 `params` 的列。表头虽然把第一列命名为 `package`，Kotlin 2.3.20 源码写入的是 `fn.fqName`，实测值形如 `lab.UnstableList`。解析脚本若按 `true`、`false`、`params` 或“纯包名”编写，都会得到错误结果。
 
-### 不可跳过 Composable 的典型场景
+样例的 `module.json` 记录了以下功能开关。
 
-```
-restartable fun HighlightedSnacks(
-  snacks: List<Snack>: Unstable    ← List<Snack> 被判定为 Unstable
-  onSnackClick: Function1<Long, Unit>: Stable
-)
+```json
+{
+  "featureFlags": {
+    "StrongSkipping": true,
+    "IntrinsicRemember": true,
+    "OptimizeNonSkippingGroups": true,
+    "PausableComposition": true
+  }
+}
 ```
 
-即使 `Snack` 类本身被标注 `@Immutable`，`List<Snack>` 仍然是 Unstable。Strong Skipping Mode（§22.3）启用后，这类 Composable 会被标记为 `restartable skippable`——但**跳过≠不重组**，只是运行时可以用 `equals()` 快速判断是否需要执行函数体。如果 `List<Snack>` 每次都产生新实例，`equals()` 判断为不等，仍然会重组。
+`featureFlags` 是解释报告不可缺少的上下文。相同源码关闭 Strong Skipping 后，样例中的 `UnstableList` 会从 `restartable skippable` 变为 `restartable`。CI 比较报告前必须先确认开关一致。
 
-**关键区别**：
-- **Pre-Strong Skipping**：`skippable = false` → 无条件执行函数体，连 `equals()` 检查都不做
-- **Strong Skipping**：`skippable = true` → 做 `equals()` 检查，不等才执行。但 `List` 的 `equals()` 是逐元素比较，大列表的比对开销可能超过直接重组
+## 四、Strong Skipping 改变了诊断方式
 
-[已验证: 官方文档, developer.android.com/develop/ui/compose/performance/stability/diagnose]
-[结构参考: §22.3 对 Strong Skipping 的完整说明]
+### 1. 稳定参数与不稳定参数使用不同相等规则
 
----
+运行时决定是否跳过函数时会比较本次和上次参数：
 
-## Strong Skipping 前后的诊断差异
+- 稳定参数使用对象相等，即 `equals()`。
+- 不稳定参数使用引用相等，即 `===`。
+- 所有参数均满足各自的“未变化”条件时，函数体才会被跳过。
 
-### Compose Compiler 版本对照
+这组规则带来两个容易漏掉的边界。
 
-| 时间线 | Compose Compiler | Strong Skipping | 报告变化 |
-|--------|-----------------|-----------------|----------|
-| Kotlin 1.9.20 | 1.5.11 | 实验性，需手动开启 | `skippable` 字段严格反映参数 Stability |
-| Kotlin 2.0.0-2.0.10 | 需手动 `enableStrongSkippingMode = true` | 开启后所有 restartable Composable 标记 skippable | — |
-| Kotlin 2.0.20+ | 默认启用 | 稳定，推荐生产使用 | `skippable` 字段几乎总是 true |
-| Kotlin 2.2+（本节基线） | 默认启用 | 已合入标准行为 | `skippable` 不再是关注重点 |
+传入一个内容相同但新创建的 `List`，引用不同，`UnstableList` 仍会重组。每次在调用点执行 `items.map { ... }` 或 `items.toList()`，都可能制造新容器。
 
-[已验证: 官方文档, developer.android.com/jetpack/androidx/releases/compose-compiler — "Strong skipping is no longer considered experimental"]
+把普通 `MutableList` 原地修改后继续传入同一引用，引用比较可能允许跳过；普通集合的修改又不会通知 Snapshot 系统，界面可能保留旧内容。解决方向是不可变 UI 模型、可观察的 Snapshot 状态或明确的新值流转，不能靠虚假稳定性注解遮住可变对象。
 
-### Strong Skipping 时代的诊断重心转移
+### 2. Lambda 会被自动记忆
 
-在 Strong Skipping 默认启用后，`composables.txt` 中 `skippable = false` 的 Composable 大幅减少。诊断重心从"为什么不可跳过"转向：
+Strong Skipping 还会记忆组合函数内部的 Lambda。编译器按捕获值生成近似 `remember(...)` 的逻辑，其中不稳定捕获使用引用相等，稳定捕获使用对象相等。
 
-1. **重组频率**：即使可跳过，如果参数频繁变化，`equals()` 比对本身也是开销
-2. **Lambda memoize 有效性**：Strong Skipping 自动 memoize lambda，但如果 lambda 的捕获值频繁变化，memoize 失效
-3. **Non-restartable Composable**：Strong Skipping 只影响 restartable Composable，内联 Composable 无法独立跳过
+需要每次创建新 Lambda 的少数场景可以使用 `@DontMemoize`。需要保持可重启、但每次父级重组都执行函数体的场景可以使用 `@NonSkippableComposable`。两者都是针对明确语义的控制手段，不适合作为常规性能开关。
 
-[结构参考: §22.3 "Strong Skipping Mode" 和 §22.20 "rememberCoroutineScope 与 Strong Skipping 交互"]
+### 3. `skippable` 不等于一定跳过
 
----
+报告中的 `skippable` 表示“允许跳过”。函数是否被跳过还取决于：
 
-## Recomposition 原因解读
+- 对应重启组是否进入本轮重组；
+- 参数比较结果；
+- 调用位置和组合身份是否保持；
+- 读取的 Snapshot 状态是否让该作用域失效；
+- 控制流和 key 是否改变了组结构。
 
-### 编译器报告的局限性
+因此，不能用 CSV 中 `skippable=1` 计算运行时跳过率。跳过次数需要运行时工具观察。
 
-Compose Compiler 报告只反映**编译时**的 Stability 推断结果，不包含运行时重组原因。要分析"哪个参数变了、为什么变了"，需要运行时工具：
+## 五、稳定性是契约，不是消除警告的标签
 
-| 工具 | 能力 | 限制 |
-|------|------|------|
-| Layout Inspector（Android Studio） | 显示每个 Composable 的重组/跳过次数 | 需要手动连接设备，不适合自动化 |
-| Perfetto / systrace | 显示重组时间线、与帧的关系 | 需要开启 Compose tracing |
-| Compose Runtime Tracking API | 程序化获取重组回调 | 实验性 API，有运行时开销 |
+### 1. `@Stable` 的三项要求
 
-### Layout Inspector 重组计数
+类型标记为 `@Stable` 后，开发者向编译器承诺：
 
-Android Studio 的 Layout Inspector 在 Compose 模式下显示两个计数：
+1. 同一对实例的 `equals` 结果保持不变。
+2. 公共属性发生变化时，Compose 会收到通知。
+3. 所有公共属性类型也满足稳定性要求。
 
-- **Recursion count**（重组次数）：Composable 函数体被执行的次数
-- **Skipped count**（跳过次数）：参数未变化，运行时跳过执行的次数
+`@Immutable` 的承诺更强：实例构造完成后，可观察状态不会变化，公开方法也不会破坏这一假设。注解不会把可变实现改造成可观察状态；违反契约可能导致应当执行的重组被跳过。
 
-理想状态：大多数 Composable 的 Skipped count 远大于 Recursion count。如果某个 Composable 的 Recursion count 在用户交互后快速增长，说明它被频繁重组。
+### 2. 集合与跨模块模型
 
-⚠️ Layout Inspector 本身有性能开销（注入了追踪代码），不能用于精确的耗时测量。用 Layout Inspector 定位问题、用 Perfetto 测量影响。
+标准库的 `List`、`Set`、`Map` 都是接口，Compose 编译器按不稳定类型处理。常用处理方式包括：
 
-[已验证: 官方文档, developer.android.com/develop/ui/compose/performance/stability/diagnose — Layout Inspector]
+- 在 UI 边界转换为持久不可变集合；
+- 用满足不可变契约的包装类型承载集合；
+- 把变化数据放入 `State`、`SnapshotStateList` 或明确的状态流；
+- 在不含 Compose 编译器的模型模块外，再定义 UI 专用模型。
 
-### @SkippableComposable 缺失的原因分析
+如果外部类型已经由团队审计并满足稳定契约，可以通过稳定性配置文件告知编译器。下面的配置用于把一份明确的类型清单加入当前模块。
 
-在 Strong Skipping 之前，`@SkippableComposable` 注解标记（编译器自动添加）表示 Composable 可以被跳过。缺失的原因：
-
-1. **参数含 Unstable 类型**（最常见）
-2. **Composable 不是 restartable**（内联函数体内的 Composable、被 `@NonRestartableComposable` 标注）
-3. **Composable 有 NonSkippableOptIn**（某些需要每次执行的 Composable，如 `WithConstraintLayout`）
-
-Strong Skipping 之后，原因 1 被自动解决——但要注意：编译器仍然会在 `composables.txt` 中标注参数的 Stability，只是不再阻止 `skippable` 标记。
-
----
-
-## Compose Runtime Tracing 与 Perfetto 集成
-
-### Compose Tracing 的启用
-
-从 Compose Runtime 1.0+ 起，系统自动在 Perfetto trace 中注入 Compose 相关 slice。Android 12+（API 31+）上这些 slice 通过 `androidx.compose.runtime` 的 `Trace` 调用写入系统 trace buffer：
-
-- `Compose:recompose` — 单次重组的完整执行
-- `Compose:applyChanges` — 将 composition 差异应用到 semantics 树
-- `Compose:measure` — Composable 的 measure 阶段
-- `Compose:layout` — Composable 的 layout 阶段
-- `Compose:draw` — Composable 的 draw 阶段
-
-这些 slice 在 Perfetto 中直接可见，不需要额外插件。
-
-[适用版本: Android 12 (API 31)+ — Compose Runtime tracing 依赖系统 atrace 机制]
-
-### Perfetto 中的重组热点识别
-
-在 Perfetto UI 中打开 trace 后，关注以下模式：
-
-**正常模式**（低频重组）：
-- `Compose:recompose` slice 间断出现，每次 < 1ms
-- 与 `frame` slice 对齐——重组发生在帧截止时间（choreographer deadline）之前
-
-**问题模式**（高频/慢重组）：
-- `Compose:recompose` 在连续帧中重复出现——参数频繁变化
-- 单个 `Compose:recompose` 持续 > 8ms（超出单帧预算）
-- `Compose:recompose` 跨越多个帧边界——导致 jank
-
-**定位根因**：
-1. 在 Perfetto 中找到频繁出现的 `Compose:recompose` slice
-2. 展开查看其子 slice（如具体哪个 Composable 在执行）
-3. 检查同一时间线上 `Choreographer#doFrame` 的耗时
-4. 如果 `Compose:applyChanges` 也频繁出现，说明 composition 差异计算量大
-
-### Composition Snapshot 与重组触发
-
-Compose 运行时通过 Snapshot 系统（`Snapshot.kotlin` / `androidx.compose.runtime.snapshots`）管理状态变更的传播。每次 `mutableStateOf` 的值变化都会创建一个 Snapshot mutation，在下一次 Composition 时被读取。
-
-在 Perfetto 中，如果看到 `Compose:recompose` 与 `Compose:applyChanges` 交替出现且间隔极短，通常表示：
-- 状态变更 → 触发 recompose → 产生新的 composition 差异 → applyChanges → 可能再次触发 recompose（级联重组）
-
-减少级联重组的方法（详见 §22.3）：
-- `derivedStateOf` 合并多个状态读取
-- `remember` + key 控制依赖范围
-- 将高频变化状态隔离到叶子 Composable
-
-[结构参考: §22.3 "derivedStateOf 与重组范围控制"]
-
----
-
-## 诊断工作流：从 Metrics 到修复
-
-### Step 1：生成全项目编译器报告
-
-```bash
-./gradlew :app:assembleRelease \
-  -P composeCompilerReportsDestination=build/compose_compiler \
-  -P composeCompilerMetricsDestination=build/compose_compiler
+```kotlin
+composeCompiler {
+    stabilityConfigurationFiles.add(
+        rootProject.layout.projectDirectory.file("stability_config.conf")
+    )
+}
 ```
 
-或确保 `build.gradle.kts` 中的 `composeCompiler` 块已配置（见上文）。
+`stabilityConfigurationFiles` 是当前复数形式的 API；单数 `stabilityConfigurationFile` 已弃用。配置文件只改变编译器判断，不会验证第三方类型的线程安全、可变性或通知机制，清单必须附带审计依据。
 
-### Step 2：扫描 Unstable 类和不可跳过 Composable
+下面的配置文件条目用于声明一个经过审计的具体类型。
 
-```bash
-# 找出所有 Unstable 类
-grep "is UNSTABLE" build/compose_compiler/*-classes.txt
-
-# 找出所有不可跳过的 restartable Composable
-# 在 Strong Skipping 之前有效；之后主要用于审计
-grep "restartable" build/compose_compiler/*-composables.txt | grep -v "skippable"
+```text
+com.example.model.ImmutableFromAnotherModule
 ```
 
-### Step 3：结合 Layout Inspector 确认运行时影响
+优先列出精确类型。大范围通配符会把后续新增类型一并视为稳定，代码评审很难发现契约已经失效。
 
-在 Android Studio → View → Tool Windows → Layout Inspector 中：
-1. 连接设备，选择目标 App
-2. 与目标页面交互（滚动、点击）
-3. 观察重组计数——找到 Recursion count 异常高的 Composable
-4. 对比 Step 2 的编译器报告——确认是否与 Unstable 参数相关
+### 3. 不要追求“全部可跳过”
 
-### Step 4：修复 Stability 问题
+非 `Unit` 返回值、显式 `@NonSkippableComposable`、不可重启函数和部分内联结构本来就不应生成相同的跳过代码。可跳过性还会增加少量代码体积。
 
-按优先级选择修复方式（详见 §22.3 和官方 Fix stability issues 文档）：
+静态治理应关注“与基线相比为什么变化”，而非设定“所有组合函数必须 skippable”的门禁。修复优先级由运行时热点、调用频率、参数分配和帧结果共同决定。
 
-1. **首选**：将 Unstable 集合替换为 `ImmutableList` / `ImmutableSet`（kotlinx-collections-immutable）
-2. **次选**：用 Stability 配置文件将整个 data layer 包标记为 Stable
-3. **兜底**：对特定类使用 `@Immutable` / `@Stable` 注解（需严格验证 equals 契约）
+## 六、Layout Inspector 观察次数
 
-⚠️ 不要追求所有 Composable 都 Skippable。官方建议：
-- 不常重组的 Composable 不需要 skippable
-- 仅调用其他 skippable Composable 的包装函数不需要 skippable
-- 参数多且 equals 检查昂贵的 Composable，skippable 的开销可能大于直接重组
+Android Studio Layout Inspector 可以显示组合节点的重组次数和跳过次数。它适合回答以下问题：
 
-[已验证: 官方文档, developer.android.com/develop/ui/compose/performance/stability/fix — "Not every composable should be skippable"]
+- 哪个界面区域在目标交互期间反复重组；
+- 状态读取是否放在过高层级；
+- 参数身份是否在父层频繁变化；
+- 修复前后，同一操作脚本下的计数是否收敛。
 
-### Step 5：用 Perfetto 验证修复效果
+使用时应固定设备、页面初始状态和交互步骤，并在每轮采样前重置计数。Inspector 是诊断环境，会增加观测开销；计数用于定位范围，耗时与流畅度仍应由 profileable、non-debuggable 构建的 Trace 和基准测试确认。
 
-1. 修复前录制 Perfetto trace（记录重组频率和帧耗时基线）
-2. 修复后录制相同操作的 trace
-3. 对比 `Compose:recompose` slice 的频率和持续时间
-4. 检查 `Choreographer#doFrame` 是否不再超时
+计数高也不自动等于问题。一个很小的计时文本可以高频重组且成本很低；一个只执行一次的组合函数也可能同步解析大对象并阻塞一帧。排查顺序应把次数与单次成本、作用域大小和帧截止时间放在一起看。
 
----
+## 七、Composition Tracing 定位运行时间
 
-## CI 集成：自动化 Stability 回归检测
+### 1. 单独加入运行时 Trace 依赖
 
-### 解析 composables.csv 建立基线
+普通系统 Trace 默认不包含每个组合函数。下面的依赖用于让 Compose 1.11.4 把编译器注入的组合信息写入 Perfetto SDK Trace。
 
-`composables.csv` 是结构化数据，适合在 CI 中用脚本解析：
+```kotlin
+dependencies {
+    implementation("androidx.compose.runtime:runtime-tracing:1.11.4")
+}
+```
+
+该能力要求采集设备至少为 API 30。本文以 Android 17 / API 37 设备为验证目标，因此满足平台条件。若使用 BOM，应确认 BOM 实际映射的 `runtime-tracing` 版本；本章显式写出 `1.11.4` 以固定实验输入。
+
+Kotlin 2.3.20 的 Compose 插件默认包含 Trace marker 和源码信息。项目若显式关闭 `includeTraceMarkers`，即使加入运行时依赖，也不会得到完整的逐函数信息。
+
+### 2. 使用可分析的构建
+
+下面的 Manifest 片段用于允许 shell 工具分析 Release 性能构建。
+
+```xml
+<application
+    android:debuggable="false">
+    <profileable android:shell="true" />
+</application>
+```
+
+采集包应为 non-debuggable 且 profileable。Debug 构建的运行时检查、调试器和编译差异会污染耗时，不能作为发布性能结论。
+
+### 3. 正确阅读 Trace
+
+加入 `runtime-tracing` 后，系统 Trace 会显示带函数名、文件和行号信息的组合切片。Compose Runtime 1.11.4 源码还包含 `Recomposer:animation`、`Recomposer:recompose` 等内部区间。
+
+这些名称不是稳定 API。团队查询应先打开当前版本 Trace 确认切片名称，再保存针对该版本的查询；不要假设所有版本都存在固定的 `Compose:measure`、`Compose:layout`、`Compose:draw` 或 `Compose:recompose` 切片组合。
+
+组合函数切片只覆盖组合阶段相关执行。Compose UI 的测量、布局和绘制是后续阶段，可能由不同 Trace marker 表达。看到某个组合函数耗时后，还要检查它是否触发布局、绘制和 RenderThread 工作，不能把四个阶段合并成一个“重组耗时”。
+
+运行时依赖通过 `ComposeTracingInitializer` 安装 `CompositionTracer`，再把编译器传入的 `info` 写入 `PerfettoSdkTrace.beginSection(info)`。这条源码路径说明函数名来自编译器 marker，也解释了缺少依赖或关闭 marker 时为何看不到逐函数切片。
+
+### 4. 控制采集成本
+
+组合函数名和源码信息会增加 APK 体积，逐函数 Trace 也会增加采集数据量。诊断构建应保留与生产一致的优化设置，只增加必要的 profileable 和 Trace 能力。
+
+从终端启用完整 Perfetto SDK tracing 时，还可能需要 `androidx.tracing:tracing-perfetto` 和对应 binary 依赖。官方明确警告不要把 `tracing-perfetto-binary` 发布到生产包。日常排查优先使用 Android Studio System Trace 或 Macrobenchmark 自动采集，减少配置漂移。
+
+## 八、把重组放回 Android 17 渲染流水线
+
+在 Android 17 标准 App Window 路径中，一次可见更新大致经过：
+
+```text
+vsync-app
+  -> Choreographer#doFrame
+  -> Compose 重组 / 测量 / 布局 / 绘制记录
+  -> RenderThread
+  -> BufferQueue / BLAST 提交缓冲
+  -> SurfaceFlinger 合成
+  -> HWC / 显示控制器
+  -> present
+```
+
+这条链路用于标出责任边界。Compose 的组合优化主要减少应用主线程生成 UI 更新的工作，无法直接证明 RenderThread、GPU、SurfaceFlinger 或显示硬件已经按时完成。
+
+诊断时可以按以下证据相互核对：
+
+1. FrameTimeline 标出目标交互中的慢帧，并区分 App 与 SurfaceFlinger 侧截止时间。
+2. 主线程轨道检查 `Choreographer#doFrame`、`Recomposer:recompose` 和目标组合函数切片。
+3. 若应用主线程按时完成，继续检查 RenderThread、GPU、BufferQueue、SurfaceFlinger 和 fence。
+4. 用同一用户操作的 Macrobenchmark 比较修复前后帧指标。
+
+`queueBuffer` 只说明应用提交了一个缓冲，不代表该缓冲已经显示。评估用户结果要看 FrameTimeline 与 present 相关证据。
+
+kernel 锚点 `android17-6.18-2026-06_r6` 只用于解释线程为什么没有及时运行、唤醒是否延迟、fence 是否阻塞等底层现象。kernel Trace 不认识 Compose 的稳定性标签；编译器报告也无法解释 CPU 调度空洞。跨层结论必须用时间戳把两类证据关联起来。
+
+## 九、从状态写入追到重组作用域
+
+一条可靠的重组因果链应包含：
+
+```text
+状态写入
+  -> Snapshot 变化被应用
+  -> 读取该状态的组合作用域失效
+  -> Recomposer 在帧时钟中处理待办工作
+  -> 参数比较与跳过判断
+  -> 必要的组合函数重新执行
+  -> 节点更新可能触发测量、布局或绘制
+```
+
+状态写入不保证产生可见重组。等价写入可能被 `SnapshotMutationPolicy` 忽略；没有组合读取者的状态也不会让界面作用域失效。相反，把频繁变化的状态读取放在页面根部，会让更大的作用域进入重组判断，即使很多子函数随后被跳过。
+
+排查调用点时重点检查：
+
+- 是否在组合期间反复创建集合、包装对象或 Lambda；
+- 状态读取能否下移到只需要它的节点；
+- Lazy 列表的 key 和内容类型是否稳定；
+- `remember` 的 key 是否准确描述缓存生命周期；
+- `derivedStateOf` 是否只在“输入变化频率高于派生结果变化频率”时使用；
+- 普通可变对象是否绕过 Snapshot 通知。
+
+报告能指出参数类型，Layout Inspector 能指出作用域，Trace 能指出耗时。三者合并后再改代码，命中率高于从 `unstable` 关键字直接开始加注解。
+
+## 十、CI 中保存可解释的语义快照
+
+### 1. 记录原始产物与构建上下文
+
+每个基线至少应保存：
+
+- Kotlin 与 Compose 插件版本；
+- Compose Runtime / UI 版本；
+- 模块、target、compilation 与构建变体；
+- `module.json` 的 `featureFlags`；
+- 原始 `classes.txt`、`composables.txt`、CSV 和 module JSON；
+- 源码提交及生成命令；
+- 对应 Macrobenchmark 或 Trace 样本标识。
+
+只提交一个“unstable 数量”会丢失函数身份、原因和编译开关，后续无法判断变化来自业务代码还是工具升级。
+
+### 2. 严格解析当前格式
+
+下面的 Python 脚本用于校验 Kotlin 2.3.20 的 CSV 表头和布尔编码，并生成便于代码评审的确定性快照。
 
 ```python
+#!/usr/bin/env python3
+import argparse
 import csv
+import json
+from pathlib import Path
 
-def parse_composables(csv_path):
-    """解析 composables.csv，返回不可跳过的 Composable 列表"""
-    unstable_composables = []
-    with open(csv_path) as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            # CSV 字段因 Compose Compiler 版本可能不同
-            # 需根据实际输出调整字段名
-            if row.get('skippable', '').strip() != 'true':
-                unstable_composables.append({
-                    'package': row.get('package', ''),
-                    'name': row.get('name', ''),
-                    'params': row.get('params', ''),
-                })
-    return unstable_composables
+EXPECTED_HEADER = [
+    "package",
+    "name",
+    "composable",
+    "skippable",
+    "restartable",
+    "readonly",
+    "inline",
+    "isLambda",
+    "hasDefaults",
+    "defaultsGroup",
+    "groups",
+    "calls",
+    "",
+]
+
+MODULE_KEYS = [
+    "skippableComposables",
+    "restartableComposables",
+    "readonlyComposables",
+    "totalComposables",
+    "restartGroups",
+    "totalGroups",
+    "markedStableClasses",
+    "inferredStableClasses",
+    "inferredUnstableClasses",
+    "inferredUncertainClasses",
+    "effectivelyStableClasses",
+    "totalClasses",
+    "memoizedLambdas",
+    "totalLambdas",
+]
+
+BOOLEAN_COLUMNS = [
+    "composable",
+    "skippable",
+    "restartable",
+    "readonly",
+    "inline",
+    "isLambda",
+    "hasDefaults",
+    "defaultsGroup",
+]
+
+
+def relative(path: Path, root: Path) -> str:
+    return path.resolve().relative_to(root.resolve()).as_posix()
+
+
+def read_csv(path: Path, root: Path) -> dict:
+    with path.open(newline="", encoding="utf-8") as source:
+        reader = csv.DictReader(source)
+        if reader.fieldnames != EXPECTED_HEADER:
+            raise ValueError(
+                f"{path}: unsupported CSV header: {reader.fieldnames}"
+            )
+        rows = list(reader)
+
+    for row in rows:
+        for column in BOOLEAN_COLUMNS:
+            if row[column] not in {"0", "1"}:
+                raise ValueError(
+                    f"{path}: {column} must use 0/1, got {row[column]!r}"
+                )
+
+    non_skippable_restartable = sorted(
+        row["package"]
+        for row in rows
+        if row["composable"] == "1"
+        and row["restartable"] == "1"
+        and row["skippable"] == "0"
+    )
+    return {
+        "file": relative(path, root),
+        "total_rows": len(rows),
+        "skippable": sum(int(row["skippable"]) for row in rows),
+        "restartable": sum(int(row["restartable"]) for row in rows),
+        "non_skippable_restartable": non_skippable_restartable,
+    }
+
+
+def read_module(path: Path, root: Path) -> dict:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    missing = [key for key in MODULE_KEYS if key not in data]
+    if "featureFlags" not in data:
+        missing.append("featureFlags")
+    if missing:
+        raise ValueError(f"{path}: missing fields: {missing}")
+    return {
+        "file": relative(path, root),
+        "metrics": {key: data[key] for key in MODULE_KEYS},
+        "featureFlags": dict(sorted(data["featureFlags"].items())),
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--build-root", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+
+    root = args.build_root.resolve()
+    csv_files = sorted(root.rglob("*-composables.csv"))
+    module_files = sorted(root.rglob("*-module.json"))
+    if not csv_files or not module_files:
+        raise SystemExit("compiler reports or module metrics were not found")
+
+    snapshot = {
+        "csv": [read_csv(path, root) for path in csv_files],
+        "modules": [read_module(path, root) for path in module_files],
+    }
+    args.output.write_text(
+        json.dumps(snapshot, ensure_ascii=False, indent=2, sort_keys=True)
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+if __name__ == "__main__":
+    main()
 ```
 
-### PR 级别增量检测
+脚本在表头变化时直接失败，避免 Kotlin 升级后继续产出看似正常的错误统计。它列出“可重启但不可跳过”的函数供评审，不把这类函数自动判为失败。
 
-CI pipeline 建议：
-
-1. **主分支基线**：将主分支构建产出的 unstable Composable 列表存为基线文件
-2. **PR 构建**：构建 PR 分支，产出新的 unstable 列表
-3. **Diff 比对**：如果 PR 新增了 unstable Composable（基线中没有的新条目），CI 发出告警
+下面的命令用于从应用构建目录生成快照。
 
 ```bash
-# 简化的 CI 检测脚本
-# baseline_unstable.txt 是主分支的 unstable Composable 名单
-NEW_UNSTABLE=$(grep "restartable" build/compose_compiler/*-composables.txt \
-  | grep -v "skippable" \
-  | awk '{print $3}' \
-  | sort -u \
-  | comm -23 - baseline_unstable.txt)
-
-if [ -n "$NEW_UNSTABLE" ]; then
-  echo "⚠️ 新增不可跳过 Composable:"
-  echo "$NEW_UNSTABLE"
-  exit 1
-fi
+python3 tools/compose_metrics_snapshot.py \
+  --build-root app/build/compose_compiler \
+  --output app/build/compose-compiler-snapshot.json
 ```
 
-⚠️ 在 Strong Skipping 默认启用后，"不可跳过"的新增通常意味着 Non-restartable Composable 或 `@NonSkippableComposable` 显式标注，需要人工评估是否合理。
+示例假设团队把脚本保存为 `tools/compose_metrics_snapshot.py`。输出仍是诊断产物；是否阻断合入应由项目基线、函数变化原因和运行时回归共同决定。
 
-### Compose Compiler 版本兼容性
+### 3. 合理的门禁规则
 
-CI 脚本需要注意 Compose Compiler 输出格式在不同版本间的差异：
+适合自动阻断的情况包括：
 
-| 版本范围 | 报告格式 | 注意事项 |
-|----------|----------|----------|
-| Kotlin 1.9.x + Compose Compiler 1.5.x | 旧格式（freeForm composeCompiler {} 选项） | 字段名和排列与新版不同 |
-| Kotlin 2.0+ Compose Compiler Gradle Plugin | 新格式 | 本节描述的格式 |
-| Kotlin 2.2+ (K2 compiler) | 新格式，字段更完整 | 部分 Legacy 字段可能移除 |
+- Kotlin 或 Compose 插件版本变化，但基线没有显式升级；
+- `featureFlags` 与基线不一致；
+- 报告格式变化而解析器尚未适配；
+- 已列入关键路径观察名单的函数发生非预期标签变化；
+- Macrobenchmark 的帧指标超过项目在目标设备上建立的回归预算。
 
-如果项目跨越多个 Kotlin 版本，CI 脚本应检测 Kotlin/Compose Compiler 版本并选择对应的解析逻辑。
+不适合使用统一阈值的情况包括：
 
----
+- 模块中 `unstable` 类型比例超过某个任意百分比；
+- 出现任意一个不可跳过函数；
+- 单次组合函数切片超过固定的 1 ms 或 8 ms；
+- 编译器指标改善，但没有运行时验证。
 
-## Compose 1.7+/K2 编译器对 Metrics 的影响
+帧预算受刷新率、设备性能、热状态和同一帧其他工作影响。应从产品 CUJ 和受控实验建立项目阈值，文章无法给出适用于所有设备的常数。
 
-### Kotlin 2.x K2 编译器插件
+## 十一、逐个问题的诊断流程
 
-从 Kotlin 2.0 起，Compose Compiler 以 Kotlin 编译器插件形式集成（不再是独立 `composeOptions`）。K2 编译器（Kotlin 2.0+）的插件 API 变化导致：
+1. 定义可重复的用户操作，例如打开会话列表并滚动三屏。
+2. 用 Macrobenchmark 或 FrameTimeline 确认该操作存在慢帧，并保存设备、温度、刷新率和构建信息。
+3. 用 Layout Inspector 缩小反复重组的界面范围。
+4. 用 Composition Tracing 找到耗时组合函数及其调用层级。
+5. 查阅 `composables.txt` 和 `classes.txt`，确认函数标签与参数稳定性。
+6. 回到调用点检查对象身份、状态读取位置、key、集合转换和 Lambda 捕获。
+7. 只修改一个主要变量，再用相同脚本复测计数、Trace 和帧结果。
+8. 更新编译器语义快照，并记录变化为何符合预期。
 
-1. **报告格式微调**：某些字段名可能略有不同，但核心内容（restartable / skippable / 参数 Stability）保持一致
-2. **编译速度提升**：K2 编译器本身更快，生成报告的额外开销降低
-3. **诊断信息更丰富**：K2 插件能提供更精确的 Stability 推断原因（部分版本会在 `classes.txt` 中附加推断路径）
+若 FrameTimeline 显示 App 侧按时完成，排查应转向 RenderThread、GPU、SurfaceFlinger 和 fence。继续修改稳定性通常不会解决合成侧或显示侧瓶颈。
 
-### 版本升级时的审计建议
+## 十二、常见误判
 
-升级 Kotlin / Compose Compiler 版本后：
+| 误判 | 准确口径 |
+| --- | --- |
+| `unstable` 参数使函数一定无法跳过 | Kotlin 2.3.20 默认 Strong Skipping；可重启函数仍可跳过，不稳定参数用 `===` 比较 |
+| `skippable` 证明运行时已经跳过 | 它只表示编译器生成了跳过能力 |
+| 编译器 CSV 包含重组次数和参数列表 | Kotlin 2.3.20 CSV 不包含运行时次数，也没有 `params` 列 |
+| 同内容的新 `List` 会按元素比较后跳过 | 声明为不稳定参数时比较容器引用，不做逐元素相等判断 |
+| 给类加 `@Stable` 就完成优化 | 注解是开发者契约；违反通知或相等约束会造成界面错误 |
+| 系统 Trace 默认显示每个组合函数 | 需要 `runtime-tracing`、编译器 marker 和支持的采集方式 |
+| `Compose:measure/layout/draw` 是所有版本固定切片 | Trace 名称属于具体库实现，应按当前版本的真实 Trace 核对 |
+| 重组计数下降就证明帧性能改善 | 仍需 FrameTimeline 或 Macrobenchmark 验证用户结果 |
+| kernel 调度记录能解释稳定性 | kernel 只提供线程运行、唤醒和同步证据，不包含 Compose 类型语义 |
 
-1. 重新生成全项目编译器报告
-2. 与升级前的报告 diff——关注 Stable → Unstable 的回归
-3. 某些类的 Stability 判定可能因编译器改进而变化（通常是修正了误判）
-4. 更新 CI 基线文件
+## 十三、核查清单
 
-[待验证: K2 编译器对 `composables.txt` 字段的具体变化，需对照 Kotlin 2.2 release notes 和 Compose Compiler changelog 确认]
+### 编译配置
+
+- [ ] Kotlin Android 插件与 `org.jetbrains.kotlin.plugin.compose` 使用同一版本。
+- [ ] 报告由固定的 Release 变体生成。
+- [ ] 归档模块、target、compilation、提交和 `featureFlags`。
+- [ ] Kotlin 升级时重新验证 CSV 与 JSON 格式。
+
+### 静态报告
+
+- [ ] 区分 `restartable`、`skippable` 与参数稳定性。
+- [ ] 没有把 `skippable` 当成实际跳过次数。
+- [ ] 对集合、跨模块类型和稳定性配置做契约审计。
+- [ ] 没有为追求统计数字给可变类型添加虚假注解。
+
+### 运行时
+
+- [ ] Layout Inspector 使用相同交互脚本和重置后的计数。
+- [ ] Trace 来自 profileable、non-debuggable 构建。
+- [ ] Composition Tracing 依赖和 marker 均已启用。
+- [ ] 组合、测量、布局、绘制和提交/显示没有混为一段。
+
+### 结果验证
+
+- [ ] FrameTimeline 指明慢帧责任侧。
+- [ ] Macrobenchmark 覆盖目标用户操作。
+- [ ] 修复前后使用相同设备条件与构建设置。
+- [ ] CI 门禁比较同版本、同开关、同模块的基线。
+
+## 源码与资料索引
+
+- [Diagnose stability issues](https://developer.android.com/develop/ui/compose/performance/stability/diagnose)
+- [Fix stability issues](https://developer.android.com/develop/ui/compose/performance/stability/fix)
+- [Strong skipping mode](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)
+- [Lifecycle of composables：稳定性契约](https://developer.android.com/develop/ui/compose/lifecycle#skipping)
+- [Composition tracing](https://developer.android.com/develop/ui/compose/tooling/tracing)
+- [Compose compiler options DSL](https://kotlinlang.org/docs/compose-compiler-options.html)
+- [Kotlin 2.3.20 `BuildMetrics.kt`](https://github.com/JetBrains/kotlin/blob/v2.3.20/plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/BuildMetrics.kt)
+- [Compose Runtime 1.11.4 release notes](https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.11.4)
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- [Android 17 `Choreographer.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/Choreographer.java)
+- [Android 17 `ViewRootImpl.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/view/ViewRootImpl.java)
+- [Android 17 `FrameTimeline.java`](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/core/java/android/graphics/FrameTimeline.java)
+- [Android common kernel `android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)
+- [本知识库：Jetpack Compose 性能优化](03-compose-performance.md)
+- [本知识库：Android 17 FrameTimeline](../../part2-rendering/ch02-rendering/2.30-android17-frametimeline.md)
+
+本文的版本化结论核查于 2026-07-29。编译器报告样例来自 Kotlin 2.3.20 编译器对本章最小源码的实测输出；升级 Kotlin 或 Compose 后，应重新生成报告并复核字段、功能开关与 Trace 名称。
