@@ -1,27 +1,39 @@
 ---
 title: "Perfetto 的高级用法"
-chapter: "13"
+chapter: "13.7"
 section: "13.7"
 drafted_date: "2026-04-03"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-22"
-last_verified_against: "perfetto.dev/docs/analysis/metrics, perfetto.dev/docs/analysis/trace-summary, perfetto.dev/docs/instrumentation/tracing-sdk"
-confidence: medium
+last_verified: "2026-07-31"
+last_verified_against: "Android 17 / API 37 / android-17.0.0_r1 (Perfetto ece66975738007dd0978b911d8a2077e49b8f31e); Perfetto Trace Processor v57.2; android17-6.18-2026-06_r6"
+confidence: high
 sources:
   - type: official
-    path: "https://perfetto.dev/docs/analysis/sql-tables"
+    path: "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/"
   - type: official
-    path: "https://perfetto.dev/docs/analysis/trace-processor"
+    path: "https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/libcutils/include/cutils/trace.h"
+  - type: official
+    path: "https://perfetto.dev/docs/analysis/trace-summary"
   - type: official
     path: "https://perfetto.dev/docs/analysis/metrics"
   - type: official
-    path: "https://perfetto.dev/docs/visualization/macros"
+    path: "https://perfetto.dev/docs/analysis/trace-processor-python"
+  - type: official
+    path: "https://perfetto.dev/docs/analysis/batch-trace-processor"
+  - type: official
+    path: "https://perfetto.dev/docs/visualization/ui-automation"
+  - type: official
+    path: "https://perfetto.dev/docs/visualization/commands-automation-reference"
+  - type: official
+    path: "https://perfetto.dev/docs/visualization/extension-servers"
   - type: official
     path: "https://perfetto.dev/docs/instrumentation/tracing-sdk"
-  - type: blog
-    path: "https://mp.weixin.qq.com/s/v6fGXbEZcTfxhfaKcMNhEQ"
   - type: official
-    path: "https://perfetto.dev/docs/analysis/trace-summary"
+    path: "https://perfetto.dev/docs/getting-started/atrace"
+  - type: official
+    path: "https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci"
+  - type: official
+    path: "https://developer.android.com/topic/performance/measuring-performance"
 tags:
   - android
   - perfetto
@@ -81,331 +93,56 @@ last_deepseek_cn_review_at: 2026-06-20
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-前面六章已经覆盖了 Perfetto 的基础操作，包括抓 Trace、读 Trace、打开超大 Trace、做专题分析，以及看线程 CPU 状态。掌握这些之后，已经能应对大部分日常性能分析场景。
+单份系统轨迹可以支持一次诊断，可复用查询、结构化指标、批量分析、持续集成和应用埋点还要解决跨人员、跨构建和跨日期的一致性。同一条分析规则应给出含义一致的结果，并在异常发生时保留足够的原始证据。
 
-Perfetto 的能力不止于“打开网页看 Trace”。当分析要从单次排障走向批量处理、团队复用和自动回归检测时，重点就变成了自定义 Metric、Python API、宏、CI/CD 集成，以及代码里的自定义 Trace 点。
+本文的平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。该标签的 `external/perfetto` 指向提交 `ece66975738007dd0978b911d8a2077e49b8f31e`。涉及调度与 ftrace 的采集侧以 `android17-6.18-2026-06_r6` 为边界。主机上的 Perfetto UI、Python 包和 Trace Processor 可以独立升级，因此流水线还要固定主机工具版本，不能只记录设备系统版本。
 
-## 自定义 Perfetto Metric：用 SQL 把 Trace 变成结构化指标
+## 先分清四种可复用能力
 
-### 为什么需要自定义 Metric
+Perfetto 提供了几套名称相近、用途不同的机制。选错层次后，查询可能能运行，却很难长期维护。
 
-Perfetto 自带了 `android_cpu`、`android_mem`、`android_startup` 等内置 Metric，用 `--run-metrics` 参数就能跑。这些覆盖了最常见的需求。但当团队要回答一些特定问题时，内置 Metric 就不够用了。比如：
+| 机制 | 输入 | 输出 | 适用位置 |
+|---|---|---|---|
+| PerfettoSQL 标准库 | `INCLUDE PERFETTO MODULE` | 稳定表、视图和函数 | 单份轨迹查询的公共语义层 |
+| Trace Summarization | 指标规格 + 标准库或 SQL | 统一的 `TraceSummary` protobuf | 新建的自动化指标和跨轨迹分析 |
+| 旧版 v1 指标 | SQL + 自定义 protobuf | `TraceMetrics` protobuf | 维护已有指标，或兼容现有读取服务 |
+| UI 命令宏 | JSON 命令序列 | 工作区、查询页、调试轨道等界面状态 | 重复执行人工诊断步骤 |
 
-- "App 首页冷启动，从 `activityStart` 到第一帧上屏，平均耗时是多少？P90 是多少？"
-- "RecyclerView 的每个 `onBindViewHolder` 调用耗时，有没有超过 16ms 的？"
-- "相机预览的帧间隔抖动程度如何？有多少帧的 capture-to-delivery 超过了阈值？"
+PerfettoSQL 还定义了 `CREATE PERFETTO MACRO`，用于在 SQL 展开阶段生成表达式或子查询。它与 UI 设置里的命令宏没有共享配置，也没有相同的执行模型。
 
-这些问题都是对 Trace 中特定 Slice 的过滤、聚合和统计。Perfetto 提供的机制允许用 SQL 表达这些逻辑，再把结果输出成结构化的 protobuf 消息，这就是自定义 Metric。
+## 自定义指标：新项目从 Trace Summarization 开始
 
-### Trace Processor 的核心数据模型
+### 为何不再把 v1 指标当作默认方案
 
-写 SQL 之前，需要先理解 Trace Processor 把 Trace 数据组织成了什么样的表。Trace Processor 是一个 C++ 库，它把各种格式的 Trace 文件解析后暴露出 SQL 接口。无论是在 Perfetto UI 的 Query 页面、命令行的 `trace_processor` shell，还是 Python API 中，查的都是同一套表。
+Android 17 标签中的 Perfetto 文档已经把 v1 指标标为软弃用：已有指标继续工作，命令行保持兼容，但新功能转向 Trace Summarization。两者的 SQL 能力接近，输出契约差异很大。
 
-核心表有这几类。**Track 类**：`track`（基表）、`thread_track`（线程级 Track）、`process_track`（进程级 Track）、`process_counter_track`（进程级计数器 Track）等。**Event 类**：`slice`（时间片，比如一次 `doFrame` 就是一个 slice）、`counter`（计数器值，比如 CPU 频率）、`sched`（CPU 调度事件）。**实体类**：`process`（进程信息）、`thread`（线程信息）。
+v1 指标要求每个团队维护独立的输出 protobuf。Trace Summarization 使用统一的 `TraceSummary`，并在规格中声明维度、数值列、单位和极性。统一结构更适合批量处理、仪表板和长期回归数据。
 
-Track 和 Event 之间的关系是通过 `track_id` 关联的。每个 slice 或 counter 都有一个 `track_id`，指向它所属的 Track。Track 又通过 `thread_track` 或 `process_track` 中的 `utid`/`upid` 关联到具体的线程或进程。
+一个可维护的选择顺序如下：
 
-Trace Processor 没有直接用 PID/TID 做标识，而是引入了 `utid`（unique tid）和 `upid`（unique pid）。原因是 Android/Linux 系统中 PID/TID 会被复用，一个进程退出后，它的 PID 可能被另一个完全不相干的进程拿走。如果直接用 PID 做 JOIN，可能会把不同进程的数据错误地关联到一起。`utid`/`upid` 是 Trace Processor 分配的单调递增 ID，保证了唯一性。
+1. 在标准库中查找已有模块，确认表的语义和版本边界。
+2. 用 Trace Summarization 描述新指标。
+3. 标准库存在缺口时，在仓库内增加自定义 PerfettoSQL 包。
+4. 只有现有读取端依赖 `TraceMetrics` 时，才增加或修改 v1 指标。
 
-查看当前 Trace 有哪些表，可以执行：
+### Trace Summarization 的完整示例
 
-```sql
-SELECT name FROM sqlite_master WHERE type='table';
-```
-
-查看某张表有哪些字段：
-
-```sql
-SELECT * FROM pragma_table_info('slice');
-```
-
-[待补充：Perfetto UI Query 页面执行 SQL 查询的截图]
-
-### 编写自定义 Metric 的流程
-
-自定义 Metric 由两部分组成：一个 `.sql` 文件定义查询逻辑，一个 `.proto` 文件定义输出结构。
-
-**第一步：定义 proto 消息结构。**
-
-假设要统计 App 冷启动各阶段的耗时分布，先写一个 proto 文件：
-
-```protobuf
-// cold_start_metric.proto
-syntax = "proto2";
-package perfetto.protos;
-
-import "protos/perfetto/metrics/metrics.proto";
-
-// 单次启动的阶段耗时
-message ColdStartPhase {
-  optional string phase_name = 1;
-  optional int64 duration_ns = 2;
-}
-
-// 整个 Metric 的输出结构
-message ColdStartMetric {
-  repeated ColdStartPhase phases = 1;
-  optional int64 total_duration_ns = 2;
-}
-
-// 扩展根消息，把自己的 Metric 挂上去
-extend TraceMetrics {
-  optional ColdStartMetric cold_start_metric = 500;
-}
-```
-
-`extend TraceMetrics` 用来把自定义 Metric 注册到 Perfetto 的 Metric 体系中，字段号在 450–500 范围内用于本地开发。字段名 `cold_start_metric` 会作为 SQL 输出表的表名和最终 proto 中的字段名。
-
-**第二步：编写 SQL 查询。**
-
-对应的 SQL 文件用 PerfettoSQL 的 `SELECT` 和 `CREATE_FUNCTION` 等语法来组织：
-
-```sql
--- cold_start_metric.sql
--- 查询冷启动各阶段耗时
-
--- 第一步：提取关键阶段的 slice，生成中间视图
-CREATE VIEW cold_start_phases AS
-SELECT
-  s.name AS phase_name,
-  s.dur AS duration_ns
-FROM slice s
-JOIN thread_track tt ON s.track_id = tt.id
-JOIN thread t ON tt.utid = t.utid
-WHERE s.name IN (
-  'activityStart',
-  'activityResume',
-  'Choreographer#doFrame',
-  'DrawFrame'
-)
-AND t.name = 'main'
-ORDER BY s.ts;
-
--- 第二步：用 proto builder 函数组装输出
-CREATE VIEW cold_start_metric_output AS
-SELECT
-  ColdStartMetric(
-    'phases',
-    (SELECT RepeatedField(
-      ColdStartPhase(
-        'phase_name', phase_name,
-        'duration_ns', duration_ns
-      )
-    ) FROM cold_start_phases),
-    'total_duration_ns',
-    (SELECT SUM(duration_ns) FROM cold_start_phases)
-  ) AS cold_start_metric
-FROM cold_start_phases
-LIMIT 1;
-```
-
-SQL 文件名（`cold_start_metric`）必须和 proto 中 `extend TraceMetrics` 的字段名一致，这是 Perfetto 的注册约定。中间视图 `cold_start_phases` 负责提取和过滤数据，输出视图 `cold_start_metric_output` 负责用 `ColdStartMetric(...)` proto builder 把结果组装成 proto 消息。`RepeatedField(...)` 用来构造 `repeated` 字段。输出视图必须以 `_output` 结尾，Trace Processor 扫描这个后缀来找到最终输出。
-
-**第三步：运行 Metric。**
-
-本地自定义 metric 不能直接把 `cold_start_metric` 当作内置 metric id 运行。要跑通本地文件，有两种常见方式：
-
-```bash
-# 下载 trace_processor（Linux 和 Mac）
-curl -LO https://get.perfetto.dev/trace_processor
-chmod +x ./trace_processor
-
-# 方式 1：直接把本地 SQL 文件路径传给 --run-metrics
-./trace_processor --run-metrics /abs/path/cold_start_metric.sql trace.perfetto-trace
-
-# 输出 JSON 结果
-./trace_processor \
-  --run-metrics /abs/path/cold_start_metric.sql \
-  --metrics-output=json \
-  trace.perfetto-trace
-
-# 方式 2：metric 放在扩展目录里，再显式加载扩展目录
-./trace_processor \
-  --run-metrics cold_start_metric \
-  --metric-extension /abs/path/my_metrics@/ \
-  trace.perfetto-trace
-```
-
-第一种适合本地迭代 SQL；第二种适合把 `.sql` / `.proto` 组织成扩展目录，再用 metric id 复用。官方 metrics 文档里的自定义 metric 示例也是“SQL 文件路径”或“`--metric-extension` + metric id”这两条路径。
-
-也可以在 Perfetto UI 中直接使用本地 `trace_processor` 实例，避免浏览器的 WASM 内存限制：
-
-```bash
-./trace_processor trace.perfetto-trace --httpd
-```
-
-启动后 Perfetto UI 会通过 TCP 连接本地的 trace_processor，性能更好，也不会受到浏览器 2GB WASM 内存上限的约束。这对于分析几百 MB 甚至几 GB 的大 Trace 特别有用。
-
-### 内置 Metric 列表
-
-Perfetto 自带的 Metric 涵盖了常见场景。一些常用的：
-
-| Metric 名称 | 说明 |
-|---|---|
-| `android_cpu` | CPU 使用率和调度统计 |
-| `android_mem` | 内存使用统计 |
-| `android_power` | 功耗相关统计 |
-| `android_startup` | App 启动时间统计 |
-| `android_threadtime` | 线程 CPU 时间统计 |
-| `android_simpleperf` | Simpleperf 采样数据统计 |
-
-[已确认：内置 Metric 列表来源于 perfetto.dev 官方文档]
-
-当内置 Metric 不满足需求时，可以用 `--metric-extension` 在运行时覆盖内置 Metric 的 SQL 逻辑，或者完全自定义新的 Metric。
-
-### 旧版 Metric vs Trace Summarization
-
-Perfetto 的自动化分析能力分三层，由底到顶：
-
-1. **旧版 Metric（v1）**：基于 `.sql` + `.proto` + `--run-metrics`。完全可用，但 SQL 直接操作底层表结构，Trace 格式变化时可能需要调整。
-
-2. **Perfetto Standard Library**：官方维护的标准化 SQL 模块集合，通过 `referenced_modules` 引用。前面的 Trace Summarization 示例中 `referenced_modules: "linux.memory.process"` 就是引用了 Standard Library 的 `linux.memory.process` 模块，它提供了 `memory_rss_and_swap_per_process` 表等标准化视图。已有的官方模块包括 `android.cpu.cpu_per_uid` / `android.cpu.cluster_type`、`android.startup.startups` / `android.startup.startup_breakdowns`、`android.frames.jank_type` / `android.frames.per_frame_metrics`、`linux.memory.process` 等。注意 Standard Library 模块名使用点分命名（如 `android.cpu.cpu_per_uid`），与旧版 v1 metric id（如 `android_cpu`）是两套命名体系；在 `INCLUDE PERFETTO MODULE` 和 `referenced_modules` 中应使用点分模块名。优先复用这些模块，避免从零写底层 SQL。
-
-3. **Trace Summarization（v2）**：基于 Standard Library 模块之上的结构化指标提取 API。通过 `metric_spec` + `referenced_modules` + `group_by` + `aggregates` 声明式定义指标，Python API 调用 `tp.trace_summary()` 返回结构化 `TraceSummary`。
-
-三层的关系是：**Standard Library 提供稳定的中间表和视图 → Trace Summarization 在这些表上声明聚合逻辑 → 旧版 Metric 是最底层的手写 SQL，仍有用但维护成本更高。** 实践中优先用 Standard Library 模块 + Trace Summarization，只有缺口指标才写自定义 PerfettoSQL 模块。
-
-如果团队已经在维护旧版 Metric，它们仍然完全可用，不需要立即迁移。但新写的 Metric 更适合直接基于 Standard Library + Trace Summarization 框架来组织。
-
-## Perfetto 宏（Macros）与仪表板
-
-### 什么是宏
-
-Perfetto UI 的宏（Macros）是一种可复用的分析自动化脚本。简单来说，它是一组命名的命令序列，可以在 Perfetto UI 中一键执行，用来完成那些每次分析都要重复的操作。
-
-举个例子：每次分析启动性能时，通常都要先找到 main 线程、缩放到启动阶段、显示 CPU 频率 Track，再隐藏不相关的进程。如果把这些操作固化成一个宏，下次打开 Trace 后一个命令就能完成准备工作。
-
-### 宏的配置方式
-
-宏在 Perfetto UI 的设置页面中配置。每个宏有一个唯一标识符（格式如 `user.myteam.StartupAnalysis`）和一组命令。命令包括：
-
-- **Pin track**：固定（钉住）特定的 Track，使其始终可见
-- **Add debug track**：添加一个基于 SQL 查询的调试 Track
-- **Set viewport**：设置当前可视区域的时间范围
-- **Toggle track**：展开或收起指定 Track
-
-在 Perfetto UI 中，通过命令面板（Command Palette，快捷键 `Ctrl+Shift+P`）可以搜索和执行已注册的宏。
-
-### 用宏构建团队分析流程
-
-宏的核心价值在于团队协作。通过 Perfetto 的 Extension Server 机制，团队可以把一套共享的宏部署到内部服务器上，所有团队成员打开 Perfetto UI 时自动加载这些宏。
-
-典型的团队级宏方案可能包括：
-
-- **启动分析宏**：自动定位启动时间窗口、固定关键 Track、高亮 Binder 调用
-- **卡顿分析宏**：自动查找 `doFrame` 中耗时超过阈值的帧、展开 RenderThread Track、显示 GPU 渲染阶段
-- **功耗分析宏**：自动显示 CPU 频率、集群状态、wakelock 持有时长
-
-这样做除了省时间，更实际的价值是把团队里资深工程师的分析思路固化下来。新同学拿到一个 Trace，运行标准分析宏，就能先看到老手会看的东西。
-
-[待补充：Perfetto UI 命令面板执行宏的截图]
-
-## Trace Processor Python API 的高级用法
-
-### 为什么需要 Python API
-
-命令行 `trace_processor` 适合一次性查询和脚本，但下面这些场景更适合用 Python API：
-
-- **批量分析**：一次性跑几百个 Trace，统计 P50/P90/P99 延迟分布
-- **与数据科学生态集成**：把 Trace 数据转成 Pandas DataFrame，用 matplotlib 画图，甚至用机器学习模型做异常检测
-- **自动化报告**：每天自动分析昨天的回归测试 Trace，生成性能报告
-- **CI/CD 集成**：在持续集成流水线中自动运行性能分析，发现回归时阻塞合并
-
-### 安装与基本使用
-
-```bash
-pip install perfetto
-```
-
-最基本的使用方式——加载一个 Trace 并执行 SQL 查询：
-
-```python
-from perfetto.trace_processor import TraceProcessor
-
-# 加载 Trace 文件
-tp = TraceProcessor(trace='path/to/trace.perfetto-trace')
-
-# 执行 SQL 查询
-result = tp.query('SELECT name, dur FROM slice WHERE name LIKE "%doFrame%" LIMIT 10')
-
-# 迭代结果
-for row in result:
-    print(f'{row.name}: {row.dur / 1e6:.2f} ms')
-```
-
-查询结果可以直接转为 Pandas DataFrame：
-
-```python
-df = result.as_pandas_dataframe()
-print(df.describe())
-```
-
-这一行转换是 Python API 的关键优势之一。有了 DataFrame，Pandas 的过滤、分组、统计和可视化能力就都能直接用上。
-
-### BatchTraceProcessor：批量分析多个 Trace
-
-需要分析一批 Trace 时（比如 CI/CD 中每次构建产出的 Trace），`BatchTraceProcessor` 比循环调用 `TraceProcessor` 高效得多：
-
-```python
-from perfetto.batch_trace_processor.api import BatchTraceProcessor
-
-# 加载多个 Trace，推荐用上下文管理器自动释放资源
-traces = [
-    'traces/build_001.perfetto-trace',
-    'traces/build_002.perfetto-trace',
-    'traces/build_003.perfetto-trace',
-]
-
-# 依赖安装：pip3 install perfetto pandas
-with BatchTraceProcessor(traces=traces) as batch:
-    # 对所有 Trace 执行同一个查询
-    results = batch.query_and_flatten(
-        'SELECT name, dur FROM slice WHERE name = "activityStart"'
-    )
-
-    # results 是一个合并后的 DataFrame，带有一列标识来源 Trace
-    print(results)
-```
-
-`BatchTraceProcessor` 会并行加载和查询所有 Trace。它特别适合统计类分析，比如要看最近 100 次构建的冷启动时间分布，用 `query_and_flatten` 一条 SQL 就够了。
-
-每个 Trace 加载后会完全驻留在内存中。如果 Trace 很大（几百 MB），同时加载几十个可能会超出单机可用内存。
-
-### BatchTraceProcessor vs Bigtrace
-
-当 Trace 数量超出单机内存能力时，有两个选择：
-
-| 维度 | BatchTraceProcessor | Bigtrace |
-|---|---|---|
-| 部署模式 | 单机多进程并行加载 | Kubernetes 集群分布式 |
-| 架构 | 本机并行加载多个 Trace | Orchestrator 分片调度 → Worker Pod 运行 TraceProcessor → 从 Object Store 读取 trace |
-| 适用规模 | 几十到几百个 Trace | 数千到数万个 Trace |
-| 内存约束 | 受单机内存限制 | 每个 Worker 独立内存，可水平扩展 |
-| 数据源 | 本地文件系统或 GCS | GCS / 本地 Object Store |
-| 适用场景 | CI 回归检测、团队级批量分析 | 大规模回归测试、云端 trace 仓库分析 |
-
-BatchTraceProcessor 的适用边界是本机内存能容纳所有待分析 Trace。当 Trace 数量增长到单机无法承载时，Bigtrace 通过 K8s 集群把 SQL 查询分发到多个 Worker Pod 上并行执行。Bigtrace 的部署细节参见 perfetto.dev/docs/deployment/deploying-bigtrace-on-kubernetes。
-
-### Trace Summarization：结构化指标提取
-
-Trace Summarization 是新版 Metric API。它要求先提供 `specs`，再用 `metric_ids` 指定要生成的指标；返回对象是 `TraceSummary`，只包含这次请求到的 summary metric，不是旧版 `TraceMetrics` 的无参替代。
-
-这组示例直接对应官方文档：
+下面的规格按进程计算 `RSS + Swap` 的持续时间加权均值。它直接使用官方 `linux.memory.process` 模块，也声明了字节单位。
 
 ```textproto
-// spec.textproto
 metric_spec {
   id: "memory_per_process"
   dimensions: "process_name"
   value: "avg_rss_and_swap"
-  query: {
-    table: {
+  unit: BYTES
+  query {
+    table {
       table_name: "memory_rss_and_swap_per_process"
     }
     referenced_modules: "linux.memory.process"
-    group_by: {
+    group_by {
       column_names: "process_name"
-      aggregates: {
+      aggregates {
         column_name: "rss_and_swap"
         op: DURATION_WEIGHTED_MEAN
         result_column_name: "avg_rss_and_swap"
@@ -415,13 +152,28 @@ metric_spec {
 }
 ```
 
+`DURATION_WEIGHTED_MEAN` 按每个样本持续的时间加权，适合计数器转成的区间数据。普通算术平均会让短区间和长区间获得相同权重，含义不同。
+
+可以用 Android 17 标签已经支持的子命令接口执行这份规格：
+
+```bash
+trace_processor summarize \
+  --metrics-v2 memory_per_process \
+  trace.perfetto-trace \
+  spec.textproto
+```
+
+输出是 `TraceSummary`，结果位于 `metric_bundles`。`--format binary` 可生成二进制 protobuf；默认文本格式适合本地检查。旧式 `--summary` 参数仍受支持，新脚本应采用子命令接口并固定二进制版本。
+
+同一份规格也能从 Python 调用：
+
 ```python
+from pathlib import Path
 from perfetto.trace_processor import TraceProcessor
 
-with open('spec.textproto', 'r') as f:
-    spec_text = f.read()
+spec_text = Path("spec.textproto").read_text(encoding="utf-8")
 
-with TraceProcessor(trace='my_trace.pftrace') as tp:
+with TraceProcessor(trace="trace.perfetto-trace") as tp:
     summary = tp.trace_summary(
         specs=[spec_text],
         metric_ids=["memory_per_process"],
@@ -429,252 +181,498 @@ with TraceProcessor(trace='my_trace.pftrace') as tp:
     print(summary)
 ```
 
-命令行等价写法是：
+`metric_ids` 只选择本次需要的指标。省略该参数时，API 可以执行规格中的全部指标；大型规格库更适合显式选择，避免一次运行引入无关查询。
 
-```bash
-trace_processor_shell summarize --metrics-v2 memory_per_process \
-  my_trace.pftrace spec.textproto
+### 存量 v1 指标：SQL 与 protobuf 的约定
+
+团队如果已有读取 `TraceMetrics` 的服务，v1 指标仍可维护。下面使用 CPU 运行时间展示完整目录和命名约定，避免依赖不稳定的 `activityStart`、`FirstFrame` 等时间片名称。
+
+存量指标可以把两个同名文件放进同一目录：
+
+```text
+legacy_metric/
+├── top_five_processes.proto
+└── top_five_processes.sql
 ```
 
-`summarize` 是 `trace_processor_shell` 的子命令，`--metrics-v2` 指定要跑的 metric id，后面跟 trace 文件和 spec 文件。如果需要多版本兼容，保留旧命令时须标注 trace_processor 版本。
+Trace Processor 根据传入的 SQL 路径查找同目录、同基本名的 protobuf 文件，再把扩展字段注册到 `TraceMetrics`。这条路径不需要覆盖内置指标。
 
-如果要把 summary 结果和 Python 数据处理链串起来，可以先在 Trace Processor 里产出稳定的 `TraceSummary`，再把其中的指标字段转成 DataFrame。这样比直接依赖临时 SQL 表结构更稳。
+输出 protobuf 定义如下：
 
-### 一个实用的自动化示例：冷启动回归检测
+```protobuf
+syntax = "proto2";
 
-把 Metric、Python API 和 SQL 查询组合起来，可以写一个实用的自动化脚本——每次构建后自动抓 Trace、分析冷启动时间、判断是否有回归：
+package perfetto.protos;
 
-```python
-import subprocess
-from perfetto.trace_processor import TraceProcessor
+import "protos/perfetto/metrics/metrics.proto";
 
-def capture_trace(device_serial, config_file, output_path):
-    """在设备上抓取 Perfetto Trace"""
-    subprocess.run([
-        'adb', '-s', device_serial, 'shell',
-        'perfetto', '-c', config_file, '-o', '/data/misc/perfetto-traces/trace.pb'
-    ])
-    subprocess.run([
-        'adb', '-s', device_serial, 'pull',
-        '/data/misc/perfetto-traces/trace.pb', output_path
-    ])
+message ProcessCpuInfo {
+  optional string process_name = 1;
+  optional int64 cpu_time_ms = 2;
+  optional uint32 scheduled_thread_count = 3;
+}
 
-def analyze_startup(trace_path, baseline_ms, threshold_pct, target_package):
-    """分析冷启动时间并检测回归。
+message TopFiveProcesses {
+  repeated ProcessCpuInfo process = 1;
+}
 
-    优先使用 Perfetto Standard Library 的 android.startup 模块；
-    如果 Standard Library 不可用，则回退到手写 SQL（需限定进程和时间窗口）。
-    """
-    tp = TraceProcessor(trace=trace_path)
-
-    # 方案 A：使用 Standard Library android.startup.startups
-    # 该模块由 Perfetto 官方维护，内部已处理进程、launch id 和时间窗口约束
-    try:
-        startup_result = tp.query("""
-            INCLUDE PERFETTO MODULE android.startup.startups;
-            INCLUDE PERFETTO MODULE android.startup.startup_breakdowns;
-
-            SELECT
-              s.package,
-              s.dur / 1e6 AS startup_ms
-            FROM android_startups s
-            WHERE s.package = '{}'
-            ORDER BY s.ts DESC
-            LIMIT 1
-        """.format(target_package))
-        df = startup_result.as_pandas_dataframe()
-    except Exception:
-        # 方案 B：手写 SQL，必须限定目标进程和时间窗口
-        # FirstFrame 是业务自定义 trace point，需按实际项目中的 atrace 标记替换
-        startup_result = tp.query("""
-            SELECT
-              (s2.ts - s1.ts) / 1e6 AS startup_ms
-            FROM slice s1
-            JOIN thread_track tt1 ON s1.track_id = tt1.id
-            JOIN thread t1 ON tt1.utid = t1.utid
-            JOIN process p ON t1.upid = p.upid
-            JOIN slice s2
-              ON s2.track_id = s1.track_id
-              AND s2.name = 'FirstFrame'
-              AND s2.ts > s1.ts
-              AND s2.ts - s1.ts < 30e9
-            WHERE s1.name = 'activityStart'
-              AND p.name = '{}'
-            ORDER BY s1.ts DESC
-            LIMIT 1
-        """.format(target_package))
-        df = startup_result.as_pandas_dataframe()
-    if df.empty:
-        return None
-    startup_ms = df['startup_ms'].iloc[0]
-    regression = startup_ms > baseline_ms * (1 + threshold_pct / 100)
-    return {
-        'startup_ms': startup_ms,
-        'baseline_ms': baseline_ms,
-        'is_regression': regression
-    }
-```
-
-方案 A 优先使用 `android.startup.startups` Standard Library 模块，由 Perfetto 官方维护，内部已处理进程、launch id 和时间窗口约束。方案 B 的手写 SQL 至少限定了：① 目标进程（`p.name`）② 时间窗口（`s2.ts > s1.ts` 且差值 < 30s）③ 同一 track（同一线程）。`FirstFrame` 是业务自定义 trace point 名称，需按项目实际的 atrace 标记替换；如果改用 FrameTimeline 的 `actual_present_time`，则应走 `android.frames` 模块。
-
-这个脚本按三步执行：抓 Trace → 查 SQL → 对比基线。它还需要接入完整流水线，才能在每次提交时自动收集指标并比较基线。
-
-## 将 Perfetto 集成到 CI/CD
-
-### 为什么要把 Perfetto 放进 CI/CD
-
-性能问题有一个很讨厌的特性，它往往是渐进恶化的。每次提交代码增加 10ms 的启动延迟，单个 commit 看不出来，但一个季度下来就是 500ms 的退步。等到用户投诉时，团队往往已经不知道是哪次提交引入的问题了。
-
-把 Perfetto 分析接入 CI/CD，就是为了在每次代码提交时自动检测这种渐进回归。核心思路是：每次构建或合入时自动运行性能测试 → 抓取 Trace → 用 SQL/Python 自动分析 → 与历史基线对比 → 超过阈值就告警或阻塞合并。
-
-### 流水线的整体架构
-
-一个完整的 Perfetto CI/CD 流水线通常由以下环节组成：
-
-**1. 触发**：代码提交（PR / merge to main）、定时任务（每日构建）、或手动触发。
-
-**2. 测试执行**：在稳定的设备或模拟器上运行性能测试。AndroidX Macrobenchmark 库是一个不错的选择，它在底层就是用 Perfetto 抓 Trace 的，提供了标准的 benchmark 框架。如果测试场景比较特殊（比如需要特定的硬件环境），也可以自己写脚本通过 `adb shell perfetto` 抓 Trace。
-
-**3. Trace 收集**：从设备拉取 `.perfetto-trace` 文件到 CI 环境的存储中。建议按构建号和时间戳组织目录结构，方便回溯。
-
-**4. 自动分析**：这是流水线的核心。用 Trace Processor 的 Python API（或命令行 `--run-metrics`）对 Trace 做结构化分析，提取关键指标。
-
-**5. 基线对比与告警**：将当前指标与历史基线对比。对比策略可以多种选择：固定阈值（"启动时间不超过 800ms"）、百分比偏差（"不超过历史均值的 110%"）、或统计检验（"P 值 < 0.05 才认为有显著回归"）。检测到回归时，自动在 PR 上添加评论、发送告警、或阻塞合并。
-
-**6. 报告与可视化**：将分析结果输出为报告。简单的可以是一段 JSON 或 Markdown；进阶的可以接入 Grafana 等仪表板工具做趋势图。
-
-### 实战配置示例
-
-一个基于 GitHub Actions 的配置示例，可以在 PR 中自动检测启动性能回归：
-
-```yaml
-# .github/workflows/perf-regression.yml
-name: Performance Regression Detection
-
-on:
-  pull_request:
-    branches: [main]
-
-jobs:
-  perf-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: pip install perfetto
-
-      - name: Run benchmark & capture trace
-        run: |
-          # 通过 adb 连接设备农场（或 Firebase Test Lab）
-          python scripts/run_benchmark.py --output traces/
-
-      - name: Analyze trace & check regression
-        run: |
-          python scripts/check_regression.py \
-            --trace traces/latest.perfetto-trace \
-            --baseline baselines/startup.json \
-            --threshold-config baselines/startup-thresholds.json \
-            --report report.md
-
-      - name: Comment on PR
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const report = fs.readFileSync('report.md', 'utf8');
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: report
-            });
-```
-
-[待验证：实际部署需要根据 CI 环境（Jenkins / GitLab CI / GitHub Actions）和设备农场方案调整]
-
-### 降低误报率的几个实践
-
-阈值和测试环境要先绑定，再设置告警线。下面这组建议适合“同一台真机 + 同一 OS 版本 + release / non-debuggable build + Macrobenchmark”这一类固定实验室环境；如果换成共享设备池或模拟器，建议只做趋势告警，不直接拦截合并。
-
-| 环境 | 适合看的指标 | 适合的动作 | 失效边界 |
-|---|---|---|---|
-| 固定真机（同机型 / 同 OS / 同 build） | 启动 `median`、帧时 `P90/P99`、每次运行的 `runs[]` | 可做 PR 级门禁；发现回归后重跑一次并保留 Trace | 设备发热、后台任务未清空时，单次结果会漂移 |
-| 共享真机池 / Firebase Test Lab | `median` 趋势、最近多次构建分布 | 适合 nightly 告警和趋势图 | 设备分配不固定时，不适合一刀切硬阈值 |
-| 模拟器 / GMD | 趋势变化、功能级 smoke 回归 | 适合验证流水线通不通 | Android Developers 明确不建议拿模拟器结果代表真实用户性能 |
-
-Macrobenchmark 的 CI 输出本身就带 `runs[]`、`median`、`warmupIterations`、`repeatIterations`。告警逻辑至少要把这些原始字段一起落盘；只保留一个最终百分比，回头很难分辨是代码回归、热限频，还是设备背景噪声。
-
-一个更稳的做法是把阈值改成配置文件，让不同场景单独校准。例如启动时间门禁只比较固定真机冷启动的 `median`，帧时门禁看 `P90` 或 `P99`，共享设备池只做趋势告警。这样能把“固定真机”和“共享设备池”两类噪声水平分开，不会再把一个 10% 阈值硬套到所有环境。
-
-[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/benchmarking-in-ci; developer.android.com/topic/performance/benchmarking/macrobenchmark-overview]
-
-## 自定义 Trace Point 的最佳实践
-
-### 为什么需要自定义 Trace 点
-
-Perfetto 默认抓取的是系统级事件，比如 CPU 调度、Binder 调用、渲染管线各阶段等。这些信息对于分析系统层面的性能问题已经足够。但分析 App 内部特定逻辑的耗时，比如“图片解码”“数据库查询”“JSON 解析”时，系统级 Trace 看不到这些细节。
-
-这时候就需要在代码里手动插入 Trace 点。当 Perfetto 抓 Trace 时，这些自定义的点会和系统事件一起被记录下来，在 Perfetto UI 中以 Slice 的形式出现在对应线程的 Track 上。
-
-### 方法一：`android.os.Trace` / `ATrace_*`（Android-only 场景）
-
-对 Android-only 的应用代码，优先用平台自带的 `android.os.Trace` 或 NDK `ATrace_*`。Perfetto SDK 官方文档也把这条线当成默认建议：如果只需要轻量 slice 标记，没有跨平台和自定义 schema 需求，先用系统自带 tracing API。
-
-**Java/Kotlin 层：**
-
-```java
-import android.os.Trace;
-
-Trace.beginSection("ImageDecode");
-try {
-    decodeImage(bitmap);
-} finally {
-    Trace.endSection();
+extend TraceMetrics {
+  optional TopFiveProcesses top_five_processes = 450;
 }
 ```
 
-`beginSection()` 和 `endSection()` 必须在同一线程内配对。适合标记主线程、RenderThread 或 worker thread 里的同步阶段。
+字段号 `450` 来自 Perfetto 为本地开发保留的 `450–500` 区间。团队内部仍要登记字段号，防止两个扩展重复。扩展字段名 `top_five_processes` 还决定 SQL 文件名和输出视图名。
 
-**Native C/C++ 层：**
+对应 SQL 统计 `sched` 中已经运行完的调度时间片：
+
+```sql
+CREATE PERFETTO VIEW top_five_processes_by_cpu AS
+SELECT
+  p.name AS process_name,
+  CAST(SUM(s.dur) / 1e6 AS INT64) AS cpu_time_ms,
+  COUNT(DISTINCT t.utid) AS scheduled_thread_count
+FROM sched AS s
+JOIN thread AS t USING (utid)
+JOIN process AS p USING (upid)
+WHERE s.dur > 0
+GROUP BY p.upid, p.name
+ORDER BY cpu_time_ms DESC
+LIMIT 5;
+
+CREATE PERFETTO VIEW top_five_processes_output AS
+SELECT TopFiveProcesses(
+  'process',
+  (
+    SELECT RepeatedField(
+      ProcessCpuInfo(
+        'process_name', process_name,
+        'cpu_time_ms', cpu_time_ms,
+        'scheduled_thread_count', scheduled_thread_count
+      )
+    )
+    FROM top_five_processes_by_cpu
+  )
+);
+```
+
+按 `upid` 分组可以避开 PID 复用和同名进程合并。`scheduled_thread_count` 只统计轨迹中出现过已完成 `sched` 时间片的线程，不代表进程创建过的全部线程。`top_five_processes_output` 必须采用 `{TraceMetrics 扩展字段名}_output`，Trace Processor 通过这个约定读取根消息。
+
+Android 17 标签支持两套等价命令。新子命令写法更容易发现参数：
+
+```bash
+trace_processor metrics \
+  --run legacy_metric/top_five_processes.sql \
+  --output json \
+  trace.perfetto-trace
+```
+
+旧脚本使用的 `--run-metrics legacy_metric/top_five_processes.sql` 与 `--metrics-output=json` 仍受兼容接口支持。`--metric-extension` 适合已有的扩展目录；把目录挂到虚拟根路径 `/` 会覆盖内置指标，Trace Processor 要求同时传入 `--dev`，不能作为生产流水线的默认配置。升级主机工具时，应在测试轨迹上对比新旧工具输出，再更新固定版本。
+
+### 指标失败时先检查采集条件
+
+SQL 返回空表不等于性能为零。常见原因包括：
+
+- 采集配置没有启用指标所依赖的数据源；
+- 轨迹在目标事件发生前结束；
+- 目标进程未被 `atrace_apps` 允许；
+- 工具版本缺少规格引用的标准库模块；
+- 数据质量表已经记录丢包、截断或时钟问题；
+- 进程名、包名或启动模式与查询条件不一致。
+
+每个指标规格应同时记录依赖的数据源、支持的系统版本、单位、方向、空值含义和已知失效边界。CI 不能把空结果自动转成数值零。
+
+## 两类宏：SQL 复用与 UI 自动化
+
+### PerfettoSQL 宏
+
+SQL 宏适合生成表、子查询或表达式片段。普通函数能够完成的标量计算应继续使用函数；宏更适合把表名或列名作为参数的场景。
+
+下面的宏从任意兼容表中选出超过指定时长的时间片：
+
+```sql
+CREATE PERFETTO MACRO long_slices(
+  input TableOrSubquery,
+  min_dur Expr
+)
+RETURNS TableOrSubquery AS
+(
+  SELECT ts, dur, name, track_id
+  FROM $input
+  WHERE dur >= $min_dur
+);
+
+SELECT ts, dur, name
+FROM long_slices!(slice, 8 * 1000 * 1000)
+ORDER BY dur DESC
+LIMIT 20;
+```
+
+宏调用以 `!` 结尾，参数在 SQL 展开阶段代入。查询中的 8 ms 只是筛选条件示例，不是“卡顿”的通用判定线；帧是否超期要比较该帧自己的显示期限。
+
+供多人使用的 SQL 不宜只存在于某个查询页。可以把它包装成自定义 SQL 包，并用 `TraceProcessorConfig.add_sql_packages` 或命令行 `--add-sql-package` 注册。包名、查询接口和测试轨迹都应纳入版本控制。
+
+### UI 命令宏
+
+Perfetto UI 的宏是命名后的稳定命令序列。当前配置入口为 `Settings > Macros`，格式是 JSON 数组。宏由工程师从命令面板执行，也可以被启动命令引用。
+
+下面的宏折叠现有轨道、固定 CPU 轨道，再为所有进程主线程中超过 8 ms 的时间片增加分组调试轨道：
+
+```json
+[
+  {
+    "id": "user.myteam.LongMainThreadSlices",
+    "name": "Long Main-thread Slices",
+    "run": [
+      {
+        "id": "dev.perfetto.CollapseTracksByRegex",
+        "args": [".*"]
+      },
+      {
+        "id": "dev.perfetto.PinTracksByRegex",
+        "args": [".*CPU \\d+$"]
+      },
+      {
+        "id": "dev.perfetto.AddDebugSliceTrackWithPivot",
+        "args": [
+          "SELECT s.ts, s.dur, s.name, COALESCE(p.name, '[unnamed]') AS process_name FROM slice AS s JOIN thread_track AS tt ON s.track_id = tt.id JOIN thread AS t USING (utid) JOIN process AS p USING (upid) WHERE t.tid = p.pid AND s.dur >= 8000000",
+          "process_name",
+          "Long main-thread slices"
+        ]
+      }
+    ]
+  }
+]
+```
+
+`AddDebugSliceTrackWithPivot` 要求查询返回 `ts`、`dur`、`name` 和分组列。命令失败不会终止宏中后续命令，因此共享前要用团队的代表性轨迹检查每一步。命令 ID 还要出现在 Perfetto 的稳定自动化参考中，避免依赖插件私有命令。
+
+宏可以保存在本地设置中。个人使用时，把 JSON 存入仓库并提供安装说明即可；固定录制流程还可以用 `record_android_trace --ui-startup-commands`、深链接或 `postMessage` 注入允许的启动命令。
+
+多人共享更适合使用 Perfetto 扩展服务器。当前接口能分发宏、SQL 模块和 protobuf 描述符，既支持 GitHub 仓库，也支持带认证的 HTTPS 端点。服务器要声明反向域名命名空间，宏 ID 和 SQL 模块名必须位于该命名空间下。扩展加载失败不会阻止 UI 打开轨迹，因此团队仍要把服务端清单、源码和已发布版本纳入版本控制，不能让分析结果依赖一个无法追溯的活动分支。
+
+### “仪表板”要分成单轨迹和跨轨迹两层
+
+Perfetto UI 擅长对一份轨迹做交互诊断。工作区、查询页和调试轨道可以组成单轨迹仪表板，但它们不会自动保存跨构建趋势。
+
+跨轨迹仪表板应读取 Trace Summarization 或 Benchmark JSON：
+
+| 层次 | 保存内容 | 回答的问题 |
+|---|---|---|
+| Perfetto UI | 宏、工作区、调试轨道、查询页 | 这次慢在哪里 |
+| 指标文件 | `TraceSummary`、Benchmark JSON、工具版本 | 这次测到了什么 |
+| 时序存储 | 构建、设备、场景、样本与指标 | 何时开始变化 |
+| 可视化与告警 | 分位数、基线区间、轨迹链接 | 是否需要人工复核 |
+
+趋势图上的每个异常点都应能跳回原始轨迹、构建信息和指标规格版本。只保存聚合值会丢失根因证据。
+
+## Trace Processor Python API
+
+### 固定二进制，记录包与工具的每次变化
+
+`pip install perfetto` 会安装 Python 客户端。客户端可以下载与包版本匹配的 Trace Processor，也允许显式指定二进制。CI 更适合固定 Python 依赖和二进制摘要，并把版本写入报告。
+
+下面的示例使用指定二进制查询最长的用户态时间片：
+
+```python
+from perfetto.trace_processor import TraceProcessor, TraceProcessorConfig
+
+config = TraceProcessorConfig(
+    bin_path="tools/perfetto/trace_processor",
+)
+
+with TraceProcessor(
+    trace="trace.perfetto-trace",
+    config=config,
+) as tp:
+    rows = tp.query("""
+        SELECT ts, dur, name
+        FROM slice
+        WHERE dur > 0
+        ORDER BY dur DESC
+        LIMIT 20
+    """)
+    frame = rows.as_pandas_dataframe()
+    print(frame.to_string(index=False))
+```
+
+上下文管理器会关闭 Trace Processor 子进程。`as_pandas_dataframe()` 适合后续统计；只需流式处理少量行时，直接遍历查询结果能少保留一份表格数据。
+
+### 批量查询
+
+`BatchTraceProcessor` 为每份轨迹启动独立实例，并行执行同一查询。`query()` 返回每份轨迹各自的数据表；`query_and_flatten()` 合并结果，并由轨迹地址解析器增加来源列。
+
+下面的代码统计每份轨迹中的用户态时间片数量和总时长：
+
+```python
+from glob import glob
+from perfetto.batch_trace_processor.api import BatchTraceProcessor
+
+trace_paths = sorted(glob("traces/*.perfetto-trace"))
+
+with BatchTraceProcessor(trace_paths) as batch:
+    summary = batch.query_and_flatten("""
+        SELECT
+          COUNT(*) AS slice_count,
+          SUM(CASE WHEN dur > 0 THEN dur ELSE 0 END) AS total_slice_dur_ns
+        FROM slice
+    """)
+    print(summary)
+```
+
+来源列的名称取决于所用轨迹地址解析器，读取结果的代码不应假定固定叫 `source`。每份轨迹解析后的数据都驻留内存；并发数要按轨迹内容和机器内存实测，不能只按压缩文件大小估算。
+
+批量规模超过单机资源后，可评估 Bigtrace。它用 Kubernetes 编排多个 Trace Processor 工作进程，适合已有对象存储和集群运维能力的团队。单纯为了几十份轨迹引入 Bigtrace，运维成本通常高于收益。
+
+### 远程 Trace Processor 的支持边界
+
+Android 17 标签已经提供新的服务子命令。下面的命令在本机 9001 端口启动原生解析器，Perfetto UI 会探测该端口：
+
+```bash
+trace_processor server http trace.perfetto-trace
+```
+
+旧写法 `trace_processor --httpd trace.perfetto-trace` 仍受支持。原生进程绕开浏览器 WebAssembly 的内存限制，但轨迹解析后的内存仍可能显著大于文件大小。
+
+`external/perfetto/src/trace_processor/rpc/` 中的 `Rpc` 负责 protobuf 编解码，HTTP、标准输入输出和 WebAssembly 桥接负责传输。Python 客户端已经封装协议协商、分批响应和错误处理。业务脚本应调用 Python API 或命令行接口，不应手写 `/rpc` 请求、分块传输和序列号管理。
+
+服务默认只应监听回环地址。轨迹可能包含进程名、文件路径、埋点文本和业务标识，不应把 9001 端口直接暴露到共享网络。UI 和服务器版本相差过大时还可能出现 RPC 版本不匹配，升级时要成套验证。
+
+## 把 Perfetto 放进持续集成
+
+### 测量值和诊断证据各司其职
+
+AndroidX Macrobenchmark 已经负责运行场景、重复测量、输出 Benchmark JSON，并为每次测量保存一份 Perfetto 轨迹。持续集成中可以按两层处理：
+
+- Benchmark JSON 作为门禁的主要数值来源；
+- Perfetto SQL 或 Trace Summarization 生成诊断指标，并保留异常样本的原始轨迹。
+
+不宜从某个不稳定的时间片名称重新计算启动时间，再与 Macrobenchmark 的 `StartupTimingMetric` 混为同一个指标。系统升级或埋点名称变化后，两套定义可能产生不可见的偏差。
+
+### 可复现的流水线
+
+一条可靠的流水线至少记录这些信息：
+
+1. 目标 APK、测试 APK、提交和构建参数；
+2. 真机序列号、机型、系统指纹、API 级别和电量；
+3. 启动模式、编译模式、场景参数和迭代次数；
+4. Benchmark JSON、每次迭代的轨迹和测试日志；
+5. Perfetto Python 包、Trace Processor 二进制版本与摘要；
+6. 指标规格、SQL 包和门禁策略的版本。
+
+官方文档不建议用模拟器数值代表用户设备。固定真机适合合并前门禁；共享设备池更适合趋势观察和夜间复测。低电量、可调试 APK、不可分析 APK 等 Macrobenchmark 配置错误不应被统一忽略。
+
+按官方示例模块名，本地连接真机时可以这样运行整组基准：
+
+```bash
+./gradlew :macrobenchmark:connectedCheck
+```
+
+Gradle 会把 Benchmark JSON 和每次迭代的 `.perfetto-trace` 复制到 `build/outputs/connected_android_test_additional_output/`。设备农场通常把构建、安装、运行和拉取测试文件拆成独立阶段，指标含义不应随执行平台变化。
+
+### 门禁阈值来自设备噪声，不来自通用百分比
+
+“变慢 10%”或“p 值小于 0.05”都不能直接套用到所有场景。团队应在固定设备和固定构建条件下重复运行未改代码，测出自然波动，再为每个场景制定阈值和复测策略。
+
+下面的脚本读取 Macrobenchmark 官方 JSON 结构，检查当前报告和基线是否来自同一系统指纹，再比较指定指标的中位数。阈值由调用者从版本库中的场景策略传入。
+
+```python
+#!/usr/bin/env python3
+import argparse
+import json
+import statistics
+import sys
+from pathlib import Path
+
+
+def load_report(path, benchmark_name, metric_name):
+    report = json.loads(Path(path).read_text(encoding="utf-8"))
+    matches = [
+        item for item in report["benchmarks"]
+        if item["name"] == benchmark_name
+    ]
+    if len(matches) != 1:
+        raise ValueError(
+            f"{path}: expected one benchmark named {benchmark_name!r}, "
+            f"found {len(matches)}"
+        )
+
+    metric = matches[0]["metrics"][metric_name]
+    runs = [float(value) for value in metric["runs"]]
+    if not runs:
+        raise ValueError(f"{path}: metric {metric_name!r} has no samples")
+    return report["context"], runs
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--current", required=True)
+    parser.add_argument("--baseline", required=True)
+    parser.add_argument("--benchmark", required=True)
+    parser.add_argument("--metric", required=True)
+    parser.add_argument("--max-regression-ratio", required=True, type=float)
+    args = parser.parse_args()
+
+    current_context, current_runs = load_report(
+        args.current, args.benchmark, args.metric
+    )
+    baseline_context, baseline_runs = load_report(
+        args.baseline, args.benchmark, args.metric
+    )
+
+    current_build = current_context["build"]
+    baseline_build = baseline_context["build"]
+    for key in ("model", "fingerprint"):
+        if current_build[key] != baseline_build[key]:
+            raise ValueError(f"environment mismatch: build.{key}")
+
+    current_median = statistics.median(current_runs)
+    baseline_median = statistics.median(baseline_runs)
+    ratio = current_median / baseline_median - 1.0
+
+    print(
+        json.dumps(
+            {
+                "benchmark": args.benchmark,
+                "metric": args.metric,
+                "current_median": current_median,
+                "baseline_median": baseline_median,
+                "regression_ratio": ratio,
+                "current_sample_count": len(current_runs),
+                "baseline_sample_count": len(baseline_runs),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+    return 2 if ratio > args.max_regression_ratio else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+```
+
+脚本故意不内置百分比，也不把样本不足伪装成通过。正式流水线还应校验场景参数、编译模式和样本数；首次超过阈值后在同一设备复测，并把两轮报告与轨迹一起交给评审。
+
+### 轨迹诊断不能反向污染测量
+
+增加 ftrace 事件、堆采样或密集应用埋点会改变采集开销。门禁配置和深度诊断配置可以分开：
+
+- 常规门禁只采 Macrobenchmark 所需数据；
+- 超过阈值后用同一提交复测并启用更详细的数据源；
+- 诊断结果用于定位，不拿来替换原门禁样本；
+- 每次配置变更都建立新基线。
+
+这样可以控制日常测量开销，也能在异常发生后获得调度、Binder、内存或渲染证据。
+
+## 自定义 Trace Point
+
+### 选择平台 API 还是 Perfetto SDK
+
+Android 应用只需要同步时间片、异步时间片和计数器时，平台 Trace 或 NDK `ATrace_*` 已经足够。Perfetto SDK 更适合 C++ 引擎、跨平台程序、分类过滤、流事件或强类型扩展。
+
+| 接口 | 可用边界 | 适合场景 |
+|---|---|---|
+| `Trace.beginSection/endSection` | API 18+ | Java/Kotlin 同线程嵌套阶段 |
+| `ATrace_beginSection/endSection` | NDK API 23+ | C/C++ 同线程嵌套阶段 |
+| `Trace.beginAsyncSection/endAsyncSection` | API 29+ | Java/Kotlin 跨线程阶段 |
+| `ATrace_beginAsyncSection/endAsyncSection` | NDK API 29+ | C/C++ 跨线程阶段 |
+| `Trace.setCounter` / `ATrace_setCounter` | API 29+ | 随时间变化的数值 |
+| Perfetto SDK `TRACE_EVENT` | C++17 SDK | 分类、流、计数器和扩展字段 |
+
+### Java/Kotlin 同步时间片
+
+同步时间片必须在同一线程成对结束。下面的包装能在异常路径上保持平衡：
+
+```kotlin
+inline fun <T> tracedSection(name: String, block: () -> T): T {
+    android.os.Trace.beginSection(name)
+    return try {
+        block()
+    } finally {
+        android.os.Trace.endSection()
+    }
+}
+
+val bitmap = tracedSection("ImageDecode") {
+    decodeImage(bytes)
+}
+```
+
+Android 17 的 `Trace.java` 将名称限制为 127 个 Unicode 代码单元，超长会抛出 `IllegalArgumentException`。`|`、换行和空字符在底层会被替换为空格。名称应保持短、稳定且不含用户数据。
+
+跨线程任务要使用相同名称和 cookie 配对：
+
+```kotlin
+fun startCapture(requestId: Int) {
+    android.os.Trace.beginAsyncSection("CameraCapture", requestId)
+}
+
+fun finishCapture(requestId: Int) {
+    android.os.Trace.endAsyncSection("CameraCapture", requestId)
+}
+
+fun updateQueueDepth(depth: Int) {
+    android.os.Trace.setCounter("DecodeQueueDepth", depth.toLong())
+}
+```
+
+同时存在的同名异步事件必须使用不同 cookie。cookie 只负责配对，不应承载账号、文件名或其他敏感信息。
+
+### NDK `ATrace_*`
+
+Native 同步阶段的写法与 Java 层语义一致：
 
 ```cpp
 #include <android/trace.h>
 
-void DecodeFrame() {
+void DecodeFrame(const EncodedFrame& frame) {
   ATrace_beginSection("ImageDecode");
-  // Several unrelated lines are omitted.
+  Decode(frame);
   ATrace_endSection();
 }
 ```
 
-`ATrace_beginSection()` / `ATrace_endSection()` 从 API 23 起可用，适合 JNI、解码器、渲染引擎这类 Native 代码路径。
+C++ 代码如果可能抛异常或提前返回，应再封装 RAII 守卫，确保 `ATrace_endSection()` 总能执行。异步 NDK API 从 API 29 起使用相同名称和 cookie 配对。
 
-**跨线程或跨回调路径：**
+Android 平台、系统服务和 HAL 还会使用 `libcutils` 的小写 `atrace_begin()`，它允许显式选择 `ATRACE_TAG_*`。下面的代码把显示配置阶段放到 graphics 分类中：
 
 ```cpp
-#include <android/trace.h>
+#include <cutils/trace.h>
 
-void StartCapture(int request_id) {
-  ATrace_beginAsyncSection("CameraCapture", request_id);
-}
-
-void FinishCapture(int request_id) {
-  ATrace_endAsyncSection("CameraCapture", request_id);
+void ConfigureDisplay(Display& display) {
+  atrace_begin(ATRACE_TAG_GRAPHICS, "ConfigureDisplay");
+  display.ApplyPendingConfiguration();
+  atrace_end(ATRACE_TAG_GRAPHICS);
 }
 ```
 
-异步 trace point 更适合相机请求、网络回调、任务队列这类跨线程路径；开始和结束要用同一个 cookie。NDK 异步 API 从 API 29 起可用。
+Android 17 的 `libcutils/include/cutils/trace.h` 还提供 `ATRACE_BEGIN` / `ATRACE_END` 宏，宏使用编译单元定义的 `ATRACE_TAG`。这套接口属于平台私有 API，普通应用应使用 SDK `Trace` 或 NDK `ATrace_*`，不能把 `libcutils` 头文件当作稳定 NDK 接口。
 
-### 方法二：Perfetto SDK `TRACE_EVENT`（Native engine / richer schema）
+应用 Trace 点只有被采集配置允许时才会出现在系统轨迹中。下面的 Android Perfetto 配置启用目标包的 `TRACE_TAG_APP` 事件：
 
-当场景需要更丰富的 category、Native-only tracing、跨平台复用，或者后面准备扩成 counter / async event / typed schema 时，再切到 Perfetto SDK。一个最小骨架如下：
+```textproto
+buffers {
+  size_kb: 32768
+  fill_policy: RING_BUFFER
+}
+
+data_sources {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      atrace_apps: "com.example.app"
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_waking"
+    }
+  }
+}
+```
+
+`atrace_apps` 可以填写具体包名；`*` 会扩大采集范围和隐私暴露，不适合作为默认团队配置。调度事件来自内核侧，本文的统一内核锚点是 `android17-6.18-2026-06_r6`。
+
+### Native Perfetto SDK
+
+系统轨迹要把应用事件与调度、ftrace 等数据放在同一时间轴，应使用系统后端。下面是 TrackEvent 的最小初始化与同步时间片：
 
 ```cpp
 #include <perfetto.h>
@@ -684,232 +682,108 @@ PERFETTO_DEFINE_CATEGORIES(
     perfetto::Category("camera"));
 PERFETTO_TRACK_EVENT_STATIC_STORAGE();
 
-void InitPerfetto() {
+void InitTracing() {
   perfetto::TracingInitArgs args;
-  args.backends = perfetto::kInProcessBackend;
+  args.backends |= perfetto::kSystemBackend;
   perfetto::Tracing::Initialize(args);
   perfetto::TrackEvent::Register();
 }
 
 void RenderFrame() {
   TRACE_EVENT("rendering", "RenderFrame");
-  // Several unrelated lines are omitted.
+  SubmitRenderWork();
 }
 ```
 
-这条路径更适合游戏引擎、跨平台运行时、系统服务或大型 Native 模块。App 业务代码只想补阶段耗时时，`android.os.Trace` / `ATrace_*` 通常更省事。
+`kSystemBackend` 连接系统 `traced`，采集会话由外部 Perfetto 客户端控制。该模式适合能控制设备和部署的本地调试或实验室环境。`kInProcessBackend` 只生成进程内轨迹，不会自行带上系统调度数据；两种后端可以同时注册，但采集权限和输出读取规则不同。
 
-### Custom Data Source：结构化二进制 Trace Packet
+TrackEvent 已支持时间片、计数器、流和调试注解。Android 17 所带 Perfetto 还支持 TrackEvent protobuf 扩展描述符；需要强类型业务字段时，可以把描述符嵌入轨迹，让 Trace Processor 自动把字段解码到 `args` 表。
 
-TrackEvent 和 `TRACE_EVENT` 覆盖的是 slice / counter 这类通用标记。当需要向 Trace 里写入**结构化的二进制数据**（比如引擎级的渲染 pipeline 状态、自定义 schema 的性能采样、或系统服务的内部指标）时，Perfetto SDK 提供了 `perfetto::DataSource<T>` 这一更底层的抽象。
+自定义 `perfetto::DataSource<T>` 的门槛更高。它能写自定义数据包，但 Trace Processor 也要具备对应导入逻辑。业务工程不能只定义一个独立 `.proto`，再假设生成的 setter 会自动出现在上游 `TracePacket`。没有平台 protobuf 扩展、描述符或自定义导入器时，这类代码无法形成可查询的结构化数据。
 
-**TrackEvent vs Custom Data Source 的定位差异：**
+### 生产包治理
 
-| 维度 | TrackEvent / TRACE_EVENT | Custom Data Source |
-|---|---|---|
-| 数据格式 | Slice name + category + 可选 debug annotations | 自定义 protobuf schema |
-| 典型用途 | 阶段耗时标记、异步事件、counter | 结构化二进制 packet、自定义 schema |
-| 适用场景 | App 业务逻辑的阶段打点 | 引擎级采集、系统服务、自定义 counter/packet |
-| Trace Processor 支持 | 内置 slice/counter 表直接可查 | 需自定义 SQL 或在 Trace Processor 侧注册解析 |
+Trace 点的设计质量会直接影响轨迹可读性和线上信息暴露：
 
-**最小 Custom Data Source 骨架：**
+- 用稳定阶段名，动态标识放在 cookie、计数器或受控字段中；
+- 同步区间严格嵌套，异步区间严格配对；
+- 不写账号、URL 参数、文件路径、令牌或用户输入；
+- 不在每个元素、每个像素或极短循环中密集埋点；
+- 字符串需要格式化时先检查 `Trace.isEnabled()`，减少未采集状态下的临时对象；
+- 对埋点开销做目标设备实测，不能沿用其他设备的纳秒级估算。
 
-```cpp
-// render_pipeline.proto — 定义自定义 packet schema
-// syntax = "proto2";
-// package my.protos;
-// message RenderPassInfo {
-//   optional string pass_name = 1;
-//   optional int64 gpu_duration_ns = 2;
-// }
+Android 性能文档给出的经验值约为每个区间 5 微秒，并建议优先标记大于 0.1 ms 的工作。这是选择粒度的参考值，具体开销仍受设备、系统和采集配置影响。
 
-// render_pass_data_source.h — DataSource 类定义与 static members 声明
-#include <perfetto.h>
+不要用全局 `-assumenosideeffects class android.os.Trace` 规则清除发布包中的平台 Trace 调用。该规则会影响应用和依赖库的所有调用点，也会让诊断能力随 R8 配置变化。更可控的方案是只包装团队自己的可选埋点：
 
-// 1. 继承 perfetto::DataSource<T> 定义数据源类
-class RenderPassDataSource : public perfetto::DataSource<RenderPassDataSource> {
- public:
-  void OnSetup(const SetupArgs&) override {}
-  void OnStart(const StartArgs&) override {}
-  void OnStop(const StopArgs&) override {}
-};
-
-// 2. 声明 static members（头文件中）
-PERFETTO_DECLARE_DATA_SOURCE_STATIC_MEMBERS(RenderPassDataSource);
-
-// render_pass_data_source.cc — static members 定义（源文件中，仅一处）
-PERFETTO_DEFINE_DATA_SOURCE_STATIC_MEMBERS(RenderPassDataSource);
-
-// main.cc — 初始化与注册
-void InitTracing() {
-  perfetto::TracingInitArgs args;
-  args.backends = perfetto::kInProcessBackend;
-  perfetto::Tracing::Initialize(args);
-  perfetto::TrackEvent::Register();   // 如需 TrackEvent
-
-  // 注册自定义 DataSource，必须提供 DataSourceDescriptor
-  perfetto::DataSourceDescriptor dsd;
-  dsd.set_name("com.example.render_pass");
-  RenderPassDataSource::Register(dsd);
-}
-
-// 业务代码中写 packet
-void RecordRenderPass(const char* name, int64_t gpu_ns) {
-  RenderPassDataSource::Trace([&](RenderPassDataSource::TraceContext ctx) {
-    auto packet = ctx.NewTracePacket();
-    // set_render_pass_info() 由 protoc 生成的代码提供
-    // 对应 render_pipeline.proto 中的 RenderPassInfo
-    auto* event = packet->set_render_pass_info();
-    event->set_pass_name(name);
-    event->set_gpu_duration_ns(gpu_ns);
-  });
+```kotlin
+object AppTrace {
+    inline fun <T> section(name: String, block: () -> T): T {
+        if (!BuildConfig.ENABLE_APP_TRACE) {
+            return block()
+        }
+        android.os.Trace.beginSection(name)
+        return try {
+            block()
+        } finally {
+            android.os.Trace.endSection()
+        }
+    }
 }
 ```
 
-这个骨架只覆盖最小可编译路径，完整项目还需要：proto 文件经 protoc 生成 C++ 头文件并加入构建；`set_render_pass_info()` 依赖 TracePacket proto 扩展注册。Trace Processor 侧查询自定义 packet 需要 `SELECT * FROM raw` 或注册对应的 proto 解析逻辑。
+把 `ENABLE_APP_TRACE` 设为构建期常量后，R8 可以消除关闭分支。发布前仍要检查 APK、映射文件和实际轨迹，确认敏感字符串已移除、需要的诊断点仍存在。
 
-注册时 DataSourceDescriptor 中的 `name` 必须与 TraceConfig 中的 `data_sources.config.name` 一致，否则 Trace 启动时无法激活该数据源。对应的 TraceConfig 启用片段：
+## 团队级 Perfetto 分析知识库
 
-```protobuf
-# trace_config.proto 片段
-buffers {
-  size_kb: 65536
-}
-data_sources {
-  config {
-    name: "com.example.render_pass"
-  }
-}
+共享知识库不应只收集零散 SQL。一个可审查的最小目录可以这样组织：
+
+```text
+perfetto-analysis/
+├── toolchain.lock
+├── trace-configs/
+│   ├── startup.textproto
+│   └── rendering.textproto
+├── sql-packages/
+│   └── team.android/
+├── summaries/
+│   ├── startup.textproto
+│   └── memory.textproto
+├── ui-macros/
+│   └── macros.json
+├── gates/
+│   └── policy.json
+├── golden-traces/
+│   └── manifest.json
+└── tests/
 ```
 
-对于大多数 App 级打点需求，TrackEvent 已经够用。Custom Data Source 主要面向引擎开发者、系统服务作者、以及需要把 Trace 当结构化数据通道的进阶场景。
+`toolchain.lock` 记录 Python 包、Trace Processor 版本和二进制摘要。黄金轨迹清单记录来源、系统版本、许可范围和预期结果，轨迹本身如果含敏感数据应放在受控存储。
 
-### Trace 点设计的几条使用规则
+每次变更至少做四类检查：
 
-- 名称保持稳定：同一条业务路径不要频繁改 section 名，否则跨版本对比会断。
-- 粒度贴着阶段边界放：初始化阶段、解码阶段、一次 Binder 往返，比给每个小函数都打点更容易读。
-- 高频循环少打点：每帧、每 item、每像素循环里密集插桩，很快就会把 Trace 噪声抬高。
-- 异步路径优先保留 request id：相机、下载、渲染任务跨线程流转时，没有 cookie 很难在 Perfetto 里串起来。
+1. SQL 能在空轨迹和代表性轨迹上执行；
+2. 指标单位、维度、空值和极性符合契约；
+3. UI 宏中的命令 ID 属于稳定自动化接口；
+4. 旧工具与新工具的差异经过固定轨迹对比。
 
-### 生产包中的 Trace 点治理
-
-`android.os.Trace.beginSection()` 的字符串参数会进入 trace 输出和 DEX 文件。在 Release 包中大量使用自定义 trace point 需要注意几个问题：
-
-**体积与语义暴露。** 每个 `beginSection("...")` 调用点会在 DEX 中保留一个字符串常量。高频打点场景下，section name 的字符串总量不容忽视，且可能暴露业务逻辑细节（如 `"PaymentSubmit"`、`"LoginTokenRefresh"`）。
-
-**构建开关策略。** 对于高频或敏感 trace point，推荐通过构建开关或 R8/ProGuard 规则控制：
-
-```proguard
-# R8: 在 release 构建中移除自定义 Trace 调用
--assumenosideeffects class android.os.Trace {
-  public static void beginSection(java.lang.String);
-  public static void endSection();
-}
-```
-
-`-assumenosideeffects` 让 R8 在 release 构建中判定 `beginSection` / `endSection` 无副作用并移除调用点。需要在 `proguard-rules.pro` 或 `consumer-rules.pro` 中配置，并确认 R8 版本支持该指令（AGP 7.0+ 的 R8 默认支持）。
-
-**保留必要线上诊断点。** 不是所有 trace point 都该被移除。对于线上问题定位的关键锚点（如启动阶段、核心交易路径），保留 trace 调用并确保 section name 稳定且粒度合理。建议团队明确哪些 trace point 是"线上常驻"，哪些是"仅开发期"，并在构建配置中分开管理。
-
-**NDK 侧 `ATrace_*` 的边界。** `ATrace_beginSection` 是平台 tracing API，Perfetto 在 Android 10+ 通过 `traced` 守护进程采集其输出。在 release native 库中保留 `ATrace_*` 调用的开销很低（单次约 50-100ns），但字符串常量同样会进入 .rodata 段。可通过 `#ifdef NDEBUG` 宏控制 release 构建中的 trace 输出。
-
-
-## Remote Trace Processor 架构
-
-前面提到 `./trace_processor trace.perfetto-trace --httpd` 可以启动本地 Trace Processor 实例让浏览器直连。这里从源码角度展开其内部架构。
-
-### 核心类与目录
-
-`Perfetto Remote Trace Processor`（RTP）在 AOSP `android-17.0.0_r1` 中位于 `external/perfetto/src/trace_processor/rpc/`（不是上游 main 较新版本的 `remote/` 目录；功能等价）。三个传输后端都共用同一个 `Rpc` 类（`rpc.h` / `rpc.cc`），传输无关：
-
-- `stdiod.cc`（stdin/stdout 字节流，Python 客户端和嵌入式场景）
-- `httpd.cc`（HTTP+WebSocket+chunked transfer，浏览器 UI 使用）
-- `wasm_bridge.cc`（Emscripten 模式，与 `ui.perfetto.dev` 配合）
-
-`Rpc` 类的注释明确写「This class does NOT define how the transport works, it just deals with marshal/unmarshal」——这是 RTP 实现「传输无关」的关键。
-
-### 关键调用链（`--httpd` 模式）
-
-```
-trace_processor_shell --httpd
-  → trace_processor_shell.cc:953 转 server subcommand
-  → shell/server_subcommand.cc:ServerSubcommand::Run
-    → 创建 Rpc 实例（持 std::unique_ptr<TraceProcessor>）
-    → RunHttpRPCServer(rpc, listen_ip, port, cors_origins)
-      → httpd.cc:Httpd::Run 启动 HttpServer，端口 9001
-      → httpd.cc:OnHttpRequest 根据 URI 分派：
-          /status         → Rpc::GetStatus
-          /websocket      → UpgradeToWebsocket
-          /rpc            → SetRpcResponseFunction → Rpc::OnRpcRequest
-          /parse /notify_eof /restore_initial_tables /query /compute_metric ...
-                         → legacy REST 端点（Python 兼容）
-```
-
-### 协议要点
-
-- **Wire format**：`TraceProcessorRpcStream` 消息线性序列，每条 `TraceProcessorRpc` 消息前缀是 `[field=1, length-delimited][varint size]`——这与 trace.proto 中 `Trace { repeated TracePacket packet = 1; }` 完全同构。
-- **seq 字段**：`optional int64 seq = 1` 用于检测掉包 / 重复。注释明确「Do NOT expect that a response has the same seq of its corresponding request」——一个 query 可能产生多个 batch 响应。
-- **seq=0 重置**：浏览器刷新 trace_processor_shell --httpd 时 seq=0 是合法的「重置」（`rpc.cc:201` 短路判断 `req.seq() != 0 && rx_seq_id_ != 0`）。
-- **响应 framing**：`(nullptr, 0)` 是 disconnect 信号，由 fatal framing error 触发。
-
-### 17 个 method（去除 reserved 4/12/14）
-
-`TPM_APPEND_TRACE_DATA(1)` / `TPM_FINALIZE_TRACE_DATA(2)` / `TPM_QUERY_STREAMING(3)` / `TPM_COMPUTE_METRIC(5)` / `TPM_GET_METRIC_DESCRIPTORS(6)` / `TPM_RESTORE_INITIAL_TABLES(7)` / `TPM_ENABLE_METATRACE(8)` / `TPM_DISABLE_AND_READ_METATRACE(9)` / `TPM_GET_STATUS(10)` / `TPM_RESET_TRACE_PROCESSOR(11)` / `TPM_REGISTER_SQL_PACKAGE(13)` / `TPM_SUMMARIZE_TRACE(15)` / `TPM_CREATE_SUMMARIZER(16)` / `TPM_UPDATE_SUMMARIZER_SPEC(17)` / `TPM_QUERY_SUMMARIZER(18)` / `TPM_DESTROY_SUMMARIZER(19)`。
-
-`TPM_SUMMARIZER` 系列（16-19）是 v53+ 引入的新方法，Android 17 已包含。
-
-### 零拷贝设计
-
-`Rpc::Response::Send`（`rpc.cc:74-79`）把 `HeapBuffered<TraceProcessorRpcStream>` 的多个 slice 直接 forward 到 `rpc_response_fn_`——避免了「先 SerializeAsArray 到 std::vector 再转发」的一次堆分配与拷贝。`Response` 的 slice 大小是 `kDefaultBatchSplitThreshold + 4096`，默认每个 query response batch ~128 KiB + 4 KiB 余量。
-
-### 实际用法（场景化）
-
-**场景 1：用 --httpd 让浏览器 UI 加速**
-
-```bash
-./trace_processor trace.perfetto-trace --httpd
-# 默认监听 127.0.0.1:9001，CORS 已放行 ui.perfetto.dev
-# 打开 https://ui.perfetto.dev/，会弹出「Trace Processor native acceleration」确认
-```
-
-**场景 2：用 --stdiod 嵌入到 CI 流水线**
-
-```bash
-./trace_processor --stdiod trace.perfetto-trace
-# 通过 STDIN/STDOUT 走裸字节流协议，Python perfetto.TraceProcessor 可直接对接
-# 单线程 reactive 循环，4 KiB 读循环，STDIN EOF 正常退出
-```
-
-**场景 3：HTTP /rpc 端点直接打裸 RPC（Python 替代路径）**
-
-```python
-import requests
-r = requests.post(
-    "http://localhost:9001/rpc",
-    data=rpc_bytes,
-    stream=True,
-    headers={"Content-Type": "application/x-protobuf",
-             "Transfer-Encoding": "chunked"})
-# 响应是 chunked transfer：每个 chunk "hex_len\r\nbody\r\n"
-# 解析后是 TraceProcessorRpcStream 字节流
-```
-
-> 引用：`external/perfetto/src/trace_processor/rpc/rpc.cc:114-126`（`OnRpcRequest`）、`rpc.cc:152-300`（`ParseRpcRequest`）、`httpd.cc:130-265`（`OnHttpRequest`）、`server_subcommand.cc:Run`（subcommand 入口）。
-> 完整调研：`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-20-perfetto-remote-trace-processor-architecture.md`
-
+知识库的评审重点应放在语义变化。格式调整可以自动化，指标定义、时间窗口、连接键、阈值和采集依赖的变化必须由熟悉该领域的工程师确认。
 
 ## 参考资料
 
-### Perfetto SPAN_JOIN 与窗口函数交叉分析
-Perfetto Trace Processor 的 SPAN_JOIN 自定义算子表在 C++ 层实现时间跨度交集，支持 PARTITIONED 分区键避免 O(n×m) 全量比较。配合 SPAN_LEFT_JOIN / SPAN_OUTER_JOIN 变体，以及窗口函数 LEAD() 在 counter→span 视图转换中的核心用法，可以构建帧×GC、Binder、锁等交叉分析。详见 DeepResearch 调研：`DeepResearch/2026-05-13-perfetto-span-join-window-function.md`。
-
-
-### Perfetto v52/v54 大改版：Dark Mode + ANR 分类 + 位图时序
-- 来源：https://github.com/google/perfetto/releases
-- 类型：article
-- 摘要：UI层：Dark Mode、触摸支持、多Track批量操作。分析层：android_anrs新增anr_type字段、android.bitmaps位图时序数据、slice_self_dur自持续时间计算、regexp_extract函数、JSON trace解析性能提升。
-- 入库时间：2026-04-08
-
-### AndroidX Tracing 2.0 架构
-AndroidX Tracing 2.0（alpha05）引入了 Tracer、TraceDriver、TraceSink 新对象模型，支持协程上下文传播和纯 Kotlin Perfetto TracePacket 发射路径。详见 DeepResearch 调研：`DeepResearch/AndroidX Tracing 2.0 架构级深度技术分析.md`。
-
+- [Android 17 `external/perfetto` 源码](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/)
+- [Android 17 `Trace.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Trace.java)
+- [Android 17 `libcutils` ATrace 接口](https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/libcutils/include/cutils/trace.h)
+- [Trace Summarization](https://perfetto.dev/docs/analysis/trace-summary)
+- [旧版 Trace-based Metrics](https://perfetto.dev/docs/analysis/metrics)
+- [PerfettoSQL 语法](https://perfetto.dev/docs/analysis/perfetto-sql-syntax)
+- [Trace Processor Python API](https://perfetto.dev/docs/analysis/trace-processor-python)
+- [Batch Trace Processor](https://perfetto.dev/docs/analysis/batch-trace-processor)
+- [Perfetto UI 命令与宏](https://perfetto.dev/docs/visualization/ui-automation)
+- [稳定 UI 自动化命令参考](https://perfetto.dev/docs/visualization/commands-automation-reference)
+- [Perfetto 扩展服务器](https://perfetto.dev/docs/visualization/extension-servers)
+- [Perfetto Tracing SDK](https://perfetto.dev/docs/instrumentation/tracing-sdk)
+- [Android ATrace 埋点](https://perfetto.dev/docs/getting-started/atrace)
+- [Android NDK Tracing API](https://developer.android.com/ndk/reference/group/tracing)
+- [Macrobenchmark 持续集成](https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci)
+- [Android 性能测量与 Trace Point 开销建议](https://developer.android.com/topic/performance/measuring-performance)
