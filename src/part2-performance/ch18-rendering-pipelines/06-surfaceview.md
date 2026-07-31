@@ -1,22 +1,51 @@
 ---
-title: SurfaceView 直出路径
+title: Android 17 SurfaceView 独立 Surface 路径
 section: '18.6'
 chapter: '18.6'
 applicable_versions: Android 1.0 (API 1) - Android 17 (API 37)
-last_verified: '2026-06-20'
+last_verified: '2026-07-31'
 last_verified_against: AOSP android-17.0.0_r1 SurfaceView.java / BLASTBufferQueue / BufferQueueProducer.cpp / BufferQueueConsumer.cpp / BufferQueueCore.cpp / HWComposer.cpp + Android Graphics Architecture overlay docs
-confidence: medium
+confidence: high
 sources:
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S03_surfaceview_type.md
+  role: SurfaceView 双生产线、三层对象、几何同步、HWC 与 Perfetto 证据链
 - type: aosp
-  path: frameworks/base/core/java/android/view/SurfaceView.java
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java
+  role: hole-punch、container/BLAST/background、生命周期、几何、composition order 与 blur
 - type: aosp
-  path: frameworks/native/libs/gui/BLASTBufferQueue.cpp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp
+  role: buffer acquire、buffer transaction、frame merge 与 release
 - type: aosp
-  path: frameworks/native/libs/gui/BufferQueueProducer.cpp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueCore.cpp
+  role: slot 状态、buffer 数量与队列配置
 - type: aosp
-  path: frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp
+  role: dequeue、queue、async 与 backpressure
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/FrontEnd/
+  role: RequestedLayerState、snapshot、hierarchy 与 readiness
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp
+  role: composition strategy、present 与 release fences
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c
+  role: dma-fence 的 sync_file fd 接口
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
+  role: fence signal、callback 与 wait
 - type: official
-  path: source.android.com/docs/core/graphics/architecture
+  path: https://developer.android.com/reference/android/view/SurfaceView
+  role: SurfaceView 公开 API 与版本语义
+- type: official
+  path: https://developer.android.com/reference/android/view/SurfaceHolder.Callback
+  role: Surface 有效期与回调责任
+- type: official
+  path: https://source.android.com/docs/core/graphics/architecture
+  role: BufferQueue、SurfaceFlinger、HWC 与 protected overlay 架构
+- type: official
+  path: https://perfetto.dev/docs/data-sources/frametimeline
+  role: SurfaceView 的 FrameTimeline 支持边界
 tags:
 - SurfaceView
 - BLAST
@@ -86,7 +115,7 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-05
 ---
 
-# 18.6 SurfaceView 直出路径
+# 18.6 Android 17 SurfaceView 独立 Surface 路径
 
 <!-- outline-start -->
 
@@ -96,7 +125,7 @@ last_deepseek_cn_review_at: 2026-07-05
 - [18.6.3 完整渲染路径](#完整渲染路径) — Producer → BLAST → SurfaceFlinger → HWC
 - [18.6.4 BufferQueue 行为与 Triple Buffering](#bufferqueue-行为与-triple-buffering) — 独立队列的流转细节
 - [18.6.5 SurfaceView vs TextureView](#surfaceview-vs-textureview) — 数据流对比与选型
-- [18.6.6 HWC Overlay 与合成策略](#hwc-overlay-与合成策略) — 零 GPU 参与的直出路径
+- [18.6.6 HWC Overlay 与合成策略](#hwc-overlay-与合成策略) — 独立 layer 的 DEVICE/CLIENT 选择
 - [18.6.7 Trace 视角](#trace-视角) — Perfetto 中的识别方法
 - [18.6.8 常见性能问题与优化](#常见性能问题与优化) — 实战瓶颈分析
 
@@ -109,7 +138,7 @@ last_deepseek_cn_review_at: 2026-07-05
 
 ## 为什么需要 SurfaceView
 
-SurfaceView 解决的核心问题，是让一部分像素不必先画进宿主窗口的 buffer。视频解码器、Camera、EGL/Vulkan 渲染线程可以向一条独立的 buffer 流提交内容；普通 View、控制条和遮罩仍由宿主窗口的主线程与 RenderThread 生成。SurfaceFlinger 在显示侧看到两条生产线：
+SurfaceView 让一部分像素不必先画进宿主窗口的 buffer。视频解码器、Camera、EGL/Vulkan 渲染线程可以向一条独立的 buffer 流提交内容；普通 View、控制条和遮罩仍由宿主窗口的主线程与 RenderThread 生成。下面的简图用于分开两条生产线：
 
 ```text
 宿主窗口：Choreographer → UI Thread → RenderThread → Host BufferQueue
@@ -151,7 +180,7 @@ ViewRootImpl bounds layer
        └─ mBackgroundControl：background color layer
 ```
 
-这里要区分 container 与内容层。`mSurfaceControl` 负责 SurfaceView 子树的位置、变换、裁剪、相对层级和部分视觉状态；`mBlastSurfaceControl` 承载 Producer 提交的 buffer；`mBackgroundControl` 在内容尚未完成绘制或需要背景色时提供辅助显示。`mBlastBufferQueue` 通过 `update()` 关联内容层的尺寸、格式与生产端 `Surface`。
+这里要区分 container 与内容层。`mSurfaceControl` 负责 SurfaceView 子树的位置、变换、裁剪、相对层级和部分视觉状态；`mBlastSurfaceControl` 承载 Producer 提交的 buffer；`mBackgroundControl` 是 container 下的背景 color layer。Android 17 的 `updateBackgroundVisibility()` 只在 `mSubLayer < 0`、内容层带 `OPAQUE` 且背景层未被禁用时显示它。`mBlastBufferQueue` 通过 `update()` 关联内容层的尺寸、格式与生产端 `Surface`。
 
 Java `SurfaceView` 位于应用进程，并不限定 buffer 填充者的进程。应用内游戏线程可以直接使用 `Surface`，MediaCodec、Camera 或嵌入式层级也可能让系统服务和厂商组件参与生产。可靠的 Producer 身份应从目标 BufferQueue 的 connect、dequeue、queue、fence 和 layer id 回溯，不能按常见进程名猜测。
 
@@ -162,9 +191,11 @@ SurfaceView 默认位于宿主窗口下方。宿主窗口如果仍在相同矩�
 - `gatherTransparentRegion()` 把 SurfaceView 的可见矩形加入透明区域；
 - `draw()` 或 `dispatchDraw()` 在 `mDrawFinished && !isAboveParent()` 时调用 `clearSurfaceViewPort()`；
 - `clearSurfaceViewPort()` 使用 `Canvas.punchHole()`，并把圆角、clip bounds 与 alpha 纳入洞的参数；
-- `mDrawFinished` 在首帧完成前阻止过早打洞，避免内容未就绪时直接露出无效区域。
+- `mDrawFinished` 为 `false` 时不会打洞；该字段在 `surfaceRedrawNeededAsync` 的回调集合结束后置为 `true`。
 
 所以“挖洞”不是创建一个黑色 View，也不是把视频像素复制到宿主窗口。宿主 buffer 在对应区域保留透明度，SurfaceFlinger 再按 layer 层级组合宿主与 SurfaceView 内容。
+
+`mDrawFinished` 只能证明 framework 认为 redraw callback 阶段完成，不能证明 Producer 已 queue 首 buffer，也不能证明 buffer 已被 latch 或 present。首帧分析仍要依次检查 Producer connection、首 buffer transaction、acquire fence、layer visibility 和目标 display present。
 
 Z-above 时，SurfaceView 位于宿主窗口之上，不需要在宿主 buffer 中打洞。代价是宿主窗口里的普通 View 无法覆盖到它上面。Android 17 推荐用 `setCompositionOrder(int)` 表达关系：负数位于宿主下方，非负数位于宿主上方，数值更大的 peer 更高；相同值的 peer 顺序未定义。旧的 `setZOrderMediaOverlay()` 与 `setZOrderOnTop()` 已标记为 deprecated，阅读遗留代码时仍需理解其语义。
 
@@ -310,7 +341,7 @@ Producer 阻塞在 `dequeueBuffer()`，说明当前配置下没有可立即返�
 
 不能只看一条长 `dequeueBuffer` slice 就断言“队列深度太小”。应同时核对目标 layer 的 queued/acquired 状态、release fence、consumer cadence、Producer timestamp 与是否发生 buffer allocation。
 
-### 两套队列独立，但资源并非隔离
+### 两套队列独立，但仍共享设备资源
 
 宿主窗口与 SurfaceView 内容拥有不同的 Producer/Consumer 状态和 release channel。宿主 `dequeueBuffer()` 等待不证明 SurfaceView 队列堵塞，SurfaceView Producer 被背压也不要求宿主按钮停止刷新。
 
