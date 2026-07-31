@@ -92,163 +92,192 @@ last_deepseek_cn_review_at: 2026-07-15
 
 ## 为什么要了解数据库性能优化（SQLite/Room）
 
-数据库慢通常不会表现成 CPU 打满。更常见的现象是主线程等一次查询、多个后台线程排队拿连接、Migration 卡住首次 open，或者列表滚动时 CursorWindow 反复 refill。Perfetto 里线程可能停在 `SQLiteConnectionPool.waitForConnection()`、`SQLiteSession.executeForCursorWindow()`、DAO 生成代码或 `ContentResolver.query()` 的 Binder 等待上。
+本文的平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。Room 属于独立发布的 AndroidX 组件，行为应以项目锁定的 Room 版本为准，不能只用 Android API 级别推断。涉及 WAL 同步和文件持久性时，沿用 [24.1 文件 I/O 优化](01-file-io-optimization.md)中的 `android17-6.18-2026-06_r6` 内核锚点。
 
-机制篇 10.7 已经讲过 SQLite 并发模型、CursorWindow、Room 线程模型和 ANR 分析路径。24.2 只处理应用侧动作：怎样配置 WAL，怎样写 Room DAO，怎样设计索引和查询，怎样把迁移风险挡在发版前。底层锁模型、CursorWindow 跨进程细节和 Perfetto SQL 分析详见 10.7 节；文件 I/O、StrictMode 与 SP/DataStore 的关系详见 24.1 节。
+数据库慢通常不会表现成 CPU 满载。更常见的现象是主线程等待查询、工作线程排队申请连接、Migration 占住首次打开，或者列表滚动时 `CursorWindow` 反复填充。Perfetto 和线程栈中常见 `SQLiteConnectionPool.waitForConnection()`、`SQLiteSession.executeForCursorWindow()`、DAO 生成代码，或 `ContentResolver.query()` 的 Binder 等待。
 
+机制篇 [10.7 SQLite 与 Room 性能](../../part2-performance/ch10-memory-perf/07-sqlite-room-performance.md)介绍 SQLite 并发、`CursorWindow`、Room 执行模型和 ANR 归因。本节处理应用侧决策：怎样选择 WAL，怎样写 DAO，怎样按查询设计索引，以及怎样在发版前验证迁移。
 
 ## SQLite WAL 模式与并发优化
 
-WAL (Write-Ahead Logging) 将写操作追加到 `-wal` 文件，checkpoint 再把变更合并回主库。它给应用带来的收益是读写并发更好、提交路径通常更短、频繁小写入更容易被合并成追加写。Android 官方 SQLite 性能文档也将 WAL 列为基础配置项，并建议启用 WAL 时将 `synchronous` 设为 `NORMAL`。
+WAL（Write-Ahead Logging）把事务变更追加到 `-wal` 文件，checkpoint 再把页面合并回主库。它允许读事务与写事务并发，提交也常能受益于追加写。WAL 仍只有一个活跃写者，多个写事务会依次等待。
 
-Android 9 引入了 Compatibility WAL：在保持每个数据库最多一个连接的前提下使用 `journal_mode=WAL`；普通 `SQLiteDatabase` 默认可受这个兼容模式影响。Room 使用 `JournalMode.AUTOMATIC` 时，在 API 16+ 且非低内存设备上会启用完整 WAL。
+Android 官方性能文档建议：除使用 `ATTACH DATABASE` 的场景外启用 WAL，并在 WAL 下使用 `synchronous=NORMAL`。这个选择改变持久性边界：应用进程崩溃后事务仍可恢复，但设备断电或内核崩溃可能回滚已经返回成功的事务。订单、支付或跨库依赖不能只按吞吐量选择同步级别。
 
-WAL 不会把写操作变成并行写。SQLite 仍然只允许一个写者活跃；读者能和写者并发，多个写事务仍要排队。Android `SQLiteDatabase` 通过每线程 `SQLiteSession` 向 `SQLiteConnectionPool` 申请连接，连接池里让线程等待的位置是 `waitForConnection()`。看到连接池等待时，要回头查长事务、慢 Migration、写连接被占用，或者连接池规模与访问模型不匹配。
+### Android 9 的 Compatibility WAL 到 Android 17 的变化
 
-Android 默认 WAL 参数也会影响尾延迟。AOSP `SQLiteGlobal.getWALSyncMode()` 读取 `db_wal_sync_mode`，`config.xml` 当前默认是 `NORMAL`；`getWALAutoCheckpoint()` 读取 `db_wal_autocheckpoint`，当前默认是 100 页。配置注释说明，WAL 文件越大，checkpoint 可能越慢，所以平台把默认阈值设得较小。
+Android 9 引入 Compatibility WAL 时，[官方历史文档](https://source.android.com/docs/core/perf/compatibility-wal)描述的是“WAL 日志模式 + 每库最多一个连接”。Android 17 源码不能继续套用这个连接数结论：
 
-这段代码用于表达应用侧的 Room 打开配置。重点看三处：保留 `JournalMode.AUTOMATIC`，给查询和事务配置有界线程池，把 Migration 明确注册到 builder。
+- `SQLiteCompatibilityWalFlags` 从 `Settings.Global.SQLITE_COMPATIBILITY_WAL_FLAGS` 读取 `legacy_compatibility_wal_enabled`；
+- 只有应用没有显式指定 journal/sync mode 时，legacy compatibility flag 才生效；
+- `SQLiteDatabaseConfiguration.resolveJournalMode()` 会把它解析成 WAL；
+- `SQLiteConnectionPool` 看到解析结果为 WAL 后，使用 `SQLiteGlobal.getWALConnectionPoolSize()`，而 `android-17.0.0_r1` 的资源默认值是 4，厂商和调试属性仍可覆盖。
+
+所以，“Compatibility WAL 永远单连接”只应放在 Android 9 的版本历史里。调查 Android 17 设备时，应读取当前连接池 dump 和生效配置，不按旧文档猜连接数。该全局兼容开关默认也不是应用可以依赖的 SDK 契约，应用应通过自己使用的数据库 API 明确选择日志模式。
+
+[源码锚点：[`SQLiteCompatibilityWalFlags.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteCompatibilityWalFlags.java)、[`SQLiteDatabaseConfiguration.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteDatabaseConfiguration.java)、[`SQLiteConnectionPool.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteConnectionPool.java)]
+
+### Android 17 的 WAL 默认参数
+
+在 `android-17.0.0_r1` 中：
+
+| 参数 | AOSP 默认值 | 含义 |
+| --- | ---: | --- |
+| `db_wal_sync_mode` | `NORMAL` | WAL 连接默认同步模式 |
+| `db_wal_autocheckpoint` | 100 | 自动 checkpoint 阈值，单位是数据库页 |
+| `db_connection_pool_size` | 4 | framework WAL 连接池资源默认值 |
+
+这些是 AOSP 资源默认值，不是所有设备和所有 Room 驱动的固定值。系统属性、资源覆盖、应用显式配置和 AndroidX 驱动都可能改变结果。100 页也不能直接按 4 KiB 内存页换算；应查询该数据库的 `PRAGMA page_size`。
+
+[源码锚点：[`SQLiteGlobal.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteGlobal.java)、[`config.xml`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/res/values/config.xml)]
+
+### Room 怎样选择 journal mode
+
+`JournalMode.AUTOMATIC` 的当前 API 契约是：API 低于 16 或低内存设备选择 `TRUNCATE`，其余情况选择 `WRITE_AHEAD_LOGGING`。这是 AndroidX Room 的契约，不是 Android 17 平台保证；升级 Room 时仍要复核依赖版本的 API 文档和 release notes。
+
+下面的配置用于展示一个可审计的 Room 打开入口。日志模式和 Migration 都在同一个 builder 中明确声明；执行器先保留 Room 默认值，只有追踪结果证明默认调度不符合业务需求时才自定义。
 
 ```kotlin
-private val dbQueryExecutor = Executors.newFixedThreadPool(4) { runnable ->
- Thread(runnable, "db-query").apply {
- priority = Thread.NORM_PRIORITY - 1
- }
-}
-
-private val dbTransactionExecutor = Executors.newSingleThreadExecutor { runnable ->
- Thread(runnable, "db-transaction").apply {
- priority = Thread.NORM_PRIORITY - 1
- }
-}
-
-val database = Room.databaseBuilder(context, AppDatabase::class.java, "app.db")
- .setJournalMode(RoomDatabase.JournalMode.AUTOMATIC)
- .setQueryExecutor(dbQueryExecutor)
- .setTransactionExecutor(dbTransactionExecutor)
- .addMigrations(MIGRATION_7_8, MIGRATION_8_9)
- .build()
+val database = Room.databaseBuilder(
+    context.applicationContext,
+    AppDatabase::class.java,
+    "app.db"
+)
+    .setJournalMode(RoomDatabase.JournalMode.AUTOMATIC)
+    .addMigrations(MIGRATION_7_8, MIGRATION_8_9)
+    .build()
 ```
 
-查询线程池可以并发处理读请求，事务线程池建议从单线程开始。单写者模型下，给写事务开很多线程不会增加写吞吐，反而会把等待和锁竞争变复杂。批量导入、索引重建、清理任务这类重写路径要排进低优先级队列，避开启动、页面切换和用户输入路径。
+这段代码不会保证一定启用 WAL，低内存设备可能得到 `TRUNCATE`。若自定义执行器，Room 文档要求查询执行器有线程上限且不能运行在主线程；事务最多同时执行一个。共享事务执行器还要遵守文档中的死锁约束，不应复制一套固定线程数到所有应用。
+
+使用 Room 3 / `SQLiteDriver` 的项目不能照搬 framework `SQLiteConnectionPool` 的连接数和 `CursorWindow` 结论。驱动会改变 Room 下方的 SQLite 实现与数据传递路径，具体边界见 [24.17 Room 3、SQLiteDriver 与 KMP 性能](17-room3-sqlitedriver-kmp-performance.md)。
 
 WAL 的应用侧检查项：
 
-- 确认是否使用 Room 默认 `AUTOMATIC`，不要为了“兼容”随手切回 `TRUNCATE` 或 `DELETE`。
+- 在目标设备读取生效的 journal/sync mode，不把 builder 选项当作运行结果。
 - 如果使用 `ATTACH DATABASE`，重新评估 WAL；官方文档把 `ATTACH DATABASE` 列为启用 WAL 的例外条件。
-- 大事务后观察 `-wal` 文件增长和 checkpoint 耗时。默认 100 页阈值按 SQLite 数据库页计算，不按设备内存页直接换算；用 `PRAGMA page_size` 或建库时的实际 DB page size 计算 checkpoint 数据量。
-- 不在主线程首次 open 数据库。首次 open 可能触发 schema 校验、Migration、预置库复制或 checkpoint。
+- 大事务后观察 `-wal` 文件增长、读事务持续时间和 checkpoint 耗时；长期读事务可能阻止 checkpoint 推进。
+- 不在主线程首次打开数据库。首次打开可能触发模式校验、Migration、预置库复制或 checkpoint。
+- 连接池等待先查长事务、慢查询和连接持有者，再考虑改变池大小。
+
+[官方文档：[SQLite 性能建议](https://developer.android.com/topic/performance/sqlite-performance-best-practices)、[`RoomDatabase.JournalMode`](https://developer.android.com/reference/androidx/room/RoomDatabase.JournalMode)、[SQLite WAL](https://sqlite.org/wal.html)]
 
 ## Room 的正确使用与性能陷阱
 
-Room 的收益是编译期 SQL 校验、DAO 抽象、迁移路径和协程/Flow 适配，不是自动把所有数据库访问变快。官方 Room 文档也把 Room 描述为 SQLite 之上的抽象层，底层仍然要遵守 SQLite 的连接、事务和查询代价。
+Room 提供编译期 SQL 校验、DAO 生成、迁移管理和异步 API 适配，不会自动降低 SQL、连接等待和事务提交的成本。`allowMainThreadQueries()` 只是关闭主线程保护，不会降低查询耗时；它可以用于受控测试，不应进入发布数据库配置。
 
-Room 性能问题多出在四类调用点：同步 DAO 被 UI 路径调用、首次 open 发生在启动主线程、事务范围过大、Flow/LiveData 失效后重查过重。`allowMainThreadQueries()` 只能关掉保护，不能降低查询耗时。它可以出现在测试代码里，不该进入正式包。
+Room 性能问题常出现在四类位置：同步 DAO 被界面路径调用、首次打开落在启动主线程、事务范围过大，以及可观察查询在表失效后反复执行。
 
 DAO 方法按执行模型分开设计：
 
 | DAO 形态 | 执行位置 | 使用场景 | 风险 |
 | --- | --- | --- | --- |
 | 普通同步方法 | 调用线程 | 测试、极少量工具代码 | UI 线程调用会被 Room 拦截；关闭拦截后会卡 UI |
-| `suspend` 方法 | Room / 协程适配层调度 | 单次读写、批量写入 | 事务范围过大会占用写连接 |
-| `Flow` | 观察表失效后重查 | UI 订阅数据变化 | 查询列过宽、重查太频繁会拖慢渲染 |
-| PagingSource | 分页列表 | 大列表、离线缓存 | Offset 深翻页仍然变慢，Keyset 要自己写 SQL |
+| `suspend` 方法 | Room 异步执行机制 | 单次读写、批量写入 | 事务范围过大会长期占用连接 |
+| `Flow` | 观察表失效后重新查询 | UI 订阅数据变化 | 表中任意行变化都可能触发重查 |
+| `PagingSource` | 分页列表 | 大列表、离线缓存 | 深 offset 仍可能扫描许多行，游标分页需按查询设计 |
 
-这段 DAO 代码用于区分“列表展示查询”和“详情查询”。重点看 projection：列表只取渲染所需列，详情页再按主键读取大字段。
+下面的 DAO 用来区分列表投影和详情实体。列表只选择渲染所需列，正文等大字段留到详情查询；调用方还要限制 `limit` 的合法范围。
 
 ```kotlin
 data class MessageRow(
- val id: Long,
- val conversationId: Long,
- val senderName: String,
- val preview: String,
- val sentAt: Long
+    val id: Long,
+    val conversationId: Long,
+    val senderName: String,
+    val preview: String,
+    val sentAt: Long
 )
 
 @Dao
 interface MessageDao {
- @Query(
- """
- SELECT id, conversation_id AS conversationId, sender_name AS senderName,
- preview, sent_at AS sentAt
- FROM messages
- WHERE conversation_id = :conversationId
- ORDER BY sent_at DESC
- LIMIT :limit
- """
- )
- suspend fun latestRows(conversationId: Long, limit: Int): List<MessageRow>
+    @Query(
+        """
+        SELECT id, conversation_id AS conversationId, sender_name AS senderName,
+               preview, sent_at AS sentAt
+        FROM messages
+        WHERE conversation_id = :conversationId
+        ORDER BY sent_at DESC
+        LIMIT :limit
+        """
+    )
+    suspend fun latestRows(conversationId: Long, limit: Int): List<MessageRow>
 
- @Query("SELECT * FROM messages WHERE id = :id")
- suspend fun detail(id: Long): MessageEntity?
+    @Query("SELECT * FROM messages WHERE id = :id")
+    suspend fun detail(id: Long): MessageEntity?
 }
 ```
 
-列表查询不要返回 `SELECT *`。大文本、JSON、BLOB 和冗余字段会挤占 CursorWindow，也会增加反序列化成本。官方文档给出的第一条原则就是少读行、少读列，并把过滤、排序、聚合交给 SQLite 引擎完成。
+在 framework SQLite 驱动下，少读列能降低 `CursorWindow` 填充、跨 JNI 复制和对象构造成本；使用其他 AndroidX SQLite 驱动时，具体承载结构可能不同，但“少读行、少读列”仍成立。过滤、排序和聚合也应尽量在 SQL 中完成。
 
-事务使用要按业务边界收敛。批量插入、删除、状态切换适合放进一个事务；网络回调、文件读取、复杂计算不该包在事务内。事务体里做慢 I/O，会占着写连接等待磁盘或网络，其他查询和写入都会被拖慢。
+可观察查询按“引用到的表”失效，不按结果集中的具体行判断。表中任意相关写入都可能让查询重跑；`distinctUntilChanged()` 可以减少相同结果向下游发射，不能省掉已经发生的 SQL 查询。高频更新表应拆小观察范围或减少无关写入。
 
-这段代码用于表达批量写入的事务边界。重点看事务内只保留数据库写入，数据解析和网络请求在进入事务前完成。
+事务范围应以不可分割的数据变更为边界。批量插入、删除和状态切换适合放进一个事务；网络请求、文件读取和复杂计算应在事务外完成。Room 同时最多执行一个事务，事务内等待外部工作会让后续事务持续排队，也可能延迟需要连接的查询。
+
+下面的代码用于展示批量替换的事务边界。传入的 `rows` 应在进入事务前完成网络读取、解码和业务校验。
 
 ```kotlin
 class MessageRepository(
- private val database: AppDatabase,
- private val dao: MessageDao
+    private val database: AppDatabase,
+    private val dao: MessageDao
 ) {
- suspend fun replaceConversationMessages(
- conversationId: Long,
- rows: List<MessageEntity>
- ) {
- database.withTransaction {
- dao.deleteByConversation(conversationId)
- dao.insertAll(rows)
- }
- }
+    suspend fun replaceConversationMessages(
+        conversationId: Long,
+        rows: List<MessageEntity>
+    ) {
+        database.withTransaction {
+            dao.deleteByConversation(conversationId)
+            dao.insertAll(rows)
+        }
+    }
 }
 ```
 
-事务把多次写入合并成一次提交，能减少锁获取、WAL 写入和事务状态切换。它也会拉长单次写连接占用时间，所以事务内代码越短越好。
+事务保证删除与插入要么一起成功，要么一起回滚，并减少多次独立提交。代价是写连接在整个事务期间被占用，因此批次大小要用真实数据量和尾延迟验证，不能无限扩大。
 
 Room 线上排查还要加可观测入口：
 
-- 打开 Room `QueryCallback` 做灰度采样，记录 SQL 模板、耗时、线程名和业务场景；参数里可能包含用户数据，默认不要上报原始参数。
-- 记录首次 open 和 Migration 耗时，把它们和冷启动、首屏、ContentProvider 初始化分开统计。
+- Room `QueryCallback` 会为每条查询增加回调成本，且回调本身只给出 SQL 与绑定参数，不直接提供执行耗时。若做短期受控采样，只记录归一化 SQL 标识和线程，不上传原始参数；耗时应在 DAO/仓库边界或 Perfetto 中另行测量。
+- 记录首次打开和 Migration 耗时，把它们和冷启动、首屏、ContentProvider 初始化分开统计。
 - 对高频 Flow 查询统计重查次数。某张表每秒多次更新时，观察者可能被重复触发。
 - 记录连接池等待栈。Perfetto 里看到 `waitForConnection()` 时，要能反查当前持有写连接的任务。
 
+Android 17 的 `dumpsys meminfo <package>` 在 `DATABASES` 和 `POOL STATS` 中提供 SQLite 页、连接与语句缓存统计。该版本里 `cache size` 表示已缓存预编译语句的数量；较早版本的同名列可能只是命中与未命中计数之和。跨版本看板必须按平台版本解释字段。
+
+[官方文档：[异步 DAO 查询](https://developer.android.com/training/data-storage/room/async-queries)、[`RoomDatabase.Builder`](https://developer.android.com/reference/androidx/room/RoomDatabase.Builder)、[SQLite 性能排查工具](https://developer.android.com/topic/performance/sqlite-performance-best-practices)]
+
 ## 索引设计与查询优化
 
-索引设计从查询形状出发，不从字段名出发。一个字段看起来像 ID，不代表它该单独建索引；一个查询同时按 `conversation_id` 过滤、按 `sent_at` 排序，单列索引可能仍然要回表或额外排序。SQLite 官方 `EXPLAIN QUERY PLAN` 文档说明，`EXPLAIN QUERY PLAN` 可以展示查询使用的扫描策略，包含 `SCAN`、`SEARCH`、`USING INDEX`、`USING COVERING INDEX` 等信息。
+索引设计从查询形状和数据分布出发，不从字段名出发。查询同时按 `conversation_id` 等值过滤、按 `sent_at` 排序时，两个互不相关的单列索引通常不能同时完成过滤与排序。`EXPLAIN QUERY PLAN` 可显示 `SCAN`、`SEARCH`、`USING INDEX` 和 `USING COVERING INDEX` 等策略，但输出格式不属于稳定的应用接口。
 
-这段 Room 实体代码用于表达复合索引的设计方式。重点看索引列顺序要和查询里的过滤、排序顺序匹配。
+下面的 Room 实体用于展示与前述查询配套的复合索引。等值过滤列放在索引前缀，随后是排序列；SQLite 可以反向扫描 B-tree，因此这个索引也可服务 `sent_at DESC`。
 
 ```kotlin
 @Entity(
- tableName = "messages",
- indices = [
- Index(
- value = ["conversation_id", "sent_at"],
- name = "idx_messages_conversation_sent_at"
- ),
- Index(
- value = ["server_id"],
- unique = true,
- name = "idx_messages_server_id_unique"
- )
- ]
+    tableName = "messages",
+    indices = [
+        Index(
+            value = ["conversation_id", "sent_at"],
+            name = "idx_messages_conversation_sent_at"
+        ),
+        Index(
+            value = ["server_id"],
+            unique = true,
+            name = "idx_messages_server_id_unique"
+        )
+    ]
 )
 data class MessageEntity(
- @PrimaryKey(autoGenerate = true) val id: Long = 0,
- @ColumnInfo(name = "conversation_id") val conversationId: Long,
- @ColumnInfo(name = "server_id") val serverId: String,
- @ColumnInfo(name = "sender_name") val senderName: String,
- val preview: String,
- @ColumnInfo(name = "sent_at") val sentAt: Long,
- val body: String
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "conversation_id") val conversationId: Long,
+    @ColumnInfo(name = "server_id") val serverId: String,
+    @ColumnInfo(name = "sender_name") val senderName: String,
+    val preview: String,
+    @ColumnInfo(name = "sent_at") val sentAt: Long,
+    val body: String
 )
 ```
 
-`conversation_id, sent_at` 适合支撑“某个会话内按时间倒序取消息”的查询。`server_id` 用唯一索引表达去重约束，让 SQLite 在写入时直接校验唯一性。官方文档也建议使用索引加速查询、使用唯一约束让数据库处理数据约束，并提醒不要维护未使用索引，因为写入时也要更新索引表。
+`conversation_id, sent_at` 适合“某个会话内按时间取消息”的查询。`server_id` 的唯一索引让数据库执行唯一性约束。每个索引都会占用空间并增加插入、更新和删除成本，因此要用查询记录确认它确有使用。
 
 索引和查询优化按这张清单检查：
 
@@ -257,11 +286,11 @@ data class MessageEntity(
 | 只读必要列 | 列表页使用 DTO projection，详情页再读全文 | 降低 CursorWindow 与对象构造成本 |
 | 只读必要行 | 加 `LIMIT`，分页查询不要一次取全量 | 控制单次查询时间和内存占用 |
 | 把计算交给 SQL | 过滤、排序、计数、去重用 SQL 表达 | 避免把大量行搬到 Kotlin/Java 后再处理 |
-| 复合索引匹配查询形状 | 过滤列在前，排序列跟在后面 | 减少全表扫描和临时排序 |
-| 批量写入进事务 | 多条 insert/update/delete 合并提交 | 减少事务切换和写锁竞争 |
+| 复合索引匹配查询形状 | 结合等值、范围、排序和选择性决定列顺序 | 减少无关行访问和临时排序 |
+| 批量写入进事务 | 多条 insert/update/delete 合并提交 | 减少独立提交，但控制事务时长 |
 | 清理无效索引 | 用线上 SQL 采样和 `EXPLAIN QUERY PLAN` 反查 | 降低写入维护成本 |
 
-这段命令用于在本地验证查询计划。重点看输出里是否出现 `SEARCH messages USING INDEX idx_messages_conversation_sent_at`，如果还是 `SCAN messages`，说明索引没有按预期命中。
+下面的 SQL 用于在接近真实分布的本地数据库上检查查询计划。预期能按 `conversation_id` 搜索复合索引，并利用索引顺序返回时间序结果。
 
 ```sql
 EXPLAIN QUERY PLAN
@@ -272,99 +301,121 @@ ORDER BY sent_at DESC
 LIMIT 50;
 ```
 
-`EXPLAIN QUERY PLAN` 的结果要和真实数据量一起看。空库、小样本库、测试库都可能给出看似正常的查询计划。索引上线前要在接近线上分布的数据集上验证：单会话消息数、长文本比例、删除比例、冷热数据分布都会影响收益。
+即使输出出现 `SCAN`，也不能脱离对象判断它一定错误：小表扫描、覆盖索引扫描或统计信息变化都可能使扫描成为合理选择。应同时检查扫描对象、临时 B-tree、返回行数和实际耗时。空库或均匀小样本也不能代表线上偏斜分布。
 
-查询优化可以进 CI。做法是给关键 DAO 准备一组固定数据，跑 `EXPLAIN QUERY PLAN` 并断言不得出现未预期的全表扫描。CI 不替代线上监控，但能防止一次 schema 改动把列表查询从索引查找改成全表扫描。
+查询回归可以进入 CI：为关键 DAO 准备有代表性的规模与分布，验证结果正确性、索引是否存在，并对明显的计划退化和耗时变化报警。不要断言完整的 `EXPLAIN QUERY PLAN` 文本；SQLite 明确不保证该输出格式跨版本稳定。
+
+[SQLite 文档：[`EXPLAIN QUERY PLAN`](https://sqlite.org/eqp.html)、[Query Planner](https://sqlite.org/queryplanner.html)]
 
 ## 数据库迁移与版本管理
 
-Migration 的性能风险和稳定性风险绑在一起。Room 打开数据库时会校验 schema，并按版本执行自动或手写 Migration。官方迁移文档说明，自动迁移适合基础 schema 改动；复杂改动，例如拆表、合并表、数据搬迁，需要手写 `Migration`。Room 还建议导出 schema JSON 并提交到版本库，用于自动迁移和迁移测试。
+Room 第一次打开数据库时会校验模式，并按版本图执行自动或手写 Migration。自动迁移适合 Room 能明确推导的简单改动；重命名、删除、拆表、合表和数据转换通常需要 `AutoMigrationSpec` 或手写 `Migration`。导出的模式 JSON 既服务于自动迁移，也让 `MigrationTestHelper` 能创建历史版本。
 
 迁移设计分三层：
 
-- schema 改动：新增表、列、索引、视图，尽量使用可回放、可验证的 SQL。
-- 数据回填：大表回填要分批，避免在首次 open 里一次处理全量历史数据。
-- 发布策略：缓存库可以接受破坏性迁移，用户资产库不能使用默认清库兜底。
+- 模式改动：新增表、列、索引或视图，SQL 必须与导出的目标模式一致。
+- 数据转换：能在短事务内完成的小规模转换随 Migration 执行；大表转换应设计分阶段兼容、可恢复的后台回填，不能把一个未完成的模式状态暴露给旧代码。
+- 发布策略：只有明确可重建的数据才允许破坏性重建，用户资产库必须提供完整迁移路径。
 
-这段 Migration 代码用于展示“只做 schema 改动 + 小规模补值”的写法。重点看 SQL 明确、版本范围明确，不依赖线上当前数据的隐含状态。
+大表转换可以跨两个应用版本完成。版本 N 先增加可空的新列或新表，新代码同时兼容新旧表示，写入时维护两份表示；后台任务按稳定主键分批回填并记录游标，进程被终止后从已确认的位置继续。回填期间的读取必须能识别“新表示尚未生成”，不能把空值当作业务结果。等监控确认受支持版本的回填已经完成，后续版本再增加非空约束、停止写旧表示并删除旧列或旧表。若仍需支持直接从更早版本升级，迁移图和读取逻辑也要保留这条路径。
+
+下面的 Migration 只新增带默认值的列和索引。它适合展示明确的 8→9 版本边，但不代表对任意大小的 `messages` 表都足够快。
 
 ```kotlin
 val MIGRATION_8_9 = object : Migration(8, 9) {
- override fun migrate(db: SupportSQLiteDatabase) {
- db.execSQL("ALTER TABLE messages ADD COLUMN sync_state INTEGER NOT NULL DEFAULT 0")
- db.execSQL(
- """
- CREATE INDEX IF NOT EXISTS idx_messages_sync_state_sent_at
- ON messages(sync_state, sent_at)
- """.trimIndent()
- )
- }
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE messages " +
+                "ADD COLUMN sync_state INTEGER NOT NULL DEFAULT 0"
+        )
+        db.execSQL(
+            """
+            CREATE INDEX IF NOT EXISTS idx_messages_sync_state_sent_at
+            ON messages(sync_state, sent_at)
+            """.trimIndent()
+        )
+    }
 }
 ```
 
-新增列带默认值、创建索引和重建表都可能产生 I/O。表越大，首次打开数据库时的等待越长。启动路径如果同步触发 Room open，这段等待会直接算进冷启动或首屏耗时。更稳的处理方式是把首次 open 放到可控后台时机，并在 UI 真要读库前暴露“数据库已准备好”的状态。
+创建索引和重建表都可能扫描或重写大量数据。把首次打开移到工作线程只能移开主线程等待，不能消除 I/O，也可能与冷启动争用 CPU 和存储。应用应明确数据库就绪状态；对无法在启动预算内完成的大迁移，采用兼容新旧字段的分阶段版本和可恢复回填。
 
-这段测试代码用于验证迁移路径。重点看 `runMigrationsAndValidate()`，它会跑指定 Migration 并校验最终 schema。
+下面的仪器测试用于验证 8→9 的模式和数据。`runMigrationsAndValidate()` 校验目标模式，测试代码还要查询旧行，确认默认值与用户数据都被保留。
 
 ```kotlin
 @RunWith(AndroidJUnit4::class)
 class AppDatabaseMigrationTest {
- @get:Rule
- val helper = MigrationTestHelper(
- InstrumentationRegistry.getInstrumentation(),
- AppDatabase::class.java
- )
+    @get:Rule
+    val helper = MigrationTestHelper(
+        InstrumentationRegistry.getInstrumentation(),
+        AppDatabase::class.java.canonicalName,
+        FrameworkSQLiteOpenHelperFactory()
+    )
 
- @Test
- fun migrate8To9() {
- helper.createDatabase("migration-test", 8).apply {
- execSQL(
- """
- INSERT INTO messages(id, conversation_id, server_id, sender_name, preview, sent_at, body)
- VALUES(1, 42, 's-1', 'alice', 'hello', 1000, 'hello body')
- """.trimIndent()
- )
- close()
- }
+    @Test
+    fun migrate8To9() {
+        helper.createDatabase("migration-test", 8).apply {
+            execSQL(
+                """
+                INSERT INTO messages(
+                    id, conversation_id, server_id, sender_name, preview, sent_at, body
+                ) VALUES(1, 42, 's-1', 'alice', 'hello', 1000, 'hello body')
+                """.trimIndent()
+            )
+            close()
+        }
 
- helper.runMigrationsAndValidate(
- "migration-test",
- 9,
- true,
- MIGRATION_8_9
- )
- }
+        helper.runMigrationsAndValidate(
+            "migration-test",
+            9,
+            true,
+            MIGRATION_8_9
+        ).use { db ->
+            db.query("SELECT body, sync_state FROM messages WHERE id = 1").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals("hello body", cursor.getString(0))
+                assertEquals(0, cursor.getInt(1))
+            }
+        }
+    }
 }
 ```
 
-迁移测试不能只测相邻版本。线上用户可能从 6 升到 9，也可能从 7 升到 9。Room 官方文档建议加入覆盖所有已定义迁移路径的测试；这类测试应进入 release CI，不要等灰度后靠崩溃发现缺迁移。
+这个测试只覆盖一条相邻迁移。发布检查还要从所有受支持的历史版本打开当前数据库，走完整迁移图，并验证关键业务数据。缺少路径时，Room 会在打开阶段抛出异常，不应等灰度崩溃后才发现。
 
-`fallbackToDestructiveMigration()` 只适合可丢数据的缓存库。它会在缺少迁移路径时破坏性重建表。用户草稿、离线内容、支付状态、消息记录这类数据不该依赖这个兜底。对缓存库使用破坏性迁移，也要记录命中次数和库大小，避免一次版本遗漏让大量用户重新拉取数据。
+`fallbackToDestructiveMigration()` 只适合经过产品确认可以重建的数据。缺少迁移路径时，它会删除数据库表中的数据并重建。用户草稿、离线内容、支付状态和消息记录不能使用这项配置。缓存库采用它时，也应记录触发版本和重建成本。
 
-迁移发版前的门禁：
+迁移发版前的检查：
 
-- `exportSchema = true`，schema JSON 提交到版本库。
+- `exportSchema = true`，模式 JSON 提交到版本库。
 - 所有历史版本到当前版本的迁移路径可测试。
-- 大表回填有批处理策略，首次 open 不做全量重算。
-- Migration 耗时进入启动监控，按版本、设备、库大小分桶。
-- 破坏性迁移只出现在缓存库，并有埋点记录。
+- 大表转换有兼容阶段、进度记录和中断恢复方案。
+- Migration 耗时按起始版本、设备和库大小观察。
+- 破坏性重建只用于可恢复数据，并记录触发情况。
+
+[官方文档：[迁移 Room 数据库](https://developer.android.com/training/data-storage/room/migrating-db-versions)、[`MigrationTestHelper`](https://developer.android.com/reference/androidx/room/testing/MigrationTestHelper)]
 
 ## 扩展：SQLite vs Realm vs ObjectBox 选型
 
-SQLite/Room 仍然是 Android 本地结构化数据的默认选项。它的优势是平台稳定、生态成熟、SQL 表达能力强、可用系统工具和 Perfetto/trace 路径排查；代价是 schema 设计、索引、迁移和 SQL 性能都要工程团队自己负责。
+SQLite/Room 仍是 Android 本地结构化数据的常用选择。它有稳定的 SQL 语义、明确的迁移路径，也能结合 SQLite shell、数据库检查器、Perfetto 追踪和 ANR 栈排查。团队仍需负责表结构、索引、迁移和查询性能。
 
-Realm 和 ObjectBox 更偏对象数据库。它们能降低一部分对象持久化和观察更新的样板代码，但会引入新的文件格式、查询模型、同步语义、包体积和长期维护成本。本项目当前没有针对 Realm/ObjectBox 的近期实测数据，所以这里只给选型维度，不给性能结论。
+Realm 与 ObjectBox 采用不同于 SQLite 的对象存储和查询接口，也会带来专有文件格式、原生库、迁移工具和版本兼容责任。本项目没有针对它们当前版本的同机、同数据、同查询基准，因此不能给出性能排名。
 
-| 维度 | SQLite/Room | Realm | ObjectBox |
+Realm 还存在产品生命周期边界。MongoDB 已在 2025 年 9 月 30 日终止 Atlas Device SDKs 和 Device Sync；本地 Realm 数据库继续以开源项目存在。Realm Kotlin 仓库建议无同步功能的项目使用 3.0.0 以上版本或 `community` 分支。新项目若仍考虑 Realm，必须先确认所选制品、维护分支、Kotlin/Gradle 兼容范围和升级负责人，不能把已终止的云端同步能力列入方案。
+
+| 核查维度 | SQLite/Room | Realm 系列 | ObjectBox |
 | --- | --- | --- | --- |
-| 查询表达 | SQL，适合复杂过滤、聚合、排序 | 对象查询 API | 对象查询 API |
-| 迁移控制 | Room schema + Migration，控制细 | 依赖库自身迁移模型 | 依赖库自身迁移模型 |
-| 排查工具 | SQLite shell、DB Browser、Perfetto、ANR trace | 依赖库工具和日志 | 依赖库工具和日志 |
-| 团队成本 | Android 工程师普遍熟悉 | 要学习库语义 | 要学习库语义 |
-| 适合场景 | 离线缓存、消息、配置、关系型数据 | 对象图、实时观察模型 | 对象图、嵌入式 KV/对象存储 |
+| 存储与查询 | 验证 SQL、事务、关系与全文检索需求 | 验证对象关系、查询限制和线程语义 | 验证对象关系、查询限制和事务语义 |
+| 生命周期 | 锁定 Room、驱动和 SQLite 版本 | 明确本地数据库分支；排除已终止的 Device Sync | 核对当前制品、许可证与支持周期 |
+| Android 17 兼容 | 测试所用 Room/驱动，不只看 API 级别 | 测试 Kotlin/Gradle、ABI 和原生库 | 测试插件、ABI 和原生库 |
+| 16 KiB 页设备 | 检查所有自带 SQLite 原生库 | 验证 Realm Core 制品 | 验证 ObjectBox 原生制品 |
+| 升级与恢复 | 覆盖历史迁移、备份和损坏恢复 | 演练文件迁移、回滚和导出 | 演练模型 UID、文件迁移和回滚 |
+| 性能验证 | 用目标查询和数据分布建立基线 | 使用相同数据、事务边界与持久性配置 | 使用相同数据、事务边界与持久性配置 |
 
-选型结论要落到数据形状：关系清楚、查询复杂、需要长期维护，优先 Room；对象图强、查询简单、团队愿意承担第三方库升级和排查成本，再评估 Realm 或 ObjectBox。涉及金融、订单、消息这类资产数据时，迁移可控性和可排查性优先于 API 简洁。
+选型应依据数据关系、查询复杂度、持久性要求和团队维护周期。涉及订单、支付状态、用户草稿或消息记录时，先验证迁移、回滚、损坏恢复和可观测性，再比较接口代码量。任何带原生库的方案还要在 Android 17 目标 ABI 和 16 KiB 页设备上做安装、打开、读写、升级与恢复测试。
+
+[生命周期资料：[Atlas Device SDKs 弃用说明](https://www.mongodb.com/docs/atlas/device-sdks/deprecation/)、[Realm Kotlin 仓库说明](https://github.com/realm/realm-kotlin)]
 
 ## 小结
 
-数据库优化的应用侧路径很明确：WAL 给读写并发提供基础，但写事务仍然串行；Room 要用异步 DAO、有界执行器和可测试 Migration；索引从查询形状出发，并用 `EXPLAIN QUERY PLAN` 验证；迁移要在 CI 和灰度监控里提前暴露风险。机制细节已经放在 10.7，24.2 的价值是把这些约束变成代码、门禁和线上指标。
+WAL 允许读写并发，但不提供并行写入；Android 17 的 Compatibility WAL、连接池和 checkpoint 参数应按源码与设备生效值解释。Room 要分清 AndroidX 版本与平台版本，使用异步 DAO，控制事务范围，并观察查询失效与连接等待。索引必须对应查询和数据分布，不能只凭 `EXPLAIN QUERY PLAN` 中的一个词判断。数据库升级则要覆盖完整迁移图，大表转换采用兼容版本与可恢复回填，并对用户数据验证迁移、回滚和恢复能力。
