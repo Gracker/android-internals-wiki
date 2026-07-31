@@ -1,17 +1,17 @@
 ---
-title: "Android 17 NetworkAgent 生命周期与 NetworkScorecard 动态评分机制"
+title: "Android 17 NetworkAgent 生命周期与 FullScore 网络排序"
 chapter: "12.8"
 section: "12.8"
 status: needs-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-tags: [NetworkAgent, NetworkScorecard, ConnectivityService, network-scoring, NetworkRanker, FullScore, PSI, Android-17]
+tags: [NetworkAgent, ConnectivityService, NetworkScore, FullScore, NetworkRanker, network-selection, Android-17]
 related_chapters: ["12.5", "12.6", "24.9", "24.16", "1.62"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-23"
 drafted_date: "2026-06-25"
 last_verified_against: "AOSP android-17.0.0_r1"
-confidence: medium
-last_verified: "2026-07-30"
+confidence: high
+last_verified: "2026-07-31"
 last_rework_at: "2026-07-30T21:35:26+08:00"
 last_rework_run_id: "20260730-213526-rework-9dc6f657"
 pipeline_stage: task9_needs_rework
@@ -25,418 +25,344 @@ reviewed_date: "2026-07-30"
 review_notes: "2026-07-30 review-finalize：发现评分模型与 §1.62（confidence:high）核心冲突。1) legacyInt 在 Android 17 已退出排名，本节仍称其为主排序键——错误。2) NetworkScorecard 非 NetworkRanker 二级排序键——错误。3) 缺少 FullScore 概念。4) 源码路径 frameworks/opt/net 为主线模块化前旧路径，已修正为 packages/modules/Connectivity。5) VPN 101 描述修正为 FullScore 策略位而非无条件接管。已就地修正源码路径、评分模型描述、排序算法描述、VPN 表项，并标注 [待 rework] 引导重写。章节 NetworkAgent 生命周期/destroyNetwork/netd 协作部分技术结论可靠。需 rework 重写评分模型整节为 FullScore 策略位范式。"
 sources:
   - type: aosp
-    path: "packages/modules/Connectivity/service/src/com/android/server/ConnectivityService.java"
+    path: "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/NetworkAgent.java"
   - type: aosp
-    path: "packages/modules/Connectivity/service/src/com/android/server/connectivity/NetworkRanker.java"
+    path: "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/NetworkScore.java"
   - type: aosp
-    path: "packages/modules/Connectivity/service/src/com/android/server/connectivity/FullScore.java"
+    path: "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/service/src/com/android/server/ConnectivityService.java"
   - type: aosp
-    path: "packages/modules/Connectivity/service/src/com/android/server/connectivity/NetworkScorecard.java"
+    path: "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/service/src/com/android/server/connectivity/NetworkAgentInfo.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/service/src/com/android/server/connectivity/FullScore.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/service/src/com/android/server/connectivity/NetworkRanker.java"
+  - type: official
+    path: "https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback"
+  - type: official
+    path: "https://developer.android.com/develop/connectivity/network-ops/reading-network-state"
 ---
 
-# 12.8 Android 17 NetworkAgent 生命周期与 NetworkScorecard 动态评分机制
+# 12.8 Android 17 NetworkAgent 生命周期与 FullScore 网络排序
 
-12.5 讲了应用层看到的 `NetworkCallback` 和 `NetworkCapabilities` 模型，12.6 讲了 DNS 解析和 netd 的诊断链路。本节往下拆一层：系统内部怎么管理一条网络的诞生、评分和销毁。`ConnectivityService` 是网络栈的中枢，`NetworkAgent` 是每种网络（Wi-Fi、蜂窝、VPN 等）向系统注册的句柄，`NetworkRanker` 负责在多网络并存时选出最优匹配。这三个组件的交互决定了应用看到的 `onAvailable()` / `onLost()` 时序和网络切换延迟。
+应用通过 `ConnectivityManager` 看见一组 `Network`、`NetworkCapabilities`、`LinkProperties` 和回调事件。系统内部还要回答两个问题：
 
-Android 12 到 17 的核心变化是评分机制从单一整数分值（`LegacyType` 时代的 `-50` ~ `100`）演进到 `NetworkScore` 对象 + `FullScore` 策略位排序。Android 17 中 `legacyInt` 已退出实际排名，`NetworkRanker` 基于 `FullScore` 的策略位做有序筛选。
+- Wi-Fi、蜂窝、VPN 等网络如何进入和退出 `ConnectivityService`；
+- 同一个 `NetworkRequest` 被多条网络满足时，哪一条成为当前 satisfier。
 
-> **[待 rework]** 本节原描述"结合 `NetworkScorecard` 的历史数据做长期质量判断"不准确——`NetworkScorecard` 是独立质量记录类，不参与 `NetworkRanker` 排序。
+Android 17 的答案由 `NetworkAgent`、`NetworkAgentInfo`、`FullScore` 和 `NetworkRanker` 协作完成。这里没有“比较两个整数，分高者胜出”的通用公式，也没有一个名为 `NetworkScorecard` 的 Connectivity 排序输入。
 
-[已验证: AOSP android-17.0.0_r1, packages/modules/Connectivity/service/src/com/android/server/ConnectivityService.java]
+`NetworkAgent` 属于 `@SystemApi` 且带有隐藏 API 标记。它面向系统网络提供者，普通应用应使用 `ConnectivityManager` 观察网络，不能自行注册系统网络 agent。
 
-> **⚠️ 本节评分模型与排序算法描述与 §1.62 的高置信度源码结论存在关键冲突，待 rework 重写。** 核心 `legacyInt` 已退出实际排名、`FullScore` 策略位排序才是 Android 17 的实际机制、`NetworkScorecard` 并非 `NetworkRanker` 二级排序键——这些在当前正文仍未正确反映。详见下方 [待 rework] 段落与 frontmatter `rework_notes`。
+## 一张图读懂控制链路
 
-## NetworkAgent 注册与销毁流程
+下面的时序图用来区分注册、验证、重匹配与销毁四条容易混淆的路径。
 
-### 注册：从 Messenger 到 NetworkAgentInfo
+```mermaid
+sequenceDiagram
+    participant P as "Wi-Fi / Telephony / VPN provider"
+    participant A as "NetworkAgent"
+    participant C as "ConnectivityService"
+    participant I as "NetworkAgentInfo"
+    participant M as "NetworkMonitor"
+    participant R as "NetworkRanker"
+    participant N as "netd / DnsResolver"
+    participant App as "应用 NetworkCallback"
 
-当 Wi-Fi 或蜂窝协议栈有一条网络准备好上报时，对应的 `NetworkAgent` 子类（`WifiNetworkAgent`、`TelephonyNetworkAgent` 等）调用 `registerNetworkAgent()`，最终进入 `ConnectivityService.registerNetworkAgentInternal()`。
+    P->>A: LinkProperties / Capabilities / Score
+    A->>C: INetworkAgent AIDL 注册
+    C->>I: 保留 netId，创建 NAI
+    C->>M: 创建并启动 NetworkMonitor
+    opt 能力要求注册时创建
+        C->>N: 创建 native network 与 DNS cache
+    end
+    A->>C: markConnected()
+    opt 尚未创建
+        C->>N: 创建 native network 与 DNS cache
+    end
+    C->>R: 对请求执行 rematch
+    R-->>C: 选出 satisfier
+    C-->>App: onAvailable + 当前能力和链路属性
+    M-->>C: validation 结果
+    C->>R: 能力变化后再次 rematch
+    C-->>App: onCapabilitiesChanged
+    A->>C: disconnect / unregister
+    C->>R: 移除旧 satisfier 后 rematch
+    C-->>App: onLost 或替代网络事件
+    C->>N: 销毁 native network 与 DNS cache
+    C->>I: 标记 destroyed，释放 netId
+```
 
-这段代码完成四件事：分配 netId、创建 `NetworkAgentInfo`、启动 `NetworkMonitor`、触发初始评分。
+注册和 connected 只表示系统已经接纳这条网络并可参与匹配。互联网验证由 `NetworkMonitor` 异步完成，因此 `onAvailable()` 可能早于 `NET_CAPABILITY_VALIDATED`。
+
+## NetworkAgent 如何进入 ConnectivityService
+
+### AIDL 注册和 NetworkAgentInfo
+
+`NetworkAgent.register()` 把 `INetworkAgent`、初始 `NetworkInfo`、`LinkProperties`、`NetworkCapabilities`、`NetworkScore` 和配置交给 `ConnectivityService`。Android 17 的注册通道是 `INetworkAgent` / `INetworkAgentRegistry` AIDL；旧资料中的 Messenger 描述不适用于本章锚点。
+
+`registerNetworkAgentInternal()` 会复制调用方传入的可变对象，保留一个 netId，构造 `NetworkAgentInfo`，再请求 NetworkStack 创建 `NetworkMonitor`。`NetworkMonitor` 返回后，`handleRegisterNetworkAgent()` 才把 NAI 放入系统集合并开始接收 agent 消息。
+
+netId 在活跃网络集合中保持唯一。网络销毁后，`mNetIdManager.releaseNetId()` 允许该整数在未来被复用，所以持久化日志不能只凭 netId 判断两条跨时段网络是否相同。
+
+[源码锚点：`ConnectivityService.registerNetworkAgentInternal()` 与 `handleRegisterNetworkAgent()`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/service/src/com/android/server/ConnectivityService.java)
+
+### NAI 记录的时间和状态
+
+`NetworkAgentInfo` 没有单一的公开生命周期枚举。Android 17 用时间戳、能力位、请求集合和 inactivity 状态组合表达生命周期。
+
+| NAI 状态 | 源码成员或方法 | 排查含义 |
+|---|---|---|
+| native network 已创建 | `mCreatedTime` / `isCreated()` | netd 网络与每网络 DNS cache 已建立 |
+| agent 已报告 connected | `mConnectedTime` / `everConnected()` | 首次进入 connected；不代表互联网已验证 |
+| 当前验证通过 | `mCurrentValidationTime` / `isValidated()` | 非零表示当前具有验证结果 |
+| 曾经验证通过 | `mFirstValidationTime` / `everValidated()` | 可参与“曾经验证”相关策略判断 |
+| 首轮评估已结束 | `mFirstEvaluationConcludedTime` | 区分尚在评估与已有评估结论 |
+| nascent / lingering | inactivity timer 和请求 linger 集合 | 网络暂时保留，等待请求或平滑切换 |
+| native network 已销毁 | `mDestroyedTime` / `isDestroyed()` | 数据通路已经撤销，可能仍在等待替代 agent 的流程中 |
+
+`dumpsys connectivity` 展示的是这些状态的组合。分析日志时应同时记录 netId、transport、接口名、创建时间和 NAI 简写，避免把被复用的 netId 当成连续的一条网络。
+
+[源码锚点：`NetworkAgentInfo` 生命周期时间戳与 inactivity 状态](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/service/src/com/android/server/connectivity/NetworkAgentInfo.java)
+
+### native network、connected 和 validation
+
+`createNativeNetwork()` 通过 `mNetd.networkCreate()` 创建物理、local 或 virtual 网络，再调用 `mDnsResolver.createNetworkCache(netId)`，并把当前能力交给 `DnsManager`。不同能力和 VPN 场景决定 native network 在注册时创建，还是在 agent 报告 connected 时创建。
+
+首次 connected 的处理顺序包含：
+
+1. 标记 `mConnectedTime`；
+2. 应用初始 `LinkProperties`，准备接口、路由和 DNS；
+3. 通知 `NetworkMonitor` 开始评估；
+4. 添加 nascent inactivity timer；
+5. 把尚未验证的网络放入请求匹配；
+6. 发送 precheck 回调。
+
+这段顺序解释了一个常见现象：网络已经满足某个请求并触发 `onAvailable()`，过一会儿才通过 `onCapabilitiesChanged()` 获得 `NET_CAPABILITY_VALIDATED`。若业务只接受可访问公网的网络，应在能力回调里检查 validated，而不能把 `onAvailable()` 当成验证成功。
+
+[源码锚点：`ConnectivityService.updateNetworkInfo()` 与 `createNativeNetwork()`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/service/src/com/android/server/ConnectivityService.java)
+
+## Android 17 的评分对象
+
+### NetworkScore：agent 能表达什么
+
+`NetworkScore` 保存三类信息：
+
+- `legacyInt`：兼容旧 provider 的整数，仅供测量和日志；
+- agent policy：`POLICY_YIELD_TO_BAD_WIFI`、`POLICY_TRANSPORT_PRIMARY`、`POLICY_EXITING`、`POLICY_VCN`；
+- keep-connected reason：handover、测试或 local network 等保留原因。
+
+源码对 `Builder.setLegacyInt()` 的约束很直接：这个整数不再用于连接态网络之间的排名。下面摘录对应注释，目的是把兼容字段和排序依据分开。
 
 ```java
-// ConnectivityService.java:10422
-private NetworkAndAgentRegistryParcelable registerNetworkAgentInternal(
-        INetworkAgent na, NetworkInfo networkInfo,
-        LinkProperties linkProperties, NetworkCapabilities networkCapabilities,
-        NetworkScore currentScore, NetworkAgentConfig networkAgentConfig,
-        @Nullable LocalNetworkConfig localNetworkConfig, int providerId,
-        int uid, boolean isAppSpecificNetwork) {
-
-    final NetworkAgentInfo nai = new NetworkAgentInfo(na,
-            new Network(mNetIdManager.reserveNetId()), niCopy, lpCopy, ncCopy,
-            localNetworkConfig, currentScore, mContext, mTrackerHandler,
-            new NetworkAgentConfig(networkAgentConfig), this, mNetd, mDnsResolver, providerId,
-            uid, isAppSpecificNetwork, mLingerDelayMs, mQosCallbackTracker, mDeps);
-
-    // 启动 NetworkMonitor 做互联网可达性验证
-    mDeps.getNetworkStack().makeNetworkMonitor(
-            nai.network, name, new NetworkMonitorCallbacks(nai));
-
-    return result;
+/**
+ * This will be used for measurements and logs, but will no longer be used
+ * for ranking networks against each other.
+ */
+public Builder setLegacyInt(final int score) {
+    mLegacyInt = score;
+    return this;
 }
 ```
 
-`mNetIdManager.reserveNetId()` 分配一个全局唯一的整数 netId，后续 netd 路由规则、DNS 缓存、BPF 过滤器都以这个 ID 做关联。`NetworkMonitor` 在独立进程运行，通过 HTTP 探测判断网络是否能访问互联网（captive portal 检测、DNS 探针、HTTPS 验证），验证结果直接影响 `NetworkCapabilities` 的 `NET_CAPABILITY_VALIDATED` 标志。
+因此，“Wi-Fi 60 分、蜂窝 50 分、VPN 101 分，然后取最大值”只能用于解释旧版本或兼容日志，不能描述 Android 17 的连接态网络选择。
 
-[已验证: AOSP android-17.0.0_r1, ConnectivityService.java L10422]
+[源码锚点：`NetworkScore.Builder.setLegacyInt()`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/NetworkScore.java)
 
-### 销毁：资源清理的四个阶段
+### FullScore：系统补充上下文
 
-`disconnectAndDestroyNetwork()` 触发销毁，`destroyNetwork()` 按固定顺序清理资源：
+provider 不知道网络未来能否验证、用户是否接受未验证连接、网络是否即将销毁。`ConnectivityService` 把 agent policy 与自身维护的状态组合成 `FullScore`。
 
-```java
-// ConnectivityService.java:6287
-private void destroyNetwork(NetworkAgentInfo nai) {
-    // 1. netd 原生网络清理：路由、防火墙、QoS 规则
-    if (shouldDestroyNativeNetwork(nai)) {
-        destroyNativeNetwork(nai);
-    }
+| FullScore 中由 Connectivity 管理的 policy | 表达的状态 |
+|---|---|
+| `POLICY_IS_VALIDATED` | 当前已验证 |
+| `POLICY_EVER_VALIDATED` | 曾经验证 |
+| `POLICY_IS_VPN` | VPN transport |
+| `POLICY_EVER_USER_SELECTED` | 用户曾显式选择 |
+| `POLICY_ACCEPT_UNVALIDATED` | 用户接受未验证网络 |
+| `POLICY_AVOIDED_WHEN_UNVALIDATED` | 未验证时应避开 |
+| `POLICY_IS_UNMETERED` | 当前能力显示不计量 |
+| `POLICY_IS_INVINCIBLE` | prospective offer 的兼容特例 |
+| `POLICY_EVER_EVALUATED` | 已经得到过评估结果 |
+| `POLICY_IS_DESTROYED` | native network 已销毁，正在等待替代 |
 
-    // 2. 接口转发规则清理
-    maybeDisableForwardRulesForDisconnectingNai(nai, false);
+`POLICY_IS_UNMETERED` 已进入 `FullScore`，但 Android 17 `NetworkRanker` 中“unmetered 胜过 metered”的筛选分支仍被注释。看到该 policy 不能推导出不计量网络必然获胜。
 
-    // 3. DNS 缓存销毁
-    mDnsResolver.destroyNetworkCache(nai.network.getNetId());
-    mDnsManager.removeNetwork(nai.network);
+keep-connected reason 用于判断一条暂时没有前台请求的网络是否仍应保留。它不属于 `NetworkRanker` 的胜负条件。
 
-    // 4. 入口速率限制规则清理
-    if (nai.everConnected() && canNetworkBeRateLimited(nai) && mIngressRateLimit >= 0) {
-        mDeps.disableIngressRateLimit(nai.linkProperties.getInterfaceName());
-    }
+[源码锚点：`FullScore` policy 定义与构造](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/service/src/com/android/server/connectivity/FullScore.java)
 
-    nai.setDestroyed();
-    nai.onNetworkDestroyed();
-}
+### prospective offer 的 legacyInt 特例
+
+网络 provider 可以先注册 `NetworkOffer`，表示它有机会提供满足某组能力的网络。`NetworkRanker.mightBeat()` 比较 offer 的 prospective score 与当前 champion；没有胜算的 offer 无需唤醒 radio 或建立网络。
+
+`FullScore.makeProspectiveScore()` 会把 score filter 中大于 `NetworkRanker.LEGACY_INT_MAX`（100）的 `legacyInt` 映射为 `POLICY_IS_INVINCIBLE`。这是 offer 阶段的兼容规则，作用是决定 provider 是否值得尝试建立网络。offer 不是能力承诺，连接成功后的网络仍按完整 policy 链参与选择。
+
+由此可以解释历史 VPN 101 的残留：它不能证明一条已连接 VPN 依靠整数 101 压过所有网络；已连接 VPN 的优先级来自 `POLICY_IS_VPN`。
+
+[源码锚点：`FullScore.makeProspectiveScore()` 与 `NetworkRanker.mightBeat()`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/service/src/com/android/server/connectivity/FullScore.java)
+
+## NetworkRanker 怎样选 satisfier
+
+### 先按能力过滤
+
+`getBestNetwork(request, nais, currentSatisfier)` 先调用 `nai.satisfies(request)`。不满足请求 transport、capability、UID 可见性或其他约束的 NAI 不会进入排序。
+
+这一步也说明“系统只有一个统一的最优网络”并不准确。每个请求都有自己的候选集；默认网络、IMS、VPN underlying、local network 和应用显式请求可能落在不同 NAI 上。
+
+### 再逐级缩小候选集
+
+`getBestNetworkByPolicy()` 对候选集执行有序筛选。某一级有命中项时，只保留命中项；无法区分时，全部候选进入下一级。
+
+| 顺序 | 筛选条件 | 设计含义 |
+|---:|---|---|
+| 1 | `POLICY_IS_INVINCIBLE` | prospective offer 的兼容优先项 |
+| 2 | `POLICY_IS_VPN` | 已连接 VPN |
+| 3 | 用户选择且接受未验证 | 尊重用户对该网络的明确选择 |
+| 4 | validated 或 accept-unvalidated | 偏好已有可用性结论的网络，并应用 bad-Wi-Fi yield 规则 |
+| 5 | 没有 `POLICY_EXITING` | 避开 provider 已声明即将退出的网络 |
+| 6 | 同 transport 下的 `POLICY_TRANSPORT_PRIMARY` | 例如同类 transport 的主订阅选择 |
+| 7 | transport 顺序 | Ethernet、Wi-Fi、Bluetooth、Cellular |
+| 8 | `POLICY_VCN` | 等价候选中保留 VCN |
+| 9 | 没有 `POLICY_IS_DESTROYED` | 等待替代的旧网络让位给等价的新网络 |
+| 10 | 当前 satisfier | 等价时保持现状，减少无收益切换 |
+| 11 | 列表中的一个等价候选 | 前述条件仍无法区分时返回一个候选 |
+
+该顺序是 Android 17 AOSP 的默认策略。OEM 可以改变 provider 上报的 policy 和外围配置，但不能用一组通用 RSSI 阈值推导所有设备的切换结果。Wi-Fi 信号变差也不等同于“整数分降到蜂窝以下”；provider 可以更新能力或 policy，NetworkMonitor 也会更新验证状态，两者都可能触发重匹配。
+
+[源码锚点：`NetworkRanker.getBestNetworkByPolicy()`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/service/src/com/android/server/connectivity/NetworkRanker.java)
+
+## 从 score 更新到回调
+
+### 计算重分配
+
+agent 更新 score 时，`ConnectivityService.updateNetworkScore()` 写入 NAI 并调用 `rematchAllNetworksAndRequests()`。重分配的主要调用关系如下，这段代码用于定位性能事件对应的方法边界。
+
+```text
+updateNetworkScore()
+  -> NetworkAgentInfo.setScore()
+  -> rematchAllNetworksAndRequests()
+       -> computeNetworkReassignment()
+            -> NetworkRanker.getBestNetwork(request, nais, currentSatisfier)
+       -> applyNetworkReassignment()
+       -> issueNetworkNeeds()
 ```
 
-清理顺序的设计逻辑：先断开数据通路（netd 路由），再清理依赖接口的规则（转发、速率限制），最后销毁 DNS 缓存。如果反过来——先删 DNS 缓存——在路由还通的情况下，其他进程的 DNS 查询会命中空的缓存并触发系统级 DNS 超时，表现为短暂但可感知的"网络卡顿"。
+`computeNetworkReassignment()` 收集当前 NAI，然后遍历待评估的 `NetworkRequestInfo`。普通纯 listen 请求可以跳过；multilayer request 会按层级尝试请求，找到首个可用 satisfier 后停止处理较低优先级层。
 
-`nai.everConnected()` 检查确保只有曾经连通的网络才执行速率限制清理。一个注册后从未通过验证（如 captive portal 拦截）就断开的网络，不会有速率限制规则残留。
+其成本会随活跃 NAI 数量和被评估的 request layer 数量增长，应用阶段还包含默认网络状态、回调、offer、listen 与 inactivity 处理。源码在 `rematchNetworksAndRequests()` 保留了 “This may be slow, and should be optimized” 注释。这里没有足够依据给出所有设备通用的毫秒范围。
 
-[已验证: AOSP android-17.0.0_r1, ConnectivityService.java L6287]
+### 应用重分配
 
-### NetworkAgentInfo 的状态追踪
+`applyNetworkReassignment()` 的顺序会影响应用观察：
 
-`NetworkAgentInfo` 没有显式的状态机枚举，而是通过一组布尔字段隐式追踪生命周期：
+1. 更新每条网络满足的请求集合；
+2. 处理默认网络变化；
+3. 更新 local network forwarding；
+4. 新 satisfier 非空时发送 available；新 satisfier 为空时发送 lost；
+5. 更新 background、listen 和 inactivity 状态；
+6. 对进入 linger 的网络发送 losing；
+7. 清理已无请求且无需保留的网络。
 
-| 字段 | 含义 | 置 true 的时机 |
-|------|------|---------------|
-| `created` | native 网络已创建 | `onNetworkCreated()` 回调 |
-| `everConnected` | 曾经达到 connected 状态 | 首次 `onCapabilitiesChanged()` 含 CONNECTED |
-| `lastConnected` | 最近一次连接的时间戳 | 连接状态变为 CONNECTED |
-| `validated` | 通过互联网验证 | NetworkMonitor 回报 VALIDATED |
-| `destroyed` | 已进入销毁流程 | `destroyNetwork()` 末尾 |
+local network forwarding 在 available 之前更新，应用收到回调时相关转发规则已经配置。互联网 validation 仍可能在后续完成，所以 available 的语义是“该请求已有 satisfier”，不是“公网探测已经通过”。
 
-这套隐式状态导致一个排查难点：日志里不会打印 "状态变为 X"，需要靠 `NetworkAgentInfo` 的 dump 输出反推当前状态组合。`adb shell dumpsys connectivity` 可以看到每个 `NetworkAgentInfo` 的全部字段值。
+调试构建或启用相应日志级别时，重匹配日志会包含 `NetReassign` 以及 `[c ...] [a ...] [i ...]`，分别对应 compute、apply 和 issue 阶段。它们是设备实测入口，不应被文档里的固定延迟代替。
 
-[已验证: AOSP android-17.0.0_r1, NetworkAgentInfo.java]
+[源码锚点：`computeNetworkReassignment()`、`rematchNetworksAndRequests()` 与 `applyNetworkReassignment()`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/service/src/com/android/server/ConnectivityService.java)
 
-## 网络评分模型：从 Legacy Score 到 NetworkScore
+## linger 与替代网络
 
-### Android 12 之前：单一整数
+请求从旧网络迁到新网络后，旧 satisfier 可以为该请求进入 linger，给应用一段处理旧 socket 的时间。Android 17 AOSP 的默认 linger delay 为 30 秒，nascent delay 为 5 秒；linger 还可由 `persist.netmon.linger` 和测试配置调整。这些是当前源码默认值，不是 SDK 时序保证。
 
-Android 11 及更早版本使用整数分值（`-50` 到 `100`）。Wi-Fi 默认 60 分，蜂窝默认 50 分，VPN 可以声明 101 强制接管。`NetworkRanker` 简单地取最高分。这套机制的问题：分数无法表达"延迟低但带宽小"或"信号强但丢包高"等多维信息。
+以下边界影响排查结论：
 
-### Android 12-17：NetworkScore 对象
+- 只有系统判断可以平滑切换时才为旧请求建立 linger；
+- 已标记 destroyed 的旧网络不会 linger，因为其 native 数据通路已经撤销；
+- linger 到期也不保证网络立刻销毁，后台请求或 keep-connected reason 仍可能保留它；
+- `onLosing()` 是提示，应用应允许缺失、延迟或紧邻 `onLost()` 的情况。
 
-Android 12 引入 `NetworkScore` 类。`NetworkAgent` 提供者通过 `NetworkScore.Builder` 构造评分对象，其中可设置 `legacyInt` 和若干 `Policy` 约束。但 Android 17 源码注释明确指出 `setLegacyInt()` 的值仅供测量和日志使用，**不再参与网络之间的排名**。
+Android 17 还支持 `NetworkAgent.unregisterAfterReplacement(timeout)`。旧 agent 的 native network 会被销毁，NAI 获得 `POLICY_IS_DESTROYED`，系统暂留注册状态等待等价的新 agent。该 policy 位于排序链后部：旧 satisfier 可在没有替代者时维持请求关系，新 agent 出现后会在等价比较中胜出；超时仍未替代时，旧 agent 被注销。
 
-实际参与排名的是 `FullScore`——`ConnectivityService` 把 `NetworkAgent` 上报的 `NetworkScore`（agent 策略）与 Connectivity 自身管理的状态（验证、用户选择、VPN、keep-connected 等）合并成 `FullScore` 的策略位集合，例如：
+[源码锚点：`NetworkAgent.unregisterAfterReplacement()` 与 ConnectivityService 的对应事件处理](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/NetworkAgent.java)
 
-- 当前或曾经验证（`POLICY_VALIDATED` / `POLICY_EVER_VALIDATED`）
-- VPN（`TRANSPORT_VPN` → `FullScore` 设置 VPN 策略）
-- 用户显式选择、接受未验证网络
-- 主传输（`POLICY_TRANSPORT_PRIMARY`）
-- 即将退出（`POLICY_EXITING`）
-- 已销毁但暂留以等待替换
+## 断开和资源销毁
 
-因此 Android 17 不存在"Wi-Fi 60 + validated 40 = 100"这类加分公式，OEM 上报的 `legacyInt` 仅用于兼容旧日志，排名由策略位集合 + `NetworkRanker` 的有序筛选决定。
+`disconnectAndDestroyNetwork()` 先从 ConnectivityService 的控制状态移除旧网络、通知相关组件、更新 satisfier 并重新匹配请求。`destroyNetwork()` 随后调用 `destroyNativeNetwork()`。源码注释明确说明，较慢的 netd 清理放在 rematch 之后，可减少默认网络切换期间的额外中断。
 
-> **[待 rework：本段以下旧描述保留但已知不准确]** 下面的描述仍基于旧 legacyInt 范式，与上文的 Android 17 源码结论冲突，应在 rework 中重写。
+`destroyNativeNetwork()` 的主要清理项包括：
 
-`NetworkScore` 对象结构（用于兼容和日志）：
+- 删除 DSCP policy、local forwarding 和 VPN 入口过滤状态；
+- 调用 `mNetd.networkDestroy(netId)`；
+- 清理接口 qdisc、IP 地址和相关 socket；
+- 调用 `mDnsResolver.destroyNetworkCache(netId)`；
+- 从 `DnsManager` 移除该网络；
+- 清理入口限速和接口跟踪；
+- 标记 `mDestroyedTime` 并通知 agent；
+- 由外层 `destroyNetwork()` 释放 netId。
 
-- **`legacyInt`**：向后兼容的整数分值，**Android 17 中已退出实际排名**，仅供测量和日志使用（详见 §1.62 与 `FullScore.java` 注释）
-- **`transportInfo`**：携带传输层特定信息（如 Wi-Fi 的 RSSI、蜂窝的 NR/ARFCN），供 `NetworkCapabilities` 透传
-- **`policies`**：一组 `NetworkScore.Policy` 约束，由 agent 上报，经 `FullScore` 合并系统状态后形成完整策略位
+DNS cache 清理是 native network 销毁流程的一部分。源码没有支持“提前清 DNS 会造成系统级 DNS 超时”这类因果结论，也没有把 DNS 统计送入 `NetworkRanker`。排查短暂断网时，应分别检查请求重分配、默认网络变化、旧 socket、Private DNS 和新网络 validation，不能只凭清理顺序归因。
 
-`NetworkScore` 本身不内嵌 `NetworkScorecard` 数据。`NetworkScorecard` 维护独立的长期质量历史（探测 RTT、DNS 成功率、丢包率），但 **`NetworkRanker` 的排名算法不使用 `NetworkScorecard` 做二级排序**——Android 17 的 `NetworkRanker` 基于策略位有序筛选（详见下节），而非数值比较 + 质量历史。
+[源码锚点：`disconnectAndDestroyNetwork()`、`destroyNetwork()` 与 `destroyNativeNetwork()`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/service/src/com/android/server/ConnectivityService.java)
 
-[边界: Android 17 NetworkScore / FullScore 的具体策略常量名以源码 `FullScore.java` 为准；本节列出的是已确认的主要策略位]
+## 应用层应如何理解网络切换
 
-`NetworkAgent` 通过 `sendNetworkScore()` 上报当前评分：
+### 回调语义
 
-```java
-// NetworkAgent 调用链
-NetworkAgent.onNetworkScoreChanged()
-    → ConnectivityService.updateNetworkScore()
-    → NetworkAgentInfo.setScore(score)
-    → ConnectivityService.rematchAllNetworksAndRequests()
-```
+应用的判断规则可以保持简洁：
 
-每次评分更新立即触发全局重匹配——这是性能敏感操作。
+- `onAvailable(network)`：这个请求已有 satisfier，可立即用返回的 `Network` 查询能力和链路属性；
+- `onCapabilitiesChanged()`：validated、metered、transport、带宽等能力发生变化；
+- `onLinkPropertiesChanged()`：地址、路由、DNS server、代理等链路配置变化；
+- `onLosing()`：系统预告网络可能失去请求，不能作为必达事件；
+- `onLost()`：该 `Network` 已不再满足这个回调对应的请求。
 
-[已验证: AOSP android-17.0.0_r1, ConnectivityService.java L13688]
+`ConnectivityManager.NetworkCallback` 文档要求应用在 `onAvailable()` 后依赖随后的 capabilities 与 link-properties 回调获取同步状态，避免在回调内用阻塞式查询拼接一个可能已经变化的快照。
 
-## NetworkRanker 重匹配算法
+[官方 API：`ConnectivityManager.NetworkCallback`](https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback)
 
-### rematchAllNetworksAndRequests() 的完整流程
+### 默认网络具有 UID 视角
 
-评分更新后，`rematchAllNetworksAndRequests()` 执行网络重分配。这个方法分两步：计算变更（`computeNetworkReassignment`）和应用变更（`applyNetworkReassignment`）。
+默认网络不是对所有进程都相同的永久全局值。VPN、UID 路由策略、企业策略和应用绑定都可能改变某个 UID 的默认路径。诊断时要明确观察者 UID，并区分：
 
-```java
-// ConnectivityService.java:13092
-private void rematchAllNetworksAndRequests() {
-    rematchNetworksAndRequests(getNrisFromGlobalRequests());
-}
+- `getActiveNetwork()` 返回调用方当前默认网络；
+- `Network.getSocketFactory()` 创建绑定到指定网络的新 socket；
+- `bindProcessToNetwork()` 改变该进程后续创建 socket 的网络选择。
 
-private void rematchNetworksAndRequests(
-        @NonNull final Set<NetworkRequestInfo> networkRequests) {
-    ensureRunningOnConnectivityServiceThread();
-    final long start = SystemClock.elapsedRealtime();
+网络切换不会普遍迁移既有 TCP、TLS 或 WebSocket。旧 socket 仍关联原网络和地址，网络消失后通常需要由连接库或业务层重试；新 socket 默认使用调用 UID 此刻的网络，除非显式绑定。
 
-    // 步骤 1：计算每个请求的最佳网络
-    final NetworkReassignment changes = computeNetworkReassignment(networkRequests);
-    final long computed = SystemClock.elapsedRealtime();
+[官方指南：读取网络状态](https://developer.android.com/develop/connectivity/network-ops/reading-network-state)
 
-    // 步骤 2：应用变更（触发 onAvailable/onLost 回调）
-    applyNetworkReassignment(changes, start);
-    final long applied = SystemClock.elapsedRealtime();
+## 诊断步骤
 
-    // 步骤 3：通知网络需求变化
-    issueNetworkNeeds();
-}
-```
-
-### computeNetworkReassignment() 的匹配逻辑
-
-核心匹配逻辑遍历所有请求 × 所有网络，时间复杂度 O(n×m)：
-
-```java
-// ConnectivityService.java:13048
-private NetworkReassignment computeNetworkReassignment(
-        @NonNull final Collection<NetworkRequestInfo> networkRequests) {
-    final NetworkReassignment changes = new NetworkReassignment();
-
-    final ArrayList<NetworkAgentInfo> nais = new ArrayList<>();
-    forEachNetworkAgentInfo(nai -> nais.add(nai));
-
-    for (final NetworkRequestInfo nri : networkRequests) {
-        if (!nri.isMultilayerRequest() && nri.mRequests.get(0).isListen()) {
-            continue; // 跳过纯监听请求
-        }
-
-        NetworkAgentInfo bestNetwork = null;
-        NetworkRequest bestRequest = null;
-
-        // 对每个请求，按优先级顺序尝试匹配
-        for (final NetworkRequest req : nri.mRequests) {
-            bestNetwork = mNetworkRanker.getBestNetwork(req, nais, nri.getSatisfier());
-            if (null != bestNetwork) {
-                bestRequest = req;
-                break;
-            }
-        }
-
-        // 当前满足者 ≠ 最佳网络 → 生成重分配
-        if (nri.getSatisfier() != bestNetwork) {
-            changes.addRequestReassignment(
-                new NetworkReassignment.RequestReassignment(
-                    nri, nri.mActiveRequest, bestRequest,
-                    nri.getSatisfier(), bestNetwork));
-        }
-    }
-    return changes;
-}
-```
-
-`NetworkRanker.getBestNetwork()` 遍历所有 `NetworkAgentInfo`，过滤掉不满足 `NetworkRequest` 的 `NetworkCapabilities` 要求的网络，然后对候选集按 `FullScore` 的策略位做有序筛选——**不是数值比较**。Android 17 的筛选顺序（简化）为：invincible offer → 已连接 VPN → 用户选择且接受未验证 → 已验证/用户接受 → 非 exiting → 同 transport primary → transport 顺序（Ethernet > Wi-Fi > Bluetooth > Cellular）→ VCN → 非 destroyed-pending-replacement → 保持当前 satisfier。
-
-> **[待 rework]** 上面的 `getBestNetwork()` 签名描述可能不精确；Android 17 `NetworkRanker` 的实际方法名和参数列表应以源码 `NetworkRanker.java` 为准。原正文声称"先比 `NetworkScore.legacyInt`，分值相同再比 `NetworkScorecard` 的历史质量数据"是**错误的**——`legacyInt` 已退出排名，`NetworkScorecard` 不参与 `NetworkRanker` 排序。
-
-### 算法复杂度与性能影响
-
-O(n×m) 的复杂度在常见场景（2-4 个网络、10-20 个请求）开销可忽略，但两个边缘情况值得注意：
-
-1. **VPN + 多个 underline 网络叠加**：一个 VPN 请求可能声明多个 `NetworkRequest`（Wi-Fi + 蜂窝双连接），m 项的循环次数成倍增长。
-2. **频繁评分更新**：信号波动场景下，Wi-Fi RSSI 持续变化导致 `updateNetworkScore()` 高频调用，每次都触发全量重匹配。
-
-AOSP 源码中有一处 TODO 注释：`"This may be slow, and should be optimized."`，表明 Google 也意识到这个性能瓶颈。Android 17 没有引入增量重匹配优化，每次仍然是全量计算。
-
-[已验证: AOSP android-17.0.0_r1, ConnectivityService.java L13048, L13092]
-
-## 网络切换的端到端延迟
-
-评分变化到应用收到 `onLost()` / `onAvailable()` 之间经过多个阶段：
-
-| 阶段 | 耗时 | 说明 |
-|------|------|------|
-| 评分上报 | <1ms | `NetworkAgent.sendNetworkScore()` 通过 Binder IPC 传递 |
-| 重匹配计算 | 1-5ms | O(n×m) 遍历，取决于网络和请求数量 |
-| applyNetworkReassignment | 5-50ms | 发送回调、更新 netd 规则 |
-| NetworkCallback 调度 | 10-100ms | 通过 Handler 异步投递到应用进程 |
-| 应用处理回调 | 视应用实现 | 业务逻辑重建连接的耗时 |
-
-Wi-Fi → 蜂窝的典型切换总延迟在 200ms-2s 之间。差异主要来自 `NetworkMonitor` 的验证时间——新网络需要通过 HTTP 探测确认可达性，探测超时（默认 10s）期间旧网络可能已经不可用。
-
-对于 TCP 长连接（如 WebSocket），切换意味着连接绑定到新的本地 IP，旧连接 RST 后需要重连。Android 17（`android-17.0.0_r1`，内核 6.18）主线没有启用系统级 TCP 迁移（MPTCP，Multipath TCP）供普通应用使用——尽管上游 GKI 内核具备 `CONFIG_MPTCP` 编译选项，`ConnectivityService` / `NetworkAgent` 路径不会为 socket 自动协商子流，应用仍需自行实现重连逻辑。`bindProcessToNetwork()` 可以把后续 socket 绑定到特定网络，避免在切换间隙发送数据到错误的接口。
-
-[已验证: AOSP android-17.0.0_r1; 官方文档 developer.android.com/develop/connectivity/network-ops/reading-network-state]
-
-## ConnectivityService 与 netd 的协作
-
-### 原生网络创建
-
-`createNativeNetwork()` 通过 `INetd` AIDL 接口向 netd 下发配置：
-
-```java
-// ConnectivityService 创建原生网络时调用
-mNetd.networkCreate(nativeNetworkConfig);
-// 配置包括：netId、接口名、VPN/物理网络类型、排除地址列表
-```
-
-netd 在内核层面完成：
-- 创建路由表（RT_TABLE_ID 由 netId 映射）
-- 配置 iptables/nftables 规则（流量计数、防火墙）
-- 设置 BPF 过滤器（入口流量分类）
-- 如果是 VPN 网络：配置 tun 接口和地址翻译规则
-
-### DNS 缓存生命周期
-
-每条网络有独立的 DNS 缓存，通过 `DnsResolver.destroyNetworkCache()` 销毁：
-
-```java
-// ConnectivityService.java:6287 片段
-mDnsResolver.destroyNetworkCache(nai.network.getNetId());
-mDnsManager.removeNetwork(nai.network);
-```
-
-`destroyNetworkCache` 调用 `IDnsResolver` 的 native 方法，释放 `res_send` 级别的解析器状态。如果在缓存销毁后、新网络 DNS 缓存建立前有 DNS 查询，查询会走到系统默认 resolver（通常指向最后一个已验证网络的 DNS），可能返回错误的解析结果。
-
-`mDnsManager.removeNetwork()` 清理 `NetworkAgentInfo` 关联的 DNS 统计数据（成功率、延迟分布）。
-
-> **[待 rework]** 原文称 DNS 统计"会写入 `NetworkScorecard` 作为历史评分参考"——这与 §1.62 的结论冲突。`NetworkScorecard` 记录质量历史但不参与 `NetworkRanker` 排序，"作为评分参考"的措辞应改为"作为质量监控/诊断数据保留"。
-
-[已验证: AOSP android-17.0.0_r1, DnsManager.java, IDnsResolver.aidl]
-
-### 入口速率限制
-
-Android 12 引入的 `ingress rate limit` 机制允许系统对每条网络设置入口带宽上限。`NetworkAgentInfo` 销毁时通过 `disableIngressRateLimit()` 清理 BPF 过滤规则：
-
-```java
-// 仅对曾经连通的网络清理速率限制
-if (nai.everConnected() && canNetworkBeRateLimited(nai) && mIngressRateLimit >= 0) {
-    mDeps.disableIngressRateLimit(nai.linkProperties.getInterfaceName());
-}
-```
-
-速率限制通过 BPF cgroup filter 实现，在网络切换时如果忘记清理旧网络的限制规则，会导致新网络接口的流量被错误限速。`everConnected()` 检查避免了清理从未生效的限制规则。
-
-[已验证: AOSP android-17.0.0_r1, ConnectivityService.java L6287]
-
-## 应用层对网络评分的感知
-
-应用看到的最直接信号是 `NetworkCallback.onAvailable()` 和 `onLost()`，但这两个回调的触发时机由 `rematchAllNetworksAndRequests()` 决定，不是网络物理状态变化的即时反映。
-
-具体来说，`onAvailable()` 在 `applyNetworkReassignment()` 中被调度，意味着：
-1. 新网络已经通过 NetworkMonitor 验证（或至少进入验证流程）
-2. 重匹配算法判定此网络为当前请求的最优选择
-3. 系统已完成 netd 路由配置
-
-从信号物理变化到 `onAvailable()` 的延迟构成：
-
-```
-Wi-Fi 关联完成 → DHCP 获取 IP（100-500ms）
-→ NetworkAgent.registerNetworkAgent()（<10ms）
-→ NetworkMonitor 验证（500ms-10s，取决于探测是否成功）
-→ updateNetworkScore() → rematchAllNetworksAndRequests()（1-5ms）
-→ applyNetworkReassignment() 调度 onAvailable()（10-100ms handler 延迟）
-```
-
-应用做网络质量感知时，不能只依赖 `onAvailable()`，应结合 `LinkProperties` 的 RTT 估算、`NetworkCapabilities` 的 `NET_CAPABILITY_NOT_METERED` 标志和自行探测做综合判断。`WorkManager` 和 `JobScheduler` 的网络约束（`NetworkType.CONNECTED`、`NetworkType.UNMETERED`）底层也是通过 `NetworkRequest` 注册到 `ConnectivityService`，由重匹配算法触发调度。
-
-[已验证: 官方文档 developer.android.com/develop/connectivity/network-ops/reading-network-state; AOSP android-17.0.0_r1]
-
-## Wi-Fi 与蜂窝网络共存的评分策略
-
-### OEM 评分权重
-
-OEM 通过 `NetworkAgent` 的 `NetworkScore.Builder` 上报策略和兼容 legacyInt。AOSP 默认 legacyInt（仅供日志/兼容，不参与排名）：
-
-| 网络类型 | 默认 legacyInt | 说明 |
-|----------|---------------|------|
-| Wi-Fi（已验证） | 60 | 包含 NET_CAPABILITY_VALIDATED |
-| Wi-Fi（未验证） | 56 | 比已验证低 4 分 |
-| 蜂窝 | 50 | 按信号强度微调 |
-| VPN | 101 | 原生 Vpn 构造 legacyInt=101 的 NetworkScore（历史兼容值）；FullScore 基于 TRANSPORT_VPN 设置 VPN 策略位，而非靠整数 101 "无条件接管" |
-
-OEM 可以修改 Wi-Fi 和蜂窝的基础分值。部分 OEM 的策略是：Wi-Fi RSSI 低于阈值时分数快速衰减，触发提前切换到蜂窝，避免用户在弱 Wi-Fi 下等待超时。
-
-### Wi-Fi RSSI 阈值与切换触发
-
-Wi-Fi 的评分变化由 `ClientModeImpl` 监听 RSSI 变化后触发。典型的 RSSI 阈值：
-- **-65 dBm 以上**：高质量，保持 Wi-Fi
-- **-70 ~ -75 dBm**：信号衰减开始，评分下降
-- **-80 dBm 以下**：可能触发切换到蜂窝（取决于 OEM 配置）
-
-评分变化不会立即切换，需要重匹配算法判定新网络在策略位筛选中胜出才会触发 `rematchAllNetworksAndRequests()` 重新分配。这导致一个现象：信号已经很差，但应用仍在使用 Wi-Fi，直到下一次评分更新完成重匹配。
-
-> **[待 rework]** 原文"需要蜂窝评分超过当前 Wi-Fi 评分"基于 legacyInt 数值比较范式；Android 17 的实际机制是策略位有序筛选（详见上节），非简单数值超越。
-
-### 双连接场景
-
-Wi-Fi Calling 和蜂窝数据共存时，语音走 Wi-Fi、数据走蜂窝。这通过 `NetworkRequest` 的能力约束实现：语音请求声明 `NET_CAPABILITY_IMS`，数据请求声明 `NET_CAPABILITY_INTERNET`，两个请求独立匹配不同网络。重匹配算法对每个请求独立计算，不会因为 Wi-Fi 评分下降就同时中断 Wi-Fi Calling。
-
-[已验证: AOSP android-17.0.0_r1; OEM 策略基于 AOSP 默认配置推断]
-
-## Android 17 PSI 与网络功耗关联
-
-PSI（Pressure Stall Information）在 Android 17 中被 `lmkd` 和 `LowMemDetector` 用于内存压力检测，对网络栈的影响是间接的：
-
-1. **后台网络任务调度**：内存压力大时，`LowMemDetector` 触发 `OnPressureNotify`，`JobScheduler` 可能延迟非紧急网络任务的执行。这不是网络评分变化，而是调度层降级。
-
-2. **缓存进程的网络冻结**：被 LMK 杀掉或被 Cached App Freezer 冻结的进程，其网络 socket 会进入 freezer 队列。解冻后 socket 可用，但 TCP 连接可能已经超时断开（取决于 keepalive 配置和服务端 timeout）。
-
-3. **NetworkScorecard 的功耗因子**：`NetworkScorecard` 在 `android-17.0.0_r1` 源码中只记录网络自身的探测质量（RTT、DNS 成功率、丢包），没有公开的功耗权重字段；蜂窝比 Wi-Fi 功耗高这一考量不通过 Scorecard 量化，而是由 OEM 通过 `NetworkScore.legacyInt` 的自定义基线（蜂窝基础分低于 Wi-Fi）间接体现。
-
-PSI 对网络的性能影响更多体现在进程级调度而非网络栈本身。如果应用需要在内存压力下维持网络连接，应使用前台服务（`FOREGROUND_SERVICE_DATA_SYNC`）避免被降级，并设置合理的 TCP keepalive 间隔。
-
-[已验证: AOSP android-17.0.0_r1, system/memory/lmkd/, packages/modules/Connectivity/.../NetworkScorecard.java — 该类无功耗/能耗字段]
-
-## 调试与排查
-
-### dumpsys connectivity
+下面的命令用于收集 Connectivity、NetworkStack 与 DNS resolver 的同一时段证据。
 
 ```bash
 adb shell dumpsys connectivity
+adb shell dumpsys network_stack
+adb shell dumpsys dnsresolver
+adb logcat -v threadtime -s ConnectivityService NetworkMonitor
 ```
 
-输出包含所有活跃 `NetworkAgentInfo` 的状态：
-- `Type` / `TransportInfo`：网络类型和传输层信息
-- `Score`：当前 `NetworkScore` 对象（含 legacyInt）
-- `CaptivePortal`：是否检测到门户页面
-- `everConnected` / `validated` / `destroyed`：生命周期标志
-- `Underlying Networks`：VPN 场景下的底层网络
+这些命令通常需要 shell 权限，OEM 构建也可能裁剪字段或调整日志级别。生产问题优先保留 bugreport，并记录复现时刻、应用 UID、目标请求、netId、transport、接口名和回调时间线。
 
-### 网络切换 trace
+建议按以下顺序阅读证据：
 
-在 Perfetto 中打开 `ConnectivityService` atrace category：
+1. 在 `dumpsys connectivity` 中确认请求、当前 satisfier、FullScore policy、validated、lingering 和 destroyed；
+2. 对照 NetworkMonitor 日志确认验证状态何时变化；
+3. 对照 `NetReassign` 或 rematch 日志确认 compute、apply、issue 阶段；
+4. 检查应用是否把 available 当成 validated，或在回调中启动了阻塞工作；
+5. 检查旧连接是否具备重试与幂等保护；
+6. 涉及 DNS 时，结合每网络 resolver 配置和 Private DNS 结果判断。
 
-```
-adb shell atrace --async_start -b 8192 connectivity
-```
+Perfetto 可以记录 Binder、调度、应用自定义 trace 和网络相关系统事件，但 Android 17 源码没有保证名为 `rematchAllNetworksAndRequests` 的公开 atrace slice。若平台团队需要精确量化该方法，应在自有调试构建增加 trace 标记，或使用 ConnectivityService 已有的分阶段日志。
 
-trace 中可见：
-- `rematchAllNetworksAndRequests` 的执行时间和调用栈
-- `computeNetworkReassignment` 的遍历耗时
-- `applyNetworkReassignment` 的回调投递
+## Review 结论
 
-### 网络评分变化日志
+本章在 Android 17 源码锚点下可以归纳为五条：
 
-```bash
-adb shell setprop log.tag.ConnectivityService VERBOSE
-adb logcat -s ConnectivityService
-```
+1. `NetworkAgent` 注册一条候选网络，`NetworkAgentInfo` 保存它在 ConnectivityService 中的控制状态。
+2. connected、available 和 validated 是三个不同事件，不能互相替代。
+3. `legacyInt` 不参与连接态网络排名，`NetworkScorecard` 也不在 `NetworkRanker` 输入中。
+4. `FullScore` 合并 agent policy 与系统状态，`NetworkRanker` 通过固定顺序逐级筛选候选。
+5. rematch 先更新请求和默认网络，再清理旧 native network；既有 socket 的恢复仍由应用或连接库处理。
 
-日志中 `updateNetworkScore for [NetworkAgentInfo]` 行显示每次评分更新的目标和分值，可用于追踪网络切换的触发链路。
+遇到“Wi-Fi 信号仍在、流量却切到蜂窝”或“收到 available 后请求失败”时，应从 request 能力、FullScore policy、validation 和 UID 默认网络四个维度还原当时的选择，不要从旧整数分数表反推 Android 17 行为。
