@@ -4,13 +4,40 @@ chapter: "18.1"
 section: "18.1"
 status: finalized
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
-last_verified_against: "AOSP android-17.0.0_r1 Layer.cpp / ViewRootImpl BLASTBufferQueue / HardwareBufferRenderer / HWComposer fence paths + Flutter 3.32 release notes"
-confidence: medium
+last_verified_against: "AOSP android-17.0.0_r1 Choreographer / ViewRootImpl / HWUI / BLASTBufferQueue / SurfaceFlinger FrontEnd / HWComposer + Perfetto android-17.0.0_r1"
+confidence: high
 tags: ["rendering-pipeline", "BLAST", "SurfaceFlinger", "HWUI", "SurfaceView", "TextureView", "Vulkan", "OpenGL ES", "HardwareBufferRenderer"]
 related_chapters: ["2.5", "2.6", "2.7", "2.13", "2.14", "2.16", "18.2", "18.3", "18.4", "18.5", "18.6", "18.7", "18.8", "18.9", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-sources: ["AOSP android-17.0.0_r1 frameworks/native/services/surfaceflinger/Layer.cpp", "AOSP android-17.0.0_r1 frameworks/base/core/java/android/view/ViewRootImpl.java", "AOSP android-17.0.0_r1 frameworks/base/graphics/java/android/graphics/HardwareBufferRenderer.java", "Flutter 3.32 release notes"]
+sources:
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md"
+    role: "App 出图类型公共基线、12 个显示锚点与版本演进"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java"
+    role: "帧调度与五类 callback 顺序"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java"
+    role: "Traversal、batched input 与 HWUI 交接"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
+    role: "BufferItem 到 SurfaceControl transaction 的转换"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Layer.h"
+    role: "BufferTX pending-buffer counter 语义"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp"
+    role: "transaction readiness 与 latch-unsignaled 条件"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp"
+    role: "validate、presentOrValidate、present 与 fence"
+  - type: perfetto
+    path: "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/prelude/after_eof/events.sql"
+    role: "actual_frame_timeline_slice schema"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6"
+    role: "dma-buf、dma-fence、sync_file 与 DRM/KMS 的统一 kernel 锚点"
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-18"
 last_task2b_at: "2026-05-05T04:53:00+08:00"
@@ -23,7 +50,7 @@ last_task6_audit: "2026-07-10"
 last_task9_audit: "2026-07-09"
 last_task9_audit_log: "logs/deep-review/2026-07-09-09-audit.md"
 auto_promoted: true
-last_verified: "2026-07-09"
+last_verified: "2026-07-31"
 task9_result: "auto-fixed"
 task9_state: "reviewed"
 task2b_state: "fixed"
@@ -44,17 +71,17 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-15
 ---
 
+# 18.1 渲染管线分类与选择对照表
+
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
 - [18.1.1 为什么需要理解渲染管线](#为什么需要理解渲染管线) — 性能调优的起点
-- [18.1.2 版本与架构对照表](#版本与架构对照表) — 从 Legacy BufferQueue 到 BLAST 的演进
-- [18.1.3 典型模式对比](#典型模式对比) — 九类主流渲染管线的核心差异
-- [18.1.4 本章阅读指南](#本章阅读指南) — 按场景推荐阅读路径
-
-**扩展（可选深入）：**
-- WebView 的四条渲染管线（概览）
-- Flutter 渲染架构与 Platform View 组合
+- [18.1.2 用四个坐标识别出图类型](#用四个坐标识别出图类型) — Producer、输出目标、layer 与合成位置
+- [18.1.3 版本与架构对照表](#版本与架构对照表) — Android 9 到 Android 17 的观测边界
+- [18.1.4 典型模式对比](#典型模式对比) — 主要渲染路径的差异
+- [18.1.5 公共显示主线](#公共显示主线从-vsync-到-present) — 12 个固定观察点
+- [18.1.6 一帧的排查顺序](#一帧的排查顺序) — 从节奏到 present 的证据链
 
 <!-- outline-end -->
 
@@ -72,6 +99,21 @@ Perfetto 里出现一帧超时，定位工作不应从“最长的 slice”开�
 
 本文的当前实现锚点是 Android 17 / API 37 的 `android-17.0.0_r1`。涉及 dma-buf、sync_file、DRM/KMS 或调度器实现时，内核锚点统一为 `android17-6.18-2026-06_r6`；本文没有依靠某个 kernel 函数推导 framework 结论。
 
+## 用四个坐标识别出图类型
+
+`SurfaceView`、`TextureView`、WebView、Flutter 和 Compose 是 API 或框架名称。名称本身不足以确定 trace 中的图形路径。同一个 Flutter 页面可能使用 `SurfaceView` 或 `TextureView` 作为宿主，Platform View 还会改变 layer 拓扑；同一个播放器也可能在普通 buffer queue、SurfaceView 独立 layer 与 tunneled/sideband 路径之间切换。
+
+每次分析先固定四个坐标：
+
+| 坐标 | 要确认的对象 | Trace 或源码证据 |
+|---|---|---|
+| Producer | HWUI RenderThread、GL/Vulkan thread、Chromium、Flutter raster thread、Camera HAL、MediaCodec、游戏引擎或其他模块 | 线程 slice、GPU submission、decoder/camera 事件 |
+| 输出目标 | App Window、独立 `Surface`、`SurfaceTexture`、swapchain、离屏 `HardwareBuffer` 或 sideband stream | BufferQueue、ANativeWindow、SurfaceControl、layer dump |
+| layer 拓扑 | 内容进入宿主窗口，还是形成一个或多个独立 child layer | layer parent、relative layer、Z-order、`BufferTX` |
+| 合成与 present | 宿主 HWUI 采样、SurfaceFlinger CLIENT composition、HWC DEVICE composition 或专用媒体路径 | RenderEngine、composition type、HWC、present fence |
+
+线程名只说明某段代码在哪条线程执行。确认渲染类型还要把线程、swapchain/BufferQueue、SurfaceControl 和目标 layer 连到同一条路径。看到 `GLThread` 不足以证明页面一定存在独立 layer；看到 `SurfaceView` 对象也不足以证明本帧拿到了 overlay。
+
 ## 版本与架构对照表
 
 Android 9 到 Android 17 的图形栈不能只用“Legacy”与“BLAST”二分。对 trace 更有帮助的写法，是标出哪个版本可以使用哪些对象和观测方法。
@@ -84,35 +126,35 @@ Android 9 到 Android 17 的图形栈不能只用“Legacy”与“BLAST”二�
 | Android 12 / API 31 | BLAST 与 FrameTimeline 构成现代 trace 基线 | 标准 App Window 可用 SurfaceFrame/DisplayFrame token 对齐；独立 Surface 仍需 layer、BufferQueue 与 fence 证据 |
 | Android 13 / API 33 | `AutoSingleLayer` 下的 latch-unsignaled 策略成为重要边界 | acquire fence 未 signal 不再等于 transaction 必定无法 latch；硬件读取仍要遵守同步约束 |
 | Android 14 / API 34 | 公共 Choreographer→HWUI→BLAST→SF→HWC 骨架延续；SurfaceView 增加 alpha 与 lifecycle 能力 | 标准窗口仍按公共主线读，独立 Surface 的透明度与生命周期要单独核对 |
-| Android 15 / API 35 | Window/SurfaceView 可以表达 desired HDR headroom | headroom 是请求，不是显示亮度、composition type 或 buffer 完成证明 |
-| Android 16 / API 36 | SurfaceView 增加整数 `compositionOrder`；公共主线延续 | 多 Surface 页面要记录 parent、relative layer 与 Z-order |
-| Android 17 / API 37 | 本文锚定 FrontEnd `RequestedLayerState` / `LayerSnapshot`、预测 present time、现行 BLAST/HWC 路径 | 源码按 `android-17.0.0_r1` 的对象名解释；旧 `DispSync`、固定 phase offset 和逐个旧 Layer latch 模型不能直接套用 |
+| Android 15 / API 35 | Window/SurfaceView 源码与 API 面开始提供 desired HDR headroom，r1 中仍带 feature flag 边界 | headroom 是请求；目标设备 flag、bit depth、面板与显示策略仍要核对 |
+| Android 16 / API 36 | SurfaceView 源码增加整数 `compositionOrder`，r1 API 签名带 `@FlaggedApi`；公共主线延续 | 多 Surface 页面要记录 parent、relative layer、flag 状态与 Z-order |
+| Android 17 / API 37 | 本文锚定 FrontEnd `RequestedLayerState` / `LayerSnapshot`、预测 present time、现行 BLAST/HWC 路径；SurfaceView blur region 与 `compositionOrder` 仍带 flag 边界 | 源码按 `android-17.0.0_r1` 的对象名解释；旧 `DispSync`、固定 phase offset 和逐个旧 Layer latch 模型不能直接套用 |
 
 这张表描述的是观察边界，不表示每个版本都重做了一套渲染管线。BLAST 改变 buffer 与窗口状态进入 SurfaceFlinger 的组织方式，没有取消 Producer/Consumer 分工，也没有取消 acquire/release fence。
 
 ## 典型模式对比
 
-先按“Producer 在哪里、是否有独立 layer、最终在哪里合成”区分主干模式：
+先按 Producer、输出目标、layer 拓扑与合成位置区分主干模式：
 
 | 模式 | 主要 Producer | Surface/layer 形态 | 主要合成位置 | 容易误判的点 | 章节 |
 |---|---|---|---|---|---|
 | 标准 Android View | MainThread 准备状态，HWUI RenderThread/GPU 产出 | 宿主 App Window | SF 选择 DEVICE 或 CLIENT | MainThread `draw()` 结束不等于 buffer 已提交 | [18.2](02-android-view-standard.md) |
-| Software Canvas | 调用 `lockCanvas()` 的线程在 CPU 侧栅格化 | 可见 Surface 或离屏目标 | 可见目标仍进入 SF/HWC | “软件绘制”不等于没有 BufferQueue 或没有显示合成 | [18.3](03-android-view-software.md) |
+| Software / 离屏 | `lockCanvas()` 线程、CPU raster 或离屏 GPU | 可见 Surface 或离屏 buffer | 可见目标进入 SF/HWC；离屏目标由下游消费 | “软件绘制”不等于没有 BufferQueue；离屏完成 fence 也不是 present fence | [18.3](03-android-view-software.md)、[18.17](17-hardware-buffer-renderer.md) |
 | 混合渲染 | 宿主 HWUI + 一个或多个独立 Producer | App Window 与 child layer 并存 | SF/HWC 拼接多层 | 不能用宿主窗口一条 FrameTimeline 代表所有独立 Surface | [18.4](04-android-view-mixed.md) |
 | 多窗口 | 每个 Window 各有 ViewRoot/Surface；线程可能同进程共享，也可能跨进程 | 多个 Window layer | 每个 display 分别组织输出 | “多窗口必定同一主线程串行”只适用于部分同进程场景 | [18.5](05-android-view-multi-window.md) |
 | SurfaceView | 解码器、Camera、GL/Vulkan 或其他 Producer | 独立 child Surface/layer | 常由 SF/HWC 与宿主拼层 | 独立 layer 有利于 overlay，但不保证低延迟或 DEVICE composition | [18.6](06-surfaceview.md) |
 | TextureView | 外部 Producer 写入 `SurfaceTexture` | 内容作为纹理进入宿主 View 树 | 宿主 HWUI 再采样到 App Window | 成本是额外采样/宿主合成，不宜笼统写成固定 CPU 拷贝 | [18.7](07-textureview.md) |
 | OpenGL ES | GL thread / engine thread | EGL window surface 对应 BufferQueue | SF/HWC | `eglSwapBuffers()` 返回不代表 GPU 写完或已经 present | [18.8](08-opengl-es.md) |
 | Vulkan | engine/render thread | `VkSwapchainKHR` 对接 ANativeWindow | SF/HWC | 显式 API 可以降低部分 driver 开销，但 CPU 成本取决于引擎、同步和驱动 | [18.9](09-vulkan-native.md) |
-| 离屏/HardwareBufferRenderer | App/RenderThread/GPU | 无可见 Window，输出 `HardwareBuffer` | 由后续消费者决定 | 生产完成 fence 与 display present fence 语义不同 | [18.17](17-hardware-buffer-renderer.md) |
+| WebView | Chromium renderer/compositor、Viz 与宿主进程协作 | Chromium surface 与宿主窗口组合，具体拓扑依实现而定 | Chromium 合成后进入 Android 显示链 | 只看 App MainThread 会漏掉 renderer/GPU 进程 | [18.13](13-webview-rendering.md) |
+| Flutter | UI/raster/platform thread 与 Impeller/Skia backend | 宿主可用 SurfaceView 或 TextureView；Platform View 再增加分支 | 宿主 layer 与 Platform View 共同进入 SF/HWC | 框架名不能确定宿主 render mode | [18.12](12-flutter-rendering.md) |
+| Camera | Camera HAL、ISP 与应用/系统消费者 | 预览 Surface、ImageReader、编码器等多消费者 | 预览常通过独立 layer 参与合成 | request/result 完成不等于预览已 present | [18.14](14-camera-pipeline.md) |
+| Video / HWC | MediaCodec、解码器、播放器 | SurfaceView buffer queue 或 tunneled/sideband 路径 | HWC overlay、专用媒体路径或 CLIENT fallback | 解码完成、releaseOutputBuffer 与上屏时间不是同一边界 | [18.15](15-video-overlay-hwc.md)、[18.23](23-media-codec2-tunneled-media3-abr.md) |
+| 游戏引擎 | game/render thread、GL/Vulkan queue | ANativeWindow swapchain，可能叠加独立 UI/video layer | SF/HWC | 平均 FPS 会掩盖 pacing、queue depth 与 present 抖动 | [18.16](16-game-engine.md) |
+| Compose | Compose runtime 与 UI thread 生成状态，HWUI RenderThread/GPU 产出 | 默认仍是宿主 App Window | SF/HWC | recomposition、layout、draw 与 GPU 提交属于不同阶段 | [18.25](25-compose-rendering-pipeline.md) |
+| React Native | JS、Fabric/UI、HWUI；第三方原生组件可另建 Surface | 标准 View 树或 SurfaceView/TextureView 分支 | 取决于宿主与原生组件拓扑 | JS thread 只是 Producer 链的一段，不能代表 present | 本章只给分型基线 |
 
-下面这些章节在九类主干上继续展开系统与框架分支：
-
-- [18.10 SurfaceControl API](10-surface-control-api.md) 与 [18.11 ANGLE](11-angle-gles-vulkan.md) 解释 native layer 控制和 GLES→Vulkan 翻译；
-- [18.12 Flutter](12-flutter-rendering.md)、[18.13 WebView](13-webview-rendering.md) 与 [18.25 Compose](25-compose-rendering-pipeline.md) 解释框架内部 Producer 和宿主组合方式；
-- [18.14 Camera](14-camera-pipeline.md)、[18.15 Video/HWC](15-video-overlay-hwc.md)、[18.16 Game](16-game-engine.md) 解释硬件或引擎 Producer；
-- [18.18 PiP/Freeform](18-pip-freeform.md)、[18.19 VRR](19-variable-refresh-rate.md)、[18.22 XR](22-android-xr-spatial-ui-rendering.md) 解释 display/windowing 分支；
-- [18.20 分析方法](20-pipeline-analysis-methodology.md)、[18.21 Eyedropper](21-eyedropper-crossdevice.md)、[18.23 MediaCodec2](23-media-codec2-tunneled-media3-abr.md)、[18.24 APV](24-advanced-professional-video-apv.md)、[18.26 HWUI Vulkan 多队列](26-android17-hwui-vulkan-multi-queue.md)、[18.27 WebGPU](27-webgpu-android-pipeline.md) 处理工具与专项路径。
+[18.10 SurfaceControl API](10-surface-control-api.md) 与 [18.11 ANGLE](11-angle-gles-vulkan.md) 分别解释 layer 控制和 GLES→Vulkan 翻译。[18.18 PiP/Freeform](18-pip-freeform.md)、[18.19 VRR](19-variable-refresh-rate.md)、[18.22 XR](22-android-xr-spatial-ui-rendering.md) 继续分析 window/display 分支；[18.20 分析方法](20-pipeline-analysis-methodology.md) 提供跨类型的取证步骤。
 
 ### 快速识别当前管线
 
@@ -173,6 +215,24 @@ sequenceDiagram
 
 图中 ①～⑥ 是应用生产阶段，⑦～⑫ 是系统合成与显示阶段。`⑥'` 是 SF server 侧观测点，不额外算一个主节点。这里的 ⑫ 是 Android 用户态可观察的 display-present 时间锚点，不等于 panel 完成扫描、像素完成响应或用户形成视觉感知。
 
+这 12 个编号是第 18 章的公共坐标：
+
+| 编号 | 节点 | 诊断含义 |
+|:---:|---|---|
+| ① | `vsync-app` | 应用侧计划起跑时间 |
+| ② | `Choreographer#doFrame` | INPUT、ANIMATION、INSETS_ANIMATION、TRAVERSAL、COMMIT |
+| ③ | `syncAndDrawFrame` | UI thread 与 RenderThread 的状态交接 |
+| ④ | `dequeueBuffer` | 取得可写 slot，可能受 release fence 和队列深度影响 |
+| ⑤ | Skia / GPU submission | 记录并提交图形命令 |
+| ⑥ | `queueBuffer` | 提交 slot、元数据与 producer completion fence |
+| ⑥' | BLAST transaction / `BufferTX` | buffer update 到达 SF server 并进入 pending |
+| ⑦ | SF 调度起点 | 按预测 present time 与 SF 工作预算执行 |
+| ⑧ | transaction、snapshot、latch | 决定本轮采纳哪个 buffer |
+| ⑨ | HWC strategy | validate 或 presentOrValidate，确定 composition type |
+| ⑩ | RenderEngine client target | CLIENT layer 需要的 GPU 合成 |
+| ⑪ | present 与 release fence 收集 | 向显示后段提交本轮 frame |
+| ⑫ | present fence feedback | Android 显示栈可观察的 present 时间边界 |
+
 ### ① `vsync-app`：应用起跑时间
 
 Android 17 的 Scheduler 以预测 present time 为目标，根据 app 的 `workDuration` 与 `readyDuration` 安排 wakeup，再由 EventThread/DisplayEventReceiver 把事件送到应用。旧资料常写固定 `app offset`、`sf offset`；分析 Android 17 时应回到预测时间和工作预算。
@@ -186,6 +246,8 @@ Android 17 的 `Choreographer#doFrame()` 依次执行：
 `INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT`
 
 这里的 INPUT 主要包括 batched motion event 的帧同步消费；普通输入事件还会通过 InputChannel/Looper 异步处理。Traversal 中的 `measure → layout → draw` 也不是每帧重算整棵 View 树。标准硬件加速路径里的 View `draw()` 主要更新 RenderNode/DisplayList，像素生成还要进入 RenderThread 和 GPU。
+
+跟手滑动与 fling 的 trace 形态也不同。手指仍在屏幕上时，batched motion input 推动本帧位移；手指抬起后，`OverScroller` 一类动画对象在 ANIMATION 阶段继续推进位置，此时 INPUT slice 变轻或消失属于正常现象。
 
 ### ③ `syncAndDrawFrame`：UI 与 RenderThread 的交接
 
@@ -223,6 +285,8 @@ Android 17 的 SurfaceFlinger FrontEnd 把 transaction 合入 `RequestedLayerSta
 
 `latch` 表示本轮采纳了某个 layer 的新 buffer。一般情况下，transaction readiness 会检查 acquire fence；Android 13+ 的 latch-unsignaled 允许受限的简单单 layer update 先进入 latch。Android 17 中，`transactionReadyBufferCheck()`、`shouldLatchUnsignaled()`、`isSimpleBufferUpdate()` 和队列顺序共同限制该路径。
 
+Android 17 的 `AutoSingleLayer` 条件包括：transaction 只更新一个 layer、它是当前队列中的第一笔 transaction、Scheduler 没有使用 early VSync config，并且 `RequestedLayerState::isSimpleBufferUpdate()` 返回 true。任一条件不满足，unsignaled fence 会让该 transaction 保持 not ready。
+
 即使允许先 latch，RenderEngine 或 HWC 读取 buffer 时仍要遵守 acquire fence。优化改变的是等待位置，没有取消同步。
 
 ### ⑨～⑪ HWC strategy、CLIENT 与 DEVICE
@@ -243,6 +307,8 @@ Android 17 不保证每轮都单独 `validate()`。`HWComposer::getDeviceComposi
 
 看到 CLIENT composition 不应立即归因于 App GPU 变慢。还要检查 overlay 资源、格式、变换、HDR/色彩、secure path 与 vendor HWC 决策。
 
+FrameTimeline 的 SurfaceFlinger actual 区间覆盖 SF 工作与后续显示栈反馈，宽度可能包含 Composer/DisplayHAL 等时间。判断 `SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed` 或 DisplayHAL 延迟时，要把 SF 主线程 CPU slice、RenderEngine GPU 工作和 HWC 调用分开，不能把整段 actual duration 都记到 SF 主线程。
+
 ### ⑫ present feedback
 
 HWC 返回的 fence 要分开：
@@ -254,6 +320,13 @@ HWC 返回的 fence 要分开：
 | present fence | HWC → SF，per-display/per-frame | 本轮 display frame 何时到达 Android 显示栈的 present 时间边界 |
 
 Present fence 比 `queueBuffer` 和 latch 更靠后，但仍不是 panel 光学响应证明。分析“App 为什么卡在 `dequeueBuffer`”应看 release fence；分析“Consumer 是否能安全读”应看 acquire fence；分析 display present timing 才看 present fence。
+
+三条 fence 在 CLIENT 与 DEVICE composition 下的去向不同：
+
+- DEVICE layer 的 acquire fence 随 layer buffer 交给 HWC；
+- CLIENT layer 的原始 acquire fence 由 RenderEngine 消费或等待，RenderEngine 完成 client target 后再给 HWC 一条 client-target acquire fence；
+- release fence 可能来自 HWC、RenderEngine 或合并结果，经 release callback/BufferQueue 回到 Producer；
+- present fence 是 per-display、per-frame 的显示反馈，不能代替任一 layer 的 release fence。
 
 ## 一帧的排查顺序
 
@@ -315,6 +388,7 @@ ORDER BY a.ts;
 - [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)：transaction readiness、latch-unsignaled、composite；
 - [`HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp) 与 [`HWC2.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWC2.cpp)：validate/presentOrValidate/present 和 fences；
 - [`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp)：SurfaceFrame、DisplayFrame 与 present feedback。
+- [`events.sql`](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/prelude/after_eof/events.sql)：`actual_frame_timeline_slice` 的列定义；查询字段应跟随采集端对应的 Perfetto schema。
 
 内核侧按 [`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6) 核对 dma-buf、dma-fence/sync_file、DRM atomic 与 vblank。Vendor GPU、Composer、display driver 和面板时序要用目标设备源码与 trace 补证。
 
