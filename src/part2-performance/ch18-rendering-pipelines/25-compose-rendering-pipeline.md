@@ -1,6 +1,8 @@
 ---
-title: "Jetpack Compose 渲染管线架构"
+title: "Android 17 Jetpack Compose 渲染管线架构"
 chapter: "18.25"
+section: "18.25"
+section_title: "Android 17 Jetpack Compose 渲染管线架构"
 status: finalized
 task2b_result: fixed
 task2b_state: fixed
@@ -18,30 +20,121 @@ last_task2b_by: task2b-lite
 last_task2b_lite_at: "2026-06-29"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-06-26"
-last_verified: "2026-06-29"
-last_verified_against: "Compose BOM 2025.12.00 (Compose 1.10), AOSP android-17.0.0_r1"
+last_verified: "2026-07-31"
+last_verified_against: "Compose BOM 2026.06.01 / Runtime、UI、Foundation 1.11.4 at AndroidX commit 854220f44ea8ea80fee824a6c5a045f39bede289 / android-17.0.0_r1 / Writer rendering_pipelines S01、S02、S05 / android17-6.18-2026-06_r6"
 confidence: high
 sources:
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md"
+    role: "标准 App Window 从 Choreographer、HWUI、BLAST 到 present 的公共基线"
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S02_aosp_standard_type.md"
+    role: "纯 Compose 仍属标准 HWUI App Window、三阶段失效与 Perfetto 分层"
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S05_mixed_rendering_type.md"
+    role: "AndroidView、SurfaceView、TextureView 引入多 Producer 后的拓扑与取证边界"
+  - type: official
+    path: "https://developer.android.com/develop/ui/compose/bom/bom-mapping"
+    role: "BOM 2026.06.01 到 Runtime、UI、Foundation 1.11.4 的映射"
+  - type: official
+    path: "https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.11.4"
+    role: "Compose Runtime 1.11.4 稳定版与版本演进"
+  - type: official
+    path: "https://developer.android.com/develop/ui/compose/phases"
+    role: "Composition、Layout、Drawing 与状态读取阶段"
+  - type: official
+    path: "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+    role: "Kotlin 2.0.20 Strong Skipping 默认值与参数比较规则"
+  - type: official
+    path: "https://developer.android.com/develop/ui/compose/tooling/tracing"
+    role: "Compose composition tracing 的依赖与 trace 配置"
   - type: androidx
-    path: "platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt"
+    path: "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidUiFrameClock.android.kt"
+    role: "一次性 Choreographer FrameCallback、dispatcher 与取消语义"
   - type: androidx
-    path: "platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt"
+    path: "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt"
+    role: "Compose 1.11.4 的 onMeasure、onLayout、dispatchDraw 与 graphics layer 入口"
   - type: androidx
-    path: "platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/PausableComposition.kt"
+    path: "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt"
+    role: "LayoutNode 节点、测量、放置与绘制状态"
   - type: androidx
-    path: "platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/RenderNodeLayer.android.kt"
+    path: "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/GraphicsLayerOwnerLayer.android.kt"
+    role: "Android 17 上 Compose OwnedLayer 的 dirty display-list 更新"
+  - type: androidx
+    path: "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt"
+    role: "公开 RenderNode 的 beginRecording、endRecording 与 drawRenderNode 路径"
+  - type: androidx
+    path: "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayer.kt"
+    role: "GraphicsLayer 内容记录、属性与离屏需求"
+  - type: androidx
+    path: "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/layer/CompositingStrategy.kt"
+    role: "Auto、Offscreen 与 ModulateAlpha 的语义"
+  - type: androidx
+    path: "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/PausableComposition.kt"
+    role: "PausableComposition 的 resume、isComplete、apply 与 cancel 契约"
+  - type: androidx
+    path: "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/ComposeFoundationFlags.kt"
+    role: "Foundation 1.11.4 Lazy PausableComposition 预取开关"
+  - type: androidx
+    path: "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutPrefetchState.kt"
+    role: "Lazy 预取的 pause、resume、apply、measure 分段与耗时历史"
+  - type: androidx
+    path: "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/lazy/layout/PrefetchScheduler.android.kt"
+    role: "refreshRate 帧间隔、idle 判断与 availableTimeNanos 预算估算"
+  - type: androidx
+    path: "https://android.googlesource.com/platform/frameworks/support/+/fb2dac31a06bf2648b0d9e06b4b80814ee5141b9%5E%21/"
+    role: "1.10.x 稳定性问题期间关闭 PausableComposition 预取开关的变更"
   - type: research
     path: "intake/research-feeds/2026-04-10-07-compose-pausable-composition-choreographer-deadline.md"
+    role: "PausableComposition、Choreographer 与预算语义的研究入口"
   - type: aosp
-    path: "frameworks/base/core/java/android/view/Choreographer.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java"
+    role: "Android 17 callback 队列与窗口帧调度"
   - type: aosp
-    path: "frameworks/base/core/java/android/view/View.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java"
+    role: "traversal、performDraw 与 App Window 提交入口"
   - type: aosp
-    path: "frameworks/base/graphics/java/android/graphics/RenderNode.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ThreadedRenderer.java"
+    role: "View 树 display list 更新与 HardwareRenderer draw 入口"
   - type: aosp
-    path: "frameworks/base/graphics/java/android/graphics/HardwareRenderer.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java"
+    role: "Android 17 RenderNode 公开记录与属性契约"
   - type: aosp
-    path: "frameworks/base/core/java/android/view/ThreadedRenderer.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/HardwareRenderer.java"
+    role: "syncAndDrawFrame 的 Java 边界"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp"
+    role: "UI/RenderThread 同步、tree preparation 与 UI unblock"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp"
+    role: "HWUI draw、swap、dequeue/queue duration 与 GPU 提交"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
+    role: "App Window buffer transaction 与 release callback"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/"
+    role: "SurfaceFlinger RequestedLayerState 与 LayerSnapshot"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp"
+    role: "HWC validate、present-or-validate 与 fence 处理"
+  - type: official
+    path: "https://perfetto.dev/docs/data-sources/frametimeline"
+    role: "expected/actual SurfaceFrame、DisplayFrame 与 jank 证据边界"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c"
+    role: "Main、RenderThread 与 SurfaceFlinger 的调度机制锚点"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/cgroup/cpuset.c"
+    role: "线程 CPU 集合约束锚点"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c"
+    role: "调度利用率到 cpufreq policy 的通用路径"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c"
+    role: "图形缓冲区共享的通用内核基础"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c"
+    role: "dma-fence 经文件描述符传递的同步基础"
 tags: [compose, rendering, rendernode, choreographer, pausable-composition, display-list]
 related_chapters: ["2.4", "2.5", "2.6", "22.3", "22.20", "22.25", "22.26"]
 created_by: "task2a-knowledge-gap"
@@ -56,7 +149,7 @@ last_task9_autofix_at: "2026-06-29"
 ---
 ---
 
-# 18.25 Jetpack Compose 渲染管线架构
+# 18.25 Android 17 Jetpack Compose 渲染管线架构
 
 Compose 改写了 UI 的描述、状态追踪和节点更新方式，却没有绕过 Android 的 App Window 渲染管线。对一个开启硬件加速、没有额外独立 Surface 的普通 Compose 页面，像素仍经由 `ViewRootImpl`、HWUI、RenderThread、App Window 的 BLAST BufferQueue、SurfaceFlinger 和 HWC 到达屏幕。
 
@@ -64,10 +157,10 @@ Compose 改写了 UI 的描述、状态追踪和节点更新方式，却没有�
 
 ## 复核基线与阅读边界
 
-本文在 2026-07-25 复核时采用以下基线。平台、Jetpack 与内核必须分别记录，不能用 Android 版本替代 Compose 版本。
+本文在 2026-07-31 复核时采用以下基线。平台、Jetpack 与内核必须分别记录，不能用 Android 版本替代 Compose 版本。
 
 | 层级 | 本文基线 | 说明 |
-|---|---|---|
+| --- | --- | --- |
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | `Choreographer`、`ViewRootImpl`、`ThreadedRenderer`、`HardwareRenderer`、HWUI、SurfaceFlinger |
 | Jetpack Compose | Compose BOM `2026.06.01`，Runtime/UI/Foundation `1.11.4` | Compose 独立发布，不属于 `android-17.0.0_r1` 源码标签 |
 | Android 内核 | `android17-6.18-2026-06_r6` | 调度、cpuset、cpufreq、dma-buf 与 fence 等机制；内核没有 Composition 或 LayoutNode |
@@ -97,7 +190,7 @@ Compose 主要提供四组机制：
 
 ## 两条帧驱动在同一主线程会合
 
-Compose 与 View traversal 都使用 Choreographer，但承担的工作不同：
+Compose 与 View traversal 都使用 Choreographer，但工作不同：
 
 1. `AndroidUiFrameClock` 为等待 `withFrameNanos` 的协程注册一次性 `Choreographer.FrameCallback`。`Recomposer` 用它对齐动画、重组和变更应用。
 2. `ViewRootImpl` 的 traversal callback 驱动窗口的 measure、layout、draw 与 HWUI 提交。
@@ -152,21 +245,21 @@ override suspend fun <R> withFrameNanos(onFrame: (Long) -> R): R =
 Compose 1.11.4 的三个入口各有明确职责：
 
 | Android 入口 | Compose 工作 | 需要注意的边界 |
-|---|---|---|
+| --- | --- | --- |
 | `onMeasure()` | 把 `MeasureSpec` 转成 Compose `Constraints`，更新 root constraints 并执行所需测量 | 仍受父 View 的测量契约约束 |
 | `onLayout()` | 调用 `MeasureAndLayoutDelegate.measureAndLayout()`，完成待处理测量/放置并更新根边界 | Layout 不在 `AndroidUiFrameClock` 回调里直接完成 |
 | `dispatchDraw()` | 再做一次 `measureAndLayout()` 兜底，调用 `root.draw()`，更新 dirty `OwnedLayer` | 兜底路径允许 draw 前清理新产生的布局请求 |
 
 硬件加速 draw 的调用顺序也应说清楚。Android 17 的 `ViewRootImpl.performDraw()` 进入 `ThreadedRenderer.draw()`；`ThreadedRenderer` 先通过 `updateRootDisplayList()` 更新 View 树的 display list，期间会调用 `AndroidComposeView.dispatchDraw()`，随后才执行 `syncAndDrawFrame()`。
 
-这意味着 UI 线程负责 RenderNode display list 的录制。RenderThread 接手的是已经录好的渲染节点树及其属性，它会执行 tree sync、buffer 获取、Skia/GPU 工作提交和 buffer 入队。把 RenderThread 描述为“录 Compose display list”会混淆两种记录过程。
+UI 线程负责 RenderNode display list 的录制。RenderThread 接手已经录好的渲染节点树及其属性，执行 tree sync、buffer 获取、Skia/GPU 工作提交和 buffer 入队。把 RenderThread 描述为“录 Compose display list”会混淆两种记录过程。
 
 ## Composition、Layout、Drawing 可以分别失效
 
 Composable 函数不会简单地“一次执行，依次完成三阶段”。状态在哪个阶段被读取，决定变更从哪个 restart scope 开始传播。
 
 | 状态读取位置 | 变更后的主要工作 | 可能跳过的阶段 |
-|---|---|---|
+| --- | --- | --- |
 | Composable 函数体 | Recomposition，随后按变更结果请求 Layout 或 Drawing | 无法预先保证 |
 | 测量 lambda | 重新测量受影响节点和必要祖先/子树 | 可跳过 Recomposition |
 | 放置 lambda | 重新放置相关节点 | 可跳过 Recomposition，常可跳过测量 |
@@ -237,7 +330,7 @@ Compose 的常规布局协议要求一个 child 在一次 measure pass 中只测
 `Modifier.graphicsLayer` 会建立图形 layer 隔离边界，但是否先渲染到 offscreen buffer 由合成策略和效果决定。
 
 | 条件 | RenderNode / layer 边界 | offscreen buffer |
-|---|---|---|
+| --- | --- | --- |
 | 普通 LayoutNode，无显式 layer | 通常并入最近所属 layer | 无额外 offscreen |
 | `graphicsLayer` + 平移/缩放/旋转 | 有 | 通常不需要 |
 | `CompositingStrategy.Auto` + `alpha < 1` 且内容可能重叠 | 有 | 为保证整体 alpha 语义，可自动启用 |
@@ -268,8 +361,8 @@ flowchart TD
     I --> J["UI 线程录 RenderNode display list"]
     J --> K["syncAndDrawFrame 跨入 RenderThread"]
     K --> L["RenderThread: tree sync + dequeue + Skia/GPU 提交"]
-    L --> M["App Window BLAST BufferQueue: queueBuffer + acquire fence"]
-    M --> N["SurfaceFlinger latch + LayerSnapshot / composition planning"]
+    L --> M["App Window BLAST BufferQueue: queueBuffer + producer completion fence"]
+    M --> N["SurfaceFlinger transaction / latch + acquire fence check"]
     N --> O["HWC DEVICE 或 RenderEngine CLIENT 合成"]
     O --> P["present fence / 屏幕显示"]
 ```
@@ -288,9 +381,9 @@ UI 线程主要完成：
 RenderThread 主要完成：
 
 - 同步 RenderNode tree 和渲染属性；
-- 获取可写的窗口 buffer，并处理 acquire fence；
+- `dequeueBuffer` 取得可写的窗口 buffer，必要时等待消费者返回的 release fence；
 - 让 Skia 构建/提交 GLES 或 Vulkan GPU 工作；
-- 完成 swap/queue，把 release/acquire fence 随 buffer 交给消费者。
+- 完成 swap/queue，把 producer completion fence 随 buffer 提交；Consumer 侧把它作为 acquire fence。
 
 RenderThread trace slice 的长度不等于 GPU 执行时长。GPU 可能在 RenderThread 提交返回后继续工作；需要 GPU completion、fence 或 GPU counter 才能判断设备执行时间。类似地，`syncAndDrawFrame()` 返回通常也不能当成 present 完成。
 
@@ -345,7 +438,7 @@ PausableComposition 最初在 Runtime `1.8.0-alpha02` 加入，不是 Compose 1.
 `AndroidView` 或 `ComposeView` 只说明 UI 框架嵌套关系。图形管线要继续问四个问题：谁是 Producer、谁消费 buffer、是否新建 Surface、SurfaceFlinger 中是否出现独立 Layer。
 
 | 场景 | 常见 Producer / Surface | 管线判断 |
-|---|---|---|
+| --- | --- | --- |
 | Compose 中嵌普通 `TextView`、`ImageView` | 仍由 App Window HWUI Producer 生成窗口 buffer | 单一标准 App Window 路径 |
 | View 树中嵌普通 `ComposeView` | 仍由 App Window HWUI Producer 生成窗口 buffer | 单一标准 App Window 路径 |
 | `AndroidView` 内含 `SurfaceView` | 子内容通常有独立 BufferQueue / SurfaceControl layer | 混合多 Surface 路径 |
@@ -363,6 +456,8 @@ PausableComposition 最初在 Runtime `1.8.0-alpha02` 加入，不是 Compose 1.
 ### 混合动画不自动同步
 
 Compose 与普通 View 往往共享主线程 Choreographer 和窗口 traversal，这只能保证它们受同一窗口调度。若内部存在 SurfaceView、视频解码器或其他独立 Producer，各 Producer 的 dequeue、render、queue、fence 和 SurfaceFlinger latch 时序仍可能不同。需要逐对象对齐 frame timeline，不能仅凭“同一个 Choreographer”认定画面同步。
+
+FrameTimeline 的宿主 `SurfaceFrame` 适合判断 App Window 是否按时交付，不能代替独立 Surface 或 SurfaceTexture 输入流的时间线。混合页面应从异常 `DisplayFrame` 的 present 反向确认：宿主使用了哪次 BufferTX，独立 layer 使用了新 buffer 还是旧 buffer，Texture 输入又是否赶上宿主 RenderThread 的采样。
 
 ## 用 Perfetto 定位慢帧
 
@@ -385,7 +480,7 @@ Compose 与普通 View 往往共享主线程 Choreographer 和窗口 traversal�
 ### 按阶段选择优化手段
 
 | 证据 | 优先检查 | 常见改法 |
-|---|---|---|
+| --- | --- | --- |
 | Recomposition 范围大 | 状态读取位置、参数稳定性、无效派生状态 | 缩小 state reader scope；只在输出变化频率低于输入时使用 `derivedStateOf` |
 | 高频状态把 Composition 拉进来 | 动画/滚动值在函数体读取 | 能满足语义时，把读取移到 placement、draw 或 layer property lambda |
 | Measure/Layout 重 | Intrinsics、Subcompose、Lazy 嵌套、自定义 MeasurePolicy | 减少重复 intrinsic 查询；压缩布局层级；稳定 constraints；用 benchmark 验证 |
@@ -399,7 +494,7 @@ Compose 与普通 View 往往共享主线程 Choreographer 和窗口 traversal�
 ## 版本演进：平台与 Compose 分开记
 
 | 时间/版本 | 与本章有关的变化 |
-|---|---|
+| --- | --- |
 | Compose 1.0（2021） | AndroidComposeView、LayoutNode、Snapshot 与基础硬件加速接入进入稳定版 |
 | Runtime 1.8.0-alpha02（2024-09） | 加入实验性 PausableComposition，供可暂停的子 composition 使用 |
 | Kotlin 2.0.20 | Strong Skipping 默认启用；这是编译器边界 |
@@ -445,16 +540,17 @@ composition root 分开不妨碍显式共享 state，也不保证拥有不同 Re
 本章关键结论来自以下固定基线：
 
 | 结论 | 基线源码 |
-|---|---|
-| 一次性 frame callback | Compose UI 1.11.4 `androidx/compose/ui/platform/AndroidUiFrameClock.android.kt` |
-| AndroidComposeView 的 measure/layout/draw 接缝 | Compose UI Android 1.11.4 `AndroidComposeView.android.kt` |
-| Android 17 主 graphics layer | Compose UI 1.11.4 `GraphicsLayerOwnerLayer.android.kt`；UI Graphics Android 1.11.4 `GraphicsLayerV29.android.kt` |
-| offscreen 策略 | Compose UI Graphics 1.11.4 `GraphicsLayer.kt`、`CompositingStrategy.kt`、`GraphicsLayerV29.android.kt` |
-| PausableComposition 契约 | Compose Runtime 1.11.4 `PausableComposition.kt` |
-| Lazy 预取 flag 与分段执行 | Compose Foundation 1.11.4 `ComposeFoundationFlags.kt`、`LazyLayoutPrefetchState.kt`、`PrefetchScheduler.android.kt` |
-| ViewRoot 到 HWUI 提交 | AOSP `android-17.0.0_r1` `ViewRootImpl.java`、`ThreadedRenderer.java`、`HardwareRenderer.java` |
-| App Window 以下路径 | AOSP `android-17.0.0_r1` HWUI、`frameworks/native` BufferQueue、SurfaceFlinger 与 CompositionEngine |
-| 内核机制边界 | ACK `android17-6.18-2026-06_r6` |
+| --- | --- |
+| 一次性 frame callback | Compose UI 1.11.4 [`AndroidUiFrameClock.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidUiFrameClock.android.kt) |
+| AndroidComposeView 的 measure/layout/draw 接缝 | Compose UI 1.11.4 [`AndroidComposeView.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt) |
+| Android 17 主 graphics layer | Compose UI 1.11.4 [`GraphicsLayerOwnerLayer.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/GraphicsLayerOwnerLayer.android.kt)；UI Graphics 1.11.4 [`GraphicsLayerV29.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt) |
+| offscreen 策略 | Compose UI Graphics 1.11.4 [`GraphicsLayer.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayer.kt) 与 [`CompositingStrategy.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/layer/CompositingStrategy.kt) |
+| PausableComposition 契约 | Compose Runtime 1.11.4 [`PausableComposition.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/PausableComposition.kt) |
+| Lazy 预取 flag 与分段执行 | Compose Foundation 1.11.4 [`ComposeFoundationFlags.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/ComposeFoundationFlags.kt)、[`LazyLayoutPrefetchState.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutPrefetchState.kt) 与 [`PrefetchScheduler.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/lazy/layout/PrefetchScheduler.android.kt) |
+| ViewRoot 到 HWUI 提交 | AOSP Android 17 [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)、[`ThreadedRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ThreadedRenderer.java) 与 [`HardwareRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/HardwareRenderer.java) |
+| RenderThread 到窗口 buffer | AOSP Android 17 [`DrawFrameTask.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp)、[`CanvasContext.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp) 与 [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp) |
+| SurfaceFlinger 与 HWC | AOSP Android 17 [SurfaceFlinger FrontEnd](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/) 与 [`HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp) |
+| 内核机制边界 | ACK `android17-6.18-2026-06_r6` [`sched/core.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c)、[`dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c) 与 [`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c) |
 
 Compose 版本可在 Android Developers 的 [Compose BOM 页面](https://developer.android.com/develop/ui/compose/bom)、[BOM 映射表](https://developer.android.com/develop/ui/compose/bom/bom-mapping) 与 [Compose Runtime release notes](https://developer.android.com/jetpack/androidx/releases/compose-runtime) 交叉核对。平台源码以 `android-17.0.0_r1` 固定标签为准，不用 moving branch 代替。
 
