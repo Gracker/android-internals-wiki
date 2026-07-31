@@ -1,18 +1,60 @@
 ---
-title: "TextureView 合成链路"
+title: "Android 17 TextureView 宿主合成链路"
 chapter: "18.7"
 section: "18.7"
 status: finalized
 applicable_versions: "Android 4.0 (API 14) - Android 17 (API 37)"
-tags: ["TextureView", "SurfaceTexture", "App 侧合成", "纹理采样", "OES", "BLAST", "渲染链路"]
-related_chapters: ["2.1", "2.6", "2.13", "18.6", "18.8"]
+tags: ["TextureView", "SurfaceTexture", "TextureLayer", "DeferredLayerUpdater", "HWUI", "AHardwareBuffer", "App 侧合成", "纹理采样", "BLAST", "渲染链路"]
+related_chapters: ["2.1", "2.6", "2.13", "18.2", "18.4", "18.6", "18.8"]
 sources:
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S04_textureview_type.md"
+    role: "TextureView 双队列、宿主采样、生命周期、版本边界与 Perfetto 证据链"
   - type: aosp
-    path: "platform/frameworks/base/core/java/android/view/TextureView.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/TextureView.java"
+    role: "hardware acceleration、listener、lifecycle、draw/applyUpdate、visibility 与 frame-rate bridge"
   - type: aosp
-    path: "platform/frameworks/base/graphics/java/android/graphics/SurfaceTexture.java"
-  - type: android-docs
-    path: "TextureView reference"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/SurfaceTexture.java"
+    role: "公开 Producer/Consumer、callback、release 与自管 GLConsumer 语义"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/TextureLayer.java"
+    role: "native updater、pushLayerUpdate 与 SurfaceTexture 绑定"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp"
+    role: "latest buffer、AHardwareBuffer/SkImage、GL/Vulkan fence、crop、transform、dataspace 与 HDR"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp"
+    role: "pending layer updates 与 RenderThread 帧同步"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp"
+    role: "输入队列 dequeue、queue、slot 与背压"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp"
+    role: "输入队列 acquire、release 与 slot 状态"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
+    role: "宿主窗口 buffer transaction、acquire 与 release"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/"
+    role: "宿主 layer state、snapshot 与 transaction readiness"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp"
+    role: "宿主 layer 的 composition strategy、present 与 release fences"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c"
+    role: "dma-fence 的 sync_file fd 接口"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c"
+    role: "fence signal、callback 与 wait"
+  - type: official
+    path: "https://developer.android.com/reference/android/view/TextureView"
+    role: "TextureView 公开 API、硬件加速与生命周期语义"
+  - type: official
+    path: "https://developer.android.com/reference/android/graphics/SurfaceTexture"
+    role: "SurfaceTexture 公开队列、时间戳、变换与所有权语义"
+  - type: official
+    path: "https://perfetto.dev/docs/data-sources/frametimeline"
+    role: "宿主 SurfaceFrame、DisplayFrame 与 jank 字段"
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: ready-to-publish
@@ -46,13 +88,15 @@ last_task2b_verifier_at: "2026-06-03T07:31:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-03-07-task2b-verifier.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-25
-last_verified: 2026-07-30
+last_verified: 2026-07-31
 last_verified_against: "android-17.0.0_r1 (TextureView.java, SurfaceTexture.java, TextureLayer.java, DeferredLayerUpdater.cpp, DrawFrameTask.cpp, BufferQueueProducer.cpp, BufferQueueConsumer.cpp, BLASTBufferQueue.cpp, HWComposer.cpp, sync_file.c, dma-fence.c)"
 confidence: high
 last_idle_audit_at: "2026-07-30T18:35:00+08:00"
 last_idle_audit_run_id: "20260730-183504-idle-audit-4a0df448"
 last_idle_audit_result: "pass-frontmatter-fix"
 ---
+
+# 18.7 Android 17 TextureView 宿主合成链路
 
 <!-- outline-start -->
 
@@ -509,7 +553,7 @@ HDR 要同时检查 buffer format、dataspace、CTA-861.3/SMPTE 2086 metadata、
 
 相关章节：
 
-- [18.6 SurfaceView 直出路径](06-surfaceview.md)
+- [18.6 SurfaceView 独立 Surface 路径](06-surfaceview.md)
 - [18.8 OpenGL ES 渲染路径](08-opengl-es.md)
 - [2.13 BufferQueue](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
 - [2.6 SurfaceFlinger](../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md)
