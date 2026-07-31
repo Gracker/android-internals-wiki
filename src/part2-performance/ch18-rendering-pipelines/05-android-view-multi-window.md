@@ -1,22 +1,26 @@
 ---
-title: Android View 多窗口渲染路径
+title: Android 17 多窗口渲染路径
 chapter: '18.5'
 section: '18.5'
 status: finalized
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
-last_verified: '2026-05-07'
-last_verified_against: AOSP Choreographer/ViewRootImpl/RenderThread references + EGL
-  1.5 Specification
-confidence: medium
+last_verified: '2026-07-31'
+last_verified_against: AOSP android-17.0.0_r1 ViewRootImpl/Choreographer/HWUI/WindowManager/SurfaceFlinger/HWC + kernel android17-6.18-2026-06_r6 + Android 17 target 37 large-screen guidance
+confidence: high
 tags:
 - multi-window
 - Dialog
 - RenderThread-contention
 - Choreographer
 - serial-rendering
+- WindowManager
+- SurfaceFlinger
+- multi-display
 related_chapters:
 - '2.1'
 - '18.2'
+- '18.4'
+- '18.18'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 pipeline_stage: ready-to-publish
@@ -29,10 +33,54 @@ reviewed_by: openclaw-task6
 reviewed_date: 2026-06-07
 task6_result: pass-light-edit
 sources:
-- AOSP frameworks/base/core/java/android/view/Choreographer.java
-- AOSP frameworks/base/core/java/android/view/ViewRootImpl.java
-- AOSP frameworks/base/libs/hwui/renderthread/RenderThread.cpp
-- EGL 1.5 Specification
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S06_multi_window_type.md
+  role: 多窗口的 Display/Window/线程分层、几何同步与 Perfetto 证据链
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java
+  role: ThreadLocal、callback 队列与 VSync pending 状态
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java
+  role: 每窗口 traversal、relayout、draw 与 App Window Surface
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/RenderThread.cpp
+  role: 进程级 HWUI RenderThread
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp
+  role: UI unblock 边界与窗口 draw 任务
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowContainer.java
+  role: WMS 的 Display/Task/Activity/Window 层级
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/window/WindowContainerTransaction.java
+  role: bounds、windowing mode 与 hierarchy 操作
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java
+  role: WMS 内部 WindowContainer 同步组
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp
+  role: 每窗口 buffer transaction 与 release callback
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/FrontEnd/
+  role: layer state、hierarchy、snapshot 与 readiness
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp
+  role: per-display validate、present 与 fences
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c
+  role: 多进程 UI/RenderThread 的调度入口
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
+  role: buffer fence 的 signal、callback 与 wait
+- type: official
+  path: https://source.android.com/docs/core/display/multi-window
+  role: multi-window、freeform 与 desktop windowing 配置
+- type: official
+  path: https://developer.android.com/about/versions/17/release-notes
+  role: Android 17 target 37 大屏行为
+- type: official
+  path: https://developer.android.com/blog/posts/prepare-your-app-for-the-resizability-and-orientation-changes-in-android-17
+  role: target 37 resizability/orientation 规则与豁免
 task9_result: auto-fixed
 task9_review_notes: "2026-05-07 Task9 08:36:needs-rework。P0 0 / P1 1 / P2 2;分屏/桌面多窗口仍有同进程泛化问题。2026-06-07 Task2B 主修复：修正 PopupWindow 窗口独立性描述；修正交叉引用路径（part1-foundation→part1-fundamentals）。 | 2026-06-07 Task9 auto-fixed:P1 修正 RenderThread syncFrameState/UI 线程释放边界与 Trace 时长判读;回到 Task6 复审。"
 task9_reviewed_by: openclaw-task9
@@ -51,7 +99,7 @@ last_deepseek_cn_review_at: 2026-07-04
 ---
 
 
-# 18.5 Android View 多窗口渲染路径
+# 18.5 Android 17 多窗口渲染路径
 
 <!-- outline-start -->
 
@@ -196,7 +244,7 @@ SkiaGL 可能涉及不同 EGLSurface 的 current/buffer swap 与 GL context 状�
 
 ### 跨进程窗口的竞争位置
 
-跨进程不会共享 App RenderThread，但可能分别在 CPU 调度、GPU queue、内存和同一 Display HWC 阶段竞争。问题并非必然“转移到 SurfaceFlinger”，应用自身仍可能迟到。
+跨进程不会共享 App RenderThread，但可能分别在 CPU 调度、GPU queue、内存和同一 Display HWC 阶段竞争。瓶颈可能位于任一应用进程，也可能位于 SurfaceFlinger、HWC 或设备资源。
 
 正确顺序是分别完成每个窗口的应用侧判断，再检查同一 Display 的 geometry、SF/HWC 与 present。
 
@@ -302,7 +350,7 @@ sequenceDiagram
 
 WMS `BLASTSyncEngine` 等待一组 WindowContainer 的 draw/surface transaction，再把 ready 结果交给 transition 或调用方。API 34 `SurfaceSyncGroup` 则面向应用与嵌入 Surface。两者参与对象、权限和调用方不同。
 
-`AutoSingleLayer` 只适用于单 layer 简单 buffer update，跨 layer、geometry 和 sync transaction 不适用，不能承担 PiP/resize/多窗口同步。
+`AutoSingleLayer` 只适用于单 layer 简单 buffer update，跨 layer、geometry 和 sync transaction 不适用，不能完成 PiP/resize/多窗口同步。
 
 ## Trace 视角
 
