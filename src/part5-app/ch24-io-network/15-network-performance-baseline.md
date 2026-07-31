@@ -91,145 +91,317 @@ sources:
 
 ## 本节边界
 
-本节把移动端一次网络请求拆成可测、可调、可回滚的阶段。协议机制见 12.2、12.3、12.4 和 24.5；HTTPDNS 的 OkHttp 接入边界见 24.10；请求分段优化的通用手册见 24.14；线上指标与接入层对账见 26.17。
+性能基线是一份带条件的分布记录：测了哪条用户路径、使用什么版本、网络处于什么状态、请求走了哪种缓存与连接路径、成功和失败如何计数。缺少这些前提的“平均耗时”无法用于回归判断。
 
-Part 5 的价值在执行面：怎样给每段耗时命名，怎样决定该换 DNS、换协议、调重试还是降级业务。参考书提供了「请求过程 → 网络库 → 接入层 → QUIC/IPv6」的组织顺序，正文只采用结构和知识点清单，不搬运原文段落。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 18.md][结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 19.md]
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台基准，说明如何建立可重复的网络实验。24.14 已给出请求事件与重试预算，24.5 解释 HTTP/2、HTTP/3 和 QUIC，24.10 解释 HTTPDNS 接入。本章只引用这些机制，把重点放在样本设计、对照实验和发布门禁。
 
-## 请求阶段拆分
+## 三类基线各自回答一个问题
 
-移动端网络优化从阶段耗时开始。只看 `total_time_ms` 会把 DNS 抖动、TCP 失败、TLS 证书校验、服务端排队、响应体过大混在一起，后续动作很容易偏。
+工程中至少保留三类基线。它们的环境和用途不同，不能把数据合并后计算一个分位值。
 
-| 阶段 | 客户端字段 | 服务端/接入层字段 | 失败含义 | 下一步动作 |
-|------|------------|-------------------|----------|------------|
-| DNS | `dns_start_ms`、`dns_end_ms`、`dns_provider`、`dns_cache_hit` | 解析来源、调度 IP、TTL | 解析慢、劫持、跨运营商调度 | 看 24.10 的 HTTPDNS 缓存和兜底模型 |
-| 地址选择 | `ip_family`、`candidate_ip_count`、`selected_ip`、`fallback_index` | VIP/边缘节点、区域、运营商 | IPv6 不通、单 IP 故障、调度不准 | 多 IP fast fallback，失败 IP 隔离 |
-| 建连 | `connect_start_ms`、`connect_end_ms`、`protocol`、`socket_reused` | 接入层连接队列、端口、四元组 | TCP/QUIC 可达率低、端口被限 | 预连接、复用、HTTP/3 灰度回退 |
-| TLS | `tls_start_ms`、`tls_end_ms`、`tls_version`、`session_reused` | 证书、SNI、ALPN、握手错误码 | 证书链慢、会话复用失效、代理干预 | TLS 1.3、会话复用、证书配置审计 |
-| 请求发送 | `request_bytes`、`upload_ms`、`content_encoding` | 入站字节、限流、鉴权结果 | 体积过大、上行带宽低、请求被拦 | 压缩、字段裁剪、请求分级 |
-| 首包 | `ttfb_ms`、`http_status`、`retry_count` | upstream 耗时、业务处理耗时、缓存命中 | 服务端慢、接入层排队、重试放大 | 接入层对账，避免客户端盲目重试 |
-| 下载 | `response_bytes`、`download_ms`、`throughput_kbps` | 出站字节、CDN 命中、分片耗时 | 响应大、单连接限速、弱网丢包 | 分页、差量、CDN、协议切换 |
+| 基线 | 环境 | 回答的问题 | 适合做门禁的指标 |
+| --- | --- | --- | --- |
+| 确定性基线 | 本地测试服务、固定响应、受控故障代理 | 客户端排队、读写、解码、取消和重试语义是否退化 | 操作耗时、调用数、尝试数、字节数、功能不变量 |
+| 设备实验室基线 | 固定真机、系统版本、接入点、网络整形和服务端 | DNS、建连、协议、切网与功耗改动是否符合预期 | 分阶段分布、成功率、协议使用率、恢复时间、能耗 |
+| 线上基线 | 真实地区、运营商、设备与服务端版本 | 改动对用户路径和尾延迟有什么影响 | 页面完成、请求成功、P50/P95/P99、后台流量、业务护栏 |
 
-Cronet 公开 API 能提供请求结束指标、网络质量估计、HTTP RTT 和吞吐量估计；Android Developers 文档也确认 Cronet 支持 HTTP、HTTP/2 和 HTTP/3 over QUIC。[已验证: 官方文档, developer.android.com/develop/connectivity/cronet][已验证: 官方文档, developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/NetworkQualityRttListener]
+确定性基线可以进入每次提交的 CI。公共互联网和生产 CDN 会受调度、拥塞、证书、服务端发布与时间段影响，适合定时实验和线上灰度，不适合作为每次提交的单一阻断条件。
 
-OkHttp 项目通常通过 `EventListener` 补齐 DNS、connect、secureConnect、requestHeaders、responseHeaders 等阶段。自研网络栈也要提供等价字段，否则只能用外层耗时猜测瓶颈。
+基线对象也应从用户路径开始。例如“首页可交互”可能包含配置、列表、图片和本地解码，单个 API 变快不保证页面变快。每条关键路径都要定义：
 
-## DNS 与地址选择
+- 开始事件与完成事件。
+- 必须成功的请求、允许使用旧缓存的请求和可延后请求。
+- 用户等待截止时间与取消条件。
+- 允许的网络调用数、物理尝试数和总字节。
+- 服务端写操作的幂等与结果查询方式。
 
-Android 10 以后，App 可使用 `DnsResolver` 进行异步 DNS 查询，并可传入 `Network` 约束解析走哪张网络。AOSP android-35 的 `android.net.DnsResolver` 仍保留 `query(Network, String, ...)` 系列入口，这说明系统 DNS 能按网络对象参与解析，但它不等于业务层 HTTPDNS。[已验证: AOSP android-35, android/net/DnsResolver.java]
+## 请求阶段拆分使用同一份指标字典
 
-DNS 优化要拆成四个问题：
+24.14 的请求时间线是本章的字段来源。基线报告至少保留逻辑操作、网络库调用、物理连接尝试和 HTTP 交换四个层级，避免一次内部回退被误算成多个用户请求。
 
-- 解析入口：系统 DNS 适合默认路径，HTTPDNS 适合调度、容灾和运营商 LocalDNS 异常治理；DoH/DoT 适合隐私和抗篡改诉求，是否接入取决于服务器、合规和失败兜底能力。
-- 缓存策略：TTL 要来自权威配置或 HTTPDNS 返回，客户端本地缓存不能无限延长；网络切换、失败 IP、证书错误都应触发刷新或隔离。
-- 地址排序：IPv4/IPv6、多个 VIP、多个端口不要只按列表顺序尝试；失败历史、网络类型、运营商、区域和握手耗时都应进入排序。
-- 兜底路径：HTTPDNS 服务不可达时要回到系统 DNS；HTTPDNS 返回空列表、单 IP 超时、多 IP 部分失败都应有独立错误码。
+| 阶段 | 起止边界 | 缺失时如何解释 | 不能混入的时间 |
+| --- | --- | --- | --- |
+| 业务队列 | 用户动作到调用网络层 | 无队列也要记录零或明确缺失原因 | OkHttp `Dispatcher` 等待 |
+| 调度队列 | 网络库接收调用到开始执行 | 同步调用或未排队时可能没有独立事件 | DNS、代理选择、缓存查找 |
+| 缓存路径 | 缓存判定到命中，或转入网络 | 未配置缓存与缓存未命中要分开 | 响应解码与业务缓存 |
+| DNS | 解析开始到结果或错误 | 复用连接时通常没有 DNS | 地址建连和 Fast Fallback 等待 |
+| connect | 每次地址尝试开始到成功或失败 | 复用连接时没有新建连 | TLS 与后续交换 |
+| TLS | 握手开始到验证结束 | 明文、复用连接或库未暴露时为空 | 服务端应用处理 |
+| 上传 | 请求头发送开始到请求体完成 | 无请求体时以请求头发送完成为界 | 排队和响应等待 |
+| TTFB | 请求发送完成到最终响应开始 | 缓存命中与双工流要使用单独定义 | 响应体下载 |
+| 下载 | 响应体开始到读取或关闭 | 提前关闭要记录取消或截断 | 解压、反序列化与界面提交 |
+| 本地消费 | 字节可用到业务消费完成 | 后台预取可能没有界面事件 | 网络等待 |
 
-24.10 已经展开 OkHttp `Dns.lookup()` 的同步执行边界。本节只保留判断口径：`lookup()` 里发实时 HTTPDNS 请求会阻塞 route planning，还可能递归依赖同一个网络栈；更稳的模型是异步预取 + 内存缓存读取 + 磁盘缓存兜底 + 系统 DNS 回退。
+阶段值允许为空。连接复用时把 DNS、connect、TLS 填成零，会把“没有发生”误写成“瞬间完成”；失败发生在 DNS 时，后续阶段同样应为空。聚合前应按缓存路径、连接复用、协议、成功/失败和取消分别统计。
 
-## 连接复用与队头阻塞
+### 用结构化键阻止不兼容样本混算
 
-建连成本由 TCP/QUIC 握手、TLS 握手、代理环境、证书链、网络切换共同决定。复用连接能少走这些阶段，但复用不是越高越好。
+下面的 Kotlin 数据结构给实验记录建立最小约束。它不负责发请求，只规定哪些环境字段必须随样本保存。
 
-| 场景 | 收益 | 风险 | 处理方式 |
-|------|------|------|----------|
-| HTTP/1.1 keep-alive | 避免重复 TCP/TLS 建连 | 并发请求受连接数限制 | 按 host 建连接池，控制空闲连接数量 |
-| HTTP/2 多路复用 | 多个请求共享同一 TCP 连接 | TCP 层丢包会影响同连接上的多个 stream | 大文件、视频、第三方下载可单独隔离 |
-| 域名合并 | 多业务复用同一接入层连接 | 证书 SAN、SNI、Cookie、鉴权边界容易混 | 只在统一接入层和安全边界明确时启用 |
-| 预连接 | 用户动作前完成建连 | 浪费电量、流量和服务端连接资源 | 只给高置信路径设置短窗口预连接 |
-| 单连接限速绕过 | 避免下载被服务端限速 | 破坏 HTTP/2 复用收益 | 仅对下载类请求独立策略，不影响 API 请求 |
+```kotlin
+enum class RequestPathState {
+    NETWORK_NEW_CONNECTION,
+    NETWORK_REUSED_CONNECTION,
+    CACHE_HIT,
+    CACHE_REVALIDATED,
+}
 
-HTTP/2 解决的是 HTTP/1.1 应用层请求排队，底层仍跑在一条 TCP 连接上。弱网丢包时，同连接上的多个 stream 都会受 TCP 重传影响。HTTP/3/QUIC 把多个 stream 放到 UDP 之上的 QUIC 层，单个 stream 的丢包不会按 TCP 连接粒度拖住其他 stream；代价是 UDP 可达率和服务端改造要通过灰度验证。
+enum class OperationOutcome {
+    SUCCEEDED,
+    FAILED,
+    CANCELED,
+    DEADLINE_EXCEEDED,
+}
 
-## Cronet、OkHttp 与 Mars 选型
+data class NetworkBaselineKey(
+    val platformApi: Int,
+    val platformBuildId: String,
+    val appVersionCode: Long,
+    val networkStackName: String,
+    val networkStackVersion: String,
+    val networkStackConfigId: String,
+    val scenarioId: String,
+    val requestPathState: RequestPathState,
+    val networkSessionId: Long,
+    val transports: Set<Int>,
+    val validated: Boolean,
+    val metered: Boolean,
+)
 
-网络库选型要围绕业务形态，不要把某个库写成统一答案。
+data class NetworkBaselineSample(
+    val key: NetworkBaselineKey,
+    val operationElapsedNanos: Long,
+    val outcome: OperationOutcome,
+    val negotiatedProtocol: String?,
+    val sentBytes: Long?,
+    val receivedBytes: Long?,
+    val networkCallCount: Int,
+    val connectionAttemptCount: Int,
+)
+```
 
-| 维度 | OkHttp | Cronet | Mars / 自研长连接 |
-|------|--------|--------|-------------------|
-| 协议 | HTTP/1.1、HTTP/2，HTTP/3 取决于外部接入方案 | 官方文档明确支持 HTTP、HTTP/2、HTTP/3 over QUIC | 常见定位是 Socket/长连接层，HTTP 能力取决于封装 |
-| Android 接入 | 生态成熟，拦截器和 Retrofit 集成成本低 | 需要引入 Cronet 依赖或 Play services 方案 | 接入、灰度、监控、服务端配套成本高 |
-| 弱网能力 | 依赖连接池、超时、重试和业务策略 | 有网络质量估计、QUIC、连接迁移等 Chromium 能力 | 可按业务协议做心跳、重连、包大小和容灾策略 |
-| 跨端一致性 | Android 侧强，iOS 需另配 | Chromium 栈更利于多端统一 | 可按公司协议统一，但维护成本高 |
-| 可观测性 | EventListener、拦截器、应用埋点 | RequestFinishedInfo、全局 metrics、网络质量估计 | 指标完全由团队设计，灵活但要防口径漂移 |
-| 适合场景 | 常规 API、图片、下载、快速交付 | 大流量、协议演进、HTTP/3 灰度、跨端网络栈 | IM、直播、游戏、强弱网容灾、长连接业务 |
+`networkSessionId` 是进程内为每个新观察到的 `Network` 分配的临时编号，不上传系统网络句柄。实验室可保存完整系统构建号；线上数据应使用受控分桶，避免形成设备指纹。`scenarioId`、网络栈配置编号和传输集合必须来自白名单，也不能包含账号、URL、IP 或文档名。
 
-Cronet 官方文档写明它是 Chromium 网络栈的 Android 库，目标是降低延迟、提高吞吐，并支持 HTTP/3 over QUIC。[已验证: 官方文档, developer.android.com/develop/connectivity/cronet] 但 Cronet 不会替业务处理幂等、降级、接入层路由和服务端排队问题。OkHttp 也不是弱网治理的反面；它的优势在接入成本、生态和可控性。
+分位值只在 `NetworkBaselineKey` 相同或分析者明确选择的维度内计算。系统版本、网络栈提供程序、缓存路径或计费状态不同的样本直接混合，会把环境构成变化误判成代码回归。
 
-## HTTP/3、QUIC 与网络切换
+## DNS 与地址选择的基线怎么建
 
-HTTP/3/QUIC 在移动端有三类直接收益：握手更短、stream 级别队头阻塞更少、网络切换时连接迁移空间更大。Cronet 的 `CronetEngine.Builder` 文档还提到 QUIC hint、HTTP cache 对跨会话 0-RTT 的作用，以及 network quality estimator 的 RTT/吞吐估计能力。[已验证: 官方文档, developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/CronetEngine.Builder]
+Android 10 / API 29 起公开的 `DnsResolver` 支持异步查询，并可传入 `Network`。`android-17.0.0_r1` 的 [`DnsResolver.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/DnsResolver.java) 仍按目标网络的 `netId` 发起解析。它属于系统解析入口，不等同于业务自建 HTTPDNS。
 
-生产接入不能只看实验室耗时。灰度方案至少要记录这些字段：
+每种解析方案单独建组：
 
-- UDP 可达率：按国家、运营商、网络类型、系统版本统计 QUIC 建连成功率。
-- 回退路径：QUIC 失败后回到 HTTP/2 或 HTTP/1.1 的耗时、错误码和重试次数。
-- 迁移效果：Wi-Fi ↔ 蜂窝切换时，请求是否重建、是否丢首包、是否触发业务超时。
-- 服务端能力：接入层是否支持 QUIC、证书和 ALPN 是否齐全、负载均衡是否保留连接状态。
-- 灰度开关：按域名、接口、业务等级和地区控制，不把登录、支付、下单等高风险请求放在第一批。
+| 解析路径 | 固定条件 | 必须记录 | 不能由结果推断 |
+| --- | --- | --- | --- |
+| 系统 DNS | Android `Network`、Private DNS 状态、网络会话 | 是否执行查询、耗时、结果数量、错误类别 | 具体递归解析器的完整内部耗时 |
+| HTTPDNS | 服务版本、缓存版本、系统 DNS 回退策略 | 本地命中、过期、请求结果、回退原因 | 返回地址一定可连接或证书一定匹配 |
+| 应用内 DoH | DoH 提供方、引导地址、连接复用状态 | 引导方式、查询耗时、HTTP 状态、回退 | Android 系统 DNS 的行为 |
+| 平台 Private DNS | 系统设置与 `LinkProperties` 快照 | 是否启用、是否验证、默认网络会话 | 应用请求一定使用某个特定服务器 |
 
-HTTP/3 接入后，P50 变快不代表风险降低。要同时看 P95/P99、失败率、回退率、服务端 CPU、UDP 被阻断比例和耗电表现。网络协议切换影响请求、接入层、证书、CDN 与监控口径，回滚开关必须比灰度开关更早上线。
+“冷 DNS”需要谨慎命名。应用可以清理自己的 HTTPDNS 缓存，却通常不能在普通测试进程里独占或可靠清理系统解析缓存。若无法控制系统缓存，报告应写“新应用客户端、无应用缓存”，不要写成“系统冷解析”。
 
-## 弱网容灾策略
+地址选择要保留候选数量、地址族、每次尝试的顺序、是否并行、失败类型和获胜尝试。OkHttp 5 的 Fast Fallback 可能并行建立多个连接；只记录最终 IPv4 或 IPv6 会隐藏另一组地址持续失败的问题。生产遥测不保存原始 IP，可使用地址族、匿名化边缘节点编号和服务端返回的区域标记。
 
-弱网治理的目标不是让每个请求都成功，而是让重要请求有预算、可恢复、可解释。24.14 已经给出一次请求的七段拆解，本节补执行清单。
+TTL 到期只影响后续解析。已经复用的连接不会因为 TTL 到期自动失效，基线也不能用清空连接池来模拟普通 TTL 刷新。HTTPDNS 与 OkHttp 的同步边界继续见 24.10。
 
-| 策略 | 适合对象 | 关键边界 | 观测字段 |
-|------|----------|----------|----------|
-| 分阶段超时 | 登录、首页、支付、图片、下载 | DNS、connect、read、write 不共用一个总超时 | `timeout_stage`、`elapsed_ms` |
-| 重试预算 | GET、幂等 POST、资源拉取 | 非幂等请求必须有业务幂等键；网络层不替业务兜底 | `retry_count`、`retry_reason`、`idempotency_key` |
-| 熔断 | 某域名、某接口、某接入点连续失败 | 熔断粒度不能大到影响全站；恢复要小流量探测 | `circuit_state`、`probe_result` |
-| 备用域名/IP | DNS 污染、VIP 故障、区域接入层异常 | 备用 IP 要过证书、SNI、Host、风控校验 | `fallback_host`、`fallback_ip` |
-| 请求分级 | 首屏、交易、后台同步、日志上报 | 低优先级请求在弱网下降级或延后 | `request_class`、`degrade_reason` |
-| 流量降级 | 图片、视频、列表、推荐流 | 降级要保护用户体验，不把空白页当成功 | `payload_level`、`bytes_saved` |
+## 连接复用与队头阻塞要分路径测试
 
-重试要防止「失败 → 重试 → 队列变长 → 更多超时」的放大效应。客户端、接入层和业务服务要共享错误分类：DNS 失败、TCP 连接失败、TLS 失败、HTTP 5xx、业务错误、客户端取消不能混成一个 `network_error`。
+至少建立四种请求路径：
 
-## 数据体积与传输成本
+| 路径 | 实验准备 | 验证目标 |
+| --- | --- | --- |
+| 新连接 | 无可复用连接，明确 DNS 缓存条件 | 解析、地址选择、connect、TLS 和首个交换 |
+| 复用空闲连接 | 同一网络、代理、地址与安全配置，前一请求已完成 | 连接池命中与省去握手后的收益 |
+| 多路复用并发 | 同一 HTTP/2 或 HTTP/3 连接发出多请求 | 流数量、优先级、丢包时的尾延迟与大响应干扰 |
+| HTTP 缓存 | 分别制造直接命中、条件请求和未命中 | 缓存语义、线上字节与本地读取成本 |
 
-减少字节数通常能改善弱网体验，但压缩和序列化会消耗 CPU、电量和服务端资源。移动端要按数据形态选方案。
+新建一个客户端不一定等于网络全冷：系统 DNS、TLS 状态、Cronet 磁盘数据、服务器 QUIC 信息和 CDN 边缘状态都可能保留。报告要列出清理了哪些状态、保留了哪些状态。
 
-| 方案 | 收益 | 成本 | 适合场景 |
-|------|------|------|----------|
-| JSON 字段裁剪 | 接入快，兼容好 | 仍有字段名和文本冗余 | API 响应、灰度字段治理 |
-| Protocol Buffers | 体积和解析速度较好 | schema 管理、调试和兼容成本更高 | 高频接口、跨端协议、长连接消息 |
-| gzip | 通用支持好 | 压缩率和速度不是最优 | 文本响应、旧服务端 |
-| Brotli | 文本压缩率好 | 编码 CPU 成本更高 | 静态资源、可缓存文本 |
-| Zstandard | 压缩率和速度平衡好，可配字典 | 客户端库、字典分发、服务端训练成本 | 高频业务数据、接入层统一压缩 |
-| 业务字典 | 对固定字段和枚举收益大 | 字典版本、回滚和兼容复杂 | 大规模统一接入层、有样本训练能力的团队 |
+HTTP/1.1 的并发通常依赖多条连接；HTTP/2 在一条 TCP 连接上复用多个流，TCP 丢包会影响该连接上的发送进度；HTTP/3 在 QUIC 中为流提供独立的有序交付，单个流的数据丢失不会按 HTTP/2 的 TCP 字节序阻塞其他流。QUIC 仍共享连接级拥塞控制和路径容量，因此某个流占用大量带宽仍可能影响其他流。
 
-压缩策略要和缓存、分页、差量更新一起评估。把一个 3 MB 响应 gzip 成 1 MB 只能降低传输时间；如果首屏只用 50 KB，分页和字段裁剪比压缩更有效。
+连接合并也要单独标记。不同主机复用 HTTP/2 连接取决于证书、DNS、代理、地址和网络库实现。主机数不能代替连接数，连接复用率也不能单独证明页面更快。
+
+## Cronet、OkHttp、HttpEngine 与 Mars 的可比性
+
+选型实验应记录实际实现，不使用“Cronet 组”“OkHttp 组”这种过宽标签。
+
+| 网络栈 | 基线必须固定 | 可用观测 | 主要边界 |
+| --- | --- | --- | --- |
+| OkHttp 5.x | 精确版本、拦截器顺序、`Dispatcher`、连接池、DNS、协议列表 | `EventListener`、`Response.protocol`、应用事件 | 默认客户端没有 HTTP/3；事件可因复用、重试和重定向而缺失或重复 |
+| Cronet 库 | Maven 版本、实际 `CronetProvider`、引擎版本、缓存目录和配置 | `RequestFinishedInfo.Metrics`、`UrlResponseInfo`、网络质量估计、NetLog | Java 回退实现与原生实现不等价；NetLog 只用于受控诊断 |
+| 平台 `HttpEngine` | API/SDK 扩展版本、模块版本、缓存与 QUIC/Brotli 配置 | `UrlResponseInfo` 与公开回调 | `android-17.0.0_r1` 没有后续 37.1 才加入的完整请求计时 API |
+| Mars 或自有长连接 | 仓库提交、协议版本、心跳、连接复用、加密与重连策略 | 团队定义的消息确认、积压、重连和字节指标 | 指标需和 HTTP 请求分开，不能用库名称代替具体实现 |
+
+Cronet 的 `RequestFinishedInfo.Metrics` 能提供请求、DNS、连接、TLS、发送、响应开始和结束等时间。复用套接字时 DNS、连接和 TLS 时间为空；重定向相关计时与字节按该 API 的定义累计，分析前要阅读所用 Cronet 版本的接口说明。`UrlRequest.Builder.addRequestAnnotation()` 可关联请求类型，但注解对象仍要遵守低基数和无个人信息原则。
+
+Cronet 网络质量估计器的 RTT 样本可能来自 TCP、QUIC 或 URL 请求层，吞吐样本来自网络栈观察。它们是网络状态信号，不是某条请求的 DNS、TTFB 或下载耗时替代值。未启用估计器或没有足够观察时，API 会返回未知值，不能填入默认网速。
+
+跨网络栈比较时，业务拦截器、缓存、压缩、Cookie、代理、证书验证、线程执行器和响应读取方式必须一致。若同时从 OkHttp 切到 Cronet 并启用 HTTP/3，结果包含“实现变化”和“协议变化”两个变量，无法单独归因给 QUIC。
+
+## HTTP/3、QUIC 与网络切换的实验设计
+
+隔离协议影响时，优先在同一个 Cronet 或 HttpEngine 实现中只改变 QUIC 开关，其余配置保持一致。实验组还要按以下状态分开：
+
+- 首次连接、已有 QUIC 服务器信息、具备可用会话状态。
+- HTTP/3 成功、主动禁用、UDP 不可达后回到 HTTP/2 或 HTTP/1.1。
+- 直接响应、重定向、HTTP 缓存命中和条件请求。
+- 请求前切网、上传期间切网、等待响应时切网、下载期间切网。
+
+每次切网实验记录旧、新 `Network` 的临时编号和能力快照、切换发生时的请求阶段、已发送与已接收字节、最终协议、是否重新建连、业务层是否重复提交。QUIC 支持连接迁移不表示每个提供程序、服务端和路径都会迁移成功；代理、VPN、NAT、服务器配置和连接迁移选项都会改变结果。
+
+UDP 阻断测试必须保留从首次 QUIC 尝试到 HTTP 回退完成的总耗时。只比较成功的 HTTP/3 与成功的 HTTP/2，会漏掉协议探测失败造成的尾延迟。服务端同时记录 ALPN、QUIC 版本、连接 ID 迁移、重试令牌和错误分类，客户端不要从端口或 URL 推断协议。
+
+0-RTT 单独建组，并只用于可重放的操作。客户端与服务端要共同验证重复到达时的语义，状态变更请求不能因“更快”直接进入早期数据。
+
+QUIC 状态机位于用户空间网络栈，Android common kernel 负责 UDP 套接字、IP、路由、队列和驱动。本项目的内核证据统一到 `android17-6.18-2026-06_r6`，UDP 发送路径可从 [`net/ipv4/udp.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/ipv4/udp.c) 继续检查。应用层不能把内核 UDP 统计直接当作 HTTP/3 请求结果。
+
+## 弱网容灾基线检查不变量
+
+故障注入的目标是验证行为，而非追求某个漂亮耗时。每种故障都要写出客户端允许做什么、禁止做什么。
+
+| 故障 | 要验证的行为 | 主要风险 |
+| --- | --- | --- |
+| DNS 超时、无答案、NXDOMAIN | 错误分类、系统 DNS 或缓存回退、总截止时间 | 多层解析同时重试 |
+| 单个地址超时或拒绝连接 | Fast Fallback、失败隔离、尝试上限 | 并行连接过多 |
+| 证书链或主机名错误 | 立即失败并保留安全错误 | 被错误归类为可重试弱网 |
+| 上传后连接断开 | 结果未知、幂等查询或恢复 | 重复下单、支付或发消息 |
+| 429、503 与 `Retry-After` | 尊重服务端等待要求和逻辑操作截止时间 | 客户端请求风暴 |
+| 响应头慢、响应体截断 | TTFB 与下载阶段分离、关闭资源 | 只记录响应码为成功 |
+| 网络切换、VPN 变化 | 取消或恢复符合幂等规则 | 全量清池与集中重建 |
+| 页面退出与任务取消 | 网络调用停止、回调不再更新界面 | 遗留下载和无效解码 |
+
+超时参数来自用户路径截止时间和各阶段历史分布，不能复制一组全局数字。网络库内部恢复、业务重试、图片库重试和 WorkManager 退避都要计入同一个逻辑操作。有关实现顺序与幂等边界见 24.14。
+
+熔断的粒度通常是具体服务、路由或接入点，并带有限制并发的探测恢复。对全站使用一个熔断状态，可能让局部故障扩大成整站不可用。备用域名和 IP 还必须通过证书、SNI、Host、Cookie、鉴权和服务端风控校验。
+
+## 数据体积与传输成本分两个轴比较
+
+序列化格式决定业务数据怎样表示，内容编码决定表示结果怎样压缩。两者是正交变量，应比较 JSON、Protocol Buffers 等表示在相同字段集合下的大小和解析成本，再比较 gzip、Brotli、Zstandard 等内容编码在相同输入上的线上字节与 CPU。
+
+| 变量 | 需要固定 | 需要测量 | 兼容边界 |
+| --- | --- | --- | --- |
+| JSON 字段集合 | 业务语义、空值与默认值策略 | 未压缩字节、解析 CPU、对象分配 | 服务端与旧客户端字段兼容 |
+| Protocol Buffers | schema、未知字段、默认值与版本 | 编码字节、序列化/反序列化 CPU | schema 演进和调试工具 |
+| gzip | 压缩级别、服务端实现、响应类型 | 线上字节、压缩与解压 CPU | 客户端透明解压后的字段口径 |
+| Brotli | 质量等级、静态或动态响应、网络栈开关 | 线上字节、首包与 CPU | HttpEngine 默认关闭 Brotli，实际配置要入样本 |
+| Zstandard | 客户端/服务端支持、内容协商、可选字典版本 | 线上字节、CPU、内存和失败回退 | 不能假定所有 Android 网络栈自动支持 |
+| 业务字典 | 字典 ID、版本、灰度与回滚 | 命中率、字节、解码失败 | 客户端与服务端必须同时拥有兼容字典 |
+
+请求字段裁剪、分页和差量更新往往比更换压缩算法更早减少无用数据。基线因此要同时记录业务使用字节和线上传输字节，防止“压缩率提高”掩盖响应仍包含大量首屏不用的字段。
+
+字节指标必须带口径。Cronet `UrlResponseInfo.getReceivedByteCount()` 返回处理该请求所需的最小网络接收字节，发生在解压前，包含重定向的头部与数据，但不保证包含 IP、TCP/UDP、TLS 和代理等全部开销。OkHttp 事件字节、响应体长度、`TrafficStats` UID 差值也各有定义，不能放进同一列直接比较。
+
+序列化和解压 CPU 可用 Microbenchmark 在固定输入上测量；端到端页面可用 Macrobenchmark 配合本地固定响应观察。远程网络波动会污染 CPU 微基准，不应把真实互联网请求放入循环微基准。
 
 ## 验证与回归防护
 
-网络优化的回归测试要覆盖客户端、系统、接入层和用户体验四个面。
+### 固定环境，再做 A/B
 
-- 客户端阶段耗时：统一采集 DNS、connect、TLS、TTFB、download、bytes、protocol、socket reuse、retry 等字段，OkHttp 用 EventListener，Cronet 用公开 Cronet API 和网络质量估计能力。[已验证: 官方文档, developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/NetworkQualityRttListener]
-- 系统网络状态：用 `ConnectivityManager` 和 `NetworkCapabilities` 区分 Wi-Fi、蜂窝、以太网、卫星等 transport；AOSP android-35 的 `NetworkCapabilities` 保留 `TRANSPORT_CELLULAR`、`TRANSPORT_WIFI` 等常量。[已验证: AOSP android-35, android/net/NetworkCapabilities.java]
-- 流量统计：`TrafficStats.getUidRxBytes()` 等接口能按 UID 读取收发字节，适合做粗粒度流量回归；精细阶段仍要靠网络库埋点。[已验证: AOSP android-35, android/net/TrafficStats.java]
-- 接入层对账：客户端 `trace_id` 要贯穿 DNS 选择、接入层、upstream 服务和 CDN 日志，避免客户端把服务端排队误判成弱网。
-- 功耗约束：Android Developers 的网络访问优化文档强调无线电状态机和批量网络请求对电量的影响；后台请求、预连接和重试都要看电量指标。[已验证: 官方文档, developer.android.com/develop/connectivity/network-ops/network-access-optimization]
-- 回归用例集：Wi-Fi、蜂窝、弱网、网络切换、代理、证书替换、IPv6-only、UDP 阻断、服务端 5xx、DNS 空响应都要有固定用例。
+同一轮对照实验至少固定：
 
-Perfetto 更适合观察线程调度、CPU、binder、socket 相关系统调用与应用阶段埋点的时间关系；它不能替代网络库里的协议阶段字段。线上网络质量监控的告警、证据包和接入层协同见 26.17。
+- 物理设备、Android 版本、系统构建和相关 Mainline 模块状态。
+- 发布型 APK、编译状态、代码压缩配置和应用数据准备方式。
+- 网络接入点、代理/整形配置、计费与验证能力、VPN 和 Private DNS 状态。
+- 网络栈版本、提供程序、缓存目录、协议开关和连接预热方式。
+- 服务端版本、响应内容、缓存指令、边缘节点与证书配置。
+- 实验顺序、并发背景任务、充电与温度条件。
 
-## 扩展：移动网络标准演进
+Android 官方性能指南要求使用接近发布的构建，并在同一设备与系统版本上做 A/B。Debug 构建、调试器、持续抓包和详细 NetLog 都会增加开销，只用于定位，不进入正式基线。
 
-Wi-Fi、蜂窝网络、5G、IPv6 对 App 请求的影响不只体现在带宽。App 更常遇到的是网络切换、NAT、运营商策略、UDP 可达率、代理环境和局部拥塞。`ConnectivityService` 负责向应用侧分发网络能力变化，AOSP android-30 代码中能看到 `notifyNetworkCallbacks()`、Wi-Fi/蜂窝 transport 判断和网络回调分发路径。[已验证: AOSP android-30, com/android/server/ConnectivityService.java]
+为降低时间漂移，可以在同一设备上交错运行基线组与候选组，并随机化用例顺序。网络切换、DNS 缓存、CDN 状态等跨用例状态仍需显式重置或记录；“重新启动应用”不是完整清理方案。
 
-IPv6 的收益不能简单写成「一定更快」。它减少 NAT 层级，对 P2P、QUIC 和地址资源有帮助，但具体请求耗时取决于运营商、地区、接入层和应用地址选择策略。IPv6-only、NAT64、464XLAT、双栈选择都要进入回归用例。
+### 统计时先看分母
 
-## 扩展：安全与性能的取舍
+报告顺序建议固定为：
 
-TLS 1.3、会话复用、0-RTT 和证书链优化能减少握手成本，但安全策略会改变性能边界。0-RTT 有重放风险，只适合幂等请求；证书锁定能降低被代理或中间人篡改的风险，但证书轮换失败会造成大面积不可用。
+1. 样本数、成功、失败、取消和截止时间超限。
+2. 每个逻辑操作的网络调用数、连接尝试数和总字节。
+3. 成功样本的 P50、P95、P99 与置信区间。
+4. 按缓存路径、协议、网络能力、地区、运营商、设备和版本分组。
+5. 页面完成、业务正确性、后台流量和功耗护栏。
 
-Android Network Security Config 官方文档说明，证书 pinning 可设置过期时间，避免长期未更新 App 在证书轮换后完全断网。[已验证: 官方文档, developer.android.com/privacy-and-security/security-config] 高风险业务可以锁定公钥或根证书，但必须保留备用 pin、过期时间、灰度验证和远程熔断方案。
+只对成功样本计算延迟会产生幸存者偏差：候选方案若更早失败，成功请求可能看起来更快。成功率和延迟必须并列展示，失败请求也要保留失败阶段与已消耗时间。
 
-## 扩展：系统侧网络模块
+回归阈值来自用户体验目标、历史波动、样本量和实验成本。固定的通用毫秒阈值无法覆盖首页 API、媒体、长连接和后台同步。门禁配置应保存基线版本、适用场景、统计窗口和阈值来源，基线也不能永远指向“上一轮结果”，否则连续小幅退化会逐次被接受。
 
-App 网络库问题和系统网络问题要分开判断。DNS 解析可看 `DnsResolver`、DNS Resolver APEX 与 netd；网络能力和切换可看 `ConnectivityService`、`NetworkCapabilities`、`ConnectivityManager.NetworkCallback`；流量粗统计可看 `TrafficStats`。Source Android 文档说明 DNS Resolver 模块以 APEX 形式交付，并由 netd 动态链接，同时本模块可直接服务 `/dev/socket/dnsproxyd`。[已验证: 官方文档, source.android.com/docs/core/ota/modular-system/dns-resolver]
+### 工具各看一层
 
-系统侧验证只用于定位边界，不建议 App 绕过平台网络策略。应用侧能稳定控制的是网络库选型、阶段埋点、缓存、重试、降级和接入层协同。
+| 工具 | 适合观察 | 不适合回答 |
+| --- | --- | --- |
+| OkHttp `EventListener` | 调度、DNS、连接、TLS、交换、缓存和重试决策 | Cronet、WebView 或自有套接字流量 |
+| Cronet 完成信息与网络质量估计 | Cronet 请求时间、字节、协议与网络状态样本 | 平台外部网络栈或业务页面完成 |
+| `NetworkCapabilities` / `LinkProperties` | 网络会话、能力、传输集合、路由与 DNS 配置 | 端到端实测速率；带宽字段只是首跳估算 |
+| `TrafficStats` | 当前 UID 跨接口的粗粒度累计字节 | 单请求、单域名、后台移动流量或协议开销 |
+| Perfetto 与应用 Trace | 线程调度、CPU、Binder、GC 和本地处理时间关系 | 完整 DNS、TLS、HTTP/3 语义 |
+| 服务端追踪记录 | 接入层排队、上游耗时、响应字节与限流 | 客户端队列、无线网络和本地解码 |
+| Macrobenchmark | 带固定数据源的用户路径完成与系统 Trace | 不受控公共互联网的稳定协议门禁 |
 
-## 小结
+Android vitals 的后台移动网络、Play Console 业务指标和线上请求遥测属于发布护栏。实验室协议收益成立后，仍要分阶段灰度，并为失败率、P99、重试数、后台字节、服务端 CPU 和业务成功率设置独立停止条件。
 
-移动网络优化要从阶段字段开始，按 DNS、地址选择、建连、TLS、发送、首包、下载逐段验证。DNS 和协议切换能改善一部分请求，弱网容灾、请求分级、接入层对账和回滚开关决定线上能否长期稳定。
+## 扩展：Android 10 到 Android 17 的网络基线变化
+
+版本演进会改变实验环境，同一应用版本也可能因 Mainline 模块更新而出现差异。
+
+| 平台节点 | 与基线相关的变化 | 记录要求 |
+| --- | --- | --- |
+| Android 10 / API 29 | `DnsResolver` 成为公开异步 API；DNS Resolver 以 `com.android.resolv` APEX 交付 | 系统构建、解析路径、Private DNS 和模块状态 |
+| Android 14 / API 34 | 平台加入 `HttpEngine`，也标注为 Android S 扩展 7 | API/扩展版本、HttpEngine 配置与实现版本 |
+| Android 17 / API 37 | CT 默认策略变化；平台提供 ECH 支持与网络安全配置 | `targetSdk`、安全配置、网络库 ECH 支持和系统构建 |
+
+`NetworkCapabilities.getLinkDownstreamBandwidthKbps()` 与上行对应接口只表示系统估计的首跳传输带宽，不是服务器到应用的端到端吞吐。Wi-Fi、蜂窝、VPN 和卫星等传输类型也不能直接代表计费、延迟或可用带宽。Android 17 源码定义可在 [`NetworkCapabilities.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java) 中核对。
+
+IPv6 也不单独判定快慢。IPv6-only/NAT64、双栈地址顺序、代理、运营商、边缘节点和服务端路由共同决定请求结果。基线用连接尝试与端到端结果回答问题，不用地址族做先验结论。
+
+## 扩展：安全策略也是基线条件
+
+Android 17 / API 37 的网络安全配置需要进入 TLS 基线。面向 API 37 的应用默认启用证书透明度；ECH 的平台配置默认开启，但只有网络库和服务端都支持时才会使用，协商失败时还可能发送 ECH GREASE。配置为 enabled 不能证明某条请求已协商 ECH，只有网络栈公开结果或受控服务端记录能提供证据。详细机制见 24.18。
+
+性能实验不得安装“信任所有证书”的 `TrustManager`、宽松主机名验证或明文回退。若测试代理需要解密 HTTPS，应使用仅存在于测试构建的调试 CA，并把“经过代理”和“直接连接”分成两组。
+
+Android 官方文档不建议普通应用进行证书固定。固定公钥会把服务端证书轮换与客户端版本覆盖绑定在一起；若风险评估后仍采用，基线必须包含备用公钥、过期策略、旧版本客户端和轮换演练。客户端无法连到服务端时，所谓远程开关也未必能送达。
+
+TLS 会话恢复与 0-RTT 不能合并成“复用握手”一个字段。0-RTT 有重放风险，只允许经过服务端确认的可重放操作；测试还要验证早期数据被拒绝后的重发语义。
+
+## 扩展：系统侧证据锚点
+
+应用观察到 DNS 慢、切网或连接失败时，按职责查源码：
+
+| 层级 | Android 17 锚点 | 能回答的问题 |
+| --- | --- | --- |
+| 应用 DNS API | [`DnsResolver.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/DnsResolver.java) | 查询如何绑定 `Network`、取消和回调 |
+| 网络能力模型 | [`NetworkCapabilities.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java) | 验证、计费、受限、传输与首跳带宽字段语义 |
+| 系统网络选择 | [`ConnectivityService.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/ConnectivityService.java) | 默认网络匹配、能力变化与回调分发 |
+| DNS Resolver 模块 | [`packages/modules/DnsResolver`](https://android.googlesource.com/platform/packages/modules/DnsResolver/+/refs/tags/android-17.0.0_r1/) | 系统 stub resolver、缓存和解析实现 |
+| Linux UDP | [`udp.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/ipv4/udp.c) | QUIC 下方的 UDP 发送、套接字与错误路径 |
+
+DNS Resolver 从 Android 10 起以 `com.android.resolv` APEX 交付。官方模块说明指出，它由 `netd` 动态链接，同时直接服务 `/dev/socket/dnsproxyd`，解析器配置的 Binder 入口也已移到该模块。Android 17 上不应继续用 Android 9 以前“所有解析都由 netd 内部实现”的结构解释问题。
+
+这些源码用于确认平台职责和公开语义。普通应用仍应通过 SDK、网络库和服务端观测定位，不绕过平台路由、权限、证书验证或后台限制。
+
+## 上线前检查清单
+
+- 每条基线都带场景、版本、网络栈配置、网络会话、缓存路径和结果状态。
+- 确定性 CI、设备实验室和线上基线没有混算。
+- 冷 DNS、冷连接、复用连接与缓存命中的准备条件写清楚。
+- 失败、取消和截止时间超限进入分母，不只统计成功请求。
+- DNS、connect、TLS 缺失表示阶段未发生或不可观测，不填零。
+- 协议来自网络栈公开结果，HTTP/3 失败后的回退时间计入逻辑操作。
+- A/B 只改变计划验证的变量；网络栈与协议同时变化时明确承认混杂。
+- 弱网用例检查幂等、取消、资源关闭和尝试上限。
+- 压缩比较区分业务表示、线上编码、解压后字节和 UID 总流量。
+- Android 17 的 CT、ECH、网络能力和 Mainline 模块状态进入实验记录。
+- 发布门禁说明阈值来源，并同时检查成功率、尾延迟、字节、功耗与业务护栏。
+
+## 参考资料
+
+- [Android 17 / API 37 公开 API 签名](https://android.googlesource.com/platform/prebuilts/sdk/+/refs/tags/android-17.0.0_r1/37.0/public/api/android.txt)
+- [读取 Android 网络状态](https://developer.android.com/develop/connectivity/network-ops/reading-network-state)
+- [Cronet 功能与接入](https://developer.android.com/develop/connectivity/cronet)
+- [Cronet RequestFinishedInfo 源码](https://chromium.googlesource.com/chromium/src/+/lkgr/components/cronet/android/api/src/org/chromium/net/RequestFinishedInfo.java)
+- [Cronet 网络质量 RTT](https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/NetworkQualityRttListener)
+- [Android 网络安全配置](https://developer.android.com/privacy-and-security/security-config)
+- [Android 17 行为变化](https://developer.android.com/about/versions/17/behavior-changes-17)
+- [Android DNS Resolver 模块](https://source.android.com/docs/core/ota/modular-system/dns-resolver)
+- [Android 应用性能测量](https://developer.android.com/topic/performance/measuring-performance)
+- [Android Benchmark 概览](https://developer.android.com/topic/performance/benchmarking/benchmarking-overview)
+- [TrafficStats API](https://developer.android.com/reference/android/net/TrafficStats)
+- [Zstandard Content-Encoding：RFC 9659](https://www.rfc-editor.org/rfc/rfc9659.html)
