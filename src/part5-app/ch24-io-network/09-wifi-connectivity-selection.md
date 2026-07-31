@@ -75,97 +75,137 @@ pipeline_stage: ready-to-publish
 
 # 24.9 Wi-Fi 评分、网络选择与连接切换性能
 
-App 看到的"网络可用",通常已经经过系统侧两层筛选:Wi-Fi 模块先在候选 AP 里选一个,Connectivity 模块再在 Wi-Fi、蜂窝、VPN 等网络之间选默认网络。工程上最容易误判的是:Wi-Fi 信号还在,请求却突然变慢、断开或切到蜂窝;App 侧要把系统选择、请求阶段和降级策略分开记录。
+本节的平台源码锚点是 Android 17（API 37）/ `android-17.0.0_r1`。应用看到默认网络可用之前，系统至少完成了两类决策：Wi-Fi 模块在可连接的 AP 中选择网络，Connectivity 模块在 Wi-Fi、蜂窝、以太网、VPN 等并存网络中为每个请求选择满足者。两类决策使用不同的输入，不能合并成一个“网络分数”。
 
-连接池、TLS、HTTP/2、HTTP/3 的协议细节详见 12.2、12.3、24.4、24.5;这里讨论系统网络选择和 App 侧观测。
+Wi-Fi 图标、RSSI、`NET_CAPABILITY_VALIDATED` 和业务接口成功分别描述无线关联、链路信号、系统公网探测和目标服务可达性。它们可以同时出现不同结果。排查连接切换时，要把系统选择事件、HTTP 交换和业务恢复分开记录。连接池、TLS 与 HTTP 协议细节见 12.2、12.3、24.4 和 24.5。
 
 ## 要点
 
 ### 🔹 ConnectivityService 与 Wi-Fi 模块分工
 
-系统网络选择可以拆成两级。
+下面的路径只描述主要控制关系，不代表每次扫描都会触发重选或重新关联：
 
 ```text
 Wi-Fi 扫描结果
-  → WifiNetworkSelector 过滤弱信号、黑名单、策略限制
+  → WifiNetworkSelector 判断当前连接是否足够好
+  → 过滤不合格的非当前 BSSID
   → NetworkNominator 生成候选网络
-  → CandidateScorer 给同一组候选排序
+  → ThroughputScorer 对候选网络和 BSSID 评分
   → WifiNetworkAgent 把已连接网络作为 NetworkAgent 上报
-  → ConnectivityService(Android 10/11 integer score / Android 12+ NetworkRanker 策略规则)在所有 NetworkAgent 中选择默认网络
+  → ConnectivityService 为 NetworkRequest 筛出满足能力的 NetworkAgent
+  → NetworkRanker 按策略选择当前满足者
   → App 通过 ConnectivityManager 观察默认网络变化
 ```
 
-Wi-Fi 模块回答"连哪个 AP"。Connectivity 模块回答"当前请求走哪个 Network"。这两个问题相关,但不能混成一个评分。
+Wi-Fi 模块主要回答“连接哪个 Wi-Fi 网络或 BSSID”。Connectivity 模块回答“哪个 `Network` 满足某个 `NetworkRequest`”。默认网络只是系统请求中的一类；VPN 还可能让不同 UID 看到不同的应用默认网络。
 
-AOSP `WifiNetworkSelector` 的 `filterScanResults()` 会过滤 RSSI 低于 entry threshold 的 BSSID、被 blocklist 命中的 BSSID、被管理策略限制的 SSID,以及部分 deprecated security type。之后 `selectNetwork()` 使用 `WifiCandidates.CandidateScorer` 对分组候选评分,并把选中的 scan result 写回 `WifiConfigManager.setNetworkCandidateScanResult()`。[已验证: AOSP android-16.0.0_r1, packages/modules/Wifi/service/java/com/android/server/wifi/WifiNetworkSelector.java]
+Android 17 的 `WifiNetworkSelector.filterScanResults()` 会排除低于入网 RSSI 阈值、命中 BSSID 阻止列表、被 MBO/OCE 拒绝关联、不满足设备管理策略或使用已弃用安全类型的结果。已连接的当前 BSSID 会在这些普通过滤条件之前保留；当前 BSSID 未出现在一次扫描中时，源码还可能放弃本轮选择，避免由不完整扫描触发激进切换。
 
-Connectivity 侧已经从传统整数分数演进到策略规则。source.android.com 的 network selection 文档说明,现代 Android 的网络选择策略位于 Connectivity 模块的 `NetworkRanker` 及其辅助类;设备厂商不能直接替换选择代码,只能通过 `NetworkScore` 的 flags 表达网络属性。[已验证: 官方文档, https://source.android.com/docs/core/connect/network-selection]
+`getCandidatesFromScan()` 让已注册的 nominator 产生保存网络、Suggestion 网络等候选，并保留当前连接作为候选。`selectNetwork()` 通过活动的 `CandidateScorer` 选择结果，再应用用户连接选择兼容逻辑。Android 17 的预设 scorer 是 `ThroughputScorer`。
 
-两个版本段的默认网络选择方式不同,不能混用:
+Connectivity 先保留能满足请求能力的网络，再执行 `NetworkRanker.getBestNetworkByPolicy()`。Android 17 的主要规则按源码顺序如下：
 
-| 版本 | 选择机制 | 评分方式 |
+| 顺序 | 优先保留的候选 | 说明 |
 | --- | --- | --- |
-| Android 10 / 11 (API 29-30) | ConnectivityService 基于 NetworkAgent 上报的 integer score 排序 | `NetworkAgentInfo.score` + validated/VPN/metered bonus/penalty;同分时行为未定义 |
-| Android 12+ (API 31+) | `NetworkRanker.getBestNetworkByPolicy()` 策略规则排序 | `NetworkScore` flags(`POLICY_TRANSPORT_PRIMARY` / `POLICY_EXITING` / `POLICY_IS_VALIDATED` 等)决定优先级 |
+| 1 | `POLICY_IS_INVINCIBLE` | 系统内部不可被普通候选替代的网络 |
+| 2 | 已连接 VPN | 应用默认网络可能是 VPN，物理承载网络位于其下层 |
+| 3 | 用户选择且接受未验证 | 保留用户明确接受的无互联网网络 |
+| 4 | 已验证或允许未验证 | 同时处理蜂窝向“较差 Wi-Fi”让路的策略 |
+| 5 | 未进入退出状态 | 避开即将断开的网络 |
+| 6 | 同传输类型中的 primary | 例如双 SIM 的主数据网络 |
+| 7 | 传输类型偏好 | 源码顺序为以太网、Wi-Fi、蓝牙、蜂窝 |
+| 8 | VCN、未销毁网络、当前满足者 | 处理等价候选并减少无意义切换 |
 
-App 不能假设所有用户设备都运行 Android 12+。线上仍有 Android 10/11 设备时,网络选择可能基于旧版 integer score,同分 BSSID 之间的行为无保证。建议在 APM 中记录 `Build.VERSION.SDK_INT` 和默认网络来源,后续排查才能对齐系统行为。
+这里的验证状态、VPN 和销毁状态来自 Connectivity 生成的 `FullScore`；`POLICY_TRANSPORT_PRIMARY`、`POLICY_EXITING` 等属性由 `NetworkScore` 表达。Android 17 的通用排序代码没有实现“所有网络一律未计费优先”，源码在该位置仍保留 TODO。`NET_CAPABILITY_NOT_METERED` 可以决定一个带该能力要求的请求能否被满足，Wi-Fi 候选评分也会奖励未计费网络，但这两件事不能外推为所有默认网络的统一排序公式。
 
-`NetworkRanker.getBestNetworkByPolicy()` 的排序不是简单"分数越大越好"。代码先处理 invincible network、VPN、用户显式选择并接受未验证网络、validated / accept-unvalidated,再处理 exiting、primary transport、transport preference 和 current satisfier。当前已满足请求的网络在策略等价时会被保留,避免默认网络在边界条件下频繁跳变。[已验证: AOSP android-16.0.0_r1, packages/modules/Connectivity/service/src/com/android/server/connectivity/NetworkRanker.java]
+版本演进需要保留：
 
-这解释了一个常见线上现象:Wi-Fi RSSI 变差后,App 不一定马上看到默认网络切走。系统会同时考虑验证状态、用户选择、是否计费、VPN、当前网络是否仍能满足 request,以及切换带来的稳定性代价。
+| 版本 | Connectivity 选择机制 | 边界 |
+| --- | --- | --- |
+| Android 10 / 11（API 29–30） | NetworkAgent 整数分数，加上验证状态、VPN 等奖励或惩罚 | 同分行为未定义 |
+| Android 12–17（API 31–37） | `NetworkScore` 与 `FullScore` 策略，由 `NetworkRanker` 逐项筛选 | 旧整数只用于日志和兼容观测，不再参与网络间排序 |
+
+Wi-Fi RSSI 下降后，应用不一定马上收到默认网络变化。当前 Wi-Fi 仍可能被判定足够好；候选连接和验证也需要时间；策略等价时，`NetworkRanker` 还会保留当前满足者。
 
 ### 🔹 Wi-Fi 评分输入
 
-Wi-Fi 选择不是只看信号格数。AOSP 和官方文档里能确认的输入至少包含这些维度:
+#### 当前连接是否需要重选
+
+Android 17 的 `WifiNetworkSelector.isNetworkSufficient()` 依次检查连接状态、用户近期选择、OSU、外部 scorer 给出的可用性、连接分数、OEM paid/private、计费属性、历史无互联网状态、IP 配置以及链路质量。只有 RSSI 不足且收发流量也不活跃时，末项才判为不足。
+
+这段逻辑使用 Wi-Fi 子系统内部状态和可覆盖资源，不能由普通应用用 RSSI 复刻。官方 Wi-Fi network selection 页面主要描述 Android 12 行为，并明确提示 AOSP 源码才是后续版本的最终依据。
+
+#### 候选如何评分
+
+Android 17 的 `WifiCandidates.Candidate` 和 `ThroughputScorer` 可确认以下输入：
 
 | 输入 | 系统侧含义 | App 侧判断方式 |
-|---|---|---|
-| RSSI / 频段 | 低于 entry threshold 的 BSSID 会被过滤;2.4GHz、5GHz、6GHz 阈值可由 overlay 配置 | 不把"信号满格"当成吞吐保证;同时看 RTT、丢包、TTFB |
-| 当前连接是否够用 | screen-on connected 场景下,当前网络满足条件时可跳过重新选择 | 观察默认网络是否切换,不要只盯 Wi-Fi scan |
-| 是否 validated | 已验证互联网可达或用户允许无互联网连接,会影响是否继续选网 | `NET_CAPABILITY_INTERNET` + `NET_CAPABILITY_VALIDATED` 同时看 |
-| 是否 metered | 未计费网络更适合大下载;计费 Wi-Fi 不能当成"免费网络" | 看 `NET_CAPABILITY_NOT_METERED`,不要只看 `TRANSPORT_WIFI` |
-| 历史失败 / blocklist | 反复连接失败、频繁断开、AP 明确要求暂不关联的 BSSID 会被过滤 | 通过 bugreport / `dumpsys wifi` 查 blocked BSSID 和失败原因 |
-| 用户选择 | 用户刚手动连接的网络会在一段时间内得到保护 | 遇到"看起来弱但不切"的 case,要检查是否用户刚手选 |
-| OEM overlay | entry RSSI threshold、用户选择保护窗口、PNO 行为等可由设备配置影响 | 厂商机型必须用实机 dumpsys 和 trace 复核 |
+| --- | --- | --- |
+| RSSI、频率和信道宽度 | 参与 RSSI 分和频段奖励 | 信号格数不能替代吞吐、时延和丢包观测 |
+| 单链路预测吞吐 | 由制式、信道、RSSI、空间流等估算 | 它是系统估算，不是业务下载测速 |
+| MLO 能力与多链路预测吞吐 | Android 17 在多链路预测值更高时采用该值 | 只在设备、AP 与协商结果均支持时出现 |
+| 当前网络 | 得到可配置的 current-network bonus | 可解释边缘信号下为何暂不切换 |
+| 保存、Suggestion、可信与安全属性 | 决定候选所在的优先级区间 | 应用不能读取最终内部评分 |
+| 计费属性 | Wi-Fi 候选 scorer 可奖励未计费网络 | 业务仍以 `NET_CAPABILITY_NOT_METERED` 判断 |
+| 历史无互联网、IP 配置超时 | 降低或清除部分奖励 | 与当前 `VALIDATED` 回调不是同一个数据口径 |
+| 近期用户选择 | 在配置窗口内获得显著奖励 | 保护时间与强度可被设备配置改变 |
 
-source.android.com 的 Wi-Fi network selection 文档给出"当前网络够用即可跳过选择"的判定:RSSI 高于阈值或有足够流量,网络已验证或用户允许无互联网使用,并且网络未计费。若当前 Wi-Fi 不够用或设备未连接,框架才会调用 nominators 生成候选网络,再过滤弱 RSSI、被阻止的 BSSID 等候选。[已验证: 官方文档, https://source.android.com/docs/core/connect/wifi-network-selection]
-
-AOSP `WifiCandidates.CandidateImpl` 暴露了 `getScanRssi()`、`getFrequency()`、`getPredictedThroughputMbps()`、`isMetered()`、`hasNoInternetAccess()`、`isUserSelected()`、`isCurrentNetwork()` 等字段。工程上可以把这些字段理解成"选择输入",不要把旧资料里 0-60、20/40/60 这类固定阈值直接写进发布判断;不同 Android 版本和厂商 overlay 都可能改变边界。[已验证: AOSP android-16.0.0_r1, packages/modules/Wifi/service/java/com/android/server/wifi/WifiCandidates.java]
-
-网络问题分析要先把基础网络状态、I/O 等待和业务请求阶段拆开。本节按这个思路组织，系统选网事实以 AOSP 和官方文档为准。
+`ScoringParams` 和资源 overlay 控制入网阈值、足够 RSSI、吞吐奖励和多个优先级参数。旧资料中的固定阈值只能说明某个版本的 AOSP 默认配置，不能作为跨版本、跨厂商的发布条件。
 
 ### 🔹 连接切换的性能指标
 
-网络切换不能只看"断没断"。线上监控至少要把系统网络变化和 HTTP 请求阶段分开记。
+普通应用看不到 `NetworkRanker` 开始决策的时刻，因此不能从公开回调直接计算“系统选网耗时”。可以稳定观测的是默认网络通知、能力变化、HTTP 事件和业务恢复：
 
 | 指标 | 起点 | 终点 | 适合回答的问题 |
-|---|---|---|---|
-| 默认网络切换耗时 | `NetworkCallback.onLost(old)` 或 `onAvailable(new)` | `onCapabilitiesChanged(new)` 出现可用能力 | 系统是否完成默认网络迁移 |
-| 互联网验证恢复耗时 | 新 network 出现 `NET_CAPABILITY_INTERNET` | 同一 network 出现 `NET_CAPABILITY_VALIDATED` | Captive Portal、DNS、探测失败是否拖慢恢复 |
-| DNS 恢复耗时 | OkHttp `dnsStart` | `dnsEnd` 或 `UnknownHostException` | 切网后 DNS 是否超时、污染或缓存失效 |
-| TCP / TLS 建连耗时 | `connectStart` / `secureConnectStart` | `connectEnd` / `secureConnectEnd` | IP 质量、IPv6/IPv4、证书链和 TLS 版本问题 |
-| 首包耗时 | `requestHeadersEnd` | `responseHeadersStart` | 服务端、CDN、无线链路、拥塞是否影响 TTFB |
-| 用户感知中断时长 | 页面触发请求或播放卡住 | 首个成功响应 / 播放恢复 | 用户看到的"卡住多久" |
+| --- | --- | --- | --- |
+| 新默认网络通知 | `onAvailable(new)` | 紧随其后的 `onCapabilitiesChanged(new)` | 应用收到选择结果后，能力快照何时到达 |
+| 验证状态变化 | 新网络第一次能力快照 | 同一网络取得或失去 `VALIDATED` | 系统公网探测状态如何变化 |
+| 异步排队 | `dispatcherQueueStart` | `dispatcherQueueEnd` | OkHttp 异步 Dispatcher 是否排队 |
+| DNS、TCP、TLS | 每组对应的 start | 同组 end 或 failed | 新解析、路由尝试和握手发生在哪一段 |
+| 响应头等待 | 同一次交换的请求结束事件 | `responseHeadersStart` | 上传、网络往返、网关和服务端共同等待 |
+| 业务恢复 | 业务操作进入等待或失败 | 首次满足业务语义的成功结果 | 用户可感知的中断时间 |
 
-OkHttp EventListener 提供了请求生命周期事件。官方 events 文档列出了 `dnsStart/dnsEnd`、`connectStart/connectEnd`、`secureConnectStart/secureConnectEnd`、`responseHeadersStart/responseHeadersEnd` 等事件,也说明连接复用时第二次请求不会再出现 connect 事件。[已验证: 官方文档, https://square.github.io/okhttp/features/events/]
+`onLost(old)` 不能作为默认网络切换起点。对 default callback 而言，`onAvailable(new)` 表示新的最佳网络已经由该回调跟踪；回调随后不再接收旧网络的事件。只有当前跟踪的默认网络丢失且没有替代网络时，才应把 `onLost()` 解释为应用失去默认网络。
 
-一段可用的采集代码如下。重点是每个 call 单独保存状态,避免并发请求互相覆盖时间戳。
+OkHttp 5.3.0 的事件序列也不能压成每个名称一个时间戳。重试、重定向和认证会在同一个 `Call` 中产生多组 DNS、连接、请求和响应事件；复用连接时不会产生 DNS 与 connect 事件；双工请求还可能交错。
+
+下面的监听器保留原始单调时钟时间线，让离线分析按事件顺序识别多次交换。`defaultGeneration` 是应用默认网络观察序号，只用于关联切网窗口：
 
 ```kotlin
-class NetTimingListener(
-    private val callId: Long,
-    private val networkSnapshot: () -> String,
-    private val report: (Map<String, Any>) -> Unit,
-) : EventListener() {
-    private val t = mutableMapOf<String, Long>()
+data class CallMark(
+    val name: String,
+    val elapsedNanos: Long,
+)
 
+data class CallTimeline(
+    val callId: Long,
+    val defaultGenerationAtStart: Long?,
+    val terminal: String,
+    val marks: List<CallMark>,
+)
+
+class TimelineEventListener(
+    private val callId: Long,
+    private val defaultGeneration: () -> Long?,
+    private val report: (CallTimeline) -> Unit,
+) : EventListener() {
+    private val marks = mutableListOf<CallMark>()
+    private var generationAtStart: Long? = null
+    private var reported = false
+
+    @Synchronized
     private fun mark(name: String) {
-        t[name] = SystemClock.elapsedRealtime()
+        marks += CallMark(name, SystemClock.elapsedRealtimeNanos())
     }
 
     override fun callStart(call: Call) {
+        generationAtStart = defaultGeneration()
         mark("callStart")
     }
+
+    override fun dispatcherQueueStart(call: Call) = mark("dispatcherQueueStart")
+
+    override fun dispatcherQueueEnd(call: Call) = mark("dispatcherQueueEnd")
 
     override fun dnsStart(call: Call, domainName: String) {
         mark("dnsStart")
@@ -196,81 +236,134 @@ class NetTimingListener(
         mark("connectEnd")
     }
 
+    override fun connectionAcquired(call: Call, connection: Connection) {
+        mark("connectionAcquired")
+    }
+
+    override fun requestHeadersEnd(call: Call, request: Request) {
+        mark("requestHeadersEnd")
+    }
+
+    override fun requestBodyEnd(call: Call, byteCount: Long) {
+        mark("requestBodyEnd")
+    }
+
     override fun responseHeadersStart(call: Call) {
         mark("responseHeadersStart")
     }
 
+    override fun responseBodyEnd(call: Call, byteCount: Long) {
+        mark("responseBodyEnd")
+    }
+
     override fun callEnd(call: Call) {
-        mark("callEnd")
-        report(
-            mapOf(
-                "call_id" to callId,
-                "network" to networkSnapshot(),
-                "dns_ms" to delta("dnsStart", "dnsEnd"),
-                "connect_ms" to delta("connectStart", "connectEnd"),
-                "tls_ms" to delta("secureConnectStart", "secureConnectEnd"),
-                "ttfb_ms" to delta("callStart", "responseHeadersStart"),
-            )
-        )
+        finish("callEnd")
     }
 
     override fun callFailed(call: Call, ioe: IOException) {
-        mark("callFailed")
-        report(
-            mapOf(
-                "call_id" to callId,
-                "network" to networkSnapshot(),
-                "error" to ioe.javaClass.name,
-                "message" to (ioe.message ?: ""),
-            )
-        )
+        finish("callFailed:${ioe.javaClass.name}")
     }
 
-    private fun delta(start: String, end: String): Long =
-        (t[end] ?: -1L).let { e -> if (e < 0) -1L else e - (t[start] ?: e) }
+    private fun finish(terminal: String) {
+        val timeline = synchronized(this) {
+            if (reported) return
+            marks += CallMark(terminal, SystemClock.elapsedRealtimeNanos())
+            reported = true
+            CallTimeline(
+                callId = callId,
+                defaultGenerationAtStart = generationAtStart,
+                terminal = terminal,
+                marks = marks.toList(),
+            )
+        }
+        report(timeline)
+    }
 }
 ```
 
-这里的 `networkSnapshot()` 建议记录 active network id、transport、`INTERNET`、`VALIDATED`、`NOT_METERED`、VPN 状态和网络切换事件序号。单独记录 OkHttp 耗时还不够;切网前后的 DNS 慢、连接慢和服务端慢,在 HTTP 层看到的错误形态很像。
+监听器应由 `EventListener.Factory` 为每个 `Call` 单独创建。分析端按完整事件序列识别交换，不能把末次 `dnsEnd` 与第一次 `dnsStart` 相减。`defaultGenerationAtStart` 也不能证明连接使用了该网络：复用连接可能建立在更早的默认网络上，显式绑定的客户端还可能使用其他 `Network`。需要证明套接字路径时，必须结合绑定配置、系统 trace 或抓包。
 
 ### 🔹 弱网与多网络并存场景
 
-弱网排查要先判断系统是否认为"有互联网"。Android 官方文档把 `NET_CAPABILITY_INTERNET` 和 `NET_CAPABILITY_VALIDATED` 分开:前者表示网络配置上可达互联网,后者表示系统探测到公网可达;Captive Portal 或 DNS 不可用时,网络可能有 `INTERNET` 但没有 `VALIDATED`。[已验证: 官方文档, https://developer.android.com/develop/connectivity/network-ops/reading-network-state] [已验证: 官方文档, https://developer.android.com/reference/android/net/NetworkCapabilities]
+能力字段只提供分层证据：
 
-App 侧判断建议按下面的顺序做:
+| 能力或传输 | 表示什么 | 不表示什么 |
+| --- | --- | --- |
+| `NET_CAPABILITY_INTERNET` | 网络配置为可访问互联网 | 已经通过公网探测 |
+| `NET_CAPABILITY_VALIDATED` | 系统探测确认公网可达 | 业务域名、账号和服务端一定可用 |
+| `NET_CAPABILITY_CAPTIVE_PORTAL` | 系统探测识别到登录门户 | 所有 HTTP 请求都会失败 |
+| `NET_CAPABILITY_NOT_METERED` | 系统认为用户不敏感于该网络的数据消耗 | 传输类型必定是 Wi-Fi |
+| `TRANSPORT_VPN` | 应用默认网络经过 VPN | 物理承载只有一种；VPN 网络可同时带有 Wi-Fi 或蜂窝传输 |
 
-1. `getActiveNetwork() == null`: 没有默认网络。直接进入离线态,取消或暂停非必要请求。
-2. 有 network 但无 `NET_CAPABILITY_INTERNET`: 这不是普通公网网络。不要发密集公网探测。
-3. 有 `INTERNET` 但无 `VALIDATED`: 可能是 Captive Portal、DNS 失败、私有网络、探测服务不可达。保留本地缓存,降低重试频率。
-4. 有 `VALIDATED` 但请求慢: 再看 DNS、TCP、TLS、TTFB、body download 的分段耗时。
-5. 有 VPN: 同时记录 underlying transport。VPN 可能改变 DNS、路由和证书策略。
+Android 17 的 `NetworkMonitor` 会在目标 `Network` 上执行 DNS 与 HTTP/HTTPS 探测，并根据成功、门户、部分连接等结果更新 Connectivity。探测 URL、代理、Private DNS 与设备配置都可能影响结果。因此：
 
-`NetworkMonitor` 负责网络验证和 Captive Portal 探测。AOSP `sendDnsProbe()` 使用 DNS resolver 做域名解析,`sendHttpProbe()` 对已知探测 URL 发起 HTTP 请求并根据响应判断。探测结果会通过 `NETWORK_VALIDATION_RESULT_VALID`、partial connectivity、skipped 等结果通知 ConnectivityService。[已验证: AOSP android-16.0.0_r1, packages/modules/NetworkStack/src/com/android/server/connectivity/NetworkMonitor.java]
+- 没有应用默认网络时，普通默认绑定请求无法新建连接；显式请求的其他网络要单独判断。
+- 有 `INTERNET` 但没有 `VALIDATED` 时，可展示离线数据并降低后台重试，不应把所有用户操作永久禁用。
+- 有 `CAPTIVE_PORTAL` 时，可引导用户完成系统登录流程。
+- 已有 `VALIDATED` 时，业务请求仍需处理 DNS、路由、TLS、服务端和账号错误。
+- VPN 的传输集合会随承载网络改变；诊断时同时记录 VPN、Wi-Fi 与蜂窝标记。
 
-多网络并存时,App 常见误判有三类:
-
-- **Wi-Fi 图标还在,但默认网络已切到蜂窝**:用户看到 Wi-Fi 图标,不代表当前请求一定走 Wi-Fi。以 `NetworkCallback` 的 default network 为准。
-- **Wi-Fi validated 失败,但业务 HTTP 偶尔成功**:系统探测 URL 失败和业务域名成功可以同时发生。此时不要把系统状态当成服务端故障,也不要把单个业务成功当成全网恢复。
-- **VPN 下网络变慢**:VPN 是 Connectivity 排序里的高优先级对象。排查时要把 VPN on/off、DNS server、MTU、TLS 握手失败分开记录。
+网络能力会动态变化，单次 `activeNetwork` 查询只能作为瞬时诊断。长期状态应来自回调。
 
 ### 🔹 应用侧能做什么
 
-App 不能直接控制系统 Wi-Fi 评分,但可以避免把系统切网放大成业务故障。
+普通应用不能读取或控制系统 Wi-Fi 最终评分。应用能做的是保留有序的网络事件，并按请求语义处理失败。
 
 #### 1. 用 NetworkCallback 建一份网络状态快照
 
-官方文档推荐用 `registerDefaultNetworkCallback()` 监听默认网络变化,并通过 `onCapabilitiesChanged()`、`onLinkPropertiesChanged()` 更新能力和链路属性。[已验证: 官方文档, https://developer.android.com/develop/connectivity/network-ops/reading-network-state]
+`registerDefaultNetworkCallback()` 需要 `ACCESS_NETWORK_STATE`。Android 8.0（API 26）起，新默认网络的 `onAvailable()` 后会立即按序收到 `onCapabilitiesChanged()` 和 `onLinkPropertiesChanged()`。回调中不要同步调用 `getNetworkCapabilities()` 或 `getLinkProperties()`，这些查询可能返回过期值或 `null`。
+
+下面的追踪器把回调放到调用方提供的 Handler，并为每次新默认网络分配递增序号：
 
 ```kotlin
+sealed interface DefaultNetworkEvent {
+    data class Selected(
+        val generation: Long,
+        val networkId: String,
+        val elapsedNanos: Long,
+    ) : DefaultNetworkEvent
+
+    data class Capabilities(
+        val generation: Long,
+        val networkId: String,
+        val wifi: Boolean,
+        val cellular: Boolean,
+        val vpn: Boolean,
+        val internet: Boolean,
+        val validated: Boolean,
+        val captivePortal: Boolean,
+        val notMetered: Boolean,
+        val downstreamKbpsEstimate: Int,
+        val elapsedNanos: Long,
+    ) : DefaultNetworkEvent
+
+    data class Blocked(
+        val generation: Long,
+        val blocked: Boolean,
+        val elapsedNanos: Long,
+    ) : DefaultNetworkEvent
+
+    data class Lost(
+        val generation: Long,
+        val elapsedNanos: Long,
+    ) : DefaultNetworkEvent
+}
+
 class DefaultNetworkTracker(
     context: Context,
-    private val onSnapshot: (NetworkSnapshot) -> Unit,
+    private val callbackHandler: Handler,
+    private val onEvent: (DefaultNetworkEvent) -> Unit,
 ) : ConnectivityManager.NetworkCallback() {
     private val cm = context.getSystemService(ConnectivityManager::class.java)
     private var current: Network? = null
+    private var nextGeneration = 0L
+
+    @Volatile
+    var currentGeneration: Long? = null
+        private set
 
     fun start() {
-        cm.registerDefaultNetworkCallback(this)
+        cm.registerDefaultNetworkCallback(this, callbackHandler)
     }
 
     fun stop() {
@@ -279,186 +372,226 @@ class DefaultNetworkTracker(
 
     override fun onAvailable(network: Network) {
         current = network
-        // 不在此处同步调用 getNetworkCapabilities():NetworkCallback
-        // 可能在 capabilities 尚未就绪时就触发 onAvailable。
-        // 等待随后的 onCapabilitiesChanged(network, caps) 携带能力快照再发布。
+        val generation = ++nextGeneration
+        currentGeneration = generation
+        onEvent(
+            DefaultNetworkEvent.Selected(
+                generation,
+                network.toString(),
+                SystemClock.elapsedRealtimeNanos(),
+            )
+        )
     }
 
     override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
-        if (network == current) publish(network, caps)
-    }
-
-    override fun onLost(network: Network) {
-        if (network == current) {
-            current = null
-            onSnapshot(NetworkSnapshot.offline())
-        }
-    }
-
-    private fun publish(network: Network, caps: NetworkCapabilities) {
-        onSnapshot(
-            NetworkSnapshot(
+        if (network != current) return
+        val generation = currentGeneration ?: return
+        onEvent(
+            DefaultNetworkEvent.Capabilities(
+                generation = generation,
                 networkId = network.toString(),
                 wifi = caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI),
                 cellular = caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR),
                 vpn = caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN),
                 internet = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET),
                 validated = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED),
-                unmetered = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED),
+                captivePortal = caps.hasCapability(
+                    NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL
+                ),
+                notMetered = caps.hasCapability(
+                    NetworkCapabilities.NET_CAPABILITY_NOT_METERED
+                ),
+                downstreamKbpsEstimate = caps.linkDownstreamBandwidthKbps,
+                elapsedNanos = SystemClock.elapsedRealtimeNanos(),
+            )
+        )
+    }
+
+    override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
+        if (network != current) return
+        val generation = currentGeneration ?: return
+        onEvent(
+            DefaultNetworkEvent.Blocked(
+                generation,
+                blocked,
+                SystemClock.elapsedRealtimeNanos(),
+            )
+        )
+    }
+
+    override fun onLost(network: Network) {
+        if (network != current) return
+        val generation = currentGeneration ?: return
+        current = null
+        currentGeneration = null
+        onEvent(
+            DefaultNetworkEvent.Lost(
+                generation,
+                SystemClock.elapsedRealtimeNanos(),
             )
         )
     }
 }
-
-data class NetworkSnapshot(
-    val networkId: String,
-    val wifi: Boolean,
-    val cellular: Boolean,
-    val vpn: Boolean,
-    val internet: Boolean,
-    val validated: Boolean,
-    val unmetered: Boolean,
-) {
-    companion object {
-        fun offline() = NetworkSnapshot("none", false, false, false, false, false, false)
-    }
-}
 ```
 
-这段只依赖公开 API。不要用隐藏 Wi-Fi 分数做业务决策;线上 SDK 也不应该要求普通 App 权限去读系统 Wi-Fi 内部状态。
+`network.toString()` 只适合在同一次设备运行中关联事件，不能当成跨重启稳定标识。`linkDownstreamBandwidthKbps` 是系统估计值，也不能替代应用吞吐测量。`onEvent` 应快速入队；数据库写入、上传等较长工作转交其他线程。追踪器还要与进程级生命周期绑定并确保只注册一次，避免耗尽每 UID 的回调额度。
 
 #### 2. 把失败隔离放在连接层附近
 
-网络切换时,失败通常会集中在 DNS、TCP、TLS 和连接池复用边界。处理原则:
+官方文档说明，新连接在默认网络变化后使用新网络，旧默认网络上的既有连接稍后会被系统终止。应用不需要在每次 `onAvailable()` 时销毁共享 `OkHttpClient` 或清空整个连接池，这会同时破坏仍可复用的健康连接。
 
-- DNS 失败:HTTPDNS 缓存要有 TTL、系统 DNS 兜底、空结果保护和失败 IP 短期隔离。详见 24.4。
-- 连接失败:保留多 IP 候选,让 OkHttp 的 fast fallback 或 route retry 有选择空间。不要把 HTTPDNS 返回值压成单 IP。
-- TLS 失败:不要把 IP URL 直接替换 HTTPS hostname,否则 SNI 和证书校验会出问题。详见 12.4。
-- 连接池复用失败:切网后旧连接可能还在池里。对长连接、WebSocket、HTTP/2 multiplexing 要记录 network 变化后的重连策略。
+- DNS 返回多个地址时保留候选，让 OkHttp 的路由重试与 `fast fallback`（快速备用连接）有选择空间。
+- HTTPS URL 始终保留原主机名；把 URL 改成 IP 会破坏 SNI、证书校验和虚拟主机路由。
+- GET 等可安全重试的操作由网络库按配置恢复；POST、支付和提交操作需要幂等键或查询结果接口。
+- WebSocket、流式响应和上传任务保存应用层进度，在终端失败后按协议重连。
+- 后台可延后任务使用 WorkManager 的网络约束，避免常驻监听器自行轮询。
 
-DNS / HTTPDNS / 连接池缓存的命中率、失败率、TTL 和隔离策略，都应可被监控——这和缓存层"冷热端分离、按场景设计淘汰策略"的诉求是相通的。
+显式绑定其他网络属于少数高级场景，申请后台网络还涉及 `CHANGE_NETWORK_STATE` 权限。获取目标 `Network` 后，要同时使用 `network.socketFactory` 与 `network.getAllByName()`，否则套接字和 DNS 可能走不同网络。目标网络丢失后，应取消相关请求；若需要独立清理连接，该绑定客户端应使用专用连接池。大多数应用应继续使用系统默认网络。
 
 #### 3. 弱网降级按请求类型分层
 
 | 请求类型 | 弱网处理 | 不建议做的事 |
-|---|---|---|
-| 首屏关键接口 | 短 connect timeout、缓存兜底、一次受控重试 | 无限等待或多 client 并发打同一接口 |
-| 图片 / 列表资源 | 降低清晰度、分页、延后预加载 | 和首屏 API 抢同一批并发槽 |
-| 埋点 / 日志 | 批量、压缩、按网络恢复发送 | 在 `onLost` 后继续密集重试 |
-| 文件上传 | 断点续传、只在 validated + 合适网络下恢复 | 默认 Wi-Fi 就开始大流量上传 |
-| 支付 / 下单 | 服务端幂等键、明确超时反馈 | 客户端自行无条件重发 POST |
+| --- | --- | --- |
+| 首屏读取 | 本地数据、分阶段加载、按错误类型重试 | 并发复制同一个请求 |
+| 图片与列表资源 | 分页、调整资源质量、延后预取 | 与交互接口争用全部异步额度 |
+| 遥测与日志 | 批量、压缩、持久队列 | 网络变化时集中重发 |
+| 文件传输 | 断点、校验、持久任务状态 | 仅凭 `TRANSPORT_WIFI` 启动大流量任务 |
+| 支付与提交 | 服务端幂等键、结果查询、明确未知状态 | 连接异常后无条件重发 |
+
+超时、并发、重试次数和恢复窗口来自项目基线与服务端契约。本节不提供跨业务通用数值。
 
 ### 🔹 系统侧证据采集
 
-单靠 App 日志很难判断"系统切网"还是"业务服务慢"。现场证据建议按下面顺序收。
+应用日志只能证明应用观察到了什么，不能单独证明系统为何选择某个网络。可复现设备上应同时采集 Connectivity、Wi-Fi 与请求时间线。
 
 #### dumpsys connectivity
 
-关注默认网络、NetworkAgent、NetworkCapabilities、LinkProperties、validation 状态和 network request 满足关系。
+下面的命令保存 ConnectivityService 当前状态：
 
 ```bash
 adb shell dumpsys connectivity > connectivity.txt
 ```
 
-检查点:
+输出用于检查 NetworkAgent、能力、链路属性、验证状态和请求满足关系。系统默认网络不一定等于受 VPN 策略影响后的某个应用默认网络，判断时要结合目标 UID。
 
-- 默认网络的 `NetworkCapabilities` 是否同时有 `INTERNET` 和 `VALIDATED`。
-- 当前默认网络是否是 `TRANSPORT_WIFI`、`TRANSPORT_CELLULAR` 或 `TRANSPORT_VPN`。
-- `LinkProperties` 中 DNS server、proxy、MTU 是否异常。
-- 是否存在旧 Wi-Fi 和新蜂窝同时满足 default request 的过渡期。
+检查以下信息：
+
+- 候选 NetworkAgent 是否满足目标请求；
+- `INTERNET`、`VALIDATED`、`CAPTIVE_PORTAL`、`NOT_METERED` 与传输集合；
+- `LinkProperties` 中的 DNS、代理、路由、接口和 MTU；
+- VPN 与底层物理网络是否同时存在；
+- 请求与网络的满足关系是否在问题窗口发生变化。
 
 #### dumpsys wifi
+
+下面的命令保存 Wi-Fi 服务状态：
 
 ```bash
 adb shell dumpsys wifi > wifi.txt
 ```
 
-检查点:
+不同版本和厂商会改变输出字段，不能让解析脚本依赖一段固定文本。人工复核时关注：
 
-- 当前连接 BSSID、频段、RSSI、link speed、score / usability 相关输出。
-- 最近扫描结果里目标 BSSID 是否因 RSSI、blocklist、连接失败被过滤。
-- 是否有 PNO、roam、disconnect reason、association reject、DHCP failure。
-- OEM overlay 是否改变 entry RSSI threshold 或漫游策略。具体字段名随 Android 版本和厂商实现变化，需按实机 dumpsys 输出复核。
+- 当前网络、BSSID、频段、RSSI、链路速率与 usability；
+- 候选与过滤原因，包括低 RSSI、阻止列表、管理策略和关联拒绝；
+- roam、断开原因、认证、关联和 IP 配置失败；
+- PNO、MLO、双 STA、外部 scorer 与设备 overlay；
+- 时间戳是否能与应用的网络 generation 和请求编号对齐。
 
 #### bugreport
+
+难以稳定复现的问题使用 bugreport 保存跨服务现场：
 
 ```bash
 adb bugreport bugreport-wifi-switch.zip
 ```
 
-bugreport 适合复盘系统决策。它能同时包含 connectivity、wifi、netd、NetworkStack、系统日志和部分配置。线上复现难的切网问题,至少保留问题发生前后 2 分钟的时间戳、网络状态快照和请求 call id,后续才能把 App 日志和系统日志关联起来。
+bugreport 可包含 Connectivity、Wi-Fi、netd、NetworkStack、系统日志和设备配置。采集时记录操作步骤、单调时钟时间、应用请求编号和预期结果。文件可能含网络标识、地址与用户数据，应限制访问并按隐私策略删除。
 
 #### Perfetto
 
-Perfetto 侧可重点打开这些数据:
+Perfetto 适合判断网络回调之后是否又被线程调度、主线程工作或存储 I/O 延迟：
 
-- `linux.ftrace` 的 `sched/sched_switch`、`power/cpu_frequency`:确认网络回调或业务回调是否拖住主线程。
-- `android.log`:抓 `ConnectivityService`、`NetworkMonitor`、`WifiNetworkSelector`、`WifiConnectivityManager`、`WifiNetworkAgent`、`netd` 相关 logcat。
-- 自定义 trace event:App 在 `onAvailable`、`onCapabilitiesChanged`、`dnsStart`、`connectStart`、`responseHeadersStart` 打点。
-- network counters:如果设备和 trace 配置支持,可观察 UID 维度收发流量变化。[待验证: counter 可用性与设备内核 / Perfetto 配置有关]
+- 调度事件用于检查回调线程、网络线程和主线程是否长期不可运行；
+- `android.log` 数据源在设备允许时保存 Connectivity、NetworkMonitor、Wi-Fi 与 netd 日志；
+- 应用 trace event 标记 `onAvailable`、能力变化、OkHttp 事件和业务恢复；
+- 流量字节使用应用或系统已有的、已验证过口径的统计源，不假设任意设备都提供某个 Perfetto 网络计数器。
 
-建议把 App 的请求 call id、network id 和 trace event 放在同一个字段体系里。否则 trace 里能看到网络切换,App 日志里能看到超时,但两边很难证明是同一轮问题。
+应用事件、系统 trace 与服务端日志至少共享请求编号和时间基准。没有这层关联，只能得到“切网和超时在相近时间发生”，不能确认因果。
 
 ## 扩展
 
 ### 🔸 OEM Wi-Fi 评分差异
 
-AOSP 的 Connectivity 网络选择策略被 Mainline 模块约束，但 OEM 仍然可以通过 overlay、Wi-Fi HAL / firmware、漫游阈值、双 Wi-Fi、链路聚合、厂商加速 SDK 改变体验。
+AOSP 的 Connectivity 选择逻辑位于 Mainline 模块。设备厂商通过 `NetworkScore` 属性表达网络策略，同时还能通过 Wi-Fi 资源 overlay、HAL、固件、驱动、漫游策略、双 STA 和厂商服务改变 Wi-Fi 行为。
 
-Android 框架预留了一个评分扩展接口：`WifiManager.WifiConnectedNetworkScorer`（`WifiManager` 中的 SystemApi 嵌套接口）。外部 scorer 通过 `ScoreUpdateObserver` 回传状态、NUD 请求或 BSSID blocklist 建议。在 Android 12 及以上，`notifyScoreUpdate()` 的数值主要用于 Wi-Fi metrics；网络选择本身更依赖 status、NUD、blocklist 这类信号。已连接网络的原始数据来自 `WifiUsabilityStatsEntry`，包含 RSSI、link speed、频段、Tx/Rx packet 统计等信息。[已验证: AOSP android-16.0.0_r1, packages/modules/Wifi/framework/java/android/net/wifi/WifiManager.java（`WifiConnectedNetworkScorer` 与 `ScoreUpdateObserver` 嵌套接口）]
+`WifiManager.WifiConnectedNetworkScorer` 是 `@SystemApi`，并要求 `WIFI_UPDATE_USABILITY_STATS_SCORE` 权限，普通第三方应用不能把它当成公开扩展点。Android 17 的 `ScoreUpdateObserver` 对各回传值给出了清楚边界：
+
+- `notifyScoreUpdate()` 的数值只用于 Wi-Fi 指标采集，不直接驱动网络选择；
+- `notifyStatusUpdate()` 可报告当前连接是否可用；
+- `requestNudOperation()` 请求邻居可达性检测；
+- `blocklistCurrentBssid()` 建议暂时阻止当前 BSSID；
+- 受功能标志控制的 `setPreEvaluationEnabled()` 可让下一次连接先进入受限预评估，再决定是否向其他应用开放。
+
+外部 scorer 的输入可来自 `WifiUsabilityStatsEntry`，包括 RSSI、链路速率、频率和分组统计。接口存在不代表所有设备都安装了外部 scorer，也不代表设备启用了 Android 17 源码中的受标志控制行为。
 
 工程判断要分三层：
 
 | 层级 | 可验证材料 | 判断边界 |
-|---|---|---|
-| AOSP framework | `WifiNetworkSelector`、`WifiCandidates`、`NetworkRanker`、`NetworkMonitor` | 可作为通用 Android 机制 |
-| OEM 配置 | `dumpsys wifi`、overlay、vendor log、机型实验 | 只能覆盖该厂商 / 该版本 |
-| firmware / driver | 厂商 bugreport、内核日志、芯片文档 | 没有材料时只能标 `[待验证]` |
+| --- | --- | --- |
+| AOSP framework | `WifiNetworkSelector`、`ThroughputScorer`、`NetworkRanker`、`NetworkMonitor` | 说明 Android 17 通用机制 |
+| 设备配置 | overlay、功能标志、`dumpsys wifi`、厂商日志 | 结论限于该构建与配置 |
+| 固件和驱动 | 厂商 bugreport、内核日志、芯片资料、射频实验 | 缺少材料时不推断具体阈值 |
 
-不要把"评分多少会切蜂窝"写成固定结论。AOSP android-16.0.0_r1 已经能确认筛选维度和 Connectivity 排序策略,但具体机型上的漫游、MLO、双 Wi-Fi、链路聚合阈值，需要实机 trace 或厂商材料确认。
-
-如果要排查厂商差异,可以做一组最小实验:同一地点、同一 SSID、同一业务请求,分别记录 Pixel / 目标厂商机型在 RSSI 从 -55dBm 降到 -80dBm 时的 default network、validated 状态、DNS/TTFB 分位数、切换次数和电量曲线。没有这组数据,不要把单机观察写成平台规律。
+跨机型实验应固定 AP、频段、信道、业务请求、服务端和干扰条件，使用可控衰减逐步改变信号，并同时记录默认网络 generation、能力、候选原因、HTTP 时间线、切换次数和功耗。单台设备的一次观察不能成为平台规律。
 
 ### 🔸 HTTP/3、QUIC 与网络切换
 
-HTTP/3 / QUIC 对移动网络切换更友好,但不是免疫切网。它的优势来自连接 ID、用户态拥塞控制和更少的握手往返;能不能迁移,还取决于服务端、客户端库、NAT、运营商网络、连接迁移配置和安全策略。
+本节前面的 `EventListener` 以 OkHttp 5.3.0 为样本。OkHttp 自身支持 HTTP/1.1 与 HTTP/2，不提供 HTTP/3。需要 HTTP/3 over QUIC 时，应评估 Android `HttpEngine` 或 Cronet，也可以评估以 Cronet 作为 OkHttp 传输层的官方集成。
 
-App 侧可以把 HTTP/3 作为灰度能力处理:
+QUIC 的连接 ID 为迁移提供了协议基础，但迁移不会凭 HTTP/3 自动发生。`HttpEngine` 和 Cronet 都提供连接迁移选项；只有启用默认网络迁移、请求使用 QUIC 且服务端支持迁移时，活动连接才有机会迁到新默认网络。允许迁往非默认网络还可能消耗计费流量。
 
-- 按域名、地区、网络类型开关 HTTP/3,保留 HTTP/2 回退。
-- 记录 QUIC handshake、0-RTT、migration attempt、fallback reason、HTTP/2 fallback TTFB。
-- 切网前后单独统计长连接恢复时长,不把 HTTP/3 和 HTTP/2 的指标混在一个分位数里。
-- 对支付、下单、上传这类请求保留幂等设计,不能把协议迁移当成业务一致性的替代品。
+HTTP/3 灰度至少分开记录：
 
-协议细节详见 24.5;这里保留 App 网络切换视角的观测口径。
+- 实际协商协议与网络 generation；
+- QUIC 建连、迁移尝试、迁移结果和回退原因；
+- HTTP/3 与 HTTP/2 各自的请求分布和失败分类；
+- 切网前后的长连接恢复；
+- 非默认计费网络的使用情况。
+
+支付、下单和上传仍需幂等与恢复协议。连接迁移只能改变传输连续性，不能提供业务一致性。协议细节见 24.5。
 
 ## 工程检查清单
 
-- 是否用 `registerDefaultNetworkCallback()` 记录默认网络变化,而不是只读一次 `activeNetwork`?
-- 是否同时判断 `NET_CAPABILITY_INTERNET` 和 `NET_CAPABILITY_VALIDATED`?
-- 是否用 `NET_CAPABILITY_NOT_METERED` 决定大下载 / 上传时机,而不是直接判断 Wi-Fi?
-- OkHttp EventListener 是否采集 DNS、TCP、TLS、TTFB、body download 和失败类型?
-- 切网时是否记录 network id、transport、VPN、validated、DNS server、proxy、MTU?
-- HTTPDNS 是否避免在 `Dns.lookup()` 内实时发阻塞请求?详见 24.4。
-- 是否把首屏 API、图片、埋点、上传放进不同优先级队列,避免弱网互相挤占?
-- bugreport / Perfetto 是否能用 call id 关联系统网络事件和 App 请求事件?
+- 默认网络由 `registerDefaultNetworkCallback()` 持续观测，回调与进程生命周期一致。
+- `INTERNET`、`VALIDATED`、`CAPTIVE_PORTAL`、`NOT_METERED` 和传输集合分别记录。
+- 新默认网络用 `onAvailable()` 识别，没有等待旧网络 `onLost()`。
+- OkHttp 保存完整事件序列，多次交换不会覆盖前一组时间戳。
+- 请求编号、网络 generation、系统 trace 与服务端日志能够关联。
+- 大文件任务依据计费能力、用户意图与持久任务状态执行。
+- DNS、连接、TLS 与业务重试都保留失败分类和幂等边界。
+- VPN、OEM 配置、MLO、双 STA 与 HTTP/3 结论都有对应设备证据。
 
-## 参考资料
+## 参考与验证
 
-- [已验证: 官方文档, https://source.android.com/docs/core/connect/wifi-network-selection]
-- [已验证: 官方文档, https://source.android.com/docs/core/connect/network-selection]
-- [已验证: 官方文档, https://developer.android.com/develop/connectivity/network-ops/reading-network-state]
-- [已验证: 官方文档, https://developer.android.com/reference/android/net/NetworkCapabilities]
-- [已验证: 官方文档, https://square.github.io/okhttp/features/events/]
-- [已验证: AOSP android-16.0.0_r1, packages/modules/Wifi/service/java/com/android/server/wifi/WifiNetworkSelector.java]
-- [已验证: AOSP android-16.0.0_r1, packages/modules/Wifi/service/java/com/android/server/wifi/WifiCandidates.java]
-- [已验证: AOSP android-16.0.0_r1, packages/modules/Wifi/framework/java/android/net/wifi/WifiManager.java]
-- [已验证: AOSP android-16.0.0_r1, packages/modules/Connectivity/service/src/com/android/server/connectivity/NetworkRanker.java]
-- [已验证: AOSP android-16.0.0_r1, packages/modules/Connectivity/service/src/com/android/server/connectivity/FullScore.java]
-- [已验证: AOSP android-16.0.0_r1, packages/modules/NetworkStack/src/com/android/server/connectivity/NetworkMonitor.java]
-- [结构参考: Clippings/Android 性能优化 - 原理:重新认识应用的速度优化.md]
-- [结构参考: Clippings/Android 性能优化 - CPU 优化(下):减少 CPU 闲置时刻和等待,提升利用率.md]
-- [结构参考: Clippings/Android 性能优化 - 缓存优化:冷热端分离+重排序,提升缓存命中率.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪?-Android开发高手课-极客时间 18.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪?-Android开发高手课-极客时间 19.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪?-Android开发高手课-极客时间 20.md]
+- [AOSP android-17.0.0_r1 · WifiNetworkSelector.java](https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/wifi/WifiNetworkSelector.java)
+- [AOSP android-17.0.0_r1 · WifiCandidates.java](https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/wifi/WifiCandidates.java)
+- [AOSP android-17.0.0_r1 · ThroughputScorer.java](https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/wifi/ThroughputScorer.java)
+- [AOSP android-17.0.0_r1 · ScoringParams.java](https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/wifi/ScoringParams.java)
+- [AOSP android-17.0.0_r1 · WifiManager.java](https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/framework/java/android/net/wifi/WifiManager.java)
+- [AOSP android-17.0.0_r1 · NetworkScore.java](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/NetworkScore.java)
+- [AOSP android-17.0.0_r1 · NetworkRanker.java](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/connectivity/NetworkRanker.java)
+- [AOSP android-17.0.0_r1 · FullScore.java](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/connectivity/FullScore.java)
+- [AOSP android-17.0.0_r1 · NetworkMonitor.java](https://android.googlesource.com/platform/packages/modules/NetworkStack/+/refs/tags/android-17.0.0_r1/src/com/android/server/connectivity/NetworkMonitor.java)
+- [Android Open Source Project · Wi-Fi network selection](https://source.android.com/docs/core/connect/wifi-network-selection)
+- [Android Open Source Project · Network selection](https://source.android.com/docs/core/connect/network-selection)
+- [Android Developers · Read network state](https://developer.android.com/develop/connectivity/network-ops/reading-network-state)
+- [Android Developers · ConnectivityManager.NetworkCallback](https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback)
+- [Android Developers · NetworkCapabilities](https://developer.android.com/reference/android/net/NetworkCapabilities)
+- [Android Developers · Define work requests](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work)
+- [Android Developers · HttpEngine.Builder](https://developer.android.com/reference/android/net/http/HttpEngine.Builder)
+- [Android Developers · ConnectionMigrationOptions.Builder](https://developer.android.com/reference/android/net/http/ConnectionMigrationOptions.Builder)
+- [Android Developers · Network stacks](https://developer.android.com/media/media3/exoplayer/network-stacks)
+- [Android Developers · Use Cronet with other libraries](https://developer.android.com/develop/connectivity/cronet/integration)
+- [OkHttp · Connections](https://lysine.dev/okhttp/features/connections/)
+- [OkHttp 5.3.0 · EventListener.kt](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt)
