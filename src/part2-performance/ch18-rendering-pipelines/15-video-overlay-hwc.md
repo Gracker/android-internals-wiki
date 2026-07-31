@@ -1,5 +1,5 @@
 ---
-title: 视频叠加与 HWC
+title: Android 17 视频叠加与 HWC
 chapter: '18.15'
 status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
@@ -12,20 +12,130 @@ tags:
 - Tunnel-Mode
 - 渲染管线
 sources:
-- type: aosp
-  path: "frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp"
-- type: aosp
-  path: "frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.cpp"
-- type: aosp
-  path: "hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/Capability.aidl"
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S12_video_overlay_hwc_type.md
+  role: 普通视频、Overlay、tunneled、protected、帧率、Perfetto 与版本边界
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S12_video_overlay_hwc_architecture/source.md
+  role: 非 tunneled、TextureView、sideband、protected 与帧率五类路径总览
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S12_video_non_tunneled_pipeline/source.md
+  role: MediaCodec Surface 输出、requested present、HWC present 与 fence
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S12_video_textureview_gl_pipeline/source.md
+  role: Android 17 TextureView 与自研 GL/Vulkan 中间消费路径
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S12_video_hwc_overlay_decision_pipeline/source.md
+  role: CompositionEngine、RenderEngine、Composer HAL 与 present 决策链
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S12_video_tunneled_sideband_pipeline/source.md
+  role: tunneled codec、硬件时钟、sideband Layer 与 HWC
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S12_video_protected_secure_pipeline/source.md
+  role: DRM、secure decoder、protected buffer 与安全显示链
+- type: internal-reference
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/images/S12_video_framerate_present_pipeline/source.md
+  role: 帧率 vote、requested present、Scheduler 与 display feedback
 - type: official
-  path: "https://developer.android.com/reference/android/view/SurfaceView"
-- type: web
-  path: "https://source.android.com/docs/core/graphics"
+  path: https://developer.android.com/about/versions/17/release-notes
+  role: Android 17 VVC 与 encoder temporal layering 版本边界
+- type: official
+  path: https://developer.android.com/media/optimize/performance/frame-rate
+  role: Surface.setFrameRate、固定源、精确帧率与刷新率选择约束
+- type: official
+  path: https://developer.android.com/reference/android/media/MediaCodec
+  role: output Surface 与 releaseOutputBuffer render timestamp
+- type: official
+  path: https://developer.android.com/reference/android/media/MediaCodecInfo.CodecCapabilities
+  role: secure-playback 与 tunneled-playback capability
+- type: official
+  path: https://developer.android.com/reference/android/view/SurfaceView
+  role: 独立 Surface 与宿主窗口承载
+- type: official
+  path: https://source.android.com/docs/core/graphics/hwc
+  role: SurfaceFlinger、HWC 与 BufferQueue 的显示架构
+- type: official
+  path: https://source.android.com/docs/core/graphics/implement-hwc
+  role: validate、present、client 与 device composition
+- type: official
+  path: https://source.android.com/docs/core/graphics/aidl-hwc
+  role: Android 13 以后 Composer3 AIDL 接口
+- type: official
+  path: https://source.android.com/docs/devices/tv/multimedia-tunneling
+  role: audio/tuner 时钟、SurfaceView、sideband handle 与 HWC 同步
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodec.java
+  role: API 37 Surface 输出与纳秒 render timestamp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodecInfo.java
+  role: FEATURE_SecurePlayback 与 FEATURE_TunneledPlayback
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaFormat.java
+  role: audio session 与 hardware A/V sync key
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/HardwareBuffer.java
+  role: USAGE_PROTECTED_CONTENT 公开标志
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/TextureView.java
+  role: OnFrameAvailable、updateLayer 与宿主 invalidation
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp
+  role: RenderThread 获取 SurfaceTexture 最新 AHardwareBuffer
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/sfplugin/CCodec.cpp
+  role: Codec2 tunneled mode、sync type 与 sideband handle
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/sfplugin/CCodecBufferChannel.cpp
+  role: Codec2 output Surface buffer 与 protected memory
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libstagefright/ACodec.cpp
+  role: OMX tunneled mode 与 sideband stream 设置
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp
+  role: queueBuffer requested present timestamp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp
+  role: expectedPresent、丢旧帧与 PRESENT_LATER
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp
+  role: canSkipValidate、presentOrValidate 与 release fence
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Display.cpp
+  role: choose/apply composition strategy 与 presentFrame
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp
+  role: RenderEngine client target 与 protected composition
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Layer.cpp
+  role: hwc composition type 写入 Layer trace proto
+- type: aosp
+  path: https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl
+  role: CLIENT、DEVICE 与 SIDEBAND 接口语义
+- type: aosp
+  path: https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/Capability.aidl
+  role: SIDEBAND_STREAM、present fence 可靠性与 skip validate
+- type: aosp
+  path: https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/common/aidl/android/hardware/graphics/common/BufferUsage.aidl
+  role: Composer/allocator PROTECTED buffer usage
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c
+  role: codec、GPU 与 DPU 跨设备共享 buffer
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
+  role: fence signal、callback 与 wait
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/dma-fence.h
+  role: dma-fence 公共同步接口与语义
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c
+  role: dma-fence 的 sync_file fd 接口
 related_chapters:
 - '2.6'
 - '2.10'
 - '18.6'
+- '18.7'
+- '18.19'
+- '18.23'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 task9_result: "auto-fixed"
@@ -64,7 +174,8 @@ task9_state: reviewed
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-26
 last_task6_audit: "2026-07-02"
-last_verified: "2026-07-25"
+last_verified: "2026-07-31"
+last_verified_against: "android-17.0.0_r1 (MediaCodec.java, MediaCodecInfo.java, MediaFormat.java, HardwareBuffer.java, TextureView.java, DeferredLayerUpdater.cpp, CCodec.cpp, CCodecBufferChannel.cpp, ACodec.cpp, BufferQueueProducer.cpp, BufferQueueConsumer.cpp, HWComposer.cpp, Display.cpp, Output.cpp, Layer.cpp, Composition.aidl, Capability.aidl, BufferUsage.aidl) / Android 17 API 37 media and HWC docs / android17-6.18-2026-06_r6 (dma-buf.c, dma-fence.c, dma-fence.h, sync_file.c)"
 confidence: high
 last_idle_audit_at: "2026-07-25T22:35:51+08:00"
 last_idle_audit_run_id: "20260725-223518-idle-audit-9529cd15"
@@ -72,11 +183,12 @@ last_idle_audit_log: "logs/audit/2026-07-25-20260725-223518-idle-audit-9529cd15-
 idle_audit_result: "pass-metadata-only"
 ---
 
-# 视频叠加与 HWC
+# 18.15 Android 17 视频叠加与 HWC
 
 <!-- outline-start -->
 
 **锚点(必须覆盖):**
+
 - 🔹 HWC (Hardware Composer) 的核心职责：决定哪些 Layer 走硬件合成，哪些走 GPU
 - 🔹 GPU Path vs Overlay Path 的通路对比
 - 🔹 SurfaceFlinger 的合成决策流程
@@ -84,21 +196,21 @@ idle_audit_result: "pass-metadata-only"
 - 🔹 在 dumpsys SurfaceFlinger 和 Perfetto 中识别 Overlay 模式
 
 **扩展(可选深入):**
+
 - 🔸 HWC 2.x / 3.x 的版本差异
 - 🔸 Tunnel Mode(Android TV / 高端手机)
 - 🔸 HWC 回退到 GPU 合成的常见触发条件
 
 <!-- outline-end -->
-## 先把结论说清楚：SurfaceView 只是候选条件
 
-视频播放里最容易误传的一句话是：“用了 `SurfaceView`，视频就会走 Overlay 并绕过 GPU。”
+## SurfaceView 只提供 Overlay 候选条件
 
-这句话少了一个关键条件。`SurfaceView` 给视频保留了独立的 SurfaceFlinger Layer，使 HWC 有机会把该 Layer 判为 `DEVICE`；是否采用显示硬件合成，要等 SurfaceFlinger 把当前帧的完整 Layer 栈交给 HWC 后才能确定。视频格式、缩放、旋转、HDR、受保护属性、叠加 UI、可用 plane 数量和显示带宽都会改变这一帧的选择。
+“使用 `SurfaceView`，视频就会走 Overlay 并绕过 GPU”少了每帧 HWC 协商这个条件。`SurfaceView` 给视频保留了独立的 SurfaceFlinger Layer，使 HWC 有机会把该 Layer 判为 `DEVICE`；是否采用显示硬件合成，要等 SurfaceFlinger 把当前帧的完整 Layer 栈交给 HWC 后才能确定。视频格式、缩放、旋转、HDR、受保护属性、叠加 UI、可用 plane 数量和显示带宽都会改变这一帧的选择。
 
 因此要分开回答四个问题：
 
 | 问题 | 谁决定 | 能从哪里确认 |
-|:---|:---|:---|
+| --- | --- | --- |
 | 解码器把帧输出到哪里 | MediaCodec / Codec2 / 厂商解码器 | codec 配置、media trace |
 | 视频是否保留为独立 Layer | `SurfaceView`、`TextureView` 或自定义渲染结构 | SurfaceFlinger layer trace |
 | 该 Layer 由 GPU 还是显示硬件合成 | SurfaceFlinger 与 Composer HAL 每帧协商 | HWC composition type |
@@ -148,7 +260,7 @@ Android 17 的 `BufferQueueProducer.cpp` 在 `queueBuffer()` 路径把 requested
 ### 三类 fence 不要混为一谈
 
 | fence | 保护的依赖 | 信号后的含义 |
-|:---|:---|:---|
+| --- | --- | --- |
 | Layer acquire fence | 生产者写 buffer → HWC 或 GPU 读取 | 消费者可以安全读取该 Layer buffer |
 | Layer release fence | HWC 读取 Layer → buffer 回到生产者 | 本次显示使用已结束，该 buffer 才可安全复用 |
 | Display present fence | 本次显示提交 → 显示硬件完成相应工作 | 表示整帧 present 的完成边界；是否可当作精确上屏时刻还受 `PRESENT_FENCE_IS_NOT_RELIABLE` 能力影响 |
@@ -169,6 +281,8 @@ Android 的 fence 最终由内核 `dma_fence` 表示，跨进程 fd 封装由 `s
 
 这条路径适合任意几何变换、透明度、圆角、模糊以及与 UI 紧密混合的场景，代价是每帧多出 GPU 采样和 App Window 写回。是否值得，要用同设备、同亮度、同分辨率、同刷新率的测量结果判断。
 
+Android 17 的宿主链从 `SurfaceTexture.OnFrameAvailableListener` 进入 `TextureView.updateLayer()` / `invalidate()`；绘制同步后，RenderThread 侧 `DeferredLayerUpdater::apply()` 调用 `ASurfaceTexture_dequeueBuffer()` 获取最新 `AHardwareBuffer` 并更新 HWUI layer。Codec buffer 已经可读，只代表 TextureView 有新纹理可取；宿主 traversal、RenderThread 或 App Window 提交迟到，仍会让最终画面沿用旧帧。
+
 ### 自定义 GL / Vulkan：看输出 Surface，不看 API 名字
 
 自定义渲染有两种常见结构：
@@ -183,7 +297,7 @@ Android 的 fence 最终由内核 `dma_fence` 表示，跨进程 fd 封装由 `s
 HWC 是 SurfaceFlinger 与设备显示实现之间的 HAL。它根据这一帧的 Layer 栈和硬件能力给出合成建议，并接收 SurfaceFlinger 的 client target。AIDL Composer3 的 `Composition.aidl` 对三种与视频密切相关的类型给出了明确语义：
 
 | Composition | Android 17 的接口语义 | 对视频排查的含义 |
-|:---|:---|:---|
+| --- | --- | --- |
 | `CLIENT` | 客户端把该 Layer 画入 client target，再通过 `setClientTarget()` 交给设备 | 该视频 Layer 参与 RenderEngine/GPU 合成 |
 | `DEVICE` | 设备用 hardware overlay 或类似方式处理该 Layer | 该视频 Layer 不由 RenderEngine 采样；具体硬件结构仍由设备决定 |
 | `SIDEBAND` | 设备负责 Layer 合成、buffer 更新和内容同步，要求 `SIDEBAND_STREAM` 能力 | 常见于 tunneled playback，不走普通逐帧 BufferQueue 更新 |
@@ -197,7 +311,7 @@ HWC 是 SurfaceFlinger 与设备显示实现之间的 HAL。它根据这一帧�
 - 视频 Layer：`DEVICE`；
 - App UI、模糊背景或复杂圆角：一个或多个 `CLIENT`；
 - GPU 合成这些 `CLIENT` Layer 得到的 client target：再交回 HWC；
-- HWC 把 client target 与 `DEVICE` Layer一起提交给显示硬件。
+- HWC 把 client target 与 `DEVICE` Layer 一起提交给显示硬件。
 
 所以 Perfetto 中看到 GPU 工作，不足以证明视频 Overlay 失败。需要确认 GPU 在合成哪些 Layer，以及视频 Layer 自己的 `hwc_composition_type`。
 
@@ -215,7 +329,7 @@ HWC 是 SurfaceFlinger 与设备显示实现之间的 HAL。它根据这一帧�
 
 ### Android 17 的 `presentOrValidate()` 快路径
 
-Android 17 的 `HWComposer::getDeviceCompositionChanges()` 里，`canSkipValidate` 并非“设备声明了能力就总能跳过”。源码包含两个框架侧前置条件：
+Android 17 的 `HWComposer::getDeviceCompositionChanges()` 里，`canSkipValidate` 不会因设备声明某项 capability 就自动成立。源码包含两个框架侧前置条件：
 
 - 本帧不能已经需要 client composition；
 - 如果存在 `earliestPresentTime`，当前 steady clock 必须到达该时间；Composer 支持 expected present time、因而没有这个等待点时可继续。
@@ -229,7 +343,7 @@ Composer3 AIDL 中 `Capability.SKIP_VALIDATE` 已标记为 deprecated，并注�
 HWC 的能力由 SoC 显示模块、Composer HAL、显示模式和当前 Layer 栈共同决定。下面这些是排查维度，不是跨设备的硬规则：
 
 | 维度 | 典型约束 | 建议观察 |
-|:---|:---|:---|
+| --- | --- | --- |
 | Plane 资源 | 可用 plane 数量、每个 plane 的格式与 z-order 能力有限 | 新增浮层前后 composition type 是否改变 |
 | buffer 格式 | YUV/RGBA、位深、压缩 modifier、stride 可能超出显示硬件能力 | pixel format、dataspace、gralloc usage |
 | 几何变换 | 过大的缩放比例、旋转、复杂 crop 可能不受支持 | source crop、display frame、transform |
@@ -244,7 +358,7 @@ HWC 的能力由 SoC 显示模块、Composer HAL、显示模式和当前 Layer �
 ### GPU、DEVICE 与 SIDEBAND 的通路对比
 
 | 路径 | 逐帧像素经过 App / SF 的方式 | 视频 Layer 是否由 RenderEngine 采样 | 适用能力 | 代价与边界 |
-|:---|:---|:---|:---|:---|
+| --- | --- | --- | --- | --- |
 | `TextureView` / GPU | 视频成为 App 纹理，写入 App Window buffer | 是 | 复杂变换和特效 | 多一次采样与写回；视频不再是独立 HWC Layer |
 | `SurfaceView` + `DEVICE` | 普通 BufferQueue，SurfaceFlinger 逐帧 latch | 否 | 设备接受该 Layer 的硬件合成 | 仍有 SF/HWC/fence 工作，也可能存在其他 GPU client composition |
 | Tunneled + `SIDEBAND` | sideband handle；视频更新与同步由设备机制处理 | 否 | codec、Audio HAL、Composer HAL 与显示链共同支持 | 可用性和格式受设备约束，GPU 特效能力受限 |
@@ -288,6 +402,8 @@ App 侧必须查询 codec 的 `FEATURE_TunneledPlayback`，并为相应场景配
 
 受保护视频经常优先使用安全硬件合成，但“受保护”不等于“必定 DEVICE”或“必定 SIDEBAND”。Android 17 的 CompositionEngine 会查询 RenderEngine 是否支持 protected content，也存在 protected client composition 的框架路径。设备能否使用它，取决于受保护 EGL/GPU、gralloc、codec、Composer HAL、显示输出和 DRM 策略。
 
+Android 17 的公开 `HardwareBuffer.USAGE_PROTECTED_CONTENT` 与 graphics common AIDL `BufferUsage.PROTECTED` 只表达 buffer 的保护用途。它们不能单独证明 secure decoder、allocator、RenderEngine/HWC、显示输出与 HDCP 已形成完整安全链，仍要逐段核对能力和运行结果。
+
 安全路径不满足时，正确结果可能是拒绝播放、黑屏、降低输出能力或禁止镜像，不应为追求画面而退到可被非安全组件读取的 buffer。排查时还要看外接显示的 HDCP 状态、secure Layer 标记和 DRM session 日志。
 
 ## 帧率匹配与 Overlay 是两条问题线
@@ -298,6 +414,8 @@ App 侧必须查询 codec 的 `FEATURE_TunneledPlayback`，并为相应场景配
 - **节奏与时序**：codec 输出 PTS、`releaseOutputBuffer()` 时间、BufferQueue desired present、SurfaceFlinger latch、显示刷新率和 present fence。
 
 `Surface.setFrameRate()` 是对系统的帧率提示，不保证显示器一定切换。视频应使用内容的准确帧率，固定帧率视频可使用 `FRAME_RATE_COMPATIBILITY_FIXED_SOURCE`；暂停或结束而 Surface 仍可见时，可用 0 清除提示。24 fps 内容在 120 Hz 屏幕上每帧重复 5 次是正常 cadence，不能仅凭“屏幕提交了 120 次”认定解码器重复输出。
+
+帧率 vote 进入 SurfaceFlinger Scheduler 的显示模式和节奏选择，不直接指定视频 Layer 的 `CLIENT`、`DEVICE` 或 `SIDEBAND`。刷新率与 composition type 可能同时变化，因果关系要用 Layer 状态和调度证据分别判断。
 
 当问题表现为周期性顿挫时，按下面顺序看更容易定位：
 
@@ -352,7 +470,7 @@ adb pull /data/misc/perfetto-traces/video-hwc.perfetto-trace
 ### 一套可复现的 A/B 实验
 
 | 实验 | 只改变什么 | 需要保持不变 | 预期能回答的问题 |
-|:---|:---|:---|:---|
+| --- | --- | --- | --- |
 | A | `SurfaceView` ↔ `TextureView` | 文件、codec、亮度、刷新率、分辨率 | 独立 Layer 与 App 纹理路径的差异 |
 | B | 显示/隐藏播放控制条 | 视频与显示模式 | UI 叠加是否改变 composition type |
 | C | 开关圆角、alpha、旋转 | 其他 Layer 不变 | 哪种几何或混合状态触发回退 |
@@ -381,7 +499,7 @@ Android 通用内核不负责选择 `CLIENT` 或 `DEVICE`；这个决定由 Surf
 ## HWC2.x 到 Composer3：接口变化不等于硬件升级
 
 | 平台阶段 | Composer HAL 形态 | 对本文的影响 |
-|:---|:---|:---|
+| --- | --- | --- |
 | Android 8–12 | HIDL `android.hardware.graphics.composer@2.1` 到 `2.4` | SurfaceFlinger 与 HWC 继续按 validate / present 模型协商 |
 | Android 11+ | Codec2 支持 tunneled playback 的标准配置路径 | C2 组件可返回 tunnel handle，设备仍需完整支持 |
 | Android 13–17 | AIDL `android.hardware.graphics.composer3` 可供厂商实现，HIDL 版本被弃用 | 命令传输与接口演进，`CLIENT` / `DEVICE` / `SIDEBAND` 的职责仍需按源码判断 |
@@ -427,23 +545,20 @@ GPU 可能在画 App UI、client target 或其他应用内容。应核对视频 
 
 ### Android 17 / API 37
 
-- [`MediaCodec.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/media/java/android/media/MediaCodec.java)：`releaseOutputBuffer()` 的 Surface 渲染语义。
-- [`MediaCodecInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/media/java/android/media/MediaCodecInfo.java)：`FEATURE_SecurePlayback` 与 `FEATURE_TunneledPlayback`。
-- [`MediaFormat.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/media/java/android/media/MediaFormat.java)：audio session 与 hardware A/V sync key。
-- [`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp)：queue 时写入 requested present timestamp。
-- [`BufferQueueConsumer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp)：`expectedPresent`、丢旧帧与 `PRESENT_LATER`。
-- [`HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)：`canSkipValidate` 与 `presentOrValidate()`。
-- [`Display.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Display.cpp)：validate 后应用 changed composition types。
-- [`Layer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Layer.cpp)：把 HWC composition type 写入 Layer trace proto。
-- [`Composition.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl)：`CLIENT`、`DEVICE`、`SIDEBAND` 的接口定义。
-- [`Capability.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/Capability.aidl)：sideband、present fence 可靠性和 skip validate 能力。
-- [`CCodec.cpp`](https://android.googlesource.com/platform/frameworks/av/+/android-17.0.0_r1/media/codec2/sfplugin/CCodec.cpp)：Codec2 tunneled mode 与 sideband handle。
+- [`MediaCodec.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodec.java)、[`MediaCodecInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaCodecInfo.java)、[`MediaFormat.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaFormat.java)：Surface 渲染、secure/tunneled capability 与同步 key。
+- [`CCodec.cpp`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/sfplugin/CCodec.cpp)、[`CCodecBufferChannel.cpp`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/codec2/sfplugin/CCodecBufferChannel.cpp)、[`ACodec.cpp`](https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libstagefright/ACodec.cpp)：Codec2 / OMX 的 Surface output、protected buffer、tunneled mode 与 sideband handle。
+- [`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp)、[`BufferQueueConsumer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp)：requested present、`expectedPresent`、丢旧帧与 `PRESENT_LATER`。
+- [`TextureView.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/TextureView.java)、[`DeferredLayerUpdater.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp)：TextureView frame available、宿主 invalidation 与最新 buffer 获取。
+- [`HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)、[`Display.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Display.cpp)、[`Output.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp)：`canSkipValidate`、composition strategy、client target、protected composition 与 present。
+- [`Layer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Layer.cpp)：把 HWC composition type 写入 Layer trace proto。
+- [`Composition.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl)、[`Capability.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/Capability.aidl)：`CLIENT`、`DEVICE`、`SIDEBAND`、present fence 可靠性与 skip validate。
+- [`HardwareBuffer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/HardwareBuffer.java)、[`BufferUsage.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/common/aidl/android/hardware/graphics/common/BufferUsage.aidl)：protected buffer usage。
 
 ### Android 17 通用内核
 
-- [`dma-buf.c`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)：跨设备 buffer 共享和 attachment。
-- [`dma-fence.h`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/include/linux/dma-fence.h)：异步硬件同步原语。
-- [`sync_file.c`](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：fence fd 封装。
+- [`dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)：跨设备 buffer 共享和 attachment。
+- [`dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)、[`dma-fence.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/dma-fence.h)：fence signal、wait 与公共同步接口。
+- [`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：fence fd 封装。
 
 ### 官方说明
 
@@ -453,6 +568,7 @@ GPU 可能在画 App UI、client target 或其他应用内容。应核对视频 
 - [Multimedia tunneling](https://source.android.com/docs/devices/tv/multimedia-tunneling)
 - [MediaCodecInfo.CodecCapabilities](https://developer.android.com/reference/android/media/MediaCodecInfo.CodecCapabilities)
 - [Video frame rate](https://developer.android.com/media/optimize/performance/frame-rate)
+- [Android 17 release notes](https://developer.android.com/about/versions/17/release-notes)
 
 ## 小结
 
