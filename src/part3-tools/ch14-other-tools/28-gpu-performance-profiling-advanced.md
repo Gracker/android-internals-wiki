@@ -51,7 +51,7 @@ sources:
 ## 要点
 
 1. `GpuCounterDescriptor` 提供 counter 的协议级元数据：语义分组、度量单位、counter spec 与硬件 counter block 容量约束。
-2. `GpuCounterEvent` 有 descriptor 直挂与 interned descriptor 两种事件发射模式；Android OEM 合规路径依赖直挂 descriptor，多 producer / 多 GPU 场景可用 interned descriptor 降低重复描述开销。
+2. `GpuCounterEvent` 有 descriptor 直挂与 interned descriptor 两种事件发射模式；Android OEM 合规路径依赖直挂 descriptor，多 producer / 多 GPU 场景可用 sequence-scoped interned descriptor 避免全局 counter id 协调。
 3. Trace Processor 在 `gpu_event_parser.h/.cc` 中维护 GPU counter track 与上一条 counter row 状态，并把回看式采样值写回上一行；`android-17.0.0_r1` 没有早稿曾引用的 `gpu_counter_sequence_state.h`。
 4. `gpu_counter_span_view.sql` 用 `LEAD() OVER (PARTITION BY track_id ORDER BY ts)` 将 counter 采样点转为 span，适合按 GPU track 计算区间持续时间。
 5. `GpuMemTotalEvent` 位于 `protos/perfetto/trace/android/gpu_mem_event.proto`，由 Android `GpuService` 生成；`pid=0` 表示全局总量，其他 pid 表示进程归属。
@@ -90,7 +90,10 @@ RAY_TRACING  = 7
 counter_id
 name
 description
-peak_value
+oneof peak_value {
+  int_peak_value
+  double_peak_value
+}
 numerator_units
 denominator_units
 select_by_default
@@ -129,8 +132,8 @@ message GpuCounterEvent {
 
 源码注释区分两种 emission 模式：
 
-- **Mode 1：descriptor 直挂**。`counter_descriptor = 1` 直接随事件发送，注释说明这是 Android OEMs 为满足 CDD / CTS 合规测试需要使用的路径。
-- **Mode 2：interned descriptor**。`counter_descriptor_iid = 4` 引用 `InternedGpuCounterDescriptor`，适合多 producer / 多 GPU 场景，并可节省每包重复携带 descriptor 的开销。
+- **Mode 1：descriptor 直挂**。`counter_descriptor = 1` 直接随事件发送，注释说明这是 Android OEMs 为满足 CDD / CTS 合规测试需要使用的路径；每个 session 的首个 trace packet 必须声明 descriptor。该模式的 counter id 是全局的，多 producer 必须自行协调。
+- **Mode 2：interned descriptor**。`counter_descriptor_iid = 4` 引用 trusted sequence 的 `InternedGpuCounterDescriptor`，适合多 producer / 多 GPU 场景。它把 counter spec 放入 sequence-scoped `InternedData`，避免把 counter id 当成全局编号；若 event 外层和 interned descriptor 都提供 `gpu_id`，以后者为准。
 
 数据源配置入口在 `protos/perfetto/config/data_source_config.proto`：
 
@@ -140,7 +143,7 @@ optional GpuCounterConfig gpu_counter_config = 108 [lazy = true];
 
 该字段对应的数据源名是 `gpu.counters`。`[lazy = true]` 是 protobuf 的延迟解码选项，不能据此推导 GPU data source 的启动时机或常驻状态。采集行为由 `GpuCounterConfig` 的以下字段表达：
 
-- `counter_period_ns`：期望采样周期，还要落在 descriptor 声明的 `min_sampling_period_ns` 与 `max_sampling_period_ns` 范围内；
+- `counter_period_ns`：期望采样周期；descriptor 若声明了 `min_sampling_period_ns` 与 `max_sampling_period_ns`，配置应落在该 producer 支持的范围内；
 - `counter_ids`：要采集的 counter id，含义以本次 producer descriptor 为准；
 - `instrumented_sampling`：请求通过 command buffer instrumentation 采样，使用前应检查 descriptor 的 `supports_instrumented_sampling`；
 - `fix_gpu_clock`：请求在 trace 期间固定 GPU 时钟，会改变动态调频条件，不能与日常运行数据混为同一基线。
@@ -229,7 +232,7 @@ message GpuMemTotalEvent {
 这条边界会直接影响结论强度：
 
 | 证据 | 可以确认 | 不能单独确认 |
-|---|---|---|
+| --- | --- | --- |
 | GPU counter span | 某个 `gpu_id` 在该区间的频率、吞吐、利用率或厂商定义事件值发生变化 | 哪个进程、layer 或 command buffer 造成变化 |
 | GPU render-stage / submission 事件 | 已被 producer 标注的 GPU 工作区间与提交关系 | 未标注工作属于哪个业务帧，或该帧已经显示 |
 | App / RenderThread slice | CPU 何时准备、提交或等待 GPU 工作 | GPU 何时完成，SurfaceFlinger 是否采用该 buffer |
@@ -243,11 +246,11 @@ message GpuMemTotalEvent {
 以下判读表来自 `rendering_pipelines` 的 Android 17 显示模型。表中的“GPU counter”均指设备级轨道；厂商若提供更细的 context、queue 或 stage 事件，可以继续细分。
 
 | 出图路径 | 可能进入同一 GPU counter 的工作 | 需要同时核对的证据 | 常见误判 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 标准 View / Compose App Window | HWUI/Skia 绘制 App buffer；发生 CLIENT composition 时还包含 SurfaceFlinger RenderEngine | MainThread、RenderThread、GPU stage、App completion fence、host `BufferTX`、SF composition type、present | 把 RenderThread duration 当成 GPU duration，或把所有 GPU 峰值算给 App |
 | TextureView | 外部 Producer 可能使用 GPU；宿主 HWUI 还要 acquire、采样外部 image 并写 App Window | 外部 BufferQueue 与 fence、`DeferredLayerUpdater`、宿主 GPU、host layer、最终 composition | 只看到宿主 counter 变高，就断定外部视频、相机或地图 Producer 变慢 |
 | SurfaceView / 独立 Surface | 游戏或自研 renderer 的 GPU 工作；若该 layer 或同屏其它 layer 转为 CLIENT，还会增加 RenderEngine 工作 | 独立 BLAST child、producer fence、per-layer composition type、client target、release/present fence | `SurfaceView` 一定不占 GPU，或 DEVICE composition 等于 Producer 没有 GPU 成本 |
-| Camera / 普通视频 Surface | 主体像素可能由 ISP、codec、blitter 或其它硬件产生；TextureView、自研滤镜、CLIENT composition 才会额外引入可见 GPU 工作 | Camera/codec result、buffer timestamp、acquire fence、carrier 类型、HWC strategy、present | GPU counter 低就表示预览/播放链路没有瓶颈 |
+| Camera / 普通视频 Surface | 主体像素可能由 ISP、codec、blitter 或其它硬件产生；TextureView、自研滤镜、CLIENT composition 才会额外引入可见 GPU 工作 | Camera/codec result、buffer timestamp、acquire fence、承载方式、HWC strategy、present | GPU counter 低就表示预览/播放链路没有瓶颈 |
 | 本地游戏 | engine submit、GPU queue execution、可能的 SurfaceFlinger CLIENT composition | Input、Game/Render/RHI、submission、producer fence、queue depth、latch、present | submit 返回等于 GPU 完成，或 FPS 稳定等于输入延迟低 |
 | 混合出图 | 多个 Producer、宿主采样与 RenderEngine 可能共享同一个 `gpu_id` | 每个 Surface/BufferQueue、目标 display 的可见 layer 集合、DEVICE/CLIENT 变化、各自 fence | 用一条全局 GPU track 给某个 layer 定责 |
 
