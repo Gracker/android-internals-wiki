@@ -1,23 +1,51 @@
 ---
-title: "Android View 软件渲染路径"
+title: "Android 17 软件与离屏渲染路径"
 chapter: "18.3"
 status: finalized
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
 section: "18.3"
-last_verified: "2026-05-05"
-last_verified_against: "Android Developers hardware acceleration docs + AOSP View/Surface/HWUI source references already cited in draft"
-confidence: medium
+last_verified: "2026-07-31"
+last_verified_against: "AOSP android-17.0.0_r1 ViewRootImpl/View/Surface/GraphicBuffer/HardwareBufferRenderer/SurfaceControl/SurfaceFlinger + kernel android17-6.18-2026-06_r6"
+confidence: high
 sources:
+  - type: internal-reference
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S07_software_offscreen_type.md"
+    role: "software 与 offscreen 正交分类、生产/消费路径与版本演进"
   - type: official
     path: "https://developer.android.com/develop/ui/views/graphics/hardware-accel"
+    role: "View layer 与 hardware/software Canvas 公开语义"
   - type: aosp
-    path: "frameworks/base/core/java/android/view/View.java"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java"
+    role: "整窗口 drawSoftware 主链"
   - type: aosp
-    path: "frameworks/native/libs/gui/Surface.cpp"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java"
+    role: "LAYER_TYPE_SOFTWARE、buildLayer 与 drawing cache 分支"
   - type: aosp
-    path: "frameworks/base/libs/hwui/"
-tags: ["software-rendering", "CPU-rasterization", "Skia", "Canvas", "lockCanvas"]
-related_chapters: ["2.1", "2.5", "18.2"]
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/Surface.cpp"
+    role: "dequeue、copyback、lock/unlock 与 queue"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/ui/GraphicBuffer.cpp"
+    role: "lockAsync 与 unlockAsync fence"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareBufferRenderer.java"
+    role: "RenderNode 到 HardwareBuffer 的离屏 HWUI 路径"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java"
+    role: "Transaction setBuffer、production fence 与 release callback"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/include/android/surface_control.h"
+    role: "NDK buffer fence 与 setBufferWithRelease"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp"
+    role: "可见结果的 composition、present 与 release fence"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/driver-api/dma-buf.rst"
+    role: "共享 buffer 的 kernel 语义"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/driver-api/sync_file.rst"
+    role: "dma-fence 到 sync_file fd 的语义"
+tags: ["software-rendering", "offscreen-rendering", "CPU-rasterization", "Skia", "Canvas", "lockCanvas", "HardwareBufferRenderer", "SurfaceControl"]
+related_chapters: ["2.1", "2.5", "18.2", "18.10", "18.17"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 task9_result: pass-tech-review
@@ -47,12 +75,12 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-13
 ---
 
-# 18.3 Android View 软件渲染路径
+# 18.3 Android 17 软件与离屏渲染路径
 
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
-- [18.3.1 软件渲染的触发条件](#软件渲染的触发条件) — 什么时候会走这条路径
+- [18.3.1 软件与离屏路径的分类](#软件与离屏路径的分类) — 像素生产方式与结果去向
 - [18.3.2 完整执行流程](#完整执行流程) — 从 lockCanvas 到 unlockCanvasAndPost
 - [18.3.3 与硬件加速路径的核心差异](#与硬件加速路径的核心差异) — CPU vs GPU 的主要区别
 - [18.3.4 Trace 视角](#trace-视角) — Perfetto 中的识别特征
@@ -68,7 +96,7 @@ last_deepseek_cn_review_at: 2026-07-13
 
 本文的平台实现固定到 Android 17 / API 37 的 `android-17.0.0_r1`；涉及 dma-buf、dma-fence、sync_file、调度与内存回收时，kernel 固定到 `android17-6.18-2026-06_r6`。
 
-## 软件渲染的触发条件
+## 软件与离屏路径的分类
 
 ### 先按“生产方式 × 结果去向”分类
 
@@ -82,6 +110,32 @@ last_deepseek_cn_review_at: 2026-07-13
 | App GPU | `HardwareBuffer` | 独立 `SurfaceControl` layer | EGL / Vulkan 生产后调用 `Transaction#setBuffer()` |
 
 只有前两行属于 CPU 软件栅格化。后两行属于离屏渲染，但不是软件渲染。中间结果若只交给编码器、算法或缓存，就不会自然出现 SurfaceFlinger latch、HWC present 和 display present fence。
+
+下面的图用于确认中间结果的消费者以及它是否进入显示链。
+
+```mermaid
+flowchart TD
+    Classify["确认 Producer 与输出位置"]
+    CpuVisible["CPU → 可见 Surface buffer"]
+    CpuBitmap["CPU → Bitmap 中间结果"]
+    GpuOffscreen["HWUI / GPU → 离屏目标"]
+    Direct["HardwareBuffer → SurfaceControl"]
+    Host["宿主窗口采样"]
+    Pure["编码 / 算法 / 缓存"]
+    Layer["可见 layer"]
+    SF["SurfaceFlinger<br/>readiness / snapshot / latch"]
+    Display["HWC / display<br/>present feedback"]
+
+    Classify --> CpuVisible --> Layer
+    Classify --> CpuBitmap --> Host --> Layer
+    Classify --> GpuOffscreen --> Host
+    GpuOffscreen --> Pure
+    GpuOffscreen --> Direct --> Layer
+    Layer --> SF --> Display
+    Pure --> NoDisplay["没有 display present<br/>除非后续消费者再提交"]
+```
+
+纯离屏分支停在编码、算法或缓存消费者，不会自动产生 SF layer。通过宿主窗口采样时，显示证据属于宿主 App Window；通过 `Transaction#setBuffer()` 提交时，才继续跟踪目标 `SurfaceControl` layer 的 transaction、latch、composition、present 与 release。
 
 ### 整窗口软件绘制
 
@@ -249,7 +303,7 @@ Java 文档要求 buffer 同时支持 `USAGE_COMPOSER_OVERLAY` 和 `USAGE_GPU_SA
 | 部分更新 | dirty region 可能触发 copyback | RenderNode/display list 复用、damage 与 GPU/HWC 策略 |
 | 适合的证据 | App 线程 Running、lock/post、CPU memory traffic | `doFrame`、`syncAndDrawFrame`、`DrawFrame`、GPU、queue |
 
-GPU 并非对所有工作都必然更快。极小、低频、一次性的 Bitmap 生成可能不值得支付 GPU setup 与同步成本；持续窗口动画、大面积混合、模糊和高分辨率重绘通常更适合硬件路径。结论要由目标设备的 CPU/GPU 时间、内存流量、功耗和 deadline 数据支持。
+GPU 也有 setup、同步和资源转换成本。极小、低频、一次性的 Bitmap 生成可能更适合 CPU；持续窗口动画、大面积混合、模糊和高分辨率重绘通常更适合硬件路径。结论要由目标设备的 CPU/GPU 时间、内存流量、功耗和 deadline 数据支持。
 
 ### 三类 fence 不可互换
 
