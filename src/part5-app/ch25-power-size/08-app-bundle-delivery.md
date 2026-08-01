@@ -97,88 +97,86 @@ last_deepseek_cn_review_at: 2026-06-16
 
 ## 为什么要了解 App Bundle 与按需分发
 
-25.6 和 25.7 节已经处理了包体积治理的两类基础工作：把 dex、资源、`.so`、`assets` 的体积账算清楚，再用 R8、资源缩减、图片格式和 ABI 策略压小产物。25.8 节处理另一类问题：同一份产物是否应该发给所有用户。
+25.6 和 25.7 处理“产物中还有什么可以删除或缩小”，本节处理“哪些产物应该在什么时间交给哪台设备”。这两个问题相互独立：AAB 不会删除 base module 中的无用代码，R8 也不会决定低频功能是否延后下载。
 
-Android App Bundle（AAB）是交给 Google Play 或 `bundletool` 的发布格式，设备最终安装的是分发侧生成的 APK 组合。分发侧会根据设备 ABI、屏幕密度、语言、功能模块和资产包生成一组 APK。对用户来说，下载目标从“拿完整安装包”变成“拿这台设备需要的 base APK、配置 APK、功能 APK 或资产包”。
+Android App Bundle（AAB）是发布格式，不是 Android 平台可直接安装的包。Google Play 根据 AAB 生成并签名 APK；设备收到的是 base APK、configuration APK、feature APK 和可能的 install-time asset split。`bundletool` 可以在本地生成同类 APK Set，用于测量和测试。构建与分发关系可参照 [About Android App Bundles](https://developer.android.com/guide/app-bundle)。
 
+本节以 Android 17（API 37）的平台安装行为为锚点。AAB 拆分与 Play Feature/Asset Delivery 由构建工具和 Google Play 服务实现，不涉及 kernel 分包逻辑，因此不引用 kernel 作为分发依据。
 
 ## AAB 格式与分包机制
 
-[已验证: 官方文档, developer.android.com/guide/app-bundle；developer.android.com/guide/app-bundle/app-bundle-format]
+AAB 按 module 组织代码和资源。base module 是所有安装必需的主体；feature module 可以在安装时、满足条件时或用户请求时交付；asset pack 用于 Play Asset Delivery。Google Play 还可以按 ABI、语言和屏幕密度生成 configuration APK，让设备只下载匹配配置。
 
-AAB 的主要收益来自分包：把不同设备需要的代码、资源和资产拆成可选择的 APK 组合。一个 AAB 通常包含 base module、dynamic feature module、asset pack 和元数据。Google Play 根据这些内容生成 base APK、configuration APK、feature module APK、asset APK 或面向旧设备的 multi-APK。官方文档明确说明，用户设备只下载运行应用所需的代码和资源；语言、密度和 ABI 这三类配置资源会按设备裁剪。
+工程中要分开记录三种尺寸：
 
-工程里要区分三种体积口径：
+- **AAB 上传大小**：用于检查发布制品，不代表任一设备的下载量；
+- **设备交付大小**：由 SDK、ABI、语言、密度、module 集合和交付时机决定；
+- **安装后占用**：还会受 native 库提取、dexopt、asset pack 展开和应用数据影响。
 
-- **AAB 文件大小**：这是上传产物大小，适合检查构建产物是否异常，但不能代表用户下载大小。
-- **设备下载大小**：同一 AAB 在 arm64 + zh + xxhdpi 设备和 x86_64 + en + hdpi 设备上生成的 APK 组合不同，下载大小也不同。
-- **安装后占用**：未压缩 native 库、asset pack、本地缓存和 dexopt 产物会影响安装后磁盘占用，不能只看下载大小。
-
-本地验证要使用 `bundletool`。这段命令用于把 AAB 转成 `.apks`，再按设备配置估算下载体积。重点看同一个 AAB 在不同 `device-spec.json` 下的差异。
+下面的命令从已连接设备生成规格文件，构建完整 APK Set，再估算该设备首次下载的压缩大小。规格文件审核后应固定到体积基线中。
 
 ```bash
+bundletool get-device-spec --output=device-spec.json
+
 bundletool build-apks \
   --bundle=app-release.aab \
   --output=app-release.apks
 
 bundletool get-size total \
   --apks=app-release.apks \
-  --device-spec=pixel-arm64-zh-xxhdpi.json
+  --device-spec=device-spec.json
 ```
 
-`build-apks` 复现 Google Play 的服务端拆包过程，`get-size total` 给出某台设备需要下载的 APK 组合大小。CI 里应保存几个代表性设备配置：主流 arm64 高密度设备、低密度设备、多语言设备、平板或折叠屏设备。只用 universal APK 做体积门禁，会把 AAB 分发收益全部抹掉。[已验证: 官方文档, developer.android.com/tools/bundletool]
+`get-size total` 默认统计首次下载时安装的所有 module，其中不止 base。指定 `--modules` 时，工具会把所选 module 的依赖一并计入。未提供设备规格时，结果可能以设备维度的最小值和最大值表示，不能作为某台设备的基线。命令语义见 [`bundletool` 文档](https://developer.android.com/tools/bundletool)。
 
-Android 平台侧接收 APK 组合，`.aab` 停在发布和拆包阶段。`PackageInstaller` 提供 `createSession()` / `openSession()` / `write()` / `commit()` 接口，安装会进入 `PackageInstallerSession.installNonStaged()` → Package Manager 的解析、split 校验（`ApkLiteParseUtils.composePackageLiteFromApks()`）、复制流程；缺少 required split 时返回 `INSTALL_FAILED_MISSING_SPLIT`。这些入口在 AOSP `PackageInstaller.java` 和 `PackageInstallerSession.java` 中。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/content/pm/PackageInstaller.java; frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java; frameworks/base/core/java/android/content/pm/parsing/ApkLiteParseUtils.java]
+本地 `build-apks` 使用与 Play 相关的拆包工具，但签名、Play 服务端处理和线上设备选择仍要通过测试轨道验证。未显式传 keystore 时，`bundletool` 会尝试使用 debug key；这样的 APK Set 适合本地测试，不能作为渠道发布制品。
 
-AAB 对包体积治理有两个边界。第一，AAB 不会替代 R8 和资源缩减；无用代码如果留在 base module，仍会进入所有用户的基础包。第二，AAB 不能自动判断业务功能冷热；模块边界、资源归属和下载时机仍由工程决定。详见 25.6、25.7 节。
+### Android 17 如何接收 split APK
+
+`.aab` 不会进入 Package Manager。安装器通过 [`PackageInstaller`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/PackageInstaller.java) 建立安装会话，写入 base 与 split APK 后提交。`android-17.0.0_r1` 的 [`PackageInstallerSession`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageInstallerSession.java) 在 `streamValidateAndCommit()` 中调用 `validateApkInstallLocked()`，主要校验：
+
+- 每个 split name 唯一；
+- package name、version code 和签名一致；
+- base 声明需要 split 时，要求的 split type 已提供；
+- 完整安装缺少必需 split 时返回 `INSTALL_FAILED_MISSING_SPLIT`；
+- 通过 [`ApkLiteParseUtils.composePackageLiteFromApks()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/parsing/ApkLiteParseUtils.java) 形成 base、feature、`uses-split` 和 `configForSplit` 的统一视图。
+
+验证完成后，非分阶段安装进入 `installNonStaged()` 等后续流程。由此可以看到，split APK 不是任意文件集合：base、配置 split 和功能 split 必须作为同一个包的一致集合安装。Android 官方还明确说明，缺少必需 split 的侧载安装会在 Android 10 及以上设备或 Google-certified 设备失败。
 
 ## Dynamic Feature Module 实践
 
-[已验证: 官方文档, developer.android.com/guide/playcore/feature-delivery；developer.android.com/guide/playcore/feature-delivery/on-demand]
+Dynamic Feature Module 适合低频、体积较大、允许等待的完整功能，例如视频编辑、OCR、AR 或额外关卡。登录恢复、崩溃提示、支付结果、通知入口等必须立即可用的路径应留在 base。拆分前要检查使用率、首次进入可接受等待、离线需求和模块依赖。
 
-Dynamic Feature Module 适合拆低频、体积大、依赖重的功能，例如视频编辑、AR、地图离线包、OCR、滤镜、客服 IM、游戏副玩法。它不适合拆启动页、登录态恢复、支付成功页这类必须立即可用的路径。用户进入功能后才开始下载模块，等待、失败、取消、弱网和版本不一致都要进入产品设计。
+### 交付方式
 
-交付模式按业务路径选择：
-
-| 模式 | 适合场景 | 主要成本 |
+| 方式 | 行为 | 工程边界 |
 | --- | --- | --- |
-| install-time | 模块随基础包安装，适合逐步模块化或安装后马上会用的功能 | 对首包下载收益有限；可移除模块数量不要过多 |
-| on-demand | 用户触发功能时下载，适合低频重功能 | 首次进入要处理下载等待、失败重试和空间不足 |
-| conditional | 按国家、设备特性、API level 等条件安装 | 条件设计错误会让目标用户缺功能或让非目标用户多下载 |
-| deferred install / uninstall | 安装后择机下载或卸载 | 状态管理复杂，要处理多端登录、版本回退和缓存清理 |
+| install-time | 随应用安装，未声明其他方式时为默认 | 模块化清晰，但不减少首次下载 |
+| conditional | 在安装时按设备特性、用户国家或最低 API 等条件交付 | 条件必须与业务可用性一致 |
+| on-demand | 应用运行后由用户路径触发下载 | 要处理进度、确认、失败、取消和空间不足 |
+| deferred install | 后台尽力预取 on-demand module | 无法跟踪进度，不保证立刻可用 |
+| deferred uninstall | 请求稍后移除已安装 module | 不能假设调用返回后文件已经消失 |
 
-base module 负责声明动态模块。下面的配置用于把 `:feature:camera_editor` 注册为动态特性模块。读者重点看模块名必须进入 base module 的 `dynamicFeatures` 集合。
+Base module 用下面的配置注册动态功能，并把编译平台统一到 Android 17/API 37。
 
 ```kotlin
-plugins {
-    id("com.android.application")
-    kotlin("android")
-}
-
 android {
-    namespace = "com.example.app"
-    compileSdk = 36
-
-    defaultConfig {
-        applicationId = "com.example.app"
-        minSdk = 29
-    }
-
+    compileSdk = 37
     dynamicFeatures += setOf(":feature:camera_editor")
 }
 ```
 
-这段配置只建立构建关系。feature module 还要使用 `com.android.dynamic-feature` 插件，并依赖 base module；否则它不会作为可独立交付的功能 APK 进入 AAB。
+这只建立 base 到 feature 的构建关系。Feature module 还要应用动态功能插件并依赖 base：
 
 ```kotlin
 plugins {
     id("com.android.dynamic-feature")
-    kotlin("android")
+    id("org.jetbrains.kotlin.android")
 }
 
 android {
     namespace = "com.example.app.feature.cameraeditor"
-    compileSdk = 36
+    compileSdk = 37
 }
 
 dependencies {
@@ -186,7 +184,28 @@ dependencies {
 }
 ```
 
-运行时通过 Play Feature Delivery Library 请求模块。下面这段代码只展示状态流转骨架，生产环境还要把状态写入页面状态机。
+Feature 可以访问 base 的公共 API；base 不能编译期引用 feature 实现。公共路由、错误类型和埋点协议应放在 base 或独立 API module，功能专用页面、资源和 native 库放在 feature。
+
+Feature 会继承 base 的部分配置，不应重复声明签名、`versionCode`、`versionName` 或 `minifyEnabled`。各 feature 的附加 keep rules 会在构建时与全应用规则合并。
+
+下面的 feature manifest 把模块配置为 on-demand。`dist:title` 引用的字符串应放在 base，保证模块下载前系统也能读取；`dist:fusing` 决定模块能否进入需要融合的 APK，包括 `bundletool --mode=universal` 生成的 universal APK。
+
+```xml
+<manifest xmlns:dist="http://schemas.android.com/apk/distribution">
+    <dist:module
+        dist:instant="false"
+        dist:title="@string/title_camera_editor">
+        <dist:delivery>
+            <dist:on-demand />
+        </dist:delivery>
+        <dist:fusing dist:include="true" />
+    </dist:module>
+</manifest>
+```
+
+`dist:on-demand` 只声明交付方式。应用仍需通过 Play Feature Delivery Library 请求模块并监听状态。
+
+下面的 Kotlin 骨架展示安装会话过滤和关键状态处理。页面只有收到 `INSTALLED` 后才能进入功能。
 
 ```kotlin
 val manager = SplitInstallManagerFactory.create(context)
@@ -194,100 +213,115 @@ val request = SplitInstallRequest.newBuilder()
     .addModule("camera_editor")
     .build()
 
+var activeSessionId = 0
+val listener = SplitInstallStateUpdatedListener { state ->
+    if (state.sessionId() != activeSessionId) return@SplitInstallStateUpdatedListener
+
+    when (state.status()) {
+        SplitInstallSessionStatus.DOWNLOADING -> {
+            // 用 bytesDownloaded/totalBytesToDownload 更新进度。
+        }
+        SplitInstallSessionStatus.REQUIRES_USER_CONFIRMATION -> {
+            // 通过 startConfirmationDialogForResult 请求用户确认。
+        }
+        SplitInstallSessionStatus.INSTALLED -> {
+            // 此时再导航到 feature 页面。
+        }
+        SplitInstallSessionStatus.FAILED,
+        SplitInstallSessionStatus.CANCELED -> {
+            // 保留基础功能，并提供重试或退出。
+        }
+    }
+}
+
+manager.registerListener(listener)
 manager.startInstall(request)
-    .addOnSuccessListener { sessionId ->
-        // 记录 sessionId，后续监听下载和安装状态。
-    }
-    .addOnFailureListener { error ->
-        // 展示重试、稍后再试或保留基础功能入口。
-    }
+    .addOnSuccessListener { activeSessionId = it }
+    .addOnFailureListener { /* 请求尚未建立，展示可恢复错误。 */ }
 ```
 
-`startInstall()` 只是发起安装请求，不代表模块已经可用。页面入口要监听 `SplitInstallSessionStatus`，在 `INSTALLED` 后再导航；如果状态是 `REQUIRES_USER_CONFIRMATION`、`FAILED`、`CANCELED` 或下载空间不足，要给用户明确的返回路径。把 `startInstall()` 放在点击后同步等待，会把按需加载做成首屏卡顿。
+`startInstall()` 成功回调只返回安装会话 ID，不代表安装完成。监听器要按页面或进程生命周期注销；进程重建后，通过 `installedModules` 和安装会话状态恢复，不能只依赖内存变量。`deferredInstall()` 是无法追踪进度的尽力而为请求，需要立即使用模块时仍应调用 `startInstall()`。完整状态和用户确认流程见 [Configure on-demand delivery](https://developer.android.com/guide/playcore/feature-delivery/on-demand)。
 
-模块边界按依赖方向设计。feature module 可以依赖 base module，base module 不能直接引用 feature module 的实现类；公共接口、路由协议、埋点模型和错误码应放在 base 或独立 API 模块。资源也要跟着功能移动：功能页面专用图片、layout、字符串和 native 库放进 feature module；启动图、通用图标、登录依赖和崩溃兜底页面留在 base module。
+应用和 feature Activity 还要按官方要求启用 SplitCompat。可选 feature 不应声明 exported 组件；需要对外入口时，在 base 放代理组件，确认模块已安装后再转发。刚下载完成的一段时间内，平台可能无法把 feature 新增的 manifest 组件用于所有系统入口，也可能无法让通知等系统界面访问 feature 资源。通知图标、系统会拉起的组件和故障页面应放在 base。
 
+Play 会让已安装 feature 随应用更新；不要给 Play feature 自建独立版本协议。版本一致性问题主要出现在自建资源下载、非 Play 插件或绕过 Play 的分发方案中。
 
 ## Play Asset Delivery 与大资源管理
 
-[已验证: 官方文档, developer.android.com/guide/playcore/asset-delivery]
+Play Asset Delivery（PAD）面向 asset，不允许 asset pack 包含可执行代码。纹理、音频、关卡、离线模型和媒体素材可以进入 asset pack；DEX、JAR、`.so` 和需要参与编译的功能应使用应用或 Dynamic Feature。
 
-Play Asset Delivery（PAD）处理的是大资源，不处理可执行代码。游戏纹理、地图包、离线模型、音视频素材、课程包和模板库更适合进 asset pack；需要参与编译、路由和依赖注入的功能代码更适合 Dynamic Feature Module。
+三种模式在磁盘形态上也有差异：
 
-PAD 有三种常用交付模式：
+| 模式 | 下载时机 | 访问与更新边界 |
+| --- | --- | --- |
+| install-time | 随应用安装 | 以 split APK 交付，启动时可用 |
+| fast-follow | 安装完成后自动下载，不要求先启动应用 | 以归档文件交付并展开到应用内部存储 |
+| on-demand | 应用运行时请求 | 以归档文件交付并展开到应用内部存储 |
 
-- **install-time**：随应用安装，适合首启必须使用的基础资源，例如默认场景、基础素材、首屏离线配置。
-- **fast-follow**：应用安装后自动下载，适合首启不阻塞但很快会用的资源，例如新手引导后的默认资源包。
-- **on-demand**：用户进入特定功能时下载，适合低频大资源，例如高清地图区域、额外关卡、素材市场资源。
+Fast-follow 和 on-demand pack 的路径可能跨会话移动，文件也可能被用户或 Play Asset Delivery Library 删除。应用每次使用前都要查询 pack 状态和位置，并把展开后的内容视为只读，因为补丁依赖文件完整性。应用更新期间还可能出现新二进制已安装、资源补丁尚未应用完的短暂状态，页面要能显示“资源更新中”。
 
-资源包接入要先决定“资源是否影响首屏”。影响首屏的资源不能简单丢到 on-demand，否则首启会变成等待下载；不影响首屏的资源如果继续放在 base module，所有用户都会多付下载成本。比较稳的拆法是：首屏最小资源留在 base，常见路径资源用 install-time 或 fast-follow，低频资源用 on-demand。
+首屏必需的最小资源留在 base 或 install-time pack；可在安装后准备的内容用 fast-follow；低频内容用 on-demand。推迟下载不会减少最终磁盘占用，仍要设计空间检查、失败恢复和资源回收。
 
-对图形资源密集的应用，PAD 还支持 Texture Compression Format Targeting。官方文档说明，开发者可以在 AAB 中放入多种纹理压缩格式，Google Play 按设备支持能力分发更合适的格式。这个能力主要面向游戏和图形重应用；普通 App 的运营图、插画和图标仍应优先走 WebP、AVIF、VectorDrawable 和 CDN 策略，详见 25.7 节。[已验证: 官方文档, developer.android.com/guide/playcore/asset-delivery/texture-compression]
-
-PAD 的风险主要在可用性与缓存一致性：
-
-- **弱网与中断**：下载进度要能恢复，失败后保留基础功能，不要让页面停在空白加载态。
-- **版本一致性**：资源包版本要与 App 版本绑定，不能让旧代码读取新资源格式，也不能让新代码读取旧资源目录。
-- **磁盘占用**：按需资源不会让磁盘成本消失，只是把下载时机后移。清理策略要纳入发版设计。
-- **观测指标**：记录资源包下载耗时、失败码、取消率、重试次数和首用等待时间。没有这些指标，PAD 上线后很难判断收益是否覆盖等待成本。
+Texture Compression Format Targeting 允许 AAB 携带多种 GPU 纹理格式，由 Play 为设备选择受支持的格式，适合游戏或图形密集应用。普通 UI 图片仍应按 25.7 的 WebP、AVIF、VectorDrawable 与网络图片策略处理。PAD 的模式、路径和更新语义以 [Play Asset Delivery](https://developer.android.com/guide/playcore/asset-delivery) 为准。
 
 
 ## 国内分发场景的 AAB 替代方案
 
-[已验证: 官方文档, developer.android.com/tools/bundletool；待验证: 各国内应用市场 AAB 支持策略需按渠道复核]
+应用市场和企业分发服务的能力会变化，不能用“国内渠道”概括成一种安装器。每个版本都要维护渠道能力表，至少确认：接收 AAB 还是 APK、是否生成 split、由谁签名、是否加固/重签、增量更新方式、是否支持动态功能和大资源服务。
 
-国内多数应用市场仍以 APK 分发为主，不能假设它们会像 Google Play 一样处理 AAB、Dynamic Feature Module 和 PAD。工程上要把“构建 AAB”与“渠道能分发 AAB”分开：前者可以本地完成，后者取决于市场能力、签名流程、加固流程和审核规则。
+常见方案如下：
 
-可选方案按风险从低到高排列：
+- **渠道原生支持 AAB**：按渠道文档上传和验证，不能假设其分包、签名或动态交付与 Google Play 完全相同。
+- **渠道只接收单 APK**：构建专用 universal APK 或常规 APK 变体。`bundletool --mode=universal` 只融合 manifest 中 `dist:fusing=true` 的 feature module；Play Feature Delivery 和 PAD 依赖 Play 服务，非 Play 渠道要另做功能/资源方案。
+- **受控安装器支持 split 安装会话**：安装器必须一次提交匹配设备的 base 与全部 required splits，处理签名、版本、失败回滚和升级。
+- **自建非代码资源下载**：适用于模型、地图、皮肤、模板和媒体。资源清单要包含版本、长度、哈希、签名、最低应用版本和可选设备选择条件；先验证签名与哈希，再原子发布到版本目录。
 
-1. **用 `bundletool` 生成渠道 APK**：从同一 AAB 按渠道能力生成不同产物，三类路径要分开：
-
-   - **渠道只收单 APK**：使用 `bundletool build-apks --mode=universal` 或传统 `productFlavor` / ABI split 产出独立 APK。不要把 device-specific split 拆成独立渠道包。
-   - **渠道 / 企业安装器支持 split APK session**：一次提交 base + required config splits。Android 10（API 29）+ 和所有 Google-certified 设备上，缺少 required split APK 会导致安装失败（sideload protection）。
-   - **universal APK 兜底**：国内渠道和 sideload 场景保留 universal APK 作为 fallback，但要单独记录大小，避免 Play 渠道的分发包收益掩盖其他渠道的实际下载成本。
-
-   收益来自配置裁剪，风险低；缺点是渠道包数量、签名和回归范围会变大。
-2. **自研大资源按需下载**：把模型、离线包、皮肤、模板和大媒体资源放到 CDN，由 App 做下载、校验、解压和缓存。收益清晰；成本集中在版本一致性、弱网恢复、磁盘清理和安全校验。
-3. **插件化或动态代码下载**：把低频代码拆成插件包或动态 dex / native 组件。收益可能高，但兼容性、稳定性、启动成本、安全审核和线上回滚都更难。Google Play 对动态可执行代码有明确政策要求，国内渠道也可能在加固或审核阶段拦截这类方案。[待验证: 具体渠道政策]
-
-如果选择第一种方案，CI 中可以按设备配置生成多个产物。下面这组命令展示从 AAB 生成指定设备 APK，并把 APK 安装到连接设备上验证。
+下面的命令生成面向连接设备的 APK Set 并安装，用于检查 base/config/feature 组合。若测试 on-demand feature，应在 `build-apks` 中增加 `--local-testing`。
 
 ```bash
+bundletool get-device-spec --output=device-spec.json
+
 bundletool build-apks \
   --bundle=app-release.aab \
   --output=app-release.apks \
-  --device-spec=domestic-arm64-zh-xxhdpi.json
+  --device-spec=device-spec.json
 
 bundletool install-apks --apks=app-release.apks
 ```
 
-这套流程能验证拆包后的 APK 组合是否可安装、启动和进入关键页面。它不能替代渠道验证：加固、重签、V1/V2/V3/V4 签名、增量更新、厂商安装器和应用市场审核仍要单独跑。
+这只能验证本地 APK Set。渠道的加固、重签、签名方案、升级、安装器和审核仍要用渠道最终制品测试。Universal APK 还要单独记录体积，避免 Play 的设备裁剪结果掩盖单 APK 渠道成本。
 
-自研按需下载要补一层安全协议。每个资源包至少包含资源 ID、版本号、目标 ABI / 屏幕密度、压缩格式、SHA-256、签名、最小 App 版本和回滚策略。下载完成后先校验，再解压到私有目录；读取时按版本目录寻址，不覆盖正在使用的旧资源。资源清理必须可延迟执行，避免用户正在使用功能时删掉文件。
+动态 DEX、JAR 或 `.so` 下载不应被当作普通体积方案。Google Play 的 [Device and Network Abuse policy](https://support.google.com/googleplay/android-developer/answer/16559646) 禁止应用从 Google Play 之外下载可执行代码；其他渠道也要逐项核对政策、安全、兼容和更新责任。本节只建议自建非代码资源交付。
 
 ## [自动发现] 按需分发要进入体积门禁
 
-[已验证: 官方文档, developer.android.com/guide/app-bundle/test；developer.android.com/tools/bundletool]
+AAB、Dynamic Feature 和 PAD 上线后，CI 要按设备、module 和下载时机保存结果：
 
-AAB、Dynamic Feature Module 和 PAD 上线后，CI 体积门禁要从“单包大小”改成“多设备、多路径、多时机”。至少保留四类检查：
+- 首次下载：默认 install-time modules 与 configuration APK；
+- on-demand feature：所选 module 及其依赖；
+- asset pack：按 install-time、fast-follow、on-demand 分开记录下载与磁盘；
+- universal APK：单 APK 渠道的完整下载量；
+- 运行指标：feature/asset 下载耗时、失败码、取消、确认和首次使用等待。
 
-- **base download size**：代表用户首次安装成本，按主流设备配置记录 P50 / P90 下载大小。
-- **feature download size**：每个 on-demand module 的下载大小、首次使用等待时间和失败率。`bundletool get-size total` 默认只测量 base first-download；要测量某个动态特性模块，需传 `--modules=<module>`，bundletool 会自动包含依赖模块：
+下面的命令分别测量同一设备的首次下载和 `camera_editor` module 集合。
 
 ```bash
-# 测量 on-demand module 的下载大小
 bundletool get-size total \
   --apks=app-release.apks \
-  --device-spec=pixel-arm64-zh-xxhdpi.json \
+  --device-spec=device-spec.json
+
+bundletool get-size total \
+  --apks=app-release.apks \
+  --device-spec=device-spec.json \
   --modules=camera_editor
 ```
 
-CI 中按代表设备 × on-demand module 迭代统计，单独保留 base first-download、feature download、asset pack 和 universal fallback 四类口径。
-- **asset pack size**：install-time、fast-follow、on-demand 三类资源包分别记录下载大小、磁盘占用和清理状态。
-- **universal fallback size**：国内渠道或 sideload 需要 universal APK 时，记录完整包大小，避免 Play 渠道收益掩盖其他渠道成本。
+第一条默认包含首次下载时安装的所有 module；第二条按显式 module 集合测量，并自动加入依赖。两条结果的含义不同，不能简单相减推导 feature 自身大小。最终发布还应使用 Play 测试轨道或渠道测试环境校验。
 
-这类门禁不需要一开始做成复杂平台。先用 `bundletool get-size total`、构建产物归档、代表设备配置和下载状态埋点，就能发现常见问题：某个 feature module 误依赖整套 SDK、资源仍留在 base module、asset pack 版本清理失败、渠道 universal APK 比 Play 下载包大很多。
+门禁阈值来自项目基线和实际设备分布，不填写通用百分位或固定数字。制品、`bundletool` 版本、device spec、签名方式和 module 集合必须随结果归档。
 
 ## 小结
 
-AAB 解决“哪些设备该拿哪些 APK”，Dynamic Feature Module 解决“哪些功能该等用户需要时再拿”，Play Asset Delivery 解决“大资源什么时候下载”。它们和 R8、资源缩减、图片格式、ABI 过滤是两层工作：前者改分发，后者改产物。Google Play 渠道优先使用 AAB + Play Feature Delivery + PAD；国内渠道要把 `bundletool` 生成 APK、自研资源下载和插件化方案分开评估，并把下载失败、版本一致性、安全校验和渠道审核纳入门禁。
+AAB 决定设备获得哪些 APK，Dynamic Feature 决定功能 module 的交付条件和时机，PAD 决定非代码 asset pack 的交付方式。设备始终安装 APK/split，而不是 AAB；Android 17 Package Manager 会校验 split 的包名、版本、签名和必需关系。
+
+Play 与非 Play 渠道要分开设计。Play Feature Delivery/PAD 不能直接搬到不具备 Play 服务的渠道，universal APK 也不会保留设备裁剪收益。无论使用哪种分发方式，都要把 release 制品、设备规格、module 集合、下载状态、失败恢复和安全校验纳入发布检查。
