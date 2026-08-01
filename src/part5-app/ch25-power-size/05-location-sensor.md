@@ -86,209 +86,321 @@ last_deepseek_cn_review_at: 2026-06-24
 
 ## 为什么要了解定位与传感器功耗优化
 
-定位和传感器功耗的治理对象很明确：减少 GNSS、Wi-Fi 扫描、蜂窝定位、传感器采样和 App 进程唤醒次数。§11.2 已经讲过 App 耗电入口，§25.1 负责诊断工具，§25.2 负责后台限制；后文围绕代码参数、生命周期和验证口径展开。
+定位请求可能启用 GNSS、Wi-Fi 扫描、蜂窝测位和传感器融合；传感器监听又会带来采样、FIFO 交付、应用处理器唤醒与后续计算。功耗评审不能只看 API 名称，要同时检查数据从哪里产生、多久产生一次、何时交付，以及应用收到数据后做了多少 CPU、存储和网络工作。
 
-Clippings 的《Android 性能优化》没有单独展开定位或传感器，但它给出的组织方式适合迁移到本节：先把硬件资源、系统调度和 App 业务放在同一张表里，再按场景决定使用频率。定位和传感器的写法也是这样，先问业务要什么精度、多久交付、能否延迟，再选择 FLP、Geofencing、被动定位或传感器批处理。
-
+定位与传感器 API 大多表达“期望”或“上限”，并不承诺准确的到达周期。其他客户端请求、权限精度、设备硬件、传感器 HAL、待机状态和省电策略都会改变结果。业务应定义可接受的精度、新鲜度、交付延迟、持续时间和退出条件，再选择一次性定位、连续 FLP、Geofencing、被动定位或传感器批处理。诊断工具见 §25.1，后台限制见 §25.2。
 
 ## 定位精度与功耗的权衡
 
-Android 官方把定位耗电拆成三个旋钮：精度、频率、延迟。精度越高，系统越可能使用 GNSS、Wi-Fi、蜂窝和传感器融合；频率越高，位置计算越频繁；延迟越低，App 被唤醒得越频繁。App 侧优化不是把定位关掉，而是把这三个旋钮调到业务能接受的最低档。
+官方把定位功耗归纳为精度、计算频率和交付延迟。高精度请求更可能使用高成本来源；更短的计算间隔会增加定位工作；更短的交付延迟会增加应用被唤醒的次数。`setMinUpdateDistanceMeters()` 还能减少没有足够位移时的回调，但它和其余 `LocationRequest` 参数一样，属于提供给位置服务的请求条件。
 
-[已验证: 官方文档, developer.android.com/develop/sensors-and-location/location/battery]
+| 业务场景 | 推荐接口 | 数据契约 | 退出条件 |
+|------|------|------|------|
+| 天气、城市级内容 | `getLastLocation()`，缓存过旧或为空时再用 `getCurrentLocation()` | 接受粗略位置；显式校验位置年龄 | 一次结果返回或取消令牌触发 |
+| 地图选点 | 短时 `PRIORITY_BALANCED_POWER_ACCURACY` 或确有需要时使用 `PRIORITY_HIGH_ACCURACY` | 页面可见；精度与刷新率跟随交互 | 页面不可见、选择完成或超时 |
+| 导航、用户主动共享轨迹 | 高精度 FLP + location 前台服务 | 用户持续可见；需要连续更新 | 用户停止、会话结束或服务退出 |
+| 到达区域后提醒 | Geofencing | 接受分钟级响应与位置误差 | 围栏过期、功能关闭或区域集合替换 |
+| 借用系统已有位置 | `PRIORITY_PASSIVE` | 不保证有结果，也不保证新鲜 | 业务窗口结束 |
+| 姿态或运动趋势 | 最低可用采样率 + 批处理 | 按事件时间处理，允许批量到达 | 生命周期结束或前台服务停止 |
 
-| 场景 | 推荐定位策略 | 更新间隔 | 交付延迟 | 退出条件 |
-|------|--------------|----------|----------|----------|
-| 地图拖动、导航前台态 | `PRIORITY_HIGH_ACCURACY` 或 `PRIORITY_BALANCED_POWER_ACCURACY` | 秒级到分钟级，按交互强度决定 | 低延迟 | 页面不可见或导航结束立刻移除请求 |
-| 天气、城市级内容推荐 | `getLastLocation()` / `PRIORITY_BALANCED_POWER_ACCURACY` | 用户打开页面时取一次 | 可接受缓存 | 页面展示完成后不持续监听 |
-| 门店附近提醒 | Geofencing | 系统维护 | 5 到 10 分钟更省电 | 围栏过期、用户退出城市级范围后移除 |
-| 后台轨迹补点 | 批量 FLP 或被动定位 | 10 分钟级 | 30 到 60 分钟批量交付 | 业务会话结束、超时或用户关闭开关 |
-| 计步、姿态、运动检测 | 低频传感器、on-change / one-shot 优先 | 按动作语义选择 | 能批量就批量 | `onPause()`、前台服务停止或任务完成 |
+`getLastLocation()` 不主动计算新位置，返回值可能为空或已经过时。判断新鲜度时优先比较 `Location.elapsedRealtimeNanos` 与当前 elapsed realtime，避免墙上时钟被用户或网络校时修改。需要一次较新结果时使用 `getCurrentLocation()` 并传入取消条件，不要为一次查询注册长期回调。
 
-Android 8.0 起，后台 App 的位置更新会被系统限制到每小时少数几次；同一版本也把后台 Geofencing 的平均响应调整到几分钟级。这个限制不看 target SDK，运行在 Android 8.0 及以上设备就会生效。后台场景要把“延迟几分钟”当成设计前提，不要用秒级轮询去对抗系统策略。
+Android 8.0（API 26）起，后台应用的位置计算与交付被限制为每小时少数几次，后台 Geofencing 也按几分钟量级响应。该设备行为不以 target SDK 为前提。提高请求频率不能消除这层限制，只会让业务契约与平台行为不一致。
 
-[已验证: 官方文档, developer.android.com/about/versions/oreo/background-location-limits]
+权限和前台服务需要按版本分别处理：
+
+- Android 10（API 29）起，目标版本为 29 及以上的应用若要在后台访问位置，必须声明并获得 `ACCESS_BACKGROUND_LOCATION`；访问位置的前台服务还要声明 `foregroundServiceType="location"`。Geofencing 也属于后台位置用例。
+- Android 11（API 30）起，系统权限对话框不再提供“始终允许”；用户需要到设置页授予后台位置。应用应先说明用途，并允许用户拒绝。
+- Android 12（API 31）起，用户可以只授予 approximate location。前台被降为粗略位置时，后台位置也只有同等精度；精确度在设置中被降低还会导致应用进程重启。应用应同时请求 coarse 与 fine，并在只有 `ACCESS_COARSE_LOCATION` 时保持主要流程可用，不能通过经纬度数值猜测授权档位。
+- 在 Android 14（API 34）设备上，目标版本为 34 及以上的应用还要声明 `FOREGROUND_SERVICE_LOCATION`，启动 location 前台服务时满足位置开关与 coarse/fine 运行时权限。位置权限受 while-in-use 约束；应用已在后台时，除非具备 `ACCESS_BACKGROUND_LOCATION` 或其他系统豁免，不能创建需要位置能力的前台服务。
+
+这些版本规则一直适用于 Android 17（API 37）。Android 17 平台源码锚点用于核对框架权限、请求合并与粗略位置处理；Google Play services 的 FLP 是独立发布的组件，不能用 AOSP 文件替代其公开 API 契约。
 
 ## Fused Location Provider 最佳实践
 
-Fused Location Provider（FLP）适合大多数 App 定位场景。它把 GNSS、Wi-Fi、蜂窝和传感器输入交给 Google Play services 融合，业务代码只表达优先级、间隔、最小交付间隔、最大批量延迟和持续时长。Google Play services 文档也明确说明，这些参数是请求提示，系统返回结果可能受权限、设备状态和其他客户端请求影响。
+Fused Location Provider（FLP）把 GNSS、Wi-Fi、蜂窝与传感器等来源交给 Google Play services 选择和融合。应用表达优先级、期望间隔、最小回调间隔、最小位移、最大交付延迟、精度档位和持续时间。`LocationRequest` 文档明确说明多项参数会尽力满足：权限、硬件、系统状态与其他客户端请求可能让结果更慢、更快、更粗或更细。
 
-[已验证: Google Play services 文档, developers.google.com/android/reference/com/google/android/gms/location/LocationRequest]
+连续定位请求要有两层停止条件：
 
-前台连续定位要把“短时间、高精度、强生命周期”写进请求。下面这段代码适合地图选点、短时运动记录这类用户可见场景，重点看 `setDurationMillis()` 和页面停止时的 `removeLocationUpdates()`。
+- 正常路径由页面、导航会话或用户开关调用 `removeLocationUpdates()`。
+- 异常路径由 `setDurationMillis()` 或 `setMaxUpdates()` 限制请求寿命。
+
+下面的函数用于构造用户可见的连续定位请求。间隔、位移和持续时间来自已评审的业务契约，函数只检查参数关系，不替产品选取一组固定数字。
 
 ```kotlin
-private val foregroundLocationRequest = LocationRequest.Builder(
-    Priority.PRIORITY_HIGH_ACCURACY,
-    TimeUnit.SECONDS.toMillis(5)
-).setMinUpdateIntervalMillis(TimeUnit.SECONDS.toMillis(2))
-    .setMinUpdateDistanceMeters(10f)
-    .setDurationMillis(TimeUnit.MINUTES.toMillis(20))
-    .build()
+fun buildVisibleTrackingRequest(
+    intervalMillis: Long,
+    minUpdateIntervalMillis: Long,
+    minDistanceMeters: Float,
+    durationMillis: Long,
+): LocationRequest {
+    require(intervalMillis > 0)
+    require(minUpdateIntervalMillis in 1L..intervalMillis)
+    require(minDistanceMeters >= 0f)
+    require(durationMillis > 0)
 
-fun startForegroundTracking() {
+    return LocationRequest.Builder(
+        Priority.PRIORITY_HIGH_ACCURACY,
+        intervalMillis,
+    )
+        .setGranularity(Granularity.GRANULARITY_PERMISSION_LEVEL)
+        .setMinUpdateIntervalMillis(minUpdateIntervalMillis)
+        .setMinUpdateDistanceMeters(minDistanceMeters)
+        .setDurationMillis(durationMillis)
+        .build()
+}
+```
+
+`GRANULARITY_PERMISSION_LEVEL` 让请求遵守当前授权精度。`minUpdateIntervalMillis` 是允许的最快回调间隔，不能把它理解成固定周期；`durationMillis` 到期后位置服务会移除请求，但业务结束时仍应主动停止。若 balanced accuracy 已满足需求，应把优先级改为 `PRIORITY_BALANCED_POWER_ACCURACY`，避免默认选择高精度。
+
+下面的代码用于把注册与解除注册绑定到同一个回调实例。它假定调用方已检查 coarse/fine 权限，并在可见生命周期开始和结束时分别调用两个函数。
+
+```kotlin
+@SuppressLint("MissingPermission")
+fun startVisibleTracking(request: LocationRequest) {
     fusedLocationProviderClient.requestLocationUpdates(
-        foregroundLocationRequest,
+        request,
         locationCallback,
-        Looper.getMainLooper()
+        Looper.getMainLooper(),
     )
 }
 
-fun stopForegroundTracking() {
+fun stopVisibleTracking() {
     fusedLocationProviderClient.removeLocationUpdates(locationCallback)
 }
 ```
 
-`setDurationMillis()` 是兜底超时，不替代 `removeLocationUpdates()`。页面进入后台、导航结束、用户关闭开关时仍要主动移除请求；超时只负责处理异常路径，防止定位请求因为生命周期遗漏一直存在。
+主线程回调只做轻量状态更新；轨迹压缩、写库和网络操作应移到受控执行器。解除注册返回 `Task<Void>`，需要严格确认停止完成的测试可以等待该任务，而不能只依据页面回调已经执行。
 
-[已验证: 官方文档, developer.android.com/develop/sensors-and-location/location/battery/optimize]
+业务允许延迟时，`setMaxUpdateDelayMillis()` 可以让设备尝试批量交付。Google Play services 只有在最大延迟至少是请求间隔的两倍时，才把请求视为允许批处理；即使满足该关系，硬件也可以逐点交付。
 
-后台或弱可见场景要优先批量交付，但先要过三道版本权限门槛：
-
-| 版本 | 要求 | 影响 |
-|------|------|------|
-| Android 10 (API 29)+ | `ACCESS_BACKGROUND_LOCATION` | 没有该权限，后台定位请求不会返回有效位置；用户必须在设置中授予"始终允许" |
-| Android 12 (API 31)+ | 用户可选择 approximate location | app 声明 `ACCESS_FINE_LOCATION` 后，系统仍可能只返回粗略位置；需要调用 `LocationRequest.Builder.setMinUpdateDistanceMeters()` 或检测 `Location.getLatitude()` 精度判断 |
-| Android 14 (API 34)+ | location FGS type + while-in-use 启动限制 | 后台启动 Activity/BroadcastReceiver 受限；定位类 FGS 必须声明 `foregroundServiceType="location"`（或 `health`/`remoteMessaging` 等）；`ACCESS_BACKGROUND_LOCATION` 下从后台启动 activity 需走 `PendingIntent` 或通知入口 |
-
-这些限制对 App 定位策略的影响是递进的：Android 10 先收后台定位权限；Android 12 再加用户可控精度；Android 14 再对前台服务类型和后台启动路径施加额外约束。批量交付请求要在所有三道门槛都满足的前提下才成立。
-
-下面这段请求以 10 分钟作为期望计算间隔，并允许系统在 1 小时窗口内批量交付；实际回调合并效果受设备、权限、系统策略和其他客户端请求影响。业务拿到的是一组带时间戳的位置点，适合低频轨迹补点、门店推荐候选刷新、地理内容预热。
+下面的函数用于构造允许批量交付的低频请求。调用方需要明确最长可接受交付延迟和整个采集会话的寿命。
 
 ```kotlin
-private val batchedBackgroundRequest = LocationRequest.Builder(
-    Priority.PRIORITY_BALANCED_POWER_ACCURACY,
-    TimeUnit.MINUTES.toMillis(10)
-).setMaxUpdateDelayMillis(TimeUnit.HOURS.toMillis(1))
-    .setDurationMillis(TimeUnit.HOURS.toMillis(6))
-    .build()
+fun buildBatchedLocationRequest(
+    intervalMillis: Long,
+    maxUpdateDelayMillis: Long,
+    durationMillis: Long,
+): LocationRequest {
+    require(intervalMillis > 0)
+    require(maxUpdateDelayMillis / 2 >= intervalMillis)
+    require(durationMillis > 0)
+
+    return LocationRequest.Builder(
+        Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+        intervalMillis,
+    )
+        .setGranularity(Granularity.GRANULARITY_PERMISSION_LEVEL)
+        .setMaxUpdateDelayMillis(maxUpdateDelayMillis)
+        .setDurationMillis(durationMillis)
+        .build()
+}
 ```
 
-批量定位换来的是交付延迟。服务端、埋点和产品逻辑都要接受“事件发生时间”和“App 收到时间”不一致，用 `Location.time` 或 `Location.elapsedRealtimeNanos` 参与排序，不要用回调到达时间推断用户轨迹。
+这段配置允许批处理，没有保证每个回调都包含多条位置。不同批次之间还可能出现时间逆序，应用应按 `elapsedRealtimeNanos` 排序和去重，并把事件发生时间与回调到达时间分别记录。`Location.time` 可用于跨设备或服务端时间展示，但不适合单机轨迹的单调排序。
+
+FLP 参数与功耗建议可对照 [`LocationRequest`](https://developers.google.com/android/reference/com/google/android/gms/location/LocationRequest)、[`LocationRequest.Builder`](https://developers.google.com/android/reference/com/google/android/gms/location/LocationRequest.Builder) 和 [Android 定位功耗指南](https://developer.android.com/develop/sensors-and-location/location/battery)。
 
 ## Geofencing 与被动定位
 
-Geofencing 适合“到某个区域再工作”的业务。围栏检测由位置服务统一调度，App 不需要周期性启动进程查询当前位置。官方文档建议把 `setNotificationResponsiveness()` 设为较大的值，5 分钟及以上更省电；真实门店、家和公司这类地点还要使用足够大的半径，常见建议是 100 到 150 米起步，再结合 Wi-Fi、室内定位和业务误触成本调整。
+Geofencing 适合“设备到达区域后再通知应用”的业务。位置服务统一维护围栏，应用无需周期性唤醒进程查询当前位置。每个应用、每个设备用户最多同时注册 100 个围栏；大量门店场景可以先维护城市或商圈范围，再按用户所在区域替换附近门店集合。
 
-[已验证: 官方文档, developer.android.com/develop/sensors-and-location/location/geofencing]
-[已验证: 官方文档, developer.android.com/develop/sensors-and-location/location/battery/scenarios]
+半径与响应时间属于产品正确性的一部分。官方建议典型围栏采用 100 到 150 米的最小半径，以容纳常见 Wi-Fi 定位误差；`setNotificationResponsiveness()` 取 5 分钟或更大更有利于功耗。它们是经验建议，室内定位能力、道路速度、误触成本和业务半径不同，不能直接复制成所有产品的常量。Android 8.0 及以上设备在应用处于后台时通常每隔几分钟处理一次围栏事件，低数值也不构成及时送达保证。
 
-下面这段代码展示围栏请求的省电参数，重点是半径、过期时间、停留延迟和通知响应延迟。门店类场景不要为每个门店都长期注册围栏；官方 API 单个 App 同时最多 100 个 geofence，更稳的做法是先注册城市级或商圈级大围栏，进入后再注册附近门店的小围栏。
+下面的函数把围栏半径、停留时间、响应时间和过期时间留给业务配置。构建器只验证 API 所需的基本范围。
 
 ```kotlin
-val storeGeofence = Geofence.Builder()
-    .setRequestId("store-10086")
-    .setCircularRegion(latitude, longitude, 150f)
-    .setTransitionTypes(
-        Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_DWELL
+fun buildDwellGeofence(
+    requestId: String,
+    latitude: Double,
+    longitude: Double,
+    radiusMeters: Float,
+    loiteringDelayMillis: Int,
+    responsivenessMillis: Int,
+    expirationMillis: Long,
+): Geofence {
+    require(requestId.isNotBlank())
+    require(latitude in -90.0..90.0)
+    require(longitude in -180.0..180.0)
+    require(radiusMeters > 0f)
+    require(loiteringDelayMillis >= 0)
+    require(responsivenessMillis >= 0)
+    require(expirationMillis > 0)
+
+    return Geofence.Builder()
+        .setRequestId(requestId)
+        .setCircularRegion(latitude, longitude, radiusMeters)
+        .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_DWELL)
+        .setLoiteringDelay(loiteringDelayMillis)
+        .setNotificationResponsiveness(responsivenessMillis)
+        .setExpirationDuration(expirationMillis)
+        .build()
+}
+```
+
+`DWELL` 能过滤短暂穿越区域造成的频繁提醒。围栏事件通过 `PendingIntent` 交给 `BroadcastReceiver` 时，接收器应核对错误码、transition 与触发列表，再发布通知或安排有限的后台工作；不要从后台事件直接展示 Activity。功能关闭、账号退出或区域集合改变时，应按 request ID 或原 `PendingIntent` 移除旧围栏。
+
+被动定位使用 `PRIORITY_PASSIVE`。该优先级不会因为当前请求单独计算位置，只接收系统为其他客户端生成的位置；它仍受位置权限、后台访问限制和进程调度影响，也可能收到批量数据。
+
+下面的函数用于构造被动请求。最小回调间隔限制应用处理数据的最高频率，持续时间防止请求长期遗留。
+
+```kotlin
+fun buildPassiveLocationRequest(
+    minUpdateIntervalMillis: Long,
+    durationMillis: Long,
+): LocationRequest {
+    require(minUpdateIntervalMillis > 0)
+    require(durationMillis > 0)
+
+    return LocationRequest.Builder(
+        Priority.PRIORITY_PASSIVE,
+        minUpdateIntervalMillis,
     )
-    .setLoiteringDelay(TimeUnit.MINUTES.toMillis(5).toInt())
-    .setNotificationResponsiveness(TimeUnit.MINUTES.toMillis(10).toInt())
-    .setExpirationDuration(TimeUnit.HOURS.toMillis(12))
-    .build()
+        .setGranularity(Granularity.GRANULARITY_PERMISSION_LEVEL)
+        .setMinUpdateIntervalMillis(minUpdateIntervalMillis)
+        .setDurationMillis(durationMillis)
+        .build()
+}
 ```
 
-后台 Geofencing 在 Android 8.0 及以上设备上不会秒级响应。用户刚进入门店就立即弹券的诉求，更适合前台扫码、蓝牙信标、NFC 或用户主动打开页面后的高精度定位；Geofencing 适合低频提醒和状态切换。
+这里的间隔控制回调资格，不会把被动请求变成周期定位。没有其他客户端计算位置时，它可以一直没有结果；安全告警、导航和完整运动轨迹不能依赖这条路径。收到数据后还要按事件时间去重，把多条写库与上报合并处理。
 
-被动定位适合“有数据就用，没有也不主动耗电”的场景。Google Play services 当前 `Priority` 文档使用 `PRIORITY_PASSIVE` 表达这类请求，它不会主动触发定位，只接收其他客户端已经计算出的结果。收到被动位置后仍要控制 CPU 和 I/O，避免把省下来的定位功耗又花在频繁写库、上报和网络请求上。
+定位层的公开资料包括 [Geofencing 指南](https://developer.android.com/develop/sensors-and-location/location/geofencing)、[后台定位权限](https://developer.android.com/develop/sensors-and-location/location/permissions/background) 和 [`Priority.PRIORITY_PASSIVE`](https://developers.google.com/android/reference/com/google/android/gms/location/Priority)。Android 17 平台实现统一核对以下 `android-17.0.0_r1` 源码：
 
-[已验证: Google Play services 文档, developers.google.com/android/reference/com/google/android/gms/location/Priority]
-
-被动定位请求通常只设置较宽的业务窗口和回调上限。下面这段代码不会主动启动定位源，但会把其他 App 或系统场景产生的位置交给当前 App。
-
-```kotlin
-private val passiveLocationRequest = LocationRequest.Builder(
-    Priority.PRIORITY_PASSIVE,
-    TimeUnit.MINUTES.toMillis(15)
-).setMinUpdateIntervalMillis(TimeUnit.MINUTES.toMillis(2))
-    .setDurationMillis(TimeUnit.HOURS.toMillis(12))
-    .build()
-```
-
-这种写法的边界也很清楚：它不能保证一定有位置，也不能保证地点新鲜。天气、内容预取、附近推荐可以用；安全告警、跑步轨迹、导航偏航不能只靠它。
+- [`LocationManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/location/LocationManagerService.java) 提供系统位置服务入口。
+- [`LocationProviderManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/location/provider/LocationProviderManager.java) 管理 provider 注册、请求和交付。
+- [`LocationFudger.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/location/fudger/LocationFudger.java) 处理粗略位置。
+- [`LocationRequest.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/location/java/android/location/LocationRequest.java) 定义平台请求参数；它与 Google Play services 的同名类不是同一个类型。
 
 ## 传感器批处理与采样率控制
 
-传感器耗电的主要成本来自两处：传感器自身采样，以及应用处理器被事件唤醒。Android 传感器批处理把事件暂存在 sensor hub 或硬件 FIFO 中，到达 `max_report_latency` 或 FIFO 满了再上报，减少应用处理器从 suspend 中醒来的次数。硬件 FIFO 越大、批量窗口越长，省电空间越大。
+传感器功耗包含传感器本身、sensor hub、硬件 FIFO、应用处理器唤醒、事件分发和应用计算。批处理的目标是让 sensor hub 或 FIFO 暂存事件，减少应用处理器从 suspend 中醒来的次数。它不会降低传感器的采样频率；采样频率仍由 `samplingPeriodUs` 决定。
 
-[已验证: AOSP 文档, source.android.com/devices/sensors/batching]
+下面的图用于说明 Android 17 传感器事件从硬件到应用的主要层次。批处理发生在 HAL 之前的 sensor hub 或硬件 FIFO，`SensorService` 负责连接、权限、速率调整和事件分发。
 
-App 代码里对应的入口是 `SensorManager.registerListener(listener, sensor, samplingPeriodUs, maxReportLatencyUs)`。`samplingPeriodUs` 决定采样频率，`maxReportLatencyUs` 决定最长批量上报延迟；如果设备没有硬件 FIFO 或 sensor hub，批处理收益会下降，系统可能更早上报。
+```mermaid
+flowchart LR
+    A["传感器硬件"] --> B["sensor hub / 硬件 FIFO"]
+    B --> C["Sensors HAL"]
+    C --> D["Android 17 SensorService"]
+    D --> E["SystemSensorManager / JNI"]
+    E --> F["SensorEventListener2"]
+    F --> G["应用计算、存储、网络"]
+```
 
-[已验证: 官方文档, developer.android.com/reference/android/hardware/SensorManager]
+这条路径说明了两个独立的功耗问题：批量交付能减少应用处理器唤醒，降低 `samplingPeriodUs` 对应的采样频率才能减少事件生成与融合计算。回调后逐条写库或立即上报，还会抵消批处理带来的收益。
 
-下面这段代码适合低频姿态、运动趋势、环境变化记录。重点看三处：采样周期不要用最快档；最大上报延迟至少给出几十秒级窗口；Activity 暂停时注销监听。
+应用侧使用 `SensorManager.registerListener(listener, sensor, samplingPeriodUs, maxReportLatencyUs)`：
+
+- `samplingPeriodUs` 是期望的相邻事件间隔，单位为微秒，系统可以按硬件能力调整。
+- `maxReportLatencyUs` 是允许事件延迟交付的最长时间，单位也为微秒。它大于零时才允许批处理。
+- `Sensor.getFifoMaxEventCount()` 为零表示该传感器不使用 FIFO，此时带最大延迟的重载与普通注册没有批处理差异。
+- FIFO 可能由多个传感器共享。某个传感器的最大延迟到期或 FIFO 提前填满时，同一 FIFO 的其他事件也可能提前交付。
+
+下面的函数用于注册一个可批处理的 continuous 或 on-change 传感器。调用方根据业务语义传入采样周期和最大交付延迟，并持有同一个 `SensorEventListener2` 以接收 flush 完成通知。
 
 ```kotlin
-private fun registerBatchedAccelerometer() {
-    val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) ?: return
+fun registerBatchedSensor(
+    sensorManager: SensorManager,
+    sensor: Sensor,
+    listener: SensorEventListener2,
+    samplingPeriodUs: Int,
+    maxReportLatencyUs: Int,
+): Boolean {
+    require(sensor.reportingMode != Sensor.REPORTING_MODE_ONE_SHOT)
+    require(samplingPeriodUs > 0)
+    require(maxReportLatencyUs >= 0)
 
-    val samplingPeriodUs = 200_000       // 5 Hz
-    val maxReportLatencyUs = 30_000_000  // 最长 30 秒批量上报
-
-    sensorManager.registerListener(
-        accelerometerListener,
-        accelerometer,
+    return sensorManager.registerListener(
+        listener,
+        sensor,
         samplingPeriodUs,
-        maxReportLatencyUs
+        maxReportLatencyUs,
     )
-}
-
-private fun flushBatchedSensorsBeforeStop() {
-    sensorManager.flush(accelerometerListener)
-}
-
-private fun unregisterBatchedSensors() {
-    sensorManager.unregisterListener(accelerometerListener)
 }
 ```
 
-`flush()` 会请求把 FIFO 中仍未上报的事件交付给 listener，适合在停止监听前保留剩余一批数据；如果业务必须保存这批数据，要等 `onFlushCompleted()` 或自定义超时后再注销 listener。它不保证所有设备都能提供同样大小的缓冲，产品逻辑不能依赖“30 秒一定攒满多少条事件”。
+返回 `false` 表示传感器不受支持或启用失败，不能把注册动作当成必然成功。one-shot 传感器要用 `requestTriggerSensor()`。如果 `fifoMaxEventCount` 为零，应用可以继续接收事件，但不要把 `maxReportLatencyUs` 当成可用的硬件批处理能力。
 
-传感器还有三个容易踩坑的边界：
+`SensorManager.flush(listener)` 是异步操作：调用后，FIFO 中已有事件按正常回调送达，随后才调用 `SensorEventListener2.onFlushCompleted()`。需要保存尾部事件时，应在 flush 成功后等待完成回调，再注销 listener；还要准备超时退出。`flush()` 返回 `false` 表示 listener 没有已注册传感器，或至少一个 flush 请求失败。硬件没有原生 flush 支持时，框架仍可以发送一个简单的完成事件。
 
-- 前后台边界：
-- Android 9（API 28）+：后台 App 不能接收 continuous 传感器（accelerometer、gyroscope 等）事件，必须使用前台服务并把通知、权限和退出条件写清楚。
-- Android 12（API 31）+：运动/位置传感器的后台采样速率被硬限制在 200 Hz 以下；`HIGH_SAMPLING_RATE_SENSORS` 权限只提升前台采样速率上限，对后台 200 Hz 硬限制和 FGS 约束无影响。
-- Android 14（API 34）+：健康/运动类传感器长时使用需配合 `foregroundServiceType="health"` 或对应的 FGS type，且 `while-in-use` 权限下后台启动 Activity 需走 `PendingIntent` 或通知入口。
-- wake-up 与 non-wake-up：wake-up sensor 可以在 FIFO 满或最大延迟到期时唤醒应用处理器；non-wake-up sensor 在 suspend 中不会主动唤醒应用处理器，旧事件可能被循环缓冲覆盖。
-- 采样率上限：`getMinDelay()` 只告诉传感器可支持的最快采样间隔，不代表业务应该使用这个频率。界面姿态、摇一摇、运动趋势通常不需要最快档。
+### wake-up、non-wake-up 与后台状态
 
-Android 12（API 31）对后台传感器访问追加了速率硬限制：
+wake-up sensor 在 FIFO 填满或最大报告延迟到期时可以唤醒应用处理器。non-wake-up sensor 在处理器 suspend 时不会主动唤醒；其 FIFO 填满后可循环覆盖旧事件，等处理器因其他原因醒来再交付。因此，“完整保留事件”和“尽量不唤醒处理器”之间需要业务选择。
 
-| 传感器类别 | 后台速率上限 | 所需权限 | 说明 |
-|------------|-------------|----------|------|
-| 运动传感器（加速度计、陀螺仪、旋转矢量等 continuous sensor） | 200 Hz | 受限：后台不能接收连续事件（Android 9+） | 即使声明 `HIGH_SAMPLING_RATE_SENSORS`，后台也无法绕过此项 |
-| 位置传感器（磁力计、orientation 等） | 200 Hz | 后台需 `ACCESS_BACKGROUND_LOCATION`（Android 10+） | Android 12+ `HIGH_SAMPLING_RATE_SENSORS` 仍不能提升后台速率 |
-| 环境/健康传感器（心率、血氧等） | 受限速率 | `BODY_SENSORS` + health FGS type（Android 14+） | 长时后台采样必须使用前台服务，不能静默常驻 |
-| 姿态传感器（significant motion、step detector 等 one-shot/on-change） | 不适用 | 不需要 FGS | 优先选择这些语义传感器替代高频轮询 |
+Android 9（API 28）及以上设备不会向后台应用交付 continuous、on-change 或 one-shot 传感器事件。长时间运动采集需要用户可见的前台服务，并在服务停止时解除注册。Android 17 `SensorEventConnection::hasSensorAccess()` 还会检查 UID 是否活跃、进程是否被冻结以及传感器隐私开关；保留一个 listener 不能让后台进程持续收到数据。
 
-`HIGH_SAMPLING_RATE_SENSORS` 权限（Android 12+）只提升前台采样速率上限，不能绕过前台服务或后台采样限制。文档中"200 Hz"是系统允许的软上限，设备传感器硬件本身可能支持更高采样率，但系统不会给 App 返回超过上限的事件。产品需求提到"实时运动姿态"时，先确认 200 Hz 是否满足精度，再决定是否上 FGS。
+### Android 12 的 200 Hz 限制
 
-[已验证: 官方文档, developer.android.com/develop/sensors-and-location/sensors/sensors_overview]
+200 Hz 是 target SDK 与权限相关的高采样率限制，不是“后台速率上限”。目标版本为 Android 12（API 31）及以上且没有 `HIGH_SAMPLING_RATE_SENSORS` 的应用，通过 `registerListener()` 读取以下原始传感器时最多为 200 Hz：
 
-| 传感器场景 | 推荐写法 | 不推荐写法 |
-|------------|----------|------------|
-| 页面内摇一摇、指南针 | `onResume()` 注册，`onPause()` 注销，按交互选择 5 到 20 Hz | Activity 不可见后仍保持监听 |
-| 低频运动趋势 | 设置 `maxReportLatencyUs`，批量读取事件 | 每个事件都唤醒线程、写库、上报 |
-| 状态变化检测 | 优先 on-change、one-shot、significant motion 等语义化传感器 | 用高频 accelerometer 自己轮询判断阈值 |
-| 长时后台采样 | 前台服务 + 低频 + 批处理 + 明确停止条件 | 静默后台常驻采样 |
+- 加速度计与未校准加速度计；
+- 陀螺仪与未校准陀螺仪；
+- 地磁场与未校准地磁场传感器。
+
+`SensorDirectChannel` 在同一条件下被限制到 `RATE_NORMAL`，通常约为 50 Hz。需要更高速率时，应用声明普通权限 `HIGH_SAMPLING_RATE_SENSORS`；它只解除这项速率限制，不授予后台持续采样资格，也不授予心率等受保护数据权限。用户关闭系统麦克风访问开关时，上述传感器仍会被限速，即使应用已声明该权限。
+
+Android 17 的 `SystemSensorManager` 使用 5000 微秒作为 200 Hz 周期边界；native `SensorService` 再按 target SDK、权限和麦克风隐私状态调整采样周期与 direct channel 档位。应用不应依靠 Java 侧异常判断限速，因为非调试包可以被 native 层直接限制到允许值。
+
+### health 前台服务与 Android 17 权限
+
+在 Android 14（API 34）设备上，目标版本为 34 及以上且需要由前台服务维持的长时间健康或运动传感器采集，必须使用 `foregroundServiceType="health"` 与 `FOREGROUND_SERVICE_HEALTH`，并满足至少一种对应运行时条件。版本差异不能只写成 `BODY_SENSORS`：
+
+- API 35 及以下的身体传感器使用 `BODY_SENSORS`；API 33 到 API 35 若要从后台启动并读取身体传感器，还需要 `BODY_SENSORS_BACKGROUND`。
+- API 36 及以上使用 `READ_HEART_RATE`、`READ_SKIN_TEMPERATURE`、`READ_OXYGEN_SATURATION` 等细分权限；后台读取对应健康数据需要 `READ_HEALTH_DATA_IN_BACKGROUND`。
+- `ACTIVITY_RECOGNITION` 或清单中的 `HIGH_SAMPLING_RATE_SENSORS` 也可以满足 health FGS 的一种启动先决条件，但只能访问各自授权范围内的数据。
+
+这些规则延续到 Android 17（API 37）。前台服务只提供合规的长时执行形态，应用仍应选择最低采样率、允许批处理、显示持续通知，并在用户停止会话后及时结束服务。
+
+### Android 17 源码锚点
+
+- [`SystemSensorManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/SystemSensorManager.java)：应用请求、200 Hz 周期边界与 high-sampling 权限检查。
+- [`SensorService.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/sensorservice/SensorService.cpp)：target SDK、权限、麦克风隐私限速及传感器访问。
+- [`SensorEventConnection.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/sensorservice/SensorEventConnection.cpp)：事件连接、活跃 UID 检查、flush 与 wake-up 事件确认。
+- [AOSP Sensors batching](https://source.android.com/docs/core/interaction/sensors/batching)：FIFO、报告延迟、suspend 与 wake-up/non-wake-up 契约。
+
+传感器驱动和 sensor hub 固件通常由设备厂商实现，通用 AOSP 不能给出一条适用于所有设备的 Linux 驱动路径。本节不据此推断内核行为；后续若引用通用内核实现，统一使用 `android17-6.18-2026-06_r6`，不能拿旧内核分支解释 Android 17 设备。
 
 ## 定位和传感器的回归守门
 
-定位和传感器优化要进入回归守门，不能只靠代码 review。§25.1 已经覆盖 Battery Historian、Power Profiler 和 `dumpsys batterystats`，这里补一组和本节参数直接相关的检查项。
+定位与传感器回归要固定设备、系统版本、权限状态、位置开关、网络条件、屏幕状态、业务持续时间和移动轨迹。只比较一次总耗电值无法定位原因；测试记录还要保存请求参数、回调次数、每批数据量、事件时间、应用处理时长和退出后的残留注册。
 
-这组命令用于确认 App 是否还在后台持有定位请求、传感器监听或异常唤醒。采集前先固定业务场景，例如“后台 30 分钟门店提醒”“息屏 1 小时低频轨迹”“页面退出后 10 分钟”。
+下面的命令用于查看 Android 17 上的平台位置请求、传感器连接和 UID 级电量归因。执行前先复现目标业务状态，执行后保存完整输出用于同版本对比。
 
 ```bash
-# 查看系统位置请求、provider、geofence 和后台访问情况
-adb shell dumpsys location > location.txt
-
-# 查看传感器注册、FIFO、active connection 等信息
-adb shell dumpsys sensorservice > sensorservice.txt
-
-# 导出 UID 级耗电统计，和 §25.1 的 Battery Historian 流程配合使用
-adb shell dumpsys batterystats --charged > batterystats.txt
+adb shell dumpsys location
+adb shell dumpsys sensorservice
+adb shell dumpsys batterystats --charged
 ```
 
-检查时按三个问题读结果：页面退出后是否还存在高频请求；后台定位是否被批量交付而不是秒级唤醒；传感器 listener 是否在生命周期结束后注销。只要有一项不满足，就回到对应业务入口补退出条件、超时或批处理参数。
+`dumpsys location` 用来核对 provider、请求间隔、权限级别和前后台状态；`dumpsys sensorservice` 可以看到活跃连接、采样周期、批处理延迟、FIFO 与 wake lock 相关信息；`batterystats` 用于把位置、传感器、唤醒和进程活动关联到应用 UID。不同厂商的字段可能不同，回归脚本应保存原始文本并只解析稳定字段。
+
+测试范围至少覆盖以下边界：
+
+- 只有 coarse、同时具备 fine、精度从 fine 降为 coarse 三种状态；降级导致进程重启后，请求能按持久化业务状态恢复或停止。
+- 没有后台位置权限、具备后台位置权限、用户在设置页撤销权限三种状态；Geofencing 和连续定位都不应静默失败后无限重试。
+- 应用可见时启动 location FGS，以及应用已在后台且没有 `ACCESS_BACKGROUND_LOCATION` 时尝试启动；后一条路径应由产品流程提前阻止并引导用户操作。
+- FLP 单点交付、批量交付和跨批次时间逆序；服务端结果按事件时间排序并去重。
+- 应用进入后台、进程被终止、设备进入 Doze 后的 Geofencing；验证分钟级延迟下不会重复通知或误判为丢失。
+- 有 FIFO 与无 FIFO 的传感器；确认同一 `maxReportLatencyUs` 配置在两类设备上的唤醒和批量大小差异。
+- Android 9+ 普通后台状态与前台服务状态；普通后台不再收到受限传感器事件，服务结束后连接被移除。
+- targetSdk 31+ 在有无 `HIGH_SAMPLING_RATE_SENSORS` 时请求高于 200 Hz，并切换麦克风隐私开关；记录有效采样周期，不能只看请求值。
+- flush 成功、flush 失败和等待超时；所有路径最终都会注销 listener。
+
+回归阈值由业务基线确定。建议分别设置“位置计算或请求是否仍存在”“应用回调与唤醒是否增加”“回调后的 CPU、存储与网络成本是否增加”三类门禁。这样才能区分硬件定位成本、交付策略和应用处理代码造成的变化。
+
+## 小结
+
+定位优化从一次性、低精度、低频和延迟容忍度开始；只有用户可见且确有精度需要时才持续使用高精度请求。Geofencing 与被动定位能减少主动计算，但仍受后台权限和交付延迟限制。传感器侧要同时降低采样率与应用处理器唤醒，批处理只解决后者。
+
+Android 17 的平台边界由位置服务、`SystemSensorManager` 和 native `SensorService` 共同执行；Google Play services FLP 还具有独立版本。评审时把两套实现和各自公开契约分开，才能避免用 AOSP 结论代替 FLP 行为。
+
+## 延伸阅读
+
+- [About background location and battery life](https://developer.android.com/develop/sensors-and-location/location/battery)
+- [Request location permissions](https://developer.android.com/develop/sensors-and-location/location/permissions)
+- [Request background location](https://developer.android.com/develop/sensors-and-location/location/permissions/background)
+- [Create and monitor geofences](https://developer.android.com/develop/sensors-and-location/location/geofencing)
+- [Foreground service types: location and health](https://developer.android.com/develop/background-work/services/fgs/service-types)
+- [Sensors overview](https://developer.android.com/develop/sensors-and-location/sensors/sensors_overview)
+- [`SensorManager` API reference](https://developer.android.com/reference/android/hardware/SensorManager)
