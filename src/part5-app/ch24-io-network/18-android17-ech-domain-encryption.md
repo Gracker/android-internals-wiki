@@ -74,23 +74,47 @@ sources:
 
 ## 这节解决什么问题
 
-Android 17 把 Encrypted Client Hello（ECH）放进平台网络安全配置面。对应用来说，升级 `targetSdkVersion` 后不能只看 TLS 是否能连通，还要确认网络库是否读取平台配置、服务端是否发布 HTTPS DNS 记录、失败时是否走到预期的 GREASE 或禁用路径。
+Android 17 / API 37 为网络库提供了 ECH 所需的 DNS、TLS 与按域名策略接口。应用以 `targetSdkVersion 37` 运行时，`domainEncryption` 的默认模式从 `disabled` 变为 `enabled`。这个默认值只表达应用策略；网络库仍须读取策略、查询 HTTPS DNS 记录并把 ECH 配置交给平台 TLS 实现，服务端也要支持 RFC 9849。
 
-本节不重复 TLS 1.3、证书链、连接池和 HTTP/2 / HTTP/3 的原理，这些内容详见 12.4、24.4 和 24.5。这里只处理 Android 17 的 ECH 配置、灰度、观测和回退。参考书只用于组织性能排查顺序：先拆速度来源，再看线程等待、缓存命中和连接复用，不使用参考书原文段落。 [结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md] [结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md] [结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+因此，验收问题不能缩成“HTTPS 能否连接”。团队还要确认：
+
+- 当前网络库版本是否已经接入 Android 17 ECH API。
+- 设备使用的解析路径能否取得 HTTPS 资源记录中的 `ech` 参数。
+- 服务端 ECH 配置、公开名称、证书与轮换流程是否一致。
+- 没有 ECH 配置、配置失配、代理拦截和证书透明度失败时分别发生什么。
+- 连接复用、DNS 等待和协议切换是否改变业务耗时。
+
+本章的平台源码锚点是 `android-17.0.0_r1`。ECH 不依赖应用可见的内核接口，本章不引用内核标签。TLS 1.3、证书链、连接池和 HTTP/2、HTTP/3 原理见 12.4、24.4 与 24.5。
 
 ## ECH 的 Android 17 适配边界
 
-ECH 是 TLS 1.3 的扩展，用来加密 ClientHello 中的敏感字段，最常见的是 SNI。标准 TLS 握手里，网络中间节点即使看不到 HTTP 内容，也能从明文 SNI 判断客户端访问的域名；ECH 把这部分放进加密的 inner ClientHello，外层只保留可路由的 public name。 [已验证: RFC 9849, https://www.rfc-editor.org/rfc/rfc9849]
+ECH 把 TLS ClientHello 分成外层 `ClientHelloOuter` 和加密的 `ClientHelloInner`。真实 SNI 等敏感扩展位于内层；外层仍包含用于路由的公开名称。RFC 9849 同时定义了配置失配后的重试信息与 ECH GREASE。
 
-Android 17 的公开文档给了三条边界：ECH 只从 API 37 开始提供；应用使用的网络库必须接入 ECH；远端服务器也要支持 ECH 协议。`domainEncryption` 写进 XML 后，不会让所有 HTTPS 请求自动拥有加密 SNI。网络库没有接入、服务端没有 HTTPS/SVCB 记录、记录里没有可用 `ech` 参数、代理或网关拦截了相关路径，都会让最终行为偏离预期。 [已验证: 官方文档, https://developer.android.com/privacy-and-security/security-config]
+ECH 保护范围有限：
 
-Android 17 还给 `DnsResolver`、`HttpsRecord` 和 `SSLSockets` 增加了公开入口。`DnsResolver` 可以查询 A / AAAA / HTTPS 记录并返回 `HttpsEndpoint`，`HttpsRecord#getEchConfigList()` 可以取出 HTTPS 记录里的 ECH 配置，`SSLSockets#setEchConfigList()` 可以在 TLS 握手前把配置传给平台 socket。应用通常不该自己拼这一套流程；这些 API 更适合作为网络库接入和排查时的事实边界。 [已验证: 官方文档, https://developer.android.com/about/versions/17/features] [已验证: 官方文档, https://developer.android.com/reference/android/net/dns/HttpsRecord] [已验证: 官方文档, https://developer.android.com/reference/android/net/ssl/SSLSockets]
+- 目标 IP 地址仍对网络路径可见。
+- 公开名称仍可能出现在外层 ClientHello。
+- 使用明文 DNS 时，查询名称仍可能泄露；ECH 不替代加密 DNS。
+- 流量大小、时序与连接目的地仍可用于流量分析。
+- 客户端、服务端、代理与业务日志仍能看到各自处理的数据。
+
+因此，“开启 ECH”不能写成“域名对所有观察者不可见”。更准确的表述是：网络库和服务端完成协商时，ECH 加密 ClientHello 内的真实 SNI 等字段，降低网络中间节点直接读取这些字段的能力。[RFC 9849](https://www.rfc-editor.org/rfc/rfc9849) 给出协议细节，[RFC 9460](https://www.rfc-editor.org/rfc/rfc9460) 定义 HTTPS 与 SVCB 资源记录。
+
+Android 17 的平台能力按下面的顺序工作：
+
+1. 网络库通过 `NetworkSecurityPolicy.getDomainEncryptionMode(hostname)` 读取应用对目标域名的策略。
+2. 网络库通过 `DnsResolver` 并发查询 A、AAAA 与 HTTPS 记录，得到 `HttpsEndpoint`。
+3. `HttpsRecord.getEchConfigList()` 从 ServiceMode HTTPS 记录中解析可选的 `EchConfigList`。
+4. 网络库在握手开始前调用 `SSLSockets.setEchConfigList()` 或 `SSLEngines.setEchConfigList()`。
+5. 平台 TLS 实现发送 ECH ClientHello；服务端接受配置，或返回配置失配及可选的重试配置。
+
+这条顺序说明了 `domainEncryption` 的职责：它提供按域名策略，不负责自动改造每个网络库。Android 官方文档也明确要求网络库已经接入 ECH。
 
 ## `domainEncryption` 放在 Network Security Config 里
 
-`domainEncryption` 属于 Network Security Configuration 的子元素，可放在 `base-config` 或 `domain-config` 下。`base-config` 影响没有被特定域名规则覆盖的连接；`domain-config` 按域名覆盖，匹配规则仍沿用 Network Security Config 的域名继承和最长匹配语义。 [已验证: 官方文档, https://developer.android.com/privacy-and-security/security-config]
+`domainEncryption` 可放在 `base-config` 或 `domain-config` 下。`base-config` 适用于没有被域名规则覆盖的连接；多个规则同时匹配时，平台使用域名最长的规则。`includeSubdomains="true"` 会让规则覆盖该域名及各级子域。
 
-这段 XML 展示灰度阶段的常见写法，重点看全局默认和单域名覆盖：
+下面的 XML 明确声明全局启用，并为一个已知不兼容的网关域名禁用 ECH：
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -106,87 +130,155 @@ Android 17 还给 `DnsResolver`、`HttpsRecord` 和 `SSLSockets` 增加了公开
 </network-security-config>
 ```
 
-这段配置的语义是：默认允许网络库对支持 ECH 的连接使用 ECH；访问 `legacy-gateway.example.com` 及其子域时，不尝试 ECH 或 ECH GREASE。适合用在网关、代理、企业客户专线或旧 CDN 节点还没有完成验证的灰度期。
+这段配置要求支持该策略的网络库对普通域名使用 `enabled`；访问 `legacy-gateway.example.com` 及其子域时，不发送 ECH，也不发送 ECH GREASE。对 `targetSdkVersion 37` 的应用，平台默认已经是 `enabled`，显式写入 `base-config` 的价值在于记录项目意图。
 
-2026-05-25 复核官方英文文档时，`domainEncryption` 的语法列出 `enabled` 和 `disabled` 两个值；Android 17 features 页面仍用“opportunistically or mandating”描述策略取向，部分本地化页面和早期说明还出现过 `opportunistic`。发布配置时按英文 Network Security Config 页面和本地构建工具校验为准，不要在生产 XML 里依赖文档尚未稳定的 mode 值。 [待验证: `opportunistic` mode 是否会在正式 Android 17 SDK XML schema 中保留]
+正式 Android 17 的 Network Security Configuration 语法只接受两个 XML 值：
 
-`enabled` 不能理解成“所有连接失败就降级成明文 SNI”。官方配置页描述的是：TLS 握手建立时如果提供了 ECH 配置，就对该连接执行 ECH；如果没有 ECH 配置，则启用 ECH GREASE。`disabled` 则是不尝试 ECH 和 GREASE。对应用侧更实用的判断是：把 `enabled` 当成升级后的默认策略，把 `disabled` 留给明确有兼容问题的域名。
+| XML 模式 | 语义 |
+| --- | --- |
+| `enabled` | 握手获得 ECH 配置时使用 ECH；没有配置时启用 ECH GREASE |
+| `disabled` | 不使用 ECH，也不使用 ECH GREASE |
 
-## 网络库支持矩阵
+`NetworkSecurityPolicy` 的公开常量还包含 `DOMAIN_ENCRYPTION_MODE_OPPORTUNISTIC` 与 `DOMAIN_ENCRYPTION_MODE_UNKNOWN`。它们是网络库读取策略时可能遇到的 API 值，不是当前 XML 语法允许填写的字符串。不要在 Network Security Configuration 中写入 `mode="opportunistic"`。
 
-ECH 在应用里通常有三条路径：平台 HTTP 引擎、WebView、以及 OkHttp / 自定义 TLS 栈。三条路径的配置面不同，排查入口也不同。
+下面的诊断函数用于确认某个主机名经过 Network Security Configuration 匹配后得到的策略值：
 
-| 路径 | 应用侧配置入口 | ECH 生效条件 | 排查重点 |
-| --- | --- | --- | --- |
-| `HttpEngine` / Cronet 路径 | 平台或库内部读取 Network Security Config | 使用的版本接入 Android 17 ECH API；服务端发布 HTTPS 记录和 ECH config | 协议、DNS HTTPS 记录、QUIC / HTTP/2 fallback、失败码 |
-| WebView | WebView 网络栈和应用 Network Security Config | 设备 WebView / Chromium 网络栈版本支持 ECH；目标域支持 ECH | WebView 版本、企业代理、证书策略、页面资源域名 |
-| OkHttp + 平台 TLS provider | OkHttp 版本、平台 TLS provider、Network Security Config | OkHttp 对 Android 17 ECH 配置完成接入；socket 来自平台 TLS provider | OkHttp 版本、Conscrypt / provider、EventListener 建连分段 |
-| 自定义 `SSLSocket` / native TLS | 业务代码或三方库直接处理 TLS | 主动查询 HTTPS 记录并在握手前传入 ECH config，且实现符合平台 API | [待验证] 不建议业务层自行维护，优先交给网络库 |
+```kotlin
+@RequiresApi(37)
+fun domainEncryptionMode(hostname: String): String {
+    val mode = NetworkSecurityPolicy.getInstance()
+        .getDomainEncryptionMode(hostname)
 
-Android 17 文档把 HttpEngine、WebView、OkHttp 作为示例网络库提到，但语义是“网络库接入后才生效”，不能推导出“所有版本已经生效”。升级前要在测试包记录网络库版本、设备 Android 版本、TLS provider、WebView 版本和服务端 ECH 发布状态。 [已验证: 官方文档, https://developer.android.com/about/versions/17/behavior-changes-17]
+    return when (mode) {
+        NetworkSecurityPolicy.DOMAIN_ENCRYPTION_MODE_DISABLED -> "disabled"
+        NetworkSecurityPolicy.DOMAIN_ENCRYPTION_MODE_OPPORTUNISTIC -> "opportunistic"
+        NetworkSecurityPolicy.DOMAIN_ENCRYPTION_MODE_ENABLED -> "enabled"
+        NetworkSecurityPolicy.DOMAIN_ENCRYPTION_MODE_UNKNOWN -> "unknown"
+        else -> "unrecognized:$mode"
+    }
+}
+```
 
-自定义 TLS 栈要谨慎。`domainEncryption` 是 Android 平台配置，BoringSSL、OpenSSL 或业务自带 QUIC/TLS 栈不会天然读取这份 XML。若某个 SDK 自带 TLS 实现，它可能绕过平台 Network Security Config、证书透明度和 ECH 配置。对这类 SDK，验收项应改成“SDK 明确说明如何处理 Android 17 ECH 与 CT”，单靠 App XML 不够。
+这个返回值只能证明平台解析出的策略，不能证明 DNS 返回了 ECH 配置，也不能证明某次 TLS 握手使用了 ECH。诊断日志不应记录完整 URL、查询参数或用户标识。
+
+模式与默认值以 [Network Security Configuration](https://developer.android.com/privacy-and-security/security-config#domain-encryption) 为准，API 常量见 [`NetworkSecurityPolicy`](https://developer.android.com/reference/android/security/NetworkSecurityPolicy)。
+
+## Android 17 API 与源码边界
+
+`DnsResolver` 在 API 37 增加了返回 `HttpsEndpoint` 的查询重载。它会并发发出 A、AAAA 和 HTTPS 查询，并允许调用方通过 `httpsTimeoutMillis` 决定地址记录完成后还要等待 HTTPS 记录多久。`DnsResolver.getInstance()` 在 API 37 已废弃，新代码应使用接收 `Context` 与 `Looper` 的构造函数。
+
+`HttpsRecord` 表示 RFC 9460 的 HTTPS 记录。`priority == 0` 表示 AliasMode，这类记录不携带 IP 提示、端口、ALPN 或 ECH 配置；ServiceMode 记录才可能通过 `getEchConfigList()` 返回 ECH 配置。返回值可以为 `null`，格式错误会抛出 `InvalidEchDataException`。
+
+`SSLSockets.setEchConfigList()` 和 `SSLEngines.setEchConfigList()` 必须在握手开始前调用，而且只接受平台 TLS provider 创建的 socket 或 engine。自带 BoringSSL、OpenSSL 或原生 QUIC 实现的 SDK 不会因为应用增加了 XML 就自动执行这些 API。
+
+在 `android-17.0.0_r1` 中可以直接核对这些实现：
+
+- [`DnsResolver.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/DnsResolver.java) 发起 A、AAAA 与 HTTPS 查询，并构建 `HttpsEndpoint`。
+- [`HttpsRecord.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/dns/HttpsRecord.java) 解析 `EchConfigList`。
+- [`DomainEncryptionMode.java`](https://android.googlesource.com/platform/external/conscrypt/+/refs/tags/android-17.0.0_r1/common/src/main/java/org/conscrypt/DomainEncryptionMode.java) 给出平台 TLS 内部使用的模式枚举。
+- [`Platform.java`](https://android.googlesource.com/platform/external/conscrypt/+/refs/tags/android-17.0.0_r1/platform/src/main/java/org/conscrypt/Platform.java) 把 ECH 配置失配转换为 Android 公共异常。
+
+应用通常不应重写这套解析与重试逻辑。自定义网络库如果必须接入，应完整处理 `HttpsEndpoint` 选择、平台 TLS provider 检查、握手前配置、取消、超时和配置失配，不能只把一段 ECH 字节写入 socket。
+
+## 网络库支持状态要按版本核对
+
+Android 17 的功能页面写的是 HttpEngine、WebView 与 OkHttp 将在后续更新中接入平台 API；[行为变更页面](https://developer.android.com/about/versions/17/behavior-changes-17#ech) 同样以“网络库已经集成”为生效前提。因此，库名称出现在文档中不等于应用当前解析到的版本已经支持 ECH。
+
+截至 2026-07-29，可验证的公开状态如下：
+
+| 路径 | 可验证事实 | 项目判断 |
+| --- | --- | --- |
+| Android 平台 API | DNS、策略、TLS 与失配异常 API 已进入 API 37 | 提供接入能力，不替网络库完成接入 |
+| OkHttp | 主分支已于 2026-07-24 合并初始 Android API 37 ECH 支持的 [PR #9573](https://github.com/square/okhttp/pull/9573)，并于 2026-07-26 合并按 `NetworkSecurityPolicy` 选择模式的 [PR #9596](https://github.com/square/okhttp/pull/9596)；[`parent-5.4.0`](https://github.com/square/okhttp/tree/parent-5.4.0) 标签早于这两次合并 | 主分支具备接入代码不等于项目使用的发布版本已经包含它，必须核对依赖版本或提交号 |
+| Chromium / WebView / Cronet | 2026-06-22 的 [Chromium 提交](https://chromium.googlesource.com/chromium/src/net/+/b91f5ad12e2adc0166183b0172cd4cbc0a04a934) 加入按主机读取平台模式，但提交说明明确写着执行逻辑另行加入 | 含该提交的版本仍需验证模式是否被执行 |
+| 自定义 `SSLSocket` / `SSLEngine` | 公共 API 已可用 | 应由网络库维护完整 DNS、策略与重试流程 |
+| 自带原生 TLS 的 SDK | 是否读取 Android XML 取决于 SDK | 要求供应方给出版本、源码或测试证据 |
+
+上线记录应包含网络库坐标与版本、WebView provider 版本、Android 构建号、TLS provider、是否使用自定义 DNS、服务端 ECH 发布状态。只记录“使用 OkHttp”或“使用 WebView”不够精确。
+
+HTTPDNS 与只返回 IP 地址的自定义 `Dns` 接口需要单独审查。ECH 配置位于 HTTPS 资源记录中；解析实现若只交付 A、AAAA 结果，网络库可能拿不到 `EchConfigList`。HTTPDNS 的适配边界见 24.10。
 
 ## 失败与回退判定
 
-ECH 失败不能只看“请求失败”或“TLS 握手失败”。同一个用户反馈里，可能同时存在 DNS HTTPS 记录缺失、ECH config 过期、企业代理替换证书、证书透明度不通过、HTTP/3 被阻断和本地网络权限失败。需要先给失败分类。
+ECH 失败应按发生阶段分类：
 
-| 现象 | 常见原因 | 处理方式 | 关联章节 |
+| 现象 | 可能原因 | 核对动作 |
 | --- | --- | --- | --- |
-| 目标域没有 ECH，但连接成功 | 没有 HTTPS 记录或没有 `ech` 参数，`enabled` 下使用 GREASE | 记录为“ECH 未命中”，不当成连接失败 | 12.4 |
-| TLS 握手失败 | ECH config 与服务端不匹配、证书链异常、CT 默认启用后证书不合规 | 按域名临时 `disabled`，同时修服务端记录和证书 | 12.4 |
-| 企业代理或网关环境失败 | 中间设备不支持 ECH、拦截 TLS、替换证书 | 建立企业网络分桶，保留域名级禁用开关 | 24.4 |
-| HTTP/3 失败但 HTTP/2 成功 | UDP / QUIC 被阻断，和 ECH 不一定相关 | 保留 HTTP/2 fallback，分开记录协议失败 | 24.5 |
-| LAN / Cast / IoT 失败 | Android 17 本地网络权限阻断 | 不归因到 ECH，走 24.16 的权限路径 | 24.16 |
+| 连接成功，没有 ECH 配置 | HTTPS 记录缺失、AliasMode、记录没有 `ech` 参数、自定义 DNS 丢失记录 | 对比权威 DNS、设备解析结果和网络库日志 |
+| 发送 GREASE 后连接成功 | `enabled` 下没有可用 ECH 配置 | 记为 GREASE，不能记为 ECH 成功 |
+| `InvalidEchDataException` | HTTPS 记录里的 ECH 数据为空、长度错误或格式无效 | 修复 DNS 发布内容，检查缓存与 TTL |
+| `EchConfigMismatchException` | 客户端缓存的配置与服务端当前配置不一致 | 验证公开名称与证书，再使用服务端给出的重试配置 |
+| 普通 TLS 证书失败 | 证书链、主机名、证书透明度或代理证书问题 | 单独核对证书错误，禁用 ECH 不会修复证书 |
+| HTTP/3 失败而 HTTP/2 成功 | UDP、QUIC、地址或协议协商问题 | 按 24.5 的协议路径分析 |
+| 私网地址、`.local` 或设备发现失败 | `ACCESS_LOCAL_NETWORK` 未获授权 | 按 24.16 的本地网络权限路径分析 |
 
-ECH GREASE 的目的不是隐藏真实域名。它在没有可用 ECH 配置时让网络生态持续看到形状类似 ECH 的扩展，降低中间设备把未知扩展当异常的概率。GREASE 命中时，SNI 仍可能是普通 TLS 路径；因此指标里要区分“ECH 成功”“GREASE”“禁用”“无配置”。 [已验证: RFC 9849, https://www.rfc-editor.org/rfc/rfc9849]
+ECH GREASE 用随机内容模拟 ECH 扩展，帮助发现会阻断未知扩展的中间设备。它没有可用的服务端 ECH 配置，不能加密真实 SNI。观测系统至少要分开记录 ECH 被接受、GREASE、策略禁用、没有配置、配置失配与其他 TLS 错误。
 
-Android 17 对 `targetSdkVersion >= 37` 的应用默认启用 Certificate Transparency。ECH 迁移时经常会顺手调整 CDN、证书和 DNS，如果证书 SCT 不符合 Android CT 策略，表现会落在 TLS 失败上，不能直接归因到 ECH。排查顺序建议是：证书链和 CT、DNS HTTPS 记录、ECH config、新旧网络库版本、代理/网关、协议 fallback。
+配置失配不能盲目重试。`EchConfigMismatchException` 要求客户端先取得 `getPublicHostname()`，用主机名验证器确认证书对该公开名称有效；公开名称为 `null` 时必须忽略重试配置。验证成功且 `getRetryConfigList()` 非空后，网络库才可以新建连接重试。公共 API 的约束见 [`EchConfigMismatchException`](https://developer.android.com/reference/android/net/ssl/EchConfigMismatchException)。
+
+Android 17 对 `targetSdkVersion 37` 及以上的应用默认启用证书透明度。CT 与 ECH 共享 TLS 失败表象，但配置和校验阶段不同。使用系统 CA 时应核对 SCT 与 CT 策略；使用用户 CA 或内嵌 CA 时，Network Security Configuration 可能按信任锚规则关闭 CT，除非域名规则显式启用。禁用 ECH 不会改变证书链或 CT 结果。
+
+`domainEncryption` 位于 APK 的资源 XML 中，普通远程配置不能修改它。把某个域名改成 `disabled` 通常需要发布新版本；网络库自带的策略开关属于另一套配置，必须确认它与平台策略的优先级。因此，不能把 XML 域名覆盖规则当作远程热修复开关。
 
 ## 性能观测方法
 
-ECH 的性能评估要按阶段拆开，不要给一个全局固定收益或固定开销。移动网络里的主要波动来自 DNS、RTT、连接复用和协议 fallback，HPKE 计算成本通常要放在设备、算法套件和实现版本里单独压测。没有这组条件时，正文和监控都不写“ECH 固定增加 X ms”。
+ECH 对耗时的影响可能来自 HTTPS DNS 查询等待、配置失配后的新连接、TLS 计算和连接复用变化。不能用一个固定毫秒数描述所有设备与网络。
 
-| 阶段 | 指标 | 采集方式 | 判断 |
+| 阶段 | 建议记录 | 解释限制 |
 | --- | --- | --- | --- |
-| DNS HTTPS 记录 | HTTPS 记录命中率、`ech` 参数命中率、解析耗时 | 服务端 DNS 日志、客户端网络库事件、灰度探针 | 区分“域名未发布 ECH”和“客户端没查到” |
-| TLS 握手 | 握手耗时、TLS 版本、cipher suite、ECH 状态 | OkHttp EventListener、HttpEngine / Cronet metrics、服务端 TLS 日志 | 对比同域名 targetSdk 36 / 37 或 ECH on / off |
-| 连接复用 | 新建连接率、复用命中率、HTTP/2 stream 数 | 连接池事件、`connectionAcquired`、服务端连接数 | 避免把短连接放大的握手成本算到 ECH |
-| 失败率 | `UnknownHost`、TLS alert、证书错误、QUIC fallback、代理失败 | 统一错误码、网络类型、运营商、地域分桶 | 找出兼容性失败，避免只看平均值变化 |
-| 用户侧体验 | 首包、接口 P90/P99、页面首屏、视频首缓冲 | APM、播放器指标、业务埋点 | 只在业务指标恶化时回滚，不因单段指标波动误判 |
+| DNS | A、AAAA、HTTPS 各阶段耗时；HTTPS 记录与 ECH 配置是否存在 | 权威 DNS 有记录不代表设备解析路径取得了记录 |
+| TLS | 新连接握手耗时、ECH 接受、GREASE、失配、证书错误 | 通用 HTTP 事件监听器未必暴露 ECH 状态，需要网络库或服务端证据 |
+| 重试 | 配置失配次数、是否收到重试配置、新连接次数 | 重试会改变尾部耗时，不能并入首次握手后只看平均值 |
+| 连接池 | 新建连接率、复用率、HTTP/2 流与 HTTP/3 会话 | 已复用连接不会重新执行完整握手 |
+| 业务 | 首包、关键接口分位数、页面首屏、媒体首缓冲 | 同时记录网络类型、代理、VPN、地域与运营商 |
 
-服务端侧至少补三类日志：HTTPS DNS 记录查询量、TLS 握手 ECH 接受/拒绝状态、证书透明度相关失败。客户端侧补网络库版本、Android 版本、target SDK、域名、网络类型、代理/VPN 状态和协议。企业网络、校园网、运营商 NAT、VPN 都要单独分桶，因为这些环境最容易暴露未知 TLS 扩展兼容问题。
+`DnsResolver` 的 `HTTPS_QUERY_WAIT_NONE` 会在地址查询完成后立即回调，即使 HTTPS 查询尚未返回；官方不建议把它用于安全或延迟敏感场景。`HTTPS_QUERY_WAIT_UNTIL_TIMEOUT` 会等待 HTTPS 查询完成或超时，在丢弃 HTTPS 查询的网络中可能增加延迟。网络库通常应从 `HTTPS_QUERY_WAIT_AUTO` 开始，并按实测调整，应用不应随意覆盖内部选择。
 
-外部验证可以用 DNS 工具确认记录发布状态。下面的命令只验证域名是否发布 HTTPS 记录，不代表 Android 端一定启用了 ECH：
+下面的命令用于从当前命令行所用解析器检查域名是否发布 HTTPS 记录：
 
 ```bash
-dig HTTPS api.example.com
+dig HTTPS api.example.com +short
 ```
 
-命令结果里如果没有 HTTPS/SVCB 记录或没有 ECH 参数，Android 网络库即使支持 ECH，也拿不到服务端配置。若记录存在但客户端仍失败，再查 DNS 缓存、网络库接入和 TLS 握手日志。
+命令结果可以验证发布格式，却不能代表 Android 设备在蜂窝网络、专用 DNS、VPN 或 HTTPDNS 下获得同一答案。客户端解析日志、服务端 DNS 日志与 TLS 服务端的 ECH 接受状态需要一起核对。
+
+抓包可以观察是否出现形似 ECH 的扩展、连接重试和协议选择，但无法仅凭扩展存在区分有效 ECH 与 GREASE，也不应尝试从 ECH 中恢复内层 SNI。业务性能数据仍要来自网络库事件、应用 trace 与服务端日志。
 
 ## 灰度发布策略
 
-ECH 迁移适合按域名和业务级别推进，不适合一次性覆盖所有请求。先选登录后低风险的读接口或静态资源域名，保留域名级 `disabled` 开关；支付、登录、消息发送、配置拉取这类接口要等证书、DNS、代理、服务端日志都能互相印证后再扩大比例。
+灰度前先建立能力清单，避免把“XML 已配置”当成完成：
 
-一套可执行的灰度顺序如下：
+- 固定网络库、WebView provider、TLS provider 和 Android 17 构建版本。
+- 确认库版本包含策略读取、HTTPS DNS 查询、握手配置与失配重试。
+- 为候选域名发布 HTTPS 记录，记录 TTL、CDN 节点、公开名称和证书覆盖。
+- 让服务端提供 ECH 接受、拒绝与配置轮换日志。
+- 选择低风险域名测试，再处理登录、支付、消息与配置获取等关键接口。
+- 分开观察普通网络、企业代理、VPN、校园网、蜂窝网络和不同地域。
 
-1. 服务端为候选域名发布 HTTPS 记录和 ECH config，记录 TTL、CDN 节点覆盖率和证书状态。
-2. 客户端灰度 targetSdk 37 包，记录 ECH 状态、TLS 错误、协议 fallback、首包和接口 P90/P99。
-3. 对企业客户、VPN、代理、校园网、海外运营商建立分桶，给问题域名准备 `domainEncryption mode="disabled"` 热修复方案。
-4. 对低风险域名扩大流量，观察一周以上的失败率和尾延迟，再推进登录、支付、消息等关键接口。
-5. 保留 `targetSdkVersion 36` 或 ECH disabled 对照组，确认问题来自 Android 17 ECH / CT，避免把同一版本里的业务改动算进去。
+`targetSdkVersion 36` 与 37 的对照会同时包含 CT 等其他行为变化，不能单独归因到 ECH。更干净的实验是在相同网络库与代码下使用两份 Network Security Configuration 构建测试包，一份保持 `enabled`，另一份对候选域名设为 `disabled`。这适合实验室与受控测试；生产发布仍要评估应用版本更新的时效。
 
-隐私合规也要同步处理。ECH 会减少网络中间节点看到真实域名的机会，但客户端和服务端仍会处理完整域名、IP、证书和业务请求日志。监控字段只保留排障所需的域名、错误类别和粗粒度网络环境，不记录完整 URL、token、用户输入或证书明文内容。
+回退手段有三类：
+
+- 服务端修正或轮换 ECH 配置，并在失配响应中提供有效重试配置。
+- DNS 撤下或修正 `ech` 参数；客户端缓存会按 TTL 延迟生效。
+- 发布应用更新，将确认不兼容的域名设为 `disabled`。
+
+降低 `targetSdkVersion` 会同时改变其他 Android 17 安全行为，也可能不符合应用商店要求，不应作为 ECH 的常规回退方案。远程开关只有在网络库明确支持并定义了与平台策略的关系时才可使用。
+
+隐私日志保留域名分类、错误类型、网络库版本、粗粒度网络环境和协议即可。不要记录完整 URL、令牌、用户输入、证书私钥材料或 ECH 配置原始字节。
 
 ## 与 12.4 TLS 性能章节的边界
 
-12.4 负责解释 TLS 1.3、证书、CT、SNI、HPKE 和安全连接成本；本节只处理 Android 17 上应用怎样配置和灰度 ECH。遇到握手耗时、证书链过长、TLS session resumption、0-RTT、证书透明度策略时，正文只引用 12.4，不在这里重写原理。
-
-本节给出的判断更偏上线流程：哪些域名能先开、怎么发现服务端没发布 ECH、怎么把 GREASE 和 ECH 成功分开、怎么用 `domainEncryption` 做域名级禁用。读者如果要理解 TLS 握手本身，应回到 12.4。
+12.4 解释 TLS 1.3、证书、CT、SNI、HPKE、会话恢复和安全连接成本。本节只说明 Android 17 如何表达按域名 ECH 策略、网络库如何取得 ECH 配置，以及应用怎样验证接入。握手耗时、证书链和 0-RTT 等问题仍按 12.4 的方法分析。
 
 ## 与 24.16 本地网络权限适配的关系
 
-24.16 处理的是 Android 17 `ACCESS_LOCAL_NETWORK`、LAN 设备发现、Cast / IoT / 本地 HTTP server 和流媒体速率上限。本节处理公网 HTTPS 连接的 ECH 与 Network Security Config。两者都属于 Android 17 网络行为变化，但失败位置完全不同。
+24.16 处理 Android 17 `ACCESS_LOCAL_NETWORK`、局域网设备发现、Cast、IoT 与本地 HTTP 服务。本节处理公网 HTTPS 连接中的 ECH 与 Network Security Configuration。两者的失败阶段不同。
 
-排障时先看目标地址。公网域名的 TLS 握手失败，进入 ECH / CT / 证书 / 协议 fallback 路径；RFC1918、link-local、`.local`、mDNS、SSDP、本地 HTTP 服务失败，进入本地网络权限路径。把这两类错误拆开，线上工单才能直接分配给网络安全、播放器、IoT 或基础网络库团队。
+公网域名的 TLS 握手失败应检查 DNS HTTPS 记录、ECH、CT、证书与协议回退。RFC 1918 地址、链路本地地址、`.local`、mDNS、SSDP 和本地 HTTP 服务失败时，应先检查本地网络权限。工单中记录目标地址类别和失败阶段，可以避免把权限拒绝误报为 TLS 问题。
+
+## 小结
+
+Android 17 提供了 ECH 所需的平台接口，并为 `targetSdkVersion 37` 的应用把 `domainEncryption` 默认设为 `enabled`。生效仍取决于网络库接入和服务端支持。正式 XML 只接受 `enabled` 与 `disabled`；公开 API 中的 `opportunistic` 常量不能直接写入 XML。
+
+验收时要沿着策略、HTTPS DNS、TLS 配置、服务端协商和重试逐段取证。没有 ECH 配置时发送的是 GREASE，不能计为 ECH 成功；配置失配时必须验证公开名称后再使用重试配置。CT、HTTP/3 和本地网络权限各有独立触发条件，不能因它们都表现为连接失败就归入 ECH。
