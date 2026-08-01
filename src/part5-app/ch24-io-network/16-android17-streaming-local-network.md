@@ -98,141 +98,361 @@ last_deepseek_cn_review_at: 2026-07-04
 
 <!-- outline-end -->
 
-## 这节解决什么问题
+## 本节边界
 
-Android 17 把两类网络适配推到应用侧：流媒体可以读取运营商分配的上下行速率上限，本地网络访问在 `targetSdkVersion >= 37` 后进入运行时权限模型。前者影响视频、音频、直播和 RTC 的码率选择；后者影响投屏、局域网设备发现、本地 HTTP 服务和 IoT 控制。
+Android 17 同时增加了流媒体数据计划速率接口和本地网络访问权限。它们都属于网络功能，却没有共同的控制对象：
 
-这两个变化各走各的路径，不要合并成笼统的“网络请求优化”。普通 REST / GraphQL API 继续走 24.10 和 24.14 的 DNS、连接复用、超时、重试、弱网策略；本节只处理媒体码率预算和 LAN 访问授权。低带宽、卫星网络和请求分段策略见 24.11、24.14，TLS / ECH / 证书透明度见 12.4。
+- `SubscriptionInfo` 的新接口描述运营商为某个订阅提供的流媒体速率上限，用于视频、音频、直播或 RTC 的质量预算。
+- `ACCESS_LOCAL_NETWORK` 控制应用能否发现或连接局域网设备，也控制局域网设备能否连接应用进程中的服务器。
+- 登录、Feed、配置和图片列表等互联网请求仍按 DNS、连接、重试与弱网规则处理。
 
-## 三类网络路径要分开建模
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台基准。24.11 说明低带宽与卫星网络，24.14 说明请求预算，24.18 说明 ECH 与证书透明度；这里集中处理流媒体速率信号和局域网授权。
 
-Android 17 相关改动落到三条路径上，触发条件和失败形态不同。
+## 先给网络路径分类
 
-| 路径 | 典型业务 | Android 17 相关点 | 失败或退化形态 | 处理入口 |
+同一页面可能同时包含媒体分片、埋点和投屏发现。若只按页面统计“网络失败”，三种问题会混在一起。
+
+| 路径 | 典型业务 | Android 17 变化 | 主要失败形态 | 决策入口 |
 | --- | --- | --- | --- | --- |
-| 流媒体传输 | 点播、直播、音频流、RTC 上行 | `SubscriptionInfo` 新增 streaming app max bitrate API | 初始码率过高、首缓冲变长、频繁降码率 | ABR 上限、清晰度默认档、分运营商指标 |
-| 本地网络访问 | Cast、IoT、mDNS、SSDP、本地 HTTP server | `ACCESS_LOCAL_NETWORK` 在 `targetSdkVersion >= 37` 下强制执行 | UDP `EPERM`、TCP 被 LNP 阻断、设备发现为空 | 系统选择器、运行时权限、拒绝后降级 |
-| 普通 API 请求 | 登录、Feed、配置、埋点、图片列表 | 受 DNS、TLS、弱网、队列调度影响 | 超时、重试、连接失败、回调延迟 | 24.10、24.14、26.17 |
+| 蜂窝流媒体 | 点播、直播、音频流、RTC 上行 | 订阅对象提供流媒体上下行速率上限 | 初始质量过高、缓冲增加、上行编码超出预算 | ABR、编码器和清晰度编排 |
+| 本地网络 | Cast、IoT、mDNS、SSDP、本地 HTTP 服务 | 目标 API 37 后默认阻断，需系统设备选择器或运行时权限 | 发现失败、UDP `EPERM`、TCP 超时、入站连接失败 | 权限与设备选择流程 |
+| 普通互联网请求 | 登录、Feed、配置、图片、遥测 | 不由上述速率上限或本地网络权限统一控制 | DNS、TLS、连接、服务端或队列失败 | 24.10、24.14、26.17 |
 
-使用这张表时，先给每个请求标记 `traffic_class`，再决定用哪个策略组。媒体流不要沿用普通 API 的重试策略；局域网发现失败也不要直接归因到 DNS 或 TLS。
+建议在诊断事件中记录低基数的 `request_class`，例如 `media_segment`、`lan_discovery` 和 `api`。不要把订阅标识、设备地址或服务实例名写入通用遥测。
 
-## Data Plan Streaming API 只是一条上限信号
+## 流媒体速率接口表达什么
 
-Android 17 在 `SubscriptionInfo` 上新增 `getStreamingAppMaxDownlinkKbps()` 和 `getStreamingAppMaxUplinkKbps()`，返回运营商为流媒体应用分配的最大下行或上行速率，单位是 Kbps；未知或不适用时返回 `SubscriptionPlan.BITRATE_UNKNOWN`。[已验证: 官方文档, https://developer.android.com/reference/android/telephony/SubscriptionInfo#getStreamingAppMaxDownlinkKbps()]
+Android 17 为 `SubscriptionInfo` 增加：
 
-这条信号适合做 ABR 的“外部上限”，不要拿去替代实时带宽估计。运营商上限是套餐或网络策略允许的媒体速率，`BandwidthMeter` 是最近传输样本推导出的吞吐估计——一个是上限，一个是估计值。两者冲突时，播放器取更保守的一方，同时保留冷启动默认档位。
+- `getStreamingAppMaxDownlinkKbps()`：流媒体应用在该订阅上的最大下行速率。
+- `getStreamingAppMaxUplinkKbps()`：流媒体应用在该订阅上的最大上行速率。
 
-读取 `SubscriptionInfo` 还要处理权限边界。`SubscriptionManager.getActiveSubscriptionInfoList()` 需要 `READ_PHONE_STATE` 或运营商权限，返回列表按 SIM slot 和 subscription id 排序；从 Android SDK 35 起不会返回 `null`，但仍可能返回空列表或只返回调用方可见的订阅。[已验证: 官方文档, https://developer.android.com/reference/android/telephony/SubscriptionManager#getActiveSubscriptionInfoList()]
+单位均为 Kbps，语义来自 GSMA TS.43。运营商未提供该值或该值不适用时，接口返回 `SubscriptionPlan.BITRATE_UNKNOWN`；在 API 37 的公开签名中，该常量为 `-1L`。它是数据计划或运营商策略信号，不是播放器刚测得的端到端吞吐，也不保证服务器、无线链路和设备解码能达到该速率。
 
-这段代码的重点是预算层的接口行为，关键看 `BITRATE_UNKNOWN` 和 `READ_PHONE_STATE` 失败后的降级路径：
+读取订阅列表还有两个前提：
+
+- `getActiveSubscriptionInfoList()` 要求 `READ_PHONE_STATE` 或运营商权限。普通媒体应用不应为了一个可选优化，在没有产品理由时强迫用户授予电话状态权限。
+- 返回值只包含调用方可见的活动订阅。Android SDK 35 起文档承诺不再返回 `null`，但仍可能是空列表，也可能因设备不支持订阅功能而抛出 `UnsupportedOperationException`。
+
+### 读取当前数据订阅，而非所有 SIM 的最小值
+
+双卡设备的两份 `SubscriptionInfo` 可能对应不同套餐。对所有可见订阅取最小值，会让一张未承载当前媒体流量的 SIM 限制另一张 SIM。下面的代码只读取系统默认数据订阅，并把未知、无权限和不支持都表示为 `null`。
 
 ```kotlin
+data class StreamingPlanLimit(
+    val subscriptionId: Int,
+    val downlinkKbps: Long?,
+    val uplinkKbps: Long?,
+)
+
 @RequiresApi(37)
-fun streamingBudgetKbps(
+fun readDefaultDataStreamingPlanLimit(
     context: Context,
-    fallbackKbps: Long = 2_500L,
-): Long {
-    val subscriptionManager = context.getSystemService(SubscriptionManager::class.java)
-    val subscriptions = try {
-        subscriptionManager.activeSubscriptionInfoList.orEmpty()
-    } catch (security: SecurityException) {
-        return fallbackKbps
-    } catch (unsupported: UnsupportedOperationException) {
-        return fallbackKbps
+): StreamingPlanLimit? {
+    val supportsSubscriptions = context.packageManager.hasSystemFeature(
+        PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION,
+    )
+    if (!supportsSubscriptions) {
+        return null
     }
 
-    val caps = subscriptions
-        .asSequence()
-        .map { it.streamingAppMaxDownlinkKbps }
-        .filter { it != SubscriptionPlan.BITRATE_UNKNOWN && it > 0L }
-        .toList()
+    val subscriptionId = SubscriptionManager.getDefaultDataSubscriptionId()
+    if (!SubscriptionManager.isValidSubscriptionId(subscriptionId)) {
+        return null
+    }
 
-    return caps.minOrNull() ?: fallbackKbps
+    val manager = context.getSystemService(SubscriptionManager::class.java)
+        ?: return null
+    val subscriptions = try {
+        manager.activeSubscriptionInfoList.orEmpty()
+    } catch (_: SecurityException) {
+        return null
+    } catch (_: UnsupportedOperationException) {
+        return null
+    }
+
+    val subscription = subscriptions.firstOrNull {
+        it.subscriptionId == subscriptionId
+    } ?: return null
+
+    fun known(value: Long): Long? {
+        return value.takeIf {
+            it != SubscriptionPlan.BITRATE_UNKNOWN && it > 0L
+        }
+    }
+
+    val downlink = known(subscription.streamingAppMaxDownlinkKbps)
+    val uplink = known(subscription.streamingAppMaxUplinkKbps)
+    if (downlink == null && uplink == null) {
+        return null
+    }
+
+    return StreamingPlanLimit(
+        subscriptionId = subscriptionId,
+        downlinkKbps = downlink,
+        uplinkKbps = uplink,
+    )
 }
 ```
 
-`fallbackKbps` 不要硬编码成全局常量。冷启动时应该按网络类型、历史首缓冲、地区、运营商和设备档位来取；拿到平台上限后，只把它用作 ABR 可选档位的上界。双卡设备按当前数据订阅优先；拿不到当前数据订阅到 `SubscriptionInfo` 的稳定映射时，取可见 cap 的较小值更保守。
+这段代码没有提供任意默认码率。调用方收到 `null` 后应继续使用已经验证过的冷启动档位和实时估计。它也只适用于媒体流量走默认蜂窝数据订阅的场景；Wi-Fi、VPN、应用绑定的其他 `Network` 或企业专用网络需要按媒体连接的实际路径判断，不能机械套用默认数据订阅的值。
 
-## ABR 接入点：限制候选档位，不篡改测速
+默认数据订阅变化、活动订阅变化、飞行模式恢复以及媒体连接从 Wi-Fi 切到蜂窝时，都要重新计算。不要把 `subscriptionId` 当作稳定用户标识上传。
 
-Media3 的 `AdaptiveTrackSelection` 是基于带宽的自适应选择，选中轨道会随网络条件和缓冲状态变化；默认 `DEFAULT_BANDWIDTH_FRACTION` 是 `0.7f`，用于给带宽估计留余量。[已验证: 官方文档, https://developer.android.com/reference/androidx/media3/exoplayer/trackselection/AdaptiveTrackSelection]
+## 把运营商上限接入 ABR
 
-`DefaultBandwidthMeter` 的默认初始估计是 `1_000_000` bps，网络类型不可用或离线时会用这类初始值；它还维护 2G、3G、4G、5G 和 Wi-Fi 的默认初始估计。[已验证: 官方文档, https://developer.android.com/reference/androidx/media3/exoplayer/upstream/DefaultBandwidthMeter]
+自适应码率至少有三类输入：
 
-工程接入的时候，把平台 cap 转成“可选 track 的最高码率”，不要直接用运营商 cap 覆盖掉 `BandwidthMeter` 的实时估计。覆写测速样本会污染后续估计，切换网络时的判断也会变得迟钝。
-
-| 输入信号 | 更新频率 | 适合影响 | 不适合影响 |
+| 输入 | 含义 | 更新时机 | 适合影响 |
 | --- | --- | --- | --- |
-| `streamingAppMaxDownlinkKbps` | 订阅、运营商策略、网络切换时刷新 | 最大视频档、默认清晰度、首段码率 | 单个 segment 的重试时机 |
-| `DefaultBandwidthMeter.bitrateEstimate` | 传输样本持续刷新 | 当前档位升降、缓冲恢复 | 套餐策略判断 |
-| 首缓冲 / 卡顿指标 | 播放会话内持续采样 | 灰度回滚、地区和运营商分组 | 单次权限弹窗策略 |
+| 运营商速率上限 | 该订阅为流媒体分配的最大上下行速率 | 订阅或承载网络变化 | 候选质量上界、初始质量、编码目标 |
+| `BandwidthMeter` 估计 | 最近媒体传输样本推导的可用吞吐 | 分片传输持续更新 | 播放中的升降档 |
+| 缓冲与播放状态 | 已缓冲时长、卡顿、直播延迟和解码能力 | 播放会话内更新 | 是否允许升档、是否快速降档 |
 
-如果业务有服务端清晰度编排，客户端 cap 还要同步给服务端，但只传区间或档位，不上传完整订阅标识。服务端返回的 media playlist 可以少下发超过 cap 的档位，减少 manifest 解析和错误选择成本。
+截至本文复核时，Media3 `AdaptiveTrackSelection.DEFAULT_BANDWIDTH_FRACTION` 为 `0.7f`，`DefaultBandwidthMeter.DEFAULT_INITIAL_BITRATE_ESTIMATE` 为 `1_000_000` bps。它们属于具体 Media3 版本的默认参数，基线必须记录播放器和 Media3 的精确版本，不能把默认值当作所有版本的固定规则。
 
-## `ACCESS_LOCAL_NETWORK` 的迁移路径
+运营商上限也不能直接写成视频轨道的最大码率。一次媒体会话还包含音频、容器、清单、加密、请求头、重传和质量探测等成本。合理的顺序是：
 
-Android 17 为本地网络访问引入 `ACCESS_LOCAL_NETWORK` 运行时权限。对 `targetSdkVersion >= 37` 的应用，本地网络默认被阻断；应用要么使用系统介导的设备选择器，要么在运行时请求该权限。Android 16 允许应用 opt-in 测试本地网络限制，Android 17 对目标 SDK 37 及以上强制执行。[已验证: 官方文档, https://developer.android.com/about/versions/17/behavior-changes-17]
+1. 将已知的 Kbps 按十进制换算为 bps。
+2. 根据音频与协议成本，为视频或上行编码保留经过实验验证的余量。
+3. 使用该预算过滤候选轨道或约束编码器目标。
+4. 仍由实时吞吐、缓冲状态和解码能力在剩余候选中选择。
 
-本地网络权限属于 `NEARBY_DEVICES` 权限组。用户已经授予同组其他权限时，系统可能不再弹出新的提示；用户拒绝或在设置里撤销后，本地网络流量会被阻断。官方迁移表还说明，`targetSdkVersion < 37` 的旧应用如果已有 `INTERNET` 权限，会获得临时隐式授权，升级到 37 后不再依赖这条路径。[已验证: 官方文档, https://developer.android.com/privacy-and-security/local-network-permission]
+不要用运营商上限覆写 `DefaultBandwidthMeter` 的采样结果。这样会把“数据计划允许多少”和“当前路径传得多快”混成一个数，网络切换后的估计也会失真。
 
-Manifest 只解决声明问题，运行时仍要按权限状态分支。下面的声明用于 target SDK 37 后直接访问 LAN 的场景：
+点播与直播下行可以约束候选视频轨道，RTC 或直播推流则使用上行接口约束编码目标。信令、小型控制请求和鉴权不属于媒体码率本身，不应因为上行速率未知而阻止建连。
+
+若服务端参与清晰度编排，客户端只需上传离散的预算档位或受控区间。服务端仍要保留兼容清单与切换能力，不能根据一次上报永久删除更低质量的轨道。
+
+## Android 17 如何界定本地网络
+
+本地网络保护作用于使用广播能力接口的 Wi-Fi、以太网等网络，不包含蜂窝 WWAN 或 VPN。官方定义覆盖的范围比 RFC 1918 更广，包括：
+
+- IPv4 链路本地地址、`100.64.0.0/10`、RFC 1918 地址。
+- IPv6 链路本地、直连路由、Thread 等存根网络和多子网。
+- IPv4/IPv6 组播地址以及 IPv4 广播地址。
+
+因此，应用不能靠 `192.168.x.x` 这一种前缀判断是否需要权限。mDNS、SSDP、`.local` 解析、局域网 HTTP、OkHttp/Cronet 访问本地地址、WebView 内的本地请求，以及应用监听端口接受局域网连接，都在影响范围内。WebView 使用宿主应用的权限状态。
+
+系统 DNS 服务器位于本地网络时，发往其 53 端口的 DNS 流量属于文档列出的例外。该例外不等于应用可以绕过权限访问任意本地 DNS 服务或其他端口。
+
+## Android 16 到 Android 17 的迁移
+
+| 环境 | 默认行为 | 测试或发布要求 |
+| --- | --- | --- |
+| Android 16 | 本地网络限制由应用通过兼容性变更主动启用；测试期间使用 `NEARBY_WIFI_DEVICES` 恢复访问 | 在目标 API 升级前覆盖发现、连接、监听和撤权 |
+| Android 17，`targetSdk < 37` | 持有 `INTERNET` 的旧应用获得临时隐式授权 | 不要声明或请求 `ACCESS_LOCAL_NETWORK`；这只是迁移兼容 |
+| Android 17，`targetSdk >= 37` | 本地网络默认阻断 | 使用系统设备选择器，或声明并请求 `ACCESS_LOCAL_NETWORK` |
+
+Android 16 的兼容性测试需要启用变更并重启设备。下面命令用于测试包，不应出现在应用运行逻辑中。
+
+```shell
+adb shell am compat enable RESTRICT_LOCAL_NETWORK com.example.app
+adb reboot
+```
+
+启用后，应用进程中的本地网络套接字会受到限制。Android 16 文档同时指出，像 `NsdManager` 这样在应用进程外执行本地网络操作的框架 API 不受这次主动测试完整覆盖，因此仍要在 Android 17 / API 37 真机上复测系统设备选择器和权限拒绝路径。
+
+## 两条授权路径
+
+### 路径一：系统设备选择器
+
+只需要连接用户明确选择的一台设备时，优先使用系统介导路径：
+
+- Cast 场景可使用 Output Switcher，让系统完成设备选择。
+- mDNS/DNS-SD 场景可使用 `DiscoveryRequest.FLAG_SHOW_PICKER`。
+- 用户选中的服务会获得按服务授权，不需要应用取得整个局域网的访问权限。
+
+Android 17 的 NSD 设备选择器 API 同时发布在 T SDK Extension 22。运行在可接收 SDK Extension 更新的旧平台时，应检查 T 扩展版本；本章示例只展示 Android 17 直接路径。
+
+下面的代码显示一次系统 NSD 设备选择。回调对象需要由页面或控制器保存，以便在生命周期结束时取消注册。
+
+```kotlin
+@RequiresApi(37)
+fun showNsdServicePicker(
+    nsdManager: NsdManager,
+    executor: Executor,
+    serviceType: String,
+    onSelected: (NsdServiceInfo) -> Unit,
+    onError: (Int) -> Unit,
+): NsdManager.ServiceInfoCallback {
+    val request = DiscoveryRequest.Builder(serviceType)
+        .setFlags(DiscoveryRequest.FLAG_SHOW_PICKER)
+        .build()
+
+    val callback = object : NsdManager.ServiceInfoCallback {
+        override fun onServiceUpdated(serviceInfo: NsdServiceInfo) {
+            onSelected(serviceInfo)
+        }
+
+        override fun onServiceLost() = Unit
+
+        override fun onServiceInfoCallbackRegistrationFailed(errorCode: Int) {
+            onError(errorCode)
+        }
+
+        override fun onServiceInfoCallbackUnregistered() = Unit
+    }
+
+    nsdManager.registerServiceInfoCallback(request, executor, callback)
+    return callback
+}
+```
+
+`FLAG_SHOW_PICKER` 一次最多返回一个用户选择的服务，并在用户选择或取消后停止本次发现。连接时使用回调给出的 `getHostAddresses()`、端口和 `getNetwork()`；不要只保存 IP，因为 DHCP、IPv6 地址和承载网络都可能变化。
+
+系统会记住用户批准的服务，授权可跨重启保留，但用户或系统仍可能撤销。再次连接前可用 `checkPermissionForService()` 查询权限，并通过 `registerServiceInfoCallback(NsdServiceInfo, ...)` 获取最新地址。需要无界面查找曾批准服务时使用 `FLAG_USER_APPROVED_ONLY`；它不能与 `FLAG_SHOW_PICKER` 同时设置。
+
+### 路径二：运行时权限
+
+持续扫描、多设备控制、后台维护连接、本地服务器或自定义发现协议通常需要广泛访问。目标 API 37 的应用先在清单中声明：
 
 ```xml
 <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 ```
 
-权限请求前要先判断业务是否能使用系统选择器。对 Cast 类媒体投屏，output switcher 由系统处理本地发现和连接，应用可以避开宽泛权限；对 mDNS 设备发现，`DiscoveryRequest#FLAG_SHOW_PICKER`、`NsdManager#registerServiceInfoCallback` 和 `NsdManager#resolveService` 可以让用户选择设备，随后连接由系统返回的地址。需要持续扫描、批量控制或后台维护连接的 IoT 场景，才适合请求 `ACCESS_LOCAL_NETWORK`。[已验证: 官方文档, https://developer.android.com/privacy-and-security/local-network-permission]
+声明不会自动授权。下面的 `ComponentActivity` 片段只在用户启动直接局域网功能时请求权限，并为旧系统保留原有路径。
 
-## 本地网络失败不要和 TLS 失败混在一起
+```kotlin
+private val requestLocalNetworkPermission =
+    registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            startDirectLanFlow()
+        } else {
+            showSystemPickerOrOfflineAlternative()
+        }
+    }
 
-Android 17 还为目标 SDK 37 及以上应用启用 ECH。ECH 只在网络库和服务器都支持时生效；无法协商时会发送带随机内容的 ECH GREASE 扩展。平台还新增 `<domainEncryption>`，允许在 Network Security Configuration 中按域名控制 ECH 模式。[已验证: 官方文档, https://developer.android.com/about/versions/17/behavior-changes-17]
+private fun startLanFeature() {
+    val granted = Build.VERSION.SDK_INT < 37 ||
+        ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_LOCAL_NETWORK,
+        ) == PackageManager.PERMISSION_GRANTED
 
-ECH、证书透明度、证书链、SNI 和 ALPN 属于互联网 TLS 取证；`ACCESS_LOCAL_NETWORK` 属于本地地址访问授权。把这两类失败混到同一个 `NetworkError`，线上排查方向就会跑偏。
+    if (granted) {
+        startDirectLanFlow()
+    } else {
+        requestLocalNetworkPermission.launch(
+            Manifest.permission.ACCESS_LOCAL_NETWORK,
+        )
+    }
+}
+```
 
-| 失败类别 | 典型异常 / 现象 | 应记录字段 | 关联章节 |
+权限属于 `NEARBY_DEVICES` 权限组。用户已经允许同组其他权限时，系统可能直接返回已授权，不显示新弹窗。拒绝或在设置中撤销后，要停止扫描、关闭相关套接字，并提供系统设备选择器、手动操作或离线说明；不要在后台反复发起权限请求。
+
+## 失败分类与系统证据
+
+本地网络权限、TLS 和弱网的外观可能都是“连接失败”，诊断字段必须分开。
+
+| 类别 | Android 17 常见表现 | 记录字段 | 不应推断 |
 | --- | --- | --- | --- |
-| LNP 阻断 | UDP 返回 `EPERM`，TCP 可用 `android_getnetworkblockedreason(sockFd)` 识别 `ANDROID_NETWORK_BLOCKED_REASON_LNP` | target SDK、权限状态、协议、目标地址类型、用户是否从 picker 进入 | 16.5、24.16 |
-| TLS / ECH | 握手失败、证书校验失败、ECH 配置不兼容 | domain、TLS version、cipher suite、ECH mode、证书错误码 | 12.4 |
-| 弱网 / 低带宽 | 首包慢、segment 下载超时、连续降码率 | network type、RTT、throughput、buffered duration、cap Kbps | 24.11、24.14、26.17 |
+| 本地网络阻断 | UDP 与一般权限拒绝通常返回 `EPERM`；TCP 通常表现为超时 | target SDK、权限状态、传输协议、目标地址类别、设备选择器路径 | 服务器下线或 TLS 证书错误 |
+| TLS / ECH | TLS 握手、证书验证、SNI/ECH 或 ALPN 失败 | 域名分组、TLS 版本、网络库、证书错误类别 | 缺少本地网络权限 |
+| 弱网与低带宽 | 首包慢、媒体分片超时、缓冲下降 | 网络会话、吞吐估计、缓冲时长、运营商速率是否已知 | 运营商上限一定生效 |
+| NSD 选择器 | `FAILURE_PERMISSION_DENIED`、未选择服务、服务授权被撤销 | API/扩展版本、服务类型分组、授权查询结果 | 用户拒绝广泛权限 |
 
-浏览器、内置 WebView 容器和本地开发服务要额外记录目标 IP 是否属于 RFC1918、IPv6 ULA、link-local 或 `.local` 名称。这样能把“访问内网服务被 LNP 阻断”和“公网域名 TLS 失败”拆开。
+Native 网络代码可以在 TCP 套接字上调用 `android_getnetworkblockedreason(sockFd)`；返回 `ANDROID_NETWORK_BLOCKED_REASON_LNP` 时，才能把该连接归因到本地网络保护。普通 Java/Kotlin TCP 超时没有同等精确的公开错误码，不能见到超时就上报为权限拒绝。
 
-## 和低带宽/卫星网络的关系
+`android-17.0.0_r1` 的实现提供了两条可核对的证据：
 
-24.11 已把低带宽和卫星网络处理成预算模型：先识别网络能力，再收缩并发、请求体、重试和媒体质量。`streamingAppMaxDownlinkKbps()` 是这套模型里新增的媒体预算来源，不能单独驱动所有网络策略。
+- `PermissionMonitor` 接收 `ACCESS_LOCAL_NETWORK` 权限位，并把结果同步到网络 BPF 权限映射。
+- native Connectivity 接口读取套接字的 `SO_ANDROID_DROP_REASON`，只在包含本地网络保护原因时返回 `ANDROID_NETWORK_BLOCKED_REASON_LNP`。
 
-推荐的调度输入如下：
+这也解释了为何更换 OkHttp、Cronet 或 Java Socket 不能绕开限制：保护位于网络栈下层，而不是某个 HTTP 客户端的权限检查。
 
-- `media_cap_kbps`: 来自 `SubscriptionInfo` 的流媒体上下行上限，未知时用历史和网络类型兜底。
-- `measured_bps`: 来自播放器或网络库的近期吞吐估计，用于短周期升降档。
-- `network_profile`: 蜂窝、Wi-Fi、卫星、VPN、漫游、低数据模式等环境标签。
-- `local_access_state`: `granted`、`denied`、`picker_granted`、`legacy_implicit`、`unknown`。
-- `request_class`: `media_segment`、`media_manifest`、`lan_discovery`、`lan_control`、`api`、`analytics`。
+## 与低带宽、卫星和 ECH 的关系
 
-调度策略按请求类别收敛。`media_segment` 受 `media_cap_kbps` 和 `measured_bps` 约束；`lan_discovery` 受 `local_access_state` 约束；普通 `api` 请求只参考弱网策略和连接池状态。这样能避免一个权限拒绝把所有网络请求都降级，也避免蜂窝套餐 cap 影响 Wi-Fi 下的局域网设备控制。
+运营商流媒体上限只是媒体预算来源之一。应用仍要结合 `NetworkCapabilities`、实时吞吐、缓冲、漫游、计费和卫星网络状态：
 
-## 灰度实验和指标口径
+- `media_plan_limit_kbps` 只约束当前订阅上的媒体质量。
+- `measured_bps` 反映近期路径吞吐，用于短周期升降档。
+- `network_profile` 描述蜂窝、Wi-Fi、卫星、VPN、漫游和计费状态。
+- `local_access_state` 描述广泛权限、设备选择授权、拒绝和旧应用隐式授权。
+- `request_class` 决定媒体、本地发现、控制和普通 API 各自使用哪组规则。
 
-target SDK 37 的灰度要拆成两条实验线。
+本地网络权限拒绝不能触发所有互联网请求降级，蜂窝数据计划上限也不能限制 Wi-Fi 局域网控制。
 
-| 实验线 | 对照组 | 实验组 | 观察指标 | 回滚条件 |
-| --- | --- | --- | --- | --- |
-| 流媒体 cap | 只用 Media3 默认 ABR 和历史测速 | ABR 叠加 `SubscriptionInfo` cap | 首缓冲 P50/P90、首段码率、降码率次数、rebuffer ratio、播放失败率 | 首缓冲或卡顿按运营商分组升高 |
-| 本地网络权限 | target SDK 36 或 Android 16 opt-in | target SDK 37 + picker / runtime permission | 权限授权率、拒绝后留存、设备发现成功率、投屏成功率、IoT 控制成功率 | 局域网发现成功率下降且 picker 不能覆盖 |
+Android 17 对目标 API 37 的应用还默认启用 ECH 配置。只有网络库和服务端都支持时才会协商 ECH；没有配置时可能发送 ECH GREASE。`<domainEncryption>` 控制域名级 ECH 模式，它不授予局域网访问，也不改变 `ACCESS_LOCAL_NETWORK` 的判定。详细安全边界见 24.18。
 
-指标维度至少包含 Android 版本、target SDK、网络类型、运营商、国家/地区、是否双卡、播放器版本、Media3 版本、是否使用系统 picker。权限弹窗要单独记录入口页和业务动作，不要只记录全局授权率；投屏入口、设备列表页、播放页和设备控制页的授权转化差异需要分入口评估。
+## 验证与灰度
 
-## Android 17 网络行为变更回归清单
+### 流媒体速率实验
 
-发布前按功能回归，不按 API 名称回归。
+对照组和候选组使用相同播放器、Media3 版本、媒体清单、CDN 和服务端配置，只改变运营商速率上限如何进入质量选择。至少并列报告：
 
-- 流媒体播放: 蜂窝下读取 `streamingAppMaxDownlinkKbps()`，未知值走历史默认档；双卡切换、飞行模式恢复、Wi-Fi / 蜂窝切换后刷新 cap；低 cap 下不会选择超过预算的首段码率。
-- RTC / 直播上行: 读取 `getStreamingAppMaxUplinkKbps()`，未知值不阻断开播；上行 cap 只影响编码目标码率，不影响信令连接。
-- Cast: 优先走 output switcher；拒绝 `ACCESS_LOCAL_NETWORK` 后仍能使用系统介导路径；直接连接 receiver 的路径有权限态提示和降级文案。
-- IoT / mDNS: Android 16 通过 `adb shell am compat enable RESTRICT_LOCAL_NETWORK <package_name>` 提前压测；Android 17 target SDK 37 下验证拒绝、撤销、再次授权、系统 picker 选中设备四种路径。
-- TLS / ECH: 按域名验证 `<domainEncryption>` 配置；ECH 失败不应被归类成 LNP；证书透明度和证书链失败进入 12.4 的安全连接指标。
-- 回调投递: 网络完成后 UI 更新延迟进入 16.5 的 MessageQueue / DeliQueue 回归项，不把它当成链路吞吐问题。
+- 速率上限已知、未知、无读取权限和不支持订阅功能的样本数。
+- 当前网络、默认数据订阅是否匹配，以及网络切换前后的重新计算结果。
+- 启播成功率、首缓冲分布、首个媒体分片质量、升降档次数、重缓冲次数与时长。
+- 下行媒体字节、重复下载字节、直播延迟或 RTC 上行质量。
+- 按运营商分组的结果，但不保存原始订阅标识。
 
-## 小结
+只统计成功播放会隐藏因候选策略导致的早期失败。质量提升也要同时检查流量、功耗、解码丢帧和设备温度。
 
-Android 17 的网络适配要按路径拆开：流媒体用运营商 cap 收紧 ABR 候选档位，本地网络用 picker 或 `ACCESS_LOCAL_NETWORK` 处理授权，普通 API 请求沿用 DNS、TLS、弱网和连接池治理。上线判断看分组指标，不看单个 API 是否调用成功。
+### 本地网络迁移实验
+
+`targetSdkVersion` 写在应用清单中，不能在同一个安装包里按用户随机切换。可使用以下顺序降低迁移风险：
+
+1. 在 Android 16 实验室设备上启用兼容性变更，盘点直接套接字与框架 API。
+2. 使用目标 API 37 的预发布构建，在 Android 17 真机验证系统设备选择器、广泛权限和拒绝路径。
+3. 通过测试轨道或分阶段发布比较新旧应用版本，分开记录 target SDK 和版本号。
+4. 发布期间为投屏、设备发现、设备连接、本地服务器和权限入口分别设置停止条件。
+
+权限授权率的分母应是用户主动触发且业务确需广泛访问的次数。已有 `NEARBY_DEVICES` 授权的用户可能没有弹窗，设备选择器路径也不会请求广泛权限，把这些会话放进同一个弹窗转化率会产生错误结论。
+
+本地网络功能至少覆盖：
+
+- 出站 TCP，入站 TCP，本地 UDP 单播、组播和广播。
+- mDNS、SSDP、`.local` 名称、本地 HTTP/HTTPS、WebView 内本地请求。
+- 系统设备选择器选择、取消、跨重启重连、服务地址变化和授权撤销。
+- 广泛权限首次允许、拒绝、设置中撤销和再次进入功能。
+- Wi-Fi、以太网、IPv4、IPv6、多子网，以及 VPN 和蜂窝不应被误判的路径。
+
+### 把回调延迟和链路延迟分开
+
+套接字或播放器已经收到数据后，主线程排队仍可能延迟界面更新。Android 17 的 MessageQueue/DeliQueue 变化属于 16.5 的回调投递回归，不能算进 DNS、连接或媒体吞吐。应分别记录网络完成、播放器消费和界面提交事件。
+
+## `android-17.0.0_r1` 源码锚点
+
+| 职责 | 源码 | 复核重点 |
+| --- | --- | --- |
+| 公开 API 集合 | [`37.0/public/api/android.txt`](https://android.googlesource.com/platform/prebuilts/sdk/+/refs/tags/android-17.0.0_r1/37.0/public/api/android.txt) | 两个流媒体速率接口、`BITRATE_UNKNOWN`、权限和 NSD 设备选择器签名 |
+| 订阅速率字段 | [`SubscriptionInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/telephony/java/android/telephony/SubscriptionInfo.java) | 上下行值的单位、未知值和对象字段 |
+| 活动订阅读取 | [`SubscriptionManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/telephony/java/android/telephony/SubscriptionManager.java) | 权限、可见订阅、默认数据订阅 |
+| 权限声明 | [`AndroidManifest.xml`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/AndroidManifest.xml) | `ACCESS_LOCAL_NETWORK` 的危险权限声明 |
+| NSD 请求 | [`DiscoveryRequest.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework-t/src/android/net/nsd/DiscoveryRequest.java) | `FLAG_SHOW_PICKER` 与 `FLAG_USER_APPROVED_ONLY` 的约束 |
+| NSD 生命周期 | [`NsdManager.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework-t/src/android/net/nsd/NsdManager.java) | 服务选择、权限查询、回调注册与取消 |
+| 权限传播 | [`PermissionMonitor.java`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/connectivity/PermissionMonitor.java) | 权限位如何进入网络 BPF 映射 |
+| 阻断原因 | [`connectivity_native.cpp`](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/libconnectivity/src/connectivity_native.cpp) | `SO_ANDROID_DROP_REASON` 与 LNP 原因映射 |
+
+源码锚点用于确认 Android 17 首发版本的实现边界。应用代码仍应调用公开 SDK，并记录设备系统构建、SDK Extension、播放器与网络库版本；不能依赖隐藏接口或具体 BPF 映射布局。
+
+## 发布前检查清单
+
+- 流媒体速率上限只用于实际承载媒体流量的订阅和网络。
+- 未知、无权限、无订阅功能都有经过验证的默认质量策略。
+- 双卡读取系统默认数据订阅，没有对所有 SIM 取最小值。
+- 运营商上限没有覆写实时吞吐估计，也没有直接等同于视频轨道码率。
+- 下行、上行、普通 API 与局域网请求使用各自的预算和错误分类。
+- 目标 API 37 前已完成 Android 16 兼容性测试和 Android 17 真机测试。
+- 只连接用户选择设备的业务优先使用 Output Switcher 或 NSD 设备选择器。
+- 广泛权限只在明确的用户动作后请求，拒绝和撤销会停止相关网络操作。
+- 系统选择的 NSD 服务在每次连接前刷新地址与 `Network`。
+- TCP 超时不直接标记为 LNP；Native 诊断使用明确的阻断原因。
+- ECH、TLS、本地网络权限和弱网指标没有混用。
+- 每次灰度同时观察功能成功率、媒体体验、字节、功耗和权限路径。
+
+## 参考资料
+
+- [Android 17 目标版本行为变更](https://developer.android.com/about/versions/17/behavior-changes-17)
+- [Android 本地网络权限](https://developer.android.com/privacy-and-security/local-network-permission)
+- [Android 本地网络定义](https://developer.android.com/privacy-and-security/local-network-definition)
+- [`SubscriptionInfo` API](https://developer.android.com/reference/android/telephony/SubscriptionInfo)
+- [`SubscriptionManager.getActiveSubscriptionInfoList()`](https://developer.android.com/reference/android/telephony/SubscriptionManager#getActiveSubscriptionInfoList)
+- [`SubscriptionPlan.BITRATE_UNKNOWN`](https://developer.android.com/reference/android/telephony/SubscriptionPlan#BITRATE_UNKNOWN)
+- [`NsdManager` API 与本地服务授权](https://developer.android.com/reference/android/net/nsd/NsdManager)
+- [`DiscoveryRequest` API](https://developer.android.com/reference/android/net/nsd/DiscoveryRequest)
+- [Media3 `AdaptiveTrackSelection`](https://developer.android.com/reference/androidx/media3/exoplayer/trackselection/AdaptiveTrackSelection)
+- [Media3 `DefaultBandwidthMeter`](https://developer.android.com/reference/androidx/media3/exoplayer/upstream/DefaultBandwidthMeter)
+- [Android 网络安全配置与 ECH](https://developer.android.com/privacy-and-security/security-config)
