@@ -88,40 +88,78 @@ task9_review_notes: "2026-06-30 Task9 idle audit auto-fix: 将 WakeLock 类型�
 
 ## 为什么要了解 WakeLock 与 Alarm 管理
 
-本节讲 App 侧怎么使用 WakeLock 和 Alarm，不重复系统电源状态机、内核 `wakeup_source` 或 Doze 实现。底层机制见 §5.6 和 §11.5；后台任务分层见 §25.2；WorkManager 的调度实战放到 §25.4。
+WakeLock 和 Alarm 解决两个不同问题：
 
-WakeLock 和 Alarm 很容易被写成“保活工具”，这类写法会把功耗问题带进线上：锁忘记释放，灭屏后 CPU 不能休眠；Alarm 频繁唤醒，Doze 维护窗口被不断打散；Exact Alarm 权限没处理好，Android 14 之后直接抛 `SecurityException` 或功能降级失控。
+- WakeLock 表示“当前工作已经开始，设备暂时不能进入会中断它的休眠状态”。
+- Alarm 表示“当前工作尚未开始，系统到达约定时刻后通知应用”。
 
-后台任务的治理可以按一条顺序展开：先按用户可见度判断任务类型，是用户正在等的结果还是可以延后的收尾；再选择调度 API；最后补齐观测字段。WakeLock 与 Alarm 的管理也要落进这条顺序。
+它们都不是进程保活接口。WakeLock 不保证进程存活，也不提供后台启动资格；Alarm 的回调窗口只够完成短小的分发工作，不能代替后台任务调度。持锁范围过大，会阻止系统进入低功耗状态；唤醒型 Alarm 过密，会增加设备被唤醒的次数；精确 Alarm 若未满足权限条件，调用时会抛出 `SecurityException`。
+
+系统电源状态机见 §5.6 和 §11.5，后台任务分类见 §25.2，WorkManager 实践见 §25.4。本节只讨论应用侧的选择、生命周期、权限和诊断。
+
+### Android 17 源码中的调用边界
+
+下面的关系图用于区分应用接口、系统服务和内核职责。
+
+```mermaid
+flowchart LR
+    A["PowerManager.WakeLock"] --> B["PowerManagerService"]
+    B --> C["kernel wakeup source"]
+    D["AlarmManager"] --> E["AlarmManagerService"]
+    E --> F["kernel alarmtimer"]
+    E --> G["分发 Alarm 回调"]
+    G --> H["系统持有 *alarm* WakeLock"]
+    H --> B
+```
+
+`PowerManagerService` 汇总框架层 WakeLock 并更新电源状态，`AlarmManagerService` 负责 Alarm 的分组、权限、空闲策略和分发。内核的 wakeup source 与 alarmtimer 提供休眠阻止和定时唤醒能力，却不了解 `PendingIntent`、精确 Alarm 权限或应用业务。一次 Alarm 触发与一次内核唤醒也不是固定的一一对应关系：系统会合并 Alarm，设备也可能因其他来源已经处于唤醒状态。
+
+本文统一使用以下源码锚点：
+
+- [`PowerManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java) 与 [`PowerManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java)
+- [`AlarmManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/AlarmManager.java) 与 [`AlarmManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java)
+- [`drivers/base/power/wakeup.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/base/power/wakeup.c) 与 [`kernel/time/alarmtimer.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/time/alarmtimer.c)
 
 ## WakeLock 类型与使用规范
 
-App 侧常用的 WakeLock 只有一个：`PARTIAL_WAKE_LOCK`。它保持 CPU 运行，允许屏幕关闭，适合短时间完成用户已经触发的后台收尾工作，例如一段上传、一次加密写盘、一个必须落完的本地索引更新。屏幕相关的 `SCREEN_DIM_WAKE_LOCK`、`SCREEN_BRIGHT_WAKE_LOCK`、`FULL_WAKE_LOCK` 已废弃；保持屏幕常亮应交给 `FLAG_KEEP_SCREEN_ON` 或具体组件能力。 [已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/os/PowerManager.java] [已验证: 官方文档, developer.android.com/reference/android/os/PowerManager.WakeLock]
+常规应用需要评估的 CPU 锁是 `PARTIAL_WAKE_LOCK`。它允许屏幕关闭，同时让 CPU 保持运行。`SCREEN_DIM_WAKE_LOCK`、`SCREEN_BRIGHT_WAKE_LOCK` 和 `FULL_WAKE_LOCK` 已废弃；页面需要保持亮屏时，使用 `FLAG_KEEP_SCREEN_ON` 或 View 的 `keepScreenOn`。申请 WakeLock 还需要在清单中声明 `android.permission.WAKE_LOCK`。
 
-WakeLock 的默认规则可以归纳成四条：少用、短持有、命名稳定、异常路径必释放。官方文档的建议很明确：只有找不到合适替代 API 时才用 WakeLock，持有时间越短越好；tag 应包含包名、类名或方法名，不要夹带个人信息、随机数或计数器，否则系统和排查工具无法聚合同一处代码的耗电。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/set] [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/best-practices]
+手动持锁之前，先检查平台接口是否已经管理唤醒周期。WorkManager 和 JobScheduler 会在任务执行期间处理所需的 WakeLock；媒体、位置和部分传感器接口也有自己的电源行为。再叠加一把手动锁，通常只会扩大持锁范围。
+
+[WakeLock 官方实践](https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/best-practices)可归纳为以下约束：
+
+- **范围小**：只覆盖必须在设备清醒时完成的同步代码。
+- **超时明确**：`acquire(timeoutMillis)` 的超时是故障保护，业务仍应在工作结束时主动释放。
+- **标签稳定**：标签包含包、类或方法的固定名称，不含用户信息、随机数、业务 ID 或计数器。
+- **释放集中**：获取与释放写在同一个所有权范围内，异常和取消都经过 `finally`。
+- **用户可感知**：需要长时间持锁的工作通常还需要合适类型的 FGS；如果 FGS 也不适合，应重新选择任务接口。
 
 | 场景 | 推荐做法 | 不建议的做法 |
 |------|----------|--------------|
 | 屏幕保持常亮 | `WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON` 或 View 的 `keepScreenOn` | 用屏幕类 WakeLock 控制亮屏 |
-| 用户触发的短任务 | `PARTIAL_WAKE_LOCK` + 超时 + `try/finally` | 后台线程里手动 `acquire()` 后靠回调释放 |
+| 用户触发且必须连续完成的短任务 | `PARTIAL_WAKE_LOCK` + 业务超时 + `try/finally` | 获取后分散到多个回调释放 |
 | 可延后的后台同步 | WorkManager / JobScheduler | 用 WakeLock 保持线程池常驻 |
-| 周期性提醒 | AlarmManager，默认用非精确 Alarm | 每个业务固定精确唤醒 |
-| 长时间用户可感知任务 | 合适类型的前台服务 + 通知 + 取消入口 | 静默持锁运行 |
+| 到时提醒 | AlarmManager，默认使用非精确 Alarm | 持锁等待目标时间 |
+| 长时间用户可感知任务 | 合适类型的 FGS + 通知 + 取消入口 | 静默持锁运行 |
 
-下面这段代码只处理“同步执行的一小段工作”。读者要看三处：固定 tag、超时、`finally` 释放。
+下面的封装只处理一段同步代码。超时时间由调用场景传入，WakeLock 标签保持固定。
 
 ```kotlin
 private const val SYNC_WAKELOCK_TAG = "com.example.app:SyncWorker"
-private const val WAKELOCK_TIMEOUT_MS = 30_000L
 
-inline fun <T> Context.withPartialWakeLock(block: () -> T): T {
+inline fun <T> Context.withPartialWakeLock(
+    timeoutMillis: Long,
+    block: () -> T,
+): T {
+    require(timeoutMillis > 0L)
+
     val powerManager = getSystemService(PowerManager::class.java)
     val wakeLock = powerManager.newWakeLock(
         PowerManager.PARTIAL_WAKE_LOCK,
-        SYNC_WAKELOCK_TAG
+        SYNC_WAKELOCK_TAG,
     ).apply {
         setReferenceCounted(false)
-        acquire(WAKELOCK_TIMEOUT_MS)
+        acquire(timeoutMillis)
     }
 
     return try {
@@ -134,160 +172,243 @@ inline fun <T> Context.withPartialWakeLock(block: () -> T): T {
 }
 ```
 
-这段代码只适合 `block()` 内部同步完成的工作。如果 `block()` 里只是启动协程、提交线程池任务或发起异步网络请求，函数返回时 WakeLock 会被释放，后续异步工作得不到保护；如果把释放挪到异步回调里，又会把持锁生命周期分散到多个状态分支，泄漏风险会升高。更稳的做法是把可延后的工作交给 WorkManager，把必须用户可见的长任务交给前台服务。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/best-practices]
+`block()` 必须在函数返回前完成。如果它只负责启动协程、提交线程池任务或发起异步请求，函数返回时 WakeLock 就会释放。反向做法——把释放分散到异步回调——会增加遗漏异常、取消和超时分支的风险。可延后工作应交给 WorkManager；长时间且用户可感知的工作应使用符合类型与权限要求的 FGS。
 
-`setReferenceCounted(false)` 也有边界。它适合“一个对象拥有一把锁，一次 acquire 对应一次 release”的封装；如果多个调用方共享同一把锁，非引用计数会让其中一个调用方提前释放锁。工程里不要把 WakeLock 做成全局单例给多个业务复用，tag 看起来省事，排查时会丢掉来源。
+WakeLock 默认使用引用计数。示例将它关闭，是因为每次调用都创建独立对象，并且只有当前函数拥有这把锁。共享对象不适合这样处理：非引用计数模式下一次 `release()` 就会撤销此前所有 `acquire()` 的效果。超时到达后 `block()` 仍可能继续运行，因此超时不能替代业务取消，也不能用作任务成功的判断。
 
 ## WakeLock 泄漏检测与治理
 
-WakeLock 泄漏通常不来自 `release()` 这一行代码缺失，而来自生命周期不清：异常提前返回、回调没回来、取消路径没走、任务迁移到线程池后没有归属。治理时要把 WakeLock 当成资源句柄处理，和文件、数据库事务一样写入统一封装。
-
-排查时可以按三层看：当前状态、历史统计、线上聚合。
+WakeLock 异常往往来自所有权不清：异常提前返回、回调没有到达、取消路径遗漏，或者异步工作已经换到其他执行器，原调用方却仍持有锁。排查需要同时查看当前状态、历史时序和线上分布。
 
 | 工具 | 观察对象 | 用法 |
 |------|----------|------|
 | `adb shell dumpsys power` | 当前仍活跃的 WakeLock | 看 tag、uid、pid、持有状态，适合复现场景后立刻确认 |
-| `adb shell dumpsys batterystats --history` | 一段时间内的持锁历史 | 看 acquire / release 是否成对，适合查灭屏后持续耗电 |
-| Battery Historian / Android Studio App Inspection | BatteryStats 聚合结果 | 看后台持锁时长、唤醒次数、UID 归因 |
-| Perfetto | CPU 运行、suspend、Alarm 唤醒附近的时序 | 把 WakeLock 与 CPU active、Doze、Alarm 触发放到同一条时间线上 |
-| Play Console Android Vitals | 线上过度持锁趋势 | 看版本、设备、场景分布，作为发布守门输入 |
+| `adb shell dumpsys batterystats --history` | BatteryStats 记录的持锁与唤醒事件 | 对照测试起止时间检查异常长区间，必要时结合 bugreport |
+| Perfetto | suspend/resume、CPU 调度与应用工作时序 | 判断锁是否阻止休眠，并与 Alarm 或任务触发时间对齐 |
+| Play Console Android Vitals | 线上非豁免 partial WakeLock 分布 | 按版本、设备和 WakeLock 名称查受影响会话 |
 
-还有一种容易漏掉的情况：App 没有直接调用 `PowerManager.newWakeLock()`，但系统 API 或三方库替 App 持有了锁。`AlarmManager` 触发广播时会获取名为 `*alarm*` 的 WakeLock，并把归因记到调用 App；`JobScheduler`、WorkManager、定位、FCM、媒体播放等也可能在系统侧产生可归因到 App 的 WakeLock。 [已验证: 官方文档, developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls]
+应用没有直接调用 `PowerManager.newWakeLock()`，也可能看到归因到自身的锁。AlarmManager、JobScheduler、WorkManager、位置、FCM 和媒体接口都可能在系统或库内部持锁。官方的[WakeLock 来源对照](https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls)会随平台和库版本更新，诊断时应以当前系统显示的名称为起点。
 
-`AlarmManager` 的广播持锁窗口只覆盖 `BroadcastReceiver.onReceive()`。API 文档写明，Alarm 触发时系统会持有 CPU WakeLock，直到 `onReceive()` 返回；如果接收器里启动 service 或提交异步任务，`onReceive()` 返回后系统会释放这把锁，后续工作要有自己的调度或持锁策略。 [已验证: 官方文档, developer.android.com/reference/android/app/AlarmManager]
+AlarmManager 分发广播时会持有名为 `*alarm*` 的 WakeLock，并将它归因给设置 Alarm 的应用。该锁只覆盖 `BroadcastReceiver.onReceive()`；方法返回后，系统就可以释放锁。接收器中若启动异步工作，应该将输入持久化并交给 WorkManager 或其他合适接口，不能依赖 `*alarm*` 继续保护后续工作。
 
-实战里可以把 WakeLock 接入统一审计表，字段不要只记 tag：
+Android Vitals 当前将一个会话中、24 小时内累计达到两小时的非豁免 partial WakeLock 记为过度使用；若 28 天范围内超过 5% 的应用会话出现该问题，可能影响应用在 Google Play 的可见性。统计只计算应用处于后台或运行 FGS 时持有的锁，并对部分有明确用户价值的 API 提供豁免。这个门槛用于识别严重问题，不应成为应用允许自己消耗的预算。参见 [Excessive partial wake locks](https://developer.android.com/topic/performance/vitals/excessive-wakelock)。
+
+应用自己的审计记录不要只保存标签：
 
 | 字段 | 用途 |
 |------|------|
 | `wakelock_tag` | 对应系统统计和 `dumpsys power` 输出 |
-| `owner_module` | 区分业务来源，避免同一 tag 被多个模块复用 |
+| `source_module` | 区分业务来源，避免同一标签被多个模块复用 |
 | `trigger_source` | 记录来自用户动作、推送、Alarm、WorkManager 还是重试 |
 | `acquire_uptime_ms` / `release_uptime_ms` | 计算持锁时长，不受系统时间调整影响 |
 | `timeout_ms` | 判断是否依赖超时兜底释放 |
 | `visible_to_user` | 区分用户感知任务和静默后台任务 |
 | `failure_reason` | 记录异常、取消、超时、进程退出等释放路径 |
 
-治理规则也要写成可执行的门禁：新增 WakeLock 必须走封装；tag 固定且可归因；默认带超时；单次持锁超过业务阈值要上报；后台持锁必须有用户可见理由或调度替代方案；线上 Vitals 或 BatteryStats 出现版本回归时阻断发布。阈值不要写死成全公司统一数字，下载、媒体、导航、同步各自有不同的正常区间。
+新增 WakeLock 应通过统一封装，标签固定且可定位，超时来自业务上限，每一条退出路径都能释放。单次时长和累计时长阈值应从具体场景的稳定版本与服务目标推导；下载、媒体、导航和短同步不能共用一个数字。
 
 ## AlarmManager 最佳实践
 
-AlarmManager 解决的是“到了某个时间点要唤醒 App”，不是后台任务执行框架。Android Developers 对 Alarm 的定位很明确：如果只是 App 存活期间的计时，用 `Handler.postDelayed()`、协程 delay 或定时器；如果是可延后的周期后台工作，用 WorkManager；只有用户指定的时间点、日历提醒、闹钟、到点通知这类需求，才进入 AlarmManager。 [已验证: 官方文档, developer.android.com/develop/background-work/services/alarms]
+AlarmManager 用于跨越应用生命周期的时间通知。应用仍在运行时的界面计时、动画或请求超时，使用 Handler、协程等进程内工具；允许延后的持久化工作使用 WorkManager。用户指定的闹钟、日历事件和到时提醒，才需要评估 AlarmManager。参见 [Schedule alarms](https://developer.android.com/develop/background-work/services/alarms)。
 
-Alarm 的选择顺序可以按精度从低到高排列：
+选择 API 时，同时判断“是否要唤醒设备”“允许多大时间偏差”“是否需要跨进程存活”：
 
-| API | 触发精度 | 适用场景 | 功耗代价 |
-|-----|----------|----------|----------|
-| `set()` | 不早于触发时间，Android 12+ 通常可在一小时内触发，受省电状态影响 | 到点附近执行即可的用户动作 | 低 |
-| `setWindow()` | 在指定窗口内触发；Android 12+ 小于 10 分钟的窗口会被裁剪到 10 分钟 | 需要时间范围，但不要求精确到秒 | 中 |
-| `setInexactRepeating()` | 大致周期触发，系统可批处理 | 周期刷新、低频清理 | 低 |
-| `setAndAllowWhileIdle()` | Doze 中也可触发的非精确 Alarm | 空闲状态下的近似提醒 | 中高 |
-| `setExact()` | 接近指定时间触发，仍可能受部分省电策略影响 | 用户指定的精确提醒 | 高 |
-| `setExactAndAllowWhileIdle()` | Doze 中也尽量按精确时间触发 | 闹钟、日历提醒等用户强预期任务 | 最高 |
-| `setAlarmClock()` | 用户可见的精确闹钟，系统会为它离开低功耗模式 | 闹钟类功能 | 最高 |
+| API | 系统行为 | 适用边界 |
+|-----|----------|----------|
+| `set()` | 不早于目标时间的单次非精确 Alarm；Android 12 及以上在没有额外省电限制时通常会在目标时间后一小时内分发 | 到点附近执行即可 |
+| `setWindow()` | 在给定窗口内分发，便于系统合并唤醒 | 业务明确给出可接受窗口 |
+| `setInexactRepeating()` | 非精确重复 Alarm，连续两次到达间隔可以变化 | 必须使用 Alarm 的粗略重复提醒；普通周期工作仍优先 WorkManager |
+| `setAndAllowWhileIdle()` | Doze 中允许分发的非精确 Alarm，仍受频率限制 | 空闲状态下也要到达、但允许偏差 |
+| `setExact()` | 精确单次 Alarm，受精确 Alarm 权限约束 | 用户对时刻有明确要求，但无需穿过 Doze |
+| `setExactAndAllowWhileIdle()` | Doze 中允许分发的精确 Alarm，受权限和频率限制 | 闹钟、日历提醒等强时效场景 |
+| `setAlarmClock()` | 用户可见的闹钟；系统必要时离开低功耗模式 | 闹钟应用的核心功能 |
 
-非精确 Alarm 是默认选项。大多数 App 用非精确 Alarm 就够了；Exact Alarm 会让系统难以批处理请求，在省电模式下尤其耗资源。长任务也不要直接塞进 `BroadcastReceiver.onReceive()`，应在接收器里启动 WorkManager / JobScheduler，并把业务输入持久化。 [已验证: 官方文档, developer.android.com/develop/background-work/services/alarms]
+目标版本 31 及以上调用 `setWindow()` 时，小于十分钟的窗口可能被系统扩展到十分钟。这个平台下限不表示业务都应该选择十分钟；窗口仍应来自产品对延迟的接受范围。精确 Alarm 难以和其他应用的唤醒合并，只有非精确接口无法满足用户需求时才使用。
 
-下面的写法把“到某个时间附近提醒用户”做成非精确 Alarm。读者看 `setWindow()` 的窗口长度和 `PendingIntent` 的稳定 request code。
+### 先选时间基准，再选是否唤醒
+
+- `RTC` / `RTC_WAKEUP` 使用墙上时钟，适合“当地时间几点提醒”之类的用户时间。用户修改时间、时区或夏令时规则时，应用要重新核对下一次触发。
+- `ELAPSED_REALTIME` / `ELAPSED_REALTIME_WAKEUP` 使用 `SystemClock.elapsedRealtime()`，不受墙上时钟调整影响，适合同一次开机内的延迟。
+- 带 `WAKEUP` 的类型可以唤醒休眠设备；不带 `WAKEUP` 的类型会等设备下次清醒后分发。业务允许等待时，选择不唤醒设备的类型。
+
+设备关机后 Alarm 会被清除。需要跨重启保留的提醒，应先将业务记录持久化，再在 `BOOT_COMPLETED` 后重建。按“每天当地时间”重复的提醒还要处理时区和夏令时变化，通常按下一次日历时间安排单次 Alarm，比固定毫秒间隔更可靠。
+
+下面的示例将“目标时间附近提醒”安排为窗口 Alarm。提醒 ID 写入 `Intent.data`，使 `PendingIntent` 身份稳定且不依赖 `Long.hashCode()`。
 
 ```kotlin
 fun scheduleReminderWindow(
     context: Context,
     triggerAtMillis: Long,
-    reminderId: Long
+    windowLengthMillis: Long,
+    reminderId: Long,
 ) {
+    require(windowLengthMillis > 0L)
+
     val alarmManager = context.getSystemService(AlarmManager::class.java)
     val intent = Intent(context, ReminderReceiver::class.java).apply {
         action = "com.example.app.ACTION_REMINDER"
+        data = Uri.Builder()
+            .scheme(context.packageName)
+            .authority("reminder")
+            .appendPath(reminderId.toString())
+            .build()
         putExtra("reminder_id", reminderId)
     }
     val pendingIntent = PendingIntent.getBroadcast(
         context,
-        reminderId.hashCode(),
+        0,
         intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
     alarmManager.setWindow(
         AlarmManager.RTC_WAKEUP,
         triggerAtMillis,
-        10 * 60 * 1000L,
-        pendingIntent
+        windowLengthMillis,
+        pendingIntent,
     )
 }
 ```
 
-这段代码允许系统在 10 分钟窗口内合并唤醒。用户不会感知秒级偏差的提醒、营销触达、低优先级日程预热，都应优先走这个模型。若任务需要下载、写库或多次网络请求，接收器只做参数校验和任务入队。
+`Intent` 的附加字段不参与 `PendingIntent` 等价判断；只改变 `reminder_id`，可能覆盖已有 Alarm。示例使用唯一的 `data` URI 区分提醒，取消时必须重建等价的 `action`、`data`、组件、`requestCode` 和标志位。`RTC_WAKEUP` 是因为示例表示用户墙上时钟提醒；若设备无需被唤醒，应改用 `RTC`。
 
-Alarm 还要处理重启和取消。设备重启后普通 Alarm 会丢失，需要在 `BOOT_COMPLETED` 后根据本地数据库重建；取消 Alarm 时必须使用与创建时等价的 `Intent` / request code / flags，否则旧 Alarm 仍会触发。业务删除提醒、用户退出登录、关闭某个功能开关时，都要同步取消对应 Alarm。
+接收器只做输入校验、状态确认和短小的本地处理。下载、数据库批处理或多轮网络请求需要入队；同一提醒已删除、账号已退出或状态已过期时，应直接结束。
+
+### Android 17：允许空闲分发的 Listener Alarm
+
+Android 17 / API 37 新增接受 `OnAlarmListener` 与 `Executor` 的 `setExactAndAllowWhileIdle()`。它适合组件仍在运行、但不希望持续持有 WakeLock 等待下一次时机的场景。下面的示例以开机后的单调时间安排一次回调。
+
+```kotlin
+@RequiresApi(37)
+fun scheduleProcessLocalIdleAlarm(
+    alarmManager: AlarmManager,
+    triggerElapsedRealtime: Long,
+    executor: Executor,
+    listener: AlarmManager.OnAlarmListener,
+) {
+    alarmManager.setExactAndAllowWhileIdle(
+        AlarmManager.ELAPSED_REALTIME_WAKEUP,
+        triggerElapsedRealtime,
+        "com.example.app:socket-maintenance",
+        executor,
+        listener,
+    )
+}
+```
+
+Listener 版本不需要 `SCHEDULE_EXACT_ALARM`，但它也不是持久化 Alarm。调用进程没有活动组件后，系统可以取消它；组件结束时也应调用 `alarmManager.cancel(listener)`。它仍受允许空闲分发的频率限制，不适合循环安排高频回调。需要在进程死亡或组件结束后仍然触发时，使用 `PendingIntent` 版本并满足精确 Alarm 权限。示例中的 `@RequiresApi` 来自 `androidx.annotation.RequiresApi`；该 API 的完整边界见 [Android 17 功能说明](https://developer.android.com/about/versions/17/features)与 §25.20。
 
 ## Exact Alarm 权限变化（Android 12+）
 
-Android 12 引入 `SCHEDULE_EXACT_ALARM` 特殊 App 访问权限；Android 13 起，目标 API 33+ 的应用可在 `SCHEDULE_EXACT_ALARM` 与 `USE_EXACT_ALARM` 中选择；Android 14 起，多数新安装且目标 API 33+、声明 `SCHEDULE_EXACT_ALARM`、又不属于豁免或预授权场景的 App，权限默认拒绝。 [已验证: 官方文档, developer.android.com/develop/background-work/services/alarms] [已验证: 官方文档, developer.android.com/about/versions/14/changes/schedule-exact-alarms]
+精确 Alarm 权限经历了三次关键变化：
 
-`USE_EXACT_ALARM` 是普通权限，但只能给符合政策的日历或闹钟类应用使用；`SCHEDULE_EXACT_ALARM` 由用户或系统授予，也可能被撤销。调用 `setExact()`、`setExactAndAllowWhileIdle()`、`setAlarmClock()` 之前应检查权限；如果没有权限还直接调用，系统会抛 `SecurityException`。官方还说明，使用 `OnAlarmListener` 形式的进程内 `setExact()` 不需要 `SCHEDULE_EXACT_ALARM`，但它依赖进程存活，不适合进程被杀后仍要触发的提醒。 [已验证: 官方文档, developer.android.com/about/versions/14/changes/schedule-exact-alarms]
+| 版本 | 权限规则 |
+|------|----------|
+| Android 12 / API 31 | 目标版本 31 及以上的应用使用基于 `PendingIntent` 的精确 Alarm，需要“闹钟和提醒”特殊访问权限或符合系统豁免 |
+| Android 13 / API 33 | 目标版本 33 及以上可在 `SCHEDULE_EXACT_ALARM` 与 `USE_EXACT_ALARM` 中选择 |
+| Android 14 / API 34 | 目标版本 33 及以上的新安装应用通常不会预先获得 `SCHEDULE_EXACT_ALARM`；备份恢复到 Android 14 的权限也会被拒绝 |
 
-下面的代码只适合用户明确要求“精确时间提醒”的场景。读者看权限检查、设置页跳转和降级出口。
+`USE_EXACT_ALARM` 会自动授予且用户不能撤销，但用途受限，并受 Google Play 政策约束，适合核心功能就是闹钟或日历的应用。`SCHEDULE_EXACT_ALARM` 是用户可授予和撤销的特殊访问权限，适用范围更广。两者都不该为普通同步任务声明。
+
+精确 Alarm 到达属于 FGS 后台启动限制的豁免场景，但不会免除 FGS 类型、类型权限和使用中权限检查。普通后台任务不能为了获得启动资格而改用精确 Alarm。
+
+使用基于 `PendingIntent` 的 `setExact()`、`setExactAndAllowWhileIdle()` 或 `setAlarmClock()` 前，应通过 `canScheduleExactAlarms()` 检查资格。下面的示例只负责安排 Alarm，并把“需要权限”返回给调用层；它不会从后台突然打开系统设置页。
 
 ```kotlin
+enum class ExactAlarmScheduleResult {
+    SCHEDULED,
+    PERMISSION_REQUIRED,
+}
+
 fun scheduleExactReminder(
     context: Context,
     triggerAtMillis: Long,
-    reminderId: Long
-) {
+    reminderId: Long,
+): ExactAlarmScheduleResult {
     val alarmManager = context.getSystemService(AlarmManager::class.java)
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
         !alarmManager.canScheduleExactAlarms()
     ) {
-        val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
-            data = Uri.parse("package:${context.packageName}")
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        context.startActivity(intent)
-        return
+        return ExactAlarmScheduleResult.PERMISSION_REQUIRED
     }
 
     val intent = Intent(context, ReminderReceiver::class.java).apply {
         action = "com.example.app.ACTION_EXACT_REMINDER"
+        data = Uri.Builder()
+            .scheme(context.packageName)
+            .authority("exact-reminder")
+            .appendPath(reminderId.toString())
+            .build()
         putExtra("reminder_id", reminderId)
     }
     val pendingIntent = PendingIntent.getBroadcast(
         context,
-        reminderId.hashCode(),
+        0,
         intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
     alarmManager.setExactAndAllowWhileIdle(
         AlarmManager.RTC_WAKEUP,
         triggerAtMillis,
-        pendingIntent
+        pendingIntent,
     )
+    return ExactAlarmScheduleResult.SCHEDULED
 }
 ```
 
-这段代码不能单独作为产品交互。用户拒绝权限时，业务必须有降级路径：改用 `setWindow()`、延后到 WorkManager、在 App 打开时补偿提醒，或者明确告诉用户该功能依赖精确提醒权限。Android 14 还要求监听 `AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`，权限被授予后重新检查并重建必要的精确 Alarm。 [已验证: 官方文档, developer.android.com/about/versions/14/changes/schedule-exact-alarms]
+UI 收到 `PERMISSION_REQUIRED` 后，应先解释用户功能为何需要精确时刻，再由用户动作打开 `Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM`。用户拒绝时，根据业务改用 `setWindow()`、WorkManager 或下次进入应用时补偿；不能把 `SecurityException` 当作权限分支。
 
-Exact Alarm 在工程上需要审查六项：
+权限状态还影响已安排的 Alarm：
 
-- 是否由用户明确设置了精确时间，例如闹钟、日历、药物提醒；如果只是后台同步，改用 WorkManager。
-- 是否能接受时间窗口；能接受就用 `setWindow()`，窗口不小于 10 分钟。
-- 是否声明了正确权限；日历和闹钟类才评估 `USE_EXACT_ALARM`，普通应用使用 `SCHEDULE_EXACT_ALARM` 并处理授权。
-- 是否在调用前检查 `canScheduleExactAlarms()`；缺权限时不要让 `SecurityException` 进入线上崩溃。
-- 是否持久化了提醒数据；进程死亡、重启、权限变更后可以重建。
-- 是否统计了触发次数和失败原因；同一用户、同一业务不要排出大量相邻精确 Alarm。
+- `SCHEDULE_EXACT_ALARM` 被撤销时，系统会停止应用进程并删除该应用未来的精确 Alarm。
+- 权限被授予时，系统发送 `ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`。接收后仍要再次调用 `canScheduleExactAlarms()`，确认资格仍有效，再根据持久化记录重建必要 Alarm。
+- 该广播只表示授予，不会在撤销时发送。应用启动、进入相关页面和安排 Alarm 前都要重新检查。
+- 设备重启也会清除 Alarm，因此重建逻辑应与 `BOOT_COMPLETED` 共用同一份持久化业务数据。
+
+审查精确 Alarm 时，逐项确认：
+
+- 用户是否明确指定精确时间；后台同步和日志上传不属于此类。
+- 时间窗口是否可以接受；可以接受就使用非精确 Alarm。
+- 权限声明是否符合功能和商店政策。
+- 调用前是否检查资格，拒绝后是否有可理解的降级行为。
+- 提醒记录是否持久化，取消、重启、时间变化和权限变化能否得到一致结果。
+- 相邻提醒是否可以合并，接收器是否只做短小工作。
 
 ## 扩展：功耗回归守门
 
-WakeLock 和 Alarm 的问题不能只靠代码审查。它们经常在功能上线几天后才出现：某个推送策略调大频率、某个异常路径不断重试、某个机型在 Doze 下延迟更长。发布前应把功耗回归守门接进 CI 和灰度监控。
+WakeLock 和 Alarm 的回归要覆盖安排、触发、取消和失败恢复。测试周期应包含业务完整的提醒或重试过程，不照抄固定息屏时长。
+
+下面的命令用于测试机上观察当前 WakeLock、Alarm 队列和 BatteryStats 历史，并验证 Doze 条件下的到达行为。
+
+```bash
+adb shell dumpsys batterystats --reset
+adb shell dumpsys battery unplug
+adb shell dumpsys deviceidle force-idle
+
+adb shell dumpsys power
+adb shell dumpsys alarm
+adb shell dumpsys batterystats --history
+
+adb shell dumpsys deviceidle unforce
+adb shell dumpsys battery reset
+```
+
+`dumpsys power` 回答“此刻谁还持锁”，`dumpsys alarm` 回答“哪些 Alarm 正在等待以及如何分组”，BatteryStats 历史用于对照测试时间。结束时必须解除强制 Doze 并恢复电池服务。测试还要覆盖用户取消提醒、修改时间或时区、重启设备，以及授予和撤销精确 Alarm 权限。
 
 | 守门项 | 检查方式 | 失败处理 |
 |--------|----------|----------|
 | 新增 WakeLock | 静态扫描 `newWakeLock()` 和封装入口 | 没有固定 tag、超时、释放路径时退回修改 |
 | Exact Alarm 新增 | 扫描 `setExact*` / `setAlarmClock()` | 没有用户精确时间需求说明和权限降级方案时退回修改 |
-| 灭屏功耗回归 | 自动化脚本灭屏 30 分钟，采集 batterystats / Perfetto | CPU active、WakeLock 时长或唤醒次数超阈值时阻断灰度 |
-| 线上聚合 | Play Console Vitals + 自建 APM | 按版本、设备、业务入口定位回归来源 |
-| 权限拒绝率 | 统计 `canScheduleExactAlarms()` 失败和设置页返回结果 | 拒绝率高时调整交互或降级策略 |
+| 持锁配对 | 单元测试异常与取消路径，设备测试核对获取和释放 | 出现超时释放或场景结束后仍持锁时阻止发布 |
+| Alarm 身份 | 安排、更新、取消多个提醒，检查 `PendingIntent` 是否互相覆盖 | 修正 action、data、组件、request code 或 flags |
+| Doze 到达 | 在强制 Doze 下验证非精确、允许空闲和精确接口的差异 | 接口语义与业务时效不匹配时重新选型 |
+| 线上分布 | Android Vitals 与应用任务记录按版本、设备、入口关联 | 超过场景基线时定位 WakeLock 名称和触发来源 |
+| 权限状态 | 覆盖未授予、已授予、撤销、升级与备份恢复 | 任一状态导致崩溃、静默丢提醒或重复提醒时阻止发布 |
 
-和 §25.2 的后台功耗治理连起来看，WakeLock 是“这段时间别睡”，Alarm 是“到点把我叫醒”。工程规范要把这两件事拆清楚：能延后就交给系统调度，必须准点才申请 Exact Alarm，必须短时间持续运行才持有 WakeLock。这样写，功耗问题才有排查入口，也有发布前拦截点。
+## 小结
+
+WakeLock 保护一段已经开始的工作，Alarm 安排未来的时间通知。前者的重点是所有权、超时和释放；后者的重点是时间基准、精度、唤醒类型、回调身份与权限。
+
+Android 17 的 Listener 版 `setExactAndAllowWhileIdle()` 可以在进程内组件仍存活时替代持续持锁等待，但不能跨越进程死亡。需要持久到达的用户提醒仍使用 `PendingIntent`，并遵守精确 Alarm 权限。诊断时，框架源码解释调度与归因，`android17-6.18-2026-06_r6` 内核源码解释休眠阻止和定时唤醒；两层证据要按时间关联。
