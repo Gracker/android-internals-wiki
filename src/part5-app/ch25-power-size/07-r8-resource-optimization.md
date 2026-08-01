@@ -93,126 +93,200 @@ last_deepseek_cn_review_at: 2026-06-10
 
 ## 为什么要了解 R8 与资源优化
 
-R8 与资源优化的主线只有两件事：规则怎么写才能既保留运行时入口又不浪费优化空间，以及图片、字体、资源表该选什么格式才能把包体积压下来。前一篇 25.6 已经把包体积分析、R8 开关和 ABI 策略放进统一排查流程，本节不再重复这些；包结构和 `.so` 策略详见 12.1。
+R8、资源缩减、图片编码和字体交付处理的是四类问题：
+
+- **R8** 删除、改写和重命名代码；
+- **资源缩减器** 删除不可达资源；
+- **图片编码** 改变仍需交付的图片字节数与解码成本；
+- **字体策略** 决定字符、字重和字体文件何时交付。
+
+25.6 负责体积测量与归因，本节处理具体配置。Android 17（API 37）是平台行为锚点，R8/AGP 的行为仍由构建工具版本决定，不能仅凭设备系统版本推导。R8 和资源打包不涉及 kernel 实现，因此本节不引用 kernel 作为优化依据。
 
 ## R8 全模式（Full Mode）与兼容模式
 
-R8 全模式从 AGP 8.0 起成为默认模式。它比旧兼容模式更积极：会更积极地做类合并、方法内联、泛型签名属性裁剪、注解属性裁剪和无用成员删除。体积收益来自这些优化，但风险也集中在同一批地方：反射、序列化、依赖注入、JNI、枚举名、`ServiceLoader`、框架通过注解或泛型读取类型信息的路径。
+R8 有三个相互独立的动作：
 
-R8 全模式、资源缩减和库 keep rules 的版本边界要按工具链拆开：
+| 动作 | 含义 | 常见风险 |
+| --- | --- | --- |
+| shrinking | 删除不可达类、成员和属性 | 反射、JNI、序列化入口未表达 |
+| optimization | 内联、类合并、访问级别调整等代码改写 | 依赖反射可见性或类结构 |
+| obfuscation | 缩短类、字段和方法名 | 通过稳定名字查找代码或字段 |
 
-| 能力 | 版本要求 | 说明 |
-|------|----------|------|
-| R8 full mode 默认 | AGP 8.0+ | 取代旧兼容模式，开启类合并、内联、无用成员删除 |
-| optimized resource shrinking | AGP 8.12/8.13 | 需显式设置 `android.r8.optimizedResourceShrinking=true` |
-| optimized resource shrinking 自动 | AGP 9.0+ | `isShrinkResources=true` 时自动启用 |
-| Gson consumer rules | Gson 2.11.0+ | 库自带 full mode 所需 keep rules，旧版需 App 侧补 TypeToken/Signature 规则 |
-| resource shrinking 依赖代码缩减 | 全版本 | 必须先开 `isMinifyEnabled=true`，否则 `isShrinkResources` 缺少代码引用图 |
+AGP 8.0 起，full mode 默认开启。与 compatibility mode 相比，它不再为未精确描述的运行时行为保留额外余量，几个差异尤其需要检查：
 
-迁移时不要把“全模式出问题”归因成 R8 不稳定。更常见的原因是工程里有运行时入口没有被静态引用图表达出来。R8 只能保证静态可达代码不被删；反射和外部框架契约要靠 keep 规则、`@Keep`、库的 consumer rules 或 generated keep rules 补齐。
+- `Signature`、运行时注解、`InnerClasses`、`EnclosingMethod` 等 class-file 属性，只有在属性及其关联端点都满足保留条件时才会留下；
+- 类被保留不代表其无参构造函数自动保留，反射调用构造函数要写到成员粒度；
+- R8 可以修改成员可见性以获得更多内联机会，依赖 `private`/`public` 状态的反射代码要有契约；
+- 只在字符串、资源、JNI 或外部注册表里出现的符号，不会自动成为静态可达入口。
 
-这段配置用于临时退回兼容模式，只应作为定位手段，不应作为长期方案。
+相关工具版本边界如下：
+
+| 工具版本 | 行为 |
+| --- | --- |
+| AGP 8.0+ | R8 full mode 默认启用 |
+| AGP 8.12/8.13 | 优化版资源缩减需设置 `android.r8.optimizedResourceShrinking=true` |
+| AGP 9.0+ | legacy DSL 中启用 `isShrinkResources` 后自动使用优化版资源缩减 |
+| AGP 9.3+ | 推荐 `optimization { enable = true }`，同时启用代码与资源优化 |
+
+各版本 DSL 和资源缩减开关以 [Enable app optimization](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization) 为准。
+
+下面的开关只用于确认故障是否与 full mode 语义有关。它不应留在长期发布配置中。
 
 ```properties
 # gradle.properties
 android.enableR8.fullMode=false
 ```
 
-如果关闭全模式后崩溃消失，下一步不是保留这个开关，而是收窄到具体规则：找出被裁剪的类、成员或属性，再用最小 keep 规则保留它。长期停留在兼容模式会让后续 AGP 升级更难，也会让 R8 的体积和运行时优化空间变小。Gson、Moshi、Jackson、Room、Hilt、Retrofit、JNI 注册和自研插件框架是全模式迁移的高风险区。以 Gson `TypeToken` 为例，官方 full mode 文档给出的失败原因是 `Signature` 属性被裁剪后，运行时拿不到泛型类型信息；对应规则要保留 `Signature`，同时允许类继续被混淆和优化。这个例子说明 keep 规则不是越宽越安全，规则写宽会把整片代码从优化器手里拿走。
+如果关闭 full mode 后问题消失，应回到 release 构建，找出缺失的类、成员或属性，并补最小规则。官方文档也要求删除该兼容开关以使用完整优化能力；详见 [R8 full mode](https://developer.android.com/topic/performance/app-optimization/full-mode)。
 
 ## Keep 规则编写与优化
 
-R8 规则要围绕“谁在运行时访问它”来写。Activity、Service、Provider 这类 manifest 入口由构建工具识别；反射、JSON 字段、JNI 方法、注解处理器生成的注册表、跨进程协议类，才需要额外规则。工程里最伤体积的写法通常是 `-keep class com.company.** { *; }`，它让包名下的类、字段和方法一起逃过裁剪、混淆和内联。
+Keep rule 的目标是把静态分析看不到的运行时契约告诉 R8。规则来源通常有四类：
 
-排查 keep 规则按三步走：
+- AGP/AAPT2 根据 manifest 等信息生成的平台规则；
+- 应用自己的规则；
+- AAR 中随库发布的 consumer rules；
+- 注解处理器、代码生成器或编译插件生成的规则。
 
-- **先看增长来源**：用 APK Analyzer 或 `apkanalyzer` 找出 dex 增长来自哪个包。没有归因的规则调整只是在碰运气。
-- **再看保留原因**：用 R8 输出的 `usage.txt`、`mapping.txt`、`seeds.txt` 和 `-whyareyoukeeping` 查被保留的类从哪条规则进入。
-- **规则再改形状**：能保留成员就不要保留整类；能允许混淆就不要禁止混淆；能允许裁剪就不要禁止裁剪。
+Activity、Service、Provider 等 manifest 组件已有构建工具生成的入口规则，不应因为担心误删就保留整个业务包。应用更需要审计反射构造、序列化字段、JNI 回调、`Class.forName()`、运行时注解扫描和旧式插件注册表。
 
-下面这组规则展示“保留运行时契约，但把优化权还给 R8”的写法。重点看 `allowshrinking`、`allowobfuscation`、`allowoptimization` 这几个修饰符。
+### 先理解规则语义
 
-**`allowshrinking` 的安全前提**：`allowshrinking` 允许 R8 删除“静态不可达”的成员或类。它只能在以下条件之一成立时使用：
+| 写法 | 语义 |
+| --- | --- |
+| `-keep` | 默认禁止删除、优化和重命名匹配项 |
+| `allowshrinking` | 允许匹配项在不可达时被删除 |
+| `allowoptimization` | 允许对匹配项做代码优化 |
+| `allowobfuscation` | 允许重命名匹配项 |
+| `-keepclassmembers` | 仅在类本身存活时保留匹配成员，不负责让类存活 |
+| `-keepclasseswithmembers` | 类含有指定成员时，保留类和匹配成员 |
+| `includedescriptorclasses` | 同时约束字段或方法描述符中出现的类型 |
 
-1. 目标仍有**静态可达路径**——被其它 `-keep` 规则、`@Keep`、manifest 入口或 library consumer rules 保护。
-2. 目标确实**允许被删除**——删除后不会产生运行时错误（例如已废弃的 debug 工具类）。
+`-keep class com.example.** { *; }` 会同时限制三类优化。规则写窄不能靠机械添加 `allow*`：只有运行时契约允许删除、改名或改写时，相应修饰符才安全。例如，完整类名来自外部配置或 R8 无法识别的字符串时，`Class.forName()` 的目标不能允许改名；JNI 按方法名和描述符查找时也不能允许这些符号变化。
 
-对反射入口（JSON 字段、JNI 方法、`ServiceLoader`、注解处理器注册表），`allowshrinking` 是危险的——R8 看不到反射路径，会把它们判定为“不可达”并删除。这类入口不应加 `allowshrinking`。
+### 用库版本对应的规则
 
-下面的规则按这个前提分化：JSON 字段不加 `allowshrinking`（反射入口）；JNI 方法不加 `allowshrinking`（native 入口）；Gson TypeToken 可以加 `allowshrinking`（有其它 keep 规则保护且静态可达）。
+下面的规则用于 Gson 2.11.0 以前的 `TypeToken` full-mode 兼容。Gson 2.11.0 起已随库提供必要规则；新版项目不应无条件复制这段配置。
 
 ```proguard
-# Gson TypeToken 场景：保留泛型签名，但允许类名继续缩短和优化。
 -keepattributes Signature
--keep,allowobfuscation,allowshrinking,allowoptimization class com.google.gson.reflect.TypeToken
+-keep,allowobfuscation,allowshrinking,allowoptimization class com.google.gson.reflect.TypeToken { *; }
 -keep,allowobfuscation,allowshrinking,allowoptimization class * extends com.google.gson.reflect.TypeToken
+```
 
-# JNI 场景：native 方法签名由 native 层查找，类本身仍可按调用关系裁剪。
-# includedescriptorclasses 防止 native 方法参数/返回值类型的 descriptor class 被改名
-# ——当 native 签名包含应用自定义类型或回调接口时，descriptor class 改名会破坏 JNI 查找。
--keepclasseswithmembernames,includedescriptorclasses,allowoptimization class * {
+`TypeToken` 通过匿名子类的 `Signature` 属性恢复泛型实参。这里允许删除、优化和改名，是因为静态使用仍决定实例是否存活，运行时不依赖匿名类的原始名字；该规则不等于对所有反射模型都能使用 `allowshrinking`。模型字段仍应使用稳定序列化注解或库文档要求的规则。
+
+下面是 `proguard-android-optimize.txt` 已包含的 JNI downcall 规则，用于防止 `native` 方法名及描述符相关类型被错误处理。项目若使用 native 到 Java/Kotlin 的 upcall，还要对被回调的类、构造函数和方法另写精确规则。
+
+```proguard
+-keepclasseswithmembernames,includedescriptorclasses class * {
     native <methods>;
-}
-
-# 反射/序列化模型类：字段名参与 JSON/Gson/Jackson/Moshi 协议时不能混淆。
-# ⚠️ 绝不能加 allowshrinking，也不要加 allowobfuscation；否则 release 包可能反序列化缺字段或字段名不匹配。
--keepclassmembers class com.example.api.** {
-    <fields>;
 }
 ```
 
-第一组规则解决泛型签名读取问题；第二组规则用 `includedescriptorclasses` 保留 JNI 方法名和 descriptor class，避免 native 注册失败；第三组规则保留字段名，不把整个模型类固定；如果所有序列化字段都有稳定注解（如 `@SerializedName`），才可以再评估 `allowobfuscation`。上线前要用混淆后的 release 包跑序列化、登录、支付、推送、深链、插件加载和 JNI smoke test。debug 包不经过同一套 R8 路径，不能替代 release 验证。
+这条规则只匹配声明为 `native` 的 Java/Kotlin 方法。它看不到 C/C++ 通过 `GetMethodID()`、`RegisterNatives()` 或反射调用的普通 Java/Kotlin 方法；这些入口需要按 native 代码中使用的类名、方法名和 JNI descriptor 逐项核对。官方示例见 [Keep rule use cases](https://developer.android.com/topic/performance/app-optimization/keep-rule-examples)。
 
-consumer rules 也要纳入体积排查。AAR 里的 `consumer-proguard-rules.pro` 会传递到 App，三方 SDK 为了降低接入失败率，常把规则写得很保守。遇到 dex 增长异常时，先从 `build/outputs/mapping/release/configuration.txt` 查看最终合并后的规则，再决定是升级 SDK、覆盖规则，还是向 SDK 方反馈更细的 consumer rules。
+### 从 release 产物反查
 
-## 资源格式优化：WebP / VectorDrawable / AVIF
+规则审计应使用与发布相同的 release 变体：
 
-资源优化要先区分“引用关系”和“文件格式”。`isShrinkResources = true` 处理的是不可达资源，WebP、VectorDrawable、AVIF 处理的是已使用资源的单文件大小。两者互补，不能互相替代。资源缩减还依赖 R8 的代码缩减结果；只打开资源缩减，构建工具没有足够的代码引用图可用。这段 Gradle 配置是 release 包的基线。读者重点看两个开关必须同时启用。
+- `configuration.txt`：查看应用规则、默认规则和 consumer rules 合并后的结果；
+- `seeds.txt`：查看入口与保留项；
+- `usage.txt`：查看被删除的代码；
+- `mapping.txt`：还原线上混淆堆栈；
+- `-whyareyoukeeping`：针对某个意外存活的类查询保留路径；
+- R8 Configuration Analyzer：工具链提供时，用于找宽泛规则和它限制的优化。
+
+文件集合和目录会随 AGP/R8 版本调整，CI 应从实际构建产物中发现并归档。测试至少覆盖反射构造、泛型序列化、深链、通知、推送、JNI、WebView 接口和动态功能。Debug 包没有经历同一套优化，不能替代 release 验证。
+
+库维护者应把库内部运行时契约写进 consumer rules；应用不应长期替三方库维护整包 keep。依赖升级时同时比较 `configuration.txt` 与 DEX 增量，规则变化和代码变化要分开判断。
+
+## 资源缩减：从代码引用图到资源表
+
+AGP 9.3 及以上推荐用下面的配置启用代码与资源优化。
 
 ```kotlin
 android {
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            optimization {
+                enable = true
+            }
         }
     }
 }
 ```
 
-构建后要检查资源缩减报告，确认被移除的是废弃布局、图片、字符串和 style，而不是动态加载路径里的资源。动态资源名要通过 `res/raw/*.keep.xml` 保留，特别是换肤、服务端下发页面、WebView bridge、通知图标和桌面 widget。
+新 DSL 会应用 Android 平台默认 keep rules，自定义规则放在 `src/<variant>/keepRules/*.keep`。AGP 9.3 以下使用 `isMinifyEnabled=true` 与 `isShrinkResources=true`；两者要同时开启，因为资源缩减依赖代码可达性。
+
+动态资源名无法被静态引用图完整表示时，下面的文件演示如何保留换肤图片和动态页面布局，并丢弃已确认仅供内部调试的图片。文件可命名为 `res/raw/com.example.app.keep.xml`。
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools"
     tools:keep="@drawable/skin_*,@layout/dynamic_*"
-    tools:discard="@drawable/debug_*" />
+    tools:discard="@drawable/internal_debug_*" />
 ```
 
-`tools:keep` 和 `tools:discard` 是给资源缩减器的显式规则。它们有全局作用域，库模块里的 keep 文件要带上包名或模块名前缀，避免规则互相覆盖。格式选择可以按下表处理：
+Keep 文件作用于合并后的全局资源，应用与 AAR 应使用包含包名的唯一文件名。`tools:discard` 会覆盖缩减器的保守判断，只有构建变体与运行路径都能证明资源无用时才可添加。规则格式见 [Customize which resources to keep](https://developer.android.com/topic/performance/app-optimization/customize-which-resources-to-keep)。
 
-| 资源类型 | 推荐格式 | 适用场景 | 风险边界 |
-| --- | --- | --- | --- |
-| 简单图标、线性图形 | VectorDrawable | 单色或少量路径、需要多密度适配的图标 | 复杂路径会增加解析和绘制成本，照片类资源不适合 |
-| 普通位图、透明图片 | WebP | PNG / JPG / 静态 GIF 的替代，适合大部分插画和运营图 | 转换后必须做视觉回归，渐变、阴影、文字边缘容易出现压缩痕迹 |
-| 高压缩比位图 | AVIF | Android 12（API 31）及以上设备，适合对下载体积敏感的图片 | 低版本不能直接使用；多渠道包要按 minSdk 或资源变体拆分 |
-| 需要拉伸边界的图片 | 9-patch PNG | 气泡、背景框、可拉伸控件背景 | 不要直接转 WebP / AVIF；拉伸区域和内容区域会丢语义 |
+`resourceConfigurations` 用于排除应用明确不支持的替代资源；AAB 则可以按语言、密度和 ABI 生成 configuration APK。支持系统“应用语言”或语言按需下载时，不能删掉受支持语言来换取上传制品变小。资源缩减、替代资源过滤与 AAB 分发是三种不同机制。
 
-VectorDrawable 的收益来自去掉多套密度位图，而不是来自压缩算法。它适合图标和简单插画；如果把复杂 SVG 全量转成 VectorDrawable，XML 路径数据可能比原 WebP 更大，还会把解析成本挪到运行时。WebP 适合替换多数 PNG / JPG，但转换要按资源类型分批做：启动页、登录页、品牌图和支付图标先人工验收，再进入批处理。AVIF 在 Android 12 及以上有系统支持，适合新系统占比高、图片体积压力大的渠道；低版本要保留 WebP 或 PNG 兜底。[已更新至 Android 16]
+Android 17 的 [`ResourceTypes.h`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/androidfw/include/androidfw/ResourceTypes.h) 定义了字符串池、资源表头、package、type spec 和 type 等二进制结构。这能解释 `resources.arsc` 的组织方式，却不能证明第三方资源表重写工具与 AGP、动态资源名、热修或资源覆盖兼容。发布流程应先使用官方缩减，再评估额外工具。
 
-resources.arsc 相关优化要谨慎。参考书把资源去重、资源名压缩和字符串池处理放在同一类问题里，这个结构是合理的：AOSP `ResourceTypes.h` 也能印证资源表由字符串池、package、type spec、type item 等二进制块组成，不是普通文本文件。工程上更稳的顺序是：先开官方资源缩减，再做图片格式转换，再评估资源名压缩或重复图片去重。直接改 `resources.arsc` 的工具必须覆盖换肤、多语言、动态资源名和热修资源路径。## 字体子集化与按需加载
+## [自动发现] AOSP Soong 与应用 AGP 不能混用配置
 
-字体文件经常被低估。一个完整 CJK 字体可能比多张运营图还大；如果 App 只在少数页面使用品牌字体，直接把全量 `.ttf` 放进 `assets/` 或 `res/font/`，会让所有用户为少数场景付下载成本。字体治理先做两件事：确认每个字体文件的使用页面和字重，再确认它是否需要随安装包交付。
+`android-17.0.0_r1` 的平台源码使用 Soong 构建系统。下面两段是源码中的关键调用形态，用于说明 AAPT2 规则输出和 R8 诊断产物如何接入平台构建。
 
-字体子集化适合范围稳定的文本，例如品牌数字、英文标题、固定营销文案和图标字体。处理时要按字符集、字重、斜体、语言拆分，保留 fallback 字体，避免缺字变成方框。子集文件生成后要记录输入字符集和工具版本，否则下一次文案变更很难复现同一份产物。[待验证: 字体子集化工具链需结合项目 CI 确认]
+```text
+aapt2 link ... --proguard <proguard-options> --output-text-symbols <R.txt>
 
-按需加载适合范围不稳定或使用频率低的字体。Android 官方 Downloadable Fonts 支持通过 provider 请求字体，AndroidX Core 可覆盖 API 14 及以上设备；它的收益是减少 APK 内置字体文件，让多个 App 复用 provider 缓存。限制也很明确：首次展示依赖 provider 可用性和网络 / 缓存状态，页面要准备系统字体 fallback，不能把首屏文本强依赖在远程字体返回上。
+r8 ... --no-data-resources \
+  -printmapping <mapping> \
+  -printconfiguration <configuration> \
+  -printusage <usage>
+```
 
-这段 XML 展示 Downloadable Fonts 的资源声明方式。重点是字体文件不再打进 APK，而是由字体 provider 按需返回。
+第一条来自 Soong 的 [`java/aapt2.go`](https://android.googlesource.com/platform/build/soong/+/android-17.0.0_r1/java/aapt2.go)，AAPT2 生成规则文件；第二条来自 [`java/dex.go`](https://android.googlesource.com/platform/build/soong/+/android-17.0.0_r1/java/dex.go)，R8 输出映射、最终配置和删除报告。启用优化版资源缩减时，Soong 还会向 R8 传 `--resource-input`、`--resource-output` 和 `--optimized-resource-shrinking`；[`java/app.go`](https://android.googlesource.com/platform/build/soong/+/android-17.0.0_r1/java/app.go) 会使用非 final resource ID，并避免追加旧的 AAPT2 生成规则，让 R8 联合追踪代码与资源。
+
+这些源码只约束 AOSP 平台模块。`Optimize.*` 属性、`RELEASE_*` 变量和 `R8_DUMP_*` 环境变量不是普通 Android 应用的 Gradle DSL。同一份 `dex.go` 中仍可看到由 API 36 与 Baklava 条件控制的 DEX v41 分支；它属于 Android 16 的版本演进，不能写成 Android 17 新特性，也不能当作应用瘦身开关。
+
+## 资源格式优化：WebP / VectorDrawable / AVIF
+
+资源缩减处理“是否还需要”，图片编码处理“留下的文件怎样表达”。格式选择要同时比较 APK 中的压缩后大小、解码时间、内存、画质和调用场景。
+
+| 格式 | 适用场景 | Android 10–17 边界 |
+| --- | --- | --- |
+| VectorDrawable | 简单图标、少量路径、需要多密度适配的图形 | 平台早已支持；复杂路径可能增加解析与绘制成本 |
+| WebP | 照片、插画、透明位图，支持有损与无损 | 本书适用版本均支持，仍需逐图做画质回归 |
+| AVIF | 对传输体积敏感、允许按版本提供资源的位图 | Android 12（API 31）起平台支持；低版本需 WebP/PNG 资源变体 |
+| PNG / 9-patch | 像素精确、无损、小型图标或带拉伸语义的背景 | 9-patch 的拉伸区与内容区不能用普通格式转换替代 |
+
+VectorDrawable 通过一份路径数据覆盖多密度设备，但复杂 SVG 转换后可能比位图更大，也可能增加首帧解析和栅格化成本。WebP/AVIF 的编码质量参数对不同图片影响不同，不能全目录使用同一阈值。启动图、品牌素材、文字边缘、渐变、暗部和透明边缘要在目标设备上人工检查。
+
+AVIF 可放在 `drawable-v31`，低版本目录保留 WebP 或 PNG；资源选择由系统版本限定符完成。若图片来自网络，服务端也要根据客户端解码能力和显示尺寸返回合适格式与分辨率，避免下载大图后再缩小。格式与画质建议见 [Reducing image download sizes](https://developer.android.com/develop/ui/views/graphics/reduce-image-sizes)。
+
+图片转换应从原始素材生成，记录编码器版本与参数，并在 CI 比较最终 release 制品。对已经有损压缩的图片反复转码会累积失真；源文件、生成脚本和验收图应一起保存。
+
+## 字体子集化与按需加载
+
+字体治理从字符覆盖、字重、使用页面和许可证开始。一个字体家族可能包含多个静态字重、斜体和大字符集；删除其中任何部分前，要确认动态文案、多语言、无障碍字号和服务端下发内容仍有字形可用。
+
+### 字体子集
+
+子集化适合字符范围可枚举的内容，例如品牌数字、固定英文标题或稳定图标集合。构建流程应保存：
+
+- 原始字体的版本、许可证和校验值；
+- 输入字符集及其来源；
+- 子集工具与参数；
+- 生成字体的 glyph 覆盖检查；
+- 缺字时的系统字体回退结果。
+
+不要从当前仓库字符串机械生成全局子集：服务端文案、用户输入、人名、货币符号和辅助功能文本可能不在静态资源中。多字重场景还可评估 variable font，但应比较“一个可变字体”与“项目实际使用的几份静态字体”，不能预设哪种更小。
+
+### Downloadable Fonts
+
+Downloadable Fonts 由字体 provider 返回并缓存字体，AndroidX Core 可覆盖 API 14 及以上设备。下面的 XML 展示 Google Fonts provider 的声明结构；实际 query 与证书数组应由 Android Studio 或 provider 文档生成。
 
 ```xml
 <font-family xmlns:android="http://schemas.android.com/apk/res/android"
@@ -222,119 +296,32 @@ resources.arsc 相关优化要谨慎。参考书把资源去重、资源名压�
     android:fontProviderCerts="@array/com_google_android_gms_fonts_certs" />
 ```
 
-接入后要补两类验证：冷启动首屏是否因为字体等待而抖动，弱网或 provider 不可用时 fallback 是否稳定。对于国内分发渠道，Google Play services 不一定可用，Downloadable Fonts 不能作为唯一方案；更稳的做法是“基础字体随包、低频字体按需下载、品牌字体按页面缓存”。
+Provider 的包名与证书用于验证来源。Google Fonts provider 依赖 Google Play services，不能假设所有渠道和设备都具备；首屏也不能阻塞等待字体。应用应准备系统字体回退，覆盖 provider 不可用、离线、缓存未命中、请求失败和证书更新。接口与证书要求见 [Use Downloadable Fonts](https://developer.android.com/develop/ui/views/text-and-emoji/downloadable-fonts)。
 
-## 扩展：资源优化与 AAB 分发的分工
+需要自建下载时，字体文件会进入系统字体解析器，应按不可信二进制输入处理，并补 HTTPS、内容校验、版本绑定、存储上限、原子替换和许可证检查。基础正文使用系统字体、低频品牌字体按需加载，通常比所有字体随包或所有字体远程化更容易维护。
 
-AAB 和 Play Feature Delivery 解决的是“按设备、语言、密度、ABI 或功能模块分发”的问题；R8 和资源优化解决的是“产物本身是否还有无用代码和资源”的问题。二者不能互相替代。一个没有开 R8 的 AAB 仍会把无用代码带进 base module；一个只做 WebP 转换的 APK 也不会自动减少未使用语言包或 ABI 副本。
+## 资源优化与 AAB 分发的分工
 
-对 Google Play 渠道，优先让 AAB 拆出语言、密度、ABI 和 dynamic feature；对国内渠道，很多市场仍以 APK 为主，仍要显式处理 `resourceConfigurations`、ABI 过滤、字体和大资源按需下载。AAB 与按需分发的细节放到 25.8 节。资源优化先让每个产物变小，分发策略再决定哪些用户需要拿到哪些产物。
+R8 与资源缩减减少每个模块中的无用内容；AAB 决定某台设备获得哪些 base、configuration 和 Dynamic Feature APK。两者不能互相替代：
 
-<!-- AIW-源码调研-2026-07-13-android17-r8-build-pipeline -->
-## AOSP android-17.0.0_r1 源码补充（2026-07-13 调研）
+- 未开启 R8 的 AAB 仍会在模块中携带可删除代码；
+- 转成 WebP 不会删除未使用语言或 ABI 副本；
+- on-demand Dynamic Feature 改变首次交付量，不会自动删除该模块内部的无用代码与资源；
+- 单 APK 渠道没有 Play 服务端 split，需要单独评估替代资源、ABI 和低频大文件。
 
-> 本节为 `topic id=18` 调研产物。要点全部来自 `android.googlesource.com` 上 `refs/tags/android-17.0.0_r1` 的 Soong 源码。
+AAB 和动态交付的测试见 25.8。专项资源优化完成后，仍要回到 25.6 的设备规格与 release 基线，确认收益出现在目标用户的交付集合中。
 
-### 1. Soong 中的 R8 调用入口
+## 发布检查清单
 
-源码位置：`build/soong/java/dex.go`（android-17.0.0_r1，约 1277 行）。
+- R8/AGP 版本、DSL 形式和 full-mode 状态已记录；
+- `configuration.txt` 中没有无依据的整包 keep；
+- 反射、泛型、JNI、序列化和动态功能使用 release 包通过；
+- `mapping.txt`、删除报告、资源报告和规则配置已归档；
+- 动态资源有最小 `tools:keep`，`tools:discard` 有变体测试；
+- WebP/AVIF/VectorDrawable 经过包内大小、画质、解码和内存检查；
+- 字体字符集、字重、许可证、provider 失败与系统字体回退已覆盖；
+- AAB 与单 APK 渠道分别测量，使用同一业务基线比较。
 
-四个布尔开关决定 R8 行为，每个都来自 `DexProperties.Optimize` 子结构：
+## 小结
 
-| 字段 | 含义 | App 默认 | Library / Test 默认 |
-| --- | --- | --- | --- |
-| `Optimize.Enabled` | R8 vs D8 二选一 | true | false |
-| `Optimize.Shrink` | 死代码裁剪 | true | false |
-| `Optimize.Optimize` | 字节码优化（inlining / 类合并） | 受 `RELEASE_R8_OPTIMIZE_BY_DEFAULT` 控制 | false |
-| `Optimize.Obfuscate` | 类/方法名混淆 | false | false |
-
-`Optimize.Proguard_compatibility` 注释明确 "soon be removed and disabled universally, see b/215530220"（dex.go:108-110）。生产工程继续依赖兼容模式将阻塞后续 AGP 升级。
-
-实际 R8 调用命令来自 `d8r8` ninja rule（dex.go:497-509）：
-
-```bash
-$r8Template ${config.R8Cmd} ${config.R8Flags} $r8Flags     -injars $in --output $outDir     --no-data-resources     -printmapping ${outDict}     -printconfiguration ${outConfig}     -printusage ${outUsage}     --deps-file ${outDepfile}
-```
-
-- `outDict` / `outConfig` / `outUsage` 三个产物分别对应体积排查的“三件套”：mapping.txt、proguard config、unused.txt。
-- `--no-data-resources`：禁止 R8 触碰 res/，资源走单独 optimized shrink 路径。
-- `--deps-file`：让 ninja 支持 incremental rebuild。
-
-### 2. aapt2 → R8 自动 keep 规则的真相
-
-源码位置：`build/soong/java/aapt2.go:193-203`。
-
-```go
-var aapt2LinkRule = pctx.AndroidStaticRule("aapt2Link",
-    blueprint.RuleParams{
-        Command2: blueprint.NewCommand(
-            `${config.Aapt2Cmd} link -o $out $flags --proguard $proguardOptions`,
-            `--output-text-symbols ${rTxt} $inFlags`,
-        ),
-        Restat: true,
-    }, ...)
-```
-
-`--proguard $proguardOptions` 是 aapt2 自身从 manifest 里解析 `<activity>` / `<service>` / `<provider>` 出来的 keep 规则。这就是“manifest 入口无需手写 keep 规则”的源码证据——Activity 不写 `-keep` 也不会被裁剪。
-
-**坑点**：开启 optimized shrinking 后，app.go:836-841 主动 **不追加** aapt2 这份 keep 文件：
-
-```go
-if !(a.dexer.optimizedResourceShrinkingEnabled(ctx)) {
-    a.Module.extraProguardFlagsFiles = append(a.Module.extraProguardFlagsFiles, a.proguardOptionsFile)
-}
-```
-
-原因是 R8 的 trace-references 机制会从代码出发追溯到 xml 节点，不再需要 manifest→keep 的保守路径。继续追加会导致 `<activity>` / `<service>` 整体保留，损失 5-10% 优化空间。
-
-### 3. Optimized vs Legacy 资源缩减的两条路径
-
-源码位置：`build/soong/java/config/config.go:181` 与 `dex.go:135-141`。
-
-```go
-// config.go:181
-pctx.HostBinToolVariable("ResourceShrinkerCmd", "resourceshrinker")
-
-// dex.go: Optimized_shrink_resources 字段
-Optimized_shrink_resources proptools.Configurable[bool] `android:"replace_instead_of_append"`
-```
-
-两条路径并存：
-
-1. **Legacy**：`resourceshrinker` 工具（独立进程），只跑在 standalone resources.arsc 引用图上，不感知代码。
-2. **Optimized**：R8 内置 trace references，把 xml/.png/.java 一起放进 R8 的 dead-code 图。需 `RELEASE_USE_OPTIMIZED_RESOURCE_SHRINKING_BY_DEFAULT=true`，同时 `app.go:790` 让 aapt2 用 `forceNonFinalResourceIDs=true` 重生成 R.java，让 `R.id.xxx` 从 `public static final int` 降级为可被 R8 优化的 `static int`。
-
-实测未引用资源裁剪率 optimized 比 legacy 高 5-12%，代价是构建时长多 8-15%。
-
-### 4. R8 诊断开关（性能调优常用）
-
-源码位置：`build/soong/java/dex.go:1018-1034`。
-
-| 环境变量 | 行为 | 代价 |
-| --- | --- | --- |
-| `R8_DUMP_INPUT=true` | 写出 r8inputs.zip，便于事后重放 | +20% 内存 |
-| `R8_DUMP_BLAST_RADIUS=true` | 输出 blast radius protobuf，定位“误删根因” | +30% 时长 |
-| `R8_DUMP_PERFETTO_TRACE=true` | 输出 `r8trace.ptrace`，可在 ui.perfetto.dev 看 R8 自身耗时切片 | +30-50% 时长 |
-
-日常流水线中只建议在体积异常排查时临时打开 `R8_DUMP_PERFETTO_TRACE`。
-
-### 5. RBE 远端执行与 Dex Container Experiment
-
-`config.go:208-209`：
-```go
-pctx.StaticVariableWithEnvOverride("RED8ExecStrategy", "RBE_D8_EXEC_STRATEGY", remoteexec.RemoteLocalFallbackExecStrategy)
-pctx.StaticVariableWithEnvOverride("RER8ExecStrategy", "RBE_R8_EXEC_STRATEGY", remoteexec.RemoteLocalFallbackExecStrategy)
-```
-
-R8 单 module 在大工程下可跑 60s+，打开 RBE 可压缩 40-70%。
-
-`dex.go:660-672`：
-```go
-if !No_dex_container && effectiveVersion.FinalOrFutureInt() >= 36 && ctx.Config().UseDexV41() {
-    if PlatformSdkVersion().FinalInt() >= 36 || PlatformSdkCodename() == "Baklava" {
-        flags = append([]string{"-JDcom.android.tools.r8.dexContainerExperiment"}, flags...)
-    }
-}
-```
-
-Android 17（SDK 36 / Baklava 代号）启用 DEX v41 container 试验：把多个 classes.dex 收进单个 zip 容器，减小 map overhead 与冷启动 verify 时间。
+R8 full mode 要求工程把运行时契约写清：类是否必须存活、名字是否稳定、成员能否改写、哪些属性要保留。资源缩减建立在代码可达性之上，图片和字体优化则处理仍需交付的数据。Android 17 平台源码可以验证资源表与 Soong 构建分支，但应用配置仍以当前 AGP/R8 官方文档为准，不能把 Soong 环境变量搬进 Gradle 工程。
