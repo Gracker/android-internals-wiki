@@ -52,8 +52,6 @@ last_deepseek_cn_review_at: '2026-06-25'
 last_task9_audit: '2026-06-24'
 ---
 
----
-
 # WorkManager 实战与后台任务调度
 
 <!-- outline-start -->
@@ -81,48 +79,115 @@ last_task9_audit: '2026-06-24'
 
 ## 为什么要了解 WorkManager 实战与后台任务调度
 
-WorkManager 适合用户离开页面后仍要可靠完成的后台任务,以及可以延后、可以合并、可以按约束执行的周期任务--典型例子是日志上传、配置同步、离线数据刷新、用户触发后的短上传收尾。它不适合替代页面内协程,也不适合承担必须精确到点的提醒。
+WorkManager 适合离开页面、进程退出或设备重启后仍需要可靠执行的工作，例如可延后的数据同步、日志上传和短时收尾。它不适合页面生命周期内的普通异步操作，也不保证精确时刻到达。
 
-App 侧需要关注建模、约束、排重和降级。Doze、App Standby、Job 配额的系统层细节见 §25.2;WakeLock 和 Alarm 的使用边界见 §25.3;JobScheduler / WorkManager 的系统调度机制见 §5.10。
+“可靠执行”不等于“副作用只发生一次”。Worker 可能在写入服务端后、更新本地成功状态前被终止，随后再次运行。任务应使用幂等键、可恢复进度或事务设计，不能把 WorkManager 的状态当成端到端 exactly-once 保证。
 
-后台任务可以从三个维度分类:是否用户可见、是否可延后、是否需要跨进程可靠执行。明确了这三条,再决定用什么约束、怎么排重、记录哪些观测字段。
+评审 WorkManager 任务时，要明确用户是否在等待、允许延迟多久、是否需要跨进程恢复、重复触发怎样合并，以及约束失效或配额用完后如何恢复。Doze、App Standby 与 Job 配额见 §25.2，WakeLock 和 Alarm 见 §25.3，平台 JobScheduler 机制见 §5.10。
 
 ## WorkManager 架构与约束条件
 
-WorkManager 的入口是 `WorkRequest`。一个 `WorkRequest` 至少包含 Worker 类型、一次性或周期性调度信息、约束、重试策略、输入数据和 tag。官方文档把 WorkManager 定位为可靠后台工作:任务会记录在内部 SQLite 数据库中,App 退出、进程被杀或设备重启后仍可重新调度。AndroidX 源码里,Android 10-16 设备上的主要调度器是 `SystemJobScheduler`。`Schedulers.createBestAvailableBackgroundScheduler()` 创建 `SystemJobScheduler` 并启用 `SystemJobService`;`SystemJobScheduler.scheduleInternal()` 把 `WorkSpec` 交给 `SystemJobInfoConverter.convert()` 转成 `JobInfo`,再调用平台 `JobScheduler.schedule()`。转换过程将 `WorkSpec` 的 `id` 映射为 `JobInfo` 的 job ID、约束条件(网络/电量/空闲/存储)翻译为 `JobInfo` 的约束位、`expedited` 标志映射为 `JobInfo.NETWORK_TYPE_ANY` 加 `setExpedited()`、周期任务映射为 `setPeriodic()`--WorkManager 不做调度策略判断,只做数据结构映射;调度决策完全由系统 `JobSchedulerService` 负责。这解释了常见现象:WorkManager 看起来是 Jetpack API,最终仍会受 JobScheduler 的配额、约束和系统功耗策略影响。`GreedyScheduler` 是另一条 App 进程内的快速路径。源码注释写明它处理 unconstrained、non-timed work,并且不会主动持有 WakeLock;当任务无约束、已到运行时间且处于 `ENQUEUED` 状态时,它会直接启动 Work。同时,非 idle、非 content-uri trigger 的 constrained work 会经过 `WorkConstraintsTracker` 追踪:约束满足时进程内 `startWork()`,约束失效时 `stopWorkWithReason()`。`GreedyScheduler` 和 `SystemJobScheduler` 的协作机制:无约束任务优先走 GreedyScheduler 进程内即时执行;有约束任务同时注册到 SystemJobScheduler 做跨进程持久化保障--进程存活时 GreedyScheduler 可能抢先满足约束后立即执行,进程死亡后由 JobScheduler 在约束恢复时唤醒。两者不是竞争关系,而是"快速路径 + 兜底路径"的双轨模型。GreedyScheduler 路径只能作为进程存活时的机会执行,不能作为可靠后台执行保证;约束恢复路径的可靠性远低于 JobScheduler 的系统级持久化追踪。设置约束时要结合功耗成本一起评估。WorkManager 支持 `NetworkType`、`BatteryNotLow`、`RequiresCharging`、`DeviceIdle`、`StorageNotLow` 五种约束。全部满足后才运行;运行中任一约束失效,Worker 会被停止,等约束恢复后重试。`.setRequiresDeviceIdle(true)` 不能与 `.setBackoffCriteria()` 同时使用--AndroidX `OneTimeWorkRequest.Builder` 与 `PeriodicWorkRequest.Builder` 在 `build()` 时会抛出 `IllegalArgumentException`。如果业务需要 idle 条件,退避策略应依赖系统对周期任务的调度合并,而不是 WorkManager 层面的重试退避。这个代码示例适合"低优先级指标上传"场景。重点看三处:只在未计费网络和充电时运行、使用唯一周期任务去重、用退避策略避免失败后密集重试。
+WorkManager 接收 `WorkRequest`，将 Worker 类型、输入数据、约束、延迟、重试策略和依赖关系写入 `WorkDatabase`。数据库记录让 WorkManager 能在进程退出或设备重启后重新安排未完成任务；它也为唯一任务、状态观察和依赖传播提供依据。
 
-```kotlin
-val constraints = Constraints.Builder()
-    .setRequiredNetworkType(NetworkType.UNMETERED)
-    .setRequiresCharging(true)
-    .setRequiresBatteryNotLow(true)
-    .build()
+在 Android 10 到 Android 17 上，常见配置包含两类调度器：
 
-val request = PeriodicWorkRequestBuilder<MetricsUploadWorker>(
-    6, TimeUnit.HOURS,
-    1, TimeUnit.HOURS,
-)
-    .setConstraints(constraints)
-    .setBackoffCriteria(
-        BackoffPolicy.EXPONENTIAL,
-        30,
-        TimeUnit.SECONDS,
-    )
-    .addTag("metrics-upload")
-    .build()
+- `GreedyScheduler` 只在应用默认进程中工作。没有延迟且没有约束的任务可以直接交给 `Processor`；除设备空闲与内容 URI 触发器外，它也能在进程存活时跟踪约束。该调度器不主动持有 WakeLock，进程退出后不能继续提供执行机会。
+- `SystemJobScheduler` 将符合条件的 `WorkSpec` 转换成 `JobInfo`，交给平台 `JobScheduler`。Android 17 中，`JobSchedulerService` 及其 Controller 负责检查网络、充电、空闲、存储、配额和待机分组等系统条件。
 
-WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-    "metrics-upload",
-    ExistingPeriodicWorkPolicy.KEEP,
-    request,
-)
+下面的图用于区分 WorkManager 自己的状态管理与 Android 17 平台调度。两条执行路径最终都进入同一个 `Processor`。
+
+```mermaid
+flowchart LR
+    A["enqueue(WorkRequest)"] --> B["WorkManagerImpl"]
+    B --> C["WorkDatabase / WorkSpec"]
+    C --> D["Schedulers"]
+    D --> E["GreedyScheduler<br/>默认进程内的执行机会"]
+    D --> F["SystemJobScheduler"]
+    F --> G["SystemJobInfoConverter"]
+    G --> H["JobScheduler"]
+    H --> I["Android 17 JobSchedulerService<br/>约束与配额 Controller"]
+    I --> J["SystemJobService"]
+    E --> K["Processor / WorkerWrapper"]
+    J --> K
+    K --> C
 ```
 
-这种写法不保证任务每 6 小时准点运行;系统会在合适窗口合并执行。周期任务的间隔是两次运行之间的最小间隔,实际运行时间还会受约束和系统优化影响;官方文档明确 `PeriodicWorkRequest` 的最小重复间隔是 15 分钟,约束不满足时某次运行可能延后或跳过。## 定期任务与链式任务
+`Schedulers` 会分别向有系统调度槽限制和无该限制的调度器提交可调度任务，因此同一个工作可能同时得到进程内执行机会和系统级安排。任一路径开始或完成工作后，WorkManager 依据工作 ID、generation、数据库状态和 `Processor` 协调其余路径；这能避免同一代 `WorkSpec` 被两个调度器独立推进，却不能替业务提供端到端的副作用去重。
 
-定期任务要先确认"业务是否允许跳过某一轮"。如果只是上传日志、刷新缓存、同步低优先级状态,允许跳过比强行唤醒更符合功耗目标;如果是用户约定的提醒、闹钟或日程通知,WorkManager 不是正确工具,应回到 AlarmManager 和 exact alarm 权限边界,详见 §25.3。
+`SystemJobInfoConverter` 对约束逐项映射：网络条件调用 `setRequiredNetwork()` 或 `setRequiredNetworkType()`，充电和空闲条件写入对应字段，API 26 起再写入低电量与低存储条件，API 24 起支持内容 URI 触发器。expedited 是另一项独立属性：仅在 API 31 及以上、第一次尝试且没有起始延迟时调用 `JobInfo.Builder.setExpedited(true)`，并不会改写网络类型。重试已是未来执行，转换器不会继续把它标成 expedited。
 
-周期任务上线前要确定四个关键字段:唯一任务名、重复间隔、flex 窗口、约束集合。唯一任务名用于防止重复入队;flex 窗口让系统在一个时间段内选择更省电的执行点;约束集合决定任务是否能和充电、未计费网络、设备空闲等窗口合并。官方的电量优化建议也强调:相同约束下的相似工作应该合并成一个任务,避免设备为多个小任务分别唤醒。链式任务适合"前一步产物是后一步输入"的场景,例如清理临时文件、压缩、加密、上传。WorkManager 使用 `WorkContinuation` 表达依赖,`then()` 后面的任务会等前置任务完成;多个 parent 的输出会通过 `InputMerger` 进入 child。默认 `OverwritingInputMerger` 遇到同名 key 会覆盖,且并行 parent 的完成顺序不保证稳定;如果需要保留多路输出,应显式改用 `ArrayCreatingInputMerger` 或自定义 merger。这个代码示例展示"本地日志批处理 → 上传 → 清理"的链式任务。重点看 `enqueueUniqueWork()` 的策略:同一批上传未结束时,不再插入第二条相同链。
+WorkManager 支持网络、电量不低、充电、设备空闲、存储不低和内容 URI 变化等约束。多个约束必须同时满足；运行中条件失效时，WorkManager 可以停止 Worker，等待条件恢复后重新安排。约束只描述可运行条件，不表示网络请求、文件写入或服务端操作具备原子性。
+
+有两组构建期限制容易漏掉：
+
+- `setRequiresDeviceIdle(true)` 与显式 `setBackoffCriteria()` 不能共存。`OneTimeWorkRequest.Builder` 和 `PeriodicWorkRequest.Builder` 会在 `build()` 时抛出 `IllegalArgumentException`。
+- expedited 工作只能使用网络与存储条件，不能带起始延迟、充电、电量不低、设备空闲或内容 URI 触发条件；周期任务也不能标成 expedited。
+
+源码核对分为 AndroidX 与平台两层。AndroidX 随依赖版本发布，不属于 Android 17 平台标签；平台侧统一以 `android-17.0.0_r1` 为锚点：
+
+- AndroidX：[`Schedulers.java`](https://android.googlesource.com/platform/frameworks/support/+/androidx-main/work/work-runtime/src/main/java/androidx/work/impl/Schedulers.java)、[`GreedyScheduler.java`](https://android.googlesource.com/platform/frameworks/support/+/androidx-main/work/work-runtime/src/main/java/androidx/work/impl/background/greedy/GreedyScheduler.java)、[`SystemJobInfoConverter.java`](https://android.googlesource.com/platform/frameworks/support/+/androidx-main/work/work-runtime/src/main/java/androidx/work/impl/background/systemjob/SystemJobInfoConverter.java)、[`SystemJobScheduler.java`](https://android.googlesource.com/platform/frameworks/support/+/androidx-main/work/work-runtime/src/main/java/androidx/work/impl/background/systemjob/SystemJobScheduler.java)、[`WorkRequest.kt`](https://android.googlesource.com/platform/frameworks/support/+/androidx-main/work/work-runtime/src/main/java/androidx/work/WorkRequest.kt) 和 [`PeriodicWorkRequest.kt`](https://android.googlesource.com/platform/frameworks/support/+/androidx-main/work/work-runtime/src/main/java/androidx/work/PeriodicWorkRequest.kt)。
+- Android 17：[`JobInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/job/JobInfo.java)、[`JobSchedulerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java)、[`QuotaController.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java)。
+
+## 定期任务与链式任务
+
+周期任务适用于允许延迟或跳过某一轮的同步，例如日志、配置与低优先级数据刷新。`repeatInterval` 是相邻周期的最小间隔，`flexInterval` 位于每个周期末尾；准确执行时刻仍受约束和系统优化影响。官方定义的最小周期为 15 分钟，最小 flex 为 5 分钟。代码应引用 AndroidX 常量校验调用方配置，以免库的边界与业务配置分离。
+
+下面的函数用于注册一个可配置的指标上传任务。参数来自业务配置，函数只负责验证 WorkManager 的合法区间并建立稳定的唯一任务。
+
+```kotlin
+fun enqueueMetricsUpload(
+    context: Context,
+    repeatIntervalMillis: Long,
+    flexIntervalMillis: Long,
+    retryBackoffMillis: Long,
+) {
+    require(
+        repeatIntervalMillis >=
+            PeriodicWorkRequest.MIN_PERIODIC_INTERVAL_MILLIS,
+    )
+    require(
+        flexIntervalMillis in
+            PeriodicWorkRequest.MIN_PERIODIC_FLEX_MILLIS..repeatIntervalMillis,
+    )
+    require(
+        retryBackoffMillis in
+            WorkRequest.MIN_BACKOFF_MILLIS..WorkRequest.MAX_BACKOFF_MILLIS,
+    )
+
+    val constraints = Constraints.Builder()
+        .setRequiredNetworkType(NetworkType.UNMETERED)
+        .setRequiresCharging(true)
+        .setRequiresBatteryNotLow(true)
+        .build()
+
+    val request = PeriodicWorkRequestBuilder<MetricsUploadWorker>(
+        repeatIntervalMillis,
+        TimeUnit.MILLISECONDS,
+        flexIntervalMillis,
+        TimeUnit.MILLISECONDS,
+    )
+        .setConstraints(constraints)
+        .setBackoffCriteria(
+            BackoffPolicy.EXPONENTIAL,
+            retryBackoffMillis,
+            TimeUnit.MILLISECONDS,
+        )
+        .addTag("metrics-upload")
+        .build()
+
+    WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        "metrics-upload",
+        ExistingPeriodicWorkPolicy.UPDATE,
+        request,
+    )
+}
+```
+
+`UPDATE` 会更新同名周期任务的规格，并保留其原始入队时间；适合服务端调整间隔、flex 或约束的场景。若产品契约要求旧规格一直有效，可以明确选择 `KEEP`。示例没有设置设备空闲，因为它同时配置了退避策略。若任务必须等待空闲，应去掉显式退避配置，再让系统依据空闲条件安排。
+
+链式任务适用于有明确成功依赖的一次性工作。`then()` 后的节点只会在所有直接前置节点成功后运行；前置节点失败或取消时，状态会传播到后续节点。周期任务不能加入链。Worker 的输出适合传递小型标识和元数据，大文件应写入持久存储，只在 `Data` 中传 URI 或业务 ID。
+
+下面的示例表达“打包日志、上传、成功后清理”的线性依赖。唯一任务名防止同一批工作在尚未结束时重复入队。
 
 ```kotlin
 val pack = OneTimeWorkRequestBuilder<PackLogsWorker>()
@@ -149,182 +214,125 @@ WorkManager.getInstance(context)
     .enqueue()
 ```
 
-链式任务的风险是把业务流程写成后台队列。如果每一步都可能失败、重试、取消,链会长期占着 WorkManager 数据库和调度配额。更可靠的做法是把不可分割的本地步骤合并在一个 Worker 内,把网络上传、清理、补偿拆成少数边界清楚的节点,并用 tag 采集每个节点的停止原因。
+这条链保证清理节点只在上传节点成功后具备运行资格。它仍需处理进程在服务端写入成功后终止的情况：上传接口使用稳定批次 ID 作为幂等键，Worker 将服务端确认与本地进度持久化，清理节点核对批次状态后再删除文件。一个可独立重试的本地事务通常适合放在同一 Worker 内；跨网络或需要独立补偿的步骤再拆成节点。
 
 ## Expedited Work 与 Foreground Service 替代
 
-Expedited Work 处理用户触发、短时间内开始、几分钟内结束的后台任务。官方文档列出的特征包括:重要、短任务、受系统级 quota 控制、较少受 Battery Saver 和 Doze 影响、延迟敏感。它适合聊天消息发送、支付收尾、用户刚点下去的附件上传,不适合周期同步、批量迁移或"想绕开系统优化"的后台任务。`setExpedited()` 只声明"尽快执行"。系统仍要分配 expedited job 的执行时间;后台 quota 用完后,WorkManager 会按 `OutOfQuotaPolicy` 处理。`RUN_AS_NON_EXPEDITED_WORK_REQUEST` 会降级成普通 WorkRequest,`DROP_WORK_REQUEST` 会取消请求。AndroidX `SystemJobScheduler` 源码也能看到同样的降级路径:`JobScheduler.schedule()` 失败时,如果 WorkSpec 是 expedited 且策略是 `RUN_AS_NON_EXPEDITED_WORK_REQUEST`,会把 `expedited` 置为 false 后重新调度。这个代码示例处理用户触发的短上传。重点看 quota 策略:额度不足时允许降级,而不是直接丢弃用户数据。
+Expedited Work 面向用户发起、需要尽快开始并在几分钟内完成的重要任务，例如消息发送、支付收尾或短附件上传。它受系统级执行时间配额控制，只是较少受到省电模式与 Doze 影响，不能用于规避后台限制。
+
+配额不足时，`RUN_AS_NON_EXPEDITED_WORK_REQUEST` 将工作改按普通请求运行，`DROP_WORK_REQUEST` 则取消请求。AndroidX 的 `SystemJobScheduler` 也实现了前一种处理：平台调度失败且策略允许时，清除 `WorkSpec.expedited` 后再次安排。即使有配额，系统负载和资源状态仍可能推迟开始时间。
+
+下面的函数用于提交一笔用户刚确认的回执上传。业务 ID 同时参与唯一任务名和请求数据，便于 Worker 对服务端操作去重。
 
 ```kotlin
-val request = OneTimeWorkRequestBuilder<ReceiptUploadWorker>()
-    .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-    .addTag("receipt-upload")
-    .build()
+fun enqueueReceiptUpload(
+    context: Context,
+    receiptId: String,
+) {
+    val constraints = Constraints.Builder()
+        .setRequiredNetworkType(NetworkType.CONNECTED)
+        .build()
 
-WorkManager.getInstance(context).enqueueUniqueWork(
-    "receipt-upload-${receiptId}",
-    ExistingWorkPolicy.KEEP,
-    request,
-)
+    val request = OneTimeWorkRequestBuilder<ReceiptUploadWorker>()
+        .setInputData(workDataOf("receipt_id" to receiptId))
+        .setConstraints(constraints)
+        .setExpedited(
+            OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST,
+        )
+        .addTag("receipt-upload")
+        .build()
+
+    WorkManager.getInstance(context).enqueueUniqueWork(
+        "receipt-upload:$receiptId",
+        ExistingWorkPolicy.KEEP,
+        request,
+    )
+}
 ```
 
-Expedited Work 和 Foreground Service 的边界取决于用户可见度。Android 12 之前,为兼容 expedited job,WorkManager 可能通过 foreground service 执行,并要求 Worker 提供 `getForegroundInfo()` / `getForegroundInfoAsync()`,否则旧平台可能运行时崩溃。Android 12(API 31)+ 起仍可用 `setForeground()`,但受前台服务启动限制影响;而 UIDT(`JobInfo.Builder.setUserInitiated(true)`)需要 Android 14(API 34)+,低版本无对等平台 API,只能走 foreground service 降级路径。各版本的 UIDT 详细边界见 §5.10。长时间用户可见任务不应默认使用 WorkManager。官方长任务文档说明，long-running worker 可超过 10 分钟，WorkManager 会代管 foreground service。但从 Android 16 开始，long-running worker 仍依赖 JobScheduler 调度，可能耗尽 App 的 job quota——官方文档明确："Starting with Android 16, long running workers (which use foreground services) can exhaust your app's job quota"。每启动一个 long-running worker 即消耗一个 job slot，而 App 在 dynamic bucket 中同时可用的 job 数量有限（具体受 standby bucket 动态调整）。应对策略：用户触发的数据下载优先用 user-initiated data transfer job（UIDT），UIDT 不受普通 job quota 限制；需要持续前台语义时，直接启动 Foreground Service 比走 WorkManager long-running worker 更可控。Android 17 进一步收紧了前台服务限制：targetSdk 37 的 App，foreground service 必须具备 while-in-use（WIU）能力，除非持有 exact alarm 权限且与 USAGE_ALARM 音频流交互。对大部分 App 而言，long-running worker 的前台服务路径在 Android 17 上受到更严格的资格审查。WorkManager 2.3.0-alpha03 起支持创建 `PendingIntent` 用于取消已入队的 worker。## WorkManager 与 JobScheduler 选型
+网络条件属于 expedited 允许的约束。`KEEP` 只阻止同名未完成工作再次入队，服务端仍应按 `receiptId` 去重。额度不足后的普通执行不再有低延迟预期；Worker 返回 `Result.retry()` 后的后续尝试也按普通工作处理。
 
-WorkManager 和 JobScheduler 的选择取决于任务契约,而不是"哪个 API 新"。WorkManager 提供跨版本封装、唯一任务、链式任务、输入输出、tag、观察状态和重试策略;JobScheduler 提供平台级控制面,适合系统组件、平台能力验证或需要直接对照 `dumpsys jobscheduler` 的场景。两者最终都会进入系统调度策略,不能绕开 Doze、App Standby、quota 和后台执行限制。
+Android 12 之前，WorkManager 为兼容 expedited 工作可能启动前台服务，Worker 需要实现 `getForegroundInfo()` 或 `getForegroundInfoAsync()`，否则旧版本设备可能在运行时崩溃。API 31 及以上可使用平台 expedited job；`SystemJobInfoConverter` 只在第一次、无延迟的执行中设置 `JobInfo.setExpedited(true)`。
+
+长时间任务要按用户可见性和传输语义选择：
+
+- WorkManager 的 long-running Worker 可以运行超过 10 分钟，并由 WorkManager 管理前台服务与通知。Android 14 起，前台服务类型、清单权限和运行时先决条件都要满足。
+- Android 16 起，伴随前台服务运行的 long-running Worker 仍会占用应用的普通 JobScheduler 运行时间配额，官方建议在适合时直接使用前台服务，或为用户发起的数据传输改用 UIDT。
+- UIDT 从 Android 14（API 34）开始提供，要求任务由用户操作发起、在应用可见时安排，并显示通知；它不计入普通 job 配额。低版本需要产品定义的兼容方案。
+
+Android 17 没有对所有 targetSdk 37 前台服务施加统一的 while-in-use 条件。各类前台服务仍按自己的启动、权限与运行时规则检查；Android 17 的后台音频限制是单独的版本行为，见 §25.17，不能推广到 WorkManager 的全部 long-running Worker。
+
+## WorkManager 与 JobScheduler 选型
+
+选型依据是任务对时机、持久性、用户可见性和平台能力的要求。WorkManager 提供跨版本封装、唯一任务、依赖、输入输出、标签、状态观察和重试；直接使用 JobScheduler 可以访问特定平台版本才有的 `JobInfo` 能力，也便于系统应用按 job ID 观察 Controller 与配额状态。两者都受 Doze、App Standby、配额和后台执行限制。
 
 | 场景 | 推荐选择 | 判断依据 |
 |------|----------|----------|
-| 页面内短异步操作 | 协程 / 线程池 | 页面关闭或进程退出后可以取消,不需要可靠后台执行 |
-| 用户离开后仍要完成的短任务 | `OneTimeWorkRequest`,必要时 expedited | 需要跨进程可靠完成,但应控制在几分钟内 |
-| 周期日志、配置、缓存同步 | `PeriodicWorkRequest` + 唯一任务 + flex + 约束 | 可延后、可跳过某一轮,适合合并到省电窗口 |
-| 多步骤离线处理 | WorkManager chain | 步骤之间有输入输出依赖,失败和取消要有明确传播规则 |
-| 精确时间提醒 | AlarmManager | 需要接近指定时间触发,WorkManager 不保证准点 |
-| 系统层调度实验或平台服务 | JobScheduler | 需要直接配置 `JobInfo`、观察系统 Controller 或验证 quota 行为 |
-| 超过 10 分钟的用户可见传输 | Android 14+:UIDT;Android 10-13:Foreground Service;谨慎使用 long-running Worker | UIDT `JobInfo.Builder.setUserInitiated(true)` 仅 API 34+ 可用,低版本回退 Foreground Service。Android 16 起 long-running Worker 可能消耗 job quota。UIDT 完整版本边界与权限要求见 §5.10 |
+| 只在页面存活期间有效的异步操作 | 生命周期感知协程 | 页面销毁后可以取消，不需要跨进程恢复 |
+| 离开页面后仍需可靠尝试的短任务 | `OneTimeWorkRequest`；满足条件时 expedited | 需要持久记录、排重、重试和状态观察 |
+| 周期日志、配置或低优先级同步 | 唯一 `PeriodicWorkRequest` + flex + 约束 | 允许延迟或跳过某一轮，可合并到省电窗口 |
+| 有成功依赖的多步离线处理 | 一次性 WorkManager chain | 节点边界清楚，失败与取消传播符合业务要求 |
+| 接近指定时刻的提醒 | AlarmManager | WorkManager 不保证准确时刻；精确闹钟权限见 §25.3 |
+| 用户可见且持续较久的普通操作 | 前台服务 | 需要持续通知和明确的前台服务语义 |
+| 用户发起的数据传输 | Android 14+ 优先评估 UIDT | 可见时安排、有通知，且不计入普通 job 配额 |
+| 平台专属 `JobInfo` 能力或系统组件 | 直接使用 JobScheduler | 需要 UIDT、稳定 job ID、Android 17 pending reason 统计或系统级诊断 |
 
-实战判断:能等待系统选择窗口用 WorkManager;需要用户立即看见持续运行状态用 Foreground Service 或 UIDT;必须准点提醒用 AlarmManager;只在当前页面有效的任务不进后台调度系统。
+是否“重要”不足以决定 API。要把完成时限、进程退出后的恢复要求、重复执行后果、通知义务和版本兼容方案写进任务契约，再据此选择。
 
-## 停止原因与回归守门
+## Android 16 与 Android 17 的配额和诊断变化
 
-Android 官方电量优化文档建议记录 `WorkInfo.getStopReason()`(WorkManager 2.9.0+),JobScheduler 对应 `JobParameters.getStopReason()`(Android 12 / API 31 起公开)。Android 10-11 设备或旧版 WorkManager 中,需退化使用 `WorkInfo.getState()` 与运行时长联合判断停止原因。停止原因不只是排错字段,也是后台任务质量门禁:如果任务频繁因 timeout、quota、constraints 变化或系统资源压力停止,说明任务粒度、约束或重试策略有问题。Android 14 及以上,如果任务频繁超时,系统可能降低 App 的 standby bucket 等级(如降级到 Rare 或 Frequent),进而收紧后台执行配额。工程上可以把 WorkManager 守门整理成三组指标:每类任务的入队次数和去重命中率、每个 tag 的成功 / 失败 / 取消 / retry 分布、停止原因和运行时长分位数。上线前用这三组指标回答两个问题:有没有重复入队,是否存在长期运行到被系统停止的后台任务。
+Android 16（API 36）调整了普通 job 与 expedited job 的运行时间配额：
+
+- ACTIVE 待机分组也开始执行一个较宽松的运行时间配额。
+- job 在应用可见时启动、应用转入不可见后继续运行，后续执行时间计入配额。
+- job 与前台服务并行执行时，job 的执行时间仍计入配额。
+
+这些变化同时影响 WorkManager、JobScheduler 和 DownloadManager。文章不写死配额分钟数，因为相关值会受待机分组与系统配置影响，应用也不应依赖某个固定额度。
+
+诊断接口按版本逐步增强：
+
+- WorkManager 2.9.0 起可通过 `WorkInfo.getStopReason()` 读取停止原因；旧版依赖只能结合 `WorkInfo.State`、尝试次数和应用自己的阶段记录分析。
+- `JobParameters.getStopReason()` 从 Android 12（API 31）提供给直接使用 JobScheduler 的任务。
+- Android 16 新增 `JobScheduler.getPendingJobReasonsHistory(jobId)`，用于查看一个 job 过去未运行的原因。
+- Android 17（API 37）的 JobDebugInfo 系列诊断接口新增 `JobScheduler.getPendingJobReasonStats(jobId)`，返回待执行原因到累计持续时间的映射。它能区分“曾经受某约束影响”与“该约束累计阻塞了多久”。
+
+WorkManager 内部使用的 JobScheduler job ID 属于实现细节，业务代码不应保存它，也不应拿它调用 Android 16/17 的 job ID 诊断接口。WorkManager 任务使用 `WorkInfo`、唯一任务名、标签和应用日志；只有直接安排的 JobScheduler 任务才使用稳定的业务 job ID 与 `JobDebugInfo`。
+
+停止原因应和任务阶段一起记录。最低限度包括：工作 ID、唯一任务名或标签、`runAttemptCount`、开始与停止时间、停止原因、约束快照、业务幂等键，以及副作用进行到哪一步。Android 14 及以上设备若频繁发生超时，系统可能把应用放入 RESTRICTED 待机分组，因此超时既是可靠性问题，也是后续后台执行机会减少的信号。
+
+## 回归验证
+
+单元和仪器测试使用 WorkManager 的测试初始化器与 `TestDriver`，主动满足起始延迟、周期条件和约束；这样可以确定唯一任务策略、依赖传播、重试与业务幂等逻辑。真机测试再覆盖系统调度、待机分组、Doze、网络切换与进程终止。
+
+下面的命令用于在测试设备上切换待机分组并查看 JobScheduler 状态。把包名替换成被测应用；验证结束后恢复到 ACTIVE，避免污染后续用例。
+
+```bash
+adb shell am set-standby-bucket com.example.app restricted
+adb shell am get-standby-bucket com.example.app
+adb shell dumpsys jobscheduler
+adb shell am set-standby-bucket com.example.app active
+```
+
+`set-standby-bucket` 只改变待机分组测试条件，不能证明某个 WorkManager 请求会立即运行或停止。测试记录需要同时保存 `WorkInfo`、应用阶段日志和 `dumpsys jobscheduler`；Android 16/17 上，直接使用 JobScheduler 的用例再采集 pending reason 历史或统计。
+
+发布前至少验证这些失败窗口：
+
+- 进程在网络副作用完成后、本地成功状态写入前终止，下一次执行没有重复创建服务端数据。
+- 约束在 Worker 运行中失效，停止与再次安排不会破坏本地中间状态。
+- expedited 配额不足后改为普通工作，界面不会一直显示“立即处理中”。
+- 周期规格通过 `UPDATE` 变更后，唯一任务没有并存两份。
+- 前置节点失败或取消后，链的后续节点状态与产品预期一致。
+- Android 16 配额条件与 Android 14+ RESTRICTED 分组下，没有无上限重试或密集重新入队。
 
 ## 小结
 
-WorkManager 的价值是把可靠后台工作写成可约束、可去重、可观察的任务契约。它不是保活入口,也不是精确定时器。App 侧要做的是分类任务、设置合适约束、用唯一任务消除重复入队、为失败和 quota 降级留路径,并把停止原因纳入功耗回归守门。
-
-## AIW 源码调研补充 <!-- AIW-源码调研-2026-06-25 -->
-
-基于 Android 17 AOSP 源码的深度调研，以下是 WorkManager quota 管理的核心机制：
-
-### JobSchedulerService 配额管理架构
-
-Android 17 的 JobSchedulerService 实现了完整的 job quota 管理机制，通过以下核心组件协同工作：
-
-**QuotaController**：配额策略执行和检查的核心控制器  
-**StandbyTracker**：跟踪每个应用的 standby 状态  
-**JobPackageTracker**：跟踪每个包的执行时间和资源使用  
-**JobConcurrencyManager**：管理任务并发执行
-
-```java
-// frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java
-final StandbyTracker mStandbyTracker;                    // Standby 状态跟踪
-final JobPackageTracker mJobPackageTracker = new JobPackageTracker();  // 包执行跟踪  
-final QuotaController mQuotaController;                  // 配额控制器
-final JobConcurrencyManager mConcurrencyManager;          // 并发管理器
-```
-
-### Standby Bucket 管理机制
-
-系统基于应用的活跃程度定义了 6 个 standby bucket：
-
-| Bucket 等级 | 索引 | 描述 |
-|-------------|------|------|
-| ACTIVE | 0 | 活跃应用 |
-| WORKING | 1 | 正在工作中的应用 |
-| FREQUENT | 2 | 频繁使用应用 |
-| RARE | 3 | 罕少使用应用 |
-| NEVER | 4 | 从不使用应用 |
-| RESTRICTED | 5 | 受限应用 |
-
-**Bucket 状态变更处理**：
-```java
-@Override
-public void onRestrictedBucketChanged(List<JobStatus> jobs) {
-    synchronized (mLock) {
-        for (JobStatus js : jobs) {
-            for (RestrictiveController controller : mRestrictiveControllers) {
-                if (js.getStandbyBucket() == RESTRICTED_INDEX) {
-                    controller.startTrackingRestrictedJobLocked(js);
-                } else {
-                    controller.stopTrackingRestrictedJobLocked(js);
-                }
-            }
-        }
-    }
-    mHandler.obtainMessage(MSG_CHECK_JOB).sendToTarget();
-}
-```
-
-### API 配额限制机制
-
-系统配置了严格的 API 调用频率限制，防止恶意应用滥用：
-
-**可配置配额参数**：
-- `ENABLE_API_QUOTAS`：启用 API 配额限制
-- `API_QUOTA_SCHEDULE_COUNT`：API 调用次数限制（最小 250 次）
-- `API_QUOTA_SCHEDULE_WINDOW_MS`：时间窗口限制
-- `API_QUOTA_SCHEDULE_THROW_EXCEPTION`：是否抛出异常
-
-```java
-// 运行时更新配置
-private void updateApiQuotaConstantsLocked() {
-    ENABLE_API_QUOTAS = DeviceConfig.getBoolean(DeviceConfig.NAMESPACE_JOB_SCHEDULER,
-            KEY_ENABLE_API_QUOTAS, DEFAULT_ENABLE_API_QUOTAS);
-    API_QUOTA_SCHEDULE_COUNT = Math.max(250,
-            DeviceConfig.getInt(DeviceConfig.NAMESPACE_JOB_SCHEDULER,
-                    KEY_API_QUOTA_SCHEDULE_COUNT, DEFAULT_API_QUOTA_SCHEDULE_COUNT));
-}
-```
-
-### Expedited Job 配额检查
-
-对于 expedited job，系统会进行严格的配额检查：
-
-**配额检查逻辑**：
-```java
-JobStatus jobStatus = JobStatus.createFromJobInfo(job, callingUid, packageName, userId, namespace, tag);
-
-// Return failure early if expedited job quota used up.
-if (jobStatus.isRequestedExpeditedJob()) {
-    if (!mQuotaController.isWithinEJQuotaLocked(jobStatus)) {
-        Counter.logIncrementWithUid(
-                "job_scheduler.value_cntr_w_uid_schedule_failure_ej_out_of_quota",
-                callingUid);
-        return JobScheduler.RESULT_FAILURE;
-    }
-}
-```
-
-**配额耗尽处理**：
-- 返回 `RESULT_FAILURE` 状态码
-- 记录配额耗尽指标日志
-- 不影响其他类型任务的调度
-
-### 配额恢复机制
-
-配额不是静态的，会根据用户使用模式动态调整：
-
-**配额恢复触发条件**：
-1. Standby bucket 动态变化触发配额调整
-2. 用户主动使用应用时 bucket 升级，获得更高配额
-3. 系统资源紧张时可能临时降级配额
-
-**性能监控**：
-系统会持续监控配额使用情况，记录关键指标用于策略优化。
-
-### 实际影响
-
-这些配额机制直接影响 WorkManager 的行为：
-
-1. **任务调度延迟**：配额检查会增加调度延迟（< 1ms）
-2. **任务失败**：配额耗尽时 expedited job 会直接失败
-3. **用户体验**：频繁使用的应用获得更高配额，减少任务失败
-4. **电池优化**：防止恶意应用滥用后台任务，节省电池
-
-### 开发建议
-
-基于源码分析，建议开发者在使用 WorkManager 时：
-
-1. **合理使用 expedited job**：避免过度依赖 expedited job
-2. **监控任务停止原因**：关注配额耗尽导致的任务失败
-3. **优化任务粒度**：避免小任务频繁调用 API
-4. **考虑用户使用模式**：让用户频繁使用的功能获得更高优先级
-
----
-
-
+WorkManager 解决的是可延后工作的持久记录、约束、排重、依赖和重试。应用仍要定义副作用幂等性、恢复点、配额不足后的用户体验和停止原因观测。AndroidX 负责工作状态与调度器协作，Android 17 的 JobScheduler 负责平台约束和配额；分清这两层，才能解释任务为什么没开始、为什么被停止，以及恢复后是否可以安全重跑。
 
 ## 延伸阅读
-- [Support for long-running workers — Android Developers](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/long-running)：long-running worker 的官方使用指南，含 Android 16 quota 限制与 UIDT 豁免说明
-- [Behavior changes: Apps targeting Android 17 — Android Developers](https://developer.android.com/about/versions/17/behavior-changes-all)：Android 17 前台服务 WIU 强化与后台音频硬化的完整行为变更清单
 
+- [Define work requests — Android Developers](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work)：周期、flex、约束、退避和 expedited 的公开契约。
+- [Update work — Android Developers](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/update-work)：`UPDATE` 对一次性与周期唯一任务的更新语义。
+- [Support for long-running workers — Android Developers](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/long-running)：long-running Worker、前台服务与 Android 16 job 配额。
+- [User-initiated data transfer — Android Developers](https://developer.android.com/develop/background-work/background-tasks/uidt)：Android 14+ UIDT 的使用条件、通知和约束。
+- [Android 16 behavior changes for all apps](https://developer.android.com/about/versions/16/behavior-changes-all)：JobScheduler 配额变化与 pending reason 历史。
+- [Android 17 features and APIs](https://developer.android.com/about/versions/17/features)：JobDebugInfo 系列的 `JobScheduler.getPendingJobReasonStats()`。
