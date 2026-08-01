@@ -1833,8 +1833,8 @@
       "summary": "--- source: opencli-twitter fetched: 2026-07-30 research_topic: Harness memory and substitutable model system --- # Primary X signals (opencli twitter) ## OpenAI ARC-AGI-3 harness thread ### @OpenAI 2082616636989952217 G",
       "chapter": "ch16",
       "processed_at": "2026-07-31T06:20:37.476501+08:00",
-      "action": "body-apply-rejected-misroute",
-      "score": 19,
+      "action": "quarantined-misroute",
+      "score": 0,
       "target_path": "src/part1-fundamentals/ch06-storage/6.03-Android-17-SharedPreferencesImpl-ANR机制.md",
       "route_confidence": 28,
       "route_terms": [
@@ -1848,7 +1848,6 @@
         "references"
       ],
       "route_status": "quarantined-misroute-3x-rejected",
-      "score": 0,
       "rejected_at": "2026-07-31T13:15:33+08:00",
       "rejected_run_id": "20260731-131533-d602fc9b",
       "rejected_reason": "Material is AI agent harness/memory X-signals (OpenAI ARC-AGI-3, Nadella, Kimi K3, T3 Code); target is AOSP SharedPreferencesImpl ANR chapter. Zero topical overlap; route_confidence=28 with generic stopwords. Prevented fabrication.",
@@ -1859,7 +1858,18 @@
       "quarantined_at": "2026-07-31T21:15:38+08:00",
       "quarantined_run_id": "20260731-211538-5672ada9",
       "quarantine_reason": "Third consecutive rejection of identical misroute. Material verified 3x: content is 100% AI-agent-harness/LLM industry signals (ARC-AGI-3 retained reasoning/context compaction, Nadella substitutable-model-system, Unsloth K3 1-bit, T3 Code iOS/Android). Target src/part1-fundamentals/ch06-storage/6.03-Android-17-SharedPreferencesImpl-ANR机制.md is AOSP SharedPreferencesImpl/QueuedWork/ANR. Zero topical overlap. route_confidence=28, all route_terms are stopwords. Score zeroed and route_status escalated to quarantined-misroute-3x-rejected to stop selector re-surfacing loop. No body change; no fabrication.",
-      "action": "quarantined-misroute"
+      "re_surfaced_4th_at": "2026-07-31T23:15:54+08:00",
+      "re_surfaced_4th_run_id": "20260731-231554-955d99fb",
+      "re_surfaced_4th_action": "body-apply-rejected-misroute-fail-closed",
+      "re_surfaced_4th_reason": "Selector bug: re-surfaced quarantined-misroute-3x-rejected item as candidate_ready a 4th time despite score=0 and explicit quarantine. Material verified again: identical AI-agent-harness/LLM content (ARC-AGI-3, Nadella, Unsloth K3, T3 Code). Target 6.03 is AOSP SharedPreferencesImpl ANR. Zero overlap. Fail-closed; no body change; no fabrication. Selector must filter route_status starting with quarantined-.",
+      "re_surfaced_5th_at": "2026-08-01T07:15:00+08:00",
+      "re_surfaced_5th_run_id": "20260801-071500-3bc34f2f",
+      "re_surfaced_5th_action": "body-apply-rejected-misroute-fail-closed",
+      "re_surfaced_5th_reason": "Selector bug persists: re-surfaced quarantined-misroute-3x-rejected item as candidate_ready a 5th time (run 20260801-071500) despite score=0, route_confidence=28, all-stopword route_terms, and 4 prior explicit rejections. Material verified again: 100% AI-agent-harness/LLM content (ARC-AGI-3 retained reasoning/context compaction, Nadella substitutable-model-system, Unsloth K3 1-bit, T3 Code iOS/Android). Target 6.03 is AOSP SharedPreferencesImpl/QueuedWork/ANR (android-17.0.0_r1). Zero topical overlap. Fail-closed; no body change; no fabrication. Selector filter for route_status starting with 'quarantined-' is NOT working and must be fixed.",
+      "re_surfaced_6th_at": "2026-08-01T09:15:17+08:00",
+      "re_surfaced_6th_run_id": "20260801-091517-348a571a",
+      "re_surfaced_6th_action": "body-apply-rejected-misroute-fail-closed",
+      "re_surfaced_6th_reason": "Selector bug STILL persists (6th re-surface): re-surfaced quarantined-misroute-3x-rejected item as candidate_ready despite score=0, route_confidence=28, all-stopword route_terms, and 5 prior explicit rejections. Material verified again: 100% AI-agent-harness/LLM content (ARC-AGI-3 retained reasoning/context compaction, Nadella substitutable-model-system, Unsloth K3 1-bit, T3 Code iOS/Android). Target 6.03 is AOSP SharedPreferencesImpl/QueuedWork/ANR (android-17.0.0_r1). Zero topical overlap. Fail-closed; no body change; no fabrication. Selector filter for route_status starting with 'quarantined-' is STILL NOT WORKING after 5+ reported failures."
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-30-morning-Harness记忆-可替换模型-研究材料/references/06-t3-architecture.md",
@@ -1877,6 +1887,66 @@
       "summary": "# Remote Access Use this when you want to connect to a T3 Code server from another device such as a phone, tablet, or separate desktop app. ## Recommended Setup Use a trusted private network that meshes your devices toge",
       "chapter": "ch16",
       "processed_at": "2026-07-31T06:20:37.476501+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "[掘金Android] 别再只用 Loading、Success、Error 表示所有页面状态了",
+      "title": "[掘金Android] 别再只用 Loading、Success、Error 表示所有页面状态了",
+      "summary": "UI 状态是渲染所需的全部信息快照，不是几个互斥状态。三态密封类无法表达\"刷新中已有内容\"\"非阻塞错误\"\"可恢复筛选条件\"等组合场景。正确做法是用 data class 承载组合状态，只把初次加载收拢成密封类型；可计算值用派生属性而非重复存储；Flow 异常用 hasReceivedArticles 区分初次失败与刷新失败，catch 后兜底发最后一次成功数据。版本边界：Kotlin 2.4.0 起 Explicit backing fields 稳定；Lifecycle 2.10.0 minSdk 提到 API 23、2.11.0 需 Compose UI 1.7.0+ 且 AGP 9.2.0+；Strong Skipping 从 Kotlin 2.0.20 默认启用。",
+      "chapter": "ch02",
+      "processed_at": "2026-08-01T06:20:53.343912+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-01-76670971-谷歌优化建议重新学Android位图处理.md",
+      "title": "[技术文章] 谷歌的一个优化建议，让我重新学了一遍Android里面如何正确处理位图背景 谷歌这位哥哥真的会整幺蛾子，好不容易把cra",
+      "summary": "> 发布时间: 2026-07-28T02:18:34.000Z > 原文链接: https://juejin.cn/post/7667097178154319912 2026-07-28 683 阅读8分钟 谷歌这位哥哥真的会整幺蛾子，好不容易把crash跟anr数据压下来一点，最近发现又给了我一条技术质量类型的整改建议，大致内容是 真的是一点不让我闲着，天天关心着我的...",
+      "chapter": "ch09",
+      "processed_at": "2026-08-01T06:20:53.343912+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-01-76678638-KotlinLLM开源运行时生成Kotlin的Agent库.md",
+      "title": "[技术文章] KotlinLLM 开源 ，一个可以在运行时自己生成永久 Kotlin 代码的 Agent 库JetBrains 这次还",
+      "summary": "> 发布时间: 2026-07-30T01:16:02.000Z > 原文链接: https://juejin.cn/post/7667863898348126271 2026-07-30 578 阅读11分钟 JetBrains 这次还真搞出来一个有意思的东西，大概理解就是： > 应用为什么需要在每次请求时重复调用 LLM？为什么不能让模型在第一次遇到新问题时生成可以审...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-01T06:20:53.343912+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-01-76678955-别再只用LoadingSuccessError表示页面状态.md",
+      "title": "[技术文章] 别再只用 Loading、Success、Error 表示所有页面状态了各位 Compose 开发者，周五好。趁着这个愉",
+      "summary": "> 发布时间: 2026-07-31T00:43:22.000Z > 原文链接: https://juejin.cn/post/7667895598095826970 2026-07-31 228 阅读21分钟 各位 Compose 开发者，周五好。趁着这个愉快的周五，我们一起探讨一个问题：Compose 中的 UI State 到底应该怎么写？ 我相信，大部分开发者在使...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-01T06:20:53.343912+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-01-juejin-android.md",
+      "title": "[技术文章] 掘金 Android 技术文章抓取 · 2026-08-01",
+      "summary": "status: completed 数据源：掘金 Android 分类推荐流（sort_type=3 最新），近 7 天候选 10 篇 评分阈值：> 7.0 入选；本日入选 1 篇，4 篇进正文阅读后淘汰 归档根：技术文章/source/juejin-android 本日推荐流返回 10 篇近 7 天 Android 分类文章。Flutter 桌面系统（Flutter S...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-01T06:20:53.343912+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-31-morning-Luna-Cursor-RHI-research/references/03-cursor-cloud-agent-environment.md",
+      "title": "[DeepResearch] How we set up our cloud agent environment · Cursor",
+      "summary": "# How we set up our cloud agent environment · Cursor > 作者: Mathew Hogan > 发布时间: 2026-07-30T12:00:00.000Z > 原文链接: https://cursor.com/en/blog/cloud-agent-environment --- [Blog](https://cursor.com/blog) / [research](https:/",
+      "chapter": "ch16",
+      "processed_at": "2026-08-01T06:20:53.343912+08:00",
       "action": "indexed-only-chapter-freeze",
       "score": 15,
       "route_status": "unrouted-existing-chapter-needed"
