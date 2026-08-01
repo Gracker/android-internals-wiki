@@ -657,6 +657,23 @@
       "summary": "aiw-body-apply-context.py selector keeps re-surfacing quarantined-misroute item #155 (00-primary-x-signals.md) as candidate_ready. 6th occurrence this run. route_status=quarantined-misroute-3x-rejected, score=0. Selector must filter route_status LIKE 'quarantined-%' and action IN (quarantined-misroute, body-apply-rejected-misroute).",
       "type": "selector-bug",
       "updated_at": "2026-08-01T09:17:00.300309+08:00"
+    },
+    {
+      "chapter": "infra",
+      "created_at": "2026-08-01T11:18:55.546523+08:00",
+      "created_by": "body-apply",
+      "created_run_id": "20260801-111545-40ce0efd",
+      "details": "Root cause: selector only checked the action field against skip-set {applied, body-applied, rejected, duplicate, superseded} in source_index_candidates(); 'quarantined-misroute' was not in the set, and route_status (value quarantined-misroute-3x-rejected) was never checked. Fix applied and verified: added route_status.startswith('quarantined') / action.startswith('quarantined') / route_confidence<30 guards. Re-ran selector after fix -> no-new-input (quarantined item correctly skipped; no other routable candidate). Material has zero topical overlap with target (OpenAI ARC-AGI-3/Nadella/Unsloth K3/T3 Code vs AOSP SharedPreferencesImpl/QueuedWork/ANR), route_confidence=28 with all-stopword route_terms. No chapter body, SUMMARY, or new file was modified; no fabrication.",
+      "id": "rf-selector-quarantine-leak-20260801",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "aiw-body-apply-context.py:163-185"
+      ],
+      "status": "open",
+      "summary": "aiw-body-apply-context.py failed to filter quarantined-misroute items, causing source-index files[155] (AI-agent/LLM X-signals misrouted to 6.03 SharedPreferencesImpl ANR) to be re-surfaced as candidate_ready across 7 consecutive runs.",
+      "type": "selector-bug",
+      "updated_at": "2026-08-01T11:18:55.546523+08:00"
     }
   ],
   "schema_version": 1
