@@ -102,45 +102,82 @@ finalized_by: openclaw-task6-auto-promote
 
 ## 为什么要了解 APK 体积分析与瘦身
 
-包体积治理的第一步是把体积账算清楚，再决定要不要动 Gradle 配置。一个 release 包里通常有 dex、`resources.arsc`、`res/`、`assets/`、`lib/<abi>/`、`AndroidManifest.xml` 和签名文件；它们进入安装、启动和内存映射路径的方式不同，对应的优化手段也不同。APK 结构、`resources.arsc` 作用、dex / res / lib 三类产物的基础原理，详见 12.1 节。这里处理实战流程：怎么定位体积来源，怎么评估改动收益，怎么把 R8、资源缩减和 ABI 策略纳入发版检查。
+体积优化不能从“删哪个目录”开始。先要回答三个问题：用户所在渠道拿到了哪些 APK，这些 APK 下载了多少字节，安装后又占用了多少空间。三者不是同一个数。
 
+- **上传制品**：APK 是可安装制品；AAB 是发布制品，Google Play 会从中生成 base、ABI、语言、密度和动态功能 APK。AAB 文件本身的大小不能代表任何一台设备的下载量。
+- **设备交付量**：普通单 APK 渠道交付一个完整 APK；App Bundle 渠道交付与设备配置匹配的一组 split APK。比较 AAB 时必须固定 ABI、密度、语言、SDK 和动态功能集合。
+- **安装占用**：除了已安装 APK，还可能包含提取后的 native 库、编译产物、应用数据和缓存。减少下载量不保证安装占用按相同比例下降。
+
+APK 或 APK 集合中常见的主体包括 `classes*.dex`、`resources.arsc`、`res/`、`assets/`、`lib/<abi>/`、编译后的 `AndroidManifest.xml` 和签名数据。它们的构建、交付和加载方式不同，不能用同一种办法处理。APK 结构和三类主要产物的基础原理见 12.1 节；本节关注测量、归因和发布门禁。
 
 ## APK Analyzer 与体积构成分析
 
-[已验证: 官方文档, developer.android.com/studio/debug/apk-analyzer]
+[APK Analyzer](https://developer.android.com/studio/debug/apk-analyzer) 可以打开 APK 或 App Bundle，查看文件构成、DEX 包结构、资源、编译后的 manifest，并比较两版制品。界面中的两个尺寸容易混淆：
 
-APK Analyzer 是包体积排查的基线工具。它可以直接查看 APK 或 App Bundle 中各文件的绝对/相对大小、dex 内部结构、最终打包后的 `AndroidManifest.xml`、资源和二进制文件，还支持两个 APK 或 App Bundle 并排对比。
+- **Raw File Size**：该实体压缩后写入 APK ZIP 的大小，也是它对 APK 文件大小的贡献。它不是解压后的大小。
+- **Download Size**：工具对 Google Play 压缩传输大小的估算。它适合观察变化方向，不等同于 Play Console 针对某个设备配置给出的精确交付结果。
 
-一次有效的体积分析要记录几组口径：
+分析时再按目录归因：
 
-- **Raw File Size**：实体在 APK ZIP 中对总包大小的贡献（即 zipped file size），用来判断某类产物在包内占了多少空间。它不是解压后的大小——如果需要分析解压后占用，应单独用 ZIP uncompressed size 或安装后占用口径。
-- **Download Size**：按 Google Play 分发时的压缩下载大小估算，用来判断用户下载包的变化。图片、文本、dex、`.so` 的压缩表现不同，只看原始大小容易误判收益。
-- **按目录归因**：`classes*.dex` 对应 Kotlin / Java 代码和依赖；`res/` 与 `resources.arsc` 对应编译资源；`assets/` 多见于字体、离线包、模型、Web 资源；`lib/<abi>/` 对应 native 库副本。
-- **按版本对比**：发版前把当前 release 包和上一版 release 包放进 APK Analyzer 对比，优先处理增长项，而不是重新扫全包。
+- `classes*.dex`：业务代码、生成代码和依赖；
+- `res/` 与 `resources.arsc`：编译资源、替代资源和资源表；
+- `assets/`：字体、离线页面、模型、媒体和配置；
+- `lib/<abi>/`：各 ABI 的 native 库；
+- `META-INF/` 与签名块：签名方案和签名数据。
 
-命令行环境要补一层可复现检查。`apkanalyzer` 可以输出 APK 总大小和估算下载大小；App Bundle 场景下，`bundletool get-size total` 可以按 `.apks` 估算压缩后的下载体积。[已验证: 官方文档, developer.android.com/tools/apkanalyzer；developer.android.com/tools/bundletool]
+### 固定构建条件再比较
 
-下面这组命令用于把体积检查接入 CI。读数只作为门禁输入，是否阻断发布要结合业务版本和渠道包策略判断。
+基线包与候选包要来自同一种 build type、同一渠道、同一签名流程和同一版本的构建工具。是否开启 R8、资源缩减、压缩、加固或渠道重签，都会改变结果。Debug 包与 release 包没有可比性。
+
+下面的命令用于记录单 APK 的文件大小、估算下载大小，并找出两版 APK 的差异。`-h` 是 `apkanalyzer` 的全局人类可读格式参数，应放在 subject 之前。
 
 ```bash
-# APK 总大小与估算下载大小
 apkanalyzer -h apk file-size app-release.apk
 apkanalyzer -h apk download-size app-release.apk
-
-# AAB 生成 APK set 后估算下载大小
-bundletool build-apks --bundle=app-release.aab --output=app-release.apks
-bundletool get-size total --apks=app-release.apks
+apkanalyzer apk compare --different-only baseline.apk app-release.apk
 ```
 
-如果本轮 APK Analyzer 显示主要增长来自 dex，就进入 R8 / 依赖治理；来自 `res/` 或 `resources.arsc`，优先检查资源缩减、图片格式和资源命名；来自 `lib/`，先看 ABI 副本和 debug symbol；来自 `assets/`，检查离线包、模型、字体和配置文件是否应改为首启后下载或按需下载。
+前两行给出单 APK 的两个口径；第三行只列出变化项，适合在 CI 中保存为构建附件。命令语法以 [`apkanalyzer` 官方文档](https://developer.android.com/tools/apkanalyzer) 为准。
+
+App Bundle 要先生成 APK Set，再针对固定设备规格计算交付量。下面的第一条命令从已连接的代表设备生成规格文件；审核其中的 SDK、ABI、密度和语言后，应将它作为体积基线的一部分固定下来。CI 还应使用稳定的 `bundletool` 版本和相同签名参数。
+
+```bash
+bundletool get-device-spec --output=device-spec.json
+
+bundletool build-apks \
+  --bundle=app-release.aab \
+  --output=app-release.apks
+
+bundletool get-size total \
+  --apks=app-release.apks \
+  --device-spec=device-spec.json
+```
+
+`get-device-spec` 读取当前连接设备；`build-apks` 生成完整 APK Set；`get-size total` 再按规格选择会交付的 APK。未传 `--device-spec` 时，输出可能是设备维度下的最小值和最大值，不能直接充当某台设备的回归基线。Dynamic Feature 的测量还要固定 `--modules`；详细用法见 25.8 节和 [`bundletool` 文档](https://developer.android.com/tools/bundletool)。
+
+定位顺序由增长目录决定：DEX 增长检查依赖和 R8；`res/` 或 `resources.arsc` 增长检查资源缩减与替代资源；`lib/` 增长检查 ABI、符号和对齐；`assets/` 增长检查低频大文件的交付时机。每次只改一类变量，重新生成 release 制品并比较，才能知道收益来自哪里。
 
 ## 代码瘦身：ProGuard / R8 规则优化
 
-[已验证: 官方文档, developer.android.com/studio/build/shrink-code]
+Android release 构建的代码缩减器是 R8。AGP 会把 manifest 组件、应用与依赖提供的 keep rules，以及构建系统掌握的其他入口交给 R8；JNI、反射、序列化和由字符串间接引用的代码仍可能需要精确规则。把它简化成“只从 manifest 遍历”会漏掉这些入口。
 
-Android 现在的代码瘦身以 R8 为主。R8 会从 manifest 中声明的 Activity、Service、Provider 等入口出发，构建可达代码图，移除不可达的类和方法；随后执行方法内联、类合并、命名缩短等优化。ProGuard 规则仍然沿用在 R8 配置里，但工程判断的重点也要从“开没开混淆”转到“规则有没有过度保留”。
+AGP 9.3 及以上推荐使用 `optimization` DSL。下面的配置同时启用代码和资源优化。
 
-release 构建至少保留下面这组开关。资源缩减依赖代码缩减，单独打开 `isShrinkResources` 没有意义。
+```kotlin
+android {
+    buildTypes {
+        release {
+            optimization {
+                enable = true
+            }
+        }
+    }
+}
+```
+
+新 DSL 会应用 Android 平台默认 keep rules；自定义规则可放在 `src/<variant>/keepRules/*.keep`。规则文件仍要进入版本控制，并与对应变体一起测试。
+
+AGP 9.3 以下，或仍使用 legacy DSL 的工程，可用下面的配置。资源缩减依赖 R8 的可达性结果，不能脱离代码缩减单独工作。
 
 ```kotlin
 android {
@@ -157,51 +194,48 @@ android {
 }
 ```
 
-这段配置让 R8 参与代码缩减、混淆和优化，也让 AGP 在 R8 移除无用代码后继续移除不可达资源。构建后要检查 `build/outputs/mapping/release/` 里的 `mapping.txt`、`usage.txt` 和资源诊断文件，确认被移除的是预期代码和资源。
+`proguard-android-optimize.txt` 启用推荐的优化配置，项目规则放在 `proguard-rules.pro`。AGP 9.3 仍兼容 legacy DSL，但团队应固定一种配置方式，避免规则分散在两个位置。配置生效后，构建产物和测试结果才是判断依据，不能只看 Gradle 开关。
 
-排查 R8 规则时按这个顺序来：
+R8 排查可沿着下面四条线进行：
 
-- **先看依赖增长**：APK Analyzer 打开 `classes.dex`，按包名找增长最大的库或模块。只用到一个功能却带入整套 SDK，是 dex 膨胀最常见的来源。
-- **再看 keep 规则**：`-keep class com.xxx.** { *; }` 会让整个包逃过大部分优化。反射、序列化、JNI 注册和框架回调需要 keep，但规则应收窄到类、成员或注解粒度。
-- **检查 consumer rules**：AAR 自带的 consumer ProGuard rules 会传递到 App。某些三方库为了避免误删，会把规则写得很宽，导致 App 侧 R8 空间变小。
-- **保留可回溯能力**：混淆后必须归档 `mapping.txt`。Crash 平台、ANR 堆栈和线上日志都依赖它还原符号。
+- **依赖**：在 APK Analyzer 的 DEX 视图中按包名比较。业务只调用少量 API，却引入整套 SDK 时，应优先评估依赖拆分、替代库或按功能引入。
+- **应用 keep rules**：`-keep class com.example.** { *; }` 会保留整个包及成员。反射、JNI 和框架回调需要规则时，应收窄到被间接访问的类、成员或注解。
+- **AAR consumer rules**：库发布者的规则会合并进应用。宽泛 consumer rules 既保留库代码，也可能保留应用侧实现。
+- **保留原因**：遇到意外未缩减的类，当前工具链提供 R8 Configuration Analyzer 时可查看宽泛规则；其他版本可临时用 `-whyareyoukeeping` 查询保留路径，避免靠猜测删除规则。
 
-AGP 8.12 / 8.13 支持手动开启优化版资源缩减；AGP 9.0 起，在 `isShrinkResources = true` 时自动使用这一流程。它会让资源缩减更贴近 R8 的引用图，但动态资源名仍然要显式声明保留，详见 25.7 节。[已验证: 官方文档, developer.android.com/topic/performance/app-optimization/enable-app-optimization]
+发布系统应归档 `mapping.txt`，否则混淆后的 Java/Kotlin 崩溃和 ANR 堆栈无法还原。`usage.txt` 用于检查删除内容，`seeds.txt` 用于查看入口和保留项，`configuration.txt` 用于审计最终合并配置；资源缩减开启后还要保存资源诊断文件。不同 AGP/R8 版本的文件集合和路径会变化，CI 应从实际 release 构建中确认。
 
+AGP 8.12/8.13 需要通过 `android.r8.optimizedResourceShrinking=true` 手动启用优化版资源缩减；AGP 9.0 起，legacy DSL 中只要 `isShrinkResources=true` 就会自动使用该流程；AGP 9.3 的新 DSL 默认启用优化版资源缩减。升级 AGP/R8 可能改变优化结果，升级提交应单独跑启动、反射、序列化、JNI、通知、Widget 和动态功能测试。修改 R8 输出的后处理工具还可能破坏 DEX 布局和 Baseline Profile，应在发布链中单独审计。细节见 [Enable app optimization](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization) 和 25.7 节。
 
 ## 资源瘦身：无用资源移除、资源混淆
 
-[已验证: 官方文档, developer.android.com/topic/performance/reduce-apk-size]
+资源体积可以从数量、单项大小和交付范围三个方向处理：
 
-资源瘦身两个方向：减少资源数量，减少单个资源大小。前者靠 lint、资源缩减、变体过滤和资源合并；后者靠图片格式、字体子集化、资源名压缩和大型资源按需下载。12.1 节已经覆盖资源类型和 `resources.arsc` 基础，这里只写操作路径。
+- **数量**：用 lint、Android Studio 检查和 `isShrinkResources=true` 清理未使用资源。自动检查只给候选项，删除公共库资源前要确认下游调用。
+- **单项大小**：按内容选择 WebP、AVIF、矢量图、字体子集或媒体压缩，并在目标 API、画质、解码耗时和内存占用下验证。格式转换不应只看文件字节数。
+- **交付范围**：普通 APK 可用 `resourceConfigurations` 排除明确不支持的替代资源；AAB 默认可按语言、密度和 ABI 生成配置 APK。若应用支持系统“应用语言”或运行时下载语言资源，不能为减小上传包而删掉受支持语言。
+- **低频资源**：完整低频功能可放入 Dynamic Feature；大体积非代码素材可评估 Play Asset Delivery 或受校验的 CDN 方案。交付方式不能替代未使用资源清理。
 
-无用资源移除先用官方工具确认：
+`Resources.getIdentifier()`、字符串拼接、主题皮肤、WebView 协议和 JNI 可能隐藏资源引用。缩减器无法可靠推导时，在 `res/raw/<package>.keep.xml` 中用 `tools:keep` 或 `tools:discard` 声明；这类文件作用于合并后的全局资源，文件名应包含唯一包名，避免应用与多个 AAR 之间冲突。保留规则、用例和调用点应同时维护，不能用一个宽泛通配符长期遮住问题。规则格式见 [Customize which resources to keep](https://developer.android.com/topic/performance/app-optimization/customize-which-resources-to-keep)。
 
-- **lint / Android Studio inspection**：扫描 `res/` 中没有被代码引用的资源，适合手工清理老图片、老布局和废弃主题。
-- **`isShrinkResources = true`**：配合 R8 删除不可达代码引用的资源。官方文档明确说明，构建过程中先由 R8 移除无用代码，再由 AGP 移除无用资源。
-- **`res/raw/*.keep.xml`**：动态资源名无法完全静态分析，使用 `tools:keep` 和 `tools:discard` 指定保留或丢弃规则。keep 文件有全局作用域，文件名要带包名前缀，避免库之间规则冲突。[已验证: 官方文档, developer.android.com/topic/performance/app-optimization/customize-which-resources-to-keep]
-- **`resourceConfigurations` / `resConfigs`**：移除不需要的语言、密度等替代资源。AAB 分发默认会按设备语言、屏幕密度和 ABI 生成配置 APK；普通 APK 或国内渠道包仍要显式检查这些资源是否被全量打入。
+“资源混淆”要区分官方构建优化与第三方重写工具。R8/AGP 的资源缩减、资源表优化属于受支持流程；自行重写资源名、路径、`resources.arsc` 或 R8 中间产物并不是通用 AGP 能力，可能破坏动态查找、资源覆盖、增量更新和诊断工具。没有明确工具版本、产物校验和完整回归时，不应把它列为默认步骤。
 
-动态资源引用要单独列风险清单。`Resources.getIdentifier()`、拼接资源名、主题皮肤包、WebView 与 native 混合页面常把资源引用藏在字符串里；R8 和资源缩减器很难从静态引用图里找到这些资源。处理方式是建立白名单：保留资源名前缀、记录调用点、在 `resources.txt` 中检查缩减结果，并给动态加载路径加回归用例。
+Android 17 的 [`ResourceTypes.h`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/androidfw/include/androidfw/ResourceTypes.h) 定义了资源表数据结构。它说明 `resources.arsc` 是编译后的二进制资源表，却不能证明任意资源表改写都兼容平台和构建工具。资源专项优化与验证流程见 25.7 和 25.31 节。
 
-资源混淆和 `resources.arsc` 处理属于收益明显但风险较高的优化。资源文件名变短后，`resources.arsc` 中的字符串池会变小；重复图片也可以在资源表层面复用同一份文件路径。AOSP 的 `ResourceTypes.h` 定义了资源表相关结构，能说明 `resources.arsc` 是二进制资源表，不是文本清单。[已验证: AOSP android-17.0.0_r1, frameworks/base/libs/androidfw/include/androidfw/ResourceTypes.h]
-
-这一类优化不建议在没有测试覆盖的项目里直接引入。更稳的顺序是：先开 R8 + 官方资源缩减，再处理图片格式和语言 / 密度过滤，再评估资源混淆。资源混淆上线前至少要覆盖启动页、换肤、通知图标、桌面 widget、WebView bridge、动态页面和多语言场景。
-
+推荐的处理顺序是：移除无用资源，开启官方缩减，处理大文件和替代资源，再评估交付拆分。每一步都检查启动、换肤、通知图标、桌面 Widget、WebView/JNI 桥接和多语言路径。
 
 ## `.so` 库瘦身：ABI 过滤、动态下发
 
-[已验证: 官方文档, developer.android.com/ndk/guides/abis]
+同一份 native 功能通常要为多个 ABI 各编译一份 `.so`。Universal APK 会包含这些副本；AAB 可让 Play 只交付设备 ABI 对应的配置 APK。因此，应同时查看上传制品和设备 APK Set，不能看到 AAB 中有四套 ABI 就断言用户下载了四套。
 
-`.so` 体积问题通常来自同一套库按多个 ABI 重复打包，单个库过大反而不是最常见原因。NDK 文档说明 fat APK 会明显大于只包含单一 ABI 二进制的 APK，并建议使用 App Bundle 或 APK Splits，在保持设备兼容性的同时减少用户实际下载大小。
+排查时检查四项：
 
-排查 `.so` 先看三件事：
+- **支持范围**：根据真实设备与渠道数据决定 `arm64-v8a`、`armeabi-v7a`、`x86_64` 等 ABI，不能把模拟器配置直接带入正式包，也不能在没有兼容性数据时删掉 32 位 ABI。
+- **ABI 完整性**：一个 APK/split 中的 JNI 依赖要有相互匹配的 ABI 版本。只删除某个间接依赖的 `armeabi-v7a` 副本，会把体积问题变成安装失败或 `UnsatisfiedLinkError`。
+- **发布库与符号**：AGP 默认会剥离 release native 库中的符号表和调试信息。用于 native 崩溃还原的符号应通过 `ndk.debugSymbolLevel` 生成并独立归档或上传，不能靠把未剥离 `.so` 留在交付包中解决。
+- **低频功能**：Dynamic Feature 可以包含代码、资源和 native 库；Play Asset Delivery 只能交付非可执行素材。非 Play 渠道若自行下载 native 代码，还要处理签名校验、版本绑定、加载路径、回滚、审核政策和攻击面，不能只按文件大小决定。
 
-- **ABI 是否全量打入**：`lib/arm64-v8a/`、`lib/armeabi-v7a/`、`lib/x86/`、`lib/x86_64/` 同时存在时，先确认线上是否还需要 x86 或 32 位 ARM。模拟器专用 ABI 不应出现在正式渠道包里。
-- **debug symbol 是否被剥离**：NDK 文档建议使用 strip 工具移除 native 库中的非必要调试符号。正式包里保留完整符号会显著放大 `lib/` 目录，符号文件应单独归档给崩溃还原系统。
-- **native 库是否属于低频功能**：OCR、地图、音视频编辑、游戏引擎、模型推理等库经常只服务少数路径，适合放到 Dynamic Feature Module / Play Feature Delivery 按需下载（注意 Play Asset Delivery 只分发 textures、sounds 等 assets，不支持可执行代码），或国内渠道的自研按需下载方案。
-
-使用普通 APK 分发时，可以用 `abiFilters` 限定打包 ABI。下面的配置只表达打包策略，是否只保留 64 位要结合设备占比、性能要求和渠道政策决定。
+使用普通 APK 分发时，下面的配置将变体限制为 `arm64-v8a`。它只适用于已经决定不支持其他 ABI 的产品和渠道。
 
 ```kotlin
 android {
@@ -213,19 +247,52 @@ android {
 }
 ```
 
-这段配置会让 APK 只包含 `arm64-v8a` 对应 native 库。对于仍需覆盖 32 位设备的应用，应使用多 APK、AAB 配置 APK，或保留 `armeabi-v7a`。如果直接删除 32 位 ABI，旧设备会在安装或加载 native 库时失败。
+`abiFilters` 改变应用的设备支持范围，并不负责给不同设备分发不同 APK。需要多个 ABI 时，Play 渠道优先使用 AAB 的 ABI configuration APK；单 APK 渠道可保留多 ABI，或由发布系统管理 per-ABI APK 的签名、版本号和升级兼容。NDK 的 ABI 约束见 [Android ABIs](https://developer.android.com/ndk/guides/abis)。
 
-Android 平台安装 native 库时，按设备 primary ABI 查找 `lib/<primary-abi>/lib<name>.so`，找不到再看 secondary ABI。安装期 ABI 选择流程：`PackageAbiHelperImpl.derivePackageAbi()` → `NativeLibraryHelper.findSupportedAbi()` 确定最佳 ABI → `copyNativeBinariesForSupportedAbi()` 将对应 `.so` 复制到应用 nativeLibraryDir；运行时 linker 按 `nativeLibraryDir` 搜索。[已验证: AOSP android-17.0.0_r1, PackageAbiHelperImpl.java; NativeLibraryHelper.java]
+### Android 17 安装期如何选择 ABI
 
-`android:extractNativeLibs` 和 AGP 的 native library packaging 策略会影响 `.so` 是否从 APK 解压到文件系统。Android 6.0+ 支持未压缩且页对齐的 native 库直接从 APK 加载，可以减少磁盘副本——但代价是 APK 内 `.so` 可能不再经过 ZIP 压缩。工程上不能只看 APK 文件大小，要同时评估下载大小、安装后占用、启动加载成本和崩溃还原能力。更细的 AAB / 动态特性分发策略详见 25.8 节。
+`android-17.0.0_r1` 的 [`PackageAbiHelperImpl.derivePackageAbi()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageAbiHelperImpl.java) 会按包是否为 multi-arch、设备支持的 ABI 顺序、覆盖参数以及是否提取 native 库走不同分支：
+
+- 需要提取时，调用 `NativeLibraryHelper.copyNativeBinariesForSupportedAbi()`；该方法先用 `findSupportedAbi()` 选出设备 ABI 列表中排名最靠前的匹配项，再创建目标目录并执行复制与校验。
+- `extractNativeLibs=false` 时，`PackageAbiHelperImpl` 直接调用 `findSupportedAbi()` 选择并校验 ABI，不会把 `.so` 复制到应用 native library 目录。
+- multi-arch 包会分别检查设备支持的 32 位和 64 位 ABI；不能概括成“primary 找不到再试 secondary”这一条固定路径。
+
+这些分支可在 Android 17 的 [`NativeLibraryHelper`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/content/NativeLibraryHelper.java) 中交叉核对。未压缩且满足 ZIP/ELF 对齐要求的 `.so` 可以从 APK 直接映射，减少提取副本；对应的 APK 文件可能因不使用 ZIP 压缩而变大，所以要同时记录下载量与安装占用。
+
+### 16 KB page size 是兼容门槛
+
+Android 15 开始支持 16 KB 基础页设备。到 Android 17（API 37），含 native 库的应用仍要同时满足 ELF load segment 对齐和 APK 中未压缩 `.so` 的 ZIP 对齐。Google Play 自 2025 年 11 月 1 日起，要求面向 Android 15/API 35 及以上设备的新应用和更新支持 16 KB page size。当前推荐工具链是 AGP 8.5.1 及以上、NDK r28 及以上，并确认所有预编译 `.so` 也兼容；仅升级自己编译的库不够。完整迁移边界见 [Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes) 和 25.30 节。
+
+下面的命令用于确认测试设备的运行时页大小、AAB 请求的页对齐方式，以及最终 APK 内未压缩 shared library 的 ZIP 对齐。`zipalign -P 16` 需要 Android SDK Build-Tools 35.0.0 或更高版本。
+
+```bash
+adb shell getconf PAGE_SIZE
+bundletool dump config --bundle=app-release.aab | grep alignment
+zipalign -v -c -P 16 4 app-release.apk
+```
+
+第一行在 16 KB 设备上应输出 `16384`；第二行应包含 `PAGE_ALIGNMENT_16K`；第三行使用检查模式，可以对最终签名并准备交付的 APK 执行。若检查失败，需要重新排列 ZIP，则必须在签名前完成，因为签名后再改变 ZIP 会破坏签名。`zipalign` 通过也只证明 ZIP entry 对齐，不能替代对 ELF `PT_LOAD` 对齐、预编译依赖和 16 KB 真机路径的检查。对齐 padding 可能增加 APK 文件字节数，但兼容要求优先于这部分体积差异。
+
+本节涉及的是构建产物与 Android 17 framework 安装逻辑，不把 kernel 内部实现当作 APK 体积依据。需要追踪 16 KB 运行时页行为时，kernel 统一以 `android17-6.18-2026-06_r6` 为源码锚点。
 
 
 ## [自动发现] 体积门禁比一次性瘦身更可靠
 
-包体积优化不适合只在版本末期突击处理。更稳的做法是在 CI 中保留基线包，按模块、目录和文件类型记录差异：dex 增长超过阈值时要求说明依赖来源；`res/` 增长超过阈值时要求列出新增图片和多语言资源；`lib/` 增长超过阈值时要求说明 ABI 与符号策略；`assets/` 增长超过阈值时要求说明是否可按需下载。
+CI 应保存已发布 release 制品、候选 release 制品、构建工具版本、渠道、签名方式和设备规格。门禁阈值来自项目基线与业务预算，不应套用一个与应用类型无关的固定数字。
 
-门禁记录可以从 `apkanalyzer`、`bundletool get-size total`、APK Analyzer 对比截图和构建产物归档开始。把“这次为什么大了”记录下来，避免下个版本再重复排查同一套 SDK、同一批图片、同一套 ABI 副本。
+每次构建至少生成这些记录：
+
+- 单 APK 的 file size、estimated download size 和文件级差异；
+- 代表设备规格下 APK Set 的下载量，并区分首次安装与选定动态功能；
+- DEX、资源、assets、各 ABI native 库的增量归因；
+- R8 mapping、最终配置、删除报告、资源诊断和 native symbols 的归档状态；
+- 普通 APK、Play AAB 和其他渠道包各自的结果；
+- 含 native 库时的 ABI 完整性与 4 KB/16 KB 兼容结果。
+
+体积增长不一定要阻断发布。新增语言、离线能力或安全库可能有明确价值，但提交记录应说明增长来自哪个制品、影响哪些设备、是否改变安装占用，以及有没有遗漏可删除内容。
 
 ## 小结
 
-APK 体积分析按文件类型归因：dex 看 R8 和依赖，资源看 shrink / 图片 / `resources.arsc`，native 库看 ABI、符号和按需分发，`assets` 看离线包和大文件。本章的产出是一张可复现的体积账；R8 规则细节和资源格式优化进入 25.7 节，AAB、动态特性和 Play Asset Delivery 进入 25.8 节。
+APK 体积分析先固定制品与设备口径，再按 DEX、资源、assets 和 native 库归因。DEX 关注依赖、R8 入口与宽泛 keep rules；资源关注可达性、替代资源和交付范围；native 库关注 ABI、符号、动态功能与 16 KB 对齐。AAB 是上传制品，设备 APK Set 才能回答用户下载了什么。
+
+本节产出应是一份可复现的体积账：基线制品、候选制品、工具版本、设备规格、目录增量、兼容结果和诊断文件齐全。R8 与资源格式的专项处理见 25.7，AAB 与动态交付见 25.8，native 库和 16 KB 对齐见 25.30。
