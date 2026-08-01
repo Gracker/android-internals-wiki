@@ -72,9 +72,9 @@ last_deepseek_cn_review_at: 2026-06-21
 
 # 24.17 Room 3.0 与 SQLiteDriver 迁移性能边界
 
-Room 3.0 不是一次普通依赖升级。它把包名移到 `androidx.room3`，把后端收敛到 `SQLiteDriver`，把编译链路收敛到 KSP，并把数据库操作接口推向协程和 Kotlin Multiplatform。Android App 团队迁移时要分开评估三类成本：运行期数据库 I/O、构建期 schema / KSP 输出、以及旧 `SupportSQLite` 扩展点的替换成本。
+Room 3.0 改变了包名、数据库驱动、代码生成器和异步接口。迁移工作因此不能只改依赖版本，还要检查运行期数据库 I/O、KSP 与 schema 输出、旧 `SupportSQLite` 扩展点，以及数据库升级后的应用降级能力。
 
-本文只处理应用侧迁移动作。SQLite 锁、WAL、CursorWindow、Room 2.x 线程模型和 ANR 观察详见 10.7 节；传统 SQLite / Room 查询、索引和事务优化详见 24.2 节；Profiler 与 Perfetto 工具入口详见 14.1 节。
+本文的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，依赖基线是 Room 3.0.1 与 SQLite 2.7.0。`AndroidSQLiteDriver` 会使用 Android 17 平台 SQLite；`BundledSQLiteDriver` 使用随库发布的原生 SQLite，两者不能共用一套未经实测的性能结论。本章不涉及内核接口，因此没有内核源码锚点。SQLite 锁、WAL、CursorWindow、Room 2.x 线程模型和 ANR 观察详见 10.7 节；查询、索引和事务优化详见 24.2 节；Profiler 与 Perfetto 的使用详见 14.1 节。
 
 <!-- outline-start -->
 ## 要点
@@ -115,57 +115,28 @@ alpha 版本引入、KSP 配置缺失、旧 SupportSQLite 扩展点失效、sche
 
 ## Room 3.0 的变化边界
 
-截至 2026-06-21，Room 3.0 最新公开版本是 `3.0.0-rc01`（2026-06-17 发布）。alpha04（2026-05-06）引入 connection pool 配置，alpha05（2026-05-19）新增 `@Relation`/`@Junction` 复合关系键支持，alpha06（2026-06-03）新增 `@Entity.withoutRowId`，rc01 新增 DAO 查询结果 data class 默认值支持，并把 `@TypeConverter` 重命名为 `@ColumnTypeConverter`。本文按 rc01 复核；Room 3.0 仍处预发布阶段，生产接入需固定版本，包名从 `androidx.room` 迁到 `androidx.room3`，Maven 坐标相应改为 `androidx.room3:room3-*`。[已验证: 官方文档, developer.android.com/jetpack/androidx/releases/room3]
+截至 2026-07-29，Room 的稳定版是 3.0.1。3.0.0 于 2026-07-01 发布，3.0.1 修复了注解处理期间多余的标准输出，以及一个数据库的事务中混入另一个数据库操作时可能出现的未定义行为。SQLite 驱动库的稳定版是 2.7.0。版本号要分别声明，不能因为二者同属 AndroidX 就假设它们同步递增。
 
-迁移评估先看破坏性变化，不看新平台覆盖。Room 3.0 保留 `@Database`、`@Entity`、`@Dao`、`@Query` 这类注解模型，但运行期和编译期的基础设施已经换掉：
+Room 3 保留 `@Database`、`@Entity`、`@Dao` 和 `@Query` 这些核心注解，破坏性变化集中在运行期接口与编译链：
 
-| 维度 | Room 2.x 常见路径 | Room 3.0 路径 | 迁移含义 |
+| 维度 | Room 2.x 常见用法 | Room 3.0.1 | 迁移检查 |
 | --- | --- | --- | --- |
-| 包名与坐标 | `androidx.room:*` | `androidx.room3:room3-*` | import、依赖和传递依赖要分批迁移 |
-| 数据库后端 | `SupportSQLite` / Android `Cursor` | `androidx.sqlite` `SQLiteDriver` | 旧 openHelper、raw query、callback 签名要替换 |
-| 编译器 | KAPT / Java AP / KSP | KSP only | 模块必须能接入 Kotlin Gradle Plugin 与 KSP |
-| 生成代码 | Java 或 Kotlin | Kotlin only | Java-only 模块需要迁移边界或拆模块 |
-| 数据库操作 | 同步、Executor、协程混用 | 协程 API 为主 | DAO 执行位置要重新核对 |
-| KMP | Android 为主，已有部分 KMP 轨道 | Android、iOS、Desktop、JS、WASM 方向 | 跨端是架构收益，不等于 Android 端自动变快 |
+| 包名与 Maven 坐标 | `androidx.room:*` | `androidx.room3:room3-*` | 更新依赖和导入；排查反射类名与混淆规则 |
+| SQLite 接口 | `SupportSQLiteDatabase`、`Cursor` | `SQLiteDriver`、`SQLiteConnection`、`SQLiteStatement` | 替换直接查询、回调和迁移签名 |
+| 代码生成 | KAPT、Java 注解处理器或 KSP | 只支持 KSP，生成 Kotlin | 数据模块需要 Kotlin 插件与 KSP |
+| DAO 调用 | 同步、Executor、协程并存 | 数据库操作采用协程接口 | DAO 应为 `suspend`，或返回 `Flow` 等响应式类型 |
+| 失效通知 | `InvalidationTracker.Observer` | `InvalidationTracker.createFlow()` | 将观察者的注册与注销改为 Flow 收集 |
+| 多平台 | Android 为主 | Android、Apple、JVM、JS、WasmJS | 各平台驱动分别验证，不能复用 Android 耗时数据 |
 
-Room 3.0 不再支持 `SupportSQLite` API，除非使用 `androidx.room3:room3-sqlite-wrapper`；必须使用 KSP，且只生成 Kotlin 代码（Java 源文件可以被 KSP 处理，但输出仍是 Kotlin）。[已验证: 官方文档, developer.android.com/jetpack/androidx/releases/room3]
+Room 3 只生成 Kotlin，但 KSP 仍可处理 Java 编写的数据库、DAO 和实体声明。Java 调用方可以继续调用生成代码；包含这些声明的模块仍须启用 Kotlin 编译器和 KSP。官方建议把 Room 使用集中在少量数据模块中，避免无关业务模块增加 KSP 配置与增量编译成本。
 
-迁移边界要在模块层明确。数据库定义、DAO、Entity、Migration、Room builder、测试 helper、调试工具代码都要归入同一个迁移包；不要只改 app 模块依赖，让旧 feature 模块继续通过 `SupportSQLiteDatabase` 或 `RoomDatabase.openHelper` 访问数据库。
+`androidx.room` 与 `androidx.room3` 包名不同，Room 2.x 和 Room 3 可以出现在同一依赖图中。这项设计主要解决 WorkManager 等库传递依赖旧版 Room 时的类冲突。它不表示两个 Room 实例可以同时操作同一个数据库文件；应用数据库仍需明确唯一的打开者、schema 版本与升级顺序。
 
-## SQLiteDriver 对数据库 I/O 路径的影响
+这些边界来自 [Room 3.0.1 发布说明](https://developer.android.com/jetpack/androidx/releases/room3) 和 [Room 3 迁移说明](https://developer.android.com/blog/posts/modernizing-the-room)。版本升级时还应查看 3.0.1 对应提交 `4762f876` 下的 [AndroidX Room 3 源码](https://android.googlesource.com/platform/frameworks/support/+/4762f876f4d43c4c8853d8887f9b110fe25777e6/room3/)。
 
-`SQLiteDriver` 改的是 Room 与 SQLite 之间的抽象层。Room 2.x 时代，许多应用侧扩展点围绕 Android `SupportSQLiteDatabase`、`SupportSQLiteOpenHelper`、`Cursor`、`SQLiteDatabase` 编写；Room 3.0 转向 `SQLiteDriver`、`SQLiteConnection`、`SQLiteStatement` 后，这些扩展点要按连接和 statement 重新组织。[已验证: 官方文档, developer.android.com/reference/androidx/sqlite/SQLiteConnection]
+## 先固定依赖与 schema 输出
 
-`SQLiteConnection` 是需要关闭的数据库连接资源，公开的基础操作包括 `prepare(sql)`、`inTransaction()` 和 `close()`；`SQLiteStatement` 是需要关闭的 prepared statement，支持绑定参数、`step()`、读取列值和清理绑定。[已验证: 官方文档, developer.android.com/reference/androidx/sqlite/SQLiteStatement]
-
-直接数据库访问的迁移不应停在函数名替换。Room 3.0 文档给出的方向是把 `runInTransaction`、`query(Cursor)` 这类入口换成 writer / reader connection 与 prepared statement。Android 端仍要验证这些点：
-
-- 连接打开：首次 open 是否发生在冷启动、ContentProvider 初始化或首屏请求路径。
-- 事务范围：写事务里是否夹带 JSON 解析、文件读写、网络回调或长时间计算。
-- statement 生命周期：高频查询是否复用稳定 SQL 模板，是否在使用后关闭 statement。
-- 参数绑定：是否继续使用 bind 参数，避免字符串拼接导致 SQL 注入和 plan 抖动。
-- 异步边界：DAO suspend / Flow 是否把磁盘等待从主线程移走，但又没有把写连接长期占住。
-
-这段代码用于表达 Room 3.0 迁移后的直接查询形态。重点看 reader connection、prepared statement 和 bind 参数，示例只保留 I/O 边界，不包含完整仓库封装。
-
-```kotlin
-suspend fun findUserName(db: AppDatabase, userId: Long): String? {
-    return db.useReaderConnection { connection ->
-        connection.prepare("SELECT name FROM users WHERE id = ?").use { statement ->
-            statement.bindLong(1, userId)
-            if (statement.step()) statement.getText(0) else null
-        }
-    }
-}
-```
-
-这类代码的性能风险和 Room 2.x 一样来自查询形状、索引、事务和线程等待。`SQLiteDriver` 不会自动解决慢 SQL，也不会让单写者模型变成并行写；它减少的是 Room 对 Android 平台 `SupportSQLite` 类型的绑定，让同一套数据库 API 更适合 KMP。
-
-## KSP 与 schema 输出对构建性能的影响
-
-Room 3.0 的构建迁移要和运行期迁移分开验收。Room 3.0 要求使用 KSP，并推荐 Room Gradle Plugin 配置 schema 输出。设置 `schemaDirectory` 后，插件把 schema 输出配置到编译任务里，generated schema 适合可复现、可缓存构建；带 flavor 的项目输出到带变体名的目录，例如 `schemas/flavorOneDebug/.../1.json`。[已验证: 官方文档, developer.android.com/jetpack/androidx/releases/room3]
-
-这段 Gradle 配置用于表达最小迁移面。重点看 `androidx.room3` 插件、`room3-runtime`、`room3-compiler` 和 schema 输出目录。
+下面的配置用于建立 Room 3.0.1、SQLite 2.7.0、KSP 和 schema 导出的最小基线。`androidx.room3` 插件版本应在根工程统一声明；示例假定插件管理已经完成。
 
 ```kotlin
 plugins {
@@ -175,13 +146,14 @@ plugins {
     id("androidx.room3")
 }
 
+val roomVersion = "3.0.1"
+val sqliteVersion = "2.7.0"
+
 dependencies {
-    val roomVersion = "3.0.0-rc01"
     implementation("androidx.room3:room3-runtime:$roomVersion")
     ksp("androidx.room3:room3-compiler:$roomVersion")
 
-    // Android 端用平台 SQLite 驱动；KMP commonMain 改用 BundledSQLiteDriver
-    implementation("androidx.sqlite:sqlite-framework:$sqliteDriverVersion")
+    implementation("androidx.sqlite:sqlite-framework:$sqliteVersion")
 }
 
 room3 {
@@ -189,156 +161,201 @@ room3 {
 }
 ```
 
-`SQLiteDriver` 是 Room 3.0 打开数据库的入口。Android 端可选 `AndroidSQLiteDriver`（委托平台 `SQLiteDatabase`）或 `BundledSQLiteDriver`（内嵌 SQLite，KMP commonMain 共享）；构建时通过 `RoomDatabase.Builder.setDriver(...)` 指定。[已验证: developer.android.com/reference/androidx/sqlite/SQLiteDriver]
+这里选择了 `sqlite-framework`，对应 `AndroidSQLiteDriver`。如果应用决定使用 `BundledSQLiteDriver`，应把这一项替换为 `androidx.sqlite:sqlite-bundled:2.7.0`。同时引入两个实现没有性能收益，还容易让不同模块选择不同引擎。
 
-alpha04 起，连接池不再只是内部实现细节。`RoomDatabase.Builder.setSingleConnectionPool()` 和 `setMultipleConnectionPool(readers, writers)` 可以显式控制连接池；只有 `SQLiteDriver.hasConnectionPool()` 返回 `false` 的 driver 才会使用 Room 侧连接池。默认策略跟 `JournalMode` 绑定：`TRUNCATE` 使用单连接，`WRITE_AHEAD_LOGGING` 使用 4 个 reader + 1 个 writer；配置多个 writer 时要把 `SQLITE_BUSY` 与 `busy_timeout` 纳入压测和线上错误验收。[已验证: Android Developers Room 3.0 alpha04 release notes + RoomDatabase.Builder API]
+使用 Room Gradle Plugin 时，`schemaDirectory` 是必填项。带构建变体的工程会写入类似 `schemas/flavorOneDebug/<数据库类名>/<版本>.json` 的目录。schema JSON 是自动迁移与迁移测试的输入，应提交到仓库，并由 CI 检查是否存在未提交的变化。它不属于可以随构建目录清理的临时文件。
 
-schema 是迁移验证输入，不是构建产物垃圾。自动迁移、schema diff、CI 校验都依赖它；漏提交 schema 文件，后续版本的迁移测试会失去基线。多 flavor 项目要把各变体输出目录纳入 CI artifact 或仓库管理，避免只在 debug 变体验证通过。
+构建性能需要分开观察：
 
-KSP 性能评估要记录两组数据：
-
-| 指标 | 采集方式 | 判断口径 |
+| 场景 | 修改内容 | 需要观察的任务 |
 | --- | --- | --- |
-| clean build 编译时间 | Gradle Build Scan 或 CI 计时 | 观察 Room compiler、KSP task、Kotlin compile 的耗时变化 |
-| 增量构建时间 | 改 DAO / Entity / 普通 Kotlin 文件各跑一次 | 判断 schema 输出和 KSP 是否扩大 invalidation |
-| cache 命中率 | CI 远端缓存日志 | `schemaDirectory` 配置后 generated schema 是否破坏可缓存性 |
-| schema diff | migration test + git diff | 确认 schema JSON 已提交，自动迁移验证可重复 |
+| 完整构建 | 清理全部输出后编译 | Room compiler、KSP、Kotlin compile 的耗时 |
+| DAO 增量构建 | 修改 SQL 或返回类型 | 受影响模块、schema 输出与下游 Kotlin 编译 |
+| Entity 增量构建 | 修改列或索引 | schema 变化、自动迁移检查与依赖模块重编译 |
+| 普通 Kotlin 增量构建 | 修改无关业务代码 | KSP 是否被无关修改触发 |
+| 远端构建缓存 | 相同提交重复构建 | KSP 与 schema 任务是否命中缓存 |
 
-KSP 能处理 Java 源声明，但 Room 3.0 只生成 Kotlin 代码。Java-only 数据库模块要么引入 Kotlin Gradle Plugin 和 KSP，要么把 Room 使用收敛到一个 Kotlin 数据模块，再通过接口暴露给 Java 调用方。把 KSP 插到所有业务模块会扩大构建影响面，多模块项目更适合先迁移数据层边界。
+编译速度的结论要来自同一 Gradle、JDK、Kotlin、KSP 配置和相同缓存条件。只比较一次本地构建，无法区分代码生成变化与缓存冷热造成的差异。
 
-## SupportSQLite 兼容层的使用策略
+## Android 17 上两种驱动的边界
 
-`androidx.room3:room3-sqlite-wrapper` 的价值是迁移期兜底。它能把 `RoomDatabase` 转换成 `SupportSQLiteDatabase`，典型替换点是把旧的 `roomDatabase.openHelper.writableDatabase` 改成 `roomDatabase.getSupportWrapper()`。[已验证: 官方文档, developer.android.com/jetpack/androidx/releases/room3]
-
-wrapper 不适合继续承载新代码。旧路径可以分三类处理：
-
-| 旧代码类型 | 处理策略 | 原因 |
-| --- | --- | --- |
-| 调试面板、一次性导出、灰度诊断 | 可短期包 wrapper | 调用频率低，迁移风险小于停发风险 |
-| 旧 Migration / callback 里接收 `SupportSQLiteDatabase` | 按 release notes 改成 `SQLiteConnection` 形态 | 回调签名变更会影响 schema 迁移路径 |
-| 高频业务查询、批量写入、离线同步 | 直接迁到 DAO 或 driver API | wrapper 会保留旧抽象，难以复核连接和 statement 生命周期 |
-| 第三方库硬依赖 `SupportSQLite` | 隔离在单独 adapter 模块 | 防止旧 API 继续扩散到 Room 3 数据层 |
-
-迁移期不要把 wrapper 藏在全局工具类里。更稳的做法是建立 `legacy-db-bridge` 包，只允许列入白名单的调用点进入；每个调用点写清替换目标、负责人和删除日期。这样 Task 6 / Task 9 复审时能判断哪些旧口径仍在影响性能结论。
-
-## 迁移前后的性能验证方法
-
-Room 3.0 迁移后的性能验收不能只看“编译通过”和“测试通过”。数据库迁移对用户可感知性能的影响集中在冷启动 open、首屏查询、批量写事务、Flow 重查和 Migration。Macrobenchmark 支持冷启动等端到端场景并输出 Perfetto trace；StrictMode 暴露主线程磁盘读写；Perfetto、Macrobenchmark、Profiler 是 Android 性能检查的标准入口。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-overview][已验证: 官方文档, developer.android.com/reference/android/os/StrictMode][已验证: 官方文档, developer.android.com/topic/performance/inspecting-overview]
-
-验证分成四条线：
-
-| 验证线 | 采集指标 | 工具 |
-| --- | --- | --- |
-| 冷启动数据库打开 | app start 到 database ready 的耗时、Migration 耗时、首次 query 耗时 | Macrobenchmark + app 自定义 trace |
-| 查询与事务 | P50 / P90 / P99 查询耗时、写事务耗时、statement 数量 | DAO/Repository 包装层采样、SQLiteStatement 包装埋点、Perfetto |
-| 线程与锁等待 | 主线程 disk read/write、数据库线程 runnable / sleeping、连接等待栈 | StrictMode、Perfetto、ANR traces |
-| 构建与 CI | clean build、增量构建、KSP task 耗时、schema diff | Gradle Build Scan、CI 日志 |
-
-这段测试配置用于把冷启动和数据库打开放到同一个量测场景。重点看 `StartupMode.COLD`，官方文档说明 cold startup 会在 setup 和 measure 之间杀掉目标进程，适合验证首次 open 是否进入启动路径。
+Android 应用可以在构建数据库时选择平台驱动或随库驱动。下面的代码用于指定 `AndroidSQLiteDriver`，让 Room 通过 Android 17 平台的 `SQLiteDatabase` 打开数据库。
 
 ```kotlin
-@RunWith(AndroidJUnit4::class)
-class DatabaseStartupBenchmark {
-    @get:Rule
-    val benchmarkRule = MacrobenchmarkRule()
+fun buildAppDatabase(context: Context): AppDatabase =
+    Room.databaseBuilder(
+        context.applicationContext,
+        AppDatabase::class.java,
+        "app.db"
+    )
+        .setDriver(AndroidSQLiteDriver())
+        .build()
+```
 
-    @Test
-    fun coldStartWithDatabaseOpen() = benchmarkRule.measureRepeated(
-        packageName = "com.example.app",
-        metrics = listOf(StartupTimingMetric()),
-        iterations = 10,
-        startupMode = StartupMode.COLD,
-        setupBlock = {
-            pressHome()
+`RoomDatabase.Builder` 没有配置查询协程上下文时会使用自身默认配置；如果应用调用 `setQueryCoroutineContext(...)`，传入的协程上下文必须包含 `CoroutineDispatcher`。不要用这项设置掩盖 DAO 内的长事务或慢查询。
+
+两种 Android 驱动的差异如下：
+
+| 项目 | `AndroidSQLiteDriver` | `BundledSQLiteDriver` |
+| --- | --- | --- |
+| 依赖 | `androidx.sqlite:sqlite-framework:2.7.0` | `androidx.sqlite:sqlite-bundled:2.7.0` |
+| SQLite 引擎 | Android 系统提供 | AndroidX 随库携带的原生 SQLite |
+| 版本一致性 | 随系统版本变化 | 各受支持平台更一致 |
+| 连接池 | 驱动内部已有连接池 | 驱动本身没有连接池 |
+| 线程约束 | 打开的连接可用于多线程并发环境 | 默认按 SQLite multithread 模式编译，单个连接不可被多个线程同时使用 |
+| 工程代价 | 不增加一份 SQLite 原生库 | 增加原生库体积和装载工作 |
+| 适用判断 | Android 专用应用可优先评估 | KMP 或需要一致 SQLite 特性时优先评估 |
+
+`AndroidSQLiteDriver.hasConnectionPool` 返回 `true`，其 `open()` 调用 `SQLiteDatabase.openOrCreateDatabase()`。因此 Room 的 `setSingleConnectionPool()` 和 `setMultipleConnectionPool()` 对它不生效。Android 17 上的平台实现可从 [`SQLiteDatabase.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteDatabase.java) 与 [`SQLiteConnectionPool.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteConnectionPool.java) 继续追踪。
+
+`BundledSQLiteDriver.hasConnectionPool` 返回 `false`，Room 才会应用自己的连接池配置。没有显式配置时，Room 对 `TRUNCATE` 使用单连接，对 `WRITE_AHEAD_LOGGING` 使用四个读连接和一个写连接；内存数据库始终使用单连接。多个写连接可能返回 `SQLITE_BUSY`，调用方要处理错误，并依据业务验证是否配置 `busy_timeout`。不能把连接数增加等同于吞吐提升。
+
+上述判断可在 3.0.1 源码中核对：
+
+- [`RoomDatabase.kt`](https://android.googlesource.com/platform/frameworks/support/+/4762f876f4d43c4c8853d8887f9b110fe25777e6/room3/room3-runtime/src/commonMain/kotlin/androidx/room3/RoomDatabase.kt) 定义连接池配置及其生效条件。
+- [`AndroidSQLiteDriver.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/4762f876f4d43c4c8853d8887f9b110fe25777e6/sqlite/sqlite-framework/src/androidMain/kotlin/androidx/sqlite/driver/AndroidSQLiteDriver.android.kt) 声明驱动内部已有连接池。
+- [`BundledSQLiteDriver.jvmAndAndroid.kt`](https://android.googlesource.com/platform/frameworks/support/+/4762f876f4d43c4c8853d8887f9b110fe25777e6/sqlite/sqlite-bundled/src/jvmAndAndroidMain/kotlin/androidx/sqlite/driver/bundled/BundledSQLiteDriver.jvmAndAndroid.kt) 声明驱动没有连接池，并记录单连接的线程限制。
+
+官方 KMP 指南推荐 `BundledSQLiteDriver`，理由是各平台获得较新且一致的 SQLite 版本。这是兼容性建议，不是 Android 查询性能排名。Android 专用应用应在相同数据库、journal 模式、设备和构建类型下比较两种驱动，再决定是否接受原生库体积与初始化代价。
+
+## 直接查询要使用 PooledConnection API
+
+Room 3 的公开连接接口分为两层。`SQLiteConnection.prepare()` 属于底层驱动连接；`RoomDatabase.useReaderConnection()` 传给调用方的是 `Transactor`，它继承 `PooledConnection`。这里应调用 `usePrepared()`，由连接池管理预编译语句的释放。
+
+下面的函数用于演示 Room 3 中一次带参数的只读查询。它假定 `users.name` 为非空列。
+
+```kotlin
+suspend fun findUserName(
+    db: AppDatabase,
+    userId: Long
+): String? = db.useReaderConnection { connection ->
+    connection.usePrepared(
+        "SELECT name FROM users WHERE id = ?"
+    ) { statement ->
+        statement.bindLong(1, userId)
+        if (statement.step()) {
+            statement.getText(0)
+        } else {
+            null
         }
-    ) {
-        startActivityAndWait()
     }
 }
 ```
 
-应用侧还要加自定义 trace。围住 database builder、Migration、首次 DAO 查询、批量写入和 Flow 首次收集，Perfetto 才能把数据库时间和主线程、RenderThread、Binder、磁盘等待放在同一条时间线上。一个容易被忽略的实践边界：数据库慢经常表现为线程等待时间变长，而不是 CPU 时间变高；只看 CPU 火焰图会漏掉锁等待和磁盘等待。
+`connection` 和 `statement` 都不能从代码块中返回或保存到成员变量。Room 把连接限制在对应协程中；预编译语句使用期间连接也处于占用状态。网络请求、JSON 解析和大段业务计算应放在连接代码块之外。等待连接超过内部期限时，API 会抛出 `SQLiteException`，这类错误需要进入稳定性监控。
 
-性能验收至少要跑三类数据集：空库、线上中位数库、线上大库。只用空库验证，Migration 和索引代价会被低估；只用大库验证，普通用户的启动路径又可能被误判。数据集要标注表规模、索引数量、数据库文件大小、WAL 文件大小、设备型号、系统版本、Room 版本和是否启用 R8 / Baseline Profile。
+参数通过 `bindLong()` 写入，避免字符串拼接带来的注入风险与 SQL 文本变化。查询是否快仍由索引、数据分布、返回列、事务范围和磁盘状态决定。驱动接口不会替应用修正查询计划，也不会改变 SQLite 写入串行化的约束。
 
-## KMP 场景的边界
+Room 3.0.1 还修复了跨数据库事务混用问题。即使使用该版本，也不应在数据库 A 的 `withWriteTransaction` 中调用数据库 B，并依赖某个隐含的事务顺序。多个数据库需要显式规定调用顺序；跨库原子性要由业务协议处理，SQLite 的单库事务不能提供跨库提交。
 
-Room 3.0 的 KMP 价值在于减少跨端数据层重复实现。Room 3.0 增加 JavaScript 和 WasmJs 支持，配合 `androidx.sqlite:sqlite-web` 里的 `WebWorkerSQLiteDriver` 覆盖 Web/WASM 场景。[已验证: 官方文档, developer.android.com/jetpack/androidx/releases/room3]
+`usePrepared()` 的声明及协程限制可查看 [`Transactor.kt`](https://android.googlesource.com/platform/frameworks/support/+/4762f876f4d43c4c8853d8887f9b110fe25777e6/room3/room3-runtime/src/commonMain/kotlin/androidx/room3/Transactor.kt) 与 [`RoomDatabase.kt`](https://android.googlesource.com/platform/frameworks/support/+/4762f876f4d43c4c8853d8887f9b110fe25777e6/room3/room3-runtime/src/commonMain/kotlin/androidx/room3/RoomDatabase.kt)。
 
-Android App 团队不要把 KMP 目标反向写进 Android 性能结论。Android 端迁移验收只回答这些问题：
+## SupportSQLite 兼容包装层
 
-- Android 端使用哪个 driver，首次 open、查询、事务、Migration 的数据是否回归。
-- 协程 dispatcher 是否和现有数据库线程策略一致，是否造成写连接占用时间变长。
-- 共享代码是否迫使 Android 端放弃平台已有优化，例如 WAL 配置、预置库复制策略或 Android 专用诊断。
-- Web/WASM / iOS / Desktop 目标是否引入 schema、类型映射和同步策略差异，但不拿这些差异解释 Android 端耗时。
+Room 3 移除了 `SupportSQLiteDatabase`、`SupportSQLiteOpenHelper` 和 Android `Cursor` 相关的 Room 接口。`androidx.room3:room3-sqlite-wrapper:3.0.1` 提供迁移期兼容能力，可用 `roomDatabase.getSupportWrapper()` 取得 `SupportSQLiteDatabase`。
 
-跨端同步是另一类问题。WebWorkerSQLiteDriver、离线同步、冲突合并、加密、文件系统限制都会影响产品架构，但这些不属于 Android 本地数据库 I/O 优化主线。要写也应拆到扩展或新章节，避免把 24.17 写成 KMP 总览。
+兼容包装层适合调用频率低、改造范围清楚的旧接口：
 
-## 常见风险与回滚策略
+| 旧代码 | 建议 |
+| --- | --- |
+| 调试面板、一次性导出、短期诊断 | 可暂用 `getSupportWrapper()`，并记录删除条件 |
+| `Migration`、`Callback` 接收 `SupportSQLiteDatabase` | 改为 Room 3 的 `SQLiteConnection` 参数 |
+| 高频业务查询、批量写入 | 改为 DAO，必要时使用 `useReaderConnection()` 或 `useWriterConnection()` |
+| 第三方库只接受 `SupportSQLiteDatabase` | 放入独立适配模块，限制调用入口 |
 
-Room 3.0 在本轮复核时已进入 rc01，但仍未稳定发布。生产接入应默认使用灰度、双版本 schema 测试和可回滚数据层开关，不要把 Room 2.x 到 3.0 放进一个不可拆分的大版本改造。
+不要把 `getSupportWrapper()` 放入全局数据库工具类供新代码调用。这样会继续扩大旧接口的使用范围，也会让连接与预编译语句的生命周期难以审查。官方的替换范围见 [Room 3.0.1 发布说明](https://developer.android.com/jetpack/androidx/releases/room3#3.0.0)。
 
-| 风险 | 触发条件 | 回滚策略 |
+## schema 迁移与应用回退
+
+数据库升级需要覆盖每个仍受支持的来源版本。`MigrationTestHelper` 应从每个来源 schema 创建数据库，写入能触发约束和类型转换的代表数据，再执行到当前版本的完整迁移链。只测试“前一版到当前版”会遗漏长期未升级用户走过的路径。
+
+迁移验收至少包括：
+
+- schema identity hash 与导出的 JSON 一致。
+- 新增非空列、默认值、索引、外键和触发器符合设计。
+- `WITHOUT ROWID`、FTS5、复合关系键等新特性有独立迁移用例。
+- 大数据集上的建索引、表重建和数据回填耗时可接受。
+- 迁移中断后再次打开数据库不会得到半完成的业务状态。
+- 3.0.1 修复涉及的跨数据库调用有回归测试。
+
+回退应用版本比回退 Maven 依赖更难。新版本一旦把设备上的 schema 从版本 N 升到 N+1，旧应用必须能识别 N+1，或提供经过验证的降级迁移。远程开关只能阻止新功能继续使用数据库，不能自动还原已经写入的 schema。
+
+`fallbackToDestructiveMigrationOnDowngrade()` 会删除数据后重建表，只适用于明确允许丢失的数据库。用户内容、离线草稿、认证材料等数据不能把破坏性降级当作发布保障。更可靠的做法是让旧应用在灰度期兼容新 schema，或把不可逆 schema 变化安排在确认无需二进制回退的版本。
+
+Room 2.x 与 Room 3 的包可以共存，但迁移同一个数据库文件时仍应只有一个版本负责打开。发版前要执行“旧版本写入 → 新版本迁移并读写 → 旧版本重新打开”的测试，结果按数据类型逐项核对。
+
+## 性能验证要回答什么
+
+数据库迁移的性能验收应区分应用启动、数据库打开、迁移、首个查询和稳定运行期查询。`StartupTimingMetric` 只能给出应用启动指标，不能单独证明数据库打开变快。需要在应用中为建库、首次触发打开、每段迁移和首个关键 DAO 查询添加自定义 trace，再用 Macrobenchmark 触发固定场景。
+
+| 问题 | 量测方式 | 解释限制 |
 | --- | --- | --- |
-| alpha API 变化 | 后续 alpha / beta 改签名或行为 | 固定版本到当前验证版本，升级单独开分支 |
-| KSP 配置缺失 | 模块未接入 KSP 或 Kotlin Gradle Plugin | 数据层模块先迁移，业务模块通过接口调用 |
-| schema 漏提交 | flavor 输出目录未纳入仓库或 CI | CI 强制检查 schema diff，缺文件直接失败 |
-| SupportSQLite 扩展点失效 | 旧 helper、callback、raw query 工具仍依赖旧类型 | 白名单 wrapper，逐项迁到 driver / DAO |
-| Java DAO / Entity 处理差异 | Java 源由 KSP 处理但生成 Kotlin | 建立 Java 调用 smoke test，必要时拆 Kotlin 数据模块 |
-| Migration 慢 | 大库 schema 改动、索引重建、预置库复制 | 大库基准测试，Migration 分批，必要时延迟非阻塞索引创建 |
-| 多模块一次性切换 | 依赖树里 Room 2.x / 3.x 混用 | 从数据模块开始，禁止业务模块直接拿 RoomDatabase |
+| 数据库是否进入启动关键路径 | 冷启动 Macrobenchmark + 自定义 trace | 应同时记录进程状态、启动入口和数据集 |
+| 首次打开与迁移耗时 | 迁移回调、首次 DAO 查询 trace | `build()` 可能尚未触发数据库 I/O，不能只围住 builder |
+| 查询与事务是否回归 | 固定数据集的 DAO 基准与查询计划 | 平均值会隐藏长尾，分位数由项目基线决定 |
+| 连接等待是否增加 | Perfetto 调度、I/O、锁事件与应用 trace | CPU 占用低不代表没有等待 |
+| 是否发生主线程磁盘访问 | StrictMode 与调用栈 | StrictMode 用于诊断，不是性能基准 |
+| KSP 是否扩大重编译范围 | Gradle Build Scan 或 CI 任务时间 | 要固定缓存、JDK、Gradle 与机器条件 |
 
-回滚不能只回滚依赖。schema 一旦前进，用户设备上的数据库版本也前进了；回滚版本必须能识别新 schema，或者通过服务端开关停用触发新 schema 的功能。发版前要跑“升级到 Room 3.0 → 写入新数据 → 回滚到旧版本”的兼容测试。无法兼容时，灰度范围要小到可承受数据修复成本。
+Profiler 适合交互式定位，Perfetto 适合把线程调度、文件 I/O、锁等待和应用 trace 放到同一时间轴。二者都不能代替 `EXPLAIN QUERY PLAN`、索引检查和真实数据分布分析。看到数据库线程处于 sleeping 状态时，还要结合连接等待、锁与 I/O 判断，不能只看 CPU 火焰图。
 
-## 版本边界
+测试数据应覆盖空库、常见规模和大规模数据库，并记录表行数、索引、数据库与 WAL 文件大小、设备、Android 版本、驱动、journal 模式、Room 版本、构建类型以及 R8 和 Baseline Profile 状态。每个项目应从线上分布与性能预算确定迭代次数、分位数和门槛，文章不提供脱离业务数据的固定数字。
 
-Room 3.0 预发布阶段的 API 变化节奏较快，几个关键版本的边界要记住：
+相关工具的官方入口包括 [Macrobenchmark 概览](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)、[StrictMode API](https://developer.android.com/reference/android/os/StrictMode) 和 [Android 性能检查工具](https://developer.android.com/topic/performance/inspecting-overview)。
 
-| 版本 | 变化 | 迁移影响 |
+## KMP 与 Web/WASM 的独立边界
+
+Room 3 支持 JS 与 WasmJS，SQLite 2.7.0 在 `androidx.sqlite:sqlite-web` 中提供 `WebWorkerSQLiteDriver`。该驱动通过 Web Worker 执行操作，并可使用 OPFS 保存数据库，但库中没有可直接使用的默认 worker；项目需要提供符合其消息协议的实现。
+
+Web 平台的数据库操作是异步接口。只面向非 Web 目标的公共代码可以使用同步 `SQLiteDriver` 接口；同时面向 Web 与非 Web 的公共代码可引入 `androidx.sqlite:sqlite-async:2.7.0`，使用 `androidx.sqlite.async` 包中的顶层挂起函数。只面向 Web 的代码则直接使用 Web 源集接口，不必增加这一层适配。
+
+Android 性能报告只记录 Android 使用的驱动、设备、系统和数据库。Web Worker、OPFS、Apple 平台文件系统和桌面 JVM 的结果应放在各自基线中。共享 DAO 和实体能减少重复代码，却不能消除平台驱动、文件系统与线程模型的差异。
+
+这些限制记录在 [SQLite 2.7.0 发布说明](https://developer.android.com/jetpack/androidx/releases/sqlite#2.7.0) 与 [Room KMP 配置指南](https://developer.android.com/kotlin/multiplatform/room)。
+
+## 版本演进
+
+Room 3 的预发布版本可用于理解 API 来源，项目依赖应固定到已验证的稳定版本：
+
+| 版本 | 主要变化 | 迁移检查 |
 | --- | --- | --- |
-| 3.0.0-alpha02 | `@Fts5` 支持 | 搜索类业务可评估 FTS5，单独验证索引构建时间 |
-| 3.0.0-alpha04 | `setSingleConnectionPool()` / `setMultipleConnectionPool(...)` | 按 `hasConnectionPool()`、WAL 默认 4 reader + 1 writer、`SQLITE_BUSY` / `busy_timeout` 验收连接池边界 |
-| 3.0.0-alpha05 | `@Relation`/`@Junction` 数组化 `parentColumns`/`entityColumns` | 支持复合关系键；旧写法是否仍兼容需单独验证 |
-| 3.0.0-alpha06 | `@Entity.withoutRowId` | 使用 `WITHOUT ROWID` 表时，单独验证主键约束、查询计划、文件体积和迁移兼容性 |
-| 3.0.0-rc01 | DAO 查询结果 data class 默认值、`@ColumnTypeConverter`、provided custom DAO return types | converter import、结果映射和自定义返回类型是升级清单新增项；升级后重跑编译、schema diff 和 DAO smoke test |
+| 3.0.0-alpha02 | `@Fts5`；`clearAllTables()` 跨平台并改为挂起函数 | 评估 FTS5 索引与现有清库调用 |
+| 3.0.0-alpha04 | `setSingleConnectionPool()`、`setMultipleConnectionPool(...)` | 按驱动的 `hasConnectionPool` 判断是否生效 |
+| 3.0.0-alpha05 | `@Relation`、`@Junction` 支持复合关系列 | 复核关系查询与 schema |
+| 3.0.0-alpha06 | `@Entity.withoutRowId` | 验证主键约束、查询计划和迁移 |
+| 3.0.0-rc01 | 查询结果数据类默认值；`@ColumnTypeConverter`；自定义 DAO 返回类型；`PrimaryKey.algorithm` | 更新导入、结果映射和转换器注册 |
+| 3.0.0 | 首个稳定版 | 按稳定 API 完成迁移与基准测试 |
+| 3.0.1 | 修复处理器输出和跨数据库事务混用问题 | 升级后执行多数据库回归测试 |
 
-预发布阶段建议固定版本号，不要用动态版本；升级时逐版本跑 migration test 和 benchmark。
+`PrimaryKey.Algorithm.ROWID` 允许复用已经删除的整数主键，开销较低；`AUTOINCREMENT` 避免复用，但 SQLite 需要维护额外状态。只有业务协议要求“曾使用过的主键永不再分配”时才应选择 `AUTOINCREMENT`，不能把它当作通用的数据安全选项。
 
-## Room 2.x 到 Room 3.0 迁移 checklist
+## Room 2.x 到 Room 3.0 迁移清单
 
-迁移按这个顺序执行，避免运行期问题和构建期问题混在一起：
+- 盘点数据库、DAO、实体、迁移、回调、测试以及直接使用 `SupportSQLite` 的代码。
+- 将数据模块切换到 Kotlin、KSP、`androidx.room3` 插件和 Room 3.0.1。
+- 配置 `schemaDirectory`，提交所有构建变体的 schema，并让 CI 检查差异。
+- 迁移包名、回调参数、同步 DAO、Executor 配置与失效观察者。
+- 在 `AndroidSQLiteDriver` 和 `BundledSQLiteDriver` 中选择一个，记录选择依据。
+- 只为明确的旧调用点引入 `room3-sqlite-wrapper`，不允许新业务代码使用。
+- 从每个受支持的来源版本运行迁移测试，另做应用降级测试。
+- 用固定数据集测量启动、打开、迁移、关键查询、批量事务和连接等待。
+- 灰度期间观察迁移失败、`SQLiteException`、ANR、数据库损坏报告和关键操作耗时。
 
-- 依赖：把数据模块依赖改为 `androidx.room3:room3-runtime`、`androidx.room3:room3-compiler`，接入 KSP 和 Room Gradle Plugin。
-- imports：批量替换 `androidx.room.*` 到 `androidx.room3.*`，保留可编译提交。
-- schema：配置 `room3 { schemaDirectory(...) }`，提交所有变体 schema，CI 增加 schema diff 检查。
-- DAO：把同步 DAO、Executor 依赖和旧 callback 改到协程 / Flow / driver 形态。
-- driver：在 builder 中设置 `SQLiteDriver`（Android 端用 `AndroidSQLiteDriver` 或 `BundledSQLiteDriver`），确认是否需要 `setSingleConnectionPool()` / `setMultipleConnectionPool(...)`，并为直接 SQL 路径补 `SQLiteConnection` / `SQLiteStatement` 生命周期测试。
-- wrapper：只为迁移期白名单调用点添加 `room3-sqlite-wrapper`，每个调用点登记删除计划。
-- 测试：跑 MigrationTestHelper、DAO 单测、Macrobenchmark、StrictMode 主线程 I/O 检查和大库回放。
-- 灰度：数据库 ready、Migration 耗时、查询 P90、事务 P90、crash-free、ANR rate 进入灰度看板。
+## Room、DataStore 与直接 SQLite 的选择
 
-## Room 3.0 与 DataStore / 原生 SQLite 选型
+Room 3 没有改变存储工具的职责：
 
-Room 3.0 不改变数据库选型原则。结构化关系数据、复杂查询、事务一致性、离线缓存和可迁移 schema 仍适合 Room；简单 key-value 配置、用户偏好和小体积状态适合 DataStore；极端高频写入、自定义虚表、特殊 SQLite 扩展或跨语言复用可能更适合直接 driver / 原生 SQLite。
-
-选型表可以这样看：
-
-| 场景 | 优先选择 | 判断依据 |
+| 场景 | 常用选择 | 判断依据 |
 | --- | --- | --- |
-| 用户配置、开关、轻量状态 | DataStore | 查询简单，schema 演进轻，避免数据库 open 进入启动路径 |
-| 关系数据、列表、离线缓存 | Room 3.0 | SQL 校验、Migration、Flow / Paging 适配完整 |
-| 大批量写入或自定义 SQLite 能力 | Room + driver API 或原生 SQLite | 需要更细的事务、statement 和连接控制 |
-| KMP 共享数据层 | Room 3.0 | 共享 schema 和 DAO 收益高于迁移成本 |
-| 启动首帧敏感、数据量小 | DataStore 或延迟 Room open | 避免冷启动被 database open / Migration 拖慢 |
+| 用户偏好、开关、小量键值数据 | DataStore | 无关系查询与多表事务需求 |
+| 关系数据、复杂查询、离线数据 | Room 3 | 有 SQL 校验、迁移、DAO、Flow 或 Paging 需求 |
+| 特殊虚表、SQLite 扩展、精细连接控制 | Room 配合驱动 API，或直接 SQLite | 团队能够负责资源管理与迁移测试 |
+| KMP 共享数据层 | Room 3 + 各平台驱动 | 共享 schema 和 DAO 的收益高于平台适配成本 |
 
-Room 3.0 自 `3.0.0-alpha02` 起支持 FTS5，包括 `@Fts5`、FTS5 tokenizer 常量和 detail 选项。搜索类业务迁移时可评估 FTS5，但要单独验证索引构建时间、数据库文件增长和查询计划——FTS5 不是所有搜索场景的默认方案。
-
-## Web/WASM SQLiteDriver 的跨端同步问题
-
-Web/WASM 支持适合作为架构扩展，不应进入 Android 性能基线。WebWorkerSQLiteDriver 的线程模型、浏览器存储、同步协议、冲突合并和离线恢复都和 Android 本地 SQLite 不同。Android 端只需要保留接口边界：共享 DAO 和 entity 可以复用，平台 driver、诊断、加密、备份和迁移策略由各端实现。
-
-项目进入 KMP 数据层后，验收文档至少拆成三份：Android 性能基线、跨端 schema / 类型映射、同步协议。24.17 的 Android 结论只引用第一份，其他两份作为架构材料，不参与 Android 查询耗时和启动耗时判断。
+FTS5、`WITHOUT ROWID` 和自定义返回类型扩大了 Room 3 的适用范围，但每项能力都需要查询计划、文件大小、迁移和设备兼容性验证。选择 Room 3 也不意味着必须使用随库 SQLite；驱动应依据平台覆盖、SQLite 特性与实测结果决定。
 
 ## 小结
 
-Room 3.0 迁移要按“后端抽象、编译链路、旧扩展点、性能验收”四个面拆开看。`SQLiteDriver` 给的是新的数据库访问边界，KSP 和 schemaDirectory 给的是新的构建与迁移验证边界，KMP 给的是共享代码边界。Android 端性能是否变好，要用冷启动、查询、事务、锁等待和 Migration 数据回答，不能只靠版本升级推断。
+Room 3.0.1 迁移包含四项独立工作：改用 `androidx.room3` 与 KSP，选择并验证 SQLite 驱动，迁移 `SupportSQLite` 调用，以及建立 schema 升级和应用降级测试。Android 17 上，平台驱动使用系统 `SQLiteDatabase` 及其内部连接池；随库驱动使用独立原生 SQLite，并由 Room 管理连接池。两条路径的版本、线程与体积条件不同，性能结论必须来自相同场景下的测量。
+
+直接访问连接时，应通过 `useReaderConnection()`、`useWriterConnection()` 与 `usePrepared()` 管理资源。查询计划、索引、事务范围和磁盘等待仍决定数据库表现。完成编译和功能测试只是迁移起点，启动、首次打开、迁移、查询、连接等待与二进制回退都要有可重复的验证记录。
