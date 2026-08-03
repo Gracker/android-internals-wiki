@@ -92,204 +92,219 @@ last_deepseek_cn_review_at: 2026-07-16
 
 # 26.10 Android 11 以下进程退出归因方案
 
-Android 11 以前，应用侧没有 `ApplicationExitInfo` 这类系统级退出记录。进程退出后，SDK 只能在下次启动时从崩溃文件、ANR 线索、内存压力、上次心跳和进程状态快照里拼出证据，推断上一次为什么退出。
+Android 11 以前，应用侧没有 `ApplicationExitInfo` 这类系统退出记录。进程结束后，SDK 只能在下次启动时读取崩溃文件、卡顿现场、内存快照、会话标记等应用自有证据，推测上一个进程发生了什么。
 
-本节覆盖 Android 5.0 到 Android 10。Android 11+ 的系统退出记录见 26.9 节，Crash 上报模型见 26.2 节，ANR 触发机制见 9.3 节，低内存治理见 23.7 节。
+本节的运行版本范围是 Android 5.0（API 21）到 Android 10（API 29）。平台侧以 `android-17.0.0_r1` 作为当前模型的校准上限，内核侧以 `android17-6.18-2026-06_r6` 作为当前参考。后两个锚点用于说明今天的系统怎样记录退出、LMKD 与内核怎样协作，并不表示 Android 5～10 设备运行 Linux 6.18。分析旧设备时，还要回到对应 ROM 的 framework、Android 10 AOSP `lmkd` 和厂商内核实现。
 
 ## 要点
 
-### 🔹 API 30 以下缺少系统退出记录带来的观测缺口
+### 🔹 先区分系统事实与应用推断
 
-`ApplicationExitInfo` 从 API 30 开始提供，应用可以通过 `ActivityManager.getHistoricalProcessExitReasons(packageName, pid, maxNum)` 读取历史退出记录，并拿到 `reason`、`timestamp`、`pid`、`processName`、`description` 等字段。系统侧由 `AppExitInfoTracker` 维护近期进程退出信息，相关容器类位于 `frameworks/base/core/java/android/app/ApplicationExitInfo.java`。低版本没有这层系统记录，进程退出时也不会自动给应用留下一条标准化事件。
+`ApplicationExitInfo` 从 API 30 开始提供。应用可通过 `ActivityManager.getHistoricalProcessExitReasons(packageName, pid, maxNum)` 查询系统保留的历史记录。`ApplicationExitInfo.java` 定义的是跨 Binder 返回给客户端的值对象；在 Android 17 源码中，服务端历史由 `AppExitInfoTracker` 管理，其内部 `AppExitInfoContainer` 按包和 UID 保存记录。Android 5～10 没有这套公开查询接口，不能把一次“会话标记未关闭”写成系统确认的退出原因。
 
-低版本的缺口集中在三类场景：
+低版本最难处理的是进程来不及执行任何清理逻辑的场景：
 
-- 进程被系统或用户直接杀掉：`SIGKILL` 不能被应用捕获，LMKD、任务管理器清理、系统回收都可能表现为“上次没有正常退出”。
-- ANR 之后进程被结束：系统会写 ANR trace，但普通应用不能稳定读取 `/data/anr/`，只能通过下次启动时的本地痕迹、日志平台、Play Vitals 或用户 bugreport 补证据。
-- OOM 前后现场丢失：Java heap OOM、虚拟内存耗尽、线程/fd 逼近上限都可能让写文件、分配对象、启动上报线程失败，进程内补救路径必须尽量短。
+- `SIGKILL` 不能注册 handler。LMKD、用户停止、系统回收等路径在应用侧都可能只留下未结束的会话。
+- 系统判定 ANR 后会生成系统 trace，但普通发布包不能依赖读取 `/data/anr/`。应用内 watchdog 只能证明主线程在采样期间没有响应，不能证明系统已经判定 ANR。
+- Java 堆 OOM、地址空间耗尽、线程或文件描述符耗尽会同时削弱采集能力。此时分配对象、创建线程和写大文件都可能失败。
+- 设备重启会中断进程，也会重置 `elapsedRealtime`。如果没有同一启动周期内的时间边界，下一次启动时间不能当作上次退出时间。
 
-参考书的崩溃分析章节把“现场信息”拆成崩溃类型、线程、Logcat、机型、系统、内存、fd、线程数、业务路径等维度；这里沿用这种组织方式，但不复用原文表述。低版本退出归因也要按“证据”拆，而不是只给一个 reason。
+数据模型应同时保存 `legacy_reason`、`confidence` 和 `evidence[]`。其中 reason 是应用规则的结论，confidence 描述证据强度，evidence 保留可复核的原始事实。三者不能合成一个看似确定的枚举。
 
-工程上可以先把退出分成四档：
+可以按证据强度组织事件：
 
-| 档位 | 代表场景 | 可采证据 | 置信度 |
-|------|----------|----------|--------|
-| 已知崩溃 | Java 未捕获异常、Native signal | crash 文件、minidump、信号号、崩溃线程、符号化栈 | 高 |
-| 已知卡死 | 前台 ANR、Service ANR、Broadcast timeout | 主线程 watchdog 栈、`am_anr` 事件、Play Vitals、bugreport trace | 中到高 |
-| 疑似低内存退出 | LMKD、Java heap OOM 前置预警、线程/fd/虚拟内存耗尽 | 上次心跳、内存快照、`/proc/self/status`、KOOM dump、系统内存桶 | 中 |
-| 未知退出 | 用户划掉、系统回收、升级、设备重启、ROM 策略 | session marker、boot id、版本号、启动耗时、前后台状态 | 低 |
+| 结论 | 代表证据 | 推荐口径 |
+|------|----------|----------|
+| 已确认 Java 崩溃 | 本进程写出的完整未捕获异常记录，包含会话、线程和栈 | `JAVA_CRASH_CONFIRMED` |
+| 已确认 Native 崩溃 | 完整 minidump 或经过校验的 signal report | `NATIVE_CRASH_CONFIRMED` |
+| 外部平台确认 ANR | Play Vitals、bugreport 或厂商系统 trace 可与会话对应 | `ANR_CONFIRMED_EXTERNAL` |
+| 应用观测到卡死 | watchdog 连续留存主线程与调度现场，但没有系统记录 | `ANR_SUSPECTED` |
+| 疑似内存压力退出 | 会话未闭合，并且退出前有内存、线程、fd 或堆报告异常 | `LOW_MEMORY_SUSPECTED` |
+| 原因未知 | 只有会话未闭合，或多类证据互相冲突 | `ABNORMAL_END_UNKNOWN` |
 
-这一层分档决定后面的产品口径：低版本不要把“疑似 LMKD”写成“系统确认 LMK kill”。更稳妥的做法是输出 `reason_guess + confidence + evidence[]`，把判断和证据一起上报。
+`LOW_MEMORY_SUSPECTED` 不能在报表中显示成“LMKD 已杀进程”。同理，应用 watchdog 的样本也不能直接计入 Android Vitals 的 ANR 指标。
 
 ### 🔹 Signal Handler、ANR traces、LMKD、dumpsys 的能力对照
 
-低版本没有单一入口，只能把多种工具放到同一张对照表里。每个工具要明确能证明什么、不能证明什么、能不能在线上大规模使用。
+低版本没有统一入口，每种手段都要同时标出证明范围和访问边界。
 
-| 手段 | 能覆盖的退出 | 线上可用性 | 主要限制 | 建议用途 |
-|------|--------------|------------|----------|----------|
-| `Thread.setDefaultUncaughtExceptionHandler` | Java crash | 高 | 进程状态已异常；不能覆盖 native crash、ANR、kill | 生成 Java crash envelope |
-| Native signal handler / Breakpad / Crashpad | `SIGSEGV`、`SIGABRT` 等 native crash | 高，但实现成本高 | handler 中只能做 async-signal-safe 操作；要防二次崩溃 | 写 minidump、寄存器、maps、线程栈 |
-| 主线程 watchdog | 疑似 ANR 前兆 | 高 | 不是系统 ANR 判定；会受采样间隔和误报影响 | 保存主线程栈、消息队列等待时间、业务路径 |
-| `/data/anr/` traces | 系统 ANR | 低 | 普通 App 权限不足；新版文件名从单个 `traces.txt` 变成多个 `anr_*` | 实验室、bugreport、厂商合作 |
-| Logcat event | `am_anr`、`am_crash`、`am_low_memory` 等 | 低到中 | Android 4.1 后第三方只能读自身日志；厂商和权限差异大 | 调试包、企业版、用户授权诊断 |
-| LMKD / lowmemorykiller 线索 | 低内存杀进程 | 低 | `SIGKILL` 不可捕获；普通 App 无法直接监听系统 LMKD kill 事件 | 用内存压力和上次心跳做间接归因 |
-| `dumpsys activity processes` / `meminfo` / `procstats` | 进程状态、adj、内存 | 低 | 多数命令需要 shell、dump 权限或调试环境 | 实验室复现、售后诊断、灰度白名单 |
-| `/proc/self/*` | 当前进程内存、线程、fd、maps | 高 | 只能在进程还活着时采集；字段随内核版本有差异 | 崩溃前快照、周期性轻量采样 |
+| 手段 | 能证明什么 | 普通发布包边界 | 合适用途 |
+|------|------------|----------------|----------|
+| `Thread.setDefaultUncaughtExceptionHandler` | Java 未捕获异常到达 handler | 不能覆盖 Native crash、ANR、`SIGKILL`；已有 handler 还要按约定传递 | 写小型 Java crash 记录 |
+| 经过验证的 Native crash 组件 | 收集到的 signal、寄存器、minidump 与映射信息 | handler 只能调用 async-signal-safe 操作；堆和锁可能已损坏 | Native 崩溃诊断 |
+| 主线程 watchdog | 采样时主线程未在期限内响应 | 不等于系统 ANR；暂停、调试器、设备负载也可能触发 | 保存主线程栈、消息调度和前后台状态 |
+| `/data/anr/` | 系统生成的 ANR trace | 普通应用通常不可读，官方取证流程依赖 adb/bugreport | 实验室复现、用户授权诊断、厂商协作 |
+| 系统 event log | `am_anr`、`am_crash` 等系统事件 | 第三方应用不能把读取系统事件当作稳定能力 | 调试、系统应用或受管设备 |
+| LMKD / lowmemorykiller 线索 | 系统处于内存压力，或外部日志显示发生 kill | 应用不能捕获 `SIGKILL`，也不能可靠订阅 LMKD 的系统 kill 记录 | 外部补证或应用侧间接推断 |
+| `dumpsys` / bugreport | 系统进程状态、adj、内存与事件上下文 | 通常需要 shell、`DUMP` 或系统权限，输出也不是 SDK 稳定协议 | 复现、售后和受管设备诊断 |
+| `/proc/self/*` | 当前进程在采样时的部分状态 | 只能观察自己且受内核、SELinux 与厂商修改影响 | 低频快照 |
 
-Native crash 的处理要把“捕获信号”和“可靠写文件”分开。信号到来时堆、锁、线程状态都可能不可用，handler 里应只做最小记录，并尽量交给独立 handler 进程或 fork 出的子进程处理。文件句柄泄漏、栈溢出、堆破坏、二次崩溃这些失败路径，在 native crash handler 实现阶段就要纳入风险清单；具体实现方案以当前 SDK 的 crash 组件为准。
+Native crash 处理必须把“进入 signal handler”和“完成持久化”看成两个阶段。崩溃线程可能持有 libc、分配器或应用锁，从 handler 里调用普通日志、分配内存或执行复杂 C++ 代码都可能再次故障。生产实现宜采用经过机型验证的 Crashpad/Breakpad 类组件，或预先启动的独立 handler 进程。不要把“收到信号后临时 fork，再在子进程调用任意库函数”当成通用安全方案；多线程进程 fork 后，子进程会继承其他线程持有的锁。
 
-ANR traces 不能按“线上 SDK 可直接读文件”设计。Android 官方文档说明，旧版本会有单个 `/data/anr/traces.txt`，新版本会有多个 `/data/anr/anr_*` 文件；这描述的是设备上的系统 trace 文件形态，不等于普通应用有读取权限。SDK 更稳妥的路径是在主线程长时间无响应时先保存本进程可拿到的栈、队列等待时间、前后台状态和最近业务事件，再把 Play Vitals、用户 bugreport、厂商诊断结果作为后补证据。
+ANR trace 也不能按“线上 SDK 直接读文件”设计。Android 官方文档说明，旧版本使用单个 `/data/anr/traces.txt`，较新版本使用多个 `/data/anr/anr_*` 文件；同一文档给出的取证方式依赖 adb 访问设备。SDK 能稳定保留的是本进程 watchdog 现场，再由 Play Vitals、bugreport 或厂商诊断提供系统侧证据。
 
-LMKD 也不能写成“应用监听到系统杀进程”。LMKD 结束进程时使用的是不可捕获的 kill 路径，应用侧只能在进程还活着时采样 `PSS/RSS/VSS`、Java heap、线程数、fd 数、前后台状态、最近心跳；下次启动发现 marker 未闭合，再结合设备内存桶、上次前后台、OOM 前置预警判断。详见 23.7 节。
+LMKD 归因还要区分年代。Android 10 AOSP 已有 userspace `lmkd`，可向目标发送 `SIGKILL`；更老设备或厂商内核仍可能使用内核 lowmemorykiller 驱动。Android 17 的 `lmkd` 与 6.18 内核锚点用于理解当前 PSI、进程优先级和 kill 上报路径，不能反推某台 Android 8 设备的实现。普通应用只能在进程存活时记录内存压力与自身状态，下次启动再把这些记录作为推断证据。
 
-`dumpsys` 适合做验证工具，不适合作为普通线上采集入口。调试环境可以用 `dumpsys activity processes` 看 adj 和进程状态，用 `dumpsys meminfo <package>` 看内存分布，用 bugreport 关联 `am_anr`、`am_crash`、`lowmemorykiller` 线索；发布包里应把这类能力放在用户授权诊断或企业设备管理场景，不能默认调用。
+内存字段也要按来源命名。`/proc/self/status` 可提供 `VmRSS`、`VmSize`、线程数等字段，但不提供 PSS；PSS 可由 `Debug.getPss()`、`Debug.MemoryInfo` 或在允许访问时解析 `smaps`/`smaps_rollup` 获得。RSS、PSS、Java heap 和虚拟地址空间代表不同问题，不能互相代替。任何 `/proc/self/*` 样本都只描述采样瞬间，不能单独证明后来由谁结束了进程。
 
 ### 🔹 KOOM fork dump 在低版本 OOM 现场保留中的位置
 
-KOOM 的价值在于“进程死掉前保存 Java heap 现场”，它不能替代 `ApplicationExitInfo`。它通过轮询 Java heap、线程数、fd、虚拟内存等阈值，在连续超过阈值后触发 HPROF dump；dump 过程使用 `Suspend ART VM -> fork VM process -> Resume ART VM -> Dump Hprof`，把传统 dump 对主进程的长时间冻结压到 20ms 以内。KOOM 官方 README 标注兼容 Android L 及以上，也就是 API 21+。
+KOOM 的 Java Leak 模块用于在进程仍存活时监测 Java heap、线程、fd 和虚拟内存等信号，并在满足其配置条件后生成 HPROF。其 fork dump 方案会暂停 ART、fork 子进程、恢复父进程，再由子进程写出 HPROF。项目 README 声明支持 Android 5.0 及以上；这是 KOOM 项目的兼容范围，不是 Android SDK 对所有 ROM 的保证。
 
-这套策略解决的是两个低版本问题：
+它对退出归因的价值是补充“退出前堆现场”：
 
-- Java heap 泄漏或大对象堆积时，进程还没被系统杀掉，SDK 可以提前把 heap 现场保存下来。
-- 传统 `Debug.dumpHprofData()` 容易让主进程冻结太久，用户可感知；fork 后由子进程写 HPROF，主进程更快恢复。
+- Java heap 持续增长时，可以在进程尚能工作时保存对象引用关系。
+- HPROF 能解释 Java 对象占用，却不能解释所有 Native 分配、图形缓冲、文件映射和内核内存。
+- 已经收到 `SIGKILL` 的进程没有机会再触发 dump。
 
-它不能解决的边界也要写清楚：
+fork dump 依赖 ART 私有实现、动态链接和不同 Android 版本的兼容处理，还会增加 copy-on-write、RSS、文件 I/O、存储与隐私成本。即使某个版本在实验室可用，也要经过目标 ROM 灰度验证、资源预算和失败保护。Android 17 的默认发布方案不应依赖未验证的 ART 私有符号。
 
-- 已经被 LMKD `SIGKILL` 的进程没有机会再 dump。
-- Native 内存、图形缓冲、ashmem、mmap 文件导致的 RSS/PSS 压力，不一定能从 Java HPROF 中解释。
-- fork dump 本身会带来 copy-on-write、文件 I/O、磁盘空间和隐私成本，必须受采样、频控和网络条件约束。
-- ROM 对 hidden API、动态链接、ART 内部符号的限制会影响实现稳定性，接入前要做机型灰度。
+KOOM 报告只能成为 `evidence[]` 的一项。比如，上一会话未结束，而且此前出现连续 Java heap 压力并成功保存 HPROF，规则可以给出 `LOW_MEMORY_SUSPECTED`。在 Android 5～10 上没有系统退出记录可供确认，不能因为有一份 HPROF 就把置信度提高到“系统确认”，也不能把 Java heap 泄漏等同于 LMKD kill。
 
-在退出归因模型里，KOOM 产物适合放进 `evidence[]`，而不是直接改写 reason。例子：上次 session 未正常关闭，进程重启前 2 分钟内出现 Java heap 阈值连续超限，同时保存了 HPROF 报告，这时可以给 `LOW_MEMORY_SUSPECTED`，置信度为 medium；如果同时有系统侧 `ApplicationExitInfo.REASON_LOW_MEMORY`，才把它升为系统确认。低版本没有系统侧记录，所以不要升到 high。
+### 🔹 权限、ART TI 与厂商 ROM 边界
 
-`/proc/meminfo`、`/proc/self/status`、`/proc/self/maps`、fd、线程数这些轻量快照可以作为退出前的现场素材；KOOM 补上的只是 heap dump 这一块。退出归因要把这些快照和 HPROF 组合起来，避免只看 Java heap 就把所有退出都归成 OOM。
-
-### 🔹 权限、兼容性与厂商 ROM 差异
-
-低版本退出归因的主要误差来自权限和 ROM 差异。能力表在设计阶段就要按“稳定可用、调试可用、厂商合作可用、不可依赖”四档标注。
+低版本退出归因的主要误差来自访问权限、系统版本和厂商修改。能力清单应区分“应用自有数据”“调试环境数据”和“系统或厂商数据”。
 
 | 线索 | 稳定性 | 风险 |
 |------|--------|------|
 | SDK 自己写的 crash/minidump/session marker | 高 | 写文件失败、进程二次崩溃、磁盘满 |
-| `/proc/self/status`、`/proc/self/fd`、`/proc/self/maps` | 中到高 | 字段随内核版本变化；采样太频繁会有开销 |
-| Logcat 自身日志 | 中 | 只能读到自身日志；系统事件依权限和版本变化 |
-| `/data/anr/` | 低 | 普通应用不可读；文件名和保留策略随版本变化 |
-| LMKD 事件 | 低 | 普通应用不能可靠监听；厂商实现差异大 |
-| `dumpsys` | 低 | shell/调试权限；输出格式无稳定协议 |
-| ROM 私有诊断接口 | 低到中 | 需要厂商合作；版本升级易断 |
+| 公开 API 与应用私有目录 | 高 | 仍需处理版本差异、I/O 失败和数据过期 |
+| `/proc/self/status`、`/proc/self/fd`、`/proc/self/maps` | 中 | 节点和字段受内核、SELinux 与 ROM 影响；高频采集会增加开销 |
+| 应用自身 Logcat | 中 | 不能据此获得完整系统事件；日志可能被覆盖 |
+| `/data/anr/`、系统 event log、LMKD 记录 | 低 | 普通应用不能稳定访问 |
+| `dumpsys` / bugreport | 低 | 需要 shell、系统授权或用户参与；格式不是 SDK 契约 |
+| ROM 私有诊断接口 | 取决于合作协议 | 升级后可能改变，还要单独处理授权和数据治理 |
 
-Android 8.0 以后 JVMTI 可用于调试和监控类工具，但这不等同于低版本都能无成本拿到所有退出证据。JVMTI 更适合收集对象分配、线程创建、类加载、GC 事件等过程数据；退出归因只把它当作“进程活着时的补充证据”。
+Android 8.0 引入 ART TI/JVMTI，但官方文档明确限制 agent 只能附加到 `android:debuggable="true"` 的应用，文件权限和 SELinux 还会限制 agent 库的加载。普通应用商店发布包不能依赖 JVMTI 构建通用的线上退出 SDK。它适合调试包、实验室复现或受控环境，用于观察对象分配、线程、类加载和 GC 等过程，不负责提供进程结束后的系统归因。
 
 厂商 ROM 还会影响三类判断：
 
-- 后台清理策略：同样是 marker 未闭合，有的设备更可能来自系统清理，有的设备更可能来自用户手动划掉。
+- 后台限制策略：同样是 marker 未闭合，不同设备上的可能原因分布不同，但单个事件仍不能由机型先验直接定因。
 - 日志保留策略：部分 ROM 会扩展系统日志或诊断接口，也可能限制 `/proc`、Logcat、ANR 文件访问。
 - 进程优先级策略：前后台切换、保活策略、厂商电池管理会改变 OOM adj 和进程被回收的概率。
 
-正文只能给通用模型，不能承诺某个厂商设备一定能拿到某类系统日志。若要把厂商能力写入线上平台，字段要带 `source=oem`、`rom_fingerprint`、`api_level`、`collector_version`，并和 AOSP/官方口径分开统计。
+厂商能力写入分析平台时，应带 `source=oem`、`build_fingerprint_hash`、`api_level`、`collector_version` 和授权版本，并与 AOSP 公开接口来源分开统计。
 
 ### 🔹 低版本归因结果如何并入 ApplicationExitInfo 模型
 
-低版本自建模型最好贴近 `ApplicationExitInfo`，这样 Android 11+ 和 Android 10 以下可以进入同一张分析表。区别在于：API 30+ 的 `reason` 来自系统，低版本的 `reason` 来自 SDK 推断。
+Android 11+ 的系统记录与 Android 5～10 的应用推断可以进入同一分析域，但不能共用一个无来源的 `reason` 字段。系统原因、旧版推断和展示分类应分别存储。
 
 建议最小字段如下：
 
-| 字段 | 说明 | 低版本来源 |
-|------|------|------------|
-| `event_id` | 单次退出归因事件 ID | SDK 生成 |
-| `session_id` | 对应启动会话 | session marker |
-| `package_name` / `process_name` | 包名和进程名 | SDK 运行时写入 |
-| `pid` / `start_elapsed_ms` / `exit_detected_elapsed_ms` | 进程 ID、启动时间、发现退出时间 | marker + 下次启动扫描 |
-| `reason` | 归一化原因 | SDK 推断枚举 |
-| `confidence` | `high` / `medium` / `low` | 证据规则计算 |
-| `evidence` | 证据列表 | crash 文件、watchdog、内存快照、KOOM、日志 |
-| `trace_ref` | 本地文件或上传后对象 ID | crash/minidump/HPROF/ANR 栈 |
-| `foreground_status` | 退出前前后台 | 会话标记 |
-| `memory_snapshot` | Java heap、PSS/RSS、VSS、fd、线程数 | `/proc/self/*` + SDK |
-| `privacy_level` | 原始、脱敏、仅摘要 | 上传策略 |
+| 字段 | 含义 | 注意事项 |
+|------|------|----------|
+| `event_id` / `session_id` | 归因事件和上一个进程会话 | 由应用生成并持久化 |
+| `package_name` / `process_name` / `pid` | 进程身份 | PID 会复用，不能单独作为关联键 |
+| `boot_session_id` | 采样所属的设备启动周期 | 不可用时显式留空，不要编造 |
+| `process_start_elapsed_ms` | 上一进程启动时的单调时钟值 | 仅可在同一设备启动周期比较 |
+| `next_start_wall_time_ms` / `next_start_elapsed_ms` | 发现旧会话未闭合的时间 | 这是检测时间，不是退出时间 |
+| `system_reason_code` / `system_timestamp_ms` | API 30+ 系统事实 | 来源固定为 `ApplicationExitInfo` |
+| `legacy_reason` / `confidence` | API 21～29 的规则结论 | 不写入系统 reason 字段 |
+| `evidence[]` / `attachment_ref[]` | 可复核事实和附件引用 | 附件引用需带保留期、加密和访问级别 |
+| `last_foreground_state` | 最近一次成功写入的前后台状态 | 不代表退出瞬间状态 |
+| `memory_snapshot` | Java heap、PSS、RSS、VmSize、fd、线程数 | 每个值记录采样 API 与时间 |
+| `collector_version` / `rule_version` | 采集器和规则版本 | 支持复算和误判追踪 |
 
-归一化 reason 可以保留和系统相近的含义，但名称要能表达推断性质：
+低版本枚举可以在报表层关联到相近的 Android 11+ 分析类别，但关联不改变来源：
 
-| 低版本 reason | 映射到 Android 11+ 分析维度 | 判定条件 |
-|----------------|-----------------------------|----------|
-| `JAVA_CRASH_CONFIRMED` | `REASON_CRASH` | 未捕获异常文件完整，包含线程、栈、时间戳 |
-| `NATIVE_CRASH_CONFIRMED` | `REASON_CRASH_NATIVE` | minidump 或 signal report 完整 |
-| `ANR_SUSPECTED` | `REASON_ANR` | watchdog 主线程卡住、前台、无 crash 文件、后续重启；有 Play Vitals/bugreport 时升级 |
-| `LOW_MEMORY_SUSPECTED` | `REASON_LOW_MEMORY` | 未闭合 marker + 内存/线程/fd/KOOM 证据；Java heap OOM、线程/fd 耗尽、LMKD kill 等细节作为 evidence 或 internal subReason 处理，不使用不存在的 `REASON_OOM` 公开常量 |
-| `USER_OR_SYSTEM_KILL_UNKNOWN` | `REASON_USER_REQUESTED` / `REASON_OTHER` | marker 未闭合但证据不足 |
-| `DEVICE_REBOOT_OR_UPDATE` | API 34+: `REASON_PACKAGE_UPDATED` / `REASON_PACKAGE_STATE_CHANGE`；API 30-33: 可能落到 `REASON_USER_REQUESTED` / `REASON_OTHER` | boot id 变化、版本升级、安装时间变化；设备重启映射到 `REASON_OTHER`，包更新/组件状态变化按 API 版本区分 |
+| 低版本结论 | 可用于聚合的分析类别 | 必需证据 |
+|------------|------------------------|----------|
+| `JAVA_CRASH_CONFIRMED` | Java crash | 完整异常记录能对应到上一会话 |
+| `NATIVE_CRASH_CONFIRMED` | Native crash | 完整 minidump 或经校验的 signal report |
+| `ANR_CONFIRMED_EXTERNAL` | ANR | 外部系统证据能对应到应用、版本和时间范围 |
+| `ANR_SUSPECTED` | Suspected ANR | watchdog 现场；没有系统确认时保持 suspected |
+| `LOW_MEMORY_SUSPECTED` | Suspected memory pressure | 会话未闭合加一项或多项内存压力证据 |
+| `PACKAGE_REPLACED_DETECTED` | Package lifecycle | 安装/更新时间或版本变化；不代表设备重启 |
+| `DEVICE_REBOOT_DETECTED` | Device lifecycle | 能证明启动周期变化；不映射到某个公开退出 reason |
+| `ABNORMAL_END_UNKNOWN` | Unknown | 只有未闭合标记，或证据冲突 |
 
-规则引擎要允许“多证据并存”。例如进程退出前保存了 native minidump，同时下次启动发现 marker 未闭合，这种情况应归并为一个 native crash 事件，并把异常退出 marker 作为附加证据。去重键可参考 26.2 节：`process_name + pid + timestamp_bucket + top_frame/signature + session_id`。
+不要把 `DEVICE_REBOOT_DETECTED` 映射为 `REASON_OTHER`，也不要把 `ABNORMAL_END_UNKNOWN` 映射为 `REASON_USER_REQUESTED`。`ApplicationExitInfo` 的公开 reason 是系统记录；旧版应用没有足够证据时就应保留 unknown。Java heap OOM、fd 耗尽等细节可进入自有 `evidence_type`，不要伪装成公开 API 中不存在的 `subReason`。
 
-和 26.9 的连接方式是同一张宽表分两条路径写入：API 30+ 使用系统 `ApplicationExitInfo` 填 `system_reason`，低版本使用 SDK 推断填 `legacy_reason`。查询时优先系统字段；没有系统字段再看低版本字段。这样图表可以按“确认退出原因”和“推断退出原因”分开展示。
+事件关联也不能只用 PID 和时间桶。PID 会复用，低版本又没有可靠退出时间。应用自有事件可用 `session_id + process_name + evidence fingerprint` 生成稳定标识；外部 ANR 或崩溃记录则按包、进程、版本、设备启动周期和时间边界进行候选匹配。无法唯一匹配时保留多个候选及分数，不强行合并。
 
 ### 🔹 灰度、采样与隐私边界
 
-退出归因 SDK 容易越做越重。低版本尤其要从“默认轻量、问题用户加深、强证据才上传原始文件”三层设计。
+采集预算应由设备性能、存储、进程状态和问题严重度决定，不预设“所有设备全量采集”。
 
-默认层只保存小对象：session marker、最近一次前后台状态、Java heap/RSS/PSS 摘要、fd/线程数、最近关键业务事件摘要、crash envelope。这个层级要覆盖全量用户，写入路径要短，文件采用原子写策略，避免为了诊断退出原因再引入新的 I/O 问题。
+基础层只保存小对象：session marker、最近一次前后台状态、经过预算控制的内存/线程/fd 摘要、关键业务事件摘要和 crash envelope。写入应有大小上限、失败回退与原子替换策略，覆盖比例由压测结果和线上预算决定。
 
-加深层只对灰度人群、问题版本、特定机型或服务端命令开启。可增加主线程 watchdog 栈、本进程关键线程栈、`/proc/self/maps` 摘要、最近 N 秒的 SDK 日志、KOOM dump 触发。退出归因也不应默认打开高成本采集——全量日志、用户拉取、主动上报、动态诊断这些手段要分层打开，不能因为找退出原因本身引出新的性能问题。
+诊断层只对灰度人群、问题版本、特定机型或用户主动诊断开启。可增加 watchdog 栈、本进程关键线程栈、`/proc/self/maps` 摘要、按配置时长维护的环形日志和 KOOM 触发。高成本功能必须分别控制启用条件、磁盘预算、CPU/I/O 开销、上传网络和停止开关。
 
-原始文件层只在强触发下上传：minidump、HPROF、maps、线程栈、用户日志都可能包含文件路径、账号片段、URL、业务参数、设备信息。上传前要做四件事：
+minidump、HPROF、maps、线程栈和日志可能包含路径、账号片段、URL、业务参数与设备信息。采集和上传至少要覆盖这些约束：
 
-- 脱敏：URL query、路径用户名、token、手机号、邮箱、业务 ID 按规则替换。
-- 加密：本地文件和网络传输都要加密，服务端按最小权限读。
-- 频控：按用户、版本、机型、reason、文件类型设置上限，避免问题版本引发诊断流量雪崩。
-- 可撤回：诊断开关支持服务端关闭，用户反馈场景要能说明采集范围。
+- 数据最少化：只采集当前问题需要的字段，并在客户端去除 token、账号、URL query 与业务标识。
+- 明示与控制：按产品政策取得必要同意，提供诊断开关，并能停止后续采集。
+- 加密与权限：本地、传输和服务端存储分别保护，原始附件仅授予必要人员和服务。
+- 保留与删除：不同附件类型设置保留期，支持到期删除、用户删除请求和审计记录。
+- 预算与熔断：按版本、设备、规则和文件类型限制采样与上传，异常增长时能远程停用。
 
-对外指标也要区分“确认”和“推断”。Java/native crash 可以进入确认崩溃率；`ANR_SUSPECTED`、`LOW_MEMORY_SUSPECTED` 更适合做趋势和线索，不应直接和 Android Vitals 的 ANR 或系统低内存退出做一比一对账。
+对外指标必须区分系统确认、外部平台确认、应用确认和应用推断。`ANR_SUSPECTED`、`LOW_MEMORY_SUSPECTED` 适合观察趋势和筛选问题，不与 Android Vitals ANR 或 API 30+ `REASON_LOW_MEMORY` 做一比一对账。
 
 ## 扩展
 
 ### 🔸 低版本 ANR 文件可读性变化记录
 
-官方文档给出的文件形态是：旧版本设备上可能是单个 `/data/anr/traces.txt`，新版本设备上可能是多个 `/data/anr/anr_*` 文件。
+官方文档记录的文件形态是：旧版本使用单个 `/data/anr/traces.txt`，较新版本使用多个 `/data/anr/anr_*` 文件。这里描述的是系统生成文件，不是应用可用的存储 API。
 
 对 SDK 来说，可读性要按访问主体区分：
 
 | 访问主体 | 可行性 | 说明 |
 |----------|--------|------|
 | 普通发布包 | 低 | 通常不能直接读取 `/data/anr/`；不能依赖此路径做自动上报 |
-| 调试包 + adb | 中 | 本地复现可用 `adb bugreport`、`adb pull`、Logcat 辅助分析 |
-| 系统签名/厂商合作包 | 中 | 取决于厂商授权和 ROM 策略，必须单独标注来源 |
-| Play Console / Android Vitals | 高 | 能看到线上 ANR 聚合和部分 trace，但不一定回流到自建 APM 原始事件 |
+| adb / bugreport | 可用于受控诊断 | 官方流程以 adb 访问系统 trace；是否能直接 pull 取决于设备和权限 |
+| 系统应用/厂商合作包 | 取决于授权 | 由签名权限、SELinux 和 ROM 策略决定，必须标注来源 |
+| Play Console / Android Vitals | 可查看平台聚合 | 平台事件不一定能与自建 APM 的每个原始会话唯一对应 |
 
-低版本 SDK 的 ANR 归因应以“应用内 watchdog 现场 + 外部系统证据”组合为主。只要缺少系统 trace 或平台确认，reason 就保留 `ANR_SUSPECTED`。
+低版本 SDK 以“应用内 watchdog 现场 + 外部系统证据”组合归因。缺少系统 trace 或平台确认时，reason 保留 `ANR_SUSPECTED`。
 
 ### 🔸 自建 Process Exit Info 表结构建议
 
-这张表用于把 Android 11+ 系统记录和低版本推断记录放到同一查询面。字段可以分阶段补齐，但要保留扩展空间。
+表结构要保留来源、检测时间和证据版本，避免查询层把推断改写成系统事实。
 
 最小表结构可以按以下方式拆：
 
 | 表 | 主键 | 内容 |
 |----|------|------|
-| `process_exit_event` | `event_id` | session、process、reason、confidence、时间、版本、设备桶 |
+| `process_exit_event` | `event_id` | session、process、来源、系统 reason、旧版推断、检测时间与版本 |
 | `process_exit_evidence` | `event_id + evidence_type` | crash 文件、watchdog、KOOM、memory snapshot、system record 的摘要 |
 | `process_exit_attachment` | `attachment_id` | minidump、HPROF、trace、日志包的对象存储引用和隐私级别 |
 | `process_exit_rule_result` | `event_id + rule_id` | 命中的规则、分数、排除原因，便于回溯误判 |
 
-这段伪 SQL 只表达字段关系，真实实现要按公司数据仓库规范调整分区和索引。
+下面的伪 SQL 只展示事件表的来源隔离和时间语义，分区、索引与字段类型应按实际数据仓库调整。
 
 ```sql
 CREATE TABLE process_exit_event (
- event_id STRING,
- app_version STRING,
- api_level INT64,
- device_fingerprint_hash STRING,
- session_id STRING,
- process_name STRING,
- pid INT64,
- start_elapsed_ms INT64,
- detected_elapsed_ms INT64,
- system_reason STRING,
- legacy_reason STRING,
- confidence STRING,
- foreground_status STRING,
- collector_version STRING,
- created_at TIMESTAMP
+    event_id STRING,
+    app_version STRING,
+    api_level INT64,
+    device_fingerprint_hash STRING,
+    boot_session_id STRING,
+    session_id STRING,
+    process_name STRING,
+    pid INT64,
+    process_start_elapsed_ms INT64,
+    next_start_wall_time_ms INT64,
+    next_start_elapsed_ms INT64,
+    system_reason_code INT64,
+    system_timestamp_ms INT64,
+    legacy_reason STRING,
+    reason_source STRING,
+    confidence STRING,
+    collector_version STRING,
+    rule_version STRING,
+    created_at TIMESTAMP
 );
 ```
 
-`system_reason` 和 `legacy_reason` 分开存，能避免低版本推断污染 Android 11+ 的系统事实。分析平台展示时再做一层合并字段，例如 `normalized_reason = coalesce(system_reason, legacy_reason)`，并把 `confidence` 一起展示。
+`system_reason_code` 只接收 `ApplicationExitInfo` 的公开 reason，`legacy_reason` 只接收应用规则结论。`reason_source` 记录 `android_system`、`external_platform`、`app_confirmed` 或 `app_inferred`。展示层可以按来源生成统一分类，但不能直接用 `coalesce(system_reason, legacy_reason)` 抹去证据等级。`next_start_*` 只表示发现旧会话的时刻；低版本无法得到精确退出时间时，字段应留空或保存上下界。
+
+## 源码与文档锚点
+
+- [Android 17 `ApplicationExitInfo`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java)：客户端值对象、公开 reason 与 trace 接口。
+- [Android 17 `AppExitInfoTracker`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java)：服务端记录、关联和持久化实现。
+- [Android Developers：`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo) 与 [`getHistoricalProcessExitReasons`](https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,%20int,%20int))：API 30+ 的公开契约。
+- [Android 17 `lmkd`](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/) 与 [Android 10 `lmkd`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-10.0.0_r47/lmkd/)：当前实现与本文历史范围的 AOSP 参照。
+- [Android 17 common kernel 6.18 tag](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6)：当前内核语义校准点，不用于替代旧设备的实际内核。
+- [Android Developers：ANR](https://developer.android.com/topic/performance/vitals/anr)：ANR trace 文件形态与 adb 取证方式。
+- [AOSP：ART TI](https://source.android.com/docs/core/runtime/art-ti)：Android 8.0+ JVMTI 能力、debuggable 和 agent 加载边界。
+- [KOOM Java Leak README](https://github.com/KwaiAppTeam/KOOM/blob/master/koom-java-leak/README.md)：监控项、fork dump 流程与项目声明的版本范围。
