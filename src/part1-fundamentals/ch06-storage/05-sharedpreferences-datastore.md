@@ -9,7 +9,7 @@ drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
 last_verified: "2026-07-01"
-last_verified_against: "AOSP android-17.0.0_r1 SharedPreferencesImpl.java / QueuedWork.java / ActivityThread.java / BroadcastReceiver.java / SharedPreferences.java / ContextImpl.java; AndroidX DataStore core 1.1.7 source/AAR"
+last_verified_against: "AOSP android-17.0.0_r1 SharedPreferencesImpl.java / QueuedWork.java / ActivityThread.java / BroadcastReceiver.java / SharedPreferences.java / ContextImpl.java; AndroidX DataStore core 1.2.1 source/AAR; historical audit notes referenced 1.1.7"
 last_verified_android17: "2026-07-01"
 last_verified_android17_source: "AOSP android-17.0.0_r1 frameworks/base/core/java/android/app/SharedPreferencesImpl.java (897行, diff android-16.0.0_r3 仅 2 行新增 @RavenwoodKeepWholeClass 注解, 无运行时行为变更) + SharedPreferences.java (421 行, javadoc 彻底重写, 官方声明不推荐使用) + ContextImpl.java (4107 行, SP 缓存逻辑零变化)"
 reviewed_date: "2026-04-20"
@@ -29,12 +29,21 @@ sources:
     path: "frameworks/base/core/java/android/app/ActivityThread.java"
   - type: official
     path: "https://developer.android.com/topic/libraries/architecture/datastore"
+  - type: official
+    path: "https://developer.android.com/reference/kotlin/androidx/datastore/core/DataStore"
+  - type: official
+    path: "https://developer.android.com/jetpack/androidx/releases/datastore"
+  - type: androidX
+    path: "AndroidX DataStore 1.2.1 DataStoreImpl.kt / FileStorage.kt / MultiProcessCoordinator.android.kt / MulticastFileObserver.android.kt / SharedCounter.android.kt"
 tags: [sharedpreferences, datastore, anr, io, storage, performance, queuedwork]
 related_chapters: ["6.1", "6.3", "9.1", "9.2", "8.2", "4.5"]
 section: "6.5"
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: "reviewed"
+last_idle_audit_at: "2026-08-02T22:35:43+08:00"
+last_idle_audit_run_id: "20260802-223543-idle-audit-29d2feef"
+last_idle_audit_log: "logs/audit/2026-08-02-20260802-223543-idle-audit-29d2feef-idle-audit.md"
 task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: fixed
@@ -69,10 +78,6 @@ last_deepseek_cn_review_at: 2026-07-01
 - 🔸 MMKV 与 DataStore 的选型边界
 - 🔸 多进程 KV 存储的替代方案
 
-### OpenClaw 加工指引
-
-> 锚点是最低覆盖要求，加工时必须逐条落实并标注验证状态。
-> 扩展内容视素材完整度决定是否展开，无法确认的技术细节保留 `[待验证]`，不要硬写结论。
 <!-- outline-end -->
 
 ## 先记住结论：`apply()` 返回，不代表写盘与主线程再无关系

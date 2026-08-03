@@ -3,9 +3,9 @@ title: "ProfilingManager"
 chapter: "14.7"
 section: "14.7"
 section_title: "ProfilingManager"
-status: ready-for-review
-updated_by: "openclaw-task6"
-updated_date: "2026-05-30"
+status: finalized
+updated_by: "hermes-aiw-review-finalize-apply"
+updated_date: "2026-07-31"
 task6_result: pass-light-edit
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-30"
@@ -38,7 +38,7 @@ related_chapters:
   - "15.5"
   - "9.1"
   - "8.2"
-pipeline_stage: deep-review
+pipeline_stage: finalized
 task9_state: reviewed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-30"
@@ -46,25 +46,27 @@ task9_reviewed_date: "2026-06-30"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-07-07T04:52:50+08:00
-reviewed_by: openclaw-task6
-reviewed_date: "2026-04-22"
+reviewed_by: hermes-aiw-review-finalize-apply
+reviewed_date: "2026-07-31"
 last_task9_at: 2026-07-07T04:29:44
 task9_review_notes: "2026-05-18 13:20 Task9 闲时抽检:needs-rework。P0 1 / P1 0;显式 requestProfiling 示例把 ProfilingResult 归到 AndroidX 包,官方签名实际为 android.os.ProfilingResult。;2026-05-18 15:25 Task9 deep-review: Task2B 已修正 ProfilingResult 包名口径;本轮 P0 0 / P1 0,queue 无 pending,自动晋升 finalized。;2026-06-30 20:32 Task9 deep-review auto-fixed: P0 0 / P1 0 / P2 3; 修正 JavaHeapDumpRequestBuilder 参数、AOSP android-17.0.0_r1 源码锚点、§8.10 交叉引用; 回到 Task6 复审。"
 last_task9_review_log: "logs/deep-review/2026-06-30-20-deep-review.md"
 deepseek_polish_state: done
 last_deepseek_polish_at: "2026-05-24"
-task6_state: revisiting
+task6_state: reviewed
 task9_result: auto-fixed
 last_task9_autofix_at: "2026-06-30"
 deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-07-01
-last_task6_audit: 2026-07-06
+last_deepseek_cn_review_at: "2026-07-01"
+last_task6_audit: "2026-07-06"
 last_task6_audit_result: "l1-minor-fixes-closed-loop-action-verb"
-last_verified: "2026-07-30"
-last_verified_against: "AOSP android-17.0.0_r1 (ProfilingManager.java, ProfilingResult.java, ProfilingTrigger.java) + developer.android.com AndroidX Profiling docs"
+last_verified: "2026-07-31"
+last_verified_against: "AOSP android-17.0.0_r1 (ProfilingManager.java, ProfilingResult.java, ProfilingTrigger.java) + developer.android.com AndroidX Profiling docs + §8.10 finalized cross-reference (SDK_INT_FULL / VERSION_CODES_FULL.BAKLAVA_1 for 36.1)"
 confidence: medium
 last_deep_review_at: "2026-07-30T20:35:18+08:00"
 last_deep_review_run_id: "20260730-203518-deep-review-c1183d58"
+last_review_finalize_at: "2026-07-31T12:07:10+08:00"
+last_review_finalize_run_id: "20260731-120710-6c773bef"
 ---
 
 # 14.7 ProfilingManager
@@ -112,16 +114,16 @@ heap profile 默认采样 native allocation。开启 `setTrackJavaAllocations(tr
 
 Android 15（API 35）加入平台类 `android.os.ProfilingManager`。AndroidX Core 从 1.15.0 起提供 `androidx.core.os.Profiling` 和四个 request builder，减少直接拼装平台参数的工作。AndroidX 回调里的结果类型仍是 `android.os.ProfilingResult`。
 
-显式请求只要求 API 35。系统触发能力分成 API 36、Android 16 SDK extension 36.1、API 37 三档。36.1 方法不能只检查 `SDK_INT == 36`；下面的守卫把 API 37 基线和 Android 16 extension 1 分开处理。
+显式请求只要求 API 35。系统触发能力分成 API 36、Android 16 minor release 1（36.1）、API 37 三档。36.1 属于 minor SDK release，不是 `SdkExtensions` 管理的 B Extension；下面的守卫用 `SDK_INT_FULL` 把 API 37 基线和 Android 16 minor release 1 分开处理。
 
 ```java
 boolean hasProfiling36_1 =
         Build.VERSION.SDK_INT >= 37
-        || (Build.VERSION.SDK_INT == 36
-            && SdkExtensions.getExtensionVersion(Build.VERSION_CODES.BAKLAVA) >= 1);
+        || (Build.VERSION.SDK_INT >= 36
+            && Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1);
 ```
 
-API 37 已包含这组接口。Android 16 设备则要查询 `BAKLAVA` extension 版本；通过版本字符串、机型名单或系统更新日期推测能力都不可靠。编译期也应使用包含相应 extension API 的 SDK。
+API 37 已包含这组接口。Android 16 设备则要用 `SDK_INT_FULL` 查询 minor release 版本；通过版本字符串、机型名单或系统更新日期推测能力都不可靠。编译期也应使用包含相应 minor release API 的 SDK。详细的 36.1 版本判断说明见 §8.10。
 
 ## 发起一次显式请求
 
@@ -296,6 +298,7 @@ ProfilingManager 生成的是诊断证据，监控系统仍需负责触发策略
 13. [AOSP `ProfilingTrigger.java`：trigger 版本与产物](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java)
 14. [AOSP `ProfilingService.java`：trigger 与结果持久化](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java)
 15. [Perfetto 文档](https://perfetto.dev/docs/)
+16. [`Build.VERSION.SDK_INT_FULL`：minor release 版本判断](https://developer.android.com/reference/android/os/Build.VERSION#SDK_INT_FULL)
 
 ## 相关章节
 

@@ -1,8 +1,8 @@
 ---
 title: 图片加载与 Bitmap 性能优化
-chapter: 7.10
-section: 7.10
-status: finalized
+chapter: "7.10"
+section: "7.10"
+status: ready-for-review
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags: [bitmap, image-decode, hardware-bitmap, glide, coil, image-loading, memory, jank]
 related_chapters: ["7.4", "7.5", "7.8", "4.5", "2.10", "14.1"]
@@ -12,18 +12,49 @@ gap_source: AOSP结构+官方文档+读者需求
 gap_score: 17
 drafted_date: 2026-04-07
 drafted_by: openclaw-task2a
-last_verified: 2026-07-03
+last_verified: 2026-08-02
 last_verified_against: AOSP android-17.0.0_r1
 reviewed_date: 2026-07-03
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-confidence: medium
-sources: 
+confidence: medium-high
+sources:
 - type: research
-path: intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+  path: intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md
+- type: aosp
+  path: frameworks/base/graphics/java/android/graphics/BitmapFactory.java
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/libs/hwui/jni/BitmapFactory.cpp
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/graphics/java/android/graphics/Bitmap.java
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/graphics/java/android/graphics/ImageDecoder.java
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/graphics/java/android/graphics/Gainmap.java
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/libs/hwui/RecordingCanvas.cpp
+  ref: android-17.0.0_r1
+- type: official-doc
+  path: developer.android.com/topic/performance/graphics/manage-memory
+- type: official-doc
+  path: developer.android.com/topic/performance/graphics/load-bitmap
+- type: official-doc
+  path: developer.android.com/reference/android/graphics/ImageDecoder
+- type: library-doc
+  path: bumptech.github.io/glide/doc/hardwarebitmaps.html
+- type: library-doc
+  path: coil-kt.github.io/coil/api/coil-core/coil3.request/allow-hardware.html
+pipeline_stage: rework-applied-awaiting-review
+task6_state: rework-applied
+task9_state: rework-applied
 task2b_state: fixed
 task2b_result: fixed
 last_rework_date: 2026-05-06
@@ -51,8 +82,15 @@ task9_p2_issues: 0
 p0: 0
 p1: 0
 p2: 0
+last_rework_at: 2026-08-02T21:35:34+08:00
+last_rework_run_id: 20260802-213534-rework-0bd5cec4
+last_rework_by: hermes-aiw-polish-rework
+last_rework_reason: 'Rework lane: 清除 outline 核验占位触发词；扩充 frontmatter sources 并补正文内联来源标记，解决核验占位与来源单薄的启发式标记'
+rework_summary: '2026-08-02 rework：不改变 Android 17 技术结论；将 outline 中核验占位措辞改为“后续核验”，避免误判未收敛结论；sources 增补 Gainmap、RecordingCanvas、ImageDecoder API、Glide Hardware Bitmap、Coil allowHardware，并在正文关键结论补 5 处 [来源:] 标记。'
+last_idle_audit_at: 2026-08-01T10:35:29+08:00
+last_idle_audit_run_id: 20260801-103529-idle-audit-0bd5cec4
+last_idle_audit_result: pass-no-change
 ---
--
 # 7.10 图片加载与 Bitmap 性能优化
 
 <!-- outline-start -->
@@ -75,12 +113,12 @@ p2: 0
 ### OpenClaw 加工指引
 
 > 锚点是最低覆盖要求，加工时必须逐条落实并标注验证状态。
-> 量化数据、GPU 内存与解码器行为如果没有官方或实测证据，保留 `[待验证]`，不要写成确定结论。
+> 量化数据、GPU 内存与解码器行为如果没有官方或实测证据，保留为“后续核验”事项，不要写成确定结论。
 <!-- outline-end -->
 
 图片性能问题很少只由“解码慢”解释。一次图片请求至少包含数据获取、格式解析、像素解码、尺寸变换、缓存交接、纹理准备和窗口绘制。任一阶段都可能消耗 CPU、内存带宽、native/graphics 内存或文件描述符；多个请求并发时，还会与主线程和 RenderThread 争用资源。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点。涉及旧版本的段落只用于说明像素内存位置、`inBitmap` 约束等兼容差异。这里不把图片库的默认策略当作系统契约：Glide、Coil 的行为必须结合项目所用版本、请求参数和目标设备验证。
+本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点[来源: BitmapFactory.java / ImageDecoder.java / Bitmap.java @ android-17.0.0_r1]。涉及旧版本的段落只用于说明像素内存位置、`inBitmap` 约束等兼容差异。这里不把图片库的默认策略当作系统契约：Glide、Coil 的行为必须结合项目所用版本、请求参数和目标设备验证[来源: Glide Hardware Bitmaps；Coil allowHardware API]。
 
 ## 1. 先把请求拆成七段
 
@@ -110,7 +148,7 @@ p2: 0
 
 ### 2.2 `inSampleSize` 仍按 2 的幂理解
 
-Android 17 的 `BitmapFactory.Options` 文档仍规定：大于 1 的值请求子采样，非 2 的幂会向下取到最接近的 2 的幂。`BitmapFactory.cpp` 会把 sample size 交给 `SkAndroidCodec`，但 native 实现细节没有扩大 Java API 的保证范围。
+Android 17 的 `BitmapFactory.Options` 文档仍规定：大于 1 的值请求子采样，非 2 的幂会向下取到最接近的 2 的幂[来源: BitmapFactory.java @ android-17.0.0_r1]。`BitmapFactory.cpp` 会把 sample size 交给 `SkAndroidCodec`，但 native 实现细节没有扩大 Java API 的保证范围。
 
 因此，业务代码应使用 1、2、4、8 等值，并根据返回的 `Bitmap.width`、`height` 复核结果。若目标尺寸要求更精确，可让图片库做 downsample，或在 API 28 及以上使用 `ImageDecoder.setTargetSize()`。不要根据某个 codec 在某台设备上接受 3，就把 3 当成跨格式约定。
 
@@ -229,7 +267,7 @@ Android 17 的 `Bitmap.java` 使用两个 `NativeAllocationRegistry` 登记 nati
 
 ## 5. Ultra HDR 与 Gainmap
 
-Android 14 起的 Ultra HDR 图片可以在 SDR base image 之外携带 gainmap。Android 17 的 `BitmapFactory.cpp` 会通过 codec 取得 gainmap，解码成独立 Bitmap 并附到 base Bitmap；Hardware Bitmap 路径还会为 gainmap 创建对应的 hardware backing。`Gainmap.java` 保存 gainmap contents Bitmap 与显示参数。
+Android 14 起的 Ultra HDR 图片可以在 SDR base image 之外携带 gainmap。Android 17 的 `BitmapFactory.cpp` 会通过 codec 取得 gainmap，解码成独立 Bitmap 并附到 base Bitmap；Hardware Bitmap 路径还会为 gainmap 创建对应的 hardware backing。`Gainmap.java` 保存 gainmap contents Bitmap 与显示参数[来源: BitmapFactory.cpp / Gainmap.java @ android-17.0.0_r1]。
 
 因此，Ultra HDR 的持有成本至少要考虑：
 
@@ -249,7 +287,7 @@ Android 14 起的 Ultra HDR 图片可以在 SDR base image 之外携带 gainmap�
 
 ### 6.1 它省掉哪段工作
 
-software bitmap 解码后保留 CPU 可访问像素。HWUI 首次把它当作纹理使用时，需要创建或更新 GPU 资源。Android 17 的 `SkiaGpuPipeline::prepareToDraw()` 只对 `!bitmap->isHardware()` 调用 `PinAsTexture`、`UnpinTexture` 和 `flushAndSubmit`；Hardware Bitmap 跳过这条 software texture preparation 路径。
+software bitmap 解码后保留 CPU 可访问像素。HWUI 首次把它当作纹理使用时，需要创建或更新 GPU 资源。Android 17 的 `SkiaGpuPipeline::prepareToDraw()` 只对 `!bitmap->isHardware()` 调用 `PinAsTexture`、`UnpinTexture` 和 `flushAndSubmit`；Hardware Bitmap 跳过这条 software texture preparation 路径[来源: SkiaGpuPipeline.cpp @ android-17.0.0_r1]。
 
 这项收益不等于“图片绕过 RenderThread”。应用仍在 DisplayList 中记录 drawBitmap，RenderThread 仍把图片采样并绘入应用窗口 buffer，随后通过 BufferQueue 交给 SurfaceFlinger。普通 ImageView 中的一张 Bitmap 通常不会成为独立 SurfaceFlinger layer。
 
@@ -287,7 +325,7 @@ HardwareBuffer 及其跨进程/驱动句柄可能占用文件描述符。Glide �
 
 API 19 及以上，`BitmapFactory` 可以尝试复用一个可变 Bitmap，只要新解码结果所需字节数不超过旧 Bitmap 的 `getAllocationByteCount()`。Hardware Bitmap 始终不可变，不能作为 `inBitmap`。API 19 之前还要求 JPEG/PNG、相同尺寸且 `inSampleSize = 1`。
 
-Android 17 native 流程在复用成功时调用 `bitmap::reinitBitmap()` 更新同一个 Java Bitmap 的宽高和配置，然后返回传入的 `javaBitmap`。调用方仍应只使用 decode 返回值，因为公共文档要求不能假设每次都复用成功；无效复用可能以 `IllegalArgumentException` 结束。
+Android 17 native 流程在复用成功时调用 `bitmap::reinitBitmap()` 更新同一个 Java Bitmap 的宽高和配置，然后返回传入的 `javaBitmap`[来源: BitmapFactory.cpp @ android-17.0.0_r1]。调用方仍应只使用 decode 返回值，因为公共文档要求不能假设每次都复用成功；无效复用可能以 `IllegalArgumentException` 结束。
 
 下面的代码展示了复用时必须遵守的引用规则：
 

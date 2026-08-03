@@ -4,9 +4,14 @@ chapter: "14.32"
 status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 drafted_date: "2026-07-16"
-last_verified: "2026-07-30"
+last_verified: "2026-08-02"
 last_verified_against: "AOSP android-17.0.0_r1 simpleperf；Android common kernel android17-6.18-2026-06_r6 perf security；Arm Telemetry Solution main@6d4f550d053c"
 confidence: high
+task6_state: deep-reviewed
+task9_state: ready-for-final-audit
+pipeline_stage: deep-review
+last_deep_review_at: "2026-08-02T20:35:25+08:00"
+last_deep_review_run_id: "20260802-203525-deep-review-436b1181"
 sources:
   - type: official
     url: "https://developer.android.com/ndk/guides/simpleperf"
@@ -84,6 +89,8 @@ Topdown 处理前一个问题。它把处理器流水线的执行机会归入少
 因此，Topdown 是诊断顺序，不是优化处方。看到 Backend Bound 偏高后直接加预取，或者看到 Frontend Bound 偏高后直接改链接布局，都缺少中间的归因证据。
 
 本章以 Android 17 / API 37、AOSP `android-17.0.0_r1` 中的 simpleperf 为平台锚点。Arm Telemetry Solution 的示例公式来自它支持的具体 CPU 数据库；这些公式不能自动套到任意 Android SoC。
+
+本章的结论边界也限于参考资料列出的版本：AOSP simpleperf、Android common kernel 的 perf 权限说明，以及 Arm 对 Topdown/Telemetry Solution 的公开文档。未被这些资料覆盖的厂商内核补丁、Android 18 之后的 simpleperf 变化、SoC 私有 PMU 扩展和商业性能工具链，不作为本文判断依据。
 
 ## 14.32.2 Intel TMAM 与 Arm Topdown 的关系
 
@@ -182,7 +189,7 @@ Android 17 simpleperf 还提供 `sample_filter_for_perfetto_trace.py`。脚本�
 
 ### Arm SPE：可选的归因来源
 
-Android 17 simpleperf 源码包含 `SPERecorder` 与 `SPEDecoder`，`simpleperf list arm_spe` 会检查内核是否暴露 SPE PMU。SPE 可给内存操作、延迟或数据源归因提供更细的样本，前提是 SoC、内核、权限和 simpleperf 解码路径都支持。
+Android 17 simpleperf 源码包含 `SPERecorder` 与 `SPEDecoder`，`simpleperf list arm_spe` 会检查内核是否暴露 SPE PMU。SPE 可给内存操作、延迟或数据源归因提供更细的样本，前提是 SoC、内核、权限、profileable/debuggable 策略和 simpleperf 解码路径都支持。
 
 SPE 不是一级 Topdown 公式的替代品。它更适合在 Backend Bound 已由计数确认后，帮助定位延迟落在哪些指令或地址。Android 17 该版本源码中没有名为 `brbe` 的 simpleperf 后端，不能把 BRBE 写成通用可用的采集选项。
 
@@ -381,7 +388,7 @@ Android 17 上可执行的可靠路径是：
 2. 用 `simpleperf stat` 取得按核、同窗口的计数；
 3. 只采用目标 CPU telemetry specification 中的公式；
 4. 用 `record/report` 或 SPE 把方向定位到代码与数据访问；
-5. 用 Perfetto核对调度、频率、idle、热状态和业务窗口；
+5. 用 Perfetto 核对调度、频率、idle、热状态和业务窗口；
 6. 每次修改后复测端到端耗时、绝对计数与派生指标。
 
 缺少 CPU 专属公式时，保留“前端 stall 事件升高”“分支错误增加”这类可核验描述，比生成看似完整的四个百分比更可靠。
@@ -414,4 +421,4 @@ Android 17 上可执行的可靠路径是：
 - **前置知识**：参见 5.28（CPU 调度）、14.24（simpleperf 基础）。
 - **平台锚点**：Android 17 / API 37 / `android-17.0.0_r1`。
 
-<!-- AIW-review-verified-2026-07-30 -->
+<!-- AIW-deep-review-verified-2026-08-02 -->

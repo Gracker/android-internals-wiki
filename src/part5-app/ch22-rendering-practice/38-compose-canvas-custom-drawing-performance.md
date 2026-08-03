@@ -1,13 +1,25 @@
 ---
 title: "Compose Canvas 自定义绘制性能实战"
 chapter: "22.38"
-status: draft
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
+last_verified: "2026-08-01"
+last_verified_against: "AOSP android-17.0.0_r1; Compose UI 1.11.4 (854220f44ea8ea80fee824a6c5a045f39bede289); android17-6.18-2026-06_r6; Android/Compose 官方文档"
+confidence: high
 tags: [compose, canvas, custom-drawing, drawbehind, drawwithcontent, graphicslayer, rendernode]
 related_chapters: ["2.1", "2.3", "7.7", "22.3", "22.25", "22.31"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "章节深挖 + 官方文档"
+pipeline_stage: finalized
+task6_state: reviewed
+task9_state: reviewed
+last_draft_polish_at: "2026-07-31T23:42:23+08:00"
+last_draft_polish_run_id: "20260731-234223-draft-polish-a8e2ab9f"
+reviewed_date: "2026-08-01"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+last_review_finalize_at: "2026-08-01T08:12:43+08:00"
+last_review_finalize_run_id: "20260801-081243-625aae95"
 ---
 
 # 22.38 Compose Canvas 自定义绘制性能实战
@@ -103,6 +115,8 @@ Compose Foundation 1.11.4 的实现只有一行核心代码：
 
 `Canvas(modifier, onDraw) = Spacer(modifier.drawBehind(onDraw))`
 
+> 源码锚点：[`Canvas.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Canvas.kt)（Compose UI 1.11.4 快照）。
+
 这条源码说明：
 
 - `Canvas` 仍参加 Compose layout，需要 modifier 给出尺寸；
@@ -116,6 +130,8 @@ Compose Foundation 1.11.4 的实现只有一行核心代码：
 
 Android 端的 Compose `Canvas` 是 `AndroidCanvas` 包装。`AndroidComposeView.dispatchDraw(android.graphics.Canvas)` 用可复用的 `CanvasHolder` 把 framework Canvas 交给 Compose root；`DrawScope.drawIntoCanvas` 暴露同一层 Compose Canvas，`nativeCanvas` 再取得 `android.graphics.Canvas`。
 
+> 源码锚点：[`AndroidCanvas.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/AndroidCanvas.android.kt)、[`AndroidComposeView.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt)。
+
 这层包装不会把每个 `drawRect()` 直接变成一个独立 GPU 调用。标准硬件窗口中的大致路径是：
 
 1. UI Thread 执行 Compose drawing lambda；
@@ -124,6 +140,8 @@ Android 端的 Compose `Canvas` 是 `AndroidCanvas` 包装。`AndroidComposeView
 4. `syncAndDrawFrame()` 把当前 RenderNode 树状态交给 RenderThread；
 5. RenderThread 准备树并通过 Skia OpenGL 或 Vulkan pipeline 生成 GPU 工作；
 6. App Window buffer 经 BLAST、SurfaceFlinger、HWC 进入显示。
+
+> 平台源码锚点：[`DrawFrameTask.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp)、[`CanvasContext.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp)、[Skia OpenGL pipeline](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp) / [Vulkan pipeline](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp)（`android-17.0.0_r1`）。
 
 UI Thread 上的 draw lambda 耗时主要反映 Kotlin 计算、Path/Brush 构造、文本测量、display list 录制和调用开销。GPU 执行 draw op 的时间位于后续 RenderThread/GPU 区间，不能用 draw lambda 的同步耗时替代。
 
@@ -248,7 +266,7 @@ Compose 记录 snapshot state 在哪个 restart scope 被读取。
 
 “只触发 drawing”表示 Compose 不需要重跑 composition/layout，不表示 GPU 只改一个参数，也不表示已有像素会自动增量更新。
 
-当 draw node 失效时，Compose 会重新执行相关 draw block并更新对应 display list/layer。一个不断增长的 Path 每帧仍可能重新录制整条 Path。需要降低成本时可以：
+当 draw node 失效时，Compose 会重新执行相关 draw block 并更新对应 display list/layer。一个不断增长的 Path 每帧仍可能重新录制整条 Path。需要降低成本时可以：
 
 - 把历史笔迹按 segment 分块，只有活动 segment 高频变化；
 - 对过密输入点做有误差界限的简化；
@@ -263,6 +281,8 @@ Compose UI 1.11.4 的 `CanvasDrawScope` 有两个延迟创建字段：
 
 - `fillPaint` 用于 Fill；
 - `strokePaint` 用于 Stroke。
+
+> 源码锚点：[`CanvasDrawScope.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/drawscope/CanvasDrawScope.kt)。
 
 第一次需要时创建，后续 draw call 复用。因此，使用 `drawRect(color)`、`drawCircle()` 或 `drawPath(..., style = Stroke)` 不会为每次调用新建底层 Paint。
 
@@ -331,6 +351,8 @@ Compose UI 1.11.4 的 Android `GraphicsLayerV29`：
 - 用 `beginRecording()` / `endRecording()` 录制 layer 内容；
 - 用 `Canvas.drawRenderNode()` 把 layer 放进父 Canvas；
 - 通过 RenderNode 属性设置平移、缩放、旋转、alpha、clip、shadow 和 RenderEffect。
+
+> 源码锚点：[`GraphicsLayerV29.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt)。
 
 Android 12—17 都走 API 29+ 实现。`graphicsLayer` 仍属于宿主 App Window 的 RenderNode 树，SurfaceFlinger 通常看不到一个同名独立 layer。
 

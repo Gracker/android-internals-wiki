@@ -1,13 +1,25 @@
 ---
 title: "SAF/DocumentFile/ContentResolver 文件访问性能选型与治理"
 chapter: "24.21"
-status: draft
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [SAF, DocumentFile, ContentResolver, ScopedStorage, IO, performance, file-access]
 related_chapters: ["6.6", "6.7", "24.1", "24.12"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "AOSP结构+官方文档"
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: finalized
+last_draft_polish_at: "2026-08-03T11:36:11+08:00"
+last_draft_polish_run_id: "20260803-113535-draft-polish-331c7d09"
+last_verified: "2026-08-03"
+reviewed_date: "2026-08-03"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+last_review_finalize_at: "2026-08-03T12:09:07+08:00"
+last_review_finalize_run_id: "20260803-120756-8c57cb22"
+confidence: high
+sources: ["Android Developers SAF/DocumentFile/ContentResolver/MediaStore/Photo Picker", "AOSP android-17.0.0_r1 DocumentsContract/DocumentsProvider/MediaProvider FuseDaemon", "Android common kernel android17-6.18 FUSE passthrough/BPF"]
 ---
 
 # 24.21 SAF/DocumentFile/ContentResolver 文件访问性能选型与治理
@@ -17,15 +29,15 @@ gap_source: "AOSP结构+官方文档"
 
 ### 🔹 Android 文件访问路径全景与性能对比
 - 直接文件路径（java.io/File）→ ScopedStorage 限制下的适用范围
-- SAF（Storage Access Framework）→ DocumentFile API → 用户授权_uri
+- SAF（Storage Access Framework）→ DocumentFile API → 用户授权 URI
 - ContentResolver.openFileDescriptor → MediaProvider 查询路径
 - MediaStore API → 媒体文件专用路径
-- 各路径的性能基准对比（打开/读取/写入/批量操作）
+- 各路径的基准测试维度（打开/读取/写入/批量操作）
 
 ### 🔹 DocumentFile 性能瓶颈分析
-- DocumentFile.listFiles() 的 IPC 开销（每次查询跨进程）
-- Uri 权限持久化（takePersistableUriPermission）的性能影响
-- 树状结构遍历的 O(n) IPC 问题与缓存策略
+- `DocumentFile.listFiles()` 与后续属性读取的查询边界
+- Uri 权限持久化（takePersistableUriPermission）的生命周期语义
+- 树状结构遍历的 N+1 查询风险与缓存策略
 
 ### 🔹 ContentResolver 性能优化
 - 批量查询：ContentProviderOperation 与 applyBatch
@@ -35,18 +47,18 @@ gap_source: "AOSP结构+官方文档"
 ### 🔹 MediaProvider 与 MediaStore 性能
 - MediaStore.Images/Video/Audio 查询性能优化
 - AND/OR 条件构造与索引利用
-- Android 14+ Photo Picker 替代 SAF 的性能收益
+- Android 13+ Photo Picker 与 SAF 的适用边界
 - MediaStore.createWriteRequest 批量授权 API
 
 ### 🔹 SAF 文件操作性能优化实战
 - DocumentFile → Uri → ParcelFileDescriptor 链路分析
 - 大文件拷贝：FileChannel vs FileInputStream/FileOutputStream
 - 批量文件操作的事务性保证与性能权衡
-- Android 17 ContentProvider 跨进程调用的 Binder buffer 竞争
+- ContentProvider 跨进程调用与文件描述符数据面的边界
 
 ### 🔹 FUSE/BPF 与 SAF 的底层链路
 - ScopedStorage → FUSE 挂载点 → 内核 VFS → 底层文件系统
-- Android 14+ FUSE+BPF 路径对 SAF 读写性能的影响
+- Android 17 FUSE passthrough / FUSE-BPF 的适用范围
 - /storage/emulated/0 路径解析与重定向机制
 
 ### 🔹 应用场景性能选型指南
@@ -62,9 +74,9 @@ gap_source: "AOSP结构+官方文档"
 
 ## 扩展
 
-### 🔸 Android 17 DocumentFile 性能增强
-- 新增 API 对批量操作的优化（如有）
-- DocumentFile 与 Path API 的互操作性
+### 🔸 Android 17 文档 API 边界
+- DocumentsContract trash/restore 与同步状态字段
+- `content://` 与 Path API 不存在通用互操作契约
 
 ### 🔸 直接文件路径恢复：MANAGE_EXTERNAL_STORAGE
 - 特殊权限申请与 Google Play 审核要求

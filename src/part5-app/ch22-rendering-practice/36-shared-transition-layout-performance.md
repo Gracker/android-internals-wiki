@@ -1,13 +1,46 @@
 ---
 title: "SharedTransitionLayout — Compose 共享元素过渡动画性能优化"
 chapter: "22.36"
-status: draft
+status: finalized
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
 tags: [Compose, SharedTransition, Animation, Performance, Rendering]
 related_chapters: ["22.5", "22.21", "22.3", "2.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "AOSP结构/官方文档"
+last_verified: "2026-08-01"
+last_verified_against: "AndroidX Compose Animation 1.11.4 源码快照 854220f44ea8ea80fee824a6c5a045f39bede289；Android 17 / API 37 / android-17.0.0_r1；内核 android17-6.18-2026-06_r6；官方 Compose Shared elements 文档"
+confidence: high
+pipeline_stage: "finalized"
+task6_state: "reviewed"
+task9_state: "reviewed"
+last_draft_polish_at: "2026-08-01T11:35:38+08:00"
+last_draft_polish_run_id: "20260801-113538-draft-polish-9c0d3e58"
+reviewed_date: "2026-08-01"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+last_review_finalize_at: "2026-08-01T12:06:00+08:00"
+last_review_finalize_run_id: "20260801-120559-a2aecf57"
+sources:
+  - type: official
+    path: "https://developer.android.com/develop/ui/compose/animation/shared-elements"
+  - type: official
+    path: "https://developer.android.com/develop/ui/compose/animation/shared-elements/customize"
+  - type: official
+    path: "https://developer.android.com/develop/ui/compose/animation/shared-elements/navigation"
+  - type: official
+    path: "https://developer.android.com/jetpack/androidx/releases/compose-animation"
+  - type: aosp
+    path: "android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedTransitionScope.kt"
+  - type: aosp
+    path: "android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedContentNode.kt"
+  - type: aosp
+    path: "android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedElementEntry.kt"
+  - type: official
+    path: "https://developer.android.com/develop/ui/compose/system/predictive-back"
+  - type: aosp
+    path: "android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java"
+  - type: aosp
+    path: "android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java"
 ---
 
 # 22.36 SharedTransitionLayout — Compose 共享元素过渡动画性能优化
@@ -114,7 +147,7 @@ SharedTransition overlay 是 `SharedTransitionScope` 根节点 draw pass 内的�
 
 共享元素可以增加应用侧的图形层记录、裁剪、缩放、透明混合和过绘制，进而推迟窗口 buffer 完成时间；它不会因为进入 Compose overlay 就直接增加 HWC 要合成的窗口 layer 数量。
 
-这个判断与 `rendering_pipelines/S02_aosp_standard_type.md` 和 `S07_software_offscreen_type.md` 的生产者/结果位置模型一致：App 内部的 GPU 图形层或离屏中间结果仍由宿主窗口消费，只有独立提交给 `SurfaceControl` 的 buffer 才会自然对应独立 SurfaceFlinger layer。
+这个判断与全书建立的生产者/结果位置模型一致：App 内部的 GPU 图形层或离屏中间结果仍由宿主窗口消费，只有独立提交给 `SurfaceControl` 的 buffer 才会自然对应独立 SurfaceFlinger layer。BufferQueue 与 SurfaceFlinger 的生产者/消费者模型见 [2.32 GraphicBuffer 内存池化与 BufferQueue Slot 复用机制](../../part1-fundamentals/ch02-rendering/32-graphic-buffer-memory-pool.md)。
 
 ### 1.5 没有“最多五个元素”的平台阈值
 

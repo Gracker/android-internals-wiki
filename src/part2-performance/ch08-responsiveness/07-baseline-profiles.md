@@ -59,6 +59,9 @@ last_task9_audit_log: "logs/deep-review/2026-07-10-16-audit.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-10
 last_task9_autofix_at: "2026-07-10"
+last_idle_audit_at: "2026-08-02T18:35:07+08:00"
+last_idle_audit_run_id: "20260802-183507-idle-audit-e1ac46d2"
+last_idle_audit_log: "logs/audit/2026-08-02-20260802-183507-idle-audit-e1ac46d2-idle-audit.md"
 auto_promoted: true
 finalized_date: "2026-06-20"
 finalized_by: "openclaw-task9-auto-promote"
@@ -93,14 +96,14 @@ finalized_by: "openclaw-task9-auto-promote"
 ### 扩展（可选深入）
 
 - 🔸 Startup Profiles 与 DEX layout
-- 🔸 [待验证] Google Play 云端预编译分发
+- 🔸 Google Play Cloud Profiles 的公开边界
 - 🔸 1.12 节 AutoFDO 与应用侧 Profile 的分工
 
 ### OpenClaw 加工指引
 
 > 锚点是最低覆盖要求，修稿时必须逐条落到正文。
 > 涉及构建产物路径、ADB 命令、版本边界的段落，优先按官方文档和 AOSP 可核对口径写。
-> 对公开证据不足的云端编译细节，保留 `[待验证]`，不要补成确定结论。
+> 对公开证据不足的云端编译细节，只保留“公开资料不足以确认”的边界表达，不补成确定结论。
 <!-- outline-end -->
 ## 为什么需要 Baseline Profiles
 

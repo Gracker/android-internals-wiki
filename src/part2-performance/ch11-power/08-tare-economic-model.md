@@ -10,9 +10,14 @@ created_date: "2026-06-04"
 drafted_date: "2026-06-04"
 drafted_by: "openclaw-task2a"
 gap_source: "素材驱动"
-last_verified: "2026-07-31"
-last_verified_against: "AOSP android-13.0.0_r1 / android-14.0.0_r1 历史实现；TARE 删除提交 4a98dd235a70；AOSP android-17.0.0_r1；Android 17 / API 37 SDK 与官方功耗文档 2026-07"
+last_verified: 2026-08-03
+last_verified_against: "AOSP android-13.0.0_r1 / android-14.0.0_r1 历史实现；TARE 删除提交 4a98dd235a70；AOSP android-17.0.0_r1；Android 17 / API 37 SDK 与官方功耗文档 2026-08"
 confidence: high
+task6_state: deep-reviewed
+task9_state: ready-for-audit
+pipeline_stage: deep_review_passed
+last_deep_review_at: 2026-08-03
+last_deep_review_run_id: 20260803-083509-deep-review-30d9b8cb
 sources:
   - type: aosp
     path: "https://android.googlesource.com/platform/frameworks/base/+/4a98dd235a708115db41e722776eff3ef9ed09fe"
@@ -212,7 +217,7 @@ BatteryStats / BatteryUsageStats
 
 这段图用于区分“调度决策”与“耗电归因”。两边会共享事件和设备状态，但 Android 17 没有历史 TARE 那种 ARC 经济账户。
 
-`BatteryUsageStats`、`BatteryUsageStatsQuery` 在 `android-17.0.0_r1` 中仍标记为 `@hide`。普通应用不能使用原文中虚构的 `BatteryManager.getBatteryUsageStats(...)` 代码。应用侧诊断应使用公开 JobScheduler 原因 API、Android Studio Power Profiler、Battery Historian、Perfetto、Android vitals 和业务遥测。
+`BatteryUsageStats`、`BatteryUsageStatsQuery` 在 `android-17.0.0_r1` 中仍标记为 `@hide`。Android 17 没有 `BatteryManager.getBatteryUsageStats(...)` 这样的公开 API。应用侧诊断应使用公开 JobScheduler 原因 API、Android Studio Power Profiler、Battery Historian、Perfetto、Android vitals 和业务遥测。
 
 ## 11.8.7 用 API 37 定位 Job 为什么等待
 
@@ -291,16 +296,18 @@ adb shell dumpsys batterystats --charged > batterystats.txt
 
 ## 11.8.10 版本迁移清单
 
-- [ ] 删除 Android 15—17 使用 TARE 的架构图
-- [ ] 删除 `TareEconomicManager`、`AppBudgetManager` 与虚构预算方法
-- [ ] 删除普通应用调用 `EconomyManager` 的示例
-- [ ] 删除“每 UID BatteryUsageStats 决定 ARC”的表述
-- [ ] 将 `JobDebugInfo` 改为 pending-reason API
-- [ ] 将 `dumpsys tare` 改为 `dumpsys jobscheduler`
-- [ ] 把 `PENDING_JOB_REASON_QUOTA` 解释为 JobScheduler quota
-- [ ] 保留 Android 13—14 的 ARC 设计时标注隐藏、默认关闭和历史版本
-- [ ] Android 17 的数字以官方近似值和设备实测为准
-- [ ] WorkManager 排障包含 JobScheduler 资源限制
+本清单用于审阅旧稿、架构图或排障手册；本章在 2026-08-03 deep-review 中已按下面口径完成自查，后续迁移其他材料时可逐项套用：
+
+- [x] 删除 Android 15—17 使用 TARE 的架构图
+- [x] 删除 `TareEconomicManager`、`AppBudgetManager` 与虚构预算方法
+- [x] 删除普通应用调用 `EconomyManager` 的示例
+- [x] 删除“每 UID BatteryUsageStats 决定 ARC”的表述
+- [x] 将 `JobDebugInfo` 改为 pending-reason API
+- [x] 将 `dumpsys tare` 改为 `dumpsys jobscheduler`
+- [x] 把 `PENDING_JOB_REASON_QUOTA` 解释为 JobScheduler quota
+- [x] 保留 Android 13—14 的 ARC 设计时标注隐藏、默认关闭和历史版本
+- [x] Android 17 的数字以官方近似值和设备实测为准
+- [x] WorkManager 排障包含 JobScheduler 资源限制
 
 ## 小结
 

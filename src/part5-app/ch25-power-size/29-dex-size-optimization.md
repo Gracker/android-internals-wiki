@@ -9,12 +9,14 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "Clippings参考书驱动"
 confidence: medium-high
-last_verified: 2026-07-30
-task6_state: pending
-task9_state: pending
-pipeline_stage: task6_pending
+last_verified: 2026-07-31
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: deep-review
 last_draft_polish_at: 2026-07-30
 last_draft_polish_run_id: 20260730-235049-draft-polish-977cb49d
+last_deep_review_at: 2026-07-31
+last_deep_review_run_id: 20260731-083556-deep-review-977cb49d
 ---
 
 # 25.29 DEX 体积优化实战
@@ -24,7 +26,7 @@ last_draft_polish_run_id: 20260730-235049-draft-polish-977cb49d
 
 ### 🔹 DEX 文件结构与体积构成
 - DEX 二进制格式：header、string_ids、type_ids、proto_ids、field_ids、method_ids、class_defs、data
-- 体积来源：代码量（方法数/类数）、字符串池、调试信息（LineNumberTable、LocalVariableTable）
+- 体积来源：代码量（方法数/类数）、字符串池、调试信息（`debug_info_item`：行号、参数名、局部变量事件）
 - DEX 方法数 64K 限制与 Multidex 的体积代价
 
 ### 🔹 R8 Full Mode 与代码缩减
@@ -40,7 +42,7 @@ last_draft_polish_run_id: 20260730-235049-draft-polish-977cb49d
 - DEX 方法内联对体积的影响
 
 ### 🔹 Debug 信息剥离与映射管理
-- `-strip-debug`：移除 LineNumberTable 对崩溃堆栈的影响
+- 现代 R8 已在 release 模式自行处理行号映射；无需非标准 `-strip-debug` 手工破坏栈信息
 - R8 `mapping.txt` 的保留与上传（Crash symbolication 依赖）
 - ReTrace 工具与 mapping 文件管理流程
 - 如何在减小体积的同时保证线上可调试
@@ -60,11 +62,11 @@ last_draft_polish_run_id: 20260730-235049-draft-polish-977cb49d
 ### 🔹 字符串池与资源引用优化
 - R.string.* 常量内联对 DEX 字符串池的影响
 - 常量折叠与 R8 内联优化边界
-- `@stringRes` 注解与 R8 keep 的冲突
+- `@StringRes` / `@DrawableRes` 类型提示注解不自动形成 R8 keep 入口
 
 ### 🔹 ProGuard / R8 诊断与体积回归监控
-- `--print-usage`：被剔除的代码清单
-- `--print-seeds`：存活代码清单审计
+- `-printusage`：被剔除的代码清单（AGP 产物 `usage.txt`）
+- `-printseeds`：存活代码清单审计（AGP 产物 `seeds.txt`）
 - DEX 体积 CI 门禁：每 PR 对比 `dexcount` 指标
 - `com.android.tools.build:apkzlib` 程序化解析 DEX 方法数
 

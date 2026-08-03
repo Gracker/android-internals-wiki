@@ -1,14 +1,55 @@
 ---
 title: "Binder 通信监控实战：传输耗时、异常检测与 IPC 性能治理"
 chapter: "20.22"
-status: draft
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [Binder, IPC监控, 稳定性, 性能监控]
 related_chapters: ["1.44", "1.53", "1.54", "17.17", "20.17"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
+drafted_date: "2026-07-31"
+last_verified: "2026-07-31"
+last_verified_against: "AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6"
+confidence: medium-high
 gap_source: "素材驱动(Clippings)"
-confidence: medium
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: finalized
+reviewed_date: "2026-07-31"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+last_review_finalize_at: "2026-07-31"
+last_review_finalize_run_id: "20260731-160920-8a8b552c"
+last_draft_polish_at: "2026-07-31"
+last_draft_polish_run_id: "20260731-153552-draft-polish-d59b1f75"
+sources:
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/Binder.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/BinderProxy.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/IBinder.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/ServiceManager.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/StrictMode.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/Debug.java"
+  - type: aosp
+    path: "frameworks/native/libs/binder/ProcessState.cpp"
+  - type: aosp
+    path: "kernel/common/drivers/android/binder.c"
+  - type: aosp
+    path: "kernel/common/drivers/android/binder_trace.h"
+  - type: official
+    path: "developer.android.com/topic/performance/anrs/find-unresponsive-thread"
+  - type: official
+    path: "developer.android.com/reference/android/os/TransactionTooLargeException"
+  - type: official
+    path: "developer.android.com/reference/android/os/Debug"
+  - type: official
+    path: "perfetto.dev/docs/learning-more/android"
+  - type: official
+    path: "perfetto.dev/docs/analysis/stdlib-docs"
 ---
 
 # 20.22 Binder 通信监控实战：传输耗时、异常检测与 IPC 性能治理
@@ -55,7 +96,7 @@ confidence: medium
 
 ### 🔸 Android 17 Binder 批处理与监控适配
 - 异步批处理流水线对现有监控方案的兼容性
-- [待验证: Android 17 Binder 批处理监控的准确方案]
+- [已验证: AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6 — 见正文 §11，无普通应用可用的通用异步批处理接口]
 
 <!-- outline-end -->
 
@@ -238,7 +279,7 @@ Android 公开文档常把 Binder transaction buffer 概括为 1MiB。Android 17
 
 `Parcel.dataSize()` 只能描述当前 Parcel 的 inline 数据，无法得知目标进程的并发占用，也不能预测 reply 大小。使用生成 AIDL proxy 的普通 wrapper 时，参数序列化发生在 proxy 内部；为监控再序列化一遍会增加 CPU、内存和 FD 生命周期风险，不适合线上全量执行。
 
-公开 API `IBinder.getSuggestedMaxIpcSizeBytes()` 给出 64KiB 建议值。这个值是保守的开发建议，不是驱动硬上限。自有协议应分别约束 request、reply、列表项数和 FD 数，并通过单元测试或 debug 构建中的 Parcel 序列化检查回归。
+公开 API `IBinder.getSuggestedMaxIpcSizeBytes()`（API 30 起）返回 64KiB 建议值，内部即 `MAX_IPC_SIZE = 64 * 1024`。这个值是保守的开发建议，不是驱动硬上限。自有协议应分别约束 request、reply、列表项数和 FD 数，并通过单元测试或 debug 构建中的 Parcel 序列化检查回归。
 
 较大的数据可以改用：
 

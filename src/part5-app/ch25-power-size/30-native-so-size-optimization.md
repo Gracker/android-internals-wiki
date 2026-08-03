@@ -1,14 +1,39 @@
 ---
 title: "Native SO 体积优化实战"
 chapter: "25.30"
-status: draft
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [native, so, elf, strip, ndk, abi, 16kb-page-size, apk-size]
 related_chapters: ["25.6", "25.8", "1.55", "1.58", "20.13"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "Clippings参考书驱动"
-confidence: medium
+confidence: medium-high
+last_verified: "2026-08-01"
+last_verified_against: "Android 17 android-17.0.0_r1; kernel android17-6.18-2026-06_r6; NDK r28 / AGP 8.5.1+ 16 KB 语义; developer.android.com 官方文档 (2026-07)"
+pipeline_stage: "finalized"
+task6_state: "reviewed"
+task9_state: "reviewed"
+last_draft_polish_at: "2026-08-01"
+last_draft_polish_run_id: "20260801-153513-draft-polish-1348b67f"
+reviewed_date: "2026-08-01"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+last_review_finalize_at: "2026-08-01"
+last_review_finalize_run_id: "20260801-160517-c1f1b427"
+sources:
+  - "[Android ABIs](https://developer.android.com/ndk/guides/abis)"
+  - "[Android App Bundle format](https://developer.android.com/guide/app-bundle/app-bundle-format)"
+  - "[Google Play 64-bit requirement](https://developer.android.com/google/play/requirements/64-bit)"
+  - "[Control symbol visibility](https://developer.android.com/ndk/guides/symbol-visibility)"
+  - "[JNI tips](https://developer.android.com/ndk/guides/jni-tips)"
+  - "[Include native symbols](https://developer.android.com/build/include-native-symbols)"
+  - "[Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)"
+  - "[Android 17 behavior changes](https://developer.android.com/about/versions/17/behavior-changes-17)"
+  - "[Dynamic Code Loading security](https://developer.android.com/privacy-and-security/risks/dynamic-code-loading)"
+  - "[Clang command guide](https://clang.llvm.org/docs/CommandGuide/clang.html)"
+  - "[AOSP linker_phdr.cpp @ Android 17](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_phdr.cpp)"
+  - "[AOSP linker.cpp @ Android 17](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker.cpp)"
+  - "[Android Common Kernel mm/mmap.c @ android17-6.18-2026-06_r6](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/mmap.c)"
 ---
 
 # 25.30 Native SO 体积优化实战
@@ -27,7 +52,7 @@ confidence: medium
 - `--strip-debug` vs `--strip-all`：保留动态符号 vs 全部移除
 - 本地保留 unstripped SO 用于 Crash 符号化（`ndk-stack` / `addr2line` 依赖）
 - 构建系统配置：`Android.mk` / `CMakeLists.txt` 中 `STRIP` 选项
-- [待验证: NDK r28 默认 strip 行为]
+- AGP 默认 strip release native 库；`debugSymbolLevel = SYMBOL_TABLE | FULL` 控制符号制品 [已验证: developer.android.com/build/include-native-symbols]
 
 ### 🔹 ABI 过滤与按需下发
 - `abiFilters` 配置：只打包目标架构（arm64-v8a 为主）
@@ -42,7 +67,7 @@ confidence: medium
 - `-fvisibility=hidden`：隐藏非导出符号，减小导出表
 - `-flto`（Link-Time Optimization）：跨文件内联与死代码消除
 - LTO 对体积的实际收益与编译时间代价
-- [待验证: Clang 18 在 Android NDK r28 中的默认优化级别]
+- Clang `-Os` 基于 `-O2` 偏向尺寸，`-Oz` 更激进；以模块/profile 为单位选择 [已验证: clang.llvm.org CommandGuide]
 
 ### 🔹 Version Script 与符号导出控制
 - `--version-script` 限定动态导出符号清单
@@ -51,10 +76,9 @@ confidence: medium
 - 示例：从全量导出到白名单导出的体积差异
 
 ### 🔹 16KB Page Size 对齐对 SO 体积的影响
-- Android 17 强制要求 Native 库 16KB 对齐 [已验证: 官方文档, developer.android.com/guide/practices/page-sizes]
-- `ALIGN` 增大导致 `.text` 段尾部 padding 增加
-- 小型 SO 的 padding 占比可高达 5-15%
-- `-Wl,-z,max-page-size=16384` 配置
+- Android 15 起支持 16 KB 基础页；Play 自 2025-11-01 起要求面向 API 35+ 的新应用支持 16 KB [已验证: developer.android.com/guide/practices/page-sizes]
+- `ALIGN` 增大可能在 `PT_LOAD` 间增加文件空隙，增量由 segment 布局决定，无固定百分比
+- NDK r28+ 默认生成 16 KB 对齐 ELF；旧 NDK 需 `-Wl,-z,max-page-size=16384` 与 `-Wl,-z,common-page-size=16384`
 - 对现有 SO 的影响评估与迁移策略
 - 详见 20.13 节
 
@@ -68,7 +92,7 @@ confidence: medium
 - `System.loadLibrary` 与 `dlopen` 延迟加载
 - 功能模块化：将低频功能拆分为独立 SO 按需下载
 - 插件化方案中 SO 的加载路径管理
-- 安全限制：Android 17 对动态加载 SO 的安全约束 [待验证]
+- 安全限制：Android 17 target API 37 的 Safer Native DCL — `System.load()` 的文件加载前须标记只读 [已验证: developer.android.com/about/versions/17/behavior-changes-17]
 
 ### 🔹 包体积监控中的 SO 治理
 - SO 体积 CI 门禁：单 SO 超阈值告警
@@ -90,7 +114,7 @@ confidence: medium
 ### 🔸 LLVM / Clang 工具链进阶
 - `opt` 优化管线与 Pass 管理
 - `BOLT`（Binary Optimization and Layout Tool）后链接优化
-- Post-link 优化的体积收益 [待验证: Android NDK 可用性]
+- BOLT 属于 post-link optimizer，不是 NDK 构建稳定默认阶段；仅在 CI 可复现时做专项实验 [已验证: 正文 §汇编/SIMD/后链接工具]
 
 <!-- outline-end -->
 

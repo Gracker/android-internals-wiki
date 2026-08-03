@@ -1954,6 +1954,146 @@
       "action": "indexed-only-chapter-freeze",
       "score": 15,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-02-76292762-跨端框架横评2026-Flutter-RN-KMP-Kuikly.md",
+      "title": "[技术文章] 跨端框架横评 2026：Flutter、React Native、KMP、Kuikly、小程序，谁是你下一个项目的正确答案？",
+      "summary": "> 发布时间: 2026-04-17T05:31:39.000Z > 原文链接: https://juejin.cn/post/7629276299651645486 2026-04-17 2,616 阅读18分钟 2024 年有一个被反复讨论的话题：跨端框架已经\"卷\"出结果了吗？现在是 2026 年，答案依然是：没有。 不是因为这些框架还不够成熟，而是因为它们在各自的战...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-02T06:20:19.488854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-02-76388970-为什么Android不用接口做Activity通信.md",
+      "title": "[技术文章] 为什么 Android 不用接口做 Activity 通信？一、一个 iOS 开发者，把我问住了 上周，一个刚从 iO",
+      "summary": "> 发布时间: 2026-05-13T00:03:47.000Z > 原文链接: https://juejin.cn/post/7638897090145075246 2026-05-13 4,497 阅读4分钟 上周，一个刚从 iOS 转过来的同事问我： > “Android 为啥不喜欢用接口回调传结果？ iOS 那边 delegate、closure 不就挺好吗？”...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-02T06:20:19.488854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-02-76500740-现代Android官方为什么更推荐Repository暴露suspend.md",
+      "title": "[技术文章] 现代 Android 官方为什么更推荐 Repository 暴露 suspend fun，而不是在内部 launch",
+      "summary": "> 发布时间: 2026-06-11T22:41:13.000Z > 原文链接: https://juejin.cn/post/7650074080125599790 2026-06-12 2,518 阅读12分钟 写这篇文章，其实是因为最近看到有些公众号在介绍 Kotlin 协程时，都推荐在 Repository 中这样写： fun load() { repositor...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-02T06:20:19.488854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-01-100years-ios-local-models/2026-08-01-ios端侧模型选型-深度调研.md",
+      "title": "[DeepResearch] 深度调研：一次性付费、无推理服务器的端侧模型方案",
+      "summary": "--- title: 100Years 一次性付费与端侧模型选型 date: 2026-08-01 status: research-complete-device-validation-pending evidence_cutoff: 2026-08-01 tags: - \"deep-research\" - \"100Years\" - \"iOS\" - \"on-device-ai\" --- # 深度调研：一次性付费、无推理服务器的端侧模型",
+      "chapter": "ch16",
+      "processed_at": "2026-08-02T06:20:19.488854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-01-100years-ios-local-models/gracker-diagrams/release-gates/density-review.md",
+      "title": "[DeepResearch] density-review",
+      "summary": "status: accepted information_zones: 5 visible_fact_units: 31 technical_microdiagrams: 9 multi_step_zones: 5 title_height_percent: 10 estimated_empty_area_percent: 14 reference_comparison: pass",
+      "chapter": "ch16",
+      "processed_at": "2026-08-02T06:20:19.488854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-01-100years-ios-local-models/gracker-diagrams/release-gates/structured-content.md",
+      "title": "[DeepResearch] 结构化内容",
+      "summary": "# 结构化内容 ## 标题 - 系列名：100YEARS LOCAL AI · 02 - 主标题：五道门禁收敛首发模型 - 副标题：五个工件先内部测试；全部通过后才进入普通用户目录 ## 五个信息区 1. P0 五个工件 - Gemma E2B 2.59 GB：速度基线 - Gemma E4B 3.66 GB：质量基线 - MiniCPM5 W8 1.10 GB：中文质量候选 - MiniCPM5 W4 0.79 GB：低存储候选 -",
+      "chapter": "ch06",
+      "processed_at": "2026-08-02T06:20:19.488854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-01-100years-ios-local-models/gracker-diagrams/release-gates/copy.md",
+      "title": "[DeepResearch] copy",
+      "summary": "系列名：100YEARS LOCAL AI · 02 主标题：五道门禁收敛首发模型 副标题：五个工件先内部测试；全部通过后才进入普通用户目录 模块： 1. P0 · 五个工件 - Gemma E2B · 2.59 GB：速度基线 - Gemma E4B · 3.66 GB：质量基线 - MiniCPM5 W8 · 1.10 GB：中文质量 - MiniCPM5 W4 · 0.79 GB：低存储 - Qwen2.5 q8 · 1.60 G",
+      "chapter": "ch06",
+      "processed_at": "2026-08-02T06:20:19.488854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-01-100years-ios-local-models/gracker-diagrams/release-gates/prompts/infographic.md",
+      "title": "[DeepResearch] infographic",
+      "summary": "你是一位擅长 Gracker 技术手绘信息图的视觉设计师。根据 Image 1 的视觉语言，创作一张严格 2:3、1024×1536、高文字密度的单页中文技术信息图。 Image 1 是 `style-reference.jpg`，仅作为 STYLE REFERENCE，不是编辑目标。继承其暖奶油纸底、大号黑色手写标题、波浪下划线、横贯画布的编号水彩色带、黑色正文、珊瑚红数字与批注、手绘技术微图和密实纵向组织。不要复制 Hermes 主",
+      "chapter": "ch16",
+      "processed_at": "2026-08-02T06:20:19.488854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-01-100years-ios-local-models/gracker-diagrams/local-pipeline/density-review.md",
+      "title": "[DeepResearch] density-review",
+      "summary": "status: accepted information_zones: 6 visible_fact_units: 31 technical_microdiagrams: 9 multi_step_zones: 6 title_height_percent: 10 estimated_empty_area_percent: 14 reference_comparison: pass",
+      "chapter": "ch16",
+      "processed_at": "2026-08-02T06:20:19.488854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-01-100years-ios-local-models/gracker-diagrams/local-pipeline/analysis.md",
+      "title": "[DeepResearch] 信息结构分析",
+      "summary": "# 信息结构分析 1. 图的目标：解释一次完整本地预测如何从模型资产准备走到可交互首屏，并标出 60 秒计时边界。 2. 内容形状：六段纵向顺序流程，下载准备位于计时外，PDF 确认到首屏位于计时内。 3. 主元素：资产与权益、文档入口、文本获取、字段归一化、模型与校验、预测与首屏。 4. 次级标注：iOS 17/26 分流、SHA-256、PDFKit/Vision 分支、evidence、schema、receipt、p50/p95",
+      "chapter": "ch16",
+      "processed_at": "2026-08-02T06:20:19.488854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-01-100years-ios-local-models/research-materials/master-research.md",
+      "title": "[DeepResearch] Master Research",
+      "summary": "--- phase: 2 topic: 100Years 一次性付费、无推理后端的 iOS 端侧模型与权益设计 date: 2026-08-01 evidence_cutoff: 2026-08-01 --- # Master Research ## 一句话结论 100Years 可以采用“一次性解锁 + 用户按需下载本地模型”的商业模式，且不运营推理服务器。首发应只保留 LiteRT-LM 一套运行时，内部先比较 Gemma 4、Mi",
+      "chapter": "ch16",
+      "processed_at": "2026-08-02T06:20:19.488854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-01-100years-ios-local-models/research-materials/references/09-lfm-ministral.md",
+      "title": "[DeepResearch] LFM2.5 与 Ministral 3 LiteRT-LM 候选摘录",
+      "summary": "# LFM2.5 与 Ministral 3 LiteRT-LM 候选摘录 - 抓取日期：2026-08-01 - 来源：[LFM2.5-1.2B-Instruct 官方模型卡](https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct) - 来源：[LFM2.5-1.2B-Instruct LiteRT](https://huggingface.co/litert-community/L",
+      "chapter": "ch16",
+      "processed_at": "2026-08-02T06:20:19.488854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-01-100years-ios-local-models/research-materials/03-chinese-models-dump-3.md",
+      "title": "[DeepResearch] 中文优势端侧模型：Qwen / MiniCPM / DeepSeek / GLM / InternLM",
+      "summary": "--- source: research sub_question: \"截至 2026-08-01，哪些中文优势小模型适合 100Years 在 iOS 端侧提供预置下载链接；其格式、运行时、许可与再分发边界是什么？\" researcher: researcher-3 phase: 1b evidence_cutoff: 2026-08-01 --- # 中文优势端侧模型：Qwen / MiniCPM / DeepSeek / GLM",
+      "chapter": "ch16",
+      "processed_at": "2026-08-02T06:20:19.488854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-01-100years-ios-local-models/research-materials/references/02-qwen-litert-artifacts.md",
+      "title": "[DeepResearch] Qwen LiteRT-LM 工件与许可证摘录",
+      "summary": "# Qwen LiteRT-LM 工件与许可证摘录 - 抓取日期：2026-08-01 - 来源：[Qwen2.5-1.5B-Instruct LiteRT](https://huggingface.co/litert-community/Qwen2.5-1.5B-Instruct) - 来源：[Qwen3-0.6B LiteRT](https://huggingface.co/litert-community/Qwen3-0.6B)",
+      "chapter": "ch16",
+      "processed_at": "2026-08-02T06:20:19.488854+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ]
 }
