@@ -111,183 +111,285 @@ last_deepseek_cn_review_at: 2026-06-27
 
 <!-- outline-end -->
 
-本节只讨论启动归因上报。8.2 已经讲启动流程和 TTID / TTFD 定义，21.8 讲启动监控指标，26.12 讲版本化诊断入口总表；这里补齐 Android 15 之后应用能从系统拿到的启动原因、启动类型、阶段时间戳，以及这些字段怎样进入线上 SDK 协议。
+启动耗时只有放在启动类型、启动原因和前一次进程状态里，才具备稳定的解释力。一次桌面图标冷启动、一次最近任务恢复、一次广播拉起和一次低内存后的状态恢复，即便首帧耗时相同，优化方向也可能完全不同。
 
-启动监控把启动耗时拆成实验室监控、线上监控、启动类型、耗时扣除和线上堆栈采样；数据上报把采样、存储、上报、容灾和自监控放在同一套组件里。本节以此组织顺序展开，但字段和 API 以 Android 公开文档、AOSP 路径和现有章节为准。
+Android 15 / API 35 的 `ApplicationStartInfo` 给应用提供了系统侧的启动记录。它补充进程身份、启动原因、冷/温/热类型、启动状态和单调时钟时间戳。业务仍需记录首页可用、路由、异步数据完成和产品场景；Perfetto 与 ProfilingManager 继续负责解释线程、调度、I/O 和 Binder 等运行现场。
 
-## 启动归因补的是线上证据缺口
+本文以 `android-17.0.0_r1` 的 `ApplicationStartInfo.java`、`ActivityManager.java` 和 `ProfilingTrigger.java` 为源码锚点。
 
-线上启动慢通常会混进几类样本：用户点击桌面图标的冷启动、最近任务回到前台、通知点击拉起、广播或 Job 触发的后台进程、覆盖安装后的首次启动、低内存杀进程后的恢复启动。只看业务埋点的 `launch_duration_ms`，这些样本会落在同一张图里，P90 / P99 会被后台拉起和特殊场景污染。
+## ApplicationStartInfo 位于哪一层
 
-`ApplicationStartInfo` 提供的价值，是把系统已经知道的启动来源和启动阶段补进上报协议。它不能替代业务首屏埋点，也不能替代 Perfetto；它回答的是三个问题：进程为什么启动、属于冷 / 温 / 热哪一类、系统记录到哪些阶段时间戳。[已验证: 官方文档, developer.android.com/reference/android/app/ApplicationStartInfo]
+一份可用的启动证据可分成三层：
 
-这层数据落库后，启动监控的第一步不再是算平均值，而是先分流：用户可感知冷启动进 SLA，后台组件拉起进健康度统计，温启动和热启动单独看活跃恢复，特殊来源进入排障队列。
-
-## Android 15 的入口和字段边界
-
-Android 15 / API 35 起，应用可以通过 `ActivityManager#getHistoricalProcessStartReasons(int maxNum)` 读取最近的 `ApplicationStartInfo` 记录。`maxNum = 0` 表示返回所有匹配记录；返回列表按从近到远排序；记录来自系统环形缓冲，只保证最近一批启动记录还在。[已验证: 官方文档, developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessStartReasons(int)]
-
-同一类信息也可以通过 `ActivityManager#addApplicationStartInfoCompletionListener(Executor, Consumer<ApplicationStartInfo>)` 回调取得。这个回调的完成点是首帧绘制完成，不等待 `Activity.reportFullyDrawn()`；如果要读 `START_TIMESTAMP_FULLY_DRAWN`，需要在业务调用 `reportFullyDrawn()` 之后，再取一份新的 `ApplicationStartInfo` 记录。[已验证: 官方文档, ActivityManager.addApplicationStartInfoCompletionListener]
-
-| 字段 | 适合落库的含义 | 使用边界 |
+| 层次 | 回答的问题 | 主要数据 |
 |---|---|---|
-| `getStartType()` | 冷启动、温启动、热启动 | `START_TYPE_COLD` 表示进程从零创建；`START_TYPE_WARM` / `START_TYPE_HOT` 不进入冷启动 SLA |
-| `getReason()` | 启动来源 | 包括 `START_REASON_LAUNCHER`、`START_REASON_ALARM`、`START_REASON_BROADCAST`、`START_REASON_CONTENT_PROVIDER`、`START_REASON_JOB`、`START_REASON_PUSH`、`START_REASON_SERVICE`、`START_REASON_START_ACTIVITY`、`START_REASON_OTHER` 等 |
-| `getStartupState()` | 记录完成度 | `STARTUP_STATE_STARTED` 只保证启动已开始；`STARTUP_STATE_ERROR` 表示启动失败；`STARTUP_STATE_FIRST_FRAME_DRAWN` 才适合计算首帧相关耗时 |
-| `getStartupTimestamps()` | 系统阶段时间戳 | 返回 `Map<Integer, Long>`，key 是 `START_TIMESTAMP_*` 常量，value 是 monotonic clock 时间戳；每个 key 都要判空 |
-| `getStartComponent()` | 组件类别 | API 36 起补充 Activity / Service / Broadcast / ContentProvider / Other 这类粗分类 |
-| `getIntent()` | 启动 Intent | 只建议端侧辅助判断，默认不上传完整 URI、extras 或 referrer |
+| 系统启动记录 | 进程为何启动，处于哪种启动状态，系统记录到哪些阶段 | `ApplicationStartInfo` |
+| 业务体验记录 | 用户从哪个入口进入，何时看到主内容并可交互 | route、scene、home ready、业务阶段 |
+| 重型诊断附件 | 慢在主线程、I/O、锁、Binder、渲染还是类加载 | Perfetto system trace、stack sampling |
 
-AOSP `ApplicationStartInfo.java` 里，`START_TYPE_COLD = 1`、`START_TYPE_WARM = 2`、`START_TYPE_HOT = 3`；时间戳常量覆盖 `LAUNCH`、`FORK`、`BIND_APPLICATION`、`APPLICATION_ONCREATE`、`FIRST_FRAME`、`FULLY_DRAWN`、`INITIAL_RENDERTHREAD_FRAME`、`SURFACEFLINGER_COMPOSITION_COMPLETE` 等阶段。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ApplicationStartInfo.java]
+`ApplicationStartInfo` 不能单独定位慢代码。它也不能替代 TTID/TTFD 的正式平台口径。它的作用是给每条启动样本增加系统归因，并为业务时间戳和诊断附件提供共同的进程、启动类型与时间基准。
 
-`getStartupTimestamps()` 的返回值不是 `Bundle`。线上 SDK 读取时必须按 `Map<Integer, Long>` 处理，并把缺失 key 当作正常边界，而不是异常数据。
+## Android 15 的两种读取入口
 
-这段代码只演示安全读取方式。重点是判断 `startupState` 和 timestamp key，不直接 unbox。
+### 历史记录
+
+`ActivityManager#getHistoricalProcessStartReasons(maxNum)` 返回调用应用最近的启动记录，按时间从近到远排序。系统使用环形缓冲保存这些记录，只能保证近期记录。`maxNum = 0` 表示忽略数量限制并返回当前匹配记录，但返回数量仍受系统缓冲限制。
+
+历史查询可能包含尚未完成的启动记录。读取后先看 `getStartupState()`，再决定哪些字段可用：
+
+| startup state | 保证的内容 | 处理方式 |
+|---|---|---|
+| `STARTUP_STATE_STARTED` | `START_TIMESTAMP_LAUNCH` 和始终可用的身份/原因字段 | 可用于提前判断启动原因；不要强行读取启动类型 |
+| `STARTUP_STATE_ERROR` | 不保证新增阶段时间戳 | 记录错误状态和已有字段，不计算完整启动耗时 |
+| `STARTUP_STATE_FIRST_FRAME_DRAWN` | 额外保证 `APPLICATION_ONCREATE`、`BIND_APPLICATION`、`FIRST_FRAME` | 可以进入首帧分析；其他 timestamp 仍逐项判空 |
+
+`getStartType()` 只在 `STARTUP_STATE_FIRST_FRAME_DRAWN` 时有保证。尚未完成的记录可能返回 `START_TYPE_UNSET`，也可能已经带有部分值；线上协议应使用 nullable 或 `unavailable`，不能把未设置值当成热启动。
+
+### 首帧完成回调
+
+`addApplicationStartInfoCompletionListener(executor, listener)` 在当前启动首帧绘制完成时通知应用。回调不等待 `Activity.reportFullyDrawn()`。当前启动若已经完成，回调会立即投递；每个 listener 最多调用一次，调用后自动移除，同一时刻已有 listener 时新注册会替换它。
+
+需要 `START_TIMESTAMP_FULLY_DRAWN` 时，应在调用 `reportFullyDrawn()` 后重新查询记录，或在该调用之后重新注册读取完成记录。不能期待首帧回调里的对象稍后自行更新。
+
+## 字段边界
+
+### 身份和原因
+
+| 字段 | 含义 | 注意事项 |
+|---|---|---|
+| `getPid()`、`getProcessName()` | 本次启动的进程身份 | PID 会复用，不能单独做主键 |
+| `getPackageUid()`、`getRealUid()`、`getDefiningUid()` | 安装 UID、运行 UID 和外部服务定义 UID | 隔离进程、external service 场景下可能不同 |
+| `getReason()` | 触发进程启动的细粒度原因 | API 35 起始终有值；不能代替组件分类 |
+| `getIntent()` | 系统保留的启动 Intent | extras 已移除，返回值仍可能为空；不要上传完整 Intent |
+| `getLaunchMode()` | 启动 Activity 的 launch mode | 非 Activity 启动不要过度解释 |
+| `wasForceStopped()` | 是否为应用被 force-stop 后的首次进程启动 | 可用于重新注册此前被清理的 alarm、job 等 |
+
+公开的 start reason 包括 alarm、backup、boot complete、broadcast、content provider、job、launcher、launcher recents、push、service、start activity 和 other。reason 描述“为什么启动”，不是“哪个组件启动”。例如一个原因可能与多种组件重叠。
+
+Android 16 / API 36 增加 `getStartComponent()`，用于区分 Activity、Service、Broadcast、ContentProvider 和 Other。API 36+ 的分流应优先使用 start component，再结合 reason 细分来源；Android 15 没有该字段，只能保留 reason 并接受分类精度较低。
+
+### 冷、温、热启动
+
+`getStartType()` 的公开语义如下：
+
+- `START_TYPE_COLD`：进程从头启动。
+- `START_TYPE_WARM`：系统保留了最少的 `SavedInstanceState`。
+- `START_TYPE_HOT`：已有应用状态被带回前台。
+- `START_TYPE_UNSET`：启动类型尚未设置。
+
+线上冷启动 SLA 只纳入完成记录中的 `START_TYPE_COLD`。warm 和 hot 分桶统计，不与 cold 聚合。后台 Service、Broadcast、ContentProvider 等进程启动也不进入“首页冷启动”指标；它们属于后台拉起健康度或组件初始化成本。
+
+用户入口还要结合 reason 和业务 route：
+
+| 系统字段 | 建议指标分组 |
+|---|---|
+| component 为 Activity，reason 为 `LAUNCHER` 或 `LAUNCHER_RECENTS` | 用户显式启动；cold/warm/hot 分开 |
+| component 为 Activity，reason 为 `START_ACTIVITY` | 外部跳转、通知或深链候选；由业务 entry scene 细分 |
+| component 为 Service/Broadcast/ContentProvider | 后台或组件启动，不进入首页 SLA |
+| reason 为 `PUSH` | 推送拉起与推送点击路径分开，依赖业务事件确认 |
+| reason 为 `OTHER` | 保留原始字段，进入待分类样本 |
+
+Android 15 缺少 start component 时，不要仅凭 reason 把样本永久定类。服务端可以标记 `component_source = unavailable`，并让业务入口补充候选分类。
+
+## 时间戳协议
+
+`getStartupTimestamps()` 返回非空的 `Map<Integer, Long>`。value 是纳秒单位的单调时钟时间戳，不是 Unix epoch 时间。Map 非空不表示每个 key 都存在。
+
+系统公开的主要 key 包括：
+
+| key | 事件 |
+|---|---|
+| `START_TIMESTAMP_LAUNCH` | 系统开始启动 |
+| `START_TIMESTAMP_FORK` | 进程 fork |
+| `START_TIMESTAMP_BIND_APPLICATION` | `bindApplication` 调用 |
+| `START_TIMESTAMP_APPLICATION_ONCREATE` | `Application.onCreate()` 调用 |
+| `START_TIMESTAMP_FIRST_FRAME` | 首帧绘制 |
+| `START_TIMESTAMP_FULLY_DRAWN` | 应用调用 `reportFullyDrawn()` |
+| `START_TIMESTAMP_INITIAL_RENDERTHREAD_FRAME` | RenderThread 初始帧 |
+| `START_TIMESTAMP_SURFACEFLINGER_COMPOSITION_COMPLETE` | SurfaceFlinger 完成合成 |
+
+可用性由启动状态、启动组件和系统采集情况共同决定。`FULLY_DRAWN` 只有应用调用 `reportFullyDrawn()` 后才可能出现。Android 官方文档还标明：Service 启动的 `START_TIMESTAMP_LAUNCH` 在 Android 16 及更早版本可能不正确。API 35/36 上不要用该值给 Service 启动设置耗时门禁；Android 17 再按修复后的平台语义处理。
+
+阶段耗时只在同一记录、两个 key 均存在时相减。例如：
+
+- `FIRST_FRAME - LAUNCH` 可保存为系统首帧原始区间，前提是 Activity 启动且 launch 时间可信。
+- `APPLICATION_ONCREATE - BIND_APPLICATION` 表示从 bindApplication 记录点到 `Application.onCreate()` 被调用的区间，不是 `Application.onCreate()` 自身耗时。
+- `FULLY_DRAWN - LAUNCH` 只有 `reportFullyDrawn()` 的业务语义稳定时才可跨版本比较。
+
+系统时间戳不应与 `System.currentTimeMillis()` 直接相减。需要给记录增加可读的 wall-clock 时间时，在采集瞬间同时保存 wall clock 和单调时钟快照，再完成同一 boot session 内的近似换算。设备重启或系统时间变化后，关联置信度需要降低。
+
+### 把业务 ready 写入同一 Map
+
+API 35 还提供 `ActivityManager#addStartInfoTimestamp(key, timestampNs)`。开发者 key 的保留范围是 `START_TIMESTAMP_RESERVED_RANGE_DEVELOPER_START` 到 `START_TIMESTAMP_RESERVED_RANGE_DEVELOPER`，即 21 到 30。重复使用同一个 key 会覆盖旧值；在 `reportFullyDrawn()` 之后添加的 timestamp 会被丢弃。
+
+下面的代码演示两件事：安全读取未完成记录，以及在调用 `reportFullyDrawn()` 前写入一个由 SDK 固定分配的首页 ready 时间戳。
 
 ```kotlin
-@RequiresApi(35)
-fun collectLatestStartInfo(context: Context): StartInfoSnapshot? {
-    val am = context.getSystemService(ActivityManager::class.java)
-    val latest = am.getHistoricalProcessStartReasons(1).firstOrNull() ?: return null
-    val timestamps = latest.startupTimestamps
+data class StartEvidence(
+    val pid: Int,
+    val processName: String,
+    val packageUid: Int,
+    val realUid: Int,
+    val reason: Int,
+    val startupState: Int,
+    val startType: Int?,
+    val startComponent: Int?,
+    val wasForceStopped: Boolean,
+    val timestampsNs: Map<Int, Long>,
+)
 
-    fun ts(key: Int): Long? = timestamps[key]
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+fun readRecentStarts(
+    context: Context,
+    maxRecords: Int,
+): List<StartEvidence> {
+    require(maxRecords > 0)
+    val activityManager = context.getSystemService(ActivityManager::class.java)
 
-    return StartInfoSnapshot(
-        startType = latest.startType,
-        reason = latest.reason,
-        startupState = latest.startupState,
-        launchNs = ts(ApplicationStartInfo.START_TIMESTAMP_LAUNCH),
-        forkNs = ts(ApplicationStartInfo.START_TIMESTAMP_FORK),
-        bindApplicationNs = ts(ApplicationStartInfo.START_TIMESTAMP_BIND_APPLICATION),
-        applicationOnCreateNs = ts(ApplicationStartInfo.START_TIMESTAMP_APPLICATION_ONCREATE),
-        firstFrameNs = ts(ApplicationStartInfo.START_TIMESTAMP_FIRST_FRAME),
-        fullyDrawnNs = ts(ApplicationStartInfo.START_TIMESTAMP_FULLY_DRAWN),
-        surfaceFlingerCompositionNs = ts(
-            ApplicationStartInfo.START_TIMESTAMP_SURFACEFLINGER_COMPOSITION_COMPLETE,
-        ),
+    return activityManager.getHistoricalProcessStartReasons(maxRecords).map { info ->
+        val completed =
+            info.startupState == ApplicationStartInfo.STARTUP_STATE_FIRST_FRAME_DRAWN
+
+        StartEvidence(
+            pid = info.pid,
+            processName = info.processName,
+            packageUid = info.packageUid,
+            realUid = info.realUid,
+            reason = info.reason,
+            startupState = info.startupState,
+            startType = info.startType.takeIf {
+                completed && it != ApplicationStartInfo.START_TYPE_UNSET
+            },
+            startComponent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+                info.startComponent
+            } else {
+                null
+            },
+            wasForceStopped = info.wasForceStopped(),
+            timestampsNs = info.startupTimestamps.toMap(),
+        )
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+fun markHomeReadyBeforeFullyDrawn(context: Context) {
+    val activityManager = context.getSystemService(ActivityManager::class.java)
+    activityManager.addStartInfoTimestamp(
+        ApplicationStartInfo.START_TIMESTAMP_RESERVED_RANGE_DEVELOPER_START,
+        SystemClock.elapsedRealtimeNanos(),
     )
 }
 ```
 
-这段代码只把系统原始字段收集成快照。耗时计算放到后面的归一化层，避免采集层同时处理 API 兼容、缺失字段和指标口径判断。
+`START_TIMESTAMP_RESERVED_RANGE_DEVELOPER_START` 在这个示例中被 SDK 协议固定为 `HOME_READY`。生产实现要维护 key 注册表，避免不同模块复用 21–30 的同一位置。写入后仍应重新读取完成记录；采集层不在字段缺失时补 0。
 
-## 冷启动指标先按系统启动类型分流
+## 启动 envelope
 
-线上冷启动 SLA 只统计 `getStartType() == START_TYPE_COLD` 的样本。`START_TYPE_WARM` 和 `START_TYPE_HOT` 反映的是已有进程或保留状态的恢复路径，优化对象和用户体感都不同；混在冷启动里，会让回归判断失真。
+系统记录和业务体验记录可以放在同一 envelope，但字段来源必须明确。
 
-启动来源还要再分一层：
-
-- `START_REASON_LAUNCHER` / `START_REASON_LAUNCHER_RECENTS`：用户显式进入应用，适合作为用户可感知启动监控主样本。
-- `START_REASON_START_ACTIVITY`：可能来自外部 App 跳转、通知点击或深链入口，要结合业务 route、referrer 和 Intent 类别归因。
-- `START_REASON_BROADCAST` / `START_REASON_SERVICE` / `START_REASON_JOB` / `START_REASON_ALARM`：常见于后台任务或系统事件，不进入首页冷启动 SLA，但要进入后台拉起健康度统计。
-- `START_REASON_PUSH`：单独看推送到达、点击、冷启动展示之间的漏斗，避免和普通桌面启动混算。
-- `START_REASON_CONTENT_PROVIDER`：重点排查三方 SDK、初始化 Provider 和跨进程查询，详见 1.10。
-- `START_REASON_OTHER`：保留原始系统字段和业务上下文，进入待分类样本池。
-
-这套分流口径和参考书中的“冷启动、温启动、首次安装启动、覆盖安装启动分开统计”方向一致，但 Android 15 之后可以把其中一部分判断交给系统字段。
-
-## 系统时间戳要和业务首屏协议合并
-
-`ApplicationStartInfo` 的时间戳适合描述系统启动阶段，业务首屏埋点适合描述用户看到的页面状态。两者不能互相替代。
-
-建议 SDK 上报一份启动 envelope，把系统字段、业务字段和扣除规则放在同一条记录里：
-
-| 字段组 | 字段 | 说明 |
+| 字段组 | 建议字段 | 约束 |
 |---|---|---|
-| 系统归因 | `api_level`、`start_type`、`start_reason`、`start_component`、`startup_state` | Android 15+ 填系统值；低版本填 `unavailable` |
-| 系统时间戳 | `launch_ns`、`fork_ns`、`bind_application_ns`、`app_on_create_ns`、`first_frame_ns`、`fully_drawn_ns`、`sf_composition_ns` | 统一用 monotonic clock；缺失字段不补 0 |
-| 业务首屏 | `home_ready_elapsed_ms`、`first_interactive_elapsed_ms`、`route_name`、`entry_scene` | 由业务 SDK 打点，和系统时间戳分列保存 |
-| 口径扣除 | `splash_deduct_ms`、`ad_deduct_ms`、`guide_deduct_ms`、`deduct_reason` | 只在明确产品口径要求时使用，原始耗时仍保留 |
-| 诊断关联 | `session_id`、`trace_id`、`case_id`、`app_version`、`build_fingerprint_hash` | 用于关联 Crash / ANR / trace / 服务端日志 |
-| 隐私控制 | `sample_policy_version`、`consent_state`、`upload_policy` | 记录采样和授权状态，便于审计 |
+| 记录身份 | `start_record_key`、pid、processName、packageUid、realUid | key 包含多字段，处理 PID 复用 |
+| 系统归因 | `startup_state`、`start_type`、`start_reason`、`start_component`、`was_force_stopped` | 保留 API availability 和 source |
+| 系统时间 | `launch_ns`、`fork_ns`、`bind_application_ns`、`app_on_create_ns`、`first_frame_ns`、`fully_drawn_ns` | 缺失为 null；保留原始值 |
+| 业务时间 | `home_ready_ns`、`first_interactive_ns`、`report_fully_drawn_policy` | 使用同一单调时钟；记录协议版本 |
+| 业务入口 | `route_name`、`entry_scene`、`install_or_upgrade_state` | 使用有限枚举，避免上传原始 URI |
+| 口径调整 | `raw_duration_ms`、`adjusted_duration_ms`、`adjustment_reason` | 原始值不可被调整值覆盖 |
+| 诊断关联 | `session_id`、`trace_id`、`case_id`、`app_version`、`os_build`、`api_level` | 关联文件时保留 source |
+| 策略信息 | `sample_policy_version`、`consent_state`、`upload_policy` | 支持审计和远程停用 |
 
-线上启动耗时需要处理结束点、广告扣除和启动类型。这里建议保留“原始耗时”和“业务扣除后耗时”两列：原始列用于研发回归，扣除列用于产品体验报表。只保留扣除后数字，会让版本之间的技术变化难以复盘。
+广告、引导页或登录流程是否从产品体验指标中调整，应由版本化协议定义。研发回归始终保留 raw duration。否则一次产品流程变化会看起来像底层启动性能改善。
 
-系统时间戳计算阶段耗时时，使用相邻 timestamp 的差值，不跨口径硬算。例如 `APPLICATION_ONCREATE - BIND_APPLICATION` 可以近似看应用 `onCreate()` 入口前后；`FIRST_FRAME - LAUNCH` 可以作为系统首帧链路观察值；`FULLY_DRAWN` 只有业务主动调用 `reportFullyDrawn()` 后才有意义。TTID / TTFD 的定义和平台统计口径详见 8.2。
+TTID 是系统从收到启动 Intent 到首次显示帧的指标；TTFD 从同一起点到 `reportFullyDrawn()`。业务 `home_ready` 可以晚于或早于某些页面条件，但不能冒充 TTFD。应用应在主内容可见且可用后调用 `reportFullyDrawn()`，并让该语义跨版本稳定。
 
-## Android 17 冷启动 trigger 负责采样现场
+## Android 17 冷启动 trigger
 
-Android 17 / API 37 新增 `ProfilingTrigger.TRIGGER_TYPE_COLD_START`。官方说明里，这个 trigger 在应用冷启动时尽早触发，响应结果包含 system trace 和 stack sampling profile；触发前提等价于 `ApplicationStartInfo.START_TYPE_COLD`。[已验证: 官方文档, developer.android.com/reference/android/os/ProfilingTrigger][已验证: 官方文档, developer.android.com/about/versions/17/features]
+Android 17 / API 37 的 `TRIGGER_TYPE_COLD_START` 在系统判断 `ApplicationStartInfo#getStartType()` 为 `START_TYPE_COLD` 时尽早触发。系统为该 trigger 新启动 system trace 和 stack sampling profile，并持续到应用调用 `reportFullyDrawn()`；未调用时，公开 API 给出的默认停止时间为 5 秒。
 
-它和常规启动上报的分工很清楚：
+该 trigger 使用 discard buffer。缓冲区满后丢弃新事件，以保留启动早期内容。profiling 本身仍可能延迟开始，结果也受系统采样、设备状态和 rate limiter 影响，所以它不能替代每次启动的轻量 envelope。
 
-| 能力 | 作用 | 适合频率 | 结果 |
-|---|---|---:|---|
-| `ApplicationStartInfo` | 每次启动的原因、类型和阶段时间戳 | 可按较高比例上报轻量字段 | 结构化字段 |
-| 业务启动 envelope | 首页 ready、交互可用、扣除规则、业务入口 | 可按产品线策略上报 | 结构化字段 |
-| `TRIGGER_TYPE_COLD_START` | 冷启动慢样本的系统 trace 和调用栈 | 低比例、强限流、灰度或问题版本开启 | trace / stack sample 文件 |
-| `TRIGGER_TYPE_APP_FULLY_DRAWN` | `reportFullyDrawn()` 后触发的 profiling | 低比例、用于校验 TTFD 附近现场 | profiling 结果文件 |
-
-`ProfilingTrigger.Builder#setRateLimitingPeriodHours()` 可以给单个 trigger 设置限流周期。线上接入时，冷启动 trigger 不应默认全量开启；更稳的做法是用远程配置对版本、渠道、设备档位和采样用户分层，只在 P90 / P99 异常或灰度版本放量时打开。[已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture]
-
-ProfilingManager 的 builder、结果回调、文件目录和错误码详见 14.7；各 trigger 的产物类型和版本边界详见 8.10。本节只把冷启动 trigger 放进启动归因协议，不重复展开工具机制。
-
-## 数据上报要按高可用组件设计
-
-启动归因字段很轻，但冷启动 trace、stack sample、用户日志都可能很重。上报组件至少要处理采样、端侧缓存、上传、容灾和自监控五类问题。
-
-- 采样策略：轻量结构化字段可以按 UV 采样或问题版本提高比例；profiling 文件必须低比例，并受远程开关、系统限流和本地磁盘预算共同约束。
-- 端侧缓存：启动 envelope 先写本地小文件或 mmap 队列，避免首启阶段同步网络请求；上传失败后按过期时间和磁盘上限清理。
-- 上传策略：普通字段走批量上报；trace / stack sample 先写诊断索引，再按 Wi-Fi、电量、授权和 case 优先级上传文件。
-- 自监控：记录采样命中率、落盘失败率、上传到达率、文件超限清理次数、ProfilingResult 错误码分布。
-- 容灾处理：如果本地文件堆积、加密失败、压缩失败或服务端拒收，SDK 要自动降级为只上传轻量字段。
-
-采样配置需要有版本号。客户端每次上报携带本地策略版本，服务端发现版本落后时在回包里返回新策略。这样不依赖推送，也能让采样和开关随正常上报逐步生效。
-
-## 隐私边界要写进协议
-
-`ApplicationStartInfo` 可能包含 `Intent`，profiling 结果可能包含线程名、方法名、类名、对象类型、文件路径和业务栈信息。启动诊断协议默认只上传枚举、耗时、hash 后设备指纹和业务场景名，不上传完整 Intent URI、extras、referrer、用户输入内容或原始日志片段。
-
-诊断文件上传需要单独策略：
-
-- 只在用户协议、隐私政策和远程配置允许时上传。
-- 文件在端侧加密，传输走 HTTPS，服务端按 case 设置访问权限。
-- 保留期限独立于普通埋点，过期后自动删除。
-- trace / heap / stack sample 文件进入脱敏和访问审计，不和普通 BI 数据混库。
-- 对未登录用户使用端侧随机 ID 或安装 ID 时，记录生成方式、重置条件和跨 App 边界。
-
-用户日志章节里提到全量日志、主动上报和按用户拉取能提升疑难问题排查效率；放到启动归因场景，原则是“先轻量字段定位，再按授权和采样拿重文件”。不要把冷启动诊断能力扩成长期、无限制的行为采集。
-
-## 和 ApplicationExitInfo 合并做启动后验
-
-启动慢有时不是启动阶段本身造成的，而是上一次退出状态改变了本次启动路径。Android 11+ 的 `ApplicationExitInfo` 负责回答“上次为什么退出”，Android 15+ 的 `ApplicationStartInfo` 负责回答“本次为什么启动”。两条记录合并后，排障入口会更准。
-
-| 上次退出 | 本次启动 | 排障方向 |
+| 数据 | 采集频率 | 主要用途 |
 |---|---|---|
-| Java / native crash | 短时间内 `START_TYPE_COLD` + `START_REASON_LAUNCHER` | 崩溃循环或 SafeMode，详见 20.7、26.2 |
-| ANR | 再次冷启动并进入同一业务 route | ANR 后用户重进，关联 26.9 的 trace / reason 和本节启动 envelope |
-| low memory / cached kill | `START_TYPE_COLD` 但业务认为是恢复场景 | 恢复路径和状态重建耗时，避免算成普通桌面冷启动 |
-| package updated / package state changed | 安装或升级后首启 | 单独进入升级首启指标，不和普通冷启动混算 |
-| user requested / force stop | 用户主动结束后启动 | 不按崩溃恢复处理，但可以观察重启后的首屏路径 |
+| `ApplicationStartInfo` 结构化字段 | 按线上轻量采样策略 | 分桶、趋势、版本回归 |
+| 业务 ready 与 route | 按业务指标策略 | 用户体验和页面归因 |
+| cold-start system trace + stack sampling | 低频、问题版本或指定 case | 定位线程、I/O、Binder、调度与调用栈 |
 
-`ApplicationExitInfo` 的 reason 版本差异详见 26.9 和 26.12。这里的落库关键，是把 `previous_exit_key` 和 `current_start_key` 关联起来：`processName`、`pid`、`timestamp`、`appVersion`、`sessionId`、`bootCount`、`elapsedRealtime` 都可以参与去重。不要只用 wall clock 时间戳，用户改系统时间会让关联结果不稳定。
+系统触发结果只能通过 `ProfilingManager#registerForAllProfilingResults()` 的全局监听器接收。文件路径读取 `ProfilingResult#getResultFilePath()`；回调缺失或无文件属于预期降级路径。`TRIGGER_TYPE_APP_FULLY_DRAWN` 是 API 36 trigger，它在冷启动调用 `reportFullyDrawn()` 后保存正在运行的后台 system trace 快照，与 API 37 新启动采集的 cold-start trigger 语义不同。
+
+## 与 ApplicationExitInfo 联合归因
+
+`ApplicationExitInfo` 记录前一次进程退出，`ApplicationStartInfo` 记录本次进程启动。两者的时钟和进程身份不同：
+
+- exit timestamp 是 Unix epoch 毫秒。
+- start timestamp 是单调时钟纳秒。
+- 前一次退出 PID 与本次启动 PID 通常不同，不能要求 PID 相等。
+- 用户改时间、设备重启和包更新都会影响关联。
+
+推荐保留两份原始记录，再生成带置信度的关联边。候选匹配可以使用包 UID、processName、前后顺序、应用版本、boot session、采集时的 wall/monotonic 快照和业务 session。时间窗口由线上数据校准，不写成平台保证。
+
+| 上次退出证据 | 本次启动证据 | 排障方向 |
+|---|---|---|
+| `REASON_CRASH` / `REASON_CRASH_NATIVE` | 短时间后 cold start | 崩溃后重启或崩溃循环；关联 Crash SDK 样本 |
+| `REASON_ANR` | cold start 且回到相同 route | ANR 后用户重进；关联 ANR trace 和 profiling |
+| `REASON_LOW_MEMORY` 或受支持设备上的 LMK 证据 | cold start，业务请求恢复状态 | 状态重建、缓存回填和恢复耗时 |
+| `REASON_PACKAGE_UPDATED` | 新版本首次启动 | 升级首启分桶；旧进程和新进程版本不同 |
+| 用户请求终止 | `wasForceStopped()` 或用户再次显式启动 | 不计为 crash 恢复；检查 alarm/job 是否需重新注册 |
+
+`wasForceStopped()` 是本次启动记录上的直接信号，优先于从模糊 exit reason 推断。匹配失败时保留“无可确认前序退出”，不要把最近的一条退出记录强制关联给当前启动。
+
+## 数据保留、采样和隐私
+
+启动记录字段较轻，profiling 文件较重，两者要分配不同预算。
+
+- 历史查询的 `maxNum` 由客户端策略配置，读取后用稳定 record key 去重。
+- completion listener 在首帧阶段只做内存复制或轻量落盘，避免同步网络和重型序列化影响启动。
+- 端侧队列设置容量、过期和失败退避；达到磁盘预算时优先删除过期诊断文件。
+- 结构化字段和 profiling 文件使用不同的采样、上传条件、保留期限和访问权限。
+- 记录采样策略版本、丢弃原因、上传状态和 `ProfilingResult` 错误码，便于判断“没有数据”的原因。
+
+`getIntent()` 已移除 extras，但仍不应直接上传。Intent 的 action、data URI、component、flags 或 referrer 可能暴露业务路径与用户上下文。服务端只接收经过白名单映射的 `entry_scene` 和 `route_name`；未知值归到 other，不发送原始字符串。
+
+system trace 和 stack sampling 可能包含方法名、线程名、调度关系、路径和业务调用栈。上传需要适用的用户同意或合规依据、远程开关、传输与静态加密、最小权限、访问审计、保留期限和删除机制。
+
+## CI 与灰度门禁
+
+Macrobenchmark、灰度和线上全量监控使用同一套名称，但不能混用数值分布。
+
+| 环境 | 数据 | 比较方式 |
+|---|---|---|
+| CI / 实验室 | `StartupTimingMetric` 的 TTID/TTFD、Macrobenchmark trace、固定 `StartupMode` 和 compilation mode | 同设备类别、系统版本、构建类型和编译条件比较 |
+| 灰度 | cold Activity 启动的 P50/P90/P99、超限比例、入口和设备分桶 | 与稳定版本相同分桶比较，达到配置门槛后阻止放量或回滚 |
+| 线上诊断 | `ApplicationStartInfo`、业务 envelope、抽样 profiling 文件 | 用结构化异常定位候选样本，再分析原始附件 |
+
+Macrobenchmark 的 `StartupMode.COLD/WARM/HOT` 控制测试前置状态；`ApplicationStartInfo.START_TYPE_*` 是系统对一次线上启动的记录。两组枚举不要按整数值关联，也不要假定所有语义细节完全相同。CI 负责可重复回归，线上分位数负责用户分布，trace 负责解释异常样本。
+
+门禁配置应带样本量条件、统计窗口、设备和入口分桶、基线版本及回滚规则。平均值容易隐藏长尾，启动评审至少同时观察中位数、尾部分位和异常占比；具体阈值由产品目标、设备实验和稳定版本分布确定。
 
 ## Android 15/16/17 能力表
 
-| 版本 | 启动归因能力 | profiling 能力 | 本节建议 |
+| 版本 | 启动记录 | profiling | 接入重点 |
 |---|---|---|---|
-| Android 15 / API 35 | `ApplicationStartInfo`、`getHistoricalProcessStartReasons()`、completion listener、启动类型 / 原因 / 时间戳 | `ProfilingManager` 应用驱动采集 | 结构化启动 envelope 可以上线，trace 仍以主动采集为主 |
-| Android 16 / API 36 | `ApplicationStartInfo` 继续可用，`getStartComponent()` 这类组件分类补齐 | `ProfilingTrigger` 覆盖 `APP_FULLY_DRAWN`、`ANR` 等事件 | TTFD 校验和 ANR 现场采样可进入灰度策略 |
-| Android 17 / API 37 | `ApplicationStartInfo.START_TYPE_COLD` 可作为冷启动 trigger 前提 | `TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 等新增 | 冷启动慢样本可按低比例采 trace / stack sample |
+| Android 15 / API 35 | `ApplicationStartInfo`、历史查询、首帧 completion listener、developer timestamps、`wasForceStopped()` | App-driven `ProfilingManager` | 处理 incomplete record；reason 与业务入口联合分桶 |
+| Android 16 / API 36 | 增加 `getStartComponent()` | 增加 `APP_FULLY_DRAWN`、`ANR` trigger | 组件分类改用 start component；Service launch timestamp 避免用于门禁 |
+| Android 17 / API 37 | 延续并修正版本边界 | 增加 `COLD_START` 等 trigger | cold-start trace 与 stack sampling 只做抽样诊断 |
 
-低于 Android 15 的设备仍然需要自建启动埋点：Application / Activity 生命周期、首帧回调、`reportFullyDrawn()`、业务首页 ready、启动来源 route。为了报表连续性，SDK 的字段名保持一致，系统不可用字段填 `unavailable`，不要用业务推断值伪装成系统字段。
+Android 15 以下继续使用 Application/Activity 生命周期、首帧、`reportFullyDrawn()` 和业务 ready 埋点。系统字段不可用时填 `unavailable`，不能用业务推断值伪装成 `ApplicationStartInfo`。
 
-## CI 与灰度门禁的字段映射
+## 与 26.12 的边界
 
-实验室、CI 和线上灰度各自回答的问题不同，字段也不要混在一起。
+26.12 解释 Android 10–17 的退出追溯、App-driven profiling 和系统 trigger 总体能力。本章只处理启动记录的 SDK 协议、分桶、时间戳、前后进程关联和监控接入。
 
-| 场景 | 工具 / 数据 | 建议字段 | 门禁判断 |
-|---|---|---|---|
-| CI | Macrobenchmark `StartupTimingMetric`、Baseline Profile 检查 | `startup_mode`、TTID、TTFD、trace 文件、baseline profile 状态 | 相同设备、相同 build type 下对比阈值 |
-| 实验室复现 | Perfetto、Logcat displayed、`reportFullyDrawn()` | `case_id`、trace id、系统阶段耗时、业务首屏耗时 | 定位阶段瓶颈，不直接代表线上 P90 |
-| 灰度 | 启动 envelope、`ApplicationStartInfo`、采样 trace | `start_type`、`start_reason`、`route_name`、P50 / P90 / P99、异常版本号 | 普通冷启动、升级首启、后台拉起分桶判断 |
-| 线上问题 | `ApplicationExitInfo` + `ApplicationStartInfo` + profiling 文件 | previous exit、current start、trace / stack sample 索引 | 判断是否进入 Crash / ANR / 启动性能排障队列 |
+ProfilingManager 的四类主动采集、结果字段、限流和 trigger 全表放在 26.12；启动流程与 TTID/TTFD 机制放在 8.2；退出原因细节放在 26.9。这里引用这些能力，只为说明一次启动样本如何进入线上证据体系。
 
-灰度回滚不要只看平均值。启动耗时通常长尾明显，P90 / P99、超阈值比例、低端机分桶、升级首启分桶更能反映用户体感。参考书对“90% 用户启动时间”和启动类型分流的建议，在 Android 15+ 可以落到 `start_type`、`start_reason` 和业务 route 三个维度上。
+## 源码与官方文档锚点
 
-## 与 26.12 的拆分边界
-
-26.12 负责回答“不同 Android 版本有什么线上诊断入口”。本节负责回答“启动这类问题怎样上报和归因”。
-
-因此，版本能力表只保留启动相关字段；ProfilingManager 的通用采集方式不在这里重写；ApplicationExitInfo 也只作为前一次退出证据参与联合归因。读者要接工具，去 14.7；要看 trigger 细节，去 8.10；要看退出原因，去 26.9；要看完整版本化排障总表，去 26.12。
+- [ApplicationStartInfo.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationStartInfo.java)
+- [ActivityManager.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java)
+- [ProfilingTrigger.java（android-17.0.0_r1）](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java)
+- [ApplicationStartInfo API reference](https://developer.android.com/reference/android/app/ApplicationStartInfo)
+- [ActivityManager API reference](https://developer.android.com/reference/android/app/ActivityManager)
+- [App startup time：TTID 与 TTFD](https://developer.android.com/topic/performance/vitals/launch-time)
+- [ProfilingTrigger API reference](https://developer.android.com/reference/android/os/ProfilingTrigger)
+- [Trigger-based profiling](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture)
+- [Macrobenchmark StartupMode](https://developer.android.com/reference/androidx/benchmark/macro/StartupMode)
+- [Macrobenchmark startup metrics](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)
