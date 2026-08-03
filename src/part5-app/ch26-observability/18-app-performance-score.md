@@ -68,76 +68,6 @@ task9_review_notes: "2026-05-23 20:25 Task9 深度技术审计：pass-tech-revie
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-17
 ---
----
-title: "App Performance Score 与性能质量评分归因"
-chapter: "26.18"
-section: "26.18"
-status: finalized
-drafted_date: "2026-05-23"
-applicable_versions: "Android 11 (API 30) - Android 17 (API 37); App Performance Score Preview 2026"
-last_verified: "2026-05-23"
-last_verified_against: "Android Developers App Performance Score / Android Vitals / Macrobenchmark / Baseline Profiles docs"
-confidence: high
-tags: [app-performance-score, android-vitals, macrobenchmark, baseline-profile, performance-governance, observability]
-related_chapters: ["15.3", "15.6", "15.10", "19.14", "26.3", "26.15"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-05-23"
-gap_source: "官方文档"
-sources:
-  - type: clipping
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md"
-  - type: clipping
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 6.md"
-  - type: clipping
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 9.md"
-  - type: clipping
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 10.md"
-  - type: clipping
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md"
-  - type: clipping
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 28.md"
-  - type: clipping
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md"
-  - type: clipping
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md"
-  - type: clipping
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 34.md"
-  - type: clipping
-    path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md"
-  - type: official
-    path: "https://developer.android.com/topic/performance/app-score"
-  - type: official
-    path: "https://developer.android.com/topic/performance/vitals"
-  - type: official
-    path: "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
-  - type: official
-    path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
-  - type: official
-    path: "https://developer.android.com/topic/performance/baselineprofiles/measure-baselineprofile"
-  - type: official
-    path: "https://developer.android.com/android-performance-analyzer"
-task6_state: reviewed
-pipeline_stage: ready-to-publish
-last_task2a_at: "2026-05-23T20:04:00+08:00"
-task2a_result: drafted
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-07-16"
-task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: fixed
-task2b_result: fixed
-last_task6_at: "2026-07-16T20:24:00+08:00"
-last_task6_audit: "2026-07-16"
-task9_result: auto-fixed
-last_task9_at: "2026-05-23T20:25:42+08:00"
-last_task9_audit: "2026-07-07"
-last_task9_autofix_at: 2026-07-15
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-07-16"
-task9_review_notes: "2026-05-23 20:25 Task9 深度技术审计：pass-tech-review。P0 0 / P1 0 / P2 0；官方 App Performance Score、Vitals、Macrobenchmark、Baseline Profiles、APA 口径复核通过；自动晋升 finalized。"
-deepseek_cn_review_state: done
-last_deepseek_cn_review_at: 2026-06-23
----
 
 # 26.18 App Performance Score 与性能质量评分归因
 
@@ -178,88 +108,90 @@ last_deepseek_cn_review_at: 2026-06-23
 
 <!-- outline-end -->
 
-团队拿到一个 0-100 的性能分数之后，最常见的反应是“然后呢？”App Performance Score 是 Google 给出的应用性能体检框架，它把改进项拆成两类：一类是能从工程配置里直接检查的静态项，另一类是必须在设备上跑路径才能得到的动态项。[已验证: 官方文档, https://developer.android.com/topic/performance/app-score]
+团队拿到一个 0～100 的性能分数后，关键问题是它能否转化为可复测的工程任务。[App Performance Score](https://developer.android.com/topic/performance/app-score) 是 Google 在 2026 年仍标为 Preview 的评估框架，包含静态与动态两类评分：静态评分检查源码配置和工具采用情况，动态评分观察指定物理设备上的运行表现。
 
-这节的重点不是复述评分表，而是把分数转成研发队列。对团队来说，分数只回答“哪里还有改进空间”；能推进的是后面的任务拆分：补配置、补测试、补 trace 证据，再把风险接进发版门禁。
+分数只表示评估表中还有多少改进空间，不是线上用户体验的综合 KPI。本章把评分项转换成配置修正、自动化路径、trace 分析和发布验证四类任务，并说明 Android 17 平台指标能提供哪些旁证。
 
-把质量平台放在开发、CI、测试、灰度和发布流程里理解；26.3 节分别提供了启动与渲染问题的测量顺序；26.15 节提供了灰度验证和上报组件的组织方式。这里借用的是覆盖顺序和问题分类，不复用原文段落与代码。
+26.3 介绍端侧性能采集，26.14 介绍实验统计，26.15 说明 Android Vitals 与 Play 的线上口径。本章只讨论评分到行动的映射，不重复这些章节的采集实现。
 
 ## App Performance Score 的定位
 
-App Performance Score 适合做研发阶段的性能体检。官方文档把它描述为一个标准化框架，用少量深入技术任务评估应用性能，并给出改进建议；评分范围是 0-100，分数越低，表示改进空间越大。[已验证: 官方文档, https://developer.android.com/topic/performance/app-score]
+App Performance Score 适合研发阶段的快速评估。官方页面给出 0～100 分，低分表示改进空间较大；静态分和动态分可以分别使用。它不是 Play Console 的线上裁决指标，评分规则、评估方式和建议仍可能随着 Preview 迭代。
 
 它和常见工具的边界可以这样划分：
 
 | 工具或系统 | 回答的问题 | 适合阶段 | 不适合做的事 |
 |---|---|---|---|
-| App Performance Score | 这个应用的性能配置和关键路径有没有明显短板 | 研发体检、专项立项、版本验收前 | 不能直接给出根因，也不能替代线上监控 |
+| App Performance Score | 工程配置和受测路径是否存在评分表覆盖的缺口 | 研发评估、专项立项、版本验收前 | 不能直接给出根因，也不能替代线上监控 |
 | Android Vitals / Play Console | Play 用户最近窗口内是否出现坏行为，是否影响商店可见性 | 线上质量裁决、版本趋势复核 | 数据有窗口延迟，不能替代实时报警；详见 26.15 节 |
 | Macrobenchmark | 某条启动、滚动或页面路径在受控设备上的耗时与 trace 证据 | CI、专项回归、性能预算 | 不能覆盖所有真实用户路径；脚本质量决定结论质量 |
-| Perfetto / Android Performance Analyzer | 某次慢启动、慢帧、GPU 压力或线程调度异常的时间线证据 | 根因定位、案例复盘、A/B trace 对比 | 不负责把问题自动转成组织任务 |
-| 自建 APM | 版本、设备、渠道、用户路径上的长期指标和报警 | 灰度、发布、线上治理 | 指标口径容易和平台口径分叉，需要和 Vitals 保持同一套口径 |
+| Perfetto / Android Studio Profiler | 某次慢启动、慢帧或线程调度异常的时间线证据 | 根因定位、案例复盘、前后 trace 对比 | 单次 trace 不能代表用户总体分布 |
+| 自建 APM | 版本、设备、渠道、用户路径上的长期指标和报警 | 灰度、发布、线上治理 | 指标口径容易漂移，需要记录定义和版本 |
 
-这个定位决定了它更像一张检查清单，而不是性能系统的终点。评分项命中后，还要回到具体场景：启动慢看 TTID / TTFD 和主线程；滑动慢看帧耗时、RenderThread、SurfaceFlinger 与 GPU；低端机差看设备档位、存储、温度和后台负载——分数指路，根因还是要靠 trace。
+评分项命中后要回到受测场景。启动问题结合 TTID、TTFD、主线程和进程状态；渲染问题结合 FrameTimeline、UI thread、RenderThread、SurfaceFlinger 与 GPU；设备差异结合 SoC、内存、存储、温度和后台负载。分数用于选择调查方向，根因需要可复现路径与 trace。
 
 ## 静态评分：低成本配置项先补齐
 
-静态评分不跑设备。它检查的是项目是否采用了对启动和渲染有稳定收益的工具与配置。官方列出的静态项包括：使用较新的 Android Gradle Plugin，启用 R8 full mode 和最小化例外，正确应用 Baseline Profiles，覆盖一个或多个用户旅程，使用 Startup Profiles 做 DEX 布局优化，使用最新稳定版 Compose，并在合适时机调用 `FullyDrawnReporter` / `reportFullyDrawn()`。[已验证: 官方文档, https://developer.android.com/topic/performance/app-score]
+静态评分不运行 App，需要读取项目源码。官方当前列出的项目包括：使用最新 Android Gradle Plugin、以 full mode 启用 R8 并限制例外、正确应用 Baseline Profiles 且覆盖至少一条用户路径、用 Startup Profiles 优化 DEX 布局、采用最新稳定版 Compose，以及在内容可用时调用 `FullyDrawnReporter` 或 `reportFullyDrawn()`。
 
 这些项的价值在于成本低、失败信号清楚、适合接进 CI。
 
 | 静态项 | 检查方式 | 改进收益 | 推荐归属 |
 |---|---|---|---|
-| Android Gradle Plugin 版本 | CI 读取根工程和 convention plugin 中的 AGP 版本 | 解锁构建、R8、profile 工具链能力 | 构建负责人 |
-| R8 full mode 与例外收敛 | 检查 release / benchmark variant 的 `isMinifyEnabled`、混淆规则数量和 `-keep` 范围 | 减少 DEX、资源和启动路径负担 | 架构 / 构建负责人 |
-| Baseline Profile | 检查 APK / AAB 是否带 profile，脚本是否覆盖启动和关键页面 | 首次启动和首次交互路径更稳 | 性能专项负责人 |
+| Android Gradle Plugin 版本 | CI 读取插件解析后的 AGP 版本，不只搜索根工程文本 | 获取当前 R8 与 profile 工具链能力 | 构建负责人 |
+| R8 full mode 与例外控制 | 检查 release variant 的 minify 配置、优化模式与 keep 规则范围 | 降低代码体积并启用优化 | 架构 / 构建负责人 |
+| Baseline Profile | 验证生成任务、产物内 profile 与关键路径覆盖 | 让所含代码路径从首次运行起获得 AOT 优化 | 性能专项负责人 |
 | Startup Profile | 检查 `startup-prof.txt` 是否生成并被 release 构建消费 | 改善启动期 DEX 布局 | 启动专项负责人 |
-| Compose 稳定版本 | 检查 Compose BOM / compiler / runtime 版本 | 减少已知渲染与重组问题 | UI 基建负责人 |
-| `reportFullyDrawn()` | 检查首屏内容可用点是否调用，避免只统计首帧 | 让 TTFD 更贴近用户可用时间 | 业务页面负责人 |
+| Compose 稳定版本 | 解析 version catalog、BOM 与直接依赖后的版本 | 获取当前稳定版本的性能与修复 | UI 基建负责人 |
+| `reportFullyDrawn()` | 检查各启动入口是否在内容可交互时报告 | 为 TTFD 提供业务完成点 | 业务页面负责人 |
 
-Baseline Profiles 的官方文档写明，它通过把关键路径提前 AOT 编译，帮助应用从首次启动起提升执行速度；文档给出的经验值是许多应用优化后约 30% 的性能提升。Startup Profiles 则在构建时优化 DEX 布局，官方建议两者一起使用。[已验证: 官方文档, https://developer.android.com/topic/performance/baselineprofiles/overview]
+[Baseline Profiles 官方说明](https://developer.android.com/topic/performance/baselineprofiles/overview)给出的总体经验是，纳入 profile 的路径从首次运行起可避免解释执行和部分 JIT 成本，许多应用测得约 30% 的代码执行性能改善；这不是任意应用、任意路径都能获得的固定收益。Startup Profiles 在构建时影响 DEX 布局，官方建议与 Baseline Profiles 同时使用。
 
-静态项不要等专项排查时才补。更合理的做法是把它们做成版本基线：新模块没有 profile 覆盖、新增 `-keep` 过宽、release 构建关闭 R8、首屏没有 TTFD 标记，都应该在合并或发版前给出提示。
+profile 生成构建与发布构建的配置不同：生成 profile 的 variant 应关闭 R8 混淆和优化，以保持规则与方法签名可匹配；最终 release 则应启用 R8，构建工具会把规则重写到优化后的代码。CI 若只检查仓库中存在 `baseline-prof.txt`，无法证明 release 产物已经包含且使用 profile。
+
+静态检查应成为版本基线。新用户路径没有 profile 覆盖、keep 规则范围扩大、release 关闭 R8、关键启动入口缺少 TTFD 报告，都应生成带模块、产物和负责人信息的诊断结果。
 
 ## 动态评分：用真实设备校验用户路径
 
-动态评分依赖运行时数据。官方文档要求使用物理设备，因为动态分数会随设备能力变化；文档也建议使用低端设备放大性能问题，从低分场景开始改。[已验证: 官方文档, https://developer.android.com/topic/performance/app-score]
+动态评分依赖运行时数据。官方要求使用物理设备，并建议覆盖能代表用户群体的多台设备；低端设备可放大性能差异。分数属于该设备、该构建和该次观察条件，不能脱离这些条件横向排名应用。
 
 当前动态评分覆盖两类指标：
 
 | 动态类别 | 官方评估口径 | 工程侧补充字段 | 关联章节 |
 |---|---|---|---|
-| Application startup | 从启动到应用可交互的持续时间，口径指向 TTFD | 启动类型、入口来源、首屏 Activity、是否通知启动、是否冷设备、低端机档位 | 21.8、26.3 |
+| Application startup | 从启动到 App 可交互的持续时间，口径指向 TTFD | 启动模式、入口来源、首屏 Activity、进程与编译状态、设备档位 | 21.8、26.3 |
 | Rendering performance | 滚动、动画和全屏渲染中的 slow frames / frozen frames 占比 | 页面、刷新率、列表数据量、图片数量、是否 Compose、是否 SurfaceView / TextureView | 22.8、26.3 |
 
 动态评分要分三档投入。
 
 | 档位 | 做法 | 适用场景 | 主要风险 |
 |---|---|---|---|
-| 手动测量 | 固定设备、清数据、重启、人工执行路径，记录分数和现象 | 新项目初筛、专项启动前 | 操作不稳定，难以复现 |
+| 手动评估 | 固定构建、设备和前置状态，人工执行路径，记录分数与现象 | 新项目初筛、专项启动前 | 操作差异大，难以稳定复测 |
 | Macrobenchmark | 建独立 `com.android.test` benchmark module，用脚本驱动启动、滚动、动画路径，输出 JSON 和 trace | CI 回归、版本对比、性能预算 | 脚本覆盖的只是选定路径 |
-| 场景自动化组合 | 在低端机、主流机、高刷机、低存储、弱网、高温前后跑同一组路径 | 发版门禁、灰度前验收 | 设备维护成本高，失败归因要回到 trace |
+| 设备池自动化 | 在低端、主流、高刷、低存储和不同温度状态下运行同一组本地可重复路径 | 发版门禁、灰度前验收 | 设备维护成本高，环境漂移会污染结果 |
 
-Macrobenchmark 官方文档要求使用独立的 `com.android.test` 模块，被测应用应尽量接近 release：非 debuggable，最好开启 minification，并能输出结果 JSON 和 trace 文件供 Android Studio 分析。[已验证: 官方文档, https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview]
+[Macrobenchmark 官方文档](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)要求测试位于独立 `com.android.test` 模块。被测 App 需要 `profileable`，构建应接近生产：non-debuggable，建议开启 minification。库会输出控制台结果、JSON 和 trace；它用于建立可重复指标，不会自动替 App Performance Score 补齐真实用户覆盖。
 
-动态评分里最容易漏掉通知启动和“首页可见但不可操作”。启动专项常把结束点放在首帧，但 App Performance Score 关心的是应用可交互时间。对于消息、支付、扫码、搜索等入口，应该单独记录启动路径；对于首页出来后仍在加载数据、预热框架或阻塞滑动的场景，TTFD 要放到内容可用点，而不是 Activity 第一次 draw。
+TTFD 依赖 App 在合适时机调用 `reportFullyDrawn()`。如果首页首帧已经显示，但核心内容尚未加载或输入仍被阻塞，报告点就不应停在 Activity 第一次 draw。通知、深链、支付、扫码和搜索等入口的内容可用点不同，需要分别定义路径；若没有调用报告 API，动态启动评估缺少可信的业务完成边界。
 
 ## 从 0-100 分到工程优先级
 
-分数本身不能直接排期。可执行的转换方式是把评分项拆成四类队列：配置项、测试项、trace 项、平台项。
+分数本身不能直接排期。可执行的转换方式是把评分项分成配置、测试、trace 和平台四类队列。
 
 | 队列 | 进入条件 | 处理顺序 | 交付物 |
 |---|---|---|---|
 | 配置项 | 静态评分缺失或 CI 可自动识别 | AGP / R8 → Baseline Profile → Startup Profile → Compose / `reportFullyDrawn()` | MR、构建报告、profile 覆盖清单 |
 | 测试项 | 动态评分没有稳定脚本或路径覆盖不足 | 冷启动 → 通知启动 → 首页滚动 → 核心交易路径 → 动画 / 全屏路径 | Macrobenchmark 用例、设备列表、结果 JSON、trace 文件 |
-| trace 项 | 动态分数低且单靠指标无法归因 | 固定场景 → 采 trace → 标注时间区间 → SQL 量化 → 归因到线程、I/O、Binder、GPU 或资源 | Perfetto / APA 证据、SQL、截图或时间戳 |
+| trace 项 | 动态分数低且单靠指标无法归因 | 固定场景 → 采 trace → 标注时间区间 → SQL 量化 → 归因到线程、I/O、Binder、GPU 或资源 | Perfetto 证据、SQL、截图或时间戳 |
 | 平台项 | 分数反复波动或线上指标无法解释 | 端侧采集 → 上报 → 聚合 → 版本 / 设备 / 场景分组 → 告警 | APM 字段、看板、报警、灰度规则 |
 
-分数低时，不建议直接开 trace 专项。配置项的回报通常更快，也更容易复查；配置项补齐后，再用 Macrobenchmark 把启动和渲染路径稳定下来；只有复现路径稳定、数据仍然差，才进入 trace 定位。
+静态分和动态分都偏低时，官方建议先改善静态项，因为配置修正也可能提升动态表现。之后用 Macrobenchmark 固定启动和渲染路径；复现稳定且数据仍然偏离预算时，再进入 trace 定位。若动态问题会阻断核心业务，也不能因为静态项尚未全部完成而延后处理。
 
-分数高也不代表没有风险。App Performance Score 当前还是 preview 文档中的第一版评分框架，官方明确写到评分、评估和建议未来可能变化。[已验证: 官方文档, https://developer.android.com/topic/performance/app-score] 因此它适合当体检入口，不适合成为唯一 KPI。
+高分不等于没有风险。当前页面明确说明这是 App Performance Score 的第一版，评分、评估与建议以后可能变化。版本报告应保存评分日期、页面版本或规则快照，避免把不同规则生成的分数直接画在同一条趋势线上。
 
 ## 和 Android Vitals / Play Console 的关系
 
-Android Vitals 看的是 Play 用户质量，App Performance Score 看的是研发阶段的性能改进空间。两者的字段和时间窗口要统一，但不要合并成一个数字。
+Android Vitals 反映 Play 用户的线上质量，App Performance Score 反映研发评估表覆盖的改进空间。两者可以建立指标映射，但不能强行统一字段、样本和时间窗口，更不能合成一个总分。
 
 | 维度 | App Performance Score | Android Vitals / Play Console |
 |---|---|---|
@@ -269,50 +201,50 @@ Android Vitals 看的是 Play 用户质量，App Performance Score 看的是研�
 | 决策用途 | 找改进队列、评估专项收益、设置 CI 预算 | 判断线上坏行为、发版暂停、商店可见性风险 |
 | 盲区 | 覆盖路径有限，设备组合有限 | 有窗口延迟，国内渠道和非 Play 分发覆盖不足 |
 
-官方 Vitals 页写明，Android Vitals 跟踪稳定性、性能、电池使用和权限问题，core vitals 包括 user-perceived crash rate、user-perceived ANR rate 和 excessive partial wake locks；core vitals 会影响 Google Play 可见性。[已验证: 官方文档, https://developer.android.com/topic/performance/vitals]
+[Android Vitals 官方说明](https://developer.android.com/topic/performance/vitals)覆盖稳定性、性能、电池和权限等问题；2026 年的 core vitals 包括 user-perceived crash rate、user-perceived ANR rate 与 excessive partial wake lock，部分阈值会影响 Google Play 可见性。具体阈值、设备类型和执行日期见 26.15，不能从 App Performance Score 推导。
 
-发版时可以这样分工：App Performance Score 负责拦截“还没上线就能发现”的问题，例如没启用 R8、没有 Baseline Profile、冷启动脚本变慢、低端机滑动掉帧；Vitals 负责验证“真实 Play 用户是否已经受影响”，例如某机型 crash / ANR 越线、partial wake lock 过高、LMK 或慢渲染趋势变差。两者出现冲突时，优先补证据：拿内部 APM 分组、Play Console 分组、Macrobenchmark trace 和版本变更记录放在同一张表里比对。
+发版前用 App Performance Score 与 benchmark 查出可预防问题，例如 release 未启用 R8、profile 未进入产物、受控设备上的启动或渲染回归；上线后用 Vitals 与自建 APM 判断用户是否受影响。实验室结果良好而线上指标恶化时，应按版本、设备、入口和用户路径比较 Play 分组、内部 APM、benchmark trace 与变更记录，不能用实验室分数否定线上数据。
 
 ## 质量门禁与回归防护
 
-App Performance Score 接进门禁时，不要只存一个总分。门禁应该保存评分项、设备、路径、版本、trace 文件、负责人和处置动作。
+App Performance Score 接入门禁时，不能只保存总分。门禁需要保存评分规则版本、分项、构建产物、设备、路径、前置状态、原始结果、trace、负责人和处置动作。
 
 | 门禁层级 | 检查项 | 失败处理 | 记录字段 |
 |---|---|---|---|
 | 合并前 | R8、AGP、profile 文件、Compose 版本、`reportFullyDrawn()` 标记 | 阻断或要求性能负责人批准 | commit、模块、失败项、豁免原因 |
-| 每日 CI | 冷启动、通知启动、首页滚动、核心页面动画 | 标记回归，生成对比报告 | 设备、系统版本、应用版本、P50/P90/P99、trace 路径 |
+| 周期性 CI | 冷启动、通知启动、首页滚动、核心页面动画 | 标记回归，生成统计与 trace 对比 | 设备、系统版本、应用版本、样本数、分布、trace 路径 |
 | 发版前 | App Performance Score 静态 + 动态项、低端机组合 | 暂停发布或缩小灰度 | 分数、路径覆盖、低端机结果、未解决项 |
 | 灰度中 | 自建 APM 指标、Vitals 早期信号、用户日志 | 控量、回滚、补丁或下架灰度 | 版本、渠道、设备、实验组、报警时间 |
-| 发布后 | Vitals 28 天窗口、趋势和机型分布 | 建专项或回退策略 | Play 指标、内部指标、责任模块 |
+| 发布后 | Vitals 当前窗口、趋势和设备分布 | 建专项或回退策略 | Play 指标定义、内部指标、责任模块 |
 
-这套门禁要允许豁免，但豁免必须有到期时间。比如某个低端机动态评分长期偏低，如果团队决定先不处理，就要写清影响路径、用户占比、下一次检查日期和替代防护。没有这些字段，分数会变成一次性体检，不会改变后续版本质量。
+门禁可以允许豁免，但豁免需要负责人、依据、影响路径、用户占比、替代防护和到期时间。没有这些字段，分数只能形成一次性报告。
 
-回归防护更适合用“预算”表达，而不是用“必须满分”表达。启动可以设 P90、P99、慢启动比例和 TTFD 预算；渲染可以设 jank 比例、frozen frame 比例和最大连续慢帧时长；静态项可以设为零豁免或限期豁免。预算一旦变化，必须有同版本 trace 或实验记录支撑。
+回归防护适合使用团队自己的性能预算，不要求 App Performance Score 满分。启动预算可以包含 TTFD 分布与超预算比例，渲染预算可以包含 jank、slow/frozen frame 分布和连续卡顿。门禁同时检查样本量、设备状态和统计不确定性；预算变化需要同构建 trace、实验记录或业务取舍作为依据。
 
 ## 常见误用边界
 
 App Performance Score 不能替代业务指标。一个应用分数高，但支付页点击后等待很久、搜索首屏空白、消息通知进入会话慢，用户仍会觉得差。业务路径的可用时间、成功率和取消率要由 APM 与业务埋点记录。
 
-App Performance Score 不能替代 trace。动态评分告诉团队哪条路径慢，Perfetto 或 Android Performance Analyzer 才能回答时间花在线程运行、Runnable 排队、I/O、Binder、锁等待、GPU、SurfaceFlinger 还是资源加载上。长 slice 也不等于 CPU 正在执行，线程状态仍要查证；详见 13.1、15.3 和 26.3 节。
+App Performance Score 不能替代 trace。动态评分指出受测路径偏慢，Perfetto 或 Android Studio Profiler 才能检查线程运行、Runnable 排队、I/O、Binder、锁等待、GPU、SurfaceFlinger 和资源加载。长 slice 不等于 CPU 始终在执行，仍需结合 `thread_state`；详见 13.1、15.3 和 26.3。
 
-App Performance Score 不能替代机型分层。官方文档建议选择代表用户群体的设备，并提示低端设备能放大问题。[已验证: 官方文档, https://developer.android.com/topic/performance/app-score] 如果只用一台旗舰机测，动态分数会掩盖低端存储、低内存、高温、弱网和 OEM 调度差异。
+App Performance Score 不能替代设备分层。官方建议选择代表用户群体的设备，并提示低端设备能放大问题。只用一台旗舰机测量，会遗漏低速存储、低内存、高温和 OEM 调度差异。弱网属于业务路径的额外测试条件，不是当前 App Performance Score 动态评分单列的类别。
 
 App Performance Score 不能替代专项判断。R8、Baseline Profile、Startup Profile、Compose 版本这些静态项适合快速补齐；但某些专项问题需要更细的证据，例如数据库膨胀、图片解码、页面预加载、SurfaceView 合成、GPU 带宽、后台任务唤醒。分数可以触发问题，不能定义全部根因。
 
 ## App Performance Score 与 Android Performance Analyzer 联动
 
-动态评分发现问题后，Android Performance Analyzer 可以作为 trace 入口。官方 APA 页面把它定位为 Android 生态的新 profiler 和性能分析工具，当前页面列出的能力包括 AI-powered analysis、Vulkan debug markers、project-based workflow，并支持多 trace 项目工作流。[已验证: 官方文档, https://developer.android.com/android-performance-analyzer]
+动态评分发现问题后，工具要按工作负载选择。[Android Performance Analyzer](https://developer.android.com/android-performance-analyzer) 当前官方定位面向游戏性能分析，重点能力包括 Vulkan render pass 的 debug annotation 和基于项目的多 trace 比较。普通 Android App 的启动、UI 线程和 FrameTimeline 分析以 Perfetto 或 Android Studio 为主；包含 Vulkan 游戏渲染时，再使用 APA 的专用视图。
 
 推荐路径如下：
 
-| 评分异常 | APA / Perfetto 观察点 | 后续动作 |
+| 评分异常 | 主要工具与观察点 | 后续动作 |
 |---|---|---|
-| TTFD 变慢 | app launch、main thread、RenderThread、Binder、I/O、CPU frequency、thread_state | 标注启动阶段，拆分首帧、首屏内容、可交互点 |
-| 滚动 slow frames 上升 | FrameTimeline、RenderThread、UI thread、SurfaceFlinger、GPU counters | 标注场景帧区间，判断是应用绘制、合成还是 GPU 压力 |
-| 动画 frozen frames | 主线程长任务、Choreographer、RenderThread、GPU completion、资源加载 | 固定动画路径，保存前后两个 trace 做对比 |
-| 低端机波动大 | CPU frequency、thermal、内存水位、I/O 等待、后台进程 | 同一设备多轮采样，排除温度和后台负载干扰 |
+| TTFD 变慢 | Perfetto：app launch、main thread、Binder、I/O、CPU frequency、`thread_state` | 标注进程启动、首帧、内容可用与可交互点 |
+| 滚动 slow frames 上升 | Perfetto：FrameTimeline、UI thread、RenderThread、SurfaceFlinger | 按帧区间判断 App、合成或 GPU deadline miss |
+| Vulkan 游戏动画异常 | APA：Vulkan debug markers、render pass、多 trace 项目 | 固定场景并比较相同设备上的前后 trace |
+| 低端机波动大 | Perfetto 与设备状态：频率、thermal、内存、I/O、后台负载 | 同一设备重复采样，量化环境差异 |
 
-APA 的价值在于减少工具切换，并把 trace 导航、对比和 SQL 分析放到更贴近 Android 性能工作的界面里。结论仍要保留原始 trace、关键时间戳、设备信息、采集配置和 SQL，方便 Task 6 / Task 9 或团队 review 复查。
+不论使用哪种查看器，报告都要保留原始 trace、关键时间戳、设备与构建信息、采集配置、查询语句和工具版本。截图只能辅助说明，不能替代可复查的 trace。
 
 ## 分数口径的团队协作模板
 
@@ -325,79 +257,38 @@ APA 的价值在于减少工具切换，并把 trace 导航、对比和 SQL 分�
 | 静态项 | AGP、R8、Baseline Profile、Startup Profile、Compose、TTFD 标记 |
 | 动态路径 | 冷启动、通知启动、首页滚动、核心页面、动画或全屏路径 |
 | 分数变化 | 总分、静态分、动态分、变化项，不只写总分 |
-| 证据 | Macrobenchmark JSON、Perfetto / APA trace、截图、SQL、APM 链接 |
+| 证据 | Macrobenchmark JSON、Perfetto 或 APA trace、截图、SQL、APM 链接 |
 | 决策 | 立即处理、进入下个版本、限期豁免、无需处理 |
 | 责任人 | 模块、负责人、截止日期、复测时间 |
 
-报告里不要写“性能已达标”这种空泛结论。更好的写法是：“本版本静态项已补齐 R8 和 Baseline Profile；冷启动 P90 在低端机 A 上仍超过预算，已生成 trace，归因到首页数据预加载，进入 21.8 启动专项。”这类结论能直接分派任务，也能被复测。
+报告应写清已完成项、仍超预算的路径、证据和后续动作。例如：“release 已启用 R8，产物已验证包含 Baseline Profile；低端设备 A 的冷启动分布仍超团队预算，trace 显示首页数据预加载占用主线程，进入 21.8 启动专项。”这种结论可以被分派和复测。
 
 ## 低端机样本池建设
 
-动态评分离不开设备池。官方文档明确提醒低端设备能放大性能问题。[已验证: 官方文档, https://developer.android.com/topic/performance/app-score] 样本池不必一开始很大，但要覆盖会改变性能结论的维度。
+动态评分离不开设备池。官方提醒低端设备能放大性能问题，也要求选择接近用户群体的设备。样本池不必很大，但要覆盖会改变结论的主要维度。
 
 | 设备类型 | 覆盖目的 | 最小要求 |
 |---|---|---|
 | 低端机 | 放大启动、I/O、内存、线程调度问题 | 低内存、低存储、eMMC 或低速 UFS、60Hz |
 | 主流机 | 覆盖主要用户群体体验 | 当前线上占比最高的 SoC / OEM 组合 |
-| 高刷机 | 检查 90Hz / 120Hz 下帧预算变化 | 记录刷新率，区分 8.3ms / 11.1ms / 16.6ms 目标 |
-| 低存储设备 | 复现安装、数据库、缓存、dexopt 和 I/O 抖动 | 存储剩余低于固定阈值并记录清理策略 |
-| 弱网设备 | 区分启动慢来自网络还是本地执行 | 固定网络条件和超时策略 |
+| 高刷机 | 检查刷新率变化下的帧表现 | 记录运行时刷新率与 nominal VSync 间隔，不把固定 16.6ms 套给所有设备 |
+| 低存储设备 | 复现安装、数据库、缓存、dexopt 和 I/O 波动 | 使用团队定义的低存储分组，并记录实际可用空间和清理策略 |
+| 弱网场景 | 区分业务可用时间中的网络与本地执行 | 固定网络整形参数和超时策略；与 App Performance Score 分项报告 |
 | 高温前后 | 检查 thermal 对 CPU / GPU 频率和动态分的影响 | 同场景冷机、热机各跑多轮 |
 
-每台设备都要绑定维护规则：系统版本是否升级、后台是否清理、亮度和刷新率是否固定、采样前是否重启、是否清数据、温度起点是否记录。动态评分的波动很多来自环境，而不是代码变化；环境字段缺失时，评分报告只能作为线索，不能作为发版裁决。
+每台设备都要绑定维护规则：系统版本、刷新率、供电、后台状态、编译模式、缓存/数据处理、可用存储和温度起点都要记录。官方也提醒动态分数可能在代码未变时波动；应连续运行多轮并报告常见表现与分布。环境字段缺失时，评分只能作为线索。
 
 
-### 🔹 系统侧 API：PerformanceHintManager 与 CPU/GPU 头寸
+## Android 17 的 CPU/GPU headroom 边界
 
-动态评分和低端机评估都依赖对设备真实运行状态的感知。Android 17 在 `android.os` 包下提供了 `PerformanceHintManager`（`frameworks/base/core/java/android/os/PerformanceHintManager.java`，371 行），允许应用创建提示会话、报告工作负载实际耗时，并查询 CPU/GPU 的可用头寸——这套 API 可以作为动态评分的系统侧数据支撑。
+CPU/GPU headroom 不是 App Performance Score 的评分输入，也不能替代 Play 或自建 APM。它是 Android 16（API 36）加入的运行时容量估计，可在重复、持续且负载较高的场景中作为 trace 与 benchmark 的环境旁证。Android 17 的公共入口是 [`SystemHealthManager`](https://developer.android.com/reference/android/os/health/SystemHealthManager)，不是 `PerformanceHintManager`。
 
-注意：部分外部资料引用 `PerformanceMetricsManager` 类名，该文件在 Android 17.0.0_r1 的 `frameworks/base/core/java/android/app/` 目录下并不存在；实际类是 `PerformanceHintManager`。
+`android-17.0.0_r1` 的 [`SystemHealthManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java) 暴露 `getCpuHeadroom()` 与 `getGpuHeadroom()`。有效结果为 0～100，0 表示当前估算没有更多容量；暂时无法估算时可能返回 `Float.NaN`，设备不支持时抛出 `UnsupportedOperationException`。调用方还应读取设备支持的计算窗口、CPU TID 数量上限与最小轮询间隔，不能把一套参数固定到所有设备。
 
-#### 核心机制
+headroom 更接近近期历史负载的估计，不是未来性能预测。AOSP 注释明确提醒快速调度和动态调频会带来 TOCTOU 问题，也不建议每次轮询都激进调整工作负载。热限制或电源控制降低频率时，相同工作量的容量占比还会变化。因此它适合在同一设备、同一路径、相近温度和供电状态下辅助比较，不适合用单次读数定义“低端机”，也不能凭 CPU 或 GPU 某一个值单独判定根因。
 
-- **会话创建**：`createHintSession(int[] tids, long initialTargetWorkDurationNanos)` — 为目标线程创建性能提示会话
-- **目标更新**：`updateTargetWorkDuration(long targetDurationNanos)` — 更新预期工作耗时
-- **反馈机制**：`reportActualWorkDuration(long actualDurationNanos)` — 报告实际耗时，系统据此调整调度策略
-- **GPU 增强**：`reportActualWorkDuration(WorkDuration workDuration)` — 支持分离 CPU/GPU 工作时长
-- **提示发送**：`sendHint(int hint)` — CPU_LOAD_UP/DOWN/RESET/RESUME, GPU_LOAD_UP/DOWN/RESET
+每次有效查询至少包含一次同步 Binder 调用，源码说明耗时可能超过 1ms，首次查询或参数变化后还可能更慢。不要在 UI、RenderThread 或受测关键区间同步等待；采集器需保留 `unsupported`、`NaN` 与参数信息，而不是把缺失值写成 0。
 
-#### CPU/GPU 头寸查询 API
+[`PerformanceHintManager`](https://developer.android.com/reference/android/os/PerformanceHintManager) 是另一套 API。它从 Android 12（API 31）开始允许 App 为周期性工作创建 hint session，报告目标与实际工作时长，使系统在满足期限和功耗之间调节资源。Android 17 实现见 [`PerformanceHintManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java)。它负责向系统提供工作负载提示，不提供 CPU/GPU headroom 查询；隐藏的 AIDL、测试 hint 常量和 HAL 方法也不是普通 App 应依赖的稳定接口。
 
-Android 17 新增了头寸查询接口：
-
-```java
-@FlaggedApi(Flags.FLAG_CPU_GPU_HEADROOMS)
-public final class CpuHeadroomParams {
-    @CpuHeadroomCalculationType int calculationType; // MIN/AVERAGE
-    int calculationWindowMillis;                     // 计算窗口
-    int[] tids;                                      // 目标线程 ID
-}
-```
-
-通过 `IHintManager.getCpuHeadroom()` 和 `IHintManager.getGpuHeadroom()` 可以查询当前设备的 CPU/GPU 可用头寸。在动态评分场景中，头寸值可以作为低端机判定的量化基线：帮助区分瓶颈来自应用自身还是设备资源不足。
-
-#### HAL 集成路径
-
-调用链路：
-
-```
-App → PerformanceHintManager → JNI → AIDL → PowerHintSessionWrapper → HAL → Kernel Scheduler
-```
-
-`PowerHintSessionWrapper`（`frameworks/native/services/powermanager/PowerHintSessionWrapper.cpp`）负责将应用层的性能提示传递给内核调度器，HAL v5 起支持模式切换（`setMode`）和图形层关联（`associateToLayers`）。
-
-#### AIDL 接口
-
-- `associateToLayers(IBinder[] layerTokens)` — 关联到具体图形层
-- `setHintSessionThreads(IHintSession, int[])` — 动态配置线程
-- `reportActualWorkDuration2(WorkDuration[] workDurations)` — 批量处理工作时长
-- `setMode(int mode, boolean enabled)` — 会话级别模式切换
-
-#### 与动态评分和低端机评估的关系
-
-这套 API 对 App Performance Score 的动态评分有两个直接价值：
-
-1. **量化设备负载**：头寸 API 提供设备侧的剩余能力，而不是应用自己的帧耗时。结合应用侧指标，可以区分"应用写得差"还是"设备已经跑满了"。
-2. **低端机基线**：在低端机样本池中，头寸值可以作为基线记录。如果同一设备上应用更新后头寸持续走低，说明新版本整体负载变重，即使单帧耗时没有明显恶化。
-
-国内非 Play 渠道分发的应用，可以基于这套架构建设自有性能评估体系，用头寸 API 替代 Play 侧的部分动态评分能力。
+把这两套 API 放进性能报告时，应分清“测量”和“调节”：`SystemHealthManager` 的 headroom 是可选环境样本，`PerformanceHintManager` 是运行时协作机制。二者都不会自动提高 App Performance Score，评分改善仍需由同构建、同设备和同路径的动态结果验证。
