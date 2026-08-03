@@ -170,30 +170,30 @@ Android 17 的 `ResourceTypes.h` 定义了资源表常见 chunk：
 下面的命令用于打印资源表、某个二进制 XML 和 APK 文件列表：
 
 ```bash
-BUILD_TOOLS="$ANDROID_HOME/build-tools/37.0.0"
+AAPT2="$ANDROID_HOME/build-tools/37.0.0/aapt2"
+APKANALYZER="$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer"
 APK_PATH="app/build/outputs/apk/release/app-release.apk"
 
-"$BUILD_TOOLS/aapt2" dump resources "$APK_PATH"
-"$BUILD_TOOLS/aapt2" dump xmltree \
-  --file res/layout/activity_main.xml \
-  "$APK_PATH"
-"$BUILD_TOOLS/apkanalyzer" files list "$APK_PATH"
+"$AAPT2" dump resources "$APK_PATH"
+"$AAPT2" dump xmltree "$APK_PATH" \
+  --file res/layout/activity_main.xml
+"$APKANALYZER" files list "$APK_PATH"
 ```
 
-`37.0.0` 只是示例 Build Tools 目录，项目应记录实际版本。`dump resources` 适合核对 package/type/entry/config，`xmltree` 证明 APK 中 XML 已是编译格式，文件列表用于找大文件与意外目录。大规模 CI 应保存结构化报告，避免解析面向人的完整 dump。
+`aapt2` 位于 SDK Build Tools，`apkanalyzer` 则由 SDK Command-Line Tools 提供，不能把两者拼到同一个目录。这里的 `37.0.0` 与 `latest` 都是路径示例；可重复构建应记录并固定实际安装版本。`dump resources` 适合核对 package/type/entry/config，`xmltree` 证明 APK 中 XML 已是编译格式，文件列表用于找大文件与意外目录。大规模 CI 应保存结构化报告，避免解析面向人的完整 dump。
 
 下面的命令用于比较两个 APK 的资源与文件差异：
 
 ```bash
-"$BUILD_TOOLS/aapt2" diff previous-release.apk app-release.apk
-"$BUILD_TOOLS/apkanalyzer" apk compare \
+"$AAPT2" diff previous-release.apk app-release.apk
+"$APKANALYZER" apk compare \
   --different-only \
   --files-only \
   previous-release.apk \
   app-release.apk
 ```
 
-AAPT2 diff 更靠近资源语义，APK Analyzer compare 更适合文件级变化。二者都要求 release 条件一致，否则签名、压缩、资源 ID 重排和工具版本变化会制造噪声。
+`aapt2 diff` 判断两个 APK 是否存在差异，`apkanalyzer apk compare` 则直接列出文件大小变化。两者都要求 release 条件一致，否则签名、压缩、资源 ID 重排和工具版本变化会制造噪声；出现差异后仍要结合 `dump resources`、文件 hash 和资源缩减报告解释原因。
 
 ## 资源缩减：先让代码引用图可靠
 
@@ -591,6 +591,7 @@ mapping 必须与同一次构建的二进制和资源表绑定。工具版本相
 本章使用以下一手资料：
 
 - [AAPT2 command reference](https://developer.android.com/tools/aapt2)：compile、link、dump、diff 与 optimize。
+- [apkanalyzer command reference](https://developer.android.com/tools/apkanalyzer)：命令位置、APK 文件列表与体积比较。
 - [Enable app optimization](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization)：AGP 8.12—9.3 的 optimized resource shrinking。
 - [Customize resources to keep](https://developer.android.com/topic/performance/app-optimization/customize-which-resources-to-keep)：`tools:keep`、`tools:discard` 与 shrink DSL。
 - [Tools attributes](https://developer.android.com/studio/write/tool-attributes)：safe/strict resource shrink mode。
