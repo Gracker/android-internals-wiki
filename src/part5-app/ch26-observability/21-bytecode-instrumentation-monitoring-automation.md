@@ -42,368 +42,430 @@ gap_source: 素材驱动/参考书
 
 # 26.21 编译期字节码插桩与监控自动化
 
-## 为什么性能监控需要字节码插桩
+字节码插桩适合解决“规则明确、调用点很多、人工埋点容易遗漏”的问题，例如给一组业务入口加 trace、把已有 API 调用改写到监控桥接层，或检查某类调用是否符合约束。它不能自动获得所有性能问题的因果关系，也不适合修改 Android framework、ART 或任意第三方库的内部实现。
 
-大型 Android App 的方法数动辄数万到数十万。靠开发者在每个方法里手写 `Trace.beginSection()` / `Trace.endSection()` 或耗时统计逻辑，覆盖率永远跟不上代码增长速度。遗漏的关键路径在线上性能排查时就是盲区。
+本节的平台语义以 Android 17 / API 37 / `android-17.0.0_r1` 为准，构建入口以 AGP 8.x Instrumentation API 为准。Android 17 没有改变 App 构建期 `.class` 插桩的基本边界；运行时证据仍来自公开 Trace API、Perfetto、JankStats、网络库接口和业务指标。
 
-字节码插桩解决的是覆盖率问题。在编译期自动把监控代码注入到目标方法中，有三个好处：
+## 先确定插桩边界
 
-- 业务代码零侵入。开发者照常写业务逻辑，监控逻辑由构建插件统一注入。
-- 全量方法可覆盖。通过配置文件或注解控制范围，不需要逐个手埋。
-- 策略可配置。Debug 包全量插桩、Release 包按白名单插桩，开销可控。
+一条可维护的监控链路包含四层：
 
-APM SDK 的监控埋点——方法耗时、网络请求、主线程卡顿、资源泄漏——底层都依赖字节码插桩。Matrix Trace Canary、ArgusAPM、DOKit 的性能监控模块，编译期注入逻辑基本基于 ASM 框架。详见 19.2 Matrix 和 19.27 APM 客户端架构。
+| 层级 | 责任 | 常见错误 |
+|---|---|---|
+| 选择规则 | 决定哪些 variant、class、method 需要处理 | Release 无条件全量插桩，或误改生成代码与依赖 |
+| 字节码变换 | 保证控制流、操作数栈、局部变量和 frame 合法 | 只处理正常 `return`，异常路径没有清理 |
+| 运行时桥接 | 采样、限流、隐私处理并写入 Trace/APM | 在热路径分配对象、同步 I/O 或递归调用 |
+| 验证与发布 | 校验 class、D8/R8 产物、运行时 trace 和成本 | 只看编译成功，没有检查优化后产物 |
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - ASM 与字节码插桩：改写字节码的"神器".md]
+“无业务手写埋点”不等于“零侵入”。每条注入指令都会改变 class、构建时间和运行路径。是否启用、覆盖哪些方法以及容许多少成本，都应由当前工程的测量结果决定。
 
 ## ASM Core API 与 Tree API
 
-ASM 是 Java 字节码操作的事实标准。国内大厂（阿里、字节、滴滴、美团）的编译期监控插件基本都基于 ASM。ASM 提供两套 API，选型直接影响插桩性能。
+ASM Core API 以 visitor 回调读取 class。`ClassVisitor` 处理类级结构，`MethodVisitor` 逐条接收方法指令。它适合局部、流式的变换，通常不需要把整个类表示保存在内存中。
 
-### Core API：事件驱动模型
+Tree API 把类读入 `ClassNode`，方法指令保存在 `InsnList`。需要多次遍历同一方法、重排较长指令序列或进行控制流分析时，Tree API 更容易编写；代价是额外内存和对象分配。
 
-Core API 基于 visitor 模式。`ClassVisitor` 遍历字节码时，每遇到一个字段、方法或注解就回调对应的 `visit` 方法。`MethodVisitor` 在方法内部逐条访问字节码指令。
+选择依据来自变换本身：
 
-Core API 的优势是内存占用低——遍历一次字节码就完成所有修改，不需要在内存中构建完整的语法树。适合做简单的注入操作：在方法入口插入一行 `Trace.beginSection()`，在出口插入 `Trace.endSection()`。
+- 入口、出口、调用点替换等局部操作优先使用 Core API。
+- 需要查看一个方法的完整指令、异常表和跳转关系时考虑 Tree API。
+- 需要全程序调用图、跨类数据流或统一改写 jar 时，单 class Instrumentation API 不够，应使用 AGP Scoped Artifacts 注册独立 task。
 
-```java
-// Core API 示例：方法入口/出口注入 trace tag
-public class TraceMethodVisitor extends MethodVisitor {
-    private String methodName;
+ASM 操作的是 JVM class，不是 DEX。Kotlin 编译器、KSP、Compose Compiler 等前置步骤先生成 class，AGP 插桩随后处理；D8/R8 再对结果做 desugar、压缩、优化、混淆和 dex 转换。
 
-    public TraceMethodVisitor(int api, MethodVisitor mv, String name) {
-        super(api, mv);
-        this.methodName = name;
-    }
+## AGP 8.x 的插桩入口
 
-    @Override
-    public void visitCode() {
-        super.visitCode();
-        // 方法入口：注入 Trace.beginSection(methodName)
-        mv.visitLdcInsn(methodName);
-        mv.visitMethodInsn(INVOKESTATIC,
-            "android/os/Trace", "beginSection", "(Ljava/lang/String;)V", false);
-    }
+### Transform API 已被移除
 
-    @Override
-    public void visitInsn(int opcode) {
-        // 在 RETURN / ATHROW 指令前注入 Trace.endSection()
-        if (opcode == RETURN || opcode == ARETURN || opcode == ATHROW
-                || opcode == IRETURN || opcode == LRETURN
-                || opcode == FRETURN || opcode == DRETURN) {
-            mv.visitMethodInsn(INVOKESTATIC,
-                "android/os/Trace", "endSection", "()V", false);
-        }
-        super.visitInsn(opcode);
-    }
-}
-```
+旧的 `com.android.build.api.transform.Transform` 在 AGP 7.2 被废弃，并从 AGP 8.0 移除。官方的 [AGP API 更新说明](https://developer.android.com/build/releases/gradle-plugin-api-updates)没有提供一个覆盖所有旧用法的单一替代物：
 
-上面这段代码只做一件事：在每个方法入口和出口插桩 `Trace.beginSection` / `endSection`。Core API 的 `visitCode()` 在方法体开始时回调一次，`visitInsn()` 在每条指令处回调。在返回指令前注入 `endSection()`，保证方法正常返回和异常抛出都能配对。
+- 独立处理每个 class：使用 `variant.instrumentation.transformClassesWith()`。
+- 读取或变换整个 class 集合：使用 `variant.artifacts.forScope()` 和 `ScopedArtifact.CLASSES`。
+- 增加生成 class：向 `MultipleArtifact.ALL_CLASSES_DIRS` 追加产物。
 
-### Tree API：整棵 AST
+Instrumentation API 能按 class 增量处理，并允许 AGP 并行准备不同依赖。代价是 visitor 只拥有有限的 classpath 视图，不能假设所有 class 已经完成其他 visitor 的变换。
 
-Tree API 把整个类文件加载成一棵 `ClassNode` 树。`ClassNode` 包含 `fields`（`List<FieldNode>`）和 `methods`（`List<MethodNode>`）。`MethodNode` 的 `instructions` 字段是 `InsnList`——方法的完整指令链表。
+### 注册 AsmClassVisitorFactory
 
-Tree API 适合跨方法分析：比如统计某个类中所有方法之间的调用关系、分析方法的控制流图。代价是内存开销——整棵树都驻留在内存中。
-
-选型原则：单方法的注入和替换用 Core API；需要同时分析多个方法的依赖关系用 Tree API。监控插桩场景下 90% 的工作 Core API 就够了。
-
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - ASM 与字节码插桩：改写字节码的"神器".md]
-[已验证: ASM 9.x 官方文档，Core API 与 Tree API 的区分在 ASM 官网 javadoc 中有明确说明]
-
-## AGP 编译管线中的插桩入口
-
-### Transform API（已废弃）
-
-AGP 7.0 以前的插桩入口是 `com.android.build.api.transform.Transform`。Gradle 插件通过 `android.registerTransform()` 注册 Transform，在 `.class` → `.dex` 之间拦截所有 class 文件做字节码修改。
-
-AGP 7.0 将 Transform API 标记为 deprecated，AGP 8.0 正式移除 `registerTransform()` 接口。仍在使用 Transform API 的插件（如 Matrix 官方 Trace Canary）在 AGP 8.0+ 项目中会在配置阶段直接报错：`API 'android.registerTransform' is removed`。
-
-[已验证: Matrix 上游 issue #888 记录了 AGP 8.x 移除 Transform API 后的兼容问题。详见 19.2 Tencent Matrix 章节]
-
-### AsmClassVisitorFactory（AGP 7.0+）
-
-Transform API 的替代方案是 `com.android.build.api.instrumentation.AsmClassVisitorFactory`。新的插桩管线有几项改进：
-
-- 按 Variant 生效，可以只对特定 build variant 做插桩，不影响其他 variant 的构建速度。
-- 增量编译感知。AGP 只对变更的 class 文件重新跑插桩，不是每次全量处理。
-- 并行处理。多个 `AsmClassVisitorFactory` 可以并行执行。
-
-注册方式通过 `androidComponents` 扩展：
-
-```groovy
-androidComponents.onVariants { variant ->
-    variant.instrumentation.transformClassesWith(
-        TraceClassVisitorFactory.class,
-        InstrumentationScope.PROJECT
-    ) { params ->
-        // 传递配置参数
-        params.enableTrace.set(true)
-    }
-}
-```
-
-`InstrumentationScope.PROJECT` 限定只处理当前项目的代码，不处理第三方依赖。如果需要同时对依赖库做插桩，使用 `InstrumentationScope.ALL`。
-
-`AsmClassVisitorFactory` 需要实现 `createClassVisitor()` 方法，返回一个自定义的 `ClassVisitor`。这个 `ClassVisitor` 的实现方式与 ASM Core API 完全一致——前面 `TraceMethodVisitor` 的代码可以直接用。
+下面的 Kotlin 代码用于把 factory 注册到 release variant，并让 AGP 为被修改的方法重新计算 stack frame。示例使用 `PROJECT`，只处理当前 Android 模块的 class。
 
 ```kotlin
+import com.android.build.api.instrumentation.FramesComputationMode
+import com.android.build.api.instrumentation.InstrumentationScope
+import com.android.build.api.variant.ApplicationAndroidComponentsExtension
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+import org.gradle.kotlin.dsl.getByType
+
+class TraceInstrumentationPlugin : Plugin<Project> {
+    override fun apply(project: Project) {
+        project.pluginManager.withPlugin("com.android.application") {
+            val androidComponents =
+                project.extensions.getByType<ApplicationAndroidComponentsExtension>()
+
+            androidComponents.onVariants(
+                androidComponents.selector().withBuildType("release")
+            ) { variant ->
+                variant.instrumentation.transformClassesWith(
+                    TraceClassVisitorFactory::class.java,
+                    InstrumentationScope.PROJECT
+                ) { params ->
+                    params.packagePrefixes.set(listOf("com.example.app"))
+                }
+
+                variant.instrumentation.setAsmFramesComputationMode(
+                    FramesComputationMode.COMPUTE_FRAMES_FOR_INSTRUMENTED_METHODS
+                )
+            }
+        }
+    }
+}
+```
+
+这段代码只展示注册关系。工程应把包前缀和启用 variant 暴露为插件扩展，而不是把示例值复制到多个模块。`COMPUTE_FRAMES_FOR_INSTRUMENTED_METHODS` 适合给既有方法增加控制流；如果 visitor 只加注解或能够自行维护 frame，`COPY_FRAMES` 的构建成本更低。`COMPUTE_FRAMES_FOR_ALL_CLASSES` 会产生非增量的全类计算，只有改变继承关系等特殊变换才应考虑。
+
+`InstrumentationScope` 还受模块类型约束。应用和测试模块可选择 `PROJECT` 或 `ALL`；Android library 只能对本项目 class 注册 Instrumentation。`ALL` 会处理传递依赖，可能重复修改已插桩库，也会把第三方版本差异纳入兼容范围，因此不应当成默认值。
+
+### Factory 必须支持异步调用
+
+AGP 的 [`AsmClassVisitorFactory`](https://developer.android.com/reference/tools/gradle-api/8.6/com/android/build/api/instrumentation/AsmClassVisitorFactory)明确要求 `isInstrumentable()` 和 `createClassVisitor()` 能被异步调用。factory 不应使用可变全局集合统计访问结果，也不应在回调中读写共享文件。
+
+下面的代码用于声明可缓存的输入参数、过滤生成类，并把 AGP 提供的 ASM API 版本交给 visitor。
+
+```kotlin
+import com.android.build.api.instrumentation.AsmClassVisitorFactory
+import com.android.build.api.instrumentation.ClassContext
+import com.android.build.api.instrumentation.ClassData
+import com.android.build.api.instrumentation.InstrumentationParameters
+import org.gradle.api.provider.ListProperty
+import org.gradle.api.tasks.Input
+import org.objectweb.asm.ClassVisitor
+
+interface TraceParameters : InstrumentationParameters {
+    @get:Input
+    val packagePrefixes: ListProperty<String>
+}
+
 abstract class TraceClassVisitorFactory :
-    AsmClassVisitorFactory<TraceInstrumentationParams> {
+    AsmClassVisitorFactory<TraceParameters> {
+
+    override fun isInstrumentable(classData: ClassData): Boolean {
+        val className = classData.className
+        val simpleName = className.substringAfterLast('.')
+        val inConfiguredPackage = parameters.get().packagePrefixes.get()
+            .any { prefix ->
+                className == prefix || className.startsWith("$prefix.")
+            }
+
+        return inConfiguredPackage &&
+            simpleName != "R" &&
+            !simpleName.startsWith("R\$") &&
+            simpleName != "BuildConfig"
+    }
 
     override fun createClassVisitor(
         classContext: ClassContext,
         nextClassVisitor: ClassVisitor
     ): ClassVisitor {
-        return TraceClassNode(
-            instrumentationContext.apiVersion.get(),
-            nextClassVisitor,
-            parameters.get().enableTrace.get()
+        return TraceClassVisitor(
+            api = instrumentationContext.apiVersion.get(),
+            next = nextClassVisitor
         )
     }
+}
+```
 
-    override fun isInstrumentable(classData: ClassData): Boolean {
-        // 只对应用代码做插桩，排除生成的 R 类、BuildConfig 等
-        return classData.className.startsWith("com.example.app")
-            && !classData.className.endsWith("R")
-            && !classData.className.endsWith("BuildConfig")
+`ClassData.className` 使用点分隔的全限定类名。过滤逻辑需要覆盖 `R` 的内部类，并根据工程情况排除 generated、data binding、Hilt、Compose synthetic、监控 SDK 自身等代码。参数必须通过 Gradle `Property`、`ListProperty`、`RegularFileProperty` 等声明输入；回调中临时读取未声明的 YAML 或 JSON 会破坏 up-to-date 与 build cache 判断。
+
+## 方法 trace 的控制流必须完整
+
+### 为什么只检查 RETURN 和 ATHROW 不够
+
+在每个 `RETURN` 和 `ATHROW` 前插入 `Trace.endSection()`，只能覆盖显式出现在当前方法字节码中的退出指令。下面这种 Java 代码没有本地 `ATHROW` 也可能异常退出：
+
+`repository.load()` 抛出的异常可以直接沿调用栈传播，当前方法会在 `INVOKEVIRTUAL` 处离开。visitor 若只观察退出 opcode，`Trace.beginSection()` 就不会配对，后续同线程的嵌套 section 也会错位。
+
+稳妥做法是给原方法体增加一个 catch-all handler，语义等价于 `try/finally`：正常返回前调用 `endSection()`；任何传播到方法边界的 `Throwable` 由 handler 调用 `endSection()` 后原样抛出。构造方法要等到父类构造调用完成后才能执行通用入口 advice，ASM `AdviceAdapter` 已处理这一限制。
+
+下面的 visitor 用于演示这一控制流。它跳过抽象、native、synthetic 方法以及构造器，避免示例同时引入构造器语义和编译器生成方法。
+
+```kotlin
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.Label
+import org.objectweb.asm.MethodVisitor
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.Type
+import org.objectweb.asm.commons.AdviceAdapter
+import org.objectweb.asm.commons.Method
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+
+class TraceClassVisitor(
+    api: Int,
+    next: ClassVisitor
+) : ClassVisitor(api, next) {
+    private var ownerInternalName: String = ""
+
+    override fun visit(
+        version: Int,
+        access: Int,
+        name: String,
+        signature: String?,
+        superName: String?,
+        interfaces: Array<out String>?
+    ) {
+        ownerInternalName = name
+        super.visit(version, access, name, signature, superName, interfaces)
+    }
+
+    override fun visitMethod(
+        access: Int,
+        name: String,
+        descriptor: String,
+        signature: String?,
+        exceptions: Array<out String>?
+    ): MethodVisitor {
+        val next = super.visitMethod(
+            access, name, descriptor, signature, exceptions
+        )
+        val unsupported = access and (
+            Opcodes.ACC_ABSTRACT or
+                Opcodes.ACC_NATIVE or
+                Opcodes.ACC_SYNTHETIC
+            ) != 0
+
+        if (unsupported || name == "<init>" || name == "<clinit>") {
+            return next
+        }
+
+        return TraceMethodVisitor(
+            api = api,
+            next = next,
+            access = access,
+            name = name,
+            descriptor = descriptor,
+            traceTag = buildTraceTag(ownerInternalName, name, descriptor)
+        )
     }
 }
-```
 
-`isInstrumentable()` 是新增的过滤能力。Transform API 时代需要在遍历时手动过滤，现在 AGP 在调度阶段就跳过不需要处理的类，减少不必要的字节码解析。
+private class TraceMethodVisitor(
+    api: Int,
+    next: MethodVisitor,
+    access: Int,
+    name: String,
+    descriptor: String,
+    private val traceTag: String
+) : AdviceAdapter(api, next, access, name, descriptor) {
+    private val bodyStart = Label()
+    private val bodyEnd = Label()
 
-### 从 Transform 迁移到 AsmClassVisitorFactory
+    override fun onMethodEnter() {
+        visitLdcInsn(traceTag)
+        invokeStatic(TRACE_TYPE, BEGIN_SECTION)
+        visitLabel(bodyStart)
+    }
 
-迁移要点：
+    override fun onMethodExit(opcode: Int) {
+        if (opcode != ATHROW) {
+            invokeStatic(TRACE_TYPE, END_SECTION)
+        }
+    }
 
-1. Transform 的 `transform()` 方法处理整个 jar/directory，新方案中每个类由 `createClassVisitor()` 独立处理。
-2. Transform 中用 `TransformInvocation.inputs` 获取增量信息，新方案的增量由 AGP 自动管理。
-3. Transform 可以修改输入再输出，新方案只能通过 visitor 修改字节码。如果原来依赖了文件级别的操作（如替换整个 jar），需要拆成更细粒度的 class 级处理。
-4. 第三方库的 Transform 依赖（如 `com.android.tools.build:transform-api`）可以保留在 classpath 上做编译兼容，但运行时不会被 AGP 8.0+ 调用。
+    override fun visitMaxs(maxStack: Int, maxLocals: Int) {
+        val handler = Label()
+        visitTryCatchBlock(bodyStart, bodyEnd, handler, null)
+        visitLabel(bodyEnd)
+        visitLabel(handler)
+        invokeStatic(TRACE_TYPE, END_SECTION)
+        throwException()
+        super.visitMaxs(maxStack, maxLocals)
+    }
 
-[已验证: AGP 8.x release notes 和 Android Components instrumentation API 文档]
+    companion object {
+        private val TRACE_TYPE = Type.getObjectType("android/os/Trace")
+        private val BEGIN_SECTION =
+            Method("beginSection", "(Ljava/lang/String;)V")
+        private val END_SECTION = Method("endSection", "()V")
+    }
+}
 
-## 方法耗时监控的插桩策略
+private fun buildTraceTag(
+    ownerInternalName: String,
+    methodName: String,
+    descriptor: String
+): String {
+    val key = "$ownerInternalName#$methodName$descriptor"
+    val digest = MessageDigest.getInstance("SHA-256")
+        .digest(key.toByteArray(StandardCharsets.UTF_8))
+        .take(6)
+        .joinToString("") { "%02x".format(it) }
+    val readable = "${ownerInternalName.substringAfterLast('/')}#$methodName"
+        .replace('|', ' ')
+        .replace('\n', ' ')
+        .replace('\u0000', ' ')
+    return "${readable.takeUtf16Safely(110)}@$digest"
+}
 
-### beginSection / endSection 注入
-
-方法级耗时统计的基础方案：在每个目标方法的入口注入 `Trace.beginSection(tag)`，在出口注入 `Trace.endSection()`。`tag` 用类名+方法名拼接，方便在 Perfetto / Systrace 中定位。
-
-两个 Hook 点：
-
-- `onMethodEnter`：方法入口（`visitCode()` 第一次调用时）
-- `onMethodExit`：方法出口（每条返回指令前）
-
-出口不止一处。Java 方法可能有多个 `return` 语句，也可能因异常退出。`visitInsn()` 中需要检查所有返回操作码：`RETURN`、`IRETURN`、`ARETURN`、`LRETURN`、`FRETURN`、`DRETURN`、`ATHROW`。
-
-异常退出容易被遗漏。如果一个方法在 try 块里抛出异常，`ATHROW` 指令触发 `endSection()`。但如果异常被 catch 吞掉，执行流可能在 catch 块的某个 return 处退出——这条 return 路径也需要插桩。Core API 的 visitor 模式天然覆盖所有退出路径，因为每条返回指令都会回调 `visitInsn()`。
-
-### 选择性插桩
-
-全量插桩（对每个方法都注入 trace）的代价：
-
-- 包体积：每个被插桩的方法增加约 10-20 字节的字节码指令。一个 50000 方法的 App，全量插桩后 APK 增大约 500KB-1MB。
-- 运行时开销：`Trace.beginSection()` 本身约 1-2μs。50000 方法全部插桩，冷启动多出 50-100ms 的 trace 开销。
-- Systrace 可读性：50000 个 trace section 会把 Systrace 填满噪声。
-
-选择性插桩策略：
-
-| 策略 | 适用场景 | 配置方式 |
-|------|---------|---------|
-| 包名过滤 | 只监控 `com.example.app.*` | `isInstrumentable()` 中按 className 前缀过滤 |
-| 注解过滤 | 只监控标注 `@TraceMethod` 的方法 | ASM 读取 `RuntimeVisibleAnnotations`，匹配自定义注解描述符 |
-| 配置文件 | 按 method 白名单精确控制 | 构建期读取 JSON/YAML 配置，生成 method set 传给 visitor |
-| Debug/Release 区分 | Debug 全量、Release 按白名单 | Build variant 参数控制 `enableTrace` |
-
-生产环境推荐配置文件 + 注解组合：配置文件指定需要监控的核心包和类，注解标记需要特别关注的方法。
-
-### 插桩后包体积评估
-
-在 AGP 构建输出中可以对比插桩前后的 APK 大小。推荐用 `./gradlew assembleRelease` 分别构建有插桩和无插桩的 APK，用 `apkanalyzer` 对比 dex 大小差异。如果增量超过 5%，需要缩小插桩范围。
-
-## 网络监控的字节码插桩
-
-网络监控的插桩思路是 Hook HTTP 客户端的入口点，而不是拦截底层 Socket。原因：
-
-- Socket 层拿不到 URL、Header、响应码等业务信息。
-- OkHttp / HttpURLConnection 已经在业务代码中广泛使用，Hook 接口层覆盖面更广。
-- 接口层 Hook 的开销远低于对每个字节做监控。
-
-### OkHttp 插桩策略
-
-OkHttp 的拦截器（`Interceptor`）链是自然的 Hook 点。字节码插桩方案：在 `OkHttpClient.Builder` 构造完成后、`build()` 方法返回前，自动插入一个全局监控 `Interceptor`。
-
-字节码操作：
-
-- 定位 `OkHttpClient$Builder.build()` 方法
-- 在 `return new OkHttpClient(this)` 之前注入代码：往 `interceptors` 列表头部插入监控拦截器
-- 监控拦截器独立编译成一个 class（如 `NetworkMonitorInterceptor`），插桩时只插入一条 `getstatic` + `list.add(0, ...)` 指令
-
-这种方式比反射注入更稳定。反射注入依赖 `OkHttpClient.interceptors` 的字段名和可访问性，版本升级后可能失效。字节码插桩直接在编译期修改 `build()` 方法，OkHttp 版本不变就不需要维护。
-
-[已验证: Matrix、ArgusAPM 的网络监控模块均采用此方案。详见 19.23 网络 APM 内部实现]
-
-### HttpURLConnection 插桩
-
-`HttpURLConnection` 通过 `URL.openConnection()` 创建。插桩方案：替换 `URL.openConnection()` 的返回对象为代理对象，在代理对象中包装网络监控逻辑。
-
-这个方案在 Android 9 及以下（使用 OkHttp 2.x 作为 HttpURLConnection 后端）效果较好。Android 10+ 使用 Cronet 或 OkHttp 3.x 作为后端，`openConnection()` 的内部路径更复杂，Hook 成本上升。现代 App 如果已经统一用 OkHttp 3+，可以不做 HttpURLConnection 的插桩。
-
-### 网络监控的性能边界
-
-每个 HTTP 请求的插桩开销约 0.1-0.3ms（注入 Interceptor + 记录时间戳 + 构造监控数据）。对单次请求几乎无感，但批量请求场景（如图片列表预加载）需要关注累加影响。
-
-## 滑动/卡顿监控的自动埋点
-
-### Choreographer doFrame Hook
-
-卡顿检测的基础方案：在 `Choreographer.doFrame()` 中注入耗时统计代码，计算两帧之间的间隔。间隔超过 16.6ms（60Hz）判定为掉帧。
-
-字节码插桩方案：定位 `Choreographer$CallbackQueue.doFrame` 或 `Choreographer.doFrame` 方法，在方法入口注入 `postFrameCallback` 来记录帧时间。
-
-实际操作中更常见的做法是用 Java 反射 + `Looper.getMainLooper().setMessageLogging()` 替代字节码修改。原因：
-
-- `Choreographer.doFrame` 是内部方法，不同 Android 版本的签名有变化。
-- `Looper.setMessageLogging` 是公开 API，稳定性更好。
-- 字节码修改系统类（`Choreographer` 在 `frameworks/base/` 下）需要处理 bootclasspath 问题，构建期插桩无法修改系统类。
-
-字节码插桩的主要用武之地是应用代码中的 `View.onDraw`、`RecyclerView.onBindViewHolder` 等渲染相关方法的自动耗时统计。系统类用运行时 Hook（反射 / ART hook）。
-
-### LoPrinter 卡顿检测
-
-BlockCanary 的核心思路：通过 `Looper.setMessageLogging(printer)` 在每个 Message 的处理前后打时间戳。如果处理时间超过阈值（如 200ms），抓取主线程堆栈定位卡顿。
-
-编译期自动化方案：通过字节码插桩在 `ActivityThread.main()` 的 `Looper.prepareMainLooper()` 之后自动注入 `setMessageLogging` 调用。这样就不用要求开发者在 `Application.onCreate()` 里手写初始化代码。
-
-```java
-// 插桩后 ActivityThread.main() 的字节码效果（伪代码）
-public static void main(String[] args) {
-    Looper.prepareMainLooper();
-    // ===== 插桩注入开始 =====
-    Looper.getMainLooper().setMessageLogging(new BlockCanaryPrinter());
-    // ===== 插桩注入结束 =====
-    ActivityThread thread = new ActivityThread();
-    thread.attach(false);
-    Looper.loop();
+private fun String.takeUtf16Safely(maxCodeUnits: Int): String {
+    if (length <= maxCodeUnits) return this
+    val end = if (
+        Character.isHighSurrogate(this[maxCodeUnits - 1]) &&
+        Character.isLowSurrogate(this[maxCodeUnits])
+    ) {
+        maxCodeUnits - 1
+    } else {
+        maxCodeUnits
+    }
+    return substring(0, end)
 }
 ```
 
-注意 `ActivityThread` 是 framework 类，构建期插桩无法修改。实际方案是在 `Application.onCreate()` 的子类（即应用代码）中注入初始化逻辑。ASM 定位到 `Application` 的子类的 `onCreate` 方法，在 `super.onCreate()` 之后注入初始化代码。
+正常返回路径由 `onMethodExit()` 写入 `endSection()`；显式与隐式异常由新增 handler 处理，所以同一个异常不会结束两次。`visitMaxs()` 增加了异常边，注册阶段必须选择能重新计算 frame 的模式。生产 visitor 还要根据注解、方法大小、访问标志和业务规则缩小范围，并为 tag 截断、多字节标识符和哈希冲突编写测试。
 
-## 字节码插桩与 R8/ProGuard 的协作
+Android 17 的 [`android.os.Trace`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java)与公开 [Trace API](https://developer.android.com/reference/android/os/Trace)规定：同步 section 必须在同一线程成对并正确嵌套，名称上限为 127 个 UTF-16 code unit。竖线、换行和空字符会被替换。示例在构建期生成固定 tag，避免每次调用时拼接字符串。若 tag 包含业务参数、URL、账号或内容摘要，trace 文件也会携带这些信息，因此只应使用低敏感度的稳定标识。
 
-### 执行顺序
+`Trace.isEnabled()` 从 API 29 提供。固定字符串的 `beginSection()` 可以直接调用，因为平台内部会检查 tracing 状态；只有运行时需要构造临时对象或格式化字符串时，才值得先调用 `isEnabled()` 避免无效分配。
 
-AGP 的构建管线顺序：
+## 选择性插桩比全量插桩更可靠
 
-```
-Java/Kotlin 源码 → javac/Kotlinc → .class 文件
-  → ASM 插桩（AsmClassVisitorFactory）
-  → R8/ProGuard（shrink + optimize + obfuscate）
-  → .dex 文件
-```
+方法数量不能直接决定开销。成本还与调用频率、tag 构造、采样逻辑、R8 优化结果、CPU 和是否正在采集 trace 有关。文章不应给出通用的“每方法增加多少字节”或“每次调用多少微秒”。
 
-ASM 插桩在 R8 shrinking **之前**执行。插桩注入的代码会被 R8 一并处理——如果注入的监控类没有被引用到，R8 可能把它 tree-shake 掉。
+可用的筛选维度包括：
 
-### 防止监控代码被 R8 优化
+- variant：开发、性能测试、灰度和生产可采用不同规则；
+- 模块与包：默认只处理自有代码，依赖库必须逐版本验证；
+- 类与方法：注解、接口、访问标志和稳定签名共同决定；
+- 热度：循环体、高频 getter、Compose 编译器生成方法和协程状态机应谨慎；
+- 采样：运行时桥接可按会话、场景或设备分群启用，但不能改变 begin/end 配对；
+- 预算：用本项目的 clean build、增量 build、APK/Dex 和基准测试建立门禁。
 
-三种情况需要处理：
+注解只用于构建期选择时，`Retention.BINARY`/Java `RetentionPolicy.CLASS` 足够。ASM 在 R8 前读取注解，运行时无需保留。只有运行时代码仍通过反射读取注解时，才需要对应的 `-keepattributes` 与成员规则。
 
-**1. 反射调用的监控类**：如果插桩注入的监控桥接类通过反射加载（某些 APM SDK 用 Class.forName 动态加载），R8 的静态分析看不到引用链，会判定为未使用代码。需要在 ProGuard keep 文件中添加：
+## 与 R8 的关系
 
-```
--keep class com.example.monitor.** { *; }
-```
+AGP Instrumentation 产生的 class 会继续进入 D8/R8。需要区分三类情况：
 
-**2. 注解驱动的插桩方法**：如果用自定义注解（`@TraceMethod`）标记需要监控的方法，R8 可能在混淆时移除注解。需要 keep 注解类本身：
+- 注入的是直接方法调用：R8 能看到引用链，通常不需要为桥接类添加全包 `-keep`。
+- 桥接类通过反射或 JNI 名称查找：R8 无法从普通调用图推导目标，需要精确的 keep 规则。
+- 监控要求与源码方法一一对应：R8 的内联、合并、删除和 outlining 会改变最终执行形态，必须在 minified release 产物上验证 trace，而不能只检查未优化 class。
 
-```
--keep @interface com.example.TraceMethod
-```
+若 trace tag 保存插桩前的类名，它可以帮助阅读源码，但也可能暴露内部命名。另一种方案是使用稳定 method ID，并随构建产出一份受控的 ID 到源码符号映射。崩溃栈仍使用 R8 `mapping.txt` 还原，两种映射不要混为一种文件。
 
-**3. 插桩注入的方法调用**：插桩注入的 `Trace.beginSection()` 等调用是静态方法引用。只要目标方法在 SDK 中存在（`android.os.Trace` 是 framework 类），R8 不会移除这些调用。但如果调用的是自定义监控类的方法，需要确保目标类和方法不被 shrink。
+不要为了保留 trace 结构而对整包禁用优化。更合适的顺序是缩小插桩范围、确认关键方法在 release 中的形态，再为确有需要的少量边界设置规则。
 
-### 混淆后符号还原
+## 网络监控：优先使用稳定扩展点
 
-插桩注入的 `Trace.beginSection("com.example.app.MainActivity#onCreate")` 中的 tag 是编译期的原始类名和方法名。R8 混淆后，运行时的调用栈里类名变成 `a.b.c`，但 trace tag 里还是原名。
+OkHttp 已提供 application interceptor、network interceptor 和 `EventListener`。能在依赖注入或 client factory 中统一配置时，应使用这些公开扩展点。字节码插桩适合补齐无法统一管理的自有调用点，例如把特定构造或 factory 调用改写到一个版本化桥接方法。
 
-这不是问题——trace tag 的目的是在 Systrace / Perfetto 中用人类可读的名称定位方法。混淆只影响运行时类名，不影响编译期注入的字符串。反过来的场景更需要注意：如果插桩逻辑依赖运行时的类名做过滤（如 `if (className == "com.example.MainActivity")`），混淆后这个判断永远不成立。用注解描述符或固定接口做过滤标识，不要依赖类名字符串匹配。
+直接修改 `OkHttpClient.Builder` 的私有字段或重写依赖 jar 内部 `build()` 有几项风险：
 
-## 多模块插桩与编译性能
+- 字段名、可见性、Kotlin 实现和构造流程不是稳定兼容协议；
+- `InstrumentationScope.ALL` 可能对同一依赖重复处理；
+- 多个插件可能改变 visitor 顺序，导致重复 interceptor；
+- shaded、不同主版本和厂商分支的 owner/descriptor 不一致；
+- 监控 interceptor 自己发请求时可能形成递归。
 
-### 多模块配置策略
+调用点变换必须同时匹配 owner、方法名和 descriptor，并在不支持的库版本上停止变换或给出构建错误。桥接层要保留请求成功、失败、取消和重试的语义，不采集授权头、Cookie、请求体、完整 URL 查询参数等敏感数据。
 
-大型 App 通常有多个 Gradle 模块（feature module / dynamic feature module）。两种插桩配置方式：
+`HttpURLConnection` 也不应依赖“某 Android 版本默认切换到 Cronet”之类假设。App 构建期 visitor 无法修改 boot classpath 中的 `URL` 或 framework 实现；包装返回对象还可能破坏调用方的具体类型转换。若工程仍使用 `HttpURLConnection`，优先在自有网络抽象层计时，或只改写已经验证的自有调用点。
 
-**全局统一配置**：在根 `build.gradle` 或 buildSrc 中注册一个 `AsmClassVisitorFactory`，对所有 variant 生效。优点是配置集中、规则统一。缺点是所有模块的 class 都要经过插桩处理，编译时间增加。
+## 帧与主线程监控：不要修改 framework class
 
-**按模块配置**：每个 feature module 独立注册插桩插件。只对需要的模块做插桩，其他模块跳过。配合 `InstrumentationScope.PROJECT`（只处理当前模块代码）可以减少不必要的处理。
+`Choreographer`、`ActivityThread` 和 `Looper` 属于 Android framework。普通 App 的 AGP 插桩只处理 App 与所选依赖的 class，不能改写设备上的 boot classpath。运行时反射或 ART hook 也会受隐藏 API、版本差异和完整性策略影响，不应作为常规线上方案。
 
-推荐方案：核心监控（如方法耗时、网络）用全局配置；专项监控（如某 feature 的业务埋点）按模块配置。
+帧问题优先使用：
 
-### 编译性能影响
+- [JankStats](https://developer.android.com/topic/performance/jankstats)：按 `Window` 提供帧时长、jank 判断和 App UI state；
+- `FrameMetrics` / `FrameMetricsAggregator`：面向 View 窗口的帧阶段数据；
+- Macrobenchmark 与 Perfetto：在可重复场景中分析 UI thread、RenderThread、SurfaceFlinger 和调度；
+- Android vitals：观察用户侧 slow session 与 jank 分布。
 
-插桩对增量编译的影响：
+刷新率可能动态变化，不能固定以 16.6 ms 判断所有设备和场景。字节码插桩在这里更适合给自有的列表绑定、图片解码、状态更新或业务事务加稳定 trace，用时间关系帮助定位慢帧附近执行了什么。
 
-- 单类修改：AGP 8.x 的增量插桩只重新处理变更的 class。单类修改的增量编译增加约 0.5-1s。
-- 全量构建：50000 方法的项目全量插桩约增加 3-8s（取决于机器性能和插桩复杂度）。
-- 多模块项目：插桩作用域影响大。`InstrumentationScope.ALL`（包含依赖库）比 `PROJECT` 慢 2-3 倍。
+`Looper.setMessageLogging()` 是公开 API，但一个 Looper 只有一个当前 `Printer`；后设置者会替换先设置者。它还处于消息分发热路径。若需要使用，应由统一初始化组件协调，并把回调工作限制为轻量记录。为初始化一项监控而修改 `Application.onCreate()` 字节码通常不如显式 App Startup initializer 清晰。
 
-降低 CI 构建时间的建议：
+## Kotlin、协程与 Compose 的特殊形态
 
-- CI 构建用 `InstrumentationScope.PROJECT`，减少不必要的依赖库处理。
-- Debug 变体缩小插桩范围或关闭插桩，Release 变体全量插桩。
-- 把插桩插件拆成多个 `AsmClassVisitorFactory`，让 AGP 并行调度。
+Kotlin 默认参数、inline、suspend、lambda 和 synthetic accessor 会产生与源码不同的方法。协程函数的主要执行逻辑可能位于生成的 `ContinuationImpl.invokeSuspend()`，一次源码调用也可能跨线程恢复多次。仅按源码函数名插入同步 `Trace.beginSection()` 不能表达跨线程生命周期。
 
-## 开源框架的实现思路
+协程需要异步 trace 或支持 context propagation 的 tracing API，并为并发实例分配不会冲突的 cookie/flow 标识。同步 section 只描述当前线程上的一段执行。
 
-| 框架 | 来源 | 字节码修改基础 | AGP 8.x 兼容性 |
-|------|------|--------------|---------------|
-| Matrix Trace Canary | 腾讯 | Transform API（`MatrixTraceTransform`） | 官方未迁移，需 fork 或自迁 |
-| ByteX | 字节跳动 | 自研框架，基于 Transform API | 部分模块已适配 |
-| Lancet | 饿了么 | Transform API + ASM | 需要迁移 |
-| Booster | 滴滴 | Transform API（5.x 版本部分兼容 AGP 8.0-8.2） | AGP 8.3+ 不可用 |
+Compose Compiler 会改变 `@Composable` 函数签名并生成重组相关代码。基于生成参数或内部方法名的 ASM 规则会随 Compose/Kotlin 版本变化。Composition tracing 已有官方 [`androidx.compose.runtime:runtime-tracing`](https://developer.android.com/develop/ui/compose/tooling/tracing)支持；UI 卡顿仍结合 JankStats、Macrobenchmark 与 Perfetto。只有公开工具无法覆盖且受支持版本集合可控时，才考虑对 Compose 产物做专项 visitor。
 
-这些框架的核心设计思路相近：Gradle 插件注册 Transform → Transform 内用 ASM 遍历 class → 按配置注入监控代码。差异在于插件管理、配置灵活性和支持的监控类型。
+## 多模块与依赖范围
 
-自研选型考量：
+Instrumentation 注册在每个 Android 模块的 variant 上。根工程插件可以统一应用配置，但仍需对 application、library、dynamic feature 和 test 模块分别注册适配的 Android Components 扩展。
 
-- 如果只需要方法耗时插桩，直接用 `AsmClassVisitorFactory` + ASM Core API 即可，不需要引入第三方框架。
-- 如果需要复杂的多模块协调和插件管理，参考 ByteX 的插件化设计。
-- 如果监控需求与崩溃/ANR 治理强绑定（如线程归因、FD 监控），参考 Matrix 的采集策略设计，但构建侧需要自行迁移到 Instrumentation API。
+推荐的范围策略是：
 
-## 扩展
+- 自有 library 使用 `PROJECT`，在 AAR 生成前处理该模块 class；
+- application 默认使用 `PROJECT`，避免再次处理已插桩 library；
+- dynamic feature 单独应用同一插件，确保规则版本一致；
+- 只有明确要修改未插桩依赖时，application 才使用 `ALL`，并设置依赖坐标、class 和方法签名白名单；
+- 跨类全局分析使用 Scoped Artifacts 独立 task，接受它比逐 class visitor 更高的构建成本。
 
-### Compose Compiler 插件与性能监控
+插件版本、规则版本、AGP 版本和 ASM API 版本都应写入构建产物或诊断信息。多插件共同处理 class 时，还要用集成测试固定注册顺序和最终结果。
 
-Compose Compiler Plugin 工作在 Kotlin IR 层，比 ASM 更早介入编译流程。理论上可以在 IR 层注入 `@Composable` 函数的重组监控代码。Kotlin 2.x 的 Compose Compiler 已经内置了重组次数统计能力（`com.android.compose.runtime:trace`），在 Debug 模式下自动记录每次 recomposition。
+## 验证一套插桩规则
 
-编译期对 Compose 函数做 ASM 插桩的局限：Compose 编译后的字节码经过 IR 变换，结构已经不是常规的 Java 方法。直接用 ASM 操作 Compose 函数的字节码风险较高。推荐用 Compose Compiler Plugin 的扩展机制而非 ASM 做这方面的监控。
+### class 级测试
 
-[待验证: Kotlin 2.x Compose Compiler 的 IR 变换扩展 API 的稳定性]
+给 visitor 准备包含正常返回、多个 return、显式 throw、被调用方法抛异常、try/catch/finally、synchronized、宽类型返回值和大方法的 fixture。验证项包括：
 
-### 端侧动态插桩
+- `CheckClassAdapter` 不报告 verifier 问题；
+- class 可由隔离 ClassLoader 加载和执行；
+- 正常与异常路径的 begin/end 数量相等；
+- 原返回值、异常类型、异常 cause 和 suppressed 信息不变；
+- 已插桩输入再次经过插件时不会重复注入。
 
-热修复框架（Tinker、Robust）通过运行时替换类加载器或方法入口来实现代码更新。同样的思路理论上可以用于运行时动态注入性能监控代码。
+`ClassWriter.COMPUTE_FRAMES` 能修正 frame，不能证明业务语义没有改变。测试仍需执行变换后的 class。
 
-生产环境不推荐运行时动态插桩，原因：
+### Android 构建集成测试
 
-- ART 的 JIT/AOT 编译假设类定义在加载后不变。运行时修改已被编译的方法会触发去优化，性能下降。
-- Java Agent / Instrumentation API 在 Android 上受限。`retransformClasses()` 需要特殊权限，非 root 设备不可用。
-- 安全检测（SafetyNet / Play Integrity）可能将运行时代码修改判定为篡改。
+用 Gradle TestKit 或样例工程覆盖 clean、incremental、configuration cache、build cache、不同 variant、多模块和 dependency scope。随后构建 minified release，让 D8/R8、desugar 与 dex verifier 参与验证。
 
-编译期插桩是 Android 平台上成本效益最高的方案。运行时 Hook（如 epic、SandHook）针对的是系统类或第三方库的修改需求，与编译期 ASM 插桩解决的是不同层面的问题。
+产物检查至少包含：
 
-### Privacy Sandbox 与字节码插桩
+- APK/AAB 与各 dex 的大小变化；
+- mapping、seeds/usage 和插桩 ID 映射是否随构建归档；
+- 目标调用是否存在，排除类是否未被修改；
+- Debug 与 Release 的启用规则是否符合配置；
+- 依赖升级或 AGP 升级后 owner/descriptor 是否仍匹配。
 
-Privacy Sandbox 的 SDK Runtime 模式将第三方 SDK 隔离在独立进程中运行。SDK 的代码在独立沙箱里执行，App 进程的字节码插桩（通过 AGP 构建管线）覆盖不到 SDK Runtime 内部。
+### 设备与性能验证
 
-替代方案：
+在 Android 8 到 Android 17 的代表设备或模拟器上运行关键场景，采集 Perfetto 并检查 section 嵌套、线程、异常退出和 R8 后名称。构建时间、启动、帧、CPU、分配、包体积和上报量使用同一工程的启用/禁用 A/B 结果评估。
 
-- Privacy Sandbox 提供的 Attribution Reporting API 和 Topics API 用于广告相关数据采集。
-- 如果需要对 SDK 做性能监控，依赖 SDK 自身的监控能力（SDK 在自身代码中集成 trace），而不是 App 层的字节码插桩。
-- AGP 的 `InstrumentationScope.ALL` 可以在编译期处理依赖库的 class 文件，但 SDK Runtime 的隔离使得运行时数据无法直接采集。
+门禁阈值来自该工程的基线分布，不使用文章中的固定百分比。样本还要记录设备、系统、编译模式、温度、场景和 trace 是否启用，否则不同实验不能直接比较。
 
-[适用版本: Privacy Sandbox 相关限制适用于 Android 13 (API 33) 及以上]
+## 运行时桥接的安全要求
+
+插桩代码只负责调用一个窄接口，复杂策略留在版本化桥接层。桥接层应满足：
+
+- 可快速关闭，失败时不阻塞业务；
+- 不在主线程执行文件或网络 I/O；
+- 不记录密钥、token、正文、完整 URL 或用户输入；
+- 有递归保护，监控 SDK 自身不再触发同类监控；
+- 处理采样、缓冲上限、背压和进程退出；
+- 事件包含 schema、插件、规则、App 和 Android 版本；
+- 监控异常独立计数，不用吞掉业务异常来维持上报。
+
+Android trace 通常用于短时诊断，不应把每个方法的原始事件长期上传。线上需要聚合时，优先保存场景级耗时、计数、分位数和低基数状态；罕见问题再通过 Android 17 的受控 profiling 能力获取更完整证据。
+
+## Android 17 验收清单
+
+- 构建插件使用 `variant.instrumentation`，没有引用已移除的 Transform API。
+- factory 无共享可变状态，所有配置都声明为 Gradle 输入。
+- 默认 scope 为自有 class；处理第三方依赖时有坐标和签名白名单。
+- visitor 覆盖隐式异常退出，且 begin/end 在同一线程正确嵌套。
+- 新增控制流后选择合适的 frame computation mode。
+- trace tag 不超过公开 API 限制，不包含用户或业务敏感数据。
+- 过滤抽象、native、生成类、监控 SDK 自身和不适合处理的热方法。
+- 网络监控优先使用客户端公开扩展点，不修改 framework 或依赖私有字段。
+- 帧监控使用 JankStats、FrameMetrics、Macrobenchmark 与 Perfetto，不注入 `Choreographer` 或 `ActivityThread`。
+- Kotlin 协程与 Compose 使用符合其执行模型的 tracing 方案。
+- class fixture、Gradle 集成、minified release 和 Android 设备测试均通过。
+- 成本门禁基于当前工程实测，保留可关闭开关和规则版本。
+
+编译期字节码插桩的优势是可重复、可审计和可在发布前验证。把变换范围、控制流正确性、R8 后产物、运行时成本与数据隐私同时纳入设计，监控自动化才不会成为新的稳定性来源。
