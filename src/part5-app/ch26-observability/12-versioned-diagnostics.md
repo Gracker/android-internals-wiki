@@ -81,572 +81,308 @@ last_task9_review_log: "logs/deep-review/2026-06-28-22-deep-review.md"
 
 <!-- outline-end -->
 
-不同 Android 版本能为线上问题提供不同类型的系统证据。这个版本的差异直接影响 App 的线上排障能力——Android 10 的用户和 Android 17 的用户遇到同一个 ANR，能拿到的系统证据完全不同。本节不重复排障流程（详见 26.5），也不展开 ProfilingManager 工具细节（详见 14.7 和 8.10）——只聚焦一个问题：线上问题落在不同系统版本时，App 能从系统拿到哪类证据、证据该怎么归档、哪些情况必须降级。
+同一个故障发生在 Android 10 和 Android 17 上，可取得的系统证据并不相同。诊断系统需要先判断设备版本和能力，再决定采集入口。版本号只能说明 API 的上限，不能保证系统一定生成了某份附件。
 
-**两类系统证据的互补关系**：`ApplicationExitInfo` 负责"进程为什么死了"，给出死因、时间戳、内存快照和 trace 附件；`ProfilingManager` / `ProfilingTrigger` 负责"进程活着时发生了什么"，给出 system trace、heap dump、stack sample 和 call stack。去重和互补的规则：
+本文以 `android-17.0.0_r1` 为平台源码锚点。涉及旧版本时保留其公开 API 边界；涉及 Android 17 新行为时，以正式开发者文档和该标签下的源码为准。
 
-- **同一 case 内两类证据并存时**：优先以 `ProfilingManager` 的 system trace / heap dump 作为主证据（提供运行时上下文），`ApplicationExitInfo` 的 reason/timestamp/trace 作为辅证据（确认退出原因和终点状态）。
-- **只有 ApplicationExitInfo 没有 ProfilingManager 时**：ANR → 用 `getTraceInputStream()` 的 ANR trace 补文本证据；native crash → 用 tombstone protobuf 与 SDK minidump 交叉验证；OOM → 结合自有内存采样回溯。
-- **只有 ProfilingManager 没有退出记录时**：卡顿/慢启动/内存异常在灰度复现阶段触发，按采集产物独立归档，不等待退出。
-- **去重键**：`pid + timestamp + processName + reason` 作为退出记录去重键，`sessionId + profilingType + triggerType` 作为 profiling 结果去重键。同一 pid 在相近时间窗口内出现多种证据时，按 caseId 合并。
+## 三条诊断路径分别回答什么
 
-本节按 Android 10-17 的公开 API 和 AOSP 路径重新整理线上诊断材料，不直接复用外部原文。
+Android 10 到 Android 17 的公开诊断能力可以分成三条路径。
 
-## 三条诊断路径：退出追溯、运行时采集、事件触发
-
-Android 10 之后，线上诊断能力不是一次性开放出来的，而是沿着三条路径分批进入公开 API。
-
-| 路径 | 解决的问题 | 起始版本 | 主要入口 | 结果形态 |
+| 路径 | 要回答的问题 | 起始版本 | 公开入口 | 典型结果 |
 |---|---|---:|---|---|
-| 退出追溯 | 进程已经死了，下次启动能不能知道死因 | Android 11 / API 30 | `ActivityManager#getHistoricalProcessExitReasons()`、`ApplicationExitInfo` | reason、timestamp、进程名、ANR trace、native tombstone |
-| 应用驱动采集 | 问题正在复现，App 能不能主动发起一次 profiling | Android 15 / API 35 | `ProfilingManager#requestProfiling()` / AndroidX Profiling | `.perfetto-trace`、`.hprof`、heap profile、stack sampling |
-| 事件触发采集 | 问题发生时没人开工具，系统能不能按事件自动保存现场 | Android 16 / API 36 起 | `ProfilingManager#addProfilingTriggers()`、`ProfilingTrigger` | system trace snapshot、Java heap dump、stack sample 等 |
+| 退出追溯 | 进程为何退出 | Android 11 / API 30 | `ActivityManager#getHistoricalProcessExitReasons()` | reason、status、退出时间、最近一次 PSS/RSS、可选 trace |
+| 应用请求采集 | App 已知问题正在复现，能否请求一次 profile | Android 15 / API 35 | `ProfilingManager#requestProfiling()`，或 AndroidX Profiling | system trace、Java heap dump、heap profile、stack sampling |
+| 系统事件触发采集 | 系统识别到特定事件时，能否保存事件前后的 profile | Android 16 / API 36 | `addProfilingTriggers()`、全局结果监听器 | 后台 trace 快照、Java heap dump、stack sample 等 |
 
-这三条路径不能混用。Crash / ANR 事后补证据走 `ApplicationExitInfo`；卡顿、启动慢、内存异常正在灰度复现时走 `ProfilingManager`；冷启动、ANR、OOM 这类系统能识别的事件再注册 `ProfilingTrigger`。完整 Trace 抓取细节详见 13.2，ProfilingManager 的 builder 和结果分发表详见 14.7，系统触发式 profiling 的 trigger 语义详见 8.10。
+退出追溯记录的是进程终点。它适合确认 ANR、native crash、用户操作或系统资源处置，但通常缺少故障发生前的完整运行时序。应用请求采集针对可控复现窗口。系统事件触发采集依赖系统后台采样和限流，适合捕获难以预测的事件。
 
-**诊断路径选择决策**：线上排障时按以下顺序判断该走哪条路径，不是三条平行选一——后一条路径往往是前一条的补充，同一次 case 可能同时用到多条。
+一次问题可以关联多条路径。例如，ANR 发生时系统可能生成触发式 system trace；进程随后被杀，下次启动又能读到 `ApplicationExitInfo`。两者应作为独立来源归档，再通过时间、进程和事件语义建立关联，不能因为时间相近就覆盖其中一份。
 
-```mermaid
-flowchart TD
- A[线上问题发生] --> B{进程是否已退出?}
- B -->|是| C[退出追溯路径]
- B -->|否，正在复现| D[运行时采集路径]
- C --> C1{Android ≥ 11?}
- C1 -->|是| C2[ActivityManager#getHistoricalProcessExitReasons]
- C1 -->|否| C3[降级：自有日志 + Perfetto + Crash SDK]
- C2 --> C4{Reason 类型?}
- C4 -->|ANR| C5[traceInputStream → ANR trace]
- C4 -->|Native Crash| C6[tombstone protobuf + SDK minidump 交叉验证]
- C4 -->|OOM / Low Memory| C7[PSS/RSS + 自有内存采样回溯]
- D --> D1{Android ≥ 15?}
- D1 -->|是| D2{是否已知触发条件?}
- D1 -->|否| D3[降级：自有监控 + Perfetto bug report]
- D2 -->|系统事件触发| D4{Android ≥ 16?}
- D2 -->|App 主动触发| D5[ProfilingManager#requestProfiling]
- D4 -->|是| D6[addProfilingTriggers 注册 event-triggered profiling]
- D4 -->|否| D5
- D6 --> D7{API 37 trigger 可用?}
- D7 -->|COLD_START| D8[system trace + call stack]
- D7 -->|OOM| D9[Java heap dump]
- D7 -->|ANOMALY| D10[产物不固定，看 tag 分发]
- D7 -->|API 36 ANR/APP_FULLY_DRAWN| D11[running trace snapshot]
-```
+## 版本能力表
 
-关键决策点：
-- **退出追溯和运行时采集可以共存**：进程被杀后下次启动，先拿 `ApplicationExitInfo` 确认死因，再按复现路径触发 `ProfilingManager` 或 `ProfilingTrigger` 补运行时证据。
-- **事件触发是运行时采集的子集**：`ProfilingTrigger` 需要 Android 16+ 且设备支持，Android 15 只能走 App 主动请求路径。
-- **降级路径不可跳过**：Android 10-14 没有 ProfilingManager 和 ProfilingTrigger，所有线上诊断必须靠自有证据体系 + `ApplicationExitInfo`（11+）。
-- **同一 case 内可用多条路径**：例如冷启动慢 → 先拿 `ApplicationExitInfo` 确认非系统杀 → 注册 `TRIGGER_TYPE_COLD_START` → 灰度复现时 `requestProfiling(SYSTEM_TRACE)`。
+| 系统版本 | 可用的主要能力 | 仍需保留的降级手段 |
+|---|---|---|
+| Android 10 / API 29 | App 自有日志、Crash SDK；开发或用户协助场景下使用 Perfetto、bug report | 业务状态快照、请求 ID、会话 ID、复现步骤 |
+| Android 11 / API 30 | 增加 `ApplicationExitInfo`；ANR 记录可能带 trace | Crash SDK、卡顿监控、人工 Perfetto |
+| Android 12-14 / API 31-34 | native crash 记录可带 tombstone protobuf；API 33/34 又增加部分 reason | 同上，并持续处理 trace 缺失 |
+| Android 15 / API 35 | 增加 `ProfilingManager#requestProfiling()` | 低版本采集方案仍需保留 |
+| Android 16 / API 36 | 增加 `APP_FULLY_DRAWN`、`ANR` 两类系统 trigger | 系统后台 trace 没运行或限流时仍会没有产物 |
+| Android 16 minor release / API 36.1 | 增加主动请求后台 trace 快照及三类用户终止 trigger | 运行时按完整 SDK 版本检查 |
+| Android 17 / API 37 | 增加 cold start、OOM、anomaly、CPU kill、app compat trigger；部分设备启用 MemoryLimiter | 设备覆盖、系统限流和无产物路径都要监控 |
 
-[已验证: refs/tags/android-17.0.0_r1, frameworks/base/core/java/android/app/ActivityManager.java]
-[已验证: refs/tags/android-17.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
-[已验证: refs/tags/android-17.0.0_r1, packages/modules/Profiling/framework/java/android/os/ProfilingManager.java]
+API 36.1 是 Android 16 的 minor SDK release。它不是 `SdkExtensions.getExtensionVersion()` 所表示的 Mainline SDK Extension。调用 36.1 新 API 前，应检查 `Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1`；只看 `SDK_INT >= 36` 无法区分 36.0 和 36.1。Android 17 的 `SDK_INT_FULL` 高于该值，因此也满足条件。
 
-## Android 10-14：以退出补偿和人工取证为主
+## Android 10-14：退出记录之前和之后
 
-Android 10 / API 29 没有 `ApplicationExitInfo`。线上排障仍然依赖 App 自有日志、Crash SDK、Perfetto / bug report、用户反馈和灰度复现。这个阶段最稳定的做法，是把日志、关键业务状态、请求 ID、会话 ID、设备信息、版本信息提前放进证据包。26.5 已经覆盖远程日志、用户反馈和 bug report，本节不重复展开。
+Android 10 没有 `ApplicationExitInfo`。线上进程退出只能依赖 App 在进程存活时写下的证据、Crash SDK，以及用户允许或测试设备上的 bug report、Perfetto。低内存杀进程通常没有 Java 异常回调，所以业务阶段、前后台状态、关键资源计数应在运行时定期写入小型状态记录，不能等到退出时再补。
 
-Android 11 / API 30 开始，App 能通过 `ActivityManager#getHistoricalProcessExitReasons(packageName, pid, maxNum)` 读取最近的进程退出记录。AOSP `ActivityManager.java` 明确返回 `ApplicationExitInfo` 列表，并按从近到远排序。它不是 Crash SDK 的替代品，而是下次启动时的系统补偿入口：SDK 没来得及写完、ANR 当时没有 App 回调、低内存杀进程没有 Java 异常时，这条记录能提供基础死因。
+Android 11 引入 `ActivityManager#getHistoricalProcessExitReasons(packageName, pid, maxNum)`。系统按时间从近到远返回历史退出记录。它是系统保存的事后记录，不等同于 Crash SDK 的崩溃样本，也不承诺每次退出都有 trace。
 
-`ApplicationExitInfo` 的公共字段要按“可归档”和“只辅助阅读”分开处理。`getPid()`、`getProcessName()`、`getReason()`、`getStatus()`、`getTimestamp()`、`getPss()`、`getRss()`、`getProcessStateSummary()` 适合落库；`getDescription()` 只适合人工排查，AOSP 注释说明它是 human-readable 字符串，系统不保证跨设备、跨版本格式稳定。[已验证: refs/tags/android-17.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
+Android 12 / API 31 扩展了 native crash 附件：`REASON_CRASH_NATIVE` 的 `getTraceInputStream()` 可以返回 tombstone protobuf。Android 13 / API 33 增加 `REASON_FREEZER`；Android 14 / API 34 增加 `REASON_PACKAGE_STATE_CHANGE` 和 `REASON_PACKAGE_UPDATED`。读取记录时按运行系统的 API 能力解释 reason，不要让旧客户端引用尚未存在的常量。
 
-这段代码只演示下次启动扫描退出记录的最小路径。重点是把 `reason` 和 `traceInputStream` 分开处理，不能因为有退出记录就假设有 trace 文件。
+## ApplicationExitInfo 能证明什么
+
+`ApplicationExitInfo` 的稳定核心是系统记录的退出事实：
+
+- `getTimestamp()` 是进程死亡的 wall-clock 时间，单位为毫秒。
+- `getPid()`、`getProcessName()`、`getPackageUid()`、`getRealUid()` 用来识别进程身份；隔离进程的 package UID 和 real UID 可能不同。
+- `getReason()` 给出公开的退出原因大类，`getStatus()` 保存退出码或 signal 等补充值。
+- `getPss()` 和 `getRss()` 是系统最近一次采样值，单位为 kB。它们不是死亡瞬间的内存快照；系统来不及采样时可能为 0。
+- `getProcessStateSummary()` 是 App 先前通过 `ActivityManager#setProcessStateSummary()` 写入的有限状态数据，可能为 `null`。
+- `getDescription()` 面向人工阅读，通常不应作为稳定协议解析。Android 17 MemoryLimiter 的官方标记是一个有文档保证的例外，后文单独说明。
+
+公开 SDK 没有 `getSubReason()`。AOSP 内部确有更细的 sub-reason，statsd 也可使用内部字段，但普通应用不能把它写进依赖公开 API 的数据模型。旧资料中出现的 `REASON_APPLICATION_SPECIFIC_ERROR` 也不在 `android-17.0.0_r1` 的公开 reason 列表中，本章不使用它。
+
+### 安全读取退出记录
+
+下面的示例只读取公开字段，并把最大记录数交给产品配置。代码不会假设 PSS/RSS 非零，也不会把 description 当成通用枚举。
 
 ```kotlin
-if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
- val activityManager = context.getSystemService(ActivityManager::class.java)
- val exits = activityManager.getHistoricalProcessExitReasons(
- context.packageName,
- 0,
- 32,
- )
+data class ExitEvidence(
+    val packageUid: Int,
+    val realUid: Int,
+    val pid: Int,
+    val processName: String,
+    val timestampMs: Long,
+    val reason: Int,
+    val status: Int,
+    val pssKb: Long?,
+    val rssKb: Long?,
+    val description: String?,
+)
 
- exits.forEach { info ->
- val key = ExitKey(
- pid = info.pid,
- processName = info.processName,
- timestamp = info.timestamp,
- reason = info.reason,
- )
- archiveExitReason(key, info.status, info.pss, info.rss)
+fun readRecentExits(
+    context: Context,
+    maxRecords: Int,
+): List<ExitEvidence> {
+    require(maxRecords > 0)
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return emptyList()
 
- if (info.reason == ApplicationExitInfo.REASON_ANR ||
- info.reason == ApplicationExitInfo.REASON_CRASH_NATIVE) {
- info.traceInputStream?.use { stream ->
- archiveExitTrace(key, stream)
- }
- }
- }
+    val activityManager = context.getSystemService(ActivityManager::class.java)
+    return activityManager.getHistoricalProcessExitReasons(
+        context.packageName,
+        0,
+        maxRecords,
+    ).map { info ->
+        ExitEvidence(
+            packageUid = info.packageUid,
+            realUid = info.realUid,
+            pid = info.pid,
+            processName = info.processName,
+            timestampMs = info.timestamp,
+            reason = info.reason,
+            status = info.status,
+            pssKb = info.pss.takeIf { it > 0L },
+            rssKb = info.rss.takeIf { it > 0L },
+            description = info.description,
+        )
+    }
 }
 ```
 
-`getTraceInputStream()` 的返回值要按 `null` 处理。AOSP 注释写明：它通常在 `REASON_ANR` 可用；API 31 起，`REASON_CRASH_NATIVE` 可返回 native tombstone protobuf；native crash trace 放在全局环形缓冲里，可能被新 crash 覆盖，所以仍然会返回 `null`。ANR trace 路径返回的是 gzip stream，native tombstone 路径返回的是 tombstone protobuf stream。两种结果不能按同一种文本格式解析。[已验证: refs/tags/android-17.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
+这段映射把 0 内存样本转成缺失值，避免服务端把“尚未采样”解释成“占用为零”。归档端还应补充包名、应用版本、设备型号、系统 build、API level、读取时间和客户端生成的 `caseId`。
 
-`REASON_APPLICATION_SPECIFIC_ERROR` 需要单独标注。`refs/tags/android-17.0.0_r1` 的 `ApplicationExitInfo` 公共 reason 列表没有这个常量；公开列表包含 `REASON_CRASH`、`REASON_CRASH_NATIVE`、`REASON_ANR`、`REASON_EXCESSIVE_RESOURCE_USAGE`、`REASON_USER_REQUESTED`、`REASON_PACKAGE_UPDATED` 等。既有调研材料中出现的 `REASON_APPLICATION_SPECIFIC_ERROR` 未能在本轮 AOSP 17 复核中确认，正文不把它当作可用 API。[待验证: 既有研究素材提到 REASON_APPLICATION_SPECIFIC_ERROR，但 android-17.0.0_r1 未命中该常量，后续如正式 SDK 文档新增再补]
+### traceInputStream 的类型和空值
 
-## ApplicationExitInfo 证据边界
+`getTraceInputStream()` 从 API 30 起存在，但它的内容随 reason 和系统版本变化：
 
-`ApplicationExitInfo` 适合做“退出原因补偿”，不适合做“完整现场还原”。退出记录的时间戳来自系统记录，PSS / RSS 是系统最近一次采样值，不等于死亡前一刻的精确内存。低内存杀进程也不是所有设备都能稳定报 `REASON_LOW_MEMORY`；AOSP 注释说明，不支持 low memory kill report 的设备可能以 `REASON_SIGNALED` + `SIGKILL` 呈现，需要通过 `ActivityManager.isLowMemoryKillReportSupported()` 判断能力。[已验证: refs/tags/android-17.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
+| 条件 | 可能返回的内容 | 处理要求 |
+|---|---|---|
+| 与 ANR 关联的记录，API 30+ | 系统在进程死亡前保存的 ANR trace | 通常对应 `REASON_ANR`；已恢复的 ANR 也可能把 trace 附在后来因其他原因退出的记录上 |
+| `REASON_CRASH_NATIVE`，API 31+ | 符合 AOSP tombstone schema 的 protobuf | 保存原始字节并使用对应 protobuf schema 解析 |
+| 其他 reason，或附件已丢失 | `null` | 正常降级，不能判成采集代码故障 |
 
-线上处理时，把 reason 分成五组更稳：
+trace 保存在独立的全局循环缓冲中，新事件可能覆盖旧附件，其中也包括其他应用产生的 native crash。因此，即使 reason 满足条件，返回值仍可能为 `null`。ANR trace 和 tombstone protobuf 不是同一种格式，文件扩展名、解析器和服务端内容类型都要分开。
 
-| reason 组 | 典型值 | 可自动归因吗 | 处理方式 |
+Native crash 的系统 tombstone 与 Crashpad/Breakpad minidump 也不等价。SDK minidump 由自有崩溃处理流程写入，系统 tombstone 由平台生成。两份证据可以用 signal、进程、线程、时间和 build ID 交叉校验；任一份缺失都不应删除另一份。
+
+### 低内存原因需要能力探测
+
+并非所有设备都支持上报 `REASON_LOW_MEMORY`。在不支持该能力的设备上，内存压力导致的 kill 可能表现为 `REASON_SIGNALED`，且 `status` 为 `SIGKILL`。应用应调用 `ActivityManager.isLowMemoryKillReportSupported()` 记录设备能力。
+
+即便设备不支持 low-memory kill report，也不能把每个 `SIGKILL` 都归因为低内存。`SIGKILL` 只说明终止信号；用户操作、系统策略和其他管理动作也可能产生相似结果。可靠归因还需要系统能力标记、前后台状态、内存趋势和同一时间段的设备压力证据。
+
+### Android 17 MemoryLimiter
+
+Android 17 在一部分设备上实施基于设备总内存的应用内存限制。该行为位于“影响所有应用”的变更列表中，不受 `targetSdkVersion` 限制。官方文档没有给出可供应用依赖的固定 RAM 门槛，因此线上逻辑不应按设备是否为 6GB 或某个具体机型预判。
+
+受 MemoryLimiter 影响的进程退出有明确的公开识别方式：
+
+- `ApplicationExitInfo#getReason()` 返回 `REASON_OTHER`。
+- `getDescription()` 包含精确字符串 `"MemoryLimiter:AnonSwap"`，后面还可能有其他信息。
+- 注册 `TRIGGER_TYPE_ANOMALY` 后，系统可以在命中内存限制时提供 Java heap dump，但仍受设备覆盖、后台采样和限流约束。
+
+这里可以对精确标记做包含判断，因为 Android 17 行为变更文档给出了该协议。不要把它缩写为匹配 `"MemoryLimiter"`，也不要把所有 `REASON_OTHER` 都归到内存限制。MemoryLimiter kill 与 Java `OutOfMemoryError` 是不同事件：前者走 anomaly trigger，后者才对应 `TRIGGER_TYPE_OOM`。
+
+## Android 15：应用请求 profiling
+
+Android 15 / API 35 引入公开的 `ProfilingManager`。实现位于 Mainline Profiling 模块 `packages/modules/Profiling`，Android 17 的直接 API 签名为：
+
+`requestProfiling(int profilingType, Bundle parameters, String tag, CancellationSignal cancellationSignal, Executor executor, Consumer<ProfilingResult> listener)`
+
+应用也可以使用 AndroidX Profiling 提供的 request builder，减少参数 Bundle 与平台版本差异带来的维护成本。平台支持四种请求类型：
+
+| profiling type | 适用问题 | 主要成本或限制 |
+|---|---|---|
+| Java heap dump | Java 堆泄漏、堆占用构成 | 可能暂停应用；文件可能含对象字段和业务数据 |
+| heap profile | 分配热点和一段时间内的堆增长 | 采样结果有偏差；窗口要覆盖问题发生阶段 |
+| stack sampling | CPU 热点的低频观察 | 短函数和瞬态热点可能未被采到 |
+| system trace | 启动、卡顿、调度、Binder 与系统交互 | 缓冲区和时长影响文件大小与覆盖范围 |
+
+请求是异步的，也不是必定执行。系统和进程级 rate limiter、已有任务、执行或后处理错误、磁盘不足、非法参数都可能使请求失败；系统也可能延后开始。应用要归档 `ProfilingResult#getErrorCode()` 和可选的 `getErrorMessage()`，并把“请求已发出”和“结果已生成”作为两个状态。
+
+结果回调有两个入口：
+
+- 请求专用的 `Executor` 与 `Consumer<ProfilingResult>`，用于当前 `requestProfiling()`。
+- `registerForAllProfilingResults()` 注册的全局监听器，接收应用请求结果，也接收系统 trigger 结果。
+
+如果请求没有提供专用 listener/executor，且进程也没有全局监听器，调用方收不到结果通知。系统触发的结果没有请求现场的 callback，只能经全局监听器交付；应用在下次启动后重新注册时，也可能收到此前生成的结果。
+
+成功文件的位置必须读取 `ProfilingResult#getResultFilePath()`。目录结构和文件命名属于实现细节，不能在上传器里拼 `/data/user/0/<package>/files/profiling/...`。`ProfilingResult` 可直接读取 error code、error message、结果路径、tag 和 trigger type；它没有 `getProfilingType()`。主动请求时，应用要把请求类型和自有 request ID 一起保存。系统触发时，应根据 trigger type、tag 和收到的文件类型归档，不要虚构 profiling type 字段。
+
+## Android 16-17：系统事件触发 profiling
+
+trigger 注册表达的是“应用对某类系统事件感兴趣”。它不保证系统持续录制，也不保证每次事件都有附件。系统通常以采样方式运行后台 trace；事件发生时若有可用历史缓冲、应用已注册且限流允许，才会保存结果。
+
+### API 36
+
+| trigger | 触发条件 | 系统结果 | 解释边界 |
 |---|---|---|---|
-| App 自身崩溃 | `REASON_CRASH`、`REASON_CRASH_NATIVE` | Java crash 可与 SDK 样本去重；native crash 需看 tombstone / minidump | 与 26.2 Crash 上报样本合并 |
-| 无响应 | `REASON_ANR` | 只能证明系统记录到 ANR；主因仍要看 trace / 日志 | 与 19.24 的 ANR 捕获机制、26.5 证据包关联 |
-| 系统资源处置 | `REASON_LOW_MEMORY`、`REASON_EXCESSIVE_RESOURCE_USAGE` | 只能说明处置类型，不能直接定位业务代码 | 回连内存、CPU、后台任务监控 |
-| 用户或包状态变化 | `REASON_USER_REQUESTED`、`REASON_PACKAGE_STATE_CHANGE`、`REASON_PACKAGE_UPDATED` | 不应按 crash 计算 | 进入非异常退出分组 |
-| 其他系统原因 | `REASON_OTHER`、`REASON_DEPENDENCY_DIED`、`REASON_FREEZER` | 需要人工复核描述和版本分布 | 只做辅助归因 |
+| `TRIGGER_TYPE_APP_FULLY_DRAWN` | 冷启动后调用 `Activity.reportFullyDrawn()` | 正在运行的 system trace 快照 | 依赖应用正确调用 `reportFullyDrawn()` |
+| `TRIGGER_TYPE_ANR` | 系统已识别 ANR，准备执行后续处置前 | 正在运行的 system trace 快照 | 触发不表示进程一定因 ANR 被杀 |
 
-Native crash 有两份证据来源：SDK 自有 minidump，以及 Android 12+ `ApplicationExitInfo#getTraceInputStream()` 暴露的 tombstone protobuf。Crashpad / Breakpad 的价值在于崩溃当下由 SDK 控制写入；系统 tombstone 的价值在于系统侧也保存了 native crash 证据。两者要合并，不要互相替代。Native signal handler、out-of-process handler、minidump 写入边界详见 20.3 和 19.24。[已验证: 官方文档, developer.android.com/ndk/guides/debug][已验证: refs/tags/android-17.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
+这两类结果都依赖系统当时存在可保存的后台 trace。ANR 的 `ApplicationExitInfo` trace 与这里的 Perfetto system trace 是两份不同证据，不能使用同一个解析器。
 
-**版本边界补充**：`REASON_FREEZER` 在 API 33（Android 13）引入，App Freezer 杀进程时返回；`REASON_PACKAGE_STATE_CHANGE` 和 `REASON_PACKAGE_UPDATED` 在 API 34（Android 14）引入。按 `Build.VERSION.SDK_INT` 判断常量可用性，低于对应 API level 的设备上不会返回这些 reason。
+### API 36.1
 
-**Android 17 MemoryLimiter**：Android 17（API 37）对高 RAM 设备（总 RAM ≥ 6GB）引入保守的应用内存限制。行为按 targetSdk 分两档：
-
-| targetSdk | 行为 | 表现 |
+| trigger | 触发条件 | 系统结果 |
 |---|---|---|
-| ≥ 36 | 受 MemoryLimiter 限制 | `ApplicationExitInfo.getReason()` 返回 `REASON_OTHER`，`getDescription()` 包含 "MemoryLimiter"；进程退出前无 OOM 异常，`TRIGGER_TYPE_OOM` 不会触发 |
-| < 36 | 不受 MemoryLimiter 限制 | 沿用 Android 16 的 `REASON_EXCESSIVE_RESOURCE_USAGE` 路径，按资源用量阈值触发 |
+| `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` | 先注册该 trigger，再调用 `requestRunningSystemTrace(tag)` | 正在运行的 system trace 快照 |
+| `TRIGGER_TYPE_KILL_FORCE_STOP` | 用户在应用信息页点“强行停止” | 正在运行的 system trace 快照 |
+| `TRIGGER_TYPE_KILL_RECENTS` | 用户从最近任务界面移除应用并导致终止 | 正在运行的 system trace 快照 |
+| `TRIGGER_TYPE_KILL_TASK_MANAGER` | 用户在 Task Manager 中停止应用 | 正在运行的 system trace 快照 |
 
-关键差异：targetSdk ≥ 36 的应用在高 RAM 设备上，MemoryLimiter 杀灭时没有 OOM 异常，也没有 `REASON_LOW_MEMORY`，只能通过退出记录 `getDescription()` 字符串匹配 "MemoryLimiter" 归因。与 `REASON_EXCESSIVE_RESOURCE_USAGE` 的区别：后者基于资源用量阈值，MemoryLimiter 基于设备 RAM 总量的应用上限（限制值更低、触发更早）。
+这些常量和方法在 API 36.1 才加入。接入代码要以 `SDK_INT_FULL` 对比 `VERSION_CODES_FULL.BAKLAVA_1`，并让 Android Lint 检查 minor SDK API。`SDK_INT == 36` 不能证明设备已经具备 36.1。
 
-线上处理要点：不要依赖 `OutOfMemoryError` 捕获或 `onTrimMemory(TRIM_MEMORY_COMPLETE)` 来识别 MemoryLimiter 杀灭——这两个回调在 MemoryLimiter 路径下不会触发。必须在下一次启动时扫描 `ApplicationExitInfo`，通过 `getDescription()` 包含 "MemoryLimiter" 来判定。
+### API 37
 
-示例设备：Pixel 6a (6GB RAM) 在 Android 17 Beta 4 下触发 MemoryLimiter 限制。
-
-## Android 15：ProfilingManager 的应用驱动采集
-
-Android 15 / API 35 的 `ProfilingManager` 解决“线上少量用户正在复现，App 能不能请求系统保存一份 profile”的问题。AOSP `ProfilingManager.java` 注释列出四类 profiling：system trace、Java heap dump、heap profile、stack sampling。公开 API 路径在 Mainline Profiling 模块 `packages/modules/Profiling/framework/java/android/os/`，不是旧的 `frameworks/base/core/java/android/os/` 路径。[已验证: refs/tags/android-17.0.0_r1, packages/modules/Profiling/framework/java/android/os/ProfilingManager.java]
-
-| profiling type | 适合场景 | 主要风险 | 结果处理 |
-|---|---|---|---|
-| `PROFILING_TYPE_SYSTEM_TRACE` | 慢启动、转场卡顿、ANR 前后线程时序 | 文件大，缓冲区会覆盖或丢弃 | 归档 `.perfetto-trace`，用 Perfetto UI / SQL 分析 |
-| `PROFILING_TYPE_JAVA_HEAP_DUMP` | 泄漏、Java 堆顶满、OOM 复盘 | 采集期间暂停和内存抖动明显 | 归档 `.hprof`，进入 heap dump 工具链 |
-| `PROFILING_TYPE_HEAP_PROFILE` | 分配增长、内存抖动来源 | 采样有偏差，时间窗口要提前覆盖 | 归档 heap profile trace |
-| `PROFILING_TYPE_STACK_SAMPLING` | CPU 消耗热点、较长窗口低成本观察 | 采样不保证覆盖短函数 | 归档 stack sample trace |
-
-`requestProfiling()` 的结果通过 `ProfilingResult` 回调返回。成功时读取 `getResultFilePath()`，失败时读取 `getErrorCode()` 和 `getErrorMessage()`。AOSP `ProfilingResult` 把失败分成 system rate limit、process rate limit、profiling already in progress、执行失败、post-processing 失败、磁盘不足、请求非法等。线上系统不能只记录“采集失败”，要把这些错误码落库，否则值班同学无法判断是系统保护、并发采集、磁盘空间还是参数错误。[已验证: refs/tags/android-17.0.0_r1, packages/modules/Profiling/framework/java/android/os/ProfilingResult.java]
-
-官方文档说明，ProfilingManager 存在 rate limiter，用来降低重复 profiling 对设备性能的影响；调试时可以用 `device_config put profiling_testing rate_limiter.disabled true` 关闭 App 进程级和系统级 rate limiter。线上版本不能依赖调试开关，必须有自己的远程开关、采样比例、单用户频率上限和文件大小上限。[已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/will-my-profile-always-be-collected][已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/debug-mode]
-
-结果文件路径也不要硬编码。官方文档给过类似 `/data/user/0/<app>/files/profiling/profile_<tag>_<datetime>.perfetto-trace` 的示例，同时明确要求用 `ProfilingResult#getResultFilePath()` 找文件，因为目录结构可能变化。归档层只保存返回路径、文件摘要、大小、采集类型、tag、caseId 和上传状态。[已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/retrieve-and-analyze]
-
-## Android 16-17：ProfilingTrigger 的事件触发采集
-
-Android 16 / API 36 把 ProfilingManager 从“App 主动请求”扩展到“系统事件触发”。应用先注册 `ProfilingTrigger`，结果只能通过 `registerForAllProfilingResults()` 的全局 listener 收到；`addProfilingTriggers()` 只是注册条件，不提供 request-scoped callback。14.7 和 8.10 已经展开接入代码，本节只保留排障表。[已验证: refs/tags/android-17.0.0_r1, packages/modules/Profiling/framework/java/android/os/ProfilingManager.java]
-
-| 版本层 | trigger | 返回物 | 使用场景 | 边界 |
-|---|---|---|---|---|
-| API 36 | `TRIGGER_TYPE_APP_FULLY_DRAWN` | running system trace snapshot | 复盘 `reportFullyDrawn()` 前后启动尾段 | 不等于 Android 17 的 `TRIGGER_TYPE_COLD_START` |
-| API 36 | `TRIGGER_TYPE_ANR` | running system trace snapshot | ANR 前后线程、Binder、锁等待 | 不是 ANR 文本 trace 的替代品 |
-| Extension 36.1 | `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`、`TRIGGER_TYPE_KILL_FORCE_STOP`、`TRIGGER_TYPE_KILL_RECENTS`、`TRIGGER_TYPE_KILL_TASK_MANAGER` | running system trace snapshot | App 请求 / 用户关闭 / 任务管理器关闭相关取证 | App 请求入口是 `requestRunningSystemTrace(tag)`，且要先注册对应 trigger |
-| API 37 | `TRIGGER_TYPE_COLD_START` | system trace + call stack sample | 进程冷启动早期到 fully drawn 的窗口 | 常量在 android-17.0.0_r1 可见，受 feature flag 和设备能力控制 |
-| API 37 | `TRIGGER_TYPE_OOM` | Java heap dump | Java `OutOfMemoryError` | 不是 LMK / lmkd 现场；自定义 uncaught handler 必须调用默认 handler |
-| API 37 | `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | running system trace snapshot | 系统因过量 CPU 使用杀进程后复盘 | 对应 `REASON_EXCESSIVE_RESOURCE_USAGE`，公开文档没有给出阈值 |
-| API 37 | `TRIGGER_TYPE_ANOMALY` / `TRIGGER_TYPE_APP_COMPAT` | 依事件类型变化，可能是 heap dump 或 stack sampling | 设备端异常检测、兼容性回退 | 收到结果后先看 tag 和扩展名；常量在源码可见，语义以官方文档和返回 tag 为准 |
-
-Android 17 的 `TRIGGER_TYPE_COLD_START` 和 Android 16 的 `TRIGGER_TYPE_APP_FULLY_DRAWN` 要分开解释。前者在冷启动早期开始，返回 system trace 和 call stack sample；后者是在 `reportFullyDrawn()` 之后给 running trace snapshot。写启动排障时，混用这两个名字会直接改变时间窗口。[已验证: 官方文档, developer.android.com/about/versions/17/features][详见 8.10 节]
-
-`TRIGGER_TYPE_OOM` 处理的是 Java `OutOfMemoryError`，返回 Java heap dump。它不覆盖系统内存压力下的 LMK，也不等同于 `ApplicationExitInfo.REASON_LOW_MEMORY`。OOM 治理策略详见 20.5；这里的重点是把 heap dump 文件归档到同一份 case 里，和异常时间、版本、设备、前后台状态关联。[已验证: 官方文档, developer.android.com/about/versions/17/features]
-
-`ANOMALY` 和 `APP_COMPAT` 的公开信息还在演进。本轮只采用官方 features / release notes 与 8.10 已复核结论：它们的结果产物不固定，归档层必须先看 `ProfilingResult#getTriggerType()`、`getTag()`、`getResultFilePath()`，再按文件扩展名分发到 Perfetto 或 heap dump 工具链。[已验证: refs/tags/android-17.0.0_r1, packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java — 常量均已可见，按 feature flag 放行]
-### 源码层验证：android-17.0.0_r1 的 ProfilingTrigger 常量可见性
-
-| 维度 | Android Developers 公开文档 | refs/tags/android-17.0.0_r1 源码 |
+| trigger | 触发条件 | 文档规定的结果与注意事项 |
 |---|---|---|
-| `TRIGGER_TYPE_NONE` / `APP_FULLY_DRAWN` / `ANR` 常量 | API 36 标注 | 三者均存在于 `ProfilingTrigger.java` |
-| `TRIGGER_TYPE_COLD_START` / `OOM` / `KILL_EXCESSIVE_CPU_USAGE` / `ANOMALY` / `APP_COMPAT` | "Added in API level 37" | 5 个常量均已存在于 `ProfilingTrigger.java`，按 `@FlaggedApi` feature flag 放行 |
-| `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` / `KILL_FORCE_STOP` / `KILL_RECENTS` / `KILL_TASK_MANAGER` | Extension 36.1 | 4 个常量均已存在于 `ProfilingTrigger.java`（常量值 3-6），按 feature flag 放行 |
-| `isValidRequestTriggerType()` 放行范围 | – | android-17.0.0_r1 中 `APP_FULLY_DRAWN` / `ANR` 直接放行，其余 trigger 按各自 feature flag 判定 |
-| Memory Advice API 库 | "The Memory Advice API beta is now deprecated" | AOSP `frameworks/opt/gamesdk/games-memory-advice/` 完整保留 v2.2.0，`build.gradle` `versionName "1.1"`，`targetSdkVersion 35`；未删除 .cpp/.h，未在源码内加 `@Deprecated` 标注 |
+| `TRIGGER_TYPE_OOM` | App 抛出 Java `OutOfMemoryError` | Java heap dump；自定义 `UncaughtExceptionHandler` 必须继续调用默认 handler |
+| `TRIGGER_TYPE_ANOMALY` | 系统检测到资源异常 | 产物按异常类型变化，`ProfilingResult#getTag()` 提供附加分类 |
+| `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因过量 CPU 使用被杀，退出 reason 为 `REASON_EXCESSIVE_RESOURCE_USAGE` | AOSP/API reference 写明返回后台 system trace 快照 |
+| `TRIGGER_TYPE_COLD_START` | `ApplicationStartInfo` 判断为 cold start | 新启动的 system trace 与 stack sampling profile |
+| `TRIGGER_TYPE_APP_COMPAT` | 系统发现未来版本将不再支持的异常行为 | 产物随兼容性问题变化，tag 提供附加信息 |
 
-AOSP 关键源码（refs/tags/android-17.0.0_r1）：
+`TRIGGER_TYPE_OOM` 依赖默认未捕获异常处理路径。自定义 handler 如果不继续调用原默认 handler，系统无法使用这个 trigger；应用仍可在合适时机主动请求 Java heap dump，但要评估进程当时是否还有足够资源完成请求。
 
-```java
-// platform/packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java
-// refs/tags/android-17.0.0_r1
-@FlaggedApi(Flags.FLAG_SYSTEM_TRIGGERED_PROFILING_NEW)
-public final class ProfilingTrigger {
- public static final int TRIGGER_TYPE_NONE = 0;
- public static final int TRIGGER_TYPE_APP_FULLY_DRAWN = 1;
- public static final int TRIGGER_TYPE_ANR = 2;
- // Android 17 新增（常量值 3-11）
- public static final int TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE = 3;
- public static final int TRIGGER_TYPE_KILL_FORCE_STOP = 4;
- public static final int TRIGGER_TYPE_KILL_RECENTS = 5;
- public static final int TRIGGER_TYPE_KILL_TASK_MANAGER = 6;
- public static final int TRIGGER_TYPE_OOM = 7;
- public static final int TRIGGER_TYPE_ANOMALY = 8;
- public static final int TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE = 9;
- public static final int TRIGGER_TYPE_COLD_START = 10;
- public static final int TRIGGER_TYPE_APP_COMPAT = 11;
+`TRIGGER_TYPE_ANOMALY` 的产物不能预设为一种格式。Android 17 文档列出的场景包括：命中 OS memory limit 时返回 heap dump，过量 Binder 调用时返回 stack sample。多个 package 共享同一 UID 并同时注册某些异常 trigger 时，系统可能不提供附件。结果处理器应先看 trigger type、tag 和文件，再选择解析器。
 
- public static boolean isValidRequestTriggerType(int triggerType) {
- return triggerType == TRIGGER_TYPE_APP_FULLY_DRAWN
- || triggerType == TRIGGER_TYPE_ANR
- || (Flags.profiling25q4() && triggerType == TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE)
- || (Flags.profiling25q4() && triggerType == TRIGGER_TYPE_KILL_FORCE_STOP)
- || (Flags.profilingTriggerKillRecents() && triggerType == TRIGGER_TYPE_KILL_RECENTS)
- || (Flags.profiling25q4() && triggerType == TRIGGER_TYPE_KILL_TASK_MANAGER)
- || (Flags.profilingTriggerOom() && triggerType == TRIGGER_TYPE_OOM)
- || (android.os.profiling.anomaly.flags.Flags.anomalyDetectorCoreC()
- && triggerType == TRIGGER_TYPE_ANOMALY)
- || (Flags.profilingTriggerKillExcessiveCpuUsage()
- && triggerType == TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE)
- || (Flags.profilingTriggerColdStart() && triggerType == TRIGGER_TYPE_COLD_START)
- || (android.os.profiling.anomaly.flags.Flags.anomalyDetectorCoreC()
- && triggerType == TRIGGER_TYPE_APP_COMPAT);
- }
-}
-```
+`TRIGGER_TYPE_COLD_START` 会尽早启动一份新的 system trace 和 stack sampling profile，持续到应用调用 `reportFullyDrawn()`；未调用时，公开 API 文档给出的默认停止时间为 5 秒。它使用 discard buffer，缓冲区满后丢弃新事件，以保留启动初期的内容。采集启动仍可能有延迟，因此产物不保证覆盖进程创建后的每个事件。
 
-```cpp
-// platform/frameworks/opt/gamesdk/include/memory_advice/memory_advice.h
-#define MEMORY_ADVICE_MAJOR_VERSION 2
-#define MEMORY_ADVICE_MINOR_VERSION 2
-#define MEMORY_ADVICE_BUGFIX_VERSION 0
-```
+`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 存在官方文档差异：`android-17.0.0_r1` 源码注释和 API reference 写的是后台 system trace 快照，Android 17 features 页面写的是 call-stack sample。接入端应保存系统返回的原始产物及文件类型，不要按 trigger 名写死解析器；本章以版本化源码和 API reference 作为接口语义锚点，同时保留该差异记录，等待官方文档一致。
 
-`addProfilingTriggers()` 走 binder 时把 `ProfilingTriggerValueParcel.triggerType` 原样传递到 `IProfilingService`，客户端构造合法性仍由 `isValidRequestTriggerType()` 把关。`android-17.0.0_r1` tag 已确认存在（frameworks/base、packages/modules/Profiling、frameworks/proto_logging 三仓库均可用）。API 37 trigger 常量已在源码中可见，其中新增 trigger 依赖各自 feature flag 放行。
+## 证据归档：系统事实与应用推断分开
 
-### 源码层验证：`TRIGGER_TYPE_OOM` 的应用侧硬约束
+推荐把退出记录、profiling 结果、Crash SDK 样本和业务状态保存为不同记录类型。`caseId` 负责关联，不能用它抹去来源差异。
 
-`TRIGGER_TYPE_OOM` 文档原文（developer.android.com/reference/android/os/ProfilingTrigger#TRIGGER_TYPE_OOM）：
+### 退出记录字段
 
-> Use of this trigger requires that any custom `Thread.UncaughtExceptionHandler` call through to the default uncaught exception handler (`Thread.getDefaultUncaughtExceptionHandler()`). If the default uncaught exception handler is not called, then this trigger cannot be used. The app can still obtain a Java heap dump in this case, but will have to request the profiling itself using `ProfilingManager.requestProfiling`.
+| 字段 | 说明 |
+|---|---|
+| `source` | 固定为 `application_exit_info` |
+| `packageName`、`processName` | 包和进程身份 |
+| `packageUid`、`realUid`、`pid` | 系统身份；注意隔离进程和 PID 复用 |
+| `timestampMs` | 系统记录的进程死亡时间 |
+| `reason`、`status` | 公开 reason 与退出状态 |
+| `pssKb`、`rssKb` | 最近一次样本；0 应按缺失处理 |
+| `descriptionRaw` | 限制访问的原始描述，只对有文档保证的标记做机器判断 |
+| `traceKind`、`traceHash` | `anr_trace`、`native_tombstone_proto` 或 `none` |
+| `appVersion`、`device`、`osBuild`、`apiLevel` | 解释版本差异所需环境 |
 
-含义：
+退出记录的持久去重指纹可以由 `packageName + processName + packageUid + realUid + pid + timestampMs + reason + status` 生成。PID 会复用，不能单独做主键。读取窗口可能重复返回相同历史记录，因此应先按完整系统字段去重，再与客户端 case 做候选关联。
 
-- 自定义 `UncaughtExceptionHandler` 必须 `chain.uncaughtException(t, e)`，否则 OOM trigger 不会触发；
-- 兜底路径是 `ProfilingManager.requestProfiling(PROFILING_TYPE_JAVA_HEAP_DUMP, ...)`，需要 App 自己识别 OOM 异常并主动请求；
-- 这与 Memory Advice `MEMORYADVICE_STATE_CRITICAL` 的"基于 TFLite 预测 + 启发式规则的连续状态信号"完全不同：OOM trigger 是一次性事件，依赖 `OutOfMemoryError` 异常被默认 handler 处理的瞬间。
+### profiling 结果字段
 
-### 源码层验证：`TRIGGER_TYPE_OOM` 与 `TRIGGER_TYPE_ANOMALY` 的正交关系
+| 字段 | 说明 |
+|---|---|
+| `source` | `profiling_request` 或 `profiling_trigger` |
+| `requestId` | 主动请求时由 App 生成；系统 trigger 可为空 |
+| `requestedProfilingType` | 只在主动请求时由 App 自己记录 |
+| `triggerType` | 从 `ProfilingResult#getTriggerType()` 读取；主动请求通常为 `TRIGGER_TYPE_NONE` |
+| `tag` | 原样保存，同时限制长度和敏感信息 |
+| `errorCode`、`errorMessage` | 结果状态 |
+| `resultFilePathLocal` | 本地处理使用；不要直接作为服务端长期标识 |
+| `artifactMime`、`artifactHash`、`artifactSize` | 按收到的文件计算 |
+| `caseId`、`sessionId` | 应用侧关联字段 |
 
-| 维度 | `TRIGGER_TYPE_OOM` | `TRIGGER_TYPE_ANOMALY` |
+主动请求的去重指纹应包含 request ID、requested profiling type、tag 和文件 hash。系统 trigger 结果可使用 trigger type、tag、结果时间和文件 hash。没有文件时，也要保存 error code 或“系统未产出”的状态，避免重复请求掩盖系统限流。
+
+### 常见事件的关联规则
+
+| 事件 | 建议关联方式 | 不应采用的方式 |
 |---|---|---|
-| 触发条件 | Java OOM 异常 | 系统检测到异常行为（OS-defined memory limits、binder spam 等） |
-| 产物 | Java heap dump | heap dump（内存）/ stack sampling（binder） |
-| 是否覆盖 `MemoryLimiter:AnonSwap` 退出 | 不直接覆盖 | **覆盖**（OS-defined memory limits 临界点） |
-| 对应 `ApplicationExitInfo.REASON_*` | OOM 异常前 | `REASON_EXCESSIVE_RESOURCE_USAGE`（与 KILL 配套） |
+| Java crash | Crash SDK 样本与 `REASON_CRASH` 按进程、时间、异常摘要做候选匹配 | 只看 PID |
+| Native crash | minidump 与 `REASON_CRASH_NATIVE`、tombstone 按进程、signal、时间、build ID 匹配 | 把 tombstone 和 minidump 互相覆盖 |
+| ANR | `REASON_ANR`、ANR trace、triggered system trace 按事件时间和进程关联 | 假定 trigger 发生后进程必然被杀 |
+| Java OOM | `TRIGGER_TYPE_OOM` heap dump 与 Java crash/退出记录关联 | 把 MemoryLimiter kill 当成 OOM |
+| MemoryLimiter | `REASON_OTHER` 加精确 description 标记，并关联 anomaly heap dump | 匹配所有 `REASON_OTHER` |
+| 用户终止 | `REASON_USER_REQUESTED` 或 36.1 用户终止 trigger 单独分类 | 计入 crash 率 |
 
-AOSP `frameworks/base/core/java/android/app/ApplicationExitInfo.java` 中 `REASON_EXCESSIVE_RESOURCE_USAGE` 在 API 36 已可见，可与 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 配对；但 `TRIGGER_TYPE_ANOMALY` 的 "OS-defined memory limits" 阈值官方未公开。
-
-23.9 节"线上告警与隐私合规"层提到"诊断层：灰度或内部用户开启 `TRIGGER_TYPE_ANOMALY`"——按 Android 17 features 文档描述，这个 trigger 可覆盖 OS-defined memory limits 临界点，并在 excessive binder spam 场景返回 stack sampling profile。具体是否对应 `REASON_OTHER + MemoryLimiter:AnonSwap` 退出，需要以 `ProfilingResult#getTag()`、文件类型和 `ApplicationExitInfo` 描述联判；OOM trigger 捕的是 Java OOM 异常的当场 heap dump，不直接覆盖 `REASON_LOW_MEMORY` 或 MemoryLimiter 退出。
-
-## 证据归档与去重字段
-
-版本化诊断要落到同一张证据表，否则 Crash SDK、ApplicationExitInfo、ProfilingManager 结果会各自成孤岛。建议最小字段如下：
-
-| 字段 | 来源 | 用途 |
-|---|---|---|
-| `caseId` | 服务端生成 | 把同一次用户反馈、Crash、trace、heap dump 关联起来 |
-| `sessionId` | App 会话 | 关联日志、业务埋点、profiling 结果 |
-| `appVersion` / `buildId` | App | 聚合版本影响面 |
-| `device` / `apiLevel` / `extensionVersion` | 系统 | 判断能力分层和降级路径 |
-| `pid` / `processName` / `timestamp` | `ApplicationExitInfo` / App | 退出记录去重 |
-| `reason` / `status` / `subReason` | `ApplicationExitInfo` | 退出类型归因 |
-| `profilingType` / `triggerType` / `tag` | `ProfilingResult` | 选择分析工具 |
-| `resultFilePath` / `fileSha256` / `fileSize` | profiling 归档层 | 防重复上传和完整性校验 |
-| `userActionPath` / `page` / `networkType` | App 日志 | 缩小复现场景 |
-
-去重规则按证据类型分开设：
-
-- Java crash：优先用 SDK crashId / 异常类型 / 线程 / top frame / timestamp 合并；同一 pid 的 `REASON_CRASH` 只作为补充，不单独新增一个 Crash。
-- Native crash：SDK minidump 和系统 tombstone 用 pid、timestamp、processName、signal、so build id、top frame 合并；两边都有时保留两份文件引用。
-- ANR：`REASON_ANR`、ANR 文本 trace、`TRIGGER_TYPE_ANR` system trace 可以进入同一 case；一个是终点快照，一个是触发前后的时间线。
-- OOM：Java `OutOfMemoryError` crash、`TRIGGER_TYPE_OOM` heap dump、内存周期采样按 sessionId 和近邻 timestamp 合并；LMK / low memory kill 另建“系统内存压力退出”分组。
-- 用户手动杀进程：`REASON_USER_REQUESTED`、force stop、recents 清理不进入 crash rate，只进入退出行为统计。
+时间接近只能生成候选关系。服务端应保留原记录，给关联关系附上算法版本和置信度，便于后续修正。
 
 ## 排障决策表
 
 | 问题 | Android 10 | Android 11-14 | Android 15 | Android 16 | Android 17 |
 |---|---|---|---|---|---|
-| 慢启动 | 自有耗时埋点 + 人工 Perfetto | 同左，退出后补 `ApplicationExitInfo` | `requestProfiling(SYSTEM_TRACE)` | `TRIGGER_TYPE_APP_FULLY_DRAWN` snapshot | `TRIGGER_TYPE_COLD_START` trace + stack sample |
-| ANR | 自有卡顿监控 + 用户 bug report | `REASON_ANR` + `getTraceInputStream()` | App-driven system trace 辅助复现 | `TRIGGER_TYPE_ANR` snapshot | 同左 |
-| Native crash | Crashpad / Breakpad minidump | API 31+ 可补 tombstone protobuf | 同左 | 同左 | 同左 |
-| Java OOM | Crash SDK + 内存采样 | 同左 + 退出记录 | App-driven heap dump / heap profile | 同左 | `TRIGGER_TYPE_OOM` heap dump |
-| 被系统杀进程 | 自有前后台和内存采样 | `REASON_LOW_MEMORY` / `REASON_EXCESSIVE_RESOURCE_USAGE` 能力探测 | 同左 | 同左 | `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` / `TRIGGER_TYPE_ANOMALY` 辅助 |
+| 慢启动 | 自有启动指标；实验设备 Perfetto | 同左，加退出记录排除异常终止 | 主动请求 system trace | 可注册 `APP_FULLY_DRAWN` | 优先评估 `COLD_START` trace + stack sampling |
+| ANR | 卡顿监控、bug report、人工 Perfetto | `REASON_ANR` + 可选 ANR trace | 可主动请求 system trace 复现 | 增加 `ANR` trigger 快照 | 同 Android 16 |
+| Native crash | Crashpad/Breakpad minidump | API 31+ 再取可选 tombstone protobuf | 同左 | 同左 | 同左 |
+| Java OOM | Crash SDK 与内存趋势 | 同左，加退出记录 | 可控场景主动请求 heap dump/profile | 同左 | 增加 `OOM` trigger heap dump |
+| 被系统杀 | 自有前后台和资源记录 | reason、status、最近 PSS/RSS；探测 LMK reporting | 同左 | 可增加部分 trigger | CPU kill、anomaly 和 MemoryLimiter 证据 |
 
-这个表也说明了降级策略：低版本靠自有证据体系，高版本再叠加系统证据。不能因为 Android 17 有 trigger，就删除 Android 10-14 的日志、指标、Crash SDK 和反馈证据包；线上版本分布决定了这些降级路径会长期存在。
+高版本能力是补充证据，不应导致低版本日志、指标和 Crash SDK 被删除。某个 trigger 在 API 上可用，也不表示每台设备、每次事件都能产生结果。
 
 ## 隐私、限流与采集成本
 
-Trace 文件可能包含业务方法名、线程名、Binder 调用、数据库路径、URL 片段和用户操作时序；heap dump 可能包含对象字段、缓存内容、请求参数和页面状态。采集前要满足四个条件：远程开关可关、用户或合规策略允许、字段经过脱敏、文件在 App 私有目录加密或受访问控制保护。[已验证: 官方文档, https://developer.android.com/privacy-and-security/risks/log-info-disclosure]
+profiling 文件可能包含比普通日志更敏感的内容：
 
-采集成本也要显式落到配置。System trace 受缓冲区大小和时长影响，stack sampling 受频率影响，heap dump 会带来暂停和内存峰值。建议默认只对灰度用户或指定 case 开启；单用户单日限制次数；Wi-Fi / 充电条件作为可选约束；上传前检查文件大小；服务端设置保留期限和访问审计。
+- Java heap dump 可能保存对象字段、缓存、请求参数和页面状态。
+- system trace 可能出现方法名、线程名、调度时序、Binder 交互及部分系统上下文。
+- stack sampling 和 heap profile 会暴露代码结构、调用栈或分配路径。
+- ANR trace、tombstone 与 minidump 可能包含路径、寄存器、映射和构建信息。
 
-对排障系统来说，最危险的设计是“问题越多，采集越多”。系统 rate limiter 会挡掉一部分 ProfilingManager 请求，但 App 自己也要在 case、用户、版本、设备四个维度限流。命中限流时，仍然要上报一条轻量事件，写明跳过原因，避免值班同学误判为设备没有发生问题。
+采集设计至少要包含用户授权或适用的合规依据、数据最小化、传输与静态加密、访问审计、保留期限、删除机制和远程关闭能力。tag、caseId 和文件名中不要放用户输入、账号、URL、token 或其他敏感值。
+
+采集预算应来自设备实验和线上观测。system trace 按时长与缓冲大小评估，stack sampling 按采样频率评估，heap dump 按停顿、峰值内存和文件大小评估。配置应区分 case、版本、设备和采集类型；系统 rate limiter 之外，应用仍需自己的并发控制与预算。命中限流或跳过采集时，上报轻量状态和原因，不要立即循环重试。
 
 ## 与 26.5 证据包模板的关系
 
-26.5 的证据包继续负责排障流程：用户反馈、复现步骤、远程日志、灰度处置、问题单流转。本节给 26.5 补一层版本化能力表：同一个 case 在不同 Android 版本能附加哪类系统证据，哪些文件来自 `ApplicationExitInfo`，哪些文件来自 `ProfilingManager`，哪些结果来自 system-triggered trigger。
-
-实现时，26.5 的问题单只需要新增一个“系统诊断附件”区域：退出记录、ANR trace、native tombstone、profiling result、heap dump、system trace。排障流程不因为新 API 改写；新 API 只让证据更完整。
-
-### StatsD 原子数据：退出记录的补充信号源
-
-Android 17 的 StatsD 系统在 `ApplicationExitInfo` 和 `ProfilingManager` 之外提供了一条补充数据通道——原子计数器。它的角色是给退出记录和 profiling 结果补充系统侧的性能指标上下文。
-
-#### StatsD 架构与数据源
-
-StatsD 在 Android 17 中采用三层架构：
-
-1. **StatsManagerService**：Java 服务层，负责权限管理和配置管理
-2. **StatsCompanionService**：JNI 桥接层，连接 Java 服务与 native daemon
-3. **StatsD daemon**：native 二进制层，运行主循环处理原子事件
-
-原子数据通过 StatsdConfig 配置定义，分为 Pull atom 和 Push atom 两种类型。statsd 侧负责聚合与告警；Perfetto 侧只有启用对应数据源或 framework 侧发出 TrackEvent 时才会出现相关轨道，不能默认把 Pull / Push atom 等同为 `android_*_states` 表。
-
-#### 原子数据与诊断能力的互补关系
-
-在诊断能力分层中，StatsD 原子数据与其他诊断入口形成互补：
-
-| 诊断路径 | 数据类型 | 适用场景 | 与 StatsD 关系 |
-|---|---|---|---|
-| ApplicationExitInfo | 退出原因、退出时间 | 进程死亡分析 | 提供死亡前后原子计数器状态 |
-| ProfilingManager | System trace、heap dump | 运行时 profiling | 原子数据作为 profiling 的上下文 |
-| StatsD 原子数据 | 计数器、状态变化 | 长期监控与趋势分析 | 提供系统级别的性能指标 |
-
-#### Android 17 中的原子数据权限
-
-Android 17 中原子数据访问的权限边界：
-
-- **REGISTER_STATS_PULL_ATOM**：`signature|privileged`，`AndroidManifest.xml` 明确标注“不供第三方应用使用”。
-- **READ_RESTRICTED_STATS**：`internal|privileged`，只面向受信系统组件读取受限 statsd 数据。
-- **PACKAGE_USAGE_STATS**：`signature|privileged|development|appop|retailDemo`，普通应用需要用户或设备策略授予 app-op 才能读 usage stats。
-
-这些权限边界直接影响线上诊断的数据可用性。普通第三方 App 不能把 statsd Pull atom 当作默认可用通道；只有系统应用、平台集成或企业管控设备才适合把它纳入证据包。
-
-#### 诊断证据中的原子数据字段
-
-在系统应用或平台侧排障场景中，证据归档表可以增加原子数据相关字段：
-
-| 字段 | 类型 | 用途 |
-|---|---|---|
-| `statsd_atoms_before` | object | 进程死亡前的原子计数器状态 |
-| `statsd_atoms_after` | object | 进程死亡后的原子计数器状态 |
-| `atom_config_hash` | string | Statsd 配置版本标识 |
-| `relevant_atoms` | array[] | 与问题相关的原子类型列表 |
-
-#### 版本差异与诊断策略
-
-Android 版本演进对原子数据诊断的影响：
-
-| 版本 | 原子数据能力 | 诊断策略变化 |
-|---|---|---|
-| Android 10-14 | 基础原子计数器 | 依赖第三方 SDK 监控 |
-| Android 15+ | 系统/平台侧 Pull / Push atom 更完整 | 与 statsd 聚合结果、Perfetto TrackEvent 或专项 trace 联判 |
-| Android 17 | 细粒度权限控制 | 先确认签名/特权/app-op 边界，再决定是否能进入线上证据包 |
-
-在制定诊断策略时，需要根据目标设备的 Android 版本选择合适的原子数据采集方式。
-
-## 补充：StatsD AppProcessDied 原子与 ApplicationExitInfo 集成链路
-
-### AppProcessDied 原子注册
-
-`frameworks/proto_logging/stats/atoms.proto` 中同时包含 `Atom` oneof 注册和 `AppProcessDied` message 定义：
-
-```
-AppProcessDied app_process_died = 373 [(module_name) = "framework"];
-```
-
-字段顺序（与 `AppExitInfoTracker.performLogToStatsdLocked` 调用顺序严格对齐）：
-1. `uid` [(is_uid)=true]
-2. `process_name`（与包名相同则 null，前缀相同则截断）
-3. `reason` → `android.app.AppExitReasonCode`
-4. `sub_reason` → `android.app.AppExitSubReasonCode`
-5. `importance` → `android.app.Importance`
-6. `pss` (int32, kB)
-7. `rss` (int32, kB)
-8. `has_foreground_services` (bool)
-9. `exit_status` (int32，`exit()` 参数或 signal number)
-
-### 15 秒去抖与去重机制
-
-**15 秒去抖实现**（`frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java`）：
-
-```java
-private static final long APP_EXIT_INFO_STATSD_LOG_DEBOUNCE = TimeUnit.SECONDS.toMillis(15);
-
-@GuardedBy("mLock")
-private void scheduleLogToStatsdLocked(ApplicationExitInfo info, boolean immediate) {
- if (info.isLoggedInStatsd()) return; // 哨兵去重
- if (immediate) {
- mKillHandler.removeMessages(KillHandler.MSG_STATSD_LOG, info);
- performLogToStatsdLocked(info);
- } else if (!mKillHandler.hasMessages(KillHandler.MSG_STATSD_LOG, info)) {
- mKillHandler.sendMessageDelayed(mKillHandler.obtainMessage(
- KillHandler.MSG_STATSD_LOG, info), APP_EXIT_INFO_STATSD_LOG_DEBOUNCE);
- }
-}
-```
-
-**设计含义**：
-- 多源 kill 信号（lmkd、zygote SIGCHLD、noteAppKill）汇入同一条记录，去抖窗口允许更高优先级的来源（带 PSS/RSS/importance）覆盖更早的简单记录。
-- `setLoggedInStatsd(true)` 是写后哨兵，确保一条退出记录只产生一次原子推送。
-- `KillHandler.MSG_STATSD_LOG = 4105` 是 AMS 进程内自定义消息号（与其他子系统不冲突）。
-
-### 三类 kill 源汇入路径
-
-| 来源 | 触发位置 | Reason | SubReason |
-|------|---------|--------|-----------|
-| lmkd netlink → AMS `OomConnection.handleOomEvent` | `ProcessList.java` line 900-915 | REASON_LOW_MEMORY | SUBREASON_OOM_KILL |
-| zygote SIGCHLD → `mAppExitInfoSourceZygote.onProcDied` | AppExitInfoTracker 内部 | 视场景而定 | 视场景而定 |
-| AMS 内部 `noteAppKill` / `killLocked` | `ProcessList.removeProcessLocked` / 类似 | REASON_OTHER / REASON_EXCESSIVE_RESOURCE_USAGE 等 | SUBREASON_TRIM_EMPTY / SUBREASON_EXCESSIVE_CPU 等 |
-
-所有路径汇入 `handleNoteProcessDiedLocked` / `handleNoteAppKillLocked`，最终 `scheduleLogToStatsdLocked` 推送。
-
-### StatsBootstrapAtomService 早期启动路径
-
-**早期启动路径**（`frameworks/base/services/core/java/com/android/server/stats/bootstrap/StatsBootstrapAtomService.java`）：
-
-- 自 2021 年引入，专门解决 system_server 早期启动阶段 statsd daemon 尚未 ready 时的原子投递。
-- 通过 `Context.STATS_BOOTSTRAP_ATOM_SERVICE` Binder service 注册。
-- `reportBootstrapAtom()` 内做 atomId 范围校验 `[1, 10000)`，超出则拒绝。
-- 使用 `StatsEvent.Builder.usePooledBuffer()` 复用字节缓冲，避免早期启动 GC 抖动。
-
-### PSS/RSS int 强转精度边界
-
-`performLogToStatsdLocked` 调用 `(int) info.getPss()` / `(int) info.getRss()`，而 atoms.proto 字段单位是 kB；int32 上限约为 2 TiB（2^31-1 kB），不是 2GB。对移动设备 PSS/RSS 基本不会触顶，但 statsd 端仍只保留聚合字段，原始诊断信息保留在 `ApplicationExitInfo` Java API 端。
-
-### 持久化 proto 与 statsd 原子的字段差异
-
-**持久化 proto vs statsd 原子字段差异**（`frameworks/base/core/proto/android/app/appexitinfo.proto`）：
-
-| 字段 | ApplicationExitInfoProto (持久化) | AppProcessDied 原子 (statsd) |
-|------|----------------------------------|------------------------------|
-| pid / real_uid / defining_uid / connection_group | ✅ | ❌（只保留 package_uid） |
-| status / exit_status（信号号 / exit code） | ✅ | ✅（字段名 `exit_status`） |
-| description | ✅ (DEST_EXPLICIT) | ❌ |
-| state / trace_file | ✅ | ❌ |
-
-statsd 端只保留聚合分析需要的最小字段集，原始诊断信息保留在 ApplicationExitInfo Java API 端。这意味着 statsd 适合做趋势/告警，ApplicationExitInfo 适合做单次诊断详查——两条通道互补而非重复。
-
-### 未验证项
-
-- `FrameworkStatsLog.APP_PROCESS_DIED` 的生成 Java 常量不在 git tree 中可直读，但 atom id 373 已由 atoms.proto 的 `app_process_died = 373` 注册确认。
-- Android 17 未在 `ApplicationExitInfo.java` 公开独立 `REASON_MEMORY_LIMITER` 常量；上一轮 AIW 调研（2026-05-23）已记录 Android 17 引入保守应用内存限制（targetSdk>=36），但具体 reason / subreason 与 description 组合仍需设备样本补查。
-- `StatsdStatsService` / `StatsService.java` 在 `services/core/java/com/android/server/stats/` 目录下的 Android.bp 视角未在本轮核对，与本主题相关度低但建议后续补查。
-
-## 待复核项
-
-- `REASON_APPLICATION_SPECIFIC_ERROR`：本轮 android-17.0.0_r1 未确认该公开常量，后续如正式 SDK 文档新增再补。
-- Android 17 `ANOMALY` / `APP_COMPAT`：常量值已在 android-17.0.0_r1 复核，tag 规则和结果产物类型仍以设备返回的 `ProfilingResult#getTag()` 与文件类型为准。
-- Extension 36.1：实际接入时必须在运行时检查 Extension 版本，本节不写死具体设备覆盖率。
-
-- **ApplicationExitInfo android-17.0.0_r1 常量验证**：Reason 常量为 `REASON_UNKNOWN=0` 到 `REASON_PACKAGE_UPDATED=16`，SubReason 已包含 `SUBREASON_OOM_KILL`、`SUBREASON_FREEZER_BINDER_IOCTL`、`SUBREASON_FREEZER_BINDER_ASYNC_FULL`、ANR 类型细分等。源码位置：`frameworks/base/core/java/android/app/ApplicationExitInfo.java`。
-- **ApplicationStartInfo 启动时间戳体系**：Android 15 引入的 ApplicationStartInfo 提供 StartupTimestamp 枚举（LAUNCH、JAVA_CLASSLOADING_COMPLETE、APPLICATION_ONCREATE、BIND_APPLICATION、FIRST_FRAME、REPORT_FULLY_DRAWN），全部为纳秒级。StartType 区分 COLD/WARM/HOT 三种启动类型。源码位置：`frameworks/base/core/java/android/app/ApplicationStartInfo.java`。
-- **ProfilingTrigger 源码位置**：android-17.0.0_r1 位于 `packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java`，不在 `frameworks/base/core/java/android/os/`。
-
-## 补充：REASON 常量版本对照与 MemoryLimiter 边界确认
-
-### ApplicationExitInfo REASON 常量版本对照表
-基于 Microsoft Learn .NET binding for Android（该 binding 忠实映射 AOSP `[ApiSince=30]` 注册注解）交叉验证，REASON_* 常量版本对照表：
-
-| 常量 | API Level | 备注 |
-|------|-----------|------|
-| REASON_UNKNOWN / REASON_LOW_MEMORY / REASON_ANR / REASON_CRASH / REASON_CRASH_NATIVE 等基础常量 | API 30 | |
-| **REASON_FREEZER** | **API 33** | Android 13 引入，App Freezer 杀进程原因 |
-| **REASON_PACKAGE_STATE_CHANGE** | **API 34** | Android 14 引入，包组件状态变化 |
-| **REASON_PACKAGE_UPDATED** | **API 34** | Android 14 引入，包更新杀进程 |
-
-
-
-### Android 17 MemoryLimiter 行为
-**来源**：developer.android.com/about/versions/17/behavior-changes-all（官方 Android 17 behavior changes）
-
-- Android 17 对高 RAM 设备引入保守应用内存限制（per-app memory limits based on device total RAM）
-- 应用被 MemoryLimiter 杀灭时，`ApplicationExitInfo.getDescription()` 包含字符串 "MemoryLimiter"
-- 原因码为 `REASON_OTHER`（兜底原因）
-- 适用条件：`targetSdk >= 36`
-
-示例设备：Pixel 6a (6GB RAM) 在 Android 17 Beta 4 下触发 MemoryLimiter 限制。
-
-### ProfilingTrigger 与 ApplicationStartInfo 共享判断逻辑确认
-- `TRIGGER_TYPE_COLD_START`（API 37）的触发前提等价于 `ApplicationStartInfo.getStartType() == START_TYPE_COLD`
-- 两者共享底层启动类型判断数据源，分工：ApplicationStartInfo 用于历史启动分析，TRIGGER_TYPE_COLD_START 用于 ProfilingTrigger 触发
-
-
-
-## 补充：ProfilingTrigger 版本常量与调试命令
-
-- `ProfilingTrigger` 标注 `@ApiSince=36`
-- Android 17 / API 37 新增 trigger 类型：`TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`
-- ProfilingManager 限流/调试模式 shell 命令：
-  - Android 16+: `device_config put profiling_testing delete_temporary_results.disabled true`
-  - Android 15: `device_config put profiling_testing delete_unredacted_trace.disabled true`
-  - 测试模式: `device_config put profiling_testing system_triggered_profiling.testing_package_name <pkg>`
-
-## 参考资料
-
-### Android 15-17 线上诊断能力版本对照验证
-- 来源：DeepResearch/2026-05-31-android-17-diagnostic-apis-version-matrix.md
-- 类型：DeepResearch 调研结果
-- 摘要：Android 15-17 线上诊断能力由 ApplicationExitInfo（API 30+，13种死亡原因+22种子原因）和 ProfilingManager（API 35+，4种剖析类型）构成。版本对照覆盖 API 30-37，含完整源码锚点和获取方式。子原因如 SUBREASON_FREEZER_BINDER_IOCTL、SUBREASON_EXCESSIVE_CPU 等对线上稳定性治理有直接诊断价值。
-
-### Android 版本化线上诊断能力完整边界研究
-- 来源：DeepResearch/2026-05-20-android-versioned-online-diagnostic-capabilities.md
-- 类型：DeepResearch 调研结果
-- 摘要：建立 Android 10-17 四档线上诊断能力对照表：ApplicationExitInfo（API 30+）提供进程退出追溯，ProfilingManager（API 35+）支持 system trace / heap dump / heap profile / stack sampling 四类采集，ProfilingTrigger（API 36+）支持 `TRIGGER_TYPE_APP_FULLY_DRAWN` / `TRIGGER_TYPE_ANR` 触发器，API 37 扩展 `TRIGGER_TYPE_COLD_START` / `TRIGGER_TYPE_OOM` / `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` / `TRIGGER_TYPE_ANOMALY`。包含完整的 API 版本降级路径和限流配置。
-
-### 源码调研补充（2026-05-25）
-
-**调研议题**：Android 版本化线上诊断能力——ApplicationExitInfo、ProfilingManager 与 ProfilingTrigger
-
-**关键发现**：
-
-1. **getTraceInputStream() 版本差异**（未经一手验证，建议用 AOSP android-16.0.0_r1 核实）
- - API 30：`getTraceInputStream()` 仅对 ANR 场景返回 trace，native crash 返回 null
- - API 31+：`REASON_CRASH_NATIVE` 可通过 `getTraceInputStream()` 返回 native tombstone protobuf
-
-2. **Exit Reason 常量版本边界**
- - `REASON_FREEZER` = API 33
- - `REASON_PACKAGE_STATE_CHANGE` / `REASON_PACKAGE_UPDATED` = API 34
-
-3. **ProfilingManager 能力边界**（API 35+，建议用 `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java` 核实）
- - `requestProfiling()` 后台执行，完成后通过 callback 返回 `ProfilingResult#getResultFilePath()`
- - trace 输出路径：`/data/user/0/<app>/files/profiling/profile_<tag>_<datetime>.perfetto-trace`
- - 有 rate limiter；debug mode 可禁用 rate limiting 并保留未脱敏 trace
-
-4. **ProfilingTrigger 触发类型**（API 36+，未经一手 AOSP 源码验证）
- - `TRIGGER_TYPE_ANR` — ANR 发生时触发
- - `TRIGGER_TYPE_COLD_START` — 冷启动时触发，前提：`ApplicationStartInfo.getStartType() == START_TYPE_COLD`
- - `TRIGGER_TYPE_APP_FULLY_DRAWN` — 应用首帧完成时触发
- - `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` — 应用通过 `requestRunningSystemTrace(tag)` 主动请求 running trace 时触发
-
-5. **ApplicationStartInfo 启动类型**（API 35+，未经一手 AOSP 源码验证）
- - `getStartType()` 返回 `START_TYPE_COLD` / `START_TYPE_WARM` / `START_TYPE_HOT`
- - 时间戳常量：`START_TIMESTAMP_PROCESS_CREATION`、`START_TIMESTAMP_BIND_APPLICATION`、`START_TIMESTAMP_FIRST_ACTIVITY`
- - 与 `TRIGGER_TYPE_COLD_START` 形成分层诊断：启动历史记录判断冷启动类型，trigger 在冷启动时采集 profiling
-
-6. **Crashpad Out-of-Process Handler 模型**（未经一手 AOSP 源码验证，建议读 `external/google-breakpad/client/crashpad_client_linux.cc`）
- - signal handler 必须是 async-signal-safe（禁止 malloc/free/printf 等堆操作）
- - minidump 写入由独立 handler 进程完成，不阻塞应用主线程
- - 双策略：RequestCrashDumpHandler（与已运行 handler 通信）/ LaunchAtCrashHandler（crash 时启动 handler）
-
-
-
-## 补充：ProfilingManager/ProfilingResult API 35 源码验证
-
-### ProfilingManager 源码路径与 Flag 约束
-- 源码位置：`packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`（非 frameworks/base 路径）
-- API Level：35（Android 15+）
-- Flag 约束：`@FlaggedApi(Flags.FLAG_TELEMETRY_APIS)` — 需设备启用 Telemetry APIs 才可用
-- ProfilingType 常量：JAVA_HEAP_DUMP=1、HEAP_PROFILE=2、STACK_SAMPLING=3、SYSTEM_TRACE=4
-- 服务端通信：使用 `IProfilingService` Binder + `IProfilingResultCallback` 异步回调
-- 结果文件路径：`mContext.getFilesDir().getPath()` + tag
-
-### ProfilingResult Error Codes（9 个）
-| 常量 | 值 | 含义 |
-|------|-----|------|
-| ERROR_NONE | 0 | 成功 |
-| ERROR_FAILED_RATE_LIMIT_SYSTEM | 1 | 系统级限流 |
-| ERROR_FAILED_RATE_LIMIT_PROCESS | 2 | 进程级限流 |
-| ERROR_FAILED_PROFILING_IN_PROGRESS | 3 | 已有采集进行中 |
-| ERROR_FAILED_EXECUTING | 4 | 执行失败 |
-| ERROR_FAILED_POST_PROCESSING | 5 | 后处理失败 |
-| ERROR_FAILED_NO_DISK_SPACE | 6 | 磁盘空间不足 |
-| ERROR_FAILED_INVALID_REQUEST | 7 | 无效请求 |
-| ERROR_UNKNOWN | 8 | 未知错误 |
+26.5 负责问题受理、复现步骤、远程日志、灰度处置和问题单流程。本章只为证据包增加版本化的“系统诊断附件”：
+
+- `ApplicationExitInfo` 退出记录及可选 ANR/native 附件；
+- 应用请求产生的 system trace、heap dump、heap profile 或 stack sampling；
+- trigger 产生的文件、tag、trigger type 和错误状态；
+- 每份文件的来源、hash、大小、采集时间、系统版本、权限和保留期限。
+
+问题单展示时应保留来源标签。值班人员需要知道某个结论来自系统退出记录、App 自有日志还是 profiling 文件，才能判断证据强度。
+
+## 源码与官方文档锚点
+
+- [ApplicationExitInfo.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java)
+- [ActivityManager.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java)
+- [ProfilingManager.java（android-17.0.0_r1）](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java)
+- [ProfilingResult.java（android-17.0.0_r1）](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingResult.java)
+- [ProfilingTrigger.java（android-17.0.0_r1）](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java)
+- [ApplicationExitInfo API reference](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+- [ProfilingManager API reference](https://developer.android.com/reference/android/os/ProfilingManager)
+- [ProfilingResult API reference](https://developer.android.com/reference/android/os/ProfilingResult)
+- [ProfilingTrigger API reference](https://developer.android.com/reference/android/os/ProfilingTrigger)
+- [App-driven profiling](https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture)
+- [Trigger-based profiling](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture)
+- [Profiling limitations](https://developer.android.com/topic/performance/tracing/profiling-manager/will-my-profile-always-be-collected)
+- [Android 17：影响所有应用的行为变更](https://developer.android.com/about/versions/17/behavior-changes-all)
+- [Android 17：功能与 API](https://developer.android.com/about/versions/17/features)
+- [Build.VERSION API reference](https://developer.android.com/reference/android/os/Build.VERSION)
+- [Build.VERSION_CODES_FULL API reference](https://developer.android.com/reference/android/os/Build.VERSION_CODES_FULL)
