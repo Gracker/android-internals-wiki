@@ -1,7 +1,7 @@
 ---
 title: "资源文件体积优化实战"
 chapter: "25.31"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [包体积, 资源优化, 图片压缩, ARSC, AAPT2]
 related_chapters: ["12.1", "25.7", "25.8", "25.29", "25.30"]
@@ -9,6 +9,21 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "Clippings性能优化参考书（资源文件体积优化实战章）"
 gap_score: 15
+task6_state: pending
+task9_state: pending
+pipeline_stage: task6_pending
+last_draft_polish_at: "2026-08-03T23:36:03+08:00"
+last_draft_polish_run_id: "20260803-233603-draft-polish-b4f706b1"
+last_verified: "2026-08-03"
+confidence: medium-high
+sources:
+  - "https://developer.android.com/tools/aapt2"
+  - "https://developer.android.com/tools/apkanalyzer"
+  - "https://developer.android.com/topic/performance/app-optimization/enable-app-optimization"
+  - "https://developer.android.com/topic/performance/app-optimization/customize-which-resources-to-keep"
+  - "https://developer.android.com/topic/performance/reduce-apk-size"
+  - "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/androidfw/include/androidfw/ResourceTypes.h"
+  - "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/androidfw/AssetManager2.cpp"
 ---
 
 # 25.31 资源文件体积优化实战
@@ -19,9 +34,9 @@ gap_score: 15
 ### 🔹 图片资源体积优化
 - WebP 格式转换与质量 / 体积权衡
 - VectorDrawable 替代 PNG 的适用场景与性能边界
-- AVIF 格式在 Android 14+ 的支持与兼容方案
+- AVIF 格式在 Android 12+ 的支持与兼容方案
 - 图片资源重复检测与自动去重
-- [结构参考: Clippings/Android 性能优化 - 资源文件的体积优化实战.md]
+- 来源锚点：Android Developers 与 Android 17 AOSP 资源表 / AssetManager2 源码
 
 ### 🔹 资源限定符优化
 - 多 dpi 资源（mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi）裁剪策略
