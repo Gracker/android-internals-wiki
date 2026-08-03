@@ -248,7 +248,7 @@ PWA、Trusted Web Activity（TWA）和普通 WebView 都能展示 Web 内容，�
 
 低端机和弱网会放大 WebView 的问题。CPU 弱时，JS、布局和图片解码更容易拉高页面驻留时长；内存小的时候，Renderer 更容易被回收或触发 App 侧白屏恢复；弱网下，重试、重定向和缓存失效会把网络耗电和首屏耗时一起放大。
 
-设备矩阵应包含 Android Go 或低内存设备、仍需支持的 32 位进程环境，以及线上占比较高的 WebView provider 版本。弱网测试覆盖高 RTT、丢包、DNS 失败、CDN 回源慢和网络切换。高端设备上的 Wi-Fi 数据不能代表低内存或弱网用户。
+设备样本应包含 Android Go 或低内存设备、仍需支持的 32 位进程环境，以及线上占比较高的 WebView provider 版本。弱网测试覆盖高 RTT、丢包、DNS 失败、CDN 回源慢和网络切换。高端设备上的 Wi-Fi 数据不能代表低内存或弱网用户。
 
 ## 本节小结
 
