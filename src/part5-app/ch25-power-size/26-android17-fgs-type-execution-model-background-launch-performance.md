@@ -30,7 +30,7 @@ sources:
 
 前台服务（Foreground Service，FGS）用于承载用户已经知晓、离开页面后仍需继续的工作，例如播放、导航、通话和屏幕采集。它提供持续通知和较高的进程存活权重，却不承诺独占 CPU、无限运行、后台随时启动或后台随时拉起页面。
 
-Android 17 沿用了 Android 12 至 Android 16 逐步收紧的 FGS 规则，并新增了两处需要单独处理的 API 37 边界：
+Android 17 沿用了 Android 12 至 Android 16 逐步增加的 FGS 限制，并新增了两处需要单独处理的 API 37 边界：
 
 - 后台音频交互需要合法的非 `shortService` FGS；以 API 37 为目标时，FGS 还要具有 while-in-use（WIU）能力，闹钟音频有受限例外。
 - `IntentSender.sendIntent()` 纳入后台 Activity 启动（Background Activity Launch，BAL）的发送方显式授权规则。
@@ -484,15 +484,15 @@ adb shell am compat reset FGS_INTRODUCE_TIME_LIMITS com.example.app
 
 ## 源码锚点
 
-- [`ActiveServices.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java)：后台启动判断、类型校验、晋升超时、short FGS 和限时类型。
-- [`ActivityManagerConstants.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java)：30 秒晋升超时、short FGS 和 6 小时额度默认值。
-- [`ActivityManagerService.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)：`FgsTempAllowListItem` 与 `mFgsStartTempAllowList`。
-- [`ForegroundServiceTypePolicy.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ForegroundServiceTypePolicy.java)：各类型权限、WIU 标志和策略结果。
-- [`ServiceInfo.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/ServiceInfo.java)：API 37 类型常量与类型语义。
-- [`Service.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/Service.java)：`onTimeout(int)` 与 `onTimeout(int, int)`。
-- [`OomAdjusterImpl.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/psc/OomAdjusterImpl.java)：普通 FGS、short FGS 和 recent TOP 的进程档位。
-- [`BackgroundActivityStartController.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/BackgroundActivityStartController.java)：BAL 创建方、发送方和可见性检查。
-- [`IntentSender.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/IntentSender.java)：API 37 `sendIntent()` 的 BAL 兼容开关与 options 重载。
+- [`ActiveServices.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java)：后台启动判断、类型校验、晋升超时、short FGS 和限时类型。
+- [`ActivityManagerConstants.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java)：30 秒晋升超时、short FGS 和 6 小时额度默认值。
+- [`ActivityManagerService.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)：`FgsTempAllowListItem` 与 `mFgsStartTempAllowList`。
+- [`ForegroundServiceTypePolicy.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ForegroundServiceTypePolicy.java)：各类型权限、WIU 标志和策略结果。
+- [`ServiceInfo.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/pm/ServiceInfo.java)：API 37 类型常量与类型语义。
+- [`Service.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Service.java)：`onTimeout(int)` 与 `onTimeout(int, int)`。
+- [`OomAdjusterImpl.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/psc/OomAdjusterImpl.java)：普通 FGS、short FGS 和 recent TOP 的进程档位。
+- [`BackgroundActivityStartController.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/BackgroundActivityStartController.java)：BAL 创建方、发送方和可见性检查。
+- [`IntentSender.java` @ `android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/IntentSender.java)：API 37 `sendIntent()` 的 BAL 兼容开关与 options 重载。
 
 ## 官方文档
 
