@@ -1,20 +1,31 @@
 ---
 title: "ThermalManager 热节流适配与性能降级治理实战"
 chapter: "25.28"
-status: ready-for-review
-applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
+status: finalized
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [thermal, throttling, performance-degradation, power, ThermalManager, ThrottlingSeverity]
 related_chapters: ["5.4", "5.9", "25.1", "25.12", "25.27"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "AOSP结构+官方文档+章节深挖"
-confidence: medium-high
+confidence: high
 last_verified: 2026-08-03
-task6_state: pending
-task9_state: pending
-pipeline_stage: task6_pending
+last_verified_against: "android-17.0.0_r1 / android17-6.18"
+sources:
+  - "frameworks/base/core/java/android/os/PowerManager.java@android-17.0.0_r1"
+  - "frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java@android-17.0.0_r1"
+  - "frameworks/native/include/android/thermal.h@android-17.0.0_r1"
+  - "hardware/interfaces/thermal/aidl/android/hardware/thermal/IThermal.aidl@android-17.0.0_r1"
+  - "AOSP Thermal mitigation"
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: finalized
 last_draft_polish_at: 2026-08-03T19:35:49+08:00
 last_draft_polish_run_id: 20260803-193549-draft-polish-4a642e80
+reviewed_date: 2026-08-03
+reviewed_by: hermes-aiw-review-finalize-apply
+last_review_finalize_at: 2026-08-03T20:20:38+08:00
+last_review_finalize_run_id: 20260803-201256-f2e7359d
 ---
 
 # 25.28 ThermalManager 热节流适配与性能降级治理实战
@@ -568,8 +579,8 @@ Android 17 普通应用只能读取 status/headroom。raw temperature、cooling 
 | 平台 | 与应用热治理有关的变化 |
 |---|---|
 | Android 10（API 29） | `getCurrentThermalStatus()` 与 status listener；Framework Thermal Service 与 HIDL Thermal HAL 2.0 |
-| Android 11（API 30） | Java `getThermalHeadroom(0..60)` |
-| Android 12（API 31） | NDK `AThermalManager` / thermal headroom API 可供原生引擎使用 |
+| Android 11（API 30） | Java `getThermalHeadroom(0..60)`；NDK `AThermalManager`、当前 status 与 status listener 可供原生引擎使用 |
+| Android 12（API 31） | NDK `AThermal_getThermalHeadroom(0..60)` 可供原生引擎使用 |
 | Android 14（API 34） | Thermal HAL 从 HIDL 迁移到稳定 AIDL |
 | Android 15（API 35） | `getThermalHeadroomThresholds()` |
 | Android 16（API 36） | headroom listener；`SystemHealthManager` CPU/GPU capacity headroom |
