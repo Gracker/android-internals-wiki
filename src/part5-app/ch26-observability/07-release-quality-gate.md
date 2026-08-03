@@ -85,136 +85,156 @@ last_deepseek_cn_review_at: 2026-06-28
 
 ## 为什么要了解发版质量门禁
 
-发版质量门禁解决的是版本能不能继续往外放的问题。26.3 节负责把性能指标采上来，26.6 节负责实验设计和回归检测，本节把这些结果放进发布动作：发版前检查、候选包测试、灰度放量、暂停和回滚。
+发版质量门禁解决的是版本能否进入下一发布阶段。26.3 节负责采集性能指标，26.6 节负责实验设计和回归检测，本节把这些证据映射为发版前检查、候选包测试、灰度扩量、暂停和恢复动作。
 
-移动应用交付可以拆成开发、编译 CI、测试、灰度和发布几个阶段；数据验证平台应该放在灰度决策旁边，而不是等事故出现后再查。本节沿用这个结构，把判断对象收束到 Android 性能与稳定性。
+本文的平台上界是 Android 17 / API 37，源码标签为 `android-17.0.0_r1`。发布门禁属于应用和交付平台设计，本节没有依赖 Linux 内核实现的结论，因此不附加 kernel tag。AOSP 标签用于核对平台实现；实际发布还要覆盖目标 OEM、系统 build fingerprint 和季度更新，因为源码标签不能代替真实设备验证。
 
 ## 发版前性能 Checklist
 
-发版前 checklist 要写成可执行项，不要写成“关注启动、流畅性、稳定性”这种口号。每一项都要能回答三件事：检查哪个包、看哪个指标、失败后谁处理。
+发版前 checklist 要能直接执行。每项至少说明被测产物、场景与设备、指标定义、比较基线、判定方法、失败动作和负责人。缺少任一项，门禁失败后就容易陷入“数字变了，但不知道是否该停”的争论。
 
-| 检查项 | 推荐口径 | 不通过动作 | 关联章节 |
+发布单应先冻结产物身份：`versionCode`、Git commit、AAB/APK 摘要、签名证书摘要、`compileSdk`、`targetSdk`、构建变体、R8 mapping、Native symbols、Baseline Profile 版本、动态特性模块版本和远程配置快照。测试报告与线上事件都引用同一个 build ID，才能确认线下和线上观察的是同一份代码与配置。
+
+| 检查域 | 证据与口径 | 不通过动作 | 关联章节 |
 | --- | --- | --- | --- |
-| 启动 | 冷启动 TTID / TTFD P90、启动类型、入口来源、低端机分群 | 阻断 release candidate，回到 21.8 和 26.3 排查 | 21.8、26.3 |
-| 渲染 | 核心页面慢帧率、冻帧率、`FrameTimingMetric` 结果、线上页面分群 | 降到小流量灰度或阻断发版 | 22.8、26.3 |
-| 内存 | 前台 PSS P90、Java / Native Heap、OOM / LMKD 退出、图片缓存水位 | 限制放量范围，补采样现场 | 23.7、26.2 |
-| 稳定性 | user-perceived crash rate、user-perceived ANR rate、Native crash、启动失败 | 阻断或回滚评估 | 20.6、26.2、26.4 |
-| 上报质量 | 上传成功率、采样配置版本、事件丢弃数、延迟窗口 | 数据无效时暂停判断，不继续放量 | 26.3 |
-| 包体与配置 | APK / AAB 体积、动态配置差异、实验参数快照 | 风险配置回退或降级灰度 | 25.6、26.6 |
+| 启动 | 按启动类型、入口和设备群比较 TTID；仅在正确调用 `reportFullyDrawn()` 的场景使用 TTFD | 阻断候选包，带 Trace 回到启动链路排查 | 21.8、26.3 |
+| 渲染 | 核心交互的 `FrameTimingMetric` 分布、线上慢帧或冻帧指标，并保留刷新率与页面分群 | 阻断或缩小发布范围 | 22.8、26.3 |
+| 内存 | Java/Native Heap、PSS/RSS、OOM 与低内存退出；同时记录前后台状态和设备内存档位 | 阻断高风险设备群，补充 heap/Perfetto/退出证据 | 23.7、26.2 |
+| 稳定性 | Crash、ANR、Native crash、启动失败和 `ApplicationExitInfo` 退出原因，按用户口径与事件口径分别呈现 | 停止升档，进入回滚评估 | 20.6、26.2、26.4、26.9 |
+| 功耗 | 固定场景的实验室能耗与线上异常唤醒、后台任务证据；声明测量是否为系统级 | 对耗电路径限流或关闭配置 | 24.x、26.3 |
+| 数据健康度 | assignment、采样配置、事件生成、落盘、上传和查询延迟 | 将业务指标标为不可判定，暂停升档 | 26.3、26.6 |
+| 包体与配置 | AAB/APK 与动态特性大小、资源变化、远程参数和实验快照 | 回退配置或重新生成候选包 | 25.6、26.6 |
 
-Android Vitals 可以作为外部质量信号。官方文档说明 Play 会按日检查关键性能指标，并使用 28 天平均值评估 warning；core vitals 包括 user-perceived crash rate、user-perceived ANR rate、excessive partial wake locks 等。门禁报告要同时保留自建 APM 口径和 Vitals 口径，不能把内部 session 统计和 Play 的活跃用户口径混用。[已验证: 官方文档, developer.android.com/topic/performance/vitals]
+### Android 17 要做两轮兼容性验证
 
-checklist 的阈值要按版本阶段分层。release candidate 阶段可以用实验室基线拦确定性退化；1% / 5% 灰度阶段看真实用户分布和 crash / ANR；50% 之后更关注长尾分群和外部质量信号。阈值固定在平台配置里，人工豁免只能带过期时间和责任人。
+Android 官方迁移指南把升级验证分成两条路径：
+
+- **运行兼容性**：把当前线上版本安装到 Android 17 设备，保持原有 `targetSdk`，验证所有应用都会受到的行为变化。这里发现的问题会影响已经发布的包，优先级通常高于 target 升级。
+- **target 兼容性**：用 API 37 SDK 构建并把 `targetSdk` 升到 37，验证只对 target 37+ 生效的变化。Android 17 的兼容性开关可以在 debuggable 包上逐项启用 target 变化，便于定位；最终结论仍要来自按目标 SDK 构建的 release-like 包。
+
+测试清单从官方“影响所有应用”和“target Android 17+”两份行为变化文档生成，不应手抄一份长期不更新的列表。Android 17 中，target 37+ 的 `MessageQueue` 实现变化、反射或 JNI 修改 `static final` 字段的限制、Certificate Transparency 默认启用、Native 动态代码加载文件只读要求、后台音频约束和大屏方向/可调整大小规则，都可能影响启动、崩溃、网络、媒体或布局门禁。应用只选择与自身代码路径相关的条目，但每个排除项也要留下理由。
+
+兼容性开关适合做单变量定位，不代表用户设备会只启用一个变化。正式候选包还要在 Android 17 的完整行为组合上运行主流程、后台流程、升级安装、数据迁移、权限拒绝、进程重建和大屏场景，并检查非 SDK 接口告警及第三方 SDK。
+
+### 阈值必须来自本项目数据
+
+门禁阈值应绑定指标版本、设备群、场景和发布阶段。相对退化阈值来自历史噪声与业务最小可接受变化，绝对阈值来自体验 SLO 或稳定性预算，最小样本量来自历史方差和期望检测能力。不要把别的项目的百分比、毫秒数或样本量直接复制进配置。
+
+Android vitals 是外部质量信号。Play 使用最近 28 天数据评估应用质量，并按日检查 28 天平均值；Core vitals 包括 user-perceived crash rate、user-perceived ANR rate、excessive battery usage 和 excessive partial wake locks。发布报告要保存自建 APM 与 vitals 各自的分子、分母、窗口和设备范围，不能混用内部 session 与 Play 用户口径。
 
 ## 自动化性能测试集成
 
-自动化测试不负责覆盖所有真实设备，它负责让候选包带着证据进入灰度。候选包没有线下性能报告，就不应该直接进入生产灰度。
+自动化测试无法覆盖全部真实设备，它的职责是让候选包带着可复现证据进入灰度。风险较高的候选包如果没有线下性能报告，应停在发布候选阶段。
 
-官方 benchmark CI 文档说明，benchmark 库会输出测量 JSON，并在设备目录里生成 profiling trace；Macrobenchmark 会按测量迭代输出 Perfetto trace。CI 要把这些产物按 commit、build id、设备、场景和测试名归档，后端才有条件做趋势对比。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/benchmarking-in-ci]
+Android 官方建议在物理设备上运行 Benchmark；模拟器结果受宿主机和虚拟化环境影响，不适合代表用户体验。目标 APK 应接近线上构建：不可调试、允许 profiling、使用一致的 R8、资源压缩、签名后处理和 Baseline Profile。测试 APK 与目标 APK 分开构建，避免把 benchmark 配置带进生产包。
 
-Macrobenchmark 指标适合做候选包卡点：`StartupTimingMetric` 观察 TTID / TTFD，`FrameTimingMetric` 观察帧耗时和 overrun，`TraceSectionMetric` 观察业务自定义阶段，`PowerMetric` 在支持设备上观察能耗。TTFD 依赖 `reportFullyDrawn()`，在 Android 10（API 29）及以下可能不可用；`frameOverrunMs` 仅 Android 12（API 31）+ 可用，Android 10/11 门禁要为启动和帧指标准备替代口径。26.6 节已经展开回归检测，这里关注这些指标进入发版流程后的门禁位置。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
+Macrobenchmark 指标进入门禁前，要核对 API 可用范围和测量语义：
 
-这段配置只演示发布门禁的表达方式：每条规则都绑定场景、设备组、基线和动作。
+- `StartupTimingMetric.timeToInitialDisplayMs` 测首帧。`timeToFullDisplayMs` 依赖 `reportFullyDrawn()`，在 Android 10 / API 29 及更早版本可能不可用；没有业务完整绘制点的场景不能拿 TTFD 做卡点。
+- `FrameTimingMetric.frameDurationCpuMs` 是 UI Thread 与 RenderThread 生产一帧的 CPU 时间；`frameOverrunMs` 只在 Android 12 / API 31 及以上可用，还包含相对帧 deadline 的语义。两项指标不能共享阈值。
+- `TraceSectionMetric` 是 experimental API，默认只观察目标包，并选择一次测量中匹配到的第一个 section。业务阶段可能重复出现时，要先验证选择模式。
+- `PowerMetric` 是 experimental API，测量系统级功率或能量，不是单应用归因；官方支持 Pixel 6、Pixel 6 Pro 及后续设备，测试机还需限制其他进程干扰。
 
-```yaml
-release_quality_gates:
-  - id: startup_low_end
-    stage: release_candidate
-    metric: home_cold_start_tffd_p90_ms
-    device_group: low_end_android_12_14
-    baseline: last_green_release
-    fail_if_relative_regression: 0.08
-    fail_if_absolute_over_ms: 5000
-    artifacts: [benchmark_json, perfetto_trace]
-    action: block_release_candidate
-  - id: rollout_jank_guard
-    stage: staged_rollout_5_percent
-    metric: feed_slow_frame_rate
-    segment: low_end_or_90hz_devices
-    min_samples: 500
-    fail_if_relative_regression: 0.15
-    action: pause_rollout
-```
+门禁配置不需要嵌入一组看似精确的示例数字。下面这些字段才是可移植的约束：
 
-配置里的 `baseline` 不要只指向上一次构建。上一版可能已经退化，连续小幅退化会被逐次放过。发布门禁至少保留 `last_green_release`、`main_branch_7d_median` 和 `manual_pinned_baseline` 三类基线；报告里显示命中哪条基线。
+| 字段 | 要回答的问题 |
+| --- | --- |
+| `artifact_id` / `commit` | 测的是哪一份目标包与测试包 |
+| `scenario_id` / `setup_version` | 用户路径、账号和测试数据是否一致 |
+| `metric_name` / `metric_version` | 指标怎样计算，当前 API 是否可用 |
+| `device_id` / `build_fingerprint` | 设备、系统镜像和刷新率是否可比较 |
+| `compilation_mode` / `profile_version` | 编译状态和 Baseline Profile 是否一致 |
+| `baseline_id` | 比较对象是固定 green release、滚动趋势还是人工固定基线 |
+| `sample_count` / `effect_interval` | 测量次数、效应值和不确定区间是什么 |
+| `decision` / `owner` / `waiver_expiry` | 失败后做什么，由谁处理，豁免何时失效 |
 
-自动化测试失败后，CI 不只给红绿结果。失败报告至少带上新包值、基线值、相对变化、绝对变化、设备温度、测试轮数、trace 文件路径和最近可疑 commit。这样 release owner 能判断是测试环境波动、真实退化，还是基线需要更新。
+`baseline_id` 不宜永久指向上一轮构建。上一轮可能已经退化，连续的小变化会被滚动比较忽略。固定 green release 适合判断累计漂移，近期稳定趋势适合识别设备环境变化，人工固定基线适合重大重构；报告必须显示实际使用的基线及其更新时间。
+
+Benchmark 库输出测量 JSON 和 profiling trace；Macrobenchmark 会为每个测量迭代生成一份 Perfetto trace。CI 应按 build、设备、场景和测试名归档 JSON 与 Trace。失败报告除了红绿状态，还应包含新包值、基线值、效应区间、测试轮数、thermal throttling 等环境标记、失败迭代 Trace 和候选 commit。
+
+PR 阶段适合运行编译校验和 dry run，确认测试可以执行；固定物理设备上的重复测量更适合主干定时任务和候选包门禁。一次噪声较大的 benchmark 不能自动判定业务回归：门禁要区分测试基础设施失败、环境漂移和可重复的应用退化，并为每类失败定义不同动作。
 
 ## 灰度发布与性能监控联动
 
-灰度发布的价值在于把候选包放回真实用户分布里验证。灰度效率可以拆成测试效率和数据验证效率，这个拆法适合性能门禁：线下测试决定能不能开始灰度，线上数据决定能不能扩大灰度。
+灰度发布把候选包放到真实设备和使用环境中验证。线下测试决定能否开始灰度，线上数据决定能否扩大覆盖，数据健康度决定当前窗口是否有资格作出判断。
 
-Google Play staged rollout 支持把更新先发布给一部分用户，然后逐步提高比例；该能力只适用于应用更新，不适用于首次发布。Play Console 文档也说明 staged rollout 可以按百分比放量，开发者可以在发现问题时停止扩大影响面。[已验证: 官方文档, support.google.com/googleplay/android-developer/answer/6346149]
+Google Play staged rollout 只适用于应用更新，不适用于首次发布。Play 会为每次新 release 随机选择符合条件的用户；暂停后恢复会继续影响同一组用户。暂停只会阻止新增用户取得该版本，已经安装的用户仍停留在问题版本。
 
-灰度监控要按批次组织，而不是只按 app version 聚合。同一个 version 可能经历 1%、5%、20%、50%、100% 多个阶段，每个阶段的用户结构都不同。门禁系统至少记录这些字段：
+staged rollout 不是严格的 A/B Test。Play 没有向开发者提供一个由实验协议定义、可稳定复现的旧版本对照组；版本覆盖还会受国家、设备资格、自动更新、安装时间和渠道影响。因此，版本间差异可以触发风险处置，却不能只凭“灰度用户比旧版用户差”就宣称代码变化是原因。因果判断仍需使用 26.6 节的实验或可复现回退证据。
 
-- `rollout_id`: 灰度批次，用来区分同一版本的不同放量阶段。
-- `rollout_fraction`: 当前用户比例，和 Play / 自建渠道配置对账。
-- `build_id`: 构建产物 ID，用来连接 CI 报告和线上指标。
-- `experiment_snapshot`: Remote Config、A/B Test、服务端开关的参数快照。
-- `metric_window`: 判断窗口，例如放量后 30 分钟、1 小时、24 小时。
-- `segment`: 设备档位、Android 版本、国家 / 地区、渠道、刷新率。
+灰度监控要按 release 与每次扩量决策组织，不能只按 `versionName` 聚合。门禁系统至少记录：
 
-灰度放量建议采用“证据齐了再升档”的状态机：
+- `track`、release name、`versionCode` 与发布 edit ID。
+- `rollout_id`、目标 `userFraction`、国家范围、开始/暂停/恢复/完成时间。
+- build ID、产物摘要、签名和符号文件版本。
+- Remote Config、实验、服务端开关和后端依赖版本快照。
+- 指标窗口的事件时间、入库时间、完整性水位与查询时间。
+- 设备、Android 版本、国家、渠道、刷新率、入口和新老用户等预注册分群。
 
-| 阶段 | 观察窗口 | 放量条件 | 失败动作 |
+`userFraction` 是“有资格接收该 staged release 的用户比例”，不是安装完成率，也不是实时在线用户占比。发布平台要同时观察 eligible、已更新、已启动、产生指标和上传成功的数量；只用目标比例作为样本量会高估有效暴露。
+
+可以把发布状态写成以下门禁状态机；具体比例和观察时间由流量周期、事件发生率、审核时延与风险预算决定，不写成全项目通用常量。
+
+| 状态 | 进入条件 | 继续条件 | 异常动作 |
 | --- | --- | --- | --- |
-| internal / dogfood | 半天到 1 天 | 安装成功、启动路径无阻断、基础上报正常 | 修包，不进生产灰度 |
-| 1% | 30-60 分钟看快速指标，24 小时看慢指标 | crash / ANR 无异常，启动和慢帧分群无明显退化 | 暂停灰度，拉证据包 |
-| 5%-20% | 1-2 个核心流量周期 | 低端机、老系统、弱网分群通过 | 限制渠道或设备范围 |
-| 50%-100% | 至少覆盖高峰时段 | Vitals / APM / 客服反馈没有同源异常 | halt rollout 或发修复包 |
+| 内部验证 | 候选包与配置冻结，自动化门禁通过 | 安装、升级、主流程和诊断上报可用 | 重新构建，不进入生产 |
+| 初始生产灰度 | 内部证据齐全，发布审批完成 | 快速稳定性指标与数据健康度可判断，未发现高风险分群 | 暂停 release，保存现场 |
+| 扩量观察 | 上一阶段通过，样本覆盖预注册分群 | 指标区间在预算内，服务端与客户端依赖稳定 | 保持当前比例或限制国家/设备 |
+| 完成发布 | 风险 owner 接受剩余不确定性 | 全量后继续观察版本队列、vitals 与反馈 | halt completed release、配置降级或发修复包 |
 
-灰度决策要区分 fast signals 和 slow signals。APM 上报、Crash/ANR 实时统计、启动/帧率分群是 fast signals——分钟到小时级可用，适合 1%-5% 灰度阶段判断。Android Vitals 使用 28 天滚动窗口计算 quality warning，属于 slow signals——它在 50%-100% 放量及全量后提供长期质量校验，但不适合在 1% 灰度 30 分钟内做决策。灰度门禁的策略：fast signals 决定能否升档（暂停/继续灰度），slow signals 用来检验"持续好几个月"的质量趋势、触发 Play warning 排查和商店可见性评估。门禁报告里把两类信号分开列出，不混在一个判断条件里。
+灰度决策要区分快速信号和慢速信号。自建 APM、Crash/ANR 流、启动与帧指标可以较早暴露风险，但前提是数据延迟和样本覆盖达标。Android vitals 使用最近 28 天数据评估质量，并按日更新 28 天平均值，适合观察长期质量与 Play warning，不适合作为小流量刚启动后的即时放量依据。
 
-APM 数据要和发布平台双向对账。发布平台告诉 APM 当前 version、rollout fraction、渠道和实验参数；APM 把核心指标、异常分群和上报质量回写到发布单。缺少这一步，release owner 会在几个看板之间人工对数，决策会变慢。
+客服反馈和商店评论也是慢且有选择偏差的信号。它们可以帮助发现未知症状，不能用“暂时没有投诉”抵消已观测到的 Crash、ANR 或数据管道异常。
 
-灰度指标还要保护数据质量。上报组件章节把采样、存储、上报、容灾拆成四块；发布门禁里要把上传成功率、事件丢弃数、配置命中率、采样版本纳入护栏。数据管道异常时，正确动作是暂停判断，而不是继续放量。
+APM 与发布平台需要双向对账。发布平台向监控侧提供 release、目标比例、国家、配置和实验快照；监控侧把指标区间、异常分群、数据完整性和证据链接写回发布单。若上报成功率、事件丢弃、配置命中或延迟水位异常，当前结论应标为“不可判定”，维持或暂停当前比例，不能把缺失数据解释为质量正常。
 
 ## 版本回滚决策流程
 
-回滚决策要先区分三种动作：停止放量、回退配置、发布修复包。不是所有问题都适合立刻发新版；配置错误适合关开关，灰度包问题适合 halt，已全量问题要结合商店能力、修复包审核时间和动态配置能力处理。
+Android 应用的“回滚”不是单一操作，至少要区分暂停发布、回退服务端配置和发布更高 `versionCode` 的修复包。配置错误可以关闭开关；未完成的 staged rollout 可以 halt；已经安装到设备上的问题版本不能由 Play 自动降级，需要配置降级、服务端兼容或修复包恢复用户。
 
-Google Play Developer API 的 track release 模型包含 `draft`、`inProgress`、`halted`、`completed` 等状态，也包含 staged rollout 的 user fraction 和国家定向字段；官方 tracks 文档说明，可以把 production track 上 `inProgress` 的 staged release 更新为 `halted`。这给自动化发布平台提供了可操作接口，但执行前仍要走人工审批。[已验证: 官方文档, developers.google.com/android-publisher/api-ref/rest/v3/edits.tracks；developers.google.com/android-publisher/tracks]
+Google Play Developer API 的 release 状态包括 `draft`、`inProgress`、`halted` 和 `completed`。`userFraction` 只允许用于 `inProgress` 或 `halted`，取值必须严格大于 0 且小于 1。暂停进行中的 release 时，把状态更新为 `halted` 并提交 edit；该 release 随后不再提供给新用户，已安装用户不受影响。
 
-回滚判断建议按影响面和可逆性排序：
+已完成发布也可以 halt，但存在前提：同一 track 上必须有一个更早、已发布且未 halt 的 `completed` release 作为 serving fallback；如果 fallback 存在阻塞性政策问题，也不能执行。halt completed release 后，旧版本重新提供给尚未更新的用户，问题版本的现有用户仍不会自动降级。这个动作要在发布平台执行前读取 track 当前状态并显示 fallback versionCode，执行后再次读取状态确认结果。
+
+按可逆性和剩余影响面选择动作：
 
 | 信号 | 判断 | 推荐动作 |
 | --- | --- | --- |
 | 配置导致启动拉接口、日志暴涨、图片预加载扩大 | 可通过服务端配置恢复 | 立即回退配置，保留版本灰度 |
-| 1% 灰度出现 crash / ANR 分群异常 | 影响面小，包体风险高 | halt / pause rollout，拉取样本和 trace |
-| 低端机启动或慢帧明显退化 | 可通过设备 / 渠道限制降低影响 | 暂停升档，只对安全分群继续观察 |
-| 已 100% 发布后发现 P0 稳定性问题 | 新用户和更新用户会继续拿到问题版本，已安装用户不会自动降级 | 可以 halt 已 100% rolled-out release，但前提是该 track 上存在可 serving 的上一个 completed release，且 fallback release 没有阻塞性政策问题；同时准备修复包、服务端降级和功能开关 |
-| 监控数据异常但客服和 Vitals 未同步异常 | 可能是采样或上报故障 | 先修数据管道，不用问题指标触发回滚 |
+| 初始灰度出现 Crash / ANR 或启动失败异常 | 影响面仍受控，包体风险高 | halt staged rollout，冻结证据并复现 |
+| 特定设备群出现稳定退化 | 可通过发布资格或功能开关缩小范围 | 保持当前比例，限制受影响范围并准备修复 |
+| completed release 出现严重稳定性问题 | 仍有用户可能更新到问题版本 | 核对 serving fallback 后 halt，同时执行配置降级并提交修复包 |
+| 已安装用户持续受影响 | halt 无法降级现有安装 | 服务端兼容、关闭高风险功能、应用内提示，并发布更高 versionCode |
+| 数据完整性失败 | 当前质量结论不可用 | 暂停扩量，修复监控链路；已有明确安全信号仍按安全信号处理 |
 
-Play Developer API 的 Tracks 文档同时覆盖两类 halt：`inProgress` staged rollout 可设置为 `halted`；已 `completed` 的 release 也可以设置为 `halted`，随后由同一 track 上之前已发布且未被 halt 的 completed release 作为 serving fallback。Play Console 帮助文档也说明 100% rolled-out release 可以 halt，但不能 halt track 的首个 release，也不能 fallback 到存在阻塞性政策问题的旧版本。halt 不会让已经安装问题版本的用户自动降级；这些用户仍要通过修复包、服务端降级、功能开关或应用内更新策略恢复。
+自动化可以生成建议、检查权限和准备 Play edit，但 halt、恢复和 completed 等动作会改变外部用户的版本供给，应保留明确审批、操作者、请求内容和 Play 返回结果。重试前先读取当前 track，避免网络超时后重复修改未知状态。
 
-版本回滚要有证据包。证据包至少包含：版本、build id、rollout fraction、异常指标、基线值、当前值、样本量、影响用户数、Top 分群、Top crash / ANR 组、trace / 日志样本、配置快照、已执行动作和下一步 owner。
+回滚证据包至少包含：track、release、versionCode、build ID、目标与有效覆盖、异常指标定义、基线与效应区间、数据完整性、受影响分群、Crash/ANR 组、Trace 或日志样本、配置快照、serving fallback、已执行动作和 owner。对于动态配置，还要保存旧值、新值、作用条件、配置版本和客户端生效时机。
 
-回滚后还要做两件事。第一，确认指标回到基线：配置回退后看分钟级指标，修复包发布后看灰度批次指标，商店全量问题还要看 Vitals 的 28 天趋势。第二，把事故规则写回门禁：如果这次是低端机慢帧退化，下个版本的 release candidate 就必须加入同场景 benchmark 或线上分群护栏。
+处置后要验证恢复是否与动作时间一致。配置回退看配置拉取、激活与功能实际使用漏斗；修复包看新 versionCode 的有效覆盖和关键指标；Play 侧长期质量继续观察 vitals 的滚动窗口。恢复只说明处置有效，根因还要由代码、Trace 或可控实验确认。事故中发现的设备群、场景或数据缺口应加入下一版门禁。
 
 ## 发布单要保存完整证据
 
-发布单不只是审批记录，它是事故复盘和下一轮门禁的输入。每个发布单至少保存四类附件：CI benchmark 报告、灰度监控快照、配置 / 实验快照、人工审批与豁免记录。豁免记录必须有过期时间，不能永久压过门禁。
+发布单既是审批记录，也是事故复盘和下一轮门禁的输入。每个发布单至少保存四类附件：CI Benchmark 报告、灰度监控快照、配置或实验快照、人工审批与豁免记录。豁免要写明规则、原因、证据、责任人、适用版本和失效时间；新版本不得自动继承。
 
-数据平台章节强调统一埋点规范和数据验证流程；放到发布门禁里，对应的是统一发布单字段。没有统一字段，后续很难回答“哪个版本在哪个灰度阶段开始退化、当时哪些开关打开、谁批准继续放量”。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 34.md]
+发布单还应保存每次状态转换，而非只保留当前状态：谁在什么时间依据哪一版数据把 release 从候选包变为灰度、从当前比例扩大、暂停、恢复或完成。保留不可变事件记录后，团队才能复原“退化从哪个窗口出现、当时哪些开关生效、为什么继续发布”。
 
 ## 小结
 
-发版质量门禁把性能治理从“版本前看一眼指标”改成固定流程：release candidate 用自动化 benchmark 拦确定性退化；灰度阶段用 APM、Vitals、客服反馈和配置快照判断真实用户风险；异常发生后先暂停放量，再按配置回退、halt rollout、修复包三类动作处理。
+发版质量门禁把候选包、测试环境、指标定义、发布状态和处置动作绑定到同一份证据记录。候选包阶段使用 release-like 构建与物理设备识别可重复退化；Android 17 兼容性按“旧 target 运行”和“target API 37”两轮验证；灰度阶段同时观察质量指标和数据健康度；异常发生后按配置回退、halt release 和修复包的适用范围处置。
 
-这套机制的价值不在于让每次发布零风险，而在于让风险有证据、有 owner、有停止条件，并且能回写到下一轮门禁。
+门禁不能消除发布风险。它应让剩余风险、数据不确定性、审批责任和停止条件可复核，并把本次事故暴露的场景与设备群加入下一次发布验证。
 
 ## 参考资料
 
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 29.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 31.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 34.md]
-- [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/benchmarking-in-ci]
-- [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
-- [已验证: 官方文档, developer.android.com/topic/performance/vitals]
-- [已验证: 官方文档, support.google.com/googleplay/android-developer/answer/6346149]
-- [已验证: 官方文档, developers.google.com/android-publisher/api-ref/rest/v3/edits.tracks]
-- [已验证: 官方文档, developers.google.com/android-publisher/tracks]
+- [AOSP Android 17：`android-17.0.0_r1` source manifest](https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/default.xml)
+- [迁移应用到 Android 17](https://developer.android.com/about/versions/17/migration)
+- [Android 17：影响所有应用的行为变化](https://developer.android.com/about/versions/17/behavior-changes-all)
+- [Android 17：target API 37+ 的行为变化](https://developer.android.com/about/versions/17/behavior-changes-17)
+- [Android 应用兼容性框架](https://developer.android.com/guide/app-compatibility)
+- [在 CI 中运行 Android Benchmark](https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci)
+- [Macrobenchmark 指标](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)
+- [Android vitals](https://developer.android.com/topic/performance/vitals)
+- [Google Play staged rollout](https://support.google.com/googleplay/android-developer/answer/6346149)
+- [Google Play Developer API：APKs 与 Tracks](https://developers.google.com/android-publisher/tracks)
+- [Google Play Developer API：`edits.tracks`](https://developers.google.com/android-publisher/api-ref/rest/v3/edits.tracks)
