@@ -79,56 +79,59 @@ last_deepseek_cn_review_at: 2026-07-03
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-App 可观测性要解决线上问题处理里的四件事：判断影响面、拿到现场证据、找到责任方向，并把修复结果拉回线上验证。上线后 30 分钟 crash 率飙升——先回答「影响多少用户、哪些机型、哪个版本」，再拿到具体 crash 堆栈和用户操作路径；修完后灰度验证，确认修复版本 crash 率回落。这四个环节对应 Metrics（看趋势）、Logs（还原现场）、Traces（解释慢在哪）、回验（确认修复）。本节把可观测性拆成四层：数据模型、端侧采集、服务端处理、问题流转。Part 5 后续小节会展开 Crash、ANR、性能指标和案例，本节聚焦总架构。
+App 可观测性要解决线上问题处理里的四件事：判断影响面、取得现场证据、找到责任方向，并在线上验证修复结果。新版本上线后 crash 率异常，应先回答「影响多少用户、集中在哪些机型和版本」，再关联 crash 堆栈、发布记录和受控的用户操作摘要；修复进入灰度后，还要验证同口径指标是否恢复。这四个环节分别需要 Metrics（看趋势）、Logs（还原事件）、Traces（解释耗时路径）和回验。本节从数据模型、端侧采集、服务端处理与问题流转四个层面说明总架构。
+
+本文的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`。可观测性协议大多由应用与服务端共同定义，不能把某个第三方 SDK 的字段误写成平台保证；涉及时间基准和线上系统 profile 时，分别以 Android 17 的 `SystemClock` 与 `ProfilingManager` 实现边界为准。
 
 ## Metrics / Logs / Traces 分别回答什么问题
 
 Metrics、Logs、Traces 是三类不同粒度的证据，混在一起设计会让系统很快失控。Metrics 适合看群体趋势，Logs 适合还原单次现场，Traces 适合解释时间线上哪一段慢。
 
-| 类型 | 典型数据 | 适合回答的问题 | 不适合承担的职责 |
+| 类型 | 典型数据 | 适合回答的问题 | 不适合处理的问题 |
 | --- | --- | --- | --- |
 | Metrics | Crash 率、ANR 率、启动 P95、慢帧率、网络失败率、WakeLock 异常率 | 这个版本是否变差、影响哪些机型、是否达到告警阈值 | 还原单个用户当时发生了什么 |
 | Logs | 业务日志、诊断日志、Crash 附加信息、用户反馈时间窗日志 | 这个用户的操作路径、请求参数摘要、错误码、降级原因 | 长期保存全部明细并做高频聚合 |
 | Traces | Perfetto trace、方法耗时片段、网络阶段耗时、会话时间线 | 一次启动、卡顿或网络请求到底慢在哪个阶段 | 替代日常指标大盘，或全量长期采集 |
 
-Android Vitals 侧重 Metrics：Google Play 会收集稳定性、性能、电量和权限等质量数据，核心指标包括 user-perceived crash rate、user-perceived ANR rate、excessive partial wake locks；Play 用最近 28 天数据评估应用质量。它适合做外部质量基线，但不提供业务场景、用户操作路径和内部日志。团队仍要建设自己的端侧可观测性系统，把页面、场景、版本、渠道、设备等维度接进来。[已验证: 官方文档, developer.android.com/topic/performance/vitals]
+Android Vitals 侧重 Metrics：在用户允许采集的前提下，Google Play 汇总稳定性、性能、电量和权限等质量数据；当前核心指标包括 user-perceived crash rate、user-perceived ANR rate 和 excessive partial wake locks，Play 每天以最近 28 天的平均值检查关键质量指标。它适合作为 Play 分发侧的质量基线，但不会提供应用自定义的业务场景和内部日志。团队仍需用自己的数据模型补充页面、场景、构建版本与渠道等维度。[Android Vitals 官方说明](https://developer.android.com/topic/performance/vitals)
 
-Firebase Performance Monitoring 的模型更接近 App 内部性能观测：自动采集启动、网络请求、屏幕渲染等 trace，并允许自定义 code trace、custom metrics 和 attributes。这里的 trace 指一段任务的起止时间与附加指标，区别于 Perfetto 文件；attributes 用来按国家、设备、版本、系统等维度筛选。[已验证: 官方文档, firebase.google.com/docs/perf-mon]
+Firebase Performance Monitoring 的模型更接近 App 内部性能观测：它可自动采集启动、HTTP/S 请求和屏幕渲染 trace，并允许自定义 code trace、custom metrics 与 attributes。这里的 trace 是一段任务的起止时间及附加指标，不是 Perfetto 文件；attributes 用于按国家、设备、版本和系统等维度筛选。[Firebase Performance Monitoring 官方说明](https://firebase.google.com/docs/perf-mon)
 
 App 自建体系要把两者结合：Vitals 给外部质量结果，自建 Metrics 给内部维度，Logs 和 Traces 给现场证据。单看 Vitals 只能知道质量已经变差；没有 Logs 和 Traces，仍然很难解释变差发生在哪个场景、由什么触发。
 
-
 ### 事件数据模型设计示例
 
-Metrics、Logs、Traces 在端侧的编码方式不同，但共享一套公共字段。把这些字段统一设计和约束，后续分析层才能跨信号跳转。
-
-**公共字段（所有事件都带）**：
+Metrics、Logs、Traces 在端侧的编码方式不同，但需要共享关联字段。下面的 JSON 展示一份最小公共信封；字段名是应用协议示例，不是 Android 平台 API。
 
 ```json
 {
   "$common": {
-    "event_type": "crash_summary | anr_summary | startup_metric | frame_metric | user_log | network_metric",
-    "timestamp_ms": 1719926400123,
-    "session_id": "a1b2c3d4-...",
+    "schema_version": "obs.event.v3",
+    "event_id": "0198f1a4-...",
+    "event_type": "startup_metric",
+    "wall_time_ms": 1785312000123,
+    "elapsed_realtime_ns": 418273600012345,
+    "session_id": "resettable-session-id",
+    "trace_id": "9f0c...",
     "scene_id": "MainActivity_onResume",
     "scene_seq": 12,
     "app_version": "8.4.2",
     "build_number": 8420,
-    "os_version": "Android 14",
-    "api_level": 34,
-    "device_model": "Pixel 8",
+    "os_version": "Android 17",
+    "api_level": 37,
+    "device_model": "example-model",
     "device_brand": "Google",
     "network_type": "WIFI",
     "app_in_foreground": true,
-    "sample_rate": 0.1,
-    "sample_config_version": "2026-07-02-v3"
+    "inclusion_probability": 0.1,
+    "sampling_rule_id": "baseline-startup-v3"
   }
 }
 ```
 
-`event_type` 决定后续展开哪个业务字段块。`session_id` 让同一个用户的一次使用会话内的所有事件可关联。`scene_id` + `scene_seq` 让事件按页面和顺序排列，比单纯用时间戳更稳定。
+`wall_time_ms` 用于和发布、告警等现实时间对齐，但用户或网络可以调整墙上时钟；会话内排序与耗时计算应使用单调递增的 `elapsed_realtime_ns`。Android 的 `SystemClock.elapsedRealtimeNanos()` 包含深度睡眠时间，适合通用间隔测量，但设备重启后会归零，因此还需要 `session_id` 和 `scene_seq` 划定边界。`event_id` 用于重试去重，`trace_id` 用于跨信号关联，`schema_version` 用于解码与迁移。
 
-**Metrics 事件示例（启动指标）**：
+下面的 Metrics 片段展示启动事件的专属字段；为节省篇幅，`$common` 只保留 `event_type`，生产事件仍应携带上面的完整公共信封。
 
 ```json
 {
@@ -154,9 +157,9 @@ Metrics、Logs、Traces 在端侧的编码方式不同，但共享一套公共�
 }
 ```
 
-启动指标选择点状采集而不是全 trace 上报——线上网络成本不允许每个启动都上传完整 Perfetto trace。把启动分解成几个关键阶段耗时，配合线程池等指标和阻塞网络请求标记，能在不依赖 trace 的情况下定位瓶颈来源。
+`ttid_ms` 和 `ttfd_ms` 分别对应平台定义的首次显示与完全显示时间；其他阶段名属于应用自定义协议，必须给出统一的起止点。日常事件适合保存阶段耗时、计数和阻塞原因，而不是为每次启动保存系统 trace。指标出现回归后，再对受控样本采集 profile。
 
-**Logs 事件示例（用户日志摘要）**：
+下面的 Logs 片段只携带允许上报的模板标识与分类字段，避免把自由文本当成默认协议。
 
 ```json
 {
@@ -164,8 +167,8 @@ Metrics、Logs、Traces 在端侧的编码方式不同，但共享一套公共�
   "log": {
     "level": "ERROR",
     "tag": "PaymentFlow",
-    "msg_hash": "sha256:abc123...",
-    "msg_summary": "payment confirm failed: timeout",
+    "message_template_id": "payment_confirm_timeout",
+    "message_fingerprint": "hmac-sha256:abc123...",
     "error_code": 504,
     "user_visible": true,
     "prev_scene_id": "PaymentConfirmActivity",
@@ -174,17 +177,18 @@ Metrics、Logs、Traces 在端侧的编码方式不同，但共享一套公共�
 }
 ```
 
-日志上报不传原始日志正文——传 `msg_hash`（去重）和 `msg_summary`（可读）。服务端按 `msg_hash` 聚合，发现某个错误码突然增多后，再用日志回捞拉具体用户的详细日志正文。
+普通上报应优先使用枚举化模板和允许列表字段。对原始文本直接做普通 SHA-256 不是匿名化：低熵错误消息、手机号或 URL 仍可能被猜测；需要稳定聚合时，应先移除敏感字段，再用受控密钥生成 HMAC 指纹。详细日志只能在明确的数据政策、用户告知或同意、目标时间窗、配额和自动过期约束下回捞。
 
-**Traces 事件示例（方法耗时片段）**：
+下面的 Traces 片段展示应用自己埋点的 span 摘要，它可以与日志共享 `trace_id`，但不等同于系统 trace。
 
 ```json
 {
   "$common": { "event_type": "method_trace" },
   "trace": {
+    "span_id": "37ab...",
+    "parent_span_id": "a011...",
     "span_name": "MainActivity.onCreate",
-    "parent_span": "cold_start",
-    "start_offset_ms": 320,
+    "start_elapsed_realtime_ns": 418273600320000,
     "duration_ms": 145,
     "thread": "main",
     "sub_spans": [
@@ -196,14 +200,9 @@ Metrics、Logs、Traces 在端侧的编码方式不同，但共享一套公共�
 }
 ```
 
-不是完整 Perfetto trace，而是关键方法耗时片段。通过 `parent_span` + `start_offset_ms` 把多个片段拼回时间线。端侧 trace SDK 在关键路径上插入 `startSpan/stopSpan`，日常只记录耗时摘要；异常时（超阈值）再触发完整 Perfetto trace 上传。
+`trace_id`、`span_id` 和 `parent_span_id` 构成关联关系，单调时钟给出同设备会话内的起点与时长。Android 15 / API 35 起，普通应用可通过 `ProfilingManager` 请求 system trace、heap dump、heap profile 或 stack sampling；请求受系统限流且不保证执行，结果经过裁剪，只包含请求应用的相关信息。Android 16 / API 36 起可注册系统触发器，Android 17 / API 37 又增加 cold start、anomaly 等触发类型。应用不能把该能力描述成“异常后必定取得完整设备 Perfetto”；回调失败、文件配额、用户数据政策与上传策略都要单独处理。
 
-**数据模型的演进策略**：
-
-先确定 `$common` 公共字段（一次性定好，后续只加不删），再逐步细化各 event_type 的专属字段。不要在开始时把 schema 设计得太复杂——schema 越细，接入方越不想用。最小版本只需要：event_type、timestamp、app_version、session_id、scene_id + 业务核心字段。其他公共字段可以后续补上。
-
-
-
+数据模型不能依赖“字段永不删除”的约定维持兼容。每条事件都要携带 schema 版本；服务端至少兼容当前与迁移窗口内的旧版本，新增字段必须有缺省语义，废弃字段经过读写双轨和数据验证后再停止发送。最小版本只需要事件类型、双时钟、构建版本、会话/场景 ID、采样纳入概率与业务核心字段；高基数字段不能直接进入 Metrics 标签集合。
 ## App 侧监控体系分层设计
 
 App 侧架构要按“入口轻、缓冲可控、证据分级、上传受限”设计。监控 SDK 不应把业务线程变成编码、落盘或网络线程；否则故障发生时，监控系统会放大故障。
