@@ -417,7 +417,7 @@ C++ 模板、header-only 库、虚函数、异常、RTTI 和大量内联常让 `
 
 ## 16 KB page size：兼容要求与体积代价
 
-Android 15 开始支持 16 KB 基础页设备。Google Play 自 2025 年 11 月 1 日起，要求面向 Android 15/API 35 及更高设备的新应用和更新支持 16 KB page size。这个规则覆盖所有直接或经 SDK 带入 native 库的应用。
+Android 15 开始支持 16 KB 基础页设备。Google Play 自 2025 年 11 月 1 日起，要求面向 Android 15/API 35 及更高设备的新应用和更新在 64 位设备上支持 16 KB page size。只要应用直接包含 native 代码，或通过 SDK 带入 `arm64-v8a`、`x86_64` 库，就要把这些预编译库一起纳入检查；32 位 ABI 的产品支持范围仍应单独验证，不能用 Play 的 64 位要求替代。
 
 发布库有两层独立对齐：
 
@@ -608,9 +608,9 @@ Android 17 的 [`Runtime.java`](https://android.googlesource.com/platform/libcor
 
 它只选第一份，不检查兼容。应统一依赖来源并覆盖全部 native SDK 路径。
 
-### 只检查 `arm64-v8a`
+### 只检查一个 ABI
 
-发布声明支持的每个 ABI 都要检查缺库、导出、依赖、符号和 16 KB。一个 ABI 通过不能替另一 ABI 背书。
+发布声明支持的每个 ABI 都要检查缺库、导出、依赖和符号；16 KB ELF/ZIP 对齐至少覆盖 Play 要求涉及的 `arm64-v8a` 与 `x86_64` 产物。一个 ABI 通过不能替另一 ABI 背书。
 
 ### 把 16 KB padding 写成固定百分比
 
@@ -635,7 +635,7 @@ AAB 是上传制品。用户交付要用代表设备的 APK Set 与 `bundletool 
 | Android 5.0（API 21） | 平台支持 split APK；AAB 后来利用该机制按 ABI/密度/语言交付配置 APK |
 | Android 7.0（API 24） | 应用对非 NDK 私有平台 native 库的访问受到限制，依赖治理要使用公开 NDK API 或随包实现 |
 | Android 15（API 35） | AOSP 支持 16 KB 基础页设备，应用 native 产物需要兼容 16 KB |
-| Google Play 2025-11-01 | 面向 Android 15/API 35 及更高设备的新应用和更新必须支持 16 KB page size |
+| Google Play 2025-11-01 | 面向 Android 15/API 35 及更高设备的新应用和更新必须在 64 位设备上支持 16 KB page size |
 | NDK r28 | 默认生成 16 KB 对齐 ELF |
 | AGP 8.5.1 | 正确处理未压缩 native 库的 16 KB ZIP 对齐 |
 | Android 16（API 36） | 16 KB 设备可为部分旧 ELF 启用应用兼容模式并提示用户 |
