@@ -82,9 +82,13 @@ ANR 监控解决的是两个问题：用户遇到无响应时能不能被统计�
 
 ANR 监控可以拆成四层：系统 ANR 记录、Play Vitals 指标、端侧卡顿预警、现场快照。系统 ANR 负责确认事件，端侧快照负责补足上下文，Play Vitals 负责提供发布质量红线。ANR 根因分析流程详见 9.3 节，治理策略详见 20.4 节，Crash / ANR 捕获底层实现详见 19.24 节。
 
+本文的平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为上界。ANR 的判定、队列和 trace 生成位于 framework、ART 与 debuggerd 等用户空间组件，本节不依赖 Android 17 kernel 的专有实现，因此不为这些结论附加 kernel tag。
+
 ## 系统侧 ANR 记录与 traces 采集
 
-系统 ANR 的触发点不在 App SDK 里。输入派发超时、前台 Service 超时、广播超时、ContentProvider 发布超时等路径最终会进入 system_server 的 ANR 处理逻辑。AOSP android-17.0.0_r1 基准里，`ActivityManagerService` 把事件交给 `AnrHelper.appNotResponding()`，再由 `AnrConsumer` 串行处理队列，避免同一个进程重复进入 ANR dump。
+系统 ANR 的触发点不在 App SDK 里。输入派发、执行 Service、广播、ContentProvider 查询和 JobService 响应等超时会沿各自路径进入 system_server 的 ANR 处理逻辑；具体时限随 ANR 类型、平台版本和 OEM 实现变化。AOSP `android-17.0.0_r1` 中，`AnrHelper.appNotResponding()` 会拒绝同一 PID 正在预抓、排队或处理的重复记录，提交目标进程的 early dump，再由 `AnrConsumer` 串行调用 `ProcessErrorStateRecord.appNotResponding()`。
+
+下面的时序图只表达 Android 17 system_server 中的主要职责，不把 trace 文件写入与退出历史记录误画成同一个调用。
 
 ```mermaid
 sequenceDiagram
@@ -93,19 +97,26 @@ sequenceDiagram
     participant Anr as AnrHelper
     participant PESR as ProcessErrorStateRecord
     participant Dump as StackTracesDumpHelper
-    participant Store as DropBox / ApplicationExitInfo
+    participant Store as DropBox / exit-info tracker
 
     Trigger->>AMS: 上报 app not responding
     AMS->>Anr: appNotResponding(process, reason)
-    Anr->>Dump: 提前 dump 目标进程栈
-    Anr->>PESR: 串行处理 ANR 记录
+    Anr->>Dump: 提交目标 PID early dump
+    Anr->>PESR: AnrConsumer 串行处理记录
     PESR->>Dump: dump firstPids / nativePids / extraPids
-    Dump->>Store: 写入 ANR traces 与退出原因
+    Dump-->>PESR: 返回 traces 文件与首进程范围
+    PESR->>Store: 写 DropBox、更新 ANR/退出信息
 ```
 
-`StackTracesDumpHelper` 的 dump 有固定预算：Java 栈通过 `Debug.dumpJavaBacktraceToFileTimeout()` 写入，失败时会尝试 native backtrace；native 进程栈通过 `Debug.dumpNativeBacktraceToFileTimeout()` 补充。源码里还会从 `ProcessCpuTracker` 选出最多两个 CPU 活跃的 Java 进程追加栈信息，用来定位“不是目标进程卡住，但目标进程在等别人”的场景。
+图中 early dump 与完整处理分开执行，目的是尽早保存目标进程现场，同时避免多个 ANR 同时发生时并发执行整套重型抓栈。
 
-老版本监控方案常提到监听 `/data/anr/traces.txt` 或依赖 SIGQUIT 产生 traces。这条路径只能作为历史背景参考：高版本系统对 `/data/anr/` 访问限制增加，端侧 SDK 不能稳定读取系统 ANR 文件；Android 17 基准的 system_server 路径也不等同于“App 自己处理 SIGQUIT”。App 侧更可靠的做法是把系统确认与端侧快照分开：Android 11 及以上用 `ApplicationExitInfo` 读取退出原因与系统 traces，运行期用主线程监控保存自己的现场。
+`StackTracesDumpHelper` 对一次完整抓取使用总预算，并乘以 `Build.HW_TIMEOUT_MULTIPLIER`：Android 17 源码中的基础总预算为 20 秒，单个 Native dump 基础预算为 2 秒，early dump 基础预算为 10 秒。Java 路径调用 `Debug.dumpJavaBacktraceToFileTimeout()`；输出失败或过小时再尝试 Native backtrace。`ProcessCpuTracker` 还会从候选 Java 进程中选择最多两个 CPU 活跃进程追加栈，用于发现目标进程等待其他进程的情况。这里的数字是 `android-17.0.0_r1` 实现预算，不是 App 判定 ANR 的通用阈值。
+
+### SIGQUIT 在平台抓栈中的位置
+
+Android 17 的 `Debug.dumpJavaBacktraceToFileTimeout()` 经 JNI 调用 debuggerd Java backtrace 路径。ART 的 `SignalCatcher` 线程通过 `sigwait()` 等待 `SIGQUIT`，随后执行 `Runtime::DumpForSigQuit()` 并把结果写给 tombstoned。它不是在主线程安装普通 signal handler，也不是给 App SDK 的“ANR 已确认”回调。
+
+第三方 SDK 不应抢占、吞掉或自行解释平台的 `SIGQUIT`。新系统会把 ANR trace 写入 `/data/anr/anr_*`，普通应用不能直接读取该目录；具备 root/调试条件的设备可以用 adb 获取，线上 App 则把系统确认与端侧预警分开处理：API 30 及以上查询 `ApplicationExitInfo`，运行期通过低成本主线程监控保存自己的上下文。
 
 [已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/AnrHelper.java]
 [已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java]
