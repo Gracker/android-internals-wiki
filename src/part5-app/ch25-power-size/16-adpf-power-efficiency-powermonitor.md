@@ -142,11 +142,11 @@ Power Efficiency Mode 的前提是工作有稳定周期，并且业务结果不�
 
 | 场景 | 是否适合 | 判断依据 |
 | --- | --- | --- |
-| 后台批量压缩、日志归档、离线索引 | 适合 | 任务时间较长，吞吐稳定，允许几十毫秒到秒级弹性 |
+| 后台批量压缩、日志归档、离线索引 | 适合 | 任务持续时间和吞吐较稳定，目标耗时留有余量 |
 | 本地模型批处理、照片批量转码、媒体库扫描 | 适合灰度 | 有固定 batch，可用单位任务能耗和 P90 耗时同时验收 |
 | 游戏主循环、相机预览滤镜、低延迟音频 | 谨慎 | 有周期性，但 deadline 紧；默认应优先稳定帧耗时和低延迟 |
 | 输入响应、点击后首屏展示、滚动帧提交 | 不适合 | 用户感知延迟优先级高，节能 hint 容易带来 P95 / P99 退化 |
-| 一次性网络请求、偶发 JSON 解析 | 不适合 | 缺少稳定周期，创建 session 和上报成本会污染收益 |
+| 一次性网络请求、偶发 JSON 解析 | 不适合 | 缺少稳定周期，无法持续提供有意义的目标耗时与实际耗时 |
 
 判断顺序很简单：先问这段工作是否能定义周期，再问周期是否有余量，随后确认线程是否稳定。三项有一项不成立，Power Efficiency Mode 通常不是第一选择。
 
@@ -164,14 +164,14 @@ Power Efficiency Mode 的前提是工作有稳定周期，并且业务结果不�
 
 Power Efficiency Mode 对应的公开方法是 `setPreferPowerEfficiency(boolean)`，API reference 标注 Added in API level 35。AOSP `android-17.0.0_r1` 中同名方法调用 native 层 `nativeSetPreferPowerEfficiency()`，注释说明它表达“这些线程可以安全地偏向能效而不是性能”。
 
-这段代码展示固定 worker 的组织方式。重点看 tid 采集、session 创建、节能偏好和周期上报的位置；生产代码还要补错误处理、埋点、灰度开关和 API 版本判断。
+下面的代码展示固定工作线程的组织方式，重点是在线程自身采集 tid、串行访问 session，并在周期结束后上报实际耗时。
 
 ```kotlin
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 class PowerEfficientBatchWorker(
     context: Context,
     private val targetDurationNanos: Long,
-) : Closeable {
+) {
     private val appContext = context.applicationContext
     private val executor = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "pe-batch-worker")
@@ -179,30 +179,42 @@ class PowerEfficientBatchWorker(
     private val dispatcher = executor.asCoroutineDispatcher()
     private var session: PerformanceHintManager.Session? = null
 
-    suspend fun start() = withContext(dispatcher) {
+    init {
+        require(targetDurationNanos > 0L)
+    }
+
+    suspend fun start(): Boolean = withContext(dispatcher) {
+        check(session == null) { "Session has already started" }
         val manager = appContext.getSystemService(PerformanceHintManager::class.java)
         val tid = Process.myTid()
         session = manager?.createHintSession(intArrayOf(tid), targetDurationNanos)
         session?.setPreferPowerEfficiency(true)
+        session != null
     }
 
     suspend fun runCycle(block: suspend () -> Unit) = withContext(dispatcher) {
+        checkNotNull(session) { "Call start() before runCycle()" }
         val start = SystemClock.uptimeNanos()
-        block()
-        val actual = SystemClock.uptimeNanos() - start
-        session?.reportActualWorkDuration(actual)
+        try {
+            block()
+        } finally {
+            val actual = SystemClock.uptimeNanos() - start
+            session?.reportActualWorkDuration(actual)
+        }
     }
 
-    override fun close() {
-        session?.close()
-        session = null
+    suspend fun close() {
+        withContext(dispatcher) {
+            session?.close()
+            session = null
+        }
         dispatcher.close()
         executor.shutdown()
     }
 }
 ```
 
-这段封装只把一个固定 worker 放进 session。多线程 batch 也能做，但要把 worker 数量控制在小范围内，并在线程全部启动后一次性登记 tid。默认 `Dispatchers.IO` 这类弹性线程池不适合直接接入，原因是 tid 会随挂起恢复和阻塞扩容变化；相关边界见 25.11 节。
+`PerformanceHintManager.Session` 不是线程安全对象，因此示例把创建、上报与关闭都放在同一个调度器中。`finally` 保证失败周期也会上报已经消耗的时间；业务仍需单独记录异常结果。多线程 batch 可以登记多个 tid，但要在线程身份稳定后再创建或更新 session。`Dispatchers.IO` 这类弹性线程池会在不同 tid 之间迁移协程，不适合作为固定线程集合直接登记；相关边界见 25.11 节。
 
 ## Power Efficiency Mode 的系统语义
 
@@ -210,7 +222,7 @@ class PowerEfficientBatchWorker(
 
 发布时要把三层边界写清楚：
 
-- API 边界：`PerformanceHintManager` 从 API 31 开始可用，`setThreads()` API reference 标注 API 34，`setPreferPowerEfficiency()` 标注 API 35。编译期、运行期和灰度数据都要检查，不按系统版本硬断言收益。
+- API 边界：`PerformanceHintManager` 从 API 31 开始可用，`setThreads()` API reference 标注 API 34，`setPreferPowerEfficiency()` 标注 API 35。编译期、运行期和灰度数据都要检查，不能只按系统版本推断收益。
 - 系统边界：hint 会进入系统的性能提示路径，后续行为受 Power HAL、调度器、CPUfreq、thermal throttling 和 OEM 策略影响。
 - 业务边界：节能 hint 可能拉长尾部耗时。验收时要同时看 P50 / P90 / P99 耗时、单位任务能耗和热状态。
 
@@ -218,9 +230,9 @@ class PowerEfficientBatchWorker(
 
 ## PowerMonitor 与 SystemHealthManager 读数模型
 
-Android 15（API 35）新增的 `PowerMonitor` / `PowerMonitorReadings` 让 App 能按设备提供的 monitor 读取累计能耗。入口在 `SystemHealthManager`：先调用 `getSupportedPowerMonitors()` 拿到列表，再把列表传给 `getPowerMonitorReadings()`，结果通过 `OutcomeReceiver<PowerMonitorReadings, RuntimeException>` 返回。
+Android 15（API 35）新增的 `PowerMonitor` / `PowerMonitorReadings` 让 App 能按设备提供的 monitor 读取累计能耗。两个入口都是异步方法：`getSupportedPowerMonitors(executor, callback)` 返回支持列表，`getPowerMonitorReadings(monitors, executor, outcomeReceiver)` 返回指定 monitor 的读数。回调执行器可以传 `null`，但此时回调线程由实现选择，应用代码通常应提供自己的执行器。
 
-AOSP `android-17.0.0_r1` 中 `SystemHealthManager.getSupportedPowerMonitors()` 的注释把 monitor 分成 raw ODPM rails 和 modeled energy consumers；如果设备不支持 ODPM，方法返回空列表。`getPowerMonitorReadings()` 通过 PowerStats service 取指定 monitor 的累计读数，失败时走 `onError()`。
+AOSP `android-17.0.0_r1` 中 `SystemHealthManager.getSupportedPowerMonitors()` 的注释把 monitor 分成 raw ODPM rails 和 modeled energy consumers；如果设备不支持 ODPM，公开 API 允许返回空列表。`getPowerMonitorReadings()` 通过 PowerStats service 取指定 monitor 的累计读数，不支持的 monitor 会通过 `onError()` 返回 `IllegalArgumentException`。
 
 `PowerMonitor` 有两类类型：
 
@@ -229,49 +241,52 @@ AOSP `android-17.0.0_r1` 中 `SystemHealthManager.getSupportedPowerMonitors()` �
 
 `PowerMonitorReadings.getConsumedEnergy(powerMonitor)` 返回自启动以来的累计能耗，单位是 microwatt-seconds（μWs），不跨重启保留，包含电池供电和插电状态下的总能耗。`getTimestampMillis(powerMonitor)` 返回快照时刻，时间基准是 `SystemClock.elapsedRealtime()`。找不到对应 monitor 时，AOSP `android-17.0.0_r1` 返回 `ENERGY_UNAVAILABLE = -1`。
 
-这段代码展示一次实验窗口的读数差值。重点是用两次累计值相减，不要把单次累计值当成场景能耗。
+Android 17 r1 还规定了读数新鲜度和精度边界。普通调用方使用 `MAX_POWER_MONITOR_AGE_MILLIS = 20_000` 的缓存；持有隐藏的系统权限 `ACCESS_FINE_POWER_MONITORS` 时使用另一组状态缓存，最大年龄为 `250 ms`。该权限的保护级别是 `signature|privileged|development`，普通三方应用不能把它当作可申请的公开能力。
+
+普通与高精度路径返回累计值前都会经过 `IntervalRandomNoiseGenerator`。在 r1 中，返回值位于“上一次原始读数”和“当前原始读数向下最多 `10_000_000 μWs`”共同确定的下界与当前读数之间；`10_000_000 μWs` 等于 `10 J`。同一 UID 在下一次底层刷新前得到稳定的扰动样本。这个实现意味着公开读数适合较长实验窗口和重复对照，不适合把一次短任务的前后差值当作精密能量计结果。[已验证: AOSP android-17.0.0_r1, `PowerStatsService.java` 与 `IntervalRandomNoiseGenerator.java`]
+
+下面的纯函数用于检查两次异步快照是否来自不同采样时刻，再计算累计值差。它不会把同一缓存快照或回退读数伪装成有效结果。
 
 ```kotlin
-@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-fun measurePowerWindow(
-    context: Context,
-    monitors: List<PowerMonitor>,
-    executor: Executor,
-    onMeasured: (Map<String, Long>) -> Unit,
-    block: () -> Unit,
-) {
-    val shm = context.getSystemService(SystemHealthManager::class.java)
-        ?: return onMeasured(emptyMap())
+data class PowerWindowDelta(
+    val monitorName: String,
+    val energyUws: Long?,
+    val startTimestampMillis: Long,
+    val endTimestampMillis: Long,
+)
 
-    fun read(consumer: (PowerMonitorReadings) -> Unit) {
-        shm.getPowerMonitorReadings(
-            monitors,
-            executor,
-            object : OutcomeReceiver<PowerMonitorReadings, RuntimeException> {
-                override fun onResult(result: PowerMonitorReadings) = consumer(result)
-                override fun onError(error: RuntimeException) {
-                    onMeasured(emptyMap())
-                }
-            },
+@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+fun calculatePowerWindowDeltas(
+    monitors: List<PowerMonitor>,
+    before: PowerMonitorReadings,
+    after: PowerMonitorReadings,
+): List<PowerWindowDelta> =
+    monitors.map { monitor ->
+        val startEnergy = before.getConsumedEnergy(monitor)
+        val endEnergy = after.getConsumedEnergy(monitor)
+        val startTime = before.getTimestampMillis(monitor)
+        val endTime = after.getTimestampMillis(monitor)
+
+        val delta = if (
+            startEnergy != PowerMonitorReadings.ENERGY_UNAVAILABLE.toLong() &&
+            endEnergy >= startEnergy &&
+            endTime > startTime
+        ) {
+            endEnergy - startEnergy
+        } else {
+            null
+        }
+
+        PowerWindowDelta(
+            monitorName = monitor.name,
+            energyUws = delta,
+            startTimestampMillis = startTime,
+            endTimestampMillis = endTime,
         )
     }
-
-    read { before ->
-        block()
-        read { after ->
-            val delta = monitors.associate { monitor ->
-                val start = before.getConsumedEnergy(monitor)
-                val end = after.getConsumedEnergy(monitor)
-                val value = if (start >= 0 && end >= start) end - start else -1L
-                monitor.name to value
-            }
-            onMeasured(delta)
-        }
-    }
-}
 ```
 
-这段示意代码只适合说明读数关系。实测时还要把异步回调、任务执行和时间窗口做成串行状态机，避免 before / after 窗口覆盖到无关工作；线上路径不要高频读取所有 monitor。
+调用方先通过 `getPowerMonitorReadings()` 获取 `before`，执行固定工作负载，再异步获取 `after`。`energyUws == null` 表示读数不可用、累计值回退，或两次调用命中了同一采样时刻。不要用高频轮询等待时间戳变化；实验窗口应覆盖缓存与扰动带来的误差，并把 `startTimestampMillis`、`endTimestampMillis` 一起保存。需要分析短任务时，优先使用可用的 Perfetto power rails、设备功耗轨道或外部功耗仪。
 
 ## Perfetto power rails 作为交叉验证通道
 
@@ -312,7 +327,7 @@ data_sources: {
 
 ## 实验设计：同时看耗时和单位任务能耗
 
-Power Efficiency Mode 的验收对象不是“是否更省电”这一句泛化判断，而是同一个工作负载在同一设备、同一温度起点、同一数据量下的单位任务能耗。
+Power Efficiency Mode 应按单位任务验收：固定设备、温度起点、输入数据和工作负载，再比较耗时与能耗。
 
 建议把实验拆成 A / B 两组：
 
@@ -408,20 +423,20 @@ Perfetto 文档说明，电池 counter 在 USB 插电时会反映充电电流，
 
 ### PowerMonitorReadings 与 Perfetto power rails 的同窗验证方法
 
-`PowerMonitorReadings` 和 Perfetto power rails 可以放在同一实验窗口内互相解释，但不应被写成跨设备等价数据源。安全做法是在同一设备、同一工作负载、同一温度起点下，同时记录 `PowerMonitorReadings.getConsumedEnergy()` 差值、Perfetto power rails 差值、CPU frequency、thermal status 和任务计数；如果两类能耗曲线只在趋势上同向，而绝对数值存在偏移，结论应写成“同窗旁证一致”，不要写成 rail 级闭合校准。Pixel 或单一 OEM 设备上的结论也只绑定该设备分桶。
+`PowerMonitorReadings` 和 Perfetto power rails 可以放在同一实验窗口内互相解释，但不应被写成跨设备等价数据源。应在同一设备、同一工作负载、同一温度起点下，同时记录两次 `PowerMonitorReadings` 的时间戳与差值、Perfetto power rails 差值、CPU frequency、thermal status 和任务计数。普通应用还要把 r1 的 20 秒缓存和随机扰动计入误差。若两类曲线只在趋势上同向，结论应写成“同窗旁证一致”，不要写成 rail 级校准。Pixel 或单一 OEM 设备上的结论也只绑定该设备分桶。
 
 
-## 扩展：系统层硬件协同设计架构
+## 扩展：系统与电源 HAL 的协同
 
-ADPF 的端到端效果不仅依赖应用侧代码，更依赖系统层的硬件感知能力。本节基于 AOSP `android-17.0.0_r1` 源码分析系统组件如何实现硬件协同。
+ADPF 的端到端效果同时取决于应用上报、系统服务和电源 HAL。本节以 AOSP `android-17.0.0_r1` 为准，说明公开 API 进入系统后的关键边界。
 
 > **版本限定**：本节源码锚点统一使用 `android-17.0.0_r1`。标注为"仅 main/master 可见"或 Android 18/API38+ 的内容不作为 AIW 结论；公开 API 口径只覆盖到 Android 17/API 37。
 
-### Power HAL ML_ACC Boost：硬件加速器协同接口
+### Power HAL `ML_ACC` Boost
 
 **源码位置**: `hardware/interfaces/power/aidl/android/hardware/power/Boost.aidl` (`android-17.0.0_r1`)
 
-`ML_ACC` boost 是 Power HAL 层为机器学习硬件加速器设计的协同接口。在 `android-17.0.0_r1` 的 `Boost.aidl` 中，`ML_ACC` 是枚举成员，位于 `INTERACTION`、`DISPLAY_UPDATE_IMMINENT` 之后，但 **没有显式数值**——实际值由 AIDL 编译器根据枚举位置自动分配：
+`ML_ACC` 是 Power HAL 为机器学习加速器预留的 boost 类型。`android-17.0.0_r1` 的注释把它和后续几种 boost 一起标记为“Android framework 当前不发送，OEM 可以选择实现”。下面摘录用于确认枚举名与这一版本边界：
 
 ```aidl
 /** 
@@ -431,9 +446,9 @@ ADPF 的端到端效果不仅依赖应用侧代码，更依赖系统层的硬件
 ML_ACC,
 ```
 
-> ⚠️ 不要手写 `ML_ACC = 20` 或其他硬编码常量。实际数值由对应 tag 的 AIDL 生成代码决定，跨版本可能不同。适配时引用枚举名 `Boost.ML_ACC`，不依赖数值。
+源文件没有给 `ML_ACC` 写显式整数。HAL 与系统代码应引用生成的 `Boost.ML_ACC`，不能从排列位置推导数值。应用公开 API 也不直接发送这个 boost，不能把它写成通用的 App 侧 NPU 加速开关。
 
-该 boost 在 Android 17 的 framework 中仍属于“framework 当前不主动发送、OEM 可选择实现”的 Power HAL 能力，适合厂商在 NPU/GPU 相关路径上做芯片级优化，例如 CPU 预处理阶段增加 boost、AI 推理阶段动态调整时钟频率、后处理阶段释放资源。
+厂商可以在自己的受控路径中决定是否实现该类型以及如何映射到芯片策略，但 AOSP 枚举本身不承诺 CPU、GPU、NPU 频率或持续时间。
 
 ### HintManagerService：系统层会话调度中心
 
@@ -451,25 +466,31 @@ HintManagerService 的内部实现细节（如具体状态映射结构、清理�
 - Power HAL V4：基础 hint session 支持。
 - Power HAL V5：`createHintSessionWithConfig()`、`SessionTag`、`SessionMode.POWER_EFFICIENCY` 与 `getSessionChannel()` 支持。
 - Power HAL V6：CPU/GPU headroom 查询，以及 `GRAPHICS_PIPELINE`、`AUTO_CPU`、`AUTO_GPU` session mode 支持。
+- Power HAL V7：加入 `AUDIO_PERFORMANCE` session mode；`android-17.0.0_r1` 的冻结 AIDL 已包含 V7。
 
 ### SessionTag 与 SessionMode：两个不同的 HAL 内部枚举
 
 AOSP 中 **SessionTag** 和 **SessionMode** 是两个独立的 AIDL 枚举，定义在不同文件中，服务于不同层次。
 
-**SessionTag**（`hardware/interfaces/power/aidl/android/hardware/power/SessionTag.aidl`，`android-17.0.0_r1`）：
+下面的 `SessionTag` 摘录用于说明会话来源类别。r1 源文件没有显式整数赋值：
+
 ```aidl
 @VintfStability
+@Backing(type="int")
 enum SessionTag {
-    OTHER = 0,
-    SURFACEFLINGER = 1,
-    HWUI = 2,
-    GAME = 3,
-    APP = 4,
-    SYSUI = 5,
+    OTHER,
+    SURFACEFLINGER,
+    HWUI,
+    GAME,
+    APP,
+    SYSUI,
 }
 ```
 
-**SessionMode**（`hardware/interfaces/power/aidl/android/hardware/power/SessionMode.aidl`，`android-17.0.0_r1`）：
+`SessionTag` 描述谁创建或归属哪类会话，`HintManagerService` 还会把普通 App 会话按应用类别映射为 `APP` 或 `GAME`。
+
+下面的 `SessionMode` 摘录用于说明会话要求；它与来源标签是两套不同的枚举：
+
 ```aidl
 @VintfStability
 @Backing(type="int")
@@ -482,65 +503,57 @@ enum SessionMode {
 }
 ```
 
-关键区分：
-- `GRAPHICS_PIPELINE` 属于 **SessionMode**，不是 SessionTag。SessionTag 中不包含 `GRAPHICS_PIPELINE`。
-- SessionTag 和 SessionMode 都是 **Power HAL 内部**枚举，供系统服务（SurfaceFlinger、HWUI 等）向 Power HAL 传达调度意图。
-- **普通 App 不直接选择 tag 或 mode**。公开 `PerformanceHintManager.createHintSession(int[], long)` 不暴露 tag/mode 选择参数。App 通过 `setPreferPowerEfficiency(true)` 表达能效偏好，由系统层根据会话特征映射到对应的 HAL tag/mode——不要建议业务代码直接选择 `SessionTag` 或 `GRAPHICS_PIPELINE`。
+`GRAPHICS_PIPELINE` 属于 `SessionMode`，不在 `SessionTag` 中。Java SDK 的 `PerformanceHintManager.createHintSession(int[], long)` 不接受 HAL tag 或 mode；`setPreferPowerEfficiency(true)` 由系统映射为能效模式。Android 16 起的 NDK `ASessionCreationConfig` 提供 `setGraphicsPipeline()`、`setUseAutoTiming()` 和 `setPreferPowerEfficiency()` 等高层开关，但 App 仍不应依赖 HAL 枚举整数，也不能通过公开 NDK 接口任意选择 `SessionTag` 或 `AUDIO_PERFORMANCE`。
 
 ### 电源状态跟踪与统计
 
-系统通过 `FrameworkStatsLog` 跟踪全局 ADPF 使用状态，包括最大并发会话数、最大线程数、能效优先会话数和目标持续时间分布。这些统计用于系统健康监控和 OEM 调优，不直接暴露给 App。
+`HintManagerService` 注册了 `ADPF_SYSTEM_COMPONENT_INFO`、`ADPF_SESSION_SNAPSHOT` 和 `ADPF_SUPPORT_INFO` 等 statsd pull atom。会话快照按 UID 与 `SessionTag` 记录最大并发会话数、最大线程数、能效会话数、目标耗时分布和图形管线会话数；支持信息还包含 Power HAL 版本与可用的 session hint、mode、FMQ、CPU/GPU headroom 能力。这些是系统统计接口，不是 App 的公开诊断 API。
 
-### FMQ (Fast Message Queue) 优化
+### FMQ 与系统组件开关
 
-`android-17.0.0_r1` 的 `HintManagerService` 中可见系统组件接入 ADPF 的调试开关；这两个属性在 `android-15.0.0_r1` 已存在，不能当成 Android 16/17 新增公开 API：
+`android-17.0.0_r1` 的 `HintManagerService` 会读取两个系统属性，并把状态写入 `ADPF_SYSTEM_COMPONENT_INFO`：
+
 - `debug.sf.enable_adpf_cpu_hint`：SurfaceFlinger CPU hint 开关
 - `debug.hwui.use_hint_manager`：HWUI hint manager 开关
 
-Android 15 起 Power HAL AIDL 已提供 `getSessionChannel()`，Android 17 的服务端仍保留 FMQ 支持状态统计。它们都属于系统级调试和 OEM 适配面，不直接暴露给 App。
-
-
+Power HAL V5 开始提供 `getSessionChannel()`，服务端可以通过 FMQ 传递会话数据并记录是否使用。上述属性和 HAL channel 都属于系统组件与厂商适配面，不应作为普通 App 的运行时开关。
 
 ### PowerStatsService 完整数据通路（系统服务 → IPowerStats HAL → statsd）
 
-25.16 节「PowerMonitor 与 SystemHealthManager 读数模型」描述了 App 端如何通过 `SystemHealthManager.getPowerMonitorReadings()` 拿到 ODPM rails 与 EnergyConsumer 累计读数；本节补齐该链路在系统服务层的实现细节，作为 2026-06-13 端侧 AI 资源调度报告（覆盖 ADPF + Power HAL 应用层）到硬件层的下行补充。
+`SystemHealthManager.getPowerMonitorReadings()` 最终进入 `IPowerStatsService.Stub`。Binder 入口复制调用 UID 后，把工作投递给 PowerStatsService 的 Handler，避免在 Binder 线程中直接访问 HAL。服务根据 monitor 类型分别调用：
 
-**入口分发与缓存阈值**（`frameworks/base/services/core/java/com/android/server/powerstats/PowerStatsService.java` L540-606）：
+- `IPowerStats.getEnergyConsumed()`：读取 modeled energy consumer；
+- `IPowerStats.readEnergyMeter()`：读取直接测量的 ODPM channel。
 
-`IPowerStatsService.Stub.getPowerMonitorReadings()` 只做参数校验后 `getHandler().post(...)`，HAL 调用不占用 Binder 线程。`getPowerMonitorReadingsImpl` 走 **30 秒缓存**：`MAX_POWER_MONITOR_AGE_MILLIS = 30_000`（同文件 L52）。如果 30 秒内已读过的 monitor（`mPowerMonitorStates[].timestampMs` 差值）则直接复用；超阈值时才调 `updateEnergyConsumers()` / `updateEnergyMeasurements()` 真正走 HAL。
+Android 17 r1 为普通读数和高精度读数维护两组 `PowerMonitorState`。普通调用方的最大缓存年龄是 `20_000 ms`；持有隐藏系统权限 `ACCESS_FINE_POWER_MONITORS` 的调用方使用 `250 ms`。当所选 monitor 中最早的时间戳为 0，或其年龄超过对应阈值，服务才更新 energy consumer 与 energy measurement。调用频率高于阈值只会反复拿到缓存，并不会提高底层采样频率。
 
-**异步路径与噪声注入**（同文件 L608-678）：
+读数更新后，服务在上一次原始累计值与当前原始累计值之间生成按 UID 稳定的随机返回值。下界不会低于 `current - 10_000_000 μWs`，也不会低于 `prevEnergyUws`；上界是当前原始值。因为 `1 μWs = 1 μJ`，该常量对应 `10 J`，不是 `10 MJ`。这段逻辑降低了公开读数的时间与数值精度，也解释了相邻窗口为何可能出现零差值或波动。
 
-`LocalService` 暴露 `getEnergyConsumedAsync` / `getStateResidencyAsync` / `readEnergyMeterAsync` 三个 `CompletableFuture` 入口。**关键设计**：`getEnergyConsumedAsync` 在 HAL 返回 `null` 或长度不匹配时，**走 `Slog.wtf` 级别告警但仍用部分数据 `future.complete(results)` 兜底**（L673-675），与 statsd pull 路径的 `PULL_SKIP` 语义不同——Binder 调用方拿到「数据可能不完整」是设计意图，避免 App 端 `getPowerMonitorReadings` 因 HAL 瞬时失败而 crash；statsd pull 路径则是「本次跳过，下次再来」。
+`LocalService` 另有 `getEnergyConsumedAsync()`、`getStateResidencyAsync()` 和 `readEnergyMeterAsync()` 三个系统内部入口，返回 `CompletableFuture`。`getEnergyConsumedAsync()` 发现 HAL 返回的 consumer 数量少于请求时会记录 `Slog.wtf`，随后仍以已有数组完成 future。这个内部路径不能直接用来推断 App 的 `getPowerMonitorReadings()` 错误语义；App 路径由 `IPowerStatsService` 的结果码和 `OutcomeReceiver` 约定决定。
 
-能量计算注入 `IntervalRandomNoiseGenerator` Beta 分布噪声（`INTERVAL_RANDOM_NOISE_GENERATION_ALPHA = 50`、`MAX_RANDOM_NOISE_UWS = 10_000_000` 即 10 MJ，约 1W 设备 2.78 小时功耗上限），避免多 App 同步轮询撞峰时上报一致值（k-anonymity 隐私保护）。
+`StatsPullAtomCallbackImpl` 根据 HAL 提供的信息注册两个 pull atom：
 
-**statsd pull atom 注册**（`frameworks/base/services/core/java/com/android/server/powerstats/StatsPullAtomCallbackImpl.java`）：
+- `ON_DEVICE_POWER_MEASUREMENT` 对应 `IPowerStats.readEnergyMeter()`；
+- `SUBSYSTEM_SLEEP_STATE` 对应 `IPowerStats.getStateResidency()`。
 
-`StatsPullAtomCallbackImpl` 在 `StatsPullAtomCallbackImpl(Context, PowerStatsInternal)` 构造时（L150-175）一次性注册两个 atom：
+回调通过 `ConcurrentUtils.DIRECT_EXECUTOR` 执行，再等待 Handler 侧 future，超时上限为 `2_000 ms`。异常、超时或空结果返回 `PULL_SKIP`。`ON_DEVICE_POWER_MEASUREMENT` 只接收 `durationMs == timestampMs` 的样本，含义是能量累计区间从开机开始；不能把这个判断缩写成“两个字段为 0”。
 
-- `FrameworkStatsLog.ON_DEVICE_POWER_MEASUREMENT` —— 对应 `IPowerStats.readEnergyMeter`（ODPM 实测 rail）
-- `FrameworkStatsLog.SUBSYSTEM_SLEEP_STATE` —— 对应 `IPowerStats.getStateResidency`（State 驻留时间）
+`PowerStatsLogger` 使用三个 Handler 消息采集 meter、model 和 residency 数据，并存入 `/data/system/powerstats/`。日志前缀分别是 `log.powerstats.meter.0`、`log.powerstats.model.0` 与 `log.powerstats.residency.0`。`PowerStatsDataStorage` 通过 `FileRotator` 每 4 小时轮转并保留 48 小时，而不是固定写成六个 `.pb` 文件。`meterCache`、`modelCache`、`residencyCache` 保存 HAL 元信息指纹；元信息改变时，对应的旧日志会被删除。它们由 `AtomicFile` 更新，不能把临时文件名当作稳定存储格式。
 
-**`STATS_PULL_TIMEOUT_MILLIS = 2_000`**（L41）是 statsd 硬性窗口。`ConcurrentUtils.DIRECT_EXECUTOR`（L165）让 `onPullAtom` 在 statsd binder 线程同步执行，**避免排队时间被算进 2s 窗口**。`ON_DEVICE_POWER_MEASUREMENT` 关键过滤：`if (energyMeasurement.durationMs == energyMeasurement.timestampMs)` 才上报——HAL 在设备刚 boot 时把这两字段都置 0，等价于「累积能量为 0」的另一种表达。
+写入前，`adjustTimeSinceBootToEpoch()` 使用服务启动时计算的墙钟基线，把 HAL 的开机时间戳放到墙钟时间线上，便于事件报告排序。这不表示累计能量可以跨重启直接相减；HAL 的 energy 与 residency 仍以本次开机为起点。
 
-**持久化层**（`PowerStatsLogger.java`）：
+`IPowerStats.aidl` 是 `@VintfStability` 接口，定义六个方法：`getPowerEntityInfo()`、`getStateResidency()`、`getEnergyConsumerInfo()`、`getEnergyConsumed()`、`getEnergyMeterInfo()` 与 `readEnergyMeter()`。`Channel` 包含 `id`、`name`、`subsystem`；后两个字段对 framework 是厂商不透明字符串。`EnergyMeasurement` 包含 `id`、`timestampMs`、`durationMs`、`energyUWs`，其中时间使用 `CLOCK_BOOTTIME`，能量单位是 μWs。
 
-3 个 Handler 消息 `MSG_LOG_TO_DATA_STORAGE_BATTERY_DROP / LOW_FREQUENCY / HIGH_FREQUENCY` 写到 `/data/system/powerstats/` 下 6 个 `.pb` 文件（meter / meterCache / model / modelCache / residency / residencyCache）。`EnergyMeasurementUtils.adjustTimeSinceBootToEpoch(measurements, mStartWallTime)` 把 HAL 的 `CLOCK_BOOTTIME` 时间戳转换为 wall clock，便于跨重启对比；`*Cache.0` 后缀是 `AtomicFile` 临时文件，写入完成 rename 为正式文件，避免半写状态被读取。
+DeviceConfig 的 `battery_stats/power_monitor_api_enabled` 由监听器动态刷新。值变化时，服务清空 monitor 列表和两组状态缓存；关闭后返回空列表。它是系统侧控制项，不是 App 的公开灰度接口。
 
-**HAL 接口契约**（`hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl`）：
+对 App 和实验平台有四个直接影响：
 
-6 个方法（`@VintfStability` 稳定）：`getPowerEntityInfo` / `getStateResidency` / `getEnergyConsumerInfo` / `getEnergyConsumed` / `getEnergyMeterInfo` / `readEnergyMeter`。`Channel` parcelable 3 字段（`id` / `name` / `subsystem`），`EnergyMeasurement` 4 字段（`id` / `timestampMs` / `durationMs` / `energyUWs` μWs）。
+- 不要假设每次 `getPowerMonitorReadings()` 都访问 HAL；普通应用在 r1 中可能复用 20 秒内的读数。
+- 必须保存每个 monitor 的返回时间戳。两次时间戳相同，差值就不代表业务窗口。
+- μWs 与 μJ 数值相等，但 μWh 是另一种单位；换算报告时要保留原始单位。
+- `@VintfStability` 约束接口兼容性，不统一厂商 rail 的覆盖范围、名称和测量质量。跨设备实验仍需先核对 monitor 语义。
 
-**远程开关**：`KEY_POWER_MONITOR_API_ENABLED = "power_monitor_api_enabled"` device config 在 `mDeviceConfigListener` 监听下变化时调 `refreshFlags()`，可一键 disable 并清空 `mPowerMonitors` / `mPowerMonitorStates`（L624-635），给厂商回归测试提供不开销的 PowerMonitor API 关闭路径。
-
-**反哺要点**：
-1. App 不应假设 `getPowerMonitorReadings()` 实时调用 HAL；30s 阈值期间复用 `mPowerMonitorStates` 缓存
-2. getEnergyConsumedAsync 偶发返回 null 是已知问题（见 PowerStatsService.java L515），线上要监控 `Slog.wtf` 频率而非直接报错
-3. statsd pull atom 的 2s 超时是硬约束，HAL 异常时 `PULL_SKIP` 是正确行为；不能改用后台 executor 反而把 2s 用在排队上
-4. PowerStats 数据是 `IPowerStats` AIDL `@VintfStability` 稳定接口，跨 Android 主版本兼容；vendor 端实现差异在 `Channel.name` 等设备特定字段上，跨设备对比前要先确认字段语义
-
-> 本节源码锚点覆盖：`PowerStatsService.java`（L1-800+）、`StatsPullAtomCallbackImpl.java`（L1-175）、`PowerStatsLogger.java`（L1-120+）、`IPowerStatsService.aidl`、`PowerMonitor.java`、`IPowerStats.aidl`、`Channel.aidl`、`EnergyMeasurement.aidl`。深入分析见 `DeepResearch/2026-06-13-android17-powerstats-service-statsd-pull-atoms.md`。
+> 本节源码锚点覆盖 `PowerStatsService.java`、`IntervalRandomNoiseGenerator.java`、`StatsPullAtomCallbackImpl.java`、`PowerStatsLogger.java`、`PowerStatsDataStorage.java`、`IPowerStatsService.aidl`、`PowerMonitor.java`、`PowerMonitorReadings.java`、`IPowerStats.aidl`、`Channel.aidl` 与 `EnergyMeasurement.aidl`，均以 `android-17.0.0_r1` 为准。
 
 
 ### 版本演进总结
@@ -568,7 +581,24 @@ ADPF Power Efficiency Mode 的价值在于把长期周期任务的 deadline 余�
 ### Android 17 Power Stats HAL OEM 厂商功耗统计实现差异
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-07-android17-power-stats-hal-impl-variations.md
 - 类型：DeepResearch 调研结果
-- 摘要：Android 17 通过 PowerStats HAL（AIDL）标准化功耗数据采集，提供 PowerEntity/EnergyConsumer/Channel 三层抽象。默认 fake 实现，Pixel 专版具象化硬件适配，厂商需覆盖 addStateResidencyDataProvider/addEnergyConsumer/setEnergyMeter 三个扩展点。Framework 层 BatteryTrigger + TimerTrigger 双驱动，30s 缓存阈值（`MAX_POWER_MONITOR_AGE_MILLIS = 30_000`，与正文 §PowerStatsService 完整数据通路一致），形成「标准接口+厂商适配+框架调度」三级架构。
-- 注：该报告提及 `MAX_POWER_MONITOR_AGE_MILLIS = 20_000` 与 `MAX_FINE_POWER_MONITOR_AGE_MILLIS = 250`，与一手源码 L52（`30_000`）冲突；以正文 30s 阈值为准。
+- 摘要：Android 17 通过 PowerStats HAL（AIDL）定义 PowerEntity、EnergyConsumer 与 Channel 三类数据。AOSP 示例实现和 Pixel 实现展示了不同的 provider 注册方式，但厂商只需遵守 HAL 契约，不要求采用相同辅助类。Framework 侧由 BatteryTrigger 与 TimerTrigger 驱动日志采集；PowerMonitor 在 `android-17.0.0_r1` 中对普通调用方使用 `20_000 ms` 缓存，对持有隐藏高精度权限的调用方使用 `250 ms` 缓存。
+- 注：报告中的 `20_000 ms` / `250 ms` 与本次复核的 `android-17.0.0_r1` 一手源码一致；旧正文曾写成 30 秒，已更正。
 - 注入时间：2026-07-08
 - 价值：补全 ch25 关于功耗数据源头的 PowerStats HAL 接口定义与 OEM 厂商定制扩展点的源码级分析
+
+## 参考资料
+
+- [Android Developers: PerformanceHintManager.Session](https://developer.android.com/reference/android/os/PerformanceHintManager.Session)
+- [Android Developers: ADPF overview](https://developer.android.com/games/optimize/adpf)
+- [Android Developers: SystemHealthManager](https://developer.android.com/reference/android/os/health/SystemHealthManager)
+- [Android Developers: PowerMonitor](https://developer.android.com/reference/android/os/PowerMonitor)
+- [Android Developers: PowerMonitorReadings](https://developer.android.com/reference/android/os/PowerMonitorReadings)
+- [Android NDK: Performance Hint Manager](https://developer.android.com/ndk/reference/group/a-performance-hint)
+- [Perfetto: Power data sources](https://perfetto.dev/docs/data-sources/battery-counters)
+- [AOSP Android 17 r1: PerformanceHintManager.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java)
+- [AOSP Android 17 r1: HintManagerService.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/hint/HintManagerService.java)
+- [AOSP Android 17 r1: PowerStatsService.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java)
+- [AOSP Android 17 r1: IntervalRandomNoiseGenerator.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/IntervalRandomNoiseGenerator.java)
+- [AOSP Android 17 r1: PowerStatsDataStorage.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsDataStorage.java)
+- [AOSP Android 17 r1: IPowerStats.aidl](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl)
+- [AOSP Android 17 r1: SessionMode.aidl](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/aidl/android/hardware/power/SessionMode.aidl)
