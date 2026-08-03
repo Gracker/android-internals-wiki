@@ -5,14 +5,14 @@
 title: "Cached App Freezer 与 GC 触发边界"
 chapter: "4.11"
 section: "4.11"
-status: finalized
+status: ready-for-review
 finalized_by: openclaw-task2b-verifier
 drafted_date: "2026-05-19"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37); 16KB Page Size 从 Android 15 起覆盖设备侧兼容"
-last_verified: "2026-05-19"
-last_verified_against: "AOSP android-16.0.0_r1 frameworks/base CachedAppOptimizer/OomAdjuster/ProcessList/ActivityManagerConstants + ART heap.cc; Android Source/Developers docs 2026-05; Android 17 tag 未公开"
-confidence: medium
-pipeline_stage: ready-to-publish
+last_verified: "2026-08-03"
+last_verified_against: "AOSP android-17.0.0_r1 frameworks/base services/core/java/com/android/server/am/psc/Constants.java, psc/OomAdjuster.java, ActivityManagerConstants.java, ActivityManagerService.java, CachedAppOptimizer.java, AppProfiler.java; frameworks/base/core/java/android/app/ActivityThread.java; ART art/runtime/gc/heap.cc; Android official docs 2026-08"
+confidence: medium-high
+pipeline_stage: ready-for-review
 tags: [cached-app-freezer, gc, lmkd, oom-adj, binder-freezer, memory]
 related_chapters: ["1.18", "4.2", "4.3", "4.4", "4.7", "5.8", "20.5", "26.9"]
 created_by: "task2a-knowledge-gap"
@@ -34,30 +34,34 @@ sources:
   - type: official
     path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ProcessList.java"
+    path: "frameworks/base/services/core/java/com/android/server/am/psc/Constants.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerConstants.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java"
+    path: "frameworks/base/services/core/java/com/android/server/am/psc/OomAdjuster.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java"
   - type: aosp
     path: "art/runtime/gc/heap.cc"
   - type: research
     path: "DeepResearch/2026-05-19-android-cached-app-freezer-gc-trigger.md"
-task6_state: reviewed
-task9_state: reviewed
-task6_result: pass-light-edit
+task6_state: ready-for-review
+task9_state: ready-for-review
+task6_result: rework-applied
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-07
 last_task6_at: 2026-06-07T16:07:00+08:00
-task9_result: auto-fixed
+task9_result: pending-review
 task2b_state: fixed
 last_task9_autofix_at: "2026-06-05"
 last_task9_at: "2026-06-05T05:28:04+08:00"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-07
 task2b_result: fixed
+last_rework_at: "2026-08-03T21:35:04+08:00"
+last_rework_run_id: "20260803-213504-rework-1a73105a"
+rework_by: aiw-polish-rework
+rework_result: fixed-pending-review
 ---
 
 # 4.11 Cached App Freezer 与 GC 触发边界
@@ -72,7 +76,7 @@ task2b_result: fixed
 围绕 `ProcessList.CACHED_APP_MIN_ADJ`、`FREEZER_CUTOFF_ADJ`、`CACHED_APP_LMK_FIRST_ADJ` 拆清边界：freezer 与 LMKD 都会看进程重要性，但一个暂停执行，一个杀进程释放内存，排障时不能把两者合并成“低内存处理”。
 
 ### 🔹 CachedAppOptimizer 的冻结/解冻链路
-以 `OomAdjuster.applyOomAdjLocked()`、`CachedAppOptimizer.freezeProcess()`、framework/native JNI 与 cgroup 写入为主线，给出冻结触发、异步处理线程、`mFrozenProcesses` 状态记录和进程移除清理路径。
+以 `psc/OomAdjuster` 的 CPU_TIME capability、`CachedAppOptimizer.freezeProcess()`、framework/native JNI 与 cgroup 写入为主线，给出冻结触发、异步处理线程、`mFrozenProcesses` 状态记录和进程移除清理路径。
 
 ### 🔹 Binder Freezer 与解冻延迟
 说明 `IBinder.addFrozenStateChangeCallback` 与 binder freezer 文档的协作方式；重点放在同步 binder call、服务绑定、UI 可见性恢复等解冻入口，以及解冻延迟对调用方卡顿/ANR 的排查价值。
@@ -81,15 +85,15 @@ task2b_result: fixed
 把 ART GC 的触发路径放回 `art/runtime/gc/heap.cc`：对象分配、堆占用阈值、后台 GC 与 low-memory 信号会影响 GC；freezer 只是停止调度，不会主动触发 GC，也不会替代 `onTrimMemory()` 或 LMKD。
 
 ### 🔹 16KB Page Size 影响内存粒度，不改写 freezer 语义
-解释 16KB 页对分配粒度、页对齐、native/anonymous memory 观测口径的影响；同时标注待验证点：Android 16/17 分支中是否存在 freezer 专属 16KB 适配代码，不能从页大小变化推导出 GC/freezer 策略变化。
+解释 16KB 页对分配粒度、页对齐、native/anonymous memory 观测口径的影响；本轮已按 Android 17 基线核对 freezer 资格判断、CachedAppOptimizer 状态机与 ART `heap.cc`，未发现 page-size 分支会改写 GC/freezer 策略。
 
 ### 🔹 线上归因：区分冻结、GC、LMK 与用户感知重启
 建立排障口径：Perfetto/trace 中看线程调度停顿，dumpsys activity/process 看 adj 和 frozen 状态，ApplicationExitInfo 看退出原因，GC log/heap profile 看堆事件，避免把“回前台慢”“像冷启动”“内存突然下降”混成同一类问题。
 
 ## 扩展
 
-### 🔸 Android 11 QPR3 到 Android 16 的版本演进
-整理 cached app freezer、binder freezer callback、DeviceConfig throttle、16KB Page Size 支持之间的时间线。
+### 🔸 Android 11 QPR3 到 Android 17 的版本演进
+整理 cached app freezer、binder freezer callback、DeviceConfig throttle、16KB Page Size 支持与 Android 17 CPU_TIME capability 判断之间的时间线。
 
 ### 🔸 厂商 freezer 策略差异
 补充 Pixel、国内 ROM、低内存设备上的 freezer 开关、阈值、白名单和后台保活策略差异；需要实机 trace 或厂商源码验证。
