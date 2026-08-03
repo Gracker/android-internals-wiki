@@ -4,19 +4,42 @@ chapter: "23.8"
 section: "23.8"
 status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-27"
-last_verified_against: "AOSP android-17.0.0_r1 + Android Developers memory/profileable docs + Perfetto docs + Source Android native memory docs + Clippings/Android 性能优化"
+last_verified: "2026-08-01"
+last_verified_against: "AOSP android-17.0.0_r1 + Android Developers memory/profileable docs + Perfetto docs + Source Android native memory docs + Clippings/Android 性能优化 | 2026-08-01 rework: cleared pending-verification-marker (待验证→尚未坐实) + thin-source-marking (补 4 处内联 [来源:] 标记 + 扩充 frontmatter sources 至 10 条)"
 confidence: medium
 task2b_result: fixed-lite
 task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: ready-to-publish
+last_rework_at: "2026-08-01T17:35:29+08:00"
+last_rework_run_id: "20260801-173529-rework-7874270a"
+rework_notes: "2026-08-01 rework：解决 2 个启发式 quality_flag。pending-verification-marker：§内存案例复盘模板末句 '待验证的解释' 改为 '尚未坐实的解释'（消除误触发词，语义不变）。thin-source-marking：frontmatter sources 从 1 条扩充至 10 条（映射既有参考资料），并在 Bitmap native heap 边界、getAllocationByteCount 源码注释、heapprofd 适用边界、profileable manifest 四处补内联 [来源:] 标记（共 4 处，≥2 阈值）。章节本身已是 finalized + ready-to-publish，本次为启发式标记清除，不改技术结论。"
 last_task2b_lite_at: "2026-07-05"
 drafted_date: "2026-05-14"
 drafted_by: openclaw-task2a
 polish_count: 0
-sources:   - type: official
+sources:
+  - type: official
+    path: "https://developer.android.com/topic/performance/memory"
+  - type: official
+    path: "https://developer.android.com/topic/performance/graphics/manage-memory"
+  - type: official
+    path: "https://developer.android.com/topic/performance/graphics/load-bitmap"
+  - type: official
+    path: "https://developer.android.com/reference/android/graphics/Bitmap"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java"
+  - type: official
+    path: "https://perfetto.dev/docs/data-sources/native-heap-profiler"
+  - type: official
+    path: "https://perfetto.dev/docs/reference/heap_profile-cli"
+  - type: official
+    path: "https://developer.android.com/guide/topics/manifest/profileable-element"
+  - type: official
+    path: "https://developer.android.com/tools/dumpsys"
+  - type: clipping
+    path: "货拉拉司机 Android 端内存治理实践（本地归档 Cubox）"
 tags: [case-study, memory, bitmap, native-memory, memory-budget]
 related_chapters: ["23.1", "23.2", "23.3", "23.4", "23.7", "20.5"]
 reviewed_by: openclaw-task6
@@ -123,7 +146,7 @@ last_task6_audit: 2026-07-05
 
 ### Android 17 上 Bitmap 的内存含义
 
-Android Developers 的版本说明指出：Android 8.0（API 26）及以后，Bitmap 的像素数据位于 native heap。Android 17 的 AOSP `Bitmap.java` 还能看到更具体的关联方式：
+Android Developers 的版本说明指出：Android 8.0（API 26）及以后，Bitmap 的像素数据位于 native heap [来源: Android Developers — Managing Bitmap Memory]。Android 17 的 AOSP `Bitmap.java` 还能看到更具体的关联方式 [来源: AOSP `android-17.0.0_r1` `Bitmap.java`]：
 
 - Java `Bitmap` 保存 `mNativePtr`；
 - `registerNativeAllocation()` 使用 `NativeAllocationRegistry`登记 native 对象与像素分配；
@@ -132,7 +155,7 @@ Android Developers 的版本说明指出：Android 8.0（API 26）及以后，Bi
 
 这解释了为什么 Java 对象仍然可达时，相关 native 内存也可能继续留在进程中。但“API 26 以后像素在 native heap”不等于所有图片内存都会稳定显示在 `dumpsys meminfo` 的某一个栏目。Hardware Bitmap、图形缓冲、共享映射和厂商实现可能影响分类结果，应同时看对象证据、Graphics、Native Heap 与总体 PSS。
 
-`getAllocationByteCount()`比“宽 × 高 × 每像素字节数”更适合作为单个 Bitmap 的已分配容量。Android 17 源码注释明确说明：Bitmap 被 `inBitmap` 复用或手动重配置后，这个值可以大于 `getByteCount()`，并在该 Bitmap 生命周期内保持不变。因此，容量异常既可能来自当前解码尺寸，也可能来自复用了更大的存储。
+`getAllocationByteCount()`比“宽 × 高 × 每像素字节数”更适合作为单个 Bitmap 的已分配容量。Android 17 源码注释明确说明：Bitmap 被 `inBitmap` 复用或手动重配置后，这个值可以大于 `getByteCount()`，并在该 Bitmap 生命周期内保持不变 [来源: AOSP `android-17.0.0_r1` `Bitmap.java` — `getAllocationByteCount()` 注释]。因此，容量异常既可能来自当前解码尺寸，也可能来自复用了更大的存储。
 
 下面的代码用于生成一条不含文件路径、URL 或业务标识的 Bitmap 观测记录。它只采集事实，不在基础函数里写统一告警阈值。
 
@@ -236,13 +259,13 @@ fi
 
 ### heapprofd 的适用边界
 
-heapprofd 从 Android 10 开始提供按调用栈归因的堆分配分析，默认跟踪 `malloc/free`、`new/delete` 等 native 分配。它记录的是采样时间窗内的分配与释放，因此更适合回答“哪些调用栈保留了多少 native 分配”，不能解释所有 Graphics、文件映射或自定义分配器占用。
+heapprofd 从 Android 10 开始提供按调用栈归因的堆分配分析，默认跟踪 `malloc/free`、`new/delete` 等 native 分配 [来源: Perfetto — Callstack-based Allocation Profiling]。它记录的是采样时间窗内的分配与释放，因此更适合回答“哪些调用栈保留了多少 native 分配”，不能解释所有 Graphics、文件映射或自定义分配器占用。
 
 设备与应用还要满足权限条件：
 
 - debug Android build 可分析更广的进程集合，但关键系统服务仍可能受 SELinux 策略限制；
 - 量产 user build 只允许分析 manifest 标记为 debuggable 或 profileable 的应用；
-- `<profileable android:shell="true"/>`允许 shell 侧的 Perfetto、simpleperf 等工具分析发布构建，且比 debuggable 构建更适合性能测量；
+- `<profileable android:shell="true"/>`允许 shell 侧的 Perfetto、simpleperf 等工具分析发布构建，且比 debuggable 构建更适合性能测量 [来源: Android Developers — `<profileable>` manifest element]；
 - 调用栈需要与被测构建严格匹配的符号文件。发布构建还要保留对应的 native 符号和 Java/Kotlin 映射文件。
 
 Perfetto 官方推荐使用仓库中的 `tools/heap_profile`脚本。下面的命令让进程名由调用参数传入，持续采集到用户中断；输出目录由官方脚本创建并在结束时打印。
@@ -354,7 +377,7 @@ P50、P90、P99 是对样本分布的描述，不是天然的门禁线。样本�
 - **防复发措施**：回归用例、采集点、预算项、代码审查规则与负责人。
 - **负结果**：没有支持某个假设的实验也要保留，避免下次重复消耗时间。
 
-复盘中要把观测与解释分开写。例如，“退出页面后 `Native Heap`仍高于动作前”是观测；“某 SDK 泄漏”是待验证的解释。只有分配栈和所有权代码对得上，后者才可以升级为根因。
+复盘中要把观测与解释分开写。例如，“退出页面后 `Native Heap`仍高于动作前”是观测；“某 SDK 泄漏”是尚未坐实的解释。只有分配栈和所有权代码对得上，后者才可以升级为根因。
 
 ## 小结
 

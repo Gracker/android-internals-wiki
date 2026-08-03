@@ -58,8 +58,6 @@ p1: 0
 p2: 0
 task9_reviewed_at: "2026-07-11T12:37:01+08:00"
 last_task6_audit: "2026-07-02"
-updated_by: openclaw-task9
-updated_date: "2026-07-11"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-11
 last_task9_audit: "2026-07-11"
@@ -67,11 +65,11 @@ last_task2b_verifier_at: "2026-07-11T11:34:06+08:00"
 task2b_verifier_notes: "Task9 idle-audit auto-fix on 2026-07-11 set task6_state: revisiting + pipeline_stage: task6_pending, but status remained finalized. Corrected to ready-for-review for Task6 re-review."
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-07-11"
-last_idle_audit_at: "2026-07-30"
-last_idle_audit_run_id: "20260730-223534-idle-audit-4ec8c98d"
-last_idle_audit_result: "pass-with-1-safe-fix"
+last_idle_audit_at: "2026-08-03"
+last_idle_audit_run_id: "20260803-103526-idle-audit-4ec8c98d"
+last_idle_audit_result: "pass-no-new-safe-fix"
 updated_by: "aiw-polish-idle-audit"
-updated_date: "2026-07-30"
+updated_date: "2026-08-03"
 ---
 # 13.14 Perfetto DataGrid 与 Jank CUJ 标准库
 
@@ -231,8 +229,6 @@ ViewRootImpl.scheduleTraversals()
 | `frameworks/native/libs/gui/include/gui/JankInfo.h` | SurfaceFlinger `JankType` 枚举定义 |
 | `external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/cujs/base.sql` | `_is_jank_slice` 进程名过滤逻辑 |
 | `android/performance-samples/JankStatsSample/` | JankStats 官方示例代码 |
-
-**版本备注**：sched_ext 调度器可能影响 CUJ 帧时间判断（线程调度延迟 → 帧耗时），此方向有待进一步验证。
 
 ### android.cujs.base 进程名过滤两层结构与协作链
 

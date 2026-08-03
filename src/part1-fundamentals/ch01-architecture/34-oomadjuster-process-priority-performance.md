@@ -8,9 +8,14 @@ related_chapters: ["4.4", "1.3", "1.8", "5.8", "4.11", "1.18"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-27"
 drafted_date: "2026-06-27"
-last_verified: "2026-07-25"
+last_verified: "2026-08-03"
 last_verified_against: "AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6"
 confidence: high
+pipeline_stage: reviewed
+task6_state: reviewed
+task9_state: deep-reviewed
+last_deep_review_at: "2026-08-03"
+last_deep_review_run_id: "20260803-123544-deep-review-0e71bb6d"
 sources:
   - type: official
     path: "developer.android.com/guide/components/activities/process-lifecycle"
@@ -94,7 +99,7 @@ Controller 在每次计算前先 `commitStagedEvents()`，把异步暂存的 Act
 
 API 37 源码还包含基于进程图和 bucket priority queue 的 `ProcStateController`。全量更新中，`OomAdjusterImpl` 只有在 `enableProcstateControllerComputation()` 开启时才调用它。
 
-该标签的 `partialUpdate()`、`evaluateProcState(ProcessEdge)`、service/provider edge 计算仍留有 TODO；代码注释也说明 CapabilityController 尚未完全切换到它的 procState 结果。因此，它代表正在推进的新算法，不能写成 Android 17 已经完全用 Dijkstra 图遍历替换 OomAdjuster。
+该标签的 `partialUpdate()`、`evaluateProcState(ProcessEdge)`、service/provider edge 计算仍留有 TODO；代码注释也说明 CapabilityController 尚未完全切换到它的 procState 结果。因此，它代表正在推进的新算法，不能写成 Android 17 已经完全用基于优先级队列的图遍历替换 OomAdjuster。
 
 ### 2.4 `LSP` 不应自行展开成一句英文
 
@@ -286,7 +291,7 @@ kernel PSI / swap / thrashing
 
 当 `mEnableBatchingOomAdj` 开启且属于批量 apply，变化进程先放入 `mProcsToOomAdj`，计算末尾调用 `ProcessList.batchSetOomAdj()`。
 
-API 37 每个 `LMK_PROCS_PRIO` 包最多携带 3 个进程，每个进程有 5 个字段：pid、uid、oomadj、process type、`for_lmkd_only`。列表超过 3 个时会拆成多个 control socket 消息。它不是 Binder IPC，也不是把任意数量进程放进一次调用。
+API 37 每个 `LMK_PROCS_PRIO` 包最多携带 3 个进程，每个进程有 5 个字段：pid、uid、oomadj、process type、`for_lmkd_only`。列表超过 3 个时会拆成多个 control socket 消息；batch 路径当前把 process type 固定为 app，并把 `for_lmkd_only` 写为 0（单进程 `LMK_PROCPRIO` 才有 zram writeback 场景下的 `for_lmkd_only` 例外）。它不是 Binder IPC，也不是把任意数量进程放进一次调用。
 
 ## 七、何时触发重算
 

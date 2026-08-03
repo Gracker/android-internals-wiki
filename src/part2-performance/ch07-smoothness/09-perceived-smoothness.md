@@ -1,26 +1,44 @@
 ---
-
-
 title: "感知流畅性：步幅波动与无掉帧卡顿"
 chapter: "7.9"
 section: "7.9"
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-07-09"
-last_verified_against: "AOSP android-17.0.0_r1 OverScroller / Choreographer / AnimationUtils / InputConsumer / AppJankStats / RelativeFrameTimeHistogram; Perfetto FrameTimeline docs"
+last_verified: "2026-08-03"
+last_verified_against: "AOSP android-17.0.0_r1 OverScroller / Choreographer / AnimationUtils / InputConsumer / AppJankStats / RelativeFrameTimeHistogram; Android Choreographer/View API docs; Perfetto FrameTimeline docs"
 task6_reviewed_date: "2026-06-16"
 last_task6_audit: "2026-06-16"
 review_type: "task6-writing-quality-review"
-confidence: medium
+confidence: medium-high
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-rework_count: 3
-rework_date: 2026-05-05
-rework_by: task2b-rework
+rework_count: 4
+rework_date: 2026-08-03
+rework_by: aiw-polish-rework
 sources:
-  - type: official
+  - type: aosp-source
+    version: "android-17.0.0_r1"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/widget/OverScroller.java"
+  - type: aosp-source
+    version: "android-17.0.0_r1"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java"
+  - type: aosp-source
+    version: "android-17.0.0_r1"
+    path: "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/animation/AnimationUtils.java"
+  - type: aosp-source
+    version: "android-17.0.0_r1"
+    path: "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/InputConsumer.cpp"
+  - type: official-api
+    path: "https://developer.android.com/reference/android/app/jank/AppJankStats"
+  - type: official-api
+    path: "https://developer.android.com/reference/android/app/jank/RelativeFrameTimeHistogram"
+  - type: official-api
+    path: "https://developer.android.com/reference/android/view/Choreographer"
+  - type: official-api
+    path: "https://developer.android.com/reference/android/view/View#reportAppJankStats%28android.app.jank.AppJankStats%29"
+  - type: official-doc
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
 tags: [perceived-smoothness, step-jitter, frametimeline, overscroller, android-performance]
 task9_result: "pass-tech-review"
@@ -31,14 +49,14 @@ task9_review_notes: "2026-07-09 Task9 idle audit AUTO-FIX: 以 android-17.0.0_r1
 review_notes: "2026-06-16 Task6：修正 outline 块格式问题，L1/L2 通过，送回 Task9 处理技术项。"
 last_task9_audit: "2026-07-09"
 status: finalized
-pipeline_stage: ready-to-publish
+pipeline_stage: finalized
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: "fixed"
 task2b_result: "fixed"
-reviewed_by: openclaw-task6
-reviewed_date: 2026-07-09
-task6_result: pass-light-edit
+reviewed_by: hermes-aiw-review-finalize-apply
+reviewed_date: 2026-08-03
+task6_result: pass-finalize-review
 last_task6_at: "2026-07-09T04:09:48+08:00"
 last_task2b_verifier_at: "2026-07-09T03:31:26+08:00"
 task2b_verifier_notes: "2026-07-09 Task2B Verifier: status finalized→ready-for-review; Task9 idle audit auto-fixed (P0 1), pipeline task6_pending + task6_state revisiting correct, status was stale finalized."
@@ -53,32 +71,22 @@ last_task9_autofix_at: "2026-07-09"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-09
 updated_by: "openclaw-task9"
-updated_date: "2026-07-09"
+updated_date: "2026-08-01"
+last_idle_audit_at: "2026-08-01T22:35:12+08:00"
+last_idle_audit_run_id: "20260801-223512-idle-audit-66741ef6"
+last_idle_audit_result: "pass-minor-metadata-fix"
+last_idle_audit_notes: "2026-08-01 idle audit: pass。无 Android 18/API38 越界、无待核验标记残留、所有交叉引用链接有效。修复 frontmatter 卫生：删除起始多余空行；扩充 sources 列表以覆盖正文引用的 4 个 AOSP 源码锚点与 2 个官方 API 链接；更新 last_verified。正文未改动。"
+last_rework_at: "2026-08-03T09:42:34+08:00"
+last_rework_run_id: "20260803-094234-rework-66741ef6"
+last_rework_result: "fixed-quality-markers"
+last_rework_log: "logs/rework/2026-08-03-20260803-094234-rework-66741ef6-rework.md"
+rework_notes: "2026-08-03 aiw-polish-rework: 删除正文前置 outline 加工指引中的阶段性待核验标记，补齐 Choreographer/View 官方 API source，按 rework 流程回流 ready-for-review / task6_pending。"
+last_review_finalize_at: "2026-08-03T10:05:40+08:00"
+last_review_finalize_run_id: "20260803-100522-554de959"
+review_finalize_notes: "2026-08-03 Hermes review/finalize: 复核 Android 17 源码基线、FrameTimeline/AppJankStats 边界、版本表、相关章节链接与正文可读性；未发现 P0/P1/P2 阻断项，在 rework 清理后晋升 finalized。"
 ---
 
 # 7.9 感知流畅性：步幅波动与无掉帧卡顿
-
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 无掉帧卡顿的本质：帧率稳定与步幅均匀性的区别
-- 🔹 OverScroller 的毫秒时间精度与 fling 步幅波动
-- 🔹 Choreographer 到动画框架的时间精度损失
-- 🔹 在 Perfetto / Frame Timeline 中量化步幅波动的方法
-- 🔹 优化方向：纳秒时间源、时间步长平滑与插值器选择
-- 🔹 版本演进、常见误区与相关章节的连接点
-
-### 扩展（可选深入）
-
-- 🔸 Chrome 与 OEM 在时间精度优化上的经验
-- 🔸 AppJankStats 与 RelativeFrameTimeHistogram 的适用边界
-
-### OpenClaw 加工指引
-
-> 锚点是最低覆盖要求，加工时必须逐条落实并标注验证状态。
-> 扩展内容视素材完整度决定是否展开，无法确认的技术细节保留 `[待验证]`，不要硬写结论。<!-- outline-end -->
 
 帧按 deadline 完成，只能证明调度与渲染没有触发对应的 jank 判定。画面中的对象是否沿预期轨迹移动，还取决于输入采样、运动模型、数值精度、像素取整、buffer 提交、刷新率选择和 present 节拍。
 

@@ -1,13 +1,25 @@
 ---
 title: "线程泄漏与匿名线程监控实战"
 chapter: "20.25"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [thread, leak, monitoring, stability, ThreadGroup, pthread, FD]
-related_chapters: ["20.1", "20.5", "20.21"]
+related_chapters: ["20.1", "20.5", "20.14", "20.24", "20.27"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "素材驱动+章节深挖"
+last_verified: "2026-07-31"
+confidence: high
+last_draft_polish_at: "2026-07-31T19:35:24+08:00"
+last_draft_polish_run_id: "20260731-193524-draft-polish-a7da59d3"
+status: finalized
+reviewed_date: "2026-07-31"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: finalized
+last_review_finalize_at: "2026-07-31T20:08:09+08:00"
+last_review_finalize_run_id: "20260731-200809-b4d1007d"
 ---
 
 # 20.25 线程泄漏与匿名线程监控实战
@@ -17,8 +29,8 @@ gap_source: "素材驱动+章节深挖"
 
 ### 🔹 线程泄漏的危害与类型
 - 线程泄漏 → FD 耗尽 → ANR/crash 链路
-- 匿名线程（Anonymous Thread）的来源：第三方 SDK、线程池配置不当、未取消的定时任务
-- 线程泄漏与内存泄漏的关联：线程持有 Context → Activity 无法回收
+- "匿名线程"是归因缺失，不是线程状态；需通过 owner 和创建来源证明是否泄漏
+- 线程泄漏与内存泄漏的关联：活线程作为 GC root 保留对象；已终止 Thread 被强引用也会滞留
 
 ### 🔹 Java 层线程监控方案
 - ThreadGroup.activeCount() 遍历与线程列表获取
@@ -28,8 +40,8 @@ gap_source: "素材驱动+章节深挖"
 
 ### 🔹 Native 层线程监控
 - /proc/self/task/ 目录遍历获取 Native 线程列表
-- pthread_create hook 监控 Native 线程创建
-- 线程名通过 prctl(PR_SET_NAME) 设置的覆盖率检查
+- 自有 C/C++ 代码优先用 RAII 包装层覆盖 pthread 成对事件；三方库可用限定范围的 PLT/inline hook 但不能默认开启
+- 线程名受 kernel comm 16 字节边界限制（含 NUL），`prctl(PR_SET_NAME)` 覆盖率检查应配合注册表
 
 ### 🔹 线程池泄漏检测
 - ThreadPoolExecutor 的 activeCount vs poolSize 判断
@@ -39,12 +51,12 @@ gap_source: "素材驱动+章节深挖"
 
 ### 🔹 线程创建阈值与告警
 - 基于 ulimit 与 /proc/self/limits 的线程数上限检测
-- 线程数分级告警策略（如 200 警告 / 400 严重 / 500 危急）
+- 告警阈值需按进程角色、版本、设备分组校准，不能写成 Android 平台通用阈值
 - 线程数突增检测（短时间大量创建）
 
 ### 🔹 线程与 FD 关联监控
-- 每个线程默认占用 1MB 栈空间（可通过 Thread.stackSize 调整）
-- 线程数与 FD 消耗的对应关系
+- 线程不天然持有一个 FD；线程和 FD 一起增长通常表示同一模块同时创建 worker 与 socket/pipe/file
+- 资源成本需区分虚拟地址映射、resident pages 与 task/TLS 结构，不能简单按"线程数 × 1MB"估算
 - /proc/self/fd 目录监控与 FD 类型分析
 
 ### 🔹 线上线程治理体系
@@ -53,9 +65,9 @@ gap_source: "素材驱动+章节深挖"
 - 线程数基准线与版本间回归检测
 
 ### 🔹 典型案例分析
-- 第三方广告 SDK 创建大量匿名线程导致 FD 耗尽
-- Coroutine 的 GlobalScope 泄漏导致线程不可回收
-- WorkManager 多进程场景下的线程数膨胀
+- 第三方广告 SDK 创建大量匿名线程：需用 owner、source 分布和创建事件证明因果，不能仅凭 Thread-N 判定
+- GlobalScope 泄漏：协程任务增长而 Linux task 稳定时是 scope/任务生命周期问题，不自动产生新线程
+- WorkManager 多进程场景：需按 PID 分组，区分多进程固定基线开销与单进程内持续增长
 
 ## 扩展
 

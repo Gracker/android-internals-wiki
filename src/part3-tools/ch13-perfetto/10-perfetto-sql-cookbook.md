@@ -10,10 +10,15 @@ tags:
 - cookbook
 task6_state: reviewed
 task6_result: pass-light-edit
+task9_state: reviewed
 pipeline_stage: ready-to-publish
 reviewed_by: openclaw-task6
 last_task6_at: 2026-07-12
 last_task6_audit: 2026-07-17
+last_verified: 2026-07-31
+confidence: high
+last_idle_audit_at: 2026-07-31T18:35:16+08:00
+last_idle_audit_run_id: 20260731-183516-idle-audit-68cd3ad3
 ---
 
 # 13.10 Perfetto SQL 性能分析实战手册

@@ -469,6 +469,9 @@
     },
     {
       "chapter": "src/part2-performance/ch12-apk-network/08-networkagent-lifecycle-scoring.md",
+      "close_note": "评分模型整节已按 FullScore 策略位范式重写，与 §1.62 完全一致：legacyInt 仅供日志、FullScore policy 有序列表、NetworkRanker 逐级筛选、VPN POLICY_IS_VPN 非整数 101、POLICY_IS_UNMETERED 注释分支。rework 验证通过。",
+      "closed_by": "rework",
+      "closed_run_id": "20260801-133555-rework-9dc6f657",
       "created_at": "2026-07-30T22:11:29.618639+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20260730-220530-7396baf7",
@@ -481,10 +484,10 @@
         "packages/modules/Connectivity/service/src/com/android/server/connectivity/NetworkRanker.java",
         "src/part1-fundamentals/ch01-architecture/1.62-android17-connectivitymanager-architecture-performance.md"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "评分模型核心描述与 §1.62 高置信度结论冲突：legacyInt 主排序键/NetworkScorecard 二级排序/缺少 FullScore 概念",
       "type": "incorrect-technical-claim",
-      "updated_at": "2026-07-30T22:11:29.618639+08:00"
+      "updated_at": "2026-08-01T13:41:35.137173+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/1.49-Android-17-Staged-Install-状态机-提交-恢复链路.md",
@@ -674,6 +677,268 @@
       "summary": "aiw-body-apply-context.py failed to filter quarantined-misroute items, causing source-index files[155] (AI-agent/LLM X-signals misrouted to 6.03 SharedPreferencesImpl ANR) to be re-surfaced as candidate_ready across 7 consecutive runs.",
       "type": "selector-bug",
       "updated_at": "2026-08-01T11:18:55.546523+08:00"
+    },
+    {
+      "chapter": "8.17",
+      "close_note": "Added last_verified, confidence, last_deep_review_at, last_deep_review_run_id to frontmatter",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260801-123546-deep-review-9d1e8e3a",
+      "created_at": "2026-08-01T12:52:45.955710+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260801-123546-deep-review-9d1e8e3a",
+      "details": "quality_flags: missing-last_verified, missing-confidence. Added last_verified=2026-08-01, confidence=medium-high, last_deep_review_at, last_deep_review_run_id.",
+      "id": "finding-9f14b5ba008f",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "src/part2-performance/ch08-responsiveness/17-kotlin-flow-backpressure-performance.md"
+      ],
+      "status": "fixed",
+      "summary": "Missing last_verified and confidence frontmatter fields",
+      "type": "missing-metadata",
+      "updated_at": "2026-08-01T12:52:54.538556+08:00"
+    },
+    {
+      "chapter": "8.17",
+      "close_note": "Reworded section 3.1 to standalone clarification; removed orphan draft-stage reference",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260801-123546-deep-review-9d1e8e3a",
+      "created_at": "2026-08-01T12:52:47.311429+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260801-123546-deep-review-9d1e8e3a",
+      "details": "Section 3.1 line 125 referenced '现稿伪源码' which is a leftover self-reference to the draft stage. Reworded to a standalone clarification that StateFlow is based on coroutines library internal state slot, not Compose mutableStateListOf.",
+      "id": "finding-a8147028fda5",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "src/part2-performance/ch08-responsiveness/17-kotlin-flow-backpressure-performance.md"
+      ],
+      "status": "fixed",
+      "summary": "Orphan self-reference to draft stage ('现稿伪源码') confusing post-finalization",
+      "type": "readability",
+      "updated_at": "2026-08-01T12:52:55.816641+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch11-power/08-tare-economic-model.md",
+      "close_note": "Reworded orphan draft reference in §11.8.6 to standalone API clarification",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260801-163521-deep-review-30d9b8cb",
+      "created_at": "2026-08-01T16:40:15.016549+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260801-163521-deep-review-30d9b8cb",
+      "details": "Reworded to standalone clarification: Android 17 does not expose BatteryManager.getBatteryUsageStats(...) as a public API.",
+      "id": "finding-24273635c205",
+      "log_path": "logs/deep-review/2026-08-01-20260801-163521-deep-review-30d9b8cb-deep-review.md",
+      "severity": "P2",
+      "source_paths": [],
+      "status": "fixed",
+      "summary": "§11.8.6 line 215 contained orphan self-reference to draft stage ('原文中虚构的 BatteryManager.getBatteryUsageStats'), confusing post-finalization",
+      "type": "orphan-draft-reference",
+      "updated_at": "2026-08-01T16:40:26.138685+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch06-storage/6.19-linux-6.10-内存碎片整理机制.md",
+      "close_note": "Task6 deep review completed. extfrag_for_order range 0-100 confirmed; GKI defconfig does not override compaction_proactiveness default 20; vendor hook description accurate. All 3 verification items resolved. Chapter promoted to finalized.",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20260801-200630-2bf8c20d",
+      "created_at": "2026-08-01T19:37:28.924246+08:00",
+      "created_by": "draft-polish",
+      "created_run_id": "20260801-193546-draft-polish-0116d589",
+      "details": "Draft-polish completed frontmatter + status promotion. Body is substantive (289 lines) with kernel source snippets (mm/compaction.c, include/trace/events/compaction.h), sysctl documentation, AOSP CachedAppOptimizer analysis. Task6 deep review should confirm: (1) extfrag_for_order() range 0-100; (2) compaction_proactiveness default 20 not overridden in arm64 GKI defconfig; (3) vendor hook scope for zone compaction decisions.",
+      "id": "finding-d2358219a920",
+      "log_path": "logs/review/2026-08-01-20260801-193546-draft-polish-0116d589-draft-polish.md",
+      "severity": "P3",
+      "source_paths": [],
+      "status": "verified",
+      "summary": "6.19 promoted draft→ready-for-review; body is substantive and source-anchored to android17-6.18-2026-06_r6; Task6 should verify extfrag_for_order range, GKI defconfig override of compaction_proactiveness default, and vendor hook scope",
+      "type": "verify-doc-urls",
+      "updated_at": "2026-08-01T20:21:43.250384+08:00"
+    },
+    {
+      "chapter": "1.34",
+      "close_note": "Reworded to 基于优先级队列的图遍历 in §2.3 line 97",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260801-203554-deep-review-0e71bb6d",
+      "created_at": "2026-08-01T20:41:06.502926+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260801-203554-deep-review-0e71bb6d",
+      "details": "已修正为'基于优先级队列的图遍历'。ProcStateController 的 partialUpdate()/evaluateProcState(ProcessEdge) 使用优先级队列评估进程图，不是 Dijkstra 最短路径算法。",
+      "id": "finding-5cccc0f5b40a",
+      "log_path": "logs/deep-review/2026-08-01-20260801-203554-deep-review-0e71bb6d-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "src/part1-fundamentals/ch01-architecture/34-oomadjuster-process-priority-performance.md"
+      ],
+      "status": "fixed",
+      "summary": "§2.3 'Dijkstra 图遍历' 术语不准确——ProcStateController 使用 bucket priority queue 而非 Dijkstra 最短路径",
+      "type": "terminology-precision",
+      "updated_at": "2026-08-01T20:41:12.992191+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/16-adpf-power-efficiency-powermonitor.md",
+      "close_note": "Rework fixed: 删除显式未闭合标记，改写为同窗验证方法；补齐 2026-07-07 report source；章节退回 ready-for-review。",
+      "closed_by": "rework",
+      "closed_run_id": "20260802-093547-rework-13a21d51",
+      "created_at": "2026-08-02T09:38:29.189133+08:00",
+      "created_by": "rework",
+      "created_run_id": "20260802-093547-rework-13a21d51",
+      "details": "2026-08-02 rework: quality_flags=pending-verification-marker/thin-source-marking。正文将未闭合验证标记改为同窗验证方法，frontmatter sources 补入 2026-07-07 PowerStats HAL OEM 差异报告。",
+      "id": "finding-20260802-25-16-rework-marker",
+      "log_path": "logs/rework/2026-08-02-20260802-093547-rework-13a21d51-rework.md",
+      "severity": "P2",
+      "source_paths": [
+        "DeepResearch/2026-07-07-android17-power-stats-hal-impl-variations.md"
+      ],
+      "status": "fixed",
+      "summary": "PowerMonitorReadings 与 Perfetto 小节保留未闭合验证标记且 2026-07-07 report 未列入 sources",
+      "type": "article-quality-marker",
+      "updated_at": "2026-08-02T09:38:29.249613+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/5.23-android17-background-audio-hardening-leaudio-power-source.md",
+      "close_note": "Outline/frontmatter fixed in deep-review run; chapter remains ready-for-review for downstream audit.",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260802-123513-deep-review-9e41e213",
+      "created_at": "2026-08-02T12:46:32.921102+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260802-123513-deep-review-9e41e213",
+      "details": "2026-08-02 deep-review 已将 outline 改写为控制 API/playback hardening 分层、LE Audio suspend scan 边界和 HOST/ADSP codec pipeline 边界，并补齐 AOSP source anchors。",
+      "id": "finding-20260802-523-deep-review-outline",
+      "log_path": "logs/deep-review/2026-08-02-20260802-123513-deep-review-9e41e213-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "src/part1-fundamentals/ch05-cpu-power/5.23-android17-background-audio-hardening-leaudio-power-source.md"
+      ],
+      "status": "fixed",
+      "summary": "早期 outline 仍含“双源决策/设备切换焦点恢复/应用态解码”等易误导表述",
+      "type": "source-boundary-outline-stale",
+      "updated_at": "2026-08-02T12:46:32.968915+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/5.21-android17-battery-optimization-soc-architecture.md",
+      "close_note": "Rework fixed: cleared pending-verification wording, added last_verified_against, retained AOSP/android common kernel sources, and moved chapter to ready-for-review.",
+      "closed_by": "rework",
+      "closed_run_id": "20260802-133522-rework-14162f29",
+      "created_at": "2026-08-02T13:41:16.450600+08:00",
+      "created_by": "rework",
+      "created_run_id": "20260802-133522-rework-14162f29",
+      "details": "quality_flags=pending-verification-marker/thin-source-marking；本轮已清理阶段性复查提示和“待验证”措辞，补 last_verified_against，并将章节回流 ready-for-review。",
+      "id": "finding-20260802-521-rework-marker",
+      "log_path": "logs/rework/2026-08-02-20260802-133522-rework-14162f29-rework.md",
+      "severity": "P2",
+      "source_paths": [
+        "src/part1-fundamentals/ch05-cpu-power/5.21-android17-battery-optimization-soc-architecture.md",
+        "android-17.0.0_r1",
+        "android17-6.18-2026-06_r6"
+      ],
+      "status": "fixed",
+      "summary": "5.21 含阶段性验证标记且需明确源码验证基线",
+      "type": "article-quality-marker",
+      "updated_at": "2026-08-02T13:41:16.497683+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch02-rendering/2.3-gpu-debug-performance-tools.md",
+      "close_note": "Removed obsolete outline-start/outline-end protected block containing unsupported Android 17 GPU-toolchain claims; chapter now starts directly with corrected android-17.0.0_r1 body and frontmatter is rework-verified.",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20260802-173558-rework-68ff4dcd",
+      "created_at": "2026-08-02T14:06:48.631824+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20260802-140526-9b075f20",
+      "details": "android-17.0.0_r1 复核正文已校正 FpsReporter、FrameTimeline、JankTracker、gfxinfo、GpuService 与 Perfetto GPU 边界；但 outline-start/outline-end 保护区仍在章节前部保留 FPSReporter 伪代码、gpu.timestamp、FrameTimeline.java、gfxinfo.gpu_*、gpu-debugd、固定开销和多窗口比例等不成立说法。本轮已新增 outline 前置 CAUTION 并设置 needs-rework；后续需移除/折叠保护区或改写为非结论素材后再 finalized。",
+      "id": "finding-659700187567",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "src/part2-performance/ch02-rendering/2.3-gpu-debug-performance-tools.md",
+        "frameworks/native/services/surfaceflinger/FpsReporter.cpp@android-17.0.0_r1",
+        "frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp@android-17.0.0_r1",
+        "frameworks/native/services/gpuservice/GpuService.cpp@android-17.0.0_r1"
+      ],
+      "status": "fixed",
+      "summary": "2.3 GPU 调试工具章节保留的 outline 保护区含已否定伪结论，暂不能 finalized",
+      "type": "protected-outline-unsupported-claims",
+      "updated_at": "2026-08-02T17:37:18.630744+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch13-profiling/13.21-perfetto-v54-data-explorer-analysis.md",
+      "close_note": "Fixed in selected chapter during finalize review.",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20260802-201044-401cbe5a",
+      "created_at": "2026-08-02T20:17:55.499062+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20260802-201044-401cbe5a",
+      "details": "Review 发现章节对第三方 CUJ marker 与 weightedAppJank/weightedSfJank 的边界说明不够精确；已在正文补充 com.android.* / com.google.android* 过滤、counter 仍依赖 android_jank_cuj，以及加权速率到总量的换算。",
+      "id": "RF-20260802-201044-13-21-cuj-scope",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "Perfetto v54.0 android.cujs.base / cuj_frame_counters and Android jank metric SQL"
+      ],
+      "status": "fixed",
+      "summary": "补充 android_jank_cuj 默认进程过滤与 weighted jank 换算边界",
+      "type": "technical-accuracy",
+      "updated_at": "2026-08-02T20:17:55.546232+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
+      "close_note": "Rework fixed: removed outline-stage verification marker, added Choreographer and View.reportAppJankStats official API sources, returned chapter to ready-for-review/task6_pending.",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20260803-094234-rework-66741ef6",
+      "created_at": "2026-08-03T09:45:15.219326+08:00",
+      "created_by": "aiw-polish-rework",
+      "created_run_id": "20260803-094234-rework-66741ef6",
+      "details": "quality_flags=pending-verification-marker/thin-source-marking；本轮删除正文前置 outline 加工指引待核验提示，补齐 Choreographer/View.reportAppJankStats 官方 API source，并回流 ready-for-review。",
+      "id": "finding-20260803-79-rework-marker",
+      "log_path": "logs/rework/2026-08-03-20260803-094234-rework-66741ef6-rework.md",
+      "severity": "P2",
+      "source_paths": [
+        "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md"
+      ],
+      "status": "fixed",
+      "summary": "7.9 retained draft verification marker and missing API source coverage",
+      "type": "article-quality-marker",
+      "updated_at": "2026-08-03T09:45:15.308161+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch24-io-network/21-saf-documentfile-contentresolver-performance.md",
+      "close_note": "Fixed in selected chapter during finalize review; outline now matches bounded body claims.",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20260803-120756-8c57cb22",
+      "created_at": "2026-08-03T12:10:02.243860+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20260803-120756-8c57cb22",
+      "details": "审阅发现 outline 仍写 Android 14+ Photo Picker 替代 SAF 的性能收益、性能基准对比，与正文关于 Photo Picker 只覆盖视觉媒体且性能取决于缓存/下载/转码、报告应记录基准维度的边界不完全一致。已改为 Android 13+ Photo Picker 与 SAF 的适用边界、各路径的基准测试维度，并修正用户授权 URI 排版。",
+      "id": "RF-20260803-120756-24-21-outline-boundary",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "src/part5-app/ch24-io-network/21-saf-documentfile-contentresolver-performance.md"
+      ],
+      "status": "fixed",
+      "summary": "24.21 outline 中 Photo Picker/SAF 性能收益与基准表述过强",
+      "type": "article-quality-marker",
+      "updated_at": "2026-08-03T12:10:02.295613+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch23-memory/23.25-android-17-memory-leak-monitoring-framework.md",
+      "close_note": "Fixed during review-finalize: separated complete HPROF file path from Perfetto android.java_hprof HeapGraph path and promoted chapter to finalized.",
+      "closed_by": "hermes-aiw-review-finalize-apply",
+      "closed_run_id": "20260803-140558-d0c907ff",
+      "created_at": "2026-08-03T14:09:22.391796+08:00",
+      "created_by": "hermes-aiw-review-finalize-apply",
+      "created_run_id": "20260803-140558-d0c907ff",
+      "details": "Review 发现章节沿用 2026-07-02 source note 中“Perfetto java_hprof 触发 ART HPROF 写出管线”的过强表述，与已 finalized §14.22 对 Perfetto ART HeapGraph 的边界不一致。本轮已改为完整 HPROF 文件 vs Perfetto HeapGraph packet 分层，并补 art/perfetto_hprof/perfetto_hprof.cc source anchor。",
+      "id": "RF-20260803-140558-23-25-perfetto-heapgraph-boundary",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "src/part5-app/ch23-memory/23.25-android-17-memory-leak-monitoring-framework.md",
+        "src/part3-tools/ch14-other-tools/22-hprof-heapdump-javahprof-datasource.md"
+      ],
+      "status": "fixed",
+      "summary": "23.25 需区分完整 ART HPROF 文件与 Perfetto android.java_hprof HeapGraph 产物",
+      "type": "technical-accuracy",
+      "updated_at": "2026-08-03T14:09:22.449494+08:00"
     }
   ],
   "schema_version": 1

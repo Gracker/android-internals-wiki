@@ -8,6 +8,10 @@ related_chapters: ["8.6", "5.10", "7.7"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-25"
 gap_source: "章节深挖"
+last_verified: "2026-08-01"
+confidence: "medium-high"
+last_deep_review_at: "2026-08-01T12:35:46+08:00"
+last_deep_review_run_id: "20260801-123546-deep-review-9d1e8e3a"
 ---
 
 # 8.17 Kotlin Flow 背压、操作符链与响应式性能边界
@@ -122,7 +126,7 @@ queryText
 - 增加订阅者的摊销成本为 O(1)；
 - 更新 value 的成本为 O(N)，N 是活跃订阅者数量。
 
-因此，StateFlow 很适合单一 UI 状态和少量订阅者。若同一状态被大量内部组件独立订阅，发射成本也应进入基准测试。它不会像现稿伪源码所写的那样使用 Compose `mutableStateListOf`。
+因此，StateFlow 很适合单一 UI 状态和少量订阅者。若同一状态被大量内部组件独立订阅，发射成本也应进入基准测试。它基于协程库内部的状态槽实现，不依赖 Compose 的 `mutableStateListOf` 等 UI 侧容器。
 
 ### 3.2 SharedFlow 是广播
 

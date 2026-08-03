@@ -1,12 +1,21 @@
 ---
 title: "Android 17 监控降级：内存约束与隐私限制下的性能数据采集"
 chapter: "26.22"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 drafted_date: "2026-06-27"
-last_verified: "2026-06-27"
+last_verified: "2026-07-31"
 last_verified_against: "Android Developers docs + AOSP android-17.0.0_r1"
-confidence: medium
+confidence: medium-high
+last_rework_at: "2026-07-31T09:37:47+08:00"
+last_rework_run_id: "20260731-093747-rework-bc7d7877"
+reviewed_date: "2026-07-31"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+last_review_finalize_at: "2026-07-31T10:10:00+08:00"
+last_review_finalize_run_id: "20260731-100508-3e642a8b"
+pipeline_stage: "finalized"
+task6_state: "reviewed"
+task9_state: "reviewed"
 tags: [observability, monitoring, memory-limiter, privacy, android17, apm]
 related_chapters: ["26.1", "26.3", "26.9", "26.12", "23.9", "4.5", "4.11", "5.8", "5.17", "15.5"]
 created_by: "task2a-knowledge-gap"
@@ -107,13 +116,13 @@ JobScheduler 的配额按 App Standby Bucket 分配（详见 §5.8）。Restrict
 
 ## 隐私变更对性能数据收集的限制
 
-Android 14 对 `/proc` 文件系统的访问做了两层限制：不能读取其他进程的 `/proc/<pid>/` 目录（已有进程隔离），应用自身读取 `/proc/self/` 的部分敏感路径也受到了 SELinux 策略约束。Android 15-17 在此基础上进一步收紧了 `/proc/self/maps` 中其他进程映射段的可见性。
+Android 14 对 `/proc` 文件系统的访问做了两层限制：不能读取其他进程的 `/proc/<pid>/` 目录（已有进程隔离），应用自身读取 `/proc/self/` 的部分敏感路径也受到了 SELinux 策略约束。Android 15-17 在此基础上进一步收紧了 `/proc/self/maps` 中部分敏感映射段（系统库、linker 等）的可见性过滤。
 
 对 APM 的影响集中在三个方向：
 
 **Stack trace 采集**：native crash 的 backtrace 依赖 `/proc/self/maps` 解析地址到 so 文件的映射关系。Android 14+ 对部分系统库的映射段做了过滤，addr2line 可能找不到对应地址。降级方案是在 crash 发生时通过 `sigaction` 信号处理函数中读取 `/proc/self/maps` 快照并缓存，crash 发生后使用缓存映射做符号化。
 
-**Logcat 采集**：Android 14+ 的 `logcat` 只能读取自身进程的日志（通过 `Logcat` 命令或 `android.log` API）。跨进程日志需要通过 binder 回调或共享文件收集。对 APM 的 ANR 排查流程影响较大——过去可以通过读取系统 ANR 日志获取详细堆栈，现在需要依赖 `ApplicationExitInfo.getTraceInputStream()` 获取。
+**Logcat 采集**：Android 15（API 35）起，targeting 该版本的应用只能读取自身进程的日志（通过 `logcat` 命令行工具），即使持有 `READ_LOGS` 权限也无法读取其他进程的日志。跨进程日志需要通过 binder 回调或共享文件收集。对 APM 的 ANR 排查流程影响较大——过去可以通过读取系统 ANR 日志获取详细堆栈，现在需要依赖 `ApplicationExitInfo.getTraceInputStream()` 获取。
 
 **系统诊断数据**：`dumpsys meminfo`、`dumpsys gfxinfo` 等命令在应用进程中执行时，返回的信息粒度从 Android 14 起逐步降低。系统鼓励使用 `ApplicationExitInfo`（§26.9）和 `ProfilingManager`（§26.12）替代主动 dump。
 
@@ -165,7 +174,7 @@ Android 14 对 `/proc` 文件系统的访问做了两层限制：不能读取其
 
 **数据最小化**：性能指标本身（帧时间、内存值、启动耗时）不含个人信息，但如果和时间戳、进程名、Activity 类名关联，就能还原用户行为路径。上报字段中只保留指标值、粗粒度时间（小时级）和匿名设备分组（RAM 档位、ABI），去掉 Activity 类名和精确时间戳。
 
-**设备标识**：不用 IMEI、Android ID、MAC 地址做设备分组。替代方案是 Firebase Installation ID（每次安装唯一，可重置）或自有 GUID。Android 17 对硬件标识符的读取限制更严——`Build.getSerial()` 需要 `Manifest.permission.READ_PRIVILEGED_PHONE_STATE`，第三方应用拿不到。
+**设备标识**：不用 IMEI、Android ID、MAC 地址做设备分组。替代方案是 Firebase Installation ID（每次安装唯一，可重置）或自有 GUID。硬件标识符自 API 26 起持续收紧——`Build.getSerial()` 需要 `Manifest.permission.READ_PRIVILEGED_PHONE_STATE`（系统签名权限，第三方应用拿不到），Android 17 维持这一限制。
 
 **用户 opt-out**：APM 数据的 opt-out 机制会让高发问题的样本量缩减。设计 opt-out 时区分「诊断数据」（crash、ANR，opt-out 后仍采集但不上传）和「指标数据」（帧率、内存，opt-out 后不采集），避免 crash 报告因为用户 opt-out 而彻底丢失。
 
@@ -180,16 +189,22 @@ object MonitoringCapabilities {
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.R  // API 30
 
     fun supportsProfilingTrigger(): Boolean =
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE  // API 34
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM  // API 35 (Android 15)
 
     fun supportsMemoryLimiterAttribution(): Boolean =
-        Build.VERSION.SDK_INT >= 36  // Android 17, [待验证: SDK_INT 常量]
+        Build.VERSION.SDK_INT >= 37  // Android 17 (API 37)
 
     fun isCachedAppFreezerActive(context: Context): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return false
-        // 通过 ActivityManager.RunningAppProcessInfo 判断
-        // [待验证: API 30+ importerState 字段含义]
-        return false
+        // API 30+ 通过 RunningAppProcessInfo.importance 判断进程是否进入 cached 区间。
+        // importance >= IMPORTANCE_CACHED (400) 表示进程被系统视为 cached，
+        // 此状态下 Cached App Freezer 会冻结线程和 binder 调用。
+        // 注意：runningAppProcesses 只返回自身应用进程，无法检测其他进程的冻结状态。
+        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager ?: return false
+        return am.runningAppProcesses?.any {
+            it.pid == android.os.Process.myPid() &&
+                it.importance >= ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED
+        } ?: false
     }
 
     fun recommendedSamplingStrategy(context: Context): SamplingStrategy {
@@ -206,7 +221,7 @@ object MonitoringCapabilities {
 
 ## 系统级诊断 API 的演进方向
 
-Android 14-17 的趋势是系统在收回应用主动采集的能力，同时在补上系统侧的诊断回执。`ApplicationExitInfo`（API 30+）让应用在重启后获取上一轮退出原因，`ProfilingManager` / `ProfilingTrigger`（API 34+）让应用请求系统在特定条件下采集 trace 和 heap dump。详见 §26.12。
+Android 14-17 的趋势是系统在收回应用主动采集的能力，同时在补上系统侧的诊断回执。`ApplicationExitInfo`（API 30+）让应用在重启后获取上一轮退出原因，`ProfilingManager`（API 35，Android 15 起正式提供 trigger-based 采集）让应用请求系统在特定条件下采集 trace 和 heap dump。详见 §26.12。
 
 这个方向对 APM 设计的影响：
 
@@ -228,57 +243,4 @@ Android 14-17 的趋势是系统在收回应用主动采集的能力，同时在
 
 当前阶段可执行的策略：把 MVMS（crash + ANR + 启动）作为所有设备的保底，把帧率和内存指标限制在前台采集，把后台持续监控的预期降到最低，优先利用系统回执替代主动采集。
 
-<!-- AIW-源码调研-2026-06-30 -->
-## 📊 HPROF Heap Dump 管线与 Perfetto java_hprof 数据源深度分析
-
-基于 Android 17 (API 37) 的源码调研，发现了内存分析领域的重大改进：
-
-### 🔍 核心发现
-
-Android 17 引入了基于 Perfetto 的统一内存分析流水线，通过 mmap 内存映射和增量式解析，HPROF 文件解析性能提升 60% 以上，特别是对 8GB+ 内存设备的支持显著增强。
-
-### 🛠️ 技术实现细节
-
-**1. mmap 优化策略**
-```java
-// frameworks/base/core/java/android/os/Debug.java
-public static void dumpHprofData(String filename) {
-    // 使用 MAP_SHARED + MAP_LOCKED 减少拷贝
-    int fd = openFileDescriptor(filename, O_RDWR);
-    long address = mmap(..., MAP_SHARED | MAP_LOCKED, PROT_READ);
-    // 分块解析机制，避免大文件一次性加载
-    processHprofChunks(address, getFileSize(fd));
-}
-```
-
-**2. Perfetto java_hprof 数据源集成**
-```proto
-// external/perfetto/protos/perfetto/trace/android/perfetto_trace.proto
-message JavaHprofPacket {
-    uint64 timestamp_ns = 1;
-    repeated HprofHeapSegment heap_segments = 2;
-    HprofMetadata metadata = 3;
-    HprofCompressionType compression = 4;
-}
-```
-
-### 📈 性能优化对比
-
-| 内存大小 | Android 16 解析时间 | Android 17 解析时间 | 提升幅度 |
-|---------|------------------|------------------|---------|
-| 1GB     | 45s              | 18s              | 60%     |
-| 4GB     | 180s             | 72s              | 60%     |
-| 8GB+    | OOM (内存不足)   | 288s             | -       |
-
-### 🏢 主流设备厂商差异
-
-- **Google Pixel**：完整支持 java_hperf 数据源
-- **Samsung**：定制的压缩算法，但兼容 Perfetto 标准  
-- **Xiaomi**：增强的内存映射策略，支持超大型 dump
-
-### 🔮 未验证/待深入
-1. **Samsung 定制实现细节**：需要访问三星 AOSP 源码
-2. **Xiaomi 增强映射策略**：具体性能优化参数
-3. **OOM 处理机制**：超大内存 dump 的降级策略
-
-**⚠️ 源码访问限制**：由于技术站点访问限制，本次分析基于行业标准文档和公开技术规范。
+> **关于 HPROF / java_hprof 数据源**：Perfetto 的 `java_hprof` 数据源和 `Debug.dumpHprofData` 的底层实现是内存分析链路（heap dump 采集与解析）的话题，属于 §26.9 / §26.12 的范畴，本节不再展开。如需基于 Perfetto 的 on-device heap dump 流程，参见 §26.12（ProfilingManager）和 Perfetto 官方文档中 `java_hprof` 数据源的说明。

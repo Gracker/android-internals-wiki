@@ -2,7 +2,7 @@
 title: "Android 17 NetworkAgent 生命周期与 FullScore 网络排序"
 chapter: "12.8"
 section: "12.8"
-status: needs-review
+status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [NetworkAgent, ConnectivityService, NetworkScore, FullScore, NetworkRanker, network-selection, Android-17]
 related_chapters: ["12.5", "12.6", "24.9", "24.16", "1.62"]
@@ -11,12 +11,14 @@ created_date: "2026-06-23"
 drafted_date: "2026-06-25"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
-last_verified: "2026-07-31"
-last_rework_at: "2026-07-30T21:35:26+08:00"
-last_rework_run_id: "20260730-213526-rework-9dc6f657"
-pipeline_stage: task9_needs_rework
-task6_state: needs-rework
-task9_state: needs-rework
+last_verified: 2026-08-01
+last_rework_at: "2026-08-01T13:35:55+08:00"
+last_rework_run_id: "20260801-133555-rework-9dc6f657"
+last_rework_by: "aiw-polish-rework"
+last_rework_reason: "verify FullScore rework accuracy, transition needs-rework → ready-for-review, close P1 finding"
+pipeline_stage: rework-verified
+task6_state: ready-for-review
+task9_state: ready-for-review
 last_review_finalize_at: "2026-07-30T22:05:30+08:00"
 last_review_finalize_run_id: "20260730-220530-7396baf7"
 rework_notes: "2026-07-30 rework：解决 pending-verification-marker。1) 修正 markdown 格式 bug（****`candidate`**`** → 合并描述）。2) NetworkScore 的 candidate 字段不存在，改为描述 policies/legacyInt 实际结构，NetworkScorecard 历史数据作为排序辅助参考而非 NetworkScore 内嵌字段。3) MPTMP 笔误修正为 MPTCP，并更新 Android 17 MPTCP 可用性表述。4) VPN 评分表'声明值+101'修正为整数 101 强制接管。5) 清除全部 [待验证] 标记，改为 [边界]/确定性表述。"
