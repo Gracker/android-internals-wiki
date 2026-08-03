@@ -76,84 +76,166 @@ Android 15 以前主要依赖 App 自建监控和 `ApplicationExitInfo`；Androi
 
 ## 本节处理的问题
 
-Android 17 的 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 给后台 CPU 异常多了一个系统侧证据入口。它适合回答“进程被系统处置前后有没有 profiling 结果”，不适合替 App 判断“哪个后台任务该不该跑”。
+Android 17 / API 37 新增 `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`。当系统以 `ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE` 记录一次 excessive CPU 终止时，这个触发器可以让已注册的应用收到对应的性能分析结果。它提供事后证据，不负责决定任务应否执行。
 
-后台任务功耗治理仍要回到业务任务本身：任务是否由用户刚刚触发，是否能延后，是否能合并，失败后是否会重试到失控。§5.10 讲 JobScheduler / WorkManager 的调度机制，§25.2 讲后台功耗治理框架，§25.4 讲 WorkManager 实战；本节只处理一种更窄的场景：后台任务已经跑起来，并且 CPU 占用高到触发系统采样或终止。
+这里有一条容易混淆的版本边界：Android 17 新增的是公开取证入口，系统终止高 CPU 缓存进程的机制并非 Android 17 才出现。`ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE` 从 API 30 已经公开。Android 17 把既有的终止路径接入 `ProfilingManager`，使应用有机会拿到终止前的系统跟踪快照。
 
-[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]
-[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
-[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
+本章以 `android-17.0.0_r1` 的 `ActivityManagerService`、`ActivityManagerConstants`、`CachedAppOptimizer` 和 `packages/modules/Profiling` 为源码锚点。JobScheduler 与 WorkManager 的调度规则分别见 5.10、25.4 节；本章只说明进程为何被 excessive CPU 路径终止、如何收集证据，以及后台任务如何避免留下失控的 CPU 工作。
 
-## Android 17 excessive CPU trigger 的能力边界
+## Android 17 excessive CPU 触发器的能力边界
 
-`ProfilingManager` 从 Android 15 开始提供应用驱动的 profiling 采集，Android 16 起扩展出系统事件触发采集。以 §26.12 已复核的版本口径，Android 17 / API 37 新增的 trigger 包含 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`，用于系统因过量 CPU 使用处置进程后的取证。应用注册 trigger 后，结果通过 `registerForAllProfilingResults()` 的全局 listener 接收，归档层读取 `ProfilingResult#getTriggerType()`、`getTag()`、`getResultFilePath()`、`getErrorCode()` 和 `getErrorMessage()`。详见 26.12 节。 [已验证: src/part5-app/ch26-observability/12-versioned-diagnostics.md; developer.android.com/reference/android/os/ProfilingTrigger]
+`ProfilingManager` 从 Android 15 / API 35 开始提供应用主动请求的性能分析。API 36 增加 `ProfilingTrigger` 与触发器注册接口，API 37 再增加 excessive CPU、冷启动、OOM 等触发类型。[`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`](https://developer.android.com/reference/android/os/ProfilingTrigger#TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE) 的常量值为 9，触发条件是应用以 `REASON_EXCESSIVE_RESOURCE_USAGE` 被终止。
 
-这个 trigger 的产物应按“事后证据”处理。公开资料能支撑的是 trigger 类型、结果回调和 profiling 文件归档方式；触发阈值、持续时间、kill signal、厂商是否调整策略，目前仍缺少稳定公开口径。正文不能写成固定的 “5 分钟检查一次”“CPU 超过某个百分比必杀” 这类规则。 [待验证: excessive CPU 触发阈值、kill signal、厂商配置]
+应用需要提前注册触发器，并通过 `registerForAllProfilingResults()` 注册全局监听器。结果可能在应用下次启动并重新注册监听器后送达。`ProfilingResult` 的公开字段只有：
 
-App 侧接入时，最小处理流程是三步：注册 trigger，监听 profiling 结果，把结果文件和后台任务证据绑定到同一个 case。注册动作本身不会降低 CPU，也不会阻止系统终止进程；它只让 App 在事后多拿到一份系统保存的现场材料。 [已验证: Android Developers ProfilingManager / ProfilingTrigger docs]
+- `getTriggerType()`：结果来自哪个触发器；
+- `getResultFilePath()`：成功时的文件路径；
+- `getTag()`：调用方标签或系统附加信息；
+- `getErrorCode()` 与 `getErrorMessage()`：失败原因。
 
-## 与 JobScheduler quota 的关系
+`ProfilingResult` 没有 `getProfilingType()`、pid 或任务 ID。归档代码不能调用不存在的方法，也不能只凭文件名猜任务来源。
 
-JobScheduler quota 回答“这个 UID 现在还能不能继续运行后台 job”。它看的是 bucket、约束、执行历史、系统状态和 quota 预算。excessive CPU trigger 回答“系统已经观察到过量 CPU 使用，并为这次事件保存了 profiling 结果”。两者会落在同一个后台任务上，但控制路径不同。
+Android 17 功能概览把该产物描述为调用栈采样，但 API 参考文档与 `android-17.0.0_r1` 的 [`ProfilingTrigger.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java#117) 都写明会返回运行中系统跟踪的快照；同一版本的 [`ProfilingService.getProfilingTypeForTrigger()`](https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java#2225) 也把该触发器映射到 `PROFILING_TYPE_SYSTEM_TRACE`。本章采用 API 参考文档与源码一致的“系统跟踪快照”口径。
 
-| 维度 | JobScheduler / WorkManager quota | `KILL_EXCESSIVE_CPU_USAGE` trigger |
+触发器结果是尽力而为的。系统后台跟踪并非持续运行，系统级与应用自定义频率限制也可能拒绝一次采集。应用被终止时没有收到回调，并不等于没有发生 excessive CPU 终止；结果错误或文件路径为空时也必须保留错误码。
+
+## Android 17 源码中的终止条件
+
+Android 17 的 [`ActivityManagerService.checkExcessivePowerUsage()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java#16057) 先刷新 CPU 统计，再遍历 LRU 进程。只有进程状态数值大于或等于 `PROCESS_STATE_HOME` 时，才进入这条 CPU 检查路径。换成应用工程语言，就是 Home 与缓存进程；前台进程、前台服务进程和正在以 service 状态执行的进程不在这一条件中。
+
+系统为每个候选进程计算：
+
+```text
+cpuPercent = processCpuTimeDelta * 100 / checkWindowUptime
+```
+
+这条公式的用途是说明源码判定量：分子是进程内各线程累计消耗的 CPU 时间增量，分母是相邻检查之间的墙上时间。多线程并行时，累计 CPU 时间可以高于单核墙上时间，因此这个百分比不能直接等同于性能面板里的整机 CPU 占比。
+
+`android-17.0.0_r1` 的 [`ActivityManagerConstants`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java#213) 给出以下默认配置：
+
+| 配置项 | AOSP 默认值 | 使用位置 |
+| --- | ---: | --- |
+| `POWER_CHECK_INTERVAL` | 5 分钟 | CPU 统计检查窗口 |
+| `POWER_CHECK_MAX_CPU_1` | 25% | 进程进入不重要状态后的第一个窗口 |
+| `POWER_CHECK_MAX_CPU_2` | 25% | 第二个窗口；Home 进程不会使用更低的后两档 |
+| `POWER_CHECK_MAX_CPU_3` | 10% | 第三个窗口 |
+| `POWER_CHECK_MAX_CPU_4` | 2% | 更长时间处于缓存状态后 |
+
+这些数字是 AOSP r1 的默认实现值，不是第三方应用可依赖的兼容性承诺。它们可以从 `Settings.Global.ACTIVITY_MANAGER_CONSTANTS` 覆盖，厂商系统也可能修改配置或相关路径。应用不应围绕某个阈值设计“刚好不被终止”的轮询。
+
+达到当前阈值后，AMS 会再次确认进程仍处于 Home 或缓存状态，然后调用 `killLocked()`，记录：
+
+- `ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE`；
+- 平台内部的 `SUBREASON_EXCESSIVE_CPU`；
+- 包含 CPU 时间、检查窗口和阈值的内部终止描述；
+- `EXCESSIVE_CPU_USAGE_REPORTED` 统计事件。
+
+随后 AMS 调用 `sendKillExcessiveCpuProfilingTrigger()`。这里的顺序说明触发器用于保存终止前已经存在的后台跟踪，不会在进程死亡后重新采样它。
+
+Android 17 r1 还有两条相邻路径需要留意：归属于应用的 phantom process 可能因同一 CPU 判定被终止；[`CachedAppOptimizer`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java#2469) 在缓存进程反复因 Binder 事务无法冻结时，也使用 `REASON_EXCESSIVE_RESOURCE_USAGE`、内部 excessive CPU 子原因和同一性能分析触发器。因此，看到该触发器后仍要检查跟踪文件与退出描述，不能先入为主地认定业务代码一定是纯计算死循环。
+
+## 与 JobScheduler 配额的关系
+
+JobScheduler 配额控制 job 的执行资格与可用运行时间，输入包括待机分桶、约束、历史执行和系统状态。excessive CPU 路径检查的是 Home 或缓存进程在采样窗口里的进程 CPU 时间。两条路径没有直接调用关系。
+
+| 维度 | JobScheduler / WorkManager 配额 | `KILL_EXCESSIVE_CPU_USAGE` 触发器 |
 |------|----------------------------------|------------------------------------|
-| 处理阶段 | 任务启动前和运行中调度 | 系统观察到异常 CPU 使用并处置前后 |
-| 决策对象 | job / work 是否有执行资格 | 进程 / UID 的 CPU 异常事件 |
-| App 可控项 | 约束、unique work、退避、任务粒度、是否 expedited | trigger 注册、结果 listener、证据归档和限流 |
-| 典型证据 | `dumpsys jobscheduler`、pending reason、WorkInfo stop reason | `ProfilingResult`、trace file、`ApplicationExitInfo` |
-| 常见误判 | 把 quota 耗尽当成 Worker 代码 bug | 把系统取证当成调度策略本身 |
+| 决策时机 | job 等待、启动、运行和停止阶段 | 进程处于 Home 或缓存状态后的周期检查 |
+| 决策对象 | job / work 的调度资格和运行配额 | 应用进程或归属它的 phantom process |
+| 应用可控项 | 约束、唯一任务、退避、任务粒度、停止响应 | 触发器注册、结果监听、证据归档与任务生命周期 |
+| 典型证据 | JobDebugInfo、`dumpsys jobscheduler`、WorkInfo / JobParameters 停止原因 | `ApplicationExitInfo`、`ProfilingResult`、Perfetto 跟踪文件 |
+| 容易混淆之处 | 配额耗尽不是进程 CPU 终止 | 收到跟踪文件不表示 JobScheduler 参与了终止 |
 
-一个后台日志上传 Worker 如果因为 network constraint 长期 pending，这是 quota / 约束问题；如果它在可运行窗口内做全量压缩、加密和上传，CPU 长时间跑满后被系统处置，这才进入 excessive CPU trigger 的排查范围。§5.10 负责解释 quota 和 pending reason，本节只在任务已经消耗 CPU 后接手。 [已验证: src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md]
+一个正在由 `SystemJobService` 执行的 Worker 通常具有 service 级进程状态，不能仅凭“后台任务 CPU 很高”断定它会进入上述缓存进程检查。Worker 与 excessive CPU 终止更常见的关联是：任务结束或被停止后，线程、原生任务、协程或子进程仍在运行，宿主进程随后降为缓存状态。定位时要先检查工作是否越过了 Worker 生命周期。
 
-## App 侧高 CPU 后台任务的常见成因
+## 应用侧高 CPU 后台任务的常见成因
 
-Clippings 的 CPU 优化章节把问题拆成线程池、CPU 闲时利用、等待锁 / IO 和线程优先级。迁移到后台任务场景，问题通常不在某个 API 名字，而在任务模型失控。
+后台 CPU 问题常见于任务生命周期、幂等性和取消处理：
 
-- 周期任务过密：多个 15 分钟 periodic work 同时存在，每个业务各跑一套同步，设备刚满足约束就集中执行。
-- 链式 Work 堆积：压缩、加密、上传、清理被拆成很多节点，前置失败后后续节点反复重入，WorkManager 数据库和调度队列一起膨胀。
-- 重试风暴：网络失败、服务端 5xx、鉴权失败都按同一种 retry 处理，短窗口内不断重新执行 CPU 和网络准备工作。
-- 日志压缩上传：后台一次性扫描全量日志、压缩、计算摘要、加密，再上传。单次任务看似合理，CPU 时间窗口过长。
-- 数据库维护：migration、vacuum、索引重建、离线数据重算被放进后台任务，用户离开后继续运行。
-- 图片 / 视频转码：用户退出页面后仍保留批量转码队列，没有按前台可见度降级或暂停。
-- 热循环轮询：为了等某个远端状态或本地文件出现，用短 sleep + 轮询维持线程运行。
-- 线程池配置错误：CPU 型任务进了无限 IO 线程池，或者 IO 型任务堵在 CPU 线程池，造成调度开销、锁等待和上下文切换一起上升。
+- 周期任务重复注册：相同业务建立了多条周期任务，约束满足时一起执行。
+- 链式任务堆积：压缩、加密、上传和清理形成长链，失败策略又让前置工作重复计算。
+- 重试策略没有分类：鉴权失败、服务端错误、网络不可用和本地数据损坏都返回 `Result.retry()`。
+- 取消没有传入底层：Worker 已被停止，FFmpeg、压缩库、数据库重算或 JNI 线程仍继续运行。
+- 线程与协程脱离作用域：使用全局作用域、独立线程池或未跟随 Worker 取消的回调，任务返回后仍占用 CPU。
+- 热轮询：等待远端状态、文件或锁时使用短间隔循环，没有事件通知或有上限的退避。
+- 全量处理缺少分片：日志、媒体、索引和离线模型更新一次处理全部数据，无法在约束变化时停止。
+- 多进程边界遗漏：主进程认为任务已取消，独立工具进程或子进程没有收到终止信号。
 
-这些成因有一个共同特征：系统只能看到 CPU 被消耗，无法知道这次消耗有没有业务价值。App 必须在任务平台里保存任务类型、触发来源、用户可见度、重试次数和 owner，否则 trace 里只会留下线程名和调用栈，值班同学仍要猜业务来源。
+系统看到的是进程 CPU 时间，无法理解这次计算的业务价值。任务框架必须记录任务名称、触发来源、开始与结束时间、停止原因、重试次数、用户可见状态和业务负责人。线程名、Perfetto 切片和任务标识也要使用同一套可检索命名。
+
+## 注册 Android 17 触发器
+
+下面的代码只负责注册 excessive CPU 触发器和过滤对应结果。调用方需要使用 `compileSdk 37`，并在 `SDK_INT >= 37` 的分支中调用；`minResultIntervalHours` 由应用的采集预算决定。
+
+```kotlin
+@RequiresApi(37)
+fun registerExcessiveCpuProfiling(
+    context: Context,
+    executor: Executor,
+    minResultIntervalHours: Int,
+    onResult: (ProfilingResult) -> Unit,
+) {
+    require(minResultIntervalHours >= 0)
+
+    val manager =
+        context.getSystemService(ProfilingManager::class.java) ?: return
+
+    manager.registerForAllProfilingResults(executor) { result ->
+        if (
+            result.triggerType ==
+                ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE
+        ) {
+            onResult(result)
+        }
+    }
+
+    val trigger = ProfilingTrigger.Builder(
+        ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE,
+    )
+        .setRateLimitingPeriodHours(minResultIntervalHours)
+        .build()
+
+    manager.addProfilingTriggers(listOf(trigger))
+}
+```
+
+监听器要先于触发器注册，并由应用级组件长期持有执行器与回调。收到结果后先判断 `errorCode`；只有 `ERROR_NONE` 且 `resultFilePath` 非空时才能读取文件。始终使用 `getResultFilePath()`，不要拼接系统目录。触发器注册和结果采集不需要普通应用声明 `MANAGE_PROFILING` 这类特权权限，公开 API 参考文档也没有这项权限要求。
 
 ## 线上证据采集与归因字段
 
-excessive CPU 事件的证据包要把三类材料放在一起：系统退出记录、profiling 结果、App 任务上下文。只保留 trace 文件不够；没有 work id、job id、业务 owner 和重试次数，trace 很难回到具体任务配置。
+一次事件要同时保存系统退出记录、性能分析结果和应用任务记录。`ApplicationExitInfo` 与 `ProfilingResult` 都没有公开的后台任务 ID，应用需要补足关联字段。
 
 | 字段 | 来源 | 用途 |
 |------|------|------|
-| `caseId` / `sessionId` | App 归档层 | 合并日志、trace、退出记录和用户反馈 |
-| `uid` / `pid` / `processName` | App + `ApplicationExitInfo` | 区分主进程、worker 进程和 SDK 进程 |
-| `workId` / `workName` / `tags` | WorkManager | 定位具体 Worker 和业务 owner |
-| `jobId` | JobScheduler / WorkManager 映射 | 回查 `dumpsys jobscheduler` 与 pending reason |
-| `triggerType` / `profilingType` / `tag` | `ProfilingResult` | 确认是否来自 `KILL_EXCESSIVE_CPU_USAGE` |
-| `resultFilePath` / `fileSha256` / `fileSize` | `ProfilingResult` + 归档层 | 上传去重和完整性校验 |
-| `exitReason` / `status` / `timestamp` | `ApplicationExitInfo` | 判断是否是系统资源处置、ANR、低内存或用户关闭 |
-| `startReason` / `foregroundState` | App 自建埋点 | 区分用户触发、定时触发、进程启动恢复 |
-| `standbyBucket` | `UsageStatsManager` | 解释 quota 变化和后台执行资格 |
-| `batteryState` / `charging` / `thermalStatus` | App + 系统接口 | 解释高 CPU 是否伴随低电量、充电、热限频 |
-| `networkState` / `metered` | App + Connectivity | 判断上传、重试和弱网是否相关 |
-| `retryCount` / `backoffMs` / `chainDepth` | 任务平台 | 识别重试风暴和链式堆积 |
-| `cpuTimeMs` / `threadSamples` | 自建采样 + profiling trace | 与 trace 中的热点线程互相校验 |
+| `eventId` | 应用归档层 | 关联退出记录、结果文件和任务日志 |
+| `uid` / `pid` / `processName` | `ApplicationExitInfo` | 区分主进程、工具进程和 SDK 进程 |
+| `exitReason` / `description` / `status` / `timestamp` | `ApplicationExitInfo` | 确认资源过量终止并保留系统描述 |
+| `importance` / `processStateSummary` | `ApplicationExitInfo` | 还原进程重要性与应用写入的任务摘要 |
+| `triggerType` / `tag` / `errorCode` / `errorMessage` | `ProfilingResult` | 判断结果来源和失败原因 |
+| `resultFilePath` / `fileSha256` / `fileSize` | `ProfilingResult` + 归档层 | 定位、去重和校验性能分析文件 |
+| `workId` / `workName` / `tags` / `jobId` | WorkManager / JobScheduler | 定位调度实体 |
+| `retryCount` / `stopReason` / `chainDepth` | 任务框架 | 识别重试与任务链问题 |
+| `taskStart` / `taskEnd` / `processCpuDelta` | 应用任务记录 | 判断 CPU 工作是否越过任务生命周期 |
+| `standbyBucket` / `charging` / `thermalStatus` | 系统接口 | 解释调度与设备条件，不作为 CPU 终止阈值 |
 
-`ApplicationExitInfo` 从 Android 11 起可用，适合在下次启动补退出原因；`ProfilingManager` / `ProfilingTrigger` 适合补系统采样文件。两者要按时间戳和 pid 做近邻合并，不要只按进程名合并，同名进程在短时间内可能多次重启。 [已验证: src/part5-app/ch26-observability/12-versioned-diagnostics.md]
+`ApplicationExitInfo.getReason()` 公开到“资源使用过量”这一层，平台内部的 `SUBREASON_EXCESSIVE_CPU` 不是普通应用可读取的稳定 API。`getDescription()` 只适合保存和展示，官方文档明确说明其文本格式不保证跨版本或设备稳定，不能用字符串解析作为判定条件。
+
+API 30 起，应用可以用 `ActivityManager.setProcessStateSummary()` 写入最多 128 字节的非敏感诊断摘要。对后台任务平台而言，可保存短任务类型、版本化状态码和重试次数。系统可能限制高频调用，因此只在活动任务发生关键状态变化时更新，不能按进度循环写入。
+
+结果匹配也有边界：`ProfilingResult` 没有 pid，系统触发时按 uid 与包名进入性能分析服务。应用可以用触发类型、文件时间、最近的 `REASON_EXCESSIVE_RESOURCE_USAGE` 退出记录和 `processStateSummary` 做关联，但公开字段不足以保证所有多进程场景都能一一对应。归档层要保留“可能关联”，不要生成虚假的精确关系。
 
 ## 治理策略：约束、合并、退避和熔断
 
-后台 CPU 治理的目标不是把所有任务都延后，而是把任务放到合适的用户可见度和资源预算里。用户刚点击的上传可以争取 expedited / UIDT / 前台服务；周期同步、日志清理、缓存预热要接受系统选择窗口；纯保活和短轮询应删除。
+后台 CPU 治理要让任务的用户可见度、调度方式和资源预算一致：
 
-- 约束：日志压缩、缓存清理、数据库维护优先加 `requiresCharging`、`requiresBatteryNotLow`、`requiresDeviceIdle` 或网络约束，避免在低电量和弱网下消耗 CPU。
-- 合并：同类后台任务使用 `enqueueUniqueWork()` / `enqueueUniquePeriodicWork()`，用业务 key 去重，避免每次启动重复入队。
-- 退避：网络失败、服务端错误和本地资源不足要分开处理；服务端 5xx 走指数退避，鉴权失败直接停止并等待新 token。
-- 熔断：同一 tag 在短窗口内连续失败或 CPU 时间超过预算时暂停该类任务，远程开关降采样或停用。
-- 分片：大文件压缩、数据库迁移和图片转码拆成可中断小片，每片结束检查约束、取消信号和剩余预算。
-- 前台切换：用户正在等待结果的任务转为用户可见路径，给通知、取消入口和超时；用户离开后降级为普通后台任务。
-- 采样上限：profiling 和自建 CPU 采样都要按用户、case、版本和设备限流，避免问题越多采集越重。
+- 约束：充电、低电量、空闲和网络约束只用于业务允许等待的任务。不能为了省电给用户正在等待的操作增加不必要约束。
+- 唯一任务：同类同步或上传使用 `enqueueUniqueWork()` / `enqueueUniquePeriodicWork()`，业务键必须稳定。
+- 退避分类：可恢复的服务端或网络错误使用退避；鉴权失效、输入损坏和永久业务错误直接失败，等待外部状态变化后再入队。
+- 取消传播：`isStopped`、协程取消和底层库取消信号要传到压缩、媒体、数据库和原生代码；Worker 返回前确认自建线程已经结束。
+- 分片与检查点：大任务按可重入边界分片，每片完成后持久化检查点，并再次检查停止信号和约束。
+- 并发预算：CPU 密集任务使用有界并发，线程数来自负载验证，不能与 `Dispatchers.IO` 的阻塞任务混用。
+- 故障隔离：任务连续失败或超过项目 CPU 预算时暂停该任务类型，通过配置关闭问题路径；预算值必须来自业务测试。
+- 采集限额：使用 `setRateLimitingPeriodHours()` 设置触发器级冷却期，上传端还要按应用版本和设备控制文件数量与总大小。
 
 下面的 WorkManager 片段展示一个可延后日志上传任务。读者重点看三处：唯一任务、约束、指数退避。
 
@@ -167,8 +249,8 @@ val request = OneTimeWorkRequestBuilder<LogUploadWorker>()
     .setConstraints(constraints)
     .setBackoffCriteria(
         BackoffPolicy.EXPONENTIAL,
-        30,
-        TimeUnit.SECONDS,
+        WorkRequest.MIN_BACKOFF_MILLIS,
+        TimeUnit.MILLISECONDS,
     )
     .addTag("log_upload")
     .build()
@@ -180,118 +262,65 @@ WorkManager.getInstance(context).enqueueUniqueWork(
 )
 ```
 
-`KEEP` 会保留已经排队或运行中的同名任务，适合避免重复上传；如果业务要求新日志覆盖旧任务，可以改成 `REPLACE`，但要同步记录被替换任务的取消原因。约束和退避不负责“保证立刻上传”，它们负责把上传放到更低成本的窗口，并在失败时压住重试频率。 [已验证: Android Developers WorkManager docs; src/part5-app/ch25-power-size/04-workmanager-practice.md]
+`KEEP` 在已有未完成的同名工作时不会再建立一条工作链，适合按账号去重。需要新输入替换旧任务时，应在选择 `REPLACE` 前确认旧任务可以安全取消。`MIN_BACKOFF_MILLIS` 使用 WorkManager 公开的最小退避常量，避免示例凭空设置时间。约束与退避都不承诺立即执行，Worker 仍要实现幂等、停止检查和断点恢复。
 
 ## Android 11-17 的版本化降级路径
 
 | 系统版本 | 可用能力 | 后台 CPU 异常处理方式 |
 |----------|----------|----------------------|
-| Android 10 及更早 | 自建日志、bug report、线下 Perfetto | 只能靠 App 任务平台记录 work / job / 线程 / CPU 采样；线上系统证据弱 |
-| Android 11-14 | `ApplicationExitInfo` | 下次启动补退出 reason、timestamp、PSS / RSS；CPU 细节仍靠自建采样和线下 trace |
-| Android 15 | `ProfilingManager#requestProfiling()` | 灰度或用户授权场景主动采集 system trace / stack sampling，适合少量设备定向排查 |
-| Android 16 | `ProfilingTrigger` 事件触发能力扩展 | 可注册系统事件触发采集；结果经全局 listener 归档，版本和 Extension 要单独记录 |
-| Android 17 | `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | 系统因过量 CPU 使用处置进程后，结合 trigger 结果、退出记录和任务上下文归因 |
+| Android 10 及更早 | 应用任务日志、实验室 Perfetto、bugreport | 记录任务与线程生命周期，线上缺少标准退出历史 API |
+| Android 11～14 | `ApplicationExitInfo`、`setProcessStateSummary()` | 下次启动读取退出原因、时间戳、进程名和应用摘要；CPU 热点仍依赖自建记录或实验室跟踪 |
+| Android 15 | `ProfilingManager.requestProfiling()` | 应用主动请求系统跟踪、堆分析或栈采样；请求受频率限制且不保证执行 |
+| Android 16 | `ProfilingTrigger`、`addProfilingTriggers()` | 注册 API 36 已公开的系统触发器，并通过全局监听器接收结果 |
+| Android 17 | `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | 把 excessive CPU 终止接入系统触发式性能分析，结合退出记录和任务摘要定位 |
 
-低版本 fallback 不应伪装成同等能力。Android 11-14 能拿到退出记录，但拿不到 Android 17 的 excessive CPU trigger 结果；Android 15 能主动请求 profiling，但不能等价替代系统事件触发。归档表里要保留 `apiLevel`、`extensionVersion` 和 `diagnosticCapability`，否则同一类 case 在不同设备上会被误读成“有的设备没问题”。
+API 37 是触发器常量的可用版本，不等于该终止机制只影响 `targetSdkVersion >= 37` 的应用。`android-17.0.0_r1` 的 AMS 检测、终止和发送触发器代码中没有这一 target SDK 条件。接入代码只需要做运行版本保护；产品仍应在 Android 17 上测试不同 target SDK 的应用行为。
 
 ## 与 26.12 线上诊断能力的关系
 
-26.12 讲 API 边界和证据归档，本节只讲后台任务 CPU 异常。这里不重复 `ProfilingManager` 的请求类型、结果回调和 rate limiter 细节，只引用它作为证据入口。
-
-工程实现上，26.12 的证据表可以增加一个 `backgroundTask` 子对象：`workId`、`jobId`、`workName`、`tags`、`retryCount`、`chainDepth`、`owner`、`cpuBudgetMs`、`stopReason`。这样同一个 profiling result 既能进入线上诊断系统，也能回到后台任务平台做治理。
+26.12 负责介绍 `ProfilingManager` 的通用 API、文件取回与隐私处理。本章要求诊断记录增加 `backgroundTask` 子对象，至少包含 `workId`、`jobId`、`workName`、`tags`、`retryCount`、`stopReason`、任务开始时间和业务负责人。性能分析文件可能包含敏感的执行路径信息，上传、保留和访问控制应沿用 26.12 的安全策略。
 
 ## 与 5.10 系统调度机制的关系
 
-5.10 解释 JobScheduler / WorkManager 的系统调度：约束、bucket、quota、pending reason、Expedited Job 和 WorkManager 调度器选择。本节不再展开这些机制，只补一条实战边界：quota 不等于 CPU 异常。
+5.10 解释约束、待机分桶、配额、等待原因和 Expedited Job。本章只补充排查顺序：
 
-排查时按这个顺序看更稳：任务没跑，查 5.10 的 pending reason 和 quota；任务跑了但被停止，查 WorkInfo / JobParameters stop reason；进程被系统处置或有 profiling 结果，再进入本节的 excessive CPU 证据包。这样可以避免把“调度延迟”“任务超时”“CPU 异常 kill”混成同一种问题。
+1. 任务没有启动：查 JobDebugInfo、等待原因、约束和配额。
+2. 任务启动后被调度器停止：查 WorkInfo 或 `JobParameters.getStopReason()`，确认 Worker 是否及时停止底层工作。
+3. 进程死亡：读取 `ApplicationExitInfo`。原因是 `REASON_EXCESSIVE_RESOURCE_USAGE` 时，再查 Android 17 触发器结果和 Perfetto 文件。
+4. 任务已经结束，进程降为缓存后仍有 CPU：查未取消协程、独立线程、JNI、子进程与 Binder 循环。
+
+这个顺序把调度等待、任务停止和进程终止分开，避免用同一套“后台限制”解释所有现象。
 
 ## 待验证阈值与厂商差异
 
-当前公开资料还不足以写死 Android 17 excessive CPU 的阈值和处置路径。需要保留以下验证项：
+源码已经确认 AOSP 默认阈值、目标进程状态、终止原因与性能分析服务调用，仍有以下设备侧变量：
 
-- 触发阈值：CPU 百分比、持续时间、是否区分 cached / background / foreground service 状态。 [待验证]
-- 处置信号：进程收到 SIGKILL、SIGTERM，还是经 ActivityManager 的应用进程清理路径。 [待验证]
-- 产物形态：trace 文件名、profiling type、buffer 时长、是否所有设备都返回 `resultFilePath`。 [待验证]
-- 厂商策略：不同 SoC、温控策略、系统电量模式下是否调整阈值。 [待验证]
-- WorkManager 映射：系统处置时，WorkManager 是否能稳定记录 stop reason，是否需要下次启动补偿。 [待验证]
+- `ACTIVITY_MANAGER_CONSTANTS` 的实际值以及厂商是否修改默认配置；
+- 厂商是否改变进程状态、phantom process 或冻结失败处理；
+- 系统后台跟踪在事件发生时是否正在运行；
+- 系统级与应用级频率限制是否允许保存结果；
+- `ProfilingResult` 文件在不同构建上的实际覆盖时段与裁剪内容；
+- WorkManager 在宿主进程被直接终止前能否持久化有用的停止信息。
 
-验证实验可以从一个 cached 进程 CPU hog 开始：注册 trigger，启动带唯一 tag 的后台 Worker，让 Worker 在可控时间窗口内执行 CPU 密集循环，同时记录 `/proc/<pid>/task/*/stat`、logcat、`dumpsys jobscheduler`、`ApplicationExitInfo` 和 profiling result。实验结果要按设备、系统版本、API level、Extension 版本和电量模式分组，不能把单台设备结果写成通用规则。
+验证时不要让生产 Worker 故意制造无限循环。使用可恢复的测试应用，在隔离设备上注册触发器，把进程置于可确认的 Home 或缓存状态，再运行有明确停止条件的 CPU 负载。同步采集 `dumpsys activity settings`、`dumpsys activity processes`、logcat、`ApplicationExitInfo` 和 `ProfilingResult`。测试结束后核对进程状态、实际配置、退出原因和文件内容，单台设备的结果只能说明该设备构建。
 
 ## 小结
 
-`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 的价值在取证，不在治理。后台 CPU 异常的治理仍由 App 完成：任务分层、唯一任务、合理约束、指数退避、分片执行、远程熔断和证据归档。系统 trigger 能补一份现场，但只有把它和 work id、job id、重试次数、bucket、退出 reason 绑定起来，才能从“知道进程被处置”走到“知道该改哪个后台任务”。
+Android 17 为既有的 excessive CPU 终止路径增加了公开取证触发器。AOSP r1 的主要判定对象是 Home 与缓存进程，依据进程 CPU 时间增量和可配置检查窗口终止进程；它不等同于 JobScheduler 配额，也不会自动指向某个 Worker。
+
+应用侧要完成两件事：注册 API 37 触发器，并把结果文件与 `ApplicationExitInfo`、任务生命周期记录和 `processStateSummary` 关联；同时修复越过任务生命周期的线程、协程、原生工作与子进程。唯一任务、分类退避、取消传播、有界并发和可恢复分片，才是降低后台 CPU 风险的主要手段。
 
 ## 延伸阅读
 
-
-### ProfilingManager Excessive CPU Trigger 版本边界验证
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-03-android17-profilingmanager-excessive-cpu-version-boundary.md
-- 类型：DeepResearch 调研结果
-- 摘要：TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 在 AOSP android-17.0.0_r1 中无公开稳定锚点，应降级为待验证。SUBREASON_EXCESSIVE_CPU=7 从 API 30 已存在。JobScheduler quota 与 AMS excessive CPU kill 属不同路径，可同时作用。版本边界清晰区分了已验证和未验证项。
-- 注入时间：2026-06-04
-- 价值：关键的版本边界验证，将缺乏一手源码支撑的结论降级为待验证，防止章节写入未确认信息
-### ProfilingManager 企业环境隐私合规策略
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-04-profilingmanager-enterprise-privacy.md
-- 类型：DeepResearch 调研结果
-- 摘要：ProfilingManager API 35+ 的 rate limiter 机制和企业 MDM 合规分析。需 MANAGE_PROFILING（signature|privileged）权限，采集数据仅含 CPU 时间片和堆栈采样，不含内存内容。企业场景下存在并发数限制、时长限制和数据导出控制，与 Android Vitals 通过 statsd 集成。
-- 注入时间：2026-06-04
-- 价值：补充了 ProfilingManager 企业环境 rate limiter、权限门控和 Vitals 集成路径，对理解 excessive CPU kill 的 profiling 数据流有直接帮助
-### Android 17 TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 机制边界验证
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-24-android17-trIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE-mechanism.md
-- 类型：DeepResearch 调研结果
-- 摘要：确认 Android 17 引入 TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE（API 37，targetSdk>=37），但 excessive CPU 检测服务、阈值、kill 路径等关键细节仍缺 AOSP 源码闭环。targetSdk gating 条件已修正（非 API 36）。与 JobScheduler quota 的关联尚无直接证据。
-- 注入时间：2026-05-25
-- 价值：补充 targetSdk gating 条件修正和官方文档层面的确认，标注待验证源码路径
-
-
-
-<!-- AIW-源码调研-2026-05-26 -->
-## 源码调研补充（2026-05-26）
-
-**来源**：DeepResearch/2026-05-26-android17-excessive-cpu-kill-mechanism-boundary.md
-
-**核心验证结论**：
-
-1. **TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 确认存在于 API 37（Android 17），触发前提包含 targetSdk >= 37**。该 trigger 非预防机制，是系统处置进程后的事后取证入口。
-
-2. **ProfilingResult 产物**：triggerType、tag、resultFilePath、errorCode、errorMessage。应用通过 `registerForAllProfilingResults()` 全局 listener 接收。
-
-3. **关键源码位置**：Perfetto trigger.proto（`external/perfetto/protos/perfetto/trace/trigger.proto`）、ProfilingTrigger.java、ProfilingManager.java。
-
-4. **与 JobScheduler quota 关系**：两者控制路径独立——quota 管"能跑多久"，trigger 管"被处置时的现场"。AOSP 源码未发现直接关联路径。
-
-5. **标注待验证**：触发阈值、kill signal、检测服务（PowerManagerService/ProcessList）、trace buffer 时长、厂商差异——均缺 AOSP 源码闭环，建议保持"待验证"标注。
-
-### Android 17 Excessive CPU Kill 机制边界验证
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android17-excessive-cpu-kill-mechanism-boundary.md
-- 类型：DeepResearch 调研结果
-- 摘要：TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE 是事后取证机制非预防性治理。确认存在于 API 37 非 36；targetSdk>=37 触发前提；JobScheduler quota 与 trigger 无直接源码关联。含 Perfetto trigger.proto、ProfilingTrigger.java 源码位置。
-- 注入时间：2026-05-27
-- 价值：明确 Android 17 Excessive CPU Kill 为取证机制而非预防机制，纠正章节可能存在的误解
-
-<!-- AIW-源码调研-2026-06-04 -->
-## 源码调研补充（2026-06-04）
-
-**来源**：DeepResearch/2026-06-04-profilingmanager-enterprise-privacy.md
-
-**核心验证结论**：
-
-1. **ProfilingManager 公共 API 自 Android 15 / API 35 开始提供**，需 `android.permission.MANAGE_PROFILING` 权限（signature|privileged 级别，普通 App 无法获取）
-
-2. **Rate limiter 机制属厂商私有实现**。AOSP 层面仅通过 `ProcessRecord.profilingInfo` 锁控制单个进程同一时间只允许一个 profiling 会话。频率上限（如每小时最多 N 次）、具体阈值属于厂商差异化配置，非 AOSP 公共接口。
-
-3. **ProfilingManager 采集数据符合隐私最小化原则**：仅含采样指标（CPU 时间片、堆栈采样、Binder 调用统计），**不含**进程内存内容、文件内容、网络 payload。这为企业隐私合规（GDRP 等）提供基础。
-
-4. **Android 17 TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE（API 37）新增**。但 android-17.0.0_r1 源码仍无法访问（404），结论基于合理推断，应保持"待验证"标注。
-
-5. **与 Android Vitals 集成路径**：`ProfilingManager` → `/data/misc/profiles/` → `statsd`（定期扫描）→ `ProfileStore` → Play Console Android Vitals。
-
-6. **企业场景特殊约束**：在 device owner / profile owner 场景下，profiling 数据保留期、数据导出能力受 MDM 策略控制，`ProfileData#isExportable()` 出厂默认 false。
-
-**关键源码**：
-- `android-16.0.0_r3:frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`（profileControl 锁机制，一手验证）
-- Android Developers: ProfilingManager reference（公共 API 验证，一手）
-
-**待验证**：android-17.0.07 ProfilingManager.java 精确源码、Rate limiter 具体阈值（厂商私有）、ProfilingTrigger callback 线程模型
-
+- [Android 17 Features and APIs](https://developer.android.com/about/versions/17/features)
+- [`ProfilingTrigger` API reference](https://developer.android.com/reference/android/os/ProfilingTrigger)
+- [`ProfilingManager` API reference](https://developer.android.com/reference/android/os/ProfilingManager)
+- [Trigger-based profiling](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture)
+- [`ApplicationExitInfo` API reference](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+- [`ActivityManager.setProcessStateSummary()`](https://developer.android.com/reference/android/app/ActivityManager#setProcessStateSummary(byte%5B%5D))
+- [Android 17 `ActivityManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java#16057)
+- [Android 17 `ActivityManagerConstants.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java#213)
+- [Android 17 `CachedAppOptimizer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java#2469)
+- [Android 17 Profiling module](https://android.googlesource.com/platform/packages/modules/Profiling/+/android-17.0.0_r1/)
+- DeepResearch：`DeepResearch/2026-06-03-android17-profilingmanager-excessive-cpu-version-boundary.md`
+- DeepResearch：`DeepResearch/2026-05-26-android17-excessive-cpu-kill-mechanism-boundary.md`
