@@ -113,7 +113,7 @@ DEX 优化容易被“方法数”“DEX 个数”带偏。用户感知到的是
 
 ## DEX 文件里哪些内容占空间
 
-标准 DEX 由 header、若干 ID 表、类定义和 data 区组成。Android 17 的 [`StandardDexFile`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/libdexfile/dex/standard_dex_file.h) 与官方 [DEX format](https://source.android.com/docs/core/runtime/dex-format) 给出了字段布局。
+标准 DEX 由 header、若干 ID 表、类定义和 data 区组成。Android 17 的 [`StandardDexFile`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libdexfile/dex/standard_dex_file.h) 与官方 [DEX format](https://source.android.com/docs/core/runtime/dex-format) 给出了字段布局。
 
 ### 固定宽度的索引区
 
@@ -226,7 +226,7 @@ android {
 1. 哪个类或成员通过反射、JNI、序列化、WebView bridge 或框架回调访问？
 2. 运行时依赖的是存在性、名称、签名、注解，还是可见性？
 3. 类自身是否已有静态引用，只需保护动态访问的成员？
-4. 这项约束应由应用规则承担，还是由库的 consumer rules 随 AAR 提供？
+4. 这项约束应放在应用规则中，还是由库的 consumer rules 随 AAR 提供？
 
 下面的规则用于保留一个已由静态代码创建的 WebView bridge 中带注解的方法，同时允许 R8 优化方法体：
 
@@ -278,7 +278,13 @@ android {
 
 ### R8 Configuration Analyzer
 
-较新的 R8/AGP 提供 Configuration Analyzer，可按 shrinking、optimization 和 obfuscation 三个维度展示规则影响，并定位覆盖范围过大的规则。它适合持续观察规则质量，但仍要结合发布 APK：
+R8 Configuration Analyzer 需要 R8 9.3.7-dev 或更高版本；AGP 9.3.0-alpha05 起已捆绑满足条件的 R8，AGP 9.3 还提供独立任务：
+
+```bash
+./gradlew :app:analyzeReleaseR8Config
+```
+
+该任务把 HTML 报告写到 `app/build/reports/r8/r8-config-analyzer-release.html`。完整的 R8 release 构建也会在 `build/outputs/mapping/release/configanalyzer.html` 生成报告。报告按 shrinking、optimization 和 obfuscation 三个维度展示规则影响，并定位覆盖范围过大的规则。它适合持续观察规则质量，但仍要结合发布 APK：
 
 - 高 shrinking score 不代表方法体一定小；
 - 某条规则覆盖很多节点，可能对应合法的运行时协议；
@@ -563,11 +569,11 @@ bundletool get-size total \
 
 ## Android 17 源码边界
 
-Android 17 ART 的 [`standard_dex_file.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/libdexfile/dex/standard_dex_file.cc) 识别 DEX 035、037、038、039、040 与 041。[`dex_file.h`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/libdexfile/dex/dex_file.h) 定义了 v41 container/header 边界和传统 DEX 访问结构。
+Android 17 ART 的 [`standard_dex_file.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libdexfile/dex/standard_dex_file.cc) 识别 DEX 035、037、038、039、040 与 041。[`dex_file.h`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libdexfile/dex/dex_file.h) 定义了 v41 container/header 边界和传统 DEX 访问结构。
 
 这说明 Android 17 runtime 具备对应读取能力，不能据此推导应用构建默认输出 DEX 041。应用输出仍由当前 D8/R8 与 AGP 选择，公开工具配置优先于 ART reader 的能力上限。
 
-Framework 的 [`DexPathList.java`](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/dalvik/src/main/java/dalvik/system/DexPathList.java) 管理 class loader 的 dex elements 与 native library elements。它没有为应用定义“DEX 越少越快”或“并行加载 N 个 DEX”的性能契约。
+Framework 的 [`DexPathList.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/dalvik/src/main/java/dalvik/system/DexPathList.java) 管理 class loader 的 dex elements 与 native library elements。它没有为应用定义“DEX 越少越快”或“并行加载 N 个 DEX”的性能契约。
 
 Android 17 / API 37 也没有新增一个面向应用的 DEX 体积 API。平台继续执行安装、验证、profile 与 dexopt；体积削减仍发生在源码依赖、R8 配置、D8/R8 输出和 App Bundle 交付阶段。
 
@@ -622,8 +628,10 @@ on-demand feature 能减少首次交付，用户安装该功能后仍会获得�
 | Android 10（API 29） | DEX 040 reader 支持扩展 SimpleName；应用输出仍由工具选择 |
 | AGP 8.0 | R8 Full Mode 成为默认；Baseline Profile Gradle plugin 进入推荐工具链 |
 | AGP 8.3 | DEX layout optimization 默认启用，Startup Profile 可驱动主 DEX 布局 |
-| AGP 8.6 | R8 release 的文件名与行号 retrace 能力覆盖全部 `minSdk` |
+| AGP 8.6 | 默认平台规则开始保留 `LineNumberTable`；`SourceFile` 自 AGP 8.2 起已默认保留，发布仍需归档 `mapping.txt` |
 | AGP 8.8 | AAB 内 `r8.json` 可用于检查 Startup Profile DEX 标记 |
+| AGP 9.1 | 应用构建默认启用 class repackaging，进一步压缩 DEX 中的名称与描述符 |
+| AGP 9.3 | 新 `optimization {}` DSL 同时启用代码与资源优化，并提供独立的 R8 Configuration Analyzer 任务 |
 | Android 17（API 37） | ART `android-17.0.0_r1` 识别 DEX 035—041；没有应用侧“自动瘦 DEX”平台 API |
 
 Android 平台版本表与 AGP 版本表放在一起是为了说明边界变化，二者不能按行一一对应。Android 17 应用可以使用不同受支持的 AGP/R8 组合，构建结果以实际工具版本为准。
@@ -640,6 +648,7 @@ Android 平台版本表与 AGP 版本表放在一起是为了说明边界变化�
 
 - [Dalvik executable format](https://source.android.com/docs/core/runtime/dex-format)：DEX header、ID 表、data item 与 v41 container。
 - [Enable app optimization with R8](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization)：R8、Full Mode 与 AGP 版本行为。
+- [R8 Configuration Analyzer](https://developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer)：最低 R8/AGP 版本、Gradle 任务与报告字段。
 - [Add keep rules](https://developer.android.com/topic/performance/app-optimization/add-keep-rules)：keep option、modifier 与 Kotlin 名称边界。
 - [Troubleshoot R8 rules](https://developer.android.com/topic/performance/app-optimization/troubleshooting-rules)：`-whyareyoukeeping` 与保留路径。
 - [APK Analyzer](https://developer.android.com/studio/debug/apk-analyzer)：DEX 定义/引用、mapping、usage 与 APK 对比。
@@ -649,5 +658,5 @@ Android 平台版本表与 AGP 版本表放在一起是为了说明边界变化�
 - [Startup Profile DEX layout](https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations)：启动代码布局和主 DEX。
 - [Debug Baseline/Startup Profiles](https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles)：`r8.json` 与 DEX 检查。
 - [`bundletool`](https://developer.android.com/tools/bundletool)：设备专用 APK Set 与下载大小估算。
-- [`StandardDexFile` @ Android 17](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/libdexfile/dex/standard_dex_file.cc)：ART 支持的 DEX magic/version。
-- [`DexFile` @ Android 17](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/libdexfile/dex/dex_file.h)：DEX header、container 与数据访问边界。
+- [`StandardDexFile` @ Android 17](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libdexfile/dex/standard_dex_file.cc)：ART 支持的 DEX magic/version。
+- [`DexFile` @ Android 17](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libdexfile/dex/dex_file.h)：DEX header、container 与数据访问边界。
