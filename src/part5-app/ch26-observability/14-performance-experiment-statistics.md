@@ -72,233 +72,269 @@ sources:
 
 <!-- outline-end -->
 
-## 为什么要单独拆出性能实验统计
+性能实验面对的是长尾、重复测量和设备异质性。报告里出现一个 P90 delta 或一个 p-value，并不足以说明方案可发布。可信结论至少要同时满足：随机分配有效、指标定义固定、实验单元正确、数据到达完整、区间估计达到预设精度、护栏没有越界。
 
-26.6 节已经说明 A/B Test 和回归防护如何进入发布流程。26.14 只处理一个更窄的问题：当指标是启动耗时、帧耗时、慢帧率、功耗、内存水位这类性能数据时，实验结论怎样从“看起来涨了 / 降了”变成可复核判断。
+26.6 负责实验流程和回归防护，26.7 负责发布门禁。本章集中解释性能指标的统计对象与证据标准。Android 能力以上限 Android 17 / API 37 为准；Macrobenchmark 指标按当前 AndroidX 官方文档核对。
 
-性能数据和常规转化率不同。转化率通常是比例问题，启动和渲染指标却带有长尾分布；一批低端机的尾部样本，足够把 P90 / P99 推上去。实验报告只写“P90 上升 3%”不够，还要交代样本量、分桶、置信区间、尾部违约率和数据完整性。
+## 灰度、随机实验与 CI 各自回答什么
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md]
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
-[来源: intake/research-gaps.md#2026-05-15-26.6]
+| 机制 | 主要问题 | 能否直接解释因果 | 典型动作 |
+|---|---|---|---|
+| 灰度发布 | 新版本是否出现严重风险，能否继续扩大覆盖 | 灰度人群、时间和渠道常有选择偏差，通常不能 | 暂停、回滚、继续观察或放量 |
+| 随机性能实验 | 方案相对对照是否改变预先登记的性能指标 | 随机化、稳定分配和数据完整性成立时可以 | 采用、拒绝、判定无效或继续收集 |
+| CI / 实验室基准 | 固定设备和场景能否复现确定性退化 | 对该受控环境有效，不能代表线上设备分布 | 阻断合入、定位 trace、修复后重跑 |
 
-## 性能实验和灰度发布的边界
+灰度也可以使用随机对照设计。只要同一时间窗内保留稳定的随机 control，并维持一致的 eligibility、配置和观测协议，它就兼具风险控制与实验属性。按渠道、地区、设备或报名顺序逐步放量时，版本差异会与人群差异混在一起，只适合作为发布风险证据。
 
-灰度发布回答“这个版本能不能继续放量”。性能实验回答“某个方案是否造成可复核差异”。两者都依赖分流和上报，但判断对象不同。
+### 分配、激活与暴露
 
-| 判断对象 | 典型问题 | 数据要求 | 决策动作 |
-| --- | --- | --- | --- |
-| 灰度发布 | 新版本 Crash、ANR、启动、卡顿、业务指标是否越过风险线 | 覆盖真实用户、监控实时、异常可回滚 | 暂停、回滚、继续放量 |
-| 性能实验 | 新方案相对对照组是否改变某个性能指标 | 同质人群、同一时间窗、稳定分桶、明确主指标 | 采用、拒绝、延长实验 |
-| CI 门禁 | 代码或候选包是否造成确定性退化 | 固定设备、固定场景、多轮采样、可重跑 trace | 阻断合入或阻断发版 |
+实验需要区分三个时刻：
 
-Clippings 的发布章节把灰度和 A/B Test 分开：灰度用户常带选择偏差，适合验证版本风险，不适合直接裁定方案收益；A/B Test 要控制人群和时间窗，让差异尽量只来自实验变量。放到性能实验里，还要控制设备档位、Android 版本、刷新率、启动入口和网络状态。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md]
+- assignment：实验单元被稳定分配到 variant。
+- activation：实验参数已可用，且样本满足进入分析的预先条件。
+- exposure：用户或 session 经过受参数影响的代码路径。
 
-Firebase A/B Testing 的 Remote Config 实验提供了可参照的约束：用户按 experiment ID 和 Firebase installation ID 进入 variant，进入后保持稳定分配；activation event 只影响结果计量，不影响客户端是否拿到实验参数；activation event 应发生在配置生效之后、配置影响行为之前。这个边界适合直接迁移到自建性能实验平台。[已验证: 官方文档, firebase.google.com/docs/ab-testing/ab-concepts；firebase.google.com/docs/ab-testing/abtest-config]
+以 Firebase Remote Config A/B Testing 为例，variant assignment 使用 experiment ID 与 Firebase installation ID 的 hash，并在实验期间保持分配。activation event 只限制哪些用户进入结果计量，不影响实验参数下发。官方要求 activation event 位于配置激活之后、配置改变行为之前。
 
-性能实验上线前要跑 A/A 或 A/A/B 空转。A/A 的两个组拿同一份配置，分桶比例、activation rate、上报成功率、主指标分布都应该接近；如果空转阶段已经出现稳定差异，正式实验的收益结论没有可信度。A/A 不只检查统计任务，也检查客户端分流、采样、埋点、延迟上报和服务端 join 逻辑。
+这个顺序很关键。若 activation 本身会被 treatment 影响，按 activation 过滤会选择一批 treatment 之后才形成的人群，随机化保护会被削弱。平台应尽量在 treatment 生效前定义 eligibility 和 activation；无法做到时，主分析保留 intention-to-treat 口径，exposure 分析只作为补充。
 
-## 样本量不能只靠 baseline 与 MDE
+### A/A 空转验证
 
-实验样本量不是 `baseline + MDE + alpha + power` 四个字段就能算完。性能指标要先确认检验对象：均值、比例、阈值违约率、P90 / P99 分位值，对应的数据需求不同。
+A/A 使用相同配置验证分配、埋点、上报和统计任务。它应检查：
 
-| 检验对象 | 例子 | 样本量还依赖什么 | 不满足时的处理 |
-| --- | --- | --- | --- |
-| 均值 | 平均启动耗时、平均功耗、平均内存水位 | 历史方差或标准差、同用户多次测量相关性、分组比例 | 补历史分布或改用分桶 bootstrap |
-| 比例 | 慢帧率、Crash-free users、阈值超标率 | baseline rate、目标变化幅度、事件发生率、用户 / session 去重口径 | 延长时间窗或合并低频分群 |
-| 分位值 | TTFD P90、frameOverrunMs P99、RSS P95 | 完整样本分布、目标分位点附近样本密度、bootstrap 次数、关键分群最小样本 | 输出置信区间，不把单点 delta 写成结论 |
+- assignment ratio 是否符合配置；
+- 各 variant 的 eligibility、activation、exposure 和 delivery 漏斗是否一致；
+- 指标分布与置信区间覆盖是否符合预期；
+- 设备、版本、渠道和时间分布是否平衡；
+- 重复事件、迟到数据和 join 丢失是否偏向某个 variant。
 
-`minimum_detectable_effect` 也要按业务动作定义。P90 降低 1% 可能统计显著，但不一定值得承担发版风险；P99 上升 8% 可能样本少，却已经越过低端机护栏。样本量计算服务要同时保存“统计能检出多小变化”和“发布团队愿意为多大变化行动”两个值。
+A/A 出现显著差异并不自动证明平台有 bug，因为固定显著性水平下仍会有偶然误报。持续、跨指标或跨批次复现的差异，才需要沿数据漏斗定位。A/A 的验收规则也要在运行前登记。
 
-allocation ratio 会改变每个组的有效样本。50 / 50 分流在统计上效率高；10 / 90 更安全，但实验组样本少，得到同等置信度要更久。Firebase 文档也说明，不均匀 variant weight 会增加数据收集时间，且权重在实验开始后不能修改。[已验证: 官方文档, firebase.google.com/docs/ab-testing/abtest-config]
+## 先定义 estimand
 
-分群后的样本量要重新计算。全量样本 100 万不代表“低端机 + Android 11 + 60 Hz + 冷启动”也够用。性能实验报告至少列出主分群的有效用户数、有效 session 数、样本天数、采样率、上报到达率。低于阈值的分群只给趋势，不给采用或回滚建议。
+样本量计算之前，团队要写清楚希望估计什么。性能实验至少有四个容易混淆的单位：
 
-推荐把实验登记表写成下面这组字段。它不是代码模板，而是避免漏字段的检查表。
+| 单位 | 例子 | 风险 |
+|---|---|---|
+| 随机化单元 | 用户、安装 ID、设备 | 统计推断必须尊重这个独立单位 |
+| 观测单元 | 启动、页面 session、帧、请求 | 同一用户内往往相关，不能全部当独立样本 |
+| 指标单元 | 每用户中位启动耗时、所有 session 的 P90、慢帧占比 | 不同聚合方式回答不同问题 |
+| 决策人群 | 全量用户、冷启动用户、低端机用户 | 实验结论只适用于登记的人群 |
 
-```yaml
-experiment_design:
-  unit: firebase_installation_id_or_user_id
-  primary_metric: home_cold_start_ttf_d_p90_ms
-  guardrail_metrics:
-    - crash_rate
-    - anr_rate
-    - slow_frame_rate
-    - report_delivery_rate
-  detectable_effect:
-    type: relative
-    value: 0.05
-  alpha: 0.05
-  power: 0.8
-  allocation_ratio:
-    baseline: 0.5
-    variant: 0.5
-  historical_distribution:
-    source: last_14_days_same_scene
-    fields: [p50, p90, p95, p99, stddev, sample_count]
-  required_segments:
-    - low_end_android_10_12
-    - mid_end_90hz
-    - high_end_android_15_plus
-```
+如果按用户分配 variant，却把每一帧当成独立样本，高活跃用户会获得更大权重，标准误也会偏小。常见处理有两种：
 
-这张表把统计参数、历史分布和分群放在一起。缺少 `historical_distribution` 时，只能估算实验周期，不能承诺上线后几天一定能得出结论。
+- 先把同一用户的事件聚合成用户级指标，再比较用户分布。
+- 保留事件级 estimand，但使用按用户聚类的方差估计或 cluster bootstrap。
 
-## P90/P99 的置信区间与尾部违约率
+两种方法的业务含义不同。前者更接近“典型用户是否改善”，后者更接近“所有实际事件的总体分布是否改善”。实验登记必须选定一个作为主 estimand。
 
-P90 / P99 是顺序统计量，不是可以线性相加的普通均值。一个 variant 的 P90 比 baseline 高 30 ms，只说明样本排序后第 90% 位置发生了变化；它没有说明尾部有多少用户变慢，也没有说明这个变化在重采样后是否稳定。
+ratio metric 也要保留分子、分母和聚类单位。慢帧率、失败率和每用户功耗等指标不能只上报最终比值；否则难以处理不同用户的暴露量和不确定性。
 
-分位值实验至少给三类结果：
+## 样本量为何不只由 baseline 和 MDE 决定
 
-| 结果 | 计算方式 | 能回答的问题 |
-| --- | --- | --- |
-| 分位值单点 | 对每个 variant 的原始样本排序后取 P90 / P99 | 本次观测值是多少 |
-| bootstrap CI | 对用户或 session 重采样，重复计算 P90 / P99，取 2.5% 和 97.5% 分位 | 如果重新抽一批样本，结论是否稳定 |
-| tail violation rate | 统计超过业务阈值的样本占比，例如 TTFD > 5 s、frameOverrunMs > 0 ms | 有多少样本越过体验或门禁阈值 |
+样本量规划要同时考虑：
 
-分位值置信区间也可用 order statistics 思路：样本排序后，用二项分布找到目标分位点的下界和上界秩。这个方法不假设分布形状，适合解释“P90 的可信区间落在哪两个排序样本之间”。工程上更常用 bootstrap，因为它容易按用户、设备分群和天级批次重采样。[引用: online.stat.psu.edu/stat415/book/export/html/835；library.virginia.edu/data/articles/distribution-free-confidence-intervals-percentiles]
+- baseline 的完整历史分布，而非只保存均值或 P90；
+- minimum detectable effect（MDE）和最小业务可行动差异；
+- alpha、power 和单侧/双侧假设；
+- allocation ratio；
+- 实验单元内的重复测量相关性；
+- eligibility、activation、采样和上报造成的有效样本折损；
+- 目标分群和多重比较计划；
+- 指标在不同日期、版本和设备上的方差。
 
-bootstrap 要按实验单元重采样。实验单元是用户时，就按用户抽样，再带出该用户的 session；实验单元是安装 ID 时，就按安装 ID 抽样。直接按 event 抽样会让高活跃用户权重变大，分布会偏向重度用户。
+MDE 是实验希望以给定 power 检出的效应，不等于业务接受线。一次很小的变化可能统计可检出，却没有工程价值；一次尾部风险即使尚未达到主指标显著性，也可能触发安全护栏。登记表应分别保存 `detectable_effect`、`practical_effect` 和 `harm_limit`。
 
-下面的 SQL 只做口径示意：先算每组分位值和阈值违约率，bootstrap 建议在离线任务里按用户重采样。
+### 三类指标的规划差异
 
-```sql
-WITH base AS (
-  SELECT
-    experiment_id,
-    variant_id,
-    user_id,
-    device_tier,
-    android_version,
-    ttf_d_ms
-  FROM perf_experiment_events
-  WHERE scene_id = 'home_cold_start'
-    AND event_date BETWEEN '2026-05-01' AND '2026-05-14'
-    AND report_status = 'delivered'
-)
-SELECT
-  experiment_id,
-  variant_id,
-  APPROX_QUANTILES(ttf_d_ms, 100)[OFFSET(90)] AS p90_ms,
-  APPROX_QUANTILES(ttf_d_ms, 100)[OFFSET(99)] AS p99_ms,
-  AVG(CASE WHEN ttf_d_ms > 5000 THEN 1 ELSE 0 END) AS tail_violation_rate,
-  COUNT(DISTINCT user_id) AS users,
-  COUNT(*) AS samples
-FROM base
-GROUP BY experiment_id, variant_id;
-```
+| 指标 | 主要分布信息 | 推荐规划方式 |
+|---|---|---|
+| 均值或用户级平均 | 方差、偏度、聚类相关性 | 解析近似或基于历史用户簇的模拟 |
+| 比例或阈值违约率 | baseline rate、暴露量、聚类相关性 | 二项近似只适用于独立单位；复杂场景用模拟 |
+| P90/P99 | 目标分位附近的样本密度、完整尾部分布、用户内相关性 | 使用历史原始样本注入候选效应，按随机化单元模拟实验 |
 
-这段查询只能输出观测分布。发布报告还要附 bootstrap CI、关键分群、上报完整性和护栏指标，否则 P90 单点会被短期流量和采样波动放大。
+分位值附近的分布越平坦，少量样本顺序变化越容易造成较大的 quantile 波动。P99 还依赖极少的尾部观测，区间通常更宽。计划阶段应通过模拟检查区间宽度和检出率，不能因为全量事件数很大就认定 P99 有足够 power。
 
-## 分群归因不能线性相加 P90
+bootstrap replicate 数量只影响重采样近似的 Monte Carlo 误差，不会增加原始样本的信息量。它不能作为样本量公式中的用户数替代项。
 
-均值和比例可以做贡献度拆分，分位值不能直接做 `样本量 × P90 delta`。P90 的位置由全量分布排序决定，分群 P90 的加权和无法还原全量 P90；某个小分群的 P90 大幅上升，也可能没有改变全量 P90 所在的样本位置。
+不均匀 allocation 会减少较小 variant 的有效信息。Firebase 官方文档也提示，不均匀 variant weight 可能延长数据收集时间，并且实验开始后不能修改权重。自建平台如果中途改变分配，应开启新的实验版本，旧数据与新数据分开分析。
 
-归因算法要按指标类型分开：
+## P90/P99 应怎样报告
 
-| 指标类型 | 可用贡献口径 | 禁用口径 |
-| --- | --- | --- |
-| 均值 | `segment_users × mean_delta`、总耗时增量、总能耗增量 | 把均值贡献套到 P90 |
-| 比例 | `segment_users × rate_delta`、新增违约样本数 | 忽略分群权重只看 rate delta |
-| 分位值 | 原始样本重算 counterfactual 分布、尾部违约样本数、阈值以上超额均值、bootstrap 后分群移除对 P90 的影响 | `segment_users × p90_delta` |
+对于目标分位点 τ，主效应应定义为：
 
-性能实验里更可执行的做法是计算尾部来源：取全量 P90 / P99 阈值附近及以上的样本，按设备档位、Android 版本、刷新率、启动类型、网络状态统计占比。这样能回答“哪些分群构成了尾部”，而不是把不可加的分位值硬拆成贡献分。
+`Δτ = Qτ(variant) - Qτ(baseline)`
 
-counterfactual 分布适合做发布复盘。做法是保留 baseline 原始样本，把某个分群替换成 variant 样本，再重算全量 P90 / P99；或者反过来，保留 variant 样本，把某个异常分群替换回 baseline。每次只替换一个分群，就能估计该分群对全量分位值位置的影响。
+报告既包含两组的分位值，也包含 `Δτ` 的置信区间。分别查看 baseline CI 和 variant CI 是否重叠，不能替代对差值本身构造 CI。
 
-这套归因还要回连 26.3 的采集字段。没有 `device_tier`、`android_version`、`refresh_rate`、`startup_type`、`network_type`、`scene_id`，后端只能对混合分布做猜测，无法把尾部样本派给具体工程团队。
+### Cluster bootstrap
 
-## SRM、采样和上报完整性
+当用户或安装 ID 是随机化单元时，推荐按该单元重采样：
 
-SRM（Sample Ratio Mismatch）要先于性能指标检查。如果配置是 50 / 50，实际有效样本是 56 / 44，性能结论要先暂停。Microsoft Research 关于 SRM 的材料也强调，不能只肉眼看比例差异，要用卡方检验判断观察分布是否偏离配置分布。[引用: microsoft.com/en-us/research/articles/diagnosing-sample-ratio-mismatch-in-a-b-testing]
+1. 在每个 variant 内有放回抽取用户或安装 ID。
+2. 被抽中的单元携带其全部合格 session 或 event。
+3. 对每次重采样计算两组 quantile 与 `Δτ`。
+4. 使用预先登记的 bootstrap CI 方法输出区间。
 
-SRM 的常见来源分成四类：
+直接按 event 重采样会破坏用户内相关结构，并让事件多的用户影响更大。若实验按 session 随机化，才可把 session 作为独立重采样单位。
 
-| 来源 | 例子 | 检查字段 |
-| --- | --- | --- |
-| 分流 | hash seed 变更、安装 ID 重置、variant 权重配置错误 | assigned_variant、assignment_time、bucket_hash |
-| 激活 | activation event 放在配置生效前、某个入口没有触发激活 | activation_event、activated_at、config_activated_at |
-| 采样 | variant 使用不同采样率、采样率下发延迟、PV / UV 口径混用 | sampling_rate、sampling_unit、sampling_policy_version |
-| 上报 | variant 崩溃导致样本丢失、弱网上报延迟、后台进程未及时上传 | delivery_rate、late_arrival_rate、client_crash_before_report |
+简单 percentile bootstrap 易实现，但 quantile 的有限样本覆盖并非在所有尾部分布上都理想。平台应通过历史回放和模拟校准覆盖率；对近似独立同分布样本，也可以使用二项分布与 order statistics 构造分布无关的 quantile 区间。方法一旦登记，不能在看到结果后挑选最有利的 CI。
 
-Clippings 的上报组件章节把采样、存储、上报、容灾拆成四个模块，并强调数据自监控。性能实验要把这套思想迁移到实验平台：分流量、激活量、采样量、写入量、成功上报量、进入分析表的量，都要能按 variant 对齐。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
+### 尾部违约率
 
-推荐保留一张实验健康度表：
+P90/P99 之外，再登记一个有明确产品语义的阈值 `L`：
 
-| 健康度项 | 合格口径 | 不合格动作 |
-| --- | --- | --- |
-| assignment ratio | 与配置比例偏差通过 SRM 检验 | 暂停性能结论，排查分流 |
-| activation rate | baseline 与 variant 差异在预设范围内 | 检查 activation event 位置 |
-| report delivery rate | variant 之间接近，且高于历史基线 | 检查上报组件、弱网、崩溃前丢失 |
-| late arrival rate | 延迟上报不改变前一日结论 | 延迟出报告或补跑离线任务 |
-| crash before report | variant 无异常升高 | 先按稳定性事故处理 |
-| sampling policy version | 各 variant 同步切换 | 切换窗口数据剔除或重算 |
+`tail_violation_rate = P(X > L)`
 
-这些检查不通过时，报告应该写“实验数据无效”或“等待补数”，不要写“未发现性能差异”。数据缺失会把坏方案伪装成没问题。
+`L` 可以来自 Android vitals、团队 SLO 或场景预算，但必须带指标、场景、设备、刷新率和版本。报告要给出 baseline/variant 违约率、差值及置信区间。对渲染还可以补充阈值以上的 excess duration，区分“刚越线”和“严重超时”。
 
-## CI 门禁与线上实验的证据对齐
+一个稳健的尾部报告至少包含：
 
-CI 门禁和线上实验要用同一套指标字典。CI 负责固定设备上的可重跑证据，线上实验负责真实用户分布；两边指标名、场景名、分群名不同，发布报告就很难判断同一个退化是否在两个环境里都存在。
+| 证据 | 用途 |
+|---|---|
+| P50、目标主 quantile、辅助高 quantile | 观察整体位置和尾部形状 |
+| 主 quantile 差值 CI | 判断效应方向与精度 |
+| tail violation rate 差值 CI | 判断越过体验线的用户或事件比例 |
+| 原始样本量、独立实验单元数、每单元事件分布 | 判断信息量与聚类 |
+| 关键分群与每日分布 | 发现人群或时间漂移 |
 
-Android Macrobenchmark 的 `FrameTimingMetric` 能输出帧相关指标。官方指标页说明 `frameOverrunMs` 表示帧错过 deadline 的时间；Macrobenchmark codelab 说明 `frameDurationCpuMs` 会输出 P50 / P90 / P95 / P99，Android 12（API 31）及以上还会返回 `frameOverrunMs`。因此 Android 10 / 11 的门禁不能依赖 overrun 口径，应退回 `frameDurationCpuMs`、slow frame rate、frozen frame rate 或自定义 trace section。[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics；developer.android.com/codelabs/android-macrobenchmark-inspect]
+若区间仍同时包含可接受改善和不可接受退化，结论应标为 inconclusive。单点 P99 方向不能覆盖不确定性。
 
-CI 与线上证据建议按这张表对齐：
+## 分群 P90 为什么不能线性相加
 
-| 场景 | CI 指标 | 线上指标 | 判定方式 |
-| --- | --- | --- | --- |
-| 冷启动 | `StartupTimingMetric` 的 TTID / TTFD，多轮 P90 | 冷启动 TTFD P90 / P99、启动失败率 | CI 阻断确定性退化，线上检查设备分布 |
-| 滚动 | `FrameTimingMetric` 的 `frameDurationCpuMs`；API 31+ 加 `frameOverrunMs` | 慢帧率、冻帧率、JankStats / FrameTimeline 摘要 | 同一 `scene_id` 下比较 CI trace 和线上尾部 |
-| 业务阶段 | `TraceSectionMetric` 的 min / median / max、次数 | 同名 trace section 的 P90 / P99 | trace 名称一致时直接归因到阶段 |
-| 稳定性护栏 | 测试过程 crash / ANR / timeout | Crash rate、ANR rate、ApplicationExitInfo | 稳定性越线时性能收益不采纳 |
-| 上报健康 | 测试包上报成功率、日志完整性 | delivery rate、late arrival rate、SRM | 健康度不合格时实验结论暂停 |
+设 variant `v` 的总体分布由互斥分群组成：
 
-门禁阈值要带版本和设备边界。`frameOverrunMs` 的 Android 12+ 口径、60 Hz / 90 Hz / 120 Hz 的帧预算、低端机和高端机的启动基线，都不能混成一个全项目数字。26.7 的发布门禁可以引用这张表，不再重复统计方法。
+`Fv(x) = Σg wv,g × Fv,g(x)`
 
-## [自动发现] Sequential testing 与频繁看数风险
+总体 quantile 是混合 CDF 的逆函数：
 
-性能实验常被发布节奏推着频繁看数：第一天看一次、第二天看一次、发现 p-value 低于 0.05 就提前结束。普通固定样本检验不允许这样用；每多看一次，都在增加误报概率。
+`Qv(τ) = Fv⁻¹(τ)`
 
-处理方式有三种：
+因此，`Qv(τ)` 通常不等于 `Σg wv,g × Qv,g(τ)`。`样本量 × P90 delta` 也没有可加的统计含义。
 
-| 方式 | 适用场景 | 代价 |
-| --- | --- | --- |
-| 固定窗口 | 发版节奏稳定，能等到预设样本量 | 发现明显坏方案不够快 |
-| sequential testing / alpha spending | 需要中途看数，但希望控制误报 | 统计实现更复杂，报告要展示已消耗 alpha |
-| 护栏优先停止 | Crash、ANR、启动严重退化等安全问题 | 只用于止损，不把提前停止样本当收益证明 |
+分群归因应分成两个问题：
 
-Spotify Engineering 关于 sequential testing 的文章提到，如果能预先限制中途分析次数，可用 Bonferroni 等多重比较修正控制假阳性；更灵活的做法是使用 alpha spending。这个方向适合实验平台实现，不适合临时手工改 p-value。[引用: engineering.atspotify.com/2023/03/choosing-sequential-testing-framework-comparisons-and-discussions]
+- composition effect：variant 的设备、版本、刷新率、启动类型或网络权重是否发生变化；
+- within-segment effect：在相同分群内部，性能分布是否变化。
 
-多指标也会增加误报。一个实验同时看启动、滑动、内存、功耗、Crash、ANR、转化率，必然会有指标看起来“显著”。发布报告要区分主指标和护栏指标；多场景、多分群探索结果应标为探索性发现，进入下一轮实验或线下复现，不直接作为采用证据。
+工程上可以选定一组 reference weights，把 baseline 和 variant 都重加权到同一分群构成，再从加权经验 CDF 重算 P90/P99。重加权后的差异更接近 within-segment effect；原始分布与重加权分布的差异提示 composition shift。
 
-## [自动发现] 长尾分布的异常值处理
+分群维度必须预先定义为互斥 strata，或使用能处理多维协变量的标准化方法。按“低端机”“Android 版本”“弱网”逐个替换时，这些人群会重叠，各次变化不能相加成总贡献。
 
-性能长尾里有两类样本：一种是产品和系统要面对的真实慢样本，例如低端机冷启动、弱网首屏、热限频后的滚动；另一种是数据错误或外部污染，例如时间戳错乱、重复上报、服务端 join 错误、压测用户混入。异常值处理先分类，再决定是否剔除。
+尾部来源分析仍有直接工程价值：在总体主 quantile 附近及以上的样本中，统计各 strata 的人数、事件数、违约率和超额耗时。它回答“尾部主要由哪些人群构成”，不宣称这些分群 quantile 可以线性求和。
 
-| 方法 | 适用对象 | 风险 |
-| --- | --- | --- |
-| winsorization | 极少数采集错误已经确认，且要保留样本量 | 会压低真实尾部，不能用于用户体验护栏 |
-| trimmed mean | 均值类指标被极端错误值污染 | 对 P90 / P99 结论帮助有限 |
-| 分桶重算 | 异常集中在某设备、入口、网络或版本 | 分桶过细会造成样本不足 |
-| 异常样本回查 | Top 慢样本要进入工程排查 | 成本高，但最能发现真实问题 |
+## SRM 和数据漏斗
 
-P90 / P99 实验默认不剔除真实慢样本。除非能证明样本是采集错误或实验外污染，否则尾部就是用户体验的一部分。剔除规则要在实验开始前写入登记表，不能在看到结果后再决定删哪些样本。
+SRM（Sample Ratio Mismatch）表示观察到的 assignment 数量与预期分配比例不符。检查应从原始 assignment count 开始，使用适合多项计数的检验，而不是只肉眼比较百分比。
 
-## 小结
+assignment SRM 是实验有效性的前置条件。常见原因包括 hash 或 seed 变化、ID 重置、互斥层冲突、分配日志重复、eligibility 在分配后变化、客户端版本未同步。发生 SRM 时，主效果报告暂停；不能通过删样本把比例修回预期。
 
-性能实验的判断单位不是单个 P90 delta，而是一组证据：分流是否健康、样本量是否足够、分位值置信区间是否稳定、尾部违约率是否越线、异常分群是否可解释、CI 和线上是否指向同一类退化。均值和比例可以做线性贡献拆分；P90 / P99 要回到原始样本、尾部样本和 counterfactual 分布。
+性能实验还要按 variant 追踪完整漏斗：
 
-26.6 可以继续讲 A/B Test 和回归防护流程；26.7 可以引用这里的判定表做发布门禁。统计口径集中在 26.14，后续修订时只维护一个地方。
+| 阶段 | 关键字段 | 典型偏差 |
+|---|---|---|
+| assigned | experiment version、assignment unit、variant、bucket | 分配不均、ID 漂移 |
+| eligible | eligibility rule version、时间 | treatment 后过滤 |
+| config available | fetch/activate 状态、配置版本 | 弱网或缓存差异 |
+| exposed | scene、首个受影响事件 | 不同 variant 改变触达概率 |
+| sampled | sampling unit、rate、policy version | variant 采样率不同 |
+| persisted | 本地写入结果、队列状态 | 崩溃前未落盘、磁盘失败 |
+| delivered | 到达时间、重试次数、payload version | 弱网迟到、重复上传 |
+| analyzed | join 结果、去重版本、排除原因 | join 丢失、窗口截断 |
+
+variant 导致 Crash、ANR 或进程被杀时，慢样本可能来不及上报。只分析 delivered performance event 会把最差的用户排除掉。应把 Crash/ANR、`ApplicationExitInfo`、delivery rate 和 missingness 作为护栏，并在可行时使用 assignment population 的 intention-to-treat 结果。
+
+迟到数据要采用成熟窗口或水位线。日报可以显示 provisional 状态，但发布结论只能使用预先登记的数据成熟规则。采样策略切换、客户端 schema 升级和服务端重算都要产生新的 policy/version 字段。
+
+## Sequential testing 与多重比较
+
+固定样本检验假设分析时间和样本量在看结果前确定。每天查看同一 p-value，并在第一次越过阈值时停止，会提高 type-I error。
+
+实验平台可选择三种设计：
+
+| 设计 | 规则 | 适用场景 |
+|---|---|---|
+| fixed horizon | 到登记的样本量或时间窗后做一次主分析 | 发布节奏可等待固定窗口 |
+| group sequential | 预先设置有限 interim look 与 alpha spending | 需要少量中期决策 |
+| anytime-valid inference | 使用可持续监控的 p-value 或 confidence sequence | 平台支持连续监控并完成过覆盖校准 |
+
+Crash、ANR、数据损坏或严重性能退化可以触发安全停止。这个动作是风险控制，不等于证明 treatment 有收益。提前停止后，报告要保留停止原因、当时样本和设计对应的区间估计。
+
+主指标和护栏指标应在实验前登记。多个 confirmatory 指标需要控制 family-wise error；大量分群与场景探索可使用 FDR 或明确标为 exploratory。探索性发现进入复现实验，不直接升级为发布收益。
+
+## 长尾异常值处理
+
+性能尾部包含两种来源：
+
+- 真实用户慢样本：低端机、热限频、弱网、冷缓存、资源竞争。
+- 无效数据：负耗时、时钟基准混用、重复事件、错误 join、测试流量或损坏 payload。
+
+无效规则要在实验揭盲前定义，并对各 variant 一致执行。删除记录时保存 reason、数量和分群；原始不可变数据保留在受控存储中。
+
+winsorization 和 trimmed mean 会改变 estimand。它们可以作为均值类指标的 sensitivity analysis，不能替代原始 P90/P99 与 tail violation guardrail。真实慢样本属于用户体验，不因数值极端而删除。
+
+推荐同时输出：
+
+- 按数据有效性规则过滤后的主结果；
+- 未做尾部截断的分位值与违约率；
+- winsorized/trimmed 结果作为敏感性对照；
+- Top 慢样本对应的 trace、设备和业务状态索引。
+
+若结论只在某一种事后异常值规则下成立，应判为不稳定，并回到采集或复现实验。
+
+## CI 与线上实验怎样对齐
+
+Android Macrobenchmark 的当前指标边界如下：
+
+- `StartupTimingMetric` 输出 `timeToInitialDisplayMs` 与 `timeToFullDisplayMs`，并汇总多次 iteration 的 min、median、max；官方建议以 median 评估典型启动。
+- `FrameTimingMetric` 输出 `frameDurationCpuMs`；Android 12 / API 31+ 还输出 `frameOverrunMs`。两者按 P50/P90/P95/P99 汇总。
+- `TraceSectionMetric` 对匹配 section 输出 min、median、max 和次数，并默认选择一次 measurement 中的第一个匹配实例。
+- `PowerMetric` 测量的是测试期间的系统级功耗/能耗，并非 App 独占；设备支持范围和环境干扰要单独核对。
+
+CI 的少量 iteration 不应套用线上大样本实验的 P90/P99 显著性语言。它用于受控、可重跑的相对回归：固定设备型号、Android 版本、刷新率、温度、构建类型、compilation mode、网络和数据状态，保留每轮原始值与 trace。
+
+| 场景 | CI 证据 | 线上证据 | 联合判定 |
+|---|---|---|---|
+| 启动 | StartupTimingMetric median、每轮值、trace | 按 cold/warm/hot 和入口分桶的 TTID/TTFD 分布 | CI 复现阶段，线上确认人群与尾部 |
+| 滚动/动画 | FrameTimingMetric quantiles、trace | 慢帧率、冻帧率、FrameTimeline/JankStats 摘要 | 使用相同 scene 与刷新率分桶 |
+| 业务阶段 | TraceSectionMetric 与 Perfetto SQL | 同名业务阶段耗时分布 | 名称和起止语义逐版本一致 |
+| 稳定性 | benchmark crash、ANR、timeout | Crash、ANR、ApplicationExitInfo | 稳定性护栏优先 |
+| 数据健康 | 测试产物完整性 | SRM、delivery、late arrival、missingness | 数据无效时暂停效果判断 |
+
+Android 8–11 没有 `frameOverrunMs`，应使用可用的 `frameDurationCpuMs`、自定义 trace section 或对应版本的线上帧指标。Android 17 / API 37 作为上限时，也要保留 AndroidX Benchmark 版本、设备 build 和指标 availability，避免把库升级造成的字段变化解释成性能变化。
+
+## 实验登记与决策
+
+性能实验登记至少包含：
+
+| 分类 | 必填内容 |
+|---|---|
+| 假设 | treatment、作用路径、预期方向、风险 |
+| 人群 | eligibility、assignment unit、exposure、排除规则 |
+| 指标 | primary estimand、guardrails、单位、聚类单位、阈值版本 |
+| 统计 | alpha、power、MDE、practical effect、harm limit、CI 方法 |
+| 计划 | allocation、fixed/sequential 设计、interim 规则、成熟窗口 |
+| 数据 | event schema、sampling policy、去重、迟到、missingness、SRM |
+| 分群 | 预先声明的设备、Android 版本、刷新率、启动类型、网络 strata |
+| 处置 | adopt、reject、inconclusive、invalid-data、emergency-stop 的条件 |
+
+最终报告给出四类结论之一：
+
+- adopt：主效应达到统计与业务标准，护栏安全，数据健康。
+- reject/harm：收益不足或达到预设伤害条件。
+- inconclusive：方向或精度不足，需要按登记规则继续收集或重做设计。
+- invalid data：SRM、埋点、采样、上报或 join 破坏了可解释性。
+
+“未显著”不等于“没有差异”，“P90 下降”也不等于“值得发布”。结论需要同时写 effect size、区间、业务阈值、护栏和数据健康状态。
 
 ## 参考资料
 
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 32.md]
-- [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
-- [来源: intake/research-gaps.md#2026-05-15-26.6]
-- [已验证: 官方文档, firebase.google.com/docs/ab-testing/ab-concepts]
-- [已验证: 官方文档, firebase.google.com/docs/ab-testing/abtest-config]
-- [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
-- [已验证: 官方文档, developer.android.com/codelabs/android-macrobenchmark-inspect]
-- [引用: microsoft.com/en-us/research/articles/diagnosing-sample-ratio-mismatch-in-a-b-testing]
-- [引用: online.stat.psu.edu/stat415/book/export/html/835]
-- [引用: library.virginia.edu/data/articles/distribution-free-confidence-intervals-percentiles]
-- [引用: engineering.atspotify.com/2023/03/choosing-sequential-testing-framework-comparisons-and-discussions]
+- [Firebase A/B Testing concepts](https://firebase.google.com/docs/ab-testing/ab-concepts)
+- [Firebase Remote Config experiment configuration](https://firebase.google.com/docs/ab-testing/abtest-config)
+- [Android Macrobenchmark metrics](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)
+- [Android Macrobenchmark overview](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
+- [KDD 2019：Diagnosing Sample Ratio Mismatch in Online Controlled Experiments](https://www.kdd.org/kdd2019/accepted-papers/view/diagnosing-sample-ratio-mismatch-in-online-controlled-experiments-a-taxonom)
+- [Always Valid Inference: Bringing Sequential Analysis to A/B Testing](https://arxiv.org/abs/1512.04922)
+- [Efron 1979：Bootstrap Methods](https://projecteuclid.org/journals/annals-of-statistics/volume-7/issue-1/Bootstrap-Methods--Another-Look-at-the-Jackknife/10.1214/aos/1176344552.full)
+- [Hall & Martin 1989：Bootstrap confidence intervals for a quantile](https://doi.org/10.1016/0167-7152%2889%2990121-1)
+- [Firpo, Fortin & Lemieux：Unconditional Quantile Regressions](https://www.nber.org/papers/t0339)
