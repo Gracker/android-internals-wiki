@@ -48,9 +48,9 @@ Android 17（API 37）的接口边界如下：
 | `dumpsys batterystats` / bugreport | `adb shell` 诊断面 | 全设备与 UID 的活动统计、历史和归因输出 | 取决于命令选项与统计会话 | 实验室复现、离线定位 |
 | 外接功耗仪 | 实验室硬件 | 整机或指定供电路径 | 电压、电流、功率、能量 | 校验整机能耗与短时功率波形 |
 
-Android 17 源码树中没有 `android.os.BatteryUsageStatsManager`。正确的系统入口是 [`BatteryStatsManager`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/BatteryStatsManager.java)，类注释将它限定为内部系统组件使用；三个 `getBatteryUsageStats` 重载都带有 `@hide` 与 `@RequiresPermission(BATTERY_STATS)`。
+Android 17 源码树中没有 `android.os.BatteryUsageStatsManager`。正确的系统入口是 [`BatteryStatsManager`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/BatteryStatsManager.java)，类注释将它限定为内部系统组件使用；三个 `getBatteryUsageStats` 重载都带有 `@hide` 与 `@RequiresPermission(BATTERY_STATS)`。
 
-`BATTERY_STATS` 在 [`AndroidManifest.xml`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/res/AndroidManifest.xml) 中的保护级别是 `signature|privileged|development`。普通第三方应用即使在 manifest 中声明它，也拿不到全设备 BatteryUsageStats 权限。通过反射调用隐藏接口还会受到非 SDK 接口限制，产品代码不应依赖这条路。
+`BATTERY_STATS` 在 [`AndroidManifest.xml`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/AndroidManifest.xml) 中的保护级别是 `signature|privileged|development`。普通第三方应用即使在 manifest 中声明它，也拿不到全设备 BatteryUsageStats 权限。通过反射调用隐藏接口还会受到非 SDK 接口限制，产品代码不应依赖这条路。
 
 ## BatteryUsageStats 的系统数据模型
 
@@ -90,7 +90,7 @@ try (BatteryUsageStats stats =
 
 ### Android 17 标准组件
 
-[`BatteryConsumer`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/BatteryConsumer.java) 在 `android-17.0.0_r1` 中定义了 19 个平台组件 ID：
+[`BatteryConsumer`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/BatteryConsumer.java) 在 `android-17.0.0_r1` 中定义了 19 个平台组件 ID：
 
 | ID | 常量 | 归因对象 |
 |---:|---|---|
@@ -150,11 +150,11 @@ flowchart TB
 
 图中的两条输出路径需要分开读。`BatteryUsageStatsProvider` 让 `PowerAttributor` 把历史与组件统计折算为 mAh 和 UID 责任；`PowerStatsService` 则把 HAL 提供的累计 energy consumer 与 rail 读数暴露为 `PowerMonitor`。后者不会自动生成前者的 UID 列表。
 
-Android 17 的 [`BatteryUsageStatsProvider`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java) 在当前会话和累计会话两条路径中都会调用：
+Android 17 的 [`BatteryUsageStatsProvider`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java) 在当前会话和累计会话两条路径中都会调用：
 
 `mPowerAttributor.estimatePowerConsumption(builder, history, start, end)`
 
-默认实现 [`MultiStatePowerAttributor`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java) 为 base、WakeLock、CPU、screen、ambient display、mobile radio、phone、Wi-Fi、Bluetooth、audio、video、flashlight、camera、GNSS、sensors 和 custom components 配置处理器。Android 17 的顶层 `power/stats/` 目录已经不再保留旧的 `CpuPowerCalculator`、`ScreenPowerCalculator` 等主归因实现。
+默认实现 [`MultiStatePowerAttributor`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java) 为 base、WakeLock、CPU、screen、ambient display、mobile radio、phone、Wi-Fi、Bluetooth、audio、video、flashlight、camera、GNSS、sensors 和 custom components 配置处理器。Android 17 的顶层 `power/stats/` 目录已经不再保留旧的 `CpuPowerCalculator`、`ScreenPowerCalculator` 等主归因实现。
 
 ## 三类硬件数据不要混用
 
@@ -188,11 +188,11 @@ interface IPowerStats {
 }
 ```
 
-这些方法来自 [`IPowerStats.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl)。Android 10 资料中的 HIDL `getRailInfo()`、`getEnergyData()` 属于旧接口族，不能拿来描述 Android 17 的 AIDL 调用。
+这些方法来自 [`IPowerStats.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl)。Android 10 资料中的 HIDL `getRailInfo()`、`getEnergyData()` 属于旧接口族，不能拿来描述 Android 17 的 AIDL 调用。
 
 `EnergyConsumerResult.energyUWs` 是自开机累计的 μWs。它还有一个可选 `EnergyConsumerAttribution[]`，元素携带 UID 与对应的累计 μWs。这个字段只说明 HAL 合约允许厂商提供 UID attribution；设备是否填写、覆盖哪些 consumer、Framework collector 是否采用，都要按设备源码和实测确认。共享 rail 仍可能需要软件活动统计来分摊。
 
-[`EnergyConsumerType`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/EnergyConsumerType.aidl) 只有 OTHER、BLUETOOTH、CPU_CLUSTER、DISPLAY、GNSS、MOBILE_RADIO、WIFI、CAMERA 八种枚举。GPU 可以由厂商用 OTHER 和设备私有名称表达，却没有跨设备可移植的 GPU 类型。
+[`EnergyConsumerType`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/EnergyConsumerType.aidl) 只有 OTHER、BLUETOOTH、CPU_CLUSTER、DISPLAY、GNSS、MOBILE_RADIO、WIFI、CAMERA 八种枚举。GPU 可以由厂商用 OTHER 和设备私有名称表达，却没有跨设备可移植的 GPU 类型。
 
 ### PowerProfile：硬件计量缺失时的设备模型
 
@@ -219,7 +219,7 @@ interface IPowerStats {
 <item name="wifi.active">0.1</item>
 ```
 
-片段摘自 [`core/res/res/xml/power_profile.xml`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/res/res/xml/power_profile.xml)。其中的 `0.1` 和单核配置仅是 AOSP 模板值，不能复制到量产设备。旧稿写成空格分隔的 `<item name="cpu.core_speeds.cluster0">`、`gpu.power` 等形式，与 Android 17 标准模板不符。
+片段摘自 [`core/res/res/xml/power_profile.xml`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/res/xml/power_profile.xml)。其中的 `0.1` 和单核配置仅是 AOSP 模板值，不能复制到量产设备。旧稿写成空格分隔的 `<item name="cpu.core_speeds.cluster0">`、`gpu.power` 等形式，与 Android 17 标准模板不符。
 
 硬件能量和 PowerProfile 也不是一次性的“二选一”。以 CPU 为例，处理器会用 measured energy 约束总量，再利用 power bracket 的模型比例和 UID time-in-bracket 分配共享消耗。这个过程只修正当前统计窗口的归因比例，不会把新参数写回 `power_profile.xml`，也没有固定 30% 偏差告警。
 
@@ -227,7 +227,7 @@ interface IPowerStats {
 
 ### CPU：频点模型、硬件总量和 UID 时间共同参与
 
-[`CpuPowerStatsProcessor`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java) 的常规路径包含以下步骤：
+[`CpuPowerStatsProcessor`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java) 的常规路径包含以下步骤：
 
 1. 从 `CpuScalingPolicies` 取得 policy、cluster 与 scaling step 的对应关系。
 2. 从 PowerProfile 读取 CPU active、cluster 和每个 scaling step 的平均电流系数。
@@ -242,7 +242,7 @@ Android 17 还保留一个面向特定 collector 的 fast path：当 descriptor 
 
 ### WakeLock：估算被阻止的休眠机会
 
-[`WakelockPowerStatsProcessor`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/WakelockPowerStatsProcessor.java) 使用 `PowerProfile.POWER_CPU_IDLE` 和本窗口内的 WakeLock usage duration 估算设备功耗，再按各 UID 的持有时长占比分配：
+[`WakelockPowerStatsProcessor`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/WakelockPowerStatsProcessor.java) 使用 `PowerProfile.POWER_CPU_IDLE` 和本窗口内的 WakeLock usage duration 估算设备功耗，再按各 UID 的持有时长占比分配：
 
 `UID WakeLock mAh = device WakeLock mAh × UID hold duration / all UID hold duration`
 
@@ -250,7 +250,7 @@ Android 17 还保留一个面向特定 collector 的 fast path：当 descriptor 
 
 ### Screen：设备总量与 UID 分摊是两步
 
-[`ScreenPowerStatsProcessor`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/ScreenPowerStatsProcessor.java) 先计算设备屏幕消耗：
+[`ScreenPowerStatsProcessor`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/ScreenPowerStatsProcessor.java) 先计算设备屏幕消耗：
 
 - 有 display energy consumer 时，把 measured energy 换算为 mAh。
 - 缺少 measured energy 时，用 screen-on、doze 和亮度 bin 的持续时间乘 PowerProfile 系数。
@@ -349,7 +349,7 @@ fun intervalAverageMicrowatts(
 - 不能把单次累计值当作瞬时功率。
 - 不能排除插电阶段的能量；`PowerMonitorReadings` 明确包含 battery 与 plugged-in 两种状态。
 
-Android 17 的 [`PowerStatsService`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java) 还会限制公开读数的时间和精度。普通调用方允许复用最多 20 秒前的缓存读数，并对返回累计值加入区间随机噪声；calling UID 是该刷新周期内的 sticky key。有 `ACCESS_FINE_POWER_MONITORS` 的特权调用方使用 250 ms 最大年龄，该权限同样是 `signature|privileged|development`。
+Android 17 的 [`PowerStatsService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java) 还会限制公开读数的时间和精度。普通调用方允许复用最多 20 秒前的缓存读数，并对返回累计值加入区间随机噪声；calling UID 是该刷新周期内的 sticky key。有 `ACCESS_FINE_POWER_MONITORS` 的特权调用方使用 250 ms 最大年龄，该权限同样是 `signature|privileged|development`。
 
 因此，应用侧窗口应比 20 秒缓存周期长得多，通常用分钟级业务场景和多轮样本观察差值。毫秒级尖峰、亚秒启动阶段和绝对功率校准应交给 Perfetto rail、Power Profiler 或外接仪器。
 
@@ -370,15 +370,20 @@ Android 17 的 [`PowerStatsService`](https://android.googlesource.com/platform/f
 
 ### 受控采集
 
-`batterystats --reset` 会清除既有统计，只应在专用测试设备或明确的测试窗口执行。准备好 release/profileable 构建后，可用下面的命令建立一次离线样本：
+`batterystats --reset` 会清除既有统计，只应在专用测试设备或明确的测试窗口执行。准备好 release/profileable 构建后，在场景开始前执行：
 
 ```bash
 adb shell dumpsys batterystats --reset
+```
+
+确认重置完成后，断开 USB 并运行固定场景。场景结束后重新连接设备，再导出统计和 bugreport：
+
+```bash
 adb shell dumpsys batterystats > batterystats.txt
 adb bugreport bugreport.zip
 ```
 
-第一条命令在场景开始前执行。随后断开 USB、运行固定场景、重新连接设备，再执行后两条导出命令。导出的文本便于按 UID 和组件检索，bugreport 可供系统工具回放。
+导出的文本便于按 UID 和组件检索，bugreport 可供系统工具回放。把重置和导出分成两个阶段，也能避免脚本紧接着导出一份几乎没有场景数据的样本。
 
 采集时至少固定这些条件：
 
@@ -463,15 +468,15 @@ PowerMonitor 接受厂商自定义名称，BatteryConsumer 是平台固定的归
 
 ## 源码锚点
 
-- [`BatteryStatsManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/BatteryStatsManager.java)：系统入口、隐藏方法与权限声明。
-- [`BatteryUsageStats.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/BatteryUsageStats.java)：device / all-apps 聚合、UID consumer 与会话字段。
-- [`BatteryUsageStatsQuery.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/BatteryUsageStatsQuery.java)：时间范围、状态维度、历史和组件过滤。
-- [`BatteryUsageStatsProvider.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java)：Android 17 到 `PowerAttributor` 的调用点。
-- [`MultiStatePowerAttributor.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java)：组件与 processor 的配置关系。
-- [`CpuPowerStatsProcessor.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java)：CPU bracket、energy consumer 缩放和 UID 分配。
-- [`ScreenPowerStatsProcessor.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/ScreenPowerStatsProcessor.java)：屏幕模型、实测总量与 top activity 分摊。
-- [`WakelockPowerStatsProcessor.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/WakelockPowerStatsProcessor.java)：WakeLock 模型与 UID 持有时长占比。
-- [`SystemHealthManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java)：公开 PowerMonitor 异步接口和本 UID HealthStats。
-- [`PowerStatsService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java)：monitor 枚举、缓存、权限和噪声处理。
-- [`IPowerStats.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl)：Android 17 Vendor HAL 合约。
-- [`EnergyConsumerResult.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/EnergyConsumerResult.aidl)：累计 μWs 与可选 UID attribution。
+- [`BatteryStatsManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/BatteryStatsManager.java)：系统入口、隐藏方法与权限声明。
+- [`BatteryUsageStats.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/BatteryUsageStats.java)：device / all-apps 聚合、UID consumer 与会话字段。
+- [`BatteryUsageStatsQuery.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/BatteryUsageStatsQuery.java)：时间范围、状态维度、历史和组件过滤。
+- [`BatteryUsageStatsProvider.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java)：Android 17 到 `PowerAttributor` 的调用点。
+- [`MultiStatePowerAttributor.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java)：组件与 processor 的配置关系。
+- [`CpuPowerStatsProcessor.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java)：CPU bracket、energy consumer 缩放和 UID 分配。
+- [`ScreenPowerStatsProcessor.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/ScreenPowerStatsProcessor.java)：屏幕模型、实测总量与 top activity 分摊。
+- [`WakelockPowerStatsProcessor.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/WakelockPowerStatsProcessor.java)：WakeLock 模型与 UID 持有时长占比。
+- [`SystemHealthManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java)：公开 PowerMonitor 异步接口和本 UID HealthStats。
+- [`PowerStatsService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java)：monitor 枚举、缓存、权限和噪声处理。
+- [`IPowerStats.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl)：Android 17 Vendor HAL 合约。
+- [`EnergyConsumerResult.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/EnergyConsumerResult.aidl)：累计 μWs 与可选 UID attribution。
