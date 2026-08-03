@@ -49,7 +49,7 @@ Android 17 也没有 `PowerManager.isThermalStatusProtectionEnabled()`、`getThe
 
 1. CPU、GPU、ISP、NPU、modem、屏幕和充电共同产生热量。
 2. skin 或其他热模型接近产品限制，厂商策略提高 throttling severity。
-3. cpufreq/devfreq cooling、固件、vendor daemon 或 QoS 请求收紧资源上限。
+3. cpufreq/devfreq cooling、固件、vendor daemon 或 QoS 请求降低资源上限。
 4. 同一份应用工作在更低资源预算下执行，帧时间、编码时间或推理延迟上升。
 5. 应用若继续堆积过期工作，功耗和热压力可能持续，用户体验进一步恶化。
 
@@ -90,11 +90,11 @@ flowchart TB
 
 限制 CPU/GPU、充电或屏幕的动作通常发生在内核、固件和 vendor 策略层，不需要等待应用回调。`PowerManager` 给应用的是产品级热压力信号，应用用它缩减自己的工作量。
 
-Android 17 的 Framework 服务位于 [`services/core/java/com/android/server/power/thermal/ThermalManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java)。旧版本资料中的 `server/power/ThermalManagerService.java` 路径不能直接套到当前 tag。
+Android 17 的 Framework 服务位于 [`services/core/java/com/android/server/power/thermal/ThermalManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java)。旧版本资料中的 `server/power/ThermalManagerService.java` 路径不能直接套到当前 tag。
 
 ### Thermal HAL 的当前接口
 
-Android 17 的稳定 AIDL [`IThermal`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/IThermal.aidl) 提供四类能力：
+Android 17 的稳定 AIDL [`IThermal`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/IThermal.aidl) 提供四类能力：
 
 | 能力 | AIDL 方法 |
 |---|---|
@@ -406,7 +406,7 @@ CPU 频率或可用核心预算降低后，常见表现包括：
 
 ### GPU 受限
 
-GPU devfreq 或厂商固件收紧预算时，GPU completion 延后，FrameTimeline 可能出现 GPU deadline miss。应用应先减少像素和 pass，再评估目标 FPS。仅凭 `SEVERE` 推断 GPU 已降到某个频点，证据不足。
+GPU devfreq 或厂商固件降低预算时，GPU completion 延后，FrameTimeline 可能出现 GPU deadline miss。应用应先减少像素和 pass，再评估目标 FPS。仅凭 `SEVERE` 推断 GPU 已降到某个频点，证据不足。
 
 ### 充电与其他缓解动作
 
@@ -443,10 +443,10 @@ API 24 的 Sustained Performance Mode 面向长时间负载。应用先调用 `P
 
 ## 与后台调度、Doze 和 App Standby 的关系
 
-Android 17 的 [`ThermalStatusRestriction`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/restrictions/ThermalStatusRestriction.java) 监听 PowerManager status，并随 severity 提高限制 JobScheduler：
+Android 17 的 [`ThermalStatusRestriction`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/restrictions/ThermalStatusRestriction.java) 监听 PowerManager status，并随 severity 提高限制 JobScheduler：
 
 - `LIGHT` 开始限制 MIN priority，以及部分未运行或 overtime 的 LOW priority job；
-- `MODERATE` 只在条件满足时放行 user-initiated、expedited 或 HIGH priority job；
+- `MODERATE` 放行 user-initiated job；expedited job 仅在首次尝试，且若已运行则尚未进入 overtime 时放行；HIGH priority job 仅在已运行且未进入 overtime 时放行；
 - `SEVERE` 及以上限制所有非 TOP_APP job；
 - TOP_APP bias 不受这条 restriction 限制。
 
@@ -597,10 +597,10 @@ Android 17 普通应用只能读取 status/headroom。raw temperature、cooling 
 
 本章采用以下 Android 17 源码作为直接锚点：
 
-- [`PowerManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/PowerManager.java)：status、headroom、threshold 与 listener。
-- [`ThermalManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java)：HAL 连接、skin 聚合、forecast、shell 与 trace counter。
-- [`IThermalService.aidl`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/IThermalService.aidl)：Framework Binder 边界。
-- [`IThermal.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/IThermal.aidl)：Android 17 Thermal HAL。
-- [`ThrottlingSeverity.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/ThrottlingSeverity.aidl)：NONE 到 SHUTDOWN 的 HAL 枚举。
-- [`CoolingDevice.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/CoolingDevice.aidl)：cooling state 与功率字段。
+- [`PowerManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java)：status、headroom、threshold 与 listener。
+- [`ThermalManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java)：HAL 连接、skin 聚合、forecast、shell 与 trace counter。
+- [`IThermalService.aidl`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/IThermalService.aidl)：Framework Binder 边界。
+- [`IThermal.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/IThermal.aidl)：Android 17 Thermal HAL。
+- [`ThrottlingSeverity.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/ThrottlingSeverity.aidl)：NONE 到 SHUTDOWN 的 HAL 枚举。
+- [`CoolingDevice.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/CoolingDevice.aidl)：cooling state 与功率字段。
 - [AOSP Thermal mitigation](https://source.android.com/docs/core/power/thermal-mitigation)：HAL、Framework 与应用 status 指南。
