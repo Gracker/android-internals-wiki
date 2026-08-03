@@ -109,9 +109,9 @@ last_deepseek_cn_review_at: 2026-06-08
 
 ## 为什么 Hybrid 页要单独算功耗账
 
-Hybrid 页面把 Android 进程、Chromium Renderer、JavaScript、网络栈和页面资源放到同一次用户会话里。只看电量百分比，很难判断是页面本身重、容器生命周期没关好，还是网络和缓存策略把 CPU 唤醒次数放大了。
+Hybrid 页面把应用进程、WebView provider、Chromium renderer、JavaScript、页面资源和桥调用放进同一次用户操作。电量百分比只能反映整机变化，无法指出耗电来自页面脚本、容器生命周期、网络请求还是原生侧工作。
 
-这里建立一套判断口径：同一个业务功能在原生页、WebView 页、外部浏览器 Web 页之间切换时，应该比较哪些成本，哪些结论能迁移到线上，哪些结论只能保留在实验设备上。
+本节以 Android 17（API 37）和 `android-17.0.0_r1` 为平台锚点，比较同一业务在原生页、应用内 WebView 和外部浏览器中的成本。结论分成两类：同机对照实验得到的相对差异，以及能够在线上按页面和 provider 版本持续验证的指标。
 
 7.11 节负责 WebView 渲染管线，10.3 节负责内存持续增长，19.26 节负责 Hybrid APM。25.10 把这些章节的结果接到功耗账本和技术选型上。
 
@@ -121,34 +121,37 @@ Hybrid 页面把 Android 进程、Chromium Renderer、JavaScript、网络栈和�
 
 | 形态 | 主要运行时 | 典型成本 | 适合场景 | 风险边界 |
 | --- | --- | --- | --- | --- |
-| 原生页 | App 进程、ART、RenderThread、系统网络栈 | 业务代码、图片解码、布局绘制、缓存维护 | 高频入口、富交互页、视频/信息流、支付登录 | 研发成本高，跨端复用弱 |
-| 普通 Web 页 | 浏览器进程、Renderer、JS 引擎、浏览器缓存 | JavaScript、DOM/CSS 布局、浏览器进程内存、页面网络请求 | 外部链接、一次性活动页、低频内容页 | App 侧可观测性弱，账号态和容器能力受限 |
-| WebView Hybrid 页 | App 进程 + WebView Renderer + JSBridge | Renderer 进程、页面资源、桥调用、容器生命周期、原生与前端双缓存 | 运营页、轻交互配置页、跨端复用页 | 容器成本归到 App，内存和功耗要由 App 团队兜底 |
+| 原生页 | 应用进程、ART、UI 工具包、应用选择的网络客户端 | 业务代码、图片解码、布局绘制、数据缓存 | 高频入口、富交互页、视频/信息流、登录支付 | 开发与多端一致性成本较高 |
+| 外部浏览器 Web 页 | 浏览器主进程、renderer、JavaScript 引擎、浏览器存储 | DOM/CSS、脚本、媒体、页面请求与浏览器自身开销 | 外部链接、完整 Web 站点、低频内容页 | 应用难以取得进程级指标，也不能控制浏览器生命周期 |
+| WebView Hybrid 页 | 应用进程、WebView provider、一个或多个 renderer、JSBridge | 页面资源、桥调用、renderer、容器与页面双重生命周期 | 运营页、轻交互配置页、需要跨端复用的内容页 | 稳定性、权限边界和页面级观测仍由应用团队负责 |
 
-功耗判断不能只按“原生快”或“Web 灵活”二分。CPU 时间、网络传输量、内存压力、页面驻留时间、后台唤醒次数共同决定电池消耗。AOSP 的功耗归因也不是直接读取每个 App 的电流，BatteryStats 主要采集组件状态和运行时间，再结合 `power_profile.xml` 中的设备功耗值估算耗电。
+CPU 时间、网络传输、内存压力、页面驻留、后台活动和屏幕亮度都会影响整机能耗。BatteryStats 不直接读取每个应用的电流：它记录 UID 与硬件组件的活动时间，并使用设备 power profile 估算归因；实现了 [Power Stats HAL](https://source.android.com/docs/core/power/power-stats-hal) 的设备还能提供部分实测 rail 数据。不同设备的归因模型和可用 rail 不同，所以 BatteryStats 适合定位行为与做同机比较，不能代替外部功率计的绝对测量。
 
 ## Native vs Web 能耗实验的结论与局限
 
-arXiv 2308.16734 对比了 10 个互联网内容平台的 Android 原生应用与 Web 版本，覆盖新闻、社交媒体、电商、音频流、视频流 5 类。论文测量能耗、CPU、内存、网络流量和帧时间，并做统计显著性检验与效应量分析。
+论文 [arXiv:2308.16734](https://arxiv.org/abs/2308.16734) 对比了 10 个互联网内容平台的 Android 原生应用与 Chrome Web 版本，覆盖新闻、社交媒体、电商、音频流和视频流五类。这里的 Web 版本运行在 Chrome，不是应用内 `WebView`。
 
-这篇论文对工程实践有三条可用结论：
+实验使用一台 Nokia 6.2（Android Go 10），每组脚本运行 3 分钟，每个研究对象重复 25 次，总计 500 次。设备通过 USB 连接并保持充电，能耗由 Batterystats 根据硬件活动和 power profile 估算。作者在每轮之间清理对应原生应用缓存，并清理浏览器标签页和除登录 Cookie 以外的缓存；交互是固定的点击、滚动和输入脚本。
 
-- 原生版本在能耗上优于 Web 版本，差异达到统计显著，效应量大。视频流媒体这类长时间驻留场景差异更容易被放大。
-- Web 版本消耗更多 CPU 和内存，差异同样达到统计显著，效应量大。Hybrid 页面要把 CPU time、PSS/RSS、Renderer 存活时间放进同一张看板。
-- 网络流量差异有统计显著性，但效应量小。网络不是唯一解释，页面脚本、布局和缓存策略经常更能解释能耗差异。
+在这套实验条件下，论文得到以下结果：
 
-论文没有给出“WebView 一定比原生耗电”的工程定律。样本只有 10 个应用，每类 2 个；不同平台的页面质量、缓存策略、广告脚本和媒体播放器实现差异很大；帧时间指标没有得出统计结论。把这篇论文用于公司内部决策时，只能把它当成实验设计和风险提示，结论要用本业务数据复验。
+- 原生版本的能耗低于 Web 版本，差异具有统计显著性且效应量大；
+- Web 版本使用更多 CPU 和内存，差异具有统计显著性且效应量大；
+- 网络流量差异具有统计显著性，但效应量小；
+- 帧时间数据不足以支持原生与 Web 孰优的结论。
+
+外推时要保留作者列出的限制：样本只有 10 对；只测试一台 Android 10 设备和一个浏览器；静态脚本不能覆盖结账、发帖等交互；Web 内容可能在实验期间变化；网络统计存在未及时更新的无效数据，部分对象被删减到较少的有效配对。论文既没有测试 WebView 容器，也没有把 Web 与原生实现控制成同一功能代码。它可以提示 CPU、内存和网络风险，不能证明某个 Hybrid 页面必须原生化。
 
 ## WebView 的 CPU、内存和网络开销来源
 
 WebView 的成本通常分成四类看。
 
-- CPU：JavaScript 执行、DOM/CSS 计算、图片解码、滚动合成、JSBridge 序列化都会消耗 CPU。频繁桥调用还会把前端事件变成 App 侧主线程或业务线程的等待。
-- 内存：WebView 依赖 Chromium Renderer，多页面、多 Tab、长列表和大图会形成独立的 Renderer 内存压力。AOSP android-16.0.0_r1 的 `loader.cpp` 会用 `mmap(PROT_NONE)` 预留 `libwebview reservation` 地址空间并通过 `prctl(PR_SET_VMA_ANON_NAME, ..., "libwebview reservation")` 标记，低地址空间设备还要关注虚拟内存预算。
-- 网络：Web 页面常带更多碎片化资源、重定向、第三方脚本和图片变体。HTTP 缓存、Service Worker、预加载策略做错，会把首屏速度换成后台网络和磁盘写入成本。
-- 生命周期：WebView 离屏后仍可能保留页面、定时器、音视频、Renderer 或缓存。容器没有明确的 `pause/resume/destroy` 协议时，功耗账会和内存账一起失真。
+- **CPU**：JavaScript、DOM/CSS 计算、图片解码、滚动合成和 JSBridge 序列化都会执行代码。桥调用过密时，还会增加应用主线程或业务线程的调度与等待。
+- **内存**：WebView 使用 Chromium renderer。多个 WebView 可能关联同一个 renderer，也可能使用不同 renderer，不能按“一个页面等于一个进程”估算。`android-17.0.0_r1` 的 [`loader.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/native/webview/loader/loader.cpp) 会用 `mmap(PROT_NONE)` 预留 `libwebviewchromium.so` 的地址空间，并命名为 `libwebview reservation`。这段 reservation 消耗虚拟地址空间，不等于同等大小的 PSS/RSS 或物理内存；32 位进程更需要关注地址空间碎片。
+- **网络与存储**：页面可能包含重定向、第三方脚本、字体和多种图片。HTTP 缓存、Cookie、DOM storage、Service Worker 与应用自己的离线包不是同一层；清理其中一层不能证明其他层也已清空。
+- **生命周期**：页面离屏后仍可能保留 renderer、音视频和定时任务。容器要把可见性映射到 `WebView.onPause()` / `onResume()`，不再复用时从 View 树移除并调用 `destroy()`。`pauseTimers()` / `resumeTimers()` 会影响当前进程中的所有 WebView，不适合作为单页面通用开关；`clearCache()` 也不是页面退出时的清理接口。
 
-7.11 节已经解释 WebView 渲染性能，10.3 节覆盖 WebView 内存增长，19.26 节覆盖 Hybrid APM，20.10 节覆盖 Renderer OOM 和白屏恢复。这些章节对 WebView Renderer 崩溃/无响应的版本边界做了统一拆分：API 26+ `onRenderProcessGone()`，API 29+ `WebViewRenderProcessClient`。功耗视角的观察字段集中在：页面 URL 类型、WebView provider 版本、Renderer PID、页面驻留时长、CPU time、PSS/RSS、网络字节数、桥调用次数、前后台切换和 Renderer 退出原因。
+7.11 解释 WebView 渲染性能，10.3 覆盖内存持续增长，19.26 覆盖 Hybrid APM，20.10 覆盖 renderer 退出和白屏恢复。本节只汇总功耗需要的字段：页面类型、provider 版本、驻留时长、CPU 时间、PSS/RSS、网络字节、桥调用、前后台切换和 renderer 退出原因。Renderer PID 适合在本地 Perfetto/`ps` 中关联；Android 公共 WebView API 不提供可用于线上记录的 renderer PID。
 
 ## 功耗基准测试方案
 
@@ -156,48 +159,53 @@ WebView 的成本通常分成四类看。
 
 实验前固定这些条件：设备型号、系统版本、WebView provider 版本、电量区间、亮度、刷新率、网络类型、账号状态、内容集合、广告开关、地理位置、温度起点和后台 App 数量。每次采样只改一个变量，避免把页面版本、网络波动和设备温升混在一起。
 
-下面这组命令用于建立一轮手工基准测试的最小采样窗口。重点看 `batterystats`、bugreport、内存和网络差值，不用一次电量百分比判断方案优劣。
+下面的命令建立一轮手工采样窗口。每个方案都要重复执行同一套步骤，并分别测试冷启动与已缓存状态。
 
 ```bash
 adb shell dumpsys batterystats --reset
+adb shell dumpsys netstats > netstats-before.txt
+
 adb shell am force-stop com.example.app
 adb shell am start -n com.example.app/.MainActivity
-# 执行固定脚本：打开页面、滚动、停留、退出。每轮脚本时长保持一致。
-adb shell dumpsys meminfo com.example.app > meminfo-after.txt
-# 网络采样：Android 8-9 的 legacy 路径是 xt_qtaguid，Android 9+ 新设备主线转向 eBPF（NetworkStatsService）
-# 优先用 dumpsys netstats；xt_qtaguid 仅在旧设备或确认 kernel 不支持 eBPF 时作为 fallback
+
+# 执行固定脚本：打开页面、滚动、停留、退出。
+adb shell dumpsys meminfo --package com.example.app > meminfo-after.txt
 adb shell dumpsys netstats > netstats-after.txt
-# legacy fallback: adb shell cat /proc/net/xt_qtaguid/stats > net-qtaguid-after.txt
 adb bugreport bugreport-hybrid-power.zip
 ```
 
-这组数据需要和 Power Profiler、Perfetto、Macrobenchmark `PowerMetric` 或 Battery Historian 交叉使用。`PowerMetric` 返回的是 system-wide 功耗，不是 per-app attribution，且限定 Pixel 6 / Pixel 6 Pro 及后续设备。Hybrid/WebView 对照实验需要额外控制其他进程、WebView provider 版本与温控干扰。Android Developers 已说明 Battery Historian 不再活跃维护；能用系统 tracing、Macrobenchmark power metric 或 Power Profiler 时，优先用新工具。
+`netstats` 是累计统计，要按目标 UID 计算前后差值，并留意统计桶尚未刷新的延迟；不能比较两个完整文件的总字节数。Android 8 设备可能使用旧网络记账实现，Android 17 设备使用的底层实现不同，但应用层基准应统一通过 NetworkStats/`dumpsys netstats` 取数，不把 `/proc/net/xt_qtaguid/stats` 当作跨版本接口。
+
+外部浏览器对照组要替换被测包名和启动入口，并记录浏览器主进程与 renderer；不能把 `com.example.app` 的统计当作浏览器结果。
+
+这组数据要与 Perfetto、Power Profiler 或 Macrobenchmark [`PowerMetric`](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics#powermetric) 交叉使用。`PowerMetric` 仍是实验性 API，返回整机而非单应用能耗，官方支持 Pixel 6、Pixel 6 Pro 及后续设备。实验要固定其他进程、WebView provider、温度与屏幕状态。Battery Historian 已不再积极维护，适合读取旧 Batterystats 记录，不应作为新基准平台的中心工具。
 
 指标表按下面口径收敛：
 
 | 指标 | 采集方式 | 用途 | 判读边界 |
 | --- | --- | --- | --- |
-| 能耗估算 | Power Profiler / BatteryStats / Macrobenchmark `PowerMetric` | 对比同机同脚本的相对变化 | 结果 system-wide，非 per-app；限定 Pixel 6+ 设备；需控其他进程与温控 |
-| CPU time | Perfetto、simpleperf、`top -H`、`/proc/<pid>/stat` | 判断 JS、布局、解码和桥调用成本 | 需要按线程和进程拆开 |
-| 内存 | `dumpsys meminfo`、Perfetto memory counters | 观察 App、Renderer、Graphics、Native 增长 | PSS/RSS 不替代泄漏判断 |
-| 网络 | `dumpsys netstats`（eBPF/NetworkStatsService）、`xt_qtaguid`（legacy）、APM 网络插件 | 比较流量、请求数、重试和弱网放大 | CDN、广告和 AB 实验会污染样本；Android 9+ 新设备主线为 eBPF |
+| 整机能耗 | Power Profiler、Macrobenchmark `PowerMetric`、外部功率计 | 对比同机同脚本的能量变化 | `PowerMetric`/ODPM 是整机数据，外部功率计还要控制 USB 供电 |
+| UID 功耗归因 | BatteryStats / BatteryUsageStats | 判断 CPU、网络、WakeLock 等责任归属 | 依赖设备统计与功耗模型，不等于电流实测 |
+| CPU 时间 | Perfetto、simpleperf、`top -H`、`/proc/<pid>/stat` | 判断脚本、布局、解码和桥调用成本 | 要覆盖应用与 renderer 进程，并按线程分析 |
+| 内存 | `dumpsys meminfo`、Perfetto memory counters | 观察应用、renderer、图形与 native 内存增长 | PSS/RSS 不等于泄漏结论，虚拟地址 reservation 也不能算作物理占用 |
+| 网络 | NetworkStats/`dumpsys netstats`、应用网络观测 | 比较流量、请求数、重试和弱网影响 | CDN、广告、AB 实验和统计刷新周期会污染样本 |
 | 帧耗时 | FrameTimeline、JankStats、APM FPS | 判断体验是否被功耗优化伤到 | 论文未能证明 Web 与原生帧时间差异 |
 | 温度 | BatteryManager、Perfetto thermal、厂商接口 | 排除热降频对结果的干扰 | 温度不同，CPU 频点和耗电不可比 |
 
 ## 原生化与 Web 优化的决策表
 
-技术选型不该只问“要不要 WebView”,要问的是这个页面的高频操作是否由 Web 技术制造了额外 CPU、内存或网络成本,以及能否通过局部原生化解决。
+技术选型需要回答两个问题：页面高频操作是否产生了可测量的额外 CPU、内存或网络成本，以及局部原生化能否消除主要成本。
 
 | 业务形态 | 倾向方案 | 判断条件 | 可执行动作 |
 | --- | --- | --- | --- |
-| 视频流 / 直播 | 原生播放器优先 | 长驻留、高带宽、解码和渲染成本高 | 原生播放器承接播放、Web 只保留运营配置；监控播放时长、缓存命中、温度和退出原因 |
-| 信息流 | 原生列表优先，局部 Hybrid | 高频滚动、大图、广告脚本多 | 原生 RecyclerView/Compose 承接列表；Web 卡片限高限资源；图片格式和预取由 App 统一治理 |
+| 视频流 / 直播 | 原生播放器优先 | 长驻留、高带宽、解码和渲染成本高 | 原生播放器负责播放，Web 只保留运营配置；监控播放时长、缓存命中、温度和退出原因 |
+| 信息流 | 原生列表优先，局部 Hybrid | 高频滚动、大图、广告脚本多 | 原生 RecyclerView/Compose 负责列表，Web 卡片限制高度和资源；图片格式与预取由应用统一管理 |
 | 电商详情 / 内容详情 | Hybrid 可用 | 页面变化快，但交互深度中等 | 资源预加载、首屏模板缓存、JSBridge 白名单、图片尺寸约束、离屏销毁协议 |
 | 活动页 / 营销页 | WebView 可用 | 低频、生命周期短、回滚要求高 | 限制第三方脚本；采集首屏、CPU time、网络流量；超过门禁转模板化或原生组件 |
 | 登录 / 支付 / 风控 | 原生优先 | 安全、稳定和可观测性要求高 | 减少 WebView 权限面；敏感流程用原生；必要 Web 页面走独立容器和审计日志 |
-| 富交互工具页 | 局部原生化 | 手势、编辑、图形、低延迟输入多 | 原生承接输入和渲染热区；Web 承接配置面板；桥调用批量化 |
+| 富交互工具页 | 局部原生化 | 手势、编辑、图形、低延迟输入多 | 原生负责输入和高频渲染区域，Web 负责配置面板；桥调用批量化 |
 
-Web 优化仍然有价值。缓存命中率、冷热资源分层、图片尺寸、请求合并、脚本拆包和离屏释放都能降低成本。 但这些动作要进入同一套灰度门禁：新 Web 页面发布后，CPU time、PSS、网络字节数、卡顿率、退出率和 Android Vitals 指标不能劣化到阈值外。
+保留 WebView 时，应按测量结果处理缓存命中、图片尺寸、请求合并、脚本拆包和离屏释放。新页面发布后，CPU 时间、PSS、网络字节、卡顿率、退出率和 Android Vitals 指标不能越过项目阈值。
 
 ## 线上监控与发布守门
 
@@ -206,32 +214,33 @@ Hybrid 功耗治理要有页面级账本。只按 App 维度看耗电，无法�
 建议每次 WebView 会话记录这些字段：
 
 - 页面身份：业务线、页面类型、URL 归一化、版本号、灰度批次、是否离线包。
-- 容器身份：WebView provider 包名与版本、Android 版本、进程名、Renderer PID、是否多进程。
+- 容器身份：WebView provider 包名与版本、Android 版本、应用进程名、是否使用独立 WebView 数据目录。
 - 成本指标：页面驻留时长、前后台状态、CPU time、PSS/RSS、网络请求数、上下行字节数、桥调用次数、帧耗时、温度区间。
-- 退出信息：用户返回、容器销毁、Renderer crash、Renderer 被系统回收、App 被 LMK、ANR、进程退出 reason。
+- 退出信息：用户返回、容器销毁、renderer crash、renderer 被系统回收、应用被 LMK、ANR、应用进程退出原因。
 
-Android Vitals 能提供过量唤醒、后台网络、wake lock、启动时间、慢渲染、LMK 等 Play 侧指标，适合做发布后的护栏。 WebView Renderer 的异常要按版本边界分两档处理：
+Android Vitals 提供过量唤醒、后台网络、WakeLock、启动、慢渲染和 LMK 等应用级指标，但不能自动定位到某个 URL。页面级 APM 负责建立 URL/容器版本与这些异常的时间关联；`ApplicationExitInfo` 用于补充应用或容器进程退出，不能代替 WebView 的 renderer 回调。
 
-- **API 26+**：接入 `WebViewClient.onRenderProcessGone()`，覆盖 Renderer crash 和被系统回收的场景。
-- **API 29+**：额外接入 `WebViewRenderProcessClient.onRenderProcessUnresponsive()`，观察 Renderer 长时间阻塞。
+WebView renderer 的版本边界如下：
 
-对于 Android 8/9（API 26-28）只能使用第一档，需要依赖 ready 超时、JSBridge 心跳、PixelCopy 或 DOM 采样作为 Renderer 健康探测的降级信号。处理时必须覆盖同一 Renderer 关联的所有 WebView。
+- **API 26+**：实现 `WebViewClient.onRenderProcessGone()`。通过 `RenderProcessGoneDetail.didCrash()` 区分 crash 与系统回收；失去 renderer 的 WebView 必须从 View 树移除并销毁，不能复用。
+- **API 29+**：再实现 `WebViewRenderProcessClient.onRenderProcessUnresponsive()` 与 `onRenderProcessResponsive()`。Unresponsive 回调可能周期性重复，告警要去重；若主动终止 renderer，必须能处理共享该 renderer 的所有 WebView。
+- **API 26–28**：平台没有标准的 renderer unresponsive 回调。页面加载或交互超时只能作为用户体验故障信号，不能据此断言 renderer 已失去响应。
 
 发布守门可以用三档规则：
 
 - 灰度前：实验室基准测试通过，原生对照、WebView 对照、外部浏览器对照都有完整报告。
 - 灰度中：页面级 CPU、PSS、网络、卡顿和退出率没有越过预设阈值；低端机、弱网、低电量分群单独看。
-- 全量前：Android Vitals、APM Session Timeline 和客服反馈没有指向同一页面；超过阈值时回滚 Web 版本或切原生兜底。
+- 全量前：Android Vitals、APM 页面时间线和客服反馈没有共同指向同一页面；超过阈值时回滚 Web 版本或切换到原生恢复路径。
 
 ## WebView provider 版本差异
 
-WebView provider 会随系统和 Play 更新变化。相同 App 版本在不同 provider 上可能表现出不同的 Renderer 内存、崩溃率、网络行为和 DevTools 能力。线上监控必须记录 provider 包名与版本；实验室复现时要固定 provider 版本，否则同一页面的功耗差异可能来自 Chromium 更新。
+WebView provider 会随系统或 Play 更新。相同应用版本在不同 provider 上可能出现不同的 renderer 内存、崩溃率和网络行为。Android 7.0（API 24）起设备可以选择不同 WebView provider；应用可用 [`WebViewCompat.getCurrentWebViewPackage()`](https://developer.android.com/develop/ui/views/layout/webapps/managing-webview#version-api) 记录包名和版本。该方法可能返回 `null`，观测代码要允许设备不支持或配置异常。
 
 Android 官方提供 WebView DevTools App，用于查看系统 WebView 组件信息、崩溃报告、开发 flags 和网络日志。它适合作为本地诊断入口，不适合作为线上监控替代品。
 
 ## PWA / TWA 与原生容器的边界
 
-PWA、Trusted Web Activity 和普通 WebView 都能承载 Web 内容，但它们给 App 的控制面不同。普通 WebView 由 App 持有生命周期、权限面和桥能力；TWA 更接近浏览器承载，适合把完整 Web 站点放进可信全屏体验；PWA 更依赖浏览器安装和 Service Worker 缓存。
+PWA、Trusted Web Activity（TWA）和普通 WebView 都能展示 Web 内容，但运行责任不同。普通 WebView 由应用持有 View 生命周期、权限回调和桥接口。TWA 通过支持该协议的浏览器以全屏方式显示经过 Digital Asset Links 验证的站点，它不是嵌入应用进程的 WebView，也不提供 JSBridge。PWA 的安装、更新和 Service Worker 生命周期主要由浏览器管理。
 
 功耗测试时不要把三者混成一组。普通 WebView 的成本归到 App 容器，TWA 和外部浏览器更依赖浏览器实现。选择 TWA 不能自动解决页面 CPU 或网络问题，只是把部分容器责任移给浏览器。
 
@@ -239,11 +248,11 @@ PWA、Trusted Web Activity 和普通 WebView 都能承载 Web 内容，但它们
 
 低端机和弱网会放大 WebView 的问题。CPU 弱时，JS、布局和图片解码更容易拉高页面驻留时长；内存小的时候，Renderer 更容易被回收或触发 App 侧白屏恢复；弱网下，重试、重定向和缓存失效会把网络耗电和首屏耗时一起放大。
 
-低端机专项至少保留三组样本：Android Go 或低内存设备、32 位进程设备、WebView provider 落后设备。弱网专项至少覆盖高 RTT、丢包、DNS 失败、CDN 回源慢和网络切换。只有高端机 Wi-Fi 数据通过，不能说明 Hybrid 页面功耗合格。
+设备矩阵应包含 Android Go 或低内存设备、仍需支持的 32 位进程环境，以及线上占比较高的 WebView provider 版本。弱网测试覆盖高 RTT、丢包、DNS 失败、CDN 回源慢和网络切换。高端设备上的 Wi-Fi 数据不能代表低内存或弱网用户。
 
 ## 本节小结
 
-Hybrid/WebView 的功耗治理从页面级账本开始：同内容对照、同脚本采样、同指标看板。论文给出的方向是 Web 版本通常消耗更多能耗、CPU 和内存；工程决策还要回到本业务页面、设备分群和发布门禁。高频、长驻留、富交互页面优先考虑原生化；低频、强运营、可快速回滚页面可以保留 WebView，但必须把 CPU、内存、网络、Renderer 退出和 Android Vitals 纳入同一套灰度规则。
+Hybrid/WebView 功耗需要按页面、provider 与设备分组记录。同一内容使用同一脚本比较，才能判断差异来自页面还是容器。论文说明 Chrome Web 版本在其样本中消耗更多能耗、CPU 和内存，但它不构成 WebView 原生化结论。高频、长驻留、富交互页面在本业务测试中出现稳定劣化时，再选择整体或局部原生化；保留 WebView 的页面要持续观察 CPU、内存、网络、renderer 异常和 Android Vitals。
 
 ## 参考资料
 
@@ -255,4 +264,6 @@ Hybrid/WebView 的功耗治理从页面级账本开始：同内容对照、同�
 - [Android Developers: WebViewRenderProcessClient](https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient)
 - [AOSP: Power profiles for Android](https://source.android.com/docs/core/power)
 - [AOSP: Measure power values](https://source.android.com/docs/core/power/values)
-- [AOSP: frameworks/base/native/webview/loader/loader.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-16.0.0_r1/native/webview/loader/loader.cpp)
+- [AOSP: Power Stats HAL](https://source.android.com/docs/core/power/power-stats-hal)
+- [Android Developers: Macrobenchmark PowerMetric](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics#powermetric)
+- [AOSP Android 17: frameworks/base/native/webview/loader/loader.cpp](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/native/webview/loader/loader.cpp)
