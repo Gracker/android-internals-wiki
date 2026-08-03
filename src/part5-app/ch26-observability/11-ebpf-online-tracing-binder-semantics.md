@@ -102,147 +102,201 @@ last_deepseek_cn_review_at: 2026-06-29
 
 <!-- outline-end -->
 
-线上排障常用日志、Trace 和灰度开关，但它们都依赖 App 提前埋好的证据。eBPF 在线追踪补的是另一类空白：问题发生时 App 没来得及打日志，或者对手代码绕过了应用层 Hook——但行为总要经过内核边界。
+线上排障依赖日志、应用埋点和短窗口 Trace。它们没有覆盖到的系统调用与 Binder 边界，可以在具备系统权限的设备上通过 ftrace 或 eBPF 补充。这里的“在线”指设备运行期间持续或按条件追踪，不代表普通应用能在商店发布包中加载 BPF 程序。
 
-这类能力适合安全审计、OEM 预装诊断、测试机长期巡检和疑难问题回放，不适合作为普通 SDK 在用户设备上默认开启。它的价值是把系统调用、Binder 事务和 App 侧事件放在同一条时间线上；代价是权限、合规、兼容性和数据治理的要求都更高。
+本节覆盖 Android 12～17，平台源码以 `android-17.0.0_r1` 为上限，Binder 与 eBPF 的内核语义以 `android17-6.18-2026-06_r6` 为准。WOOTdroid 的实验环境是两台已 root 的 Pixel 9、Android 16，论文结论不能直接外推到 Android 17 user build、其他 SoC 或厂商内核。
 
+这类能力适合 OEM 系统集成、userdebug 测试机和授权安全实验。普通应用应优先使用应用日志、公开的 `ProfilingManager`、Android Vitals 和用户授权的 bugreport。
 
 ## 线上追踪为什么不能只依赖 ftrace
 
-ftrace 和 systrace 适合短窗口诊断——启动慢、卡顿、I/O 峰值、调度异常，抓一段现场就能分析。但线上长期追踪的约束完全不同：事件持续产生，用户态读取端不一定跟得上；ring buffer 一旦写满，旧事件就会被覆盖；采集端如果把原始事件全量吐给用户态，CPU、内存、I/O 和电量成本都会被放大。
+ftrace 是 Android/Perfetto 系统追踪的重要数据源，适合观察调度、频率、Binder 和 I/O 等内核事件。它通常把事件写入每 CPU 缓冲区，读取端消费不及时且缓冲空间耗尽时，旧事件可能被覆盖。短窗口人工诊断可以通过扩大缓冲区、缩小事件集和控制复现步骤降低风险；常驻审计还要处理持续事件率、读取阻塞、存储和电量。
 
-卡顿工具可以分成 instrument 和 sample 两类：systrace 依赖 ftrace/atrace 探针，适合观察系统关键事件，但不负责还原所有应用代码路径。把这个判断搬到线上场景，结论更明确——ftrace 能做人工协助和短期抓包，但不适合做长久在线审计的唯一来源。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 6.md]
+ftrace 也不等同于“信息不够”。Android 17 的 Binder 驱动提供 `binder_transaction`、`binder_transaction_received`、`binder_command`、`binder_return` 等 tracepoint，适合观察事务路由和驱动阶段；它们不携带完整 Parcel 参数，也不是 Android 应用 SDK 契约。需要方法语义时，要额外建立 transaction code 与接口版本的映射。
 
-WOOTdroid 论文给出了更具体的失败模式：高负载下，传统 syscall tracer 的环形缓冲区可能在用户态读取前覆盖旧条目，导致事件丢失。安全审计和事后回放不能只看“抓到了什么”，还要知道“漏掉了多少”——如果漏事件没有计数或对照指标，排障结论就只能停在猜测层面。
+WOOTdroid 关注的是系统调用审计：WDSys 在 eBPF 侧过滤和编码事件，再通过 perf buffer 交给用户态；论文将它与基于 ftrace 的系统调用追踪同时运行并比较事件。这个实验说明缓冲与读取架构会影响观察结果，但不能证明任一方案获得了全部真实事件，因为实验没有独立的 ground truth。
 
-线上追踪至少要控制四个口径：
+生产追踪至少要记录以下健康度：
 
-| 口径 | 要回答的问题 | 工程含义 |
+| 维度 | 要回答的问题 | 约束 |
 |---|---|---|
-| 采集窗口 | 追踪是常驻、触发式，还是人工协助 | 常驻只保留低基数事件和聚合指标，触发式才保留短窗口明细 |
-| 丢失指标 | 采集端能否报告 dropped / overwritten / lost events | 没有丢失指标时，不能把“未观察到”写成“未发生” |
-| 权限边界 | 普通 App、userdebug、root、OEM 预装分别能拿到什么 | Android 发布版设备不能假设 App 可加载自定义 BPF 程序 |
-| 数据边界 | 采集的是 syscall、Binder 元数据，还是参数明文 | 参数级采集必须先设计脱敏和授权 |
+| 窗口与触发 | 常驻摘要、故障前滚动窗口，还是人工抓取 | 明细窗口有时长、事件类型和设备范围限制 |
+| 内核侧丢失 | map 更新、perf buffer 输出或 BPF ring buffer reserve 是否失败 | 每条丢失路径分别计数，计数器本身也要防溢出 |
+| 用户态积压 | reader 延迟、队列长度和落盘速度是否恶化 | 达到项目阈值后停止参数采集或关闭追踪 |
+| 关联完整性 | enter/exit、请求/接收、应用阶段能否匹配 | 缺失一端时标记 partial，不补造时长 |
+| 权限来源 | root、userdebug、OEM system image 分别允许什么 | 能力报告必须带 build type、内核和策略版本 |
+| 数据类别 | 只保留元数据，还是读取 Parcel 内容 | 参数读取默认关闭，并由接口白名单和授权控制 |
+
+“没有观察到事件”只说明当前采集管线没有产出该事件。丢失计数、过滤规则和权限状态不完整时，不能将它解释为“事件没有发生”。
 
 
 ## Android eBPF syscall 追踪路径
 
-Android 系统侧已经使用 eBPF。AOSP 文档说明，系统启动时会自动加载 `/system/etc/bpf/` 下的 eBPF 对象，创建 maps，并把程序和 maps pin 到 BPF 文件系统。14.10 节已经覆盖网络统计、CPU 频率、GPU 内存和 UprobeStats 等系统能力。26.11 只讨论“自定义在线追踪”这条线：在受控设备上把 syscall 或 Binder 边界事件写成可查询证据。 [详见 14.10 节]
+Android 平台本身使用 eBPF。AOSP 文档说明，系统镜像中的 BPF 对象由 Android BPF loader 在启动阶段加载，所需 map 和 program 会 pin 到 BPF 文件系统。Android 17 的 `system/bpf` 源码进一步表明，平台程序由 loader 的描述和权限配置管理，部分测试程序在 user build 上跳过。这是系统集成机制，不是把任意 `.o` 放到应用目录就能调用的公开能力。
 
-WOOTdroid 的 syscall 追踪路径可以拆成五步：
+WDSys 的论文原型可按下面的链路理解：
 
-1. **挂载入口**：使用 `raw_syscalls` tracepoint 捕获 syscall enter/exit。Android 设备上并不总能依赖桌面 Linux 那种 per-syscall tracepoint 组合，统一入口更容易跨版本复用。
-2. **内核内过滤**：eBPF 程序在内核侧先过滤 syscall 号、进程、UID、线程、返回值和少量参数，避免把无关事件全量写出。
-3. **事件传输**：命中事件写入 perf / BPF ring buffer，再由用户态 reader 批量读取、落盘或上传。reader 的消费速度要参与健康度统计。
-4. **tail calls 拆分**：复杂解析逻辑用 tail calls 拆成多个小程序，绕开 verifier 对栈深、指令数和复杂分支的限制。
-5. **Android 指针适配**：Arm64 + MTE 场景下，用户态地址可能带 tag；读取用户态参数前要做地址 mask，否则 `bpf_probe_read_user()` 可能读错地址或被 verifier 拒绝。
+1. **入口**：论文在测试的 Pixel 7/9 上未获得逐系统调用 tracepoint，因此挂到 `raw_syscalls:sys_enter` 与 `raw_syscalls:sys_exit`，再按 syscall id 分派。这个观察不是所有 Android 12～17 设备的保证，部署前要枚举目标内核的 tracepoint。
+2. **过滤与配对**：enter 保存参数，exit 保存返回值。过滤器按 UID/TGID、syscall id 和项目规则减少事件；线程退出、tail call 失败或 map 更新/查询失败都可能产生半条记录。
+3. **复杂度分段**：论文用 program array 与 tail call 把逻辑分到多个 BPF 程序，以适配 verifier 的栈和复杂度限制。tail call 是该实现的组织方式，不是 Android 系统调用追踪的固定协议。
+4. **传输**：WOOTdroid 使用 perf ring buffer。`BPF_MAP_TYPE_RINGBUF` 是另一种 BPF map 类型，两者的预留、提交、顺序与丢失统计不同，设计文档不能只写一个含混的“ring buffer”。
+5. **用户态消费**：reader 负责拼接分片、规范化时间、落盘和审计。内核程序已经成功输出，不代表 reader 已持久化。
 
+论文为读取带 tag 的用户地址，在其 Pixel 原型中使用了固定按位掩码。这个常量依赖所测试设备的虚拟地址布局，不应复制为 Android 17 通用方案。地址去 tag 需要按目标 arm64 内核、TBI/MTE 配置、BPF helper 行为和进程 ABI 验证；验证失败时只记录元数据，不读取用户缓冲。
 
-对应用工程师来说，不必把 eBPF 当成另一个 strace。它的作用更接近一层内核侧预聚合器：在内核侧先判断事件是否值得记录，再把少量结构化事件交给用户态。越靠近线上，越要减少字符串、堆栈和大 payload；越靠近实验室，越可以临时打开更细的参数和堆栈。
+eBPF 在这里更像内核侧筛选器：尽早排除无关事件，只把固定上限的结构化数据送出。字符串、用户栈和可变长 payload 都会增加 verifier、读取、带宽与隐私成本，不能因“代码在内核执行”就忽略这些开销。
 
 ## Binder 语义重建的关键问题
 
-Binder 在 Perfetto 里通常表现为 `binder transaction`、`binder reply`、线程 sleeping 或 `binder_thread_read` 等片段。这些能说明“线程在等 Binder”，但不一定给出高层方法名、参数和业务含义。1.4 节已经讲过，应用调用 AIDL Proxy 后，参数会被写入 `Parcel`，再通过 `IBinder.transact()` 进入 Binder 驱动；驱动看到的是事务码、handle、buffer 和 offsets 等底层结构。[详见 1.4 节]
+应用调用 AIDL Proxy 后，接口 token 和参数按该接口版本的规则写入 `Parcel`，再由 `IBinder.transact()` 进入 Binder 驱动。驱动处理 transaction code、flags、目标 handle、数据缓冲和对象 offsets；方法名与 Java/Kotlin 参数类型不属于 Binder 内核 ABI。
 
-WDBind 的思路是把内核捕获和用户态解码分开：
+Android 17 / 6.18 的 UAPI 可从 `include/uapi/linux/android/binder.h` 核对。`BINDER_WRITE_READ` 的参数是 `binder_write_read`，其中 `write_buffer` 指向命令流；`BC_TRANSACTION` 和 `BC_TRANSACTION_SG` 后跟不同大小的 transaction 结构。驱动的 `binder_ioctl_write_read()` 先 `copy_from_user()` 读取 `binder_write_read`，再处理 write/read 两部分。
 
-| 层级 | 可拿到的信息 | 仍然缺失的信息 |
+WDBind 在 `raw_syscalls:sys_enter` 运行于内核上下文，但读取的数据仍来自调用进程的用户地址。它观察的是驱动 `copy_from_user()` 之前的 `binder_write_read` 和 Parcel，不是驱动已经复制、校验并完成对象重写后的内核 transaction。这个差异带来 TOCTOU、短读、地址标签和 ABI 兼容风险。
+
+语义重建可分为四层：
+
+| 层级 | 可验证的数据 | 仍然缺少什么 |
 |---|---|---|
-| syscall 层 | `ioctl()`、fd、cmd、返回值、时间戳、tid / pid | 不知道这是哪个 Binder API |
-| Binder 命令层 | `BINDER_WRITE_READ`、`BC_TRANSACTION`、事务码、目标 handle、Parcel buffer 指针 | 不知道事务码对应的方法名 |
-| Parcel 层 | 原始参数 buffer、对象 offsets、部分 flat Binder object | 不知道每个字段的 Java / AIDL 类型 |
-| 签名表层 | interface descriptor、method transaction code、参数类型 | vendor 接口、动态注册接口、版本漂移仍可能缺失 |
+| syscall | `ioctl` 参数、返回值、PID/TID 与时间 | fd 是否属于 Binder、命令流内容与事务结果 |
+| Binder UAPI | `BINDER_WRITE_READ`、命令字、transaction code、flags、数据长度 | Java 方法名与字段类型 |
+| Parcel | interface token、字节序列、对象 offsets | 当前接口版本对应的参数布局 |
+| 签名表 | descriptor、transaction code、方法与参数类型 | vendor、动态注册接口以及复杂自定义序列化 |
 
-具体流程：eBPF 在 `ioctl(BINDER_WRITE_READ)` 边界捕获写入 buffer，从中定位 `BC_TRANSACTION`，提取 `binder_transaction_data` 指向的 Parcel 数据；用户态预先用 Java Reflection 建立 framework 接口签名表，再把事务码和 descriptor 映射到方法名与参数类型。这样就能把“某进程发起了一次 ioctl”还原成“某 UID 调用了某个系统服务方法”。
+一条可审计的解析链路应完成这些检查：
 
-解析边界也要写清楚。WDBind 论文里的解析能力覆盖原始类型、String 和部分 Binder 对象；file descriptor、指针间接引用、复杂 Parcelable 和厂商私有接口都可能解析不完整。reply 事务当前不处理——WDBind 只解析 outgoing 方向的 `BC_TRANSACTION`，不捕获 `BC_REPLY`。反序列化失败时，记录 transaction code、descriptor、参数长度和失败类型，比强行猜参数更有用。
+1. 证明 fd 对应正确的 Binder 设备或上下文，不能只因 ioctl cmd 数值相同就认定是 Binder。
+2. 校验 `write_size`、指针、命令边界和单次读取上限；一个 write buffer 可以包含多条命令。
+3. 按目标 UAPI 同时识别 `BC_TRANSACTION`、`BC_TRANSACTION_SG` 等已支持命令；未知命令停止当前段解析，不继续猜偏移。
+4. 对 `data_size`、`offsets_size` 和对象位置做上限与对齐检查。读取失败时保留 transaction code、大小与错误类型。
+5. 用与 `Build.FINGERPRINT`、AIDL 接口版本和采集器版本绑定的签名表解码。transaction code 不应跨系统版本盲用。
 
-[待验证: AOSP android-mainline `drivers/android/binder.c` 与 `include/uapi/linux/android/binder.h` 的字段路径需在源码审阅中复核]
+WOOTdroid 论文通过设备上的 Java reflection 生成 framework AIDL 签名表，原型解析基本类型、String 和部分 Binder 对象。它不跟随 fd 或指针引用，不处理 transaction reply，对复杂 Parcelable、vendor 与动态注册接口也没有系统性覆盖；WDBind 的完整性和性能评估仍是论文列出的后续工作。
+
+需要路由与时序而不需要参数时，Android 17 Binder tracepoint 更合适。`binder_transaction` 给出事务 debug id、目标进程/线程、reply 标记、code 和 flags，`binder_transaction_received` 表示目标侧接收。它们仍受 ftrace 权限和缓冲区限制，字段也属于内核追踪接口而不是应用 API。
+
+`BINDER_WRITE_READ` 的 ioctl 时长不能直接当作一次 Binder RPC 时长。一次 ioctl 可以写入多条命令，也可以进入 read 路径等待工作；oneway transaction 没有同步回复。端到端时延应结合客户端应用 slice、Binder transaction/received 事件和服务端 slice 分段计算，缺少关联点时只报告已观察区间。
 
 ## 性能开销与完整性指标
 
-在线追踪方案要用两组指标评估：开销和完整性。开销回答“能不能打开”，完整性回答“打开后漏不漏”。只看 Geekbench 或只看事件量都不够。
+WOOTdroid v1 的数据可以用于理解实验方法，不能当作产品预算：
 
-WOOTdroid 的公开数据可以作为评估模板，而不是直接照搬成线上承诺：
-
-| 指标 | 论文口径 | 工程解读 |
+| 项目 | 论文结果 | 解读限制 |
 |---|---|---|
-| Geekbench6 单核 | Pixel 9 / Android 16，baseline 1487.2，WDSys 1433.0，约 3.6% 开销 | 常驻审计要把 3%-5% 视为预算上限，业务设备还要测启动、滑动、耗电 |
-| Geekbench6 多核 | baseline 3651.4，WDSys 3618，约 0.9% 开销 | 多核分数不敏感，不能替代高频 syscall 场景测试 |
-| ftrace 对照 | 同机单核约 5.9% 开销，多核约 2.9% 开销 | 对照工具要一起测，避免只给单方案数字 |
-| Top 100 应用 Monkey | 100 个 Google Play 免费应用，每个 1000 次操作、500ms 间隔 | 自动化负载要固定随机种子、操作间隔、版本和设备温度 |
-| Unique Event Rate | WDSys 均值 37.75%，ftrace 均值 4.27%，差 33.48 个百分点 | 事件完整性要用“独有事件率 / 丢失率 / reader 延迟”同时描述 |
+| Geekbench 6 | WDSys 单核分数下降 3.6%，多核下降 0.9%；ftrace 对照为 5.9% 和 2.9% | 两台 rooted Pixel 9、Android 16，十次重复；只评估 WDSys，不代表 WDBind |
+| 自动交互 | 目标数据集为 Google Play Top 100 免费应用，每个应用注入 1000 个 Monkey 输入，间隔 500 ms | 覆盖取决于当时的数据集、安装结果和 Monkey 路径，不代表业务场景覆盖 |
+| UER | WDSys 均值 37.75%，ftrace 均值 4.27%，相差 33.48 个百分点 | UER 是两份日志事件并集中的独有比例，不是绝对 recall，也不是独立测得的丢失率 |
 
+ftrace 的 UER 非零意味着存在只被 ftrace 观察到的事件，因此不能写成 WDSys“完整捕获”。论文摘要中的“多追踪 33%”应按上述实验定义阅读。
 
-放到团队评估里，建议再加三项指标：
+团队自己的评估需要覆盖四类数据：
 
-- **reader backlog**：用户态读取线程的积压时间和 ring buffer 水位，用来判断事件是否快被覆盖。
-- **采样命中率**：按 UID、进程、接口或 syscall 类型统计采样前后保留比例，避免重要接口被采样策略吞掉。
-- **业务扰动**：冷启动 P90、主线程慢帧、ANR、耗电和网络上报量。系统审计工具不能只用 CPU benchmark 证明低开销。
+- **有 ground truth 的完整性**：在受控进程注入带序号事件，对 enter/exit、transaction/received 和 reader 结果逐级对账。
+- **每条失败路径**：BPF map 冲突、tail call miss、reserve/output 失败、用户态解码失败、落盘失败分别计数。
+- **业务扰动**：在目标设备组合上测 CPU、内存、存储 I/O、耗电、温度、启动、帧和 ANR；阈值由产品预算决定。
+- **WDBind 单独测量**：Parcel 读取与解码的事件率、最大 payload、复杂接口比例和失败分布不能借用 WDSys 的 Geekbench 数字。
 
 ## 用于 ANR、隐私审计和冷启动回溯
 
-eBPF + Binder 语义重建适合补强三类线上证据。
+eBPF 与 Binder 语义只在权限和数据治理允许的受控设备上补充证据。
 
 ### ANR 与卡死回放
 
-ANR 现场经常只留下主线程等待栈：`binder_thread_read`、锁等待、futex 或 I/O 阻塞。Perfetto 能定位等待区间，日志能描述业务阶段，但缺一次跨进程调用的语义时，仍然很难判断是系统服务慢、服务端 Binder 线程池排队，还是 App 自己发起了过多同步调用。
+主线程栈停在 Binder 等待，只说明采样时正在等待 IPC。要区分客户端调用前耗时、驱动路由、服务端排队、服务端执行和回复，需要多侧时间点。
 
-在受控设备上，Binder 事务日志可以补三列信息：调用方 tid / uid、目标接口 / transaction code、outgoing transaction 的 ioctl enter/exit 阻塞时长。WDBind 当前实现不处理 transaction reply payload，无法直接给出“请求和回复的时间差”；如果需要 request/reply latency，要回退到 binder driver 的 `/sys/kernel/debug/binder/proc/` 或 `binder_transaction_log`。排查 ANR 时先把“主线程等待 600ms”拆成“发起了哪些系统服务调用、哪一次 ioctl 阻塞时间最长、前后是否伴随 I/O 或锁等待”。原理细节仍回到 1.4 节，26.11 只负责说明怎么把证据拿出来。[详见 1.4 节]
+在受控设备上，可以组合这些证据：
+
+- App slice：调用点、线程、业务阶段和客户端总耗时。
+- Binder tracepoint：transaction code、目标进程/线程、事务发送与接收阶段。
+- WDBind 类解析：在允许读取 payload 时提供接口 descriptor、方法候选和解码状态。
+- 调度/I/O/futex 事件：解释客户端或服务端线程在相关区间是否获得 CPU、等待锁或执行 I/O。
+
+WDBind v1 不处理 reply，ioctl enter/exit 又可能混合 write 与 read，因此不能独立输出 request/reply latency。`/sys/kernel/debug/binder/` 也需要特权，格式和可用性不属于 Android 应用契约，不应成为发布包方案。
 
 ### 隐私审计
 
-WOOTdroid 的案例覆盖短信、电话、权限、账户等安全相关 Binder 调用。对安全审计来说，内核边界捕获的意义在于：应用即使用 native code 构造 Parcel，或绕开 Java framework Hook，仍然要经过 Binder ioctl。审计系统可以把“谁在什么时间调用了哪个敏感接口”记录下来，再与运行时权限、前后台状态和用户操作时间线对照。
+WOOTdroid 案例重建了十个安全相关的 framework 方法，包含短信、电话、包管理、权限、账户和通知场景。它证明原型能在所测 Android 16 设备上解析这些样例，不代表覆盖所有 Binder 接口。
 
-这类日志不能保存原始参数明文。手机号、短信内容、账户名、位置、设备 ID、联系人、通知文本都必须在端侧脱敏后再落盘。完整参数只允许出现在本地短窗口、授权测试机或安全实验环境，并且要有审计记录。
+审计目标通常只需要回答“哪个 UID 在何时调用了哪个敏感接口”，无需保存参数正文。解码策略应默认丢弃内容：
+
+| 数据类别 | 默认处理 |
+|---|---|
+| token、密码、认证材料 | 不读取或立即丢弃，禁止写日志 |
+| 短信、剪贴板、通知、联系人正文 | 不落盘，仅记录接口、结果类别和调用计数 |
+| 电话、账户、设备标识 | 默认不记录值；业务确需关联时使用受控令牌化，不用低熵值的普通 hash 冒充匿名化 |
+| 精确位置、SSID/BSSID | 默认丢弃；安全用例只保留经审批的粗粒度分类 |
+| 包名与权限名 | 按审计目的建立允许列表，其他值使用稳定分类或聚合 |
+| transaction code、flags、大小、耗时 | 可作为元数据，但仍受保留期和访问控制约束 |
+
+端侧脱敏要发生在持久化和上传之前。原始 Parcel 进入用户态 reader 后就已经扩大了敏感数据暴露面，所以“服务端再清洗”不满足最小化原则。
 
 ### 冷启动回溯
 
-冷启动慢经常混合了文件 I/O、dex / oat 读取、资源加载、Binder 查询、权限检查、ContentProvider 初始化和网络预热。已有的 I/O 监控方案把线上 I/O 证据拆成文件名、线程、调用栈、buffer、连续读写时间和异常规则；eBPF syscall 追踪可以把这套思路下沉到内核边界，用 `openat`、`mmap`、`read`、`futex`、`ioctl` 的时间线还原启动前几秒发生了什么。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 13.md]
+冷启动包含进程创建、dex/oat、资源与文件 I/O、ContentProvider、Binder 查询、权限检查和应用初始化。系统调用追踪能观察 `openat`、`mmap`、`read`、`futex`、`ioctl` 等边界，却看不到每段应用代码的业务含义。
 
-冷启动回溯不要替代 Perfetto。组合使用时，App 内阶段埋点负责业务阶段名，Perfetto 负责线程和系统轨道，eBPF 负责长期开启的 syscall / Binder 摘要。三者用同一个 sessionId、启动 ID 和时间戳关联。
+较稳妥的组合是：
+
+- 应用埋点提供启动 ID、阶段名和依赖关系。
+- Perfetto 提供调度、Binder、I/O 与应用 slice 的统一时钟。
+- eBPF 仅在 OEM/实验设备上补充经过筛选的 syscall 或 Binder 元数据。
+
+三类数据要记录时钟来源和同步误差。仅有 syscall 序列时，不应把相邻事件的时间差全部归给某个系统调用。
 
 ## 部署边界与合规风险
 
-普通应用不能把自定义 eBPF 当成线上 SDK 能力。Android 发布版设备上，加载 BPF 程序受 SELinux、能力位、系统签名和内核配置限制；WOOTdroid 原型也依赖 Pixel 9 / Android 16 / Magisk root。能稳定部署的场景主要是 userdebug 测试机、root 实验机、OEM 预装组件、企业管控设备和安全实验室。
+自定义 eBPF 不是 Android 应用公开 API。能否使用取决于系统镜像、SELinux、BPF loader、内核配置和签名，而不是应用声明一个权限即可获得。
 
-上线前至少要过六个检查：
+| 环境 | 能力边界 |
+|---|---|
+| 普通 user build 应用 | 不能加载任意追踪程序；Android 15/API 35+ 可按公开契约请求受限且有频控的 `ProfilingManager` profile |
+| adb / userdebug | 适合 Perfetto、ftrace 和实验性 BPF 验证；不代表量产权限 |
+| root 研究机 | 可复现实验，但 root 改变安全与完整性条件，不是用户部署方案 |
+| OEM 系统集成 | 可把程序、loader 配置、SELinux、consumer 和更新策略纳入系统镜像；需要平台测试与安全审查 |
+| 企业受管设备 | Device Owner 身份本身不授予 BPF 加载权；还需 OEM 系统能力或专用调试环境 |
 
-- **权限来源**：明确是 root、userdebug、系统签名、OEM 预装，还是普通 App；不同来源不能混用同一份能力说明。
-- **最小采集**：默认只采集时间戳、pid / tid / uid、syscall 号、返回值、接口名、耗时和错误码；参数明细按场景单独打开。
-- **端侧脱敏**：敏感字段在写文件前处理，不把明文交给上报队列再清洗。
-- **用户授权**：用户设备上的诊断开关要有授权、过期时间、采集范围和撤销入口。
-- **灰度与熔断**：reader backlog、CPU、内存、耗电、上报量超过阈值时自动降级到摘要模式或关闭。
-- **厂商差异**：GKI、BTF、MTE、SELinux、Binder vendor 接口、内核 tracepoint 可用性都要按设备清单验证。
+部署清单至少包括：
 
+- 精确记录 build type、Android tag、kernel release、BPF helper/tracepoint、Binder ABI、SELinux policy 和采集器版本。
+- 参数采集使用显式接口允许列表，未识别接口只保留最小元数据。
+- 设备端设定 CPU、内存、缓冲、磁盘和网络预算，并提供远程停止与升级失败回退。
+- 用户诊断具备目的说明、范围、到期时间、撤销入口、保留期和删除路径。
+- 原始附件加密，服务端按最小权限访问并保留审计记录。
+- 系统 OTA 后重新验证 loader、程序、签名表、MTE/TBI、vendor Binder 接口与数据解析。
 
 ## 扩展：WOOTdroid 与 Android eBPF 工具链对比
 
 | 工具 / 方案 | 主要入口 | 适合场景 | 主要限制 |
 |---|---|---|---|
-| Perfetto / systrace | atrace、ftrace、Perfetto data source | 人工抓取性能现场、UI jank、启动、调度分析 | 长期开启成本高，普通线上设备触发能力有限 |
+| Perfetto / system trace | atrace、ftrace 与平台 data source | 启动、卡顿、调度、Binder、I/O 分析 | 可用 data source 和权限随版本/build type 变化；不是任意 eBPF 程序入口 |
+| `ProfilingManager` | 系统管理的 profile 请求 | API 35+ 普通应用按条件采集系统 trace、heap 或 stack profile | 有频控和配置限制，并非全部 Perfetto 配置都开放 |
 | Simpleperf | perf event、采样 | CPU 热点、native / Java 栈采样 | 事件语义偏 CPU，不能直接重建 Binder 参数 |
-| bpftrace / BCC | kprobe、tracepoint、uprobe | 实验室快速验证追踪点 | Android 发布设备工具链和权限受限 |
-| AOSP 系统 eBPF | `/system/etc/bpf/`、系统服务 maps | 网络统计、CPU 频率、GPU 内存等平台能力 | 面向系统组件，普通 App 不可随意扩展 |
-| WOOTdroid WDSys | `raw_syscalls` + eBPF | syscall 在线审计、事件完整性对照 | 原型依赖 root；线上需 OEM / 企业管控环境 |
-| WOOTdroid WDBind | `ioctl(BINDER_WRITE_READ)` + 签名表 | Binder API 语义重建、安全审计 | 参数解析不完整，vendor / 动态接口要单独适配 |
-
-
+| bpftrace / BCC | kprobe、tracepoint、uprobe | root/userdebug 实验室快速验证 | user build 缺少权限与完整工具链；hook 稳定性取决于目标 |
+| AOSP 系统 eBPF | BPF loader、系统镜像对象、pinned map/program | 平台网络、CPU、GPU、内存等系统功能 | 由系统组件与 SELinux 管理，普通应用不能扩展 |
+| Binder ftrace tracepoint | Binder 驱动 trace event | 事务路由、接收与线程分析 | 主要是元数据，没有完整 Parcel 类型语义 |
+| WOOTdroid WDSys | `raw_syscalls` + eBPF + perf buffer | 已 root/OEM 环境的系统调用审计研究 | 论文只在 Android 16 Pixel 原型评估 |
+| WOOTdroid WDBind | syscall 入口读取 Binder write buffer + 签名表 | 受控安全审计与语义研究 | reply、复杂类型、vendor 覆盖和性能尚未系统评估 |
 
 ## 扩展：Binder 参数脱敏策略
 
-Binder 参数脱敏不能只做字符串替换。解码器已经知道接口名、方法名和参数类型，就应该按接口级策略处理：
+参数保护不能依赖通用字符串替换。解析器应先以 `interface descriptor + method + parameter index` 查策略，再决定跳过读取、只记录类型/长度、令牌化或在受控实验中短暂保留。未知接口的默认动作是丢弃参数。
 
-| 参数类型 / 接口场景 | 保留字段 | 脱敏方式 |
-|---|---|---|
-| 短信、电话、联系人 | 接口名、调用时间、调用 UID、号码归属国家或长度 | 号码只保留 hash 前缀或后四位；正文不落盘 |
-| 账户与身份 | 接口名、账户类型、调用 UID | 账户名、邮箱、token 全量 hash；token 明文丢弃 |
-| 位置与蓝牙 / Wi-Fi | 权限、接口名、粗粒度状态 | 经纬度降精度或只保留 geohash 粗格；SSID / BSSID hash |
-| 包管理查询 | 目标包名、查询 flags、调用 UID | 用户安装列表按白名单保留，其余聚合计数 |
-| 通知与剪贴板 | 接口名、调用 UID、前后台状态 | 文本内容不保存，只记录长度、类型和是否为空 |
+策略本身也要版本化。AIDL 增删参数、transaction code 变化或 vendor 接口复用时，旧规则可能对错字段执行处理。签名表、脱敏规则、build fingerprint 和采集器版本必须作为同一配置发布；任一项不匹配就退回元数据模式。
 
-脱敏策略要和审计目标绑定。排查 ANR 只需要接口名、耗时和事务大小；隐私审计需要知道敏感接口是否被调用；恶意样本分析才可能需要短窗口参数明细。采集粒度越细，授权和留存要求越高。
+安全实验若必须保留短窗口原始参数，应与生产数据域隔离，并具备明确的设备清单、审批人、加密密钥、到期删除和访问日志。手机号后四位、普通 hash、粗 geohash 仍可能形成可关联标识，不能自动视为匿名数据。
 
 ## 小结
 
-eBPF 在线追踪适合补齐“应用层日志拿不到、短窗口 Trace 没抓到、Binder 调用缺语义”的证据缺口。它属于高权限诊断能力，不能替代普通线上监控：在受控设备上，把 syscall、Binder、App 阶段名和日志放到同一条时间线上，再用明确的开销、完整性和合规指标约束它。
+eBPF 能在具备系统权限的设备上补充系统调用与 Binder 边界证据。它不能自动获得完整事件、稳定方法语义或普通应用权限。Android 17 上应把 AOSP BPF loader、6.18 Binder UAPI/tracepoint、目标 ROM 权限和实际丢失计数一起纳入设计；WOOTdroid 数据只作为 Android 16 研究原型的参考。
+
+普通应用的线上诊断以公开 API 和应用自有观测为主。只有 OEM、userdebug 或授权研究环境需要更深的内核证据时，才启用版本绑定的 BPF/Binder 方案，并默认停在元数据层。
+
+## 源码与文档锚点
+
+- [Android 17 `system/bpf`](https://android.googlesource.com/platform/system/bpf/+/refs/tags/android-17.0.0_r1/)：平台 BPF loader、program 与 map 的实现入口。
+- [AOSP：Extend the kernel with eBPF](https://source.android.com/docs/core/architecture/kernel/bpf)：系统镜像 BPF 对象、启动加载、pin 与 Android BPF library 的官方说明。
+- [Android 17 common kernel 6.18 `binder.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/uapi/linux/android/binder.h)：`BINDER_WRITE_READ`、`BC_TRANSACTION`、`BC_REPLY` 与 UAPI 结构。
+- [Android 17 common kernel 6.18 `binder.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)：`binder_ioctl_write_read()`、命令处理和用户内存复制路径。
+- [Android 17 common kernel 6.18 `binder_trace.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_trace.h)：Binder transaction、received、command 与 return tracepoint。
+- [WOOTdroid v1](https://arxiv.org/abs/2604.27830)：WDSys/WDBind 设计、Android 16 实验数据和作者列出的限制。
+- [Android Developers：App-driven profiling](https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture)：`ProfilingManager` profile 类型、频控和配置边界。
+- [Android Developers：Log Info Disclosure](https://developer.android.com/privacy-and-security/risks/log-info-disclosure)：日志敏感数据泄露风险与端侧处理建议。
