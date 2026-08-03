@@ -46,201 +46,395 @@ sources:
 
 # 26.22 Android 17 监控降级：内存约束与隐私限制下的性能数据采集
 
-Android 14 到 17 的三个政策方向正在压缩 APM SDK 的操作空间：内存上限收紧（MemoryLimiter、cgroup memory.high、Cached App Freezer）、后台执行配额收紧（JobScheduler 配额、FGS 类型声明强制化）、隐私边界硬化（/proc 访问限制、日志读取隔离）。
+APM 不能假设进程会一直运行、系统会按固定周期调度任务，也不能把系统诊断权限当成普通 App 能力。Android 14 的 cached app freezer、Android 17 的 MemoryLimiter、长期存在的后台调度与日志权限边界，会共同暴露依赖定时轮询、常驻进程和跨进程抓取的监控设计缺陷。
 
-这三条线相互叠加。内存约束让监控进程更容易被杀或冻结，后台限制让定时采集排不进调度窗口，隐私变更让部分主动采集路径直接失效。本节处理监控 SDK 在被挤压的运行环境中怎么保持最低可用观测能力，不重复 §26.1（可观测性架构设计）的总架构和 §23.9（Android 17 App Memory Limits）的内存机制原理。
+本节以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点。涉及 cgroup memory controller 与 freezer 时，内核锚点为 `android17-6.18-2026-06_r6`。重点是监控 SDK 怎样在资源与隐私边界内保持可解释的数据，不重复 23.9 的 MemoryLimiter 实现细节和 26.12 的 ProfilingManager 完整版本表。
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
+## 三类约束要分开处理
 
-## Android 17 内存政策对监控进程的影响
+| 约束 | 平台行为 | App 能观察什么 | 设计结论 |
+|---|---|---|---|
+| 进程资源 | MemoryLimiter、LMKD、GC、回收与进程状态变化 | 当前进程内存快照、trim 状态、退出记录、可选 profile | 采集器自身也属于内存负载 |
+| 执行机会 | cached freezer、后台启动限制、JobScheduler/WorkManager 配额 | 生命周期、任务实际开始/停止、调度结果 | 后台定时器没有准点保证 |
+| 数据访问 | App sandbox、`READ_LOGS`/`DUMP` 权限、profiling 脱敏 | 自有进程数据、公开回执、用户授权的数据 | 不以跨进程 `/proc`、logcat 或 dumpsys 作为线上依赖 |
 
-APM SDK 的运行进程和业务代码共享同一个内存配额。Android 17 的 MemoryLimiter 按设备总 RAM 设定应用内存上限，触发时通过 `ApplicationExitInfo` 中的 `REASON_OTHER` + `MemoryLimiter:AnonSwap` 归因。这个机制不区分业务内存和监控内存——APM SDK 的 native 堆栈、线程栈、采集缓存全部计入匿名页。详见 §23.9。
+资源不足、没有执行机会和没有读取权限会产生相似的“样本缺口”，处理方式却不同。每条记录都应带 `source`、`scope`、`supported`、采样时间和跳过原因，让服务端区分“值为零”“未采到”和“该设备不支持”。
 
-三层约束按粒度从粗到细：
+## Android 17 MemoryLimiter 的准确边界
 
-| 约束层 | 触发条件 | 对 APM 的影响 | 详见 |
-| --- | --- | --- | --- |
-| MemoryLimiter | 应用匿名页 + swap 超过设备 RAM 档位阈值 | 进程被杀，所有采集终止 | §23.9 |
-| cgroup memory.high | 进程内存达到 cgroup 上限 | 内核强制回收，分配停顿，采集线程卡在 IO | §4.5 |
-| Cached App Freezer | 进程 oom_adj 进入 cached 区间 | 线程冻结，binder 阻塞，定时任务停摆 | §4.11 |
+[Android 17 行为变更](https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits)说明，应用内存限制只在部分设备上实施，限制配置与设备总 RAM 有关，但没有向 App 承诺可依赖的固定门槛。它影响运行在 Android 17 上的所有 App，不取决于 `targetSdkVersion`。
 
-APM SDK 常见的「开一个后台进程做采集」策略在 Android 17 上有两个风险。第一，独立后台进程的 oom_adj 通常落在 cached 区间，会被 Freezer 冻结；冻结期间采集线程不执行，解冻后批量补采样的数据已经失真。第二，即使进程没有被冻结，memory.high 触发的内核回收会让采集线程在分配内存时遇到 direct reclaim 停顿，表现为采集间隔不均匀。
+命中该限制后的公开归因协议是：
 
-监控 SDK 自身的内存开销需要纳入应用整体内存预算。一个参考值：APM SDK 的 native 内存占用控制在应用总匿名页的 2-3% 以内，超过这个比例就是在和业务抢配额。
+- `ApplicationExitInfo.reason == REASON_OTHER`；
+- `ApplicationExitInfo.description` 包含精确字符串 `"MemoryLimiter:AnonSwap"`；
+- 注册 Android 17 的 `TRIGGER_TYPE_ANOMALY` 后，系统可能提供与内存限制相关的 heap dump。
 
-## Debug.MemoryInfo API 在新内核策略下的准确性
+`getDescription()` 通常只面向人工阅读。这里能匹配精确字符串，是因为 Android 17 官方文档专门规定了该标记。不能把所有 `REASON_OTHER`、所有 `SIGKILL` 或所有高 PSS 会话归为 MemoryLimiter。
 
-`Debug.MemoryInfo` 底层读取 `/proc/<pid>/smaps_rollup`，提供 PSS、Private Dirty、Shared Clean 等字段。在 cgroup memory.high 触发回收时，共享页的引用计数变化会导致 PSS 抖动——同一进程在同一时间点的两次读取可能差出几十 MB，不是监控代码的 bug，而是内核回收过程中页面归属在变化。
+### cgroup 限制与终止决定不是同一件事
 
-[已验证: AOSP, frameworks/base/core/java/android/os/Debug.java — getMemoryStat() 读取 /proc/self/smaps_rollup]
+Android 17 的 [`MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java)和 [JNI 实现](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp)使用 cgroup v2 内存接口监视进程。`android17-6.18-2026-06_r6` 的 [cgroup v2 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst)把 `memory.high` 定义为节流边界：越过它会增加回收压力，但这个控制文件本身不会调用 OOM killer。Android 用户空间在满足 MemoryLimiter 条件后执行 profiling 与终止流程。
 
-采集内存数据的三个实践路径：
+因此，PSS 上升、分配变慢或线程停顿只能说明内存现象，不能单独证明 MemoryLimiter 已经触发。归因要以退出记录的精确标记为主，再关联退出前内存趋势、业务场景和可用 heap dump。
 
-1. **主进程低频采集**：在 Activity.onResume 或 onTrimMemory 回调中采集一次，不启动定时器。频率控制在分钟级，避免和业务线程争抢 CPU。
-2. **系统 API 替代主动读取**：`ActivityManager.getProcessMemoryInfo()` 通过 binder 从 AMS 获取目标进程的内存快照，适用于多进程场景。但每次调用是同步 binder 事务，批量查询所有子进程时注意累积延迟。
-3. **/proc/self/status 兜底**：当 smaps_rollup 读取失败或数据异常时，`/proc/self/status` 中的 VmRSS、VmSize 可以提供粗粒度参照。Android 14+ 对 /proc 的访问限制针对的是非自身进程，自身进程的 /proc/self/ 仍然可读。
+### SDK 内存也要计入基线
 
-[已验证: 官方文档, developer.android.com/topic/performance/memory-management]
+嵌入宿主进程的 SDK 对象、native allocation、线程栈、映射、ring buffer 和队列都会增加该进程的内存。单独创建 `:apm` 进程也不会获得稳定的常驻权：新进程有自己的进程状态和限制，还会增加一份 runtime、代码、线程与 IPC 成本。
 
-内存指标采集的降级层次：
+监控开销没有通用的安全百分比。评估时应比较同一场景启用和禁用 SDK 的：
 
-| 优先级 | 采集方式 | 数据精度 | 适用场景 |
-| --- | --- | --- | --- |
-| P0 | ApplicationExitInfo 系统回执 | 进程级退出原因 | 最低保底，Android 11+ |
-| P1 | Debug.MemoryInfo + onTrimMemory 事件触发 | PSS / Native Heap 近似值 | 主进程低频采集 |
-| P2 | 定时轮询 smaps_rollup | 高精度 PSS 明细 | 前台运行，无内存压力 |
+- RSS、PSS、Java heap、native heap 与 graphics；
+- 线程数、stack reservation、mmap 和文件缓存；
+- MemoryLimiter、LMK、Java OOM 与 native allocation failure 分布；
+- 前台、FGS、后台和 cached 状态；
+- 设备 RAM、page size、ABI、系统 build 与 App 版本。
 
-## 后台执行限制对定时采集的影响
+平均值会掩盖峰值和尾部。发布门禁至少检查高分位、最大连续增长、进程退出率和设备分层。
 
-Android 14 起 FGS 类型声明强制化（详见 §5.17），「监控」不是一个合法的 FGS 类型。这意味着 APM SDK 不能通过启动前台服务来维持持续采集。合法的 FGS 类型包括 dataSync、mediaPlayback、location、microphone、camera、phoneCall 等，APM 需要搭载在这些合法场景的 FGS 中做伴随采集，或者放弃后台持续采集。
+### 用 adb 复现，不在 App 中猜限制
 
-JobScheduler 的配额按 App Standby Bucket 分配（详见 §5.8）。Restricted Bucket 的应用每天只有极少量的 JobScheduler 配额，不足以支撑分钟级的性能指标采集。WorkManager 的 expedited task 虽然不受 bucket 限制，但系统每天分配的额度有限（约 10-30 次，取决于厂商配置），且每次执行时间限制在 3 分钟内。
+下面的命令用于专用 Android 17 测试设备。它们会改变当前设备的 MemoryLimiter 测试状态，运行前应保存基线，测试后恢复。
 
-后台采集的降级策略：
+```bash
+adb shell am memory-limiter status
+adb shell am memory-limiter manual "$TEST_PID" "$TEST_LIMIT_MB"
 
-```
-前台运行（可见）:
-  → 全量采集：帧率、内存、启动、业务指标，定时 + 事件驱动
-
-后台运行（不可见，未冻结）:
-  → 事件驱动采集：Activity 生命周期、ComponentCallbacks2、ANR 信号
-  → 放弃定时轮询
-
-被冻结（Cached）:
-  → 无采集能力
-  → 依赖系统回执：ApplicationExitInfo、ProfilingTrigger
-  → 解冻后补读取关键状态（非补采样）
+# 清除手动限制，恢复设备默认配置。
+adb shell am memory-limiter manual "$TEST_PID" none
 ```
 
-事件驱动的采集触发点：`ComponentCallbacks2.onTrimMemory()` 提供内存压力等级（TRIM_MEMORY_RUNNING_LOW 到 TRIM_MEMORY_COMPLETE），兼做采集触发和降级信号。`ActivityLifecycleCallbacks.onActivityStopped()` 标记前后台切换边界，适合做一轮状态快照。
+这些命令只在实施 MemoryLimiter 的设备上有效，`manual` 作用于指定 PID。测试脚本必须先把 `TEST_PID` 和 `TEST_LIMIT_MB` 设为当前用例的明确输入。`status` 输出用于记录设备当时是否实施限制以及 visible/non-visible 配置，不能把一次实验参数写成所有设备的生产门槛。
 
-## 隐私变更对性能数据收集的限制
+## Android 14 以后不能依赖旧的 trim 压力等级
 
-Android 14 对 `/proc` 文件系统的访问做了两层限制：不能读取其他进程的 `/proc/<pid>/` 目录（已有进程隔离），应用自身读取 `/proc/self/` 的部分敏感路径也受到了 SELinux 策略约束。Android 15-17 在此基础上进一步收紧了 `/proc/self/maps` 中部分敏感映射段（系统库、linker 等）的可见性过滤。
+旧监控代码常用 `TRIM_MEMORY_RUNNING_MODERATE`、`RUNNING_LOW`、`RUNNING_CRITICAL` 和 `COMPLETE` 调整采样频率。这个策略不适用于本章覆盖的 Android 14-17：
 
-对 APM 的影响集中在三个方向：
+- 从 API 34 起，App 不再收到这些 running/moderate/complete 等级；
+- 这些常量在 API 35 被废弃；
+- 有可见 Activity 的 App 在 UI 隐藏时会收到 `TRIM_MEMORY_UI_HIDDEN`；
+- 保持非 UI 工作的进程，例如含 FGS 的进程，可能收到 `TRIM_MEMORY_BACKGROUND`；
+- cached 进程可能很快被冻结，冻结后不能执行 GC、回调或采样。
 
-**Stack trace 采集**：native crash 的 backtrace 依赖 `/proc/self/maps` 解析地址到 so 文件的映射关系。Android 14+ 对部分系统库的映射段做了过滤，addr2line 可能找不到对应地址。降级方案是在 crash 发生时通过 `sigaction` 信号处理函数中读取 `/proc/self/maps` 快照并缓存，crash 发生后使用缓存映射做符号化。
+官方 [`ComponentCallbacks2`](https://developer.android.com/reference/android/content/ComponentCallbacks2)文档还提醒调用方不要只按精确值比较，因为以后可能加入中间等级。Android 14-17 的 SDK 可以用 `UI_HIDDEN` 和 `BACKGROUND` 释放可重建资源，却不能把已废弃的 running 等级当成实时压力传感器。
 
-**Logcat 采集**：Android 15（API 35）起，targeting 该版本的应用只能读取自身进程的日志（通过 `logcat` 命令行工具），即使持有 `READ_LOGS` 权限也无法读取其他进程的日志。跨进程日志需要通过 binder 回调或共享文件收集。对 APM 的 ANR 排查流程影响较大——过去可以通过读取系统 ANR 日志获取详细堆栈，现在需要依赖 `ApplicationExitInfo.getTraceInputStream()` 获取。
+`ActivityManager.getMyMemoryState()` 能返回当前进程的 `importance` 与 `lastTrimLevel`，适合在一次状态快照中记录上下文。它也不能预测 MemoryLimiter 还剩多少空间。
 
-**系统诊断数据**：`dumpsys meminfo`、`dumpsys gfxinfo` 等命令在应用进程中执行时，返回的信息粒度从 Android 14 起逐步降低。系统鼓励使用 `ApplicationExitInfo`（§26.9）和 `ProfilingManager`（§26.12）替代主动 dump。
+## Cached App Freezer 改变了后台监控模型
 
-## 监控 SDK 降级策略设计
+Cached app freezer 从 Android 11 开始存在。[AOSP freezer 文档](https://source.android.com/docs/core/perf/cached-apps-freezer)规定，Android 14 及以上设备可在进程进入 cached 状态约 10 秒后冻结它；设备配置和豁免仍可能不同。冻结时所有线程停止获得 CPU 时间，定时器、采集线程、GC 与普通用户态代码都不会运行。
 
-降级策略的核心思路：从「全量定时轮询」退化到「事件驱动 + 系统回执」。
+这一行为带来几条直接结论：
 
-**Pressure-sensitive sampling**：通过 `ComponentCallbacks2.onTrimMemory()` 的 level 判断当前内存压力，动态调整采样频率：
+- 缓存进程没有“继续低频采样”的能力，采样缺口是预期状态；
+- 解冻后只能记录一段不可观测窗口，不能补造冻结期间的 CPU、内存或网络样本；
+- `RunningAppProcessInfo.importance >= IMPORTANCE_CACHED` 只表示进程重要性，不能证明该设备启用了 freezer 或进程已经冻结；
+- 普通 App 没有公开的 freezer 状态查询 API；
+- Android 14 以后，cached 状态下动态注册的广播通常排队到解冻后再投递；
+- 向 frozen 进程发送同步 Binder 调用可能导致接收方被系统终止，退出原因为 `REASON_FREEZER`。
 
-| onTrimMemory level | 含义 | 采样行为 |
-| --- | --- | --- |
-| TRIM_MEMORY_RUNNING_MODERATE | 系统开始有内存压力 | 降频到基线的 50% |
-| TRIM_MEMORY_RUNNING_LOW | 系统内存较紧 | 降频到基线的 25%，只采集 crash/ANR |
-| TRIM_MEMORY_RUNNING_CRITICAL | 系统内存紧张 | 停止所有非关键采集 |
-| TRIM_MEMORY_COMPLETE | 系统即将杀进程 | 持久化已有数据，准备退出 |
+独立监控进程若进入 cached，也会面临相同问题。多进程 SDK 应避免让前台业务同步等待 cached 监控进程，并给 oneway 事件设置有界队列、时效和丢弃策略。
 
-**事件驱动替代轮询**：用系统回调替代定时器。Activity 生命周期回调标记页面切换，`FrameMetrics` 回调标记渲染性能，`BatteryManager` 广播标记功耗状态。事件驱动的开销集中在回调处理本身，不会像定时器那样在空闲时浪费 CPU。
+## 内存数据应使用公开 API，并保留测量语义
 
-**最小可行监控集（MVMS）**：资源最紧张时仍需采集的最少数据。包含三类：
+### PSS、RSS 与 heap 回答不同问题
 
-- **Crash + Native Crash**：通过信号处理器 + `Thread.setDefaultUncaughtExceptionHandler` 捕获，不依赖任何系统 API
-- **ANR**：通过 `ApplicationExitInfo`（API 30+）系统回执获取，不需要主动采集
-- **冷启动时间**：在 `Application.onCreate()` 到首个 Activity 的 `onWindowFocusChanged()` 之间计时，不依赖后台运行
+| 指标 | 公开入口 | 含义与限制 |
+|---|---|---|
+| PSS | `Debug.getMemoryInfo()`、`Debug.getPss()`、`ActivityManager.getProcessMemoryInfo()` | 共享页按引用进程分摊；计算成本较高，会随共享关系变化 |
+| RSS | API 35+ `Debug.getRss()`、退出记录 `getRss()` | 当前驻留页总量，包含共享页，不能跨进程直接相加 |
+| Java heap | `Runtime`、`Debug.MemoryInfo.dalvik*` | 只描述 ART 管理的堆，不能代表 native、graphics 和映射 |
+| native heap | `Debug.getNativeHeapAllocatedSize()` 等 | 主要描述 native allocator，不覆盖全部 native 映射与 graphics |
+| 退出前 PSS/RSS | `ApplicationExitInfo` | 系统最近一次样本，可能为 0，也不是死亡瞬间值 |
 
-崩溃、ANR、启动——这三类指标即使在没有持续后台采集的情况下也能完整获取。性能指标（帧率、内存、网络）可以在前台运行时补全。
+Android 官方说明 PSS 计算较慢，RSS 更适合观察变化。PSS 不是“更高频就更准确”；连续调用可能增加 CPU 与 I/O 成本，页面共享变化还会改变分摊结果。
 
-## 数据上报的可靠性保障
+`ActivityManager.getProcessMemoryInfo()` 从 Android 10 起只向普通 App 返回同 UID 进程数据，并显著限制采样速率；调用过快会得到上一次结果。它是同步 Binder 调用，不适合作为热路径计时器。
 
-监控数据的价值取决于它能不能在被采集后到达服务端。Android 17 的运行环境让上报时机变得不可靠：进程随时可能被 MemoryLimiter 杀掉或被 Freezer 冻结。
-
-**分通道上报**：
-
-| 通道 | 数据类型 | 触发时机 | 传输方式 |
-| --- | --- | --- | --- |
-| 紧急通道 | Crash、Native Crash | crash handler 执行完立即 | 同步写入文件，下次启动上传 |
-| 高优通道 | ANR、启动失败 | 进程重启检测到上一轮退出 | WorkManager expedited |
-| 常规通道 | 帧率、内存、功耗 | 批量积累，前台时上传 | WorkManager 普通 Job |
-| 聚合通道 | 日级汇总指标 | 每日定时 | JobScheduler |
-
-**进程死亡前的持久化**：Crash handler 中先写文件再上传。文件格式选 protobuf 或扁平 binary 而非 JSON，减少 IO 耗时。写入路径用应用的 `filesDir` 或 `cacheDir`，不要用外部存储——Android 10+ 的 Scoped Storage 对外部存储写入有限制。`cacheDir` 下的文件可能被系统在低空间时清理，重要数据放 `filesDir`。
-
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md — 端侧高可用日志]
-
-**重启恢复**：每次 `Application.onCreate()` 时检查 `filesDir` 下是否有未上报的 crash 文件。`ApplicationExitInfo` 也应该在此时拉取，判断上一轮退出原因。两条路径互为验证：crash handler 写入的文件有调用栈细节，系统回执有退出原因分类。
-
-## 隐私合规与性能监控的平衡
-
-性能监控需要的数据粒度和隐私保护存在张力。以下原则来自 Google Play 的数据安全政策和 Android 17 隐私要求的交集：
-
-**数据最小化**：性能指标本身（帧时间、内存值、启动耗时）不含个人信息，但如果和时间戳、进程名、Activity 类名关联，就能还原用户行为路径。上报字段中只保留指标值、粗粒度时间（小时级）和匿名设备分组（RAM 档位、ABI），去掉 Activity 类名和精确时间戳。
-
-**设备标识**：不用 IMEI、Android ID、MAC 地址做设备分组。替代方案是 Firebase Installation ID（每次安装唯一，可重置）或自有 GUID。硬件标识符自 API 26 起持续收紧——`Build.getSerial()` 需要 `Manifest.permission.READ_PRIVILEGED_PHONE_STATE`（系统签名权限，第三方应用拿不到），Android 17 维持这一限制。
-
-**用户 opt-out**：APM 数据的 opt-out 机制会让高发问题的样本量缩减。设计 opt-out 时区分「诊断数据」（crash、ANR，opt-out 后仍采集但不上传）和「指标数据」（帧率、内存，opt-out 后不采集），避免 crash 报告因为用户 opt-out 而彻底丢失。
-
-## 跨版本兼容的监控降级框架
-
-面向 Android 12-17 的 APM SDK 需要一套运行时探测机制，根据当前系统版本和能力动态选择采集路径。
+下面的 Kotlin 代码用于在工作线程上采集当前进程的一份低频快照。字段名显式写出 kB，避免与 native heap 的 byte 单位混用。
 
 ```kotlin
-object MonitoringCapabilities {
+data class ProcessMemorySnapshot(
+    val elapsedRealtimeMs: Long,
+    val totalPssKb: Int,
+    val totalPrivateDirtyKb: Int,
+    val rssKb: Long?,
+    val nativeHeapAllocatedBytes: Long,
+    val javaHeapUsedBytes: Long,
+)
 
-    fun supportsApplicationExitInfo(): Boolean =
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.R  // API 30
+fun captureCurrentProcessMemory(): ProcessMemorySnapshot {
+    val memoryInfo = Debug.MemoryInfo()
+    Debug.getMemoryInfo(memoryInfo)
 
-    fun supportsProfilingTrigger(): Boolean =
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM  // API 35 (Android 15)
+    val runtime = Runtime.getRuntime()
+    return ProcessMemorySnapshot(
+        elapsedRealtimeMs = SystemClock.elapsedRealtime(),
+        totalPssKb = memoryInfo.totalPss,
+        totalPrivateDirtyKb = memoryInfo.totalPrivateDirty,
+        rssKb = if (Build.VERSION.SDK_INT >= 35) {
+            Debug.getRss().takeIf { it > 0L }
+        } else {
+            null
+        },
+        nativeHeapAllocatedBytes = Debug.getNativeHeapAllocatedSize(),
+        javaHeapUsedBytes = runtime.totalMemory() - runtime.freeMemory(),
+    )
+}
+```
 
-    fun supportsMemoryLimiterAttribution(): Boolean =
-        Build.VERSION.SDK_INT >= 37  // Android 17 (API 37)
+`Debug.getMemoryInfo()` 直接读取当前进程的低层数据，公开文档说明它可能看不到 graphics 等受保护分配。需要系统补充 memtrack 的同 UID 多进程调试时，可低频调用 `getProcessMemoryInfo()`，同时保留它的限速与重复样本语义。
 
-    fun isCachedAppFreezerActive(context: Context): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return false
-        // API 30+ 通过 RunningAppProcessInfo.importance 判断进程是否进入 cached 区间。
-        // importance >= IMPORTANCE_CACHED (400) 表示进程被系统视为 cached，
-        // 此状态下 Cached App Freezer 会冻结线程和 binder 调用。
-        // 注意：runningAppProcesses 只返回自身应用进程，无法检测其他进程的冻结状态。
-        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager ?: return false
-        return am.runningAppProcesses?.any {
-            it.pid == android.os.Process.myPid() &&
-                it.importance >= ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED
-        } ?: false
-    }
+### 不把 `/proc` 文件格式当成 App 兼容协议
 
-    fun recommendedSamplingStrategy(context: Context): SamplingStrategy {
-        return when {
-            isForegroundProcess(context) -> SamplingStrategy.FULL
-            supportsApplicationExitInfo() -> SamplingStrategy.EVENT_DRIVEN
-            else -> SamplingStrategy.LEGACY_POLLING
-        }
+`Debug.getPss()` 的公开说明指向 smaps。API 35 的 `Debug.getRss()` 以 status 中的 RSS 为基础；`android-17.0.0_r1` 的 JNI 实现还会加入可获得的 graphics memtrack 数据。平台内部怎样读取与聚合仍可随版本演进，普通 App 应优先使用公开 API，并以公开字段语义作为兼容边界。
+
+`/proc/self/status`、`smaps` 和 `maps` 在某些设备上可读，不表示所有字段、权限和格式都是 Android SDK 契约。直接解析 `/proc` 的 native 组件必须把缺失、权限拒绝、字段变化和读取成本作为正常分支，并按系统 build 验证。跨进程 `/proc/<pid>` 不能作为第三方 APM 的线上数据源。
+
+## 后台任务不提供持续采样时钟
+
+### Foreground Service 不能只为 APM 常驻
+
+从 Android 14 起，target 34+ 的 App 启动 FGS 时必须声明有效类型并满足该类型前提。“监控”不是现有标准 FGS 类型。`specialUse` 需要在 manifest 解释用途，并可能接受 Google Play 审核，它也不是通用常驻许可。
+
+APM 可以在业务已经合法运行的可见或前台服务场景中记录该业务的性能，但不能为了维持监控而冒用 `dataSync`、`location`、`mediaPlayback` 等类型，也不能把监控需求当作启动 FGS 的用户价值。
+
+### WorkManager 与 JobScheduler 只负责可延期工作
+
+WorkManager 适合上传已持久化的诊断批次。任务仍受 App Standby、Doze、设备负载、内存和配额影响，执行时间不等于请求时间。expedited work 面向用户重要、需要尽快开始的短任务，也受系统配额控制；诊断上传不应默认占用 expedited 配额。
+
+上报任务应：
+
+- 设置网络、充电或存储等与产品要求一致的约束；
+- 支持重复执行和服务端幂等；
+- 在 quota 不足、进程重启和网络失败后按 WorkManager 语义重试；
+- 记录 enqueue、实际开始、停止原因和成功确认；
+- 不以 periodic work 的触发间隔计算性能指标时间轴。
+
+前台运行期间可以由生命周期内的轻量调度器采集。进入后台后停止轮询，保留业务事件、系统回执和已落盘队列；进入前台或任务获得执行机会时再恢复。
+
+## 一套可执行的降级状态机
+
+| 状态 | 采集 | 本地处理 | 上报 |
+|---|---|---|---|
+| Foreground | 用户旅程、帧、网络、低频内存与业务指标 | 有界聚合、采样和脱敏 | 可直接批量发送或入队 |
+| UI hidden / Background | 停止周期轮询，只保留必要业务事件 | 释放可重建缓存，写入小型状态摘要 | 普通 WorkManager，等待约束满足 |
+| Cached / Frozen | 无用户态执行保证 | 不补采样 | 等待系统解冻 |
+| Restart / Resume | 查询退出记录，注册 profiling 结果监听，读取待传队列 | 标记不可观测区间，去重与恢复 | 先传关键小记录，再按预算传大文件 |
+| Memory pressure observed | 停止大对象和高成本 profile 请求 | 缩小 buffer、拒绝新批次、保存丢弃计数 | 不因压力立即启动额外网络工作 |
+
+状态转换要由生命周期、任务回调和系统结果驱动。App 无法可靠探测“当前已被冻结”，因为被冻结时也没有执行代码的机会。
+
+## ApplicationExitInfo 是事后证据，不是退出回调
+
+Android 11 / API 30 起，`ActivityManager.getHistoricalProcessExitReasons()`提供历史退出记录。Android 17 还新增 `ApplicationExitInfo.AnrInfo`。使用时要保留以下限制：
+
+- 历史记录数量与保留时间没有跨设备保证；
+- `getPss()`、`getRss()` 是系统最近一次样本，0 表示可能尚未采样；
+- `getTraceInputStream()` 可能为 `null`；
+- ANR trace 与 API 31+ native crash tombstone protobuf 是不同格式；
+- trace 位于全局循环缓冲，可能被新事件覆盖；
+- 读取到记录不表示 APM 自己在退出前获得了运行机会。
+
+下面的代码只识别官方规定的 Android 17 MemoryLimiter 标记，并把 0 内存值转成缺失值。
+
+```kotlin
+private const val MEMORY_LIMITER_MARKER = "MemoryLimiter:AnonSwap"
+
+data class ExitSummary(
+    val processName: String,
+    val timestampMs: Long,
+    val reason: Int,
+    val status: Int,
+    val pssKb: Long?,
+    val rssKb: Long?,
+    val memoryLimiterAnonSwap: Boolean,
+)
+
+fun readExitSummaries(
+    context: Context,
+    maxRecords: Int,
+): List<ExitSummary> {
+    require(maxRecords > 0)
+    if (Build.VERSION.SDK_INT < 30) return emptyList()
+
+    val activityManager = context.getSystemService(ActivityManager::class.java)
+    return activityManager.getHistoricalProcessExitReasons(
+        context.packageName,
+        0,
+        maxRecords,
+    ).map { info ->
+        ExitSummary(
+            processName = info.processName,
+            timestampMs = info.timestamp,
+            reason = info.reason,
+            status = info.status,
+            pssKb = info.pss.takeIf { it > 0L },
+            rssKb = info.rss.takeIf { it > 0L },
+            memoryLimiterAnonSwap =
+                Build.VERSION.SDK_INT >= 37 &&
+                    info.reason == ApplicationExitInfo.REASON_OTHER &&
+                    info.description?.contains(MEMORY_LIMITER_MARKER) == true,
+        )
     }
 }
 ```
 
-这个框架的设计原则：版本判断只做粗筛，运行时 probe 确认能力可用后再启用对应路径。`ProfilingManager` 在某些厂商 ROM 上可能被禁用，`ApplicationExitInfo` 的保留条数在不同设备上也有差异——版本判断不够，需要 try-catch + fallback。
+读取端应保存包、进程、PID、UID、系统 build、App 版本和读取时间，并用进程、时间、reason、status 等组合字段去重。不要长期上传完整 `description`；除了有文档保证的精确标记，其余内容只用于受控诊断。
 
-## 系统级诊断 API 的演进方向
+## ProfilingManager 补充系统证据，但不保证每次有文件
 
-Android 14-17 的趋势是系统在收回应用主动采集的能力，同时在补上系统侧的诊断回执。`ApplicationExitInfo`（API 30+）让应用在重启后获取上一轮退出原因，`ProfilingManager`（API 35，Android 15 起正式提供 trigger-based 采集）让应用请求系统在特定条件下采集 trace 和 heap dump。详见 §26.12。
+版本边界如下：
 
-这个方向对 APM 设计的影响：
+- API 35：`ProfilingManager.requestProfiling()`，App 主动请求 system trace、Java heap dump、heap profile 或 stack sampling；
+- API 36：`ProfilingTrigger`、`addProfilingTriggers()` 和 ANR / fully-drawn trigger；
+- API 37：增加 OOM、anomaly、cold start、excessive CPU、app compat 等 trigger。
 
-1. **应用侧采集职责收缩**：crash、ANR、内存退出等系统事件由系统采集和回传，应用侧只需要做业务指标和帧级性能采集。
-2. **触发式采集替代持续监控**：与其保持后台进程持续采集，不如注册 `ProfilingTrigger` 在 ANR 或内存异常时由系统触发一次 trace 采集。
-3. **隐私风险降低**：系统采集的数据不经过应用进程，不存在 /proc 访问权限问题。
+Android 17 的 `TRIGGER_TYPE_ANOMALY` 可用于 MemoryLimiter 事件，公开文档说明该场景可能返回 heap dump。Java `OutOfMemoryError` 对应 `TRIGGER_TYPE_OOM`，两者不能合并。OOM trigger 还要求自定义 `UncaughtExceptionHandler` 继续调用系统默认 handler。
 
-`ProfilingTrigger` 在 Android 17 的能力边界：支持 TRIGGER_TYPE_ANR、TRIGGER_TYPE_ANOMALY 两种触发类型，产物为 Perfetto trace。API 需要通过 `ProfilingManager.addProfilingTriggers()` 注册，触发后通过 `ProfilingResult` callback 返回文件路径。应用侧读取该文件后自行上传。
+下面的代码用于在 Android 17 注册两类内存 trigger。应用定义的最小间隔由产品配置传入，系统还会应用自己的限流。
 
-[已验证: 官方文档, developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture]
+```kotlin
+@RequiresApi(37)
+fun registerMemoryProfilingTriggers(
+    context: Context,
+    executor: Executor,
+    minPeriodHours: Int,
+    listener: Consumer<ProfilingResult>,
+) {
+    require(minPeriodHours >= 0)
 
-## 大厂 APM 监控降级实践
+    val manager = context.getSystemService(ProfilingManager::class.java)
+    manager.registerForAllProfilingResults(executor, listener)
+    manager.addProfilingTriggers(
+        listOf(
+            ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_ANOMALY)
+                .setRateLimitingPeriodHours(minPeriodHours)
+                .build(),
+            ProfilingTrigger.Builder(ProfilingTrigger.TRIGGER_TYPE_OOM)
+                .setRateLimitingPeriodHours(minPeriodHours)
+                .build(),
+        )
+    )
+}
+```
 
-[待补充: 微信 Matrix 在 Android 14+ 的后台采集策略调整]
-[待补充: 字节跳动 APMPlus 的 ProfilingManager 集成路径]
-[待补充: 阿里支付宝 APMP 的多进程监控在 Freezer 下的存活方案]
+系统 trigger 的结果只能通过全局监听器接收。若产生文件时 App 不在运行，系统可能在下次启动并重新注册监听器后投递。处理器必须检查 `ProfilingResult.errorCode`、`triggerType`、`tag` 和 `resultFilePath`，不能拼接内部目录，也不能按 trigger 名预设文件格式。
 
-面向 Android 17 的 APM 降级还没有成熟的开源参考。上述大厂方案的公开材料集中在 Android 12-14 的适配经验。Android 17 的 MemoryLimiter + Freezer + 隐私收紧三重约束是 2026 年的新问题，业界还在摸索。
+profiling 请求与 trigger 都受系统限流、设备覆盖、后台 trace 是否运行、存储与后处理状态影响。注册成功只表示系统知道 App 的兴趣，不表示每次事件都生成产物。
 
-当前阶段可执行的策略：把 MVMS（crash + ANR + 启动）作为所有设备的保底，把帧率和内存指标限制在前台采集，把后台持续监控的预期降到最低，优先利用系统回执替代主动采集。
+## Crash 与 ANR 的最低可用记录
 
-> **关于 HPROF / java_hprof 数据源**：Perfetto 的 `java_hprof` 数据源和 `Debug.dumpHprofData` 的底层实现是内存分析链路（heap dump 采集与解析）的话题，属于 §26.9 / §26.12 的范畴，本节不再展开。如需基于 Perfetto 的 on-device heap dump 流程，参见 §26.12（ProfilingManager）和 Perfetto 官方文档中 `java_hprof` 数据源的说明。
+“Crash、ANR、启动一定能完整采到”是不成立的。进程可被 `SIGKILL`、MemoryLimiter 或 LMKD 直接终止；Java OOM 时可能无法再分配对象；native signal handler 也有严格限制。
+
+Java 未捕获异常处理器应：
+
+- 只写入已经脱敏、结构固定、大小受限的最小记录；
+- 避免在崩溃线程上发网络请求、等待锁或执行复杂序列化；
+- 保留并调用原默认 handler，让平台完成正常 crash 处置；
+- 允许写入失败，下一次启动再用 `ApplicationExitInfo` 补充。
+
+Native crash handler 只能调用 async-signal-safe 操作。不能在 signal handler 中使用 JVM、分配器、普通日志、锁或复杂 `/proc/maps` 解析。需要自有 minidump 时，应采用经过验证的 crash reporter，并继续让 debuggerd/系统 handler 生成平台 tombstone。API 31+ 还可在下次启动从 `ApplicationExitInfo` 获取可选 tombstone protobuf。
+
+ANR 依赖系统的 exit record、可选 trace、Android 16+ ANR profiling trigger，以及 App 在运行时已有的主线程和业务状态。任何一条都可能缺失，服务端要保留来源和完整度。
+
+启动监控在 API 35+ 可结合 `ApplicationStartInfo` 的系统时间戳；TTID、TTFD 和业务 ready 仍是不同指标。`Application.onCreate()` 到 `onWindowFocusChanged()` 不是所有窗口模式和启动路径都通用的冷启动定义。
+
+## 本地队列与上报要接受进程随时消失
+
+### 在正常运行时提前保存关键状态
+
+Android 没有生产环境可依赖的进程死亡回调，`Application.onTerminate()` 也不会在普通设备进程退出时调用。关键状态应在正常业务边界写入小型 journal，例如：
+
+- 当前 session 与进程启动标识；
+- App 可见性、最近用户旅程类别和阶段；
+- 最近一份内存、网络、帧或任务聚合；
+- 已排队事件范围、丢弃计数和 schema 版本。
+
+journal 要有长度前缀或校验，容忍尾部被截断。文件数量与总大小必须有上限。重要但不应进入系统备份的数据可放 `noBackupFilesDir`；可重新生成的大文件可放 `cacheDir`，并接受系统清理。
+
+### 上传采用幂等协议
+
+一个稳健的诊断上传流程是：
+
+1. 本地记录生成不可重复的 event ID，并在提交前完成脱敏。
+2. WorkManager 读取已封口批次，发送时带 event ID 与内容 hash。
+3. 服务端按 ID 幂等接收，返回明确确认。
+4. 客户端只在确认后删除本地批次。
+5. 中断或重复执行时重发同一批次，不生成新的事件。
+
+Crash handler 负责留下最小本地证据，不负责“立即上传”。profiling 文件通常更大、更敏感，应单独排队、限制并发和保留期；退出摘要不应因大文件上传失败而被阻塞。
+
+## 隐私边界从采集前开始
+
+### 普通 App 不能依赖系统日志与 dumpsys
+
+从 Android 4.1 / API 16 起，只有特权系统 App 才能获得完整 `READ_LOGS` 能力。[Android 日志信息泄露指南](https://developer.android.com/privacy-and-security/risks/log-info-disclosure)明确指出普通第三方 App 不能读取其他进程的 logcat。`DUMP` 同样是系统级权限。这个边界并非 Android 15 才出现。
+
+APM 应收集自己产生的结构化事件，多进程 App 通过自有 IPC 或文件协议汇总。`dumpsys meminfo`、`gfxinfo`、完整 bugreport 和跨进程 Perfetto 适合 adb、实验室、用户主动诊断或特权组件，不是普通生产 App 的后台采集入口。
+
+### “性能数据”也可能成为用户数据
+
+帧时间或 PSS 单独看是数值；与精确时间、页面类名、URL、账号、设备标识和长期 session 组合后，可以恢复用户行为与设备特征。heap dump、ANR trace、tombstone、system trace 和日志的敏感度更高，可能包含字符串、路径、请求信息、对象字段与代码结构。
+
+数据模型应：
+
+- 用受控的页面/场景枚举替代任意 Activity、Fragment 或 Compose route 文本；
+- URL 只保留经过允许的模板或低基数分类，不保存 query、token 和用户输入；
+- 使用随机、可重置且有保留期的安装或会话标识，不使用 IMEI、MAC、序列号或 Android ID 充当“匿名 ID”；
+- 在写盘前删除不需要的字段，避免先采全量再在服务端过滤；
+- 对大文件设置访问审批、静态与传输保护、审计和自动删除；
+- 让用户删除账号或撤回授权时同步清理关联诊断数据。
+
+Google Play 要求 App 的 Data safety 声明覆盖第三方 SDK 的收集与共享行为。SDK 还应读取宿主传入的 consent/opt-out 状态；若产品承诺退出后停止收集，就应停止采集和上传并清理队列，不能自行把 crash/ANR 解释为默认豁免。
+
+## 监控自身也需要观测
+
+降级系统至少上报这些低成本计数：
+
+- `capture_attempted`、`capture_succeeded`、`capture_skipped`；
+- skip reason：后台、预算不足、unsupported、rate limited、storage full、consent disabled；
+- 本地队列字节、事件数、最老事件年龄和丢弃原因；
+- WorkManager enqueue、start、stop reason、retry 与 server ack；
+- profiling 注册、回调、error code、无文件和文件处理结果；
+- 内存采集耗时、重复样本与采集期间分配；
+- SDK 版本、规则版本、Android API、系统 build 与设备分组。
+
+这些指标的分母必须是“具备采集资格的会话”，不能把未获得授权、系统不支持或从未执行到初始化的设备混入成功率。监控 SDK 自己发生错误时要降级并保留计数，不能阻塞业务线程或吞掉业务异常。
+
+## Android 17 验收清单
+
+- 平台锚点为 `android-17.0.0_r1`，cgroup/freezer 锚点为 `android17-6.18-2026-06_r6`。
+- MemoryLimiter 只在部分 Android 17 设备实施，不按 RAM 或机型猜测固定限制。
+- 退出归因同时检查 `REASON_OTHER` 与精确标记 `MemoryLimiter:AnonSwap`。
+- `memory.high` 被解释为内核节流边界，终止决定归于 Android MemoryLimiter 流程。
+- Android 14-17 不使用已停止通知的 running/complete trim 等级控制采样。
+- cached/frozen 期间不假设定时器、GC、Binder 或采集线程继续运行。
+- 不用进程 importance 冒充 freezer 已启用或已经冻结的证据。
+- PSS、RSS、Java heap、native heap 与退出前样本分别建模并写明单位。
+- `getProcessMemoryInfo()` 处理同 UID 限制、同步 Binder、限速和重复结果。
+- FGS 只服务符合类型与用户预期的前台任务，不为 APM 冒用类型。
+- WorkManager 用于可延期、幂等的持久上传，不作为性能采样时钟。
+- ProfilingManager 按 API 35/36/37 能力分层，trigger 结果允许缺失和延迟。
+- Java crash handler 调用默认 handler；native handler 只做 async-signal-safe 工作。
+- 普通 App 不依赖其他进程 logcat、dumpsys 或跨进程 `/proc`。
+- heap、trace、日志和行为上下文按高敏感度数据设置权限、保留和删除。
+- consent/opt-out、Data safety 与第三方 SDK 行为保持一致。
+
+在 Android 17 上，可靠监控依赖的是清晰的状态、公开 API、可丢失的数据协议和系统事后证据。允许样本缺失、记录缺失原因，并让业务在监控关闭时保持原有语义，比维持一个看似连续但无法解释的后台曲线更重要。
+
+## 源码与官方文档
+
+- [Android 17 App memory limits](https://developer.android.com/about/versions/17/behavior-changes-all#app-memory-limits)
+- [AOSP `MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java)
+- [AOSP `CachedAppOptimizer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java)
+- [AOSP `Debug.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Debug.java)
+- [AOSP `ApplicationExitInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java)
+- [AOSP `ProfilingManager.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java)
+- [Cached apps freezer](https://source.android.com/docs/core/perf/cached-apps-freezer)
+- [ComponentCallbacks2](https://developer.android.com/reference/android/content/ComponentCallbacks2)
+- [ActivityManager](https://developer.android.com/reference/android/app/ActivityManager)
+- [ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+- [ProfilingTrigger](https://developer.android.com/reference/android/os/ProfilingTrigger)
+- [WorkManager expedited work](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work#expedited)
+- [Google Play Data safety](https://support.google.com/googleplay/android-developer/answer/10787469)
