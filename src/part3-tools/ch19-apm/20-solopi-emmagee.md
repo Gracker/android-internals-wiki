@@ -62,6 +62,10 @@ last_rework_run_id: 20260804-173752-rework-5ee2b1f4
 last_rework_log: logs/rework/2026-08-04-20260804-173752-rework-5ee2b1f4-rework.md
 last_review_finalize_at: 2026-08-04T18:05:47+08:00
 last_review_finalize_run_id: 20260804-180547-5e8d0697
+last_idle_audit_at: 2026-08-04T22:35:22+08:00
+last_idle_audit_run_id: 20260804-223522-idle-audit-5ee2b1f4
+last_idle_audit_result: pass-no-content-change
+last_idle_audit_log: logs/audit/2026-08-04-20260804-223522-idle-audit-5ee2b1f4-idle-audit.md
 ---
 
 # SoloPi 与 Emmagee
