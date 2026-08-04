@@ -2,7 +2,7 @@
 title: "性能测试最佳实践"
 chapter: "15.6"
 section: "15.6"
-status: "ready-for-review"
+status: "finalized"
 task6_reviewed_by: openclaw-task6
 drafted_date: "2026-04-04"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -58,13 +58,13 @@ related_chapters:
   - "8.3"
   - "13.2"
   - "5.5"
-pipeline_stage: "rework-applied-awaiting-review"
-task6_state: rework-applied
-reviewed_by: openclaw-task6
-reviewed_date: 2026-07-09
+pipeline_stage: "finalized"
+task6_state: reviewed
+reviewed_by: hermes-aiw-review-finalize-apply
+reviewed_date: 2026-08-04
 last_task6_audit: 2026-07-09
 task6_result: pass-light-edit
-task9_state: "rework-applied"
+task9_state: "reviewed"
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-18"
@@ -97,6 +97,9 @@ last_rework_run_id: "20260804-213514-rework-b52e6e4a"
 last_rework_log: "logs/rework/2026-08-04-20260804-213514-rework-b52e6e4a-rework.md"
 rework_by: "aiw-polish-rework"
 rework_notes: "2026-08-04 rework：处理 pending-verification-marker/thin-source-marking。全文未发现待验证/TODO/needs-rework 正文残留；本轮将 7 处泛化 [已验证] 标记改为可追踪 [来源:] 标记并绑定 frontmatter sources，保持 Android 17 / android-17.0.0_r1 边界，章节状态回流 ready-for-review 等待 Task6/Task9 复核。"
+last_review_finalize_at: "2026-08-04T22:07:14+08:00"
+last_review_finalize_run_id: "20260804-220518-6f1a5c2e"
+review_finalize_notes: "2026-08-04 Hermes review-finalize：复核 Android 17/android-17.0.0_r1 版本边界、AndroidX Benchmark/FPM/source anchors、正文待验证标记与中文结构；未发现新增 P0/P1/P2 blocker，章节晋升 finalized。"
 ---
 
 # 性能测试最佳实践
