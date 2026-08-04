@@ -4,7 +4,7 @@ deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-25
 chapter: 19
 section: 19.20
-status: ready-for-review
+status: finalized
 drafted_date: 2026-04-24
 drafted_by: codex
 applicable_versions: SoloPi：源码编译基线 minSdk 18 / compileSdk 29 / targetSdk 29，Android 12-17 需逐机验证；Emmagee：历史工具，README 明确声明 Android 7.0 起不支持
@@ -26,13 +26,13 @@ sources:
   path: https://developer.android.com/about/versions/17/behavior-changes-17
 - type: official
   path: https://developer.android.com/about/versions/13/behavior-changes-all#restricted-settings
-pipeline_stage: ready-for-review
-task6_state: needs-review
-reviewed_by: openclaw-task6
-reviewed_date: 2026-07-03
+pipeline_stage: finalized
+task6_state: reviewed
+reviewed_by: hermes-aiw-review-finalize-apply
+reviewed_date: 2026-08-04
 task6_result: pass-light-edit
 last_task6_audit: 2026-06-17
-task9_state: needs-review
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-04-26T15:45:22+08:00
@@ -54,12 +54,14 @@ task9_p2_issues: 0
 p0: 0
 p1: 0
 p2: 0
-task9_review_notes: "2026-07-03 12 Task9 deep-review: pass-tech-review。Task6 复审后复核 SoloPi README/build.gradle/release 与 Emmagee README/release，版本边界仍限定 Android 17 以内；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。2026-08-04 rework 修复 YAML 引用结构和正文待验证标记，退回 ready-for-review 等待复审。"
+task9_review_notes: "2026-07-03 12 Task9 deep-review: pass-tech-review。Task6 复审后复核 SoloPi README/build.gradle/release 与 Emmagee README/release，版本边界仍限定 Android 17 以内；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。2026-08-04 rework 修复 YAML 引用结构和正文待验证标记，退回 ready-for-review 等待复审。2026-08-04 Hermes finalize 复审：正文已诚实限定 SoloPi 为 Android 17 待验证工具、Emmagee 为历史工具；关键源码/官方链接齐备；无新增 P0/P1/P2，恢复 finalized。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-18
 last_rework_at: 2026-08-04T17:37:52+08:00
 last_rework_run_id: 20260804-173752-rework-5ee2b1f4
 last_rework_log: logs/rework/2026-08-04-20260804-173752-rework-5ee2b1f4-rework.md
+last_review_finalize_at: 2026-08-04T18:05:47+08:00
+last_review_finalize_run_id: 20260804-180547-5e8d0697
 ---
 
 # SoloPi 与 Emmagee
