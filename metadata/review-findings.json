@@ -139,6 +139,9 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch08-startup/8.02-Android-17-系统启动优化与bootanalyze工具链.md",
+      "close_note": "8.1 target chapter completed deep-review: body now has AOSP android-17.0.0_r1 source anchors; frontmatter updated to source-verified/deep-reviewed and expanded with bootanalyze.sh, builtins.cpp, init.rc, init.zygote64_32.rc. No remaining P1 body-apply blocker in this target.",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260804-203507-deep-review-c871548d",
       "created_at": "2026-07-27T08:37:15.749050+08:00",
       "created_by": "deep-review",
       "created_run_id": "20260727-083606-deep-review-dbbfc734",
@@ -149,10 +152,10 @@
       "source_paths": [
         "src/part1-fundamentals/ch08-startup/8.1-bootanalyze-optimization-toolchain.md"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "历史错误 outline 已隔离但缺少可审计独立正文",
       "type": "needs-body-apply",
-      "updated_at": "2026-07-27T08:37:15.749050+08:00"
+      "updated_at": "2026-08-04T20:38:15.668860+08:00"
     },
     {
       "chapter": "src/part4-system/ch18-connectivity/18-android17-nfc-performance-contactless-payment.md",
