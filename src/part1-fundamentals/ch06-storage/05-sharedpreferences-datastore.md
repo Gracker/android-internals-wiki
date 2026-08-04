@@ -41,9 +41,9 @@ section: "6.5"
 pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task9_state: "reviewed"
-last_idle_audit_at: "2026-08-02T22:35:43+08:00"
-last_idle_audit_run_id: "20260802-223543-idle-audit-29d2feef"
-last_idle_audit_log: "logs/audit/2026-08-02-20260802-223543-idle-audit-29d2feef-idle-audit.md"
+last_idle_audit_at: "2026-08-04T18:35:51+08:00"
+last_idle_audit_run_id: "20260804-183551-idle-audit-29d2feef"
+last_idle_audit_log: "logs/audit/2026-08-04-20260804-183551-idle-audit-29d2feef-idle-audit.md"
 task9_result: "auto-fixed"
 task2b_state: "fixed"
 task2b_result: fixed
@@ -379,7 +379,7 @@ AndroidX DataStore 1.2.1 的 `FileStorage` 写入路径是：
 6. `writeScope` 的写入代码结束后，`FileStorage` 把临时文件原子移动到目标路径。
 7. 整个 `writeScope` 成功返回后，写入 actor 才唤醒等待该更新的调用方。
 
-源码仍有“同步父目录”的 TODO，因此不应把这一实现描述成所有掉电窗口下都不会回退。DataStore 提供的 API 一致性和错误传播显著强于 SP，但存储硬件与文件系统的持久性边界仍存在。
+源码仍留有“同步父目录”的待办注释，因此不应把这一实现描述成所有掉电窗口下都不会回退。DataStore 提供的 API 一致性和错误传播显著强于 SP，但存储硬件与文件系统的持久性边界仍存在。
 
 ### Preferences 与 Proto 怎么选
 
