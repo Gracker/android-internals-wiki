@@ -1767,6 +1767,13 @@
       "status": "appended",
       "title": "Juejin Android intake · 2026-08-04"
     },
+    "source/juejin-android/2026-08-05-juejin-android.md": {
+      "last_seen": "2026-08-05T05:25:16.561141+08:00",
+      "mtime": 1785874481.7688322,
+      "sha256": "01a198e60834dffd5e35d87dc377744c3923df455e43c4a7dd7b8e00db54f52f",
+      "size": 7220,
+      "status": "skipped-low-score"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -3574,24 +3581,24 @@
     }
   },
   "last_report": {
-    "appended": 1,
+    "appended": 0,
     "considered": 1,
-    "cutoff": "2026-08-03T05:20:42.128110+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-04.md",
+    "cutoff": "2026-08-04T05:20:04.990927+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-05.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1745,
+    "scanned": 1746,
     "skipped": {
       "existing_link": 0,
-      "low_score": 0,
+      "low_score": 1,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 28,
-      "unchanged": 313
+      "unchanged": 314
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-08-04T05:25:04.990927+08:00",
+  "last_run_at": "2026-08-05T05:25:16.561141+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
