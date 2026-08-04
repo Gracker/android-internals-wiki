@@ -1,7 +1,7 @@
 ---
 title: "资源文件体积优化实战"
 chapter: "25.31"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [包体积, 资源优化, 图片压缩, ARSC, AAPT2]
 related_chapters: ["12.1", "25.7", "25.8", "25.29", "25.30"]
@@ -9,21 +9,31 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "Clippings性能优化参考书（资源文件体积优化实战章）"
 gap_score: 15
-task6_state: pending
-task9_state: pending
-pipeline_stage: task6_pending
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: finalized
 last_draft_polish_at: "2026-08-03T23:36:03+08:00"
 last_draft_polish_run_id: "20260803-233603-draft-polish-b4f706b1"
 last_verified: "2026-08-03"
 confidence: medium-high
+reviewed_date: "2026-08-04"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+last_review_finalize_at: "2026-08-04T08:11:26+08:00"
+last_review_finalize_run_id: "20260804-081101-aa9c89f4"
 sources:
   - "https://developer.android.com/tools/aapt2"
   - "https://developer.android.com/tools/apkanalyzer"
   - "https://developer.android.com/topic/performance/app-optimization/enable-app-optimization"
   - "https://developer.android.com/topic/performance/app-optimization/customize-which-resources-to-keep"
   - "https://developer.android.com/topic/performance/reduce-apk-size"
+  - "https://developer.android.com/studio/write/tool-attributes"
+  - "https://developer.android.com/develop/ui/views/graphics/reduce-image-sizes"
+  - "https://developer.android.com/guide/app-bundle/app-bundle-format"
+  - "https://developer.android.com/guide/app-bundle/configure-base"
+  - "https://developer.android.com/guide/playcore/asset-delivery"
   - "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/androidfw/include/androidfw/ResourceTypes.h"
   - "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/androidfw/AssetManager2.cpp"
+  - "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/tools/aapt2/ResourceTable.cpp"
 ---
 
 # 25.31 资源文件体积优化实战
@@ -70,9 +80,9 @@ sources:
 - 大型游戏 / 应用的资源按需下载策略
 - Fast-follow 与 on-demand 分发模式
 
-### 🔸 Android 17 AAPT2 资源编译管线变更
-- 增量资源编译对构建性能的影响
-- 非 SDK 资源引用的兼容性边界
+### 🔸 Android 17 资源运行时与构建期边界
+- AAPT2 属于构建期工具链，不是 Android 17 runtime 自动优化
+- AssetManager2 / Resources 只消费已安装资源表并按 configuration 选择候选
 
 <!-- outline-end -->
 
