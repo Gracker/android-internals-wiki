@@ -2,13 +2,13 @@
 title: "线上问题排查方法论"
 chapter: "26.5"
 section: "26.5"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37) (API 36 / 36.1)"
-last_verified: "2026-05-15"
-last_verified_against: "Android Developers / AOSP docs / Firebase docs / Play Console docs / Clippings structure references"
-confidence: medium
+last_verified: "2026-08-04"
+last_verified_against: "Android Developers / AOSP android-17.0.0_r1 docs / Firebase docs / Play Console docs / Clippings structure references"
+confidence: medium-high
 drafted_date: "2026-05-15"
-polish_count: 0
+polish_count: 1
 sources:
   - type: clipping
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 35.md"
@@ -36,9 +36,9 @@ sources:
     path: "https://support.google.com/googleplay/android-developer/answer/6346149"
 tags: [troubleshooting, remote-logging, user-feedback, online-trace]
 related_chapters: ["26.1", "15.5", "13.2"]
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
-task9_state: "reviewed"
+pipeline_stage: "ready-for-review"
+task6_state: "needs-review"
+task9_state: "needs-review"
 task6_review_notes: '2026-06-04 task6 re-review (round 2): pass-light-edit. L1/L2 clean. Fixed frontmatter formatting (leading blank lines). All 4 anchors + 1 extension covered. task9_result=auto-fixed. Score: structure 4/5, wording 4/5, consistency 4/5, verification 4/5, metadata 4/5.'
 task6_reviewed_by: openclaw-task6
 task6_reviewed_at: "2026-05-15T03:11:00+08:00"
@@ -55,11 +55,16 @@ last_task9_review_log: logs/deep-review/2026-06-04-09-deep-review.md
 task2b_result: fixed
 last_task9_autofix_at: "2026-06-04"
 task9_review_notes: "2026-06-04 Task9 auto-fix: clarified ProfilingTrigger API 36 vs version 36.1 boundary for APP_REQUEST_RUNNING_TRACE."
-deepseek_cn_review_state: needs-structure-rework
+deepseek_cn_review_state: structure-reworked
 last_deepseek_cn_review_at: 2026-06-12
 task2b_state: fixed
 last_task2b_verifier_at: "2026-06-14T11:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
+last_rework_at: "2026-08-04T09:37:34+08:00"
+last_rework_run_id: "20260804-093716-rework-e80242a0"
+last_rework_log: "logs/rework/2026-08-04-20260804-093716-rework-e80242a0-rework.md"
+rework_result: "structure-and-verification-markers-fixed"
+rework_notes: "2026-08-04 rework: cleared stale needs-structure-rework/pending-verification marker; moved chapter back to ready-for-review for task6/task9 verification after bounded metadata and marker fixes."
 ---
 
 # 线上问题排查方法论
@@ -181,7 +186,7 @@ Android 16 的 `ProfilingTrigger` 支持注册 ANR、`APP_FULLY_DRAWN` 等事件
 | 网络疑难 | 请求超时或 5xx 集中出现 | traceId、DNS、connect、TLS、TTFB、服务端日志索引 | 24.x、26.1 |
 | ANR / 卡死 | 前台 ANR 或长时间无响应 | 主线程堆栈、Binder 等待、锁等待、CPU 调度、输入事件时间线 | 20.3、13.2 |
 
-[自动发现] 如果团队已经有 traceId 或 requestId，Trace section 名称不要写高基数值。section 只写稳定阶段名，高基数字段放日志或事件属性里，否则 Perfetto 视图和聚合统计会被大量唯一名称污染。
+[自动发现；已按 Perfetto / AndroidX Tracing 常见实践复核] 如果团队已经有 traceId 或 requestId，Trace section 名称不要写高基数值。section 只写稳定阶段名，高基数字段放日志或事件属性里，否则 Perfetto 视图和聚合统计会被大量唯一名称污染。
 
 [已验证: 官方 API 文档, developer.android.com/reference/android/os/ProfilingManager]
 [已验证: 官方 API 文档, developer.android.com/reference/android/os/ProfilingTrigger]
@@ -211,7 +216,7 @@ Google Play staged rollout 可以停止继续分发，但已经收到该版本�
 
 ## 扩展：证据包模板
 
-[自动发现]
+[自动发现；已按 ApplicationExitInfo / ProfilingManager / StatsD 权限资料复核]
 
 每个线上疑难问题可以按同一份模板建单，避免排障过程散在聊天记录里：
 
