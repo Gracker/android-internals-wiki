@@ -2094,6 +2094,48 @@
       "action": "indexed-only-chapter-freeze",
       "score": 15,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-04-evening-科研Agent证据分层-研究材料/master-research.md",
+      "title": "[DeepResearch] Master Research · 科研 Agent 结果验收",
+      "summary": "--- phase: 1 topic: 科研 Agent 结果验收 created: 2026-08-04 tags: [ai-agent, research-agent, verification, opencli-twitter] sources: [opencli-twitter, x-brief] --- ## 执行摘要 - 本次产出文件：`/Users/chris/Library/Mobile Documents/iCloud",
+      "chapter": "ch16",
+      "processed_at": "2026-08-05T06:20:24.157313+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch01-architecture/1.49-Android-17-Staged-Install-状态机-提交-恢复链路.md",
+      "route_confidence": 25,
+      "route_terms": [
+        "research",
+        "topic",
+        "created",
+        "tags",
+        "verification",
+        "sources",
+        "aiw"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-04-Agent验收-实时语音-权限边界-研究材料/master-research.md",
+      "title": "[DeepResearch] Master Research · Agent 验收、实时语音、权限边界",
+      "summary": "--- phase: 1 topic: 开放权重 Agent 模型验收、实时语音 Agent、企业连接器权限 created: 2026-08-04 tags: [ai-agent, deep-research, opencli-twitter] sources: [opencli-twitter, x-brief] --- ## 执行摘要 - 本次产出文件：[[DeepResearch/2026-08-04-Agent验收-实时语音-",
+      "chapter": "ch16",
+      "processed_at": "2026-08-05T06:20:24.157313+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch13-profiling/13.23-perfetto-v57-ai-skill-state-tracks-memory-debug.md",
+      "route_confidence": 25,
+      "route_terms": [
+        "research",
+        "agent",
+        "topic",
+        "tags",
+        "ai-agent",
+        "sources",
+        "aiw"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ]
 }
