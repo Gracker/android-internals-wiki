@@ -1,17 +1,21 @@
 ---
 title: "ARM Topdown 微架构性能分析方法论与 Android 实践"
 chapter: "14.32"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 drafted_date: "2026-07-16"
 last_verified: "2026-08-04"
 last_verified_against: "AOSP android-17.0.0_r1 simpleperf；Android common kernel android17-6.18-2026-06_r6 perf security；Arm Telemetry Solution main@6d4f550d053c"
 confidence: high
-task6_state: deep-reviewed
-task9_state: ready-for-final-audit
-pipeline_stage: deep-review
+reviewed_date: "2026-08-04"
+reviewed_by: hermes-aiw-review-finalize-apply
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: finalized
 last_deep_review_at: "2026-08-04T08:35:50+08:00"
 last_deep_review_run_id: "20260804-083532-deep-review-436b1181"
+last_review_finalize_at: "2026-08-04T10:06:21+08:00"
+last_review_finalize_run_id: "20260804-100544-c952e108"
 sources:
   - type: official
     url: "https://developer.android.com/ndk/guides/simpleperf"
@@ -393,7 +397,7 @@ Android 17 上可执行的可靠路径是：
 
 缺少 CPU 专属公式时，保留“前端 stall 事件升高”“分支错误增加”这类可核验描述，比生成看似完整的四个百分比更可靠。
 
-本轮 deep-review 未新增外部材料，审计只依据本文参考资料中已经列明的 AOSP `android-17.0.0_r1`、Android common kernel `android17-6.18-2026-06_r6`、Arm Topdown/Telemetry Solution 文档与 Neoverse V1 r1p2 示例定义。后续若要把本文方法落到具体手机 SoC，应补入该 CPU 的 telemetry specification、设备 `simpleperf list raw` 输出和同窗口计数原始记录；在这些证据缺失前，不应把示例公式升级为通用 Android 结论。
+最终审阅未新增外部材料，审计只依据本文参考资料中已经列明的 AOSP `android-17.0.0_r1`、Android common kernel `android17-6.18-2026-06_r6`、Arm Topdown/Telemetry Solution 文档与 Neoverse V1 r1p2 示例定义。后续若要把本文方法落到具体手机 SoC，应补入该 CPU 的 telemetry specification、设备 `simpleperf list raw` 输出和同窗口计数原始记录；在这些证据缺失前，不应把示例公式升级为通用 Android 结论。
 
 ## 参考资料
 
@@ -424,3 +428,4 @@ Android 17 上可执行的可靠路径是：
 - **平台锚点**：Android 17 / API 37 / `android-17.0.0_r1`。
 
 <!-- AIW-deep-review-verified-2026-08-04 run_id=20260804-083532-deep-review-436b1181 -->
+<!-- AIW-review-finalized-2026-08-04 run_id=20260804-100544-c952e108 -->
