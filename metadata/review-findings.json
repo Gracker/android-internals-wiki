@@ -984,6 +984,23 @@
       "summary": "19.1 将 Android 15 GPU 工作时长上报误写为不存在的 reportActualGpuWorkDuration API",
       "type": "technical-accuracy",
       "updated_at": "2026-08-03T22:07:36.348098+08:00"
+    },
+    {
+      "chapter": "src/part3-system/ch18-camera/18.03-camera-hal3-buffer-management.md",
+      "created_at": "2026-08-04T11:37:47.414876+08:00",
+      "created_by": "draft-polish",
+      "created_run_id": "20260804-113556-draft-polish-6b28b797",
+      "details": "Materials were empty; chapter remains draft with low confidence. Android 17 optimization claims were downgraded to a review checklist and require CameraService, Camera3Device, GraphicBuffer/BufferQueue, and camera HAL interface verification.",
+      "id": "finding-b56f157cd1d6",
+      "log_path": "logs/review/2026-08-04-20260804-113556-draft-polish-6b28b797-draft-polish.md",
+      "severity": "P2",
+      "source_paths": [
+        "draft-polish lane"
+      ],
+      "status": "open",
+      "summary": "Camera HAL3 Buffer draft lacks source material for Android 17 / android-17.0.0_r1 claims",
+      "type": "needs_source_material",
+      "updated_at": "2026-08-04T11:37:47.414876+08:00"
     }
   ],
   "schema_version": 1
