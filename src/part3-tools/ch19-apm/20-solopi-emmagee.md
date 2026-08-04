@@ -4,25 +4,35 @@ deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-25
 chapter: 19
 section: 19.20
-status: finalized
+status: ready-for-review
 drafted_date: 2026-04-24
 drafted_by: codex
 applicable_versions: SoloPi：源码编译基线 minSdk 18 / compileSdk 29 / targetSdk 29，Android 12-17 需逐机验证；Emmagee：历史工具，README 明确声明 Android 7.0 起不支持
-last_verified: 2026-07-03
-last_verified_against: SoloPi README + src/build.gradle + src/app/build.gradle + GitHub release v0.12.0；Emmagee README + GitHub release V2.5.1；Android 13 Restricted Settings behavior changes
+last_verified: 2026-08-04
+last_verified_against: SoloPi README + src/build.gradle + src/portal/build.gradle + GitHub release v0.12.0；Emmagee README + GitHub release V2.5.1；Android 17 behavior/source references；Android 13 Restricted Settings behavior changes
 confidence: medium
 tags: 
 related_chapters: 
 sources: 
 - type: official
-path: https://developer.android.com/about/versions/13/behavior-changes-all#restricted-settings
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+  path: https://github.com/alipay/SoloPi/blob/35a4a3e3fe02deeb89df35c82dc3ba03a33f4f13/README.md
+- type: source
+  path: https://github.com/alipay/SoloPi/blob/35a4a3e3fe02deeb89df35c82dc3ba03a33f4f13/src/build.gradle
+- type: source
+  path: https://github.com/alipay/SoloPi/blob/35a4a3e3fe02deeb89df35c82dc3ba03a33f4f13/src/portal/build.gradle
+- type: official
+  path: https://github.com/NetEase/Emmagee/blob/6a382dffe74b5be6d2de78cb0c640cc67e9ce650/README.md
+- type: official
+  path: https://developer.android.com/about/versions/17/behavior-changes-17
+- type: official
+  path: https://developer.android.com/about/versions/13/behavior-changes-all#restricted-settings
+pipeline_stage: ready-for-review
+task6_state: needs-review
 reviewed_by: openclaw-task6
 reviewed_date: 2026-07-03
 task6_result: pass-light-edit
 last_task6_audit: 2026-06-17
-task9_state: reviewed
+task9_state: needs-review
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-04-26T15:45:22+08:00
@@ -44,12 +54,13 @@ task9_p2_issues: 0
 p0: 0
 p1: 0
 p2: 0
-task9_review_notes: 2026-07-03 12 Task9 deep-review: pass-tech-review。Task6 复审后复核 SoloPi README/build.gradle/release 与 Emmagee README/release，版本边界仍限定 Android 17 以内；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。
+task9_review_notes: "2026-07-03 12 Task9 deep-review: pass-tech-review。Task6 复审后复核 SoloPi README/build.gradle/release 与 Emmagee README/release，版本边界仍限定 Android 17 以内；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。2026-08-04 rework 修复 YAML 引用结构和正文待验证标记，退回 ready-for-review 等待复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-18
+last_rework_at: 2026-08-04T17:37:52+08:00
+last_rework_run_id: 20260804-173752-rework-5ee2b1f4
+last_rework_log: logs/rework/2026-08-04-20260804-173752-rework-5ee2b1f4-rework.md
 ---
--
-
 
 # SoloPi 与 Emmagee
 
