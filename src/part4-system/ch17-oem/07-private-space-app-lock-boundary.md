@@ -1,15 +1,26 @@
 ---
 title: "Private Space 与应用锁的兼容性边界"
 chapter: "17.7"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-25"
-applicable_versions: "Android 15 (API 35) - Android 17 (API 37) QPR2；Android 17 应用锁待官方确认"
-last_verified: "2026-05-25"
-last_verified_against: "AOSP/Android Developers documentation, Android 16 QPR2 release notes"
-confidence: medium
+applicable_versions: "Android 15 (API 35) - Android 17 (API 37) QPR2；手持设备通用逐应用锁无公开 SDK，AAOS App Lock 另行说明"
+last_verified: "2026-08-04"
+last_verified_against: "AOSP android-17.0.0_r1 framework sources; Android Developers Android 15/17 documentation; AOSP Android 16 QPR2 release notes; AAOS App Lock documentation"
+confidence: medium-high
+reviewed_date: "2026-08-04"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: finalized
+last_review_finalize_at: "2026-08-04T12:08:06+08:00"
+last_review_finalize_run_id: "20260804-120806-549a8bbc"
 sources:
   - type: official
     path: "https://source.android.com/docs/security/features/private-space"
+  - type: official
+    path: "https://source.android.com/docs/whatsnew/android-17-release"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/summary"
   - type: official
     path: "https://source.android.com/docs/whatsnew/android-16-release"
   - type: official
@@ -20,6 +31,12 @@ sources:
     path: "https://developer.android.com/reference/android/content/pm/LauncherApps"
   - type: official
     path: "https://developer.android.com/reference/android/content/pm/LauncherUserInfo"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/UserManager"
+  - type: official
+    path: "https://developer.android.com/identity/sign-in/biometric-auth"
+  - type: official
+    path: "https://source.android.com/docs/automotive/unbundled_apps/app-lock"
   - type: blog
     path: "intake/daily-info/2026-05-25.md"
 tags: [private-space, app-lock, user-profile, launcher, notification, media-access]
@@ -44,7 +61,7 @@ gap_source: "官方文档/每日信息/素材驱动"
 梳理用户解锁、从 Launcher 启动、从通知进入、从分享入口进入时，Activity 启动、冷启动归因、最近任务和进程保活的观察点。
 
 ### 🔹 通知、媒体访问和 URI 授权边界
-覆盖锁定状态下通知内容展示、Photo Picker/MediaStore 结果、DocumentsUI 回退、一次性 URI 授权失效和用户中断导致的稳定性问题。
+覆盖锁定状态下通知内容展示、Photo Picker/MediaStore 结果、DocumentsUI 回退、URI 授权与来源 provider 可用性变化，以及用户中断导致的稳定性问题。
 
 ### 🔹 OEM 差异与兼容性探测
 整理小米、三星等应用锁方案与 AOSP Private Space 的能力差异，用能力探测、失败码、版本/品牌维度统计替代厂商硬编码。
