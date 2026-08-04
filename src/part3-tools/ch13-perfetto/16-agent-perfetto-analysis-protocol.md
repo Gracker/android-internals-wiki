@@ -2,25 +2,30 @@
 title: "Agent 辅助 Perfetto 分析协议"
 chapter: "13.16"
 section: "13.16"
-status: "finalized"
+status: "ready-for-review"
 drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-06-18"
-last_verified_against: "android/skills profilers commit 4328beaf36f00265db107eb316f9add6b8764144; Perfetto stdlib docs (android.frames.*, android.startup.startups, sched.with_context, linux.cpu.frequency, linux.cpu.utilization.*); Perfetto SQL table docs (thread_state, cpu_freq); Android system tracing docs"
+last_verified: "2026-08-04"
+last_verified_against: "android/skills profilers commit 4328beaf36f00265db107eb316f9add6b8764144; Perfetto official AI skill docs/release notes v57.1-v57.2; Perfetto stdlib docs (android.frames.*, android.startup.startups, android.binder, slices.with_context, slices.time_in_state, slices.cpu_time, linux.cpu.frequency, linux.cpu.utilization.*); Perfetto SQL table docs (slice, thread_state, sched, cpu_freq); Android system tracing docs | 2026-08-04 rework: removed stale sched.with_context metadata marker and added inline source markers for thin-source heuristic"
+last_rework_at: "2026-08-04T13:38:46+08:00"
+last_rework_run_id: "20260804-133512-rework-39378b94"
+last_rework_log: "logs/rework/2026-08-04-20260804-133512-rework-39378b94-rework.md"
+rework_result: "ready-for-review"
+rework_notes: "2026-08-04 rework：解决 pending-verification-marker 与 thin-source-marking。frontmatter 去除 last_verified_against 中失效的 sched.with_context 标记，补齐 Perfetto official AI skill、release notes、stdlib/testing 来源；正文新增 3 处 [来源:] 内联来源标记，保持 Android 17 / android-17.0.0_r1 边界并回退到 ready-for-review 等待 Task6/Task9 复审。"
 confidence: medium
 tags: [perfetto, trace-analysis, agent-workflow, performance-tools]
 related_chapters: ["13.2", "13.10", "13.15", "15.6", "26.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材+官方仓库"
-pipeline_stage: ready-to-publish
+pipeline_stage: ready-for-review
 task2b_result: fixed-lite
-task6_state: reviewed
+task6_state: needs-review
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: "pass-light-edit"
 last_task6_at: "2026-06-19T04:25:46+08:00"
-task9_state: reviewed
+task9_state: needs-review
 task9_result: auto-fixed
 task2b_state: fixed
 last_task2b_lite_at: "2026-05-28"
@@ -36,6 +41,16 @@ sources:
     path: "https://perfetto.dev/docs/quickstart/trace-analysis"
   - type: official
     path: "https://perfetto.dev/docs/analysis/sql-tables"
+  - type: official
+    path: "https://perfetto.dev/docs/analysis/stdlib-docs"
+  - type: official
+    path: "https://perfetto.dev/docs/getting-started/using-ai"
+  - type: official
+    path: "https://github.com/google/perfetto/releases/tag/v57.1"
+  - type: official
+    path: "https://github.com/google/perfetto/releases/tag/v57.2"
+  - type: official
+    path: "https://perfetto.dev/docs/contributing/testing"
   - type: research
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/android-skills-profilers/2026-05-16-android-skills-profilers-深度调研.md"
   - type: material
@@ -110,11 +125,11 @@ last_deepseek_cn_review_at: 2026-07-11
 
 <!-- outline-end -->
 
-Agent 辅助 Perfetto 分析的目标是让 trace 调查可复查。人工查看 Perfetto UI 很快，但结论容易散落在截图、口头判断和临时 SQL 里；换一份 trace 或换一名分析者后，很难重放同一条推理路径。本节把 `android/skills/profilers` 固定提交中的约束整理为 AIW 协议，并纳入 Perfetto 官方 Agent Skill 的主机侧工具边界：输入完整、SQL 经执行验证、证据与假设分开、报告注明版本和采集缺口。
+Agent 辅助 Perfetto 分析的目标是让 trace 调查可复查。人工查看 Perfetto UI 很快，但结论容易散落在截图、口头判断和临时 SQL 里；换一份 trace 或换一名分析者后，很难重放同一条推理路径。本节把 `android/skills/profilers` 固定提交中的约束整理为 AIW 协议，并纳入 Perfetto 官方 Agent Skill 的主机侧工具边界：输入完整、SQL 经执行验证、证据与假设分开、报告注明版本和采集缺口。[来源: android/skills profilers commit 4328beaf；Perfetto Using AI]
 
 在 13.2 节 Trace 抓取、13.10 节 Perfetto SQL 常用模板、13.15 节 BufferQueue 阻塞案例的基础上，本节聚焦 Agent 调查流程：怎样提问、怎样取证、怎样避免过早下结论。
 
-本章以 Android 17 / API 37、`android-17.0.0_r1` 为平台源码锚点；该标签在 `platform/external/perfetto` 对应提交 `ece66975738007dd0978b911d8a2077e49b8f31e`。涉及调度和内核等待时，以 `android17-6.18-2026-06_r6` 为内核锚点。主机侧 SQL 在 Perfetto v57.2、提交 `da1d152cff27890903d158fe96751de3aab883cc` 的 Trace Processor 上验证，并覆盖为 Android 17 标签中的标准库。Perfetto v57.1 引入官方 Agent Skill，v57.2 修复 Trace Processor 解析带内嵌 proto descriptor 的部分 trace 时出现的兼容问题。
+本章以 Android 17 / API 37、`android-17.0.0_r1` 为平台源码锚点；该标签在 `platform/external/perfetto` 对应提交 `ece66975738007dd0978b911d8a2077e49b8f31e`。涉及调度和内核等待时，以 `android17-6.18-2026-06_r6` 为内核锚点。主机侧 SQL 在 Perfetto v57.2、提交 `da1d152cff27890903d158fe96751de3aab883cc` 的 Trace Processor 上验证，并覆盖为 Android 17 标签中的标准库。Perfetto v57.1 引入官方 Agent Skill，v57.2 修复 Trace Processor 解析带内嵌 proto descriptor 的部分 trace 时出现的兼容问题。[来源: Android 17 external/perfetto 标签；Perfetto v57.1/v57.2 release notes]
 
 Android 17 标签是 2026 年 4 月的固定源码快照，包含 Perfetto v54.0 之后的提交，不能写成“Android 17 等于 Perfetto v54”。主机上的新 Trace Processor 读取旧设备 trace 时，只能解析 trace 已经采到的数据；它可以改变表结构、标准库和分析能力，不能补出设备当时未记录的 FrameTimeline、ftrace、调用栈或厂商事件。
 
@@ -179,7 +194,7 @@ scratchpad 分成三张表：
 
 Perfetto SQL 即使语法正确，也可能因为表、字段、模块版本或时间区间口径错误而给出误导性结果。`perfetto-sql` 对 Agent 的约束是：固定 Trace Processor 和 SQL 包，检查当前表结构，再编写查询并对真实输出做语义校验。
 
-Android 17 的固定源码快照提供三类入口。`slice`、`thread_state`、`thread`、`process` 等基础表由 Trace Processor 预置；`android.startup.startups`、`slices.time_in_state` 等标准库模块要通过 `INCLUDE PERFETTO MODULE` 加载；旧版基于 trace 的 metric 由 metric 运行入口生成，不能因为加载同名标准库模块就假定 metric 表已经存在。
+Android 17 的固定源码快照提供三类入口。`slice`、`thread_state`、`thread`、`process` 等基础表由 Trace Processor 预置；`android.startup.startups`、`slices.time_in_state` 等标准库模块要通过 `INCLUDE PERFETTO MODULE` 加载；旧版基于 trace 的 metric 由 metric 运行入口生成，不能因为加载同名标准库模块就假定 metric 表已经存在。[来源: Perfetto Trace Processor；PerfettoSQL standard library；SQL tables]
 
 | 规则 | 操作要求 | 防止的问题 |
 |---|---|---|
