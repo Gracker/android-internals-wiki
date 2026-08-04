@@ -2,13 +2,13 @@
 title: "性能测试最佳实践"
 chapter: "15.6"
 section: "15.6"
-status: "finalized"
+status: "ready-for-review"
 task6_reviewed_by: openclaw-task6
 drafted_date: "2026-04-04"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-07-30"
-last_verified_against: "AOSP android-17.0.0_r1 ThermalManagerService, DisplayModeDirector and ART Service; AndroidX Benchmark 1.4.1 stable, current Macrobenchmark, Microbenchmark and CI documentation; current Firebase Performance Monitoring documentation"
-confidence: high
+last_verified: "2026-08-04"
+last_verified_against: "AOSP android-17.0.0_r1 ThermalManagerService, DisplayModeDirector and ART Service; AndroidX Benchmark 1.4.1 stable, current Macrobenchmark, Microbenchmark and CI documentation; current Firebase Performance Monitoring documentation | 2026-08-04 rework: cleared pending-verification/thin-source quality flags by converting generic verification marks to source-anchored statements and routing the chapter back to review"
+confidence: medium-high
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/benchmarking/benchmarking-overview"
@@ -58,13 +58,13 @@ related_chapters:
   - "8.3"
   - "13.2"
   - "5.5"
-pipeline_stage: "ready-to-publish"
-task6_state: reviewed
+pipeline_stage: "rework-applied-awaiting-review"
+task6_state: rework-applied
 reviewed_by: openclaw-task6
 reviewed_date: 2026-07-09
 last_task6_audit: 2026-07-09
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: "rework-applied"
 task2b_state: fixed
 task2b_result: fixed-lite
 last_task2b_lite_at: "2026-06-18"
@@ -92,6 +92,11 @@ verifier_checked: 2026-07-09
 task6_reviewed_date: 2026-07-09
 updated_by: "openclaw-task9"
 updated_date: "2026-07-10"
+last_rework_at: "2026-08-04T21:35:51+08:00"
+last_rework_run_id: "20260804-213514-rework-b52e6e4a"
+last_rework_log: "logs/rework/2026-08-04-20260804-213514-rework-b52e6e4a-rework.md"
+rework_by: "aiw-polish-rework"
+rework_notes: "2026-08-04 rework：处理 pending-verification-marker/thin-source-marking。全文未发现待验证/TODO/needs-rework 正文残留；本轮将 7 处泛化 [已验证] 标记改为可追踪 [来源:] 标记并绑定 frontmatter sources，保持 Android 17 / android-17.0.0_r1 边界，章节状态回流 ready-for-review 等待 Task6/Task9 复核。"
 ---
 
 # 性能测试最佳实践
@@ -167,7 +172,7 @@ CI 回归闸门需要专用物理设备。Android 官方不建议用模拟器做
 
 系统镜像使用 user 或经过验证的 userdebug 构建。eng 构建、debuggable 目标包、代码覆盖率和 method tracing 都会改变执行路径。Macrobenchmark 目标应用应接近 release：`debuggable=false`、`profileable`、与发布一致的 R8/资源压缩配置，并包含满足当前 Benchmark 要求的 ProfileInstaller。
 
-[已验证：当前 Android Benchmark CI 与 Macrobenchmark 官方文档]
+[来源：Android Benchmark CI 与 Macrobenchmark 官方文档；见 frontmatter sources]
 
 ### 存储与数据状态
 
@@ -198,7 +203,7 @@ CI 回归闸门需要专用物理设备。Android 官方不建议用模拟器做
 
 Android 17 的 `cmd thermalservice override-status` 只覆盖 `ThermalManagerService` 向 framework 暴露的 thermal status。它不会关闭 Thermal HAL、kernel cpufreq/GPU 降频或厂商 thermal engine。该命令适合测试应用的 thermal callback，不能用来制造“未降频”基准。
 
-[已验证：AOSP android-17.0.0_r1 `frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java`]
+[来源：AOSP android-17.0.0_r1 `frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java`]
 
 ### 峰值路径与热稳定态分开
 
@@ -232,7 +237,7 @@ Benchmark 会把低电量设备标为 `LOW-BATTERY` 错误。CI 闸门不应抑�
 
 亮度、自动亮度、主题和显示内容也要保持一致。OLED 上切换深浅主题会改变显示功耗，同时也改变被测 UI；不能为了散热把生产场景改成另一套主题。测动画或转场时保留发布配置的 animation scale，关闭系统动画会改变 workload。
 
-[已验证：AOSP android-17.0.0_r1 `frameworks/base/services/core/java/com/android/server/display/mode/DisplayModeDirector.java`]
+[来源：AOSP android-17.0.0_r1 `frameworks/base/services/core/java/com/android/server/display/mode/DisplayModeDirector.java`]
 
 ### 网络：本地路径与网络路径使用不同方案
 
@@ -287,7 +292,7 @@ CI 可通过 instrumentation argument 启用：
 
 Android 17 中，`PackageManagerShellCommand` 只保留 ART Service 命令的兼容分发列表；处理代码在 `art/libartservice/.../ArtShellCommand.java`，调度与执行由 `BackgroundDexoptJob*` 和 `ArtManagerLocal` 完成。不要依赖旧版 `BackgroundDexOptService` 路径，也不要用无法确认权限和恢复行为的 `setprop` 代替这些命令。
 
-[已验证：AOSP android-17.0.0_r1 `PackageManagerShellCommand.java`、`ArtShellCommand.java`、`BackgroundDexoptJob.java`]
+[来源：AOSP android-17.0.0_r1 `PackageManagerShellCommand.java`、`ArtShellCommand.java`、`BackgroundDexoptJob.java`]
 
 ### 锁频只适用于特定 Microbenchmark
 
@@ -330,7 +335,7 @@ Microbenchmark 使用 `AndroidBenchmarkRunner`；其 runner 与 `IsolationActivi
 
 API 31+ 优先看 `frameOverrunMs`：正值表示错过 deadline，负值表示剩余预算。`frameDurationCpuMs` 只描述 UI 线程与 RenderThread 的 CPU 生产时长，不能覆盖 GPU 与 SurfaceFlinger 的完整路径。
 
-[已验证：当前 “Capture Macrobenchmark metrics” 官方文档]
+[来源：“Capture Macrobenchmark metrics” 官方文档；见 frontmatter sources]
 
 ### 中位数、尾部与指标方向
 
@@ -397,7 +402,7 @@ fun coldStartupWithRequiredBaselineProfile() {
 
 `Partial(Require, warmupIterations > 0)` 会先安装 Baseline Profile，再运行 warmup 并再次做 profile-guided 编译。若要单独量化 Baseline Profile 与运行时 profile 的作用，使用不同测试分别配置，避免把两种 profile 混在一个结果里。
 
-[已验证：AndroidX `CompilationMode.kt` 与 Benchmark 1.4.1 官方 API]
+[来源：AndroidX `CompilationMode.kt` 与 Benchmark 1.4.1 官方 API；见 frontmatter sources]
 
 ### 启动模式只控制进程与 Activity 状态
 
@@ -568,7 +573,7 @@ FPM 的服务端采样和聚合不由客户端按 benchmark 实验协议精确�
 
 当前 FPM 文档把兼容 SDK 的处理描述为 near real-time，数据通常在采集后数分钟显示。SDK 首次检测、批量上传、离线设备和平台故障仍会造成额外延迟。发布报警要监控数据新鲜度与覆盖率，不能假设每条事件同步到达。
 
-[已验证：当前 Firebase Performance Monitoring custom code trace 与 troubleshooting 文档]
+[来源：Firebase Performance Monitoring custom code trace 与 troubleshooting 文档；见 frontmatter sources]
 
 ### 与其他数据源的分工
 
