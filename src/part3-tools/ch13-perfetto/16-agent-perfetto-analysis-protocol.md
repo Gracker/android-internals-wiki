@@ -2,11 +2,11 @@
 title: "Agent 辅助 Perfetto 分析协议"
 chapter: "13.16"
 section: "13.16"
-status: "ready-for-review"
+status: "finalized"
 drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-08-04"
-last_verified_against: "android/skills profilers commit 4328beaf36f00265db107eb316f9add6b8764144; Perfetto official AI skill docs/release notes v57.1-v57.2; Perfetto stdlib docs (android.frames.*, android.startup.startups, android.binder, slices.with_context, slices.time_in_state, slices.cpu_time, linux.cpu.frequency, linux.cpu.utilization.*); Perfetto SQL table docs (slice, thread_state, sched, cpu_freq); Android system tracing docs | 2026-08-04 rework: removed stale sched.with_context metadata marker and added inline source markers for thin-source heuristic"
+last_verified_against: "android/skills profilers commit 4328beaf36f00265db107eb316f9add6b8764144; Perfetto official AI skill docs/release notes v57.1-v57.2; Android 17 Perfetto stdlib docs/source (android.frames.*, android.startup.startups, android.binder, slices.with_context, slices.time_in_state, slices.cpu_time, sched.with_context, linux.cpu.frequency, linux.cpu.utilization.*); Perfetto SQL table docs (slice, thread_state, sched, cpu_freq); Android system tracing docs | 2026-08-04 finalize review: corrected sched.with_context availability boundary and verified official AI skill/release-note anchors"
 last_rework_at: "2026-08-04T13:38:46+08:00"
 last_rework_run_id: "20260804-133512-rework-39378b94"
 last_rework_log: "logs/rework/2026-08-04-20260804-133512-rework-39378b94-rework.md"
@@ -18,14 +18,14 @@ related_chapters: ["13.2", "13.10", "13.15", "15.6", "26.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材+官方仓库"
-pipeline_stage: ready-for-review
+pipeline_stage: finalized
 task2b_result: fixed-lite
-task6_state: needs-review
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-28"
+task6_state: reviewed
+reviewed_by: hermes-aiw-review-finalize-apply
+reviewed_date: "2026-08-04"
 task6_result: "pass-light-edit"
 last_task6_at: "2026-06-19T04:25:46+08:00"
-task9_state: needs-review
+task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
 last_task2b_lite_at: "2026-05-28"
@@ -69,8 +69,10 @@ task9_review_notes: "2026-05-28 Task9 deep-review: auto-fixed。P0 1：修正 Pe
 p0: 0
 p1: 0
 p2: 0
-finalized_by: "openclaw-task9-auto-promote"
-finalized_date: "2026-06-19"
+finalized_by: "hermes-aiw-review-finalize-apply"
+finalized_date: "2026-08-04"
+last_review_finalize_at: "2026-08-04T14:07:05+08:00"
+last_review_finalize_run_id: "20260804-140516-9d7a366c"
 last_task9_audit: "2026-07-10"
 task6_reviewed_date: "2026-06-19"
 task6_review_notes: "2026-06-19 Task6 revisiting-review: pass-light-edit。Task9 idle-audit auto-fix（cpu_freq linux.cpu.frequency cpu_frequency_counters 修正）已确认干净。L1 禁用词/高频词/翻译腔/元叙述 0 命中。L2 可读性通过（两处模板引导语属于代码块用途句，不算元叙述）。outline 8/8 覆盖。L1-L2 小修 0 处，无 B 类问题。task9_result=auto-fixed，待 Task9 最终确认。"
@@ -200,7 +202,7 @@ Android 17 的固定源码快照提供三类入口。`slice`、`thread_state`、
 |---|---|---|
 | 固定执行环境 | 保存 Trace Processor `--version` 输出、二进制散列值、标准库提交和完整命令；使用官方 skill 时也要记录其包装脚本与下载到的二进制 | 包装脚本或自动下载结果变化后无法重放 |
 | 表结构检索 | 对实际二进制检查表和列，并对固定源码中的模块文件复核公开对象 | 根据记忆编造字段，或混用不同版本的表结构 |
-| 标准库优先 | Android 17 可用 `android.startup.startups`、`android.frames.timeline`、`android.frames.per_frame_metrics`、`android.binder`、`slices.with_context`、`slices.time_in_state`、`slices.cpu_time`、`linux.cpu.frequency`、`linux.cpu.utilization.process`；`sched.with_context` 并不存在 | 手写复杂关联时漏掉上下文或边界 |
+| 标准库优先 | Android 17 可用 `android.startup.startups`、`android.frames.timeline`、`android.frames.per_frame_metrics`、`android.binder`、`slices.with_context`、`slices.time_in_state`、`slices.cpu_time`、`sched.with_context`、`linux.cpu.frequency`、`linux.cpu.utilization.process`；其中 `sched.with_context` 公开的是 `sched_with_thread_process` 这类调度 slice 上下文视图，不等同于 `thread_state` 的等待状态分布 | 手写复杂关联时漏掉上下文或边界 |
 | CPU 频率口径 | `linux.cpu.frequency` 生成 `cpu_frequency_counters` 时间区间，`freq` 单位为 kHz；`cpu_freq` 是 CPU 与支持频点的维度表 | 把频点维度当成随时间变化的计数器，或把记录的 cpufreq 状态当成硬件瞬时有效频率 |
 | `utid/upid` | 线程和进程 join 使用 trace 内唯一 ID | `tid/pid` 复用导致错配 |
 | `dur = -1` | 统计时用 `trace_end() - ts` 替代未闭合 duration | 总耗时和 overlap 计算错误 |
