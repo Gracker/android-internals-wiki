@@ -335,7 +335,7 @@ Android 17 源码锚点是 `SurfaceFlinger.cpp`、CompositionEngine 的 `Output.
 
 ### 现场与公开结果
 
-Android Developers 的 Netmarble 案例介绍了《Game of Thrones: Kingsroad》在长时间高负载后出现热限制和帧率波动。团队对画质项逐项测量，发现动态分辨率比阴影、纹理等选项更适合承担主要降载；随后根据 ADPF Thermal API 同时调整分辨率和目标帧率。
+Android Developers 的 Netmarble 案例介绍了《Game of Thrones: Kingsroad》在长时间高负载后出现热限制和帧率波动。团队对画质项逐项测量，发现动态分辨率比阴影、纹理等选项更适合负责主要降载；随后根据 ADPF Thermal API 同时调整分辨率和目标帧率。
 
 官方案例披露的结果为：
 
@@ -352,7 +352,7 @@ Android Developers 的 Netmarble 案例介绍了《Game of Thrones: Kingsroad》
 
 - 相同内容和输入下，frame time 随会话时间变差；
 - thermal status/headroom 或 cooling state 同期变化；
-- CPU/GPU 可用容量或频率上限收紧；
+- CPU/GPU 可用容量或频率上限限制加强；
 - 内存泄漏、后台负载、亮度和充电条件已记录；
 - 冷却或降低工作量后，持续 frame time 恢复。
 

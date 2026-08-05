@@ -164,7 +164,7 @@ trace 之前缺少场景定义，trace 之后通常只会得到一幅很宽的�
 
 Android 12+ 的 `android.surfaceflinger.frametimeline` 数据源会生成 Expected 和 Actual 时间线。Expected 描述调度期望；Actual 描述应用或 SurfaceFlinger 完成与呈现的记录。
 
-Perfetto UI 中的颜色承担不同含义：
+Perfetto UI 中的颜色负责不同含义：
 
 - 红色表示该进程造成了 jank。
 - App 轨道上的黄色表示该 SurfaceFrame 受到 SurfaceFlinger 侧 jank 影响。
@@ -241,7 +241,7 @@ adb shell setprop bionic.linker.16kb.app_compat.enabled fatal
 adb shell setprop pm.16kb.app_compat.disabled true
 ```
 
-这两个属性会收紧兼容行为，适合让未正确适配的 Native 依赖尽早失败；它们不属于线上优化参数。
+这两个属性会限制加强兼容行为，适合让未正确适配的 Native 依赖尽早失败；它们不属于线上优化参数。
 
 导航：`8.1`、`8.2`、`8.3`、`15.6`。
 

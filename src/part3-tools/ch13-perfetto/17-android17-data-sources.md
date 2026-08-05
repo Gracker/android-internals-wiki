@@ -522,7 +522,7 @@ AOSP 用户态源码能证明 `linux.perf` producer 和配置路径存在，不�
 - **空闲开销**：trace session 不开时没有 Perfetto packet 写入；FrameTimeline 自身的帧状态维护仍属于 SurfaceFlinger 正常路径。
 - **FrameTimeline packet**：有效 prediction 和 actual timeline 都用 start/end packet 表示；SurfaceFrame、DisplayFrame、skipped frame 数量会共同放大数据量。
 - **FrameTracer packet**：事件量随活跃 layer、buffer 周转和 fence 数量增长；未 signal fence 还会占用 pending 容器。
-- **Jank listener**：它与 Perfetto data source 是两条路径。没有 listener 时快速返回，存在 listener 时仍要承担异步排队与批量 Binder 回调成本。
+- **Jank listener**：它与 Perfetto data source 是两条路径。没有 listener 时快速返回，存在 listener 时仍要负责异步排队与批量 Binder 回调成本。
 
 开销结论必须来自目标设备的 A/B trace：固定复现场景，比较关闭/开启数据源时的 CPU time、丢帧、Perfetto buffer loss、`traced_perf` RSS/Swap 和 skipped-sample stats。源码只能说明成本随哪些变量增长。
 

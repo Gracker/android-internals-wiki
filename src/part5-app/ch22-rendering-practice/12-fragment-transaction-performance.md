@@ -444,6 +444,6 @@ Navigation 不适合用“绕过 FragmentTransaction”来优化。更有效的�
 
 ## 小结
 
-Fragment 页面切换的性能判断点有三条：`commit()` 只是排队，`execPendingActions()` 才承担事务执行成本；Fragment 生命周期推进通常发生在普通主线程消息里，可能在 `doFrame` 之前拖慢下一帧；`setReorderingAllowed(true)` 通过合并和重排减少冗余操作，但会改变生命周期顺序假设。
+Fragment 页面切换的性能判断点有三条：`commit()` 只是排队，`execPendingActions()` 才负责事务执行成本；Fragment 生命周期推进通常发生在普通主线程消息里，可能在 `doFrame` 之前拖慢下一帧；`setReorderingAllowed(true)` 通过合并和重排减少冗余操作，但会改变生命周期顺序假设。
 
 排查时从点击后的主线程消息开始，顺着 Fragment 生命周期、首帧 traversal、RenderThread 和 Android 12+ FrameTimeline 往后看。优化也按这个顺序做：少创建、晚创建、批量提交、首帧后再补齐。能用结构拆分解决的问题，不要交给 `commitNow()` 或线程优先级处理。

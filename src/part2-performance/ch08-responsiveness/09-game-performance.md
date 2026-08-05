@@ -357,7 +357,7 @@ Hint Session 绑定 Linux TID。Java/Kotlin 中应使用 `Process.myTid()` 获�
 
 - 把每帧关键工作放到生命周期稳定的 game/render worker，并绑定这些 TID。
 - API 34 及以上在线程集合变化时调用 `setThreads()`，更新 session 的完整线程列表。
-- API 33 在线程集合频繁变化的场景中避免反复关闭和重建 session；可把提示放在稳定的帧循环线程，协程池承担非关键吞吐任务。
+- API 33 在线程集合频繁变化的场景中避免反复关闭和重建 session；可把提示放在稳定的帧循环线程，协程池负责非关键吞吐任务。
 
 `setThreads()` 适合线程池成员发生结构变化时调用，不适合每次协程恢复都更新。NDK 头文件也说明 Hint Session 方法不是线程安全的，调用侧应串行化 session 更新。
 

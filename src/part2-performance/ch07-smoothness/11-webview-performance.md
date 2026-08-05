@@ -505,7 +505,7 @@ WebView 适合页面必须嵌入 App 布局、需要受控 bridge、定制输入
 | UI 嵌入 | View hierarchy 内 | 浏览器管理的页面 UI |
 | JS/native 交互 | 可提供受控 bridge | 能力更窄 |
 | 浏览器账号与数据 | App 独立 WebView data/profile | 取决于浏览器 |
-| 生命周期与内存 | App 承担实例和 renderer 管理 | 浏览器承担更多管理 |
+| 生命周期与内存 | App 负责实例和 renderer 管理 | 浏览器负责更多管理 |
 | 调试与渲染控制 | 更细 | 较少 |
 | 安全边界 | App 必须严格限制内容与 bridge | 浏览器导航模型更完整 |
 

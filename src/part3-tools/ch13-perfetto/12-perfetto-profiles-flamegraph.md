@@ -273,7 +273,7 @@ Perfetto v53 还支持把调用栈附到 TrackEvent slice 或 instant event。�
 
 可读的函数名依赖采集产物与构建产物匹配。native 栈需要正确的 ELF、Build ID 和展开信息；Java/Kotlin 混淆栈需要同一 APK 构建生成的 `mapping.txt`。路径中存在一个同名 `.so` 还不够，Build ID 不匹配时不能用于证明线上地址对应某个函数。
 
-编译器内联会让一个机器码地址对应多层源码调用关系。Perfetto v53 的 UI 能标出 inline frame，分析时应保留这些层级：外层调用者解释业务入口，内联函数解释真正执行的源码位置。缺少 DWARF inline 信息时，“火焰图没有某个函数名”不能推出该函数未执行。
+编译器内联会让一个机器码地址对应多层源码调用关系。Perfetto v53 的 UI 能标出 inline frame，分析时应保留这些层级：外层调用者解释业务入口，内联函数解释执行的源码位置。缺少 DWARF inline 信息时，“火焰图没有某个函数名”不能推出该函数未执行。
 
 对已经录好的原生 Perfetto trace，可分别生成符号包和 R8 去混淆包，再利用 protobuf trace 的可拼接性得到 UI 可直接打开的文件。执行前由构建流水线把该 APK 对应的 `mapping.txt` 绝对路径写入 `R8_MAPPING_FILE`。下面的命令沿用 Android 构建输出目录，并将系统设置包与它的 R8 映射绑定。
 
@@ -358,7 +358,7 @@ ORDER BY frame.ts;
 
 ## FrameTimeline、Binder 与 GC 的证据拼接
 
-Profile 与系统跟踪联合分析时，每类数据承担不同的证明责任：
+Profile 与系统跟踪联合分析时，每类数据负责不同的证明责任：
 
 - **FrameTimeline** 给出帧的实际区间、预期区间和 jank 分类。`perf_sample` 只能说明该区间内某线程被采中时的调用路径。
 - **Binder** 的 slice 与 flow 用于连接客户端等待和服务端执行。客户端线程 blocked 时不会产生用户态 CPU 样本；服务端线程的热点要在服务端 `utid` 上查找。

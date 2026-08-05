@@ -169,7 +169,7 @@ Android 17 源码中有几个容易被混用的常量：
 
 `VsyncSchedule::createTracker()` 在默认路径创建一个 20 项历史、至少 6 个样本才开始拟合的 `VSyncPredictor`，离群比例为 20%。Android 17 还有一条条件严格的单样本路径：只有 `use_last_vsync_predict` flag 打开、目标 display mode 带 VRR config、present fence 功能可用时，history 与 minimum samples 才会改为 1/1。
 
-因此，“Android 17 总是使用最后一次 VSync 预测”这个结论不成立。调试某台设备前，应在 `dumpsys SurfaceFlinger`、日志和对应产品 flag 中确认它走的是默认模型还是单样本模型。
+因此，“Android 17 总是使用末次 VSync 预测”这个结论不成立。调试某台设备前，应在 `dumpsys SurfaceFlinger`、日志和对应产品 flag 中确认它走的是默认模型还是单样本模型。
 
 ### 3.1 `validate()` 检查的是什么
 
@@ -189,7 +189,7 @@ Android 17 源码中有几个容易被混用的常量：
 timestamp(n) ≈ intercept + slope × sequence(n)
 ```
 
-这里 `slope` 表示模型估计的周期，`intercept` 表示相位。实现先对时间值做缩放以降低大整数参与运算时的精度风险，最后再恢复纳秒尺度。拟合完成后还会检查各样本与模型之间的误差，超出 20% 容差的模型不会直接采用。
+这里 `slope` 表示模型估计的周期，`intercept` 表示相位。实现先对时间值做缩放以降低大整数参与运算时的精度风险，最终再恢复纳秒尺度。拟合完成后还会检查各样本与模型之间的误差，超出 20% 容差的模型不会直接采用。
 
 单样本模式不会执行这组回归；它以最新有效 pulse 为锚点，并使用理想 period 预测。阅读 trace 时，要把“样本少”与“预测器失效”分开判断。
 

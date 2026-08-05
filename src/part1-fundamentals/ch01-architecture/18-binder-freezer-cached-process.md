@@ -104,7 +104,7 @@ Cached apps freezer 在“继续运行”和“杀掉回收”之间增加了一
 
 它节省的是 cached 进程的 CPU 与唤醒成本。内存压力到来时，`lmkd` 仍可杀掉这个进程；重新进入前台或接到生命周期工作时，系统也可以先解冻再继续执行。
 
-真正需要仔细处理的是 Binder。被冻结的线程无法处理 IPC：同步调用不能无限等待，`oneway` 事务也不能无限堆积。本章从 Android 17 framework 与 ACK 6.18 的源码把这条链路拆开。
+需要仔细处理的是 Binder。被冻结的线程无法处理 IPC：同步调用不能无限等待，`oneway` 事务也不能无限堆积。本章从 Android 17 framework 与 ACK 6.18 的源码把这条链路拆开。
 
 ## 1. 先把 freezer、Doze 和 LMK 分开
 
@@ -151,7 +151,7 @@ ActivityManagerService
 CachedAppOptimizer 执行 Binder freeze 与 cgroup freeze
 ```
 
-### 2.1 显式 CPU_TIME：当前确实需要执行
+### 2.1 显式 CPU_TIME：当前需要执行
 
 `android-17.0.0_r1` 的 `psc/OomAdjuster.java` 会为下列典型状态授予 `PROCESS_CAPABILITY_CPU_TIME`：
 
@@ -231,7 +231,7 @@ Android 17 的默认值来自：
 - 是否有 Binder outstanding transaction 导致重试。
 - 是否刚发生生命周期事件或文件锁保护。
 
-## 4. 真正冻结时，Binder 必须先于 cgroup
+## 4. 冻结时，Binder 必须先于 cgroup
 
 Android 17 的 `CachedAppOptimizer.freezeProcess()` 顺序很明确：
 

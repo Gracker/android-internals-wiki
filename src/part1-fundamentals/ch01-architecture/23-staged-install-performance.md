@@ -178,7 +178,7 @@ Staged Install 解决的是另一件事：某批更新不能在当前运行中�
 4. **APEX 提交与验证**：包含 APEX 时，向 apexd 提交 session，并继续检查 APEX 容器签名与包信息。
 5. **建立 checkpoint 并转为 ready**：支持 checkpoint 的设备调用 `StorageManager.startCheckpoint(2)`，随后按前述顺序更新 Package Installer 与 apexd 的状态。
 
-“pre-reboot verification”不能简化成“检查磁盘空间和签名”。它还承担并发 staged session、rollback、包重叠和 APEX 状态的一致性检查。
+“pre-reboot verification”不能简化成“检查磁盘空间和签名”。它还负责并发 staged session、rollback、包重叠和 APEX 状态的一致性检查。
 
 Developer Verification 位于 session 的通用验证路径中，发生在 staged 专用验证之前。Android 17 设备若启用了相应服务，并且当前安装适用该策略，staged session 同样必须通过它。
 

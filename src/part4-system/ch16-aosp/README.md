@@ -29,9 +29,9 @@
 ### Android World 与 MobileWorld 深度技术架构调研
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android World 与 MobileWorld 深度技术架构调研.md
 - 类型：DeepResearch 调研结果
-- 摘要：对 google-research/android_world 与 MobileWorld 的任务定义、环境架构、评测协议、ADB/无障碍控制链路和数据闭环做机制级对比，可作为端侧 GUI Agent 与手机自动化评测体系的外部参考。
+- 摘要：对 google-research/android_world 与 MobileWorld 的任务定义、环境架构、评测协议、ADB/无障碍控制路径和数据反馈流程做机制级对比，可作为端侧 GUI Agent 与手机自动化评测体系的外部参考。
 - 注入时间：2026-04-25
-- 价值：能补齐 AI × 手机/GUI Agent 在 Android 系统侧评测环境、动作空间与任务闭环的参考背景。
+- 价值：能补充 AI × 手机/GUI Agent 在 Android 系统侧评测环境、动作空间与任务验证流程的参考背景。
 
 ### Android 17 ResourcesManager 与 Configuration 变更分发机制
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-01-android-17-resourcesmanager-configuration-system.md
@@ -43,7 +43,7 @@
 ### Android Binder IPC 机制 — 从 Java 层到 Kernel Driver 源码分析
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-01-android-binder-ipc-mechanism-source-analysis.md
 - 类型：DeepResearch 调研结果
-- 摘要：完整梳理 Binder IPC 三层架构：Java 层 Binder/BinderProxy → JNI(android_util_Binder.cpp) → Native BpBinder/BBinder → IPCThreadState.talkWithDriver() → ioctl(BINDER_WRITE_READ)。详解 BC_/BR_ 命令协议、flat_binder_object 类型编码、Parcel 序列化、死亡通知机制、线程池管理。源码锚点 android-17.0.0_r1，可作为 Binder 全链路阅读导航。
+- 摘要：完整梳理 Binder IPC 三层架构：Java 层 Binder/BinderProxy → JNI(android_util_Binder.cpp) → Native BpBinder/BBinder → IPCThreadState.talkWithDriver() → ioctl(BINDER_WRITE_READ)。详解 BC_/BR_ 命令协议、flat_binder_object 类型编码、Parcel 序列化、死亡通知机制、线程池管理。源码锚点 android-17.0.0_r1，可作为 Binder 完整调用路径的阅读导航。
 - 注入时间：2026-06-03
 - 价值：为AOSP 性能优化章节提供端到端链路梳理和 Perfetto 可观测性方案参考
 ### ltrace 0.7.3 源码级工作原理与 Linux 动态链接器集成机制

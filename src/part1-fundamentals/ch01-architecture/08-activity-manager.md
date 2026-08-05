@@ -223,7 +223,7 @@ Android 不以“前台/后台”二分进程。AMS 会综合 Activity 可见性
 
 这里要分清两个概念：
 
-- `procState` 描述进程当前承担的工作，供调度、后台限制和权限判断使用；
+- `procState` 描述进程当前负责的工作，供调度、后台限制和权限判断使用；
 - `oom_score_adj` 是给内存回收使用的分数。值越大，通常越早成为回收候选。
 
 两者相关，但不是一张固定的一一映射表。同一个进程也可能同时承载 Activity、Service 和 Provider，最终重要性取决于所有依赖关系中最强的保护条件。
@@ -394,12 +394,12 @@ InputDispatcher.processAnrsLocked()
 - `Running` 很久：查长任务与热点代码；
 - `Runnable` 很久：查 CPU 饥饿和系统负载；
 - `Sleeping` 且在 Binder：沿 Binder reply 找服务端；
-- `Sleeping` 且在锁等待：找真正持锁线程；
+- `Sleeping` 且在锁等待：找持锁线程；
 - 主线程已经空闲：堆栈可能采得太晚，需回看 ANR 前的 trace。
 
 ### Broadcast ANR
 
-Android 17 中，AMS 创建前台与后台两套 `BroadcastConstants`。`ActivityManagerService` 给它们设置 10 秒和 60 秒基础超时，`BroadcastQueueImpl.dispatchReceivers()` 在真正向目标进程调度 Receiver 时启动 `BroadcastAnrTimer`。
+Android 17 中，AMS 创建前台与后台两套 `BroadcastConstants`。`ActivityManagerService` 给它们设置 10 秒和 60 秒基础超时，`BroadcastQueueImpl.dispatchReceivers()` 在向目标进程调度 Receiver 时启动 `BroadcastAnrTimer`。
 
 这意味着：
 
@@ -452,7 +452,7 @@ ActivityThread.handleCreateService()
 | Provider ready | 20 秒 | 调用方等待 Provider 可用超时，获取失败 |
 | 已连接远端 Provider 的部分异步调用 | 3 秒 | 特定 API 的远端结果等待；可通过 `appNotRespondingViaProvider()` 报告宿主无响应 |
 
-`ContentProviderHelper.processContentProviderPublishTimedOutLocked()` 会以“timeout publishing content providers”为原因移除进程；外部调用者在 ready 等待超时后可能只得到 `null`。真正的 Provider ANR 由 `ContentProviderHelper.appNotRespondingViaProvider()` 创建 `TimeoutRecord.forContentProvider()` 并交给 `AnrHelper`。
+`ContentProviderHelper.processContentProviderPublishTimedOutLocked()` 会以“timeout publishing content providers”为原因移除进程；外部调用者在 ready 等待超时后可能只得到 `null`。实际的 Provider ANR 由 `ContentProviderHelper.appNotRespondingViaProvider()` 创建 `TimeoutRecord.forContentProvider()` 并交给 `AnrHelper`。
 
 所以排查 Provider 卡顿时，先确认它发生在：
 
@@ -477,7 +477,7 @@ WHERE tag = 'am_anr'
 ORDER BY ts;
 ```
 
-拿到时刻后，回看超时前的线程状态和 Binder/锁依赖。ANR 发生后的堆栈可能已经恢复，只看最后一张堆栈容易错过真正的阻塞段。
+拿到时刻后，回看超时前的线程状态和 Binder/锁依赖。ANR 发生后的堆栈可能已经恢复，只看最末张堆栈容易错过实际的阻塞段。
 
 ---
 
@@ -537,7 +537,7 @@ RootWindowContainer
 | Android 11（API 30） | 后台拉起的 FGS 访问相机、麦克风、位置受到更严格限制 |
 | Android 12（API 31） | 后台启动 FGS 默认禁止，仅保留明确豁免 |
 | Android 13（API 33） | 用户可在 Active apps/FGS 管理界面查看并停止服务；通知权限与 FGS 通知展示分开处理 |
-| Android 14（API 34） | 目标版本要求声明 FGS type 和对应权限；while-in-use 权限检查收紧 |
+| Android 14（API 34） | 目标版本要求声明 FGS type 和对应权限；while-in-use 权限检查限制加强 |
 | Android 15（API 35） | `dataSync` 与 `mediaProcessing` 各自共享每 24 小时 6 小时后台额度，并提供 `Service.onTimeout()` |
 | Android 16（API 36） | 与 FGS 并发执行的 Job 也计入 JobScheduler runtime quota |
 | Android 17（API 37） | 后台音频交互增加生命周期与 FGS/WIU 约束 |
@@ -629,7 +629,7 @@ Android 14 起，应用处于 cached state 时，系统可以把 context-registe
 
 - “广播发送后很久才进入 `onReceive()`”可能是设计内的 cached 排队，不一定是 AMS 卡住；
 - manifest Receiver 仍可能触发进程启动，启动风暴要结合隐式广播限制和具体 action 判断；
-- 真正的 Receiver ANR 计时从 `BroadcastQueueImpl` 调度目标 Receiver 时开始，不从广播发送时开始。
+- 实际的 Receiver ANR 计时从 `BroadcastQueueImpl` 调度目标 Receiver 时开始，不从广播发送时开始。
 
 ---
 
@@ -659,7 +659,7 @@ Android 14 起，应用处于 cached state 时，系统可以把 context-registe
 2. 对齐 `am_kill`、`am_proc_died`、lmkd 日志和 PID 生命周期；
 3. 查看死亡前 adj、procState、RSS、swap 与系统内存压力；
 4. 区分 AMS 主动清理、lmkd、Crash、ANR 后退出、用户停止和 Android 17 MemoryLimiter；
-5. 不要把“最后一次 adj 是 900+”当作死亡原因，它只表示当时保护较弱。
+5. 不要把“末次 adj 是 900+”当作死亡原因，它只表示当时保护较弱。
 
 ---
 

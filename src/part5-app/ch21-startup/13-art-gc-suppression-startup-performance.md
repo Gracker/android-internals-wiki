@@ -61,7 +61,7 @@ Android 17 的常见任务包括：
 | `ConcurrentGCTask` | 调用 `Heap::ConcurrentGC()` | 需要结合 GC cause、暂停与 Running 时间分析 |
 | `CollectorTransitionTask` | 处理前后台 collector 状态变化 | 进程状态变化附近可能出现，不等同于分配触发 GC |
 | `HeapTrimTask` | 尝试归还空闲页并整理相关内存 | 关注 trim slice，不能算作 GC CPU |
-| `ReduceTargetFootprintTask` | 延后收紧 post-fork heap 目标 | Android 17 启动期阈值调整的一部分 |
+| `ReduceTargetFootprintTask` | 延后限制加强 post-fork heap 目标 | Android 17 启动期阈值调整的一部分 |
 | `TriggerPostForkCCGcTask` | 长时间没有发生 GC 时请求一次后台 GC | 用于回收启动垃圾，不是在 fork 后 2 秒立即执行 |
 | `StartupCompletedTask` | 通知 runtime 启动结束、释放 startup dex cache/linear alloc 等资源 | 由 framework/runtime 管理，不是 App 的 GC 开关 |
 
@@ -73,10 +73,10 @@ Android 17 的常见任务包括：
 
 1. 增加 GC sequence number，使 Zygote 或 fork 极早期已经排队的旧 GC 请求失效，避免子进程刚 fork 就执行旧请求。
 2. 把 `target_footprint_` 临时提高到 `growth_limit_`，再重新计算 `concurrent_start_bytes_`，源码注释直接写明目的是避免 App launch 期间 GC。
-3. 在 2 秒后尝试把目标收紧到 `max(growth_limit / 4, initial_heap_size)`；如果仍高于初始值，再过 8 秒收紧到 `initial_heap_size`。若期间已经发生 GC，这些收紧任务会成为无操作。
+3. 在 2 秒后尝试把目标降低到 `max(growth_limit / 4, initial_heap_size)`；如果仍高于初始值，再过 8 秒限制到 `initial_heap_size`。若期间已经发生 GC，这些限制加强任务会成为无操作。
 4. 更晚再安排 `TriggerPostForkCCGcTask`。它只在自 fork 以来仍未发生 GC 时请求后台回收，用于避免长期保留启动垃圾；时间还加入了按 UID 生成的 0—19,999 ms 抖动。
 
-所以，“系统固定屏蔽 GC 两秒”的说法并不准确。2 秒是第一次 footprint 收紧的延迟，不是 TaskProcessor 的全局冻结窗口。启动分配若触及 growth limit、发生 allocation failure、收到其他 GC 请求或遇到进程状态变化，GC 仍可能发生。
+所以，“系统固定屏蔽 GC 两秒”的说法并不准确。2 秒是第一次 footprint 降低的延迟，不是 TaskProcessor 的全局冻结窗口。启动分配若触及 growth limit、发生 allocation failure、收到其他 GC 请求或遇到进程状态变化，GC 仍可能发生。
 
 这套策略只适用于新 fork 的进程。温启动、热启动复用已有进程，不会重新执行 `PostForkChildAction()`；多进程 App 的每个新进程则有自己的 heap 和 post-fork 状态。
 
@@ -236,7 +236,7 @@ Android 8 起可以使用不受 65,535 条记录限制的现代 Java/Kotlin allo
 
 本章的 Android 17 结论以 `android-17.0.0_r1` 为准：
 
-- post-fork 阶段先放宽 heap 阈值，再分阶段收紧；
+- post-fork 阶段先放宽 heap 阈值，再分阶段限制加强；
 - 2 秒不是 GC 全局冻结窗口；
 - `ConcurrentGCTask` 可以作为立即任务插入队列；
 - UI 线程已由 framework 登记为 JIT sensitive thread；

@@ -76,7 +76,7 @@ buffer frame barrier 与 Android 17 transaction barrier 的不同超时边界。
 
 这一章最容易产生的误解，是把 `LocklessQueue` 的性质扩大到整个事务系统。
 
-Android 17 中，`SurfaceFlinger::setTransactionState()` 会在 Binder 调用线程上完成权限清洗、layer handle 解析、buffer 包装、workload hint 收集等工作，然后把 `QueuedTransactionState` 交给 `TransactionHandler::queueTransaction()`。只有最后这段入口交接使用 `LocklessQueue<QueuedTransactionState>`。
+Android 17 中，`SurfaceFlinger::setTransactionState()` 会在 Binder 调用线程上完成权限清洗、layer handle 解析、buffer 包装、workload hint 收集等工作，然后把 `QueuedTransactionState` 交给 `TransactionHandler::queueTransaction()`。只有最终这段入口交接使用 `LocklessQueue<QueuedTransactionState>`。
 
 进入主线程后仍能看到多种同步边界：
 
@@ -406,7 +406,7 @@ Android 17 可关注这些 SF trace 名称：
 
 同 token 的队头条件最重要。一个等待中的事务可能让该 token 后续事务全部留在队列，但其他 token 仍在正常前进。
 
-### 11.4 最后接到一帧的完整证据
+### 11.4 最终接到一帧的完整证据
 
 来自 `rendering_pipelines` 的通用排查顺序也适用于本章：
 
@@ -414,7 +414,7 @@ Android 17 可关注这些 SF trace 名称：
 2. 再看 BLAST 是否取得 `BufferItem` 并调用 `Transaction::setBuffer()`；
 3. 用 `TransactionQueue` 与 readiness trace 判断 SF 在等时间、barrier 还是 fence；
 4. 用 `BufferTX - <layerName>`、latch 事件确认新 buffer 是否被采纳；
-5. 最后结合 FrameTimeline、HWC 与 present fence 判断显示后段。
+5. 最终结合 FrameTimeline、HWC 与 present fence 判断显示后段。
 
 `TransactionQueue` 下降、transaction committed callback、buffer latch 和 display present 回答的是四个不同问题。只看其中一个，无法确定用户何时看到内容。
 

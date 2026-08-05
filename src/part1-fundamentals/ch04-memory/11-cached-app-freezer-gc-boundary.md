@@ -150,7 +150,7 @@ frameworks/base/services/core/java/com/android/server/am/psc/Constants.java
 
 Android 17 的关键变化在 `psc/OomAdjuster.java`：
 
-1. `getCpuTimeReasons()` 根据进程承担的工作赋予显式 `PROCESS_CAPABILITY_CPU_TIME`。电源白名单、前台或顶部 Activity、正在执行的 Service、前台服务、广播接收、Instrumentation 等都可能构成理由。
+1. `getCpuTimeReasons()` 根据进程负责的工作赋予显式 `PROCESS_CAPABILITY_CPU_TIME`。电源白名单、前台或顶部 Activity、正在执行的 Service、前台服务、广播接收、Instrumentation 等都可能构成理由。
 2. `getImplicitCpuCapability(app, adj)` 检查 `adj < mFreezerCutoffAdj`，以及进程的 `maxAdj` 是否低于阈值。命中时赋予 `PROCESS_CAPABILITY_IMPLICIT_CPU_TIME`。
 3. `getFreezePolicy()` 检查显式或隐式 CPU_TIME capability。只要进程仍需要 CPU 时间，就返回不可冻结；两项都没有时才返回可冻结。
 4. `updateAppFreezeStateLSP()` 把结果交给 ActivityManagerService 的 `onProcessFreezabilityChanged()` 回调。回调根据策略安排延迟冻结，或取消 pending freeze 并解冻进程。
@@ -241,7 +241,7 @@ Binder 先冻结，cgroup 随后冻结。这个顺序让 system_server 能在停
 6. 清除 frozen 标志并从 `mFrozenProcesses` 移除 pid。
 7. 如果该进程的页面已写回 ZRAM，且解冻原因是 Activity 激活，可以请求预取这些页面。
 
-最后一点是 Android 17 内存优化的重要补充：前台恢复前的 ZRAM prefetch 由 system_server/MMD 协作执行，和应用进程里的 ART GC 没有调用关系。
+最终一点是 Android 17 内存优化的重要补充：前台恢复前的 ZRAM prefetch 由 system_server/MMD 协作执行，和应用进程里的 ART GC 没有调用关系。
 
 ## Freezer 与 GC 的边界
 
@@ -252,7 +252,7 @@ Binder 先冻结，cgroup 随后冻结。这个顺序让 system_server 能在停
 - `CachedAppOptimizer` 尝试发送 `TRIM_MEMORY_BACKGROUND`。
 - `AppProfiler` 把进程加入后台 GC 队列，随后调用应用线程的 `processInBackground()`。`ActivityThread` 在主线程空闲时处理 `GC_WHEN_IDLE`，最终可以经 `BinderInternal.forceGc(reason)` 请求 runtime GC。
 
-两者都发生在应用仍能获得 CPU 时间的阶段。发送请求也不等于请求已完成：主线程繁忙、进程状态再次变化或 debounce 配置都会改变最后的时序。
+两者都发生在应用仍能获得 CPU 时间的阶段。发送请求也不等于请求已完成：主线程繁忙、进程状态再次变化或 debounce 配置都会改变最终的时序。
 
 官方文档使用“系统可能在缓存后不久请求一次 GC”的表述是有意保留条件的。排障时应检查 GC slice 的起止时间，不能仅凭“进程刚退后台”就认定这次 GC 属于 freezer。
 
@@ -313,7 +313,7 @@ Android 17 还将 MMD 引入这类内存管理流程。按设备配置，冻结�
 
 ## Binder Freezer 决定 IPC 如何失败
 
-线程被冻结以后，普通 Binder 行为会让调用方承担不可控等待。Binder freezer 为同步和异步事务规定了不同处理：
+线程被冻结以后，普通 Binder 行为会让调用方负责不可控等待。Binder freezer 为同步和异步事务规定了不同处理：
 
 | IPC 类型 | 目标处于 frozen 时的行为 | 应用侧风险 |
 | --- | --- | --- |

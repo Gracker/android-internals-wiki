@@ -123,7 +123,7 @@ verifier_result: "state-consistency-fixed: task6_state/task9_state/pipeline_stag
 
 ## 先把三条时间线分开
 
-CPU 与功耗问题经常被写成一条简单的版本链：Android 版本升级，内核调度器随之更换，应用后台能力继续收紧。这个说法会把不同层次的变化混在一起。阅读本章时，应分别追踪三条时间线：
+CPU 与功耗问题经常被写成一条简单的版本链：Android 版本升级，内核调度器随之更换，应用后台能力继续限制加强。这个说法会把不同层次的变化混在一起。阅读本章时，应分别追踪三条时间线：
 
 1. **应用 API 与兼容性规则**：`JobScheduler`、精确闹钟、前台服务和后台 Activity 启动限制。它们通常还受 `targetSdkVersion`、权限、豁免条件影响。
 2. **系统资源策略**：Doze、App Standby Buckets、Battery Saver、任务配额。它们由 framework 服务执行，也可能带有 DeviceConfig 和厂商配置。
@@ -260,7 +260,7 @@ GKI 把通用核心内核与硬件相关 vendor module 分开，并为支持周�
 
 GKI 并没有让所有设备使用相同的调度参数，也没有清除厂商扩展。设备仍可通过 vendor module、task profile、Power/Thermal HAL、设备配置和允许的 hook 实现产品策略。变化集中在接口边界、可维护性和兼容性约束。
 
-## Android 12—14：精确闹钟、前台服务与后台启动持续收紧
+## Android 12—14：精确闹钟、前台服务与后台启动持续限制加强
 
 ### Android 12：精确闹钟特殊访问与后台 FGS 启动限制
 
@@ -434,7 +434,7 @@ Android 5 到 Android 17 的主线可以概括为：
 - 设备空闲、应用活跃度、权限、前台可见性和配额共同决定后台机会；
 - EAS、task profile、GKI 与 `sched_ext` 改变系统工程实现，但不能从 API 版本直接推断设备调度配置；
 - Android 17 增加了 Job 等待原因、系统触发 profiling 和 listener 型 idle alarm 等诊断或细分接口；
-- 排查版本差异时，先确认设备版本、target SDK 和执行 API，再检查系统状态，最后进入调度、频率和热管理。
+- 排查版本差异时，先确认设备版本、target SDK 和执行 API，再检查系统状态，最终进入调度、频率和热管理。
 
 掌握这套分层方法后，版本号不再是结论，而是选择规则和源码分支的第一条索引。
 

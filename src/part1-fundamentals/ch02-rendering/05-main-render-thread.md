@@ -175,7 +175,7 @@ MainThread 与 RenderThread 的并行来自相邻帧重叠：RenderThread 推进
 
 ### Draw 在硬件加速路径中主要是“记录”
 
-每个 View 都持有一个 `RenderNode`。View 需要更新显示列表时，`updateDisplayListIfDirty()` 会向 RenderNode 请求 `RecordingCanvas`，调用 View 的绘制逻辑，最后结束记录。下面的结构摘录保留了 Android 17 的关键判断，省略异常处理、overlay 和辅助绘制分支：
+每个 View 都持有一个 `RenderNode`。View 需要更新显示列表时，`updateDisplayListIfDirty()` 会向 RenderNode 请求 `RecordingCanvas`，调用 View 的绘制逻辑，最终结束记录。下面的结构摘录保留了 Android 17 的关键判断，省略异常处理、overlay 和辅助绘制分支：
 
 ```java
 // frameworks/base/core/java/android/view/View.java
@@ -302,7 +302,7 @@ if (!canUnblockUiThread) {
 }
 ```
 
-`syncFrameState()` 最后返回 `info.prepareTextures`。源码注释明确说明：它为 `false` 表示纹理缓存空间已经用尽。返回 `true` 时，UI 可在 RenderThread 进入 `CanvasContext::draw()` 前继续执行；返回 `false` 时，解锁推迟到 draw 或 skip 处理之后。
+`syncFrameState()` 最终返回 `info.prepareTextures`。源码注释明确说明：它为 `false` 表示纹理缓存空间已经用尽。返回 `true` 时，UI 可在 RenderThread 进入 `CanvasContext::draw()` 前继续执行；返回 `false` 时，解锁推迟到 draw 或 skip 处理之后。
 
 所以“SyncFrameState 栅栏”适合描述 UI → RenderThread 的同步等待关系，无法代表一条固定时长、固定解锁位置的 GPU fence。它通过条件变量协调两个线程，与 `sync_file` 文件描述符的实现和参与者不同。
 

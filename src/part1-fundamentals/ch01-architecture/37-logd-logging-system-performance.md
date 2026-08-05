@@ -211,7 +211,7 @@ adb logcat -b main --pid="$(adb shell pidof -s com.example.app)" \
 
 `system/logging/rust/` 包含 Rust logging API、结构化日志和 liblog 绑定等客户端能力。它的存在不代表 logd 守护进程已经改写为 Rust。
 
-在 `android-17.0.0_r1` 中，`logd/Android.bp` 构建的是 `cc_binary`，核心文件仍包括 C++ 的 `main.cpp`、`LogListener.cpp`、`SerializedLogBuffer.cpp`、`LogReader.cpp` 和 `LogReaderThread.cpp`。`logd/` 下没有承担这些核心职责的 `.rs` 实现。基于 `RwLock<VecDeque<...>>`、`mio` 或“Rust 版吞吐提升比例”的描述都无法由该版本源码支持，应从 Android 17 章节中删除。
+在 `android-17.0.0_r1` 中，`logd/Android.bp` 构建的是 `cc_binary`，核心文件仍包括 C++ 的 `main.cpp`、`LogListener.cpp`、`SerializedLogBuffer.cpp`、`LogReader.cpp` 和 `LogReaderThread.cpp`。`logd/` 下没有负责这些核心职责的 `.rs` 实现。基于 `RwLock<VecDeque<...>>`、`mio` 或“Rust 版吞吐提升比例”的描述都无法由该版本源码支持，应从 Android 17 章节中删除。
 
 ## 5. 应用侧性能治理
 

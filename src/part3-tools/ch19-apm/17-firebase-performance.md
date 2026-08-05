@@ -96,7 +96,7 @@ last_deepseek_cn_review_at: 2026-07-14
 
 Firebase Performance Monitoring 是 Firebase 提供的托管型性能监控服务。它用较少的接入工作采集启动、前后台、屏幕渲染和部分 HTTP/S 请求，还允许应用补充业务 trace。控制台负责版本、设备、国家或地区等维度的聚合。
 
-它适合中小团队快速建立基础性能看板，也适合作为成熟监控体系中的趋势观测层。它不提供自托管采集服务，端侧还有采样和限流，控制台展示也不是秒级。因此，Firebase Performance 不能单独承担实时故障发现、单次请求复原、逐帧归因或 native 现场诊断。
+它适合中小团队快速建立基础性能看板，也适合作为成熟监控体系中的趋势观测层。它不提供自托管采集服务，端侧还有采样和限流，控制台展示也不是秒级。因此，Firebase Performance 不能单独负责实时故障发现、单次请求复原、逐帧归因或 native 现场诊断。
 
 截至 2026 年 7 月，本文采用以下 Firebase 构建锚点：
 
@@ -126,7 +126,7 @@ metric 适合记录条目数、重试次数等整数；trace duration 由 `start
 
 ## 构建接入：插件与运行库分工
 
-Performance Gradle plugin 与运行时 SDK 承担不同工作：
+Performance Gradle plugin 与运行时 SDK 负责不同工作：
 
 - `com.google.firebase.firebase-perf` 在构建期对受支持的网络库和 `@AddTrace` 做字节码插桩。
 - `firebase-perf` 在进程中记录、采样、暂存并上传性能事件。

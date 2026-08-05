@@ -164,7 +164,7 @@ AndroidX RecyclerView 会在系统跟踪中留下有用的 slice。不同库版�
 
 1. 结果回调在主线程更新 ImageView；
 2. 尺寸或 drawable 状态改变可能触发 invalidate 或 requestLayout；
-3. 首次使用纹理时，RenderThread/GPU 可能承担上传与采样成本。
+3. 首次使用纹理时，RenderThread/GPU 可能负责上传与采样成本。
 
 列表图片应在绑定前拥有稳定的目标尺寸或宽高比。复用 ViewHolder 时，要取消或替换旧请求，并校验回调仍属于当前绑定项。图片预取要结合缓存命中、解码尺寸和内存占用评估，不能只追求更早加载。
 

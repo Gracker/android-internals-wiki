@@ -97,7 +97,7 @@ last_deepseek_cn_review_at: 2026-06-24
 - `FinalizerDaemon` 串行执行 `finalize()`，也负责 Android 共享 `SystemCleaner` 的清理动作。
 - 应用代码负责在确定的生命周期边界释放 FD、socket、游标、图形缓冲区和 native handle。
 
-前三项属于运行时机制，最后一项才是资源所有权。运行时可以延后清理，也可能在进程结束前来不及执行；因此不能用 GC 是否发生来证明资源已经释放。
+前三项属于运行时机制，最末项才是资源所有权。运行时可以延后清理，也可能在进程结束前来不及执行；因此不能用 GC 是否发生来证明资源已经释放。
 
 本章源码锚点为 AOSP `android-17.0.0_r1` 的 `platform/libcore`。其中 `ReferenceQueue.java`、`FinalizerReference.java` 和 `Daemons.java` 共同定义了 Android 17 的引用入队、对象终结和超时监控行为。
 
@@ -353,7 +353,7 @@ SystemCleaner.cleaner()
 1. owner 明确，创建者知道由谁关闭；
 2. `close()` 幂等；
 3. 正常、异常和取消路径都会关闭；
-4. 兜底清理只处理遗漏，不承担日常释放流量。
+4. 兜底清理只处理遗漏，不负责日常释放流量。
 
 Java 用 `try-with-resources`，Kotlin 用 `use`：
 
@@ -415,7 +415,7 @@ final class NativeSession implements AutoCloseable {
 
 这里的 `State` 不持有 `NativeSession`。显式调用 `close()` 时，`cleanable.clean()` 在调用线程执行释放；遗忘关闭时，SystemCleaner 才提供延迟兜底。
 
-如果 `nativeRelease()` 可能等待 Binder、磁盘、网络或不可控锁，这个 action 不适合 `SystemCleaner`。应把耗时释放设计成可显式等待或受控调度的业务操作，Cleaner 中只保留快速、有限、不会阻塞的最后防线。
+如果 `nativeRelease()` 可能等待 Binder、磁盘、网络或不可控锁，这个 action 不适合 `SystemCleaner`。应把耗时释放设计成可显式等待或受控调度的业务操作，Cleaner 中只保留快速、有限、不会阻塞的最终防线。
 
 低于 API 33 的设备不能直接假设存在公共 `java.lang.ref.Cleaner`。项目可以在兼容层选择其他实现，但 `AutoCloseable` 的调用契约应保持一致。不要把隐藏 `sun.misc.Cleaner` 当作兼容方案，也不要在没有验证构建配置和运行时语义时宣称 desugaring 与 Android 17 原生 Cleaner 完全等价。
 

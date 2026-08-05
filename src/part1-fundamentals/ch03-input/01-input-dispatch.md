@@ -549,7 +549,7 @@ android.input.inputevent
 | 消费到完成 | `finishTime - consumeTime` | batching、InputStage、IME、Window/View 处理 |
 | 输入到显示 | input event 到目标 frame present | Choreographer、渲染、SF/HWC、刷新周期 |
 
-InputDispatcher 的 latency aggregator 本身就使用 read-to-deliver、deliver-to-consume 和 consume-to-finish 等时间。最后一段需要 FrameTimeline、应用帧、SurfaceFlinger 与 present 证据，不能从 `finishInputEvent()` 推出像素已经上屏。
+InputDispatcher 的 latency aggregator 本身就使用 read-to-deliver、deliver-to-consume 和 consume-to-finish 等时间。最终一段需要 FrameTimeline、应用帧、SurfaceFlinger 与 present 证据，不能从 `finishInputEvent()` 推出像素已经上屏。
 
 ### 8.3 counter 的正确读法
 

@@ -129,7 +129,7 @@ Compose First 把新增 UI 能力的主入口移到 Compose。Google 公告覆�
 
 ## View 维护模式与存量页面边界
 
-Compose First 不等于 View 已废弃。官方将 `android.widget` View toolkit 标为 maintenance mode，只接收高优先级修复；`android.view` 继续承担窗口、输入与绘制等基础职责。Fragment、RecyclerView、ViewPager2、ConstraintLayout 和 Data Binding 等 View-based Jetpack 库被列为 complete 或 maintenance mode，存量项目仍可使用，新特性投入会集中到 Compose。[Android Developers：View 与 View-based 库的支持边界](https://developer.android.com/develop/ui/compose/first)
+Compose First 不等于 View 已废弃。官方将 `android.widget` View toolkit 标为 maintenance mode，只接收高优先级修复；`android.view` 继续负责窗口、输入与绘制等基础职责。Fragment、RecyclerView、ViewPager2、ConstraintLayout 和 Data Binding 等 View-based Jetpack 库被列为 complete 或 maintenance mode，存量项目仍可使用，新特性投入会集中到 Compose。[Android Developers：View 与 View-based 库的支持边界](https://developer.android.com/develop/ui/compose/first)
 
 这个边界会影响技术规划：
 

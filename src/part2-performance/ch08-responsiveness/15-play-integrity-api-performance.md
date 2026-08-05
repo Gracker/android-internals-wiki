@@ -76,7 +76,7 @@ Play Integrity 与 Key Attestation 解决的问题也不同：
 | `MEETS_DEVICE_INTEGRITY` | 运行于真实、通过认证的 Android 设备；Android 13 及以上还要求硬件支持的证据表明 bootloader 已锁定，加载的是认证厂商镜像 |
 | `MEETS_STRONG_INTEGRITY` | Android 13 及以上要求满足 `MEETS_DEVICE_INTEGRITY`，且 Android OS、vendor 等设备分区的安全更新都在最近一年内 |
 
-Android 12 及以下的 `MEETS_STRONG_INTEGRITY` 不要求最近安全更新，只要求硬件支持的启动完整性证据。若策略覆盖旧系统，应同时读取可选的 `deviceAttributes.sdkVersion`，避免让同名标签跨版本承担不同策略含义。
+Android 12 及以下的 `MEETS_STRONG_INTEGRITY` 不要求最近安全更新，只要求硬件支持的启动完整性证据。若策略覆盖旧系统，应同时读取可选的 `deviceAttributes.sdkVersion`，避免让同名标签跨版本负责不同策略含义。
 
 标签数组为空也不是一条精确的“设备已 root”诊断。API hooking、系统受损、未通过检查的模拟环境或技术问题都可能导致没有设备标签。面向用户时应给修复路径或较宽泛的环境提示，不要把内部风险信号翻译成确定的入侵结论。
 

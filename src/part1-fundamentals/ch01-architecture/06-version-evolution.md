@@ -197,7 +197,7 @@ Android 10 的 Project Mainline 把一部分系统组件拆成可独立更新的
 
 Mainline 让安全修复和组件更新不必总等整机 OTA，但“设备运行 Android 10”不代表所有后来出现的模块已经可更新。ART 从 Android 12 才成为 Mainline 模块。
 
-这会改变复现方法。遇到 ART、Conscrypt、Media 或 Permission 行为差异时，除了 build fingerprint，还要记录活动 APEX/APK 模块版本。只对比 `Build.VERSION.SDK_INT` 可能漏掉真正变量。
+这会改变复现方法。遇到 ART、Conscrypt、Media 或 Permission 行为差异时，除了 build fingerprint，还要记录活动 APEX/APK 模块版本。只对比 `Build.VERSION.SDK_INT` 可能漏掉变量。
 
 ### GKI 与 KMI
 
@@ -323,13 +323,13 @@ Android 11 对以 API 30 及以上为目标的应用限制包可见性。`Packag
 |---|---|---|
 | Android 8.0 | 后台 Service 和隐式广播受限 | 持久延迟工作迁移到 JobScheduler/WorkManager |
 | Android 12 | 后台启动前台服务受限；精确闹钟进入特殊权限模型 | 区分用户可见即时任务、持久任务和闹钟 |
-| Android 14 | 面向新版本的前台服务必须声明类型和相应权限；多数新安装应用的精确闹钟授权默认收紧 | Manifest 类型、运行时权限和 Play 政策一起检查 |
+| Android 14 | 面向新版本的前台服务必须声明类型和相应权限；多数新安装应用的精确闹钟授权默认限制加强 | Manifest 类型、运行时权限和 Play 政策一起检查 |
 | Android 15 | `dataSync`、`mediaProcessing` 前台服务引入时间配额 | 长任务需要保存进度并处理 timeout 回调 |
-| Android 16 | Job 运行时配额计算继续收紧 | 不把前台服务当作 Job 配额豁免手段 |
+| Android 16 | Job 运行时配额计算继续限制加强 | 不把前台服务当作 Job 配额豁免手段 |
 
 WorkManager 适合需要持久调度且允许系统选择执行时机的任务，但不是所有后台工作的替代品。音频播放、导航、用户发起的数据传输、精确闹钟和短暂进程内任务，各自有不同 API 与政策边界。
 
-## 诊断时怎样识别真正的版本变量
+## 诊断时怎样识别实际的版本变量
 
 面对“旧版本正常，新版本变慢”，可以按下面的顺序收集信息：
 

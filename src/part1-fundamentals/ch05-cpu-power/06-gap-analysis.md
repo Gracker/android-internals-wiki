@@ -33,7 +33,7 @@ gap_score: "19/20"
 - 🔸 三维决策模型：zone watermarks、thrashing、swap utilization
 - 🔸 pidfd 等待机制替代传统信号量的实现方案
 - 🔸 epoll 事件驱动的高效响应架构（10ms/100ms 双间隔）
-- 🔸 Android 17 LMKD 与传统 LowMemoryKiller 的根本差异
+- 🔸 Android 17 LMKD 与传统 LowMemoryKiller 的关键差异
 - 🔸 PSI 监听对内存压力识别精度的提升效果
 
 ### 🔹 扩展（可选深入）
@@ -61,4 +61,4 @@ gap_score: "19/20"
 - [4.37 Android 17 LMKD userspace 迁移](../ch04-memory/4.37-android17-lmkd-userspace-migration.md)
 - [4.50 LMKD v2 与 PSI 分级压力治理](../ch04-memory/4.50-lmkd-v2-psi-tiered-pressure-governance.md)
 
-CPU cache/PSS 相关修订应采用 AOSP `android-17.0.0_r1`；LMKD/PSI 同时采用 AOSP `android-17.0.0_r1` 与 kernel `android17-6.18-2026-06_r6`。本页只承担隔离与迁移提示，不复制上述章节的技术论述。
+CPU cache/PSS 相关修订应采用 AOSP `android-17.0.0_r1`；LMKD/PSI 同时采用 AOSP `android-17.0.0_r1` 与 kernel `android17-6.18-2026-06_r6`。本页只负责隔离与迁移提示，不复制上述章节的技术论述。

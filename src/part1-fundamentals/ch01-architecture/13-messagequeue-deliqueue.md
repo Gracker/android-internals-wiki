@@ -143,7 +143,7 @@ private static boolean loopOnce(final Looper me,
 - **插入最坏为 O(N)**：新消息需要沿链表找到按 `when` 排序的位置。
 - **生产者与消费者互斥**：后台线程入队时，可能挡住正在取消息的主线程；主线程检查队列时，也可能挡住生产者。
 
-真正危险的不是一次普通的短暂加锁，而是锁竞争与调度叠加后的优先级反转。例如：
+危险的不是一次普通的短暂加锁，而是锁竞争与调度叠加后的优先级反转。例如：
 
 1. 后台低优先级线程拿到 MessageQueue 的 monitor。
 2. 中优先级线程抢占 CPU，使后台线程暂时无法继续运行和释放锁。
@@ -273,7 +273,7 @@ do {
 
 CAS 失败说明栈顶已被其他线程改变，当前线程重新读取并重试。它避免了旧实现那种“先获得全局 monitor 才能入队”的互斥等待，但不代表每次入队只执行一条指令：高竞争下仍可能发生 CAS 重试，还要处理消息计数、插入序号和 native wake 协调。
 
-调用线程的提交路径是 O(1)；随后 Looper 把消息放入最小堆时还会承担 O(log N) 的排序成本。成本没有消失，而是从“生产者在带锁链表里线性查找”改成“生产者快速提交，单消费者集中排序”。
+调用线程的提交路径是 O(1)；随后 Looper 把消息放入最小堆时还会负责 O(log N) 的排序成本。成本没有消失，而是从“生产者在带锁链表里线性查找”改成“生产者快速提交，单消费者集中排序”。
 
 ### 5.2 出队：Looper 独占两个最小堆
 
@@ -462,7 +462,7 @@ Android 17 新实现让旧 monitor contention 消失后，主线程仍可能 Run
 | Android 16（API 36） | 公开源码出现 Combined / Concurrent / Legacy 多种实现，处于系统进程优先的受控 rollout 阶段 |
 | Android 17（API 37） | DeliQueue 面向 `targetSdkVersion >= 37` 的应用默认启用；当前源码锚点为 `CombinedDeliMessageQueue`、`MessageStack`、`MessageHeap` 与扩展后的 `Message` |
 
-Android 16 的并发实现适合解释演进，不能替代 Android 17 的当前源码。Android 17 的 `MessageStack` 本身就是 Treiber stack，不是“用 MessageStack 替换 Treiber stack”；真正变化是原型结构收敛为共享 Treiber stack、Looper 私有双堆、tombstone 删除和完整的睡眠/退出协调。
+Android 16 的并发实现适合解释演进，不能替代 Android 17 的当前源码。Android 17 的 `MessageStack` 本身就是 Treiber stack，不是“用 MessageStack 替换 Treiber stack”；变化是原型结构收敛为共享 Treiber stack、Looper 私有双堆、tombstone 删除和完整的睡眠/退出协调。
 
 ## 12. 常见误判
 

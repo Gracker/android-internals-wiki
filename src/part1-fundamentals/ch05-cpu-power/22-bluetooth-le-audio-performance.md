@@ -37,7 +37,7 @@ LE Audio 的性能变化来自整条音频路径：LC3 编解码、AudioFlinger 
 
 ### GAF、BAP 与控制服务
 
-Bluetooth LE Audio 位于 Generic Audio Framework（GAF）中。几个常见缩写承担不同职责：
+Bluetooth LE Audio 位于 Generic Audio Framework（GAF）中。几个常见缩写负责不同职责：
 
 | 组件 | 职责 | 对性能分析的意义 |
 |---|---|---|
@@ -63,7 +63,7 @@ LE Audio 使用等时传输（Isochronous Transport）承载有时限的音频�
 
 - 广播发送端的空口计划不会随着收听人数线性增加；
 - 单播增加设备或音频方向，通常会增加 CIS、子事件或控制开销；
-- 广播接收端还要承担扫描、周期广播同步和 BIG 同步成本，所以“广播接收一定比单播省电”没有通用依据。
+- 广播接收端还要负责扫描、周期广播同步和 BIG 同步成本，所以“广播接收一定比单播省电”没有通用依据。
 
 ### LC3 的能力需要协商
 
@@ -89,7 +89,7 @@ LC3 常见帧时长为 7.5 ms 和 10 ms。帧时长只是一个 Codec 参数，�
 | 已连接启动延迟 | 已完成 ACL/GATT 连接后开始播放，到首次出声 | ASCS、CIG/CIS 与音频路由开销 |
 | 稳态单向延迟 | 手机音频时间点，到耳机声学输出 | 视频同步、乐器监听、游戏反馈 |
 | 双向往返延迟 | 手机发声，经远端采集后返回手机 | VoIP、游戏语音、交互式音频 |
-| 路由切换间隙 | 旧路由最后一帧，到新路由第一帧 | A2DP/LE Audio 或扬声器/耳机切换 |
+| 路由切换间隙 | 旧路由最末帧，到新路由第一帧 | A2DP/LE Audio 或扬声器/耳机切换 |
 | 抖动与 glitch | 稳态延迟分布、欠载和丢帧 | 射频干扰、调度和缓冲稳定性 |
 
 一次稳态单向延迟可以按以下预算理解：
@@ -166,7 +166,7 @@ Android 17 的 `SessionType.aidl` 明确区分了：
 - LE Audio 广播软件编码与硬件 offload 编码；
 - 广播解码和 peripheral offload 等路径。
 
-在软件路径中，Bluetooth 栈承担相应编解码和媒体数据处理；硬件 offload session 主要是控制路径，数据和 Codec 工作由平台硬件实现承担。AOSP `codec_manager.cc` 还区分 `CodecLocation::HOST` 与 `CodecLocation::ADSP`，并检查设备属性和 HAL 能力后才启用 offload。源码中甚至保留了“offload 不支持某配置时如何切换”的待完善点，因此不能由“设备有 DSP”推出当前流一定已经 offload。
+在软件路径中，Bluetooth 栈负责相应编解码和媒体数据处理；硬件 offload session 主要是控制路径，数据和 Codec 工作由平台硬件实现负责。AOSP `codec_manager.cc` 还区分 `CodecLocation::HOST` 与 `CodecLocation::ADSP`，并检查设备属性和 HAL 能力后才启用 offload。源码中甚至保留了“offload 不支持某配置时如何切换”的待完善点，因此不能由“设备有 DSP”推出当前流一定已经 offload。
 
 ### 音频设备类型
 

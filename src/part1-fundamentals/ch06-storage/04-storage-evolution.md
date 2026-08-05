@@ -84,7 +84,7 @@ last_deepseek_cn_review_at: 2026-06-06
 
 ### 扩展（可选深入）
 
-- 🔸 各版本对 App 外部存储访问权限的收紧
+- 🔸 各版本对 App 外部存储访问权限的限制加强
 - 🔸 Incremental FS 用于大型应用的按需下载
 
 ### OpenClaw 加工指引
@@ -152,7 +152,7 @@ SDCardFS 改善了许多元数据密集型场景，但不宜引用脱离设备�
 
 Android 11 将 FUSE 设为存储模拟的默认实现，并弃用 SDCardFS。FUSE 的用户态裁决能力适合承载 Scoped Storage：MediaProvider 可以在打开文件时检查归属、媒体权限、位置元数据脱敏和转码条件。
 
-不过，官方文档明确区分了两件事：SDCardFS 的弃用并非由 Android 11 的 FUSE 支持单独导致；FUSE 同时承担了替代存储模拟实现和执行隐私策略的任务。把这次切换简化成“为了 Scoped Storage，只能回到 FUSE”，会遗漏内核维护、升级兼容与安全边界。
+不过，官方文档明确区分了两件事：SDCardFS 的弃用并非由 Android 11 的 FUSE 支持单独导致；FUSE 同时负责了替代存储模拟实现和执行隐私策略的任务。把这次切换简化成“为了 Scoped Storage，只能回到 FUSE”，会遗漏内核维护、升级兼容与安全边界。
 
 设备条件同样重要：
 
@@ -228,7 +228,7 @@ AOSP EROFS 文档给出的当前要点包括：
 - Android 13 起，EROFS 完整支持 Virtual A/B。
 - 是否启用由产品构建与分区配置决定，不能写成 Android 12 或 13 对全部设备的强制要求。
 
-压缩会减少从闪存读取的字节数，同时带来解压 CPU 成本。冷启动是否改善，取决于数据可压缩性、闪存性能、CPU、预读和 page cache 命中率。EROFS 的只读属性也不能单独承担系统完整性保证；Android 的信任链还包括 AVB、dm-verity、SELinux 和分区签名。
+压缩会减少从闪存读取的字节数，同时带来解压 CPU 成本。冷启动是否改善，取决于数据可压缩性、闪存性能、CPU、预读和 page cache 命中率。EROFS 的只读属性也不能单独负责系统完整性保证；Android 的信任链还包括 AVB、dm-verity、SELinux 和分区签名。
 
 下面的命令用于确认设备当前挂载了哪些文件系统，而不是根据机型或 Android 版本猜测：
 

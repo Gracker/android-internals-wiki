@@ -269,7 +269,7 @@ merge 适合表达“等待所有前置工作”，但不应无条件合并整�
 - HWC layer release fence 本来就是 per-layer；
 - present fence 是 per-display；
 - 为了方便只保留一个 fd 而合并无关 fence，会扩大等待范围并掩盖慢依赖；
-- debug 名称、driver / timeline 与内部 fence 列表要保留，便于定位哪一项最后 signal。
+- debug 名称、driver / timeline 与内部 fence 列表要保留，便于定位哪一项最终 signal。
 
 ## 8. EGL 与 Vulkan 怎样桥接 native fence
 

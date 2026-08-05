@@ -232,7 +232,7 @@ RecyclerView 1.4.0 的 `DiffUtil.java` 对复杂度写得很清楚：Myers 部�
 
 `AsyncListDiffer` 和 `ListAdapter` 把 diff 计算放到后台 executor，结果回到主线程后才分发更新。连续提交列表时，旧 generation 的迟到结果会被丢弃。提交后的列表及参与比较的字段必须在 diff 完成前保持不变，否则比较结果和 Adapter 当前数据可能不一致。
 
-三个回调承担不同契约：
+三个回调负责不同契约：
 
 - `areItemsTheSame()` 判断两项是否代表同一业务实体，常用稳定 ID；
 - `areContentsTheSame()` 判断该实体的可见内容是否一致，比较应正确且足够轻；

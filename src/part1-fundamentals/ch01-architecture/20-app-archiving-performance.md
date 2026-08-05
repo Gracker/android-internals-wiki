@@ -144,7 +144,7 @@ Android 15 把应用归档做成了平台能力；Android 17 延续并完善了�
 | 卸载但保留数据 | 通常无 | 保留 | 没有平台归档入口 | 没有标准恢复契约 |
 | `installPackageArchived()` 创建的归档包 | 无 APK，只有归档元数据 | API 不负责生成业务数据 | 归档入口 | 指定安装器 |
 
-最后一行是 Android 15 同期加入的另一条特权 API。`PackageInstaller.installPackageArchived()` 使用 `ArchivedPackageInfo` 在没有 APK 的情况下登记归档包，供需要先建立归档元数据的系统级流程使用。它不是用户点击归档图标后的下载接口，也不能替代 `requestUnarchive()`。
+最末行是 Android 15 同期加入的另一条特权 API。`PackageInstaller.installPackageArchived()` 使用 `ArchivedPackageInfo` 在没有 APK 的情况下登记归档包，供需要先建立归档元数据的系统级流程使用。它不是用户点击归档图标后的下载接口，也不能替代 `requestUnarchive()`。
 
 ## 2. 平台中的参与者
 
@@ -157,7 +157,7 @@ Android 15 把应用归档做成了平台能力；Android 17 延续并完善了�
 
 SDK 注解只是第一层。服务端还会校验 caller package 与 Binder UID、跨用户权限，以及后续卸载策略。持有 `REQUEST_DELETE_PACKAGES` 不等于可以静默归档任意应用。
 
-归档前可先调用 `PackageManager.isAppArchivable(packageName)`。它适合做 UI 能力判断，但不是操作成功的承诺：设备策略、App Lock、用户限制、包状态变化或确认流程仍可能让真正的归档失败。
+归档前可先调用 `PackageManager.isAppArchivable(packageName)`。它适合做 UI 能力判断，但不是操作成功的承诺：设备策略、App Lock、用户限制、包状态变化或确认流程仍可能让实际的归档失败。
 
 ### 2.2 `PackageArchiver`
 
@@ -201,7 +201,7 @@ APK 删除后，系统不能再从 manifest 和资源表中读取 Launcher Activ
 
 1. 取得目标 user 下的包状态。
 2. 拒绝 system app 和 updated system app。
-3. 确认该 user 当前确实安装了目标包。
+3. 确认该 user 当前安装了目标包。
 4. 找到并验证 responsible installer。
 5. 检查归档 opt-out 状态。
 6. 通过 `LauncherApps.getActivityList()` 取得至少一个 Launcher Activity。
@@ -239,7 +239,7 @@ DELETE_ARCHIVE | DELETE_KEEP_DATA
 
 归档仍会进入 `PackageInstallerService.uninstall()` 和 `DeletePackageHelper`。因此设备管理员、禁止卸载策略、受保护包、App Lock 等限制仍然生效。删除路径会 freeze 并通常 kill 目标包；这与 LMKD 根据 PSI 和 adj 杀进程不是同一回事。
 
-删除成功时，包移除广播会携带 `EXTRA_ARCHIVAL=true`，同时把 `EXTRA_REPLACING` 设为 true、`EXTRA_DATA_REMOVED` 设为 false。接收方由此可以把归档与彻底卸载区分开。
+删除成功时，包移除广播会携带 `EXTRA_ARCHIVAL=true`，同时把 `EXTRA_REPLACING` 设为 true、`EXTRA_DATA_REMOVED` 设为 false。接收方由此可以把归档与删除应用数据的普通卸载区分开。
 
 ### 4.1 “删除 APK”有一个多用户前提
 
@@ -251,7 +251,7 @@ APK 和 native library 位于包级代码目录，可被多个 Android user 共�
 
 这时能稳定回收的是归档路径清理的 cache / code cache；不能把整个 APK 大小都计入收益。
 
-#### 归档最后一个安装 user
+#### 归档末尾一个安装 user
 
 如果没有其他 user 安装该包，而且 PMS 没有因内部缓存策略保留未安装包，删除流程才会移除包级代码和资源。`PackageSetting` 因 `DELETE_KEEP_DATA` 继续存在，并携带归档状态。
 
@@ -313,7 +313,7 @@ Android 17 的实现允许：
 
 `PackageArchiver.requestUnarchive()` 会先验证：
 
-- 目标包在该 user 下确实处于 archived 状态。
+- 目标包在该 user 下处于 archived 状态。
 - caller package 与 UID 一致。
 - 调用者声明或持有 `REQUEST_INSTALL_PACKAGES` / `INSTALL_PACKAGES`。
 - 跨用户权限满足。
@@ -354,14 +354,14 @@ Intent.ACTION_UNARCHIVE_PACKAGE
 
 `unarchiveId` 把广播与安装 session 绑定起来。即使安装器没有设置它，Android 17 也会尝试按包名、installer UID 和 user 复用 draft session，但显式设置可以消除并发歧义。
 
-`INSTALL_UNARCHIVE` 不是安装器可随意伪造的“跳过确认”开关。`PackageInstallerService` 会清掉外部传入值，仅在目标确实已归档、请求安装器又与 responsible installer 匹配时重新设置。它允许在恢复确认已经完成后跳过第二次安装确认，不会跳过 APK 签名和正常安装校验。
+`INSTALL_UNARCHIVE` 不是安装器可随意伪造的“跳过确认”开关。`PackageInstallerService` 会清掉外部传入值，仅在目标已归档、请求安装器又与 responsible installer 匹配时重新设置。它允许在恢复确认已经完成后跳过第二次安装确认，不会跳过 APK 签名和正常安装校验。
 
 ### 6.4 安装完成不会自动重放第一次点击
 
 - `UNARCHIVAL_OK` 只表示安装器能够开始恢复。
 - 初次 `startActivity()` 已以 `START_ABORTED` 结束。
 - Android 17 的 `PackageArchiver` 没有保存并自动重放原始启动 Intent。
-- 真正安装完成通过 `ACTION_PACKAGE_ADDED` 或 session 完成状态观察。
+- 安装完成通过 `ACTION_PACKAGE_ADDED` 或 session 完成状态观察。
 
 Launcher 或产品层可以展示下载进度，并在安装完成后让用户再次点击；某些 OEM 或安装器也可能额外提供“恢复后打开”，但那不是 AOSP `PackageArchiver` 的默认保证。
 
@@ -495,7 +495,7 @@ Android 15 的“移除 APK 与缓存、保留用户数据”是 API 契约层�
 
 ### 误区三：`UNARCHIVAL_OK` 表示应用已经恢复
 
-不是。它只表示恢复可开始，真正安装完成要看 session 或 `ACTION_PACKAGE_ADDED`。
+不是。它只表示恢复可开始，安装完成要看 session 或 `ACTION_PACKAGE_ADDED`。
 
 ### 误区四：系统会自动重放第一次点击
 
@@ -544,7 +544,7 @@ Android 17 的 App Archiving 可以概括为：
   → 安装成功后清除 ArchiveState
 ```
 
-真正需要记住的是三个边界：
+需要记住的是三个边界：
 
 1. 归档状态按 user 保存，APK 却可能由多个 user 共享。
 2. `UNARCHIVAL_OK` 是“开始恢复”，不是“恢复完成”。

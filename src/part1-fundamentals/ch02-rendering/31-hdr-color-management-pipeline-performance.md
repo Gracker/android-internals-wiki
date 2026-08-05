@@ -218,7 +218,7 @@ Android 13 引入 vendor-configurable `libtonemap`，目的是让 SurfaceFlinger
 - 可选 `AHardwareBuffer` metadata；
 - render intent。
 
-shader 先把输入转换为线性亮度和 XYZ，再计算 gain，最后归一化并编码到输出空间。这里没有一个适用于所有 SoC 的固定耗时。4K、120 Hz、保护内容、Layer 数量、缩放、模糊、GPU 型号和 client target 格式都能改变结果。
+shader 先把输入转换为线性亮度和 XYZ，再计算 gain，最终归一化并编码到输出空间。这里没有一个适用于所有 SoC 的固定耗时。4K、120 Hz、保护内容、Layer 数量、缩放、模糊、GPU 型号和 client target 格式都能改变结果。
 
 ---
 
@@ -591,7 +591,7 @@ Android 17 源码中可直接对应的 trace 名称包括：
 
 看到 `AGTM` 只能证明该 RenderEngine 分支执行过；看不到它也不能证明没有硬件 tone mapping，因为 HWC/DPU 路径不走这段 shader。
 
-### 11.3 最后做 A/B
+### 11.3 最终做 A/B
 
 一次只改变一个变量：
 

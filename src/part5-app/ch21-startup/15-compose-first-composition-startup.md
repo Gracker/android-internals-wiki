@@ -29,7 +29,7 @@ gap_source: "章节深挖"
 
 # 21.15 Compose 首次组合开销与启动性能
 
-Compose 首屏比传统 View 页面多一个 composition 阶段，但“用了 Compose 就固定多花几十毫秒”不是可复用的结论。View 页面也要承担 XML inflate、对象绑定、measure、layout 和 draw；Compose 则把 UI 描述执行、Slot Table 维护、节点创建，以及后续的 layout、draw 放进首帧路径。两者的成本结构不同，不能脱离设备、构建类型、编译状态和页面内容给出统一差值。
+Compose 首屏比传统 View 页面多一个 composition 阶段，但“用了 Compose 就固定多花几十毫秒”不是可复用的结论。View 页面也要负责 XML inflate、对象绑定、measure、layout 和 draw；Compose 则把 UI 描述执行、Slot Table 维护、节点创建，以及后续的 layout、draw 放进首帧路径。两者的成本结构不同，不能脱离设备、构建类型、编译状态和页面内容给出统一差值。
 
 本章把平台边界固定在 Android 17 / API 37 / `android-17.0.0_r1`。Compose 仍是随应用发布的 AndroidX 库，并没有并入 Android 17 framework。平台侧仍由 Activity 生命周期、`ViewRootImpl` traversal、HWUI 与 `RenderThread` 承接首帧；Compose 在应用进程内完成 composition，并通过一个 View host 接入这条渲染路径。
 
@@ -203,11 +203,11 @@ Android 17 的自由窗口、分屏和旋转都可能改变窗口约束。约束
 
 启动测试至少覆盖一个常用全屏尺寸和一个可调整窗口尺寸。若窗口拖动期间重组过多，应检查状态读取范围、窗口类别离散化和布局到状态的反馈，不要冻结一次 `getCurrentWindowMetrics()` 结果。
 
-每个 Android 进程有独立的 heap、ClassLoader 和 Compose runtime 状态。只有在某个进程创建 Compose UI host 时，它才承担对应类加载与 composition 成本。通知、App Widget 的 `RemoteViews`，以及基于 Glance 生成 `RemoteViews` 的路径，不能按 Activity 中的 `AndroidComposeView` 首帧模型解释。多进程 Baseline Profile 是否覆盖入口，也应通过该进程的启动 trace 验证。
+每个 Android 进程有独立的 heap、ClassLoader 和 Compose runtime 状态。只有在某个进程创建 Compose UI host 时，它才负责对应类加载与 composition 成本。通知、App Widget 的 `RemoteViews`，以及基于 Glance 生成 `RemoteViews` 的路径，不能按 Activity 中的 `AndroidComposeView` 首帧模型解释。多进程 Baseline Profile 是否覆盖入口，也应通过该进程的启动 trace 验证。
 
 ## 7. View/Compose 混合页面
 
-混合页面会同时承担 View inflate/binding 和 Compose host 的初始 composition。每个独立 `ComposeView` 都有自己的 composition 生命周期，并在内部持有 Compose UI owner；首屏分散许多 `ComposeView` 可能放大 host、owner 查找和 composition 管理工作。
+混合页面会同时负责 View inflate/binding 和 Compose host 的初始 composition。每个独立 `ComposeView` 都有自己的 composition 生命周期，并在内部持有 Compose UI owner；首屏分散许多 `ComposeView` 可能放大 host、owner 查找和 composition 管理工作。
 
 优化时可以评估把相邻 Compose 内容放进同一个 host，但要保留 Fragment/View 生命周期边界。`ViewCompositionStrategy` 的选择应先保证 composition 在正确时机释放。为了少一个 host 而让 composition 越过 Fragment view 生命周期，会把小幅性能猜测换成泄漏或状态错误。
 

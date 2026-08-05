@@ -155,7 +155,7 @@ Provider 可以通过 `readPermission`、`writePermission`、path permission 和
 
 性能优化不能绕过这层安全语义：
 
-- 只导出确实需要跨应用访问的 Provider；
+- 只导出需要跨应用访问的 Provider；
 - 对可共享的最小 URI 发放临时 grant；
 - selection 使用占位符和 `selectionArgs`，不要拼接来自调用方的字符串；
 - `call()`、`openFile()` 等自定义入口同样要设计权限边界。
@@ -398,7 +398,7 @@ Provider 侧 GC 虽不会暂停主进程线程，却会延迟远程 reply，因�
 
 - 保存 application context；
 - 创建轻量级依赖容器；
-- 注册真正必需的句柄。
+- 注册必需的句柄。
 
 应该推迟：
 
@@ -414,7 +414,7 @@ Provider 侧 GC 虽不会暂停主进程线程，却会延迟远程 reply，因�
 
 App Startup 用一个 `InitializationProvider` 发现多个 `Initializer`，并按 `dependencies()` 构建依赖顺序。它可以减少各库各自声明初始化 Provider 的重复成本，但初始化代码本身仍运行在启动路径上。
 
-如果某个组件不应自动初始化，需要从合并后的 Manifest 中移除对应 metadata，再在真正需要时调用 `AppInitializer.initializeComponent()`。这才是 App Startup 的懒初始化；不存在一个自动把重任务移出启动路径的“lazy 标记”。
+如果某个组件不应自动初始化，需要从合并后的 Manifest 中移除对应 metadata，再在需要时调用 `AppInitializer.initializeComponent()`。这才是 App Startup 的懒初始化；不存在一个自动把重任务移出启动路径的“lazy 标记”。
 
 收益必须用目标应用实测。不能使用“每减少一个 Provider 固定节省 2 ms”或“必然提升 35%”这类没有设备、构建和样本条件的数字。
 
@@ -556,7 +556,7 @@ SDK 或应用自定义 Provider 最好在 `onCreate()` 内对可疑步骤分别�
 
 ### “App Startup 会自动延迟所有初始化”
 
-它默认仍在 `InitializationProvider` 中运行 Initializer。真正的懒初始化需要移除自动发现 metadata，并在业务入口手动初始化。
+它默认仍在 `InitializationProvider` 中运行 Initializer。实际的懒初始化需要移除自动发现 metadata，并在业务入口手动初始化。
 
 ### “批处理天然具有事务性”
 

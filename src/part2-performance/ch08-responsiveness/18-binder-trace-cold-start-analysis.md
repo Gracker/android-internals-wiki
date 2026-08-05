@@ -110,7 +110,7 @@ last_task9_audit_notes: "idle audit: 维度1（源码引用准确性）和维度
 
 ## 一、先把冷启动窗口和 Binder 范围分开
 
-一次 Activity 冷启动会经过 Launcher、`system_server`、Zygote 和目标应用进程。Binder 只承担其中一部分跨进程通信。下面几类工作经常与 Binder slice 相邻，却要按各自的数据源分析：
+一次 Activity 冷启动会经过 Launcher、`system_server`、Zygote 和目标应用进程。Binder 只负责其中一部分跨进程通信。下面几类工作经常与 Binder slice 相邻，却要按各自的数据源分析：
 
 - `system_server` 通过 Zygote command socket 请求创建应用进程；
 - 应用读取 dex、resources、SharedPreferences 或 DataStore 时产生文件 I/O；

@@ -243,7 +243,7 @@ AndroidX 默认 initializer 会把字体加载推迟到首个 Activity resume �
 
 API 28 的 `PrecomputedText.create()` 会预先生成每个段落的 `MeasuredParagraph` / native `MeasuredText`，包括文字测量和 glyph positioning。`StaticLayout` 收到兼容的 `PrecomputedText` 后可以复用这些 `ParagraphInfo`。
 
-`PrecomputedText.Params` 包含 `TextPaint`、text direction、break strategy、hyphenation frequency 和 `LineBreakConfig`，不包含 View 的最终可用宽度。最后的 line breaking、maxLines、ellipsize、行距和高度计算仍在创建 `Layout` 时完成。
+`PrecomputedText.Params` 包含 `TextPaint`、text direction、break strategy、hyphenation frequency 和 `LineBreakConfig`，不包含 View 的最终可用宽度。最终的 line breaking、maxLines、ellipsize、行距和高度计算仍在创建 `Layout` 时完成。
 
 下面的示例强调两个工程边界：参数从目标 `TextView` 取得，异步结果必须防止 RecyclerView holder 复用后写回旧内容。
 

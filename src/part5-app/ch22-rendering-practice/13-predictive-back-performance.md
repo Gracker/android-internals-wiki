@@ -100,7 +100,7 @@ Android 13 引入 `OnBackInvokedDispatcher` / `OnBackInvokedCallback`，提供�
 - `PredictiveBackHandler`：Compose 入口，来自 `androidx.activity:activity-compose:1.8.0+`，以 `Flow<BackEventCompat>` 提供手势事件；取消会结束 Flow 并抛出 `CancellationException`。
 - `NavigationEventDispatcher`：面向 Compose、KMP 和自定义导航容器的更底层抽象。Activity 1.12.0 已把 `OnBackPressed` API 重写到 NavigationEvent 之上；截至 2026-07-29，Activity 稳定版为 1.13.0，NavigationEvent 稳定版为 1.1.2。[已验证: Activity / NavigationEvent release notes]
 
-Android 16 增加 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER`：应用可以在不消费返回事件的前提下记录 root Activity 返回，系统 back-to-home 动画仍可播放。Android 17 的 `OnBackInvokedDispatcher` 明确写出版本差异：API 36 同时只能注册一个 observer callback，API 37 起不再限制数量。observer 只适合日志或不改变导航结果的收尾工作，不能拦截返回，也不要承担页面切换。[已验证: Android 17 `OnBackInvokedDispatcher.java`]
+Android 16 增加 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER`：应用可以在不消费返回事件的前提下记录 root Activity 返回，系统 back-to-home 动画仍可播放。Android 17 的 `OnBackInvokedDispatcher` 明确写出版本差异：API 36 同时只能注册一个 observer callback，API 37 起不再限制数量。observer 只适合日志或不改变导航结果的收尾工作，不能拦截返回，也不要负责页面切换。[已验证: Android 17 `OnBackInvokedDispatcher.java`]
 
 ## 手势进度进入动画系统后，回调只能做每帧能承受的事
 
@@ -351,4 +351,4 @@ ahead-of-time 分发要求手势开始前就确定谁接管返回。官方 WebVi
 
 ## 小结
 
-Predictive Back 的性能治理重点是把返回拆成 start、progress、cancel、complete 四段，并让 progress 阶段只承担每帧能完成的动画更新。Fragment、Compose、WebView 和 Activity 混合栈需要同时管住返回优先级、状态恢复和每帧成本。Perfetto 中先对齐输入、主线程和 App `SurfaceFrame`，再沿 RenderThread、SF `DisplayFrame`、目标 layer 与 present timing 判断慢帧落在哪一段。
+Predictive Back 的性能治理重点是把返回拆成 start、progress、cancel、complete 四段，并让 progress 阶段只负责每帧能完成的动画更新。Fragment、Compose、WebView 和 Activity 混合栈需要同时管住返回优先级、状态恢复和每帧成本。Perfetto 中先对齐输入、主线程和 App `SurfaceFrame`，再沿 RenderThread、SF `DisplayFrame`、目标 layer 与 present timing 判断慢帧落在哪一段。

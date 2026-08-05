@@ -227,7 +227,7 @@ Android 17 的 `SystemServer` 提交 `SecondaryZygotePreload` 任务，调用：
 Process.ZYGOTE_PROCESS.preloadDefault(Build.SUPPORTED_32_BIT_ABIS[0]);
 ```
 
-任务约在 WebView preparation 前一秒启动；WebView preparation 会等待这个 future。`preloadDefault()` 通过 Zygote socket 发送 `--preload-default`。返回 `true` 表示本次确实触发了 lazy preload，`false` 表示此前已经完成或 Zygote 并非 lazy 模式。
+任务约在 WebView preparation 前一秒启动；WebView preparation 会等待这个 future。`preloadDefault()` 通过 Zygote socket 发送 `--preload-default`。返回 `true` 表示本次触发了 lazy preload，`false` 表示此前已经完成或 Zygote 并非 lazy 模式。
 
 这是特定 init 配置下的行为。64-only、32-only 和厂商自定义 Zygote 配置可能不同，分析设备时要同时看 `ro.zygote`、实际 init service 和对应进程。
 
@@ -382,7 +382,7 @@ ZygoteConnection.handleChildProc()
 
 - 不创建会跨 fork 失效的线程；
 - 不保留不该继承的连接和文件描述符；
-- 优先加载只读、可共享、确实被多个 isolated service 使用的数据；
+- 优先加载只读、可共享、被多个 isolated service 使用的数据；
 - 不把用户或单次请求状态放入父进程。
 
 它不是普通 Activity 进程的通用预加载 API。
@@ -487,4 +487,4 @@ EventLog 只有在 trace 启用 Android logs 并包含 events buffer 时才可�
 6. `ZygoteInit.zygoteInit()` / `RuntimeInit.applicationInit()`：进入 `ActivityThread.main()`；
 7. `ActivityThread.attach()` 与 AMS attach：从新进程回到 `bindApplication`。
 
-理解这条顺序后，冷启动 trace 中的每段时间都能落到具体进程和具体职责上：创建慢看 Zygote，特化慢看 native 安全准备，绑定慢看应用初始化，首帧慢看组件与渲染。这样才能把 Zygote 优化控制在它真正负责的范围内。
+理解这条顺序后，冷启动 trace 中的每段时间都能落到具体进程和具体职责上：创建慢看 Zygote，特化慢看 native 安全准备，绑定慢看应用初始化，首帧慢看组件与渲染。这样才能把 Zygote 优化控制在它负责的范围内。

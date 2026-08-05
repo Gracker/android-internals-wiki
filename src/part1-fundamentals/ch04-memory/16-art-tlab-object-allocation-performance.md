@@ -46,8 +46,8 @@ gap_source: "AOSP结构"
 
 | Collector | 启用 TLAB | 未启用 TLAB | `gc_plan_` |
 |---|---|---|---|
-| Concurrent Copying（CC） | `kAllocatorTypeRegionTLAB` | `kAllocatorTypeRegion` | 分代配置先放入 Sticky，最后放入 Full |
-| Concurrent Mark-Compact（CMC） | `kAllocatorTypeTLAB` | `kAllocatorTypeBumpPointer` | 分代配置先放入 Sticky，最后放入 Full |
+| Concurrent Copying（CC） | `kAllocatorTypeRegionTLAB` | `kAllocatorTypeRegion` | 分代配置先放入 Sticky，最终放入 Full |
+| Concurrent Mark-Compact（CMC） | `kAllocatorTypeTLAB` | `kAllocatorTypeBumpPointer` | 分代配置先放入 Sticky，最终放入 Full |
 | Semi-Space（SS） | `kAllocatorTypeTLAB` | `kAllocatorTypeBumpPointer` | Full |
 | Mark-Sweep / Concurrent Mark-Sweep | `kAllocatorTypeRosAlloc` | 编译时关闭 RosAlloc 才选 dlmalloc | Sticky、Partial、Full |
 
@@ -163,7 +163,7 @@ RosAlloc 一共有 42 个 size bracket：
 
 - 前 16 个是线程本地 bracket，覆盖 8～128 字节，步长 8 字节；
 - 之后的常规 bracket 覆盖 144～512 字节，步长 16 字节；
-- 最后还有 1KB 和 2KB 两档；
+- 最终还有 1KB 和 2KB 两档；
 - 大于 2KB 的 RosAlloc 请求按页粒度处理。
 
 不超过 128 字节时，线程可先从自己的 thread-local run 取空闲 slot；当前 run 无法满足请求时，再进入补充 run 的代码。共享 run、`current_runs_` 与 `non_full_runs_` 由 **每个 size bracket 一把** `size_bracket_locks_[i]` 保护。页映射、空闲页集合和 footprint 等状态另有全局 `lock_`，批量释放还有 `bulk_free_lock_`。

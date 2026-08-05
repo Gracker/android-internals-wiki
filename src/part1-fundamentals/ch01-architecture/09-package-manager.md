@@ -142,7 +142,7 @@ last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
 
 # 1.9 Package Manager Service 与应用安装性能
 
-安装一个应用，不是把 APK 复制到 `/data/app` 就结束了。系统还要验证安装会话、解析包、校验签名、协调权限和共享库、准备应用数据、按策略执行 dexopt，最后才把新状态发布给系统其余部分。只要其中一个阶段变慢，用户看到的“正在安装”就会变长；如果编译产物或 Profile 没有按预期生效，影响还会延续到首次启动。
+安装一个应用，不是把 APK 复制到 `/data/app` 就结束了。系统还要验证安装会话、解析包、校验签名、协调权限和共享库、准备应用数据、按策略执行 dexopt，最终才把新状态发布给系统其余部分。只要其中一个阶段变慢，用户看到的“正在安装”就会变长；如果编译产物或 Profile 没有按预期生效，影响还会延续到首次启动。
 
 本节以 AOSP `android-17.0.0_r1` 为平台基线；涉及 Incremental File System 时，以 ACK `android17-6.18-2026-06_r6` 为内核基线。Android 10～16 只用于解释机制如何演进。
 
@@ -161,7 +161,7 @@ last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
 | ART Service / `artd` | `system_server` / native daemon | 组织和执行 on-device dexopt，管理编译产物 | 不负责发布 PackageManager 状态 |
 | `dex2oat` | 独立 native 进程 | 按 ART Service 给出的参数生成 OAT、VDEX 等产物 | 不决定包是否允许安装 |
 
-Android 14 起，设备端 AOT 编译的控制面已经迁移到 ART Service。PMS 中仍能看到 `DexOptHelper`，但它更接近安装侧的桥接层：根据安装状态发起请求，最终由 `ArtManagerLocal`、`artd` 和 `dex2oat` 完成编译。把 Android 17 的安装编译简单画成“PMS 调 installd 做 dexopt”，会遗漏真正的调度和执行位置。
+Android 14 起，设备端 AOT 编译的控制面已经迁移到 ART Service。PMS 中仍能看到 `DexOptHelper`，但它更接近安装侧的桥接层：根据安装状态发起请求，最终由 `ArtManagerLocal`、`artd` 和 `dex2oat` 完成编译。把 Android 17 的安装编译简单画成“PMS 调 installd 做 dexopt”，会遗漏实际的调度和执行位置。
 
 ---
 
@@ -380,7 +380,7 @@ OTA 或 Mainline 更新后，已有编译产物是否还能复用取决于 boot 
 
 ## `.sdm` / `.sdc`：Android 17 源码中的云编译产物
 
-Android 17 固定 tag 中确实存在 `.sdm` 和 `.sdc`，但应按源码能够证明的范围描述。
+Android 17 固定 tag 中存在 `.sdm` 和 `.sdc`，但应按源码能够证明的范围描述。
 
 `PackageInstallerSession` 的注释把 `.sdm` 说明为承载 cloud compilation artifacts 的文件。`ArtManagedInstallFileHelper` 把 `.dm`、`.prof` 和 `.sdm` 列为 ART 管理的安装文件；`.sdm` 文件名还要包含有效 ISA，例如 `base.arm64.sdm`。源码注释说明该格式从 Android 16 引入。
 
@@ -470,11 +470,11 @@ Android 17 源码中可直接找到的 trace 名称包括：
 
 1. **确定时间边界**：从 session commit 到安装结果回调，不要把 APK 下载时间混进来。
 2. **看 `system_server` 的阶段**：prepare、scan、reconcile、dexopt、commit 中哪段最长。
-3. **下钻执行进程**：dexopt 长就看 `artd` / `dex2oat`；数据目录长就看 `installd`；增量读取长就看数据加载器与 IncFS。
+3. **展开到执行进程**：dexopt 长就看 `artd` / `dex2oat`；数据目录长就看 `installd`；增量读取长就看数据加载器与 IncFS。
 4. **区分运行、排队和 I/O 阻塞**：长 slice 不等于线程一直在 CPU 上执行。
 5. **核对设备状态**：温度、充电、idle、存储压力和并发安装都会改变结果。
 
-下面的 SQL 可先列出安装相关 slice，作为人工下钻入口：
+下面的 SQL 可先列出安装相关 slice，作为继续分析的入口：
 
 ```sql
 SELECT
@@ -565,7 +565,7 @@ Android 17 源码把它作为可选 ART 管理文件。没有 `.sdm` 是正常�
 
 Android 17 的安装流程可以压缩成一句话：`PackageInstallerSession` 管事务，PMS 管包状态，`installd` 管应用数据和底层文件，ART Service 与 `artd` 管 dexopt，`dex2oat` 执行最重的编译工作。
 
-真正有用的性能结论必须回答三个问题：
+有用的性能结论必须回答三个问题：
 
 1. 慢的是安装事务中的哪个阶段；
 2. 该阶段实际运行在哪个进程、哪条线程上；

@@ -63,7 +63,7 @@ last_deepseek_cn_review_at: 2026-07-16
 
 ### 锚点（必须覆盖）
 
-- 🔹 [定位] 说明 Jetpack Benchmark 用来证明代码改动效果，承担可重复实验，不承担线上监控。
+- 🔹 [定位] 说明 Jetpack Benchmark 用来证明代码改动效果，负责可重复实验，不负责线上监控。
 - 🔹 [Microbenchmark] 展开适合测试的对象、JIT / warmup、measurement、BlackHole、state、避免测到日志或随机数。
 - 🔹 [Macrobenchmark] 展开端到端场景、启动、滚动、页面切换、UiAutomator、CompilationMode、StartupMode。
 - 🔹 [工程结构] 写 benchmark module、target app、instrumentation runner、Gradle 插件、依赖和构建变体。

@@ -183,7 +183,7 @@ Android 17 的公开 Standby Bucket 值为：
 
 另有每分钟 20 个 Job 和 20 个 session 的 rate limit。相邻 session 在 5 秒范围内可合并统计。时间、Job 数、session 数任一耗尽，都可能让应用 out of quota。
 
-这里的“执行时长”是 elapsed realtime 上的 package execution session，并非某线程消耗的 CPU time。`QuotaController.Timer` 在该包第一个需要计费的后台 Job 开始时启动，在最后一个结束时生成一段 `TimingSession`。多个 Job 并行运行期间，elapsed time 不会按 Job 数简单相加，但每个启动的后台 Job 仍会增加 Job count。
+这里的“执行时长”是 elapsed realtime 上的 package execution session，并非某线程消耗的 CPU time。`QuotaController.Timer` 在该包第一个需要计费的后台 Job 开始时启动，在末尾一个结束时生成一段 `TimingSession`。多个 Job 并行运行期间，elapsed time 不会按 Job 数简单相加，但每个启动的后台 Job 仍会增加 Job count。
 
 普通 Job 还受一个 24 小时内最多 4 小时执行会话的二级上限。`QuotaController.DEFAULT_MAX_EXECUTION_TIME_MS = 4h` 描述的是包级滚动统计，不是“单个 Job 可以运行 4 小时”。
 

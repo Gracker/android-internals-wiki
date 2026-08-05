@@ -257,7 +257,7 @@ private static native void nativeWriteString16(
 - 调用时长通常很短、但最坏情况无界的操作。
 - 持有一把也可能被 Java 回调路径持有的 native 锁。
 
-最后一种模式可能让 GC、Java 线程和 FastNative 线程形成死锁。
+最终一种模式可能让 GC、Java 线程和 FastNative 线程形成死锁。
 
 ### 4.2 `@CriticalNative` 只能用 primitive
 
@@ -315,7 +315,7 @@ Baseline Profile 不会自动合并 JNI 调用，也不会把不合格的方法�
 native 代码需要获得当前线程的环境时：
 
 1. 用 `JavaVM::GetEnv()` 查询当前线程是否已经 attach。
-2. 未 attach 且确实要调用 JNI，使用 `AttachCurrentThread()` 或 `AttachCurrentThreadAsDaemon()`。
+2. 未 attach 且要调用 JNI，使用 `AttachCurrentThread()` 或 `AttachCurrentThreadAsDaemon()`。
 3. 线程退出前调用 `DetachCurrentThread()`。
 
 对已经 attach 的线程再次 attach 是 no-op，但不等于应该在每个任务前后反复做。attach/detach 应与线程生命周期绑定。

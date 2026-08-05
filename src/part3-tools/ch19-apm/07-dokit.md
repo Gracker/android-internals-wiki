@@ -47,7 +47,7 @@ last_deepseek_cn_review_at: 2026-07-17
 
 ### 锚点（必须覆盖）
 
-- 🔹 [定位] 说明 DoKit 是研发现场工具箱，主要提高调试和 QA 效率，不承担线上指标平台职责。
+- 🔹 [定位] 说明 DoKit 是研发现场工具箱，主要提高调试和 QA 效率，不负责线上指标平台职责。
 - 🔹 [能力地图] 按性能面板、网络、Mock、弱网、日志、业务入口、环境切换、视觉辅助拆功能和使用对象。
 - 🔹 [性能可信度] 说明 FPS、CPU、内存、网络数据的采集来源、刷新频率、误差和适合回答的问题。
 - 🔹 [工具关系] 和 Android Studio Profiler、Perfetto、JankStats、FrameMetrics 做分工表，写清 DoKit 何时只能当初筛工具。
@@ -85,7 +85,7 @@ last_deepseek_cn_review_at: 2026-07-17
 
 DoraemonKit（DoKit）把网络查看、弱网、Mock、文件与数据库浏览、日志、性能浮窗、UI 检查和业务自定义入口放进同一个 Android 调试包。测试人员可以在手机上改变测试条件，开发人员可以在同一路径下查看请求与进程状态，这正是它最擅长的场景。
 
-这类便利也会改变被测环境。浮窗需要绘制，性能面板会轮询，网络模块会插入 interceptor，部分功能还依赖编译期插桩或隐藏 API。DoKit 适合回答“哪个页面、哪个操作或哪个网络条件值得继续调查”，不能据此发布版本级性能结论，更不该承担生产 APM 的采集任务。
+这类便利也会改变被测环境。浮窗需要绘制，性能面板会轮询，网络模块会插入 interceptor，部分功能还依赖编译期插桩或隐藏 API。DoKit 适合回答“哪个页面、哪个操作或哪个网络条件值得继续调查”，不能据此发布版本级性能结论，更不该负责生产 APM 的采集任务。
 
 本节以 Android 17 / API 37 / `android-17.0.0_r1` 为平台审阅锚点。DoKit 没有面向 API 37 的官方兼容承诺，因此文中的“可用”只表示某项实现经过源码分析后具备试接条件，仍需在项目自己的 AGP、依赖图、设备和最终安装包上验证。
 
@@ -129,7 +129,7 @@ DoraemonKit（DoKit）把网络查看、弱网、Mock、文件与数据库浏览
 
 `dokitx` 是运行时工具箱，`dokitx-plugin` 负责字节码改写。3.7.11 的插件在 `DoKitPlugin.kt` 中取得旧版 `AppExtension` / `LibraryExtension`，随后调用 `registerTransform()`。Android Gradle Plugin 7.2 已弃用 Transform API，AGP 8.0 将它移除；API 37 项目常用的现代 AGP 不能直接套用这条插件链路。
 
-插件还有一个容易漏掉的变体问题。它通过顶层 Gradle task 名是否包含 `release` / `Release` 判断 Release 构建。执行 `assembleRelease` 时通常能命中，执行 `assemble` 这类聚合任务时却可能返回 false，插件仍可能注册 Transform。它不能承担 Release 隔离的安全边界。
+插件还有一个容易漏掉的变体问题。它通过顶层 Gradle task 名是否包含 `release` / `Release` 判断 Release 构建。执行 `assembleRelease` 时通常能命中，执行 `assemble` 这类聚合任务时却可能返回 false，插件仍可能注册 Transform。它不能负责 Release 隔离的安全边界。
 
 可以按能力拆开决策：
 
@@ -302,7 +302,7 @@ AAR 还声明了未导出的 `FileProvider`，authority 为 `${applicationId}.de
 | 基线 | 测试环境、正常网络 | 首屏、分页、图片与缓存 | 记录请求顺序，不把浮窗值作为基准 |
 | 慢 Body | DoKit 对 GET 列表接口限速 | loading、取消请求、页面退出 | 无主线程阻塞，退出后不更新旧页面 |
 | HTTP 400 | DoKit“断网”模式，仅用于该幂等 GET | 错误页、重试入口 | 文案正确，不清掉可用缓存 |
-| 空列表 | Mock 平台或本地 repository 返回空数组 | 空态与埋点 | 不崩溃，不误显示网络错误 |
+| 空列表 | Mock 平台或本地 repository 返回空数组 | 空态与埋点 | 不应崩溃，不误显示网络错误 |
 | 大列表 | Mock 返回上限数据 | diff、布局、图片请求 | 用 Perfetto / Macrobenchmark 复核卡顿 |
 | 真实超时 | MockWebServer 或代理制造 read timeout | 异常分类、退避重试 | 命中 `SocketTimeoutException` 分支，重试次数受控 |
 

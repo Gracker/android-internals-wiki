@@ -236,7 +236,7 @@ files/apm/spool/<process-name-hash>/<process-instance-id>/
 
 上传协调者应固定在主进程或专用诊断进程，扫描其他进程的 sealed 文件；其他进程只负责 seal 和发轻量 IPC 通知，通知丢失时由下次扫描补上。需要从多个进程安全地提交 WorkManager 请求时，显式接入 `androidx.work.multiprocess.RemoteWorkManager`，不要在每个进程各自初始化一套未验证的调度器。多个进程也不能向同一个 mmap active file 写入；Java/Kotlin 进程内锁无法保护另一个进程，文件锁仍不能替代 record commit 协议。Mars xLog 的接入文档同样要求多进程使用独立日志文件。
 
-### 3.1 crash handler 不能承担“清空整个队列”
+### 3.1 crash handler 不能负责“清空整个队列”
 
 Java 未捕获异常、native signal、OOM 和系统结束进程的可用环境不同：
 
@@ -308,7 +308,7 @@ record:
 
 APM event 通常字段稳定、数值多、批量频繁。二进制协议常能减少字段名重复和临时字符串，但“二进制一定更快”不是通用结论。
 
-| 方案 | 适用位置 | 优点 | 需要承担的成本 |
+| 方案 | 适用位置 | 优点 | 需要负责的成本 |
 | --- | --- | --- | --- |
 | JSON | 本地 debug、人工导出、小流量兼容接口 | 可读、工具普遍 | UTF-8 字符串与对象分配，字段名重复 |
 | Protobuf Lite | 默认事件 schema 与网络批次 | 小 runtime、未知字段兼容、跨语言成熟 | 生成代码、schema 演进、对象构造 |
@@ -450,7 +450,7 @@ Android 14 / API 34 起不会再向 App 发送 `TRIM_MEMORY_RUNNING_MODERATE/LOW
 - 探测成功且成本恢复才回到 `CLOSED`；
 - 连续失败增加冷却，但设置最大值，避免永久失去诊断能力。
 
-自保规则使用 SDK 内置上限与已验签配置共同计算，远端只能收紧不能放宽硬上限。服务端失联、DNS 故障或 App 离线时，本地规则仍能工作。
+自保规则使用 SDK 内置上限与已验签配置共同计算，远端只能限制加强不能放宽硬上限。服务端失联、DNS 故障或 App 离线时，本地规则仍能工作。
 
 ## 9. APM 监控 APM：给每个数字写清测量边界
 

@@ -308,7 +308,7 @@ service vendor.cas-default-lazy /vendor/bin/hw/android.hardware.cas-service.exam
     disabled
 ```
 
-`interface aidl` 让 servicemanager 识别接口，`disabled` 避免随 class 自动启动，`oneshot` 控制退出后的重启行为。lazy 只适合客户端可以承担首次启动延迟、且服务没有早期硬依赖的场景。
+`interface aidl` 让 servicemanager 识别接口，`disabled` 避免随 class 自动启动，`oneshot` 控制退出后的重启行为。lazy 只适合客户端可以负责首次启动延迟、且服务没有早期硬依赖的场景。
 
 ### Home 和广播长尾
 

@@ -103,7 +103,7 @@ last_deepseek_cn_review_at: 2026-06-06
 
 ## 2. `LayoutInflater.inflate()` 的三阶段路径
 
-布局 XML 经 AAPT2 编译后，以 binary XML 资源存入 APK；`resources.arsc` 保存资源表与索引，两者承担不同职责。运行时 inflate 仍需解析节点、解析属性、构造对象并组装 View 树，binary XML 没有消除这些工作。
+布局 XML 经 AAPT2 编译后，以 binary XML 资源存入 APK；`resources.arsc` 保存资源表与索引，两者负责不同职责。运行时 inflate 仍需解析节点、解析属性、构造对象并组装 View 树，binary XML 没有消除这些工作。
 
 ### 2.1 阶段一：读取 XML 与确定上下文
 
@@ -419,7 +419,7 @@ ORDER BY s.dur DESC;
 
 `slice` 没有可直接 `USING (utid)` 的通用关系，必须经 `thread_track` 关联线程。结果还要过滤目标进程/窗口，并回到时间线判断这些 slice 是否属于用户可感知帧。
 
-FrameTimeline 中 App `SurfaceFrame` 的 `surface_frame_token` 与 SF/Display 侧的 `display_frame_token` 承担不同关联语义。一帧 DisplayFrame 可以接纳多个进程或 layer 的 SurfaceFrame，不能把两种 token 拼成一个“端到端 frame id”。measure/layout 只能解释 App 主线程准备阶段，显示结果还要继续对齐 RenderThread、App Window buffer 提交和对应的 DisplayFrame。
+FrameTimeline 中 App `SurfaceFrame` 的 `surface_frame_token` 与 SF/Display 侧的 `display_frame_token` 负责不同关联语义。一帧 DisplayFrame 可以接纳多个进程或 layer 的 SurfaceFrame，不能把两种 token 拼成一个“端到端 frame id”。measure/layout 只能解释 App 主线程准备阶段，显示结果还要继续对齐 RenderThread、App Window buffer 提交和对应的 DisplayFrame。
 
 ### 8.2 给可疑 View 加窄范围 trace
 

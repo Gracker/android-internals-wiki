@@ -225,7 +225,7 @@ flowchart TD
 
 - 若其他线程已经在做 GC，分配线程会进入 `WaitForGcToComplete()`；这个等待本身可能形成明显卡顿。
 - ART 先尝试 `next_gc_type_`。这个类型由上一次 GC 后的存活量、吞吐估计和堆目标计算决定，不固定为 Young 或 Full。
-- 最后的回收会使用 `gc_plan_.back()`，收集整个堆并清除软引用。源码还用回收收益限制反复 GC，防止长期 GC thrashing。
+- 最终的回收会使用 `gc_plan_.back()`，收集整个堆并清除软引用。源码还用回收收益限制反复 GC，防止长期 GC thrashing。
 - 对 RosAlloc/DlMalloc 路径，满足配置和时间间隔时还可能尝试 homogeneous space compaction。
 - OOM 日志若显示总空闲字节大于请求大小，ART 会补充最大连续块等碎片信息。
 

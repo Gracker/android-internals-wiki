@@ -149,7 +149,7 @@ API 37 的 `EnterInterpreterFromDeoptimize()` 明确说明，它不为 lock coun
 
 `Thread::GetDeoptimizationException()` 返回一个保留的假对象指针。Instrumentation 可以把它写入线程的 exception slot，使 quick exception delivery 或 `ArtMethod::Invoke()` 在返回边界识别“这里要 deopt”；原有 Java 异常保存在 deoptimization context 中，稍后恢复。
 
-它不会进入 Java `catch`，GC root visitor 也会排除该值。显式 `HDeoptimize` 路径直接获得 long-jump context；只有需要跨既有 quick/invoke 边界传递请求时，sentinel 才承担信号作用。
+它不会进入 Java `catch`，GC root visitor 也会排除该值。显式 `HDeoptimize` 路径直接获得 long-jump context；只有需要跨既有 quick/invoke 边界传递请求时，sentinel 才负责信号作用。
 
 ## 三、CHA 失效：类加载怎样影响在栈代码
 

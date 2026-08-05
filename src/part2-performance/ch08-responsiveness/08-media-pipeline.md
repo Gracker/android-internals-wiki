@@ -113,7 +113,7 @@ last_task6_audit: "2026-07-14"
 | 图形排队 | Surface、BufferQueue、fence | consumer 慢、队列满、fence 未 signal | FrameTimeline、SurfaceFlinger、fence |
 | 合成与显示 | SurfaceFlinger、HWC、显示驱动 | GPU/HWC 合成、vsync、present | Perfetto gfx、FrameTimeline、Winscope |
 
-音频路径可按“应用生产数据 → AudioTrack/AAudio → AudioFlinger 或 MMAP → Audio HAL/DSP → 输出设备”拆解。视频和音频在播放器的 media clock 处汇合；Bluetooth、USB、HDMI 和机身扬声器还会引入不同的设备侧缓冲。
+音频路径可按“应用生产数据 → AudioTrack/AAudio → AudioFlinger 或 MMAP → Audio HAL/DSP → 输出设备”分段分析。视频和音频在播放器的 media clock 处汇合；Bluetooth、USB、HDMI 和机身扬声器还会引入不同的设备侧缓冲。
 
 这张时间线用于定位归属，不表示每个阶段都在独立进程中串行执行。解码、加载、合成和音频播放会并行推进，队列把它们隔开；队列过深会增加延迟，队列过浅又更容易因抖动而耗尽。
 

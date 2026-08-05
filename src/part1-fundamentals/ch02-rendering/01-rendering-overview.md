@@ -586,7 +586,7 @@ Hardware Composer HAL 连接 SurfaceFlinger 与设备显示合成能力。Surfac
 
 ### 9.4 色彩处理位于多个可能阶段
 
-色彩空间转换、色调映射、显示颜色变换可能由 RenderEngine、HWC、显示处理单元或面板侧能力承担，位置取决于 Layer、输出显示和设备实现。它不总是显示前的最后一步，成本也不能一概忽略。
+色彩空间转换、色调映射、显示颜色变换可能由 RenderEngine、HWC、显示处理单元或面板侧能力负责，位置取决于 Layer、输出显示和设备实现。它不总是显示前的收尾步骤，成本也不能一概忽略。
 
 ## 10. 从应用缓冲区到显示输出，不是同一组“三个 Buffer”
 
@@ -719,7 +719,7 @@ RenderThread CPU slice 长度不等于 GPU duration。二者可能重叠，也�
 5. 若应用已按时 `queueBuffer`，按 Surface 和 frame number 追踪 BLAST transaction。
 6. 检查 SurfaceFlinger 是否及时 latch，以及 acquire fence 是否满足。
 7. 检查 HWC composition type、RenderEngine 工作和 present 时序。
-8. 最后把根因归到“生产晚、GPU 完成晚、队列背压、系统合成晚或显示呈现晚”中的具体一项。
+8. 最终把根因归到“生产晚、GPU 完成晚、队列背压、系统合成晚或显示呈现晚”中的具体一项。
 
 这种顺序可以避免看到主线程的一次长调用，就提前结束对后续异步阶段的检查。
 

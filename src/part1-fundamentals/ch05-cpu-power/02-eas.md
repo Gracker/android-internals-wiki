@@ -111,7 +111,7 @@ verifier_checked: 2026-07-09
 
 现代手机 SoC（System on Chip，片上系统）普遍采用大小核架构（我们会在 5.3 节详细展开），一个四小核加四大核的八核处理器，在安排任务时面临一个核心问题：**一个任务应该放在小核还是大核？** 放小核省电但可能不够快，放大核够快但功耗高。如果调度器只看当前空闲程度，轻任务就可能被放到大核上，频率和电压都会被抬高，系统会多花电，还会把更多热量堆在前台交互阶段。
 
-EAS（Energy Aware Scheduling）在 Linux 5.0 合入主线。任务唤醒时，它先在每个 performance domain 中找出有代表性的候选 CPU，再借助 Energy Model 估算放置前后的 active energy 差值。最后的选择还要满足 affinity、cpuset、capacity 和 UClamp 等约束。
+EAS（Energy Aware Scheduling）在 Linux 5.0 合入主线。任务唤醒时，它先在每个 performance domain 中找出有代表性的候选 CPU，再借助 Energy Model 估算放置前后的 active energy 差值。最终的选择还要满足 affinity、cpuset、capacity 和 UClamp 等约束。
 
 理解 EAS 的意义在于：打开一份 Perfetto Trace 时，看到主线程在低 capacity CPU 上运行，或者在不同 performance domain 之间迁移，可以继续追查 wake-up placement、负载均衡、UClamp 与 thermal 等决策依据。
 

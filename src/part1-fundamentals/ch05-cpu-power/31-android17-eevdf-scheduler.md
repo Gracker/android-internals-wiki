@@ -64,7 +64,7 @@ $$
 
 这里有一个容易误读的实现细节：运行队列中的实体并不依赖持续写回的 `se->vlag` 来判断资格。`entity_eligible()` 调用 `vruntime_eligible()`，直接用 `cfs_rq->sum_w_vruntime`、`sum_weight`、当前实体和待判断实体的 `vruntime` 完成等价比较，还特意避开了先做除法带来的精度损失。
 
-`se->vlag` 主要承担离队与重新入队之间的 lag 保存：
+`se->vlag` 主要负责离队与重新入队之间的 lag 保存：
 
 1. `update_curr()` 用 `rq_clock_task()` 计算已经运行的 `delta_exec`，再通过 `calc_delta_fair()` 推进 `curr->vruntime`。
 2. 实体离开运行队列时，`dequeue_entity()` 调用 `update_entity_lag()`，把当前虚拟 lag 保存到 `se->vlag`。
@@ -276,7 +276,7 @@ ORDER BY avg_runnable_ms DESC;
 5. 对照 CPU frequency、idle 和 thermal 轨道。频率不足会延长完成工作所需的墙上时间，但不能据此断言 EEVDF 记账错误。
 6. 检查 vendor hook、设备调度补丁和 sched_ext 状态。GKI 源码结论不能覆盖设备私有改动。
 
-最后记住五条边界：
+最终记住五条边界：
 
 - EEVDF 是公平调度类中的选人算法，CFS 基础设施和层级公平机制仍在。
 - eligibility 来自运行队列虚拟时间关系，`se->vlag` 主要保存离队状态。

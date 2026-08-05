@@ -316,7 +316,7 @@ Android 17 已具备 per-display status bar 基础设施。`StatusBarWindowContr
 
 其他三个边界也要保持清楚：
 
-- `NavigationBarControllerImpl` 用 `SparseArray<NavigationBar>` 按 display 管理导航栏，并通过 WMS 查询该 display 是否有 navigation bar/taskbar。连接屏的 Taskbar 可能由 Launcher 侧管理，SystemUI 的 `TaskbarDelegate` 承担状态与回调协调。
+- `NavigationBarControllerImpl` 用 `SparseArray<NavigationBar>` 按 display 管理导航栏，并通过 WMS 查询该 display 是否有 navigation bar/taskbar。连接屏的 Taskbar 可能由 Launcher 侧管理，SystemUI 的 `TaskbarDelegate` 负责状态与回调协调。
 - AOSP Shade 是 display-aware 的单例主窗口，可以在 display 之间移动或在 display 移除时重新挂到默认屏。不能从 per-display StatusBar 推出“每块屏都有一套 NotificationShade”。
 - 桌面任务布局、窗口装饰与转场主要属于 WM Shell desktop mode；桌面任务 View 和光标不能统称为 SystemUI 渲染内容。
 
@@ -462,7 +462,7 @@ ORDER BY s.ts;
 
 - **§2.5 MainThread 与 RenderThread 协作**：本章沿用标准 HWUI、BLAST 与 SurfaceFlinger 分工，并补充 SystemUI 的专用 UI 线程。
 - **§7.1 卡顿的定义与分类**：SystemUI 仍需从 FrameTimeline 的用户可见帧开始定责。
-- **§7.4 典型卡顿场景**：Shade、导航、启动和 Overview 的现象，可用本章的窗口与组件边界进一步拆解。
+- **§7.4 典型卡顿场景**：Shade、导航、启动和 Overview 的现象，可用本章的窗口与组件边界进一步分析。
 - **§13.3 Perfetto View 解读**：线程、FrameTimeline、Layer 和 SQL 操作可参考该章。
 
 ## Android 17 源码与官方资料

@@ -184,7 +184,7 @@ class H5OpenTiming(
 
 ### 把 startup、实例创建和首个页面分开
 
-第一次使用 WebView 时，主线程可能同时承担 provider 选择、Java 类加载、native library 装载和 Chromium startup。后续工作还包括单个 WebView 的 provider-side 对象创建、renderer 建立、网络请求、解析、raster、functor 绘制与窗口提交。这些阶段的触发时机受 provider revision 影响，不能统一写成“构造 WebView 就创建 renderer 和 GPU 资源”。
+第一次使用 WebView 时，主线程可能同时负责 provider 选择、Java 类加载、native library 装载和 Chromium startup。后续工作还包括单个 WebView 的 provider-side 对象创建、renderer 建立、网络请求、解析、raster、functor 绘制与窗口提交。这些阶段的触发时机受 provider revision 影响，不能统一写成“构造 WebView 就创建 renderer 和 GPU 资源”。
 
 更适合实验的拆分方式如下：
 

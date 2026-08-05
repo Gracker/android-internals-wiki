@@ -106,7 +106,7 @@ finalized_date: "2026-07-14"
 
 1. **谁在等**：主线程、RenderThread、Binder worker，还是普通后台线程？
 2. **等什么**：Java monitor、native 同步原语、Binder 回复，还是正常事件等待？
-3. **谁能让它继续**：真正的 owner 或服务端线程是谁？
+3. **谁能让它继续**：实际的 owner 或服务端线程是谁？
 4. **owner 为什么没有及时推进**：正在运行、排队等 CPU、阻塞在另一把锁，还是做了 I/O？
 
 这四个答案拼起来，才是一条可修复的等待链。
@@ -522,7 +522,7 @@ LIMIT 30;
 
 超时只能限制等待，并不能修复潜在死锁；`tryLock()` 也不能自动保证状态机正确。
 
-### 10.4 最后才比较锁类型或无锁结构
+### 10.4 最终才比较锁类型或无锁结构
 
 选择 `synchronized`、`ReentrantLock`、读写锁或无锁结构，应由需求决定：
 
@@ -579,7 +579,7 @@ Binder 默认线程配置在历史上容易被误传。本章只对当前 Androi
 
 锁竞争分析的核心不是锁名，而是等待链。Java monitor 用 `android_monitor_contention` 找 waiter 与 owner；native mutex 从 futex 候选回到 native 栈和初始化代码；Binder 用 transaction/reply 连起 client 与 server；MessageQueue 还要区分正常 native poll 与旧 monitor 竞争。
 
-找到 owner 后继续问：它在 CPU 上运行吗，还是 Runnable 却没被调度？它是否阻塞在另一把锁、I/O 或 Binder 上？只有追到真正不推进的节点，缩短临界区、拆锁、调整线程模型、启用 PI 或采用无锁结构才有明确目标。
+找到 owner 后继续问：它在 CPU 上运行吗，还是 Runnable 却没被调度？它是否阻塞在另一把锁、I/O 或 Binder 上？只有追到不推进的节点，缩短临界区、拆锁、调整线程模型、启用 PI 或采用无锁结构才有明确目标。
 
 ## 参考资料
 

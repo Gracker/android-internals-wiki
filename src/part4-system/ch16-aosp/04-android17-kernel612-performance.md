@@ -91,7 +91,7 @@ task2b_verification_note: "2026-06-16 验证 android17-6.18 gki/aarch64/afdo/REA
 - Android 平台：Android 17 / API 37 / `android-17.0.0_r1`；
 - Android common kernel：`android17-6.18-2026-06_r6`，其 `Makefile` 版本为 6.18.21。
 
-`android15-6.6` 与 `android16-6.12` 只用于解释 EEVDF、sched_ext 和 AutoFDO 的演进，不承担 Android 17 当前实现结论。平台行为也不应从内核分支名推导：Android 17 的 generational CMC 与 lock-free `MessageQueue` 位于 ART 和 `frameworks/base`，它们不属于 Linux 6.18 的调度或存储改动。
+`android15-6.6` 与 `android16-6.12` 只用于解释 EEVDF、sched_ext 和 AutoFDO 的演进，不负责 Android 17 当前实现结论。平台行为也不应从内核分支名推导：Android 17 的 generational CMC 与 lock-free `MessageQueue` 位于 ART 和 `frameworks/base`，它们不属于 Linux 6.18 的调度或存储改动。
 
 GKI（Generic Kernel Image）把通用内核与板级 vendor modules 分开，并以 KMI 约束模块接口。设备采用 `android17-6.18-2026-06_r6` release build，还需要相容的 vendor modules、产品配置和启动参数。源码 tag 中存在某个功能，无法单独证明设备已经启用它。
 

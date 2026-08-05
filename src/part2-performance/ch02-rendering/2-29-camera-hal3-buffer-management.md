@@ -33,7 +33,7 @@ Camera HAL3 的 Buffer 生命周期分为三个核心阶段：**初始化分配*
 
 **流转阶段**通过 CaptureRequest 实现单次 buffer 填充和传递。每个 Buffer 拥有独立的生命周期追踪：通过 buffer_id 标识、acquire_fence 与 release_fence 管理所有权、Surface 实例完成跨进程同步。
 
-**回收阶段**遵循 `queueBuffer` → `releaseBuffer` 链路。当 ImageReader 消费端调用 `close()` 时，Buffer 从 BufferQueue 中彻底清除，触发 HAL3 层 buffer 释放。Android 14 引入的强制清除机制确保内存及时回收。
+**回收阶段**遵循 `queueBuffer` → `releaseBuffer` 路径。ImageReader 消费端关闭一张 Image 时，会释放对应的 acquired buffer；Buffer 是否马上归还 producer、解除 slot 绑定或释放底层分配，还取决于其他未关闭的 Image、BufferQueue 状态和 producer/consumer 生命周期。不能把 `Image.close()` 写成“立即释放 HAL3 层内存”的保证。
 
 ### 🔹 BufferQueue 协作机制
 Camera HAL3 与 BufferQueue 的协作通过 **双向绑定** 实现：HAL3 作为 BufferQueue 的生产者，通过 `ANativeWindow` 接口注册；渲染端作为消费者，通过 Surface 接口消费 buffer。
@@ -468,7 +468,7 @@ try {
 ```
 
 如果算法异步持有 `Image`，不能在提交任务后立即 close；此时要限制并发并确保所有
-成功、异常、取消路径都 close。CameraX 的 `ImageProxy.close()` 承担相同的回收责任。
+成功、异常、取消路径都 close。CameraX 的 `ImageProxy.close()` 负责相同的回收责任。
 
 `ImageReader.close()` 会释放 Surface、关闭当前已 acquire 的 image 并关闭 native
 consumer；`discardFreeBuffers()` 只清除空闲缓存，不包含 App 正持有、queue 中待

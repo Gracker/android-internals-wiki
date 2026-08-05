@@ -207,7 +207,7 @@ Android 17 的 NpuManager CTS 包含两类缺少 feature 的测试：
 - 通过 NNAPI 路径运行推理应失败；
 - 通过测试 LiteRT/vendor delegate 路径直接运行推理也应失败。
 
-这些测试证明控制面覆盖多种直接访问路径。它们没有规定上层库必须抛出哪一种异常，也没有保证库一定自动改用 CPU/GPU。应用仍应按运行时文档配置 fallback，并记录最后选中的 accelerator。
+这些测试证明控制面覆盖多种直接访问路径。它们没有规定上层库必须抛出哪一种异常，也没有保证库一定自动改用 CPU/GPU。应用仍应按运行时文档配置 fallback，并记录最终选中的 accelerator。
 
 ## NpuManager 的系统控制面边界
 
@@ -224,7 +224,7 @@ NpuManager 的模型装载策略负责共享 NPU 资源：它可以按 normal/ba
 
 ## LiteRT CompiledModel 的执行边界
 
-LiteRT 由 Google AI Edge 独立发布，不随 AOSP `android-17.0.0_r1` 一起冻结。当前官方文档把 `CompiledModel` 作为 Android 上面向 CPU、GPU、NPU 的现代推理 API，`Interpreter` 继续承担兼容路径。工程记录应分别锁定：
+LiteRT 由 Google AI Edge 独立发布，不随 AOSP `android-17.0.0_r1` 一起冻结。当前官方文档把 `CompiledModel` 作为 Android 上面向 CPU、GPU、NPU 的现代推理 API，`Interpreter` 继续负责兼容路径。工程记录应分别锁定：
 
 - Android build 与 target/compile SDK；
 - LiteRT Maven/C++ 版本；
@@ -480,7 +480,7 @@ NPU feature 只描述设备与访问资格，不授予后台执行机会。JobSc
 4. 明确 `CompiledModel.Options` 的 fallback；
 5. 分开测 AOT、JIT 首次编译和缓存命中；
 6. 做持续功耗、温控、后台与并发测试；
-7. 最后决定哪些设备启用 NPU，哪些设备保留 GPU/CPU。
+7. 最终决定哪些设备启用 NPU，哪些设备保留 GPU/CPU。
 
 若目标是改善首次结果，就重点比较模型交付、编译和预热；若目标是降低持续功耗，就比较稳定状态下的请求能量、温度和吞吐。一个平均 latency 无法同时回答这两个问题。
 

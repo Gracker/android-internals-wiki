@@ -188,7 +188,7 @@ AOSP Android 17 的 [`AppExitInfoTracker.java`](https://android.googlesource.com
 - 同一 exit 记录只消费一次；
 - 已经写入 `launch_success` 的运行期 Crash 不计作启动循环。
 
-下一段示意代码只演示 exit reason 与 launch 的相关性，不承担持久化：
+下一段示意代码只演示 exit reason 与 launch 的相关性，不负责持久化：
 
 ```kotlin
 data class PreviousLaunch(

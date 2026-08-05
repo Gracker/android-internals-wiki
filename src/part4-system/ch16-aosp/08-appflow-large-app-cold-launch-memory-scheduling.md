@@ -47,10 +47,10 @@ gap_source: "研究素材 + 论文精读 + 官方/外部搜索"
 ## 要点
 
 ### 🔹 大型应用冷启动的系统侧瓶颈
-说明 GB 级应用在多任务场景下为什么会从 warm launch 退化为 cold launch：文件 I/O、页回收、后台进程杀灭三个机制互相影响，不能只按 App 初始化任务拆解。
+说明 GB 级应用在多任务场景下为什么会从 warm launch 退化为 cold launch：文件 I/O、页回收、后台进程杀灭三个机制互相影响，不能只按 App 初始化任务分析。
 
 ### 🔹 AppFlow 的三段式调度模型
-拆解 Selective File Preloader、Adaptive Memory Reclaimer、Context-Aware Process Killer 三个组件的职责边界，以及它们分别接入 Android Framework 与 Linux Kernel 的位置。
+分析 Selective File Preloader、Adaptive Memory Reclaimer、Context-Aware Process Killer 三个组件的职责边界，以及它们分别接入 Android Framework 与 Linux Kernel 的位置。
 
 ### 🔹 文件访问预测与预加载预算
 解释启动文件热度、文件大小、预加载预算之间的关系：小文件用于降低 stall，大文件用于提升顺序吞吐。需要标注论文中 128KB 阈值与 100MB 预算属于实验设计，不是 Android 平台默认值。

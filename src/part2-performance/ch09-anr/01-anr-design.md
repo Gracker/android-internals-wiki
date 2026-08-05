@@ -110,7 +110,7 @@ task2b_verifier_notes: "Task9 idle-audit auto-fix on 2026-07-11 set task6_state:
 
 用户不知道应用内部正在做数据库迁移、Binder 调用还是图片解码。他只知道触摸后没有反馈、页面停住了，或刚打开的界面迟迟不能接收按键。Android 必须在有限时间内结束这种失控状态，同时留下足够证据供开发者追查。
 
-ANR（Application Not Responding）因此承担三项工作：
+ANR（Application Not Responding）因此负责三项工作：
 
 1. 给输入、广播、服务等关键工作设定响应期限。
 2. 期限耗尽时，从系统进程侧记录原因并采集现场。
@@ -434,7 +434,7 @@ PID 会复用，进程也可能在 ANR 后重启。只按包名合并多份报�
 - **Android 16（API 36）**：公开 `ProfilingTrigger.TRIGGER_TYPE_ANR` 和系统触发式 profiling 注册能力，为 ANR 增加一份时间段证据。
 - **Android 17（API 37）**：`TimeoutRecord` 可映射公开 `AnrTypes`；`ApplicationExitInfo.getAnrInfo()` 提供结构化 ANR 元数据；`ActivityManager.registerAnrWarningListener()` 允许应用按尽力而为原则接收临近 ANR 期限的预警。详情见 [9.10 Android 17 ANR Warning Callback](10-android17-anr-warning-callback.md)。
 
-版本演进的方向很清楚：检测器保留各自的协议语义，AMS 加强统一编排；诊断材料从一次线程快照扩展到结构化退出信息、早期预警和可选的时间段 profiling。传统 trace 仍是基础证据，只是它不再承担全部解释任务。
+版本演进的方向很清楚：检测器保留各自的协议语义，AMS 加强统一编排；诊断材料从一次线程快照扩展到结构化退出信息、早期预警和可选的时间段 profiling。传统 trace 仍是基础证据，只是它不再负责全部解释任务。
 
 ## Google Play Console 的统计边界
 

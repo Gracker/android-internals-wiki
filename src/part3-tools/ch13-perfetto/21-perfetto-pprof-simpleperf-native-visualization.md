@@ -52,7 +52,7 @@ confidence: medium
 - 典型场景：启动耗时分析中的 CPU 热点 + Binder 调用关联
 
 ### 🔸 Perfetto 版本演进路线（v53 → v57）
-- 版本特性矩阵
+- 版本特性matrix
 - Android 17 内置的 Perfetto 版本与 UI 版本的对应关系
 
 <!-- outline-end -->

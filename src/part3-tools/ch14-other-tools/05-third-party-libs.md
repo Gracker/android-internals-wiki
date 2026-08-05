@@ -277,7 +277,7 @@ Booster `v5.1.0` README 的发布版兼容表列出：
 
 并行数量越多，CPU 竞争、锁冲突、I/O 队列和 class loading 抖动也越大。调度器需要限制并发，显式区分主线程任务与后台任务，并把首帧必需节点的最长依赖链当作关键路径。任务总耗时下降但关键路径变长时，启动指标仍会退化。
 
-还要区分“组件发现”和“并行调度”。[Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup) 通过一个共享 `InitializationProvider` 发现 `Initializer`，由 `dependencies()` 声明顺序，也支持手动延迟初始化；它的 `create()` 调用不提供通用后台并行调度器。需要并行 DAG、线程选择或锚点等待时，要由业务调度层承担。
+还要区分“组件发现”和“并行调度”。[Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup) 通过一个共享 `InitializationProvider` 发现 `Initializer`，由 `dependencies()` 声明顺序，也支持手动延迟初始化；它的 `create()` 调用不提供通用后台并行调度器。需要并行 DAG、线程选择或锚点等待时，要由业务调度层负责。
 
 ### 典型框架对比
 
@@ -329,7 +329,7 @@ Measure 同时提供客户端 SDK、后端与 Web UI，可使用托管服务或�
 
 DoKit 把 App 信息、沙盒浏览、网络、UI 检查、启动耗时、FPS 等能力放进设备端入口，适合开发和测试现场。它还包含 AOP/字节码与平台服务相关功能，接入前要区分仅 debug 生效的 kit、会修改构建产物的插件和依赖远端服务的功能。
 
-GitHub release 页面、README badge 与 AGP 8.6 相关 feature 分支显示的 Android 版本线并不一致。新项目应从所需 kit 反推最小依赖，按选定 artifact 验证 AGP/Kotlin/R8 与 Android 17，避免因为一个调试入口引入整套运行时代码。DoKit 不承担大规模生产采样、后端聚合和告警。
+GitHub release 页面、README badge 与 AGP 8.6 相关 feature 分支显示的 Android 版本线并不一致。新项目应从所需 kit 反推最小依赖，按选定 artifact 验证 AGP/Kotlin/R8 与 Android 17，避免因为一个调试入口引入整套运行时代码。DoKit 不负责大规模生产采样、后端聚合和告警。
 
 项目能力与数据收集说明见 [didi/DoKit](https://github.com/didi/DoKit)。
 

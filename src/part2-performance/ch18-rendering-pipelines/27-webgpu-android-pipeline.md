@@ -122,7 +122,7 @@ Jetpack WebGPU 把 WebGPU 的对象模型带到 Kotlin：应用通过 `GPUInstan
 - WebView 网页中的 WebGPU 由 Chromium/WebView 运行时提供，不复用 Jetpack WebGPU 的 instance、device 或 native handle；
 - Android 平台仍负责 `Surface`、`ANativeWindow`、BufferQueue、SurfaceFlinger、HWC 和内核同步，平台不会把普通 HWUI 内容自动改成 WebGPU。
 
-本文复核时，官方 release notes 的最新公开版本仍是 `androidx.webgpu:webgpu:1.0.0-alpha05`，发布日期为 2026-04-22，最低系统版本为 Android 7.0 / API 24。它仍处于 alpha 阶段，适合评估、原型和能够承担 API 变更成本的产品；选型时不能只看 Android 版本，还要检查 adapter、feature、limit、surface capability 和目标设备上的实测结果。
+本文复核时，官方 release notes 的最新公开版本仍是 `androidx.webgpu:webgpu:1.0.0-alpha05`，发布日期为 2026-04-22，最低系统版本为 Android 7.0 / API 24。它仍处于 alpha 阶段，适合评估、原型和能够负责 API 变更成本的产品；选型时不能只看 Android 版本，还要检查 adapter、feature、limit、surface capability 和目标设备上的实测结果。
 
 ## 复核基线
 

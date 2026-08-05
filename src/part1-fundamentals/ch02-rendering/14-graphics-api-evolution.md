@@ -213,7 +213,7 @@ Android 17 同时存在 CDD、平台源码内的设备要求 profile，以及面
 
 Android 17 CDD 的强制项与建议项要分开读。对包含 Vulkan 实现的设备，CDD 7.1.4.2 要求支持 `VK_EXT_present_mode_fifo_latest_ready`、`VK_KHR_present_wait2`、`VK_KHR_android_surface`、`VK_KHR_incremental_present`、`VK_KHR_present_id`、`VK_KHR_present_id2`、`VK_KHR_surface` 和 `VK_KHR_swapchain`。`VK_EXT_present_timing`、`VK_GOOGLE_display_timing` 与 `VK_KHR_driver_properties` 在 CDD 中是强烈建议项，不是同一层级的强制项。
 
-Android 17 还收紧了两类边界。第一，声明 Vulkan 1.1 及相应 feature flag 的实现必须支持 `SYNC_FD` external semaphore handle 和 `VK_ANDROID_external_memory_android_hardware_buffer`，而 `VK_KHR_external_fence_fd` 仍是强烈建议项。第二，普通非 debuggable 应用不能枚举包外 layer，也不能被包外实现追踪或拦截 Vulkan API；只有应用设置 `com.android.graphics.injectLayers.enable=true` 时才放行这一入口，OEM 和平台 layer 按 CDD 例外处理。这会直接影响抓帧、验证层和图形调试工具的接入方式。
+Android 17 还限制加强了两类边界。第一，声明 Vulkan 1.1 及相应 feature flag 的实现必须支持 `SYNC_FD` external semaphore handle 和 `VK_ANDROID_external_memory_android_hardware_buffer`，而 `VK_KHR_external_fence_fd` 仍是强烈建议项。第二，普通非 debuggable 应用不能枚举包外 layer，也不能被包外实现追踪或拦截 Vulkan API；只有应用设置 `com.android.graphics.injectLayers.enable=true` 时才放行这一入口，OEM 和平台 layer 按 CDD 例外处理。这会直接影响抓帧、验证层和图形调试工具的接入方式。
 
 `frameworks/native/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json` 列出的 Android 17 芯片组要求更宽。它除了 present 扩展，还包含 `VK_KHR_pipeline_binary`、`VK_KHR_pipeline_library`、`VK_EXT_graphics_pipeline_library`、`VK_EXT_present_timing`，并要求 Vulkan 1.4 的 `hostImageCopy` feature。该 JSON 的说明把适用范围限定为在 Android 17 首发或重新进行 Google Requirements Freeze 的芯片组，不能拿它约束所有从旧版本升级到 Android 17 的设备。
 

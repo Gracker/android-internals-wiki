@@ -263,7 +263,7 @@ FrontEnd `readme.md` 将绘制顺序描述为一次中序式遍历：
 
 1. 先遍历 z 小于 0 的 children；
 2. 再访问 parent；
-3. 最后遍历 z 大于等于 0 的 children。
+3. 最终遍历 z 大于等于 0 的 children。
 
 relative children 在排序时按直接 child 看待。相同 z 值再按 layer id 保持稳定顺序，较新的 layer 在上方。源码也明确不建议依赖创建顺序，调用方应尽量使用明确、唯一的 z 值。
 

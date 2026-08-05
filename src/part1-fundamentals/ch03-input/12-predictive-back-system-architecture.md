@@ -94,7 +94,7 @@ flowchart TD
     M --> N["Transition 合并并完成收尾"]
 ```
 
-其中两个类承担核心协调职责：
+其中两个类负责核心协调职责：
 
 - `BackNavigationController` 位于 system_server，负责确定 focused window、top callback、返回目标和可动画性，并准备 WindowContainer/Transition 侧资源；
 - `BackAnimationController` 位于 WM Shell，负责手势状态、pointer pilfer、remote animation readiness、progress 分发以及提交后的收尾。

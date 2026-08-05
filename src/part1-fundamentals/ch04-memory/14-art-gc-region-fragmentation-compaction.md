@@ -315,7 +315,7 @@ adb shell getprop persist.device_config.runtime_native_boot.use_generational_gc
 adb shell getprop ro.dalvik.vm.force_cmc_stw_compaction
 ```
 
-属性只反映一部分条件。还要结合进程启动参数、ART 启动日志和内核能力，确认最后选择的是 CC、CMC、young 还是 full 收集。
+属性只反映一部分条件。还要结合进程启动参数、ART 启动日志和内核能力，确认最终选择的是 CC、CMC、young 还是 full 收集。
 
 ### 第二步：用 trace 区分暂停、并发工作和页错误
 

@@ -221,7 +221,7 @@ Android 17 中有明确的转换点：
 | 指标 | 回答的问题 | 不能回答的问题 |
 |---|---|---|
 | VmSize / `/proc/self/maps` | 进程保留和映射了多少虚拟地址区间 | 这些页是否常驻、是否独占 |
-| VmRSS / `smaps_rollup` RSS | 当前有多少页驻留内存 | 共享页应由哪个进程承担 |
+| VmRSS / `smaps_rollup` RSS | 当前有多少页驻留内存 | 共享页应由哪个进程负责 |
 | PSS | 共享页按映射进程数分摊后的进程成本 | 单个 native allocation 的调用栈 |
 | `Debug.getNativeHeapAllocatedSize()` | bionic malloc 管理的已分配字节趋势 | mmap、线程栈、GraphicBuffer 等全部 native 成本 |
 | heapprofd | 被采样的 malloc/free 调用栈、大小和存活情况 | 未经过受支持 allocator 的所有映射与图形内存 |

@@ -163,7 +163,7 @@ IME 自身的启动、`InputConnection` 与窗口动画问题见 [3.11 InputMeth
 | 位置 | ContentCapture | Autofill | trace 中的表现 |
 |---|---|---|---|
 | 应用 UI 线程 | 初始结构遍历；动态节点的 ViewStructure 准备 | 会话结果等待；AssistStructure 遍历 | frame/traversal 延长、主线程 waiting 或 Runnable |
-| 应用后台线程 | 事件合并、buffer、Parcel、direct Binder | 通常不承担标准 View 的 AssistStructure 遍历 | BackgroundThread CPU、Binder transaction |
+| 应用后台线程 | 事件合并、buffer、Parcel、direct Binder | 通常不负责标准 View 的 AssistStructure 遍历 | BackgroundThread CPU、Binder transaction |
 | `system_server` | 会话、allowlist、服务连接 | Session、assist request、FillContext、IME 协调 | Autofill/ATM handler、Binder、锁与调度 |
 | ContentCaptureService | 主线程逐个处理增量事件 | 无 | 服务 main looper 积压 |
 | AutofillService / 密码提供方 | 无 | 解析 FillRequest、产生 dataset、认证 | provider CPU/I/O、response latency |

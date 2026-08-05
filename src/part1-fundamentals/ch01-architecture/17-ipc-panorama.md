@@ -103,7 +103,7 @@ last_deepseek_cn_review_at: 2026-06-22
 
 # 1.17 IPC 全景：Android 进程间通信机制对比与性能选型
 
-Android 的 IPC 不是一张“Binder、Intent、共享内存三选一”的表。Intent 和 AIDL 描述上层语义；Binder、Unix domain socket 和 vsock 承担传输；共享内存、DMA-BUF 与 FMQ 又常被用作数据面。一个真实链路经常同时使用两到三层机制。
+Android 的 IPC 不是一张“Binder、Intent、共享内存三选一”的表。Intent 和 AIDL 描述上层语义；Binder、Unix domain socket 和 vsock 负责传输；共享内存、DMA-BUF 与 FMQ 又常被用作数据面。一个真实链路经常同时使用两到三层机制。
 
 本章以 Android 17 / API 37、AOSP `android-17.0.0_r1` 为当前锚点。目标不是给每种机制贴一个固定延迟，而是建立一套能从源码、fd、线程和 trace 还原真实链路的方法。
 
@@ -141,7 +141,7 @@ Android 的 IPC 不是一张“Binder、Intent、共享内存三选一”的表�
 - HAL 用 AIDL/HIDL 建立 FMQ，持续数据走共享内存队列。
 - Microdroid 复用 Binder/AIDL 对象模型，但传输改为 socket/vsock。
 
-同一套 API 还可能根本不跨进程。AIDL 的 client 与 service 在同一进程、同一 backend 时可以直接调用，不产生 Parcel 编组和 Binder driver 事务。分析前先确认 PID。
+同一套 API 也可能不跨进程。AIDL 的 client 与 service 在同一进程、同一 backend 时可以直接调用，不产生 Parcel 编组和 Binder driver 事务。分析前先确认 PID。
 
 ## 2. 选型先回答六个问题
 
@@ -701,7 +701,7 @@ LIMIT 50;
 
 - Parcel 里传的是 fd/handle，不是大 payload。
 - `/proc/<pid>/fd` 与 `/proc/<pid>/maps` 显示两端映射同一对象。
-- source path 确实走 `writeFileDescriptor()` / `mmap()`。
+- source path 走 `writeFileDescriptor()` / `mmap()`。
 - CPU profile 没有持续出现 payload-sized 编组 copy。
 - 协议计数、fence/event flag 与数据生命周期吻合。
 

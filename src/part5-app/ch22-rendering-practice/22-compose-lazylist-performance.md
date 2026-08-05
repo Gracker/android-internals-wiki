@@ -90,7 +90,7 @@ LazyColumn {
 
 ## 3. contentType 管的是复用兼容性
 
-`contentType` 不承担业务身份。它告诉 LazyLayout 哪些 item composition 结构兼容，可以在旧 slot 滚出后复用给新 item。默认值 `null` 也是有效类型；未提供时，所有 item 都被视为同一兼容类型。
+`contentType` 不负责业务身份。它告诉 LazyLayout 哪些 item composition 结构兼容，可以在旧 slot 滚出后复用给新 item。默认值 `null` 也是有效类型；未提供时，所有 item 都被视为同一兼容类型。
 
 Compose Foundation 1.10.0 的 `LazyLayoutItemReusePolicy` 用 `contentType` 相等判断 slot 是否兼容，并为每种类型最多保留 7 个可复用 slot。这个数量属于内部实现，不是开发者可依赖的 API 合同。
 

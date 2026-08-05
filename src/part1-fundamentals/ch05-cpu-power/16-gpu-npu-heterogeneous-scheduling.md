@@ -72,7 +72,7 @@ last_task6_audit: "2026-07-16T21:17:00+08:00"
 ## 要点
 
 ### 🔹 异构负载不等于 CPU 空闲
-说明 GPU/NPU 卸载后,CPU 仍承担输入预处理、buffer 搬运、delegate 调度、结果后处理和 UI 合成;性能归因要看端到端路径,而不是只看加速器子图耗时。
+说明 GPU/NPU 卸载后,CPU 仍负责输入预处理、buffer 搬运、delegate 调度、结果后处理和 UI 合成;性能归因要看端到端路径,而不是只看加速器子图耗时。
 
 ### 🔹 GPU、NPU、CPU 三类路径的适用边界
 对比渲染类 GPU 负载、ML delegate / LiteRT NPU 负载、CPU fallback 的典型收益和代价,明确算子覆盖率、内存布局、同步等待和热状态对结果的影响。
@@ -137,7 +137,7 @@ last_task6_audit: "2026-07-16T21:17:00+08:00"
 
 CPU 路径应始终作为基线保留。小模型、短序列或低频任务中，delegate 初始化、编译和数据转换可能比加速器节省的执行时间更长。CPU 基线还能暴露两类问题：模型本身发生了变化，以及所谓 NPU 结果中混入了大比例 CPU fallback。
 
-GPU 适合并行度较高、布局匹配的张量计算，也常承担图像预处理和结果渲染。计算与 UI 若共用同一 GPU，推理吞吐上升可能伴随渲染排队和掉帧。此时只看模型 latency 会得到错误方向，必须把 GPU 队列与 FrameTimeline 放在同一时间轴上。
+GPU 适合并行度较高、布局匹配的张量计算，也常负责图像预处理和结果渲染。计算与 UI 若共用同一 GPU，推理吞吐上升可能伴随渲染排队和掉帧。此时只看模型 latency 会得到错误方向，必须把 GPU 队列与 FrameTimeline 放在同一时间轴上。
 
 NPU 的收益取决于模型、精度、形状、算子覆盖、编译方式、驱动和 SoC。Android 17 提供 NPU 能力声明与调度接口，但没有规定所有设备必须支持相同算子或达到相同性能。工程报告必须绑定机型、SoC、系统构建、runtime、delegate、模型和精度。
 
@@ -196,7 +196,7 @@ LiteRT 当前公开资料还显示，不同芯片系列支持的模式并不一�
 
 ## Android 17 的调度与调频分属多层
 
-异构任务没有一个统一的 Android 调度器。CPU 线程、GPU 命令和 NPU 工作分别进入不同控制面，最后通过内存带宽、电源域和热预算相互影响。
+异构任务没有一个统一的 Android 调度器。CPU 线程、GPU 命令和 NPU 工作分别进入不同控制面，最终通过内存带宽、电源域和热预算相互影响。
 
 ```text
 应用 / LiteRT
@@ -253,7 +253,7 @@ Android 17 平台源码中的 Java 常规接口包括：
 
 `setPreferPowerEfficiency(boolean)` 与接收 `WorkDuration` 的重载受 feature flag 控制。`WorkDuration` 可报告总时长以及 CPU、GPU 时长组成。源码要求起始时间和总时长大于零，CPU/GPU 时长不能为负，并且两者至少有一个大于零。
 
-边界还要再收紧一层：Java 中的 `CPU_LOAD_*`、`GPU_LOAD_*` 常量和 `sendHint()` 标为 `@TestApi` / `@hide`，普通应用不应把它们当成稳定公开 SDK。Android 17 NDK 头文件则公开了更完整的原生接口：
+边界还要再限制加强一层：Java 中的 `CPU_LOAD_*`、`GPU_LOAD_*` 常量和 `sendHint()` 标为 `@TestApi` / `@hide`，普通应用不应把它们当成稳定公开 SDK。Android 17 NDK 头文件则公开了更完整的原生接口：
 
 - API 35 的 `APerformanceHint_reportActualWorkDuration2()`；
 - API 36 的 `APerformanceHint_notifyWorkloadIncrease()`；

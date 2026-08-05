@@ -70,7 +70,7 @@ Android 16 起，`SHOW_IMPLICIT`、`SHOW_FORCED`、`HIDE_IMPLICIT_ONLY` 和 `HID
 | 目标 | 建议终点 | 能回答的问题 |
 |---|---|---|
 | API 行为正确 | `WindowInsets.isVisible(Type.ime())` | 最终 Insets 状态是否可见 |
-| 请求停在哪一层 | ImeTracker 的最后 phase | 客户端、服务端、IME 或窗口控制阶段是否等待 |
+| 请求停在哪一层 | ImeTracker 的最终 phase | 客户端、服务端、IME 或窗口控制阶段是否等待 |
 | 应用过渡是否流畅 | 应用 FrameTimeline 与主线程 slice | 应用是否错过帧截止时间 |
 | IME 自身是否流畅 | IME 进程 FrameTimeline 与 RenderThread | 输入法窗口是否掉帧 |
 | 用户端到端感知 | 屏幕录制或高速摄像 | 从操作到可见像素的总时间 |
@@ -292,13 +292,13 @@ Android 17 的 ImeTracker 为同一次 show/hide 请求分配 token，并跨客�
 | `PHASE_CLIENT_ANIMATION_RUNNING` | 客户端动画运行中 |
 | `PHASE_CLIENT_ANIMATION_FINISHED_SHOW` | 显示动画完成 |
 
-ImeTracker 的 history 会给出请求类型、状态、持续时间、最后 phase 和请求窗口。定位思路如下：
+ImeTracker 的 history 会给出请求类型、状态、持续时间、最终 phase 和请求窗口。定位思路如下：
 
 - 停在 `CLIENT_VIEW_SERVED` 之前：检查 View focus、window focus、served view 和调用时机；
 - 长时间停在 `SERVER_WAIT_IME`：检查进程启动、Service binding、session 创建和 IME 崩溃；
 - 已到 `IME_SHOW_WINDOW`，迟迟拿不到 control：检查 IME Surface、窗口布局和 WMS 的 leash 条件；
 - 已到 `CLIENT_ANIMATION_RUNNING`：把注意力移到应用、IME 和 SurfaceFlinger 的帧调度；
-- 状态为 FAIL、CANCEL 或 TIMEOUT：先读最后 phase 和 reason，不要只看“键盘没出来”的表象。
+- 状态为 FAIL、CANCEL 或 TIMEOUT：先读最终 phase 和 reason，不要只看“键盘没出来”的表象。
 
 ## 8. `dumpsys input_method` 应该看哪些字段
 
@@ -312,10 +312,10 @@ Android 17 的输出包括：
 
 - `mStartInputHistory`：最近的 start-input 记录；
 - `mSoftInputShowHideHistory`：显隐原因、请求窗口、IME target 等历史；
-- `mImeTrackerService#History`：show/hide 请求及最后 phase；
+- `mImeTrackerService#History`：show/hide 请求及最终 phase；
 - `mBindingController`：`mSelectedImeId`、`mCurImeId`、main/visible connection、`mCurIme`、display、window visibility；
 - `mCurClient`、`mImeBindingState`、`mEnabledSession`；
-- `mVisibilityStateComputer` 中的 `mInputShown` 和最后 IME target；
+- `mVisibilityStateComputer` 中的 `mInputShown` 和最终 IME target；
 - 当前输入 client 与当前 IME 的异步 dump。
 
 `mMainConnection` 非空只代表绑定已创建或正在绑定，`mCurIme` 非空才说明 `onServiceConnected()` 已提供可调用接口。`mEnabledSession` 或 client 的当前 session 用于判断输入会话是否就绪。

@@ -356,7 +356,7 @@ headroom listener 适合获知显著的当前值或阈值变化，但它不会�
 | `EMERGENCY` | 保存必要状态，停止所有可推迟任务 | 只做保守恢复 |
 | `SHUTDOWN` | 不依赖回调完成持久化；若收到则立即执行最小保护 | 由设备后续状态决定 |
 
-升温时应立即收紧预算，降温时延迟恢复。状态在阈值附近来回变化时，如果每次都立即启停下载、视频和动画，会引入抖动，甚至产生更多 CPU 与网络活动。每项策略都要幂等，而且 NORMAL 预算必须显式恢复此前改变过的参数。
+升温时应立即缩减预算，降温时延迟恢复。状态在阈值附近来回变化时，如果每次都立即启停下载、视频和动画，会引入抖动，甚至产生更多 CPU 与网络活动。每项策略都要幂等，而且 NORMAL 预算必须显式恢复此前改变过的参数。
 
 ### 6.2 Android 17 注册行为与可恢复状态机
 
@@ -515,7 +515,7 @@ Alarm 测试覆盖：
 - Doze 下允许与不允许 idle 的投递时间；
 - callback 内启动 Worker/Job、网络失败与重试。
 
-Thermal 策略测试要模拟升温和降温序列，验证收紧立即发生、恢复经过迟滞、重复状态幂等、close 后不再改策略。Android 17 的调试设备可通过 `adb shell cmd thermalservice override-status <status>` 注入状态，并用 `adb shell cmd thermalservice reset` 解除覆盖；该命令用于测试环境，不应在用户设备执行。headroom 路径还要覆盖 `NaN`、阈值缺失和 listener 不可用。
+Thermal 策略测试要模拟升温和降温序列，验证限制加强立即发生、恢复经过迟滞、重复状态幂等、close 后不再改策略。Android 17 的调试设备可通过 `adb shell cmd thermalservice override-status <status>` 注入状态，并用 `adb shell cmd thermalservice reset` 解除覆盖；该命令用于测试环境，不应在用户设备执行。headroom 路径还要覆盖 `NaN`、阈值缺失和 listener 不可用。
 
 设备实验应固定亮度、刷新率、温度起点、充电状态、网络和业务输入，至少包含空载基线与功能开关对照。结果按设备和版本分层，不把某台设备的电流曲线推广成所有 Android 设备的功耗模型。
 

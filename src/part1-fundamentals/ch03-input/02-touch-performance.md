@@ -94,7 +94,7 @@ pipeline_stage: ready-to-publish
 
 ## 为什么需要关注触摸响应
 
-打开一段滑动列表的 Perfetto Trace，可以沿时间轴看到 InputReader、InputDispatcher、应用主线程、RenderThread、SurfaceFlinger 和显示帧。触摸样本已经进入系统，并不表示用户马上能看到结果；应用还要消费事件、更新界面状态、提交 Buffer，最后由 SurfaceFlinger 合成并送显。
+打开一段滑动列表的 Perfetto Trace，可以沿时间轴看到 InputReader、InputDispatcher、应用主线程、RenderThread、SurfaceFlinger 和显示帧。触摸样本已经进入系统，并不表示用户马上能看到结果；应用还要消费事件、更新界面状态、提交 Buffer，最终由 SurfaceFlinger 合成并送显。
 
 这段从物理动作到光子变化的时间通常称为 touch-to-display latency。刷新周期只是其中一个时间尺度：60Hz 每周期约 16.67ms，120Hz 每周期约 8.33ms。事件落在 VSync 周期的哪个相位、应用是否赶上当前帧、Buffer 是否按期合成，都会改变最终结果。因此，不能用一个刷新周期直接代表端到端延迟，也不应脱离设备、操作和统计分位数给出通用的“典型毫秒数”。
 
@@ -183,7 +183,7 @@ InputDispatcher 通过 `InputChannel` 将事件发送给目标进程。Android 1
 
 ### 6. App 端处理（View 树遍历）
 
-`NativeInputEventReceiver` 把事件转成 Java `InputEvent` 后，`WindowInputEventReceiver` 将其加入 `ViewRootImpl` 的 pending queue。Android 17 用 `aq:pending:<window>` counter 记录队列长度，并以 `deliverInputEvent` 同步/异步 Trace 标记整段处理。触摸这类 pointer event 通常从 post-IME 链进入 `EarlyPostImeInputStage`、`NativePostImeInputStage` 和 `ViewPostImeInputStage`，最后由 View 树处理。
+`NativeInputEventReceiver` 把事件转成 Java `InputEvent` 后，`WindowInputEventReceiver` 将其加入 `ViewRootImpl` 的 pending queue。Android 17 用 `aq:pending:<window>` counter 记录队列长度，并以 `deliverInputEvent` 同步/异步 Trace 标记整段处理。触摸这类 pointer event 通常从 post-IME 链进入 `EarlyPostImeInputStage`、`NativePostImeInputStage` 和 `ViewPostImeInputStage`，最终由 View 树处理。
 
 View 的触摸分发沿命中的目标分支和已建立的 `TouchTarget` 关系进行，并非每个 MOVE 都遍历整棵 View 树。事件可能只更新滚动偏移或状态，也可能触发 `invalidate()`、`requestLayout()` 或动画。前者通常只要求重绘，后者可能让下一次 traversal 执行 measure/layout/draw。
 
@@ -231,7 +231,7 @@ Android 17 的 `InputEventAssigner` 还带来一个重要限制：连续手势�
 
 ### 为什么需要 Batching
 
-当触摸采样率高于渲染帧率时，一个 VSync 周期内可能到达多个 `ACTION_MOVE` 样本。若每个样本都立即唤醒应用并执行完整的 View 分发，会增加 Looper 和业务回调压力；即便多次 invalidation 最后合并到一帧，前面的 CPU 工作也可能重复。batching 用较少的应用交付次数保存这些样本。
+当触摸采样率高于渲染帧率时，一个 VSync 周期内可能到达多个 `ACTION_MOVE` 样本。若每个样本都立即唤醒应用并执行完整的 View 分发，会增加 Looper 和业务回调压力；即便多次 invalidation 最终合并到一帧，前面的 CPU 工作也可能重复。batching 用较少的应用交付次数保存这些样本。
 
 Android 的 Input batching 做的是合并交付，不会直接删除中间坐标。Android 17 的应用侧 `InputConsumer` 对可兼容的 `ACTION_MOVE` / `ACTION_HOVER_MOVE` 消息建立 batch；消费时，第一条样本初始化 `MotionEvent`，后续样本通过 `addSample()` 进入 history。当前坐标通过 `getX()` / `getY()` 读取，较早样本通过 `getHistorySize()` 和 `getHistorical*()` 读取。
 
@@ -281,11 +281,11 @@ for (int h = 0; h < event.getHistorySize(); h++) {
 4. `CALLBACK_TRAVERSAL`
 5. `CALLBACK_COMMIT`
 
-`CALLBACK_COMMIT` 运行在 traversal 之后，负责这一帧的 post-draw 工作和时间基准修正，不承担 measure/layout/draw。本节分析输入延迟时，重点还是前四段，其中输入处理排在最前面，后续动画和遍历都基于最新输入状态。
+`CALLBACK_COMMIT` 运行在 traversal 之后，负责这一帧的 post-draw 工作和时间基准修正，不负责 measure/layout/draw。本节分析输入延迟时，重点还是前四段，其中输入处理排在最前面，后续动画和遍历都基于最新输入状态。
 
 连续 `MOVE` 事件默认走 buffered path。`ViewRootImpl.WindowInputEventReceiver#onBatchedInputEventPending()` 会先判断 `mUnbufferedInputDispatch` 和 `mUnbufferedInputSource`：如果当前序列请求了 unbuffered dispatch，就直接 `consumeBatchedInputEvents(-1)`；否则才 `scheduleConsumeBatchedInput()`，让事件贴着下一帧的输入阶段消费。
 
-这条分叉决定 MOVE 是立即送达，还是贴近下一帧的 input callback 消费。普通滚动使用 buffered path，可以减少 Looper 唤醒和 View 分发次数；笔迹、绘图、签名可在确认命中目标后调用 `View.requestUnbufferedDispatch(event)`。它只影响当前手势序列，应用仍要逐个处理事件，并承担更高的 CPU 调度和回调压力。
+这条分叉决定 MOVE 是立即送达，还是贴近下一帧的 input callback 消费。普通滚动使用 buffered path，可以减少 Looper 唤醒和 View 分发次数；笔迹、绘图、签名可在确认命中目标后调用 `View.requestUnbufferedDispatch(event)`。它只影响当前手势序列，应用仍要逐个处理事件，并负责更高的 CPU 调度和回调压力。
 
 ### Batching 与 WaitQueue 在 Perfetto 中的表现
 
@@ -319,7 +319,7 @@ for (int h = 0; h < event.getHistorySize(); h++) {
 3. **检查应用主线程**：从 socket 可读/Native dispatch 到 `deliverInputEvent`，区分 Running、Runnable、Sleep 和锁等待。
 4. **检查 batching**：读取 `historySize`，确认是否在 `CALLBACK_INPUT` 消费，以及业务有没有漏掉 historical samples。
 5. **检查目标帧**：用 input event ID、应用 FrameTimeline 和 SurfaceFlinger FrameTimeline 关联到 present。
-6. **最后归因资源瓶颈**：根据 scheduler、CPU frequency、GPU 和内存轨道解释等待，避免从一个函数名直接猜根因。
+6. **最终归因资源瓶颈**：根据 scheduler、CPU frequency、GPU 和内存轨道解释等待，避免从一个函数名直接猜根因。
 
 ### 采集结构化 Input Trace
 

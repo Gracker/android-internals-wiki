@@ -230,7 +230,7 @@ override fun onTimeout(startId: Int, foregroundServiceType: Int) {
 - Service 主线程等待数据库迁移、网络或 Binder；
 - 首次创建 NotificationChannel 时发生额外工作；
 - 通知对象无效、channel 不存在或权限前置条件失败；
-- 业务先初始化 SDK，最后才调用 `startForeground()`。
+- 业务先初始化 SDK，最终才调用 `startForeground()`。
 
 更稳的顺序是：预先创建稳定的通知渠道；Service 启动后立即发布最小可用通知；随后把业务工作交给有明确取消和恢复语义的执行单元。通知内容可在获得进度后更新。
 
@@ -352,7 +352,7 @@ FGS 类型要匹配用途。`specialUse` 需要声明具体 subtype，并接受�
 - type timeout 和 Job stop reason 的统一记录；
 - 用户主动结束时清理通知、session 和临时文件。
 
-收到 timeout 后才持久化全部状态，风险较高。按工作单元持续写 checkpoint，回调只负责关闭入口和提交最后一个已完成位置。
+收到 timeout 后才持久化全部状态，风险较高。按工作单元持续写 checkpoint，回调只负责关闭入口和提交末尾一个已完成位置。
 
 ### 测试范围要覆盖启动、额度和用户状态
 

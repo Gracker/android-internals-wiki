@@ -319,7 +319,7 @@ ZRAM 解压消耗 CPU。低端设备或持续热负载下，解压可能和主�
 
 ### direct reclaim
 
-分配线程无法及时获得页面时，可以在分配路径进入 direct reclaim。此时发起分配的线程直接承担扫描、回写或 swap-out 等等待。若主线程或 RenderThread 命中 direct reclaim，用户更容易感知卡顿。
+分配线程无法及时获得页面时，可以在分配路径进入 direct reclaim。此时发起分配的线程直接负责扫描、回写或 swap-out 等等待。若主线程或 RenderThread 命中 direct reclaim，用户更容易感知卡顿。
 
 direct reclaim 和物理内存 compaction 也应分开。高阶页分配失败可能触发 compaction；它围绕物理页连续性工作，不等于 ZRAM recompression。
 
@@ -478,7 +478,7 @@ adb shell cat /sys/kernel/tracing/available_events \
 - 多进程拆分前评估总 PSS、匿名页、Binder 成本和各进程重建成本。
 - 线上同时记录 pid、启动类型、后台时长、设备 RAM 档位、页大小和最近退出原因。
 
-`onTrimMemory()` 也需要版本边界。cached 进程可能被冻结，无法保证每次内存压力都收到并及时处理回调。应用的内存预算应在常态运行中成立，不能把 trim callback 当作最后兜底。
+`onTrimMemory()` 也需要版本边界。cached 进程可能被冻结，无法保证每次内存压力都收到并及时处理回调。应用的内存预算应在常态运行中成立，不能把 trim callback 当作最终兜底。
 
 ## 系统调优检查表
 

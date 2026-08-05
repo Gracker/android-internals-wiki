@@ -102,7 +102,7 @@ last_deepseek_cn_review_at: 2026-06-23
 
 ## 结论先行
 
-Measure 是一个面向移动端的监控平台，项目包含 Android、iOS、Flutter、React Native SDK，数据接收与处理服务，以及 Web 看板。它把 Crash、ANR、启动、HTTP、CPU、内存、点击、页面导航、业务 span 和 bug report 放进同一套会话模型。Matrix、KOOM 的重点是端侧专项采集与诊断；Measure 还承担事件入库、检索、聚合、告警、附件保存和团队协作。两类工具可以并存，不是同一层级的替代品。
+Measure 是一个面向移动端的监控平台，项目包含 Android、iOS、Flutter、React Native SDK，数据接收与处理服务，以及 Web 看板。它把 Crash、ANR、启动、HTTP、CPU、内存、点击、页面导航、业务 span 和 bug report 放进同一套会话模型。Matrix、KOOM 的重点是端侧专项采集与诊断；Measure 还负责事件入库、检索、聚合、告警、附件保存和团队协作。两类工具可以并存，不是同一层级的替代品。
 
 本文以 2026-07-25 的 `measure-sh/measure` 主分支提交 `8a189ea1e9728105773c1c81fb6cc8797e6b2d15` 为产品源码依据，以 Android 17 / API 37 / `android-17.0.0_r1` 为平台边界。此时最新稳定 Android SDK 为 `0.19.0`，Gradle 插件为 `0.13.0`；主分支分别已进入 `0.20.0-SNAPSHOT` 和 `0.14.0-SNAPSHOT`。
 
@@ -485,7 +485,7 @@ Measure 支持远端修改采样和若干采集选项，这让故障期临时提
 | 平台成本 | 已测每千 session 数据量、附件占比、查询延迟和恢复时间 |
 | Android 17 | 既有能力在 API 37 真机通过；未把 API 37 新 profiling trigger 误报为现有能力 |
 
-只有当“采到数据”转化为“更快找到根因，并且团队能承担数据治理和平台维护”时，试点才算通过。
+只有当“采到数据”转化为“更快找到根因，并且团队能负责数据治理和平台维护”时，试点才算通过。
 
 ## 参考资料
 

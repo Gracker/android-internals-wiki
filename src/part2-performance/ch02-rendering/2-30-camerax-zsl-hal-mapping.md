@@ -205,7 +205,7 @@ CameraX 1.6.0 起，Camera2 实现迁移到统一的 CameraPipe 栈；1.6.1 的�
 
 CameraPipe 随后给 builder 添加 JPEG 等目标 Surface，并通过
 `CameraCaptureSession.capture()` 提交。`ImageWriter` 连接的是 session 的 input
-Surface；JPEG `ImageReader` 等连接的是 output Surface。输入和输出承担不同方向的
+Surface；JPEG `ImageReader` 等连接的是 output Surface。输入和输出负责不同方向的
 buffer 传递。
 
 ### 3.5 Camera service 与 HAL3 看到什么

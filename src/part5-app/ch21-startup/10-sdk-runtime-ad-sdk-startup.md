@@ -148,7 +148,7 @@ fun canUseLegacyPlatformSdkSandbox(): Boolean {
 - 独立 ClassLoader 能减少类名冲突，不能提供独立 Linux 进程、UID 或内存空间；
 - 首次提取 DEX、类加载和资源处理会增加存储与启动成本；
 - Binder 形式的接口可以保持调用形状，却不一定发生跨进程事务；
-- AndroidX 该库已经 deprecated，不能承担面向 Android 17 的长期抽象。
+- AndroidX 该库已经 deprecated，不能负责面向 Android 17 的长期抽象。
 
 现有产品若仍依赖 alpha19，应固定版本、保留兼容测试，并与 SDK/广告供应方确认替代交付。不要仅把 `SdkSandboxManagerCompat` 改名封装后继续扩展新功能。
 
@@ -276,7 +276,7 @@ class AdSdkGateway(
 - 通常仍使用应用 UID 与权限；
 - SDK 能否在该进程工作取决于 SDK 自身实现与许可；
 - UI、Activity Context 和 WebView 可能要求主进程交互；
-- Binder、进程冷启动、独立堆和死亡恢复都由应用承担；
+- Binder、进程冷启动、独立堆和死亡恢复都由应用负责；
 - Provider 只在其所属进程安装，但 `Application` 会在该进程创建。
 
 这与历史 SDK sandbox 的独立 UID、受控 API 和 SDK package 模型不同。没有供应方明确支持和完整测试时，不要强行把封闭广告 SDK 移到远程进程。

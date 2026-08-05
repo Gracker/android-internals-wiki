@@ -276,7 +276,7 @@ Scoped Storage 对 App 开发和性能优化有几个直接影响。
 
 | Android 版本 | system / 挂载模型 | shared storage 入口 | FUSE 行为 | App 侧建议 |
 | --- | --- | --- | --- | --- |
-| Android 9 | `system-as-root` 成为 launching device 基线,rootfs 合入 `system.img` | 传统 external storage 模型 | 设备存储模拟常用 SDCardFS，也存在升级和厂商差异 | 旧项目以路径访问为主,但开始留意后续权限收紧 |
+| Android 9 | `system-as-root` 成为 launching device 基线,rootfs 合入 `system.img` | 传统 external storage 模型 | 设备存储模拟常用 SDCardFS，也存在升级和厂商差异 | 旧项目以路径访问为主,但开始留意后续权限限制加强 |
 | Android 10 | dynamic partitions + `first-stage init` 成为新设备主路径 | Scoped Storage 引入，可通过兼容机制暂缓 | MediaProvider 执行 scoped policy；设备存储模拟仍常见 SDCardFS，direct file path 受限 | 新代码优先 MediaStore / SAF，少依赖裸路径 |
 | Android 11 | `/data` 挂载流程继续沿用 Android 10 | shared media 支持 direct file paths、`File` API、`fopen()` | MediaProvider 成为 FUSE handler；升级设备可叠加 SDCardFS | 媒体库兼容可以用 direct file paths，重度随机访问优先比较 MediaStore |
 | Android 12 | 挂载模型基本稳定 | API 入口与 Android 11 接近 | launching device + official kernel 可启用 FUSE passthrough | 先确认设备是否支持 passthrough,再判断瓶颈位置 |

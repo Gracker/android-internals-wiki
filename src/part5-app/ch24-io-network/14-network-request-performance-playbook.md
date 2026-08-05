@@ -82,7 +82,7 @@ last_deepseek_cn_review_at: 2026-07-07
 <!-- outline-start -->
 ## 要点
 
-### 🔹 一次请求的七段拆解
+### 🔹 一次请求的七段分析
 说明 DNS、connect、TLS、request write、TTFB、response read 和 decode/render 的观测入口，避免只看总耗时。
 
 ### 🔹 速度、弱网、安全和功耗的取舍

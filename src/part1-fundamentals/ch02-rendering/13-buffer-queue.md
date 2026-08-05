@@ -206,7 +206,7 @@ virtual status_t queueBuffer(
 
 ### 3. `queueBuffer()`：提交 slot、元数据和生产完成 fence
 
-Producer 生成内容后调用 `queueBuffer()`。`QueueBufferInput` 携带生产完成 fence、时间戳、crop、transform、dataspace、surface damage 等信息。该 fence 到达下游后承担 acquire fence 的角色：Consumer 在读取像素前必须遵守它。
+Producer 生成内容后调用 `queueBuffer()`。`QueueBufferInput` 携带生产完成 fence、时间戳、crop、transform、dataspace、surface damage 等信息。该 fence 到达下游后负责 acquire fence 的角色：Consumer 在读取像素前必须遵守它。
 
 `queueBuffer()` 返回只说明 CPU 侧提交完成。此时仍可能发生：
 

@@ -281,7 +281,7 @@ adb shell getprop dalvik.vm.heaptargetutilization
 adb shell dumpsys meminfo com.example.app
 ```
 
-前三项描述 heap 的起点、增长限制和最大配置，最后一项提供当前进程 Java、Native、Graphics 等快照。属性值仍要结合进程位数和 Runtime 日志解释。
+前三项描述 heap 的起点、增长限制和最大配置，最末项提供当前进程 Java、Native、Graphics 等快照。属性值仍要结合进程位数和 Runtime 日志解释。
 
 ### `largeHeap` 只改变受管理堆等级
 
@@ -425,7 +425,7 @@ Java 中部分字段和日志沿用 `swapHigh`/`memory.swap.high` 命名，但 N
 1. 先把该进程的两个限制恢复为 `max`；
 2. 条件满足时通知 Profiling 模块的 `TRIGGER_TYPE_ANOMALY`；
 3. 延迟 30 秒向 AMS 请求杀进程，让 profiling 有时间完成；
-4. DeviceConfig 的 disable-kill 开关可以跳过最后的 kill。
+4. DeviceConfig 的 disable-kill 开关可以跳过最终的 kill。
 
 MemoryLimiter 与 lmkd 并行作用于不同条件。前者关注 vendor 配置的单进程阈值，后者在系统内存压力下选择 victim；任何一方都可能先产生可见结果。
 

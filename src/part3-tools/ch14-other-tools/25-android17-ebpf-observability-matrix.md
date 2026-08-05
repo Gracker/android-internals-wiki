@@ -42,7 +42,7 @@ gap_source: "每日技术文章 intake"
 android17_review_notes: "合并源码调研附录；按 Android 17 tag 核对构建架构、加载开关、attach 类型、map 字段、用户态读取方式和能力边界"
 ---
 
-# 14.25 Android 17 eBPF 性能可观测性程序矩阵扩展
+# 14.25 Android 17 eBPF 性能可观测性程序matrix扩展
 
 §14.10 介绍 eBPF 性能工具，§14.21 讲解 Android 17 `bpfloader`。本章沿着“构建产物 → 启动加载 → attach → 输出 → 用户态消费”检查 Android 17 新增的四组程序：
 
@@ -53,7 +53,7 @@ android17_review_notes: "合并源码调研附录；按 Android 17 tag 核对构
 
 它们都由 `libbpf_prog` 构建为 `.bpf` 对象，依赖内核 BTF 与对应 hook。文件被编进 system image，不等于启动时已经加载；`bpfloader` 还会检查架构、内核版本和 aconfig flag。
 
-## 14.25.1 程序矩阵
+## 14.25.1 程序matrix
 
 | 程序 | 构建与加载条件 | attach 点 | 输出 | 明确不提供 |
 |---|---|---|---|---|

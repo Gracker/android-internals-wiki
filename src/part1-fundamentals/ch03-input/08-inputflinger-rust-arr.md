@@ -129,7 +129,7 @@ InputReader
 - `notifyMotion()`、`notifySwitch()`、`notifySensor()`、`notifyVibratorState()`、`notifyDeviceReset()` 和 `notifyPointerCaptureChanged()` 都从 C++ 直接传给下一层。
 - `notifyInputDevicesChanged()` 始终缓存设备信息并继续向后传递；只有 `isEnabled()` 返回 `true` 时，设备列表才同时交给 Rust filter。
 
-所以，InputReader、PointerChoreographer、InputProcessor 和 InputDispatcher 仍由 C++ 实现。Android 17 的 Rust 代码承担的是 `InputFilter` 节点内的一组键盘辅助功能过滤器，并未重写整个 InputFlinger。
+所以，InputReader、PointerChoreographer、InputProcessor 和 InputDispatcher 仍由 C++ 实现。Android 17 的 Rust 代码负责的是 `InputFilter` 节点内的一组键盘辅助功能过滤器，并未重写整个 InputFlinger。
 
 ### 一个容易忽略的启停细节
 
@@ -181,7 +181,7 @@ BounceKeysFilter
 
 | Filter | 处理对象 | 处理方式 | 延迟影响 |
 | --- | --- | --- | --- |
-| Bounce Keys | 支持设备且 `source` 位包含 `Source::KEYBOARD` 的 `KeyEvent` | 记录每台设备最后一次 UP。若同一 `keyCode` 的下一次 DOWN 落在阈值内，丢弃该 DOWN 及其配对 UP | 不设置定时等待；表现为快速重复按键被抑制 |
+| Bounce Keys | 支持设备且 `source` 位包含 `Source::KEYBOARD` 的 `KeyEvent` | 记录每台设备末次 UP。若同一 `keyCode` 的下一次 DOWN 落在阈值内，丢弃该 DOWN 及其配对 UP | 不设置定时等待；表现为快速重复按键被抑制 |
 | Slow Keys | 支持设备且 `source` 位包含 `Source::KEYBOARD` 的 `KeyEvent` | 首次 DOWN 进入 pending；按住超过阈值才发出。阈值前收到 UP 时，pending DOWN 和这次 UP 都不再向后传递 | 接受的 DOWN 会被有意延后一个配置阈值 |
 | Sticky Keys | 受支持的非虚拟字母键盘；源码未额外检查 `Source::KEYBOARD` | 捕获 Alt、Shift、Ctrl、Meta 的 DOWN/UP，UP 时更新 off → latched → locked → off 状态；普通键与锁定类修饰键继续传递，并改写 `metaState` | 没有阈值等待；影响修饰键状态与传递内容 |
 
@@ -243,7 +243,7 @@ UI Toolkit 可用 `HighHint` category vote 表达应用侧 touch boost。选择�
 
 `HighHint` 本身不按普通 category vote 计分，它在后面的 touch boost 分支参与决策。游戏若使用 `setFrameRate()` 配合 Default compatibility 给出 `ExplicitDefault`，选择器会保留其明确请求，避免交互提示把帧率强行拉高。
 
-## RefreshRatePolicy 在这里承担什么角色
+## RefreshRatePolicy 在这里负责什么角色
 
 `RefreshRatePolicy.java` 属于 WindowManager。它读取 `WindowManager.LayoutParams` 中的 preferred display mode、preferred refresh rate、min/max refresh rate，并结合高刷 denylist、包级范围、焦点状态和刷新率切换类型，为 `WindowState` 生成 frame-rate vote 与优先级。
 
@@ -328,7 +328,7 @@ ARR 允许显示刷新节奏随内容帧率降低。判断 jank 要看 FrameTime
 
 ## 小结
 
-Android 17 的 InputFlinger Rust 组件只承担键盘辅助功能过滤。Bounce 抑制快速重复按键，Slow 延后并筛除短按，Sticky 捕获瞬时修饰键并改写状态；MotionEvent 不进入这组 Rust filters。
+Android 17 的 InputFlinger Rust 组件只负责键盘辅助功能过滤。Bounce 抑制快速重复按键，Slow 延后并筛除短按，Sticky 捕获瞬时修饰键并改写状态；MotionEvent 不进入这组 Rust filters。
 
 交互对刷新率的影响从 InputDispatcher user activity 开始，经 PowerManager 的 `Boost.INTERACTION` 同时通知 Power HAL 和 SurfaceFlinger。Scheduler 的全局 touch signal、UI Toolkit 的 `HighHint`、Window / Surface 显式帧率请求以及硬件能力，最终都由 RefreshRateSelector 与显示栈共同处理。
 

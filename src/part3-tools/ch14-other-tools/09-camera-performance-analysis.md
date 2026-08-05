@@ -107,7 +107,7 @@ Camera 性能问题通常横跨 App、Framework、HAL、内核驱动和显示系
 ## 🎬 Camera 预览卡顿分析  <!-- anchor: preview-stutter -->
 ### 预览帧率不达标  <!-- anchor: preview-fps -->
 ### Buffer 耗尽导致卡顿  <!-- anchor: buffer-exhaustion -->
-### Camera 启动性能的量化拆解  <!-- anchor: camera-launch -->
+### Camera 启动性能的分段量化  <!-- anchor: camera-launch -->
 
 ## ⚡ Camera 功耗优化  <!-- anchor: power-optimization -->
 - 帧率与分辨率权衡
@@ -328,7 +328,7 @@ ORDER BY samples DESC, s.track_id;
 
 ### SQL：量化帧间隔
 
-下面以 track id `1234` 为示例。把它改成上一条查询确认的单一 preview 事件 track；同一 track 上还含其他 `queueBuffer` 时，应再收紧 `name`。
+下面以 track id `1234` 为示例。把它改成上一条查询确认的单一 preview 事件 track；同一 track 上还含其他 `queueBuffer` 时，应再限制加强 `name`。
 
 ```sql
 WITH ordered AS (

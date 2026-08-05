@@ -111,7 +111,7 @@ last_idle_audit_log: logs/audit/2026-08-04-20260804-223522-idle-audit-5ee2b1f4-i
 
 ## 结论：两者都属于测试现场工具
 
-SoloPi 和 Emmagee 都不承担线上 APM 的职责。它们运行在测试设备上，擅长复现操作、观察现场和导出记录；崩溃、ANR、卡顿等问题的归因仍要回到 Perfetto、Android Studio Profiler、系统日志或应用内监控样本。
+SoloPi 和 Emmagee 都不负责线上 APM 的职责。它们运行在测试设备上，擅长复现操作、观察现场和导出记录；崩溃、ANR、卡顿等问题的归因仍要回到 Perfetto、Android Studio Profiler、系统日志或应用内监控样本。
 
 两者的现状差异很大：
 
@@ -325,7 +325,7 @@ SoloPi 依赖多项用户授权与设备策略。测试清单要记录“是否�
 Emmagee 最新 release 是 V2.5.1，发布于 2017-08-25；仓库 HEAD `6a382dffe74b5be6d2de78cb0c640cc67e9ce650` 的时间是 2018-03-16，内容为 README 修改。README 明确写出两条边界：
 
 - Android 5.0 起，`getRunningTasks()` 与 `getRunningAppProcesses()` 的返回受到限制，工具无法再取得可靠的 TopActivity。
-- Android 7.0 收紧 `/proc` 访问，同时工具无法通过 `top` 命令取得目标 PID，因此上游直接声明 Android 7.0 不受支持。
+- Android 7.0 限制加强 `/proc` 访问，同时工具无法通过 `top` 命令取得目标 PID，因此上游直接声明 Android 7.0 不受支持。
 
 源码进一步说明了这些限制为何会影响整条采样链：
 
@@ -371,7 +371,7 @@ flowchart LR
 
 SoloPi 负责复现，PerfDog 观察设备外部趋势，Macrobenchmark 给出可重复的应用基准，ADB 与日志平台保存环境和错误，Perfetto解释时间花在何处。Emmagee 不进入 Android 17 的主流程。
 
-| 工具 | 主要职责 | 不应承担的职责 |
+| 工具 | 主要职责 | 不应负责的职责 |
 |---|---|---|
 | SoloPi | 录制回放、视觉响应、现场辅助字段 | 单独给出根因或线上质量结论 |
 | PerfDog | FPS、CPU、功耗和温度等外部趋势 | 解释每个内部线程为何耗时 |
@@ -383,7 +383,7 @@ SoloPi 负责复现，PerfDog 观察设备外部趋势，Macrobenchmark 给出�
 
 ### 回归测试
 
-用 SoloPi 固定主路径和断言，先关注“步骤能否完成”。性能门禁由 Macrobenchmark 或团队已有基准承担。回归失败时保留步骤序号、截图、窗口信息、logcat、账号和环境指纹。
+用 SoloPi 固定主路径和断言，先关注“步骤能否完成”。性能门禁由 Macrobenchmark 或团队已有基准负责。回归失败时保留步骤序号、截图、窗口信息、logcat、账号和环境指纹。
 
 ### 专项性能测试
 

@@ -39,7 +39,7 @@ last_review_finalize_run_id: "20260725-160531-5200f347"
 - 系统豁免链至少覆盖系统模块、运营商特权应用、SystemConfig/DeviceConfig 豁免、DPC 保护/设备管理员和角色持有等来源。[来源: DeepResearch/2026-07-16-android17-oem-background-restriction.md]
 
 ### 🔹 诊断切入点
-- 先查限制等级，再查豁免来源，最后查 tracker 状态；材料给出的命令入口集中在 `cmd activity background get-restriction-level` 与 `dumpsys activity bg-restriction` / `dumpsys activity restriction` 系列。[来源: DeepResearch/2026-07-16-android17-oem-background-restriction.md]
+- 先查限制等级，再查豁免来源，最终查 tracker 状态；材料给出的命令入口集中在 `cmd activity background get-restriction-level` 与 `dumpsys activity bg-restriction` / `dumpsys activity restriction` 系列。[来源: DeepResearch/2026-07-16-android17-oem-background-restriction.md]
 - `/data/system/apprestriction/settings.xml` 是材料标注的后台限制设置持久化路径，可作为复现场景前后 diff 的候选证据点。[来源: DeepResearch/2026-07-16-android17-oem-background-restriction.md]
 
 <!-- outline-end -->

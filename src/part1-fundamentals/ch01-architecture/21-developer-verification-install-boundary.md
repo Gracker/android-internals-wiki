@@ -153,7 +153,7 @@ FAQ 在 2026-07-15 明确补充：
 | 路径 | 当前官方边界 | 工程理解 |
 |---|---|---|
 | ADB | 工作流保持不变，可安装未注册应用 | 只证明开发调试路径可用，不能替代真实商店验收 |
-| Advanced flow | 2026 年 8 月面向 power users 推出；一次设置后可安装未注册应用 | 用户明确承担风险的旁加载路径，不是商店静默绕过接口 |
+| Advanced flow | 2026 年 8 月面向 power users 推出；一次设置后可安装未注册应用 | 用户明确负责风险的旁加载路径，不是商店静默绕过接口 |
 | Limited distribution | 免费、无需政府签发身份证件，最多分享给 20 台经最终用户明确授权的设备 | 适合学习、课堂、家庭和非商业小范围分享 |
 | Managed device + organization store | 由 IT 管理员审核的组织内应用不要求完成验证 | 同一 APK 离开托管商店或进入非托管设备后，不能继续假设豁免 |
 
@@ -292,7 +292,7 @@ Android 17 把新机制直接接入 `PackageInstallerSession`，不是把 Google
 - 当前不是 multi-package parent；
 - session 不是从重启恢复。
 
-若 `SessionParams.appPackageName` 已提供包名，controller 还会调用 `onPackageNameAvailable()` 让 verifier 预取数据。真正的验证尚未开始，这只是 pre-warm。
+若 `SessionParams.appPackageName` 已提供包名，controller 还会调用 `onPackageNameAvailable()` 让 verifier 预取数据。实际的验证尚未开始，这只是 pre-warm。
 
 ### 6.2 commit：封存、流式校验，再进入安装消息
 
@@ -388,7 +388,7 @@ per-user 默认策略由 verifier 或系统指定的 policy delegate 设置。ve
 
 官方面向开发者的承诺是 ADB 工作流不变。Android 17 源码把这个产品承诺拆成了机制与结果两层：旧的非强制路径可以直接跳过；启用 `verificationServiceAdb` 后，ADB request 也可送到 verifier，并通过 `FLAG_VERIFICATION_IS_ADB` 表明来源。verifier 可用 `DEVELOPER_VERIFICATION_BYPASSED_REASON_ADB` 明确回报 bypass。
 
-若内部 session 还设置了 `forceVerification`，平台会追加 `FLAG_VERIFICATION_FORCED_ON_ADB`；即便如此，源码注释仍要求只有 blocking policy 才能真正阻断。这些都是 shell、测试或系统管理边界，不是普通第三方安装器 API，也不改变常规 ADB 用于开发测试的产品承诺。
+若内部 session 还设置了 `forceVerification`，平台会追加 `FLAG_VERIFICATION_FORCED_ON_ADB`；即便如此，源码注释仍要求只有 blocking policy 才能阻断。这些都是 shell、测试或系统管理边界，不是普通第三方安装器 API，也不改变常规 ADB 用于开发测试的产品承诺。
 
 - `adb install` 成功：证明 APK 和调试安装路径基本可用。
 - 商店安装成功：证明该商店、设备、账号、区域和策略组合可用。
@@ -541,7 +541,7 @@ fun readLitePerformedCompat(intent: Intent): Boolean? {
 - extension params 只在确认 verifier provider 与 schema 后使用。
 - 后台收到 pending 时通过通知恢复，不盲目拉起 Activity。
 
-### 测试矩阵
+### 测试matrix
 
 | 维度 | 样本 |
 |---|---|
@@ -568,7 +568,7 @@ fun readLitePerformedCompat(intent: Intent): Boolean? {
 | SDM / dex metadata | 安装附带的执行优化元数据是否可信 | 否 |
 | dexopt / ART profile | 安装后代码编译状态和启动性能 | 否 |
 
-最稳妥的心智模型是：
+可以按下面的职责模型理解：
 
 > Developer Verification 是安装继续条件中的一项，不是 Android 安装安全模型的新总开关。
 

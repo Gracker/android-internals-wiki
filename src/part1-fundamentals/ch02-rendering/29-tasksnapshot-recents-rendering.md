@@ -162,7 +162,7 @@ flowchart TD
 - 正在退出且不是 base application 的部分窗口；
 - Task 明确登记在 `mExcludeLayersFromTaskSnapshot` 中的 layer。
 
-捕获得到的是新的 screenshot buffer。它不是简单读取某个 App Window 的最后一块 `GraphicBuffer`：Task 里可能有多个窗口、SurfaceView、壁纸或装饰 layer，SurfaceFlinger 要按当前 layer 状态生成捕获结果。
+捕获得到的是新的 screenshot buffer。它不是简单读取某个 App Window 的最末块 `GraphicBuffer`：Task 里可能有多个窗口、SurfaceView、壁纸或装饰 layer，SurfaceFlinger 要按当前 layer 状态生成捕获结果。
 
 ### 3.2 同步捕获会进入 transition 关键路径
 

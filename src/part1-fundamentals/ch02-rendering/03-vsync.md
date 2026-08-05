@@ -101,7 +101,7 @@ last_task9_autofix_at: "2026-06-09"
 
 ## 先建立一套准确的分析模型
 
-VSync 在 Android 中承担两类工作：
+VSync 在 Android 中负责两类工作：
 
 1. 提供或校准显示设备的时间节奏。
 2. 围绕预计呈现时刻，为 App 和 SurfaceFlinger 安排合适的唤醒时间。

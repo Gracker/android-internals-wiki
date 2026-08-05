@@ -112,7 +112,7 @@ flowchart TD
     READ -->|"interrupt / error"| RETRY["返回，由 BufferQueue 重新检查"]
 ```
 
-BLAST 在解锁 BufferQueue mutex 后阻塞读取 `BufferReleaseChannel`。成功收到 release 消息时，它先执行 `releaseBufferCallback()`，再用 `steady_clock` 计算从进入等待到收到 release 的持续时间，最后调用已注册的 callback。
+BLAST 在解锁 BufferQueue mutex 后阻塞读取 `BufferReleaseChannel`。成功收到 release 消息时，它先执行 `releaseBufferCallback()`，再用 `steady_clock` 计算从进入等待到收到 release 的持续时间，最终调用已注册的 callback。
 
 超时路径直接返回 `TIMED_OUT`，interrupt/error 路径让 BufferQueue 重新检查状态；这两条分支不会按成功 release 的路径报告 duration。因此，`onWaitForBufferRelease()` 不是所有 dequeue 失败的统一通知。
 
@@ -326,7 +326,7 @@ recovery 只说明 App 已感知回压。根因仍要由 producer workload、acq
 | RenderThread 卡在 free buffer/release wait | queue depth、slot、release channel/fence、下游消费 |
 | App 已 queue，SF/HWC present 晚 | acquire fence、latch、composition、HWC/display |
 
-三者可以连续发生。比如主线程先迟到，随后 GPU 和 queue 堆积，最后 SF 错过 present；不能只选一个标签覆盖整段时间线。
+三者可以连续发生。比如主线程先迟到，随后 GPU 和 queue 堆积，最终 SF 错过 present；不能只选一个标签覆盖整段时间线。
 
 ## 十一、常见误判
 
