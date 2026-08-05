@@ -2,13 +2,20 @@
 title: "Android 17 Excessive CPU Kill 与后台任务功耗治理"
 chapter: "25.12"
 section: "25.12"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-05-20"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
-last_verified: "2026-05-20"
-last_verified_against: "Android Developers ProfilingManager / ProfilingTrigger docs, AOSP packages/modules/Profiling, DeepResearch 2026-05-19/2026-05-20, Clippings structure references"
-confidence: medium
+last_verified: "2026-08-05"
+last_verified_against: "Android Developers ProfilingManager / ProfilingTrigger docs, AOSP android-17.0.0_r1 frameworks/base and packages/modules/Profiling, DeepResearch 2026-05-26/2026-06-03"
+reviewed_date: "2026-08-05"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: finalized
+last_review_finalize_at: "2026-08-05T10:05:53+08:00"
+last_review_finalize_run_id: "20260805-100553-af78308e"
+confidence: high
 tags: [android-17, profiling-trigger, jobscheduler, workmanager, power, background-task]
 related_chapters: ["5.10", "25.2", "25.4", "26.12", "11.2"]
 created_by: "task2a-knowledge-gap"
@@ -24,6 +31,10 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
   - type: research
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-19-android-jobscheduler-profilingtrigger-version-boundary.md"
+  - type: research
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-26-android17-excessive-cpu-kill-mechanism-boundary.md"
+  - type: research
+    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-06-03-android17-profilingmanager-excessive-cpu-version-boundary.md"
   - type: research
     path: "/Users/gracker/.openclaw/workspace/AutoResearchClaw/state/researched-gaps.json"
   - type: internal
