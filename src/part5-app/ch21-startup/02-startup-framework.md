@@ -180,9 +180,9 @@ public void registerStartupMonitor(StartupMonitor monitor);
 - **内存占用**：SystemHealthManager 内存开销约 8KB，历史数据采用环形缓冲区
 - **存储优化**：采用 protoBuf 压缩，减少 50% 存储空间
 
-#### 🔹 启动优化闭环实现
+#### 🔹 启动优化验证循环
 
-**测量 → 分析 → 优化 → 验证**闭环：
+**测量 → 分析 → 优化 → 验证**循环：
 
 1. **测量阶段**：Startup Insights 收集启动各阶段延迟分布
 2. **分析阶段**：通过 Perfetto trace 可视化分析启动瓶颈

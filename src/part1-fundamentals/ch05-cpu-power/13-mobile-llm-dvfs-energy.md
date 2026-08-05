@@ -171,7 +171,7 @@ GPU delegate、NPU delegate 或厂商运行时可能通过驱动提交工作，�
 
 Android 17 的 AIDL `IPower` 支持创建 hint session，框架把应用线程组、目标工作时长及实际工作时长交给 Power HAL。系统和厂商可以用这些信息调节调度、频率或其他策略，也可以在不支持相应能力时忽略提示。提示不会给应用返回一个已保证的 CPU/GPU 频点。
 
-温度达到限制后，thermal cooling device、CPUFreq/Devfreq 限制、Power HAL 和厂商策略都可能收紧性能上限。此时增加负载、放宽线程数或反复请求性能提示，可能只会增加排队与功耗，无法越过热限制。
+温度达到限制后，thermal cooling device、CPUFreq/Devfreq 限制、Power HAL 和厂商策略都可能降低性能上限。此时增加负载、放宽线程数或反复请求性能提示，可能只会增加排队与功耗，无法越过热限制。
 
 ## 为什么独立的利用率反馈会误读 LLM decode
 
@@ -257,7 +257,7 @@ if (session != null) {
 }
 ```
 
-这段代码表达“这些线程周期性完成一轮工作，希望在目标时间内结束”。`createHintSession()` 可能返回 `null`，应用必须保留没有 hint session 时的正确执行路径。线程 ID 应来自承担推理工作的长期 worker，不能填 UI 线程 ID 来替代真实执行线程。
+这段代码表达“这些线程周期性完成一轮工作，希望在目标时间内结束”。`createHintSession()` 可能返回 `null`，应用必须保留没有 hint session 时的正确执行路径。线程 ID 应来自负责推理工作的长期 worker，不能填 UI 线程 ID 来替代真实执行线程。
 
 Android 17 源码中的主要操作包括：
 

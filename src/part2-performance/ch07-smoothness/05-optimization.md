@@ -153,7 +153,7 @@ ViewStub 是不可见、零尺寸的占位 View。调用 `inflate()` 或把它�
 
 ### `<merge>`、`<include>` 与 GONE
 
-`<merge>` 可以在 include 场景省去一个纯包装根节点，前提是父容器能承担原根节点的布局语义。去掉根节点后，layout params 的归属、背景、padding、clip 和 accessibility 语义都要复核。
+`<merge>` 可以在 include 场景省去一个纯包装根节点，前提是父容器能负责原根节点的布局语义。去掉根节点后，layout params 的归属、背景、padding、clip 和 accessibility 语义都要复核。
 
 预先 inflate 一组 GONE View 会支付对象创建和内存成本。多数 ViewGroup 在测量与布局时会跳过 GONE child，但仍可能在遍历、状态分发或自定义容器逻辑中遇到它们。低概率且较重的区域可用 ViewStub；高频切换的小组件保留为 GONE 通常更合适，避免反复创建。
 
@@ -339,7 +339,7 @@ Android 17 源码锚点：
 
 - `Choreographer.postFrameCallback()` 的回调运行在帧开始附近，回调工作会占用该帧预算；
 - `Handler.post()` 只保证进入消息队列，没有 deadline 和空闲保证；
-- IdleHandler 只在 Looper 空闲时运行，不能承担必须及时完成的任务；
+- IdleHandler 只在 Looper 空闲时运行，不能负责必须及时完成的任务；
 - 后台线程适合无 UI 依赖的工作，结果投递仍要限流；
 - 延迟初始化必须定义最迟完成时刻，避免把启动卡顿变成首次点击卡顿。
 

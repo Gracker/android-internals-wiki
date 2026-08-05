@@ -213,7 +213,7 @@ data class StartupTaskSpec(
 )
 ```
 
-有了这些字段，代码评审可以检查“为什么必须早做”和“失败时谁承担影响”。执行器仍需另外实现依赖检查、状态管理、线程切换、取消和追踪。
+有了这些字段，代码评审可以检查“为什么必须早做”和“失败时谁负责影响”。执行器仍需另外实现依赖检查、状态管理、线程切换、取消和追踪。
 
 ### 推迟到首帧之后
 
@@ -293,7 +293,7 @@ Jetpack App Startup 用一个 `InitializationProvider` 发现 `Initializer`，�
 
 Android 17 的 `ActivityThread#handleBindApplication()` 创建 `Application` 后，会调用 `installContentProviders()`，随后调用 `Instrumentation.callApplicationOnCreate()`。Provider 的 `onCreate()` 通常在应用主线程执行，因此第三方库的自动初始化会直接进入冷启动路径。
 
-Provider 还可能承担跨进程数据、FileProvider URI、数据库、WorkManager、Emoji 或其他功能。看到 Provider 多不能直接判定它无用。正确审计顺序是：
+Provider 还可能负责跨进程数据、FileProvider URI、数据库、WorkManager、Emoji 或其他功能。看到 Provider 多不能直接判定它无用。正确审计顺序是：
 
 1. 从目标 variant 的合并 Manifest 找出 Provider 和 `meta-data`；
 2. 追溯来源依赖、authorities、exported、process 与启动逻辑；

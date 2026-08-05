@@ -231,7 +231,7 @@ SmartPerfetto 只能分析调用方有权提供的 trace。Perfetto SDK 或 Andr
 
 ## 和原生 Perfetto / Perfetto SDK / APM 平台的组合关系
 
-每个工具承担不同责任。Perfetto UI 提供时间轴观察和人工验证，`trace_processor_shell` 执行确定性查询，Perfetto SDK 把应用事件写入 trace，ProfilingManager 提供受平台控制的 profiling 请求，APM 平台统计长期趋势。SmartPerfetto 位于解析器和团队调查流程之间，负责调用查询、组织证据、生成报告与比较结果。
+每个工具负责不同责任。Perfetto UI 提供时间轴观察和人工验证，`trace_processor_shell` 执行确定性查询，Perfetto SDK 把应用事件写入 trace，ProfilingManager 提供受平台控制的 profiling 请求，APM 平台统计长期趋势。SmartPerfetto 位于解析器和团队调查流程之间，负责调用查询、组织证据、生成报告与比较结果。
 
 | 工具 | 更适合的问题 | 产物 |
 | --- | --- | --- |

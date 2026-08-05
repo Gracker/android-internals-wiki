@@ -61,7 +61,7 @@ task9_review_notes: "2026-06-16 Task9：needs-rework。P0 2 / P1 1。core-splash
 ---
 # Splash Screen 与感知启动速度
 
-用户点击图标之后、App 首帧真正画出来之前，系统可以做很多事来缩短体感等待时间。Starting Window 在 App 进程就绪前先给视觉反馈；SplashScreen API（Android 12+）把这段反馈统一成可配置样式；骨架屏、预渲染和退出动画再让过渡更平滑。本节讲这三层工具各自怎么用、版本边界在哪、Perfetto 上怎么看。
+用户点击图标之后、App 首帧画出来之前，系统可以做很多事来缩短体感等待时间。Starting Window 在 App 进程就绪前先给视觉反馈；SplashScreen API（Android 12+）把这段反馈统一成可配置样式；骨架屏、预渲染和退出动画再让过渡更平滑。本节讲这三层工具各自怎么用、版本边界在哪、Perfetto 上怎么看。
 
 关于 Starting Window 的系统侧工作机制（ATMS 决策、Shell starting-surface 组件创建流程、TaskSnapshot 路径），详见 2.12 节。本节聚焦 App 侧的配置、适配和感知优化策略。
 

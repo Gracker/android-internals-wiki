@@ -68,7 +68,7 @@ task9_p2_issues: 0
 ---
 # 1.22 ART Verifier、Quickening 与 dexopt 过滤器的性能边界
 
-看到 `speed-profile`，不能直接下结论说“这个应用已经充分编译”；看到 `verify`，也不等于“应用没有优化”。compiler filter 描述的是某一次 dexopt 想达到的目标，真正落盘的结果还会受 profile、DEX 规模、依赖关系、安装方式和设备策略影响。
+看到 `speed-profile`，不能直接下结论说“这个应用已经充分编译”；看到 `verify`，也不等于“应用没有优化”。compiler filter 描述的是某一次 dexopt 想达到的目标，落盘的结果还会受 profile、DEX 规模、依赖关系、安装方式和设备策略影响。
 
 排查安装慢、首次启动慢或 OTA 后应用变慢时，先分清三件事：
 
@@ -268,12 +268,12 @@ adb logcat -b all -d |
 | 时点 | 常见状态 | 运行性能含义 |
 | --- | --- | --- |
 | 安装完成 | 有 cloud profile 时可能是 `speed-profile`；否则常见 `verify` | `verify` 已完成安全验证，但关键方法可能仍无 AOT 代码 |
-| 第一次运行 | AOT 命中方法直接执行；其余方法解释执行，热点进入 JIT | 首启可能承担类加载、page fault、解释器和 JIT 热身成本 |
+| 第一次运行 | AOT 命中方法直接执行；其余方法解释执行，热点进入 JIT | 首启可能负责类加载、page fault、解释器和 JIT 热身成本 |
 | 多次运行后 | current profile 逐步积累真实用户热点 | profile 只是输入，尚不等于 reference profile 已用于 dexopt |
 | 空闲充电 | background dexopt 合并可用 profile，以 `speed-profile` 重新处理 | 后续启动可能改善，但任务可以被取消或因策略跳过 |
 | OTA / Mainline 前 | Pre-reboot Dexopt 尝试针对新依赖生成产物 | 未完成的包重启后仍能以 `verify` + JIT 正常运行 |
 
-这也是“安装很快但第一次打开慢”和“升级后第一次打开变慢”的常见来源。它们不一定是 bug，而可能是系统有意把 AOT 成本从交互路径挪到后台。真正需要修复的是关键启动路径不合理、profile 覆盖缺失、后台任务长期无法完成或依赖配置错误。
+这也是“安装很快但第一次打开慢”和“升级后第一次打开变慢”的常见来源。它们不一定是 bug，而可能是系统有意把 AOT 成本从交互路径挪到后台。需要修复的是关键启动路径不合理、profile 覆盖缺失、后台任务长期无法完成或依赖配置错误。
 
 ## 大体积 DEX 的特殊降级
 
@@ -296,7 +296,7 @@ adb shell getprop |
   grep -E 'pm.dexopt|dalvik.vm.*compilerfilter|dalvik.vm.*dex2oat|dalvik.vm.usejit'
 ```
 
-属性反映默认策略，不代表某个包最后一定使用该 filter。
+属性反映默认策略，不代表某个包最末定使用该 filter。
 
 ### 2. 查看包级最终状态
 

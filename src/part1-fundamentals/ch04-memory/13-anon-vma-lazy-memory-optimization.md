@@ -287,7 +287,7 @@ proposal 讨论了 `mmap_lock`、VMA lock 和 PTE lock，但 rmap、migration �
 - 16KB 基础页会改变 folio、PTE 与 VMA 边界组合，不能由“anon_vma 是 VMA 级结构”推导兼容。
 - THP/large folio、migration、KSM、GUP、DAMON 和 memory failure 都在该 patchset 的修改清单中，说明它们需要专门适配。
 
-这些测试尚未成为 Android 17 的问题，因为基线内核没有合入该设计。OEM 若私有回移，就要承担对应验证。
+这些测试尚未成为 Android 17 的问题，因为基线内核没有合入该设计。OEM 若私有回移，就要负责对应验证。
 
 ## 如何确认设备有没有私有实现
 

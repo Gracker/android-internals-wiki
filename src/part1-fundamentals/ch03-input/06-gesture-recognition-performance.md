@@ -151,9 +151,9 @@ native 收样逻辑还包含几项影响诊断的细节：
 - `ACTION_DOWN` 会先清空旧状态，再加入 X/Y 样本；
 - `ACTION_MOVE` 会遍历历史批次和当前批次，并为每个 pointer id 加入 X/Y；
 - 标记为 resampled 的样本会跳过，避免预测出来的坐标反过来污染速度拟合；
-- `ACTION_UP` 和普通 `ACTION_POINTER_UP` 不重复加入抬手位置，以保留最后一次有效移动的速度；
+- `ACTION_UP` 和普通 `ACTION_POINTER_UP` 不重复加入抬手位置，以保留末次有效移动的速度；
 - 同一指针超过 40 ms 没有新移动样本时，下一次采样会按“指针已经停下”处理并重建策略状态；
-- `getComputedVelocity()` 最后按 `units / 1000` 缩放，并限制在 `[-maxVelocity, maxVelocity]`。
+- `getComputedVelocity()` 最终按 `units / 1000` 缩放，并限制在 `[-maxVelocity, maxVelocity]`。
 
 Android 14（API 34）起，公开 API 增加了 `isAxisSupported()` 与 `getAxisVelocity()`，`AXIS_SCROLL` 也进入公开可跟踪范围。版本迭代可以概括为：
 
@@ -472,7 +472,7 @@ Compose 对新 pointer 的第一个事件做命中测试，形成可接收 point
 遇到滑动、双击或 Fling 异常时，按以下顺序收集证据：
 
 1. 记录完整的 action、pointer id/index、`downTime`、`eventTime`、坐标、source 和 axis；
-2. 确认序列最后是 `UP` 还是 `CANCEL`，以及哪个父容器改变了拦截决定；
+2. 确认序列最终是 `UP` 还是 `CANCEL`，以及哪个父容器改变了拦截决定；
 3. 打印运行时 `scaledTouchSlop`、最小/最大 Fling 速度，不用源码 fallback 替代设备值；
 4. 核对 `VelocityTracker` 是否从 `DOWN` 开始收样、是否在 getter 前 compute、是否按 pointer id 取值；
 5. 用 trace 标出自定义回调，确认耗时来自识别、业务处理还是识别后的布局与绘制；

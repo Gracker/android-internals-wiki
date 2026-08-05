@@ -222,7 +222,7 @@ kNotReady → kIdx → kLoaded → kResolving/kResolved
 
 ### `<clinit>` 耗时属于应用代码
 
-ART 会先初始化父类，并按规范处理包含 default method 的接口，再写入 DEX 编码的静态值，最后调用类初始化方法。此处可以执行任意应用逻辑，例如读取磁盘、初始化序列化元数据、创建线程池或等待锁。耗时来自这些逻辑时，调整 compiler filter 或 DEX 次序通常只能改善外围成本，不能消除 `<clinit>` 本身。
+ART 会先初始化父类，并按规范处理包含 default method 的接口，再写入 DEX 编码的静态值，最终调用类初始化方法。此处可以执行任意应用逻辑，例如读取磁盘、初始化序列化元数据、创建线程池或等待锁。耗时来自这些逻辑时，调整 compiler filter 或 DEX 次序通常只能改善外围成本，不能消除 `<clinit>` 本身。
 
 把静态初始化改为惰性 holder、按需缓存或显式初始化前，要检查线程安全和首次使用位置。工作只是从进程启动移到了另一个用户动作时，还应衡量该动作的延迟。
 
@@ -259,7 +259,7 @@ LoadedApk.makeApplicationInner()
 
 ### 预加载共享了什么
 
-`ZygoteInit.preloadClasses()` 读取 `/system/etc/preloaded-classes`。每个有效条目使用 `Class.forName(name, true, null)` 交给 boot class loader 加载并初始化，最后调用 `VMRuntime.preloadDexCaches()`。列表条数是产品配置，不能写成跨设备固定值。
+`ZygoteInit.preloadClasses()` 读取 `/system/etc/preloaded-classes`。每个有效条目使用 `Class.forName(name, true, null)` 交给 boot class loader 加载并初始化，最终调用 `VMRuntime.preloadDexCaches()`。列表条数是产品配置，不能写成跨设备固定值。
 
 fork 后，应用能通过写时复制共享 Zygote 已建立的类元数据、初始化状态和相关内存页。应用仍要按 boot class path 和类表执行查找，首次解析到自身 DEX 的引用也可能更新应用侧 DexCache。成功预加载类的定义、验证和初始化已经在 Zygote 完成，并具备共享条件；后续查找仍有成本。
 

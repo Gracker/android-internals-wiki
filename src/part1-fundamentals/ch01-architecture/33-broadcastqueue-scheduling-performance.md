@@ -187,7 +187,7 @@ Android 没有 `PRIORITY_URGENT_APP`、`PRIORITY_NORMAL_APP` 这组广播字符�
 
 ### 4.2 receiver priority 是整数，但 Android 16 起不再提供跨进程全序
 
-`IntentFilter` 的 priority 仍是整数。Android 16 起，公开行为已经收紧：优先级只保证在同一应用进程内生效，不保证不同进程之间的接收顺序；应用可设置的值也会被限制在系统保留上下界之间。
+`IntentFilter` 的 priority 仍是整数。Android 16 起，公开行为已经限制加强：优先级只保证在同一应用进程内生效，不保证不同进程之间的接收顺序；应用可设置的值也会被限制在系统保留上下界之间。
 
 因此，即使两个应用为同一个广播设置不同 priority，也不能把它设计成跨应用协议顺序。需要请求/响应、确认或全序处理时，应使用 Binder 服务、明确的任务队列或持久化协调机制。
 
@@ -360,4 +360,4 @@ API 37 定义了 `broadcasts` Perfetto SDK category。启用相关 tracing v3 fe
   - [Android 14 behavior changes](https://developer.android.com/about/versions/14/behavior-changes-all#cached-broadcasts)
   - [BroadcastOptions API](https://developer.android.com/reference/android/app/BroadcastOptions)
 
-Android 17 会在及时性、进程启动成本、cached 状态和系统健康之间调度广播，不保证每一条事件都立即唤醒每一个进程。性能分析也应沿着同一条边界展开：先判断该 receiver 为什么此时 runnable，再区分排队、冷启动、Binder 提交和应用执行，最后决定应修 receiver、改发送策略，还是换用更合适的 IPC/任务机制。
+Android 17 会在及时性、进程启动成本、cached 状态和系统健康之间调度广播，不保证每一条事件都立即唤醒每一个进程。性能分析也应沿着同一条边界展开：先判断该 receiver 为什么此时 runnable，再区分排队、冷启动、Binder 提交和应用执行，最终决定应修 receiver、改发送策略，还是换用更合适的 IPC/任务机制。

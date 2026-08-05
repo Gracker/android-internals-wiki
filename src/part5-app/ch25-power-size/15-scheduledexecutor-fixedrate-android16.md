@@ -45,7 +45,7 @@ Android 16 面向 `targetSdk >= 36` 调整 `scheduleAtFixedRate()` 的补偿执�
 ### 🔹 观测方法
 用 Perfetto 观察线程池 runnable 队列、CPU frequency、main thread 恢复阶段耗时；用 Batterystats / 电量采样对照后台恢复后的功耗峰值。
 
-### 🔹 测试矩阵
+### 🔹 测试matrix
 覆盖 `targetSdk 35/36`、前后台切换、长任务阻塞、Doze / Battery Saver、不同线程池大小和周期参数，确认行为变化不会隐藏业务状态同步问题。
 
 ## 扩展

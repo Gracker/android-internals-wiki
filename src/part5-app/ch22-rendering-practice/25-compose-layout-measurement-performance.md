@@ -60,9 +60,9 @@ Modifier 链的性能影响：每个 Modifier 都会创建额外的 LayoutNode�
 RemeasureScope 的使用要点：remeasure 会触发子树的完整重新测量，不是轻量级操作；在动画场景中应避免频繁调用 remeasure，考虑使用 layout() 的参数变化替代；使用 rememberSaveable 保持状态稳定性，避免不必要的 remeasure。优化后的 remeasure 范围控制可将耗时从 25ms 降低到 5ms。
 
 ### 🔹 Compose 1.7+ LookaheadLayout 的性能特征
-LookaheadLayout（用于 beyondBoundsLayout、动画布局过渡）引入两轮测量 pass：先 lookahead 再 actual。对常规 UI 无感知，但对有大量子节点的自定义布局会增加单帧 layout 耗时。需要评估是否真正需要 lookahead 语义。
+LookaheadLayout（用于 beyondBoundsLayout、动画布局过渡）引入两轮测量 pass：先 lookahead 再 actual。对常规 UI 无感知，但对有大量子节点的自定义布局会增加单帧 layout 耗时。需要评估是否需要 lookahead 语义。
 
-LookaheadLayout 的性能开销：双 pass 测量意味着 layout 时间大致翻倍；lookahead 测算的约束可能与最终不同，导致实际测量时重新计算；内存占用增加，因为需要保持两套布局状态。建议仅在确实需要 beyondBounds 内容预计算时使用，避免过度使用。在复杂列表场景中，LookaheadLayout 可能导致帧率下降 10-20%。
+LookaheadLayout 的性能开销：双 pass 测量意味着 layout 时间大致翻倍；lookahead 测算的约束可能与最终不同，导致实际测量时重新计算；内存占用增加，因为需要保持两套布局状态。建议仅在需要 beyondBounds 内容预计算时使用，避免过度使用。在复杂列表场景中，LookaheadLayout 可能导致帧率下降 10-20%。
 
 ## 扩展
 

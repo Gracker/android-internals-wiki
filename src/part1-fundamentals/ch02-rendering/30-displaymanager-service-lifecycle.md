@@ -119,7 +119,7 @@ VirtualDisplayAdapter 已创建
 - `LogicalDisplayMapper` 是否生成 `DEFAULT_DISPLAY`；
 - `VirtualDisplayAdapter` 是否成功创建。
 
-`PHASE_BOOT_COMPLETED` 的职责不同：DMS 通知 DisplayPowerController、DisplayModeDirector、LogicalDisplayMapper、外接屏策略等组件 boot completed，不承担首次默认屏发现。
+`PHASE_BOOT_COMPLETED` 的职责不同：DMS 通知 DisplayPowerController、DisplayModeDirector、LogicalDisplayMapper、外接屏策略等组件 boot completed，不负责首次默认屏发现。
 
 ## 2. 物理 Display 的发现、变更与移除
 

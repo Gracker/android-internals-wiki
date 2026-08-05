@@ -96,7 +96,7 @@ last_deepseek_cn_review_at: 2026-07-15
   → 发布 profile 或二进制
 ```
 
-Android 17 同时能看到两类落地：
+Android 17 同时能看到两类接入：
 
 - 平台 userspace 的 native library / executable 由 Soong `afdo` 能力接入；
 - ACK `android17-6.18-2026-06_r6` 携带 GKI `kernel.afdo`，Kleaf 在构建 `vmlinux` 时引用。
@@ -148,7 +148,7 @@ afdo: true,
 
 开启了 `afdo: true`。
 
-这只能证明目标具备 AFDO 构建接入，不能证明任意本地构建都一定拿到了有效 profile。是否真正使用，还取决于 profile 配置、目标 arch、构建变体和产物日志。验证时应在 verbose build log 中查找 `-fprofile-sample-use=`，再核对该路径对应的 profile。
+这只能证明目标具备 AFDO 构建接入，不能证明任意本地构建都一定拿到了有效 profile。是否使用，还取决于 profile 配置、目标 arch、构建变体和产物日志。验证时应在 verbose build log 中查找 `-fprofile-sample-use=`，再核对该路径对应的 profile。
 
 ### 与 ART Baseline Profile 的区别
 
@@ -376,7 +376,7 @@ AutoFDO 不会在 Perfetto 里生成一个名为 `AutoFDO` 的 slice。它改变
 - 同一温度、电量与调频条件；
 - 唯一变量为是否应用目标 profile。
 
-先从 verbose build log 和反汇编确认 A 组没有使用 profile、B 组确实使用。否则“无差异”可能只是两组都没接入，所谓“提升”也可能来自工具链或配置漂移。
+先从 verbose build log 和反汇编确认 A 组没有使用 profile、B 组使用。否则“无差异”可能只是两组都没接入，所谓“提升”也可能来自工具链或配置漂移。
 
 ### Perfetto 看系统结果
 

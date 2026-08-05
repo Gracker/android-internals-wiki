@@ -237,12 +237,12 @@ budget = sustainable_power
 |---|---|---|
 | `sustainable_power` | 提高目标温度附近的基础预算 | 高估会持续偏热，低估会过早限制 |
 | `k_pu` | 低于目标温度时更快放开功耗 | 容易冲过目标温度 |
-| `k_po` | 高于目标温度时更强地收紧预算 | 可能造成性能突降或振荡 |
+| `k_po` | 高于目标温度时更强地缩减预算 | 可能造成性能突降或振荡 |
 | `k_i` | 更积极修正长期偏差 | 积分累积可能让恢复变慢 |
 | `k_d` | 根据温度误差变化速度提前修正 | 对噪声敏感；内核文档建议通常保留默认 0 |
 | `integral_cutoff` | 决定哪些误差进入积分 | 配置不当会积累无用历史误差 |
 
-调参需要同时观察 `thermal_power_allocator`、`thermal_power_actor` 与 `thermal_power_allocator_pid` tracepoint。仅看温度曲线，无法知道预算收紧来自比例项、积分项还是 actor 的功耗请求。
+调参需要同时观察 `thermal_power_allocator`、`thermal_power_actor` 与 `thermal_power_allocator_pid` tracepoint。仅看温度曲线，无法知道预算缩减来自比例项、积分项还是 actor 的功耗请求。
 
 ### 其他 governor
 
@@ -595,7 +595,7 @@ zone/cooling device 编号不稳定，正式脚本应先按 `type` 建立映射�
 2. 记录温度、PID 各项、总请求/授予功耗和 actor state；
 3. 先校准 `sustainable_power`；
 4. 再调整 `k_pu` 与 `k_po` 的升温/过热响应；
-5. 最后评估积分项，`k_d` 保持文档建议的默认值，除非有充分数据；
+5. 最终评估积分项，`k_d` 保持文档建议的默认值，除非有充分数据；
 6. 重复冷热机、不同环境温度和制造偏差测试。
 
 调参目标应同时包含安全温度、温度过冲、性能振荡、稳定吞吐与功耗。追求更晚触发 throttling 可能把代价转移到机身温度、电池寿命或保护关机。

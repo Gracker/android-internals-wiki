@@ -134,7 +134,7 @@ API 37 用注解给出锁要求：`computeOomAdjLSP()`、`applyResultsLSP()` 等
 
 Visible 和 previous 进程可以在 feature flag 开启时使用 100～199、700～799 的梯度。cached 进程则在 900～999 间按 LRU、activity/empty 分组和 connection group importance 分配。
 
-`CACHED_APP_LMK_FIRST_ADJ=950` 是 `ProcessList` 提交给 lmkd 的六档 target 配置中的最后一档；源码注释称它为允许优先死亡的 adj level。它不表示 lmkd 永远先杀所有 `adj>=950` 的进程。lmkd 还会结合当前压力级别、内存占用、swap/thrashing、进程类型和设备参数选目标。
+`CACHED_APP_LMK_FIRST_ADJ=950` 是 `ProcessList` 提交给 lmkd 的六档 target 配置中的最终一档；源码注释称它为允许优先死亡的 adj level。它不表示 lmkd 永远先杀所有 `adj>=950` 的进程。lmkd 还会结合当前压力级别、内存占用、swap/thrashing、进程类型和设备参数选目标。
 
 ## 四、一轮 OOM adjustment 怎样计算
 
@@ -205,7 +205,7 @@ Short FGS 超时后会触发带 `OOM_ADJ_REASON_SHORT_FGS_TIMEOUT` 的重算。�
 
 Provider connection 也能传播客户端重要性。持有 external process handle 的 provider host 可提升到 `adj=0`；连接释放后的短时间内，recent provider 还可能保留 `PREVIOUS_APP_ADJ`，到期后由 follow-up update 重算。
 
-### 4.5 最后分配 LRU 梯度并应用结果
+### 4.5 最终分配 LRU 梯度并应用结果
 
 连接传播结束后，`applyLruAdjust()` 为仍是 unknown/cached 的进程分配 cached adj，并在相应 flag 下处理 visible/previous 梯度。`postUpdateOomAdjInnerLSP()` 再执行：
 

@@ -183,7 +183,7 @@ len = __PAGE_ALIGN(len)
 
 ### 3.1 system heap 不要求整块物理连续
 
-通用 [`system_heap.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/heaps/system_heap.c) 尝试用多种 order 的 page 组成 buffer，最后建立 `sg_table`。它可以包含多个 scatter-gather entry，不承诺整个 buffer 物理连续。
+通用 [`system_heap.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/heaps/system_heap.c) 尝试用多种 order 的 page 组成 buffer，最终建立 `sg_table`。它可以包含多个 scatter-gather entry，不承诺整个 buffer 物理连续。
 
 在 16KB kernel 上，最低 order 对应 16KB base page。实现仍可能优先申请更大的 compound page，再用较小页面补足。secure、camera、video 或连续内存 heap 可以采用不同策略，不能从 system heap 推导它们。
 

@@ -410,7 +410,7 @@ FrameTimeline 里，App 侧和 SurfaceFlinger 侧至少要分成三类：
 
 多窗口场景下，后两类更有价值。窗口多、layer 多、display 多，先把 SurfaceFlinger 侧 miss 和 App 侧 miss 拆开，再决定是不是回头看应用主线程、RenderThread、图片上传、视频解码，还是继续沿着 SurfaceFlinger / HWC / GPU composition 往下查。
 
-一次可复用的顺序是：先在 `actual_frame_timeline_slice` 找到异常 SurfaceFrame/DisplayFrame token，再对齐目标进程的 `doFrame`、RenderThread 与 buffer transaction；随后选择最接近异常时刻的 layer snapshot，确认 output、可见 layer 和 composition type；最后检查 SurfaceFlinger main thread、GPU fence、Composer/HAL 与 present。这样能把“某个窗口晚交帧”和“整屏合成晚”分开。
+一次可复用的顺序是：先在 `actual_frame_timeline_slice` 找到异常 SurfaceFrame/DisplayFrame token，再对齐目标进程的 `doFrame`、RenderThread 与 buffer transaction；随后选择最接近异常时刻的 layer snapshot，确认 output、可见 layer 和 composition type；最终检查 SurfaceFlinger main thread、GPU fence、Composer/HAL 与 present。这样能把“某个窗口晚交帧”和“整屏合成晚”分开。
 
 ## 版本演进
 

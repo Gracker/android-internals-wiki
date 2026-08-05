@@ -261,7 +261,7 @@ resize 期间可以暂时出现“新 geometry + 旧 buffer”，系统会缩放
 
 ## FrameTimeline：按 token 关联，禁止按 name 猜
 
-[Perfetto FrameTimeline 文档](https://perfetto.dev/docs/data-sources/frametimeline) 提供 `expected_frame_timeline_slice` 与 `actual_frame_timeline_slice`。App SurfaceFrame 用 `surface_frame_token` 对齐预期和实际工作；SurfaceFlinger DisplayFrame 使用 `display_frame_token`。一个 DisplayFrame 可以包含多个进程的 SurfaceFrame，两种 token 承担的含义不同。
+[Perfetto FrameTimeline 文档](https://perfetto.dev/docs/data-sources/frametimeline) 提供 `expected_frame_timeline_slice` 与 `actual_frame_timeline_slice`。App SurfaceFrame 用 `surface_frame_token` 对齐预期和实际工作；SurfaceFlinger DisplayFrame 使用 `display_frame_token`。一个 DisplayFrame 可以包含多个进程的 SurfaceFrame，两种 token 负责的含义不同。
 
 下面的 SQL 只比较目标应用窗口的 actual SurfaceFrame 与 expected SurfaceFrame。`$layer_glob` 应包含目标 Activity/window 的稳定片段，例如 `*com.example/.MainActivity*`。
 
@@ -308,7 +308,7 @@ JOIN expected_app AS e
 ORDER BY a.actual_start_ns;
 ```
 
-`overrun_ns > 0` 只表示 actual end 晚于 expected end，原因仍要回到 `jank_type`、UI/RenderThread、GPU 和系统线程。若同一 token 出现多个 layer 记录，应进一步收紧 `layer_name` 或在聚合前去重。随后用 `display_frame_token` 查 SurfaceFlinger 行，确认该应用帧对应的 DisplayFrame 是否也迟到。原先按 `name + upid` 关联会把同名或相邻帧配错，不能用于 deadline 计算。
+`overrun_ns > 0` 只表示 actual end 晚于 expected end，原因仍要回到 `jank_type`、UI/RenderThread、GPU 和系统线程。若同一 token 出现多个 layer 记录，应进一步限制加强 `layer_name` 或在聚合前去重。随后用 `display_frame_token` 查 SurfaceFlinger 行，确认该应用帧对应的 DisplayFrame 是否也迟到。原先按 `name + upid` 关联会把同名或相邻帧配错，不能用于 deadline 计算。
 
 第三方应用也不应假设系统 CUJ 表总有 marker。可以使用 AndroidX JankStats、自定义稳定 trace section，或直接按 FrameTimeline token 分析。自定义 section 名保持低基数，例如在自动化 resize 动作外层使用 `Trace.beginSection("desktop_resize")` 与 `Trace.endSection()`；尺寸、文档 ID 等高变化值放日志或测试参数，不拼进 section 名。
 

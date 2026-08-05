@@ -129,7 +129,7 @@ AGP 8.0 删除了 `com.android.build.api.transform`。Matrix 2.1.0 的源码仍�
 
 因此，“切换为 task injection 就能支持 AGP 8”是不成立的。官方仓库中也没有 `MatrixTraceClassVisitorFactory` 之类的迁移类。现代项目只有三种可审计的选择：
 
-1. 继续使用官方明确覆盖的旧构建环境，并承担旧工具链的维护代价。
+1. 继续使用官方明确覆盖的旧构建环境，并负责旧工具链的维护代价。
 2. 采用一个持续维护的 fork，逐项检查它是否已迁到 Android Components API，并在目标 AGP、R8、Kotlin、动态特性模块上跑回归。
 3. 自己移植插桩器。逐类 ASM 插桩可用 Instrumentation API；需要全程序分析时，应评估 Scoped Artifacts API，而不能只改一个注册方法名。
 

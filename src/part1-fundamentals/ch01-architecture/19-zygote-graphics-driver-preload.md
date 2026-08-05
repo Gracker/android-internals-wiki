@@ -127,7 +127,7 @@ Activity 即将创建
 
 ## 1. Zygote 预加载转移了什么成本
 
-普通应用进程由与其 ABI 匹配的 Zygote fork 出来。Zygote 在 fork 前映射的共享库代码页和适合继承的只读状态，可以被后续子进程复用；同一个 Zygote 只需承担一次冷加载成本。
+普通应用进程由与其 ABI 匹配的 Zygote fork 出来。Zygote 在 fork 前映射的共享库代码页和适合继承的只读状态，可以被后续子进程复用；同一个 Zygote 只需负责一次冷加载成本。
 
 图形预加载主要覆盖：
 
@@ -321,7 +321,7 @@ if (Properties::peekRenderPipelineType()
 - `eglCreateWindowSurface()`
 - `eglMakeCurrent()`
 
-因此，“Zygote 已初始化 App 的 GL context”是错误说法。真正的 context 仍在子进程的 RenderThread 创建。
+因此，“Zygote 已初始化 App 的 GL context”是错误说法。实际的 context 仍在子进程的 RenderThread 创建。
 
 ### 4.2 Vulkan 分支没有创建 VkInstance 或 VkDevice
 
@@ -338,7 +338,7 @@ if (Properties::peekRenderPipelineType()
 
 `Properties::initializeGlAlways()` 读取 `debug.hwui.initialize_gl_always`，默认值来自 HWUI flag。当 HWUI 走 SkiaVulkan，但设备上仍有大量 App 直接使用 GLES 时，这个分支会额外调用一次 `eglGetDisplay()`。
 
-源码特别说明：这次 GL 调用发生在 fork 前，相关内存应可共享；不使用 GL 的 App 不需要在自己的启动路径再次承担同样的公共成本。
+源码特别说明：这次 GL 调用发生在 fork 前，相关内存应可共享；不使用 GL 的 App 不需要在自己的启动路径再次负责同样的公共成本。
 
 ## 5. `ro.zygote.disable_gl_preload` 不是 App 调优开关
 
@@ -370,7 +370,7 @@ chooseDriver
 notifyGraphicsEnvironmentSetup
 ```
 
-前三个决定当前进程的图形环境；最后一个主要为 game category 通知 `GameManager`。
+前三个决定当前进程的图形环境；末尾一个主要为 game category 通知 `GameManager`。
 
 ### 6.1 `setupGpuLayers`：调试 layer
 
@@ -427,7 +427,7 @@ ro.gfx.driver.1   # prerelease driver package
 
 这一步发生在每个 App 进程。Zygote 触达过 system EGL/Vulkan 入口，不会替这个 App 完成 updatable package 路径、ANGLE package 或 debug layer 的选择。
 
-## 7. 真正启动 RenderThread 的是 `HardwareRenderer.preload()`
+## 7. 启动 RenderThread 的是 `HardwareRenderer.preload()`
 
 `ActivityThread.handleLaunchActivity()` 在创建硬件加速 Activity 之前调用：
 
@@ -521,7 +521,7 @@ queueBuffer
 
 | 域 | 关键切片 / 事件 | 回答的问题 |
 | --- | --- | --- |
-| Zygote / boot | `PreloadAppProcessHALs`、`PreloadGraphicsDriver` | 系统是否在 boot 期承担预热，哪一段慢 |
+| Zygote / boot | `PreloadAppProcessHALs`、`PreloadGraphicsDriver` | 系统是否在 boot 期负责预热，哪一段慢 |
 | App main / bind | `setupGraphicsSupport`、`setupGpuLayers`、`setupAngle`、`chooseDriver` | 当前 App 选了什么环境，选择是否异常耗时 |
 | RenderThread | `earlyPreloadGlContext`、EGL/Vulkan/Skia 初始化 | context 是否在首帧前完成，是否仍有 driver 冷路径 |
 | App + SurfaceFlinger | FrameTimeline、BufferQueue、fence、latch、present | 首帧是否卡在提交或合成 |
@@ -615,7 +615,7 @@ adb logcat -v threadtime \
 - 对应 driver 已在其他 boot 组件中被加载。
 - App 选择了 ANGLE/updatable driver，没复用到目标路径。
 - 文件页仍在 page cache。
-- 真正瓶颈在 shader、allocator 或 SurfaceFlinger。
+- 瓶颈在 shader、allocator 或 SurfaceFlinger。
 
 没有调用栈与配置证据时，不要猜是哪一种。
 

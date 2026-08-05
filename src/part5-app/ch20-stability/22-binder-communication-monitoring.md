@@ -59,7 +59,7 @@ sources:
 
 ### 🔹 Binder 通信监控的应用层需求
 - 为什么需要监控 Binder：跨进程调用的延迟、异常、死锁对用户体验的影响
-- 典型痛点：系统服务调用超时、TransactionTooLargeException、DeadObjectException
+- 常见问题：系统服务调用超时、TransactionTooLargeException、DeadObjectException
 - [结构参考: Clippings/Android 应用稳定性剖析与优化 - Binder 通信监控]
 
 ### 🔹 Binder 传输耗时监控方案
@@ -113,7 +113,7 @@ Binder 监控最容易出现的误区，是把一次方法调用的总耗时直�
 3. 失败属于传输、远端死亡、协议、权限，还是业务返回？
 4. 客户端等待时间来自本地、驱动排队、服务端调度、服务端执行，还是 reply 路径？
 
-前两个问题可由应用内埋点持续回答；第三个问题需要保留原始异常和接口语义；第四个问题通常要把客户端、服务端与 Perfetto 时间线放在一起。不要让一个“ipc_cost”字段承担全部含义。
+前两个问题可由应用内埋点持续回答；第三个问题需要保留原始异常和接口语义；第四个问题通常要把客户端、服务端与 Perfetto 时间线放在一起。不要让一个“ipc_cost”字段负责全部含义。
 
 主线程同步 Binder 调用值得优先治理，但“主线程栈停在 `BinderProxy.transactNative()`”只证明采样时正在等待 IPC。它不能单独证明服务端死锁，也不能说明目标进程正在运行。连续多次短调用的累计时间，同样可能越过帧预算或 ANR 时间窗口。
 
@@ -142,7 +142,7 @@ Binder 监控最容易出现的误区，是把一次方法调用的总耗时直�
 
 `T_client = T_marshal + T_driver_out + T_queue + T_server + T_driver_reply + T_unmarshal`
 
-这是调用方感受到的等待时间，适合做用户体验指标。它不等于驱动传输时间。客户端单点埋点无法继续拆解上式；想知道服务端是没获得 CPU、等待 Binder 线程、持锁，还是执行慢，需要服务端时间戳或 Perfetto 的 `binder_driver`、AIDL 和 `sched` 数据。
+这是调用方感受到的等待时间，适合做用户体验指标。它不等于驱动传输时间。客户端单点埋点无法继续细分上式；想知道服务端是没获得 CPU、等待 Binder 线程、持锁，还是执行慢，需要服务端时间戳或 Perfetto 的 `binder_driver`、AIDL 和 `sched` 数据。
 
 计时必须使用单调时钟，例如 `SystemClock.elapsedRealtimeNanos()`。墙上时间可能因为自动校时而跳变，不适合计算时长。
 
@@ -297,7 +297,7 @@ StrictMode 会把线程策略状态随 Binder 调用传播，并能把远端收�
 
 所以，`detectAll()` 不能替代 AIDL wrapper 的单调时钟计时，也不能生成按接口统计的 P50/P90/P99。开发阶段仍可启用 StrictMode，借此发现“服务端 Binder 线程做了磁盘 I/O”一类问题；这与测量 IPC 本身的延迟是两件事。
 
-## 9. 用 Perfetto 拆解长尾
+## 9. 用 Perfetto 分析长尾
 
 常驻指标负责发现“哪个逻辑接口慢”，Perfetto 负责回答“为什么慢”。采集时至少关注：
 

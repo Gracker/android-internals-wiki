@@ -29,7 +29,7 @@ gap_source: "素材驱动/章节深挖"
 - 方案 3：自建评分模型（加权评分 → 高/中/低三档）
 - 方案 4：Android 17 PowerManager.getPerformanceMode() / SystemHealthManager
 
-### 🔹 分档降级策略矩阵
+### 🔹 分档降级策略matrix
 - 渲染降级：低端机关闭 blur/shadow/矢量动画 → 使用 PNG 替代
 - 启动降级：低端机减少并发初始化任务 / 关闭 Baseline Profile AOT
 - 内存降级：低端机缩小 LruCache / 使用 RGB_565 / 减少预加载窗口

@@ -97,7 +97,7 @@ updated_by: openclaw-task9
 
 ## 先建立一条完整的调度链
 
-Perfetto 的 CPU 轨道只展示了最后一步：某个线程在某个 CPU 上运行。要解释这一步，需要把调度决策拆成五个问题：
+Perfetto 的 CPU 轨道只展示了收尾步骤：某个线程在某个 CPU 上运行。要解释这一步，需要把调度决策拆成五个问题：
 
 1. 线程是否已经被唤醒，处于 runnable 状态？
 2. 它属于哪种调度策略，优先级和 nice 值是多少？
@@ -122,7 +122,7 @@ Running：出现在 sched_slice
     └─ 仍可运行但被切出         → R 或 R+
 ```
 
-这条路径也是本章的诊断主线：先确认“有没有工作”，再看“为什么没有轮到它”，最后才讨论调参。
+这条路径也是本章的诊断主线：先确认“有没有工作”，再看“为什么没有轮到它”，最终才讨论调参。
 
 ## 从 CFS 公平性到 EEVDF
 
@@ -263,7 +263,7 @@ effective CPUs
 
 `sched_setaffinity()` 为线程设置 affinity mask。在 Linux 接口中传入 tid 即可控制单个线程。Android bionic 也提供 `sched_setaffinity()` / `sched_getaffinity()`；`pthread_setaffinity_np()` / `pthread_getaffinity_np()` 从 API 36 起公开。
 
-affinity 只能进一步缩小允许范围，无法绕过 cpuset。随后若系统改变 cpuset、CPU 下线或热管理策略收紧范围，线程还可能被迁移。直接把 RenderThread 固定在某个“大核编号”会失去调度器的迁移空间，并可能造成排队、温升或能耗回归，应把它当作受控实验，而非默认优化。
+affinity 只能进一步缩小允许范围，无法绕过 cpuset。随后若系统改变 cpuset、CPU 下线或热管理策略缩小范围，线程还可能被迁移。直接把 RenderThread 固定在某个“大核编号”会失去调度器的迁移空间，并可能造成排队、温升或能耗回归，应把它当作受控实验，而非默认优化。
 
 CPU 编号也不能用“`cpu >= 4` 就是大核”判断。SoC 的簇布局各不相同，分析时应结合 Trace 中的 CPU frequency/capacity 信息，或读取设备的 sysfs 拓扑与最大频率。
 
@@ -391,7 +391,7 @@ scheduling latency = first_running_ts - runnable_ts
 - Running 后被抢占：前一个 `sched_slice.end_state = 'R+'`；
 - 主动 yield、迁移或其他调度路径：需要结合相邻状态和内核事件判断。
 
-采集 CPU 调度延迟时，Perfetto 官方文档建议关注 `sched_switch`、`sched_waking`，必要时再加入 `sched_wakeup`。`sched_waking` 由发起唤醒的一侧记录，通常足以还原唤醒关系；若要拆解 wakeup path 或跨 CPU IPI 延迟，再核对 `sched_wakeup`。
+采集 CPU 调度延迟时，Perfetto 官方文档建议关注 `sched_switch`、`sched_waking`，必要时再加入 `sched_wakeup`。`sched_waking` 由发起唤醒的一侧记录，通常足以还原唤醒关系；若要继续分析 wakeup path 或跨 CPU IPI 延迟，再核对 `sched_wakeup`。
 
 没有跨设备通用的“Runnable 超过帧周期 10% 就算异常”阈值。阈值应来自业务 deadline、线程角色和设备分布。例如主线程在一次 8.33 ms 帧预算内等待 2 ms 可能很关键，后台编译线程等待同样时长通常无须处理。
 

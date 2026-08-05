@@ -123,7 +123,7 @@ Manifest 可以改变进程边界：
 - 以冒号开头的名字，例如 `:player`，表示应用私有进程，实际名字会带上包名前缀。
 - 不以冒号开头的全局进程名只在共享 Linux UID 且签名匹配时才可能跨应用共用。`android:sharedUserId` 从 API 29 起已经废弃，新应用不应依赖这种设计。
 
-在 Android 17 中，`android.os.Process.start()` 仍把 UID、GID、ABI、targetSdk、数据目录和运行时参数交给 `ZygoteProcess.start()`。真正的 fork 发生在 Zygote 一侧；`Process.start()` 是 framework 的请求入口，不是直接调用 Linux `fork()` 的位置。应用进程创建后再经 Binder 向 `system_server` 回连，AMS 才能继续 `bindApplication` 和组件调度。
+在 Android 17 中，`android.os.Process.start()` 仍把 UID、GID、ABI、targetSdk、数据目录和运行时参数交给 `ZygoteProcess.start()`。实际的 fork 发生在 Zygote 一侧；`Process.start()` 是 framework 的请求入口，不是直接调用 Linux `fork()` 的位置。应用进程创建后再经 Binder 向 `system_server` 回连，AMS 才能继续 `bindApplication` 和组件调度。
 
 多进程因此不是免费的线程隔离。一个 `android:process=":remote"` 至少增加一套进程地址空间、ART 运行时状态、Java 与 native 堆、线程栈、主线程消息循环和 `Application` 初始化；原来的进程内调用也可能变成 Binder IPC。
 
@@ -157,7 +157,7 @@ Manifest 可以改变进程边界：
 
 第一，进程按其中最重要的活跃组件定级。一个进程同时拥有 visible Activity 和 started service 时，不会因为 service 较弱就降到 service 级别。
 
-第二，重要性会沿依赖关系传播。高优先级进程绑定另一个进程的 Service，或正在使用另一个进程的 ContentProvider 时，被依赖进程需要获得足以完成请求的保护。绑定 flag、依赖类型和能力传播规则都会影响最后结果，不能只看服务端自身组件。
+第二，重要性会沿依赖关系传播。高优先级进程绑定另一个进程的 Service，或正在使用另一个进程的 ContentProvider 时，被依赖进程需要获得足以完成请求的保护。绑定 flag、依赖类型和能力传播规则都会影响最终结果，不能只看服务端自身组件。
 
 第三，组件回调结束就可能撤销保护。`BroadcastReceiver.onReceive()` 返回后，receiver 不再被视为活跃；此时让裸线程继续工作，不能保证进程还会存活。需要可靠完成的任务应交给 JobScheduler、WorkManager 或其他与系统调度约束相匹配的接口。
 
@@ -195,7 +195,7 @@ if (app == topApp && PROCESS_STATE_CUR_TOP == PROCESS_STATE_TOP) {
 }
 ```
 
-四组结果承担不同职责：
+四组结果负责不同职责：
 
 - `adj` 是 Android 的进程回收优先级，提交后与 `/proc/<pid>/oom_score_adj`、`lmkd` 进程表相关。
 - `procState` 描述更细的运行状态，供后台限制、统计、内存采样和其他策略使用。
@@ -346,7 +346,7 @@ RSS 只是候选选择的一部分。进程重要性、PSI、swap、thrashing、
 
 ### “多进程总能提高稳定性”
 
-多进程可以隔离一部分崩溃与内存峰值，但会增加启动、常驻内存、Binder 和一致性成本。只有边界稳定、通信较少且失败确实可以隔离时，这笔成本才合理。
+多进程可以隔离一部分崩溃与内存峰值，但会增加启动、常驻内存、Binder 和一致性成本。只有边界稳定、通信较少且失败可以隔离时，这笔成本才合理。
 
 ## 版本边界
 

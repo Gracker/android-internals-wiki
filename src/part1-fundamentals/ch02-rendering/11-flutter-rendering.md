@@ -138,7 +138,7 @@ Widget rebuild 不等于整页 layout 或 repaint。Element 更新后，只有�
 
 ### Engine：把 DisplayList 变成 GPU 工作
 
-Engine 用 C++ 实现，承接 Dart runtime、frame scheduling、DisplayList、rasterizer、文本、图片与图形 backend。Rasterizer 消费 Layer tree/DisplayList，通过 Impeller 或 legacy renderer 创建 GPU command，最后面向 Android render target 提交 buffer。
+Engine 用 C++ 实现，承接 Dart runtime、frame scheduling、DisplayList、rasterizer、文本、图片与图形 backend。Rasterizer 消费 Layer tree/DisplayList，通过 Impeller 或 legacy renderer 创建 GPU command，最终面向 Android render target 提交 buffer。
 
 Flutter 3.44.8 的 Impeller 目录把职责分成 compiler、renderer、backend、entity、display_list、typographer 和 shader_archive 等子系统。离线 shader compiler `impellerc` 在 engine 构建期处理 Impeller 自带 shader；运行时 renderer 仍要处理 pipeline、纹理、buffer、render pass、同步和具体 GPU driver。
 

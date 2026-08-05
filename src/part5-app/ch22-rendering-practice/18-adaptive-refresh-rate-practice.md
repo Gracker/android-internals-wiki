@@ -260,7 +260,7 @@ fun Surface.setVideoFrameRate(frameRate: Float) {
 
 API 36 及以上的普通 UI、动画、滚动 Surface 可以使用 `FRAME_RATE_COMPATIBILITY_AT_LEAST`；游戏继续使用 `DEFAULT`，并由引擎控制 pacing；视频继续使用 `FIXED_SOURCE`。相机预览要按捕获帧率、宿主 UI 和产品延迟目标单独评估，不能因输出到 Surface 就套用视频语义。
 
-## Android 17 怎样接住这些提示
+## Android 17 怎样处理这些提示
 
 View 层先汇总当前绘制帧的 category 或具体值。Surface 级请求和提交历史进入 layer 状态。Android 17 的 SurfaceFlinger 再沿下面的路径处理：
 

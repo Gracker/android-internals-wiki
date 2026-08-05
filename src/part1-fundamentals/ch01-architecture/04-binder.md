@@ -143,7 +143,7 @@ Client
 
 Binder 还能在传输时翻译 Binder object、handle 和文件描述符，并把内核可信的调用 pid、uid、SID 等身份信息交给服务端。服务端权限检查应在 IPC 入口完成，不能信任客户端写进 `Parcel` 的“身份字段”。
 
-如果 Proxy 发现目标对象就在本进程，`queryLocalInterface()` 可以返回本地实现，调用不会经过内核驱动。此时 AIDL 的 `oneway` 也没有远程异步语义，方法仍在调用线程同步执行。写性能测试时必须确认接口确实跨进程。
+如果 Proxy 发现目标对象就在本进程，`queryLocalInterface()` 可以返回本地实现，调用不会经过内核驱动。此时 AIDL 的 `oneway` 也没有远程异步语义，方法仍在调用线程同步执行。写性能测试时必须确认接口跨进程。
 
 ## AIDL 生成了什么
 
@@ -245,7 +245,7 @@ binder thread pool (<N> threads) starved for <M> ms
 1. 客户端同步 Binder 的等待时间升高；
 2. 服务端可用 worker 很少，或已经接近它自己的配置上限；
 3. 现有 worker 长时间执行业务、等锁、等下游 Binder 或做 I/O；
-4. 新事务在服务端真正开始执行前有明显排队。
+4. 新事务在服务端开始执行前有明显排队。
 
 如果 worker 都在等同一把锁，增加线程只会制造更多 waiter。应先缩短临界区、移出阻塞 I/O，或把长任务转交给受控的业务线程池。
 

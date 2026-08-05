@@ -72,7 +72,7 @@ VirtualizationServiceInternal     crosvm
 
 `libs/framework-virtualization/.../VirtualizationService.java` 对这个关系写得很直接：该类代表“一个正在运行、承载 AIDL 服务的 virtmgr 实例”，`nativeSpawn()` 创建子进程，Unix-domain socket 上的 RpcBinder 负责 host 客户端与 `virtmgr` 通信。
 
-`android/virtualizationservice/src/main.rs` 则注册全局的 `android.system.virtualizationservice` lazy Binder 服务。它承担 CID、全局资源、统计和维护职责。它与每个客户端拉起的 `virtmgr` 不是同一个进程，也不位于 system_server。
+`android/virtualizationservice/src/main.rs` 则注册全局的 `android.system.virtualizationservice` lazy Binder 服务。它负责 CID、全局资源、统计和维护职责。它与每个客户端拉起的 `virtmgr` 不是同一个进程，也不位于 system_server。
 
 每个 crosvm 进程只运行一台 VM；一个 `virtmgr` 可以管理多台 crosvm 子进程。crosvm 通过 `/dev/kvm` 的系统、VM、vCPU 和设备 ioctl 创建并运行虚拟机。
 
@@ -113,7 +113,7 @@ Microdroid 为 native payload 提供熟悉的 Android 基础设施：Bionic、Ve
 
 传统 KVM 在 host 运行时通常不使用 Stage-2 限制，因此 host kernel 可以访问承载 guest 内存的物理页。pKVM 在 host 上下文也启用 Stage-2：
 
-- host Stage-2 使用 identity mapping，地址不重排，主要承担访问控制；
+- host Stage-2 使用 identity mapping，地址不重排，主要负责访问控制；
 - guest 仍有自己的 Stage-2，把 guest IPA 映射到物理地址；
 - EL2 维护页面所有者，并决定 host、某台 pVM、hypervisor 或设备能否映射该页。
 

@@ -58,7 +58,7 @@ Android 15（API 35）开始对满足版本条件的 Activity 强制 Edge-to-Edg
 
 1. **窗口几何**：应用窗口是否覆盖系统栏和 cutout 区域；
 2. **Insets 数据**：哪些系统区域与当前窗口相交，何时分发给 View 树；
-3. **像素与 layer**：本帧哪些内容重绘，SurfaceFlinger/HWC 最后怎样合成。
+3. **像素与 layer**：本帧哪些内容重绘，SurfaceFlinger/HWC 最终怎样合成。
 
 把这三层混成“透明系统栏多了一层 GPU 合成”或“Insets 动画每帧完整 relayout”，会得到错误的归因。
 

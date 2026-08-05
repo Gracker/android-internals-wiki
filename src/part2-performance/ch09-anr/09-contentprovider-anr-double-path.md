@@ -294,7 +294,7 @@ ORDER BY client_dur DESC;
 
 ### 7.3 不依赖 `am_anr` 字符串 SQL
 
-`am_proc_died`、`am_anr` 是否以 slice 名出现，受 atrace、EventLog 导入、Perfetto parser 和厂商实现影响。用 `slice.name LIKE '%am_anr%'` 同时承担“发现事件”和“判断原因”，漏报与误报都很常见。
+`am_proc_died`、`am_anr` 是否以 slice 名出现，受 atrace、EventLog 导入、Perfetto parser 和厂商实现影响。用 `slice.name LIKE '%am_anr%'` 同时负责“发现事件”和“判断原因”，漏报与误报都很常见。
 
 更稳的入口是：
 

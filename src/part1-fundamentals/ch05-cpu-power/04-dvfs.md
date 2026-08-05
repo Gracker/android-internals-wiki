@@ -217,7 +217,7 @@ Android 17 的 schedutil 不能概括成“每次都排队给 kthread”：
 
 1. policy 开启 fast switch 时，频率路径可调用 `cpufreq_driver_fast_switch()`。
 2. 驱动支持 adjust-perf 且满足频率不变性条件时，可调用 `cpufreq_driver_adjust_perf()` 传递性能参数。
-3. 不能快速切换时，schedutil 通过 `irq_work` 和 kthread work 延后执行，最后进入 `__cpufreq_driver_target()`。
+3. 不能快速切换时，schedutil 通过 `irq_work` 和 kthread work 延后执行，最终进入 `__cpufreq_driver_target()`。
 
 具体设备走哪条路，由 CPUFreq 驱动能力与 policy 配置决定。Perfetto 的频率事件本身不能证明调用走了 fast switch、固件邮箱或延后线程。
 

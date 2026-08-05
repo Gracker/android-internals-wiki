@@ -183,7 +183,7 @@ mScheduler->chooseRefreshRateForContent(
 2. 用户峰值刷新率、低电量和温度策略是否收窄范围；
 3. 当前显示配置是 MRR 还是 ARR；
 4. 其它可见 Layer 是否给出更高或不兼容的请求；
-5. Scheduler 最后选择的 render rate 和 mode。
+5. Scheduler 最终选择的 render rate 和 mode。
 
 ### 2.3 Composer HAL 把 ARR cadence 交给显示硬件
 

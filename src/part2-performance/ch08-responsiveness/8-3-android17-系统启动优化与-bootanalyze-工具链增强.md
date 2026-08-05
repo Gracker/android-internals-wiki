@@ -10,7 +10,7 @@ created_date: "2026-07-03"
 gap_source: "素材驱动+AOSP验证"
 gap_score: 18
 ---
-> **隔离说明**：这是一篇重复条目，保留文件与元数据是为了让 Hermes/OpenClaw 继续识别历史状态。标题属于 bootanalyze，受保护 outline 却混入 Binder 错稿。有效的启动分析正文请阅读 [§8.1 Android 17 系统启动优化与 bootanalyze](../../part1-fundamentals/ch08-startup/8.1-bootanalyze-optimization-toolchain.md)；本页不再承担独立技术章节职责。
+> **隔离说明**：这是一篇重复条目，保留文件与元数据是为了让 Hermes/OpenClaw 继续识别历史状态。标题属于 bootanalyze，受保护 outline 却混入 Binder 错稿。有效的启动分析正文请阅读 [§8.1 Android 17 系统启动优化与 bootanalyze](../../part1-fundamentals/ch08-startup/8.1-bootanalyze-optimization-toolchain.md)；本页不再负责独立技术章节职责。
 
 # 8.3 Android 17 系统启动优化与 bootanalyze 工具链增强
 

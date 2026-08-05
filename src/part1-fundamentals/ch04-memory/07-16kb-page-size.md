@@ -207,7 +207,7 @@ zipalign -v -c -P 16 4 app-release.apk
 bundletool dump config --bundle app-release.aab | grep alignment
 ```
 
-期望看到 `PAGE_ALIGNMENT_16K`。最后仍应在 Play Console 的 App Bundle Explorer 中检查平台生成的 APK，因为用户安装的是 Play 拆分后的产物。
+期望看到 `PAGE_ALIGNMENT_16K`。最终仍应在 Play Console 的 App Bundle Explorer 中检查平台生成的 APK，因为用户安装的是 Play 拆分后的产物。
 
 ## 4. 源码中最常见的 4KB 假设
 

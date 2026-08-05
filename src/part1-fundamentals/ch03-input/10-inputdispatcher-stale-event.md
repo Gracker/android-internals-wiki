@@ -278,7 +278,7 @@ Perfetto 中把这些 counter 与 `InputDispatcher` 线程调度、目标进程�
 4. 可复现时抓 Perfetto，观察 `iq`、`oq:*`、`wq:*` 的先后变化。
 5. 如果 `wq` 堆积，检查目标线程何时收到和完成输入；如果只有 `iq` / PendingEvent 老化，转查 policy、焦点、窗口状态和 dispatcher 调度。
 6. 对注入或自动化场景打印注入前的 `eventTime` 与 `SystemClock.uptimeMillis()`，先排除旧时间戳和时钟基准错误。
-7. 最后再检查业务点击防抖、手势处理和渲染；它们只有在事件已经到达应用后才可能解释当前样本。
+7. 最终再检查业务点击防抖、手势处理和渲染；它们只有在事件已经到达应用后才可能解释当前样本。
 
 线上监控若只能采到固定 stale 文案，应把它记为“InputDispatcher 处理了过老事件”，并关联同机型、同版本、同页面的 ANR、焦点异常和线程长任务。单条日志不足以证明是业务回调丢失，也不足以证明 InputDispatcher 自身有缺陷。
 

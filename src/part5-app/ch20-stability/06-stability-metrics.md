@@ -169,7 +169,7 @@ $$
 
 API 35 起，[`ApplicationStartInfo`](https://developer.android.com/reference/android/app/ApplicationStartInfo) 提供系统记录的应用启动信息；`ActivityManager.addStartInfoTimestamp()` 允许在 `reportFullyDrawn()` 之前补充开发者时间点。它们可以改善启动时间线，但进程内采集仍看不到自身启动前的所有故障，需要和 Android vitals、Crash 平台以及下次进程启动读取的退出记录互相补充。
 
-启动门禁不应照搬一个通用百分比。支付、导航等关键路径与内容浏览应用承担的风险不同；冷启动量、灰度样本和历史波动也不同。目标应来自稳定版本基线和产品容忍度。
+启动门禁不应照搬一个通用百分比。支付、导航等关键路径与内容浏览应用负责的风险不同；冷启动量、灰度样本和历史波动也不同。目标应来自稳定版本基线和产品容忍度。
 
 ### 重复崩溃与 crash loop
 

@@ -275,7 +275,7 @@ PerfDog 的 Android Battery Power 是整机口径，不是目标 App 的独占�
 
 ## PerfDog、Perfetto、Profiler 与 Macrobenchmark 的分工
 
-| 工具 | 擅长回答的问题 | 不宜单独承担的结论 |
+| 工具 | 擅长回答的问题 | 不宜单独负责的结论 |
 |---|---|---|
 | PerfDog | 哪个版本、设备或时间段的外部指标异常 | 哪个函数造成异常 |
 | Perfetto / Android Studio System Trace | 主线程、RenderThread、SurfaceFlinger、调度、Binder、I/O 如何重叠 | 大规模版本回归评分 |

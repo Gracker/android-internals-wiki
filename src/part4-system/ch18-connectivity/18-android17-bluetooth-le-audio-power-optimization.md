@@ -50,7 +50,7 @@ review_notes: "Review/finalize confirmed the chapter is technically safe as an e
 ### 🔹 低延迟音频路径的正确边界
 - FAST Mixer 是 Android 音频栈中长期存在的低延迟混音路径；材料只支持“降低到几十毫秒量级”的描述，不支持把它直接写成蓝牙 LE Audio 的 `<20ms` 平台保证。
 - AAudio MMAP 在 Android 8.1 之后提供更低延迟路径，但是否可用依赖设备 HAL/驱动实现；EXCLUSIVE 模式才可能绕开 AudioServer 混音器，SHARED 模式仍通过 AudioServer 内部混音器。
-- 因此，蓝牙耳机链路的端到端延迟应拆成 App/API、AudioFlinger/AudioPolicy、Bluetooth stack、codec/controller、对端设备能力等多段分析，不能只用 FAST Mixer 或 MMAP 材料推出 LE Audio 全链路结论。
+- 因此，蓝牙耳机路径的端到端延迟应分成 App/API、AudioFlinger/AudioPolicy、Bluetooth stack、codec/controller、对端设备能力等多段分析，不能只用 FAST Mixer 或 MMAP 材料推出完整 LE Audio 路径的结论。
 
 ## 扩展
 
@@ -70,7 +70,7 @@ review_notes: "Review/finalize confirmed the chapter is technically safe as an e
 ## 实际应用场景
 
 ### 无线耳机功耗优化
-在缺少 Bluetooth HAL 与实测功耗数据前，本文不再给出固定续航提升百分比。可执行的安全建议是：先核对应用是否满足后台音频硬化豁免路径，再通过设备日志确认蓝牙路由、AudioFocus、Track 与 codec/offload 状态，最后以同一设备、同一耳机、同一音量/码率/场景的功耗采样作结论。
+在缺少 Bluetooth HAL 与实测功耗数据前，本文不再给出固定续航提升百分比。可执行的安全建议是：先核对应用是否满足后台音频硬化豁免路径，再通过设备日志确认蓝牙路由、AudioFocus、Track 与 codec/offload 状态，最终以同一设备、同一耳机、同一音量/码率/场景的功耗采样作结论。
 
 ### 车载与多设备音频
 车载语音、通话保持、多设备切换都可能同时涉及 AudioFocus、MediaSession、Bluetooth profile 与厂商策略。现有材料只能支持“需要把硬化 partial 路径纳入排障”，不能支持统一的自动切换时延、语音识别准确率或跨厂商兼容性结论。

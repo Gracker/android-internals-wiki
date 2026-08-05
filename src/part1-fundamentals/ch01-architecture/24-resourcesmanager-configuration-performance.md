@@ -403,7 +403,7 @@ Android 16 已开始在大屏上忽略部分方向、宽高比和 resizable 限�
 
 Android 17 文档列出的例外包括：`android:appCategory` 标记的游戏、用户在设备宽高比设置中显式选择应用默认行为，以及小于 sw600dp 边界的屏幕。
 
-固定竖屏或 `resizeableActivity="false"` 已不能承担“避免 Configuration 变化”的职责。target 37 的大屏测试至少覆盖：
+固定竖屏或 `resizeableActivity="false"` 已不能负责“避免 Configuration 变化”的职责。target 37 的大屏测试至少覆盖：
 
 - 横屏、竖屏和旋转中的状态保存；
 - 分屏与桌面自由窗口连续 resize；

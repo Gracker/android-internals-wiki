@@ -118,7 +118,7 @@ Game Mode 和 Game State 又补充了用户偏好与游戏阶段。它们共同�
 
 Java 入口是 `PerformanceHintManager.Session`。创建 session 时需要传入一组 Linux TID 和初始 target work duration；创建结果可为 `null`，表示设备不支持 HintSession，或某个 TID 不属于本应用。session 应覆盖一组关系紧密、生命周期较长、周期性执行的线程。
 
-target work duration 表示这组线程每个周期希望完成工作的时长。它通常小于显示周期。以 60 Hz 渲染为例，显示周期约为 16.67 ms；如果纳入 session 的线程只承担其中 6 ms 的 CPU 工作，target 应接近 6 ms，而非直接填写 16.67 ms。Android 17 的 `IPower.createHintSession*()` 注释也使用了“60 Hz 渲染、目标工作时长 6 ms”的例子。
+target work duration 表示这组线程每个周期希望完成工作的时长。它通常小于显示周期。以 60 Hz 渲染为例，显示周期约为 16.67 ms；如果纳入 session 的线程只负责其中 6 ms 的 CPU 工作，target 应接近 6 ms，而非直接填写 16.67 ms。Android 17 的 `IPower.createHintSession*()` 注释也使用了“60 Hz 渲染、目标工作时长 6 ms”的例子。
 
 下面的代码展示基本反馈方式。`renderTid` 必须在对应线程中取得或由应用自己的线程管理器提供，不能拿 Java `Thread.getId()` 代替 Linux TID。
 
@@ -394,7 +394,7 @@ API 37 的 `core/api/current.txt` 以及 NDK `performance_hint.h` 都没有 `set
 
 ### target duration 等于整帧周期
 
-target 属于 session 所覆盖的工作。显示周期还要容纳流水线其他阶段。把 16.67 ms 原样交给只承担 6 ms 渲染工作的线程组，会让系统误判余量。
+target 属于 session 所覆盖的工作。显示周期还要容纳流水线其他阶段。把 16.67 ms 原样交给只负责 6 ms 渲染工作的线程组，会让系统误判余量。
 
 ### 掉帧后上报能够修复当前帧
 

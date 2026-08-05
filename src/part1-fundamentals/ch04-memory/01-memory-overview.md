@@ -128,7 +128,7 @@ flowchart TB
     J --> L["Android 17 MemoryLimiter<br/>仅部分设备启用"]
 ```
 
-图中的箭头表示管理或记账关系。ART 堆、Native 堆和图形内存最后都依赖内核提供的页、映射或设备缓冲区；同一物理页还可能被多个进程和设备共享。
+图中的箭头表示管理或记账关系。ART 堆、Native 堆和图形内存最终都依赖内核提供的页、映射或设备缓冲区；同一物理页还可能被多个进程和设备共享。
 
 ## 从物理内存到进程地址空间
 
@@ -311,7 +311,7 @@ Android 17 的 `getSummaryGraphics()` 只汇总 `Gfx dev`、`EGL mtrack` 和 `GL
 
 ### Ashmem、memfd 与 DMA-BUF 的职责要分开
 
-较新 Android 版本逐步使用 memfd 承担通用共享内存场景；DMA-BUF 面向设备之间以及设备与进程之间的缓冲区共享，常见于图形、相机和媒体。两者解决的问题不同，不能用“DMA-BUF 取代 ashmem”概括版本变化。
+较新 Android 版本逐步使用 memfd 负责通用共享内存场景；DMA-BUF 面向设备之间以及设备与进程之间的缓冲区共享，常见于图形、相机和媒体。两者解决的问题不同，不能用“DMA-BUF 取代 ashmem”概括版本变化。
 
 ## 堆转储与采样边界
 
@@ -522,7 +522,7 @@ Android 内存分析的核心是区分三件事：
 - Java、Native、代码、线程栈、图形与内核资源需要不同工具；
 - 分配失败、系统压力杀进程与 Android 17 MemoryLimiter 是不同退出路径。
 
-先用退出原因和系统压力确定问题类型，再用 `dumpsys meminfo`、procfs 与 Perfetto 找到增长分类，最后进入 Java 对象、Native 调用栈或图形缓冲区。这样得到的证据可以回到源码、配置和可重复实验中验证。
+先用退出原因和系统压力确定问题类型，再用 `dumpsys meminfo`、procfs 与 Perfetto 找到增长分类，最终进入 Java 对象、Native 调用栈或图形缓冲区。这样得到的证据可以回到源码、配置和可重复实验中验证。
 
 ## 源码与文档锚点
 

@@ -92,7 +92,7 @@ suspend fun showUser(model: UserUiModel) {
 }
 ```
 
-从主线程调用时，这段代码可能同步执行；从其他线程恢复时，它仍会投递到 main Handler。可重入风险要由调用者和状态模型承担。
+从主线程调用时，这段代码可能同步执行；从其他线程恢复时，它仍会投递到 main Handler。可重入风险要由调用者和状态模型负责。
 
 ### 2.4 Default 与 IO 的典型用法
 
@@ -286,7 +286,7 @@ Android 17 通过 libprocessgroup 的 task profiles 配置 cpu/cpuset controller
 
 父 Job 取消会向子 Job 传播。挂起函数在可取消 suspend 点检查状态；CPU 循环要主动检查，阻塞式第三方调用是否响应取消取决于适配器能否关闭资源或中断等待。
 
-下面的计算按 chunk 检查取消，避免每个元素都承担检查成本。
+下面的计算按 chunk 检查取消，避免每个元素都负责检查成本。
 
 ```kotlin
 suspend fun hashAll(chunks: List<ByteArray>): List<Hash> =

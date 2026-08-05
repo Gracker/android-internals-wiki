@@ -303,7 +303,7 @@ GLES 的 `glCompileShader()` / `glLinkProgram()` 可以触发编译与链接。V
 
 | 维度 | OpenGL ES | Vulkan |
 | --- | --- | --- |
-| 状态模型 | 全局/上下文状态较多，驱动承担更多隐式验证 | pipeline 与资源状态更显式 |
+| 状态模型 | 全局/上下文状态较多，驱动负责更多隐式验证 | pipeline 与资源状态更显式 |
 | 命令记录 | 典型路径由持有 context 的线程发调用 | 支持多线程记录 command buffer |
 | 同步 | API/驱动包含较多隐式行为 | semaphore、fence、barrier 等由应用显式设计 |
 | 内存 | 驱动管理较多 | 应用选择 memory type、分配与绑定 |
@@ -421,7 +421,7 @@ ASTC block 越大通常压缩率越高、质量风险也越高。透明纹理、
 
 ## Tile-Based Rendering 的性能含义
 
-典型 tile-based GPU 会先把几何分配到屏幕 tile，再在片上存储中完成一个 tile 的 raster、fragment 和 blend，最后把需要保留的结果写回设备内存。
+典型 tile-based GPU 会先把几何分配到屏幕 tile，再在片上存储中完成一个 tile 的 raster、fragment 和 blend，最终把需要保留的结果写回设备内存。
 
 这能减少某些中间颜色的外部内存流量，但不会让 overdraw、纹理采样和复杂 shader 免费。下面这些行为仍可能增加成本：
 
@@ -565,7 +565,7 @@ Perfetto 适合把下面的时间放在同一时钟域：
 
 截至 2026 年 5 月，Android Performance Analyzer（APA）处于 public beta，官方已把它作为 system profiling 的推荐工具，可联合查看 CPU、GPU、memory、power 和系统行为。AGI System Profiler 仍可采集 Perfetto 与 GPU 数据，但新建 system profile 应优先评估 APA 的设备支持与数据源覆盖。
 
-AGI Frame Profiler 继续承担单帧检查：对受支持应用查看 Vulkan API call、framebuffer、draw call、pipeline、shader、texture、render state 与 memory。
+AGI Frame Profiler 继续负责单帧检查：对受支持应用查看 Vulkan API call、framebuffer、draw call、pipeline、shader、texture、render state 与 memory。
 
 当前 AGI Frame Profiler 直接支持 Vulkan；GLES frame profile 使用 OpenGL on ANGLE 模式，由工具的 ANGLE build 转成 Vulkan 进行抓取。capture 和插桩会改变时序，适合分析命令与相对差异，不宜把抓帧耗时当作生产性能。
 

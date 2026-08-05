@@ -178,7 +178,7 @@ static constexpr bool kAsyncReferenceQueueAdd = false;
 - 没有任务：创建并保存指针，再加入队列；
 - 任务运行结束：清空 pending 指针。
 
-这种策略适合“只关心最后一次状态与最后一次执行时间”的工作。
+这种策略适合“只关心末次状态与末次执行时间”的工作。
 
 ### HeapTrimTask：重复请求不改变原计划
 
@@ -205,7 +205,7 @@ static constexpr bool kAsyncReferenceQueueAdd = false;
 
 这是一套“检查—估算—再检查”机制，不是固定周期定时器。
 
-## 4.21.5 fork 后为何先放宽堆目标，再逐步收紧
+## 4.21.5 fork 后为何先放宽堆目标，再逐步限制加强
 
 应用进程刚从 zygote fork 出来时，类加载、资源初始化和首帧准备会产生集中分配。Android 17 的 `Heap::PostForkChildAction()` 先降低启动期 GC 干扰，再逐步恢复常态。
 
@@ -220,11 +220,11 @@ static constexpr bool kAsyncReferenceQueueAdd = false;
 
 `target_footprint_` 控制 ART 何时认为堆需要收集或增长。`growth_limit_` 才约束堆能够增长到的上界。把前者暂时提高到后者，目的是减少启动阶段因目标过紧触发 GC 的机会，并没有扩大 manifest 的 `largeHeap` 配额，也不会修改 lmkd 的 `oom_score_adj`、PSI 或 memcg 状态。
 
-### 第二步：按堆配置安排 0、1 或 2 次收紧
+### 第二步：按堆配置安排 0、1 或 2 次限制加强
 
 源码常量 `kPostForkMaxHeapDurationMS` 为 2000 ms。调度分支如下：
 
-| 条件 | 第一次收紧 | 第二次收紧 |
+| 条件 | 第一次限制加强 | 第二次限制加强 |
 |---|---:|---:|
 | `initial_heap_size_ >= growth_limit_` | 无 | 无 |
 | `initial_heap_size_ < growth_limit_`，且等于第一次目标 | fork 后 2 秒 | 无 |
@@ -236,15 +236,15 @@ static constexpr bool kAsyncReferenceQueueAdd = false;
 
 ### 第三步：为空闲进程安排一次兜底 GC
 
-最后一个 `TriggerPostForkCCGcTask` 会在基础时间上再等待：
+末尾一个 `TriggerPostForkCCGcTask` 会在基础时间上再等待：
 
 ```text
 4 * 2000 ms + UID 确定的 [0, 19999] ms 偏移
 ```
 
-偏移由 UID 作为随机数种子，同一 UID 的结果稳定，不同 UID 通常分散。结合前面的可选收紧任务，兜底任务相对 fork 的目标时间为：
+偏移由 UID 作为随机数种子，同一 UID 的结果稳定，不同 UID 通常分散。结合前面的可选限制加强任务，兜底任务相对 fork 的目标时间为：
 
-| 已安排的收紧次数 | 兜底 GC 目标时间 |
+| 已安排的限制加强次数 | 兜底 GC 目标时间 |
 |---:|---:|
 | 0 次 | 8～27.999 秒 |
 | 1 次 | 10～29.999 秒 |
@@ -308,7 +308,7 @@ JIT post-fork 阶段在满足配置条件时安排一个 10 秒后的任务。�
 2. 在 `HeapTaskDaemon` 时间线上定位到期工作。
 3. 检查相邻 GC slice 的 cause 和 collector，确认是否属于 `Background` 请求。
 4. 检查此前是否已经有 GC；若有，`TriggerPostForkCCGcTask` 按源码应成为空操作。
-5. 对照设备 heap 配置，判断 post-fork 是 0、1 还是 2 次 footprint 收紧。
+5. 对照设备 heap 配置，判断 post-fork 是 0、1 还是 2 次 footprint 降低。
 6. 若只有 trim 或启动缓存清理，不把它误报成 GC。
 7. 再回到分配速率、存活对象、线程暂停和 RSS/PSS 变化判断性能影响。
 
@@ -351,7 +351,7 @@ JIT post-fork 阶段在满足配置条件时安排一个 10 秒后的任务。�
 - 队列按 `target_run_time_` 排序；改期必须移除后重插，停止时会提前排空剩余任务。
 - Android 17 ART runtime 生产源码共有 10 个 `HeapTask` 派生类，`heap.cc` 中有 6 个。
 - `ClearedReferenceTask` 在该 tag 下默认由 GC 调用方执行，不能算作正常入队的异步任务。
-- post-fork 会暂时放宽 GC 目标，再按配置收紧；兜底 GC 的目标时间范围是 8～37.999 秒，并受先前 GC 序号保护。
+- post-fork 会暂时放宽 GC 目标，再按配置限制加强；兜底 GC 的目标时间范围是 8～37.999 秒，并受先前 GC 序号保护。
 - `target_footprint_` 是 ART GC/增长目标，不是硬堆上限，也不参与 lmkd 评分。
 - Perfetto 排查应使用 `HeapTaskDaemon`、GC cause/collector 和源码明确声明的 slice，不能自行假设每个任务类都有同名事件。
 - 普通应用没有受支持的 HeapTask 控制接口。绕过 ART 内部调度会同时破坏多类 runtime 工作。

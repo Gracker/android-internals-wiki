@@ -103,7 +103,7 @@ last_deepseek_cn_review_at: 2026-07-02
 
 在 Perfetto 里看到 App 的触摸事件流以 `ACTION_CANCEL` 结束，或者从某个时刻开始不再有后续 `MOVE`，原因未必在 App。左右边缘返回手势开始时，SystemUI 的 gesture monitor 与 App 可以同时收到同一条 pointer stream；系统确认这是返回手势后，再通过 `pilferPointers()` 把后续事件交给手势处理方，并取消原窗口的触摸目标。
 
-Android 10（API 29）引入全手势导航：从左右边缘向内滑动表示返回，底部上滑和横向滑动分别承担 Home、最近任务或快速切换。系统不会在 `ACTION_DOWN` 到达前就无条件挡住 App；边缘返回采用“并行观察、达到条件后接管”的方式，这个时序是理解手势冲突和输入延迟的基础。
+Android 10（API 29）引入全手势导航：从左右边缘向内滑动表示返回，底部上滑和横向滑动分别负责 Home、最近任务或快速切换。系统不会在 `ACTION_DOWN` 到达前就无条件挡住 App；边缘返回采用“并行观察、达到条件后接管”的方式，这个时序是理解手势冲突和输入延迟的基础。
 
 Android 13（API 33）开始提供 Predictive Back API。Android 15 将 back-to-home、cross-task、cross-activity 系统动画移出开发者选项；Android 16 又把它设为 `targetSdkVersion >= 36` App 的默认行为。返回处理因此增加了预提交阶段：系统在手指移动时解析返回目标、生成进度并准备预览，松手后才提交或取消。
 
@@ -188,7 +188,7 @@ override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
 }
 ```
 
-`ViewRootImpl` 的 `ViewRootRectTracker` 收集各 View 的 rect，转换到窗口坐标后通过 `WindowSession.reportSystemGestureExclusionChanged()` 上报。WMS 的 `DisplayContent.calculateSystemGestureExclusion()` 按窗口 Z 序、可触摸区域和显示坐标汇总，最后通过 `ISystemGestureExclusionListener` 把限制后的 `Region` 通知 SystemUI。上报成功只说明 WMS 收到了请求，最终生效范围还要经过可触摸区域相交和配额计算。
+`ViewRootImpl` 的 `ViewRootRectTracker` 收集各 View 的 rect，转换到窗口坐标后通过 `WindowSession.reportSystemGestureExclusionChanged()` 上报。WMS 的 `DisplayContent.calculateSystemGestureExclusion()` 按窗口 Z 序、可触摸区域和显示坐标汇总，最终通过 `ISystemGestureExclusionListener` 把限制后的 `Region` 通知 SystemUI。上报成功只说明 WMS 收到了请求，最终生效范围还要经过可触摸区域相交和配额计算。
 
 [已验证: AOSP android-17.0.0_r1, `View.java`; `ViewRootImpl.java`; `DisplayContent.java`; 官方 Gesture navigation 文档]
 

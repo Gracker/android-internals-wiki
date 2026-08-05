@@ -70,7 +70,7 @@ Compose 把 UI 工作划分为 Composition、Layout 和 Drawing。一次状态�
 
 ### `SlotTable` 不是 UI 树
 
-Composition 会维护 group、key、`remember` 值和调用结构等运行时信息。`SlotTable` 是这些信息的紧凑存储，不承担测量和绘制。Compose UI 的布局与绘制主体是 `LayoutNode` 树；节点上的 modifier、coordinator、layer 等对象再参与布局和绘制。
+Composition 会维护 group、key、`remember` 值和调用结构等运行时信息。`SlotTable` 是这些信息的紧凑存储，不负责测量和绘制。Compose UI 的布局与绘制主体是 `LayoutNode` 树；节点上的 modifier、coordinator、layer 等对象再参与布局和绘制。
 
 把 `SlotTable` 当成 UI 树容易造成两个误判：
 
@@ -140,7 +140,7 @@ Strong Skipping 没有放宽状态模型。对同一个可变对象原地改字�
 - 在 UI 边界转换为项目认可的不可变集合；
 - 用稳定 wrapper 封装，并由代码审查维护契约；
 - 将可变集合改成 Snapshot 可观察容器；
-- 为受控类型配置 stability configuration，同时承担配置正确性的验证责任。
+- 为受控类型配置 stability configuration，同时负责配置正确性的验证责任。
 
 来自没有运行 Compose Compiler 的外部模块的类型也常被视为不稳定。不要为了让报告变绿给每个 DTO 加注解；先用 trace 证明稳定性导致了可感知成本，再决定 wrapper、模块边界或配置。官方[稳定性说明](https://developer.android.com/develop/ui/compose/performance/stability)和[诊断指南](https://developer.android.com/develop/ui/compose/performance/stability/diagnose)都强调先确认问题。
 

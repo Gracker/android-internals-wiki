@@ -197,7 +197,7 @@ Buddy 的 order 以二次幂表示连续页数量：
 | 9 | 512 | 2 MiB | 8 MiB |
 | 10 | 1024 | 4 MiB | 16 MiB |
 
-在 `android17-6.18-2026-06_r6` 中，未设置 `CONFIG_ARCH_FORCE_MAX_ORDER` 时，`MAX_PAGE_ORDER` 是 10，`free_area` 覆盖 order 0 到 10。厂商可以覆盖最大 order，所以工具应读取当前内核构建，不要把表中最后一行当作所有设备的上限。
+在 `android17-6.18-2026-06_r6` 中，未设置 `CONFIG_ARCH_FORCE_MAX_ORDER` 时，`MAX_PAGE_ORDER` 是 10，`free_area` 覆盖 order 0 到 10。厂商可以覆盖最大 order，所以工具应读取当前内核构建，不要把表中最末行当作所有设备的上限。
 
 分配较小 order 时，如果对应 free list 为空，Buddy 可以拆分更大块；释放时，地址与 order 匹配的空闲伙伴可以逐级合并。迁移类型会把 pageblock 分为 `Unmovable`、`Movable`、`Reclaimable`、`CMA` 等类别，降低不同生命周期页面长期混杂造成的外部碎片。
 

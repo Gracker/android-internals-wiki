@@ -245,7 +245,7 @@ Importer 看到的是适合自身设备的 DMA 地址与 scatterlist，不应把
 
 Binder 把 fd 传到目标进程时，会在那里安装一个指向同一 file object 的 fd。两个进程中的整数编号通常不同，且每个 fd 都有自己的 close 生命周期。像素 payload 没有随 Parcel 复制。
 
-backing storage 的寿命也不只由可见 fd 数量决定。imported handle、mmap、设备 attachment、内核引用和对象缓存都可能继续持有它。最后一个相关引用释放后，dma-buf exporter 的 `release` 才有机会回收资源。
+backing storage 的寿命也不只由可见 fd 数量决定。imported handle、mmap、设备 attachment、内核引用和对象缓存都可能继续持有它。末尾一个相关引用释放后，dma-buf exporter 的 `release` 才有机会回收资源。
 
 DMA-BUF 文档要求 exporter 创建 fd 时支持原子设置 `O_CLOEXEC`，避免多线程程序在 `fork` / `exec` 窗口泄漏访问能力。这既是资源问题，也是安全边界。
 

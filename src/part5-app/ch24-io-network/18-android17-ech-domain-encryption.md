@@ -50,7 +50,7 @@ sources:
 ### 🔹 `domainEncryption` 配置方式
 整理 `base-config` 与 `domain-config` 的配置位置、文档列出的 mode 取值差异，以及按域名灰度关闭的场景。
 
-### 🔹 网络库支持矩阵
+### 🔹 网络库支持matrix
 区分 HttpEngine、WebView、OkHttp/Conscrypt 路径，说明配置只有在网络库接入 ECH 后才生效。
 
 ### 🔹 失败与回退判定

@@ -197,7 +197,7 @@ Android 17 的命令号在 Framework `ProcessList.java` 与 `system/memory/lmkd/
 
 单进程 `LMK_PROCPRIO` 包含 6 个 32 位整数：命令、PID、UID、adj、process type、`for_lmkd_only`。默认 process type 是 `PROC_TYPE_APP`。当 `for_lmkd_only=false` 时，`lmkd::apply_proc_prio()` 先把 adj 写到 `/proc/<pid>/oom_score_adj`，再把进程放进对应 adj 链表。
 
-批量命令每个包最多放 3 个进程，每个记录有 PID、UID、adj、process type 和 `for_lmkd_only` 五个字段。Android 17 的 `ProcessList.batchSetOomAdj()` 固定把最后一个字段写成 0，因此批量路径不支持只更新 `lmkd` 内部值。
+批量命令每个包最多放 3 个进程，每个记录有 PID、UID、adj、process type 和 `for_lmkd_only` 五个字段。Android 17 的 `ProcessList.batchSetOomAdj()` 固定把末尾一个字段写成 0，因此批量路径不支持只更新 `lmkd` 内部值。
 
 连接建立后，`ProcessList.onLmkdConnect()` 会：
 
@@ -460,7 +460,7 @@ adb logcat -b all -s lowmemorykiller ActivityManager MemoryLimiter
 1. 先确认进程退出时间与退出类型；
 2. 再看 kill 前是否存在 PSI、低水位、低 swap 或 thrashing；
 3. 核对 victim 当时的 adj 和内存构成；
-4. 最后确认用户返回后是否产生新进程与启动代价。
+4. 最终确认用户返回后是否产生新进程与启动代价。
 
 仅看到 `lmkd` 在 trace 中运行，无法证明它导致卡顿。也不要用一次 `dumpsys meminfo` 快照解释数十秒前的 kill。
 
@@ -501,7 +501,7 @@ Android 17 的 `ActivityThread.scheduleTrimMemory()` 把回调投递到主线程
 
 cached app freezer 由 OomAdjuster/CachedAppOptimizer 根据 cached 状态安排。`CachedAppOptimizer.freezeAppAsyncInternalLSP()` 在目标 adj 至少为 900 时，先通过 Binder 请求 `TRIM_MEMORY_BACKGROUND`，再向 freeze handler 投递冻结消息。
 
-Binder 请求先发出不等于 App 已经完成清理。回调在 App 主线程异步执行，冻结也由另一条 Handler 路径安排，因此应用不能把这次通知当作有完成保证的“最后期限”。
+Binder 请求先发出不等于 App 已经完成清理。回调在 App 主线程异步执行，冻结也由另一条 Handler 路径安排，因此应用不能把这次通知当作有完成保证的“截止期限”。
 
 冻结后的进程仍存在，也没有释放全部进程内存。回到前台时是进程 thaw，常见代价是页重新变热、缓存重建和待处理任务恢复；这与 LMK 后从 Zygote 创建新进程的冷启动不同。Freezer 本身也不会产生 `ApplicationExitInfo` 的进程退出记录。
 

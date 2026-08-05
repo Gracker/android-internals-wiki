@@ -499,7 +499,7 @@ Android 12+ 还可用 `heaps: "com.android.art"` 采样 Java 堆分配。它与�
 
 在 `android-17.0.0_r1` 中，`ActivityThread.ApplicationThread.scheduleTrimMemory()` 接到 Binder 调用后，会优先把处理安排到主线程 `Choreographer.CALLBACK_COMMIT`，让回调位于绘制帧之后，以降低卡顿风险；没有可用 Choreographer 时退回 Handler。
 
-随后私有方法 `ActivityThread.handleTrimMemory()` 收集进程内的 `ComponentCallbacks2` 并分发，最后通知 WindowManager。通过 `Application.registerComponentCallbacks()` 注册的对象由 Application 的 callback controller 继续分发。业务不能依赖各回调的相对顺序。
+随后私有方法 `ActivityThread.handleTrimMemory()` 收集进程内的 `ComponentCallbacks2` 并分发，最终通知 WindowManager。通过 `Application.registerComponentCallbacks()` 注册的对象由 Application 的 callback controller 继续分发。业务不能依赖各回调的相对顺序。
 
 Android 17 还有两条需要知道的系统边界：
 
@@ -621,7 +621,7 @@ val javaHeadroom = runtime.maxMemory() - javaUsed
 
 ### `ApplicationExitInfo`
 
-Android 11 / API 30 起，`ActivityManager.getHistoricalProcessExitReasons()` 可以回查进程退出记录。`ApplicationExitInfo` 提供 reason、importance、description、trace，以及最后采样到的 PSS/RSS。
+Android 11 / API 30 起，`ActivityManager.getHistoricalProcessExitReasons()` 可以回查进程退出记录。`ApplicationExitInfo` 提供 reason、importance、description、trace，以及最终采样到的 PSS/RSS。
 
 这些 PSS/RSS 值可能为 0，也不保证等于死亡瞬间峰值。`REASON_LOW_MEMORY` 能说明系统按低内存原因记录了退出，仍需结合设备内存档位、业务场景和版本分布分析。
 

@@ -223,7 +223,7 @@ MediaProvider 定义的 BPF 程序路径是 `/sys/fs/bpf/prog_fuseMedia_fuse_med
 - 进入包所属路径时，可以返回移除 BPF 的动作；
 - `readdirplus` 暂时不能直接携带 backing fd 与 BPF program，代码会让相关项随后再触发单独 lookup。
 
-vold 的 `EmulatedVolume::doMount()` 提供了另一半证据：`IsFuseBpfEnabled()` 为 false 时，vold 才把 lower fs 上的 `Android/data` 和 `Android/obb` bind mount 到用户可见 FUSE 树；BPF 启用时跳过这组 bind mount，由 FUSE BPF/backing 路径承担相应工作。
+vold 的 `EmulatedVolume::doMount()` 提供了另一半证据：`IsFuseBpfEnabled()` 为 false 时，vold 才把 lower fs 上的 `Android/data` 和 `Android/obb` bind mount 到用户可见 FUSE 树；BPF 启用时跳过这组 bind mount，由 FUSE BPF/backing 路径负责相应工作。
 
 这套机制主要解决受保护目录的访问控制与 lower-fs 转发，不是普通 `DCIM`、`Pictures` 或 `Download` 文件的通用加速开关。分析媒体大文件读写时，先看 passthrough；分析 `Android/data`、`Android/obb` 的目录和文件操作时，再检查 FUSE BPF 与 vold 的选择。
 

@@ -345,7 +345,7 @@ Android 17 将部分 arm64 字符串/内存例程链接自 `external/arm-optimiz
 
 | 函数族 | Android 17 的选择依据 |
 |---|---|
-| `memcpy` / `memmove` | 优先 MOPS；否则识别 Qualcomm Oryon；再看 ASIMD；最后使用通用 arm64 实现 |
+| `memcpy` / `memmove` | 优先 MOPS；否则识别 Qualcomm Oryon；再看 ASIMD；最终使用通用 arm64 实现 |
 | `memset` | 优先 MOPS；否则选择 Oryon 或通用 arm64 实现 |
 | `memchr`、`strchr`、`strlen` 等 | 支持 MTE 时选择能正确处理 tagged address 的 MTE 版本 |
 | `memcmp`、`strcmp`、`strcpy` 等 | 当前选择 arm64 实现；源码中的 SVE 分支仍是待启用注释 |
@@ -403,7 +403,7 @@ malloc debug 通过 `libc.debug.malloc.options` 或对应环境配置安装 shim
 4. **保持条件变量谓词循环。** 任何依赖“不会虚假唤醒”的写法都不符合 Android 17 实现与 POSIX 约束。
 5. **不要伪造 top-app 策略。** 线程调度问题应从 task profile、nice、uclamp、CPU affinity、实时权限和设备配置分别检查。
 6. **按运行时页大小计算映射。** 所有传给 `mmap`、`mprotect`、`munmap` 的地址和长度都要复核；ELF 则检查每个 `PT_LOAD` 的对齐。
-7. **把 MTE 模式写进测试矩阵。** 开发阶段用 sync 获取精确报告，生产候选按安全与性能需求评估 async/asymm。
+7. **把 MTE 模式写进测试matrix。** 开发阶段用 sync 获取精确报告，生产候选按安全与性能需求评估 async/asymm。
 8. **批量 I/O 时处理系统调用语义。** 直接 `write` 仍可能 short write 或被 `EINTR` 中断；用它替换 stdio 之前，应补齐重试并测量 buffering 效果。
 9. **遵守 `minSdkVersion`。** 对 API 28、33、37 新增符号分别检查编译 guard 和运行时装载路径。
 

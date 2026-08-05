@@ -100,7 +100,7 @@ libbinder 的 `IPCThreadState::getAndExecuteCommand()` 收到命令后调用 `Pr
 
 驱动收到事务后会优先从目标进程的 `waiting_threads` 选择可用线程。没有可用线程时，普通进程级工作进入 `proc->todo`。同步调用方阻塞在 libbinder 的 `waitForResponse()`，直到收到 reply 或错误。
 
-调用方被阻塞的线程可能是 UI 主线程、业务线程，也可能是正在处理另一笔事务的 Binder worker。只有最后一种情况会占用调用方进程的 Binder 服务能力。把每个同步客户端线程都计为“占用一个 Binder 池线程”会高估线程池消耗。
+调用方被阻塞的线程可能是 UI 主线程、业务线程，也可能是正在处理另一笔事务的 Binder worker。只有最终一种情况会占用调用方进程的 Binder 服务能力。把每个同步客户端线程都计为“占用一个 Binder 池线程”会高估线程池消耗。
 
 ### 2.2 100 ms 饥饿日志是用户态启发式信号
 
@@ -249,7 +249,7 @@ Android 17 章节可以描述当前实现；Binder 优先级继承早已存在�
 
 ## 7. 与 ANR 的关系
 
-线程池饥饿本身不会直接生成 App ANR。它会延长同步 IPC 或 framework 状态机的耗时，最后由对应的 ANR 超时机制判定。
+线程池饥饿本身不会直接生成 App ANR。它会延长同步 IPC 或 framework 状态机的耗时，最终由对应的 ANR 超时机制判定。
 
 | 场景 | AOSP/Pixel 默认边界 | Binder 可能扮演的角色 |
 |---|---|---|

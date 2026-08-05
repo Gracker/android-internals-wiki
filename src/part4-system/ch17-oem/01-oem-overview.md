@@ -392,7 +392,7 @@ freezer 的直接作用是停止执行。匿名页是否被压缩、换出或回
 | 版本 | 对 OEM 性能策略的影响 |
 |---|---|
 | Android 5.0 / 6.0 | ART、JobScheduler、Doze 和 App Standby 逐步建立编译与后台任务基线 |
-| Android 8.0 | 后台服务和隐式广播限制收紧，应用需要迁移到受调度的后台工作 |
+| Android 8.0 | 后台服务和隐式广播限制加强，应用需要迁移到受调度的后台工作 |
 | Android 9 | App Standby buckets 与 Adaptive Battery 让使用频率进入资源分配 |
 | Android 11 | AOSP 支持 cached apps freezer，cgroup v2 freezer 成为系统冻结基础 |
 | Android 12 | 后台启动 foreground service 受到明确限制 |

@@ -250,7 +250,7 @@ Android 13（API 33）起，普通通知需要 `POST_NOTIFICATIONS` 运行时权
 
 FCM BigQuery 的 `MESSAGE_DELIVERED` 表示消息交给设备上的 FCM SDK，不代表通知已经显示。Aggregate Delivery Data 是抽样、聚合且延迟提供的数据，也不能替代单设备 trace。代理 notification 在普通 FCM / GA 指标中可能形成缺口，应读取 Proxy Notification Insights。
 
-后台 notification message 不进入业务 `onMessageReceived()`，因此应用无法在到达时写自定义 callback 埋点。若产品必须获得应用侧处理与自定义展示证据，应选择 data message，并承担进程与后台执行约束；这项选择同时影响可靠性、功耗和用户体验。
+后台 notification message 不进入业务 `onMessageReceived()`，因此应用无法在到达时写自定义 callback 埋点。若产品必须获得应用侧处理与自定义展示证据，应选择 data message，并负责进程与后台执行约束；这项选择同时影响可靠性、功耗和用户体验。
 
 ## Perfetto：只关联有共同键或共同时间窗的证据
 

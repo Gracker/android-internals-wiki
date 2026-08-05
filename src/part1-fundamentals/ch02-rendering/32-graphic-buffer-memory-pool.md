@@ -115,7 +115,7 @@ switch (mMapper.getMapperVersion()) {
 - 生成 `GraphicBufferAllocator buffers:` dump；
 - 汇总当前登记条目的估算大小，并维护 trace 事件。
 
-列表里没有“已 free、等待匹配”的条目，也没有按规格查找旧 handle 的接口，因此它不承担 framework 通用内存池的职责。
+列表里没有“已 free、等待匹配”的条目，也没有按规格查找旧 handle 的接口，因此它不负责 framework 通用内存池的职责。
 
 ### 2.3 `getTotalSize()` 是估算值
 
@@ -301,9 +301,9 @@ Android 17 的该函数会清除：
 - fence 与旧 EGL fence 信息；
 - last queued slot 关联。
 
-函数中没有直接调用 `GraphicBufferAllocator::free()`。但“没有直接调用”也不等于“这次操作肯定不释放内存”：`mGraphicBuffer.clear()` 会减少强引用；若它恰好是最后一个拥有底层 handle 的 `GraphicBuffer`，对象析构会进入相应释放路径。
+函数中没有直接调用 `GraphicBufferAllocator::free()`。但“没有直接调用”也不等于“这次操作肯定不释放内存”：`mGraphicBuffer.clear()` 会减少强引用；若它恰好是末尾一个拥有底层 handle 的 `GraphicBuffer`，对象析构会进入相应释放路径。
 
-是否成为最后一份引用，需要检查：
+是否成为最终一份引用，需要检查：
 
 - Producer `Surface` 的 slot 缓存；
 - Consumer/BLAST/SurfaceFlinger 的 buffer 缓存；
@@ -327,7 +327,7 @@ Producer disconnect、队列配置变化等路径可调用 `freeAllBuffersLocked
 
 不能把每个 `GraphicBuffer` 析构都描述成“从 `sAllocList` 删除一项”。只有由该 allocator 登记并按相应 owner 语义持有的 handle 才符合这条路径。
 
-`GraphicBufferAllocator` 自身的析构函数在 Android 17 是空函数，不会遍历 `sAllocList` 做统一清理。进程退出时，fd、Binder 对象和驱动上下文会按各自生命周期释放；跨进程 Consumer 与驱动何时撤销最后引用，不能承诺固定为“下一个 frame cycle”。
+`GraphicBufferAllocator` 自身的析构函数在 Android 17 是空函数，不会遍历 `sAllocList` 做统一清理。进程退出时，fd、Binder 对象和驱动上下文会按各自生命周期释放；跨进程 Consumer 与驱动何时撤销最终引用，不能承诺固定为“下一个 frame cycle”。
 
 ### 6.4 SurfaceView 反复创建不等于已有通用泄漏结论
 

@@ -139,7 +139,7 @@ flowchart LR
     EQ --> App
 ```
 
-Android 17 的 `SystemSensorManager.registerListenerImpl()` 为 listener 创建或复用 `SensorEventQueue`，`BaseEventQueue.addSensor()` 再调用 native enable。SensorService 在启用前按 sensor 的 `minDelay` / `maxDelay` 约束采样周期，然后把 `samplingPeriodNs` 和 `maxBatchReportLatencyNs` 传给 sensor 接口的 `batch()`，最后 `activate()`。
+Android 17 的 `SystemSensorManager.registerListenerImpl()` 为 listener 创建或复用 `SensorEventQueue`，`BaseEventQueue.addSensor()` 再调用 native enable。SensorService 在启用前按 sensor 的 `minDelay` / `maxDelay` 约束采样周期，然后把 `samplingPeriodNs` 和 `maxBatchReportLatencyNs` 传给 sensor 接口的 `batch()`，最终 `activate()`。
 
 在 HAL 一侧，Android 17 同时保留现代 AIDL Sensors HAL 和兼容 HIDL 2.0/2.1 的 wrapper。`SensorDevice::connectHalService()` 先尝试 AIDL，再尝试 HIDL。AIDL `ISensors` 的关键接口包括：
 
@@ -340,7 +340,7 @@ Direct Channel 不提供通用节能保证。高频 sensor、持续轮询共享�
    `SensorDevice::setFrozenStateForConnection()`；
 3. 该连接被标记为 `DISABLED_REASON_PID_FROZEN`；
 4. `Info::selectBatchParams()` 不再让它参与硬件参数聚合；
-5. 若它是最后一个有效客户端，底层 sensor 会停用；
+5. 若它是末尾一个有效客户端，底层 sensor 会停用；
 6. `SensorEventConnection::hasSensorAccess()` 也会在 PID frozen 时拒绝向该连接投递事件。
 
 解冻后连接重新参与聚合，必要时重新激活 sensor。源码没有为普通应用承诺回放冻结期间的全部事件，因此应用不能把 freezer 当成另一种 batching。

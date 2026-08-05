@@ -122,7 +122,7 @@ Death notification 的四态机设计解决了 Binder 中唯一的长生命周�
 
 ### 🔹 IPCThreadState.cpp 在优先级继承中的真实角色
 
-经全文检索（1869 行），`IPCThreadState.cpp` 在优先级继承链路中**几乎不参与计算**，仅承担 **2 个职责**：
+经全文检索（1869 行），`IPCThreadState.cpp` 在优先级继承链路中**几乎不参与计算**，仅负责 **2 个职责**：
 
 1. **背景调度守门**（IPCThreadState.cpp:431-438）：`gDisableBackgroundScheduling` 原子 bool 决定 Parcel.cpp:288 是否走默认 nice=19
    ```cpp

@@ -228,7 +228,7 @@ class DetailFragment : Fragment() {
 }
 ```
 
-`Route.enqueue` 只测 `commit()` 调用与入队；它不会覆盖 `mExecCommit`。两个 Fragment section 能说明同步回调成本，目标 SurfaceFrame 继续承担 traversal 到 Window 提交的证据。网络、图片和异步流应有各自 marker。
+`Route.enqueue` 只测 `commit()` 调用与入队；它不会覆盖 `mExecCommit`。两个 Fragment section 能说明同步回调成本，目标 SurfaceFrame 继续负责 traversal 到 Window 提交的证据。网络、图片和异步流应有各自 marker。
 
 ### 5. 核对系统负载
 

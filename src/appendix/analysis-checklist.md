@@ -41,7 +41,7 @@
 - [ ] **启动类型**：是完全的冷启动（Cold Start）、温启动（Warm Start）还是热启动（Hot Start）？
 - [ ] **数据口径**：是以 `am start -W` 的 `TotalTime` 为准，还是以 logcat `Displayed` 为准，还是以业务自定义的 TTFD（Fully Drawn）为准？
 
-### 2.2 启动时间线拆解（Perfetto / Method Trace）
+### 2.2 启动时间线分析（Perfetto / Method Trace）
 - [ ] **进程创建与 Zygote fork**：系统侧耗时是否异常长？（可能是系统内存压力导致）
 - [ ] **Application#onCreate**：
   - [ ] 是否有第三方 SDK 在主线程同步初始化？

@@ -324,7 +324,7 @@ fun consumeMotion(event: MotionEvent, sink: (Long, Float, Float) -> Unit) {
 
 这段代码按时间顺序消费 history 和当前样本。若 UI 只需要最新光标位置，可以只保存末尾状态；绘图、手写或速度估算才需要完整历史。
 
-`ViewRootImpl` 还会对尚未处理的 `ACTION_DRAG_LOCATION` Handler 消息保留最新一条。这个优化只针对拖放位置消息，不能推广成“所有 hover 或 move 都只保留最后一条”。
+`ViewRootImpl` 还会对尚未处理的 `ACTION_DRAG_LOCATION` Handler 消息保留最新一条。这个优化只针对拖放位置消息，不能推广成“所有 hover 或 move 都只保留最终一条”。
 
 ### 6.2 input timeout 看连接等待队列
 

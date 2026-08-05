@@ -175,7 +175,7 @@ chmod +x ./trace_processor
 
 PerfettoSQL 使用 SQLite 语法，并增加 `CREATE PERFETTO VIEW`、`CREATE PERFETTO MACRO`、标准库模块和区间处理能力。查询能否跨版本工作，取决于表、列、模块及输入数据源，不能用一个固定百分比概括它与 SQLite 的相似度。
 
-常见内置表承担不同职责：
+常见内置表负责不同职责：
 
 - `slice` 保存有开始时间和持续时间的区间事件，通过 `track_id` 关联所属 Track。
 - `sched` 保存线程在某个 CPU 上实际运行的区间。

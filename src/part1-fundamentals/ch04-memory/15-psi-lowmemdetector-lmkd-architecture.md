@@ -42,7 +42,7 @@ Android 17 需要区分两套互斥入口：
 | 用户空间 lmkd | 没有可写的旧 LMK 模块参数 | lmkd 根据 PSI、watermark、swap、thrashing 等信息决策 |
 | 旧 in-kernel LMK 兼容接口 | `/sys/module/lowmemorykiller/parameters/minfree` 可写 | 旧内核模块执行 kill，lmkd 读取 kill 记录 |
 
-AOSP lmkd 的 README 已说明，upstream Linux 从 4.12 起移除了旧 lowmemorykiller driver，Android 改由用户空间 lmkd 承担压力监控和进程选择。Android 17 的 common kernel 6.18 基准树也不包含该旧驱动。厂商内核若继续提供兼容模块，lmkd 才会进入第二行的分支。
+AOSP lmkd 的 README 已说明，upstream Linux 从 4.12 起移除了旧 lowmemorykiller driver，Android 改由用户空间 lmkd 负责压力监控和进程选择。Android 17 的 common kernel 6.18 基准树也不包含该旧驱动。厂商内核若继续提供兼容模块，lmkd 才会进入第二行的分支。
 
 ## PSI：内核怎样量化“系统被内存拖住”
 

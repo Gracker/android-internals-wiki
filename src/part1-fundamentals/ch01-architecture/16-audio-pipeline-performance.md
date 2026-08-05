@@ -95,7 +95,7 @@ last_deepseek_cn_review_at: 2026-06-21
 
 # 1.16 Audio Pipeline 延迟与性能
 
-音频性能问题不能只看“一个 buffer 有多少帧”。从 App 生成一个 sample，到扬声器真正发声，中间可能经过客户端队列、AudioFlinger、HAL、DSP、Codec 和换能器；录放同时进行时，还要再加输入路径、App 算法和两套并不严格同步的音频时钟。
+音频性能问题不能只看“一个 buffer 有多少帧”。从 App 生成一个 sample，到扬声器发声，中间可能经过客户端队列、AudioFlinger、HAL、DSP、Codec 和换能器；录放同时进行时，还要再加输入路径、App 算法和两套并不严格同步的音频时钟。
 
 本章以 Android 17 / API 37、AOSP `android-17.0.0_r1` 为当前锚点，回答四个工程问题：
 
@@ -176,7 +176,7 @@ App buffer
                  └─ driver / DSP / Codec / transducer
 ```
 
-Binder 主要承担建流、状态、路由、参数和控制操作；高频 PCM 数据通常通过共享内存队列传输。把整条链描述成“每个音频 buffer 都走一次 Binder 序列化”并不准确。
+Binder 主要负责建流、状态、路由、参数和控制操作；高频 PCM 数据通常通过共享内存队列传输。把整条链描述成“每个音频 buffer 都走一次 Binder 序列化”并不准确。
 
 ### 2.1 AudioPolicyService 决定“用哪条路”
 
@@ -261,7 +261,7 @@ if (*flags & AUDIO_OUTPUT_FLAG_FAST) {
 2. 数据是 linear PCM。
 3. sample rate 等于当前 output 的硬件采样率。
 4. channel mask 不需要昂贵的 downmix。
-5. 这个 mixer output 确实有关联的 FastMixer。
+5. 这个 mixer output 有关联的 FastMixer。
 6. fast track slot 仍有空位。
 7. session、output stage 或 device 上的 effect chain 不会移除 FAST flag。
 
@@ -525,7 +525,7 @@ Android 17 为 `USAGE_ASSISTANT` 增加独立的 Assistant volume stream，使 A
 - 是否启用 effects、spatial audio、hardening 测试开关。
 - 复现时设备是否切路由、熄屏、发热或有并发音频。
 
-音频路径对路由非常敏感。没记录这些信息，两个 trace 很可能根本不是同一条管线。
+音频路径对路由非常敏感。没记录这些信息，两个 trace 很可能来自不同管线。
 
 ### 8.2 dumpsys 先回答“走哪条路”
 
@@ -599,7 +599,7 @@ Perfetto 不保证每次 xrun 都出现名为 `underrun` 的标准 slice。更�
 
 ### 8.5 声学延迟需要 loopback
 
-Perfetto 能解释软件时序，却看不到扬声器振膜何时真正发声，也看不到麦克风声学信号何时到达。端到端往返延迟应使用：
+Perfetto 能解释软件时序，却看不到扬声器振膜何时发声，也看不到麦克风声学信号何时到达。端到端往返延迟应使用：
 
 - CTS Verifier / OboeTester 等 loopback 测试。
 - 支持的物理 loopback dongle 或受控声学回路。

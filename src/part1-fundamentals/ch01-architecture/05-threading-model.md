@@ -278,7 +278,7 @@ void DrawFrameTask::postAndWait() {
 }
 ```
 
-RenderThread 执行 `run()` 时先同步帧状态。满足条件时，它可以在真正提交绘制前解除主线程等待；如果纹理准备等工作要求继续持有同步点，则会在稍后解除。因此，不能把这段关系简化成“主线程提交后立即自由运行”，也不能理解成“主线程必须等 GPU 完成整帧”。
+RenderThread 执行 `run()` 时先同步帧状态。满足条件时，它可以在提交绘制前解除主线程等待；如果纹理准备等工作要求继续持有同步点，则会在稍后解除。因此，不能把这段关系简化成“主线程提交后立即自由运行”，也不能理解成“主线程必须等 GPU 完成整帧”。
 
 Perfetto 中常见三种情况：
 
@@ -302,7 +302,7 @@ Perfetto 中常见三种情况：
 | 必须在约束满足后可靠执行的持久任务 | WorkManager | 调度时刻不精确，普通 Worker 有运行时长限制 |
 | 需要立即运行且用户可感知的长任务 | 前台服务及相应任务 API | 遵守后台启动和通知限制 |
 
-### HandlerThread：仅在确实需要 Looper 时使用
+### HandlerThread：仅在需要 Looper 时使用
 
 HandlerThread 适合要求线程亲和、顺序处理，且依赖 Handler/Looper API 的组件。只为了“开一个后台线程”时，Executor 或协程通常更容易管理并发、返回值和取消。
 
@@ -330,7 +330,7 @@ class SerialWorker : Closeable {
 
 ### 协程解决的是任务结构，不是让代码自动变快
 
-协程可以用较少线程表达大量挂起任务，但真正的阻塞调用仍会占住承载它的线程。Dispatcher 选择需要与工作类型相符：
+协程可以用较少线程表达大量挂起任务，但实际的阻塞调用仍会占住承载它的线程。Dispatcher 选择需要与工作类型相符：
 
 ```kotlin
 class UserRepository(
@@ -413,7 +413,7 @@ CPU 密集型任务应使用有界并行度，并以目标设备上的吞吐、�
 
 看到一个很长的 slice，只能说明某段逻辑从开始到结束经历了很长时间。下一步要把时间拆成线程状态：
 
-- **Running**：线程确实在 CPU 上执行；
+- **Running**：线程在 CPU 上执行；
 - **Runnable**：可以运行，但在等 CPU；
 - **Sleeping / Interruptible sleep**：常见于等消息、Binder、futex、I/O 或条件变量；
 - **Uninterruptible sleep**：通常需要继续检查内核 I/O、驱动或等待链。
@@ -424,7 +424,7 @@ CPU 密集型任务应使用有界并行度，并以目标设备上的吞吐、�
 2. 同时查看主线程和 RenderThread，而不是只盯 `doFrame`；
 3. 对长区间展开 thread state，区分 on-CPU、Runnable 与阻塞；
 4. Runnable 很长时查看 CPU 是否被更高优先级或大量线程占用；
-5. 阻塞时沿 wakeup、futex、Binder、I/O 或锁持有者寻找真正的唤醒方；
+5. 阻塞时沿 wakeup、futex、Binder、I/O 或锁持有者寻找实际的唤醒方；
 6. 回到源码确认 slice 对应的执行边界，再决定优化业务、并行度还是跨线程协议。
 
 主线程睡在 Looper poll 通常表示“当前没有到期消息”，本身不是卡顿证据。相反，如果关键消息已到期而主线程仍被前一条消息占用，才需要缩短那条消息的执行路径。
@@ -467,9 +467,9 @@ Android 17 的 `libcore` 源码和 API 文本已经出现第一版虚拟线程�
 | 版本 | 与线程模型相关的变化 |
 |---|---|
 | Android 5.0 | 硬件加速渲染管线进一步采用独立 RenderThread，主线程与渲染提交的分工成为常见分析对象 |
-| Android 8.0 | 后台执行限制收紧，后台 Service 不再适合承载任意长任务 |
+| Android 8.0 | 后台执行限制加强，后台 Service 不再适合承载任意长任务 |
 | Android 11 / API 30 | `AsyncTask` 与 `IntentService` 废弃 |
-| Android 12 以后 | 前台服务启动和后台工作约束持续收紧，任务类型必须与系统 API 语义匹配 |
+| Android 12 以后 | 前台服务启动和后台工作约束持续限制加强，任务类型必须与系统 API 语义匹配 |
 | Android 17 / API 37 | 以 API 37 为目标的应用启用新的无锁 MessageQueue；私有字段反射存在兼容风险 |
 | Android 17 / API 37 | `libcore` 出现受发布开关控制的虚拟线程 v1 API 与实现，不能假定所有构建均启用 |
 

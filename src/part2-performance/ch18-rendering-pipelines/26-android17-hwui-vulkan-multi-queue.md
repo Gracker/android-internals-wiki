@@ -172,7 +172,7 @@ sp<VulkanManager> VulkanManager::getInstance() {
 - device-lost 回调中的上下文标签；
 - queue 0 与 queue 1 的提交顺序。
 
-`SkiaVMA::Options{.fThreadSafe = false}` 不能解释成“整个 VkDevice 无需跨线程同步”。它只说明每个 context 创建的 allocator 不承担多线程并发访问；共享 Vulkan 对象、queue 和跨 queue 资源依赖仍要遵守 Vulkan 的 external synchronization 与 semaphore/fence 规则。
+`SkiaVMA::Options{.fThreadSafe = false}` 不能解释成“整个 VkDevice 无需跨线程同步”。它只说明每个 context 创建的 allocator 不负责多线程并发访问；共享 Vulkan 对象、queue 和跨 queue 资源依赖仍要遵守 Vulkan 的 external synchronization 与 semaphore/fence 规则。
 
 ## 两条 graphics queue 如何创建
 

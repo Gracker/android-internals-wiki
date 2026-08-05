@@ -308,7 +308,7 @@ Android 17 把 `BIONIC_SIGNAL_DEBUGGER` 定义为 `__SIGRTMIN + 3`。平台 `deb
 
 `BIONIC_SIGNAL_DEBUGGER`、`debuggerd_client` 和 `AddSpecialSignalHandlerFn()` 都不属于普通应用的 NDK 公共接口。Crash SDK 不应把它们包装成“主动采集 API”。普通应用获取自身历史 native tombstone 应使用 API 31 起的 `ApplicationExitInfo.getTraceInputStream()`；平台或 root 调试工具可使用其权限范围内的 debuggerd 命令。
 
-### 🔹 async-signal-safe 规则没有在 Android 17 才收紧
+### 🔹 async-signal-safe 规则没有在 Android 17 才限制加强
 
 `malloc()`、`free()`、`dlopen()`、`dladdr()`、C++ 容器、普通日志和 `pthread_mutex_lock()` 从来都不是应用 fatal signal handler 可依赖的通用安全操作。不能写成“Android 14 勉强可用，Android 17 才会失败”。
 

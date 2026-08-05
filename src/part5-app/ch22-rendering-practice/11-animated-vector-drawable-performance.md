@@ -87,7 +87,7 @@ Perfetto 没有一个公开的 “AVD fallback” counter。排查时要把它�
 
 - 先用 FrameTimeline 定位 jank 帧，确认卡顿发生在 AVD 可见且正在播放的时间段；若页面没有绘制行为，平均帧率口径会稀释问题，详见 22.8。
 - 看 UI 线程的 `Choreographer#doFrame`、`ViewRootImpl#doTraversal`、`DrawFrame` 附近是否出现连续超时；UI 路径动画会把每帧属性计算、invalidate 和 draw 压在主线程帧预算内。
-- 看 RenderThread 是否有对应帧的 `DrawFrame` / HWUI 工作。如果 UI 线程忙、RenderThread 仍稳定推进，AVD 更可能仍在 RT；如果 UI 线程承担主要动画推进，而 RenderThread 空闲或只做轻量提交，要回到宿主 Canvas 检查。
+- 看 RenderThread 是否有对应帧的 `DrawFrame` / HWUI 工作。如果 UI 线程忙、RenderThread 仍稳定推进，AVD 更可能仍在 RT；如果 UI 线程负责主要动画推进，而 RenderThread 空闲或只做轻量提交，要回到宿主 Canvas 检查。
 - 对比同一资源在普通 `ImageView` 和问题容器中的 trace。资源相同但线程分布不同，宿主绘制路径就是第一嫌疑点。
 
 本地复现时建议给问题场景加轻量埋点：记录 AVD 资源名、宿主 View 类名、`View.isHardwareAccelerated()`、自身及祖先是否设置 software layer、播放 start 时间和场景 ID。线上样本只靠堆栈不够，卡顿监控还要带宿主绘制路径。

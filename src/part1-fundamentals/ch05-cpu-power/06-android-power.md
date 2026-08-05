@@ -222,7 +222,7 @@ Batterystats 适合回答“某 UID 在多长时间内持有哪些锁、触发�
 
 | 机制 | 作用范围 | 主要触发依据 | 典型影响 |
 | --- | --- | --- | --- |
-| Battery Saver | 全设备 | 用户或系统省电策略 | 性能、网络、动画和后台策略可能收紧 |
+| Battery Saver | 全设备 | 用户或系统省电策略 | 性能、网络、动画和后台策略可能限制加强 |
 | Doze | 全设备空闲状态 | 灭屏、未充电、静止/空闲等设备条件 | 网络、Job、Sync、普通 Alarm 延后，WakeLock 被忽略 |
 | App Standby | 单个应用 | 用户近期是否使用该应用 | 后台网络、Job 和 Alarm 受限 |
 | App Standby Buckets | 单个应用 | 使用频率、预测与系统策略 | 不同 bucket 获得不同预算 |
@@ -433,7 +433,7 @@ Perfetto energy consumer、Power Profiler 或 rail 数据是否存在取决于�
 - 同时比较功能正确性；省电不能靠漏同步或丢通知换取。
 - 报告中区分 modeled energy、rail measurement、battery delta 与外部仪表。
 
-### 最后选择修复层
+### 最终选择修复层
 
 | 证据 | 优先修复 |
 | --- | --- |
@@ -473,7 +473,7 @@ Batterystats 包含记账和模型估算。硬件 rail、采样周期和归因�
 | --- | --- | --- |
 | Android 5 / API 21 | JobScheduler | 把可延期后台工作交给系统批处理 |
 | Android 6 / API 23 | Doze、App Standby | 设备级与应用级后台限制 |
-| Android 7 / API 24 | Light Doze、后台广播优化 | 灭屏后更早收紧部分活动 |
+| Android 7 / API 24 | Light Doze、后台广播优化 | 灭屏后更早限制加强部分活动 |
 | Android 8 / API 26 | 后台执行与前台服务限制 | 长期后台服务受到更强约束 |
 | Android 9 / API 28 | App Standby Buckets、Adaptive Battery | bucket 可由使用历史或预测影响 |
 | Android 12 / API 31 | RESTRICTED bucket | 增加更严格的应用级资源限制 |
