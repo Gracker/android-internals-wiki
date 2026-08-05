@@ -1,13 +1,33 @@
 ---
 title: "非 Play 渠道性能监控与国内厂商 ROM 适配可观测性"
 chapter: "26.28"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [non-play, domestic, ROM, observability, monitoring, OEM, channel]
 related_chapters: ["25.25", "26.3", "26.18", "26.22"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "研究素材+每日信息+章节深挖"
+task6_state: pending
+task9_state: pending
+pipeline_stage: task6_pending
+last_draft_polish_at: "2026-08-05T23:47:01+08:00"
+last_draft_polish_run_id: "20260805-234701-draft-polish-010c5e00"
+last_verified: "2026-08-05"
+confidence: medium-high
+sources:
+  - type: android-source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java"
+  - type: android-source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+  - type: android-source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/usage/UsageStatsManager.java"
+  - type: android-source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/pm/PackageManager.java"
+  - type: android-doc
+    path: "https://developer.android.com/reference/android/os/ProfilingManager"
+  - type: android-doc
+    path: "https://support.google.com/googleplay/android-developer/answer/9844486?hl=en"
 ---
 
 # 26.28 非 Play 渠道性能监控与国内厂商 ROM 适配可观测性
