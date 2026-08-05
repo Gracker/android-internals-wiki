@@ -27,312 +27,238 @@ sources:
 
 # 26.27 Facebook Profilo 框架线上 ATrace 收集方案
 
-## 要点
+## 先给结论：它是历史实现，不是 Android 17 现成方案
 
-### 🔹 Profilo 框架架构概述
+[Profilo](https://github.com/facebookarchive/profilo) 的定位是从生产版本收集应用性能 trace。它的 provider、触发控制、内存映射环形缓冲区和异步写文件设计仍有参考价值，但上游在 2023 年进入归档状态，README 也明确说明 API 不稳定。上游没有 Android 17 / API 37 的维护承诺和验证记录。
 
-#### 设计目标
+因此，本章讨论两件事：
 
-Facebook Profilo 是一个面向**生产环境大规模部署**的高性能 trace 收集框架。其核心设计目标：
+- 解释 Profilo 的 ATrace provider 到底拦截了什么、保存了什么；
+- 给出 `android-17.0.0_r1` 下继续维护 fork 时必须验证的边界，以及新项目的替代路线。
 
-1. **极低开销**：在线上灰度环境中启用 trace 收集，对应用性能的影响 < 1%
-2. **无需修改应用代码**：通过 PLT Hook 拦截系统 trace 写入接口，对业务代码透明
-3. **可控采样**：支持按比例灰度、按时间段采样、按条件触发
-4. **跨版本兼容**：从 Android 8 (API 26) 到 Android 17 (API 37) 全面覆盖
+“Android 8 到 Android 17 全面覆盖”“生产开销低于 1%”之类结论没有上游基准和 Android 17 测试支撑，不能作为上线依据。开销需要按设备、事件密度、provider 组合、buffer 大小和采样时长重新测量。
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Hook 全解析 — Hook 技术选型]
+## Profilo 的组件职责
 
-#### 核心组件
+Profilo 不是单一的 ATrace hook。官方[架构文档](https://github.com/facebookarchive/profilo/blob/main/docs/architecture.md)把系统分为 TraceController、TraceProvider、配置和写入链路：
 
-```
-┌────────────────────────────────────────────────────────┐
-│                    Profilo 架构                         │
-├────────────────┬───────────────────────────────────────┤
-│  Trace Provider│  PLT Hook layer                        │
-│  (trace 写入   │  ├── pthread_create hook              │
-│   拦截层)      │  ├── write() hook (trace_marker fd)   │
-│                │  └── atrace_begin/end hook            │
-├────────────────┼───────────────────────────────────────┤
-│  Sampler       │  快速采样器                             │
-│                │  ├── Stack sampling (每 N μs)         │
-│                │  ├── Java stack unwinding             │
-│                │  └── Native stack unwinding           │
-├────────────────┼───────────────────────────────────────┤
-│  Buffer Manager│  环形缓冲区                             │
-│                │  无锁写入 + 批量 flush                  │
-├────────────────┼───────────────────────────────────────┤
-│  Uploader      │  压缩 + 加密 + 上传                     │
-│                │  zlib 压缩 → HTTPS 上传到后端           │
-└────────────────┴───────────────────────────────────────┘
-```
+| 组件 | 源码中的职责 | 不负责的事情 |
+|---|---|---|
+| `TraceController` / 配置 | 判断一次 trigger 是否启动 trace，选择 provider 和参数 | 不自动决定业务采样策略 |
+| `BaseTraceProvider` | 在 trace 开始和结束时启停一个数据源 | 不保证所有 Android 版本可用 |
+| `MultiBufferLogger` | 把标准项和字符串写进一个或多个 buffer | 不直接等于 ftrace ring buffer |
+| `MmapBufferManager` | 分配匿名或 file-backed buffer，登记进程与容量信息 | 不上传数据 |
+| `TraceWriter` / `FileManager` | 从 buffer 生成 trace 文件并管理待处理文件 | 不内置通用加密与 HTTPS 后端 |
 
-### 🔹 PLT Hook 拦截 trace_marker 写入
+内存侧使用固定容量的并发环形缓冲区。源码 [`LockFreeRingBuffer.h`](https://github.com/facebookarchive/profilo/blob/main/cpp/logger/lfrb/LockFreeRingBuffer.h) 说明：writer 通常不等待 reader，reader 落后时可以发现数据已被覆盖；当 writer 绕回同一 slot 而前一次写入尚未完成时，writer 仍可能等待。用“完全无锁、永不阻塞”概括并不准确。
 
-#### trace_marker 机制
+下面的关系图用于区分应用内 Profilo 数据与系统 trace 数据。
 
-Android 的 atrace 系统底层依赖 Linux 内核的 **ftrace** 机制。用户态写入 trace 事件的接口是 `/sys/kernel/tracing/trace_marker`：
+```text
+业务 trigger / 远程配置
+          │
+          ▼
+    TraceController
+          │ 选择 provider
+          ▼
+ ┌───────────────────────────────┐
+ │ 应用进程                      │
+ │ ATrace provider ─┐            │
+ │ stack provider ──┼─> logger ──┼─> mmap ring buffer
+ │ counters ────────┘            │          │
+ └───────────────────────────────┘          ▼
+                                      TraceWriter
+                                           │
+                                           ▼
+                                      应用私有文件
 
-```c
-// frameworks/native/cmds/atrace/atrace.cpp
-// atrace 初始化时打开 trace_marker fd
-int trace_marker_fd = open("/sys/kernel/tracing/trace_marker", O_WRONLY | O_CLOEXEC);
-
-// 写入 trace 事件
-// atrace_begin(tag, name) → write(trace_marker_fd, "B|pid|name", len)
-// atrace_end(tag)         → write(trace_marker_fd, "E", 1)
+系统 Perfetto / ftrace 是另一条采集链路。
 ```
 
-[已验证: AOSP android-17.0.0_r1, system/core/libcutils/trace-dev.cpp — atrace_begin_body / atrace_end_body]
+图中的上传、限额、脱敏和服务端分析需要接入方自行实现。不能从 Profilo 有 `upload` 文件目录推导出“默认会压缩、加密并上传”。
 
-每次 `write()` 到 `trace_marker_fd` 会产生一次**系统调用**（用户态 → 内核态切换），将 trace 数据写入内核 ftrace ring buffer。
+## Android 17 的 ATrace 写入链路
 
-#### PLT Hook 拦截策略
+平台锚点为 AOSP `android-17.0.0_r1`。[`libcutils/trace-dev.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libcutils/trace-dev.cpp) 初始化时优先打开 `/sys/kernel/tracing/trace_marker`，失败后再尝试 `/sys/kernel/debug/tracing/trace_marker`。[`trace-dev.inc`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libcutils/trace-dev.inc) 保存 `atrace_marker_fd` 和 `atrace_enabled_tags`，并用 `write()` 写入格式化事件。
 
-Profilo 通过 PLT (Procedure Linkage Table) Hook 拦截 `write()` 函数，过滤出写入 `trace_marker_fd` 的调用：
+Android 17 的用户态格式已不止早期五种：
 
-```c
-// 伪代码 — Profilo 的 write hook
-ssize_t hooked_write(int fd, const void* buf, size_t count) {
-    if (fd == trace_marker_fd && profilo_enabled) {
-        // 解析 buf 中的 atrace 事件
-        // "B|1234|activityStart" → begin event, pid=1234, name="activityStart"
-        // "E" → end event
-        // "C|1234|frameCount|42" → counter event
-        profilo_record_trace_event(fd, buf, count);
+| 前缀 | 语义 | Profilo 上游 ATrace provider |
+|---|---|---|
+| `B` / `E` | 当前线程同步 slice 开始 / 结束 | 保存 |
+| `S` / `F` | 异步事件开始 / 结束 | 忽略 |
+| `G` / `H` | 指定 track 的可嵌套异步事件 | 忽略 |
+| `I` / `N` | 进程或指定 track 的 instant event | 忽略 |
+| `C` | counter | 忽略 |
+
+[`android.os.Trace`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java) 的 JNI 在 Android 17 进入 [`tracing_perfetto`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/tracing_perfetto/tracing_perfetto.cpp)。它根据启用状态选择 ATrace 兼容路径或 Perfetto Track Event 路径。`Trace.beginSection()` 仍是公共的同步 slice API，名称最多 127 个 UTF-16 code unit，并要求在同一线程以正确嵌套顺序调用 `endSection()`。
+
+下面的写法用于给稳定、低基数的业务阶段添加公共 trace 标记。
+
+```kotlin
+import android.os.Trace
+
+inline fun <T> traceSection(name: String, block: () -> T): T {
+    Trace.beginSection(name)
+    return try {
+        block()
+    } finally {
+        Trace.endSection()
     }
-    // 调用原始 write
-    return real_write(fd, buf, count);
+}
+
+val result = traceSection("Feed.bindVisibleItems") {
+    bindVisibleItems()
 }
 ```
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Hook 全解析 — PLT/GOT Hook 原理]
+`finally` 保证异常路径也关闭 slice。线上事件名应使用固定名称，用户输入、URL、账号、订单号等高基数字段不要放进 section name；参数可在采样命中后由受控日志单独记录。
 
-PLT Hook 的优势：
-- **不需要 root**：PLT Hook 只修改 GOT (Global Offset Table) 中的函数指针，在应用自身进程空间内完成
-- **目标 so 可控**：可以选择只 hook 特定 so 的 PLT（如 `libc.so`），不影响其他 so
-- **线程安全**：PLT Hook 的写入是原子的（指针大小 ≤ 8 bytes on ARM64）
+## Profilo ATrace provider 的精确行为
 
-### 🔹 atrace_enabled_tags 全位掩码策略
+上游实现位于 [`cpp/atrace/Atrace.cpp`](https://github.com/facebookarchive/profilo/blob/main/cpp/atrace/Atrace.cpp) 和 [`SystraceProvider.java`](https://github.com/facebookarchive/profilo/blob/main/java/main/com/facebook/profilo/provider/atrace/SystraceProvider.java)。在 API 27 及更高版本，它的关键步骤是：
 
-#### 默认 atrace tag 的限制
+1. 用 `dlsym()` 查找进程中的私有实现变量 `atrace_enabled_tags` 和 `atrace_marker_fd`。
+2. 在 `libcutils.so` 上安装 `__write_chk` 的 PLT hook。
+3. provider 启用时把 `atrace_enabled_tags` 原子交换为 `UINT64_MAX`，并保存原值。
+4. 写入目标 fd 且 provider 处于启用状态时，只解析 `B` 与 `E`，把线程 ID、单调时钟时间和名称写入 Profilo logger。
+5. provider 停止时卸载 hook，并尝试恢复原 tag mask。
 
-Android 系统通过 `atrace_enabled_tags` 控制哪些 trace category 被启用。默认情况下，应用只能写入预设的 tag：
+这一点与常见描述有明显差别：命中 hook 后，`write_hook()` 返回 `count`，不会调用原始 `write()`。事件被导向 Profilo buffer，没有同时写入内核 ftrace buffer。下面的伪代码只保留控制流，便于代码审计。
 
 ```c
-// atrace_enabled_tags 是一个全局 uint64_t 变量
-// 各 tag 对应一个 bit：
-// ATRACE_TAG_APP       = (1 << 13)
-// ATRACE_TAG_VIEW      = (1 << 1)
-// ATRACE_TAG_ACTIVITY_MANAGER = (1 << 2)
-// ...
-
-uint64_t atrace_enabled_tags = ATRACE_TAG_APP;  // 默认只启用 APP tag
-```
-
-如果应用调用 `Trace.beginSection("mySection")`，底层会检查 `(atrace_enabled_tags & ATRACE_TAG_APP) != 0`，只有匹配时才会写入 trace_marker。
-
-#### Profilo 的全位掩码策略
-
-Profilo 在初始化时将 `atrace_enabled_tags` 设置为 `0xFFFFFFFFFFFFFFFF`（全 1），启用所有 category：
-
-```c
-// Profilo 初始化
-// 通过 dlsym 找到 atrace_enabled_tags 的地址
-uint64_t* tags_ptr = (uint64_t*)dlsym(RTLD_DEFAULT, "atrace_enabled_tags");
-if (tags_ptr) {
-    *tags_ptr = 0xFFFFFFFFFFFFFFFF;  // 启用所有 tag
+ssize_t profilo_write_hook(int fd, const void* data, size_t size) {
+    if (provider_enabled && fd == observed_atrace_fd && size > 0) {
+        if (is_sync_begin_or_end(data, size)) {
+            write_to_profilo_buffer(current_tid(), monotonic_time(), data, size);
+        }
+        return size; // 不再写入 trace_marker
+    }
+    return previous_write(fd, data, size);
 }
 ```
 
-这样做的效果：
-1. 应用自身的 `Trace.beginSection()` 开始生效（之前被 tag 过滤掉）
-2. 系统框架的 atrace 事件也被捕获（如 WindowManager、ActivityManager 内部的 trace）
-3. 每秒产生的 trace 事件数量大幅增加 → 需要环形缓冲区和采样策略来控制开销
+返回成功但忽略 `S/F/G/H/I/N/C` 会让调用方以为事件已经记录，Profilo trace 中却没有相应数据。若业务依赖 async、counter、instant 或自定义 track，上游 provider 的数据模型不够用。
 
-[已验证: Android atrace 机制基于 atrace_enabled_tags 全局变量；Profilo 的具体实现为开源代码]
+### 能看到哪些进程
 
-### 🔹 trace_marker 机制与 ftrace 接口
+PLT hook 只修改当前应用进程中目标库的调用入口。把 tag mask 设为全 1，会放行当前进程里 framework、ART、HWUI 或 native library 执行到的 ATrace 点；它不会进入 `system_server`、SurfaceFlinger、WindowManager 等其他进程，也不会采集 sched、binder、block I/O 等内核 tracepoint。
 
-#### ftrace 用户态接口
+所以，Profilo ATrace trace 是“本进程同步 slice 的应用内副本”，不是一份完整 systrace。需要跨进程与内核因果关系时，仍要采集 Perfetto system trace。
 
-`/sys/kernel/tracing/trace_marker` 是 ftrace 提供的**通用用户态事件写入接口**。任何用户态进程都可以向此 fd 写入数据来创建 trace 事件：
+### B/E 如何配对
 
-```
-写入格式：
-B|<pid>|<name>          → Begin event（开始一个 section）
-E                       → End event（结束当前 section）
-C|<pid>|<name>|<value>  → Counter event（记录一个计数器值）
-S|<pid>|<name>|<cookie> → Async start event
-F|<pid>|<name>|<cookie> → Async finish event
-```
+Profilo 在 hook 执行时直接调用 `threadID()`，每条 `MARK_PUSH` / `MARK_POP` 已带 TID，不需要依赖 `sched_switch` 推断线程。解析端按 TID 维护栈即可恢复同步嵌套：
 
-#### 性能特征
+```text
+tid 4101: PUSH Activity.onCreate
+tid 4101:   PUSH inflateContent
+tid 4101:   POP
+tid 4101: POP
 
-每次写入 trace_marker 的开销：
-
-| 操作 | 耗时 (ARM64 典型值) | 说明 |
-|------|-------------------|------|
-| `write(trace_marker_fd, ...)` 系统调用 | ~3-5 μs | 用户态 → 内核态切换 + ftrace ring buffer 写入 |
-| atrace_enabled_tags 检查 | ~10 ns | 内存比较 |
-| 总单次 atrace_begin + atrace_end | ~6-10 μs | 一对 B/E 事件 |
-
-对于一帧（16.6ms @ 60Hz），如果有 50 个 trace section（典型 UI 帧），trace 开销约 300-500 μs（~2-3% 的帧时间）。这在调试时可接受，但在生产环境需要采样。
-
-[已验证: AOSP android-17.0.0_r1, system/core/libcutils/trace-dev.cpp — 开销分析基于系统调用特性]
-
-### 🔹 traceBegin/traceEnd 匹配算法
-
-#### 事件配对重建调用栈
-
-Profilo 收集到的原始 trace 数据是一系列离散的 B/E 事件。需要将它们配对重建为**层级化的调用栈**：
-
-```
-原始事件流（按时间顺序）：
-  B|pid|Activity.onCreate
-  B|pid|setContentView
-  B|pid|inflate
-  E
-  B|pid|findViewById
-  E
-  E
-  E
-
-重建后的调用栈：
-  Activity.onCreate
-    ├── setContentView
-    │     └── inflate
-    └── findViewById
+tid 4178: PUSH decodeThumbnail
+tid 4178: POP
 ```
 
-#### 匹配算法
+每个 TID 的 `PUSH` 与 `POP` 独立配对。环形 buffer 覆盖、trace 恰好从一个未结束 slice 中间开始、进程异常退出或调用方本身没有成对调用，都会留下不平衡栈。分析端应把对应区间标成不完整数据，不能凭空补出时长。
 
-```
-使用 per-thread 栈结构：
-- 每个线程维护一个栈（通过 CPU 编号 + task_pid 识别线程）
-- 收到 B 事件 → push 到栈
-- 收到 E 事件 → pop 栈顶
-- 栈的深度即嵌套层级
-```
+## ATrace provider 与 stack provider 不要混为一谈
 
-**关键挑战**：
-1. **事件丢失**：如果某些 B/E 事件因采样率不足而丢失，栈可能不平衡 → 需要 mismatch 修复策略
-2. **跨线程事件**：async event (S/F) 跨线程传递，需要通过 cookie 匹配而非栈配对
-3. **线程切换**：atrace 事件不包含线程信息，需要从 ftrace 的 sched_switch 事件获取
+Profilo 的堆栈采样是另一个 provider。上游 [`SamplingProfiler.cpp`](https://github.com/facebookarchive/profilo/blob/main/cpp/profiler/SamplingProfiler.cpp) 为目标线程建立 CPU-time 或 wall-time timer，以 profiler signal 触发 unwind；[`TimerManager.cpp`](https://github.com/facebookarchive/profilo/blob/main/cpp/profiler/TimerManager.cpp) 周期性扫描 `/proc` 线程列表并增删 timer。源码没有“Quicken 模式”，也没有通过 PLT hook `pthread_create` 建立线程清单。
 
-### 🔹 线程创建监控：PLT Hook pthread_create
+Android 版本边界更严格：
 
-Profilo 通过 Hook `pthread_create` 监控线程的创建与销毁，为 trace 事件提供线程上下文：
+- [`CPUProfiler.java`](https://github.com/facebookarchive/profilo/blob/main/java/main/com/facebook/profilo/provider/stacktrace/CPUProfiler.java) 中基于 ART 内部布局的 Java unwinder 只列到 Android 9；
+- API 26 及更高版本会把 native tracer 标为候选，但这不等于上游二进制已经在 Android 17 验证；
+- signal handler、ART/DEX/JIT unwind、native unwinder 与其他 SDK 的信号处理会互相影响，需要独立压力测试。
 
-```c
-// 伪代码 — Profilo 的 pthread_create hook
-typedef int (*pthread_create_orig_t)(pthread_t*, const pthread_attr_t*, void*(*fn)(void*), void*);
+如果目标是 Android 17 Java 方法采样，不应直接复用 Profilo 的 Android 9 ART offset 表，也不应靠扫描 ART 私有内存寻找新偏移。使用 Android Studio CPU Profiler、Simpleperf、Perfetto 支持的数据源或经过版本验证的 JVMTI 方案更可控。
 
-int hooked_pthread_create(pthread_t* thread, const pthread_attr_t* attr,
-                          void*(*start_routine)(void*), void* arg) {
-    // 记录线程创建
-    thread_id_t tid = /* generate id */;
-    profilo_record_thread_create(tid, start_routine);
-    
-    // 包装 start_routine
-    return real_pthread_create(thread, attr, profilo_thread_wrapper, wrapped_arg);
-}
+## Android 17 兼容性审计
 
-static void* profilo_thread_wrapper(void* arg) {
-    // 注册线程到 Profilo 的采样器
-    profilo_register_thread();
-    void* result = original_start_routine(original_arg);
-    // 注销线程
-    profilo_unregister_thread();
-    return result;
-}
-```
+Profilo 主分支最近一次提交和发布产物都早于 Android 17。源码审计只能指出依赖关系，不能代替真机验证。
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - pthread_create 回溯 — pthread_create hook 方案]
+| 能力 | Android 17 源码现状 | 结论 |
+|---|---|---|
+| `libcutils` ATrace 变量 | `atrace_enabled_tags`、`atrace_marker_fd` 仍存在于 `trace-dev.inc` | 存在不代表属于应用可依赖的稳定 ABI |
+| Java `Trace` | JNI 经 `tracing_perfetto`，`isTagEnabled()` 不再读取旧 Java 缓存字段 | Profilo 的 `nativeGetEnabledTags` 反射代码已经过时 |
+| PLT hook | 上游 API 27+ 固定 hook `libcutils.so::__write_chk` | 必须用 Android 17 构建产物和目标 OEM 镜像验证 relocation |
+| ATrace 事件格式 | Android 17 支持 B/E/S/F/G/H/I/N/C | 上游只保存 B/E |
+| Java stack sampling | 上游 ART unwinder 版本表截止 Android 9 | Android 17 不可按上游能力宣称支持 |
+| 维护状态 | 官方仓库已归档 | 移植、安全修复和回归由采用方负责 |
 
-#### Attached vs Unattached 线程
+旧文把 hidden API、SELinux、W^X 都写成 Android 17 已确认的阻断点，再给出扫描 `.bss` 的规避办法，证据不足且风险很高。这里的核心问题是依赖私有符号和具体 relocation，任何平台或 OEM 构建变化都可能使 hook 失效。失败时应关闭 provider 并保留诊断信息，不应继续扫描或修改未知内存。
 
-Profilo 区分两种线程类型：
+## 继续维护 Profilo fork 时的验证清单
 
-| 类型 | 特征 | Java 堆栈获取 |
-|------|------|-------------|
-| **Attached**（VM 托管） | 通过 `JavaVM::AttachCurrentThread()` 注册到 ART | 可获取（通过 JVMTI 或 ART 内部接口） |
-| **Unattached**（非托管） | 纯 Native 线程，未注册到 ART | 不可获取 Java 堆栈（只能获取 Native 堆栈） |
+### 固定源码与构建输入
 
-大多数应用线程是 Attached（通过 `Thread` 对象创建），但某些第三方库（如 ffmpeg、bionic 内部线程）可能是 Unattached。
+记录 fork 基于的 commit、所有 native 依赖、NDK 版本、ABI、编译器选项和符号化文件。上游 README 明确说 API 不稳定，直接使用未固定版本的 AAR 会让 trace schema 和 native 行为难以追溯。
 
-### 🔹 Profilo 与 Perfetto 的互补关系
+### 把 provider 安装结果纳入能力协商
 
-| 维度 | Profilo | Perfetto |
-|------|---------|---------|
-| **适用场景** | 线上大规模灰度 | 深度分析 / 线下调试 |
-| **开销** | < 1%（采样模式） | 5-15%（全量 trace） |
-| **数据源** | atrace + 自定义采样 | ftrace + atrace + system metrics + custom |
-| **数据量** | KB 级（单次采样） | MB 级（完整 trace） |
-| **分析工具** | 自定义后端 | Perfetto UI / TraceProcessor |
-| **部署方式** | 应用内集成（SDK） | 系统/应用/独立进程均可 |
-| **Android 17 兼容** | 需要 Hook 方案适配 | 原生支持（Android 10+ 内置） |
+`installSystraceHook()` 返回失败时，不启动 ATrace provider；其他 provider 是否继续由配置决定。需要记录失败阶段，例如私有符号未找到、PLT hook 安装失败或 buffer 分配失败。不要向后端上传一份被标成完整、内容却为空的 trace。
 
-**推荐协同策略**：
-1. **日常灰度**：Profilo 低开销采样 → 发现异常帧/慢操作
-2. **定向深挖**：Perfetto 完整 trace → 定位根因
-3. **回归监控**：Profilo 持续灰度 → 验证修复效果
+### 做事件语义测试
 
-> 关于 Perfetto 的深度使用，参见 **26.21 Perfetto 自定义 trace event 实战** 和 **13.21 Perfetto v54 Data Explorer 与性能分析**。
+至少覆盖以下用例：
 
-## 扩展
+- 同线程嵌套 B/E，确认名称、TID、时间顺序和深度；
+- 两个线程同时写入，确认各自栈互不干扰；
+- async、counter、instant 和 track 事件，明确是补充实现还是声明不支持；
+- trace 开始前已有未结束 section、buffer wrap、异常退出和 provider 重入；
+- 启停后 `atrace_enabled_tags` 恢复，并验证并发 Perfetto capture 没有受到破坏；
+- `android.os.Trace`、NDK ATrace 和直接使用 Perfetto SDK 的事件分别测试，不能假设它们必经同一 PLT 入口。
 
-### 🔸 Profilo 的 Quicken 模式与低开销采样
+### 用上游工具检查文件
 
-Profilo 的 **Quicken 模式** 是一种极低开销的采样策略：
+Profilo 官方 [`trace-processing` 文档](https://github.com/facebookarchive/profilo/blob/main/docs/trace-processing.md)提供了从应用私有目录拉取最近 trace 的工具。下面的命令用于开发环境验证文件可以被解析，不代表线上上传流程。
 
-- **原理**：不拦截每次 atrace 写入，而是按固定频率（如 100Hz）采样当前线程的栈顶
-- **开销**：< 0.1% CPU（相比全量拦截的 ~2-3%）
-- **数据**：获得的是**统计性堆栈**（statistical stack sampling），而非完整 trace
-- **适用**：全量用户灰度，仅用于发现高频热点
-
-Quicken 模式的采样器使用 `SIGPROF` 信号或 `timerfd` 触发定时采样：
-
-```c
-// 设置定时采样
-struct itimerval timer;
-timer.it_interval.tv_usec = 10000;  // 100Hz (每 10ms 采样一次)
-timer.it_value.tv_usec = 10000;
-setitimer(ITIMER_PROF, &timer, NULL);
-
-// SIGPROF 信号处理器中获取当前线程的堆栈
-void sigprof_handler(int sig, siginfo_t* info, void* context) {
-    void* stack[32];
-    int depth = backtrace(stack, 32);
-    // 快速记录（无锁写入环形缓冲区）
-    profilo_record_sample(stack, depth);
-}
+```shell
+cd python
+python3 -m profilo.profilo pull_traces \
+  --last com.facebook.profilo.sample
+python3 -m profilo.workflow_demo --help
 ```
 
-### 🔸 Profilo 在 Android 17 上的兼容性挑战
+成功拉取后，还要检查 provider 注解、事件数量、首尾时间、丢失记录和 buffer 覆盖情况。只验证“文件存在”无法证明 hook 捕获完整。
 
-Android 17 的安全硬化对 PLT Hook 方案带来多重挑战：
+### 建立本项目的开销预算
 
-1. **隐藏 API 限制**：`atrace_enabled_tags` 的符号地址获取更加困难。Android 12+ 引入的 hidden API enforcement 阻止了部分 `dlsym` 调用。解决方案：通过内存扫描 `.bss` 段找到变量地址
+不要沿用固定的微秒或百分比。至少测量：
 
-2. **SELinux 策略**：Android 17 收紧了 `trace_marker` fd 的访问权限。非 system 分区的应用可能无法直接打开 `/sys/kernel/tracing/trace_marker`。解决：使用 `android.os.Trace` API（内部封装了 fd 打开逻辑）
+- provider 关闭、只开 ATrace、只开 stack、组合开启四组；
+- 冷启动、滚动、动画、后台恢复和空闲五类场景；
+- CPU time、帧时长、分配、RSS、功耗、trace 字节数、buffer overwrite；
+- 低端与高端设备、4 KB 与 16 KB page-size 设备；
+- P50/P95/P99 以及未开启采集的对照组。
 
-3. **W^X (Write-XOR-Execute) 强制**：Android 17 在某些设备上强制 W^X 内存保护，阻止了 JIT 代码修改式的 Hook 方案。PLT Hook 不受影响（修改的是数据段 GOT，不是代码段）
+事件密度比“是否使用系统调用”更能决定干扰程度。Profilo 命中 hook 时省去了 trace-marker 写入，却增加了解析、时间戳、TID 获取和 buffer 写入；具体差值只能由目标构建测得。
 
-4. **ART 内部结构变化**：Profilo 依赖的 ART 内部偏移量（如 `Thread::tlsPtr_` 布局）在不同版本间不兼容。需要动态探测或版本适配表
+## Android 17 新项目的选择
 
-[待验证: Android 17 具体的 SELinux 和 hidden API 变更细节]
+### 只需要公共业务标记
 
-> 关于 Native Hook 技术的完整选型分析，参见 **20.15 Native Hook 技术选型与实现原理**。
+Java/Kotlin 使用 `android.os.Trace` 或 AndroidX Tracing，native 使用 NDK ATrace。它们适合把业务阶段放进 Perfetto system trace，API 边界比私有变量和 PLT hook 稳定。
 
----
+### 需要线上应用内 trace
 
-## 工程实践建议
+[AndroidX Tracing 的 in-process tracing](https://developer.android.com/topic/performance/tracing/in-process-tracing) 或 [Perfetto Tracing SDK 的 in-process backend](https://perfetto.dev/docs/instrumentation/tracing-sdk) 可以让应用控制自身 trace session，并输出 Perfetto 格式。in-process 数据只包含应用注册的数据源，不会自动包含调度器和其他系统进程；这与线上采集的权限和隐私边界更一致。
 
-| 场景 | 推荐方案 | 理由 |
-|------|---------|------|
-| 线上灰度 trace（百万级 DAU） | Profilo Quicken 模式 | < 0.1% 开销，统计性堆栈足够发现热点 |
-| 定向功能性能分析 | Profilo 全量模式（小灰度） | 完整 atrace + 堆栈，1% 开销可接受 |
-| 线下深度调试 | Perfetto + 自定义 data source | 最完整的 trace 数据，支持 Perfetto UI 分析 |
-| 线上 ANR/Crash 诊断 | 信号处理器中收集堆栈（参见 20.24） | 不依赖常驻 trace 基础设施 |
+选择这条路线时仍需实现采样、限额、脱敏、加密、上传和服务端保留策略。Perfetto 格式解决数据模型与工具兼容问题，不会替应用决定哪些用户、哪些场景可以采集。
 
-[结构参考: Clippings/Android 应用稳定性剖析与优化 - Native Backtrace — CFI/libunwind 堆栈获取方案]
+### 需要系统级因果分析
+
+Android 10 及更高版本优先使用 Perfetto system trace。它能在一条时间线上组合应用 trace、sched、binder、频率、内存和 I/O 等数据。系统模式的 trace 读取受到权限控制；普通线上应用不应尝试绕过该边界。
+
+## 工程决策
+
+| 现状 | 建议 |
+|---|---|
+| 已有维护多年的 Profilo fork 和配套后端 | 保留架构，按 Android 17 清单重新验证；把 ATrace B/E 子集和失效条件写进协议 |
+| 只想复用上游 AAR 快速上线 | 不建议；仓库已归档，Android 17 与 OEM 兼容性没有维护方保证 |
+| 新建应用内线上 trace | 评估 AndroidX Tracing 2.x 或 Perfetto SDK in-process backend |
+| 线下或实验室定位跨进程问题 | 使用 Perfetto system trace，不用 Profilo trace 代替系统时间线 |
+| 只需持续指标与异常触发 | 优先做聚合指标和短窗口触发，命中后再采集受控 trace |
+
+Profilo 值得借鉴的是 provider 化、触发控制、固定容量 buffer 和异步文件处理。Android 17 上不应照搬的是对 `libcutils` 私有变量、特定 PLT relocation 和旧 ART 布局的依赖。
