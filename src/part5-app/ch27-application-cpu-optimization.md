@@ -36,1832 +36,401 @@ sources:
 <!-- outline-start -->
 ## 要点
 
-### 🔹 ThreadPoolExecutor 实战配置
-- CPU 线程池与 IO 线程池的设计差异与配置策略
-- execute() 调度流程源码级解析
-- 线程池参数调优的黄金法则
+### 🔹 先分清 CPU 时间与响应时间
+- CPU 时间、墙钟时间、可运行等待、阻塞等待和热约束是不同问题
+- 优化目标应来自用户路径与功耗预算，不能只看一个 CPU 百分比
 
-### 🔹 CPU 闲置检测方案
-- 基于 /proc/stat + /proc/pid/stat 的 CPU 占用率计算
-- Native times() 函数的低开销 CPU 闲置检测
-- 闲置状态阈值设定与优化窗口识别
+### 🔹 ThreadPoolExecutor 的边界
+- `execute()` 依次考虑核心线程、队列、非核心线程和拒绝策略
+- 线程数与队列容量需要由任务特征和服务预算决定
+- 拒绝任务时，不应让主线程或 Binder 线程意外执行重任务
 
-### 🔹 闲置预加载策略
-- CPU 闲置时的资源预创建技术
-- 任务打散与负载均衡策略
-- 预加载对冷启动体验的改善效果
+### 🔹 采样数据的正确解释
+- 进程 CPU 增量可以换算为“等效占用核数”
+- `/proc/stat` 的 `guest` 已计入 `user`，`iowait` 也不是可靠的空闲信号
+- `times()` 使用 USER_HZ 口径，不能从内核 `CONFIG_HZ` 推断
 
-### 🔹 锁等待对 CPU 的影响
-- synchronized 等待的自旋→休眠状态转换
-- 锁优化的四项基本原则
-- CAS 与 synchronized/显式 Lock 的性能边界
+### 🔹 延后工作、锁与协程
+- 系统 CPU 空闲不等于适合预加载
+- 锁优化要从临界区和竞争证据入手
+- 协程改变调度方式，不会降低计算本身所需的 CPU 时间
 
 ## 扩展
 
-### 🔹 IO 密集型场景优化
-- Kotlin 协程在 IO 密集型场景的优势分析
-- 异步架构的 CPU 效率最大化策略
-- 网络请求与本地计算的并发优化
-
-### 🔹 多线程 CPU 争用分析
-- 线程调度器的 EAS/CFS/EEVDF 口径说明
-- CPU 缓存一致性的优化技巧
-- 移动 SoC big.LITTLE/异构核下的 CPU 资源调度边界
+### 🔹 Android 17 调度边界
+- `Process.setThreadPriority()` 调整 niceness，不等于选核或修改 cpuset
+- Android 17 的 6.18 内核公平调度采用 EEVDF，应用仍只表达需求
+- ADPF 适合有明确周期和目标时长的持续负载
 
 <!-- outline-end -->
 
-> Rework 说明（2026-07-26）：本章以 Android `android-17.0.0_r1` / android17-6.18 为上限。正文中的普通应用示例只使用 public SDK/NDK；涉及 `Process.readProcFile`、`setThreadGroupAndCpuset` 等 hidden/system API 的片段均仅作为平台源码口径说明，不作为三方应用可直接复制方案。章节仍处于 `ready-for-review`，等待最终人工/Task6 finalize。
+> 本章的平台源码上限为 `android-17.0.0_r1`，内核口径为 `android17-6.18-2026-06_r6`。普通应用示例只使用 public SDK/NDK；`/proc` 文件可能因设备策略而不可读，相关方案都必须允许采样失败。
 
 ---
 
-## ThreadPoolExecutor 实战配置
+## CPU 优化先回答三个问题
 
-### CPU 线程池与 IO 线程池设计差异
+“CPU 高”只能描述现象，不能直接指出改法。开始修改线程池或调度参数前，需要回答：
 
-#### 线程池设计原则
+1. 哪一段用户路径受影响：启动、首帧、滚动、输入、后台同步，还是持续计算？
+2. 损失表现在哪个维度：延迟、CPU 时间、能耗、温升，还是后台执行额度？
+3. 证据能否归因到具体任务、线程和调用栈？
 
-Android 应用的 CPU 密集型任务和 IO 密集型任务需要不同的线程池配置策略：
+常见指标的含义并不相同：
 
-```java
-public class ThreadPoolConfigManager {
-    
-    /**
-     * CPU 线程池配置
-     * 特点：核心线程数 = 最大线程数，固定大小，任务队列使用有界队列
-     * 目标：避免线程切换开销，并防止突发任务在无界队列中堆积到 OOM
-     */
-    public static ExecutorService createCpuThreadPool() {
-        int cpuCount = Runtime.getRuntime().availableProcessors();
-        
-        return new ThreadPoolExecutor(
-            cpuCount,                    // 核心线程数 = CPU 核心数
-            cpuCount,                    // 最大线程数 = CPU 核心数（避免上下文切换）
-            0L,                          // core=max 且默认不回收核心线程，keepAliveTime 不应误导
-            TimeUnit.MILLISECONDS,
-            new ArrayBlockingQueue<>(cpuCount * 4),  // 有界队列：让拒绝策略真实生效
-            new CpuThreadFactory(),      // 自定义线程工厂
-            new ThreadPoolExecutor.CallerRunsPolicy()  // 背压：回调用者线程执行
-        );
+| 指标 | 回答的问题 | 容易误读的地方 |
+| --- | --- | --- |
+| 墙钟时间（wall time） | 用户等了多久 | 包含运行、排队、锁等待、I/O 和抢占 |
+| 进程/线程 CPU 时间 | 代码在 CPU 上运行了多久 | 不包含大多数睡眠与阻塞等待 |
+| Runnable 等待 | 线程能运行，但还未获得 CPU 的时间 | 可能来自并发过量、优先级或系统竞争 |
+| Blocked/Sleeping 时间 | 线程在等锁、I/O、定时器或条件 | CPU 低也可能有很差的响应 |
+| 能耗与温度 | 这段工作付出了多少设备成本 | 同样的 CPU 时间在不同频点和核上成本不同 |
+
+应用层 CPU 优化通常落在四件事上：少做工作、减少同一时刻的并行工作、减少唤醒与切换、把非紧急工作交给合适的系统调度时机。线程池参数只是其中一个控制点。
+
+## ThreadPoolExecutor：先理解队列，再谈线程数
+
+### `execute()` 的三段决策
+
+Android 17 的 `ThreadPoolExecutor` 来自 libcore 的 OpenJDK 实现。`execute()` 的主要决策顺序是：
+
+1. 当前 worker 少于 `corePoolSize` 时，尝试创建核心 worker；
+2. 否则尝试把任务放入 `workQueue`，入队后还会复查池状态；
+3. 队列拒绝入队时，尝试创建非核心 worker；仍失败才调用拒绝策略。
+
+这解释了一个常见疑问：使用容量很大的队列时，任务会长时间停在第 2 步，`maximumPoolSize` 很少参与调度。使用 `SynchronousQueue` 时没有存储槽位，提交方更容易触发创建非核心 worker。两种队列没有固定优劣，差别在于系统选择“排队”还是“增加并发”。
+
+默认配置下，核心线程不会因 `keepAliveTime` 到期而退出；`keepAliveTime` 只约束超出核心数量的 worker。调用 `allowCoreThreadTimeOut(true)` 后，核心线程也可以超时退出。对应实现可在 Android 17 的 [`ThreadPoolExecutor.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java) 中核对。
+
+### 没有跨应用通用的“核数公式”
+
+`Runtime.availableProcessors()` 返回 JVM 当前可用的逻辑处理器数量。它不是性能核数量，也不是应用可长期占满的核数，更不能直接推出合适的 worker 数量。任务内部还可能调用并行库，设备也会受前台状态、温度、功耗策略和其他进程影响。
+
+线程数需要从任务模型出发：
+
+- 纯计算任务先用较小的受控并行度做基线，再观察吞吐、尾延迟、Runnable 等待、温度和前台流畅度；
+- 阻塞任务的并发上限取决于下游容量、连接池、内存、文件描述符和超时策略，不能用一个很大的固定值代替分析；
+- 混合任务应拆开计算阶段与阻塞阶段，让两者分别受限；
+- 同一个执行器承载不同优先级、不同服务目标的任务，会让长任务阻塞短任务。
+
+队列容量的单位是“任务个数”，并不代表内存大小或可接受等待时间。容量应同时受以下条件约束：
+
+- 峰值到达速率与任务服务时间；
+- 允许的排队时延；
+- 每个排队任务持有的对象、Bitmap、Buffer 或请求上下文；
+- 任务过期后是否还有业务价值；
+- 饱和时可以合并、丢弃、降级还是改期。
+
+因此，`workers = availableProcessors()`、`queue = processors × 4` 之类的表达最多只能当实验起点，不能写成工程规则。
+
+### 一个可观测、可拒绝的计算执行器
+
+下面的工厂刻意不替业务决定 worker 数和队列容量。调用方必须根据压测结果传入参数；线程优先级也由场景明确给出。
+
+```kotlin
+import android.os.Process
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+
+data class CpuExecutorConfig(
+    val workers: Int,
+    val queueCapacity: Int,
+    val threadPriority: Int,
+)
+
+fun newBoundedCpuExecutor(
+    name: String,
+    config: CpuExecutorConfig,
+): ThreadPoolExecutor {
+    require(config.workers > 0)
+    require(config.queueCapacity > 0)
+
+    val sequence = AtomicInteger()
+    val factory = ThreadFactory { command ->
+        Thread({
+            Process.setThreadPriority(config.threadPriority)
+            command.run()
+        }, "$name-${sequence.incrementAndGet()}")
     }
-    
-    /**
-     * IO 线程池配置
-     * 特点：核心线程数较小，最大线程数较大，任务队列使用 SynchronousQueue
-     * 目标：适应 IO 等待不消耗 CPU 的特性，提高并发处理能力
-     */
-    public static ExecutorService createIoThreadPool() {
-        int corePoolSize = 0;        // 核心线程数可以设为 0（按需创建）
-        int maxPoolSize = 60;        // 最大线程数可以较大
-        long keepAliveTime = 60;     // 空闲线程存活时间较长
-        
-        return new ThreadPoolExecutor(
-            corePoolSize,
-            maxPoolSize,
-            keepAliveTime,
-            TimeUnit.SECONDS,
-            new SynchronousQueue<>(),   // 直接提交，不排队
-            new IoThreadFactory(),       // IO 线程工厂
-            new ThreadPoolExecutor.CallerRunsPolicy()  // 拒绝策略：回调用者线程执行
-        );
-    }
-    
-    private static class CpuThreadFactory implements ThreadFactory {
-        private final AtomicInteger threadNumber = new AtomicInteger(1);
-        private final String namePrefix = "cpu-pool-";
-        
-        @Override
-        public Thread newThread(Runnable r) {
-            Thread t = new Thread(() -> {
-                android.os.Process.setThreadPriority(
-                    android.os.Process.THREAD_PRIORITY_DEFAULT);
-                r.run();
-            }, namePrefix + threadNumber.getAndIncrement());
-            t.setPriority(Thread.NORM_PRIORITY);  // Java 层优先级；Linux nice 由 Process 显式设置
-            t.setDaemon(false);                  // 非守护线程
-            return t;
-        }
-    }
-    
-    private static class IoThreadFactory implements ThreadFactory {
-        private final AtomicInteger threadNumber = new AtomicInteger(1);
-        private final String namePrefix = "io-pool-";
-        
-        @Override
-        public Thread newThread(Runnable r) {
-            Thread t = new Thread(() -> {
-                android.os.Process.setThreadPriority(
-                    android.os.Process.THREAD_PRIORITY_BACKGROUND);
-                r.run();
-            }, namePrefix + threadNumber.getAndIncrement());
-            t.setPriority(Thread.NORM_PRIORITY);  // Java 层优先级；后台 IO 线程显式降 nice
-            t.setDaemon(false);                  // 非守护线程
-            return t;
-        }
-    }
+
+    return ThreadPoolExecutor(
+        config.workers,
+        config.workers,
+        0L,
+        TimeUnit.MILLISECONDS,
+        ArrayBlockingQueue(config.queueCapacity),
+        factory,
+        ThreadPoolExecutor.AbortPolicy(),
+    )
 }
 ```
 
+固定大小的有界池让并发量和积压量都可控。`AbortPolicy` 会用 `RejectedExecutionException` 明确报告饱和，提交点据此选择合并同类请求、取消已经过期的工作、返回降级结果或交给持久化调度。
 
-### ThreadPoolExecutor 源码深度分析（android-17.0.0_r1）
+`CallerRunsPolicy` 会在提交任务的线程里直接调用 `Runnable.run()`。如果提交方恰好是主线程、Binder 线程或持有锁的回调线程，计算或阻塞工作就会转移到那里。只有能证明提交线程允许执行该任务时，才能把它当作反压手段。
 
-> 本节为基于 AOSP `android-17.0.0_r1` 的 ThreadPoolExecutor 三层决策源码解析，补足主线章节未覆盖的源码级细节。
+线程工厂在新线程内部调用 `Process.setThreadPriority()`，因为该 API 默认修改调用线程。它设置的是 Linux nice 值相关的线程优先级，不负责选择大小核，也不改变 cpuset。
 
-#### execute() / addWorker / getTask 三层决策源码
+### 线程池至少记录哪些数据
 
-`libcore/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java:1302-1350` 完整执行流程（android-17.0.0_r1 沿用 OpenJDK 17）：
+只看 `activeCount` 不足以定位问题。建议为稳定的任务类型记录：
 
-```java
-public void execute(Runnable command) {
-    Objects.requireNonNull(command, "command");
-    /*
-     * Proceed in 3 steps:
-     *  1. If fewer than corePoolSize threads are running, try to
-     *     start a new thread with the given command as its first task.
-     *  2. If a task can be successfully queued, then we still need
-     *     to double-check whether we should have added a thread
-     *     (because existing ones died since last checking) or that
-     *     the pool shut down since entry into this method. So we
-     *     recheck state and if necessary roll back the enqueuing if
-     *     stopped, or start a new thread if there are none.
-     *  3. If we cannot queue task, then we try to add a new thread.
-     *     If it fails, we know we are shut down or saturated and
-     *     so reject the task.
-     */
-    int c = ctl.get();
-    if (workerCountOf(c) < corePoolSize) {
-        if (addWorker(command, true))
-            return;                              // ① 核心线程空闲则复用
-        c = ctl.get();
-    }
-    if (isRunning(c) && workQueue.offer(command)) {  // ② 入队
-        int recheck = ctl.get();
-        if (! isRunning(recheck) && remove(command))
-            reject(command);
-        else if (workerCountOf(recheck) == 0)
-            addWorker(null, false);
-    }
-    else if (!addWorker(command, false))        // ③ 队列满则尝试非核心
-        reject(command);
+- 提交时间、开始时间和结束时间；
+- 排队时长、墙钟执行时长、线程 CPU 时间；
+- 已完成、取消、过期和拒绝次数；
+- 采样时的活动 worker 数与队列深度；
+- 分位数，而不是只有平均值；
+- 对应的版本、设备档位、前后台状态和热状态。
+
+任务类型应是低基数标识，例如 `image_decode`、`feed_diff`，不要把 URL、文件名或用户 ID 放进指标维度。对线程池调参时，一次只改一个主要变量，并同时检查吞吐、尾延迟、温升和 UI 帧表现。
+
+## 进程 CPU 采样：把百分比说清楚
+
+### Public SDK 的低成本窗口采样
+
+`Process.getElapsedCpuTime()` 返回进程从启动以来消耗的 CPU 毫秒数，`SystemClock.elapsedRealtime()` 返回包含深度睡眠在内的单调墙钟毫秒数。两次采样的增量可以得到窗口内的“等效占用核数”。
+
+```kotlin
+import android.os.Process
+import android.os.SystemClock
+
+data class CpuSample(
+    val processCpuMs: Long,
+    val elapsedMs: Long,
+    val availableProcessors: Int,
+)
+
+data class CpuWindow(
+    val equivalentCores: Double,
+    val logicalCapacityFractionHint: Double,
+)
+
+fun takeCpuSample(): CpuSample = CpuSample(
+    processCpuMs = Process.getElapsedCpuTime(),
+    elapsedMs = SystemClock.elapsedRealtime(),
+    availableProcessors = Runtime.getRuntime().availableProcessors().coerceAtLeast(1),
+)
+
+fun calculateCpuWindow(
+    before: CpuSample,
+    after: CpuSample,
+): CpuWindow? {
+    val cpuDeltaMs = after.processCpuMs - before.processCpuMs
+    val wallDeltaMs = after.elapsedMs - before.elapsedMs
+    if (cpuDeltaMs < 0L || wallDeltaMs <= 0L) return null
+
+    val equivalentCores = cpuDeltaMs.toDouble() / wallDeltaMs
+    val capacity = minOf(before.availableProcessors, after.availableProcessors)
+
+    return CpuWindow(
+        equivalentCores = equivalentCores,
+        logicalCapacityFractionHint = equivalentCores / capacity,
+    )
 }
 ```
 
-**三步决策的真实开销**：
-- ① 路径：`addWorker(command, true)` 走 `compareAndIncrementWorkerCount(c)` 原子 CAS（行 850-869），失败则回 ② 路径。**CAS 失败常见原因**：并发的 submit 抢到了 workerCount 增长。失败后不阻塞，直接重读 ctl 重判。
-- ② 路径：`workQueue.offer(command)` 在无界队列（如无容量上限的 `LinkedBlockingQueue`/`LinkedBlockingDeque`）通常会一直返回 true，导致**正常路径不会走 ③ 路径**。旧稿若采用「CPU 线程池无界队列 + `corePoolSize==maxPoolSize`」，拒绝策略（`AbortPolicy` / `CallerRunsPolicy`）几乎不会在突发流量下触发，溢出任务会堆在队列里，存在 OOM 风险；本章前文已改为有界 `ArrayBlockingQueue`。
-- ③ 路径：当 `workQueue` 是有界队列（`ArrayBlockingQueue(N)`）且队满时触发。`addWorker(command, false)` 检查 `workerCountOf(c) >= maxPoolSize`，满则返回 false 走 `reject(command)`。
+`equivalentCores = 1.0` 表示采样窗口内累计使用了约一个核的 CPU 时间。多线程并行时它可以大于 `1.0`。除以逻辑处理器数量得到的值只能作为当前逻辑容量占比的粗略提示；它没有考虑各核性能差异、频率、温控和调度限制。
 
-**Android 17 专属增强点**：
-- 行 309：private final AtomicInteger ctl = new AtomicInteger(ctlOf(RUNNING, 0)) — 上方注释有 `@ReachabilitySensitive`（`import dalvik.annotation.optimization.ReachabilitySensitive`），防止 ART 把 ctl 字段优化掉——AOT 后 ctl 看似只被赋值未被读取，ART 会把赋值消除掉，进而导致 workerCount 永远为 0、线程池僵死。
-- 行 360-365：`Worker` 内部类持有 `SharedThreadContainer container`（来自 `jdk.internal.vm.SharedThreadContainer`），ART 进程终止时通过 container 一并 stop 全部 worker 线程，避免野线程残留。
+采样窗口太短会受毫秒精度影响，太长又会掩盖尖峰。窗口长度应由要观察的用户路径决定。监控代码不应内置一个适用于所有设备的“高 CPU 阈值”，告警线应来自场景基线、用户影响和设备分层。
 
-#### getTask() 的 worker 收缩语义修正
+### `/proc/stat` 不能直接回答“现在适合做重活吗”
 
-源码行 998-1030 显示 keepAliveTime 的真实语义：
+Linux 6.18 的 `/proc/stat` 首行按 `USER_HZ` 输出累计时间，常见字段顺序为：
 
-**关键发现**：
-- `allowCoreThreadTimeOut == false`（默认）时：`timed = wc > corePoolSize` —— **只有超过 corePoolSize 的 worker 才按 keepAliveTime 计时回收**；当 `corePoolSize == maximumPoolSize` 且没有超额 worker 时，核心线程会阻塞等待任务，不会因 keepAliveTime 到期退出。
-- `allowCoreThreadTimeOut == true` 时：`timed = true` —— **核心线程也会超时回收**，要保留核心线程必须始终有任务运行（poll 不超时）。
-
-**章节 §27.1 现有代码的潜在问题**：
-```java
-// 章节 §27.1 推荐的 CPU 线程池
-return new ThreadPoolExecutor(
-    cpuCount,                    // corePoolSize
-    cpuCount,                    // maxPoolSize (相等 = 固定大小)
-    60,                          // keepAliveTime 60s
-    TimeUnit.SECONDS,
-    new LinkedBlockingDeque<>()  // 无界队列
-);
-```
-这个配置的 `getTask()` 行为分析：
-- `wc == corePoolSize` 时 `timed == false` —— 核心线程 `take()` 永远阻塞，**不会超时回收**。60s keepAliveTime 实际无效。
-- 一旦任务激增触发 `corePoolSize == maxPoolSize` 边界，`wc > corePoolSize` 永远为 false，timed 永远为 false —— **60s keepAliveTime 完全是死代码**。
-- 真正的回收只发生在 `shutdownNow()` 或线程异常退出时。
-
-**修正建议**：固定大小 CPU 线程池的 `keepAliveTime` 应设为 `0L, TimeUnit.MILLISECONDS`（避免误导性参数）。若希望核心线程也回收，需显式调用 `allowCoreThreadTimeOut(true)`，并配合有界队列和清晰的冷启动唤醒策略。
-
-#### execute() 调度流程源码解析
-
-上方代码块已经给出 android-17.0.0_r1 中 `execute()` 的真实源码级流程。后续阅读时请以该源码块为准，不再重复用“教学伪代码”改写 `ThreadPoolExecutor` 私有实现，避免把不存在的 helper（例如 `rejectNewTask()`、`workerStarted()`）误认为 JDK/Android API。
-
-#### 线程池参数调优法则
-
-```java
-public class ThreadPoolOptimizer {
-    
-    /**
-     * CPU 线程池调优黄金法则
-     */
-    public static CpuPoolConfig optimizeCpuPool(AppProfile profile) {
-        CpuPoolConfig config = new CpuPoolConfig();
-        
-        // 基础配置：核心线程数 = CPU 核心数
-        config.corePoolSize = Runtime.getRuntime().availableProcessors();
-        config.maximumPoolSize = config.corePoolSize;
-        
-        // 根据应用类型调整
-        switch (profile.getAppType()) {
-            case GAMING:
-                // 游戏应用：适当增加线程数以处理渲染计算
-                config.maximumPoolSize = (int)(config.corePoolSize * 1.5);
-                break;
-                
-            case MEDIA:
-                // 媒体处理：考虑媒体编解码的特殊需求
-                config.maximumPoolSize = config.corePoolSize + 2;
-                break;
-                
-            case BUSINESS:
-                // 业务应用：保持核心线程数，减少切换开销
-                config.maximumPoolSize = config.corePoolSize;
-                break;
-        }
-        
-        // 队列大小根据内存限制设定
-        Runtime runtime = Runtime.getRuntime();
-        long maxMemory = runtime.maxMemory();
-        long usedMemory = runtime.totalMemory() - runtime.freeMemory();
-        long availableMemory = maxMemory - usedMemory;
-        
-        // 限制队列大小为可用内存的 1/10
-        config.queueCapacity = (int)(availableMemory / 10 / 1024 / 1024);
-        
-        // 固定 CPU 线程池默认不回收核心线程，keepAliveTime 用 0 避免误导
-        config.keepAliveTime = 0;
-        
-        // 拒绝策略选择
-        if (profile.isCritical()) {
-            config.rejectedExecutionHandler = new ThreadPoolExecutor.CallerRunsPolicy();
-        } else {
-            config.rejectedExecutionHandler = new ThreadPoolExecutor.AbortPolicy();
-        }
-        
-        return config;
-    }
-    
-    /**
-     * IO 线程池调优策略
-     */
-    public static IoPoolConfig optimizeIoPool(NetworkProfile profile) {
-        IoPoolConfig config = new IoPoolConfig();
-        
-        // 核心线程数：根据网络延迟设定
-        int corePoolSize = Math.max(0, profile.getNetworkLatency() > 100 ? 4 : 2);
-        config.corePoolSize = corePoolSize;
-        
-        // 最大线程数：根据并发请求数和响应时间
-        int maxPoolSize = Math.min(60, profile.getMaxConcurrentRequests() + 4);
-        config.maximumPoolSize = maxPoolSize;
-        
-        // 空闲线程存活时间
-        config.keepAliveTime = 300; // 5分钟，适合 IO 操作
-        
-        // 队列策略：IO 操作通常不需要大的队列
-        config.queueCapacity = 100;
-        
-        // 拒绝策略
-        config.rejectedExecutionHandler = new ThreadPoolExecutor.CallerRunsPolicy();
-        
-        return config;
-    }
-}
+```text
+cpu  user nice system idle iowait irq softirq steal guest guest_nice
 ```
 
-## CPU 闲置检测方案
+这里的 `guest` 已包含在 `user` 中，`guest_nice` 已包含在 `nice` 中。计算总时间时如果把十个字段全部相加，就会重复计算虚拟 CPU 时间。常见口径只累计 `user` 到 `steal` 的前八项，并明确忙碌时间是否排除 `iowait`。
 
+内核文档还特别说明，`iowait` 很难可靠计算，在某些条件下甚至可能下降。它不表示某个特定 CPU 一直在等待 I/O，也不能作为应用预加载的安全信号。细节见 Android 17 内核锚点的 [`Documentation/filesystems/proc.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst)。
 
-### bionic times() 系统调用全链路分析（android-17.0.0_r1）
+读取 `/proc/self/stat` 时，进程名 `comm` 位于括号内且可能包含空格，不能直接对整行 `split(" ")` 后取固定下标。应先识别 `comm` 的结束括号，再解析其后的字段；`utime` 和 `stime` 是文档中的第 14、15 字段。相关访问也可能因设备策略、SELinux 或未来平台限制失败，采样器必须返回“无数据”，而不是让业务崩溃。
 
-> 本节为基于 AOSP `android-17.0.0_r1` 的 `times()` 系统调用完整路径分析，补足主线章节未覆盖的源码级细节。
+`/proc/stat` 是整机聚合数据。即使整机采样显示较多 idle，也不知道用户是否即将触摸屏幕、前台应用是否临近帧期限、设备是否处于热约束，或你的任务是否会引起缓存和内存压力。它适合诊断，不适合单独决定业务时机。
 
-#### times() 的三层实现架构
+### `times()` 的 USER_HZ 语义
 
-android-17.0.0_r1 中 `times()` 的调用链：
+Android bionic 的 `times()` 进入 Linux `do_sys_times()`。在 `android17-6.18-2026-06_r6` 中，内核通过 `thread_group_cputime_adjusted()` 取得当前线程组的 user/system CPU 时间，再用 `nsec_to_clock_t()` 转成 clock tick；返回值来自 `jiffies_64_to_clock_t(get_jiffies_64())`。源码可在 [`kernel/sys.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sys.c) 中核对。
 
-**1. 应用/NDK 调用**：普通应用不依赖 framework hidden API，直接在 native 层通过 NDK `<sys/times.h>` 调用 `times(struct tms*)`；Java 层需要进程 CPU 采样时，通过自有 JNI 暴露一个明确的 public app 接口即可。
+`tms_utime` 与 `tms_stime` 是当前进程线程组的累计 CPU tick。`tms_cutime` 与 `tms_cstime` 反映已纳入 `times()` 子进程统计语义的子进程时间，普通 Android 应用通常不需要它们。`times()` 的返回值是从系统定义起点累计的 elapsed tick，绝对值没有业务含义，应只比较短时间窗口内的差值。
 
-**2. framework 口径说明**：`frameworks/base/core/java/android/os/Process.java` 和 `frameworks/base/core/jni/android_util_Process.cpp` 也有若干 proc/times 相关 native 工具函数，但这些属于平台/系统实现细节。本章不把它们写成普通应用可复制 API，避免 hidden API 边界误导。
-
-**3. bionic 层实现**：
-```c
-// bionic/libc/SYSCALLS.TXT:237
-times(struct tms*)       all
-
-// bionic/libc/tools/gensyscalls.py 渲染规则（arm64）：
-arm64_call = syscall_stub_header + """
-    mov     x8, %(__NR_name)s       ; x8 = syscall number
-    svc     #0                       ; syscall
-    DO_SYSCALL_RETURN
-END(%(func)s)
-"""
-
-// 生成的 arm64 汇编 (libc/arch-arm64/syscalls/times.S)：
-ENTRY(times)
-    mov     x8, #__NR_times    ; 43 on arm64
-    svc     #0
-    cmn     x0, #(MAX_ERRNO + 1)
-    b.cs    .Lerrno
-    ret
-.Lerrno:
-    neg     x0, x0
-    b       __set_errno_internal
-END(times)
-```
-
-**关键发现**：
-- **bionic `times()` 是 SYSCALLS.TXT → gensyscalls.py 生成的纯汇编 stub**：C 层没有任何胶水代码，整个 times() 就是一个 inline syscall。
-- **没有用户态 tms 缓冲区管理**：直接返回内核 `jiffies_64_to_clock_t(get_jiffies_64())` 作为返回值，tms 数据通过 `copy_to_user` 从内核空间拷贝到用户空间。
-
-#### kernel-side do_sys_times 实现
-
-```c
-// kernel/common/kernel/sys.c:2254-2265
-static void do_sys_times(struct tms *tms)
-{
-    u64 tgutime, tgstime, cutime, cstime;
-
-    thread_group_cputime_adjusted(current, &tgutime, &tgstime);
-    cutime = current->signal->cutime;
-    cstime = current->signal->cstime;
-    tms->tms_utime  = nsec_to_clock_t(tgutime);
-    tms->tms_stime  = nsec_to_clock_t(tgstime);
-    tms->tms_cutime = nsec_to_clock_t(cutime);
-    tms->tms_cstime = nsec_to_clock_t(cstime);
-}
-
-SYSCALL_DEFINE1(times, struct tms __user *, tbuf)
-{
-    if (tbuf) {
-        struct tms tmp;
-        do_sys_times(&tmp);
-        if (copy_to_user(tbuf, &tmp, sizeof(struct tms)))
-            return -EFAULT;
-    }
-    force_successful_syscall_return();
-    return (long) jiffies_64_to_clock_t(get_jiffies_64());
-}
-```
-
-**关键观察**：
-- **返回值是 `jiffies`（系统启动以来的 tick 数）**——不是 `gettimeofday` 的 wall time。应用层若想计算经过时间，需 `times(NULL)` 取得 baseline，再 diff。
-- **`tms_utime` 走 `thread_group_cputime_adjusted`**（不是原始 `task_times`）——经过 cgroup 限额、irqtime、fair scheduler steer 调整。在 cgroup 限速场景下，与 `/proc/self/stat` 的 `utime` 差值可达 30%。
-- **粒度 `sysconf(_SC_CLK_TCK)`**：典型 100（10ms），高频 1000（1ms），低频 64（15.6ms）。bionic 上 `_SC_CLK_TCK` 由内核编译时 `CONFIG_HZ` 决定。
-- **单次 syscall 开销低于常规 `/proc` 文本解析**（具体纳秒级数值强依赖设备、内核配置与 benchmark 方法；本章只把它作为 10-100Hz 低开销进程级采样方案）。
-
-#### JNI /proc/stat 解析的栈/堆双缓冲策略
-
-`android_util_Process.cpp:1025-1090` 的 `readProcFile()` 实现了智能缓冲策略（这是 framework 内部实现；普通应用若不能使用 hidden API，应以 `BufferedReader`/JNI 读取 `/proc/stat`）：
-
-**关键设计**：
-- **栈优先**：先尝试 1024 字节栈缓冲；超过该大小的 proc 文件会切到堆缓冲并按需扩容。因此 `/proc/stat`、`/proc/pid/status` 在多核设备上通常不应假设“零分配命中”。
-- **`TEMP_FAILURE_RETRY(pread)`**：包装 EINTR 重试——多线程应用 PSS 采样时高频调用，被信号打断的 EINTR 必须重试。
-- **倍增而非 +4096**：与 std::vector 内存策略一致，amortized O(1) realloc。/proc/pid/maps 100 MiB 场景下 17 次 realloc 即可。
-
-#### /proc/stat 解析的正确实现
-
-章节现有代码的修正：
-
-```java
-// framework / system app 可用；普通应用优先使用 BufferedReader 或自有 JNI 读取 /proc/stat。
-private static final int[] CPU_FORMAT = new int[] {
-    Process.PROC_OUT_LONG,  // 0 user
-    Process.PROC_OUT_LONG,  // 1 nice  
-    Process.PROC_OUT_LONG,  // 2 system
-    Process.PROC_OUT_LONG,  // 3 idle
-    Process.PROC_OUT_LONG,  // 4 iowait
-    Process.PROC_OUT_LONG,  // 5 irq
-    Process.PROC_OUT_LONG,  // 6 softirq
-    Process.PROC_OUT_LONG,  // 7 steal
-    Process.PROC_OUT_LONG,  // 8 guest
-    Process.PROC_OUT_LONG,  // 9 guest_nice
-};
-
-public float getCpuUsage() {
-    long[] cpuStats = new long[10];
-    Process.readProcFile("/proc/stat", CPU_FORMAT, null, cpuStats, null);
-    long busy = cpuStats[0] + cpuStats[1] + cpuStats[2]
-              + cpuStats[5] + cpuStats[6] + cpuStats[7];
-    long total = busy + cpuStats[3] + cpuStats[4] + cpuStats[8] + cpuStats[9];
-    return total > 0 ? (float) busy / total : 0f;
-}
-```
-
-**性能对比**：
-- `/proc/stat` 解析属于文本 IO；低频（约 1-10Hz）可接受，高频采样应放到后台线程并控制窗口。
-- `times()` 只给出进程级累计 CPU tick，适合 10-100Hz 的轻量启发式采样；它不能替代系统全局 `/proc/stat` 口径。
-
-### 基于 /proc/stat 的 CPU 占用率计算
-
-Android 系统提供了多种 CPU 使用率计算方法，最常用的基于 `/proc/stat` 文件：
-
-```java
-public class CpuUsageMonitor {
-    
-    private static final String PROC_STAT = "/proc/stat";
-    private long[] lastCpuUsage;
-    private long lastUpdateTime;
-    private long lastProcessTicks = -1;
-    
-    /**
-     * 初始化 CPU 使用率监控
-     */
-    public void initialize() {
-        lastCpuUsage = parseCpuUsage();
-        lastUpdateTime = System.currentTimeMillis();
-    }
-    
-    /**
-     * 基于 /proc/stat 的 CPU 使用率计算
-     */
-    public float getCpuUsagePercentage() {
-        long[] currentCpuUsage = parseCpuUsage();
-        long currentTime = System.currentTimeMillis();
-        
-        // 计算时间差
-        long timeDiff = currentTime - lastUpdateTime;
-        if (timeDiff == 0) {
-            return 0.0f;
-        }
-        
-        // 计算总使用时间差
-        long totalDiff = 0;
-        long idleDiff = currentCpuUsage[3] - lastCpuUsage[3]; // idle 时间差
-        
-        for (int i = 0; i < currentCpuUsage.length; i++) {
-            totalDiff += currentCpuUsage[i] - lastCpuUsage[i];
-        }
-        
-        long iowaitDiff = currentCpuUsage.length > 4
-            ? currentCpuUsage[4] - lastCpuUsage[4] : 0;
-        long busyDiff = totalDiff - idleDiff - iowaitDiff;
-        // Android 17 procfs 仍输出 idle / iowait 两列；iowait 单独统计，避免把 IO 等待误判为可用于预加载的 CPU 空闲。
-        float usagePercentage = totalDiff > 0 ?
-            100.0f * (float) busyDiff / (float) totalDiff : 0.0f;
-        
-        // 更新时间戳
-        lastCpuUsage = currentCpuUsage;
-        lastUpdateTime = currentTime;
-        
-        return usagePercentage;
-    }
-    
-    /**
-     * 解析 /proc/stat 文件
-     * 格式：cpu  user nice system idle iowait irq softirq steal guest guest_nice
-     */
-    private long[] parseCpuUsage() {
-        try (BufferedReader reader = new BufferedReader(new FileReader(PROC_STAT))) {
-            String line = reader.readLine();
-            if (line != null && line.startsWith("cpu ")) {
-                String[] parts = line.trim().split("\\s+");
-                long[] usage = new long[parts.length - 1];
-                
-                for (int i = 1; i < parts.length; i++) {
-                    usage[i - 1] = Long.parseLong(parts[i]);
-                }
-                
-                return usage;
-            }
-        } catch (IOException e) {
-            Log.e("CpuMonitor", "Failed to read /proc/stat", e);
-        }
-        
-        return new long[10]; // Android 17 common kernel 输出 10 个 cpu 字段
-    }
-    
-    private long readProcessTicks() {
-        String statPath = "/proc/" + android.os.Process.myPid() + "/stat";
-        try (BufferedReader reader = new BufferedReader(new FileReader(statPath))) {
-            String line = reader.readLine();
-            if (line == null) return -1;
-            int endOfComm = line.lastIndexOf(')');
-            if (endOfComm < 0 || endOfComm + 2 >= line.length()) return -1;
-            String[] fieldsAfterComm = line.substring(endOfComm + 2).trim().split("\\s+");
-            // /proc/pid/stat: utime/stime 是全局第 14/15 列；去掉 pid 与 comm 后对应 fieldsAfterComm[11]/[12]
-            long utime = Long.parseLong(fieldsAfterComm[11]);
-            long stime = Long.parseLong(fieldsAfterComm[12]);
-            return utime + stime;
-        } catch (IOException | NumberFormatException e) {
-            Log.e("CpuMonitor", "Failed to read process stat", e);
-            return -1;
-        }
-    }
-
-    /**
-     * 获取进程级别 CPU 使用率需要两次采样 /proc/self/stat 的 utime/stime，
-     * 再用同一窗口内的 /proc/stat totalDiff 归一化；不要把一次性累计值
-     * 与当前系统 idle 累计值直接相除。
-     */
-    public float getProcessCpuUsagePercentage() {
-        long[] currentCpuUsage = parseCpuUsage();
-        long currentProcessTicks = readProcessTicks(); // utime + stime, fields 14/15
-        if (lastCpuUsage == null || lastProcessTicks < 0 || currentProcessTicks < 0) {
-            lastCpuUsage = currentCpuUsage;
-            lastProcessTicks = currentProcessTicks;
-            return 0.0f;
-        }
-
-        long totalDiff = 0;
-        for (int i = 0; i < currentCpuUsage.length; i++) {
-            totalDiff += currentCpuUsage[i] - lastCpuUsage[i];
-        }
-        long processDiff = currentProcessTicks - lastProcessTicks;
-        lastCpuUsage = currentCpuUsage;
-        lastProcessTicks = currentProcessTicks;
-        return totalDiff > 0 ? 100.0f * (float) processDiff / (float) totalDiff : 0.0f;
-    }
-}
-```
-
-### Native times() 函数的低开销检测
-
-Android NDK 提供了更高效的 CPU 使用率检测方法：
+下面的 NDK 示例保留单位换算，并拒绝无效样本：
 
 ```cpp
 #include <sys/times.h>
 #include <unistd.h>
 
-class CpuIdleDetector {
-public:
-    CpuIdleDetector() : lastWallTicks(0), lastProcessTicks(0) {}
-    
-    /**
-     * 使用 Native times 函数检测进程 CPU 闲置状态。
-     * times() 的时间单位为 sysconf(_SC_CLK_TCK)，Android 17 arm64 常见粒度为 10ms。
-     */
-    bool isCpuIdle(float threshold = 0.1f) {
-        struct tms cpuTimes;
-        clock_t currentWallTicks = times(&cpuTimes);
-        
-        if (currentWallTicks == (clock_t)-1) {
-            return false;
-        }
-        
-        const long hz = sysconf(_SC_CLK_TCK);
-        clock_t wallDiff = currentWallTicks - lastWallTicks;
-        clock_t currentProcessTicks = cpuTimes.tms_utime + cpuTimes.tms_stime;
-        if (lastWallTicks == 0 || wallDiff < hz / 10) { // 少于约 100ms 的窗口不处理
-            lastWallTicks = currentWallTicks;
-            lastProcessTicks = currentProcessTicks;
-            return false;
-        }
-        
-        // 计算用户态 + 内核态 CPU 使用时间差
-        clock_t processDiff = currentProcessTicks - lastProcessTicks;
-        
-        // 计算进程级 CPU 使用率；多核归一化需在上层除以可用 CPU 数。
-        float usageRatio = (float) processDiff / (float) wallDiff;
-        
-        // 更新状态
-        lastWallTicks = currentWallTicks;
-        lastProcessTicks = currentProcessTicks;
-        
-        return usageRatio < threshold;
-    }
-    
-private:
-    clock_t lastWallTicks;
-    clock_t lastProcessTicks;
+#include <optional>
+
+struct TimesSample {
+    clock_t elapsed_ticks;
+    clock_t process_ticks;
+    long ticks_per_second;
 };
 
-/**
- * JNI 接口
- */
-extern "C" JNIEXPORT jboolean JNICALL
-Java_com_example_app_CpuIdleDetector_isCpuIdle(JNIEnv *env, jobject thiz, jfloat threshold) {
-    static CpuIdleDetector detector;
-    return detector.isCpuIdle(threshold);
+std::optional<TimesSample> TakeTimesSample() {
+    const long ticks_per_second = sysconf(_SC_CLK_TCK);
+    if (ticks_per_second <= 0) return std::nullopt;
+
+    tms value{};
+    const clock_t elapsed = times(&value);
+    if (elapsed == static_cast<clock_t>(-1)) return std::nullopt;
+
+    return TimesSample{
+        .elapsed_ticks = elapsed,
+        .process_ticks = value.tms_utime + value.tms_stime,
+        .ticks_per_second = ticks_per_second,
+    };
+}
+
+std::optional<double> EquivalentCores(
+        const TimesSample& before,
+        const TimesSample& after) {
+    if (before.ticks_per_second != after.ticks_per_second) return std::nullopt;
+
+    const clock_t wall_ticks = after.elapsed_ticks - before.elapsed_ticks;
+    const clock_t cpu_ticks = after.process_ticks - before.process_ticks;
+    if (wall_ticks <= 0 || cpu_ticks < 0) return std::nullopt;
+
+    return static_cast<double>(cpu_ticks) /
+           static_cast<double>(wall_ticks);
 }
 ```
 
-```java
-public class CpuIdleDetector {
-    private static final String TAG = "CpuIdleDetector";
-    
-    static {
-        System.loadLibrary("cpuidle");
-    }
-    
-    private native boolean isCpuIdle(float threshold);
-    
-    /**
-     * 检测 CPU 是否处于闲置状态
-     * @param threshold 闲置阈值，默认 0.1 (10% CPU 使用率)
-     * @return true 表示闲置，false 表示繁忙
-     */
-    public boolean checkIdle(float threshold) {
-        return isCpuIdle(threshold);
-    }
-    
-    /**
-     * 智能闲置检测
-     */
-    public boolean isIdleForOptimization() {
-        // 阈值根据历史使用率动态调整
-        float adaptiveThreshold = calculateAdaptiveThreshold();
-        
-        // 持续检测避免瞬时波动
-        int idleCount = 0;
-        for (int i = 0; i < 3; i++) {
-            if (checkIdle(adaptiveThreshold)) {
-                idleCount++;
-            }
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return false;
-            }
-        }
-        
-        return idleCount >= 2; // 2/3 次检测都认为闲置
-    }
-    
-    private float calculateAdaptiveThreshold() {
-        // 基于历史使用率动态调整阈值
-        // 这里可以实现机器学习模型
-        return 0.1f; // 简化版本
-    }
-}
-```
+`sysconf(_SC_CLK_TCK)` 返回用户空间 ABI 使用的 clock ticks per second，也就是这里需要的 USER_HZ 口径。它不应由内核 `CONFIG_HZ` 推算。`CONFIG_HZ` 影响内核定时 tick 配置，两者不是同一个接口契约。
 
-### 闲置状态识别与优化窗口
+`times()` 精度较粗，适合低频累计采样。需要更细的进程 CPU 时间时，NDK 可评估 `clock_gettime(CLOCK_PROCESS_CPUTIME_ID, ...)`；只在 Kotlin/Java 层做应用监控时，前面的 `Process.getElapsedCpuTime()` 更直接。
 
-```java
-public class CpuIdleOptimizer {
-    
-    private CpuIdleDetector idleDetector;
-    private PreloadTaskManager preloadManager;
-    
-    public CpuIdleOptimizer() {
-        this.idleDetector = new CpuIdleDetector();
-        this.preloadManager = new PreloadTaskManager();
-    }
-    
-    /**
-     * CPU 闲置时的优化窗口识别
-     */
-    public void optimizeDuringIdle() {
-        // 1. 检测闲置状态
-        if (!idleDetector.isIdleForOptimization()) {
-            return;
-        }
-        
-        // 2. 执行闲置预加载
-        preloadManager.executePreloadTasks();
-        
-        // 3. 资源清理：只释放业务缓存；不要把 System.gc() 当成常规优化手段
-        performResourceCleanup();
-        
-        // 4. 性能监控
-        logIdleOptimizationMetrics();
-    }
-    
-    private void performResourceCleanup() {
-        // 清理缓存
-        clearCaches();
-        
-        // 释放未使用的内存
-        releaseUnusedMemory();
-    }
-    
-    private void clearCaches() {
-        // 清理图片缓存
-        ImageCacheManager.clearUnused();
-        
-        // 清理网络缓存
-        NetworkCacheManager.clearExpired();
-        
-        // 清理数据库缓存
-        DatabaseCacheManager.cleanup();
-    }
-    
-    private void releaseUnusedMemory() {
-        // 释放弱引用缓存
-        WeakReferenceCacheManager.cleanup();
-        
-        // 释放软引用缓存
-        SoftReferenceCacheManager.cleanup();
-    }
-    
-    private void logIdleOptimizationMetrics() {
-        long memoryBefore = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-        
-        // 执行优化操作
-        
-        long memoryAfter = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-        long memoryFreed = memoryBefore - memoryAfter;
-        
-        Log.i("CpuIdleOptimizer", 
-            String.format("Idle optimization: freed %d bytes, CPU usage: %.1f%%",
-                memoryFreed, getCpuUsage()));
-    }
-}
-```
+## 预加载：由收益与生命周期决定，不由“空闲百分比”决定
 
-## 闲置预加载策略
+预加载会提前支付 CPU、I/O、内存和缓存成本。如果结果没有被使用，这些成本都成了浪费。设计前应明确：
 
-### CPU 闲置时的资源预创建
+- 预加载命中率与节省的用户等待时间；
+- 结果的有效期、取消点和去重键；
+- 单次与累计 CPU/I/O 预算；
+- 结果占用的 Java heap、native heap、GPU 资源和文件缓存；
+- 前后台切换、低内存、温度升高时如何停止；
+- 未命中或被回收后是否比按需加载更差。
 
-```java
-public class PreloadTaskManager {
-    
-    private ExecutorService preloadExecutor;
-    private List<PreloadTask> pendingTasks = new ArrayList<>();
-    private Set<Class<? extends PreloadTask>> executingTasks = new HashSet<>();
-    
-    public PreloadTaskManager() {
-        this.preloadExecutor = Executors.newFixedThreadPool(
-            Runtime.getRuntime().availableProcessors(),
-            new PreloadThreadFactory()
-        );
-    }
-    
-    /**
-     * 预加载任务基类
-     */
-    public abstract static class PreloadTask implements Runnable {
-        protected abstract String getTaskName();
-        protected abstract long estimateDuration();
-        protected abstract void executePreload();
-        
-        @Override
-        public void run() {
-            try {
-                executePreload();
-            } catch (Exception e) {
-                Log.e("PreloadTask", 
-                    String.format("Failed to execute %s", getTaskName()), e);
-            }
-        }
-    }
-    
-    /**
-     * UI 资源预加载
-     */
-    public static class UIResourcePreloadTask extends PreloadTask {
-        private final Activity activity;
-        private final ViewType viewType;
-        
-        public UIResourcePreloadTask(Activity activity, ViewType viewType) {
-            this.activity = activity;
-            this.viewType = viewType;
-        }
-        
-        @Override
-        protected String getTaskName() {
-            return "UIResourcePreload-" + viewType.name();
-        }
-        
-        @Override
-        protected long estimateDuration() {
-            return viewType.getEstimatedLoadTime();
-        }
-        
-        @Override
-        protected void executePreload() {
-            // 预加载布局文件
-            int layoutId = viewType.getLayoutId();
-            LayoutInflater inflater = LayoutInflater.from(activity);
-            inflater.inflate(layoutId, null);
-            
-            // 预加载图片资源
-            int[] imageResIds = viewType.getImageResIds();
-            for (int resId : imageResIds) {
-                Bitmap bitmap = BitmapFactory.decodeResource(
-                    activity.getResources(), resId);
-                if (bitmap != null) {
-                    // 可以缓存到内存中
-                    bitmap.recycle();
-                }
-            }
-        }
-    }
-    
-    /**
-     * 数据预加载
-     */
-    public static class DataPreloadTask extends PreloadTask {
-        private final DataLoadStrategy strategy;
-        private final Object dataKey;
-        
-        public DataPreloadTask(DataLoadStrategy strategy, Object dataKey) {
-            this.strategy = strategy;
-            this.dataKey = dataKey;
-        }
-        
-        @Override
-        protected String getTaskName() {
-            return "DataPreload-" + strategy.name() + "-" + dataKey;
-        }
-        
-        @Override
-        protected long estimateDuration() {
-            return strategy.getEstimatedLoadTime();
-        }
-        
-        @Override
-        protected void executePreload() {
-            switch (strategy) {
-                case DATABASE:
-                    preloadDatabaseData();
-                    break;
-                case NETWORK:
-                    preloadNetworkData();
-                    break;
-                case CACHE:
-                    preloadCachedData();
-                    break;
-            }
-        }
-        
-        private void preloadDatabaseData() {
-            // 预热数据库连接
-            DatabaseHelper.getReadableDatabase();
-            
-            // 预加载常用查询
-            CommonQueries.warmUp();
-        }
-        
-        private void preloadNetworkData() {
-            // 预加载基础数据
-            NetworkLoader.preloadEssentialData();
-        }
-        
-        private void preloadCachedData() {
-            // 预加载缓存
-            CacheManager.warmUp();
-        }
-    }
-    
-    /**
-     * 执行预加载任务
-     */
-    public void executePreloadTasks() {
-        // 按优先级排序
-        sortTasksByPriority();
-        
-        // 选择适合当前状态的预加载任务
-        List<PreloadTask> selectedTasks = selectTasksForCurrentState();
-        
-        // 执行预加载
-        for (PreloadTask task : selectedTasks) {
-            if (isSuitableForPreload(task)) {
-                executingTasks.add(task.getClass());
-                preloadExecutor.submit(task);
-            }
-        }
-    }
-    
-    private void sortTasksByPriority() {
-        // 基于任务类型、预计耗时、历史执行时间等排序
-        Collections.sort(pendingTasks, (t1, t2) -> {
-            int priority1 = calculateTaskPriority(t1);
-            int priority2 = calculateTaskPriority(t2);
-            return Integer.compare(priority2, priority1);
-        });
-    }
-    
-    private int calculateTaskPriority(PreloadTask task) {
-        int priority = 0;
-        
-        // 1. 基础优先级
-        priority += task.estimateDuration() / 1000; // 以秒为单位
-        
-        // 2. 任务类型权重
-        if (task instanceof UIResourcePreloadTask) {
-            priority += 100; // UI 资源加载优先级较高
-        } else if (task instanceof DataPreloadTask) {
-            priority += 50;  // 数据加载次之
-        }
-        
-        // 3. 历史执行成功率
-        float successRate = getHistoricalSuccessRate(task.getClass());
-        priority += (int)(successRate * 100);
-        
-        return priority;
-    }
-    
-    private boolean isSuitableForPreload(PreloadTask task) {
-        // 检查内存状态
-        Runtime runtime = Runtime.getRuntime();
-        long usedMemory = runtime.totalMemory() - runtime.freeMemory();
-        long maxMemory = runtime.maxMemory();
-        
-        // 内存使用率低于 70% 时执行预加载
-        return (double)usedMemory / maxMemory < 0.7;
-    }
-}
-```
+`MessageQueue.IdleHandler` 只表示当前 Looper 队列暂时没有到期消息。它不表示整机 CPU 空闲，也不保证距离下一次输入或 vsync 还有足够时间。IdleHandler 中只适合短小、可立即结束的操作；重计算仍应交给受控执行器，并能在页面状态改变时取消。
 
-### 任务打散与负载均衡
+需要延后、可持久化、受网络或充电等条件约束的后台工作，应使用 WorkManager 或 JobScheduler 表达约束。系统会结合设备状态调度，但不承诺精确执行时刻。不要通过高频轮询 `/proc/stat` 自建“空闲探测器”，轮询本身也会增加唤醒。
 
-```java
-public class TaskBalancer {
-    
-    private List<TaskGroup> taskGroups = new ArrayList<>();
-    private ExecutorService balancedExecutor;
-    
-    public TaskBalancer() {
-        this.balancedExecutor = Executors.newFixedThreadPool(
-            Runtime.getRuntime().availableProcessors(),
-            new BalancedThreadFactory()
-        );
-    }
-    
-    /**
-     * 任务分组策略
-     */
-    public static class TaskGroup {
-        private String groupName;
-        private List<Runnable> tasks = new ArrayList<>();
-        private int maxConcurrentTasks;
-        private long estimatedTotalTime;
-        
-        public TaskGroup(String groupName, int maxConcurrent) {
-            this.groupName = groupName;
-            this.maxConcurrentTasks = maxConcurrent;
-        }
-        
-        public void addTask(Runnable task, long estimatedTime) {
-            tasks.add(task);
-            estimatedTotalTime += estimatedTime;
-        }
-        
-        public void execute(ExecutorService executor) {
-            // 按任务重要性和预计执行时间排序
-            Collections.sort(tasks, (t1, t2) -> {
-                // 这里可以实现更复杂的排序逻辑
-                return Long.compare(estimateTime(t1), estimateTime(t2));
-            });
-            
-            // 控制并发度
-            Semaphore semaphore = new Semaphore(maxConcurrentTasks);
-            
-            for (Runnable task : tasks) {
-                executor.submit(() -> {
-                    try {
-                        semaphore.acquire();
-                        task.run();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    } finally {
-                        semaphore.release();
-                    }
-                });
-            }
-        }
-        
-        private long estimateTime(Runnable task) {
-            // 简化版本，实际可以实现更复杂的估算
-            return 1000; // 默认 1 秒
-        }
-    }
-    
-    /**
-     * 执行任务平衡
-     */
-    public void executeBalancedTasks() {
-        // 1. 按优先级分组
-        groupTasksByPriority();
-        
-        // 2. 计算每组最适合的并发度
-        calculateOptimalConcurrency();
-        
-        // 3. 按组执行任务
-        for (TaskGroup group : taskGroups) {
-            group.execute(balancedExecutor);
-        }
-    }
-    
-    private void groupTasksByPriority() {
-        // 高优先级任务组
-        TaskGroup highPriorityGroup = new TaskGroup("high-priority", 2);
-        
-        // 中优先级任务组
-        TaskGroup mediumPriorityGroup = new TaskGroup("medium-priority", 4);
-        
-        // 低优先级任务组
-        TaskGroup lowPriorityGroup = new TaskGroup("low-priority", 8);
-        
-        // 分类添加任务
-        for (Runnable task : getAllPreloadTasks()) {
-            long estimatedTime = estimateTaskTime(task);
-            int priority = calculateTaskPriority(task);
-            
-            if (priority > 80) {
-                highPriorityGroup.addTask(task, estimatedTime);
-            } else if (priority > 50) {
-                mediumPriorityGroup.addTask(task, estimatedTime);
-            } else {
-                lowPriorityGroup.addTask(task, estimatedTime);
-            }
-        }
-        
-        taskGroups.addAll(Arrays.asList(
-            highPriorityGroup, mediumPriorityGroup, lowPriorityGroup));
-    }
-    
-    private int calculateTaskPriority(Runnable task) {
-        // 基于任务类型、历史执行时间、重要性等计算优先级
-        // 这里简化实现
-        return 50;
-    }
-}
-```
+评估预加载时，至少同时看命中率、废弃工作比例、CPU 时间、I/O、RSS/PSS、启动与帧性能回归。只有用户收益覆盖设备成本时，这项预加载才值得保留。
 
-## 锁等待对 CPU 的影响
+## 锁竞争：低 CPU 也可能让用户等很久
 
-### synchronize 等待状态转换
+### 不要假设固定的“自旋后休眠”流程
 
-Java 中的 synchronized 锁机制在等待状态转换中经历了几个重要阶段：
+Java/Kotlin `synchronized` 在 ART 中由 monitor 实现，具体快路径、竞争处理和运行时策略会随实现与状态改变。应用代码不能依赖“先自旋固定次数，再进入内核休眠”这类固定流程。
 
-```java
-public class LockWaitAnalysis {
-    
-    /**
-     * synchronized 等待流程详解
-     */
-    public static class SynchronizedWaitFlow {
-        
-        public void analyzeWaitFlow() {
-            Object lock = new Object();
-            
-            // 场景：多个线程竞争同一个锁
-            Runnable competingTask = () -> {
-                try {
-                    synchronized (lock) {
-                        System.out.println("Thread " + Thread.currentThread().getName() + 
-                                         " acquired lock");
-                        
-                        // 模拟长时间持有锁
-                        Thread.sleep(1000);
-                        
-                        System.out.println("Thread " + Thread.currentThread().getName() + 
-                                         " released lock");
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            };
-            
-            // 创建多个竞争线程
-            Thread[] threads = new Thread[5];
-            for (int i = 0; i < threads.length; i++) {
-                threads[i] = new Thread(competingTask, "CompetingThread-" + i);
-                threads[i].start();
-            }
-        }
-        
-        /**
-         * 锁状态转换的 CPU 消耗分析
-         */
-        public void analyzeLockStateTransition() {
-            Object lock = new Object();
-            
-            Runnable lockTask = () -> {
-                long startTime = System.nanoTime();
-                
-                try {
-                    synchronized (lock) {
-                        // 自旋阶段
-                        spinPhase();
-                        
-                        // 阻塞阶段
-                        blockPhase();
-                        
-                        // 唤醒阶段
-                        wakeupPhase();
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-                
-                long endTime = System.nanoTime();
-                System.out.println("Total time: " + (endTime - startTime) / 1000000 + "ms");
-            };
-            
-            Thread lockThread = new Thread(lockTask, "LockAnalysisThread");
-            lockThread.start();
-        }
-        
-        private void spinPhase() {
-            // 自旋等待锁
-            while (!Thread.currentThread().isInterrupted()) {
-                // 忙等待消耗 CPU
-                Thread.onSpinWait(); // Java 9+ 的自旋等待提示
-                
-                // 检查是否获得锁
-                if (tryAcquireLock()) {
-                    break;
-                }
-            }
-        }
-        
-        private void blockPhase() {
-            // 进入阻塞状态
-            try {
-                // 释放 CPU，进入 WAITING 状态
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-        
-        private void wakeupPhase() {
-            // 被唤醒后重新竞争锁
-            while (!Thread.currentThread().isInterrupted()) {
-                if (tryAcquireLock()) {
-                    break;
-                }
-                
-                // 短暂自旋后再次阻塞
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-        }
-        
-        private boolean tryAcquireLock() {
-            // 模拟锁尝试获取
-            return Math.random() > 0.8; // 20% 成功率
-        }
-    }
-}
-```
+等待锁的线程通常不会持续消耗一个核，但锁竞争会增加尾延迟、线程唤醒、上下文切换和优先级反转风险。相反，CAS 在竞争激烈时可能反复失败并消耗 CPU。`synchronized`、`ReentrantLock`、原子变量之间不存在脱离负载的固定胜者。
 
-### CAS 与 synchronized 的性能边界
+### 优化顺序
 
-```java
-public class LockPerformanceComparison {
-    
-    /**
-     * synchronized 轻量竞争性能测试。
-     * 注意：不要把该示例解释为“偏向锁”测试；Android ART 并不提供可依赖的 HotSpot 偏向锁优化语义。
-     */
-    public static class SynchronizedBenchmark {
-        private final Object lock = new Object();
-        
-        public void benchmarkSynchronized() {
-            // 预热：降低解释执行/JIT 冷启动对示例结果的影响
-            for (int i = 0; i < 1000; i++) {
-                synchronized (lock) {
-                    // 轻量级操作
-                    performLightWork();
-                }
-            }
-            
-            // 性能测试
-            long startTime = System.nanoTime();
-            
-            for (int i = 0; i < 100000; i++) {
-                synchronized (lock) {
-                    performLightWork();
-                }
-            }
-            
-            long endTime = System.nanoTime();
-            double durationMs = (endTime - startTime) / 1000000.0;
-            
-            System.out.println("synchronized average time: " +
-                             (durationMs / 100000) + "ms");
-        }
-        
-        private void performLightWork() {
-            // 轻量级工作
-            int result = 0;
-            for (int i = 0; i < 10; i++) {
-                result += i;
-            }
-        }
-    }
-    
-    /**
-     * CAS (Compare And Swap) 性能测试
-     */
-    public static class CasBenchmark {
-        private final AtomicInteger counter = new AtomicInteger(0);
-        
-        public void benchmarkCas() {
-            // 性能测试
-            long startTime = System.nanoTime();
-            
-            for (int i = 0; i < 100000; i++) {
-                performCasOperation();
-            }
-            
-            long endTime = System.nanoTime();
-            double durationMs = (endTime - startTime) / 1000000.0;
-            
-            System.out.println("CAS average time: " + 
-                             (durationMs / 100000) + "ms");
-        }
-        
-        private void performCasOperation() {
-            // CAS 操作
-            counter.incrementAndGet();
-        }
-    }
-    
-    /**
-     * 性能对比分析
-     */
-    public static class PerformanceAnalyzer {
-        
-        public void compareLockMechanisms() {
-            SynchronizedBenchmark synchronizedBenchmark = new SynchronizedBenchmark();
-            CasBenchmark casBenchmark = new CasBenchmark();
-            
-            // 运行基准测试
-            synchronizedBenchmark.benchmarkSynchronized();
-            casBenchmark.benchmarkCas();
-            
-            // 分析结果
-            analyzeResults();
-        }
-        
-        private void analyzeResults() {
-            // 基于测试结果分析不同锁机制的适用场景
-            
-            /*
-            分析结论：
-            
-            1. synchronized
-               - 适用场景：低到中等竞争、临界区较清晰的共享状态保护
-               - 优点：语义简单，由 ART/运行时负责锁膨胀、阻塞与唤醒
-               - 缺点：竞争激烈或长临界区会带来调度与唤醒开销
-               - CPU 消耗：阻塞后释放 CPU；短竞争窗口可能经历轻量级快速路径
-                
-            2. CAS (Compare And Swap)
-               - 适用场景：高并发、短时间锁竞争
-               - 优点：无阻塞、响应快速
-               - 缺点：忙等待消耗 CPU，ABA 问题需要额外处理
-               - CPU 消耗：持续自旋等待
-               
-            3. 经典锁/显式 Lock
-               - 适用场景：需要可中断、公平锁、条件队列等高级能力
-               - 优点：API 能力更完整，可按场景选择公平/非公平策略
-               - 缺点：线程上下文切换开销大
-               - CPU 消耗：阻塞时释放 CPU，唤醒时需要恢复上下文
-            */
-        }
-    }
-}
-```
+锁问题应按证据处理：
 
-### 锁优化的四项基本原则
+1. 用 Perfetto 或可控的应用 trace 找到等待时间长、调用频繁的临界区；
+2. 缩短持锁范围，避免在锁内执行 I/O、Binder 调用、回调和重计算；
+3. 检查是否可以用线程封闭、不可变快照或消息传递减少共享可变状态；
+4. 只有在确认单锁竞争后，再评估分段锁或更复杂的数据结构；
+5. 用相同负载比较修改前后的墙钟时间、CPU 时间、等待分布和内存成本。
 
-```java
-public class LockOptimizationPrinciples {
-    
-    /**
-     * 原则一：无锁优于有锁
-     */
-    public static class Principle1_AvoidLock {
-        
-        public void demonstrateAvoidLock() {
-            // 错误示例：不必要的同步
-            Object lock = new Object();
-            
-            // 错误：同步块包含非临界区代码
-            synchronized (lock) {
-                // 临界区代码
-                updateCriticalSection();
-                
-                // 错误：非临界区代码也在同步块中
-                logNonCriticalOperation();
-                updateCache();
-            }
-            
-            // 正确示例：减少同步范围
-            updateCriticalSection();  // 临界区
-            
-            // 这些操作不需要同步
-            logNonCriticalOperation();
-            updateCache();
-        }
-        
-        private void updateCriticalSection() {
-            // 临界区代码
-        }
-        
-        private void logNonCriticalOperation() {
-            // 非临界区代码
-        }
-        
-        private void updateCache() {
-            // 缓存更新
-        }
-    }
-    
-    /**
-     * 原则二：细化粒度优于粗化粒度
-     */
-    public static class Principle2_FineGrained {
-        
-        public void demonstrateFineGrainedLock() {
-            // 错误示例：粗粒度锁
-            Object coarseLock = new Object();
-            
-            synchronized (coarseLock) {
-                updateProfile();
-                updateSettings();
-                updateHistory();
-            }
-            
-            // 正确示例：细粒度锁
-            Object profileLock = new Object();
-            Object settingsLock = new Object();
-            Object historyLock = new Object();
-            
-            // 并行更新不同的数据结构
-            new Thread(() -> {
-                synchronized (profileLock) {
-                    updateProfile();
-                }
-            }).start();
-            
-            new Thread(() -> {
-                synchronized (settingsLock) {
-                    updateSettings();
-                }
-            }).start();
-            
-            new Thread(() -> {
-                synchronized (historyLock) {
-                    updateHistory();
-                }
-            }).start();
-        }
-        
-        private void updateProfile() {
-            // 更新用户资料
-        }
-        
-        private void updateSettings() {
-            // 更新设置
-        }
-        
-        private void updateHistory() {
-            // 更新历史记录
-        }
-    }
-    
-    /**
-     * 原则三：增加锁的数量避免竞争
-     */
-    public static class Principle3_IncreaseLocks {
-        
-        private final Map<String, Object> locks = new ConcurrentHashMap<>();
-        
-        public void demonstrateIncreaseLocks() {
-            // 错误示例：单一锁导致竞争
-            Object globalLock = new Object();
-            
-            // 所有操作都需要获取全局锁
-            updateUser("user1", "data1", globalLock);
-            updateUser("user2", "data2", globalLock);
-            updateUser("user3", "data3", globalLock);
-            
-            // 正确示例：为每个用户分配独立的锁
-            updateUser("user1", "data1");  // 使用 user1 的锁
-            updateUser("user2", "data2");  // 使用 user2 的锁
-            updateUser("user3", "data3");  // 使用 user3 的锁
-        }
-        
-        public void updateUser(String userId, String data) {
-            // 为每个用户分配独立锁
-            Object userLock = locks.computeIfAbsent(userId, k -> new Object());
-            
-            synchronized (userLock) {
-                updateUserInternal(userId, data);
-            }
-        }
-        
-        private void updateUserInternal(String userId, String data) {
-            // 实际的用户更新逻辑
-        }
-    }
-    
-    /**
-     * 原则四：读写锁优于互斥锁
-     */
-    public static class Principle4_ReadWriteLock {
-        
-        private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
-        
-        public void demonstrateReadWriteLock() {
-            // 错误示例：互斥锁阻塞读操作
-            Object mutexLock = new Object();
-            
-            // 读操作也会阻塞其他读操作
-            new Thread(() -> {
-                synchronized (mutexLock) {
-                    readData();
-                }
-            }).start();
-            
-            // 写操作也会阻塞读操作
-            new Thread(() -> {
-                synchronized (mutexLock) {
-                    writeData();
-                }
-            }).start();
-            
-            // 正确示例：读写锁
-            new Thread(() -> {
-                rwLock.readLock().lock();
-                try {
-                    readData();
-                } finally {
-                    rwLock.readLock().unlock();
-                }
-            }).start();
-            
-            new Thread(() -> {
-                rwLock.writeLock().lock();
-                try {
-                    writeData();
-                } finally {
-                    rwLock.writeLock().unlock();
-                }
-            }).start();
-        }
-        
-        private void readData() {
-            // 读操作
-        }
-        
-        private void writeData() {
-            // 写操作
-        }
-    }
-}
-```
+把一把锁换成多把锁可能增加一致性维护难度；把锁换成 CAS 也可能把阻塞等待变成忙碌重试。优化结果要由 trace 和基准测试确认。
 
-## IO 密集型场景优化
+## 协程：控制并发，不隐藏成本
 
-### Kotlin 协程在 IO 密集型场景的优势
+`Dispatchers.Default` 面向 CPU 计算，`Dispatchers.IO` 面向阻塞 I/O。两者在 JVM 上共享线程资源，切换 dispatcher 不必然创建一条新线程。`Dispatchers.IO.limitedParallelism(n)` 创建的视图具有弹性：这些视图不受 IO dispatcher 常规并行度上限的同一约束，但仍与它共享线程和资源。具体语义见 kotlinx.coroutines 的 [`Dispatchers.IO` 文档](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html)。
+
+下面的封装要求调用方根据计算预算和下游容量显式给出并行度：
 
 ```kotlin
-// Kotlin 协程 IO 优化示例
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 
-class CoroutineIOOptimizer {
-    
-    // 传统线程方式
-    fun traditionalIOApproach() {
-        val threadPool = Executors.newFixedThreadPool(10)
-        
-        // 创建 10 个 HTTP 请求
-        for (i in 1..10) {
-            threadPool.submit {
-                val result = performNetworkRequest("http://example.com/api/$i")
-                processResult(result)
-            }
-        }
-        
-        // 问题：线程数固定，无法动态调整
-        // 线程上下文切换开销大
-        // 内存占用高
+class WorkDispatchers(
+    cpuParallelism: Int,
+    blockingParallelism: Int,
+) {
+    init {
+        require(cpuParallelism > 0)
+        require(blockingParallelism > 0)
     }
-    
-    // 协程方式
-    suspend fun coroutineIOApproach() = coroutineScope {
-        // 使用 Dispatchers.IO 专门处理 IO 操作
-        val results = listOf(1..10).map { url ->
-            async(Dispatchers.IO) {
-                val result = performNetworkRequest("http://example.com/api/$url")
-                processResult(result)
-            }
-        }
-        
-        // 等待所有请求完成
-        results.awaitAll()
-    }
-    
-    // 协程的优势分析
-    fun analyzeCoroutineAdvantages() {
-        println("1. 内存效率：")
-        println("   - 传统线程：每个线程需要 1MB 栈内存")
-        println("   - 协程：每个协程只有几 KB 内存开销")
-        
-        println("2. CPU 效率：")
-        println("   - 传统线程：阻塞时消耗 CPU 时间片")
-        println("   - 协程：挂起时不消耗 CPU 资源")
-        
-        println("3. 并发能力：")
-        println("   - 传统线程：受限于线程池大小")
-        println("   - 协程：轻量级，可创建数千个协程")
-        
-        println("4. 代码可读性：")
-        println("   - 传统线程：回调嵌套，代码复杂")
-        println("   - 协程：顺序代码风格，易于理解")
-    }
-    
-    // 异步架构的 CPU 效率最大化
-    fun maximizeCpuEfficiency() = runBlocking {
-        // 使用结构化并发确保资源清理
-        coroutineScope {
-            // CPU 密集型任务
-            val cpuTasks = listOf(1..5).map { taskId ->
-                async(Dispatchers.Default) {
-                    performCpuIntensiveTask(taskId)
-                }
-            }
-            
-            // IO 密集型任务
-            val ioTasks = listOf(1..10).map { urlId ->
-                async(Dispatchers.IO) {
-                    performNetworkRequest("http://example.com/api/$urlId")
-                }
-            }
-            
-            // 并行执行，最大化 CPU 利用率
-            val allResults = (cpuTasks + ioTasks).awaitAll()
-            processResults(allResults)
-        }
-    }
-    
-    private suspend fun performNetworkRequest(url: String): String {
-        delay(1000) // 模拟网络延迟
-        return "Result from $url"
-    }
-    
-    private suspend fun performCpuIntensiveTask(taskId: Int): Int {
-        delay(500) // 模拟 CPU 计算
-        return taskId * 2
-    }
-    
-    private fun processResult(result: String) {
-        println("Processing: $result")
-    }
-    
-    private fun processResults(results: List<Any>) {
-        results.forEach { result ->
-            println("Final result: $result")
-        }
-    }
+
+    val cpu: CoroutineDispatcher =
+        Dispatchers.Default.limitedParallelism(cpuParallelism)
+
+    val blockingIo: CoroutineDispatcher =
+        Dispatchers.IO.limitedParallelism(blockingParallelism)
 }
 ```
 
-## 总结与最佳实践
+`limitedParallelism()` 限制该视图同时执行的协程数量，不承诺对应固定数量的物理线程。阻塞并发上限应与数据库连接池、服务端限流、文件描述符和内存预算匹配。CPU 任务即使写成 `suspend` 函数，所需指令和 CPU 时间也不会减少；仍要分批、取消过期任务并控制并发。
 
-### 应用层 CPU 优化的核心策略
+不要在主线程用 `runBlocking` 等待后台结果。结构化并发的价值在于生命周期、取消和错误传播，它不能补偿不受控的工作量。
 
-1. **线程池配置策略**
-   - CPU 密集型任务：固定大小线程池，核心线程数 = CPU 核心数
-   - IO 密集型任务：弹性线程池，可动态调整大小
-   - 避免线程上下文切换开销
+## Android 17 上应用能控制什么
 
-2. **CPU 闲置检测**
-   - 使用 `/proc/stat` 进行系统级监控
-   - 使用 `Native times()` 进行进程级监控
-   - 动态调整检测阈值
+### 优先级不等于选核
 
-3. **资源预加载**
-   - 基于 CPU 闲置状态的智能预加载
-   - 任务分组与负载均衡
-   - 内存使用率监控
+Android 17 的内核锚点是 `android17-6.18-2026-06_r6`。公平调度类采用 EEVDF 选择可运行实体，但系统还会结合调度组、cpuset、利用率钳制、功耗和温度策略决定线程在哪里、以什么资源水平运行。
 
-4. **锁优化策略**
-   - 无锁优于有锁
-   - 细化粒度优于粗化粒度
-   - 增加锁的数量避免竞争
-   - 读写锁优于互斥锁
+普通应用调用 `Process.setThreadPriority()` 表达 nice 级别的相对优先级。它不提供以下能力：
 
-5. **IO 优化**
-   - 使用 Kotlin 协程处理 IO 密集型任务
-   - 异步架构最大化 CPU 利用率
-   - 结构化并发确保资源清理
+- 指定线程必须运行在性能核或能效核；
+- 把线程移入系统 cpuset；
+- 直接设置 `uclamp`；
+- 绕过后台、功耗或温控策略。
 
-### 性能监控与调优
+提高优先级也不会减少工作量，只会改变竞争时的相对机会。优先级设置不当还可能挤压 UI、RenderThread、Binder 或其他关键工作。
 
-```java
-public class CpuOptimizationMonitor {
-    
-    private CpuUsageMonitor cpuMonitor;
-    private ThreadPoolMonitor threadPoolMonitor;
-    private LockMonitor lockMonitor;
-    
-    public void startMonitoring() {
-        // 监控 CPU 使用率
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(() -> {
-            float cpuUsage = cpuMonitor.getCpuUsagePercentage();
-            logCpuUsage(cpuUsage);
-            
-            if (cpuUsage > 80) {
-                alertHighCpuUsage(cpuUsage);
-            }
-        }, 1, 1, TimeUnit.SECONDS);
-        
-        // 监控线程池状态
-        threadPoolMonitor.startMonitoring();
-        
-        // 监控锁竞争情况
-        lockMonitor.startMonitoring();
-    }
-    
-    private void logCpuUsage(float cpuUsage) {
-        Log.i("CpuMonitor", String.format("CPU Usage: %.1f%%", cpuUsage));
-    }
-    
-    private void alertHighCpuUsage(float cpuUsage) {
-        Log.w("CpuMonitor", 
-            String.format("High CPU usage detected: %.1f%%", cpuUsage));
-        
-        // 触发优化策略
-        triggerOptimization(cpuUsage);
-    }
-    
-    private void triggerOptimization(float cpuUsage) {
-        // 根据 CPU 使用率执行不同的优化策略
-        if (cpuUsage > 90) {
-            // 紧急优化
-            performEmergencyOptimization();
-        } else if (cpuUsage > 80) {
-            // 常规优化
-            performRegularOptimization();
-        }
-    }
-}
-```
+### ADPF 是持续负载的协作接口
 
-[已验证: 官方文档, developer.android.com/reference/java/util/concurrent/ThreadPoolExecutor]
-[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]
-[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
-[适用版本: Android 8 - Android 17]
----
----
+API 31 起，`PerformanceHintManager` 允许应用为一组工作线程创建 hint session，报告目标工作时长和实际工作时长。它适合游戏、相机、音视频等有重复工作周期且能持续反馈实际耗时的负载。系统据此调整资源策略；应用不能把它当成核心绑定或固定频率接口。API 边界见 [`PerformanceHintManager`](https://developer.android.com/reference/android/os/PerformanceHintManager)。
 
-<!-- AIW-源码调研-2026-07-02 -->
+如果工作没有明确周期、线程集合不稳定，或应用无法可靠报告实际时长，先减少工作与并发通常更有效。使用 ADPF 后仍要在多档设备、持续温升和前后台切换条件下测量。
 
-## 附录：android-17.0.0_r1 源码级验证补充（2026-07-02）
+## 一套可执行的 Review 流程
 
-> 本节为基于 AOSP `android-17.0.0_r1` 标签的源码级验证补充。完整调研报告见 `DeepResearch/2026-07-02-android17-app-cpu-optimization-thread-priority-source-verification.md`，所有结论均带源码路径支撑。
+### 建立基线
 
-### A. Process.java 线程优先级体系（一手验证）
+选择一个可重复的用户场景，记录应用版本、构建类型、设备、刷新率、电量、温度起点和后台环境。性能测量应使用接近发布配置的构建；调试器、日志和未优化代码会改变调度与 CPU 成本。
 
-android-17.0.0_r1 `frameworks/base/core/java/android/os/Process.java` 中线程优先级与调度组常量的真实分布（line 416-625）：
+### 用时间线归因
 
-```java
-// 摘自 android-17.0.0_r1 Process.java
-public static final int THREAD_PRIORITY_DEFAULT        = 0;   // nice 0
-public static final int THREAD_PRIORITY_LOWEST         = 19;  // nice 19
-public static final int THREAD_PRIORITY_BACKGROUND     = 10;  // nice 10
-public static final int THREAD_PRIORITY_FOREGROUND     = -2;  // nice -2
-public static final int THREAD_PRIORITY_DISPLAY        = -4;  // nice -4
-public static final int THREAD_PRIORITY_URGENT_DISPLAY = -8;  // nice -8
-public static final int THREAD_PRIORITY_VIDEO          = -10; // nice -10
-public static final int THREAD_PRIORITY_AUDIO          = -16; // nice -16
-public static final int THREAD_PRIORITY_URGENT_AUDIO   = -19; // nice -19
+Perfetto 中同时观察：
 
-public static final int SCHED_OTHER = 0;
-public static final int SCHED_FIFO  = 1;  // @hide
-public static final int SCHED_RR    = 2;  // @hide
-public static final int SCHED_BATCH = 3;  // @hide
-public static final int SCHED_IDLE  = 5;  // @hide
+- 主线程、RenderThread 和相关 worker 的 Running/Runnable/Sleeping 状态；
+- 应用 trace section 对应的业务阶段；
+- 频率、调度、帧时间与热状态；
+- Binder、I/O、锁等待和 GC 是否占据关键路径。
 
-public static final int THREAD_GROUP_DEFAULT            = -1;
-public static final int THREAD_GROUP_BACKGROUND        = 0;  // = SP_BACKGROUND
-public static final int THREAD_GROUP_FOREGROUND        = 1;
-public static final int THREAD_GROUP_SYSTEM            = 2;
-public static final int THREAD_GROUP_AUDIO_APP         = 3;
-public static final int THREAD_GROUP_AUDIO_SYS         = 4;
-public static final int THREAD_GROUP_TOP_APP           = 5;
-public static final int THREAD_GROUP_RT_APP            = 6;
-public static final int THREAD_GROUP_RESTRICTED        = 7;
-public static final int THREAD_GROUP_FOREGROUND_WINDOW = 8;
-```
+“CPU 时间很高”时查看调用栈与任务来源；“墙钟时间高但 CPU 时间低”时优先检查排队、锁、I/O 和调度等待。只有定位到具体阶段，才知道应减少计算、降低并发、移除锁内工作还是改变后台时机。
 
-文件注释明确写「Keep in sync with SP_* constants of enum type SchedPolicy declared in system/core/include/cutils/sched_policy.h」（注意：android-17.0.0_r1 该头文件已迁移至 `system/core/libprocessgroup/include/processgroup/sched_policy.h`）。**任意一方新增枚举必须同步另一方**，否则 `setThreadGroup(tid, N)` 会落到 C 端 default 分支什么都不做。
+### 修改后同时检查收益与副作用
 
-### B. Android 17 新增 `nicenessApis` flag 门控（一手验证）
+每轮只改变少量因素，并回答：
 
-`Process.java` 在 android-17.0.0_r1 中两条 `setThreadPriority` 重载的行为差异：
+- 用户路径的中位数和尾延迟是否改善；
+- 进程 CPU 时间和整机能耗是否下降；
+- Runnable 等待、上下文切换或锁等待是否转移到别处；
+- 队列是否积压，任务是否被拒绝或过期；
+- 连续运行后是否因温度产生反向回归；
+- 低端设备、后台状态和网络异常下是否仍成立。
 
-```java
-// 无 tid 版本（line 1393-1422）—— 推荐应用层使用
-public static final void setThreadPriority(int priority) {
-    if (!com.android.libcore.Flags.nicenessApis()) {
-        setThreadPriority(myTid(), priority);  // 回退旧路径
-        return;
-    }
-    boolean succ = VMRuntime.getRuntime()
-        .setThreadNiceness(Thread.currentThread(), priority);  // 走 ART 路径
-    if (!succ) { /* 抛异常 */ }
-}
+CPU 优化的完成标准不是某个瞬时百分比变小，而是在明确场景中以更少设备成本达到同等或更好的用户结果，并且没有把延迟、内存和可靠性问题转移到其他阶段。
 
-// 带 tid 版本（line 1217-1229）—— 当 tid == myTid 时也优走 ART 路径
-public static final void setThreadPriority(int tid, int priority) {
-    if (com.android.libcore.Flags.nicenessApis() && Process.myTid() == tid) {
-        setThreadPriority(priority);  // 委托给无 tid 版本
-        return;
-    }
-    setThreadPriorityNative(tid, priority);
-}
-```
+## 源码与文档索引
 
-**关键变化**：Android 17 的 `nicenessApis()` flag 控制是否让 ART 通过 `VMRuntime.setThreadNiceness()` 知晓优先级变化。`nicenessApis()` 默认值未直接验证（libcore flag 文件路径待深入），但应用层应当**总是优先调无 tid 版本** `setThreadPriority(priority)`，避免「runtime 偶尔把 priority 重新拉回 Java 缓存值」在 flag 切换后从偶发变为常态。
-
-### C. CPUSET 与 SCHED 双通道独立（一手验证）
-
-```cpp
-// system/core/libprocessgroup/sched_policy.cpp (android17-release)
-int set_cpuset_policy(pid_t tid, SchedPolicy policy) {
-    switch (policy) {
-        case SP_BACKGROUND:        SetTaskProfiles(tid, {"CPUSET_SP_BACKGROUND"}, true); break;
-        case SP_FOREGROUND:        SetTaskProfiles(tid, {"CPUSET_SP_FOREGROUND"}, true); break;
-        case SP_TOP_APP:           SetTaskProfiles(tid, {"CPUSET_SP_TOP_APP"}, true); break;
-    }
-}
-int set_sched_policy(pid_t tid, SchedPolicy policy) {
-    switch (policy) {
-        case SP_BACKGROUND:        SetTaskProfiles(tid, {"SCHED_SP_BACKGROUND"}, true); break;
-        case SP_FOREGROUND:        SetTaskProfiles(tid, {"SCHED_SP_FOREGROUND"}, true); break;
-        case SP_TOP_APP:           SetTaskProfiles(tid, {"SCHED_SP_TOP_APP"}, true); break;
-    }
-}
-```
-
-**两条通道完全独立**——`setThreadGroup` 只改 SCHED（cpu cgroup 调度权重），不改 CPUSET（CPU 拓扑限制）。平台侧如果需要同时改变调度组与 CPUSET，应使用同时走两条通道的接口；普通应用则不能把 hidden/system API 当成 public SDK 方案。
-
-**章节现有示例的修正点**：§27.1 中『CPU 闲置检测 -> 调低 Worker 线程优先级』的代码片段只走 nice 优先级通道，不会同时迁移 CPUSET。普通应用只能使用 public SDK 的 `setThreadPriority(...)`；`setThreadGroupAndCpuset(...)` 属于 system/priv-app 语境能力，不能写成普通应用可直接复制的方案。
-
-普通应用：
-```java
-Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);  // 当前线程 nice=10
-```
-
-system/priv-app 或平台代码在确有权限时才可同时设置 SCHED + CPUSET：
-```java
-Process.setThreadPriority(tid, Process.THREAD_PRIORITY_BACKGROUND);  // 10
-Process.setThreadGroupAndCpuset(tid, Process.THREAD_GROUP_BACKGROUND);  // 同时设 SCHED + CPUSET
-```
-
-### D. /proc/stat 字段顺序与 idle 语义变化（一手验证）
-
-```c
-// kernel/common/fs/proc/stat.c (android17-6.18 baseline)
-static int show_stat(struct seq_file *p, ...) {
-    for_each_possible_cpu(i) {
-        // 输出顺序严格为：
-        seq_printf(p, "cpu%d", i);
-        seq_put_decimal_ull(p, " ", nsec_to_clock_t(user));
-        seq_put_decimal_ull(p, " ", nsec_to_clock_t(nice));
-        seq_put_decimal_ull(p, " ", nsec_to_clock_t(system));
-        seq_put_decimal_ull(p, " ", nsec_to_clock_t(idle));      // <- field 3
-        seq_put_decimal_ull(p, " ", nsec_to_clock_t(iowait));    // <- field 4
-        seq_put_decimal_ull(p, " ", nsec_to_clock_t(irq));
-        seq_put_decimal_ull(p, " ", nsec_to_clock_t(softirq));
-        seq_put_decimal_ull(p, " ", nsec_to_clock_t(steal));
-        seq_put_decimal_ull(p, " ", nsec_to_clock_t(guest));
-        seq_put_decimal_ull(p, " ", nsec_to_clock_t(guest_nice));
-        seq_putc(p, '\n');
-    }
-}
-```
-
-**关键修正**：Android 17 内核 `get_idle_time()` 优先走 NO_HZ tickless 路径 `get_cpu_idle_time_us(cpu, NULL)`（fs/proc/stat.c:24-37），返回的是**复合 idle**（包含调度器无任务的 tick 时间）。章节现有 `idleDiff = currentCpuUsage[3] - lastCpuUsage[3]` 的代码在 NO_HZ_FULL 配置的设备上会高估 CPU 利用率 5-15%。
-
-**修正建议**：
-```java
-// 把现有 busy = total - idle 改为：
-long user   = currentCpuUsage[0] - lastCpuUsage[0];
-long nice   = currentCpuUsage[1] - lastCpuUsage[1];
-long system = currentCpuUsage[2] - lastCpuUsage[2];
-long irq    = currentCpuUsage[5] - lastCpuUsage[5];
-long sirq   = currentCpuUsage[6] - lastCpuUsage[6];
-long steal  = currentCpuUsage[7] - lastCpuUsage[7];
-long busy   = user + nice + system + irq + sirq + steal;
-long idle   = currentCpuUsage[3] - lastCpuUsage[3];
-long iow    = currentCpuUsage[4] - lastCpuUsage[4];
-long total  = busy + idle + iow;
-float util  = total > 0 ? (float) busy / total : 0f;
-// iow 单独作为 IO 阻塞指标，避免被合并到 idle 中
-```
-
-### E. Native times() 替代方案确认
-
-`<sys/times.h>` 中的 `clock_t times(struct tms *buf)` 在 Android 17 NDK r27 中仍可直接调用，开销通常低于读取并解析 `/proc` 文本，适合 10-100Hz 采样。但**时钟单位为 `sysconf(_SC_CLK_TCK)`**（典型 100，即 10ms 粒度），低于 10ms 的 burst CPU 任务会漏检。章节 §27.1 推荐方案 B 的『CPU 速率 < 0.1 = 闲置』阈值在 10ms 粒度下含义为『过去 100ms 中 busy 占比 < 10%』；它可作为应用内启发式指标，但不能等同于系统 PSI 口径。
-
-### F. Worker 线程默认优先级调度陷阱
-
-`ThreadPoolExecutor` 的 `Worker` 走 `new Thread(...)` -> ART `Thread_nativeCreate()`；普通线程默认可按 `THREAD_PRIORITY_DEFAULT`（nice 0）参与调度。**章节 §27.1 推荐的『CPU 线程池等于核数』并不意味着每个 Worker 都跑在专属核上**——应用其它默认 nice=0 的线程（如 OkHttp Dispatcher 的 IO 线程）仍会与 Worker 竞争 runqueue，具体落核由调度器与设备拓扑决定。
-
-**修正建议**：CPU 线程池的 `ThreadFactory` 可在当前 worker 内显式调用 public SDK 的 `Process.setThreadPriority(Process.THREAD_PRIORITY_DEFAULT)` 声明 nice 口径；后台 IO worker 则显式降到 `THREAD_PRIORITY_BACKGROUND`。普通应用不要把 `THREAD_PRIORITY_DISPLAY`、`setThreadGroupAndCpuset` 等需要更强权限/平台语境的能力写成通用优化手段。
-
----
-
-<!-- /AIW-源码调研-2026-07-02 -->
-
-## 延伸阅读
-
-### Android 17 ThreadPoolExecutor 三层源码 + bionic times() 系统调用 + JNI /proc/stat 解析
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-02-android17-threadpoolexecutor-times-syscall-source-deepdive.md
-- 类型：DeepResearch 调研结果
-- 摘要：ThreadPoolExecutor.execute() 三步决策源码含3处 Android 专属增强（@ReachabilitySensitive、SharedThreadContainer、addWorkerFailed 回滚）；bionic times() 为纯汇编 stub 无胶水代码；kernel do_sys_times 走调度器归一化路径与 /proc/stat 差值可达30%；JNI readProcFile 栈/堆双缓冲设计。
-- 注入时间：2026-07-03
-- 价值：§27 核心源码级补强：线程池决策源码 + times() 系统调用全链路 + 纠正 corePoolSize 永久保留误解
+- Android 17 [`ThreadPoolExecutor.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java)
+- Android 17 [`android.os.Process`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Process.java)
+- Android 17 6.18 内核 [`kernel/sys.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sys.c)
+- Android 17 6.18 内核 [`proc.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst)
+- Linux 6.18 [`EEVDF 调度文档`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-eevdf.rst)
+- Android Developers [`优化后台任务`](https://developer.android.com/topic/performance/background-optimization)
+- Android Developers [`PerformanceHintManager`](https://developer.android.com/reference/android/os/PerformanceHintManager)
+- Kotlin [`Dispatchers.IO`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html)
