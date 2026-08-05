@@ -36,9 +36,9 @@ sources:
 
 # 26.24 heapprofd 生产级部署与权限模型
 
-本章讨论 Android 17 user build 上的 native heap 采集：哪些进程允许采、谁能发起会话、配置怎样限制开销，以及怎样解释采样结果。平台源码锚定 `android-17.0.0_r1`。本章不涉及内核接口，因此没有引用 kernel tag。
+本章讨论 Android 17 user build 上的 native heap 采集：哪些进程允许采、谁能发起会话、应用怎样使用公开入口、配置怎样限制开销，以及怎样解释采样结果。平台源码锚定 `android-17.0.0_r1`。本章不涉及内核接口，因此没有引用 kernel tag。
 
-heapprofd 随 Android 10 引入。Android 12 增加了 named heap、`all_heaps` 和 installer 过滤等配置能力；Android 17 延续这套架构。`<profileable>` 元素从 API 29 可用，`android:enabled` 属性从 API 30 可用。版本时间线应按这些可核验事实描述，不能把 Android 12 写成 heapprofd 的起点。
+heapprofd 随 Android 10 引入。Android 12 增加了 named heap、`all_heaps` 和 installer 过滤等配置能力；Android 15 又通过 `ProfilingManager` 向普通应用提供受系统约束的 heap profile 请求。Android 17 延续这几条入口。`<profileable>` 元素从 API 29 可用，`android:enabled` 属性从 API 30 可用。版本时间线应按这些可核验事实描述，不能把 Android 12 写成 heapprofd 的起点。
 
 ## 26.24.1 heapprofd 记录什么
 
@@ -50,7 +50,7 @@ heapprofd 观察目标进程在采集窗口内经过受支持 allocator 的分�
 |---|---|---|
 | 会话期间的 `malloc` / `free` | 可采样并归因到调用栈 | Perfetto heap flamegraph |
 | 会话开始前已存在的 allocation | 没有历史分配事件，不能还原来源 | 更早启动采集或做基线对照 |
-| 直接 `mmap` / `munmap` | 默认不经过 `libc.malloc` heap | `linux.perf` syscall events、`/proc/<pid>/maps` |
+| 直接 `mmap` / `munmap` | 默认不经过 `libc.malloc` heap | Perfetto ftrace syscall 事件、`/proc/<pid>/maps` |
 | DMA-BUF、图形 buffer | 没有 allocator 调用栈语义 | memtrack、`dmabuf_dump`、GpuMem |
 | Java 对象引用关系 | native heap profile 不提供 | Java heap dump、Android Studio profiler |
 | allocator 内部缓存 | 能看到应用层 free，不能直接解释 RSS 是否归还 | `dumpsys meminfo`、smaps、allocator 指标 |
@@ -76,6 +76,8 @@ Android 17 中，`heapprofd` 是 Perfetto producer。一次对已运行进程的
 ## 26.24.3 user build 的权限判定
 
 Android 17 的 `CanProfileAndroid()` 会先看 build type。`userdebug` 和 `eng` 直接通过这一层；`user` build 继续检查 UID、会话发起者和 `/data/system/packages.list`。
+
+本节的判定表描述直接提交给 Perfetto 的 `android.heapprofd` data source。`ProfilingManager` 不是让应用自行填写 `session_initiator`：系统服务先核对 Binder 调用 UID 与包名，再代为生成限定到调用方包名的配置。两条入口不能混用权限结论。
 
 ### 普通应用与两类发起者
 
@@ -127,7 +129,9 @@ target_installed_by: "@product"
 
 `android:enabled` 默认是 `true`，通常不用重复写。设为 `false` 会禁止系统服务和 shell profiler。`android:shell="true"` 允许 shell 工具读取 profiling 所需的调用栈信息，不会把任意堆字节开放给第三方 App。
 
-发布策略要根据产品威胁模型决定。调用栈、模块路径、Build ID、线程名和进程名仍可能暴露实现信息。应用若不接受终端用户通过本地调试工具采集 release 版本，应保留 `android:shell="false"`，由受信系统组件承担线上采集；没有这类系统组件时，就不具备通用的远程 heapprofd 采集入口。
+发布策略要根据产品威胁模型决定。调用栈、模块路径、Build ID、线程名和进程名仍可能暴露实现信息。应用若不接受终端用户通过本地调试工具采集 release 版本，应保留 `android:shell="false"`，由受信系统组件执行线上采集。
+
+`ProfilingManager` 不要求 `android:shell="true"`。平台服务 profiling 默认允许，应用可通过 `<profileable android:enabled="false" />` 明确退出；退出后，shell 与平台服务都不能采集。Android 15–17 的普通应用若要采自己的生产 profile，应优先使用 `ProfilingManager`，不必为了远程采集向设备 shell 开放 release APK。
 
 可通过包管理器输出核对最终 APK 的合并结果。下面的命令查看设备侧 package 信息：
 
@@ -165,7 +169,38 @@ process_cmdline: "com.example.app:remote"
 
 heapprofd 会分别为匹配到的 PID 建立状态。分析时还要按 `upid` 区分进程，不能把两个进程的 allocation 直接相加后归到主进程。
 
-## 26.24.7 两种可执行的采集方式
+## 26.24.7 三种可执行的采集方式
+
+### Android 15–17 使用 `ProfilingManager`
+
+API 35 起，普通应用可以请求自己的 native heap profile。Android 官方建议通过 AndroidX `HeapProfileRequestBuilder` 构造参数；系统会限制时长、buffer、采样间隔和请求频率，调用成功也不保证每次都获得结果。
+
+下面的 Kotlin 代码用于启动 native allocation profile，并把停止时机交给调用方：
+
+```kotlin
+@RequiresApi(35)
+fun requestNativeHeapProfile(
+    context: Context,
+    executor: Executor,
+    listener: Consumer<ProfilingResult>,
+): CancellationSignal {
+    val stopSignal = CancellationSignal()
+    val request = HeapProfileRequestBuilder()
+        .setTrackJavaAllocations(false)
+        .setTag("native-heap")
+        .setCancellationSignal(stopSignal)
+        .build()
+
+    requestProfiling(context, request, executor, listener)
+    return stopSignal
+}
+```
+
+调用方应在目标场景前发起请求，并在场景结束后执行 `stopSignal.cancel()`。结果通过 `ProfilingResult.getResultFilePath()` 指向应用 files 目录；失败时要记录 `getErrorCode()` 和 `getErrorMessage()`，其中包括进程级或系统级限流。
+
+Android 17 的 Profiling 模块会校验调用 UID 与包名，然后把包名写入 `HeapprofdConfig.process_cmdline`。应用不能借此采集其他包，`:remote` 等次要进程也不会自动加入。`setTrackJavaAllocations(true)` 会把 heap 改为 `com.android.art`，它是 Java allocation profile，不是包含对象引用关系的 Java heap dump。
+
+系统 trace 会经过通用 trace redactor；`android-17.0.0_r1` 的 `ProfilingService.needsRedaction()` 没有把 heap profile 放进该流程。heap profile 依靠目标包限制来隔离其他应用数据，返回文件中的本应用调用栈、映射与地址仍应按敏感诊断数据管理。
 
 ### 使用官方 `tools/heap_profile`
 
@@ -185,7 +220,7 @@ Android 17 tag 中脚本的默认采样间隔是 4096 bytes，共享内存默认
 
 ### 手写 Perfetto textproto
 
-需要与调度、进程内存或业务 marker 同时采集时，可以直接配置 `android.heapprofd`。下面是一份偏保守的两分钟示例：
+需要与调度、进程内存或业务 marker 同时采集时，可以直接配置 `android.heapprofd`。下面的两分钟示例沿用上一条命令的采样间隔、dump 周期和官方脚本 buffer 默认值，并附带 process stats：
 
 ```textproto
 buffers {
@@ -201,8 +236,6 @@ data_sources {
       process_cmdline: "com.example.app"
       sampling_interval_bytes: 4096
       shmem_size_bytes: 8388608
-      max_heapprofd_memory_kb: 131072
-      max_heapprofd_cpu_secs: 30
       continuous_dump_config {
         dump_phase_ms: 30000
         dump_interval_ms: 30000
@@ -227,7 +260,7 @@ write_into_file: true
 flush_timeout_ms: 30000
 ```
 
-这份配置用周期 dump 观察存活 allocation 的变化，并用 process stats 提供 RSS 侧背景。`max_heapprofd_memory_kb` 和 `max_heapprofd_cpu_secs` 是示例阈值，部署前应按目标设备、进程数和场景基线调整。
+这份配置用周期 dump 观察存活 allocation 的变化，并用 process stats 提供 RSS 侧背景。示例没有填写 `max_heapprofd_memory_kb` 和 `max_heapprofd_cpu_secs`，因为这两个 guardrail 没有跨设备通用值；生产配置应先测量 daemon 基线，再设置并验证阈值。
 
 下面的命令把配置送入设备侧 Perfetto，并拉回 trace：
 
@@ -260,7 +293,19 @@ memory 和 CPU guardrail 每 30 秒检查一次。阈值触发后，producer 关
 
 不要引用固定的“CPU 增加 1%”或“daemon RSS 80 MB”作为跨设备结论。开销会受 allocation 速率、采样间隔、调用栈深度、ABI、符号信息、目标进程数和 CPU 性能影响。可靠做法是在相同 workload 下分别测量无采集、目标采样间隔和更大间隔三组数据。
 
-## 26.24.9 生产部署的三种权限位置
+## 26.24.9 采集主体与部署位置
+
+### Android 15–17 普通 App 请求自己的 profile
+
+`ProfilingManager` 是应用在公开用户设备上采集 heap profile 的标准入口。它不要求 adb，也不把 trusted-system 身份交给应用。系统服务执行以下约束：
+
+- Binder 调用 UID 必须与请求包名对应；
+- 配置目标固定为调用方包名；
+- 请求同时受单应用与全系统限流；
+- DeviceConfig 可以限制参数范围或关闭 profile 类型；
+- 结果复制到应用目录，由应用负责上传和删除。
+
+这条路径适合少量、按场景触发的线上证据。它的可配置范围小于手写 Perfetto config，不能选择其他进程名、installer 过滤、连续 dump 或自定义 heapprofd guardrail。
 
 ### QA 在 user build 上采 release APK
 
@@ -285,11 +330,11 @@ OEM 或系统产品可以让受信系统服务按设备健康信号发起 Perfet
 
 受信发起者身份来自系统集成，不能由普通 APK 模拟。设备管理权限或远程配置本身也不自动获得该身份。
 
-### 只有普通 App 权限
+### Android 12–14 只有普通 App 权限
 
-普通 App 没有公开 API 可以把自己声明为 trusted-system 会话，也通常不能管理 `/data/misc/perfetto-traces`。若产品必须在终端用户设备上由 App 自主触发，应选择应用内 allocator instrumentation、SDK 自带 native hook、GWP-ASan 或轻量内存指标，并单独评估兼容性、性能和隐私。
+Android 12–14 的普通 App 没有 `ProfilingManager`，也没有公开 API 可以把自己声明为 trusted-system 会话。若产品必须在这些版本的终端用户设备上由 App 自主触发，应选择应用内 allocator instrumentation、SDK 自带 native hook、GWP-ASan 或轻量内存指标，并单独评估兼容性、性能和隐私。
 
-把 `onTrimMemory()`、PSS 阈值或 `ApplicationExitInfo` 接到“启动 heapprofd”之前，要先确认执行采集的系统主体存在。事件信号只能决定何时采，不能创造 Perfetto 系统权限。
+把 `onTrimMemory()`、PSS 阈值或 `ApplicationExitInfo` 接到“启动 heapprofd”之前，要先确认执行采集的系统主体存在。Android 15–17 可以请求 `ProfilingManager`，但仍会受限流和并发会话约束；更低版本中的事件信号只能决定何时记录应用内证据，不能创造 Perfetto 系统权限。
 
 ## 26.24.10 如何判断 native heap 是否持续增长
 
@@ -332,7 +377,18 @@ heapprofd 证据与 PSS 证据应并排解释。两者趋势一致时，可把�
 
 ## 26.24.11 失败场景排查
 
-### 没有生成 profile
+### `ProfilingManager` 请求被拒绝
+
+API 35 以上的应用应先检查 `ProfilingResult`：
+
+- `ERROR_FAILED_RATE_LIMIT_PROCESS` 表示调用应用的小时、天或周预算已经用完；
+- `ERROR_FAILED_RATE_LIMIT_SYSTEM` 表示整台设备的共享预算已经用完；
+- `ERROR_FAILED_PROFILING_IN_PROGRESS` 表示已有不兼容的 profiling 会话；
+- `ERROR_FAILED_INVALID_REQUEST` 常见于参数越界、未知参数或 profile 类型被关闭。
+
+限流不是“稍后立即重试”的信号。应用应记录错误分类，并等待下一次有诊断价值的场景。若进程在采集期间退出，系统会停止并保存已有结果；应用下次启动并注册全局 listener 后，系统才有机会补发通知。
+
+### 手写 Perfetto 会话没有生成 profile
 
 按以下顺序检查：
 
@@ -387,6 +443,7 @@ heapprofd 不复制任意 heap payload，但 trace 仍可能包含：
 - [ ] 源码与配置以 `android-17.0.0_r1` 为基准；
 - [ ] release APK 的 profileable 合并结果已在 user build 验证；
 - [ ] shell 会话和 trusted-system 会话的权限主体没有混写；
+- [ ] Android 15–17 的普通 App 优先使用 `ProfilingManager`，并处理限流与结果文件；
 - [ ] 所有 native 进程名均为精确值，没有使用 `*`；
 - [ ] sampling interval、shmem、dump 周期和 guardrail 有设备基线；
 - [ ] 线上配置不会因 `block_client` 放大业务延迟；
@@ -409,3 +466,8 @@ heapprofd 不复制任意 heap payload，但 trace 仍可能包含：
 - [Perfetto：Memory profiling guide](https://perfetto.dev/docs/getting-started/memory-profiling)
 - [PerfettoSQL：heap_profile_allocation](https://perfetto.dev/docs/analysis/sql-tables#heap_profile_allocation)
 - [Android Developers：`<profileable>` element](https://developer.android.com/guide/topics/manifest/profileable-element)
+- [Android Developers：`ProfilingManager`](https://developer.android.com/reference/android/os/ProfilingManager)
+- [Android Developers：App-driven profiling](https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture)
+- [AndroidX：`HeapProfileRequestBuilder`](https://developer.android.com/reference/androidx/core/os/HeapProfileRequestBuilder)
+- [AOSP android-17.0.0_r1：Profiling heap profile 配置](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/Configs.java)
+- [AOSP android-17.0.0_r1：ProfilingService 权限、限流与结果处理](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java)
