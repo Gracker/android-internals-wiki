@@ -9,7 +9,7 @@ task2b_lite_notes: "2026-06-07 删除重复 H1+outline+intro 块(L55-102);代码
 last_task6_review_log: "logs/review/2026-06-07-11-review.md"
 task6_review_notes: "2026-05-30 01: Task6 revisiting review: needs-rework;L1/L2 小修 6 处;参考资料后仍有未融合源码调研素材块，新增 queue 回炉。 | 2026-06-07 11:06:B类问题-文件存在重复的H1+outline+intro块(第55-102行),需Task2B删除第一个不完整实例;L1/L2无新增小修项。 | 2026-06-07 12:12:task6 revisiting review(第3轮):修复 13 处代码块语言标记(```text→```cpp/```java + 闭合标签规范化);L1/L2 通过;无 B 类大问题;queue 中 3.1 的 pending 条目为 task2b 已修复的陈旧条目，建议清理。"
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-03'
+last_verified: '2026-08-05'
 last_verified_against: "AOSP android-17.0.0_r1; kernel android17-6.18-2026-06_r6"
 version_note: Android 12/13 使用 InputClassifier，Android 14-17 使用 InputProcessor；正文行为以 Android 17 为准
 confidence: high
@@ -68,12 +68,12 @@ review_type: "task6-writing-quality-review"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-21
 last_task9_autofix_at: "2026-06-20"
-last_task9_audit: "2026-08-03"
+last_task9_audit: "2026-08-05"
 task2b_verifier_notes: "2026-06-20 Task2B Verifier: status finalized→ready-for-review (Task9 auto-fix 回流，pipeline_stage=task6_pending 但 status 未同步); 2026-06-20T19:27:21+08:00"
 last_task6_audit: "2026-06-20"
-last_idle_audit_at: "2026-08-03T14:35:19+08:00"
-last_idle_audit_run_id: "20260803-143502-idle-audit-d0114de0"
-last_idle_audit_notes: "2026-08-03 闲时抽检通过：无 Android 18/API38 越界、无待验证残留标记、无 P0/P1 技术错误；sources 覆盖 AOSP inputflinger/InputTransport/ViewRootImpl/ViewGroup 与 kernel evdev，quality_flags pending-verification-marker 与 thin-source-marking 经核查仍不适用；仅更新审计元数据。"
+last_idle_audit_at: "2026-08-05T14:35:24+08:00"
+last_idle_audit_run_id: "20260805-143524-idle-audit-d0114de0"
+last_idle_audit_notes: "2026-08-05 闲时抽检通过：无 Android 18/API38 越界、无待验证残留标记、无 P0/P1 技术错误；sources 覆盖 AOSP inputflinger/InputTransport/ViewRootImpl/ViewGroup 与 kernel evdev，quality_flags pending-verification-marker 与 thin-source-marking 经核查仍不适用；仅更新审计元数据。"
 ---
 
 # 3.1 Input 事件分发全流程
