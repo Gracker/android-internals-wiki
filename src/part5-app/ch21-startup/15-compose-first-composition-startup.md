@@ -203,7 +203,7 @@ Android 17 的自由窗口、分屏和旋转都可能改变窗口约束。约束
 
 启动测试至少覆盖一个常用全屏尺寸和一个可调整窗口尺寸。若窗口拖动期间重组过多，应检查状态读取范围、窗口类别离散化和布局到状态的反馈，不要冻结一次 `getCurrentWindowMetrics()` 结果。
 
-每个 Android 进程有独立的 heap、ClassLoader 和 Compose runtime 状态。只有在某个进程创建 Compose UI host 时，它才负责对应类加载与 composition 成本。通知、App Widget 的 `RemoteViews`，以及基于 Glance 生成 `RemoteViews` 的路径，不能按 Activity 中的 `AndroidComposeView` 首帧模型解释。多进程 Baseline Profile 是否覆盖入口，也应通过该进程的启动 trace 验证。
+每个 Android 进程有独立的 heap、ClassLoader 和 Compose runtime 状态。只有在某个进程创建 Compose UI host 时，它才会产生对应类加载与 composition 成本。通知、App Widget 的 `RemoteViews`，以及基于 Glance 生成 `RemoteViews` 的路径，不能按 Activity 中的 `AndroidComposeView` 首帧模型解释。多进程 Baseline Profile 是否覆盖入口，也应通过该进程的启动 trace 验证。
 
 ## 7. View/Compose 混合页面
 

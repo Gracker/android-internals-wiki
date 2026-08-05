@@ -198,6 +198,8 @@ fun updateUiLater() {
 }
 ```
 
+构造点已经把执行目标固定为 main Looper，因此调用方位于哪条线程都不会改变消息归属。它只解决投递位置问题，不保证任务能在某个固定时限内执行。
+
 ### Android 17 的 MessageQueue 不能再只按链表理解
 
 经典 `LegacyMessageQueue` 以 `mMessages` 为头结点，维护按执行时间排序的单向链表。这个模型适合解释旧版本的插入、同步屏障和 `next()`，但不能代表 Android 17 的全部实现。
@@ -467,9 +469,9 @@ Android 17 的 `libcore` 源码和 API 文本已经出现第一版虚拟线程�
 | 版本 | 与线程模型相关的变化 |
 |---|---|
 | Android 5.0 | 硬件加速渲染管线进一步采用独立 RenderThread，主线程与渲染提交的分工成为常见分析对象 |
-| Android 8.0 | 后台执行限制加强，后台 Service 不再适合承载任意长任务 |
+| Android 8.0 | 后台执行限制趋严，后台 Service 不再适合承载任意长任务 |
 | Android 11 / API 30 | `AsyncTask` 与 `IntentService` 废弃 |
-| Android 12 以后 | 前台服务启动和后台工作约束持续限制加强，任务类型必须与系统 API 语义匹配 |
+| Android 12 以后 | 前台服务启动和后台工作的限制持续增加，任务类型必须与系统 API 语义匹配 |
 | Android 17 / API 37 | 以 API 37 为目标的应用启用新的无锁 MessageQueue；私有字段反射存在兼容风险 |
 | Android 17 / API 37 | `libcore` 出现受发布开关控制的虚拟线程 v1 API 与实现，不能假定所有构建均启用 |
 

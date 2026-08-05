@@ -141,6 +141,8 @@ if (!strcmp(argv[1], "second_stage")) {
 return FirstStageMain(argc, argv);
 ```
 
+这三个入口由 `execv()` 串接，运行在不同的初始化条件下。排障时应先确认耗时属于 first stage、SELinux setup 还是 second stage，再选择对应日志和源码路径。
+
 ### first-stage init
 
 `FirstStageMain()` 建立 early userspace 所需的文件系统和设备条件，通过 `FirstStageMount::DoFirstStageMount()` 挂载启动必需分区，处理 ramdisk/root 切换，然后 `execv("/system/bin/init", {"selinux_setup"})`。
@@ -251,6 +253,8 @@ adb shell bootstat -p
 
 ### event log 与内核日志
 
+下面两条命令分别读取 framework 启动里程碑和内核早期日志，用于判断延迟发生在哪一侧：
+
 ```bash
 adb logcat -b events -d | grep -E 'boot_progress|boot_complete'
 adb shell dmesg
@@ -308,7 +312,7 @@ service vendor.cas-default-lazy /vendor/bin/hw/android.hardware.cas-service.exam
     disabled
 ```
 
-`interface aidl` 让 servicemanager 识别接口，`disabled` 避免随 class 自动启动，`oneshot` 控制退出后的重启行为。lazy 只适合客户端可以负责首次启动延迟、且服务没有早期硬依赖的场景。
+`interface aidl` 让 servicemanager 识别接口，`disabled` 避免随 class 自动启动，`oneshot` 控制退出后的重启行为。lazy 只适合客户端可以接受首次启动延迟、且服务没有早期硬依赖的场景。
 
 ### Home 和广播长尾
 

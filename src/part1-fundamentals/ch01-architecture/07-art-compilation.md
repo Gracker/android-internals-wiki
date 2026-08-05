@@ -107,7 +107,7 @@ last_task9_autofix_at: "2026-06-20"
 
 一个方法在 Android 上运行时，不一定只有一种执行形态。ART 可以解释 DEX 字节码、在运行期用 JIT 编译热点，也可以加载 dex2oat 预先生成的 AOT 代码。
 
-启动性能分析里有用的问题不是“AOT 还是 JIT 哪个更快”，而是：
+分析启动性能时，不要笼统比较“AOT 还是 JIT 更快”，应依次确认：
 
 1. 启动路径上的方法当前有没有可用的 AOT 代码？
 2. 没有 AOT 代码时，是解释执行，还是已经被 JIT 编译？
@@ -206,7 +206,7 @@ dex2oat 是 ART 的 on-device AOT 编译器入口。对被 filter 选中的方�
 
 ### AOT 产物为什么会失效
 
-编译代码依赖的不只是 APK 本身，还包括：
+编译代码既依赖 APK 本身，也依赖：
 
 - DEX 校验和和 split 集合；
 - boot class path 与 boot image；
@@ -265,7 +265,7 @@ static size_t GetInitialCapacity() {
 
 空间压力下，`JitCodeCache::DoCollection(Thread*)` 扫描活动栈和 code cache 状态，保留仍然需要的代码并回收可移除项。调试信息、JVMTI、JIT-at-first-use 等模式会影响是否允许回收。不能把它简化成固定 LRU，也没有依据说大型应用“通常稳定在 4 MB”。
 
-### 去优化不是异常，而是投机优化的安全出口
+### 去优化是投机优化的安全出口
 
 JIT/AOT 可能基于当前类层次、inline cache 或单实现方法做优化。如果后来加载的新类型、类重定义、调试器或 instrumentation 破坏假设，ART 必须丢弃代码、切回安全入口或去优化栈帧。
 

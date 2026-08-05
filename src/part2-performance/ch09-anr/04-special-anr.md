@@ -442,7 +442,7 @@ sqlite3 app.db 'PRAGMA synchronous;'
 
 - **Android 8 / API 26**：加入 `startForegroundService()`；ART 默认 GC 计划切换到 Concurrent Copying。
 - **Android 10 / API 29**：Concurrent Copying 支持分代收集。
-- **Android 12 / API 31**：后台启动 FGS 的入口限制加强，使用 `ForegroundServiceStartNotAllowedException` 表达拒绝。
+- **Android 12 / API 31**：后台启动 FGS 的入口限制趋严，使用 `ForegroundServiceStartNotAllowedException` 表达拒绝。
 - **Android 14 / API 34**：Broadcast timeout 可按 CPU starvation 延长；加入 `shortService` 与超时回调。
 - **Android 15 / API 35**：AOSP 支持 16 KB page-size 设备；targetSdk 35+ 的 `dataSync`、`mediaProcessing` 进入限时 FGS 规则。
 - **Android 17 / API 37**：本文以 `BroadcastQueueImpl`、`BroadcastAnrTimer`、Android 17 ActivityThread/QueuedWork、ART heap 和 6.18 内核状态为结论锚点。

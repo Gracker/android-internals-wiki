@@ -81,7 +81,7 @@ JNI 性能问题很少由某一条指令单独决定。一次跨边界调用会�
 
 - 它是 generic quick trampoline 的栈预留空间；
 - 它不是一次 5120 字节的堆分配；
-- 它也不是所有 JNI 调用都会负责的固定成本。
+- 它也不是所有 JNI 调用都会产生的固定成本。
 
 栈指针调整本身不能直接换算成耗时。通用桩还会根据 shorty 描述处理整数、浮点和引用参数，准备 `JNIEnv*` 与接收者，并在返回阶段恢复引用和线程状态。AOT/JIT 编译出的 JNI stub 已知方法签名，可以按目标 ISA 的调用约定生成更紧凑的路径。
 
@@ -343,7 +343,7 @@ mode `0` 表示复制修改并释放缓冲区；只读场景可用 `JNI_ABORT` �
 - 不调用可能阻塞或触发复杂运行时工作的 JNI API；
 - 所有退出路径都执行 Release。
 
-数组较大并不能自动证明 Critical 更快。普通 Elements 可能负责副本成本，Critical 则把压力转移到 GC 协调。应在目标设备上同时观察 CPU、复制量、GC pause 和尾延迟。
+数组较大并不能自动证明 Critical 更快。普通 Elements 可能产生副本成本，Critical 则把压力转移到 GC 协调。应在目标设备上同时观察 CPU、复制量、GC pause 和尾延迟。
 
 Android 17 的数组实现位于 [`jni_internal.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/jni/jni_internal.cc)。
 

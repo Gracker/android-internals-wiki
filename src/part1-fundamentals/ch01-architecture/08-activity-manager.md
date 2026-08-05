@@ -537,7 +537,7 @@ RootWindowContainer
 | Android 11（API 30） | 后台拉起的 FGS 访问相机、麦克风、位置受到更严格限制 |
 | Android 12（API 31） | 后台启动 FGS 默认禁止，仅保留明确豁免 |
 | Android 13（API 33） | 用户可在 Active apps/FGS 管理界面查看并停止服务；通知权限与 FGS 通知展示分开处理 |
-| Android 14（API 34） | 目标版本要求声明 FGS type 和对应权限；while-in-use 权限检查限制加强 |
+| Android 14（API 34） | 目标版本要求声明 FGS type 和对应权限；后台创建 FGS 时会同步检查 while-in-use 权限是否处于可用状态 |
 | Android 15（API 35） | `dataSync` 与 `mediaProcessing` 各自共享每 24 小时 6 小时后台额度，并提供 `Service.onTimeout()` |
 | Android 16（API 36） | 与 FGS 并发执行的 Job 也计入 JobScheduler runtime quota |
 | Android 17（API 37） | 后台音频交互增加生命周期与 FGS/WIU 约束 |

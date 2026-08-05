@@ -127,7 +127,7 @@ Activity 即将创建
 
 ## 1. Zygote 预加载转移了什么成本
 
-普通应用进程由与其 ABI 匹配的 Zygote fork 出来。Zygote 在 fork 前映射的共享库代码页和适合继承的只读状态，可以被后续子进程复用；同一个 Zygote 只需负责一次冷加载成本。
+普通应用进程由与其 ABI 匹配的 Zygote fork 出来。Zygote 在 fork 前映射的共享库代码页和适合继承的只读状态，可以被后续子进程复用；同一个 Zygote 只需付出一次冷加载成本。
 
 图形预加载主要覆盖：
 
@@ -311,6 +311,8 @@ if (Properties::peekRenderPipelineType()
 }
 ```
 
+这段分支只触发所选图形后端的早期 loader 路径；它没有完成 App 的 context、surface 或 swapchain 创建。
+
 ### 4.1 GL 分支没有创建 EGLContext
 
 `eglGetDisplay(EGL_DEFAULT_DISPLAY)` 让 EGL loader/driver 走到 display 获取路径，但源码没有：
@@ -338,7 +340,7 @@ if (Properties::peekRenderPipelineType()
 
 `Properties::initializeGlAlways()` 读取 `debug.hwui.initialize_gl_always`，默认值来自 HWUI flag。当 HWUI 走 SkiaVulkan，但设备上仍有大量 App 直接使用 GLES 时，这个分支会额外调用一次 `eglGetDisplay()`。
 
-源码特别说明：这次 GL 调用发生在 fork 前，相关内存应可共享；不使用 GL 的 App 不需要在自己的启动路径再次负责同样的公共成本。
+源码特别说明：这次 GL 调用发生在 fork 前，相关内存应可共享；不使用 GL 的 App 不需要在自己的启动路径再次付出同样的公共成本。
 
 ## 5. `ro.zygote.disable_gl_preload` 不是 App 调优开关
 
@@ -553,6 +555,8 @@ driver 初始化可能包含：
 
 ### 10.1 记录属性和全局选择
 
+下面的属性和全局设置共同描述 zygote 预加载开关、HWUI pipeline 以及可更新 driver/ANGLE 选择：
+
 ```bash
 adb shell getprop ro.zygote.disable_gl_preload
 adb shell getprop debug.hwui.renderer
@@ -582,6 +586,8 @@ adb shell cat /proc/<PID>/maps \
 这能证明“哪些库已映射”，不能单独证明“最终所有 GL/Vulkan 调用由哪套 driver 处理”。还要结合 `GraphicsEnvironment` 日志、属性、driver package 和 API trace。
 
 ### 10.3 日志入口
+
+下面的日志筛选用于查找 zygote 预加载、driver 选择、动态链接和 SELinux 拒绝信息：
 
 ```bash
 adb logcat -v threadtime \

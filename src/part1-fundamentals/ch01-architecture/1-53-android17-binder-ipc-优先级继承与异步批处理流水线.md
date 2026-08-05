@@ -131,7 +131,7 @@ Death notification 的四态机设计解决了 Binder 中唯一的长生命周�
    ```
 2. **caller 元数据透传**（IPCThreadState.cpp:1515-1611）：在 BR_TRANSACTION 入口保存 origPid，tr.sender_pid 写入 mCallingPid；恢复时还原。这与调度优先级**正交**，仅服务于 `Binder.getCallingPid()` Java API。
 
-**结论**：所谓"IPCThreadState.cpp 中的优先级继承"实际上**不存在**于该文件，全部优先级逻辑都在 `Parcel.cpp`（用户态编码）+ `kernel binder.c`（内核态决策）双侧。
+**结论**：`IPCThreadState.cpp` 中没有实现所谓的“优先级继承”；相关优先级逻辑分布在 `Parcel.cpp` 的用户态编码与内核 `binder.c` 的决策路径。
 
 ### 🔹 Parcel.cpp 编码端（frameworks/native/libs/binder/Parcel.cpp:247-326）
 
@@ -168,6 +168,8 @@ if (thread->prio_state == BINDER_PRIO_PENDING) {
 }
 ```
 
+这段分支把 pending 的下一优先级保存到当前事务，并把线程状态切到 ABORT，避免嵌套事务结束时恢复到已经过期的状态。
+
 ### 🔹 三层合并顺序（binder.c:819-869 binder_transaction_priority）
 
 `binder_transaction_priority()` 在 `binder_set_priority()` 之前的 3 步处理：
@@ -189,6 +191,8 @@ if (thread->prio_state == BINDER_PRIO_PENDING) {
 - **`verify=false` 路径**（binder_restore_priority）：恢复自己原优先级时跳过 CAP_SYS_NICE 校验
 
 ### 🔹 RT 写调用（binder.c:793-800）
+
+下面是仲裁和权限校验完成后，Binder driver 把目标调度策略写入线程的关键调用：
 
 ```c
 struct sched_param params;

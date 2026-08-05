@@ -313,7 +313,7 @@ Android 17 还将 MMD 引入这类内存管理流程。按设备配置，冻结�
 
 ## Binder Freezer 决定 IPC 如何失败
 
-线程被冻结以后，普通 Binder 行为会让调用方负责不可控等待。Binder freezer 为同步和异步事务规定了不同处理：
+线程被冻结以后，普通 Binder 行为会让调用方经历不可控等待。Binder freezer 为同步和异步事务规定了不同处理：
 
 | IPC 类型 | 目标处于 frozen 时的行为 | 应用侧风险 |
 | --- | --- | --- |

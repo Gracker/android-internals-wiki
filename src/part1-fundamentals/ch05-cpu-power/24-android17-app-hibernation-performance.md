@@ -28,7 +28,7 @@ sources:
 
 # 5.24 Android 17 App Hibernation 状态机与冷启动恢复性能
 
-App Hibernation 面向“安装后长期没有被使用”的应用。它会把包置于类似手动 Force stop 的状态，回收缓存和可选的 dexopt 产物，并配合 unused-app policy 重置一部分运行时权限。对应用团队而言，最重要的后果有三个：原有后台入口不能继续工作、权限不会在退出休眠时自动恢复、首次再启动可能同时负责冷进程、缓存重建和代码重新优化的成本。
+App Hibernation 面向“安装后长期没有被使用”的应用。它会把包置于类似手动 Force stop 的状态，回收缓存和可选的 dexopt 产物，并配合 unused-app policy 重置一部分运行时权限。对应用团队而言，最重要的后果有三个：原有后台入口不能继续工作、权限不会在退出休眠时自动恢复、首次再启动可能同时产生冷进程、缓存重建和代码重新优化的成本。
 
 本章以 Android 17 / `android-17.0.0_r1` 为源码锚点。阅读源码时要先分清职责：`AppHibernationService` 保存休眠状态并执行系统动作，判定“多久未使用、哪些包应豁免”的策略位于 PermissionController 模块。把所有逻辑都归到 system_server，会得到错误的检查周期、使用事件和权限撤销链路。
 

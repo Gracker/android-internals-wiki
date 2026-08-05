@@ -328,7 +328,7 @@ ORDER BY samples DESC, s.track_id;
 
 ### SQL：量化帧间隔
 
-下面以 track id `1234` 为示例。把它改成上一条查询确认的单一 preview 事件 track；同一 track 上还含其他 `queueBuffer` 时，应再限制加强 `name`。
+下面以 track id `1234` 为示例。把它改成上一条查询确认的单一 preview 事件 track；同一 track 上还含其他 `queueBuffer` 时，应为 `name` 增加更具体的过滤条件。
 
 ```sql
 WITH ordered AS (

@@ -130,7 +130,7 @@ WebView 本身已有独立的 renderer 进程。把承载 WebView 的 Activity �
 
 第二，在 `Application.onCreate()` 中按进程名分支，只能约束分支之后的工作。它无法撤销已经执行的 Provider 初始化。SDK 通过 Provider 或 AndroidX App Startup 自动初始化时，需要从 manifest 归属、initializer 依赖和是否禁用自动初始化三个位置共同治理。
 
-这也解释了同步 IPC 对首屏的影响：主进程在首帧前访问远程 Provider，或绑定服务后立即等待结果，可能触发远程进程冷启动。调用线程会同时负责进程创建、Provider 安装、`Application.onCreate()` 和目标服务准备的等待时间。
+这也解释了同步 IPC 对首屏的影响：主进程在首帧前访问远程 Provider，或绑定服务后立即等待结果，可能触发远程进程冷启动。调用线程会等待进程创建、Provider 安装、`Application.onCreate()` 和目标服务准备。
 
 ## 3. 给每个进程定义最小初始化集
 

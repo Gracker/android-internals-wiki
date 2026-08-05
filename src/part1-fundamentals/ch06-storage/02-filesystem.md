@@ -364,7 +364,7 @@ F2FS 的更新会产生旧无效块，GC 再搬移 victim 中的有效块。冷�
 | Android 10–12 | F2FS、ext4 继续用于可写分区；动态分区与 Virtual A/B 改变系统镜像的映射和更新方式。 |
 | Android 13 | AOSP 文档明确 EROFS 完整支持 Virtual A/B，EROFS 成为只读分区的产品选项。 |
 | Android 15 | AOSP 支持 16 KB page size；文件系统格式、kernel page size 与 native ELF 对齐需要分别检查。 |
-| Android 16 | AOSP 增加预编译 ELF 最大页大小检查等迁移工具，16 KB 兼容要求继续限制加强。 |
+| Android 16 | AOSP 增加预编译 ELF 最大页大小检查等迁移工具，16 KB 兼容要求继续变严。 |
 | Android 17 | 平台锚点为 API 37 / `android-17.0.0_r1`；6.18 arm64 GKI 同时启用 ext4、F2FS、EROFS，并启用 EROFS ZSTD 解压能力。 |
 
 这条时间线描述 AOSP 能力，不代表每台上市设备在相同版本都采用相同格式。版本分析还要结合设备是 launch 还是 upgrade，以及 vendor kernel 和产品配置。

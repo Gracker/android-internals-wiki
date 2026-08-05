@@ -235,7 +235,7 @@ Android 15 起，AOSP 支持 16KB page-size 设备。应用只要直接使用 ND
 
 Google Play 自 2025 年 11 月 1 日起要求：提交到 Play、面向 Android 15（API 35）及以上设备的新应用和现有应用更新必须支持 16KB page size。该要求见 [Android Developers 官方说明](https://developer.android.com/guide/practices/page-sizes)。
 
-这项要求不能证明应用的 GraphicBuffer stride 已变成 16KB，也不能证明帧率会提高。它首先是安装、链接、装载与运行时页大小假设的兼容性要求。
+这项要求不能证明应用的 GraphicBuffer stride 已变成 16KB，也不能证明帧率会提高。它是安装、链接、装载与运行时页大小假设的兼容性要求。
 
 ### 5.1 Android 17 的 backcompat 边界
 

@@ -548,7 +548,7 @@ Android Vitals 当前以 24 小时内累计至少 2 小时的非豁免 partial W
 | Android 8.0 / API 26 | 后台 Service 限制生效；持久后台工作更依赖 JobScheduler 等受控入口 |
 | Android 9 / API 28 | 引入四档 App Standby Buckets，job quota 与应用活跃程度结合 |
 | Android 11 / API 30 | 增加 `STANDBY_BUCKET_RESTRICTED` 常量；该档在 Android 11 默认未启用 |
-| Android 12 / API 31 | 公开 Expedited Job；Foreground Service 后台启动限制加强 |
+| Android 12 / API 31 | 公开 Expedited Job；限制从后台启动 Foreground Service |
 | Android 13 / API 33 | 公开 `JobInfo.Builder.setPriority()` |
 | Android 14 / API 34 | 加入 UIDT、单个 pending reason 查询；priority 文档明确 namespace 范围 |
 | Android 16 / API 36 | 增加当前全部 pending reasons 与有限历史；运行时 quota 覆盖范围扩大 |

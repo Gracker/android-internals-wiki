@@ -102,7 +102,7 @@ finalized_date: "2026-07-14"
 
 线程显示为 Waiting 或 Sleeping，只能证明它没有在 CPU 上执行，不能直接证明发生了锁竞争。它可能在等 Java monitor、native mutex、条件变量、Binder 回复、I/O、定时器，也可能只是 Looper 正常睡在 `epoll_wait()`。
 
-诊断锁问题最有效的方法不是先猜“哪种锁更快”，而是回答四个问题：
+诊断锁问题时，先回答四个问题，不要从猜测“哪种锁更快”开始：
 
 1. **谁在等**：主线程、RenderThread、Binder worker，还是普通后台线程？
 2. **等什么**：Java monitor、native 同步原语、Binder 回复，还是正常事件等待？
@@ -146,6 +146,8 @@ enum LockState {
   kForwardingAddress,
 };
 ```
+
+这些枚举说明 LockWord 还要容纳 identity hash 和对象转发状态。观察到 `synchronized` 时，不能把对象头恒定解释成一组 owner/递归计数字段。
 
 ### 2.1 无竞争路径：thin lock
 
@@ -197,7 +199,7 @@ static constexpr uint64_t kLongWaitMs =
 
 ## 3. Futex：用户态快路径与内核慢路径
 
-futex 不是一把具体的 C++ 锁，而是一套让用户态原子状态与内核等待队列协作的机制。
+futex 是用户态原子状态与内核等待队列协作的机制；它本身不是某一种具体的 C++ 锁。
 
 普通 mutex 的典型思路是：
 
@@ -326,7 +328,7 @@ Android 17 的 `ProcessState.cpp` 定义：
 
 ## 6. system_server：Binder 慢经常只是表象
 
-App 主线程调用 AMS、WMS 或 PMS 后长时间等 reply，常见根因不是 Binder driver 本身，而是 server 端：
+App 主线程调用 AMS、WMS 或 PMS 后长时间等待 reply，常见根因位于 server 端，而非 Binder driver 本身：
 
 - Binder worker 等 system_server 的全局对象锁。
 - owner 持锁执行长计算或磁盘 I/O。
@@ -351,7 +353,7 @@ final ActivityManagerGlobalLock mProcLock = ENABLE_PROC_LOCK
 
 源码注释规定锁顺序：`mProcLock` 位于 `mGlobalLock` 之下，不应在只持有 `mProcLock` 时反向获取 `mGlobalLock`。
 
-`@CompositeRWLock({"mService", "mProcLock"})` 不是一个运行时读写锁对象，而是静态锁契约：相关状态读取可由两把锁中的任意一把保护，写入通常要求同时持有两把锁。方法后缀也帮助审阅调用约束：
+`@CompositeRWLock({"mService", "mProcLock"})` 表达的是静态锁契约，不会在运行时创建读写锁对象：相关状态读取可由两把锁中的任意一把保护，写入通常要求同时持有两把锁。方法后缀也帮助审阅调用约束：
 
 - `LOSP`：通常表示持有列出的任一锁。
 - `LSP`：通常表示同时持有 service/global 与 proc lock。
@@ -577,7 +579,7 @@ Binder 默认线程配置在历史上容易被误传。本章只对当前 Androi
 
 ## 结论
 
-锁竞争分析的核心不是锁名，而是等待链。Java monitor 用 `android_monitor_contention` 找 waiter 与 owner；native mutex 从 futex 候选回到 native 栈和初始化代码；Binder 用 transaction/reply 连起 client 与 server；MessageQueue 还要区分正常 native poll 与旧 monitor 竞争。
+锁竞争分析的核心是等待链。Java monitor 用 `android_monitor_contention` 找 waiter 与 owner；native mutex 从 futex 候选回到 native 栈和初始化代码；Binder 用 transaction/reply 连起 client 与 server；MessageQueue 还要区分正常 native poll 与旧 monitor 竞争。
 
 找到 owner 后继续问：它在 CPU 上运行吗，还是 Runnable 却没被调度？它是否阻塞在另一把锁、I/O 或 Binder 上？只有追到不推进的节点，缩短临界区、拆锁、调整线程模型、启用 PI 或采用无锁结构才有明确目标。
 

@@ -84,7 +84,7 @@ last_deepseek_cn_review_at: 2026-06-06
 
 ### 扩展（可选深入）
 
-- 🔸 各版本对 App 外部存储访问权限的限制加强
+- 🔸 各版本逐步减少 App 对外部存储的直接访问权限
 - 🔸 Incremental FS 用于大型应用的按需下载
 
 ### OpenClaw 加工指引

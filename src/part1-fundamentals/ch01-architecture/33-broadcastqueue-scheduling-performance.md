@@ -187,7 +187,7 @@ Android 没有 `PRIORITY_URGENT_APP`、`PRIORITY_NORMAL_APP` 这组广播字符�
 
 ### 4.2 receiver priority 是整数，但 Android 16 起不再提供跨进程全序
 
-`IntentFilter` 的 priority 仍是整数。Android 16 起，公开行为已经限制加强：优先级只保证在同一应用进程内生效，不保证不同进程之间的接收顺序；应用可设置的值也会被限制在系统保留上下界之间。
+`IntentFilter` 的 priority 仍是整数。Android 16 起，公开行为增加了两项限制：优先级只保证在同一应用进程内生效，不保证不同进程之间的接收顺序；应用可设置的值也会被限制在系统保留上下界之间。
 
 因此，即使两个应用为同一个广播设置不同 priority，也不能把它设计成跨应用协议顺序。需要请求/响应、确认或全序处理时，应使用 Binder 服务、明确的任务队列或持久化协调机制。
 

@@ -285,7 +285,7 @@ for (int h = 0; h < event.getHistorySize(); h++) {
 
 连续 `MOVE` 事件默认走 buffered path。`ViewRootImpl.WindowInputEventReceiver#onBatchedInputEventPending()` 会先判断 `mUnbufferedInputDispatch` 和 `mUnbufferedInputSource`：如果当前序列请求了 unbuffered dispatch，就直接 `consumeBatchedInputEvents(-1)`；否则才 `scheduleConsumeBatchedInput()`，让事件贴着下一帧的输入阶段消费。
 
-这条分叉决定 MOVE 是立即送达，还是贴近下一帧的 input callback 消费。普通滚动使用 buffered path，可以减少 Looper 唤醒和 View 分发次数；笔迹、绘图、签名可在确认命中目标后调用 `View.requestUnbufferedDispatch(event)`。它只影响当前手势序列，应用仍要逐个处理事件，并负责更高的 CPU 调度和回调压力。
+这条分叉决定 MOVE 是立即送达，还是贴近下一帧的 input callback 消费。普通滚动使用 buffered path，可以减少 Looper 唤醒和 View 分发次数；笔迹、绘图、签名可在确认命中目标后调用 `View.requestUnbufferedDispatch(event)`。它只影响当前手势序列，应用仍要逐个处理事件，CPU 调度和回调压力也会增加。
 
 ### Batching 与 WaitQueue 在 Perfetto 中的表现
 

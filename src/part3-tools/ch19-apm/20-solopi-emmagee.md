@@ -325,7 +325,7 @@ SoloPi 依赖多项用户授权与设备策略。测试清单要记录“是否�
 Emmagee 最新 release 是 V2.5.1，发布于 2017-08-25；仓库 HEAD `6a382dffe74b5be6d2de78cb0c640cc67e9ce650` 的时间是 2018-03-16，内容为 README 修改。README 明确写出两条边界：
 
 - Android 5.0 起，`getRunningTasks()` 与 `getRunningAppProcesses()` 的返回受到限制，工具无法再取得可靠的 TopActivity。
-- Android 7.0 限制加强 `/proc` 访问，同时工具无法通过 `top` 命令取得目标 PID，因此上游直接声明 Android 7.0 不受支持。
+- Android 7.0 对 `/proc` 的访问限制趋严，同时工具无法通过 `top` 命令取得目标 PID，因此上游直接声明 Android 7.0 不受支持。
 
 源码进一步说明了这些限制为何会影响整条采样链：
 

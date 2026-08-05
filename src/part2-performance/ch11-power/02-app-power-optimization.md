@@ -460,7 +460,7 @@ Perfetto 轨道依赖 trace config、系统 build 和厂商实现。标准 user 
 | --- | --- |
 | Android 5.0 / API 21 | JobScheduler 引入 |
 | Android 6.0 / API 23 | Doze 与 App Standby 引入 |
-| Android 8.0 / API 26 | 后台执行、后台位置与隐式广播限制加强 |
+| Android 8.0 / API 26 | 后台执行、后台位置与隐式广播限制趋严 |
 | Android 12 / API 31 | 精确闹钟 special app access；后台启动 FGS 受限 |
 | Android 13 / API 33 | `USE_EXACT_ALARM` 与通知权限等边界进入适配范围 |
 | Android 14 / API 34 | target 34+ 强制 FGS type 与对应权限；`shortService` 时限；多数 target 33+ 新安装不预授予精确闹钟权限 |

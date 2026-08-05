@@ -259,7 +259,7 @@ void DrawFrameTask::postAndWait() {
 }
 ```
 
-因此，UI 线程上的等待首先表示“RenderThread 尚未到达本次 `DrawFrameTask` 的解锁点”。它可能在等 RenderThread 调度运行，也可能在等前方任务结束，还可能在等本帧同步或后续绘制。看到一段长 `syncAndDrawFrame()`，不能直接写成“GPU 正在运行”。
+因此，UI 线程上的等待表示“RenderThread 尚未到达本次 `DrawFrameTask` 的解锁点”。它可能在等 RenderThread 调度运行，也可能在等前方任务结束，还可能在等本帧同步或后续绘制。看到一段长 `syncAndDrawFrame()`，不能直接写成“GPU 正在运行”。
 
 ### `syncFrameState()` 做了什么
 

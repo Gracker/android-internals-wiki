@@ -154,7 +154,7 @@ Cooling device 的 state 是抽象等级。对于 cpufreq cooling，更高 cooli
 - 降温时，目标可以逐级减少，并受 thermal instance 的上下界约束；
 - `HOT` 和 `CRITICAL` trip 不走这段普通 cooling-state 管理逻辑。
 
-这解释了某些设备上逐级限制加强的曲线，但 Perfetto 里出现阶梯频率仍不足以证明正在运行 `step_wise`。OPP 本身是离散的，schedutil 与固件也会生成阶梯变化。
+这解释了某些设备上逐级降低上限的曲线，但 Perfetto 里出现阶梯频率仍不足以证明正在运行 `step_wise`。OPP 本身是离散的，schedutil 与固件也会生成阶梯变化。
 
 ### 限频只是 cooling action 的一种
 
@@ -308,7 +308,7 @@ Android 16（API 36）增加了公开的 CPU/GPU headroom API；Android 17 源�
 
 1. 关键工作在目标 CPU/GPU 上持续繁忙。
 2. thermal status、SKIN headroom、thermal zone 或 cooling state 同期变化。
-3. policy 上限、capacity 或设备功率约束同期限制加强。
+3. policy 频率上限降低、capacity 下降，或者设备功率约束增强。
 4. 请求频率受上限压制，任务时长或帧时间随之恶化。
 5. 冷却并恢复策略后，同一负载的限制解除。
 

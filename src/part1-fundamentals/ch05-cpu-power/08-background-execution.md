@@ -208,7 +208,7 @@ public static final int STANDBY_BUCKET_NEVER = 50; // @hide
 
 对应用开发者，常用的是五个公开桶：Active、Working Set、Frequent、Rare、Restricted。`NEVER` 是内部桶，表示安装后一次也未启动的应用。
 
-当前官方 `power-details` 页面给出的资源上限如下，表里是“App state 与 device state 没有进一步放宽或限制加强”时的基线值：
+当前官方 `power-details` 页面给出的资源上限如下，表里是 App state 与 device state 没有进一步调整限制时的基线值：
 
 | Bucket | Regular jobs | Expedited jobs | Alarms | Network |
 |------|------|------|------|------|
@@ -484,7 +484,7 @@ Perfetto 中看到后台线程与 RenderThread 同时活跃，只能说明存在
 
 **与 Android 功耗管理（5.6）的关系**：5.6 节偏底层，讲 WakeLock、PowerManagerService、device idle。这里更偏框架和 API 选择，讲的是应用层后台任务最终会被哪些规则拦下来。
 
-**与响应速度（8.4）的关系**：BAL 从 Android 10 开始限制加强，后续版本还在继续加限制。后台能不能拉起 Activity，取决于用户可见性、通知 / `PendingIntent` / `IntentSender` 路径和系统豁免条件，不能再按老版本经验硬推。
+**与响应速度（8.4）的关系**：BAL 的限制从 Android 10 开始变严，后续版本还在继续增加约束。后台能不能拉起 Activity，取决于用户可见性、通知 / `PendingIntent` / `IntentSender` 路径和系统豁免条件，不能再按老版本经验硬推。
 
 ## 版本演进
 
@@ -494,7 +494,7 @@ Perfetto 中看到后台线程与 RenderThread 同时活跃，只能说明存在
 | Android 7.0 (API 24) | 引入 Light Doze | 刚灭屏就可能开始限流 |
 | Android 8.0 (API 26) | 对 target API 26+ 限制后台 Service 与 manifest 隐式广播 | 需要结合宽限期、临时允许名单与广播种类判断 |
 | Android 9.0 (API 28) | 引入 App Standby Buckets | Job、alarm、network 开始按桶分级限流 |
-| Android 10 (API 29) | BAL 限制加强 | 后台弹 Activity 的路径明显变少 |
+| Android 10 (API 29) | 增加 BAL 限制 | 后台弹 Activity 的路径明显变少 |
 | Android 12 (API 31) | Restricted bucket、后台启动 FGS 限制、exact alarm special access | 后台任务调度和 FGS 启动都要先过门禁 |
 | Android 13 (API 33) | Restricted bucket 与后台资源规则继续调整 | 分桶阈值不是应用可依赖的公开契约 |
 | Android 14 (API 34) | FGS 类型强制声明，新增 `remoteMessaging`、`shortService`、`systemExempted` 等类型；cached app 进入 cached 约 10 秒后冻结，并引入冻结前 GC 请求 + 冻结后 compaction | FGS 类型、权限和运行时前提都要写完整 |
