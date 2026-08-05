@@ -2,8 +2,8 @@
 title: "行业案例"
 chapter: "17.3"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-04-21"
-last_verified_against: "Android Developers Game Mode/ADPF 文档, Samsung Support Game Booster, Samsung Developer SceneSDK, Android Developers Blog TikTok case study"
+last_verified: "2026-08-06"
+last_verified_against: "Android Developers Game Mode/ADPF 文档, Samsung Support Game Booster, Samsung Developer SceneSDK, Android Developers Blog TikTok case study, Android Developers Blog Jetpacker cloud/hybrid inference case"
 confidence: medium
 sources:
   - type: official
@@ -26,11 +26,13 @@ sources:
     path: "Cubox/抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea-2022-01-13.md"
   - type: official
     path: "https://developer.android.com/jetpack/androidx/releases/window"
+  - type: official
+    path: "https://android-developers.googleblog.com/2026/07/build-intelligent-android-apps-cloud-and-hybrid-inference.html"
 tags: ['case-study', 'game-mode', 'adpf', 'startup', 'foldable', 'oem', 'industry']
 related_chapters: ["5.6", "7.4", "7.5", "8.2", "8.3", "11.1", "16.1", "17.1", "17.2"]
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
-task6_state: "reviewed"
+task6_state: "revisiting"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-28"
 task6_result: "pass-light-edit"
@@ -38,9 +40,9 @@ last_task6_audit: "2026-07-15"
 last_task6_audit_log: "logs/review/2026-07-15-18-audit.md"
 last_task6_audit_notes: "idle audit: L1 禁用词全清；中英文间距干净；高频词(优化48/性能38/设备28)均主题固有；frontmatter 完整；4个🔹锚点全覆盖；无 L1/L2 问题，无需修改。"
 section: "17.3"
-status: finalized
-pipeline_stage: ready-to-publish
-task9_state: reviewed
+status: ready-for-review
+pipeline_stage: task6_pending
+task9_state: pending
 task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
@@ -56,6 +58,9 @@ last_task9_audit_notes: "idle audit: no P0/P1; android-17.0.0_r1 source paths re
 review_notes: "2026-04-28 task9 deep-review: pass-tech-review；无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。；2026-05-04 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 3。核心 API 与案例链路可通过；仅有 Thermal thresholds API 版本守卫、FileProvider 插桩细节、折叠屏多窗口数据支撑三处 P2。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-21
+last_body_apply_at: "2026-08-06T07:15:45+08:00"
+last_body_apply_run_id: "20260806-071545-2d77d0d1"
+last_body_apply_source: "source-index:192; 08-jetpacker-hybrid.md"
 ---
 
 # 行业案例
@@ -319,6 +324,20 @@ Samsung SceneSDK 与 TikTok 案例展示了两种合作关系：前者把应用�
 
 如果一个收益只能依赖私有配置获得，应用仍需保留公共路径和安全默认值。设备 OTA、SoC 变更或游戏版本升级后，应重新验证。
 
+### Jetpacker：云端、端侧与自定义路由的 AI 功能案例
+
+Android Developers Blog 在 2026-07-21 发布 Jetpacker 案例，主题不是 OEM 私有调度，而是大型 Android 应用如何把云端模型、端侧模型和服务侧保护组合成可发布功能；因此它更适合作为“协作接口与验证边界”的补充案例，而不是 Android 17 平台 API 结论。[来源: 08-jetpacker-hybrid.md]
+
+案例公开的三项功能分别是：博物馆助手用 grounding 回答实时展览、票价和规则问题；餐厅评价草稿优先使用 Gemini Nano 端侧执行，设备不支持时回落到云端；酒店客服聊天先识别消息语言，再按自定义逻辑选择端侧或云端翻译。[来源: 08-jetpacker-hybrid.md]
+
+材料给出的 Firebase AI Logic grounding 类型包括 URL grounding、Google Search grounding 和 Maps grounding；这些能力解决的是“把实时上下文加入模型上下文窗口”的问题，不能替代应用自己的权限、缓存、日志脱敏和失败兜底设计。[来源: 08-jetpacker-hybrid.md]
+
+Hybrid Inference API 在材料中列出四种路由模式：`PREFER_ON_DEVICE`、`PREFER_IN_CLOUD`、`ONLY_ON_DEVICE`、`ONLY_IN_CLOUD`。Jetpacker 的评价生成使用 `PREFER_ON_DEVICE`，即优先端侧、不可用时回落云端；酒店翻译则在示例里用 ML Kit Language Identification 识别源语言，并只把已验证质量的英语、韩语路径放到端侧，其余走云端。[来源: 08-jetpacker-hybrid.md]
+
+这类 AI 功能的性能与可靠性验证应把“路由决策”也当作可观测事件：记录模型位置、模型版本、网络状态、失败原因、用户可见延迟、token 或计费边界、端侧温度和电量状态；否则只看最终文本质量，无法解释一次请求为什么落在端侧或云端。[来源: 08-jetpacker-hybrid.md]
+
+云端 AI 调用还引入滥用和计费风险。材料中的 Jetpacker 在 Firebase App Check 中使用 Play Integrity 作为生产保护、Debug Provider 作为本地/模拟器调试路径，并触发匿名认证来建立受保护会话；报告或日志里不应保存本地 debug secret。[来源: 08-jetpacker-hybrid.md]
+
 ## 折叠屏与多窗口：负载随窗口状态变化
 
 折叠与展开可能改变窗口尺寸、宽高比、density、display、刷新模式和折叠姿态。Activity 可能经历配置变更或重建，Surface 与 buffer 尺寸也可能变化。性能问题应按时间线拆成：
@@ -389,6 +408,7 @@ TikTok 的 45% 启动改善属于该项目。自己的基线、设备分布和�
 - 本库归档：`Cubox/抖音 Android 性能优化系列：启动优化实践-2022-03-25.md`
 - 本库归档：`Cubox/抖音 Android 性能优化系列：新一代全能型性能分析工具 Rhea-2022-01-14.md`
 - [ByteDance btrace](https://github.com/bytedance/btrace)
+- [Android Developers Blog: Build intelligent Android apps: Cloud and hybrid inference](https://android-developers.googleblog.com/2026/07/build-intelligent-android-apps-cloud-and-hybrid-inference.html)
 
 ### Android API 与指南
 

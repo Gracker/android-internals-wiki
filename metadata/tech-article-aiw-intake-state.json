@@ -1774,6 +1774,90 @@
       "size": 7220,
       "status": "skipped-low-score"
     },
+    "source/juejin-android/2026-08-06-76692680-VSync同步屏障与doFrame.md": {
+      "chapter": "ch02-rendering",
+      "entry_id": "4f07f33f6c4a52ad",
+      "last_appended": "2026-08-06T05:25:30.104604+08:00",
+      "last_seen": "2026-08-06T05:25:30.104604+08:00",
+      "mtime": 1785960944.9166048,
+      "score": 17,
+      "sha256": "a1f95c4a1e8c6294959527b94003c863d41294c7506ce46c7810059d81162843",
+      "size": 8997,
+      "status": "appended",
+      "title": "VSync 与同步屏障：doFrame() 的优先调度本文介绍 VSync、同步屏障与 doFrame() 的协作机制，"
+    },
+    "source/juejin-android/2026-08-06-76696491-JetBrains-MCP接入Codex.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "a0640af120964396",
+      "last_appended": "2026-08-06T05:25:30.104604+08:00",
+      "last_seen": "2026-08-06T05:25:30.104604+08:00",
+      "mtime": 1785960944.9173822,
+      "score": 14,
+      "sha256": "bf3fbbc4f5372c9da85d8e593bde54002191ec2046c8c7d3decca1d9cde30a03",
+      "size": 14106,
+      "status": "appended",
+      "title": "让 Codex “用上”Android Studio：JetBrains MCP Server 接入与实践很多 AI 编"
+    },
+    "source/juejin-android/2026-08-06-76696820-Compose-LayoutNode与GraphicsLayer.md": {
+      "chapter": "待分类",
+      "entry_id": "524c46cd84896df8",
+      "last_appended": "2026-08-06T05:25:30.104604+08:00",
+      "last_seen": "2026-08-06T05:25:30.104604+08:00",
+      "mtime": 1785960944.9170146,
+      "score": 14,
+      "sha256": "9451264609f5a6660b494e72fc70077e333ba8f0f0906f13d35fdce8f5326d73",
+      "size": 10108,
+      "status": "appended",
+      "title": "Compose 布局与绘制：LayoutNode、DisplayList 与 GraphicsLayer本文梳理 Com"
+    },
+    "source/juejin-android/2026-08-06-76699988-Binder调用变慢分阶段定位.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "6b3614295671db4d",
+      "last_appended": "2026-08-06T05:25:30.104604+08:00",
+      "last_seen": "2026-08-06T05:25:30.104604+08:00",
+      "mtime": 1785960944.9162004,
+      "score": 28,
+      "sha256": "346b1cf32af1af423d789092a4625b3ffcacf3efbf423bca0cc0a066e3783bfd",
+      "size": 36739,
+      "status": "appended",
+      "title": "Binder 实战（九）：一次调用变慢，到底卡在客户端、驱动、Binder 线程还是 Handler？“Binder 卡"
+    },
+    "source/juejin-android/2026-08-06-76703446-Perfetto-Trace是怎么形成的.md": {
+      "chapter": "ch13-perfetto",
+      "entry_id": "19bf2c6ebf1be9ea",
+      "last_appended": "2026-08-06T05:25:30.104604+08:00",
+      "last_seen": "2026-08-06T05:25:30.104604+08:00",
+      "mtime": 1785960944.915726,
+      "score": 24,
+      "sha256": "1379bc6dc8e96540e5332a580b1cc37f7b40d61637ecf9689b63f928d5e23301",
+      "size": 25377,
+      "status": "appended",
+      "title": "01 一份 Perfetto Trace 是怎么形成的一份 Perfetto Trace 是怎么形成的？本文讲清 ATr"
+    },
+    "source/juejin-android/2026-08-06-76703869-AppActuator-Agent操作Android.md": {
+      "chapter": "待分类",
+      "entry_id": "b4d29d81c2bcb71a",
+      "last_appended": "2026-08-06T05:25:30.104604+08:00",
+      "last_seen": "2026-08-06T05:25:30.104604+08:00",
+      "mtime": 1785960944.9177392,
+      "score": 13,
+      "sha256": "987764edcafa7a93e149bb9c5d09c59a4314acd394304dfb6a5977ec0540d3b1",
+      "size": 14220,
+      "status": "appended",
+      "title": "AppActuator - 让 AI Agent 直接理解并操作运行中的 Android AppAppActuator"
+    },
+    "source/juejin-android/2026-08-06-juejin-android.md": {
+      "chapter": "待分类",
+      "entry_id": "7ee0aeb5762c1a0b",
+      "last_appended": "2026-08-06T05:25:30.104604+08:00",
+      "last_seen": "2026-08-06T05:25:30.104604+08:00",
+      "mtime": 1785960982.6769807,
+      "score": 24,
+      "sha256": "1ec541a52ddca9cb2d5342cfe56f734fdb34364098543226f64a4351db954a2e",
+      "size": 8175,
+      "status": "appended",
+      "title": "Juejin Android intake · 2026-08-06"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -3581,24 +3665,24 @@
     }
   },
   "last_report": {
-    "appended": 0,
-    "considered": 1,
-    "cutoff": "2026-08-04T05:20:04.990927+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-05.md",
+    "appended": 7,
+    "considered": 7,
+    "cutoff": "2026-08-05T05:20:16.561141+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-06.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1746,
+    "scanned": 1753,
     "skipped": {
       "existing_link": 0,
-      "low_score": 1,
+      "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 28,
-      "unchanged": 314
+      "unchanged": 315
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-08-05T05:25:16.561141+08:00",
+  "last_run_at": "2026-08-06T05:25:30.104604+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }
