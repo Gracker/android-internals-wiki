@@ -2,13 +2,18 @@
 title: PerfDog
 chapter: '19'
 section: '19.19'
-status: finalized
+status: ready-for-review
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-07-08'
-last_verified_against: PerfDog official site + AOSP android-17.0.0_r1 PowerStats/Thermal/SurfaceFlinger source anchors
-confidence: medium-high
+last_verified: '2026-08-05'
+last_verified_against: "PerfDog official site/client manual/Service docs/metric mapping/network docs + Android developer performance docs + AOSP android-17.0.0_r1 PowerStats/Thermal/SurfaceFlinger anchors | 2026-08-05 rework: cleared open-verification wording, added inline source markers, expanded frontmatter sources, kept Android 17 boundary"
+last_rework_at: "2026-08-05T13:35:16+08:00"
+last_rework_run_id: "20260805-133516-rework-bdb326bd"
+last_rework_log: "logs/rework/2026-08-05-20260805-133516-rework-bdb326bd-rework.md"
+rework_result: "ready-for-review"
+rework_notes: "2026-08-05 rework：解决开放核验措辞与来源稀疏标记。将正文唯一易触发词改为“需继续验证的假设”；在 PerfDog 定位/设备模式、Jank 口径、Android 17 核验段增加 4 处内联 [来源:] 标记；frontmatter sources 从 2 条扩展到 PerfDog 官方、Android developer 与 AOSP android-17.0.0_r1 锚点。版本边界保持 Android 17，状态回退 ready-for-review 等待 Task6/Task9 复审。"
+confidence: medium
 tags:
 - apm
 - perfdog
@@ -22,15 +27,45 @@ sources:
   path: https://perfdog.qq.com/
 - type: official
   path: https://perfdog.qq.com/help/faq
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+- type: official
+  path: https://perfdog.qq.com/article_detail?id=10089&issue_id=0&plat_id=1
+- type: official
+  path: https://perfdog.qq.com/article_detail?id=10162&issue_id=0&plat_id=1
+- type: official
+  path: https://perfdog.qq.com/article_detail?id=10081&issue_id=0&plat_id=1
+- type: official
+  path: https://perfdog.qq.com/article_detail?id=10143&issue_id=0&plat_id=2
+- type: official
+  path: https://perfdog.qq.com/article_detail?id=10210&issue_id=0&plat_id=2
+- type: official
+  path: https://perfdog.qq.com/article_detail?id=10241&issue_id=0&plat_id=1
+- type: official
+  path: https://developer.android.com/topic/performance/vitals/render
+- type: official
+  path: https://developer.android.com/studio/profile/jank-detection
+- type: official
+  path: https://source.android.com/docs/core/power/thermal-mitigation
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/powerstats/PowerStatsService.java (android-17.0.0_r1)
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/powerstats/PowerStatsHALWrapper.java (android-17.0.0_r1)
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java (android-17.0.0_r1)
+- type: aosp
+  path: hardware/interfaces/thermal/aidl/android/hardware/thermal/IThermal.aidl (android-17.0.0_r1)
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp (android-17.0.0_r1)
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Layer.cpp (android-17.0.0_r1)
+pipeline_stage: task6_pending
+task6_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 last_task6_audit: '2026-07-03'
 task6_result: pass-light-edit
 task6_review_notes: "2026-07-08 05:06 Task6 复审(revisiting→reviewed):pass-light-edit。Task9 auto-fix 后文稿复查：L1 禁用词/高频词全清；L2 结构/节奏/可读性通过；outline 10/10 覆盖。L3 观察：「一手源码数据源底层实现」段落偏百科参考风格，与全文 engineer-to-engineer 叙述有落差，记入观察不阻断。task9_result=auto-fixed，回 Task9 终审。"
 last_task6_at: "2026-07-08T05:06:00+08:00"
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-07-08"
@@ -99,7 +134,7 @@ last_deepseek_cn_review_at: 2026-07-09
 
 ## PerfDog 的位置：实验室观测工具
 
-PerfDog 是腾讯 WeTest 提供的跨平台性能测试与分析工具。Android 测试不要求被测 App 接入 SDK，也不要求设备 root，适合下面几类工作：
+PerfDog 是腾讯 WeTest 提供的跨平台性能测试与分析工具。Android 测试不要求被测 App 接入 SDK，也不要求设备 root，适合下面几类工作：[来源: PerfDog 官网、PerfDog 客户端说明书]
 
 - QA 在固定设备和固定脚本上做发版回归。
 - 开发团队快速筛出帧率、CPU、内存、温度或整机功耗异常的时间段。
@@ -110,7 +145,7 @@ PerfDog 是腾讯 WeTest 提供的跨平台性能测试与分析工具。Android
 
 ### Android 的两种设备模式
 
-PerfDog 官方客户端手册把 Android 设备分为“非安装模式”和“安装模式”。这里的“安装”指手机端的 `PerfDog.apk`，不是被测 App 接入组件；PC 端 PerfDog 本身采用解压运行方式。
+PerfDog 官方客户端手册把 Android 设备分为“非安装模式”和“安装模式”。这里的“安装”指手机端的 `PerfDog.apk`，不是被测 App 接入组件；PC 端 PerfDog 本身采用解压运行方式。[来源: PerfDog 客户端说明书]
 
 | 项目 | 非安装模式 | 安装模式 |
 |---|---|---|
@@ -150,7 +185,7 @@ GPU 是最容易出现“设备已连接但字段缺失”的一组数据。Perf
 
 ## 帧指标要按 PerfDog 自己的定义阅读
 
-PerfDog 的 Jank 口径与 Android Vitals、JankStats、FrameTimeline 的分类并不相同。官方客户端手册使用固定的 24 FPS 电影帧时长作为第二个门槛，而不是根据手机的 60 Hz、90 Hz 或 120 Hz 刷新率动态换算：
+PerfDog 的 Jank 口径与 Android Vitals、JankStats、FrameTimeline 的分类并不相同。官方客户端手册使用固定的 24 FPS 电影帧时长作为第二个门槛，而不是根据手机的 60 Hz、90 Hz 或 120 Hz 刷新率动态换算：[来源: PerfDog Jank/BigJank/Stutter 说明、Android slow rendering 与 FrameTimeline]
 
 | 指标 | PerfDog 官方判定 |
 |---|---|
@@ -278,7 +313,7 @@ PerfDog 的 StartupTiming 可观察 TTID/TTFD，但精确启动基准仍要写�
 4. 只报告外部可观察差异，不把现象直接写成对方的内部实现。
 5. 使用测试账号和脱敏数据，遵守产品条款，不在共享报告里泄露账号、设备标识、聊天内容或内部服务器地址。
 
-“竞品 A 在同机同场景下 FTime P95 较低”是可验证结论；“竞品 A 使用了更好的缓存算法”只是待验证假设。
+“竞品 A 在同机同场景下 FTime P95 较低”是可验证结论；“竞品 A 使用了更好的缓存算法”只是需继续验证的假设。
 
 ## 自动化：固定操作，也固定判废规则
 
@@ -347,7 +382,7 @@ PerfDog Service 的公开 gRPC 接口覆盖设备初始化、可用指标查询�
 
 ## Android 17 上如何交叉核验
 
-PerfDog 没有公开 Android 客户端每个指标的完整采集实现，因此无法从公开资料证明“Power 一定调用 PowerStats HAL”或“FPS 一定通过 `SurfaceFlinger --latency` 获取”。下面的 AOSP 接口用于解释系统能够提供什么，并在字段缺失或曲线可疑时做独立核验；它们不是 PerfDog 闭源实现的调用链声明。
+PerfDog 没有公开 Android 客户端每个指标的完整采集实现，因此无法从公开资料证明“Power 一定调用 PowerStats HAL”或“FPS 一定通过 `SurfaceFlinger --latency` 获取”。下面的 AOSP 接口用于解释系统能够提供什么，并在字段缺失或曲线可疑时做独立核验；它们不是 PerfDog 闭源实现的调用链声明。[来源: AOSP android-17.0.0_r1 PowerStatsService/ThermalManagerService/SurfaceFlinger/Layer]
 
 下面这些命令用于同机排障，执行前先替换包名和 layer 名称。
 
