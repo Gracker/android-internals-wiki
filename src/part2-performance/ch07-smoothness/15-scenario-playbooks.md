@@ -241,7 +241,7 @@ adb shell setprop bionic.linker.16kb.app_compat.enabled fatal
 adb shell setprop pm.16kb.app_compat.disabled true
 ```
 
-这两个属性会限制加强兼容行为，适合让未正确适配的 Native 依赖尽早失败；它们不属于线上优化参数。
+这两个属性会禁用更多兼容行为，适合让未正确适配的 Native 依赖尽早失败；它们不属于线上优化参数。
 
 导航：`8.1`、`8.2`、`8.3`、`15.6`。
 

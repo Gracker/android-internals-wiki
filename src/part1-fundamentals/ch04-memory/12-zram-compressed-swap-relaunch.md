@@ -319,7 +319,7 @@ ZRAM 解压消耗 CPU。低端设备或持续热负载下，解压可能和主�
 
 ### direct reclaim
 
-分配线程无法及时获得页面时，可以在分配路径进入 direct reclaim。此时发起分配的线程直接负责扫描、回写或 swap-out 等等待。若主线程或 RenderThread 命中 direct reclaim，用户更容易感知卡顿。
+分配线程无法及时获得页面时，可以在分配路径进入 direct reclaim。此时发起分配的线程会直接执行扫描、回写或 swap-out，并经历相应等待。若主线程或 RenderThread 命中 direct reclaim，用户更容易感知卡顿。
 
 direct reclaim 和物理内存 compaction 也应分开。高阶页分配失败可能触发 compaction；它围绕物理页连续性工作，不等于 ZRAM recompression。
 

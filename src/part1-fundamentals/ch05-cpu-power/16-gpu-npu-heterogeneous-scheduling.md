@@ -253,7 +253,7 @@ Android 17 平台源码中的 Java 常规接口包括：
 
 `setPreferPowerEfficiency(boolean)` 与接收 `WorkDuration` 的重载受 feature flag 控制。`WorkDuration` 可报告总时长以及 CPU、GPU 时长组成。源码要求起始时间和总时长大于零，CPU/GPU 时长不能为负，并且两者至少有一个大于零。
 
-边界还要再限制加强一层：Java 中的 `CPU_LOAD_*`、`GPU_LOAD_*` 常量和 `sendHint()` 标为 `@TestApi` / `@hide`，普通应用不应把它们当成稳定公开 SDK。Android 17 NDK 头文件则公开了更完整的原生接口：
+还要进一步限定边界：Java 中的 `CPU_LOAD_*`、`GPU_LOAD_*` 常量和 `sendHint()` 标为 `@TestApi` / `@hide`，普通应用不应把它们当成稳定公开 SDK。Android 17 NDK 头文件则公开了更完整的原生接口：
 
 - API 35 的 `APerformanceHint_reportActualWorkDuration2()`；
 - API 36 的 `APerformanceHint_notifyWorkloadIncrease()`；

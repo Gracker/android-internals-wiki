@@ -527,7 +527,7 @@ Skia Vulkan RenderEngine、应用 Vulkan、ANGLE 或 GPU 驱动可以维护各�
 
 ## 十二、结论
 
-GraphicBuffer 的低分配率首先来自 BufferQueue 保留 `slot -> GraphicBuffer` 映射。Consumer release 后，slot 进入 `mFreeBuffers`，Producer 下次优先选择它；规格兼容时沿用原 buffer，不兼容时才在 `dequeueBuffer()` 中重新分配。
+GraphicBuffer 的低分配率主要来自 BufferQueue 保留 `slot -> GraphicBuffer` 映射。Consumer release 后，slot 进入 `mFreeBuffers`，Producer 下次优先选择它；规格兼容时沿用原 buffer，不兼容时才在 `dequeueBuffer()` 中重新分配。
 
 分析时记住四条边界：
 

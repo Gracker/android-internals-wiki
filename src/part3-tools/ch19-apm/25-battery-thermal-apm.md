@@ -515,7 +515,7 @@ Alarm 测试覆盖：
 - Doze 下允许与不允许 idle 的投递时间；
 - callback 内启动 Worker/Job、网络失败与重试。
 
-Thermal 策略测试要模拟升温和降温序列，验证限制加强立即发生、恢复经过迟滞、重复状态幂等、close 后不再改策略。Android 17 的调试设备可通过 `adb shell cmd thermalservice override-status <status>` 注入状态，并用 `adb shell cmd thermalservice reset` 解除覆盖；该命令用于测试环境，不应在用户设备执行。headroom 路径还要覆盖 `NaN`、阈值缺失和 listener 不可用。
+Thermal 策略测试要模拟升温和降温序列，验证限制立即生效、恢复经过迟滞、重复状态幂等、close 后不再改策略。Android 17 的调试设备可通过 `adb shell cmd thermalservice override-status <status>` 注入状态，并用 `adb shell cmd thermalservice reset` 解除覆盖；该命令用于测试环境，不应在用户设备执行。headroom 路径还要覆盖 `NaN`、阈值缺失和 listener 不可用。
 
 设备实验应固定亮度、刷新率、温度起点、充电状态、网络和业务输入，至少包含空载基线与功能开关对照。结果按设备和版本分层，不把某台设备的电流曲线推广成所有 Android 设备的功耗模型。
 

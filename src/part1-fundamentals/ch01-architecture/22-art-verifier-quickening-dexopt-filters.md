@@ -268,7 +268,7 @@ adb logcat -b all -d |
 | 时点 | 常见状态 | 运行性能含义 |
 | --- | --- | --- |
 | 安装完成 | 有 cloud profile 时可能是 `speed-profile`；否则常见 `verify` | `verify` 已完成安全验证，但关键方法可能仍无 AOT 代码 |
-| 第一次运行 | AOT 命中方法直接执行；其余方法解释执行，热点进入 JIT | 首启可能负责类加载、page fault、解释器和 JIT 热身成本 |
+| 第一次运行 | AOT 命中方法直接执行；其余方法解释执行，热点进入 JIT | 首启可能产生类加载、page fault、解释器和 JIT 热身成本 |
 | 多次运行后 | current profile 逐步积累真实用户热点 | profile 只是输入，尚不等于 reference profile 已用于 dexopt |
 | 空闲充电 | background dexopt 合并可用 profile，以 `speed-profile` 重新处理 | 后续启动可能改善，但任务可以被取消或因策略跳过 |
 | OTA / Mainline 前 | Pre-reboot Dexopt 尝试针对新依赖生成产物 | 未完成的包重启后仍能以 `verify` + JIT 正常运行 |
@@ -291,6 +291,8 @@ Android 17 的 `dex2oat.cc` 会累加输入 DEX header 中的 `file_size_`，与
 
 ### 1. 保存系统策略
 
+下面的命令保存 dexopt 与 JIT 相关属性，作为设备策略背景：
+
 ```bash
 adb shell getprop |
   grep -E 'pm.dexopt|dalvik.vm.*compilerfilter|dalvik.vm.*dex2oat|dalvik.vm.usejit'
@@ -300,6 +302,8 @@ adb shell getprop |
 
 ### 2. 查看包级最终状态
 
+下面的 ART Service 命令读取指定包当前的 dexopt 产物与原因：
+
 ```bash
 adb shell pm art dump com.example.app
 ```
@@ -308,6 +312,8 @@ Android 14–17 优先使用 `pm art dump`。重点查看 primary / secondary de
 
 ### 3. 建立未编译基线
 
+下面的 reset 命令只适合受控实验，用来建立以 verify 为主的对照状态：
+
 ```bash
 adb shell pm compile --reset com.example.app
 ```
@@ -315,6 +321,8 @@ adb shell pm compile --reset com.example.app
 Android 17 的 `--reset` 会清理本地 current / reference profiles；对 primary dex，当前实现等同于以 `verify` 做 dexopt。外部 profile（如 cloud / embedded profile）会保留，但本次 reset 不使用；secondary dex 的产物会被删除且不在本轮重建。它适合实验室建立对照基线，不适合线上随意执行。
 
 ### 4. 验证 profile-guided 编译
+
+下面先强制请求 `speed-profile`，再读取最终状态验证请求是否被满足：
 
 ```bash
 adb shell pm compile -m speed-profile -f -v com.example.app
@@ -332,6 +340,8 @@ adb shell pm compile -m speed -f -v com.example.app
 这个结果只用于定位 AOT 覆盖是否影响性能，不应直接变成产品默认策略。
 
 ### 5. 手动运行真实后台 dexopt 流程
+
+下面的命令立即触发并等待 ART Service 的后台 dexopt job，适合实验室复现系统任务：
 
 ```bash
 adb shell pm bg-dexopt-job

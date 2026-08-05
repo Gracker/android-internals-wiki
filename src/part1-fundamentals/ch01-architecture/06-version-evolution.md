@@ -144,7 +144,7 @@ Material You 是 Android 12 的重要产品和 UI 变化，但它不是 system/v
 
 ## 从 Treble 到 GKI：把更新边界逐层拆开
 
-Android 的模块化不是“一次完成”的项目，而是沿着不同兼容边界逐步推进。
+Android 的模块化沿着多个兼容边界逐步推进，并非一次版本升级就全部完成。
 
 ```text
 App / SDK API
@@ -162,7 +162,7 @@ Boot firmware / 可选 GBL
 
 ### Treble、VINTF 与 HAL
 
-Treble 在 Android 8.0 把 framework 和 vendor 实现分到明确的分区与兼容边界。其目标不是让任意新版 system 都能搭配任意旧 vendor，而是让双方在声明并满足兼容契约时，可以减少同步修改。
+Treble 在 Android 8.0 把 framework 和 vendor 实现分到明确的分区与兼容边界。新版 system 与旧 vendor 仍需满足双方声明的兼容契约；契约成立时，升级才有机会减少同步修改。
 
 VINTF 提供这份契约：
 
@@ -223,7 +223,7 @@ GBL 仍依赖设备 boot firmware 提供 UEFI、AVB 和必要协议，也允许�
 
 Android 4.4 中，ART 是可选运行时，Dalvik 仍是常见默认路径。ART 尝试把更多 DEX 代码提前编译为机器码，用安装和存储成本换取运行期收益。
 
-这段历史的关键不是“ART 一定更快”，而是编译时机发生变化：成本可以落在安装期、首次运行、后台空闲期或运行时。不同策略只是在这些阶段之间重新分配 CPU、存储和延迟。
+这段历史的关键是编译时机发生了变化，而不能简单概括为“ART 一定更快”：成本可以落在安装期、首次运行、后台空闲期或运行时。不同策略会在这些阶段之间重新分配 CPU、存储和延迟。
 
 ### Android 5.0 到 6.0：以安装期 AOT 为主
 
@@ -323,9 +323,9 @@ Android 11 对以 API 30 及以上为目标的应用限制包可见性。`Packag
 |---|---|---|
 | Android 8.0 | 后台 Service 和隐式广播受限 | 持久延迟工作迁移到 JobScheduler/WorkManager |
 | Android 12 | 后台启动前台服务受限；精确闹钟进入特殊权限模型 | 区分用户可见即时任务、持久任务和闹钟 |
-| Android 14 | 面向新版本的前台服务必须声明类型和相应权限；多数新安装应用的精确闹钟授权默认限制加强 | Manifest 类型、运行时权限和 Play 政策一起检查 |
+| Android 14 | 面向新版本的前台服务必须声明类型和相应权限；多数新安装应用默认不再预授权精确闹钟能力 | Manifest 类型、运行时权限和 Play 政策一起检查 |
 | Android 15 | `dataSync`、`mediaProcessing` 前台服务引入时间配额 | 长任务需要保存进度并处理 timeout 回调 |
-| Android 16 | Job 运行时配额计算继续限制加强 | 不把前台服务当作 Job 配额豁免手段 |
+| Android 16 | Job 运行时配额限制继续趋严 | 不把前台服务当作 Job 配额豁免手段 |
 
 WorkManager 适合需要持久调度且允许系统选择执行时机的任务，但不是所有后台工作的替代品。音频播放、导航、用户发起的数据传输、精确闹钟和短暂进程内任务，各自有不同 API 与政策边界。
 

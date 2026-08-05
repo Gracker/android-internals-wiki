@@ -145,7 +145,7 @@ JEDEC 版本规定接口能力，不承诺某颗量产器件一定达到某组 M
 | 多硬件队列 | 取决于主控和 CQE | 支持 MCQ 的 UFSHCI 主控可建立多组 submission/completion queue |
 | 常见性能特征 | 链路与并发上限较低 | 更高带宽与并发潜力，尾延迟仍由器件和负载决定 |
 
-**MCQ（Multi-Circular Queue）首先是 UFS Host Controller Interface 的能力**，不应只按“UFS 4.0 闪存特性”理解。`android17-6.18-2026-06_r6` 的 `drivers/ufs/core/ufs-mcq.c` 会根据主控能力配置读写队列、专用读队列和 polling queue；默认读写队列数还会参考 CPU 数量。设备是否启用 MCQ，要继续检查 host controller capability、驱动日志和 `/sys` 队列信息。
+**MCQ（Multi-Circular Queue）是 UFS Host Controller Interface 的能力**，不应只按“UFS 4.0 闪存特性”理解。`android17-6.18-2026-06_r6` 的 `drivers/ufs/core/ufs-mcq.c` 会根据主控能力配置读写队列、专用读队列和 polling queue；默认读写队列数还会参考 CPU 数量。设备是否启用 MCQ，要继续检查 host controller capability、驱动日志和 `/sys` 队列信息。
 
 ### 怎么用这个知识?
 
@@ -276,7 +276,7 @@ Scoped Storage 对 App 开发和性能优化有几个直接影响。
 
 | Android 版本 | system / 挂载模型 | shared storage 入口 | FUSE 行为 | App 侧建议 |
 | --- | --- | --- | --- | --- |
-| Android 9 | `system-as-root` 成为 launching device 基线,rootfs 合入 `system.img` | 传统 external storage 模型 | 设备存储模拟常用 SDCardFS，也存在升级和厂商差异 | 旧项目以路径访问为主,但开始留意后续权限限制加强 |
+| Android 9 | `system-as-root` 成为 launching device 基线,rootfs 合入 `system.img` | 传统 external storage 模型 | 设备存储模拟常用 SDCardFS，也存在升级和厂商差异 | 旧项目以路径访问为主，但要为后续访问权限减少做准备 |
 | Android 10 | dynamic partitions + `first-stage init` 成为新设备主路径 | Scoped Storage 引入，可通过兼容机制暂缓 | MediaProvider 执行 scoped policy；设备存储模拟仍常见 SDCardFS，direct file path 受限 | 新代码优先 MediaStore / SAF，少依赖裸路径 |
 | Android 11 | `/data` 挂载流程继续沿用 Android 10 | shared media 支持 direct file paths、`File` API、`fopen()` | MediaProvider 成为 FUSE handler；升级设备可叠加 SDCardFS | 媒体库兼容可以用 direct file paths，重度随机访问优先比较 MediaStore |
 | Android 12 | 挂载模型基本稳定 | API 入口与 Android 11 接近 | launching device + official kernel 可启用 FUSE passthrough | 先确认设备是否支持 passthrough,再判断瓶颈位置 |

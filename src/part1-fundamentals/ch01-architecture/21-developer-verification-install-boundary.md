@@ -153,7 +153,7 @@ FAQ 在 2026-07-15 明确补充：
 | 路径 | 当前官方边界 | 工程理解 |
 |---|---|---|
 | ADB | 工作流保持不变，可安装未注册应用 | 只证明开发调试路径可用，不能替代真实商店验收 |
-| Advanced flow | 2026 年 8 月面向 power users 推出；一次设置后可安装未注册应用 | 用户明确负责风险的旁加载路径，不是商店静默绕过接口 |
+| Advanced flow | 2026 年 8 月面向 power users 推出；一次设置后可安装未注册应用 | 用户明确接受风险的旁加载路径，不是商店静默绕过接口 |
 | Limited distribution | 免费、无需政府签发身份证件，最多分享给 20 台经最终用户明确授权的设备 | 适合学习、课堂、家庭和非商业小范围分享 |
 | Managed device + organization store | 由 IT 管理员审核的组织内应用不要求完成验证 | 同一 APK 离开托管商店或进入非托管设备后，不能继续假设豁免 |
 
@@ -296,6 +296,8 @@ Android 17 把新机制直接接入 `PackageInstallerSession`，不是把 Google
 
 ### 6.2 commit：封存、流式校验，再进入安装消息
 
+下面的调用序列用于定位 `commit()` 之后、Developer Verification 之前的 session 状态转换：
+
 ```text
 Session.commit(statusReceiver)
   → markAsSealed()
@@ -311,6 +313,8 @@ Session.commit(statusReceiver)
 `streamValidateAndCommit()` 会准备 DataLoader、验证 APK/APEX session 的基本结构并标记 committed。到这里仍没有安装成功。
 
 ### 6.3 `handleInstall()`：解析 APK 后先做 Developer Verification
+
+下面的序列标出 `performDeveloperVerification()` 在 `handleInstall()` 中相对 APK 解析的位置：
 
 ```text
 handleInstall()
@@ -348,6 +352,8 @@ reportVerificationBypassed(reason)
 完整结果包含 `isVerified`、lite verification 状态、App Metadata 状态和可选失败说明。incomplete 当前只区分 unknown 与 network unavailable。
 
 ### 6.5 结果怎样回到原安装链
+
+下面的分支图说明 verifier 结果怎样完成 future，并决定恢复原安装链还是结束 session：
 
 ```text
 verifier callback
@@ -396,6 +402,8 @@ per-user 默认策略由 verifier 或系统指定的 policy delegate 设置。ve
 
 ## 9. 安装耗时应该怎样拆
 
+安装端到端耗时至少包含下面这些阶段，不能全部记到 Developer Verification：
+
 ```text
 包体获取
   + session 写入
@@ -429,6 +437,8 @@ Android 17 r1 的 controller 默认参数是：
 普通安装器可上报 `commit → first callback` 和 `commit → terminal callback`，但不能把前者直接命名为“Developer Verification 耗时”。
 
 ## 10. 推荐的错误归因顺序
+
+下面的决策顺序以公开 status 和附加 reason 为依据，避免仅凭错误文本归因：
 
 ```text
 收到安装回调

@@ -352,7 +352,7 @@ Android Developers 的 Netmarble 案例介绍了《Game of Thrones: Kingsroad》
 
 - 相同内容和输入下，frame time 随会话时间变差；
 - thermal status/headroom 或 cooling state 同期变化；
-- CPU/GPU 可用容量或频率上限限制加强；
+- CPU/GPU 可用容量减少或频率上限降低；
 - 内存泄漏、后台负载、亮度和充电条件已记录；
 - 冷却或降低工作量后，持续 frame time 恢复。
 

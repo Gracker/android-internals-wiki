@@ -123,7 +123,7 @@ verifier_result: "state-consistency-fixed: task6_state/task9_state/pipeline_stag
 
 ## 先把三条时间线分开
 
-CPU 与功耗问题经常被写成一条简单的版本链：Android 版本升级，内核调度器随之更换，应用后台能力继续限制加强。这个说法会把不同层次的变化混在一起。阅读本章时，应分别追踪三条时间线：
+CPU 与功耗问题经常被写成一条简单的版本链：Android 版本升级，内核调度器随之更换，应用后台限制继续增加。这个说法会把不同层次的变化混在一起。阅读本章时，应分别追踪三条时间线：
 
 1. **应用 API 与兼容性规则**：`JobScheduler`、精确闹钟、前台服务和后台 Activity 启动限制。它们通常还受 `targetSdkVersion`、权限、豁免条件影响。
 2. **系统资源策略**：Doze、App Standby Buckets、Battery Saver、任务配额。它们由 framework 服务执行，也可能带有 DeviceConfig 和厂商配置。
@@ -260,7 +260,7 @@ GKI 把通用核心内核与硬件相关 vendor module 分开，并为支持周�
 
 GKI 并没有让所有设备使用相同的调度参数，也没有清除厂商扩展。设备仍可通过 vendor module、task profile、Power/Thermal HAL、设备配置和允许的 hook 实现产品策略。变化集中在接口边界、可维护性和兼容性约束。
 
-## Android 12—14：精确闹钟、前台服务与后台启动持续限制加强
+## Android 12—14：精确闹钟、前台服务与后台启动限制继续增加
 
 ### Android 12：精确闹钟特殊访问与后台 FGS 启动限制
 
@@ -364,6 +364,8 @@ listener alarm 不提供进程存活保证。调用组件结束、进程进入�
 
 ### 1. 建立版本与安装状态
 
+下面的命令保存系统版本和包状态，避免把 target SDK、安装路径差异误判为 CPU 调度变化：
+
 ```shell
 adb shell getprop ro.build.version.release
 adb shell getprop ro.build.version.sdk
@@ -378,6 +380,8 @@ adb shell dumpsys package com.example.app
 把任务归入 Job/WorkManager、Alarm、FGS、普通 Service 或 Activity 启动之一，再检查对应约束。不要用“后台任务”四个字覆盖所有机制。
 
 ### 3. 查看系统为什么延后
+
+下面的命令分别读取 Job、Doze、Alarm、待机桶和精确闹钟权限状态：
 
 ```shell
 adb shell dumpsys jobscheduler

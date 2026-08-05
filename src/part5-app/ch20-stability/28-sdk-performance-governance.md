@@ -346,7 +346,7 @@ Android 17 的 [所有应用行为变更](https://developer.android.com/about/ve
 除 App Memory Limits 外，Android 17 还需关注：
 
 - target API 37 后，`MessageQueue` 使用无锁实现；依赖反射访问其私有字段的 SDK 可能失效。公共 `Handler`/`Looper` 契约没有因此改变。
-- 后台音频限制加强，音频相关 SDK 在不满足条件时可能拿不到音频焦点或启动播放失败。
+- 后台应用的音频焦点请求会受限；音频相关 SDK 在不满足条件时可能拿不到焦点，随后启动播放失败。
 - 后台调度、前台服务和权限仍由宿主应用共同负责合规与稳定性责任。
 
 评估报告要写明 SDK 行为依赖的是公开 API 还是私有实现。Android 17 的目标 SDK 变更可从 [target 37 行为变更](https://developer.android.com/about/versions/17/behavior-changes-17)逐项核对。

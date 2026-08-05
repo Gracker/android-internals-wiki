@@ -123,7 +123,7 @@ primitive 标量最直接；`String`、数组和普通 Java 对象都需要运�
 - native 回调 Java 又产生一次反向 transition。
 - `DirectByteBuffer` 可让 native 直接访问地址，但需要明确内存所有权与生命周期。
 
-很多所谓“JNI 慢”其实是数据表示在两侧来回转换。
+很多所谓“JNI 慢”来自数据表示在两侧来回转换。
 
 ### 1.3 Native 函数内部
 
@@ -488,6 +488,8 @@ managed wrapper
   └─ 结果转换
 ```
 
+相邻 slice 能把 managed 侧封装成本与 native 批处理本体分开；仍需结合 CPU sampling，确认 slice 内部具体耗时符号。
+
 ### 9.2 Simpleperf / Perfetto CPU sampling
 
 采样能回答“CPU 时间花在哪些符号”，也可能看到 ART JNI trampoline 和 native call chain；它不能给出每一次调用的精确 begin/end 时长。
@@ -546,6 +548,8 @@ Android 15 起支持 16KB page size 设备。只要 APK 或 SDK 包含 `.so`，�
 NDK r27 及更低可以按文档配置 linker flags，但升级工具链通常更稳。只重编自研库、遗漏 SDK 附带的 `.so`，最终 APK 仍不兼容。
 
 ### 10.2 验证最终产物
+
+下面的命令从设备、APK、AAB 和 ELF 四个层面核对 16 KB 页兼容性：
 
 ```bash
 # 设备实际页大小

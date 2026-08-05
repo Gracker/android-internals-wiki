@@ -188,12 +188,14 @@ Layer 请求 / 内容检测 / 系统策略
              pending
                 │  立即完成，或等待刷新帧退出 pending
                 ▼
-              active
+             active
 ```
+
+图中的 `desired` 表示策略选择结果，`pending` 表示已经提交但尚未完成，`active` 才是当前生效模式。三者的时间差是判断切换延迟的重点。
 
 ### 3.1 选择候选模式
 
-`RefreshRateSelector` 对 Layer 需求、显示策略和全局信号进行评分。Android 17 源码没有一张固定的“视频最高、动画其次、静态最低”优先级表；结果取决于投票类型、焦点、候选模式、无缝约束和策略范围。
+`RefreshRateSelector` 对 Layer 需求、显示策略和全局信号进行评分。Android 17 源码没有一张固定的“视频最高、动画居中、静态最低”优先级表；结果取决于投票类型、焦点、候选模式、无缝约束和策略范围。
 
 `Surface.setFrameRate()` 的兼容性参数在 `LayerHistory` 中映射为不同投票：
 

@@ -487,7 +487,7 @@ Android 12 GKI 2.0 开始用 DMA-BUF heaps 替代 ION。DMA-BUF heaps 提供稳�
 
 ### 16 KB page 与 GPU buffer
 
-16 KB page 兼容性首先约束 native ELF 的 segment 对齐、APK 中未压缩 `.so` 的 zip 对齐，以及 mmap 等代码对 page size 的假设。它不会把 gralloc buffer 自动改成线性 16 KB 分块，也不表示每张纹理固定浪费 16 KB。GraphicBuffer 仍应以 allocator 返回的 allocation size、stride、plane layout、heap 与映射数据为准。
+16 KB page 兼容性约束 native ELF 的 segment 对齐、APK 中未压缩 `.so` 的 zip 对齐，以及 mmap 等代码对 page size 的假设。它不会把 gralloc buffer 自动改成线性 16 KB 分块，也不表示每张纹理固定浪费 16 KB。GraphicBuffer 仍应以 allocator 返回的 allocation size、stride、plane layout、heap 与映射数据为准。
 
 ## GPU 内存怎样追踪
 

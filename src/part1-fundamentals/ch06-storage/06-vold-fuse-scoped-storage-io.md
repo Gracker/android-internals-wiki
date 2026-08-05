@@ -283,7 +283,7 @@ adb shell su 0 strace -f -ttT \
 
 ## FBE、16KB 页与底层文件系统
 
-FBE 位于 `/data` 文件系统的数据与文件名加密路径，FUSE 位于共享存储的命名空间和策略层。同一次访问可能同时负责两者成本。`android17-6.18-2026-06_r6` 的 GKI 配置包含 `CONFIG_FS_ENCRYPTION=y` 与 inline encryption 支持，但产品是否使用 inline crypto、密钥策略和硬件加速仍由设备实现决定。
+FBE 位于 `/data` 文件系统的数据与文件名加密路径，FUSE 位于共享存储的命名空间和策略层。同一次访问可能叠加两者成本。`android17-6.18-2026-06_r6` 的 GKI 配置包含 `CONFIG_FS_ENCRYPTION=y` 与 inline encryption 支持，但产品是否使用 inline crypto、密钥策略和硬件加速仍由设备实现决定。
 
 区分两层成本可以设计对照实验：同一设备、相同大小与访问模式，比较内部私有文件、App-specific external 和共享媒体；同时控制缓存冷热与加密策略。不同目录的文件系统、配额和挂载选项可能不同，结果只能解释已记录的设备配置。
 
