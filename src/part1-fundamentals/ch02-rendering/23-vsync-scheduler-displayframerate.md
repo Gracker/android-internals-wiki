@@ -7,7 +7,7 @@ status: finalized
 drafted_date: "2026-05-18"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
-last_verified: "2026-07-25"
+last_verified: "2026-08-05"
 last_verified_against: "AOSP android-17.0.0_r1 frameworks/native SurfaceFlinger Scheduler/VsyncSchedule/VSyncPredictor/VSyncReactor/VSyncDispatchTimerQueue/EventThread/RefreshRateSelector/FrameTimeline；Android 17 API 37 Display/View/Surface 文档；Android ARR/frame pacing 官方文档；kernel android17-6.18-2026-06_r6"
 confidence: high
 sources:
@@ -53,9 +53,9 @@ task9_state: reviewed
 last_task6_at: "2026-06-20T12:07:00+08:00"
 last_task6_review_log: "logs/review/2026-06-20-12-review.md"
 task9_result: pass-idle-audit
-task9_reviewed_date: "2026-08-03"
+task9_reviewed_date: "2026-08-05"
 task9_reviewed_by: "aiw-polish-idle-audit"
-last_task9_at: "2026-08-03T18:35:40+08:00"
+last_task9_at: "2026-08-05T18:35:58+08:00"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_lite_at: "2026-05-27"
@@ -71,15 +71,16 @@ task9_review_notes: "2026-05-27 13:20 Task9：pass-tech-review。复核 VsyncSch
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-08
 last_task9_autofix_at: "2026-07-08"
-last_task9_audit: "2026-08-03"
-last_task9_audit_at: "2026-08-03T18:35:40+08:00"
-last_task9_audit_log: "logs/audit/2026-08-03-20260803-183540-idle-audit-cad65fbd-idle-audit.md"
+last_task9_audit: "2026-08-05"
+last_task9_audit_at: "2026-08-05T18:35:58+08:00"
+last_task9_audit_log: "logs/audit/2026-08-05-20260805-183558-idle-audit-cad65fbd-idle-audit.md"
 last_task9_audit_result: "pass-idle-audit"
-task9_audit_notes: "2026-07-08 Task9 idle audit: AUTO-FIX。按 Android 17(android-17.0.0_r1) 复核 FrameTimeline/VSyncPredictor/VSyncReactor；修正 FrameTimeline jank bitmask 数量 13→15，修正 VSyncPredictor 离群容差 10%→20%，VSyncReactor 10% 周期确认边界保持独立；回到 Task6 复审。；2026-08-03 idle audit: PASS。无 Android 18/API38 越界；sources 已有 research/official/aosp 标记；清理 p1=1 残留为 p1=0。"
-last_idle_audit_at: "2026-08-03T18:35:40+08:00"
-last_idle_audit_run_id: "20260803-183540-idle-audit-cad65fbd"
-last_idle_audit_result: "pass-frontmatter-cleanup"
-last_idle_audit_log: "logs/audit/2026-08-03-20260803-183540-idle-audit-cad65fbd-idle-audit.md"
+task9_audit_notes: "2026-07-08 Task9 idle audit: AUTO-FIX。按 Android 17(android-17.0.0_r1) 复核 FrameTimeline/VSyncPredictor/VSyncReactor；修正 FrameTimeline jank bitmask 数量 13→15，修正 VSyncPredictor 离群容差 10%→20%，VSyncReactor 10% 周期确认边界保持独立；回到 Task6 复审。；2026-08-03 idle audit: PASS。无 Android 18/API38 越界；sources 已有 research/official/aosp 标记；清理 p1=1 残留为 p1=0。；2026-08-05 idle audit: PASS。抽检 Android 18/API38 越界、待验证残留、来源标记、frontmatter 与正文表达；quality_flags 经复核不构成正文问题，未修改正文。"
+last_idle_audit_at: "2026-08-05T18:35:58+08:00"
+last_idle_audit_run_id: "20260805-183558-idle-audit-cad65fbd"
+last_idle_audit_result: "pass-idle-audit"
+last_idle_audit_log: "logs/audit/2026-08-05-20260805-183558-idle-audit-cad65fbd-idle-audit.md"
+last_idle_audit_notes: "抽检 Android 18/API38 越界、TODO/待验证残留、sources 标记、frontmatter 和正文表达；未发现需降级或安全正文补丁的问题。"
 ---
 
 # 2.23 SurfaceFlinger VSync Scheduler 与 DisplayFrameRate 策略
