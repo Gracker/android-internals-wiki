@@ -43,151 +43,260 @@ rework_resolution: "第四轮 rework：从本卷已验证章节 [1.35][14.1][26.
 
 # 26.29 JVMTI Agent — ART 运行时动态监控的实验入口与证据边界
 
-[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 53.md]
+## 先给结论
 
-## 本节定位
+JVMTI 是 ART 提供给调试器和 profiler 的进程内原生接口。它能观察线程、方法、类、对象分配和 GC，也能设置断点、挂起线程、重定义类。接口能力很强，因此 Android 对普通应用设置了清晰的安全边界：
 
-JVMTI（JVM Tool Interface）是 JDK 5 / JSR-163 定义的标准工具接口。ART 从 Android 8.0（API 26）起正式支持 JVMTI，使运行时调试和性能监控类工具可以通过 agent 机制接入虚拟机。[已验证: 经由本卷 [14.1] 交叉引用 + 官方文档 Record Java/Kotlin Allocations]
+- ART TI 从 Android 8.0 / API 26 开始提供；
+- 公共的 `Debug.attachJvmtiAgent()` 从 Android 9 / API 28 开始提供；
+- 运行中的 agent 只能附加到 `android:debuggable="true"` 的应用；
+- `profileable` 不等于 `debuggable`，不能让 release 应用获得 JVMTI attach 权限；
+- JVMTI 更适合实验室工具、IDE profiler 和专用调试构建，不是线上 release 监控 SDK 的通用入口。
 
-本章把 JVMTI Agent 在 Android 上的内容组织为两层：
+本章以 `android-17.0.0_r1` 为源码锚点。Android 官方 [ART TI 说明](https://source.android.com/docs/core/runtime/art-ti) 还指出，Android 8 及以上版本由 CTS 检查 debuggable / non-debuggable attach 边界、已实现的 JVMTI API 和 agent 二进制接口。厂商无需另行实现这套接口，但不同 Android 版本可提供的 capability 仍可能不同。
 
-1. **ART 中 JVMTI 的源码级语义**——交叉引用本卷已验证章节 [1.35]（ART 去优化）和 [14.1]（Android Studio Profiler），这些章节已基于 `android-17.0.0_r1` AOSP 源码做过逐文件验证。
-2. **Android CLI 作为实验准备工具**——唯一原始材料是 Android CLI 预览版博文，它能安全支撑的是实验工程生成、SDK 管理和 UI 取证，不能替代 JVMTI 运行时机制本身的源码核验。
+## ART TI、JVMTI plugin 与 agent 的关系
 
-## ART 中 JVMTI 的源码级语义
+ART 没有把 JVMTI 固定放在运行时核心路径中，而是通过 `libopenjdkjvmti` plugin 暴露接口。agent 是被加载进目标应用进程的 `.so`，与 plugin 通过 `jvmtiEnv` 调用和回调通信。
 
-> 以下内容交叉引用本卷已验证章节，所有 AOSP 源码路径均已在对应章节中以 `android-17.0.0_r1` tag 验证。
+下面的关系图用于区分宿主、plugin 和 agent。
 
-### JVMTI Agent 注入路径
+```text
+adb / Android Studio / debuggable 应用
+                 │ attach 请求
+                 ▼
+        ActivityManager + ART 权限检查
+                 │
+                 ▼
+应用进程 ┌─────────────────────────────────────┐
+         │ ART runtime                         │
+         │   └─ libopenjdkjvmti plugin         │
+         │          ▲ jvmtiEnv 调用 / 回调      │
+         │          │                          │
+         │      libsample-agent.so             │
+         │          └─ 有界缓冲与工作线程       │
+         └─────────────────────────────────────┘
+```
 
-Android Studio Memory Profiler 的分配追踪数据通路展示了 Android 上 JVMTI agent 的实际注入方式：device 端的 JVMTI agent（`libperfa.so`）由 Android Studio 推送到 `/data/local/tmp/perfd/perfd` daemon，再通过 `am attach-agent` 注入目标应用，随后注册 `JVMTI_EVENT_VM_OBJECT_ALLOC` / `OBJECT_FREE` / `GARBAGE_COLLECTION_START` / `GARBAGE_COLLECTION_FINISH` / `CLASS_PREPARE` 等事件回调获取运行时数据。[已验证: 本卷 [14.1]，源码 `tools/base/profiler/native/perfa/perfa.cc` + `memory/memory_tracking_env.cc`，Android Studio 源码树 `platform/tools/base`]
+agent 与应用处于同一地址空间。agent 的越界访问、死锁、ABI 不匹配或回调中的阻塞都会直接影响目标进程；“标准接口”只约束 JVMTI 调用语义，不会隔离 agent 自身的 native 缺陷。
 
-这直接回答了 "线上 attach/detach 是否可用" 的问题：**Android 通过 `am attach-agent` 支持运行时 agent attach，但要求目标 App 处于 debuggable 状态**。当 App 仅配置 `android:profileable="true"`（非 debuggable）时，JVMTI 路径完全不可用——MEMORY_HEAP_DUMP / MEMORY_JVM_RECORDING / MEMORY_GC / MEMORY_LEAK_WITH_LEAKCANARY 四项 Memory Profiler 功能被禁用（`SupportLevel.kt:39-46` PROFILEABLE except 列表），只保留实时内存曲线与 Perfetto heapprofd 的 native allocation。[已验证: 本卷 [14.1]]
+## 两种加载时机
 
-### JVMTI 事件与 ART Instrumentation 的映射
+### 独立 ART 进程的启动参数
 
-ART 的 JVMTI 实现位于 AOSP 源码 `art/openjdkjvmti/` 目录。API 37 的 JVMTI 事件与 deopt（去优化）需求有明确映射关系，验证自 `openjdkjvmti/events.cc` 与 `openjdkjvmti/deopt_manager.cc`：[已验证: 本卷 [1.35]，源码 `art/openjdkjvmti/events.cc` + `art/openjdkjvmti/deopt_manager.cc`（android-17.0.0_r1）]
+手动启动 `dalvikvm` 或 `app_process` 时，可以同时指定 `-Xplugin:libopenjdkjvmti.so` 和 `-agentpath`。这条路径主要服务 ART 自测。设备上的普通应用由已运行的 Zygote fork 出来，不能把 `-agentpath` 当成应用 manifest 的启动选项；`system_server` 也不属于普通应用可用范围。
 
-| JVMTI 事件类别 | deopt 需求 | 源码依据 |
-| --- | --- | --- |
-| breakpoint、exception、method entry/exit | limited requirement（受限路径） | `openjdkjvmti/events.cc` |
-| exception catch（全局监听） | full deopt（全局解释器） | `openjdkjvmti/events.cc` |
-| field access/modification、single-step、frame-pop、force-early-return | 有目标线程→线程级；无目标线程→full deopt | `openjdkjvmti/deopt_manager.cc` |
-| class load、compiled method load、GC 事件 | 不要求 deopt | `openjdkjvmti/events.cc` |
+### 运行中附加
 
-关键结论：**"启用任意 JVMTI agent 就会让全进程永久解释执行"不成立**。应根据 agent 实际启用的事件类型和线程过滤器判断 instrumentation level。[已验证: 本卷 [1.35]]
+Android 提供 shell 命令，把 agent 附加到已经运行的 debuggable 进程。下面的命令只展示接口形状，agent 文件必须位于目标进程能够读取且 SELinux 允许加载的位置。
 
-### DeoptManager 的三种作用域
+```shell
+adb shell cmd activity attach-agent \
+  PROCESS_NAME \
+  /data/user/0/PACKAGE_NAME/code_cache/libsample-agent.so=AGENT_OPTIONS
+```
 
-ART 通过 `DeoptManager`（`openjdkjvmti/deopt_manager.cc`）将 JVMTI 请求映射为三个级别的 instrumentation：[已验证: 本卷 [1.35]，源码 `art/runtime/instrumentation.cc` + `art/openjdkjvmti/deopt_manager.cc`（android-17.0.0_r1）]
+`PROCESS_NAME` 可以是目标进程名；等号右侧内容会作为 options 传给 agent。官方建议把 `.so` 放进应用 native library 目录，或通过 `run-as` 复制到应用数据目录。把库推到任意公共路径并不保证目标进程可以 `dlopen()`。
 
-| Instrumentation Level | 行为 | 适用场景 |
-| --- | --- | --- |
-| `kInstrumentNothing` | 无 entry/exit hook 要求 | 无 agent 或仅注册 GC/class-load 事件 |
-| `kInstrumentWithEntryExitHooks` | 运行 method entry/exit hooks，仍可执行支持 hook 的 compiled code | method tracing、breakpoint（非全局） |
-| `kInstrumentWithInterpreter` | 安装 interpreter stubs，强制方法进入解释器 | exception catch 全局监听、field access 全局监听 |
+应用也可以在 API 28 及以上版本调用 [`Debug.attachJvmtiAgent()`](https://developer.android.com/reference/android/os/Debug) 附加自身。下面的示例用于调试构建中的显式开关。
 
-- **方法级 deopt**：`Instrumentation::Deoptimize(method)` 把方法 entrypoint 改为 quick-to-interpreter bridge，可撤销。普通非 native、非 proxy 方法上的 breakpoint 走此路径。[已验证: 本卷 [1.35]]
-- **线程级 deopt**：部分 JVMTI 事件（single-step、field access/modification、frame-pop、force-early-return）允许指定线程，`DeoptManager` 通过 `RequestSynchronousCheckpoint()` 在目标线程上增加 force-interpreter count。[已验证: 本卷 [1.35]]
-- **全局 deopt**：`Instrumentation::DeoptimizeEverything(key)` 请求 `kInstrumentWithInterpreter`，JIT 编译入口会因 `AreAllMethodsDeoptimized()` 返回 true 而跳过方法编译。[已验证: 本卷 [1.35]]
+```kotlin
+import android.os.Debug
 
-### 类重定义（RedefineClasses）
+fun attachGcCounterAgent() {
+    check(BuildConfig.DEBUG)
+    Debug.attachJvmtiAgent(
+        "libsample-agent.so",
+        "mode=gc-counter",
+        object {}.javaClass.classLoader
+    )
+}
+```
 
-JVMTI 支持运行时类重定义，实现在 `openjdkjvmti/ti_redefine.cc`。API 37 区分两种情况：[已验证: 本卷 [1.35]，源码 `art/openjdkjvmti/ti_redefine.cc`（android-17.0.0_r1）]
+`classLoader` 决定 native library 的搜索路径，`options` 由 agent 自行解析。non-debuggable 进程会收到 `SecurityException`，加载失败则是 `IOException`。不要捕获异常后继续把实验标成“JVMTI 已启用”。
 
-- **非结构性 redefinition**：为旧方法建立 obsolete method，修正活动栈 method 指针，更新 JIT 数据。代价较小。
-- **结构性 redefinition**（改变字段或方法布局）：强制每个线程每个可去优化 frame 设置 redefinition flag，替换 class/instance 引用，调用 `InvalidateAllCompiledCode()` 清空 JIT compiled code。代价很大。
+## Agent_OnLoad、Agent_OnAttach 与 Agent_OnUnload
 
-Android Studio 的 "Apply Changes" 最终走哪条路径取决于修改内容和部署机制，不能把每次 Apply Changes 都描述为结构性全量 deopt。[已验证: 本卷 [1.35]]
+Android 17 的 [`runtime/ti/agent.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/ti/agent.cc) 会查找三个导出符号：
 
-### 与字节码插桩和 XTrace 的选型关系
+| 符号 | 调用时机 | 工程含义 |
+|---|---|---|
+| `Agent_OnLoad` | 独立 runtime 通过启动参数加载 agent | 普通应用通常不用这条路径 |
+| `Agent_OnAttach` | 运行中的进程接受 attach | Android 应用调试最常见 |
+| `Agent_OnUnload` | runtime 关闭时清理 agent | 不是日常运行中的“detach 回调” |
 
-本章既有提纲把 JVMTI、字节码插桩和 XTrace 放在同一组选型问题里：[来源: 本章既有提纲]
+Android 17 在 runtime 关闭时调用 `Agent_OnUnload`，源码还明确不执行 native library close，因为已有 agent 可能假设库不会在运行中卸载。JVMTI 没有与 attach 对称的通用“卸载 agent”接口。agent 可以停用事件、停止自己的工作线程并 `DisposeEnvironment()`，但这不等于 `.so` 已从进程地址空间移除。需要干净基线时重启目标进程。
 
-| 方案 | 时机 | 侵入性 | 详见章节 |
-| --- | --- | --- | --- |
-| 字节码插桩（ASM/AGP） | 编译期 | 需要特殊构建；覆盖率依赖编译期决定 | [26.21] |
-| XTrace（ART hook） | 运行时 | 非侵入式动态追踪，利用 ART Instrumentation listener | [26.23] |
-| JVMTI Agent | 运行时 | 通过标准 agent 接口 attach；受 debuggable 约束 | 本章 |
+## 最小 agent：只统计 GC 事件
 
-ART Instrumentation 子系统（`art/runtime/instrumentation.h`）的 `InstrumentationListener` 定义了 `MethodEntered`、`MethodExited`、`MethodUnwind`、字段读写等回调接口。JVMTI 事件和 XTrace 的 method tracing 最终都汇入这套 Instrumentation 机制。[已验证: 本卷 [26.23]，源码 `art/runtime/instrumentation.h`（android-17.0.0_r1）]
+agent 应先查询潜在 capability，再只申请本次实验所需部分。下面的 C++ 示例用于说明 `GetEnv → capability → callbacks → enable` 的最小顺序；回调只增加原子计数，避免在 ART 回调线程里做文件 I/O 或复杂分配。
 
-详见 [26.23 XTrace — 生产级 ART 动态方法追踪] 对 ART Instrumentation listener 机制的完整分析，以及 [26.21 编译期字节码插桩与监控自动化] 对编译期插桩的讨论。
+```cpp
+#include <atomic>
+#include <cstdint>
+#include <jni.h>
+#include <jvmti.h>
 
-## Android CLI 作为实验准备工具
+namespace {
 
-> 本节的唯一原始材料是 Android CLI 预览版博文（掘金，2026-04-21），它描述的是 Agent/CI 工作流的流程入口能力，不是 ART JVMTI 运行时机制的一手证据。以下内容仅作为 JVMTI 实验的环境准备和取证工具参考。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
+std::atomic<uint64_t> g_gc_start_count{0};
+std::atomic<uint64_t> g_gc_finish_count{0};
 
-### Android CLI 能安全支撑什么
+void JNICALL OnGcStart(jvmtiEnv*) {
+  g_gc_start_count.fetch_add(1, std::memory_order_relaxed);
+}
 
-材料把 Android CLI 描述为 Android 团队发布的预览版命令行入口，强调它面向 Agent 工作流，提供项目模板、SDK 管理、设备/界面操作、文档检索和 skills 安装等能力；这些能力适合放在 JVMTI 排障链路的"准备与取证"层。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
+void JNICALL OnGcFinish(jvmtiEnv*) {
+  g_gc_finish_count.fetch_add(1, std::memory_order_relaxed);
+}
 
-在本章范围内，它可以安全承担三类工作：
+jint StartAgent(JavaVM* vm) {
+  jvmtiEnv* jvmti = nullptr;
+  if (vm->GetEnv(
+          reinterpret_cast<void**>(&jvmti),
+          JVMTI_VERSION_1_0) != JNI_OK ||
+      jvmti == nullptr) {
+    return JNI_ERR;
+  }
 
-1. **显式化实验工程**：材料给出 `android create list`、`android create --dry-run --verbose empty-activity-agp-9` 和 `android create -o ./DemoApp empty-activity-agp-9`。这些命令适合记录样例工程从 dry-run 到落盘的过程，避免 Agent 临时拼 Gradle、目录和模板。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
-2. **显式化 SDK 与设备前置条件**：材料说明 `android sdk install` 可指定包名、版本或渠道，并给出 `android sdk install platforms/android-34 build-tools/34.0.0` 与 `android sdk list 'platforms/.*'` 示例。它们适合记录实验需要的 SDK 包和已安装平台，降低"装错版本、路径混乱、隐式依赖"的复现风险。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
-3. **显式化 UI 触发与外部证据**：材料列出 `android screen capture --annotate`、`android screen resolve --screenshot=ui.png --string="input tap #5"` 和 `android layout --diff`。这些命令适合把方法追踪或字段观察实验中的外部触发动作、截图和布局变化留作验收证据。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
+  jvmtiCapabilities potential{};
+  if (jvmti->GetPotentialCapabilities(&potential) != JVMTI_ERROR_NONE ||
+      potential.can_generate_garbage_collection_events == 0) {
+    return JNI_ERR;
+  }
 
-### Agent 工作流中的使用边界
+  jvmtiCapabilities requested{};
+  requested.can_generate_garbage_collection_events = 1;
+  if (jvmti->AddCapabilities(&requested) != JVMTI_ERROR_NONE) {
+    return JNI_ERR;
+  }
 
-材料提到 `android init` 会安装 `android-cli` skill，帮助 Agent 理解并使用 Android CLI；还提到 `android skills list --long`、`android skills find 'performance'`、`android skills add --agent='gemini' edge-to-edge` 这类命令可管理 Markdown 形式的工作流指令集。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
+  jvmtiEventCallbacks callbacks{};
+  callbacks.GarbageCollectionStart = &OnGcStart;
+  callbacks.GarbageCollectionFinish = &OnGcFinish;
+  if (jvmti->SetEventCallbacks(&callbacks, sizeof(callbacks))
+      != JVMTI_ERROR_NONE) {
+    return JNI_ERR;
+  }
 
-接入 JVMTI 研究时，需要保留两条边界：
+  if (jvmti->SetEventNotificationMode(
+          JVMTI_ENABLE,
+          JVMTI_EVENT_GARBAGE_COLLECTION_START,
+          nullptr) != JVMTI_ERROR_NONE) {
+    return JNI_ERR;
+  }
+  if (jvmti->SetEventNotificationMode(
+          JVMTI_ENABLE,
+          JVMTI_EVENT_GARBAGE_COLLECTION_FINISH,
+          nullptr) != JVMTI_ERROR_NONE) {
+    jvmti->SetEventNotificationMode(
+        JVMTI_DISABLE,
+        JVMTI_EVENT_GARBAGE_COLLECTION_START,
+        nullptr);
+    return JNI_ERR;
+  }
+  return JNI_OK;
+}
 
-- **skills 约束操作，不替代源码核验**：`android docs search` / `android docs fetch` 可以作为官方知识检索入口，帮助定位推荐做法或文档主题；但 ART JVMTI capability 子集、attach 生命周期、事件语义、对象 tag 行为和卸载清理仍要以 android-17.0.0_r1 源码与可复现实验为准（参见上文已交叉引用的源码级结论）。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
-- **预览版工具不扩大版本边界**：材料把 Android CLI 标为"预览版"，示例中出现 `platforms/android-34`，不能据此推出 Android 18/API 38 及之后的运行时结论。AIW 当前主线仍限定在 Android 17.0.0_r1 / API 37 及 android17-6.18 内核基线。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md]
+}  // namespace
 
-### 建议的 JVMTI 实验记录模板
+extern "C" JNIEXPORT jint JNICALL Agent_OnAttach(
+    JavaVM* vm, char*, void*) {
+  return StartAgent(vm);
+}
 
-当用 Agent 协助验证 JVMTI Agent 或 ART 运行时监控时，建议至少保留下面四层证据。这样即便不深入 `attachAgent`、事件回调或对象 tag 的实测，也能为后续源码复核和实测留下可复现入口。
+extern "C" JNIEXPORT jint JNICALL Agent_OnLoad(
+    JavaVM* vm, char*, void*) {
+  return StartAgent(vm);
+}
+```
 
-| 证据层 | 建议记录项 | 作用 |
-| --- | --- | --- |
-| 工程生成 | `android create --dry-run --verbose ...` 与实际 `android create -o ...` 输出 | 证明样例工程如何生成，便于回看模板、Gradle 配置和初始文件差异。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md] |
-| SDK 环境 | `android sdk install ...` 与 `android sdk list 'platforms/.*'` 输出 | 证明实验所需平台和 build-tools，不把环境问题误判为 JVMTI 行为差异。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md] |
-| 设备/UI 触发 | `android screen capture --annotate`、`android screen resolve ...`、`android layout --diff` 输出 | 证明触发路径和界面状态，方便把外部操作与运行时观测时间线对齐。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md] |
-| 知识检索 | `android docs search ...` 与 `android docs fetch ...` 输出 | 作为官方文档导航线索；最终运行时结论仍需源码和实测确认。[来源: 2026-07-24-76308345-Android CLI 来了！终端一键建项目、控模拟器、给 Agent.md] |
+示例省略了事件停用、环境释放、计数导出和重复 attach 防护，不能直接作为成品。生产质量的调试工具还要检查每一个 `jvmtiError`，保存 agent 状态机，并保证停用时没有 callback 与销毁操作并发。
 
-## 后续源码实测清单
+### 为什么要先查 capability
 
-以下条目保留为后续实测清单，本章通过交叉引用已建立源码级语义映射，但尚未独立提供可复现的端到端实测记录：
+官方文档只承诺“实现了一部分 JVMTI”，并提示 capability 可能随 Android 版本变化。agent 应使用 `GetPotentialCapabilities()` 读取当前 runtime 的能力，再调用 `AddCapabilities()`。把桌面 HotSpot 或另一个 Android 版本的 capability 表写死，失败时很难区分“平台不支持”和“agent 初始化有误”。
 
-- `android.os.Debug.attachAgent` 在 Framework/API 层的入口、权限和错误处理边界——本章通过 [14.1] 确认了 `am attach-agent` 路径和 debuggable 约束，但 `Debug.attachAgent` 公共 API 的详细权限模型需进一步验证。[交叉引用: 本卷 [14.1]]
-- `Agent_OnLoad` / `Agent_OnUnload` 在 ART 加载与清理链路中的调用条件——本章通过 [1.35] 确认了 DeoptManager 和 instrumentation level 机制，但 agent 生命周期回调本身需独立核验。[交叉引用: 本卷 [1.35]]
-- MethodEntry/MethodExit 与 FieldAccess/FieldModification 事件的 capability 条件——本章通过 [1.35] 给出了事件→deopt 映射表，已建立框架性结论。[交叉引用: 本卷 [1.35]]
-- TagObject/GetObjectsWithTags 这类对象标记能力在泄漏检测或堆对象归因中的可用边界——本章通过 [14.1] 确认了 `VM_OBJECT_ALLOC` / `OBJECT_FREE` 事件用于分配追踪的路径，但 TagObject 需独立验证。[交叉引用: 本卷 [14.1]]
-- 线上 attach/detach 是否可用、可控和可回滚——本章已通过 [14.1] 确认 profileable（非 debuggable）App 的 JVMTI 不可用约束；release build 线上 attach 的安全策略需结合签名、SELinux/权限与应用发布策略单独验证。[交叉引用: 本卷 [14.1]]
+有 capability 也不表示事件已经开启。常见顺序是：
 
-## 复查结论
+1. 查询并申请 capability；
+2. 用 `SetEventCallbacks()` 登记回调；
+3. 用 `SetEventNotificationMode()` 按事件、必要时按线程启用；
+4. 运行实验；
+5. 先停用事件，再等待 agent 内部工作结束并释放资源。
 
-> **第五轮 review-finalize（2026-07-30）：`rework-verified` → `finalized`**
+回调运行在哪个线程、允许调用哪些 JVMTI 方法，要按具体事件的规范和当前 phase 判断。稳妥的回调只复制必要字段到预分配或有界缓冲区，把解析、符号化和文件写入交给 agent 自己的消费者线程。
 
-本轮深度复核逐项核验了章节交叉引用与源码一致性，全部通过，推进为 finalized。
+## 启用事件会怎样影响 ART
 
-核验结论：
+不能把 JVMTI 开销概括为“只多一次回调”，也不能说“任意 agent 都让全进程永久解释执行”。Android 17 的 [`openjdkjvmti/events.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/openjdkjvmti/events.cc) 把事件启用所需的去优化分成 `kNone`、`kLimited`、`kThread` 和 `kFull`：
 
-1. **事件→deopt 映射表**（line 71-76）：与 [1.35] line 215-219 完全一致——breakpoint/exception/method-entry-exit 为 limited；exception-catch 全局监听为 full deopt；field access/modification、single-step、frame-pop、force-early-return 有目标线程→线程级、无目标线程→full deopt；class load/compiled method load/GC 不要求 deopt。
-2. **DeoptManager 三种作用域**（line 84-92）：与 [1.35] line 187-213 一致——`kInstrumentNothing` / `kInstrumentWithEntryExitHooks` / `kInstrumentWithInterpreter`，方法级/线程级/全局 deopt 机制。
-3. **RedefineClasses**（line 96-101）：与 [1.35] line 239-250 一致——非结构性 vs 结构性 redefinition，`InvalidateAllCompiledCode()`。
-4. **Agent 注入路径**（line 63-65）：与 [14.1] line 169/173 一致——`libperfa.so` → `/data/local/tmp/perfd/perfd` → `am attach-agent`，`SupportLevel.kt:39-46` profileable 约束。
-5. **InstrumentationListener 回调**（line 113）：与 [26.23] line 57-60 一致——`MethodEntered` / `MethodExited` / `MethodUnwind`。
-6. **版本边界**：所有结论限定 android-17.0.0_r1 / API 37；CLI 示例 `platforms/android-34` 明确标注不扩大版本边界。
-7. **来源结构**：6 个 AOSP/official 源码 + 1 个 article 材料分层标注，article 材料正确降级为"实验准备工具"节。
+| 事件 | Android 17 的去优化要求 | 如何理解 |
+|---|---|---|
+| breakpoint、exception、method entry、method exit | `kLimited` | 不直接请求全量去优化，仍会启用相应 instrumentation |
+| exception catch | `kFull` | 请求所有方法和线程进入全量去优化状态 |
+| field access/modification、single step、frame pop、force early return 更新 | 指定线程时 `kThread`，未指定线程时 `kFull` | 线程过滤器会改变影响范围 |
+| thread/class、compiled method、GC、monitor、object free、VM object alloc 等 | `kNone` | 不因“启用事件”进入上述去优化路径；回调与数据采集仍有成本 |
 
-置信度从 medium 评估后维持——交叉引用章节 [1.35] (confidence: high) 和 [14.1] (confidence: high) 均已 finalized/verified，可充分支撑本章源码级结论。Android CLI 实验工具节作为流程入口参考，不承担运行时机制断言。剩余 5 项后续源码实测清单诚实标注了需独立验证的边界（`Debug.attachAgent` 权限模型、`Agent_OnLoad/OnUnload` 生命周期、TagObject 等），不影响已确立的框架性结论的正确性。
+[`deopt_manager.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/openjdkjvmti/deopt_manager.cc) 对请求做计数。启用 full 或 thread 级事件时增加对应请求，停用时移除；多个 agent 或多个事件可以同时持有请求。因此，全量去优化可以撤销，但必须等相关请求都被移除。
 
-> **第四轮 rework（2026-07-29）：`needs-rework` → `rework-verified`**
+`kLimited` 也不是“零影响”。例如设置某个 breakpoint 时，ART 还需要处理目标方法及活动栈；method entry/exit 则会走 ART Instrumentation 的方法事件路径。详细的入口替换、解释器 stub 与 JIT 关系见 [1.35]，Instrumentation listener 的回调位置见 [26.23]。
 
-本次 rework 的核心修复：从本卷已验证章节 [1.35][14.1][26.23] 引入 AOSP `android-17.0.0_r1` 源码级 JVMTI 交叉引用，解决了前三轮复核中"唯一来源为 Android CLI 博文，无法支撑源码级结论"的问题。
+## 类重定义要分清标准入口与 ART 扩展
 
-具体改进：
+Android 的类定义输入是单类 DEX，不是桌面 JVM 常见的 class file。Android 17 的 [`ti_redefine.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/openjdkjvmti/ti_redefine.cc) 为普通 `RedefineClasses()` 和结构性扩展维护了不同模式。
 
-1. **新增"ART 中 JVMTI 的源码级语义"节**：包含 JVMTI agent 注入路径（`am attach-agent` + `libperfa.so`）、事件→deopt 映射表（`openjdkjvmti/events.cc`）、DeoptManager 三种作用域（`deopt_manager.cc`）、类重定义（`ti_redefine.cc`），全部交叉引用本卷已验证章节，标注 AOSP 源码路径。
-2. **Android CLI 材料降级**：保留为"实验准备工具"节，明确其证据边界（流程入口而非运行时机制一手来源）。
-3. **后续源码实测清单更新**：标注每项已通过交叉引用建立的结论范围和仍需独立实测的边界。
-4. **选型对比表**：新增 JVMTI / 字节码插桩 / XTrace 三方选型表，交叉引用 [26.21][26.23]。
+### 普通 RedefineClasses
 
-剩余风险（维持追踪）：
+标准入口适合替换方法实现，不允许随意改变类 schema。添加或删除方法、添加字段、改变类修饰符、父类或接口等变化会按对应 JVMTI 错误拒绝。已经在栈上的旧方法要以 obsolete method 继续执行，后续调用再使用新定义。
 
-- 本章 JVMTI 语义全部来自对本卷其他章节的交叉引用，尚未在本章内部独立进行 AOSP 源码逐行核验和端到端实测。若引用章节被修改，本章结论受影响。
-- TagObject/GetObjectsWithTags 对象标记能力的具体实现边界未在任何已验证章节中展开。
+这也是为什么“改了一段代码”不能自动推导为“所有线程立刻执行新实现”。活动 frame、内联、JIT code 和类是否可修改都会影响结果。
+
+### 结构性重定义是条件受限的 ART 扩展
+
+Android 17 的 [`ti_extension.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/openjdkjvmti/ti_extension.cc) 可以公布 `com.android.art.class.structurally_redefine_classes`。它不是标准 JVMTI `RedefineClasses()` 的默认语义，而且只在 runtime 条件允许时出现。
+
+扩展仅支持增量添加方法或字段，不允许删除成员，也不允许改变父类和已实现接口。源码路径会暂停类加载与对象分配、执行 GC、替换受影响的类和实例、更新子类关系，并调用 `InvalidateAllCompiledCode()` 清理 JIT code。它适合 IDE 的受控开发操作，不适合作为线上热修复协议。
+
+Android Studio Apply Changes 是否使用普通重定义、结构性扩展或其他部署机制，取决于修改内容和工具版本。不能仅凭界面提示推断进程执行了哪一种 runtime 操作。
+
+## 对象 tag 与堆遍历
+
+`SetTag()` / `GetTag()` 依赖 `can_tag_objects`。Android 17 的 [`ti_heap.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/openjdkjvmti/ti_heap.cc) 为每个 `jvmtiEnv` 维护 object tag table；堆遍历、引用遍历和 `GetObjectsWithTags()` 都从这张表读取。`ObjectFree` 主要用于通知带非零 tag 的对象已经回收，不等于“为所有对象自动发送释放事件”。
+
+tag 是 agent 自己解释的 `jlong`，ART 不知道它代表分配序号、对象类别还是外部索引。设计 tag 时要处理复用、溢出、agent 多环境隔离和上传隐私。对整个堆做遍历或引用追踪可能明显扰动目标进程，不能在没有基线对照的情况下把结果当作原运行状态。
+
+若目标只是观察 native 分配，heapprofd 比 JVMTI 对象事件更贴近问题；若目标是 Java/Kotlin allocation，Android Studio Memory Profiler 已提供受支持的调试路径。自己写 agent 的价值通常在于验证一个标准工具无法表达的窄问题。
+
+## attach 不等于线上动态监控
+
+debuggable 是硬边界。即使应用不通过 Google Play 分发，把 debuggable 构建发给终端用户也会扩大被调试、注入和修改的攻击面。`android:profileable="true"` 允许受支持的 profiler 在更接近 release 的构建上采集有限信息，但不会开放 JVMTI attach。
+
+线上 release 场景应按目标选择公共能力：
+
+| 目标 | 更合适的入口 |
+|---|---|
+| 业务方法与阶段耗时 | 编译期字节码插桩、`android.os.Trace`、AndroidX Tracing |
+| 系统调度、Binder、频率和渲染因果 | Perfetto system trace，受权限与 profileable 约束 |
+| Native 分配 | heapprofd / Android Studio Memory Profiler |
+| API 35 及以上的应用 profile 请求 | ProfilingManager，接受限流和不保证执行的契约 |
+| Java 崩溃、ANR、进程退出 | 应用稳定性采集与 `ApplicationExitInfo` |
+| ART 私有 hook 实验 | 仅在固定版本和受控设备验证，边界见 [26.23] |
+
+JVMTI 与 [26.21] 的编译期插桩也不是互相替代。编译期插桩能进入 release，但只能观察构建时选定的点；JVMTI 能在运行中选择事件和类，却要求 debuggable，并可能改变 ART 执行形态。
+
+## 一次可复现的 JVMTI 实验
+
+建议为每次实验保存这些信息：
+
+- 设备型号、Android build fingerprint、API、ABI 和 page size；
+- 应用 versionCode、签名摘要、`debuggable`、`profileable` 与构建 ID；
+- agent 源码 commit、NDK、编译器、ABI、符号文件和 `.so` 摘要；
+- attach 入口、库路径、options、`Agent_OnAttach` 返回值和每个 `jvmtiError`；
+- potential / requested / granted capability；
+- 启用的事件、线程过滤器、开始与停止时刻；
+- 无 agent、已 attach 但未开事件、开启目标事件三组对照；
+- wall time、CPU time、帧、内存、GC、JIT 状态和丢弃事件数；
+- 进程重启后的恢复结果。
+
+实验结论也要限定范围。Android 17 AOSP 的源码可以解释机制，目标 OEM 镜像上的可用性仍需用同一 agent 验证；一次真机成功则只能证明该构建和配置成功。遇到 attach 失败时，按 debuggable、ABI、库可读性、SELinux、导出符号、capability 和事件 phase 的顺序检查，比扫描 ART 私有内存更可靠。
