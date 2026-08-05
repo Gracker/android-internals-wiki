@@ -1084,6 +1084,27 @@
       "summary": "Rework resolved pending-verification/thin-source flags for Perfetto AI memory tracking chapter",
       "type": "pending-verification-marker",
       "updated_at": "2026-08-05T09:37:42.247899+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/4.18-android-17-memorylimiter-深度解析.md",
+      "close_note": "正文已将 setUid() 修正为 setUidRecord()，frontmatter deep-review 时间/run_id/last_verified 同步更新，源码索引增加公开标签链接。",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260805-123510-deep-review-44dab4a0",
+      "created_at": "2026-08-05T12:38:20.463021+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260805-123510-deep-review-44dab4a0",
+      "details": "deep-review 对照章节内部源码索引与 §4.17 高置信度相邻章节，修正绑定 UidRecord 的源码入口命名，并补充公开 android-17.0.0_r1 / android17-6.18-2026-06_r6 标签链接。",
+      "id": "AIW-4.18-20260805-P2-processrecord-uid-anchor",
+      "log_path": "logs/deep-review/2026-08-05-20260805-123510-deep-review-44dab4a0-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "src/part1-fundamentals/ch04-memory/4.18-android-17-memorylimiter-深度解析.md",
+        "frameworks/base/services/core/java/com/android/server/am/ProcessRecord.java@android-17.0.0_r1"
+      ],
+      "status": "fixed",
+      "summary": "4.18 ProcessRecord 生命周期锚点误写为 setUid()，应为 setUidRecord()",
+      "type": "source-anchor-precision",
+      "updated_at": "2026-08-05T12:38:20.515344+08:00"
     }
   ],
   "schema_version": 1
