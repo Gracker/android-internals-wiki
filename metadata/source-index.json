@@ -2136,6 +2136,217 @@
         "aiw"
       ],
       "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Gracker的Rss订阅/2026-08-06-Gracker的Rss订阅.md",
+      "title": "[RSS订阅] Gracker RSS 正文精选 · 2026-08-06",
+      "summary": "SICP 数字电路仿真的纯函数 Haskell 重写：Wire 标识、Change 事件议程、组件函数列表组合半加/全加器；propagate 有序推进并跳过空操作。可作为事件驱动系统与纯函数建模的短对照材料。",
+      "chapter": "ch16",
+      "processed_at": "2026-08-06T06:20:37.666993+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-06-76692680-VSync同步屏障与doFrame.md",
+      "title": "[技术文章] VSync 与同步屏障：doFrame() 的优先调度本文介绍 VSync、同步屏障与 doFrame() 的协作机制，",
+      "summary": "> 发布时间: 2026-08-03T00:17:04.000Z > 原文链接: https://juejin.cn/post/7669268061262315583 2026-08-03 55 阅读5分钟 View 系统把界面变化攒到帧上处理。invalidate() 或 requestLayout() 之后，ViewRootImpl 把 Traversal 安排到后续...",
+      "chapter": "ch02",
+      "processed_at": "2026-08-06T06:20:37.666993+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-06-76696491-JetBrains-MCP接入Codex.md",
+      "title": "[技术文章] 让 Codex “用上”Android Studio：JetBrains MCP Server 接入与实践很多 AI 编",
+      "summary": "> 发布时间: 2026-08-05T06:18:11.000Z > 原文链接: https://juejin.cn/post/7669649119754879026 2026-08-05 145 阅读10分钟 > 本文基于 2026 年 8 月的 JetBrains MCP Server 与 Codex 配置方式编写。不同 Android Studio版本可能略有差异，...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-06T06:20:37.666993+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-06-76696820-Compose-LayoutNode与GraphicsLayer.md",
+      "title": "[技术文章] Compose 布局与绘制：LayoutNode、DisplayList 与 GraphicsLayer本文梳理 Com",
+      "summary": "> 发布时间: 2026-08-03T15:53:26.000Z > 原文链接: https://juejin.cn/post/7669682093891698730 2026-08-03 50 阅读4分钟 Composable 在 Android 上通过 View 系统接入窗口绘制流程。AndroidComposeView 是 View 树中真实存在的 ViewGrou...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-06T06:20:37.666993+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-06-76699988-Binder调用变慢分阶段定位.md",
+      "title": "[技术文章] Binder 实战（九）：一次调用变慢，到底卡在客户端、驱动、Binder 线程还是 Handler？“Binder 卡",
+      "summary": "> 发布时间: 2026-08-04T15:21:47.000Z > 原文链接: https://juejin.cn/post/7669998887132463123 2026-08-04 49 阅读23分钟 工程现场经常只给出两条信息：主线程栈停在 BinderProxy.transactNative()，这次调用耗时两秒。于是结论很快被写成： 这句话几乎没有诊断价值。...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-06T06:20:37.666993+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-06-76703446-Perfetto-Trace是怎么形成的.md",
+      "title": "[技术文章] 01 一份 Perfetto Trace 是怎么形成的一份 Perfetto Trace 是怎么形成的？本文讲清 ATr",
+      "summary": "> 发布时间: 2026-08-05T06:13:36.000Z > 原文链接: https://juejin.cn/post/7670344663845552164 2026-08-05 39 阅读15分钟 一份 Perfetto Trace 里混合了多种数据。内核产生 sched_switch、sched_wakeup、CPU 频率等事件；Android Framew...",
+      "chapter": "ch05",
+      "processed_at": "2026-08-06T06:20:37.666993+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/appendix/perfetto-templates.md",
+      "route_confidence": 28,
+      "route_terms": [
+        "perfetto",
+        "trace",
+        "atr",
+        "sched",
+        "switch",
+        "wakeup",
+        "cpu",
+        "linux"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-06-76703869-AppActuator-Agent操作Android.md",
+      "title": "[技术文章] AppActuator - 让 AI Agent 直接理解并操作运行中的 Android AppAppActuator",
+      "summary": "> 发布时间: 2026-08-05T08:52:55.000Z > 原文链接: https://juejin.cn/post/7670386923397464114 2026-08-05 33 阅读5分钟 > 让 AI Agent 直接理解并操作运行中的 Android App，而不是隔着屏幕猜测。 AppActuator 是一个面向开发与测试场景的 Android 工...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-06T06:20:37.666993+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-05-evening-验收权写死-研究材料/03-dump-agents-production.md",
+      "title": "[DeepResearch] Dump · AGENTS 生产改写（接合验收权）",
+      "summary": "--- phase: 1 sub_question: AGENTS.md 生产改写（复用 morning，补与验收权表的接合） official_material_status: 二手信号 evidence_class: secondary_report --- # Dump · AGENTS 生产改写（接合验收权） ## 状态 morning 已完成八条转述与生产 diff；晚间不重搜原文仓库，只把规则层接到「验收权表」。 ## 生产",
+      "chapter": "ch16",
+      "processed_at": "2026-08-06T06:20:37.666993+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-05-evening-验收权写死-研究材料/02-dump-sol-gates-refresh.md",
+      "title": "[DeepResearch] Dump · Sol Advisor 验收闸门（晚间刷新）",
+      "summary": "--- phase: 1 sub_question: Sol Advisor 验收协议刷新 + 与跨模型审查对照 official_material_status: 已抓官方文档 evidence_class: official_release --- # Dump · Sol Advisor 验收闸门（晚间刷新） ## 仓库快照（2026-08-05 API） - `DannyMac180/sol-advisor` - stars：*",
+      "chapter": "ch05",
+      "processed_at": "2026-08-06T06:20:37.666993+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-05-morning-LFM25-Jetpacker-AGENTS-Sol-研究材料/commands.md",
+      "title": "[DeepResearch] opencli / 网络命令记录 2026-08-05 morning",
+      "summary": "# opencli / 网络命令记录 2026-08-05 morning - opencli twitter search \"LFM2.5 OR LFM2.5-2.6B OR liquidai agentic\" - opencli twitter thread 2084640701669613906 - opencli twitter thread 2084670698891456838 - opencli twitter threa",
+      "chapter": "ch16",
+      "processed_at": "2026-08-06T06:20:37.666993+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-05-morning-LFM25-Jetpacker-AGENTS-Sol-研究材料/03-dump-sol-agents-gates.md",
+      "title": "[DeepResearch] Dump · 验收闸门与规则层",
+      "summary": "--- phase: 1 sub_question: Sol Advisor 验收闸门 + AGENTS.md 生产改写 + Codex harness 下一代叙事 official_material_status: Sol=已抓官方文档; AGENTS八条=二手转述+agents.md站点; Codex=个人工程帖 --- # Dump · 验收闸门与规则层 ## A. Sol Advisor（GitHub README + Luna",
+      "chapter": "ch16",
+      "processed_at": "2026-08-06T06:20:37.666993+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "target_path": "src/part1-fundamentals/ch13-profiling/13.23-perfetto-v57-ai-skill-state-tracks-memory-debug.md",
+      "route_confidence": 25,
+      "route_terms": [
+        "dump",
+        "sol",
+        "codex",
+        "official",
+        "agents",
+        "github",
+        "aiw"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-05-morning-LFM25-Jetpacker-AGENTS-Sol-研究材料/02-dump-jetpacker-hybrid.md",
+      "title": "[DeepResearch] Dump · Jetpacker 混合推理与 AppFunctions",
+      "summary": "--- phase: 1 sub_question: Jetpacker 如何演示 on-device / cloud / hybrid 与 AppFunctions official_material_status: 已抓官方文档 evidence_class: official_release --- # Dump · Jetpacker 混合推理与 AppFunctions ## 研究问题 Android 官方 showcase",
+      "chapter": "ch05",
+      "processed_at": "2026-08-06T06:20:37.666993+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-05-morning-LFM25-Jetpacker-AGENTS-Sol-研究材料/references/08-jetpacker-hybrid.md",
+      "title": "[DeepResearch] 08-jetpacker-hybrid",
+      "summary": "- Android Developers Blog: Build intelligent Android apps: Cloud and hybrid inference - - - - - - - - - - - - ☰ Android Developers Blog The latest Android and Google Play news for app and game developers. 🔍 Android Devel",
+      "chapter": "ch16",
+      "processed_at": "2026-08-06T06:20:37.666993+08:00",
+      "action": "body-applied",
+      "score": 15,
+      "target_path": "src/part4-system/ch17-oem/03-industry-cases.md",
+      "route_confidence": 40,
+      "route_terms": [
+        "developers",
+        "blog",
+        "apps",
+        "cloud",
+        "and",
+        "the",
+        "google",
+        "for"
+      ],
+      "route_status": "existing-chapter-routed",
+      "previous_action": "indexed-only-chapter-freeze",
+      "status": "applied",
+      "applied_at": "2026-08-06T07:15:45+08:00",
+      "applied_run_id": "20260806-071545-2d77d0d1"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-05-morning-LFM25-Jetpacker-AGENTS-Sol-研究材料/references/05-appfunctions.md",
+      "title": "[DeepResearch] 05-appfunctions",
+      "summary": "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - Overview of AppFunctions | AI | Android Developers Skip to main content Essentials - Build AI experiences - Build AI-powered Android apps with Gemini AP",
+      "chapter": "ch16",
+      "processed_at": "2026-08-06T06:20:37.666993+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-05-morning-LFM25-Jetpacker-AGENTS-Sol-研究材料/references/04-jetpacker-intro.md",
+      "title": "[DeepResearch] 04-jetpacker-intro",
+      "summary": "- Android Developers Blog: Build intelligent Android apps: Introduction to Jetpacker - - - - - - - - - - - - ☰ Android Developers Blog The latest Android and Google Play news for app and game developers. 🔍 Android Develo",
+      "chapter": "ch16",
+      "processed_at": "2026-08-06T06:20:37.666993+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "target_path": "src/part4-system/ch17-oem/03-industry-cases.md",
+      "route_confidence": 37,
+      "route_terms": [
+        "developers",
+        "blog",
+        "apps",
+        "the",
+        "and",
+        "google",
+        "for",
+        "app"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-05-morning-LFM25-Jetpacker-AGENTS-Sol-研究材料/references/07-jetpacker-ondevice.md",
+      "title": "[DeepResearch] 07-jetpacker-ondevice",
+      "summary": "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - Build intelligent Android apps: On-device inference | Android Developers' Blog - - Skip to main content Essentials - Build AI experiences - Build AI-pow",
+      "chapter": "ch16",
+      "processed_at": "2026-08-06T06:20:37.666993+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ]
 }
