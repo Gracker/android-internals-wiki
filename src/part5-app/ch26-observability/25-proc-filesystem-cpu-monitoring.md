@@ -25,399 +25,387 @@ gap_source: "参考书驱动（Clippings/线上疑难问题 45.md）"
 
 # 26.25 ProcessCpuTracker 与 /proc 伪文件系统 CPU 数据采集
 
-## 要点
+## 这一章解决什么问题
 
-### 🔹 /proc 伪文件系统概述
+Android 上的“CPU 使用率”至少有三种口径：
 
-Linux 内核在运行时维护着大量内部数据结构——进程列表、CPU 使用统计、内存分配状态、中断计数等。`procfs`（/proc 伪文件系统）提供了一种统一、只读（部分可写）的接口来暴露这些数据。
+- 系统在采样窗口内有多少 CPU 容量处于忙碌状态；
+- 某个进程在采样窗口内消耗了多少个“核等价”的 CPU 时间；
+- 某个线程何时被调度、在哪个 CPU 上运行，以及等待运行队列多久。
 
-`/proc` 的核心特征：
+这三类问题分别适合用 `/proc/stat`、进程 CPU 时间和调度事件回答。把它们混成一个百分比，常见后果是把单核占满误报成整机占满，或者把 load average 当作 CPU 利用率。
 
-- **虚拟文件**：所有文件大小为 0，不占用磁盘空间。读取操作触发内核回调函数实时生成数据
-- **动态内容**：每次读取都反映读取瞬间的内核状态，不存在缓存一致性问题
-- **文本格式**：大部分文件以纯文本格式输出，便于 shell 工具（`cat`/`grep`/`awk`）直接解析
-- **无 seek 支持**：大多数 `/proc` 文件不支持 `lseek()`，只能从头读到尾
+Android 17 还需要先处理权限边界：普通应用无法照搬 `system_server` 的 `ProcessCpuTracker` 方案。下文以 AOSP `android-17.0.0_r1` 和 Android Common Kernel `android17-6.18-2026-06_r6` 为源码锚点，分别说明应用侧与平台侧能采集什么。
 
-[已验证: 内核文档, Documentation/filesystems/proc.rst（Linux 6.6，Android 17 内核基线）]
+## procfs 是接口，不是磁盘快照
 
-Android 平台上 `/proc` 的可见性约束（Android 10+）：
+`procfs` 是内核提供的虚拟文件系统。读取 `/proc/stat`、`/proc/<pid>/stat` 等节点时，内核按节点实现生成文本；有些节点也允许写入，用来调整内核参数。
 
-- **/targetSDK ≤ 28**：可读取 `/proc/stat`、`/proc/[pid]/stat` 等全局文件
-- **/targetSDK ≥ 29（Android 10+）**：`/proc/[pid]/` 目录访问被 SELinux 和 `/proc` hidepid 挂载选项限制，应用只能读取自身进程的 `/proc/self/` 目录
-- **全局 `/proc/stat`**：Android 10+ 仍然可读，但 `/proc/[other_pid]/stat` 不可读
-- 这一限制直接影响 APM 工具的 CPU 监控策略——无法再遍历系统所有进程的 CPU 数据
+使用它时需要记住四个边界：
 
-[已验证: 官方文档, developer.android.com/about/versions/10/privacy/changes（Android 10 Privacy Changes）]
+- 文件的 `st_size` 可能为零，也可能提供其他值，不能用“所有文件大小都为零”判断内容是否存在。
+- 一次读取看到的是生成过程中的内核状态。多个文件之间没有事务，也不能认为整份采样天然原子。
+- 进程可能在 `open()`、`read()` 之间退出，PID 还可能被复用。跨时刻跟踪进程时，应同时校验 `/proc/<pid>/stat` 的 `starttime`。
+- 部分节点基于 `seq_file`，是否支持定位由节点实现决定；业务代码不应假设所有节点都不能 `lseek()`。
 
-### 🔹 /proc/stat：全局 CPU 时间片
+因此，可靠的采样器应给每次样本附加单调时钟时间戳，允许单个节点读取失败，并在计数回退、进程实例变化或字段不足时丢弃本轮差值。
 
-`/proc/stat` 是 CPU 监控最核心的数据源。文件首行 `cpu` 汇总了所有 CPU 核的总时间（单位：USER_HZ，通常 100Hz 即 1/100 秒）：
+内核接口与挂载选项可在 [`Documentation/filesystems/proc.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst) 中核对。
 
-```
+## Android 17 的访问边界
+
+### 普通应用不能读取全局 CPU 节点
+
+AOSP Android 17 的 `app_neverallows.te` 明确禁止所有普通应用域读取 `proc_stat` 和 `proc_loadavg`。这条规则覆盖不同 `targetSdk` 对应的 `untrusted_app_*` 域，因此不能用降低 `targetSdk` 恢复 `/proc/stat`。
+
+同一份策略还保留了从 Android O 开始对这些拒绝日志的 `dontaudit` 处理。应用读取失败时，设备日志中未必出现醒目的 SELinux denial，不能据此判断节点可读。
+
+Android 的 `/proc` 还使用 `hidepid=2` 隔离其他 UID 的进程目录；Android 17 的 first-stage init 以 `gid=AID_READPROC` 挂载该文件系统。普通应用可以依赖的是自身数据；其他 PID 是否可见不能作为 SDK 能力。Android 10 的公开隐私变更针对的是 `/proc/net`，而且影响设备上的所有应用，并不是 Android 10 才按 `targetSdk` 关闭整个 `/proc/<pid>`。
+
+| 调用方 | Android 17 上适合依赖的数据 | 不应依赖的数据 |
+|---|---|---|
+| 普通应用或 APM SDK | `Process.getElapsedCpuTime()`、`/proc/self/stat`、自身可见的 `task` 节点 | `/proc/stat`、`/proc/loadavg`、全系统 PID 遍历 |
+| 具有专用 SELinux 规则的平台服务 | 策略允许的全局节点与进程节点 | 仅凭“预装”或“平台签名”推定访问权 |
+| `shell`、root、系统 tracing 服务 | Perfetto、受控的 procfs/ftrace/BPF 采集 | 把调试权限当作线上应用权限 |
+
+厂商策略可以比 AOSP 更严格。采集器仍要把节点访问视为可失败能力，而不是用品牌或系统版本推断。
+
+对应证据包括：
+
+- [`app_neverallows.te` 的 procfs 禁止规则](https://android.googlesource.com/platform/system/sepolicy/+/refs/tags/android-17.0.0_r1/private/app_neverallows.te)
+- [`untrusted_app_all.te` 的历史兼容说明](https://android.googlesource.com/platform/system/sepolicy/+/refs/tags/android-17.0.0_r1/private/untrusted_app_all.te)
+- [`first_stage_init.cpp` 的 procfs 挂载参数](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/init/first_stage_init.cpp)
+- [Android 10 对 `/proc/net` 的公开说明](https://developer.android.com/about/versions/10/privacy/changes#restriction-access-proc-net)
+
+## `/proc/stat`：全机 CPU 容量口径
+
+平台进程读取 `/proc/stat` 时，首行汇总所有 possible CPU 的累计值，后续 `cpu0`、`cpu1` 等行列出当前在线 CPU 的独立累计值。下面只展示首行字段顺序，便于说明计算式：
+
+```text
 cpu  user nice system idle iowait irq softirq steal guest guest_nice
 ```
 
-各字段含义：
+这些数值自启动以来累计，单位为 `USER_HZ`。不要把频率写死为 100；Android 17 的 `ProcessCpuTracker` 通过 `Os.sysconf(OsConstants._SC_CLK_TCK)` 获取换算系数。
 
-| 字段 | 含义 | 说明 |
-|------|------|------|
-| `user` | 用户态时间 | 运行普通进程（nice ≥ 0）的用户态 CPU 时间 |
-| `nice` | 低优先级用户态时间 | nice 值 < 0 的进程（实际是 nice > 0 的低优先级进程）|
-| `system` | 内核态时间 | 内核空间执行的 CPU 时间 |
-| `idle` | 空闲时间 | CPU 空闲且没有等待 I/O |
-| `iowait` | I/O 等待时间 | 等待磁盘/存储 I/O 完成的时间（可能不准确，见下文）|
-| `irq` | 硬中断时间 | 处理硬件中断的时间 |
-| `softirq` | 软中断时间 | 处理软中断（tasklet、网络收发等）的时间 |
-| `steal` | 被虚拟化偷取的时间 | 在虚拟化环境中，hypervisor 分配给其他虚拟 CPU 的时间 |
-| `guest` | 客户机时间 | 运行虚拟 CPU 的时间（已包含在 user 中）|
-| `guest_nice` | 低优先级客机时间 | 运行低优先级虚拟 CPU 的时间（已包含在 nice 中）|
+各字段的含义如下：
 
-**CPU 使用率计算公式**：
+| 字段 | 含义 |
+|---|---|
+| `user` | 普通优先级任务在用户态运行的时间 |
+| `nice` | `nice > 0` 的低优先级任务在用户态运行的时间 |
+| `system` | 任务在内核态运行的时间 |
+| `idle` | CPU 空闲时间 |
+| `iowait` | 内核归入等待 I/O 的空闲时间 |
+| `irq` | 处理硬中断的时间 |
+| `softirq` | 处理软中断的时间 |
+| `steal` | 虚拟化环境中被宿主占用的时间 |
+| `guest` | 运行普通优先级虚拟 CPU 的时间，已经计入 `user` |
+| `guest_nice` | 运行低优先级虚拟 CPU 的时间，已经计入 `nice` |
 
+`guest` 和 `guest_nice` 是细分项，不能再次加进总时间。Android 17 内核的 `account_guest_time()` 同时更新 `user`/`nice` 与对应的 guest 计数，这一包含关系可在 [`kernel/sched/cputime.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cputime.c) 中看到。
+
+若产品要计算本机任务消耗的 CPU 时间，可以采用下列定义：
+
+- `total = user + nice + system + idle + iowait + irq + softirq + steal`
+- `localBusy = user + nice + system + irq + softirq`
+- `localBusyPercent = ΔlocalBusy / Δtotal × 100%`
+
+`steal` 表示虚拟机被宿主占用的时间，不是本机任务执行时间。如果指标要表达“对虚拟机不可用的 CPU 容量”，可以把 `steal` 加入分子，但应使用不同名称。`guest` 和 `guest_nice` 仍不能重复相加。
+
+这里的 `cpu` 首行汇总多个 CPU。假设八个 CPU 在一个窗口内都保持在线，一个进程只占满其中一个 CPU，那么 `Δprocess / Δtotal` 接近整机容量的八分之一，而不是 100%。原先把该结果称为“单核百分比”，再除一次 CPU 数，会重复归一化。
+
+还要注意：
+
+- 内核文档明确指出 `iowait` 在多核和无时钟节拍场景下并不可靠，某些条件下甚至会回退。计数回退时应丢弃样本，不能用零替代负差值。
+- CPU 热插拔会改变在线 CPU 集合。不要用固定核数补偿 `/proc/stat` 的聚合差值。
+- CPU 时间没有表达核心微架构、频率和调度容量。同样的一毫秒在小核与大核上不代表相同工作量或能耗。
+
+Android 17 对应实现位于 [`fs/proc/stat.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/stat.c)。该文件还输出：
+
+- `ctxt`：全机累计上下文切换次数；
+- `btime`：启动时间的 Unix 时间戳；
+- `processes`：创建过的进程和线程数量；
+- `procs_running`：正在运行或可运行的线程数量；
+- `procs_blocked`：等待 I/O 的阻塞任务数量。
+
+这些值适合补充描述系统压力，但不能替代调度 trace。
+
+## 两种进程 CPU 百分比不要混用
+
+`/proc/<pid>/stat` 的第 14、15 个字段分别是 `utime` 和 `stime`，两者相加得到进程累计 CPU 时间。对两次样本做差后，可以定义两种常见口径。
+
+### 核等价利用率
+
+`ΔprocessCpu / Δwall × 100%` 表示进程用了多少个核：
+
+- 100% 表示窗口内约占用一个 CPU；
+- 150% 表示平均约占用 1.5 个 CPU；
+- 多线程进程可以超过 100%。
+
+这是应用性能监控中更直观的口径。它不需要 `/proc/stat`，普通应用可以用公开 API [`Process.getElapsedCpuTime()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Process.java) 获取当前进程累计 CPU 毫秒数。
+
+下面的 Kotlin 示例同时保留“设备唤醒期间”和“完整观察窗口”两个分母，避免睡眠时间是否计入指标变成隐含条件：
+
+```kotlin
+import android.os.Process
+import android.os.SystemClock
+
+data class CpuPoint(
+    val processCpuMs: Long,
+    val uptimeMs: Long,
+    val realtimeMs: Long,
+)
+
+data class CpuUsage(
+    val awakeCorePercent: Double,
+    val windowCorePercent: Double,
+)
+
+class SelfCpuSampler {
+    private var previous: CpuPoint? = null
+
+    fun sample(): CpuUsage? {
+        val current = CpuPoint(
+            processCpuMs = Process.getElapsedCpuTime(),
+            uptimeMs = SystemClock.uptimeMillis(),
+            realtimeMs = SystemClock.elapsedRealtime(),
+        )
+        val old = previous
+        previous = current
+        if (old == null) return null
+
+        val cpuDelta = current.processCpuMs - old.processCpuMs
+        val uptimeDelta = current.uptimeMs - old.uptimeMs
+        val realtimeDelta = current.realtimeMs - old.realtimeMs
+        if (cpuDelta < 0 || uptimeDelta <= 0 || realtimeDelta <= 0) return null
+
+        return CpuUsage(
+            awakeCorePercent = cpuDelta * 100.0 / uptimeDelta,
+            windowCorePercent = cpuDelta * 100.0 / realtimeDelta,
+        )
+    }
+}
 ```
-total = user + nice + system + idle + iowait + irq + softirq + steal
-busy  = user + nice + system + irq + softirq + steal
-usage% = (Δbusy / Δtotal) × 100
+
+`uptimeMillis()` 在深度睡眠期间停止，适合描述设备醒着时的 CPU 密度；`elapsedRealtime()` 包含深度睡眠，适合描述完整观察窗口内的平均负担。这个示例只统计当前进程，不会自动合并应用的 `:remote` 等其他进程。
+
+### 整机容量占比
+
+`ΔprocessCpu / ΔallCpu × 100%` 表示进程占全机累计 CPU 容量的比例，通常位于 0% 到 100% 之间。它需要全局 CPU 计数，普通应用在 AOSP Android 17 上无法直接计算。
+
+若产品为了跨设备比较而把核等价利用率除以 CPU 数量，必须把“CPU 数量”定义清楚：是物理核心、当前在线 CPU、进程 cpuset 允许的 CPU，还是按调度容量加权的 CPU。移动设备会热插拔，并且大小核性能不同，简单除以 `Runtime.availableProcessors()` 只能算近似值。
+
+## `/proc/<pid>/stat` 的解析规则
+
+CPU 采集常用字段如下，索引从 1 开始：
+
+| 索引 | 字段 | 说明 |
+|---:|---|---|
+| 1 | `pid` | 进程或线程 ID |
+| 2 | `comm` | 括号包围的任务名，可包含空格和右括号 |
+| 3 | `state` | `R`、`S`、`D`、`Z`、`T` 等状态 |
+| 14 | `utime` | 用户态累计 CPU 时间，单位为 `USER_HZ` |
+| 15 | `stime` | 内核态累计 CPU 时间，单位为 `USER_HZ` |
+| 16 | `cutime` | 已等待子进程累计的用户态 CPU 时间 |
+| 17 | `cstime` | 已等待子进程累计的内核态 CPU 时间 |
+| 20 | `num_threads` | 线程数量 |
+| 22 | `starttime` | 任务从系统启动起算的创建时刻，单位为 clock tick |
+| 23 | `vsize` | 虚拟地址空间大小，单位为字节 |
+| 24 | `rss` | 驻留页数量，需要乘页大小得到字节 |
+| 39 | `processor` | 任务上次运行所在的 CPU 编号 |
+
+不能直接按空格切整行，因为 `comm` 可以包含空格和 `)`。分隔符是整行最右侧的 `)`；它后面的第一个 token 才是字段 3。下面的代码只解析 CPU 采集需要的稳定前缀，并保留 `starttime` 用于识别进程实例：
+
+```kotlin
+import android.system.Os
+import android.system.OsConstants
+import java.io.File
+
+data class ProcCpuTicks(
+    val cpuTicks: Long,
+    val startTicks: Long,
+)
+
+private val whitespace = Regex("\\s+")
+
+fun readSelfCpuTicks(): ProcCpuTicks? {
+    return try {
+        val line = File("/proc/self/stat").readText()
+        val closingParen = line.lastIndexOf(')')
+        require(closingParen > 0)
+
+        // tail[0] 对应字段 3；utime、stime、starttime 分别对应 11、12、19。
+        val tail = line.substring(closingParen + 1).trim().split(whitespace)
+        require(tail.size > 19)
+        ProcCpuTicks(
+            cpuTicks = tail[11].toLong() + tail[12].toLong(),
+            startTicks = tail[19].toLong(),
+        )
+    } catch (_: Exception) {
+        null
+    }
+}
+
+fun clockTicksPerSecond(): Long =
+    Os.sysconf(OsConstants._SC_CLK_TCK)
 ```
 
-后续行 `cpu0`、`cpu1`、... `cpuN` 提供每个 CPU 核心的独立统计，格式与 `cpu` 行相同。
+解析失败返回 `null`，调用方应丢弃这一轮样本。不要返回 `-1` 后继续计算差值，否则一次权限拒绝或进程退出会产生很大的伪 CPU 峰值。跟踪任意 PID 时，还要在两次样本之间比较 `startTicks`；数值变化说明 PID 已对应另一个进程。
 
-[已验证: 内核文档, Documentation/filesystems/proc.rst#section-1.2]
+内核可能在末尾追加字段，因此不应断言 `/proc/<pid>/stat` 固定有 44 个字段。按需要解析稳定前缀，比校验总字段数更兼容。Android 17 生成这些字段的代码位于 [`fs/proc/array.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/array.c)。
 
-> ⚠️ **iowait 的陷阱**：`iowait` 是 CPU 空闲且等待 I/O 的时间。当 CPU 核心在等 I/O 且无其他任务可运行时，iowait 增加；一旦有其他任务可运行，iowait 就转为 idle。因此 iowait 并不反映 I/O 延迟大小，而是「CPU 闲着也是闲着」的度量。多核系统上，iowait 的参考价值更低。
+## 线程级采集
 
-[已验证: 内核文档, Documentation/cpu-load.rst]
+`/proc/<pid>/task/<tid>/stat` 与进程 stat 使用相同字段格式，但 `utime`、`stime` 对应单个线程。对普通应用而言，`/proc/self/task/` 可用于：
 
-`/proc/stat` 还包含中断和上下文切换统计：
+- 区分主线程与后台工作线程的 CPU 消耗；
+- 查看 Binder 线程是否持续占用 CPU；
+- 观察线程数量和线程 CPU 时间是否持续增长；
+- 在卡顿前后保留轻量的线程 CPU 快照。
 
-- `intr` 行：总中断次数 + 各 IRQ 号的中断次数
-- `ctxt` 行：系统启动以来的上下文切换总数
-- `btime` 行：系统启动时间（Unix 时间戳）
-- `processes` 行：系统启动以来创建的进程总数
-- `procs_running` 行：当前处于 R（运行）状态的进程数
-- `procs_blocked` 行：当前处于 D（不可中断睡眠）状态的进程数
+逐线程轮询的成本随线程数增长，并且目录枚举会遇到线程创建、退出的竞争。它适合短时诊断或低频摘要，不适合替代调度事件。主线程 CPU 较低也不代表主线程健康：锁等待、Binder 等待和 I/O 阻塞都可能让线程不消耗 CPU，却仍造成卡顿或 ANR。
 
-### 🔹 /proc/loadavg：系统负载均值
+## Android 17 `ProcessCpuTracker` 的准确模型
 
+`ProcessCpuTracker` 位于 `com.android.internal.os`，是 Framework 内部类，不属于 SDK API。Android 17 源码中它直接声明为 `public class ProcessCpuTracker`，不存在同路径的 `CpuTracker` 基类。
+
+它的主要入口与数据结构可以概括为：
+
+```text
+ProcessCpuTracker(boolean includeThreads)
+  init(): void
+  update(): void
+  countStats(): int
+  getStats(index): Stats
+  countWorkingStats(): int
+  getWorkingStats(index): Stats
+  getCpuTimeForPid(pid): long
+  getCpuDelayTimeForPid(pid): long
+
+Stats
+  pid, uid, name, baseName
+  base_utime, base_stime, base_uptime
+  rel_utime, rel_stime, rel_uptime
+  rel_minfaults, rel_majfaults
+  active, working, added, removed
 ```
+
+这份摘要强调方法签名和字段名：`update()` 不返回布尔值，没有 `addCpuTime()`、`getProcessStats()` 或 `getIdleCpuTime()` 等接口。完整定义见 [`ProcessCpuTracker.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ProcessCpuTracker.java)。
+
+一次 `update()` 的流程是：
+
+1. 用 `Process.readProcFile()` 读取 `/proc/stat` 的 `user` 到 `softirq` 七个字段，并按 `_SC_CLK_TCK` 换算为毫秒。
+2. 用 `Process.getPids("/proc", ...)` 枚举进程，而不是只更新预先注册的 PID。
+3. 对已有 PID 读取 `/proc/<pid>/stat`，计算 CPU 时间和缺页次数增量。
+4. 新 PID 还会读取任务名与 `vsize`；退出的 PID 标记为 `removed` 后从活动列表移除。
+5. `includeThreads` 为 `true` 时，在进程 CPU 发生变化后继续扫描其 `task` 目录。
+6. 读取 `/proc/loadavg`，在数值变化时调用 `onLoadChanged()`。
+
+`Stats.active` 表示本次 CPU 累计值发生变化；`Stats.working` 表示本轮需要进入工作集合，新发现的进程也可能被标为 working。退出项会短暂设置 `removed` 后从活动列表移除。三者不能互换。
+
+### 同一个类中也存在不同百分比定义
+
+Android 17 的 `getTotalCpuPercent()` 只用 `user + system + irq` 作为忙时间，并用 `user + system + irq + idle` 作分母；`iowait` 和 `softirq` 都未进入这个方法。另一方面，`printCurrentState()` 与 proto 输出计算总时间时包含 `iowait` 和 `softirq`。
+
+这属于现有内部实现的语义差异，不应把 `getTotalCpuPercent()` 抄成通用 CPU 公式。使用内部数据时，应直接选取需要的增量字段并在指标协议中记录公式。
+
+### Framework 为什么能用，应用为什么不能照搬
+
+Android 17 的 `AppProfiler` 在 `system_server` 内持有一个 `ProcessCpuTracker`，源码注释明确说明它会遍历 `/proc`，并要求调用方避免在关键锁路径上持有其锁。采样结果用于 ANR 等诊断输出、进程 CPU 统计和 BatteryStats 归因，也用于 phantom process 的 CPU 状态更新。
+
+对应调用链可在 [`AppProfiler.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppProfiler.java) 中核对。
+
+普通应用同时受两层约束：
+
+- 类本身是隐藏 API，反射调用没有兼容性保证；
+- 即使设法调用成功，SELinux 与 procfs 挂载权限也不会随反射绕过。
+
+所以第三方 APM 应使用公开 API 采集自身进程 CPU，并把系统级诊断交给 Perfetto、bugreport 或受控的平台服务。
+
+## `/proc/loadavg` 回答的不是 CPU 利用率
+
+Android 17 内核将 load average 定义为 `nr_running + nr_uninterruptible` 的指数衰减平均值，三个窗口通常称为 1、5、15 分钟负载。它同时包含可运行任务和不可中断睡眠任务，因此高负载既可能来自 CPU 竞争，也可能来自 D 状态任务。
+
+下面的示例只用于说明文件布局：
+
+```text
 1.23 1.45 1.67 3/1024 12345
 ```
 
-前三个值分别是 1 分钟、5 分钟、15 分钟的运行队列平均长度（负载均值）。第四个值的分子是当前运行进程数，分母是总进程数。第五个是最近创建的进程 PID。
+前三个值是三个时间尺度的负载平均值；`3/1024` 是读取时刻的 runnable 线程数与系统线程总数；末尾值来自当前 PID 命名空间最近分配位置。第四列不是“运行进程数/总进程数”，也不应假定只统计进程主线程。
 
-负载均值的解读需要结合 CPU 核心数：
+不要为所有设备设定固定的 load average 告警线。Android 设备存在 CPU 热插拔、大小核、cpuset 和功耗策略，同一个数值在不同设备和温控状态下含义不同。更稳妥的做法是：
 
-- **单核**：loadavg 持续 > 1.0 表示过载
-- **8 核**：loadavg 持续 > 8.0 表示过载
-- **经验法则**：loadavg / CPU 核数 > 0.7 需要关注，> 1.0 需要优化
+- 与同机型、同场景的历史基线比较；
+- 同时查看系统 CPU busy、`procs_running`、`procs_blocked` 与 PSI；
+- 用调度 trace 区分运行队列等待、锁等待和不可中断 I/O；
+- 把温控、频率和在线 CPU 集合作为解释上下文。
 
-`/proc/loadavg` 在 Android APM 中的应用场景：
+生成第四列的代码位于 [`fs/proc/loadavg.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/loadavg.c)，负载平均算法位于 [`kernel/sched/loadavg.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/loadavg.c)。普通应用在 AOSP Android 17 上不能读取该节点。
 
-- 作为 CPU 使用率的补充指标——即使 CPU 使用率不高，高 loadavg 可能意味着大量 I/O wait 或锁竞争
-- 用于区分 CPU-bound 和 I/O-bound 场景：CPU-bound 场景 loadavg ≈ CPU 使用率%，I/O-bound 场景 loadavg 远高于 CPU 使用率
+## 采样器的工程约束
 
-[已验证: 内核文档, Documentation/filesystems/proc.rst#section-1.8]
+采样间隔没有脱离产品场景的固定答案。短间隔能看见更短的尖峰，也会增加唤醒、文件解析、线程枚举和上报成本。设计时应明确：
 
-### 🔹 /proc/[pid]/stat：进程级 CPU 数据
+- 常态只采当前进程的累计 CPU 时间，异常窗口再临时增加线程维度；
+- 不在主线程读取 procfs，避免磁盘读取策略告警和业务抖动；
+- 使用单调时钟，不用 `currentTimeMillis()` 计算采样间隔；
+- 记录原始累计值、差值、时间分母和指标口径，服务端不要凭字段名猜公式；
+- 对读取失败、差值为负、时间不前进、`starttime` 变化分别计数；
+- 通过设备实验测量采集线程 CPU、唤醒次数、分配量与包体影响，再决定频率；
+- 后台和温控状态下允许降频或停止，异常触发的高频模式应有持续时间限制。
 
-`/proc/[pid]/stat` 或 `/proc/self/stat`（读取自身进程）包含进程的详细统计信息。关键字段（以空格分隔，字段索引从 1 开始）：
+`ProcessCpuTracker` 自身也说明了全 PID 扫描属于长操作。它缓存已有 `Stats` 和进程名，按 PID 合并新增、存续、退出记录，但并没有消除每轮 `/proc` 枚举。
 
-| 字段索引 | 字段名 | 含义 |
-|----------|--------|------|
-| 1 | pid | 进程 ID |
-| 2 | comm | 可执行文件名（括在括号中）|
-| 3 | state | 进程状态（R/S/D/Z/T）|
-| 14 | utime | 用户态 CPU 时间（USER_HZ 单位）|
-| 15 | stime | 内核态 CPU 时间（USER_HZ 单位）|
-| 16 | cutime | 已回收子进程的 utime 总和 |
-| 17 | cstime | 已回收子进程的 stime 总和 |
-| 20 | num_threads | 线程数 |
-| 23 | vsize | 虚拟内存大小（字节）|
-| 24 | rss | 驻留集大小（页数，乘以 PAGE_SIZE 得到字节）|
-| 39 | processor | 最近运行的 CPU 编号 |
+## Perfetto 与 eBPF：何时换成事件数据
 
-**进程 CPU 使用率计算**：
+### CPU 调度分析用 `linux.ftrace`
 
-```java
-// 两次采样
-long totalCpuTime1 = readProcStatTotal();       // /proc/stat 的 total
-long processUtime1 = readProcessStat(pid).utime; // /proc/[pid]/stat 的 utime
-long processStime1 = readProcessStat(pid).stime;
+Perfetto 的 `linux.process_stats` 主要提供进程/线程身份关系和按周期采集的内存、`oom_score_adj` 等数据，不是进程 CPU 时间采样器。线程何时运行、运行多久、为何被换下 CPU，应由 `linux.ftrace` 的 `sched_switch` 提供；`sched_waking` 可补充唤醒与调度延迟。
 
-Thread.sleep(sampleIntervalMs);
+下面的配置展示两类数据源如何配合，目的是让调度事件具有完整的进程和线程名称：
 
-long totalCpuTime2 = readProcStatTotal();
-long processUtime2 = readProcessStat(pid).utime;
-long processStime2 = readProcessStat(pid).stime;
+```textproto
+data_sources {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_waking"
+    }
+  }
+}
 
-double cpuUsage = (double)((processUtime2 + processStime2) - (processUtime1 + processStime1))
-                / (totalCpuTime2 - totalCpuTime1)
-                * 100.0;  // 百分比（单核）
-// 多核：再乘以 1 / cpuCoreCount 得到整机百分比
-```
-
-[已验证: 内核文档, Documentation/filesystems/proc.rst#section-5.2（Table 1-4: Contents of the stat files）]
-
-> ⚠️ **解析陷阱**：`comm` 字段（第 2 字段）被括号包裹，但可执行文件名本身可能包含括号或空格。正确解析方式：从最后一个 `)` 开始向前查找，确保 comm 内容完整提取。
-
-### 🔹 /proc/[pid]/task/[tid]/stat：线程级 CPU 数据
-
-每个线程在 `/proc/[pid]/task/` 下有独立目录。`/proc/[pid]/task/[tid]/stat` 的格式与 `/proc/[pid]/stat` 相同。
-
-线程级 CPU 采集的关键应用场景：
-
-1. **热点线程定位**：在 ANR 或卡顿场景中，逐线程分析 CPU 使用率，找出消耗最高的线程
-2. **主线程监控**：单独计算 UI 线程的 CPU 使用率，判断是否被业务逻辑堵塞
-3. **Binder 线程池监控**：监控 Binder 线程的 CPU 消耗，判断是否存在 IPC 瓶颈
-4. **线程泄漏检测**：通过 `num_threads` 字段或 `task/` 子目录数量检测线程数异常增长
-
-Android 10+ 的限制：由于 `/proc` hidepid 策略，应用只能读取 `/proc/self/task/` 下的自身线程数据，无法遍历其他进程的线程。
-
-[已验证: 官方文档, developer.android.com/about/versions/10/privacy/changes（/proc 访问限制）]
-
-### 🔹 ProcessCpuTracker 实现原理
-
-`ProcessCpuTracker` 是 Android Framework 内部的 CPU 监控工具类，位于 `com.android.internal.os` 包（非公开 API）。
-
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/com/android/internal/os/ProcessCpuTracker.java]
-
-**核心职责**：
-
-1. 封装 `/proc/stat` 和 `/proc/[pid]/stat` 的读取与解析
-2. 计算全局 CPU 使用率和进程/线程级 CPU 使用率
-3. 提供差异化采样（只报告变化部分）
-
-**类继承结构**：
-
-```
-CpuTracker (abstract)
-  └── ProcessCpuTracker
-```
-
-`CpuTracker` 是基类，定义了 CPU 时间片的差值计算框架。`ProcessCpuTracker` 扩展了进程级数据采集。
-
-**核心方法**：
-
-```java
-// 初始化并设置监控的进程/线程集合
-public void init();
-public void addCpuTime(int pid, String name);
-
-// 读取一次 /proc 数据并更新内部状态
-// 返回更新后的统计快照
-public boolean update();
-
-// 获取最新 CPU 统计数据
-public long getIdleCpuTime();
-public long getTotalCpuTime();
-public long getUserCpuTime();
-public long getSystemCpuTime();
-
-// 进程级数据
-public ArrayList<Stats> getProcessStats();
-public ArrayList<Stats> getWorkingStats();
-```
-
-**update() 方法的执行流程**：
-
-1. 读取 `/proc/stat` 首行获取全局 CPU 总时间
-2. 遍历 `/proc/` 目录下所有 PID 目录（受权限限制）
-3. 对每个目标 PID，读取 `/proc/[pid]/stat` 解析 utime/stime
-4. 计算与上次采样的差值
-5. 更新内部 Stats 数组（包含进程名、CPU 时间、上次采样时间戳等）
-6. 标记有变化的进程（`Stats.active` = true）
-
-**Stats 内部类**：
-
-```java
-public static class Stats {
-    public final int pid;
-    public String name;
-    public long userTime;      // 用户态 CPU 时间增量
-    public long systemTime;    // 内核态 CPU 时间增量
-    public long userTimeBase;  // 前次采样的基准值
-    public long systemTimeBase;
-    public boolean active;     // 本次采样是否有变化
-    public boolean added;      // 是否为新发现的进程
-    public boolean removed;    // 进程是否已退出
+data_sources {
+  config {
+    name: "linux.process_stats"
+    process_stats_config {
+      scan_all_processes_on_start: true
+    }
+  }
 }
 ```
 
-**使用场景**：
+`linux.ftrace` 给出 CPU 时间轴，`linux.process_stats` 补充名称和线程归属。若要周期采集进程内存，再显式配置 `proc_stats_poll_ms`；它不应被描述成 CPU 采样频率。可继续阅读 Perfetto 的 [CPU Scheduling events](https://perfetto.dev/docs/data-sources/cpu-scheduling) 与 [Memory counters and events](https://perfetto.dev/docs/data-sources/memory-counters)。
 
-- `ActivityManagerService` 中的进程 CPU 监控（ANR 检测、OomAdjuster 优先级计算）
-- `BatteryStatsService` 中的电量归因（将 CPU 时间关联到 UID 计算功耗）
-- SystemUI 的 CPU 监视器
-- 第三方 APM SDK（通过反射或 libbpf 替代方案间接获取）
+### eBPF 不是普通应用的直接替代
 
-### 🔹 轮询采集的性能优化
+平台团队可以在 `sched_switch` 等事件上运行 BPF 程序，把时间归因到 UID、PID 或 TID，并通过 map 输出聚合结果。但这条路线有三个前提：
 
-`/proc` 文件读取虽然看似简单（`open` → `read` → `close`），但每次读取都产生系统调用开销。高频轮询（如每 100ms）对性能有显著影响。
+- Android 需要由受信任的 loader、固定对象和 SELinux 规则管理 BPF 能力，普通应用不能只靠声明权限获得访问；
+- BPF 程序在每次调度切换时执行，事件驱动不等于开销必然低于周期采样；
+- 读取并清空同一张 map 会与内核侧更新竞争，需要按 CPU 聚合、双缓冲或带世代的协议，不能把一次 `BPF_MAP_LOOKUP_AND_DELETE_ELEM` 调用当成无损快照。
 
-**开销来源分析**：
+`BPF_MAP_LOOKUP_AND_DELETE_ELEM` 是 `bpf()` 系统调用的操作命令，不是 map 类型。Android 的 loader、对象编译与固定规则可参考 AOSP 的 [Extend the kernel with eBPF](https://source.android.com/docs/core/architecture/kernel/bpf)。对于普通应用性能诊断，Perfetto 已经提供受平台管理的调度数据通路；只有设备厂商或系统组件需要长期、定制化聚合时，才有理由维护专用 BPF 方案。
 
-1. **系统调用开销**：每次 `open()` + `read()` + `close()` 涉及用户态→内核态切换，约 2-5μs/次（ARM64）
-2. **内核回调开销**：`/proc` 文件的 `seq_file` 接口需要在内核态遍历数据结构并格式化输出
-3. **内存分配**：`seq_file` 内核内部使用 `kmalloc` 分配缓冲区
-4. **I/O 锁**：多线程并发读取 `/proc/stat` 可能产生锁竞争
+## 排查顺序
 
-**推荐采样策略**：
+遇到 CPU 告警时，可以按问题粒度选择数据：
 
-| 场景 | 推荐频率 | 理由 |
-|------|----------|------|
-| 线上 APM 常规监控 | 3-5 秒 | 平衡精度与功耗 |
-| ANR/卡告警时 | 500ms-1s | 短时高频采样定位问题 |
-| 性能分析（开发阶段）| 100-200ms | 使用 Perfetto 替代直接轮询 |
-| 后台低功耗模式 | 10-30 秒 | 降低功耗影响 |
+1. 用 `Process.getElapsedCpuTime()` 判断当前进程是否持续消耗核等价 CPU。
+2. 对短时异常读取自身线程 stat，确认 CPU 时间集中在哪些线程。
+3. 若线程 CPU 不高但用户仍感到卡顿，转向 Perfetto 检查 runnable 等待、锁、Binder、I/O 与调度抢占。
+4. 只有具备平台权限并且问题涉及全机竞争时，才读取 `/proc/stat`、load average 或使用 `ProcessCpuTracker`。
+5. 需要长期系统级归因时，再评估平台服务或 BPF 聚合，并单独验证开销与权限模型。
 
-**ProcessCpuTracker 的优化措施**：
-
-- **差值计算**：只在内存中维护增量数据，减少内存分配
-- **懒加载进程列表**：不主动扫描全部 `/proc/`，只更新已注册的 PID 集合
-- **进程名缓存**：避免每次读取 `/proc/[pid]/cmdline`
-
-**APM SDK 实践建议**：
-
-```java
-// 伪代码：低开销 CPU 采样循环
-class CpuMonitor {
-    private static final long SAMPLE_INTERVAL_MS = 2000; // 2秒
-    private long lastTotalCpu;
-    private long lastProcessCpu;
-
-    void sample() {
-        long currentTotal = readTotalCpuFromProcStat();
-        long currentProcess = readProcessCpuFromSelfStat();
-
-        if (lastTotalCpu > 0) {
-            long totalDelta = currentTotal - lastTotalCpu;
-            long processDelta = currentProcess - lastProcessCpu;
-            double cpuUsage = totalDelta > 0
-                ? (processDelta * 100.0 / totalDelta)
-                : 0.0;
-            report(cpuUsage);
-        }
-
-        lastTotalCpu = currentTotal;
-        lastProcessCpu = currentProcess;
-    }
-
-    private long readTotalCpuFromProcStat() {
-        // 只读 /proc/stat 首行
-        try (BufferedReader br = new BufferedReader(
-                new FileReader("/proc/stat"))) {
-            String[] parts = br.readLine().split("\\s+");
-            long total = 0;
-            for (int i = 1; i <= 8; i++) { // user..steal
-                total += Long.parseLong(parts[i]);
-            }
-            return total;
-        } catch (IOException e) {
-            return -1;
-        }
-    }
-
-    private long readProcessCpuFromSelfStat() {
-        try (BufferedReader br = new BufferedReader(
-                new FileReader("/proc/self/stat"))) {
-            String line = br.readLine();
-            // comm 字段可能含空格/括号，从最后一个 ) 后开始解析
-            int lastParen = line.lastIndexOf(')');
-            String[] parts = line.substring(lastParen + 2).split("\\s+");
-            // utime = field 14, stime = field 15
-            // 从 lastParen+2 开始，utime 是第 12 个字段（0-indexed）
-            long utime = Long.parseLong(parts[11]);
-            long stime = Long.parseLong(parts[12]);
-            return utime + stime;
-        } catch (IOException e) {
-            return -1;
-        }
-    }
-}
-```
-
-[结构参考: Clippings/线上疑难问题 45.md]
-
-### 🔹 内核版本兼容处理
-
-Android 设备使用 Linux 内核版本范围较广（Android 8: 4.x，Android 17: 6.6+）。不同内核版本中 `/proc` 文件格式可能存在细微差异。
-
-**已知的版本差异**：
-
-| 特性 | 内核版本 | 影响 |
-|------|----------|------|
-| `steal` 字段 | 2.6.11+ | 虚拟化环境下有效，物理设备恒为 0 |
-| `guest` / `guest_nice` | 2.6.24+ | 非虚拟化环境恒为 0，不影响计算 |
-| `iowait` 精度 | 各版本 | 多核系统精度有限，不可作为 I/O 延迟指标 |
-| `/proc/[pid]/stat` 字段数量 | 稳定（44 字段）| 从 2.6 开始格式基本不变 |
-| `/proc/stat` 的 `guest` 行 | 部分定制内核 | 某些厂商可能裁剪 |
-
-**兼容性处理建议**：
-
-```java
-// 解析 /proc/stat 时容错处理
-String[] cpuFields = line.split("\\s+");
-long total = 0;
-// 至少有 user~idle（5 个字段），最多到 guest_nice（10 个字段）
-int maxFields = Math.min(cpuFields.length - 1, 8); // 到 steal 为止
-for (int i = 1; i <= maxFields; i++) {
-    total += Long.parseLong(cpuFields[i]);
-}
-```
-
-[已验证: 内核文档, Documentation/filesystems/proc.rst（Linux 6.6 LTS）]
-
-> **Android 17 内核基线**：Android 17 使用 Linux 6.6 LTS 或 6.12 LTS 作为内核基线。`/proc/stat` 和 `/proc/[pid]/stat` 格式在这些版本中保持稳定。主要变化在于 eBPF 能力的扩展，为更高效的内核事件采集提供了基础。
-
-## 扩展
-
-### 🔸 eBPF 替代 /proc 采样的可行性
-
-Android 从 Android 12+ 开始逐步引入 eBPF 支持，Android 17（Linux 6.6 内核）上 eBPF 能力更加完善。
-
-**eBPF 的优势**：
-
-- **更低开销**：eBPF 程序在内核态执行，无需用户态读取 `/proc` 文件，消除系统调用开销
-- **事件驱动**：基于内核事件（如 sched_switch、sched_process_exit）触发，而非定时轮询
-- **更细粒度**：可精确到每次 CPU 调度切换的时间点
-
-**Android 17 上的 eBPF CPU 监控思路**：
-
-- `BPF_MAP_TYPE_HASH` 存储进程/线程的 CPU 时间累计
-- `sched/sched_switch` tracepoint 挂载 BPF 程序，记录每次上下文切换
-- 用户态通过 `BPF_MAP_LOOKUP_AND_DELETE_ELEM` 批量读取并清零计数器
-
-**限制**：
-
-- 需要 `CAP_BPF` 或 root 权限（非特权应用无法直接使用）
-- 需要内核启用 `CONFIG_BPF` 和 `CONFIG_BPF_SYSCALL`
-- 非 Pixel 设备的厂商内核可能未开启完整 eBPF 支持
-
-[待验证: Android 17 非特权应用使用 eBPF 的具体限制策略]
-
-### 🔸 /proc 数据与 Perfetto trace 的关联
-
-Perfetto 是 Android 官方的系统级 trace 工具，它在采集 trace 时可以同时抓取 `/proc` 数据。
-
-**Perfetto 中的 proc 数据源**：
-
-- `linux.process_stats` 数据源：定期采样 `/proc/[pid]/stat`、`/proc/[pid]/status`、`/proc/[pid]/oom_score_adj`
-- 采样频率可配置（默认 1s，可低至 100ms）
-- 数据以 protobuf 格式写入 trace 文件
-
-**Perfetto proc 数据的时序对齐**：
-
-- 每个采样点带有一个 `timestamp`，与 trace 中的其他数据源（ftrace、atrace）共享同一时间轴
-- 可以将 CPU 调度事件（sched_switch）与进程 CPU 使用率变化对齐分析
-- 在 Perfetto UI 中，`Process Stats` track 展示进程级 RSS/CPU 时间，与 `CPU Frequency`、`Scheduling Latency` track 交叉分析
-
-**对 APM 工具的启示**：
-
-- 线上 APM 采集的 `/proc` 数据如果附加单调时钟时间戳，可以与 Perfetto trace 对齐
-- 在性能问题复现时，先抓取 Perfetto trace，再与线上 `/proc` 数据对比，加快根因定位
-
-详见 13.21 节（Perfetto 数据分析）和 26.03 节（线上 Trace 系统）。
-
----
-
-> 本节已加工完成。素材来源：AOSP android-17.0.0_r1 源码（ProcessCpuTracker.java / CpuTracker.java）+ Linux 内核文档（Documentation/filesystems/proc.rst）+ Clippings/线上疑难问题 45.md（结构参考）。所有技术断言已通过 AOSP 源码和内核文档交叉验证。
+这套顺序让每种数据回答它擅长的问题，也避免普通应用依赖 Android 17 已经关闭的全局 procfs 接口。
