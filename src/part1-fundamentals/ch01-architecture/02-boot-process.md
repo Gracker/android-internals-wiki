@@ -28,25 +28,27 @@ sources:
     path: "https://source.android.com/docs/core/ota/virtual_ab"
 tags: [boot, init, zygote, SystemServer, 启动优化, bootstat, Perfetto, Verified-Boot]
 related_chapters: ["1.1", "1.3", "1.4", "1.7", "1.11", "8.2", "8.3"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
+pipeline_stage: finalized
+task6_state: reviewed
+task6_result: pass-finalize-review
 task2b_state: fixed
 task2b_result: fixed
-task9_state: pending
-task9_result: auto-fixed
+task9_state: reviewed
+task9_result: pass-tech-review
 last_body_apply_at: "2026-08-06T21:16:07+08:00"
 last_body_apply_run_id: "20260806-211543-32849a70"
 last_body_apply_source: "queue: AIW 时效性巡检 / src/part1-fundamentals/ch01-architecture/02-boot-process.md"
-review_notes: "2026-07-25 Android 17/API 37 全文复审：平台锚定 android-17.0.0_r1，内核锚定 android17-6.18-2026-06_r6；删除 Pixel 分段估算、Cloud Profiles/SDM 外推、关闭 dm-verity 建议和内部加工标记；修正 Perfetto boot trace 起点、init 三阶段、Zygote/SystemServer 顺序与 per-user boot completed 边界。"
+last_review_finalize_at: "2026-08-06T22:06:08+08:00"
+last_review_finalize_run_id: "20260806-220550-cfef08da"
+review_notes: "2026-07-25 Android 17/API 37 全文复审：平台锚定 android-17.0.0_r1，内核锚定 android17-6.18-2026-06_r6；删除 Pixel 分段估算、Cloud Profiles/SDM 外推、关闭 dm-verity 建议和内部加工标记；修正 Perfetto boot trace 起点、init 三阶段、Zygote/SystemServer 顺序与 per-user boot completed 边界。 | 2026-08-06 Hermes review-finalize：复核 android-17.0.0_r1 init/zygote/SystemServer/perfetto/bootstat 与 ACK android17-6.18 边界，未发现 P0/P1/P2 阻断项，状态推进 finalized。"
 drafted_date: '2026-03-30'
 drafted_by: openclaw-task2a
-reviewed_date: "2026-07-02"
-reviewed_by: openclaw-task6
-review_type: task6-writing-quality-review
-task6_reviewed_date: "2026-07-02"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-07-01'
+reviewed_date: "2026-08-06"
+reviewed_by: hermes-aiw-review-finalize-apply
+review_type: review-finalize-apply
+task6_reviewed_date: "2026-08-06"
+task9_reviewed_by: hermes-aiw-review-finalize-apply
+task9_reviewed_date: "2026-08-06"
 last_task9_at: '2026-07-01T13:41:01+08:00'
 last_task2b_at: '2026-05-06T16:04:00+08:00'
 last_task2b_lite_at: '2026-07-01'
