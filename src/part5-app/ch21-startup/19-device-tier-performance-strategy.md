@@ -1,13 +1,27 @@
 ---
 title: "设备分级性能策略实战"
 chapter: "21.19"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [device-tier, performance-strategy, device-year-class, feature-flag, degradation]
 related_chapters: ["21.16", "21.18", "23.07", "25.06"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "素材驱动/章节深挖"
+last_draft_polish_at: "2026-08-06T23:45:29+08:00"
+last_draft_polish_run_id: "20260806-234529-draft-polish-b425a06d"
+last_verified: "2026-08-06"
+last_verified_against: "AOSP android-17.0.0_r1 + android17-6.18-2026-06_r6 + Android developer docs"
+confidence: medium-high
+task6_state: pending
+task9_state: pending
+pipeline_stage: task6_pending
+sources:
+  - "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java"
+  - "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/PowerManager.java"
+  - "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityManager.java"
+  - "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Build.java"
+  - "https://developer.android.com/topic/performance/performance-class"
 ---
 
 # 21.19 设备分级性能策略实战
@@ -16,25 +30,25 @@ gap_source: "素材驱动/章节深挖"
 ## 要点
 
 ### 🔹 设备能力评估维度与数据源
-- CPU：核心数 / 大核频率 / micro-architecture（Cortex-X / A7xx / A5xx）
-- 内存：totalmem / availMem / 内存带宽
-- GPU：Vulkan 支持 / 纹理填充率 / Shader 核心数
+- CPU：`Runtime.availableProcessors()`、SoC 标识和实验室 workload 数据
+- 内存：`isLowRamDevice()`、`memoryClass`、`totalMem` / `advertisedMem` / `availMem` / `freeMem`
+- GPU：Vulkan 支持、编解码/图形特性查询和实测帧时间
 - 屏幕：DPI / 刷新率 / 色域
-- 存储：随机读 IOPS / 顺序读写吞吐
-- Android 17 DeviceConfig / SystemProperties 中的设备能力标识
+- 存储：仅在实验室或非启动关键路径测量 I/O 表现
+- Android 17：普通应用只依赖公开 SDK API，不读取隐藏 `SystemProperties` 或私有 `DeviceConfig`
 
 ### 🔹 设备分级模型
-- 方案 1：Android Device Performance Class（media performance class 13/14/15/16）
+- 方案 1：Android Media Performance Class（公开平台值 + Jetpack Core Performance 补充）
 - 方案 2：Device Year Class（Facebook archived library，思路仍有参考价值）
-- 方案 3：自建评分模型（加权评分 → 高/中/低三档）
-- 方案 4：Android 17 PowerManager.getPerformanceMode() / SystemHealthManager
+- 方案 3：按业务维度生成 `memory_constrained`、`media_enhanced`、`render_reduced` 等策略
+- 方案 4：Android 10+ thermal / power save 与 Android 16+ `SystemHealthManager` headroom 仅作为会话期压力信号
 
 ### 🔹 分档降级策略matrix
-- 渲染降级：低端机关闭 blur/shadow/矢量动画 → 使用 PNG 替代
-- 启动降级：低端机减少并发初始化任务 / 关闭 Baseline Profile AOT
-- 内存降级：低端机缩小 LruCache / 使用 RGB_565 / 减少预加载窗口
-- 网络降级：低端机降低图片分辨率 / 关闭预连接
-- 功耗降级：低端机降低后台轮询频率 / 更激进的 JobScheduler 配额
+- 渲染降级：依据帧预算、窗口像素和实测帧时间调整特效复杂度
+- 启动降级：保留 Baseline / Startup Profile，只在 trace 证明争用时收缩并发初始化
+- 内存降级：按堆预算、资源收益和 `onTrimMemory()` 收缩缓存 / 预加载
+- 网络降级：依据容器像素、计量网络、Data Saver 和吞吐调整图片与预取
+- 功耗降级：减少任务数量、延长周期并设置公开 JobScheduler 约束，不假设 App 可修改系统配额
 
 ### 🔹 Feature Flag 体系与灰度下发
 - Firebase Remote Config / 自建配置中心的结构
@@ -48,18 +62,18 @@ gap_source: "素材驱动/章节深挖"
 
 ### 🔹 常见陷阱与反模式
 - 仅按内存分档导致高端小内存设备误判
-- 分档过细导致维护成本爆炸（推荐≤3档）
-- 静态分档不适应设备老化（电池/存储降级）
+- 分档过细导致维护成本爆炸；按业务保留少量可验证策略
+- 把热节流、内存压力或存储抖动误写成永久设备等级
 
 ## 扩展
 
 ### 🔸 设备老化检测与动态降级
-- Battery Health API / 存储健康度估算
+- 没有通用公开 API 可可靠转换“电池老化 + 存储健康度”为性能等级
 - 运行时动态降级策略（基于实际 ANR 率/帧率回退）
 
 ### 🔸 厂商ROM差异化适配
-- 小米/华为/OPPO/vivo 的 Performance Mode 厂商 API
-- 游戏模式对普通 App 的性能影响边界
+- 厂商 Performance Mode / 游戏模式缺少跨设备公开契约，不写入通用策略
+- 持续渲染负载优先使用公开 sustained performance API
 
 <!-- outline-end -->
 
