@@ -12,15 +12,15 @@
 ## 执行步骤
 
 ### Step 1：统计进度（v2 状态机口径）
-- 大纲总小节数
+- 从 `metadata/progress.json` 读取 `total`、`status_counts`、`pipeline_stage_counts` 和 `chapter_article_counts`
 - `status: ready-for-review` / `draft` 总量
-- `pipeline_stage` 分布：`task6_pending` / `task9_pending` / `task2b_pending` / `publish_ready`
-- `task6_state` / `task9_state` / `task2b_state` 分布
-- 本周进入 `publish_ready` 的章节数
+- `pipeline_stage_counts` 分布；发布就绪口径统一使用 `ready-to-publish`
+- 如需 `task6_state` / `task9_state` / `task2b_state` 明细，运行 `scripts/progress-report.py`，不得臆造到聚合 JSON
+- 本周进入 `ready-to-publish` 的章节数（用上周 Git 快照与当前快照比较）
 - 本周进入 `task2b_pending` 的章节数（阻塞量）
 
 ### Step 2：分析趋势
-- 流水线推进速度（task6 → task9 → task2b → publish_ready）
+- 流水线推进速度（task6 → task9 → task2b → ready-to-publish）
 - 哪些章节推进最快 / 最慢
 - 阻塞点（尤其是长期停留在 `task2b_pending` 或 `task9_pending` 的章节）
 
@@ -39,18 +39,19 @@
 - Task6 待处理：{N}
 - Task9 待处理：{N}
 - Task2B 待修复：{N}
-- Publish Ready：{N}
+- Ready to Publish：{N}
 
 本周推进：
 - 新进入 task9：{N}
 - 新进入 task2b：{N}
-- 新进入 publish_ready：{N}
+- 新进入 ready-to-publish：{N}
 
 各部分进度：
 📗 基础与机制：{X}%
 📙 性能专题：{X}%
 📘 工具与方法论：{X}%
 📕 系统级优化：{X}%
+📒 应用层优化：{X}%
 
 ⏳ 当前阻塞：{N} 项
 🎯 下周建议重点：{3-5 个小节}

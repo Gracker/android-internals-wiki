@@ -117,7 +117,7 @@ python3 source_index_helper.py append --entries '[...]'
   "score": 14,
   "quality": "medium",
   "scores": {"relevance": 3, "depth": 4, "timeliness": 4, "verifiability": 3},
-  "mapped_chapters": [{"chapter": "ch05-渲染", "confidence": "medium"}],
+  "mapped_chapters": [{"chapter": "ch02-rendering", "confidence": "medium"}],
   "summary": "50字摘要"
 }
 ```

@@ -105,6 +105,7 @@
 #### queue.json
 - 同章节已有 external-ai-review 条目：合并 `review_issues`
 - 同章节已有 task6/task9 条目：保留已有条目，external-review 问题作为补充 evidence 或新增 issue
+- 每条活动 queue 记录必须从 `src/SUMMARY.md` / frontmatter 解析并校验现有 `target_path`；无法唯一定位时只记 integration 日志，不写 queue
 
 #### research-gaps.md
 - 若已有同章节同主题盲区，不重复新增；补充 external-review 证据与研究方向
@@ -134,7 +135,7 @@ python3 scripts/external_review_archive_helper.py archive
 ### Step 7：Git 提交
 ```bash
 cd "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki"
-git add metadata/ intake/ logs/external-review/ logs/external-review-integration/
+git add metadata/queue.json intake/research-gaps.md intake/suggestions.md logs/external-review/ logs/external-review-integration/
 git commit -m "[openclaw] external-review integration: auto-ingest external AI review results"
 ```
 

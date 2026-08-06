@@ -33,7 +33,7 @@
 
 优先级排序（从高到低）：
 1. **external-review 活跃文件中的知识盲区 / 一手资料线索**：优先读取最近 7 天 `logs/external-review/` 根目录（不含 `archive/`），提取高价值盲区、版本差异、源码线索，作为研究焦点
-2. **queue.json 中的高优先级章节**（priority ≥ 80）：读取 queue.json，找出当前最需要素材的章节
+2. **queue.json 中的高优先级章节**（`status: pending` 且 priority ≥ 80）：读取 queue.json，找出当前最需要素材的现有章节；必须校验 `target_path` 存在
 3. **writing-guide.md 中的重点章节**：根据写作规范中的优先级确定研究方向
 4. **固定主题轮转**（兜底）：如果队列空，按以下 20 个主题轮转（根据日期取模）：
 
@@ -85,7 +85,7 @@
 - GitHub 高 star 项目的文档和 issue
 
 ### Stage 3：去重与过滤
-- 检查 source-index.json（如存在），跳过已收录的素材
+- 通过 `scripts/source_index_helper.py search` 检查 source-index，跳过已收录的素材；不要直接全量读取索引
 - 检查 intake/research-feeds/ 已有文件，避免重复投递
 - 过滤低质量内容（纯翻译、无原创观点、无数据支撑）
 
@@ -151,7 +151,7 @@ python3 scripts/external_review_archive_helper.py archive
 - 更新 `metadata/queue.json`：
   - 如果素材对应 queue 中已有条目，更新其 `material_paths`（追加新素材路径）
   - 如果素材发现 queue 中某个章节的 priority 应调整，记录到 `intake/suggestions.md`
-- 更新 `metadata/progress.json` 中的研究进度
+- 不直接写 `metadata/progress.json`；该文件只保存规范正文聚合快照，研究进度写入本轮研究日志
 
 ### Stage 7：兜底主题处理
 

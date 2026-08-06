@@ -8,7 +8,7 @@
 ## 核心原则
 - **只扫增量**：用 `find -mtime -1` 找到当天的文件，不重复扫存量
 - **覆盖所有目录**：包括 Cubox、X 文章、调研等全部素材目录
-- **排除目录**：AIW 项目自身（src/、staging/、openclaw-tasks/、metadata/）
+- **排除目录**：整个 AIW 项目自身（`Android-Internal-Wiki/**`）
 - **轻量快速**：通常只有几个文件，1-2 分钟内完成
 - **通过脚本写入**：所有 source-index 操作通过 helper 脚本
 
@@ -95,7 +95,7 @@ python3 source_index_helper.py search --query '<文件名关键词>'
 - ANR/Watchdog → ch09
 - 功耗/battery/doze → ch11
 - Perfetto/Trace → ch13
-- 其他 → ch16（待分类）
+- 无法可靠匹配 → `unmapped/manual-review`（不得强制归入 ch16，也不得写正文或 queue）
 
 ## 约束
 - 只处理 24 小时内修改的文件

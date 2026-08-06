@@ -13,7 +13,7 @@
 - **精确映射**：映射到 1-3 个 AIW 章节，标注置信度
 
 ## ⚠️ 关键约束（最高优先级）
-1. **扫描目标必须是 Obsidian 知识库素材目录，绝对不能扫描 AIW 项目自身的 src/ 目录**
+1. **扫描目标必须是 Obsidian 知识库素材目录，绝对不能扫描 AIW 项目自身的整个 `Android-Internal-Wiki/**` 目录**
 2. **排除目录**：Cubox（已扫两遍）、AndroidWeekly（Task 10 负责）、Personal-Knowlodge/Knowlledge（已删除）
 
 ## 本地环境
@@ -44,25 +44,36 @@
 
 ## AIW 章节关键词映射
 
+章节编号和目录以 `metadata/v1.0-definition.md` 与 `src/SUMMARY.md` 为准；下面是当前 26 章的索引标签，不得沿用旧 17 章编号。
+
 | 章节 | 关键词（至少命中2个才映射） |
 |------|---------------------------|
-| ch01-架构 | 分层架构, system server, framework, binder, zygote, app组件, content provider |
-| ch02-进程 | 进程, lifecycle, low memory killer, lmk, oom_adj, 进程优先级 |
-| ch03-线程 | 线程, handler, looper, threadpool, async, 并发, concurrent |
-| ch04-启动 | 启动, startup, 冷启动, zygote, app startup, 启动速度 |
-| ch05-渲染 | 渲染, render, vsync, choreographer, surfaceflinger, bufferqueue, draw, measure, layout, skia, flutter, impeller, gpu渲染, 过度绘制 |
-| ch06-功耗 | 功耗, power, battery, wakelock, doze, app standby, 省电, job scheduler, workmanager |
-| ch07-内存 | 内存, memory, gc, leak, 内存泄漏, zram, memcg, lmkd, oom, heap |
-| ch08-存储 | 存储, storage, io, f2fs, ext4, sqlite, 文件系统, shared preference |
-| ch09-网络 | 网络, network, okhttp, cronet, retrofit, dns, tcp, ssl, http |
-| ch10-包体积 | 包体积, apk size, dex, r8, proguard, 混淆, shrink, app bundle, aab |
-| ch11-Profiling | profiling, perfetto, simpleperf, systrace, trace, profiler, atrace, ftrace |
-| ch12-安全 | 安全, security, selinux, permission, 权限, keystore, 加密 |
-| ch13-调度 | 调度, scheduler, eas, cfs, schedtune, uclamp, cpu, dvfs, cpufreq |
-| ch14-工具 | 工具, tool, adb, dumpsys, logcat, benchmark, baseline profile |
-| ch15-Kotlin | kotlin, coroutine, 协程, flow, compose, recomposition |
-| ch16-构建 | gradle, 构建, build, build cache, incremental, ksp, kapt |
-| ch17-新版本 | android 16, android 17, api change, preview, beta, 新特性 |
+| ch01-architecture | 分层架构, system server, framework, binder, zygote, 进程, 线程, handler, looper |
+| ch02-rendering | 渲染, render, vsync, choreographer, surfaceflinger, bufferqueue, hwui, skia, gpu |
+| ch03-input | 输入, inputdispatcher, touch, gesture, 按键, 事件分发 |
+| ch04-memory | 内存, memory, gc, zram, memcg, lmkd, oom, heap |
+| ch05-cpu-power | 调度, scheduler, eas, cfs, uclamp, cpu, dvfs, cpufreq, thermal |
+| ch06-storage | 存储, storage, io, f2fs, ext4, sqlite, 文件系统 |
+| ch07-smoothness | 流畅度, jank, fps, 掉帧, 帧率, frame pacing |
+| ch08-responsiveness | 响应性, startup, 冷启动, zygote, app startup, launch |
+| ch09-anr | anr, watchdog, input timeout, broadcast timeout, service timeout, deadlock |
+| ch10-memory-perf | 内存优化, memory pressure, leak, allocation, heap dump, 内存治理 |
+| ch11-power | 功耗, power, battery, wakelock, doze, app standby, jobscheduler |
+| ch12-apk-network | apk size, dex, r8, aab, network, okhttp, cronet, tcp, ssl |
+| ch13-perfetto | perfetto, simpleperf, systrace, trace, atrace, ftrace, profiling |
+| ch14-other-tools | 工具, tool, adb, dumpsys, logcat, benchmark, baseline profile |
+| ch15-methodology | 方法论, 性能分析, 指标体系, 实验设计, 归因, 回归 |
+| ch16-aosp | aosp, 源码, framework, system service, hal, native service |
+| ch17-oem | oem, 厂商, mtk, qualcomm, 高通, 定制系统, 行业案例 |
+| ch18-rendering-pipelines | flutter, impeller, compose, webview, 跨平台渲染, 渲染管线 |
+| ch19-apm | apm, 性能监控, telemetry, sdk, 指标采集, 线上监控 |
+| ch20-stability | crash, native crash, tombstone, 稳定性, 异常, 故障恢复 |
+| ch21-startup | app 启动优化, 首帧, 初始化, 冷启动治理, 启动链路 |
+| ch22-rendering-practice | compose 性能, lazylist, recomposition, ui 优化, 实战渲染 |
+| ch23-memory-practice | app 内存, 泄漏治理, oom 治理, 图片内存, 内存实战 |
+| ch24-io-network | io 优化, network performance, 数据库优化, 请求链路, 网络实战 |
+| ch25-power-size | 功耗优化, 包体积优化, dex size, 资源压缩, app size |
+| ch26-observability | 可观测性, 线上排查, 告警, trace id, 诊断平台, 性能防劣化 |
 
 ## 扫描流程
 
@@ -138,6 +149,7 @@ python3 source_index_helper.py update-progress --json '{"current_offset": ..., .
 ## 约束
 - 每次扫描 30-50 个文件
 - 必须读前 200 字内容
+- 必须排除整个 `Android-Internal-Wiki/**` 项目目录
 - **禁止直接读取 source-index.json 全量文件**
 - 严禁使用 write/edit 直接写 Obsidian/iCloud/~/Library 路径
 - 所有 JSON 写入必须通过 helper 脚本

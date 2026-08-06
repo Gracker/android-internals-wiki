@@ -19,6 +19,72 @@ VALID_STATUS = [
 ]
 VALID_CONFIDENCE = ["high", "medium", "low", "medium-high", "medium-low"]
 
+CANONICAL_PARTS = {
+    "part1-fundamentals": {
+        "ch01-architecture", "ch02-rendering", "ch03-input",
+        "ch04-memory", "ch05-cpu-power", "ch06-storage",
+    },
+    "part2-performance": {
+        "ch07-smoothness", "ch08-responsiveness", "ch09-anr",
+        "ch10-memory-perf", "ch11-power", "ch12-apk-network",
+        "ch18-rendering-pipelines",
+    },
+    "part3-tools": {
+        "ch13-perfetto", "ch14-other-tools", "ch15-methodology", "ch19-apm",
+    },
+    "part4-system": {"ch16-aosp", "ch17-oem"},
+    "part5-app": {
+        "ch20-stability", "ch21-startup", "ch22-rendering-practice",
+        "ch23-memory-practice", "ch24-io-network", "ch25-power-size",
+        "ch26-observability",
+    },
+}
+AUXILIARY_SRC_DIRS = {"preface", "appendix"}
+
+
+def canonical_chapter_roots(src_dir):
+    for part, chapters in CANONICAL_PARTS.items():
+        for chapter in sorted(chapters):
+            yield os.path.join(src_dir, part, chapter)
+
+
+def is_canonical_chapter_file(filepath, src_dir):
+    rel = os.path.relpath(filepath, src_dir)
+    parts = rel.split(os.sep)
+    return (
+        len(parts) >= 3
+        and parts[0] in CANONICAL_PARTS
+        and parts[1] in CANONICAL_PARTS[parts[0]]
+    )
+
+
+def check_layout(src_dir):
+    """Reject obsolete/duplicate top-level and chapter directories."""
+    issues = []
+    allowed_top = set(CANONICAL_PARTS) | AUXILIARY_SRC_DIRS
+    for name in sorted(os.listdir(src_dir)):
+        path = os.path.join(src_dir, name)
+        if os.path.isdir(path) and name not in allowed_top:
+            issues.append(f"异常 src 顶层目录: {name}")
+
+    for part, expected_chapters in CANONICAL_PARTS.items():
+        part_dir = os.path.join(src_dir, part)
+        if not os.path.isdir(part_dir):
+            issues.append(f"缺少规范 Part 目录: {part}")
+            continue
+        actual_chapters = {
+            name for name in os.listdir(part_dir)
+            if os.path.isdir(os.path.join(part_dir, name))
+        }
+        for name in sorted(actual_chapters - expected_chapters):
+            issues.append(f"异常章节目录: {part}/{name}")
+        for name in sorted(expected_chapters - actual_chapters):
+            issues.append(f"缺少规范章节目录: {part}/{name}")
+        for name in sorted(os.listdir(part_dir)):
+            if os.path.isfile(os.path.join(part_dir, name)):
+                issues.append(f"Part 根目录存在异常文件: {part}/{name}")
+    return issues
+
 def check_file(filepath):
     issues = []
     with open(filepath, 'r', encoding='utf-8') as f:
@@ -64,24 +130,18 @@ def iter_files(src_dir, explicit_files=None):
             filepath = item if os.path.isabs(item) else os.path.join(repo_root, item)
             if not filepath.endswith('.md') or not os.path.exists(filepath):
                 continue
-            rel = os.path.relpath(filepath, src_dir)
-            if rel.startswith(('preface/', 'appendix/', 'graphify-out/')):
-                continue
             if os.path.basename(filepath) in ('README.md', 'SUMMARY.md'):
                 continue
-            if filepath.startswith(src_dir + os.sep):
+            if filepath.startswith(src_dir + os.sep) and is_canonical_chapter_file(filepath, src_dir):
                 yield filepath
         return
 
-    # Full scan mode, kept for manual audits.
-    for root, dirs, files in os.walk(src_dir):
-        for f in files:
-            if f.endswith('.md') and f != 'README.md' and f != 'SUMMARY.md':
-                filepath = os.path.join(root, f)
-                rel = os.path.relpath(filepath, src_dir)
-                if rel.startswith(('preface/', 'appendix/', 'graphify-out/')):
-                    continue
-                yield filepath
+    # Full scan mode is deliberately restricted to the canonical 26 chapter roots.
+    for chapter_root in canonical_chapter_roots(src_dir):
+        for root, dirs, files in os.walk(chapter_root):
+            for f in files:
+                if f.endswith('.md') and f != 'README.md' and f != 'SUMMARY.md':
+                    yield os.path.join(root, f)
 
 
 def main(argv=None):
@@ -90,14 +150,20 @@ def main(argv=None):
     args = ap.parse_args(argv)
     src_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "src")
 
+    layout_issues = check_layout(src_dir)
     all_files = list(iter_files(src_dir, args.files))
 
     total = len(all_files)
-    issues_count = 0
+    issues_count = len(layout_issues)
     warn_count = 0
 
-    scope = '指定变更文件' if args.files else '全量 src'
+    scope = '指定变更文件' if args.files else '全量 canonical 章节'
     print(f"检查 {total} 个章节文件的元数据（scope={scope}）...\n")
+
+    for issue in layout_issues:
+        print(f"❌ {issue}")
+    if layout_issues:
+        print()
 
     for filepath in sorted(all_files):
         rel = os.path.relpath(filepath, src_dir)
@@ -115,7 +181,8 @@ def main(argv=None):
         else:
             print(f"✅ {rel}")
 
-    print(f"\n总计: {total} 个文件, {total - issues_count} 个通过, {issues_count} 个失败, {warn_count} 个警告")
+    passed = total - (issues_count - len(layout_issues))
+    print(f"\n总计: {total} 个文件, {passed} 个通过, {issues_count} 个失败（含 {len(layout_issues)} 个目录结构问题）, {warn_count} 个警告")
     return 1 if issues_count > 0 else 0
 
 

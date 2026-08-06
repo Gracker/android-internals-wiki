@@ -39,7 +39,8 @@
       "applied_at": "2026-07-19T18:27:36+08:00",
       "applied_run_id": "20260719-182618-1abc2d42",
       "target_path": "src/part4-system/ch17-oem/17.21-android17-soc-vendor-power-hal-schedutil-loop.md",
-      "previous_action": "indexed-only-chapter-freeze"
+      "previous_action": "indexed-only-chapter-freeze",
+      "canonical_target_chapter": "ch17"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-15-android17-art-markcompact-young-wrapper-source-verification.md",
@@ -218,7 +219,8 @@
       "status": "applied",
       "applied_at": "2026-07-19T18:30:46+08:00",
       "applied_run_id": "20260719-183046-4ec5ae7e",
-      "target_path": "src/part1-fundamentals/ch05-cpu-power/5.33-android17-performance-score-attribution-sourcecode.md"
+      "target_path": "src/part1-fundamentals/ch05-cpu-power/5.33-android17-performance-score-attribution-sourcecode.md",
+      "canonical_target_chapter": "ch05"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-16-android17-oem-background-restriction.md",
@@ -244,7 +246,8 @@
       "previous_action": "indexed-only-chapter-freeze",
       "status": "applied",
       "applied_at": "2026-07-25T15:18:53+08:00",
-      "applied_run_id": "20260725-151525-21e58a30"
+      "applied_run_id": "20260725-151525-21e58a30",
+      "canonical_target_chapter": "ch25"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md",
@@ -280,7 +283,8 @@
       "status": "applied",
       "applied_at": "2026-07-28T07:15:05+08:00",
       "applied_run_id": "20260728-071505-5c898420",
-      "previous_action": "indexed-only-chapter-freeze"
+      "previous_action": "indexed-only-chapter-freeze",
+      "canonical_target_chapter": "ch20"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-windowmanager-architecture-sourcecode.md",
@@ -311,7 +315,8 @@
       "previous_action": "direct-inject",
       "applied_at": "2026-07-20T07:15:21+08:00",
       "applied_run_id": "20260720-071521-dbc00327",
-      "target_path": "src/part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md"
+      "target_path": "src/part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md",
+      "canonical_target_chapter": "ch22"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-cloud-profiles-systemserver-onboot.md",
@@ -343,7 +348,7 @@
       "routed_at": "2026-07-25T13:53:24.486291+08:00"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-windowmanager-architecture-sourcecode.md`",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-windowmanager-architecture-sourcecode.md",
       "title": "[DeepResearch] Android 17 WindowManagerService 架构 — Window 添加 / Surface 分配 / BLAST 链路",
       "summary": "基于 android-17.0.0_r1 源码，完整拆解 WMS 双 Handler 线程模型、addWindow 全链路（WindowToken 解析→BLASTSurfaceControl）、WindowSurfacePlacer 6 次循环硬上限 layout 风暴护栏、BLASTSyncEngine SyncGroup 多 surface 合批机制。",
       "chapter": "ch16",
@@ -367,10 +372,11 @@
       "previous_action": "indexed-only-chapter-freeze",
       "status": "applied",
       "applied_at": "2026-07-26T07:15:29+08:00",
-      "applied_run_id": "20260726-071529-abfc0d7c"
+      "applied_run_id": "20260726-071529-abfc0d7c",
+      "canonical_target_chapter": "ch01"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android3-video-rendering-pipeline-sourcecode.md`",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android3-video-rendering-pipeline-sourcecode.md",
       "title": "[DeepResearch] Media3 视频播放渲染管线全链路源码级拆解",
       "summary": "从 MediaCodec Java 层异步分发到 native ALooper 双线程模型，详解 BufferQueue generation number 防 buffer 复用、BUFFER_MODE_BLOCK 零拷贝路径、setOutputSurface 动态切换 consumer，形成 MediaCodec→BufferQueue→SurfaceFlinger 完整闭环。",
       "chapter": "ch02",
@@ -394,10 +400,11 @@
         "setoutputsurface"
       ],
       "route_status": "existing-chapter-routed",
-      "routed_at": "2026-07-25T13:53:24.486291+08:00"
+      "routed_at": "2026-07-25T13:53:24.486291+08:00",
+      "canonical_target_chapter": "ch22"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md`",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md",
       "title": "[DeepResearch] Android 17 ANGLE（GLES-over-Vulkan）选择与同步机制",
       "summary": "详解 ANGLE 三级优先级 + Flag 双重门控、Loader unload 真值表、EGL native fence→Vulkan semaphore 转换、GLSL→SPIR-V UBO 压缩路径，含 b/370113081 crash 风险边界。",
       "chapter": "ch16",
@@ -408,10 +415,11 @@
       "status": "applied",
       "applied_at": "2026-07-20T07:15:21+08:00",
       "applied_run_id": "20260720-071521-dbc00327",
-      "target_path": "src/part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md"
+      "target_path": "src/part5-app/ch22-rendering-practice/43-media3-video-rendering-pipeline-performance.md",
+      "canonical_target_chapter": "ch22"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-cloud-profiles-systemserver-onboot.md`",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-cloud-profiles-systemserver-onboot.md",
       "title": "[DeepResearch] Android 17 SystemServer 启动与 ART Mainline Cloud Profiles 协同机制",
       "summary": "拆解 ART Mainline APEX 驱动的 SystemServer 启动期 dexopt 触发（首启/OTA/BCP 变更），ArtModuleServiceInitializer 避免 GC-Class Linker 死锁，Cloud Profile 源码层 ProfilePath 合并机制。",
       "chapter": "ch08",
@@ -422,10 +430,11 @@
       "score": 17,
       "applied_at": "2026-07-19T22:16:26+08:00",
       "applied_run_id": "20260719-221555-b0bff823",
-      "target_path": "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md"
+      "target_path": "src/part5-app/ch25-power-size/17-background-audio-hardening-power.md",
+      "canonical_target_chapter": "ch25"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md`",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md",
       "title": "[DeepResearch] SurfaceFlinger DisplayMode 选择与 RefreshRateSelector 评分机制",
       "summary": "拆解 DisplayModeController 四态状态机、RefreshRateSelector 三组输入评分（Layer vote + Global Signals + Policy）、getRankedFrameRatesLocked 浮点分曲线、FrameRateOverrideMappings 双路 override 合并、modeset_state_machine flag 双槽/单槽切换。",
       "chapter": "ch02",
@@ -445,7 +454,8 @@
         "global"
       ],
       "route_status": "existing-chapter-routed",
-      "routed_at": "2026-07-25T13:53:24.486291+08:00"
+      "routed_at": "2026-07-25T13:53:24.486291+08:00",
+      "canonical_target_chapter": "ch02"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-18-76250748-Android现代架构不需要事件总.md",
@@ -1055,7 +1065,8 @@
       "previous_action": "indexed-only-chapter-freeze",
       "status": "applied",
       "applied_at": "2026-07-25T19:15:51+08:00",
-      "applied_run_id": "20260725-191551-6f04a0a1"
+      "applied_run_id": "20260725-191551-6f04a0a1",
+      "canonical_target_chapter": "ch01"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-22-morning-CC-iOS模拟器-HF评测越狱-AGENTS评审规则-研究材料/master-research.md",
@@ -1146,7 +1157,8 @@
       "status": "applied",
       "applied_at": "2026-07-24T07:15:55+08:00",
       "applied_run_id": "20260724-071534-2a71a09c",
-      "target_path": "src/part5-app/ch26-observability/29-jvmti-agent-art-runtime-dynamic-monitoring.md"
+      "target_path": "src/part5-app/ch26-observability/29-jvmti-agent-art-runtime-dynamic-monitoring.md",
+      "canonical_target_chapter": "ch26"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-24-76369472-能告诉我：你为什么用 MVI 吗？反正我不理解！.md",
@@ -1247,7 +1259,8 @@
       "status": "body-applied",
       "applied_at": "2026-07-25T07:15:14+08:00",
       "applied_run_id": "20260725-071514-c8dfcc93",
-      "target_path": "src/part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md"
+      "target_path": "src/part5-app/ch22-rendering-practice/37-compose-runtime-tracing-perfetto-integration.md",
+      "canonical_target_chapter": "ch22"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-07-25-76369472-能告诉我-你为什么用-MVI-吗-反正我不理解.md",
@@ -1873,7 +1886,8 @@
       "re_surfaced_7th_at": "2026-08-01T11:15:45+08:00",
       "re_surfaced_7th_run_id": "20260801-111545-40ce0efd",
       "re_surfaced_7th_action": "body-apply-rejected-misroute-fail-closed",
-      "re_surfaced_7th_reason": "7th selector re-surface of quarantined-misroute-3x-rejected item (run 20260801-111545-40ce0efd). Material verified again: 100% AI-agent-harness/LLM content (OpenAI ARC-AGI-3 retained reasoning/context compaction, Nadella substitutable-model-system, Unsloth K3 1-bit, T3 Code iOS/Android). Target src/part1-fundamentals/ch06-storage/6.03-Android-17-SharedPreferencesImpl-ANR机制.md is AOSP SharedPreferencesImpl/QueuedWork/ANR (android-17.0.0_r1). Zero topical overlap; route_confidence=28; all route_terms are stopwords. Fail-closed: no chapter body change, no SUMMARY change, no new file, no fabrication. ROOT CAUSE FIXED this run: selector aiw-body-apply-context.py only checked the action field against a skip-set that did NOT contain \"quarantined-misroute\", so route_status=quarantined-* items leaked through. Added route_status.startswith(\"quarantined\") and action.startswith(\"quarantined\") guards plus route_confidence<30 skip. Re-ran selector after fix -> no-new-input (quarantined item correctly skipped, no other routable candidate)."
+      "re_surfaced_7th_reason": "7th selector re-surface of quarantined-misroute-3x-rejected item (run 20260801-111545-40ce0efd). Material verified again: 100% AI-agent-harness/LLM content (OpenAI ARC-AGI-3 retained reasoning/context compaction, Nadella substitutable-model-system, Unsloth K3 1-bit, T3 Code iOS/Android). Target src/part1-fundamentals/ch06-storage/6.03-Android-17-SharedPreferencesImpl-ANR机制.md is AOSP SharedPreferencesImpl/QueuedWork/ANR (android-17.0.0_r1). Zero topical overlap; route_confidence=28; all route_terms are stopwords. Fail-closed: no chapter body change, no SUMMARY change, no new file, no fabrication. ROOT CAUSE FIXED this run: selector aiw-body-apply-context.py only checked the action field against a skip-set that did NOT contain \"quarantined-misroute\", so route_status=quarantined-* items leaked through. Added route_status.startswith(\"quarantined\") and action.startswith(\"quarantined\") guards plus route_confidence<30 skip. Re-ran selector after fix -> no-new-input (quarantined item correctly skipped, no other routable candidate).",
+      "canonical_target_chapter": "ch06"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-07-30-morning-Harness记忆-可替换模型-研究材料/references/06-t3-architecture.md",
@@ -2114,7 +2128,8 @@
         "sources",
         "aiw"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "canonical_target_chapter": "ch01"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-04-Agent验收-实时语音-权限边界-研究材料/master-research.md",
@@ -2135,7 +2150,8 @@
         "sources",
         "aiw"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "canonical_target_chapter": "ch13"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Gracker的Rss订阅/2026-08-06-Gracker的Rss订阅.md",
@@ -2207,7 +2223,8 @@
         "cpu",
         "linux"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "canonical_target_chapter": "appendix"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-06-76703869-AppActuator-Agent操作Android.md",
@@ -2268,7 +2285,8 @@
         "github",
         "aiw"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "canonical_target_chapter": "ch13"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-05-morning-LFM25-Jetpacker-AGENTS-Sol-研究材料/02-dump-jetpacker-hybrid.md",
@@ -2304,7 +2322,8 @@
       "previous_action": "indexed-only-chapter-freeze",
       "status": "applied",
       "applied_at": "2026-08-06T07:15:45+08:00",
-      "applied_run_id": "20260806-071545-2d77d0d1"
+      "applied_run_id": "20260806-071545-2d77d0d1",
+      "canonical_target_chapter": "ch17"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-05-morning-LFM25-Jetpacker-AGENTS-Sol-研究材料/references/05-appfunctions.md",
@@ -2340,7 +2359,8 @@
         "for",
         "app"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "existing-chapter-routed",
+      "canonical_target_chapter": "ch17"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-05-morning-LFM25-Jetpacker-AGENTS-Sol-研究材料/references/07-jetpacker-ondevice.md",
@@ -2352,5 +2372,9 @@
       "score": 15,
       "route_status": "unrouted-existing-chapter-needed"
     }
-  ]
+  ],
+  "schema_version": "2.1",
+  "mapping_version": "canonical-26-chapter-2026-08-06",
+  "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",
+  "architecture_synced_at": "2026-08-06T10:05:34+08:00"
 }

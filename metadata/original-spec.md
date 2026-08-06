@@ -1,5 +1,7 @@
 # Android Internals & Performance 知识体系项目方案
 
+> 历史基线：本文保留项目初始方案与早期 17 章素材映射，不作为当前目录或统计口径。当前 5 部分、26 章架构以 [`v1.0-definition.md`](v1.0-definition.md) 和 [`../src/SUMMARY.md`](../src/SUMMARY.md) 为准。
+
 ## 一、项目定位
 
 **一句话定义**：一本由 AI 辅助持续进化的 Android 系统与性能技术百科，面向有经验的 Android 开发者和系统工程师，追求深度、准确、可追溯。

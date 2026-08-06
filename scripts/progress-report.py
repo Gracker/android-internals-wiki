@@ -25,6 +25,35 @@ PARTS = {
     "第五部分：应用层优化": ["20", "21", "22", "23", "24", "25", "26"],
 }
 
+CANONICAL_CHAPTER_ROOTS = [
+    "part1-fundamentals/ch01-architecture",
+    "part1-fundamentals/ch02-rendering",
+    "part1-fundamentals/ch03-input",
+    "part1-fundamentals/ch04-memory",
+    "part1-fundamentals/ch05-cpu-power",
+    "part1-fundamentals/ch06-storage",
+    "part2-performance/ch07-smoothness",
+    "part2-performance/ch08-responsiveness",
+    "part2-performance/ch09-anr",
+    "part2-performance/ch10-memory-perf",
+    "part2-performance/ch11-power",
+    "part2-performance/ch12-apk-network",
+    "part2-performance/ch18-rendering-pipelines",
+    "part3-tools/ch13-perfetto",
+    "part3-tools/ch14-other-tools",
+    "part3-tools/ch15-methodology",
+    "part3-tools/ch19-apm",
+    "part4-system/ch16-aosp",
+    "part4-system/ch17-oem",
+    "part5-app/ch20-stability",
+    "part5-app/ch21-startup",
+    "part5-app/ch22-rendering-practice",
+    "part5-app/ch23-memory-practice",
+    "part5-app/ch24-io-network",
+    "part5-app/ch25-power-size",
+    "part5-app/ch26-observability",
+]
+
 
 def parse_frontmatter(path: Path):
     text = path.read_text(encoding="utf-8", errors="ignore")
@@ -54,12 +83,13 @@ def main():
     src_dir = base_dir / "src"
     items = []
 
-    for path in src_dir.rglob("*.md"):
-        if path.name in {"SUMMARY.md", "README.md"}:
-            continue
-        meta = parse_frontmatter(path)
-        if meta:
-            items.append(meta)
+    for relative_root in CANONICAL_CHAPTER_ROOTS:
+        for path in (src_dir / relative_root).rglob("*.md"):
+            if path.name == "README.md":
+                continue
+            meta = parse_frontmatter(path)
+            if meta:
+                items.append(meta)
 
     total = len(items)
     status_counter = Counter(v.get("status", "unknown") for v in items)

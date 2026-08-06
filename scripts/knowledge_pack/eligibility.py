@@ -95,8 +95,12 @@ def _safe_sources(value: Any) -> tuple[dict[str, str], ...]:
     return tuple(sources)
 
 
-def _policy_patterns(policy: dict[str, Any]) -> tuple[list[str], set[str], set[str]]:
+def _policy_patterns(policy: dict[str, Any]) -> tuple[list[str], list[str], set[str], set[str]]:
     smartperfetto = policy["distribution"]["smartperfetto"]
+    included_patterns = [
+        _normalize_path(str(value))
+        for value in smartperfetto.get("included_paths", [])
+    ]
     patterns = [
         _normalize_path(str(value))
         for value in smartperfetto.get("excluded_paths", [])
@@ -109,11 +113,15 @@ def _policy_patterns(policy: dict[str, Any]) -> tuple[list[str], set[str], set[s
         str(value).strip().lower()
         for value in smartperfetto.get("excluded_tags", [])
     }
-    return patterns, blocklist, excluded_tags
+    return included_patterns, patterns, blocklist, excluded_tags
 
 
 def _path_excluded(relative_path: str, patterns: list[str]) -> bool:
     return any(fnmatch(relative_path, pattern) for pattern in patterns)
+
+
+def _path_included(relative_path: str, patterns: list[str]) -> bool:
+    return not patterns or any(fnmatch(relative_path, pattern) for pattern in patterns)
 
 
 def _bounded_scalar(value: Any, maximum: int) -> str | None:
@@ -186,7 +194,7 @@ def scan_corpus_articles(repo_root: Path, policy: dict[str, Any]) -> ScanResult:
     src_root = repo_root / "src"
     if not src_root.is_dir():
         raise ValueError("src directory not found")
-    excluded_patterns, policy_blocklist, excluded_tags = _policy_patterns(policy)
+    included_patterns, excluded_patterns, policy_blocklist, excluded_tags = _policy_patterns(policy)
     audit_fields = tuple(policy["audit_metadata"]["workflow_fields"])
     accepted: list[PackArticle] = []
     excluded: list[AuditEntry] = []
@@ -196,6 +204,9 @@ def scan_corpus_articles(repo_root: Path, policy: dict[str, Any]) -> ScanResult:
         relative_path = _normalize_path(str(path.relative_to(repo_root)))
         if path.name.lower() in SKIPPED_FILENAMES:
             excluded.append(AuditEntry("reserved_markdown_file", relative_path))
+            continue
+        if not _path_included(relative_path, included_patterns):
+            excluded.append(AuditEntry("policy_path_not_included", relative_path))
             continue
         if _path_excluded(relative_path, excluded_patterns):
             excluded.append(AuditEntry("policy_path_excluded", relative_path))

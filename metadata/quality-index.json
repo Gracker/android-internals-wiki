@@ -1,6 +1,7 @@
 {
-  "version": "2.0",
+  "version": "2.1",
   "description": "4-dimension scored high-quality material index",
+  "mapping_version": "canonical-26-chapter-2026-08-06",
   "files": [
     {
       "path": "Cubox/结合源码和Perfetto分析Android渲染机制-2024-12-13.md",
@@ -11,8 +12,8 @@
       "timeliness": 5,
       "verifiability": 5,
       "chapters": [
-        "ch05",
-        "ch11"
+        "ch02",
+        "ch13"
       ],
       "confidence": [
         "high",
@@ -30,8 +31,8 @@
       "timeliness": 5,
       "verifiability": 5,
       "chapters": [
-        "ch07",
-        "ch08"
+        "ch04",
+        "ch10"
       ],
       "confidence": [
         "high",
@@ -49,8 +50,8 @@
       "timeliness": 5,
       "verifiability": 5,
       "chapters": [
-        "ch05",
-        "ch13"
+        "ch02",
+        "ch05"
       ],
       "confidence": [
         "high",
@@ -68,7 +69,7 @@
       "timeliness": 5,
       "verifiability": 4,
       "chapters": [
-        "ch05"
+        "ch02"
       ],
       "confidence": [
         "high"
@@ -86,13 +87,11 @@
       "verifiability": 5,
       "chapters": [
         "ch01",
-        "ch13",
-        "ch03"
+        "ch05"
       ],
       "confidence": [
         "high",
-        "high",
-        "medium"
+        "high"
       ],
       "summary": "Binder主线程/普通线程创建机制、BR_SPAWN_LOOPER调度、源码级分析",
       "scan_time": "2026-03-29T23:20:25"
@@ -106,8 +105,8 @@
       "timeliness": 4,
       "verifiability": 4,
       "chapters": [
-        "ch13",
-        "ch03"
+        "ch05",
+        "ch01"
       ],
       "confidence": [
         "high",
@@ -125,7 +124,7 @@
       "timeliness": 4,
       "verifiability": 4,
       "chapters": [
-        "ch05"
+        "ch02"
       ],
       "confidence": [
         "high"
@@ -142,8 +141,8 @@
       "timeliness": 3,
       "verifiability": 5,
       "chapters": [
-        "ch05",
-        "ch11"
+        "ch02",
+        "ch13"
       ],
       "confidence": [
         "high",
@@ -161,13 +160,11 @@
       "timeliness": 5,
       "verifiability": 4,
       "chapters": [
-        "ch13",
-        "ch03",
-        "ch02"
+        "ch05",
+        "ch01"
       ],
       "confidence": [
         "high",
-        "medium",
         "medium"
       ],
       "summary": "车载场景下前后台CPU资源动态分配的完整方案",
@@ -182,14 +179,12 @@
       "timeliness": 3,
       "verifiability": 4,
       "chapters": [
-        "ch13",
-        "ch03",
-        "ch02"
+        "ch05",
+        "ch01"
       ],
       "confidence": [
         "high",
-        "high",
-        "medium"
+        "high"
       ],
       "summary": "Android线程调度机制、nice值/cgroup/schedtune完整解析",
       "scan_time": "2026-03-29T23:20:25"
@@ -203,8 +198,8 @@
       "timeliness": 3,
       "verifiability": 4,
       "chapters": [
-        "ch13",
-        "ch03"
+        "ch05",
+        "ch01"
       ],
       "confidence": [
         "high",
@@ -222,7 +217,7 @@
       "timeliness": 4,
       "verifiability": 4,
       "chapters": [
-        "ch04",
+        "ch08",
         "ch01"
       ],
       "confidence": [
@@ -241,8 +236,8 @@
       "timeliness": 3,
       "verifiability": 5,
       "chapters": [
-        "ch05",
-        "ch11"
+        "ch02",
+        "ch13"
       ],
       "confidence": [
         "high",
@@ -260,7 +255,7 @@
       "timeliness": 3,
       "verifiability": 4,
       "chapters": [
-        "ch05"
+        "ch02"
       ],
       "confidence": [
         "high"
@@ -273,5 +268,5 @@
     "total_indexed": 14,
     "total_skipped": 0
   },
-  "last_update": "2026-03-29 23:20:25"
+  "last_update": "2026-08-06 10:05:34"
 }

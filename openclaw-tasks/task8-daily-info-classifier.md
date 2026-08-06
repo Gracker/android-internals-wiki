@@ -20,7 +20,7 @@
 - 进度追踪：`metadata/progress.json`
 - Rework 队列：`metadata/queue.json`
 - 素材索引：`metadata/source-index.json`
-- 章节根目录：`src/partX-xxx/chYY-xxx/`
+- 正文章节：以 `metadata/v1.0-definition.md` 和 `src/SUMMARY.md` 列出的五部分、26 章及现有文章路径为准；禁止拼接 `partX` 占位路径
 
 ## 评分标准
 
@@ -56,8 +56,17 @@
 | ch16-aosp | AOSP、源码、系统服务、Binder、zygote |
 | ch17-oem | OEM、厂商、MTK、Qualcomm、高通 |
 | ch01-architecture | 启动流程、架构、概览 |
+| ch18-rendering-pipelines | Flutter、Impeller、Compose、WebView、跨平台渲染管线 |
+| ch19-apm | APM、性能监控、Telemetry、SDK、线上指标采集 |
+| ch20-stability | Crash、Native Crash、Tombstone、稳定性、故障恢复 |
+| ch21-startup | App 启动优化、首帧、初始化、冷启动治理 |
+| ch22-rendering-practice | Compose 性能、LazyList、重组、UI 渲染实战 |
+| ch23-memory-practice | App 内存、泄漏治理、OOM、图片内存、内存实战 |
+| ch24-io-network | I/O 优化、数据库优化、网络请求链路、网络实战 |
+| ch25-power-size | 功耗优化、包体积、Dex Size、资源压缩 |
+| ch26-observability | 可观测性、线上排查、告警、诊断平台、性能防劣化 |
 
-如果无法匹配，标记为 `ch17-oem`（待人工分配）。
+如果无法匹配，标记为 `unmapped/manual-review` 并停止正文和 queue 写入；不得强制归入 `ch17-oem`。
 
 ## 执行流程
 
@@ -89,7 +98,7 @@
 
 **A. 非 finalized 章节（直接注入）**
 
-1. 找到章节文件（`src/partX-xxx/chYY-xxx/chYY-xxx.md`）
+1. 先从 `src/SUMMARY.md` 和文章 frontmatter 的 `section`/`title` 唯一解析现有目标文章及 `target_path`；不得猜测或新建路径。无法唯一定位时标记 `unmapped/manual-review`，不修改正文和 queue
 2. 读取 frontmatter 中的 `status`
 3. 如果 status 不是 `finalized`/`finalized-v2`：在章节末尾 `## 参考资料` 小节追加：
 
@@ -102,16 +111,17 @@
 - 评分：{总分}/20
 ```
 
-4. 如果 status 是 `finalized`/`finalized-v2` 或章节不存在 → 进入 Stage 5B
+4. 如果 status 是 `finalized`/`finalized-v2` → 进入 Stage 5B；文章不存在或无法唯一定位时按 unmapped 处理
 
-**B. Finalized 章节或章节不存在（推进 rework queue）**
+**B. Finalized 文章（推进 rework queue）**
 
-1. 在 `metadata/queue.json` 的 `pending` 数组中追加新条目：
+1. 在 `metadata/queue.json` 顶层数组中追加一个对象（该文件不是按状态分组的对象）：
 
 ```json
 {
   "section": "{章节号，如 2.3}",
   "section_title": "{章节标题}",
+  "target_path": "{从 SUMMARY/frontmatter 解析出的现有正文相对路径}",
   "priority": {60-85，根据总分确定},
   "reason": "[素材注入] 新增参考文章，建议补充到章节",
   "material_paths": ["{URL}"],
@@ -131,7 +141,7 @@
 
 ### Stage 6：更新 source-index
 
-在 `metadata/source-index.json` 中追加已处理条目的索引（URL → 章节映射）。
+在 `metadata/source-index.json` 中追加已处理条目的索引（URL → 当前 26 章映射）。若已解析现有正文，必须同时写入 `target_path` 和从路径派生的 `canonical_target_chapter`；`chapter` 仅记录本轮路由标签。
 
 ### Stage 7：标记已消费
 

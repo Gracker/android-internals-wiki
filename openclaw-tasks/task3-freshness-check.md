@@ -26,7 +26,7 @@
 - Kernel 相关更新（如 AutoFDO 部署进展）
 
 ### Step 2：扫描已有内容
-遍历 src/ 目录：
+只遍历 `metadata/v1.0-definition.md` 与 `src/SUMMARY.md` 列出的 26 个规范章节目录；跳过前言、附录、README、导航、生成物和任何异常目录：
 - 提取每篇内容的 applicable_versions 和 last_verified
 - 检查：
   a. 提到的 API 是否在新版本中有变化
@@ -42,7 +42,7 @@
 - 建议动作
 
 ### Step 4：更新加工队列
-将需要更新的内容加入 queue.json，优先级按影响程度排序。
+将需要更新的内容加入 queue.json，优先级按影响程度排序。每条记录必须带从现有正文解析出的 `target_path`；顶层是对象数组，同一目标/同一问题不得重复追加。
 
 ### Step 5：更新附录 A（版本变更速查表）
 如果发现新的版本变更，更新附录 A 的内容。
@@ -84,7 +84,7 @@
 📋 已加入加工队列：{N} 项
 
 ## Git 操作
-git add metadata/
+git add metadata/queue.json metadata/freshness-log.json src/appendix/version-changes.md
 git commit -m "[openclaw] freshness: 周巡检 {日期}"
 
 ## 注意事项

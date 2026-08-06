@@ -10,8 +10,9 @@ It contains:
 - hash-prefixed immutable targets under `targets/`;
 - community, commercial, and redistribution notices under `LICENSES/`.
 
-It can contain body content whose source workflow state is draft, under review,
-deprecated, or finalized. It does not contain the private source repository,
+It can contain canonical body content whose source workflow state is draft,
+under review, or finalized. Obsolete, duplicate, blank, and generated source paths
+are excluded. It does not contain the private source repository,
 review queues, logs, raw local filesystem paths, or unpublished workflow
 metadata. Private-context lines are redacted before packaging, and detected
 secrets fail publication.
