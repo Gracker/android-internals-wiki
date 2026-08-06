@@ -1127,6 +1127,66 @@
       "summary": "折叠历史源码补充中的 ready 语义仍写成安装进行中，并把 commitSession 描述为直接触发 mSessionReady",
       "type": "stale-correction",
       "updated_at": "2026-08-06T10:36:12.771957+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch20-stability/20.27-coroutine-leak-diagnosis-structured-concurrency-performance.md",
+      "close_note": "Fixed in target frontmatter and opening source-boundary paragraph.",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260806-123528-deep-review-933adf6b",
+      "created_at": "2026-08-06T12:39:32.611362+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260806-123528-deep-review-933adf6b",
+      "details": "Frontmatter/opening baseline wording overstated AndroidX Lifecycle 2.11.0 as a fixed verification baseline; reworded to public documentation/source-link spot-check boundary.",
+      "id": "finding-20-27-source-boundary-20260806",
+      "log_path": "logs/deep-review/2026-08-06-20260806-123528-deep-review-933adf6b-deep-review.md",
+      "severity": "P1",
+      "source_paths": [
+        "chapter deep-review 2026-08-06"
+      ],
+      "status": "fixed",
+      "summary": "Narrow Lifecycle version baseline wording for thin-source-marking chapter",
+      "type": "source-boundary",
+      "updated_at": "2026-08-06T12:39:32.660283+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch20-stability/20.27-coroutine-leak-diagnosis-structured-concurrency-performance.md",
+      "close_note": "Corrected outline spelling.",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260806-123528-deep-review-933adf6b",
+      "created_at": "2026-08-06T12:39:32.708005+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260806-123528-deep-review-933adf6b",
+      "details": "Outline used limiting.parallelism(); corrected to limitedParallelism().",
+      "id": "finding-20-27-limitedparallelism-typo-20260806",
+      "log_path": "logs/deep-review/2026-08-06-20260806-123528-deep-review-933adf6b-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "chapter outline"
+      ],
+      "status": "fixed",
+      "summary": "Correct limitedParallelism API spelling in outline",
+      "type": "readability",
+      "updated_at": "2026-08-06T12:39:32.756050+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch20-stability/20.27-coroutine-leak-diagnosis-structured-concurrency-performance.md",
+      "close_note": "Updated outline to repeatOnLifecycle / launchIn(scope).",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260806-123528-deep-review-933adf6b",
+      "created_at": "2026-08-06T12:39:32.804478+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260806-123528-deep-review-933adf6b",
+      "details": "Outline mentioned collectIn as lifecycle protection, while body correctly says collectIn is not standard kotlinx.coroutines/AndroidX Lifecycle API; changed outline to launchIn(scope).",
+      "id": "finding-20-27-collectin-outline-20260806",
+      "log_path": "logs/deep-review/2026-08-06-20260806-123528-deep-review-933adf6b-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "chapter outline and §3.1"
+      ],
+      "status": "fixed",
+      "summary": "Align Flow outline with public API discussion",
+      "type": "source-boundary",
+      "updated_at": "2026-08-06T12:39:32.853823+08:00"
     }
   ],
   "schema_version": 1

@@ -2,9 +2,9 @@
 title: Package Manager Service 与应用安装性能
 chapter: '1.9'
 section: '1.9'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-07-25'
+last_verified: '2026-08-06'
 last_verified_against: AOSP android-17.0.0_r1 + ACK android17-6.18-2026-06_r6 + Android Developers
 confidence: high
 sources:
@@ -97,15 +97,15 @@ related_chapters:
   - '8.2'
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
-reviewed_by: openclaw-task6
-reviewed_date: '2026-05-28'
-task6_state: revisiting
+reviewed_by: hermes-aiw-review-finalize-apply
+reviewed_date: '2026-08-06'
+task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed-lite
-pipeline_stage: task6_pending
+pipeline_stage: finalized
 deepseek_cn_review_state: done
 polish_count: 1
 polish_date: '2026-04-09'
@@ -141,6 +141,8 @@ last_body_apply_at: "2026-08-06T11:15:29+08:00"
 last_body_apply_run_id: "20260806-111529-1f9a01ff"
 last_body_apply_source: "queue: AIW 时效性巡检 / src/part1-fundamentals/ch01-architecture/09-package-manager.md"
 last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
+last_review_finalize_at: "2026-08-06T12:07:15+08:00"
+last_review_finalize_run_id: "20260806-120548-9b08ffcd"
 ---
 
 # 1.9 Package Manager Service 与应用安装性能
