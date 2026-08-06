@@ -1,13 +1,25 @@
 ---
 title: "SurfaceView 与 TextureView 渲染性能选型实战"
 chapter: "22.42"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [surfaceview, textureview, surfacecontrol, rendering, gpu, video, camera]
 related_chapters: ["22.17", "22.35", "2.1", "18.16"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "AOSP结构/官方文档/章节深挖"
+last_verified: "2026-08-06"
+confidence: "medium-high"
+task6_state: pending
+task9_state: pending
+pipeline_stage: task6_pending
+last_draft_polish_at: "2026-08-06T19:35:28+08:00"
+last_draft_polish_run_id: "20260806-193528-draft-polish-b85a1422"
+sources:
+  - "Android 17 platform source tag android-17.0.0_r1"
+  - "Android kernel tag android17-6.18-2026-06_r6"
+  - "Android developer documentation: SurfaceView, TextureView, SurfaceControl.Transaction, SurfaceSyncGroup"
+  - "CameraX PreviewView, Media3 PlayerView, Compose AndroidView / external surface references"
 ---
 
 # 22.42 SurfaceView 与 TextureView 渲染性能选型实战
@@ -16,44 +28,44 @@ gap_source: "AOSP结构/官方文档/章节深挖"
 ## 要点
 
 ### 🔹 SurfaceView 与 TextureView 的架构本质差异
-- SurfaceView：独立 Surface + 独立窗口（WindowAnimationFrame），与 View 树合成分离
-- TextureView：View 树内的硬件层（HardwareRenderer），参与 GPU 纹理合成
-- Android 17 SurfaceControl API 演进对两者差距的缩小/放大
+- SurfaceView：仍是宿主 View 树中的 View，但内容进入独立 BLAST child layer
+- TextureView：外部 buffer 先由应用内 HWUI/RenderThread 消费，再画入宿主 App Window
+- Android 17 SurfaceControl 能管理 layer 状态与 transaction，不替代 Producer 产帧或 fence 同步
 
 ### 🔹 性能对比：延迟、功耗、内存
-- 渲染延迟：SurfaceView 独立 Surface 的低延迟 vs TextureView 的额外 GPU 合成 pass
-- 功耗：SurfaceView 的硬件叠加层（Overlay Plane）节省 GPU 合成 vs TextureView 强制 GPU 合成
-- 内存：SurfaceView 的双缓冲/FIFO BufferQueue vs TextureView 的 DisplayList 纹理开销
-- Android 17 设备典型数据范围（不同 SoC 差异）
+- 渲染延迟：SurfaceView 有机会省去宿主纹理采样，TextureView 可能受宿主帧截止点影响
+- 功耗：SurfaceView 只有在 HWC 选择 DEVICE composition 时才可能减少 GPU 合成
+- 内存：两者都涉及内容队列与宿主窗口队列，slot/stride/format/usage 决定占用
+- 不提供跨 SoC 的 Android 17 “典型范围”，只给可复现实测维度
 
 ### 🔹 SurfaceControl 在 Android 17 的角色
-- SurfaceControl.Transaction 的 buffer 提交模式（sync vs async）
-- SurfaceControl.BufferChangedListener 回调链路
-- SurfaceView 底层使用 SurfaceControl 的 BufferQueue 模型
+- SurfaceControl.Transaction 管几何、可见性、alpha、crop、present hint 等 layer 状态
+- API 37 没有公开 `SurfaceControl.BufferChangedListener`；需区分 committed/completed listener 与 fence
+- SurfaceView 通过 container、BLAST child 和 BufferQueue 组合承载内容
 - 与 SurfaceFlinger Hardware Composer（HWC）Overlay 的关系
 
 ### 🔹 场景选型决策树
 - 相机预览：SurfaceView 默认优先，TextureView 在需要 View 变换（缩放/旋转/滤镜）时选
 - 视频播放：SurfaceView 优先（ExoPlayer/Media3 默认），TextureView 在需要贴纸/特效时选
-- 地图/游戏渲染：SurfaceView + GLSurfaceView / SurfaceControl 直接绑定 EGL
+- 地图/游戏渲染：按 SDK/引擎实际 Surface 拓扑确认，Vulkan WSI 通过 `ANativeWindow` 建立 swapchain
 - 直播弹幕叠加：TextureView 变换灵活性 vs SurfaceView 性能的取舍
 
 ### 🔹 Perfetto 中的 SurfaceView/TextureView 渲染链路追踪
 - BufferQueue 的 acquire/release buffer 在 trace 中的 Track
-- HWC Overlay 的识别方法（SurfaceFlinger "layer type" 标记）
+- HWC Overlay 的识别方法以 composition type、client target 和 layer trace 为主
 - GPU 合成 vs Overlay 合成的 Perfetto 判定方法
 
 ### 🔹 常见性能陷阱
-- TextureView 的 animate() 触发 GPU 合成放大
+- TextureView 的 animate() 可能改变采样、过滤、blend 与宿主 GPU 带宽
 - SurfaceView 的 surfaceCreated/surfaceDestroyed 生命周期与 Activity 的竞态
 - 多 SurfaceView 场景的 Overlay Plane 耗尽退化
-- Android 17 SurfaceView 黑屏问题与 setSecure / setAlpha 的副作用
+- Android 17 黑屏需按 layer、Producer、fence、visibility、secure/HDR 逐项排查
 
 ## 扩展
 
 ### 🔸 Vulkan Surface 与 SurfaceControl 的直接绑定
 - ANativeWindow 与 Vulkan VkSurfaceAndroid 的互操作
-- 游戏引擎（Unity/Unreal）直接使用 SurfaceControl 的性能收益
+- 游戏引擎（Unity/Unreal）应从实际 layer tree、swapchain 和队列确认收益
 
 ### 🔸 Compose 中的 SurfaceView/AndroidView 互操作
 - AndroidView 包裹 SurfaceView 的重组合开销与缓解策略
