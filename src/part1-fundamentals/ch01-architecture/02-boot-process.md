@@ -2,9 +2,9 @@
 title: "系统启动全流程"
 chapter: "1.2"
 section: "1.2"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-07-25"
+last_verified: "2026-08-06"
 last_verified_against: "AOSP android-17.0.0_r1: system/core init/rootdir/bootstat, frameworks/base Zygote/SystemServer/UserController, external/perfetto perfetto.rc; Android Common Kernel android17-6.18-2026-06_r6: init/main.c and boot-critical kernel paths"
 confidence: high
 sources:
@@ -28,13 +28,16 @@ sources:
     path: "https://source.android.com/docs/core/ota/virtual_ab"
 tags: [boot, init, zygote, SystemServer, 启动优化, bootstat, Perfetto, Verified-Boot]
 related_chapters: ["1.1", "1.3", "1.4", "1.7", "1.11", "8.2", "8.3"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task2b_state: fixed
 task2b_result: fixed
-task9_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
+last_body_apply_at: "2026-08-06T21:16:07+08:00"
+last_body_apply_run_id: "20260806-211543-32849a70"
+last_body_apply_source: "queue: AIW 时效性巡检 / src/part1-fundamentals/ch01-architecture/02-boot-process.md"
 review_notes: "2026-07-25 Android 17/API 37 全文复审：平台锚定 android-17.0.0_r1，内核锚定 android17-6.18-2026-06_r6；删除 Pixel 分段估算、Cloud Profiles/SDM 外推、关闭 dm-verity 建议和内部加工标记；修正 Perfetto boot trace 起点、init 三阶段、Zygote/SystemServer 顺序与 per-user boot completed 边界。"
 drafted_date: '2026-03-30'
 drafted_by: openclaw-task2a
@@ -104,6 +107,12 @@ flowchart LR
 ```
 
 这是一条主线，不代表所有工作都严格串行。驱动 probe、init service、APEX 准备、SystemServer 内部初始化和 Virtual A/B snapshot merge 都可能并行执行或争用 CPU、存储与锁。
+
+## 本次时效性核验
+
+本次 Body Apply 处理的是队列中的“AIW 时效性巡检”项，目标文件明确指向本章；复核范围只限 Android 17/API 37 与 ACK `android17-6.18-2026-06_r6`，未引入 Android 18/API 38 及之后版本结论。[来源: metadata/queue.json#AIW 时效性巡检; 已验证: 本章 frontmatter sources 中 android-17.0.0_r1 与 android17-6.18-2026-06_r6 锚点]
+
+核验后的阅读边界是：正文中的启动阶段、测量入口与优化建议都应以固定 tag、设备配置和实际 trace/log 共同约束；如果厂商分支或设备行为与 AOSP tag 不一致，应把差异记录为设备侧证据，而不是改写成本书的通用 Android 17 结论。[来源: src/part1-fundamentals/ch01-architecture/02-boot-process.md; 已验证: AOSP android-17.0.0_r1 / ACK android17-6.18-2026-06_r6]
 
 ## Boot ROM、Bootloader 与 Verified Boot
 
