@@ -8,13 +8,16 @@ related_chapters: ["25.25", "26.3", "26.18", "26.22"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "研究素材+每日信息+章节深挖"
-task6_state: pending
-task9_state: pending
-pipeline_stage: task6_pending
+task6_state: deep-reviewed
+task9_state: ready-for-audit
+pipeline_stage: deep_review_passed
 last_draft_polish_at: "2026-08-05T23:47:01+08:00"
 last_draft_polish_run_id: "20260805-234701-draft-polish-010c5e00"
-last_verified: "2026-08-05"
-confidence: medium-high
+last_deep_review_at: "2026-08-06T08:36:03+08:00"
+last_deep_review_run_id: "20260806-083603-deep-review-010c5e00"
+last_verified: "2026-08-06"
+last_verified_against: "AOSP android-17.0.0_r1 public API sources; Android Developers API docs for ProfilingManager/ProfilingTrigger; Android Vitals data coverage documentation"
+confidence: high
 sources:
   - type: android-source
     path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java"
@@ -24,8 +27,16 @@ sources:
     path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/usage/UsageStatsManager.java"
   - type: android-source
     path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/pm/PackageManager.java"
+  - type: android-source
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java"
   - type: android-doc
     path: "https://developer.android.com/reference/android/os/ProfilingManager"
+  - type: android-doc
+    path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
+  - type: android-doc
+    path: "https://developer.android.com/topic/performance/tracing/profiling-manager/querying-profiles"
+  - type: android-doc
+    path: "https://developer.android.com/about/versions/17/features"
   - type: android-doc
     path: "https://support.google.com/googleplay/android-developer/answer/9844486?hl=en"
 ---
@@ -296,7 +307,7 @@ ADPF 是向系统表达负载意图的控制接口，不是性能指标。sessio
 
 [`ProfilingManager`](https://developer.android.com/reference/android/os/ProfilingManager) 从 Android 15 / API 35 开始提供公共 profiling 请求，可请求 system trace、Java heap dump、heap profile 与 stack sampling。官方契约强调请求受频率限制，并不保证每次都执行。结果写入应用数据目录并通过 listener 通知；系统会按应用边界处理数据，普通应用不能借此读取其他进程的任意内容。
 
-Android 16 / API 36 增加 `ProfilingTrigger`。Android 17 / API 37 又增加了新的系统触发类型，具体 API 变化应按 [`ProfilingTrigger`](https://developer.android.com/reference/android/os/ProfilingTrigger) 和 [Android 17 功能说明](https://developer.android.com/about/versions/17/features) 适配。使用系统触发时要注册全局结果 listener，因为结果不一定来自当前一次显式请求。
+Android 16 / API 36 增加 `ProfilingTrigger`；Android 17 / API 37 继续扩展 profiling 的系统触发场景。具体 API 变化应按 [`ProfilingTrigger`](https://developer.android.com/reference/android/os/ProfilingTrigger) 和 [Android 17 功能说明](https://developer.android.com/about/versions/17/features) 适配，而不是按主线源码预览外推。使用系统触发时要注册全局结果 listener，因为结果不一定来自当前一次显式请求。
 
 这里不把“请求没有结果”直接归因于厂商裁剪。可能原因包括不支持的版本、参数错误、频率限制、系统资源状态、进程生命周期或实现问题。应用需要记录请求类型、请求时刻、回调结果和超时后的未知状态，再在目标设备上复现。
 
