@@ -4,12 +4,12 @@ deepseek_polish_state: done
 last_deepseek_polish_at: 2026-05-25
 chapter: 19
 section: 19.20
-status: finalized
+status: ready-for-review
 drafted_date: 2026-04-24
 drafted_by: codex
-applicable_versions: SoloPi：源码编译基线 minSdk 18 / compileSdk 29 / targetSdk 29，Android 12-17 需逐机验证；Emmagee：历史工具，README 明确声明 Android 7.0 起不支持
-last_verified: 2026-08-04
-last_verified_against: SoloPi README + src/build.gradle + src/portal/build.gradle + GitHub release v0.12.0；Emmagee README + GitHub release V2.5.1；Android 17 behavior/source references；Android 13 Restricted Settings behavior changes
+applicable_versions: SoloPi：源码编译基线 minSdk 18 / compileSdk 29 / targetSdk 29，Android 12-17 需逐机验收；Emmagee：历史工具，README 明确声明 Android 7.0 起不支持
+last_verified: 2026-08-06
+last_verified_against: SoloPi README + build.gradle + portal build.gradle + release v0.12.0 + 性能/无障碍/录屏源码；Emmagee README + 进程/流量源码 + GitHub release V2.5.1；Android 17 behavior/source references；Android 13 Restricted Settings behavior changes；Android 非 SDK、MediaProjection、16 KB page、proc_net 文档
 confidence: medium
 tags: 
 related_chapters: 
@@ -26,19 +26,29 @@ sources:
   path: https://developer.android.com/about/versions/17/behavior-changes-17
 - type: official
   path: https://developer.android.com/about/versions/13/behavior-changes-all#restricted-settings
-pipeline_stage: finalized
-task6_state: reviewed
+- type: official
+  path: https://developer.android.com/guide/app-compatibility/restrictions-non-sdk-interfaces
+- type: official
+  path: https://developer.android.com/media/grow/media-projection
+- type: official
+  path: https://developer.android.com/guide/practices/page-sizes
+- type: source
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java
+- type: source
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/proc_net.c
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: hermes-aiw-review-finalize-apply
 reviewed_date: 2026-08-04
-task6_result: pass-light-edit
+task6_result: pending-rework-review
 last_task6_audit: 2026-06-17
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-04-26T15:45:22+08:00
 repaired_date: 2026-04-26
 repaired_by: openclaw-task2b
-task9_result: pass-tech-review
+task9_result: pending-rework-review
 task9_reviewed_date: 2026-07-03
 task9_reviewed_by: openclaw-task9
 last_task9_at: 2026-07-03T12:32:56+08:00
@@ -54,12 +64,12 @@ task9_p2_issues: 0
 p0: 0
 p1: 0
 p2: 0
-task9_review_notes: "2026-07-03 12 Task9 deep-review: pass-tech-review。Task6 复审后复核 SoloPi README/build.gradle/release 与 Emmagee README/release，版本边界仍限定 Android 17 以内；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。2026-08-04 rework 修复 YAML 引用结构和正文待验证标记，退回 ready-for-review 等待复审。2026-08-04 Hermes finalize 复审：正文已诚实限定 SoloPi 为 Android 17 待验证工具、Emmagee 为历史工具；关键源码/官方链接齐备；无新增 P0/P1/P2，恢复 finalized。"
+task9_review_notes: "2026-07-03 12 Task9 deep-review: pass-tech-review。Task6 复审后复核 SoloPi README/build.gradle/release 与 Emmagee README/release，版本边界仍限定 Android 17 以内；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。2026-08-04 rework 修复 YAML 引用结构和正文待验收标记，退回 ready-for-review 等待复审。2026-08-04 Hermes finalize 复审：正文已诚实限定 SoloPi 为 Android 17 需逐机验收工具、Emmagee 为历史工具；关键源码/官方链接齐备；无新增 P0/P1/P2，恢复 finalized。2026-08-06 rework 修复正文待验收标记与 source 标注不足：正文改为准入/逐机验收表述，frontmatter 补充关键 Android 官方与 AOSP/内核源码引用，退回 ready-for-review 等待复审。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-18
-last_rework_at: 2026-08-04T17:37:52+08:00
-last_rework_run_id: 20260804-173752-rework-5ee2b1f4
-last_rework_log: logs/rework/2026-08-04-20260804-173752-rework-5ee2b1f4-rework.md
+last_rework_at: 2026-08-06T17:35:09+08:00
+last_rework_run_id: 20260806-173509-rework-5ee2b1f4
+last_rework_log: logs/rework/2026-08-06-20260806-173509-rework-5ee2b1f4-rework.md
 last_review_finalize_at: 2026-08-04T18:05:47+08:00
 last_review_finalize_run_id: 20260804-180547-5e8d0697
 last_idle_audit_at: 2026-08-04T22:35:22+08:00
@@ -115,7 +125,7 @@ SoloPi 和 Emmagee 都不负责线上 APM 的职责。它们运行在测试设�
 
 两者的现状差异很大：
 
-- SoloPi 仍有使用价值，重点是录制回放和设备侧测试辅助。不过，公开 APK、构建链与若干采集实现都停留在较早的 Android 基线上，Android 17 / API 37 只能按“待验证工具”接入。
+- SoloPi 仍有使用价值，重点是录制回放和设备侧测试辅助。不过，公开 APK、构建链与若干采集实现都停留在较早的 Android 基线上，Android 17 / API 37 只能按“需逐机验收的测试现场工具”接入。
 - Emmagee 的 README 已明确声明 Android 7.0 不受支持。它在现代系统中的主要价值是解释旧报告和研究早期外部采样方案，不应重新纳入 Android 17 测试体系。
 
 本节以 SoloPi 源码提交 `35a4a3e3fe02deeb89df35c82dc3ba03a33f4f13`、Emmagee 源码提交 `6a382dffe74b5be6d2de78cb0c640cc67e9ce650` 为审阅基线。Android 平台上限为 Android 17 / API 37 / `android-17.0.0_r1`，涉及 `/proc` 语义时使用内核 `android17-6.18-2026-06_r6` 交叉核对。
@@ -136,7 +146,7 @@ SoloPi README 将产品能力概括为录制回放、性能测试和一机多控
 
 讨论 SoloPi 是否兼容 Android 17 时，要把两个问题分开：
 
-1. **旧 APK 能否运行**：使用上游 v0.12.0 或旧构建，在 Android 17 设备上验证安装、授权、录制、回放和采样。它仍以 `targetSdkVersion 29` 运行，部分新行为不会按 API 37 目标应用的规则启用。
+1. **旧 APK 能否运行**：使用上游 v0.12.0 或旧构建，在 Android 17 设备上验收安装、授权、录制、回放和采样。它仍以 `targetSdkVersion 29` 运行，部分新行为不会按 API 37 目标应用的规则启用。
 2. **源码能否迁移到 API 37**：升级构建链、`compileSdkVersion` 和 `targetSdkVersion` 后重新打包。此时需要处理现代前台服务、MediaProjection、存储、后台启动以及原生库页面大小等要求。
 
 旧 APK 在某台设备上能打开，只证明这一组 APK、系统镜像和厂商策略可以共同运行。它不能替代 API 37 迁移验收。
@@ -224,7 +234,7 @@ adb shell settings get global window_animation_scale
 - `verified`：与同一时段的独立来源对读，量纲和趋势一致。
 - `degraded`：能返回值，但只能作为趋势或全局值使用。
 - `unavailable`：返回 0、空值、旧值或解析失败。
-- `unknown`：尚未验证，不能进入结论。
+- `unknown`：尚无本次设备对读证据，不能进入结论。
 
 ## 启动耗时：视觉响应和系统启动要分列
 
