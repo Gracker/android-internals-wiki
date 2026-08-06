@@ -2,30 +2,30 @@
 title: "Agent 辅助 Perfetto 分析协议"
 chapter: "13.16"
 section: "13.16"
-status: "finalized"
+status: ready-for-review
 drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-08-04"
-last_verified_against: "android/skills profilers commit 4328beaf36f00265db107eb316f9add6b8764144; Perfetto official AI skill docs/release notes v57.1-v57.2; Android 17 Perfetto stdlib docs/source (android.frames.*, android.startup.startups, android.binder, slices.with_context, slices.time_in_state, slices.cpu_time, sched.with_context, linux.cpu.frequency, linux.cpu.utilization.*); Perfetto SQL table docs (slice, thread_state, sched, cpu_freq); Android system tracing docs | 2026-08-04 finalize review: corrected sched.with_context availability boundary and verified official AI skill/release-note anchors"
-last_rework_at: "2026-08-04T13:38:46+08:00"
-last_rework_run_id: "20260804-133512-rework-39378b94"
-last_rework_log: "logs/rework/2026-08-04-20260804-133512-rework-39378b94-rework.md"
+last_verified: "2026-08-06"
+last_verified_against: "android/skills profilers commit 4328beaf36f00265db107eb316f9add6b8764144; Perfetto official AI skill docs/release notes v57.1-v57.2; Android 17 Perfetto stdlib docs/source (android.frames.*, android.startup.startups, android.binder, slices.with_context, slices.time_in_state, slices.cpu_time, sched.with_context, linux.cpu.frequency, linux.cpu.utilization.*); Perfetto SQL table docs (slice, thread_state, sched, cpu_freq); Android system tracing docs | 2026-08-06 rework: cleared stale rework wording in frontmatter notes; Android 17 boundary retained"
+last_rework_at: "2026-08-06T13:40:10+08:00"
+last_rework_run_id: "20260806-133627-rework-39378b94"
+last_rework_log: "logs/rework/2026-08-06-20260806-133627-rework-39378b94-rework.md"
 rework_result: "ready-for-review"
-rework_notes: "2026-08-04 rework：解决 pending-verification-marker 与 thin-source-marking。frontmatter 去除 last_verified_against 中失效的 sched.with_context 标记，补齐 Perfetto official AI skill、release notes、stdlib/testing 来源；正文新增 3 处 [来源:] 内联来源标记，保持 Android 17 / android-17.0.0_r1 边界并回退到 ready-for-review 等待 Task6/Task9 复审。"
+rework_notes: "2026-08-06 rework：清理 frontmatter 中已过期的英文核验标记字面量，保留 2026-08-04 已完成的来源补强事实；正文抽查未发现越过当前平台锚点的主线结论，版本边界保持 Android 17 / android-17.0.0_r1，状态回退 ready-for-review 等待 Task6/Task9 复审。"
 confidence: medium
 tags: [perfetto, trace-analysis, agent-workflow, performance-tools]
 related_chapters: ["13.2", "13.10", "13.15", "15.6", "26.5"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "研究素材+官方仓库"
-pipeline_stage: finalized
+pipeline_stage: ready-for-review
 task2b_result: fixed-lite
-task6_state: reviewed
+task6_state: pending-review
 reviewed_by: hermes-aiw-review-finalize-apply
 reviewed_date: "2026-08-04"
 task6_result: "pass-light-edit"
 last_task6_at: "2026-06-19T04:25:46+08:00"
-task9_state: reviewed
+task9_state: pending-review
 task9_result: auto-fixed
 task2b_state: fixed
 last_task2b_lite_at: "2026-05-28"
