@@ -1,12 +1,12 @@
 # AIW Knowledge Pack 维护说明
 
 Knowledge Pack 是从私有 Android Internals Wiki 仓库生成的公开、只读、版本化
-知识快照。`src/` 下的正文 Markdown 全部进入候选语料，草稿、待审、定稿、
-deprecated、queue 中的正文一视同仁。工作流状态只进入聚合审计，不发送给模型，
-也不作为收录门槛。
+知识快照。只有 `src/` 下五个 canonical part 的 26 个章节目录中的正文 Markdown
+进入候选语料；草稿、待审、定稿正文一视同仁。工作流状态只进入聚合审计，
+不发送给模型，也不作为收录门槛。
 
-各级 `README.md`、`SUMMARY.md` 和 `src/graphify-out/**` 是导航或生成产物，不属于
-正文。公开仓库只接收经过安全投影的正文片段、聚合审计、许可证和 TUF 元数据：
+各级 `README.md`、`SUMMARY.md`、废弃目录、重复/空白文件和任何生成产物都不属于
+正文；生成产物不得写回 `src/`。公开仓库只接收经过安全投影的正文片段、聚合审计、许可证和 TUF 元数据：
 本机绝对路径所在行会被确定性脱敏，高置信密钥命中会阻断构建；私有源仓库、queue、
 review notes、日志、原始绝对路径和 Git remote 都不会进入 Pack。
 

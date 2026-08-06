@@ -1,3 +1,16 @@
+# 当前架构对账（2026-08-06）
+
+以下历史建议继续保留作审计，但新章节冻结仍然有效。旧 Gap Mining 候选不得再创建文件，统一并入现有正文：
+
+- 22.44 Compose 状态订阅 → 22.20 `src/part5-app/ch22-rendering-practice/20-compose-performance-blind-spots.md`
+- 22.45 Compose LazyGrid → 22.22 `src/part5-app/ch22-rendering-practice/22-compose-lazylist-performance.md`
+- 20.29 Crash SDK / tombstone → 20.18 `src/part5-app/ch20-stability/18-native-stack-unwinding-symbolication.md`
+- 24.22 网络引擎选型 → 24.14 `src/part5-app/ch24-io-network/14-network-request-performance-playbook.md`
+- 22.46 TextField / IME → 22.3 `src/part5-app/ch22-rendering-practice/03-compose-performance.md`
+- 22.47 嵌套滚动 / 手势冲突 → 3.3 `src/part1-fundamentals/ch03-input/03-gesture-navigation.md`
+- 25.32 插件化 / 动态加载包体积 → 25.29 `src/part5-app/ch25-power-size/29-dex-size-optimization.md`
+
+对应 queue 记录已标记为 `rejected` 并写明 canonical `target_path`；后续只允许向上述现有文章补充材料。
 
 
 ## [Task9 Deep Review] 15. Android 性能优化研究方法论 — 2026-07-17

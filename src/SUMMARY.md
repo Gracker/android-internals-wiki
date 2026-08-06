@@ -36,6 +36,7 @@
   - [1.48 Android 17 ResourcesManager/Configuration 与 Activity Relaunch 判定模型](part1-fundamentals/ch01-architecture/1.48-Android-17-ResourcesManager-Configuration-Activity-Relaunch-判定模型.md)
   - [1.48 Android 17 Binder 优先级继承机制详解](part1-fundamentals/ch01-architecture/1.48-android17-binder-priority-inheritance.md)
   - [1.49 Android 17 Staged Install 状态机与提交/恢复链路](part1-fundamentals/ch01-architecture/1.49-Android-17-Staged-Install-状态机-提交-恢复链路.md)
+  - [1.54 Android 17 Binder 线程池实现机制与调优参数](part1-fundamentals/ch01-architecture/1.54-binder-thread-pool-implementation/1.54-binder-thread-pool-implementation.md)
   - [1.55 Android 17 VNDK 隔离与 native 库加载性能影响](part1-fundamentals/ch01-architecture/1.55-android17-vndk-isolation-native-library-performance.md)
   - [1.60 Android 17 / ACK 6.18 BPF 可观测性与可编程边界](part1-fundamentals/ch01-architecture/1.60-linux-610-bpf-android17-boundary.md)
   - [1.61 Android 17 TelephonyManager 架构、状态传播与性能边界](part1-fundamentals/ch01-architecture/1.61-android17-telephonymanager-architecture-performance.md)

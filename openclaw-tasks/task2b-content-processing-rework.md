@@ -52,7 +52,7 @@ AIW = Path('/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents
 LOCK_DIR = AIW / 'metadata' / 'locks' / 'task2b'
 LOCK_DIR.mkdir(parents=True, exist_ok=True)
 
-rel = 'src/partX/example.md'  # 替换为本轮目标章节相对路径
+rel = 'src/part1-fundamentals/ch01-architecture/01-layered-architecture.md'  # 替换为本轮目标章节相对路径
 lane = 'main'                 # main / lite / verifier
 safe = re.sub(r'[^A-Za-z0-9_.-]+', '__', rel)
 lock = LOCK_DIR / f'{safe}.lock'

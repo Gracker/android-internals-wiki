@@ -68,7 +68,7 @@ related_chapters: ["X.Y", "X.Z"]
 - `status` 表示正文成熟度。当前主状态为 `draft`、`ready-for-review`、`finalized`。
 - `pipeline_stage` 表示流水线位置。发布就绪使用 `ready-to-publish`。
 - 早期遗留的 `verified`、`needs-review`、`outdated`、`fixed-lite` 可被脚本兼容，但不要在新章节里继续引入。
-- `src/preface/`、`src/appendix/`、`src/graphify-out/` 可按内容需要简化字段，但不得缺少标题和来源边界。
+- `src/preface/`、`src/appendix/` 可按内容需要简化字段，但不得缺少标题和来源边界。生成图、扫描报告和其他分析产物必须放在 `src/` 之外。
 
 ## 内容融入策略
 
@@ -97,10 +97,16 @@ related_chapters: ["X.Y", "X.Z"]
 当前权威文件：
 
 - `metadata/queue.json`：回炉、素材注入、人工请求队列。当前结构为列表；追加时保留既有条目，不要整体重写。
-- `metadata/progress.json`：精修跟踪子集，不等同于 `src/` 全量文件数量。
+- `metadata/progress.json`：规范章节正文的聚合快照；由 frontmatter 原始扫描生成，不作为单篇正文的写入源。
 - `metadata/source-index.json`：素材索引。大文件操作应优先使用 `scripts/source_index_helper.py`。
 - `intake/suggestions.md`、`intake/research-gaps.md`、`intake/manual-requests/`：人工建议、知识缺口、手动请求的落点。
 - `logs/`：review、research、rework、integration 的证据链。
+
+目录与路径规则：
+
+- 当前正文只能位于 `src/preface/`、`src/appendix/` 和 `metadata/v1.0-definition.md` 定义的 26 个规范章节目录。
+- 不得重新创建 `src/chXX-*`、`partX-*`、`chchXX-*`、`part2-rendering` 等历史错位目录。
+- 章节移动或合并后必须同步更新 `src/SUMMARY.md`、活动 queue、source-index 的 `target_path` 和未关闭 finding；历史日志与已关闭 finding 保留原路径。
 
 非权威或临时文件不要作为流水线输入：
 

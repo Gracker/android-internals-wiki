@@ -1,5 +1,7 @@
 # Part 2 Performance Review Todolist
 
+> 历史 Review 完成清单；路径已按当前 canonical 目录核验，不作为活动 queue。
+
 ## 第 7 章：流畅性 (ch07-smoothness)
 - [x] 7.1 卡顿的定义与分类 (`src/part2-performance/ch07-smoothness/01-jank-definition.md`)
 - [x] 7.2 卡顿原因体系 (`src/part2-performance/ch07-smoothness/02-jank-causes.md`)
@@ -77,7 +79,7 @@
 - [x] 18.20 链路分析方法论 (`src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md`)
 - [x] 18.21 EyeDropper API 与跨设备协作性能 (`src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md`)
 
-## 第 12 章：包体积与其他 (ch12-apk-network)
+## 第 12 章：包体积与网络 (ch12-apk-network)
 - [x] 12.1 APK 体积优化 (`src/part2-performance/ch12-apk-network/01-apk-size.md`)
 - [x] 12.2 网络性能优化 (`src/part2-performance/ch12-apk-network/02-network-performance.md`)
 - [x] 12.3 网络性能深入 (`src/part2-performance/ch12-apk-network/03-network-performance-deep.md`)
@@ -85,4 +87,3 @@
 
 # All Tasks Completed
 The comprehensive technical audit for Part 2 (Performance) has been finalized. 69 detailed review reports have been generated and archived in `logs/external-review/`. All Android 15/16/17 performance characteristics have been synchronized.
-

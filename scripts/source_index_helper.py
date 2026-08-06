@@ -122,7 +122,12 @@ def cmd_append(args):
         else:
             duplicates += 1
 
-    save_json(SOURCE_INDEX, {"files": existing})
+    # Preserve top-level schema/mapping metadata added by architecture migrations.
+    if isinstance(idx, dict):
+        idx["files"] = existing
+        save_json(SOURCE_INDEX, idx)
+    else:
+        save_json(SOURCE_INDEX, {"files": existing})
 
     result = {
         "added": len(added),

@@ -1,6 +1,7 @@
 # 英文翻译计划
 
 > 本文件记录英文版本的翻译策略，v1.0 中文版发布后启动。
+> 翻译目录以 `metadata/v1.0-definition.md` 与 `src/SUMMARY.md` 的当前五部分、26 章为准。
 
 ## 翻译策略
 
@@ -46,11 +47,21 @@
 | 第 9 章：ANR | Chapter 9: ANR |
 | 第 10 章：内存性能 | Chapter 10: Memory Performance |
 | 第 11 章：功耗 | Chapter 11: Power Consumption |
-| 第 12 章：包体积与其他 | Chapter 12: APK Size & Others |
+| 第 12 章：包体积与网络 | Chapter 12: APK Size & Networking |
+| 第 18 章：渲染链路全景 | Chapter 18: Rendering Pipelines |
 | 第三部分：工具与方法论 | Part 3: Tools & Methodology |
 | 第 13 章：Perfetto | Chapter 13: Perfetto |
 | 第 14 章：其他分析工具 | Chapter 14: Other Analysis Tools |
 | 第 15 章：方法论 | Chapter 15: Methodology |
+| 第 19 章：APM 工具与性能监控生态 | Chapter 19: APM & Performance Monitoring |
 | 第四部分：系统级优化与行业实践 | Part 4: System Optimization & Industry Practices |
 | 第 16 章：AOSP 性能优化 | Chapter 16: AOSP Performance Optimization |
 | 第 17 章：厂商优化实践 | Chapter 17: OEM Optimization Practices |
+| 第五部分：应用层优化 | Part 5: Application Performance |
+| 第 20 章：应用稳定性治理 | Chapter 20: Application Stability |
+| 第 21 章：启动优化 | Chapter 21: Startup Optimization |
+| 第 22 章：渲染优化实战 | Chapter 22: Rendering Optimization in Practice |
+| 第 23 章：内存优化实战 | Chapter 23: Memory Optimization in Practice |
+| 第 24 章：I/O 与网络优化 | Chapter 24: I/O & Network Optimization |
+| 第 25 章：功耗与包体积优化 | Chapter 25: Power & App Size Optimization |
+| 第 26 章：应用可观测性 | Chapter 26: Application Observability |

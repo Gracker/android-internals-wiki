@@ -7,7 +7,7 @@
 
 一本由 AI 辅助持续进化的 Android 技术百科，面向有经验的 Android 开发者和系统工程师。
 
-当前项目处于 **alpha 精修期**。正文素材已经大规模沉淀，但发布目录、流水线状态和历史任务产物仍在收敛中；阅读和维护时请优先参考本文件下面的“当前事实口径”。
+当前项目处于 **alpha 精修期**。正文已恢复为 5 个部分、26 章、前言和附录的规范架构；当前重点从“目录收敛”转向技术审校、状态统一和发布验证。阅读和维护时请优先参考本文件下面的“当前事实口径”。
 
 <!-- android-performance-ecosystem:start -->
 ## Android 性能分析生态
@@ -41,7 +41,7 @@
 - **第四部分：系统级优化与行业实践** — AOSP 优化、厂商实践
 - **第五部分：应用层优化** — 稳定性、启动、渲染、内存、I/O、功耗、可观测性
 
-`src/SUMMARY.md` 是 mdBook 的发布入口，但当前仍在重组中，不能单独代表全书覆盖范围。全量内容治理请结合 `src/` 原始扫描、`metadata/progress.json`、`metadata/queue.json` 和 `logs/` 判断。
+`src/SUMMARY.md` 是 mdBook 的权威发布入口，当前已经覆盖 5 个部分、26 章、前言、附录和全部保留正文。工作流成熟度和未闭环问题仍需结合 `metadata/progress.json`、`metadata/queue.json` 与 `logs/` 判断。
 
 ## 语言
 
@@ -78,14 +78,15 @@ mdbook serve
 
 ## 当前事实口径
 
-截至 2026-07-02，仓库有两套常用统计口径：
+截至 2026-08-06，当前活动口径已经统一：
 
-- `scripts/progress-report.py` 的 frontmatter 原始扫描：550 个正文元数据文件，其中 `finalized` 338、`ready-for-review` 185、`draft` 25。
-- `metadata/progress.json` 的精修跟踪子集：147 节，其中 `finalized` 119、`ready_for_review` 22、`draft` 6。
-- `metadata/queue.json` 当前为列表结构：28 条队列记录，其中 17 条 `pending`、6 条 `draft`、5 条 `completed`。
-- `src/SUMMARY.md` 当前是发布目录重组中的短目录，不要把它当作全量目录清单。
+- 规范章节正文共 622 篇：`finalized` 388、`ready-for-review` 216、`draft` 15、`needs-review` 2、`verified` 1。
+- `pipeline_stage=ready-to-publish` 的正文为 329 篇；其余遗留流水线状态按 `metadata/progress.json` 聚合展示。
+- `src/SUMMARY.md` 包含 661 个本地链接，链接目标和重复项检查均通过。
+- `metadata/queue.json` 已收敛为 17 条活动/审计记录：9 条 `pending`、7 条因架构合并而 `rejected`、1 条 `completed`。
+- `metadata/inventory.json` 只索引项目外的素材文档，不再把本仓库 `src/` 当作外部输入。
 
-如果这些口径冲突，优先级是：正在处理的 queue / frontmatter 状态 > 最近 logs > `metadata/progress.json` 汇总 > README 中的快照。
+若状态发生短时冲突，优先级是：章节 frontmatter 与正在处理的 queue > 最近 logs > `metadata/progress.json` 聚合 > README 快照。已关闭的 review finding 和历史日志允许保留变更发生时的旧路径。
 
 ## 内容验证标准
 
@@ -101,14 +102,14 @@ mdbook serve
 
 ## 项目进度
 
-当前阶段：**alpha**（正文持续批量 review / finalize，发布目录和治理口径继续收敛）
+当前阶段：**alpha**（正文持续批量 review / finalize，目录架构和基础治理口径已经收敛）
 
 当前优先事项：
 
-1. 重建 `src/SUMMARY.md`，让 mdBook 发布目录重新覆盖 ch01-ch26 与附录。
-2. 对齐 `metadata/progress.json` 与 frontmatter 原始扫描口径，明确“精修子集”和“全量内容”的边界。
-3. 消费 `metadata/queue.json` 中仍为 `pending` 的 Task6 / Task9 / DeepResearch 条目。
-4. 清理根目录与 metadata 下的一次性报告、旧备份和临时 JSON，避免它们再次进入提交。
+1. 消费 `metadata/queue.json` 中仍为 `pending` 的时效性与 DeepResearch 条目。
+2. 把正文中的遗留状态名逐步统一到 `draft`、`ready-for-review`、`finalized` 和 `ready-to-publish`。
+3. 推进 Part 1-3 发布前审校，并补齐 Part 4-5 的版本边界与证据链。
+4. 在安装 mdBook 与 Mermaid 预处理器的环境中持续验证完整 HTML 构建。
 
 详细路线图见 [metadata/roadmap.md](metadata/roadmap.md)
 
@@ -132,9 +133,9 @@ mdbook serve
   [AIW Commercial License](COMMERCIAL-LICENSE.md)。
 
 仅下载仓库或 Knowledge Pack 不代表获得商业授权。SmartPerfetto 使用的公开
-Knowledge Pack 收录 `src/` 下所有正文，不以 `status`、`pipeline_stage`、
+Knowledge Pack 收录规范章节目录中的所有正文，不以 `status`、`pipeline_stage`、
 Task6/Task9 或 queue 状态作为门槛。各级 `README.md`、`SUMMARY.md` 和自动生成的
-图报告不属于正文；私有路径行会在公开投影中脱敏，密钥命中会阻断发布。构建和分发规则见
+导航/分析产物不属于正文；私有路径行会在公开投影中脱敏，密钥命中会阻断发布。构建和分发规则见
 [`knowledge-pack/policy.yaml`](knowledge-pack/policy.yaml)，Pack 再分发边界见
 [`KNOWLEDGE-PACK-LICENSE.md`](KNOWLEDGE-PACK-LICENSE.md)。
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from fnmatch import fnmatch
 from pathlib import Path
 import shutil
 import sqlite3
@@ -39,10 +40,13 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 FIXTURE_ROOT = REPO_ROOT / "tests" / "fixtures" / "knowledge-pack"
 
 
-def load_policy() -> dict:
-    return yaml.safe_load(
+def load_policy(*, canonical_scope: bool = False) -> dict:
+    policy = yaml.safe_load(
         (REPO_ROOT / "knowledge-pack" / "policy.yaml").read_text(encoding="utf-8")
     )
+    if not canonical_scope:
+        policy["distribution"]["smartperfetto"].pop("included_paths", None)
+    return policy
 
 
 class FrontmatterTest(unittest.TestCase):
@@ -200,12 +204,15 @@ class CorpusInclusionTest(unittest.TestCase):
                 scan_corpus_articles(fixture, load_policy())
 
     def test_repository_corpus_includes_every_body_markdown(self) -> None:
-        result = scan_corpus_articles(REPO_ROOT, load_policy())
+        result = scan_corpus_articles(REPO_ROOT, load_policy(canonical_scope=True))
         expected_paths = {
             path.relative_to(REPO_ROOT).as_posix()
             for path in (REPO_ROOT / "src").rglob("*.md")
             if path.name.lower() not in {"readme.md", "summary.md"}
-            and "src/graphify-out/" not in path.relative_to(REPO_ROOT).as_posix()
+            and any(
+                fnmatch(path.relative_to(REPO_ROOT).as_posix(), pattern)
+                for pattern in load_policy(canonical_scope=True)["distribution"]["smartperfetto"]["included_paths"]
+            )
         }
         self.assertEqual(
             {article.relative_path for article in result.accepted},

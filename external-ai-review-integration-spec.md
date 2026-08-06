@@ -99,13 +99,16 @@
 
 ## 3. 四路落盘规范
 
+所有章节号、标题和路径必须以 `metadata/v1.0-definition.md`、`src/SUMMARY.md` 及目标文章 frontmatter 为准。活动 queue 条目必须包含可解析到现有正文的 `target_path`；无法唯一定位时只记录待人工映射，不得猜测路径或创建章节。
+
 ## 3.1 回炉问题单 → `metadata/queue.json`
 
 写入字段建议：
 
 ```json
 {
-  "section": "5.3",
+  "section": "3.3",
+  "target_path": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
   "section_title": "InputDispatcher ANR 机制",
   "priority": 95,
   "reason": "[External Review] 源码路径与 ANR 判定链路存在技术风险，需回炉修正",
@@ -137,7 +140,7 @@
 模板：
 
 ```markdown
-## [YYYY-MM-DD] 5.3 InputDispatcher ANR 机制 — 知识盲区
+## [YYYY-MM-DD] 3.3 InputDispatcher ANR 机制 — 知识盲区
 
 ### 盲区描述
 Android 14 之后 Input timeout 相关实现与历史版本差异未覆盖。
@@ -151,9 +154,9 @@ Android 14 之后 Input timeout 相关实现与历史版本差异未覆盖。
 - Perfetto 中可观测的 Input timeout 链路
 
 ### 关联章节
-- 5.1
-- 5.2
-- 5.3
+- 3.1
+- 3.2
+- 3.3
 
 ### 外部 review 来源
 - Gemini 外部 review
@@ -166,7 +169,7 @@ Android 14 之后 Input timeout 相关实现与历史版本差异未覆盖。
 模板：
 
 ```markdown
-## [External Review] 5.3 InputDispatcher ANR 机制 — YYYY-MM-DD
+## [External Review] 3.3 InputDispatcher ANR 机制 — YYYY-MM-DD
 - **类型**：数据支撑
 - **位置**：ANR 现象分析段
 - **问题**：缺少 Perfetto / trace 片段支撑
@@ -187,7 +190,7 @@ Android 14 之后 Input timeout 相关实现与历史版本差异未覆盖。
 模板：
 
 ```markdown
-# 外部 AI Review 归档 · 5.3 InputDispatcher ANR 机制
+# 外部 AI Review 归档 · 3.3 InputDispatcher ANR 机制
 
 ## 可复用知识资产
 

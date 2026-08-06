@@ -13,7 +13,7 @@ Android 15 Cloud Profiles 对 SystemServer 启动流程的具体影响机制未�
 - Cloud Profiles 与 Mainline 模块在启动阶段的协同机制
 
 ### 关联章节
-1.2、8.3（启动性能优化）、1.4（SystemServer 详细流程）
+1.2（系统启动全流程）、8.3（启动性能优化）
 
 ---
 
@@ -31,4 +31,4 @@ Android 15 Cloud Profiles 对 SystemServer 启动流程的具体影响机制未�
 - Texture 压缩格式选择与设备能力匹配
 
 ### 关联章节
-5.2、26.7、26.3
+18.16（游戏引擎渲染链路）、22.9（渲染案例）、23.8（内存案例）

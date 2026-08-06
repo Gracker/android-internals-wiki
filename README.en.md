@@ -11,6 +11,12 @@ practical tooling.
 > navigation summary; the complete current README and book content remain in
 > Chinese, and a full English edition is planned after v1.0.
 
+The canonical Chinese body now follows five parts and 26 chapters, plus a
+preface and appendices. `src/SUMMARY.md` is the complete mdBook entry point; as
+of 2026-08-06 it links all retained canonical material without missing or
+duplicate local targets. Workflow maturity remains tracked separately in
+`metadata/progress.json` and `metadata/queue.json`.
+
 <!-- android-performance-ecosystem:start -->
 ## Android performance ecosystem
 
@@ -35,10 +41,11 @@ map, build and validation commands, writing rules, and contribution workflow.
 
 ## Knowledge Pack and licensing
 
-Every body Markdown file under `src/` can be published in the versioned,
-read-only SmartPerfetto Knowledge Pack. Workflow state, Task 6/Task 9 results,
-and review queues are audit metadata rather than inclusion gates. Navigation
-README/SUMMARY files and generated graph reports are not article bodies. Local
+Every body Markdown file under the canonical 26 chapter directories can be
+published in the versioned, read-only SmartPerfetto Knowledge Pack. Workflow
+state, Task 6/Task 9 results, and review queues are audit metadata rather than
+inclusion gates. Navigation README/SUMMARY files, obsolete paths, duplicates,
+blank files, and generated reports are not article bodies. Local
 private-path lines are redacted from the public projection, and secret findings
 fail the release. The exact policy is defined by
 [`knowledge-pack/policy.yaml`](knowledge-pack/policy.yaml).
