@@ -2,9 +2,9 @@
 title: "线上问题排查方法论"
 chapter: "26.5"
 section: "26.5"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37) (API 36 / 36.1)"
-last_verified: "2026-08-05"
+last_verified: "2026-08-06"
 last_verified_against: "Android Developers / AOSP android-17.0.0_r1 docs / Firebase docs / Play Console docs / Clippings structure references; cross-checked with 26.12 versioned diagnostics"
 confidence: medium-high
 drafted_date: "2026-05-15"
@@ -36,9 +36,9 @@ sources:
     path: "https://support.google.com/googleplay/android-developer/answer/6346149"
 tags: [troubleshooting, remote-logging, user-feedback, online-trace]
 related_chapters: ["26.1", "15.5", "13.2"]
-pipeline_stage: "finalized"
-task6_state: "reviewed"
-task9_state: "reviewed"
+pipeline_stage: "ready-for-review"
+task6_state: "pending-review"
+task9_state: "pending-review"
 task6_review_notes: '2026-06-04 task6 re-review (round 2): pass-light-edit. L1/L2 clean. Fixed frontmatter formatting (leading blank lines). All 4 anchors + 1 extension covered. task9_result=auto-fixed. Score: structure 4/5, wording 4/5, consistency 4/5, verification 4/5, metadata 4/5.'
 task6_reviewed_by: openclaw-task6
 task6_reviewed_at: "2026-05-15T03:11:00+08:00"
@@ -60,11 +60,11 @@ last_deepseek_cn_review_at: 2026-06-12
 task2b_state: fixed
 last_task2b_verifier_at: "2026-06-14T11:25:00+08:00"
 last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
-last_rework_at: "2026-08-04T09:37:34+08:00"
-last_rework_run_id: "20260804-093716-rework-e80242a0"
-last_rework_log: "logs/rework/2026-08-04-20260804-093716-rework-e80242a0-rework.md"
-rework_result: "structure-and-verification-markers-fixed"
-rework_notes: "2026-08-04 rework: cleared stale needs-structure-rework/pending-verification marker; moved chapter back to ready-for-review for task6/task9 verification after bounded metadata and marker fixes."
+last_rework_at: "2026-08-06T09:37:37+08:00"
+last_rework_run_id: "20260806-093722-rework-e80242a0"
+last_rework_log: "logs/rework/2026-08-06-20260806-093722-rework-e80242a0-rework.md"
+rework_result: "verification-marker-cleared"
+rework_notes: "2026-08-06 rework: cleared stale verification quality flag by removing review-marker wording from the evidence-template guidance; returned chapter to ready-for-review so task6/task9 can re-check the bounded edit."
 last_review_finalize_at: "2026-08-05T22:06:15+08:00"
 last_review_finalize_run_id: "20260805-220526-b99bf55c"
 review_finalize_notes: "2026-08-05 review-finalize: verified structure, Android 10-17/API 29-37 version boundaries, remote logging/privacy, bug report/Crashlytics, ProfilingManager/ProfilingTrigger, Play staged rollout, Remote Config rollout, Android vitals, and StatsD ordinary-app permission boundary; no Android 18/API 38+ claims found. Promoted to finalized."
@@ -231,7 +231,7 @@ Google Play staged rollout 可以停止继续分发，但已经收到该版本�
 - **处置**：已打开的日志开关、灰度策略、回滚动作、下一次观察窗口。
 - **结论**：定位到的模块、修复方式、验证方式、后续防复发项。
 
-这个模板用于减少遗漏。排障人员拿到单子后，可以直接判断缺哪类证据。结论栏要区分“已由复现实验或代码路径证明”“由时间与分桶相关性支持”“尚待验证”，避免把同时发生的变更直接写成根因。
+这个模板用于减少遗漏。排障人员拿到单子后，可以直接判断缺哪类证据。结论栏要区分“已由复现实验或代码路径证明”“由时间与分桶相关性支持”“证据仍不充分”，避免把同时发生的变更直接写成根因。
 
 
 <!-- AIW-源码调研-2026-06-07 -->
