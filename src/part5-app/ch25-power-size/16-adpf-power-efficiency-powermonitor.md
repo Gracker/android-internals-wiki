@@ -2,7 +2,7 @@
 
 drafted_date: "2026-05-24"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
-last_verified: "2026-08-02"
+last_verified: "2026-08-06"
 last_verified_against: "Android Developers API reference + AOSP android-17.0.0_r1（PowerStatsService/StatsPullAtomCallbackImpl/IPowerStats.aidl/Power HAL AIDL）"
 confidence: medium-high
 sources:
@@ -96,14 +96,14 @@ task2b_state: "fixed"
 last_task9_audit: 2026-06-13
 finalized_date: "2026-08-02"
 finalized_by: "hermes-aiw-review-finalize-apply"
-last_idle_audit_at: "2026-08-04T14:35:20+08:00"
-last_idle_audit_run_id: "20260804-143520-idle-audit-13a21d51"
+last_idle_audit_at: "2026-08-06T14:35:44+08:00"
+last_idle_audit_run_id: "20260806-143544-idle-audit-13a21d51"
 last_idle_audit_result: "pass-frontmatter-fix"
-last_idle_audit_log: "logs/audit/2026-08-04-20260804-143520-idle-audit-13a21d51-idle-audit.md"
-last_idle_audit_notes: "2026-08-04 idle-audit: finalized 章节抽检通过；未发现 Android 18/API38 越界结论、待验证残留或需降级问题。仅修正上一轮 frontmatter audit notes 中已过期的 PowerStatsService 缓存阈值描述，将 30s 改为 android-17.0.0_r1 一手源码与正文一致的普通 20_000 ms / 高精度 250 ms。"
+last_idle_audit_log: "logs/audit/2026-08-06-20260806-143544-idle-audit-13a21d51-idle-audit.md"
+last_idle_audit_notes: "2026-08-06 idle-audit: finalized 章节抽检通过；未发现 Android 18/API38 越界结论、待验证残留或需降级问题。仅修正历史 rework notes 中已过期的 PowerStatsService 缓存阈值描述，避免 frontmatter 与 android-17.0.0_r1 正文的普通 20_000 ms / 高精度 250 ms 边界矛盾。"
 previous_rework_at: "2026-07-31T17:35:08+08:00"
 previous_rework_run_id: "20260731-173508-rework-13a21d51"
-previous_rework_notes: "2026-07-31 rework: 修正延伸阅读摘要中 PowerStatsService 缓存阈值矛盾（20s/250ms → 30s），与正文一手源码 L52 MAX_POWER_MONITOR_AGE_MILLIS=30_000 对齐；当时保留 PowerMonitor/Perfetto 一致性实验问题。"
+previous_rework_notes: "2026-07-31 rework: 当时曾尝试修正延伸阅读摘要中的 PowerStatsService 缓存阈值矛盾，但把 r1 普通路径误写为过大的缓存年龄；2026-08-04/08-06 idle-audit 已按 android-17.0.0_r1 一手源码统一更正为普通 20_000 ms / 高精度 250 ms。PowerMonitor/Perfetto 一致性实验问题已在 2026-08-02 rework/finalize 闭合。"
 last_rework_verify_at: "2026-08-02T09:36:04+08:00"
 last_rework_at: "2026-08-02T09:36:04+08:00"
 last_rework_run_id: "20260802-093547-rework-13a21d51"
