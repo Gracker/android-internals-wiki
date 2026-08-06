@@ -3,7 +3,7 @@ title: "行业案例"
 chapter: "17.3"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-08-06"
-last_verified_against: "Android Developers Game Mode/ADPF 文档, Samsung Support Game Booster, Samsung Developer SceneSDK, Android Developers Blog TikTok case study, Android Developers Blog Jetpacker cloud/hybrid inference case"
+last_verified_against: "Android Developers Game Mode/ADPF 文档, Samsung Support Game Booster, Samsung Developer SceneSDK, Android Developers Blog TikTok case study, Android Developers Blog Jetpacker introduction/cloud/hybrid inference case"
 confidence: medium
 sources:
   - type: official
@@ -28,11 +28,13 @@ sources:
     path: "https://developer.android.com/jetpack/androidx/releases/window"
   - type: official
     path: "https://android-developers.googleblog.com/2026/07/build-intelligent-android-apps-cloud-and-hybrid-inference.html"
+  - type: material
+    path: "DeepResearch/2026-08-05-morning-LFM25-Jetpacker-AGENTS-Sol-研究材料/references/04-jetpacker-intro.md"
 tags: ['case-study', 'game-mode', 'adpf', 'startup', 'foldable', 'oem', 'industry']
 related_chapters: ["5.6", "7.4", "7.5", "8.2", "8.3", "11.1", "16.1", "17.1", "17.2"]
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
-task6_state: reviewed
+task6_state: revisiting
 reviewed_by: hermes-aiw-review-finalize-apply
 reviewed_date: "2026-08-06"
 task6_result: "pass-light-edit"
@@ -40,9 +42,9 @@ last_task6_audit: "2026-07-15"
 last_task6_audit_log: "logs/review/2026-07-15-18-audit.md"
 last_task6_audit_notes: "idle audit: L1 禁用词全清；中英文间距干净；高频词(优化48/性能38/设备28)均主题固有；frontmatter 完整；4个🔹锚点全覆盖；无 L1/L2 问题，无需修改。"
 section: "17.3"
-status: finalized
-pipeline_stage: finalized
-task9_state: reviewed
+status: ready-for-review
+pipeline_stage: task6_pending
+task9_state: pending
 task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
@@ -58,9 +60,9 @@ last_task9_audit_notes: "idle audit: no P0/P1; android-17.0.0_r1 source paths re
 review_notes: "2026-04-28 task9 deep-review: pass-tech-review；无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。；2026-05-04 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 3。核心 API 与案例链路可通过；仅有 Thermal thresholds API 版本守卫、FileProvider 插桩细节、折叠屏多窗口数据支撑三处 P2。；2026-08-06 hermes review/finalize: 复核 Jetpacker hybrid inference 新增段落与 Android 17/API 边界，未发现 P0/P1/P2 open issue，推进 finalized。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-21
-last_body_apply_at: "2026-08-06T07:15:45+08:00"
-last_body_apply_run_id: "20260806-071545-2d77d0d1"
-last_body_apply_source: "source-index:192; 08-jetpacker-hybrid.md"
+last_body_apply_at: "2026-08-06T09:15:33+08:00"
+last_body_apply_run_id: "20260806-091503-909828fa"
+last_body_apply_source: "source-index:194; 04-jetpacker-intro.md"
 last_review_finalize_at: "2026-08-06T08:13:18+08:00"
 last_review_finalize_run_id: "20260806-081251-70e8ee18"
 ---
@@ -326,11 +328,19 @@ Samsung SceneSDK 与 TikTok 案例展示了两种合作关系：前者把应用�
 
 如果一个收益只能依赖私有配置获得，应用仍需保留公共路径和安全默认值。设备 OTA、SoC 变更或游戏版本升级后，应重新验证。
 
-### Jetpacker：云端、端侧与自定义路由的 AI 功能案例
+### Jetpacker：从功能选型到云端、端侧与自定义路由
 
-Android Developers Blog 在 2026-07-21 发布 Jetpacker 案例，主题不是 OEM 私有调度，而是大型 Android 应用如何把云端模型、端侧模型和服务侧保护组合成可发布功能；因此它更适合作为“协作接口与验证边界”的补充案例，而不是 Android 17 平台 API 结论。[来源: 08-jetpacker-hybrid.md]
+Android Developers Blog 在 2026-07-21 发布 Jetpacker 系列介绍，把这个开源旅行演示 App 定位为 Google I/O 技术 showcase：它展示行程概览、单次旅行 itinerary 和活动详情，并用 Material UI 作为普通 Android App 外壳承载 AI 功能。[来源: 04-jetpacker-intro.md]
 
-案例公开的三项功能分别是：博物馆助手用 grounding 回答实时展览、票价和规则问题；餐厅评价草稿优先使用 Gemini Nano 端侧执行，设备不支持时回落到云端；酒店客服聊天先识别消息语言，再按自定义逻辑选择端侧或云端翻译。[来源: 08-jetpacker-hybrid.md]
+这份介绍把 GenAI 功能的工程选型先拆成三组问题：模型运行在端侧、云端还是混合；功能是单次 inference 还是更复杂的 agentic flow；能力应放在 App 内，还是通过 Android 系统集成暴露。[来源: 04-jetpacker-intro.md] 这些问题不属于 Android 17 调度或 OEM 私有能力本身，但适合放在行业案例里说明“大型 App 与平台能力协作”首先要定义边界，而不是先追求某个模型或 API 名称。[来源: 04-jetpacker-intro.md]
+
+Jetpacker 介绍列出的端侧功能有三类：行程摘要使用 Gemini Nano 与 ML Kit GenAI APIs 在设备上处理；费用跟踪用 Gemini Nano 4 的多模态能力从票据图片提取结构化数据；语音日记使用 ML Kit Speech Recognition 与 GenAI Prompt APIs 做录音转写和分类。[来源: 04-jetpacker-intro.md] 原文给出的选择理由分别覆盖云端成本、离线可用性、隐私敏感图片和私密语音数据；因此本节只能把它作为“端侧优先的产品约束样例”，不能推出所有 AI 功能都应端侧运行。[来源: 04-jetpacker-intro.md]
+
+同一篇介绍还把云端或混合能力列为三项：place Q&A 通过 Firebase AI Logic 结合 Google Maps 与 web context grounding 回答地点问题；review drafting 通过 Firebase AI Logic 的 Hybrid inference API 在端侧模型不可用时回落云端；automatic chat translation 展示自定义混合推理逻辑，用于实时聊天翻译。[来源: 04-jetpacker-intro.md] 这与前面的端侧功能共同说明：同一个 App 可以按数据敏感度、实时知识需求、设备覆盖率和成本，把不同 AI 功能放到不同执行位置。[来源: 04-jetpacker-intro.md]
+
+Android Developers Blog 的后续 Hybrid Inference 案例主题不是 OEM 私有调度，而是大型 Android 应用如何把云端模型、端侧模型和服务侧保护组合成可发布功能；因此它更适合作为“协作接口与验证边界”的补充案例，而不是 Android 17 平台 API 结论。[来源: 08-jetpacker-hybrid.md]
+
+后续案例公开的三项功能分别是：博物馆助手用 grounding 回答实时展览、票价和规则问题；餐厅评价草稿优先使用 Gemini Nano 端侧执行，设备不支持时回落到云端；酒店客服聊天先识别消息语言，再按自定义逻辑选择端侧或云端翻译。[来源: 08-jetpacker-hybrid.md]
 
 材料给出的 Firebase AI Logic grounding 类型包括 URL grounding、Google Search grounding 和 Maps grounding；这些能力解决的是“把实时上下文加入模型上下文窗口”的问题，不能替代应用自己的权限、缓存、日志脱敏和失败兜底设计。[来源: 08-jetpacker-hybrid.md]
 
@@ -339,6 +349,8 @@ Hybrid Inference API 在材料中列出四种路由模式：`PREFER_ON_DEVICE`�
 这类 AI 功能的性能与可靠性验证应把“路由决策”也当作可观测事件：记录模型位置、模型版本、网络状态、失败原因、用户可见延迟、token 或计费边界、端侧温度和电量状态；否则只看最终文本质量，无法解释一次请求为什么落在端侧或云端。[来源: 08-jetpacker-hybrid.md]
 
 云端 AI 调用还引入滥用和计费风险。材料中的 Jetpacker 在 Firebase App Check 中使用 Play Integrity 作为生产保护、Debug Provider 作为本地/模拟器调试路径，并触发匿名认证来建立受保护会话；报告或日志里不应保存本地 debug secret。[来源: 08-jetpacker-hybrid.md]
+
+介绍材料还提到 Jetpacker 的系统集成使用 AppFunctions API 把 App 核心能力暴露给 Android 系统级 intelligence，并预告 booking assistant 会以 A2UI 与 ADK 在云端运行 agentic workflow，Android App 作为前端。[来源: 04-jetpacker-intro.md] 在本章语境下，这只能作为“应用能力、系统入口、云端代理编排分层”的案例：系统集成需要单独检查 AppFunctions 当前文档和设备支持，agentic workflow 的性能、隐私和失败恢复也不能从 Android 17 AOSP 基线直接得出。[来源: 04-jetpacker-intro.md]
 
 ## 折叠屏与多窗口：负载随窗口状态变化
 
