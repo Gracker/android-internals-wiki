@@ -2,7 +2,7 @@
 title: Package Manager Service 与应用安装性能
 chapter: '1.9'
 section: '1.9'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-07-25'
 last_verified_against: AOSP android-17.0.0_r1 + ACK android17-6.18-2026-06_r6 + Android Developers
@@ -99,13 +99,13 @@ drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-28'
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: auto-fixed
 task2b_state: fixed
 task2b_result: fixed-lite
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 deepseek_cn_review_state: done
 polish_count: 1
 polish_date: '2026-04-09'
@@ -134,9 +134,12 @@ last_task9_autofix_at: '2026-06-07'
 last_task9_review_log: "logs/deep-review/2026-06-07-21-audit.md"
 updated_by: "openclaw-task9"
 updated_date: "2026-06-07"
-task9_review_notes: "2026-05-28 Task9 deep-review: needs-rework。P0 2 / P1 1；SDM 全称/文件归属、installd 版本边界和 Cloud Compilation 设备侧链路仍冲突，已合并 queue。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 SDM/.sdm、installd Binder、ART Service 与安装编译链路，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-07 21 Task9 idle audit: auto-fixed。将 App Archiving 源码锚点从 AOSP mainline 改为 android-15/16 tag；未使用 Android 18/API 38+ 内容。"
+task9_review_notes: "2026-05-28 Task9 deep-review: needs-rework。P0 2 / P1 1；SDM 全称/文件归属、installd 版本边界和 Cloud Compilation 设备侧链路仍冲突，已合并 queue。 | 2026-05-28 17 Task9 deep-review: pass-tech-review。复核 SDM/.sdm、installd Binder、ART Service 与安装编译链路，无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。 | 2026-06-07 21 Task9 idle audit: auto-fixed。将 App Archiving 源码锚点从 AOSP mainline 改为 android-15/16 tag；未使用超出本章固定平台基线的内容。"
 last_deepseek_polish_at: 2026-06-08
 last_task6_audit: "2026-07-10"
+last_body_apply_at: "2026-08-06T11:15:29+08:00"
+last_body_apply_run_id: "20260806-111529-1f9a01ff"
+last_body_apply_source: "queue: AIW 时效性巡检 / src/part1-fundamentals/ch01-architecture/09-package-manager.md"
 last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
 ---
 
@@ -144,7 +147,9 @@ last_task2b_verifier_log: "logs/rework/2026-06-14-11-task2b-verifier.md"
 
 安装一个应用，不是把 APK 复制到 `/data/app` 就结束了。系统还要验证安装会话、解析包、校验签名、协调权限和共享库、准备应用数据、按策略执行 dexopt，最终才把新状态发布给系统其余部分。只要其中一个阶段变慢，用户看到的“正在安装”就会变长；如果编译产物或 Profile 没有按预期生效，影响还会延续到首次启动。
 
-本节以 AOSP `android-17.0.0_r1` 为平台基线；涉及 Incremental File System 时，以 ACK `android17-6.18-2026-06_r6` 为内核基线。Android 10～16 只用于解释机制如何演进。
+本节以 AOSP `android-17.0.0_r1` 为平台基线；涉及 Incremental File System 时，以 ACK `android17-6.18-2026-06_r6` 为内核基线。Android 10～16 只用于解释机制如何演进。[来源: src/part1-fundamentals/ch01-architecture/09-package-manager.md]
+
+本次时效性修订把正文判断收敛到上述固定平台与内核 tag：没有落到 `android-17.0.0_r1`、`android17-6.18-2026-06_r6` 或已列官方文档的机制，不在本章写成平台结论。[来源: src/part1-fundamentals/ch01-architecture/09-package-manager.md]
 
 ---
 
