@@ -1858,6 +1858,90 @@
       "status": "appended",
       "title": "Juejin Android intake · 2026-08-06"
     },
+    "source/juejin-android/2026-08-07-76393117-Toast重复弹窗LiveData事件.md": {
+      "chapter": "待分类",
+      "entry_id": "d11d11cd4e35a546",
+      "last_appended": "2026-08-07T05:25:56.035760+08:00",
+      "last_seen": "2026-08-07T05:25:56.035760+08:00",
+      "mtime": 1786047393.7742102,
+      "score": 9,
+      "sha256": "f1e2ad40cad18a6f495c09bf262a01e544c9dab12ed2a57b2afd30ce0c849af0",
+      "size": 17673,
+      "status": "appended",
+      "title": "我为什么让 Toast 多弹了一次有一类 Bug 很容易让人怀疑人生：代码看起来没问题，业务逻辑也没问题，甚至第一次运行"
+    },
+    "source/juejin-android/2026-08-07-76674594-R8让协程启动取消提速.md": {
+      "chapter": "ch08-responsiveness",
+      "entry_id": "98d2e00e53f648ac",
+      "last_appended": "2026-08-07T05:25:56.035760+08:00",
+      "last_seen": "2026-08-07T05:25:56.035760+08:00",
+      "mtime": 1786047393.7733603,
+      "score": 21,
+      "sha256": "09af2b7d0d9b9df4de37cea367dd06e29995f691dd68a61d2965a3584eb740d6",
+      "size": 13963,
+      "status": "appended",
+      "title": "Android R8 为什么可以让 Kotlin 协程提速 2 倍？这个问题其实我们之前 《AGP 9.2 开始，And"
+    },
+    "source/juejin-android/2026-08-07-76675023-Compose副作用RememberOb.md": {
+      "chapter": "ch16-aosp",
+      "entry_id": "6584e0ac3f6cdf36",
+      "last_appended": "2026-08-07T05:25:56.035760+08:00",
+      "last_seen": "2026-08-07T05:25:56.035760+08:00",
+      "mtime": 1786047393.7737024,
+      "score": 14,
+      "sha256": "99d7b30d5374d29c078e118a7c497f5ffa82b4df418a6d7ceeaf1249a1bbc353",
+      "size": 35437,
+      "status": "appended",
+      "title": "深入理解 Compose 副作用各位 Compose 爱好者们，你们好。 如果你去打开任何一个 Compose 页面源码"
+    },
+    "source/juejin-android/2026-08-07-76675959-H5游戏WebView多进程冻结.md": {
+      "chapter": "ch04-memory",
+      "entry_id": "e10887e1ded573de",
+      "last_appended": "2026-08-07T05:25:56.035760+08:00",
+      "last_seen": "2026-08-07T05:25:56.035760+08:00",
+      "mtime": 1786047393.7746828,
+      "score": 22,
+      "sha256": "5311565e340561372121c1056eebef31ecfcc7310f59c17357755fa8d9c63630",
+      "size": 12306,
+      "status": "appended",
+      "title": "H5游戏多进程隔离：如何解决Android内存激增与进程冻结问题前言 将WebView塞进独立子进程，或许是解决H5游戏"
+    },
+    "source/juejin-android/2026-08-07-76677803-AGP9主要变更与迁移清单.md": {
+      "chapter": "待分类",
+      "entry_id": "8761a5e03211c494",
+      "last_appended": "2026-08-07T05:25:56.035760+08:00",
+      "last_seen": "2026-08-07T05:25:56.035760+08:00",
+      "mtime": 1786047393.7744446,
+      "score": 12,
+      "sha256": "cd71e33cd7138f5e438f04295338fd184867ede54023cddddc8fee50dbb690c0",
+      "size": 12386,
+      "status": "appended",
+      "title": "AGP9.0的主要变更项，给Gradle来一次大变样AGP9.0出来有一段时间了，但一直没有真正去了解它更新了些啥，跟以"
+    },
+    "source/juejin-android/2026-08-07-76678955-Compose页面状态不可变快照.md": {
+      "chapter": "待分类",
+      "entry_id": "658b0f8ff4184d66",
+      "last_appended": "2026-08-07T05:25:56.035760+08:00",
+      "last_seen": "2026-08-07T05:25:56.035760+08:00",
+      "mtime": 1786047393.7739708,
+      "score": 9,
+      "sha256": "5a984475d485dd68bc6875f9a35c2246924147bfca16fc2f43dd2a390be5c121",
+      "size": 33875,
+      "status": "appended",
+      "title": "别再只用 Loading、Success、Error 表示所有页面状态了各位 Compose 开发者，周五好。趁着这个愉"
+    },
+    "source/juejin-android/2026-08-07-juejin-android.md": {
+      "chapter": "待分类",
+      "entry_id": "8a3c7004bca0a1d9",
+      "last_appended": "2026-08-07T05:25:56.035760+08:00",
+      "last_seen": "2026-08-07T05:25:56.035760+08:00",
+      "mtime": 1786047436.5960886,
+      "score": 19,
+      "sha256": "c93327a153212369393c63ab9aecdd082618de20e77dba2bb34bbfb635dfeb53",
+      "size": 8718,
+      "status": "appended",
+      "title": "Juejin Android intake · 2026-08-07"
+    },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
       "entry_id": "c2d8e9513d97d093",
@@ -3667,22 +3751,22 @@
   "last_report": {
     "appended": 7,
     "considered": 7,
-    "cutoff": "2026-08-05T05:20:16.561141+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-06.md",
+    "cutoff": "2026-08-06T05:20:30.104604+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-08-07.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 1753,
+    "scanned": 1760,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1403,
       "path": 28,
-      "unchanged": 315
+      "unchanged": 322
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-08-06T05:25:30.104604+08:00",
+  "last_run_at": "2026-08-07T05:25:56.035760+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

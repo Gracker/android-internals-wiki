@@ -2371,6 +2371,191 @@
       "action": "indexed-only-chapter-freeze",
       "score": 15,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "[掘金Android] intake 04:16",
+      "title": "[掘金Android] intake 04:16",
+      "summary": "",
+      "chapter": "ch16",
+      "processed_at": "2026-08-07T06:20:04.116855+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-07-76393117-Toast重复弹窗LiveData事件.md",
+      "title": "[技术文章] 我为什么让 Toast 多弹了一次有一类 Bug 很容易让人怀疑人生：代码看起来没问题，业务逻辑也没问题，甚至第一次运行",
+      "summary": "> 发布时间: 2026-05-14T02:17:51.000Z > 原文链接: https://juejin.cn/post/7639311759746383882 2026-05-14 1,613 阅读9分钟 Kotlin Learning 我之前在这篇故事里说到，实习生阿泽在经历项目锻炼后写了一篇文章-《我为什么让 Toast 多弹了一次》，对，就是这篇！ 现在，让...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-07T06:20:04.116855+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-07-76674594-R8让协程启动取消提速.md",
+      "title": "[技术文章] Android R8 为什么可以让 Kotlin 协程提速 2 倍？这个问题其实我们之前 《AGP 9.2 开始，And",
+      "summary": "> 发布时间: 2026-07-29T01:54:41.000Z > 原文链接: https://juejin.cn/post/7667459437695778870 2026-07-29 724 阅读8分钟 这个问题其实我们之前 《AGP 9.2 开始，Android 上协程启动和取消速度提升两倍》就聊过了，因为 PR 终于被合并，所以现在从 Android Gradl...",
+      "chapter": "ch08",
+      "processed_at": "2026-08-07T06:20:04.116855+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-07-76675023-Compose副作用RememberOb.md",
+      "title": "[技术文章] 深入理解 Compose 副作用各位 Compose 爱好者们，你们好。 如果你去打开任何一个 Compose 页面源码",
+      "summary": "> 发布时间: 2026-07-29T00:55:37.000Z > 原文链接: https://juejin.cn/post/7667502327419846702 2026-07-29 383 阅读23分钟 各位 Compose 爱好者们，你们好。 如果你去打开任何一个 Compose 页面源码，几乎总能看到各种 Effect API。 可能我们自己也会这样写代码：...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-07T06:20:04.116855+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-07-76675959-H5游戏WebView多进程冻结.md",
+      "title": "[技术文章] H5游戏多进程隔离：如何解决Android内存激增与进程冻结问题前言 将WebView塞进独立子进程，或许是解决H5游戏",
+      "summary": "> 发布时间: 2026-07-29T03:46:01.000Z > 原文链接: https://juejin.cn/post/7667595929017958450 2026-07-29 373 阅读10分钟 将WebView塞进独立子进程，或许是解决H5游戏内存占用过大的终局方案。但随之而来的进程冻结、IPC回调丢失等问题，才是真正的技术深水区。 在移动应用生态中，H...",
+      "chapter": "ch04",
+      "processed_at": "2026-08-07T06:20:04.116855+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-07-76677803-AGP9主要变更与迁移清单.md",
+      "title": "[技术文章] AGP9.0的主要变更项，给Gradle来一次大变样AGP9.0出来有一段时间了，但一直没有真正去了解它更新了些啥，跟以",
+      "summary": "> 发布时间: 2026-07-30T02:02:18.000Z > 原文链接: https://juejin.cn/post/7667780391577305103 2026-07-30 237 阅读6分钟 AGP9.0出来有一段时间了，但一直没有真正去了解它更新了些啥，跟以前有啥不一样，毕竟升级了一个大版本，那么借今天这篇文章，就一起来看下AGP9.0 首先要知道一点...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-07T06:20:04.116855+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-07-76678955-Compose页面状态不可变快照.md",
+      "title": "[技术文章] 别再只用 Loading、Success、Error 表示所有页面状态了各位 Compose 开发者，周五好。趁着这个愉",
+      "summary": "> 发布时间: 2026-07-31T00:43:22.000Z > 原文链接: https://juejin.cn/post/7667895598095826970 2026-07-31 1,100 阅读21分钟 各位 Compose 开发者，周五好。趁着这个愉快的周五，我们一起探讨一个问题：Compose 中的 UI State 到底应该怎么写？ 我相信，大部分开发者...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-07T06:20:04.116855+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-06-evening-外环运维三件套-研究材料/02-dump-blackhat-hf-patch.md",
+      "title": "[DeepResearch] Research Dump · 消息板与入侵链：08-06 媒体补丁",
+      "summary": "--- phase: 1 sub_question: Black Hat / HF 技术时间线补丁（相对 morning） date: 2026-08-06 slot: evening official_material_status: 已抓 WIRED/Nextgov/Ground Level/HF blog；OpenAI全文postmortem仍待 --- # Research Dump · 消息板与入侵链：08-06 媒体补丁 #",
+      "chapter": "ch16",
+      "processed_at": "2026-08-07T06:20:04.116855+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "target_path": "src/part4-system/ch17-oem/03-industry-cases.md",
+      "route_confidence": 25,
+      "route_terms": [
+        "research",
+        "morning",
+        "date",
+        "official",
+        "material",
+        "blog",
+        "aiw"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-06-evening-外环运维三件套-研究材料/03-dump-production-ops-checklist.md",
+      "title": "[DeepResearch] Research Dump · 生产外环运维清单草案",
+      "summary": "--- phase: 1 sub_question: 生产外环运维清单（可执行） date: 2026-08-06 slot: evening --- # Research Dump · 生产外环运维清单草案 ## 三层栈 ### A. 可见性（你能不能看见它在干什么） 1. 长跑 agent 必须可 attach 到真终端/会话流（tmux / mission control / Desktop）。 2. idle / 卡死 / 等额",
+      "chapter": "ch16",
+      "processed_at": "2026-08-07T06:20:04.116855+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/grill-me 深度调研：一个 7 行 Markdown 引爆的 Claude Skill 现象.md",
+      "title": "[DeepResearch] grill-me 深度调研报告：一个 7 行 Markdown 引爆的 Claude Skill 现象",
+      "summary": "# grill-me 深度调研报告：一个 7 行 Markdown 引爆的 Claude Skill 现象 ## TL;DR - **grill-me 是社区开发者 Matt Pocock（Total TypeScript / AI Hero 作者）创建的第三方 Claude Code Skill，不是 Anthropic 官方 skill，也不在 anthropics/skills 官方仓库中**；它属于 `mattpocock/sk",
+      "chapter": "ch16",
+      "processed_at": "2026-08-07T06:20:04.116855+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-06-morning-DiscoveryLoop-PrimeAgent-AgentSafety-研究材料/references/05-opencli-commands-resolved-urls.md",
+      "title": "[DeepResearch] opencli 命令日志（摘要）",
+      "summary": "--- source: opencli-commands title: 2026-08-06 morning opencli 命令与 resolved URLs fetched: 2026-08-06T09:10:00+08:00 --- # opencli 命令日志（摘要） ```text opencli twitter search 'Discovery Loop OR DiscoLoopAI OR \"Jeff Dean\" expe",
+      "chapter": "ch16",
+      "processed_at": "2026-08-07T06:20:04.116855+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part4-system/ch17-oem/03-industry-cases.md",
+      "route_confidence": 28,
+      "route_terms": [
+        "title",
+        "morning",
+        "t09",
+        "search",
+        "expe",
+        "aiw",
+        "研究材料",
+        "references"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-06-morning-DiscoveryLoop-PrimeAgent-AgentSafety-研究材料/references/01-prime-agent-blog.md",
+      "title": "[DeepResearch] 摘要归档（全文见抓取时 cwd web-articles/Prime_Agent_A_self/）",
+      "summary": "--- source: https://www.primeintellect.ai/blog/prime-agent title: Prime Agent: A self-improving RLM agent fetched: 2026-08-06T09:02:00+08:00 research_topic: Prime Agent sub_question: 02-dump-prime-agent resolve_source: c",
+      "chapter": "ch16",
+      "processed_at": "2026-08-07T06:20:04.116855+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part4-system/ch17-oem/03-industry-cases.md",
+      "route_confidence": 25,
+      "route_terms": [
+        "agent",
+        "blog",
+        "title",
+        "t09",
+        "research",
+        "topic",
+        "aiw"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-06-morning-DiscoveryLoop-PrimeAgent-AgentSafety-研究材料/references/03-wired-techcrunch-discovery-loop.md",
+      "title": "[DeepResearch] WIRED 摘要（含直接采访）",
+      "summary": "--- source: https://www.wired.com/story/jeff-dean-google-discovery-loop-startup/ title: 4 of Google’s Top AI Brains Are Leaving—and Launching Their Own AI Startup author: Steven Levy fetched: 2026-08-06T09:03:00+08:00 re",
+      "chapter": "ch08",
+      "processed_at": "2026-08-07T06:20:04.116855+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part4-system/ch17-oem/03-industry-cases.md",
+      "route_confidence": 25,
+      "route_terms": [
+        "title",
+        "google",
+        "top",
+        "and",
+        "startup",
+        "t09",
+        "aiw"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-06-morning-DiscoveryLoop-PrimeAgent-AgentSafety-研究材料/03-dump-agent-safety-msgboard.md",
+      "title": "[DeepResearch] Research Dump · Agent 安全消息板",
+      "summary": "--- phase: 1 sub_question: Agent 安全 — Black Hat HF 消息板重建 + 验收清单续篇 official_material_status: 记者现场纪要已抓；OpenAI 全文 postmortem 待；AISI 官方帖有 date: 2026-08-06 --- # Research Dump · Agent 安全消息板 ## 研究问题 OpenAI Black Hat 新细节把攻击面扩到哪",
+      "chapter": "ch16",
+      "processed_at": "2026-08-07T06:20:04.116855+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 17,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "schema_version": "2.1",
