@@ -100,6 +100,10 @@ rework_notes: "2026-08-04 rework：处理 pending-verification-marker/thin-sourc
 last_review_finalize_at: "2026-08-04T22:07:14+08:00"
 last_review_finalize_run_id: "20260804-220518-6f1a5c2e"
 review_finalize_notes: "2026-08-04 Hermes review-finalize：复核 Android 17/android-17.0.0_r1 版本边界、AndroidX Benchmark/FPM/source anchors、正文待验证标记与中文结构；未发现新增 P0/P1/P2 blocker，章节晋升 finalized。"
+last_idle_audit_at: "2026-08-06T18:35:19+08:00"
+last_idle_audit_run_id: "20260806-183519-idle-audit-b52e6e4a"
+last_idle_audit_log: "logs/audit/2026-08-06-20260806-183519-idle-audit-b52e6e4a-idle-audit.md"
+idle_audit_notes: "2026-08-06 idle-audit：抽检 Android 17/android-17.0.0_r1 边界、待验证残留、来源标记、frontmatter 与表达；未发现 Android 18/API38 越界或需降级问题，正文未改动，保持 finalized/reviewed。"
 ---
 
 # 性能测试最佳实践
