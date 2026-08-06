@@ -2,8 +2,8 @@
 title: "ART 编译管线与 dex2oat 优化"
 chapter: "1.7"
 section: "1.7"
-status: finalized
-pipeline_stage: ready-to-publish
+status: ready-for-review
+pipeline_stage: task6_pending
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 confidence: high
 tags:
@@ -59,8 +59,8 @@ sources:
     path: "art/DISASSEMBLY_GUIDE.md @ android-17.0.0_r1"
   - type: aosp
     path: "frameworks/base/core/jni/AndroidRuntime.cpp @ android-17.0.0_r1"
-last_verified: "2026-07-25"
-last_verified_against: "AOSP android-17.0.0_r1; Android Developers; source.android.com"
+last_verified: "2026-08-07"
+last_verified_against: "AOSP android-17.0.0_r1; Android Developers; source.android.com; 2026-08-07 body-apply freshness pass"
 related_chapters:
   - "1.6"
   - "1.12"
@@ -77,7 +77,7 @@ reviewed_date: "2026-05-26"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task2b_result: fixed
-task6_state: reviewed
+task6_state: revisiting
 review_round: 6
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
@@ -86,7 +86,7 @@ last_task6_at: "2026-06-20T08:08:00+08:00"
 last_task6_review_log: "logs/review/2026-06-20-08-review.md"
 task6_review_notes: "2026-06-20 08:08 Task6 revisiting review: pass-light-edit。L1 禁用词 0 命中，L2 可读性通过；Task9 idle-audit auto-fixed（JitCodeCache DoCollection + 404 链接修正）后正文未回退；task6+task9 双通过且 queue 无 pending，自动晋升 finalized。"
 task9_result: auto-fixed
-task9_state: reviewed
+task9_state: pending
 last_task2b_at: "2026-05-26T03:19:12+08:00"
 task2b_state: fixed
 task9_reviewed_date: "2026-06-20"
@@ -101,11 +101,16 @@ last_task9_audit: "2026-06-20"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: "2026-06-20"
 last_task9_autofix_at: "2026-06-20"
+last_body_apply_at: "2026-08-07T07:15:26+08:00"
+last_body_apply_run_id: "20260807-071512-04a03874"
+last_body_apply_source: "queue:freshness:src/part1-fundamentals/ch01-architecture/07-art-compilation.md"
 ---
 
 # ART 编译管线与 dex2oat 优化
 
 一个方法在 Android 上运行时，不一定只有一种执行形态。ART 可以解释 DEX 字节码、在运行期用 JIT 编译热点，也可以加载 dex2oat 预先生成的 AOT 代码。
+
+本轮时效性核验把章节边界重新固定到 Android 17/API 37：本文只讨论 android-17.0.0_r1 中仍成立的 ART 混合执行、dex2oat、JIT code cache、ART Service 与 Profile 诊断路径，不把 Android 18/API 38 以后可能出现的行为写成正文结论。[来源: src/part1-fundamentals/ch01-architecture/07-art-compilation.md]
 
 分析启动性能时，不要笼统比较“AOT 还是 JIT 更快”，应依次确认：
 
@@ -113,6 +118,8 @@ last_task9_autofix_at: "2026-06-20"
 2. 没有 AOT 代码时，是解释执行，还是已经被 JIT 编译？
 3. AOT 产物为什么不存在、失效，或者没有覆盖这条路径？
 4. 为了得到更多机器码，安装时间、存储和后台编译成本增加了多少？
+
+核验后的阅读顺序是先看 `pm art dump`/compiler filter，再判断 profile 是否真正参与 AOT，最后用 Perfetto 或 Macrobenchmark 量化解释执行、JIT 与 dex2oat 成本；仅凭 ODEX 文件存在、单条 JIT slice 或 profile 文件打包成功，都不足以推出启动性能已经优化完成。[来源: src/part1-fundamentals/ch01-architecture/07-art-compilation.md]
 
 ## 从 DEX 到执行代码
 
@@ -433,4 +440,4 @@ Cloud Profile 是聚合后的编译提示，设备用它指导本地 dex2oat。�
 
 是否失效取决于 boot class path、ART 版本、产物校验和依赖。应观察具体 dexopt reason 和 artifact 状态，不从“发生过更新”直接推导全量重编译。
 
-ART 性能优化需要一条可重复的验证流程：确认当前 filter 与 profile，测出解释/JIT/AOT 的实际成本，再改 profile 或代码，并用相同 release 包和相同设备复测。只看版本号、文件扩展名或一条 JIT slice，都不足以解释启动性能。
+ART 性能优化需要一条可重复的验证流程：确认当前 filter 与 profile，测出解释/JIT/AOT 的实际成本，再改 profile 或代码，并用相同 release 包和相同设备复测。[来源: src/part1-fundamentals/ch01-architecture/07-art-compilation.md] 只看版本号、文件扩展名或一条 JIT slice，都不足以解释启动性能。[来源: src/part1-fundamentals/ch01-architecture/07-art-compilation.md]
