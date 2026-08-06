@@ -28,13 +28,17 @@ sources:
     path: "https://developer.android.com/jetpack/androidx/releases/window"
   - type: official
     path: "https://android-developers.googleblog.com/2026/07/build-intelligent-android-apps-cloud-and-hybrid-inference.html"
+  - type: official
+    path: "https://android-developers.googleblog.com/2026/07/build-intelligent-android-apps-introduction-to-jetpacker.html"
   - type: material
     path: "DeepResearch/2026-08-05-morning-LFM25-Jetpacker-AGENTS-Sol-研究材料/references/04-jetpacker-intro.md"
+  - type: material
+    path: "DeepResearch/2026-08-05-morning-LFM25-Jetpacker-AGENTS-Sol-研究材料/references/08-jetpacker-hybrid.md"
 tags: ['case-study', 'game-mode', 'adpf', 'startup', 'foldable', 'oem', 'industry']
 related_chapters: ["5.6", "7.4", "7.5", "8.2", "8.3", "11.1", "16.1", "17.1", "17.2"]
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
-task6_state: revisiting
+task6_state: reviewed
 reviewed_by: hermes-aiw-review-finalize-apply
 reviewed_date: "2026-08-06"
 task6_result: "pass-light-edit"
@@ -42,9 +46,9 @@ last_task6_audit: "2026-07-15"
 last_task6_audit_log: "logs/review/2026-07-15-18-audit.md"
 last_task6_audit_notes: "idle audit: L1 禁用词全清；中英文间距干净；高频词(优化48/性能38/设备28)均主题固有；frontmatter 完整；4个🔹锚点全覆盖；无 L1/L2 问题，无需修改。"
 section: "17.3"
-status: ready-for-review
-pipeline_stage: task6_pending
-task9_state: pending
+status: finalized
+pipeline_stage: finalized
+task9_state: reviewed
 task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
@@ -63,8 +67,8 @@ last_deepseek_cn_review_at: 2026-06-21
 last_body_apply_at: "2026-08-06T09:15:33+08:00"
 last_body_apply_run_id: "20260806-091503-909828fa"
 last_body_apply_source: "source-index:194; 04-jetpacker-intro.md"
-last_review_finalize_at: "2026-08-06T08:13:18+08:00"
-last_review_finalize_run_id: "20260806-081251-70e8ee18"
+last_review_finalize_at: "2026-08-06T10:06:06+08:00"
+last_review_finalize_run_id: "20260806-100508-973d0b7e"
 ---
 
 # 行业案例
@@ -344,7 +348,7 @@ Android Developers Blog 的后续 Hybrid Inference 案例主题不是 OEM 私有
 
 材料给出的 Firebase AI Logic grounding 类型包括 URL grounding、Google Search grounding 和 Maps grounding；这些能力解决的是“把实时上下文加入模型上下文窗口”的问题，不能替代应用自己的权限、缓存、日志脱敏和失败兜底设计。[来源: 08-jetpacker-hybrid.md]
 
-Hybrid Inference API 在材料中列出四种路由模式：`PREFER_ON_DEVICE`、`PREFER_IN_CLOUD`、`ONLY_ON_DEVICE`、`ONLY_IN_CLOUD`。Jetpacker 的评价生成使用 `PREFER_ON_DEVICE`，即优先端侧、不可用时回落云端；酒店翻译则在示例里用 ML Kit Language Identification 识别源语言，并只把已验证质量的英语、韩语路径放到端侧，其余走云端。[来源: 08-jetpacker-hybrid.md]
+Hybrid Inference API 在材料中列出四种路由模式：`PREFER_ON_DEVICE`、`PREFER_IN_CLOUD`、`ONLY_ON_DEVICE`、`ONLY_IN_CLOUD`。Jetpacker 的评价生成使用 `PREFER_ON_DEVICE`，即优先端侧、不可用时回落云端；酒店翻译则在示例里用 ML Kit Language Identification 识别源语言，并只把已验证质量的英语、韩语路径放到端侧，其余走云端。复制这类示例时还要按 ML Kit 当前返回的语言 tag 核对分支条件，不能只复用博客片段里的字面字符串。[来源: 08-jetpacker-hybrid.md]
 
 这类 AI 功能的性能与可靠性验证应把“路由决策”也当作可观测事件：记录模型位置、模型版本、网络状态、失败原因、用户可见延迟、token 或计费边界、端侧温度和电量状态；否则只看最终文本质量，无法解释一次请求为什么落在端侧或云端。[来源: 08-jetpacker-hybrid.md]
 
