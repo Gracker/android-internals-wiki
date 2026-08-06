@@ -1207,6 +1207,46 @@
       "summary": "13.16 frontmatter retained stale verification marker wording after previous rework",
       "type": "stale-frontmatter-marker",
       "updated_at": "2026-08-06T13:43:11.648671+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch26-observability/26.14-android14-memory-tracking-integration.md",
+      "close_note": "Patched wording in §26.14.2/26.14.5/26.14.8.",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260806-163501-deep-review-3e3c5143",
+      "created_at": "2026-08-06T16:39:29.637613+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260806-163501-deep-review-3e3c5143",
+      "details": "收窄为 Android 17 源码锚点与具体设备内核配置约束，避免推广为所有 Android 14 设备完整可用。",
+      "id": "20260806-163501-26.14-P1-boundary",
+      "log_path": "logs/deep-review/2026-08-06-20260806-163501-deep-review-3e3c5143-deep-review.md",
+      "severity": "P1",
+      "source_paths": [
+        "DeepResearch/2026-06-22-libmeminfo-android17.md; AOSP android-17.0.0_r1 system/memory/libmeminfo/libmemevents"
+      ],
+      "status": "fixed",
+      "summary": "Android 14+/Android 17 device availability wording was too broad",
+      "type": "source-boundary",
+      "updated_at": "2026-08-06T16:39:29.684748+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch26-observability/26.14-android14-memory-tracking-integration.md",
+      "close_note": "Patched wording in §26.14.3.",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260806-163501-deep-review-3e3c5143",
+      "created_at": "2026-08-06T16:39:29.733049+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260806-163501-deep-review-3e3c5143",
+      "details": "明确 libmeminfo 是系统侧 native 基础库，不等同于普通应用可调用的新公开 Java API。",
+      "id": "20260806-163501-26.14-P1-api-boundary",
+      "log_path": "logs/deep-review/2026-08-06-20260806-163501-deep-review-3e3c5143-deep-review.md",
+      "severity": "P1",
+      "source_paths": [
+        "AOSP android-17.0.0_r1 system/memory/libmeminfo/Android.bp"
+      ],
+      "status": "fixed",
+      "summary": "libmeminfo wording could be misread as public app API",
+      "type": "api-boundary",
+      "updated_at": "2026-08-06T16:39:29.785578+08:00"
     }
   ],
   "schema_version": 1
