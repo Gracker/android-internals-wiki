@@ -11,6 +11,9 @@ applicable_versions: SoloPi：源码编译基线 minSdk 18 / compileSdk 29 / tar
 last_verified: 2026-08-06
 last_verified_against: SoloPi README + build.gradle + portal build.gradle + release v0.12.0 + 性能/无障碍/录屏源码；Emmagee README + 进程/流量源码 + GitHub release V2.5.1；Android 17 behavior/source references；Android 13 Restricted Settings behavior changes；Android 非 SDK、MediaProjection、16 KB page、proc_net 文档
 confidence: medium
+last_deep_review_at: "2026-08-06T20:35:36+08:00"
+last_deep_review_run_id: 20260806-203536-deep-review-5ee2b1f4
+deep_review_result: pass-source-marking
 tags: 
 related_chapters: 
 sources: 
@@ -20,8 +23,26 @@ sources:
   path: https://github.com/alipay/SoloPi/blob/35a4a3e3fe02deeb89df35c82dc3ba03a33f4f13/src/build.gradle
 - type: source
   path: https://github.com/alipay/SoloPi/blob/35a4a3e3fe02deeb89df35c82dc3ba03a33f4f13/src/portal/build.gradle
+- type: source
+  path: https://github.com/alipay/SoloPi/blob/35a4a3e3fe02deeb89df35c82dc3ba03a33f4f13/src/shared/src/main/java/com/alipay/hulu/shared/display/items/CPUTools.java
+- type: source
+  path: https://github.com/alipay/SoloPi/blob/35a4a3e3fe02deeb89df35c82dc3ba03a33f4f13/src/shared/src/main/java/com/alipay/hulu/shared/display/items/MemoryTools.java
+- type: source
+  path: https://github.com/alipay/SoloPi/blob/35a4a3e3fe02deeb89df35c82dc3ba03a33f4f13/src/shared/src/main/java/com/alipay/hulu/shared/display/items/NetworkTools.java
+- type: source
+  path: https://github.com/alipay/SoloPi/blob/35a4a3e3fe02deeb89df35c82dc3ba03a33f4f13/src/shared/src/main/java/com/alipay/hulu/shared/display/items/BatteryInfo.java
+- type: source
+  path: https://github.com/alipay/SoloPi/blob/35a4a3e3fe02deeb89df35c82dc3ba03a33f4f13/src/shared/src/main/java/com/alipay/hulu/shared/node/tree/accessibility/util/AccessibilityUtil.java
+- type: source
+  path: https://github.com/alipay/SoloPi/blob/35a4a3e3fe02deeb89df35c82dc3ba03a33f4f13/src/app/src/main/java/com/alipay/hulu/screenRecord/VideoAnalyzer.java
+- type: source
+  path: https://github.com/alipay/SoloPi/blob/35a4a3e3fe02deeb89df35c82dc3ba03a33f4f13/src/app/src/main/java/com/alipay/hulu/screenRecord/ScreenRecorder.java
 - type: official
   path: https://github.com/NetEase/Emmagee/blob/6a382dffe74b5be6d2de78cb0c640cc67e9ce650/README.md
+- type: source
+  path: https://github.com/NetEase/Emmagee/blob/6a382dffe74b5be6d2de78cb0c640cc67e9ce650/src/com/netease/qa/emmagee/utils/ProcessInfo.java
+- type: source
+  path: https://github.com/NetEase/Emmagee/blob/6a382dffe74b5be6d2de78cb0c640cc67e9ce650/src/com/netease/qa/emmagee/utils/TrafficInfo.java
 - type: official
   path: https://developer.android.com/about/versions/17/behavior-changes-17
 - type: official
@@ -32,39 +53,51 @@ sources:
   path: https://developer.android.com/media/grow/media-projection
 - type: official
   path: https://developer.android.com/guide/practices/page-sizes
+- type: official
+  path: https://developer.android.com/topic/performance/vitals/launch-time
+- type: official
+  path: https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview
+- type: official
+  path: https://developer.android.com/reference/android/app/ActivityManager#getProcessMemoryInfo(int%5B%5D)
+- type: official
+  path: https://developer.android.com/reference/android/net/TrafficStats#getUidRxBytes(int)
+- type: official
+  path: https://developer.android.com/about/versions/14/behavior-changes-14#media-projection
+- type: official
+  path: https://support.google.com/android/answer/12623953
 - type: source
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java
 - type: source
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/proc_net.c
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: deep_review_passed
+task6_state: reviewed
 reviewed_by: hermes-aiw-review-finalize-apply
-reviewed_date: 2026-08-04
-task6_result: pending-rework-review
+reviewed_date: 2026-08-06
+task6_result: pass-source-marking
 last_task6_audit: 2026-06-17
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: 2026-04-26T15:45:22+08:00
 repaired_date: 2026-04-26
 repaired_by: openclaw-task2b
-task9_result: pending-rework-review
-task9_reviewed_date: 2026-07-03
-task9_reviewed_by: openclaw-task9
+task9_result: pass-source-marking
+task9_reviewed_date: 2026-08-06
+task9_reviewed_by: hermes-aiw-polish-deep-review
 last_task9_at: 2026-07-03T12:32:56+08:00
 last_task9_audit: 2026-07-03
 last_task9_autofix_at: 2026-07-03
 rework_type: review回炉修复（External Review 问题单）
 last_task9_audit_log: logs/deep-review/2026-07-03-10-audit.md
-last_task6_at: 2026-07-03T12:13:55+08:00
-last_task9_review_log: logs/deep-review/2026-07-03-12-deep-review.md
+last_task6_at: "2026-08-06T20:35:36+08:00"
+last_task9_review_log: logs/deep-review/2026-08-06-20260806-203536-deep-review-5ee2b1f4-deep-review.md
 task9_p0_issues: 0
 task9_p1_issues: 0
 task9_p2_issues: 0
 p0: 0
 p1: 0
 p2: 0
-task9_review_notes: "2026-07-03 12 Task9 deep-review: pass-tech-review。Task6 复审后复核 SoloPi README/build.gradle/release 与 Emmagee README/release，版本边界仍限定 Android 17 以内；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。2026-08-04 rework 修复 YAML 引用结构和正文待验收标记，退回 ready-for-review 等待复审。2026-08-04 Hermes finalize 复审：正文已诚实限定 SoloPi 为 Android 17 需逐机验收工具、Emmagee 为历史工具；关键源码/官方链接齐备；无新增 P0/P1/P2，恢复 finalized。2026-08-06 rework 修复正文待验收标记与 source 标注不足：正文改为准入/逐机验收表述，frontmatter 补充关键 Android 官方与 AOSP/内核源码引用，退回 ready-for-review 等待复审。"
+task9_review_notes: "2026-07-03 12 Task9 deep-review: pass-tech-review。Task6 复审后复核 SoloPi README/build.gradle/release 与 Emmagee README/release，版本边界仍限定 Android 17 以内；P0 0 / P1 0 / P2 0；queue 无 pending，自动晋升 finalized。2026-08-04 rework 修复 YAML 引用结构和正文待验收标记，退回 ready-for-review 等待复审。2026-08-04 Hermes finalize 复审：正文已诚实限定 SoloPi 为 Android 17 需逐机验收工具、Emmagee 为历史工具；关键源码/官方链接齐备；无新增 P0/P1/P2，恢复 finalized。2026-08-06 rework 修复正文待验收标记与 source 标注不足：正文改为准入/逐机验收表述，frontmatter 补充关键 Android 官方与 AOSP/内核源码引用，退回 ready-for-review 等待复审。2026-08-06 Hermes deep-review：复核正文与参考资料，补齐 frontmatter source 标注到 SoloPi 性能/无障碍/录屏源码、Emmagee 进程/流量源码及 Android 官方口径；正文已限定 Android 17 / API 37，无新增 P0/P1/P2，进入 deep_review_passed。"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-18
 last_rework_at: 2026-08-06T17:35:09+08:00
