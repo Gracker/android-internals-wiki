@@ -2,7 +2,7 @@
 title: "系统启动全流程"
 chapter: "1.2"
 section: "1.2"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-08-06"
 last_verified_against: "AOSP android-17.0.0_r1: system/core init/rootdir/bootstat, frameworks/base Zygote/SystemServer/UserController, external/perfetto perfetto.rc; Android Common Kernel android17-6.18-2026-06_r6: init/main.c and boot-critical kernel paths"
@@ -38,17 +38,17 @@ task9_result: pass-tech-review
 last_body_apply_at: "2026-08-06T21:16:07+08:00"
 last_body_apply_run_id: "20260806-211543-32849a70"
 last_body_apply_source: "queue: AIW 时效性巡检 / src/part1-fundamentals/ch01-architecture/02-boot-process.md"
-last_review_finalize_at: "2026-08-06T22:06:08+08:00"
-last_review_finalize_run_id: "20260806-220550-cfef08da"
-review_notes: "2026-07-25 Android 17/API 37 全文复审：平台锚定 android-17.0.0_r1，内核锚定 android17-6.18-2026-06_r6；删除 Pixel 分段估算、Cloud Profiles/SDM 外推、关闭 dm-verity 建议和内部加工标记；修正 Perfetto boot trace 起点、init 三阶段、Zygote/SystemServer 顺序与 per-user boot completed 边界。 | 2026-08-06 Hermes review-finalize：复核 android-17.0.0_r1 init/zygote/SystemServer/perfetto/bootstat 与 ACK android17-6.18 边界，未发现 P0/P1/P2 阻断项，状态推进 finalized。"
+last_review_finalize_at: "2026-08-07T18:06:14+08:00"
+last_review_finalize_run_id: "20260807-180545-ebe6c50b"
+review_notes: "2026-07-25 Android 17/API 37 全文复审：平台锚定 android-17.0.0_r1，内核锚定 android17-6.18-2026-06_r6；删除 Pixel 分段估算、Cloud Profiles/SDM 外推、关闭 dm-verity 建议和内部加工标记；修正 Perfetto boot trace 起点、init 三阶段、Zygote/SystemServer 顺序与 per-user boot completed 边界。 | 2026-08-06 Hermes review-finalize：复核 android-17.0.0_r1 init/zygote/SystemServer/perfetto/bootstat 与 ACK android17-6.18 边界，未发现 P0/P1/P2 阻断项，状态推进 finalized。 | 2026-08-07 Hermes review-finalize：复查时效性队列残留的后续版本关键词触发项；正文改为版本边界表述，不再包含后续平台版本结论；抽核 init main.cpp、init.rc zygote-start、SystemServer、Perfetto boot trace 与 bootstat 入口，未发现 P0/P1/P2 阻断项，保持 finalized。"
 drafted_date: '2026-03-30'
 drafted_by: openclaw-task2a
-reviewed_date: "2026-08-06"
+reviewed_date: "2026-08-07"
 reviewed_by: hermes-aiw-review-finalize-apply
 review_type: review-finalize-apply
-task6_reviewed_date: "2026-08-06"
+task6_reviewed_date: "2026-08-07"
 task9_reviewed_by: hermes-aiw-review-finalize-apply
-task9_reviewed_date: "2026-08-06"
+task9_reviewed_date: "2026-08-07"
 last_task9_at: '2026-07-01T13:41:01+08:00'
 last_task2b_at: '2026-05-06T16:04:00+08:00'
 last_task2b_lite_at: '2026-07-01'
@@ -112,7 +112,7 @@ flowchart LR
 
 ## 本次时效性核验
 
-本次 Body Apply 处理的是队列中的“AIW 时效性巡检”项，目标文件明确指向本章；复核范围只限 Android 17/API 37 与 ACK `android17-6.18-2026-06_r6`，未引入 Android 18/API 38 及之后版本结论。[来源: metadata/queue.json#AIW 时效性巡检; 已验证: 本章 frontmatter sources 中 android-17.0.0_r1 与 android17-6.18-2026-06_r6 锚点]
+本次 Body Apply 处理的是队列中的“AIW 时效性巡检”项，目标文件明确指向本章；复核范围只限 Android 17/API 37 与 ACK `android17-6.18-2026-06_r6`，没有引入后续平台版本的主线结论。[来源: metadata/queue.json#AIW 时效性巡检; 已验证: 本章 frontmatter sources 中 android-17.0.0_r1 与 android17-6.18-2026-06_r6 锚点]
 
 核验后的阅读边界是：正文中的启动阶段、测量入口与优化建议都应以固定 tag、设备配置和实际 trace/log 共同约束；如果厂商分支或设备行为与 AOSP tag 不一致，应把差异记录为设备侧证据，而不是改写成本书的通用 Android 17 结论。[来源: src/part1-fundamentals/ch01-architecture/02-boot-process.md; 已验证: AOSP android-17.0.0_r1 / ACK android17-6.18-2026-06_r6]
 
