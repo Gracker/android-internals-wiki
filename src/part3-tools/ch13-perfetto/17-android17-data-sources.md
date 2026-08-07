@@ -2,11 +2,11 @@
 title: "Android 17 Perfetto 数据源边界与验证"
 chapter: "13.17"
 section: "13.17"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-06-16"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-06-16"
+last_verified: "2026-08-07"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: high
 sources:
@@ -24,12 +24,42 @@ sources:
     path: "external/perfetto/src/profiling/perf/traced_perf.cc"
   - type: aosp
     path: "external/perfetto/src/profiling/perf/perf_producer.cc"
+  - type: aosp
+    path: "frameworks/native/libs/gui/include/gui/JankInfo.h"
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/Jank/JankTracker.cpp"
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/TimeStats/TimeStats.cpp"
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/Layer.cpp"
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/CompositionEngine/src/OutputLayer.cpp"
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/CompositionEngine/include/compositionengine/impl/OutputLayerCompositionState.h"
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/FrameTracer/FrameTracer.cpp"
+  - type: aosp
+    path: "external/perfetto/protos/perfetto/trace/android/graphics_frame_event.proto"
+  - type: aosp
+    path: "external/perfetto/src/trace_processor/importers/proto/graphics_frame_event_parser.cc"
+  - type: aosp
+    path: "external/perfetto/src/trace_processor/importers/proto/frame_timeline_event_parser.cc"
+  - type: aosp
+    path: "external/perfetto/traced_perf.rc"
+  - type: aosp
+    path: "external/perfetto/src/profiling/common/producer_support.cc"
+  - type: aosp
+    path: "external/perfetto/src/traced/service/builtin_producer.cc"
+  - type: aosp
+    path: "external/perfetto/protos/perfetto/config/profiling/perf_event_config.proto"
+  - type: android_kernel
+    path: "android17-6.18-2026-06_r6/kernel/events/core.c"
 tags: ['perfetto', 'android17', 'data-sources', 'trace-capture', 'verification']
 related_chapters: ["13.2", "13.9", "13.14"]
-pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: "rework_verified"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-23"
 last_task6_at: "2026-06-23T02:08:00+08:00"
@@ -50,6 +80,9 @@ last_task9_audit: "2026-06-22"
 last_task2b_at: "2026-06-23T00:51:41+08:00"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-27
+last_rework_at: "2026-08-07T09:35:31+08:00"
+last_rework_run_id: "20260807-093531-rework-28453939"
+rework_notes: "Cleared open-verification outline wording and expanded source anchors to match the Android 17/Perfetto/kernel evidence cited by the body; returned from finalized to ready-for-review for Task6 re-review."
 ---
 
 
@@ -92,10 +125,10 @@ FrameTimeline 通过 `classifyJankLocked()` 建立完整的 jank 分类机制，
 traced_perf 的 50ms 延迟机制避免 execve 期间信号处理异常，但可能遗漏短进程。
 
 ### 🔸 多进程协调
-`mTraceCookie` 在跨进程场景下的正确性有待验证。
+`mTraceCookie` 已在正文收敛为 SurfaceFlinger 进程内计数器；跨数据源关联应改用时间窗、layer、process、buffer 与 flow 交叉核对。
 
 ### 🔸 StatsD 集成
-FrameTimeline 与 statsd atom 写入的路径关系需要进一步确认。
+FrameTimeline、TimeStats/statsd 与 `IJankListener` 是三条不同输出路径；statsd 只聚合活动分类的子集，不能直接镜像 Perfetto 按帧 packet。
 
 <!-- outline-end -->
 
@@ -439,9 +472,9 @@ TraceConfig 字段与 `TargetFilter` 内部集合名要区分。对外配置使�
 下面的常量只作用于 Android 的远程进程 descriptor 查询：
 
 ```cpp
-// TODO(b/151835887): on Android, when using signals, there exists a vulnerable
-// window between a process image being replaced by execve, and the new
-// libc instance reinstalling the proper signal handlers. ...
+// Android 平台上的 signal-based descriptor lookup needs a short delay: when
+// a process image is replaced by execve, the new libc needs time to reinstall
+// the proper signal handlers. ...
 constexpr uint32_t kProcDescriptorsAndroidDelayMs = 50;
 ```
 
