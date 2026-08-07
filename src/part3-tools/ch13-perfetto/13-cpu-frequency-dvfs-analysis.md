@@ -2,12 +2,17 @@
 title: "Perfetto CPU 频率与 DVFS 关联分析"
 chapter: "13.13"
 section: "13.13"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-05-16"
 applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
-last_verified: "2026-05-16"
-last_verified_against: "Perfetto cpu-freq docs + Linux cpufreq/cpuidle docs + arXiv 2507.02135v1"
-confidence: medium
+last_verified: "2026-08-07"
+last_verified_against: "Android 17 / API 37 / AOSP android-17.0.0_r1 Perfetto sources; Android common kernel android17-6.18-2026-06_r6 CPUFreq/CPUIdle sources; arXiv 2507.02135v1 with explicit Android 13 Pixel/Tensor G2 boundary; 2026-08-07 rework cleared pending-verification/thin-source flags"
+last_rework_at: "2026-08-07T21:35:15+08:00"
+last_rework_run_id: "20260807-213515-rework-952e31cf"
+last_rework_log: "logs/rework/2026-08-07-20260807-213515-rework-952e31cf-rework.md"
+rework_result: "ready-for-review"
+rework_notes: "2026-08-07 rework：复核 pending-verification-marker/thin-source-marking；补齐 frontmatter 精确源码锚点，正文增加证据边界说明，去除未使用的 DeepResearch material 路由；章节回流 ready-for-review 等待 Task6/Task9 复审。"
+confidence: medium-high
 tags: [perfetto, cpu-frequency, dvfs, power, scheduling]
 related_chapters: ["5.2", "5.4", "11.1", "13.6"]
 created_by: "task2a-knowledge-gap"
@@ -16,25 +21,34 @@ gap_source: "素材驱动/官方文档/AOSP 结构"
 material_paths:
   - "Cubox/Perfetto查看CPU 频率部分指导-2026-05-03.md"
   - "论文/Android-2026-05-15-DVFS-LLM-Performance/03-精读.md"
-  - "DeepResearch/2026-05-11-soc-platform-diff-dimensity-scheduling.md"
 sources:
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/cpu-freq"
-  - type: official
-    path: "https://perfetto.dev/docs/analysis/trace-processor"
-  - type: official
-    path: "https://docs.kernel.org/admin-guide/pm/cpufreq.html"
-  - type: official
-    path: "https://docs.kernel.org/admin-guide/pm/cpuidle.html"
+  - type: source
+    path: "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/docs/data-sources/cpu-freq.md"
+  - type: source
+    path: "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traced/probes/common/cpu_freq_info.cc"
+  - type: source
+    path: "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/frequency.sql"
+  - type: source
+    path: "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/idle.sql"
+  - type: source
+    path: "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/tables/metadata_tables.py"
+  - type: source
+    path: "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/Configs.java"
+  - type: source
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c"
+  - type: source
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/pm/cpufreq.rst"
+  - type: source
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/pm/cpuidle.rst"
   - type: paper
     path: "https://arxiv.org/abs/2507.02135"
   - type: obsidian
     path: "Cubox/Perfetto查看CPU 频率部分指导-2026-05-03.md"
   - type: obsidian
     path: "论文/Android-2026-05-15-DVFS-LLM-Performance/03-精读.md"
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
-task6_result: "pass-light-edit"
+pipeline_stage: ready-for-review
+task6_state: pending-review
+task6_result: rework-applied
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-28"
 last_task6_at: "2026-05-28T04:13:00+08:00"
@@ -43,9 +57,9 @@ last_task6_audit: "2026-06-21"
 task6_l1_l2_fixes: 1
 task6_l3_l4_issues: 0
 task6_review_notes: "2026-05-28 Task6：Task2B fixed-lite 后复审通过；L1/L2 小修 1 处，禁用词与高频词扫描无命中；outline 10/10 覆盖；无新增 L3/L4 回炉项。Task9 result 仍为 needs-rework，未自动晋升。"
-task9_state: reviewed
+task9_state: pending-review
 task2b_state: "fixed"
-task9_result: pass-tech-review
+task9_result: rework-applied
 task2b_result: "fixed-lite"
 last_task2b_lite_at: "2026-05-28"
 task9_reviewed_by: "openclaw-task9"
@@ -100,6 +114,8 @@ last_deepseek_cn_review_at: 2026-07-13
 本章的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点是 `android17-6.18-2026-06_r6`。Perfetto 的 CPU Frequency 轨道记录软件可见的频率状态，线程轨道记录调度状态。两者落在同一时间窗，才能回答“线程 Running 时，所在 CPU 报告了什么频率”。
 
 这里有一条必须守住的证据边界：频率轨并非硬件时钟探针。Android 17 内核在 cpufreq 普通切换完成后，把 `freqs->new` 写入 `cpu_frequency`；快速切换路径写入驱动返回的 `freq`。同一 policy 内的在线 CPU 会分别产生事件。`linux.sys_stats` 的轮询结果也只能代表 sysfs 暴露的值。仅凭这些数据，不能断言某段代码获得了对应数量的有效执行周期。
+
+本章的可复核来源分成三层：Android 17 tag 下的 Perfetto 采集、Trace Processor 表和 ProfilingManager 源码；`android17-6.18-2026-06_r6` 下的 CPUFreq、CPUIdle 与 schedutil 内核源码/文档；以及端侧 LLM DVFS 论文中限定在 Pixel 7 / Pixel 7 Pro、Android 13、Tensor G2 和特定推理栈内的实验结果。正文只把第三层当作“协同 governor 诊断视角”，不把论文数字外推成 Android 17 或其他 SoC 的通用结论。
 
 ## 频率轨记录的是什么
 
