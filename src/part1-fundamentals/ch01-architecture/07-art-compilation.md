@@ -2,8 +2,8 @@
 title: "ART 编译管线与 dex2oat 优化"
 chapter: "1.7"
 section: "1.7"
-status: ready-for-review
-pipeline_stage: task6_pending
+status: finalized
+pipeline_stage: finalized
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 confidence: high
 tags:
@@ -73,11 +73,11 @@ drafted_by: "openclaw-task2a"
 polish_count: 2
 polish_date: "2026-04-17"
 polish_by: "task2b-polish"
-reviewed_date: "2026-05-26"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-08-07"
+reviewed_by: "hermes-aiw-review-finalize-apply"
 task6_result: pass-light-edit
 task2b_result: fixed
-task6_state: revisiting
+task6_state: reviewed
 review_round: 6
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
@@ -86,7 +86,7 @@ last_task6_at: "2026-06-20T08:08:00+08:00"
 last_task6_review_log: "logs/review/2026-06-20-08-review.md"
 task6_review_notes: "2026-06-20 08:08 Task6 revisiting review: pass-light-edit。L1 禁用词 0 命中，L2 可读性通过；Task9 idle-audit auto-fixed（JitCodeCache DoCollection + 404 链接修正）后正文未回退；task6+task9 双通过且 queue 无 pending，自动晋升 finalized。"
 task9_result: pass-tech-review
-task9_state: passed
+task9_state: reviewed
 last_task2b_at: "2026-05-26T03:19:12+08:00"
 task2b_state: fixed
 task9_reviewed_date: "2026-06-20"
@@ -108,6 +108,9 @@ last_deep_review_at: "2026-08-07T08:36:48+08:00"
 last_deep_review_run_id: "20260807-083648-deep-review-962ac2dc"
 last_deep_review_log: "logs/deep-review/2026-08-07-20260807-083648-deep-review-962ac2dc-deep-review.md"
 deep_review_notes: "2026-08-07 deep-review: 复核 android-17.0.0_r1 ART/JIT/Profile 边界；未发现 Android 18/API38+ 主线结论，修正正文自引用来源标注并关闭 task9 pending 状态。P0 0 / P1 0 / P2 1（已修复）。"
+last_review_finalize_at: "2026-08-07T10:08:18+08:00"
+last_review_finalize_run_id: "20260807-100535-f89828e4"
+review_finalize_notes: "2026-08-07 Hermes finalize-apply: 复核 deep-review 结论、frontmatter/source 边界与正文可读性；未发现开放 P0/P1/P2，推进 finalized。"
 ---
 
 # ART 编译管线与 dex2oat 优化
