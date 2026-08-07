@@ -2,8 +2,8 @@
 title: "线程模型"
 chapter: "1.5"
 section: "1.5"
-status: ready-for-review
-pipeline_stage: task6_pending
+status: finalized
+pipeline_stage: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 confidence: high
 tags:
@@ -77,16 +77,16 @@ related_chapters:
   - "5.1"
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-task2"
-reviewed_date: "2026-07-07"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-08-07"
+reviewed_by: "hermes-aiw-review-finalize-apply"
 reviewed_at: "2026-05-26T01:12:00+08:00"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-07-07"
 last_task6_at: "2026-07-07T08:10:16+08:00"
 last_task6_audit: "2026-07-08"
 task6_review_notes: "2026-07-07 08:10 Task6：Task2B lite 修复后重审（版本引用已更新至 android-17.0.0_r1）；L1 小修 4 处（承担→中性动词 ×2、对齐→对照、结构性元叙述 ×1）；无新增 L3/L4 回炉项；转 Task9 复核 P1 版本修复。"
-task9_state: pending
+task9_state: reviewed
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-07-07"
 task9_reviewed_by: "openclaw-task9"
@@ -113,6 +113,9 @@ last_deepseek_cn_review_at: "2026-07-07"
 last_body_apply_at: "2026-08-06T23:15:01+08:00"
 last_body_apply_run_id: "20260806-231501-982bb83c"
 last_body_apply_source: "queue:freshness:src/part1-fundamentals/ch01-architecture/05-threading-model.md"
+last_review_finalize_at: "2026-08-07T08:18:06+08:00"
+last_review_finalize_run_id: "20260807-081516-9264ee2d"
+review_finalize_notes: "Hermes AIW review/finalize：按 android-17.0.0_r1 / android17-6.18 基线复核主线程 Looper、MessageQueue 实现选择、RenderThread 交接、调度优先级、虚拟线程边界；未发现 P0/P1/P2 阻断项，推进 finalized。"
 ---
 
 # 线程模型
@@ -125,7 +128,7 @@ Android 应用并不是“主线程加几个后台线程”这么简单。一次
 2. 当前线程是在执行、等待 CPU，还是等待另一个线程或内核事件？
 3. 这段工作应该留在当前线程，还是交给其他执行机制？
 
-本次时效性核验将本章解释边界重新限定在 Android 5.0 到 Android 17/API 37，并以 AOSP `android-17.0.0_r1`、ACK `android17-6.18-2026-06_r6` 与 Android Developers 文档作为核验基线；正文中的 MessageQueue、RenderThread、调度权重和虚拟线程判断均不外推到 Android 18/API 38 或更新版本。[来源: src/part1-fundamentals/ch01-architecture/05-threading-model.md][已验证: frontmatter last_verified_against]
+本次时效性核验将本章解释边界重新限定在 Android 5.0 到 Android 17/API 37，并以 AOSP `android-17.0.0_r1`、ACK `android17-6.18-2026-06_r6` 与 Android Developers 文档作为核验基线；正文中的 MessageQueue、RenderThread、调度权重和虚拟线程判断均不外推到 Android 18/API 38 或更新版本。
 
 ## 主线程负责什么
 
