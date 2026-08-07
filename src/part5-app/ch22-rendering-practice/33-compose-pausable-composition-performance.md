@@ -1,14 +1,24 @@
 ---
 title: "Compose PausableComposition 性能机制与 Choreographer Deadline 协作"
 chapter: "22.33"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 tags: [Compose, PausableComposition, Choreographer, 渲染性能, FrameData]
 related_chapters: ["2.4", "22.3", "22.21", "22.22"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "研究素材+章节深挖"
-confidence: medium
+confidence: medium-high
+sources:
+  - "AndroidX Compose Runtime/Foundation/UI 1.11.4 source snapshot 854220f44ea8ea80fee824a6c5a045f39bede289"
+  - "Android 17 Choreographer.java android-17.0.0_r1"
+  - "AndroidX Compose Runtime/Foundation API reference and release notes"
+task6_state: pending
+task9_state: pending
+pipeline_stage: task6_pending
+last_verified: "2026-08-07"
+last_draft_polish_at: "2026-08-07T11:35:48+08:00"
+last_draft_polish_run_id: "20260807-113548-draft-polish-25bb3663"
 ---
 
 # 22.33 Compose PausableComposition 性能机制与 Choreographer Deadline 协作
@@ -17,45 +27,45 @@ confidence: medium
 ## 要点
 
 ### 🔹 PausableComposition 的起源与版本演进
-- Compose 1.7 引入 PausableComposition 作为内部性能优化机制
-- Compose 1.10（2025 年 12 月稳定）将其设为默认行为
-- 从"必须单帧完成"到"可跨帧暂停"的范式转变
+- 公开 API 从 Compose Runtime `1.8.0-alpha02` 开始出现，稳定 API 标记为 `1.8.0`
+- “默认启用”只限定在 Foundation Lazy 预取路径；`1.10.6` 曾因稳定性改为默认关闭，`1.11.4` 基线源码恢复为 true
+- 从“单次组合必须完成”到“子组合可在合法边界暂停/恢复”的范式转变
 
 ### 🔹 核心控制流：setPausableContent → resume() → shouldPause → apply()
-- setPausableContent() 不立即组合 UI，返回 PausedComposition 控制器对象
-- resume() 执行分块组合工作，内部通过 shouldPause lambda 检查帧截止时间
-- shouldPause 返回 true 时暂停 Composition，主线程让出给当前帧绘制任务
-- isComplete=true 后调用 apply() 提交 UI 变更
+- `setPausableContent()` 不立即组合 UI，返回 `PausedComposition` 控制器对象
+- `resume()` 执行分块组合工作，内部通过 `shouldPause` lambda 在合法边界请求暂停
+- `shouldPause=true` 不是线程抢占，也不保证当前函数立即停止
+- `isComplete=true` 后仍需紧邻检查，再调用公开 `apply()` 提交 UI 变更
 
-### 🔹 shouldPause 回调与 FrameData Deadline 判定
-- shouldPause 基于 Choreographer.FrameData.getDeadlineNanos() 判定
-- 与 VSYNC-app、Frame Timeline 的 Expected/Actual 协同
-- 帧截止时间临近时如何决定暂停粒度
+### 🔹 shouldPause 回调与 Android 17 FrameData 边界
+- Foundation `1.11.4` 预取调度未直接读取 `Choreographer.FrameData`
+- Android 17 deadline 访问链是 `FrameData.getPreferredFrameTimeline().getDeadlineNanos()`，且仅在 `VsyncCallback#onVsync()` 期间有效
+- 当前 Compose 预算使用 `View.drawingTime`、最近 `FrameCallback#doFrame()` 帧起点和刷新周期估算下一帧空档
 
 ### 🔹 LazyList 预取系统集成
-- PausableComposition 与 LazyColumn/LazyRow 预取深度集成
-- 空闲时间增量组合即将滚动到可见区域的列表项
-- Compose 1.9 CacheWindow API 进一步利用 pausable composition
+- PausableComposition 与 LazyColumn/LazyRow 预取路径深度集成
+- 帧间消息中增量组合即将滚动到可见区域的列表项
+- Compose 1.9 CacheWindow API 决定预取/保留范围，PausableComposition 决定组合阶段调度
 
-### 🔹 applyChanges() 提交机制
-- applyChanges() 回放缓冲命令、分发生命周期回调
+### 🔹 apply 提交机制
+- 内部 `applyChanges()` 回放缓冲命令、分发生命周期回调；公开入口是 `PausedComposition.apply()`
 - 未完成的 UI 树不会被渲染
-- SideEffect 排队与 flush 时机
+- SideEffect 排队与 flush 时机需要纳入 apply 成本
 
-### 🔹 Node 树 Checkpoint 与可暂停位置
-- Composition tree 结构支持在特定位置插入可暂停 checkpoint
-- 不是协程的 CancellationException 机制，而是 Compose runtime 内部中断点
-- Compose 1.7 之前单帧不可中断的约束及其导致的 jank
+### 🔹 Composer checkpoint 与可暂停位置
+- 暂停点属于 Composer、SlotTable、restart scope 与编译器生成代码，不是 LayoutNode 树 checkpoint
+- 不是协程的 CancellationException 机制，而是 Compose Runtime 内部状态机
+- 大型不可恢复边界、measure、draw、I/O、图片解码和 Binder 调用不会被 PausableComposition 自动切片
 
 ## 扩展
 
-### 🔸 与 Compose 1.10 默认行为的性能对比数据
-- 使用 Macrobenchmark 对比 1.9 vs 1.10 的帧率差异
-- LazyColumn 滚动场景下的 jank 率变化
+### 🔸 与 Compose 版本对比的性能数据
+- 使用 Macrobenchmark 与 Perfetto 对比 Foundation 1.10.5、1.10.6、1.11.4 的预取行为
+- 不虚构固定帧率提升比例，按 compose/apply/measure/FrameTimeline 分阶段归因
 
 ### 🔸 CacheWindow API 与 PausableComposition 的协同
-- Compose 1.9 CacheWindow 对预取窗口的精确控制
-- 与 LazyList prefetch 机制的交互
+- Compose 1.9 CacheWindow 对预取与保留窗口的精确控制
+- 与 LazyList prefetch 机制的交互需同时评估 CPU、内存和命中率
 
 <!-- outline-end -->
 
