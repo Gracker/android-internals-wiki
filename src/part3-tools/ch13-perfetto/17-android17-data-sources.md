@@ -2,7 +2,7 @@
 title: "Android 17 Perfetto 数据源边界与验证"
 chapter: "13.17"
 section: "13.17"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-06-16"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
@@ -56,11 +56,11 @@ sources:
     path: "android17-6.18-2026-06_r6/kernel/events/core.c"
 tags: ['perfetto', 'android17', 'data-sources', 'trace-capture', 'verification']
 related_chapters: ["13.2", "13.9", "13.14"]
-pipeline_stage: "task9_pending"
+pipeline_stage: "finalized"
 task6_state: "reviewed"
 task6_result: pass-deep-review
-task9_state: "pending"
-reviewed_by: "hermes-aiw-polish-deep-review"
+task9_state: "reviewed"
+reviewed_by: "hermes-aiw-review-finalize-apply"
 reviewed_date: "2026-08-07"
 last_task6_at: "2026-08-07T16:35:30+08:00"
 last_task6_audit: "2026-06-25"
@@ -86,6 +86,9 @@ rework_notes: "Cleared open-verification outline wording and expanded source anc
 last_deep_review_at: "2026-08-07T16:35:30+08:00"
 last_deep_review_run_id: "20260807-163530-deep-review-28453939"
 deep_review_notes: "Task6 deep-review：复核 Android 17 Perfetto 图形数据源与 linux.perf 源码边界，收敛示例配置/回归检查措辞；无 P0/P1，进入 Task9 pending。"
+last_review_finalize_at: "2026-08-07T22:07:21+08:00"
+last_review_finalize_run_id: "20260807-220520-fa5b5c77"
+review_finalize_notes: "Review-finalize 复核 android-17.0.0_r1 / android17-6.18 源码锚点、既有 findings 与章节边界；未发现开放 P0/P1/P2，正文无需再改，推进 finalized。"
 ---
 
 
