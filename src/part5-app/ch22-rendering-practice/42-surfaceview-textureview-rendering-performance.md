@@ -1,18 +1,22 @@
 ---
 title: "SurfaceView 与 TextureView 渲染性能选型实战"
 chapter: "22.42"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [surfaceview, textureview, surfacecontrol, rendering, gpu, video, camera]
 related_chapters: ["22.17", "22.35", "2.1", "18.16"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "AOSP结构/官方文档/章节深挖"
-last_verified: "2026-08-06"
-confidence: "medium-high"
-task6_state: pending
-task9_state: pending
-pipeline_stage: task6_pending
+last_verified: "2026-08-07"
+reviewed_date: "2026-08-07"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+confidence: "high"
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: finalized
+last_review_finalize_at: "2026-08-07T14:06:07+08:00"
+last_review_finalize_run_id: "20260807-140509-edd6f8ad"
 last_draft_polish_at: "2026-08-06T19:35:28+08:00"
 last_draft_polish_run_id: "20260806-193528-draft-polish-b85a1422"
 sources:
