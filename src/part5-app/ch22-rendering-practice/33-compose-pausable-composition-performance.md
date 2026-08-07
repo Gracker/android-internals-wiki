@@ -1,5 +1,5 @@
 ---
-title: "Compose PausableComposition 性能机制与 Choreographer Deadline 协作"
+title: "Compose PausableComposition 性能机制与 Choreographer 预算边界"
 chapter: "22.33"
 status: ready-for-review
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
@@ -13,15 +13,18 @@ sources:
   - "AndroidX Compose Runtime/Foundation/UI 1.11.4 source snapshot 854220f44ea8ea80fee824a6c5a045f39bede289"
   - "Android 17 Choreographer.java android-17.0.0_r1"
   - "AndroidX Compose Runtime/Foundation API reference and release notes"
-task6_state: pending
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_verified: "2026-08-07"
+last_verified_against: "AndroidX Compose Runtime/Foundation/UI 1.11.4 source snapshot 854220f44ea8ea80fee824a6c5a045f39bede289; AOSP Choreographer.java @ android-17.0.0_r1; AndroidX API reference/release notes"
 last_draft_polish_at: "2026-08-07T11:35:48+08:00"
 last_draft_polish_run_id: "20260807-113548-draft-polish-25bb3663"
+last_deep_review_at: "2026-08-07T12:39:40+08:00"
+last_deep_review_run_id: "20260807-123556-deep-review-25bb3663"
 ---
 
-# 22.33 Compose PausableComposition 性能机制与 Choreographer Deadline 协作
+# 22.33 Compose PausableComposition 性能机制与 Choreographer 预算边界
 
 <!-- outline-start -->
 ## 要点
@@ -40,7 +43,7 @@ last_draft_polish_run_id: "20260807-113548-draft-polish-25bb3663"
 ### 🔹 shouldPause 回调与 Android 17 FrameData 边界
 - Foundation `1.11.4` 预取调度未直接读取 `Choreographer.FrameData`
 - Android 17 deadline 访问链是 `FrameData.getPreferredFrameTimeline().getDeadlineNanos()`，且仅在 `VsyncCallback#onVsync()` 期间有效
-- 当前 Compose 预算使用 `View.drawingTime`、最近 `FrameCallback#doFrame()` 帧起点和刷新周期估算下一帧空档
+- 当前 Compose 预算使用 `View.drawingTime`、最近 `FrameCallback#doFrame()` 帧起点和刷新周期估算下一帧空档；标题中的“预算边界”不等同于读取平台 FrameTimeline deadline
 
 ### 🔹 LazyList 预取系统集成
 - PausableComposition 与 LazyColumn/LazyRow 预取路径深度集成
@@ -76,7 +79,7 @@ last_draft_polish_run_id: "20260807-113548-draft-polish-25bb3663"
 > - Compose：Runtime、Foundation 与 UI `1.11.4`
 > - AndroidX 源码快照：`854220f44ea8ea80fee824a6c5a045f39bede289`
 >
-> `PausableComposition` 的关键逻辑位于 Compose Runtime 与 Foundation，内核不参与暂停点选择。这里保留内核锚点是为了与全书基线一致；本节的直接证据来自 Android 17 `Choreographer` 和 Compose `1.11.4` 源码。
+> `PausableComposition` 的关键逻辑位于 Compose Runtime 与 Foundation，内核不参与暂停点选择。这里保留内核锚点是为了与全书基线一致；本节的直接证据来自 Android 17 `Choreographer` 和 Compose `1.11.4` 源码。本文没有声称 Compose `1.11.4` 读取平台 FrameTimeline deadline，也没有给出未经实测的帧率提升比例。
 
 ## 1. 先校正三个容易混淆的结论
 

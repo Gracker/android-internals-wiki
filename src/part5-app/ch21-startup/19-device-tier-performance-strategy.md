@@ -1,7 +1,7 @@
 ---
 title: "设备分级性能策略实战"
 chapter: "21.19"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [device-tier, performance-strategy, device-year-class, feature-flag, degradation]
 related_chapters: ["21.16", "21.18", "23.07", "25.06"]
@@ -12,10 +12,14 @@ last_draft_polish_at: "2026-08-06T23:45:29+08:00"
 last_draft_polish_run_id: "20260806-234529-draft-polish-b425a06d"
 last_verified: "2026-08-06"
 last_verified_against: "AOSP android-17.0.0_r1 + android17-6.18-2026-06_r6 + Android developer docs"
-confidence: medium-high
-task6_state: pending
-task9_state: pending
-pipeline_stage: task6_pending
+reviewed_date: "2026-08-07"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+last_review_finalize_at: "2026-08-07T12:09:10+08:00"
+last_review_finalize_run_id: "20260807-120726-dea40797"
+confidence: high
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: finalized
 sources:
   - "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java"
   - "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/PowerManager.java"
@@ -43,7 +47,7 @@ sources:
 - 方案 3：按业务维度生成 `memory_constrained`、`media_enhanced`、`render_reduced` 等策略
 - 方案 4：Android 10+ thermal / power save 与 Android 16+ `SystemHealthManager` headroom 仅作为会话期压力信号
 
-### 🔹 分档降级策略matrix
+### 🔹 分档降级策略矩阵
 - 渲染降级：依据帧预算、窗口像素和实测帧时间调整特效复杂度
 - 启动降级：保留 Baseline / Startup Profile，只在 trace 证明争用时收缩并发初始化
 - 内存降级：按堆预算、资源收益和 `onTrimMemory()` 收缩缓存 / 预加载
