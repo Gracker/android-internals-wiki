@@ -1292,6 +1292,26 @@
       "summary": "13.17 retained pending-verification outline markers and thin source frontmatter despite source-backed body",
       "type": "article-quality-marker",
       "updated_at": "2026-08-07T09:37:19.105703+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch22-rendering-practice/33-compose-pausable-composition-performance.md",
+      "close_note": "已将标题/H1改为预算边界，新增 last_verified_against 和 deep-review run metadata，并在源码锚点处明确未声明读取 FrameTimeline deadline。",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260807-123556-deep-review-25bb3663",
+      "created_at": "2026-08-07T12:40:51.886145+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260807-123556-deep-review-25bb3663",
+      "details": "章节正文已有正确边界说明，但标题使用 Deadline 协作，frontmatter 缺少 last_verified_against 与 deep-review 状态，容易触发 thin-source-marking。",
+      "id": "finding-e18d861bfa80",
+      "log_path": "logs/deep-review/2026-08-07-20260807-123556-deep-review-25bb3663-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "src/part5-app/ch22-rendering-practice/33-compose-pausable-composition-performance.md"
+      ],
+      "status": "fixed",
+      "summary": "标题与元数据需避免暗示 Compose 1.11.4 直接读取 FrameTimeline deadline",
+      "type": "source-boundary",
+      "updated_at": "2026-08-07T12:41:01.814748+08:00"
     }
   ],
   "schema_version": 1
