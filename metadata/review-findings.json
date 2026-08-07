@@ -1247,6 +1247,29 @@
       "summary": "libmeminfo wording could be misread as public app API",
       "type": "api-boundary",
       "updated_at": "2026-08-06T16:39:29.785578+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+      "close_note": "Fixed in same deep-review run: self-citations replaced with AOSP android-17.0.0_r1 ART/Framework and official Android documentation source anchors.",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260807-083648-deep-review-962ac2dc",
+      "created_at": "2026-08-07T08:38:43.128810+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260807-083648-deep-review-962ac2dc",
+      "details": "deep-review 发现导语、诊断顺序段和结尾验证流程段以 src/part1-fundamentals/ch01-architecture/07-art-compilation.md 自引用作为来源；已替换为 AOSP android-17.0.0_r1 ART/Framework 源码与 Android Developers/source.android.com 官方文档来源说明。",
+      "id": "AIW-1.7-20260807-P2-self-source-citation",
+      "log_path": "logs/deep-review/2026-08-07-20260807-083648-deep-review-962ac2dc-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+        "art/libartbase/base/compiler_filter.h@android-17.0.0_r1",
+        "art/runtime/jit/jit_code_cache.h@android-17.0.0_r1",
+        "art/runtime/jit/jit_code_cache.cc@android-17.0.0_r1"
+      ],
+      "status": "fixed",
+      "summary": "§1.7 正文使用本章文件自引用作为技术来源，需改为 AOSP/官方文档来源边界",
+      "type": "source-citation-quality",
+      "updated_at": "2026-08-07T08:38:49.048156+08:00"
     }
   ],
   "schema_version": 1
