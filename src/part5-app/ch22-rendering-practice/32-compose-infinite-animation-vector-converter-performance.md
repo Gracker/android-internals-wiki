@@ -1,20 +1,24 @@
 ---
 title: "Compose 无限动画与 VectorConverter 性能优化"
 chapter: "22.32"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [compose, animation, infinite-transition, vector-converter, performance]
 related_chapters: ["22.5", "22.21", "22.11", "22.27"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "AOSP结构+章节深挖"
-pipeline_stage: task6_pending
-task6_state: pending
-task9_state: pending
+pipeline_stage: finalized
+task6_state: reviewed
+task9_state: reviewed
 last_draft_polish_at: "2026-08-07T19:35:58+08:00"
 last_draft_polish_run_id: "20260807-193558-draft-polish-c7c8c2be"
+reviewed_date: "2026-08-07"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+last_review_finalize_at: "2026-08-07T20:13:52+08:00"
+last_review_finalize_run_id: "20260807-200624-3002f692"
 last_verified: "2026-08-07"
-confidence: medium-high
+confidence: high
 sources:
   - "Android 17 Choreographer.java (android-17.0.0_r1)"
   - "AndroidX Compose Animation/Core/UI 1.11.4 source snapshot 854220f44ea8ea80fee824a6c5a045f39bede289"
@@ -57,10 +61,10 @@ sources:
 - 进度条动画的帧节流策略
 
 ### 🔹 动画性能诊断工具
-- Compose Compiler Metrics 中的动画重组检测
+- Compose Compiler Metrics 中的稳定性与可跳过性检查
 - Layout Inspector 的动画录制与回放分析
 - Perfetto 中 Compose 动画帧的 trace 标记
-- Choreographer.skippedFrames 的监控
+- FrameTimeline、JankStats 与 Macrobenchmark 帧指标
 
 ## 扩展
 
