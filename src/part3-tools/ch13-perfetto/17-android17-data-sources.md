@@ -56,13 +56,13 @@ sources:
     path: "android17-6.18-2026-06_r6/kernel/events/core.c"
 tags: ['perfetto', 'android17', 'data-sources', 'trace-capture', 'verification']
 related_chapters: ["13.2", "13.9", "13.14"]
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task6_result: pass-light-edit
-task9_state: "rework_verified"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-06-23"
-last_task6_at: "2026-06-23T02:08:00+08:00"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task6_result: pass-deep-review
+task9_state: "pending"
+reviewed_by: "hermes-aiw-polish-deep-review"
+reviewed_date: "2026-08-07"
+last_task6_at: "2026-08-07T16:35:30+08:00"
 last_task6_audit: "2026-06-25"
 # task2b_state restored 2026-06-16 by Task9 — Android 17 重基完成 2026-06-22
 task9_result: "auto-fixed"
@@ -83,6 +83,9 @@ last_deepseek_cn_review_at: 2026-06-27
 last_rework_at: "2026-08-07T09:35:31+08:00"
 last_rework_run_id: "20260807-093531-rework-28453939"
 rework_notes: "Cleared open-verification outline wording and expanded source anchors to match the Android 17/Perfetto/kernel evidence cited by the body; returned from finalized to ready-for-review for Task6 re-review."
+last_deep_review_at: "2026-08-07T16:35:30+08:00"
+last_deep_review_run_id: "20260807-163530-deep-review-28453939"
+deep_review_notes: "Task6 deep-review：复核 Android 17 Perfetto 图形数据源与 linux.perf 源码边界，收敛示例配置/回归检查措辞；无 P0/P1，进入 Task9 pending。"
 ---
 
 
@@ -117,7 +120,7 @@ FrameTimeline 通过 `classifyJankLocked()` 建立完整的 jank 分类机制，
 `linux.perf` 在 Android 11 已存在，`android.surfaceflinger.frametimeline` 从 Android 12 引入；Android 17 主要扩展 JankType，traced_perf 维持既有属性驱动生命周期。
 
 ### 🔸 应用优化建议
-针对不同场景的 Trace 配置方案，避免数据丢失，优化内存使用。
+按复现场景组合 FrameTimeline、FrameTracer、`linux.perf` 与必要的 ftrace/process stats，并把 buffer、采样频率和内存上限留给目标设备实测决定。
 
 ## 扩展
 
@@ -623,9 +626,9 @@ adb shell perfetto --txt \
 
 需要把调用栈与调度状态关联时，再加入 `linux.ftrace` 的 `sched_switch`/`sched_waking` 和 `linux.process_stats` 的启动时进程扫描。留空 `target_cpu` 会覆盖所有在线 CPU。开启 `kernel_frames` 前，应在目标 build 上验证内核栈权限与符号可用性；扩大 CPU/进程范围、提高采样频率或改用高频 tracepoint 时，要同时检查 ring-buffer overrun、unwinder overload、descriptor failure 和数据源停止原因。
 
-## 7. 已执行回归检查
+## 7. 源码锚点复核方法
 
-下面的命令分别在 AOSP 多仓库 checkout 的 `frameworks/native`、`external/perfetto` 和 `kernel/common` 中固定 tag 读取源码，避免把 repo 根目录误当作单个 Git 仓库：
+下面的命令可在 AOSP 多仓库 checkout 的 `frameworks/native`、`external/perfetto` 和 `kernel/common` 中固定 tag 读取源码，避免把 repo 根目录误当作单个 Git 仓库。它们是复核本文源码锚点的最小集合；不能替代目标设备上的实际 trace 验收：
 
 ```bash
 git -C frameworks/native show \

@@ -1334,6 +1334,26 @@
       "summary": "15.9 retained pending-verification/thin-source quality flags despite source-backed body",
       "type": "article-quality-marker",
       "updated_at": "2026-08-07T13:43:23.151315+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch13-perfetto/17-android17-data-sources.md",
+      "close_note": "Deep-review patch applied in src/part3-tools/ch13-perfetto/17-android17-data-sources.md.",
+      "closed_by": "deep-review",
+      "closed_run_id": "20260807-163530-deep-review-28453939",
+      "created_at": "2026-08-07T16:40:15.086828+08:00",
+      "created_by": "deep-review",
+      "created_run_id": "20260807-163530-deep-review-28453939",
+      "details": "已将应用优化建议收敛为目标设备实测边界，并将已执行回归检查改为源码锚点复核方法，避免把固定 tag 源码命令误读成设备验收。",
+      "id": "finding-28453939-p2-source-marking",
+      "log_path": "logs/deep-review/2026-08-07-20260807-163530-deep-review-28453939-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "android-17.0.0_r1; android17-6.18-2026-06_r6"
+      ],
+      "status": "fixed",
+      "summary": "Perfetto 数据源章节示例配置/回归检查措辞偏强",
+      "type": "source-boundary",
+      "updated_at": "2026-08-07T16:40:15.137064+08:00"
     }
   ],
   "schema_version": 1
