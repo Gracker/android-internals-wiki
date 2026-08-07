@@ -1,14 +1,25 @@
 ---
 title: "Compose SubcomposeLayout 性能深度：层级测量、Intrinsic 与重组陷阱"
 chapter: "22.34"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [Compose, SubcomposeLayout, 布局性能, Intrinsics, 测量]
 related_chapters: ["22.3", "22.22", "22.25", "22.28"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "章节深挖"
-confidence: medium
+sources:
+  - "AndroidX Compose UI 1.11.4 SubcomposeLayout.kt @ 854220f44ea8ea80fee824a6c5a045f39bede289"
+  - "AndroidX Compose Foundation 1.11.4 LazyLayout/BoxWithConstraints sources @ 854220f44ea8ea80fee824a6c5a045f39bede289"
+  - "Android 17 platform tag android-17.0.0_r1"
+  - "Android common kernel tag android17-6.18-2026-06_r6"
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+last_draft_polish_at: "2026-08-07T23:35:38+08:00"
+last_draft_polish_run_id: "20260807-233538-draft-polish-342b11bc"
+last_verified: "2026-08-07"
+confidence: medium-high
 ---
 
 # 22.34 Compose SubcomposeLayout 性能深度：层级测量、Intrinsic 与重组陷阱
@@ -22,14 +33,14 @@ confidence: medium
 - SubcomposeLayout 与常规 Layout 的测量流程差异
 
 ### 🔹 测量阶段性能开销
-- 双趟测量：Intrinsic 测量 + 实际测量
-- 每次子组合的 recomposition scope 扩大风险
-- N 层 SubcomposeLayout 嵌套的指数级测量风险
+- SubcomposeLayout 不会默认执行 “Intrinsic + 实际测量” 双趟；成本来自实际请求的 slot、子树组合和测量
+- 父级重组、measure 阶段状态读取与 content lambda 身份变化可能扩大 remeasure/recompose 范围
+- 多层嵌套应按 pass、slot 数和子树成本实测，不能直接推导为指数复杂度
 
 ### 🔹 Intrinsic 查询的性能陷阱
-- minIntrinsicWidth/maxIntrinsicWidth 的传播链路
-- 何时 Intrinsic 查询触发全树重新测量
-- @IntrinsicMeasurer 的开销与规避策略
+- SubcomposeLayout 使用 NoIntrinsics 策略，IntrinsicSize 查询传播到它时可能直接抛出异常
+- Intrinsic 查询只沿参与查询的布局关系传播，不等价于无条件全树重新测量
+- Compose UI 1.11.4 没有公开的 `@IntrinsicMeasurer` 注解；普通 Layout 通过 MeasurePolicy intrinsic 方法处理
 
 ### 🔹 Subcomposition 与 Recomposition 的交互
 - subcompose() 调用的时机与频率
@@ -37,14 +48,14 @@ confidence: medium
 - 重组传播在 SubcomposeLayout 边界的行为
 
 ### 🔹 性能诊断方法
-- Compose Compiler Metrics 中的 SubcomposeLayout 标记
-- Layout Inspector 中的测量次数统计
-- Perfetto trace 中 Compose:recompose track 的 subcompose 事件
+- Compose Compiler Metrics 可解释可跳过性与稳定性，但不提供 SubcomposeLayout 测量次数
+- Layout Inspector 的 composition/recomposition/skip 计数不能替代 measure 次数或耗时
+- Perfetto 需结合 Composition Tracing、Macrobenchmark 与自定义计数确认实际 subcompose/measure 工作
 
 ### 🔹 替代方案与迁移策略
-- 使用 BoxWithConstraints 替代 SubcomposeLayout 的场景
+- BoxWithConstraints 本身基于 SubcomposeLayout；只有在约束决定内容结构时才应保留
 - 基于固定尺寸或 Modifier 链的静态布局优化
-- Compose 1.7+ LookaheadScope API 的替代思路
+- LookaheadScope 自 Compose UI 1.5.0 起提供，适用于目标布局/过渡，不是通用替代方案
 
 ## 扩展
 
@@ -53,8 +64,8 @@ confidence: medium
 - item key 对 subcomposition 缓存的影响
 
 ### 🔸 Android 17 上 Compose 的布局性能改进
-- 测量缓存的新策略
-- 是否有 framework 层对 SubcomposeLayout 的原生优化
+- SubcomposeLayout 行为由 AndroidX Compose 依赖版本决定，Android 17 framework 不提供专门加速路径
+- Android 17 FrameTimeline 可定位帧 deadline，但 slot 调度仍需 Compose trace 与 measure 证据
 
 <!-- outline-end -->
 
