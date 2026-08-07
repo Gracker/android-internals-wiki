@@ -1,14 +1,24 @@
 ---
 title: "Perfetto pprof 与 Simpleperf 原生可视化分析"
 chapter: "13.21"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 tags: [Perfetto, pprof, Simpleperf, CPU Profiling, Flamegraph]
 related_chapters: ["13.12", "13.14", "14.24"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "研究素材"
-confidence: medium
+last_verified: "2026-08-07"
+last_draft_polish_at: "2026-08-07T15:35:22+08:00"
+last_draft_polish_run_id: "20260807-153522-draft-polish-bf477a52"
+task6_state: pending
+task9_state: pending
+pipeline_stage: task6_pending
+confidence: medium-high
+sources:
+  - "Perfetto v53.0/v54.0/v57.2 release notes"
+  - "Perfetto docs: other-formats, cpu-profiling, converting"
+  - "AOSP android-17.0.0_r1: system/extras/simpleperf and external/perfetto"
 ---
 
 # 13.21 Perfetto pprof 与 Simpleperf 原生可视化分析
