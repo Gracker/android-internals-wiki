@@ -1312,6 +1312,28 @@
       "summary": "标题与元数据需避免暗示 Compose 1.11.4 直接读取 FrameTimeline deadline",
       "type": "source-boundary",
       "updated_at": "2026-08-07T12:41:01.814748+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-methodology/09-observability-closed-loop.md",
+      "close_note": "Fixed in rework: explicit source/version boundary added; frontmatter rework metadata refreshed; chapter routed to ready-for-review.",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20260807-133523-rework-26b6fba8",
+      "created_at": "2026-08-07T13:43:23.102852+08:00",
+      "created_by": "aiw-polish-rework",
+      "created_run_id": "20260807-133523-rework-26b6fba8",
+      "details": "Rework resolved pre-run pending-verification-marker/thin-source-marking by adding an explicit source/version boundary paragraph and refreshing rework frontmatter; chapter returned to ready-for-review for Task6/Task9.",
+      "id": "finding-20260807-159-rework-marker",
+      "log_path": "logs/rework/2026-08-07-20260807-133523-rework-26b6fba8-rework.md",
+      "severity": "P2",
+      "source_paths": [
+        "src/part3-tools/ch15-methodology/09-observability-closed-loop.md",
+        "android-17.0.0_r1",
+        "android17-6.18-2026-06_r6"
+      ],
+      "status": "fixed",
+      "summary": "15.9 retained pending-verification/thin-source quality flags despite source-backed body",
+      "type": "article-quality-marker",
+      "updated_at": "2026-08-07T13:43:23.151315+08:00"
     }
   ],
   "schema_version": 1

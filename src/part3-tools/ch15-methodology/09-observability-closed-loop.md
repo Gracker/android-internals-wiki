@@ -2,12 +2,17 @@
 title: "从采集到治理的反馈回路"
 chapter: "15.9"
 section: "15.9"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) – Android 17 (API 37)"
-last_verified: "2026-07-30"
-last_verified_against: "AndroidX metrics-performance 1.0.0 sources；Android 17 / API 37 / AOSP android-17.0.0_r1；Android Vitals 与 Perfetto 官方文档"
+last_verified: "2026-08-07"
+last_verified_against: "AndroidX metrics-performance 1.0.0 sources；Android 17 / API 37 / AOSP android-17.0.0_r1；Android Vitals 与 Perfetto 官方文档；2026-08-07 rework verified no pending marker remains and source anchors are explicit"
+last_rework_at: "2026-08-07T13:42:07+08:00"
+last_rework_run_id: "20260807-133523-rework-26b6fba8"
+last_rework_log: "logs/rework/2026-08-07-20260807-133523-rework-26b6fba8-rework.md"
+rework_result: "ready-for-review"
+rework_notes: "2026-08-07 rework：复核 pending-verification-marker/thin-source-marking；正文未发现未闭合待验证标记，补充来源边界段，frontmatter 保留 AndroidX/Android Vitals/Perfetto/AOSP android-17.0.0_r1/android17-6.18 source anchors；章节回流 ready-for-review 等待 Task6/Task9 复审。"
 confidence: medium-high
 sources:
   - type: official
@@ -34,16 +39,16 @@ sources:
     path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6"
 tags: [observability, apm, pipeline, governance, monitoring]
 related_chapters: ["7.1", "8.1", "9.1", "14.12", "15.3", "15.5", "15.6", "15.10"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task6_result: pass-light-edit
+pipeline_stage: ready-for-review
+task6_state: pending-review
+task6_result: rework-applied
 reviewed_date: 2026-07-04
 reviewed_by: openclaw-task6
 last_task6_at: 2026-07-04T13:09:00+08:00
-task9_state: reviewed
+task9_state: pending-review
 repaired_date: "2026-04-22"
 repaired_by: "codex"
-task9_result: pass-tech-review
+task9_result: rework-applied
 task9_reviewed_date: "2026-07-04"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-07-04T18:20:00+08:00"
@@ -92,6 +97,8 @@ last_deepseek_polish_at: "2026-05-24"
 - 验收结论以及没有解决时的后续动作。
 
 任一项长期缺失，监控数据都会与工程工作脱节。常见表现包括告警重复、工单没有证据、同类问题反复调查，以及修复上线后无人核对结果。
+
+本节的技术边界只锚定到公开 AndroidX `metrics-performance:1.0.0` 源码、Android Vitals 与 Perfetto 官方文档，以及 AOSP `android-17.0.0_r1` / Android common kernel `android17-6.18` 可核验接口。文中的阈值与 SLA 均作为团队内治理方法描述；凡涉及具体产品红线，都要求在工单或规则旁记录分母、样本量和制定依据，不从通用示例外推出平台结论。
 
 ## 先区分四种数据
 
