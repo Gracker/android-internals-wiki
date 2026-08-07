@@ -1,14 +1,24 @@
 ---
 title: "Compose 无限动画与 VectorConverter 性能优化"
 chapter: "22.32"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [compose, animation, infinite-transition, vector-converter, performance]
 related_chapters: ["22.5", "22.21", "22.11", "22.27"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "AOSP结构+章节深挖"
-confidence: medium
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+last_draft_polish_at: "2026-08-07T19:35:58+08:00"
+last_draft_polish_run_id: "20260807-193558-draft-polish-c7c8c2be"
+last_verified: "2026-08-07"
+confidence: medium-high
+sources:
+  - "Android 17 Choreographer.java (android-17.0.0_r1)"
+  - "AndroidX Compose Animation/Core/UI 1.11.4 source snapshot 854220f44ea8ea80fee824a6c5a045f39bede289"
+  - "Android Developers Compose performance phases, animation tooling, TwoWayConverter, AnimatedImageVector, preferredFrameRate, Macrobenchmark metrics"
 ---
 
 # 22.32 Compose 无限动画与 VectorConverter 性能优化
@@ -23,22 +33,22 @@ confidence: medium
 - 多个 infiniteAnimable 并行运行时的 CPU 开销累积
 
 ### 🔹 InfiniteAnimation 的底层调度
-- AnimationClockakov 与 MonotonicFrameClock 的协作
-- InfiniteTransition.runInfiniteLoop() 的重组模式
-- 无限动画暂停时的资源释放（DisposableEffect 链路）
-- Android 17 Compose 1.9+ 中 infinite animation 的帧调度优化
+- MonotonicFrameClock 与 Choreographer ANIMATION 阶段的协作
+- InfiniteTransition.run()、LaunchedEffect 与 withInfiniteAnimationFrameNanos() 的帧循环
+- 子动画注册/移除的 DisposableEffect 链路，以及窗口 ON_STOP 时的帧时钟暂停边界
+- Compose 1.11.4 中 MotionDurationScale 与 preferredFrameRate 的行为边界
 
-### 🔹 VectorConverter 与 AnimatedVectorDrawable 性能
-- AnimatedVectorDrawable 在 Compose 中的加载路径
-- VectorConverter：将 VectorDrawable XML 转换为 Compose 动画树
-- VectorConverter 生成的 ObjectAnimation 的性能开销分析
-- 批量 VectorConverter 解析对内存分配的影响
+### 🔹 TwoWayConverter 与 Animated Vector 性能
+- AnimatedImageVector 在 Compose 中的资源加载路径
+- TwoWayConverter：业务值与 AnimationVector 的双向映射
+- 自定义 convertFromVector() 与对象分配的每帧热点
+- 批量 Animated Vector Painter/动画状态对列表场景的影响
 
 ### 🔹 无限动画的性能优化策略
 - 使用 graphicsLayer 替代 Modifier.offset 进行变换
 - alpha 动画的合成层策略与 GPU 开销
-- 无限动画的降帧策略：在低端机上降低更新频率
-- DeratingStrategy：在不可见时自动暂停动画（basedOnState 等模式）
+- 帧率偏好与手动降频的适用边界
+- 用显式可见性状态移出组合，而不是依赖透明或遮挡自动暂停
 
 ### 🔹 场景案例
 - 加载指示器（Loading Spinner）的性能优化
@@ -59,8 +69,8 @@ confidence: medium
 - 混合使用场景下的最佳实践
 
 ### 🔸 Android 17 Compose 动画新特性
-- Compose 1.9+ 的 AnimationSpec 改进
-- TargetBasedAnimation 的预测性帧调度
+- Android 17 系统基线与应用侧 Compose 版本解耦
+- Compose 1.11.4 Animation Core / UI 行为的版本锚点
 
 <!-- outline-end -->
 
@@ -75,7 +85,7 @@ confidence: medium
 
 Compose 随应用依赖发布，版本节奏与 Android 平台、内核相互独立。Android 17 与内核标签限定本知识库的系统环境；`InfiniteTransition`、`TwoWayConverter` 和 `AnimatedImageVector` 的行为仍应以应用解析到的 Compose 版本为准。
 
-受保护提纲保留了任务创建时的若干旧术语。当前源码中没有 `AnimationClockakov`、`InfiniteTransition.runInfiniteLoop()`、`DeratingStrategy` 或 `basedOnState` 这些 API。对应实现是 `MonotonicFrameClock`、`InfiniteTransition.run()`、组合生命周期与应用显式可见性状态。本节也会分开说明 `TwoWayConverter` 和 Animated Vector XML，两者属于不同链路。
+本节已把任务创建时的旧术语收敛到当前源码名称：当前源码中没有 `AnimationClockakov`、`InfiniteTransition.runInfiniteLoop()`、`DeratingStrategy` 或 `basedOnState` 这些 API。对应实现是 `MonotonicFrameClock`、`InfiniteTransition.run()`、组合生命周期与应用显式可见性状态。本节也会分开说明 `TwoWayConverter` 和 Animated Vector XML，两者属于不同链路。
 
 ## 1. 选择与生命周期相符的动画 API
 
