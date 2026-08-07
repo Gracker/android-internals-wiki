@@ -2556,6 +2556,38 @@
       "action": "indexed-only-chapter-freeze",
       "score": 17,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "[RSS订阅] 2026-08-08",
+      "title": "[RSS订阅] 2026-08-08",
+      "summary": "",
+      "chapter": "ch16",
+      "processed_at": "2026-08-08T06:20:32.263167+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-07-morning-AgentPlugins-TeamMemory-SkillEntropy-研究材料/01-dump-agent-plugins.md",
+      "title": "[DeepResearch] Research Dump · Agent Plugins 1.0",
+      "summary": "--- phase: 1 topic: Agent Plugins 1.0 date: 2026-08-07 sources: [opencli-twitter, opencli-google, opencli-web] --- ## 执行摘要 - 本 dump 聚焦 Agent Plugins 1.0：它是 Skills 与 MCP server 配置的可移植包格式，不是完整 agent runtime 标准。 - 核心来源：Open",
+      "chapter": "ch16",
+      "processed_at": "2026-08-08T06:20:32.263167+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part4-system/ch17-oem/03-industry-cases.md",
+      "route_confidence": 28,
+      "route_terms": [
+        "research",
+        "agent",
+        "topic",
+        "date",
+        "sources",
+        "open",
+        "aiw",
+        "研究材料"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "schema_version": "2.1",
