@@ -1,7 +1,7 @@
 ---
 title: "Perfetto pprof 与 Simpleperf 原生可视化分析"
 chapter: "13.21"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 tags: [Perfetto, pprof, Simpleperf, CPU Profiling, Flamegraph]
 related_chapters: ["13.12", "13.14", "14.24"]
@@ -11,10 +11,14 @@ gap_source: "研究素材"
 last_verified: "2026-08-07"
 last_draft_polish_at: "2026-08-07T15:35:22+08:00"
 last_draft_polish_run_id: "20260807-153522-draft-polish-bf477a52"
-task6_state: pending
-task9_state: pending
-pipeline_stage: task6_pending
-confidence: medium-high
+reviewed_date: "2026-08-07"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: finalized
+last_review_finalize_at: "2026-08-07T16:07:09+08:00"
+last_review_finalize_run_id: "20260807-160526-7569949f"
+confidence: high
 sources:
   - "Perfetto v53.0/v54.0/v57.2 release notes"
   - "Perfetto docs: other-formats, cpu-profiling, converting"
@@ -27,8 +31,8 @@ sources:
 ## 要点
 
 ### 🔹 pprof 原生可视化（Perfetto v53+）
-- Perfetto UI 直接导入和可视化 pprof profile 数据，无需第三方工具转换
-- 支持在同一 Trace 中同时分析 system trace 和 CPU profiling 数据
+- Perfetto UI 可直接导入和可视化 pprof profile 数据，无需先转成第三方火焰图格式
+- pprof 适合聚合 profile 页面；若要与调度、Binder、FrameTimeline 同轴分析，应优先使用同一 trace 内的 `linux.perf` 或确认时钟映射
 - 专用 pprof 分析页面
 
 ### 🔹 Simpleperf protobuf 格式导入
