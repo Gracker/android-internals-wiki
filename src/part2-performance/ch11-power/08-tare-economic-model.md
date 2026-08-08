@@ -10,14 +10,14 @@ created_date: "2026-06-04"
 drafted_date: "2026-06-04"
 drafted_by: "openclaw-task2a"
 gap_source: "素材驱动"
-last_verified: 2026-08-05
-last_verified_against: "AOSP android-13.0.0_r1 / android-14.0.0_r1 历史实现；TARE 删除提交 4a98dd235a70；AOSP android-17.0.0_r1；Android 17 / API 37 SDK 与官方功耗文档 2026-08"
+last_verified: 2026-08-08
+last_verified_against: "AOSP android-13.0.0_r1 / android-14.0.0_r1 历史实现；TARE 删除提交 4a98dd235a70；AOSP android-17.0.0_r1；Android 17 / API 37 SDK 与官方功耗文档 2026-08；deep-review 2026-08-08 未引入 Android 18/API38+ 结论"
 confidence: high
 task6_state: deep-reviewed
 task9_state: ready-for-audit
 pipeline_stage: deep_review_passed
-last_deep_review_at: 2026-08-05
-last_deep_review_run_id: 20260805-083541-deep-review-30d9b8cb
+last_deep_review_at: 2026-08-08
+last_deep_review_run_id: 20260808-123526-deep-review-30d9b8cb
 sources:
   - type: aosp
     path: "https://android.googlesource.com/platform/frameworks/base/+/4a98dd235a708115db41e722776eff3ef9ed09fe"
@@ -60,6 +60,8 @@ sources:
 Android 17 不包含 TARE（The Android Resource Economy）。在 `android-17.0.0_r1` 中找不到 `com.android.server.tare`、`TareController`、`android.app.tare.EconomyManager` 或 `resource_economy` 服务。JobScheduler 当前使用 App Standby、`QuotaController`、后台限制、Doze、显式约束和 flexibility policy 管理后台任务。
 
 这个版本边界值得单独成章。网上仍有不少资料把 ARC 余额、`dumpsys tare` 和 `EconomyManager` 写成 Android 17 能力；按这些资料排查，只会寻找已经删除的服务。TARE 的设计仍有学习价值，但它只能放在 Android 13—14 的历史源码中阅读。
+
+本次 deep-review 只复核到 Android 17 / API 37 和历史 TARE 源码边界；没有把 Android 18/API38+ 主线变更纳入正文结论。读者若在厂商系统中看到同名私有服务，应按该厂商版本单独取证，不能回推为 AOSP Android 17 合同。
 
 ## 11.8.1 结论表：哪些说法已经失效
 
@@ -296,7 +298,7 @@ adb shell dumpsys batterystats --charged > batterystats.txt
 
 ## 11.8.10 版本迁移清单
 
-本清单用于审阅旧稿、架构图或排障手册；本章在 2026-08-05 deep-review 中复核为已按下面口径完成自查，后续迁移其他材料时可逐项套用：
+本清单用于审阅旧稿、架构图或排障手册；本章在 2026-08-08 deep-review 中复核为已按下面口径完成自查，后续迁移其他材料时可逐项套用：
 
 | 迁移项 | 本章状态 |
 |---|---|

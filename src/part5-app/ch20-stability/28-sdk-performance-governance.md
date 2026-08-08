@@ -1,7 +1,7 @@
 ---
 title: "第三方 SDK 性能影响评估与治理实战"
 chapter: "20.28"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [SDK治理, 第三方库, 性能评估, 启动阻塞, 稳定性]
 related_chapters: ["21.3", "20.1", "23.1", "24.14"]
@@ -11,10 +11,14 @@ gap_source: "Clippings参考书+日常痛点+AOSP SDK Runtime"
 last_verified: "2026-08-08"
 last_draft_polish_at: "2026-08-08T11:35:18+08:00"
 last_draft_polish_run_id: "20260808-113518-draft-polish-76608468"
-task6_state: pending
-task9_state: pending
-pipeline_stage: task6_pending
 confidence: high
+reviewed_date: "2026-08-08"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: finalized
+last_review_finalize_at: "2026-08-08T12:06:09+08:00"
+last_review_finalize_run_id: "20260808-120545-a55fec3c"
 sources:
   - "AOSP Android 17 ActivityThread (android-17.0.0_r1)"
   - "AOSP Android 17 SdkSandboxManagerService (android-17.0.0_r1)"
@@ -30,7 +34,7 @@ sources:
 
 ### 🔹 SDK 性能影响全貌
 - 第三方 SDK 对应用启动、内存、耗电、网络的全方位性能侵入
-- 行业数据：单个应用平均集成 20-40 个 SDK，SDK 代码量占应用总体积 30-60%
+- SDK 数量与代码占比必须按供应商、能力、artifact 与最终制品多口径核对，不能直接套用行业均值
 - SDK 性能问题的隐蔽性：单 SDK 达标但多 SDK 叠加后严重劣化
 
 ### 🔹 SDK 启动耗时归因与治理
@@ -40,7 +44,7 @@ sources:
 - Jetpack App Startup 库的标准化初始化路径与局限
 
 ### 🔹 SDK 内存侵入评估
-- SDK 内存占用的精确测量方法（procrank、smaps、heap dump 对比法）
+- SDK 内存占用的 A/B 测量方法（procrank、smaps、heap dump 对比法）与同进程归因边界
 - 常见 SDK 内存泄漏模式（静态引用、单例 Context、注册未反注册）
 - SDK Native 内存：so 库加载的 RSS 增量与 mmap 分析
 
