@@ -1,7 +1,7 @@
 ---
 title: "Compose SubcomposeLayout 性能深度：层级测量、Intrinsic 与重组陷阱"
 chapter: "22.34"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [Compose, SubcomposeLayout, 布局性能, Intrinsics, 测量]
 related_chapters: ["22.3", "22.22", "22.25", "22.28"]
@@ -13,13 +13,18 @@ sources:
   - "AndroidX Compose Foundation 1.11.4 LazyLayout/BoxWithConstraints sources @ 854220f44ea8ea80fee824a6c5a045f39bede289"
   - "Android 17 platform tag android-17.0.0_r1"
   - "Android common kernel tag android17-6.18-2026-06_r6"
-pipeline_stage: task6_pending
-task6_state: pending
-task9_state: pending
+pipeline_stage: finalized
+task6_state: reviewed
+task9_state: reviewed
 last_draft_polish_at: "2026-08-07T23:35:38+08:00"
 last_draft_polish_run_id: "20260807-233538-draft-polish-342b11bc"
-last_verified: "2026-08-07"
-confidence: medium-high
+last_verified: "2026-08-08"
+reviewed_date: "2026-08-08"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+last_review_finalize_at: "2026-08-08T08:12:33+08:00"
+last_review_finalize_run_id: "20260808-081000-ee813258"
+last_verified_against: "AndroidX Compose UI/Foundation/Runtime 1.11.4 @ 854220f44ea8ea80fee824a6c5a045f39bede289; Android platform android-17.0.0_r1; common kernel android17-6.18-2026-06_r6"
+confidence: high
 ---
 
 # 22.34 Compose SubcomposeLayout 性能深度：层级测量、Intrinsic 与重组陷阱
@@ -60,7 +65,7 @@ confidence: medium-high
 ## 扩展
 
 ### 🔸 LazyList 内部对 SubcomposeLayout 的使用
-- LazyList 实现 中 SubcomposeLayout 的特殊优化
+- LazyList 实现中 SubcomposeLayout 的特殊优化
 - item key 对 subcomposition 缓存的影响
 
 ### 🔸 Android 17 上 Compose 的布局性能改进
@@ -208,8 +213,8 @@ fun SizeAwareOverlay(
 
         val overlayPlaceables =
             subcompose(DependentSlot.Overlay) {
-                    overlay(size)
-                }
+                overlay(size)
+            }
                 .map { measurable ->
                     measurable.measure(
                         Constraints.fixed(size.width, size.height)
@@ -530,4 +535,4 @@ Android 17 的 FrameTimeline 能帮助确认 App SurfaceFrame 是否错过 deadl
 
 SubcomposeLayout 允许父布局在 measure 或 layout 阶段选择并组合 slot。它的价值来自约束依赖、兄弟尺寸依赖和按需内容；代价来自子 Composition、slot 生命周期、额外 measure 工作与复用管理。稳定 slotId、准确的 Lazy key/contentType、有限且兼容的复用，以及减少无必要的每 item BoxWithConstraints，都比泛化的“层级过深”更可操作。
 
-Intrinsic 查询在当前实现中直接被拒绝，BoxWithConstraints 自身使用 SubcomposeLayout，LookaheadScope 还会引入目标与 approach pass。性能分析需要把 Compiler Metrics、Layout Inspector 和 Perfetto 的能力分开：编译信息解释可跳过性，Inspector 提供结构与重组线索，Perfetto 和 Macrobenchmark负责运行时耗时与帧结果。Android 17 继续处理 Compose 输出后的 HWUI、BufferQueue、SurfaceFlinger 和显示路径，不参与 slot 调度。
+Intrinsic 查询在当前实现中直接被拒绝，BoxWithConstraints 自身使用 SubcomposeLayout，LookaheadScope 还会引入目标与 approach pass。性能分析需要把 Compiler Metrics、Layout Inspector 和 Perfetto 的能力分开：编译信息解释可跳过性，Inspector 提供结构与重组线索，Perfetto 和 Macrobenchmark 负责运行时耗时与帧结果。Android 17 继续处理 Compose 输出后的 HWUI、BufferQueue、SurfaceFlinger 和显示路径，不参与 slot 调度。
