@@ -61,7 +61,7 @@ Android 17 不包含 TARE（The Android Resource Economy）。在 `android-17.0.
 
 这个版本边界值得单独成章。网上仍有不少资料把 ARC 余额、`dumpsys tare` 和 `EconomyManager` 写成 Android 17 能力；按这些资料排查，只会寻找已经删除的服务。TARE 的设计仍有学习价值，但它只能放在 Android 13—14 的历史源码中阅读。
 
-本次 deep-review 只复核到 Android 17 / API 37 和历史 TARE 源码边界；没有把 Android 18/API38+ 主线变更纳入正文结论。读者若在厂商系统中看到同名私有服务，应按该厂商版本单独取证，不能回推为 AOSP Android 17 合同。
+本文只覆盖 Android 17 / API 37 和历史 TARE 源码边界；Android 18/API38+ 主线变更不纳入正文结论。读者若在厂商系统中看到同名私有服务，应按该厂商版本单独取证，不能回推为 AOSP Android 17 合同。
 
 ## 11.8.1 结论表：哪些说法已经失效
 

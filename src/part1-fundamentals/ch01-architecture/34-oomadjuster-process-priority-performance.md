@@ -55,7 +55,7 @@ Android 不让应用直接决定自己的进程寿命。system_server 根据进�
 
 API 37 的实现已经迁入 `com.android.server.am.psc` 包。旧文章若仍以 `com.android.server.am.OomAdjuster.java` 为源码入口，会错过 Android 17 的 `ProcessStateController`、批处理 session、能力传播和新 tracing 字段。
 
-本轮 deep-review 复核范围限定在 `android-17.0.0_r1` framework / lmkd 与 `android17-6.18-2026-06_r6` kernel tracepoint；正文中的 PSC、freezer、LMKD socket 和 Perfetto 结论均按该基线表述，不外推到 Android 18/API 38+ 主线或厂商私有改造。
+本文的证据范围限定在 `android-17.0.0_r1` framework / lmkd 与 `android17-6.18-2026-06_r6` kernel tracepoint；正文中的 PSC、freezer、LMKD socket 和 Perfetto 结论均按该基线表述，不外推到 Android 18/API 38+ 主线或厂商私有改造。
 
 ## 一、进程优先级不是一个数字
 
