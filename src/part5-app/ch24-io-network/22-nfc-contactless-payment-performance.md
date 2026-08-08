@@ -1,29 +1,50 @@
 ---
 title: "Android 17 NFC 性能优化与无接触支付"
 chapter: "24.22"
-status: needs-review
+status: ready-for-review
 applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
 tags: ["Android", "连接性", "NFC"]
 related_chapters: ["ch05-cpu-power"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-07"
 gap_source: "daily-info"
-last_verified: "2026-07-27"
-last_verified_against: "rework source-boundary check; routed material is unrelated audio hardening research, only Android Developers NFC docs retained as background"
-confidence: low
-pipeline_stage: needs-rework
-task6_state: needs-source-material
-task9_state: rework-returned-source-boundary
+last_verified: "2026-08-09"
+last_source_verified_at: "2026-08-09"
+last_verified_against: "Android 17/API 37 official NFC docs and AOSP packages/modules/Nfc android-17.0.0_r1 source anchors; unrelated audio hardening material remains rejected"
+confidence: medium
+pipeline_stage: ready-for-review
+task6_state: source-evidence-added
+task9_state: rework-fixed
 last_deep_review_at: "2026-07-27T12:35:27+08:00"
 last_deep_review_run_id: "20260727-123527-deep-review-455b9e9f"
-last_rework_at: "2026-07-27T17:35:55+08:00"
-last_rework_run_id: "20260727-173511-rework-455b9e9f"
-rework_summary: "Rework 未发现可支撑 NFC 支付性能结论的一手材料；已统一状态边界、强化不可发布说明，并保留为待补 NFC/AOSP 证据的 needs-review 页面。"
+last_rework_at: "2026-08-09T03:14:43+08:00"
+last_rework_run_id: "20260809-031354-rework-bf063b3b"
+rework_summary: "Rework closed finding-c8aaa40d5450 by binding the chapter to Android Developers NFC/HCE/API-diff docs and AOSP packages/modules/Nfc android-17.0.0_r1 sources, rejecting unrelated audio material, and keeping all performance guidance as measurement methodology rather than fixed platform guarantees."
 sources:
   - type: official-docs
-    ref: "Android Developers: NFC basics / advanced NFC"
-    url: "https://developer.android.com/develop/connectivity/nfc"
-    status: background-reference-only
+    ref: "Android 17 / API 37 android.nfc API diff"
+    url: "https://developer.android.com/sdk/api_diff/37/changes/pkg_android.nfc"
+    status: source-evidence
+  - type: official-docs
+    ref: "Android Developers: NFC basics"
+    url: "https://developer.android.com/develop/connectivity/nfc/nfc"
+    status: source-evidence
+  - type: official-docs
+    ref: "Android Developers: Host-based card emulation"
+    url: "https://developer.android.com/develop/connectivity/nfc/hce"
+    status: source-evidence
+  - type: official-docs
+    ref: "Android Developers: NfcAdapter / HostApduService API reference"
+    url: "https://developer.android.com/reference/android/nfc/NfcAdapter"
+    status: source-evidence
+  - type: aosp-source
+    ref: "packages/modules/Nfc @ android-17.0.0_r1: NfcAdapter.java, HostApduService.java, NfcDispatcher.java, NfcService.java, HostEmulationManager.java, NfcProprietaryCaps.java, NfcShellCommand.java"
+    url: "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/"
+    status: source-evidence
+  - type: android-common-kernel
+    ref: "android17-6.18-2026-06_r6"
+    url: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6"
+    status: boundary-reference
   - type: routed-material
     ref: "DeepResearch/2026-07-05-background-audio-hardening-power.md"
     status: rejected-unrelated-to-nfc-payment
@@ -34,6 +55,8 @@ sources:
 本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，覆盖 NFC 标签读取、Reader Mode、主机卡模拟（Host Card Emulation，HCE）和 off-host Secure Element 路由。Android 17 中，NFC framework 与系统服务源码都位于 `packages/modules/Nfc`；分析旧路径 `frameworks/base/core/java/android/nfc/` 或 `packages/apps/Nfc/`，会漏掉当前实现。
 
 无接触支付包含终端、射频控制器、Android NFC 服务、钱包应用、Secure Element、收单系统和支付网络。AOSP 能证明 Android 侧的分发、路由、服务绑定与 APDU 传递行为，无法替终端或支付网络承诺固定响应时间、成功率与离线额度。本章不设固定的平台指标，性能目标应由实测数据和业务协议共同确定。
+
+阅读时需区分两类证据：Android Developers 与 `android-17.0.0_r1` 源码用于解释 Android 侧的路由、服务绑定和 APDU 传递；端到端支付时延与成功率则必须在目标终端和支付协议上实测。因此，本章的优化建议聚焦于 Android 侧可观测、可复现的环节，不给出平台无法保证的统一 SLA。
 
 ## 1. 先分清三条 NFC 路径
 
