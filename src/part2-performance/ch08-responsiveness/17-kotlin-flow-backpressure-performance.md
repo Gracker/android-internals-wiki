@@ -1,15 +1,35 @@
 ---
 title: "Kotlin Flow 背压、操作符链与响应式性能边界"
 chapter: "8.17"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [kotlin, flow, coroutines, backpressure, reactive, performance]
 related_chapters: ["8.6", "5.10", "7.7"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-25"
 gap_source: "章节深挖"
-last_verified: "2026-08-01"
-confidence: "medium-high"
+last_verified: "2026-08-09"
+last_verified_against: "AOSP android-17.0.0_r1; kernel android17-6.18-2026-06_r6; kotlinx.coroutines 1.11.0; Android lifecycle/Compose/benchmark official docs"
+confidence: "high"
+sources:
+  - type: official
+    path: "https://kotlinlang.org/docs/coroutines-flow.html"
+  - type: official
+    path: "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow/"
+  - type: source
+    path: "https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/kotlinx-coroutines-core/common/src/flow/operators/Context.kt"
+  - type: source
+    path: "https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/kotlinx-coroutines-core/common/src/flow/SharedFlow.kt"
+  - type: source
+    path: "https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/kotlinx-coroutines-core/common/src/flow/StateFlow.kt"
+  - type: source
+    path: "https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/kotlinx-coroutines-core/common/src/flow/operators/Merge.kt"
+  - type: source
+    path: "https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/ui/kotlinx-coroutines-android/src/HandlerDispatcher.kt"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Looper.java"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c"
 last_deep_review_at: "2026-08-01T12:35:46+08:00"
 last_deep_review_run_id: "20260801-123546-deep-review-9d1e8e3a"
 ---
