@@ -24,6 +24,7 @@ created_date: '2026-04-05'
 gap_source: 官方文档+研究素材+AOSP结构
 gap_score: 15/20
 confidence: medium
+last_verified: '2026-08-08'
 sources:
 - type: official
   path: https://developer.android.com/reference/android/os/PerformanceHintManager
@@ -43,8 +44,6 @@ sources:
   path: frameworks/base/core/jni/android_os_PerformanceHintManager.cpp
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java
-- type: blog
-  path: https://android-developers.googleblog.com/
 pipeline_stage: "ready-to-publish"
 task6_state: reviewed
 task9_state: "reviewed"
@@ -58,6 +57,9 @@ task9_result: "auto-fixed"
 last_task9_at: "2026-07-03T00:27:00+08:00"
 last_task9_audit: "2026-07-03"
 last_task9_audit_log: "logs/deep-review/2026-07-03-00-audit.md"
+last_idle_audit_at: "2026-08-08T18:35:19+08:00"
+last_idle_audit_run_id: "20260808-183519-idle-audit-87d42442"
+last_idle_audit_log: "logs/audit/2026-08-08-20260808-183519-idle-audit-87d42442-idle-audit.md"
 last_task6_audit: "2026-07-05"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-27"
