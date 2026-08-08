@@ -1396,6 +1396,25 @@
       "summary": "Recurring thin-source-marking (4x 见参考资料) and pending-verification-marker (待验证假设 in body)",
       "type": "source-boundary",
       "updated_at": "2026-08-08T13:39:14.023833+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch24-io-network/20-android17-network-quota-management.md",
+      "created_at": "2026-08-08T15:37:27.034822+08:00",
+      "created_by": "draft-polish",
+      "created_run_id": "20260808-153552-draft-polish-43dea43a",
+      "details": "Draft-polish only updated frontmatter/source anchors because materials=[]; body was already substantive and Android 17 source-linked. Task6 should verify android-17.0.0_r1 / android17-6.18-2026-06_r6 URLs, code snippets, quota2/Long.MAX_VALUE/Data Saver/Telephony policy boundaries, and absence of Android 18 conclusions.",
+      "id": "finding-20260808-24-20-draft-polish-task6",
+      "log_path": "logs/review/2026-08-08-20260808-153552-draft-polish-43dea43a-draft-polish.md",
+      "severity": "P3",
+      "source_paths": [
+        "src/part5-app/ch24-io-network/20-android17-network-quota-management.md",
+        "android-17.0.0_r1",
+        "android17-6.18-2026-06_r6"
+      ],
+      "status": "open",
+      "summary": "24.20 promoted draft→ready-for-review; Task6 should verify AOSP/kernel source anchors and code snippets before finalization",
+      "type": "verify-source-anchors",
+      "updated_at": "2026-08-08T15:37:27.034822+08:00"
     }
   ],
   "schema_version": 1
