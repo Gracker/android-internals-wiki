@@ -65,12 +65,12 @@ last_task2b_verifier_at: "2026-07-11T11:34:06+08:00"
 task2b_verifier_notes: "Task9 idle-audit auto-fix on 2026-07-11 set task6_state: revisiting + pipeline_stage: task6_pending, but status remained finalized. Corrected to ready-for-review for Task6 re-review."
 auto_promoted_by: "openclaw-task9"
 auto_promoted_date: "2026-07-11"
-last_idle_audit_at: "2026-08-07"
-last_idle_audit_run_id: "20260807-103539-idle-audit-4ec8c98d"
+last_idle_audit_at: "2026-08-08"
+last_idle_audit_run_id: "20260808-223555-idle-audit-4ec8c98d"
 last_idle_audit_result: "pass-no-new-safe-fix"
-last_idle_audit_log: "logs/audit/2026-08-07-20260807-103539-idle-audit-4ec8c98d-idle-audit.md"
+last_idle_audit_log: "logs/audit/2026-08-08-20260808-223555-idle-audit-4ec8c98d-idle-audit.md"
 updated_by: "aiw-polish-idle-audit"
-updated_date: "2026-08-07"
+updated_date: "2026-08-08"
 ---
 # 13.14 Perfetto DataGrid 与 Jank CUJ 标准库
 
