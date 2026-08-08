@@ -1,13 +1,28 @@
 ---
 title: "内存泄漏检测与治理"
 chapter: "23.1"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 16 (API 35) - Android 17 (API 37)"
 tags: [memory-leak, performance, optimization, governance]
 related_chapters: ["4.1 Android 内存模型全景", "10.1 App 内存分析"]
-last_verified: "2026-06-26"
-last_verified_against: "AOSP android-17.0.0_r1"
+last_verified: "2026-08-09"
+last_verified_against: "Android 17 / API 37 / AOSP android-17.0.0_r1; Android official docs; LeakCanary docs; KOOM repository; Perfetto heapprofd docs"
+reviewed_date: "2026-08-09"
+reviewed_by: hermes-aiw-review-finalize-apply
+last_review_finalize_at: "2026-08-09T04:25:25+08:00"
+last_review_finalize_run_id: "20260809-042525-7671f9ac"
 confidence: high
+sources:
+  - "https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/"
+  - "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java"
+  - "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java"
+  - "https://developer.android.com/about/versions/17/features"
+  - "https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture"
+  - "https://developer.android.com/reference/android/app/ApplicationExitInfo"
+  - "https://developer.android.com/studio/profile/capture-heap-dump"
+  - "https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/"
+  - "https://github.com/KwaiAppTeam/KOOM"
+  - "https://perfetto.dev/docs/data-sources/native-heap-profiler"
 ---
 
 # 23.1 内存泄漏检测与治理
