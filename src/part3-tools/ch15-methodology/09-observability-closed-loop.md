@@ -6,14 +6,19 @@ status: ready-for-review
 drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) – Android 17 (API 37)"
-last_verified: "2026-08-07"
-last_verified_against: "AndroidX metrics-performance 1.0.0 sources；Android 17 / API 37 / AOSP android-17.0.0_r1；Android Vitals 与 Perfetto 官方文档；2026-08-07 rework verified no pending marker remains and source anchors are explicit"
+last_verified: "2026-08-08"
+last_verified_against: "AndroidX metrics-performance 1.0.0 sources（FrameData.copy、JankStats.createAndTrack、JankStatsApi31Impl DEADLINE overrun）；Android 17 / API 37 / AOSP android-17.0.0_r1；Android Vitals 与 Perfetto 官方文档；2026-08-08 deep review verified source anchors, version boundaries, and body markers"
 last_rework_at: "2026-08-07T13:42:07+08:00"
 last_rework_run_id: "20260807-133523-rework-26b6fba8"
 last_rework_log: "logs/rework/2026-08-07-20260807-133523-rework-26b6fba8-rework.md"
 rework_result: "ready-for-review"
-rework_notes: "2026-08-07 rework：复核 pending-verification-marker/thin-source-marking；正文未发现未闭合待验证标记，补充来源边界段，frontmatter 保留 AndroidX/Android Vitals/Perfetto/AOSP android-17.0.0_r1/android17-6.18 source anchors；章节回流 ready-for-review 等待 Task6/Task9 复审。"
+rework_notes: "2026-08-07 rework：复核上游质量标记；正文未发现未闭合核验标记，补充来源边界段，frontmatter 保留 AndroidX/Android Vitals/Perfetto/AOSP android-17.0.0_r1/android17-6.18 source anchors；章节回流 ready-for-review 等待 Task6/Task9 复审。"
 confidence: medium-high
+last_deep_review_at: "2026-08-08T20:35:37+08:00"
+last_deep_review_run_id: "20260808-203537-deep-review-26b6fba8"
+last_deep_review_log: "logs/deep-review/2026-08-08-20260808-203537-deep-review-26b6fba8-deep-review.md"
+deep_review_result: "ready-for-review"
+deep_review_notes: "2026-08-08 deep review：抽查 JankStats FrameData.copy/createAndTrack、FrameMetrics.DEADLINE overrun、ApplicationExitInfo 与 Perfetto 边界；正文仅做结构层级和措辞收敛，未提升平台上限；无 P0/P1。"
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/vitals"
@@ -128,7 +133,7 @@ last_deepseek_polish_at: "2026-05-24"
 
 同名指标若定义不同，不应合并。Play Console 的 user-perceived ANR rate 以日活用户为分母；客户端上报的“ANR 次数 / 启动次数”采用另一分母，两条曲线不能直接比较。
 
-### 帧信号：JankStats 的准确边界
+#### 帧信号：JankStats 的准确边界
 
 本章固定 `androidx.metrics:metrics-performance:1.0.0`。源码中的入口是 `JankStats.createAndTrack(window, JankStats.OnFrameListener)`，回调参数是 `FrameData`，不存在 `FrameData.getFrames()`。
 
@@ -168,7 +173,7 @@ class FeedActivity : AppCompatActivity() {
 
 JankStats 适合应用内页面和交互分群。定位某次慢帧仍要依赖系统 trace、FrameTimeline、RenderThread、SurfaceFlinger 与调度信息；JankStats 事件不能替代这些现场证据。
 
-### 进程退出：ApplicationExitInfo 的准确边界
+#### 进程退出：ApplicationExitInfo 的准确边界
 
 `ApplicationExitInfo` 从 Android 11 / API 30 提供。Android 17 的 `ActivityManager.getHistoricalProcessExitReasons()` 返回最近到最早的记录；系统使用有限环形缓冲，因此记录可能被覆盖。普通应用只能查询本 UID 的包，查询其他 UID 需要 `DUMP` 权限。
 
@@ -213,7 +218,7 @@ fun loadRecentExits(context: Context): List<ExitSummary> {
 
 API 26—29 没有等价的退出历史 API。`getRunningAppProcesses()` 只描述调用时仍在运行的进程，无法恢复已经消失的退出原因。旧系统需要组合崩溃上报、Play Console、服务端会话缺口和下一次启动标记；这些信号仍无法完整区分 LMKD、force-stop、系统终止和进程崩溃。
 
-### 版本边界
+#### 版本边界
 
 | 平台范围 | 帧数据 | 进程退出 | 系统级现场 |
 |---|---|---|---|
@@ -309,7 +314,7 @@ Play Vitals 与自建指标可以放在同一治理页面，但要标出来源�
 - 基线版本、回归版本、绝对值与变化量；
 - 样本量、采样策略和数据缺口；
 - 正常/异常样本及 trace、ANR、heap 等受控链接；
-- 已验证事实、待验证假设和候选 owner；
+- 已验证事实、仍需确认的假设和候选 owner；
 - 优先级依据、计划版本、风险与回滚条件；
 - 线下测试与线上验收指标。
 
