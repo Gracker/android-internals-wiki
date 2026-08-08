@@ -1,7 +1,7 @@
 ---
 title: "Compose PausableComposition 性能机制与 Choreographer 预算边界"
 chapter: "22.33"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 13 (API 33) - Android 17 (API 37)"
 tags: [Compose, PausableComposition, Choreographer, 渲染性能, FrameData]
 related_chapters: ["2.4", "22.3", "22.21", "22.22"]
@@ -14,14 +14,18 @@ sources:
   - "Android 17 Choreographer.java android-17.0.0_r1"
   - "AndroidX Compose Runtime/Foundation API reference and release notes"
 task6_state: reviewed
-task9_state: pending
-pipeline_stage: task9_pending
-last_verified: "2026-08-07"
-last_verified_against: "AndroidX Compose Runtime/Foundation/UI 1.11.4 source snapshot 854220f44ea8ea80fee824a6c5a045f39bede289; AOSP Choreographer.java @ android-17.0.0_r1; AndroidX API reference/release notes"
+task9_state: reviewed
+pipeline_stage: finalized
+last_verified: "2026-08-08"
+last_verified_against: "AndroidX Compose Runtime/Foundation/UI 1.11.4 source snapshot 854220f44ea8ea80fee824a6c5a045f39bede289; AOSP Choreographer.java @ android-17.0.0_r1; AndroidX API reference/release notes; local chapter consistency review 2026-08-08"
 last_draft_polish_at: "2026-08-07T11:35:48+08:00"
 last_draft_polish_run_id: "20260807-113548-draft-polish-25bb3663"
 last_deep_review_at: "2026-08-07T12:39:40+08:00"
 last_deep_review_run_id: "20260807-123556-deep-review-25bb3663"
+reviewed_date: "2026-08-08"
+reviewed_by: "hermes-aiw-review-finalize-apply"
+last_review_finalize_at: "2026-08-08T10:05:23+08:00"
+last_review_finalize_run_id: "20260808-100504-aa8b541a"
 ---
 
 # 22.33 Compose PausableComposition 性能机制与 Choreographer 预算边界
