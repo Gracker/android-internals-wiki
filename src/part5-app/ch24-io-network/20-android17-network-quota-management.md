@@ -1,33 +1,50 @@
 ---
 title: "Android 17 NetworkStatsService 与 NetworkPolicyManagerService 移动数据 quota 限速源码路径"
 chapter: "24.20"
-status: "draft"
+status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [network, io, http]
-last_draft_polish_at: "2026-07-29T14:02:42+08:00"
-last_draft_polish_run_id: "20260729-140242-draft-polish-43dea43a"
+last_draft_polish_at: "2026-08-08T15:36:16+08:00"
+last_draft_polish_run_id: "20260808-153552-draft-polish-43dea43a"
 last_rework_at: "2026-07-30T13:35:29+08:00"
 last_rework_run_id: "20260730-133529-rework-43dea43a"
 rework_summary: "Rework 第四轮（连续第四轮空 materials）：解决 pending-verification-marker（全文「待验证」表述改为「证据缺口」）；解决 thin-source-marking（§4 新增 5 处 [来源:] 内联标记覆盖公开 API）；扩充 §4 为应用层公开 API 边界指南并补 frontmatter sources（5 条 official API doc）。thin-body 无法在本轮修复，因 AOSP 源码材料仍未路由。"
-task6_state: "rework-applied-awaiting-source-material"
-task9_state: "rework-applied"
-pipeline_stage: "rework-applied-source-material-still-needed"
-last_verified: "2026-07-30"
-last_verified_against: "Android baseline android-17.0.0_r1; rework round 4 (2026-07-30) resolved heuristic flags via public API citations; AOSP source-code material still not routed (empty materials for 4 consecutive runs: 2026-07-26/27/29/30)"
-confidence: low
+draft_polish_summary: "Draft-polish 2026-08-08：materials 仍为空，但正文已是源码锚定的非占位稿；本轮不扩写新结论，仅补齐 frontmatter 的 AOSP/kernel/netd/public API source anchors，明确 Android 17 baseline，并推进到 Task6 复查队列。"
+task6_state: "pending"
+task9_state: "pending"
+pipeline_stage: "task6_pending"
+last_verified: "2026-08-08"
+last_verified_against: "Android baseline android-17.0.0_r1 / android17-6.18-2026-06_r6; draft-polish metadata/source-anchor pass only; Task6 must still review code snippets and URL resolution before finalization."
+confidence: medium
 sources:
+  - type: aosp
+    path: "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/src/com/android/server/net/NetworkStatsService.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/src/com/android/server/net/NetworkStatsFactory.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/BpfNetMaps.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/net/NetworkPolicyManagerService.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/net/NetworkManagementService.java"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/system/netd/+/refs/tags/android-17.0.0_r1/server/BandwidthController.cpp"
+  - type: kernel
+    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/netfilter/xt_quota2.c"
   - type: official
     path: "https://developer.android.com/reference/android/net/ConnectivityManager"
   - type: official
+    path: "https://developer.android.com/reference/android/net/NetworkCapabilities"
+  - type: official
     path: "https://developer.android.com/reference/android/app/usage/NetworkStatsManager"
   - type: official
-    path: "https://developer.android.com/training/basics/data-usage/data-saver"
+    path: "https://developer.android.com/develop/connectivity/network-ops/data-saver"
   - type: official
     path: "https://developer.android.com/reference/androidx/work/NetworkType"
   - type: official
     path: "https://developer.android.com/reference/android/app/job/JobInfo"
-  - type: source-material-required
-    note: "Pre-run materials array was empty for four consecutive runs (2026-07-26, 2026-07-27, 2026-07-29, 2026-07-30); AOSP source-code slices still not routed. Body remains constrained to public API boundary + evidence-gap scaffolding until AOSP material arrives."
+  - type: source-material-note
+    note: "Pre-run materials array was empty for this draft-polish run; no new body conclusion was added from unrouted material."
 ---
 
 # Android 17 NetworkStatsService 与 NetworkPolicyManagerService 移动数据 quota 限速源码路径
