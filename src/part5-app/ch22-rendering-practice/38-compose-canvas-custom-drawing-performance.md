@@ -20,6 +20,45 @@ reviewed_date: "2026-08-01"
 reviewed_by: "hermes-aiw-review-finalize-apply"
 last_review_finalize_at: "2026-08-01T08:12:43+08:00"
 last_review_finalize_run_id: "20260801-081243-625aae95"
+last_idle_audit_at: "2026-08-09T04:49:28+08:00"
+last_idle_audit_run_id: "20260809-044928-idle-audit-a8e2ab9f"
+sources:
+  - type: official
+    path: "https://developer.android.com/develop/ui/compose/graphics/draw/overview"
+    note: "Compose Canvas、DrawScope、坐标与 drawIntoCanvas 官方文档"
+  - type: official
+    path: "https://developer.android.com/develop/ui/compose/graphics/draw/modifiers"
+    note: "drawBehind、drawWithContent、drawWithCache、graphicsLayer 与 CompositingStrategy 边界"
+  - type: official
+    path: "https://developer.android.com/develop/ui/compose/phases"
+    note: "Compose phase 与 state read restart scope"
+  - type: official
+    path: "https://developer.android.com/develop/ui/compose/graphics/draw/brush"
+    note: "RuntimeShader / ShaderBrush 与 API 33 可用性"
+  - type: source
+    path: "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Canvas.kt"
+    note: "Compose UI 1.11.4 Canvas = Spacer + drawBehind 源码锚点"
+  - type: source
+    path: "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/drawscope/CanvasDrawScope.kt"
+    note: "Compose UI 1.11.4 DrawScope Paint 复用源码锚点"
+  - type: source
+    path: "https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt"
+    note: "Compose UI 1.11.4 Android graphicsLayer / RenderNode / compositing 源码锚点"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp"
+    note: "Android 17 HWUI RenderThread draw frame 源码锚点"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp"
+    note: "Android 17 HWUI CanvasContext 源码锚点"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp"
+    note: "Android 17 tag 中 HWUI Skia OpenGL pipeline 源码锚点"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp"
+    note: "Android 17 tag 中 HWUI Skia Vulkan pipeline 源码锚点"
+  - type: official
+    path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
+    note: "Baseline Profile / ART AOT 覆盖范围边界"
 ---
 
 # 22.38 Compose Canvas 自定义绘制性能实战
