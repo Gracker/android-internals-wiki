@@ -8,14 +8,14 @@ related_chapters: ["4.4", "1.3", "1.8", "5.8", "4.11", "1.18"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-27"
 drafted_date: "2026-06-27"
-last_verified: "2026-08-05"
+last_verified: "2026-08-08"
 last_verified_against: "AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6"
 confidence: high
 pipeline_stage: reviewed
 task6_state: reviewed
 task9_state: deep-reviewed
-last_deep_review_at: "2026-08-05"
-last_deep_review_run_id: "20260805-163541-deep-review-0e71bb6d"
+last_deep_review_at: "2026-08-08"
+last_deep_review_run_id: "20260808-163500-deep-review-0e71bb6d"
 sources:
   - type: official
     path: "developer.android.com/guide/components/activities/process-lifecycle"
@@ -54,6 +54,8 @@ sources:
 Android 不让应用直接决定自己的进程寿命。system_server 根据进程承载的 Activity、Service、BroadcastReceiver、ContentProvider 以及跨进程依赖，持续计算进程重要性；lmkd 在内存压力出现时使用这份结果选择回收目标。
 
 API 37 的实现已经迁入 `com.android.server.am.psc` 包。旧文章若仍以 `com.android.server.am.OomAdjuster.java` 为源码入口，会错过 Android 17 的 `ProcessStateController`、批处理 session、能力传播和新 tracing 字段。
+
+本轮 deep-review 复核范围限定在 `android-17.0.0_r1` framework / lmkd 与 `android17-6.18-2026-06_r6` kernel tracepoint；正文中的 PSC、freezer、LMKD socket 和 Perfetto 结论均按该基线表述，不外推到 Android 18/API 38+ 主线或厂商私有改造。
 
 ## 一、进程优先级不是一个数字
 
@@ -389,7 +391,7 @@ Kernel `oom/oom_score_adj_update` ftrace event 用于核对 score 写入时间�
 
 ## 十、版本边界与源码锚点
 
-Android 13 以后，cached 进程可能获得很少或零 CPU 时间；Android 14 以后，cached-app freezer 与延迟动态广播等策略进一步减少无效解冻。Android 17 的关键源码变化是 PSC 包迁移、ProcessStateController 入口、能力型 freezer 决策和结构化 proc-state tracing。
+Android 13 以后，cached 进程可能获得很少或零 CPU 时间；Android 14 以后，cached-app freezer 与延迟动态广播等策略进一步减少无效解冻。Android 17 的关键源码变化是 PSC 包迁移、ProcessStateController 入口、能力型 freezer 决策和结构化 proc-state tracing；本文未使用 Android 18/API 38 之后的主线实现反推 Android 17 行为。
 
 源码定位：
 
