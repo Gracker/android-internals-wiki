@@ -315,7 +315,7 @@ Android 8.0（API 26）为兼容设备提供广色域色彩管理。应用可以
 - 目标 buffer 格式；
 - GPU 是否因整个窗口进入更重的合成配置。
 
-脱离设备、分辨率、资源和渲染后端给出一个列表滑动开销比例，无法迁移到其他场景。更可靠的做法是在同一设备上准备 sRGB/P3 对照资源，固定分辨率、亮度和刷新率，再比较 GPU counters、RenderThread 与 SurfaceFlinger client composition。
+脱离具体设备、分辨率、资源和渲染后端给出的开销比例，无法迁移到其他场景。更可靠的做法是在同一设备上准备 sRGB/P3 对照资源，固定分辨率、亮度和刷新率，再比较 GPU counters、RenderThread 与 SurfaceFlinger client composition。
 
 ### 5.5 未标记和误标记是不同故障
 
