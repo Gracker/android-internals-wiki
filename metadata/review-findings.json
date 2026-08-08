@@ -1461,6 +1461,26 @@
       "summary": "frontmatter 将 Android 16 误标为 API 35",
       "type": "version-boundary",
       "updated_at": "2026-08-08T18:10:53.129384+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/1.48-android17-binder-priority-inheritance.md",
+      "close_note": "Fixed: folded historical [待验证]/[待补充] markers rewritten as historical non-citable notes; frontmatter reworked and ready-for-review.",
+      "closed_by": "rework",
+      "closed_run_id": "20260808-213546-rework-3b3755ed",
+      "created_at": "2026-08-08T21:37:56.832096+08:00",
+      "created_by": "rework",
+      "created_run_id": "20260808-213546-rework-3b3755ed",
+      "details": "pre-run quality_flags=pending-verification-marker; fixed by rewriting folded historical [待验证]/[待补充] placeholders as non-citable historical marker notes and returning chapter to ready-for-review.",
+      "id": "RF-20260808-213546-1-48-pending-marker",
+      "log_path": "logs/rework/2026-08-08-20260808-213546-rework-3b3755ed-rework.md",
+      "severity": "P3",
+      "source_paths": [
+        "marker-scan"
+      ],
+      "status": "fixed",
+      "summary": "1.48 folded historical outline retained pending verification markers",
+      "type": "pending-verification-marker",
+      "updated_at": "2026-08-08T21:37:56.880949+08:00"
     }
   ],
   "schema_version": 1
