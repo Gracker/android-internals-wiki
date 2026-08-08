@@ -3,9 +3,12 @@ title: 性能指标采集与上报
 chapter: '26.3'
 status: finalized
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
+last_verified: '2026-08-09'
+last_source_verified_at: '2026-08-09'
 last_verified_against: AOSP android-17.0.0_r1 StatsD/AM/Debug/Build sources + AndroidX
   metrics-performance + Firebase Performance Monitoring docs + LeakCanary 2.x + Debug.MemoryInfo
-  API docs
+  API docs; idle audit 2026-08-09 confirmed source anchors remain Android 17 / android-17.0.0_r1 bounded
+confidence: high
 tags:
 - android
 - performance
@@ -40,10 +43,50 @@ task9_review_notes: '2026-06-27 Task2B Lite: 修复网络聚合、JankStats关�
   中 pull atom 描述。 2026-06-29 Task9 Deep Tech Review auto-fix: 修正 StatsLog 公开 breadcrumb
   与任意 StatsEvent SystemApi 边界、StatsManager query/权限签名、JankStats StateInfo/Java setter、Freezer
   cgroup 语义、memtrack/StatsD 版本演进表、Android 17 SDK 常量与未验证留存数据。'
-last_task9_audit: '2026-06-29'
-last_task9_at: '2026-06-29T09:31:38+08:00'
+last_task9_audit: '2026-08-09'
+last_task9_at: '2026-08-09T03:47:35+08:00'
 last_task9_autofix_at: '2026-06-29'
 last_task6_audit: '2026-07-17T21:13:00+08:00'
+last_idle_audit_at: '2026-08-09T03:47:35+08:00'
+last_idle_audit_run_id: '20260809-034735-idle-audit-0e177ec8'
+last_idle_audit_log: logs/audit/2026-08-09-20260809-034735-idle-audit-0e177ec8-idle-audit.md
+sources:
+- type: source
+  path: https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/framework/java/android/app/StatsManager.java
+- type: source
+  path: https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/proto_logging/stats/atoms.proto
+- type: source
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java
+- type: source
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java
+- type: source
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp
+- type: source
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst
+- type: official
+  path: https://developer.android.com/reference/androidx/metrics/performance/JankStats
+- type: official
+  path: https://developer.android.com/topic/performance/jankstats
+- type: official
+  path: https://developer.android.com/reference/android/os/Debug
+- type: official
+  path: https://developer.android.com/reference/android/os/Debug.MemoryInfo
+- type: official
+  path: https://developer.android.com/reference/android/app/ActivityManager
+- type: official
+  path: https://developer.android.com/reference/android/app/ActivityManager.MemoryInfo
+- type: official
+  path: https://developer.android.com/reference/android/app/ApplicationExitInfo
+- type: official
+  path: https://firebase.google.com/docs/perf-mon
+- type: official
+  path: https://firebase.google.com/docs/perf-mon/custom-url-patterns
+- type: official
+  path: https://developer.android.com/topic/performance/power/setup-battery-historian
+- type: official
+  path: https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work#work-constraints
+- type: official
+  path: https://square.github.io/leakcanary/getting_started/
 ---
 
 # 性能指标采集与上报
