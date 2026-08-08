@@ -1376,6 +1376,26 @@
       "summary": "13.13 retained pending-verification/thin-source quality flags despite source-backed body",
       "type": "article-quality-marker",
       "updated_at": "2026-08-07T21:37:44.173805+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-methodology/06-testing-best-practices.md",
+      "close_note": "Fixed: 4 source markers replaced with exact official URLs; 待验证假设 rephrased to 待证实假设. Chapter routed back to ready-for-review.",
+      "closed_by": "rework",
+      "closed_run_id": "20260808-133535-rework-b52e6e4a",
+      "created_at": "2026-08-08T13:39:05.109360+08:00",
+      "created_by": "rework",
+      "created_run_id": "20260808-133535-rework-b52e6e4a",
+      "details": "Lines 182/345/412/583 used vague 见参考资料 suffix; line 492 had 待验证假设. Fixed: replaced with exact official URLs and rephrased to 待证实假设.",
+      "id": "finding-75bfa42a37f2",
+      "log_path": "logs/rework/2026-08-08-20260808-133535-rework-b52e6e4a-rework.md",
+      "severity": "P2",
+      "source_paths": [
+        "marker-scan"
+      ],
+      "status": "fixed",
+      "summary": "Recurring thin-source-marking (4x 见参考资料) and pending-verification-marker (待验证假设 in body)",
+      "type": "source-boundary",
+      "updated_at": "2026-08-08T13:39:14.023833+08:00"
     }
   ],
   "schema_version": 1
