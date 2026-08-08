@@ -2128,8 +2128,9 @@
         "sources",
         "aiw"
       ],
-      "route_status": "existing-chapter-routed",
-      "canonical_target_chapter": "ch01"
+      "route_status": "provisional-low-confidence",
+      "canonical_target_chapter": "ch01",
+      "route_migration_reason": "route_confidence 25 below shared threshold 30"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-04-Agent验收-实时语音-权限边界-研究材料/master-research.md",
@@ -2150,8 +2151,9 @@
         "sources",
         "aiw"
       ],
-      "route_status": "existing-chapter-routed",
-      "canonical_target_chapter": "ch13"
+      "route_status": "provisional-low-confidence",
+      "canonical_target_chapter": "ch13",
+      "route_migration_reason": "route_confidence 25 below shared threshold 30"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Gracker的Rss订阅/2026-08-06-Gracker的Rss订阅.md",
@@ -2223,8 +2225,9 @@
         "cpu",
         "linux"
       ],
-      "route_status": "existing-chapter-routed",
-      "canonical_target_chapter": "appendix"
+      "route_status": "provisional-low-confidence",
+      "canonical_target_chapter": "appendix",
+      "route_migration_reason": "route_confidence 28 below shared threshold 30"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-06-76703869-AppActuator-Agent操作Android.md",
@@ -2285,8 +2288,9 @@
         "github",
         "aiw"
       ],
-      "route_status": "existing-chapter-routed",
-      "canonical_target_chapter": "ch13"
+      "route_status": "provisional-low-confidence",
+      "canonical_target_chapter": "ch13",
+      "route_migration_reason": "route_confidence 25 below shared threshold 30"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-05-morning-LFM25-Jetpacker-AGENTS-Sol-研究材料/02-dump-jetpacker-hybrid.md",
@@ -2461,7 +2465,8 @@
         "blog",
         "aiw"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "provisional-low-confidence",
+      "route_migration_reason": "route_confidence 25 below shared threshold 30"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-06-evening-外环运维三件套-研究材料/03-dump-production-ops-checklist.md",
@@ -2503,7 +2508,8 @@
         "研究材料",
         "references"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "provisional-low-confidence",
+      "route_migration_reason": "route_confidence 28 below shared threshold 30"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-06-morning-DiscoveryLoop-PrimeAgent-AgentSafety-研究材料/references/01-prime-agent-blog.md",
@@ -2524,7 +2530,8 @@
         "topic",
         "aiw"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "provisional-low-confidence",
+      "route_migration_reason": "route_confidence 25 below shared threshold 30"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-06-morning-DiscoveryLoop-PrimeAgent-AgentSafety-研究材料/references/03-wired-techcrunch-discovery-loop.md",
@@ -2545,7 +2552,8 @@
         "t09",
         "aiw"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "provisional-low-confidence",
+      "route_migration_reason": "route_confidence 25 below shared threshold 30"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-08-06-morning-DiscoveryLoop-PrimeAgent-AgentSafety-研究材料/03-dump-agent-safety-msgboard.md",
@@ -2587,7 +2595,8 @@
         "aiw",
         "研究材料"
       ],
-      "route_status": "existing-chapter-routed"
+      "route_status": "provisional-low-confidence",
+      "route_migration_reason": "route_confidence 28 below shared threshold 30"
     }
   ],
   "schema_version": "2.1",

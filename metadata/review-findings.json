@@ -540,12 +540,15 @@
       "created_run_id": "20260731-131533-d602fc9b",
       "details": "Material 00-primary-x-signals.md covers OpenAI ARC-AGI-3 harness (retained reasoning/context compaction), Nadella earnings substitutable-model system, matanSF three-rings, Unsloth Kimi K3 1-bit, T3 Code mobile. Target chapter is AOSP android-17.0.0_r1 SharedPreferencesImpl/QueuedWork/fsync ANR analysis. route_confidence=28, route_terms are generic stopwords (research/topic/memory/and/system/thread), item action=indexed-only-chapter-freeze, chapter label ch16 vs target 6.03. No body edit made; entry marked body-apply-rejected-misroute.",
       "id": "AIW-BODY-APPLY-20260731-P1-misroute-6.03",
+      "close_note": "2026-08-09 verified: shared eligibility now rejects quarantined route statuses, non-routed entries and route_confidence below 30; dry-run selected an unrelated valid candidate instead of source-index #155.",
+      "closed_by": "codex-pipeline-audit",
+      "closed_at": "2026-08-09T02:25:00+08:00",
       "log_path": "/Users/gracker/.hermes/state/aiw-body-apply/evidence/20260731-131533-d602fc9b-misroute-evidence.md",
       "severity": "P1",
       "source_paths": [
         "metadata/source-index.json#155"
       ],
-      "status": "open",
+      "status": "verified",
       "summary": "body-apply misroute: source-index #155 (AI agent harness X-signals) routed to SharedPreferencesImpl ANR chapter 6.03; zero topical overlap, blocked to prevent fabrication.",
       "type": "routing-defect",
       "updated_at": "2026-07-31T13:18:24.557278+08:00"
@@ -557,12 +560,15 @@
       "created_run_id": "20260731-171505-42c39a9e",
       "details": "Source-index item primary-x-signals.md was rejected at 2026-07-31T13:15:33 (run 20260731-131533-d602fc9b) with route_status=rejected-misroute-by-apply and route_confidence=28 (generic stopwords). The upstream context script did not filter rejected-misroute items, re-surfacing it as candidate_ready at 17:15:05. Material is AI agent harness/memory X-signals (OpenAI ARC-AGI-3, Nadella, Kimi K3, T3 Code) with zero overlap to target AOSP SharedPreferencesImpl ANR chapter. Blocked to prevent fabrication. Fix: candidate filter should exclude route_status=rejected-misroute-by-apply.",
       "id": "finding-bee3fcd793de",
+      "close_note": "2026-08-09 verified by shared source_index_eligibility and body-apply dry-run: rejected/quarantined low-confidence material no longer reaches candidate_ready.",
+      "closed_by": "codex-pipeline-audit",
+      "closed_at": "2026-08-09T02:25:00+08:00",
       "log_path": "",
       "severity": "P1",
       "source_paths": [
         "body-apply-run-20260731-171505-42c39a9e"
       ],
-      "status": "open",
+      "status": "verified",
       "summary": "aiw-body-apply-context.py re-surfaced already-rejected misroute (primary-x-signals.md) as candidate_ready",
       "type": "upstream-routing-bug",
       "updated_at": "2026-07-31T17:17:10.829894+08:00"
@@ -595,13 +601,16 @@
       "created_run_id": "20260731-203532-deep-review-d4c41108",
       "details": "参考资料.md frontmatter chapter=3.12 与同章 12-predictive-back-system-architecture.md (chapter=3.12) 冲突。ch03 已占用 3.1-3.13，本参考索引改为 3.14。H1 同步更新。",
       "id": "finding-7d087da5634a",
+      "close_note": "2026-08-09 verified: 参考资料.md is chapter 3.14, predictive-back remains 3.12, and SUMMARY.md links the reference page as 3.14.",
+      "closed_by": "codex-pipeline-audit",
+      "closed_at": "2026-08-09T02:25:00+08:00",
       "log_path": "logs/deep-review/2026-07-31-20260731-203532-deep-review-d4c41108-deep-review.md",
       "severity": "P1",
       "source_paths": [
         "src/part1-fundamentals/ch03-input/参考资料.md",
         "src/part1-fundamentals/ch03-input/12-predictive-back-system-architecture.md"
       ],
-      "status": "open",
+      "status": "verified",
       "summary": "chapter 编号 3.12 与 12-predictive-back-system-architecture.md 冲突，已改为 3.14",
       "type": "chapter-number-collision",
       "updated_at": "2026-07-31T20:38:34.802753+08:00"
@@ -613,12 +622,15 @@
       "created_run_id": "20260731-203532-deep-review-d4c41108",
       "details": "quality_flags 标记 missing-last_verified、missing-confidence。已补 last_verified=2026-07-31、last_verified_against、confidence=medium-high、pipeline_stage=deep-reviewed。confidence 未提升至 high 因未逐条验证所有 AOSP 链接的 HTTP 200。",
       "id": "finding-003f370350cd",
+      "close_note": "2026-08-09 verified: last_verified, confidence and pipeline_stage are present; sources frontmatter was also added from the existing inline AOSP/kernel references.",
+      "closed_by": "codex-pipeline-audit",
+      "closed_at": "2026-08-09T02:25:00+08:00",
       "log_path": "logs/deep-review/2026-07-31-20260731-203532-deep-review-d4c41108-deep-review.md",
       "severity": "P2",
       "source_paths": [
         "src/part1-fundamentals/ch03-input/参考资料.md"
       ],
-      "status": "open",
+      "status": "verified",
       "summary": "frontmatter 缺少 last_verified / confidence / pipeline_stage，已补全",
       "type": "missing-metadata",
       "updated_at": "2026-07-31T20:38:43.973091+08:00"
@@ -630,10 +642,13 @@
       "created_run_id": "20260731-231554-955d99fb",
       "details": "Item source-index #155 (00-primary-x-signals.md) has route_status=quarantined-misroute-3x-rejected, score=0, route_confidence=28, rejected 3x since 2026-07-31T13:15. Selector still returned candidate_ready at run 20260731-231554-955d99fb. Body-apply correctly fail-closed. Fix: skip items where route_status.startswith('quarantined-') or score==0.",
       "id": "finding-b6fe43c08676",
+      "close_note": "2026-08-09 verified: shared selector rejects route_status prefixes quarantined-, action prefixes quarantined-, score 0 and confidence below 30.",
+      "closed_by": "codex-pipeline-audit",
+      "closed_at": "2026-08-09T02:25:00+08:00",
       "log_path": "",
       "severity": "P2",
       "source_paths": [],
-      "status": "open",
+      "status": "verified",
       "summary": "aiw-body-apply-context.py re-surfaces quarantined-misroute-3x-rejected item as candidate_ready (4th time); selector must filter route_status starting with quarantined-",
       "type": "selector-bug",
       "updated_at": "2026-07-31T23:17:47.542842+08:00"
@@ -645,12 +660,15 @@
       "created_run_id": "20260801-071500-3bc34f2f",
       "details": "Material is 100% AI-agent-harness/LLM content (OpenAI ARC-AGI-3 retained reasoning/context compaction, Nadella substitutable-model-system, Unsloth K3 1-bit, T3 Code iOS/Android). Target src/part1-fundamentals/ch06-storage/6.03-Android-17-SharedPreferencesImpl-ANR机制.md is AOSP SharedPreferencesImpl/QueuedWork/ANR (android-17.0.0_r1). route_confidence=28, all route_terms are stopwords, score=0. Selector filter for route_status starting with 'quarantined-' is NOT working. Fail-closed; no body change; no fabrication.",
       "id": "finding-bdf8588c7aad",
+      "close_note": "2026-08-09 verified: the misrouted X-signals item remains quarantined and is ineligible under the shared selector; body-apply dry-run did not resurface it.",
+      "closed_by": "codex-pipeline-audit",
+      "closed_at": "2026-08-09T02:25:00+08:00",
       "log_path": "",
       "severity": "P1",
       "source_paths": [
         "metadata/source-index.json[item:00-primary-x-signals]"
       ],
-      "status": "open",
+      "status": "verified",
       "summary": "Selector re-surfaced quarantined-misroute-3x-rejected item 00-primary-x-signals.md as candidate_ready a 5th time; zero overlap with target 6.03 SharedPreferencesImpl ANR",
       "type": "selector-misroute-loop",
       "updated_at": "2026-08-01T07:16:23.023592+08:00"
@@ -662,10 +680,13 @@
       "created_run_id": "20260801-091517-348a571a",
       "details": "",
       "id": "finding-6dd9603660d5",
+      "close_note": "2026-08-09 verified: source-index eligibility now centralizes quarantined/action/confidence checks and the context selector consumes it.",
+      "closed_by": "codex-pipeline-audit",
+      "closed_at": "2026-08-09T02:25:00+08:00",
       "log_path": "",
       "severity": "P1",
       "source_paths": [],
-      "status": "open",
+      "status": "verified",
       "summary": "aiw-body-apply-context.py selector keeps re-surfacing quarantined-misroute item #155 (00-primary-x-signals.md) as candidate_ready. 6th occurrence this run. route_status=quarantined-misroute-3x-rejected, score=0. Selector must filter route_status LIKE 'quarantined-%' and action IN (quarantined-misroute, body-apply-rejected-misroute).",
       "type": "selector-bug",
       "updated_at": "2026-08-01T09:17:00.300309+08:00"
@@ -677,12 +698,15 @@
       "created_run_id": "20260801-111545-40ce0efd",
       "details": "Root cause: selector only checked the action field against skip-set {applied, body-applied, rejected, duplicate, superseded} in source_index_candidates(); 'quarantined-misroute' was not in the set, and route_status (value quarantined-misroute-3x-rejected) was never checked. Fix applied and verified: added route_status.startswith('quarantined') / action.startswith('quarantined') / route_confidence<30 guards. Re-ran selector after fix -> no-new-input (quarantined item correctly skipped; no other routable candidate). Material has zero topical overlap with target (OpenAI ARC-AGI-3/Nadella/Unsloth K3/T3 Code vs AOSP SharedPreferencesImpl/QueuedWork/ANR), route_confidence=28 with all-stopword route_terms. No chapter body, SUMMARY, or new file was modified; no fabrication.",
       "id": "rf-selector-quarantine-leak-20260801",
+      "close_note": "2026-08-09 reverified after pipeline refactor: quarantined and route_confidence<30 entries fail shared eligibility; repeated body-apply dry-run selected a valid DisplayMode candidate and did not create a manifest.",
+      "closed_by": "codex-pipeline-audit",
+      "closed_at": "2026-08-09T02:25:00+08:00",
       "log_path": "",
       "severity": "P1",
       "source_paths": [
         "aiw-body-apply-context.py:163-185"
       ],
-      "status": "open",
+      "status": "verified",
       "summary": "aiw-body-apply-context.py failed to filter quarantined-misroute items, causing source-index files[155] (AI-agent/LLM X-signals misrouted to 6.03 SharedPreferencesImpl ANR) to be re-surfaced as candidate_ready across 7 consecutive runs.",
       "type": "selector-bug",
       "updated_at": "2026-08-01T11:18:55.546523+08:00"
