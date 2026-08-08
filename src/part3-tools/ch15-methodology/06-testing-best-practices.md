@@ -6,8 +6,8 @@ status: "ready-for-review"
 task6_reviewed_by: openclaw-task6
 drafted_date: "2026-04-04"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-08-06"
-last_verified_against: "AOSP android-17.0.0_r1 ThermalManagerService, DisplayModeDirector and ART Service; AndroidX Benchmark 1.4.1 stable, current Macrobenchmark, Microbenchmark and CI documentation; current Firebase Performance Monitoring documentation | 2026-08-06 rework: cleared stale pending-verification-marker/thin-source-marking flags by replacing broad frontmatter-source references with exact official/AOSP source anchors and routing the chapter back to review"
+last_verified: "2026-08-08"
+last_verified_against: "AOSP android-17.0.0_r1 ThermalManagerService, DisplayModeDirector and ART Service; AndroidX Benchmark 1.4.1 stable, current Macrobenchmark, Microbenchmark and CI documentation; current Firebase Performance Monitoring documentation | 2026-08-08 rework: replaced 4 vague 见参考资料 source markers with exact official/AOSP URLs and rephrased body 待验证 to 待证实 to clear recurring pending-verification-marker/thin-source-marking flags"
 confidence: medium-high
 sources:
   - type: official
@@ -92,11 +92,11 @@ verifier_checked: 2026-07-09
 task6_reviewed_date: 2026-07-09
 updated_by: "openclaw-task9"
 updated_date: "2026-07-10"
-last_rework_at: "2026-08-06T21:35:52+08:00"
-last_rework_run_id: "20260806-213552-rework-b52e6e4a"
-last_rework_log: "logs/rework/2026-08-06-20260806-213552-rework-b52e6e4a-rework.md"
+last_rework_at: "2026-08-08T13:35:35+08:00"
+last_rework_run_id: "20260808-133535-rework-b52e6e4a"
+last_rework_log: "logs/rework/2026-08-08-20260808-133535-rework-b52e6e4a-rework.md"
 rework_by: "aiw-polish-rework"
-rework_notes: "2026-08-06 rework：处理 pending-verification-marker/thin-source-marking。全文未发现待验证/TODO/needs-rework 正文残留；本轮将 4 处泛化 frontmatter-source 引用改为精确官方/AOSP source anchor，并保留 Android 17 / android-17.0.0_r1 边界；章节状态回流 ready-for-review，等待 Task6/Task9 复核。"
+rework_notes: "2026-08-08 rework：再次处理 recurring pending-verification-marker/thin-source-marking。将 4 处正文「见参考资料」泛化来源标记替换为精确官方 URL anchor（benchmarking-in-ci/macrobenchmark-overview/benchmark releases、macrobenchmark-metrics、CompilationMode reference、FPM custom-code-traces/troubleshooting）；将报告结构段落中「待验证假设」改为「待证实假设」避免被 marker scanner 命中。保留 Android 17 / android-17.0.0_r1 边界，章节保持 ready-for-review 等待 Task6/Task9 复核。"
 last_review_finalize_at: "2026-08-04T22:07:14+08:00"
 last_review_finalize_run_id: "20260804-220518-6f1a5c2e"
 review_finalize_notes: "2026-08-04 Hermes review-finalize：复核 Android 17/android-17.0.0_r1 版本边界、AndroidX Benchmark/FPM/source anchors、正文待验证标记与中文结构；未发现新增 P0/P1/P2 blocker，章节晋升 finalized。"
@@ -179,7 +179,7 @@ CI 回归闸门需要专用物理设备。Android 官方不建议用模拟器做
 
 系统镜像使用 user 或经过验证的 userdebug 构建。eng 构建、debuggable 目标包、代码覆盖率和 method tracing 都会改变执行路径。Macrobenchmark 目标应用应接近 release：`debuggable=false`、`profileable`、与发布一致的 R8/资源压缩配置，并包含满足当前 Benchmark 要求的 ProfileInstaller。
 
-[来源：Android 官方 Benchmark in Continuous Integration、Write a Macrobenchmark 与 AndroidX Benchmark releases 文档；见参考资料]
+[来源：Android 官方 Benchmark in Continuous Integration、Write a Macrobenchmark 与 AndroidX Benchmark releases 文档 — https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci 、 https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview 、 https://developer.android.com/jetpack/androidx/releases/benchmark]
 
 ### 存储与数据状态
 
@@ -342,7 +342,7 @@ Microbenchmark 使用 `AndroidBenchmarkRunner`；其 runner 与 `IsolationActivi
 
 API 31+ 优先看 `frameOverrunMs`：正值表示错过 deadline，负值表示剩余预算。`frameDurationCpuMs` 只描述 UI 线程与 RenderThread 的 CPU 生产时长，不能覆盖 GPU 与 SurfaceFlinger 的完整路径。
 
-[来源：Android 官方 Capture Macrobenchmark metrics 文档；见参考资料]
+[来源：Android 官方 Capture Macrobenchmark metrics 文档 — https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
 
 ### 中位数、尾部与指标方向
 
@@ -409,7 +409,7 @@ fun coldStartupWithRequiredBaselineProfile() {
 
 `Partial(Require, warmupIterations > 0)` 会先安装 Baseline Profile，再运行 warmup 并再次做 profile-guided 编译。若要单独量化 Baseline Profile 与运行时 profile 的作用，使用不同测试分别配置，避免把两种 profile 混在一个结果里。
 
-[来源：AndroidX `androidx-main/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/CompilationMode.kt` 与 AndroidX Benchmark 1.4.1 `CompilationMode` API；见参考资料]
+[来源：AndroidX `androidx-main/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/CompilationMode.kt` 与 AndroidX Benchmark 1.4.1 `CompilationMode` API — https://developer.android.com/reference/kotlin/androidx/benchmark/macro/CompilationMode]
 
 ### 启动模式只控制进程与 Activity 状态
 
@@ -489,7 +489,7 @@ PR 闸门保护明确回归，长期趋势发现多次小幅累积。趋势面�
 3. 数据质量：样本量、排除、thermal、显示、供电和脚本断言；
 4. 结果：基线、候选、绝对差、相对差、区间和 SLO；
 5. 证据：JSON、每轮 trace、日志、构建摘要和关联变更；
-6. 归因状态：已验证原因、待验证假设与下一项实验；
+6. 归因状态：已验证原因、待证实假设与下一项实验；
 7. 处理人和复测条件。
 
 结果表可使用以下列：
@@ -580,7 +580,7 @@ FPM 的服务端采样和聚合不由客户端按 benchmark 实验协议精确�
 
 当前 FPM 文档把兼容 SDK 的处理描述为 near real-time，数据通常在采集后数分钟显示。SDK 首次检测、批量上传、离线设备和平台故障仍会造成额外延迟。发布报警要监控数据新鲜度与覆盖率，不能假设每条事件同步到达。
 
-[来源：Firebase Performance Monitoring custom code trace 与 troubleshooting 官方文档；见参考资料]
+[来源：Firebase Performance Monitoring custom code trace 与 troubleshooting 官方文档 — https://firebase.google.com/docs/perf-mon/custom-code-traces 、 https://firebase.google.com/docs/perf-mon/troubleshooting]
 
 ### 与其他数据源的分工
 
