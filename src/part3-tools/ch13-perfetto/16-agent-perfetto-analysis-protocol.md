@@ -5,14 +5,14 @@ section: "13.16"
 status: ready-for-review
 drafted_date: "2026-05-17"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-08-06"
-last_verified_against: "android/skills profilers commit 4328beaf36f00265db107eb316f9add6b8764144; Perfetto official AI skill docs/release notes v57.1-v57.2; Android 17 Perfetto stdlib docs/source (android.frames.*, android.startup.startups, android.binder, slices.with_context, slices.time_in_state, slices.cpu_time, sched.with_context, linux.cpu.frequency, linux.cpu.utilization.*); Perfetto SQL table docs (slice, thread_state, sched, cpu_freq); Android system tracing docs | 2026-08-06 rework: cleared stale rework wording in frontmatter notes; Android 17 boundary retained"
-last_rework_at: "2026-08-06T13:40:10+08:00"
-last_rework_run_id: "20260806-133627-rework-39378b94"
-last_rework_log: "logs/rework/2026-08-06-20260806-133627-rework-39378b94-rework.md"
+last_verified: "2026-08-08"
+last_verified_against: "android/skills profilers commit 4328beaf36f00265db107eb316f9add6b8764144; Perfetto official AI skill docs/release notes v57.1-v57.2; Android 17 Perfetto stdlib docs/source (android.frames.*, android.startup.startups, android.binder, slices.with_context, slices.time_in_state, slices.cpu_time, sched.with_context, linux.cpu.frequency, linux.cpu.utilization.process); Perfetto SQL table docs (slice, thread_state, sched, cpu_freq); Android system tracing docs | 2026-08-08 rework: closed pending-verification marker by pinning critical stdlib/source anchors and retaining Android 17 / android-17.0.0_r1 boundary"
+last_rework_at: "2026-08-08T09:36:00+08:00"
+last_rework_run_id: "20260808-093600-rework-39378b94"
+last_rework_log: "logs/rework/2026-08-08-20260808-093600-rework-39378b94-rework.md"
 rework_result: "ready-for-review"
-rework_notes: "2026-08-06 rework：清理 frontmatter 中已过期的英文核验标记字面量，保留 2026-08-04 已完成的来源补强事实；正文抽查未发现越过当前平台锚点的主线结论，版本边界保持 Android 17 / android-17.0.0_r1，状态回退 ready-for-review 等待 Task6/Task9 复审。"
-confidence: medium
+rework_notes: "2026-08-08 rework：处理待验证标记；将 linux.cpu.utilization 通配口径收窄为已核验的 linux.cpu.utilization.process，并在正文官方资料区补充 Android 17 固定标签下的关键 stdlib/source 路径锚点；未越过 Android 17 / android-17.0.0_r1 基线，章节回流 ready-for-review 等待 Task6/Task9 复审。"
+confidence: medium-high
 tags: [perfetto, trace-analysis, agent-workflow, performance-tools]
 related_chapters: ["13.2", "13.10", "13.15", "15.6", "26.5"]
 created_by: "task2a-knowledge-gap"
@@ -23,10 +23,10 @@ task2b_result: fixed-lite
 task6_state: pending-review
 reviewed_by: hermes-aiw-review-finalize-apply
 reviewed_date: "2026-08-04"
-task6_result: "pass-light-edit"
+task6_result: "rework-applied"
 last_task6_at: "2026-06-19T04:25:46+08:00"
 task9_state: pending-review
-task9_result: auto-fixed
+task9_result: rework-applied
 task2b_state: fixed
 last_task2b_lite_at: "2026-05-28"
 last_task9_at: "2026-07-10T01:28:21+08:00"
@@ -43,6 +43,12 @@ sources:
     path: "https://perfetto.dev/docs/analysis/sql-tables"
   - type: official
     path: "https://perfetto.dev/docs/analysis/stdlib-docs"
+  - type: source
+    path: "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/slices/time_in_state.sql"
+  - type: source
+    path: "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/slices/cpu_time.sql"
+  - type: source
+    path: "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/utilization/process.sql"
   - type: official
     path: "https://perfetto.dev/docs/getting-started/using-ai"
   - type: official
@@ -499,6 +505,9 @@ Perfetto 提供事件、状态和时间关系，优化动作通常还要回到�
 - [Perfetto v57.2 release notes](https://github.com/google/perfetto/releases/tag/v57.2)
 - [Using AI with Perfetto](https://perfetto.dev/docs/getting-started/using-ai)
 - [Android 17 固定标签的 Perfetto SQL 标准库](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/)
+- [android.startup.startups](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/startup/startups.sql)、[android.frames.timeline](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/frames/timeline.sql)、[android.frames.per_frame_metrics](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/frames/per_frame_metrics.sql)
+- [android.binder](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/binder.sql)、[slices.with_context](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/slices/with_context.sql)、[slices.time_in_state](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/slices/time_in_state.sql)、[slices.cpu_time](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/slices/cpu_time.sql)
+- [sched.with_context](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/sched/with_context.sql)、[linux.cpu.frequency](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/frequency.sql)、[linux.cpu.utilization.process](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/cpu/utilization/process.sql)
 - [Android 17 kernel common 固定标签](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)
 - [Trace Processor](https://perfetto.dev/docs/analysis/trace-processor)
 - [PerfettoSQL standard library](https://perfetto.dev/docs/analysis/stdlib-docs)
