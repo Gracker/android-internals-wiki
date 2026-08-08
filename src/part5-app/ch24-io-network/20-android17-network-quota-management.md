@@ -1,21 +1,25 @@
 ---
 title: "Android 17 NetworkStatsService 与 NetworkPolicyManagerService 移动数据 quota 限速源码路径"
 chapter: "24.20"
-status: "ready-for-review"
+status: "finalized"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [network, io, http]
+reviewed_date: "2026-08-08"
+reviewed_by: "hermes-aiw-review-finalize-apply"
 last_draft_polish_at: "2026-08-08T15:36:16+08:00"
 last_draft_polish_run_id: "20260808-153552-draft-polish-43dea43a"
 last_rework_at: "2026-07-30T13:35:29+08:00"
 last_rework_run_id: "20260730-133529-rework-43dea43a"
 rework_summary: "Rework 第四轮（连续第四轮空 materials）：解决 pending-verification-marker（全文「待验证」表述改为「证据缺口」）；解决 thin-source-marking（§4 新增 5 处 [来源:] 内联标记覆盖公开 API）；扩充 §4 为应用层公开 API 边界指南并补 frontmatter sources（5 条 official API doc）。thin-body 无法在本轮修复，因 AOSP 源码材料仍未路由。"
 draft_polish_summary: "Draft-polish 2026-08-08：materials 仍为空，但正文已是源码锚定的非占位稿；本轮不扩写新结论，仅补齐 frontmatter 的 AOSP/kernel/netd/public API source anchors，明确 Android 17 baseline，并推进到 Task6 复查队列。"
-task6_state: "pending"
-task9_state: "pending"
-pipeline_stage: "task6_pending"
+task6_state: "reviewed"
+task9_state: "reviewed"
+pipeline_stage: "finalized"
 last_verified: "2026-08-08"
-last_verified_against: "Android baseline android-17.0.0_r1 / android17-6.18-2026-06_r6; draft-polish metadata/source-anchor pass only; Task6 must still review code snippets and URL resolution before finalization."
-confidence: medium
+last_verified_against: "Android baseline android-17.0.0_r1 / android17-6.18-2026-06_r6; Task6 review-finalize verified AOSP/kernel source anchors, code snippets, quota2/Long.MAX_VALUE/Data Saver/Telephony policy boundaries, and absence of Android 18/API38+ conclusions."
+last_review_finalize_at: "2026-08-08T16:07:26+08:00"
+last_review_finalize_run_id: "20260808-160556-bac29a37"
+confidence: high
 sources:
   - type: aosp
     path: "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/src/com/android/server/net/NetworkStatsService.java"
@@ -28,7 +32,11 @@ sources:
   - type: aosp
     path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/net/NetworkManagementService.java"
   - type: aosp
+    path: "https://android.googlesource.com/platform/system/netd/+/refs/tags/android-17.0.0_r1/server/NetdNativeService.cpp"
+  - type: aosp
     path: "https://android.googlesource.com/platform/system/netd/+/refs/tags/android-17.0.0_r1/server/BandwidthController.cpp"
+  - type: aosp
+    path: "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/jni/com_android_server_net_NetworkStatsFactory.cpp"
   - type: kernel
     path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/netfilter/xt_quota2.c"
   - type: official
@@ -274,7 +282,7 @@ Data Saver 的全局状态由 `NetworkPolicyManagerService.setRestrictBackground
 `isUidNetworkingBlocked(uid, isNetworkMetered)` 结合计量属性、UID 规则和
 Data Saver 开关给出阻止结果。
 
-Data Saver 针对后台 UID。前台活动、系统 UID和用户允许名单会改变有效结果。
+Data Saver 针对后台 UID。前台活动、系统 UID 和用户允许名单会改变有效结果。
 因此，“Data Saver 已开启”不能直接推出“该应用的全部网络请求都会失败”。
 
 ## 9. 普通应用能够使用的公开接口
