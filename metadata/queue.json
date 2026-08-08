@@ -375,7 +375,9 @@
     ],
     "added_by": "hermes-aiw-weekly-source-audit",
     "added_at": "2026-08-07T02:00:25.321023+08:00",
-    "status": "pending"
+    "status": "superseded",
+    "superseded_at": "2026-08-09T02:25:45.503358+08:00",
+    "superseded_reason": "freshness risks now use metadata/review-findings.json and rework lane"
   },
   {
     "section": "freshness",
@@ -395,7 +397,9 @@
     ],
     "added_by": "hermes-aiw-weekly-source-audit",
     "added_at": "2026-08-07T02:00:25.321023+08:00",
-    "status": "pending"
+    "status": "superseded",
+    "superseded_at": "2026-08-09T02:25:45.503358+08:00",
+    "superseded_reason": "freshness risks now use metadata/review-findings.json and rework lane"
   },
   {
     "section": "freshness",
@@ -415,7 +419,9 @@
     ],
     "added_by": "hermes-aiw-weekly-source-audit",
     "added_at": "2026-08-07T02:00:25.321023+08:00",
-    "status": "pending"
+    "status": "superseded",
+    "superseded_at": "2026-08-09T02:25:45.503358+08:00",
+    "superseded_reason": "freshness risks now use metadata/review-findings.json and rework lane"
   },
   {
     "section": "freshness",
@@ -435,7 +441,9 @@
     ],
     "added_by": "hermes-aiw-weekly-source-audit",
     "added_at": "2026-08-07T02:00:25.321023+08:00",
-    "status": "pending"
+    "status": "superseded",
+    "superseded_at": "2026-08-09T02:25:45.503358+08:00",
+    "superseded_reason": "freshness risks now use metadata/review-findings.json and rework lane"
   },
   {
     "section": "freshness",
@@ -455,6 +463,8 @@
     ],
     "added_by": "hermes-aiw-weekly-source-audit",
     "added_at": "2026-08-07T02:00:25.321023+08:00",
-    "status": "pending"
+    "status": "superseded",
+    "superseded_at": "2026-08-09T02:25:45.503358+08:00",
+    "superseded_reason": "freshness risks now use metadata/review-findings.json and rework lane"
   }
 ]

@@ -11,7 +11,8 @@ REQUIRED_FIELDS = [
     "title", "chapter", "status", "applicable_versions", "tags"
 ]
 
-OPTIONAL_FIELDS = ["last_verified", "confidence", "sources"]
+OPTIONAL_FIELDS = ["confidence", "sources"]
+SOURCE_GATED_STATUS = {"ready-for-review", "finalized", "verified"}
 
 VALID_STATUS = [
     "verified", "draft", "needs-review", "outdated",
@@ -115,6 +116,18 @@ def check_file(filepath):
 
     if meta.get("confidence") and meta["confidence"] not in VALID_CONFIDENCE:
         issues.append(f"confidence 值无效: {meta['confidence']}")
+
+    status = meta.get("status")
+    if status in SOURCE_GATED_STATUS:
+        if not (meta.get("last_source_verified_at") or meta.get("last_verified")):
+            issues.append(f"status={status} 需要 last_source_verified_at 或兼容字段 last_verified")
+        if not meta.get("confidence"):
+            issues.append(f"status={status} 需要 confidence")
+        if not meta.get("sources"):
+            issues.append(f"status={status} 需要非空 sources")
+
+    if "last_source_verified_at" not in meta and "last_verified" not in meta:
+        issues.append("[warn] 缺少来源核验时间: last_source_verified_at / last_verified")
 
     for field in OPTIONAL_FIELDS:
         if field not in meta:
