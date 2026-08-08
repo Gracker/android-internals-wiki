@@ -1,22 +1,36 @@
 ---
 title: "DEX 体积优化实战"
 chapter: "25.29"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: [dex, r8, d8, apk-size, code-shrinking, baseline-profile, multidex]
 related_chapters: ["25.6", "25.7", "21.12", "1.57"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "Clippings参考书驱动"
-confidence: medium-high
-last_verified: 2026-07-31
+confidence: high
+last_verified: 2026-08-09
+last_verified_against: "android-17.0.0_r1 / Android Developers docs checked 2026-08-09"
+sources:
+  - "Dalvik executable format (source.android.com/docs/core/runtime/dex-format)"
+  - "Enable app optimization with R8 (developer.android.com/topic/performance/app-optimization/enable-app-optimization)"
+  - "R8 Configuration Analyzer (developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer)"
+  - "Add keep rules / Troubleshoot R8 rules (developer.android.com/topic/performance/app-optimization)"
+  - "D8 command reference (developer.android.com/tools/d8)"
+  - "Multidex guide (developer.android.com/build/multidex)"
+  - "Startup Profile DEX layout and Baseline Profile debug docs (developer.android.com/topic/performance)"
+  - "StandardDexFile / DexFile / DexPathList @ android-17.0.0_r1"
 task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: deep-review
+pipeline_stage: finalized
 last_draft_polish_at: 2026-07-30
 last_draft_polish_run_id: 20260730-235049-draft-polish-977cb49d
 last_deep_review_at: 2026-07-31
 last_deep_review_run_id: 20260731-083556-deep-review-977cb49d
+reviewed_date: 2026-08-09
+reviewed_by: hermes-aiw-review-finalize-apply
+last_review_finalize_at: 2026-08-09T04:43:41+08:00
+last_review_finalize_run_id: 20260809-044341-4eef3020
 ---
 
 # 25.29 DEX 体积优化实战
