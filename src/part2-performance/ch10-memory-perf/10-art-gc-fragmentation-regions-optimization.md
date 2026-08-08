@@ -1,15 +1,18 @@
 ---
 title: ART GC 碎片化、Compaction 与性能诊断
 chapter: 10.10
-status: needs-review
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags: [Android, 内存性能, ART GC, 碎片化优化]
-last_verified: "2026-07-31"
+last_verified: "2026-08-09"
 last_verified_against: "AOSP android-17.0.0_r1; Android 17 official release notes; Perfetto current memory profiling docs"
 confidence: high
-pipeline_stage: source-rework-required
-task6_state: needs-source-material
-task9_state: blocked-source-boundary
+pipeline_stage: ready-for-review
+task6_state: source-reworked
+task9_state: ready-for-review
+last_rework_at: "2026-08-09T02:51:39+08:00"
+last_rework_run_id: "20260809-024950-rework-501b4554"
+rework_notes: "Closed finding-64a9f0019062 by routing Android 17 ART GC Region/Compaction claims to AOSP android-17.0.0_r1 source anchors, official Android 17 GC notes, ART GC debug docs, and Perfetto memory profiling boundaries; chapter remains ready-for-review, not finalized."
 last_deep_review_at: "2026-07-27T16:35:02+08:00"
 last_deep_review_run_id: "20260727-163502-deep-review-501b4554"
 sources:
@@ -50,6 +53,8 @@ sources:
 “内存还有空闲，分配却变慢”“GC 频率突然升高”“进程 RSS 很大”经常被统称为内存碎片。这样的描述不足以支持优化决策。ART moving space、LargeObjectSpace、Native heap、虚拟地址空间和 Linux 物理页都有各自的碎片模型，处理手段也不同。
 
 本章以 Android 17 / API 37 / `android-17.0.0_r1` 为当前平台锚点，讨论 GC 碎片怎样转化为应用性能问题，以及如何用可复现证据定位。CC、CMC、RegionSpace 和 `UnevacFromSpace` 的完整源码结构见 [§4.14 ART GC Region 碎片化与 Compaction 策略](../../part1-fundamentals/ch04-memory/14-art-gc-region-fragmentation-compaction.md)；本章把重点放在端侧诊断和应用优化。
+
+本文关于 `RegionSpace`、`ShouldBeEvacuated()`、`YoungMarkCompact`、CMC pause、LOS 判定和 GC trace slice 的结论，以 frontmatter `sources` 列出的 `android-17.0.0_r1` ART 源码、Android 17 官方说明、ART GC debug 文档与 Perfetto memory profiling 文档为边界。没有实机 trace 或 benchmark 支撑的内容只用于说明排查流程，不作为量化收益或跨设备保证。
 
 <!-- more -->
 
