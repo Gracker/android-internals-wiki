@@ -1,14 +1,26 @@
 ---
 title: "第三方 SDK 性能影响评估与治理实战"
 chapter: "20.28"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [SDK治理, 第三方库, 性能评估, 启动阻塞, 稳定性]
 related_chapters: ["21.3", "20.1", "23.1", "24.14"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-17"
 gap_source: "Clippings参考书+日常痛点+AOSP SDK Runtime"
+last_verified: "2026-08-08"
+last_draft_polish_at: "2026-08-08T11:35:18+08:00"
+last_draft_polish_run_id: "20260808-113518-draft-polish-76608468"
+task6_state: pending
+task9_state: pending
+pipeline_stage: task6_pending
 confidence: high
+sources:
+  - "AOSP Android 17 ActivityThread (android-17.0.0_r1)"
+  - "AOSP Android 17 SdkSandboxManagerService (android-17.0.0_r1)"
+  - "Android Common Kernel proc 文档 (android17-6.18-2026-06_r6)"
+  - "Android Developers: App Startup, Macrobenchmark, Baseline Profiles, Android 17 behavior changes"
+  - "Privacy Sandbox SDK Runtime architecture and backward compatibility"
 ---
 
 # 20.28 第三方 SDK 性能影响评估与治理实战
