@@ -1514,6 +1514,26 @@
       "summary": "1.48 folded historical outline retained pending verification markers",
       "type": "pending-verification-marker",
       "updated_at": "2026-08-08T21:37:56.880949+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch23-memory-practice/23.24-android-17-ai-推理加速与-neuralnetworks-hal-优化.md",
+      "created_at": "2026-08-09T04:33:35.579701+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20260809-043007-52ce263c",
+      "details": "This run removed or reframed unsupported API names, fixed performance numbers, Binder, GC and DVFS platform guarantees; follow-up verification also restored the official Android 15 deprecation and migration boundary. The chapter remains ready-for-review. Before finalized, add AOSP android-17.0.0_r1 NNAPI header/runtime/HAL anchors and Android build source for the TFLite NNAPI delegate version.",
+      "id": "AIW-23.24-20260809-P2-nnapi-source-boundary",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/ndk/reference/group/neural-networks",
+        "https://developer.android.com/ndk/guides/neuralnetworks/migration-guide",
+        "https://developer.android.com/guide/practices/page-sizes",
+        "DeepResearch/2026-06-23-android-端侧ai推理运行时源码-LiteRT-NNAPI-MediaPipe-Tasks.md"
+      ],
+      "status": "open",
+      "summary": "NNAPI LiteRT Android 17 source anchors still required before finalized",
+      "type": "unsupported-claim",
+      "updated_at": "2026-08-09T04:33:35.579701+08:00"
     }
   ],
   "schema_version": 1
