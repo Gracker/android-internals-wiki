@@ -38,11 +38,11 @@ sources:
 
 `ActivityManagerService`（AMS）处在 Android 进程管理的中心。进程启动和退出、组件状态、LRU 次序、OOM adj、应用冻结等操作都可能在 `system_server` 内并发发生。只用一把大锁保护这些状态，代码容易保持一致，却会让互不修改同一组数据的线程排在同一个等待队列中。
 
-Android 12 引入 `mProcLock`，并保留原有的 `mGlobalLock`。Android 17 仍采用这套双锁设计。理解它时需要先记住一个边界：双锁扩大了部分进程状态读取和独立操作的并发空间，但没有把 AMS 的所有进程管理操作改成只持 `mProcLock`。OOM adj 全量计算、LRU 写入等关键路径仍会同时持有两把锁。
+Android 12 引入 `mProcLock`，并保留原有的 `mGlobalLock`。Android 17 仍采用这套双锁设计。它的边界很明确：双锁扩大了部分进程状态读取和独立操作的并发空间，但没有把 AMS 的所有进程管理操作改成只持 `mProcLock`。OOM adj 全量计算、LRU 写入等关键路径仍会同时持有两把锁。
 
 ## 1. 从单锁到双锁
 
-Android 11 的 AMS 尚未定义 `ENABLE_PROC_LOCK`、`mProcLock` 和 `ActivityManagerProcLock`。当时进程管理代码广泛依赖 AMS 对象本身的 monitor，也就是后来的 `mGlobalLock`。
+Android 11 的 AMS 尚未定义 `ENABLE_PROC_LOCK`、`mProcLock` 和 `ActivityManagerProcLock`。当时进程管理代码广泛依赖 AMS 对象自身的 Java 监视器，也就是后来的 `mGlobalLock`。
 
 Android 12 的 `ActivityManagerService` 首次给出完整的双锁骨架：
 
@@ -55,7 +55,7 @@ final ActivityManagerGlobalLock mProcLock = ENABLE_PROC_LOCK
         ? new ActivityManagerProcLock() : mGlobalLock;
 ```
 
-这段代码有两个重要含义：
+这段代码说明了两件事：
 
 1. `mGlobalLock` 仍然是 `ActivityManagerService.this`，旧代码中的 `synchronized (mService)`、`synchronized (this)` 与围绕全局锁建立的约束不会凭空消失。
 2. `ENABLE_PROC_LOCK` 为 `false` 时，`mProcLock` 会指回 `mGlobalLock`。这种写法让迁移过程可以维持相同的接口和方法命名；Android 12 与 Android 17 的发布源码中该开关均为 `true`。
@@ -64,7 +64,7 @@ final ActivityManagerGlobalLock mProcLock = ENABLE_PROC_LOCK
 
 ## 2. 两把锁分别保护什么
 
-Android 17 在 `ActivityManagerService` 的注释中给出了边界：Service、Provider、Broadcast 等核心组件仍主要由 `mGlobalLock` 保护；进程管理状态逐步迁移到 `mProcLock`。源码中的实际情况可以概括为下表。
+Android 17 在 `ActivityManagerService` 的注释中给出了边界：Service、Provider、Broadcast 等核心组件仍主要由 `mGlobalLock` 保护；进程管理状态逐步迁移到 `mProcLock`。源码中的锁要求如下。
 
 | 锁要求 | 典型数据或操作 | 说明 |
 |---|---|---|
@@ -133,7 +133,7 @@ private void updateLruProcessLSP(...) {
 }
 ```
 
-这条路径说明，双锁允许 LRU 读取避开全局锁，但 LRU 排序、插入和删除仍要同时保护列表结构与其关联状态。
+双锁允许 LRU 读取避开全局锁，但 LRU 排序、插入和删除仍要同时保护列表结构与关联状态。
 
 ## 4. 方法后缀是锁契约的速记
 
@@ -201,7 +201,7 @@ private void updateOomAdjLSP(@OomAdjReason int oomAdjReason) {
 
 `performUpdateOomAdjLSP()`、`updateAndTrimProcessLSP()` 等后续方法也标注为同时受两把锁保护。双锁没有让一次完整的 OOM adj 更新与所有 AMS 全局操作并行。它提供的收益之一，是让只需读取或修改独立进程状态的其他路径可以绕开全局锁等待。
 
-这一区别对性能分析很重要。若 trace 显示 OOM adj 期间 `mGlobalLock` 长时间被持有，不能据“双锁已经启用”就排除 OOM adj；仍需查看持锁线程在计算、Binder 调用、内核调度和 I/O 上分别花了多少时间。
+分析性能时必须保留这项边界。若跟踪显示 OOM adj 期间 `mGlobalLock` 长时间被持有，不能因双锁已经启用就排除 OOM adj；仍需查看持锁线程在计算、Binder 调用、内核调度和 I/O 上分别花了多少时间。
 
 ### 6.2 时区更新：只用进程锁遍历 LRU
 
@@ -223,7 +223,7 @@ case UPDATE_TIME_ZONE: {
 } break;
 ```
 
-该路径展示了 `LOSP` 的价值：读取 LRU 不必占用 `mGlobalLock`。同时也暴露了另一类风险——代码在 `mProcLock` 内向多个应用进程发起 Binder 调用。即使这些调用通常是单向分发，也要通过 trace 判断临界区是否因调度、Binder 驱动拥塞或目标进程状态而拉长。
+该路径展示了 `LOSP` 的作用：读取 LRU 不必占用 `mGlobalLock`。风险在于，代码会在 `mProcLock` 内向多个应用进程发起 Binder 调用。即使这些调用通常是单向分发，也要通过跟踪判断临界区是否因调度、Binder 驱动拥塞或目标进程状态而拉长。
 
 ### 6.3 CachedAppOptimizer：进程锁保护冻结与压缩队列
 
@@ -240,7 +240,7 @@ final class ActivityManagerProcLock implements ActivityManagerGlobalLock {
 }
 ```
 
-源码注释说，这个独立类型可让 CPU booster 识别临界区。Android 17 中可以直接验证的实现是 `ThreadPriorityBooster`：AMS 分别为全局锁和进程锁创建一个 booster，目标优先级都是 `THREAD_PRIORITY_FOREGROUND`。
+源码注释说明，这个独立类型可让 CPU 优先级提升器识别临界区。Android 17 中可以直接验证的实现是 `ThreadPriorityBooster`：AMS 分别为全局锁和进程锁创建一个提升器，目标优先级都是 `THREAD_PRIORITY_FOREGROUND`。
 
 `ThreadPriorityBooster.boost()` 会读取当前线程的 Linux nice 值；若当前优先级低于目标值，便通过 `setThreadPriority()` 提升当前线程。嵌套临界区由线程局部计数器记录，最外层退出时恢复原优先级。
 
@@ -250,13 +250,13 @@ final class ActivityManagerProcLock implements ActivityManagerGlobalLock {
 - 调整的是 Linux nice 优先级，目标为前台线程优先级。
 - 退出最外层临界区后恢复先前优先级。
 
-它不能证明系统会为该锁直接提高 CPU 频率，也不能证明持锁线程会切换到 `SCHED_FIFO`。AMS 中的 `mUseFifoUiScheduling` 面向 UI 线程和 RenderThread，是另一套调度策略，不应与 `mProcLock` 的 booster 混为一谈。
+它不能证明系统会为该锁直接提高 CPU 频率，也不能证明持锁线程会切换到 `SCHED_FIFO`。AMS 中的 `mUseFifoUiScheduling` 面向 UI 线程和 RenderThread，是另一套调度策略，不应与 `mProcLock` 的线程优先级提升机制混为一谈。
 
-优先级提升只能减少持锁线程因普通优先级竞争而被延迟的概率。临界区内若有慢 Binder、缺页、I/O 或过量计算，booster 不会消除这些等待。
+优先级提升只能降低持锁线程因普通优先级竞争而延迟的概率。临界区内若有慢 Binder、缺页、I/O 或过量计算，提升器不会消除这些等待。
 
-## 8. 用 Perfetto 区分等待时间和持锁时间
+## 8. 用 Perfetto 区分等待时间与持锁时间
 
-锁问题至少包含两个角色：等待锁的线程和持有锁的线程。只看到 Binder 线程处于 `futex` 等待，无法确定哪把锁造成延迟，也无法知道持锁线程为何没有及时释放。
+锁问题至少涉及等待线程和持锁线程。只看到 Binder 线程处于 `futex` 等待，无法确定哪把锁造成延迟，也无法判断持锁线程为何没有及时释放。
 
 Android 17 的 `ActivityManagerService` 定义了 `big_locks` 类别下的四组事件：
 
@@ -265,7 +265,7 @@ Android 17 的 `ActivityManagerService` 定义了 `big_locks` 类别下的四组
 | `mGlobalLock` | `ams_lock_acquire` | `ams_lock_held` |
 | `mProcLock` | `proc_lock_acquire` | `proc_lock_held` |
 
-这些事件受 `android.os.Flags.perfettoSdkTracingV3()` 控制。分析某台设备前，应先确认构建是否启用相应特性、trace 配置是否采集 `big_locks` 类别，以及结果中是否出现这些 slice。不要把源码中定义了事件等同于每份 trace 都一定包含事件。
+这些事件受 `android.os.Flags.perfettoSdkTracingV3()` 控制。分析某台设备前，应确认构建是否启用相应特性、跟踪配置是否采集 `big_locks` 类别，以及结果中是否出现这些切片。源码定义了事件，不代表每份跟踪都包含它们。
 
 如果事件存在，可以先用下面的查询列出 `system_server` 中的持锁区间。它的用途是找到长持锁段，并定位到具体线程：
 
@@ -286,9 +286,9 @@ WHERE p.name = 'system_server'
 ORDER BY s.dur DESC;
 ```
 
-`*_lock_acquire` 是尝试获取时发出的瞬时事件，`*_lock_held` 是成功获取后开始的区间。二者位于同一线程轨道时，可以在界面中直接观察等待与持锁的先后关系。查询结果为空时，再使用 ART monitor contention 数据作为通用证据。
+`*_lock_acquire` 是尝试获取时发出的瞬时事件，`*_lock_held` 是成功获取后开始的区间。二者位于同一线程轨道时，可以在界面中直接观察等待与持锁的先后关系。查询结果为空时，再使用 ART 监视器竞争数据作为通用证据。
 
-Perfetto 当前标准库的模块名为 `android.monitor_contention`，表名为 `android_monitor_contention`。下面的查询使用实际列名列出 `system_server` 的 Java monitor 竞争：
+Perfetto 当前标准库的模块名为 `android.monitor_contention`，表名为 `android_monitor_contention`。下面的查询使用现有列名列出 `system_server` 的 Java 监视器竞争：
 
 ```sql
 INCLUDE PERFETTO MODULE android.monitor_contention;
@@ -317,24 +317,24 @@ ORDER BY dur DESC
 LIMIT 50;
 ```
 
-`dur` 是等待线程被 monitor 阻塞的墙钟时间。`blocking_thread_name` 与 `short_blocking_method` 指向持锁方，`blocked_thread_name` 与 `short_blocked_method` 指向等待方。`lock_name` 可用时，优先用它区分 `ActivityManagerService` 对象和 `ActivityManagerProcLock` 对象；类名缺失时，再结合源码位置与 `big_locks` 事件判断。仅凭方法属于 `OomAdjuster` 或 `ProcessList` 猜测锁类型并不可靠，因为这些类中存在同时持有两把锁的路径。
+`dur` 是等待线程被监视器阻塞的墙钟时间。`blocking_thread_name` 与 `short_blocking_method` 指向持锁方，`blocked_thread_name` 与 `short_blocked_method` 指向等待方。`lock_name` 可用时，优先用它区分 `ActivityManagerService` 对象和 `ActivityManagerProcLock` 对象；类名缺失时，再结合源码位置与 `big_locks` 事件判断。仅凭方法属于 `OomAdjuster` 或 `ProcessList` 猜测锁类型并不可靠，因为这些类中存在同时持有两把锁的路径。
 
 ## 9. 一次可复用的诊断顺序
 
 遇到 Activity 启动、Service 调用或进程状态更新偶发变慢时，可以按以下顺序分析：
 
-1. 在问题时间窗内找到等待线程，确认延迟来自 monitor contention，而非 Binder reply、CPU runnable、I/O 或其他原因。
+1. 在问题时间窗内找到等待线程，确认延迟来自监视器竞争，而非 Binder 回复、CPU 可运行延迟、I/O 或其他原因。
 2. 查看 `big_locks` 事件或 `android_monitor_contention.lock_name`，区分全局锁与进程锁。
 3. 找到持锁线程及其持锁方法。等待方的调用栈只能说明谁受影响，持锁方才说明临界区为何变长。
-4. 把持锁区间与线程状态、Binder transaction、调度和 I/O slice 对齐。持锁线程可能在运行，也可能持锁等待另一个资源。
+4. 把持锁区间与线程状态、Binder 事务、调度和 I/O 切片对齐。持锁线程可能在运行，也可能持锁等待另一个资源。
 5. 检查同一时段的 `waiter_count` 和其他等待者。一次长等待与许多中等等待造成的总影响不同。
 6. 回到对应 Android 版本的源码，确认锁注解、获取顺序和版本差异，再决定修改位置。
 
-`adb shell dumpsys activity processes` 可以查看当时的进程、adj 与 proc state，但它是状态快照，不能证明某个 adj 变化导致了锁竞争。复现性能问题时，应把 dumpsys 用作背景信息，把时间与因果判断交给 trace。
+`adb shell dumpsys activity processes` 可以查看当时的进程、adj 与进程状态，但它是状态快照，不能证明某个 adj 变化导致了锁竞争。复现性能问题时，应把 dumpsys 用作背景信息，并通过跟踪判断时间关系与因果链。
 
 ## 10. 应用侧能做什么
 
-普通应用不能直接选择 AMS 使用哪把锁，也无法从一次系统 API 调用推断服务端当时的持锁情况。应用侧能控制的是调用时机、频率和对结果的需求。
+普通应用不能直接选择 AMS 使用哪把锁，也无法从一次系统 API 调用推断服务端当时的持锁情况。应用侧能控制调用时机、频率和结果时效要求。
 
 - 不要在每帧、滚动回调或高频定时器中同步查询系统进程与内存状态。一次调用可能很快，密集 IPC 仍会增加客户端和 `system_server` 的调度负担。
 - 缓存前要确认数据允许短时间过期。进程列表、内存压力和组件状态的时效要求不同，不能统一设置一个缓存时间。
@@ -342,7 +342,7 @@ LIMIT 50;
 - `ActivityManager.getRunningAppProcesses()` 是进程可见性查询，不会因为“读取列表”就刷新 LRU。`UsageStatsManager` 提供应用使用记录，语义不同，不能当作进程列表的通用替代品。
 - `ServiceConnection.onServiceConnected()` 等回调在应用进程中按 `ServiceDispatcher` 配置的执行器或 Handler 分发。回调里发起新的系统调用可能形成新的同步 IPC，但不能据此声称 system_server 仍持有原来的 AMS 锁。
 
-平台代码的优化则需要遵守更严格的条件：缩短锁内工作、避免持锁进行不可控的跨进程调用、在安全时复制快照后释放锁，并用相同负载的 trace 验证等待时间和持锁时间。任何移锁操作都要先证明对象生命周期与组合写锁规则仍成立。
+平台代码的优化需要遵守更严格的条件：缩短锁内工作、避免持锁进行不可控的跨进程调用、在安全时复制快照后释放锁，并用相同负载的跟踪验证等待时间和持锁时间。任何移锁操作都要先证明对象生命周期与组合写锁规则仍成立。
 
 ## 11. 版本边界
 
@@ -351,7 +351,7 @@ LIMIT 50;
 | Android 11 及更早 | 没有当前这套 `mProcLock` 双锁骨架 | 不要把 Android 12 之后的 LOSP/LSP 契约套用到旧分支 |
 | Android 12 / API 31 | 引入并启用 `mProcLock`，确立组合读写锁和锁顺序 | 迁移初期仍有大量全局锁路径 |
 | Android 13—16 | 进程状态、OOM 调整、冻结与统计代码持续采用相关约定 | 具体字段和方法位置随版本变化 |
-| Android 17 / API 37 | 双锁继续启用；OOM 调整位于 `am.psc`；定义 `big_locks` Perfetto 事件 | 以 `android-17.0.0_r1` 的注解、调用点和 trace 特性为准 |
+| Android 17 / API 37 | 双锁继续启用；OOM 调整位于 `am.psc`；定义 `big_locks` Perfetto 事件 | 以 `android-17.0.0_r1` 的注解、调用点和跟踪特性为准 |
 
 ## 12. 小结
 
