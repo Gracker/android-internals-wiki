@@ -6,9 +6,11 @@ section_title: "Android 17 Advanced Professional Video 与专业视频编解码�
 status: ready-for-review
 drafted_date: "2026-05-26"
 applicable_versions: "Android 16 (API 36/36.1) - Android 17 (API 37)；当前平台锚点 Android 17 / API 37"
-last_verified: "2026-07-31"
+last_verified: "2026-08-09"
 last_verified_against: "android-17.0.0_r1 (MediaFormat, MediaCodecInfo, MediaRecorder, C2SoftApvEnc, C2SoftApvDec, software codec XML, MPEG4Writer) / Android 16 APV 与 Android 17 CQ 官方文档 2026-07-31 / Writer rendering_pipelines S12 / android17-6.18-2026-06_r6"
 confidence: high
+deep_reviewed_date: "2026-08-09"
+deep_review_run_id: "20260809-203506-deep-review-ecd9cb0e"
 tags: [media, apv, mediacodec, professional-video, android16, android17]
 related_chapters: ["18.23", "14.9", "24.13", "26.3"]
 created_by: "task2a-knowledge-gap"
@@ -296,7 +298,7 @@ fun findApvEncoders(
 }
 ```
 
-`requestedLevelCovered == null` 表示调用方没有约束 level/band。传入 `level` 时，代码沿用 Android 17 Java legacy capability 路径的 `supportsProfileLevel()` 判断：同一 profile 下，组件公布的 level 值大于或等于请求值，便视为覆盖该请求。APV 常量用递增高位表示 Level 1 到 7.1，并用低位区分 Band 0 到 3，因此该比较适用于 Android 17 的 APV 常量集合。
+`requestedLevelCovered == null` 表示调用方没有约束 level/band。传入 `level` 时，代码只复刻 Android 17 Java legacy capability 路径的 `supportsProfileLevel()` 准入判断：同一 profile 下，组件公布的 level 常量数值大于或等于请求值，便让该请求进入后续 format 检查。APV 的 level 高位和 band 低位会同时影响采样率、码率上限，这个数值比较是 framework capability 的近似入口，不是 APV level/band 的规格证明；要求严格落在某个 band 时，还要按 APV 表独立核算采样率和码率。
 
 `isFormatSupported()` 会联合检查 MIME、尺寸、帧率、profile、level、码率等字段；输入色彩格式仍单独与 `colorFormats` 交叉检查，便于诊断 vendor 上报不一致。这里还有一条容易遗漏的 API 边界：`KEY_LEVEL` 能参与 profile/level 组合检查，但文档明确说明，它不会证明其他 format 参数满足调用方指定的那个 level。Android 17 的 Java legacy capability 路径会改用该 profile 的最高已公布 level 检查关键参数；无论设备走 Java legacy 还是 native capability 路径，公开 API 都没有给出“其余参数符合指定 level”的保证。工作流若要求输出严格落在某个 APV level/band，还要独立核算目标采样率与码率，并检查 configure 后的 output format 和生成码流。HDR 录制应把 `profile` 换成 HDR10 或 HDR10+ 版本，并继续设置、核对 color standard、transfer、range 和静态/动态 HDR 元数据，不能只换一个 profile 常量。
 
