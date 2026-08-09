@@ -119,15 +119,15 @@ last_deepseek_cn_review_at: 2026-07-15
 
 # 1.11 Zygote 机制与启动性能优化
 
-Zygote 把每个 Android 应用都需要的一部分运行时初始化前移到一个长期存活的父进程中。启动应用时，系统不必从空进程重新装载 ART 和常用 framework 状态，而是从 Zygote fork，或把 USAP 池中的未特化进程变成目标应用进程。
+Zygote 把每个 Android 应用都需要的一部分运行时初始化前移到一个长期存活的父进程中。启动应用时，系统不必从空进程重新装载 ART 和常用框架层状态，而是从 Zygote 派生进程，或把 USAP 池中的未特化进程变成目标应用进程。
 
 这套机制同时解决启动和内存问题：
 
 - 预加载结果可被子进程继承；
-- fork 后的私有可写页面先共享，首次写入时再触发 Copy-on-Write；
-- system_server 可以通过一个受控协议为子进程设置 UID、GID、SELinux domain、mount namespace、rlimit 和 seccomp。
+- 派生后的私有可写页面先共享，首次写入时再触发写时复制（COW）；
+- `system_server` 可以通过受控协议为子进程设置 UID、GID、SELinux 域、挂载命名空间、资源限制和 seccomp。
 
-分析冷启动时，Zygote 只覆盖“进程请求、创建或特化、进入应用入口”这一段。`bindApplication`、Provider 初始化、`Application.onCreate()` 和首帧仍属于后续应用初始化。把整段冷启动都归因于 Zygote，会看错优化位置。
+分析冷启动时，Zygote 只覆盖“进程请求、创建或特化、进入应用入口”这一段。`bindApplication`、内容提供者初始化、`Application.onCreate()` 和首帧仍属于后续应用初始化。把整段冷启动都归因于 Zygote，会看错优化位置。
 
 本节以 AOSP `android-17.0.0_r1` 为平台基线；涉及 `fork` 与 COW 时，以 ACK `android17-6.18-2026-06_r6` 为内核基线。Android 5～16 仅用于版本演进。
 
@@ -135,37 +135,37 @@ Zygote 把每个 Android 应用都需要的一部分运行时初始化前移到�
 
 ## 从启动请求到 Zygote
 
-Launcher 发起 Activity 启动时，前半段通过 Binder 进入 `system_server`。ATMS/AMS 解析 Activity、Task 和进程状态；只有目标进程不存在时，`ProcessList` 才请求创建进程。
+启动器发起活动启动时，前半段通过 Binder 进入 `system_server`。ATMS/AMS 解析活动、任务和进程状态；只有目标进程不存在时，`ProcessList` 才请求创建进程。
 
 普通应用进程的控制流可以简化为：
 
 ```text
-Launcher / App
+启动器 / 应用
   → Binder
 system_server: ATMS / AMS / ProcessList
   → Process.start()
   → ZygoteProcess.startViaZygote()
   → LocalSocket
-primary 或 secondary Zygote
-  → forkAndSpecialize() 或 USAP specialize
+主 Zygote 或次 Zygote
+  → forkAndSpecialize() 或 USAP 特化
   → 返回 PID
 ```
 
-`system_server` 与 Zygote 之间不是 Binder 服务调用。`ZygoteProcess.openZygoteSocketIfNeeded(abi)` 先按目标 ABI 选择 primary 或 secondary socket，再把参数写入 `LocalSocket`。请求中包含 UID、GID、supplementary groups、target SDK、ABI、SELinux `seInfo`、进程名和 mount 选项等。
+`system_server` 与 Zygote 之间不使用 Binder 服务调用。`ZygoteProcess.openZygoteSocketIfNeeded(abi)` 先按目标 ABI 选择主或次套接字，再把参数写入 `LocalSocket`。请求中包含 UID、GID、附加组、目标 SDK、ABI、SELinux `seInfo`、进程名和挂载选项等。
 
 `ProcessList.startProcess()` 还会先看进程类型：
 
 - WebView 相关进程可以走 `WebViewZygote`；
-- 声明使用 App Zygote 的 isolated service 可以走 `AppZygote`；
-- 其余应用走普通 primary/secondary Zygote。
+- 声明使用 App Zygote 的隔离服务可以走 `AppZygote`；
+- 其余应用走普通的主/次 Zygote。
 
-所以，看到 `Process.start()` 不等于所有进程都进入同一个 Zygote socket。
+调用 `Process.start()` 不代表所有进程都进入同一个 Zygote 套接字。
 
 ---
 
 ## Zygote 在开机时预加载什么
 
-Android 17 的 `ZygoteInit.main()` 先解析启动参数，并根据 `--enable-lazy-preload` 决定是否立即执行 `preload()`；随后创建 `ZygoteServer`，再按参数 fork system_server。常见 64 位 primary Zygote 由 `init.zygote64.rc` 启动，带 `--start-system-server`，没有 lazy 参数，因此先预加载，再 fork system_server。
+Android 17 的 `ZygoteInit.main()` 先解析启动参数，并根据 `--enable-lazy-preload` 决定是否立即执行 `preload()`；随后创建 `ZygoteServer`，再按参数派生 `system_server`。常见的 64 位主 Zygote 由 `init.zygote64.rc` 启动，带 `--start-system-server`，没有延迟预加载参数，所以先预加载，再派生 `system_server`。
 
 `ZygoteInit.preload()` 的当前顺序是：
 
@@ -179,24 +179,24 @@ beginPreload
   → preloadSharedLibraries
   → preloadTextResources
   → preloadCompatConfig
-  → HttpEngine.preload              [feature flag]
+  → HttpEngine.preload              [功能开关]
   → WebViewFactory.prepareWebViewInZygote
   → endPreload
   → warmUpJcaProviders
 ```
 
-`HttpEngine.preload()` 受 flag 控制，并用 `NoSuchMethodError` 兼容 Zygote 与模块版本不一致的情况。它不能写成所有 Android 17 产品都会执行的固定阶段。
+`HttpEngine.preload()` 受功能开关控制，并用 `NoSuchMethodError` 兼容 Zygote 与模块版本不一致的情况。它不是所有 Android 17 产品都会执行的固定阶段。
 
 ### `preloaded-classes` 的边界
 
-`preloadClasses()` 读取 `/system/etc/preloaded-classes`。AOSP 对应源文件是 `frameworks/base/config/preloaded-classes`，主要覆盖 boot class path / framework 中适合跨进程共享的类。AndroidX、业务代码和普通第三方 SDK 不会因为“常用”就自动进入主 Zygote。
+`preloadClasses()` 读取 `/system/etc/preloaded-classes`。AOSP 对应源文件是 `frameworks/base/config/preloaded-classes`，主要覆盖启动类路径和框架层中适合跨进程共享的类。AndroidX、业务代码和普通第三方 SDK 不会因为“常用”就自动进入主 Zygote。
 
 预加载并非越多越好：
 
 - 类加载会增加开机时间；
-- 预加载对象若在子进程中很快被写，会触发 COW，降低共享收益；
+- 预加载对象若在子进程中很快被写，会触发写时复制，降低共享收益；
 - 很少使用的类会增加 Zygote 常驻内存；
-- preload 后遗留不安全文件描述符或线程，会破坏 fork 边界。
+- 预加载后遗留不安全文件描述符或线程，会破坏进程派生边界。
 
 应根据启动样本和内存样本选择条目，不能只按类加载次数扩充列表。
 
@@ -208,18 +208,18 @@ beginPreload
 android::GraphicBufferMapper::preloadHal();
 ```
 
-源码注释给出的约束是：适合放在这里的 HAL 应当始终为 passthrough，并被大多数应用进程使用。因此，不能把这个入口理解成“Zygote 预加载所有 HAL”。
+源码注释给出的约束是：适合放在这里的 HAL 应当始终采用直通模式，并被大多数应用进程使用。因此，不能把这个入口理解成“Zygote 预加载所有 HAL”。
 
 `nativePreloadGraphicsDriver()` 调用 `zygote_preload_graphics()`。`ZygoteInit` 的注释说明，它通过一次 OpenGL 或 Vulkan 调用加载并初始化图形驱动；属性 `ro.zygote.disable_gl_preload=true` 可以关闭该动作。
 
-这里预热的是可继承的驱动装载状态，不是每个应用自己的图形运行环境。应用的 RenderThread、EGL/Vulkan context、Surface 和首帧命令仍在子进程中创建。也不能假定每个应用选择的 updatable GPU driver 都等于 Zygote 预加载的系统驱动。
+这里预热的是可继承的驱动装载状态，不是每个应用自己的图形运行环境。应用的 RenderThread、EGL/Vulkan 上下文、Surface 和首帧命令仍在子进程中创建。也不能假定每个应用选择的可更新 GPU 驱动都等于 Zygote 预加载的系统驱动。
 
-### 32 位 secondary Zygote 的 lazy preload
+### 32 位次 Zygote 的延迟预加载
 
 在 64/32 双 ABI 的 AOSP 配置中：
 
-- `init.zygote64.rc` 启动 primary 64 位 Zygote，eager preload；
-- `init.zygote64_32.rc` 启动 32 位 secondary Zygote，并带 `--enable-lazy-preload`。
+- `init.zygote64.rc` 启动 64 位主 Zygote，立即预加载；
+- `init.zygote64_32.rc` 启动 32 位次 Zygote，并带 `--enable-lazy-preload`。
 
 Android 17 的 `SystemServer` 提交 `SecondaryZygotePreload` 任务，调用：
 
@@ -227,13 +227,13 @@ Android 17 的 `SystemServer` 提交 `SecondaryZygotePreload` 任务，调用：
 Process.ZYGOTE_PROCESS.preloadDefault(Build.SUPPORTED_32_BIT_ABIS[0]);
 ```
 
-任务约在 WebView preparation 前一秒启动；WebView preparation 会等待这个 future。`preloadDefault()` 通过 Zygote socket 发送 `--preload-default`。返回 `true` 表示本次触发了 lazy preload，`false` 表示此前已经完成或 Zygote 并非 lazy 模式。
+任务约在 WebView 准备前一秒启动；WebView 准备会等待这个异步结果。`preloadDefault()` 通过 Zygote 套接字发送 `--preload-default`。返回 `true` 表示本次触发了延迟预加载，`false` 表示此前已经完成或 Zygote 并非延迟模式。
 
-这是特定 init 配置下的行为。64-only、32-only 和厂商自定义 Zygote 配置可能不同，分析设备时要同时看 `ro.zygote`、实际 init service 和对应进程。
+这是特定 init 配置下的行为。纯 64 位、纯 32 位和厂商自定义 Zygote 配置可能不同，分析设备时要同时看 `ro.zygote`、实际 init 服务和对应进程。
 
 ---
 
-## 普通 fork 路径做了什么
+## 普通进程派生路径
 
 普通路径进入 `Zygote.forkAndSpecialize()`：
 
@@ -242,63 +242,63 @@ ZygoteHooks.preFork();
 int pid = nativeForkAndSpecialize(...);
 if (pid == 0) {
     Trace.traceBegin(TRACE_TAG_ACTIVITY_MANAGER, "PostFork");
-    // child-only Java setup
+    // 仅在子进程执行的 Java 设置
 }
 ZygoteHooks.postForkCommon();
 ```
 
-`preFork()` 要让 ART 和运行时进入适合 fork 的状态。JNI 的 `nativeForkAndSpecialize()` 调用 `ForkCommon()`；子进程再进入 `SpecializeCommon()`。
+`preFork()` 要让 ART 和运行时进入适合派生进程的状态。JNI 的 `nativeForkAndSpecialize()` 调用 `ForkCommon()`；子进程再进入 `SpecializeCommon()`。
 
-特化不是简单改一个 UID。Android 17 的 native 实现包含：
+特化包含的步骤远多于修改 UID。Android 17 的原生实现包含：
 
 - 关闭或替换不应继承的文件描述符；
-- 建立应用 mount namespace 和存储视图；
-- 设置 supplementary groups 与 rlimit；
+- 建立应用挂载命名空间和存储视图；
+- 设置附加组与资源限制；
 - 切换 GID、UID；
-- 安装 seccomp filter；
+- 安装 seccomp 过滤器；
 - 设置调度策略；
-- 收缩 capabilities；
-- 执行 SELinux domain transition；
+- 收缩进程能力；
+- 执行 SELinux 域转换；
 - 设置进程名、调试与内存安全选项；
-- 运行 ART 的 post-fork child hooks。
+- 运行 ART 的派生后子进程钩子。
 
-这些步骤既是安全边界，也是进程创建时间的一部分。某次启动在 `PostFork` 内显著变慢时，应检查 mount、文件描述符、SELinux、调度和运行时 hook，而不是只看 `fork()` 系统调用本身。
+这些步骤既是安全边界，也是进程创建时间的一部分。某次启动在 `PostFork` 内显著变慢时，应检查挂载、文件描述符、SELinux、调度和运行时钩子，不能只看 `fork()` 系统调用本身。
 
-### 内核中的 fork 与 COW
+### 内核中的进程派生与写时复制
 
-ACK `android17-6.18-2026-06_r6` 中，`copy_process()` 通过 `copy_mm()` 复制地址空间描述，`dup_mmap()` 复制 VMA 和必要页表。私有可写页起初可以继续引用相同物理页；子进程或父进程首次写入时，write-protect fault 进入 `do_wp_page()`，需要时由 `wp_page_copy()` 创建独占副本。
+ACK `android17-6.18-2026-06_r6` 中，`copy_process()` 通过 `copy_mm()` 复制地址空间描述，`dup_mmap()` 复制 VMA 和必要页表。私有可写页起初可以继续引用相同物理页；子进程或父进程首次写入时，写保护缺页进入 `do_wp_page()`，需要时由 `wp_page_copy()` 创建独占副本。
 
-这就是 COW 的准确边界：
+写时复制的边界如下：
 
-- fork 时不是把 Zygote 全部内存复制一遍；
+- 派生进程时不会把 Zygote 全部内存复制一遍；
 - 共享文件映射和只读页可以继续共享；
 - 私有可写页在被修改后逐步私有化；
 - 预加载后对象越容易被子进程修改，共享收益越低。
 
-已退出的普通应用进程不是后续应用的父进程。lmkd 杀掉缓存应用，不会让下一次 fork 脱离 Zygote，也不会因为“缓存子进程少了”直接降低 Zygote COW 复用率。内存压力可以通过回收文件页、swap、调度与 I/O 间接影响启动，但那是另一条因果路径。
+已退出的普通应用进程不是后续应用的父进程。`lmkd` 杀掉缓存应用，不会让下一次进程派生脱离 Zygote，也不会因为“缓存子进程少了”直接降低 Zygote 写时复制复用率。内存压力可以通过回收文件页、交换空间、调度与 I/O 间接影响启动，但那是另一条因果路径。
 
-### 16KB page size 不是单向收益
+### 16KB 页大小不是单向收益
 
 相同虚拟内存范围在 16KB 页上通常需要更少的页表项，但 VMA 数量由映射布局决定，不会因为页从 4KB 变为 16KB 就自动减少 75%。
 
-更大的页可能减少部分页表和缺页管理开销，也会改变 COW 粒度：只修改页内少量数据时，私有化的单位更大。对 Zygote 子进程而言，启动时间和 PSS/RSS 的净变化取决于访问局部性、脏页比例、文件映射和设备内存配置，不能只用页大小推导固定收益。
+更大的页可能减少部分页表和缺页管理开销，也会改变写时复制粒度：只修改页内少量数据时，私有化的单位更大。对 Zygote 子进程而言，启动时间和 PSS/RSS 的净变化取决于访问局部性、脏页比例、文件映射和设备内存配置，不能只用页大小推导固定收益。
 
 ---
 
-## USAP：先 fork，后特化
+## USAP：预先派生，按需特化
 
-USAP 是 Unspecialized App Process。启用后，primary/secondary Zygote 可以预先维护一小组尚未绑定具体应用身份的进程。满足条件的启动请求直接发到 USAP socket，现有进程调用 `specializeAppProcess()` 完成 UID、GID、SELinux 等特化，不再为这次请求执行新的 fork。
+USAP 是未特化应用进程（Unspecialized App Process）。启用后，主/次 Zygote 可以预先维护一小组尚未绑定具体应用身份的进程。满足条件的启动请求直接发到 USAP 套接字，现有进程调用 `specializeAppProcess()` 完成 UID、GID、SELinux 等特化，不再为这次请求派生新进程。
 
 普通路径和 USAP 路径的区别是：
 
-| 路径 | 本次请求是否新 fork | Java 入口 | 共同结果 |
+| 路径 | 本次请求是否派生新进程 | Java 入口 | 共同结果 |
 |---|---|---|---|
 | 普通 Zygote | 是 | `forkAndSpecialize()` | 子进程完成特化并进入应用入口 |
 | USAP 命中 | 否，使用池中现有进程 | `specializeAppProcess()` | 现有进程完成特化并进入应用入口 |
 
-两条路径都会在目标进程中开始 `PostFork` trace。因此，看到 `PostFork` 只能证明 post-fork/post-specialize 阶段开始，不能证明这次启动刚执行了 `fork()`。
+两条路径都会在目标进程中开始 `PostFork` 跟踪片段。看到 `PostFork` 只能证明派生后或特化后阶段已经开始，不能证明这次启动刚执行了 `fork()`。
 
-### USAP 不是默认必开能力
+### USAP 默认关闭
 
 Android 17 的 `ZygoteConfig.USAP_POOL_ENABLED_DEFAULT` 是 `false`。配置读取顺序是：
 
@@ -306,7 +306,7 @@ Android 17 的 `ZygoteConfig.USAP_POOL_ENABLED_DEFAULT` 是 `false`。配置读�
 2. `dalvik.vm.usap_pool_enabled`；
 3. 源码默认值。
 
-即使池已启用，也只有 latency-sensitive 且非 system process 的请求符合基础策略。`--start-child-zygote`、`--invoke-with`、各种 preload 命令等参数会让请求回退到传统 Zygote；USAP socket 通信失败时，`ZygoteProcess` 也会回退。
+即使池已启用，也只有延迟敏感且非系统进程的请求符合基础策略。`--start-child-zygote`、`--invoke-with`、各种预加载命令等参数会让请求回退到传统 Zygote；USAP 套接字通信失败时，`ZygoteProcess` 也会回退。
 
 设备上可先读取这两个属性：
 
@@ -315,13 +315,13 @@ adb shell getprop persist.device_config.runtime_native.usap_pool_enabled
 adb shell getprop dalvik.vm.usap_pool_enabled
 ```
 
-空值不表示最终一定启用，应按上述优先级和默认值解释，并结合启动 trace 判断是否命中。
+空值不表示最终一定启用，应按上述优先级和默认值解释，并结合启动跟踪判断是否命中。
 
-### 为什么 child zygote 没有 USAP
+### 子 Zygote 为什么没有 USAP
 
-`ZygoteServer(boolean isPrimaryZygote)` 用于系统 primary/secondary Zygote，设置 `mUsapPoolSupported = true`。无参 `ZygoteServer()` 用于 child zygote，明确设置 `mUsapPoolSupported = false`。
+`ZygoteServer(boolean isPrimaryZygote)` 用于系统主/次 Zygote，设置 `mUsapPoolSupported = true`。无参 `ZygoteServer()` 用于子 Zygote，明确设置 `mUsapPoolSupported = false`。
 
-因此，App Zygote 和 WebView Zygote 不从主 Zygote 的 USAP 池取进程，也不维护自己的 USAP 池。两者通过各自 child zygote socket 接收后续 fork 请求。
+App Zygote 和 WebView Zygote 不从主 Zygote 的 USAP 池取进程，也不维护自己的 USAP 池。两者通过各自的子 Zygote 套接字接收后续进程派生请求。
 
 ---
 
@@ -331,7 +331,7 @@ adb shell getprop dalvik.vm.usap_pool_enabled
 
 ```text
 ZygoteConnection.handleChildProc()
-  → 结束 PostFork trace
+  → 结束 PostFork 跟踪
   → ZygoteInit.zygoteInit()
       → RuntimeInit.commonInit()
       → nativeZygoteInit()
@@ -343,25 +343,25 @@ ZygoteConnection.handleChildProc()
       → IActivityManager.attachApplication()
 ```
 
-`nativeZygoteInit()` 最终进入 `AppRuntime.onZygoteInit()`，为普通应用启动 Binder thread pool。child zygote 使用 `childZygoteInit()`，刻意跳过这套普通应用初始化，再进入自己的 Zygote server 循环。
+`nativeZygoteInit()` 最终进入 `AppRuntime.onZygoteInit()`，为普通应用启动 Binder 线程池。子 Zygote 使用 `childZygoteInit()`，跳过这套普通应用初始化，再进入自己的 Zygote 服务端循环。
 
 应用调用 `attachApplication()` 回到 `system_server` 后，AMS 才发送 `bindApplication`。接着才有：
 
-- 创建并 attach Application；
-- 安装当前进程的 ContentProvider；
+- 创建并附加应用；
+- 安装当前进程的内容提供者；
 - 调用 `Application.onCreate()`；
-- 启动目标 Activity；
+- 启动目标活动；
 - 创建窗口并绘制首帧。
 
 这给出了清晰的责任边界：
 
 | 区间 | 优先怀疑 |
 |---|---|
-| system_server 请求到 PID 返回 | Zygote socket、USAP/fork、父进程调度 |
-| `PostFork` | native specialize、mount、SELinux、运行时 post-fork hook |
+| `system_server` 请求到 PID 返回 | Zygote 套接字、USAP/进程派生、父进程调度 |
+| `PostFork` | 原生特化、挂载、SELinux、运行时派生后钩子 |
 | `ActivityThreadMain` 到 `attachApplication` | 子进程调度、运行时入口、Binder 初始化 |
-| `bindApplication` | APK/类加载、Application、Provider、配置 |
-| bind 完成到首帧 | Activity、View、资源、RenderThread、Surface |
+| `bindApplication` | APK/类加载、应用、内容提供者、配置 |
+| 绑定完成到首帧 | 活动、视图、资源、RenderThread、Surface |
 
 ---
 
@@ -369,27 +369,27 @@ ZygoteConnection.handleChildProc()
 
 | 类型 | 谁启动 | 服务对象 | 预加载特点 | USAP |
 |---|---|---|---|---|
-| Primary Zygote | `init` | primary ABI、system_server、普通应用 | 通常 eager preload | 产品配置可启用 |
-| Secondary Zygote | `init` | secondary ABI 普通应用 | 64/32 配置中常为 lazy preload | 产品配置可启用 |
-| WebView Zygote | `WebViewZygote` 经主 Zygote 创建 | WebView/renderer 相关进程 | 预加载当前 WebView provider | 不支持 |
-| App Zygote | `AppZygote` 经主 Zygote 创建 | 声明 `useAppZygote` 的 isolated service | 调用应用的 `ZygotePreload` 实现 | 不支持 |
+| 主 Zygote | `init` | 主 ABI、`system_server`、普通应用 | 通常立即预加载 | 产品配置可启用 |
+| 次 Zygote | `init` | 次 ABI 普通应用 | 64/32 位配置中常为延迟预加载 | 产品配置可启用 |
+| WebView Zygote | `WebViewZygote` 经主 Zygote 创建 | WebView/渲染器相关进程 | 预加载当前 WebView 提供者 | 不支持 |
+| App Zygote | `AppZygote` 经主 Zygote 创建 | 声明 `useAppZygote` 的隔离服务 | 调用应用的 `ZygotePreload` 实现 | 不支持 |
 
 ### App Zygote 与 `ZygotePreload`
 
-`android.app.ZygotePreload` 从 API 29 提供。应用在 `<application>` 上用 `android:zygotePreloadName` 指定实现类，并在 isolated service 上设置 `android:useAppZygote="true"`。
+`android.app.ZygotePreload` 从 API 29 提供。应用在 `<application>` 上用 `android:zygotePreloadName` 指定实现类，并在隔离服务上设置 `android:useAppZygote="true"`。
 
-预加载的数据会被该 App Zygote 后续 fork 的 isolated services 继承。实现时必须遵守与主 Zygote 类似的约束：
+预加载的数据会被该 App Zygote 后续派生的隔离服务进程继承。实现时必须遵守与主 Zygote 类似的约束：
 
-- 不创建会跨 fork 失效的线程；
+- 不创建会跨进程派生失效的线程；
 - 不保留不该继承的连接和文件描述符；
-- 优先加载只读、可共享、被多个 isolated service 使用的数据；
+- 优先加载只读、可共享、被多个隔离服务使用的数据；
 - 不把用户或单次请求状态放入父进程。
 
-它不是普通 Activity 进程的通用预加载 API。
+它不是普通活动进程的通用预加载 API。
 
 ### WebView Zygote
 
-`WebViewZygote` 通过 `startChildZygote()` 创建 `webview_zygote`，等待 socket 可用，再用 `preloadApp()` 预加载当前 WebView provider 的应用信息。切换 WebView provider 后，旧 Zygote 需要停止或重建，不能把一次预热当作永久状态。
+`WebViewZygote` 通过 `startChildZygote()` 创建 `webview_zygote`，等待套接字可用，再用 `preloadApp()` 预加载当前 WebView 提供者的应用信息。切换 WebView 提供者后，旧 Zygote 需要停止或重建，不能把一次预热当作永久状态。
 
 ---
 
@@ -398,24 +398,24 @@ ZygoteConnection.handleChildProc()
 建议同时采集：
 
 - atrace 的 `am` 与 `dalvik`；
-- sched switch / waking；
-- Binder transaction；
-- process lifecycle；
-- Android EventLog events buffer；
-- 需要分析内核 fork 时再加入 syscall 和内存事件。
+- 调度切换/唤醒；
+- Binder 事务；
+- 进程生命周期；
+- Android EventLog 事件缓冲区；
+- 需要分析内核进程派生时再加入系统调用和内存事件。
 
 Android 17 可使用的源码锚点包括：
 
 - Zygote 进程：`ZygotePreload`、`PreloadClasses`、`CacheNonBootClasspathClassLoaders`、`PreloadResources`、`PreloadAppProcessHALs`、`PreloadGraphicsDriver`；
 - 目标应用：`PostFork`、`ZygoteInit`、`ActivityThreadMain`、`bindApplication`；
-- system_server：`launching: <package>` async trace；
+- `system_server`：`launching: <package>` 异步跟踪；
 - EventLog：`am_proc_start`、`am_proc_bound`。
 
-EventLog 只有在 trace 启用 Android logs 并包含 events buffer 时才可查询。没有这些行不代表进程没有启动。
+EventLog 只有在跟踪启用 Android 日志并包含事件缓冲区时才可查询。没有这些行不代表进程没有启动。
 
 ### 诊断顺序
 
-1. 用 `launching: <package>` 圈出一次 Activity launch；
+1. 用 `launching: <package>` 圈出一次活动启动；
 2. 确认目标 PID 是否为新进程；
 3. 查设备是否启用 USAP，不要仅凭 `PostFork` 判断；
 4. 比较 system_server 进程请求、目标进程首次调度、`PostFork`、`ActivityThreadMain`、`am_proc_bound` 和 `bindApplication`；
@@ -424,13 +424,13 @@ EventLog 只有在 trace 启用 Android logs 并包含 events buffer 时才可�
 
 几个常见结论：
 
-- Zygote 侧等待长、目标进程尚未运行：看 socket 排队、USAP pool refill、父 Zygote 调度和系统负载；
-- `PostFork` 长：看 specialize 的 native 步骤；
-- `PostFork` 已结束，但 `ActivityThreadMain` 或 attach 很晚：看新进程是否长期 runnable 未获 CPU，或运行时入口是否阻塞；
-- `bindApplication` 长：优先看 Provider、Application、类加载和资源；
-- 目标进程早已存在：本次是 warm/hot start，Zygote 不在关键路径。
+- Zygote 侧等待长、目标进程尚未运行：检查套接字排队、USAP 池补充、父 Zygote 调度和系统负载；
+- `PostFork` 长：检查原生特化步骤；
+- `PostFork` 已结束，但 `ActivityThreadMain` 或附加很晚：检查新进程是否长期处于可运行状态却未获 CPU，或运行时入口是否阻塞；
+- `bindApplication` 长：优先检查内容提供者、应用、类加载和资源；
+- 目标进程早已存在：本次是温启动或热启动，Zygote 不在关键路径。
 
-不要用固定的“fork 应小于 N 毫秒”作为跨设备阈值。ABI、page size、SELinux、mount、调度、内存压力和厂商实现都会改变分布，应该与同设备、同构建、同启动类型的基线比较。
+不能用固定的“进程派生应小于 N 毫秒”作为跨设备阈值。ABI、页大小、SELinux、挂载、调度、内存压力和厂商实现都会改变分布，应与同设备、同构建、同启动类型的基线比较。
 
 ---
 
@@ -439,9 +439,9 @@ EventLog 只有在 trace 启用 Android logs 并包含 events buffer 时才可�
 | 版本 | 已确认变化 | 分析意义 |
 |---|---|---|
 | Android 8 | AOSP 出现 `WebViewZygote` | WebView 相关进程有独立预加载父进程 |
-| Android 9 | `PreloadAppProcessHALs` 出现在 Zygote preload | gralloc mapper HAL 开始在主 Zygote 期预热 |
-| Android 10 | `PreloadGraphicsDriver` 替代旧 `preloadOpenGL`；AOSP 出现 USAP、App Zygote 与 `ZygotePreload` | 普通 fork、USAP、WebView/App child zygote 需要分开判断 |
-| Android 17 | 本章当前固定基线；保留可选 `HttpEngine.preload()`、secondary lazy preload 和当前 USAP 策略 | 以产品 flag、ABI/init 配置和实际 trace 判断生效路径 |
+| Android 9 | `PreloadAppProcessHALs` 出现在 Zygote 预加载流程 | gralloc 映射器 HAL 开始在主 Zygote 阶段预热 |
+| Android 10 | `PreloadGraphicsDriver` 替代旧 `preloadOpenGL`；AOSP 出现 USAP、App Zygote 与 `ZygotePreload` | 普通进程派生、USAP、WebView/App 子 Zygote 需要分开判断 |
+| Android 17 | 本章当前固定基线；保留可选 `HttpEngine.preload()`、次 Zygote 延迟预加载和当前 USAP 策略 | 以产品开关、ABI/init 配置和实际跟踪判断生效路径 |
 
 历史版本只用于说明机制何时出现。当前行为与路径一律回到 `android-17.0.0_r1`，内核 COW 一律回到 `android17-6.18-2026-06_r6`。
 
@@ -449,42 +449,42 @@ EventLog 只有在 trace 启用 Android logs 并包含 events buffer 时才可�
 
 ## 常见误区
 
-### “system_server 通过 Binder 调用 Zygote”
+### “`system_server` 通过 Binder 调用 Zygote”
 
-创建进程命令走 Zygote `LocalSocket`。Binder 用在启动请求进入 system_server，以及子进程 attach 回 system_server 等位置。
+创建进程命令走 Zygote `LocalSocket`。Binder 用在启动请求进入 `system_server`，以及子进程附加回 `system_server` 等位置。
 
-### “看到 `PostFork` 就证明刚执行了 fork”
+### “看到 `PostFork` 就证明刚执行了进程派生”
 
-普通 fork 和 USAP specialize 都会开始 `PostFork` trace。还要看 USAP 配置、PID 和父进程事件。
+普通进程派生和 USAP 特化都会开始 `PostFork` 跟踪。还要查看 USAP 配置、PID 和父进程事件。
 
 ### “预加载越多，应用一定越快”
 
-预加载会增加开机和常驻内存成本；容易被写脏的对象还会削弱 COW。只读、普遍使用、可安全继承的数据才适合。
+预加载会增加开机和常驻内存成本；容易被写脏的对象还会削弱写时复制收益。只读、普遍使用、可安全继承的数据才适合。
 
-### “图形驱动预加载已经创建应用 GPU context”
+### “图形驱动预加载已经创建应用 GPU 上下文”
 
-它只预热驱动装载状态。应用自己的 RenderThread、context、Surface 与首帧仍在子进程中创建。
+它只预热驱动装载状态。应用自己的 RenderThread、上下文、Surface 与首帧仍在子进程中创建。
 
 ### “lmkd 杀缓存应用会破坏 Zygote 的父子复用”
 
-普通应用一直从 Zygote 或 USAP 派生，不从其他缓存应用 fork。lmkd 清理子进程不会改变这个父进程关系。
+普通应用一直从 Zygote 或 USAP 派生，不从其他缓存应用派生。`lmkd` 清理子进程不会改变这个父进程关系。
 
-### “16KB 页让 fork 固定快 75%”
+### “16KB 页让进程派生固定快 75%”
 
-页表项、COW 粒度、缺页和内存浪费会同时变化；VMA 数量也不会按页大小等比缩减。必须实测。
+页表项、写时复制粒度、缺页和内存浪费会同时变化；VMA 数量也不会按页大小等比缩减。必须实测。
 
 ---
 
 ## 源码阅读顺序
 
-建议沿普通冷启动阅读：
+普通冷启动涉及以下源码路径：
 
-1. `ProcessList.startProcess()`：选择 regular、WebView 还是 App Zygote；
-2. `ZygoteProcess.startViaZygote()`：组装参数、选 ABI socket、判断 USAP；
+1. `ProcessList.startProcess()`：选择普通、WebView 还是 App Zygote；
+2. `ZygoteProcess.startViaZygote()`：组装参数、选择 ABI 套接字、判断 USAP；
 3. `ZygoteServer.runSelectLoop()` / `ZygoteConnection.processCommand()`：Zygote 端接收命令；
-4. `Zygote.forkAndSpecialize()` 与 `com_android_internal_os_Zygote.cpp`：fork 和安全特化；
-5. `ZygoteConnection.handleChildProc()`：结束 `PostFork` 并选择普通应用或 child zygote 入口；
+4. `Zygote.forkAndSpecialize()` 与 `com_android_internal_os_Zygote.cpp`：进程派生和安全特化；
+5. `ZygoteConnection.handleChildProc()`：结束 `PostFork` 并选择普通应用或子 Zygote 入口；
 6. `ZygoteInit.zygoteInit()` / `RuntimeInit.applicationInit()`：进入 `ActivityThread.main()`；
-7. `ActivityThread.attach()` 与 AMS attach：从新进程回到 `bindApplication`。
+7. `ActivityThread.attach()` 与 AMS 附加：从新进程回到 `bindApplication`。
 
-理解这条顺序后，冷启动 trace 中的每段时间都能落到具体进程和具体职责上：创建慢看 Zygote，特化慢看 native 安全准备，绑定慢看应用初始化，首帧慢看组件与渲染。这样才能把 Zygote 优化控制在它负责的范围内。
+冷启动跟踪中的每段时间都可对应到具体进程和职责：创建慢检查 Zygote，特化慢检查原生安全准备，绑定慢检查应用初始化，首帧慢检查组件与渲染。Zygote 优化应限定在它负责的范围内。

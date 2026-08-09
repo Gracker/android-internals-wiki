@@ -97,7 +97,7 @@ task2b_verifier_notes: "2026-07-14 23:25 Task2B Verifier: auto-promote to finali
 
 # 1.13 MessageQueue 机制与 DeliQueue 无锁优化
 
-Android 17 没有改变 `Handler`、`Looper` 和同步屏障对应用呈现的基本语义，改的是 `MessageQueue` 内部的并发结构。对运行在 Android 17、且 `targetSdkVersion >= 37` 的应用，平台默认启用 DeliQueue：生产者不再与 Looper 围绕同一个 Java monitor 互斥，而是先把消息压入无锁栈，再由 Looper 整理到自己独占的最小堆。
+Android 17 没有改变 `Handler`、`Looper` 和同步屏障对应用呈现的基本语义，改的是 `MessageQueue` 内部的并发结构。对运行在 Android 17、且 `targetSdkVersion >= 37` 的应用，平台默认启用 DeliQueue：生产者不再与 Looper 围绕同一个 Java 监视器互斥，而是先把消息压入无锁栈，再由 Looper 整理到自己独占的最小堆。
 
 这项改造解决的是队列操作的锁竞争，不会让 `layout`、`draw`、数据库查询或 Binder 调用凭空变快。分析卡顿时，先把一轮消息处理拆成三段：
 
@@ -130,7 +130,7 @@ private static boolean loopOnce(final Looper me,
 
 `next()` 返回前，关注点是消息排序、屏障、唤醒和队列并发；`dispatchMessage()` 开始后，才进入 `Handler.handleMessage()` 或 `Runnable.run()`。因此：
 
-- 主线程在 `MessageQueue.next()` 附近出现 monitor contention，才可能是旧队列锁竞争。
+- 主线程在 `MessageQueue.next()` 附近出现监视器竞争，才可能是旧队列锁竞争。
 - `dispatchMessage()` 下方的 `layout`、I/O 或 Binder 调用很长，是消息执行慢，不是 MessageQueue 持锁太久。
 - 一条消息执行太久会推迟下一次 `next()`，但这是时间上的连锁影响，不能倒推出队列内部的锁持有时间变长。
 
@@ -143,9 +143,9 @@ private static boolean loopOnce(final Looper me,
 - **插入最坏为 O(N)**：新消息需要沿链表找到按 `when` 排序的位置。
 - **生产者与消费者互斥**：后台线程入队时，可能挡住正在取消息的主线程；主线程检查队列时，也可能挡住生产者。
 
-危险的不是一次普通的短暂加锁，而是锁竞争与调度叠加后的优先级反转。例如：
+一次普通的短暂加锁通常问题不大，锁竞争与调度叠加后却可能形成优先级反转。例如：
 
-1. 后台低优先级线程拿到 MessageQueue 的 monitor。
+1. 后台低优先级线程拿到 MessageQueue 的监视器。
 2. 中优先级线程抢占 CPU，使后台线程暂时无法继续运行和释放锁。
 3. 高优先级 UI 线程回到 `next()`，却必须等那个后台线程。
 
@@ -158,15 +158,15 @@ UI 线程表面上被低优先级线程阻塞，实际等待时间还被中优�
 - 大范围调用 `removeCallbacksAndMessages()` 或各种 `removeMessages()` 重载。
 - 同步屏障存在时，Looper 需要越过同步消息继续寻找可执行的异步消息。
 
-“主线程很忙”本身不等于“MessageQueue 锁竞争”。只有 trace 里出现对应的锁等待，或 A/B 测试能稳定复现差异，才能把问题归到队列同步结构。
+“主线程很忙”本身不等于“MessageQueue 锁竞争”。只有跟踪记录里出现对应的锁等待，或 A/B 测试能稳定复现差异，才能把问题归到队列同步结构。
 
 ## 3. `next()` 不只是取链表头
 
 无论新旧实现，`next()` 都要同时处理等待、消息时序、同步屏障和空闲回调。
 
-### 3.1 native poll：没有到期消息时让线程睡眠
+### 3.1 原生轮询：没有到期消息时让线程休眠
 
-MessageQueue 的 Java 层通过 JNI 调用 `nativePollOnce()`。native `MessageQueue` 再交给 `libutils::Looper` 等待文件描述符事件或超时；Linux 实现最终使用 epoll。新消息可能改变下一次唤醒时间，入队线程便通过 `nativeWake()` 唤醒 Looper。
+MessageQueue 的 Java 层通过 JNI 调用 `nativePollOnce()`。原生 `MessageQueue` 再交给 `libutils::Looper` 等待文件描述符事件或超时；Linux 实现最终使用 epoll。新消息可能改变下一次唤醒时间，入队线程便通过 `nativeWake()` 唤醒 Looper。
 
 Android 17 仍保留这条链路：
 
@@ -178,7 +178,7 @@ MessageQueue.next()
               └─ epoll_wait()
 ```
 
-DeliQueue 不是忙等队列。没有可执行消息时，Looper 仍然阻塞在 native poll；变化主要发生在 Java 层共享队列的组织和唤醒协调方式上。
+DeliQueue 不是忙等队列。没有可执行消息时，Looper 仍然阻塞在原生轮询；变化主要发生在 Java 层共享队列的组织和唤醒协调方式上。
 
 ### 3.2 同步屏障：暂缓同步消息，让异步消息越过
 
@@ -192,14 +192,14 @@ DeliQueue 不是忙等队列。没有可执行消息时，Looper 仍然阻塞在
 
 ### 3.3 IdleHandler：队列准备休眠时执行
 
-`MessageQueue.IdleHandler` 从 API 1 就存在。队列没有立即可执行的消息、准备等待下一条消息时，Looper 可以调用已注册的 IdleHandler。回调返回 `false` 会被移除，返回 `true` 则保留。
+`MessageQueue.IdleHandler` 从 API 1 就存在。队列没有立即可执行的消息、准备等待下一条消息时，Looper 可以调用已注册的空闲处理器。回调返回 `false` 会被移除，返回 `true` 则保留。
 
-IdleHandler 与同步屏障解决的是两类问题：
+空闲处理器与同步屏障解决的是两类问题：
 
 - 同步屏障决定“当前哪些消息可以越过”。
-- IdleHandler 决定“没有立即可执行消息时，是否做一点空闲工作”。
+- 空闲处理器决定“没有立即可执行消息时，是否做一点空闲工作”。
 
-IdleHandler 运行在 Looper 所在线程，耗时操作照样会阻塞后续消息，不能把它当后台执行器。
+空闲处理器运行在 Looper 所在线程，耗时操作照样会阻塞后续消息，不能把它当后台执行器。
 
 ## 4. Android 17 如何决定使用 DeliQueue
 
@@ -227,7 +227,7 @@ PlatformCompat.getUseDeliQueue(appInfo)
 
 `ActivityThread.main()` 特意在 `Looper.prepareMainLooper()` 之前设置该值。`MessageQueue` 内部把选择保存为进程级静态状态；同一进程里的 MessageQueue 走同一种实现。
 
-当前 `CombinedDeliMessageQueue/MessageQueue.java` 同时保留 Deli 与 legacy 两条路径：
+当前 `CombinedDeliMessageQueue/MessageQueue.java` 同时保留 Deli 与旧实现两条路径：
 
 ```java
 Message next() {
@@ -239,7 +239,7 @@ Message next() {
 }
 ```
 
-因此，“Android 17 源码只有 DeliQueue”与“每个 Android 17 应用都使用 DeliQueue”都不准确。平台用同一个组合类承载两种实现，再按进程启动时确定的兼容性结果选择路径。系统进程、测试环境和 feature flag 还有平台内部的启用入口，普通应用不应把这些内部条件当稳定 API。
+“Android 17 源码只有 DeliQueue”与“每个 Android 17 应用都使用 DeliQueue”都不准确。平台用同一个组合类承载两种实现，再按进程启动时确定的兼容性结果选择路径。系统进程、测试环境和功能开关还有平台内部的启用入口，普通应用不应把这些内部条件当稳定 API。
 
 ## 5. DeliQueue 的数据结构
 
@@ -247,20 +247,20 @@ DeliQueue 把“并发提交”和“按时间排序”拆开：
 
 ```text
 生产者线程
-  └─ CAS push
-      └─ MessageStack（Treiber stack，共享）
+  └─ CAS 压栈
+      └─ MessageStack（共享 Treiber 栈）
 
 Looper 线程
   ├─ heapSweep()：把新消息纳入堆
-  ├─ mSyncHeap：同步消息与 barrier
+  ├─ mSyncHeap：同步消息与屏障
   └─ mAsyncHeap：异步消息
 ```
 
 这不是一棵所有线程共同修改的并发优先队列。共享部分尽量缩小为无锁栈和少量原子状态，两个 `MessageHeap` 的物理增删及排序由 Looper 线程独占。
 
-### 5.1 入队：Treiber stack 与 CAS
+### 5.1 入队：Treiber 栈与 CAS
 
-`MessageStack` 的源码注释直接称其为 “Treiber stack of Message objects”。生产者用 release 语义的 CAS 更新栈顶：
+`MessageStack` 的源码注释将其定义为由 `Message` 对象组成的 Treiber 栈。生产者用释放语义的 CAS 更新栈顶：
 
 ```java
 // frameworks/base/core/java/android/os/MessageStack.java
@@ -271,7 +271,7 @@ do {
 } while (!sTop.weakCompareAndSetRelease(this, current, m));
 ```
 
-CAS 失败说明栈顶已被其他线程改变，当前线程重新读取并重试。它避免了旧实现那种“先获得全局 monitor 才能入队”的互斥等待，但不代表每次入队只执行一条指令：高竞争下仍可能发生 CAS 重试，还要处理消息计数、插入序号和 native wake 协调。
+CAS 失败说明栈顶已被其他线程改变，当前线程重新读取并重试。它避免了旧实现中“先获得全局监视器才能入队”的互斥等待，但不代表每次入队只执行一条指令：高竞争下仍可能发生 CAS 重试，还要处理消息计数、插入序号和原生唤醒协调。
 
 调用线程的提交路径是 O(1)；随后 Looper 把消息放入最小堆时还会付出 O(log N) 的排序成本。成本没有消失，而是从“生产者在带锁链表里线性查找”改成“生产者快速提交，单消费者集中排序”。
 
@@ -282,12 +282,12 @@ CAS 失败说明栈顶已被其他线程改变，当前线程重新读取并重�
 - `mSyncHeap`：同步消息和同步屏障。
 - `mAsyncHeap`：异步消息。
 
-`MessageHeap` 是数组实现的最小堆，主要按 `when` 排序；相同时间再用 `insertSeq` 保持确定的提交顺序。堆只由 Looper 线程做物理调整，所以不需要把一把 Java 锁包在每次 sift-up、sift-down 外面。
+`MessageHeap` 是数组实现的最小堆，主要按 `when` 排序；相同时间再用 `insertSeq` 保持确定的提交顺序。堆只由 Looper 线程做物理调整，所以不需要在每次向上或向下调整时加一把 Java 锁。
 
 下一条消息的选择仍遵守旧语义：
 
-1. 没有生效的 barrier 时，从已到期候选中选择应最先执行的消息。
-2. barrier 生效时，同步消息被挡住，只能选择到期的异步消息。
+1. 没有生效的屏障时，从已到期候选中选择应最先执行的消息。
+2. 屏障生效时，同步消息被挡住，只能选择到期的异步消息。
 3. 没有消息到期时，计算等待时间并回到 `nativePollOnce()`。
 
 DeliQueue 没有引入业务优先级、机器学习调度或新的线程优先级策略。应用能观察到的主要排序依据仍是 `when`、同时间的插入顺序、同步屏障和异步标记。
@@ -299,14 +299,14 @@ DeliQueue 没有引入业务优先级、机器学习调度或新的线程优先�
 找到目标后，DeliQueue 不让任意线程直接重排堆，而是分三步：
 
 1. 对 `Message.flags` 做 CAS，设置 `FLAG_REMOVED`，完成逻辑删除。
-2. 清理会造成对象滞留的引用字段，并把 tombstone 放进另一条无锁 freelist。
+2. 清理会造成对象滞留的引用字段，并把墓碑节点放进另一条无锁空闲列表。
 3. Looper 在 `drainFreelist()` 中把节点从栈和相应的堆里物理移除。
 
-这样，非 Looper 线程负责“声明它已经无效”，Looper 负责“修复自己独占的数据结构”。读取线程即使短暂看到 tombstone，也会按 removed 标记忽略它。
+非 Looper 线程负责声明消息已经无效，Looper 负责修复自己独占的数据结构。读取线程即使短暂看到墓碑节点，也会按已移除标记忽略它。
 
-### 5.4 为什么 DeliQueue 不复用 Message 池
+### 5.4 DeliQueue 为什么不复用 Message 池
 
-Treiber stack 经常要面对 ABA：线程第一次看到栈顶是对象 A，暂停期间 A 被移除、复用，又重新成为栈顶；单看引用仍像“没有变化”。
+Treiber 栈需要处理 ABA 问题：线程第一次看到栈顶是对象 A，暂停期间 A 被移除、复用，又重新成为栈顶；单看引用仍像“没有变化”。
 
 Android 17 没有声称单指针 CAS 天然消除了 ABA。DeliQueue 的处理与对象生命周期绑定：进入并发队列的 `Message` 可能长期仍被某个移除遍历引用，所以不能马上回收到全局池再作为另一条消息复用。
 
@@ -316,35 +316,35 @@ Android 17 没有声称单指针 CAS 天然消除了 ABA。DeliQueue 的处理�
 public static Message obtain() {
     if (!MessageQueue.getUseConcurrent()) {
         synchronized (sPoolSync) {
-            // legacy 路径才尝试从全局池取 Message
+            // 旧实现路径才尝试从全局池取 Message
         }
     }
     return new Message();
 }
 ```
 
-DeliQueue 下，`recycleUnchecked()` 会清除 `obj`、`callback`、`data` 等引用，但不把这个对象放回共享消息池，也不会把并发删除所需的 flags 和链路当作普通新消息状态重用。这个选择避免了经典的“节点对象被回收后以新身份重新出现”的 ABA 场景，代价是比 legacy 路径产生更多 `Message` 分配。评估收益时应同时观察锁竞争、分配速率和 GC，而不是只看队列操作时长。
+DeliQueue 下，`recycleUnchecked()` 会清除 `obj`、`callback`、`data` 等引用，但不把这个对象放回共享消息池，也不会把并发删除所需的标志和链路当作普通新消息状态重用。这个选择避免了经典的“节点对象被回收后以新身份重新出现”的 ABA 场景，代价是比旧路径产生更多 `Message` 分配。评估收益时应同时观察锁竞争、分配速率和 GC，不能只看队列操作时长。
 
 ### 5.5 睡眠、唤醒与退出也要无竞争地协同
 
-只改消息容器还不够。生产者入队时可能让一条更早的消息成为新队首，需要唤醒正在 native poll 的 Looper；Looper 准备睡眠时，又可能与刚入队的线程交错。
+消息容器之外还需要处理唤醒竞争。生产者入队时可能让一条更早的消息成为新队首，需要唤醒正在原生轮询的 Looper；Looper 准备休眠时，又可能与刚入队的线程交错。
 
-DeliQueue 用原子 wait state 协调“预计睡到何时”和“期间发生过多少次需要重新判断的事件”，避免丢失唤醒。同步屏障也有独立的原子状态，用来判断新增异步消息是否需要唤醒消费者。
+DeliQueue 用原子等待状态协调“预计睡到何时”和“期间发生过多少次需要重新判断的事件”，避免丢失唤醒。同步屏障也有独立的原子状态，用来判断新增异步消息是否需要唤醒消费者。
 
-退出更敏感：其他线程可能正在通过 `mPtr` 调用 native wake，而 Looper 正准备销毁 native 对象。Android 17 用带退出位的引用计数保护 `mPtr` 生命周期。`quitSafely()` 仍只处理已经到期的消息并移除未来消息；安全销毁 native 对象则要等正在使用它的线程退出临界阶段。
+退出阶段的竞争更敏感：其他线程可能正在通过 `mPtr` 调用原生唤醒，而 Looper 正准备销毁原生对象。Android 17 用带退出位的引用计数保护 `mPtr` 生命周期。`quitSafely()` 仍只处理已经到期的消息并移除未来消息；安全销毁原生对象则要等正在使用它的线程退出临界阶段。
 
-## 6. “lock-free MessageQueue”不等于“整个类没有任何锁”
+## 6. “无锁 MessageQueue”不代表整个类没有锁
 
-官方把 DeliQueue 称为 lock-free MessageQueue，因为消息的核心并发提交、检查和移除不再依赖旧的单一全局 monitor，相关算法满足 lock-free 的进展性质：即使某个线程停住，系统中仍有线程能够继续推进。
+官方把 DeliQueue 称为无锁 MessageQueue，因为消息的核心并发提交、检查和移除不再依赖旧的单一全局监视器，相关算法满足无锁进展性质：即使某个线程停住，系统中仍有线程能够继续推进。
 
 但 `android-17.0.0_r1` 的组合实现仍能看到：
 
 - `mIdleHandlersLock`：保护 IdleHandler 集合。
 - `mFileDescriptorRecordsLock`：保护文件描述符监听记录。
-- legacy 路径里的 `synchronized (this)`。
-- native poll/wake 和退出阶段的协调。
+- 旧实现路径里的 `synchronized (this)`。
+- 原生轮询/唤醒和退出阶段的协调。
 
-所以严谨的表述是：**DeliQueue 消除了旧 MessageQueue 核心消息路径上的单一全局 monitor，并使用无锁共享结构与 Looper 私有堆协作**。把它扩写成“MessageQueue 内任何操作都不加锁”会与源码冲突。
+准确的表述是：**DeliQueue 消除了旧 MessageQueue 核心消息路径上的单一全局监视器，并使用无锁共享结构与 Looper 私有堆协作**。把它扩写成“MessageQueue 内任何操作都不加锁”会与源码冲突。
 
 ## 7. 同步屏障与 Choreographer：语义不变，容器变了
 
@@ -352,21 +352,21 @@ DeliQueue 用原子 wait state 协调“预计睡到何时”和“期间发生�
 
 ```text
 旧实现
-生产者 enqueue ─┐
-Looper next     ├─ 同一个 monitor + 有序链表
-移除/barrier    ┘
+生产者入队 ─┐
+Looper 出队 ├─ 同一个监视器 + 有序链表
+移除/屏障   ┘
 
 Android 17 DeliQueue
-生产者 enqueue ── CAS push 到 MessageStack
-Looper next    ── sweep + 私有 sync/async 最小堆
-移除            ── CAS tombstone + Looper 延迟清理
+生产者入队 ── CAS 压入 MessageStack
+Looper 出队 ── 扫描 + 私有同步/异步最小堆
+移除         ── CAS 墓碑标记 + Looper 延迟清理
 ```
 
-barrier 的行为没有改变：同步消息等待，异步消息可以越过。变化在于生产者提交消息时不再为了修改同一条链表而与 Looper 互斥。
+屏障的行为没有改变：同步消息等待，异步消息可以越过。变化在于生产者提交消息时不再为了修改同一条链表而与 Looper 互斥。
 
 这会改善 `VSYNC-app` 到 `doFrame()` 之间因为队列锁竞争造成的抖动，但不能保证每一帧都更快：
 
-- `doFrame()` 里 measure/layout/draw 太慢，DeliQueue 无法修复。
+- `doFrame()` 里的测量、布局和绘制太慢，DeliQueue 无法修复。
 - 主线程被别的应用锁、Binder 或调度延迟挡住，仍要查各自根因。
 - 队列积压来自业务过量投递时，新结构能降低管理成本，却不会替应用丢弃无意义工作。
 
@@ -377,8 +377,8 @@ Android Developers Blog 给出了 DeliQueue 的内部验证结果：
 | 指标 | 官方结果 | 适用边界 |
 | --- | ---: | --- |
 | 多线程向繁忙队列插入 | 最高 5,000× | 合成高竞争基准，不代表普通应用 |
-| App 主线程锁竞争耗时 | 降低 15% | Google 内部 beta 用户 Perfetto trace |
-| App 掉帧 | 降低 4% | 同批内部测试设备与工作负载 |
+| 应用主线程锁竞争耗时 | 降低 15% | Google 内部测试用户的 Perfetto 跟踪 |
+| 应用掉帧 | 降低 4% | 同批内部测试设备与工作负载 |
 | System UI / Launcher 交互掉帧 | 降低 7.7% | 同批内部测试设备与工作负载 |
 | 启动到首帧 P95 | 缩短 9.1% | 同批内部测试设备与工作负载 |
 
@@ -386,7 +386,7 @@ Android Developers Blog 给出了 DeliQueue 的内部验证结果：
 
 项目自己的结论至少要记录：
 
-- 设备和 Android build。
+- 设备和 Android 构建。
 - `targetSdkVersion` 与兼容开关状态。
 - 生产者线程数、消息量和队列积压程度。
 - Perfetto 配置、操作步骤、样本数与统计口径。
@@ -406,7 +406,7 @@ Android Developers Blog 给出了 DeliQueue 的内部验证结果：
 
 - Espresso 3.7.0 或更高版本。
 - Robolectric 4.17 或更高版本，并从 `@LooperMode(LEGACY)` 迁移到 `@LooperMode(PAUSED)`。
-- instrumentation 测试使用 `TestLooperManager`，包括 Android 17 增加的 `peekWhen()`、`poll()` 等能力，不再依赖 MessageQueue 私有字段。
+- 插桩测试使用 `TestLooperManager`，包括 Android 17 增加的 `peekWhen()`、`poll()` 等能力，不再依赖 MessageQueue 私有字段。
 
 ### 9.3 用兼容性开关做同版本 A/B
 
@@ -424,33 +424,33 @@ adb shell am force-stop com.example.app
 
 A/B 结果的解释也要克制：
 
-- 关闭后 crash 消失：优先排查反射和测试工具假设。
-- 开启后 monitor contention 消失：说明旧队列锁是原链路的一部分。
+- 关闭后崩溃消失：优先排查反射和测试工具假设。
+- 开启后监视器竞争消失：说明旧队列锁是原链路的一部分。
 - 两边 `dispatchMessage()` 都很长：继续修业务代码，别把它算成 DeliQueue 问题。
 
 兼容开关用于开发验证和故障隔离，不应成为应用长期依赖的产品配置。
 
-## 10. 用 Perfetto 验证，而不是凭体感归因
+## 10. 用 Perfetto 验证，避免凭体感归因
 
 ### 第一步：确认等待发生在哪里
 
-旧实现的典型证据是主线程 `monitor contention with ...` 切片，阻塞方法指向 `MessageQueue`。官方文章给出的 PerfettoSQL 使用 `android_monitor_contention` 表，并以 `short_blocked_method LIKE "%MessageQueue%"` 筛选主线程等待。
+旧实现的典型证据是主线程出现 `monitor contention with ...` 片段，阻塞方法指向 `MessageQueue`。官方文章给出的 PerfettoSQL 使用 `android_monitor_contention` 表，并以 `short_blocked_method LIKE "%MessageQueue%"` 筛选主线程等待。
 
-主线程只是处于 Sleeping 状态不够。它可能正常睡在 `nativePollOnce()` 等下一条消息；只有结合 contention 切片、持锁者和调用点，才能确认是 Java monitor。
+主线程只处于休眠状态不能证明存在锁竞争。它可能正常睡在 `nativePollOnce()` 等下一条消息；只有结合竞争片段、持锁者和调用点，才能确认是 Java 监视器。
 
 ### 第二步：分开统计队列等待和消息执行
 
-- 队列侧：MessageQueue monitor contention 次数、总时长、P95/P99，以及持锁线程。
-- 执行侧：Looper/Handler trace slice 下具体回调、`doFrame()`、Binder、I/O 和锁。
-- 帧侧：实际帧时间线、missed frame 原因、`VSYNC-app` 到 `doFrame()` 的延迟。
+- 队列侧：MessageQueue 监视器竞争次数、总时长、P95/P99，以及持锁线程。
+- 执行侧：Looper/Handler 跟踪片段下的具体回调、`doFrame()`、Binder、I/O 和锁。
+- 帧侧：实际帧时间线、丢帧原因、`VSYNC-app` 到 `doFrame()` 的延迟。
 
-Android 17 新实现让旧 monitor contention 消失后，主线程仍可能 Runnable 但拿不到 CPU，也可能在其他锁上阻塞。线程状态必须和调度、调用栈一起看。
+Android 17 新实现让旧监视器竞争消失后，主线程仍可能处于可运行状态却拿不到 CPU，也可能在其他锁上阻塞。线程状态必须和调度、调用栈一起检查。
 
 ### 第三步：做控制变量明确的 A/B
 
-同一台 Android 17 设备、同一个 build、同一个 APK 和同一套操作脚本，只切 `USE_NEW_MESSAGEQUEUE`。每轮强制停止并冷启动进程，收集多份 trace，再比较分位数。不要拿 Android 16 与 Android 17 两个完整系统直接对比后，把所有差异都归给 DeliQueue。
+同一台 Android 17 设备、同一个构建、同一个 APK 和同一套操作脚本，只切 `USE_NEW_MESSAGEQUEUE`。每轮强制停止并冷启动进程，收集多份跟踪记录，再比较分位数。不能直接对比 Android 16 与 Android 17 两个完整系统，再把所有差异都归给 DeliQueue。
 
-对 `system_server` 做平台开发时，Android 17 还提供 `mq` track event 分类，可在 Perfetto 配置中启用 MessageQueue tracing。普通应用分析仍应优先使用稳定的 Looper、调度、锁竞争和帧时间线证据，不要依赖隐藏实现字段。
+对 `system_server` 做平台开发时，Android 17 还提供 `mq` 跟踪事件分类，可在 Perfetto 配置中启用 MessageQueue 跟踪。普通应用分析仍应优先使用稳定的 Looper、调度、锁竞争和帧时间线证据，不要依赖隐藏实现字段。
 
 ## 11. 版本演进
 
@@ -458,17 +458,17 @@ Android 17 新实现让旧 monitor contention 消失后，主线程仍可能 Run
 | --- | --- |
 | Android 1.0（API 1） | `MessageQueue`、`Looper` 与 `IdleHandler` 已存在 |
 | Android 4.1（API 16） | `Choreographer` 使用同步屏障与异步消息组织渲染调度 |
-| Android 15（API 35） | legacy 主线仍是单链表加单一 monitor |
-| Android 16（API 36） | 公开源码出现 Combined / Concurrent / Legacy 多种实现，处于系统进程优先的受控 rollout 阶段 |
+| Android 15（API 35） | 旧实现主线仍是单链表加单一监视器 |
+| Android 16（API 36） | 公开源码出现组合、并发、旧版等多种实现，处于系统进程优先的受控推广阶段 |
 | Android 17（API 37） | DeliQueue 面向 `targetSdkVersion >= 37` 的应用默认启用；当前源码锚点为 `CombinedDeliMessageQueue`、`MessageStack`、`MessageHeap` 与扩展后的 `Message` |
 
-Android 16 的并发实现适合解释演进，不能替代 Android 17 的当前源码。Android 17 的 `MessageStack` 本身就是 Treiber stack，不是“用 MessageStack 替换 Treiber stack”；变化是原型结构收敛为共享 Treiber stack、Looper 私有双堆、tombstone 删除和完整的睡眠/退出协调。
+Android 16 的并发实现适合解释演进，不能替代 Android 17 的当前源码。Android 17 的 `MessageStack` 本身就是 Treiber 栈，不是“用 MessageStack 替换 Treiber 栈”；变化是原型结构收敛为共享 Treiber 栈、Looper 私有双堆、墓碑删除和完整的休眠/退出协调。
 
 ## 12. 常见误判
 
-### “lock-free 就是没有任何 `synchronized`”
+### “无锁就是没有任何 `synchronized`”
 
-不是。核心消息路径不再依赖旧的全局 monitor，但 IdleHandler、文件描述符记录和 legacy 路径仍有各自的锁。
+不是。核心消息路径不再依赖旧的全局监视器，但空闲处理器、文件描述符记录和旧实现路径仍有各自的锁。
 
 ### “CAS 一定比锁快”
 
@@ -476,23 +476,23 @@ Android 16 的并发实现适合解释演进，不能替代 Android 17 的当前
 
 ### “MessageStack 解决了所有 ABA 问题”
 
-不准确。`MessageStack` 就是 Treiber stack。Android 17 通过禁止 DeliQueue 中的 `Message` 对象池复用、保留 tombstone 生命周期和限制物理结构修改者来规避其设计中的节点复用问题。
+不准确。`MessageStack` 就是 Treiber 栈。Android 17 通过禁止 DeliQueue 中的 `Message` 对象池复用、保留墓碑节点生命周期和限制物理结构修改者来规避其设计中的节点复用问题。
 
 ### “新队列给渲染消息增加了更高业务优先级”
 
 没有。同步屏障与异步消息语义沿用既有模型；DeliQueue 改的是并发容器和协调算法，不是应用任务优先级系统。
 
-### “主线程卡在 Sleeping 就是队列锁竞争”
+### “主线程处于休眠状态就是队列锁竞争”
 
-不成立。空闲 Looper 正常睡在 native poll。要看到 `android_monitor_contention`、持锁线程和 MessageQueue 调用点，才能确认旧 monitor 竞争。
+不成立。空闲 Looper 正常睡在原生轮询。要看到 `android_monitor_contention`、持锁线程和 MessageQueue 调用点，才能确认旧监视器竞争。
 
 ## 结论
 
 阅读 Android 17 MessageQueue，抓住两条边界就够了。
 
-第一，DeliQueue 优化的是入队和出队：生产者 CAS 提交到 `MessageStack`，Looper 把消息整理进自己独占的同步/异步最小堆，移除操作先做 tombstone，再由 Looper 清结构。同步屏障、异步消息、IdleHandler 和 native poll 的外部语义仍然存在。
+第一，DeliQueue 优化的是入队和出队：生产者通过 CAS 提交到 `MessageStack`，Looper 把消息整理进自己独占的同步/异步最小堆，移除操作先做墓碑标记，再由 Looper 清理结构。同步屏障、异步消息、空闲处理器和原生轮询的外部语义仍然存在。
 
-第二，官方所说的 lock-free 指核心消息并发路径摆脱旧的单一全局 monitor，不代表整个类没有锁，更不代表业务回调会自动变快。迁移时检查反射和测试框架；性能分析时把队列等待与 `dispatchMessage()` 之后的业务执行分开，用同版本兼容开关和 Perfetto 证据完成 A/B。
+第二，官方所说的无锁指核心消息并发路径摆脱旧的单一全局监视器，不代表整个类没有锁，也不代表业务回调会自动变快。迁移时检查反射和测试框架；性能分析时把队列等待与 `dispatchMessage()` 之后的业务执行分开，用同版本兼容开关和 Perfetto 证据完成 A/B 测试。
 
 ## 参考资料
 
