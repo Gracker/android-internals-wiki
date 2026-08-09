@@ -2597,6 +2597,56 @@
       ],
       "route_status": "provisional-low-confidence",
       "route_migration_reason": "route_confidence 28 below shared threshold 30"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-09-76308345-Android-CLI-来了！终端一键建项目、控模拟器、给-Agent-喂官方规.md",
+      "title": "[技术文章] Android CLI 来了！终端一键建项目、控模拟器、给 Agent 喂官方规范Android 团队刚发布了 Andr",
+      "summary": "> 发布时间: 2026-04-21T00:49:58.000Z > 原文链接: https://juejin.cn/post/7630834546863751219 2026-04-21 1,283 阅读5分钟 > 本文首发于公众号“Android技术圈” Android 团队刚发布了 **Android CLI（预览版）**：你可以在终端里完成 Android 开发的...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-09T06:20:02.287414+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-09-76310811-重磅！Android-Studio-Quail-1-来了，IDE直接内置-Lea.md",
+      "title": "[技术文章] 重磅！Android Studio Quail 1 来了，IDE直接内置 LeakCanary2026 年 4 月 16",
+      "summary": "> 发布时间: 2026-04-22T00:47:41.000Z > 原文链接: https://juejin.cn/post/7631081134169309210 2026-04-22 2,100 阅读3分钟 2026 年 4 月 16 日，Google 放出了 Android Studio Quail 1 的首个 Canary 版本。 这意味着 Android St...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-09T06:20:02.287414+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-09-76393117-我为什么让-Toast-多弹了一次.md",
+      "title": "[技术文章] 我为什么让 Toast 多弹了一次有一类 Bug 很容易让人怀疑人生：代码看起来没问题，业务逻辑也没问题，甚至第一次运行",
+      "summary": "> 发布时间: 2026-05-14T02:17:51.000Z > 原文链接: https://juejin.cn/post/7639311759746383882 2026-05-14 1,631 阅读9分钟 Kotlin Learning 我之前在这篇故事里说到，实习生阿泽在经历项目锻炼后写了一篇文章-《我为什么让 Toast 多弹了一次》，对，就是这篇！ 现在，让...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-09T06:20:02.287414+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-08-09-76444766-学吧！Android-全新的嵌入式照片选择器.md",
+      "title": "[技术文章] 学吧！Android 全新的嵌入式照片选择器AndroidX 推出了全新的嵌入式照片选择器（EmbeddedPhotoP",
+      "summary": "> 发布时间: 2026-05-28T00:39:32.000Z > 原文链接: https://juejin.cn/post/7644476634998538249 2026-05-28 1,142 阅读5分钟 2022 年，Android 团队推出了照片选择器，让用户能更隐私地分享媒体文件。用户可以通过可浏览的界面按日期从新到旧查看媒体库，并且只授予应用访问所选文件的...",
+      "chapter": "ch16",
+      "processed_at": "2026-08-09T06:20:02.287414+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/GitNexus Deep Dive_ AST Knowledge Graphs as the Nervous System for AI Coding Agents.md",
+      "title": "[DeepResearch] GitNexus 深度技术调研报告：把代码库变成 AI Agent 的”神经系统”",
+      "summary": "# GitNexus 深度技术调研报告：把代码库变成 AI Agent 的”神经系统” ## TL;DR - **GitNexus（github.com/abhigyanpatwari/GitNexus，作者 Abhigyan Patwari）是一款”零服务器”的代码知识图谱引擎**：用 Tree-sitter 把任意仓库解析成 AST，跨文件解析出 CALLS/IMPORTS/EXTENDS 等关系，存进一个可同时运行在浏览器 WAS",
+      "chapter": "ch16",
+      "processed_at": "2026-08-09T06:20:02.287414+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "schema_version": "2.1",
