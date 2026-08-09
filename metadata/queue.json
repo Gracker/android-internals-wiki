@@ -124,8 +124,11 @@
     ],
     "added_by": "task-deepresearch-injector",
     "added_at": "2026-07-18T10:33:02.169990",
-    "status": "pending",
-    "target_path": "src/part1-fundamentals/ch02-rendering/34-display-mode-refresh-rate-selection.md"
+    "status": "body-applied",
+    "target_path": "src/part1-fundamentals/ch02-rendering/34-display-mode-refresh-rate-selection.md",
+    "action": "body-applied",
+    "applied_at": "2026-08-09T09:17:01+08:00",
+    "applied_run_id": "20260809-091529-696a441f"
   },
   {
     "chapter": "25.29",

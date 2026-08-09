@@ -1,17 +1,21 @@
 ---
 title: "Android 17 Display Mode 选择与 RefreshRateSelector 评分机制"
 chapter: "2.34"
-status: "finalized"
+status: "ready-for-review"
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 last_verified: "2026-07-17"
 last_verified_against: "AOSP android-17.0.0_r1"
 last_idle_audit_at: "2026-08-05"
 last_idle_audit_run_id: "20260805-223530-idle-audit-20677657"
-task9_state: "idle-audit-passed"
-pipeline_stage: "finalized"
+task9_state: "body-applied"
+pipeline_stage: "ready-for-review"
 confidence: high
 drafted_date: "2026-07-17"
 last_task6_audit: "2026-07-17"
+last_body_apply_at: "2026-08-09T09:17:01+08:00"
+last_body_apply_run_id: "20260809-091529-696a441f"
+task2b_state: "body-applied"
+task6_state: "pending-review"
 tags: [rendering, surfaceflinger, refresh-rate, frame-rate-override, display-mode, android17, hwc, vrr]
 related_chapters: ["2.30", "2.6"]
 created_by: "task3-source-research"
@@ -251,6 +255,8 @@ Scheduler 会为多个 physical display 生成 choice。Pacesetter 提供全局�
 
 发起物理切换前，Controller 会暂时把当前 mode 的 render rate 恢复到 peak fps，让下一帧尽早被调度。启用 `modeset_state_machine` 后，`desiredModeOpt` 和 `pendingModeOpt` 分别表示尚待发起与已经交给 HWC 的请求；新请求能否合并还要看分辨率。
 
+源码核查时可以把 `setDesiredMode()` 看成三个判定门：先看是否已有未消费的 `desiredModeOpt` 可合并，再看目标 mode id 已经 active 时是否只是 render-rate-only，最后才进入真正的 display-mode request；启用 `modeset_state_machine()` 后，`pendingModeOpt` 与 `desiredModeOpt` 分离，用来避免已经交给 HWC 的请求和后来请求互相覆盖。[来源: DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md; 已验证: frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp]
+
 ### 7.2 两条 Composer/HWC 路径
 
 `initiateModeChange()` 根据 Composer 能力选择：
@@ -259,6 +265,8 @@ Scheduler 会为多个 physical display 生成 choice。Pacesetter 提供全局�
 - 支持 DisplayCommand modeset：调用 `setDisplayMode()`；调用成功后，SurfaceFlinger 在本分支把 `refreshRequired` 置为 `false`，并把 `newVsyncAppliedTimeNanos` 设为当前 `systemTime()`。
 
 源码中的“immediate”描述的是 SurfaceFlinger 对 DisplayCommand 成功分支的状态处理，不能外推成“面板像素在一个固定帧数内完成响应”。另一条路径的 timeline 由 vendor HAL 提供，也没有 AOSP 统一规定的 1～3 帧延迟。
+
+取证时要把这两条 Composer 路径分开记录：`setActiveModeWithConstraints()` 的 timeline 来自 HAL 返回值；DisplayCommand `setDisplayMode(seamlessRequired)` 成功后，SurfaceFlinger 在本分支把 `refreshRequired` 置为 `false` 并把 `newVsyncAppliedTimeNanos` 设为 `systemTime()`，这只是框架状态机的完成语义，不是面板光学响应时间。[来源: DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md; 已验证: frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp]
 
 ### 7.3 finalize 的边界
 
@@ -302,6 +310,8 @@ Game Mode intervention 和 game-default rate 不写这两个 map。它们进入 
 `VSyncReactor::onDisplayModeChanged()` 还明确排除了带 VRR config 的 mode：kernel idle timer 只在 `mSupportKernelIdleTimer && !modePtr->getVrrConfig()` 时参与 period transition。
 
 common kernel `android17-6.18-2026-06_r6` 提供 DRM atomic、vblank、dma-fence 等通用机制，但没有为所有 Android 设备定义上述 sysprop 的统一显示驱动行为。属性由谁监听、能降到哪个 panel mode、切换是否闪屏、节省多少功耗，都要查 vendor Composer、display HAL 和内核驱动。AOSP 这段代码只能证明控制入口与 policy guard。
+
+因此，看到 dumpsys 或 trace 中 kernel idle timer 状态变化，只能说明 SurfaceFlinger 已按 `RefreshRateSelector::getIdleTimerAction()` 选择了 HWC API 或 sysprop 通道；若 active mode 带 VRR config，`VSyncReactor::onDisplayModeChanged()` 还会把 kernel idle timer 排除在 period transition 外。设备是否真的降频，仍必须结合 vendor HAL、panel driver 或实测 present/功耗证据判断。[来源: DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md; 已验证: frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp, frameworks/native/services/surfaceflinger/Scheduler/VSyncReactor.cpp]
 
 ## 10. 应用怎样表达需求
 
