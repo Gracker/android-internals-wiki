@@ -92,9 +92,9 @@ last_task2b_by: task2b-main
 
 # 1.18 Binder Freezer 与缓存进程冻结
 
-Android 把退到后台的进程保留在内存里，是为了下次打开时少付一次冷启动成本。但“还活着”不等于“还应该工作”：如果 cached 进程继续跑轮询线程、定时器或回调，它仍会消耗 CPU，甚至唤醒设备。
+Android 把退到后台的进程保留在内存里，是为了下次打开时少付一次冷启动成本。但进程存活不代表它仍应执行工作：如果缓存进程继续跑轮询线程、定时器或回调，它仍会消耗 CPU，甚至唤醒设备。
 
-Cached apps freezer 在“继续运行”和“杀掉回收”之间增加了一种状态：
+缓存应用冻结器在“继续运行”和“杀掉回收”之间增加了一种状态：
 
 ```text
 进程仍存在、地址空间仍存在
@@ -102,44 +102,44 @@ Cached apps freezer 在“继续运行”和“杀掉回收”之间增加了一
 进程中的线程暂时不能获得 CPU
 ```
 
-它节省的是 cached 进程的 CPU 与唤醒成本。内存压力到来时，`lmkd` 仍可杀掉这个进程；重新进入前台或接到生命周期工作时，系统也可以先解冻再继续执行。
+它节省的是缓存进程的 CPU 与唤醒成本。内存压力到来时，`lmkd` 仍可杀掉这个进程；重新进入前台或接到生命周期工作时，系统也可以先解冻再继续执行。
 
-需要仔细处理的是 Binder。被冻结的线程无法处理 IPC：同步调用不能无限等待，`oneway` 事务也不能无限堆积。本章从 Android 17 framework 与 ACK 6.18 的源码把这条链路拆开。
+Binder 需要专门处理。被冻结的线程无法处理 IPC：同步调用不能无限等待，单向事务也不能无限堆积。本章从 Android 17 框架层与 ACK 6.18 源码拆解这条链路。
 
-## 1. 先把 freezer、Doze 和 LMK 分开
+## 1. 先区分冻结器、Doze 和 LMK
 
 | 机制 | 主要对象 | 直接动作 | 进程内存 | 恢复方式 |
 | --- | --- | --- | --- | --- |
-| Cached apps freezer | 已进入 cached 状态的 App 进程 | 暂停线程执行 | 通常仍保留 | 系统解冻后继续执行 |
+| 缓存应用冻结器 | 已进入缓存状态的应用进程 | 暂停线程执行 | 通常仍保留 | 系统解冻后继续执行 |
 | Doze / App Standby | 设备或应用的后台活动 | 延后或限制 Job、Alarm、网络等能力 | 不要求进程冻结 | 满足窗口、配额或状态条件 |
 | 后台启动 / FGS 限制 | 组件启动与长期后台执行 | 拒绝、限时或约束组件行为 | 不直接决定是否保留 | 依组件和用户可见状态变化 |
 | `lmkd` | 内存压力下的低优先级进程 | 杀进程并回收内存 | 释放 | 下次需要时重新启动 |
 
 因此，下列推断都不成立：
 
-- “进程被 freeze，所以 PSS 已经释放。”
+- “进程被冻结，所以 PSS 已经释放。”
 - “应用处于 Doze，所以进程一定没有 CPU 时间。”
-- “进程是 cached，所以它一定已经 frozen。”
-- “进程 frozen 但仍在内存，所以不会被杀。”
+- “进程处于缓存状态，所以它一定已经被冻结。”
+- “进程已冻结但仍在内存，所以不会被杀。”
 
-是否启用 cached apps freezer 还受设备配置影响。AOSP 提供 `activity_manager_native_boot/use_freezer` 和开发者选项，但量产设备是否启用、cgroup 如何布局、厂商是否叠加自己的后台策略，都需要在实机上确认。
+是否启用缓存应用冻结器还受设备配置影响。AOSP 提供 `activity_manager_native_boot/use_freezer` 和开发者选项，但量产设备是否启用、cgroup 如何布局、厂商是否叠加自己的后台策略，都需要在实机上确认。
 
-## 2. Android 17 的决策链：重要性先变成 CPU capability
+## 2. Android 17 的决策链：重要性先转换为 CPU 能力
 
-理解当前实现时，不能只背一句“`oom_adj >= CACHED_APP_MIN_ADJ` 就冻结”。Android 17 已把冻结资格收束到 CPU capability：
+理解当前实现时，不能只背一句“`oom_adj >= CACHED_APP_MIN_ADJ` 就冻结”。Android 17 已把冻结资格收束到 CPU 能力：
 
 ```text
-Activity / Service / Broadcast / binding 等状态
+Activity / Service / Broadcast / 绑定等状态
                      │
                      ▼
-OomAdjuster 计算 proc state、oom_adj 与 capability
+OomAdjuster 计算进程状态、oom_adj 与能力
                      │
                      ├─ PROCESS_CAPABILITY_CPU_TIME
                      └─ PROCESS_CAPABILITY_IMPLICIT_CPU_TIME
                                       │
                                       ▼
 getFreezePolicy()
-  ├─ 持有任一 CPU_TIME capability → 不冻结
+  ├─ 持有任一 CPU_TIME 能力 → 不冻结
   └─ 两者都没有                  → 可冻结
                                       │
                                       ▼
@@ -148,22 +148,22 @@ ActivityManagerService
   └─ unfreezeAppLSP()
                                       │
                                       ▼
-CachedAppOptimizer 执行 Binder freeze 与 cgroup freeze
+CachedAppOptimizer 执行 Binder 冻结与 cgroup 冻结
 ```
 
 ### 2.1 显式 CPU_TIME：当前需要执行
 
 `android-17.0.0_r1` 的 `psc/OomAdjuster.java` 会为下列典型状态授予 `PROCESS_CAPABILITY_CPU_TIME`：
 
-- UID 位于 power allowlist。
-- 进程处于 top，或持有用户可感知的前台 Activity。
+- UID 位于电源白名单。
+- 进程处于顶层，或持有用户可感知的前台 Activity。
 - 正在启动或停止 Service。
 - 承载前台服务。
 - 正在接收广播。
-- 正在运行 instrumentation。
-- CPU capability 通过重要 client 的 binding 关系传递而来。
+- 正在运行插桩测试。
+- CPU 能力通过重要客户端的绑定关系传递而来。
 
-这比“cached / non-cached”二分更能表达真实意图：一个进程当前是否仍有必须执行的工作。
+这比“缓存/非缓存”二分更能表达真实意图：一个进程当前是否仍有必须执行的工作。
 
 ### 2.2 隐式 CPU_TIME：保留 oom_adj 阈值的兼容语义
 
@@ -183,13 +183,13 @@ Flags.prototypeAggressiveFreezing()
         : CACHED_APP_MIN_ADJ
 ```
 
-设备还可通过 `activity_manager/freezer_cutoff_adj` 修改它。换句话说：
+设备还可通过 `activity_manager/freezer_cutoff_adj` 修改它。由此形成三条边界：
 
-- 常规配置仍把 cached 边界作为基线。
-- aggressive freezing 实验可把资格范围提前到 `HOME_APP_ADJ`。
+- 常规配置仍把缓存边界作为基线。
+- 激进冻结实验可把资格范围提前到 `HOME_APP_ADJ`。
 - 即使当前 adj 较低，`maxAdj` 约束也可能让进程继续获得隐式 CPU 时间。
 
-所以，排查“为什么没冻”时要同时看 adj、capability、flag 和 DeviceConfig，不能只看 `curAdj`。
+排查“为什么没冻”时要同时看 adj、能力、标志和 DeviceConfig，不能只看 `curAdj`。
 
 ### 2.3 旧实现里的两个判断已经不能代表 Android 17
 
@@ -200,16 +200,16 @@ ProcessCachedOptimizerRecord.shouldNotFreeze()
 ProcessCachedOptimizerRecord.isFreezeExempt()
 ```
 
-Android 17 当前主路径的 `getFreezePolicy()` 不再靠这两个状态决定资格；`ActivityManagerService` 的兼容 trace 甚至把对应占位值固定为 `false`。写 Android 17 时，应使用 `CPU_TIME` / `IMPLICIT_CPU_TIME` 模型。
+Android 17 当前主路径的 `getFreezePolicy()` 不再靠这两个状态决定资格；`ActivityManagerService` 的兼容跟踪甚至把对应占位值固定为 `false`。写 Android 17 时，应使用 `CPU_TIME` / `IMPLICIT_CPU_TIME` 模型。
 
 这不表示所有豁免都消失了。官方文档仍列出两类实现级保护：
 
-- cached 进程持有文件锁并阻塞 non-cached 进程时，系统会避免继续冻结锁持有者。
-- `BIND_WAIVE_PRIORITY` 连接可能让服务进程进入 cached，但在相关 client 都 cached 之前保持可运行。
+- 缓存进程持有文件锁并阻塞非缓存进程时，系统会避免继续冻结锁持有者。
+- `BIND_WAIVE_PRIORITY` 连接可能让服务进程进入缓存状态，但在相关客户端都进入缓存状态之前保持可运行。
 
 它们是冻结执行链上的保护条件，不应重新包装成旧版 `shouldNotFreeze()` 结论。
 
-## 3. 为什么进入 cached 后还要等 10 秒
+## 3. 进入缓存状态后为什么还要等 10 秒
 
 Android 17 的默认值来自：
 
@@ -220,15 +220,15 @@ Android 17 的默认值来自：
 `CachedAppOptimizer` 允许用 `activity_manager_native_boot/freeze_debounce_timeout` 覆盖这个资源值。默认等待 10 秒有两个目的：
 
 1. 避免 Activity 刚退后台、Service 刚结束时立刻冻结，打断仍在收尾的状态切换。
-2. 避免短时间内反复 freeze/unfreeze，放大调度、Binder 和日志开销。
+2. 避免短时间内反复冻结/解冻，放大调度、Binder 和日志开销。
 
-实现不是简单地“发一个 10 秒后的消息”。它会维护 `earliestFreezableTime`：临时解冻可能把最早可冻结时间继续向后推；立即冻结请求也要与这个时间以及 pending 状态协调。
+实现并非简单地“发一个 10 秒后的消息”。它会维护 `earliestFreezableTime`：临时解冻可能把最早可冻结时间继续向后推；立即冻结请求也要与这个时间以及待处理状态协调。
 
-因此，看到进程进入 cached 后仍运行几秒，并不自动说明 freezer 失效。要先确认：
+因此，看到进程进入缓存状态后仍运行几秒，并不自动说明冻结器失效。要先确认：
 
-- 当前 capability 是否允许冻结。
+- 当前能力是否允许冻结。
 - `earliestFreezableTime` 是否还没到。
-- 是否有 Binder outstanding transaction 导致重试。
+- 是否有未完成的 Binder 事务导致重试。
 - 是否刚发生生命周期事件或文件锁保护。
 
 ## 4. 冻结时，Binder 必须先于 cgroup
@@ -238,32 +238,32 @@ Android 17 的 `CachedAppOptimizer.freezeProcess()` 顺序很明确：
 ```text
 1. freezeBinder(pid, true, timeout)
    ├─ 阻止新的同步事务进入
-   └─ 等待 outstanding transaction 排空
+   └─ 等待未完成事务排空
 
 2. setProcessFrozen(pid, uid, true)
-   └─ 把进程置入 freezer cgroup
+   └─ 把进程置入冻结器 cgroup
 
 3. 标记 ProcessCachedOptimizerRecord.frozen = true
-   └─ 写 AM_FREEZE、statsd 与 trace
+   └─ 写 AM_FREEZE、statsd 与跟踪记录
 
 4. getBinderFreezeInfo(pid)
-   └─ 冻结后再次检查竞态窗口中的 pending transaction
+   └─ 冻结后再次检查竞态窗口中的待处理事务
 ```
 
-这不是可交换的两个动作。如果先停掉线程，再让 Binder driver 继续接受同步事务，调用端就可能等一个永远不会执行的 server。
+这两个动作不能交换。如果先停掉线程，再让 Binder 驱动继续接受同步事务，调用端就可能等待一个永远不会执行的服务端。
 
 ACK `android17-6.18-2026-06_r6` 的 `BINDER_FREEZE` 路径也说明了这一点：
 
-1. 先设置目标 `binder_proc.is_frozen = true`，阻止新的同步 transaction。
-2. 若传入 timeout，等待 `outstanding_txns` 归零。
-3. 再检查仍在等待 reply 的 transaction stack。
-4. 若检查失败，清回 `is_frozen` 并把失败交给 framework 处理。
+1. 先设置目标 `binder_proc.is_frozen = true`，阻止新的同步事务。
+2. 若传入超时，等待 `outstanding_txns` 归零。
+3. 再检查仍在等待回复的事务栈。
+4. 若检查失败，清回 `is_frozen` 并把失败交给框架层处理。
 
-`CachedAppOptimizer` 遇到 outstanding transaction 或冻结后的新 pending transaction，不会假装冻结成功。它会解冻、调整重试时间并重新安排冻结；反复出现时可识别 Binder spam，避免应用靠持续发事务永久逃过 freezer。
+`CachedAppOptimizer` 遇到未完成事务或冻结后的新待处理事务，不会把它记录为冻结成功。它会解冻、调整重试时间并重新安排冻结；反复出现时可识别 Binder 事务洪泛，避免应用靠持续发事务永久逃过冻结器。
 
-## 5. cgroup v2 freezer：请求冻结不等于已经冻结
+## 5. cgroup v2 冻结器：请求冻结不等于已经冻结
 
-ACK 6.18 使用 cgroup v2 freezer。用户空间写入的是 `cgroup.freeze`：
+ACK 6.18 使用 cgroup v2 冻结器。用户空间写入的是 `cgroup.freeze`：
 
 ```bash
 echo 1 > cgroup.freeze   # 请求冻结本 cgroup 及其后代
@@ -275,7 +275,7 @@ echo 0 > cgroup.freeze   # 请求解冻
 | 状态 | 含义 |
 | --- | --- |
 | `CGRP_FREEZE` | 用户空间已经请求冻结 |
-| `CGRP_FROZEN` | 本 cgroup 的任务以及需要计入的后代已经达到 frozen 条件 |
+| `CGRP_FROZEN` | 本 cgroup 的任务以及需要计入的后代已经达到冻结条件 |
 
 因此，写完 `1` 以后，应观察 `cgroup.events`：
 
@@ -283,7 +283,7 @@ echo 0 > cgroup.freeze   # 请求解冻
 frozen 1
 ```
 
-只有这个状态变为 `1`，才表示冻结转换完成。一个 task 还没走到可冻结点时，`CGRP_FREEZE` 可以已经置位，而 `CGRP_FROZEN` 尚未成立。
+只有这个状态变为 `1`，才表示冻结转换完成。一个任务还没走到可冻结点时，`CGRP_FREEZE` 可以已经置位，而 `CGRP_FROZEN` 尚未成立。
 
 ### 5.1 内核状态机
 
@@ -293,37 +293,37 @@ frozen 1
 cgroup_freeze(cgrp, true)
   └─ cgroup_do_freeze()
        ├─ set_bit(CGRP_FREEZE)
-       ├─ 遍历 task
+       ├─ 遍历任务
        │    └─ cgroup_freeze_task()
        │         ├─ JOBCTL_TRAP_FREEZE
        │         └─ signal_wake_up()
        └─ cgroup_update_frozen()
 ```
 
-task 进入冻结点后，`cgroup_enter_frozen()`：
+任务进入冻结点后，`cgroup_enter_frozen()`：
 
 - 设置 `current->frozen = true`。
-- 增加 cgroup 的 frozen task 计数。
+- 增加 cgroup 的已冻结任务计数。
 - 重新计算 `CGRP_FROZEN`。
 
-解冻则清 `JOBCTL_TRAP_FREEZE`、唤醒 task，并在 `cgroup_leave_frozen()` 更新计数。
+解冻则清除 `JOBCTL_TRAP_FREEZE`、唤醒任务，并在 `cgroup_leave_frozen()` 更新计数。
 
 ### 5.2 性能含义
 
-冻结不是 busy wait。task 不会在 CPU 上循环检查“能不能解冻”，所以 Java 线程、native worker、Handler 和协程都不会继续执行。
+冻结不是忙等。任务不会在 CPU 上循环检查“能不能解冻”，所以 Java 线程、原生工作线程、Handler 和协程都不会继续执行。
 
 冻结也不是回收：
 
 - 虚拟地址空间仍在。
-- Java / native heap 仍在。
-- fd 和 Binder 引用仍在。
+- Java/原生堆仍在。
+- 文件描述符和 Binder 引用仍在。
 - RSS/PSS 不会因为 `cgroup.freeze=1` 自动归零。
 
-Android 14 以后，framework 可能在冻结前后触发 GC、内存压缩、匿名页换入 ZRAM 等辅助动作。这些动作可能降低物理内存压力，但要与“freezer 本身暂停 CPU”分开描述。
+Android 14 以后，框架层可能在冻结前后触发 GC、内存压缩、匿名页换入 ZRAM 等辅助动作。这些动作可能降低物理内存压力，但要与“冻结器本身暂停 CPU”分开描述。
 
 ## 6. Binder Freezer 的两条事务路径
 
-### 6.1 同步事务：driver 拒绝，系统杀被冻结的接收进程
+### 6.1 同步事务：驱动拒绝，系统终止被冻结的接收进程
 
 目标 `binder_proc.is_frozen` 为 true 时，ACK r6 的 `binder_proc_transaction()` 对同步事务执行：
 
@@ -334,41 +334,41 @@ return BR_FROZEN_REPLY
 
 平台对外的行为是：
 
-- 同步事务不会排到 frozen 进程等待解冻。
-- 调用端最终收到 `RemoteException`，已注册的 Binder death 监听也会被触发。
-- 系统终止被冻结的接收进程，退出原因记录为 freezer。
+- 同步事务不会排到冻结进程等待解冻。
+- 调用端随后收到 `RemoteException`，已注册的 Binder 死亡监听也会被触发。
+- 系统终止被冻结的接收进程，退出原因记录为冻结器。
 
 Android 17 的 `CachedAppOptimizer` 同时保留两条发现路径：
 
 - Binder 监控收到 `BR_FROZEN_REPLY` 报告后，直接按同步冻结事务处理目标 PID。
 - 若即时报告能力未启用，解冻前的 `getBinderFreezeInfo()` 仍能发现 `SYNC_RECEIVED_WHILE_FROZEN` 并杀进程。
 
-这是为了保护调用线程，而不是惩罚“服务端太慢”。最常见的应用错误是：
+这项处理用于保护调用线程，与惩罚“服务端太慢”无关。最常见的应用错误是：
 
-1. client 已经 `unbindService()`。
-2. server 因失去重要 binding 退到 cached 并被冻结。
-3. client 仍保存旧 `IBinder` proxy，继续发同步调用。
+1. 客户端已经调用 `unbindService()`。
+2. 服务端因失去重要绑定退到缓存状态并被冻结。
+3. 客户端仍保存旧 `IBinder` 代理，继续发同步调用。
 
-修复点是让 Binder 引用的生命周期与 binding 对齐：解绑后立即丢弃 proxy，不要把它当作永久可用的本地对象。
+修复点是让 Binder 引用的生命周期与绑定对齐：解绑后立即丢弃代理，不要把它当作永久可用的本地对象。
 
-### 6.2 oneway 事务：允许入队，但不是无限队列
+### 6.2 单向事务：允许入队，但不是无限队列
 
-`oneway` transaction 命中 frozen 目标时，driver 会：
+单向事务命中冻结目标时，驱动会：
 
 ```text
 proc->async_recv = true
-transaction 入 async queue
+事务进入异步队列
 return BR_TRANSACTION_PENDING_FROZEN
 ```
 
-目标解冻后才会消费这些 transaction。这个设计避免同步等待，却带来两个问题：
+目标解冻后才会消费这些事务。这个设计避免同步等待，却带来两个问题：
 
-- transaction 继续占用目标进程的 Binder buffer；空间耗尽时，系统会以 `SUBREASON_FREEZER_BINDER_ASYNC_FULL` 终止目标。
-- 事件可能已经过期；解冻后一次性处理大量旧回调，还可能造成 CPU burst 和业务状态倒退。
+- 事务继续占用目标进程的 Binder 缓冲区；空间耗尽时，系统会以 `SUBREASON_FREEZER_BINDER_ASYNC_FULL` 终止目标。
+- 事件可能已经过期；解冻后一次性处理大量旧回调，还可能造成 CPU 突发和业务状态倒退。
 
-“改成 oneway”只解决了等待语义，没有解决事件模型。更合适的策略通常是：
+“改成单向调用”只解决了等待语义，没有解决事件模型。更合适的策略通常是：
 
-| 事件语义 | frozen 期间策略 |
+| 事件语义 | 冻结期间策略 |
 | --- | --- |
 | 瞬时采样、下一次可重新获取 | 丢弃 |
 | 当前状态，以最新值为准 | 只保留最新一条 |
@@ -376,9 +376,9 @@ return BR_TRANSACTION_PENDING_FROZEN
 
 如果“不可丢”意味着无限排队，这个协议仍然没有完成设计。
 
-## 7. API 36+：不要自己手搓一套 frozen callback 队列
+## 7. API 36+：使用系统提供的冻结回调队列
 
-### 7.1 观察远端 Binder 的 frozen 状态
+### 7.1 观察远端 Binder 的冻结状态
 
 `IBinder.addFrozenStateChangeCallback()` 从 API 36 成为公开 API。Android 17 的回调签名是：
 
@@ -392,23 +392,23 @@ IBinder.FrozenStateChangeCallback callback = (who, state) -> {
 try {
     remoteBinder.addFrozenStateChangeCallback(executor, callback);
 } catch (UnsupportedOperationException e) {
-    // Kernel binder driver 不支持 frozen notification。
+    // 内核 Binder 驱动不支持冻结通知。
 } catch (RemoteException e) {
-    // 远端可能已死亡，按正常 Binder death 路径处理。
+    // 远端可能已死亡，按正常 Binder 死亡路径处理。
 }
 ```
 
 使用时要记住三个边界：
 
-1. 只会观察 remote Binder；local Binder 与当前进程同生共冻。
-2. 状态变化可能合并，只保证拿到最新状态，不能用回调次数统计 freeze 次数。
-3. kernel 不支持时会抛 `UnsupportedOperationException`，必须有降级策略。
+1. 只会观察远程 Binder；本地 Binder 与当前进程同生共冻。
+2. 状态变化可能合并，只保证拿到最新状态，不能用回调次数统计冻结次数。
+3. 内核不支持时会抛出 `UnsupportedOperationException`，必须有降级策略。
 
-不再需要时可调用 `removeFrozenStateChangeCallback()`。所有 Binder proxy 引用都释放后，注册也会自动移除，但显式解除通常更容易让组件生命周期清楚。
+不再需要时可调用 `removeFrozenStateChangeCallback()`。所有 Binder 代理引用都释放后，注册也会自动移除，但显式解除通常更容易让组件生命周期清楚。
 
 ### 7.2 用 RemoteCallbackList 表达事件策略
 
-API 36 的 `RemoteCallbackList` 支持三种 frozen callee policy：
+API 36 的 `RemoteCallbackList` 支持三种冻结被调用方策略：
 
 ```java
 RemoteCallbackList<IMyCallback> callbacks =
@@ -427,15 +427,15 @@ callbacks.broadcast(callback -> {
 
 可选策略与适用场景：
 
-| policy | 行为 | 适合 |
+| 策略 | 行为 | 适合 |
 | --- | --- | --- |
-| `FROZEN_CALLEE_POLICY_DROP` | frozen 时丢弃 | 高频瞬时事件 |
-| `FROZEN_CALLEE_POLICY_ENQUEUE_MOST_RECENT` | 只保留最新 callback | 音量、亮度、连接状态等状态同步 |
+| `FROZEN_CALLEE_POLICY_DROP` | 冻结时丢弃 | 高频瞬时事件 |
+| `FROZEN_CALLEE_POLICY_ENQUEUE_MOST_RECENT` | 只保留最新回调 | 音量、亮度、连接状态等状态同步 |
 | `FROZEN_CALLEE_POLICY_ENQUEUE_ALL` | 按顺序排队 | 少量且每条都有意义的事件 |
 
-`ENQUEUE_ALL` 也有队列上限。Android 17 默认最大 1000 条；达到上限后丢掉最旧 callback，Builder 可用 `setMaxQueueSize()` 显式设置。选择这个策略时，仍要写出容量、溢出和恢复方案。
+`ENQUEUE_ALL` 也有队列上限。Android 17 默认最大 1000 条；达到上限后丢掉最旧回调，构建器可用 `setMaxQueueSize()` 显式设置。选择这个策略时，仍要写出容量、溢出和恢复方案。
 
-无 policy 的旧构造方式保留兼容行为：照常调用 frozen 远端。这在 SDK 36+ 不推荐。
+没有设置策略的旧构造方式保留兼容行为：照常调用冻结的远端。SDK 36+ 不推荐这种用法。
 
 ## 8. Freezer 对应用代码的几个隐蔽影响
 
@@ -445,30 +445,30 @@ callbacks.broadcast(callback -> {
 
 如果业务要的是“每次完成后再隔一段时间”，使用 `scheduleWithFixedDelay()`；如果任务允许由系统调度，优先考虑 WorkManager。不要在解冻后补跑几十次已经失去意义的轮询。
 
-### 8.2 GC 与 trim callback 也无法执行
+### 8.2 GC 与内存整理回调也无法执行
 
-线程全部暂停意味着进程不能主动 GC，也不能处理内存 trim callback。Android 14 起，framework 会调整通知和冻结前准备：
+线程全部暂停意味着进程不能主动 GC，也不能处理内存整理回调。Android 14 起，框架层会调整通知和冻结前准备：
 
 - 可见 Activity 退后台时尽早收到 `TRIM_MEMORY_UI_HIDDEN`。
-- 进程进入 cached 后，runtime 可能先做 GC。
-- 其他 trim 级别不保证在 frozen 进程中被执行。
+- 进程进入缓存状态后，运行时可能先执行 GC。
+- 其他整理级别不保证在冻结进程中执行。
 
 应用不能依赖“等 `onTrimMemory()` 再释放关键资源”来保证冻结前收尾。
 
-### 8.3 广播不都以同一种方式解冻进程
+### 8.3 不同广播采用不同的解冻方式
 
 Android 14 起，为减少无意义的解冻：
 
-- context-registered broadcast 可在 cached 期间排队，解冻后再投递。
-- manifest-declared broadcast 会先解冻进程再投递。
+- 上下文注册的广播可在缓存期间排队，解冻后再投递。
+- 清单声明的广播会先解冻进程再投递。
 
-因此，trace 里看到广播延迟，不应先归因于 BroadcastQueue 卡死；要同时检查目标是否 cached/frozen 以及 receiver 的注册方式。
+因此，跟踪记录里看到广播延迟，不应先归因于 BroadcastQueue 卡死；要同时检查目标是否处于缓存/冻结状态以及接收器的注册方式。
 
-### 8.4 TCP socket 不能当成保活承诺
+### 8.4 TCP 套接字不能当作保活承诺
 
-官方 freezer 文档说明：当一个应用的所有进程都 frozen 时，系统会终止该应用的活动 TCP socket，避免 keepalive 唤醒 modem。需要长期可靠传递的业务应使用 FCM、JobScheduler、WorkManager 或适合其语义的系统设施，不能依赖 cached 进程维持 socket。
+官方冻结器文档说明：当一个应用的所有进程都被冻结时，系统会终止该应用的活动 TCP 套接字，避免保活包唤醒调制解调器。需要长期可靠传递的业务应使用 FCM、JobScheduler、WorkManager 或适合其语义的系统设施，不能依赖缓存进程维持套接字。
 
-## 9. 退出归因：公开 reason 与内部 subreason 要分层
+## 9. 退出归因：区分公开原因与内部子原因
 
 `ApplicationExitInfo` 从 API 30 提供，`REASON_FREEZER` 从 API 33 加入公开 SDK。普通应用可在下一次启动时查询历史退出记录：
 
@@ -486,30 +486,30 @@ for (ApplicationExitInfo info : exits) {
 }
 ```
 
-Android 17 源码中的内部 subreason 包括：
+Android 17 源码中的内部子原因包括：
 
-| subreason | 含义 |
+| 子原因 | 含义 |
 | --- | --- |
-| `SUBREASON_FREEZER_BINDER_TRANSACTION` | frozen 期间收到同步 Binder transaction |
-| `SUBREASON_FREEZER_BINDER_IOCTL` | freeze/unfreeze Binder 或查询状态失败 |
-| `SUBREASON_FREEZER_BINDER_ASYNC_FULL` | frozen 期间异步 Binder buffer 接近耗尽 |
+| `SUBREASON_FREEZER_BINDER_TRANSACTION` | 冻结期间收到同步 Binder 事务 |
+| `SUBREASON_FREEZER_BINDER_IOCTL` | 冻结/解冻 Binder 或查询状态失败 |
+| `SUBREASON_FREEZER_BINDER_ASYNC_FULL` | 冻结期间异步 Binder 缓冲区接近耗尽 |
 
-这些 subreason 与 `getSubReason()` 是 hidden API，普通应用不能把它们当成公开诊断接口。平台或 OEM 调试可从 `dumpsys`、system_server 日志与源码拿到更细粒度；应用侧以公开 reason、description、自己的业务状态和时间线为准。
+这些子原因与 `getSubReason()` 是隐藏 API，普通应用不能把它们当成公开诊断接口。平台或 OEM 调试可从 `dumpsys`、`system_server` 日志与源码获得更细的信息；应用侧以公开原因、描述、自己的业务状态和时间线为准。
 
-API 30–32 没有公开 `REASON_FREEZER` 常量。不要硬编码数值 `14` 跨版本猜测；这会把“当时平台是否记录该 reason”和“当前 SDK 里常量是多少”混为一谈。
+API 30–32 没有公开 `REASON_FREEZER` 常量。不要硬编码数值 `14` 跨版本猜测；这会混淆“当时平台是否记录该原因”与“当前 SDK 里的常量值”。
 
-## 10. 用四层证据诊断，而不是看到 cached 就下结论
+## 10. 用四层证据诊断，避免根据缓存状态直接下结论
 
-### 10.1 配置与 framework 状态
+### 10.1 配置与框架层状态
 
 ```bash
-# 当前设备是否请求启用 cached apps freezer
+# 当前设备是否请求启用缓存应用冻结器
 adb shell device_config get activity_manager_native_boot use_freezer
 
 # Android 17 的 CachedAppOptimizer 配置与统计
 adb shell dumpsys activity cao
 
-# 进程状态、adj、capability 与 LRU 信息
+# 进程状态、adj、能力与 LRU 信息
 adb shell dumpsys activity processes
 ```
 
@@ -518,9 +518,9 @@ adb shell dumpsys activity processes
 - `use_freezer`
 - `freeze_debounce_timeout`
 - `freezer_cutoff_adj`
-- process state / oom_adj
-- CPU_TIME 与 implicit CPU_TIME capability
-- pending freeze / frozen
+- 进程状态 / oom_adj
+- CPU_TIME 与隐式 CPU_TIME 能力
+- 待处理冻结 / 已冻结
 
 ### 10.2 shell 控制实验
 
@@ -534,7 +534,7 @@ adb shell cmd activity unfreeze <PROCESS_OR_PID>
 
 `--sticky` 会让强制状态保持到进程死亡或下一次相反的 shell 操作，只应用于隔离的测试进程。实验结束必须解冻，不能拿线上关键进程做同步 Binder 探测。
 
-### 10.3 cgroup 与 events log
+### 10.3 cgroup 与事件日志
 
 ```bash
 # 先找 PID 属于哪个 cgroup
@@ -544,7 +544,7 @@ adb shell cat /proc/<PID>/cgroup
 adb shell find /sys/fs/cgroup \
   \( -name cgroup.freeze -o -name cgroup.events \)
 
-# framework 冻结与解冻事件
+# 框架层冻结与解冻事件
 adb logcat -b events -v threadtime | grep -E 'am_freeze|am_unfreeze'
 
 # 历史退出原因
@@ -555,7 +555,7 @@ adb shell dumpsys activity exit-info <PACKAGE>
 
 ### 10.4 Perfetto 时间线
 
-Android 17 的 `CachedAppOptimizer` 会在 ActivityManager trace 下写 `Freezer` track：
+Android 17 的 `CachedAppOptimizer` 会在 ActivityManager 跟踪下写入 `Freezer` 轨道：
 
 ```text
 Freeze <process>:<pid> -1
@@ -565,100 +565,100 @@ Reschedule freeze <process>:<pid> timeout=<...>, reason=<...>
 
 分析顺序：
 
-1. 用 `am_freeze` 或 `Freezer` instant event 定位冻结窗口。
-2. 检查目标线程在该窗口是否还有 Running slice。
-3. 若出现 `Reschedule freeze`，对齐 outstanding/new pending Binder transaction。
-4. 若进程消失，对齐 `exit-info`、Binder 调用端和 `am_kill`。
-5. 若解冻后 CPU 突增，检查积压 oneway、广播和固定频率任务。
+1. 用 `am_freeze` 或 `Freezer` 瞬时事件定位冻结窗口。
+2. 检查目标线程在该窗口是否还有运行片段。
+3. 若出现 `Reschedule freeze`，对齐未完成/新增待处理 Binder 事务。
+4. 若进程消失，对齐退出信息、Binder 调用端和 `am_kill`。
+5. 若解冻后 CPU 突增，检查积压的单向事务、广播和固定频率任务。
 
-Perfetto 未采集 ActivityManager 或 sched 数据时，“没看到事件”不能证明 freezer 未运行。
+Perfetto 未采集 ActivityManager 或调度数据时，“没看到事件”不能证明冻结器未运行。
 
 ## 11. 一个可复现的 Binder Freezer 实验
 
 准备两个独立进程：
 
-- 进程 A 提供一个同步方法和一个 `oneway` 方法。
-- 进程 B 绑定 A，拿到 Binder proxy。
+- 进程 A 提供一个同步方法和一个单向方法。
+- 进程 B 绑定 A，拿到 Binder 代理。
 
 实验分三轮。
 
 ### 第一轮：正常绑定
 
-保持 binding，调用同步方法。A 的重要性会被 B 的 binding 提升，通常不应进入 cached freezer。先证明基础 IPC 正常，不要直接跳到冻结结论。
+保持绑定并调用同步方法。A 的重要性会被 B 的绑定提升，通常不应进入缓存冻结状态。应先证明基础 IPC 正常，再分析冻结行为。
 
-### 第二轮：解绑后误用旧 proxy
+### 第二轮：解绑后误用旧代理
 
-1. B 调用 `unbindService()`，但故意保留旧 proxy。
-2. 等 A 进入 cached，或在测试环境用 `cmd activity freeze`。
+1. B 调用 `unbindService()`，但故意保留旧代理。
+2. 等 A 进入缓存状态，或在测试环境用 `cmd activity freeze`。
 3. B 再发同步调用。
 
-预期验证点不是固定耗时，而是：
+预期验证点包括：
 
-- driver 返回 frozen reply。
-- B 收到 `RemoteException` / Binder death。
+- 驱动返回冻结回复。
+- B 收到 `RemoteException` / Binder 死亡通知。
 - A 的退出记录为 `REASON_FREEZER`。
 
-### 第三轮：oneway 积压
+### 第三轮：单向事务积压
 
-向 frozen 的 A 发送有限数量、带序号的 `oneway` 事件，然后解冻：
+向冻结的 A 发送有限数量、带序号的单向事件，然后解冻：
 
-- 确认事件是否在解冻后按 Binder 对象内的 oneway 顺序到达。
+- 确认事件是否在解冻后按 Binder 对象内的单向调用顺序到达。
 - 观察事件是否已经过期。
-- 观察解冻后的 CPU burst。
+- 观察解冻后的 CPU 突发。
 
-不要用无限循环把 Binder buffer 打爆作为默认验证手段。需要验证溢出时，应在隔离设备上设置明确上限，并保存 trace、events log 和 exit-info。
+不要用无限循环耗尽 Binder 缓冲区作为默认验证手段。需要验证溢出时，应在隔离设备上设置明确上限，并保存跟踪记录、事件日志和退出信息。
 
 ## 12. 版本边界
 
 | 版本 | 已确认变化 | 工程含义 |
 | --- | --- | --- |
-| Android 11（API 30） | AOSP 支持 cached apps freezer；`ApplicationExitInfo` 公开 | 设备是否启用仍依赖 kernel 与配置 |
-| Android 13（API 33） | 公开 `ApplicationExitInfo.REASON_FREEZER` | 应用可把 freezer kill 与 LMK、ANR 分开统计 |
-| Android 14（API 34） | cached 后默认 10 秒冻结；生命周期事件立即解冻；动态注册广播可排队；冻结前后增加 GC/压缩等配合 | freezer 从单点开关扩展为更完整的 cached 进程策略 |
-| Android 16（API 36） | 公开 `IBinder` frozen state callback；`RemoteCallbackList` 增加 frozen callee policy | callback 服务可以按“丢弃/最新/全部”表达积压语义 |
-| Android 17（API 37） | 当前 `OomAdjuster` 以显式/隐式 CPU_TIME capability 统一冻结资格；Binder 监控与 freezer 重试链继续完善 | 源码判断锚定 `android-17.0.0_r1`，内核锚定 `android17-6.18-2026-06_r6` |
+| Android 11（API 30） | AOSP 支持缓存应用冻结器；`ApplicationExitInfo` 公开 | 设备是否启用仍依赖内核与配置 |
+| Android 13（API 33） | 公开 `ApplicationExitInfo.REASON_FREEZER` | 应用可把冻结器终止与 LMK、ANR 分开统计 |
+| Android 14（API 34） | 缓存后默认 10 秒冻结；生命周期事件立即解冻；动态注册广播可排队；冻结前后增加 GC/压缩等配合 | 冻结器从单点开关扩展为更完整的缓存进程策略 |
+| Android 16（API 36） | 公开 `IBinder` 冻结状态回调；`RemoteCallbackList` 增加冻结被调用方策略 | 回调服务可以按“丢弃/最新/全部”表达积压语义 |
+| Android 17（API 37） | 当前 `OomAdjuster` 以显式/隐式 CPU_TIME 能力统一冻结资格；Binder 监控与冻结器重试链继续完善 | 源码判断锚定 `android-17.0.0_r1`，内核锚定 `android17-6.18-2026-06_r6` |
 
-版本演进可以保留，但当前行为不能继续引用 Android 15/16 的旧文件路径代替 Android 17。特别是 `shouldNotFreeze()`、freezer cutoff 和 Binder 错误上报，已经出现足以影响结论的结构变化。
+版本演进可以保留，但当前行为不能继续引用 Android 15/16 的旧文件路径代替 Android 17。特别是 `shouldNotFreeze()`、冻结阈值和 Binder 错误上报，已经出现足以影响结论的结构变化。
 
 ## 13. 常见误区
 
-### “cached 进程一定 frozen”
+### “缓存进程一定被冻结”
 
-不成立。设备可能没启用 freezer，进程可能仍持有 CPU capability，也可能处于 debounce、Binder 重试或实现级保护中。
+不成立。设备可能没启用冻结器，进程可能仍持有 CPU 能力，也可能处于防抖、Binder 重试或实现级保护中。
 
-### “frozen 就等于释放内存”
+### “冻结就等于释放内存”
 
-不成立。freezer 的直接作用是停止 CPU 执行；进程仍占地址空间和物理内存。GC、compaction、ZRAM writeback 与 LMK 是另外的动作。
+不成立。冻结器的直接作用是停止 CPU 执行；进程仍占地址空间和物理内存。GC、内存规整、ZRAM 回写与 LMK 是另外的动作。
 
 ### “同步调用只会等到对方解冻”
 
-不成立。Android 会拒绝对 frozen 远端的同步 Binder transaction，并终止被冻结的接收进程，避免调用线程无限等待。
+不成立。Android 会拒绝发往冻结远端的同步 Binder 事务，并终止被冻结的接收进程，避免调用线程无限等待。
 
-### “oneway 对 frozen 进程绝对安全”
+### “单向调用对冻结进程绝对安全”
 
-不成立。它会积压、占 Binder buffer，解冻后还可能集中处理过期事件；buffer 压力过高时目标进程会被终止。
+不成立。它会积压、占用 Binder 缓冲区，解冻后还可能集中处理过期事件；缓冲区压力过高时目标进程会被终止。
 
-### “观察 frozen callback 就能统计冻结次数”
+### “观察冻结回调就能统计冻结次数”
 
 不成立。状态事件允许合并，API 只承诺最新状态。
 
-### “OEM 的‘冻结’都等于 AOSP cached apps freezer”
+### “OEM 的‘冻结’都等于 AOSP 缓存应用冻结器”
 
-不成立。必须用 ActivityManager 事件、cgroup 状态、Binder freezer reason 和厂商实现证据区分。
+不成立。必须用 ActivityManager 事件、cgroup 状态、Binder 冻结原因和厂商实现证据区分。
 
-## 14. Review 清单
+## 14. 复核清单
 
-1. 确认设备的 `use_freezer`、kernel 支持和 cgroup v2 布局。
-2. 同时记录 proc state、oom_adj、CPU_TIME capability 与 freezer cutoff。
-3. 区分 pending freeze、请求冻结和 `cgroup.events frozen=1`。
-4. 检查 Binder freeze 是否先于 cgroup freeze。
-5. 同步调用命中 frozen 目标时，找到调用端、旧 proxy 生命周期和退出原因。
-6. oneway 回调写清丢弃、只留最新、全量排队及容量上限。
-7. API 36+ 优先使用 `IBinder` frozen callback 或 `RemoteCallbackList` policy。
-8. 检查固定频率任务、广播与 oneway 是否在解冻后形成 burst。
-9. 不把冻结本身写成内存回收；单独验证 GC、compaction、ZRAM 和 LMK。
-10. 用 Perfetto、events log、cgroup、exit-info 四条时间线交叉证明结论。
-11. 区分公开 `REASON_FREEZER` 与 hidden subreason。
+1. 确认设备的 `use_freezer`、内核支持和 cgroup v2 布局。
+2. 同时记录进程状态、oom_adj、CPU_TIME 能力与冻结阈值。
+3. 区分待处理冻结、请求冻结和 `cgroup.events frozen=1`。
+4. 检查 Binder 冻结是否先于 cgroup 冻结。
+5. 同步调用命中冻结目标时，找到调用端、旧代理生命周期和退出原因。
+6. 单向回调写清丢弃、只留最新、全量排队及容量上限。
+7. API 36+ 优先使用 `IBinder` 冻结回调或 `RemoteCallbackList` 策略。
+8. 检查固定频率任务、广播与单向事务是否在解冻后形成突发。
+9. 不把冻结本身写成内存回收；单独验证 GC、内存规整、ZRAM 和 LMK。
+10. 用 Perfetto、事件日志、cgroup、退出信息四条时间线交叉证明结论。
+11. 区分公开 `REASON_FREEZER` 与隐藏子原因。
 12. 当前源码统一引用 `android-17.0.0_r1` 与 `android17-6.18-2026-06_r6`。
 
 ## 参考资料
