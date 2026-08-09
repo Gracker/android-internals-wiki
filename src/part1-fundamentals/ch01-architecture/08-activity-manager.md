@@ -157,14 +157,14 @@ task9_review_notes: '2026-07-01 Task9 idle-audit: auto-fixed Android 17 source b
 
 AMS（`ActivityManagerService`）是应用组件与进程生命周期的系统侧协调者。它不负责渲染界面，也不直接执行应用代码；它负责记录“哪个进程承载哪些组件、当前有多重要、某次组件调用是否按时完成”，并把创建进程、调度组件、记录异常等工作交给相应模块。
 
-分析冷启动、进程被杀、Service 卡住或 Broadcast ANR 时，AMS 往往是把系统侧现象与应用侧调用栈接起来的那一层。正确的分析方式不是背一张超时表，而是先确认：
+分析冷启动、进程被杀、Service 卡住或 Broadcast ANR 时，AMS 往往是把系统侧现象与应用侧调用栈接起来的那一层。排查时应先确认：
 
 1. 谁发起了操作；
 2. 系统把操作投递给了哪个进程和线程；
 3. 计时从哪里开始、由什么回调结束；
 4. 超时后是 ANR、异常、进程清理，还是一次普通的等待失败。
 
-本节以 AOSP `android-17.0.0_r1` 为当前源码基线。Android 10～16 只在解释版本演进时保留。
+当前源码基线为 AOSP `android-17.0.0_r1`。Android 10～16 只用于解释版本演进。
 
 ---
 
@@ -190,7 +190,7 @@ AMS 相关证据主要来自三类数据：
 - Binder transaction、线程状态和 Java monitor contention；
 - EventLog，例如 `am_proc_start`、`am_proc_bound`、`am_anr`、`am_crash`、`am_kill`。
 
-EventLog 不是普通 slice。只有 trace 启用了 Android logs 数据源并包含 events buffer，`android_logs` 表中才会有这些记录。下面的查询同时保留消息内容，便于读取 PID、进程名和原因：
+EventLog 不是普通切片。只有跟踪启用了 Android logs 数据源并包含 events 缓冲区，`android_logs` 表中才会有这些记录。下面的查询同时保留消息内容，便于读取 PID、进程名和原因：
 
 ```sql
 SELECT
@@ -221,7 +221,7 @@ ORDER BY l.ts;
 
 Android 不以“前台/后台”二分进程。AMS 会综合 Activity 可见性、正在执行的 Service、Provider 依赖、Receiver、Binder 绑定关系等信息，计算进程状态和回收优先级。
 
-这里要分清两个概念：
+这两个概念需要分开：
 
 - `procState` 描述进程当前负责的工作，供调度、后台限制和权限判断使用；
 - `oom_score_adj` 是给内存回收使用的分数。值越大，通常越早成为回收候选。
@@ -247,7 +247,7 @@ Android 不以“前台/后台”二分进程。AMS 会综合 Activity 可见性
 | `SERVICE_B_ADJ` | 800 | 较低优先级的旧 Service |
 | `CACHED_APP_MIN_ADJ`～`CACHED_APP_MAX_ADJ` | 900～999 | 缓存进程 |
 
-表中数值是源码常量，不是承诺每种组件永远落在某一行。Android 17 还可以通过 feature flag 对可见进程和 previous app 做阶梯化分配。`TOP_SLEEPING` 也是计算分支中的 `adjType`，不能把它当成独立常量档位。
+表中数值是源码常量，不是承诺每种组件永远落在某一行。Android 17 还可以通过功能开关对可见进程和 `previous app`（前一个应用）做阶梯化分配。`TOP_SLEEPING` 也是计算分支中的 `adjType`，不能把它当成独立常量档位。
 
 前台 Service 同样不是“永远 100”。在当前基线中，常规非 short FGS 通常受 `PERCEPTIBLE_APP_ADJ = 200` 保护；刚从 TOP 进入 FGS 的进程可在宽限期内使用 50。它仍可能在极端内存压力、异常或用户停止服务时退出。
 
@@ -277,7 +277,7 @@ WHERE process_name = 'com.example.app'
 ORDER BY ts;
 ```
 
-能否得到完整结果取决于 trace 配置。看到 adj 升高只能说明保护程度下降；判断死亡原因还要结合 lmkd 日志、`ApplicationExitInfo`、`am_proc_died` 和内存压力。`am_kill` 表示 AMS 记录了一次主动 kill，不能仅凭这个 tag 断言“进程被 lmkd 回收”。
+能否得到完整结果取决于跟踪配置。看到 adj 升高只能说明保护程度下降；判断死亡原因还要结合 lmkd 日志、`ApplicationExitInfo`、`am_proc_died` 和内存压力。`am_kill` 表示 AMS 记录了一次主动终止，不能仅凭这个标签断言“进程被 lmkd 回收”。
 
 ---
 
@@ -366,11 +366,11 @@ ANR 不是统一的“主线程卡 5 秒”。不同系统模块在投递不同�
 | 前台执行 Service | 20 秒基础值 | 对应 Service 执行回调完成 |
 | 后台执行 Service | 200 秒基础值 | 对应 Service 执行回调完成 |
 
-这些值不是跨设备 API 契约。AOSP 会乘以 `Build.HW_TIMEOUT_MULTIPLIER`，设备厂商也可能调整。Android 14+ 的广播计时还会为 CPU-starved 进程扩展窗口：官方诊断文档给出的范围是前台优先级 10～20 秒、后台优先级 60～120 秒。
+这些值不是跨设备 API 契约。AOSP 会乘以 `Build.HW_TIMEOUT_MULTIPLIER`，设备厂商也可能调整。Android 14+ 的广播计时还会为 CPU 饥饿进程扩展窗口：官方诊断文档给出的范围是前台优先级 10～20 秒、后台优先级 60～120 秒。
 
 ### Input ANR
 
-Input ANR 从 native `InputDispatcher` 开始。典型路径是：
+Input ANR 从原生 `InputDispatcher` 开始。典型路径是：
 
 ```text
 InputDispatcher.processAnrsLocked()
@@ -395,13 +395,13 @@ InputDispatcher.processAnrsLocked()
 - `Runnable` 很久：查 CPU 饥饿和系统负载；
 - `Sleeping` 且在 Binder：沿 Binder reply 找服务端；
 - `Sleeping` 且在锁等待：找持锁线程；
-- 主线程已经空闲：堆栈可能采得太晚，需回看 ANR 前的 trace。
+- 主线程已经空闲：堆栈可能采得太晚，需回看 ANR 前的跟踪。
 
 ### Broadcast ANR
 
 Android 17 中，AMS 创建前台与后台两套 `BroadcastConstants`。`ActivityManagerService` 给它们设置 10 秒和 60 秒基础超时，`BroadcastQueueImpl.dispatchReceivers()` 在向目标进程调度 Receiver 时启动 `BroadcastAnrTimer`。
 
-这意味着：
+计时边界如下：
 
 - 广播进入系统队列的时刻，不等于 ANR 计时开始；
 - 拉起冷进程所花的时间会进入 Receiver 的执行预算；
@@ -464,7 +464,7 @@ Provider 通常在应用主线程初始化。即使最终报告的是 Input、Br
 
 ### ANR 数据是怎样保存的
 
-各入口最终可调用 `AnrHelper.appNotResponding()`。Android 17 会尽早为主要目标进程生成临时堆栈，正式处理时再由 `StackTracesDumpHelper` 收集相关 Java/native 栈与 CPU 信息。正式文件位于 `/data/anr/`，文件名以 `anr_` 开头，而不是早期版本常见的固定 `traces.txt`。
+各入口最终可调用 `AnrHelper.appNotResponding()`。Android 17 会尽早为主要目标进程生成临时堆栈，正式处理时再由 `StackTracesDumpHelper` 收集相关 Java/原生栈与 CPU 信息。正式文件位于 `/data/anr/`，文件名以 `anr_` 开头，而不是早期版本常见的固定 `traces.txt`。
 
 如果 ANR 排队超过 10 秒，`AnrHelper` 会把报告视为过期，只 dump 目标进程，避免在系统已经很慢时继续扩大负载。因此，ANR 文件里缺少其他进程的栈不一定是采集故障。
 
@@ -513,7 +513,7 @@ RootWindowContainer
 - `colorMode`；
 - `uiMode`，仅限进入或离开 `UI_MODE_TYPE_DESK`。
 
-如果应用依赖 Activity 重建来重新加载这些资源，需要在 manifest 中显式选择：
+如果应用依赖 Activity 重建来重新加载这些资源，需要在 Manifest 中显式选择：
 
 ```xml
 <activity
@@ -539,7 +539,7 @@ RootWindowContainer
 | Android 13（API 33） | 用户可在 Active apps/FGS 管理界面查看并停止服务；通知权限与 FGS 通知展示分开处理 |
 | Android 14（API 34） | 目标版本要求声明 FGS type 和对应权限；后台创建 FGS 时会同步检查 while-in-use 权限是否处于可用状态 |
 | Android 15（API 35） | `dataSync` 与 `mediaProcessing` 各自共享每 24 小时 6 小时后台额度，并提供 `Service.onTimeout()` |
-| Android 16（API 36） | 与 FGS 并发执行的 Job 也计入 JobScheduler runtime quota |
+| Android 16（API 36） | 与 FGS 并发执行的 Job 也计入 JobScheduler 运行时配额 |
 | Android 17（API 37） | 后台音频交互增加生命周期与 FGS/WIU 约束 |
 
 Android 17 的后台音频规则分两层：
@@ -590,7 +590,7 @@ ORDER BY dur DESC
 LIMIT 20;
 ```
 
-`blocked_*` 是等待锁的一侧，`blocking_*` 是持锁一侧。`binder_reply_id` 非空时，标准库已经把 contention 与相关 Binder reply 建立了关联；不要只凭两个切片时间相邻就宣布因果关系。
+`blocked_*` 是等待锁的一侧，`blocking_*` 是持锁一侧。`binder_reply_id` 非空时，标准库已经把锁竞争与相关 Binder reply 建立了关联；不要只凭两个切片时间相邻就宣布因果关系。
 
 ---
 
@@ -603,7 +603,7 @@ Android 17 的主要实现是 `BroadcastQueueImpl` 与 `BroadcastProcessQueue`�
 ```text
 Context.sendBroadcast()
   → ActivityManagerService.broadcastIntent()
-    → 解析 manifest / context-registered Receiver
+    → 解析 Manifest 中声明 / 运行时注册的 Receiver
       → BroadcastQueueImpl 入队
         → BroadcastProcessQueue 选择可运行目标进程
           → IApplicationThread.scheduleReceiver()
@@ -617,18 +617,18 @@ Context.sendBroadcast()
 ### Manifest Receiver 与动态 Receiver
 
 - Manifest Receiver 可以在规则允许时拉起尚未运行的应用进程，因此可能把冷启动时间计入广播预算；
-- context-registered Receiver 只在注册对象有效时接收，不会为了一个已经消失的动态注册关系单独创建进程；
+- 运行时注册的 Receiver 只在注册对象有效时接收，不会为了一个已经消失的动态注册关系单独创建进程；
 - 从 Android 8 开始，Manifest 中的隐式广播受到广泛限制，并非任意静态 Receiver 都能被系统事件唤醒；
 - 目标 Android 14+ 的应用注册非纯系统广播 Receiver 时，要显式使用 `RECEIVER_EXPORTED` 或 `RECEIVER_NOT_EXPORTED`。
 
-### Android 14+ 的 cached 广播
+### Android 14+ 缓存状态下的广播
 
-Android 14 起，应用处于 cached state 时，系统可以把 context-registered broadcast 暂存，等应用离开 cached state 后再投递；某些重复广播还可能被合并。Manifest-declared broadcast 不使用这套排队方式，系统可把应用移出 cached state 后投递。
+Android 14 起，应用处于缓存状态时，系统可以暂存发给运行时注册 Receiver 的广播，等应用离开缓存状态后再投递；某些重复广播还可能被合并。发给 Manifest Receiver 的广播不使用这套排队方式，系统可先让应用离开缓存状态再投递。
 
-这会改变 trace 的解释：
+这会改变跟踪的解释：
 
-- “广播发送后很久才进入 `onReceive()`”可能是设计内的 cached 排队，不一定是 AMS 卡住；
-- manifest Receiver 仍可能触发进程启动，启动风暴要结合隐式广播限制和具体 action 判断；
+- “广播发送后很久才进入 `onReceive()`”可能是设计内的缓存排队，不一定是 AMS 卡住；
+- Manifest Receiver 仍可能触发进程启动，启动风暴要结合隐式广播限制和具体 `action` 判断；
 - 实际的 Receiver ANR 计时从 `BroadcastQueueImpl` 调度目标 Receiver 时开始，不从广播发送时开始。
 
 ---
@@ -655,7 +655,7 @@ Android 14 起，应用处于 cached state 时，系统可以把 context-registe
 
 ### 进程消失
 
-1. 查 `ApplicationExitInfo` 的 reason、subreason 与 description；
+1. 查 `ApplicationExitInfo` 的 `reason`、`subreason` 与 `description`；
 2. 对齐 `am_kill`、`am_proc_died`、lmkd 日志和 PID 生命周期；
 3. 查看死亡前 adj、procState、RSS、swap 与系统内存压力；
 4. 区分 AMS 主动清理、lmkd、Crash、ANR 后退出、用户停止和 Android 17 MemoryLimiter；
