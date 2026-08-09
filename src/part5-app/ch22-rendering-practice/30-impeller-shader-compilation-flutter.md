@@ -1,73 +1,32 @@
 ---
 title: "Impeller Shader 编译性能与 Flutter 渲染稳定性"
 chapter: "22.30"
-status: draft
+status: ready-for-review
 applicable_versions: "Android 14 (API 34) - Android 17 (API 37)"
 tags: [flutter, impeller, shader, vulkan, opengl, gpu, compilation, rendering]
 related_chapters: ["22.3", "22.10", "2.10", "14.8"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-07-05"
 gap_source: "研究素材/章节深挖"
-last_draft_polish_at: "2026-07-29T19:35:08+08:00"
-last_draft_polish_run_id: "20260729-193508-draft-polish-1de00e19"
-task6_state: "blocked-source-material-required"
-task9_state: pending
-pipeline_stage: "draft_needs_body_apply"
-last_verified: "2026-07-29"
-confidence: low
+last_draft_polish_at: "2026-08-09T15:35:23+08:00"
+last_draft_polish_run_id: "20260809-153523-draft-polish-1de00e19"
+task6_state: pending-review
+task9_state: pending-review
+pipeline_stage: ready-for-review
+last_verified: "2026-08-09"
+confidence: medium-high
 sources:
 - type: aosp
   path: 'AOSP android-17.0.0_r1 negative scan note embedded in this draft: Impeller is not part of Android platform source tree'
+- type: reference
+  path: 'Flutter docs: Impeller, Fragment shaders, UI performance, DevTools Performance, FrameTiming, architectural overview'
+- type: source
+  path: 'Flutter 3.44.7 engine/framework: settings.h, flutter_main.cc, AndroidContextDynamicImpeller, PipelineCompileQueue, PipelineLibraryVK, PipelineCacheVK, PipelineCacheDataPersist, FragmentProgram, RuntimeEffectContents, ShaderWarmUp'
+- type: aosp
+  path: 'Android 17 android-17.0.0_r1 Surface, BufferQueueProducer, SurfaceFlinger; android17-6.18-2026-06_r6 dma-buf and sync_file'
 ---
 
 # 22.30 Impeller Shader 编译性能与 Flutter 渲染稳定性
-
-> 本页仍是研究提纲，不构成发布结论。Impeller 不属于 Android 17 AOSP 平台模块；补写正文前需要 Flutter Engine/Impeller 官方源码或文档、Perfetto trace 与设备实测材料。
-
-<!-- outline-start -->
-## 待补来源后展开的要点
-
-> 以下条目是写作提纲，不是已完成的结论。除“Impeller 未进入 Android 17.0.0_r1 平台源码树”这一勘误外，所有 Flutter/Impeller 行为、GPU 驱动差异和优化建议都需要 Flutter Engine 源码、官方文档、Perfetto trace 或设备测试材料支撑后再正文定稿。
-
-### 🔹 Impeller 渲染引擎架构回顾（待 Flutter Engine 来源）
-- Flutter Android 端 Impeller 启用条件、后端选择与 Flutter 版本边界
-- Impeller vs Skia 的渲染管线差异：预构建/运行时 pipeline、shader/pipeline cache 的职责边界
-- Raster 线程、platform/UI 线程与 picture/raster 阶段的性能观测口径
-
-### 🔹 Shader / Pipeline 编译性能问题分析（待 trace 或源码支撑）
-- Shader / pipeline 变体数量与 Material、CustomPainter、FragmentProgram 等用法的关系
-- 首帧或首次进入复杂页面时的 jank：pipeline creation、driver compilation 与缓存命中率的拆分
-- Vulkan 与 OpenGL ES 后端在 Android 设备上的可观测差异
-- Adreno、Mali、PowerVR 等 GPU/driver 组合只应作为实测维度，不应写成无来源的固定排序
-
-### 🔹 Shader 预热与缓存策略（待官方文档/示例）
-- Flutter `ShaderWarmUp`、Impeller pipeline cache、应用内首屏预热之间的边界
-- 预热清单如何生成、何时加载，以及对启动耗时/包体/内存的代价
-- 首次启动与后续启动的 shader/pipeline 编译开销分布
-
-### 🔹 运行时性能监控（待工具链材料）
-- 通过 Flutter DevTools Performance、Perfetto trace、FrameTiming 或自定义埋点识别 raster overrun
-- 将 shader/pipeline 编译尖峰与页面切换、动画首帧、图片/字体首次使用等业务事件关联
-- 建议输出示例 trace label 或指标口径，避免只给泛化建议
-
-### 🔹 Flutter Impeller 在 Android 17 环境下的兼容性（已明确系统边界）
-- Android 17.0.0_r1 是系统源码基线；Impeller 属于 Flutter Engine/SDK，不属于 AOSP 平台模块
-- Android 系统侧主要提供 Vulkan/OpenGL ES 驱动与调试/trace 基础设施，不直接优化 Impeller 编译器实现
-- 任何“Android 17 对 Impeller 的优化”都必须改写为“Flutter 在 Android 17 设备环境下的兼容性/性能表现”并附来源
-
-### 🔹 Flutter 渲染优化实践（待示例代码与测试）
-- 减少首次渲染复杂 shader/pipeline 组合的页面结构与动画策略
-- CustomPainter、FragmentShader/FragmentProgram 与图片滤镜的性能边界
-- PlatformView 混合渲染场景下的 trace 采集与回归测试方法
-
-## 扩展候选（待来源确认）
-
-### 🔸 Impeller 与 Android 原生渲染管线的对比
-- Impeller Vulkan 后端与 Android HWUI/RenderThread 的职责边界
-- Flutter + Native 混合应用中，Flutter raster 与原生 View 渲染管线的帧预算协调
-<!-- outline-end -->
-
-<!-- AIW-源码调研-2026-07-07：Flutter Impeller 在 Android 17.0.0_r1 中的存在状态 -->
 
 ## 版本锚点与结论范围
 
