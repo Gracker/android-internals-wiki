@@ -1657,6 +1657,26 @@
       "summary": "Reader-visible body contained editorial/finalized wording and Gracker hard-gate prose hits",
       "type": "reader-facing-boundary",
       "updated_at": "2026-08-09T14:38:19.579517+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch16-aosp/参考资料.md",
+      "close_note": "已将论文条目改写为素材检索线索，补充缺少 DOI/出版社页/原文链接边界，并在 frontmatter sources 中登记本地素材。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20260809-163531-deep-review-8204f5b6",
+      "created_at": "2026-08-09T16:37:31.424719+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20260809-163531-deep-review-8204f5b6",
+      "details": "P1 主题资料条目转述 5 篇内存泄漏论文及准确率/延迟数字，但本地素材仅列论文名称与作者，没有 DOI、出版社页或可点击原文链接；应把该条降为检索线索，并禁止把数字作为 Android 17 平台结论。",
+      "id": "AIW-CH16-REF-UNVERIFIED-PAPER-LINKS",
+      "log_path": "logs/deep-review/2026-08-09-20260809-163531-deep-review-8204f5b6-deep-review.md",
+      "severity": "P1",
+      "source_paths": [
+        "Obsidian/每日论文精读（Android）/Android-2026-06-20.md"
+      ],
+      "status": "fixed",
+      "summary": "每日论文精读条目缺少论文原文/DOI来源边界",
+      "type": "source-boundary",
+      "updated_at": "2026-08-09T16:37:31.474570+08:00"
     }
   ],
   "schema_version": 1
