@@ -19,8 +19,55 @@ last_verified: "2026-05-28"
 last_verified_against: "Android Studio Profiler docs + Power Profiler docs + ProfilingManager API 34-36 / trigger-based profiling docs (2026-07-14 Task2B fix)"
 task9_result: pass-tech-review
 confidence: high
-sources: 
-path: "androidperformance.com (高爷博客)"
+sources:
+- type: reference
+  path: androidperformance.com (高爷博客)
+- type: official
+  path: https://ui.perfetto.dev/
+- type: official
+  path: https://developer.android.com/studio/profile
+- type: official
+  path: https://developer.android.com/topic/performance/tracing
+- type: official
+  path: https://developer.android.com/studio/profile/inspect-traces
+- type: official
+  path: https://developer.android.com/studio/profile/cpu-profiler
+- type: official
+  path: https://developer.android.com/studio/profile/sample-callstack
+- type: official
+  path: https://developer.android.com/studio/profile/record-java-kotlin-methods
+- type: official
+  path: https://developer.android.com/studio/profile/record-java-kotlin-allocations
+- type: official
+  path: https://developer.android.com/studio/profile/capture-heap-dump
+- type: official
+  path: https://developer.android.com/studio/profile/record-native-allocations
+- type: official
+  path: https://developer.android.com/studio/profile/power-profiler
+- type: official
+  path: https://developer.android.com/reference/android/os/ProfilingManager
+- type: official
+  path: https://developer.android.com/reference/android/os/ProfilingTrigger
+- type: official
+  path: https://developer.android.com/sdk/api_diff/37/changes/android.os.ProfilingTrigger
+- type: official
+  path: https://developer.android.com/sdk/api_diff/36.1/changes/android.os.ProfilingTrigger
+- type: official
+  path: https://developer.android.com/sdk/api_diff/36.1/changes/android.os.ProfilingManager
+- type: official
+  path: https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture
+- type: official
+  path: https://developer.android.com/topic/performance/tracing/profiling-manager/retrieve-and-analyze
+- type: official
+  path: https://developer.android.com/topic/performance/tracing/profiling-manager/querying-profiles
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingResult.java
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java
 tags: 
 last_task2b_lite_at: "2026-05-28"
 last_task2b_main_at: "2026-07-14"
@@ -67,13 +114,6 @@ last_deepseek_cn_review_at: 2026-06-11
 - 🔸 Power Profiler（Android Studio Hedgehog+）
 - 🔸 使用 Profiler API 在代码中触发 profiling
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## Profiler 解决什么问题

@@ -10,6 +10,35 @@ last_verified_against: AOSP android-17.0.0_r1 system/sepolicy/public/domain.te +
   + art/runtime/art_method.h + art/runtime/entrypoints/entrypoint_utils.h + art/libartbase/base/apex.h + external/perfetto + frameworks/native/cmds/atrace/atrace.cpp
   + Android Developers 16KB page size docs + GitHub upstream READMEs (ShadowHook/xHook/Matrix/KOOM)
 confidence: medium
+sources:
+- type: reference
+  path: https://github.com/KwaiAppTeam/KOOM
+- type: aosp
+  path: https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/linker/linker_relocate.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/art_method.h
+- type: aosp
+  path: https://android.googlesource.com/platform/system/sepolicy/+/e066568e98d86db31a9346d30977f3632fa7073c/private/app.te
+- type: official
+  path: https://developer.android.com/guide/practices/page-sizes
+- type: official
+  path: https://developer.android.com/reference/android/os/Debug#attachJvmtiAgent(java.lang.String,%20java.lang.String,%20java.lang.ClassLoader)
+- type: reference
+  path: https://github.com/bytedance/bhook
+- type: reference
+  path: https://github.com/bytedance/android-inline-hook
+- type: reference
+  path: https://github.com/iqiyi/xHook
+- type: reference
+  path: https://github.com/Tencent/matrix
+- type: aosp
+  path: bionic/linker/linker.cpp
+- type: aosp
+  path: system/sepolicy/private/app.te
+- type: aosp
+  path: art/runtime/art_method.h
 tags:
 - hook
 - plt-hook
@@ -34,7 +63,6 @@ gap_source: AOSP结构+官方文档+研究素材
 last_task2b_at: '2026-06-24'
 last_task9_at: 2026-07-16T02:23:22+0800
 last_task9_audit: 2026-07-16
-path: https://github.com/KwaiAppTeam/KOOM
 pipeline_stage: ready-to-publish
 polish_by: task2b-polish
 polish_count: '1'

@@ -9,6 +9,32 @@ last_verified: "2026-07-02"
 last_verified_against: "Android Developers background audio hardening / Media3 / audio focus docs 2026-05；AOSP android-17.0.0_r1 AudioManagerShellCommand/AudioManager/AudioService/HardeningEnforcer/AudioFlinger Tracks.cpp"
 confidence: medium
 sources:
+- type: official
+  path: https://developer.android.com/about/versions/17/changes/bg-audio
+- type: official
+  path: https://developer.android.com/about/versions/17/behavior-changes-17
+- type: official
+  path: https://developer.android.com/media/media3/session/background-playback
+- type: official
+  path: https://developer.android.com/media/optimize/audio-focus
+- type: official
+  path: https://developer.android.com/media/media3/exoplayer/battery-consumption
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/HardeningEnforcer.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/AudioManagerShellCommand.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/MediaFocusControl.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/audioflinger/Tracks.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_audio/LeAudioService.java
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/bta/le_audio/codec_manager.cc
+- type: official
+  path: https://developer.android.com/tools/perfetto
+- type: official
+  path: https://developer.android.com/studio/command-line/dumpsys
 tags: [[power, audio, foreground-service, android-17, media-playback]]
 related_chapters: ["1.16", "5.8", "8.8", "11.2", "16.5", "25.13", "26.17"]
 created_by: "task2a-knowledge-gap"

@@ -99,11 +99,6 @@ finalized_by: "openclaw-task9-auto-promote"
 - 🔸 Google Play Cloud Profiles 的公开边界
 - 🔸 1.12 节 AutoFDO 与应用侧 Profile 的分工
 
-### OpenClaw 加工指引
-
-> 锚点是最低覆盖要求，修稿时必须逐条落到正文。
-> 涉及构建产物路径、ADB 命令、版本边界的段落，优先按官方文档和 AOSP 可核对口径写。
-> 对公开证据不足的云端编译细节，只保留“公开资料不足以确认”的边界表达，不补成确定结论。
 <!-- outline-end -->
 ## 为什么需要 Baseline Profiles
 

@@ -106,10 +106,6 @@ task9_p2_issues: 0
 - 🔸 RecyclerView 1.4 与 Adaptive Refresh Rate
 - 🔸 自定义 LayoutManager、ItemDecoration、ItemAnimator 的性能代价
 
-### OpenClaw 加工指引
-
-> 锚点是最低覆盖要求，加工时必须逐条落实并标注验证状态。
-> 需要继续核对源码或版本边界的内容，保留 `[需确认]`，不要把猜测写成结论。
 <!-- outline-end -->
 
 列表滑动是 Android 用户最高频的操作之一，也是流畅性问题最集中的场景。RecyclerView 作为列表渲染的标准组件，内部涉及缓存复用、预取、嵌套滑动和增量更新，这几层机制都会直接影响滑动帧时间。

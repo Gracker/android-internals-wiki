@@ -17,6 +17,37 @@ last_task6_at: 2026-07-12
 last_task6_audit: 2026-07-17
 last_verified: 2026-07-31
 confidence: high
+sources:
+- type: official
+  path: https://perfetto.dev/docs/analysis/perfetto-sql-getting-started
+- type: official
+  path: https://perfetto.dev/docs/analysis/perfetto-sql-syntax
+- type: official
+  path: https://perfetto.dev/docs/analysis/sql-tables
+- type: official
+  path: https://perfetto.dev/docs/data-sources/cpu-scheduling
+- type: official
+  path: https://perfetto.dev/docs/data-sources/frametimeline
+- type: official
+  path: https://perfetto.dev/docs/data-sources/cpu-freq
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/frames/timeline.sql
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/frames/per_frame_metrics.sql
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/binder.sql
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/garbage_collection.sql
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/startup/startups.sql
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/startup/time_to_display.sql
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/anrs.sql
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/monitor_contention.sql
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h
 last_idle_audit_at: 2026-07-31T18:35:16+08:00
 last_idle_audit_run_id: 20260731-183516-idle-audit-68cd3ad3
 ---

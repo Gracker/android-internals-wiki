@@ -69,7 +69,6 @@ task2b_state: "fixed"
 task2b_result: "fixed-2026-07-08"
 pipeline_stage: "ready-to-publish"
 finalized_date: "2026-07-10"
-finalized_by: "openclaw-task9-auto-promote"
 last_task6_at: "2026-07-10T12:20:00+08:00"
 last_task6_review_log: "logs/review/2026-07-08-09-review.md"
 task6_l1_l2_fixes: 3

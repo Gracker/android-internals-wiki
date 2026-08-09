@@ -75,7 +75,6 @@ tags: ["SDM", "cloud-compilation", "dexopt", "ART-Service", "install-performance
 related_chapters: ["16.6", "1.9", "1.23", "21.11"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-11"
-
 ---
 
 # Android 17 Secure Dex Metadata：安装、验证与运行时加载

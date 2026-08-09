@@ -15,26 +15,45 @@ confidence: medium
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-sources: 
-path: "https://developer.android.com/topic/performance/memory-management"
-path: "https://developer.android.com/topic/performance/graphics/manage-memory"
-path: "https://developer.android.com/guide/practices/page-sizes"
-path: "https://source.android.com/docs/core/perf/lmkd"
-path: "https://source.android.com/docs/core/perf/cgroups"
-path: frameworks/base/services/core/java/com/android/server/am/ProcessList.java
-path: frameworks/base/core/java/android/content/ComponentCallbacks2.java
-path: system/core/libprocessgroup/profiles/task_profiles.json
-path: system/memory/lmkd/lmkd.cpp
-path: "https://docs.kernel.org/admin-guide/blockdev/zram.html"
-path: "https://perfetto.dev/docs/data-sources/java-heap-profiler"
-path: "https://perfetto.dev/docs/case-studies/android-outofmemoryerror"
-path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerShellCommand.java
-path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
-path: frameworks/base/core/java/android/app/ActivityThread.java
-path: art/runtime/hprof/hprof.cc
-path: external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto
-path: "https://androidperformance.com/"
-path: "https://juejin.cn/post/7530909474103296039"
+sources:
+- type: official
+  path: https://developer.android.com/topic/performance/memory-management
+- type: official
+  path: https://developer.android.com/topic/performance/graphics/manage-memory
+- type: official
+  path: https://developer.android.com/guide/practices/page-sizes
+- type: official
+  path: https://source.android.com/docs/core/perf/lmkd
+- type: official
+  path: https://source.android.com/docs/core/perf/cgroups
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/ProcessList.java
+- type: aosp
+  path: frameworks/base/core/java/android/content/ComponentCallbacks2.java
+- type: aosp
+  path: system/core/libprocessgroup/profiles/task_profiles.json
+- type: aosp
+  path: system/memory/lmkd/lmkd.cpp
+- type: kernel
+  path: https://docs.kernel.org/admin-guide/blockdev/zram.html
+- type: official
+  path: https://perfetto.dev/docs/data-sources/java-heap-profiler
+- type: official
+  path: https://perfetto.dev/docs/case-studies/android-outofmemoryerror
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerShellCommand.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
+- type: aosp
+  path: frameworks/base/core/java/android/app/ActivityThread.java
+- type: aosp
+  path: art/runtime/hprof/hprof.cc
+- type: aosp
+  path: external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto
+- type: reference
+  path: https://androidperformance.com/
+- type: reference
+  path: https://juejin.cn/post/7530909474103296039
 tags: 
   - android-memory
   - memory-model
@@ -89,13 +108,6 @@ last_deepseek_cn_review_at: 2026-06-12
 - 🔸 cgroup v1/v2 对 Android 内存控制的作用
 - 🔸 ZRAM / Swap 在 Android 上的使用与配置
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 先建立一张可用于排障的地图

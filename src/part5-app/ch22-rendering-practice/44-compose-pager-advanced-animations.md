@@ -11,9 +11,12 @@ gap_source: "素材驱动"
 confidence: medium
 last_verified: "2026-07-23"
 sources:
-  - "https://developer.android.com/develop/ui/compose/layouts/pager"
-  - "https://developer.android.com/reference/kotlin/androidx/compose/foundation/pager/package-summary"
-  - "https://developer.android.com/develop/ui/compose/animation"
+- type: official
+  path: https://developer.android.com/develop/ui/compose/layouts/pager
+- type: official
+  path: https://developer.android.com/reference/kotlin/androidx/compose/foundation/pager/package-summary
+- type: official
+  path: https://developer.android.com/develop/ui/compose/animation
 reviewed_by: "hermes-aiw-review-finalize-apply"
 reviewed_date: "2026-07-23"
 task6_state: reviewed

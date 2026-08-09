@@ -13,8 +13,6 @@ last_verified: "2026-07-09"
 last_verified_against: AOSP android-17.0.0_r1
 confidence: medium
 sources:
-- type: aosp
-- type: official
 - type: blog
   path: source.android.com/docs/core/graphics/surfaceflinger-windowmanager
 tags:
@@ -60,7 +58,6 @@ task9_reviewed_at: "2026-07-09T01:31:02+08:00"
 updated_by: "openclaw-task9"
 updated_date: "2026-07-09"
 deepseek_cn_review_state: done
-last_task6_audit: "2026-06-10"
 last_deepseek_cn_review_at: 2026-07-09
 p0: 1
 p1: 0
@@ -89,13 +86,6 @@ task2b_verifier_notes: "2026-07-09 Task2B Verifier: status finalized→ready-for
 - 🔸 dumpsys package / dumpsys alarm / dumpsys jobscheduler
 - 🔸 自定义 Service 实现 dump 接口
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 为什么需要 dumpsys

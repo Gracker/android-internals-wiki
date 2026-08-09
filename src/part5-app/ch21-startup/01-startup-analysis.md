@@ -9,12 +9,27 @@ last_verified: "2026-05-12"
 last_verified_against: "AOSP android-15.0.0_r1, Android Developers launch-time docs"
 confidence: medium
 drafted_date: "2026-05-12"
-sources: 
-  - type: official
-  - type: aosp
-  - type: aosp
-  - type: aosp
-path: "frameworks/base/core/java/android/view/ViewRootImpl.java"
+sources:
+- type: aosp
+  path: frameworks/base/core/java/android/view/ViewRootImpl.java
+- type: official
+  path: https://developer.android.com/topic/performance/vitals/launch-time
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java
+- type: official
+  path: https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview
+- type: official
+  path: https://developer.android.com/topic/performance/appstartup/analysis-optimization
+- type: official
+  path: https://developer.android.com/reference/androidx/benchmark/macro/StartupTimingMetric
+- type: official
+  path: https://developer.android.com/reference/android/view/ViewTreeObserver
+- type: official
+  path: https://perfetto.dev/docs/data-sources/atrace
+- type: official
+  path: https://perfetto.dev/docs/analysis/stdlib-docs
 tags: [cold-start, warm-start, hot-start, ttid, ttfd, startup-trace, perfetto]
 related_chapters: ["8.2", "8.3", "1.7", "1.11", "21.2"]
 pipeline_stage: "ready-to-publish"
@@ -63,13 +78,6 @@ last_deepseek_polish_at: 2026-06-16
 
 - 🔸 启动过程中的 ClassLoader 与 dex 加载开销
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 本节站在应用进程一侧分析启动：系统什么时候把执行权交给应用，应用的关键路径包含哪些阶段，以及 Trace 中的一段时间究竟代表什么。系统侧的进程创建、任务与窗口管理另见 8.2 节；初始化依赖治理、Baseline Profile 和首帧渲染分别在后续章节展开。

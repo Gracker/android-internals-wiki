@@ -13,7 +13,8 @@ reviewed_date: "2026-07-25"
 reviewed_by: "hermes-aiw-review-finalize-apply"
 confidence: medium-high
 sources:
-  - "DeepResearch/2026-07-16-android17-oem-background-restriction.md"
+- type: deepresearch
+  path: DeepResearch/2026-07-16-android17-oem-background-restriction.md
 last_body_apply_at: "2026-07-25T15:18:53+08:00"
 last_body_apply_run_id: "20260725-151525-21e58a30"
 last_body_apply_source: "source-index:16:DeepResearch/2026-07-16-android17-oem-background-restriction.md"

@@ -12,7 +12,6 @@ last_task9_audit: 2026-05-22
 last_task9_review_log: logs/deep-review/2026-05-22-07-deep-review.md
 last_verified: 2026-04-26
 last_verified_against: "AndroidX docs + AndroidX Benchmark PowerMetric @RequiresApi(Q) + Android test docs + external review"
-path: appium.io/docs/en/latest/
 related_chapters: 
 repaired_by: openclaw-task2b
 repaired_date: 2026-04-26
@@ -21,12 +20,18 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-06-04"
 section: 14.6
 sources:
-  - developer.android.com/topic/performance/benchmarking
-  - developer.android.com/topic/performance/benchmarking/macrobenchmark-overview
-  - developer.android.com/topic/performance/benchmarking/microbenchmark-overview
-  - developer.android.com/topic/performance/benchmarking/benchmarking-in-ci
-  - developer.android.com/training/testing/ui-automator
-  - developer.android.com/training/testing/ui-testing/espresso
+- type: official
+  path: developer.android.com/topic/performance/benchmarking
+- type: official
+  path: developer.android.com/topic/performance/benchmarking/macrobenchmark-overview
+- type: official
+  path: developer.android.com/topic/performance/benchmarking/microbenchmark-overview
+- type: official
+  path: developer.android.com/topic/performance/benchmarking/benchmarking-in-ci
+- type: official
+  path: developer.android.com/training/testing/ui-automator
+- type: official
+  path: developer.android.com/training/testing/ui-testing/espresso
 status: "finalized"
 tags:
   - android
@@ -72,13 +77,6 @@ last_deepseek_cn_review_at: 2026-06-10
 - 🔸 使用 Firebase Test Lab 开展大规模性能测试
 - 🔸 自建性能 Benchmark 平台的实践
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本章强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 为什么要用自动化工具做性能测试

@@ -11,18 +11,30 @@ polish_count: 1
 polish_date: "2026-04-06"
 polish_by: task2b-polish
 sources:
-  - "手机Android存储性能优化架构分析（Linux阅码场）"
-  - "手机主流存储器件的分析与发展（OPPO内核工匠）"
-  - "Android分区挂载原理介绍（OPPO内核工匠）"
-  - "Android Storage | Android Open Source Project"
-  - "Scoped Storage | Android Developers"
-  - "Access media files from shared storage | Android Developers"
-  - "File-based encryption | Android Open Source Project"
-  - "Metadata encryption | Android Open Source Project"
-  - "System-as-root | Android Open Source Project"
-  - "Implement dynamic partitions | Android Open Source Project"
-  - "SQLite Compile-time Options / WAL | sqlite.org"
-  - "JEDEC UFS 4.0 Standard (JESD220E)"
+- type: reference
+  path: 手机Android存储性能优化架构分析（Linux阅码场）
+- type: reference
+  path: 手机主流存储器件的分析与发展（OPPO内核工匠）
+- type: reference
+  path: Android分区挂载原理介绍（OPPO内核工匠）
+- type: reference
+  path: Android Storage | Android Open Source Project
+- type: reference
+  path: Scoped Storage | Android Developers
+- type: reference
+  path: Access media files from shared storage | Android Developers
+- type: reference
+  path: File-based encryption | Android Open Source Project
+- type: reference
+  path: Metadata encryption | Android Open Source Project
+- type: reference
+  path: System-as-root | Android Open Source Project
+- type: reference
+  path: Implement dynamic partitions | Android Open Source Project
+- type: reference
+  path: SQLite Compile-time Options / WAL | sqlite.org
+- type: reference
+  path: JEDEC UFS 4.0 Standard (JESD220E)
 tags: ['storage', 'ufs', 'emmc', 'partition', 'scoped-storage', 'mediastore', 'fuse', 'fbe', 'dynamic-partition', 'virtual-ab', 'f2fs']
 related_chapters: ['6.2', '6.3', '4.1', '7.1']
 created: 2026-04-01

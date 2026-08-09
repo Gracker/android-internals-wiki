@@ -7,13 +7,55 @@ pipeline_stage: ready-to-publish
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37) (AGI 支持 Android 11+, APA 支持 Android 12+, Sokatoa 支持 Android 13+)"
 tags: ["gpu", "agi", "renderdoc", "sokatoa", "gapid", "gpu-counter", "profiling", "vulkan", "opengl-es"]
 confidence: "medium"
+sources:
+- type: material
+  path: Cubox/基于gpu counters数据的性能优化-2025-02-27.md
+- type: official
+  path: https://developer.android.com/android-performance-analyzer
+- type: official
+  path: https://developer.android.com/blog/posts/introducing-android-performance-analyzer-the-next-evolution-in-profiling-for-android
+- type: official
+  path: https://developer.android.com/agi
+- type: official
+  path: https://developer.android.com/agi/start
+- type: official
+  path: https://developer.android.com/agi/frame-trace/frame-profiler
+- type: official
+  path: https://perfetto.dev/docs/data-sources/gpu
+- type: official
+  path: https://perfetto.dev/docs/data-sources/frametimeline
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/gpu/gpu_counter_config.proto
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/gpu/gpu_renderstages_config.proto
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/trace/gpu/gpu_counter_event.proto
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrameTracer/
+- type: official
+  path: https://developer.android.com/games/develop/vulkan/overview
+- type: official
+  path: https://developer.android.com/guide/topics/manifest/profileable-element
+- type: reference
+  path: https://github.com/sarc-acl/sokatoa
+- type: reference
+  path: https://developer.arm.com/Tools%20and%20Software/Arm%20Performance%20Studio
+- type: reference
+  path: https://developer.arm.com/tools-and-software/streamline-performance-analyzer
+- type: reference
+  path: https://developer.arm.com/tools-and-software/renderdoc-for-arm-gpus
+- type: reference
+  path: https://developer.qualcomm.com/software/snapdragon-profiler
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/devfreq/
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
 last_verified: "2026-07-07"
 last_verified_against: "developer.android.com/agi, developer.android.com/android-performance-analyzer, developer.android.com/blog/posts/introducing-android-performance-analyzer-the-next-evolution-in-profiling-for-android, perfetto.dev/docs/data-sources/gpu, github.com/sarc-acl/sokatoa, AOSP android-17.0.0_r1 external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto"
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 reviewed_date: 2026-07-07
 reviewed_by: openclaw-task6
-path: "Cubox/基于gpu counters数据的性能优化-2025-02-27.md"
 related_chapters: ["2.10", "2.14", "13.3", "14.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"

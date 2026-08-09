@@ -32,8 +32,7 @@ task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-28"
 task6_result: pass-light-edit
-task6_review_notes: "2026-07-07 Task6 复审：pass-light-edit。L1 修正 12 处禁用词（5×链路→路径/调用链, 4×可以看到→会看到/能观察到/存在, 3×问题是→核心疑问是/直接删除/本身）。无 L3/L4 回炉项。Task9 result 为 auto-fixed，需 Task9 最终确认。"
-task6_review_notes: "2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 6 处；无 L3/L4 回炉项，送 Task9 复核。"
+task6_review_notes: 2026-07-07 Task6 复审：pass-light-edit。L1 修正 12 处禁用词（5×链路→路径/调用链, 4×可以看到→会看到/能观察到/存在, 3×问题是→核心疑问是/直接删除/本身）。无 L3/L4 回炉项。Task9 result 为 auto-fixed，需 Task9 最终确认。 | 2026-05-28 Task6：Task9/Task2B 回流后写作复审通过；L1/L2 小修 6 处；无 L3/L4 回炉项，送 Task9 复核。
 task9_result: auto-fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-07-07"

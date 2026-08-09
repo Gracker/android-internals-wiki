@@ -20,9 +20,12 @@ last_review_finalize_run_id: "20260807-200624-3002f692"
 last_verified: "2026-08-07"
 confidence: high
 sources:
-  - "Android 17 Choreographer.java (android-17.0.0_r1)"
-  - "AndroidX Compose Animation/Core/UI 1.11.4 source snapshot 854220f44ea8ea80fee824a6c5a045f39bede289"
-  - "Android Developers Compose performance phases, animation tooling, TwoWayConverter, AnimatedImageVector, preferredFrameRate, Macrobenchmark metrics"
+- type: reference
+  path: Android 17 Choreographer.java (android-17.0.0_r1)
+- type: official
+  path: AndroidX Compose Animation/Core/UI 1.11.4 source snapshot 854220f44ea8ea80fee824a6c5a045f39bede289
+- type: reference
+  path: Android Developers Compose performance phases, animation tooling, TwoWayConverter, AnimatedImageVector, preferredFrameRate, Macrobenchmark metrics
 ---
 
 # 22.32 Compose 无限动画与 VectorConverter 性能优化

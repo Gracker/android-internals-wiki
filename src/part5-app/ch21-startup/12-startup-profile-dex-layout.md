@@ -100,7 +100,7 @@ last_task6_audit: "2026-06-22"
 本节从 21.4 的扩展点拆出，21.4 保留 Profile 生成和治理主线，本节聚焦启动路径 DEX layout、构建产物和验证组合。
 
 ### 🔸 AOSP `profman` / `dex2oat` 验证入口
-后续加工可结合 `art/profman/`、`art/dex2oat/` 和 AGP/R8 文档验证 profile 消费路径，不照搬官方示例代码。
+验证 profile 消费路径时应结合 `art/profman/`、`art/dex2oat/` 和 AGP/R8 文档，不照搬官方示例代码。
 
 ### 🔸 失败案例
 记录 Startup Profile 误覆盖非首屏路径、启动弹窗导致 profile 不稳定、CI 设备状态污染、首屏网络请求掩盖 DEX layout 收益等案例。

@@ -82,7 +82,7 @@ android17_review_notes: "2026-07-30：按 Android CLI、Journeys、Android skill
 梳理 `android run` 部署 APK、`android layout` 导出布局树、`android screen capture/resolve` 采集屏幕和坐标的证据价值，强调这些命令适合复现、UI 状态确认和自动化点击，不替代帧级 trace。
 
 ### 🔹 Journeys 与关键用户路径回归
-说明 Journey 用自然语言描述核心用户路径，适合驱动 agent 按真实交互路径运行应用；需要补齐冷启动、页面切换、滚动、弱网和登录态等性能场景的基线设计。
+Journey 用自然语言描述核心用户路径，适合驱动 agent 按真实交互路径运行应用。性能基线应覆盖冷启动、页面切换、滚动、弱网和登录态等典型场景。
 
 ### 🔹 Android Studio 语义命令与性能排查协作
 覆盖 `android studio check/analyze-file/find-declaration/find-usages/open-file/render-compose-preview/version-lookup` 的能力边界，说明它们如何服务于源码定位、Compose Preview、依赖版本核对和人工复核。

@@ -38,7 +38,6 @@ sources:
     path: frameworks/base/core/java/android/view/ViewGroup.java
   - type: kernel
     path: common/drivers/input/evdev.c
-path: https://mp.weixin.qq.com/s/Analyze-AOSP-input-architecture
 tags: [InputReader, InputDispatcher, EventHub, InputChannel, InputTransport, ViewRootImpl, ANR, Perfetto]
 related_chapters: ["3.2", "3.4", "3.7", "3.10", "3.12", "9.1"]
 task6_result: "pass-light-edit"

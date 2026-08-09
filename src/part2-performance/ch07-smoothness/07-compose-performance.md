@@ -21,7 +21,6 @@ last_task9_at: 2026-07-01T12:30:15+08:00
 last_task9_audit_result: auto-fixed
 last_task9_audit: 2026-07-01
 last_task9_autofix_at: 2026-07-01
-path: Personal-Knowlodge/source/2026-03-08_wechat_沉思录_如何优化_Compose_的性能_通过_底层原理_寻找答案.md
 pipeline_stage: ready-to-publish
 polish_by: task2b-polish
 polish_count: '1'
@@ -42,8 +41,10 @@ last_task6_review_log: logs/review/2026-07-02-04-review.md
 last_task6_audit: 2026-07-17
 reviewed_date: "2026-07-02"
 sources:
-  - 朱涛·沉思录:如何优化 Compose 的性能(微信公众号)
-  - Android官方文档:Jetpack Compose Performance
+- type: reference
+  path: 朱涛·沉思录:如何优化 Compose 的性能(微信公众号)
+- type: reference
+  path: Android官方文档:Jetpack Compose Performance
 ---
 
 # Jetpack Compose 性能优化

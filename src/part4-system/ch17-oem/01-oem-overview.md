@@ -7,13 +7,61 @@ pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [['oem', 'performance', 'freezer', 'preloading', 'background-management']]
 confidence: medium
+sources:
+- type: official
+  path: developer.android.com/topic/performance/background-optimization
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/Freezer.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Process.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_util_Process.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/res/values/config.xml
+- type: aosp
+  path: https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libprocessgroup/profiles/task_profiles.json
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ZygoteInit.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/config/preloaded-classes
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ZygoteConfig.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ZygoteServer.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/ZygoteProcess.java
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/fair.c
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-energy.rst
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst
+- type: official
+  path: https://source.android.com/docs/core/perf/cached-apps-freezer
+- type: official
+  path: https://developer.android.com/develop/background-work
+- type: official
+  path: https://developer.android.com/develop/background-work/background-tasks/persistent
+- type: official
+  path: https://developer.android.com/develop/background-work/services/fgs
+- type: official
+  path: https://source.android.com/docs/core/power/thermal-mitigation
+- type: official
+  path: https://source.android.com/docs/core/power/performance
+- type: kernel
+  path: kernel/sched/fair.c
+- type: aosp
+  path: frameworks/base/config/preloaded-classes
 last_verified: "2026-07-09"
 last_verified_against: "AOSP android-17.0.0_r1 CachedAppOptimizer/Freezer/Process/ZygoteConfig/ZygoteServer"
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-07-10"
 reviewed_by: openclaw-task6
-path: "developer.android.com/topic/performance/background-optimization"
 related_chapters: "[\"5.1\", \"5.5\", \"5.6\", \"4.4\", \"8.3\", \"17.2\"]"
 task9_result: "auto-fixed"
 task9_reviewed_date: "2026-07-09"
@@ -55,13 +103,6 @@ task9_review_notes: "2026-07-09 Task9 idle-audit: auto-fixed。修正 cgroup fre
 - 🔸 OEM 优化带来的兼容性问题（如后台杀进程过于激进）
 - 🔸 各厂商性能优化品牌（HyperBoost / RAMDISK / LPDDR Training 等）
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## OEM 优化分析要回答什么

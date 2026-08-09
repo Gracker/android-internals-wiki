@@ -67,7 +67,7 @@ gap_source: "官方文档/AOSP结构/每日信息"
 ## 扩展
 
 ### 🔸 Unity / Unreal 接入差异
-记录 Unity 示例、Unreal 原生插件和自研引擎接入方式的差异，后续加工时补充官方示例和工程边界。
+Unity 示例、Unreal 原生插件和自研引擎的接入方式不同；结论应以各自官方示例为锚点，并明确引擎版本与工程边界。
 
 ### 🔸 与 Android 17 App Memory Limits 的关系
 对照 23.9 节的 Android 17 App Memory Limits，说明 Memory Advice API 在新系统内存限制下能提前暴露哪些信号。

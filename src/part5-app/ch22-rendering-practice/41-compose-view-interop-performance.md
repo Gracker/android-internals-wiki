@@ -21,9 +21,12 @@ reviewed_by: hermes-aiw-review-finalize-apply
 last_review_finalize_at: "2026-08-05T20:06:52+08:00"
 last_review_finalize_run_id: "20260805-200652-bf2f8aa5"
 sources:
-  - "Android developer documentation: Views in Compose / Compose in Views / Compose testing interoperability"
-  - "AndroidX Compose UI, UI ViewBinding, Foundation 1.11.4 source artifacts and public API references"
-  - "AOSP android-17.0.0_r1 ViewRootImpl, Choreographer, SurfaceView, TextureView, HWUI WebViewFunctor"
+- type: reference
+  path: 'Android developer documentation: Views in Compose / Compose in Views / Compose testing interoperability'
+- type: official
+  path: AndroidX Compose UI, UI ViewBinding, Foundation 1.11.4 source artifacts and public API references
+- type: aosp
+  path: AOSP android-17.0.0_r1 ViewRootImpl, Choreographer, SurfaceView, TextureView, HWUI WebViewFunctor
 ---
 
 # 22.41 Compose ↔ View 互操作性能实战

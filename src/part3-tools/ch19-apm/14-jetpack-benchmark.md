@@ -82,19 +82,6 @@ last_deepseek_cn_review_at: 2026-07-16
 - 🔸 对 Android Developers Benchmark 文档、Gradle 插件版本和 API 状态做核对。
 - 🔸 增加与 Perfetto trace、JankStats、FrameMetrics 的结果互证方式。
 
-### 流水线加工要求
-
-- 每个 benchmark 示例都要写清被测对象、准备数据、循环方式、指标和失败条件。
-- 任何性能结论都必须绑定测试条件。
-- 不要把线上 P95 和实验室 median 混为同一种证据。
-
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## Benchmark 给优化结论提供可重复实验

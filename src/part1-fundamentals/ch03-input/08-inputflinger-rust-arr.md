@@ -18,25 +18,52 @@ last_verified: "2026-06-04"
 last_verified_against: "AOSP android-17.0.0_r1:frameworks/native/services/inputflinger、frameworks/base/services/core/java/com/android/server/power、frameworks/native/services/surfaceflinger;spot-check AOSP android-16.0.0_r36 inputflinger/rust/input_filter.rs;Android Developers ARR 文档;AOSP ARR 文档"
 confidence: medium
 sources:
-- type: research
-- type: aosp
-- type: aosp
-- type: aosp
-- type: aosp
-- type: aosp
-- type: aosp
-- type: aosp
-- type: aosp
-- type: aosp
-- type: aosp
-- type: aosp
-- type: aosp
-- type: aosp
-- type: aosp
 - type: official
+  path: https://source.android.com/docs/core/graphics/arr
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/InputManager.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/InputFilter.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/rust/input_filter.rs
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/rust/bounce_keys_filter.rs
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/rust/slow_keys_filter.rs
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/rust/sticky_keys_filter.rs
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/aidl/com/android/server/inputflinger/IInputFilter.aidl
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/InputFilterCallbacks.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_power_PowerManagerService.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/RefreshRatePolicy.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/DisplayPolicy.java
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/
 - type: official
+  path: https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate
 - type: official
-path: "https://source.android.com/docs/core/graphics/arr"
+  path: https://developer.android.com/about/versions/16/features#adaptive-refresh-rate
+- type: official
+  path: https://developer.android.com/reference/android/view/Display
+- type: official
+  path: https://developer.android.com/reference/android/view/View
+- type: official
+  path: https://developer.android.com/reference/android/view/Window
 tags: [inputflinger, rust, arr, refresh-rate, input, accessibility]
 related_chapters: ["3.1", "3.3", "3.4", "2.18", "2.19"]
 created_by: "task2a-knowledge-gap"

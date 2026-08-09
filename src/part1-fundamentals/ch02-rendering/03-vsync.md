@@ -11,38 +11,70 @@ last_verified: "2026-07-25"
 last_verified_against: "AOSP android-17.0.0_r1 VsyncSchedule/VSyncPredictor/VSyncReactor/VSyncDispatchTimerQueue/EventThread/Choreographer；kernel android17-6.18-2026-06_r6 DRM vblank"
 confidence: high
 sources:
-  - "frameworks/native/services/surfaceflinger/Scheduler/VSyncPredictor.cpp"
-  - "frameworks/native/services/surfaceflinger/Scheduler/VSyncReactor.cpp"
-  - "frameworks/native/services/surfaceflinger/Scheduler/VsyncSchedule.cpp"
-  - "frameworks/native/services/surfaceflinger/Scheduler/EventThread.cpp"
-  - "frameworks/native/services/surfaceflinger/Scheduler/MessageQueue.cpp"
-  - "frameworks/native/services/surfaceflinger/Scheduler/VSyncDispatchTimerQueue.cpp"
-  - "frameworks/base/core/java/android/view/Choreographer.java"
-  - "frameworks/base/core/java/android/os/Looper.java"
-  - "frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java"
-  - "frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java"
-  - "frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java"
-  - "https://source.android.com/docs/core/graphics/implement-vsync"
-  - "https://developer.android.com/about/versions/16/features"
-  - "frameworks/native/services/surfaceflinger/Scheduler/VsyncSchedule.h"
-  - "frameworks/native/services/surfaceflinger/Scheduler/VSyncTracker.h"
-  - "frameworks/native/services/surfaceflinger/Scheduler/VsyncConfiguration.h"
-  - "frameworks/native/services/surfaceflinger/Scheduler/VsyncConfiguration.cpp"
-  - "frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.h"
-  - "frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp"
-  - "frameworks/native/services/surfaceflinger/Scheduler/include/scheduler/VsyncConfig.h"
-  - "frameworks/native/libs/gui/DisplayEventReceiver.cpp"
-  - "frameworks/native/libs/gui/BitTube.cpp"
-  - "frameworks/base/core/java/android/view/DisplayEventReceiver.java"
-  - "hardware/interfaces/graphics/composer/aidl/aidl_api/android.hardware.graphics.composer3/3/android/hardware/graphics/composer3/DisplayConfiguration.aidl"
-  - "hardware/interfaces/graphics/composer/aidl/aidl_api/android.hardware.graphics.composer3/3/android/hardware/graphics/composer3/VrrConfig.aidl"
-  - "hardware/interfaces/graphics/composer/aidl/aidl_api/android.hardware.graphics.composer3/3/android/hardware/graphics/composer3/DisplayCommand.aidl"
-  - "kernel/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_vblank.c"
-  - "kernel/android17-6.18-2026-06_r6/include/drm/drm_vblank.h"
-  - "https://source.android.com/docs/core/graphics/arr"
-  - "https://perfetto.dev/docs/data-sources/frametimeline"
-  - "Writer/rendering_pipelines/S01_rendering_types_overview.md"
-  - "Writer/rendering_pipelines/S02_aosp_standard_type.md"
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/VSyncPredictor.cpp
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/VSyncReactor.cpp
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/VsyncSchedule.cpp
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/EventThread.cpp
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/MessageQueue.cpp
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/VSyncDispatchTimerQueue.cpp
+- type: aosp
+  path: frameworks/base/core/java/android/view/Choreographer.java
+- type: aosp
+  path: frameworks/base/core/java/android/os/Looper.java
+- type: aosp
+  path: frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java
+- type: aosp
+  path: frameworks/base/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java
+- type: aosp
+  path: frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java
+- type: official
+  path: https://source.android.com/docs/core/graphics/implement-vsync
+- type: official
+  path: https://developer.android.com/about/versions/16/features
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/VsyncSchedule.h
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/VSyncTracker.h
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/VsyncConfiguration.h
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/VsyncConfiguration.cpp
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.h
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/include/scheduler/VsyncConfig.h
+- type: aosp
+  path: frameworks/native/libs/gui/DisplayEventReceiver.cpp
+- type: aosp
+  path: frameworks/native/libs/gui/BitTube.cpp
+- type: aosp
+  path: frameworks/base/core/java/android/view/DisplayEventReceiver.java
+- type: aosp
+  path: hardware/interfaces/graphics/composer/aidl/aidl_api/android.hardware.graphics.composer3/3/android/hardware/graphics/composer3/DisplayConfiguration.aidl
+- type: aosp
+  path: hardware/interfaces/graphics/composer/aidl/aidl_api/android.hardware.graphics.composer3/3/android/hardware/graphics/composer3/VrrConfig.aidl
+- type: aosp
+  path: hardware/interfaces/graphics/composer/aidl/aidl_api/android.hardware.graphics.composer3/3/android/hardware/graphics/composer3/DisplayCommand.aidl
+- type: kernel
+  path: kernel/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_vblank.c
+- type: kernel
+  path: kernel/android17-6.18-2026-06_r6/include/drm/drm_vblank.h
+- type: official
+  path: https://source.android.com/docs/core/graphics/arr
+- type: official
+  path: https://perfetto.dev/docs/data-sources/frametimeline
+- type: material
+  path: Writer/rendering_pipelines/S01_rendering_types_overview.md
+- type: material
+  path: Writer/rendering_pipelines/S02_aosp_standard_type.md
 tags: "[vsync, dispsync, choreographer, surfaceflinger, phase-offset, arr, rendering, vsyncschedule]"
 related_chapters: "[\"2.1\", \"2.4\", \"2.5\", \"2.6\", \"2.9\", \"8.1\"]"
 task6_state: reviewed
@@ -90,13 +122,6 @@ last_task9_autofix_at: "2026-06-09"
 - 🔸 可变刷新率下 VSync 行为的变化
 - 🔸 VSync 偏移量对输入延迟的影响
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求,加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点,
-> 可**就地插入**最相关的锚点之后,并用 `[自动发现]` 标注,方便后续 review。
-> 锚点内容需 L1/L2 验证,扩展内容至少 L2 验证,自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 先建立一套准确的分析模型

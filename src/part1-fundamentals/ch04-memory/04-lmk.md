@@ -20,7 +20,9 @@ applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: 2026-05-09
 last_verified_against: "AOSP android-4.0.1_r1 init.rc/ProcessList.java, android-8.1"
 confidence: medium-high
-sources: "AOSP ProcessList.java, lmkd.cpp, reaper.cpp, OomAdjuster.java, CachedAppOptimizer.java; source.android.com/docs/core/perf/lmkd; developer.android.com/about/versions/17/behavior-changes-all"
+sources:
+- type: aosp
+  path: AOSP ProcessList.java, lmkd.cpp, reaper.cpp, OomAdjuster.java, CachedAppOptimizer.java; source.android.com/docs/core/perf/lmkd; developer.android.com/about/versions/17/behavior-changes-all
 tags: "LMK, lmkd, OOM, oom_score_adj, PSI, memory-pressure, process-priority, CachedAppOptimizer, Android-17"
 related_chapters: "4.1, 4.3, 1.3, 10.4"
 task9_result: auto-fixed
@@ -59,13 +61,6 @@ pipeline_stage: ready-to-publish
 - 🔸 通过 Perfetto 观察 lmkd 行为的方法
 - 🔸 Android 16 上 lmkd 的变化
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 先把 LMK 放回 Android 内存体系

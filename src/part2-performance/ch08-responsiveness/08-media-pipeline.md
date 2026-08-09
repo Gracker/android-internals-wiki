@@ -70,7 +70,6 @@ last_task9_autofix_at: 2026-06-06
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-23
 last_task6_audit: "2026-07-14"
-
 ---
 # 8.8 Android 多媒体管线性能
 
@@ -96,9 +95,6 @@ last_task6_audit: "2026-07-14"
 - 🔸 HDR / Dolby Vision 带来的额外渲染开销
 - 🔸 Camera → `MediaCodec` 编码管线的零拷贝与 GPU 处理权衡
 
-### OpenClaw 加工指引
-
-> 锚点是最低覆盖要求。涉及 SoC 支持差异、Perfetto SQL 字段名、版本演进这类内容时，如果来源不够硬，保留 `[待验证]`，不要硬写结论。
 <!-- outline-end -->
 ## 先建立端到端时间线
 

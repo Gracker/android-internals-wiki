@@ -97,7 +97,7 @@ last_deepseek_cn_review_at: 2026-06-23
 区分跨平台 UI 选型和 Android 原生页面迁移，避免把 Compose Multiplatform 的限制直接套到 Android App 页面上。
 
 ### 🔸 Compose 1.10+ 发布说明跟踪
-后续补充 Pausable Composition、Lazy prefetch、Modifier 优化和 runtime tracing 的稳定版本边界。
+Pausable Composition、Lazy prefetch、Modifier 优化和 runtime tracing 的适用范围必须按稳定版发布说明确认，不能依据预览版行为外推。
 
 <!-- outline-end -->
 

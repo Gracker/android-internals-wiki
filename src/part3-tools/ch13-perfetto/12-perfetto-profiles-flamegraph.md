@@ -7,13 +7,51 @@ pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)（Simpleperf 导入）；Android 15 (API 35) - Android 17 (API 37)（Perfetto linux.perf 采集，需 profileable/debuggable/userdebug）"
 tags: ["perfetto", "simpleperf", "pprof", "flamegraph", "profiling", "trace"]
 confidence: "high"
+sources:
+- type: reference
+  path: intake/research-feeds/2026-04-14-07-perfetto-v54-data-explorer-jank-cuj-heap-graph-stats.md
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/importers/pprof/pprof_trace_reader.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/importers/simpleperf_proto/simpleperf_proto_parser.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/CHANGELOG
+- type: aosp
+  path: https://android.googlesource.com/platform/system/extras/+/android-17.0.0_r1/simpleperf/cmd_report_sample.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/perf/event_config.cc
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/include/uapi/linux/perf_event.h
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/docs/getting-started/cpu-profiling.md
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/docs/data-sources/native-heap-profiler.md
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/traceconv/main.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/traceconv/trace_to_bundle.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/
+- type: reference
+  path: https://github.com/google/perfetto/releases/tag/v53.0
+- type: reference
+  path: https://github.com/google/perfetto/releases/tag/v54.0
+- type: reference
+  path: https://raw.githubusercontent.com/google/perfetto/v54.0/docs/getting-started/other-formats.md
+- type: reference
+  path: https://raw.githubusercontent.com/google/perfetto/v54.0/docs/getting-started/cpu-profiling.md
+- type: kernel
+  path: https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/perf/samples.sql
+- type: aosp
+  path: system/extras/simpleperf/scripts/app_profiler.py
 last_verified: "2026-07-11"
 last_verified_against: "Perfetto v53/v54 release notes; Perfetto v54.0 cpu-profiling/other-formats docs; Perfetto v54.0 traceconv/main.cc and trace_enrichment.cc; Android simpleperf public docs snippets"
 drafted_date: "2026-05-15"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-15"
 reviewed_by: "openclaw-task6"
-path: "intake/research-feeds/2026-04-14-07-perfetto-v54-data-explorer-jank-cuj-heap-graph-stats.md"
 related_chapters: "[\"13.2\", \"13.3\", \"13.10\", \"14.2\", \"14.8\"]"
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-15"

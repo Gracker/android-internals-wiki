@@ -20,40 +20,40 @@ last_verified: "2026-07-25"
 last_verified_against: AOSP android-17.0.0_r1, Composer3 AIDL, Perfetto android-17.0.0_r1, kernel android17-6.18-2026-06_r6, Android MRR / frame-rate / ARR 官方文档, Writer rendering_pipelines S01 / S08 / S12
 confidence: high
 sources:
-  - type: aosp
-    url: "https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp"
-  - type: aosp
-    url: "https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
-  - type: aosp
-    url: "https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp"
-  - type: aosp
-    url: "https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/Scheduler/LayerHistory.cpp"
-  - type: aosp
-    url: "https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp"
-  - type: aosp
-    url: "https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayConfiguration.aidl"
-  - type: aosp
-    url: "https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayCommand.aidl"
-  - type: aosp
-    url: "https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/ActiveConfigCommand.aidl"
-  - type: kernel
-    url: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_vblank.c"
-  - type: kernel
-    url: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_atomic_helper.c"
-  - type: kernel
-    url: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c"
-  - type: official-doc
-    url: "https://source.android.com/docs/core/graphics/multiple-refresh-rate"
-  - type: official-doc
-    url: "https://source.android.com/docs/core/graphics/arr"
-  - type: official-doc
-    url: "https://developer.android.com/media/optimize/performance/frame-rate"
-  - type: material
-    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md"
-  - type: material
-    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md"
-  - type: material
-    path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S12_video_overlay_hwc_type.md"
+- type: aosp
+  path: https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/Display/DisplayModeController.cpp
+- type: aosp
+  path: https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
+- type: aosp
+  path: https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp
+- type: aosp
+  path: https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/Scheduler/LayerHistory.cpp
+- type: aosp
+  path: https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp
+- type: aosp
+  path: https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayConfiguration.aidl
+- type: aosp
+  path: https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayCommand.aidl
+- type: aosp
+  path: https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/ActiveConfigCommand.aidl
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_vblank.c
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_atomic_helper.c
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c
+- type: official-doc
+  path: https://source.android.com/docs/core/graphics/multiple-refresh-rate
+- type: official-doc
+  path: https://source.android.com/docs/core/graphics/arr
+- type: official-doc
+  path: https://developer.android.com/media/optimize/performance/frame-rate
+- type: material
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S01_rendering_types_overview.md
+- type: material
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S08_native_graphics_type.md
+- type: material
+  path: /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Writer/rendering_pipelines/S12_video_overlay_hwc_type.md
 tags: [refresh-rate, frame-rate, SurfaceFlinger, VSync, setFrameRate, jank, rendering, display-mode, ARR]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
 task9_reviewed_date: "2026-06-06"

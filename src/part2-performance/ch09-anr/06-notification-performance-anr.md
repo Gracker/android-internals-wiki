@@ -14,8 +14,47 @@ last_task9_review_log: logs/deep-review/2026-07-14-06-deep-review.md
 last_verified: "2026-07-14"
 last_verified_against: "AOSP android-17.0.0_r1"
 confidence: medium
-sources: 
-path: "intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md"
+sources:
+- type: reference
+  path: intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/NotificationManager.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/INotificationManager.aidl
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/notification/NotificationManagerService.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/service/notification/NotificationListenerService.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/service/notification/INotificationListener.aidl
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/Notification.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/widget/RemoteViews.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/drawable/Icon.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java
+- type: official
+  path: https://developer.android.com/develop/ui/views/notifications
+- type: official
+  path: https://developer.android.com/develop/ui/views/notifications/notification-permission
+- type: official
+  path: https://developer.android.com/develop/background-work/services/fgs/troubleshooting
+- type: official
+  path: https://developer.android.com/about/versions/16/features/progress-centric-notifications
+- type: official
+  path: https://developer.android.com/develop/ui/views/notifications/metric-style
+- type: official
+  path: https://developer.android.com/develop/ui/views/notifications/live-update
+- type: official
+  path: https://developer.android.com/about/versions/17/features#live-update-semantic-color
+- type: official
+  path: https://developer.android.com/topic/performance/vitals/anr
+- type: aosp
+  path: frameworks/base/core/java/android/app/NotificationManager.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/notification/NotificationManagerService.java
 tags: [notification, anr, notificationmanagerservice, remoteviews, performance, notificationlistenerservice, foreground-service]
 related_chapters: ["9.2", "9.3", "9.4", "1.4", "9.5"]
 pipeline_stage: ready-to-publish

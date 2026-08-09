@@ -25,23 +25,40 @@ confidence: high
 rework_resolution: "收窄章节标题与正文范围，仅保留 android-17.0.0_r1 可由 external/perfetto 一手 proto、trace processor parser 与 SQL 视图支撑的 Perfetto GPU counter / GPU memory 事件链路；移除未取证的跨厂商阈值、Ray Tracing、NPU/ML、远程调试与 AGI 工作流结论。"
 android17_review_notes: "2026-07-30：复核 GpuCounterDescriptor、GpuCounterEvent、GpuCounterConfig、Trace Processor 回看式采样与 GpuMemTotalEvent；结合 rendering_pipelines 补充标准 HWUI、TextureView、独立 Surface、Camera/Video、Game 与混合出图的信号归属及归因边界。原 task6/task9/OpenClaw 字段完整保留。"
 sources:
-  - "AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/common/gpu_counter_descriptor.proto"
-  - "AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/trace/gpu/gpu_counter_event.proto"
-  - "AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto"
-  - "AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/config/data_source_config.proto"
-  - "AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/trace/android/gpu_mem_event.proto"
-  - "AOSP android-17.0.0_r1: external/perfetto/src/trace_processor/importers/proto/gpu_event_parser.h"
-  - "AOSP android-17.0.0_r1: external/perfetto/src/trace_processor/importers/proto/gpu_event_parser.cc"
-  - "AOSP android-17.0.0_r1: external/perfetto/src/trace_processor/metrics/sql/android/gpu_counter_span_view.sql"
-  - "AOSP android-17.0.0_r1: external/perfetto/test/trace_processor/diff_tests/parser/graphics/gpu_counter_specs.textproto"
-  - "Writer/rendering_pipelines/S01_rendering_types_overview.md"
-  - "Writer/rendering_pipelines/S02_aosp_standard_type.md"
-  - "Writer/rendering_pipelines/S03_surfaceview_type.md"
-  - "Writer/rendering_pipelines/S04_textureview_type.md"
-  - "Writer/rendering_pipelines/S05_mixed_rendering_type.md"
-  - "Writer/rendering_pipelines/S11_camera_type.md"
-  - "Writer/rendering_pipelines/S12_video_overlay_hwc_type.md"
-  - "Writer/rendering_pipelines/S13_game_type.md"
+- type: aosp
+  path: 'AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/common/gpu_counter_descriptor.proto'
+- type: aosp
+  path: 'AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/trace/gpu/gpu_counter_event.proto'
+- type: aosp
+  path: 'AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto'
+- type: aosp
+  path: 'AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/config/data_source_config.proto'
+- type: aosp
+  path: 'AOSP android-17.0.0_r1: external/perfetto/protos/perfetto/trace/android/gpu_mem_event.proto'
+- type: aosp
+  path: 'AOSP android-17.0.0_r1: external/perfetto/src/trace_processor/importers/proto/gpu_event_parser.h'
+- type: aosp
+  path: 'AOSP android-17.0.0_r1: external/perfetto/src/trace_processor/importers/proto/gpu_event_parser.cc'
+- type: aosp
+  path: 'AOSP android-17.0.0_r1: external/perfetto/src/trace_processor/metrics/sql/android/gpu_counter_span_view.sql'
+- type: aosp
+  path: 'AOSP android-17.0.0_r1: external/perfetto/test/trace_processor/diff_tests/parser/graphics/gpu_counter_specs.textproto'
+- type: material
+  path: Writer/rendering_pipelines/S01_rendering_types_overview.md
+- type: material
+  path: Writer/rendering_pipelines/S02_aosp_standard_type.md
+- type: material
+  path: Writer/rendering_pipelines/S03_surfaceview_type.md
+- type: material
+  path: Writer/rendering_pipelines/S04_textureview_type.md
+- type: material
+  path: Writer/rendering_pipelines/S05_mixed_rendering_type.md
+- type: material
+  path: Writer/rendering_pipelines/S11_camera_type.md
+- type: material
+  path: Writer/rendering_pipelines/S12_video_overlay_hwc_type.md
+- type: material
+  path: Writer/rendering_pipelines/S13_game_type.md
 ---
 
 # 14.28 Perfetto GPU Counter 与 GPU Memory 事件分析

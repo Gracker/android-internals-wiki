@@ -95,11 +95,6 @@ last_deepseek_cn_review_at: 2026-07-03
 - 🔸 线上 ANR 聚合分析的实践
 - 🔸 系统级 ANR 案例（SystemServer ANR / Watchdog）
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 先给证据分级

@@ -10,9 +10,12 @@ created_date: "2026-07-16"
 gap_source: "研究素材+章节深挖"
 confidence: medium-high
 sources:
-  - "AndroidX Compose Runtime/Foundation/UI 1.11.4 source snapshot 854220f44ea8ea80fee824a6c5a045f39bede289"
-  - "Android 17 Choreographer.java android-17.0.0_r1"
-  - "AndroidX Compose Runtime/Foundation API reference and release notes"
+- type: official
+  path: AndroidX Compose Runtime/Foundation/UI 1.11.4 source snapshot 854220f44ea8ea80fee824a6c5a045f39bede289
+- type: reference
+  path: Android 17 Choreographer.java android-17.0.0_r1
+- type: official
+  path: AndroidX Compose Runtime/Foundation API reference and release notes
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized

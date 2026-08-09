@@ -58,8 +58,6 @@ task9_state: rework-applied
 task2b_state: fixed
 task2b_result: fixed
 last_rework_date: 2026-05-06
-last_rework_by: openclaw-task2b
-last_rework_reason: P95 Task9回炉(第四轮)：P0 inBitmap返回对象语义修正（reinitBitmap→return javaBitmap，返回值即inBitmap同一对象）
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-07-03
 task6_review_notes: '2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。 | 2026-05-05 task6 revisiting review 07:30: pass-light-edit。清理重复 frontmatter、未标语言代码块、高频填充词和第一人称；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理编辑痕迹、虚假引导语和中英文格式；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 09:07: pass-light-edit。移除未支撑的 upload/WebP/AVIF 量化口径，清理发布稿编辑痕迹和夸张标题；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 10:10: pass-light-edit。清理 frontmatter 禁用词、口语化表达、绝对化措辞和结构性引导语；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。'
@@ -110,10 +108,6 @@ last_idle_audit_result: pass-no-change
 - 🔸 Hardware Bitmap 的 fd 成本与低端设备限制
 - 🔸 大型 App 的图片优化实践
 
-### OpenClaw 加工指引
-
-> 锚点是最低覆盖要求，加工时必须逐条落实并标注验证状态。
-> 量化数据、GPU 内存与解码器行为如果没有官方或实测证据，保留为“后续核验”事项，不要写成确定结论。
 <!-- outline-end -->
 
 图片性能问题很少只由“解码慢”解释。一次图片请求至少包含数据获取、格式解析、像素解码、尺寸变换、缓存交接、纹理准备和窗口绘制。任一阶段都可能消耗 CPU、内存带宽、native/graphics 内存或文件描述符；多个请求并发时，还会与主线程和 RenderThread 争用资源。

@@ -14,18 +14,55 @@ tags:
 - apm
 related_chapters: 
 - '19.0'
-sources: 
+sources:
+- type: reference
+  path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
+- type: reference
+  path: https://api.example.com/products/42",
+- type: reference
+  path: https://github.com/measure-sh/measure/tree/8a189ea1e9728105773c1c81fb6cc8797e6b2d15
+- type: reference
+  path: https://github.com/measure-sh/measure/releases/tag/android-v0.19.0
+- type: reference
+  path: https://github.com/measure-sh/measure/blob/8a189ea1e9728105773c1c81fb6cc8797e6b2d15/android/measure-android/measure/build.gradle.kts
+- type: reference
+  path: https://github.com/measure-sh/measure/blob/8a189ea1e9728105773c1c81fb6cc8797e6b2d15/android/measure-android/measure/src/main/java/sh/measure/android/config/DynamicConfig.kt
+- type: reference
+  path: https://github.com/measure-sh/measure/blob/8a189ea1e9728105773c1c81fb6cc8797e6b2d15/android/measure-android/measure/src/main/jni/anr_handler.c
+- type: reference
+  path: https://github.com/measure-sh/measure/blob/8a189ea1e9728105773c1c81fb6cc8797e6b2d15/android/measure-android/measure/src/main/CMakeLists.txt
+- type: reference
+  path: https://github.com/measure-sh/measure/blob/8a189ea1e9728105773c1c81fb6cc8797e6b2d15/android/measure-android/measure/src/main/java/sh/measure/android/performance/MemoryReader.kt
+- type: reference
+  path: https://github.com/measure-sh/measure/blob/8a189ea1e9728105773c1c81fb6cc8797e6b2d15/android/measure-android/measure/src/main/java/sh/measure/android/profiling/ProfileCollector.kt
+- type: reference
+  path: https://github.com/measure-sh/measure/blob/8a189ea1e9728105773c1c81fb6cc8797e6b2d15/android/measure-android/measure/src/main/java/sh/measure/android/Measure.kt
+- type: reference
+  path: https://github.com/measure-sh/measure/blob/8a189ea1e9728105773c1c81fb6cc8797e6b2d15/self-host/compose.prod.yml
+- type: reference
+  path: https://measure.sh/docs/sdk-integration-guide
+- type: reference
+  path: https://measure.sh/docs/features/feature-session-timelines
+- type: reference
+  path: https://measure.sh/docs/features/feature-crash-reporting
+- type: reference
+  path: https://measure.sh/docs/features/feature-anr-reporting
+- type: reference
+  path: https://measure.sh/docs/features/feature-network-monitoring
+- type: reference
+  path: https://measure.sh/docs/features/feature-performance-tracing
+- type: reference
+  path: https://measure.sh/docs/features/feature-profiling
+- type: reference
+  path: https://measure.sh/docs/configuration-options
+- type: reference
+  path: https://measure.sh/docs/hosting
 - type: official
+  path: https://developer.android.com/sdk/api_diff/37/changes/android.os.ProfilingTrigger
 - type: official
-- type: official
-- type: official
-- type: official
-- type: official
-- type: official
-- type: official
-- type: official
-- type: official
-path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
+  path: https://developer.android.com/reference/android/os/ProfilingTrigger
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1
 task2b_state: "fixed"
 task2b_result: "fixed-lite"
 task2b_reopened_at: "2026-05-21T08:06:00+08:00"
@@ -85,19 +122,6 @@ last_deepseek_cn_review_at: 2026-06-23
 - 🔸 对 measure-sh/measure README、部署文档、license、维护状态做核对。
 - 🔸 增加“什么时候选 Firebase / Sentry / Measure”的决策表。
 
-### 流水线加工要求
-
-- 平台能力必须和运维成本一起写，不能只列 SDK API。
-- 每个数据对象都要给字段例子，后续服务端章节可以直接复用。
-- 涉及 OpenTelemetry 时只写可验证的关联方式，不扩展成服务端 APM 教程。
-
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 结论先行

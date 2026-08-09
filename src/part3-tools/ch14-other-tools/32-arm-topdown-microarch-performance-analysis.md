@@ -17,22 +17,22 @@ last_deep_review_run_id: "20260804-083532-deep-review-436b1181"
 last_review_finalize_at: "2026-08-04T10:06:21+08:00"
 last_review_finalize_run_id: "20260804-100544-c952e108"
 sources:
-  - type: official
-    url: "https://developer.android.com/ndk/guides/simpleperf"
-  - type: aosp
-    tag: "android-17.0.0_r1"
-    path: "platform/system/extras/simpleperf/"
-  - type: kernel
-    tag: "android17-6.18-2026-06_r6"
-    path: "Documentation/admin-guide/perf-security.rst"
-  - type: official
-    url: "https://learn.arm.com/install-guides/topdown-tool/"
-  - type: external
-    repo: "Arm Telemetry Solution"
-    commit: "6d4f550d053c4a5f322d966fc2b1c95ae403eb9b"
-    path: "data/pmu/cpu/specifications/neoverse/neoverse_v1_r1p2_pmu.json"
-  - type: paper
-    path: 'Yasin, A. "A Top-Down Method for Performance Analysis and Counters Architecture", ISPASS 2014'
+- type: official
+  path: https://developer.android.com/ndk/guides/simpleperf
+- type: aosp
+  tag: android-17.0.0_r1
+  path: platform/system/extras/simpleperf/
+- type: kernel
+  tag: android17-6.18-2026-06_r6
+  path: Documentation/admin-guide/perf-security.rst
+- type: official
+  path: https://learn.arm.com/install-guides/topdown-tool/
+- type: external
+  repo: Arm Telemetry Solution
+  commit: 6d4f550d053c4a5f322d966fc2b1c95ae403eb9b
+  path: data/pmu/cpu/specifications/neoverse/neoverse_v1_r1p2_pmu.json
+- type: paper
+  path: Yasin, A. "A Top-Down Method for Performance Analysis and Counters Architecture", ISPASS 2014
 tags: ['arm-topdown', 'microarchitecture', 'perf', 'simpleperf', 'performance-analysis', 'pmu']
 related_chapters: ['5.28', '14.24']
 created_by: "task2a-knowledge-gap"
@@ -43,9 +43,6 @@ processed_by: "task2a-draft"
 android17_review_notes: "2026-08-04：deep-review 复核 simpleperf stat/list/record、Arm SPE、Perfetto sample filter、raw event 生成规则和 Neoverse V1 r1p2 公式边界；保留 Android 17 / android-17.0.0_r1 锚点，不引入后续平台主线结论。"
 ---
 # 14.32 ARM Topdown 微架构性能分析方法论与 Android 实践
-
-<details>
-<summary>Hermes 流水线 outline（已按 Android 17 复核）</summary>
 
 <!-- outline-start -->
 
@@ -78,8 +75,6 @@ android17_review_notes: "2026-08-04：deep-review 复核 simpleperf stat/list/re
 - Perfetto 用于核对调度、频率、idle、热状态和业务窗口，不代替 PMU 计数。
 
 <!-- outline-end -->
-
-</details>
 
 ## 14.32.1 Topdown 能回答什么
 
@@ -397,7 +392,7 @@ Android 17 上可执行的可靠路径是：
 
 缺少 CPU 专属公式时，保留“前端 stall 事件升高”“分支错误增加”这类可核验描述，比生成看似完整的四个百分比更可靠。
 
-最终审阅未新增外部材料，审计只依据本文参考资料中已经列明的 AOSP `android-17.0.0_r1`、Android common kernel `android17-6.18-2026-06_r6`、Arm Topdown/Telemetry Solution 文档与 Neoverse V1 r1p2 示例定义。后续若要把本文方法落到具体手机 SoC，应补入该 CPU 的 telemetry specification、设备 `simpleperf list raw` 输出和同窗口计数原始记录；在这些证据缺失前，不应把示例公式升级为通用 Android 结论。
+本文依据参考资料中列明的 AOSP `android-17.0.0_r1`、Android common kernel `android17-6.18-2026-06_r6`、Arm Topdown/Telemetry Solution 文档与 Neoverse V1 r1p2 示例定义。把该方法落到具体手机 SoC 时，还要补入对应 CPU 的 telemetry specification、设备 `simpleperf list raw` 输出和同窗口计数原始记录；在这些证据缺失前，不应把示例公式升级为通用 Android 结论。
 
 ## 参考资料
 
@@ -426,6 +421,3 @@ Android 17 上可执行的可靠路径是：
 - **适用读者**：Android 系统/性能工程师，需要 CPU 微架构视角优化 hot path。
 - **前置知识**：参见 5.28（CPU 调度）、14.24（simpleperf 基础）。
 - **平台锚点**：Android 17 / API 37 / `android-17.0.0_r1`。
-
-<!-- AIW-deep-review-verified-2026-08-04 run_id=20260804-083532-deep-review-436b1181 -->
-<!-- AIW-review-finalized-2026-08-04 run_id=20260804-100544-c952e108 -->

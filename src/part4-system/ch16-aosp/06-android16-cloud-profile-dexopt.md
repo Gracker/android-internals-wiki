@@ -38,7 +38,6 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-06-29"
 review_type: task6-writing-quality-review
 task6_result: "pass-light-edit"
-last_task6_at: "2026-07-13T18:18:50+08:00"
 last_task6_audit: "2026-06-07"
 last_task6_review_log: "logs/review/2026-06-29-20-review.md"
 review_notes: "2026-05-15 Task6：四层质检通过；L1/L2 轻量修复 6 处（frontmatter 元数据、结构性元叙述、标题与结尾措辞）；无 L3/L4 回炉项，送 Task9 技术复审。 | 2026-06-29 Task6 复审（Task9 auto-fix 后）：pass-light-edit。L1/L2 全部通过；禁用词零命中；SDM 证据边界写法清晰。Task9 auto-fix 涉及的源码锚点重锚（android-16→17.0.0_r1）写作质量合格。无 B 类回炉项，送 Task9 确认。 | 2026-07-13 Task6 re-review (revisiting after Task9 deep review + Task2B-lite fix): pass-light-edit。Task2B-lite 已修复 P0 DexMetadataHelper 路径 pm/dex/→pm/（正文+frontmatter 共 2 处）。L1 禁用词扫描零命中。L2 可读性通过。修复 frontmatter task9_p1_issues 计数不一致（0→1）。P1 ArtManagerLocal.deleteDexoptArtifacts() 方法引用由 Task2B-lite 审查后仅修复 P0，方法名准确性留待 Task9 复审确认。无 B 类回炉项。"

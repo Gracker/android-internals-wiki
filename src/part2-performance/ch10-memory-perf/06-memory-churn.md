@@ -15,22 +15,38 @@ verified_note: "Android 17/API 37 分代 CMC 基线已锚定 android-17.0.0_r1�
 confidence: high
 pipeline_stage: "ready-to-publish"
 sources:
-  - "Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md"
-  - "developer.android.com/studio/profile/record-java-kotlin-allocations"
-  - "developer.android.com/topic/performance/memory"
-  - "perfetto.dev/docs/data-sources/native-heap-profiler"
-  - "source.android.com/docs/core/runtime/gc-debug"
-  - "android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector_type.h"
-  - "android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/runtime.cc"
-  - "android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc"
-  - "android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc"
-  - "android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/userfaultfd.c"
-  - "android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/mremap.c"
-  - "developer.android.com/jetpack/androidx/releases/compose-runtime"
-  - "developer.android.com/develop/ui/compose/performance/stability/strongskipping"
-  - "developer.android.com/develop/ui/compose/performance/bestpractices"
-  - "developer.android.com/reference/kotlin/androidx/compose/runtime/MutableIntState"
-  - "kotlinlang.org/docs/inline-classes.html"
+- type: material
+  path: Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md
+- type: official
+  path: developer.android.com/studio/profile/record-java-kotlin-allocations
+- type: official
+  path: developer.android.com/topic/performance/memory
+- type: official
+  path: perfetto.dev/docs/data-sources/native-heap-profiler
+- type: official
+  path: source.android.com/docs/core/runtime/gc-debug
+- type: aosp
+  path: android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector_type.h
+- type: aosp
+  path: android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/runtime.cc
+- type: aosp
+  path: android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc
+- type: aosp
+  path: android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc
+- type: kernel
+  path: android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/userfaultfd.c
+- type: kernel
+  path: android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/mremap.c
+- type: official
+  path: developer.android.com/jetpack/androidx/releases/compose-runtime
+- type: official
+  path: developer.android.com/develop/ui/compose/performance/stability/strongskipping
+- type: official
+  path: developer.android.com/develop/ui/compose/performance/bestpractices
+- type: official
+  path: developer.android.com/reference/kotlin/androidx/compose/runtime/MutableIntState
+- type: reference
+  path: kotlinlang.org/docs/inline-classes.html
 tags: "[\"memory\", \"gc\", \"churn\", \"object-pool\", \"tlab\", \"autoboxing\", \"heapprofd\"]"
 related_chapters: "[\"4.3\", \"7.1\", \"7.2\", \"10.1\", \"10.4\"]"
 word_count: "~7500"
@@ -84,13 +100,6 @@ finalized_by: "openclaw-task9-auto-promote"
 - 🔸 Kotlin 内联类（value class）对减少装箱的作用
 - 🔸 ART GC 对短生命周期对象的特殊优化（TLAB / Region）
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 内存抖动描述的是高频分配与回收，不等同于内存泄漏。泄漏对象长期可达，堆基线不断抬升；抖动对象通常很快失去引用，堆曲线反复上升和回落。两种现象也可能同时存在，例如一个页面既在每帧创建临时对象，又把少量对象留在错误的生命周期里。

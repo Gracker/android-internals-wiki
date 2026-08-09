@@ -65,7 +65,6 @@ sources:
     path: Writer/rendering_pipelines/S07_software_offscreen_type.md
   - type: obsidian
     path: Writer/rendering_pipelines/S12_video_overlay_hwc_type.md
-path: developer.android.com/develop/ui/compose/graphics/draw/modifiers
 tags: [overdraw, hwui, skia, gpu, compose, perfetto, agi]
 related_chapters: ["2.6", "2.7", "2.10", "7.1", "7.5"]
 task9_result: pass-tech-review
@@ -105,8 +104,6 @@ task9_p2_issues: 0
 
 - 🔸 Compose 中过度绘制的特点与排查
 - 🔸 Perfetto / FrameTimeline / AGI 中如何继续确认 GPU 侧瓶颈
-
-### OpenClaw 加工指引
 
 ## 先给过度绘制划清边界
 

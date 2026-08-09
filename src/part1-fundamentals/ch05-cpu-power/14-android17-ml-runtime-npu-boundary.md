@@ -106,7 +106,7 @@ last_deepseek_cn_review_at: 2026-06-03
 ## 扩展
 
 ### 🔸 Google Tensor / EdgeTPU 能力验证
-补充 Tensor 设备上 NPU delegate 的公开能力与待验证项。
+Tensor 设备上的 NPU delegate 能力只采用公开资料和可复现实验结论；厂商私有实现不外推为 Android 平台通用能力。
 
 ### 🔸 LiteRT 与旧 TFLite/NNAPI 迁移对照表
 整理旧项目从 TFLite delegate 迁移到 LiteRT 的工程检查清单。

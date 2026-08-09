@@ -7,6 +7,27 @@ pipeline_stage: "ready-to-publish"
 applicable_versions: "\"Android 10 (API 29) - Android 17 (API 37)\""
 tags: [crash-aggregation, attribution, alerting, stack-dedup, clustering]
 confidence: "medium"
+sources:
+- type: reference
+  path: Clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md
+- type: reference
+  path: https://firebase.google.com/docs/crashlytics/troubleshooting
+- type: official
+  path: https://developer.android.com/tools/retrace
+- type: reference
+  path: https://firebase.google.com/docs/crashlytics/android/get-deobfuscated-reports
+- type: official
+  path: https://developer.android.com/ndk/guides/ndk-stack
+- type: official
+  path: https://developer.android.com/build/include-native-symbols
+- type: aosp
+  path: https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/debuggerd/proto/tombstone.proto
+- type: aosp
+  path: https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Throwable.java
+- type: reference
+  path: https://firebase.google.com/docs/crashlytics/android/customize-crash-reports
+- type: reference
+  path: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 last_verified: "\"2026-06-03\""
 last_verified_against: "\"AOSP android-16.0.0_r1, Firebase Crashlytics docs, Sentry docs\""
 drafted_date: "\"2026-05-11\""
@@ -19,7 +40,6 @@ task9_state: "reviewed"
 task9_result: "auto-fixed"
 task2b_result: "fixed"
 task2b_state: "fixed"
-path: "\"Clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md\""
 related_chapters: "[\"20.6\", \"26.2\", \"19.18\"]"
 last_task2b_at: "\"2026-06-03T00:50:00+08:00\""
 task2b_review_notes: "\"2026-06-03 Task2B fallback 回炉：补齐堆栈相似度聚类算法边界，修正尾部匹配和 cause chain 过度简化，收敛 ML 指标表述。\""
@@ -51,13 +71,6 @@ task2b_verify_result: "stale-state-fixed: task6_state revisiting→reviewed (alr
 
 - 🔸 （待扩展）
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 20.6 节把 Crash 事件、受影响安装实例、会话和启动尝试分成了不同指标。本节处理服务端的下一步：怎样把海量 occurrence 归入可解释的问题簇，怎样判断它集中在哪些人群，以及怎样把证据交给合适的团队。

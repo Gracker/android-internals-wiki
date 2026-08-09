@@ -2,16 +2,46 @@
 title: "异常处理架构设计"
 chapter: "20.7"
 section: "20.7"
-status: "finalized"
-pipeline_stage: task6_pending
+status: "ready-for-review"
+pipeline_stage: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [exception-handling, safemode, hotfix, graceful-degradation]
 confidence: medium
+sources:
+- type: reference
+  path: kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java
+- type: official
+  path: https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail)
+- type: reference
+  path: https://support.google.com/googleplay/android-developer/answer/16559646
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/util/AtomicFile.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/DropBoxManagerService.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java
+- type: reference
+  path: https://kotlinlang.org/docs/exception-handling.html
+- type: reference
+  path: https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/kotlinx-coroutines-core/jvm/src/internal/CoroutineExceptionHandlerImpl.kt
+- type: reference
+  path: https://github.com/Kotlin/kotlinx.coroutines/blob/1.11.0/ui/kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt
+- type: official
+  path: https://developer.android.com/reference/android/app/ApplicationExitInfo
+- type: official
+  path: https://developer.android.com/reference/android/app/ActivityManager#setProcessStateSummary(byte%5B%5D)
+- type: reference
+  path: https://github.com/Kotlin/kotlinx.coroutines/tree/1.11.0/ui/kotlinx-coroutines-android
 last_verified: "2026-05-15"
 last_verified_against: "AOSP android-17.0.0_r1, Android Developers docs, Kotlin docs, Clippings structure references"
 drafted_date: "2026-05-15"
 polish_count: 1
-path: "kotlinx-coroutines-android/src/AndroidExceptionPreHandler.kt"
 related_chapters: ["20.2", "20.3", "26.2"]
 reviewed_by: openclaw-task6
 reviewed_date: 2026-06-23
@@ -59,13 +89,6 @@ last_task2b_main_at: "2026-06-23T10:52:50+08:00"
 - 🔸 多进程异常隔离
 - 🔸 Kotlin Coroutine 异常处理
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求,加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点,
-> 可**就地插入**最相关的锚点之后,并用 `[自动发现]` 标注,方便后续 review。
-> 锚点内容需 L1/L2 验证,扩展内容至少 L2 验证,自动发现内容至少标注来源。
 <!-- outline-end -->
 
 异常处理架构面对的是一个很苛刻的时刻：线程可能持有锁，堆可能已经耗尽，文件系统可能正在写入，系统也可能马上结束进程。架构目标因此分成三件事：在当前进程保留最小证据，在下次启动限制重复失败，把版本风险交给灰度和发布系统处理。

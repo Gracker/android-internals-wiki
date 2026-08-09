@@ -11,8 +11,10 @@ gap_source: "AOSP结构/官方文档"
 last_verified: "2026-07-25"
 confidence: medium-high
 sources:
-  - "DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md"
-  - "DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md"
+- type: deepresearch
+  path: DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md
+- type: deepresearch
+  path: DeepResearch/2026-07-17-android17-angle-vulkan-game-engine-pipeline.md
 last_body_apply_at: "2026-07-25T17:15:40+08:00"
 last_body_apply_run_id: "20260725-171540-c68b5cac"
 last_body_apply_source: "source-index:26 DeepResearch/2026-07-17-android17-media3-video-rendering-pipeline-sourcecode.md"

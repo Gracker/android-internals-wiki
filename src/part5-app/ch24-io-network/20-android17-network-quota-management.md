@@ -21,38 +21,36 @@ last_review_finalize_at: "2026-08-08T16:07:26+08:00"
 last_review_finalize_run_id: "20260808-160556-bac29a37"
 confidence: high
 sources:
-  - type: aosp
-    path: "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/src/com/android/server/net/NetworkStatsService.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/src/com/android/server/net/NetworkStatsFactory.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/BpfNetMaps.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/net/NetworkPolicyManagerService.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/net/NetworkManagementService.java"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/system/netd/+/refs/tags/android-17.0.0_r1/server/NetdNativeService.cpp"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/system/netd/+/refs/tags/android-17.0.0_r1/server/BandwidthController.cpp"
-  - type: aosp
-    path: "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/jni/com_android_server_net_NetworkStatsFactory.cpp"
-  - type: kernel
-    path: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/netfilter/xt_quota2.c"
-  - type: official
-    path: "https://developer.android.com/reference/android/net/ConnectivityManager"
-  - type: official
-    path: "https://developer.android.com/reference/android/net/NetworkCapabilities"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/usage/NetworkStatsManager"
-  - type: official
-    path: "https://developer.android.com/develop/connectivity/network-ops/data-saver"
-  - type: official
-    path: "https://developer.android.com/reference/androidx/work/NetworkType"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/job/JobInfo"
-  - type: source-material-note
-    note: "Pre-run materials array was empty for this draft-polish run; no new body conclusion was added from unrouted material."
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/src/com/android/server/net/NetworkStatsService.java
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/src/com/android/server/net/NetworkStatsFactory.java
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/BpfNetMaps.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/net/NetworkPolicyManagerService.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/net/NetworkManagementService.java
+- type: aosp
+  path: https://android.googlesource.com/platform/system/netd/+/refs/tags/android-17.0.0_r1/server/NetdNativeService.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/system/netd/+/refs/tags/android-17.0.0_r1/server/BandwidthController.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/jni/com_android_server_net_NetworkStatsFactory.cpp
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/netfilter/xt_quota2.c
+- type: official
+  path: https://developer.android.com/reference/android/net/ConnectivityManager
+- type: official
+  path: https://developer.android.com/reference/android/net/NetworkCapabilities
+- type: official
+  path: https://developer.android.com/reference/android/app/usage/NetworkStatsManager
+- type: official
+  path: https://developer.android.com/develop/connectivity/network-ops/data-saver
+- type: official
+  path: https://developer.android.com/reference/androidx/work/NetworkType
+- type: official
+  path: https://developer.android.com/reference/android/app/job/JobInfo
 ---
 
 # Android 17 NetworkStatsService 与 NetworkPolicyManagerService 移动数据 quota 限速源码路径

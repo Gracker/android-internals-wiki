@@ -31,9 +31,12 @@ last_task6_audit: 2026-07-16
 task6_result: pass-light-edit
 task9_state: reviewed
 sources:
-- https://developer.android.com/reference/android/os/PowerManager
-- https://source.android.com/docs/core/power/thermal-mitigation
-- https://developer.android.com/topic/performance/power/setup-battery-historian
+- type: official
+  path: https://developer.android.com/reference/android/os/PowerManager
+- type: official
+  path: https://source.android.com/docs/core/power/thermal-mitigation
+- type: official
+  path: https://developer.android.com/topic/performance/power/setup-battery-historian
 task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-06-07
@@ -71,15 +74,6 @@ last_deepseek_cn_review_at: 2026-07-17
 - 🔸 画一张从“触发 CPU/网络高频活动”到“发热状态改变”再到“APM 端侧报警”的反馈路径图。
 - 🔸 介绍 `BatteryManager` 获取电流/电压瞬时值的局限性及不同厂商 ROM 下的差异。
 
-### 流水线加工要求
-
-- 必须明确“耗电”是一个衍生指标，直接测电量下降往往不准，主要观测对象是“谁占用了高耗电硬件”。
-- 必须指出后台任务 (WorkManager/JobScheduler) 也是耗电分析的重灾区。
-
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
 <!-- outline-end -->
 
 耗电监控最关键的工作是把资源活动还原到业务代码。单看“电量下降了多少”远远不够：电池百分比经过 fuel gauge 平滑，瞬时电流还混合了屏幕、蜂窝基带、GPU、充放电和其他进程的影响。线上 APM 若把一段方法执行时间换算成 mAh，往往只得到一个看似精确的误差。

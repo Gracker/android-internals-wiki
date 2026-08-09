@@ -15,14 +15,22 @@ reviewed_date: "2026-06-02"
 reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-07-15"
 sources:
-  - "https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler"
-  - "https://developer.android.com/reference/android/app/ApplicationExitInfo"
-  - "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,int,int)"
-  - "https://raw.githubusercontent.com/chromium/crashpad/main/doc/overview_design.md"
-  - "https://developer.android.com/ndk/guides/gwp-asan"
-  - "https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/signal_catcher.cc"
-  - "https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/debuggerd/proto/tombstone.proto"
-  - "https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/libc/include/signal.h"
+- type: official
+  path: https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler
+- type: official
+  path: https://developer.android.com/reference/android/app/ApplicationExitInfo
+- type: official
+  path: https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,int,int)
+- type: reference
+  path: https://raw.githubusercontent.com/chromium/crashpad/main/doc/overview_design.md
+- type: official
+  path: https://developer.android.com/ndk/guides/gwp-asan
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/signal_catcher.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/debuggerd/proto/tombstone.proto
+- type: aosp
+  path: https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/libc/include/signal.h
 last_task2b_at: "2026-05-25T15:18:38+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
@@ -42,7 +50,6 @@ last_task6_at: "2026-07-15T12:06:00+08:00"
 last_task9_audit: 2026-07-15
 last_task9_audit_at: "2026-05-25T13:20:00+08:00"
 last_task9_audit_log: "logs/deep-review/2026-05-25-13-audit.md"
-last_task9_review_log: "logs/deep-review/2026-07-15-17-deep-review.md"
 last_task6_review_log: "logs/review/2026-07-15-12-review.md"
 task6_review_notes: "2026-07-15 12:06 Task6 revisiting-review：修复 2 处 L1 形容词+冒号句式（§4.1、§4.2）。Task9 auto-fix 确认无写作质量问题。锚点 7/7+3扩展 覆盖，无 L3/L4 回炉项。满足 auto-promotion 条件，晋升 finalized。"
 task6_l1_l2_fixes: 2
@@ -79,16 +86,6 @@ last_deepseek_cn_review_at: 2026-07-15
 - 🔸 提供针对 Android 11+ `ApplicationExitInfo` 捞取 ANR 与 LMK (Low Memory Killer) 历史记录的代码片段。
 - 🔸 介绍对于 C/C++ 内存破坏 (如 Use-After-Free) 的 GWP-ASan 线上灰度检测方案。
 
-### 流水线加工要求
-
-- 要把不同 Android 版本对底层 `/data/anr` 或进程内存文件的权限封堵作为重要背景交代。
-- OOM 监控部分不能只写 Java 堆内存，必须写清 FD 和线程数溢出的底层原因。
-- 强调异常处理函数中绝对不能做复杂的内存分配与锁操作，以防二次 Crash。
-
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
 <!-- outline-end -->
 
 稳定性 APM 面对的不是一种“崩溃”。Java 未捕获异常、Native 同步致命信号、系统判定的 ANR、lmkd 杀进程和资源耗尽，发生时的线程状态、权限与剩余执行时间都不同。采集器应先回答“当前还能安全做什么”，再决定采哪些数据。

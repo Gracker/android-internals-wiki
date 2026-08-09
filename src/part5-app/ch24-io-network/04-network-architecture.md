@@ -7,6 +7,45 @@ pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [okhttp, connection-pool, httpdns, weak-network, dispatcher]
 confidence: "medium"
+sources:
+- type: reference
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealConnection.kt
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java
+- type: official
+  path: https://developer.android.com/develop/background-work/background-tasks/data-transfer-options
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/DnsResolver.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/StrictMode.java
+- type: official
+  path: https://source.android.com/docs/core/ota/modular-system/dns-resolver
+- type: official
+  path: https://developer.android.com/develop/connectivity/network-ops/reading-network-state
+- type: official
+  path: https://developer.android.com/develop/background-work/background-tasks/uidt
+- type: official
+  path: https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/long-running
+- type: reference
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/OkHttpClient.kt
+- type: reference
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dispatcher.kt
+- type: reference
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dns.kt
+- type: reference
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt
+- type: reference
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/ResponseBody.kt
+- type: reference
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/RequestBody.kt
+- type: reference
+  path: https://www.rfc-editor.org/rfc/rfc9110.html
+- type: reference
+  path: https://www.rfc-editor.org/rfc/rfc6585.html
+- type: aosp
+  path: system/dns-resolver
 last_verified: "2026-06-03"
 last_verified_against: "Android Developers docs 2026-05-14 + OkHttp 5.x docs + AOSP android-17.0.0_r1 SDK sources"
 drafted_date: "2026-05-14"
@@ -19,7 +58,6 @@ task9_state: "reviewed"
 task9_result: "auto-fixed"
 task2b_result: "fixed-lite"
 task2b_state: "fixed"
-path: ""
 related_chapters: ["24.5", "12.2", "12.3"]
 last_task6_at: "2026-07-08T08:10:41+08:00"
 last_task6_audit: "2026-07-08"
@@ -52,13 +90,6 @@ last_deepseek_cn_review_at: 2026-07-08
 
 - 🔸 (待扩展)
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求,加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点,
-> 可**就地插入**最相关的锚点之后,并用 `[自动发现]` 标注,方便后续 review。
-> 锚点内容需 L1/L2 验证,扩展内容至少 L2 验证,自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 为什么要了解网络架构与连接管理

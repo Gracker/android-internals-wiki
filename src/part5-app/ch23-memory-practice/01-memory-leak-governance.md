@@ -13,16 +13,26 @@ last_review_finalize_at: "2026-08-09T04:25:25+08:00"
 last_review_finalize_run_id: "20260809-042525-7671f9ac"
 confidence: high
 sources:
-  - "https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/"
-  - "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java"
-  - "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java"
-  - "https://developer.android.com/about/versions/17/features"
-  - "https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture"
-  - "https://developer.android.com/reference/android/app/ApplicationExitInfo"
-  - "https://developer.android.com/studio/profile/capture-heap-dump"
-  - "https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/"
-  - "https://github.com/KwaiAppTeam/KOOM"
-  - "https://perfetto.dev/docs/data-sources/native-heap-profiler"
+- type: aosp
+  path: https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java
+- type: official
+  path: https://developer.android.com/about/versions/17/features
+- type: official
+  path: https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture
+- type: official
+  path: https://developer.android.com/reference/android/app/ApplicationExitInfo
+- type: official
+  path: https://developer.android.com/studio/profile/capture-heap-dump
+- type: reference
+  path: https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/
+- type: reference
+  path: https://github.com/KwaiAppTeam/KOOM
+- type: official
+  path: https://perfetto.dev/docs/data-sources/native-heap-profiler
 ---
 
 # 23.1 内存泄漏检测与治理

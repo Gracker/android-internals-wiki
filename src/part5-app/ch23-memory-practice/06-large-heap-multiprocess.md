@@ -42,7 +42,6 @@ sources:
 tags: [large-heap, multiprocess, memory-budget, 64bit]
 related_chapters: ["23.4", "4.4", "1.3", "4.7"]
 pipeline_stage: ready-to-publish
-task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 reviewed_date: "2026-05-14"
@@ -50,9 +49,6 @@ reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-14"
 task6_review_notes: "2026-05-14 task6 review: L1/L2 轻修 11 处（术语格式、填充表达、维护成本表述）；四层质检通过，无新增 L3/L4 回炉项，送 Task9 技术复审。"
-last_task6_review_log: "logs/review/2026-06-08-16-review.md"
-last_task6_at: "2026-06-08T16:14:59+08:00"
-last_task6_audit: "2026-06-08"
 task9_result: auto-fixed
 last_task9_at: "2026-06-08T10:20:00+08:00"
 task9_reviewed_date: "2026-06-08"
@@ -86,13 +82,6 @@ last_deepseek_cn_review_at: 2026-06-15
 
 - 🔸 （待扩展）
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 > **版本基线**

@@ -20,11 +20,16 @@ pipeline_stage: finalized
 last_review_finalize_at: "2026-08-08T12:06:09+08:00"
 last_review_finalize_run_id: "20260808-120545-a55fec3c"
 sources:
-  - "AOSP Android 17 ActivityThread (android-17.0.0_r1)"
-  - "AOSP Android 17 SdkSandboxManagerService (android-17.0.0_r1)"
-  - "Android Common Kernel proc 文档 (android17-6.18-2026-06_r6)"
-  - "Android Developers: App Startup, Macrobenchmark, Baseline Profiles, Android 17 behavior changes"
-  - "Privacy Sandbox SDK Runtime architecture and backward compatibility"
+- type: aosp
+  path: AOSP Android 17 ActivityThread (android-17.0.0_r1)
+- type: aosp
+  path: AOSP Android 17 SdkSandboxManagerService (android-17.0.0_r1)
+- type: kernel
+  path: Android Common Kernel proc 文档 (android17-6.18-2026-06_r6)
+- type: reference
+  path: 'Android Developers: App Startup, Macrobenchmark, Baseline Profiles, Android 17 behavior changes'
+- type: reference
+  path: Privacy Sandbox SDK Runtime architecture and backward compatibility
 ---
 
 # 20.28 第三方 SDK 性能影响评估与治理实战

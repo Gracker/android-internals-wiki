@@ -13,6 +13,7 @@ REQUIRED_FIELDS = [
 
 OPTIONAL_FIELDS = ["confidence", "sources"]
 SOURCE_GATED_STATUS = {"ready-for-review", "finalized", "verified"}
+PUBLICATION_STATUS = {"finalized", "verified"}
 
 VALID_STATUS = [
     "verified", "draft", "needs-review", "outdated",
@@ -41,6 +42,32 @@ CANONICAL_PARTS = {
     },
 }
 AUXILIARY_SRC_DIRS = {"preface", "appendix"}
+
+
+class DuplicateKeyError(yaml.YAMLError):
+    """Raised for duplicate mapping keys, including keys in nested mappings."""
+
+
+class StrictSafeLoader(yaml.SafeLoader):
+    pass
+
+
+def construct_unique_mapping(loader, node, deep=False):
+    mapping = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in mapping:
+            raise DuplicateKeyError(
+                f"重复 YAML key {key!r}（frontmatter 第 {key_node.start_mark.line + 1} 行）"
+            )
+        mapping[key] = loader.construct_object(value_node, deep=deep)
+    return mapping
+
+
+StrictSafeLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+    construct_unique_mapping,
+)
 
 
 def canonical_chapter_roots(src_dir):
@@ -100,12 +127,14 @@ def check_file(filepath):
         return ["YAML frontmatter 格式错误"]
 
     try:
-        meta = yaml.safe_load(m.group(1))
+        meta = yaml.load(m.group(1), Loader=StrictSafeLoader)
     except yaml.YAMLError as e:
         return [f"YAML 解析错误: {e}"]
 
     if meta is None:
         return [f"YAML frontmatter 为空"]
+    if not isinstance(meta, dict):
+        return ["YAML frontmatter 必须是 mapping"]
 
     for field in REQUIRED_FIELDS:
         if field not in meta:
@@ -118,6 +147,19 @@ def check_file(filepath):
         issues.append(f"confidence 值无效: {meta['confidence']}")
 
     status = meta.get("status")
+    sources = meta.get("sources")
+    if sources is not None:
+        if not isinstance(sources, list):
+            issues.append("sources 必须是 list")
+        else:
+            for index, source in enumerate(sources):
+                if not isinstance(source, dict):
+                    issues.append(f"sources[{index}] 必须是 mapping")
+                    continue
+                if not str(source.get("type") or "").strip():
+                    issues.append(f"sources[{index}] 缺少非空 type")
+                if not str(source.get("path") or "").strip():
+                    issues.append(f"sources[{index}] 缺少非空 path")
     if status in SOURCE_GATED_STATUS:
         if not (meta.get("last_source_verified_at") or meta.get("last_verified")):
             issues.append(f"status={status} 需要 last_source_verified_at 或兼容字段 last_verified")
@@ -125,6 +167,12 @@ def check_file(filepath):
             issues.append(f"status={status} 需要 confidence")
         if not meta.get("sources"):
             issues.append(f"status={status} 需要非空 sources")
+
+    if status in PUBLICATION_STATUS:
+        for field in ("pipeline_stage", "task6_state", "task9_state", "task2b_state"):
+            value = str(meta.get(field) or "").lower()
+            if re.search(r"(?:pending|needs[-_ ]?rework|revisiting)", value):
+                issues.append(f"status={status} 与 {field}={meta.get(field)!r} 冲突")
 
     if "last_source_verified_at" not in meta and "last_verified" not in meta:
         issues.append("[warn] 缺少来源核验时间: last_source_verified_at / last_verified")
