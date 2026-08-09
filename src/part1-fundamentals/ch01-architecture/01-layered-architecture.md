@@ -267,7 +267,7 @@ Binder flow 只说明 transaction 关系。调用方 slice 的持续时间、目
 | `surfaceflinger` 的 `composite` 变长 | SF 主线程、CompositionEngine、HWC/RenderEngine 事件 | composition type、fence、GPU/HWC、显示模式与 layer 变化 | “一定是应用绘制慢” |
 | Camera 请求返回慢 | Framework/CameraService/HAL transaction 与 request ID | HAL 线程、FMQ/buffer、fence、驱动与传感器时间 | “HAL 只是接口，不会产生延迟” |
 
-初级工程师容易停在调用 API 的进程；中级工程师还应继续寻找接收进程、执行线程和内核等待对象。每多跨一个边界，都要保存 transaction ID、线程 ID、时间范围或源码符号，避免只凭相邻事件建立因果关系。
+定位不能停在调用 API 的进程，还要继续寻找接收进程、执行线程和内核等待对象。每多跨一个边界，都要保存 transaction ID、线程 ID、时间范围或源码符号，避免只凭相邻事件建立因果关系。
 
 ## 容易混淆的六个判断
 
