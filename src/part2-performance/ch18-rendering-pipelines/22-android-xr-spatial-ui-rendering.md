@@ -259,7 +259,7 @@ Jetpack XR SDK 是一组库，不是单一渲染器：
 
 80 MB 与 10,000 vertices 是内容制作建议，不是 runtime parser 的硬限制。超过建议值可能提高解析、内存、GPU 和功耗成本，但不能仅凭文件大小判定某帧一定卡顿。
 
-拆分可见 skybox 与 lighting map 后，两者可以独立选择分辨率，降低 texture memory read bandwidth 和功耗。自定义环境含 3D 对象时，缺少匹配 IBL 可能导致过亮、过暗或反射与环境不一致。
+拆分可见 skybox 与 lighting map 后，两者可以独立选择分辨率，降低纹理内存读取带宽和功耗。自定义环境含 3D 对象时，缺少匹配 IBL 可能导致过亮、过暗或反射与环境不一致。
 
 官方将环境 view distance 写为距用户 200 m，并建议把用户放在约 1.5 m 高的位置。200 m 是环境制作与渲染的可见距离边界，不是感知传感器量程；1.5 m 用于减少较大 UI 与地面穿插，也不是平台 API 上限。
 
@@ -285,7 +285,7 @@ Jetpack XR 的内容规范支持 glTF 2.0，常见作者文件形式是 `.gltf` 
 3. 远处环境或低概率内容；
 4. 离开场景后可以释放或降级的缓存。
 
-资源加载、scene attach 与首帧 present 要分别打点。若只记录 `GltfModel.create()` 返回时刻，会漏掉 GPU upload、shader warm-up 和首次被 runtime 采用的时间；若只解除 entity parent 而没有处理 `AutoCloseable` 资产，也无法证明纹理与模型资源已释放。
+资源加载、scene attach 与首帧 present 要分别打点。若只记录 `GltfModel.create()` 返回时刻，会漏掉 GPU upload、shader warm-up 和首次被 runtime 采用的时间。若只解除 entity parent 而没有处理 `AutoCloseable` 资产，也无法证明纹理与模型资源已释放。
 
 ## 视点、姿态与显示配置对帧时间的影响
 
@@ -310,7 +310,7 @@ Unity Android XR Extensions 提供三类不同优化：
 | Vulkan subsampling | 借助 Fragment Density Map 让不同区域以不同密度渲染/采样 | 目标设备支持、画质、GPU/带宽收益 |
 | late latching | 在帧生成后段更新 head pose，官方描述可接近减少一个 frame time 的输入延迟 | 标记节点正确、runtime 支持、MTP 或可替代指标 |
 
-这些能力属于 Unity/OpenXR 引擎路径，不能当作普通 Compose panel 的开关，也不能叠加名义收益后宣称得到固定延迟。
+这些能力属于 Unity/OpenXR 引擎路径，不能当作普通 Compose panel 的开关，也不能把各项优化的理论收益简单相加，声称得到某个固定延迟数值。
 
 ## Android XR 质量分级的性能检查项
 
@@ -352,7 +352,7 @@ Unity Android XR Extensions 提供三类不同优化：
 6. 查 display cadence、thermal、CPU/GPU frequency 和长会话趋势；
 7. 将 App render miss、runtime miss、tracking stale 和显示延迟分开写结论。
 
-公开文档没有承诺统一的 Android XR Perfetto slice 名。按 `XR` 关键字搜不到事件不能证明 runtime 没有工作；应从目标线程、surface/swapchain、GPU 和设备工具逐层建立证据。
+公开文档没有承诺统一的 Android XR Perfetto slice 名。在 trace 中按 `XR` 关键字搜索不到事件，不能证明 runtime 没有工作；应从目标线程、surface/swapchain、GPU 和设备工具逐层建立证据。
 
 每份报告至少保留：设备类型、系统 build、Jetpack XR/Unity package、refresh mode、空间模式、passthrough、模型/环境版本、纹理上限、采集工具版本与复现动作。
 
