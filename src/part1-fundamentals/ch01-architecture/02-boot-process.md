@@ -110,12 +110,6 @@ flowchart LR
 
 这是一条主线，不代表所有工作都严格串行。驱动 probe、init service、APEX 准备、SystemServer 内部初始化和 Virtual A/B snapshot merge 都可能并行执行或争用 CPU、存储与锁。
 
-## 本次时效性核验
-
-本次 Body Apply 处理的是队列中的“AIW 时效性巡检”项，目标文件明确指向本章；复核范围只限 Android 17/API 37 与 ACK `android17-6.18-2026-06_r6`，没有引入后续平台版本的主线结论。[来源: metadata/queue.json#AIW 时效性巡检; 已验证: 本章 frontmatter sources 中 android-17.0.0_r1 与 android17-6.18-2026-06_r6 锚点]
-
-核验后的阅读边界是：正文中的启动阶段、测量入口与优化建议都应以固定 tag、设备配置和实际 trace/log 共同约束；如果厂商分支或设备行为与 AOSP tag 不一致，应把差异记录为设备侧证据，而不是改写成本书的通用 Android 17 结论。[来源: src/part1-fundamentals/ch01-architecture/02-boot-process.md; 已验证: AOSP android-17.0.0_r1 / ACK android17-6.18-2026-06_r6]
-
 ## Boot ROM、Bootloader 与 Verified Boot
 
 Boot ROM 是 SoC 固化的第一段代码，负责最小硬件初始化和信任链起点。Bootloader 选择启动 slot，校验并加载 boot image、内核、ramdisk、device tree 等内容，再把启动参数交给内核。
@@ -210,7 +204,7 @@ Zygote fork 使用 Copy-on-Write 共享未修改页面。它降低公共运行�
 
 ## SystemServer：四组服务与 APEX 服务阶段
 
-Android 17 的 `SystemServer.main()` 进入 `run()`，写入 `BOOT_PROGRESS_SYSTEM_RUN`，准备 Looper、system context 和 Mainline module 初始化，再执行四组服务：
+Android 17 的 `SystemServer.main()` 进入 `run()`，写入 `BOOT_PROGRESS_SYSTEM_RUN`，准备 Looper、系统上下文和 Mainline module 初始化，再执行四组服务：
 
 ```java
 // AOSP android-17.0.0_r1

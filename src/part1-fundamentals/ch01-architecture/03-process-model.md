@@ -208,7 +208,7 @@ if (app == topApp && PROCESS_STATE_CUR_TOP == PROCESS_STATE_TOP) {
 
 Android 使用 userspace `lmkd` 监控内存压力。Android 10 及以上支持 PSI（Pressure Stall Information）模式：内核统计任务因 CPU、内存或 I/O 资源争用而停顿的时间，`lmkd` 订阅内存压力阈值。当前官方配置仍以 `ro.lmk.use_psi=true` 为默认值，但前提是设备内核启用 PSI。
 
-Android 17 的 platform 与 kernel 锚点能对上这条链：
+Android 17 的平台与内核锚点能对上这条链：
 
 - `ProcessList.setOomAdj()` 向 `lmkd` 发送 `LMK_PROCPRIO`，包含 pid、uid、adj、进程类型等字段。
 - `system/memory/lmkd/lmkd.cpp` 保存进程的 `oomadj`，读取 PSI、swap、thrashing、workingset refault 等信号后选择合格目标。
@@ -233,7 +233,7 @@ writeLmkd(buf, null);
 
 - 当前内存压力及 PSI stall；
 - 进程是否达到本轮允许回收的最小 `oom_score_adj`；
-- swap 剩余量、page cache thrashing 和 workingset refault；
+- swap 剩余量、页缓存抖动和 workingset refault；
 - 是否启用“杀最大合格进程”等策略；
 - 低内存设备与高性能设备的不同配置；
 - 厂商在产品属性与内存 cgroup 上的调整。
@@ -251,7 +251,7 @@ Cached App Freezer 与 `lmkd` 是两种不同动作：
 
 Android 17 的 `CachedAppOptimizer.DEFAULT_USE_FREEZER` 为 `true`，但设备实际启用还要同时满足 DeviceConfig、内核和 libprocessgroup 对 freezer 的支持。`task_profiles.json` 中的 `Frozen` / `Unfrozen` profile 最终写入 `FreezerState`，ACK 基线中的 `kernel/cgroup/freezer.c` 与 `kernel/cgroup/cgroup.c` 实现并暴露 `cgroup.freeze`。
 
-“`adj >= 900` 就一定冻结”也不准确。默认 freezer cutoff 是 `CACHED_APP_MIN_ADJ`，但 Android 17 允许通过 `freezer_cutoff_adj` 和实验开关调整。更重要的是，`OomAdjuster.getFreezePolicy()` 还会检查进程是否持有显式或隐式 CPU time capability。AMS 只有在 freezer 已启用、进程满足 cutoff 且策略认为可冻结时，才安排异步冻结；中间还存在 debounce、待处理消息、Binder 事务和解冻原因。
+“`adj >= 900` 就一定冻结”也不准确。默认 freezer cutoff 是 `CACHED_APP_MIN_ADJ`，但 Android 17 允许通过 `freezer_cutoff_adj` 和实验开关调整。此外，`OomAdjuster.getFreezePolicy()` 还会检查进程是否持有显式或隐式 CPU time capability。AMS 只有在 freezer 已启用、进程满足 cutoff 且策略认为可冻结时，才安排异步冻结；中间还存在 debounce、待处理消息、Binder 事务和解冻原因。
 
 同步 Binder 调用不会被简单概括为“自动解冻后一切正常”。Android 17 会冻结 Binder 接口并处理待处理事务；如果应用通过持续 Binder 事务规避冻结，或者冻结状态下异步 Binder 缓冲区耗尽，系统可以终止进程。`ApplicationExitInfo.REASON_FREEZER` 表示进程因为 freezer 相关错误被杀，例如 Binder ioctl、同步事务或异步缓冲区问题；它不表示一次普通冻结事件，也不是“解冻失败”的通用标签。
 
@@ -312,7 +312,7 @@ adb shell dumpsys activity exit-info <package>
 adb logcat -b events -b system | grep -Ei 'lmkd|lowmemory|freez'
 ```
 
-抓 Perfetto 时，应至少覆盖问题发生前后的调度、进程生命周期、ActivityManager 事件、内存计数器和 PSI。分析顺序可以固定为：
+抓 Perfetto 时，应至少覆盖问题发生前后的调度、进程生命周期、ActivityManager 事件、内存计数器和 PSI。按以下顺序分析：
 
 1. 进程的重要组件何时消失，`procState` 与 `adj` 何时改变；
 2. 调度组和 freezer 状态是否随后改变；
