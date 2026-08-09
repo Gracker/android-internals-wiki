@@ -57,14 +57,11 @@ polish_date: '2026-04-08'
 polish_by: task2b-polish
 pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-06-04T04:55:01"
-task9_result: auto-fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-06-04"
-last_task9_at: "2026-06-04T08:20:00+08:00"
 task9_review_notes: "2026-06-04 Task9 deep review: auto-fixed。修正 onTrimMemory 在 Android 16 的 ApplicationThread→主线程分发链、Debug.getPss API level、heapprofd 开销边界和 System.gc 使用边界;已回到 Task6 复审。"
 task6_result: pass-light-edit
 last_task6_at: "2026-06-23T20:08:00+08:00"
@@ -101,13 +98,6 @@ last_deepseek_cn_review_at: 2026-06-24
 - 🔸 Jetpack Compose 的内存特点与注意事项
 - 🔸 大型 App 的内存预算(Memory Budget)管理实践
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求,加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点,
-> 可**就地插入**最相关的锚点之后,并用 `[自动发现]` 标注,方便后续 review。
-> 锚点内容需 L1/L2 验证,扩展内容至少 L2 验证,自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 先确定优化对象

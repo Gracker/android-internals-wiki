@@ -8,26 +8,32 @@ drafted_date: '2026-04-06'
 applicable_versions: Android 14 (API 34) - Android 17 (API 37)
 last_verified: '2026-04-12'
 last_verified_against: AOSP android-17.0.0_r1 (art/runtime/gc) + Android 17 release notes + perfetto.dev stdlib/docs + developer.android.com/topic/performance/graphics/manage-memory
-last_task2b_lite_at: "2026-05-30"
 confidence: medium
-sources: 
+sources:
 - type: official
+  path: https://developer.android.com/blog/posts/android-17-is-here
 - type: official
+  path: https://source.android.com/docs/core/runtime/gc-debug
 - type: official
+  path: https://source.android.com/docs/core/runtime/improvements
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.h
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/write_barrier-inl.h
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/accounting/card_table.h
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig
 - type: official
+  path: https://perfetto.dev/docs/analysis/stdlib-docs
 - type: official
+  path: https://perfetto.dev/docs/reference/heap_profile-cli
 - type: official
-- type: aosp
-- type: aosp
-- type: aosp
-- type: aosp
-- type: aosp
-- type: aosp
-- type: research
-- type: research
-- type: research
-- type: research
-
+  path: https://perfetto.dev/docs/data-sources/java-heap-profiler
 tags: 
 - android
 - memory

@@ -71,10 +71,6 @@ last_deepseek_cn_review_at: 2026-06-06
 - 🔸 `Factory2` / AppCompat 对 inflate 路径的影响
 - 🔸 高刷新率设备下的布局帧预算压力
 
-### OpenClaw 加工指引
-
-> 锚点是最低覆盖要求，加工时必须逐条落实并标注验证状态。
-> 缺少真实 trace 或截图时，用 `[图：...]` 标注说明，不要编造现象。
 <!-- outline-end -->
 
 本章讨论 View UI 在创建、测量和摆放阶段的主线程成本。分析基线固定为 Android 17 / API 37 / `android-17.0.0_r1`；只有在继续追踪调度、CPU 频率、内存回收或 fence 等内核现象时，才采用 `android17-6.18-2026-06_r6`。View 的布局算法位于 framework，单凭内核 trace 无法解释某个容器为何反复测量。

@@ -12,19 +12,31 @@ drafted_by: "openclaw-task2a"
 last_verified: "2026-04-12"
 last_verified_against: "AOSP android-16.0.0_r1, Linux kernel android16-6.12"
 confidence: medium
-sources: 
-path: "drivers/thermal/thermal_core.c"
-path: "drivers/thermal/cpufreq_cooling.c"
-path: "drivers/thermal/gov_step_wise.c"
-path: "drivers/thermal/gov_power_allocator.c"
-path: "drivers/thermal/devfreq_cooling.c"
-path: "drivers/devfreq/devfreq.c"
-path: "hardware/interfaces/thermal/aidl/android/hardware/thermal/"
-path: "developer.android.com/games/optimize/thermal"
-path: "developer.android.com/games/optimize/adpf"
-path: "source.android.com/docs/core/power/thermal-mitigation"
-path: "https://perfetto.dev/docs/analysis/trace-analysis-with-sql"
-path: "mediatek.com - MAGT ADPF integration case studies"
+sources:
+- type: kernel
+  path: drivers/thermal/thermal_core.c
+- type: kernel
+  path: drivers/thermal/cpufreq_cooling.c
+- type: kernel
+  path: drivers/thermal/gov_step_wise.c
+- type: kernel
+  path: drivers/thermal/gov_power_allocator.c
+- type: kernel
+  path: drivers/thermal/devfreq_cooling.c
+- type: kernel
+  path: drivers/devfreq/devfreq.c
+- type: aosp
+  path: hardware/interfaces/thermal/aidl/android/hardware/thermal/
+- type: official
+  path: developer.android.com/games/optimize/thermal
+- type: official
+  path: developer.android.com/games/optimize/adpf
+- type: official
+  path: source.android.com/docs/core/power/thermal-mitigation
+- type: official
+  path: https://perfetto.dev/docs/analysis/trace-analysis-with-sql
+- type: reference
+  path: mediatek.com - MAGT ADPF integration case studies
 tags: "[thermal, throttling, ADPF, Thermal HAL, sustained performance, 游戏性能, 功耗, devfreq, power_allocator]"
 related_chapters: "[\"5.5\", \"5.9\", \"4.7\", \"8.9\", \"11.1\", \"16.4\"]"
 created_by: "task2a-knowledge-gap"

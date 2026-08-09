@@ -9,7 +9,6 @@ drafted_date: "2026-04-24"
 drafted_by: "codex"
 reviewed_date: 2026-06-28
 reviewed_by: openclaw-task6
-path: "https://github.com/Tencent/matrix"
 task6_result: pass-light-edit
 task6_review_notes: "2026-06-28 16:11 Task6 revisiting 复审(Task9 auto-fix后回归): 修复69处半角标点(逗号/冒号/分号→全角)。L1禁用词/高频词/物理动词/元叙述/否定纠正grep全部零命中。L2结构/节奏/开头/读者视角均通过。task9_result=auto-fixed(无遗留P0/P1),queue无pending,自动晋升finalized。"
 last_task6_audit: "2026-07-17"
@@ -22,6 +21,55 @@ task9_review_date: "2026-06-25"
 task9_reviewer: "openclaw-task9"
 task9_state: reviewed
 confidence: "medium"
+sources:
+- type: reference
+  path: https://github.com/Tencent/matrix
+- type: reference
+  path: https://github.com/Kyson/AndroidGodEye/tree/459f5cb5a2a4d176ff63f27322644a8191df2af9
+- type: reference
+  path: https://github.com/happylishang/Collie/tree/bfdc6782d568bfcefef01e846e81ccfd5a7e3470
+- type: reference
+  path: https://github.com/SusionSuc/rabbit-client/tree/d29f293a373167b03fc946e763d57e72157ab0e5
+- type: reference
+  path: https://github.com/Tencent/matrix/tree/3b8293bd65d47eeea7caf1f32a3a5d4d5eab60e7
+- type: reference
+  path: https://github.com/Kyson/AndroidGodEye/blob/459f5cb5a2a4d176ff63f27322644a8191df2af9/README.md
+- type: reference
+  path: https://github.com/Kyson/AndroidGodEye/blob/459f5cb5a2a4d176ff63f27322644a8191df2af9/build.gradle
+- type: reference
+  path: https://github.com/Kyson/AndroidGodEye/blob/459f5cb5a2a4d176ff63f27322644a8191df2af9/gradle.properties
+- type: reference
+  path: https://github.com/happylishang/Collie/blob/bfdc6782d568bfcefef01e846e81ccfd5a7e3470/README.md
+- type: reference
+  path: https://github.com/happylishang/Collie/blob/bfdc6782d568bfcefef01e846e81ccfd5a7e3470/build.gradle
+- type: reference
+  path: https://github.com/happylishang/Collie/blob/bfdc6782d568bfcefef01e846e81ccfd5a7e3470/collie/src/main/AndroidManifest.xml
+- type: reference
+  path: https://github.com/happylishang/Collie/blob/bfdc6782d568bfcefef01e846e81ccfd5a7e3470/collie/src/main/java/com/snail/collie/core/LooperMonitor.kt
+- type: reference
+  path: https://github.com/happylishang/Collie/blob/bfdc6782d568bfcefef01e846e81ccfd5a7e3470/collie/src/main/java/com/snail/collie/fps/FpsTracker.java
+- type: reference
+  path: https://github.com/happylishang/Collie/blob/bfdc6782d568bfcefef01e846e81ccfd5a7e3470/collie/src/main/java/com/snail/collie/startup/LauncherTracker.kt
+- type: reference
+  path: https://github.com/happylishang/Collie/blob/bfdc6782d568bfcefef01e846e81ccfd5a7e3470/collie/src/main/java/com/snail/collie/trafficstats/TrafficStatsTracker.kt
+- type: reference
+  path: https://github.com/happylishang/Collie/blob/bfdc6782d568bfcefef01e846e81ccfd5a7e3470/collie/src/main/java/com/snail/collie/mem/MemoryLeakTrack.kt
+- type: reference
+  path: https://github.com/SusionSuc/rabbit-client/blob/d29f293a373167b03fc946e763d57e72157ab0e5/README.md
+- type: reference
+  path: https://github.com/SusionSuc/rabbit-client/blob/d29f293a373167b03fc946e763d57e72157ab0e5/buildSrc/src/main/java/Dependencies.kt
+- type: reference
+  path: https://github.com/SusionSuc/rabbit-client/blob/d29f293a373167b03fc946e763d57e72157ab0e5/rabbit-gradle-transform/src/main/java/com/susion/rabbit/gradle/RabbitPlugin.kt
+- type: reference
+  path: https://github.com/SusionSuc/rabbit-client/blob/d29f293a373167b03fc946e763d57e72157ab0e5/rabbit-gradle-transform/src/main/java/com/susion/rabbit/gradle/core/context/VariantScope.kt
+- type: reference
+  path: https://github.com/Tencent/matrix/blob/3b8293bd65d47eeea7caf1f32a3a5d4d5eab60e7/README.md
+- type: reference
+  path: https://github.com/Tencent/matrix/blob/3b8293bd65d47eeea7caf1f32a3a5d4d5eab60e7/matrix/matrix-android/matrix-gradle-plugin/build.gradle
+- type: reference
+  path: https://github.com/Tencent/matrix/blob/3b8293bd65d47eeea7caf1f32a3a5d4d5eab60e7/matrix/matrix-android/matrix-gradle-plugin/src/main/kotlin/com/tencent/matrix/plugin/trace/MatrixTraceInjection.kt
+- type: official
+  path: https://developer.android.com/build/releases/gradle-plugin-api-updates
 tech_score: "3/5"
 last_task9_audit: "2026-06-28"
 task2b_result: fixed-lite

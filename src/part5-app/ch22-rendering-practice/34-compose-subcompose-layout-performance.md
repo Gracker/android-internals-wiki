@@ -9,10 +9,14 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-07-16"
 gap_source: "章节深挖"
 sources:
-  - "AndroidX Compose UI 1.11.4 SubcomposeLayout.kt @ 854220f44ea8ea80fee824a6c5a045f39bede289"
-  - "AndroidX Compose Foundation 1.11.4 LazyLayout/BoxWithConstraints sources @ 854220f44ea8ea80fee824a6c5a045f39bede289"
-  - "Android 17 platform tag android-17.0.0_r1"
-  - "Android common kernel tag android17-6.18-2026-06_r6"
+- type: official
+  path: AndroidX Compose UI 1.11.4 SubcomposeLayout.kt @ 854220f44ea8ea80fee824a6c5a045f39bede289
+- type: official
+  path: AndroidX Compose Foundation 1.11.4 LazyLayout/BoxWithConstraints sources @ 854220f44ea8ea80fee824a6c5a045f39bede289
+- type: reference
+  path: Android 17 platform tag android-17.0.0_r1
+- type: kernel
+  path: Android common kernel tag android17-6.18-2026-06_r6
 pipeline_stage: finalized
 task6_state: reviewed
 task9_state: reviewed

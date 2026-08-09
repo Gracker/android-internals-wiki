@@ -39,7 +39,6 @@ related_chapters: ["1.7", "1.9", "16.6", "21.11"]
 created_by: task2a-knowledge-gap
 created_date: 2026-05-24
 gap_source: 研究素材/官方文档/AOSP结构
-path: intake/daily-info/2026-05-24.md#增量扫描-源码调研art-verifier-quickening-与-dex2oat-过滤器体系
 task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed

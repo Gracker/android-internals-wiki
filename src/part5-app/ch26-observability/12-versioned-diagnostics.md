@@ -7,13 +7,49 @@ pipeline_stage: ready-to-publish
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 tags: [observability, online-diagnostics, application-exit-info, profiling-manager]
 confidence: "medium"
+sources:
+- type: aosp
+  path: packages/modules/Profiling/framework/java/android/os/ProfilingResult.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingResult.java
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java
+- type: official
+  path: https://developer.android.com/reference/android/app/ApplicationExitInfo
+- type: official
+  path: https://developer.android.com/reference/android/os/ProfilingManager
+- type: official
+  path: https://developer.android.com/reference/android/os/ProfilingResult
+- type: official
+  path: https://developer.android.com/reference/android/os/ProfilingTrigger
+- type: official
+  path: https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture
+- type: official
+  path: https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture
+- type: official
+  path: https://developer.android.com/topic/performance/tracing/profiling-manager/will-my-profile-always-be-collected
+- type: official
+  path: https://developer.android.com/about/versions/17/behavior-changes-all
+- type: official
+  path: https://developer.android.com/about/versions/17/features
+- type: official
+  path: https://developer.android.com/reference/android/os/Build.VERSION
+- type: official
+  path: https://developer.android.com/reference/android/os/Build.VERSION_CODES_FULL
+- type: aosp
+  path: packages/modules/Profiling
 last_verified: "2026-06-28"
 last_verified_against: "refs/tags/android-17.0.0_r1 (frameworks/base, packages/modules/Profiling, frameworks/proto_logging均已确认存在)"
 drafted_date: "2026-05-17"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-06-28"
 reviewed_by: "openclaw-task6"
-path: "packages/modules/Profiling/framework/java/android/os/ProfilingResult.java"
 related_chapters: ["26.2", "26.5", "14.7", "8.10", "13.2", "15.5", "20.3", "19.24"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"

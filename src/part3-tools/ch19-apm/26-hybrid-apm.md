@@ -20,11 +20,16 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-07-04"
 section: "19.26"
 sources:
-  - https://developer.android.com/reference/android/view/PixelCopy
-  - https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail)
-  - https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient
-  - https://api.flutter.dev/flutter/dart-ui/FrameTiming-class.html
-  - https://api.flutter.dev/flutter/scheduler/SchedulerBinding/addTimingsCallback.html
+- type: official
+  path: https://developer.android.com/reference/android/view/PixelCopy
+- type: official
+  path: https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail)
+- type: official
+  path: https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient
+- type: reference
+  path: https://api.flutter.dev/flutter/dart-ui/FrameTiming-class.html
+- type: reference
+  path: https://api.flutter.dev/flutter/scheduler/SchedulerBinding/addTimingsCallback.html
 tags:
   - apm
   - webview
@@ -78,15 +83,6 @@ last_deepseek_cn_review_at: 2026-07-13
 - 🔸 分析 Flutter 引擎中的 `FrameTiming` API 如何映射为 Android 的 Jank 概念。
 - 🔸 对比分析"像素截帧判白屏"对低端机带来的额外性能损耗与规避策略。
 
-### 流水线加工要求
-
-- 避免写成纯前端（FE）的性能监控教程，所有的指标与视角必须围绕 Android Native 容器组织。
-- 必须明确跨平台引擎（如 Flutter）自成体系的渲染管线与 Android 系统的 Choreographer 之间的时序关系。Flutter APM 小节必须按版本标记线程模型：3.32 stable+ merged model（Main(UI+Platform) / Raster / IO）、旧版/定制 Embedder（独立 UI 线程），与全书 2.11、18.12 口径一致。
-
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
 <!-- outline-end -->
 
 混合栈 APM 需要同时尊重三套运行时的语义。Android 宿主知道 Activity、Window、主线程、网络和 native crash；WebView 才知道 Navigation Timing、FCP、LCP、DOM 与 JavaScript；Flutter engine 才能把 framework build、raster 和 Dart 异常分开。把三边事件放进同一条会话时间线很有价值，把它们压成一个“首屏耗时”会丢失诊断信息。

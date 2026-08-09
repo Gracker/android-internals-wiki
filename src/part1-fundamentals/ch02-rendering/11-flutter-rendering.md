@@ -97,12 +97,6 @@ last_task9_autofix_at: "2026-07-02"
 - 🔸 PlatformView 对 Main(UI+Platform)、Raster 与 SurfaceFlinger 的性能影响
 - 🔸 Flutter 自定义 Trace event 在 DevTools 和 Perfetto 中的使用
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求,加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点,
-> 可作为"自动发现"补充,但需标注来源。
 <!-- outline-end -->
 
 # 2.11 Flutter 渲染管线与性能

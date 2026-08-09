@@ -18,7 +18,6 @@ pipeline_stage: rework-verified
 last_rework_at: "2026-07-30T09:37:01+08:00"
 last_rework_run_id: "20260730-093701-rework-e61f2940"
 rework_summary: "解决 pending-verification-marker（§四类场景入口将「待验证假设」改为「证据缺口记录」）和 thin-source-marking（正文新增 5 处 [来源:]/[已验证:] 内联证据标记，覆盖 ThermalManagerService、PowerManager.getThermalHeadroom、IPowerStats、FrameTimeline SurfaceView 边界和 ARR API）。frontmatter 新增 PowerManager API 与 thermal-mitigation 来源。"
-path: "src/part2-performance/ch07-smoothness/16-power-thermal-jank-playbook.md"
 sources:
   - type: official
     path: "https://perfetto.dev/docs/data-sources/battery-counters"

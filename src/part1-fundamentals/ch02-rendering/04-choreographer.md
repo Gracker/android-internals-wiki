@@ -150,13 +150,6 @@ task2b_verify_result: 'promoted-to-finalized: task6 pass-light-edit + task9 pass
 - 🔸 自定义 FrameCallback 实现帧率监控的原理与实践
 - 🔸 Compose 对 Choreographer 的使用差异
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求,加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点,
-> 可**就地插入**最相关的锚点之后,并用 `[自动发现]` 标注,方便后续 review。
-> 锚点内容需 L1/L2 验证,扩展内容至少 L2 验证,自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 先说结论：Choreographer 管“何时开始一帧”

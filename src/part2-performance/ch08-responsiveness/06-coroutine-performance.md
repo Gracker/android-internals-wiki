@@ -56,7 +56,6 @@ last_task9_review_log: "logs/deep-review/2026-06-05-06-deep-review.md"
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-05
 last_task6_audit: "2026-07-09T10:20:48.680322"
-
 ---
 
 
@@ -79,13 +78,6 @@ last_task6_audit: "2026-07-09T10:20:48.680322"
 - 🔸 Coroutine 与 RxJava 的性能对比
 - 🔸 自定义 Dispatcher 的场景与实践
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 协程能把等待从线程中移开，也能把过多的小任务塞进同一条调度路径。判断性能时要区分四件事：协程是否挂起、continuation 是否需要 dispatch、目标线程何时得到 CPU、业务代码运行多久。把这四段都叫作“协程切换”会掩盖瓶颈。

@@ -9,6 +9,7 @@ last_verified_against: "AOSP android-17.0.0_r1 PowerMonitorReadings.java / Power
 confidence: medium
 sources:
 - path: https://source.android.com/docs/core/power/power-stats-hal
+  type: official
 tags:
 - Battery Historian
 - bugreport
@@ -30,7 +31,6 @@ gap_source: 官方文档+读者需求
 gap_score: 15/20
 drafted_by: openclaw-task2a
 drafted_date: '2026-04-10'
-path: https://source.android.com/docs/core/power/power-stats-hal
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit

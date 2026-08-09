@@ -97,8 +97,6 @@ updated_date: "2026-07-09"
 - 🔸 前台服务晋升、`shortService`、限时 FGS 的不同后果
 - 🔸 Android 14+ `JobService` 回调 ANR 与 job 运行超时的边界
 
-### OpenClaw 加工指引
-
 ## 先认超时契约，再看线程栈
 
 ANR 报告中的 `Reason` 描述了系统等待哪一个完成信号。Input 等输入连接确认，Broadcast 等 receiver 完成，execute-service 等服务生命周期调用结束。它们可能留下相似的主线程栈，触发它们的计时器和责任边界却不同。

@@ -53,7 +53,7 @@ gap_source: "AOSP结构/官方文档/素材驱动"
 关联 8.12 节，说明只有满足强度要求的 biometric authenticator 才能参与 Keystore 加密操作。把传感器认证成功和密钥签名耗时分开观测，避免把 KeyMint 延迟误归因到 UI。
 
 ### 🔹 系统服务与 AOSP 验证入口
-列出 BiometricService、BiometricScheduler、CredentialManagerService、SystemUI biometric prompt 与 Keystore/KeyMint 的源码验证点，后续加工时用 AOSP 分支确认线程、Binder 调用和错误码边界。
+源码验证点包括 BiometricService、BiometricScheduler、CredentialManagerService、SystemUI biometric prompt 与 Keystore/KeyMint；线程、Binder 调用和错误码边界必须以对应 AOSP 分支为准。
 
 ### 🔹 线上观测与回退治理
 设计登录流程埋点：prompt 展示耗时、认证结果类型、错误码、取消来源、credential provider、KeyMint 调用耗时、网络校验耗时、回退方式与最终转化。给出隐私和安全数据最小化原则。

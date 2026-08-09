@@ -1,7 +1,6 @@
 ---
 title: "线程泄漏与匿名线程监控实战"
 chapter: "20.25"
-status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 tags: [thread, leak, monitoring, stability, ThreadGroup, pthread, FD]
 related_chapters: ["20.1", "20.5", "20.14", "20.24", "20.27"]
@@ -10,6 +9,55 @@ created_date: "2026-07-16"
 gap_source: "素材驱动+章节深挖"
 last_verified: "2026-07-31"
 confidence: high
+sources:
+- type: aosp
+  path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java
+- type: aosp
+  path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/api/current.txt
+- type: aosp
+  path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/ThreadGroup.java
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/build/flags/art-flags.aconfig
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/java_lang_Thread.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/pthread_create.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/pthread_exit.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/pthread_join.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/pthread_setname_np.cpp
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/fork.c
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst
+- type: official
+  path: https://developer.android.com/reference/java/lang/Thread
+- type: official
+  path: https://developer.android.com/reference/java/lang/ThreadGroup
+- type: official
+  path: https://developer.android.com/reference/java/util/concurrent/ThreadPoolExecutor
+- type: official
+  path: https://developer.android.com/reference/java/util/concurrent/ScheduledThreadPoolExecutor
+- type: reference
+  path: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/new-single-thread-context.html
+- type: reference
+  path: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/
+- type: reference
+  path: https://github.com/square/okhttp/blob/parent-5.1.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/OkHttpClient.kt
+- type: official
+  path: https://developer.android.com/reference/androidx/work/Configuration
+- type: official
+  path: https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/manage-work
+- type: official
+  path: https://perfetto.dev/docs/data-sources/cpu-scheduling
+- type: official
+  path: https://perfetto.dev/docs/analysis/sql-tables
+- type: aosp
+  path: bionic/ART
 last_draft_polish_at: "2026-07-31T19:35:24+08:00"
 last_draft_polish_run_id: "20260731-193524-draft-polish-a7da59d3"
 status: finalized

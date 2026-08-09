@@ -7,6 +7,35 @@ pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [memory, lmk, gc]
 confidence: medium
+sources:
+- type: reference
+  path: https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.h
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap-inl.h
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/concurrent_copying.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.h
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/space/region_space.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/space/large_object_space.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/gc_cause.h
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/jit/jit_code_cache.cc
+- type: official
+  path: https://source.android.com/docs/core/runtime/gc-debug
+- type: official
+  path: https://developer.android.com/topic/performance/baselineprofiles/overview
+- type: official
+  path: https://developer.android.com/guide/practices/page-sizes
 last_verified: '2026-06-29'
 last_verified_against: "AOSP android-17.0.0_r1 (主线) / android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 (版本演进对比) + Android Developers Blog (Android 16 QPR2)"
 drafted_date: '2026-03-31'
@@ -16,7 +45,6 @@ reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-path: "https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html"
 last_task2b_at: "2026-06-09T20:59:35+08:00"
 last_task6_at: '2026-06-30T05:09:02+08:00'
 last_task6_audit: 2026-06-09

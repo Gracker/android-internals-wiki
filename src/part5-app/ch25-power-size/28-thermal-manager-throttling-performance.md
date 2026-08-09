@@ -12,11 +12,16 @@ confidence: high
 last_verified: 2026-08-03
 last_verified_against: "android-17.0.0_r1 / android17-6.18"
 sources:
-  - "frameworks/base/core/java/android/os/PowerManager.java@android-17.0.0_r1"
-  - "frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java@android-17.0.0_r1"
-  - "frameworks/native/include/android/thermal.h@android-17.0.0_r1"
-  - "hardware/interfaces/thermal/aidl/android/hardware/thermal/IThermal.aidl@android-17.0.0_r1"
-  - "AOSP Thermal mitigation"
+- type: aosp
+  path: frameworks/base/core/java/android/os/PowerManager.java@android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java@android-17.0.0_r1
+- type: aosp
+  path: frameworks/native/include/android/thermal.h@android-17.0.0_r1
+- type: aosp
+  path: hardware/interfaces/thermal/aidl/android/hardware/thermal/IThermal.aidl@android-17.0.0_r1
+- type: aosp
+  path: AOSP Thermal mitigation
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized

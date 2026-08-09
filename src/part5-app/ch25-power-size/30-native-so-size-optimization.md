@@ -21,19 +21,32 @@ reviewed_by: "hermes-aiw-review-finalize-apply"
 last_review_finalize_at: "2026-08-01"
 last_review_finalize_run_id: "20260801-160517-c1f1b427"
 sources:
-  - "[Android ABIs](https://developer.android.com/ndk/guides/abis)"
-  - "[Android App Bundle format](https://developer.android.com/guide/app-bundle/app-bundle-format)"
-  - "[Google Play 64-bit requirement](https://developer.android.com/google/play/requirements/64-bit)"
-  - "[Control symbol visibility](https://developer.android.com/ndk/guides/symbol-visibility)"
-  - "[JNI tips](https://developer.android.com/ndk/guides/jni-tips)"
-  - "[Include native symbols](https://developer.android.com/build/include-native-symbols)"
-  - "[Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)"
-  - "[Android 17 behavior changes](https://developer.android.com/about/versions/17/behavior-changes-17)"
-  - "[Dynamic Code Loading security](https://developer.android.com/privacy-and-security/risks/dynamic-code-loading)"
-  - "[Clang command guide](https://clang.llvm.org/docs/CommandGuide/clang.html)"
-  - "[AOSP linker_phdr.cpp @ Android 17](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_phdr.cpp)"
-  - "[AOSP linker.cpp @ Android 17](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker.cpp)"
-  - "[Android Common Kernel mm/mmap.c @ android17-6.18-2026-06_r6](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/mmap.c)"
+- type: official
+  path: '[Android ABIs](https://developer.android.com/ndk/guides/abis)'
+- type: official
+  path: '[Android App Bundle format](https://developer.android.com/guide/app-bundle/app-bundle-format)'
+- type: official
+  path: '[Google Play 64-bit requirement](https://developer.android.com/google/play/requirements/64-bit)'
+- type: official
+  path: '[Control symbol visibility](https://developer.android.com/ndk/guides/symbol-visibility)'
+- type: official
+  path: '[JNI tips](https://developer.android.com/ndk/guides/jni-tips)'
+- type: official
+  path: '[Include native symbols](https://developer.android.com/build/include-native-symbols)'
+- type: official
+  path: '[Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)'
+- type: official
+  path: '[Android 17 behavior changes](https://developer.android.com/about/versions/17/behavior-changes-17)'
+- type: official
+  path: '[Dynamic Code Loading security](https://developer.android.com/privacy-and-security/risks/dynamic-code-loading)'
+- type: reference
+  path: '[Clang command guide](https://clang.llvm.org/docs/CommandGuide/clang.html)'
+- type: aosp
+  path: '[AOSP linker_phdr.cpp @ Android 17](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_phdr.cpp)'
+- type: aosp
+  path: '[AOSP linker.cpp @ Android 17](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker.cpp)'
+- type: kernel
+  path: '[Android Common Kernel mm/mmap.c @ android17-6.18-2026-06_r6](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/mmap.c)'
 ---
 
 # 25.30 Native SO 体积优化实战

@@ -20,9 +20,12 @@ last_review_finalize_at: "2026-08-07T16:07:09+08:00"
 last_review_finalize_run_id: "20260807-160526-7569949f"
 confidence: high
 sources:
-  - "Perfetto v53.0/v54.0/v57.2 release notes"
-  - "Perfetto docs: other-formats, cpu-profiling, converting"
-  - "AOSP android-17.0.0_r1: system/extras/simpleperf and external/perfetto"
+- type: reference
+  path: Perfetto v53.0/v54.0/v57.2 release notes
+- type: reference
+  path: 'Perfetto docs: other-formats, cpu-profiling, converting'
+- type: aosp
+  path: 'AOSP android-17.0.0_r1: system/extras/simpleperf and external/perfetto'
 ---
 
 # 13.21 Perfetto pprof 与 Simpleperf 原生可视化分析

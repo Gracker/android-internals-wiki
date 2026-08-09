@@ -1,9 +1,4 @@
 ---
-title: 04-typical-scenarios
-chapter: "7.4"
-status: "finalized"
-applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-tags: [smoothness, jank]
 repaired_date: 2026-05-23
 updated_by: openclaw-task2b
 updated_date: 2026-05-23
@@ -93,13 +88,6 @@ last_review_finalize_run_id: "20260730-100503-40fd0f28"
 - 🔸 视频播放场景的帧率稳定性
 - 🔸 地图/WebView 等重渲染场景的特殊处理
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 场景名只负责缩小范围

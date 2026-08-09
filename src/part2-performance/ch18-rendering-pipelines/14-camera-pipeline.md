@@ -7,7 +7,6 @@ pipeline_stage: ready-to-publish
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 tags: ["Camera", "Camera2", "HAL3", "ZSL", "多流并发", "SurfaceView", "ImageReader", "渲染管线"]
 reviewed_by: "openclaw-task6"
-path: "hardware/interfaces/camera/device/aidl/android/hardware/camera/device/ICameraDeviceSession.aidl"
 related_chapters: ["2.13", "2.15", "14.9", "18.6", "18.7", "18.10", "18.15"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"

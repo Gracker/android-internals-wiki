@@ -8,6 +8,8 @@ section: '3.5'
 drafted_by: openclaw-task
 applicable_versions: Android 10 (API 29) - Android 17 (API 37), 主线源码基准已复核 android-17.0.0_r1, Android 10-16 仅作历史演进参照, 密码输入场景的 InputMonitor 切断暂不作为 AOSP 源码结论
 confidence: medium
+last_verified: "2026-07-10"
+last_verified_against: "AOSP android-17.0.0_r1 input/security paths and Android Developers APIs"
 reviewed_date: "2026-07-10"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"

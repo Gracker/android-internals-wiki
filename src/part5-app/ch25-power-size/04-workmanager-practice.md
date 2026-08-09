@@ -21,7 +21,9 @@ reviewed_date: "2026-07-31"
 reviewed_by: "hermes-aiw-review-finalize-apply"
 last_verified: "2026-07-31"
 confidence: high
-sources: "[androidx.work 2.9 公共 API; Android 14/15 Background Processing 官方指南; AOSP android-17.0.0_r1]"
+sources:
+- type: aosp
+  path: '[androidx.work 2.9 公共 API; Android 14/15 Background Processing 官方指南; AOSP android-17.0.0_r1]'
 ---
 
 # 25.4 WorkManager 实战与后台任务调度

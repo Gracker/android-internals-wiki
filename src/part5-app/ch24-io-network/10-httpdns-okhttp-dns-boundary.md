@@ -7,12 +7,46 @@ pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37) / OkHttp 4.x - 5.x"
 tags: [network, httpdns, okhttp, dns, latency]
 confidence: "medium"
+sources:
+- type: reference
+  path: Clippings/Android 性能优化 - 缓存优化:冷热端分离+重排序,提升缓存命中率.md
+- type: reference
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dns.kt
+- type: reference
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealRoutePlanner.kt
+- type: reference
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RouteSelector.kt
+- type: reference
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp-dnsoverhttps/src/main/kotlin/okhttp3/dnsoverhttps/DnsOverHttps.kt
+- type: aosp
+  path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/net/InetAddress.java
+- type: official
+  path: https://source.android.com/docs/core/ota/modular-system/dns-resolver
+- type: official
+  path: https://developer.android.com/reference/android/net/LinkProperties
+- type: official
+  path: https://developer.android.com/reference/android/net/DnsResolver
+- type: official
+  path: https://developer.android.com/reference/android/net/Network
+- type: reference
+  path: https://api.example.com/`
+- type: reference
+  path: https://203.0.113.10/`
+- type: reference
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/InetAddressOrder.kt
+- type: reference
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/FastFallbackExchangeFinder.kt
+- type: reference
+  path: https://lysine.dev/okhttp/features/events/
+- type: official
+  path: https://developer.android.com/privacy-and-security/risks/bad-dns
+- type: aosp
+  path: system/dns-resolver
 last_verified: "2026-06-09"
 last_verified_against: "OkHttp 5.x docs + OkHttp source 728e4d575d8e9a09bbab04ef09bb24ff6b1fa0ab + DeepResearch 2026-05-14 + Clippings 结构参考"
 drafted_date: "2026-05-16"
 reviewed_date: "2026-05-16"
 reviewed_by: "openclaw-task6"
-path: "Clippings/Android 性能优化 - 缓存优化:冷热端分离+重排序,提升缓存命中率.md"
 related_chapters: ["12.2", "12.3", "24.4", "24.5", "26.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-05-16"

@@ -53,7 +53,6 @@ task9_reviewed_date: "2026-07-08"
 last_task6_at: "2026-07-07T20:11:24+08:00"
 last_task6_audit: "2026-06-20"
 last_task6_review_log: "logs/review/2026-06-14-11-review.md"
-task6_review_notes: "2026-07-07 Task6 revisiting review: pass-light-edit；Task9 auto-fix .hprof→.perfetto-java-heap-dump 已验证正确；L1/L2 扫描干净；锚点 5/5 覆盖；无 L3/L4 回炉项。task9_result=auto-fixed 非 pass-tech-review，未自动晋升。"
 last_task9_at: "2026-07-08T00:31:29+08:00"
 last_task9_audit: "2026-07-07"
 last_task9_audit_log: "logs/deep-review/2026-07-07-19-audit.md"
@@ -74,7 +73,7 @@ task6_reviewed_date: "2026-07-07"
 last_task2b_verifier_at: "2026-07-07T23:28:23+08:00"
 last_task2b_verifier_log: "logs/rework/2026-05-31-23-task2b-verifier.md"
 last_task9_autofix_at: "2026-07-07"
-task6_review_notes: "2026-06-14 Task6 revisiting review: pass-light-edit；terminology 一致性修复 artifact→产物 (5处)；Task9 auto-fix SDK_INT_FULL 已验证正确；无新增 Task2B 回炉项。"
+task6_review_notes: '2026-07-07 Task6 revisiting review: pass-light-edit；Task9 auto-fix .hprof→.perfetto-java-heap-dump 已验证正确；L1/L2 扫描干净；锚点 5/5 覆盖；无 L3/L4 回炉项。task9_result=auto-fixed 非 pass-tech-review，未自动晋升。 | 2026-06-14 Task6 revisiting review: pass-light-edit；terminology 一致性修复 artifact→产物 (5处)；Task9 auto-fix SDK_INT_FULL 已验证正确；无新增 Task2B 回炉项。'
 deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-07-08
 finalized_date: "2026-07-08"

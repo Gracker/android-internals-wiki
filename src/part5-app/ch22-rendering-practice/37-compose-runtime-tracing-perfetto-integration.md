@@ -26,10 +26,14 @@ last_rework_run_id: "20260727-093533-rework-2ce7e666"
 last_verified_against: "AndroidX Compose Runtime Tracing 官方文档、AndroidX tracing release 文档、AndroidX compose-runtime release 文档；结论边界止于 Android 17/API 37"
 rework_summary: "删除原始大纲占位与未实证事件名/字段承诺；把章节收敛为 Android 13-17 范围内可审查的 Compose Runtime Tracing + Perfetto + APM 工程策略；明确 runtime-tracing 依赖、Flamingo/Compose UI 1.3.0+/Compiler 1.3.0+/API 30+ 前提、track_event/ENABLE_TRACING 手动采集边界、tracing-perfetto-binary 生产包隔离要求。"
 sources:
-  - "developer.android.com/develop/ui/compose/tooling/tracing"
-  - "developer.android.com/jetpack/androidx/releases/tracing"
-  - "developer.android.com/jetpack/androidx/releases/compose-runtime"
-  - "技术文章/source/juejin-android/2026-07-25-76336249-Android-App-最强APM来袭.md"
+- type: official
+  path: developer.android.com/develop/ui/compose/tooling/tracing
+- type: official
+  path: developer.android.com/jetpack/androidx/releases/tracing
+- type: official
+  path: developer.android.com/jetpack/androidx/releases/compose-runtime
+- type: reference
+  path: 技术文章/source/juejin-android/2026-07-25-76336249-Android-App-最强APM来袭.md
 ---
 
 # 22.37 Compose Runtime Tracing — runtime-tracing 与 Perfetto 组合阶段追踪

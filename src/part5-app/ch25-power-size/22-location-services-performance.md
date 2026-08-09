@@ -7,12 +7,44 @@ pipeline_stage: "ready-to-publish"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags: ["定位", "Location", "FusedLocationProvider", "功耗", "Geofencing", "FGS"]
 confidence: "medium-high"
+sources:
+- type: aosp
+  path: frameworks/base/location/java/android/location/LocationManager.java
+- type: official
+  path: https://developer.android.com/develop/sensors-and-location/location/request-updates
+- type: official
+  path: https://developer.android.com/develop/sensors-and-location/location/geofencing
+- type: official
+  path: https://developer.android.com/develop/sensors-and-location/location/battery/optimize
+- type: official
+  path: https://developer.android.com/develop/sensors-and-location/location/permissions/runtime
+- type: official
+  path: https://developer.android.com/develop/sensors-and-location/location/background
+- type: official
+  path: https://developer.android.com/develop/background-work/services/fgs/service-types#location
+- type: official
+  path: https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start
+- type: official
+  path: https://developer.android.com/develop/sensors-and-location/sensors/gnss
+- type: official
+  path: https://developer.android.com/develop/connectivity/wifi/wifi-rtt
+- type: official
+  path: https://developer.android.com/reference/android/bluetooth/le/ScanSettings
+- type: reference
+  path: https://developers.google.com/android/reference/com/google/android/gms/location/LocationRequest.Builder
+- type: reference
+  path: https://developers.google.com/android/reference/com/google/android/gms/location/Geofence.Builder
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/location/LocationManagerService.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/location/provider/LocationProviderManager.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java
 last_verified: "2026-06-18"
 last_verified_against: "Android Developers location/background + FGS service type docs + Google Play services LocationRequest/GeofenceStatusCodes + Android API GnssStatus + AOSP android-17.0.0_r1 LocationManagerService"
 drafted_date: "2026-06-18"
 reviewed_date: "2026-06-26"
 reviewed_by: "openclaw-task6"
-path: "frameworks/base/location/java/android/location/LocationManager.java"
 related_chapters: ["5.15", "11.2", "25.5", "5.17"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-06-18"

@@ -32,8 +32,6 @@ sources:
 tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-scheduling]
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
 task6_state: reviewed
-last_task6_at: "2026-07-03T19:10:00+08:00"
-last_task6_review_log: "logs/review/2026-07-02-22-review.md"
 task6_review_notes_final: "2026-07-02 Task6 round3 (post-Task9-autofix): pass-light-edit. L1 fix×1 (真正→删). L2 pass. Anchors all covered. Auto-promoted: task9=pass, queue=completed."
 task6_review_notes_round4: "2026-07-03 Task6 round4 (re-confirm): pass-light-edit. L1 clean. L2 pass. No new L3/L4 issues. AUTO-PROMOTED: task6=pass-light-edit, task9=auto-fixed(=pass), queue=completed."
 task9_state: reviewed
@@ -50,8 +48,7 @@ task9_review_notes: "2026-07-02 Task9 normal deep-review AUTO-FIX：对照 AOSP 
 last_task9_review_log: "logs/deep-review/2026-07-02-19-deep-review.md"
 last_task6_at: "2026-07-02T19:14:49+08:00"
 last_task6_review_log: "logs/review/2026-06-21-20-review.md"
-task6_review_notes: "2026-07-02 18:10 Task6 revisiting-review: needs-rework。L1/L2复扫通过, 无新增小修。L3/L4问题已在queue.json(pending)。保持ready-for-review, 送Task2B。"
-task6_review_notes: "2026-06-01 23:07 Task6 revisiting-review：L1/L2 复扫无新增小修，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。"
+task6_review_notes: '2026-07-02 18:10 Task6 revisiting-review: needs-rework。L1/L2复扫通过, 无新增小修。L3/L4问题已在queue.json(pending)。保持ready-for-review, 送Task2B。 | 2026-06-01 23:07 Task6 revisiting-review：L1/L2 复扫无新增小修，锚点覆盖完整，未新增 L3/L4 回炉项，送 Task9 复审。'
 last_task2b_at: "2026-07-02T18:50:00+08:00"
 task2b_notes: "2026-06-01 Task2B fallback: 按 logs/deep-review/2026-05-22-03-deep-review.md 修正 Alpha Project.Builder/getInstance/默认 ExecutorService/执行模型，并收窄线程优先级建议。2026-07-02 Task2B round2: 补充 Alpha 错误处理与超时机制、Application 生命周期集成方式、启动框架选型常见陷阱与场景化引导。"
 task6_review_notes_round2: "2026-07-02 Task6 revisiting-review round2: pass-light-edit. L1 fix: remove banned word. L2 pass. No new L3/L4 issues."
@@ -79,15 +76,6 @@ last_deepseek_cn_review_at: 2026-07-04
 ### 扩展（可选深入）
 
 - 🔸 启动任务的动态配置与 A/B 测试
-
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
-
 
 ### §21.2.5.6 Android 17 Startup Insights 源码级分析
 

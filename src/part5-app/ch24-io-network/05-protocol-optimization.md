@@ -52,8 +52,6 @@ last_deepseek_cn_review_at: 2026-07-06
 ### 扩展（可选深入）
 - 🔸 （待扩展）
 
-### OpenClaw 加工指引
-
 <!-- outline-end -->
 <!-- markdownlint-enable MD022 MD032 -->
 

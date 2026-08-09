@@ -17,7 +17,6 @@ task2b_result: fixed
 last_task2b_at: 2026-07-17T14:52:59+08:00
 last_task2b_lite_at: "2026-07-17"
 last_task9_at: "2026-07-17T15:20:00+08:00"
-last_task9_audit_log: "logs/deep-review/2026-07-17-15-deep-review.md"
 last_task9_result: "pass-tech-review"
 reviewed_by: openclaw-task6
 reviewed_date: 2026-07-17

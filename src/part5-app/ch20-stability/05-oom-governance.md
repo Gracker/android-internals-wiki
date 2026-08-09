@@ -73,9 +73,6 @@ last_deepseek_cn_review_at: 2026-07-12
 - 🔹 Native 内存 OOM、线程数 OOM、FD 泄漏 OOM 与虚拟内存耗尽的排查入口
 - 🔹 OOM 兜底、安全降级与大型 App 内存预算管理
 
-### OpenClaw 加工指引
-
-> 锚点是最低覆盖要求，review 时需要确认每个锚点都有对应正文和验证标注。
 <!-- outline-end -->
 
 `OutOfMemoryError` 只是 Android 进程资源失败的一种表现。Java heap 达到 ART growth limit、native-backed API 分配失败、线程创建失败，都可能投递 OOME；普通 `malloc()` / `mmap()` 失败也可能只返回错误，FD 耗尽通常表现为 `EMFILE` 或 abort，LMKD 结束进程时则没有 Java 异常。

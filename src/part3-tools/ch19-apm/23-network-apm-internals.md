@@ -29,11 +29,16 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-31"
 section: '19.23'
 sources:
-- https://square.github.io/okhttp/features/events/
-- https://square.github.io/okhttp/features/interceptors/
-- https://developer.android.com/reference/tools/gradle-api/8.6/com/android/build/api/instrumentation/AsmClassVisitorFactory
-- https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlRequest.Callback
-- https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo
+- type: reference
+  path: https://square.github.io/okhttp/features/events/
+- type: reference
+  path: https://square.github.io/okhttp/features/interceptors/
+- type: official
+  path: https://developer.android.com/reference/tools/gradle-api/8.6/com/android/build/api/instrumentation/AsmClassVisitorFactory
+- type: official
+  path: https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlRequest.Callback
+- type: official
+  path: https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo
 tags:
 - apm
 - network
@@ -82,16 +87,6 @@ last_deepseek_cn_review_at: 2026-07-16
 - 🔸 增加一段 ASM Hook `openConnection` 的伪代码或指令说明。
 - 🔸 解析 HTTP/3 (QUIC) 对现有网络 APM 捕获机制带来的挑战与应对思路。
 
-### 流水线加工要求
-
-- 必须从架构师的视角解释“如何造轮子”，而不仅是“如何用轮子”。
-- 所有网络指标分解必须符合真实的网络协议栈阶段。
-- 强调插桩与拦截器引入的性能开销及防劣化方案。
-
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
 <!-- outline-end -->
 
 网络 APM 难在采样边界。一条请求会经过业务封装、HTTP 客户端、DNS、Socket、TLS 和内核网络栈；WebView、Cronet 或 C/C++ SDK 还会绕开应用熟悉的 Java 入口。看板上的一条“请求耗时”，只有在这些事件被正确配对后才有诊断价值。

@@ -40,7 +40,6 @@ sources:
 tags: [file-io, sharedpreferences, datastore, mmkv, strictmode]
 related_chapters: ["24.2", "6.1", "6.3", "6.5", "9.2"]
 pipeline_stage: ready-to-publish
-task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task9_result: auto-fixed
@@ -54,9 +53,6 @@ task9_review_notes: "2026-05-14 Task9 06: pass-tech-review。无 P0/P1；P2 2：
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
-last_task6_at: "2026-06-08T16:14:59+08:00"
-last_task6_review_log: "logs/review/2026-06-08-16-review.md"
-last_task6_audit: "2026-06-08"
 last_task6_audit_log: "logs/review/2026-06-06-09-audit.md"
 task6_state: reviewed
 last_task6_at: "2026-06-08T16:14:59+08:00"
@@ -82,13 +78,6 @@ last_deepseek_cn_review_at: 2026-06-21
 
 - 🔸 （待扩展）
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 为什么要了解文件 I/O 优化

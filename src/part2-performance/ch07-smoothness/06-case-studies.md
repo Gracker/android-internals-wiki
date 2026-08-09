@@ -70,7 +70,6 @@ status: finalized
 pipeline_stage: "ready-to-publish"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-27"
-task6_result: "pass-light-edit"
 task6_state: "reviewed"
 task6_reviewed_date: "2026-05-27"
 task6_reviewed_by: "openclaw-task6"
@@ -105,10 +104,6 @@ updated_date: "2026-07-08"
 - 🔸 厂商级别的流畅性优化案例
 - 🔸 特殊硬件条件下的 Jank 案例(如低端机、折叠屏)
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求,加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
 <!-- outline-end -->
 
 ## 案例证据怎样使用

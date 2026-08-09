@@ -73,10 +73,6 @@ last_task9_autofix_at: "2026-06-20"
 - 🔸 Chrome Custom Tabs 与 WebView 的选型边界
 - 🔸 WebView 多进程、Renderer 崩溃隔离与调试策略
 
-### OpenClaw 加工指引
-
-> 锚点是最低覆盖要求，加工时必须逐条落实并标注验证状态。
-> 涉及 Chromium 线程模型、滚动调度、量化数据和 API 示例时，无法确认的细节保留 `[待验证]`，不要硬写结论。
 <!-- outline-end -->
 
 WebView 卡顿常跨越三个边界：网页 renderer、宿主 App 进程中的 WebView/provider/GPU service、Android 窗口显示链路。只看宿主主线程会漏掉 Blink 与 raster；只看 Chromium compositor 又无法证明宿主窗口按时提交和显示。

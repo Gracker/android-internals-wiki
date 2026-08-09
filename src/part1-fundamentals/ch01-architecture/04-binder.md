@@ -99,7 +99,6 @@ p1: 1
 p2: 0
 task9_review_notes: "2026-07-02 00 Task9 deep-review: auto-fixed。P0 1(auto-fixed) / P1 1(auto-fixed) / P2 0；修正 BINDER_ENABLE_ONEWAY_SPAM_DETECTION 所属 API/源码路径为 ProcessState，并将 frameworks/native 来源标签统一 android-17.0.0_r1，回到 Task6 复审。"
 task6_review_notes: "07-01 07 Task6 revisiting：pass-light-edit。07-02 01 Task6 revisiting：pass-light-edit。"
-path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql"
 last_task9_log: "logs/deep-review/2026-07-02-00-deep-review.md"
 last_task9_review_log: "logs/deep-review/2026-07-02-00-deep-review.md"
 ---

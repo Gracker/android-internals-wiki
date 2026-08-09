@@ -12,17 +12,17 @@ last_verified: "2026-04-27"
 last_verified_against: "AOSP android-15.0.0_r1 ART heap/gc_cause anchors, SQLite WAL docs, Android 14-17 FGS timeout research"
 confidence: medium
 sources:
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/ActivityThread.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/SharedPreferencesImpl.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/IActivityManager.aidl"
-  - type: web
-    url: "https://androidperformance.com/"
-    note: "高爷原创 ANR 分析系列"
+- type: aosp
+  path: frameworks/base/core/java/android/app/ActivityThread.java
+- type: aosp
+  path: frameworks/base/core/java/android/app/SharedPreferencesImpl.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
+- type: aosp
+  path: frameworks/base/core/java/android/app/IActivityManager.aidl
+- type: web
+  note: 高爷原创 ANR 分析系列
+  path: https://androidperformance.com/
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
 task6_state: "reviewed"

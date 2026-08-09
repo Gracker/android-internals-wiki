@@ -10,19 +10,8 @@ last_verified: "2026-07-01"
 last_verified_against: "AOSP android-17.0.0_r1 + Perfetto docs 2026-05"
 confidence: medium
 sources:
-  - type: official
-  - type: official
-  - type: official
-  - type: official
-  - type: official
-  - type: aosp
-  - type: aosp
-  - type: aosp
-  - type: aosp
-  - type: aosp
-  - type: paper
-  - type: research
-    path: "DeepResearch/2026-05-11-hci-perception-input-latency-analysis.md"
+- type: research
+  path: DeepResearch/2026-05-11-hci-perception-input-latency-analysis.md
 tags: [input-latency, hci, touch, jank, perception]
 related_chapters: ["3.2", "3.4", "7.9", "13.8", "15.3"]
 created_by: "task2a-knowledge-gap"

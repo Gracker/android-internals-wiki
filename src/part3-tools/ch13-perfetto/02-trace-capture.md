@@ -152,13 +152,6 @@ last_task9_audit: 2026-07-11
 - 🔸 Long trace 的周期写文件、文件上限与分段策略
 - 🔸 Heap profiling、ART heap graph 与 callstack sampling
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
-
 ### 🔸 `linux.perf` 与 FrameTimeline 数据源实现细节
 
 - `traced_perf` 通过 Producer IPC 连接 `traced`；init 传入的 `ANDROID_SOCKET_traced_perf` 监听 socket 用来接收目标进程 `/proc/<pid>/{maps,mem}` 文件描述符。

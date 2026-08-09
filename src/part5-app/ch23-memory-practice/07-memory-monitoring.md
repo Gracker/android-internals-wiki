@@ -11,44 +11,39 @@ confidence: medium
 drafted_date: "2026-05-14"
 polish_count: 0
 sources:
-  - type: official
-    path: "https://developer.android.com/reference/android/os/Debug.MemoryInfo"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/ActivityManager.MemoryInfo"
-  - type: official
-    path: "https://developer.android.com/reference/android/content/ComponentCallbacks2"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/ActivityManager#getProcessMemoryInfo(int[])"
-  - type: official
-    path: "https://developer.android.com/studio/profile/chart-glossary/process-memory"
-  - type: official
-    path: "https://developer.android.com/topic/performance/memory"
-  - type: official
-    path: "https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture"
-  - type: official
-    path: "https://developer.android.com/studio/profile/capture-heap-dump"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/Debug.java @ android-16.0.0_r1"
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/ActivityManager.java @ android-16.0.0_r1"
-  - type: aosp
-    path: "frameworks/base/core/java/android/content/ComponentCallbacks2.java @ android-16.0.0_r1"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-16.0.0_r1"
-  - type: blog
-    path: ""
-  - type: blog
-    path: ""
-  - type: blog
-    path: "[结构参考: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md]"
-  - type: blog
-    path: "[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]"
-  - type: blog
-    path: "[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]"
+- type: official
+  path: https://developer.android.com/reference/android/os/Debug.MemoryInfo
+- type: official
+  path: https://developer.android.com/reference/android/app/ActivityManager.MemoryInfo
+- type: official
+  path: https://developer.android.com/reference/android/content/ComponentCallbacks2
+- type: official
+  path: https://developer.android.com/reference/android/app/ActivityManager#getProcessMemoryInfo(int[])
+- type: official
+  path: https://developer.android.com/studio/profile/chart-glossary/process-memory
+- type: official
+  path: https://developer.android.com/topic/performance/memory
+- type: official
+  path: https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture
+- type: official
+  path: https://developer.android.com/studio/profile/capture-heap-dump
+- type: aosp
+  path: frameworks/base/core/java/android/os/Debug.java @ android-16.0.0_r1
+- type: aosp
+  path: frameworks/base/core/java/android/app/ActivityManager.java @ android-16.0.0_r1
+- type: aosp
+  path: frameworks/base/core/java/android/content/ComponentCallbacks2.java @ android-16.0.0_r1
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-16.0.0_r1
+- type: blog
+  path: '[结构参考: Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md]'
+- type: blog
+  path: '[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]'
+- type: blog
+  path: '[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]'
 tags: [memory-monitoring, pss, rss, heap-dump, oom-alert]
 related_chapters: ["23.1", "20.5", "26.3", "10.1", "19.3"]
 pipeline_stage: ready-to-publish
-task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task9_result: auto-fixed
@@ -62,9 +57,6 @@ task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-14"
 task6_reviewed_by: "openclaw-task6"
 task6_review_notes: "2026-05-14 task6 review: L1/L2 轻修 3 处（第二人称收束、API 35+ 边界标注、结尾措辞）；四层质检通过，无新增 L3/L4 回炉项。Task9 已 pass-tech-review 且 queue 无 pending，自动晋升 finalized。"
-last_task6_review_log: "logs/review/2026-06-08-16-review.md"
-last_task6_at: "2026-06-08T16:14:59+08:00"
-last_task6_audit: "2026-06-08"
 auto_finalized_by: openclaw-task6
 auto_finalized_date: "2026-05-14"
 last_task9_audit: "2026-06-08"
@@ -94,13 +86,6 @@ last_deepseek_cn_review_at: 2026-06-12
 
 - 🔸 （待扩展）
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 > **版本基线**

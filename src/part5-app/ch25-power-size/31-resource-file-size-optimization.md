@@ -21,19 +21,32 @@ reviewed_by: "hermes-aiw-review-finalize-apply"
 last_review_finalize_at: "2026-08-04T08:11:26+08:00"
 last_review_finalize_run_id: "20260804-081101-aa9c89f4"
 sources:
-  - "https://developer.android.com/tools/aapt2"
-  - "https://developer.android.com/tools/apkanalyzer"
-  - "https://developer.android.com/topic/performance/app-optimization/enable-app-optimization"
-  - "https://developer.android.com/topic/performance/app-optimization/customize-which-resources-to-keep"
-  - "https://developer.android.com/topic/performance/reduce-apk-size"
-  - "https://developer.android.com/studio/write/tool-attributes"
-  - "https://developer.android.com/develop/ui/views/graphics/reduce-image-sizes"
-  - "https://developer.android.com/guide/app-bundle/app-bundle-format"
-  - "https://developer.android.com/guide/app-bundle/configure-base"
-  - "https://developer.android.com/guide/playcore/asset-delivery"
-  - "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/androidfw/include/androidfw/ResourceTypes.h"
-  - "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/androidfw/AssetManager2.cpp"
-  - "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/tools/aapt2/ResourceTable.cpp"
+- type: official
+  path: https://developer.android.com/tools/aapt2
+- type: official
+  path: https://developer.android.com/tools/apkanalyzer
+- type: official
+  path: https://developer.android.com/topic/performance/app-optimization/enable-app-optimization
+- type: official
+  path: https://developer.android.com/topic/performance/app-optimization/customize-which-resources-to-keep
+- type: official
+  path: https://developer.android.com/topic/performance/reduce-apk-size
+- type: official
+  path: https://developer.android.com/studio/write/tool-attributes
+- type: official
+  path: https://developer.android.com/develop/ui/views/graphics/reduce-image-sizes
+- type: official
+  path: https://developer.android.com/guide/app-bundle/app-bundle-format
+- type: official
+  path: https://developer.android.com/guide/app-bundle/configure-base
+- type: official
+  path: https://developer.android.com/guide/playcore/asset-delivery
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/androidfw/include/androidfw/ResourceTypes.h
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/androidfw/AssetManager2.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/tools/aapt2/ResourceTable.cpp
 ---
 
 # 25.31 资源文件体积优化实战

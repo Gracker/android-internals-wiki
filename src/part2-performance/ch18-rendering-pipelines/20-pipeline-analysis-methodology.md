@@ -9,7 +9,6 @@ applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
 tags: ["方法论", "渲染管线", "Perfetto", "dumpsys", "诊断", "BufferQueue", "性能分析"]
 reviewed_date: "2026-07-03"
 reviewed_by: "openclaw-task6"
-path: "frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp"
 related_chapters: ["18.1", "2.6", "13.5", "15.1", "18.13", "18.14", "18.15"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"

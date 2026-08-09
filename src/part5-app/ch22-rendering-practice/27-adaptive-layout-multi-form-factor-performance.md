@@ -17,7 +17,6 @@ task6_state: rework-ready
 task9_state: rework-fixed
 last_rework_at: "2026-07-25T21:35:11+08:00"
 last_rework_run_id: "20260725-213511-rework-cbda85dc"
-path: "src/part5-app/ch22-rendering-practice/27-adaptive-layout-multi-form-factor-performance.md"
 sources:
   - type: official
     path: "https://developer.android.com/guide/topics/large-screens"

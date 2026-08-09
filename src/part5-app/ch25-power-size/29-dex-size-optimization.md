@@ -12,14 +12,22 @@ confidence: high
 last_verified: 2026-08-09
 last_verified_against: "android-17.0.0_r1 / Android Developers docs checked 2026-08-09"
 sources:
-  - "Dalvik executable format (source.android.com/docs/core/runtime/dex-format)"
-  - "Enable app optimization with R8 (developer.android.com/topic/performance/app-optimization/enable-app-optimization)"
-  - "R8 Configuration Analyzer (developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer)"
-  - "Add keep rules / Troubleshoot R8 rules (developer.android.com/topic/performance/app-optimization)"
-  - "D8 command reference (developer.android.com/tools/d8)"
-  - "Multidex guide (developer.android.com/build/multidex)"
-  - "Startup Profile DEX layout and Baseline Profile debug docs (developer.android.com/topic/performance)"
-  - "StandardDexFile / DexFile / DexPathList @ android-17.0.0_r1"
+- type: official
+  path: Dalvik executable format (source.android.com/docs/core/runtime/dex-format)
+- type: official
+  path: Enable app optimization with R8 (developer.android.com/topic/performance/app-optimization/enable-app-optimization)
+- type: official
+  path: R8 Configuration Analyzer (developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer)
+- type: official
+  path: Add keep rules / Troubleshoot R8 rules (developer.android.com/topic/performance/app-optimization)
+- type: official
+  path: D8 command reference (developer.android.com/tools/d8)
+- type: official
+  path: Multidex guide (developer.android.com/build/multidex)
+- type: official
+  path: Startup Profile DEX layout and Baseline Profile debug docs (developer.android.com/topic/performance)
+- type: reference
+  path: StandardDexFile / DexFile / DexPathList @ android-17.0.0_r1
 task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: finalized

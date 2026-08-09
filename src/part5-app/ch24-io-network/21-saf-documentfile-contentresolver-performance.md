@@ -19,7 +19,13 @@ reviewed_by: "hermes-aiw-review-finalize-apply"
 last_review_finalize_at: "2026-08-03T12:09:07+08:00"
 last_review_finalize_run_id: "20260803-120756-8c57cb22"
 confidence: high
-sources: ["Android Developers SAF/DocumentFile/ContentResolver/MediaStore/Photo Picker", "AOSP android-17.0.0_r1 DocumentsContract/DocumentsProvider/MediaProvider FuseDaemon", "Android common kernel android17-6.18 FUSE passthrough/BPF"]
+sources:
+- type: reference
+  path: Android Developers SAF/DocumentFile/ContentResolver/MediaStore/Photo Picker
+- type: aosp
+  path: AOSP android-17.0.0_r1 DocumentsContract/DocumentsProvider/MediaProvider FuseDaemon
+- type: kernel
+  path: Android common kernel android17-6.18 FUSE passthrough/BPF
 ---
 
 # 24.21 SAF/DocumentFile/ContentResolver 文件访问性能选型与治理

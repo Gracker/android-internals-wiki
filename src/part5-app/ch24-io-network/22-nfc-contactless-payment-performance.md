@@ -21,33 +21,34 @@ last_rework_at: "2026-08-09T03:14:43+08:00"
 last_rework_run_id: "20260809-031354-rework-bf063b3b"
 rework_summary: "Rework closed finding-c8aaa40d5450 by binding the chapter to Android Developers NFC/HCE/API-diff docs and AOSP packages/modules/Nfc android-17.0.0_r1 sources, rejecting unrelated audio material, and keeping all performance guidance as measurement methodology rather than fixed platform guarantees."
 sources:
-  - type: official-docs
-    ref: "Android 17 / API 37 android.nfc API diff"
-    url: "https://developer.android.com/sdk/api_diff/37/changes/pkg_android.nfc"
-    status: source-evidence
-  - type: official-docs
-    ref: "Android Developers: NFC basics"
-    url: "https://developer.android.com/develop/connectivity/nfc/nfc"
-    status: source-evidence
-  - type: official-docs
-    ref: "Android Developers: Host-based card emulation"
-    url: "https://developer.android.com/develop/connectivity/nfc/hce"
-    status: source-evidence
-  - type: official-docs
-    ref: "Android Developers: NfcAdapter / HostApduService API reference"
-    url: "https://developer.android.com/reference/android/nfc/NfcAdapter"
-    status: source-evidence
-  - type: aosp-source
-    ref: "packages/modules/Nfc @ android-17.0.0_r1: NfcAdapter.java, HostApduService.java, NfcDispatcher.java, NfcService.java, HostEmulationManager.java, NfcProprietaryCaps.java, NfcShellCommand.java"
-    url: "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/"
-    status: source-evidence
-  - type: android-common-kernel
-    ref: "android17-6.18-2026-06_r6"
-    url: "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6"
-    status: boundary-reference
-  - type: routed-material
-    ref: "DeepResearch/2026-07-05-background-audio-hardening-power.md"
-    status: rejected-unrelated-to-nfc-payment
+- type: official-docs
+  ref: Android 17 / API 37 android.nfc API diff
+  status: source-evidence
+  path: https://developer.android.com/sdk/api_diff/37/changes/pkg_android.nfc
+- type: official-docs
+  ref: 'Android Developers: NFC basics'
+  status: source-evidence
+  path: https://developer.android.com/develop/connectivity/nfc/nfc
+- type: official-docs
+  ref: 'Android Developers: Host-based card emulation'
+  status: source-evidence
+  path: https://developer.android.com/develop/connectivity/nfc/hce
+- type: official-docs
+  ref: 'Android Developers: NfcAdapter / HostApduService API reference'
+  status: source-evidence
+  path: https://developer.android.com/reference/android/nfc/NfcAdapter
+- type: aosp-source
+  ref: 'packages/modules/Nfc @ android-17.0.0_r1: NfcAdapter.java, HostApduService.java, NfcDispatcher.java, NfcService.java, HostEmulationManager.java, NfcProprietaryCaps.java, NfcShellCommand.java'
+  status: source-evidence
+  path: https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/
+- type: android-common-kernel
+  ref: android17-6.18-2026-06_r6
+  status: boundary-reference
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6
+- type: routed-material
+  ref: DeepResearch/2026-07-05-background-audio-hardening-power.md
+  status: rejected-unrelated-to-nfc-payment
+  path: DeepResearch/2026-07-05-background-audio-hardening-power.md
 ---
 
 # 24.22 Android 17 NFC 性能优化与无接触支付

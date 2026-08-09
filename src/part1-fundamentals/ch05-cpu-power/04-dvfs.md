@@ -8,10 +8,12 @@ last_verified: '2026-06-29'
 last_verified_against: AOSP android-17.0.0_r1 (frameworks/base, hardware/interfaces/power), Linux kernel 6.6 (android15-6.6), Linux kernel 6.12 (android16-6.12)
 confidence: medium
 sources:
-  - obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md
-  - AOSP android-17.0.0_r1 (frameworks/base, hardware/interfaces/power)
-  - kernel/sched/cpufreq_schedutil.c
-path: 'source: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md'
+- type: material
+  path: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md
+- type: aosp
+  path: AOSP android-17.0.0_r1 (frameworks/base, hardware/interfaces/power)
+- type: kernel
+  path: kernel/sched/cpufreq_schedutil.c
 tags:
   - dvfs
   - cpu-frequency
@@ -77,13 +79,6 @@ last_deepseek_cn_review_at: 2026-06-30
 - 🔸 内存频率（DDR/LPDDR）调频对性能的影响
 - 🔸 Perfetto 中观察 CPU/GPU 频率变化的方法
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 > [!NOTE] 源码锚点

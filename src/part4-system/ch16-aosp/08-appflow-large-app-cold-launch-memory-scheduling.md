@@ -76,7 +76,7 @@ gap_source: "研究素材 + 论文精读 + 官方/外部搜索"
 补充车载多屏、端侧大模型、3D 游戏这类 GB 级负载为什么更容易触发该问题。
 
 ### 🔸 AOSP 可验证锚点
-后续加工时核对 ActivityManagerService、UsageStatsManager、LMKD、mm/vmscan、readahead、zRAM 相关源码路径，区分论文原型与 AOSP 主线事实。
+核查结论时应对照 ActivityManagerService、UsageStatsManager、LMKD、mm/vmscan、readahead、zRAM 相关源码路径，区分论文原型与 AOSP 主线事实。
 
 <!-- outline-end -->
 

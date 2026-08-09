@@ -10,9 +10,12 @@ last_verified: '2026-05-09'
 last_verified_against: Linux 6.12 + Android 16 GKI + Android 17 Baklava preview
 confidence: medium
 sources:
-- Cubox/IO调度器详解-2024-03-08.md
-- Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md
-- Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md
+- type: material
+  path: Cubox/IO调度器详解-2024-03-08.md
+- type: material
+  path: Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md
+- type: material
+  path: Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md
 tags:
 - linux
 - android
@@ -56,13 +59,6 @@ last_deepseek_cn_review_at: 2026-06-26
 - 🔸 Direct I/O vs Buffered I/O 在 Android 场景的取舍
 - 🔸 数据库（SQLite/Room）I/O 优化最佳实践
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 从 D 状态开始，但不要停在 D 状态

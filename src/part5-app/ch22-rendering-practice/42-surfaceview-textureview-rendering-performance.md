@@ -20,10 +20,14 @@ last_review_finalize_run_id: "20260807-140509-edd6f8ad"
 last_draft_polish_at: "2026-08-06T19:35:28+08:00"
 last_draft_polish_run_id: "20260806-193528-draft-polish-b85a1422"
 sources:
-  - "Android 17 platform source tag android-17.0.0_r1"
-  - "Android kernel tag android17-6.18-2026-06_r6"
-  - "Android developer documentation: SurfaceView, TextureView, SurfaceControl.Transaction, SurfaceSyncGroup"
-  - "CameraX PreviewView, Media3 PlayerView, Compose AndroidView / external surface references"
+- type: reference
+  path: Android 17 platform source tag android-17.0.0_r1
+- type: kernel
+  path: Android kernel tag android17-6.18-2026-06_r6
+- type: reference
+  path: 'Android developer documentation: SurfaceView, TextureView, SurfaceControl.Transaction, SurfaceSyncGroup'
+- type: reference
+  path: CameraX PreviewView, Media3 PlayerView, Compose AndroidView / external surface references
 ---
 
 # 22.42 SurfaceView 与 TextureView 渲染性能选型实战

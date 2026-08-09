@@ -84,7 +84,6 @@ sources:
 - type: official
   path: https://perfetto.dev/docs/data-sources/frametimeline
 pipeline_stage: "ready-to-publish"
-task6_result: "pass-light-edit"
 task6_state: "reviewed"
 task9_state: "reviewed"
 task2b_state: "fixed"
@@ -127,12 +126,6 @@ task6_reviewed_date: "2026-06-12"
 
 - 🔸 三缓冲与 `setMaxDequeuedBufferCount(2)` 的关系
 - 🔸 从 Project Butter 到 BLAST 的两次大变化
-
-### OpenClaw 加工指引
-
-> 锚点是最低覆盖要求。
-> 没有实测 Trace 的地方,用 `[图:...]` 或 `[需补充素材:...]` 明确占位,不写假截图。
-> 涉及版本结论,只保留能在 AOSP tag 或官方文档中落下来的事实。
 
 <!-- outline-end -->
 

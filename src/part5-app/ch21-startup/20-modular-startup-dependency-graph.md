@@ -21,29 +21,25 @@ reviewed_by: "hermes-aiw-review-finalize-apply"
 last_review_finalize_at: "2026-07-30T16:06:42+08:00"
 last_review_finalize_run_id: "20260730-160642-907d4a28"
 sources:
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/ActivityThread.java"
-    tag: "android-17.0.0_r1"
-    url: "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/LoadedApk.java"
-    tag: "android-17.0.0_r1"
-  - type: jetpack
-    path: "androidx/startup/AppInitializer.java"
-    version: "1.2.0"
-    url: "https://android.googlesource.com/platform/frameworks/support/+/2bbbb9ffed2413b31a95f0fa838532db5b541e2e/startup/startup-runtime/src/main/java/androidx/startup/AppInitializer.java"
-  - type: jetpack
-    path: "androidx/startup/InitializationProvider.java"
-    version: "1.2.0"
-    url: "https://android.googlesource.com/platform/frameworks/support/+/2bbbb9ffed2413b31a95f0fa838532db5b541e2e/startup/startup-runtime/src/main/java/androidx/startup/InitializationProvider.java"
-  - type: jetpack
-    path: "androidx/startup/Initializer.java"
-    version: "1.2.0"
-    url: "https://android.googlesource.com/platform/frameworks/support/+/2bbbb9ffed2413b31a95f0fa838532db5b541e2e/startup/startup-runtime/src/main/java/androidx/startup/Initializer.java"
-  - type: official
-    path: "https://developer.android.com/topic/libraries/app-startup"
-  - type: official
-    path: "https://developer.android.com/jetpack/androidx/releases/startup"
+- type: aosp
+  path: frameworks/base/core/java/android/app/ActivityThread.java
+  tag: android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/core/java/android/app/LoadedApk.java
+  tag: android-17.0.0_r1
+- type: jetpack
+  path: androidx/startup/AppInitializer.java
+  version: 1.2.0
+- type: jetpack
+  path: androidx/startup/InitializationProvider.java
+  version: 1.2.0
+- type: jetpack
+  path: androidx/startup/Initializer.java
+  version: 1.2.0
+- type: official
+  path: https://developer.android.com/topic/libraries/app-startup
+- type: official
+  path: https://developer.android.com/jetpack/androidx/releases/startup
 ---
 
 # 21.20 Android 17 应用启动边界与 AndroidX App Startup 依赖图

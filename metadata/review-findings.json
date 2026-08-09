@@ -1497,13 +1497,13 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/1.48-android17-binder-priority-inheritance.md",
-      "close_note": "Fixed: folded historical [待验证]/[待补充] markers rewritten as historical non-citable notes; frontmatter reworked and ready-for-review.",
-      "closed_by": "rework",
+      "close_note": "完整历史错误提纲及 Review-finalize 过程话术已从读者正文删除；有效源码正文保留，DeepResearch 路径迁入 structured sources。",
+      "closed_by": "pipeline-remediation-review",
       "closed_run_id": "20260808-213546-rework-3b3755ed",
       "created_at": "2026-08-08T21:37:56.832096+08:00",
       "created_by": "rework",
       "created_run_id": "20260808-213546-rework-3b3755ed",
-      "details": "pre-run quality_flags=pending-verification-marker; fixed by rewriting folded historical [待验证]/[待补充] placeholders as non-citable historical marker notes and returning chapter to ready-for-review.",
+      "details": "原处理只改写待验证标记，仍完整保留虚构枚举、API、公式、性能数字和 ML 调度旧稿。2026-08-09 治理已删除整个错误折叠区和正文过程话术。",
       "id": "RF-20260808-213546-1-48-pending-marker",
       "log_path": "logs/rework/2026-08-08-20260808-213546-rework-3b3755ed-rework.md",
       "severity": "P3",
@@ -1513,7 +1513,87 @@
       "status": "fixed",
       "summary": "1.48 folded historical outline retained pending verification markers",
       "type": "pending-verification-marker",
-      "updated_at": "2026-08-08T21:37:56.880949+08:00"
+      "updated_at": "2026-08-09T09:59:45+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/05.26-android17-jobscheduler-service-cpu-quota.md",
+      "close_note": "删除 400 余行无源码依据的权重公式、CPU quota 伪代码、固定百分比、WorkManager 优先级映射与跨设备调度旧稿；保留 android-17.0.0_r1 源码正文。",
+      "closed_by": "pipeline-remediation-review",
+      "closed_run_id": "manual-remediation-20260809",
+      "created_at": "2026-08-09T05:16:00+08:00",
+      "created_by": "pipeline-remediation-review",
+      "created_run_id": "review-section-12",
+      "details": "finalized 章节在 warning 后完整保留已知虚构公式、数字和 API；免责声明不能把错误内容变为发布正文。",
+      "id": "AIW-5.26-20260809-P1-historical-wrong-content",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "src/part1-fundamentals/ch05-cpu-power/05.26-android17-jobscheduler-service-cpu-quota.md"
+      ],
+      "status": "fixed",
+      "summary": "5.26 finalized 正文保留大块已知错误 JobScheduler 旧稿",
+      "type": "historical-wrong-content",
+      "updated_at": "2026-08-09T09:59:45+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch06-storage/6.1-androidx-datastore--ipc-源码级验证-draft.md",
+      "close_note": "删除虚构性能数据、MemoryLimiter/ZRAM 集成、专属 ftrace 事件和 Binder 关联旧稿；保留 DataStore 1.2.1 可验证正文并将纠错段改为能力边界。",
+      "closed_by": "pipeline-remediation-review",
+      "closed_run_id": "manual-remediation-20260809",
+      "created_at": "2026-08-09T05:16:00+08:00",
+      "created_by": "pipeline-remediation-review",
+      "created_run_id": "review-section-12",
+      "details": "章节前半保留虚构基准和 Android 17 特性，后半才逐项纠正，形成两套互相冲突的读者可见结论。",
+      "id": "AIW-6.1-20260809-P1-historical-wrong-content",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "src/part1-fundamentals/ch06-storage/6.1-androidx-datastore--ipc-源码级验证-draft.md"
+      ],
+      "status": "fixed",
+      "summary": "6.1 DataStore 正文前后结论冲突并保留虚构数据",
+      "type": "historical-wrong-content",
+      "updated_at": "2026-08-09T09:59:45+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch06-storage/6.19-linux-6.10-内存碎片整理机制.md",
+      "close_note": "删除无复现实验的 60%/45% 历史 outline 与 draft-polish/review-finalize 过程记录；保留 Android 17 6.18 r6 内存规整正文。",
+      "closed_by": "pipeline-remediation-review",
+      "closed_run_id": "manual-remediation-20260809",
+      "created_at": "2026-08-09T05:16:00+08:00",
+      "created_by": "pipeline-remediation-review",
+      "created_run_id": "review-section-12",
+      "details": "finalized 正文以 warning 隔离无实验百分比，但仍把完整错误段和 lane 记录暴露给读者。",
+      "id": "AIW-6.19-20260809-P1-historical-wrong-content",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "src/part1-fundamentals/ch06-storage/6.19-linux-6.10-内存碎片整理机制.md"
+      ],
+      "status": "fixed",
+      "summary": "6.19 finalized 正文保留无依据历史百分比与过程话术",
+      "type": "historical-wrong-content",
+      "updated_at": "2026-08-09T09:59:45+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/5.29-android17-gpu-dvfs-headroom-power-advisor.md",
+      "close_note": "删除受保护 outline，将版本/API/HAL/缓存/SurfaceFlinger 边界合并为单套源码结论；章节继续保持 ready-for-review。",
+      "closed_by": "pipeline-remediation-review",
+      "closed_run_id": "manual-remediation-20260809",
+      "created_at": "2026-08-09T05:16:00+08:00",
+      "created_by": "pipeline-remediation-review",
+      "created_run_id": "review-section-12",
+      "details": "ready-for-review 章节用后文表格收窄受保护 outline，晋级前应直接删除旧表达，避免两套结论并存。",
+      "id": "AIW-5.29-20260809-P1-historical-wrong-content",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "src/part1-fundamentals/ch05-cpu-power/5.29-android17-gpu-dvfs-headroom-power-advisor.md"
+      ],
+      "status": "fixed",
+      "summary": "5.29 受保护 outline 与后文源码结论并存",
+      "type": "historical-wrong-content",
+      "updated_at": "2026-08-09T09:59:45+08:00"
     },
     {
       "chapter": "src/part5-app/ch23-memory-practice/23.24-android-17-ai-推理加速与-neuralnetworks-hal-优化.md",

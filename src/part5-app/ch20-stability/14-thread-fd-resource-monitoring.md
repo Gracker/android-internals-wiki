@@ -81,7 +81,7 @@ last_deepseek_cn_review_at: 2026-06-22
 ## 扩展
 
 ### 🔸 与 20.7 异常处理架构的边界
-20.7 负责异常捕获和恢复策略，本节只负责资源监控与归因数据。后续加工时用「详见 20.7 节」交叉引用，不重复写异常框架设计。
+20.7 负责异常捕获和恢复策略，本节只负责资源监控与归因数据；异常框架设计详见 20.7 节。
 
 ### 🔸 与 26.2 / 26.5 线上证据包的衔接
 本节产出的线程快照、FD 快照、FD 创建堆栈需要进入 crash/ANR 证据包，作为 ApplicationExitInfo、tombstone、traces.txt 的补充材料。
@@ -89,8 +89,8 @@ last_deepseek_cn_review_at: 2026-06-22
 ### 🔸 ⚠️ 待验证：Android 16/17 bionic fortify 与 FD_SETSIZE 触发路径
 需要复核 `__FD_SET_chk`、`FD_SETSIZE`、厂商 libc 差异和目标 SDK 行为边界，避免把老设备现象写成所有 Android 版本的通用结论。
 
-### 🔸 ⚠️ 待验证：字节码插桩与现代 AGP/ASM Transform 接入方式
-需要补齐 AGP 8.x 插件接入方式、Transform API 退场后的替代路径，以及 R8/混淆对线程归因类名的影响。
+### 🔸 字节码插桩与现代 AGP/ASM 接入边界
+接入方案应覆盖 AGP 8.x 插件 API、Transform API 退场后的替代路径，以及 R8/混淆对线程归因类名的影响；未完成版本级验证前，不把单一 AGP 版本的实现描述为通用方案。
 
 <!-- outline-end -->
 

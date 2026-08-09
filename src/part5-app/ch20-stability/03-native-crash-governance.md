@@ -37,8 +37,6 @@ sources:
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
 task6_state: reviewed
-last_task6_at: "2026-07-12T20:19:00+08:00"
-last_task6_review_log: "logs/review/2026-07-02-22-review.md"
 task6_review_notes_final: "2026-07-02 Task6 round3 (post-Task9-autofix): pass-light-edit. L1 clean. L2 pass. Anchors all covered. Auto-promoted: task9=pass, queue=completed."
 task6_review_notes_round4: "2026-07-03 Task6 round4 (re-confirm): pass-light-edit. L1 clean (对齐=技术内存对齐, 非黑话). L2 pass. 限制句式×2 at limit. No new L3/L4 issues. AUTO-PROMOTED: task6=pass-light-edit, task9=auto-fixed(=pass), queue=completed."
 task6_result: pass-light-edit
@@ -55,9 +53,8 @@ last_task6_audit: "2026-06-09"
 task6_reviewed_by: "openclaw-task6"
 task6_reviewed_at: "2026-05-19T20:25:44+08:00"
 last_task6_review_log: "logs/review/2026-06-21-20-review.md"
-task6_review_notes: "2026-07-02 18:10 Task6 revisiting-review: needs-rework。L1修复: 链路→流程×3, meta-narrative×1。L3/L4问题已在queue.json(pending)。保持ready-for-review, 送Task2B。"
 task6_review_notes_round2: "2026-07-02 Task6 revisiting-review round2: pass-light-edit. L1 fix: remove banned word. L2 pass. Anchors all covered. No new L3/L4 issues."
-task6_review_notes: "2026-06-01 18 Task6 revisiting-review: pass-light-edit。修正 C++ 异常 typo 与英文所有格表达；L1/L2 通过，无新增回炉项，送 Task9 复核。"
+task6_review_notes: '2026-07-02 18:10 Task6 revisiting-review: needs-rework。L1修复: 链路→流程×3, meta-narrative×1。L3/L4问题已在queue.json(pending)。保持ready-for-review, 送Task2B。 | 2026-06-01 18 Task6 revisiting-review: pass-light-edit。修正 C++ 异常 typo 与英文所有格表达；L1/L2 通过，无新增回炉项，送 Task9 复核。'
 last_task9_review_log: "logs/deep-review/2026-07-12-19-audit.md"
 task9_review_notes: "2026-07-12 Task9 idle audit AUTO-FIX：对照 AOSP android-17.0.0_r1 tombstoned.cpp，修正 tombstone 默认保留数量旧口径：Android 17 由 tombstoned.max_tombstone_count 控制，默认 32 个槽位，并补充 tombstoned.cpp 源码锚点；回到 Task6 复审。"
 last_task9_autofix_at: "2026-07-12"

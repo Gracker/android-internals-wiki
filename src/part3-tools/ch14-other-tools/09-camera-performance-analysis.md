@@ -45,7 +45,6 @@ repaired_by: openclaw-task2b
 last_task9_review_log: "logs/deep-review/2026-05-28-18-deep-review.md"
 task9_review_notes: "2026-05-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。复核 TextureView/SurfaceTexture、HAL buffer management、CameraMetadataNative 与 Perfetto SQL/Python 示例；未发现阻断问题，自动晋升 finalized。"
 task2b_rework_date: '2026-05-19'
-last_task2b_lite_at: "2026-05-28"
 last_task6_at: "2026-07-13T15:17:00+08:00"
 task6_reviewed_at: "2026-07-13T15:17:00+08:00"
 task6_reviewed_by: "openclaw-task6"

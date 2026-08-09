@@ -17,7 +17,6 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-05-17"
 gap_source: "官方文档+AOSP结构+每日信息"
 gap_score: 15
-path: "packages/modules/Connectivity/framework/src/android/net/NetworkCapabilities.java"
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/behavior-changes-17"

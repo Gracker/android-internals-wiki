@@ -15,13 +15,47 @@ task6_review_notes: "2026-06-29 Task6 revisiting review: pass-light-edit；修�
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 confidence: "medium"
+sources:
+- type: reference
+  path: intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md
+- type: official
+  path: https://perfetto.dev/docs/concepts/buffers
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/trace/ftrace.rst
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traced/probes/ftrace/tracefs.cc
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_trace.h
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/atrace/atrace.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Trace.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/tracing_perfetto/tracing_perfetto.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libcutils/trace-dev.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/perfetto.rc
+- type: official
+  path: https://perfetto.dev/docs/concepts/config
+- type: official
+  path: https://perfetto.dev/docs/reference/traced_probes
+- type: official
+  path: https://developer.android.com/reference/android/os/Trace
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/samples/trace_events/trace-events-sample.h
+- type: official
+  path: https://perfetto.dev/docs/case-studies/android-boot-tracing
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traced/probes/ftrace/ftrace_controller.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/traced/probes/ftrace/ftrace_config_muxer.cc
 last_verified: "2026-06-29"
 last_verified_against: "AOSP android-17.0.0_r1, frameworks/base/core/jni/android_os_Trace.cpp, frameworks/native/libs/tracing_perfetto/tracing_perfetto.cpp, frameworks/native/cmds/atrace/atrace.cpp, system/core/libcutils/{trace-dev.cpp,include/cutils/trace.h}, external/perfetto/src/traced/probes/ftrace/{ftrace_controller.cc,cpu_reader.cc,tracefs.cc,tracefs.h}, external/perfetto/perfetto.rc, external/perfetto/src/profiling/perf/perf_producer.cc, frameworks/native/services/surfaceflinger/Scheduler/FrameTimeline.{h,cpp}"
 drafted_date: 2026-04-08
 drafted_by: openclaw-task2a
 reviewed_date: "2026-06-07"
 reviewed_by: openclaw-task6
-path: intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md
 related_chapters: [13.1, 13.2, 13.5, 14.10, 1.5]
 task2b_state: "fixed"
 last_task2b_rerun_at: 2026-05-08T16:50:00+08:00
@@ -72,11 +106,6 @@ Perfetto 界面里的调度切片、应用自定义区间和计数器来自多�
 - 🔸 eBPF 与静态 tracepoint 的互补关系
 - 🔸 boot trace 的启用方式与适用场景
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求,加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 AOSP 源码或官方文档中发现更精确的数据流细节,可在对应锚点后补充,并标注验证来源。
 <!-- outline-end -->
 
 ## 先分清三层缓冲区

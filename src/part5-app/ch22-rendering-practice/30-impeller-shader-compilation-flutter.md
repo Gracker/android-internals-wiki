@@ -16,14 +16,13 @@ pipeline_stage: "draft_needs_body_apply"
 last_verified: "2026-07-29"
 confidence: low
 sources:
-  - "AOSP android-17.0.0_r1 negative scan note embedded in this draft: Impeller is not part of Android platform source tree"
+- type: aosp
+  path: 'AOSP android-17.0.0_r1 negative scan note embedded in this draft: Impeller is not part of Android platform source tree'
 ---
 
 # 22.30 Impeller Shader 编译性能与 Flutter 渲染稳定性
 
-> **Draft polish 状态（2026-07-29，run 20260729-193508-draft-polish-1de00e19）**：本章目前只有待展开提纲和一段已写入的 Android 17.0.0_r1 勘误说明；本轮再次未收到可路由的 Flutter Engine、Impeller、Perfetto 或设备实测材料。因此**不**将本章推进为 `ready-for-review`，仅刷新元数据（last_draft_polish_at / run_id / last_verified），保留 draft 与 `blocked-source-material-required` 状态，明确等待 body-apply / source material 后再展开正文。
-
-> **Draft polish 历史（2026-07-25，run 20260725-233527）**：首轮 polish 已修复 Android 17.0.0_r1 版本边界、Impeller 非 AOSP 平台模块的勘误，并将提纲与勘误区段化隔离开，避免将提纲写成结论。结论与 2026-07-29 一致：正文必须等待 Flutter Engine/Impeller 官方文档、Perfetto trace、设备实测等来源到位后再展开。
+> 本页仍是研究提纲，不构成发布结论。Impeller 不属于 Android 17 AOSP 平台模块；补写正文前需要 Flutter Engine/Impeller 官方源码或文档、Perfetto trace 与设备实测材料。
 
 <!-- outline-start -->
 ## 待补来源后展开的要点

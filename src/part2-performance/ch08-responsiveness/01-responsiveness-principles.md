@@ -13,6 +13,41 @@ tags:
 - input-latency
 - perceived-performance
 confidence: medium
+sources:
+- type: reference
+  path: https://web.dev/articles/rail
+- type: official
+  path: https://source.android.com/docs/core/tests/debug/eval_perf
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/InputManager.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/reader/InputReader.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/InputTransport.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/jni/android_view_InputEventReceiver.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/RenderThread.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp
+- type: official
+  path: https://perfetto.dev/docs/analysis/stdlib-docs#android-input
+- type: official
+  path: https://developer.android.com/topic/performance/vitals/render
+- type: official
+  path: https://developer.android.com/topic/performance/vitals/launch-time
+- type: official
+  path: https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
+- type: official
+  path: https://developer.android.com/reference/android/view/MotionPredictor
+- type: official
+  path: https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate
 last_verified: "2026-07-09"
 last_verified_against: "AOSP android-17.0.0_r1; Android Developers MotionPredictor/ARR/Vitals docs; web.dev RAIL"
 drafted_date: "2026-04-01"
@@ -22,7 +57,6 @@ reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
-path: "https://web.dev/articles/rail"
 related_chapters: "[\"2.3\", \"2.4\", \"3.1\", \"7.1\", \"8.2\", \"9.1\", \"15.3\", \"15.5\", \"15.9\"]"
 task6_state: "reviewed"
 task6_result: pass-light-edit
@@ -72,13 +106,6 @@ last_task9_review_log: "logs/deep-review/2026-07-09-04-deep-review.md"
 - 🔸 Interaction-to-Next-Paint（INP）概念在 Android 的对应物
 - 🔸 Google Play Console 中的 App 性能数据解读
 
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
 ## 响应速度要量哪一段

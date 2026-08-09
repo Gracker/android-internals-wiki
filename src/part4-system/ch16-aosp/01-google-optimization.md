@@ -26,7 +26,6 @@ last_task9_audit: "2026-07-13"
 last_task9_autofix_at: "2026-07-01"
 last_task9_review_log: "logs/deep-review/2026-07-13-17-deep-review.md"
 last_task9_review_notes: "2026-07-13 Task9 deep review 发现 P0/P1 问题：1) CombinedMessageQueue路径不存在，实际为CombinedDeliMessageQueue；2) Binder线程池描述未说明总并发路径。P0 1 / P1 1 / P2 0；不可自动晋升，需 Task6 复审。P0/P1 问题已写入 queue.json，建议优先修复源码路径错误和并发描述不完整问题。"
-last_task6_at: 2026-07-13T18:18:50+08:00
 task2b_state: fixed
 task2b_result: fixed-lite
 task2b_fixed_at: "2026-06-26T11:40:00+08:00"
