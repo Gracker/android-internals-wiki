@@ -68,29 +68,11 @@ last_deepseek_cn_review_at: 2026-06-20
 
 # Perfetto 的高级用法
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 自定义 Perfetto Metric：编写 SQL + proto 定义输出指标
-- 🔹 Perfetto 宏（Macros）与仪表板
-- 🔹 Trace Processor Python API 的高级用法
-- 🔹 将 Perfetto 集成到 CI/CD 的自动化性能测试中
-- 🔹 自定义 Trace Point 的最佳实践（atrace_begin / TRACE_EVENT）
-
-### 扩展（可选深入）
-
-- 🔸 Perfetto SDK 在 Native 层的使用
-- 🔸 构建团队级 Perfetto 分析知识库
-
-<!-- outline-end -->
-
 单份系统轨迹可以支持一次诊断，可复用查询、结构化指标、批量分析、持续集成和应用埋点还要解决跨人员、跨构建和跨日期的一致性。同一条分析规则应给出含义一致的结果，并在异常发生时保留足够的原始证据。
 
-本文的平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。该标签的 `external/perfetto` 指向提交 `ece66975738007dd0978b911d8a2077e49b8f31e`。涉及调度与 ftrace 的采集侧以 `android17-6.18-2026-06_r6` 为边界。主机上的 Perfetto UI、Python 包和 Trace Processor 可以独立升级，因此流水线还要固定主机工具版本，不能只记录设备系统版本。
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。该标签的 `external/perfetto` 指向提交 `ece66975738007dd0978b911d8a2077e49b8f31e`。涉及调度与 ftrace 的采集侧以 `android17-6.18-2026-06_r6` 为边界。主机上的 Perfetto UI、Python 包和 Trace Processor 可以独立升级，因此流水线还要固定主机工具版本，不能只记录设备系统版本。
 
-## 先分清四种可复用能力
+## 四种可复用能力
 
 Perfetto 提供了几套名称相近、用途不同的机制。选错层次后，查询可能能运行，却很难长期维护。
 
@@ -661,7 +643,7 @@ data_sources {
 }
 ```
 
-`atrace_apps` 可以填写具体包名；`*` 会扩大采集范围和隐私暴露，不适合作为默认团队配置。调度事件来自内核侧，本文的统一内核锚点是 `android17-6.18-2026-06_r6`。
+`atrace_apps` 可以填写具体包名；`*` 会扩大采集范围和隐私暴露，不适合作为默认团队配置。调度事件来自内核侧，统一内核锚点是 `android17-6.18-2026-06_r6`。
 
 ### Native Perfetto SDK
 

@@ -56,17 +56,7 @@ last_idle_audit_run_id: 20260731-183516-idle-audit-68cd3ad3
 
 Perfetto UI 适合寻找可疑时间段，SQL 适合回答能复查的定量问题：某一帧错过了多少时间预算，主线程在分析窗口内运行了多久，Binder 客户端时间由哪些调度状态组成，一次 GC 的墙上时间中有多少时间在等待 CPU。查询结果只说明 Trace 中已经采集到的事件。缺少 FrameTimeline、调度、Binder 或 ART 事件时，空表不能证明系统没有发生对应行为。
 
-本章的平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点为 `android17-6.18-2026-06_r6`。示例优先查询 Android 17 Perfetto SQL 标准库，再在需要理解原始数据时使用 `slice`、`sched`、`thread_state` 和 `counter`。查询已按 Android 17 源码中的表结构复核，并用当前 Trace Processor 解析器做过语法检查。
-
-<!-- outline-start -->
-## 本节导读
-- 🔹 TraceProcessor SQL 基础：建立 Perfetto SQL、标准库模块、核心表、时间单位和大 Trace 查询约束。
-- 🔹 帧时间与卡顿分析：用 `Choreographer#doFrame`、FrameTimeline 和分桶统计定位慢帧。
-- 🔹 线程调度与 CPU 使用：通过 `sched`、`thread_state` 和调度延迟判断 CPU bound、Runnable 排队与阻塞。
-- 🔹 Binder、GC、启动与 ANR：把常见性能场景拆成可复查的 SQL 查询路径。
-- 🔹 锁竞争与 SPAN_JOIN：用 stdlib 视图、时间窗口和 `SPAN_JOIN` 做跨维度关联分析。
-- 🔹 交叉引用与分析路径：把单条 SQL 模板组合成卡顿、ANR 和启动分析流程。
-<!-- outline-end -->
+平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点为 `android17-6.18-2026-06_r6`。示例优先查询 Android 17 Perfetto SQL 标准库，再在需要理解原始数据时使用 `slice`、`sched`、`thread_state` 和 `counter`。查询已按 Android 17 源码中的表结构复核，并用当前 Trace Processor 解析器做过语法检查。
 
 ## 查询前先固定分析口径
 

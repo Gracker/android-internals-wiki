@@ -53,44 +53,13 @@ last_deepseek_cn_review_at: 2026-07-17
 
 # 13.8 Perfetto 输入延迟 SQL 深度分析
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 android.input 模块的 SQL 表结构
-android_input_events、android_motion_events、android_key_events、android_input_event_dispatch 等核心表的 schema；字段含义与版本差异
-
-### 🔹 端到端输入延迟的量化查询
-从 kernel touch event → InputDispatcher → App doFrame 的端到端时间计算 SQL
-
-### 🔹 InputDispatcher 延迟分解
-dispatch_latency_dur、handling_latency_dur、ack_latency_dur、total_latency_dur 等指标的 SQL 提取；ANR 前的 iq / oq / wq 队列堆积分析
-
-### 🔹 Choreographer 与 Input 的时序关联
-将 input_event 时间戳与 doFrame callback 匹配；input → vsync → render 的流水线延迟 SQL
-
-### 🔹 常用 SQL 模板集
-按场景分类的即用型 SQL 查询（滑动卡顿输入分析、ANR 输入超时分析、冷启动输入响应分析）
-
-### 🔹 与 13.5 专题解读的衔接
-本节 SQL 方法如何补充 13.5 的可视化分析方法；何时用 SQL、何时用 UI
-
-## 扩展
-
-### 🔸 自定义 input trace config
-如何配置 Perfetto TraceConfig 以捕获输入与帧数据；debug-level tracing 的开销
-
-### 🔸 批量 Trace 的输入延迟对比
-跨版本、跨设备的输入延迟 SQL 对比分析方法
-
-<!-- outline-end -->
-
 ## 分析边界与源码锚点
 
 输入延迟排障常遇到三类问题：慢事件藏在大量正常样本中、ANR 发生前的队列状态不清楚、一次输入究竟关联了哪一帧。时间线界面适合观察单个现场，SQL 更适合筛选异常样本、计算分位数和复用判定逻辑。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点。Perfetto 对应源码提交为 `ece66975738007dd0978b911d8a2077e49b8f31e`，`frameworks/native` 对应提交为 `ae266dcb706d083868578cfedce381ef44488a07`。调度事件的内核语义以 `android17-6.18-2026-06_r6` 为准。Perfetto 标准库还能由较新的 `Trace Processor` 提供，因此分析报告需要同时记录系统版本、采集配置和 `Trace Processor` 版本。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`。Perfetto 对应源码提交为 `ece66975738007dd0978b911d8a2077e49b8f31e`，`frameworks/native` 对应提交为 `ae266dcb706d083868578cfedce381ef44488a07`。调度事件的内核语义以 `android17-6.18-2026-06_r6` 为准。Perfetto 标准库还能由较新的 `Trace Processor` 提供，因此分析报告需要同时记录系统版本、采集配置和 `Trace Processor` 版本。
 
-这一章讨论三段不同的时间：
+分析需要区分三段时间：
 
 - 输入事件的语义时间戳到 `InputReader` 读取；
 - `InputDispatcher` 发出消息到应用完成并返回 `FINISHED`；
@@ -727,7 +696,7 @@ SQL 适合重复执行的筛选和统计：
 - Binder、锁、GC、I/O、频率与 `SurfaceFlinger` 是否同时异常；
 - SQL 的进程、通道和帧关联是否符合现场。
 
-实用流程是用 SQL 产出时间戳、事件 ID、进程、通道、帧 ID 和异常分段，再到 UI 展开该点，修复后用相同 SQL 与相同采集条件复测。§13.5 侧重时间线专题观察，本节提供可重复的量化入口。
+实用流程是用 SQL 产出时间戳、事件 ID、进程、通道、帧 ID 和异常分段，再到 UI 展开该点，修复后用相同 SQL 与相同采集条件复测。§13.5 侧重时间线专题观察，这里提供可重复的量化入口。
 
 ## `TraceConfig`：按问题选择采集面
 
