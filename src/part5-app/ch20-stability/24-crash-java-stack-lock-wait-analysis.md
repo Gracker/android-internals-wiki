@@ -33,7 +33,7 @@ sources:
 
 “Crash 时取全部 Java 栈”不是一个单一问题。Java 未捕获异常、Native 致命信号、系统 ANR 和进程退出后的回捞，拥有不同的运行时状态、权限和安全边界。把它们放进同一个 signal handler 方案，往往会把一次可诊断故障变成死锁、二次崩溃或残缺报告。
 
-本文的平台与 ART 源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。涉及 futex 与线程调度的底层判断时，内核锚点为 `android17-6.18-2026-06_r6`；Java monitor 的 owner、held lock 和栈帧仍由 ART 解释，不能从一个内核睡眠状态直接反推。
+平台与 ART 源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。涉及 futex 与线程调度的底层判断时，内核锚点为 `android17-6.18-2026-06_r6`；Java monitor 的 owner、held lock 和栈帧仍由 ART 解释，不能从一个内核睡眠状态直接反推。
 
 ## 先按现场选择取证路径
 
@@ -295,14 +295,14 @@ Perfetto 没记录到 contention 也不能证明没有竞争；trace 配置、�
 
 ## Android 版本边界
 
-| 版本 | 与本章相关的公开或系统能力 |
+| 版本 | 相关的公开或系统能力 |
 | --- | --- |
 | Android 8 / API 26 | Native crash 进入按需启动的 `crash_dump32/64` 架构；普通应用仍不能读取系统 tombstone 目录 |
 | Android 11 / API 30 | `ApplicationExitInfo` 与历史退出查询公开，可在可用时回捞 ANR trace |
 | Android 12 / API 31 | `REASON_CRASH_NATIVE` 的 trace stream 可返回 tombstone protobuf |
-| Android 17 / API 37 | 本章源码锚点；公开 `Thread` API 仍不给普通应用 monitor owner 或原子全线程快照 |
+| Android 17 / API 37 | 源码锚点；公开 `Thread` API 仍不给普通应用 monitor owner 或原子全线程快照 |
 
-本文没有把 Android 17 的 Java monitor 解释强行套到内核。`android17-6.18-2026-06_r6` 的 scheduler/futex 证据用于说明线程为什么睡眠或迟迟未运行；`synchronized` 对象、held lock 与 owner 的解释仍以 `android-17.0.0_r1` 的 ART dump 为准。
+Android 17 的 Java monitor 解释不能直接套到内核。`android17-6.18-2026-06_r6` 的 scheduler/futex 证据用于说明线程为什么睡眠或迟迟未运行；`synchronized` 对象、held lock 与 owner 的解释仍以 `android-17.0.0_r1` 的 ART dump 为准。
 
 ## 验证清单
 
