@@ -256,7 +256,7 @@ Flutter 中间 image ready 后，宿主窗口还要及时发起遍历、取得�
 分析时要检查：
 
 - ImageReader 是否有新图像；
-- 获取、栅栏等待与图像释放；
+- acquire、fence wait 与 image release；
 - `HardwareBuffer`/Bitmap 包装；
 - 宿主 View 绘制与 App Window buffer。
 
@@ -391,7 +391,7 @@ Impeller 3.44.8 README 的目标包括：
 - 管线/缓存未命中与驱动机器码准备；
 - 字形图集、图片解码/上传；
 - 大纹理、blur、saveLayer 和多 pass；
-- 外部纹理栅栏；
+- external texture fence；
 - GPU 队列、内存带宽与温控。
 
 Flutter 3.44.8 的 `ShellSetupGPUSubsystem` 还明确把某些 Android Vulkan 上下文创建移出启动关键路径，因为它可能超过 100 ms。着色器离线编译不会消除所有 GPU 初始化工作。
@@ -445,7 +445,7 @@ Raster 线程的长切片不一定表示 GPU 正在执行；它可能在准备 d
 - Raster CPU Running/Runnable；
 - 驱动/管线相关切片；
 - GPU 提交与完成；
-- 根视图生产者栅栏；
+- root producer fence；
 - SurfaceFlinger 锁存与 display present。
 
 降低效果面积或 render target 像素后 GPU 完成时间同步下降，才支持 fragment/带宽方向。只看到 Raster 线程忙，不能直接归因 GPU。
@@ -455,7 +455,7 @@ Raster 线程的长切片不一定表示 GPU 正在执行；它可能在准备 d
 同步 Platform Channel、主线程限定插件、FFI 和 native callback 都可能占用合并后的 platform/Dart UI 线程。需要记录：
 
 - 调用方向与载荷；
-- 序列化/反序列化；
+- serialization/deserialization；
 - Dart 与 Java/Kotlin/native 执行时间；
 - task 是否 Runnable 但未调度状态；
 - 是否等待 Surface、binder、锁或 I/O。
@@ -481,7 +481,7 @@ DevTools 的“帧完成”不等于面板已显示。它不能单独解释 CPU 
 
 Perfetto 采集至少关注：
 
-- 进程/线程调度、运行/可运行状态；
+- process/thread scheduling、Running/Runnable；
 - `PlatformVsync`、Flutter frame、Rasterizer/Impeller 事件；
 - GPU render stages/counters（设备支持时）；
 - BufferQueue、BLAST、fence 和 FrameTimeline；
@@ -569,7 +569,7 @@ Flutter root Surface、host App Window 和独立 PlatformView 图层可能有不
 - texture id；
 - buffer id/frame number；
 - SurfaceFlinger layer id；
-- 预期/实际呈现时间；
+- expected/actual present time；
 - producer/acquire/release/present fence。
 
 Dart 帧结束只表示 framework/engine 的一个阶段结束，不能作为上屏时间。

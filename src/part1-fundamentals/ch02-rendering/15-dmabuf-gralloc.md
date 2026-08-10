@@ -293,7 +293,7 @@ Android 15 起平台支持 16 KB 页大小设备。它会影响 ELF、mmap、页
 
 - 逻辑尺寸：width × height；
 - 步幅与平面布局；
-- 格式、压缩元数据和对齐；
+- format、compression metadata 和 alignment；
 - `reservedSize`；
 - IOMMU/CPU / CPU mapping 与页表成本；
 - 多进程统计是否重复计算同一 dma-buf inode。
@@ -366,7 +366,7 @@ Producer 把 GPU 或 CPU 写入完成的栅栏随缓冲提交给 consumer。cons
 
 一块图形缓冲可能同时被以下对象持有：
 
-- 分配器/导出方的底层存储；
+- allocator / exporter 的 backing storage；
 - 各进程中的原始或已导入原生句柄；
 - BufferQueue 生产者/ consumer slot；
 - BLAST 或 SurfaceFlinger 事务/ buffer cache；

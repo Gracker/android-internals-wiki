@@ -309,7 +309,7 @@ Android 17 的 BLAST 创建 `BBQBufferQueueCore` 和 `BBQBufferQueueProducer`。
 
 ```text
 BBQBufferQueueProducer::waitForBufferRelease()
-  清除待处理的中断
+  clear pending interrupt
   unlock mCore->mMutex
   BufferReleaseReader::readBlocking()
     epoll waits for:
