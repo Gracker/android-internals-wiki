@@ -43,7 +43,7 @@ gap_source: "研究素材/AOSP结构"
 
 Buffer stuffing 描述的是 producer 已经占用或提交了过多 buffer，而 consumer 还没及时归还可写 buffer。下一次 `dequeueBuffer()` 找不到 free slot 时，producer 会等待 release。一次较长等待不仅拖慢当前提交，还可能让后续动画继续沿着已经落后的帧时间推进。
 
-Android 16 在 `Choreographer` 中加入 Buffer Stuffing Recovery：收到等待 buffer release”信号后，先主动放弃一次帧回调，再在恢复期调整传给 FrameData/FrameCallback 的时间线。Android 17 保留这条主线，并加入受开关控制的多次恢复与累计延迟上限。
+Android 16 在 `Choreographer` 中加入 Buffer Stuffing Recovery：收到“等待 buffer release”信号后，先主动放弃一次帧 callback，再在恢复期调整传给 FrameData/FrameCallback 的时间线。Android 17 保留这条主线，并加入受 flag 控制的多次恢复与累计延迟上限。
 
 这套机制不增加 BufferQueue slot，不主动释放 buffer，也不修复 GPU、SurfaceFlinger 或 HWC。它处理的是等待发生后的 App 帧节拍。
 
@@ -212,7 +212,7 @@ if vsyncsSinceLastCallback > totalFrameDelays:
     reset recovery
 ```
 
-`+1` 表示自然等待下一次 VSync 的预期间隔。若自上次未偏移回调以来的空闲间隔比预期等待更长，状态机会认为动画已经空闲，结束 async trace 并清空状态。
+`+1` 表示自然等待下一次 VSync 的预期间隔。若自上次未偏移 callback 以来的空闲间隔比预期等待更长，状态机会认为动画已经 idle，结束 async trace 并清空状态。
 
 frame time 回退或 `FPSDivisor` 要求跳过当前帧时，`doFrame()` 还会安排下一次 VSync；recovering 期间，这些额外等待会增加 `numberWaitsForNextVsync`，避免退出条件把调度主动跳过误判成动画 idle。
 
@@ -243,7 +243,7 @@ flag 关闭时，这个 100ms 值不会限制 `DELAY_FRAME`。因此，仅看到
 
 Android 17 `DisplayEventReceiver.VsyncEventData.FRAME_TIMELINES_CAPACITY` 为 7。它是 frame timeline choices 的最大容量，每项带 `vsyncId`、expected presentation time 和 deadline；`preferredFrameTimelineIndex` 指向平台推荐项，实际有效数量由 `frameTimelinesLength` 给出。
 
-`FrameData.update()` 把这些候选复制进 Choreographer 的 `FrameData`。线程已经迟到时，另一个重载会在已有候选中寻找 deadline 尚未过去的项目，必要时向 `DisplayEventReceiver` 查询最新数据。
+`FrameData.update()` 把这些候选复制进 Choreographer 的 `FrameData`。线程已经迟到时，另一个 overload 会在已有候选中寻找 deadline 尚未过去的项目，必要时向 `DisplayEventReceiver` 查询最新数据。
 
 这套候选机制早已服务于 callback 的 present/deadline 选择。Buffer Stuffing Recovery 只是把 offset frame time 送入同一个 `FrameData.update()`，并没有创建七个并行恢复状态机。源码没有提供恢复“精度提升比例”；此类结论需要独立 benchmark。
 
@@ -326,7 +326,7 @@ recovery 只说明 App 已感知回压。根因仍要由 producer workload、acq
 | RenderThread 卡在 free buffer/release wait | queue depth、slot、release channel/fence、下游消费 |
 | App 已 queue，SF/HWC present 晚 | acquire fence、latch、composition、HWC/display |
 
-三者可以连续发生。例如，主线程先迟到，随后 GPU 和队列堆积，最终 SF 错过 present；不能用一个标签概括整段时间线。
+三者可以连续发生。例如，主线程先迟到，随后 GPU 和 queue 堆积，最终 SF 错过 present；不能用一个标签概括整段时间线。
 
 ## 十一、常见误判
 
@@ -340,7 +340,7 @@ recovery 只说明 App 已感知回压。根因仍要由 producer workload、acq
 
 ### “Android 17 一定启用 multi-recovery 和 100ms 上限”
 
-两个行为由独立开关控制。只有产品配置和跟踪数据能够证明实际采用的分支。
+两个行为由独立 flag 控制。只有产品配置和跟踪数据能够证明实际采用的分支。
 
 ### 七个 FrameTimeline 候选项代表七套恢复策略
 
@@ -350,7 +350,7 @@ recovery 只说明 App 已感知回压。根因仍要由 producer workload、acq
 
 SF 分类与 App recovery 有不同触发条件。独立 native producer 可能只有 SF 分类，没有主 Choreographer trace。
 
-### 负偏移会让这一帧更早上屏
+### 负 offset 会让这一帧更早上屏
 
 offset 改变 App callback 使用的 frame data/timeline。真实唤醒、GPU 执行和 present 不会倒退。
 

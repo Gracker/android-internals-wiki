@@ -42,7 +42,7 @@ Android 17 中，`SurfaceFlinger::setTransactionState()` 会在 Binder 调用线
 - display state、snapshot 构建过程中的共享状态、部分回调与统计逻辑仍在 `mStateLock` 下处理；
 - Scheduler、CompositionEngine、HWC 和 buffer 生命周期各有自己的同步规则。
 
-这里讨论 SurfaceFlinger 事务入口的无锁 MPSC 交接，以及交接后的分桶与就绪过滤。该设计没有消除 SurfaceFlinger 的所有锁。
+这里讨论 SurfaceFlinger transaction ingress 的无锁 MPSC 交接，以及交接后的分桶与就绪过滤。该设计没有消除 SurfaceFlinger 的所有锁。
 
 ## 2. Android 17 的主路径
 
@@ -78,7 +78,7 @@ Android 17 的正常处理入口位于 `SurfaceFlinger::updateLayerSnapshots()`�
 - layer 请求状态进入 FrontEnd 的关键调用是 `LayerLifecycleManager::applyTransactions()`；
 - `applyTransactionState()` 在 Android 17 没有消失，它仍在主线程、`mStateLock` 保护下处理回调、统计、输入命令和事务标记等职责。
 
-将整条链描述为“flush 后直接在 `mStateLock` 内逐图层修改”会漏掉 FrontEnd；Android 17 也仍会调用 `applyTransactionState()`。
+将整条链描述为“flush 后直接在 `mStateLock` 内逐 layer 修改”会漏掉 FrontEnd；Android 17 也仍会调用 `applyTransactionState()`。
 
 ## 3. LocklessQueue 如何工作
 
@@ -186,7 +186,7 @@ timeline 过滤器综合检查：
 
 如果期望送显时间晚于本轮的预计送显时间，且差值不超过一秒，事务会返回 `NotReady`。超过一秒的未来时间会被忽略，避免异常 timestamp 长期卡住队列。
 
-带有效 VSync ID 的事务已按该 ID 的节奏被 Choreographer 节流，SF 不会再按来源 UID 的节奏重复节流。使用自动 timestamp 的事务还会通过 `frameIsEarly()` 判断是否过早。
+带有效 VSync ID 的事务已按该 ID 的节奏被 Choreographer 节流，SF 不会再按 origin UID 的 cadence 重复节流。使用自动 timestamp 的事务还会通过 `frameIsEarly()` 判断是否过早。
 
 ### 5.2 buffer：frame barrier、backpressure 与 acquire fence
 
@@ -222,7 +222,7 @@ Android 17 的第三个过滤器处理 transaction 中的 `KIND_WAIT` 和 `KIND_
 
 pending 容器按 apply token 分桶，`unordered_map` 的遍历次序没有业务含义。某个 WAIT barrier 所在桶可能先被检查，此时 signal 事务还没被弹出；signal 又可能位于另一个 token 的桶。
 
-`flushTransactions()` 会反复调用 `flushPendingTransactionQueues()`，直到 `NotReadyBarrier` 的数量在相邻两轮之间不再变化。这个循环用于继续解析跨令牌的屏障依赖链，不能概括为“扫描到没有新 Ready 事务”。
+`flushTransactions()` 会反复调用 `flushPendingTransactionQueues()`，直到 `NotReadyBarrier` 的数量在相邻两轮之间不再变化。这个循环用于继续解析跨 token 的 barrier 依赖链，不能概括为“扫描到没有新 Ready 事务”。
 
 每弹出一笔事务，处理状态会同步更新：
 
@@ -259,7 +259,7 @@ SurfaceFlinger::setTransactionFlags(eTransactionFlushNeeded, ...)
 
 Android 17 有一个单独的例外：事务包含 frame-rate change，且已安排的 callback 距当前超过 30 ms 时，SF 会调用 `scheduleImmediateFrame()`。这个分支不能推广为所有 transaction 都会立即唤醒。
 
-因此，从 App `apply()` 到 SF 采纳事务的延迟，需要结合 Binder 调度、SF 已安排的帧、就绪状态和系统负载判断，不能套用固定的 0.5～2 ms 进程间通信耗时。
+因此，从 App `apply()` 到 SF 采纳事务的延迟，需要结合 Binder 调度、SF 已安排的 scheduled frame、就绪状态和系统负载判断，不能套用固定的 0.5～2 ms 进程间通信耗时。
 
 ## 8. BLASTBufferQueue 与 TransactionHandler
 
@@ -307,7 +307,7 @@ Android 13 的入口使用 `mQueueLock` 保护 `mTransactionQueue`，主线程�
 
 ### 9.3 为什么不能给固定收益
 
-收益取决于 Binder 生产者数量、事务频率、CPU 拓扑、cache 竞争、SF 主线程负载和原有锁冲突程度。事务量较低时，两种入口的差异可能很小；压力升高后，CAS 重试本身也有成本。
+收益取决于 Binder producer 数量、事务频率、CPU 拓扑、cache 竞争、SF 主线程负载和原有锁冲突程度。事务量较低时，两种入口的差异可能很小；压力升高后，CAS 重试本身也有成本。
 
 没有同设备、同构建、同场景的 A/B 数据时，只能提出可验证假设，不能写“节省若干毫秒”或“完全消除上下文切换”。
 
@@ -395,7 +395,7 @@ Android 17 可关注这些 SF trace 名称：
 | one-way transaction 可以绕过 readiness | one-way 只改变 Binder 调用方式 |
 | BLAST 是 SF 拉取 buffer 的接口 | BLAST adapter 在客户端取得 buffer，再通过 transaction 发送给 SF |
 | barrier 都是五秒 TTL | buffer frame barrier 超时为四秒；显式 transaction barrier 默认 TTL 为五秒 |
-| `NotReadyUnsignaled` 表示可以忽略栅栏 | 只允许特定的简单单层事务提前进入后段，读取方仍遵守栅栏 |
+| `NotReadyUnsignaled` 表示可以忽略栅栏 | 只允许特定的简单单层事务提前进入后段，读取方仍遵守 fence |
 | `scheduleCommit()` 总是立即处理 | 常规路径调用 `scheduleFrame()`；frame-rate change 有条件触发 immediate frame |
 | TransactionQueue 就是无锁链表深度 | 它统计尚未 flush 的事务总数，包含入口和按令牌分桶的待处理队列 |
 
