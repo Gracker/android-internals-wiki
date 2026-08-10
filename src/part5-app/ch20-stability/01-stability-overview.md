@@ -52,26 +52,9 @@ last_deepseek_cn_review_at: 2026-07-06
 
 # 应用稳定性全景
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Crash / ANR / OOM 的分类体系与进程退出原因
-- 🔹 Java Crash、Native Crash、ANR、OOM 的触发链路与观测入口
-- 🔹 Google Play Vitals 与团队内部稳定性指标
-- 🔹 稳定性治理流程：预防、发现、诊断、修复、验证
-- 🔹 采集方式对比与后续章节的衔接
-
-### 扩展（可选深入）
-
-- 🔸 稳定性治理的组织保障与发版门禁
-
-<!-- outline-end -->
-
 稳定性排查最怕一开始就把现象归错类。用户看到的“闪退、卡死、白屏、重新启动”，可能来自应用进程崩溃、系统判定 ANR、低内存杀进程，也可能只是 WebView 渲染进程退出。只有把事件、进程结局和证据来源分开，后面的指标与修复才有意义。
 
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码锚点；涉及内核内存回收时，以 `android17-6.18-2026-06_r6` 为 kernel 锚点。
+平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`；涉及内核内存回收时，以 `android17-6.18-2026-06_r6` 为 kernel 锚点。
 
 ## 先区分“故障事件”和“进程退出”
 
@@ -170,7 +153,7 @@ Native `malloc` 失败通常返回 `nullptr` 并设置错误状态；调用方�
 
 内存压力下，Android 的 [`lmkd`](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp) 会读取 PSI 等压力信号，结合 `oom_score_adj`、进程重要性和回收收益选择牺牲进程。被选中的应用没有可靠的 Java 临终回调，进程可能直接以 `SIGKILL` 结束。
 
-kernel OOM killer 是更底层的兜底机制。本文的内核依据是 [`android17-6.18-2026-06_r6/mm/oom_kill.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/oom_kill.c)。排查应用线上 LMK 时应优先使用 `ApplicationExitInfo`、Android Vitals 和设备内存分层数据，不能把 kernel OOM 日志当作每次应用低内存退出都一定存在的证据。
+kernel OOM killer 是更底层的兜底机制。内核依据是 [`android17-6.18-2026-06_r6/mm/oom_kill.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/oom_kill.c)。排查应用线上 LMK 时应优先使用 `ApplicationExitInfo`、Android Vitals 和设备内存分层数据，不能把 kernel OOM 日志当作每次应用低内存退出都一定存在的证据。
 
 [20.5 OOM 治理](05-oom-governance.md)会继续区分 Java heap、Native heap、线程、映射、图形内存与 LMK。
 
