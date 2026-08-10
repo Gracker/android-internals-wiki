@@ -56,7 +56,7 @@ Android 17 的 LMK 主路径包含三类输入、两段决策和一条回收链�
 flowchart LR
     lifecycle["Activity、Service、Provider 与绑定关系"] --> adjuster["OomAdjuster / Process State Controller"]
     adjuster --> processlist["ProcessList"]
-    processlist -->|"控制套接字：PID、UID、adj"| lmkd["lmkd"]
+    processlist -->|"控制 socket：PID、UID、adj"| lmkd["lmkd"]
     lmkd -->|"写入"| procfs["/proc/PID/oom_score_adj"]
 
     psi["PSI：some / full stall"] --> lmkd
@@ -72,7 +72,7 @@ flowchart LR
 图中有两个容易混淆的边界：
 
 - `OomAdjuster` 负责回答“这个进程对用户有多重要”，`lmkd` 负责回答“当前压力是否需要杀进程，以及在什么优先级范围内选谁”。
-- `lmkd` 会写 `/proc/<pid>/oom_score_adj`，同时在自己的进程表中登记候选。AMS 与 `lmkd` 之间存在专用控制套接字，不能把这条通信简化成“双方只通过 `/proc` 共享信息”。
+- `lmkd` 会写 `/proc/<pid>/oom_score_adj`，同时在自己的进程表中登记候选。AMS 与 `lmkd` 之间存在专用控制 socket，不能把这条通信简化成“双方只通过 `/proc` 共享信息”。
 
 平台源码以 `android-17.0.0_r1` 为锚点，内核语义以 `android17-6.18-2026-06_r6` 为锚点。
 
@@ -85,7 +85,7 @@ flowchart LR
 这套方案的局限来自它所在的位置：
 
 - shrinker 回调不适合承载遍历进程、评估目标和杀进程这类重操作；
-- 固定的空闲页阈值很难识别页缓存抖动，也容易把正常文件缓存当成紧迫内存；
+- 固定的空闲页阈值很难识别 page cache thrashing，也容易把正常文件缓存当成紧迫内存；
 - 策略位于内核，设备调校和版本更新成本较高；
 - Android 进程语义先被压缩成一个数字，内核侧缺少更多决策信号。
 
@@ -93,15 +93,15 @@ flowchart LR
 
 ### 现代方案：userspace lmkd
 
-Android 8.1 的源码已经包含用户空间 `lmkd` 及 AMS 控制协议。Android 9 起，在未检测到内核 LMK 驱动时启用用户空间路径；Android 10 引入 PSI 监控模式；Android 11 的新策略进一步把区域水位、交换空间和工作集重新缺页抖动纳入判断。Android 17 延续这条架构。
+Android 8.1 的源码已经包含 userspace `lmkd` 及 AMS 控制协议。Android 9 起，在未检测到内核 LMK 驱动时启用 userspace 路径；Android 10 引入 PSI 监控模式；Android 11 的新策略进一步把 zone watermark、swap 和 workingset refault thrashing 纳入判断。Android 17 延续这条架构。
 
 迁到用户空间以后，`lmkd` 可以：
 
 - 读取 `/proc/meminfo`、`/proc/vmstat`、`/proc/zoneinfo` 和 PSI；
 - 接收 AMS 计算出的最新 `oom_score_adj`；
-- 根据交换空间、文件页反复换入和回收状态过滤压力信号；
-- 通过属性、资源覆盖和厂商钩子做设备级调校；
-- 输出 logcat、statsd、控制套接字事件和 Perfetto 事件。
+- 根据 swap、文件页反复换入和回收状态过滤压力信号；
+- 通过属性、资源覆盖和 vendor hook 做设备级调校；
+- 输出 logcat、statsd、控制 socket 事件和 Perfetto 事件。
 
 “用户空间”不表示它脱离内核。PSI、pidfd、cgroup、`process_mrelease()` 以及内存统计仍由内核提供；策略代码位于 `lmkd`。
 
@@ -148,7 +148,7 @@ Android 17 把核心常量集中在 `services/core/java/com/android/server/am/ps
 
 因此，排查时要读取目标时刻的 adj，不能只凭“它有一个 Service”推断。
 
-`NATIVE_ADJ` 也不代表所有原生守护进程都不会被终止。该常量在 Framework 中描述 AMS 未管理的原生进程；某个守护进程的实际保护还取决于 init 服务配置、它的 `/proc/<pid>/oom_score_adj` 以及它是否登记到 `lmkd`。
+`NATIVE_ADJ` 也不代表所有 native daemon 都天然不会被杀。该常量在 Framework 中描述 AMS 未管理的 native 进程；某个 daemon 的实际保护还取决于 init service 配置、它的 `/proc/<pid>/oom_score_adj` 以及它是否登记到 `lmkd`。
 
 ## AMS 如何把优先级交给 lmkd
 
@@ -166,7 +166,7 @@ Android 17 的命令号在 Framework `ProcessList.java` 与 `system/memory/lmkd/
 | `LMK_SUBSCRIBE` | 5 | 订阅异步终止或统计事件 |
 | `LMK_PROCKILL` | 6 | `lmkd` 发给订阅者的终止通知 |
 | `LMK_UPDATE_PROPS` | 7 | 重新读取属性并重建监控 |
-| `LMK_KILL_OCCURRED` | 8 | Framework 中的统计事件名；原生头文件名为 `LMK_STAT_KILL_OCCURRED` |
+| `LMK_KILL_OCCURRED` | 8 | Framework 中的 stats 事件名；native 头文件名为 `LMK_STAT_KILL_OCCURRED` |
 | `LMK_START_MONITORING` | 9 | 启动延迟初始化的 PSI 监控 |
 | `LMK_BOOT_COMPLETED` | 10 | 通知 `lmkd` 完成启动后初始化 |
 | `LMK_PROCS_PRIO` | 11 | 批量登记 adj |
@@ -214,9 +214,9 @@ Android 17 的命令号在 Framework `ProcessList.java` 与 `system/memory/lmkd/
 - `some` 表示至少有一部分任务因该资源而停顿；
 - `full` 表示所有非 idle 任务同时停顿，此时 CPU 无法继续做有效工作。
 
-这里的对象是调度中的任务。把 `full` 解释为“设备上的所有进程都阻塞”过于宽泛，也忽略了空闲任务。
+这里的对象是调度中的任务。把 `full` 解释为“设备上的所有进程都阻塞”过于宽泛，也忽略了 idle task。
 
-PSI 触发器使用“某个窗口内累计停顿多久”的形式。例如 `some 70000 1000000` 表示 1 秒窗口内累计出现 70 ms 部分停顿时唤醒监听者。触发器是唤醒信号，本身不等于一次进程终止。
+PSI trigger 使用“某个窗口内累计 stall 多久”的形式。例如 `some 70000 1000000` 表示 1 秒窗口内累计出现 70 ms partial stall 时唤醒监听者。trigger 是唤醒信号，本身不等于一次 kill。
 
 ### Android 17 最终注册的阈值
 
@@ -241,12 +241,12 @@ low_ram_device || !use_minfree_levels
 
 新策略收到 PSI 或轮询事件后，会继续读取并比较：
 
-- `/proc/vmstat` 中的工作集重新缺页、直接回收和 kswapd 统计；
+- `/proc/vmstat` 中的 workingset refault、direct reclaim 和 kswapd 统计；
 - `/proc/meminfo` 中的空闲页、文件页、swap、匿名页等数据；
-- `/proc/zoneinfo` 计算出的区域水位；
+- `/proc/zoneinfo` 计算出的 zone watermark；
 - 空闲交换空间与交换空间利用率；
-- 文件页重新缺页相对页缓存大小得到的抖动比例；
-- 上一次进程终止是否完成，以及终止后水位是否恢复。
+- 文件页 refault 相对 page cache 大小得到的 thrashing 比例；
+- 上一次 kill 是否完成，以及 kill 后水位是否恢复。
 
 Android 17 还在 boot completed 之后尝试注册 BPF memevents：
 
@@ -255,22 +255,22 @@ Android 17 还在 boot completed 之后尝试注册 BPF memevents：
 - 可选的 vendor LMK kill；
 - 可选的 zoneinfo update。
 
-若内存事件监听器不可用，`lmkd` 回退到 vmstat 差分来识别直接回收和 kswapd。BPF 事件改善了状态判断，它们也不自动触发一次进程终止。
+若 memevent listener 不可用，`lmkd` 回退到 vmstat 差分来识别 direct reclaim 和 kswapd。BPF 事件改善了状态判断，它们也不自动触发一次 kill。
 
 ### 决策原因与候选门槛
 
-Android 17 新策略的主要终止原因包括：
+Android 17 新策略的主要 kill reason 包括：
 
 - critical PSI 下设备长时间无响应；
 - 低交换空间与页缓存抖动同时出现；
-- 内存水位和空闲交换空间同时偏低；
-- 内存水位偏低且交换空间利用率过高；
+- 内存水位和 free swap 同时偏低；
+- 内存水位偏低且 swap utilization 过高；
 - 低水位伴随抖动；
 - 直接回收期间发生抖动，或直接回收持续过久；
-- 抖动之后文件缓存仍低；
-- 终止进程后仍跌破最低水位；
+- thrashing 之后 file cache 仍低；
+- kill 后仍跌破 min watermark；
 - 普通低水位；
-- 厂商内存事件提供的原因。
+- vendor memevent 提供的原因。
 
 普通低水位分支使用 `ro.lmk.lowmem_min_oom_score`。Android 17 默认是 `PREVIOUS_APP_ADJ + 1`，即 701，并且源码把它限制为不低于 `PERCEPTIBLE_APP_ADJ + 1`，即 201。
 
@@ -283,20 +283,20 @@ Android 17 新策略的主要终止原因包括：
 1. 先看数值更大的 adj 档；
 2. 默认从该档链表尾部取候选；
 3. `ro.lmk.kill_heaviest_task=true` 时，在该 adj 档选择内存最大的目标；
-4. 当门槛已经下探到 `PERCEPTIBLE_APP_ADJ` 或更低时，源码会强制选择该档最重的进程，以减少高价值目标进程的数量；
+4. 当门槛已经下探到 `PERCEPTIBLE_APP_ADJ` 或更低时，源码会强制选择该档最重的进程，希望减少高价值 victim 的数量；
 5. 一次函数调用成功处理一个目标后返回。
 
 “一次调用只选一个”不等于一次压力周期只杀一个。PSI 事件后，`lmkd` 会进入 10 ms 或 100 ms 轮询；等待目标死亡时暂停轮询，收到 pidfd 死亡通知或超时后恢复。水位仍未恢复时，下一轮可以继续选择目标。
 
 ## 终止进程后：Reaper 怎样让内存尽快可用
 
-`kill_one_process()` 在发出终止信号前会做几项防护和记账：
+`kill_one_process()` 在发出 kill 前会做几项防护和记账：
 
 - 再读 `/proc/<pid>/status`，检查进程是否仍存在；
 - 校验 TGID，降低 PID 复用导致误杀的风险；
 - 读取 RSS、anonymous RSS、swap；
 - 读取可用的 DMA-BUF PSS/RSS；
-- 调用厂商释放内存钩子，若别处已经释放足够内存则跳过终止；
+- 调用 vendor free-memory hook，若别处已经释放足够内存则跳过 kill；
 - 建立 pidfd 或 PID 死亡等待。
 
 随后，`reaper.kill(..., false)` 尝试把任务交给异步 Reaper：
@@ -305,19 +305,19 @@ Android 17 新策略的主要终止原因包括：
 2. 无合适 cgroup 时回退到 `pidfd_send_signal(SIGKILL)`；
 3. Reaper 线程调用 `process_mrelease(pidfd, 0)`，促使内核提前回收已退出进程的匿名页和页表。
 
-Reaper 线程会进入前台 `cpuset` 并提高自身优先级；它还会为目标进程组设置专门的回收任务配置。这个行为来自 AOSP `reaper.cpp`，无需借助某个 SoC 厂商的私有补丁来解释。
+Reaper 线程会进入前台 `cpuset` 并提高自身优先级；它还会为目标进程组设置专门的 reap task profile。这个行为来自 AOSP `reaper.cpp`，无需借助某个 SoC 厂商的私有补丁来解释。
 
-终止信号发出和内存回到可用池之间可能有时间差。目标包含大量匿名页、交换空间或 DMA-BUF 时，这段差距尤其值得观察。
+kill 信号发出和内存回到可用池之间可能有时间差。目标包含大量匿名页、swap 或 DMA-BUF 时，这段差距尤其值得观察。
 
 ### Android 17 的可观测输出
 
-当前 `lmkd.cpp` 每次成功提交进程终止都执行：
+当前 `lmkd.cpp` 每次成功提交 kill 都执行：
 
 ```cpp
 ATRACE_INSTANT_FOR_TRACK(LOG_TAG, desc);
 ```
 
-这行代码用于说明事件类型。`LOG_TAG` 是 `lowmemorykiller`，`desc` 依次编码 PID、kill reason、目标 adj、最低候选 adj 和最大抖动比例。它是瞬时事件，并非带开始和结束时间的持续时间切片；源码中也没有旧文章常提到的 `LMKD_TRACE_KILLS` 编译开关。
+这行代码用于说明事件类型。`LOG_TAG` 是 `lowmemorykiller`，`desc` 依次编码 PID、kill reason、目标 adj、最低候选 adj 和最大 thrashing。它是 instant event，并非带开始和结束时间的 duration slice；源码中也没有旧文章常提到的 `LMKD_TRACE_KILLS` 编译开关。
 
 同一条路径还会：
 
@@ -338,28 +338,28 @@ ATRACE_INSTANT_FOR_TRACK(LOG_TAG, desc);
 | Java/native 进程内 OOM | 单进程堆或地址空间分配失败 | `OutOfMemoryError`、abort/tombstone、crash exit reason |
 | Android 17 MemoryLimiter | 单应用进程超过设备配置的配额 | `REASON_OTHER`，description 含 `MemoryLimiter:AnonSwap` |
 
-看到 `REASON_LOW_MEMORY` 后，还要结合子原因、`lmkd` 日志和轨迹区分系统 LMK 与内核 OOM。Java `OutOfMemoryError` 也不能直接归因于 `lmkd`。
+看到 `REASON_LOW_MEMORY` 后，还要结合 subreason、`lmkd` 日志和轨迹区分系统 LMK 与内核 OOM。Java `OutOfMemoryError` 也不能直接归因于 `lmkd`。
 
 ## LMK 如何变成用户可感知卡顿
 
-LMK 自身的目标是缩短内存压力持续时间。体验问题通常出现在进程被终止之后：
+LMK 自身的目标是缩短内存压力持续时间。体验问题通常出现在 kill 之后：
 
-1. 系统持续处于低水位或抖动状态；
+1. 系统持续处于低水位或 thrashing；
 2. `lmkd` 反复处理 cached、service B 或 previous 进程；
 3. 用户返回已被杀的应用；
 4. 系统重新 fork 进程、绑定 Application、创建组件并恢复界面状态；
 5. 新进程重新加载代码、资源、数据库页和网络数据，又推高内存与 IO 压力。
 
-第 3 步没有发生时，终止进程不会自动产生一次冷启动。只有用户或系统再次需要该进程，才会付出重建成本。界面状态可恢复也不代表进程仍是原进程。
+第 3 步没有发生时，kill 不会自动产生一次冷启动。只有用户或系统再次需要该进程，才会付出重建成本。界面状态可恢复也不代表进程仍是原进程。
 
 排查时建议同时看四组指标：
 
-- 单位时间 LMK 次数及目标进程的 adj 分布；
+- 单位时间 LMK 次数及 victim 的 adj 分布；
 - victim 的 RSS、anon RSS、swap 和 DMA-BUF；
 - kill 前的 PSI、watermark、swap 与 refault；
 - 目标进程再次启动后的启动耗时、主线程、缺页和 I/O。
 
-如果大量目标进程都在 900～999，系统大体还在牺牲缓存命中率换取可用内存；若频繁下探到 800、700 甚至 200 以下，后台工作、最近任务和用户可感知组件已经受到影响。
+如果大量 victim 都在 900～999，系统大体还在牺牲缓存命中率换取可用内存；若频繁下探到 800、700 甚至 200 以下，后台工作、最近任务和用户可感知组件已经受到影响。
 
 ## 用 Perfetto、logcat 与退出历史定位
 
@@ -398,9 +398,9 @@ data_sources {
 duration_ms: 30000
 ```
 
-`atrace_apps: "lmkd"` 让用户空间 LMK 事件进入轨迹，`oom_score_adj_update` 用来还原目标进程当时的保护级别，`linux.sys_stats` 用来对齐水位和回收变化。量产设备允许的 ftrace 事件与采样频率可能受构建配置限制。
+`atrace_apps: "lmkd"` 让用户空间 LMK 事件进入轨迹，`oom_score_adj_update` 用来还原 victim 当时的保护级别，`linux.sys_stats` 用来对齐水位和回收变化。量产设备允许的 ftrace 事件与采样频率可能受构建配置限制。
 
-Android 17 对应的 Perfetto SQL 标准库会解析当前的瞬时事件、旧切片和更早的计数器三种 LMK 记录。以下 SQL 使用统一后的 `android_lmk_events` 表列出目标进程：
+Android 17 对应的 Perfetto SQL 标准库会解析当前的 instant、旧 slice 和更早的 counter 三种 LMK 记录。下面的 SQL 使用统一后的 `android_lmk_events` 表列出 victim：
 
 ```sql
 INCLUDE PERFETTO MODULE android.memory.lmk;
@@ -429,16 +429,16 @@ adb shell getprop | grep -E 'ro\\.lmk|sys\\.lmk'
 adb logcat -b all -s lowmemorykiller ActivityManager MemoryLimiter
 ```
 
-`/proc/<pid>/oom_score_adj` 只能观察存活进程的当前值；退出历史和 logcat 用于查找已死亡的目标进程；Perfetto 用于建立时序。三者时间要对齐。
+`/proc/<pid>/oom_score_adj` 只能观察存活进程的当前值；退出历史和 logcat 用于查找已死亡 victim；Perfetto 用于建立时序。三者时间要对齐。
 
 ### 判断因果的四步
 
 1. 先确认进程退出时间与退出类型；
-2. 再看进程终止前是否存在 PSI、低水位、低交换空间或抖动；
-3. 核对目标进程当时的 adj 和内存构成；
+2. 再看 kill 前是否存在 PSI、低水位、低 swap 或 thrashing；
+3. 核对 victim 当时的 adj 和内存构成；
 4. 最终确认用户返回后是否产生新进程与启动代价。
 
-仅看到 `lmkd` 在轨迹中运行，无法证明它导致卡顿。一次 `dumpsys meminfo` 快照也无法解释数十秒前的进程终止。
+仅看到 `lmkd` 在轨迹中运行，无法证明它导致卡顿。一次 `dumpsys meminfo` 快照也无法解释数十秒前的 kill。
 
 ## `onTrimMemory()` 与 cached app freezer 的边界
 
@@ -481,7 +481,7 @@ Binder 请求先发出不等于 App 已经完成清理。回调在 App 主线程
 
 冻结后的进程仍存在，也没有释放全部进程内存。回到前台时是进程 thaw，常见代价是页重新变热、缓存重建和待处理任务恢复；这与 LMK 后从 Zygote 创建新进程的冷启动不同。Freezer 本身也不会产生 `ApplicationExitInfo` 的进程退出记录。
 
-`lmkd` 不会通过 AMS 发出“请冻结这个目标进程”的命令。把路径画成 `lmkd → CachedAppOptimizer → freeze` 会混淆两个子系统。
+`lmkd` 不会通过 AMS 发出“请冻结这个 victim”的命令。把路径画成 `lmkd → CachedAppOptimizer → freeze` 会混淆两个子系统。
 
 ## Android 17 MemoryLimiter：单进程配额
 
@@ -496,7 +496,7 @@ Android 17 增加 MemoryLimiter，用于限制异常的单应用进程内存占�
 - `/vendor/etc/memory-limiter-config.xml` 存在；
 - XML 中有一组 `minimumRequiredMemTotal` 不高于当前 `/proc/meminfo` 的 `MemTotal`。
 
-这些条件决定是否创建启用状态的控制器。原生层是否主动监控由 `memoryLimiterTrigger()` 控制，是否配置交换空间上限由 `memoryLimiterSwap()` 控制；`memory_limiter_disable_limits` 和 `memory_limiter_disable_kill` 还可以在运行时分别停用限制与进程终止。
+这些条件决定是否创建 enabled controller。native 层是否主动监控由 `memoryLimiterTrigger()` 控制，是否配置 swap 上限由 `memoryLimiterSwap()` 控制；`memory_limiter_disable_limits` 和 `memory_limiter_disable_kill` 还可以在运行时分别停用限制与 kill。
 
 源码会选择符合设备总 RAM 的配置中 `minimumRequiredMemTotal` 最大的一组。可见与不可见进程的内存、swap XML。`4 GB / 2 GB` 等 `sDefaultConfig` 只供测试，注释明确要求生产使用前另行评估，不能当作 Android 17 通用默认值。
 
@@ -514,7 +514,7 @@ MemoryLimiter 按 `ActivityManager` proc state 应用配置：
 
 ### cgroup 文件与超限处理
 
-原生实现使用进程 cgroup v2 文件：
+native 实现使用进程 cgroup v2 文件：
 
 - `memory.high`；
 - `memory.swap.max`；
@@ -523,9 +523,9 @@ MemoryLimiter 按 `ActivityManager` proc state 应用配置：
 
 Java 层部分注释和展示字符串仍写作 `memory.swap.high`，但 Android 17 原生源码的 `CgroupFile::kSwapMax` 明确解析到 `memory.swap.max`。描述运行行为时应以写入路径为准。
 
-原生层写入 `memory.high` 和交换空间上限，并监听 `memory.events` 的 `high` 计数。`memory.high` 触发后，监控线程进入轮询区，比较 `anon + shmem + swap` 与两项配置之和。组合指标超过配置后，Java 回调会先取消该进程限制；若相关性能分析特性开启且能解析包名，则发送 `TRIGGER_TYPE_ANOMALY`；随后延迟 30 秒请求 AMS 以 `"MemoryLimiter:AnonSwap"` 为原因终止进程。
+native 层写入 `memory.high` 和 swap 上限，并监听 `memory.events` 的 `high` 计数。`memory.high` 触发后，监控线程进入轮询区，比较 `anon + shmem + swap` 与两项配置之和。组合指标超过配置后，Java 回调会先取消该进程限制；若相关 profiling 特性开启且能解析包名，则发送 `TRIGGER_TYPE_ANOMALY`；随后延迟 30 秒请求 AMS 以 `"MemoryLimiter:AnonSwap"` 为原因杀进程。
 
-这 30 秒用于给已配置的性能分析留出时间，不保证每次都能生成堆转储。Android 17 官方文档给出的应用侧识别方式是：
+这 30 秒用于给已配置的 profiling 留时间，不保证每次都能生成 heap dump。Android 17 官方文档给出的应用侧识别方式是：
 
 - `ApplicationExitInfo.getReason()` 为 `REASON_OTHER`；
 - `getDescription()` 包含 `"MemoryLimiter:AnonSwap"`。
@@ -554,7 +554,7 @@ AOSP 公开了多种设备调校入口，例如：
 - vendor free-memory hook 与 vendor LMK memevent；
 - Framework resource overlay 和 MemoryLimiter vendor XML。
 
-具体厂商可以加入白名单、场景化水位或私有终止原因。没有对应 ROM、版本和源码/轨迹证据时，不应写成“某品牌总会把相机启动预留为固定容量”或“固定杀到 adj 200”。这些数字会随 RAM 档位、相机管线和产品配置变化。
+具体厂商可以加入白名单、场景化水位或私有 kill reason。没有对应 ROM、版本和源码/trace 证据时，不应写成“某品牌总会把相机启动预留为固定容量”或“固定杀到 adj 200”。这些数字会随 RAM 档位、相机管线和产品配置变化。
 
 ## Android 15～17 的版本边界
 
@@ -564,7 +564,7 @@ AOSP 公开了多种设备调校入口，例如：
 
 ### Android 16：userspace lmkd 与 Reaper
 
-Android 16 已经具备 PSI/抖动决策、pidfd、Reaper 与 `process_mrelease()` 主链。`sys.lmk.minfree_levels`、`sys.lmk.reportkills` 等属性更早就存在，不适合作为 Android 16 独有特性。
+Android 16 已经具备 PSI/thrashing 决策、pidfd、Reaper 与 `process_mrelease()` 主链。`sys.lmk.minfree_levels`、`sys.lmk.reportkills` 等属性更早就存在，不适合作为 Android 16 独有特性。
 
 ### Android 17 源码边界
 
@@ -583,11 +583,11 @@ Android 17 源码中值得单独记住的边界包括：
 理解 Android 17 LMK，可以抓住四条线：
 
 1. AMS/Process State Controller 把组件状态和依赖关系计算成动态 `oom_score_adj`；
-2. `ProcessList` 经控制套接字把进程信息交给 `lmkd`，`lmkd` 更新 `/proc` 并维护候选表；
+2. `ProcessList` 经控制 socket 把进程信息交给 `lmkd`，`lmkd` 更新 `/proc` 并维护候选表；
 3. PSI 负责唤醒，watermark、swap、thrashing 和 reclaim 状态共同决定是否杀、门槛降到哪里；
 4. Reaper 负责终止目标并加速页回收，Framework、statsd、logcat 与 Perfetto 记录结果。
 
-性能分析也应沿这四条线取证。只看空闲内存、只看目标进程的生命周期标签，或把冻结器、MemoryLimiter 和 `lmkd` 混为一个机制，都会得到不完整的结论。
+性能分析也应沿这四条线取证。只看空闲内存、只看 victim 的生命周期标签，或把 freezer、MemoryLimiter 和 `lmkd` 混为一个机制，都会得到不完整的结论。
 
 ## 源码与官方资料
 
