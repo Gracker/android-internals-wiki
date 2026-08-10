@@ -114,7 +114,7 @@ ART 属于可通过 Google Play 系统更新下发的 Mainline 模块。系统�
 - 使用 CC 且启用分代时，同时创建 full CC 与 young CC。
 - 使用 CMC 且启用分代时，同时创建 `MarkCompact` 与 `YoungMarkCompact`。
 
-是否走 CMC 与 userfaultfd（UFFD）能力有关。`mark_compact.cc` 中的 `ShouldUseUserfaultfd()` 会综合命令行选项、系统属性、内核 API 和所需 UFFD 特性。`runtime.cc` 对分代 GC 还有一层组合条件：
+是否走 CMC 与 userfaultfd（UFFD）能力有关。`mark_compact.cc` 中的 `ShouldUseUserfaultfd()` 会综合命令行选项、系统属性、内核 API 和所需 UFFD feature。`runtime.cc` 对分代 GC 还有一层组合条件：
 
 ```cpp
 use_generational_gc =
@@ -125,7 +125,7 @@ use_generational_gc =
 
 这段代码的用途是展示分代开关并非单一布尔量。读屏障或 UFFD 路径、`-Xgc` 配置和运行时开关都要满足相应条件。
 
-在 Android 17 的 `ShouldUseGenerationalGC()` 中，UFFD 路径还会检查 `use_generational_cmc` 开关；随后读取 `persist.device_config.runtime_native_boot.use_generational_gc`，默认值为 true。默认值不等于每台设备都会启用，前置条件和产品配置仍需成立。
+在 Android 17 的 `ShouldUseGenerationalGC()` 中，UFFD 路径还会检查 `use_generational_cmc` flag；随后读取 `persist.device_config.runtime_native_boot.use_generational_gc`，默认值为 true。默认值不等于每台设备都会启用，前置条件和产品配置仍需成立。
 
 `android17-6.18-2026-06_r6` 的 arm64 GKI defconfig 含 `CONFIG_USERFAULTFD=y`。这只说明通用内核具备编译期支持。ART 启动时仍会探测 `userfaultfd`、`UFFD_FEATURE_SIGBUS`、`MREMAP_DONTUNMAP` 等能力，并接受产品属性和运行时开关的约束。
 
@@ -201,7 +201,7 @@ Android 17 的 `CardTable` 以 `kCardShift = 10` 划分堆，因此一个卡表�
 
 dirty 卡表项只表示这段堆地址最近发生过引用写入，是一个保守候选。它不能说明其中必然有老年代到年轻代的引用。GC 仍需扫描卡表项覆盖的对象并检查字段。
 
-年轻代 CMC 的 `ScanOldGenObjects()` 会扫描可移动老年代区域，以及非移动空间中达到指定年龄的卡表项所覆盖的区域。这样可以找到老对象指向年轻对象的引用，同时避免每轮都遍历完整老年代。
+young CMC 的 `ScanOldGenObjects()` 会扫描可移动老年代区域，以及非移动空间中达到指定年龄的卡表项所覆盖的区域。这样可以找到老对象指向年轻对象的引用，同时避免每轮都遍历完整老年代。
 
 ## 5. Young 之后何时执行 Full
 
@@ -223,14 +223,14 @@ ART 不按固定次数轮换 young 与 full。`heap.cc` 在一次非 sticky 回�
 
 | 指标 | 回答的问题 |
 | --- | --- |
-| 应用线程暂停时长 | 应用线程被暂停了多久 |
-| GC 墙上时钟时长 | 从 GC 开始到结束经过了多久 |
-| GC 运行时长 | GC 线程得到 CPU 并执行了多久 |
-| GC 可运行等待时长 | GC 线程可运行但在等待 CPU 多久 |
+| mutator pause | 应用线程被暂停了多久 |
+| GC wall duration | 从 GC 开始到结束经过了多久 |
+| GC running duration | GC 线程得到 CPU 并执行了多久 |
+| GC runnable duration | GC 线程可运行但在等待 CPU 多久 |
 
 墙上时钟时长很长，不一定代表应用线程全程暂停。运行时长高说明 GC 消耗了较多 CPU；可运行等待时长高说明 GC 线程本身也受调度竞争影响。若同一时段主线程或 RenderThread 也频繁处于可运行状态，应进一步看 CPU 核、优先级、频率和其他进程负载。
 
-暂停也不能只看平均值。少量长尾、等待线程暂停的耗时偏高、阻塞式 GC，常常比稳定的小暂停更容易伤害交互。对滚动、动画和输入响应，应同时看 P95/P99 或最大值，并回到发生长尾的轨迹片段。
+暂停也不能只看平均值。少量长尾、time to suspend GC，常常比稳定的小暂停更容易伤害交互。对滚动、动画和输入响应，应同时看 P95/P99 或最大值，并回到发生长尾的轨迹片段。
 
 ## 7. 大对象空间的精确边界
 
@@ -245,7 +245,7 @@ byte_count >= large_object_threshold_ &&
 
 LOS 对排查的意义主要在于识别大块 `byte[]`、`char[]`、`int[]`、解码缓冲区和大字符串。频繁创建这些对象会增加大对象分配、扫描和回收成本。是否产生阻塞式 GC 取决于当时的堆空间与分配结果，不能把每次 LOS 分配都描述为同步 GC。
 
-Android 8.0 起，`Bitmap` 像素数据放在原生堆中。Android 14～17 中，大图带来的内存压力仍很重要，但像素内存不能按 Java LOS 对象计算。应结合 Java 包装对象、原生分配、图形缓冲和 GPU 资源分别观察。
+Android 8.0 起，`Bitmap` 像素数据放在 native heap。Android 14～17 中，大图带来的内存压力仍很重要，但像素内存不能按 Java LOS 对象计算。应结合 Java wrapper、native allocation、图形缓冲和 GPU 资源分别观察。
 
 ## 8. 用 Perfetto 判断 GC 是否参与慢帧
 
@@ -258,7 +258,7 @@ Android 8.0 起，`Bitmap` 像素数据放在原生堆中。Android 14～17 中�
 1. 找到 `actual_frame_timeline_slice` 中的卡顿帧。
 2. 查看主线程和 RenderThread 在这一帧内处于 Running、Runnable、Sleeping 还是被阻塞。
 3. 查看同进程 GC 事件是否与帧重叠，以及 GC 是短而密还是单次长尾。
-4. 对重叠事件比较墙上时钟、运行、可运行等待和可中断/不可中断时间。
+4. 对重叠事件比较 wall、running、runnable 和 interruptible/uninterruptible 时间。
 5. 再决定是否抓取分配采样或堆转储。
 
 ### 8.2 汇总 GC 类型与时长
@@ -332,7 +332,7 @@ ORDER BY avg_running_ms DESC;
 
 运行时长高时，继续查分配速率、存活对象和全堆收集；可运行等待时长高时，同时查系统负载和 CPU 调度。二者也可能一起升高。
 
-## 9. 用 GC 计时、分配采样和堆转储补充证据
+## 9. 用 GC timing、分配 profile 和 heap dump 补证据
 
 ### 9.1 SIGQUIT 的累计 GC 统计
 
@@ -342,7 +342,7 @@ ORDER BY avg_running_ms DESC;
 adb shell kill -s QUIT <PID>
 ```
 
-ART 会把线程栈、锁和累计 GC 计时写入 ANR 轨迹，搜索 `Dumping cumulative Gc timings` 可找到各收集器阶段、暂停直方图、等待线程暂停的耗时、吞吐和阻塞式 GC 统计。量产设备对 `/data/anr` 的读取常有限制，可通过可调试构建或错误报告获取允许访问的记录。
+ART 会把线程栈、锁和累计 GC timing 写入 ANR trace，搜索 `Dumping cumulative Gc timings` 可找到各收集器阶段、暂停直方图、time to suspend、吞吐和 blocking GC 统计。量产设备对 `/data/anr` 的读取常有限制，可通过可调试构建或 bugreport 获取允许访问的记录。
 
 发送 `SIGQUIT` 会触发一次诊断转储。压测脚本应控制次数，并避免在用户生产会话中随意执行。
 
@@ -364,8 +364,8 @@ Android 13 及以后，某些通过 `NativeAllocationRegistry` 关联的原生�
 
 选择工具时可用一个简单问题区分：
 
-- “谁在高频创建对象？”——抓 ART 分配采样。
-- “谁把这批对象一直留着？”——抓 Java 堆转储。
+- “谁在高频创建对象？”——抓 ART allocation profile。
+- “谁把这批对象一直留着？”——抓 Java heap dump。
 
 ## 10. 应用侧如何降低 GC 干扰
 
@@ -440,10 +440,10 @@ Compose 重组不等于每次都会创建 lambda 或状态对象。编译器可�
 假设列表快速滚动时出现间歇性慢帧，可以按以下顺序缩小范围：
 
 1. 用 Macrobenchmark 或固定手势重复滚动，保留发布构建、设备温度和刷新率。
-2. 录制包含 Frame Timeline、sched 和 ART/GC 的 Perfetto 轨迹。
+2. 录制包含 Frame Timeline、sched 和 ART/GC 的 Perfetto trace。
 3. 用时间交集查询找出 GC 与卡顿帧重叠的样本。
-4. 对样本查看主线程暂停、GC 运行与可运行等待时长，以及是否有阻塞式 GC。
-5. 若 GC 短而密，抓 ART 分配采样，定位每次绑定或绘制中的分配栈。
+4. 对样本查看主线程 pause、GC running/runnable，以及是否有 blocking GC。
+5. 若 GC 短而密，抓 ART allocation profile，定位每次绑定或绘制中的分配栈。
 6. 若全堆 GC 后仍释放很少，或堆持续增长，抓堆转储查保留关系。
 7. 只修改已定位的热点，再用相同脚本复测 GC 次数、CPU 时间、长尾帧和 RSS。
 
@@ -461,7 +461,7 @@ Compose 重组不等于每次都会创建 lambda 或状态对象。编译器可�
 
 ### 一次 GC 与卡顿帧重叠，能否直接判定 GC 导致掉帧？
 
-不能。还要看应用线程暂停、GC 运行与可运行等待时长、主线程状态和同一帧的其他阻塞。时间重叠是后续调查入口。
+不能。还要看应用线程暂停、GC mutator pause、GC running/runnable、主线程状态和同一帧的其他阻塞。时间重叠是后续调查入口。
 
 ### Android 17 应用需要主动开启分代 CMC 吗？
 
@@ -469,7 +469,7 @@ Compose 重组不等于每次都会创建 lambda 或状态对象。编译器可�
 
 ### 为什么优化后 GC 次数可能增加？
 
-分代策略可以用更多次、成本较低的年轻代收集替代全堆收集。次数单独增加不代表退化，应同时比较总 GC CPU、暂停长尾、阻塞式 GC、回收吞吐、RSS 和用户场景耗时。
+分代策略可以用更多次、成本较低的年轻代收集替代全堆收集。次数单独增加不代表退化，应同时比较总 GC CPU、暂停长尾、blocking GC、回收吞吐、RSS 和用户场景耗时。
 
 ## 13. 版本结论
 
@@ -495,4 +495,4 @@ Android 17 的分代 CMC 降低了处理短命对象的平均成本，但它不�
 - [Android 17 GKI 6.18：arm64 gki_defconfig](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig)
 - [Perfetto stdlib：android.garbage_collection](https://perfetto.dev/docs/analysis/stdlib-docs)
 - [Perfetto heap_profile 命令行](https://perfetto.dev/docs/reference/heap_profile-cli)
-- [Perfetto ART 堆转储](https://perfetto.dev/docs/data-sources/java-heap-profiler)
+- [Perfetto ART Heap Dumps](https://perfetto.dev/docs/data-sources/java-heap-profiler)

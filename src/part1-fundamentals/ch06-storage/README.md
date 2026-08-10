@@ -24,7 +24,7 @@ eMMC、UFS 和 NVMe 的队列能力不同，ext4 与 F2FS 的写入、回收和�
 - [6.6 vold、FUSE 与 scoped storage I/O](./06-vold-fuse-scoped-storage-io.md)：共享存储访问路径和性能边界；
 - [6.7 FUSE passthrough 与 FUSE BPF](./07-fuse-bpf-scoped-storage-io-performance.md)：Android 17 下快路径的适用条件与观测方法。
 
-SharedPreferences ANR 和 AndroidX DataStore 多进程一致性另有专题页；Linux 物理内存规整应结合内存管理章节阅读。
+SharedPreferences ANR SharedPreferences ANR、AndroidX DataStore 多进程一致性另有专题页；Linux 物理内存规整应结合内存管理章节阅读。
 
 ## 阅读建议
 

@@ -144,7 +144,7 @@ Android 17 中的 `CollectorTransitionTask` 和 `TimeBasedGcThresholdCheckTask` 
 | `trace_profile.cc` | `TraceStopTask` | 到期停止低开销方法追踪 | 按追踪结束时间执行 |
 | `jit/jit.cc` | `MapBootImageMethodsTask` | 在 JIT 通知后重映射 boot image 方法 | 首次延时 10 秒，条件未满足则再延时 10 秒 |
 
-只统计 `heap.cc` 会得到 6 种，统计整个 ART runtime 的生产源码则会得到 10 种。分析代码时，应先说明统计目录和是否包含“继承了 `HeapTask`、但当前配置不经过队列”的类型。
+只统计 `heap.cc` 会得到 6 种，统计整个 ART runtime `heap.cc`。分析代码时，应先说明统计目录和是否包含“继承了 `HeapTask`、但当前配置不经过队列”的类型。
 
 ### `ClearedReferenceTask` 是一个重要例外
 

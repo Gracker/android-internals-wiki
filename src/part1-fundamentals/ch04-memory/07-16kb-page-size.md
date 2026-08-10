@@ -100,13 +100,13 @@ Android 的 16 KiB 页适配包含两个问题：
 
 TLB 未命中和缺页也要分开：
 
-- **TLB 未命中**：当前虚拟页的翻译不在 TLB 中，通常由硬件遍历页表处理。
-- **次要缺页**：页表尚未建立，但数据无需从块设备读入，例如匿名页首次触碰，或者文件页已经在页缓存中。
-- **主要缺页**：内核需要等待文件数据从存储设备读入。
+- **TLB miss**：当前虚拟页的翻译不在 TLB 中，通常由硬件遍历页表处理。
+- **Minor page fault**：页表尚未建立，但数据无需从块设备读入，例如匿名页首次触碰，或者文件页已经在 page cache 中。
+- **Major page fault**：内核需要等待文件数据从存储设备读入。
 
 TLB 未命中不会自然表现为 Perfetto 调度轨道中的一个内核切片；缺页会进入内核异常路径。分析工具和指标不能混用。
 
-### 1.2 16 KiB 页为什么可能减少缺页
+### 1.2 16KB 页为什么可能减少 fault
 
 对连续访问的代码或数据，内核每次建立 16 KiB 映射，可以覆盖比 4 KiB 页更多的相邻字节。因此，顺序访问且局部性良好的工作负载可能产生更少的缺页和更少的页表项。
 
@@ -145,7 +145,7 @@ Google 公布的初期 Pixel 测试结果如下：
 
 修好其中一个，另一个仍可能使安装或加载失败。
 
-### 3.1 纯 Java/Kotlin 应用
+### 3.1 纯 Java/Kotlin App
 
 如果应用及其全部依赖都没有原生代码，Android 官方将其视为已支持 16 KiB 页。仍要跑一遍 16 KiB 设备测试，因为很多 SDK 会通过 AAR 带入 `.so`。看到 JNI、Rust、游戏引擎、媒体编解码库或加固壳时，应直接进入原生代码检查流程。
 
@@ -330,13 +330,13 @@ adb shell setprop bionic.linker.16kb.app_compat.enabled fatal
 adb shell setprop pm.16kb.app_compat.disabled true
 ```
 
-应用也可以在 Manifest 中通过 `android:pageSizeCompat` 为单个应用启用或禁用向后兼容。兼容模式适合迁移和诊断，发布前仍应让所有原生代码产物满足 16 KiB 要求。
+App Manifest 中通过 `android:pageSizeCompat` 为单个应用启用或禁用向后兼容。兼容模式适合迁移和诊断，发布前仍应让所有原生代码产物满足 16 KiB 要求。
 
 ## 6. 迁移流程
 
 ### 第一步：盘点全部原生代码产物
 
-检查主 APK、动态功能模块、AAR、Prefab、Rust/C++ 产物、游戏引擎插件、加固产物和运行时下载模块。对没有源码的预编译库，记录提供方、版本和 16 KiB 支持声明。
+检查主 APK、dynamic feature、AAR、Prefab、Rust/C++ 产物、游戏引擎插件、加固产物和运行时下载模块。对没有源码的预编译库，记录提供方、版本和 16 KiB 支持声明。
 
 ### 第二步：升级工具链并全量重建
 
@@ -357,7 +357,7 @@ adb shell getprop ro.build.fingerprint
 
 期望 `PAGE_SIZE` 输出 `16384`。Android 16 起还可以检查 `ro.product.page_size`、`ro.product.cpu.pagesize.max` 和 `ro.product.build.16k_page.enabled`，但运行时页大小仍以 `getconf`、`AT_PAGESZ` 或进程接口为准。
 
-可用的测试环境包括 16 KiB 模拟器、Cuttlefish，以及提供“Boot with 16KB page size”开发者选项的 Pixel 8/8 Pro、Pixel 8a、Pixel 9 系列和 Android 16+ 的 Pixel 9a。设备能切换页大小时，4 KiB/16 KiB 对比更容易控制硬件差异。
+可用的测试环境包括 16KB emulator、Cuttlefish，以及提供“Boot with 16KB page size”开发者选项的 Pixel 8/8 Pro、Pixel 8a、Pixel 9 系列和 Android 16+ 的 Pixel 9a。设备能切换页大小时，4 KiB/16 KiB 对比更容易控制硬件差异。
 
 ### 第五步：关闭兼容模式再跑完整用例
 
@@ -374,7 +374,7 @@ adb shell getprop ro.build.fingerprint
 
 ### 第六步：观察内存与性能回归
 
-至少记录启动耗时、PSS/RSS、次要/主要缺页、线程数和原生内存映射。若应用自建小型映射较多，还要比较 `/proc/<pid>/maps` 与 `smaps` 中的 VMA 数量和页尾损失。
+至少记录启动耗时、PSS/RSS、minor/major fault、线程数和原生内存映射。若应用自建小型映射较多，还要比较 `/proc/<pid>/maps` 与 `smaps` 中的 VMA 数量和页尾损失。
 
 ## 7. 常见故障如何定位
 
@@ -392,7 +392,7 @@ adb shell getprop ro.build.fingerprint
 
 ### 7.4 只在某个业务页面崩溃
 
-这通常意味着延迟加载的 `.so`、动态模块或某段页大小计算直到该路径才执行。把 `dlopen()` 失败、信号、故障地址、目标 ABI 和库构建 ID 一起记录，再回到产物盘点表定位来源。
+这通常意味着延迟加载的 `.so`、动态模块或某段页大小计算直到该路径才执行。把 `dlopen()` 失败、signal、fault address、目标 ABI 和库 build ID 一起记录，再回到产物盘点表定位来源。
 
 ### 7.5 内存明显增长
 
@@ -408,7 +408,7 @@ adb shell getprop ro.build.fingerprint
 
 ### 8.1 先控制实验变量
 
-对比测试应使用同一台可切换 4 KiB/16 KiB 的设备、同一 Android 构建、同一应用构建和相同温控条件。每组至少记录：
+对比测试应使用同一台可切换 4 KiB/16 KiB 的设备、同一 Android build、同一应用构建和相同温控条件。每组至少记录：
 
 - `getconf PAGE_SIZE`；
 - 构建指纹；
@@ -429,7 +429,7 @@ Perfetto 可以对齐应用启动、主线程调度、Binder、文件 I/O、`mma
 
 ### 8.3 simpleperf 适合观察缺页与 TLB 事件
 
-先用 `simpleperf list` 查看 SoC 和内核导出的事件。`minor-faults`、`major-faults` 等软件事件通常可用；ITLB/DTLB 重填、遍历类 PMU 事件的名称和权限依 SoC 而异，正文不能写死一个跨设备名称。
+先用 `simpleperf list` 查看 SoC 和内核导出的事件。`minor-faults`、`major-faults` 等软件事件通常可用；ITLB/DTLB refill、遍历类 PMU 事件的名称和权限依 SoC 而异，正文不能写死一个跨设备名称。
 
 TLB 指标降低而启动时间不变，说明 TLB 可能不在关键路径。启动更快而 TLB 事件不可用，也只能证明端到端结果变化，不能把原因单独归给 TLB。
 
@@ -454,7 +454,7 @@ adb shell cat /sys/kernel/mm/transparent_hugepage/hpage_pmd_size
 adb shell zcat /proc/config.gz | grep CONFIG_TRANSPARENT_HUGEPAGE
 ```
 
-在 16 KiB 内核上，`hpage_pmd_size` 通常会显示 32 MiB。PMD THP 可以显著扩大单个映射的覆盖范围，也需要更大的连续 folio，缺页、清零、压缩和拆分页的成本都要纳入评估。
+在 16 KiB 内核上，`hpage_pmd_size` 通常会显示 32 MiB。PMD THP 可以显著扩大单个映射的覆盖范围，也需要更大的连续 folio，fault、清零、压缩和拆分页的成本都要纳入评估。
 
 ### 9.2 mTHP
 
@@ -467,7 +467,7 @@ adb shell 'ls -d /sys/kernel/mm/transparent_hugepage/hugepages-* 2>/dev/null'
 adb shell 'cat /sys/kernel/mm/transparent_hugepage/hugepages-*/enabled 2>/dev/null'
 ```
 
-Linux 6.18 文档中的默认规则是：PMD 尺寸 THP 继承顶层 `enabled`，其他粒度默认为 `never`。产品配置可以修改这些值。`khugepaged` 当前只扫描并折叠 PMD 尺寸 THP；较小 mTHP 主要在缺页时分配。
+Linux 6.18 文档中的默认规则是：PMD-sized THP 继承顶层 `enabled`，其他粒度默认为 `never`。产品配置可以修改这些值。`khugepaged` 当前只扫描并折叠 PMD-sized THP；较小 mTHP 主要走 fault-time allocation。
 
 ### 9.3 ARM64 contpte
 
@@ -487,16 +487,16 @@ CONT_PTE_SIZE = 128 × 16 KiB = 2 MiB
 - 整个 2MB 范围落在同一个 folio 内；
 - 映射属于可处理的用户空间普通内存。
 
-“启用 `CONFIG_ARM64_CONTPTE` 后每 2 MiB 都只占一个 TLB 条目”过于绝对。mTHP 提供较大的 folio，contpte 负责符合条件的 2 MiB PTE 组；较小 mTHP 即使减少了缺页，也不会自动满足 2 MiB contpte 折叠条件。CPU 还可能有硬件页聚合能力，那是另一个层面的实现。
+“启用 `CONFIG_ARM64_CONTPTE` 后每 2 MiB 都只占一个 TLB entry”过于绝对。mTHP 提供较大的 folio，contpte 负责符合条件的 2 MiB PTE 组；较小 mTHP 即使减少了缺页，也不会自动满足 2 MiB contpte 折叠条件。CPU 还可能有硬件页聚合能力，那是另一个层面的实现。
 
 ### 9.4 三种机制的边界
 
 | 机制 | 16 KiB 内核上的典型粒度 | 主要作用 | 关键条件 |
 |---|---:|---|---|
 | 基础页 | 16 KiB | 所有普通映射的基本粒度 | 内核以 16 KiB 粒度构建 |
-| mTHP | 32 KiB～小于 32 MiB 的可用粒度 | 一次缺页处理多个基础页 | 分尺寸策略、连续 folio |
+| mTHP | 32KB～小于 32MB 的可用粒度 | 一次 fault 处理多个基础页 | per-size policy、连续 folio |
 | contpte | 2 MiB PTE 组 | 利用连续提示降低 TLB 压力 | 对齐、连续 PFN、同一 folio、相容权限 |
-| PMD THP | 32 MiB | PMD 块映射 | THP 策略、连续大 folio |
+| PMD THP | 32MB | PMD block 映射 | THP policy、连续大 folio |
 
 四者可以共存，但不会对每个应用、每段内存同时生效。性能报告要同时记录基础页、THP sysfs、`smaps` 和相关 vmstat，避免把 THP 或 contpte 的变化算进基础页收益。
 
