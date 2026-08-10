@@ -309,7 +309,7 @@ Incremental File System 允许应用在 APK 的全部数据块下载完之前启
 
 ## 安装 dexopt 与 ART Service
 
-### 编译过滤器取决于设备配置
+### compiler filter 取决于设备配置
 
 Android 构建可以通过 `pm.dexopt.<reason>` 配置不同原因对应的 compiler filter。ART Service 文档给出的标准配置中，`bg-dexopt` 通常使用 `speed-profile`，多个开机相关原因使用 `verify`；产品配置可以覆盖这些值。
 
@@ -423,7 +423,7 @@ session committed
       或失败后进入回滚/失败处理
 ```
 
-只有部分 `PackageInstallerSession` 属于分阶段会话。使用会话 API 时，先检查参数和包类型，再判断是否应跨重启分析。
+只有部分 `PackageInstallerSession` 属于 staged session。使用 session API 时，先检查参数和包类型，再判断是否应跨重启分析。
 
 ---
 
