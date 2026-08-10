@@ -98,7 +98,7 @@ Android 会在 Zygote fork 应用进程前预先触达一部分图形栈。这�
 这里有两个常见误解：
 
 1. Zygote 调过一次 EGL 或 Vulkan，App 就不需要再初始化 RenderThread 和图形 context。
-2. Zygote 预加载了“GPU driver”，每个应用使用的 driver 就已经确定。
+2. Zygote 预加载了“GPU driver”，每个 App 使用的 driver 就已经确定。
 
 Android 17 源码都不支持这两个结论。要看清收益和边界，需要把图形初始化拆成四段：
 
@@ -204,7 +204,7 @@ Trace.traceEnd(Trace.TRACE_TAG_DALVIK);
 - WebView 的 Zygote 初始化在后面，是另一条共享内存与启动优化路径。
 - 这些切片属于系统启动期间的 Zygote，不属于某个 App 的 `bindApplication` 或 `launchingActivity`。
 
-应用启动 trace 里通常没有这两个切片，需要采集包含 Zygote 的 boot trace 才能看到。
+App 启动 trace 里通常没有这两个切片，需要采集包含 Zygote 的 boot trace 才能看到。
 
 ## 3. `PreloadAppProcessHALs` 当前只预热 GraphicBufferMapper
 
@@ -311,7 +311,7 @@ if (Properties::peekRenderPipelineType()
 }
 ```
 
-这段分支只触发所选图形后端的早期 loader 路径；它没有创建应用的 context、surface 或交换链。
+这段分支只触发所选图形后端的早期 loader 路径；它没有创建 App 的 context、surface 或 swapchain。
 
 ### 4.1 GL 分支没有创建 EGLContext
 
@@ -427,7 +427,7 @@ ro.gfx.driver.1   # prerelease driver package
 4. 读取 APK 的 `assets` 目录中的 `sphal_libraries.txt`。
 5. 调用 `setDriverPathAndSphalLibraries()` 配置 native loader。
 
-这一步发生在每个 App 进程。Zygote 触达过 system EGL/Vulkan 入口，但不会替应用选择可更新驱动包路径、ANGLE package 或调试层。
+这一步发生在每个 App 进程。Zygote 触达过 system EGL/Vulkan 入口，但不会替 App 选择可更新驱动包路径、ANGLE package 或 debug layer。
 
 ## 7. 启动 RenderThread 的是 `HardwareRenderer.preload()`
 
@@ -608,7 +608,7 @@ adb logcat -v threadtime \
 
 要评估 `ro.zygote.disable_gl_preload` 或 mapper 预热变化，至少控制：
 
-1. 使用同一硬件、同一 ABI、同一系统/厂商构建版本，只改变目标配置。
+1. 使用同一硬件、同一 ABI、同一系统/vendor 构建版本，只改变目标配置。
 2. 两组都从完整 reboot 开始，让对应 Zygote 重建。
 3. 等待 boot completed 后再启动测试 App。
 4. 保持 ANGLE、updatable driver、HWUI renderer 和 debug layer 配置一致。
@@ -621,7 +621,7 @@ adb logcat -v threadtime \
 - 对应 driver 已由其他 boot 组件加载。
 - App 选择了 ANGLE/updatable driver，没有复用目标路径。
 - 文件页仍在 page cache。
-- 瓶颈位于着色器、allocator 或 SurfaceFlinger。
+- 瓶颈位于 shader、allocator 或 SurfaceFlinger。
 
 没有调用栈与配置证据时，不要猜是哪一种。
 
@@ -654,11 +654,11 @@ adb logcat -v threadtime \
 
 不成立。要求 Mapper 4+ 时会跳过 2/3。
 
-### “Zygote 预加载决定应用使用的驱动”
+### “Zygote 预加载决定 App 使用的驱动”
 
 不成立。App fork 后仍通过 `GraphicsEnvironment.setup()` 选择 ANGLE、system 或 updatable driver。
 
-### “应用可通过关闭 `ro.zygote.disable_gl_preload` 动态调优”
+### “App 可通过关闭 `ro.zygote.disable_gl_preload` 动态调优”
 
 不成立。该属性是只读平台配置，而且关闭它只影响 graphics driver 入口，不影响 mapper HAL 预热。
 
@@ -669,9 +669,9 @@ adb logcat -v threadtime \
 ## 14. 检查清单
 
 1. 分清 Zygote、App main、RenderThread 与 SurfaceFlinger 四个时间域。
-2. 确认应用由哪个 ABI 的 Zygote fork。
+2. 确认 App 由哪个 ABI 的 Zygote fork。
 3. boot trace 检查 `PreloadAppProcessHALs` 与 `PreloadGraphicsDriver`。
-4. Android 17 mapper Android 17 映射器路径，按 `requireMapper4()` 判断是否包含 Gralloc 2/3。
+4. Android 17 mapper 路径按 `requireMapper4()` 判断是否包含 Gralloc 2/3。
 5. 记录 `ro.zygote.disable_gl_preload` 与 HWUI renderer。
 6. App bind 阶段检查 `setupAngle`、`chooseDriver` 和最终 package。
 7. 不把 `eglGetDisplay()` 写成 EGLContext 初始化。
@@ -680,7 +680,7 @@ adb logcat -v threadtime \
 10. 分开分析映射器与分配器。
 11. shader/pipeline、buffer、fence 与合成单独取证。
 12. A/B 对比必须重启 Zygote/设备，并保持 driver 选择一致。
-13. OEM 结论附上 SoC、系统/厂商构建版本、driver package 与属性快照。
+13. OEM 结论附上 SoC、系统/vendor 构建版本、driver package 与属性快照。
 14. 当前平台源码统一引用 `android-17.0.0_r1`。
 
 ## 参考资料

@@ -376,7 +376,7 @@ return BR_TRANSACTION_PENDING_FROZEN
 
 如果“不可丢”意味着无限排队，这个协议仍然没有完成设计。
 
-## 7. API 36+：使用系统提供的冻结回调队列
+## 7. API 36+：使用系统提供的冻结 callback 队列
 
 ### 7.1 观察远端 Binder 的 frozen 状态
 
@@ -606,7 +606,7 @@ Perfetto 未采集 ActivityManager 或 sched 数据时，“没看到事件”�
 - 观察事件是否已经过期。
 - 观察解冻后的 CPU burst。
 
-不要用无限循环耗尽 Binder 缓冲区作为默认验证手段。需要验证溢出时，应在隔离设备上设置明确上限，并保存 trace、events log 和 exit-info。
+不要用无限循环耗尽 Binder buffer 作为默认验证手段。需要验证溢出时，应在隔离设备上设置明确上限，并保存 trace、events log 和 exit-info。
 
 ## 12. 版本边界
 

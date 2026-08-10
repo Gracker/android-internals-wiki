@@ -244,7 +244,7 @@ Java `TransactionTooLargeException` 文档把 Binder transaction buffer 描述�
 
 这仍不是“单个请求可放心塞到 992KiB”的承诺。同一进程的并发请求、回复、对象元数据和对端 receive buffer 都会占空间。异常发生时，client 甚至无法可靠区分请求尚未发出还是回复过大。
 
-工程规则很简单：transaction 保持小；大数据使用文件描述符、分页或流传递。
+工程规则很简单：transaction 保持小；大数据使用 fd、分页或流传递。
 
 ### 3.4 默认 15 不是“进程总共只有 15 个 Binder 线程”
 
@@ -345,7 +345,7 @@ Unix domain socket 提供本机字节流或有消息边界的 packet 语义，�
 - 命名 socket：由 init 创建在 `/dev/socket/*` 等 namespace。
 - 匿名 `socketpair()`：创建一对已连接 fd。
 
-它没有 Binder 的“事务共享 1MB receive mapping”口径，但仍受 socket send/receive buffer、单个分组、内存和协议 framing 约束。大流可以分块持续发送，不等于单次 `send()` 没有上限。
+它没有 Binder 的“transaction 共享 1MB receive mapping”口径，但仍受 socket send/receive buffer、单个 packet、内存和协议 framing 约束。大流可以分块持续发送，不等于单次 `send()` 没有上限。
 
 ### 5.1 InputChannel：Binder 交 fd，socket 传事件
 
@@ -394,7 +394,7 @@ Unix socket 更适合：
 - 单向。
 - 没有消息边界。
 - 由有限 kernel buffer 提供背压。
-- 常通过 fork 继承或显式传递文件描述符建立连接。
+- 常通过 fork 继承或显式传递 fd 建立连接。
 
 Android/Java 常见场景是 `ProcessBuilder` / `Runtime.exec()` 的 stdin、stdout、stderr。需要双向通信时要两条 pipe，或直接使用 socketpair。
 
@@ -476,11 +476,11 @@ try {
 
 Android 17 `MemoryFile.java` 已明确写成 `SharedMemory` wrapper。新代码通常优先使用 SharedMemory；MemoryFile 的 purgeable 兼容行为不应被当作新的通用共享内存设计基础。
 
-### 7.4 Android 17 的 ashmem 兼容文件描述符可能由 memfd 承载
+### 7.4 Android 17 的 ashmem 兼容 fd 可能由 memfd 承载
 
 `ashmem_create_region()` 是兼容 API 名，不保证底层一定是 legacy `/dev/ashmem`。Android 17 `ashmem-dev.cpp` 的默认判定是：
 
-1. 内核/SELinux 策略支持 `memfd_class` capability。
+1. kernel/SELinux 策略支持 `memfd_class` capability。
 2. `ro.vendor.api_level >= 202604`。
 3. 当前 application target SDK >= 37。
 
@@ -508,7 +508,7 @@ if (!mAllowFds || len <= BLOB_INPLACE_LIMIT) {
 - `len > 16KiB` 且 Parcel 允许 fd：创建 ashmem-compatible region，映射后通过 Parcel 传 fd。
 - `len > 16KiB` 但不允许 fd：仍走 inline。
 
-`writeBlob()` 返回可写区域给调用者，数据仍要被写进 inline buffer 或共享 mapping。fd 分支避免把整块 blob 再次塞进 Binder transaction buffer，但生产者仍有写入成本。
+`writeBlob()` 返回可写区域给调用者，数据仍要被写进 inline buffer 或共享 mapping。fd 分支避免把整块 blob 再次塞进 Binder transaction buffer，但 producer 仍有写入成本。
 
 这个行为也不能外推成“所有大 AIDL `byte[]` 自动走共享内存”。只有实际使用 blob/fd-backed Parcelable 的路径才有这项分流。普通 byte array 仍会被内联编组。
 
@@ -566,7 +566,7 @@ HIDL 从 Android 13 起 deprecated，但既有 HIDL HAL 仍受支持。分析 An
 | --- | --- | --- |
 | HIDL binderized HAL | `/dev/hwbinder` | 存量兼容，不用于新接口 |
 | Stable AIDL HAL | `/dev/binder` | 新实现优先 |
-| `/dev/vndbinder` + vndservicemanager | 厂商进程间旧 AIDL | Android 11 起 deprecated |
+| `/dev/vndbinder` + vndservicemanager | vendor 进程间旧 AIDL | Android 11 起 deprecated |
 
 控制调用之外，音频、相机、传感器和图形仍常把持续数据放在 FMQ、SharedMemory 或 DMA-BUF 中。AIDL/HIDL 决定接口语言和控制 transport，不等于高吞吐 payload 必须内联。
 
@@ -587,7 +587,7 @@ host RpcSession
 - socket/vsock buffer 与 virtio。
 - VM 调度和服务端工作。
 
-AVF 还限制 pVM 之间直接通信；host 的 VirtualizationService 控制连接建立。大文件交换可使用 AuthFS 等专门通道，不能依赖超大的 Binder RPC 事务。
+AVF 还限制 pVM 之间直接通信；host 的 VirtualizationService 控制连接建立。大文件交换可使用 AuthFS 等专门通道，不能依赖超大的 Binder RPC transaction。
 
 ## 13. 定性对比
 
