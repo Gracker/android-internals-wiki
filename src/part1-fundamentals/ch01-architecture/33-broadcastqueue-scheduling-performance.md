@@ -314,7 +314,7 @@ API 37 定义了 `broadcasts` Perfetto SDK category。启用相关 tracing v3 �
 - `action`、receiver type；
 - 冷/热进程启动类型；
 - `dispatch_delay_ms`、`receive_delay_ms`、`finish_delay_ms`；
-- Intent 标志、接收者优先级、投递组策略。
+- Intent flags、receiver priority、delivery group policy。
 
 当前进程级实现把 `receive_delay_ms` 记为 0，因为“被进程队列选中”和“提交给应用”之间没有旧实现中的独立阶段。分析时重点检查以下两个值：
 
@@ -352,7 +352,7 @@ API 37 定义了 `broadcasts` Perfetto SDK category。启用相关 tracing v3 �
 - 标志与公开选项：
   - `frameworks/base/core/java/android/content/Intent.java`
   - `frameworks/base/core/java/android/app/BroadcastOptions.java`
-- 跟踪：
+- tracing：
   - `frameworks/base/core/java/android/os/PerfettoCategories.java`
   - `BroadcastQueueImpl.logBroadcastDeliveryEventReported()`
 - 官方行为说明：

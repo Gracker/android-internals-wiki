@@ -58,7 +58,7 @@ framework-virtualization Java library
         │  spawn + RpcBinder over Unix-domain socket
         ▼
 virtmgr 子进程（Rust）
-        │  每台运行中的 VM 对应一个 crosvm 子进程
+        │  one crosvm child process for each running VM
         ├─────────────────────────────┐
         ▼                             ▼
 VirtualizationServiceInternal     crosvm
@@ -304,7 +304,7 @@ API 37 的 `VirtualMachine.run()` 注释写明：并发运行数量除可用内�
 
 AOSP 基准测试包含同时创建 8 台 VM 的测试路径，说明“每个应用默认只能运行 1 台”的概括并不成立，但也不代表所有设备都应以 8 台为容量目标。
 
-## 八、受保护与非受保护 VM 的选择
+## 八、protected 与 non-protected 的选择
 
 | 维度 | protected VM | non-protected VM |
 |---|---|---|
@@ -329,7 +329,7 @@ AVF 也没有完全替代 TrustZone。TEE 仍承载 KeyMint、Gatekeeper 等依�
 - 受保护/非受保护模式；
 - Microdroid 或 custom guest；
 - debug `NONE`/`FULL`；
-- vCPU 拓扑、客户机内存、大页；
+- vCPU topology、guest memory、huge page；
 - payload/APEX 集合与存储镜像；
 - host 温度、频点、充电状态和前后台负载。
 

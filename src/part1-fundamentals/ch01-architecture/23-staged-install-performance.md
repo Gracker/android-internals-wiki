@@ -186,7 +186,7 @@ Developer Verification 位于会话的通用验证路径中，发生在 staged �
 
 设备启动时，apexd 会在 `system_server` 恢复 Package Installer 会话前验证并挂载 APEX。随后 `PackageInstallerService.restoreAndApplyStagedSessionIfNeeded()` 从持久化数据中找出：
 
-- 分阶段会话；
+- staged；
 - 已提交；
 - 尚未应用或失败；
 - 没有 parent，或者属于可恢复的顶层 parent。
@@ -251,7 +251,7 @@ Developer Verification 位于会话的通用验证路径中，发生在 staged �
 
 APK-only session APK 会话在重启后的安装失败，通常会调用 `setSessionFailed()` 并清理自己的 stage。包含 APEX 的失败更严重：系统可能调用 `revertActiveSessions()`，再通过 checkpoint 回退；回退本身失败时还可能触发重启，以免继续运行在无法确认一致性的系统状态中。
 
-恢复阶段若发现某个 APEX 会话已处于激活失败、未知、已回退、正在回退或回退失败等状态，会阻止相关会话继续应用。出现一个 APEX session failed，其他分阶段会话失败时，不应按普通 APK 的独立失败模型排查。
+恢复阶段若发现某个 APEX session 已处于 activation failed、unknown、reverted、revert in progress 或 revert failed 等失败状态，会阻止相关 session 继续应用。出现“一个 APEX session failed，其他 staged session 也被标记失败”时，不应按普通 APK 的独立失败模型排查。
 
 失败原因还会写入：
 
@@ -366,10 +366,10 @@ CPU 时间不能替代墙钟时间。若 `dex2oat` 的 CPU 时间不高但切片
 
 1. build fingerprint、Android 版本与 AOSP/厂商基线。
 2. parent session ID 和所有子会话 ID。
-3. 会话类型：仅 APK、仅 APEX、混合或多包。
+3. session 类型：APK-only、APEX-only、mixed 或 multi-package。
 4. APK/APEX 文件版本、大小、split 列表和签名方案。
 5. 是否启用回滚、设备是否支持 checkpoint。
-6. ART 编译原因、最终编译过滤器、配置文件是否存在。
+6. ART compilation reason、最终 compiler filter、profile 是否存在。
 7. 提交前跟踪、boot trace、恢复阶段跟踪和完整 `logcat -b all`。
 8. `isReady`、`isApplied`、`isFailed` 的状态变化时间。
 
