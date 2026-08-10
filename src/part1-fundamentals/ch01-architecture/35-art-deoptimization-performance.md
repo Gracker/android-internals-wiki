@@ -214,7 +214,7 @@ Instrumentation 按 client key 保存请求，`DeoptManager` 另外用引用计�
 
 API 37 的 JVMTI 事件映射也有明确边界：
 
-- 断点、异常、方法进入/退出属于受限要求；
+- breakpoint、exception、method entry/exit 属于 limited requirement；
 - exception catch 的全局监听需要完整 deopt；
 - field access/modification、single-step、frame-pop、force-early-return 在无目标线程时需要完整 deopt，有目标线程时限制到该线程；
 - class load、compiled method load、GC 等事件不要求 deopt。

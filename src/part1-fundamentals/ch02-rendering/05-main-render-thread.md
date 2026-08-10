@@ -488,7 +488,7 @@ UI 线程上看到的是等待；`syncFrameState` 的工作本身运行在 Rende
 
 - App 进程的 BufferQueue/BLAST 槽位状态；
 - `BufferTX - <layerName>`、transaction ready 与锁存；
-- 生产者完成/获取/释放栅栏；
+- Producer completion/acquire/release fence；
 - GPU queue、GPU 完成与厂商提供的 busy/counter；
 - SurfaceFlinger composition、HWC 显示提交和 FrameTimeline DisplayFrame。
 

@@ -495,7 +495,7 @@ COMMIT
 API 33 及以上的 `Choreographer.VsyncCallback` 接收 `FrameData`。每个 `FrameTimeline` 包含：
 
 - `vsyncId`；
-- 预期呈现时间；
+- expected presentation time；
 - deadline。
 
 `getPreferredFrameTimeline()` 是平台建议值。自建 SurfaceControl 事务可以选另一个可满足的 timeline，再通过 API 35 的 `setFrameTimeline()` 提交。选择更晚 timeline 会改变目标呈现时机，但不能减少渲染工作本身。
@@ -516,7 +516,7 @@ Frame pacing 的目标包括：
 AGDK Frame Pacing Library（Frame Pacing Library，Swappy）支持 OpenGL ES 和 Vulkan 游戏。它结合：
 
 - Choreographer 时序；
-- 呈现时间戳；
+- presentation timestamp；
 - EGL/Vulkan 同步对象；
 - 交换间隔与管线模式；
 - 多刷新率设备的 frame-rate hint。
@@ -738,7 +738,7 @@ ORDER BY a.ts;
 需要把以下证据放在一起：
 
 - 当前显示策略范围；
-- 活动显示模式/模式组；
+- active display mode/group；
 - Layer 投票与期望帧率；
 - touch/idle/power 信号；
 - MRR 模式切换或 ARR 渲染帧率变化；
@@ -818,8 +818,8 @@ Framework 的 RefreshRateSelector 负责投票与策略，Composer HAL 把所选
 当问题已经定位到 HWC 之后，可继续收集：
 
 - Composer HAL 调用与返回；
-- 显示模式/刷新回调；
-- 厂商显示跟踪点；
+- display mode/refresh callbacks；
+- vendor display tracepoints；
 - DRM vblank/page-flip 事件（设备支持时）；
 - present fence；
 - 面板或外接显示器的硬件测量。
