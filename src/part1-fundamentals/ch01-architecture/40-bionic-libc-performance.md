@@ -42,7 +42,7 @@ gap_source: "AOSP结构"
 
 # 1.40 Bionic libc 性能演进与系统级影响
 
-Bionic 位于 Android 原生运行时的公共路径上。系统调用封装、线程创建、同步原语、ELF 装载、字符串函数以及原生堆（Native Heap）的入口都经过它。分析 Bionic 性能需要划清实现边界：某个 API 由 Bionic 导出，不代表算法主体也在 Bionic 仓库。
+Bionic 位于 Android 原生运行时的公共路径上。系统调用封装、线程创建、同步原语、ELF 装载、字符串函数以及 Native Heap 的入口都经过它。分析 Bionic 性能需要划清实现边界：某个 API 由 Bionic 导出，不代表算法主体也在 Bionic 仓库。
 
 平台行为以 Android 17 / API 37 / `android-17.0.0_r1` 为准；涉及 futex 和 MTE 的内核行为以 `android17-6.18-2026-06_r6` 为准。历史版本只用于解释兼容代码为何存在。
 
@@ -265,7 +265,7 @@ Android 17 在 arm/arm64 上保留的 Bionic TCB slot 包括：
 | `TLS_SLOT_ART_THREAD_SELF` | ART 的 `Thread::Current()` 快速路径 |
 | `TLS_SLOT_BIONIC_TLS` | Bionic 自身 TLS 指针 |
 | `TLS_SLOT_NATIVE_BRIDGE_GUEST_STATE` | native bridge guest 状态 |
-| `TLS_SLOT_STACK_MTE` | stack MTE ring buffer MTE 环形缓冲区指针 |
+| `TLS_SLOT_STACK_MTE` | stack MTE ring buffer 指针 |
 
 这些定义位于私有头文件 `tls_defines.h`，不属于 NDK 公共 ABI。业务代码不能依赖 slot 编号；普通线程局部数据应使用 C++ `thread_local`、编译器 ELF TLS 或 `pthread_key_create`。
 

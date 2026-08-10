@@ -156,7 +156,7 @@ FPS（Frames Per Second）是单位时间内生成或呈现的帧数。使用它
 
 | 写法 | 统计对象 | 适合回答的问题 |
 | --- | --- | --- |
-| 应用 FPS（App FPS） | 应用提交的 SurfaceFrame | 应用平均生产速度如何 |
+| App FPS | 应用提交的 SurfaceFrame | 应用平均生产速度如何 |
 | GPU FPS | GPU 完成的应用帧 | GPU 能否持续完成目标负载 |
 | 显示 FPS（Present FPS） | 显示端实际呈现的新帧 | 用户看到的新内容更新速度如何 |
 | 显示刷新率（Display refresh rate） | 显示扫描或更新频率 | 显示设备当前以什么节拍工作 |

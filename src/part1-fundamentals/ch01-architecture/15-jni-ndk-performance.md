@@ -213,7 +213,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void*) {
 
 1. `pthread_create()` / `std::thread` 创建线程。
 2. 线程通过 `AttachCurrentThread()` 附着到 VM。
-3. 当前栈上没有应用的 App Java frame。
+3. 当前栈上没有 App Java frame。
 4. `FindClass()` 回退到 system class loader。
 5. system class loader 不认识 App 自己的类。
 
@@ -350,7 +350,7 @@ global reference 泄漏会让 Java 对象一直存活。Android Studio 的 JNI h
 
 ### 6.2 JNI 异常不会像 C++ 异常自动展开
 
-许多 JNI API 失败时会设置待处理的 pending Java exception，并返回 `nullptr` 或其他 sentinel。存在待处理异常后，只有一小部分 JNI 函数可以安全调用。
+许多 JNI API 失败时会设置 pending Java exception，并返回 `nullptr` 或其他 sentinel。异常 pending 后，只有一小部分 JNI 函数可以安全调用。
 
 ```cpp
 jclass clazz = env->FindClass("com/example/Decoder");
