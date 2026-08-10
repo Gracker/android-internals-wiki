@@ -91,28 +91,9 @@ last_idle_audit_result: pass-no-change
 ---
 # 7.10 图片加载与 Bitmap 性能优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 BitmapFactory / ImageDecoder 的解码流程，以及 `inSampleSize`、`setTargetSize` 等关键参数
-- 🔹 Bitmap 像素内存的版本差异，与 `Bitmap.Config.HARDWARE` 的适用边界
-- 🔹 `inBitmap` 复用、BitmapPool，以及 Glide / Coil 的缓存与解码管线
-- 🔹 JPEG、WebP、AVIF 等格式的解码成本，与大图 OOM 风险
-- 🔹 在 Perfetto 中定位图片解码卡顿的方法与观察点
-- 🔹 图片加载优化的可执行检查清单
-
-### 扩展（可选深入）
-
-- 🔸 Hardware Bitmap 的 fd 成本与低端设备限制
-- 🔸 大型 App 的图片优化实践
-
-<!-- outline-end -->
-
 图片性能问题很少只由“解码慢”解释。一次图片请求至少包含数据获取、格式解析、像素解码、尺寸变换、缓存交接、纹理准备和窗口绘制。任一阶段都可能消耗 CPU、内存带宽、native/graphics 内存或文件描述符；多个请求并发时，还会与主线程和 RenderThread 争用资源。
 
-本章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点[来源: BitmapFactory.java / ImageDecoder.java / Bitmap.java @ android-17.0.0_r1]。涉及旧版本的段落只用于说明像素内存位置、`inBitmap` 约束等兼容差异。这里不把图片库的默认策略当作系统契约：Glide、Coil 的行为必须结合项目所用版本、请求参数和目标设备验证[来源: Glide Hardware Bitmaps；Coil allowHardware API]。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，对应 `BitmapFactory.java`、`ImageDecoder.java` 与 `Bitmap.java`。涉及旧版本的段落只用于说明像素内存位置、`inBitmap` 约束等兼容差异。图片库的默认策略不属于系统契约：Glide、Coil 的行为必须结合项目所用版本、请求参数和目标设备验证。
 
 ## 1. 先把请求拆成七段
 
@@ -142,7 +123,7 @@ last_idle_audit_result: pass-no-change
 
 ### 2.2 `inSampleSize` 仍按 2 的幂理解
 
-Android 17 的 `BitmapFactory.Options` 文档仍规定：大于 1 的值请求子采样，非 2 的幂会向下取到最接近的 2 的幂[来源: BitmapFactory.java @ android-17.0.0_r1]。`BitmapFactory.cpp` 会把 sample size 交给 `SkAndroidCodec`，但 native 实现细节没有扩大 Java API 的保证范围。
+Android 17 的 `BitmapFactory.Options` 文档仍规定：大于 1 的值请求子采样，非 2 的幂会向下取到最接近的 2 的幂。`BitmapFactory.cpp` 会把 sample size 交给 `SkAndroidCodec`，但 native 实现细节没有扩大 Java API 的保证范围。
 
 因此，业务代码应使用 1、2、4、8 等值，并根据返回的 `Bitmap.width`、`height` 复核结果。若目标尺寸要求更精确，可让图片库做 downsample，或在 API 28 及以上使用 `ImageDecoder.setTargetSize()`。不要根据某个 codec 在某台设备上接受 3，就把 3 当成跨格式约定。
 
@@ -261,7 +242,7 @@ Android 17 的 `Bitmap.java` 使用两个 `NativeAllocationRegistry` 登记 nati
 
 ## 5. Ultra HDR 与 Gainmap
 
-Android 14 起的 Ultra HDR 图片可以在 SDR base image 之外携带 gainmap。Android 17 的 `BitmapFactory.cpp` 会通过 codec 取得 gainmap，解码成独立 Bitmap 并附到 base Bitmap；Hardware Bitmap 路径还会为 gainmap 创建对应的 hardware backing。`Gainmap.java` 保存 gainmap contents Bitmap 与显示参数[来源: BitmapFactory.cpp / Gainmap.java @ android-17.0.0_r1]。
+Android 14 起的 Ultra HDR 图片可以在 SDR base image 之外携带 gainmap。Android 17 的 `BitmapFactory.cpp` 会通过 codec 取得 gainmap，解码成独立 Bitmap 并附到 base Bitmap；Hardware Bitmap 路径还会为 gainmap 创建对应的 hardware backing。`Gainmap.java` 保存 gainmap contents Bitmap 与显示参数。
 
 因此，Ultra HDR 的持有成本至少要考虑：
 
@@ -281,7 +262,7 @@ Android 14 起的 Ultra HDR 图片可以在 SDR base image 之外携带 gainmap�
 
 ### 6.1 它省掉哪段工作
 
-software bitmap 解码后保留 CPU 可访问像素。HWUI 首次把它当作纹理使用时，需要创建或更新 GPU 资源。Android 17 的 `SkiaGpuPipeline::prepareToDraw()` 只对 `!bitmap->isHardware()` 调用 `PinAsTexture`、`UnpinTexture` 和 `flushAndSubmit`；Hardware Bitmap 跳过这条 software texture preparation 路径[来源: SkiaGpuPipeline.cpp @ android-17.0.0_r1]。
+software bitmap 解码后保留 CPU 可访问像素。HWUI 首次把它当作纹理使用时，需要创建或更新 GPU 资源。Android 17 的 `SkiaGpuPipeline::prepareToDraw()` 只对 `!bitmap->isHardware()` 调用 `PinAsTexture`、`UnpinTexture` 和 `flushAndSubmit`；Hardware Bitmap 跳过这条 software texture preparation 路径。
 
 这项收益不等于“图片绕过 RenderThread”。应用仍在 DisplayList 中记录 drawBitmap，RenderThread 仍把图片采样并绘入应用窗口 buffer，随后通过 BufferQueue 交给 SurfaceFlinger。普通 ImageView 中的一张 Bitmap 通常不会成为独立 SurfaceFlinger layer。
 
@@ -319,7 +300,7 @@ HardwareBuffer 及其跨进程/驱动句柄可能占用文件描述符。Glide �
 
 API 19 及以上，`BitmapFactory` 可以尝试复用一个可变 Bitmap，只要新解码结果所需字节数不超过旧 Bitmap 的 `getAllocationByteCount()`。Hardware Bitmap 始终不可变，不能作为 `inBitmap`。API 19 之前还要求 JPEG/PNG、相同尺寸且 `inSampleSize = 1`。
 
-Android 17 native 流程在复用成功时调用 `bitmap::reinitBitmap()` 更新同一个 Java Bitmap 的宽高和配置，然后返回传入的 `javaBitmap`[来源: BitmapFactory.cpp @ android-17.0.0_r1]。调用方仍应只使用 decode 返回值，因为公共文档要求不能假设每次都复用成功；无效复用可能以 `IllegalArgumentException` 结束。
+Android 17 native 流程在复用成功时调用 `bitmap::reinitBitmap()` 更新同一个 Java Bitmap 的宽高和配置，然后返回传入的 `javaBitmap`。调用方仍应只使用 decode 返回值，因为公共文档要求不能假设每次都复用成功；无效复用可能以 `IllegalArgumentException` 结束。
 
 下面的代码展示了复用时必须遵守的引用规则：
 

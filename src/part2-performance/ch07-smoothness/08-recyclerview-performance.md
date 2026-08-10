@@ -89,30 +89,11 @@ task9_p2_issues: 0
 
 # 7.8 RecyclerView 列表滑动性能深度优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 RecyclerView 三阶段布局流程，以及 `dispatchLayoutStep1/2/3` 在 Trace 中的定位方式
-- 🔹 ViewHolder 四级缓存与 `onCreateViewHolder()` / `onBindViewHolder()` 的缓存命中判断
-- 🔹 GapWorker 预取、`setInitialPrefetchItemCount()` 与嵌套列表预取调优
-- 🔹 DiffUtil、`AsyncListDiffer` 与 payload 局部刷新
-- 🔹 嵌套滑动、共享 `RecycledViewPool` 与常见滑动卡顿根因
-- 🔹 在 Perfetto 中分析 RecyclerView 滑动卡顿的顺序和 SQL 查询
-
-### 扩展（可选深入）
-
-- 🔸 RecyclerView 1.4 与 Adaptive Refresh Rate
-- 🔸 自定义 LayoutManager、ItemDecoration、ItemAnimator 的性能代价
-
-<!-- outline-end -->
-
 列表滑动是 Android 用户最高频的操作之一，也是流畅性问题最集中的场景。RecyclerView 作为列表渲染的标准组件，内部涉及缓存复用、预取、嵌套滑动和增量更新，这几层机制都会直接影响滑动帧时间。
 
-这篇文章聚焦那些最容易在 Perfetto 里暴露出来的点，用于在看到卡顿时判断问题落在布局、bind、缓存还是预取阶段。
+Perfetto 中最常暴露的问题集中在布局、bind、缓存与预取阶段。
 
-本文的平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点为 `android17-6.18-2026-06_r6`。RecyclerView 独立于 Android 平台发布，本文按稳定版 `androidx.recyclerview:recyclerview:1.4.0` sources jar 核对组件行为。平台标签用于 `View`、`Display`、MessageQueue 和 FrameTimeline；内核标签只用于线程调度与 fence 等系统现象，不能替代 AndroidX 版本。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`，内核锚点为 `android17-6.18-2026-06_r6`。RecyclerView 独立于 Android 平台发布，组件行为按稳定版 `androidx.recyclerview:recyclerview:1.4.0` sources jar 核对。平台标签用于 `View`、`Display`、MessageQueue 和 FrameTimeline；内核标签只用于线程调度与 fence 等系统现象，不能替代 AndroidX 版本。
 
 ## RecyclerView 的布局流程
 
@@ -154,8 +135,6 @@ CachedViews 的请求上限默认是 2，但有效的 `mViewCacheMax` 等于请�
 RecycledViewPool 默认每个 viewType 最多保存 5 个 holder。holder 入池时会重置内部绑定状态，复用后要重新 bind。Pool 可以跨 RecyclerView 共享，但只有 viewType、item View 结构和 bind 契约兼容时才安全。
 
 RecyclerView 1.4.0 的 trace 名称是 `RV onCreateViewHolder type=0x%X` 与 `RV onBindViewHolder type=0x%X`。fling 中出现 create 说明当前获取路径没有拿到可用 holder；出现 bind 只能证明 holder 需要绑定，不能反推出它一定来自 Pool。只有 `RV Prefetch` 而没有 create/bind，还可能是目标已 attached、缓存直接命中，或预算判断终止了普通预取任务。
-
-[已验证: AndroidX RecyclerView 1.4.0 sources.jar，`RecyclerView.java` `tryGetViewHolderForPositionByDeadline()` / Adapter trace sections]
 
 ## GapWorker 预取机制
 
@@ -218,8 +197,6 @@ GapWorker 通过 `recyclerView.post(this)` 投到主线程队列。legacy Messag
 
 DeliQueue 还会影响反射 `MessageQueue.mMessages` 的监控或测试库：新实现为兼容保留字段，但该字段始终为 `null`。Android 17 官方迁移要求 Espresso 3.7.0 及以上、Robolectric 4.17 及以上；应用监控应使用 FrameTimeline、JankStats、公开 Looper 能力与自定义 trace。机制与 A/B 方法参见[Android 17 DeliQueue 与 RecyclerView 预取时序](../../part5-app/ch22-rendering-practice/16-deliqueue-recyclerview-prefetch.md)。
 
-[已验证: AndroidX RecyclerView 1.4.0 sources.jar，`RecyclerView.java` `scrollByInternal()` / `ViewFlinger.run()` / `tryGetViewHolderForPositionByDeadline()`，`GapWorker.java` `postFromTraversal()` / `run()` / `prefetchPositionWithDeadline()`]
-
 ## DiffUtil 与增量更新
 
 `notifyDataSetChanged()` 让 RecyclerView 把已有 item 视为失效，并走整表更新路径；stable ID 可帮助动画和 holder 对应，但不能恢复精确的插入、删除和内容变化信息。`DiffUtil` 计算新旧列表的插入、删除与内容变化，再把结果分发成更细的 Adapter update。
@@ -237,8 +214,6 @@ RecyclerView 1.4.0 的 `DiffUtil.java` 对复杂度写得很清楚：Myers 部�
 Payload 是优化提示，不是完整绑定保证。多个 update 的 payload 可能合并传入；holder 未 attached 时 payload 也可能被丢弃并走完整 bind。Adapter 必须让无 payload 的 bind 恢复全部 View 状态，局部 bind 则遍历并合并所有 payload，不能只读取列表第一个元素。
 
 分页列表不宜手写“只 diff 新一页”并绕过全局身份关系。使用 Paging 3 时由 `PagingDataAdapter` 管理异步差分、占位与 generation；普通列表仍可提交新的不可变快照，再用 Macrobenchmark 验证大列表 diff、主线程 update dispatch 和动画成本。
-
-[已验证: AndroidX RecyclerView 1.4.0 sources.jar，`DiffUtil.java` Myers 差分算法实现]
 
 ### RecycledViewPool 共享的典型实现
 
@@ -298,8 +273,6 @@ RecyclerView 1.4.0 的 release notes 把这项能力称为 `Adaptive refresh rat
 - Android 17 Display 与显示策略：结合设备能力、其他投票和策略选择刷新行为
 
 速度上报不是刷新率命令。RecyclerView 不查询设备是否支持 ARR，也不指定切换到多少 Hz。Android 17 的 `Display.hasArrSupport()`、`getSupportedRefreshRates()` 与 `getSuggestedFrameRate(int)` 属于平台能力查询。刷新率选择及 Perfetto 证据参见[可变刷新率与帧率选择](../ch18-rendering-pipelines/19-variable-refresh-rate.md)。
-
-[已验证: AndroidX RecyclerView 1.4.0 release notes（2025-01-15），`RecyclerView.java` `ViewFlinger.run()`，AOSP `android-17.0.0_r1` `View.java` / `Display.java`]
 
 ## 在 Perfetto 中分析 RecyclerView 性能
 
@@ -416,6 +389,4 @@ LinearLayoutManager、GridLayoutManager 与 StaggeredGridLayoutManager 的锚点
 - **官方文档**：[Android 17 MessageQueue behavior changes](https://developer.android.com/about/versions/17/changes/messagequeue)
 - **官方博客**：[Under the hood: Android 17's lock-free MessageQueue](https://developer.android.com/blog/posts/under-the-hood-android-17-lock-free-message-queue)
 - **官方文档**：[Macrobenchmark overview](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)
-- **内部调研**：`DeepResearch/2026-05-14-android17-deliqueue-recyclerview-prefetch-verification.md`
-- **内部调研**：`DeepResearch/2026-05-13-recyclerview-deliqueue-messagequeue-analysis.md`
 - **Myers 差分算法**：Eugene W. Myers, "An O(ND) Difference Algorithm and Its Variations", 1986
