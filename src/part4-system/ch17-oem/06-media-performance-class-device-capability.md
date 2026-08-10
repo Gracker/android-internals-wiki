@@ -42,7 +42,7 @@ Media Performance Class（MPC）是设备声明的一组媒体体验下限。它
 
 MPC 不代表通用性能分数，也不能替代某项能力的运行时查询。一个设备可以满足很高的媒体等级，却在特定温度、后台压力或 OEM 策略下表现波动；另一个值为 0 的设备也可能支持某项高规格功能，只是没有可用的 MPC 声明。
 
-本章的平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`。Android 17 对 MPC 做了结构性调整，旧版本文章里常见的“等级只会等于 Android API level”已经不完整。
+平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`。Android 17 对 MPC 做了结构性调整，旧文章里常见的“等级只会等于 Android API level”已经不完整。
 
 ## Android 17 新增了四个等级
 
@@ -63,7 +63,7 @@ Android 17 CDD 的 2.2.7 节新增 MPC 1、10、20、37，并把每项阈值移�
 
 MPC 32 和 36 没有定义。新等级 1、10、20 让厂商可以声明低于 MPC 30 的已验证能力集，减少“只有高端设备有 class，其余全部是 0”的信息缺口。MPC 37 则提高内存、I/O、音频与部分媒体、相机要求。
 
-表中的“基础、入门、中间”只用于本章区分档位，不是 CDD 的正式等级名称。
+表中的“基础、入门、中间”只用于区分档位，不是 CDD 的正式等级名称。
 
 Android Developers 的概览页截至 2026 年 5 月仍只列到 MPC 35；Android 17 CDD 和 2026 年 6 月发布的 supplemental 文档已经包含上述新等级。实现与评审 Android 17 功能时，应以 CDD 17 和 supplemental 表为准。
 

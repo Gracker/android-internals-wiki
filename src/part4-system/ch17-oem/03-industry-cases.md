@@ -73,23 +73,6 @@ last_review_finalize_run_id: "20260806-100508-973d0b7e"
 
 # 行业案例
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 手机厂商公开分享的性能优化案例（引用公开演讲/博客）
-- 🔹 游戏性能优化的行业实践：Game Mode、帧率稳定、温控策略
-- 🔹 系统级启动速度优化案例
-- 🔹 大型 App 与厂商协作的性能优化案例
-
-### 扩展（可选深入）
-
-- 🔸 汽车/IoT/TV 等 Android 变体的性能优化
-- 🔸 折叠屏设备的性能挑战与优化
-
-<!-- outline-end -->
-
 ## 案例能证明到哪一层
 
 行业案例记录的是特定应用、设备、版本和实验条件下的结果。它适合解释团队如何缩小问题、如何选择指标，也容易被误读成跨设备规律。
@@ -105,7 +88,7 @@ last_review_finalize_run_id: "20260806-100508-973d0b7e"
 
 公开案例给出的百分比只能保留在原案例的分母里。没有设备分布、样本数、统计区间和版本信息时，不能把它改写成项目排期或行业基准。
 
-本文以 Android 17（API 37）和 AOSP `android-17.0.0_r1` 为平台锚点。旧案例保留其历史背景，API 语义与建议按 Android 17 重新核对。
+平台锚点为 Android 17（API 37）和 AOSP `android-17.0.0_r1`。旧案例保留其历史背景，API 语义与建议按 Android 17 重新核对。
 
 ## Samsung：用户模式与合作接口是两条路径
 
@@ -327,27 +310,27 @@ Samsung SceneSDK 与 TikTok 案例展示了两种合作关系：前者把应用�
 
 ### Jetpacker：从功能选型到云端、端侧与自定义路由
 
-Android Developers Blog 在 2026-07-21 发布 Jetpacker 系列介绍，把这个开源旅行演示 App 定位为 Google I/O 技术 showcase：它展示行程概览、单次旅行 itinerary 和活动详情，并用 Material UI 作为普通 Android App 外壳承载 AI 功能。[来源: 04-jetpacker-intro.md]
+Android Developers Blog 在 2026-07-21 发布 Jetpacker 系列介绍，把这个开源旅行演示 App 定位为 Google I/O 技术 showcase：它展示行程概览、单次旅行 itinerary 和活动详情，并用 Material UI 作为普通 Android App 外壳承载 AI 功能。
 
-这份介绍把 GenAI 功能的工程选型先拆成三组问题：模型运行在端侧、云端还是混合；功能是单次 inference 还是更复杂的 agentic flow；能力应放在 App 内，还是通过 Android 系统集成暴露。[来源: 04-jetpacker-intro.md] 这些问题不属于 Android 17 调度或 OEM 私有能力本身，但适合放在行业案例里说明“大型 App 与平台能力协作”首先要定义边界，而不是先追求某个模型或 API 名称。[来源: 04-jetpacker-intro.md]
+这份介绍把 GenAI 功能的工程选型拆成三组问题：模型运行在端侧、云端还是混合；功能是单次 inference 还是更复杂的 agentic flow；能力应放在 App 内，还是通过 Android 系统集成暴露。这些问题不属于 Android 17 调度或 OEM 私有能力，但“大型 App 与平台能力协作”需要先定义边界，再选择模型或 API。
 
-Jetpacker 介绍列出的端侧功能有三类：行程摘要使用 Gemini Nano 与 ML Kit GenAI APIs 在设备上处理；费用跟踪用 Gemini Nano 4 的多模态能力从票据图片提取结构化数据；语音日记使用 ML Kit Speech Recognition 与 GenAI Prompt APIs 做录音转写和分类。[来源: 04-jetpacker-intro.md] 原文给出的选择理由分别覆盖云端成本、离线可用性、隐私敏感图片和私密语音数据；因此本节只能把它作为“端侧优先的产品约束样例”，不能推出所有 AI 功能都应端侧运行。[来源: 04-jetpacker-intro.md]
+Jetpacker 介绍列出的端侧功能有三类：行程摘要使用 Gemini Nano 与 ML Kit GenAI APIs 在设备上处理；费用跟踪用 Gemini Nano 4 的多模态能力从票据图片提取结构化数据；语音日记使用 ML Kit Speech Recognition 与 GenAI Prompt APIs 做录音转写和分类。选择理由覆盖云端成本、离线可用性、隐私敏感图片和私密语音数据。它可以作为“端侧优先的产品约束样例”，但不能推出所有 AI 功能都应端侧运行。
 
-同一篇介绍还把云端或混合能力列为三项：place Q&A 通过 Firebase AI Logic 结合 Google Maps 与 web context grounding 回答地点问题；review drafting 通过 Firebase AI Logic 的 Hybrid inference API 在端侧模型不可用时回落云端；automatic chat translation 展示自定义混合推理逻辑，用于实时聊天翻译。[来源: 04-jetpacker-intro.md] 这与前面的端侧功能共同说明：同一个 App 可以按数据敏感度、实时知识需求、设备覆盖率和成本，把不同 AI 功能放到不同执行位置。[来源: 04-jetpacker-intro.md]
+同一篇介绍还把云端或混合能力列为三项：place Q&A 通过 Firebase AI Logic 结合 Google Maps 与 web context grounding 回答地点问题；review drafting 通过 Firebase AI Logic 的 Hybrid inference API 在端侧模型不可用时回落云端；automatic chat translation 展示自定义混合推理逻辑，用于实时聊天翻译。这与前面的端侧功能共同说明：同一个 App 可以按数据敏感度、实时知识需求、设备覆盖率和成本，把不同 AI 功能放到不同执行位置。
 
-Android Developers Blog 的后续 Hybrid Inference 案例主题不是 OEM 私有调度，而是大型 Android 应用如何把云端模型、端侧模型和服务侧保护组合成可发布功能；因此它更适合作为“协作接口与验证边界”的补充案例，而不是 Android 17 平台 API 结论。[来源: 08-jetpacker-hybrid.md]
+Android Developers Blog 的后续 Hybrid Inference 案例讨论大型 Android 应用如何把云端模型、端侧模型和服务侧保护组合成可发布功能，并不涉及 OEM 私有调度。它适合作为“协作接口与验证边界”的补充案例，不能当作 Android 17 平台 API 结论。
 
-后续案例公开的三项功能分别是：博物馆助手用 grounding 回答实时展览、票价和规则问题；餐厅评价草稿优先使用 Gemini Nano 端侧执行，设备不支持时回落到云端；酒店客服聊天先识别消息语言，再按自定义逻辑选择端侧或云端翻译。[来源: 08-jetpacker-hybrid.md]
+后续案例公开的三项功能分别是：博物馆助手用 grounding 回答实时展览、票价和规则问题；餐厅评价草稿优先使用 Gemini Nano 端侧执行，设备不支持时回落到云端；酒店客服聊天先识别消息语言，再按自定义逻辑选择端侧或云端翻译。
 
-材料给出的 Firebase AI Logic grounding 类型包括 URL grounding、Google Search grounding 和 Maps grounding；这些能力解决的是“把实时上下文加入模型上下文窗口”的问题，不能替代应用自己的权限、缓存、日志脱敏和失败兜底设计。[来源: 08-jetpacker-hybrid.md]
+Firebase AI Logic grounding 类型包括 URL grounding、Google Search grounding 和 Maps grounding。这些能力用于把实时上下文加入模型上下文窗口，不能替代应用自己的权限、缓存、日志脱敏和失败兜底设计。
 
-Hybrid Inference API 在材料中列出四种路由模式：`PREFER_ON_DEVICE`、`PREFER_IN_CLOUD`、`ONLY_ON_DEVICE`、`ONLY_IN_CLOUD`。Jetpacker 的评价生成使用 `PREFER_ON_DEVICE`，即优先端侧、不可用时回落云端；酒店翻译则在示例里用 ML Kit Language Identification 识别源语言，并只把已验证质量的英语、韩语路径放到端侧，其余走云端。复制这类示例时还要按 ML Kit 当前返回的语言 tag 核对分支条件，不能只复用博客片段里的字面字符串。[来源: 08-jetpacker-hybrid.md]
+Hybrid Inference API 列出四种路由模式：`PREFER_ON_DEVICE`、`PREFER_IN_CLOUD`、`ONLY_ON_DEVICE`、`ONLY_IN_CLOUD`。Jetpacker 的评价生成使用 `PREFER_ON_DEVICE`，即优先端侧、不可用时回落云端；酒店翻译则在示例里用 ML Kit Language Identification 识别源语言，并只把已验证质量的英语、韩语路径放到端侧，其余走云端。复制这类示例时还要按 ML Kit 当前返回的语言 tag 核对分支条件，不能只复用博客片段里的字面字符串。
 
-这类 AI 功能的性能与可靠性验证应把“路由决策”也当作可观测事件：记录模型位置、模型版本、网络状态、失败原因、用户可见延迟、token 或计费边界、端侧温度和电量状态；否则只看最终文本质量，无法解释一次请求为什么落在端侧或云端。[来源: 08-jetpacker-hybrid.md]
+这类 AI 功能的性能与可靠性验证应把“路由决策”也当作可观测事件：记录模型位置、模型版本、网络状态、失败原因、用户可见延迟、token 或计费边界、端侧温度和电量状态；否则只看最终文本质量，无法解释一次请求为什么落在端侧或云端。
 
-云端 AI 调用还引入滥用和计费风险。材料中的 Jetpacker 在 Firebase App Check 中使用 Play Integrity 作为生产保护、Debug Provider 作为本地/模拟器调试路径，并触发匿名认证来建立受保护会话；报告或日志里不应保存本地 debug secret。[来源: 08-jetpacker-hybrid.md]
+云端 AI 调用还引入滥用和计费风险。Jetpacker 在 Firebase App Check 中使用 Play Integrity 作为生产保护、Debug Provider 作为本地/模拟器调试路径，并触发匿名认证来建立受保护会话；报告或日志里不应保存本地 debug secret。
 
-介绍材料还提到 Jetpacker 的系统集成使用 AppFunctions API 把 App 核心能力暴露给 Android 系统级 intelligence，并预告 booking assistant 会以 A2UI 与 ADK 在云端运行 agentic workflow，Android App 作为前端。[来源: 04-jetpacker-intro.md] 在本章语境下，这只能作为“应用能力、系统入口、云端代理编排分层”的案例：系统集成需要单独检查 AppFunctions 当前文档和设备支持，agentic workflow 的性能、隐私和失败恢复也不能从 Android 17 AOSP 基线直接得出。[来源: 04-jetpacker-intro.md]
+Jetpacker 的系统集成使用 AppFunctions API 把 App 核心能力暴露给 Android 系统级 intelligence，并预告 booking assistant 会以 A2UI 与 ADK 在云端运行 agentic workflow，Android App 作为前端。在此语境下，它只能作为“应用能力、系统入口、云端代理编排分层”的案例：系统集成需要单独检查 AppFunctions 当前文档和设备支持，agentic workflow 的性能、隐私和失败恢复也不能从 Android 17 AOSP 基线直接得出。
 
 ## 折叠屏与多窗口：负载随窗口状态变化
 
@@ -403,11 +386,11 @@ TikTok 的 45% 启动改善属于该项目。自己的基线、设备分布和�
 
 ## 与相关章节的边界
 
-- §5.4、§5.6 和 §11.1 解释 DVFS、Power HAL 与 thermal；本节关注应用如何提供信号并验证 OEM 响应。
-- §2.2 与 §2.10 解释帧率、刷新率和 GPU；本节关注 intervention、折叠和多窗口实验。
-- §8.2、§8.3 解释启动链路；本节补充 TikTok、抖音与 provider 的公开案例。
-- §13 解释 Perfetto；本节要求案例附采集配置、原始 Trace 和统计脚本。
-- §17.1、§17.2 解释 OEM 与 SoC 差异；本节把差异限制在具体设备证据中。
+- §5.4、§5.6 和 §11.1 解释 DVFS、Power HAL 与 thermal；这里关注应用如何提供信号并验证 OEM 响应。
+- §2.2 与 §2.10 解释帧率、刷新率和 GPU；这里关注 intervention、折叠和多窗口实验。
+- §8.2、§8.3 解释启动路径；这里补充 TikTok、抖音与 provider 的公开案例。
+- §13 解释 Perfetto；案例应附采集配置、原始 Trace 和统计脚本。
+- §17.1、§17.2 解释 OEM 与 SoC 差异；这里把差异限制在具体设备证据中。
 
 ## 参考资料
 

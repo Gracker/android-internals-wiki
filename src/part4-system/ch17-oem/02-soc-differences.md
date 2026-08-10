@@ -67,24 +67,6 @@ task2b_state: fixed
 ---
 # SoC 平台差异
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 主流 SoC 平台对比:高通 Snapdragon、联发科 Dimensity、三星 Exynos、Google Tensor
-- 🔹 各平台的 CPU 核心架构差异与性能调度策略
-- 🔹 GPU 差异(Adreno / Mali / Xclipse / Immortalis)对渲染性能的影响
-- 🔹 ISP / NPU / DSP 的性能相关差异
-- 🔹 内存控制器与带宽差异(LPDDR5/5x)
-
-### 扩展(可选深入)
-
-- 🔸 SoC 厂商提供的性能分析工具(Snapdragon Profiler、ARM Streamline)
-- 🔸 不同 SoC 上 Perfetto 数据的差异
-
-<!-- outline-end -->
-
 ## SoC 名称不能代替设备证据
 
 同一款 App 在两台手机上的帧时间不同，原因可能来自 CPU 拓扑、GPU、内存系统，也可能来自内核配置、驱动版本、散热结构、屏幕分辨率或 OEM 策略。芯片型号只能缩小排查范围，不能直接给出故障结论。
@@ -97,11 +79,11 @@ task2b_state: fixed
 
 这三层不能互相替代。厂商产品页无法证明某台手机持续运行时的频率，单次 Perfetto 也无法证明 SoC 的架构上限。
 
-本文的平台锚点为 Android 17（API 37）、AOSP `android-17.0.0_r1` 和 Android common kernel `android17-6.18-2026-06_r6`。历史型号用于解释演进，涉及量产设备时仍以该设备的内核、驱动和运行状态为准。
+平台锚点为 Android 17（API 37）、AOSP `android-17.0.0_r1` 和 Android common kernel `android17-6.18-2026-06_r6`。历史型号用于解释演进，涉及量产设备时仍以该设备的内核、驱动和运行状态为准。
 
 ## 四类代表性平台
 
-截至本文核对日期，四家厂商公开的新一代移动平台可以这样描述：
+在当前核对范围内，四家厂商公开的新一代移动平台可以这样描述：
 
 | 平台 | 官方公开的 CPU / GPU | 专用计算单元 | 分析边界 |
 | --- | --- | --- | --- |
@@ -369,11 +351,11 @@ CPU 与 GPU 同时变慢只是线索。可靠判断需要 DRAM / interconnect co
 
 ## 与相关章节的边界
 
-- §5.1 说明公平调度、唤醒与 runnable latency；本节只讨论 SoC 拓扑和 vendor 扩展怎样改变观测条件。
-- §5.3 说明 DynamIQ 与异构核心；本节强调设备拓扑必须从目标机核验。
-- §5.4 说明 DVFS；本节补充 cpufreq policy、Power HAL 和整机散热的差异。
-- §2.10 说明 Android GPU 渲染分析；本节补充 GPU IP、driver 与 producer 的跨平台边界。
-- §17.1 说明 OEM 优化的公共框架；本节提供 SoC 侧的证据分层。
+- §5.1 说明公平调度、唤醒与 runnable latency；这里讨论 SoC 拓扑和 vendor 扩展怎样改变观测条件。
+- §5.3 说明 DynamIQ 与异构核心；设备拓扑必须从目标机核验。
+- §5.4 说明 DVFS；这里补充 cpufreq policy、Power HAL 和整机散热的差异。
+- §2.10 说明 Android GPU 渲染分析；这里补充 GPU IP、driver 与 producer 的跨平台边界。
+- §17.1 说明 OEM 优化的公共框架；这里提供 SoC 侧的证据分层。
 
 ## 参考资料
 

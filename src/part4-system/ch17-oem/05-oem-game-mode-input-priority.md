@@ -49,7 +49,7 @@ source_refs:
 1. 延迟减少发生在哪一段？
 2. 这一变化来自 AOSP 标准机制、OEM 私有实现，还是游戏自身策略？
 
-本章的平台源码锚定 Android 17 / API 37 / `android-17.0.0_r1`。Android 12 到 Android 16 的内容只用于说明 Game Mode、Game State 与 Power HAL 能力的演进。
+平台源码锚定 Android 17 / API 37 / `android-17.0.0_r1`。Android 12 到 Android 16 的内容只用于说明 Game Mode、Game State 与 Power HAL 能力的演进。
 
 ## 先建立端到端输入路径
 
