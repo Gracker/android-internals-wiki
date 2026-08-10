@@ -98,27 +98,9 @@ last_deepseek_cn_review_at: 2026-07-05
 
 # 专题解读
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 启动分析专题：从 Trace 中定位冷启动各阶段耗时
-- 🔹 流畅性分析专题：FrameTimeline 分析、Jank 帧定位
-- 🔹 Binder 分析专题：Binder 调用频率、耗时、跨进程追踪
-- 🔹 内存分析专题：heapprofd、RSS/PSS counter
-- 🔹 I/O 分析专题：block I/O events、filesystem events
-
-### 扩展（可选深入）
-
-- 🔸 功耗分析专题：CPU freq、suspend/resume、wakelock
-- 🔸 多进程协同分析：System Server + App 进程联合分析
-
-<!-- outline-end -->
-
 Perfetto 专题分析最容易在找到一段长 Slice 后过早结束：耗时已经看见，归因却还没有完成。一个可复核的判断至少要同时回答四件事：哪段业务动作变慢、哪条线程或设备时间线贡献了延迟、等待由谁唤醒、相同条件下的对照 Trace 是否消除了偶发现象。
 
-这一章以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点，覆盖启动、帧、Binder、内存、I/O 和功耗。SQL 以该标签内置的 PerfettoSQL 标准库为准。旧版本是否能直接执行同一模块，取决于设备生成的数据和用于分析的 `trace_processor` 版本；离线分析时应固定工具版本，并把版本号写进结果记录。
+平台锚点是 Android 17 / API 37 / `android-17.0.0_r1`，分析范围覆盖启动、帧、Binder、内存、I/O 和功耗。SQL 以该标签内置的 PerfettoSQL 标准库为准。旧版本是否能直接执行同一模块，取决于设备生成的数据和用于分析的 `trace_processor` 版本；离线分析时应固定工具版本，并把版本号写进结果记录。
 
 ## 13.5.1 分析前的证据约束
 
