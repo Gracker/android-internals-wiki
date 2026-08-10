@@ -57,14 +57,14 @@ source_candidates:
 
 # 2.24 Android 17 图形内存分配边界：DMA-BUF、Gralloc 与 16KB Page
 
-“16KB 设备上的图形 buffer 也按 16KB 对齐”只描述了部分事实。Android 图形内存从逻辑尺寸走到 GPU、显示控制器或相机 ISP，要经过多种相互独立的粒度：
+“16KB 设备上的图形 buffer 也按 16KB 对齐”只描述了部分事实。Android 图形内存从逻辑尺寸走到 GPU、显示控制器或 Camera ISP，要经过多种相互独立的粒度：
 
 - ELF `PT_LOAD` alignment；
 - APK 中未压缩 `.so` 的 ZIP alignment；
 - CPU kernel base page size；
 - DMA-BUF Heap 对 allocation length 的页对齐；
 - Gralloc 的 stride、plane、压缩块与 metadata 布局；
-- IOMMU 域支持的映射页大小；
+- IOMMU domain 支持的映射页大小；
 - GPU MMU、DPU、codec、camera 等硬件自身的布局约束。
 
 其中前两项决定原生代码能否可靠装载，第三和第四项影响通用内存管理，后几项决定设备如何访问图形缓冲区。它们的数值可能恰好都是 16KB，但控制来源并不相同。
@@ -104,7 +104,7 @@ Android 17 `BufferQueueProducer::dequeueBuffer()` 会检查 slot 中的 `Graphic
 
 ### 1.2 Android 17 的 Gralloc 接口边界
 
-Android 17 框架仍保留 Gralloc 2/3/4/5 wrapper，以适配多代厂商 HAL。当前稳定版 AIDL `IAllocator` 包含：
+Android 17 框架仍保留 Gralloc 2/3/4/5 wrapper，以适配多代 vendor HAL。当前 Stable AIDL `IAllocator` 包含：
 
 - `allocate2(BufferDescriptorInfo, count)`；
 - `isSupported()`；
@@ -131,7 +131,7 @@ Android 17 `GraphicBufferAllocator` 在分配成功后，用 `stride × height �
 | 数字 | 表示什么 |
 |---|---|
 | `width × height × bpp` | 紧密排布下的逻辑像素量 |
-| `stride × height × bpp` | 部分简单格式的框架估算 |
+| `stride × height × bpp` | 部分简单 format 的 framework 估算 |
 | Mapper plane layout | vendor 暴露的行跨度、plane 与 subsampling metadata |
 | dma-buf size | exporter 创建的共享对象大小 |
 | 物理页总量 | exporter 为对象持有的 backing pages，可能还有实现开销 |
@@ -145,7 +145,7 @@ Android 12 GKI 2.0 以 DMA-BUF Heaps 取代 ION 作为 GKI 分配框架。迁移
 
 - ION support removed；
 - `Alloc()` 打开目标 DMA-BUF Heap，失败就返回错误；
-- 带 `legacy_align` 的重载仅为二进制兼容保留，内部转到现代 `Alloc()`；
+- 带 `legacy_align` 的 overload 仅为二进制兼容保留，内部转到现代 `Alloc()`；
 - `MapNameToIonHeap()` 不再建立映射；
 - `CheckIonSupport()` 固定返回 false。
 
@@ -155,7 +155,7 @@ Android 12 GKI 2.0 以 DMA-BUF Heaps 取代 ION 作为 GKI 分配框架。迁移
 
 `AllocSystem(cpu_access_needed, len, flags)` 在不需要 CPU 访问时，会优先尝试 `system-uncached`；设备没有该 heap 时改用 `system`。需要 CPU 访问时直接使用 `system`。
 
-这只是 `libdmabufheap` 的通用入口。Gralloc 仍可依据用途、protected content、格式和硬件要求选择其他 vendor heap。`/dev/dma_heap/system` 存在，也不能证明所有 GraphicBuffer 都从它分配。
+这只是 `libdmabufheap` 的通用入口。Gralloc 仍可依据 usage、protected content、格式和硬件要求选择其他 vendor heap。`/dev/dma_heap/system` 存在，也不能证明所有 GraphicBuffer 都从它分配。
 
 ### 2.2 通用库没有 buffer pool
 
@@ -187,7 +187,7 @@ len = __PAGE_ALIGN(len)
 
 在 16KB kernel 上，最低 order 对应 16KB base page。实现仍可能优先申请更大的 compound page，再用较小页面补足。secure、camera、video 或连续内存 heap 可以采用不同策略，不能从 system heap 推导它们。
 
-### 3.2 DMA-BUF 文件描述符共享对象，不复制像素
+### 3.2 DMA-BUF fd 共享对象，不复制像素
 
 heap ioctl 返回的 fd 引用一个 `struct dma_buf`。`GraphicBuffer::flatten()` 把尺寸、stride、format、usage、generation number 等元数据写入扁平数据，并把 native handle 的 fd 放入单独 fd 数组。接收进程的 `unflatten()` 再调用 Mapper import。
 
@@ -224,9 +224,9 @@ logical bytes = 1000 × 1000 × 4 = 4,000,000
 
 对多张小 buffer、小 mmap 或大量独立 metadata 区域，16KB 页尾浪费可能累积。对数 MiB 的主图形 buffer，stride、format、buffer count、压缩和复用策略常常更值得先查。
 
-## 五、16KB 应用兼容与图形内存是两类问题
+## 五、16KB App 兼容与图形内存是两类问题
 
-Android 15 起，AOSP 支持 16KB 页大小设备。应用只要直接使用 NDK 库，或通过 SDK 间接携带 `.so`，就要处理：
+Android 15 起，AOSP 支持 16KB page-size 设备。应用只要直接使用 NDK 库，或通过 SDK 间接携带 `.so`，就要处理：
 
 1. ELF `LOAD` segment 的 16KB alignment；
 2. APK/AAB 内未压缩 `.so` 的 16KB ZIP alignment；
@@ -271,7 +271,7 @@ readelf -lW libexample.so
 zipalign -c -P 16 -v 4 app.apk
 ```
 
-`getconf` 返回 `16384` 才说明设备当前运行在 16KB 页大小环境。`readelf` 要检查 `LOAD` segment alignment；`zipalign` 检查包内未压缩 native library 的存放边界。三项通过仍不能替代 16KB 实机功能测试。
+`getconf` 返回 `16384` 才说明设备当前运行在 16KB page-size 环境。`readelf` 要检查 `LOAD` segment alignment；`zipalign` 检查包内未压缩 native library 的存放边界。三项通过仍不能替代 16KB 实机功能测试。
 
 ### 6.2 确认 buffer owner 与复用
 

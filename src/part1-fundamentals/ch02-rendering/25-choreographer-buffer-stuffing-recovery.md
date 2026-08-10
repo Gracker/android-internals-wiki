@@ -45,7 +45,7 @@ Buffer stuffing 描述的是 producer 已经占用或提交了过多 buffer，�
 
 Android 16 在 `Choreographer` 中加入 Buffer Stuffing Recovery：收到等待 buffer release”信号后，先主动放弃一次帧回调，再在恢复期调整传给 FrameData/FrameCallback 的时间线。Android 17 保留这条主线，并加入受开关控制的多次恢复与累计延迟上限。
 
-这套机制不增加 BufferQueue slot，不主动释放 buffer，也不修复 GPU、SurfaceFlinger 或 HWC。它处理的是等待发生后的应用帧节拍。
+这套机制不增加 BufferQueue slot，不主动释放 buffer，也不修复 GPU、SurfaceFlinger 或 HWC。它处理的是等待发生后的 App 帧节拍。
 
 ## 一、适用范围
 
@@ -72,7 +72,7 @@ flowchart LR
 这项边界很重要：
 
 - 标准硬件加速窗口有明确注册路径；
-- 使用应用主 Choreographer 不代表任意 Surface 都接入这条回调；
+- 使用应用主 Choreographer 不代表任意 Surface 都接入这条 callback；
 - 独立 SurfaceView、Camera/Codec producer、引擎自有 EGL/Vulkan swapchain 可能形成自己的 render loop 和 BufferQueue；
 - 未接入 callback 的 producer 仍可能 queue-stuffing，只是不会依靠这套 Choreographer 状态机恢复。
 
@@ -159,7 +159,7 @@ if durationNanos > mLastFrameIntervalNanos / 2:
 恢复动作有三种：
 
 - `NONE`：本帧不做恢复动作；
-- `DELAY_FRAME`：本轮回调不执行，安排下一次 VSync；
+- `DELAY_FRAME`：本轮 callbacks 不执行，安排下一次 VSync；
 - `OFFSET`：把用于首次 `FrameData.update()` 的 frame time 减去一个 frame interval。
 
 `numberWaitsForNextVsync` 统计的是帧调度等待，不是等待的 buffer 数；`accumulatedDelayNanos` 也不是 producer 在 `dequeueBuffer()` 中阻塞的总时长。
@@ -186,9 +186,9 @@ return
 
 本轮 input、animation、traversal、commit callbacks 都不会运行。空出一个目标周期，为 consumer release 和队列深度下降留时间，但源码没有在这里直接读取“已经释放了几块 buffer”。
 
-### 5.2 恢复期间：调整回调时间
+### 5.2 恢复期间：调整 callback 时间
 
-处于 recovering 且尚未检测到空闲时，状态机返回 `OFFSET`。`doFrame()` 先执行：
+处于 recovering 且尚未检测到 idle 时，状态机返回 `OFFSET`。`doFrame()` 先执行：
 
 ```text
 offsetFrameTimeNanos = frameTimeNanos - frameIntervalNanos
@@ -247,7 +247,7 @@ Android 17 `DisplayEventReceiver.VsyncEventData.FRAME_TIMELINES_CAPACITY` 为 7�
 
 这套候选机制早已服务于 callback 的 present/deadline 选择。Buffer Stuffing Recovery 只是把 offset frame time 送入同一个 `FrameData.update()`，并没有创建七个并行恢复状态机。源码没有提供恢复“精度提升比例”；此类结论需要独立 benchmark。
 
-## 八、Choreographer 恢复与 FrameTimeline `BufferStuffing`
+## 八、Choreographer recovery 与 FrameTimeline `BufferStuffing`
 
 两者相关，但来源不同：
 
@@ -282,7 +282,7 @@ Android 17 的基础 recovery 不再由 Android 16 的旧总开关包住：首�
 
 ### 10.2 找到 release wait
 
-在数据生产线程或 RenderThread 上检查：
+在 producer/RenderThread 上检查：
 
 - `dequeueBuffer()` 或 BLAST `waitForBufferRelease()`；
 - release channel 等待；
@@ -311,8 +311,8 @@ Android 17 的基础 recovery 不再由 Android 16 的旧总开关包住：首�
 
 - producer 持续过快提交，in-flight frame 太多；
 - GPU 完成晚，buffer 迟迟不能交给 consumer；
-- SurfaceFlinger 锁存或 CLIENT 合成变慢；
-- HWC 或显示侧释放延迟；
+- SurfaceFlinger latch 或 CLIENT composition 变慢；
+- HWC/display 侧释放延迟；
 - 窗口 resize、mode switch 或 transaction 条件改变 buffer 生命周期；
 - consumer 持有 Image/codec/camera buffer 过久。
 
@@ -356,7 +356,7 @@ offset 改变 App callback 使用的 frame data/timeline。真实唤醒、GPU �
 
 ## 十二、源码阅读顺序
 
-1. [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)：确认标准窗口如何注册回调；
+1. [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)：确认标准窗口如何注册 callback；
 2. [`HardwareRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareRenderer.java) 与 HWUI RenderProxy/CanvasContext/SkiaPipeline：确认回调如何到达 BLAST；
 3. [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)：确认 release channel wait、duration 与通知时机；
 4. [`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp)：确认 free slot 与 too-many-buffers 条件；
@@ -369,13 +369,13 @@ offset 改变 App callback 使用的 frame data/timeline。真实唤醒、GPU �
 Android 17 Buffer Stuffing Recovery 的完整因果关系是：
 
 ```text
-标准 HWUI 数据生产方没有 free buffer
+标准 HWUI producer 没有 free buffer
 → BLAST 等待 release channel
-→ 成功释放后报告 duration
+→ 成功 release 后报告 duration
 → Choreographer 比较半帧阈值
 → 下一次 doFrame 选择 DELAY_FRAME
 → recovery 期间使用 OFFSET
-→ 检测到空闲后重置
+→ 检测到 idle 后 reset
 ```
 
 multi-recovery 和 100ms limit 是 Android 17 的可配置增强；七项 FrameTimeline 是候选 present/deadline 数据，不是性能提升指标。排障时先证明目标 Surface 接入了 callback，再从 release wait 追到 producer、SF、HWC 与 fence，才能解释 buffer 为什么没有及时回到 producer。
