@@ -91,50 +91,7 @@ sources:
 
 # 18.24 Android 17 Advanced Professional Video 与专业视频编解码管线
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 APV 的定位与适用场景
-
-区分 APV 面向专业录制、剪辑、后期交换的帧内高码率工作流，避免把它和普通在线视频分发编码混在一起。
-
-### 🔹 APV 422-10 Profile 的能力边界
-
-覆盖 YUV 4:2:2、10-bit、最高 2 Gbps 目标码率、HDR 与多视图/辅助视频等能力，以及设备支持探测方式。
-
-### 🔹 MediaCodec 能力探测与降级策略
-
-围绕 codec list、profile / level、hardware acceleration、performance point 和 vendor codec 差异设计能力表。
-
-### 🔹 编码、解码与存储 I/O 成本
-
-建立 2K/4K/8K 高码率素材的 CPU、GPU、内存带宽、存储吞吐和发热风险检查项。
-
-### 🔹 专业视频 App 的管线设计
-
-拆分录制、预览、代理文件、后台转码、导出和缓存清理，不把所有工作压到交互路径。
-
-### 🔹 Perfetto 与媒体日志观察点
-
-明确 MediaCodec、Camera、Surface、AudioTrack、I/O 和 thermal 轨道的观察顺序。
-
-## 扩展
-
-### 🔸 APV 与 HEVC/AV1/ProRes 工作流对照
-
-对照母版、剪辑、交付与分发阶段的格式目标，按工作阶段选择格式，避免把压缩效率或编辑响应当成单一评价标准。
-
-### 🔸 OpenAPV 参考实现与 Android 平台支持边界
-
-说明 OpenAPV 的完整 profile 和工具价值，并区分开源软件能力、Android 公开契约与设备硬件能力。
-
-### 🔸 高码率素材的线上失败率与设备分桶
-
-按 codec、Camera、存储卷与温控条件记录能力和结果，用长时录制、回读与抽样解码结果控制高规格开放范围。
-
-<!-- outline-end -->
-
-本文的平台源码固定到 Android 17 / API 37 的 `android-17.0.0_r1`，kernel 固定到 `android17-6.18-2026-06_r6`。APV 在 Android 16 引入，Android 16 的 36.1 次版本补上 `MediaRecorder.VideoEncoder.APV`，Android 17 又增加录制质量参数。本章保留这段版本演进，但所有源码结论均回到 Android 17 tag 核对。
+平台源码固定到 Android 17 / API 37 的 `android-17.0.0_r1`，kernel 固定到 `android17-6.18-2026-06_r6`。APV 在 Android 16 引入，Android 16 的 36.1 次版本补上 `MediaRecorder.VideoEncoder.APV`，Android 17 又增加录制质量参数。版本演进按公开接口说明，源码结论均以 Android 17 tag 为准。
 
 ## APV 解决的是专业素材问题
 
@@ -160,7 +117,7 @@ APV 的目标场景是高质量录制、剪辑和后期交换。官方列出的�
 | AOSP 参考实现 | `frameworks/av` 有 C2 APV 软编码器、软解码器和 MP4 writer | 产品是否启用组件、组件对外公布的规格 |
 | 设备产品能力 | `MediaCodecList` 可查询 vendor 和 platform codec | 硬件加速、Camera 输入组合、4K/8K、持续码率、温控和稳定性 |
 
-这一区分也适用于显示。设备能解码 APV，不表示 APV 图层一定被 HWC 作为硬件 overlay 扫出；普通 Surface 输出仍交给 SurfaceFlinger 和 HWC 每帧决定合成方式。这个边界与 `rendering_pipelines/S12_video_overlay_hwc_type.md` 的既有结论一致。
+这一区分也适用于显示。设备能解码 APV，不表示 APV 图层一定被 HWC 作为硬件 overlay 扫出；普通 Surface 输出仍交给 SurfaceFlinger 和 HWC 每帧决定合成方式。
 
 ## Android 16 到 Android 17 的公开接口
 
@@ -410,7 +367,7 @@ APV 是帧内格式，录制过程中直接切到另一种 codec 通常意味着
 
 ## Perfetto、媒体指标与 kernel 边界
 
-APV 编码算法、C2 component 和 MP4 writer 位于 framework/vendor 用户空间。kernel tag 不定义 `video/apv`，也不承诺 422-10 或 2 Gbps。`android17-6.18-2026-06_r6` 在本章用于固定这些通用机制的语义：
+APV 编码算法、C2 component 和 MP4 writer 位于 framework/vendor 用户空间。kernel tag 不定义 `video/apv`，也不承诺 422-10 或 2 Gbps。`android17-6.18-2026-06_r6` 只用于固定这些通用机制的语义：
 
 - `dma-buf` 与 dma-fence / `sync_file`：Camera、codec、GPU、SurfaceFlinger 之间的共享 buffer 与完成同步；
 - `sched`、CPU frequency 和 idle：编码、Camera、写入线程的调度与降频现象；
@@ -489,4 +446,4 @@ APV 上线时应把能力和结果分开记录：
 
 APV 给 Android 增加的是专业录制和后期素材能力。Android 17 已有 MIME、422-10 profile、P210、MediaRecorder、MediaMuxer 和录制质量接口，但这些 API 只建立公共契约。应用仍要核对 codec、Camera、像素格式、存储和温控，并用完整录制与回读测试证明目标规格可用。
 
-设计专业视频功能时，最重要的边界有三条：标准上限不等于设备能力，422-10 码流不等于处理链始终保持 P210，codec 可用也不等于显示层获得硬件 overlay。把这三条边界写进能力探测、项目数据和线上指标，APV 才能成为可靠的母版格式选项。
+设计专业视频功能时，需要守住三条边界：标准上限不等于设备能力，422-10 码流不等于处理链始终保持 P210，codec 可用也不等于显示层获得硬件 overlay。把这三条边界写进能力探测、项目数据和线上指标，APV 才能成为可靠的母版格式选项。

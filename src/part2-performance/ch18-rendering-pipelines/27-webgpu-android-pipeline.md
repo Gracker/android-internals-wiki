@@ -122,22 +122,22 @@ Jetpack WebGPU 把 WebGPU 的对象模型带到 Kotlin：应用通过 `GPUInstan
 - WebView 网页中的 WebGPU 由 Chromium/WebView 运行时提供，不复用 Jetpack WebGPU 的 instance、device 或 native handle；
 - Android 平台仍负责 `Surface`、`ANativeWindow`、BufferQueue、SurfaceFlinger、HWC 和内核同步，平台不会把普通 HWUI 内容自动改成 WebGPU。
 
-本文复核时，官方 release notes 的最新公开版本仍是 `androidx.webgpu:webgpu:1.0.0-alpha05`，发布日期为 2026-04-22，最低系统版本为 Android 7.0 / API 24。它仍处于 alpha 阶段，适合评估、原型和能够接受 API 变更成本的产品；选型时不能只看 Android 版本，还要检查 adapter、feature、limit、surface capability 和目标设备上的实测结果。
+复核时，官方 release notes 的最新公开版本仍是 `androidx.webgpu:webgpu:1.0.0-alpha05`，发布日期为 2026-04-22，最低系统版本为 Android 7.0 / API 24。它仍处于 alpha 阶段，适合评估、原型和能够接受 API 变更成本的产品；选型时不能只看 Android 版本，还要检查 adapter、feature、limit、surface capability 和目标设备上的实测结果。
 
 ## 复核基线
 
-| 层级 | 本文基线 | 负责内容 |
+| 层级 | 基线 | 负责内容 |
 | --- | --- | --- |
 | Jetpack WebGPU | `1.0.0-alpha05` | Kotlin API、JNI handle 包装、helper、随包发布的 Dawn |
 | Dawn | `9d41fdf36977cca92361c6ae2769129bbaaafd9b` | WebGPU 验证、资源与命令管理、后端选择、shader 翻译 |
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | `Surface`、`ANativeWindow`、BufferQueue、SurfaceFlinger、HWC |
 | Android 内核 | `android17-6.18-2026-06_r6` | CPU 调度、dma-buf、dma-fence 与 sync_file；厂商 GPU/display 调度由具体驱动实现 |
 
-alpha05 的 AAR 在 `assets/dawn_build_metadata.json` 中记录上述 Dawn SHA。本文下载到的 AAR SHA-256 为 `f977680085599a1cdfd4f8c5b0289d1fda905e33bcf4f5238042849bee74d1c0`，包含四个 ABI 的 `libwebgpu_c_bundled.so`：解压后 arm64-v8a 约 5.8 MiB、armeabi-v7a 约 3.7 MiB、x86 约 6.5 MiB、x86_64 约 6.3 MiB。安装体积要以应用自己的 ABI 配置、压缩方式和 App Bundle 拆分结果为准，不能把四个解压尺寸直接当成单台设备的安装增量。
+alpha05 的 AAR 在 `assets/dawn_build_metadata.json` 中记录上述 Dawn SHA。下载到的 AAR SHA-256 为 `f977680085599a1cdfd4f8c5b0289d1fda905e33bcf4f5238042849bee74d1c0`，包含四个 ABI 的 `libwebgpu_c_bundled.so`：解压后 arm64-v8a 约 5.8 MiB、armeabi-v7a 约 3.7 MiB、x86 约 6.5 MiB、x86_64 约 6.3 MiB。安装体积要以应用自己的 ABI 配置、压缩方式和 App Bundle 拆分结果为准，不能把四个解压尺寸直接当成单台设备的安装增量。
 
-Maven 的 alpha05 source JAR 与 AndroidX 提交 `c48b772dd76241af6af60bee13d3cad0e4520306` 中的 `Functions.kt`、`GPURequestAdapterOptions.kt`、`helper/WebGpu.kt` 逐文件一致，因此正文用该提交固定 Kotlin 层行为，不用会继续变化的 `androidx-main` 分支充当版本锚点。
+Maven 的 alpha05 source JAR 与 AndroidX 提交 `c48b772dd76241af6af60bee13d3cad0e4520306` 中的 `Functions.kt`、`GPURequestAdapterOptions.kt`、`helper/WebGpu.kt` 逐文件一致，因此用该提交固定 Kotlin 层行为，不用会继续变化的 `androidx-main` 分支充当版本锚点。
 
-Android 17 不要求 Jetpack WebGPU 使用 Vulkan 1.4。官方入门文档给出的条件是“Vulkan 1.1+ 为首选后端”，Compatibility feature level 可覆盖 OpenGL ES 路径。Android 17 只构成本文的平台源码上限，不会抹平不同 GPU、驱动和 Dawn 后端之间的能力差异。
+Android 17 不要求 Jetpack WebGPU 使用 Vulkan 1.4。官方入门文档给出的条件是“Vulkan 1.1+ 为首选后端”，Compatibility feature level 可覆盖 OpenGL ES 路径。Android 17 只是平台源码上限，不会抹平不同 GPU、驱动和 Dawn 后端之间的能力差异。
 
 ## 库架构与调用链
 
@@ -248,7 +248,7 @@ feature level 也不是“所有高级能力”的总开关。alpha05 把 subgro
 
 ### Shader 路径不要写死
 
-应用输入 WGSL，Dawn 负责验证、转换并创建后端 pipeline。Vulkan 后端通常生成适合 Vulkan 的 shader 模块，OpenGLES 后端生成适合 GLES 的 shader；中间表示、优化阶段和驱动编译方式会随 Dawn commit 与 backend 改变。正文若写死“WGSL → SPIR-V → GLSL ES 3.10”，很快会把实现细节误当成 API 合约。
+应用输入 WGSL，Dawn 负责验证、转换并创建后端 pipeline。Vulkan 后端通常生成适合 Vulkan 的 shader 模块，OpenGLES 后端生成适合 GLES 的 shader；中间表示、优化阶段和驱动编译方式会随 Dawn commit 与 backend 改变。若写死“WGSL → SPIR-V → GLSL ES 3.10”，很快会把实现细节误当成 API 合约。
 
 对应用稳定的边界是：
 
@@ -265,7 +265,7 @@ feature level 也不是“所有高级能力”的总开关。alpha05 把 subgro
 
 WebGPU 绘制结果不会进入宿主 HWUI 的 RenderNode/display list，宿主 Compose 画布也不能像处理普通绘制节点那样对它应用任意裁剪、变换或 effect。需要 `Modifier.graphicsLayer {}` 一类视觉效果时，可以评估 `AndroidEmbeddedExternalSurface` 的 TextureView 路径，但要重新测量中间纹理、合成和延迟成本。
 
-这组边界与 `rendering_pipelines/S03`、`S04` 一致：`AndroidExternalSurface` 走 SurfaceView 独立 layer，`AndroidEmbeddedExternalSurface` 才把 `SurfaceTexture` 作为 TextureView 内容嵌回宿主窗口。两者的 Producer、合成拓扑和性能证据不同，不能只按 Compose API 名称归为同一条路径。
+`AndroidExternalSurface` 走 SurfaceView 独立 layer，`AndroidEmbeddedExternalSurface` 则把 `SurfaceTexture` 作为 TextureView 内容嵌回宿主窗口。两者的 Producer、合成拓扑和性能证据不同，不能只按 Compose API 名称归为同一条路径。
 
 `AndroidExternalSurface.onSurface`、`onChanged` 和 `onDestroyed` 的生命周期回调在主线程触发；拿到 `Surface` 后可以切到专用渲染线程。Surface 销毁回调到达后，渲染线程必须停止 acquire、encode、submit 和 present，不能继续持有一个已失效的窗口目标。
 
@@ -367,7 +367,7 @@ WebGPU compute 使用同一组 instance、adapter、device、queue、buffer、te
 
 `GPUInstance.requestAdapter()`、`GPUAdapter.requestDevice()`、异步 pipeline 创建和 `GPUQueue.onSubmittedWorkDone()` 都提供 callback + `Executor` 版本。对应的 `suspend` wrapper 使用 direct executor，再通过 continuation 恢复挂起协程。
 
-这说明协程只是异步 API 的 Kotlin 适配。它不能推出“WebGPU 默认在主线程提交”，也不能推出所有 handle 都有未公开的创建线程绑定。alpha05 的公开 Kotlin API 没有声明 `GPUQueue` 或 `GPUCommandEncoder` 必须回到创建线程；正文不应添加库没有承诺的亲和规则。
+这说明协程只是异步 API 的 Kotlin 适配。它不能推出“WebGPU 默认在主线程提交”，也不能推出所有 handle 都有未公开的创建线程绑定。alpha05 的公开 Kotlin API 没有声明 `GPUQueue` 或 `GPUCommandEncoder` 必须回到创建线程；不能添加库没有承诺的亲和规则。
 
 工程上仍建议给 WebGPU 建立单一 render/compute owner：
 
@@ -535,7 +535,6 @@ Jetpack WebGPU 在应用进程中加载 AndroidX AAR 内的 Dawn。WebView 页�
 
 ## 源码与文档入口
 
-- Writer `rendering_pipelines/S01_rendering_types_overview.md`、`S03_surfaceview_type.md`、`S04_textureview_type.md`：核对标准窗口末端、SurfaceView 独立 layer 与 TextureView 嵌入路径，完整本地路径记录在 frontmatter。
 - [Jetpack WebGPU release notes](https://developer.android.com/jetpack/androidx/releases/webgpu)：确认最新 artifact、alpha 状态、发布日期和版本变化。
 - [WebGPU for Android overview](https://developer.android.com/develop/ui/views/graphics/webgpu) 与 [Getting started](https://developer.android.com/develop/ui/views/graphics/webgpu/getting-started)：确认 API 24、Vulkan 1.1+ 首选、Compatibility 请求、Compose Surface 和基础渲染流程。
 - AndroidX alpha05 快照中的 [`Functions.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/Functions.kt)、[`GPURequestAdapterOptions.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPURequestAdapterOptions.kt)、[`GPUInstance.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPUInstance.kt) 与 [`GPURequestCallback.kt`](https://android.googlesource.com/platform/frameworks/support/+/c48b772dd76241af6af60bee13d3cad0e4520306/webgpu/webgpu/src/main/java/androidx/webgpu/GPURequestCallback.kt)：核对 native 入口、adapter 选项、Executor 与 suspend wrapper。

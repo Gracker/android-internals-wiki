@@ -142,24 +142,6 @@ last_task9_autofix_at: '2026-06-29'
 
 # Perfetto 简介与演进
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Perfetto 是什么：Google 的下一代系统级 tracing 工具，Systrace 的继任者
-- 🔹 Perfetto 与 Systrace 的关系与区别
-- 🔹 Perfetto 的架构：traced、traced_probes、heapprofd / traced_perf 等 profiling 组件、Perfetto UI
-- 🔹 核心概念：TraceConfig、Data Source、Track、Slice、Counter
-- 🔹 为什么性能分析离不开 Perfetto
-
-### 扩展（可选深入）
-
-- 🔸 Perfetto 在 Chrome / Linux 上的跨平台支持
-- 🔸 Perfetto SDK 嵌入 App 的能力（Custom Data Sources）
-
-<!-- outline-end -->
-
 ## 为什么要了解 Perfetto
 
 日志和单次堆栈擅长记录局部状态，却很难回答跨线程、跨进程的时间关系。一次卡顿可能同时经过 App 主线程、RenderThread、GPU、SurfaceFlinger；一次 Binder 阻塞还要看调用方是否在运行、对端何时被唤醒、事务何时返回。只看其中一层，很容易把等待时间算到错误的模块上。
@@ -180,9 +162,9 @@ Perfetto 是一整套 tracing 基础设施，包含三个核心模块：
 
 采集、分析和 UI 可以独立升级。设备侧平台 Perfetto 负责产出 trace；主机上的 Trace Processor 和 UI 可以使用更新版本读取它。排查解析差异时，必须同时记录设备 build、采集端版本和分析端版本。
 
-## 本文复核基线
+## 复核基线
 
-| 层级 | 本文锚点 | 本章使用方式 |
+| 层级 | 锚点 | 分析边界 |
 | --- | --- | --- |
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | 固定 `traced`、`traced_probes`、Perfetto CLI 与平台 data source |
 | 平台内 Perfetto | `external/perfetto` 提交 `ece66975738007dd0978b911d8a2077e49b8f31e` | `CHANGELOG` 已包含 v54.0，并带有后续 `android.aflags` 变更；不能直接写成上游最新版本 |
@@ -423,7 +405,7 @@ Data Source 是 Perfetto 对“可采集能力”的抽象。一个 data source 
 
 这张表只解决“有没有入口”。真要选采集方式，还要把 Consumer 放进来一起看。Traceur、`adb shell perfetto`、`record_android_trace` 和 Android Studio Profiler 能看到的范围并不一样。
 
-### LMKD 行为追踪 [自动发现]
+### LMKD 行为追踪
 
 Perfetto 可以追踪 lmkd（Low Memory Killer Daemon）的杀死行为，但观测路径取决于 Android 版本和内核配置。
 
@@ -525,7 +507,7 @@ Chrome 使用 Perfetto tracing 基础设施采集浏览器进程、渲染、网�
 
 UI 操作、PerfettoSQL 和 service model 可以跨平台复用；Android 的 atrace、FrameTimeline、Binder 与 Java heap graph 则是平台特有数据。迁移分析脚本时应先检查输入格式和 data source，再复用查询逻辑。
 
-## [扩展] Perfetto SDK：在 App 中嵌入自定义 Trace
+## Perfetto SDK：在 App 中嵌入自定义 Trace
 
 Perfetto 提供了一个 C++17 的 Tracing SDK，允许 App 开发者在自己的代码中添加自定义的 trace 点。它的能力范围比 `android.os.Trace` 更大，后者最终落到 atrace：
 
@@ -539,13 +521,13 @@ Perfetto 提供了一个 C++17 的 Tracing SDK，允许 App 开发者在自己�
 
 完全自定义的 packet 字段还需要 Trace Processor importer 或 UI 插件理解其 schema，否则只能看到原始 packet，无法自动生成领域表和轨道。只需要方法区间且要兼容 Android Java/Kotlin 代码时，`android.os.Trace` 往往成本更低；需要跨平台 C++、结构化参数、Counter 或 flow 时，再评估 Perfetto SDK。
 
-## 版本演进与抓取入口对照表 [自动发现]
+## 版本演进与抓取入口对照表
 
 把 Android P / Q / R+ 的边界列清，前面的命令和 data source 才不会混。
 
 ### Android 版本对照表
 
-| 版本 | `traced` / `traced_probes` 状态 | normal mode 配置输入 | 配置文件读取路径 / SELinux | 常见启用条件 | 这一章该怎么理解 |
+| 版本 | `traced` / `traced_probes` 状态 | normal mode 配置输入 | 配置文件读取路径 / SELinux | 常见启用条件 | 分析边界 |
 | --- | --- | --- | --- | --- | --- |
 | Android 9 (P) | 服务已进 system image | binary protobuf，通过 stdin 传入 | 不支持 `--txt`；shell 不能按 Android 12+ 的方式读取专用配置目录 | 非 Pixel 设备常见要手动 enable `persist.traced.enable=1` | 可用 Perfetto，但不能直接输入文本 PBTX |
 | Android 10 (Q) | 服务仍可能未默认 enable | binary protobuf；或 PBTX 配合 `--txt` | 非 root 设备受 SELinux 限制，PBTX 宜经 stdin 传入 | 非 Pixel 设备仍常见手动 enable | heapprofd 开始进入常用工作流 |
@@ -598,5 +580,4 @@ Android 17 的 `traced` / `traced_probes` 仍由 `external/perfetto` 构建为 `
 - Android 17 Profiling 模块的 [`ProfilingTrigger.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java) 与 [`apex/Android.bp`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/apex/Android.bp)：trigger 常量、feature flag 与 `com.android.profiling` 组成。
 - Android 17 [`lmkd.cpp`](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp)：PSI、kill instant event、event log 与 stats 数据。
 - common kernel `android17-6.18-2026-06_r6` 的 [`kernel/trace/trace.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/trace/trace.c) 与 [`sched.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/sched.h)：tracefs/ftrace 与调度 tracepoint 基线。
-- 本地研究：《Perfetto 2026 架构级深度技术分析》与《Android 9-17 Perfetto 版本可用性与新特性源码验证》，绝对路径记录在本文原始资料库；正文结论已回到固定源码和官方文档复核。
 - [高爷 Systrace 系列导读](https://androidperformance.com/2019/05/28/Android-Systrace-About/) 与 [SmartPerfetto 架构实践](https://androidperformance.com/2026/04/10/SmartPerfetto-Architecture-Deep-Dive/)：中文实践背景与自动化分析思路。
