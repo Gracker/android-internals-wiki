@@ -28,24 +28,7 @@ last_review_finalize_run_id: "20260725-160531-5200f347"
 
 # 25.25 OEM 厂商差异化后台限制与功耗诊断实战
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 AOSP 后台限制入口
-- Android 17 的后台限制入口应从 `AppRestrictionController` 与 `BaseAppStateTracker` 体系切入，而不是从不存在的 `AppStateManager.java` 切入。[来源: DeepResearch/2026-07-16-android17-oem-background-restriction.md]
-- `AppRestrictionController` 维护 tracker 链，材料核对到的 tracker 包括 `AppBatteryTracker`、`AppBatteryExemptionTracker`、`AppFGSTracker`、`AppMediaSessionTracker`、`AppPermissionTracker`、`AppBroadcastEventsTracker`、`AppBindServiceEventsTracker`。[来源: DeepResearch/2026-07-16-android17-oem-background-restriction.md]
-
-### 🔹 OEM 可干预边界
-- OEM 可通过 `SystemConfig` 的 `bg-restriction-exemption` 配置后台限制豁免，`SystemConfig.java` 解析该标签后由 `AppRestrictionController` 读取豁免包集合。[来源: DeepResearch/2026-07-16-android17-oem-background-restriction.md]
-- 系统豁免链至少覆盖系统模块、运营商特权应用、SystemConfig/DeviceConfig 豁免、DPC 保护/设备管理员和角色持有等来源。[来源: DeepResearch/2026-07-16-android17-oem-background-restriction.md]
-
-### 🔹 诊断切入点
-- 先查限制等级，再查豁免来源，最终查 tracker 状态；材料给出的命令入口集中在 `cmd activity background get-restriction-level` 与 `dumpsys activity bg-restriction` / `dumpsys activity restriction` 系列。[来源: DeepResearch/2026-07-16-android17-oem-background-restriction.md]
-- `/data/system/apprestriction/settings.xml` 是材料标注的后台限制设置持久化路径，可作为复现场景前后 diff 的候选证据点。[来源: DeepResearch/2026-07-16-android17-oem-background-restriction.md]
-
-<!-- outline-end -->
-
-本文以 Android 17（API 37，`android-17.0.0_r1`）为平台基线。排查 OEM 后台问题时，不从“某厂商会杀应用”的传闻出发，而是先回答三个有证据可查的问题：
+平台基线为 Android 17（API 37，`android-17.0.0_r1`）。排查 OEM 后台问题时，不从“某厂商会杀应用”的传闻出发，而是先回答三个有证据可查的问题：
 
 1. AOSP 当前如何评价这个 package/UID：限制等级、待机分组和豁免原因是什么？
 2. Job、Alarm、前台服务、网络或进程生命周期中的哪一层没有按预期推进？
@@ -328,4 +311,3 @@ XML 保存 package、UID、当前限制等级、变更时间、组合后的 reas
 - [Android 后台优化总览](https://developer.android.com/topic/performance/background-optimization)
 - [App Standby Buckets](https://developer.android.com/topic/performance/appstandby)
 - [ApplicationExitInfo API](https://developer.android.com/reference/android/app/ApplicationExitInfo)
-- 本地调研材料：`DeepResearch/2026-07-16-android17-oem-background-restriction.md`
