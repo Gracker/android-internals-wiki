@@ -386,7 +386,7 @@ KASAN 检测内核内存越界和 use-after-free。软件 shadow 模式与硬件
 
 Arm MTE 可以支持用户空间 allocator 检查，也可以支撑 HW_TAGS KASAN。Android 17 r6 arm64 GKI 配置包含 KASAN/HW_TAGS 能力，运行设备是否启用、采用什么模式仍由启动参数、硬件和构建决定。
 
-因此，本节不使用跨设备的固定开销比例。比较内存与性能基线时，应记录：
+因此，这里不使用跨设备的固定开销比例。比较内存与性能基线时，应记录：
 
 - kernel config 与启动参数；
 - userspace MTE 的 sync、async 或关闭状态；
