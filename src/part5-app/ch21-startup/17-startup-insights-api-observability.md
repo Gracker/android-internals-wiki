@@ -30,17 +30,17 @@ sources:
 
 # 21.17 Startup Insights API 与启动性能可观测性
 
-本节把 `ApplicationStartInfo`、`ActivityManager` 的配套接口以及围绕它们建立的采集方案统称为 Startup Insights。Android Framework 中没有名为 `StartupInsights` 的公开类，接入代码仍以这两个公开 API 为准。
+Startup Insights 在这里指 `ApplicationStartInfo`、`ActivityManager` 的配套接口以及围绕它们建立的采集方案。Android Framework 中没有名为 `StartupInsights` 的公开类，接入代码仍以这两个公开 API 为准。
 
 应用可以在 `ContentProvider` 中记录早于 `Application.onCreate()` 的节点，也可以在 `Instrumentation`、Activity 生命周期和首帧回调中继续打点。然而，应用自己的代码无法准确还原 AMS 何时收到启动请求、Zygote 何时 fork、系统怎样判定 cold/warm/hot。Android 15（API 35）加入的 `ApplicationStartInfo` 补充了这部分系统视角。
 
 它返回一份阶段记录，不是一条完整 trace：记录中可能缺少 `FORK`、RenderThread、SurfaceFlinger 或 `FULLY_DRAWN` 时间戳，也没有方法调用、线程调度、Binder 和 I/O 明细。线上采集用它识别启动类型并寻找变慢区间；需要解释区间内部发生了什么时，再用应用事件和 Perfetto。
 
-完整的指标、cohort 和告警设计见[启动监控与度量](./08-startup-monitoring.md)，启动归因上报协议见[ApplicationStartInfo 与启动归因上报](../ch26-observability/13-application-start-info.md)。本节集中处理 API 行为、源码边界和接入时容易出错的细节。
+完整的指标、cohort 和告警设计见[启动监控与度量](./08-startup-monitoring.md)，启动归因上报协议见[ApplicationStartInfo 与启动归因上报](../ch26-observability/13-application-start-info.md)。以下集中处理 API 行为、源码边界和接入时容易出错的细节。
 
 ## 1. Android 15、16、17 的能力边界
 
-这一组 API 的主要能力在 Android 15 已经提供。Android 17 是本章的源码校验锚点，不应把已有接口误写成 Android 17 新增。
+这一组 API 的主要能力在 Android 15 已经提供。Android 17 是源码校验锚点，不应把已有接口误写成 Android 17 新增。
 
 | 能力 | Android 15 / API 35 | Android 16 / API 36 | Android 17 / API 37 |
 | --- | --- | --- | --- |

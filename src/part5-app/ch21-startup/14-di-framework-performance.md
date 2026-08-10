@@ -23,40 +23,6 @@ sources:
 
 # 21.14 依赖注入框架性能：Dagger/Hilt/Koin 启动开销与优化
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 Dagger/Hilt component 依赖图初始化开销分析
-Hilt 生成的 AppComponent 在 Application.onCreate() 阶段的实例化路径。@Singleton binding 的实例化时机——哪些是 eager 的、哪些是 lazy 的。Component 依赖图的构建时间测量方法（Hilt Java 代码分析）。
-
-### 🔹 Eager vs Lazy 初始化的实例化时机
-@Provides 方法返回值的实例化时机。UnstableClass / Lazy<T> / Provider<T> 的延迟绑定机制。Singleton vs Scoped binding 在内存中的存活周期与首次访问开销。
-
-### 🔹 Hilt code generation 对 APK 体积和启动性能的影响
-Hilt 生成的 Factory/Component 类对 DEX 数量和类加载时间的影响。@InstallIn 注解处理器的输出量分析。Multi-module 项目中 generated code 分布。
-
-### 🔹 KSP vs KAPT 编译处理器的性能差异
-Kotlin Symbol Processing (KSP) 替换 KAPT 后的编译时间改善。KSP 生成的 Hilt 代码与 KAPT 生成的代码在运行时是否有差异。KSP 迁移对冷启动的间接影响（DEX 布局、类加载顺序）。
-
-### 🔹 Manual DI vs Framework DI 的性能对比
-手写 ServiceLocator / 单例容器 vs Hilt/Dagger 的运行时开销。手动 DI 的启动时间优势与维护成本。Koin 的 runtime resolution 性能特征与 Dagger compile-time 生成的对比。
-
-### 🔹 DI 框架与 Application.onCreate() 关键路径
-Hilt 在 Application.onCreate() 之前的初始化路径（generated Hilt_App 绑定代码）。ContentProvider 链路中的 DI 访问限制。Startup Profile 对 DI 相关类预热的效果。
-
-## 扩展
-
-### 🔸 HiltViewModel 创建开销与 ViewModelProvider.Factory
-HiltViewModelFactory 的 ViewModel 实例化路径。@HiltViewModel 的组件绑定与 SavedStateHandle 注入开销。
-
-### 🔸 Koin 的 runtime resolution 性能特征
-Koin scope 的模块注册与 dependency resolution 运行时开销。Koin DSL 解析与 Hilt 注解处理的架构差异对性能的影响。
-
-### 🔸 DI scope 管理与内存泄漏风险
-@ActivityScoped / @FragmentScoped binding 的生命周期绑定。Activity 销毁时 scope 清理的 GC 影响。常见 DI 内存泄漏模式（Singleton 持有 Activity 引用）。
-
-<!-- outline-end -->
-
 依赖注入的启动成本不能用“框架有多重”概括。一次注入至少包含四类工作：创建容器/组件、建立 provider 字段、解析 binding、执行对象构造与初始化。Dagger/Hilt 把解析关系生成成 Java 代码；Koin 在运行时注册和查询 definition。两者的主要成本位置不同，但重对象的构造函数、`@Provides` 或 definition lambda 才常是启动长尾。
 
 Android 17 的平台边界也很清楚：`ActivityThread.handleBindApplication()` 先安装进程内 `ContentProvider`，之后才调用 `Application.onCreate()`。DI 框架无法改变这个顺序。任何 Provider 中的容器访问，都可能把 component 创建或 runtime resolution 提前到 `Application.onCreate()` 之前。
@@ -281,13 +247,13 @@ Allocation Recording 会显著扰动时序，只用于找对象调用栈；Perfe
 
 ## 参考资料
 
-- [已验证: Android 17 AOSP] [`ActivityThread.handleBindApplication()` Provider/Application 顺序](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
-- [已验证: 官方文档] [Dependency injection with Hilt](https://developer.android.com/training/dependency-injection/hilt-android)
-- [已验证: 官方文档] [Hilt components](https://dagger.dev/hilt/components.html)
-- [已验证: 官方文档] [`dagger.Lazy`](https://dagger.dev/api/latest/dagger/Lazy.html)
-- [已验证: 官方文档] [`@Reusable`](https://dagger.dev/api/latest/dagger/Reusable.html)
-- [已验证: 上游源码] [`ApplicationComponentManager`](https://github.com/google/dagger/blob/master/hilt-android/main/java/dagger/hilt/android/internal/managers/ApplicationComponentManager.java)
-- [已验证: 上游源码] [`ApplicationGenerator`](https://github.com/google/dagger/blob/master/hilt-compiler/main/java/dagger/hilt/android/processor/internal/androidentrypoint/ApplicationGenerator.java)
-- [已验证: 官方文档] [Migrate from kapt to KSP](https://developer.android.com/build/migrate-to-ksp)
-- [已验证: 官方文档] [Starting Koin](https://insert-koin.io/docs/reference/koin-core/starting-koin/)
-- [已验证: 官方文档] [Koin modules](https://insert-koin.io/docs/reference/koin-core/modules/)
+- [`ActivityThread.handleBindApplication()` Provider/Application 顺序](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [Dependency injection with Hilt](https://developer.android.com/training/dependency-injection/hilt-android)
+- [Hilt components](https://dagger.dev/hilt/components.html)
+- [`dagger.Lazy`](https://dagger.dev/api/latest/dagger/Lazy.html)
+- [`@Reusable`](https://dagger.dev/api/latest/dagger/Reusable.html)
+- [`ApplicationComponentManager`](https://github.com/google/dagger/blob/master/hilt-android/main/java/dagger/hilt/android/internal/managers/ApplicationComponentManager.java)
+- [`ApplicationGenerator`](https://github.com/google/dagger/blob/master/hilt-compiler/main/java/dagger/hilt/android/processor/internal/androidentrypoint/ApplicationGenerator.java)
+- [Migrate from kapt to KSP](https://developer.android.com/build/migrate-to-ksp)
+- [Starting Koin](https://insert-koin.io/docs/reference/koin-core/starting-koin/)
+- [Koin modules](https://insert-koin.io/docs/reference/koin-core/modules/)

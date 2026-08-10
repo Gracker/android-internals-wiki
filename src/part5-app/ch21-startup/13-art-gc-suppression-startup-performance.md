@@ -24,11 +24,11 @@ sources:
 
 # 21.13 ART GC 抑制与启动性能优化
 
-先给工程结论：三方 App 没有受支持的“暂停 ART GC”接口，也不应修改 `libart.so` 的任务函数或 vtable。这里所说的 GC 抑制，应理解为**降低启动阶段的分配速率和存活对象规模，让 ART 更少达到 GC 触发条件**。
+三方 App 没有受支持的“暂停 ART GC”接口，也不应修改 `libart.so` 的任务函数或 vtable。所谓 GC 抑制，是**降低启动阶段的分配速率和存活对象规模，让 ART 更少达到 GC 触发条件**。
 
 Android 17 已在 Zygote fork 后主动放宽 Java heap 的启动期阈值。App 若仍在首帧前触发 GC，通常说明启动分配接近 heap growth limit、显式请求了 GC、native allocation 反馈造成压力，或进程状态变化触发了回收。排查目标应是找到这些分配和触发原因，而非阻塞 `HeapTaskDaemon`。
 
-本节基于 `android-17.0.0_r1` 解释当前行为。ART GC 的收集器和分代机制见 4.8，启动任务治理见 21.2 和 21.6。
+以下行为以 `android-17.0.0_r1` 为准。ART GC 的收集器和分代机制见 4.8，启动任务治理见 21.2 和 21.6。
 
 ## GC 对启动性能的影响路径
 
@@ -69,7 +69,7 @@ Android 17 的常见任务包括：
 
 ## Android 17 的 post-fork 启动期策略
 
-`Heap::PostForkChildAction()` 是本章最重要的源码锚点。Android 17 做了四件事：
+`Heap::PostForkChildAction()` 是理解启动期策略的关键源码锚点。Android 17 做了四件事：
 
 1. 增加 GC sequence number，使 Zygote 或 fork 极早期已经排队的旧 GC 请求失效，避免子进程刚 fork 就执行旧请求。
 2. 把 `target_footprint_` 临时提高到 `growth_limit_`，再重新计算 `concurrent_start_bytes_`，源码注释直接写明目的是避免 App launch 期间 GC。
@@ -234,7 +234,7 @@ Baseline Profile 会改变启动 CPU 时间和分配时序，Startup Profile 会
 
 Android 8 起可以使用不受 65,535 条记录限制的现代 Java/Kotlin allocation recording，但 ART 内部 heap 策略会随系统和 Mainline 模块演进。文章或方案不应把 Android 8 某个实现细节直接外推到 Android 17。
 
-本章的 Android 17 结论以 `android-17.0.0_r1` 为准：
+以下 Android 17 结论以 `android-17.0.0_r1` 为准：
 
 - post-fork 阶段先放宽 heap 阈值，再分阶段降低；
 - 2 秒不是 GC 全局冻结窗口；
@@ -258,14 +258,12 @@ OEM 和 ART Mainline 更新可以调整 collector、flags 和 heap 参数。应�
 
 ## 参考资料
 
-- [已验证: Android 17 AOSP] [`Heap::PostForkChildAction()` 与 heap tasks](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc)
-- [已验证: Android 17 AOSP] [`TaskProcessor`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/task_processor.cc)
-- [已验证: Android 17 AOSP] [`task_processor.h`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/task_processor.h)
-- [已验证: Android 17 AOSP] [`StartupCompletedTask`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/startup_completed_task.cc)
-- [已验证: Android 17 AOSP] [`VMRuntime.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/libart/src/main/java/dalvik/system/VMRuntime.java)
-- [已验证: Android 17 AOSP] [`Daemons.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/libart/src/main/java/java/lang/Daemons.java)
-- [已验证: Android 17 AOSP] [`ActivityThread.handleBindApplication()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
-- [已验证: 官方文档] [Overview of memory management](https://developer.android.com/topic/performance/memory-overview)
-- [已验证: 官方文档] [Record Java/Kotlin allocations](https://developer.android.com/studio/profile/record-java-kotlin-allocations)
-- [研究材料] `DeepResearch/2026-05-24-android17-art-gc-compose-pause.md`
-> **可信度**：low（受技术访问限制，无法直接访问源代码，内容基于原理推断）
+- [`Heap::PostForkChildAction()` 与 heap tasks](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc)
+- [`TaskProcessor`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/task_processor.cc)
+- [`task_processor.h`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/task_processor.h)
+- [`StartupCompletedTask`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/startup_completed_task.cc)
+- [`VMRuntime.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/libart/src/main/java/dalvik/system/VMRuntime.java)
+- [`Daemons.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/libart/src/main/java/java/lang/Daemons.java)
+- [`ActivityThread.handleBindApplication()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [Overview of memory management](https://developer.android.com/topic/performance/memory-overview)
+- [Record Java/Kotlin allocations](https://developer.android.com/studio/profile/record-java-kotlin-allocations)
