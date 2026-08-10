@@ -48,7 +48,7 @@ sources:
 
 APM 不能假设进程会一直运行、系统会按固定周期调度任务，也不能把系统诊断权限当成普通 App 能力。Android 14 的 cached app freezer、Android 17 的 MemoryLimiter、长期存在的后台调度与日志权限边界，会共同暴露依赖定时轮询、常驻进程和跨进程抓取的监控设计缺陷。
 
-本节以 Android 17 / API 37 / `android-17.0.0_r1` 为平台锚点。涉及 cgroup memory controller 与 freezer 时，内核锚点为 `android17-6.18-2026-06_r6`。重点是监控 SDK 怎样在资源与隐私边界内保持可解释的数据，不重复 23.9 的 MemoryLimiter 实现细节和 26.12 的 ProfilingManager 完整版本表。
+平台锚点为 Android 17 / API 37 / `android-17.0.0_r1`。涉及 cgroup memory controller 与 freezer 时，内核锚点为 `android17-6.18-2026-06_r6`。重点是监控 SDK 怎样在资源与隐私边界内保持可解释的数据，不重复 23.9 的 MemoryLimiter 实现细节和 26.12 的 ProfilingManager 完整版本表。
 
 ## 三类约束要分开处理
 
@@ -108,7 +108,7 @@ adb shell am memory-limiter manual "$TEST_PID" none
 
 ## Android 14 以后不能依赖旧的 trim 压力等级
 
-旧监控代码常用 `TRIM_MEMORY_RUNNING_MODERATE`、`RUNNING_LOW`、`RUNNING_CRITICAL` 和 `COMPLETE` 调整采样频率。这个策略不适用于本章覆盖的 Android 14-17：
+旧监控代码常用 `TRIM_MEMORY_RUNNING_MODERATE`、`RUNNING_LOW`、`RUNNING_CRITICAL` 和 `COMPLETE` 调整采样频率。这个策略不适用于 Android 14-17：
 
 - 从 API 34 起，App 不再收到这些 running/moderate/complete 等级；
 - 这些常量在 API 35 被废弃；

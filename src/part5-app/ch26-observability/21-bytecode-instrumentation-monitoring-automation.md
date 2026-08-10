@@ -44,7 +44,7 @@ gap_source: 素材驱动/参考书
 
 字节码插桩适合解决“规则明确、调用点很多、人工埋点容易遗漏”的问题，例如给一组业务入口加 trace、把已有 API 调用改写到监控桥接层，或检查某类调用是否符合约束。它不能自动获得所有性能问题的因果关系，也不适合修改 Android framework、ART 或任意第三方库的内部实现。
 
-本节的平台语义以 Android 17 / API 37 / `android-17.0.0_r1` 为准，构建入口以 AGP 8.x Instrumentation API 为准。Android 17 没有改变 App 构建期 `.class` 插桩的基本边界；运行时证据仍来自公开 Trace API、Perfetto、JankStats、网络库接口和业务指标。
+平台语义以 Android 17 / API 37 / `android-17.0.0_r1` 为准，构建入口以 AGP 8.x Instrumentation API 为准。Android 17 没有改变 App 构建期 `.class` 插桩的基本边界；运行时证据仍来自公开 Trace API、Perfetto、JankStats、网络库接口和业务指标。
 
 ## 先确定插桩边界
 

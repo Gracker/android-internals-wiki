@@ -71,48 +71,11 @@ last_deepseek_cn_review_at: 2026-07-17
 
 # 26.18 App Performance Score 与性能质量评分归因
 
-<!-- outline-start -->
-## 要点
+团队拿到一个 0～100 的性能分数后，需要判断它能否转化为可复测的工程任务。[App Performance Score](https://developer.android.com/topic/performance/app-score) 是 Google 在 2026 年仍标为 Preview 的评估框架，包含静态与动态两类评分：静态评分检查源码配置和工具采用情况，动态评分观察指定物理设备上的运行表现。
 
-### 🔹 App Performance Score 的定位
-说明 App Performance Score 如何把性能治理拆成静态评分与动态评分，和 Android Vitals、Macrobenchmark、Perfetto、APM 平台分别解决哪些问题。
+分数只表示评估表中还有多少改进空间，不是线上用户体验的综合 KPI。评分项可转换成配置修正、自动化路径、trace 分析和发布验证四类任务，Android 17 平台指标则提供旁证。
 
-### 🔹 静态评分：低成本配置项先补齐
-整理 AGP 版本、R8 优化、Baseline Profile、Startup Profile、Compose 版本等静态项，说明它们为什么属于低成本高收益动作。
-
-### 🔹 动态评分：用真实设备校验用户路径
-覆盖冷启动、通知启动、核心页面滑动、动画路径和低端机验证，明确手动测量、Macrobenchmark、UiAutomator 三档投入差异。
-
-### 🔹 从 0-100 分到工程优先级
-把分数拆成团队可执行队列：先补静态项，再补自动化测试，再进入 trace 分析和自建性能框架。
-
-### 🔹 和 Android Vitals / Play Console 的关系
-说明 Vitals 负责线上坏行为阈值和 Play 可见性，App Performance Score 更适合研发阶段的体检与改进路线。
-
-### 🔹 质量门禁与回归防护
-把评分项接入发版门禁、CI、灰度监控和性能预算，避免分数只停留在一次性体检。
-
-### 🔹 常见误用边界
-说明 App Performance Score 不能替代业务指标、端侧 trace、机型分层和专项问题分析，避免把单一分数当成全部性能结论。
-
-## 扩展
-
-### 🔸 App Performance Score 与 Android Performance Analyzer 联动
-可补充 APA、Perfetto、Android Studio Profiler 在动态评分后的定位路径。
-
-### 🔸 分数口径的团队协作模板
-可整理一份研发、测试、产品都能读懂的评分报告模板。
-
-### 🔸 低端机样本池建设
-可补充低端机、低存储、弱网和高温场景的最小测试组合。
-
-<!-- outline-end -->
-
-团队拿到一个 0～100 的性能分数后，关键问题是它能否转化为可复测的工程任务。[App Performance Score](https://developer.android.com/topic/performance/app-score) 是 Google 在 2026 年仍标为 Preview 的评估框架，包含静态与动态两类评分：静态评分检查源码配置和工具采用情况，动态评分观察指定物理设备上的运行表现。
-
-分数只表示评估表中还有多少改进空间，不是线上用户体验的综合 KPI。本章把评分项转换成配置修正、自动化路径、trace 分析和发布验证四类任务，并说明 Android 17 平台指标能提供哪些旁证。
-
-26.3 介绍端侧性能采集，26.14 介绍实验统计，26.15 说明 Android Vitals 与 Play 的线上口径。本章只讨论评分到行动的映射，不重复这些章节的采集实现。
+26.3 介绍端侧性能采集，26.14 介绍实验统计，26.15 说明 Android Vitals 与 Play 的线上口径。这里讨论评分到行动的映射，不重复这些章节的采集实现。
 
 ## App Performance Score 的定位
 
