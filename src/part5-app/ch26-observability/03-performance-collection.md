@@ -95,7 +95,7 @@ sources:
 
 Android 没有一个面向普通 App、涵盖所有性能问题的“性能指标大 Atom”。可用能力分布在不同权限层：StatsD 为系统和特权组件收集、聚合 atom；AndroidX `JankStats` 在 App 进程内提供帧级数据；`Debug.MemoryInfo`、网络栈插桩和业务埋点补充 App 自身指标；上传与服务端统计由 APM 系统负责。
 
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台上界。Compaction 和 Freezer 早于 Android 17 已存在；Android 17 新增的 `MemoryLimiter` 还受 feature flag、设备能力和 vendor 配置控制。观察到内存曲线变化时，要区分公开 App API 能确认的事实与 system_server 源码提供的解释，不能仅凭 PSS 形态反推某个系统策略已经触发。
+平台上界为 Android 17 / API 37 / `android-17.0.0_r1`。Compaction 和 Freezer 早于 Android 17 已存在；Android 17 新增的 `MemoryLimiter` 还受 feature flag、设备能力和 vendor 配置控制。观察到内存曲线变化时，要区分公开 App API 能确认的事实与 system_server 源码提供的解释，不能仅凭 PSS 形态反推某个系统策略已经触发。
 
 ---
 
@@ -127,7 +127,7 @@ public byte[] getReports(long configId)
 
 App 侧不能通过 `StatsManager` 写入事件。`android.util.StatsLog.logStart/logStop/logEvent(int)` 是公开的 breadcrumb API，只写入 `APP_BREADCRUMB_REPORTED`；任意 `StatsEvent` 写入路径 `StatsLog.write(StatsEvent)` 是 `@SystemApi`，系统服务通常走生成的 `FrameworkStatsLog` / `StatsdStatsLog`。
 
-`setPullAtomCallback()` 的语义是**客户端向 statsd 提供自定义 pulled atom 数据**，而不是客户端从 statsd 接收聚合指标。当 statsd 需要拉取某个 atom 时，它会回调已注册的 `StatsPullAtomCallback.onPullAtom(int atomTag, List<StatsEvent> data)`，客户端负责往 `data` 列表中填充 `StatsEvent` 并返回 `RESULT_SUCCESS` / `RESULT_SKIP` 等结果；`StatsManager` 内部的 `PullAtomCallbackInternal` 再调用 `resultReceiver.pullFinished()` 回传给 statsd。`PullAtomMetadata` 的默认冷却间隔为 1000ms，超时为 1500ms——这不是周期性定时回调，而是 statsd 按需拉取时的节流参数。
+`setPullAtomCallback()` 用于**客户端向 statsd 提供自定义 pulled atom 数据**，客户端读取 statsd 聚合指标需使用其他接口。当 statsd 需要拉取某个 atom 时，它会回调已注册的 `StatsPullAtomCallback.onPullAtom(int atomTag, List<StatsEvent> data)`，客户端负责往 `data` 列表中填充 `StatsEvent` 并返回 `RESULT_SUCCESS` / `RESULT_SKIP` 等结果；`StatsManager` 内部的 `PullAtomCallbackInternal` 再调用 `resultReceiver.pullFinished()` 回传给 statsd。`PullAtomMetadata` 的默认冷却间隔为 1000ms，超时为 1500ms，用于 statsd 按需拉取时的节流，不构成周期性定时回调。
 
 `addConfig()` 返回 `void`（非 boolean），用于向 statsd 注册 `StatsdConfig`；`getReports(long configId)` 用于读取 statsd 已收集的报告——这是特权 App 获取 statsd 聚合数据的主路径。`query()` 需要 `READ_RESTRICTED_STATS` 权限，签名为 `query(long configKey, String configPackage, StatsQuery query, Executor executor, OutcomeReceiver<StatsCursor, StatsQueryException> outcomeReceiver)`。
 
@@ -218,8 +218,6 @@ int totalPss = info[0].getTotalPss();
 
 `AppStartOccurred` 在 Android 17 `atoms.proto` 中的 ID 为 48（`app_start_occurred = 48`），字段包含 `transition_delay_millis`、`starting_window_delay_millis`、`bind_application_delay_millis`、`windows_drawn_delay_millis` 等，没有 `latencyMillis` 字段。
 
-[已确认: AOSP android-17.0.0_r1 packages/modules/StatsD/framework/java/android/app/StatsManager.java; frameworks/proto_logging/stats/atoms.proto]
-
 ---
 
 ## 2. 电池感知采样：App 层实现策略
@@ -275,8 +273,6 @@ int dalvikPrivateDirty = memInfo.dalvikPrivateDirty;
 
 Android 10 起，普通 App 只能取得与调用者相同 UID 的进程数据；该 API 还会限制采样频率，调用过快时可能返回与上次相同的数据。它适合低频诊断和趋势采样，不适合用紧密轮询近似实时 RSS。
 
-[已验证: AOSP android.os.Debug.MemoryInfo, API 34-37; `ActivityManager.getProcessMemoryInfo()` 与 `Debug.getRuntimeStat()` 官方文档]
-
 ### 3.2 Native 内存与 Runtime 统计
 
 下面的示例分别读取 Native heap 已分配字节数和 ART GC 累计统计。
@@ -291,8 +287,6 @@ String gcTime  = Debug.getRuntimeStat("art.gc.gc-time");
 ```
 
 `getNativeHeapAllocatedSize()` 返回 Native heap allocator 统计，不等于进程全部 Native 映射；`getRuntimeStat()` 在键不受支持时可以返回 `null`。
-
-[已验证: `android.os.Debug` 官方文档，Android 17 / API 37]
 
 ### 3.3 Compaction、Freezer 与 Android 17 MemoryLimiter
 
@@ -316,21 +310,19 @@ enum CompactProfile {
 
 #### Freezer 冻结器子系统
 
-`CachedAppOptimizer` 最终通过 cgroup freezer 冻结缓存进程，源码状态记录为 `opt.setFrozen(true)`，这不等同于 Linux 的 `D` 状态。被冻结的 App 进程不能继续运行自己的采样线程，因此“App 在冻结期间持续采集自身 RSS”本身就不成立。特权观察者或离线 trace 可以看到冻结/解冻事件；普通 App 更适合在恢复后根据生命周期、采样时间间隔和 `ApplicationExitInfo` 判断数据是否中断。
+`CachedAppOptimizer` 最终通过 cgroup freezer 冻结缓存进程，源码状态记录为 `opt.setFrozen(true)`，这不等同于 Linux 的 `D` 状态。被冻结的 App 进程不能继续运行自己的采样线程，因此“App 在冻结期间持续采集自身 RSS”本身就不成立。特权观察者或离线 trace 能够观察冻结/解冻事件；普通 App 更适合在恢复后根据生命周期、采样时间间隔和 `ApplicationExitInfo` 判断数据是否中断。
 
 #### MemoryLimiter：memcg 内核级节流
 
 Android 17 的 `MemoryLimiter` 由 system_server 的 Java 控制层与 JNI/native 监控层组成。启用时，它为目标进程配置 cgroup v2 的 `memory.high`、`memory.swap.high` 等限制，并监听越界事件。该能力要求 feature flag 开启、运行在 system UID、存在有效 vendor 配置且设备满足条件。
 
-本节的 kernel 语义以 `android17-6.18-2026-06_r6` 为锚点。该版本的 [cgroup v2 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst) 把 `memory.high` 定义为内存使用节流边界：超过后进程承受回收压力，但内核不会仅因越过 `memory.high` 就调用 OOM killer。MemoryLimiter 在此基础上监控事件，并在特定 anon+swap 分支由 system_server 另行安排进程终止；两条行为不能合并描述成“内核越界后自动 kill”。
+kernel 语义以 `android17-6.18-2026-06_r6` 为锚点。该版本的 [cgroup v2 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst) 把 `memory.high` 定义为内存使用节流边界：超过后进程承受回收压力，但内核不会仅因越过 `memory.high` 就调用 OOM killer。MemoryLimiter 在此基础上监控事件，并在特定 anon+swap 分支由 system_server 另行安排进程终止；两条行为不能合并描述成“内核越界后自动 kill”。
 
 **对监控采集的三类影响：**
 
 1. **指标口径不同**：PSS 按共享页面比例分摊，cgroup memory charge、anon 与 swap 指标采用另一套归属规则。PSS 未达到某个数值，不能证明进程没有触及 limiter。
 2. **越界后可能先采 profile 再终止**：`LIMIT_TYPE_ANON_SWAP` 分支会触发 anomaly profiling，并通过 `KILL_DELAY_MS` 延迟终止请求，为系统 profiler 留出完成时间。这个延迟不是开放给 App 的轮询或上传时限。
 3. **退出原因要读记录，不要预设**：进程恢复后查询 `ApplicationExitInfo`，记录实际 `reason`、`status`、描述和可用 trace，再与 SDK 样本关联。不能把所有 MemoryLimiter 终止预先写成 `REASON_LOW_MEMORY`。
-
-[已验证: AOSP android-17.0.0_r1 MemoryLimiter.java, com_android_server_am_MemoryLimiter.cpp, ProcessRecord.java, ActivityManagerService.java]
 
 ### 3.4 Android 17 原生内存跟踪架构
 
@@ -365,8 +357,6 @@ if (proc_mem.SmapsOrRollup(&stats)) {
 |-------------|--------------|------|
 | Android 14-17 | graphics / gl / other 三类 memtrack PSS | `android_os_Debug.cpp` 中 `graphics_memory_pss` 与 `memtrack_proc_graphics_pss()` / `memtrack_proc_gl_pss()` / `memtrack_proc_other_pss()` 在这些版本均存在 |
 | Android 17 | 同一分类口径，叠加 MemoryLimiter / Freezer 影响 | 三分类不是 Android 17 新增能力；精度取决于 HAL/driver，上述源码没有给出 ±5% 平台保证 |
-
-[已验证: AOSP android-17.0.0_r1 frameworks/base/core/jni/android_os_Debug.cpp, android_util_Process.cpp]
 
 ---
 

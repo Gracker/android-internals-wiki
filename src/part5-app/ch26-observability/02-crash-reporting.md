@@ -75,25 +75,9 @@ last_deepseek_cn_review_at: 2026-06-06
 
 # Crash 上报体系搭建
 
-<!-- outline-start -->
-## 本节要点大纲
+Crash 上报体系的任务很明确：进程即将退出时，尽可能保存足以定位问题的证据，并在后续可用的执行窗口把证据送到分析系统。Java Crash、Native Crash 的捕获机制在 20.2、20.3 和 19.24 中展开；这里关注端到端工程设计，包括本地留存、多进程归集、符号化、告警和发布门禁。
 
-### 锚点（必须覆盖）
-
-- 🔹 Crash SDK 核心流程：捕获 / 序列化 / 持久化 / 上报
-- 🔹 多进程 Crash 上报的可靠性保证
-- 🔹 符号化与反混淆服务
-- 🔹 Crash 实时告警与分级响应
-
-### 扩展（可选深入）
-
-- 🔸 Crash 数据隐私与成本控制
-
-<!-- outline-end -->
-
-Crash 上报体系的任务很明确：进程即将退出时，尽可能保存足以定位问题的证据，并在后续可用的执行窗口把证据送到分析系统。Java Crash、Native Crash 的捕获机制在 20.2、20.3 和 19.24 中展开；本节关注端到端工程设计，包括本地留存、多进程归集、符号化、告警和发布门禁。
-
-本文的平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为上界。崩溃主路径位于 framework、bionic 与 debuggerd 等用户空间组件，本节不依赖某项 Android 17 内核实现，因此不强行为结论附加 kernel tag。
+平台源码上界为 Android 17 / API 37 / `android-17.0.0_r1`。崩溃主路径位于 framework、bionic 与 debuggerd 等用户空间组件，不依赖某项 Android 17 内核专有实现，因此不为结论附加 kernel tag。
 
 ## Crash SDK 的四段路径：捕获、序列化、持久化、上报
 
@@ -333,18 +317,18 @@ Crash 附件可能包含 URL、请求参数、用户输入、文件路径、设�
 
 下表只列与 Crash 上报直接相关的公开能力。`ApplicationExitInfo` 从 Android 11 开始提供，不能写成 Android 10 已支持。
 
-| 平台版本 | API | 与本章相关的变化 |
+| 平台版本 | API | 相关变化 |
 | --- | ---: | --- |
 | Android 10 | 29 | 没有 `ApplicationExitInfo`；应用依赖自己的 Crash SDK、平台日志和开发诊断工具 |
 | Android 11 | 30 | 新增 `ApplicationExitInfo` 与 `getHistoricalProcessExitReasons()`；`getTraceInputStream()` 主要返回 ANR trace |
 | Android 12 | 31 | `REASON_CRASH_NATIVE` 的 `getTraceInputStream()` 可以返回 tombstone protobuf |
 | Android 15 | 35 | 新增 `ProfilingManager`；它受频率限制且请求不保证执行，不是 Crash 捕获 API |
 | Android 16 | 36 | 新增 `ProfilingTrigger`，可按受支持事件请求诊断采集 |
-| Android 17 | 37 | 本文源码验证上界；新增 cold start、OOM、过量 CPU、anomaly 和 app compatibility 等 profiling trigger |
+| Android 17 | 37 | 源码验证上界；新增 cold start、OOM、过量 CPU、anomaly 和 app compatibility 等 profiling trigger |
 
 `ProfilingManager` 支持 `PROFILING_TYPE_SYSTEM_TRACE`、`PROFILING_TYPE_JAVA_HEAP_DUMP`、`PROFILING_TYPE_HEAP_PROFILE` 和 `PROFILING_TYPE_STACK_SAMPLING` 等类型。`ProfilingTrigger.TRIGGER_TYPE_APP_FULLY_DRAWN` 对应应用调用 `reportFullyDrawn()`，不是“首帧完成”。Android 17 的 `TRIGGER_TYPE_OOM` 还明确要求自定义 `Thread.UncaughtExceptionHandler` 继续调用默认 handler，否则系统无法使用该 trigger；这与前文的 Java handler 链规则一致。这些 API 适合收集性能诊断资料，不能代替 Java handler、Native 崩溃机制或退出历史查询。
 
-## 本节小结
+## 小结
 
 可靠的 Crash 上报系统依赖三条边界：
 

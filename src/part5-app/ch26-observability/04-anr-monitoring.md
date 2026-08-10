@@ -40,29 +40,13 @@ last_deepseek_cn_review_at: 2026-07-03
 ---
 # ANR 监控体系
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 ANR 信号捕获（SIGQUIT）与 traces 采集
-- 🔹 ANR 率统计与 Play Vitals 对标
-- 🔹 主线程卡顿监控与预警
-- 🔹 ANR 快照与现场还原
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-
-## 为什么要做 ANR 监控
+## ANR 监控解决什么问题
 
 ANR 监控解决的是两个问题：用户遇到无响应时能不能被统计到，研发拿到一条记录后能不能还原现场。只看系统弹窗或 Play Console，通常只能知道“发生过 ANR”；只做主线程卡顿监控，又容易把长卡顿误判成系统 ANR。
 
 ANR 监控可以拆成四层：系统 ANR 记录、Play Vitals 指标、端侧卡顿预警、现场快照。系统 ANR 负责确认事件，端侧快照负责补足上下文，Play Vitals 负责提供发布质量红线。ANR 根因分析流程详见 9.3 节，治理策略详见 20.4 节，Crash / ANR 捕获底层实现详见 19.24 节。
 
-本文的平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为上界。ANR 的判定、队列和 trace 生成位于 framework、ART 与 debuggerd 等用户空间组件，本节不依赖 Android 17 kernel 的专有实现，因此不为这些结论附加 kernel tag。
+平台源码上界为 Android 17 / API 37 / `android-17.0.0_r1`。ANR 的判定、队列和 trace 生成位于 framework、ART 与 debuggerd 等用户空间组件，不依赖 Android 17 kernel 的专有实现，因此不为这些结论附加 kernel tag。
 
 ## 系统侧 ANR 记录与 traces 采集
 
@@ -98,11 +82,6 @@ Android 17 的 `Debug.dumpJavaBacktraceToFileTimeout()` 经 JNI 调用 debuggerd
 
 第三方 SDK 不应抢占、吞掉或自行解释平台的 `SIGQUIT`。新系统会把 ANR trace 写入 `/data/anr/anr_*`，普通应用不能直接读取该目录；具备 root/调试条件的设备可以用 adb 获取，线上 App 则把系统确认与端侧预警分开处理：API 30 及以上查询 `ApplicationExitInfo`，运行期通过低成本主线程监控保存自己的上下文。
 
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/AnrHelper.java]
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java]
-[已验证: AOSP android-17.0.0_r1, frameworks/base/services/core/java/com/android/server/am/StackTracesDumpHelper.java]
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
-
 ## Android 11+：用 ApplicationExitInfo 补系统确认
 
 Android 11 引入 `ApplicationExitInfo` 后，App 可以在后续进程启动时通过 `ActivityManager.getHistoricalProcessExitReasons()` 查询退出历史。`REASON_ANR` 是系统确认 ANR 的直接证据，`getTraceInputStream()` 则可能返回进程死亡前保存的 trace。两者不能用一条 `reason == REASON_ANR` 分支简单绑定：如果进程从 ANR 中恢复，后来又因其他原因退出，ANR trace 可能附在后一次退出记录上。因此，采集器应按时间倒序检查尚未处理的记录，保留系统给出的实际 reason，并独立判断 trace 是否存在。
@@ -113,9 +92,6 @@ Android 11 引入 `ApplicationExitInfo` 后，App 可以在后续进程启动时
 - trace 使用独立的系统级环形缓冲区，新的崩溃或 ANR（包括其他应用产生的记录）可能覆盖旧内容，`getTraceInputStream()` 允许返回 `null`。发现可读流后，应立即在字节上限内复制到应用私有目录，关闭输入流，并记录文件大小与摘要；不能把系统侧流当作长期归档。
 - trace 主要提供线程和进程现场，不包含完整业务语义。页面、经过脱敏的用户动作、请求阶段和实验分组仍需由端侧采集器保存。
 - API 31 及以上的 Native crash 记录也可能通过该接口返回 protobuf tombstone。消费端要连同 reason 识别数据类型，不能把所有非空 trace 都标成 ANR。
-
-[已验证: 官方文档, developer.android.com/reference/android/app/ApplicationExitInfo]
-[已验证: AOSP android-17.0.0_r1, frameworks/base/core/java/android/app/ApplicationExitInfo.java]
 
 ## ANR 率统计与 Play Vitals 对标
 
@@ -138,11 +114,9 @@ Play 的“用户”按设备和自然日去重：同一账号在两台设备上
 
 告警规则按“全量 + 分桶”两层设计。全量指标观察版本发布质量，分桶指标观察机型、系统版本、页面和实验组。0.47% 与 8% 是 Play 的 bad behavior 阈值，不应直接充当企业内部的 P1/P2 分级线。内部告警应结合历史基线、版本增量、曝光量与统计置信度设定，并在指标逼近 Play 阈值前触发人工判断；是否暂停发布，还要结合增量版本、实验组和场景分布确认影响范围。
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
-[已验证: Google Play 帮助, support.google.com/googleplay/android-developer/answer/9844486]
 ## 主线程卡顿监控与 ANR 预警
 
-主线程监控的任务不是“判定 ANR”，而是在系统 ANR 之前保存现场。工程上通常用三类信号组合：
+主线程监控在系统 ANR 之前保存现场，不负责判定系统 ANR。工程上通常用三类信号组合：
 
 - Looper 消息耗时：`Looper.setMessageLogging(Printer)` 可以观察消息派发的开始和结束，但打印文本不是稳定的结构化协议，后安装的 `Printer` 也可能与已有监控冲突。需要 what、callback、target 等字段时，应使用经过版本验证的框架埋点或应用自己的调度包装，并准备降级路径。
 - Choreographer / FrameMetrics / JankStats：记录帧延迟与页面状态，补充用户看到的渲染表现。它们只覆盖参与渲染的帧，不能证明每一次长卡顿都已达到系统 ANR 条件。
@@ -154,8 +128,6 @@ Play 的“用户”按设备和自然日去重：同一账号在两台设备上
 
 主线程快照采集要控制成本。全线程 `Thread.getAllStackTraces()` 可能带来停顿，也会放大低端机问题；高频抓栈会扰动被观测进程。端侧实现应采用退避和字节预算：同一会话、同一页面只保留有限样本，栈摘要相同时累加计数，应用进入后台后降低频率。相关线程优先由锁、Binder 调用或自有线程池线索选择，避免每个阶段都遍历全部线程。
 
-[已验证: 官方文档, developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs]
-[已验证: 官方文档, developer.android.com/topic/performance/anrs/find-unresponsive-thread]
 ## ANR 快照字段设计
 
 ANR 现场还原依赖快照质量。只上传一段主线程栈，很多问题会停在“主线程在等锁 / 等 Binder / 等 I/O”，但不知道锁被谁拿着、Binder 对端是谁、I/O 对哪个文件发生。快照字段应围绕“时间、线程、资源、场景、环境”设计。
@@ -187,7 +159,6 @@ ANR 现场还原依赖快照质量。只上传一段主线程栈，很多问题�
 
 这个顺序可以减少两个常见误判：把每个固定时长的卡顿都叫 ANR，或只盯主线程栈而忽略对端线程。ANR 监控的价值不在于多报几条事件，而在于每条事件都能给出下一步排查动作。
 
-[已验证: 官方文档, developer.android.com/topic/performance/anrs/find-unresponsive-thread]
 ## 扩展
 
 以下两个场景在多进程和协程项目中常见，作为 ANR 监控的补充边界。
@@ -199,8 +170,6 @@ ANR 现场还原依赖快照质量。只上传一段主线程栈，很多问题�
 上报侧按 process_name 聚合，不要把子进程 ANR 直接归到主进程页面。主进程等待子进程 Binder 返回时，主进程记录的是等待现场，子进程记录的是执行现场，两条记录通过调用 ID、session_id 或时间窗口关联。
 
 WebView renderer 是单独边界：应用不能在该 renderer 内安装通用采集器。API 29 及以上可在宿主侧通过 `WebViewRenderProcessClient.onRenderProcessUnresponsive()` 观察 renderer 对某个 WebView 未响应，并用 `onRenderProcessResponsive()` 识别恢复；回调可能重复，renderer 也可能被多个 WebView 共享。这是 WebView 渲染进程信号，不等于 system_server 已确认宿主 App 发生 ANR。若选择终止 renderer，还必须为所有受影响的 WebView 正确处理 `WebViewClient.onRenderProcessGone()`。
-
-[已验证: 官方 API 文档, developer.android.com/reference/android/webkit/WebViewRenderProcessClient]
 
 ### Kotlin Coroutine 与 ANR 现场
 
