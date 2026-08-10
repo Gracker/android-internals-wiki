@@ -75,27 +75,8 @@ last_deepseek_cn_review_at: 2026-06-22
 
 # Android 功耗管理
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 Android 功耗管理框架:PowerManagerService → WakeLock → Suspend
-- 🔹 Doze 模式与 App Standby 的工作原理与影响
-- 🔹 Battery Historian 工具与功耗分析方法
-- 🔹 WakeLock 的种类与滥用检测
-- 🔹 JobScheduler / WorkManager 的省电调度策略
-
-### 扩展(可选深入)
-
-- 🔸 Adaptive Battery 与 ML 预测
-- 🔸 Background Restriction 对后台功耗的控制
-- 🔸 RESTRICTED bucket 与 Exemption 机制
-
-<!-- outline-end -->
-
 > [!NOTE] 源码锚点
-> 本章的平台实现以 AOSP `android-17.0.0_r1`（Android 17 / API 37）为准，内核休眠与唤醒机制以 `android17-6.18-2026-06_r6` 为准。Doze 时序、App Standby 分桶、功率模型与 vendor Power HAL 策略允许由设备配置，因此不使用固定分钟数或固定频率描述通用行为。
+> 平台实现以 AOSP `android-17.0.0_r1`（Android 17 / API 37）为准，内核休眠与唤醒机制以 `android17-6.18-2026-06_r6` 为准。Doze 时序、App Standby 分桶、功率模型与 vendor Power HAL 策略允许由设备配置，因此不使用固定分钟数或固定频率描述通用行为。
 
 ## 功耗排障先回答三个问题
 
@@ -105,7 +86,7 @@ last_deepseek_cn_review_at: 2026-06-22
 2. **系统为什么没有休眠**：应用 WakeLock、内核 wakeup source、定时器、中断或系统恢复流程。
 3. **工作为什么在这个时间发生**：前台业务、Alarm、JobScheduler、WorkManager、推送、Doze 维护窗口或后台限制豁免。
 
-WakeLock 主要回答第二个问题。它不会告诉我们 CPU 为什么繁忙，也不能解释显示或射频的全部能量。一次可靠结论通常需要把系统状态、组件活动和能量数据放到同一时间轴。
+WakeLock 主要回答第二个问题。它不能解释 CPU 为什么繁忙，也不能覆盖显示或射频的全部能量。可靠结论通常需要把系统状态、组件活动和能量数据放到同一时间轴。
 
 ## PowerManagerService 到 system suspend
 

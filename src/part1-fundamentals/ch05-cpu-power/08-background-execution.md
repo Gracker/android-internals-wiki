@@ -102,36 +102,15 @@ reviewed_date: 2026-06-21
 
 # 5.8 后台执行限制与优化
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 Android 后台限制的演进：Doze、App Standby、后台服务限制与 FGS 类型化
-- 🔹 Doze 与 App Standby Buckets 的工作方式，以及在 Perfetto / dumpsys 中怎么观察
-- 🔹 前台服务的定位、类型声明和超时约束
-- 🔹 WorkManager、JobScheduler、AlarmManager 的适用边界
-- 🔹 后台执行对前台性能的影响：CPU、内存与热节流
-- 🔹 与 CPU 调度、DVFS、Thermal、响应速度章节的关系
-- 🔹 版本演进与常见误区
-
-### 扩展（可选深入）
-
-- 🔸 Standby Bucket、Job 配额与网络策略的内部实现
-- 🔸 Android 16 的后台任务调试接口与版本边界
-
-> **锚点**为最低覆盖要求。**扩展**视素材丰富程度选择性深入。大纲外但与本节强相关的知识点可插入最相关锚点后方。
-<!-- outline-end -->
-
 ## 为什么要了解后台执行限制
 
-当我们在 Perfetto 里看到灭屏后某个进程还在持续跑 CPU，或者在 Battery Historian 里看到后台 alarm、job、network 活动一直冒出来，排查往往会卡在同一个问题上：这是应用代码没收住，还是系统已经开始限流了。
+Perfetto 中若显示灭屏后某个进程仍持续占用 CPU，或 Battery Historian 中反复出现后台 alarm、job、network 活动，需要区分应用工作没有停止和系统已经开始限流两种情况。
 
 Android 的后台限制持续演进。Android 6.0 引入 Doze 和 App Standby，Android 8.0 开始限制后台 service，Android 9 把 App Standby 细化成 Buckets，Android 12 加入 Restricted bucket 并限制后台启动 FGS，Android 14 和 15 又把 FGS 类型、权限和超时写成了更明确的运行时规则。JobScheduler 的单个 pending reason 在 API 34 已公开，API 36 增加多原因与历史视图，API 37 再增加按原因统计的累计等待时长。
 
-理解这套机制，主要是为了解决两类问题。第一，后台任务没按预期执行时，先判断它是被系统延后了，还是代码本身有 bug。第二，真有后台需求时，选对 API，别拿前台服务、精确闹钟或者轮询把系统拖热。
+这套机制用于解决两类问题：后台任务未按预期执行时，区分系统延后与应用缺陷；存在后台需求时，根据业务语义选择 API，避免用前台服务、精确闹钟或轮询制造持续负载。
 
-本章前面讨论了 CPU 调度（5.1）、EAS（5.2）、大小核（5.3）、DVFS（5.4）、Thermal（5.5）和 Android 功耗管理框架（5.6）。那些章节回答的是硬件怎么分配资源，这一节回答的是框架什么时候允许 App 在后台继续消耗这些资源。
+CPU 调度（5.1）、EAS（5.2）、大小核（5.3）、DVFS（5.4）、Thermal（5.5）和 Android 功耗管理框架（5.6）说明硬件如何分配资源；这里说明 framework 何时允许 App 在后台继续消耗这些资源。
 
 ## Android 后台限制如何逐步细化
 
@@ -155,11 +134,11 @@ Android 8.0（API 26，Oreo）是后台执行模型的分水岭。这组限制�
 
 Android 9（API 28）把 App Standby 进一步细化为 **App Standby Buckets**，从按“常用/不常用”粗分，变成 Active、Working Set、Frequent、Rare 四档主桶。Android 12 以后又补上 Restricted 桶。
 
-Android 10（API 29）开始限制 **Background Activity Launch（BAL）**。后台弹 Activity 不再是想弹就弹，很多“锁屏后突然跳广告页”的路径从系统层就被卡掉了。
+Android 10（API 29）开始限制 **Background Activity Launch（BAL）**。后台启动 Activity 需要满足用户可见性或系统豁免等条件，锁屏后直接弹出页面的许多路径会被系统阻止。
 
 ### Android 12-17：Restricted bucket、FGS 类型和调试接口
 
-Android 12（API 31）把后台限制又拧紧了一圈：
+Android 12（API 31）进一步收紧后台限制：
 
 - 加入 **Restricted bucket**，给高耗电或长时间不使用的 App 更重的 job、alarm、network 限流
 - 后台启动前台服务时，如果不满足豁免条件，会抛 `ForegroundServiceStartNotAllowedException`
@@ -186,7 +165,7 @@ Doze 期间，常见限制包括：
 - `JobScheduler`、`SyncAdapter` 等延迟型后台任务会被后移
 - Wi-Fi 扫描等周期性动作会被压缩
 
-`setAndAllowWhileIdle()` / `setExactAndAllowWhileIdle()` 仍然能在 Doze 中触发，但这类 while-idle alarm 也有单独的频率上限，不能当成无限制的后门。
+`setAndAllowWhileIdle()` / `setExactAndAllowWhileIdle()` 仍然能在 Doze 中触发，但这类 while-idle alarm 也有单独的频率上限，不能作为无限制的后台入口。
 
 ### Light Doze：先限流，再进入更深 idle
 
@@ -224,9 +203,9 @@ public static final int STANDBY_BUCKET_NEVER = 50; // @hide
 
 ### 观测方法：先看 dumpsys，再看 Battery Historian / Perfetto
 
-排查后台任务时，别先假设 Trace 里一定有现成的 `device_idle` track。是否能直接看到 Doze 状态切换，取决于 trace config、系统版本和厂商裁剪。
+排查后台任务时，不能假设 Trace 中一定存在 `device_idle` track。能否直接看到 Doze 状态切换，取决于 trace config、系统版本和厂商裁剪。
 
-建议把观测顺序固定下来：
+观测顺序如下：
 
 - `adb shell dumpsys deviceidle`，确认当前是否进入 light / deep doze，以及 allowlist 状态
 - `adb shell dumpsys usagestats appstandby` 或 `adb shell am get-standby-bucket <package>`，确认 bucket
@@ -242,7 +221,7 @@ Battery Historian 已不再积极维护，适合读取已有 bugreport 的系统
 
 第一组证据看 Doze 状态切换。设备灭屏、静止、未充电后，`dumpsys deviceidle` 会从 active 进入 idle / idle maintenance。对应的 Battery Historian 时间线里，`screen` 熄灭后 `cpu_running` 会从连续活跃收缩成稀疏脉冲，`job`、`alarm`、`network` 条带集中出现在短暂窗口里；这和官方 Doze 文档描述的 maintenance window 行为一致。14.11《Battery Historian 与功耗分析工具》已经把 `cpu_running`、`wake_lock`、`job`、`alarm` 这些行的读法拆开讲过，可以直接拿来做对照。
 
-第二组证据看后台任务被延后。把目标包切到 `Rare` 或 `Restricted` 桶后，先用 `dumpsys jobscheduler <package>` 看 pending reason、quota 和约束，再看 Battery Historian 的 `job` 行或 Perfetto 里的 CPU / network burst。正常现象是任务没有消失，而是执行时间被挪到配额允许或 Doze 维护窗口到来之后。11.4《功耗分析案例集》里的 AlarmManager 滥用案例能看到每 60 秒一次的 `alarm` 唤醒条带，JobScheduler 生命周期错误案例能看到 30 分钟 `WakeLock` 条带；两组样本的问题类型不同，但都提供了可复核的对照，方便区分“系统主动延后”和“任务自己跑飞”。
+第二组证据看后台任务被延后。把目标包切到 `Rare` 或 `Restricted` 桶后，先用 `dumpsys jobscheduler <package>` 看 pending reason、quota 和约束，再看 Battery Historian 的 `job` 行或 Perfetto 里的 CPU / network burst。正常现象是任务没有消失，而是执行时间被挪到配额允许或 Doze 维护窗口到来之后。11.4《功耗分析案例集》里的 AlarmManager 滥用案例能看到每 60 秒一次的 `alarm` 唤醒条带，JobScheduler 生命周期错误案例能看到 30 分钟 `WakeLock` 条带；两组样本的问题类型不同，但都提供了可复核的对照，可用于区分系统主动延后与任务异常持续运行。
 
 如果 trace config 已打开 power、batterystats 和调度数据源，Perfetto 里可能看到进程 runnable slice 变少，以及维护窗口附近出现短促的 network / alarm burst。CPU 频率是否下降取决于同期系统负载，不能作为 Doze 的单独证据。缺少这些数据源时，不要根据空白轨道猜结论，应回到 `dumpsys` 与 bugreport。
 
@@ -303,7 +282,7 @@ API 37 对后台音频操作施加了更严格的约束。运行在 Android 17 �
 
 ## WorkManager vs JobScheduler vs AlarmManager：选型指南
 
-当 App 需要做后台任务时，这三个 API 最常见，但职责边界差很多。选错工具，后面看到的大部分“系统为什么不让我跑”都只是后果。
+这三个 API 都能用于后台任务，但职责边界差异很大。工具与业务语义不匹配时，任务延迟或受限只是后续表现。
 
 ### WorkManager：默认选择
 
