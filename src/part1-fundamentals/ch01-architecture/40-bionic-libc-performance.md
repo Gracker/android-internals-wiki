@@ -85,7 +85,7 @@ NDK / Framework JNI / native system service
 
 ### 2.1 Android 17 的默认关系
 
-`bionic/libc/bionic/malloc_common.cpp` 定义 `MallocDispatch`，其中包含 `malloc`、`free`、`realloc`、`mallopt`、`malloc_info` 等函数指针。正常路径使用默认 dispatch；malloc debug、hooks、heapprofd 等功能可以安装另一张分派表，在调用前后插入诊断或采样逻辑。
+`bionic/libc/bionic/malloc_common.cpp` 定义 `MallocDispatch`，其中包含 `malloc`、`free`、`realloc`、`mallopt`、`malloc_info` 等函数指针。正常路径使用默认 dispatch；malloc debug、hooks、heapprofd 等功能可以安装另一张 dispatch 表，在调用前后插入诊断或采样逻辑。
 
 下面的 Android 17 构建片段用于确认默认分配器和低内存分支：
 
@@ -142,7 +142,7 @@ Android 的 `mallopt` 提供若干分配器控制项：
 - `M_DECAY_TIME` 控制未使用页立即、周期或停止回收；
 - `M_MEMTAG_TUNING` 只在 Scudo 且进程启用 MTE 时有意义。
 
-这些接口改变 CPU 时间、锁持有时间、RSS 和后续缺页之间的平衡。不要把 purge 放到每帧路径，也不要只看调用结束后的 RSS。应同时记录清理时延、回收量、下一阶段 minor fault 和用户可见延迟。
+这些接口改变 CPU 时间、锁持有时间、RSS 和后续缺页之间的平衡。不要把 purge 放到每帧路径，也不要只看调用结束后的 RSS。应同时记录 purge 时延、回收量、下一阶段 minor fault 和用户可见延迟。
 
 ## 3. pthread_create：默认栈只是线程成本的一部分
 
@@ -183,7 +183,7 @@ Android 17 的默认子线程栈定义在 `pthread_internal.h`：
 
 这里有三个性能含义：
 
-1. 线程成本不能只用 `stack_size` 估算。TLS、guard、signal stack、Shadow Call Stack、内核任务和调度数据都要计入。
+1. 线程成本不能只用 `stack_size` 估算。TLS、guard、signal stack、Shadow Call Stack、内核 task 和调度数据都要计入。
 2. `MAP_NORESERVE` 以及按需缺页使虚拟地址空间增长与 RSS 增长不同步。只看 VSS 容易高估物理内存，触碰大量栈页后 RSS 才会上升。
 3. 缩小栈能减少地址空间和最坏物理占用，但 `PTHREAD_STACK_MIN` 只是 ABI 下限。Android 17 中 LP64 为 16 KiB、32 位为 8 KiB；该下限不保证业务调用深度、信号处理、JNI 或第三方库安全。
 
@@ -219,10 +219,10 @@ PI 可以缓解高优先级线程等待低优先级持锁者造成的优先级�
 
 `pthread_cond_t` 在 Android 17 中维护原子 `state` 计数和等待者数量。wait 路径的顺序是：
 
-1. 读取当前状态；
+1. 读取当前 state；
 2. 记录等待者；
 3. 解开调用者的 mutex；
-4. 对旧状态执行 futex wait；
+4. 对旧 state 执行 futex wait；
 5. 减少等待者并重新获得 mutex。
 
 `signal`/`broadcast` 会增加状态，再分别唤醒一个或多个等待者。该实现允许 spurious wakeup；POSIX 调用者仍须使用谓词循环：
@@ -250,15 +250,15 @@ static inline void** __get_tls(void) {
 }
 ```
 
-这段代码只说明线程指针的获取方式。一次 C/C++ `thread_local` 访问还可能包含 TLS 模型相关的地址计算、DTV 查询、模块初始化和数据访问，不能统一写成固定周期数。
+这段代码只说明线程指针的获取方式。一次 C/C++ `thread_local` 访问还可能包含 TLS model 相关的地址计算、DTV 查询、模块初始化和数据访问，不能统一写成固定周期数。
 
-Android 17 在 arm/arm64 上保留的 Bionic TCB 槽位包括：
+Android 17 在 arm/arm64 上保留的 Bionic TCB slot 包括：
 
 | Slot | 用途 |
 |---|---|
 | `TLS_SLOT_DTV` | ELF TLS dynamic thread vector |
 | `TLS_SLOT_THREAD_ID` | 线程标识相关快速访问 |
-| `TLS_SLOT_APP` | API 29 起留给应用使用的预分配槽位 |
+| `TLS_SLOT_APP` | API 29 起留给应用使用的预分配 slot |
 | `TLS_SLOT_OPENGL` / `TLS_SLOT_OPENGL_API` | 图形子系统快速访问 |
 | `TLS_SLOT_STACK_GUARD` | stack protector canary |
 | `TLS_SLOT_SANITIZER` | Sanitizer 线程状态 |
@@ -267,13 +267,13 @@ Android 17 在 arm/arm64 上保留的 Bionic TCB 槽位包括：
 | `TLS_SLOT_NATIVE_BRIDGE_GUEST_STATE` | native bridge guest 状态 |
 | `TLS_SLOT_STACK_MTE` | stack MTE ring buffer MTE 环形缓冲区指针 |
 
-这些定义位于私有头文件 `tls_defines.h`，不属于 NDK 公共 ABI。业务代码不能依赖槽位编号；普通线程局部数据应使用 C++ `thread_local`、编译器 ELF TLS 或 `pthread_key_create`。
+这些定义位于私有头文件 `tls_defines.h`，不属于 NDK 公共 ABI。业务代码不能依赖 slot 编号；普通线程局部数据应使用 C++ `thread_local`、编译器 ELF TLS 或 `pthread_key_create`。
 
 `TLS_SLOT_STACK_MTE` 也不表示“整个 TLS 区域被 MTE 标记”。Android 17 的 `pthread_create.cpp` 会在需要时把它设置为栈 stack MTE ring buffer；线程主映射在 `__libc_memtag_stack` 开启时可带 `PROT_MTE`。这是栈标记支持，需要与 TLS 寻址机制分开说明。
 
 ## 6. MTE：诊断精度、运行成本和适用环境要一起看
 
-Arm MTE 以 16 字节粒度保存 4 位 allocation tag，指针的逻辑标签位于地址高位。CPU 访问内存时比较 logical tag 与 allocation tag。标签不匹配时，Android 可按进程配置不同 fault mode：
+Arm MTE 以 16 字节 granule 保存 4 位 allocation tag，指针的逻辑 tag 位于地址高位。CPU 访问内存时比较 logical tag 与 allocation tag。标签不匹配时，Android 可按进程配置不同 fault mode：
 
 | 模式 | 报告行为 | 适用方向 |
 |---|---|---|
@@ -314,7 +314,7 @@ inline size_t page_size() {
 
 可变页大小构建从 auxiliary vector 的 `AT_PAGESZ` 读取运行时值。`page_start`、`page_offset`、`page_end` 以及 pthread 映射随后都使用该值。NDK 代码应使用 `getpagesize()` 或 `sysconf(_SC_PAGESIZE)`，不要假设 `PAGE_SIZE == 4096`。
 
-Android 15 起，AOSP 支持配置为 16 KB 页的设备；4 KB 设备仍受支持。16 KB 页扩大单个 TLB 条目的覆盖范围，也增大映射、保护、文件尾页和部分分配器回收的粒度。小对象通常共享 Scudo slab，一个 1 字节 `malloc` 不会单独占用一个 16 KB 物理页。RSS 是增加还是下降，取决于 TLB miss、页表、文件映射、工作集局部性和页内浪费之间的结果。
+Android 15 起，AOSP 支持配置为 16 KB 页的设备；4 KB 设备仍受支持。16 KB 页扩大单个 TLB entry 的覆盖范围，也增大映射、保护、文件尾页和部分分配器回收的粒度。小对象通常共享 Scudo slab，一个 1 字节 `malloc` 不会单独占用一个 16 KB 物理页。RSS 是增加还是下降，取决于 TLB miss、页表、文件映射、工作集局部性和页内浪费之间的结果。
 
 ### 7.2 linker 的兼容路径不能替代重新构建
 
@@ -337,11 +337,11 @@ bool should_use_16kib_app_compat_ = false;
 | r28 及以上 | 默认生成 16 KB 对齐的 ELF |
 | r27 及以下 | 显式加入 `-Wl,-z,max-page-size=16384` 和 `-Wl,-z,common-page-size=16384` |
 
-还要检查自定义 linker script、预编译 `.so`、直接使用 `mmap`/`mprotect` 的对齐计算，以及把 4096 当作 I/O 块大小的代码。构建通过后，应在 16 KB 模式设备上执行启动、`dlopen`、插件加载、解压、数据库和 native crash 路径测试。完整检查方式见 [Android 16 KB page size 指南](https://developer.android.com/guide/practices/page-sizes)。
+还要检查自定义 linker script、预编译 `.so`、直接使用 `mmap`/`mprotect` 的对齐计算，以及把 4096 当作 I/O block 大小的代码。构建通过后，应在 16 KB 模式设备上执行启动、`dlopen`、插件加载、解压、数据库和 native crash 路径测试。完整检查方式见 [Android 16 KB page size 指南](https://developer.android.com/guide/practices/page-sizes)。
 
 ## 8. arm64 字符串函数：Android 17 按硬件能力选择实现
 
-Android 17 将部分 arm64 字符串/内存例程链接自 `external/arm-optimized-routines/`，同时保留 Bionic 自有的检查封装、Oryon 例程和 IFUNC resolver。`ifuncs.cpp` 根据 auxv hardware capability 与 CPU 信息选择实现。
+Android 17 将部分 arm64 字符串/内存例程链接自 `external/arm-optimized-routines/`，同时保留 Bionic 自有的检查 wrapper、Oryon 例程和 IFUNC resolver。`ifuncs.cpp` 根据 auxv hardware capability 与 CPU 信息选择实现。
 
 | 函数族 | Android 17 的选择依据 |
 |---|---|
@@ -360,7 +360,7 @@ Android 17 将部分 arm64 字符串/内存例程链接自 `external/arm-optimiz
 - 设备最终解析到哪一个 IFUNC；
 - 时间消耗来自 CPU 搬运、cache miss，还是内存带宽饱和。
 
-替换系统 `memcpy` 前必须在目标 SoC 上测量，并覆盖小块、大块、冷热缓存、对齐和重叠输入。系统 resolver 已经包含平台维护的硬件分支，自写版本很容易只在单项微基准中占优。
+替换系统 `memcpy` 前必须在目标 SoC 上测量，并覆盖小块、大块、冷热 cache、对齐和重叠输入。系统 resolver 已经包含平台维护的硬件分支，自写版本很容易只在单项微基准中占优。
 
 ## 9. Bionic 与 glibc：API 可用性和性能边界
 
@@ -375,7 +375,7 @@ Android 17 将部分 arm64 字符串/内存例程链接自 `external/arm-optimiz
 | `ftw` / `nftw` | API 37 头文件与符号中存在 |
 | `pthread_cancel` | Android 17 仍未实现 |
 
-“头文件能编译”与“最低支持版本能运行”属于两个阶段。NDK 根据 `minSdkVersion` 提供 API 桩和 availability guard；如果库的最低 API 低于符号引入版本，需要条件编译、运行时查询或兼容实现。直接在低版本进程装载一个带有新符号强引用的 `.so`，可能在业务代码执行前就失败。
+“头文件能编译”与“最低支持版本能运行”属于两个阶段。NDK 根据 `minSdkVersion` 提供 API stub 和 availability guard；如果库的最低 API 低于符号引入版本，需要条件编译、运行时查询或兼容实现。直接在低版本进程装载一个带有新符号强引用的 `.so`，可能在业务代码执行前就失败。
 
 `pthread_cancel` 缺失时，应采用协作式取消：原子标志、eventfd/pipe 唤醒、可中断队列或上层任务状态。不要用信号模拟任意点取消，因为库代码、锁状态和资源释放都可能停在不可恢复的位置。
 
@@ -390,8 +390,8 @@ glibc 的 benchmark 也不能直接预测 Android。Android 设备的分配器�
 | 需要精确 guard 或每次分配回溯 | malloc debug | 仅在调试环境开启；`backtrace` 选项会让分配慢一个数量级 |
 | RSS 下降慢 | `mallopt` 对照实验、Perfetto memory、minor fault | purge 时延、释放页数、后续再次缺页的代价 |
 | 锁竞争 | Perfetto `sched`/futex、Simpleperf | owner/waiter、临界区、唤醒延迟、优先级反转 |
-| 线程数或栈占用异常 | `/proc/<pid>/maps`、Perfetto、线程转储 | `stack_and_tls:<tid>` 映射、实际触页、高水位 |
-| Native crash 符号化 | tombstone、debuggerd、带构建 ID 的符号文件 | `backtrace_symbols` 只提供进程内基础转换，不能替代完整离线符号化 |
+| 线程数或栈占用异常 | `/proc/<pid>/maps`、Perfetto、线程 dump | `stack_and_tls:<tid>` 映射、实际触页、高水位 |
+| Native crash 符号化 | tombstone、debuggerd、带 build ID 的符号文件 | `backtrace_symbols` 只提供进程内基础转换，不能替代完整离线符号化 |
 
 malloc debug 通过 `libc.debug.malloc.options` 或对应环境配置安装垫片。guard、fill、backtrace 等选项可以组合，但开销不同；尤其逐次 unwind 会改变分配时序和竞争。heapprofd 适合按时间采样实际负载，HWASan/MTE 适合查非法访问，工具选择应与问题类型匹配。
 
@@ -404,8 +404,8 @@ malloc debug 通过 `libc.debug.malloc.options` 或对应环境配置安装垫�
 5. **不要伪造 `top-app` 策略。** 线程调度问题应从 task profile、nice、uclamp、CPU affinity、实时权限和设备配置分别检查。
 6. **按运行时页大小计算映射。** 所有传给 `mmap`、`mprotect`、`munmap` 的地址和长度都要复核；ELF 则检查每个 `PT_LOAD` 的对齐。
 7. **把 MTE 模式纳入测试组合。** 开发阶段用 sync 获取精确报告，生产候选按安全与性能需求评估 async/asymm。
-8. **批量 I/O 时处理系统调用语义。** 直接 `write` 仍可能 short write 或被 `EINTR` 中断；用它替换 stdio 之前，应补齐重试并测量缓冲效果。
-9. **遵守 `minSdkVersion`。** 对 API 28、33、37 新增符号分别检查编译保护和运行时装载路径。
+8. **批量 I/O 时处理系统调用语义。** 直接 `write` 仍可能 short write 或被 `EINTR` 中断；用它替换 stdio 之前，应补齐重试并测量 buffering 效果。
+9. **遵守 `minSdkVersion`。** 对 API 28、33、37 新增符号分别检查编译 guard 和运行时装载路径。
 
 ## 12. Android 17 的职责分层
 

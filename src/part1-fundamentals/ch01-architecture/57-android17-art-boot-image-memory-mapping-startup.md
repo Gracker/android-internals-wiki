@@ -62,7 +62,7 @@ ART Boot Image 是 `dex2oat` 生成的可加载运行时快照。它保存选入
 | --- | --- | --- |
 | `.art` | `ImageHeader`、镜像对象、`ArtField`、`ArtMethod`、类表、字符串表、位图等 | 建立 `ImageSpace`，恢复预先构造的对象和 ART 元数据 |
 | `.oat` | OAT 头、编译代码、运行时所需元数据 | 提供 AOT 代码和镜像依赖信息 |
-| `.vdex` | DEX 与验证相关数据；是否携带 DEX 区段取决于产物模式 | 配合 OAT 打开 DEX，复用验证结果 |
+| `.vdex` | DEX 与验证相关数据；是否携带 DEX section 取决于产物模式 | 配合 OAT 打开 DEX，复用验证结果 |
 
 “三个固定文件”只适合解释最小模型。Android 17 默认使用多组件能力：一个主镜像可以覆盖多个 Boot Class Path 组件，也可以接若干 Boot Image Extension。多镜像构建时会出现 `boot.art`、`boot-framework-*.art` 等文件，并各有对应的 `.oat`、`.vdex`。
 
@@ -87,10 +87,10 @@ ART 已经模块化，并不表示 `boot.art` 一定位于 `/apex/com.android.ar
 
 ### 主镜像与扩展镜像
 
-`dex2oat` 根据参数区分三种镜像：
+`dex2oat` 根据参数区分三种 image：
 
 - 传入 `--image` 且没有 `--boot-image`：生成主 Boot Image。
-- 同时传入输出镜像和已有 `--boot-image`：生成 Boot Image Extension。
+- 同时传入输出 image 和已有 `--boot-image`：生成 Boot Image Extension。
 - 传入 `--app-image-file` 或 `--app-image-fd`：生成 App Image。
 
 Android 17 的 AOT 编译统一使用位置无关代码，`Dex2Oat::ProcessOptions()` 直接设置 `compile_pic_ = true`。“Boot Image 依赖位置相关机器码，地址稍变就无法运行”不符合当前实现。
@@ -123,7 +123,7 @@ Android 17 的定义位于 `art/runtime/oat/image.h`，文件格式实现位于 
 - 镜像预留大小、组件数、期望地址、镜像大小与镜像校验和。
 - 对应 OAT 的校验和及地址范围。
 - 依赖 Boot Image 的起始地址、大小、组件数与组合校验和。
-- image roots、指针大小、各区段的偏移和大小。
+- image roots、指针大小、各 section 的偏移和大小。
 - 压缩块信息；镜像可以使用未压缩、LZ4 或 LZ4HC 存储。
 
 Android 17 的 `ImageSections` 顺序如下：
@@ -136,7 +136,7 @@ Android 17 的 `ImageSections` 顺序如下：
 | `kSectionImTables` | 接口方法表 |
 | `kSectionIMTConflictTables` | IMT 冲突表 |
 | `kSectionRuntimeMethods` | ART 运行时方法 |
-| `kSectionJniStubMethods` | JNI 桩方法 |
+| `kSectionJniStubMethods` | JNI stub 方法 |
 | `kSectionInternedStrings` | intern 字符串集合 |
 | `kSectionClassTable` | 类表 |
 | `kSectionStringReferenceOffsets` | 字符串引用偏移 |
@@ -171,7 +171,7 @@ Runtime::Init()
 
 地址改变不会直接导致 fatal abort。`MaybeRelocateSpaces()` 计算实际地址与 `ImageHeader::GetImageBegin()` 的差值，再由 `Relocator::RelocateBootImage()` 修正镜像内的对象引用和原生指针。加载器还会为 OAT 初始化运行时 relocation。
 
-预留连续地址仍有价值：多个镜像与 OAT 可以按构建时布局装入同一段低 4 GB 地址空间，引用编码和相邻空间预留也更容易满足。它不等于“所有内部指针都是不可调整的绝对地址”。
+预留连续地址仍有价值：多个 image 与 OAT 可以按构建时布局装入同一段低 4 GB 地址空间，引用编码和相邻空间预留也更容易满足。它不等于“所有内部指针都是不可调整的绝对地址”。
 
 ### 未压缩镜像与压缩镜像的映射不同
 
@@ -219,7 +219,7 @@ Boot Image 的内存收益有两层来源：
 - `ZygoteHooks.onEndPreload()` 完成 ART 侧收尾。
 - 返回主流程后调用 `gcAndFinalize()`，清理预加载期间产生的临时对象，再开始 fork System Server 和应用进程。
 
-Boot Image 提供构建期生成的对象与元数据；Zygote 预加载提供本次开机中的类初始化和额外对象。两者都能减少子进程重复工作，但对象来源、生成时机和调优入口不同。
+Boot Image 提供构建期生成的对象与元数据；Zygote preload 提供本次开机中的类初始化和额外对象。两者都能减少子进程重复工作，但对象来源、生成时机和调优入口不同。
 
 ## 五类配置文件与清单的作用阶段
 
@@ -295,7 +295,7 @@ adb shell 'pid=$(pidof zygote64); cat /proc/$pid/smaps' > zygote64-smaps.txt
 adb shell oatdump --image=/system/framework/boot.art
 ```
 
-设备若使用 `/data` 产物或扩展组件，需要把 `maps` 中确认的位置按组件顺序传入。输出可核对 image header、section、对象、OAT 依赖和编译代码；工具可用性与读取权限取决于构建类型。
+设备若使用 `/data` 产物或扩展组件，需要把 `maps` 中确认的 location 按组件顺序传入。输出可核对 image header、section、对象、OAT 依赖和编译代码；工具可用性与读取权限取决于构建类型。
 
 ### 4. 区分 `odrefresh` 与应用 dexopt
 
@@ -317,18 +317,18 @@ OEM 可以调整 Boot Class Path、Boot Image Profile、`preloaded-classes` 和 
 - 容易写入的对象散布在大量页面中，会抬高每个子进程的 `Private_Dirty`。只比较 `boot.art` 文件大小看不到这项成本。
 - Mainline Boot Class Path JAR、System Server JAR 和自定义 Boot Class Path JAR 要放在正确的 classpath 配置中。把 `services.jar` 当作 Boot Class Path 组件会让编译依赖模型失真。
 
-调优至少要同时观察 Zygote 预加载时间、应用冷启动、Boot Image/OAT 文件尺寸、各进程 PSS、`Private_Dirty`、page fault 和 dexopt/JIT 行为。单个指标变好不能证明整机收益。
+调优至少要同时观察 Zygote preload 时间、应用冷启动、Boot Image/OAT 文件尺寸、各进程 PSS、`Private_Dirty`、page fault 和 dexopt/JIT 行为。单个指标变好不能证明整机收益。
 
 ## 源码阅读入口
 
 - `art/runtime/oat/image.h`、`image.cc`：格式版本、`ImageHeader`、section 和压缩块。
 - `art/runtime/gc/space/image_space.h`、`image_space.cc`：image location 解析、预留、映射、校验、扩展加载和重定位。
-- `art/libartbase/base/file_utils.cc`：Android 17 默认 Boot Image 位置与 `/system`、`/data` 选择。
+- `art/libartbase/base/file_utils.cc`：Android 17 默认 Boot Image location 与 `/system`、`/data` 选择。
 - `art/dex2oat/dex2oat.cc`、`dex2oat/linker/image_writer.cc`：主镜像/扩展识别、profile、对象选择与布局。
 - `art/odrefresh/odrefresh.cc`：更新检查、`speed-profile` 参数、完整/最小镜像与 System Server 编译。
 - `art/profman/boot_image_profile.cc`：从采样 profile 生成 Boot Image Profile 和预加载类清单。
 - `frameworks/base/core/java/com/android/internal/os/ZygoteInit.java`：`preload()`、`preloadClasses()`、`gcAndFinalize()` 与 `fork` 前流程。
-- `common/mm/memory.c`：`MAP_PRIVATE` 写缺页与写时复制。
+- `common/mm/memory.c`：`MAP_PRIVATE` 写 fault 与写时复制。
 
 ## Android 17 的映射与共享边界
 
