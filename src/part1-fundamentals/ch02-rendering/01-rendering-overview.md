@@ -192,7 +192,7 @@ HWC validate：设备合成或客户端合成
     ↓
 必要时由 RenderEngine 生成 client target
     ↓
-HWC 显示提交 → 显示栅栏 → 释放栅栏
+HWC present → present fence → release fence
 ```
 
 各阶段并非全部按单线程串行执行。主线程、RenderThread、GPU、SurfaceFlinger 和显示硬件可以重叠处理不同帧。分析时必须保留帧号、VSync 周期和栅栏（fence）依赖，不能只把各段耗时相加。
@@ -456,7 +456,7 @@ HWUI Producer
     │ queueBuffer
     ▼
 应用进程内 BLASTBufferQueue
-    │ 获取缓冲区
+    │ acquire buffer
     │ Transaction.setBuffer(...)
     ▼
 SurfaceFlinger 中对应 Layer 的待处理事务

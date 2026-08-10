@@ -355,7 +355,7 @@ Android 17 的 `LayerHistory::summarize()` 会为活跃 Layer 生成 `LayerRequi
 - DisplayManager 设置的 primary/physical/render ranges；
 - 当前和默认显示模式组；
 - Layer 是否允许 non-seamless 切换；
-- 触摸、空闲、显示电源等全局信号；
+- touch、idle、display power 等全局信号；
 - 当前是否有显式 Layer vote；
 - power-on、多个显示器的 pacesetter/follower 关系；
 - 省电、温度和 vendor policy 最终形成的允许范围。
@@ -496,7 +496,7 @@ API 33 及以上的 `Choreographer.VsyncCallback` 接收 `FrameData`。每个 `F
 
 - `vsyncId`；
 - 预期呈现时间；
-- 截止时间。
+- deadline。
 
 `getPreferredFrameTimeline()` 是平台建议值。自建 SurfaceControl 事务可以选另一个可满足的 timeline，再通过 API 35 的 `setFrameTimeline()` 提交。选择更晚 timeline 会改变目标呈现时机，但不能减少渲染工作本身。
 
@@ -541,7 +541,7 @@ API 37 增加 `Surface.setProducerThrottlingEnabled(boolean)`，用于控制 Vul
 
 这个 API 不负责选择刷新率，也不能代替 frame pacing。官方建议 Vulkan 生产者在具备正确显式同步时关闭默认节流，避免把 `vkPresentKHR()` 的 CPU 停顿当成 producer/consumer 同步；队列耗尽时的自然出队背压仍会发生。异步模式下节流始终启用，此开关没有效果。
 
-## 7. 卡顿、迟到、丢帧与错过目标帧
+## 7. Janky、late、dropped 与 missed
 
 这些词在口语中经常混用，诊断时要回到工具字段。
 

@@ -139,7 +139,7 @@ linker64 从新任务中生成待映射列表。普通路径会打乱映射顺�
 - `.dynamic`、字符串表、符号表与哈希表；
 - 普通、PLT、RELR 和 Android packed relocation；
 - 构造/析构函数数组；
-- 父子依赖边、主/次命名空间；
+- 父子依赖边、primary/secondary namespace；
 - local-group root、引用计数与 `RTLD_*` 标记；
 - TLS、MTE、GNU 属性和 CFI 相关状态；
 - realpath、SONAME、版本和链接状态。
@@ -321,7 +321,7 @@ adb shell setprop pm.16kb.app_compat.disabled true
 
 只设置第一项时，包级 app compat mode 仍可能让 `should_use_16kib_app_compat_` 成立。测试完成后应恢复设备原有属性。
 
-兼容路径是迁移工具，不应作为发布质量标准。它要处理按 4 KB 对齐的相邻 ELF KB segment 落入同一 16 KB 页时的权限冲突，代码明显比原生 16 KB 对齐路径复杂。
+兼容路径是迁移工具，不应作为发布质量标准。它要处理按 4 KB segment 落入同一 16 KB 页时的权限冲突，代码明显比原生 16 KB 对齐路径复杂。
 
 对应用而言有两层对齐要求：
 
@@ -366,7 +366,7 @@ APEX 只改变库的来源、配置和激活边界，不会热替换进程里已
 
 ```text
 T(loadLibrary)
-  = T(等待加载器锁)
+  = T(loader-lock wait)
   + T(命名空间和文件查找)
   + T(ELF read and mmap)
   + T(重定位和符号查找)
@@ -381,7 +381,7 @@ T(loadLibrary)
 
 - 本次调用新增多少个 `DT_NEEDED` 节点，多少依赖已经加载；
 - APK 内直接映射、独立文件或 APEX 路径带来的文件访问差异；
-- 相对重定位、带符号重定位和 TLS 重定位的数量；
+- relative relocation、带符号 relocation 和 TLS relocation 的数量；
 - lookup list 宽度、导出符号数与版本约束；
 - constructor 与 `JNI_OnLoad` 执行了多少同步工作；
 - 所需页面位于 page cache、压缩存储还是需要实际 I/O；
