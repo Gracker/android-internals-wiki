@@ -401,7 +401,7 @@ Predictive Back 的版本线要拆开读：
 
 它的性能路径跨 Input、ATMS/WMS、Shell transition 和 SurfaceFlinger。手势开始后，Input 侧持续上报 back progress；WMS/Shell 根据返回目标更新当前窗口和目标窗口的 leash；手势完成或取消时，transition 进入 finish 或 cancel。分析卡顿时要同时看 Input 事件节奏、Shell transition handler、system_server transition 状态，以及 SurfaceFlinger 是否在同一时间段出现 transaction 堆积。
 
-## 多窗口、折叠屏与桌面模式
+## 多窗口、折叠屏与 Desktop Mode
 
 Split-screen、freeform、Picture-in-Picture、Activity Embedding 和多 Display 会改变 WindowContainer 树、可见 layer 集合与窗口 bounds。性能压力来自参与本轮变化的对象、同步范围和更新频率，不能只按屏幕上有几个窗口估算。
 
