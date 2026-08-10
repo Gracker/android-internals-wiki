@@ -260,7 +260,7 @@ LIMIT ?
 
 ---
 
-## 稳定客户端与非稳定客户端
+## Stable 与 unstable client
 
 `ContentResolver.acquireContentProviderClient()` 返回 stable client。系统会记录调用方对 Provider 的稳定依赖；调用方用完客户端后必须调用 `close()`。
 

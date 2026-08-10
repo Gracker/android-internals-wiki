@@ -221,7 +221,7 @@ dex2oat 是 ART 的设备端 AOT 编译器入口。对被 filter 选中的方法
 编译代码既依赖 APK 本身，也依赖：
 
 - DEX 校验和与拆分包集合；
-- 引导类路径与引导映像；
+- boot class path 与 boot image；
 - class loader context 和 `<uses-library>` 顺序；
 - ART/APEX 与编译产物格式；
 - 目标 ISA、运行时特性和编译选项。
