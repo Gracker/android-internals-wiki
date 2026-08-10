@@ -71,40 +71,9 @@ last_deepseek_cn_review_at: 2026-06-29
 
 # 26.11 eBPF 在线追踪与 Binder 语义重建
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 线上追踪为什么不能只依赖 ftrace
-从 ring buffer 覆盖、长期开启成本、事件丢失、生产环境权限边界解释在线追踪的约束。
-
-### 🔹 Android eBPF syscall 追踪路径
-梳理 raw_syscalls tracepoint、perf ring buffer、tail calls、MTE address masking 等 Android 特有适配点。
-
-### 🔹 Binder 语义重建的关键问题
-说明 ioctl(BINDER_WRITE_READ)、BC_TRANSACTION、Parcel buffer、接口签名表和参数反序列化的边界。
-
-### 🔹 性能开销与完整性指标
-整理 Geekbench、Top 100 应用 Monkey、独有事件率等实验指标如何转化为工程评估口径。
-
-### 🔹 用于 ANR、隐私审计和冷启动回溯
-连接线上问题排查场景，说明 syscall 序列和 Binder transaction 日志能回答哪些问题。
-
-### 🔹 部署边界与合规风险
-标清 root/OEM 预装、隐私数据采集、用户授权、敏感参数脱敏和厂商系统差异。
-
-## 扩展
-
-### 🔸 WOOTdroid 与 Android eBPF 工具链对比
-对照 bpftrace、Perfetto eBPF 数据源、内核 tracepoint。
-
-### 🔸 Binder 参数脱敏策略
-整理短信、账户、位置等敏感接口的字段级脱敏规则。
-
-<!-- outline-end -->
-
 线上排障依赖日志、应用埋点和短窗口 Trace。它们没有覆盖到的系统调用与 Binder 边界，可以在具备系统权限的设备上通过 ftrace 或 eBPF 补充。这里的“在线”指设备运行期间持续或按条件追踪，不代表普通应用能在商店发布包中加载 BPF 程序。
 
-本节覆盖 Android 12～17，平台源码以 `android-17.0.0_r1` 为上限，Binder 与 eBPF 的内核语义以 `android17-6.18-2026-06_r6` 为准。WOOTdroid 的实验环境是两台已 root 的 Pixel 9、Android 16，论文结论不能直接外推到 Android 17 user build、其他 SoC 或厂商内核。
+适用范围为 Android 12～17，平台源码以 `android-17.0.0_r1` 为上限，Binder 与 eBPF 的内核语义以 `android17-6.18-2026-06_r6` 为准。WOOTdroid 的实验环境是两台已 root 的 Pixel 9、Android 16，论文结论不能直接外推到 Android 17 user build、其他 SoC 或厂商内核。
 
 这类能力适合 OEM 系统集成、userdebug 测试机和授权安全实验。普通应用应优先使用应用日志、公开的 `ProfilingManager`、Android Vitals 和用户授权的 bugreport。
 
