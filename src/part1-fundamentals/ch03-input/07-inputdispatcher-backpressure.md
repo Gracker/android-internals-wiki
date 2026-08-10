@@ -107,7 +107,7 @@ flowchart LR
 
 连接型输入 ANR 不从事件进入 `inboundQueue` 的时刻计时，也不按应用主线程消息数量计时。Android Developers 将常见的输入分发超时概括为 5 秒；Android 17 源码仍按窗口/应用的分发超时时间为每个 `DispatchEntry` 固化超时点，因此诊断时应读取实际窗口配置，不能把 5 秒当作所有目标都不可调整的常量。
 
-## 两类输入 ANR 与 Android 17 预警
+## 两类 Input ANR 与 Android 17 pre-ANR
 
 InputDispatcher 维护两条不同的 ANR 路径：
 
@@ -141,13 +141,13 @@ Android 17 在功能开关 `mAnrWarningCallbackInputDispatcherEnabled` 开启时
 
 观察 InputDispatcher 反压，优先看两个入口。
 
-`adb shell dumpsys input` 能直接看到 Input Dispatcher State。官方 dumpsys 文档展示了 `PendingEvent`、`InboundQueue`、连接、`OutboundQueue` 与 `WaitQueue` 等结构，但示例来自较旧实现，字段名会随版本变化。Android 17 当前源码在每个连接上输出 `status`、`isFocusMonitor` 和 `responsive`。现场排查时，至少记录三项：
+`adb shell dumpsys input` 能直接看到 Input Dispatcher State。官方 dumpsys 文档展示了 `PendingEvent`、`InboundQueue`、connection、`OutboundQueue` 与 `WaitQueue` 等结构，但示例来自较旧实现，字段名会随版本变化。Android 17 当前源码在每个连接上输出 `status`、`isFocusMonitor` 和 `responsive`。现场排查时，至少记录三项：
 
-- `FocusedWindow` / 焦点应用：确认事件应该发给谁，是否处在无焦点窗口等待。
+- `FocusedWindow` / focused application：确认事件应该发给谁，是否处在 no-focused-window 等待。
 - 目标连接的 `OutboundQueue` / `WaitQueue` 长度和存续时间：确认事件卡在写入前，还是写入后等待完成回执。
 - `Input Dispatcher State at time of last ANR`：确认 ANR 原因与当时的队列快照。
 
-Perfetto 侧看 ATRACE 计数器。AOSP android-17.0.0_r1 里 `traceInboundQueueLengthLocked()` 写 `iq`，`traceOutboundQueueLength()` 写 `oq:<channel>`，`traceWaitQueueLength()` 写 `wq:<channel>`。这些是计数器，不是时间片。`wq` 持续上升说明完成回执被压住；`oq` 上升更接近通道写入受限或 `waitQueue` 未释放；`iq` 上升可能是分发器前端积压、焦点等待或策略等待。
+Perfetto 侧看 ATRACE counter。AOSP android-17.0.0_r1 里 `traceInboundQueueLengthLocked()` 写 `iq`，`traceOutboundQueueLength()` 写 `oq:<channel>`，`traceWaitQueueLength()` 写 `wq:<channel>`。这些是计数器，不是时间片。`wq` 持续上升说明完成回执被压住；`oq` 上升更接近通道写入受限或 `waitQueue` 未释放；`iq` 上升可能是分发器前端积压、焦点等待或策略等待。
 
 判读时不要把 `wq` 当成 `MotionEvent` 批处理的直接证据。批处理和重采样要结合客户端 `InputConsumer` / `ViewRootImpl` 时序观察；InputDispatcher 的 `wq` 只说明已发布的分发项没有完成回执。详见 3.2 节。
 
@@ -170,7 +170,7 @@ InputDispatcher 的 `waitQueue` 是症状入口。一个分发项停在其中，
 
 ### 游戏/高频触控场景下的反压放大
 
-硬件宣称的报点率不能直接换算成 InputDispatcher 的队列增长。只有额外样本穿过驱动和 InputReader 到达分发器，并且发布速度持续超过客户端完成速度时，`waitQueue` / `outboundQueue` 压力才会增大。客户端批处理又可能把多个样本放进一个 `MotionEvent` 的历史记录，因此需要同时核对 `iq/oq/wq`、应用收到的事件及其历史样本数量和帧时间线，不能只看规格表上的 Hz。
+硬件宣称的报点率不能直接换算成 InputDispatcher 的队列增长。只有额外样本穿过驱动和 InputReader dispatcher，并且发布速度持续超过客户端完成速度时，`waitQueue` / `outboundQueue` 压力才会增大。客户端批处理又可能把多个样本放进一个 `MotionEvent` 的历史记录，因此需要同时核对 `iq/oq/wq`、应用收到的事件及其历史样本数量和帧时间线，不能只看规格表上的 Hz。
 
 游戏场景还有一个分析边界：公开 Android API 没有提供“提高某个应用的 InputDispatcher 优先级”这样的能力。`View.requestUnbufferedDispatch()` 影响应用侧 `MotionEvent` 批处理，不会提升触控 IC 报点率，也不会绕过 InputDispatcher 的 `waitQueue` / ANR 机制。Android 17 的 `View` 源码还明确警告，这个 API 不适合大多数应用，滥用可能增加延迟、造成滚动抖动，并失去系统重采样能力。应在目标设备上测量后再启用。厂商系统可能有游戏模式或触控调度定制；没有公开源码或实机轨迹时，只能标为 OEM 差异。
 
@@ -179,13 +179,13 @@ InputDispatcher 的 `waitQueue` 是症状入口。一个分发项停在其中，
 
 厂商定制最容易混进不可验证结论。可由 AOSP 确认的边界是：InputDispatcher 使用 `responsive` 隔离无响应连接，用 `mAnrTracker` 管理超时，用 `iq/oq/wq` 计数器暴露队列长度，用 `dumpsys input` 暴露连接状态。超出这些边界的说法，需要实机证据支撑。
 
-可接受的证据包括：同一机型开关游戏模式前后的 Perfetto 轨迹、`dumpsys input` 快照、线程优先级或调度策略记录、厂商内核补丁或框架补丁。只有产品宣传、论坛描述或单次主观手感，不足以写成章节结论。
+可接受的证据包括：同一机型开关游戏模式前后的 Perfetto trace、`dumpsys input` 快照、线程优先级或调度策略记录、厂商内核补丁或框架补丁。只有产品宣传、论坛描述或单次主观手感，不足以写成章节结论。
 
 ## 小结
 
 InputDispatcher 反压由通道可写性、`outboundQueue`、`waitQueue`、`mAnrTracker`、`responsive` 标记和无焦点窗口队列裁剪共同构成。排查时先确认一个边界：`waitQueue` 表示“已发布、未完成”，它是连接型输入 ANR 的计时基础，也是继续追查应用主线程、Binder、CPU 调度和窗口状态的入口。
 
-## 参考资料
+## References
 
 > `docs/anr.md` 对队列和两类 ANR 的解释仍有参考价值，但其“策略扩展超时时间”一节保留了旧字段 `inputPublisherBlocked`。Android 17 的当前实现使用 `Connection::responsive` 与 `processConnectionResponsiveLocked()`，这里涉及现行行为的结论以同一标签的 `InputDispatcher.cpp/.h` 为准。
 

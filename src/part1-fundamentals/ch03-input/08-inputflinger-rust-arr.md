@@ -103,7 +103,7 @@ InputFlinger 的 Rust 组件和自适应刷新率（Adaptive Refresh Rate，ARR�
 - Rust 组件位于 InputFlinger 的 `InputFilter` 节点，Android 17 当前实现只过滤 `KeyEvent`，用于防抖键、慢速键和粘滞键等辅助功能。
 - 触摸产生的 `MotionEvent` 从 C++ `InputFilter` 直接传给下一层。后续的用户活动、`Boost.INTERACTION`、SurfaceFlinger 调度器和图层帧率投票共同影响刷新率选择。
 
-先按事件类型分流，可以避免把按键辅助功能的规定延迟误判为 InputDispatcher 堵塞，也能避免在触摸卡顿问题里错误追查 Rust 过滤器。
+先按事件类型分流，可以避免把按键辅助功能的规定延迟误判为 InputDispatcher 堵塞，也能避免在触摸卡顿问题里错误追查 Rust filter。
 
 ```mermaid
 flowchart LR
@@ -119,12 +119,12 @@ flowchart LR
 
     subgraph InteractionPath["交互提示与刷新率选择"]
         MR["MotionEvent 经 C++ InputFilter 直传"] --> ID["InputDispatcher"]
-        ID -->|触摸事件分类为 TOUCH| PM["PowerManagerService 用户活动"]
+        ID -->|触摸事件分类为 TOUCH| PM["PowerManagerService userActivity"]
         PM --> PB["Power HAL：Boost.INTERACTION"]
         PM --> SF["SurfaceFlinger.notifyPowerBoost()"]
         SF --> SH["Scheduler.onTouchHint()"]
         SH --> GS["全局触摸信号"]
-        VH["View / Window / Surface 帧率提示"] --> LV["图层投票"]
+        VH["View / Window / Surface 帧率提示"] --> LV["Layer votes"]
         GS --> RR["RefreshRateSelector"]
         LV --> RR
         RR --> HW["Composer / ARR 面板"]
@@ -150,11 +150,11 @@ InputReader
 
 这段顺序用于确认 `InputFilter` 的位置。部分设备未创建 `InteractionReporter`，`InputDeviceMetricsCollector` 也受编译期开关控制，因此诊断时应以目标设备的状态转储和构建配置为准。
 
-`InputManager` 构造时始终创建 `mInputFlingerRust` 和 C++ `InputFilter` 包装器，并把包装器固定插入监听器管线。事件类型在包装器内分流：
+`InputManager` 构造时始终创建 `mInputFlingerRust` 和 C++ `InputFilter` wrapper，并把包装器固定插入监听器管线。事件类型在包装器内分流：
 
 - `notifyKey()` 先查询 Rust 侧 `isEnabled()`；返回 `true` 时转换为本地 AIDL `KeyEvent` 并交给 Rust，返回 `false` 时直接通知下一层监听器。
 - `notifyMotion()`、`notifySwitch()`、`notifySensor()`、`notifyVibratorState()`、`notifyDeviceReset()` 和 `notifyPointerCaptureChanged()` 都从 C++ 直接传给下一层。
-- `notifyInputDevicesChanged()` 始终缓存设备信息并继续向后传递；只有 `isEnabled()` 返回 `true` 时，设备列表才同时交给 Rust 过滤器。
+- `notifyInputDevicesChanged()` 始终缓存设备信息并继续向后传递；只有 `isEnabled()` 返回 `true` 时，设备列表才同时交给 Rust filter。
 
 InputReader、PointerChoreographer、InputProcessor 和 InputDispatcher 仍由 C++ 实现。Android 17 的 Rust 代码负责 `InputFilter` 节点内的一组键盘辅助功能过滤器，并未重写整个 InputFlinger。
 
@@ -165,7 +165,7 @@ Rust `InputFilterState` 初始为 `BaseFilter + enabled=false`。只要 Sticky�
 Android 17 当前源码在重建“全部关闭”的配置时没有显式执行 `state.enabled = false`。因此需要区分两个场景：
 
 1. 进程启动后从未启用过这些过滤器：`isEnabled()` 为 `false`，按键从 C++ 包装器直接传给下一层。
-2. 至少启用过一次，随后全部关闭：过滤链会重建为只含 `BaseFilter`，过滤语义等价于透传；`enabled` 仍可能保持 `true`，按键会多走一次本地 AIDL、Rust `BaseFilter` 和回调。
+2. 至少启用过一次，随后全部关闭：filter chain 会重建为只含 `BaseFilter`，过滤语义等价于透传；`enabled` 仍可能保持 `true`，按键会多走一次 local AIDL / Rust `BaseFilter` / callback。
 
 第二种行为来自 `android-17.0.0_r1` 的当前实现，不应当被应用或测试依赖。对功能诊断而言，“全部关闭后没有 Bounce、Slow、Sticky 语义”才是稳定结论。
 
@@ -174,11 +174,11 @@ Android 17 当前源码在重建“全部关闭”的配置时没有显式执行
 Rust 入口位于 `services/inputflinger/rust/lib.rs`。启动阶段，C++ 通过 cxxbridge 调用 `create_inputflinger_rust()`；Rust 创建 `IInputFlingerRust` 实现，再通过引导回调把强引用交回 C++。后续接口包括：
 
 - `IInputFlingerRust.createInputFilter()`：创建 Rust `InputFilter`。
-- `IInputFilter.notifyKey()`：把按键交给 Rust 过滤链。
-- `IInputFilterCallbacks.sendKeyEvent()`：把过滤后的按键送回 C++ 监听器。
+- `IInputFilter.notifyKey()`：把按键交给 Rust filter chain。
+- `IInputFilterCallbacks.sendKeyEvent()`：把过滤后的按键送回 C++ listener。
 - `IInputFilterCallbacks.createInputFilterThread()`：为 Slow Keys 创建等待线程。
 
-`IInputFlingerRust.aidl` 和 `IInputFilter.aidl` 都明确标注为本地 AIDL 接口，处理发生在调用线程。这里借用了 AIDL 生成的类型和接口模型，但没有向另一个进程发起 Binder 事务。普通按键过滤仍位于 InputFlinger 监听器调用链内。
+`IInputFlingerRust.aidl` 和 `IInputFilter.aidl` 都明确标注为 local AIDL interface，处理发生在调用线程。这里借用了 AIDL 生成的类型和接口模型，但没有向另一个进程发起 Binder transaction。普通按键过滤仍位于 InputFlinger listener 调用链内。
 
 Rust 处理完成后的返回路径如下：
 
@@ -187,12 +187,12 @@ Rust BaseFilter::notify_key()
   → IInputFilterCallbacks.sendKeyEvent()
   → C++ InputFilterCallbacks::sendKeyEvent()
   → mNextListener.notifyKey()
-  → 后续 InputListener 阶段
+  → 后续 InputListener stage
 ```
 
 这段路径解释了 `BaseFilter` 的职责：它不再修改事件，只负责经回调返回 C++。
 
-## 防抖键、慢速键与粘滞键的执行顺序
+## Bounce、Slow、Sticky 的执行顺序
 
 配置变化时，Rust 从 `BaseFilter` 开始依次包上 Sticky、Slow、Bounce。最终最外层先接收事件，因此三个过滤器同时开启时的执行顺序是：
 
@@ -201,16 +201,16 @@ BounceKeysFilter
   → SlowKeysFilter
   → StickyKeysFilter
   → BaseFilter
-  → C++ 回调
+  → C++ callback
 ```
 
 对应配置项是 `bounceKeysThresholdNs`、`slowKeysThresholdNs` 和 `stickyKeysEnabled`。三种过滤器的设备条件和事件语义并不相同：
 
-| 过滤器 | 处理对象 | 处理方式 | 延迟影响 |
+| Filter | 处理对象 | 处理方式 | 延迟影响 |
 | --- | --- | --- | --- |
 | 防抖键（Bounce Keys） | 支持设备且 `source` 位包含 `Source::KEYBOARD` 的 `KeyEvent` | 记录每台设备末次 UP。若同一 `keyCode` 的下一次 DOWN 落在阈值内，丢弃该 DOWN 及其配对 UP | 不设置定时等待；表现为快速重复按键被抑制 |
-| 慢速键（Slow Keys） | 支持设备且 `source` 位包含 `Source::KEYBOARD` 的 `KeyEvent` | 首次 DOWN 进入待处理队列；按住超过阈值才发出。阈值前收到 UP 时，待处理的 DOWN 和这次 UP 都不再向后传递 | 接受的 DOWN 会被有意延后一个配置阈值 |
-| 粘滞键（Sticky Keys） | 受支持的非虚拟字母键盘；源码未额外检查 `Source::KEYBOARD` | 捕获 Alt、Shift、Ctrl、Meta 的 DOWN/UP，UP 时按关闭 → 锁存 → 锁定 → 关闭切换状态；普通键与锁定类修饰键继续传递，并改写 `metaState` | 没有阈值等待；影响修饰键状态与传递内容 |
+| Slow Keys | 支持设备且 `source` 位包含 `Source::KEYBOARD` 的 `KeyEvent` | 首次 DOWN 进入 pending；按住超过阈值才发出。阈值前收到 UP 时，pending DOWN 和这次 UP 都不再向后传递 | 接受的 DOWN 会被有意延后一个配置阈值 |
+| Sticky Keys | 受支持的非虚拟字母键盘；源码未额外检查 `Source::KEYBOARD` | 捕获 Alt、Shift、Ctrl、Meta 的 DOWN/UP，UP 时更新 off → latched → locked → off 状态；普通键与锁定类修饰键继续传递，并改写 `metaState` | 没有阈值等待；影响修饰键状态与传递内容 |
 
 防抖键和慢速键的受支持设备集合是：
 
@@ -232,24 +232,24 @@ BounceKeysFilter
 
 复制后的事件进入待处理队列。Rust 通过 `InputFilterThread.request_timeout_at_time()` 请求超时回调；C++ 创建名为 `InputFilter` 的 `InputThread`，用 `Looper.sleepUntil()` 和 `wake()` 等待。阈值到达后，DOWN 才进入后续过滤器，并记录为处理中；后续 UP 会沿用被接受 DOWN 的 `downTime`。
 
-如果 UP 先到，待处理的 DOWN 会被移除，整次短按不会进入 InputDispatcher。这个现象符合慢速键的辅助功能定义。其典型特征是延迟接近配置阈值，或短按稳定消失；InputDispatcher 堵塞通常还会伴随分发队列、目标窗口或应用主线程的异常。
+如果 UP 先到，pending DOWN 会被移除，整次短按不会进入 InputDispatcher。这个现象符合 slow keys 的辅助功能定义。其典型特征是 delay 接近配置 threshold，或短按稳定消失；InputDispatcher 堵塞通常还会伴随 dispatch queue、target window 或 App main thread 的异常。
 
 ## 触摸事件怎么影响 ARR
 
 触摸事件经过 C++ `InputFilter.notifyMotion()` 直传，到了 InputDispatcher 才进入用户活动逻辑。`getUserActivityEventType()` 的分类是：
 
-- 按键事件：`USER_ACTIVITY_EVENT_BUTTON`；
+- Key：`USER_ACTIVITY_EVENT_BUTTON`；
 - 满足 `MotionEvent::isTouchEvent(source, action)` 的运动事件：`USER_ACTIVITY_EVENT_TOUCH`；
 - 其他运动事件：`USER_ACTIVITY_EVENT_OTHER`。
 
 InputDispatcher 不会为每个输入样本都调用 PowerManager。Android 17 默认对每种用户活动类型设置 100 ms 的最小触发间隔；取消事件、禁止用户活动的目标窗口等情况也会跳过。
 
-PowerManagerService 的 `userActivityNoUpdateLocked()` 在事件时间推进时调用 `setPowerBoostInternal(Boost.INTERACTION, 0)`。这个调用没有按 TOUCH、BUTTON 和 OTHER 再做区分，因此交互加速并非触摸专属信号。原生 `setPowerBoost()` 同时执行两件事：
+PowerManagerService 的 `userActivityNoUpdateLocked()` 在事件时间推进时调用 `setPowerBoostInternal(Boost.INTERACTION, 0)`。这个调用没有按 TOUCH、BUTTON 和 OTHER 再做区分，因此交互加速并非触摸专属信号。Native `setPowerBoost()` 同时执行两件事：
 
 1. 调用 Power HAL 的 `setBoost(Boost.INTERACTION, durationMs)`；
 2. 通过 `SurfaceComposerClient::notifyPowerBoost()` 通知 SurfaceFlinger。
 
-SurfaceFlinger 收到 `Boost.INTERACTION` 后调用 `Scheduler.onTouchHint()`。方法名沿用了“触摸提示”，但它上游承载的是交互加速。Scheduler 只有在 `mTouchTimer` 已创建时才重置计时器和主节拍显示的内核空闲计时器；`mTouchTimer` 仅在配置时长大于 0 时创建。因此，“发生触摸”不能直接推导出“设备必定切到最高刷新率”。
+SurfaceFlinger 收到 `Boost.INTERACTION` 后调用 `Scheduler.onTouchHint()`。方法名沿用了 touch hint，但它上游承载的是交互加速。Scheduler 只有在 `mTouchTimer` 已创建时才重置计时器和主节拍显示的内核空闲计时器；`mTouchTimer` 仅在配置时长大于 0 时创建。因此，“发生触摸”不能直接推导出“设备必定切到最高刷新率”。
 
 ## RefreshRateSelector 接收两类交互信号
 
@@ -262,9 +262,9 @@ Android 17 的 `RefreshRateSelector` 同时处理两类相关但独立的输入�
 - 没有任何 `Explicit*` 图层投票时，早期触摸加速直接把候选刷新率按降序排列。
 - 已有显式投票时，选择器先完成图层评分，再考虑后期触摸加速。`ExplicitDefault` 会阻止全局后期触摸加速；`ExplicitExact` 和类别投票也有额外条件。
 
-触摸信号只是一项排名输入。显示策略范围、图层投票、候选模式和设备能力等因素仍然参与决策。
+触摸信号只是一项排名输入。显示策略范围、Layer vote、候选模式和设备能力等因素仍然参与决策。
 
-### 2. UI Toolkit 的 `HighHint` 类别投票
+### 2. UI Toolkit 的 `HighHint` category vote
 
 UI Toolkit 可用 `HighHint` 类别投票表达应用侧触摸加速。选择器按 UID 检查图层：同一 UID 存在 `HighHint` 且不存在 `ExplicitDefault` 时，`isAppTouchBoost` 才可能成立；任一时刻最多把一个应用视为触摸加速来源。
 
@@ -272,7 +272,7 @@ UI Toolkit 可用 `HighHint` 类别投票表达应用侧触摸加速。选择器
 
 ## RefreshRatePolicy 的职责
 
-`RefreshRatePolicy.java` 属于 WindowManager。它读取 `WindowManager.LayoutParams` 中的首选显示模式、首选刷新率和最小/最大刷新率，并结合高刷拒绝名单、包级范围、焦点状态和刷新率切换类型，为 `WindowState` 生成帧率投票与优先级。
+`RefreshRatePolicy.java` 属于 WindowManager。它读取 `WindowManager.LayoutParams` 中的首选显示模式、preferred refresh rate、min/max refresh rate，并结合高刷拒绝名单、包级范围、焦点状态和刷新率切换类型，为 `WindowState` 生成帧率投票与优先级。
 
 它与 InputFlinger Rust 过滤器没有上下游关系，也不负责接收 `Boost.INTERACTION`。WindowManager 提交的窗口偏好最终会成为 SurfaceFlinger 看到的图层信息之一。
 
@@ -319,18 +319,18 @@ AOSP ARR 文档把 ARR 定义为：显示 VSync 频率与刷新率解耦，面�
 
 ### 实体键盘按下后迟迟没有事件
 
-先用 `dumpsys input` 查看 `InputFilter`。Rust 状态转储会列出启用的过滤器、阈值、待处理及处理中的 DOWN、修饰键状态和支持的设备 ID。若慢速键生效，延迟应接近阈值；短按在阈值前抬起时没有后续 `KeyEvent`。
+先用 `dumpsys input` 查看 `InputFilter`。Rust 状态转储会列出启用的过滤器、阈值、待处理及处理中的 DOWN、threshold、pending ID。若慢速键生效，延迟应接近阈值；短按在阈值前抬起时没有后续 `KeyEvent`。
 
-如果过滤器未启用或延迟与阈值不吻合，再查看 InputDispatcher 目标、等待队列、应用 `deliverInputEvent` 和主线程调度。3.1 与 3.7 节覆盖了这部分。
+如果过滤器未启用或延迟与阈值不吻合，再查看 InputDispatcher 目标、wait queue、应用 `deliverInputEvent` 和主线程调度。3.1 与 3.7 节覆盖了这部分。
 
 ### 触摸后刷新率没有提高
 
 建议同时观察：
 
-- 电源轨迹中的 `userActivity` 时间片；
-- SurfaceFlinger 的 `TouchState` 计数器；
-- `RefreshRateSelector` 的 `Touch Boost` / `Touch Boost [late]` 即时轨迹；
-- 图层帧率投票、当前模式、渲染帧率与 FrameTimeline；
+- Power trace 中的 `userActivity` slice；
+- SurfaceFlinger 的 `TouchState` counter；
+- `RefreshRateSelector` 的 `Touch Boost` / `Touch Boost [late]` instant trace；
+- Layer frame-rate vote、当前 mode / render rate 与 FrameTimeline；
 - `dumpsys SurfaceFlinger` 中 Scheduler 的 `touchTimer` 配置。
 
 Android 17 的 `SurfaceFlinger::notifyPowerBoost()` 没有单独记录“已收到交互加速”的轨迹时间片，因此不能只凭缺少同名轨道判定通知丢失。`TouchState` 还依赖触摸计时器已经创建。
@@ -341,9 +341,9 @@ ARR 允许显示刷新节奏随内容帧率降低。判断卡顿要看 FrameTime
 
 ## 外接设备与多显示边界
 
-外接键盘按键可能进入防抖键、慢速键或粘滞键过滤器，鼠标、触控板和触摸屏的 `MotionEvent` 仍从 C++ 包装器直传。某个设备是否经过 Rust 过滤器，不会直接决定刷新率。
+外接键盘按键可能进入防抖键、慢速键或粘滞键过滤器，鼠标、触控板和触摸屏的 `MotionEvent` 仍从 C++ 包装器直传。某个设备是否经过 Rust filter，不会直接决定刷新率。
 
-多显示场景还要区分事件目标显示器、显示组、WindowManager 对各显示器的窗口策略，以及 SurfaceFlinger 的主节拍显示器。Android 17 当前 `onTouchHint()` 重置的是主节拍选择器的内核空闲计时器。跟随显示器能否采用同一刷新节奏，还受显示组、候选模式和硬件约束；源码不保证“任一显示器收到输入，所有显示器都升到同一刷新率”。
+多显示场景还要区分事件目标显示器、display group、WindowManager 对各显示器的窗口策略，以及 SurfaceFlinger 的主节拍显示器。Android 17 当前 `onTouchHint()` 重置的是主节拍选择器的内核空闲计时器。跟随显示器能否采用同一刷新节奏，还受显示组、候选模式和硬件约束；源码不保证“任一显示器收到输入，所有显示器都升到同一刷新率”。
 
 ## 版本边界
 
@@ -351,31 +351,31 @@ ARR 允许显示刷新节奏随内容帧率降低。判断卡顿要看 FrameTime
 | --- | --- | --- |
 | Android 15 / API 35 | AOSP 引入 ARR 平台能力；`android-15.0.0_r1` 已包含 Rust InputFilter 及防抖键、慢速键、粘滞键过滤器；View / Window 提供 API 35 帧率与触摸加速接口 | Android 官方应用文档把 ARR 可用起点限定为 Android 15 QPR1 及支持对应 HAL 的设备 |
 | Android 16 / API 36 | 新增 `Display.hasArrSupport()`、`Display.getSuggestedFrameRate(int)`；`getSupportedRefreshRates()` 返回渲染帧率；RecyclerView 1.4 支持滚动减速阶段的 ARR | 能力查询和建议值都不代表当前帧一定切到某个刷新率 |
-| Android 17 / API 37 | `android-17.0.0_r1` 包含这里分析的 InputFlinger Rust、InputDispatcher 用户活动、Power 加速、Scheduler 和 RefreshRateSelector 实现 | 这些实现细节以该标签为准；厂商 HAL、内核与面板实现仍需按设备验证 |
+| Android 17 / API 37 | `android-17.0.0_r1` 包含当前分析的 InputFlinger Rust、InputDispatcher user activity、Power boost、Scheduler 和 RefreshRateSelector 实现 | 这些实现细节以该 tag 为准；厂商 HAL、内核与面板实现仍需按设备验证 |
 
 ## 小结
 
-Android 17 的 InputFlinger Rust 组件只负责键盘辅助功能过滤。防抖键抑制快速重复按键，慢速键延后并筛除短按，粘滞键捕获瞬时修饰键并改写状态；`MotionEvent` 不进入这组 Rust 过滤器。
+Android 17 的 InputFlinger Rust 组件只负责键盘辅助功能过滤。防抖键抑制快速重复按键，慢速键延后并筛除短按，粘滞键捕获瞬时修饰键并改写状态；`MotionEvent` 不进入这组 Rust filters。
 
 交互对刷新率的影响从 InputDispatcher 用户活动开始，经 PowerManager 的 `Boost.INTERACTION` 同时通知 Power HAL 和 SurfaceFlinger。Scheduler 的全局触摸信号、UI Toolkit 的 `HighHint`、Window / Surface 显式帧率请求以及硬件能力，最终都由 RefreshRateSelector 与显示栈共同处理。
 
-排障时先确认事件类型，再确认过滤器、用户活动、触摸信号、图层投票和面板能力分别走到了哪一步。由此可以区分辅助功能规定行为、输入分发阻塞、应用渲染超时和 ARR 的正常节奏调整。
+排障时先确认事件类型，再确认过滤器、user activity、touch signal、Layer vote 和面板能力分别走到了哪一步。这样才能区分辅助功能规定行为、输入分发阻塞、应用渲染超时和 ARR 的正常节奏调整。
 
 ## 参考源码与文档
 
 ### Android 17 平台源码
 
-- [InputManager.cpp：InputListener 管线与 Rust 引导](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/InputManager.cpp)
-- [InputFilter.cpp：按键/运动事件分流与启用状态查询](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/InputFilter.cpp)
+- [InputManager.cpp：InputListener 管线与 Rust bootstrap](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/InputManager.cpp)
+- [InputFilter.cpp：Key / Motion 分流与 enable 查询](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/InputFilter.cpp)
 - [Rust input_filter.rs：过滤链与状态](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/rust/input_filter.rs)
 - [Bounce Keys](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/rust/bounce_keys_filter.rs)、[Slow Keys](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/rust/slow_keys_filter.rs)、[Sticky Keys](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/rust/sticky_keys_filter.rs)
-- [IInputFilter.aidl：本地 AIDL 调用约束](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/aidl/com/android/server/inputflinger/IInputFilter.aidl)
+- [IInputFilter.aidl：local AIDL 调用约束](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/aidl/com/android/server/inputflinger/IInputFilter.aidl)
 - [InputFilterCallbacks.cpp：过滤事件回传与 InputFilterThread](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/InputFilterCallbacks.cpp)
 - [InputDispatcher.cpp：用户活动分类与节流](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
 - [PowerManagerService.java：userActivity 与 interaction boost](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java)
 - [PowerManagerService.cpp：Power HAL 与 SurfaceFlinger 通知](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_power_PowerManagerService.cpp)
 - [SurfaceFlinger.cpp：Boost.INTERACTION 入口](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)
-- [Scheduler.cpp：触摸计时器、onTouchHint 与轨迹](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp)
+- [Scheduler.cpp：touch timer、onTouchHint 与 trace](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp)
 - [RefreshRateSelector.cpp：全局触摸信号与 HighHint 规则](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp)
 - [RefreshRatePolicy.java：WindowManager 窗口帧率投票](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/RefreshRatePolicy.java)
 - [DisplayPolicy.java：休眠场景的触摸用户活动](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/DisplayPolicy.java)
@@ -383,9 +383,9 @@ Android 17 的 InputFlinger Rust 组件只负责键盘辅助功能过滤。防�
 
 ### 官方说明
 
-- [Android Developers：用自适应刷新率优化帧率](https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate)
-- [Android 16 功能：自适应刷新率](https://developer.android.com/about/versions/16/features#adaptive-refresh-rate)
-- [AOSP：自适应刷新率](https://source.android.com/docs/core/graphics/arr)
-- [Display API 参考](https://developer.android.com/reference/android/view/Display)
-- [View API 参考](https://developer.android.com/reference/android/view/View)
-- [Window API 参考](https://developer.android.com/reference/android/view/Window)
+- [Android Developers：Optimize frame rate with adaptive refresh rate](https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate)
+- [Android 16 features：Adaptive refresh rate](https://developer.android.com/about/versions/16/features#adaptive-refresh-rate)
+- [AOSP：Adaptive refresh rate](https://source.android.com/docs/core/graphics/arr)
+- [Display API reference](https://developer.android.com/reference/android/view/Display)
+- [View API reference](https://developer.android.com/reference/android/view/View)
+- [Window API reference](https://developer.android.com/reference/android/view/Window)
