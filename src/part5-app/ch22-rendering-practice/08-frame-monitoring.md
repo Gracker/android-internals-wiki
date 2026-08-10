@@ -65,25 +65,9 @@ last_deepseek_cn_review_at: 2026-06-13
 
 # 帧率监控与线上卡顿治理
 
-<!-- outline-start -->
-## 本节要点大纲
+线上卡顿治理需要把发现、聚合和定位接成一条可执行流程：明确观测边界，保留可归因字段，用受控采样补充代码上下文，再把异常聚合成可分派的问题。卡顿成因见 7.2 节，JankStats 与 FrameMetrics 的接口细节见 19.11 和 19.12 节。
 
-### 锚点（必须覆盖）
-
-- 🔹 Choreographer.FrameCallback 帧率采集
-- 🔹 JankStats API 集成
-- 🔹 线上卡顿堆栈采集方案
-- 🔹 卡顿归因与自动告警
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
-
-22.8 节讨论应用怎样在线上发现、聚合并定位卡顿。7.2 节解释卡顿成因，19.11 和 19.12 节分别介绍 JankStats 与 FrameMetrics；本节把这些接口组织成一套可执行流程：明确观测边界，保留可归因字段，用受控采样补充代码上下文，再把异常聚合成可分派的问题。
-
-本文的平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。涉及线程调度与 fence 等内核证据时，锚点是 `android17-6.18-2026-06_r6`。
+平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。涉及线程调度与 fence 等内核证据时，锚点是 `android17-6.18-2026-06_r6`。
 
 ## 先确定“这一帧”观测到了哪里
 
@@ -100,9 +84,6 @@ last_deepseek_cn_review_at: 2026-06-13
 这个边界会直接影响结论。`queueBuffer()` 表示 producer 提交了 buffer，不能据此认定 SurfaceFlinger 已收到、latch 或 present。FrameMetrics 的 `TOTAL_DURATION` 结束于“渲染完成并交给显示子系统”，也没有覆盖 panel 扫描。
 
 页面含 `SurfaceView`、Camera、视频、WebView、Flutter 或游戏引擎时，还要画清 Surface 拓扑。宿主 App Window 的指标可能很平稳，独立 Producer 对应的内容却在重复旧 buffer。此类页面要按目标 layer 补 producer queue、fence、FrameTimeline 与 present 证据，不能只用宿主 Window 的 JankStats 结案。
-
-[已验证: AOSP `android-17.0.0_r1`, `Choreographer.java`、`FrameMetrics.java`]
-[已验证: 渲染管线资料, `S01_rendering_types_overview.md`、`S02_aosp_standard_type.md`]
 
 ## Choreographer.FrameCallback：只把它当作回调节奏探针
 
@@ -156,7 +137,7 @@ class CallbackCadenceProbe(
 
 刷新率会因 display mode、应用 frame-rate vote、内容类型和节能策略变化。把构造时读到的 `Display.getRefreshRate()` 当作整个页面停留期的预算，会在自适应刷新设备上产生错判。API 31+ 优先使用 FrameMetrics 的 `DEADLINE` 或 JankStats 对当前帧给出的判定；低版本保留原始分布并通过同设备、同场景基线比较。
 
-### [自动发现] API 33+ 用 VsyncCallback 保存 timeline 身份
+### API 33+ 用 VsyncCallback 保存 timeline 身份
 
 API 33 增加 `Choreographer.VsyncCallback`。它提供多个候选 `FrameTimeline` 以及平台选择的 preferred timeline，其中包含 deadline、expected presentation time 和 VSync ID。`FrameData` 与内部 `FrameTimeline` 在回调外无效，必须在回调内复制基础数值。
 
@@ -201,12 +182,9 @@ class VsyncTimelineProbe(
 
 deadline 是帧需要 ready 的时间戳，回调刚开始时还没有完成时间，所以上述探针不能在 `onVsync()` 内判定本帧是否超期。VSync ID 的用途是关联同一帧的 FrameMetrics、SurfaceFlinger 数据或自建 `SurfaceControl.Transaction`，并不等同于“该帧已经显示”。
 
-[已验证: 官方 API, `Choreographer`、`Choreographer.FrameData`、`Choreographer.FrameTimeline`]
-[已验证: AOSP `android-17.0.0_r1`, `frameworks/base/core/java/android/view/Choreographer.java`]
-
 ## JankStats：线上默认入口
 
-JankStats 按 `Window` 跟踪帧，并把帧数据与 `PerformanceMetricsState` 中的 UI 状态一同交给监听器。API 16—23 使用较粗的 timing 估计；API 24+ 依赖平台 FrameMetrics，时长更可信；API 31+ 又增加 CPU、CPU + GPU 总时长与 overrun 信息。本文覆盖 Android 10—17，但服务端仍应带上 `api_level` 和 timing capability，不能把不同能力层的数据直接混成一条基线。
+JankStats 按 `Window` 跟踪帧，并把帧数据与 `PerformanceMetricsState` 中的 UI 状态一同交给监听器。API 16—23 使用较粗的 timing 估计；API 24+ 依赖平台 FrameMetrics，时长更可信；API 31+ 又增加 CPU、CPU + GPU 总时长与 overrun 信息。适用范围为 Android 10—17，但服务端仍应带上 `api_level` 和 timing capability，不能把不同能力层的数据直接混成一条基线。
 
 常用字段的含义要分开：
 
@@ -274,10 +252,7 @@ JankStats 的监听线程随 API 层级变化：API 23 及以下通常是 Main/U
 
 JankStats 的默认 jank heuristic multiplier 是产品口径的一部分。线上修改它会改变趋势，调整时必须登记策略版本并建立新基线。更合适的上报方式是保留 `isJank`，同时按能力层记录 UI duration、CPU duration、total duration、overrun 和状态；服务端可以在不篡改客户端原判定的前提下分析严重程度。
 
-[已验证: 官方文档, JankStats 与 AndroidX Metrics release notes]
-[已验证: 官方 API, `FrameDataApi24`、`FrameDataApi31`]
-
-## [自动发现] FrameMetrics：拆分 Window 帧的应用侧阶段
+## FrameMetrics：拆分 Window 帧的应用侧阶段
 
 JankStats 已能覆盖多数线上趋势。某个页面出现稳定回归后，可以按远程配置对少量会话开启 FrameMetrics，补充阶段耗时和 VSync ID。字段按平台版本分层：
 
@@ -332,10 +307,7 @@ class WindowFrameMetricsSession(
 
 `FIRST_DRAW_FRAME` 通常不进入滚动或动画 jank 分母，但这类帧不能直接丢弃。把它们放进 startup / navigation 首帧桶，交给 21.8 或 26.3 的启动与页面切换指标分析。`TOTAL_DURATION` 也只覆盖应用渲染到提交显示子系统的阶段；即使它小于 `DEADLINE`，需要 compositor 侧证据才能解释最终 present。
 
-[已验证: 官方 API, `FrameMetrics`、`Window.OnFrameMetricsAvailableListener`]
-[已验证: AOSP `android-17.0.0_r1`, `frameworks/base/core/java/android/view/FrameMetrics.java`]
-
-## [自动发现] API 36+：把 FrameMetrics 与 compositor jank 对齐
+## API 36+：把 FrameMetrics 与 compositor jank 对齐
 
 API 36 起，`Window.getRootSurfaceControl()` 返回的 `AttachedSurfaceControl` 可以注册 `SurfaceControl.OnJankDataListener`。SurfaceFlinger 会异步、批量回传每帧分类：
 
@@ -380,9 +352,6 @@ class CompositorJankSession(
 
 这一组 API 适合标准 App Window。页面里的 SurfaceView、Camera、视频、WebView renderer 或引擎可能拥有独立 buffer layer；宿主 root surface 的分类不能自动覆盖每条独立内容流。遇到“Window 指标正常、内容仍跳动”，需要回到目标 layer 的 producer、BufferQueue、fence、FrameTimeline 和 present-to-present 间隔。
 
-[已验证: 官方 API, `AttachedSurfaceControl`、`SurfaceControl.JankData`]
-[已验证: AOSP `android-17.0.0_r1`, `SurfaceControl.java`]
-
 ## Android 17 的 buffer-stuffing recovery 会制造主动延迟
 
 Android 17 的 `Choreographer` 源码包含 buffer-stuffing recovery。BLAST producer 等待 buffer release 的时间超过半个 frame interval 后，`onWaitForBufferRelease()` 会标记 stuffed 状态；后续 `doFrame()` 可以主动推迟一帧，降低排队 buffer 数，并在恢复期调整 animation timeline。相关 aconfig flag 会影响同一段动画能否多次恢复以及累计主动延迟上限，设备取值需要从 trace 或配置确认。
@@ -390,9 +359,6 @@ Android 17 的 `Choreographer` 源码包含 buffer-stuffing recovery。BLAST pro
 Perfetto 中出现 `Buffer stuffing recovery`、`buffer stuffed` 或 `Negative offset` 时，这一帧的迟到可能是系统为了排空队列而安排的恢复动作。归因时应同时检查 `dequeueBuffer` wait、queued buffer、FrameTimeline 的 `Buffer Stuffing` 分类及恢复后的 backlog。只看 UI/CPU duration 就把责任分给业务代码，会漏掉队列已经过深这一前因。
 
 该机制处理排队造成的额外延迟，不会提升 GPU 或显示吞吐。若恢复频繁出现，还要追查 producer 产出节奏、RenderThread/GPU 完成时间、release fence 和 consumer 释放速度。
-
-[已验证: AOSP `android-17.0.0_r1`, `Choreographer.onWaitForBufferRelease()` 与 `doFrame()`]
-[已验证: 渲染管线资料, `S02_aosp_standard_type.md`]
 
 ## 线上卡顿堆栈：按策略采样，给指标补代码现场
 
@@ -468,8 +434,6 @@ class MainThreadStackSampler(
 端侧应把连续样本按方法序列生成稳定签名，同一 `app_version + page + ui_state + signature` 只上传少量代表样本。重复命中同一栈的价值高于一次偶发快照；多个样本分别落在 binder proxy、锁等待和业务方法时，应保留分布，不能强行选一个栈当根因。
 
 报告不得携带完整 URL、搜索词、聊天内容、订单号、地理位置或可还原用户身份的数据。业务上下文使用枚举；方法名需要混淆映射时，在服务端按受控 mapping file 解析。
-
-[已验证: 本知识库 19.06]
 
 ## 从指标到归因
 

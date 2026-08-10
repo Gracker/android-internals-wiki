@@ -57,28 +57,13 @@ deepseek_cn_review_state: done
 last_deepseek_cn_review_at: 2026-06-12
 ---
 
-
 # 渲染优化排查框架与案例模板
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 列表滑动卡顿优化实战
-- 🔹 Compose 迁移性能踩坑
-- 🔹 复杂页面渲染优化
-
-### 扩展（可选深入）
-
-- 🔸 （待扩展）
-
-<!-- outline-end -->
 ## 这套框架解决什么问题
 
 渲染案例常见两种缺陷：只列优化技巧，缺少问题现场；只给优化前后数字，缺少可复现条件。前者容易把无关配置塞进项目，后者无法判断收益来自代码、缓存、编译状态、设备温度还是测试波动。
 
-本节把 22.1—22.8 的专项知识组织成固定评审流程，覆盖列表滑动、Compose 迁移和复杂页面。平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`；需要检查 scheduler 或 fence 时，内核锚点是 `android17-6.18-2026-06_r6`。
+以下固定评审流程覆盖列表滑动、Compose 迁移和复杂页面，并串起 22.1—22.8 的专项知识。平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`；需要检查 scheduler 或 fence 时，内核锚点是 `android17-6.18-2026-06_r6`。
 
 一次案例应沿下面五步推进：
 
@@ -110,9 +95,6 @@ last_deepseek_cn_review_at: 2026-06-12
 API 31+ 的 Macrobenchmark `FrameTimingMetric` 会输出 `frameOverrunMs`：正值表示超出 deadline，负值表示提前完成。它能自然适配高刷新率和可变刷新率，回归判断应优先看它。`frameDurationCpuMs` 只覆盖 UI 线程与 RenderThread 的 CPU 产帧时间，是定位 CPU 压力的辅助指标。两者都会给出 P50、P90、P95、P99；还要检查 `frameCount`，因为删除无效的轻量帧后，剩余帧的分位数可能升高，功耗和总工作量却下降。
 
 Android 10 / 11 没有 `frameOverrunMs`。这两个版本保留 CPU duration、JankStats 判定和 trace 证据，不要用测试开始时读到的固定 refresh rate 伪造精确 deadline。
-
-[已验证: 官方 API, `FrameTimingMetric`]
-[已验证: 官方文档, Macrobenchmark metrics、JankStats]
 
 ### Benchmark 本身也要被评审
 
@@ -208,8 +190,6 @@ class FeedAdapter : ListAdapter<FeedItem, FeedViewHolder>(FeedDiff()) {
 
 这段改动只减少特定更新的 bind 工作量。若长帧来自图片上传、layout、GPU 或 CPU 竞争，payload 不会带来对应改善。复测时对比 `frameOverrunMs`、`frameDurationCpuMs`、`frameCount`、create/bind 次数以及命中的 trace section；任何“提升百分比”都要附设备、用例、分位数和置信范围。
 
-[已验证: 官方 API, `RecyclerView.Adapter` payload 语义、`DiffUtil`]
-
 ## 案例二：View 迁移到 Compose 后滚动回归
 
 ### 先排除不公平比较
@@ -264,9 +244,6 @@ fun FeedScreen(
 
 Compose 性能 codelab 提到 Lazy layout、`BoxWithConstraints` 及其他 `SubcomposeLayout` 会在父布局阶段决定子项 composition。把固定少量标签从 `LazyRow` 改成 `Row` 只适用于不需要懒加载且 trace 已显示子组合成本的场景。不能将它扩展成“禁用 Lazy”的项目规则。
 
-[已验证: 官方文档, Compose performance best practices]
-[已验证: 官方 codelab, composition tracing、SubcomposeLayout、Binder transaction]
-
 ## 案例三：含视频、WebView 和长列表的详情页
 
 ### 按用户里程碑拆任务
@@ -306,9 +283,7 @@ CUJ:
 
 若 UI 与 RenderThread 已按期完成，FrameTimeline 仍显示 composer 侧 jank，排查方向应转到 SurfaceFlinger scheduling、composition、HWC 和显示模式。若线程 runnable 长时间未获 CPU，再检查 `android17-6.18-2026-06_r6` scheduler；若 buffer 复用等待 fence，补 dma-fence、GPU 和 display driver 证据。没有这些下沉信号时，不从应用长帧直接推断内核根因。
 
-[已验证: 渲染管线资料, `S01_rendering_types_overview.md`、`S02_aosp_standard_type.md`]
-
-## [自动发现] 案例复盘模板
+## 案例复盘模板
 
 每个案例保存以下字段，缺项会影响复查：
 
@@ -327,7 +302,7 @@ CUJ:
 | 灰度 | 线上分组、监控 coverage、回滚条件 |
 | 结论边界 | 可推广范围、反例、仍待验证项 |
 
-复盘正文要分开写“观察事实”“推断”“验证结果”。自动分析工具可以聚类栈签名、连接 VSync ID 和生成候选检查项，输出仍属于假设。只有同契约实验和线上灰度都支持时，才能把相关性升级为根因结论。
+复盘记录要分开写“观察事实”“推断”“验证结果”。自动分析工具可以聚类栈签名、连接 VSync ID 和生成候选检查项，输出仍属于假设。只有同契约实验和线上灰度都支持时，才能把相关性升级为根因结论。
 
 ## 评审核对单
 
