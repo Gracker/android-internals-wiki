@@ -30,7 +30,7 @@ sources:
 
 App Widget 的界面由 Launcher、SystemUI 或其他 `AppWidgetHost` 承载。提供方进程负责生成 `RemoteViews`，`system_server` 中的 AppWidget 服务负责校验和缓存，宿主进程负责创建 View、执行动作并参与后续绘制。这种跨进程模型决定了优化重点：控制更新次数、动作数量、布局创建成本、集合数据量和图像内存。
 
-本文的平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。章节不涉及内核实现，因此没有引入 kernel 分支结论。
+平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。相关机制不涉及内核实现，因此不引入 kernel 分支结论。
 
 ## 一、Android 17 的执行模型
 
