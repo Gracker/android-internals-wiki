@@ -24,7 +24,7 @@ sources:
 
 # 4.13 ANON_VMA_LAZY 提案与 Android 内存性能
 
-## 先给结论：Android 17 没有这项功能
+## Android 17 未合入 ANON_VMA_LAZY
 
 `ANON_VMA_LAZY` 是 Honor 工程师在 2026-05-27 提交到 Linux 内核邮件列表的一组 15 个补丁。它提出进一步延迟 `anon_vma` 的创建，以减少 `anon_vma` 和 `anon_vma_chain` slab 开销。
 
@@ -37,7 +37,7 @@ sources:
 - `include/linux/rmap.h` 中的 `vma->anon_vma` 仍指向常规 `struct anon_vma`；
 - `rmap_walk_anon()` 仍通过 `rmap_walk_anon_lock()` 取得并锁定相关 anon_vma；`try_to_unmap()` 等调用会提供 `folio_lock_anon_vma_read()`，随后沿 anon_vma interval tree 查找映射。
 
-邮件线程中的主要维护者还对该实现给出了明确反对意见，集中在 VMA 生命周期、RCU 与锁、migration、VMA split/merge/remap、large folio、MAP_PRIVATE COW 和缺少测试等问题。到本章基线日期，不能把这组补丁描述为上游 Linux、Android 17 GKI 或任一 OEM 的通用能力。
+邮件线程中的主要维护者还对该实现给出了明确反对意见，集中在 VMA 生命周期、RCU 与锁、migration、VMA split/merge/remap、large folio、MAP_PRIVATE COW 和缺少测试等问题。截至 `android17-6.18-2026-06_r6`，不能把这组补丁描述为上游 Linux、Android 17 GKI 或任一 OEM 的通用能力。
 
 | 问题 | Android 17 / Kernel 6.18 结论 |
 | --- | --- |
@@ -47,7 +47,7 @@ sources:
 | 提案数据是否可作为 Android 17 收益 | 只能作为提交者的原型测量 |
 | OEM 是否可能私有回移 | 有可能，必须用该设备内核源码或符号验证 |
 
-本章的平台基线是 Android 17 / API 37 / `android-17.0.0_r1`；内核基线是 `android17-6.18-2026-06_r6`。后文先解释现行实现，再评审提案。
+平台基线是 Android 17 / API 37 / `android-17.0.0_r1`，内核基线是 `android17-6.18-2026-06_r6`。以下先解释现行实现，再评审提案。
 
 ## `anon_vma` 解决什么问题
 
@@ -97,7 +97,7 @@ VMA 会被拆分、合并、移动和销毁。一个匿名 folio 还可能：
 
 ## Android 17 已经延迟到首次 fault
 
-旧文把现行实现描述成“`mmap()` 创建 VMA 时立即分配 `anon_vma`”，这个说法不准确。常见匿名映射路径已经具有一层延迟：
+把现行实现描述成“`mmap()` 创建 VMA 时立即分配 `anon_vma`”并不准确。常见匿名映射路径已经具有一层延迟：
 
 1. `mmap(MAP_ANONYMOUS)` 创建 VMA，此时 `vma->anon_vma` 可以保持 `NULL`。
 2. 首次匿名页 fault、COW fault 等路径调用 `vmf_anon_prepare()`。

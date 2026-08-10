@@ -42,43 +42,6 @@ gap_source: "研究素材/官方文档/AOSP结构"
 
 # 4.12 ZRAM 压缩交换与应用重启延迟
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 ZRAM 在 Android 内存压力中的位置
-说明 ZRAM 处理的是匿名页压缩交换，和 page cache 回收、LMKD 杀进程不是同一层动作。
-
-### 🔹 kswapd、direct reclaim、LMKD 的分工边界
-区分后台回收、同步回收、进程淘汰三类路径，避免把低内存卡顿全部归因到 App 主线程。
-
-### 🔹 应用重启延迟为什么受 swap-in 影响
-从后台保活、匿名页换入、页面触碰顺序解释 relaunch 比冷启动和热启动都更难定位的原因。
-
-### 🔹 热数据、冷数据与压缩块大小取舍
-整理热感知压缩交换的研究结论，说明解压速度、压缩率、CPU 占用之间的取舍。
-
-### 🔹 Perfetto 与 /proc 指标观测路径
-列出 `kswapd`、PSI、major fault、RSS/swap、LMKD event、ApplicationExitInfo 的交叉验证入口。
-
-### 🔹 Android 版本演进：MGLRU、ZRAM recompression、16KB page
-跟踪内核和 Android 版本中与内存回收、压缩交换、页大小相关的行为变化。
-
-### 🔹 App 端可做与不可做的边界
-说明 App 能通过内存预算、缓存释放、进程拆分降低压力，但不能直接控制系统 swap 策略。
-
-## 扩展
-
-### 🔸 Ariadne 论文与热感知压缩交换
-基于 HPCA 2025 / arXiv 2502.12826 梳理 hotness-aware、size-adaptive、proactive decompression 三个方向。
-
-### 🔸 低内存设备与 Android Go 策略
-补充低内存设备上的内存预算、后台保活和启动体验差异。
-
-### 🔸 与 ApplicationExitInfo / LMK 归因的交叉验证
-把 relaunch 延迟、LMK 退出原因、RSS 口径和线上上报串起来。
-
-<!-- outline-end -->
-
 ## 先判断进程还在不在
 
 讨论 ZRAM 对应用恢复耗时的影响，应先确认原进程是否仍然存在，再看 `VmSwap`。两种场景的执行成本完全不同：
@@ -88,11 +51,11 @@ gap_source: "研究素材/官方文档/AOSP结构"
 | 进程存活，部分匿名页在 ZRAM | 不变 | swap fault、解压、可能的 backing-device 读取，以及恢复后的业务工作 | 直接相关 |
 | 进程已被 LMKD 或其他机制杀死 | 改变 | 创建进程、初始化 runtime、加载代码和资源、重建组件 | 旧进程的 ZRAM 页面已随 swap slot 清理，不构成本次新进程的直接恢复路径 |
 
-Android 的冷启动、温启动和热启动是 Activity 启动分类；论文和系统优化语境中的 relaunch 更宽，可能包含从后台任务恢复、Activity 重建或进程重建。本文使用“换入恢复”表示 pid 不变且需要重新触碰 swapped page 的情况，使用“冷启动”表示原进程已经死亡。
+Android 的冷启动、温启动和热启动是 Activity 启动分类；论文和系统优化语境中的 relaunch 更宽，可能包含从后台任务恢复、Activity 重建或进程重建。这里用“换入恢复”表示 pid 不变且需要重新触碰 swapped page，用“冷启动”表示原进程已经死亡。
 
 这个区分很重要。用户感觉“像冷启动”只描述了体验，不能证明进程发生过重建。应先记录 pid、`ApplicationExitInfo` 与 Activity 启动类型，再分析 swap。
 
-本章的平台基线是 Android 17 / API 37 / `android-17.0.0_r1`；内核基线是 `android17-6.18-2026-06_r6`。
+平台基线是 Android 17 / API 37 / `android-17.0.0_r1`，内核基线是 `android17-6.18-2026-06_r6`。
 
 ## ZRAM 位于匿名页回收与进程淘汰之间
 
@@ -164,7 +127,7 @@ flowchart TD
 - `mmd.zram.recompression.algorithm`：次级算法，官方文档默认值为 `zstd`；
 - `mmd.zram.writeback.enabled`：是否配置并使用后备存储。
 
-启用 `mmd.zram.enabled` 后，`swapon_all` 中的 ZRAM setup 变为空操作，旧 overlay `config_zramWriteback` 和 `ro.zram.*` writeback 属性也会被忽略。因此，Android 17 排障不能只检查历史 `ZramWriteback` 属性；要先确认设备使用 MMD 还是旧方案。[已验证: Android MMD 官方文档]
+启用 `mmd.zram.enabled` 后，`swapon_all` 中的 ZRAM setup 变为空操作，旧 overlay `config_zramWriteback` 和 `ro.zram.*` writeback 属性也会被忽略。因此，Android 17 排障不能只检查历史 `ZramWriteback` 属性；要先确认设备使用 MMD 还是旧方案。
 
 ### 全局维护
 
@@ -273,7 +236,7 @@ prefetch 的内核执行分为三段：
 2. `zram_prefetch_read_endio()` 在 I/O 完成时把后续工作投递到 `system_highpri_wq`，因为恢复到 zsmalloc pool 的操作可能睡眠。
 3. `zram_deferred_prefetch()` 调用 `zram_populate_table()`；后者重新取得 slot lock，再次确认 `ZRAM_WB`，防止 I/O 期间 slot 已被释放或替换。
 
-这个时序允许后备存储 I/O 期间释放 slot lock，同时用完成后的二次检查处理并发变化。[已验证: Android common kernel `android17-6.18-2026-06_r6` `drivers/block/zram/zram_drv.c`、`zram_ioctl.c`]
+这个时序允许后备存储 I/O 期间释放 slot lock，同时用完成后的二次检查处理并发变化。
 
 ## 恢复耗时为什么容易出现长尾
 
@@ -345,7 +308,7 @@ return std::min(
 - `ro.lmk.psi_complete_stall_ms`；
 - `ro.lmk.direct_reclaim_threshold_ms`。
 
-这些值影响设备何时认为 swap 过低、何时因 thrashing 或 direct reclaim 选择杀进程。排查具体设备要读取实际属性，不能只引用 AOSP 默认值。[已验证: AOSP `android-17.0.0_r1` `system/memory/lmkd/lmkd.cpp`]
+这些值影响设备何时认为 swap 过低、何时因 thrashing 或 direct reclaim 选择杀进程。排查具体设备要读取实际属性，不能只引用 AOSP 默认值。
 
 ## 16KB Page Size 的准确影响
 

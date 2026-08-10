@@ -59,37 +59,6 @@ last_deepseek_cn_review_at: 2026-06-24
 
 # 4.9 ART FinalizerDaemon 与 ReferenceQueue 性能边界
 
-<!-- outline-start -->
-## 要点
-
-### 🔹 ReferenceQueue 与 FinalizerDaemon 的职责边界
-区分 Java 引用队列、对象终结、ART daemon 线程和应用资源释放责任,避免把内存泄漏、终结延迟和 GC 暂停混成一个问题。
-
-### 🔹 从 GC 标记到 finalizer 执行的路径
-梳理对象进入待终结队列、FinalizerDaemon 取出并执行 finalize()、异常处理和超时监控的观察点。
-
-### 🔹 ReferenceQueue 并发优化的版本口径
-记录 Android 16/17 ART 对 ReferenceQueue / ConcurrentMessageQueue 相关优化的公开证据、源码路径和未验证边界。
-
-### 🔹 队列堆积对内存与卡顿的影响
-分析 finalizer 堆积、CloseGuard 警告、FD 泄漏、native handle 泄漏在 heap、threads、Perfetto 中的表现。
-
-### 🔹 诊断流程与证据采集
-给出 heap dump、`adb shell dumpsys meminfo`、ART log、Perfetto 线程轨道和 simpleperf 的组合观察方式。
-
-### 🔹 工程治理边界
-给出 `AutoCloseable`、显式 close、Cleaner、资源池和测试门禁的适用条件,说明 finalize() 不适合作为主释放路径。
-
-## 扩展
-
-### 🔸 Cleaner / CloseGuard / StrictMode 的组合使用
-补充不同 API level 下可用性、误报来源和 CI 接入方式。
-
-### 🔸 Native 资源释放与 Java wrapper 生命周期
-补 JNI global ref、fd、GraphicBuffer、Bitmap native allocation 的排查模板。
-
-<!-- outline-end -->
-
 看到 `FinalizerDaemon` 忙、FD 数量上涨或 CloseGuard 告警时，先把几个相邻概念分开：
 
 - GC 判断对象的可达性，并把需要后续处理的 `Reference` 交给引用处理机制。
@@ -99,7 +68,7 @@ last_deepseek_cn_review_at: 2026-06-24
 
 前三项属于运行时机制，最末项才是资源所有权。运行时可以延后清理，也可能在进程结束前来不及执行；因此不能用 GC 是否发生来证明资源已经释放。
 
-本章源码锚点为 AOSP `android-17.0.0_r1` 的 `platform/libcore`。其中 `ReferenceQueue.java`、`FinalizerReference.java` 和 `Daemons.java` 共同定义了 Android 17 的引用入队、对象终结和超时监控行为。
+源码以 AOSP `android-17.0.0_r1` 的 `platform/libcore` 为锚点。`ReferenceQueue.java`、`FinalizerReference.java` 和 `Daemons.java` 共同定义了 Android 17 的引用入队、对象终结和超时监控行为。
 
 ## 1. 一张表分清四个角色
 
@@ -277,7 +246,7 @@ watchdog 把一个超时窗口分成 5 次唤醒。每次醒来都会比较活�
 
 当超时成立且调试器未连接时，watchdog 会先给本进程发送 `SIGQUIT`，留出时间记录 native 栈，再把超时异常交给未捕获异常处理机制。Zygote 派生的应用进程通常由 `RuntimeInit` 的处理器生成崩溃报告并终止进程。调试器连接期间，源码明确跳过这次致命超时处理。
 
-所以，“看到 FinalizerDaemon 很忙”和“watchdog 判定进程必须终止”之间还有进度、超时窗口、调试器状态等条件。诊断报告要保留这些条件。
+“看到 FinalizerDaemon 很忙”和“watchdog 判定进程必须终止”之间还有进度、超时窗口、调试器状态等条件。诊断报告要保留这些条件。
 
 ## 5. Android 17 的三种 Cleaner 路径
 
@@ -327,7 +296,7 @@ SystemCleaner.cleaner()
            -> Cleanable.clean()
 ```
 
-官方契约要求这类动作快速结束，并避免显式 I/O、IPC 和网络访问。原因有两层：
+官方契约要求这类动作快速结束，并避免显式 I/O、IPC 和网络访问。原因如下：
 
 - 全进程共享，同一 action 会挡住后续共享清理动作；
 - 它与普通 finalizer 共用 `FinalizerDaemon`，还受 finalizer watchdog 监控。
@@ -374,7 +343,7 @@ fun decode(path: String): Result {
 
 Cleaner 只在 owner 变成 phantom reachable 后自动执行。如果 action 直接或间接引用 owner，owner 会一直可达，自动清理也就永远没有机会开始。
 
-下面的 Java 示例适用于 API 33 及以上。它使用静态嵌套状态对象，并用 `AtomicLong.getAndSet(0)` 让 native handle 最多释放一次：
+以下 Java 示例适用于 API 33 及以上。它使用静态嵌套状态对象，并用 `AtomicLong.getAndSet(0)` 让 native handle 最多释放一次：
 
 ```java
 final class NativeSession implements AutoCloseable {
@@ -536,7 +505,7 @@ Perfetto 可用来观察：
 
 Perfetto 默认没有公开的 `FinalizerReference.queue` 深度计数器。线程轨道繁忙只能说明 daemon 活跃，不能单独证明队列里有多少对象。
 
-simpleperf 适合在 CPU 异常时找热点函数；具备符号和可展开栈时，可以看到 native 清理函数或锁竞争相关调用。它也不提供引用队列长度，阻塞型问题仅看 CPU profile 还可能没有明显热点。
+simpleperf 适合在 CPU 异常时找热点函数；具备符号和可展开栈时，采样结果会包含 native 清理函数或锁竞争相关调用。它也不提供引用队列长度，阻塞型问题仅看 CPU profile 还可能没有明显热点。
 
 ### 8.4 heap dump 能做什么
 
