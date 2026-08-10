@@ -72,23 +72,6 @@ last_deepseek_polish_at: "2026-05-24"
 ---
 # 从采集到治理的反馈回路
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点(必须覆盖)
-
-- 🔹 线上性能治理不等于"把数据采回来"
-- 🔹 治理回路至少包含:采集、采样、聚合、归因、告警、回查、修复、验收
-- 🔹 指标、trace、会话上下文、版本/机型维度要能关联
-- 🔹 没有接通处理回路的监控系统,最终会退化成日志堆积
-- 🔹 把性能问题转成 backlog,并用回归验证确认结果,才进入治理
-
-### 扩展(可选深入)
-
-- 🔸 trace-id / session-id / page-id 的埋点设计
-- 🔸 自建平台中的 schema 演进和存储成本控制
-<!-- outline-end -->
-
 ## 监控系统何时开始失效
 
 一套平台可以持续接收指标，却无法回答某次回归由谁处理、依据是什么、修复是否有效。数据采集只完成了观测工作，治理还要求异常经过识别、调查、流转和验收。
@@ -103,7 +86,7 @@ last_deepseek_polish_at: "2026-05-24"
 
 任一项长期缺失，监控数据都会与工程工作脱节。常见表现包括告警重复、工单没有证据、同类问题反复调查，以及修复上线后无人核对结果。
 
-本节的技术边界只锚定到公开 AndroidX `metrics-performance:1.0.0` 源码、Android Vitals 与 Perfetto 官方文档，以及 AOSP `android-17.0.0_r1` / Android common kernel `android17-6.18` 可核验接口。文中的阈值与 SLA 均作为团队内治理方法描述；凡涉及具体产品红线，都要求在工单或规则旁记录分母、样本量和制定依据，不从通用示例外推出平台结论。
+技术边界限于公开的 AndroidX `metrics-performance:1.0.0` 源码、Android Vitals 与 Perfetto 官方文档，以及 AOSP `android-17.0.0_r1` / Android common kernel `android17-6.18` 可核验接口。阈值与 SLA 均用于说明团队内部治理方法；具体产品红线还要在工单或规则旁记录分母、样本量和制定依据，不能从通用示例外推出平台结论。
 
 ## 先区分四种数据
 
@@ -135,9 +118,9 @@ last_deepseek_polish_at: "2026-05-24"
 
 #### 帧信号：JankStats 的准确边界
 
-本章固定 `androidx.metrics:metrics-performance:1.0.0`。源码中的入口是 `JankStats.createAndTrack(window, JankStats.OnFrameListener)`，回调参数是 `FrameData`，不存在 `FrameData.getFrames()`。
+AndroidX 版本固定为 `androidx.metrics:metrics-performance:1.0.0`。源码中的入口是 `JankStats.createAndTrack(window, JankStats.OnFrameListener)`，回调参数是 `FrameData`，不存在 `FrameData.getFrames()`。
 
-JankStats 按 Window 工作。API 24 及以上基于 `FrameMetrics`，更早版本回退到 `OnPreDrawListener`；本书范围从 API 26 开始。所有版本都提供 `frameStartNanos`、`frameDurationUiNanos`、`isJank` 和 `states`。API 24 及以上的对象可表现为 `FrameDataApi24`，增加 `frameDurationCpuNanos`；API 31 及以上可表现为 `FrameDataApi31`，再增加 `frameDurationTotalNanos` 和 `frameOverrunNanos`。
+JankStats 按 Window 工作。API 24 及以上基于 `FrameMetrics`，更早版本回退到 `OnPreDrawListener`；讨论范围从 API 26 开始。所有版本都提供 `frameStartNanos`、`frameDurationUiNanos`、`isJank` 和 `states`。API 24 及以上的对象可表现为 `FrameDataApi24`，增加 `frameDurationCpuNanos`；API 31 及以上可表现为 `FrameDataApi31`，再增加 `frameDurationTotalNanos` 和 `frameOverrunNanos`。
 
 `FrameDataApi31.frameOverrunNanos` 来自 `FrameMetrics.TOTAL_DURATION - FrameMetrics.DEADLINE`。它为正表示帧超过平台给出的 deadline，为负表示仍有余量。`isJank` 由 JankStats 的 UI duration heuristic 判断，默认 multiplier 为 2；这两个字段的判定口径不同。
 
@@ -284,7 +267,7 @@ Play Vitals 与自建指标可以放在同一治理页面，但要标出来源�
 
 固定阈值适合稳定的用户体验边界；动态基线适合季节性、地域和流量变化。两者可以同时使用。发布阻断采用明确预算，日常预警采用较低门槛和连续窗口，容量异常采用增长速度与剩余空间。
 
-原文中的“TTFD 2.5 s”“Binder P99 50 ms”“每分钟 3 个 frozen frame”没有产品基线和官方来源，不能写成通用 SLA。团队应从自身 SLO、历史分布、用户影响、样本量和处理能力推导阈值，并在规则旁记录制定日期与依据。
+“TTFD 2.5 s”“Binder P99 50 ms”“每分钟 3 个 frozen frame”缺少产品基线和官方来源，不能作为通用 SLA。团队应从自身 SLO、历史分布、用户影响、样本量和处理能力推导阈值，并在规则旁记录制定日期与依据。
 
 告警消息应描述“发生了什么”，例如“版本 B 的 Feed warm start P95 相对同设备分群的版本 A 上升，样本量满足门槛”。归因结果在证据确认后补充。这样可以避免把网络波动、采样切换或设备构成变化提前写成代码根因。
 
@@ -413,12 +396,12 @@ Java/Kotlin 代码可以使用平台或 AndroidX tracing 注解把业务阶段�
 | 查询成本持续增长 | 高基数标签、无限保留原始数据 | 分离事件与指标，设置 rollup/TTL |
 | 多业务线可互相看到附件 | 只在 UI 过滤 tenant | 在鉴权、查询、对象存储全程校验 |
 
-## 本节与其他章节的关系
+## 与其他章节的关系
 
 - §7、§8、§9 描述流畅性、启动和 ANR 的机制与证据。
 - §15.3 定义指标契约和分母。
 - §15.5 讨论线上采集、保护开关和监控实现。
-- 本节把指标、样本、工单、发布与验收组织成持续过程。
+- §15.9 把指标、样本、工单、发布与验收组织成持续过程。
 - §15.10 继续讨论团队责任、门禁和长期运行。
 
 Android 平台源码锚点固定为 `android-17.0.0_r1`，最高平台版本为 Android 17 / API 37。涉及 sched、cgroup、Binder driver 等内核证据时，使用 `android17-6.18-2026-06_r6`；厂商设备必须对照设备对应的 kernel build 与源码。JankStats 属于 AndroidX 库，版本边界单独固定为 `metrics-performance:1.0.0`，不能用平台 API 37 代替库版本。

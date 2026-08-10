@@ -70,32 +70,6 @@ last_deepseek_cn_review_at: 2026-06-18
 
 # APM 全景图与分类体系
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 [定位] 说明 APM 解决线上可见性，不替代 Perfetto、Android Studio Profiler、simpleperf、heap dump；补一个线上慢帧或 OOM 样本从发现到定位的例子。
-- 🔹 [分类] 把客户端 APM、官方指标 SDK、线下研发工具、Benchmark 工具按采集位置、使用阶段、输出数据、工程成本做成对照表。
-- 🔹 [数据模型] 展开指标、样本、trace、上下文四类证据；每类至少写 3 个字段例子和一个误用场景。
-- 🔹 [证据路径] 写清从指标异常到样本筛选，再到 trace / dump / report 复核的排查路径；避免只停留在工具清单。
-- 🔹 [采集方式] 比较 Looper、Choreographer、FrameMetrics、字节码插桩、native hook、系统 profiling 的成本、版本边界和适用问题。
-- 🔹 [工具边界] 给出“什么时候只用 APM 不够”的判断表，包括 CPU 争抢、Binder 卡住、I/O 等待、GPU 阻塞、Java / native 内存泄漏。
-- 🔹 [选型框架] 按团队已有平台、发版节奏、隐私要求、低端设备比例、专项问题类型，推导应该优先接入哪些工具。
-- 🔹 [数据合同] 明确 event 名称、维度、单位、采样、脱敏、保留周期、trace id / session id 关系；提供一份最小字段模板。
-- 🔹 [线上策略] 说明灰度开关、采样率、磁盘缓存、上传失败重试、端侧降级和服务端聚合对结论可信度的影响。
-- 🔹 [章节关系] 交代本章后续各节的分工，让读者知道 Matrix、KOOM、JankStats、Firebase、PerfDog、Benchmark 分别回答哪类问题。
-
-### 扩展（可选深入）
-
-- 🔸 画一张“端侧采集 -> 本地缓冲 -> 上传 -> 服务端聚合 -> 告警/查询 -> 专项诊断”的架构图。
-- 🔸 加一份 APM 数据 schema 示例，覆盖启动、慢帧、ANR、OOM、I/O、网络请求。
-- 🔸 增加一张“工具选择速查表”，按问题类型映射到推荐工具和后续验证方式。
-- 🔸 补充隐私与合规检查项，特别是 URL、文件路径、日志片段、用户标识、Hprof 摘要。
-- 🔸 对所有 Android 官方 API 和开源项目状态做 L1/L2 核对，过期项目要明确写边界。
-
-<!-- outline-end -->
-
 ## APM 先解决线上可见性
 
 APM（Application Performance Monitoring）负责回答三类线上问题：
@@ -110,7 +84,7 @@ APM SDK 通常只能看到应用有权限采集的信号。一次慢帧可能来
 
 ## Android 17 复核基线
 
-| 层级 | 本文基线 | APM 能看到什么 |
+| 层级 | 版本基线 | APM 能看到什么 |
 |---|---|---|
 | Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | `ApplicationExitInfo`、`FrameMetrics`、`ProfilingManager`、系统 trace 与进程生命周期 |
 | Android 内核 | `android17-6.18-2026-06_r6` | scheduler、I/O、binder driver、dma-buf/fence、内存压力等底层事实；普通应用不能任意读取这些数据 |
@@ -418,7 +392,7 @@ Android 17 上可以把 ProfilingManager 接入少量高价值样本，例如：
 | 低端设备占比高 | 更低采样、更小缓冲、端侧聚合、严格 kill switch | APM 开销更容易污染被测性能 |
 | 隐私或合规限制严格 | 数据最小化、端侧聚合、短保留期、可审计 schema | 降低原始内容离开设备的范围 |
 
-Matrix、KOOM、btrace/RheaTrace、Measure、Firebase、Sentry、APMPlus 等工具各自覆盖一部分问题。项目活跃度、license、版本兼容和维护者状态会变化，接入前要查看对应仓库/release 和最小验证应用，不能沿用旧文章中的“主流/维护中”标签。
+Matrix、KOOM、btrace/RheaTrace、Measure、Firebase、Sentry、APMPlus 等工具各自覆盖一部分问题。项目活跃度、license、版本兼容和维护者状态会变化，接入前要查看对应仓库/release 和最小验证应用，不能仅凭过时的“主流/维护中”标签判断。
 
 ## 分阶段建设顺序
 
