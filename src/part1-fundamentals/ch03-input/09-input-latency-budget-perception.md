@@ -58,8 +58,8 @@ last_task6_audit: "2026-07-01"
 | 口径 | 起点 | 终点 | 能回答的问题 | 主要限制 |
 | --- | --- | --- | --- | --- |
 | 触摸/触控笔到光子（touch-to-photon / stylus-to-photon） | 传感器检测到物理动作，或高速相机看到手指开始运动 | 面板目标像素发光 | 用户看到反馈前总共等了多久 | 需要外部仪器；Android 轨迹看不到触控 IC 内部延迟和面板像素响应 |
-| 事件到呈现（event-to-present） | Linux 输入事件的 `eventTime` | 对应帧的呈现时间 | 从内核输入时间戳到系统呈现用了多久 | `eventTime` 不一定等于物理接触时刻；帧关联可能不确定 |
-| 读取到呈现（read-to-present） | EventHub / InputReader 的 `read_time` | 关联帧的呈现时间 | Android 软件从读取事件到呈现的路径是否变慢 | 不包含触控硬件到 evdev 的完整时间，也不等于像素发光时刻 |
+| event-to-present | Linux input event 的 `eventTime` | 对应 frame 的 present | 从内核输入时间戳到系统呈现用了多久 | `eventTime` 不一定等于物理接触时刻；帧关联可能不确定 |
+| read-to-present | EventHub / InputReader 的 `read_time` | 关联 frame 的 present | Android 软件从读取事件到呈现的路径是否变慢 | 不包含触控硬件到 evdev 的完整时间；也不等于 photon 时刻 |
 | dispatch-to-ACK | InputDispatcher 发送事件 | InputDispatcher 收到应用的 FINISHED ACK | 窗口接收和完成输入处理是否及时 | 不包含 InputReader 前段，也不包含对应画面何时显示 |
 
 产品指标名称应写明起止点，例如 `touch-to-photon P95`、`input-read-to-present P90`、`dispatch-to-ack P95`。只写 `input latency` 会把不同问题混在一起。
@@ -79,7 +79,7 @@ flowchart LR
     APP --> CH["Choreographer / UI / RenderThread"]
     CH --> BQ["BufferQueue"]
     BQ --> SF["SurfaceFlinger / HWC"]
-    SF --> PANEL["扫描输出与面板发光"]
+    SF --> PANEL["scanout 与面板发光"]
 ```
 
 AOSP 官方输入文档描述了前半段：驱动把设备信号转换成 Linux input event，EventHub 打开 `/dev/input/event*` 对应的 evdev 节点，InputReader 解码并生成 Android 输入事件，InputDispatcher 再把事件发给目标窗口。
@@ -89,11 +89,11 @@ Android 17 的 `EventHub.cpp` 为每个 `RawEvent` 保存两个时间：
 - `when` 来自 evdev `input_event` 的时间戳；
 - `readTime` 是 EventHub 读到该事件时的 `CLOCK_MONOTONIC` 时间。
 
-通用内核 `android17-6.18-2026-06_r6` 中，驱动可以用 `input_set_timestamp()` 提供更准确的 `CLOCK_MONOTONIC` 事件时间；驱动未提供时，输入核心在事件进入子系统时用 `ktime_get()` 生成时间戳。evdev 再把该时间写入客户端队列。
+通用内核 `android17-6.18-2026-06_r6` 中，驱动可以用 `input_set_timestamp()` 提供更准确的 `CLOCK_MONOTONIC` 事件时间；驱动未提供时，input core 在事件进入子系统时用 `ktime_get()` 生成时间戳。evdev 再把该时间写入客户端队列。
 
-`eventTime` 的精度取决于驱动何时采集和设置时间戳。它通常比 EventHub 的 `readTime` 更接近事件发生时刻，但仍可能晚于触控 IC 检测到物理动作的时刻。只有外部高速相机、光电传感器或专用延迟仪能覆盖从物理动作到像素发光的完整区间。
+`eventTime` 的精度取决于驱动何时采集和设置时间戳。它通常比 EventHub 的 `readTime` 更接近事件发生时刻，但仍可能晚于触控 IC 检测到物理动作的时刻。只有外部高速相机、光电传感器或专用延迟仪能覆盖 physical-to-photon。
 
-InputDispatcher 到应用采用 InputChannel 套接字传输，并要求应用返回 FINISHED ACK。该确认表示输入消费流程完成，不表示对应像素已经显示。用户看到反馈还要经过 `Choreographer`、应用 UI / RenderThread、BufferQueue、SurfaceFlinger、HWC、显示扫描和像素响应。
+InputDispatcher 到应用采用 InputChannel 套接字传输，并要求应用返回 FINISHED ACK。ACK 表示输入消费流程完成，不表示对应像素已经显示。用户看到反馈还要经过 `Choreographer`、应用 UI / RenderThread、BufferQueue、SurfaceFlinger、HWC、显示扫描和像素响应。
 
 ## 用时间戳差值建立预算
 
@@ -104,13 +104,13 @@ InputDispatcher 到应用采用 InputChannel 套接字传输，并要求应用�
 | 硬件与内核前段 | 外部物理动作 → evdev `eventTime` | 触控采样率、固件批处理、总线、IRQ / 驱动线程、时间戳位置 |
 | evdev 等待读取 | `readTime - eventTime` | EventHub 调度延迟、事件风暴、驱动积压、系统负载 |
 | InputReader 到分发 | `dispatch_ts - read_time`，配合输入线程切片 | InputReader 映射与过滤、InputDispatcher 排队、线程调度 |
-| 套接字交付 | `receive_ts - dispatch_ts` | InputChannel、目标进程调度、应用主线程是否获得运行机会 |
+| socket 交付 | `receive_ts - dispatch_ts` | InputChannel、目标进程调度、应用主线程是否获得运行机会 |
 | 应用处理与确认 | `finish_ts - receive_ts` | `ViewRootImpl` 输入阶段、手势处理、同步 I/O、锁、重布局 |
-| 确认返回 | `finish_ack_ts - finish_ts` | 套接字回程与 InputDispatcher 调度 |
-| 输入到呈现 | `present_time - read_time`，同时查看帧关联 | `doFrame` 等待、UI / RenderThread、GPU、BufferQueue、SurfaceFlinger、HWC |
-| 呈现到像素发光 | 外部呈现/扫描输出信号 → 目标像素发光 | 扫描方向、面板响应、显示处理与厂商硬件 |
+| ACK 返回 | `finish_ack_ts - finish_ts` | socket 回程与 InputDispatcher 调度 |
+| 输入到呈现 | `present_time - read_time`，同时查看 frame association | `doFrame` 等待、UI / RenderThread、GPU、BufferQueue、SurfaceFlinger、HWC |
+| 呈现到 photon | 外部 present / scanout 信号 → 目标像素发光 | 扫描方向、面板响应、显示处理与厂商硬件 |
 
-这些区间并非总能简单相加。CPU 与 GPU 可能并行，多个输入样本可能合并进同一帧，FrameTimeline 的呈现时间也早于面板某个像素完成响应。预算表用于确定责任边界，不能用若干估计值拼出一个看似精确的总数。
+这些区间并非总能简单相加。CPU 与 GPU 可能并行，多个输入样本可能合并进同一帧，FrameTimeline 的 present 也早于面板某个像素完成响应。预算表用于确定责任边界，不能用若干估计值拼出一个看似精确的总数。
 
 ## HCI 研究为什么不能变成一套通用阈值
 
@@ -127,7 +127,7 @@ InputDispatcher 到应用采用 InputChannel 套接字传输，并要求应用�
 
 建立产品阈值时，应先固定交互原语和测量定义：
 
-1. 点击看首个可见反馈，报告触摸到光子或事件到呈现的延迟。
+1. 点击看首个可见反馈，报告 touch-to-photon 或 event-to-present。
 2. 拖动、书写看连续轨迹与手指 / 笔尖的空间差，同时报告延迟、步幅波动和预测误差。
 3. 游戏还要区分输入到本地判定、输入到渲染帧、网络确认和最终显示。
 4. 同一脚本覆盖目标机型、刷新率、温控状态和电源模式，至少比较 P50、P90、P95。
@@ -144,9 +144,9 @@ InputDispatcher 到应用采用 InputChannel 套接字传输，并要求应用�
 | 120 Hz | 8.33 ms |
 | 144 Hz | 6.94 ms |
 
-更高刷新率增加了应用和显示系统呈现新画面的机会，并缩短错过一个显示节拍的时间成本。它不会缩短业务同步任务、GPU shader、BufferQueue 积压或面板处理本身。高刷设备持续错过截止时间时，拖动仍会滞后。
+更高刷新率增加了应用和显示系统呈现新画面的机会，并缩短错过一个显示节拍的时间成本。它不会缩短业务同步任务、GPU shader、BufferQueue 积压或面板处理本身。高刷设备持续错过 deadline 时，拖动仍会滞后。
 
-Android 15 及后续版本的 ARR 还会让渲染帧率随内容和交互策略变化。分析轨迹时要读取当时的刷新率和渲染帧率，不能用启动时的峰值刷新率换算整段时间。2.18、2.19 和 3.8 节继续讨论刷新率选择。
+Android 15 及后续版本的 ARR 还会让 render rate 随内容和交互策略变化。分析 trace 时要读取当时的 refresh / render rate，不能用启动时的峰值刷新率换算整段时间。2.18、2.19 和 3.8 节继续讨论刷新率选择。
 
 ## 重采样和预测改变的是坐标时间
 
@@ -157,7 +157,7 @@ Android 17 的 `InputConsumer.cpp` 使用以下边界处理触摸重采样：
 - `RESAMPLE_MAX_DELTA = 20ms`；
 - `RESAMPLE_MAX_PREDICTION = 8ms`，并且外推不超过最近样本间隔的一半。
 
-批量消费事件时，目标采样时间是 `frameTime - 5ms`。存在未来样本时做插值，只有历史样本时才在限制内外推。这里的 5 ms 是重采样目标相对帧时间的偏移，用来限制误预测；不能解读为“系统固定增加 5 ms”，也不能写成“端到端减少 5 ms”。
+批量消费事件时，目标采样时间是 `frameTime - 5ms`。存在未来样本时做插值，只有历史样本时才在限制内外推。这里的 5 ms 是重采样目标相对 frame time 的偏移，用来限制误预测；不能解读为“系统固定增加 5 ms”，也不能写成“端到端减少 5 ms”。
 
 Motion Prediction Jetpack 库提供更上层的未来 `MotionEvent` 估计。官方文档要求在真实事件到达后用真实数据替换预测数据。预测可以填补笔尖与轨迹之间的视觉空隙，也会引入误差；效果评估要同时记录滞后、抖动、过冲和回滚痕迹。3.4 节详述这两类机制。
 
@@ -165,7 +165,7 @@ Motion Prediction Jetpack 库提供更上层的未来 `MotionEvent` 估计。官
 
 Android 17 对应的 Perfetto `android.input` 标准库包含两组不同来源的数据。
 
-### `android_input_events`：套接字往返与帧关联
+### `android_input_events`：socket 往返与帧关联
 
 这张表由输入 ATrace 切片和 FrameTimeline 构建，核心字段定义如下：
 
@@ -175,7 +175,7 @@ Android 17 对应的 Perfetto `android.input` 标准库包含两组不同来源�
 - `total_latency_dur = finish_ack.ts - dispatch.ts`；
 - `end_to_end_latency_dur = frame.present_time - frame.read_time`。
 
-`total_latency_dur` 只覆盖分发到 FINISHED 确认。`end_to_end_latency_dur` 从 InputReader 的读取时间开始，不含触控硬件前段，也不含面板像素响应延迟。
+`total_latency_dur` 只覆盖 dispatch 到 FINISHED ACK。`end_to_end_latency_dur` 从 InputReader 的 read time 开始，不含可见的触控硬件前段，也不含 panel photon 延迟。
 
 标准库先尝试把 `deliverInputEvent` 与同线程的 `Choreographer#doFrame` 按时间区间关联；找不到时，会选择后续最近的一帧并把 `is_speculative_frame` 标成 `true`。相关字段应按以下方式解读：
 
@@ -209,29 +209,29 @@ LIMIT 50;
 - `android_motion_events` / `android_key_events` 提供 `event_id`、`source`、`action`、`device_id`、`display_id` 等事件属性；
 - `android_input_event_dispatch` 只提供 `event_id`、`arg_set_id`、`vsync_id` 和目标 `window_id`。
 
-`android_input_event_dispatch` 本身没有分发开始、结束或确认耗时。需要按 `event_id` 与运动事件/按键视图关联；套接字往返耗时仍看 `android_input_events`。采集轨迹时要同时开启所需的输入 ATrace 和 FrameTimeline 数据，否则表或字段可能为空。
+`android_input_event_dispatch` 本身没有 dispatch 开始、结束或 ACK 耗时。需要按 `event_id` 与 motion / key view 关联；socket 往返耗时仍看 `android_input_events`。抓 trace 时要同时开启所需 input atrace 和 FrameTimeline 数据，否则表或字段可能为空。
 
 ## FrameTimeline：帧很稳也可能延迟很高
 
-Perfetto 把浅绿色 FrameTimeline 切片定义为高延迟状态：帧率平稳，但帧晚于预期呈现，输入延迟随之增加。
+Perfetto 把浅绿色 FrameTimeline 切片定义为 high latency state：帧率平稳，但帧晚于预期呈现，输入延迟随之增加。
 
-`Buffer Stuffing` 是典型例子。应用在前一帧呈现前持续提交新缓冲区，队列中积压了待呈现内容。应用每帧的工作甚至可能按时完成，但画面仍至少晚一个 VSync；队列占满后，应用还可能阻塞在出队操作。
+`Buffer Stuffing` 是典型例子。应用在前一帧 present 前持续提交新 buffer，队列中积压了待呈现内容。应用每帧的工作甚至可能按时完成，但画面仍至少晚一个 VSync；队列占满后，应用还可能阻塞在 dequeue。
 
 因此要同时读取：
 
-- 应用帧的 `on_time_finish`；
+- App frame 的 `on_time_finish`；
 - `present_type` 是否为 `Late Present`；
 - `jank_type` 是否包含 `Buffer Stuffing`；
 - 对应的 SurfaceFlinger DisplayFrame；
 - `actual_frame_timeline_slice` 的呈现时间。
 
-主线程和 RenderThread 都按截止时间完成，只能排除一部分应用慢帧；这不能证明输入反馈已经及时显示。
+主线程和 RenderThread 都按 deadline 完成，只能排除一部分应用慢帧；这不能证明输入反馈已经及时显示。
 
 ## 游戏模式和厂商低延迟模式怎样验证
 
 Android 17 的 `GameManagerService` 可确认的 AOSP 能力包括：
 
-- 游戏模式状态与每个模式的配置；
+- Game Mode 状态与每个模式的配置；
 - FPS override、分辨率缩放和 ANGLE 配置；
 - 前台游戏对应的 Power HAL `Mode.GAME`；
 - 游戏加载阶段的 `Mode.GAME_LOADING`。
@@ -249,14 +249,14 @@ AOSP 没有公开的通用“提高 InputDispatcher 输入优先级”游戏 API
 
 ## 手写场景还要看前缓冲与预测误差
 
-Android 官方手写笔文档把延迟拆为硬件与操作系统输入处理、应用处理、系统合成和硬件渲染。Jetpack 低延迟图形库从 Android 10 / API 29 起可用，它用前缓冲渲染减少多缓冲区交换带来的等待。
+Android 官方手写笔文档把延迟拆为硬件与 OS 输入处理、应用处理、系统合成和硬件渲染。Jetpack low-latency graphics library 从 Android 10 / API 29 起可用，它用 front-buffer rendering 减少多 buffer 交换带来的等待。
 
-前缓冲适合笔迹这类小区域、持续更新的内容。应用写入显示系统正在读取的缓冲区，存在画面撕裂风险；全屏复杂界面不应直接套用同一方案。
+前缓冲适合笔迹这类小区域、持续更新的内容。应用写入显示正在读取的 buffer，存在 tearing 风险；全屏复杂 UI 不应直接套用同一方案。
 
 | 场景 | 首要测量 | 同时观察 |
 | --- | --- | --- |
 | 普通点击 | touch-to-photon 或 read-to-first-present P90/P95 | 主线程首次反馈、目标 View 是否 invalidate |
-| 列表拖动 | 输入到呈现的延迟分布 | 每帧位移、刷新率、重采样、Buffer Stuffing |
+| 列表拖动 | input-to-present 分布 | 每帧位移、刷新率、重采样、Buffer Stuffing |
 | 手写 / 绘图 | stylus-to-photon 与笔尖—墨迹距离 | 预测误差、front-buffer tearing、笔迹合并 |
 | 游戏 | input-to-local-frame P95 | 判定线程、GPU、Game Mode、温控后的长尾 |
 
@@ -264,7 +264,7 @@ Android 官方手写笔文档把延迟拆为硬件与操作系统输入处理、
 
 ### InputDispatcher 很快，用户就会立刻看到反馈
 
-分发到确认的延迟正常，只说明窗口及时消费了输入。应用可能没有重绘，或新缓冲区仍在等待呈现。
+分发到确认的延迟正常，只说明窗口及时消费了输入。应用可能没有重绘，或新 buffer 仍在等待呈现。
 
 ### `eventTime` 就是手指接触屏幕的时刻
 
@@ -280,12 +280,12 @@ Android 官方手写笔文档把延迟拆为硬件与操作系统输入处理、
 
 ### ANR 超时可以当成交互指标
 
-ANR 用来保护系统免受秒级无响应影响。触摸、拖动和书写的体验问题发生在更短时间尺度，应使用按场景定义的输入到呈现指标。
+ANR 用来保护系统免受秒级无响应影响。触摸、拖动和书写的体验问题发生在更短时间尺度，应使用按场景定义的 input-to-present 指标。
 
 ## 版本与源码边界
 
 - Android 平台实现按 `android-17.0.0_r1` 复核。
-- 内核输入核心/evdev 按 `android17-6.18-2026-06_r6` 复核；触控驱动和固件仍取决于设备厂商。
+- 内核 input core / evdev 按 `android17-6.18-2026-06_r6` 复核；触控驱动和固件仍取决于设备厂商。
 - Jetpack 低延迟图形库的官方可用起点是 Android 10 / API 29。
 - HCI 论文中的装置与历史设备数据用于解释任务差异，不代表 Android 17 设备的基准值。
 
@@ -297,8 +297,8 @@ ANR 用来保护系统免受秒级无响应影响。触摸、拖动和书写的�
 - [EventHub.cpp：evdev 读取、eventTime 与 readTime](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/reader/EventHub.cpp)
 - [InputConsumer.cpp：重采样目标与边界](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/input/InputConsumer.cpp)
 - [Resampler.cpp：插值与外推实现](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/input/Resampler.cpp)
-- [GameManagerService.java：游戏模式与干预项](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/app/GameManagerService.java)
-- [Android 17 通用内核输入核心](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/input/input.c)
+- [GameManagerService.java：Game Mode 与干预项](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/app/GameManagerService.java)
+- [Android 17 通用内核 input core](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/input/input.c)
 - [Android 17 通用内核 evdev](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/input/evdev.c)
 - [Perfetto android.input SQL：Android 17 tag](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/input.sql)
 - [PerfettoSQL `android.input` 标准库文档](https://perfetto.dev/docs/analysis/stdlib-docs#android-input)
