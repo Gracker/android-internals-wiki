@@ -327,7 +327,7 @@ Android 构建可以通过 `pm.dexopt.<reason>` 配置不同原因对应的 comp
 
 Baseline Profile 通常位于 APK 的 `assets/dexopt/baseline.prof`。安装渠道可以把 Profile 编入 dex metadata（例如 `base.dm`）并随 APK 交付；使用 `ProfileInstaller` 的应用也可以在运行后把 Profile 写入系统可消费的位置，再等待后台 dexopt。
 
-不能笼统声称“只要 APK 带 Baseline Profile，安装按钮结束前就一定完成 AOT”。Play、ADB、IDE、本地侧载以及 OEM 构建可以采用不同调度时机。判断时应检查设备上的 ART 状态和编译原因。
+不能笼统声称“只要 APK 带 Baseline Profile，安装按钮结束前就一定完成 AOT”。Play、ADB、IDE、本地 sideload 以及 OEM 构建可以采用不同调度时机。判断时应检查设备上的 ART 状态和编译原因。
 
 Startup Profile 则更容易被误解。它影响的是 R8/D8 如何把启动相关类和方法布置到 DEX，目的是减少启动时的 page fault 和随机读取；它不会在设备上触发一个名为“Startup Profile 编译”的 PMS 阶段。
 
@@ -371,7 +371,7 @@ adb shell pm bg-dexopt-job
 
 Android 14+ 的后台编译由 ART Service 的 `BackgroundDexoptJob` 管理。标准调度通常每天一次，要求设备空闲且充电；设备退出 idle 后，运行中的任务会被取消。厂商可以调整约束和策略。
 
-ART Service 不再保留旧 PMS 模型中的开机后 post-boot dexopt job。这样可以避免刚开机时的编译任务与用户操作直接争抢资源。需要补齐的编译工作交给后台任务，在满足空闲、charging 等条件时继续。
+ART Service 不再保留旧 PMS 模型中的开机后 post-boot dexopt job。这样可以避免刚开机时的编译任务与用户操作直接争抢资源。需要补齐的编译工作交给后台任务，在满足 idle、charging 等条件时继续。
 
 OTA 或 Mainline 更新后，已有编译产物是否还能复用取决于 boot image、classpath、APEX 版本、编译依赖和产物校验结果。不要把 OTA 后的行为概括成“所有应用重新编译”：
 
@@ -469,7 +469,7 @@ Android 17 源码中可直接找到的 trace 名称包括：
 - `dexopt`
 - `commitPackages`
 
-具体设备可能因 feature flag、厂商修改或代码分支而缺少部分切片。先搜索现有切片，再围绕时间段展开，不要依赖一套固定 SQL 名单。
+具体设备可能因 feature flag、厂商修改或代码分支而缺少部分 slice。先搜索现有 slice，再围绕时间段展开，不要依赖一套固定 SQL 名单。
 
 ### 诊断顺序
 
@@ -546,7 +546,7 @@ Android 17 源码把它作为可选 ART 管理文件。没有 `.sdm` 是正常�
 | Android 16 | Android 17 源码注释确认 `.sdm` 格式由此引入 | 可选云编译输入进入 session 签名与 ART 产物管理 |
 | Android 17 | 当前固定基线；保留 ART 管理文件校验、SDM/SDC 复用判断和现代安装提交路径 | 以 `android-17.0.0_r1` 的实际 feature flag 和产品配置判断行为 |
 
-版本变化必须能由固定标签或官方文档确认。没有类、提交或官方行为说明支撑的说法，不应写成平台事实。
+版本变化必须能由固定 tag 或官方文档确认。没有类、提交或官方行为说明支撑的说法，不应写成平台事实。
 
 ---
 
