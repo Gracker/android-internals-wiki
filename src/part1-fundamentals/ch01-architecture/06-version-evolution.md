@@ -288,7 +288,7 @@ Android 16 还把 `basename()`/`dirname()` 使用的 TLS 缓冲区改为首次�
 
 Android 15 / API 35 引入 `ProfilingManager` 的应用主动请求接口。Android 16 / API 36 增加系统触发 profiling：应用注册关注的触发类型，系统在 `reportFullyDrawn()` 或 ANR 等事件附近采集并把结果交给应用。
 
-Android 16 还调整 JobScheduler 的普通和加急 Job 运行时配额。配额会考虑 standby bucket、任务启动时应用是否处于 top 状态，以及任务是否在前台服务运行期间执行。前台服务不再等同于“Job 一定不计配额”。排查任务未运行时，应读取 `pending reason`、`stop reason` 和约束，不能只看是否启动过前台服务。
+Android 16 还调整 JobScheduler 的普通和 expedited job 运行时配额。配额会考虑 standby bucket、任务启动时应用是否处于 top 状态，以及任务是否在前台服务运行期间执行。前台服务不再等同于“Job 一定不计配额”。排查任务未运行时，应读取 `pending reason`、`stop reason` 和约束，不能只看是否启动过前台服务。
 
 ### Android 17：MessageQueue、ProfilingTrigger 与 Job 诊断
 

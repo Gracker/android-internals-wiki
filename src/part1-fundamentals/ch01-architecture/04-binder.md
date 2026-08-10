@@ -406,4 +406,4 @@ Binder buffer 是进程级共享资源。大列表、Bitmap 和完整对象图�
 - Android 14 及以后：平台会暂存发往 cached 应用的 context-registered broadcast，并在应用解冻后再投递；manifest receiver 仍会触发立即解冻。
 - Android 17：native libbinder 仍以 `BINDER_VM_SIZE = 1 MiB - 2 × page_size`、`DEFAULT_MAX_BINDER_THREADS = 15` 为默认源码锚点；实际服务可以改变线程池配置。Perfetto `android.binder` 与 `android.binder_breakdown` 应以当前 Trace Processor 模块和实际录制事件为准。
 
-platform、libbinder 与 Perfetto 结论锚定 `android-17.0.0_r1`，Binder 驱动结论锚定 `android17-6.18-2026-06_r6`。厂商内核 hook、服务线程池大小、SELinux 可见性和 user build 的调试权限仍需在目标设备确认。
+platform、libbinder 与 Perfetto 结论锚定 `android-17.0.0_r1`，Binder driver 结论锚定 `android17-6.18-2026-06_r6`。厂商内核 hook、服务线程池大小、SELinux 可见性和 user build 的调试权限仍需在目标设备确认。
