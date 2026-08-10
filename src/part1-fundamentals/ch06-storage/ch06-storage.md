@@ -31,7 +31,7 @@ related_chapters: ["05", "07"]
 - Embedded Photo Picker、云媒体提供方和具体云服务的可用性受系统组件、地区、服务实现与用户选择影响；
 - 厂商功能名称和性能收益需要对应版本、设备、测试方法与公开证据，不能用品牌示例代替 Android 平台机制。
 
-对应内容已经拆到以下章节：
+对应主题入口如下：
 
 - [6.1 Android 存储架构](./01-storage-architecture.md)：分区、挂载、加密、应用目录和共享存储边界；
 - [6.2 Android 文件系统](./02-filesystem.md)：ext4、F2FS、EROFS 与产品配置；
@@ -40,4 +40,4 @@ related_chapters: ["05", "07"]
 - [6.6 vold、FUSE 与 scoped storage I/O](./06-vold-fuse-scoped-storage-io.md)：Android 17 共享存储执行路径；
 - [6.7 FUSE passthrough 与 FUSE BPF](./07-fuse-bpf-scoped-storage-io-performance.md)：快路径条件和调试方法。
 
-Photo Picker、应用安装和 ART 编译应在各自专题章节中以 AOSP `android-17.0.0_r1` 重新核对，不从本页推导技术结论。
+Photo Picker、应用安装和 ART 编译应在各自专题章节中以 AOSP `android-17.0.0_r1` 核对，不能依据这份主题索引推导技术结论。

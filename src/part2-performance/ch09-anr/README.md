@@ -1,24 +1,29 @@
 # 第 9 章：ANR
 
-ANR 是 Android 性能问题里最“不留情面”的一种表现。
+ANR 表示系统判定应用未在规定时间内响应。
 
-掉帧和响应慢还可能让用户勉强忍一忍，ANR 则意味着系统已经判断：这个应用长时间没有给出应有的响应，必须介入。  
-所以 ANR 分析从来不只是“看一份 traces.txt”，而是要把超时设计、主线程状态、Binder、锁、系统负载和用户可感知体验一起放回来看。
+一份 `traces.txt` 只能记录采样时刻的线程状态。ANR 分析还要结合超时类型、触发时间、Binder、锁、系统负载和用户可感知时间线。
 
-这一章会把 ANR 从设计思想、触发类型、分析方法和特殊场景几条线拆开，帮助读者建立一种更稳的判断方式：不是只盯住最终堆栈，而是回到超时发生前的整条时间线。
+分析应回到超时发生前的时间线，区分最终堆栈、触发原因和放大因素。
 
-## 本章内容
+## 内容索引
 
-- ANR 设计思想
-- ANR 类型与触发条件
-- ANR 分析方法
-- 特殊场景的 ANR
-- 案例集
-- Notification 性能与 ANR
-- ANR 非技术故障诊断
+- [9.1 ANR 设计思想](01-anr-design.md)
+- [9.2 ANR 类型与触发条件](02-anr-types.md)
+- [9.3 ANR 分析方法](03-anr-analysis.md)
+- [9.4 特殊场景的 ANR](04-special-anr.md)
+- [9.5 案例集](05-case-studies.md)
+- [9.6 Notification 性能与 ANR](06-notification-performance-anr.md)
+- [9.7 ANR 非技术故障诊断](07-non-technical-anr-diagnosis.md)
+- [9.8 ANR Kernel Trace 联合诊断与系统事件关联](08-anr-kernel-trace-joint-diagnosis.md)
+- [9.9 ContentProvider ANR 双路径](09-contentprovider-anr-double-path.md)
+- [9.10 Android 17 ANR 预警回调与类型枚举](10-android17-anr-warning-callback.md)
+- [9.11 企业级 ANR 监控平台架构设计](9.11-enterprise-anr-monitoring-platform-design.md)
+- [9.12 Android 17 ANR 输入事件超时检测双层预警机制](9-12-android17-anr-输入事件超时检测双层预警机制.md)
+- [9.13 ANR 日志 CPU 数据系统化分析方法论](13-anr-log-cpu-analysis-methodology.md)
 
 ## 阅读建议
 
-- 如果你刚开始系统学 ANR，先读 `9.1`、`9.2`、`9.3`。
-- 如果你已经在线上看过不少 ANR 堆栈，但总觉得“堆栈像替罪羊”，重点回看 `9.1` 和 `9.3`。
-- 如果你经常踩 Notification、前台服务、多进程这些边界问题，后面的专项章节更值得优先看。
+- 系统学习 ANR：按 `9.1 → 9.2 → 9.3` 阅读。
+- 事后堆栈无法解释触发点：重点查看 `9.1`、`9.3`、`9.8`。
+- Notification、前台服务和多进程边界：进入对应专项条目。
