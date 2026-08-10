@@ -141,7 +141,7 @@ Android Choreographer
   → BufferQueue / host HWUI
   → SurfaceFlinger
   → HWC or RenderEngine
-  → 显示提交
+  → display present
 ```
 
 这条链只覆盖 Flutter 根视图的公共主干。external texture 与 PlatformView 会在中间或显示端加入额外 producer 和图层。
@@ -198,7 +198,7 @@ Choreographer
   → View measure / layout / draw
   → RenderNode / DisplayList
   → HWUI RenderThread
-  → 应用窗口缓冲
+  → App Window buffer
 ```
 
 Flutter 自绘 UI 的路径跳过 `ViewRootImpl.performTraversals()` 对 Widget 树的绘制，也没有应用 HWUI 的 RenderThread 分工。它由 Flutter 框架生成 DisplayList，再由 Flutter Raster 线程生产 root target。
@@ -243,7 +243,7 @@ Flutter Raster / GPU
   → SurfaceTexture producer buffer
   → onFrameAvailable / TextureView update
   → host ViewRoot traversal + HWUI draw
-  → 宿主应用窗口缓冲
+  → host App Window buffer
   → SurfaceFlinger
 ```
 
@@ -521,9 +521,9 @@ Dart 可用 `dart:developer` 的 `Timeline.startSync()` / `finishSync()` 或 `Ti
 - Dart animation/build/layout/paint；
 - Raster begin/end；
 - GPU submit/completion；
-- 根缓冲入队；
+- root buffer queue；
 - SF latch；
-- 显示提交。
+- display present。
 
 ### 4. 按现象补证据
 
@@ -567,10 +567,10 @@ Flutter root Surface、host App Window 和独立 PlatformView 图层可能有不
 
 - Flutter engine frame id；
 - texture id；
-- 缓冲 ID/帧号；
+- buffer id/frame number；
 - SurfaceFlinger layer id；
 - 预期/实际呈现时间；
-- 生产者/获取/释放/显示栅栏。
+- producer/acquire/release/present fence。
 
 Dart 帧结束只表示 framework/engine 的一个阶段结束，不能作为上屏时间。
 

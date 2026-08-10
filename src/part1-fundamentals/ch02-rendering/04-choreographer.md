@@ -699,7 +699,7 @@ Android 17 / API 37 的 platform tag 不能确定应用使用的 Compose runtime
 - Android 构建版本/标签与 vendor build；
 - Compose Runtime/UI 与 BOM 版本；
 - Kotlin 与 Compose compiler plugin；
-- 调试、可分析或发布构建；
+- debug、profileable 或 release 构建；
 - 是否开启组合阶段跟踪；
 - 刷新率、热状态和测试输入。
 

@@ -433,7 +433,7 @@ Choreographer / UI Thread
   → App Window BLAST buffer transaction
   → SurfaceFlinger FrontEnd RequestedLayerState / LayerSnapshot
   → CompositionEngine / HWComposer / Composer3
-  → 显示提交
+  → display present
 ```
 
 页面有 `SurfaceView`、`TextureView`、视频、Camera、WebView、Flutter、游戏或 React Native 时，要先确认 Producer、Consumer 与最终图层。`SurfaceView` 常有独立的子 Surface；`TextureView` 会先被宿主 HWUI 采样进 App Window；框架名无法替代 Surface 拓扑。
