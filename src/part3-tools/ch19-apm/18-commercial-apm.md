@@ -58,42 +58,15 @@ last_task6_audit: "2026-06-15"
 
 # 商业 APM 平台（Sentry、APMPlus、Bugly）
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 [定位] 说明商业 APM 购买的是维护、看板、告警、权限、SLA、合规和跨端分析能力，不只是 SDK 功能。
-- 🔹 [评审维度] 按 SDK 开销、数据所有权、私有化、采样、符号化、告警、移动专项、价格、迁移成本做选型表。
-- 🔹 [Sentry] 展开 error、transaction、span、profiling、session replay 的移动端模型和适用场景。
-- 🔹 [APMPlus] 说明国内移动 APM 常见能力：启动、卡顿、崩溃、ANR、网络、内存、页面、版本灰度、机型维度。
-- 🔹 [Bugly] 写稳定性治理入口的优势和边界，区分 crash / ANR 与完整性能监控。
-- 🔹 [接入策略] 给商业 SDK facade 设计，避免业务代码直接依赖某个 vendor API。
-- 🔹 [数据合同] 统一自定义 trace、用户标识、页面、版本、实验、网络请求的字段，降低未来迁移成本。
-- 🔹 [私有化] 展开部署、升级、存储、权限、审计、数据删除、成本和故障责任。
-- 🔹 [退出成本] 写从商业平台迁移时要保留的字段、历史数据、告警规则、mapping、dashboard。
-- 🔹 [PoC 验收] 给试用期验证清单：采样准确性、符号还原、慢帧定位、网络阶段、告警噪声、低端设备开销。
-
-### 扩展（可选深入）
-
-- 🔸 增加 Sentry Android transaction / span 示例和 profiling 采样配置。
-- 🔸 补一个商业 APM facade 接口示例，覆盖 startTrace、addMetric、captureException、setUser、setContext。
-- 🔸 对 Sentry、APMPlus、Bugly 官方文档做 L1 核对，标注移动端能力差异。
-- 🔸 增加采购评审表和 PoC 验收表。
-- 🔸 补充合规检查项：数据地域、脱敏、保留周期、访问审计、删除流程。
-
-<!-- outline-end -->
-
-
 ## 商业平台买的是服务能力和维护成本
 
 Sentry、APMPlus、Bugly 这类平台的付费点主要落在 SDK、服务端、看板、告警、权限、符号表、数据保留、工单协作和技术支持。团队省下的是后端维护、值班运营、告警治理和跨端数据分析成本。
 
 选型前要先确认团队短板：崩溃治理、性能指标、用户会话回查、跨端追踪、国内访问、合规审计、私有化部署，还是数据迁移能力。商业 APM 接入后会进入 App 启动、异常捕获、网络、页面和用户标识等敏感路径，采购评审必须同时看能力、成本和退出方式。
 
-本文在 2026 年 7 月 25 日按公开文档核对了以下 Android 端版本。商业合同可能提供不同分支，PoC 必须以拿到的制品、合同能力表和部署清单为准。
+以下 Android 端版本按 2026 年 7 月 25 日的公开文档核对。商业合同可能提供不同分支，PoC 必须以拿到的制品、合同能力表和部署清单为准。
 
-| 平台 | 本文核对的公开 Android 制品 | 版本边界 |
+| 平台 | 核对的公开 Android 制品 | 版本边界 |
 |---|---|---|
 | Sentry | `io.sentry:sentry-android:8.50.1`、Android Gradle plugin `6.16.0` | core AAR 的 `minSdk=21`；Session Replay 的运行时实现只在 API 26+ 启用 |
 | APMPlus 国内版 | `apm_insight:1.5.25.cn`、`apm_insight_crash:1.5.21`、plugin `1.4.2` | 国内与海外制品、上报地域不同，不能混用 |
@@ -401,7 +374,7 @@ interface AppMonitor {
 
 ## 核验来源
 
-商业 APM 的实现不是 AOSP 组成部分，无法用 Android 17 platform tag 验证厂商闭源逻辑。本文采用三层证据：
+商业 APM 的实现不是 AOSP 组成部分，无法用 Android 17 platform tag 验证厂商闭源逻辑。核验采用三层证据：
 
 1. 厂商公开接入页、功能页和 changelog，用于确认制品版本、开关和产品口径。
 2. 可下载 AAR 的 Manifest、source package 和最终 APK，用于确认 `minSdk`、API 分支、native library 与打包结果。

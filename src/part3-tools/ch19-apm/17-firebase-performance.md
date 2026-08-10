@@ -53,39 +53,13 @@ last_deepseek_cn_review_at: 2026-07-14
 ---
 # Firebase Performance
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 [定位] 说明 Firebase Performance 是托管型低接入成本方案，适合快速获得基础性能看板，但定制能力和数据控制有限。
-- 🔹 [trace 模型] 展开自动 trace、自定义 trace、metric、attribute、screen rendering trace、network request trace 的数据关系。
-- 🔹 [自动采集] 按启动、前后台、屏幕渲染、HTTP/S 请求列自动采集能力和需要官方文档核对的版本要求。
-- 🔹 [自定义 trace] 给启动、首屏、登录、图片解码、数据库查询示例，说明 trace 名称、metric、attribute 的命名规则。
-- 🔹 [网络聚合] 说明 URL pattern、域名、path 参数、状态码、payload size、失败原因如何影响聚合结果和隐私。
-- 🔹 [JankStats 关系] 区分 Firebase 的屏幕渲染指标和 JankStats 的端侧帧数据；写清什么时候需要自采。
-- 🔹 [采样与延迟] 说明数据采集、上传、控制台展示延迟、采样、阈值、版本维度对问题定位的影响。
-- 🔹 [Google Play] 写与 Google Play Console / Android Vitals 的互补关系，避免重复解释同一类慢帧或 ANR 数据。
-- 🔹 [接入成本] 覆盖 Gradle plugin、Google services、地区访问、账号权限、隐私政策、Release 开关。
-- 🔹 [适用边界] 明确适合中小团队快速建看板，不适合深度私有化、复杂自定义诊断和完整原始样本回溯。
-
-### 扩展（可选深入）
-
-- 🔸 增加一份 Firebase custom trace Kotlin 示例，包含 metric 和 attribute。
-- 🔸 补一张 Firebase、JankStats、FrameMetrics、Google Play Vitals 的指标分工表。
-- 🔸 对 Firebase Performance official docs、Android SDK 版本要求和自动 trace 列表做 L1 核对。
-- 🔸 补一个 URL pattern 设计案例，说明如何避免把用户 id、订单 id 写进 trace 名。
-- 🔸 增加从 Firebase 迁移到自建 APM 或商业 APM 时需要保留的字段清单。
-
-<!-- outline-end -->
-
 ## Firebase Performance 的定位
 
 Firebase Performance Monitoring 是 Firebase 提供的托管型性能监控服务。它用较少的接入工作采集启动、前后台、屏幕渲染和部分 HTTP/S 请求，还允许应用补充业务 trace。控制台负责版本、设备、国家或地区等维度的聚合。
 
 它适合中小团队快速建立基础性能看板，也适合作为成熟监控体系中的趋势观测层。它不提供自托管采集服务，端侧还有采样和限流，控制台展示也不是秒级。因此，Firebase Performance 不能单独负责实时故障发现、单次请求复原、逐帧归因或 native 现场诊断。
 
-截至 2026 年 7 月，本文采用以下 Firebase 构建锚点：
+截至 2026 年 7 月，采用以下 Firebase 构建锚点：
 
 | 组件 | 版本 | 说明 |
 | --- | --- | --- |
@@ -94,7 +68,7 @@ Firebase Performance Monitoring 是 Firebase 提供的托管型性能监控服�
 | Performance Gradle plugin | `2.0.2` | 网络请求和 `@AddTrace` 字节码插桩 |
 | Google services plugin | `4.5.0` | 处理 `google-services.json` |
 
-`firebase-perf:22.0.6` 的 AAR 最低支持 API 23。本文知识点按 Android 8（API 26）到 Android 17（API 37）复核。Firebase Android BoM 从 `34.0.0` 起不再包含独立 KTX module；Kotlin 扩展 API 已并入主 module，依赖仍写 `firebase-perf`。
+`firebase-perf:22.0.6` 的 AAR 最低支持 API 23。以下内容按 Android 8（API 26）到 Android 17（API 37）复核。Firebase Android BoM 从 `34.0.0` 起不再包含独立 KTX module；Kotlin 扩展 API 已并入主 module，依赖仍写 `firebase-perf`。
 
 ## 数据模型：trace、metric、attribute
 
@@ -119,7 +93,7 @@ Performance Gradle plugin 与运行时 SDK 负责不同工作：
 - `firebase-perf` 在进程中记录、采样、暂存并上传性能事件。
 - `com.google.gms.google-services` 读取 `google-services.json`，把 Firebase 项目配置生成到 Android resources。
 
-下面的 Kotlin DSL 示例锁定本文复核过的版本：
+下面的 Kotlin DSL 示例锁定上述版本：
 
 ```kotlin
 plugins {
@@ -182,7 +156,7 @@ Firebase 并没有“debug 构建默认关闭”的通用规则。更稳妥的�
 | HTTP/S request | 自动 + 手工 | 自动覆盖受支持的 JVM 网络调用 | Cronet、native 或自研栈需要手工记录 |
 | Custom trace | 手工或 `@AddTrace` | 业务阶段、解码、查询等代码区间 | 需要设计稳定字段，`@AddTrace` 不能附加自定义数据 |
 
-Android 17 / API 37 没有一套单独的 Firebase Performance 语义。本文以 SDK `22.0.6` 的官方文档和源码为准；跨版本比较时，SDK 升级、采样策略变化也要作为实验变量。
+Android 17 / API 37 没有一套单独的 Firebase Performance 语义。这里以 SDK `22.0.6` 的官方文档和源码为准；跨版本比较时，SDK 升级、采样策略变化也要作为实验变量。
 
 ## App start：不要把 `_app_start` 当成完整启动
 
@@ -196,7 +170,7 @@ Android 17 / API 37 没有一套单独的 Firebase Performance 语义。本文�
 
 SDK 会过滤后台触发的进程启动。`22.0.6` 修复了 Android 14（API 34）及以上版本的判断：在 Firebase 的早期初始化阶段调用 `ActivityManager.getMyMemoryState()`，只有 `IMPORTANCE_FOREGROUND` 才允许生成 `_app_start`。这个变化同样覆盖 Android 17。
 
-结论很简单：用 `_app_start` 比较版本趋势可以，用它替代应用定义的 TTID/TTFD 不可以。若“启动完成”要求首页骨架绘制、首批数据展示或可交互，需要另建 custom trace，并用 Macrobenchmark 或 Perfetto 校验端侧阶段。
+`_app_start` 可用于比较版本趋势，不能替代应用定义的 TTID/TTFD。若“启动完成”要求首页骨架绘制、首批数据展示或可交互，需要另建 custom trace，并用 Macrobenchmark 或 Perfetto 校验端侧阶段。
 
 ## Screen rendering：指标是“屏幕实例比例”
 
