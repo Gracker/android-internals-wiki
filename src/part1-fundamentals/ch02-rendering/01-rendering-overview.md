@@ -566,7 +566,7 @@ Hardware Composer HAL 连接 SurfaceFlinger 与设备显示合成能力。Surfac
 
 “Layer 太多或有透明混合才会转 GPU 合成”只覆盖少数可能性。
 
-### 9.2 设备合成与客户端合成
+### 9.2 Device composition 与 Client composition
 
 | 类型 | 主要执行者 | 说明 |
 | --- | --- | --- |
@@ -675,7 +675,7 @@ RenderThread CPU 切片长度不等于 GPU duration。二者可能重叠，也�
 
 - dequeue、queue、acquire、release 的时间；
 - slot 和 frame number 是否对应；
-- 获取栅栏何时发出信号；
+- acquire fence 何时 signal；
 - `BufferTX - layerName` 是否积压；
 - BLAST 事务何时进入 SurfaceFlinger；
 - 队列深度是否带来背压或延迟。
@@ -691,7 +691,7 @@ RenderThread CPU 切片长度不等于 GPU duration。二者可能重叠，也�
 - SurfaceFlinger 是否错过自己的 deadline；
 - HWC validate 返回的 composition type；
 - 是否发生 RenderEngine client composition；
-- 显示栅栏和释放栅栏的时间；
+- present fence 和 release fence 的时间；
 - 多显示器、刷新率切换或显示模式变化。
 
 不要给 SurfaceFlinger 套用固定“只剩几毫秒”的预算。实际预算取决于当前显示模式、调度相位、预测和 FrameTimeline。

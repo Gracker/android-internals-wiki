@@ -506,7 +506,7 @@ Frame pacing 的目标包括：
 
 - 让内容帧在正确的显示机会呈现；
 - 避免短帧和长帧造成不均匀 cadence；
-- 限制在途帧，减少队列堆积；
+- 限制 in-flight frame，减少 queue stuffing；
 - 在允许的显示配置中表达合适帧率。
 
 “每次收到 VSync 就立即渲染”只覆盖起帧节奏。若 producer 总是尽快提交，BufferQueue 可能积压，输入延迟仍会升高。
@@ -688,7 +688,7 @@ ORDER BY a.ts;
 
 - 进程和 Layer 名称；
 - surface/display token；
-- 预期与实际时间线；
+- expected 与 actual；
 - `jank_type`、`present_type` 和 `on_time_finish`；
 - flow 指向哪个 DisplayFrame。
 
@@ -702,7 +702,7 @@ ORDER BY a.ts;
 - INPUT、ANIMATION、INSETS_ANIMATION、TRAVERSAL、COMMIT；
 - RenderThread `DrawFrame`；
 - GPU submission 与 completion；
-- 出队/入队和生产者栅栏；
+- dequeue/queue 和 producer fence；
 - App SurfaceFrame actual end。
 
 主线程短不代表应用帧按时，RenderThread 切片长也不等于 GPU 一直忙。
@@ -737,7 +737,7 @@ ORDER BY a.ts;
 
 需要把以下证据放在一起：
 
-- 当前显示策略范围；
+- 当前 display policy ranges；
 - active display mode/group；
 - Layer vote 与 desired frame rate；
 - touch/idle/power 信号；

@@ -362,7 +362,7 @@ Android 17 AIDL `Composition.aidl` 中没有通用 `CLIENT_BYPASS` 枚举。厂�
 
 - buffer format、modifier/usage、dataspace 与 HDR metadata；
 - crop、scale、rotation、blend、alpha、rounded corner 和 color transform；
-- 受保护内容与安全显示要求；
+- protected content 与 secure display 要求；
 - overlay plane、scaler、色彩单元和内存带宽是否被其他图层占用；
 - Display 分辨率、刷新率、输出模式和厂商功耗策略；
 - transition leash、SystemUI、IME、dim Layer 和多个视频流形成的整屏组合。
@@ -386,7 +386,7 @@ getDeviceCompositionChanges(display)
   if canSkipValidate:
     presentOrValidate()
     if state == PresentSucceeded:
-      保存显示栅栏与图层释放栅栏
+      保存 present fence 与 layer release fences
       validateWasSkipped = true
       return
     # 否则本次调用完成 validate
@@ -425,7 +425,7 @@ Android 13 起 Composer3 AIDL 进入平台主线。Android 17 的 SurfaceFlinger
 
 ## Buffer 与栅栏：四种完成边界
 
-以下时间线把图层缓冲、客户端目标和显示提交分开：
+以下时间线把 Layer buffer、client target 和 Display present 分开：
 
 ```text
 App / Producer
@@ -518,8 +518,8 @@ Android 17 userdebug/eng 跟踪数据中可关注：
 判断 CLIENT/DEVICE 时查看：
 
 - CompositionEngine/RenderEngine 是否生成 client target；
-- 每个图层的合成类型；
-- GPU 合成或客户端合成切片；
+- 每个 Layer 的 composition type；
+- GPU composition 或 client composition slice；
 - HWC validate/present、DisplayHAL 与厂商 DPU trace；
 - per-display present fence、FrameTimeline present/jank type。
 
