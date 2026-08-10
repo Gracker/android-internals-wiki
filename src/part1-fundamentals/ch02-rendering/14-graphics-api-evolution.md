@@ -242,7 +242,7 @@ Vulkan 适合把 scene traversal、visibility、resource preparation 和 command
 
 静态场景可以复用部分 secondary command buffer，减少 CPU 录制。但以下变化通常会迫使应用更新命令或其引用的数据：
 
-- 交换链重建或帧缓冲/附件变化；
+- swapchain 重建或 framebuffer / attachment 变化；
 - pipeline、descriptor binding 或 draw 数量变化；
 - 资源生命周期和 image layout 方案变化；
 - dynamic rendering 配置或渲染目标变化。
