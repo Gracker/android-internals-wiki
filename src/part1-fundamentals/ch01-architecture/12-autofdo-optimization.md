@@ -118,7 +118,7 @@ PGO（基于配置文件的优化，Profile-Guided Optimization）按 profile �
 
 采样也有开销。Coresight trace 会产生 AUX 数据，需要缓冲、压缩和后处理；数据量过大时还可能 overflow 或被 simpleperf 限流。它没有 instrumentation counter 的代码侵入，但采集仍会影响设备。
 
-### 编译器如何使用配置文件
+### 编译器如何使用 profile
 
 LLVM sample profile 可以影响：
 
@@ -176,7 +176,7 @@ ACK `android17-6.18-2026-06_r6` 中有三条直接证据：
 clang_autofdo_profile = ":gki/aarch64/afdo/kernel.afdo"
 ```
 
-当前标签已经把内核 AutoFDO 接入 GKI 构建。说明文档指出，当前 profile 针对 AArch64 kernel 6.18.21 采集，并会在对应滚动分支持续更新。tag 固定了某次 profile 内容，分支最新提交仍会继续变化；复现实验必须记录使用的是 tag、profile blob 还是分支提交。
+当前标签已经把 kernel AutoFDO 接入 GKI 构建。说明文档指出，当前 profile 针对 AArch64 kernel 6.18.21 采集，并会在对应滚动分支持续更新。tag 固定了某次 profile 内容，分支最新提交仍会继续变化；复现实验必须记录使用的是 tag、profile blob 还是分支提交。
 
 ### Android 17 README 的性能数据
 
@@ -317,13 +317,13 @@ Kernel profile 不可能覆盖所有错误处理、中断和低频管理路径�
 
 ## Profile 的质量控制
 
-AutoFDO 更隐蔽的失败方式是配置文件成功接入，但性能在真实场景回退。
+AutoFDO 更隐蔽的失败方式是 profile 成功接入，但性能在真实场景回退。
 
 ### Profile 与 binary 必须接近
 
 源码、内联结构和地址布局变化后，旧样本的可用程度会下降。应记录：
 
-- 内核/平台提交；
+- kernel/平台提交；
 - Clang 版本；
 - build ID；
 - profile 生成时间和输入工作负载；
@@ -420,7 +420,7 @@ adb shell simpleperf stat \
 5. 建立性能、体积、功耗和稳定性门禁；
 6. 随代码漂移定期刷新，避免长期复用旧 profile。
 
-当前 ACK README 聚焦 `vmlinux`。模块需要单独采集、符号化和构建接入；不能因为内核主体有 `kernel.afdo` 就认定 vendor driver 已经得到相同优化。
+当前 ACK README 聚焦 `vmlinux`。模块需要单独采集、符号化和构建接入；不能因为 kernel 主体有 `kernel.afdo` 就认定 vendor driver 已经得到相同优化。
 
 ### 应用开发者
 
