@@ -246,7 +246,7 @@ Insets 变化会先走 `mApplyInsetsRequested`、`dispatchApplyInsets()`，并�
 
 Android 14+ 增加了 `relayoutAsync()`。Android 17 的 `canRelayoutAsync()` 会检查 starting window、待处理 sync/seq、AM/WMS `WindowConfiguration` 差异等条件；随后客户端用本地 `InsetsState` 和 `WindowConfiguration` 计算 frame。若位置和尺寸同时变化、需要取得新的 sync seq，就回到同步 relayout。启用 fluid-resize/client-surface 相关 flag 后，分支还会不同，核对时必须以目标 build 的 feature flags 为准。
 
-服务端实现很薄：`Session.relayoutAsync()`/`relayoutAsync2()` 复用 `relayout(...)`，只把 `outRelayoutResult` 设为 `null`，随后仍进入 `WindowManagerService.relayoutWindow()`。Trace 上的区别是 App UI 线程不等待 frames、Insets、SurfaceControl 和 sync seq 返回；system_server 仍要处理属性变化、`mGlobalLock` 与后续 placement。分析时要把当前 traversal 和之后的 `IWindow.resized()`/Insets / Insets callback 放在同一段时间线里。
+服务端实现很薄：`Session.relayoutAsync()`/`relayoutAsync2()` 复用 `relayout(...)`，只把 `outRelayoutResult` 设为 `null`，随后仍进入 `WindowManagerService.relayoutWindow()`。Trace 上的区别是 App UI 线程不等待 frames、Insets、SurfaceControl 和 sync seq 返回；system_server 仍要处理属性变化、`mGlobalLock` 与后续 placement。分析时要把当前 traversal 和之后的 `IWindow.resized()` / Insets callback 放在同一段时间线里。
 
 ### relayoutWindow 内部流程
 
@@ -510,7 +510,7 @@ WMS 的性能表现同时受多个上下游影响：
 
 | 版本 | 变化 | 性能影响 | 参考锚点 |
 |------|------|---------|---------|
-| Android 12 (API 31) | SplashScreen API 统一 StartingWindow | 启动反馈路径更标准，但 Android 12+ 的 SplashScreen/TaskSnapshot / TaskSnapshot starting window 创建与绘制主要落在 WM Shell starting-surface 路径 | `developer.android.com/develop/ui/views/launch/splash-screen` |
+| Android 12 (API 31) | SplashScreen API 统一 StartingWindow | 启动反馈路径更标准，但 Android 12+ 的 SplashScreen/TaskSnapshot starting window 创建与绘制主要落在 WM Shell starting-surface 路径 | `developer.android.com/develop/ui/views/launch/splash-screen` |
 | Android 13 (API 33) | `OnBackInvokedCallback` 与 Predictive Back 早期能力 | 应用可接入新的 back callback；系统预测返回动画多处仍需要开发者选项辅助测试 | `developer.android.com/guide/navigation/custom-back/predictive-back-gesture` |
 | Android 14 (API 34) | Predictive Back 跨 Activity/自定义过渡能力继续完善 | 返回手势进入实时预览，Input、WMS transition 与 Shell transition 需要放在同一段时间轴内分析 | `developer.android.com/guide/navigation/custom-back/predictive-back-gesture` |
 | Android 15 (API 35) | Predictive Back 系统动画不再依赖开发者选项；Edge-to-Edge enforcement 扩大 | 已 opt-in 的应用/Activity 会显示 back-to-home、cross-task、cross-activity 等系统动画；Insets 分发也更常见 | `developer.android.com/guide/navigation/custom-back/predictive-back-gesture`/`developer.android.com/about/versions/15/behavior-changes-15` |
@@ -529,7 +529,7 @@ Window 数量会增加状态和内存，但不能单独预测帧耗时。需要�
 
 ### 误区 3："StartingWindow 是 App 画的"
 
-StartingWindow 独立于 App 主 Window 第一帧。ATMS/WMS 判断是否需要 starting surface 并发出生命周期请求；Android 12+ 的 SplashScreen/TaskSnapshot / TaskSnapshot starting window 多由 WM Shell starting-surface 组件创建和绘制。App 进程完成主 Window 首帧之前，Shell 侧 starting surface 已经挂到 Task 上。
+StartingWindow 独立于 App 主 Window 第一帧。ATMS/WMS 判断是否需要 starting surface 并发出生命周期请求；Android 12+ 的 SplashScreen/TaskSnapshot starting window 多由 WM Shell starting-surface 组件创建和绘制。App 进程完成主 Window 首帧之前，Shell 侧 starting surface 已经挂到 Task 上。
 
 ### 误区 4："relayoutWindow 慢一定是 WMS 的问题"
 

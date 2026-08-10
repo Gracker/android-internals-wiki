@@ -210,7 +210,7 @@ usage 会影响 allocator 选择内存布局、压缩、cache policy 和安全�
 
 | 现代 usage | 典型含义 |
 |---|---|
-| `CPU_READ_*`/`CPU_WRITE_*` | 允许通过 Mapper/AHardwareBuffer / AHardwareBuffer lock 进行 CPU 访问 |
+| `CPU_READ_*`/`CPU_WRITE_*` | 允许通过 Mapper/AHardwareBuffer lock 进行 CPU 访问 |
 | `GPU_SAMPLED_IMAGE` | GPU 作为纹理或 sampled image 读取 |
 | `GPU_COLOR_OUTPUT`/`GPU_FRAMEBUFFER` | GPU 作为 framebuffer attachment 写入 |
 | `COMPOSER_OVERLAY` | buffer 可能交给 Composer HAL 使用 |
@@ -295,7 +295,7 @@ Android 15 起平台支持 16 KB page size 设备。它会影响 ELF、mmap、�
 - stride 与 plane layout；
 - format、compression metadata 和 alignment；
 - `reservedSize`；
-- IOMMU/CPU / CPU mapping 与页表成本；
+- IOMMU/CPU mapping 与页表成本；
 - 多进程统计是否重复计算同一 dma-buf inode。
 
 `GraphicBufferAllocator` 的 `stride × height × bytesPerPixel` 只是部分格式的估算，源码也把 dump 文案写成 estimate。判断 16 KB 设备上的变化应使用 allocator metadata、dma-buf size 和目标设备测量。
@@ -421,7 +421,7 @@ Android 17 `GraphicBufferAllocator.cpp` 定义了两个直接观察点：
 | dma-buf fdinfo/sysfs inode | 同一 backing storage 被哪些进程引用、大小与 exporter 是什么 |
 | SurfaceFlinger layer trace/ dump | layer 是否仍存在，buffer cache 与合成路径怎样 |
 | fence、GPU 与 HWC trace | buffer 因异步工作未完成而不能复用，还是引用没有释放 |
-| PSI、direct reclaim、IOMMU/GPU / GPU driver 事件 | 分配慢是否来自内存压力或设备映射 |
+| PSI、direct reclaim、IOMMU/GPU driver 事件 | 分配慢是否来自内存压力或设备映射 |
 
 看到 buffer 长时间处于 ACQUIRED 状态时，先判断 consumer 是否按协议持有，再看 release fence 和队列上限。Mapper import 通常发生在新 handle 首次出现时，不能把每次 ACQUIRED 停留都归因于 import。
 

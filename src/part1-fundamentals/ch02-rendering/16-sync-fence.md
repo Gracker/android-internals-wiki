@@ -395,7 +395,7 @@ Composer HAL 向 Stable AIDL 演进，Vulkan、EGL 与 native fence 互操作继
 
 ### Fence signal 后 buffer 一定 free
 
-signal 只满足同步依赖。slot 状态、GraphicBuffer 引用、Mapper handle、HWC/GPU / GPU cache 与应用对象仍会影响 buffer 生命周期。
+signal 只满足同步依赖。slot 状态、GraphicBuffer 引用、Mapper handle、HWC / GPU cache 与应用对象仍会影响 buffer 生命周期。
 
 ### Timeline semaphore 能直接导出 Android sync fd
 
@@ -424,5 +424,5 @@ Fence 让等待可见。GPU 工作慢、HWC 持有、display 迟到、queue 深�
 
 - [Android synchronization framework](https://source.android.com/docs/core/graphics/sync)
 - [Android graphics architecture](https://source.android.com/docs/core/graphics/architecture)
-- [Linux DMA-BUF/dma-fence / dma-fence documentation](https://docs.kernel.org/6.18/driver-api/dma-buf.html)
+- [Linux DMA-BUF / dma-fence documentation](https://docs.kernel.org/6.18/driver-api/dma-buf.html)
 - [Vulkan 1.4.335 synchronization specification](https://github.com/KhronosGroup/Vulkan-Docs/blob/v1.4.335/chapters/synchronization.adoc)

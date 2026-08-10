@@ -199,7 +199,7 @@ int SwappyCommon::calculateSwapInterval(nanoseconds frameTime,
 
 - `mAutoSwapIntervalThreshold` 默认是 `50 ms`。观测到的帧时长超过该阈值后，auto swap interval 不再主动 sleep，让应用尽快追赶；它不是建议的目标帧预算。
 - `REFRESH_RATE_MARGIN` 是 `500 ns`，只用于 interval 取整边界。
-- `FrameDurations` 的采样窗口是 `2 s`，用来估计近期 CPU/GPU / GPU frame duration。
+- `FrameDurations` 的采样窗口是 `2 s`，用来估计近期 CPU/GPU frame duration。
 
 在 90Hz 设备上做心算，22ms 左右的 frame time 会被 `calculateSwapInterval()` 算成 2 个 refresh period，得到约 22.22ms 的展示节奏。这个数来自运行时计算，不来自配置表里的“45FPS 档位”。
 
@@ -339,10 +339,10 @@ FrameTimeline 要求 Android 12/API 31 及以上。`Expected Timeline` 表示 sc
 
 在 Perfetto UI 中按以下顺序展开：
 
-- 应用进程的 Choreographer/AChoreographer / AChoreographer callback 与 render-thread marker；
+- 应用进程的 Choreographer/AChoreographer callback 与 render-thread marker；
 - `Expected Timeline` 和 `Actual Timeline`；
 - GPU render stages 与 producer fence；
-- 对应 layer 的 BufferQueue/SurfaceFlinger / SurfaceFlinger slice。
+- 对应 layer 的 BufferQueue/SurfaceFlinger slice。
 
 对于受 FrameTimeline 支持的窗口，下面的查询把预算、实际工作时长和 jank 归因放到同一行。它沿用 Android 17 Perfetto metric 中按 `upid + name` 关联 expected / actual slice 的方式。
 
