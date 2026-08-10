@@ -262,11 +262,11 @@ Android 17 还在 boot completed 之后尝试注册 BPF memevents：
 Android 17 新策略的主要 kill reason 包括：
 
 - critical PSI 下设备长时间无响应；
-- 低交换空间与页缓存抖动同时出现；
+- low swap 与 page-cache thrashing 同时出现；
 - 内存水位和 free swap 同时偏低；
 - 内存水位偏低且 swap utilization 过高；
 - 低水位伴随抖动；
-- 直接回收期间发生抖动，或直接回收持续过久；
+- direct reclaim 期间 thrashing，或 direct reclaim 持续过久；
 - thrashing 之后 file cache 仍低；
 - kill 后仍跌破 min watermark；
 - 普通低水位；
